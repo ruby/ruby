@@ -331,4 +331,26 @@ class TestIOBuffer < Test::Unit::TestCase
   ensure
     io.close!
   end
+
+  def test_operators
+    source = IO::Buffer.for("1234123412")
+    mask = IO::Buffer.for("133\x00")
+    result = source & mask
+
+    assert_equal (source & mask), IO::Buffer.for("123\x00123\x0012")
+    assert_equal (source | mask), IO::Buffer.for("1334133413")
+    assert_equal (source ^ mask), IO::Buffer.for("\x00\x01\x004\x00\x01\x004\x00\x01")
+    assert_equal ~source, IO::Buffer.for("\xce\xcd\xcc\xcb\xce\xcd\xcc\xcb\xce\xcd")
+  end
+
+  def test_inplace_operators
+    source = IO::Buffer.for("1234123412")
+    mask = IO::Buffer.for("133\x00")
+    result = source & mask
+
+    assert_equal source.dup.and!(mask), IO::Buffer.for("123\x00123\x0012")
+    assert_equal source.dup.or!(mask), IO::Buffer.for("1334133413")
+    assert_equal source.dup.xor!(mask), IO::Buffer.for("\x00\x01\x004\x00\x01\x004\x00\x01")
+    assert_equal source.dup.not!, IO::Buffer.for("\xce\xcd\xcc\xcb\xce\xcd\xcc\xcb\xce\xcd")
+  end
 end

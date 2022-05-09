@@ -1695,6 +1695,40 @@ io_buffer_copy_from(struct rb_io_buffer *data, const void *source_base, size_t s
 
 /*
  *  call-seq:
+ *    dup -> io_buffer
+ *    clone -> io_buffer
+ *
+ *  Make an internal copy of the source buffer. Updates to the copy will not
+ *  affect the source buffer.
+ *
+ *    source = IO::Buffer.for("Hello World")
+ *    # =>
+ *    # #<IO::Buffer 0x00007fd598466830+11 EXTERNAL READONLY SLICE>
+ *    # 0x00000000  48 65 6c 6c 6f 20 57 6f 72 6c 64                Hello World
+ *    buffer = source.dup
+ *    # =>
+ *    # #<IO::Buffer 0x0000558cbec03320+11 INTERNAL>
+ *    # 0x00000000  48 65 6c 6c 6f 20 57 6f 72 6c 64                Hello World
+ *
+ */
+static VALUE
+rb_io_buffer_initialize_copy(VALUE self, VALUE source)
+{
+    struct rb_io_buffer *data = NULL;
+    TypedData_Get_Struct(self, struct rb_io_buffer, &rb_io_buffer_type, data);
+
+    const void *source_base;
+    size_t source_size;
+
+    rb_io_buffer_get_bytes_for_reading(source, &source_base, &source_size);
+
+    io_buffer_initialize(data, NULL, source_size, io_flags_for_size(source_size), Qnil);
+
+    return io_buffer_copy_from(data, source_base, source_size, 0, NULL);
+}
+
+/*
+ *  call-seq:
  *    copy(source, [offset, [length, [source_offset]]]) -> size
  *
  *  Efficiently copy data from a source IO::Buffer into the buffer,
@@ -2136,6 +2170,18 @@ memory_and(unsigned char * restrict output, unsigned char * restrict base, size_
     }
 }
 
+/*
+ *  call-seq:
+ *    source & mask -> io_buffer
+ *
+ *  Generate a new buffer the same size as the source by applying the binary AND
+ *  operation to the source, using the mask, repeating as necessary.
+ *
+ *    IO::Buffer.for("1234567890") & IO::Buffer.for("\xFF\x00\x00\xFF")
+ *    # =>
+ *    # #<IO::Buffer 0x00005589b2758480+4 INTERNAL>
+ *    # 0x00000000  31 00 00 34 35 00 00 38 39 00                   1..45..89.
+ */
 static VALUE
 io_buffer_and(VALUE self, VALUE mask)
 {
@@ -2164,6 +2210,18 @@ memory_or(unsigned char * restrict output, unsigned char * restrict base, size_t
     }
 }
 
+/*
+ *  call-seq:
+ *    source | mask -> io_buffer
+ *
+ *  Generate a new buffer the same size as the source by applying the binary OR
+ *  operation to the source, using the mask, repeating as necessary.
+ *
+ *    IO::Buffer.for("1234567890") | IO::Buffer.for("\xFF\x00\x00\xFF")
+ *    # =>
+ *    # #<IO::Buffer 0x0000561785ae3480+10 INTERNAL>
+ *    # 0x00000000  ff 32 33 ff ff 36 37 ff ff 30                   .23..67..0
+ */
 static VALUE
 io_buffer_or(VALUE self, VALUE mask)
 {
@@ -2179,7 +2237,6 @@ io_buffer_or(VALUE self, VALUE mask)
     struct rb_io_buffer *output_data = NULL;
     TypedData_Get_Struct(output, struct rb_io_buffer, &rb_io_buffer_type, output_data);
 
-    assert(output_data->size >= data->size);
     memory_or(output_data->base, data->base, data->size, mask_data->base, mask_data->size);
 
     return output;
@@ -2193,6 +2250,18 @@ memory_xor(unsigned char * restrict output, unsigned char * restrict base, size_
     }
 }
 
+/*
+ *  call-seq:
+ *    source ^ mask -> io_buffer
+ *
+ *  Generate a new buffer the same size as the source by applying the binary XOR
+ *  operation to the source, using the mask, repeating as necessary.
+ *
+ *    IO::Buffer.for("1234567890") ^ IO::Buffer.for("\xFF\x00\x00\xFF")
+ *    # =>
+ *    # #<IO::Buffer 0x000055a2d5d10480+10 INTERNAL>
+ *    # 0x00000000  ce 32 33 cb ca 36 37 c7 c6 30                   .23..67..0
+ */
 static VALUE
 io_buffer_xor(VALUE self, VALUE mask)
 {
@@ -2208,7 +2277,6 @@ io_buffer_xor(VALUE self, VALUE mask)
     struct rb_io_buffer *output_data = NULL;
     TypedData_Get_Struct(output, struct rb_io_buffer, &rb_io_buffer_type, output_data);
 
-    assert(output_data->size >= data->size);
     memory_xor(output_data->base, data->base, data->size, mask_data->base, mask_data->size);
 
     return output;
@@ -2222,6 +2290,18 @@ memory_not(unsigned char * restrict output, unsigned char * restrict base, size_
     }
 }
 
+/*
+ *  call-seq:
+ *    ~source -> io_buffer
+ *
+ *  Generate a new buffer the same size as the source by applying the binary NOT
+ *  operation to the source.
+ *
+ *    ~IO::Buffer.for("1234567890")
+ *    # =>
+ *    # #<IO::Buffer 0x000055a5ac42f120+10 INTERNAL>
+ *    # 0x00000000  ce cd cc cb ca c9 c8 c7 c6 cf                   ..........
+ */
 static VALUE
 io_buffer_not(VALUE self)
 {
@@ -2232,7 +2312,6 @@ io_buffer_not(VALUE self)
     struct rb_io_buffer *output_data = NULL;
     TypedData_Get_Struct(output, struct rb_io_buffer, &rb_io_buffer_type, output_data);
 
-    assert(output_data->size >= data->size);
     memory_not(output_data->base, data->base, data->size);
 
     return output;
@@ -2263,6 +2342,23 @@ memory_and_inplace(unsigned char * restrict base, size_t size, unsigned char * r
     }
 }
 
+/*
+ *  call-seq:
+ *    source.and!(mask) -> io_buffer
+ *
+ *  Modify the source buffer in place by applying the binary AND
+ *  operation to the source, using the mask, repeating as necessary.
+ *
+ *    source = IO::Buffer.for("1234567890").dup # Make a read/write copy.
+ *    # =>
+ *    # #<IO::Buffer 0x000056307a0d0c20+10 INTERNAL>
+ *    # 0x00000000  31 32 33 34 35 36 37 38 39 30                   1234567890
+ *
+ *    source.and!(IO::Buffer.for("\xFF\x00\x00\xFF"))
+ *    # =>
+ *    # #<IO::Buffer 0x000056307a0d0c20+10 INTERNAL>
+ *    # 0x00000000  31 00 00 34 35 00 00 38 39 00                   1..45..89.
+ */
 static VALUE
 io_buffer_and_inplace(VALUE self, VALUE mask)
 {
@@ -2275,7 +2371,11 @@ io_buffer_and_inplace(VALUE self, VALUE mask)
     io_buffer_check_mask(mask_data);
     io_buffer_check_overlaps(data, mask_data);
 
-    memory_and_inplace(data->base, data->size, mask_data->base, mask_data->size);
+    void *base;
+    size_t size;
+    io_buffer_get_bytes_for_writing(data, &base, &size);
+
+    memory_and_inplace(base, size, mask_data->base, mask_data->size);
 
     return self;
 }
@@ -2288,6 +2388,23 @@ memory_or_inplace(unsigned char * restrict base, size_t size, unsigned char * re
     }
 }
 
+/*
+ *  call-seq:
+ *    source.or!(mask) -> io_buffer
+ *
+ *  Modify the source buffer in place by applying the binary OR
+ *  operation to the source, using the mask, repeating as necessary.
+ *
+ *    source = IO::Buffer.for("1234567890").dup # Make a read/write copy.
+ *    # =>
+ *    # #<IO::Buffer 0x000056307a272350+10 INTERNAL>
+ *    # 0x00000000  31 32 33 34 35 36 37 38 39 30                   1234567890
+ *
+ *    source.or!(IO::Buffer.for("\xFF\x00\x00\xFF"))
+ *    # =>
+ *    # #<IO::Buffer 0x000056307a272350+10 INTERNAL>
+ *    # 0x00000000  ff 32 33 ff ff 36 37 ff ff 30                   .23..67..0
+ */
 static VALUE
 io_buffer_or_inplace(VALUE self, VALUE mask)
 {
@@ -2300,7 +2417,11 @@ io_buffer_or_inplace(VALUE self, VALUE mask)
     io_buffer_check_mask(mask_data);
     io_buffer_check_overlaps(data, mask_data);
 
-    memory_or_inplace(data->base, data->size, mask_data->base, mask_data->size);
+    void *base;
+    size_t size;
+    io_buffer_get_bytes_for_writing(data, &base, &size);
+
+    memory_or_inplace(base, size, mask_data->base, mask_data->size);
 
     return self;
 }
@@ -2313,6 +2434,23 @@ memory_xor_inplace(unsigned char * restrict base, size_t size, unsigned char * r
     }
 }
 
+/*
+ *  call-seq:
+ *    source.xor!(mask) -> io_buffer
+ *
+ *  Modify the source buffer in place by applying the binary XOR
+ *  operation to the source, using the mask, repeating as necessary.
+ *
+ *    source = IO::Buffer.for("1234567890").dup # Make a read/write copy.
+ *    # =>
+ *    # #<IO::Buffer 0x000056307a25b3e0+10 INTERNAL>
+ *    # 0x00000000  31 32 33 34 35 36 37 38 39 30                   1234567890
+ *
+ *    source.xor!(IO::Buffer.for("\xFF\x00\x00\xFF"))
+ *    # =>
+ *    # #<IO::Buffer 0x000056307a25b3e0+10 INTERNAL>
+ *    # 0x00000000  ce 32 33 cb ca 36 37 c7 c6 30                   .23..67..0
+ */
 static VALUE
 io_buffer_xor_inplace(VALUE self, VALUE mask)
 {
@@ -2325,7 +2463,11 @@ io_buffer_xor_inplace(VALUE self, VALUE mask)
     io_buffer_check_mask(mask_data);
     io_buffer_check_overlaps(data, mask_data);
 
-    memory_xor_inplace(data->base, data->size, mask_data->base, mask_data->size);
+    void *base;
+    size_t size;
+    io_buffer_get_bytes_for_writing(data, &base, &size);
+
+    memory_xor_inplace(base, size, mask_data->base, mask_data->size);
 
     return self;
 }
@@ -2338,13 +2480,34 @@ memory_not_inplace(unsigned char * restrict base, size_t size)
     }
 }
 
+/*
+ *  call-seq:
+ *    source.not! -> io_buffer
+ *
+ *  Modify the source buffer in place by applying the binary NOT
+ *  operation to the source.
+ *
+ *    source = IO::Buffer.for("1234567890").dup # Make a read/write copy.
+ *    # =>
+ *    # #<IO::Buffer 0x000056307a33a450+10 INTERNAL>
+ *    # 0x00000000  31 32 33 34 35 36 37 38 39 30                   1234567890
+ *
+ *    source.not!
+ *    # =>
+ *    # #<IO::Buffer 0x000056307a33a450+10 INTERNAL>
+ *    # 0x00000000  ce cd cc cb ca c9 c8 c7 c6 cf                   ..........
+ */
 static VALUE
 io_buffer_not_inplace(VALUE self)
 {
     struct rb_io_buffer *data = NULL;
     TypedData_Get_Struct(self, struct rb_io_buffer, &rb_io_buffer_type, data);
 
-    memory_not_inplace(data->base, data->size);
+    void *base;
+    size_t size;
+    io_buffer_get_bytes_for_writing(data, &base, &size);
+
+    memory_not_inplace(base, size);
 
     return self;
 }
@@ -2463,6 +2626,7 @@ Init_IO_Buffer(void)
 
     // General use:
     rb_define_method(rb_cIOBuffer, "initialize", rb_io_buffer_initialize, -1);
+    rb_define_method(rb_cIOBuffer, "initialize_copy", rb_io_buffer_initialize_copy, 1);
     rb_define_method(rb_cIOBuffer, "inspect", rb_io_buffer_inspect, 0);
     rb_define_method(rb_cIOBuffer, "hexdump", rb_io_buffer_hexdump, 0);
     rb_define_method(rb_cIOBuffer, "to_s", rb_io_buffer_to_s, 0);
