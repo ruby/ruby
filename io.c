@@ -5143,7 +5143,6 @@ finish_writeconv(rb_io_t *fptr, int noalloc)
 
     if (!fptr->wbuf.ptr) {
         unsigned char buf[1024];
-        long r;
 
         res = econv_destination_buffer_full;
         while (res == econv_destination_buffer_full) {
@@ -5151,19 +5150,20 @@ finish_writeconv(rb_io_t *fptr, int noalloc)
             de = buf + sizeof(buf);
             res = rb_econv_convert(fptr->writeconv, NULL, NULL, &dp, de, 0);
             while (dp-ds) {
-              retry:
-                r = rb_write_internal(fptr, ds, dp-ds);
-                if (r == dp-ds)
-                    break;
-                if (0 <= r) {
-                    ds += r;
+                size_t remaining = dp-ds;
+                long result = rb_write_internal(fptr, ds, remaining);
+
+                if (result >= 0) {
+                    ds += result;
+                    if ((size_t)result == remaining) break;
                 }
-                if (rb_io_maybe_wait_writable(errno, fptr->self, Qnil)) {
+                else if (rb_io_maybe_wait_writable(errno, fptr->self, Qnil)) {
                     if (fptr->fd < 0)
                         return noalloc ? Qtrue : rb_exc_new3(rb_eIOError, rb_str_new_cstr(closed_stream));
-                    goto retry;
                 }
-                return noalloc ? Qtrue : INT2NUM(errno);
+                else {
+                    return noalloc ? Qtrue : INT2NUM(errno);
+                }
             }
             if (res == econv_invalid_byte_sequence ||
                 res == econv_incomplete_input ||
@@ -5178,8 +5178,9 @@ finish_writeconv(rb_io_t *fptr, int noalloc)
     res = econv_destination_buffer_full;
     while (res == econv_destination_buffer_full) {
         if (fptr->wbuf.len == fptr->wbuf.capa) {
-            if (io_fflush(fptr) < 0)
+            if (io_fflush(fptr) < 0) {
                 return noalloc ? Qtrue : INT2NUM(errno);
+            }
         }
 
         ds = dp = (unsigned char *)fptr->wbuf.ptr + fptr->wbuf.off + fptr->wbuf.len;
