@@ -1940,13 +1940,11 @@ io_binwritev_internal(VALUE arg)
 
             iov->iov_base = (char *)iov->iov_base + result;
             iov->iov_len -= result;
-
-            errno = EAGAIN;
         }
-
-        if (rb_io_maybe_wait_writable(errno, fptr->self, Qnil)) {
+        else if (rb_io_maybe_wait_writable(errno, fptr->self, Qnil)) {
             rb_io_check_closed(fptr);
-        } else {
+        }
+        else {
             return -1;
         }
     }
