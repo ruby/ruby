@@ -203,6 +203,15 @@ class TestBignum < Test::Unit::TestCase
     assert_equal(00_02, '00_02'.to_i)
   end
 
+  def test_very_big_str_to_inum
+    assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
+      digits = [["3", 700], ["0", 2700], ["1", 1], ["0", 26599]]
+      num = digits.inject("") {|s,(c,n)|s << c*n}.to_i
+      assert_equal digits.sum {|c,n|n}, num.to_s.size
+    end;
+  end
+
   def test_to_s2
     assert_raise(ArgumentError) { T31P.to_s(37) }
     assert_equal("9" * 32768, (10**32768-1).to_s)
