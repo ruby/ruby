@@ -121,6 +121,7 @@ class TestFiberScheduler < Test::Unit::TestCase
 
     thread.join
   ensure
+    $LOADED_FEATURES.delete(File.expand_path("autoload.rb", __dir__))
     Object.send(:remove_const, :TestFiberSchedulerAutoload)
   end
 end
