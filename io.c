@@ -5252,7 +5252,7 @@ static void
 fptr_finalize_flush(rb_io_t *fptr, int noraise, int keepgvl,
                     struct ccan_list_head *busy)
 {
-    VALUE err = Qnil;
+    VALUE error = Qnil;
     int fd = fptr->fd;
     FILE *stdio_file = fptr->stdio_file;
     int mode = fptr->mode;
@@ -5262,10 +5262,10 @@ fptr_finalize_flush(rb_io_t *fptr, int noraise, int keepgvl,
             struct finish_writeconv_arg arg;
             arg.fptr = fptr;
             arg.noalloc = noraise;
-            err = rb_mutex_synchronize(fptr->write_lock, finish_writeconv_sync, (VALUE)&arg);
+            error = rb_mutex_synchronize(fptr->write_lock, finish_writeconv_sync, (VALUE)&arg);
         }
         else {
-            err = finish_writeconv(fptr, noraise);
+            error = finish_writeconv(fptr, noraise);
         }
     }
     if (fptr->wbuf.len) {
@@ -5273,8 +5273,9 @@ fptr_finalize_flush(rb_io_t *fptr, int noraise, int keepgvl,
             io_flush_buffer_sync(fptr);
         }
         else {
-            if (io_fflush(fptr) < 0 && NIL_P(err))
-        	err = INT2NUM(errno);
+            if (io_fflush(fptr) < 0 && NIL_P(error)) {
+                error = INT2NUM(errno);
+            }
         }
     }
 
@@ -5306,8 +5307,11 @@ fptr_finalize_flush(rb_io_t *fptr, int noraise, int keepgvl,
 
     if (!done && stdio_file) {
         // stdio_file is deallocated anyway even if fclose failed.
-        if ((maygvl_fclose(stdio_file, noraise) < 0) && NIL_P(err))
-            if (!noraise) err = INT2NUM(errno);
+        if ((maygvl_fclose(stdio_file, noraise) < 0) && NIL_P(error)) {
+            if (!noraise) {
+                error = INT2NUM(errno);
+            }
+        }
 
         done = 1;
     }
@@ -5318,17 +5322,20 @@ fptr_finalize_flush(rb_io_t *fptr, int noraise, int keepgvl,
 
         keepgvl |= !(mode & FMODE_WRITABLE);
         keepgvl |= noraise;
-        if ((maygvl_close(fd, keepgvl) < 0) && NIL_P(err))
-            if (!noraise) err = INT2NUM(errno);
+        if ((maygvl_close(fd, keepgvl) < 0) && NIL_P(error)) {
+            if (!noraise) {
+                error = INT2NUM(errno);
+            }
+        }
 
         done = 1;
     }
 
-    if (!NIL_P(err) && !noraise) {
-        if (RB_INTEGER_TYPE_P(err))
-            rb_syserr_fail_path(NUM2INT(err), fptr->pathv);
+    if (!NIL_P(error) && !noraise) {
+        if (RB_INTEGER_TYPE_P(error))
+            rb_syserr_fail_path(NUM2INT(error), fptr->pathv);
         else
-            rb_exc_raise(err);
+            rb_exc_raise(error);
     }
 }
 
