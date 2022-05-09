@@ -130,6 +130,7 @@ jobs:
           - { key: append_configure, name: 'coroutine=pthread',  value: '--with-coroutine=pthread' }
           - { key: append_configure, name: disable-jit-support,  value: '--disable-jit-support' }
           - { key: append_configure, name: disable-dln,          value: '--disable-dln' }
+          - { key: append_configure, name: enable-mkmf-verbose,  value: '--enable-mkmf-verbose' }
           - { key: append_configure, name: disable-rubygems,     value: '--disable-rubygems' }
 
           - { key: cppflags, name: OPT_THREADED_CODE=1,            value: '-DOPT_THREADED_CODE=1' }
