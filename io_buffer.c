@@ -2138,20 +2138,7 @@ io_buffer_pwrite(VALUE self, VALUE io, VALUE length, VALUE offset)
  *  C mechanisms like `memcpy`.
  *
  *  The class is meant to be an utility for implementing more high-level mechanisms
- *  like Fiber::SchedulerInterface#io_read and Fiber::Sc            io_buffer_unmap(data->base, data->size);
-        }
-
-        if (RB_TYPE_P(data->source, T_STRING)) {
-            rb_str_unlocktmp(data->source);
-        }
-        // Previously we had this, but we found out due to the way GC works, we
-        // can't refer to any other Ruby objects here.
-        // if (RB_TYPE_P(data->source, T_STRING)) {
-        //     rb_str_unlocktmp(data->source);
-        // }
-
-        data->base = NULL;
-hedulerInterface#io_write.
+ *  like Fiber::SchedulerInterface#io_read and Fiber::SchedulerInterface#io_write.
  *
  *  <b>Examples of usage:</b>
  *
