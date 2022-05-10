@@ -5434,7 +5434,7 @@ gc_sweep_page(rb_objspace_t *objspace, rb_heap_t *heap, struct gc_sweep_context 
         bits[BITMAP_INDEX(p) + page_rvalue_count / BITS_BITLENGTH] |= ~(((bits_t)1 << out_of_range_bits) - 1);
     }
 
-    /* The last bitmap plane may not be used if the last plane does not have
+    /* The last bitmap plane may not be used if the last plane does not
      * have enough space for the slot_size. In that case, the last plane must
      * be skipped since none of the bits will be set. */
     int bitmap_plane_count = CEILDIV(NUM_IN_PAGE(p) + page_rvalue_count, BITS_BITLENGTH);
