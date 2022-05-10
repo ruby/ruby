@@ -1112,12 +1112,6 @@ internal_write_func(void *ptr)
     return (VALUE)ret;
 }
 
-static void*
-internal_write_func2(void *ptr)
-{
-    return (void*)internal_write_func(ptr);
-}
-
 #ifdef HAVE_WRITEV
 static VALUE
 internal_writev_func(void *ptr)
@@ -1170,10 +1164,7 @@ rb_write_internal(rb_io_t *fptr, const void *buf, size_t count)
         .capa = count
     };
 
-    if (fptr->write_lock && rb_mutex_owned_p(fptr->write_lock))
-        return (ssize_t)rb_thread_call_without_gvl2(internal_write_func2, &iis, RUBY_UBF_IO, NULL);
-    else
-        return (ssize_t)rb_thread_io_blocking_region(internal_write_func, &iis, fptr->fd);
+    return (ssize_t)rb_thread_io_blocking_region(internal_write_func, &iis, fptr->fd);
 }
 
 #ifdef HAVE_WRITEV
@@ -1221,18 +1212,6 @@ io_flush_buffer_sync(void *arg)
     return (VALUE)-1;
 }
 
-static void*
-io_flush_buffer_sync2(void *arg)
-{
-    VALUE result = io_flush_buffer_sync(arg);
-
-    /*
-     * rb_thread_call_without_gvl2 uses 0 as interrupted.
-     * So, we need to avoid to use 0.
-     */
-    return !result ? (void*)1 : (void*)result;
-}
-
 static VALUE
 io_flush_buffer_async(VALUE arg)
 {
@@ -1240,36 +1219,13 @@ io_flush_buffer_async(VALUE arg)
     return rb_thread_io_blocking_region(io_flush_buffer_sync, fptr, fptr->fd);
 }
 
-static VALUE
-io_flush_buffer_async2(VALUE arg)
-{
-    rb_io_t *fptr = (rb_io_t *)arg;
-    VALUE ret;
-
-    ret = (VALUE)rb_thread_call_without_gvl2(io_flush_buffer_sync2, fptr, RUBY_UBF_IO, NULL);
-
-    if (!ret) {
-	/* pending async interrupt is there. */
-	errno = EAGAIN;
-	return -1;
-    }
-    else if (ret == 1) {
-	return 0;
-    }
-    return ret;
-}
-
 static inline int
 io_flush_buffer(rb_io_t *fptr)
 {
-    if (fptr->write_lock) {
-	if (rb_mutex_owned_p(fptr->write_lock))
-	    return (int)io_flush_buffer_async2((VALUE)fptr);
-	else
-	    return (int)rb_mutex_synchronize(fptr->write_lock, io_flush_buffer_async2, (VALUE)fptr);
-    }
-    else {
-	return (int)io_flush_buffer_async((VALUE)fptr);
+    if (!NIL_P(fptr->write_lock) && rb_mutex_owned_p(fptr->write_lock)) {
+        return (int)io_flush_buffer_async((VALUE)fptr);
+    } else {
+        return (int)rb_mutex_synchronize(fptr->write_lock, io_flush_buffer_async, (VALUE)fptr);
     }
 }
 
@@ -1580,7 +1536,7 @@ struct write_arg {
 };
 
 #ifdef HAVE_WRITEV
-static VALUE
+static ssize_t
 io_binwrite_string_internal(rb_io_t *fptr, const char *ptr, long length)
 {
     if (fptr->wbuf.len) {
@@ -1591,7 +1547,7 @@ io_binwrite_string_internal(rb_io_t *fptr, const char *ptr, long length)
         iov[1].iov_base = (void*)ptr;
         iov[1].iov_len = length;
 
-        long result = rb_writev_internal(fptr, iov, 2);
+        ssize_t result = rb_writev_internal(fptr, iov, 2);
 
         if (result < 0)
             return result;
@@ -1617,7 +1573,7 @@ io_binwrite_string_internal(rb_io_t *fptr, const char *ptr, long length)
     }
 }
 #else
-static VALUE
+static ssize_t
 io_binwrite_string_internal(rb_io_t *fptr, const char *ptr, long length)
 {
     long remaining = length;
@@ -1658,17 +1614,14 @@ io_binwrite_string(VALUE arg)
     struct binwrite_arg *p = (struct binwrite_arg *)arg;
 
     const char *ptr = p->ptr;
-    long remaining = p->length;
+    size_t remaining = p->length;
 
     while (remaining) {
         // Write as much as possible:
-        long result = (long)io_binwrite_string_internal(p->fptr, ptr, remaining);
-
-        // It's possible that write can return 0 which implies we should wait for the file descriptor to be writable.
-        if (result == 0) errno = EAGAIN;
+        ssize_t result = io_binwrite_string_internal(p->fptr, ptr, remaining);
 
         if (result > 0) {
-            if (result == remaining) break;
+            if ((size_t)result == remaining) break;
             ptr += result;
             remaining -= result;
         }
@@ -1695,7 +1648,7 @@ io_allocate_write_buffer(rb_io_t *fptr, int sync)
         fptr->wbuf.ptr = ALLOC_N(char, fptr->wbuf.capa);
     }
 
-    if (!fptr->write_lock) {
+    if (NIL_P(fptr->write_lock)) {
         fptr->write_lock = rb_mutex_new();
         rb_mutex_allow_trap(fptr->write_lock, 1);
     }
@@ -1734,7 +1687,7 @@ io_binwrite(VALUE str, const char *ptr, long len, rb_io_t *fptr, int nosync)
         arg.ptr = ptr;
         arg.length = len;
 
-        if (fptr->write_lock) {
+        if (!NIL_P(fptr->write_lock)) {
             return rb_mutex_synchronize(fptr->write_lock, io_binwrite_string, (VALUE)&arg);
         }
         else {
@@ -1906,8 +1859,6 @@ io_binwritev_internal(VALUE arg)
     while (remaining) {
         long result = rb_writev_internal(fptr, iov, iovcnt);
 
-        if (result == 0) errno = EAGAIN;
-
         if (result > 0) {
             offset += result;
             if (fptr->wbuf.ptr && fptr->wbuf.len) {
@@ -2000,7 +1951,7 @@ io_binwritev(struct iovec *iov, int iovcnt, rb_io_t *fptr)
     arg.iovcnt = iovcnt;
     arg.total = total;
 
-    if (fptr->write_lock) {
+    if (!NIL_P(fptr->write_lock)) {
         return rb_mutex_synchronize(fptr->write_lock, io_binwritev_internal, (VALUE)&arg);
     }
     else {
@@ -5151,8 +5102,6 @@ finish_writeconv(rb_io_t *fptr, int noalloc)
                 size_t remaining = dp-ds;
                 long result = rb_write_internal(fptr, ds, remaining);
 
-                if (result == 0) errno = EAGAIN;
-
                 if (result > 0) {
                     ds += result;
                     if ((size_t)result == remaining) break;
@@ -5259,7 +5208,7 @@ fptr_finalize_flush(rb_io_t *fptr, int noraise, int keepgvl,
     int mode = fptr->mode;
 
     if (fptr->writeconv) {
-        if (fptr->write_lock && !noraise) {
+        if (!NIL_P(fptr->write_lock) && !noraise) {
             struct finish_writeconv_arg arg;
             arg.fptr = fptr;
             arg.noalloc = noraise;
@@ -5405,7 +5354,7 @@ rb_io_fptr_finalize_internal(void *ptr)
     fptr->pathv = Qnil;
     if (0 <= fptr->fd)
         rb_io_fptr_cleanup(fptr, TRUE);
-    fptr->write_lock = 0;
+    fptr->write_lock = Qnil;
     free_io_buffer(&fptr->rbuf);
     free_io_buffer(&fptr->wbuf);
     clear_codeconv(fptr);
@@ -9032,7 +8981,7 @@ rb_io_fptr_new(void)
     fp->encs.enc2 = NULL;
     fp->encs.ecflags = 0;
     fp->encs.ecopts = Qnil;
-    fp->write_lock = 0;
+    fp->write_lock = Qnil;
     return fp;
 }
 
