@@ -1447,6 +1447,11 @@ yes-test-bundler-parallel: yes-test-bundler-prepare
 		$(PARALLELRSPECOPTS) $(srcdir)/spec/bundler/$(BUNDLER_SPECS)
 no-test-bundler-parallel:
 
+test-annocheck: $(TEST_RUNNABLE)-test-annocheck
+yes-test-annocheck: $(PROGRAM)
+	$(tooldir)/test-annocheck.sh $(PROGRAM)
+no-test-annocheck: PHONY
+
 GEM = up
 sync-default-gems:
 	$(Q) $(XRUBY) -C "$(srcdir)" tool/sync_default_gems.rb $(GEM)
