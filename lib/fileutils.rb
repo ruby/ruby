@@ -169,7 +169,7 @@ module FileUtils
 
   #
   # Returns +true+ if the file at path +new+
-  # is newer than all the files at paths in array +old_list+.;
+  # is newer than all the files at paths in array +old_list+;
   # +false+ otherwise:
   #
   #   FileUtils.uptodate?('Rakefile', ['Gemfile', 'README.md']) # => true
@@ -195,7 +195,8 @@ module FileUtils
   private_module_function :remove_trailing_slash
 
   #
-  # Creates directories at the paths in the given +list+ (an array of strings);
+  # Creates directories at the paths in the given +list+
+  # (an array of strings or a single string);
   # returns +list+.
   #
   # With no keyword arguments, creates a directory at each +path+ in +list+
@@ -203,6 +204,7 @@ module FileUtils
   # see {Dir.mkdir}[https://docs.ruby-lang.org/en/master/Dir.html#method-c-mkdir]:
   #
   #   FileUtils.mkdir(%w[tmp0 tmp1]) # => ["tmp0", "tmp1"]
+  #   FileUtils.mkdir('tmp4')        # => ["tmp4"]
   #
   # Keyword arguments:
   #
