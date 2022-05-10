@@ -335,22 +335,20 @@ class TestIOBuffer < Test::Unit::TestCase
   def test_operators
     source = IO::Buffer.for("1234123412")
     mask = IO::Buffer.for("133\x00")
-    result = source & mask
 
-    assert_equal (source & mask), IO::Buffer.for("123\x00123\x0012")
-    assert_equal (source | mask), IO::Buffer.for("1334133413")
-    assert_equal (source ^ mask), IO::Buffer.for("\x00\x01\x004\x00\x01\x004\x00\x01")
-    assert_equal ~source, IO::Buffer.for("\xce\xcd\xcc\xcb\xce\xcd\xcc\xcb\xce\xcd")
+    assert_equal IO::Buffer.for("123\x00123\x0012"), (source & mask)
+    assert_equal IO::Buffer.for("1334133413"), (source | mask)
+    assert_equal IO::Buffer.for("\x00\x01\x004\x00\x01\x004\x00\x01"), (source ^ mask)
+    assert_equal IO::Buffer.for("\xce\xcd\xcc\xcb\xce\xcd\xcc\xcb\xce\xcd"), ~source
   end
 
   def test_inplace_operators
     source = IO::Buffer.for("1234123412")
     mask = IO::Buffer.for("133\x00")
-    result = source & mask
 
-    assert_equal source.dup.and!(mask), IO::Buffer.for("123\x00123\x0012")
-    assert_equal source.dup.or!(mask), IO::Buffer.for("1334133413")
-    assert_equal source.dup.xor!(mask), IO::Buffer.for("\x00\x01\x004\x00\x01\x004\x00\x01")
-    assert_equal source.dup.not!, IO::Buffer.for("\xce\xcd\xcc\xcb\xce\xcd\xcc\xcb\xce\xcd")
+    assert_equal IO::Buffer.for("123\x00123\x0012"), source.dup.and!(mask)
+    assert_equal IO::Buffer.for("1334133413"), source.dup.or!(mask)
+    assert_equal IO::Buffer.for("\x00\x01\x004\x00\x01\x004\x00\x01"), source.dup.xor!(mask)
+    assert_equal IO::Buffer.for("\xce\xcd\xcc\xcb\xce\xcd\xcc\xcb\xce\xcd"), source.dup.not!
   end
 end
