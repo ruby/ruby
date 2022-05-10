@@ -774,7 +774,7 @@ end
       run <<~RUBY
         puts ENV['MANPATH']
         require "open3"
-        puts Open3.capture2e("man", "ls")[0]
+        puts Open3.capture2e({ "LC_ALL" => "C" }, "man", "ls")[0]
       RUBY
 
       lines = out.split("\n")
