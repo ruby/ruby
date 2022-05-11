@@ -135,9 +135,9 @@ module Bundler
         end
       end
 
-      def install(spec, opts = {})
-        force = opts[:force]
-        ensure_builtin_gems_cached = opts[:ensure_builtin_gems_cached]
+      def install(spec, options = {})
+        force = options[:force]
+        ensure_builtin_gems_cached = options[:ensure_builtin_gems_cached]
 
         if ensure_builtin_gems_cached && spec.default_gem?
           if !cached_path(spec)
@@ -198,7 +198,7 @@ module Bundler
             :ignore_dependencies => true,
             :wrappers            => true,
             :env_shebang         => true,
-            :build_args          => opts[:build_args],
+            :build_args          => options[:build_args],
             :bundler_expected_checksum => spec.respond_to?(:checksum) && spec.checksum,
             :bundler_extension_cache_path => extension_cache_path(spec)
           ).install
