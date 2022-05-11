@@ -56,10 +56,19 @@
 #if VM_CHECK_MODE > 0
 #define VM_ASSERT(expr) RUBY_ASSERT_MESG_WHEN(VM_CHECK_MODE > 0, expr, #expr)
 #define VM_UNREACHABLE(func) rb_bug(#func ": unreachable")
-
+#define RUBY_VM_CRITICAL_SECTION
 #else
 #define VM_ASSERT(expr) ((void)0)
 #define VM_UNREACHABLE(func) UNREACHABLE
+#endif
+
+#if defined(RUBY_VM_CRITICAL_SECTION)
+extern int rb_vm_critical_section_entered;
+#define RUBY_VM_CRITICAL_SECTION_ENTER rb_vm_critical_section_entered += 1;
+#define RUBY_VM_CRITICAL_SECTION_EXIT rb_vm_critical_section_entered -= 1;
+#else
+#define RUBY_VM_CRITICAL_SECTION_ENTER
+#define RUBY_VM_CRITICAL_SECTION_EXIT
 #endif
 
 #if defined(__wasm__) && !defined(__EMSCRIPTEN__)

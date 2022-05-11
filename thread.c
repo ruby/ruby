@@ -1562,6 +1562,10 @@ static inline int
 blocking_region_begin(rb_thread_t *th, struct rb_blocking_region_buffer *region,
 		      rb_unblock_function_t *ubf, void *arg, int fail_if_interrupted)
 {
+#ifdef RUBY_VM_CRITICAL_SECTION
+    VM_ASSERT(rb_vm_critical_section_entered == 0);
+#endif
+
     region->prev_status = th->status;
     if (unblock_function_set(th, ubf, arg, fail_if_interrupted)) {
 	th->blocking_region_buffer = region;
