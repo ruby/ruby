@@ -461,6 +461,11 @@ impl VALUE {
         self == Qnil
     }
 
+    /// Returns true or false depending whether the value is a string
+    pub fn string_p(self) -> bool {
+        unsafe { CLASS_OF(self) == rb_cString }
+    }
+
     /// Read the flags bits from the RBasic object, then return a Ruby type enum (e.g. RUBY_T_ARRAY)
     pub fn builtin_type(self) -> ruby_value_type {
         assert!(!self.special_const_p());
