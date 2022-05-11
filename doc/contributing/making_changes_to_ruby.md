@@ -26,11 +26,3 @@ Use the following style for commit messages:
 GitHub actions will run on each pull request.
 
 There is [a CI that runs on master](https://rubyci.org/). It has broad coverage of different systems and architectures, such as Solaris SPARC and macOS.
-
-# Contributing to standard libraries
-
-Everything in the [lib](https://github.com/ruby/ruby/tree/master/lib) directory is mirrored from a standalone repository into the Ruby repository.
-If you'd like to make contributions to standard libraries, do so in the standalone repositories, and the
-changes will be automatically mirrored into the Ruby repository.
-
-For example, CSV lives in [a separate repository](https://github.com/ruby/csv) and is mirrored into [Ruby](https://github.com/ruby/ruby/tree/master/lib/csv).
