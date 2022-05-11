@@ -131,7 +131,7 @@ enum ruby_rarray_flags {
      * store array elements.  It was a bad idea to expose this to them.
      */
 #if USE_RVARGC
-    RARRAY_EMBED_LEN_MASK  = RUBY_FL_USER8 | RUBY_FL_USER7 | RUBY_FL_USER6 |
+    RARRAY_EMBED_LEN_MASK  = RUBY_FL_USER9 | RUBY_FL_USER8 | RUBY_FL_USER7 | RUBY_FL_USER6 |
                                  RUBY_FL_USER5 | RUBY_FL_USER4 | RUBY_FL_USER3
 #else
     RARRAY_EMBED_LEN_MASK  = RUBY_FL_USER4 | RUBY_FL_USER3

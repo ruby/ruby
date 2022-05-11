@@ -256,14 +256,14 @@ module Bundler
     # @return [SpecSet] resolved dependencies
     def resolve
       @resolve ||= begin
-        last_resolve = converge_locked_specs
         if Bundler.frozen_bundle?
           Bundler.ui.debug "Frozen, using resolution from the lockfile"
-          last_resolve
+          @locked_specs
         elsif !unlocking? && nothing_changed?
           Bundler.ui.debug("Found no changes, using resolution from the lockfile")
-          last_resolve
+          SpecSet.new(filter_specs(@locked_specs, @dependencies.select{|dep| @locked_specs[dep].any? }))
         else
+          last_resolve = converge_locked_specs
           # Run a resolve against the locally available gems
           Bundler.ui.debug("Found changes from the lockfile, re-resolving dependencies because #{change_reason}")
           expanded_dependencies = expand_dependencies(dependencies + metadata_dependencies, true)
@@ -464,6 +464,10 @@ module Bundler
     end
 
     private
+
+    def filter_specs(specs, deps)
+      SpecSet.new(specs).for(expand_dependencies(deps, true), false, false)
+    end
 
     def materialize(dependencies)
       specs = resolve.materialize(dependencies)
@@ -680,20 +684,17 @@ module Bundler
     end
 
     def converge_specs(specs)
-      deps = []
       converged = []
 
-      @dependencies.each do |dep|
-        if specs[dep].any? {|s| s.satisfies?(dep) && (!dep.source || s.source.include?(dep.source)) }
-          deps << dep
-        end
+      deps = @dependencies.select do |dep|
+        specs[dep].any? {|s| s.satisfies?(dep) && (!dep.source || s.source.include?(dep.source)) }
       end
 
       specs.each do |s|
         # Replace the locked dependency's source with the equivalent source from the Gemfile
         dep = @dependencies.find {|d| s.satisfies?(d) }
 
-        s.source = (dep && dep.source) || sources.get(s.source) || sources.default_source unless Bundler.frozen_bundle?
+        s.source = (dep && dep.source) || sources.get(s.source) || sources.default_source
 
         next if @unlock[:sources].include?(s.source.name)
 
@@ -730,8 +731,7 @@ module Bundler
         end
       end
 
-      resolve = SpecSet.new(converged)
-      SpecSet.new(resolve.for(expand_dependencies(deps, true), false, false).reject{|s| @unlock[:gems].include?(s.name) })
+      SpecSet.new(filter_specs(converged, deps).reject{|s| @unlock[:gems].include?(s.name) })
     end
 
     def metadata_dependencies

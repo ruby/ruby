@@ -150,18 +150,18 @@ Note: We're only listing outstanding class updates.
     * cgi 0.3.2
     * etc 1.4.0
     * io-console 0.5.11
-    * io-wait 0.2.2.pre1
+    * io-wait 0.2.3
     * ipaddr 1.2.4
     * logger 1.5.1
-    * net-http 0.2.1.pre1
+    * net-http 0.2.2
     * net-protocol 0.1.3
     * ostruct 0.5.5
     * reline 0.3.1
     * securerandom 0.2.0
-    * stringio 3.0.2.pre1
+    * stringio 3.0.3
 *   The following bundled gems are updated.
     * net-imap 0.2.3
-    * rbs 2.3.2
+    * rbs 2.4.0
     * typeprof 0.21.2
     * debug 1.5.0
 *   The following default gems are now bundled gems.

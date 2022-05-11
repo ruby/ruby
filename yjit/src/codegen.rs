@@ -3626,6 +3626,91 @@ fn jit_rb_str_to_s(
     false
 }
 
+// Codegen for rb_str_concat()
+// Frequently strings are concatenated using "out_str << next_str".
+// This is common in Erb and similar templating languages.
+fn jit_rb_str_concat(
+    jit: &mut JITState,
+    ctx: &mut Context,
+    cb: &mut CodeBlock,
+    ocb: &mut OutlinedCb,
+    _ci: *const rb_callinfo,
+    _cme: *const rb_callable_method_entry_t,
+    _block: Option<IseqPtr>,
+    _argc: i32,
+    _known_recv_class: *const VALUE,
+) -> bool {
+    let comptime_arg = jit_peek_at_stack(jit, ctx, 0);
+    let comptime_arg_type = ctx.get_opnd_type(StackOpnd(0));
+
+    // String#<< can take an integer codepoint as an argument, but we don't optimise that.
+    // Also, a non-string argument would have to call .to_str on itself before being treated
+    // as a string, and that would require saving pc/sp, which we don't do here.
+    if comptime_arg_type != Type::String {
+        return false;
+    }
+
+    // Generate a side exit
+    let side_exit = get_side_exit(jit, ocb, ctx);
+
+    // Guard that the argument is of class String at runtime.
+    let arg_opnd = ctx.stack_opnd(0);
+    mov(cb, REG0, arg_opnd);
+    if !jit_guard_known_klass(
+        jit,
+        ctx,
+        cb,
+        ocb,
+        unsafe { rb_cString },
+        StackOpnd(0),
+        comptime_arg,
+        SEND_MAX_DEPTH,
+        side_exit,
+    ) {
+        return false;
+    }
+
+    let concat_arg = ctx.stack_pop(1);
+    let recv = ctx.stack_pop(1);
+
+    // Test if string encodings differ. If different, use rb_str_append. If the same,
+    // use rb_yjit_str_simple_append, which calls rb_str_cat.
+    add_comment(cb, "<< on strings");
+
+    // Both rb_str_append and rb_yjit_str_simple_append take identical args
+    mov(cb, C_ARG_REGS[0], recv);
+    mov(cb, C_ARG_REGS[1], concat_arg);
+
+    // Take receiver's object flags XOR arg's flags. If any
+    // string-encoding flags are different between the two,
+    // the encodings don't match.
+    mov(cb, REG0, recv);
+    mov(cb, REG1, concat_arg);
+    mov(cb, REG0, mem_opnd(64, REG0, RUBY_OFFSET_RBASIC_FLAGS));
+    xor(cb, REG0, mem_opnd(64, REG1, RUBY_OFFSET_RBASIC_FLAGS));
+    test(cb, REG0, uimm_opnd(RUBY_ENCODING_MASK as u64));
+
+    let enc_mismatch = cb.new_label("enc_mismatch".to_string());
+    jne_label(cb, enc_mismatch);
+
+    // If encodings match, call the simple append function and jump to return
+    call_ptr(cb, REG0, rb_yjit_str_simple_append as *const u8);
+    let ret_label: usize = cb.new_label("stack_return".to_string());
+    jmp_label(cb, ret_label);
+
+    // If encodings are different, use a slower encoding-aware concatenate
+    cb.write_label(enc_mismatch);
+    call_ptr(cb, REG0, rb_str_append as *const u8);
+    // Drop through to return
+
+    cb.write_label(ret_label);
+    let stack_ret = ctx.stack_push(Type::String);
+    mov(cb, stack_ret, RAX);
+
+    cb.link_labels();
+    true
+}
+
 fn jit_thread_s_current(
     _jit: &mut JITState,
     ctx: &mut Context,
@@ -3887,7 +3972,6 @@ fn gen_send_cfunc(
         // Copy the arguments from the stack to the C argument registers
         // self is the 0th argument and is at index argc from the stack top
         for i in 0..=passed_argc as usize {
-            // "as usize?" Yeah, you can't index an array by an i32.
             let stack_opnd = mem_opnd(64, RAX, -(argc + 1 - (i as i32)) * SIZEOF_VALUE_I32);
             let c_arg_reg = C_ARG_REGS[i];
             mov(cb, c_arg_reg, stack_opnd);
@@ -5839,6 +5923,7 @@ impl CodegenGlobals {
             self.yjit_reg_method(rb_cString, "to_s", jit_rb_str_to_s);
             self.yjit_reg_method(rb_cString, "to_str", jit_rb_str_to_s);
             self.yjit_reg_method(rb_cString, "bytesize", jit_rb_str_bytesize);
+            self.yjit_reg_method(rb_cString, "<<", jit_rb_str_concat);
 
             // Thread.current
             self.yjit_reg_method(

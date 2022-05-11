@@ -8220,7 +8220,10 @@ rb_io_init_copy(VALUE dest, VALUE io)
  *    printf(format_string, *objects) -> nil
  *
  *  Formats and writes +objects+ to the stream.
- *  See Kernel#sprintf for formatting details.
+ *
+ *  For details on +format_string+, see
+ *  {Format Specifications}[rdoc-ref:format_specifications.rdoc].
+ *
  */
 
 VALUE
@@ -8232,14 +8235,17 @@ rb_io_printf(int argc, const VALUE *argv, VALUE out)
 
 /*
  *  call-seq:
- *    printf(string, *objects)               -> nil
- *    printf(io, string, *objects) -> nil
+ *    printf(format_string, *objects)               -> nil
+ *    printf(io, format_string, *objects) -> nil
  *
  *  Equivalent to:
  *
- *    io.write(sprintf(string, *objects))
+ *    io.write(sprintf(format_string, *objects))
  *
- *  With the single argument +string+, formats +objects+ into the string,
+ *  For details on +format_string+, see
+ *  {Format Specifications}[rdoc-ref:format_specifications.rdoc].
+ *
+ *  With the single argument +format_string+, formats +objects+ into the string,
  *  then writes the formatted string to $stdout:
  *
  *    printf('%4.4d %10s %2.2f', 24, 24, 24.0)
@@ -8248,7 +8254,7 @@ rb_io_printf(int argc, const VALUE *argv, VALUE out)
  *
  *    0024         24 24.00#
  *
- *  With arguments +io+ and +string, formats +objects+ into the string,
+ *  With arguments +io+ and +format_string+, formats +objects+ into the string,
  *  then writes the formatted string to +io+:
  *
  *    printf($stderr, '%4.4d %10s %2.2f', 24, 24, 24.0)

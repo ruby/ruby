@@ -1383,17 +1383,18 @@ rb_prepend_module(VALUE klass, VALUE module)
             /* During lazy sweeping, iclass->klass could be a dead object that
              * has not yet been swept. */
             if (!rb_objspace_garbage_object_p(iclass->klass)) {
-                if (klass_had_no_origin && klass_origin_m_tbl == RCLASS_M_TBL(iclass->klass)) {
+                const VALUE subclass = iclass->klass;
+                if (klass_had_no_origin && klass_origin_m_tbl == RCLASS_M_TBL(subclass)) {
                     // backfill an origin iclass to handle refinements and future prepends
-                    rb_id_table_foreach(RCLASS_M_TBL(iclass->klass), clear_module_cache_i, (void *)iclass->klass);
-                    RCLASS_M_TBL(iclass->klass) = klass_m_tbl;
-                    VALUE origin = rb_include_class_new(klass_origin, RCLASS_SUPER(iclass->klass));
-                    RCLASS_SET_SUPER(iclass->klass, origin);
-                    RCLASS_SET_INCLUDER(origin, RCLASS_INCLUDER(iclass->klass));
-                    RCLASS_SET_ORIGIN(iclass->klass, origin);
+                    rb_id_table_foreach(RCLASS_M_TBL(subclass), clear_module_cache_i, (void *)subclass);
+                    RCLASS_M_TBL(subclass) = klass_m_tbl;
+                    VALUE origin = rb_include_class_new(klass_origin, RCLASS_SUPER(subclass));
+                    RCLASS_SET_SUPER(subclass, origin);
+                    RCLASS_SET_INCLUDER(origin, RCLASS_INCLUDER(subclass));
+                    RCLASS_SET_ORIGIN(subclass, origin);
                     RICLASS_SET_ORIGIN_SHARED_MTBL(origin);
                 }
-                include_modules_at(iclass->klass, iclass->klass, module, FALSE);
+                include_modules_at(subclass, subclass, module, FALSE);
             }
 
             iclass = iclass->next;

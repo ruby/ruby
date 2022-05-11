@@ -68,7 +68,7 @@ struct rb_objspace; /* in vm_core.h */
                  (VALUE)(b), __FILE__, __LINE__)
 
 #if USE_RVARGC
-# define SIZE_POOL_COUNT 4
+# define SIZE_POOL_COUNT 5
 #else
 # define SIZE_POOL_COUNT 1
 #endif

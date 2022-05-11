@@ -19,7 +19,7 @@ require_relative "bundler/build_metadata"
 #
 # Since Ruby 2.6, Bundler is a part of Ruby's standard library.
 #
-# Bunder is used by creating _gemfiles_ listing all the project dependencies
+# Bundler is used by creating _gemfiles_ listing all the project dependencies
 # and (optionally) their versions and then using
 #
 #   require 'bundler/setup'

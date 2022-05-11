@@ -1,7 +1,7 @@
 .\" generated with Ronn/v0.7.3
 .\" http://github.com/rtomayko/ronn/tree/0.7.3
 .
-.TH "BUNDLE\-ADD" "1" "March 2022" "" ""
+.TH "BUNDLE\-ADD" "1" "May 2022" "" ""
 .
 .SH "NAME"
 \fBbundle\-add\fR \- Add gem to the Gemfile and run bundle install
@@ -45,6 +45,10 @@ Specify the group(s) for the added gem\. Multiple groups should be separated by 
 Specify the source for the added gem\.
 .
 .TP
+\fB\-\-require\fR, \fB\-r\fR
+Adds require path to gem\. Provide false, or a path as a string\.
+.
+.TP
 \fB\-\-git\fR
 Specify the git source for the added gem\.
 .
@@ -66,9 +70,9 @@ Adds the gem to the Gemfile but does not install it\.
 .
 .TP
 \fB\-\-optimistic\fR
-Adds optimistic declaration of version
+Adds optimistic declaration of version\.
 .
 .TP
 \fB\-\-strict\fR
-Adds strict declaration of version
+Adds strict declaration of version\.
 

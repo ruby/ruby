@@ -1197,6 +1197,9 @@ static void gc_marks_continue(rb_objspace_t *objspace, rb_size_pool_t *size_pool
 
 static void gc_sweep(rb_objspace_t *objspace);
 static void gc_sweep_start(rb_objspace_t *objspace);
+#if USE_RVARGC
+static void gc_sweep_finish_size_pool(rb_objspace_t *objspace, rb_size_pool_t *size_pool);
+#endif
 static void gc_sweep_finish(rb_objspace_t *objspace);
 static int  gc_sweep_step(rb_objspace_t *objspace, rb_size_pool_t *size_pool, rb_heap_t *heap);
 static void gc_sweep_rest(rb_objspace_t *objspace);
@@ -2099,7 +2102,7 @@ heap_page_allocate(rb_objspace_t *objspace, rb_size_pool_t *size_pool)
     /* adjust obj_limit (object number available in this page) */
     start = (uintptr_t)((VALUE)page_body + sizeof(struct heap_page_header));
 
-    if ((VALUE)start % BASE_SLOT_SIZE != 0) {
+    if (start % BASE_SLOT_SIZE != 0) {
         int delta = BASE_SLOT_SIZE - (start % BASE_SLOT_SIZE);
         start = start + delta;
         GC_ASSERT(NUM_IN_PAGE(start) == 0 || NUM_IN_PAGE(start) == 1);
@@ -2248,13 +2251,17 @@ heap_add_pages(rb_objspace_t *objspace, rb_size_pool_t *size_pool, rb_heap_t *he
 }
 
 static size_t
-heap_extend_pages(rb_objspace_t *objspace, size_t free_slots, size_t total_slots, size_t used)
+heap_extend_pages(rb_objspace_t *objspace, rb_size_pool_t *size_pool, size_t free_slots, size_t total_slots, size_t used)
 {
     double goal_ratio = gc_params.heap_free_slots_goal_ratio;
     size_t next_used;
 
     if (goal_ratio == 0.0) {
 	next_used = (size_t)(used * gc_params.growth_factor);
+    }
+    else if (total_slots == 0) {
+        int multiple = size_pool->slot_size / BASE_SLOT_SIZE;
+        next_used = (gc_params.heap_init_slots * multiple) / HEAP_PAGE_OBJ_LIMIT;
     }
     else {
 	/* Find `f' where free_slots = f * total_slots * goal_ratio
@@ -5405,8 +5412,6 @@ gc_sweep_page(rb_objspace_t *objspace, rb_heap_t *heap, struct gc_sweep_context 
 {
     struct heap_page *sweep_page = ctx->page;
 
-    int i;
-
     uintptr_t p;
     bits_t *bits, bitset;
 
@@ -5429,6 +5434,13 @@ gc_sweep_page(rb_objspace_t *objspace, rb_heap_t *heap, struct gc_sweep_context 
         bits[BITMAP_INDEX(p) + page_rvalue_count / BITS_BITLENGTH] |= ~(((bits_t)1 << out_of_range_bits) - 1);
     }
 
+    /* The last bitmap plane may not be used if the last plane does not
+     * have enough space for the slot_size. In that case, the last plane must
+     * be skipped since none of the bits will be set. */
+    int bitmap_plane_count = CEILDIV(NUM_IN_PAGE(p) + page_rvalue_count, BITS_BITLENGTH);
+    GC_ASSERT(bitmap_plane_count == HEAP_PAGE_BITMAP_LIMIT - 1 ||
+                  bitmap_plane_count == HEAP_PAGE_BITMAP_LIMIT);
+
     // Skip out of range slots at the head of the page
     bitset = ~bits[0];
     bitset >>= NUM_IN_PAGE(p);
@@ -5437,7 +5449,7 @@ gc_sweep_page(rb_objspace_t *objspace, rb_heap_t *heap, struct gc_sweep_context 
     }
     p += (BITS_BITLENGTH - NUM_IN_PAGE(p)) * BASE_SLOT_SIZE;
 
-    for (i=1; i < HEAP_PAGE_BITMAP_LIMIT; i++) {
+    for (int i = 1; i < bitmap_plane_count; i++) {
         bitset = ~bits[i];
         if (bitset) {
             gc_sweep_plane(objspace, heap, p, bitset, ctx);
@@ -5473,11 +5485,13 @@ gc_sweep_page(rb_objspace_t *objspace, rb_heap_t *heap, struct gc_sweep_context 
 
 #if RGENGC_CHECK_MODE
     short freelist_len = 0;
+    asan_unpoison_memory_region(&sweep_page->freelist, sizeof(RVALUE*), false);
     RVALUE *ptr = sweep_page->freelist;
     while (ptr) {
         freelist_len++;
         ptr = ptr->as.free.next;
     }
+    asan_poison_memory_region(&sweep_page->freelist, sizeof(RVALUE*));
     if (freelist_len != sweep_page->free_slots) {
         rb_bug("inconsistent freelist length: expected %d but was %d", sweep_page->free_slots, freelist_len);
     }
@@ -5586,8 +5600,18 @@ gc_sweep_start(rb_objspace_t *objspace)
 
     for (int i = 0; i < SIZE_POOL_COUNT; i++) {
         rb_size_pool_t *size_pool = &size_pools[i];
+        rb_heap_t *heap = SIZE_POOL_EDEN_HEAP(size_pool);
 
         gc_sweep_start_heap(objspace, SIZE_POOL_EDEN_HEAP(size_pool));
+
+#if USE_RVARGC
+        /* We should call gc_sweep_finish_size_pool for size pools with no pages. */
+        if (heap->sweeping_page == NULL) {
+            GC_ASSERT(heap->total_pages == 0);
+            GC_ASSERT(heap->total_slots == 0);
+            gc_sweep_finish_size_pool(objspace, size_pool);
+        }
+#endif
     }
 
     rb_ractor_t *r = NULL;
@@ -5606,6 +5630,11 @@ gc_sweep_finish_size_pool(rb_objspace_t *objspace, rb_size_pool_t *size_pool)
     size_t swept_slots = size_pool->freed_slots + size_pool->empty_slots;
 
     size_t min_free_slots = (size_t)(total_slots * gc_params.heap_free_slots_min_ratio);
+    /* Some size pools may have very few pages (or even no pages). These size pools
+     * should still have allocatable pages. */
+    if (min_free_slots < gc_params.heap_init_slots) {
+        min_free_slots = gc_params.heap_init_slots;
+    }
 
     if (swept_slots < min_free_slots) {
         bool grow_heap = is_full_marking(objspace);
@@ -5625,13 +5654,11 @@ gc_sweep_finish_size_pool(rb_objspace_t *objspace, rb_size_pool_t *size_pool)
         }
 
         if (grow_heap) {
-            size_t extend_page_count = heap_extend_pages(objspace, swept_slots, total_slots, total_pages);
+            size_t extend_page_count = heap_extend_pages(objspace, size_pool, swept_slots, total_slots, total_pages);
 
             if (extend_page_count > size_pool->allocatable_pages) {
                 size_pool_allocatable_pages_set(objspace, size_pool, extend_page_count);
             }
-
-            heap_increment(objspace, size_pool, SIZE_POOL_EDEN_HEAP(size_pool));
         }
     }
 }
@@ -6992,6 +7019,10 @@ gc_mark_children(rb_objspace_t *objspace, VALUE obj)
             gc_mark(objspace, RCLASS_SUPER(obj));
         }
 	if (!RCLASS_EXT(obj)) break;
+
+        if (RCLASS_INCLUDER(obj)) {
+            gc_mark(objspace, RCLASS_INCLUDER(obj));
+        }
 	mark_m_tbl(objspace, RCLASS_CALLABLE_M_TBL(obj));
         cc_table_mark(objspace, obj);
 	break;
@@ -8090,7 +8121,7 @@ gc_marks_finish(rb_objspace_t *objspace)
               /* increment: */
 		gc_report(1, objspace, "gc_marks_finish: heap_set_increment!!\n");
                 rb_size_pool_t *size_pool = &size_pools[0];
-                size_pool_allocatable_pages_set(objspace, size_pool, heap_extend_pages(objspace, sweep_slots, total_slots, heap_allocated_pages + heap_allocatable_pages(objspace)));
+                size_pool_allocatable_pages_set(objspace, size_pool, heap_extend_pages(objspace, size_pool, sweep_slots, total_slots, heap_allocated_pages + heap_allocatable_pages(objspace)));
 
                 heap_increment(objspace, size_pool, SIZE_POOL_EDEN_HEAP(size_pool));
 	    }

@@ -110,7 +110,11 @@ module FileUtils
   end
 
   #
-  # Returns the name of the current directory.
+  # Returns a string containing the path to the current directory:
+  #
+  #   FileUtils.pwd # => "/rdoc/fileutils"
+  #
+  # FileUtils.getwd is an alias for FileUtils.pwd.
   #
   def pwd
     Dir.pwd
@@ -121,18 +125,36 @@ module FileUtils
   module_function :getwd
 
   #
-  # Changes the current directory to the directory +dir+.
+  # With no block given,
+  # changes the current directory to the directory
+  # at the path given by +dir+; returns zero:
   #
-  # If this method is called with block, resumes to the previous
-  # working directory after the block execution has finished.
+  #   FileUtils.pwd # => "/rdoc/fileutils"
+  #   FileUtils.cd('..')
+  #   FileUtils.pwd # => "/rdoc"
+  #   FileUtils.cd('fileutils')
   #
-  #   FileUtils.cd('/')  # change directory
+  # With a block given, changes the current directory to the directory
+  # at the path given by +dir+, calls the block with argument +dir+,
+  # and restores the original current directory; returns the block's value:
   #
-  #   FileUtils.cd('/', verbose: true)   # change directory and report it
+  #   FileUtils.pwd                                     # => "/rdoc/fileutils"
+  #   FileUtils.cd('..') { |arg| [arg, FileUtils.pwd] } # => ["..", "/rdoc"]
+  #   FileUtils.pwd                                     # => "/rdoc/fileutils"
   #
-  #   FileUtils.cd('/') do  # change directory
-  #     # ...               # do something
-  #   end                   # return to original directory
+  # Keyword arguments:
+  #
+  # - <tt>verbose: true</tt> - prints an equivalent command:
+  #
+  #     FileUtils.cd('..')
+  #     FileUtils.cd('fileutils')
+  #
+  #   Output:
+  #
+  #     cd ..
+  #     cd fileutils
+  #
+  # FileUtils.chdir is an alias for FileUtils.cd.
   #
   def cd(dir, verbose: nil, &block) # :yield: dir
     fu_output_message "cd #{dir}" if verbose
@@ -146,11 +168,14 @@ module FileUtils
   module_function :chdir
 
   #
-  # Returns true if +new+ is newer than all +old_list+.
-  # Non-existent files are older than any file.
+  # Returns +true+ if the file at path +new+
+  # is newer than all the files at paths in array +old_list+;
+  # +false+ otherwise:
   #
-  #   FileUtils.uptodate?('hello.o', %w(hello.c hello.h)) or \
-  #       system 'make hello.o'
+  #   FileUtils.uptodate?('Rakefile', ['Gemfile', 'README.md']) # => true
+  #   FileUtils.uptodate?('Gemfile', ['Rakefile', 'README.md']) # => false
+  #
+  # A non-existent file is considered to be infinitely old.
   #
   def uptodate?(new, old_list)
     return false unless File.exist?(new)
@@ -170,12 +195,34 @@ module FileUtils
   private_module_function :remove_trailing_slash
 
   #
-  # Creates one or more directories.
+  # Creates directories at the paths in the given +list+
+  # (an array of strings or a single string);
+  # returns +list+.
   #
-  #   FileUtils.mkdir 'test'
-  #   FileUtils.mkdir %w(tmp data)
-  #   FileUtils.mkdir 'notexist', noop: true  # Does not really create.
-  #   FileUtils.mkdir 'tmp', mode: 0700
+  # With no keyword arguments, creates a directory at each +path+ in +list+
+  # by calling: <tt>Dir.mkdir(path, mode)</tt>;
+  # see {Dir.mkdir}[https://docs.ruby-lang.org/en/master/Dir.html#method-c-mkdir]:
+  #
+  #   FileUtils.mkdir(%w[tmp0 tmp1]) # => ["tmp0", "tmp1"]
+  #   FileUtils.mkdir('tmp4')        # => ["tmp4"]
+  #
+  # Keyword arguments:
+  #
+  # - <tt>mode: <i>integer</i></tt> - also calls <tt>File.chmod(mode, path)</tt>;
+  #   see {File.chmod}[https://docs.ruby-lang.org/en/master/File.html#method-c-chmod].
+  # - <tt>noop: true</tt> - does not create directories.
+  # - <tt>verbose: true</tt> - prints an equivalent command:
+  #
+  #     FileUtils.mkdir(%w[tmp0 tmp1], verbose: true)
+  #     FileUtils.mkdir(%w[tmp2 tmp3], mode: 0700, verbose: true)
+  #
+  #   Output:
+  #
+  #     mkdir tmp0 tmp1
+  #     mkdir -m 700 tmp2 tmp3
+  #
+  # Raises an exception if any path in +list+ points to an existing
+  # file or directory, or if for any reason a directory cannot be created.
   #
   def mkdir(list, mode: nil, noop: nil, verbose: nil)
     list = fu_list(list)
@@ -189,19 +236,35 @@ module FileUtils
   module_function :mkdir
 
   #
-  # Creates a directory and all its parent directories.
-  # For example,
+  # Creates directories at the paths in the given +list+
+  # (an array of strings or a single string),
+  # also creating ancestor directories as needed;
+  # returns +list+.
   #
-  #   FileUtils.mkdir_p '/usr/local/lib/ruby'
+  # With no keyword arguments, creates a directory at each +path+ in +list+,
+  # along with any needed ancestor directories,
+  # by calling: <tt>Dir.mkdir(path, mode)</tt>;
+  # see {Dir.mkdir}[https://docs.ruby-lang.org/en/master/Dir.html#method-c-mkdir]:
   #
-  # causes to make following directories, if they do not exist.
+  #   FileUtils.mkdir_p(%w[tmp0/tmp1 tmp2/tmp3]) # => ["tmp0/tmp1", "tmp2/tmp3"]
+  #   FileUtils.mkdir_p('tmp4/tmp5')             # => ["tmp4/tmp5"]
   #
-  # * /usr
-  # * /usr/local
-  # * /usr/local/lib
-  # * /usr/local/lib/ruby
+  # Keyword arguments:
   #
-  # You can pass several directories at a time in a list.
+  # - <tt>mode: <i>integer</i></tt> - also calls <tt>File.chmod(mode, path)</tt>;
+  #   see {File.chmod}[https://docs.ruby-lang.org/en/master/File.html#method-c-chmod].
+  # - <tt>noop: true</tt> - does not create directories.
+  # - <tt>verbose: true</tt> - prints an equivalent command:
+  #
+  #     FileUtils.mkdir_p(%w[tmp0 tmp1], verbose: true)
+  #     FileUtils.mkdir_p(%w[tmp2 tmp3], mode: 0700, verbose: true)
+  #
+  #   Output:
+  #
+  #     mkdir -p tmp0 tmp1
+  #     mkdir -p -m 700 tmp2 tmp3
+  #
+  # Raises an exception if for any reason a directory cannot be created.
   #
   def mkdir_p(list, mode: nil, noop: nil, verbose: nil)
     list = fu_list(list)
@@ -246,12 +309,34 @@ module FileUtils
   private_module_function :fu_mkdir
 
   #
-  # Removes one or more directories.
+  # Removes directories at the paths in the given +list+
+  # (an array of strings or a single string);
+  # returns +list+.
   #
-  #   FileUtils.rmdir 'somedir'
-  #   FileUtils.rmdir %w(somedir anydir otherdir)
-  #   # Does not really remove directory; outputs message.
-  #   FileUtils.rmdir 'somedir', verbose: true, noop: true
+  # With no keyword arguments, removes the directory at each +path+ in +list+,
+  # by calling: <tt>Dir.rmdir(path)</tt>;
+  # see {Dir.rmdir}[https://docs.ruby-lang.org/en/master/Dir.html#method-c-rmdir]:
+  #
+  #   FileUtils.rmdir(%w[tmp0/tmp1 tmp2/tmp3]) # => ["tmp0/tmp1", "tmp2/tmp3"]
+  #   FileUtils.rmdir('tmp4/tmp5')             # => ["tmp4/tmp5"]
+  #
+  # Keyword arguments:
+  #
+  # - <tt>parents: true</tt> - removes successive ancestor directories
+  #   if empty.
+  # - <tt>noop: true</tt> - does not remove directories.
+  # - <tt>verbose: true</tt> - prints an equivalent command:
+  #
+  #     FileUtils.rmdir(%w[tmp0/tmp1 tmp2/tmp3], parents: true, verbose: true)
+  #     FileUtils.rmdir('tmp4/tmp5', parents: true, verbose: true)
+  #
+  #   Output:
+  #
+  #     rmdir -p tmp0/tmp1 tmp2/tmp3
+  #     rmdir -p tmp4/tmp5
+  #
+  # Raises an exception if a directory does not exist
+  # or if for any reason a directory cannot be removed.
   #
   def rmdir(list, parents: nil, noop: nil, verbose: nil)
     list = fu_list(list)
