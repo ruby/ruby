@@ -314,7 +314,7 @@ module FileUtils
   # returns +list+.
   #
   # With no keyword arguments, removes the directory at each +path+ in +list+,
-  # by calling: <tt>Dir.rmdir(path, mode)</tt>;
+  # by calling: <tt>Dir.rmdir(path)</tt>;
   # see {Dir.rmdir}[https://docs.ruby-lang.org/en/master/Dir.html#method-c-rmdir]:
   #
   #   FileUtils.rmdir(%w[tmp0/tmp1 tmp2/tmp3]) # => ["tmp0/tmp1", "tmp2/tmp3"]
