@@ -441,10 +441,10 @@ This proc will add one to its argument.
 Each of the literals in described in this section
 may use these paired delimiters:
 
-* <tt>[</tt> and </tt>]</tt>.
-* <tt>(</tt> and </tt>)</tt>.
-* <tt>{</tt> and </tt>}</tt>.
-* <tt><</tt> and </tt>></tt>.
+* <tt>[</tt> and <tt>]</tt>.
+* <tt>(</tt> and <tt>)</tt>.
+* <tt>{</tt> and <tt>}</tt>.
+* <tt><</tt> and <tt>></tt>.
 * Any other character, as both beginning and ending delimiters.
 
 These are demonstrated in the next section.
