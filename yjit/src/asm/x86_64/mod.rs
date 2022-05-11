@@ -9,20 +9,20 @@ mod tests;
 pub struct X86Imm
 {
     // Size in bits
-    num_bits: u8,
+    pub num_bits: u8,
 
     // The value of the immediate
-    value: i64
+    pub value: i64
 }
 
 #[derive(Clone, Copy, Debug)]
 pub struct X86UImm
 {
     // Size in bits
-    num_bits: u8,
+    pub num_bits: u8,
 
     // The value of the immediate
-    value: u64
+    pub value: u64
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -38,32 +38,32 @@ pub enum RegType
 pub struct X86Reg
 {
     // Size in bits
-    num_bits: u8,
+    pub num_bits: u8,
 
     // Register type
-    reg_type: RegType,
+    pub reg_type: RegType,
 
     // Register index number
-    reg_no: u8,
+    pub reg_no: u8,
 }
 
 #[derive(Clone, Copy, Debug)]
 pub struct X86Mem
 {
     // Size in bits
-    num_bits: u8,
+    pub num_bits: u8,
 
     /// Base register number
-    base_reg_no: u8,
+    pub base_reg_no: u8,
 
     /// Index register number
-    idx_reg_no: Option<u8>,
+    pub idx_reg_no: Option<u8>,
 
     /// SIB scale exponent value (power of two, two bits)
-    scale_exp: u8,
+    pub scale_exp: u8,
 
     /// Constant displacement from the base, not scaled
-    disp: i32,
+    pub disp: i32,
 }
 
 #[derive(Clone, Copy, Debug)]
