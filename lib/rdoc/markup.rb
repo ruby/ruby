@@ -166,7 +166,7 @@
 #   <h1 id="method-i-do_fun_things-label-Example">Example</h1>
 #
 # The label can be linked-to using <tt>SomeClass@Headers</tt>.  See
-# {Links}[RDoc::Markup@Links] for further details.
+# {Links}[rdoc-ref:RDoc::Markup@Links] for further details.
 #
 # === Rules
 #
