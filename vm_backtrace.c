@@ -800,7 +800,7 @@ backtrace_load_data(VALUE self, VALUE str)
 }
 
 /*
- *  call-seq: Threade::Backtrace::limit -> integer
+ *  call-seq: Thread::Backtrace::limit -> integer
  *
  *  Returns maximum backtrace length set by <tt>--backtrace-limit</tt>
  *  command-line option. The defalt is <tt>-1</tt> which means unlimited
