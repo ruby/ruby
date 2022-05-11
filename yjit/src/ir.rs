@@ -319,7 +319,7 @@ impl From<X86Opnd> for Opnd {
 /// Branch target (something that we can jump to)
 /// for branch instructions
 #[derive(Clone, PartialEq, Eq, Debug)]
-enum BranchTarget
+enum Target
 {
     CodePtr(CodePtr),   // Pointer to a piece of code (e.g. side-exit)
     LabelName(String),  // A label without an index in the output
@@ -336,7 +336,7 @@ pub struct Insn
     opnds: Vec<Opnd>,
 
     // List of branch targets (branch instructions only)
-    targets: Vec<BranchTarget>,
+    targets: Vec<Target>,
 
     // Position in the generated machine code
     // Useful for comments and for patching jumps
@@ -358,7 +358,7 @@ impl Assembler
         }
     }
 
-    fn push_insn(&mut self, op: Op, opnds: Vec<Opnd>, targets: Vec<BranchTarget>) -> Opnd
+    fn push_insn(&mut self, op: Op, opnds: Vec<Opnd>, targets: Vec<Target>) -> Opnd
     {
         let insn_idx = self.insns.len();
 
@@ -375,7 +375,7 @@ impl Assembler
     }
 
     // TODO:
-    //fn label(&self, name: &str) -> BranchTarget
+    //fn label(&self, name: &str) -> Target
     //{
     //}
 
@@ -391,17 +391,40 @@ impl Assembler
 
 impl Assembler
 {
+    // Add a comment, no output operand
+    fn comment(&mut self, text: &str)
+    {
+        self.push_insn(Op::Add, vec![ Opnd::String(text.to_owned()) ], vec![]);
+    }
+
     fn add(&mut self, opnd0: Opnd, opnd1: Opnd) -> Opnd
     {
         self.push_insn(Op::Add, vec![opnd0, opnd1], vec![])
     }
 
-    fn mov(&mut self, opnd0: Opnd, opnd1: Opnd) -> Opnd
+    // Low-level, no output operand
+    fn test(&mut self, opnd0: Opnd, opnd1: Opnd)
     {
         self.push_insn(Op::Add, vec![opnd0, opnd1], vec![]);
-        Opnd::None
+    }
+
+    // Jump if not zero
+    fn jnz(&mut self, target: Target)
+    {
+        self.push_insn(Op::Jnz, vec![], vec![target]);
+    }
+
+    // Low-level, no output operand
+    fn mov(&mut self, opnd0: Opnd, opnd1: Opnd)
+    {
+        self.push_insn(Op::Add, vec![opnd0, opnd1], vec![]);
     }
 }
+
+
+
+
+
 
 // NOTE: these methods are temporary and will likely move
 // to context.rs later
@@ -424,7 +447,7 @@ impl Context
 #[cfg(test)]
 mod tests {
     use super::*;
-
+    use crate::cruby::*;
     use crate::core::*;
     use InsnOpnd::*;
 
@@ -443,6 +466,23 @@ mod tests {
 
 
 
+    // TODO
+    fn guard_object_is_heap(
+        asm: &mut Assembler,
+        object_opnd: Opnd,
+        ctx: &mut Context,
+        side_exit: CodePtr,
+    ) {
+        asm.comment("guard object is heap");
+
+        // Test that the object is not an immediate
+        asm.test(object_opnd, Opnd::UImm(RUBY_IMMEDIATE_MASK as u64));
+        asm.jnz(Target::CodePtr(side_exit));
+
+        // Test that the object is not false or nil
+        //cmp(cb, object_opnd, uimm_opnd(Qnil.into()));
+        //jbe_ptr(cb, side_exit);
+    }
 
     #[test]
     fn test_add() {
@@ -451,29 +491,3 @@ mod tests {
         asm.add(out, Opnd::UImm(2));
     }
 }
-
-
-
-
-
-// TODO: we need a test instruction
-// Can we combine this with a branch?
-//
-/*
-fn guard_object_is_heap(
-    cb: &mut CodeBlock,
-    object_opnd: X86Opnd,
-    _ctx: &mut Context,
-    side_exit: CodePtr,
-) {
-    add_comment(cb, "guard object is heap");
-
-    // Test that the object is not an immediate
-    test(cb, object_opnd, uimm_opnd(RUBY_IMMEDIATE_MASK as u64));
-    jnz_ptr(cb, side_exit);
-
-    // Test that the object is not false or nil
-    cmp(cb, object_opnd, uimm_opnd(Qnil.into()));
-    jbe_ptr(cb, side_exit);
-}
-*/
