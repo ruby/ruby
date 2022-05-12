@@ -175,7 +175,7 @@ require_relative 'logger/errors'
 #
 # You can use a custom formatter to escape message data;
 # this formatter uses
-# {String#dump}[https://ruby-doc.org/core-3.1.2/String.html#method-i-dump]
+# {String#dump}[https://docs.ruby-lang.org/en/master/String.html#method-i-dump]
 # to escape the message string:
 #
 #   original_formatter = logger.formatter || Logger::Formatter.new
