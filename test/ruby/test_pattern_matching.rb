@@ -1674,4 +1674,59 @@ END
       end
     end
   end
+
+  class DeconstructWithRange
+    def initialize(values)
+      @values = values
+    end
+
+    def deconstruct(range)
+      range.cover?(@values.length) ? @values : []
+    end
+  end
+
+  def test_passes_range_to_deconstruct
+    assert_block do
+      case DeconstructWithRange.new([1, 2])
+      in [1, 2]
+        true
+      end
+    end
+
+    assert_block do
+      case DeconstructWithRange.new([1, 2])
+      in [1, 2, *]
+        true
+      end
+    end
+
+    assert_block do
+      case DeconstructWithRange.new([1, 2])
+      in [*, 1, 2]
+        true
+      end
+    end
+
+    assert_block do
+      case DeconstructWithRange.new([1, 2])
+      in [1, *, 2]
+        true
+      end
+    end
+
+    assert_block do
+      case DeconstructWithRange.new([1, 2])
+      in [1, *]
+        true
+      end
+    end
+
+    assert_block do
+      case DeconstructWithRange.new([1, 2])
+      in [1, 2, 3]
+      else
+        true
+      end
+    end
+  end
 end

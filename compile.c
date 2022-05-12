@@ -6020,7 +6020,7 @@ compile_case2(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const orig_no
 static int iseq_compile_pattern_match(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, LABEL *unmatched, bool in_single_pattern, bool in_alt_pattern, int base_index, bool use_deconstructed_cache);
 
 static int iseq_compile_pattern_constant(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, LABEL *match_failed, bool in_single_pattern, int base_index);
-static int iseq_compile_array_deconstruct(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, LABEL *deconstruct, LABEL *deconstructed, LABEL *match_failed, LABEL *type_error, bool in_single_pattern, int base_index, bool use_deconstructed_cache);
+static int iseq_compile_array_deconstruct(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, LABEL *deconstruct, LABEL *deconstructed, LABEL *match_failed, LABEL *type_error, bool in_single_pattern, int base_index, bool use_deconstructed_cache, const int min_argc, const int endless);
 static int iseq_compile_pattern_set_general_errmsg(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, VALUE errmsg, int base_index);
 static int iseq_compile_pattern_set_length_errmsg(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, VALUE errmsg, VALUE pattern_length, int base_index);
 static int iseq_compile_pattern_set_eqq_errmsg(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, int base_index);
@@ -6117,7 +6117,7 @@ iseq_compile_pattern_each(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *c
 
         CHECK(iseq_compile_pattern_constant(iseq, ret, node, match_failed, in_single_pattern, base_index));
 
-        CHECK(iseq_compile_array_deconstruct(iseq, ret, node, deconstruct, deconstructed, match_failed, type_error, in_single_pattern, base_index, use_deconstructed_cache));
+        CHECK(iseq_compile_array_deconstruct(iseq, ret, node, deconstruct, deconstructed, match_failed, type_error, in_single_pattern, base_index, use_deconstructed_cache, min_argc, !!apinfo->rest_arg));
 
         ADD_INSN(ret, line_node, dup);
         ADD_SEND(ret, line_node, idLength, INT2FIX(0));
@@ -6264,7 +6264,7 @@ iseq_compile_pattern_each(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *c
 
         CHECK(iseq_compile_pattern_constant(iseq, ret, node, match_failed, in_single_pattern, base_index));
 
-        CHECK(iseq_compile_array_deconstruct(iseq, ret, node, deconstruct, deconstructed, match_failed, type_error, in_single_pattern, base_index, use_deconstructed_cache));
+        CHECK(iseq_compile_array_deconstruct(iseq, ret, node, deconstruct, deconstructed, match_failed, type_error, in_single_pattern, base_index, use_deconstructed_cache, args_num, 1));
 
         ADD_INSN(ret, line_node, dup);
         ADD_SEND(ret, line_node, idLength, INT2FIX(0));
@@ -6755,7 +6755,7 @@ iseq_compile_pattern_constant(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NOD
 
 
 static int
-iseq_compile_array_deconstruct(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, LABEL *deconstruct, LABEL *deconstructed, LABEL *match_failed, LABEL *type_error, bool in_single_pattern, int base_index, bool use_deconstructed_cache)
+iseq_compile_array_deconstruct(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, LABEL *deconstruct, LABEL *deconstructed, LABEL *match_failed, LABEL *type_error, bool in_single_pattern, int base_index, bool use_deconstructed_cache, const int min_argc, const int endless)
 {
     const NODE *line_node = node;
 
@@ -6795,7 +6795,38 @@ iseq_compile_array_deconstruct(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NO
 
     ADD_INSNL(ret, line_node, branchunless, match_failed);
 
+    // Check if the arity of the deconstruct accepts an argument. If it does,
+    // we're going to give it a range object to represent how many values are
+    // being deconstructed.
+    const int line = nd_line(node);
+    LABEL* deconstruct_arity1 = NEW_LABEL(line);
+    LABEL* deconstruct_arity = NEW_LABEL(line);
+
+    // First, get the method object and check its arity.
+    ADD_INSN1(ret, line_node, dupn, INT2FIX(1));
+    ADD_INSN1(ret, line_node, putobject, ID2SYM(rb_intern("deconstruct")));
+    ADD_SEND(ret, line_node, rb_intern("method"), INT2FIX(1));
+    ADD_SEND(ret, line_node, rb_intern("arity"), INT2FIX(0));
+    ADD_INSN1(ret, line_node, putobject, INT2FIX(0));
+    ADD_SEND(ret, line_node, rb_intern("=="), INT2FIX(1));
+    ADD_INSNL(ret, line_node, branchunless, deconstruct_arity1);
+
+    // Next, if we didn't jump out of the previous instruction then we know the
+    // arity is 0. In this case just call deconstruct and jump past the
+    // subsequent instructions.
     ADD_SEND(ret, line_node, rb_intern("deconstruct"), INT2FIX(0));
+    ADD_INSN1(ret, line_node, jump, deconstruct_arity);
+
+    // Otherwise, we're going to construct a range object that represents the
+    // number of elements that are being matched against.
+    ADD_LABEL(ret, deconstruct_arity1);
+    ADD_INSN1(ret, line_node, putobject, INT2FIX(min_argc));
+    ADD_INSN1(ret, line_node, putobject, endless ? Qnil : INT2FIX(min_argc));
+    ADD_INSN1(ret, line_node, newrange, INT2FIX(0));
+    ADD_SEND(ret, line_node, rb_intern("deconstruct"), INT2FIX(1));
+
+    // Finally, we now have deconstructed depending on the arity.
+    ADD_LABEL(ret, deconstruct_arity);
 
     // Cache the result (if it's cacheable - currently, only top-level array patterns)
     if (use_deconstructed_cache) {
