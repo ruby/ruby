@@ -234,7 +234,7 @@ require_relative 'logger/errors'
 #   logger.add(0, "My message")
 #   # => D, [2022-05-11T15:10:59.773668 #20536] DEBUG -- : My message
 #
-# You can specify a different setting in a new log
+# You can specify a different setting in a new logger
 # using keyword argument +level+ with an appropriate value:
 #
 #   logger = Logger.new($stdout, level: Logger::ERROR)
