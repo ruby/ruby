@@ -399,6 +399,9 @@ impl Assembler
         // Register allocation
         // Generic lowering pass
         // Platform-specific lowering
+
+        // Question: should this method return machine code?
+        // How do we go from lowered/optimized insn to an array of bytes?
     }
 }
 
@@ -410,18 +413,6 @@ impl Assembler
         self.push_insn(Op::Add, vec![ Opnd::String(text.to_owned()) ], None);
     }
 
-    // Low-level, no output operand
-    fn test(&mut self, opnd0: Opnd, opnd1: Opnd)
-    {
-        self.push_insn(Op::Add, vec![opnd0, opnd1], None);
-    }
-
-    // Low-level, no output operand
-    fn mov(&mut self, opnd0: Opnd, opnd1: Opnd)
-    {
-        self.push_insn(Op::Add, vec![opnd0, opnd1], None);
-    }
-
     // Jump if not zero
     fn jnz(&mut self, target: Target)
     {
@@ -429,7 +420,7 @@ impl Assembler
     }
 }
 
-macro_rules! def_push_insn_2_opnd {
+macro_rules! def_push_2_opnd {
     ($op_name:ident, $opcode:expr) => {
         impl Assembler
         {
@@ -441,9 +432,23 @@ macro_rules! def_push_insn_2_opnd {
     };
 }
 
-def_push_insn_2_opnd!(add, Op::Add);
-def_push_insn_2_opnd!(sub, Op::Sub);
-def_push_insn_2_opnd!(and, Op::And);
+macro_rules! def_push_2_opnd_no_out {
+    ($op_name:ident, $opcode:expr) => {
+        impl Assembler
+        {
+            fn $op_name(&mut self, opnd0: Opnd, opnd1: Opnd)
+            {
+                self.push_insn($opcode, vec![opnd0, opnd1], None);
+            }
+        }
+    };
+}
+
+def_push_2_opnd!(add, Op::Add);
+def_push_2_opnd!(sub, Op::Sub);
+def_push_2_opnd!(and, Op::And);
+def_push_2_opnd_no_out!(test, Op::Test);
+def_push_2_opnd_no_out!(mov, Op::Mov);
 
 // NOTE: these methods are temporary and will likely move
 // to context.rs later
