@@ -160,7 +160,7 @@ require_relative 'logger/errors'
 #
 # === Message
 #
-# The message is an optional argument to  method #add:
+# The message is an optional argument to method #add:
 #
 #   logger = Logger.new($stdout)
 #   logger.add(Logger::INFO, 'My message')
