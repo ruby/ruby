@@ -63,6 +63,11 @@ Try the following command to see the list of branches:
 
 https://www.ruby-lang.org/
 
+## Documentation
+
+- [English](https://docs.ruby-lang.org/en/master/index.html) 
+- [Japanese](https://docs.ruby-lang.org/ja/master/index.html) 
+
 ## Mailing list
 
 There is a mailing list to discuss Ruby. To subscribe to this list, please
