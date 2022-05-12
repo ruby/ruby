@@ -488,7 +488,7 @@ class Logger
   #
   # - A string filepath: entries are to be written
   #   to the file at that path.
-  # - An IO stream (typically +$stdout+, +$stderr+. or an open file):
+  # - An IO stream (typically +$stdout+, +$stderr+, or an open file):
   #   entries are to be written to the given stream.
   # - +nil+ or +File::NULL+: no entries are to be written.
   #
