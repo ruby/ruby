@@ -65,8 +65,8 @@ https://www.ruby-lang.org/
 
 ## Documentation
 
-- [English](https://docs.ruby-lang.org/en/master/index.html) 
-- [Japanese](https://docs.ruby-lang.org/ja/master/index.html) 
+- [English](https://docs.ruby-lang.org/en/master/index.html)
+- [Japanese](https://docs.ruby-lang.org/ja/master/index.html)
 
 ## Mailing list
 
