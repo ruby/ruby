@@ -247,7 +247,7 @@ require_relative 'logger/errors'
 #
 #   logger = Logger.new($stdout, level: Logger::ERROR)
 #   logger.add(3)
-#   # =? E, [2022-05-11T15:17:20.933362 #20536] ERROR -- : nil
+#   # => E, [2022-05-11T15:17:20.933362 #20536] ERROR -- : nil
 #   logger.add(2) # Silent.
 #
 # You can set the log level for an existing logger
