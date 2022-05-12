@@ -186,7 +186,7 @@ require_relative 'logger/errors'
 #
 # === Program Name
 #
-# The program name is an optional argument to  method #add:
+# The program name is an optional argument to method #add:
 #
 #   logger = Logger.new($stdout)
 #   logger.add(Logger::INFO, 'My message', 'mung')
