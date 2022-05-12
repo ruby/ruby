@@ -254,12 +254,6 @@ pub enum Opnd
     Reg(Reg),           // Machine register (num_bits, idx)
 }
 
-// Special register constants
-pub const EC    : Opnd = Opnd::Reg(Reg { reg_no: 0, num_bits: 64, special: true });
-pub const CFP   : Opnd = Opnd::Reg(Reg { reg_no: 1, num_bits: 64, special: true });
-pub const SP    : Opnd = Opnd::Reg(Reg { reg_no: 2, num_bits: 64, special: true });
-pub const SELF  : Opnd = Opnd::Reg(Reg { reg_no: 3, num_bits: 64, special: true });
-
 impl Opnd
 {
     // Convenience constructor for memory operands
@@ -277,6 +271,12 @@ impl Opnd
         }
     }
 }
+
+// Special register constants
+pub const EC    : Opnd = Opnd::Reg(Reg { reg_no: 0, num_bits: 64, special: true });
+pub const CFP   : Opnd = Opnd::Reg(Reg { reg_no: 1, num_bits: 64, special: true });
+pub const SP    : Opnd = Opnd::Reg(Reg { reg_no: 2, num_bits: 64, special: true });
+pub const SELF  : Opnd = Opnd::Reg(Reg { reg_no: 3, num_bits: 64, special: true });
 
 /// Method to convert from an X86Opnd to an IR Opnd
 impl From<X86Opnd> for Opnd {
@@ -335,6 +335,7 @@ pub struct Insn
     // List of input operands/values
     opnds: Vec<Opnd>,
 
+    // Kevin asks: do we really need multiple branch targets?
     // List of branch targets (branch instructions only)
     targets: Vec<Target>,
 
@@ -397,13 +398,21 @@ impl Assembler
         self.push_insn(Op::Add, vec![ Opnd::String(text.to_owned()) ], vec![]);
     }
 
+    /*
     fn add(&mut self, opnd0: Opnd, opnd1: Opnd) -> Opnd
     {
         self.push_insn(Op::Add, vec![opnd0, opnd1], vec![])
     }
+    */
 
     // Low-level, no output operand
     fn test(&mut self, opnd0: Opnd, opnd1: Opnd)
+    {
+        self.push_insn(Op::Add, vec![opnd0, opnd1], vec![]);
+    }
+
+    // Low-level, no output operand
+    fn mov(&mut self, opnd0: Opnd, opnd1: Opnd)
     {
         self.push_insn(Op::Add, vec![opnd0, opnd1], vec![]);
     }
@@ -413,18 +422,23 @@ impl Assembler
     {
         self.push_insn(Op::Jnz, vec![], vec![target]);
     }
-
-    // Low-level, no output operand
-    fn mov(&mut self, opnd0: Opnd, opnd1: Opnd)
-    {
-        self.push_insn(Op::Add, vec![opnd0, opnd1], vec![]);
-    }
 }
 
+macro_rules! def_push_insn_2_opnd {
+    ($op_name:ident, $opcode:expr) => {
+        impl Assembler
+        {
+            fn $op_name(&mut self, opnd0: Opnd, opnd1: Opnd) -> Opnd
+            {
+                self.push_insn($opcode, vec![opnd0, opnd1], vec![])
+            }
+        }
+    };
+}
 
-
-
-
+def_push_insn_2_opnd!(add, Op::Add);
+def_push_insn_2_opnd!(sub, Op::Sub);
+def_push_insn_2_opnd!(and, Op::And);
 
 // NOTE: these methods are temporary and will likely move
 // to context.rs later
@@ -463,10 +477,6 @@ mod tests {
         asm.mov(loc0, dup_val);
     }
 
-
-
-
-    // TODO
     fn guard_object_is_heap(
         asm: &mut Assembler,
         object_opnd: Opnd,
