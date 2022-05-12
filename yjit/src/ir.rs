@@ -8,32 +8,6 @@ use crate::asm::{CodePtr};
 use crate::asm::x86_64::{X86Opnd, X86Imm, X86UImm, X86Reg, X86Mem, RegType};
 use crate::core::{Context, Type, TempMapping};
 
-
-
-
-/*
-// Minimally, we might want to specify how many operands and branch targets an insn has
-// Branch targets are not interchangeable with other operand types. We distinguish
-// between branch and regular instructions.
-//
-// TODO: should mark instructions that produce no output operand
-//
-make_ops! {
-    (Comment, 1, 0),
-    ...
-
-    // Call is variadic, might need to be special-cased
-}
-*/
-
-
-
-
-
-
-
-
-
 /// Instruction opcodes
 #[derive(Copy, Clone, PartialEq, Eq, Debug)]
 pub enum Op
@@ -80,8 +54,12 @@ pub enum Op
     // Bitwise AND test instruction
     Test,
 
-    // Jump if not zero
+    // Compare two operands
+    Cmp,
+
+    // Low-level conditional jump instructions
     Jnz,
+    Jbe,
 
     /*
     // The following are conditional jump instructions. They all accept as their
@@ -127,12 +105,6 @@ pub enum Op
     // the generated function. Accepts as its only operand the value that should
     // be returned from the generated function.
     RetVal,
-
-    // A low-level cmp instruction. It accepts two operands. The first it
-    // expects to be a register. The second can be anything. Most of the time
-    // this instruction shouldn't be used by the developer since other
-    // instructions break down to this one.
-    Cmp,
 
     // A conditional move instruction that should be preceeded at some point by
     // an OP_CMP instruction that would have set the requisite comparison flags.
@@ -194,15 +166,6 @@ pub enum Op
     // OP_TEST,
     */
 }
-
-
-
-
-
-
-
-
-
 
 // Register value used by IR operands
 #[derive(Copy, Clone, PartialEq, Eq, Debug)]
@@ -418,6 +381,11 @@ impl Assembler
     {
         self.push_insn(Op::Jnz, vec![], Some(target));
     }
+
+    fn jbe(&mut self, target: Target)
+    {
+        self.push_insn(Op::Jbe, vec![], Some(target));
+    }
 }
 
 macro_rules! def_push_2_opnd {
@@ -447,8 +415,9 @@ macro_rules! def_push_2_opnd_no_out {
 def_push_2_opnd!(add, Op::Add);
 def_push_2_opnd!(sub, Op::Sub);
 def_push_2_opnd!(and, Op::And);
-def_push_2_opnd_no_out!(test, Op::Test);
 def_push_2_opnd_no_out!(mov, Op::Mov);
+def_push_2_opnd_no_out!(cmp, Op::Cmp);
+def_push_2_opnd_no_out!(test, Op::Test);
 
 // NOTE: these methods are temporary and will likely move
 // to context.rs later
@@ -496,12 +465,12 @@ mod tests {
         asm.comment("guard object is heap");
 
         // Test that the object is not an immediate
-        asm.test(object_opnd, Opnd::UImm(RUBY_IMMEDIATE_MASK as u64));
+        asm.test(object_opnd.clone(), Opnd::UImm(RUBY_IMMEDIATE_MASK as u64));
         asm.jnz(Target::CodePtr(side_exit));
 
         // Test that the object is not false or nil
-        //cmp(cb, object_opnd, uimm_opnd(Qnil.into()));
-        //jbe_ptr(cb, side_exit);
+        asm.cmp(object_opnd.clone(), Opnd::UImm(Qnil.into()));
+        asm.jbe(Target::CodePtr(side_exit));
     }
 
     #[test]
