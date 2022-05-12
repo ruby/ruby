@@ -245,7 +245,7 @@ require_relative 'logger/errors'
 # With this level, entries with severity Logger::ERROR and higher
 # are written, while those with lower severities are not written:
 #
-#   logger = Logger.new($stdout)
+#   logger = Logger.new($stdout, level: Logger::ERROR)
 #   logger.add(3)
 #   # =? E, [2022-05-11T15:17:20.933362 #20536] ERROR -- : nil
 #   logger.add(2) # Silent.
