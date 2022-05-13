@@ -24,7 +24,7 @@ module Bundler
 
         specs_for_dep = spec_for_dependency(dep, match_current_platform)
         if specs_for_dep.any?
-          match_current_platform ? specs += specs_for_dep : specs |= specs_for_dep
+          specs += specs_for_dep
 
           specs_for_dep.first.dependencies.each do |d|
             next if d.type == :development
@@ -39,6 +39,8 @@ module Bundler
       if spec = lookup["bundler"].first
         specs << spec
       end
+
+      specs.uniq! unless match_current_platform
 
       check ? true : specs
     end
