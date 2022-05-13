@@ -196,7 +196,7 @@ pub struct Mem
 }
 
 /// Operand to an IR instruction
-#[derive(Clone, PartialEq, Eq, Debug)]
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub enum Opnd
 {
     None,               // For insns with no output
@@ -205,7 +205,6 @@ pub enum Opnd
     Local(u16),         // Local variable (idx, do we need depth too?)
     Value(VALUE),       // Immediate Ruby value, may be GC'd, movable
     InsnOut(usize),     // Output of a preceding instruction in this block
-    String(String),     // String constant, used for comments
 
     // Low-level operands, for lowering
     Imm(i64),           // Raw signed immediate
@@ -287,10 +286,14 @@ enum Target
 }
 
 /// YJIT IR instruction
+#[derive(Clone, Debug)]
 pub struct Insn
 {
     // Opcode for the instruction
     op: Op,
+
+    // Optional string for comments and labels
+    text: Option<String>,
 
     // List of input operands/values
     opnds: Vec<Opnd>,
@@ -324,6 +327,7 @@ impl Assembler
 
         let insn = Insn {
             op: op,
+            text: None,
             opnds: opnds,
             target: target,
             pos: None
@@ -334,6 +338,19 @@ impl Assembler
         Opnd::InsnOut(insn_idx)
     }
 
+    // Add a comment at the current position
+    fn comment(&mut self, text: &str)
+    {
+        let insn = Insn {
+            op: Op::Comment,
+            text: Some(text.to_owned()),
+            opnds: vec![],
+            target: None,
+            pos: None
+        };
+        self.insns.push(insn);
+    }
+
     // Add a label at the current position
     fn label(&mut self, name: &str) -> Target
     {
@@ -341,6 +358,7 @@ impl Assembler
 
         let insn = Insn {
             op: Op::Label,
+            text: Some(name.to_owned()),
             opnds: vec![],
             target: None,
             pos: None
@@ -370,12 +388,6 @@ impl Assembler
 
 impl Assembler
 {
-    // Add a comment, no output operand
-    fn comment(&mut self, text: &str)
-    {
-        self.push_insn(Op::Add, vec![ Opnd::String(text.to_owned()) ], None);
-    }
-
     // Jump if not zero
     fn jnz(&mut self, target: Target)
     {
