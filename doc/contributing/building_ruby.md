@@ -70,5 +70,5 @@ with the Ruby script you'd like to run. You can use the following make targets:
 * `make lldb`: Runs `test.rb` using Miniruby in lldb
 * `make gdb`: Runs `test.rb` using Miniruby in gdb
 * `make runruby`: Runs `test.rb` using Ruby
-* `make lldb-runruby`: Runs `test.rb` using Ruby in lldb
-* `make gdb-runruby`: Runs `test.rb` using Ruby in gdb
+* `make lldb-ruby`: Runs `test.rb` using Ruby in lldb
+* `make gdb-ruby`: Runs `test.rb` using Ruby in gdb
