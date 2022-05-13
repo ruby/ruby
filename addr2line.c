@@ -2257,8 +2257,11 @@ print_line0(line_info_t *line, void *address)
     else if (!line->path) {
         kprintf("[0x%"PRIxPTR"]\n", addr);
     }
-    else if (!line->saddr || !line->sname) {
+    else if (!line->sname) {
         kprintf("%s(0x%"PRIxPTR") [0x%"PRIxPTR"]\n", line->path, addr-line->base_addr, addr);
+    }
+    else if (!line->saddr) {
+        kprintf("%s(%s) [0x%"PRIxPTR"]\n", line->path, line->sname, addr);
     }
     else if (line->line <= 0) {
         kprintf("%s(%s+0x%"PRIxPTR") [0x%"PRIxPTR"]\n", line->path, line->sname,
