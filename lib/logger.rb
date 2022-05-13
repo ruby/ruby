@@ -38,10 +38,12 @@ require_relative 'logger/errors'
 #
 #   # Single log file.
 #   logger = Logger.new('t.log')
-#   # Size-based rotated log: 3 10-megabyte files.
+#   # Size-based rotated logging: 3 10-megabyte files.
 #   logger = Logger.new('t.log', 3, 10485760)
-#   # Period-based rotated log: daily (also allowed: 'weekly', 'monthly').
+#   # Period-based rotated logging: daily (also allowed: 'weekly', 'monthly').
 #   logger = Logger.new('t.log', 'daily')
+#   # Log to an IO stream.
+#   logger = Logger.new($stdout)
 #
 # Add entries (level, message) with Logger#add:
 #
@@ -52,7 +54,22 @@ require_relative 'logger/errors'
 #   logger.add(Logger::FATAL, 'Fatal error')
 #   logger.add(Logger::UNKNOWN, 'Most severe')
 #
-# There are also these shorthand methods:
+# Close the log with Logger#close:
+#
+#   logger.close
+#
+# == Entries
+#
+# You can add entries with method Logger#add:
+#
+#   logger.add(Logger::DEBUG, 'Maximal debugging info')
+#   logger.add(Logger::INFO, 'Non-error information')
+#   logger.add(Logger::WARN, 'Non-error warning')
+#   logger.add(Logger::ERROR, 'Non-fatal error')
+#   logger.add(Logger::FATAL, 'Fatal error')
+#   logger.add(Logger::UNKNOWN, 'Most severe')
+#
+# These shorthand methods also add entries:
 #
 #   logger.debug('Maximal debugging info')
 #   logger.info('Non-error information')
@@ -61,36 +78,9 @@ require_relative 'logger/errors'
 #   logger.fatal('Fatal error')
 #   logger.unknown('Most severe')
 #
-# For each method in the two groups immediately above,
-# you can omit the string message and provide a block instead.
-# Doing so can have two benefits:
-#
-# - Context: the block can evaluate the entire program context
-#   and create a context-dependent message.
-# - Performance: the block is not evaluated unless the log level
-#   permits the entry actually to be written:
-#
-#     logger.error { my_slow_message_generator }
-#
-#   Contrast this with the string form, where the string is
-#   always evaluated, regardless of the log level:
-#
-#     logger.error("#{my_slow_message_generator}")
-#
-# Close the log with Logger#close:
-#
-#   logger.close
-#
-# == Log Stream
-#
-# When you create a \Logger instance, you specify an IO stream
-# for the logger's output, usually either an open File object
-# or an IO object such as <tt>$stdout</tt> or <tt>$stderr</tt>.
-#
-# == Entries
-#
-# When you call instance method #add (or its alias #log),
-# an entry may (or may not) be written to the log;
+# When you call any of these methods,
+# the entry may or may not be written to the log,
+# depending on the entry's severity and on the log level;
 # see {Log Level}[rdoc-ref:Logger@Log+Level]
 #
 # An entry always has:
@@ -106,8 +96,8 @@ require_relative 'logger/errors'
 # Example:
 #
 #   logger = Logger.new($stdout)
-#   logger.add(Logger::INFO, 'msg', 'progname')
-#   # => I, [2022-05-07T17:21:46.536234 #20536]  INFO -- progname: msg
+#   logger.add(Logger::INFO, 'My message.', 'mung')
+#   # => I, [2022-05-07T17:21:46.536234 #20536]  INFO -- mung: My message.
 #
 # The default format for an entry is:
 #
@@ -124,15 +114,27 @@ require_relative 'logger/errors'
 #
 # You can use a different entry format by:
 #
-# - Calling #add with a block (affects only the one entry).
-# - Setting a format proc with method
-#   {formatter=}[Logger.html#attribute-i-formatter]
-#   (affects following entries).
+# - Setting a custom format proc (affects following entries);
+#   see {formatter=}[Logger.html#attribute-i-formatter].
+# - Calling any of the methods above with a block
+#   (affects only the one entry).
+#   Doing so can have two benefits:
+#
+#   - Context: the block can evaluate the entire program context
+#     and create a context-dependent message.
+#   - Performance: the block is not evaluated unless the log level
+#     permits the entry actually to be written:
+#
+#       logger.error { my_slow_message_generator }
+#
+#     Contrast this with the string form, where the string is
+#     always evaluated, regardless of the log level:
+#
+#       logger.error("#{my_slow_message_generator}")
 #
 # === \Severity
 #
-# The severity of a log entry, which is specified in the call to #add,
-# does two things:
+# The severity of a log entry has two effects:
 #
 # - Determines whether the entry is selected for inclusion in the log;
 #   see {Log Level}[rdoc-ref:Logger@Log+Level].
@@ -142,7 +144,7 @@ require_relative 'logger/errors'
 # === Timestamp
 #
 # The timestamp for a log entry is generated automatically
-# when the entry is created (by a call to #add).
+# when the entry is created.
 #
 # The logged timestamp is formatted by method
 # {Time#strftime}[https://docs.ruby-lang.org/en/master/Time.html#method-i-strftime]
@@ -160,33 +162,30 @@ require_relative 'logger/errors'
 #
 # === Message
 #
-# The message is an optional argument to method #add:
+# The message is an optional argument to an entry method:
 #
 #   logger = Logger.new($stdout)
 #   logger.add(Logger::INFO, 'My message')
 #   # => I, [2022-05-07T18:15:37.647581 #20536]  INFO -- : My message
 #
-# The message object may be a string, or an object that can be converted
-# to a string.
+# For the default entry formatter, <tt>Logger::Formatter</tt>,
+# the message object may be:
 #
-# *Note*: \Logger does not escape or sanitize any messages passed to it.
+# - A string: used as-is.
+# - An Exception: <tt>message.message</tt> is used.
+# - Anything else: <tt>message.inspect</tt> is used.
+#
+# *Note*: Logger::Formatter does not escape or sanitize
+# the message passed to it.
 # Developers should be aware that malicious data (user input)
-# may be passed to \Logger, and should explicitly escape untrusted data.
+# may be in the message, and should explicitly escape untrusted data.
 #
 # You can use a custom formatter to escape message data;
-# this formatter uses
-# {String#dump}[https://docs.ruby-lang.org/en/master/String.html#method-i-dump]
-# to escape the message string:
-#
-#   original_formatter = logger.formatter || Logger::Formatter.new
-#   logger.formatter = proc { |sev, time, progname, msg|
-#     original_formatter.call(sev, time, progname, msg.dump)
-#   }
-#   logger.info(input)
+# see the example at {formatter=}[Logger.html#attribute-i-formatter].
 #
 # === Program Name
 #
-# The program name is an optional argument to method #add:
+# The program name is an optional argument to an entry method:
 #
 #   logger = Logger.new($stdout)
 #   logger.add(Logger::INFO, 'My message', 'mung')
@@ -204,6 +203,8 @@ require_relative 'logger/errors'
 #
 # The current program name may be retrieved with method
 # {progname}[Logger.html#attribute-i-progname]:
+#
+#   logger.progname # => "mung"
 #
 # == Log Level
 #
@@ -255,7 +256,7 @@ require_relative 'logger/errors'
 #
 #   logger.level = Logger::ERROR
 #
-# There are also these shorthand methods for setting the level:
+# These shorthand methods also set the level:
 #
 #   logger.debug! # => 0
 #   logger.info!  # => 1
@@ -266,13 +267,13 @@ require_relative 'logger/errors'
 # You can retrieve the log level with method
 # {level}[Logger.html#attribute-i-level]:
 #
-#   logger.level = 3
+#   logger.level = Logger::ERROR
 #   logger.level # => 3
 #
-# There are also these methods for determining whether a given
+# These methods return whether a given
 # level is to be written:
 #
-#   logger.level = 3
+#   logger.level = Logger::ERROR
 #   logger.debug? # => false
 #   logger.info?  # => false
 #   logger.warn?  # => false
@@ -381,9 +382,18 @@ class Logger
   # Logging severity threshold (e.g. <tt>Logger::INFO</tt>).
   attr_reader :level
 
-  # Set logging severity threshold.
+  # Sets the log level; returns +severity+.
+  # See {Log Level}[rdoc-ref:Logger@Log+Level].
   #
-  # +severity+:: The Severity of the log message.
+  # Argument +severity+ may be an integer, a string, or a symbol:
+  #
+  #   logger.level = Logger::ERROR # => 3
+  #   logger.level = 3             # => 3
+  #   logger.level = 'error'       # => "error"
+  #   logger.level = :error        # => :error
+  #
+  # Logger#sev_threshold= is an alias for Logger#level=.
+  #
   def level=(severity)
     if severity.is_a?(Integer)
       @level = severity
@@ -410,74 +420,117 @@ class Logger
   # Program name to include in log messages.
   attr_accessor :progname
 
-  # Set date-time format.
+  # Sets the date-time format.
   #
-  # +datetime_format+:: A string suitable for passing to +strftime+.
+  # Argument +datetime_format+ should be either of these:
+  #
+  # - A string suitable for use as a format for method
+  #   {Time#strftime}[https://docs.ruby-lang.org/en/master/Time.html#method-i-strftime].
+  # - +nil+: the logger uses <tt>'%Y-%m-%dT%H:%M:%S.%6N'</tt>.
+  #
   def datetime_format=(datetime_format)
     @default_formatter.datetime_format = datetime_format
   end
 
-  # Returns the date format being used.  See #datetime_format=
+  # Returns the date-time format; see #datetime_format=.
+  #
   def datetime_format
     @default_formatter.datetime_format
   end
 
-  # Logging formatter, as a +Proc+ that will take four arguments and
-  # return the formatted message. The arguments are:
+  # Sets or retrieves the logger entry formatter proc.
   #
-  # +severity+:: The Severity of the log message.
-  # +time+:: A Time instance representing when the message was logged.
-  # +progname+:: The #progname configured, or passed to the logger method.
-  # +msg+:: The _Object_ the user passed to the log message; not necessarily a
-  #         String.
+  # When +formatter+ is +nil+, the logger uses Logger::Formatter.
   #
-  # The block should return an Object that can be written to the logging
-  # device via +write+.  The default formatter is used when no formatter is
-  # set.
+  # When +formatter+ is a proc, a new entry is formatted by the proc,
+  # which is called with four arguments:
+  #
+  # - +severity+: The severity of the entry.
+  # - +time+: A Time object representing the entry's timestamp.
+  # - +progname+: The program name for the entry.
+  # - +msg+: The message for the entry (string or string-convertible object).
+  #
+  # The proc should return a string containing the formatted entry.
+  #
+  # This custom formatter uses
+  # {String#dump}[https://docs.ruby-lang.org/en/master/String.html#method-i-dump]
+  # to escape the message string:
+  #
+  #   logger = Logger.new($stdout, progname: 'mung')
+  #   original_formatter = logger.formatter || Logger::Formatter.new
+  #   logger.formatter = proc { |severity, time, progname, msg|
+  #     original_formatter.call(severity, time, progname, msg.dump)
+  #   }
+  #   logger.add(Logger::INFO, "hello \n ''")
+  #   logger.add(Logger::INFO, "\f\x00\xff\\\"")
+  #
+  # Output:
+  #
+  #   I, [2022-05-13T13:16:29.637488 #8492]  INFO -- mung: "hello \n ''"
+  #   I, [2022-05-13T13:16:29.637610 #8492]  INFO -- mung: "\f\x00\xFF\\\""
+  #
   attr_accessor :formatter
 
   alias sev_threshold level
   alias sev_threshold= level=
 
-  # Returns +true+ if and only if the current severity level allows for the printing of
-  # +DEBUG+ messages.
+  # Returns +true+ if the log level allows entries with severity
+  # Logger::DEBUG to be written, +false+ otherwise.
+  # See {Log Level}[rdoc-ref:Logger@Log+Level].
+  #
   def debug?; level <= DEBUG; end
 
-  # Sets the severity to DEBUG.
+  # Sets the log level to Logger::DEBUG.
+  # See {Log Level}[rdoc-ref:Logger@Log+Level].
+  #
   def debug!; self.level = DEBUG; end
 
-  # Returns +true+ if and only if the current severity level allows for the printing of
-  # +INFO+ messages.
+  # Returns +true+ if the log level allows entries with severity
+  # Logger::INFO to be written, +false+ otherwise.
+  # See {Log Level}[rdoc-ref:Logger@Log+Level].
+  #
   def info?; level <= INFO; end
 
-  # Sets the severity to INFO.
+  # Sets the log level to Logger::INFO.
+  # See {Log Level}[rdoc-ref:Logger@Log+Level].
+  #
   def info!; self.level = INFO; end
 
-  # Returns +true+ if and only if the current severity level allows for the printing of
-  # +WARN+ messages.
+  # Returns +true+ if the log level allows entries with severity
+  # Logger::WARN to be written, +false+ otherwise.
+  # See {Log Level}[rdoc-ref:Logger@Log+Level].
+  #
   def warn?; level <= WARN; end
 
-  # Sets the severity to WARN.
+  # Sets the log level to Logger::WARN.
+  # See {Log Level}[rdoc-ref:Logger@Log+Level].
+  #
   def warn!; self.level = WARN; end
 
-  # Returns +true+ if and only if the current severity level allows for the printing of
-  # +ERROR+ messages.
+  # Returns +true+ if the log level allows entries with severity
+  # Logger::ERROR to be written, +false+ otherwise.
+  # See {Log Level}[rdoc-ref:Logger@Log+Level].
+  #
   def error?; level <= ERROR; end
 
-  # Sets the severity to ERROR.
+  # Sets the log level to Logger::ERROR.
+  # See {Log Level}[rdoc-ref:Logger@Log+Level].
+  #
   def error!; self.level = ERROR; end
 
-  # Returns +true+ if and only if the current severity level allows for the printing of
-  # +FATAL+ messages.
+  # Returns +true+ if the log level allows entries with severity
+  # Logger::FATAL to be written, +false+ otherwise.
+  # See {Log Level}[rdoc-ref:Logger@Log+Level].
+  #
   def fatal?; level <= FATAL; end
 
-  # Sets the severity to FATAL.
+  # Sets the log level to Logger::FATAL.
+  # See {Log Level}[rdoc-ref:Logger@Log+Level].
+  #
   def fatal!; self.level = FATAL; end
 
-  #
   # :call-seq:
-  #   Logger.new(logdev, shift_age = 0, shift_size = 1048576, **options)
-  #   Logger.new(logdev, shift_age = 'weekly', **options)
+  #    Logger.new(logdev, shift_age = 0, shift_size = 1048576, **options)
   #
   # With the single argument +logdev+,
   # returns a new logger with all default options:
@@ -487,41 +540,39 @@ class Logger
   # Argument +logdev+ must be one of:
   #
   # - A string filepath: entries are to be written
-  #   to the file at that path.
-  # - An IO stream (typically +$stdout+, +$stderr+, or an open file):
+  #   to the file at that path; if the file at that path exists,
+  #   new entries are appended.
+  # - An IO stream (typically +$stdout+, +$stderr+. or an open file):
   #   entries are to be written to the given stream.
   # - +nil+ or +File::NULL+: no entries are to be written.
   #
-  # === Args
+  # Examples:
   #
-  # +logdev+::
-  #   The log device.  This is a filename (String), IO object (typically
-  #   +STDOUT+, +STDERR+, or an open file), +nil+ (it writes nothing) or
-  #   +File::NULL+ (same as +nil+).
-  # +shift_age+::
-  #   Number of old log files to keep, *or* frequency of rotation (+daily+,
-  #   +weekly+ or +monthly+). Default value is 0, which disables log file
-  #   rotation.
-  # +shift_size+::
-  #   Maximum logfile size in bytes (only applies when +shift_age+ is a positive
-  #   Integer). Defaults to +1048576+ (1MB).
-  # +level+::
-  #   Logging severity threshold. Default values is Logger::DEBUG.
-  # +progname+::
-  #   Program name to include in log messages. Default value is nil.
-  # +formatter+::
-  #   Logging formatter. Default values is an instance of Logger::Formatter.
-  # +datetime_format+::
-  #   Date and time format. Default value is '%Y-%m-%d %H:%M:%S'.
-  # +binmode+::
-  #   Use binary mode on the log device. Default value is false.
-  # +shift_period_suffix+::
-  #   The log file suffix format for +daily+, +weekly+ or +monthly+ rotation.
-  #   Default is '%Y%m%d'.
+  #   Logger.new('t.log')
+  #   Logger.new($stdout)
   #
-  # === Description
+  # The keyword options are:
   #
-  # Create an instance.
+  # - +level+: sets the log level; default value is Logger::DEBUG.
+  #   See {Log Level}[rdoc-ref:Logger@Log+Level]:
+  #
+  #     Logger.new('t.log', level: Logger::ERROR)
+  #
+  # - +progname+: sets the default program name; default is +nil+.
+  #   See {Program Name}[rdoc-ref:Logger@Program+Name]:
+  #
+  #     Logger.new('t.log', progname: 'mung')
+  #
+  # - +formatter+: sets the entry formatter; default is +nil+.
+  #   See {formatter=}[Logger.html#attribute-i-formatter].
+  # - +datetime_format+: sets the format for entry timestamp;
+  #   default is +nil+.
+  #   See #datetime_format=.
+  # - +binmode+: sets whether the logger writes in binary mode;
+  #   default is +false+.
+  # - +shift_period_suffix+: sets the format for the filename suffix
+  #   for periodic log file rotation; default is <tt>'%Y%m%d'</tt>.
+  #   See {Periodic Rotation}[rdoc-ref:Logger@Periodic+Rotation].
   #
   def initialize(logdev, shift_age = 0, shift_size = 1048576, level: DEBUG,
                  progname: nil, formatter: nil, datetime_format: nil,
@@ -540,67 +591,60 @@ class Logger
     end
   end
 
+  # Sets the logger's output stream:
   #
-  # :call-seq:
-  #   Logger#reopen
-  #   Logger#reopen(logdev)
+  # - If +logdev+ is +nil+, reopens the current output stream.
+  # - If +logdev+ is a filepath, opens the indicated file for append.
+  # - If +logdev+ is an IO stream
+  #   (usually <tt>$stdout</tt>, <tt>$stderr</tt>, or an open File object),
+  #   opens the stream for append.
   #
-  # === Args
+  # Example:
   #
-  # +logdev+::
-  #   The log device.  This is a filename (String) or IO object (typically
-  #   +STDOUT+, +STDERR+, or an open file).  reopen the same filename if
-  #   it is +nil+, do nothing for IO.  Default is +nil+.
-  #
-  # === Description
-  #
-  # Reopen a log device.
+  #   logger = Logger.new('t.log')
+  #   logger.add(Logger::ERROR, 'one')
+  #   logger.close
+  #   logger.add(Logger::ERROR, 'two') # Prints 'log writing failed. closed stream'
+  #   logger.reopen
+  #   logger.add(Logger::ERROR, 'three')
+  #   logger.close
+  #   File.readlines('t.log')
+  #   # =>
+  #   # ["# Logfile created on 2022-05-12 14:21:19 -0500 by logger.rb/v1.5.0\n",
+  #   #  "E, [2022-05-12T14:21:27.596726 #22428] ERROR -- : one\n",
+  #   #  "E, [2022-05-12T14:23:05.847241 #22428] ERROR -- : three\n"]
   #
   def reopen(logdev = nil)
     @logdev&.reopen(logdev)
     self
   end
 
+  # Creates a log entry, which may or may not be written to the log,
+  # depending on the entry's severity and on the log level.
+  # See {Log Level}[rdoc-ref:Logger@Log+Level]
+  # and {Entries}[rdoc-ref:Logger@Entries] for details.
   #
-  # :call-seq:
-  #   Logger#add(severity, message = nil, progname = nil) { ... }
+  # Examples:
   #
-  # === Args
+  #   logger = Logger.new($stdout, progname: 'mung')
+  #   logger.add(Logger::INFO)
+  #   logger.add(Logger::ERROR, 'No good')
+  #   logger.add(Logger::ERROR, 'No good', 'gnum')
   #
-  # +severity+::
-  #   Severity.  Constants are defined in Logger namespace: +DEBUG+, +INFO+,
-  #   +WARN+, +ERROR+, +FATAL+, or +UNKNOWN+.
-  # +message+::
-  #   The log message.  A String or Exception.
-  # +progname+::
-  #   Program name string.  Can be omitted.  Treated as a message if no
-  #   +message+ and +block+ are given.
-  # +block+::
-  #   Can be omitted.  Called to get a message string if +message+ is nil.
+  # Output:
   #
-  # === Return
+  #   I, [2022-05-12T16:25:31.469726 #36328]  INFO -- mung: mung
+  #   E, [2022-05-12T16:25:55.349414 #36328] ERROR -- mung: No good
+  #   E, [2022-05-12T16:26:35.841134 #36328] ERROR -- gnum: No good
   #
-  # When the given severity is not high enough (for this particular logger),
-  # log no message, and return +true+.
+  # These convenience methods have implicit severity:
   #
-  # === Description
-  #
-  # Log a message if the given severity is high enough.  This is the generic
-  # logging method.  Users will be more inclined to use #debug, #info, #warn,
-  # #error, and #fatal.
-  #
-  # <b>Message format</b>: +message+ can be any object, but it has to be
-  # converted to a String in order to log it.  Generally, +inspect+ is used
-  # if the given object is not a String.
-  # A special case is an +Exception+ object, which will be printed in detail,
-  # including message, class, and backtrace.  See #msg2str for the
-  # implementation if required.
-  #
-  # === Bugs
-  #
-  # * Logfile is not locked.
-  # * Append open does not need to lock file.
-  # * If the OS supports multi I/O, records possibly may be mixed.
+  # - #debug.
+  # - #info.
+  # - #warn.
+  # - #error.
+  # - #fatal.
+  # - #unknown.
   #
   def add(severity, message = nil, progname = nil)
     severity ||= UNKNOWN
@@ -624,104 +668,71 @@ class Logger
   end
   alias log add
 
+  # Writes the given +msg+ to the log with no formatting;
+  # returns the number of characters written,
+  # or +nil+ if no log device exists:
   #
-  # Dump given message to the log device without any formatting.  If no log
-  # device exists, return +nil+.
+  #   logger = Logger.new($stdout)
+  #   logger << 'My message.' # => 10
+  #
+  # Output:
+  #
+  #   My message.
   #
   def <<(msg)
     @logdev&.write(msg)
   end
 
-  #
-  # Log a +DEBUG+ message.
-  #
-  # See #info for more information.
+  # Equivalent to calling #add with severity <tt>Logger::DEBUG</tt>.
   #
   def debug(progname = nil, &block)
     add(DEBUG, nil, progname, &block)
   end
 
-  #
-  # :call-seq:
-  #   info(message)
-  #   info(progname, &block)
-  #
-  # Log an +INFO+ message.
-  #
-  # +message+:: The message to log; does not need to be a String.
-  # +progname+:: In the block form, this is the #progname to use in the
-  #              log message.  The default can be set with #progname=.
-  # +block+:: Evaluates to the message to log.  This is not evaluated unless
-  #           the logger's level is sufficient to log the message.  This
-  #           allows you to create potentially expensive logging messages that
-  #           are only called when the logger is configured to show them.
-  #
-  # === Examples
-  #
-  #   logger.info("MainApp") { "Received connection from #{ip}" }
-  #   # ...
-  #   logger.info "Waiting for input from user"
-  #   # ...
-  #   logger.info { "User typed #{input}" }
-  #
-  # You'll probably stick to the second form above, unless you want to provide a
-  # program name (which you can do with #progname= as well).
-  #
-  # === Return
-  #
-  # See #add.
+  # Equivalent to calling #add with severity <tt>Logger::INFO</tt>.
   #
   def info(progname = nil, &block)
     add(INFO, nil, progname, &block)
   end
 
-  #
-  # Log a +WARN+ message.
-  #
-  # See #info for more information.
+  # Equivalent to calling #add with severity <tt>Logger::WARN</tt>.
   #
   def warn(progname = nil, &block)
     add(WARN, nil, progname, &block)
   end
 
-  #
-  # Log an +ERROR+ message.
-  #
-  # See #info for more information.
+  # Equivalent to calling #add with severity <tt>Logger::ERROR</tt>.
   #
   def error(progname = nil, &block)
     add(ERROR, nil, progname, &block)
   end
 
-  #
-  # Log a +FATAL+ message.
-  #
-  # See #info for more information.
+  # Equivalent to calling #add with severity <tt>Logger::FATAL</tt>.
   #
   def fatal(progname = nil, &block)
     add(FATAL, nil, progname, &block)
   end
 
-  #
-  # Log an +UNKNOWN+ message.  This will be printed no matter what the logger's
-  # level is.
-  #
-  # See #info for more information.
+  # Equivalent to calling #add with severity <tt>Logger::UNKNOWN</tt>.
   #
   def unknown(progname = nil, &block)
     add(UNKNOWN, nil, progname, &block)
   end
 
+  # Closes the logger; returns +nil+:
   #
-  # Close the logging device.
+  #   logger = Logger.new('t.log')
+  #   logger.close       # => nil
+  #   logger.info('foo') # Prints "log writing failed. closed stream"
   #
+  # Related: Logger#reopen.
   def close
     @logdev&.close
   end
 
 private
 
-  # Severity label for logging (max 5 chars).
+  # \Severity label for logging (max 5 chars).
   SEV_LABEL = %w(DEBUG INFO WARN ERROR FATAL ANY).freeze
 
   def format_severity(severity)
