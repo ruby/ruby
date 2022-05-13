@@ -60,8 +60,24 @@ def gemfile(install = false, options = {}, &gemfile)
         end
       end
 
-      runtime = Bundler::Runtime.new(nil, definition)
-      runtime.setup.require
+      begin
+        runtime = Bundler::Runtime.new(nil, definition).setup
+      rescue Gem::LoadError => e
+        name = e.name
+        version = e.requirement.requirements.first[1]
+        activated_version = Gem.loaded_specs[name].version
+
+        Bundler.ui.info \
+          "The #{name} gem was resolved to #{version}, but #{activated_version} was activated by Bundler while installing it, causing a conflict. " \
+          "Bundler will now retry resolving with #{activated_version} instead."
+
+        builder.instance_eval { gem name, activated_version }
+        definition = builder.to_definition(nil, true)
+
+        retry
+      end
+
+      runtime.require
     end
   end
 
