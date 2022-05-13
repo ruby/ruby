@@ -12,15 +12,17 @@ module Bundler
     end
 
     def for(dependencies, check = false, match_current_platform = false)
-      handled = []
+      # dep.name => [list, of, deps]
+      handled = Hash.new {|h, k| h[k] = [] }
       deps = dependencies.dup
       specs = []
 
       loop do
         break unless dep = deps.shift
-        next if handled.any? {|d| d.name == dep.name && (match_current_platform || d.__platform == dep.__platform) } || dep.name == "bundler"
+        next if handled[dep.name].any? {|d| match_current_platform || d.__platform == dep.__platform } || dep.name == "bundler"
 
-        handled << dep
+        # use a hash here to ensure constant lookup time in the `any?` call above
+        handled[dep.name] << dep
 
         specs_for_dep = spec_for_dependency(dep, match_current_platform)
         if specs_for_dep.any?
