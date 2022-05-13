@@ -5602,7 +5602,7 @@ gc_sweep_start(rb_objspace_t *objspace)
         rb_size_pool_t *size_pool = &size_pools[i];
         rb_heap_t *heap = SIZE_POOL_EDEN_HEAP(size_pool);
 
-        gc_sweep_start_heap(objspace, SIZE_POOL_EDEN_HEAP(size_pool));
+        gc_sweep_start_heap(objspace, heap);
 
 #if USE_RVARGC
         /* We should call gc_sweep_finish_size_pool for size pools with no pages. */
