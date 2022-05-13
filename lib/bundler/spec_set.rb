@@ -24,7 +24,7 @@ module Bundler
 
         specs_for_dep = spec_for_dependency(dep, match_current_platform)
         if specs_for_dep.any?
-          specs += specs_for_dep
+          specs.concat(specs_for_dep)
 
           specs_for_dep.first.dependencies.each do |d|
             next if d.type == :development
