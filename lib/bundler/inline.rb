@@ -50,7 +50,6 @@ def gemfile(install = false, options = {}, &gemfile)
 
     Bundler.settings.temporary(deployment: false, frozen: false) do
       definition = builder.to_definition(nil, true)
-      def definition.lock(*); end
       definition.validate_runtime!
 
       if install || definition.missing_specs?

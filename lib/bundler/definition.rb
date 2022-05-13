@@ -519,7 +519,7 @@ module Bundler
     end
 
     def write_lock(file, preserve_unknown_sections)
-      return if Definition.no_lock
+      return if Definition.no_lock || file.nil?
 
       contents = to_lock
 
