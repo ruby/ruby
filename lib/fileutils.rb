@@ -358,25 +358,54 @@ module FileUtils
   module_function :rmdir
 
   #
-  # :call-seq:
-  #   FileUtils.ln(target, link, force: nil, noop: nil, verbose: nil)
-  #   FileUtils.ln(target,  dir, force: nil, noop: nil, verbose: nil)
-  #   FileUtils.ln(targets, dir, force: nil, noop: nil, verbose: nil)
+  # When +src+ is the path to an existing file
+  # and +dest+ is the path to a non-existent file,
+  # creates a hard link at +dest+ pointing to +src+; returns zero:
   #
-  # In the first form, creates a hard link +link+ which points to +target+.
-  # If +link+ already exists, raises Errno::EEXIST.
-  # But if the +force+ option is set, overwrites +link+.
+  #   Dir.children('tmp0/')                    # => ["t.txt"]
+  #   Dir.children('tmp1/')                    # => []
+  #   FileUtils.ln('tmp0/t.txt', 'tmp1/t.lnk') # => 0
+  #   Dir.children('tmp1/')                    # => ["t.lnk"]
   #
-  #   FileUtils.ln 'gcc', 'cc', verbose: true
-  #   FileUtils.ln '/usr/bin/emacs21', '/usr/bin/emacs'
+  # When +src+ is the path to an existing file
+  # and +dest+ is the path to an existing directory,
+  # creates a hard link in +dest+ pointing to +src+; returns zero:
   #
-  # In the second form, creates a link +dir/target+ pointing to +target+.
-  # In the third form, creates several hard links in the directory +dir+,
-  # pointing to each item in +targets+.
-  # If +dir+ is not a directory, raises Errno::ENOTDIR.
+  #   Dir.children('tmp2')               # => ["t.dat"]
+  #   Dir.children('tmp3')               # => []
+  #   FileUtils.ln('tmp2/t.dat', 'tmp3') # => 0
+  #   Dir.children('tmp3')               # => ["t.dat"]
   #
-  #   FileUtils.cd '/sbin'
-  #   FileUtils.ln %w(cp mv mkdir), '/bin'   # Now /sbin/cp and /bin/cp are linked.
+  # When +src+ is an array of paths to existing files
+  # and +dest+ is the path to an existing directory,
+  # then for each path +target+ in +src+,
+  # creates a hard link in +dest+ pointing to +target+;
+  # returns +src+:
+  #
+  #   Dir.children('tmp4/')                               # => []
+  #   FileUtils.ln(['tmp0/t.txt', 'tmp2/t.dat'], 'tmp4/') # => ["tmp0/t.txt", "tmp2/t.dat"]
+  #   Dir.children('tmp4/')                               # => ["t.dat", "t.txt"]
+  #
+  # Keyword arguments:
+  #
+  # - <tt>force: true</tt> - overwrites +dest+ if it exists.
+  # - <tt>noop: true</tt> - does not create links.
+  # - <tt>verbose: true</tt> - prints an equivalent command:
+  #
+  #     FileUtils.ln('tmp0/t.txt', 'tmp1/t.lnk', verbose: true)
+  #     FileUtils.ln('tmp2/t.dat', 'tmp3', verbose: true)
+  #     FileUtils.ln(['tmp0/t.txt', 'tmp2/t.dat'], 'tmp4/', verbose: true)
+  #
+  #   Output:
+  #
+  #     ln tmp0/t.txt tmp1/t.lnk
+  #     ln tmp2/t.dat tmp3
+  #     ln tmp0/t.txt tmp2/t.dat tmp4/
+  #
+  # Raises an exception if +dest+ is the path to an existing file
+  # and keyword argument +force+ is not +true+.
+  #
+  # FileUtils#link is an alias for FileUtils#ln.
   #
   def ln(src, dest, force: nil, noop: nil, verbose: nil)
     fu_output_message "ln#{force ? ' -f' : ''} #{[src,dest].flatten.join ' '}" if verbose
