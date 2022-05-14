@@ -2141,22 +2141,6 @@ autoload_i_mark(void *ptr)
     struct autoload_data_i *p = ptr;
 
     rb_gc_mark_movable(p->feature);
-
-    /* allow GC to free us if no modules refer to this via autoload_const.ad */
-    if (ccan_list_empty(&p->constants)) {
-        rb_hash_delete(autoload_featuremap, p->feature);
-    }
-}
-
-static void
-autoload_i_free(void *ptr)
-{
-    struct autoload_data_i *p = ptr;
-
-    /* we may leak some memory at VM shutdown time, no big deal */
-    if (ccan_list_empty(&p->constants)) {
-	xfree(p);
-    }
 }
 
 static size_t
@@ -2167,7 +2151,7 @@ autoload_i_memsize(const void *ptr)
 
 static const rb_data_type_t autoload_data_i_type = {
     "autoload_i",
-    {autoload_i_mark, autoload_i_free, autoload_i_memsize, autoload_i_compact},
+    {autoload_i_mark, ruby_xfree, autoload_i_memsize, autoload_i_compact},
     0, 0, RUBY_TYPED_FREE_IMMEDIATELY
 };
 
@@ -2193,14 +2177,6 @@ autoload_c_mark(void *ptr)
     rb_gc_mark_movable(ac->file);
 }
 
-static void
-autoload_c_free(void *ptr)
-{
-    struct autoload_const *ac = ptr;
-    ccan_list_del(&ac->cnode);
-    xfree(ac);
-}
-
 static size_t
 autoload_c_memsize(const void *ptr)
 {
@@ -2209,7 +2185,7 @@ autoload_c_memsize(const void *ptr)
 
 static const rb_data_type_t autoload_const_type = {
     "autoload_const",
-    {autoload_c_mark, autoload_c_free, autoload_c_memsize, autoload_c_compact,},
+    {autoload_c_mark, ruby_xfree, autoload_c_memsize, autoload_c_compact,},
     0, 0, RUBY_TYPED_FREE_IMMEDIATELY
 };
 
