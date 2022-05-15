@@ -208,6 +208,8 @@ The following deprecated APIs are removed.
 
 ## Implementation improvements
 
+* Fixed several race conditions in `Kernel#autoload`. [[Bug #18782]]
+
 ## JIT
 
 ### MJIT
@@ -253,3 +255,4 @@ The following deprecated APIs are removed.
 [Feature #18598]: https://bugs.ruby-lang.org/issues/18598
 [Bug #18625]:     https://bugs.ruby-lang.org/issues/18625
 [Bug #18633]:     https://bugs.ruby-lang.org/issues/18633
+[Bug #18782]:     https://bugs.ruby-lang.org/issues/18782

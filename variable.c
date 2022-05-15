@@ -46,7 +46,16 @@ typedef void rb_gvar_compact_t(void *var);
 
 static struct rb_id_table *rb_global_tbl;
 static ID autoload, classpath, tmp_classpath;
-static VALUE autoload_featuremap; /* feature => autoload_i */
+
+// This hash table maps file paths to loadable features. We use this to track
+// autoload state until it's no longer needed.
+// feature (file path) => struct autoload_i
+static VALUE autoload_featuremap;
+
+// This mutex is used to protect autoloading state. We use a global mutex which
+// is held until a per-feature mutex can be created. This ensures there are no
+// race conditions relating to autoload state.
+static VALUE autoload_mutex;
 
 static void check_before_mod_set(VALUE, ID, VALUE, const char *);
 static void setup_const_entry(rb_const_entry_t *, VALUE, VALUE, rb_const_flag_t);
@@ -72,6 +81,14 @@ Init_var_tables(void)
     classpath = rb_intern_const("__classpath__");
     /* __tmp_classpath__: temporary class path which contains anonymous names */
     tmp_classpath = rb_intern_const("__tmp_classpath__");
+
+    autoload_mutex = rb_mutex_new();
+    rb_obj_hide(autoload_mutex);
+    rb_gc_register_mark_object(autoload_mutex);
+
+    autoload_featuremap = rb_ident_hash_new();
+    rb_obj_hide(autoload_featuremap);
+    rb_gc_register_mark_object(autoload_featuremap);
 }
 
 static inline bool
@@ -2141,22 +2158,6 @@ autoload_i_mark(void *ptr)
     struct autoload_data_i *p = ptr;
 
     rb_gc_mark_movable(p->feature);
-
-    /* allow GC to free us if no modules refer to this via autoload_const.ad */
-    if (ccan_list_empty(&p->constants)) {
-        rb_hash_delete(autoload_featuremap, p->feature);
-    }
-}
-
-static void
-autoload_i_free(void *ptr)
-{
-    struct autoload_data_i *p = ptr;
-
-    /* we may leak some memory at VM shutdown time, no big deal */
-    if (ccan_list_empty(&p->constants)) {
-	xfree(p);
-    }
 }
 
 static size_t
@@ -2167,7 +2168,7 @@ autoload_i_memsize(const void *ptr)
 
 static const rb_data_type_t autoload_data_i_type = {
     "autoload_i",
-    {autoload_i_mark, autoload_i_free, autoload_i_memsize, autoload_i_compact},
+    {autoload_i_mark, ruby_xfree, autoload_i_memsize, autoload_i_compact},
     0, 0, RUBY_TYPED_FREE_IMMEDIATELY
 };
 
@@ -2193,14 +2194,6 @@ autoload_c_mark(void *ptr)
     rb_gc_mark_movable(ac->file);
 }
 
-static void
-autoload_c_free(void *ptr)
-{
-    struct autoload_const *ac = ptr;
-    ccan_list_del(&ac->cnode);
-    xfree(ac);
-}
-
 static size_t
 autoload_c_memsize(const void *ptr)
 {
@@ -2209,7 +2202,7 @@ autoload_c_memsize(const void *ptr)
 
 static const rb_data_type_t autoload_const_type = {
     "autoload_const",
-    {autoload_c_mark, autoload_c_free, autoload_c_memsize, autoload_c_compact,},
+    {autoload_c_mark, ruby_xfree, autoload_c_memsize, autoload_c_compact,},
     0, 0, RUBY_TYPED_FREE_IMMEDIATELY
 };
 
@@ -2257,18 +2250,18 @@ rb_autoload_str(VALUE mod, ID id, VALUE file)
 
     Check_Type(file, T_STRING);
     if (!RSTRING_LEN(file)) {
-	rb_raise(rb_eArgError, "empty file name");
+        rb_raise(rb_eArgError, "empty file name");
     }
 
     ce = rb_const_lookup(mod, id);
     if (ce && ce->value != Qundef) {
-	return;
+        return;
     }
 
     const_set(mod, id, Qundef);
     tbl = RCLASS_IV_TBL(mod);
     if (tbl && st_lookup(tbl, (st_data_t)autoload, &av)) {
-	tbl = check_autoload_table((VALUE)av);
+        tbl = check_autoload_table((VALUE)av);
     }
     else {
 	if (!tbl) tbl = RCLASS_IV_TBL(mod) = st_init_numtable();
@@ -2279,11 +2272,6 @@ rb_autoload_str(VALUE mod, ID id, VALUE file)
     }
 
     file = rb_fstring(file);
-    if (!autoload_featuremap) {
-        autoload_featuremap = rb_ident_hash_new();
-        rb_obj_hide(autoload_featuremap);
-        rb_gc_register_mark_object(autoload_featuremap);
-    }
     ad = rb_hash_aref(autoload_featuremap, file);
     if (NIL_P(ad)) {
         ad = TypedData_Make_Struct(0, struct autoload_data_i,
@@ -2406,9 +2394,11 @@ rb_autoloading_value(VALUE mod, ID id, VALUE* value, rb_const_flag_t *flag)
     if (value) {
         *value = ac->value;
     }
+
     if (flag) {
         *flag = ac->flag;
     }
+
     return TRUE;
 }
 
@@ -2417,6 +2407,9 @@ autoload_by_current(struct autoload_data_i *ele) {
     return ele->state && ele->state->mutex != Qnil && rb_mutex_owned_p(ele->state->mutex);
 }
 
+// If there is an autoloading constant and it has been set by the current
+// execution context, return it. This allows threads which are loading code to
+// refer to their own autoloaded constants.
 struct autoload_const *
 autoloading_const_entry(VALUE mod, ID id)
 {
@@ -2424,10 +2417,13 @@ autoloading_const_entry(VALUE mod, ID id)
     struct autoload_data_i *ele;
     struct autoload_const *ac;
 
+    // Find the autoloading state:
     if (!load || !(ele = get_autoload_data(load, &ac))) {
+        // Couldn't be found:
         return 0;
     }
 
+    // Check if it's being loaded by the current thread/fiber:
     if (autoload_by_current(ele)) {
         if (ac->value != Qundef) {
             return ac;
@@ -2442,13 +2438,17 @@ autoload_defined_p(VALUE mod, ID id)
 {
     rb_const_entry_t *ce = rb_const_lookup(mod, id);
 
+    // If there is no constant or the constant is not undefined (special marker for autoloading):
     if (!ce || ce->value != Qundef) {
-	return 0;
+        // We are not autoloading:
+        return 0;
     }
+
+    // Otherwise check if there is an autoload in flight right now:
     return !rb_autoloading_value(mod, id, NULL, NULL);
 }
 
-static void const_tbl_update(struct autoload_const *);
+static void const_tbl_update(struct autoload_const *, int);
 
 static VALUE
 autoload_const_set(struct autoload_const *ac)
@@ -2459,7 +2459,7 @@ autoload_const_set(struct autoload_const *ac)
 
     RB_VM_LOCK_ENTER();
     {
-        const_tbl_update(ac);
+        const_tbl_update(ac, true);
     }
     RB_VM_LOCK_LEAVE();
 
@@ -2490,50 +2490,65 @@ autoload_reset(VALUE arg)
     ele = rb_check_typeddata(ac->ad, &autoload_data_i_type);
     VALUE mutex = state->mutex;
 
+    // If we are the main thread to execute...
     if (ele->state == state) {
+        // Prepare to update the state of the world:
+        rb_mutex_lock(autoload_mutex);
+
+        // At the last, move a value defined in autoload to constant table:
+        if (RTEST(state->result)) {
+            // Can help to test race conditions:
+            // rb_thread_schedule();
+
+            struct autoload_const *next;
+
+            ccan_list_for_each_safe(&ele->constants, ac, next, cnode) {
+                if (ac->value != Qundef) {
+                    autoload_const_set(ac);
+                }
+            }
+        }
+
+        // Reset the autoload state - i.e. clear our state from the autoload data:
         ele->state = 0;
         ele->fork_gen = 0;
+
+        rb_mutex_unlock(autoload_mutex);
     }
 
     rb_mutex_unlock(mutex);
 
-    /* At the last, move a value defined in autoload to constant table */
-    if (RTEST(state->result)) {
-        struct autoload_const *next;
-
-        ccan_list_for_each_safe(&ele->constants, ac, next, cnode) {
-            if (ac->value != Qundef) {
-                autoload_const_set(ac);
-            }
-        }
-    }
-
     return 0; /* ignored */
 }
 
-VALUE
-rb_autoload_load(VALUE mod, ID id)
+struct autoload_load_arguments {
+    VALUE module;
+    ID name;
+    struct autoload_state *state;
+};
+
+static VALUE
+autoload_load_synchronized(VALUE _arguments)
 {
+    struct autoload_load_arguments *arguments = (struct autoload_load_arguments*)_arguments;
+
     VALUE load;
     const char *loading = 0, *src;
     struct autoload_data_i *ele;
     struct autoload_const *ac;
-    struct autoload_state state;
-    int flag = -1;
-    rb_const_entry_t *ce;
 
-    if (!autoload_defined_p(mod, id)) return Qfalse;
-    load = check_autoload_required(mod, id, &loading);
-    if (!load) return Qfalse;
-    src = rb_sourcefile();
-    if (src && loading && strcmp(src, loading) == 0) return Qfalse;
-
-    if (UNLIKELY(!rb_ractor_main_p())) {
-        rb_raise(rb_eRactorUnsafeError, "require by autoload on non-main Ractor is not supported (%s)", rb_id2name(id));
+    if (!autoload_defined_p(arguments->module, arguments->name)) {
+        return Qfalse;
     }
 
-    if ((ce = rb_const_lookup(mod, id))) {
-        flag = ce->flag & (CONST_DEPRECATED | CONST_VISIBILITY_MASK);
+    load = check_autoload_required(arguments->module, arguments->name, &loading);
+    if (!load) {
+        return Qfalse;
+    }
+
+    src = rb_sourcefile();
+    if (src && loading && strcmp(src, loading) == 0) {
+        return Qfalse;
     }
 
     /* set ele->state for a marker of autoloading thread */
@@ -2541,34 +2556,71 @@ rb_autoload_load(VALUE mod, ID id)
         return Qfalse;
     }
 
-    state.ac = ac;
+    struct autoload_state * state = arguments->state;
+    state->ac = ac;
 
     if (!ele->state) {
-        ele->state = &state;
-        ele->state->mutex = rb_mutex_new();
+        state->mutex = rb_mutex_new();
         ele->fork_gen = GET_VM()->fork_gen;
+        ele->state = state;
     }
     else if (rb_mutex_owned_p(ele->state->mutex)) {
         return Qfalse;
     } else {
-        state.mutex = ele->state->mutex;
+        state->mutex = ele->state->mutex;
     }
 
-    // Block all other threads that come here until we are done in autoload_reset. At that point, all threads can continue. Current implementation prevents threads from executing in parallel even though at that point there are no data races.
+    return load;
+}
+
+VALUE
+rb_autoload_load(VALUE module, ID name)
+{
+    rb_const_entry_t *ce = rb_const_lookup(module, name);
+
+    // We bail out as early as possible without any synchronisation:
+    if (!ce || ce->value != Qundef) {
+        return Qfalse;
+    }
+
+    // At this point, we assume there might be autoloading.
+
+    if (UNLIKELY(!rb_ractor_main_p())) {
+        rb_raise(rb_eRactorUnsafeError, "require by autoload on non-main Ractor is not supported (%s)", rb_id2name(name));
+    }
+
+    // This state is stored on thes stack and is used during the autoload process.
+    struct autoload_state state = {.mutex = Qnil, .result = Qfalse};
+    struct autoload_load_arguments arguments = {.module = module, .name = name, .state = &state};
+
+    // Figure out whether we can autoload the named constant:
+    VALUE load = rb_mutex_synchronize(autoload_mutex, autoload_load_synchronized, (VALUE)&arguments);
+
+    // This confirms whether autoloading is required or not:
+    if (load == Qfalse) return load;
+
+    // Every thread that tries to autoload a variable will stop here:
     rb_mutex_lock(state.mutex);
 
-    /* autoload_data_i can be deleted by another thread while require */
-    state.result = Qfalse;
+    // Every thread goes through this process, but only one of them will ultimately require the file.
+
+    int flag = 0;
+
+    // Capture any flags on the specified "Qundef" constant so we can re-apply them later:
+    if (ce) {
+        flag = ce->flag & (CONST_DEPRECATED | CONST_VISIBILITY_MASK);
+    }
+
     VALUE result = rb_ensure(autoload_require, (VALUE)&state, autoload_reset, (VALUE)&state);
 
-    if (!(ce = rb_const_lookup(mod, id)) || ce->value == Qundef) {
-        rb_const_remove(mod, id);
+    // If we did not apply the constant after requiring it, remove it:
+    if (!(ce = rb_const_lookup(module, name)) || ce->value == Qundef) {
+        rb_const_remove(module, name);
     }
     else if (flag > 0) {
+        // Re-apply any flags:
         ce->flag |= flag;
     }
-
-    RB_GC_GUARD(load);
 
     return result;
 }
@@ -3114,7 +3166,7 @@ const_set(VALUE klass, ID id, VALUE val)
                 .value = val, .flag = CONST_PUBLIC,
                 /* fill the rest with 0 */
             };
-            const_tbl_update(&ac);
+            const_tbl_update(&ac, false);
         }
     }
     RB_VM_LOCK_LEAVE();
@@ -3172,7 +3224,7 @@ current_autoload_data(VALUE mod, ID id, struct autoload_const **acp)
 }
 
 static void
-const_tbl_update(struct autoload_const *ac)
+const_tbl_update(struct autoload_const *ac, int autoload_force)
 {
     VALUE value;
     VALUE klass = ac->mod;
@@ -3187,7 +3239,7 @@ const_tbl_update(struct autoload_const *ac)
         if (ce->value == Qundef) {
             struct autoload_data_i *ele = current_autoload_data(klass, id, &ac);
 
-            if (ele) {
+            if (!autoload_force && ele) {
                 rb_clear_constant_cache_for_id(id);
 
                 ac->value = val; /* autoload_i is non-WB-protected */
