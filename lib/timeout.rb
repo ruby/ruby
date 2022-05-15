@@ -67,11 +67,13 @@ module Timeout
       @message = message
 
       @mutex = Mutex.new
-      @done = false
+      @done = false # protected by @mutex
     end
 
     def done?
-      @done
+      @mutex.synchronize do
+        @done
+      end
     end
 
     def expired?(now)
