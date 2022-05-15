@@ -139,4 +139,24 @@ class TestTimeout < Test::Unit::TestCase
     }
     assert(ok, bug11344)
   end
+
+  def test_fork
+    omit 'fork not supported' unless Process.respond_to?(:fork)
+    r, w = IO.pipe
+    pid = fork do
+      r.close
+      begin
+        r = Timeout.timeout(0.01) { sleep 5 }
+        w.write r.inspect
+      rescue Timeout::Error
+        w.write 'timeout'
+      ensure
+        w.close
+      end
+    end
+    w.close
+    Process.wait pid
+    assert_equal 'timeout', r.read
+    r.close
+  end
 end

@@ -95,30 +95,37 @@ module Timeout
   end
   private_constant :Request
 
-  def self.ensure_timeout_thread_created
-    unless @timeout_thread
-      TIMEOUT_THREAD_MUTEX.synchronize do
-        @timeout_thread ||= Thread.new do
-          requests = []
-          while true
-            until QUEUE.empty? and !requests.empty? # wait to have at least one request
-              req = QUEUE.pop
-              requests << req unless req.done?
-            end
-            closest_deadline = requests.min_by(&:deadline).deadline
+  def self.create_timeout_thread
+    Thread.new do
+      requests = []
+      while true
+        until QUEUE.empty? and !requests.empty? # wait to have at least one request
+          req = QUEUE.pop
+          requests << req unless req.done?
+        end
+        closest_deadline = requests.min_by(&:deadline).deadline
 
-            now = 0.0
-            QUEUE_MUTEX.synchronize do
-              while (now = Process.clock_gettime(Process::CLOCK_MONOTONIC)) < closest_deadline and QUEUE.empty?
-                CONDVAR.wait(QUEUE_MUTEX, closest_deadline - now)
-              end
-            end
-
-            requests.each do |req|
-              req.interrupt if req.expired?(now)
-            end
-            requests.reject!(&:done?)
+        now = 0.0
+        QUEUE_MUTEX.synchronize do
+          while (now = Process.clock_gettime(Process::CLOCK_MONOTONIC)) < closest_deadline and QUEUE.empty?
+            CONDVAR.wait(QUEUE_MUTEX, closest_deadline - now)
           end
+        end
+
+        requests.each do |req|
+          req.interrupt if req.expired?(now)
+        end
+        requests.reject!(&:done?)
+      end
+    end
+  end
+  private_class_method :create_timeout_thread
+
+  def self.ensure_timeout_thread_created
+    unless @timeout_thread and @timeout_thread.alive?
+      TIMEOUT_THREAD_MUTEX.synchronize do
+        unless @timeout_thread and @timeout_thread.alive?
+          @timeout_thread = create_timeout_thread
         end
       end
     end
