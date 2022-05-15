@@ -46,7 +46,11 @@ typedef void rb_gvar_compact_t(void *var);
 
 static struct rb_id_table *rb_global_tbl;
 static ID autoload, classpath, tmp_classpath;
-static VALUE autoload_featuremap; /* feature => autoload_i */
+
+// This hash table maps file paths to loadable features. We use this to track
+// autoload state until it's no longer needed.
+// feature (file path) => struct autoload_i
+static VALUE autoload_featuremap;
 
 // This mutex is used to protect autoloading state. We use a global mutex which
 // is held until a per-feature mutex can be created. This ensures there are no
@@ -79,7 +83,12 @@ Init_var_tables(void)
     tmp_classpath = rb_intern_const("__tmp_classpath__");
 
     autoload_mutex = rb_mutex_new();
+    rb_obj_hide(autoload_mutex);
     rb_gc_register_mark_object(autoload_mutex);
+
+    autoload_featuremap = rb_ident_hash_new();
+    rb_obj_hide(autoload_featuremap);
+    rb_gc_register_mark_object(autoload_featuremap);
 }
 
 static inline bool
@@ -2263,11 +2272,6 @@ rb_autoload_str(VALUE mod, ID id, VALUE file)
     }
 
     file = rb_fstring(file);
-    if (!autoload_featuremap) {
-        autoload_featuremap = rb_ident_hash_new();
-        rb_obj_hide(autoload_featuremap);
-        rb_gc_register_mark_object(autoload_featuremap);
-    }
     ad = rb_hash_aref(autoload_featuremap, file);
     if (NIL_P(ad)) {
         ad = TypedData_Make_Struct(0, struct autoload_data_i,
