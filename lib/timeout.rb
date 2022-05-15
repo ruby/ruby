@@ -77,7 +77,7 @@ module Timeout
     end
 
     def expired?(now)
-      now >= @deadline and !done?
+      now >= @deadline
     end
 
     def interrupt
