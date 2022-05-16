@@ -392,7 +392,8 @@ impl Assembler
         Target::LabelIdx(insn_idx)
     }
 
-    fn split_insns(&mut self) -> Assembler
+    fn transform_insns<F>(&mut self, mut map_insn: F) -> Assembler
+        where F: FnMut(&mut Assembler, Op, Vec<Opnd>, Option<Target>)
     {
         let mut asm = Assembler::new();
 
@@ -410,26 +411,10 @@ impl Assembler
             }
         }
 
-        for insn in self.insns.drain(..) {
+        for (_, insn) in self.insns.drain(..).enumerate() {
             let opnds: Vec<Opnd> = insn.opnds.into_iter().map(|opnd| map_opnd(opnd, &mut indices)).collect();
 
-            match insn.op {
-                // Check for Add, Sub, or Mov instructions with two memory operands.
-                Op::Add | Op::Sub | Op::Mov => {
-                    match opnds.as_slice() {
-                        [Opnd::Mem(_), Opnd::Mem(_)] => {
-                            let output = asm.push_insn(Op::Load, vec![opnds[0]], None);
-                            asm.push_insn(insn.op, vec![output, opnds[1]], None);
-                        },
-                        _ => {
-                            asm.push_insn(insn.op, opnds, insn.target);
-                        }
-                    }
-                },
-                _ => {
-                    asm.push_insn(insn.op, opnds, insn.target);
-                }
-            };
+            map_insn(&mut asm, insn.op, opnds, insn.target);
 
             // Here we're assuming that if we've pushed multiple instructions,
             // the output that we're using is still the final instruction that
@@ -438,6 +423,29 @@ impl Assembler
         }
 
         asm
+    }
+
+    fn split_insns(&mut self) -> Assembler
+    {
+        self.transform_insns(|asm, op, opnds, target| {
+            match op {
+                // Check for Add, Sub, or Mov instructions with two memory operands.
+                Op::Add | Op::Sub | Op::Mov => {
+                    match opnds.as_slice() {
+                        [Opnd::Mem(_), Opnd::Mem(_)] => {
+                            let output = asm.push_insn(Op::Load, vec![opnds[0]], None);
+                            asm.push_insn(op, vec![output, opnds[1]], None);
+                        },
+                        _ => {
+                            asm.push_insn(op, opnds, target);
+                        }
+                    }
+                },
+                _ => {
+                    asm.push_insn(op, opnds, target);
+                }
+            };
+        })
     }
 
     /// Sets the out field on the various instructions that require allocated
