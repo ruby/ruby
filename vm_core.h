@@ -56,19 +56,24 @@
 #if VM_CHECK_MODE > 0
 #define VM_ASSERT(expr) RUBY_ASSERT_MESG_WHEN(VM_CHECK_MODE > 0, expr, #expr)
 #define VM_UNREACHABLE(func) rb_bug(#func ": unreachable")
-#define RUBY_VM_CRITICAL_SECTION
+#define RUBY_ASSERT_CRITICAL_SECTION
+#define RUBY_DEBUG_THREAD_SCHEDULE() rb_thread_schedule()
 #else
 #define VM_ASSERT(expr) ((void)0)
 #define VM_UNREACHABLE(func) UNREACHABLE
+#define RUBY_DEBUG_THREAD_SCHEDULE()
 #endif
 
-#if defined(RUBY_VM_CRITICAL_SECTION)
-extern int rb_vm_critical_section_entered;
-#define RUBY_VM_CRITICAL_SECTION_ENTER rb_vm_critical_section_entered += 1;
-#define RUBY_VM_CRITICAL_SECTION_EXIT rb_vm_critical_section_entered -= 1;
+#define RUBY_ASSERT_MUTEX_OWNED(mutex) VM_ASSERT(rb_mutex_owned_p(mutex))
+
+#if defined(RUBY_ASSERT_CRITICAL_SECTION)
+// TODO add documentation
+extern int ruby_assert_critical_section_entered;
+#define RUBY_ASSERT_CRITICAL_SECTION_ENTER() do{ruby_assert_critical_section_entered += 1;}while(false)
+#define RUBY_ASSERT_CRITICAL_SECTION_LEAVE() do{VM_ASSERT(ruby_assert_critical_section_entered > 0);ruby_assert_critical_section_entered -= 1;}while(false)
 #else
-#define RUBY_VM_CRITICAL_SECTION_ENTER
-#define RUBY_VM_CRITICAL_SECTION_EXIT
+#define RUBY_ASSERT_CRITICAL_SECTION_ENTER()
+#define RUBY_ASSERT_CRITICAL_SECTION_LEAVE()
 #endif
 
 #if defined(__wasm__) && !defined(__EMSCRIPTEN__)
@@ -1975,9 +1980,14 @@ void rb_vm_cond_timedwait(rb_vm_t *vm, rb_nativethread_cond_t *cond, unsigned lo
 static inline void
 rb_vm_check_ints(rb_execution_context_t *ec)
 {
+#ifdef RUBY_ASSERT_CRITICAL_SECTION
+    VM_ASSERT(ruby_assert_critical_section_entered == 0);
+#endif
+
     VM_ASSERT(ec == GET_EC());
+
     if (UNLIKELY(RUBY_VM_INTERRUPTED_ANY(ec))) {
-	rb_threadptr_execute_interrupts(rb_ec_thread_ptr(ec), 0);
+        rb_threadptr_execute_interrupts(rb_ec_thread_ptr(ec), 0);
     }
 }
 
