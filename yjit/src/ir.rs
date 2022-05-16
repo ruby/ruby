@@ -414,7 +414,19 @@ impl Assembler
         for (_, insn) in self.insns.drain(..).enumerate() {
             let opnds: Vec<Opnd> = insn.opnds.into_iter().map(|opnd| map_opnd(opnd, &mut indices)).collect();
 
-            map_insn(&mut asm, insn.op, opnds, insn.target);
+            // For each instruction, either handle it here or allow the map_insn
+            // callback to handle it.
+            match insn.op {
+                Op::Comment => {
+                    asm.comment(insn.text.unwrap().as_str());
+                },
+                Op::Label => {
+                    asm.label(insn.text.unwrap().as_str());
+                },
+                _ => {
+                    map_insn(&mut asm, insn.op, opnds, insn.target);
+                }
+            };
 
             // Here we're assuming that if we've pushed multiple instructions,
             // the output that we're using is still the final instruction that
