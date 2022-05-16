@@ -48,6 +48,9 @@ pub enum Op
     // Low-level instructions
     //
 
+    // A low-level instruction that loads a value into a register.
+    Load,
+
     // A low-level mov instruction. It accepts two operands.
     Mov,
 
@@ -389,10 +392,83 @@ impl Assembler
         Target::LabelIdx(insn_idx)
     }
 
+    /// Transform input instructions, consumes the input assembler
+    fn transform_insns<F>(mut self, mut map_insn: F) -> Assembler
+        where F: FnMut(&mut Assembler, usize, Op, Vec<Opnd>, Option<Target>)
+    {
+        let mut asm = Assembler::new();
+
+        // indices maps from the old instruction index to the new instruction
+        // index.
+        let mut indices: Vec<usize> = Vec::default();
+
+        // Map an operand to the next set of instructions by correcting previous
+        // InsnOut indices.
+        fn map_opnd(opnd: Opnd, indices: &mut Vec<usize>) -> Opnd {
+            if let Opnd::InsnOut(index) = opnd {
+                Opnd::InsnOut(indices[index])
+            } else {
+                opnd
+            }
+        }
+
+        for (index, insn) in self.insns.drain(..).enumerate() {
+            let opnds: Vec<Opnd> = insn.opnds.into_iter().map(|opnd| map_opnd(opnd, &mut indices)).collect();
+
+            // For each instruction, either handle it here or allow the map_insn
+            // callback to handle it.
+            match insn.op {
+                Op::Comment => {
+                    asm.comment(insn.text.unwrap().as_str());
+                },
+                Op::Label => {
+                    asm.label(insn.text.unwrap().as_str());
+                },
+                _ => {
+                    map_insn(&mut asm, index, insn.op, opnds, insn.target);
+                }
+            };
+
+            // Here we're assuming that if we've pushed multiple instructions,
+            // the output that we're using is still the final instruction that
+            // was pushed.
+            indices.push(asm.insns.len() - 1);
+        }
+
+        asm
+    }
+
+    /// Transforms the instructions by splitting instructions that cannot be
+    /// represented in the final architecture into multiple instructions that
+    /// can.
+    fn split_insns(self) -> Assembler
+    {
+        self.transform_insns(|asm, _, op, opnds, target| {
+            match op {
+                // Check for Add, Sub, or Mov instructions with two memory
+                // operands.
+                Op::Add | Op::Sub | Op::Mov => {
+                    match opnds.as_slice() {
+                        [Opnd::Mem(_), Opnd::Mem(_)] => {
+                            let output = asm.push_insn(Op::Load, vec![opnds[0]], None);
+                            asm.push_insn(op, vec![output, opnds[1]], None);
+                        },
+                        _ => {
+                            asm.push_insn(op, opnds, target);
+                        }
+                    }
+                },
+                _ => {
+                    asm.push_insn(op, opnds, target);
+                }
+            };
+        })
+    }
+
     /// Sets the out field on the various instructions that require allocated
     /// registers because their output is used as the operand on a subsequent
     /// instruction. This is our implementation of the linear scan algorithm.
-    fn alloc_regs(&mut self, regs: Vec<Reg>)
+    fn alloc_regs(mut self, regs: Vec<Reg>) -> Assembler
     {
         // First, create the pool of registers.
         let mut pool: u32 = 0;
@@ -418,21 +494,12 @@ impl Assembler
             *pool &= !(1 << reg_index);
         }
 
-        // Next, create the next list of instructions.
-        let mut next_insns: Vec<Insn> = Vec::default();
-
-        // Finally, walk the existing instructions and allocate.
-        for (index, mut insn) in self.insns.drain(..).enumerate() {
-            if self.live_ranges[index] != index {
-                // This instruction is used by another instruction, so we need
-                // to allocate a register for it.
-                insn.out = Opnd::Reg(alloc_reg(&mut pool, &regs));
-            }
-
+        let live_ranges: Vec<usize> = std::mem::take(&mut self.live_ranges);
+        let result = self.transform_insns(|asm, index, op, opnds, target| {
             // Check if this is the last instruction that uses an operand that
             // spans more than one instruction. In that case, return the
             // allocated register to the pool.
-            for opnd in &insn.opnds {
+            for opnd in &opnds {
                 if let Opnd::InsnOut(idx) = opnd {
                     // Since we have an InsnOut, we know it spans more that one
                     // instruction.
@@ -442,8 +509,8 @@ impl Assembler
                     // We're going to check if this is the last instruction that
                     // uses this operand. If it is, we can return the allocated
                     // register to the pool.
-                    if self.live_ranges[start_index] == index {
-                        if let Opnd::Reg(reg) = next_insns[start_index].out {
+                    if live_ranges[start_index] == index {
+                        if let Opnd::Reg(reg) = asm.insns[start_index].out {
                             dealloc_reg(&mut pool, &regs, &reg);
                         } else {
                             unreachable!();
@@ -452,18 +519,25 @@ impl Assembler
                 }
             }
 
-            // Push the instruction onto the next list of instructions now that
-            // we have checked everything we needed to check.
-            next_insns.push(insn);
-        }
+            asm.push_insn(op, opnds, target);
+
+            if live_ranges[index] != index {
+                // This instruction is used by another instruction, so we need
+                // to allocate a register for it.
+                let length = asm.insns.len();
+                asm.insns[length - 1].out = Opnd::Reg(alloc_reg(&mut pool, &regs));
+            }
+        });
 
         assert_eq!(pool, 0, "Expected all registers to be returned to the pool");
-        self.insns = next_insns;
+        result
     }
 
     // Optimize and compile the stored instructions
-    fn compile()
+    fn compile(self, regs: Vec<Reg>) -> Assembler
     {
+        self.split_insns().alloc_regs(regs)
+
         // TODO: splitting pass, split_insns()
 
         // Peephole optimizations
@@ -583,6 +657,23 @@ mod tests {
     }
 
     #[test]
+    fn test_split_insns() {
+        let mut asm = Assembler::new();
+
+        let reg1 = Reg { reg_no: 0, num_bits: 64, special: false };
+        let reg2 = Reg { reg_no: 1, num_bits: 64, special: false };
+
+        asm.add(
+            Opnd::mem(64, Opnd::Reg(reg1), 0),
+            Opnd::mem(64, Opnd::Reg(reg2), 0)
+        );
+
+        let result = asm.split_insns();
+        assert_eq!(result.insns.len(), 2);
+        assert_eq!(result.insns[0].op, Op::Load);
+    }
+
+    #[test]
     fn test_alloc_regs() {
         let mut asm = Assembler::new();
 
@@ -609,12 +700,12 @@ mod tests {
         // Here we're going to allocate the registers.
         let reg1 = Reg { reg_no: 0, num_bits: 64, special: false };
         let reg2 = Reg { reg_no: 1, num_bits: 64, special: false };
-        asm.alloc_regs(vec![reg1, reg2]);
+        let result = asm.alloc_regs(vec![reg1, reg2]);
 
         // Now we're going to verify that the out field has been appropriately
         // updated for each of the instructions that needs it.
-        assert_eq!(asm.insns[0].out, Opnd::Reg(reg1));
-        assert_eq!(asm.insns[2].out, Opnd::Reg(reg2));
-        assert_eq!(asm.insns[5].out, Opnd::Reg(reg1));
+        assert_eq!(result.insns[0].out, Opnd::Reg(reg1));
+        assert_eq!(result.insns[2].out, Opnd::Reg(reg2));
+        assert_eq!(result.insns[5].out, Opnd::Reg(reg1));
     }
 }
