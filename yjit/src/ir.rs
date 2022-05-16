@@ -48,6 +48,9 @@ pub enum Op
     // Low-level instructions
     //
 
+    // A low-level instruction that loads a value into a register.
+    Load,
+
     // A low-level mov instruction. It accepts two operands.
     Mov,
 
@@ -364,6 +367,7 @@ impl Assembler
             op: Op::Comment,
             text: Some(text.to_owned()),
             opnds: vec![],
+            out: Opnd::None,
             target: None,
             pos: None
         };
@@ -386,6 +390,54 @@ impl Assembler
         self.insns.push(insn);
 
         Target::LabelIdx(insn_idx)
+    }
+
+    fn split_insns(&mut self) -> Assembler
+    {
+        let mut asm = Assembler::new();
+
+        // indices maps from the old instruction index to the new instruction
+        // index.
+        let mut indices: Vec<usize> = Vec::default();
+
+        // Map an operand to the next set of instructions by correcting previous
+        // InsnOut indices.
+        fn map_opnd(opnd: Opnd, indices: &mut Vec<usize>) -> Opnd {
+            if let Opnd::InsnOut(index) = opnd {
+                Opnd::InsnOut(indices[index])
+            } else {
+                opnd
+            }
+        }
+
+        for insn in self.insns.drain(..) {
+            let opnds: Vec<Opnd> = insn.opnds.into_iter().map(|opnd| map_opnd(opnd, &mut indices)).collect();
+
+            match insn.op {
+                // Check for Add, Sub, or Mov instructions with two memory operands.
+                Op::Add | Op::Sub | Op::Mov => {
+                    match opnds.as_slice() {
+                        [Opnd::Mem(_), Opnd::Mem(_)] => {
+                            let output = asm.push_insn(Op::Load, vec![opnds[0]], None);
+                            asm.push_insn(insn.op, vec![output, opnds[1]], None);
+                        },
+                        _ => {
+                            asm.push_insn(insn.op, opnds, insn.target);
+                        }
+                    }
+                },
+                _ => {
+                    asm.push_insn(insn.op, opnds, insn.target);
+                }
+            };
+
+            // Here we're assuming that if we've pushed multiple instructions,
+            // the output that we're using is still the final instruction that
+            // was pushed.
+            indices.push(asm.insns.len() - 1);
+        }
+
+        asm
     }
 
     /// Sets the out field on the various instructions that require allocated
@@ -579,6 +631,23 @@ mod tests {
         let mut asm = Assembler::new();
         let out = asm.add(SP, Opnd::UImm(1));
         asm.add(out, Opnd::UImm(2));
+    }
+
+    #[test]
+    fn test_split_insns() {
+        let mut asm1 = Assembler::new();
+
+        let reg1 = Reg { reg_no: 0, num_bits: 64, special: false };
+        let reg2 = Reg { reg_no: 1, num_bits: 64, special: false };
+
+        asm1.add(
+            Opnd::mem(64, Opnd::Reg(reg1), 0),
+            Opnd::mem(64, Opnd::Reg(reg2), 0)
+        );
+
+        let asm2 = asm1.split_insns();
+        assert_eq!(asm2.insns.len(), 2);
+        assert_eq!(asm2.insns[0].op, Op::Load);
     }
 
     #[test]
