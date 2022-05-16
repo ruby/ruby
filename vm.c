@@ -48,8 +48,8 @@
 #endif
 #include "probes_helper.h"
 
-#ifdef RUBY_VM_CRITICAL_SECTION
-int rb_vm_critical_section_entered = 0;
+#ifdef RUBY_ASSERT_CRITICAL_SECTION
+int ruby_assert_critical_section_entered = 0;
 #endif
 
 VALUE rb_str_concat_literals(size_t, const VALUE*);
