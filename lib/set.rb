@@ -134,7 +134,7 @@
 #   Returns whether a given object is a subset of the set.
 # - \#proper_subset? (aliased as [<](#method-i-3C)):
 #   Returns whether a given enumerable is a proper subset of the set.
-# - \#superset? (aliased as [<=](#method-i-3E-3D])):
+# - \#superset? (aliased as [>=](#method-i-3E-3D])):
 #   Returns whether a given enumerable is a superset of the set.
 # - \#proper_superset? (aliased as [>](#method-i-3E)):
 #   Returns whether a given enumerable is a proper superset of the set.
