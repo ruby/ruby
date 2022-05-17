@@ -2373,7 +2373,7 @@ autoload_delete(VALUE mod, ID id)
         /* Qfalse can indicate already deleted */
         if (load != Qfalse) {
             ele = get_autoload_data((VALUE)load, &ac);
-            VM_ASSERT(ele);
+            if (!ele) VM_ASSERT(ele);
             /*
              * we must delete here to avoid "already initialized" warnings
              * with parallel autoload.  Using list_del_init here so list_del
@@ -2390,7 +2390,8 @@ autoload_delete(VALUE mod, ID id)
 }
 
 static int
-autoload_by_someone_else(struct autoload_data *ele) {
+autoload_by_someone_else(struct autoload_data *ele)
+{
     return ele->mutex != Qnil && !rb_mutex_owned_p(ele->mutex);
 }
 
@@ -2451,7 +2452,8 @@ rb_autoloading_value(VALUE mod, ID id, VALUE* value, rb_const_flag_t *flag)
 }
 
 static int
-autoload_by_current(struct autoload_data *ele) {
+autoload_by_current(struct autoload_data *ele)
+{
     return ele->mutex != Qnil && rb_mutex_owned_p(ele->mutex);
 }
 
