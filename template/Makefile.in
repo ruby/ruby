@@ -311,8 +311,7 @@ $(LIBRUBY_A):
 		  echo 'merging $(YJIT_LIBS) into $@' && \
 		  $(RMALL)    libyjit/ && \
 		  $(MAKEDIRS) libyjit/ && \
-		  $(CP) '$(YJIT_LIBS)' libyjit/ && \
-		  (cd libyjit/ && $(AR) -x libyjit.a) && \
+		  (cd libyjit/ && $(AR) -x ../$(YJIT_LIBS)) && \
 		  :  "$(AR) $(ARFLAGS) $@ libyjit/*.$(OBJEXT)" && \
 		  find libyjit/ -name '*.$(OBJEXT)' -exec $(AR) $(ARFLAGS) $@ '{}' '+' ; \
 		fi
