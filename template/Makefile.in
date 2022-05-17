@@ -47,6 +47,7 @@ libdir = @libdir@
 libexecdir = @libexecdir@
 datarootdir = @datarootdir@
 datadir = @datadir@
+target_os = @target_os@
 arch = @arch@
 sitearch = @sitearch@
 sitedir = @sitedir@
