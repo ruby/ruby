@@ -34,7 +34,7 @@ pub enum RegType
     IP,
 }
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct X86Reg
 {
     // Size in bits
@@ -157,22 +157,39 @@ const RBP_REG_NO: u8 = 5;
 const R12_REG_NO: u8 = 12;
 const R13_REG_NO: u8 = 13;
 
-pub const RAX: X86Opnd  = X86Opnd::Reg(X86Reg { num_bits: 64, reg_type: RegType::GP, reg_no: RAX_REG_NO });
-pub const RCX: X86Opnd  = X86Opnd::Reg(X86Reg { num_bits: 64, reg_type: RegType::GP, reg_no: 1 });
-pub const RDX: X86Opnd  = X86Opnd::Reg(X86Reg { num_bits: 64, reg_type: RegType::GP, reg_no: 2 });
-pub const RBX: X86Opnd  = X86Opnd::Reg(X86Reg { num_bits: 64, reg_type: RegType::GP, reg_no: 3 });
-pub const RSP: X86Opnd  = X86Opnd::Reg(X86Reg { num_bits: 64, reg_type: RegType::GP, reg_no: RSP_REG_NO });
-pub const RBP: X86Opnd  = X86Opnd::Reg(X86Reg { num_bits: 64, reg_type: RegType::GP, reg_no: RBP_REG_NO });
-pub const RSI: X86Opnd  = X86Opnd::Reg(X86Reg { num_bits: 64, reg_type: RegType::GP, reg_no: 6 });
-pub const RDI: X86Opnd  = X86Opnd::Reg(X86Reg { num_bits: 64, reg_type: RegType::GP, reg_no: 7 });
-pub const R8:  X86Opnd  = X86Opnd::Reg(X86Reg { num_bits: 64, reg_type: RegType::GP, reg_no: 8 });
-pub const R9:  X86Opnd  = X86Opnd::Reg(X86Reg { num_bits: 64, reg_type: RegType::GP, reg_no: 9 });
-pub const R10: X86Opnd  = X86Opnd::Reg(X86Reg { num_bits: 64, reg_type: RegType::GP, reg_no: 10 });
-pub const R11: X86Opnd  = X86Opnd::Reg(X86Reg { num_bits: 64, reg_type: RegType::GP, reg_no: 11 });
-pub const R12: X86Opnd  = X86Opnd::Reg(X86Reg { num_bits: 64, reg_type: RegType::GP, reg_no: R12_REG_NO });
-pub const R13: X86Opnd  = X86Opnd::Reg(X86Reg { num_bits: 64, reg_type: RegType::GP, reg_no: R13_REG_NO });
-pub const R14: X86Opnd  = X86Opnd::Reg(X86Reg { num_bits: 64, reg_type: RegType::GP, reg_no: 14 });
-pub const R15: X86Opnd  = X86Opnd::Reg(X86Reg { num_bits: 64, reg_type: RegType::GP, reg_no: 15 });
+pub const RAX_REG: X86Reg = X86Reg { num_bits: 64, reg_type: RegType::GP, reg_no: RAX_REG_NO };
+pub const RCX_REG: X86Reg = X86Reg { num_bits: 64, reg_type: RegType::GP, reg_no: 1 };
+pub const RDX_REG: X86Reg = X86Reg { num_bits: 64, reg_type: RegType::GP, reg_no: 2 };
+pub const RBX_REG: X86Reg = X86Reg { num_bits: 64, reg_type: RegType::GP, reg_no: 3 };
+pub const RSP_REG: X86Reg = X86Reg { num_bits: 64, reg_type: RegType::GP, reg_no: RSP_REG_NO };
+pub const RBP_REG: X86Reg = X86Reg { num_bits: 64, reg_type: RegType::GP, reg_no: RBP_REG_NO };
+pub const RSI_REG: X86Reg = X86Reg { num_bits: 64, reg_type: RegType::GP, reg_no: 6 };
+pub const RDI_REG: X86Reg = X86Reg { num_bits: 64, reg_type: RegType::GP, reg_no: 7 };
+pub const R8_REG:  X86Reg = X86Reg { num_bits: 64, reg_type: RegType::GP, reg_no: 8 };
+pub const R9_REG:  X86Reg = X86Reg { num_bits: 64, reg_type: RegType::GP, reg_no: 9 };
+pub const R10_REG: X86Reg = X86Reg { num_bits: 64, reg_type: RegType::GP, reg_no: 10 };
+pub const R11_REG: X86Reg = X86Reg { num_bits: 64, reg_type: RegType::GP, reg_no: 11 };
+pub const R12_REG: X86Reg = X86Reg { num_bits: 64, reg_type: RegType::GP, reg_no: R12_REG_NO };
+pub const R13_REG: X86Reg = X86Reg { num_bits: 64, reg_type: RegType::GP, reg_no: R13_REG_NO };
+pub const R14_REG: X86Reg = X86Reg { num_bits: 64, reg_type: RegType::GP, reg_no: 14 };
+pub const R15_REG: X86Reg = X86Reg { num_bits: 64, reg_type: RegType::GP, reg_no: 15 };
+
+pub const RAX: X86Opnd  = X86Opnd::Reg(RAX_REG);
+pub const RCX: X86Opnd  = X86Opnd::Reg(RCX_REG);
+pub const RDX: X86Opnd  = X86Opnd::Reg(RDX_REG);
+pub const RBX: X86Opnd  = X86Opnd::Reg(RBX_REG);
+pub const RSP: X86Opnd  = X86Opnd::Reg(RSP_REG);
+pub const RBP: X86Opnd  = X86Opnd::Reg(RBP_REG);
+pub const RSI: X86Opnd  = X86Opnd::Reg(RSI_REG);
+pub const RDI: X86Opnd  = X86Opnd::Reg(RDI_REG);
+pub const R8:  X86Opnd  = X86Opnd::Reg(R8_REG);
+pub const R9:  X86Opnd  = X86Opnd::Reg(R9_REG);
+pub const R10: X86Opnd  = X86Opnd::Reg(R10_REG);
+pub const R11: X86Opnd  = X86Opnd::Reg(R11_REG);
+pub const R12: X86Opnd  = X86Opnd::Reg(R12_REG);
+pub const R13: X86Opnd  = X86Opnd::Reg(R13_REG);
+pub const R14: X86Opnd  = X86Opnd::Reg(R14_REG);
+pub const R15: X86Opnd  = X86Opnd::Reg(R15_REG);
 
 // 32-bit GP registers
 pub const EAX: X86Opnd  = X86Opnd::Reg(X86Reg { num_bits: 32, reg_type: RegType::GP, reg_no: 0 });
