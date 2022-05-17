@@ -2176,11 +2176,6 @@ autoload_data_mark(void *ptr)
 
     rb_gc_mark_movable(p->feature);
     rb_gc_mark_movable(p->mutex);
-
-    // Allow GC to free us if no modules refer to this via autoload_const.autoload_data
-    if (ccan_list_empty(&p->constants)) {
-        rb_hash_delete(autoload_features, p->feature);
-    }
 }
 
 static void
@@ -2422,7 +2417,10 @@ autoload_delete(VALUE module, ID name)
         /* Qfalse can indicate already deleted */
         if (load != Qfalse) {
             struct autoload_const *autoload_const;
-            get_autoload_data((VALUE)load, &autoload_const);
+            struct autoload_data *autoload_data = get_autoload_data((VALUE)load, &autoload_const);
+
+            VM_ASSERT(autoload_data);
+            VM_ASSERT(!ccan_list_empty(&autoload_data->constants));
 
             /*
              * we must delete here to avoid "already initialized" warnings
@@ -2430,6 +2428,10 @@ autoload_delete(VALUE module, ID name)
              * works in autoload_const_free
              */
             ccan_list_del_init(&autoload_const->cnode);
+
+            if (ccan_list_empty(&autoload_data->constants)) {
+                rb_hash_delete(autoload_features, autoload_data->feature);
+            }
 
             // If the autoload table is empty, we can delete it.
             if (table->num_entries == 0) {
@@ -2649,6 +2651,8 @@ autoload_apply_constants(VALUE _arguments)
     if (arguments->result == Qtrue) {
         struct autoload_const *autoload_const;
         struct autoload_const *next;
+
+        // We use safe iteration here because `autoload_const_set` will eventually invoke `autoload_delete` which will remove the constant from the linked list. In theory, once the `autoload_data->constants` linked list is empty, we can remove it.
 
         // Iterate over all constants and assign them:
         ccan_list_for_each_safe(&arguments->autoload_data->constants, autoload_const, next, cnode) {
