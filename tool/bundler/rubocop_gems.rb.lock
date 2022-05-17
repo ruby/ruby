@@ -49,7 +49,6 @@ PLATFORMS
   universal-java-11
   x86_64-darwin-19
   x86_64-darwin-20
-  x86_64-darwin-21
   x86_64-linux
 
 DEPENDENCIES
@@ -61,4 +60,4 @@ DEPENDENCIES
   test-unit
 
 BUNDLED WITH
-   2.3.12
+   2.3.13

@@ -364,7 +364,9 @@ RSpec.describe "bundle install with gem sources" do
     end
 
     it "throws a warning if a gem is added twice in Gemfile without version requirements" do
-      install_gemfile <<-G, :raise_on_error => false
+      build_repo2
+
+      install_gemfile <<-G
         source "#{file_uri_for(gem_repo2)}"
         gem "rack"
         gem "rack"
@@ -376,13 +378,31 @@ RSpec.describe "bundle install with gem sources" do
     end
 
     it "throws a warning if a gem is added twice in Gemfile with same versions" do
-      install_gemfile <<-G, :raise_on_error => false
+      build_repo2
+
+      install_gemfile <<-G
         source "#{file_uri_for(gem_repo2)}"
         gem "rack", "1.0"
         gem "rack", "1.0"
       G
 
       expect(err).to include("Your Gemfile lists the gem rack (= 1.0) more than once.")
+      expect(err).to include("Remove any duplicate entries and specify the gem only once.")
+      expect(err).to include("While it's not a problem now, it could cause errors if you change the version of one of them later.")
+    end
+
+    it "throws a warning if a gem is added twice under different platforms and does not crash when using the generated lockfile" do
+      build_repo2
+
+      install_gemfile <<-G
+        source "#{file_uri_for(gem_repo2)}"
+        gem "rack", :platform => :jruby
+        gem "rack"
+      G
+
+      bundle "install"
+
+      expect(err).to include("Your Gemfile lists the gem rack (>= 0) more than once.")
       expect(err).to include("Remove any duplicate entries and specify the gem only once.")
       expect(err).to include("While it's not a problem now, it could cause errors if you change the version of one of them later.")
     end

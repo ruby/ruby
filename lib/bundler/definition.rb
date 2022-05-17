@@ -87,10 +87,11 @@ module Bundler
         @platforms = @locked_platforms.dup
         @locked_bundler_version = @locked_gems.bundler_version
         @locked_ruby_version = @locked_gems.ruby_version
+        @originally_locked_specs = SpecSet.new(@locked_gems.specs)
 
         if unlock != true
           @locked_deps    = @locked_gems.dependencies
-          @locked_specs   = SpecSet.new(@locked_gems.specs)
+          @locked_specs   = @originally_locked_specs
           @locked_sources = @locked_gems.sources
         else
           @unlock         = {}
@@ -255,14 +256,14 @@ module Bundler
     # @return [SpecSet] resolved dependencies
     def resolve
       @resolve ||= begin
-        last_resolve = converge_locked_specs
         if Bundler.frozen_bundle?
           Bundler.ui.debug "Frozen, using resolution from the lockfile"
-          last_resolve
+          @locked_specs
         elsif !unlocking? && nothing_changed?
           Bundler.ui.debug("Found no changes, using resolution from the lockfile")
-          last_resolve
+          SpecSet.new(filter_specs(@locked_specs, @dependencies.select{|dep| @locked_specs[dep].any? }))
         else
+          last_resolve = converge_locked_specs
           # Run a resolve against the locally available gems
           Bundler.ui.debug("Found changes from the lockfile, re-resolving dependencies because #{change_reason}")
           expanded_dependencies = expand_dependencies(dependencies + metadata_dependencies, true)
@@ -463,6 +464,10 @@ module Bundler
     end
 
     private
+
+    def filter_specs(specs, deps)
+      SpecSet.new(specs).for(expand_dependencies(deps, true), false, false)
+    end
 
     def materialize(dependencies)
       specs = resolve.materialize(dependencies)
@@ -679,17 +684,17 @@ module Bundler
     end
 
     def converge_specs(specs)
-      deps = []
       converged = []
+
+      deps = @dependencies.select do |dep|
+        specs[dep].any? {|s| s.satisfies?(dep) && (!dep.source || s.source.include?(dep.source)) }
+      end
+
       specs.each do |s|
         # Replace the locked dependency's source with the equivalent source from the Gemfile
         dep = @dependencies.find {|d| s.satisfies?(d) }
 
-        if dep && (!dep.source || s.source.include?(dep.source))
-          deps << dep
-        end
-
-        s.source = (dep && dep.source) || sources.get(s.source) || sources.default_source unless Bundler.frozen_bundle?
+        s.source = (dep && dep.source) || sources.get(s.source) || sources.default_source
 
         next if @unlock[:sources].include?(s.source.name)
 
@@ -726,8 +731,7 @@ module Bundler
         end
       end
 
-      resolve = SpecSet.new(converged)
-      SpecSet.new(resolve.for(expand_dependencies(deps, true), false, false).reject{|s| @unlock[:gems].include?(s.name) })
+      SpecSet.new(filter_specs(converged, deps).reject{|s| @unlock[:gems].include?(s.name) })
     end
 
     def metadata_dependencies
@@ -804,7 +808,7 @@ module Bundler
 
     def additional_base_requirements_for_resolve
       return [] unless @locked_gems && unlocking? && !sources.expired_sources?(@locked_gems.sources)
-      converge_specs(@locked_gems.specs).map do |locked_spec|
+      converge_specs(@originally_locked_specs).map do |locked_spec|
         name = locked_spec.name
         dep = Gem::Dependency.new(name, ">= #{locked_spec.version}")
         DepProxy.get_proxy(dep, locked_spec.platform)
