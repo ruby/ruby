@@ -1182,6 +1182,8 @@ RSpec.describe "bundle update --bundler" do
   end
 
   it "updates the bundler version in the lockfile even if the latest version is not installed", :ruby_repo, :realworld do
+    skip "ruby-head has a default Bundler version too high for this spec to work" if RUBY_PATCHLEVEL == -1
+
     pristine_system_gems "bundler-2.3.9"
 
     build_repo4 do
@@ -1226,6 +1228,8 @@ RSpec.describe "bundle update --bundler" do
   end
 
   it "errors if the explicit target version does not exist", :realworld do
+    skip "ruby-head has a default Bundler version too high for this spec to work" if RUBY_PATCHLEVEL == -1
+
     pristine_system_gems "bundler-2.3.9"
 
     build_repo4 do
