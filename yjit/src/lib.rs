@@ -4,7 +4,7 @@
 #![allow(clippy::identity_op)] // Sometimes we do it for style
 
 mod asm;
-mod ir;
+mod backend;
 mod codegen;
 mod core;
 mod cruby;

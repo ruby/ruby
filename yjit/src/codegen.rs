@@ -33,7 +33,6 @@ pub const REG0: X86Opnd = RAX;
 pub const REG0_32: X86Opnd = EAX;
 pub const REG0_8: X86Opnd = AL;
 pub const REG1: X86Opnd = RCX;
-// pub const REG1_32: X86Opnd = ECX;
 
 // A block that can be invalidated needs space to write a jump.
 // We'll reserve a minimum size for any block that could
