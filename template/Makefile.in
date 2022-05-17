@@ -307,8 +307,8 @@ $(LIBRUBY_A):
 		$(ECHO) linking static-library $@
 		$(Q) $(AR) $(ARFLAGS) $@ $(LIBRUBY_A_OBJS) $(INITOBJS)
 		$(Q) if [ 'no' != '$(YJIT_SUPPORT)' ]; then \
-		  set -eu && \
-		  echo 'merging $(YJIT_LIBS) into $@' && \
+		  set -eu$(V0:1=x) && \
+		  $(ECHO0) 'merging $(YJIT_LIBS) into $@' && \
 		  $(RMALL)    libyjit/ && \
 		  $(MAKEDIRS) libyjit/ && \
 		  (cd libyjit/ && $(AR) -x ../$(YJIT_LIBS)) && \
