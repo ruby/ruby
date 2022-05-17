@@ -268,12 +268,11 @@ module Psych
   # YAML documents that are supplied via user input.  Instead, please use the
   # load method or the safe_load method.
   #
-  def self.unsafe_load yaml, filename: nil, fallback: false, symbolize_names: false, freeze: false
+  def self.unsafe_load yaml, filename: nil, fallback: false, symbolize_names: false, freeze: false, strict_integer: false
     result = parse(yaml, filename: filename)
     return fallback unless result
-    result.to_ruby(symbolize_names: symbolize_names, freeze: freeze)
+    result.to_ruby(symbolize_names: symbolize_names, freeze: freeze, strict_integer: strict_integer)
   end
-  class << self; alias :load :unsafe_load; end
 
   ###
   # Safely load the yaml string in +yaml+.  By default, only the following
@@ -320,13 +319,13 @@ module Psych
   #   Psych.safe_load("---\n foo: bar")                         # => {"foo"=>"bar"}
   #   Psych.safe_load("---\n foo: bar", symbolize_names: true)  # => {:foo=>"bar"}
   #
-  def self.safe_load yaml, permitted_classes: [], permitted_symbols: [], aliases: false, filename: nil, fallback: nil, symbolize_names: false, freeze: false
+  def self.safe_load yaml, permitted_classes: [], permitted_symbols: [], aliases: false, filename: nil, fallback: nil, symbolize_names: false, freeze: false, strict_integer: false
     result = parse(yaml, filename: filename)
     return fallback unless result
 
     class_loader = ClassLoader::Restricted.new(permitted_classes.map(&:to_s),
                                                permitted_symbols.map(&:to_s))
-    scanner      = ScalarScanner.new class_loader
+    scanner      = ScalarScanner.new class_loader, strict_integer: strict_integer
     visitor = if aliases
                 Visitors::ToRuby.new scanner, class_loader, symbolize_names: symbolize_names, freeze: freeze
               else
@@ -366,14 +365,15 @@ module Psych
   # Raises a TypeError when `yaml` parameter is NilClass.  This method is
   # similar to `safe_load` except that `Symbol` objects are allowed by default.
   #
-  def self.load yaml, permitted_classes: [Symbol], permitted_symbols: [], aliases: false, filename: nil, fallback: nil, symbolize_names: false, freeze: false
+  def self.load yaml, permitted_classes: [Symbol], permitted_symbols: [], aliases: false, filename: nil, fallback: nil, symbolize_names: false, freeze: false, strict_integer: false
     safe_load yaml, permitted_classes: permitted_classes,
                     permitted_symbols: permitted_symbols,
                     aliases: aliases,
                     filename: filename,
                     fallback: fallback,
                     symbolize_names: symbolize_names,
-                    freeze: freeze
+                    freeze: freeze,
+                    strict_integer: strict_integer
   end
 
   ###
