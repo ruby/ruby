@@ -43,5 +43,16 @@ module Psych
       str = Psych.load('--- 1.1.1')
       assert_equal '1.1.1', str
     end
+
+    # This behavior is not to YML spec, but is kept for backwards compatibility
+    def test_string_with_commas
+      number = Psych.load('--- 12,34,56')
+      assert_equal 123456, number
+    end
+
+    def test_string_with_commas_with_strict_integer
+      str = Psych.load('--- 12,34,56', strict_integer: true)
+      assert_equal '12,34,56', str
+    end
   end
 end

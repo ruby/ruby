@@ -1,5 +1,4 @@
 # frozen_string_literal: true
-require 'strscan'
 
 module Psych
   ###
@@ -13,24 +12,32 @@ module Psych
     FLOAT = /^(?:[-+]?([0-9][0-9_,]*)?\.[0-9]*([eE][-+][0-9]+)?(?# base 10))$/x
 
     # Taken from http://yaml.org/type/int.html
-    INTEGER = /^(?:[-+]?0b[0-1_,]+                        (?# base 2)
-                  |[-+]?0[0-7_,]+                         (?# base 8)
-                  |[-+]?(?:0|[1-9](?:[0-9]|,[0-9]|_[0-9])*) (?# base 10)
-                  |[-+]?0x[0-9a-fA-F_,]+                  (?# base 16))$/x
+    INTEGER_STRICT = /^(?:[-+]?0b[0-1_]+                  (?# base 2)
+                         |[-+]?0[0-7_]+                   (?# base 8)
+                         |[-+]?(0|[1-9][0-9_]*)           (?# base 10)
+                         |[-+]?0x[0-9a-fA-F_]+            (?# base 16))$/x
+
+    # Same as above, but allows commas.
+    # Not to YML spec, but kept for backwards compatibility
+    INTEGER_LEGACY = /^(?:[-+]?0b[0-1_,]+                        (?# base 2)
+                         |[-+]?0[0-7_,]+                         (?# base 8)
+                         |[-+]?(?:0|[1-9](?:[0-9]|,[0-9]|_[0-9])*) (?# base 10)
+                         |[-+]?0x[0-9a-fA-F_,]+                  (?# base 16))$/x
 
     attr_reader :class_loader
 
     # Create a new scanner
-    def initialize class_loader
+    def initialize class_loader, strict_integer: false
       @symbol_cache = {}
       @class_loader = class_loader
+      @strict_integer = strict_integer
     end
 
     # Tokenize +string+ returning the Ruby object
     def tokenize string
       return nil if string.empty?
       return @symbol_cache[string] if @symbol_cache.key?(string)
-
+      integer_regex = @strict_integer ? INTEGER_STRICT : INTEGER_LEGACY
       # Check for a String type, being careful not to get caught by hash keys, hex values, and
       # special floats (e.g., -.inf).
       if string.match?(%r{^[^\d.:-]?[[:alpha:]_\s!@#$%\^&*(){}<>|/\\~;=]+}) || string.match?(/\n/)
@@ -88,9 +95,9 @@ module Psych
         if string.match?(/\A[-+]?\.\Z/)
           string
         else
-          Float(string.gsub(/[,_]|\.([Ee]|$)/, '\1'))
+          Float(string.delete(',_').gsub(/\.([Ee]|$)/, '\1'))
         end
-      elsif string.match?(INTEGER)
+      elsif string.match?(integer_regex)
         parse_int string
       else
         string
@@ -100,7 +107,7 @@ module Psych
     ###
     # Parse and return an int from +string+
     def parse_int string
-      Integer(string.gsub(/[,_]/, ''))
+      Integer(string.delete(',_'))
     end
 
     ###
