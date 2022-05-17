@@ -492,6 +492,26 @@ p Foo::Bar
     TestAutoload.class_eval {remove_const(:AutoloadTest)} if defined? TestAutoload::AutoloadTest
   end
 
+  def test_autoload_module_gc
+    Dir.mktmpdir('autoload') do |tmpdir|
+      autoload_path = File.join(tmpdir, "autoload_module_gc.rb")
+      File.write(autoload_path, "X = 1; Y = 2;")
+
+      x = Module.new
+      x.autoload :X, "./feature.rb"
+
+      1000.times do
+        y = Module.new
+        y.autoload :Y, "./feature.rb"
+      end
+
+      x = y = nil
+
+      # Ensure the internal data structures are cleaned up correctly / don't crash:
+      GC.start
+    end
+  end
+
   def test_autoload_parallel_race
     Dir.mktmpdir('autoload') do |tmpdir|
       autoload_path = File.join(tmpdir, "autoload_parallel_race.rb")
