@@ -2176,6 +2176,22 @@ autoload_data_mark(void *ptr)
 
     rb_gc_mark_movable(p->feature);
     rb_gc_mark_movable(p->mutex);
+
+    // Allow GC to free us if no modules refer to this via autoload_const.autoload_data
+    if (ccan_list_empty(&p->constants)) {
+        rb_hash_delete(autoload_features, p->feature);
+    }
+}
+
+static void
+autoload_data_free(void *ptr)
+{
+    struct autoload_data *p = ptr;
+
+    // We may leak some memory at VM shutdown time, no big deal...?
+    if (ccan_list_empty(&p->constants)) {
+        ruby_xfree(p);
+    }
 }
 
 static size_t
@@ -2186,12 +2202,12 @@ autoload_data_memsize(const void *ptr)
 
 static const rb_data_type_t autoload_data_type = {
     "autoload_data",
-    {autoload_data_mark, ruby_xfree, autoload_data_memsize, autoload_data_compact},
+    {autoload_data_mark, autoload_data_free, autoload_data_memsize, autoload_data_compact},
     0, 0, RUBY_TYPED_FREE_IMMEDIATELY
 };
 
 static void
-autoload_c_compact(void *ptr)
+autoload_const_compact(void *ptr)
 {
     struct autoload_const *ac = ptr;
 
@@ -2202,7 +2218,7 @@ autoload_c_compact(void *ptr)
 }
 
 static void
-autoload_c_mark(void *ptr)
+autoload_const_mark(void *ptr)
 {
     struct autoload_const *ac = ptr;
 
@@ -2213,41 +2229,52 @@ autoload_c_mark(void *ptr)
 }
 
 static size_t
-autoload_c_memsize(const void *ptr)
+autoload_const_memsize(const void *ptr)
 {
     return sizeof(struct autoload_const);
 }
 
+static void
+autoload_const_free(void *ptr)
+{
+    struct autoload_const *autoload_const = ptr;
+
+    ccan_list_del(&autoload_const->cnode);
+    ruby_xfree(ptr);
+}
+
 static const rb_data_type_t autoload_const_type = {
     "autoload_const",
-    {autoload_c_mark, ruby_xfree, autoload_c_memsize, autoload_c_compact,},
+    {autoload_const_mark, autoload_const_free, autoload_const_memsize, autoload_const_compact,},
     0, 0, RUBY_TYPED_FREE_IMMEDIATELY
 };
 
 static struct autoload_data *
-get_autoload_data(VALUE acv, struct autoload_const **acp)
+get_autoload_data(VALUE autoload_const_value, struct autoload_const **autoload_const_pointer)
 {
-    struct autoload_const *ac = rb_check_typeddata(acv, &autoload_const_type);
-    struct autoload_data *ele;
+    struct autoload_const *autoload_const = rb_check_typeddata(autoload_const_value, &autoload_const_type);
 
-    ele = rb_check_typeddata(ac->autoload_data_value, &autoload_data_type);
+    struct autoload_data *autoload_data = rb_check_typeddata(autoload_const->autoload_data_value, &autoload_data_type);
+
     /* do not reach across stack for ->state after forking: */
-    if (ele && ele->fork_gen != GET_VM()->fork_gen) {
-        ele->mutex = Qnil;
-        ele->fork_gen = 0;
+    if (autoload_data && autoload_data->fork_gen != GET_VM()->fork_gen) {
+        autoload_data->mutex = Qnil;
+        autoload_data->fork_gen = 0;
     }
-    if (acp) *acp = ac;
-    return ele;
+
+    if (autoload_const_pointer) *autoload_const_pointer = autoload_const;
+
+    return autoload_data;
 }
 
 RUBY_FUNC_EXPORTED void
-rb_autoload(VALUE mod, ID id, const char *file)
+rb_autoload(VALUE module, ID name, const char *feature)
 {
-    if (!file || !*file) {
-        rb_raise(rb_eArgError, "empty file name");
+    if (!feature || !*feature) {
+        rb_raise(rb_eArgError, "empty feature name");
     }
 
-    rb_autoload_str(mod, id, rb_fstring_cstr(file));
+    rb_autoload_str(module, name, rb_fstring_cstr(feature));
 }
 
 static void const_set(VALUE klass, ID id, VALUE val);
@@ -2256,25 +2283,47 @@ static void const_added(VALUE klass, ID const_name);
 struct autoload_arguments {
     VALUE module;
     ID name;
-
-    VALUE path;
+    VALUE feature;
 };
 
 static VALUE
-autoload_feature_lookup_or_create(VALUE file)
+autoload_feature_lookup_or_create(VALUE feature, struct autoload_data **autoload_data_pointer)
 {
-    VALUE ad = rb_hash_aref(autoload_features, file);
-    struct autoload_data *ele;
+    RUBY_ASSERT_MUTEX_OWNED(autoload_mutex);
+    RUBY_ASSERT_CRITICAL_SECTION_ENTER();
 
-    if (NIL_P(ad)) {
-        ad = TypedData_Make_Struct(0, struct autoload_data, &autoload_data_type, ele);
-        ele->feature = file;
-        ele->mutex = Qnil;
-        ccan_list_head_init(&ele->constants);
-        rb_hash_aset(autoload_features, file, ad);
+    VALUE autoload_data_value = rb_hash_aref(autoload_features, feature);
+    struct autoload_data *autoload_data;
+
+    if (NIL_P(autoload_data_value)) {
+        autoload_data_value = TypedData_Make_Struct(0, struct autoload_data, &autoload_data_type, autoload_data);
+        autoload_data->feature = feature;
+        autoload_data->mutex = Qnil;
+        ccan_list_head_init(&autoload_data->constants);
+
+        if (autoload_data_pointer) *autoload_data_pointer = autoload_data;
+
+        rb_hash_aset(autoload_features, feature, autoload_data_value);
+    } else if (autoload_data_pointer) {
+        *autoload_data_pointer = rb_check_typeddata(autoload_data_value, &autoload_data_type);
     }
 
-    return ad;
+    RUBY_ASSERT_CRITICAL_SECTION_LEAVE();
+    return autoload_data_value;
+}
+
+static VALUE
+autoload_feature_clear_if_empty(VALUE argument)
+{
+    RUBY_ASSERT_MUTEX_OWNED(autoload_mutex);
+
+    struct autoload_data *autoload_data = (struct autoload_data *)argument;
+
+    if (ccan_list_empty(&autoload_data->constants)) {
+        rb_hash_delete(autoload_features, autoload_data->feature);
+    }
+
+    return Qnil;
 }
 
 static struct st_table* autoload_table_lookup_or_create(VALUE module) {
@@ -2313,10 +2362,10 @@ autoload_synchronized(VALUE _arguments)
     struct st_table *autoload_table = autoload_table_lookup_or_create(arguments->module);
 
     // Ensure the string is uniqued since we use an identity lookup:
-    VALUE path = rb_fstring(arguments->path);
+    VALUE feature = rb_fstring(arguments->feature);
 
-    VALUE autoload_data_value = autoload_feature_lookup_or_create(path);
-    struct autoload_data *autoload_data = rb_check_typeddata(autoload_data_value, &autoload_data_type);
+    struct autoload_data *autoload_data;
+    VALUE autoload_data_value = autoload_feature_lookup_or_create(feature, &autoload_data);
 
     {
         struct autoload_const *autoload_const;
@@ -2334,59 +2383,63 @@ autoload_synchronized(VALUE _arguments)
 }
 
 void
-rb_autoload_str(VALUE mod, ID id, VALUE file)
+rb_autoload_str(VALUE module, ID name, VALUE feature)
 {
-    if (!rb_is_const_id(id)) {
-        rb_raise(rb_eNameError, "autoload must be constant name: %"PRIsVALUE"", QUOTE_ID(id));
+    if (!rb_is_const_id(name)) {
+        rb_raise(rb_eNameError, "autoload must be constant name: %"PRIsVALUE"", QUOTE_ID(name));
     }
 
-    Check_Type(file, T_STRING);
-    if (!RSTRING_LEN(file)) {
-        rb_raise(rb_eArgError, "empty file name");
+    Check_Type(feature, T_STRING);
+    if (!RSTRING_LEN(feature)) {
+        rb_raise(rb_eArgError, "empty feature name");
     }
 
     struct autoload_arguments arguments = {
-        .module = mod,
-        .name = id,
-        .path = file,
+        .module = module,
+        .name = name,
+        .feature = feature,
     };
 
     VALUE result = rb_mutex_synchronize(autoload_mutex, autoload_synchronized, (VALUE)&arguments);
 
     if (result == Qtrue) {
-        const_added(mod, id);
+        const_added(module, name);
     }
 }
 
 static void
-autoload_delete(VALUE mod, ID id)
+autoload_delete(VALUE module, ID name)
 {
-    st_data_t val, load = 0, n = id;
+    RUBY_ASSERT_CRITICAL_SECTION_ENTER();
 
-    if (st_lookup(RCLASS_IV_TBL(mod), (st_data_t)autoload, &val)) {
-        struct st_table *tbl = check_autoload_table((VALUE)val);
-        struct autoload_data *ele;
-        struct autoload_const *ac;
+    st_data_t value, load = 0, key = name;
 
-        st_delete(tbl, &n, &load);
+    if (st_lookup(RCLASS_IV_TBL(module), (st_data_t)autoload, &value)) {
+        struct st_table *table = check_autoload_table((VALUE)value);
+
+        st_delete(table, &key, &load);
 
         /* Qfalse can indicate already deleted */
         if (load != Qfalse) {
-            ele = get_autoload_data((VALUE)load, &ac);
-            if (!ele) VM_ASSERT(ele);
+            struct autoload_const *autoload_const;
+            get_autoload_data((VALUE)load, &autoload_const);
+
             /*
              * we must delete here to avoid "already initialized" warnings
              * with parallel autoload.  Using list_del_init here so list_del
-             * works in autoload_c_free
+             * works in autoload_const_free
              */
-            ccan_list_del_init(&ac->cnode);
+            ccan_list_del_init(&autoload_const->cnode);
 
-            if (tbl->num_entries == 0) {
-                n = autoload;
-                st_delete(RCLASS_IV_TBL(mod), &n, &val);
+            // If the autoload table is empty, we can delete it.
+            if (table->num_entries == 0) {
+                name = autoload;
+                st_delete(RCLASS_IV_TBL(module), &name, &value);
             }
         }
     }
+
+    RUBY_ASSERT_CRITICAL_SECTION_LEAVE();
 }
 
 static int
@@ -2589,9 +2642,9 @@ autoload_feature_require(VALUE _arguments)
 static VALUE
 autoload_apply_constants(VALUE _arguments)
 {
-    struct autoload_load_arguments *arguments = (struct autoload_load_arguments*)_arguments;
+    RUBY_ASSERT_CRITICAL_SECTION_ENTER();
 
-    RUBY_DEBUG_THREAD_SCHEDULE();
+    struct autoload_load_arguments *arguments = (struct autoload_load_arguments*)_arguments;
 
     if (arguments->result == Qtrue) {
         struct autoload_const *autoload_const;
@@ -2605,8 +2658,7 @@ autoload_apply_constants(VALUE _arguments)
         }
     }
 
-    // Since the feature is now loaded, delete the autoload data for it:
-    rb_hash_delete(autoload_features, arguments->autoload_data->feature);
+    RUBY_ASSERT_CRITICAL_SECTION_LEAVE();
 
     return Qtrue;
 }
@@ -2623,7 +2675,7 @@ autoload_try_load(VALUE _arguments)
     struct autoload_load_arguments *arguments = (struct autoload_load_arguments*)_arguments;
 
     // We have tried to require the autoload feature, so we shouldn't bother trying again in any other threads. More specifically, `arguments->result` starts of as nil, but then contains the result of `require` which is either true or false. Provided it's not nil, it means some other thread has got as far as evaluating the require statement completely.
-    if (arguments->result != Qnil) arguments->result;
+    if (arguments->result != Qnil) return arguments->result;
 
     // Try to require the autoload feature:
     rb_ensure(autoload_feature_require, _arguments, autoload_feature_require_ensure, _arguments);
@@ -2672,6 +2724,8 @@ rb_autoload_load(VALUE module, ID name)
 
     // Only one thread will enter here at a time:
     return rb_mutex_synchronize(arguments.mutex, autoload_try_load, (VALUE)&arguments);
+
+    // rb_mutex_synchronize(autoload_mutex, autoload_feature_clear_if_empty, (VALUE)&arguments.autoload_data);
 }
 
 VALUE
