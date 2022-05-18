@@ -156,6 +156,7 @@ Note: We're only listing outstanding class updates.
     * net-http 0.2.2
     * net-protocol 0.1.3
     * ostruct 0.5.5
+    * psych 5.0.0.dev
     * reline 0.3.1
     * securerandom 0.2.0
     * stringio 3.0.3
