@@ -701,7 +701,7 @@ class Time
   #
   # If self is a UTC time, Z is used as TZD.  [+-]hh:mm is used otherwise.
   #
-  # +fractional_digits+ specifies a number of digits to use for fractional
+  # +fraction_digits+ specifies a number of digits to use for fractional
   # seconds.  Its default value is 0.
   #
   #     require 'time'
