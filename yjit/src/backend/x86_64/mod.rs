@@ -18,8 +18,11 @@ pub const SP: Opnd = Opnd::Reg(RBX_REG);
 impl From<Opnd> for X86Opnd {
     fn from(opnd: Opnd) -> Self {
         match opnd {
+            // NOTE: these operand types need to be lowered first
             //Value(VALUE),       // Immediate Ruby value, may be GC'd, movable
             //InsnOut(usize),     // Output of a preceding instruction in this block
+
+            Opnd::InsnOut(idx) => panic!("InsnOut operand made it past register allocation"),
 
             Opnd::None => X86Opnd::None,
 
@@ -59,18 +62,19 @@ impl Assembler
                 Op::Comment => {},
                 Op::Label => {},
 
-                Op::Add => {
-
-                    //add(cb, )
-
-
-
-                },
+                Op::Add => add(cb, insn.opnds[0].into(), insn.opnds[1].into()),
 
                 /*
                 Load
                 Store,
-                Mov,
+                */
+
+                Op::Mov => add(cb, insn.opnds[0].into(), insn.opnds[1].into()),
+
+                // Test and set flags
+                Op::Test => add(cb, insn.opnds[0].into(), insn.opnds[1].into()),
+
+                /*
                 Test,
                 Cmp,
                 Jnz,
