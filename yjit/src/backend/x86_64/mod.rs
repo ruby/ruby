@@ -14,6 +14,31 @@ pub const CFP: Opnd = Opnd::Reg(R13_REG);
 pub const EC: Opnd = Opnd::Reg(R12_REG);
 pub const SP: Opnd = Opnd::Reg(RBX_REG);
 
+/// Map Opnd to X86Opnd
+impl From<Opnd> for X86Opnd {
+    fn from(opnd: Opnd) -> Self {
+        match opnd {
+            //Value(VALUE),       // Immediate Ruby value, may be GC'd, movable
+            //InsnOut(usize),     // Output of a preceding instruction in this block
+
+            Opnd::None => X86Opnd::None,
+
+            Opnd::UImm(val) => uimm_opnd(val),
+            Opnd::Imm(val) => imm_opnd(val),
+
+            // General-purpose register
+            Opnd::Reg(reg) => X86Opnd::Reg(reg),
+
+            // Memory operand with displacement
+            Opnd::Mem(Mem{ num_bits, base_reg, disp }) => {
+                mem_opnd(num_bits, X86Opnd::Reg(base_reg), disp)
+            }
+
+            _ => panic!("unsupported x86 operand type")
+        }
+    }
+}
+
 impl Assembler
 {
     // Get the list of registers from which we can allocate on this platform
@@ -28,28 +53,32 @@ impl Assembler
     // Emit platform-specific machine code
     pub fn target_emit(&self, cb: &mut CodeBlock)
     {
-
-
-
+        // For each instruction
         for insn in &self.insns {
-
-
-            // For each instruction, either handle it here or allow the map_insn
-            // callback to handle it.
             match insn.op {
-                Op::Comment => {
+                Op::Comment => {},
+                Op::Label => {},
+
+                Op::Add => {
+
+                    //add(cb, )
+
+
+
                 },
-                Op::Label => {
-                },
-                _ => {
-                }
+
+                /*
+                Load
+                Store,
+                Mov,
+                Test,
+                Cmp,
+                Jnz,
+                Jbe,
+                */
+
+                _ => panic!("unsupported instruction passed to x86 backend")
             };
-
-
         }
-
-
-
-
     }
 }

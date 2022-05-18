@@ -183,7 +183,7 @@ pub enum Op
 pub struct Mem
 {
     // Base register
-    pub(super) base: Reg,
+    pub(super) base_reg: Reg,
 
     // Offset relative to the base pointer
     pub(super) disp: i32,
@@ -198,8 +198,11 @@ pub enum Opnd
 {
     None,               // For insns with no output
 
-    Stack(u16),         // Value on the temp stack (idx)
-    Local(u16),         // Local variable (idx, do we need depth too?)
+    // NOTE: for now Context directly returns memory operands,
+    // but eventually we'd like to have Stack and Local operand types
+    //Stack(u16),         // Value on the temp stack (idx)
+    //Local(u16),         // Local variable (idx, do we need depth too?)
+
     Value(VALUE),       // Immediate Ruby value, may be GC'd, movable
     InsnOut(usize),     // Output of a preceding instruction in this block
 
@@ -219,7 +222,7 @@ impl Opnd
                 assert!(base_reg.num_bits == 64);
                 Opnd::Mem(Mem {
                     num_bits: num_bits,
-                    base: base_reg,
+                    base_reg: base_reg,
                     disp: disp,
                 })
             },
@@ -228,6 +231,9 @@ impl Opnd
     }
 }
 
+/// NOTE: this is useful during the port but can probably be removed once
+/// Context returns ir::Opnd instead of X86Opnd
+///
 /// Method to convert from an X86Opnd to an IR Opnd
 impl From<X86Opnd> for Opnd {
     fn from(opnd: X86Opnd) -> Self {
@@ -246,7 +252,7 @@ impl From<X86Opnd> for Opnd {
                 let base_reg = Reg { num_bits: 64, reg_no: base_reg_no, reg_type: RegType::GP };
 
                 Opnd::Mem(Mem {
-                    base: base_reg,
+                    base_reg: base_reg,
                     disp,
                     num_bits
                 })
