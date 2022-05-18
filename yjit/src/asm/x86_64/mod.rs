@@ -5,7 +5,7 @@ use crate::asm::*;
 // Import the assembler tests module
 mod tests;
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct X86Imm
 {
     // Size in bits
@@ -15,7 +15,7 @@ pub struct X86Imm
     pub value: i64
 }
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct X86UImm
 {
     // Size in bits
