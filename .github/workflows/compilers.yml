@@ -83,7 +83,7 @@ jobs:
             value: 'gcc-11 -O2 -fcf-protection -Wl,-z,now'
             container: gcc-11
             env:
-              # FIXME: Drop skiping options
+              # FIXME: Drop skipping options
               # https://bugs.ruby-lang.org/issues/18061
               # https://sourceware.org/annobin/annobin.html/Test-pie.html
               # https://sourceware.org/annobin/annobin.html/Test-notes.html
