@@ -433,7 +433,7 @@ impl Assembler
             match op {
                 // Check for Add, Sub, And, Mov, with two memory operands.
                 // Load one operand into memory.
-                Op::Add | Op::Sub | Op::And => {
+                Op::Add | Op::Sub | Op::And | Op::Mov => {
                     match opnds.as_slice() {
                         [Opnd::Mem(_), Opnd::Mem(_)] => {
                             // We load opnd1 because for mov, opnd0 is the output
@@ -507,27 +507,42 @@ impl Assembler
                 }
             }
 
+            // If this instruction is used by another instruction,
+            // we need to allocate a register to it
+            let mut out_reg = Opnd::None;
+            if live_ranges[index] != index {
+                // If this instruction's first operand maps to a register and
+                // this is the last use of the register, reuse the register
+                // We do this to improve register allocation on x86
+                if opnds.len() > 0 {
+                    if let Opnd::InsnOut(idx) = opnds[0] {
+                        if live_ranges[idx] == index {
+                            if let Opnd::Reg(reg) = asm.insns[idx].out {
+                                out_reg = Opnd::Reg(alloc_reg(&mut pool, &vec![reg]))
+                            }
+                        }
+                    }
+                }
+
+                if out_reg == Opnd::None {
+                    // Allocate a new register for this instruction
+                    out_reg = Opnd::Reg(alloc_reg(&mut pool, &regs))
+                }
+            }
+
             // Replace InsnOut operands by their corresponding register
-            let opnds = opnds.into_iter().map(|opnd|
+            let reg_opnds = opnds.into_iter().map(|opnd|
                 match opnd {
                      Opnd::InsnOut(idx) => asm.insns[idx].out,
                      _ => opnd,
                 }
             ).collect();
 
-            asm.push_insn(op, opnds, target);
+            asm.push_insn(op, reg_opnds, target);
 
+            // Set the output register for this instruction
             let num_insns = asm.insns.len();
-            if live_ranges[index] != index {
-                // This instruction is used by another instruction, so we need
-                // to allocate a register for it.
-                asm.insns[num_insns - 1].out = Opnd::Reg(alloc_reg(&mut pool, &regs));
-            }
-            else
-            {
-                // Nobody is using the output of this instruction
-                asm.insns[num_insns - 1].out = Opnd::None;
-            }
+            asm.insns[num_insns - 1].out = out_reg;
         });
 
         assert_eq!(pool, 0, "Expected all registers to be returned to the pool");
@@ -731,12 +746,22 @@ mod tests {
     fn test_compile()
     {
         let mut asm = Assembler::new();
-        let mut cb = CodeBlock::new_dummy(64 * 1024);
+        let mut cb = CodeBlock::new_dummy(1024);
         let regs = Assembler::get_scrach_regs();
 
         let out = asm.add(Opnd::Reg(regs[0]), Opnd::UImm(2));
         asm.add(out, Opnd::UImm(2));
 
+        asm.compile(&mut cb);
+    }
+
+    // Test full codegen pipeline
+    #[test]
+    fn test_mov_mem2mem()
+    {
+        let mut asm = Assembler::new();
+        let mut cb = CodeBlock::new_dummy(1024);
+        asm.mov(Opnd::mem(64, SP, 0), Opnd::mem(64, SP, 8));
         asm.compile(&mut cb);
     }
 }
