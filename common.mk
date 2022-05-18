@@ -1447,10 +1447,11 @@ yes-test-bundler-parallel: yes-test-bundler-prepare
 		$(PARALLELRSPECOPTS) $(srcdir)/spec/bundler/$(BUNDLER_SPECS)
 no-test-bundler-parallel:
 
-test-annocheck: $(target_os)-test-annocheck
-linux-test-annocheck: $(PROGRAM)
+# The annocheck supports ELF format binaries compiled for any OS and for any
+# architecture. It is designed to be independent of the host OS and the
+# architecture. The test-annocheck.sh requires docker or podman.
+test-annocheck: $(PROGRAM)
 	$(tooldir)/test-annocheck.sh $(PROGRAM)
-$(target_os)-test-annocheck: PHONY
 
 GEM = up
 sync-default-gems:
