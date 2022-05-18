@@ -2,6 +2,7 @@
 #![allow(unused_variables)]
 #![allow(unused_imports)]
 
+use std::fmt;
 use std::convert::From;
 use crate::cruby::{VALUE};
 use crate::virtualmem::{CodePtr};
@@ -317,6 +318,7 @@ impl Assembler
         }
     }
 
+    /// Append an instruction to the list
     fn push_insn(&mut self, op: Op, opnds: Vec<Opnd>, target: Option<Target>) -> Opnd
     {
         // If we find any InsnOut from previous instructions, we're going to
@@ -345,7 +347,7 @@ impl Assembler
         Opnd::InsnOut(insn_idx)
     }
 
-    // Add a comment at the current position
+    /// Add a comment at the current position
     fn comment(&mut self, text: &str)
     {
         let insn = Insn {
@@ -359,7 +361,7 @@ impl Assembler
         self.insns.push(insn);
     }
 
-    // Add a label at the current position
+    /// Add a label at the current position
     fn label(&mut self, name: &str) -> Target
     {
         let insn_idx = self.insns.len();
@@ -430,13 +432,14 @@ impl Assembler
     {
         self.transform_insns(|asm, _, op, opnds, target| {
             match op {
-                // Check for Add, Sub, or Mov instructions with two memory
-                // operands.
-                Op::Add | Op::Sub | Op::Mov => {
+                // Check for Add, Sub, And, Mov, with two memory operands.
+                // Load one operand into memory.
+                Op::Add | Op::Sub | Op::And => {
                     match opnds.as_slice() {
                         [Opnd::Mem(_), Opnd::Mem(_)] => {
-                            let output = asm.load(opnds[0]);
-                            asm.push_insn(op, vec![output, opnds[1]], None);
+                            // We load opnd1 because for mov, opnd0 is the output
+                            let opnd1 = asm.load(opnds[1]);
+                            asm.push_insn(op, vec![opnds[0], opnd1], None);
                         },
                         _ => {
                             asm.push_insn(op, opnds, target);
@@ -480,7 +483,8 @@ impl Assembler
         }
 
         let live_ranges: Vec<usize> = std::mem::take(&mut self.live_ranges);
-        let result = self.transform_insns(|asm, index, op, opnds, target| {
+
+        let asm = self.transform_insns(|asm, index, op, opnds, target| {
             // Check if this is the last instruction that uses an operand that
             // spans more than one instruction. In that case, return the
             // allocated register to the pool.
@@ -498,24 +502,37 @@ impl Assembler
                         if let Opnd::Reg(reg) = asm.insns[start_index].out {
                             dealloc_reg(&mut pool, &regs, &reg);
                         } else {
-                            unreachable!();
+                            unreachable!("no register allocated for insn");
                         }
                     }
                 }
             }
 
+            // Replace InsnOut operands by their corresponding register
+            let opnds = opnds.into_iter().map(|opnd|
+                match opnd {
+                     Opnd::InsnOut(idx) => asm.insns[idx].out,
+                     _ => opnd,
+                }
+            ).collect();
+
             asm.push_insn(op, opnds, target);
 
+            let num_insns = asm.insns.len();
             if live_ranges[index] != index {
                 // This instruction is used by another instruction, so we need
                 // to allocate a register for it.
-                let length = asm.insns.len();
-                asm.insns[length - 1].out = Opnd::Reg(alloc_reg(&mut pool, &regs));
+                asm.insns[num_insns - 1].out = Opnd::Reg(alloc_reg(&mut pool, &regs));
+            }
+            else
+            {
+                // Nobody is using the output of this instruction
+                asm.insns[num_insns - 1].out = Opnd::None;
             }
         });
 
         assert_eq!(pool, 0, "Expected all registers to be returned to the pool");
-        result
+        asm
     }
 
     // Optimize and compile the stored instructions
@@ -527,10 +544,16 @@ impl Assembler
 
         let scratch_regs = Self::get_scrach_regs();
 
-        self
+        dbg!(self
         .split_insns()
-        .alloc_regs(scratch_regs)
-        .target_emit(cb)
+        .alloc_regs(scratch_regs))
+        .target_emit(cb);
+    }
+}
+
+impl fmt::Debug for Assembler {
+    fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
+        fmt.debug_list().entries(self.insns.iter()).finish()
     }
 }
 
@@ -704,12 +727,17 @@ mod tests {
         assert_eq!(result.insns[5].out, Opnd::Reg(regs[0]));
     }
 
+    // Test full codegen pipeline
     #[test]
     fn test_compile()
     {
-        // TODO: test full compile pipeline
+        let mut asm = Assembler::new();
+        let mut cb = CodeBlock::new_dummy(64 * 1024);
+        let regs = Assembler::get_scrach_regs();
 
+        let out = asm.add(Opnd::Reg(regs[0]), Opnd::UImm(2));
+        asm.add(out, Opnd::UImm(2));
 
-
+        asm.compile(&mut cb);
     }
 }
