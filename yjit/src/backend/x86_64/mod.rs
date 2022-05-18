@@ -69,6 +69,7 @@ impl Assembler
                 Store,
                 */
 
+                Op::Load => add(cb, insn.out.into(), insn.opnds[0].into()),
                 Op::Mov => add(cb, insn.opnds[0].into(), insn.opnds[1].into()),
 
                 // Test and set flags
