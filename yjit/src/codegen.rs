@@ -2991,6 +2991,16 @@ fn gen_opt_empty_p(
     gen_opt_send_without_block(jit, ctx, cb, ocb)
 }
 
+fn gen_opt_succ(
+    jit: &mut JITState,
+    ctx: &mut Context,
+    cb: &mut CodeBlock,
+    ocb: &mut OutlinedCb,
+) -> CodegenStatus {
+    // Delegate to send, call the method on the recv
+    gen_opt_send_without_block(jit, ctx, cb, ocb)
+}
+
 fn gen_opt_str_freeze(
     jit: &mut JITState,
     ctx: &mut Context,
@@ -5820,6 +5830,7 @@ fn get_gen_fn(opcode: VALUE) -> Option<InsnGenFn> {
         OP_OPT_LTLT => Some(gen_opt_ltlt),
         OP_OPT_NIL_P => Some(gen_opt_nil_p),
         OP_OPT_EMPTY_P => Some(gen_opt_empty_p),
+        OP_OPT_SUCC => Some(gen_opt_succ),
         OP_OPT_NOT => Some(gen_opt_not),
         OP_OPT_SIZE => Some(gen_opt_size),
         OP_OPT_LENGTH => Some(gen_opt_length),

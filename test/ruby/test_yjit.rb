@@ -86,6 +86,10 @@ class TestYJIT < Test::Unit::TestCase
     assert_compiles(':foo', insns: %i[putobject], result: :foo)
   end
 
+  def test_compile_opt_succ
+    assert_compiles('1.succ', insns: %i[opt_succ], result: 2)
+  end
+
   def test_compile_opt_not
     assert_compiles('!false', insns: %i[opt_not], result: true)
     assert_compiles('!nil', insns: %i[opt_not], result: true)
