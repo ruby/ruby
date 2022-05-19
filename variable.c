@@ -2307,6 +2307,7 @@ autoload_feature_lookup_or_create(VALUE feature, struct autoload_data **autoload
     return autoload_data_value;
 }
 
+#if 0
 static VALUE
 autoload_feature_clear_if_empty(VALUE argument)
 {
@@ -2320,6 +2321,7 @@ autoload_feature_clear_if_empty(VALUE argument)
 
     return Qnil;
 }
+#endif
 
 static struct st_table* autoload_table_lookup_or_create(VALUE module) {
     // Get or create an autoload table in the class instance variables:
