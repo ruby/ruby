@@ -3,6 +3,7 @@
 
 use crate::asm::x86_64::*;
 use crate::asm::*;
+use crate::backend::ir::*;
 use crate::core::*;
 use crate::cruby::*;
 use crate::invariants::*;
@@ -885,6 +886,10 @@ fn gen_pop(
     KeepCompiling
 }
 
+
+
+
+/*
 fn gen_dup(
     _jit: &mut JITState,
     ctx: &mut Context,
@@ -900,17 +905,10 @@ fn gen_dup(
 
     KeepCompiling
 }
-
-
-
-
-
-
-
-use crate::backend::ir::*;
+*/
 
 #[allow(dead_code)]
-fn gen_dup_ir(
+fn gen_dup(
     _jit: &mut JITState,
     ctx: &mut Context,
     cb: &mut CodeBlock,

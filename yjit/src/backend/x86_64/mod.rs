@@ -98,14 +98,13 @@ impl Assembler
 
                 Op::Label => {},
 
-                Op::Add => add(cb, insn.opnds[0].into(), insn.opnds[1].into()),
+                Op::Add => {
+                    assert_eq!(insn.out, insn.opnds[0]);
+                    add(cb, insn.opnds[0].into(), insn.opnds[1].into())
+                },
 
-                /*
-                Load
-                Store,
-                */
-
-                Op::Load => add(cb, insn.out.into(), insn.opnds[0].into()),
+                Op::Load => mov(cb, insn.out.into(), insn.opnds[0].into()),
+                //Store
                 Op::Mov => mov(cb, insn.opnds[0].into(), insn.opnds[1].into()),
 
                 // Test and set flags
@@ -125,10 +124,10 @@ impl Assembler
     // Optimize and compile the stored instructions
     pub fn compile_with_regs(self, cb: &mut CodeBlock, regs: Vec<Reg>)
     {
-        dbg!(self
+        self
         .target_split()
         .split_loads()
-        .alloc_regs(regs))
+        .alloc_regs(regs)
         .target_emit(cb);
     }
 }
