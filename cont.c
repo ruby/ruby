@@ -274,7 +274,6 @@ static ID fiber_initialize_keywords[2] = {0};
 #define ERRNOMSG strerror(errno)
 
 // Locates the stack vacancy details for the given stack.
-// Requires that fiber_pool_vacancy fits within one page.
 inline static struct fiber_pool_vacancy *
 fiber_pool_vacancy_pointer(void * base, size_t size)
 {
@@ -284,6 +283,24 @@ fiber_pool_vacancy_pointer(void * base, size_t size)
         (char*)base + STACK_DIR_UPPER(0, size - RB_PAGE_SIZE)
     );
 }
+
+#if defined(COROUTINE_SANITIZE_ADDRESS)
+// Compute the base pointer for a vacant stack, for the area which can be poisoned.
+inline static void *
+fiber_pool_stack_poison_base(struct fiber_pool_stack * stack)
+{
+    STACK_GROW_DIR_DETECTION;
+
+    return (char*)stack->base + STACK_DIR_UPPER(RB_PAGE_SIZE, 0);
+}
+
+// Compute the size of the vacant stack, for the area that can be poisoned.
+inline static size_t
+fiber_pool_stack_poison_size(struct fiber_pool_stack * stack)
+{
+    return stack->size - RB_PAGE_SIZE;
+}
+#endif
 
 // Reset the current stack pointer and available size of the given stack.
 inline static void
@@ -634,6 +651,10 @@ fiber_pool_stack_acquire(struct fiber_pool * fiber_pool)
     VM_ASSERT(vacancy);
     VM_ASSERT(vacancy->stack.base);
 
+#if defined(COROUTINE_SANITIZE_ADDRESS)
+    __asan_unpoison_memory_region(fiber_pool_stack_poison_base(&vacancy->stack), fiber_pool_stack_poison_size(&vacancy->stack));
+#endif
+
     // Take the top item from the free list:
     fiber_pool->used += 1;
 
@@ -679,6 +700,10 @@ fiber_pool_stack_free(struct fiber_pool_stack * stack)
     // Not available in all versions of Windows.
     //DiscardVirtualMemory(base, size);
 #endif
+
+#if defined(COROUTINE_SANITIZE_ADDRESS)
+    __asan_poison_memory_region(fiber_pool_stack_poison_base(stack), fiber_pool_stack_poison_size(stack));
+#endif
 }
 
 // Release and return a stack to the vacancy list.
@@ -698,7 +723,7 @@ fiber_pool_stack_release(struct fiber_pool_stack * stack)
     fiber_pool_vacancy_reset(vacancy);
 
     // Push the vacancy into the vancancies list:
-    pool->vacancies = fiber_pool_vacancy_push(vacancy, stack->pool->vacancies);
+    pool->vacancies = fiber_pool_vacancy_push(vacancy, pool->vacancies);
     pool->used -= 1;
 
 #ifdef FIBER_POOL_ALLOCATION_FREE
@@ -751,6 +776,11 @@ static COROUTINE
 fiber_entry(struct coroutine_context * from, struct coroutine_context * to)
 {
     rb_fiber_t *fiber = to->argument;
+
+#if defined(COROUTINE_SANITIZE_ADDRESS)
+    __sanitizer_finish_switch_fiber(to->fake_stack, NULL, NULL);
+#endif
+
     rb_thread_t *thread = fiber->cont.saved_ec.thread_ptr;
 
 #ifdef COROUTINE_PTHREAD_CONTEXT
@@ -1379,8 +1409,16 @@ fiber_setcontext(rb_fiber_t *new_fiber, rb_fiber_t *old_fiber)
 
     // if (DEBUG) fprintf(stderr, "fiber_setcontext: %p[%p] -> %p[%p]\n", (void*)old_fiber, old_fiber->stack.base, (void*)new_fiber, new_fiber->stack.base);
 
+#if defined(COROUTINE_SANITIZE_ADDRESS)
+    __sanitizer_start_switch_fiber(FIBER_TERMINATED_P(old_fiber) ? NULL : &old_fiber->context.fake_stack, new_fiber->context.stack_base, new_fiber->context.stack_size);
+#endif
+
     /* swap machine context */
     struct coroutine_context * from = coroutine_transfer(&old_fiber->context, &new_fiber->context);
+
+#if defined(COROUTINE_SANITIZE_ADDRESS)
+    __sanitizer_finish_switch_fiber(old_fiber->context.fake_stack, NULL, NULL);
+#endif
 
     if (from == NULL) {
         rb_syserr_fail(errno, "coroutine_transfer");
