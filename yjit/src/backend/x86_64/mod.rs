@@ -45,12 +45,46 @@ impl From<Opnd> for X86Opnd {
 impl Assembler
 {
     // Get the list of registers from which we can allocate on this platform
-    pub fn get_scrach_regs() -> Vec<Reg>
+    pub fn get_scratch_regs() -> Vec<Reg>
     {
         vec![
             RAX_REG,
             RCX_REG,
         ]
+    }
+
+    // Emit platform-specific machine code
+    fn target_split(mut self) -> Assembler
+    {
+        let live_ranges: Vec<usize> = std::mem::take(&mut self.live_ranges);
+
+        self.transform_insns(|asm, index, op, opnds, target| {
+            match op {
+                Op::Add | Op::Sub | Op::And => {
+                    match opnds.as_slice() {
+                        // Instruction output whose live range spans beyond this instruction
+                        [Opnd::InsnOut(out_idx), _] => {
+                            if live_ranges[*out_idx] > index {
+                                let opnd0 = asm.load(opnds[0]);
+                                asm.push_insn(op, vec![opnd0, opnds[1]], None);
+                                return;
+                            }
+                        },
+
+                        [Opnd::Mem(_), _] => {
+                            let opnd0 = asm.load(opnds[0]);
+                            asm.push_insn(op, vec![opnd0, opnds[1]], None);
+                            return;
+                        },
+
+                        _ => {}
+                    }
+                },
+                _ => {}
+            };
+
+            asm.push_insn(op, opnds, target);
+        })
     }
 
     // Emit platform-specific machine code
@@ -86,5 +120,15 @@ impl Assembler
                 _ => panic!("unsupported instruction passed to x86 backend")
             };
         }
+    }
+
+    // Optimize and compile the stored instructions
+    pub fn compile_with_regs(self, cb: &mut CodeBlock, regs: Vec<Reg>)
+    {
+        dbg!(self
+        .target_split()
+        .split_loads()
+        .alloc_regs(regs))
+        .target_emit(cb);
     }
 }
