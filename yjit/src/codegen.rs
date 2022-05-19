@@ -901,6 +901,42 @@ fn gen_dup(
     KeepCompiling
 }
 
+
+
+
+
+
+
+use crate::backend::ir::*;
+
+#[allow(dead_code)]
+fn gen_dup_ir(
+    _jit: &mut JITState,
+    ctx: &mut Context,
+    cb: &mut CodeBlock,
+    _ocb: &mut OutlinedCb,
+) -> CodegenStatus {
+
+    let mut asm = Assembler::new();
+
+    let dup_val = ctx.ir_stack_pop(0);
+    let (mapping, tmp_type) = ctx.get_opnd_mapping(StackOpnd(0));
+
+    let loc0 = ctx.ir_stack_push_mapping((mapping, tmp_type));
+    asm.mov(loc0, dup_val);
+
+    asm.compile(cb);
+
+    KeepCompiling
+}
+
+
+
+
+
+
+
+
 // duplicate stack top n elements
 fn gen_dupn(
     jit: &mut JITState,
