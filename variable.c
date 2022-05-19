@@ -2299,7 +2299,8 @@ autoload_feature_lookup_or_create(VALUE feature, struct autoload_data **autoload
         if (autoload_data_pointer) *autoload_data_pointer = autoload_data;
 
         rb_hash_aset(autoload_features, feature, autoload_data_value);
-    } else if (autoload_data_pointer) {
+    }
+    else if (autoload_data_pointer) {
         *autoload_data_pointer = rb_check_typeddata(autoload_data_value, &autoload_data_type);
     }
 
@@ -2323,7 +2324,9 @@ autoload_feature_clear_if_empty(VALUE argument)
 }
 #endif
 
-static struct st_table* autoload_table_lookup_or_create(VALUE module) {
+static struct st_table *
+autoload_table_lookup_or_create(VALUE module)
+{
     // Get or create an autoload table in the class instance variables:
     struct st_table *table = RCLASS_IV_TBL(module);
     VALUE autoload_table_value;
@@ -2654,7 +2657,9 @@ autoload_apply_constants(VALUE _arguments)
         struct autoload_const *autoload_const;
         struct autoload_const *next;
 
-        // We use safe iteration here because `autoload_const_set` will eventually invoke `autoload_delete` which will remove the constant from the linked list. In theory, once the `autoload_data->constants` linked list is empty, we can remove it.
+        // We use safe iteration here because `autoload_const_set` will eventually invoke
+        // `autoload_delete` which will remove the constant from the linked list. In theory, once
+        // the `autoload_data->constants` linked list is empty, we can remove it.
 
         // Iterate over all constants and assign them:
         ccan_list_for_each_safe(&arguments->autoload_data->constants, autoload_const, next, cnode) {
@@ -2680,7 +2685,10 @@ autoload_try_load(VALUE _arguments)
 {
     struct autoload_load_arguments *arguments = (struct autoload_load_arguments*)_arguments;
 
-    // We have tried to require the autoload feature, so we shouldn't bother trying again in any other threads. More specifically, `arguments->result` starts of as nil, but then contains the result of `require` which is either true or false. Provided it's not nil, it means some other thread has got as far as evaluating the require statement completely.
+    // We have tried to require the autoload feature, so we shouldn't bother trying again in any
+    // other threads. More specifically, `arguments->result` starts of as nil, but then contains the
+    // result of `require` which is either true or false. Provided it's not nil, it means some other
+    // thread has got as far as evaluating the require statement completely.
     if (arguments->result != Qnil) return arguments->result;
 
     // Try to require the autoload feature:
@@ -2694,7 +2702,8 @@ autoload_try_load(VALUE _arguments)
         arguments->result = Qfalse;
 
         rb_const_remove(arguments->module, arguments->name);
-    } else {
+    }
+    else {
         // Otherwise, it was loaded, copy the flags from the autoload constant:
         ce->flag |= arguments->flag;
     }
