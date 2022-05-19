@@ -310,7 +310,7 @@ pub struct Assembler
 
 impl Assembler
 {
-    fn new() -> Assembler {
+    pub fn new() -> Assembler {
         Assembler {
             insns: Vec::default(),
             live_ranges: Vec::default()
@@ -347,7 +347,7 @@ impl Assembler
     }
 
     /// Add a comment at the current position
-    fn comment(&mut self, text: &str)
+    pub fn comment(&mut self, text: &str)
     {
         let insn = Insn {
             op: Op::Comment,
@@ -362,7 +362,7 @@ impl Assembler
     }
 
     /// Add a label at the current position
-    fn label(&mut self, name: &str) -> Target
+    pub fn label(&mut self, name: &str) -> Target
     {
         let insn_idx = self.insns.len();
 
@@ -552,7 +552,7 @@ impl Assembler
     }
 
     // Optimize and compile the stored instructions
-    fn compile(self, cb: &mut CodeBlock)
+    pub fn compile(self, cb: &mut CodeBlock)
     {
         // NOTE: for arm we're going to want to split loads but also stores
         // This can be done in a platform-agnostic way, but the set of passes
@@ -576,12 +576,12 @@ impl fmt::Debug for Assembler {
 impl Assembler
 {
     // Jump if not zero
-    fn jnz(&mut self, target: Target)
+    pub fn jnz(&mut self, target: Target)
     {
         self.push_insn(Op::Jnz, vec![], Some(target));
     }
 
-    fn jbe(&mut self, target: Target)
+    pub fn jbe(&mut self, target: Target)
     {
         self.push_insn(Op::Jbe, vec![], Some(target));
     }
@@ -591,7 +591,7 @@ macro_rules! def_push_1_opnd {
     ($op_name:ident, $opcode:expr) => {
         impl Assembler
         {
-            fn $op_name(&mut self, opnd0: Opnd) -> Opnd
+            pub fn $op_name(&mut self, opnd0: Opnd) -> Opnd
             {
                 self.push_insn($opcode, vec![opnd0], None)
             }
@@ -603,7 +603,7 @@ macro_rules! def_push_2_opnd {
     ($op_name:ident, $opcode:expr) => {
         impl Assembler
         {
-            fn $op_name(&mut self, opnd0: Opnd, opnd1: Opnd) -> Opnd
+            pub fn $op_name(&mut self, opnd0: Opnd, opnd1: Opnd) -> Opnd
             {
                 self.push_insn($opcode, vec![opnd0, opnd1], None)
             }
@@ -615,7 +615,7 @@ macro_rules! def_push_2_opnd_no_out {
     ($op_name:ident, $opcode:expr) => {
         impl Assembler
         {
-            fn $op_name(&mut self, opnd0: Opnd, opnd1: Opnd)
+            pub fn $op_name(&mut self, opnd0: Opnd, opnd1: Opnd)
             {
                 self.push_insn($opcode, vec![opnd0, opnd1], None);
             }
