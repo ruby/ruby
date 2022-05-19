@@ -27,14 +27,12 @@ It is simple, straightforward, and extensible.
   well as Windows, macOS, etc.) cf.
   https://github.com/ruby/ruby/blob/master/doc/maintainers.rdoc#label-Platform+Maintainers
 
-## How to get Ruby
+## How to get Ruby with Git
 
 For a complete list of ways to install Ruby, including using third-party tools
 like rvm, see:
 
 https://www.ruby-lang.org/en/downloads/
-
-### Git
 
 The mirror of the Ruby source tree can be checked out with the following command:
 
@@ -47,17 +45,6 @@ to see the list of branches:
 
 You may also want to use https://git.ruby-lang.org/ruby.git (actual master of Ruby source)
 if you are a committer.
-
-### Subversion
-
-Stable branches for older Ruby versions can be checked out with also the
-following command:
-
-    $ svn co https://svn.ruby-lang.org/repos/ruby/branches/ruby_2_6/ ruby
-
-Try the following command to see the list of branches:
-
-    $ svn ls https://svn.ruby-lang.org/repos/ruby/branches/
 
 ## Ruby home page
 
