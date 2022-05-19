@@ -59,7 +59,9 @@ impl Assembler
         // For each instruction
         for insn in &self.insns {
             match insn.op {
+                // TODO: need to map the position of comments in the machine code
                 Op::Comment => {},
+
                 Op::Label => {},
 
                 Op::Add => add(cb, insn.opnds[0].into(), insn.opnds[1].into()),
@@ -70,13 +72,12 @@ impl Assembler
                 */
 
                 Op::Load => add(cb, insn.out.into(), insn.opnds[0].into()),
-                Op::Mov => add(cb, insn.opnds[0].into(), insn.opnds[1].into()),
+                Op::Mov => mov(cb, insn.opnds[0].into(), insn.opnds[1].into()),
 
                 // Test and set flags
-                Op::Test => add(cb, insn.opnds[0].into(), insn.opnds[1].into()),
+                Op::Test => test(cb, insn.opnds[0].into(), insn.opnds[1].into()),
 
                 /*
-                Test,
                 Cmp,
                 Jnz,
                 Jbe,

@@ -358,6 +358,7 @@ impl Assembler
             pos: None
         };
         self.insns.push(insn);
+        self.live_ranges.push(self.insns.len());
     }
 
     /// Add a label at the current position
@@ -374,6 +375,7 @@ impl Assembler
             pos: None
         };
         self.insns.push(insn);
+        self.live_ranges.push(self.insns.len());
 
         Target::LabelIdx(insn_idx)
     }
@@ -761,6 +763,7 @@ mod tests {
     {
         let mut asm = Assembler::new();
         let mut cb = CodeBlock::new_dummy(1024);
+        asm.comment("check that comments work too");
         asm.mov(Opnd::mem(64, SP, 0), Opnd::mem(64, SP, 8));
         asm.compile(&mut cb);
     }
