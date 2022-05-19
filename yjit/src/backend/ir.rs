@@ -778,4 +778,20 @@ mod tests {
 
         asm.compile_with_regs(&mut cb, vec![regs[0]]);
     }
+
+    // Multiple registers needed and register reuse
+    #[test]
+    fn test_reuse_reg()
+    {
+        let mut asm = Assembler::new();
+        let mut cb = CodeBlock::new_dummy(1024);
+        let regs = Assembler::get_scratch_regs();
+
+        let v0 = asm.add(Opnd::mem(64, SP, 0), Opnd::UImm(1));
+        let v1 = asm.add(Opnd::mem(64, SP, 8), Opnd::UImm(1));
+        let v2 = asm.add(v0, Opnd::UImm(1));
+        asm.add(v0, v2);
+
+        asm.compile_with_regs(&mut cb, vec![regs[0], regs[1]]);
+    }
 }
