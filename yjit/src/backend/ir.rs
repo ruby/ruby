@@ -306,7 +306,7 @@ pub struct Assembler
 
     /// Parallel vec with insns
     /// Index of the last insn using the output of this insn
-    live_ranges: Vec<usize>
+    pub(super) live_ranges: Vec<usize>
 }
 
 impl Assembler
@@ -319,7 +319,7 @@ impl Assembler
     }
 
     /// Append an instruction to the list
-    fn push_insn(&mut self, op: Op, opnds: Vec<Opnd>, target: Option<Target>) -> Opnd
+    pub(super) fn push_insn(&mut self, op: Op, opnds: Vec<Opnd>, target: Option<Target>) -> Opnd
     {
         // If we find any InsnOut from previous instructions, we're going to
         // update the live range of the previous instruction to point to this
@@ -382,7 +382,7 @@ impl Assembler
     }
 
     /// Transform input instructions, consumes the input assembler
-    fn transform_insns<F>(mut self, mut map_insn: F) -> Assembler
+    pub(super) fn transform_insns<F>(mut self, mut map_insn: F) -> Assembler
         where F: FnMut(&mut Assembler, usize, Op, Vec<Opnd>, Option<Target>)
     {
         let mut asm = Assembler::new();
@@ -430,7 +430,7 @@ impl Assembler
     /// Transforms the instructions by splitting instructions that cannot be
     /// represented in the final architecture into multiple instructions that
     /// can.
-    fn split_insns(self) -> Assembler
+    pub(super) fn split_loads(self) -> Assembler
     {
         self.transform_insns(|asm, _, op, opnds, target| {
             match op {
@@ -458,7 +458,7 @@ impl Assembler
     /// Sets the out field on the various instructions that require allocated
     /// registers because their output is used as the operand on a subsequent
     /// instruction. This is our implementation of the linear scan algorithm.
-    fn alloc_regs(mut self, regs: Vec<Reg>) -> Assembler
+    pub(super) fn alloc_regs(mut self, regs: Vec<Reg>) -> Assembler
     {
         // First, create the pool of registers.
         let mut pool: u32 = 0;
@@ -517,6 +517,8 @@ impl Assembler
                 // If this instruction's first operand maps to a register and
                 // this is the last use of the register, reuse the register
                 // We do this to improve register allocation on x86
+                // e.g. out  = add(reg0, reg1)
+                //      reg0 = add(reg0, reg1)
                 if opnds.len() > 0 {
                     if let Opnd::InsnOut(idx) = opnds[0] {
                         if live_ranges[idx] == index {
@@ -527,8 +529,8 @@ impl Assembler
                     }
                 }
 
+                // Allocate a new register for this instruction
                 if out_reg == Opnd::None {
-                    // Allocate a new register for this instruction
                     out_reg = Opnd::Reg(alloc_reg(&mut pool, &regs))
                 }
             }
@@ -552,19 +554,11 @@ impl Assembler
         asm
     }
 
-    // Optimize and compile the stored instructions
+    /// Compile the instructions down to machine code
     pub fn compile(self, cb: &mut CodeBlock)
     {
-        // NOTE: for arm we're going to want to split loads but also stores
-        // This can be done in a platform-agnostic way, but the set of passes
-        // we run will be slightly different.
-
-        let scratch_regs = Self::get_scrach_regs();
-
-        dbg!(self
-        .split_insns()
-        .alloc_regs(scratch_regs))
-        .target_emit(cb);
+        let scratch_regs = Self::get_scratch_regs();
+        self.compile_with_regs(cb, scratch_regs);
     }
 }
 
@@ -694,17 +688,17 @@ mod tests {
     }
 
     #[test]
-    fn test_split_insns() {
+    fn test_split_loads() {
         let mut asm = Assembler::new();
 
-        let regs = Assembler::get_scrach_regs();
+        let regs = Assembler::get_scratch_regs();
 
         asm.add(
             Opnd::mem(64, Opnd::Reg(regs[0]), 0),
             Opnd::mem(64, Opnd::Reg(regs[1]), 0)
         );
 
-        let result = asm.split_insns();
+        let result = asm.split_loads();
         assert_eq!(result.insns.len(), 2);
         assert_eq!(result.insns[0].op, Op::Load);
     }
@@ -734,11 +728,11 @@ mod tests {
         asm.add(out3, Opnd::UImm(6));
 
         // Here we're going to allocate the registers.
-        let result = asm.alloc_regs(Assembler::get_scrach_regs());
+        let result = asm.alloc_regs(Assembler::get_scratch_regs());
 
         // Now we're going to verify that the out field has been appropriately
         // updated for each of the instructions that needs it.
-        let regs = Assembler::get_scrach_regs();
+        let regs = Assembler::get_scratch_regs();
         assert_eq!(result.insns[0].out, Opnd::Reg(regs[0]));
         assert_eq!(result.insns[2].out, Opnd::Reg(regs[1]));
         assert_eq!(result.insns[5].out, Opnd::Reg(regs[0]));
@@ -750,7 +744,7 @@ mod tests {
     {
         let mut asm = Assembler::new();
         let mut cb = CodeBlock::new_dummy(1024);
-        let regs = Assembler::get_scrach_regs();
+        let regs = Assembler::get_scratch_regs();
 
         let out = asm.add(Opnd::Reg(regs[0]), Opnd::UImm(2));
         asm.add(out, Opnd::UImm(2));
@@ -758,14 +752,31 @@ mod tests {
         asm.compile(&mut cb);
     }
 
-    // Test full codegen pipeline
+    // Test memory-to-memory move
     #[test]
     fn test_mov_mem2mem()
     {
         let mut asm = Assembler::new();
         let mut cb = CodeBlock::new_dummy(1024);
+        let regs = Assembler::get_scratch_regs();
+
         asm.comment("check that comments work too");
         asm.mov(Opnd::mem(64, SP, 0), Opnd::mem(64, SP, 8));
-        asm.compile(&mut cb);
+
+        asm.compile_with_regs(&mut cb, vec![regs[0]]);
+    }
+
+    // Test load of register into new register
+    #[test]
+    fn test_load_reg()
+    {
+        let mut asm = Assembler::new();
+        let mut cb = CodeBlock::new_dummy(1024);
+        let regs = Assembler::get_scratch_regs();
+
+        let out = asm.load(SP);
+        asm.mov(Opnd::mem(64, SP, 0), out);
+
+        asm.compile_with_regs(&mut cb, vec![regs[0]]);
     }
 }
