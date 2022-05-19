@@ -6,17 +6,22 @@ in the Ruby core and in the Ruby standard library.
 
 ## Generating documentation
 
-Most Ruby documentation lives in the source files and is written in [RDoc format](https://ruby.github.io/rdoc/RDoc/Markup.html).
+Most Ruby documentation lives in the source files and is written in
+[RDoc format](rdoc-ref:RDoc::Markup).
 
-Some pages live under the `doc` folder and can be written in either `.rdoc` or `.md` format, determined by the file extension.
+Some pages live under the `doc` folder and can be written in either
+`.rdoc` or `.md` format, determined by the file extension.
 
-To generate the output of documentation changes in HTML in the `{build folder}/.ext/html` directory, run the following inside your build directory:
+To generate the output of documentation changes in HTML in the
+`{build folder}/.ext/html` directory, run the following inside your
+build directory:
 
-```
+```sh
 make html
 ```
 
-Then you can preview your changes by opening `{build folder}/.ext/html/index.html` file in your browser.
+Then you can preview your changes by opening
+`{build folder}/.ext/html/index.html` file in your browser.
 
 
 ## Goal
@@ -56,10 +61,10 @@ Use only US-ASCII-compatible characters in a C source file.
 
 If want to put ASCII-incompatible characters into the documentation
 for a C-coded class, module, or method, there are workarounds
-involving new files <tt>doc/*.rdoc</tt>:
+involving new files `doc/*.rdoc`:
 
-- For class `Foo` (defined in file <tt>foo.c</tt>),
-  create file <tt>doc/foo.rdoc</tt>, declare <tt>class Foo; end</tt>,
+- For class `Foo` (defined in file `foo.c`),
+  create file `doc/foo.rdoc`, declare `class Foo; end`,
   and place the class documentation above that declaration:
 
     ```ruby
@@ -67,8 +72,8 @@ involving new files <tt>doc/*.rdoc</tt>:
     class Foo; end
     ```
 
-- Similarly, for module `Bar` (defined in file <tt>bar.c</tt>,
-  create file <tt>doc/bar.rdoc</tt>, declare <tt>module Bar; end</tt>,
+- Similarly, for module `Bar` (defined in file `bar.c`,
+  create file `doc/bar.rdoc`, declare `module Bar; end`,
   and place the module documentation above that declaration:
 
     ```ruby
@@ -81,8 +86,8 @@ involving new files <tt>doc/*.rdoc</tt>:
   in the rendered documentation.
 
     Therefore it's best to use file inclusion:
-    
-    - Retain the call-seq in the C code.
+
+    - Retain the `call-seq` in the C code.
     - Use file inclusion (`:include:`) to include text from an .rdoc file.
 
     Example:
@@ -93,7 +98,7 @@ involving new files <tt>doc/*.rdoc</tt>:
      *    each_byte {|byte| ... } -> self
      *    each_byte               -> enumerator
      *
-     *  \:include: doc/string/each_byte.rdoc
+     *  :include: doc/string/each_byte.rdoc
      *
      */
     ```
@@ -104,13 +109,13 @@ Ruby is documented using RDoc.
 For information on \RDoc syntax and features, see the
 [RDoc Markup Reference](rdoc-ref:RDoc::Markup@RDoc+Markup+Reference).
 
-### Output from <tt>irb</tt>
+### Output from `irb`
 
 For code examples, consider using interactive Ruby,
 [irb](https://ruby-doc.org/stdlib/libdoc/irb/rdoc/IRB.html).
 
 For a code example that includes `irb` output,
-consider aligning <tt># => ...</tt> in successive lines.
+consider aligning `# => ...` in successive lines.
 Alignment may sometimes aid readability:
 
 ```ruby
@@ -135,7 +140,7 @@ This is unnecessary for the HTML output, but helps in the `ri` output.
 ### Auto-Linking
 
 In general, \RDoc's auto-linking should not be suppressed.
-For example, we should write `Array`, not <tt>\Array</tt>.
+For example, we should write `Array`, not `\Array`.
 
 We might consider whether to suppress when:
 
@@ -172,7 +177,7 @@ The documentation for a class or module may include a "What's Here" section.
 
 Guidelines:
 
-- The section title is <tt>What's Here</tt>.
+- The section title is `What's Here`.
 - Consider listing the parent class and any included modules; consider
   [links](rdoc-ref:RDoc::Markup@Links)
   to their "What's Here" sections if those exist.
@@ -210,18 +215,18 @@ For methods written in Ruby, \RDoc documents the calling sequence automatically.
 
 For methods written in C, \RDoc cannot determine what arguments
 the method accepts, so those need to be documented using \RDoc directive
-[:call-seq:](rdoc-ref:RDoc::Markup@Method+arguments).
+[`:call-seq:`](rdoc-ref:RDoc::Markup@Method+arguments).
 
 Example:
 
-```
+```c
 *  call-seq:
 *    array.count -> integer
 *    array.count(obj) -> integer
 *    array.count {|element| ... } -> integer
 ```
 
-When creating the <tt>call-seq</tt>, use the form
+When creating the `call-seq`, use the form
 
 ```
 receiver_type.method_name(arguments) {|block_arguments|} -> return_type
@@ -234,9 +239,9 @@ In the cases where method can return multiple different types, separate the
 types with "or".  If the method can return any type, use "object".  If the
 method returns the receiver, use "self".
 
-In cases where the method accepts optional arguments, use a <tt>call-seq</tt>
-with an optional argument if the method has the same behavior when an argument
-is omitted as when the argument is passed with the default value.  For example,
+In cases where the method accepts optional arguments, use a `call-seq` with
+an optional argument if the method has the same behavior when an argument is
+omitted as when the argument is passed with the default value.  For example,
 use:
 
 ```
@@ -250,13 +255,13 @@ obj.respond_to?(symbol) -> true or false
 obj.respond_to?(symbol, include_all) -> true or false
 ```
 
-However, as shown above for <tt>Array#count</tt>, use separate lines if the
+However, as shown above for `Array#count`, use separate lines if the
 behavior is different if the argument is omitted.
 
-Omit aliases from the call-seq, but mention them near the end (see below).
+Omit aliases from the `call-seq`, but mention them near the end (see below).
 
 
-A `call-seq` block should have <tt>{|x| ... }</tt>, not <tt>{|x| block }</tt> or <tt>{|x| code }</tt>.
+A `call-seq` block should have `{|x| ... }`, not `{|x| block }` or `{|x| code }`.
 
 A `call-seq` output should:
 
@@ -271,7 +276,7 @@ method does and why you would want to use it.  Ideally, this
 is a single sentence, but for more complex methods it may require
 an entire paragraph.
 
-For <tt>Array#count</tt>, the synopsis is:
+For `Array#count`, the synopsis is:
 
 ```
 Returns a count of specified elements.
@@ -328,9 +333,9 @@ the behavior, but do not provide any examples.
 
 Only document exceptions raised if they are not obvious.  For example,
 if you have stated earlier than an argument type must be an integer,
-you do not need to document that a \TypeError is raised if a non-integer
+you do not need to document that a `TypeError` is raised if a non-integer
 is passed.  Do not provide examples of exceptions being raised unless
-that is a common case, such as \Hash#fetch raising a \KeyError.
+that is a common case, such as `Hash#fetch` raising a `KeyError`.
 
 ### Aliases
 
