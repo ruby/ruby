@@ -2,7 +2,7 @@ require_relative 'helper'
 
 class GemTest < Gem::TestCase
   def test_rubygems_normal_behaviour
-    _ = Gem::Util.popen(*ruby_with_rubygems_in_load_path, '-e', "'require \"rubygems\"'", {:err => [:child, :out]}).strip
+    _ = Gem::Util.popen(*ruby_with_rubygems_in_load_path, '-e', "'require \"rubygems\"'", { :err => [:child, :out] }).strip
     assert $?.success?
   end
 
@@ -13,7 +13,7 @@ class GemTest < Gem::TestCase
       intentionally_not_implemented_method
     RUBY
 
-    output = Gem::Util.popen(*ruby_with_rubygems_and_fake_operating_system_in_load_path(path), '-e', "'require \"rubygems\"'", {:err => [:child, :out]}).strip
+    output = Gem::Util.popen(*ruby_with_rubygems_and_fake_operating_system_in_load_path(path), '-e', "'require \"rubygems\"'", { :err => [:child, :out] }).strip
     assert !$?.success?
     assert_includes output, "undefined local variable or method `intentionally_not_implemented_method'"
     assert_includes output, "Loading the rubygems/defaults/operating_system.rb file caused an error. " \
@@ -40,7 +40,7 @@ class GemTest < Gem::TestCase
       *ruby_with_rubygems_and_fake_operating_system_in_load_path(path),
       '-e',
       "require \"rubygems\"; puts Gem::Specification.stubs.map(&:full_name)",
-      {:err => [:child, :out]}
+      { :err => [:child, :out] }
     ).strip
     begin
       assert_empty output
@@ -66,6 +66,6 @@ class GemTest < Gem::TestCase
   end
 
   def ruby_with_rubygems_and_fake_operating_system_in_load_path(operating_system_path)
-    [Gem.ruby, "-I", operating_system_path, "-I" , $LOAD_PATH.find{|p| p == File.dirname($LOADED_FEATURES.find{|f| f.end_with?("/rubygems.rb") }) }]
+    [Gem.ruby, "-I", operating_system_path, "-I" , $LOAD_PATH.find {|p| p == File.dirname($LOADED_FEATURES.find {|f| f.end_with?("/rubygems.rb") }) }]
   end
 end

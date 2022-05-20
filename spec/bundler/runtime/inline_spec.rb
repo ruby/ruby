@@ -89,7 +89,7 @@ RSpec.describe "bundler/inline#gemfile" do
 
     expect(out).to include("Installing activesupport")
     err_lines = err.split("\n")
-    err_lines.reject!{|line| line =~ /\.rb:\d+: warning: / } unless RUBY_VERSION < "2.7"
+    err_lines.reject! {|line| line =~ /\.rb:\d+: warning: / } unless RUBY_VERSION < "2.7"
     expect(err_lines).to be_empty
   end
 

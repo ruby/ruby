@@ -725,11 +725,11 @@ class Gem::Installer
       raise Gem::InstallError, "#{spec} has an invalid name"
     end
 
-    if spec.raw_require_paths.any?{|path| path =~ /\R/ }
+    if spec.raw_require_paths.any? {|path| path =~ /\R/ }
       raise Gem::InstallError, "#{spec} has an invalid require_paths"
     end
 
-    if spec.extensions.any?{|ext| ext =~ /\R/ }
+    if spec.extensions.any? {|ext| ext =~ /\R/ }
       raise Gem::InstallError, "#{spec} has an invalid extensions"
     end
 

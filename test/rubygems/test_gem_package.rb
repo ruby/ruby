@@ -218,7 +218,7 @@ class TestGemPackage < Gem::Package::TarTestCase
     end
 
     assert_equal %w[lib/code.rb], files
-    assert_equal [{'lib/code_sym.rb' => 'code.rb'}, {'lib/code_sym2.rb' => '../lib/code.rb'}], symlinks
+    assert_equal [{ 'lib/code_sym.rb' => 'code.rb' }, { 'lib/code_sym2.rb' => '../lib/code.rb' }], symlinks
   end
 
   def test_build

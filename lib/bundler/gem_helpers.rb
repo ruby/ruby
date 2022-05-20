@@ -48,7 +48,7 @@ module Bundler
       sorted_matching = matching.sort_by {|spec| platform_specificity_match(spec.platform, platform) }
       exemplary_spec = sorted_matching.first
 
-      sorted_matching.take_while{|spec| same_specificity(platform, spec, exemplary_spec) && same_deps(spec, exemplary_spec) }
+      sorted_matching.take_while {|spec| same_specificity(platform, spec, exemplary_spec) && same_deps(spec, exemplary_spec) }
     end
     module_function :select_best_platform_match
 

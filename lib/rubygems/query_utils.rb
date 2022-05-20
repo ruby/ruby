@@ -61,7 +61,7 @@ module Gem::QueryUtils
     gem_names = if args.empty?
       [options[:name]]
     else
-      options[:exact] ? args.map{|arg| /\A#{Regexp.escape(arg)}\Z/ } : args.map{|arg| /#{arg}/i }
+      options[:exact] ? args.map {|arg| /\A#{Regexp.escape(arg)}\Z/ } : args.map {|arg| /#{arg}/i }
     end
 
     terminate_interaction(check_installed_gems(gem_names)) if check_installed_gems?
