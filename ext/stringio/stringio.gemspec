@@ -1,4 +1,4 @@
-# -*- encoding: utf-8 -*-
+# -*- coding: utf-8 -*-
 # frozen_string_literal: true
 
 source_version = ["", "ext/stringio/"].find do |dir|
@@ -16,11 +16,18 @@ Gem::Specification.new do |s|
 
   s.required_rubygems_version = Gem::Requirement.new(">= 2.6")
   s.require_paths = ["lib"]
-  s.authors = ["Nobu Nakada"]
+  s.authors = ["Nobu Nakada", "Charles Oliver Nutter"]
   s.description = "Pseudo `IO` class from/to `String`."
-  s.email = "nobu@ruby-lang.org"
-  s.extensions = ["ext/stringio/extconf.rb"]
-  s.files = ["README.md", "ext/stringio/extconf.rb", "ext/stringio/stringio.c"]
+  s.email = ["nobu@ruby-lang.org", "headius@headius.com"]
+  s.files = ["README.md"]
+  jruby = true if Gem::Platform.new('java') =~ s.platform or RUBY_ENGINE == 'jruby'
+  if jruby
+    s.files += ["lib/stringio.rb", "lib/stringio.jar"]
+    s.platform = "java"
+  else
+    s.extensions = ["ext/stringio/extconf.rb"]
+    s.files += ["ext/stringio/extconf.rb", "ext/stringio/stringio.c"]
+  end
   s.homepage = "https://github.com/ruby/stringio"
   s.licenses = ["Ruby", "BSD-2-Clause"]
   s.required_ruby_version = ">= 2.5"
