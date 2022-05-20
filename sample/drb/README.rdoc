@@ -1,6 +1,6 @@
 = Sample scripts
 
-* array and iteretor
+* array and iterator
   * darray.rb --- server
   * darrayc.rb --- client
 
