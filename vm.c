@@ -3292,6 +3292,11 @@ th_init(rb_thread_t *th, VALUE self, rb_vm_t *vm, rb_ractor_t *r)
     th->name = Qnil;
     th->report_on_exception = vm->thread_report_on_exception;
     th->ext_config.ractor_safe = true;
+
+#if USE_RUBY_DEBUG_LOG
+    static rb_atomic_t thread_serial = 0;
+    th->serial = RUBY_ATOMIC_FETCH_ADD(thread_serial, 1);
+#endif
 }
 
 VALUE

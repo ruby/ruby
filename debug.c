@@ -410,36 +410,36 @@ ruby_debug_log(const char *file, int line, const char *func_name, const char *fm
         len += r;
     }
 
-    // Ruby location
-    int ruby_line;
-    const char *ruby_file = rb_source_location_cstr(&ruby_line);
-    if (len < MAX_DEBUG_LOG_MESSAGE_LEN) {
-        if (ruby_file) {
-            r = snprintf(buff + len, MAX_DEBUG_LOG_MESSAGE_LEN - len, "\t%s:%d", pretty_filename(ruby_file), ruby_line);
-        }
-        else {
-            r = snprintf(buff + len, MAX_DEBUG_LOG_MESSAGE_LEN - len, "\t");
-        }
-        if (r < 0) rb_bug("ruby_debug_log returns %d\n", r);
-        len += r;
-    }
-
-    // ractor information
-    if (ruby_single_main_ractor == NULL) {
-        rb_ractor_t *cr = GET_RACTOR();
-        if (r && len < MAX_DEBUG_LOG_MESSAGE_LEN) {
-            r = snprintf(buff + len, MAX_DEBUG_LOG_MESSAGE_LEN - len, "\tr:#%u/%u",
-                         (unsigned int)rb_ractor_id(cr), GET_VM()->ractor.cnt);
+    if (rb_current_execution_context(false)) {
+        // Ruby location
+        int ruby_line;
+        const char *ruby_file = rb_source_location_cstr(&ruby_line);
+        if (len < MAX_DEBUG_LOG_MESSAGE_LEN) {
+            if (ruby_file) {
+                r = snprintf(buff + len, MAX_DEBUG_LOG_MESSAGE_LEN - len, "\t%s:%d", pretty_filename(ruby_file), ruby_line);
+            }
+            else {
+                r = snprintf(buff + len, MAX_DEBUG_LOG_MESSAGE_LEN - len, "\t");
+            }
             if (r < 0) rb_bug("ruby_debug_log returns %d\n", r);
             len += r;
         }
-    }
 
-    // thread information
-    if (!rb_thread_alone()) {
+        // ractor information
+        if (ruby_single_main_ractor == NULL) {
+            rb_ractor_t *cr = GET_RACTOR();
+            if (r && len < MAX_DEBUG_LOG_MESSAGE_LEN) {
+                r = snprintf(buff + len, MAX_DEBUG_LOG_MESSAGE_LEN - len, "\tr:#%u/%u",
+                             (unsigned int)rb_ractor_id(cr), GET_VM()->ractor.cnt);
+                if (r < 0) rb_bug("ruby_debug_log returns %d\n", r);
+                len += r;
+            }
+        }
+
+        // thread information
         const rb_thread_t *th = GET_THREAD();
         if (r && len < MAX_DEBUG_LOG_MESSAGE_LEN) {
-            r = snprintf(buff + len, MAX_DEBUG_LOG_MESSAGE_LEN - len, "\tth:%p", (void *)th);
+            r = snprintf(buff + len, MAX_DEBUG_LOG_MESSAGE_LEN - len, "\tth:%u", (unsigned int)th->serial);
             if (r < 0) rb_bug("ruby_debug_log returns %d\n", r);
             len += r;
         }
