@@ -16,13 +16,13 @@ end
 class Net::HTTPRetriableError < Net::ProtoRetriableError
   include Net::HTTPExceptions
 end
-class Net::HTTPServerException < Net::ProtoServerError
-  # We cannot use the name "HTTPServerError", it is the name of the response.
+class Net::HTTPClientException < Net::ProtoServerError
   include Net::HTTPExceptions
 end
 
 # for compatibility
-Net::HTTPClientException = Net::HTTPServerException
+Net::HTTPServerException = Net::HTTPClientException # :nodoc:
+# We cannot use the name "HTTPServerError", it is the name of the response.
 
 class Net::HTTPFatalError < Net::ProtoFatalError
   include Net::HTTPExceptions
