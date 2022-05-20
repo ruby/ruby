@@ -357,6 +357,7 @@ module FileUtils
   end
   module_function :rmdir
 
+  # Creates {hard links}[https://en.wikipedia.org/wiki/Hard_link].
   #
   # When +src+ is the path to an existing file
   # and +dest+ is the path to a non-existent file,
@@ -369,7 +370,7 @@ module FileUtils
   #
   # When +src+ is the path to an existing file
   # and +dest+ is the path to an existing directory,
-  # creates a hard link in +dest+ pointing to +src+; returns zero:
+  # creates a hard link at <tt>dest/src</tt> pointing to +src+; returns zero:
   #
   #   Dir.children('tmp2')               # => ["t.dat"]
   #   Dir.children('tmp3')               # => []
@@ -379,7 +380,7 @@ module FileUtils
   # When +src+ is an array of paths to existing files
   # and +dest+ is the path to an existing directory,
   # then for each path +target+ in +src+,
-  # creates a hard link in +dest+ pointing to +target+;
+  # creates a hard link at <tt>dest/target</tt> pointing to +target+;
   # returns +src+:
   #
   #   Dir.children('tmp4/')                               # => []
@@ -420,28 +421,75 @@ module FileUtils
   alias link ln
   module_function :link
 
+  # Creates {hard links}[https://en.wikipedia.org/wiki/Hard_link].
   #
-  # Hard link +src+ to +dest+. If +src+ is a directory, this method links
-  # all its contents recursively. If +dest+ is a directory, links
-  # +src+ to +dest/src+.
+  # If +src+ is the path to a directory and +dest+ does not exist,
+  # creates links +dest+ and descendents pointing to +src+ and its descendents:
   #
-  # +src+ can be a list of files.
+  #   Dir.glob('**/*.txt')
+  #   # => ["tmp0/tmp2/t0.txt",
+  #         "tmp0/tmp2/t1.txt",
+  #         "tmp0/tmp3/t2.txt",
+  #         "tmp0/tmp3/t3.txt"]
+  #   FileUtils.cp_lr('tmp0', 'tmp1')
+  #   Dir.glob('**/*.txt')
+  #   # => ["tmp0/tmp2/t0.txt",
+  #         "tmp0/tmp2/t1.txt",
+  #         "tmp0/tmp3/t2.txt",
+  #         "tmp0/tmp3/t3.txt",
+  #         "tmp1/tmp2/t0.txt",
+  #         "tmp1/tmp2/t1.txt",
+  #         "tmp1/tmp3/t2.txt",
+  #         "tmp1/tmp3/t3.txt"]
   #
-  # If +dereference_root+ is true, this method dereference tree root.
+  # If +src+ is an array of paths to files and +dest+ is the path to a directory,
+  # for each path +filepath+ in +src+, creates a link at <tt>dest/filepath</tt>
+  # pointing to that path:
   #
-  # If +remove_destination+ is true, this method removes each destination file before copy.
+  #   FileUtils.rm_r('tmp1')
+  #   Dir.mkdir('tmp1')
+  #   FileUtils.cp_lr(['tmp0/tmp3/t2.txt', 'tmp0/tmp3/t3.txt'], 'tmp1')
+  #   Dir.glob('**/*.txt')
+  #   # => ["tmp0/tmp2/t0.txt",
+  #        "tmp0/tmp2/t1.txt",
+  #        "tmp0/tmp3/t2.txt",
+  #        "tmp0/tmp3/t3.txt",
+  #        "tmp1/t2.txt",
+  #        "tmp1/t3.txt"]
   #
-  #   FileUtils.rm_r site_ruby + '/mylib', force: true
-  #   FileUtils.cp_lr 'lib/', site_ruby + '/mylib'
+  # If +src+ and +dest+ are both paths to directories,
+  # creates links <tt>dest/src</tt> and descendents
+  # pointing to +src+ and its descendents:
   #
-  #   # Examples of linking several files to target directory.
-  #   FileUtils.cp_lr %w(mail.rb field.rb debug/), site_ruby + '/tmail'
-  #   FileUtils.cp_lr Dir.glob('*.rb'), '/home/aamine/lib/ruby', noop: true, verbose: true
+  #   FileUtils.rm_r('tmp1')
+  #   Dir.mkdir('tmp1')
+  #   FileUtils.cp_lr('tmp0', 'tmp1')
+  #   # => ["tmp0/tmp2/t0.txt",
+  #        "tmp0/tmp2/t1.txt",
+  #        "tmp0/tmp3/t2.txt",
+  #        "tmp0/tmp3/t3.txt",
+  #        "tmp1/tmp0/tmp2/t0.txt",
+  #        "tmp1/tmp0/tmp2/t1.txt",
+  #        "tmp1/tmp0/tmp3/t2.txt",
+  #        "tmp1/tmp0/tmp3/t3.txt"]
   #
-  #   # If you want to link all contents of a directory instead of the
-  #   # directory itself, c.f. src/x -> dest/x, src/y -> dest/y,
-  #   # use the following code.
-  #   FileUtils.cp_lr 'src/.', 'dest'  # cp_lr('src', 'dest') makes dest/src, but this doesn't.
+  # Keyword arguments:
+  #
+  # - <tt>dereference_root: false</tt> - does not follow soft links.
+  # - <tt>noop: true</tt> - does not create links.
+  # - <tt>remove_destination: true</tt> - removes +dest+ before creating links.
+  # - <tt>verbose: true</tt> - prints an equivalent command:
+  #
+  #     FileUtils.cp_lr('tmp0', 'tmp1', verbose: true, noop: true)
+  #     FileUtils.cp_lr(['tmp0/tmp3/t2.txt', 'tmp0/tmp3/t3.txt'], 'tmp1', verbose: true, noop: true)
+  #
+  #   Output:
+  #
+  #     cp -lr tmp0 tmp1
+  #     cp -lr tmp0/tmp3/t2.txt tmp0/tmp3/t3.txt tmp1
+  #
+  # Raises an exception if +dest+ is the path to an existing file
+  # and keyword argument +remove_destination+ is not +true+.
   #
   def cp_lr(src, dest, noop: nil, verbose: nil,
             dereference_root: true, remove_destination: false)
