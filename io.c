@@ -14212,7 +14212,7 @@ set_LAST_READ_LINE(VALUE val, ID _x, VALUE *_y)
  *  ==== Read/Write Mode Specified as an \Integer
  *
  *  When +mode+ is an integer it must be one or more (combined by bitwise OR (<tt>|</tt>)
- *  of the modes defined in File::Constants:
+ *  of the following modes:
  *
  *  - +File::RDONLY+: Open for reading only.
  *  - +File::WRONLY+: Open for writing only.
@@ -14276,6 +14276,12 @@ set_LAST_READ_LINE(VALUE val, ID _x, VALUE *_y)
  *  Example:
  *
  *    File.open('t.tmp', 'wx')
+ *
+ *  Note that when using integer flags to set the read/write mode, it's not
+ *  possible to also set the binary data mode by adding the File::BINARY flag
+ *  to the bitwise OR combination of integer flags. This is because, as
+ *  documented in File::Constants, the File::BINARY flag only disables line code
+ *  conversion, but does not change the external encoding at all.
  *
  *  == Encodings
  *
