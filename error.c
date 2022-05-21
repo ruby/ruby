@@ -1269,13 +1269,12 @@ check_highlight_keyword(VALUE opt, int auto_tty_detect)
     VALUE highlight = Qnil;
 
     if (!NIL_P(opt)) {
-        highlight = rb_hash_aref(opt, sym_highlight);
+        highlight = rb_hash_lookup(opt, sym_highlight);
 
         switch (highlight) {
           default:
             rb_bool_expected(highlight, "highlight");
             UNREACHABLE;
-          case Qundef: highlight = Qnil; break;
           case Qtrue: case Qfalse: case Qnil: break;
         }
     }
@@ -1301,7 +1300,7 @@ check_order_keyword(VALUE opt)
         static VALUE kw_order;
         if (!kw_order) kw_order = ID2SYM(rb_intern_const("order"));
 
-        order = rb_hash_aref(opt, kw_order);
+        order = rb_hash_lookup(opt, kw_order);
 
         if (order != Qnil) {
             ID id = rb_check_id(&order);
