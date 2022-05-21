@@ -164,7 +164,7 @@ Note: We're only listing outstanding class updates.
     * stringio 3.0.3
 *   The following bundled gems are updated.
     * net-imap 0.2.3
-    * rbs 2.4.0
+    * rbs 2.5.0
     * typeprof 0.21.2
     * debug 1.5.0
 *   The following default gems are now bundled gems.
