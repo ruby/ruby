@@ -1,16 +1,12 @@
 # Ruby Hacking Guide
 
-This document gives  some helpful instructions which  should make your
-experience as a Ruby core developer easier.
+This document gives some helpful instructions which should make your experience as a Ruby core developer easier.
 
 ## Setup
 
 ### Make
 
-It's common to want to compile things as quickly as possible. Ensuring
-`make`  has the  right `--jobs`  flag will  ensure all  processors are
-utilized when building  software projects To do  this effectively, you
-can set `MAKEFLAGS` in your shell configuration/profile:
+It's common to want to compile things as quickly as possible. Ensuring `make` has the right `--jobs` flag will ensure all processors are utilized when building software projects To do this effectively, you can set `MAKEFLAGS` in your shell configuration/profile:
 
 ``` shell
 # On macOS with Fish shell:
@@ -40,8 +36,7 @@ make install
 
 ### Without Documentation
 
-If you  are frequently  building Ruby,  this will  reduce the  time it
-takes to `make install`.
+If you are frequently building Ruby, this will reduce the time it takes to `make install`.
 
 ``` shell
 ../configure --disable-install-doc
@@ -51,15 +46,13 @@ takes to `make install`.
 
 ### Run Local Test Script
 
-You can create  a file in the Ruby source  root called `test.rb`.  You
-can build `miniruby` and execute this script:
+You can create a file in the Ruby source root called `test.rb`. You can build `miniruby` and execute this script:
 
 ``` shell
 make run
 ```
 
-If  you want  more  of the  standard library,  you  can use  `runruby`
-instead of `run`.
+If you want more of the standard library, you can use `runruby` instead of `run`.
 
 ## Running Tests
 
@@ -71,8 +64,7 @@ make check
 
 ### Run Bootstrap Tests
 
-There are  a set of tests  in `bootstraptest/` which cover  most basic
-features of the core Ruby language.
+There are a set of tests in `bootstraptest/` which cover most basic features of the core Ruby language.
 
 ``` shell
 make test
@@ -80,8 +72,7 @@ make test
 
 ### Run Extensive Tests
 
-There  are extensive  tests in  `test/` which  cover a  wide range  of
-features of the Ruby core language.
+There are extensive tests in `test/` which cover a wide range of features of the Ruby core language.
 
 ``` shell
 make test-all
@@ -95,9 +86,7 @@ make test-all TESTS=../test/fiber/test_io.rb
 
 ### Run Ruby Spec Suite Tests
 
-The [Ruby Spec Suite](https://github.com/ruby/spec/) is a test suite
-that aims to provide an executable description for the behavior of the
-language.
+The [Ruby Spec Suite](https://github.com/ruby/spec/) is a test suite that aims to provide an executable description for the behaviour of the language.
 
 ``` shell
 make test-spec
@@ -110,6 +99,8 @@ Using the address sanitizer is a great way to detect memory issues.
 ``` shell
 > ./autogen.sh
 > mkdir build && cd build
-> ../configure cppflags="-fsanitize=address -fno-omit-frame-pointer" optflags=-O1 LDFLAGS="-fsanitize=address -fno-omit-frame-pointer"
->
+> ../configure cppflags="-fsanitize=address -fno-omit-frame-pointer" optflags=-O0 LDFLAGS="-fsanitize=address -fno-omit-frame-pointer"
+> make
 ```
+
+On Linux it is important to specify -O0 when debugging and this is especially true for ASAN which sometimes works incorrectly at higher optimisation levels.

@@ -2132,7 +2132,7 @@ struct autoload_const {
     VALUE module;
 
     // The name of the constant we are loading.
-    VALUE name;
+    ID name;
 
     // The value of the constant (after it's loaded).
     VALUE value;
@@ -2307,22 +2307,6 @@ autoload_feature_lookup_or_create(VALUE feature, struct autoload_data **autoload
     RUBY_ASSERT_CRITICAL_SECTION_LEAVE();
     return autoload_data_value;
 }
-
-#if 0
-static VALUE
-autoload_feature_clear_if_empty(VALUE argument)
-{
-    RUBY_ASSERT_MUTEX_OWNED(autoload_mutex);
-
-    struct autoload_data *autoload_data = (struct autoload_data *)argument;
-
-    if (ccan_list_empty(&autoload_data->constants)) {
-        rb_hash_delete(autoload_features, autoload_data->feature);
-    }
-
-    return Qnil;
-}
-#endif
 
 static struct st_table *
 autoload_table_lookup_or_create(VALUE module)
@@ -2596,14 +2580,13 @@ autoload_load_needed(VALUE _arguments)
     struct autoload_load_arguments *arguments = (struct autoload_load_arguments*)_arguments;
 
     const char *loading = 0, *src;
-    struct autoload_data *ele;
 
     if (!autoload_defined_p(arguments->module, arguments->name)) {
         return Qfalse;
     }
 
-    VALUE load = check_autoload_required(arguments->module, arguments->name, &loading);
-    if (!load) {
+    VALUE autoload_const_value = check_autoload_required(arguments->module, arguments->name, &loading);
+    if (!autoload_const_value) {
         return Qfalse;
     }
 
@@ -2613,22 +2596,23 @@ autoload_load_needed(VALUE _arguments)
     }
 
     struct autoload_const *autoload_const;
-    if (!(ele = get_autoload_data(load, &autoload_const))) {
+    struct autoload_data *autoload_data;
+    if (!(autoload_data = get_autoload_data(autoload_const_value, &autoload_const))) {
         return Qfalse;
     }
 
-    if (ele->mutex == Qnil) {
-        ele->mutex = rb_mutex_new();
-        ele->fork_gen = GET_VM()->fork_gen;
+    if (autoload_data->mutex == Qnil) {
+        autoload_data->mutex = rb_mutex_new();
+        autoload_data->fork_gen = GET_VM()->fork_gen;
     }
-    else if (rb_mutex_owned_p(ele->mutex)) {
+    else if (rb_mutex_owned_p(autoload_data->mutex)) {
         return Qfalse;
     }
 
+    arguments->mutex = autoload_data->mutex;
     arguments->autoload_const = autoload_const;
-    arguments->mutex = ele->mutex;
 
-    return load;
+    return autoload_const_value;
 }
 
 static VALUE
@@ -2730,17 +2714,17 @@ rb_autoload_load(VALUE module, ID name)
     struct autoload_load_arguments arguments = {.module = module, .name = name, .mutex = Qnil, .result = Qnil};
 
     // Figure out whether we can autoload the named constant:
-    VALUE load = rb_mutex_synchronize(autoload_mutex, autoload_load_needed, (VALUE)&arguments);
+    VALUE autoload_const_value = rb_mutex_synchronize(autoload_mutex, autoload_load_needed, (VALUE)&arguments);
 
     // This confirms whether autoloading is required or not:
-    if (load == Qfalse) return load;
+    if (autoload_const_value == Qfalse) return autoload_const_value;
 
     arguments.flag = ce->flag & (CONST_DEPRECATED | CONST_VISIBILITY_MASK);
 
     // Only one thread will enter here at a time:
-    return rb_mutex_synchronize(arguments.mutex, autoload_try_load, (VALUE)&arguments);
+    VALUE result = rb_mutex_synchronize(arguments.mutex, autoload_try_load, (VALUE)&arguments);
 
-    // rb_mutex_synchronize(autoload_mutex, autoload_feature_clear_if_empty, (VALUE)&arguments.autoload_data);
+    return result;
 }
 
 VALUE
