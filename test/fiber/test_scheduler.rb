@@ -106,22 +106,24 @@ class TestFiberScheduler < Test::Unit::TestCase
   end
 
   def test_autoload
-    Object.autoload(:TestFiberSchedulerAutoload, File.expand_path("autoload.rb", __dir__))
+    100.times do
+      Object.autoload(:TestFiberSchedulerAutoload, File.expand_path("autoload.rb", __dir__))
 
-    thread = Thread.new do
-      scheduler = Scheduler.new
-      Fiber.set_scheduler scheduler
+      thread = Thread.new do
+        scheduler = Scheduler.new
+        Fiber.set_scheduler scheduler
 
-      10.times do
-        Fiber.schedule do
-          Object.const_get(:TestFiberSchedulerAutoload)
+        10.times do
+          Fiber.schedule do
+            Object.const_get(:TestFiberSchedulerAutoload)
+          end
         end
       end
-    end
 
-    thread.join
-  ensure
-    $LOADED_FEATURES.delete(File.expand_path("autoload.rb", __dir__))
-    Object.send(:remove_const, :TestFiberSchedulerAutoload)
+      thread.join
+    ensure
+      $LOADED_FEATURES.delete(File.expand_path("autoload.rb", __dir__))
+      Object.send(:remove_const, :TestFiberSchedulerAutoload)
+    end
   end
 end
