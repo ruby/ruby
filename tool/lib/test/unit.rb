@@ -74,16 +74,16 @@ module Test
         end
       end
 
-      module JITFirst
+      module MJITFirst
         def group(list)
-          # JIT first
-          jit, others = list.partition {|e| /test_jit/ =~ e}
-          jit + others
+          # MJIT first
+          mjit, others = list.partition {|e| /test_mjit/ =~ e}
+          mjit + others
         end
       end
 
       class Alpha < NoSort
-        include JITFirst
+        include MJITFirst
 
         def sort_by_name(list)
           list.sort_by(&:name)
@@ -97,7 +97,7 @@ module Test
 
       # shuffle test suites based on CRC32 of their names
       Shuffle = Struct.new(:seed, :salt) do
-        include JITFirst
+        include MJITFirst
 
         def initialize(seed)
           self.class::CRC_TBL ||= (0..255).map {|i|

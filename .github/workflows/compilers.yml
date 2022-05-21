@@ -251,8 +251,8 @@ jobs:
       # FIXME: Skip MJIT tests failing in the annocheck case.
       # https://bugs.ruby-lang.org/issues/18781
       - run: |
-          rm test/ruby/test_jit.rb
-          rm test/ruby/test_rubyvm_jit.rb
+          rm test/ruby/test_mjit.rb
+          rm test/ruby/test_rubyvm_mjit.rb
         if: ${{ endsWith(matrix.entry.name, 'annocheck') }}
         working-directory: src
       - run: make test-all TESTS='-- ruby -ext-'

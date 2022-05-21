@@ -3,8 +3,8 @@ require 'test/unit'
 require 'tmpdir'
 require_relative '../lib/jit_support'
 
-# Test for --jit option
-class TestJIT < Test::Unit::TestCase
+# Test for --mjit option
+class TestMJIT < Test::Unit::TestCase
   include JITSupport
 
   IGNORABLE_PATTERNS = [
@@ -31,7 +31,7 @@ class TestJIT < Test::Unit::TestCase
     :opt_invokebuiltin_delegate,
   ].each do |insn|
     if !RubyVM::INSTRUCTION_NAMES.include?(insn.to_s)
-      warn "instruction #{insn.inspect} is not defined but included in TestJIT::TEST_PENDING_INSNS"
+      warn "instruction #{insn.inspect} is not defined but included in TestMJIT::TEST_PENDING_INSNS"
     end
   end
 
@@ -46,17 +46,17 @@ class TestJIT < Test::Unit::TestCase
     # ci.rvm.jp caches its build environment. Clean up temporary files left by SEGV.
     if ENV['RUBY_DEBUG']&.include?('ci')
       Dir.glob("#{ENV.fetch('TMPDIR', '/tmp')}/_ruby_mjit_p*u*.*").each do |file|
-        puts "test/ruby/test_jit.rb: removing #{file}"
+        puts "test/ruby/test_mjit.rb: removing #{file}"
         File.unlink(file)
       end
     end
 
-    # ruby -w -Itest/lib test/ruby/test_jit.rb
+    # ruby -w -Itest/lib test/ruby/test_mjit.rb
     if $VERBOSE
       pid = $$
       at_exit do
-        if pid == $$ && !TestJIT.untested_insns.empty?
-          warn "you may want to add tests for following insns, when you have a chance: #{TestJIT.untested_insns.join(' ')}"
+        if pid == $$ && !TestMJIT.untested_insns.empty?
+          warn "you may want to add tests for following insns, when you have a chance: #{TestMJIT.untested_insns.join(' ')}"
         end
       end
     end
@@ -620,7 +620,7 @@ class TestJIT < Test::Unit::TestCase
     end;
   end
 
-  def test_jit_output
+  def test_mjit_output
     out, err = eval_with_jit('5.times { puts "MJIT" }', verbose: 1, min_calls: 5)
     assert_equal("MJIT\n" * 5, out)
     assert_match(/^#{JIT_SUCCESS_PREFIX}: block in <main>@-e:1 -> .+_ruby_mjit_p\d+u\d+\.c$/, err)
@@ -1237,7 +1237,7 @@ class TestJIT < Test::Unit::TestCase
       $stderr.puts
       warn "'#{insn}' insn is not included in the script. Actual insns are: #{used_insns.join(' ')}\n", uplevel: uplevel
     end
-    TestJIT.untested_insns.delete(insn)
+    TestMJIT.untested_insns.delete(insn)
   end
 
   # Collect block's insns or defined method's insns, which are expected to be JIT-ed.
