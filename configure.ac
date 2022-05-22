@@ -3118,6 +3118,15 @@ AS_CASE(["$target_cpu-$target_os"],
     AS_IF([test "x$ac_cv_header_execinfo_h" = xyes], [
 	AC_CHECK_LIB([execinfo], [backtrace])
 	AC_CHECK_HEADERS([libunwind.h])
+
+    AC_CHECK_HEADERS([mach/task.h mach/mach_init.h mach/mach_port.h])
+    AS_IF([ test \
+        "x${ac_cv_header_mach_task_h}" = xyes -a \
+        "x${ac_cv_header_mach_mach_init_h}" = xyes -a \
+        "x${ac_cv_header_mach_mach_port_h}" = xyes \
+    ], [
+        AC_DEFINE([HAVE_MACH_TASK_EXCEPTION_PORTS], [1])
+    ])
     ])],
 [*-freebsd*|x86_64-netbsd*], [
     AC_CHECK_HEADERS([execinfo.h])

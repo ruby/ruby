@@ -87,6 +87,11 @@
 #include <emscripten.h>
 #endif
 
+#ifdef HAVE_MACH_TASK_EXCEPTION_PORTS
+# include <mach/task.h>
+# include <mach/mach_init.h>
+# include <mach/mach_port.h>
+#endif
 #undef LIST_HEAD /* ccan/list conflicts with BSD-origin sys/queue.h. */
 
 #include "constant.h"
@@ -5264,6 +5269,38 @@ install_handlers(void)
 static struct sigaction old_sigbus_handler;
 static struct sigaction old_sigsegv_handler;
 
+#ifdef HAVE_MACH_TASK_EXCEPTION_PORTS
+static exception_mask_t old_exception_masks[32];
+static mach_port_t old_exception_ports[32];
+static exception_behavior_t old_exception_behaviors[32];
+static thread_state_flavor_t old_exception_flavors[32];
+static mach_msg_type_number_t old_exception_count;
+
+static void
+disable_mach_bad_access_exc(void)
+{
+    old_exception_count = sizeof(old_exception_masks) / sizeof(old_exception_masks[0]);
+    task_swap_exception_ports(
+        mach_task_self(), EXC_MASK_BAD_ACCESS,
+        MACH_PORT_NULL, EXCEPTION_DEFAULT, 0,
+        old_exception_masks, &old_exception_count,
+        old_exception_ports, old_exception_behaviors, old_exception_flavors
+    );
+}
+
+static void
+restore_mach_bad_access_exc(void)
+{
+    for (mach_msg_type_number_t i = 0; i < old_exception_count; i++) {
+        task_set_exception_ports(
+            mach_task_self(),
+            old_exception_masks[i], old_exception_ports[i],
+            old_exception_behaviors[i], old_exception_flavors[i]
+        );
+    }
+}
+#endif
+
 static void
 read_barrier_signal(int sig, siginfo_t * info, void * data)
 {
@@ -5278,11 +5315,16 @@ read_barrier_signal(int sig, siginfo_t * info, void * data)
     sigaddset(&set, SIGBUS);
     sigaddset(&set, SIGSEGV);
     sigprocmask(SIG_UNBLOCK, &set, &prev_set);
-
+#ifdef HAVE_MACH_TASK_EXCEPTION_PORTS
+    disable_mach_bad_access_exc();
+#endif
     // run handler
     read_barrier_handler((uintptr_t)info->si_addr);
 
     // reset SEGV/BUS handlers
+#ifdef HAVE_MACH_TASK_EXCEPTION_PORTS
+    restore_mach_bad_access_exc();
+#endif
     sigaction(SIGBUS, &prev_sigbus, NULL);
     sigaction(SIGSEGV, &prev_sigsegv, NULL);
     sigprocmask(SIG_SETMASK, &prev_set, NULL);
@@ -5291,6 +5333,9 @@ read_barrier_signal(int sig, siginfo_t * info, void * data)
 static void
 uninstall_handlers(void)
 {
+#ifdef HAVE_MACH_TASK_EXCEPTION_PORTS
+    restore_mach_bad_access_exc();
+#endif
     sigaction(SIGBUS, &old_sigbus_handler, NULL);
     sigaction(SIGSEGV, &old_sigsegv_handler, NULL);
 }
@@ -5306,6 +5351,9 @@ install_handlers(void)
 
     sigaction(SIGBUS, &action, &old_sigbus_handler);
     sigaction(SIGSEGV, &action, &old_sigsegv_handler);
+#ifdef HAVE_MACH_TASK_EXCEPTION_PORTS
+    disable_mach_bad_access_exc();
+#endif
 }
 #endif
 
