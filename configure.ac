@@ -340,16 +340,16 @@ AS_CASE(["$host_os:$build_os"],
 AS_CASE(["$target_os"],
 [darwin*], [
     AC_MSG_CHECKING(if minimum required OS X version is supported)
-    AC_PREPROC_IFELSE([AC_LANG_SOURCE([[@%:@include <AvailabilityMacros.h>
+    AC_COMPILE_IFELSE([AC_LANG_SOURCE([[@%:@include <AvailabilityMacros.h>
 	@%:@if MAC_OS_X_VERSION_MIN_REQUIRED < __MAC_10_5
 	@%:@error pre OS X 10.5
 	[!<===== pre OS X 10.5 =====>]
 	@%:@endif
+	int __thread conftest;
 	]])],
-	[macosx_min_required=yes],
+	[AC_MSG_RESULT(yes)],
 	[AC_MSG_RESULT(no)
 	AC_MSG_ERROR([Unsupported OS X version is required])])
-    AC_MSG_RESULT(${macosx_min_required})
 ])
 
 RUBY_MINGW32
