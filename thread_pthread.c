@@ -1771,15 +1771,15 @@ native_thread_native_thread_id(rb_thread_t *target_th)
     #elif MAC_OS_X_VERSION_MIN_REQUIRED < 1060
         uint64_t tid;
         if (&pthread_threadid_np) {
-            int e = pthread_threadid_np(target_th->thread_id, &tid);
-            if (e != 0) rb_syserr_fail(e, "pthread_threadid_np");
+            int error = pthread_threadid_np(target_th->thread_id, &tid);
+            if (error != 0) rb_syserr_fail(error, "pthread_threadid_np");
         } else {
             uint64_t tid;
             tid = pthread_mach_thread_np(pthread_self());
         }
     #else
-        int e = pthread_threadid_np(target_th->thread_id, &tid);
-        if (e != 0) rb_syserr_fail(e, "pthread_threadid_np");
+        int error = pthread_threadid_np(target_th->thread_id, &tid);
+        if (error != 0) rb_syserr_fail(error, "pthread_threadid_np");
         return ULL2NUM((unsigned long long)tid);
     #endif
 #endif
