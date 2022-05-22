@@ -1866,7 +1866,7 @@ AS_IF([test $rb_cv_stack_end_address != no], [
 dnl Checks for library functions.
 AC_TYPE_GETGROUPS
 AS_CASE(["${target_cpu}-${target_os}:${target_archs}"],
-[powerpc-darwin*], [
+[powerpc*-darwin*], [
   AC_LIBSOURCES(alloca.c)
   AC_SUBST([ALLOCA], [\${LIBOBJDIR}alloca.${ac_objext}])
   AC_DEFINE(C_ALLOCA)
@@ -2545,6 +2545,12 @@ AS_CASE([$coroutine_type], [yes|''], [
         ],
         [arm64-darwin*], [
             coroutine_type=arm64
+        ],
+        [powerpc-darwin*], [
+            coroutine_type=ppc
+        ],
+        [powerpc64-darwin*], [
+            coroutine_type=ppc64
         ],
         [x*64-linux*], [
             AS_CASE(["$ac_cv_sizeof_voidp"],
