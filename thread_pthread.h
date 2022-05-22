@@ -92,7 +92,7 @@ struct rb_thread_sched {
 
 #if __STDC_VERSION__ >= 201112
   #define RB_THREAD_LOCAL_SPECIFIER _Thread_local
-#elif defined(__GNUC__)
+#elif defined(__GNUC__) && !defined(RB_THREAD_LOCAL_SPECIFIER_IS_UNSUPPORTED)
   /* note that ICC (linux) and Clang are covered by __GNUC__ */
   #define RB_THREAD_LOCAL_SPECIFIER __thread
 #else

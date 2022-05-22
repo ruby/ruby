@@ -340,16 +340,21 @@ AS_CASE(["$host_os:$build_os"],
 AS_CASE(["$target_os"],
 [darwin*], [
     AC_MSG_CHECKING(if minimum required OS X version is supported)
-    AC_COMPILE_IFELSE([AC_LANG_SOURCE([[@%:@include <AvailabilityMacros.h>
+    AC_PREPROC_IFELSE([AC_LANG_SOURCE([[@%:@include <AvailabilityMacros.h>
 	@%:@if MAC_OS_X_VERSION_MIN_REQUIRED < __MAC_10_5
 	@%:@error pre OS X 10.5
 	[!<===== pre OS X 10.5 =====>]
 	@%:@endif
-	int __thread conftest;
 	]])],
 	[AC_MSG_RESULT(yes)],
 	[AC_MSG_RESULT(no)
 	AC_MSG_ERROR([Unsupported OS X version is required])])
+    AC_CACHE_CHECK([if thread-local storage is supported], [rb_cv_tls_supported],
+	[AC_LINK_IFELSE([AC_LANG_PROGRAM([[int __thread conftest;]])],
+	    [rb_cv_tls_supported=yes],
+	    [rb_cv_tls_supported=no])])
+    AS_IF([test x"$rb_cv_tls_supported" != xyes],
+	[AC_DEFINE(RB_THREAD_LOCAL_SPECIFIER_IS_UNSUPPORTED)])
 ])
 
 RUBY_MINGW32
