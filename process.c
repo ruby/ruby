@@ -8721,7 +8721,7 @@ get_PROCESS_ID(ID _x, VALUE *_y)
 
 /*
  *  call-seq:
- *     Process.kill(signal, pid, ...)    -> integer
+ *     Process.kill(signal, pid, *pids)    -> integer
  *
  *  Sends the given signal to the specified process id(s) if _pid_ is positive.
  *  If _pid_ is zero, _signal_ is sent to all processes whose group ID is equal
