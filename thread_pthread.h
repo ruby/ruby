@@ -102,11 +102,8 @@ typedef pthread_key_t native_tls_key_t;
 static inline void *
 native_tls_get(native_tls_key_t key)
 {
-    void *ptr = pthread_getspecific(key);
-    if (UNLIKELY(ptr == NULL)) {
-        rb_bug("pthread_getspecific returns NULL");
-    }
-    return ptr;
+    // return value should be checked by caller
+    return pthread_getspecific(key);
 }
 
 static inline void
