@@ -1624,4 +1624,14 @@ assert_match /\Atest_ractor\.rb:1:\s+warning:\s+Ractor is experimental/, %q{
   eval("Ractor.new{}.take", nil, "test_ractor.rb", 1)
 }
 
+# Ractor#queue_size
+assert_equal "2", %q{
+  ractor = Ractor.new do
+    loop { sleep(1) }
+  end
+  ractor << 'x'
+  ractor << 'y'
+  ractor.queue_size
+}
+
 end # if !ENV['GITHUB_WORKFLOW']
