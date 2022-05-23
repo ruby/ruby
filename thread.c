@@ -270,34 +270,6 @@ void rb_thread_debug(const char *fmt, ...);
 #define POSITION_ARGS
 #endif
 
-# ifdef NON_SCALAR_THREAD_ID
-#define fill_thread_id_string ruby_fill_thread_id_string
-const char *
-ruby_fill_thread_id_string(rb_nativethread_id_t thid, rb_thread_id_string_t buf)
-{
-    extern const char ruby_digitmap[];
-    size_t i;
-
-    buf[0] = '0';
-    buf[1] = 'x';
-    for (i = 0; i < sizeof(thid); i++) {
-# ifdef LITTLE_ENDIAN
-	size_t j = sizeof(thid) - i - 1;
-# else
-	size_t j = i;
-# endif
-	unsigned char c = (unsigned char)((char *)&thid)[j];
-	buf[2 + i * 2] = ruby_digitmap[(c >> 4) & 0xf];
-	buf[3 + i * 2] = ruby_digitmap[c & 0xf];
-    }
-    buf[sizeof(rb_thread_id_string_t)-1] = '\0';
-    return buf;
-}
-#   define fill_thread_id_str(th) fill_thread_id_string((th)->thread_id, (th)->thread_id_string)
-#   define thread_id_str(th) ((th)->thread_id_string)
-#   define PRI_THREAD_ID "s"
-# endif
-
 # if THREAD_DEBUG < 0
 static int rb_thread_debug_enabled;
 
@@ -336,12 +308,8 @@ rb_thread_s_debug_set(VALUE self, VALUE val)
 #define thread_debug if(0)printf
 #endif
 
-#ifndef fill_thread_id_str
-# define fill_thread_id_string(thid, buf) ((void *)(uintptr_t)(thid))
-# define fill_thread_id_str(th) (void)0
-# define thread_id_str(th) ((void *)(uintptr_t)(th)->nt->thread_id)
-# define PRI_THREAD_ID "p"
-#endif
+#define thread_id_str(th) ((void *)(uintptr_t)(th)->nt->thread_id)
+#define PRI_THREAD_ID "p"
 
 MAYBE_UNUSED(NOINLINE(static int thread_start_func_2(rb_thread_t *th, VALUE *stack_start)));
 void ruby_sigchld_handler(rb_vm_t *); /* signal.c */
@@ -380,9 +348,6 @@ rb_thread_debug(
 {
     va_list args;
     char buf[BUFSIZ];
-#ifdef NON_SCALAR_THREAD_ID
-    rb_thread_id_string_t thread_id_string;
-#endif
 
     if (!rb_thread_debug_enabled) return;
 

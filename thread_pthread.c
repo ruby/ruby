@@ -51,10 +51,15 @@
 #  define USE_EVENTFD (0)
 #endif
 
+#ifdef NON_SCALAR_THREAD_ID
+  #define DEBUG_OUT_NT_ID (NULL)
+#else
+  #define DEBUG_OUT_NT_ID ((void *)pthread_self())
+#endif
+
 #define DEBUG_OUT() \
   pthread_mutex_lock(&debug_mutex); \
-  printf(POSITION_FORMAT"%"PRI_THREAD_ID" - %s" POSITION_ARGS, \
-	 fill_thread_id_string(pthread_self(), thread_id_string), buf);	\
+  printf(POSITION_FORMAT"%"PRI_THREAD_ID" - %s" POSITION_ARGS, DEBUG_OUT_NT_ID, buf);	\
   fflush(stdout); \
   pthread_mutex_unlock(&debug_mutex);
 
@@ -717,7 +722,6 @@ Init_native_thread(rb_thread_t *main_th)
     // setup main thread
     main_th->nt->thread_id = pthread_self();
     ruby_thread_set_native(main_th);
-    fill_thread_id_str(main_th);
     native_thread_init(main_th->nt);
 }
 
@@ -1069,7 +1073,6 @@ thread_start_func_1(void *th_ptr)
 	VALUE stack_start;
 #endif
 
-	fill_thread_id_str(th);
 #if defined USE_NATIVE_THREAD_INIT
 	native_thread_init_stack(th);
 #endif
@@ -1173,7 +1176,6 @@ use_cached_thread(rb_thread_t *th)
         entry->th = th;
         /* th->nt->thread_id must be set before signal for Thread#name= */
         th->nt->thread_id = entry->thread_id;
-        fill_thread_id_str(th);
         rb_native_cond_signal(&entry->cond);
     }
     rb_native_mutex_unlock(&thread_cache_lock);
@@ -1237,7 +1239,6 @@ native_thread_create(rb_thread_t *th)
         err = pthread_create(&th->nt->thread_id, &attr, thread_start_func_1, th);
 	thread_debug("create: %p (%d)\n", (void *)th, err);
 	/* should be done in the created thread */
-	fill_thread_id_str(th);
 	CHECK_ERR(pthread_attr_destroy(&attr));
     }
     return err;

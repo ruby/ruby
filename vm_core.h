@@ -896,8 +896,6 @@ typedef struct rb_ensure_list {
     struct rb_ensure_entry entry;
 } rb_ensure_list_t;
 
-typedef char rb_thread_id_string_t[sizeof(rb_nativethread_id_t) * 2 + 3];
-
 typedef struct rb_fiber_struct rb_fiber_t;
 
 struct rb_waiting_list {
