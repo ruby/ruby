@@ -475,7 +475,8 @@ module FileUtils
   #
   # Keyword arguments:
   #
-  # - <tt>dereference_root: false</tt> - does not follow soft links.
+  # - <tt>dereference_root: false</tt> - if +src+ is a symbolic link,
+  #   does not dereference it.
   # - <tt>noop: true</tt> - does not create links.
   # - <tt>remove_destination: true</tt> - removes +dest+ before creating links.
   # - <tt>verbose: true</tt> - prints an equivalent command:
@@ -488,8 +489,8 @@ module FileUtils
   #     cp -lr tmp0 tmp1
   #     cp -lr tmp0/tmp3/t2.txt tmp0/tmp3/t3.txt tmp1
   #
-  # Raises an exception if +dest+ is the path to an existing file
-  # and keyword argument +remove_destination+ is not +true+.
+  # Raises an exception if +dest+ is the path to an existing file or directory
+  # and keyword argument <tt>remove_destination: true</tt> is not given.
   #
   def cp_lr(src, dest, noop: nil, verbose: nil,
             dereference_root: true, remove_destination: false)
@@ -578,29 +579,48 @@ module FileUtils
   alias symlink ln_s
   module_function :symlink
 
-  #
-  # :call-seq:
-  #   FileUtils.ln_sf(*args)
-  #
-  # Same as
-  #
-  #   FileUtils.ln_s(*args, force: true)
+  # Like FileUtils.ln_s, but always with keyword argument <tt>force: true</tt> given.
   #
   def ln_sf(src, dest, noop: nil, verbose: nil)
     ln_s src, dest, force: true, noop: noop, verbose: verbose
   end
   module_function :ln_sf
 
+  # Creates {hard links}[https://en.wikipedia.org/wiki/Hard_link]; returns +nil+.
   #
-  # Hard links a file system entry +src+ to +dest+.
-  # If +src+ is a directory, this method links its contents recursively.
+  # If +src+ is the path to a file and +dest+ does not exist,
+  # creates a hard link at +dest+ pointing to +src+:
   #
-  # Both of +src+ and +dest+ must be a path name.
-  # +src+ must exist, +dest+ must not exist.
+  #   FileUtils.touch('src0.txt')
+  #   File.exist?('dest0.txt')   # => false
+  #   FileUtils.link_entry('src0.txt', 'dest0.txt')
+  #   File.exist?('dest0.txt') # => true
   #
-  # If +dereference_root+ is true, this method dereferences the tree root.
+  # If +src+ is the path to a directory and +dest+ does not exist,
+  # recursively creates hard links at +dest+ pointing to paths in +src+:
   #
-  # If +remove_destination+ is true, this method removes each destination file before copy.
+  #   FileUtils.mkdir_p(['src1/dir0', 'src1/dir1'])
+  #   src_file_paths = [
+  #     'src1/dir0/t0.txt',
+  #     'src1/dir0/t1.txt',
+  #     'src1/dir1/t2.txt',
+  #     'src1/dir1/t3.txt',
+  #     ]
+  #   FileUtils.touch(src_file_paths)
+  #   File.exist?('dest1')
+  #   FileUtils.link_entry('src1', 'dest1')
+  #   File.exist?('dest1/dir0/t0.txt') # => true
+  #   File.exist?('dest1/dir0/t1.txt') # => true
+  #   File.exist?('dest1/dir1/t2.txt') # => true
+  #   File.exist?('dest1/dir1/t3.txt') # => true
+  #
+  # Keyword arguments:
+  #
+  # - <tt>dereference_root: true</tt> - dereferences +src+ if it is a symbolic link.
+  # - <tt>remove_destination: true</tt> - removes +dest+ before creating links.
+  #
+  # Raises an exception if +dest+ is the path to an existing file or directory
+  # and keyword argument <tt>remove_destination: true</tt> is not given.
   #
   def link_entry(src, dest, dereference_root = false, remove_destination = false)
     Entry_.new(src, nil, dereference_root).traverse do |ent|
