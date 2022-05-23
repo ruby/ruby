@@ -59,31 +59,45 @@ w32_error(const char *func)
     UNREACHABLE;
 }
 
+#define W32_EVENT_DEBUG 0
+
+#if W32_EVENT_DEBUG
+#define w32_event_debug printf
+#else
+#define w32_event_debug if (0) printf
+#endif
+
 static int
 w32_mutex_lock(HANDLE lock, bool try)
 {
     DWORD result;
     while (1) {
-        thread_debug("rb_native_mutex_lock: %p\n", lock);
+        // RUBY_DEBUG_LOG() is not available because RUBY_DEBUG_LOG() calls it.
+        w32_event_debug("lock:%p\n", lock);
+
         result = w32_wait_events(&lock, 1, try ? 0 : INFINITE, 0);
 	switch (result) {
 	  case WAIT_OBJECT_0:
 	    /* get mutex object */
-	    thread_debug("acquire mutex: %p\n", lock);
+            w32_event_debug("locked lock:%p\n", lock);
 	    return 0;
-	  case WAIT_OBJECT_0 + 1:
+
+          case WAIT_OBJECT_0 + 1:
 	    /* interrupt */
 	    errno = EINTR;
-	    thread_debug("acquire mutex interrupted: %p\n", lock);
+            w32_event_debug("interrupted lock:%p\n", lock);
 	    return 0;
-	  case WAIT_TIMEOUT:
-	    thread_debug("timeout mutex: %p\n", lock);
+
+          case WAIT_TIMEOUT:
+            w32_event_debug("timeout locK:%p\n", lock);
             return EBUSY;
-	  case WAIT_ABANDONED:
+
+          case WAIT_ABANDONED:
 	    rb_bug("win32_mutex_lock: WAIT_ABANDONED");
 	    break;
-	  default:
-	    rb_bug("win32_mutex_lock: unknown result (%ld)", result);
+
+          default:
+            rb_bug("win32_mutex_lock: unknown result (%ld)", result);
 	    break;
 	}
     }
@@ -174,10 +188,10 @@ Init_native_thread(rb_thread_t *main_th)
 		    GetCurrentProcess(),
 		    &main_th->nt->thread_id, 0, FALSE, DUPLICATE_SAME_ACCESS);
 
-    thread_debug("initial thread (th: %p, thid: %p, event: %p)\n",
-                 main_th,
-                 main_th->nt->thread_id,
-                 main_th->nt->interrupt_event);
+    RUBY_DEBUG_LOG("initial thread th:%u thid:%p, event: %p",
+                   rb_th_serial(main_th),
+                   main_th->nt->thread_id,
+                   main_th->nt->interrupt_event);
 }
 
 static int
@@ -188,34 +202,34 @@ w32_wait_events(HANDLE *events, int count, DWORD timeout, rb_thread_t *th)
     const int initcount = count;
     DWORD ret;
 
-    thread_debug("  w32_wait_events events:%p, count:%d, timeout:%ld, th:%p\n",
-		 events, count, timeout, th);
+    w32_event_debug("events:%p, count:%d, timeout:%ld, th:%u\n",
+                    events, count, timeout, th ? rb_th_serial(th) : -1);
+
     if (th && (intr = th->nt->interrupt_event)) {
 	if (ResetEvent(intr) && (!RUBY_VM_INTERRUPTED(th->ec) || SetEvent(intr))) {
 	    targets = ALLOCA_N(HANDLE, count + 1);
 	    memcpy(targets, events, sizeof(HANDLE) * count);
 
 	    targets[count++] = intr;
-	    thread_debug("  * handle: %p (count: %d, intr)\n", intr, count);
-	}
+            w32_event_debug("handle:%p (count:%d, intr)\n", intr, count);
+        }
 	else if (intr == th->nt->interrupt_event) {
 	    w32_error("w32_wait_events");
 	}
     }
 
-    thread_debug("  WaitForMultipleObjects start (count: %d)\n", count);
+    w32_event_debug("WaitForMultipleObjects start count:%d\n", count);
     ret = WaitForMultipleObjects(count, targets, FALSE, timeout);
-    thread_debug("  WaitForMultipleObjects end (ret: %lu)\n", ret);
+    w32_event_debug("WaitForMultipleObjects end ret:%lu\n", ret);
 
     if (ret == (DWORD)(WAIT_OBJECT_0 + initcount) && th) {
 	errno = EINTR;
     }
-    if (ret == WAIT_FAILED && THREAD_DEBUG) {
+    if (ret == WAIT_FAILED && W32_EVENT_DEBUG) {
 	int i;
-	DWORD dmy;
-	for (i = 0; i < count; i++) {
-	    thread_debug("  * error handle %d - %s\n", i,
-			 GetHandleInformation(targets[i], &dmy) ? "OK" : "NG");
+        DWORD dmy;
+        for (i = 0; i < count; i++) {
+            w32_event_debug("i:%d %s\n", i, GetHandleInformation(targets[i], &dmy) ? "OK" : "NG");
 	}
     }
     return ret;
@@ -320,9 +334,9 @@ native_sleep(rb_thread_t *th, rb_hrtime_t *rel)
 	    /* interrupted.  return immediate */
 	}
 	else {
-	    thread_debug("native_sleep start (%lu)\n", msec);
+	    RUBY_DEBUG_LOG("start msec:%lu", msec);
 	    ret = w32_wait_events(0, 0, msec, th);
-	    thread_debug("native_sleep done (%lu)\n", ret);
+	    RUBY_DEBUG_LOG("done ret:%lu", ret);
 	}
 
         rb_native_mutex_lock(&th->interrupt_lock);
@@ -357,7 +371,7 @@ void
 rb_native_mutex_unlock(rb_nativethread_lock_t *lock)
 {
 #ifdef USE_WIN32_MUTEX
-    thread_debug("release mutex: %p\n", lock->mutex);
+    RUBY_DEBUG_LOG("lock:%p", lock->mutex);
     ReleaseMutex(lock->mutex);
 #else
     LeaveCriticalSection(&lock->crit);
@@ -597,7 +611,7 @@ static void
 native_thread_destroy(rb_thread_t *th)
 {
     HANDLE intr = InterlockedExchangePointer(&th->nt->interrupt_event, 0);
-    thread_debug("close handle - intr: %p, thid: %p\n", intr, th->nt->thread_id);
+    RUBY_DEBUG_LOG("close handle intr:%p, thid:%p\n", intr, th->nt->thread_id);
     w32_close_handle(intr);
 }
 
@@ -611,13 +625,13 @@ thread_start_func_1(void *th_ptr)
     th->nt->interrupt_event = CreateEvent(0, TRUE, FALSE, 0);
 
     /* run */
-    thread_debug("thread created (th: %p, thid: %p, event: %p)\n", th,
-		 th->nt->thread_id, th->nt->interrupt_event);
+    RUBY_DEBUG_LOG("thread created th:%u, thid: %p, event: %p",
+                   rb_th_serial(th), th->nt->thread_id, th->nt->interrupt_event);
 
     thread_start_func_2(th, th->ec->machine.stack_start);
 
     w32_close_handle(thread_id);
-    thread_debug("thread deleted (th: %p)\n", th);
+    RUBY_DEBUG_LOG("thread deleted th:%u", rb_th_serial(th));
     return 0;
 }
 
@@ -634,11 +648,11 @@ native_thread_create(rb_thread_t *th)
 
     w32_resume_thread(th->nt->thread_id);
 
-    if (THREAD_DEBUG) {
-	Sleep(0);
-	thread_debug("create: (th: %p, thid: %p, intr: %p), stack size: %"PRIuSIZE"\n",
-		     th, th->nt->thread_id,
-		     th->nt->interrupt_event, stack_size);
+    if (USE_RUBY_DEBUG_LOG) {
+        Sleep(0);
+        RUBY_DEBUG_LOG("th:%u thid:%p intr:%p), stack size: %"PRIuSIZE"",
+                       rb_th_serial(th), th->nt->thread_id,
+                       th->nt->interrupt_event, stack_size);
     }
     return 0;
 }
@@ -702,7 +716,7 @@ static void
 ubf_handle(void *ptr)
 {
     rb_thread_t *th = (rb_thread_t *)ptr;
-    thread_debug("ubf_handle: %p\n", th);
+    RUBY_DEBUG_LOG("th:%u\n", rb_th_serial(th));
 
     if (!SetEvent(th->nt->interrupt_event)) {
 	w32_error("ubf_handle");
@@ -723,7 +737,7 @@ static unsigned long __stdcall
 timer_thread_func(void *dummy)
 {
     rb_vm_t *vm = GET_VM();
-    thread_debug("timer_thread\n");
+    RUBY_DEBUG_LOG("%s", "start");
     rb_w32_set_thread_description(GetCurrentThread(), L"ruby-timer-thread");
     while (WaitForSingleObject(timer_thread.lock,
                                TIME_QUANTUM_USEC/1000) == WAIT_TIMEOUT) {
@@ -731,7 +745,7 @@ timer_thread_func(void *dummy)
 	ruby_sigchld_handler(vm); /* probably no-op */
 	rb_threadptr_check_signal(vm->ractor.main_thread);
     }
-    thread_debug("timer killed\n");
+    RUBY_DEBUG_LOG("%s", "end");
     return 0;
 }
 
@@ -754,8 +768,8 @@ rb_thread_create_timer_thread(void)
 	if (!timer_thread.lock) {
 	    timer_thread.lock = CreateEvent(0, TRUE, FALSE, 0);
 	}
-	timer_thread.id = w32_create_thread(1024 + (THREAD_DEBUG ? BUFSIZ : 0),
-					    timer_thread_func, 0);
+        timer_thread.id = w32_create_thread(1024 + (USE_RUBY_DEBUG_LOG ? BUFSIZ : 0),
+                                            timer_thread_func, 0);
 	w32_resume_thread(timer_thread.id);
     }
 }
