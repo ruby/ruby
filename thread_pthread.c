@@ -1212,7 +1212,7 @@ native_thread_create(rb_thread_t *th)
     th->nt = ZALLOC(struct rb_native_thread);
 
     if (use_cached_thread(th)) {
-	thread_debug("create (use cached thread): %p\n", (void *)th);
+        RUBY_DEBUG_LOG("use cached nt. th:%u", rb_th_serial(th));
     }
     else {
 	pthread_attr_t attr;
@@ -1227,8 +1227,8 @@ native_thread_create(rb_thread_t *th)
 	CHECK_ERR(pthread_attr_init(&attr));
 
 # ifdef PTHREAD_STACK_MIN
-	thread_debug("create - stack size: %lu\n", (unsigned long)stack_size);
-	CHECK_ERR(pthread_attr_setstacksize(&attr, stack_size));
+        RUBY_DEBUG_LOG("stack size: %lu", (unsigned long)stack_size);
+        CHECK_ERR(pthread_attr_setstacksize(&attr, stack_size));
 # endif
 
 # ifdef HAVE_PTHREAD_ATTR_SETINHERITSCHED
@@ -1237,8 +1237,10 @@ native_thread_create(rb_thread_t *th)
 	CHECK_ERR(pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED));
 
         err = pthread_create(&th->nt->thread_id, &attr, thread_start_func_1, th);
-	thread_debug("create: %p (%d)\n", (void *)th, err);
-	/* should be done in the created thread */
+
+        RUBY_DEBUG_LOG("th:%u err:%d", rb_th_serial(th), err);
+
+        /* should be done in the created thread */
 	CHECK_ERR(pthread_attr_destroy(&attr));
     }
     return err;
@@ -1284,7 +1286,7 @@ static void
 ubf_pthread_cond_signal(void *ptr)
 {
     rb_thread_t *th = (rb_thread_t *)ptr;
-    thread_debug("ubf_pthread_cond_signal (%p)\n", (void *)th);
+    RUBY_DEBUG_LOG("th:%u", rb_th_serial(th));
     rb_native_cond_signal(&th->nt->cond.intr);
 }
 
@@ -1312,7 +1314,7 @@ native_cond_sleep(rb_thread_t *th, rb_hrtime_t *rel)
 
 	if (RUBY_VM_INTERRUPTED(th->ec)) {
 	    /* interrupted.  return immediate */
-	    thread_debug("native_sleep: interrupted before sleep\n");
+            RUBY_DEBUG_LOG("interrupted before sleep th:%u", rb_th_serial(th));
 	}
 	else {
 	    if (!rel) {
@@ -1335,7 +1337,7 @@ native_cond_sleep(rb_thread_t *th, rb_hrtime_t *rel)
     }
     THREAD_BLOCKING_END(th);
 
-    thread_debug("native_sleep done\n");
+    RUBY_DEBUG_LOG("done th:%u", rb_th_serial(th));
 }
 
 #ifdef USE_UBF_LIST
@@ -1388,7 +1390,7 @@ unregister_ubf_list(rb_thread_t *th)
 static void
 ubf_wakeup_thread(rb_thread_t *th)
 {
-    thread_debug("thread_wait_queue_wakeup (%"PRI_THREAD_ID")\n", thread_id_str(th));
+    RUBY_DEBUG_LOG("th:%u", rb_th_serial(th));
     pthread_kill(th->nt->thread_id, SIGVTALRM);
 }
 
@@ -2152,7 +2154,7 @@ rb_sigwait_sleep(rb_thread_t *th, int sigwait_fd, const rb_hrtime_t *rel)
         check_signals_nogvl(th, sigwait_fd);
     }
     else {
-        rb_hrtime_t to = RB_HRTIME_MAX, end;
+        rb_hrtime_t to = RB_HRTIME_MAX, end = 0;
         int n = 0;
 
         if (rel) {
