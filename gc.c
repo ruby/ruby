@@ -10410,8 +10410,20 @@ gc_update_references(rb_objspace_t *objspace)
     gc_update_table_refs(objspace, finalizer_table);
 }
 
+/*
+ *  call-seq:
+ *     GC.latest_compact_info -> {:considered=>{:T_CLASS=>11}, :moved=>{:T_CLASS=>11}}
+ *
+ *  Returns information about object moved in the most recent GC compaction.
+ *
+ * The returned hash has two keys :considered and :moved.  The hash for
+ * :considered lists the number of objects that were considered for movement
+ * by the compactor, and the :moved hash lists the number of objects that
+ * were actually moved.  Some objects can't be moved (maybe they were pinned)
+ * so these numbers can be used to calculate compaction efficiency.
+ */
 static VALUE
-gc_compact_stats(rb_execution_context_t *ec, VALUE self)
+gc_compact_stats(VALUE self)
 {
     size_t i;
     rb_objspace_t *objspace = &rb_objspace;
@@ -10484,22 +10496,70 @@ heap_check_moved_i(void *vstart, void *vend, size_t stride, void *data)
     return 0;
 }
 
+/*
+ *  call-seq:
+ *     GC.compact
+ *
+ * This function compacts objects together in Ruby's heap.  It eliminates
+ * unused space (or fragmentation) in the heap by moving objects in to that
+ * unused space.  This function returns a hash which contains statistics about
+ * which objects were moved.  See `GC.latest_gc_info` for details about
+ * compaction statistics.
+ *
+ * This method is implementation specific and not expected to be implemented
+ * in any implementation besides MRI.
+ */
 static VALUE
-gc_compact(rb_execution_context_t *ec, VALUE self)
+gc_compact(VALUE self)
 {
     /* Run GC with compaction enabled */
-    gc_start_internal(ec, self, Qtrue, Qtrue, Qtrue, Qtrue);
+    gc_start_internal(NULL, self, Qtrue, Qtrue, Qtrue, Qtrue);
 
-    return gc_compact_stats(ec, self);
+    return gc_compact_stats(self);
 }
 
+/*
+ * call-seq:
+ *    GC.verify_compaction_references(toward: nil, double_heap: false) -> hash
+ *
+ * Verify compaction reference consistency.
+ *
+ * This method is implementation specific.  During compaction, objects that
+ * were moved are replaced with T_MOVED objects.  No object should have a
+ * reference to a T_MOVED object after compaction.
+ *
+ * This function doubles the heap to ensure room to move all objects,
+ * compacts the heap to make sure everything moves, updates all references,
+ * then performs a full GC.  If any object contains a reference to a T_MOVED
+ * object, that object should be pushed on the mark stack, and will
+ * make a SEGV.
+ */
 static VALUE
-gc_verify_compaction_references(rb_execution_context_t *ec, VALUE self, VALUE double_heap, VALUE toward_empty)
+gc_verify_compaction_references(int argc, VALUE *argv, VALUE self)
 {
     rb_objspace_t *objspace = &rb_objspace;
+    VALUE kwargs, double_heap = Qfalse, toward_empty = Qfalse;
+    static ID id_toward, id_double_heap, id_empty;
+
+    if (!id_toward) {
+        id_toward = rb_intern("toward");
+        id_double_heap = rb_intern("double_heap");
+        id_empty = rb_intern("empty");
+    }
+
+    rb_scan_args(argc, argv, ":", &kwargs);
+    if (!NIL_P(kwargs)) {
+        if (rb_hash_has_key(kwargs, ID2SYM(id_toward))) {
+            VALUE toward = rb_hash_aref(kwargs, ID2SYM(id_toward));
+            toward_empty = (toward == ID2SYM(id_empty)) ? Qtrue : Qfalse;
+        }
+        if (rb_hash_has_key(kwargs, ID2SYM(id_double_heap))) {
+            double_heap = rb_hash_aref(kwargs, ID2SYM(id_double_heap));
+        }
+    }
 
     /* Clear the heap. */
-    gc_start_internal(ec, self, Qtrue, Qtrue, Qtrue, Qfalse);
+    gc_start_internal(NULL, self, Qtrue, Qtrue, Qtrue, Qfalse);
 
     RB_VM_LOCK_ENTER();
     {
@@ -10519,12 +10579,12 @@ gc_verify_compaction_references(rb_execution_context_t *ec, VALUE self, VALUE do
     }
     RB_VM_LOCK_LEAVE();
 
-    gc_start_internal(ec, self, Qtrue, Qtrue, Qtrue, Qtrue);
+    gc_start_internal(NULL, self, Qtrue, Qtrue, Qtrue, Qtrue);
 
     objspace_reachable_objects_from_root(objspace, root_obj_check_moved_i, NULL);
     objspace_each_objects(objspace, heap_check_moved_i, NULL, TRUE);
 
-    return gc_compact_stats(ec, self);
+    return gc_compact_stats(self);
 }
 
 VALUE
@@ -11113,8 +11173,18 @@ gc_disable(rb_execution_context_t *ec, VALUE _)
     return rb_gc_disable();
 }
 
+/*
+ *  call-seq:
+ *     GC.auto_compact = flag
+ *
+ *  Updates automatic compaction mode.
+ *
+ *  When enabled, the compactor will execute on every major collection.
+ *
+ *  Enabling compaction will degrade performance on major collections.
+ */
 static VALUE
-gc_set_auto_compact(rb_execution_context_t *ec, VALUE _, VALUE v)
+gc_set_auto_compact(VALUE _, VALUE v)
 {
     /* If not MinGW, Windows, or does not have mmap, we cannot use mprotect for
      * the read barrier, so we must disable automatic compaction. */
@@ -11132,8 +11202,14 @@ gc_set_auto_compact(rb_execution_context_t *ec, VALUE _, VALUE v)
     return v;
 }
 
+/*
+ *  call-seq:
+ *     GC.auto_compact    -> true or false
+ *
+ *  Returns whether or not automatic compaction has been enabled.
+ */
 static VALUE
-gc_get_auto_compact(rb_execution_context_t *ec, VALUE _)
+gc_get_auto_compact(VALUE _)
 {
     return RBOOL(ruby_enable_autocompact);
 }
@@ -13995,6 +14071,11 @@ Init_GC(void)
     rb_define_singleton_method(rb_mGC, "malloc_allocated_size", gc_malloc_allocated_size, 0);
     rb_define_singleton_method(rb_mGC, "malloc_allocations", gc_malloc_allocations, 0);
 #endif
+    rb_define_singleton_method(rb_mGC, "compact", gc_compact, 0);
+    rb_define_singleton_method(rb_mGC, "auto_compact", gc_get_auto_compact, 0);
+    rb_define_singleton_method(rb_mGC, "auto_compact=", gc_set_auto_compact, 1);
+    rb_define_singleton_method(rb_mGC, "latest_compact_info", gc_compact_stats, 0);
+    rb_define_singleton_method(rb_mGC, "verify_compaction_references", gc_verify_compaction_references, -1);
 
 #if GC_DEBUG_STRESS_TO_CLASS
     rb_define_singleton_method(rb_mGC, "add_stress_to_class", rb_gcdebug_add_stress_to_class, -1);
