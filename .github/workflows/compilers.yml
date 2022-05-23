@@ -163,7 +163,6 @@ jobs:
 #         - { key: cppflags, name: ID_TABLE_DEBUG,                 value: '-DID_TABLE_DEBUG' }
 #         - { key: cppflags, name: RGENGC_DEBUG=-1,                value: '-DRGENGC_DEBUG=-1' }
 #         - { key: cppflags, name: SYMBOL_DEBUG,                   value: '-DSYMBOL_DEBUG' }
-#         - { key: cppflags, name: THREAD_DEBUG=-1,                value: '-DTHREAD_DEBUG=-1' }
 
 #         - { key: cppflags, name: RGENGC_CHECK_MODE,              value: '-DRGENGC_CHECK_MODE' }
 #         - { key: cppflags, name: TRANSIENT_HEAP_CHECK_MODE,      value: '-DTRANSIENT_HEAP_CHECK_MODE' }
