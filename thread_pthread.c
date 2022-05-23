@@ -40,6 +40,10 @@
 #include <time.h>
 #include <signal.h>
 
+#if defined __APPLE__
+# include <AvailabilityMacros.h>
+#endif
+
 #if defined(HAVE_SYS_EVENTFD_H) && defined(HAVE_EVENTFD)
 #  define USE_EVENTFD (1)
 #  include <sys/eventfd.h>
@@ -1766,6 +1770,10 @@ native_thread_native_thread_id(rb_thread_t *target_th)
     return INT2FIX(tid);
 #elif defined(__APPLE__)
     uint64_t tid;
+    if (MAC_OS_X_VERSION_MAX_ALLOWED < MAC_OS_X_VERSION_10_6 ||
+        !&pthread_threadid_np /* check weakly linked symbol */) {
+        return ULL2NUM(pthread_mach_thread_np(pthread_self()));
+    }
     int e = pthread_threadid_np(target_th->nt->thread_id, &tid);
     if (e != 0) rb_syserr_fail(e, "pthread_threadid_np");
     return ULL2NUM((unsigned long long)tid);
