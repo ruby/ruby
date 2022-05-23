@@ -1078,6 +1078,12 @@ typedef struct rb_thread_struct {
 #endif
 } rb_thread_t;
 
+static inline unsigned int
+rb_th_serial(const rb_thread_t *th)
+{
+    return (unsigned int)th->serial;
+}
+
 typedef enum {
     VM_DEFINECLASS_TYPE_CLASS           = 0x00,
     VM_DEFINECLASS_TYPE_SINGLETON_CLASS = 0x01,
