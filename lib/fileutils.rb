@@ -631,16 +631,53 @@ module FileUtils
   end
   module_function :link_entry
 
+  # Copies files from +src+ to +dest+.
   #
-  # Copies a file content +src+ to +dest+.  If +dest+ is a directory,
-  # copies +src+ to +dest/src+.
+  # If +src+ is the path to a file and +dest+ is not the path to a directory,
+  # copies +src+ to +dest+:
   #
-  # If +src+ is a list of files, then +dest+ must be a directory.
+  #   FileUtils.touch('src0.txt')
+  #   File.exist?('dest0.txt') # => false
+  #   FileUtils.cp('src0.txt', 'dest0.txt')
+  #   File.exist?('dest0.txt') # => true
   #
-  #   FileUtils.cp 'eval.c', 'eval.c.org'
-  #   FileUtils.cp %w(cgi.rb complex.rb date.rb), '/usr/lib/ruby/1.6'
-  #   FileUtils.cp %w(cgi.rb complex.rb date.rb), '/usr/lib/ruby/1.6', verbose: true
-  #   FileUtils.cp 'symlink', 'dest'   # copy content, "dest" is not a symlink
+  # If +src+ is the path to a file and +dest+ is the path to a directory,
+  # copies +src+ to <tt>dest/src</tt>:
+  #
+  #   FileUtils.touch('src1.txt')
+  #   FileUtils.mkdir('dest1')
+  #   FileUtils.cp('src1.txt', 'dest1')
+  #   File.exist?('dest1/src1.txt') # => true
+  #
+  # If +src+ is an array of paths to files and +dest+ is the path to a directory,
+  # copies from each +src+ to +dest+:
+  #
+  #   src_file_paths = ['src2.txt', 'src2.dat']
+  #   FileUtils.touch(src_file_paths)
+  #   FileUtils.mkdir('dest2')
+  #   FileUtils.cp(src_file_paths, 'dest2')
+  #   File.exist?('dest2/src2.txt') # => true
+  #   File.exist?('dest2/src2.dat') # => true
+  #
+  # Keyword arguments:
+  #
+  # - <tt>preserve: true</tt> - preserves file times.
+  # - <tt>noop: true</tt> - does not copy files.
+  # - <tt>verbose: true</tt> - prints an equivalent command:
+  #
+  #     FileUtils.cp('src0.txt', 'dest0.txt', noop: true, verbose: true)
+  #     FileUtils.cp('src1.txt', 'dest1', noop: true, verbose: true)
+  #     FileUtils.cp(src_file_paths, 'dest2', noop: true, verbose: true)
+  #
+  #   Output:
+  #
+  #     cp src0.txt dest0.txt
+  #     cp src1.txt dest1
+  #     cp src2.txt src2.dat dest2
+  #
+  # Raises an exception if +src+ is a directory.
+  #
+  # FileUtils.copy is an alias for FileUtils.cp.
   #
   def cp(src, dest, preserve: nil, noop: nil, verbose: nil)
     fu_output_message "cp#{preserve ? ' -p' : ''} #{[src,dest].flatten.join ' '}" if verbose
