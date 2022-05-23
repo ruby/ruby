@@ -1274,7 +1274,6 @@ do_include_modules_at(const VALUE klass, VALUE c, VALUE module, int search_super
 
             rb_id_table_foreach(RCLASS_M_TBL(module), add_refined_method_entry_i, (void *)refined_class);
             RUBY_ASSERT(BUILTIN_TYPE(c) == T_MODULE);
-	    FL_SET(c, RMODULE_INCLUDED_INTO_REFINEMENT);
 	}
 
         tbl = RCLASS_CONST_TBL(module);
