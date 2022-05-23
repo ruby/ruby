@@ -501,25 +501,69 @@ module FileUtils
   end
   module_function :cp_lr
 
+  # Creates {symbolic links}[https://en.wikipedia.org/wiki/Symbolic_link].
   #
-  # :call-seq:
-  #   FileUtils.ln_s(target, link, force: nil, noop: nil, verbose: nil)
-  #   FileUtils.ln_s(target,  dir, force: nil, noop: nil, verbose: nil)
-  #   FileUtils.ln_s(targets, dir, force: nil, noop: nil, verbose: nil)
+  # When +src+ is the path to an existing file:
   #
-  # In the first form, creates a symbolic link +link+ which points to +target+.
-  # If +link+ already exists, raises Errno::EEXIST.
-  # But if the <tt>force</tt> option is set, overwrites +link+.
+  # - When +dest+ is the path to a non-existent file,
+  #   creates a symbolic link at +dest+ pointing to +src+:
   #
-  #   FileUtils.ln_s '/usr/bin/ruby', '/usr/local/bin/ruby'
-  #   FileUtils.ln_s 'verylongsourcefilename.c', 'c', force: true
+  #     FileUtils.touch('src0.txt')
+  #     File.exist?('dest0.txt')   # => false
+  #     FileUtils.ln_s('src0.txt', 'dest0.txt')
+  #     File.symlink?('dest0.txt') # => true
   #
-  # In the second form, creates a link +dir/target+ pointing to +target+.
-  # In the third form, creates several symbolic links in the directory +dir+,
-  # pointing to each item in +targets+.
-  # If +dir+ is not a directory, raises Errno::ENOTDIR.
+  # - When +dest+ is the path to an existing file,
+  #   creates a symbolic link at +dest+ pointing to +src+
+  #   if and only if keyword argument <tt>force: true</tt> is given
+  #   (raises an exception otherwise):
   #
-  #   FileUtils.ln_s Dir.glob('/bin/*.rb'), '/home/foo/bin'
+  #     FileUtils.touch('src1.txt')
+  #     FileUtils.touch('dest1.txt')
+  #     FileUtils.ln_s('src1.txt', 'dest1.txt', force: true)
+  #     FileTest.symlink?('dest1.txt') # => true
+  #
+  #     FileUtils.ln_s('src1.txt', 'dest1.txt') # Raises Errno::EEXIST.
+  #
+  # When +dest+ is the path to a directory,
+  # creates a symbolic link at <tt>dest/src</tt> pointing to +src+:
+  #
+  #   FileUtils.touch('src2.txt')
+  #   FileUtils.mkdir('destdir2')
+  #   FileUtils.ln_s('src2.txt', 'destdir2')
+  #   File.symlink?('destdir2/src2.txt') # => true
+  #
+  # When +src+ is an array of paths to existing files and +dest+ is a directory,
+  # for each child +child+ in +src+ creates a symbolic link <tt>dest/child</tt>
+  # pointing to +child+:
+  #
+  #   FileUtils.mkdir('srcdir3')
+  #   FileUtils.touch('srcdir3/src0.txt')
+  #   FileUtils.touch('srcdir3/src1.txt')
+  #   FileUtils.mkdir('destdir3')
+  #   FileUtils.ln_s(['srcdir3/src0.txt', 'srcdir3/src1.txt'], 'destdir3')
+  #   File.symlink?('destdir3/src0.txt') # => true
+  #   File.symlink?('destdir3/src1.txt') # => true
+  #
+  # Keyword arguments:
+  #
+  # - <tt>force: true</tt> - overwrites +dest+ if it exists.
+  # - <tt>noop: true</tt> - does not create links.
+  # - <tt>verbose: true</tt> - prints an equivalent command:
+  #
+  #     FileUtils.ln_s('src0.txt', 'dest0.txt', noop: true, verbose: true)
+  #     FileUtils.ln_s('src1.txt', 'destdir1', noop: true, verbose: true)
+  #     FileUtils.ln_s('src2.txt', 'dest2.txt', force: true, noop: true, verbose: true)
+  #     FileUtils.ln_s(['srcdir3/src0.txt', 'srcdir3/src1.txt'], 'destdir3', noop: true, verbose: true)
+  #
+  #   Output:
+  #
+  #     ln -s src0.txt dest0.txt
+  #     ln -s src1.txt destdir1
+  #     ln -sf src2.txt dest2.txt
+  #     ln -s srcdir3/src0.txt srcdir3/src1.txt destdir3
+  #
+  # FileUtils.symlink is an alias for FileUtils.ln_s.
   #
   def ln_s(src, dest, force: nil, noop: nil, verbose: nil)
     fu_output_message "ln -s#{force ? 'f' : ''} #{[src,dest].flatten.join ' '}" if verbose
