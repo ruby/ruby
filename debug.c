@@ -474,7 +474,7 @@ ruby_debug_log(const char *file, int line, const char *func_name, const char *fm
         // thread information
         const rb_thread_t *th = GET_THREAD();
         if (r && len < MAX_DEBUG_LOG_MESSAGE_LEN) {
-            r = snprintf(buff + len, MAX_DEBUG_LOG_MESSAGE_LEN - len, "\tth:%u", (unsigned int)th->serial);
+            r = snprintf(buff + len, MAX_DEBUG_LOG_MESSAGE_LEN - len, "\tth:%u", rb_th_serial(th));
             if (r < 0) rb_bug("ruby_debug_log returns %d\n", r);
             len += r;
         }
