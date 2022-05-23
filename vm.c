@@ -3275,10 +3275,6 @@ th_init(rb_thread_t *th, VALUE self, rb_vm_t *vm)
     th->top_self = vm->top_self; // 0 while self == 0
     th->value = Qundef;
 
-#if  defined(NON_SCALAR_THREAD_ID) && !defined(__wasm__) && !defined(__EMSCRIPTEN__)
-    th->nt->thread_id_string[0] = '\0';
-#endif
-
     th->ec->errinfo = Qnil;
     th->ec->root_svar = Qfalse;
     th->ec->local_storage_recursive_hash = Qnil;

@@ -30,10 +30,6 @@ struct rb_native_thread {
 
     rb_nativethread_id_t thread_id;
 
-#ifdef NON_SCALAR_THREAD_ID
-    rb_thread_id_string_t thread_id_string;
-#endif
-
 #ifdef RB_THREAD_T_HAS_NATIVE_ID
     int tid;
 #endif
