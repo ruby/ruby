@@ -9671,6 +9671,7 @@ gc_move(rb_objspace_t *objspace, VALUE scan, VALUE free, size_t slot_size)
     return (VALUE)src;
 }
 
+#if GC_COMPACTION_SUPPORTED
 static int
 compare_free_slots(const void *left, const void *right, void *dummy)
 {
@@ -9719,6 +9720,7 @@ gc_sort_heap_by_empty_slots(rb_objspace_t *objspace)
         free(page_list);
     }
 }
+#endif
 
 static void
 gc_ref_update_array(rb_objspace_t * objspace, VALUE v)
@@ -10410,6 +10412,7 @@ gc_update_references(rb_objspace_t *objspace)
     gc_update_table_refs(objspace, finalizer_table);
 }
 
+#if GC_COMPACTION_SUPPORTED
 /*
  *  call-seq:
  *     GC.latest_compact_info -> {:considered=>{:T_CLASS=>11}, :moved=>{:T_CLASS=>11}}
@@ -10446,7 +10449,11 @@ gc_compact_stats(VALUE self)
 
     return h;
 }
+#else
+#  define gc_compact_stats rb_f_notimplement
+#endif
 
+#if GC_COMPACTION_SUPPORTED
 static void
 root_obj_check_moved_i(const char *category, VALUE obj, void *data)
 {
@@ -10508,6 +10515,10 @@ heap_check_moved_i(void *vstart, void *vend, size_t stride, void *data)
  *
  * This method is implementation specific and not expected to be implemented
  * in any implementation besides MRI.
+ *
+ * To test whether GC compaction is supported, use the idiom:
+ *
+ *   GC.respond_to?(:compact)
  */
 static VALUE
 gc_compact(VALUE self)
@@ -10517,7 +10528,11 @@ gc_compact(VALUE self)
 
     return gc_compact_stats(self);
 }
+#else
+#  define gc_compact rb_f_notimplement
+#endif
 
+#if GC_COMPACTION_SUPPORTED
 /*
  * call-seq:
  *    GC.verify_compaction_references(toward: nil, double_heap: false) -> hash
@@ -10586,6 +10601,9 @@ gc_verify_compaction_references(int argc, VALUE *argv, VALUE self)
 
     return gc_compact_stats(self);
 }
+#else
+#  define gc_verify_compaction_references rb_f_notimplement
+#endif
 
 VALUE
 rb_gc_start(void)
@@ -11173,6 +11191,7 @@ gc_disable(rb_execution_context_t *ec, VALUE _)
     return rb_gc_disable();
 }
 
+#if GC_COMPACTION_SUPPORTED
 /*
  *  call-seq:
  *     GC.auto_compact = flag
@@ -11194,14 +11213,14 @@ gc_set_auto_compact(VALUE _, VALUE v)
     }
 #endif
 
-#if !GC_COMPACTION_SUPPORTED
-    rb_raise(rb_eNotImpError, "Automatic compaction isn't available on this platform");
-#endif
-
     ruby_enable_autocompact = RTEST(v);
     return v;
 }
+#else
+#  define gc_set_auto_compact rb_f_notimplement
+#endif
 
+#if GC_COMPACTION_SUPPORTED
 /*
  *  call-seq:
  *     GC.auto_compact    -> true or false
@@ -11213,6 +11232,9 @@ gc_get_auto_compact(VALUE _)
 {
     return RBOOL(ruby_enable_autocompact);
 }
+#else
+#  define gc_get_auto_compact rb_f_notimplement
+#endif
 
 static int
 get_envparam_size(const char *name, size_t *default_value, size_t lower_bound)
