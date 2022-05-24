@@ -631,6 +631,10 @@ def_push_2_opnd_no_out!(test, Op::Test);
 // They are just wrappers to convert from X86Opnd into the IR Opnd type
 impl Context
 {
+    pub fn ir_stack_opnd(&mut self, idx: i32) -> Opnd {
+        self.stack_opnd(idx).into()
+    }
+
     pub fn ir_stack_pop(&mut self, n: usize) -> Opnd {
         self.stack_pop(n).into()
     }

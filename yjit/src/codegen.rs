@@ -932,6 +932,7 @@ fn gen_dup(
 
 
 
+/*
 // duplicate stack top n elements
 fn gen_dupn(
     jit: &mut JITState,
@@ -963,6 +964,53 @@ fn gen_dupn(
 
     KeepCompiling
 }
+*/
+
+
+// duplicate stack top n elements
+fn gen_dupn(
+    jit: &mut JITState,
+    ctx: &mut Context,
+    cb: &mut CodeBlock,
+    _ocb: &mut OutlinedCb,
+) -> CodegenStatus {
+
+    let mut asm = Assembler::new();
+
+    let nval: VALUE = jit_get_arg(jit, 0);
+    let VALUE(n) = nval;
+
+    // In practice, seems to be only used for n==2
+    if n != 2 {
+        return CantCompile;
+    }
+
+    let opnd1: Opnd = ctx.ir_stack_opnd(1);
+    let opnd0: Opnd = ctx.ir_stack_opnd(0);
+
+    let mapping1 = ctx.get_opnd_mapping(StackOpnd(1));
+    let mapping0 = ctx.get_opnd_mapping(StackOpnd(0));
+
+    let dst1: Opnd = ctx.ir_stack_push_mapping(mapping1);
+    asm.mov(dst1, opnd1);
+
+    let dst0: Opnd = ctx.ir_stack_push_mapping(mapping0);
+    asm.mov(dst0, opnd0);
+
+    asm.compile(cb);
+
+    KeepCompiling
+}
+
+
+
+
+
+
+
+
+
+
 
 // Swap top 2 stack entries
 fn gen_swap(
