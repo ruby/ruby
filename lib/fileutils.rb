@@ -677,6 +677,8 @@ module FileUtils
   #
   # Raises an exception if +src+ is a directory.
   #
+  # Related: FileUtils.cp_r (recursive).
+  #
   # FileUtils.copy is an alias for FileUtils.cp.
   #
   def cp(src, dest, preserve: nil, noop: nil, verbose: nil)
@@ -691,30 +693,79 @@ module FileUtils
   alias copy cp
   module_function :copy
 
+  # Recursively copies files from +src+ to +dest+.
   #
-  # Copies +src+ to +dest+. If +src+ is a directory, this method copies
-  # all its contents recursively. If +dest+ is a directory, copies
-  # +src+ to +dest/src+.
   #
-  # +src+ can be a list of files.
+  # If +src+ is the path to a file and +dest+ is not the path to a directory,
+  # copies +src+ to +dest+:
   #
-  # If +dereference_root+ is true, this method dereference tree root.
+  #   FileUtils.touch('src0.txt')
+  #   File.exist?('dest0.txt') # => false
+  #   FileUtils.cp_r('src0.txt', 'dest0.txt')
+  #   File.exist?('dest0.txt') # => true
   #
-  # If +remove_destination+ is true, this method removes each destination file before copy.
+  # If +src+ is the path to a file and +dest+ is the path to a directory,
+  # copies +src+ to <tt>dest/src</tt>:
   #
-  #   # Installing Ruby library "mylib" under the site_ruby
-  #   FileUtils.rm_r site_ruby + '/mylib', force: true
-  #   FileUtils.cp_r 'lib/', site_ruby + '/mylib'
+  #   FileUtils.touch('src1.txt')
+  #   FileUtils.mkdir('dest1')
+  #   FileUtils.cp_r('src1.txt', 'dest1')
+  #   File.exist?('dest1/src1.txt') # => true
   #
-  #   # Examples of copying several files to target directory.
-  #   FileUtils.cp_r %w(mail.rb field.rb debug/), site_ruby + '/tmail'
-  #   FileUtils.cp_r Dir.glob('*.rb'), '/home/foo/lib/ruby', noop: true, verbose: true
+  # If +src+ is the path to a directory and +dest+ does not exist,
+  # recursively copies +src+ to +dest+:
   #
-  #   # If you want to copy all contents of a directory instead of the
-  #   # directory itself, c.f. src/x -> dest/x, src/y -> dest/y,
-  #   # use following code.
-  #   FileUtils.cp_r 'src/.', 'dest'     # cp_r('src', 'dest') makes dest/src,
-  #                                      # but this doesn't.
+  #   FileUtils.mkdir_p(['src2/dir0', 'src2/dir1'])
+  #   FileUtils.touch('src2/dir0/src0.txt')
+  #   FileUtils.touch('src2/dir0/src1.txt')
+  #   FileUtils.touch('src2/dir1/src2.txt')
+  #   FileUtils.touch('src2/dir1/src3.txt')
+  #   FileUtils.cp_r('src2', 'dest2')
+  #   File.exist?('dest2/dir0/src0.txt') # => true
+  #   File.exist?('dest2/dir0/src1.txt') # => true
+  #   File.exist?('dest2/dir1/src2.txt') # => true
+  #   File.exist?('dest2/dir1/src3.txt') # => true
+  #
+  # If +src+ and +dest+ are paths to directories,
+  # recursively copies +src+ to <tt>dest/src</tt>:
+  #
+  #   FileUtils.mkdir_p(['src3/dir0', 'src3/dir1'])
+  #   FileUtils.touch('src3/dir0/src0.txt')
+  #   FileUtils.touch('src3/dir0/src1.txt')
+  #   FileUtils.touch('src3/dir1/src2.txt')
+  #   FileUtils.touch('src3/dir1/src3.txt')
+  #   FileUtils.mkdir('dest3')
+  #   FileUtils.cp_r('src3', 'dest3')
+  #   File.exist?('dest3/src3/dir0/src0.txt') # => true
+  #   File.exist?('dest3/src3/dir0/src1.txt') # => true
+  #   File.exist?('dest3/src3/dir1/src2.txt') # => true
+  #   File.exist?('dest3/src3/dir1/src3.txt') # => true
+  #
+  # Keyword arguments:
+  #
+  # - <tt>dereference_root: false</tt> - if +src+ is a symbolic link,
+  #   does not dereference it.
+  # - <tt>noop: true</tt> - does not copy files.
+  # - <tt>preserve</tt> - preserves file times.
+  # - <tt>remove_destination: true</tt> - removes +dest+ before copying files.
+  # - <tt>verbose: true</tt> - prints an equivalent command:
+  #
+  #     FileUtils.cp_r('src0.txt', 'dest0.txt', noop: true, verbose: true)
+  #     FileUtils.cp_r('src1.txt', 'dest1', noop: true, verbose: true)
+  #     FileUtils.cp_r('src2', 'dest2', noop: true, verbose: true)
+  #     FileUtils.cp_r('src3', 'dest3', noop: true, verbose: true)
+  #
+  #   Output:
+  #
+  #     cp -r src0.txt dest0.txt
+  #     cp -r src1.txt dest1
+  #     cp -r src2 dest2
+  #     cp -r src3 dest3
+  #
+  # Raises an exception of +src+ is the path to a directory
+  # and +dest+ is the path to a file.
+  #
+  # Related: FileUtils.cp (not recursive).
   #
   def cp_r(src, dest, preserve: nil, noop: nil, verbose: nil,
            dereference_root: true, remove_destination: nil)
