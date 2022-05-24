@@ -118,6 +118,10 @@ Note: We're only listing outstanding class updates.
     * Proc#dup returns an instance of subclass. [[Bug #17545]]
     * Proc#parameters now accepts lambda keyword. [[Feature #15357]]
 
+* Regexp
+    * Regexp.new now warns second argument, other than `true`, `false`,
+      `nil` or Integer.  [[Feature #18788]]
+
 * Refinement
     * Refinement#refined_class has been added. [[Feature #12737]]
 
@@ -263,3 +267,4 @@ The following deprecated APIs are removed.
 [Bug #18625]:     https://bugs.ruby-lang.org/issues/18625
 [Bug #18633]:     https://bugs.ruby-lang.org/issues/18633
 [Bug #18782]:     https://bugs.ruby-lang.org/issues/18782
+[Feature #18788]: https://bugs.ruby-lang.org/issues/18788
