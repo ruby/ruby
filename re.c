@@ -20,6 +20,7 @@
 #include "internal/imemo.h"
 #include "internal/re.h"
 #include "internal/string.h"
+#include "internal/object.h"
 #include "internal/ractor.h"
 #include "internal/variable.h"
 #include "regint.h"
@@ -3716,7 +3717,8 @@ rb_reg_initialize_m(int argc, VALUE *argv, VALUE self)
     else {
         if (opts != Qundef) {
 	    if (FIXNUM_P(opts)) flags = FIX2INT(opts);
-	    else if (RTEST(opts)) flags = ONIG_OPTION_IGNORECASE;
+	    else if (!NIL_P(opts) && rb_bool_expected(opts, "ignorecase", FALSE))
+		flags = ONIG_OPTION_IGNORECASE;
 	}
         if (n_flag != Qundef && !NIL_P(n_flag)) {
 	    char *kcode = StringValuePtr(n_flag);
