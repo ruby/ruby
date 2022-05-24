@@ -2477,9 +2477,7 @@ fiber_resume_kw(rb_fiber_t *fiber, int argc, const VALUE *argv, int kw_splat)
         rb_raise(rb_eFiberError, "attempt to resume a transferring fiber");
     }
 
-    VALUE result = fiber_switch(fiber, argc, argv, kw_splat, fiber, false);
-
-    return result;
+    return fiber_switch(fiber, argc, argv, kw_splat, fiber, false);
 }
 
 VALUE

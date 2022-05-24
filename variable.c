@@ -2722,9 +2722,7 @@ rb_autoload_load(VALUE module, ID name)
     arguments.flag = ce->flag & (CONST_DEPRECATED | CONST_VISIBILITY_MASK);
 
     // Only one thread will enter here at a time:
-    VALUE result = rb_mutex_synchronize(arguments.mutex, autoload_try_load, (VALUE)&arguments);
-
-    return result;
+    return rb_mutex_synchronize(arguments.mutex, autoload_try_load, (VALUE)&arguments);
 }
 
 VALUE
