@@ -2210,7 +2210,7 @@ rb_execarg_addopt_rlimit(struct rb_execarg *eargp, int rtype, VALUE val)
 }
 #endif
 
-#define TO_BOOL(val, name) NIL_P(val) ? 0 : rb_bool_expected((val), name)
+#define TO_BOOL(val, name) (NIL_P(val) ? 0 : rb_bool_expected((val), name, TRUE))
 int
 rb_execarg_addopt(VALUE execarg_obj, VALUE key, VALUE val)
 {
