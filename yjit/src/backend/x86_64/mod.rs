@@ -14,6 +14,9 @@ pub const CFP: Opnd = Opnd::Reg(R13_REG);
 pub const EC: Opnd = Opnd::Reg(R12_REG);
 pub const SP: Opnd = Opnd::Reg(RBX_REG);
 
+// C return value register on this platform
+pub const RET_REG: Reg = RAX_REG;
+
 /// Map Opnd to X86Opnd
 impl From<Opnd> for X86Opnd {
     fn from(opnd: Opnd) -> Self {
@@ -54,7 +57,7 @@ impl Assembler
     }
 
     // Emit platform-specific machine code
-    fn target_split(mut self) -> Assembler
+    fn x86_split(mut self) -> Assembler
     {
         let live_ranges: Vec<usize> = std::mem::take(&mut self.live_ranges);
 
@@ -88,7 +91,7 @@ impl Assembler
     }
 
     // Emit platform-specific machine code
-    pub fn target_emit(&self, cb: &mut CodeBlock)
+    pub fn x86_emit(&self, cb: &mut CodeBlock)
     {
         // For each instruction
         for insn in &self.insns {
@@ -117,6 +120,17 @@ impl Assembler
                 Jbe,
                 */
 
+                // C function call
+                Op::CCall => {
+                    // Temporary
+                    assert!(insn.opnds.len() < C_ARG_REGS.len());
+
+                    // For each operand
+                    for (idx, opnd) in insn.opnds.iter().enumerate() {
+                        mov(cb, C_ARG_REGS[idx], insn.opnds[idx].into());
+                    }
+                },
+
                 _ => panic!("unsupported instruction passed to x86 backend")
             };
         }
@@ -126,9 +140,9 @@ impl Assembler
     pub fn compile_with_regs(self, cb: &mut CodeBlock, regs: Vec<Reg>)
     {
         self
-        .target_split()
+        .x86_split()
         .split_loads()
         .alloc_regs(regs)
-        .target_emit(cb);
+        .x86_emit(cb);
     }
 }

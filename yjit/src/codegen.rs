@@ -931,7 +931,6 @@ fn gen_dup(
 
 
 
-
 /*
 // duplicate stack top n elements
 fn gen_dupn(
@@ -965,7 +964,6 @@ fn gen_dupn(
     KeepCompiling
 }
 */
-
 
 // duplicate stack top n elements
 fn gen_dupn(
@@ -1002,16 +1000,6 @@ fn gen_dupn(
     KeepCompiling
 }
 
-
-
-
-
-
-
-
-
-
-
 // Swap top 2 stack entries
 fn gen_swap(
     _jit: &mut JITState,
@@ -1031,19 +1019,23 @@ fn stack_swap(
     _reg0: X86Opnd,
     _reg1: X86Opnd,
 ) {
-    let opnd0 = ctx.stack_opnd(offset0 as i32);
-    let opnd1 = ctx.stack_opnd(offset1 as i32);
+    let mut asm = Assembler::new();
+
+    let stack0_mem = ctx.ir_stack_opnd(offset0 as i32);
+    let stack1_mem = ctx.ir_stack_opnd(offset1 as i32);
 
     let mapping0 = ctx.get_opnd_mapping(StackOpnd(offset0));
     let mapping1 = ctx.get_opnd_mapping(StackOpnd(offset1));
 
-    mov(cb, REG0, opnd0);
-    mov(cb, REG1, opnd1);
-    mov(cb, opnd0, REG1);
-    mov(cb, opnd1, REG0);
+    let stack0_reg = asm.load(stack0_mem);
+    let stack1_reg = asm.load(stack1_mem);
+    asm.mov(stack0_mem, stack1_reg);
+    asm.mov(stack1_mem, stack0_reg);
 
     ctx.set_opnd_mapping(StackOpnd(offset0), mapping1);
     ctx.set_opnd_mapping(StackOpnd(offset1), mapping0);
+
+    asm.compile(cb);
 }
 
 fn gen_putnil(
@@ -1277,6 +1269,7 @@ fn gen_newarray(
     KeepCompiling
 }
 
+
 // dup array
 fn gen_duparray(
     jit: &mut JITState,
@@ -1298,6 +1291,23 @@ fn gen_duparray(
 
     KeepCompiling
 }
+
+
+
+
+/*
+let mut asm = Assembler::new();
+
+//asm.ccall(rb_ary_resurrect as *const u8, vec![ary]);
+
+asm.compile(cb);
+*/
+
+
+
+
+
+
 
 // dup hash
 fn gen_duphash(

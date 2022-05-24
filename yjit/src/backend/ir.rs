@@ -73,6 +73,9 @@ pub enum Op
     Jnz,
     Jbe,
 
+    // C function call with N arguments (variadic)
+    CCall,
+
     /*
     // The following are conditional jump instructions. They all accept as their
     // first operand an EIR_LABEL_NAME, which is used as the target of the jump.
@@ -269,9 +272,10 @@ impl From<X86Opnd> for Opnd {
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub enum Target
 {
-    CodePtr(CodePtr),   // Pointer to a piece of code (e.g. side-exit)
+    CodePtr(CodePtr),   // Pointer to a piece of YJIT-generated code (e.g. side-exit)
+    FunPtr(*const u8),  // Pointer to a C function
     LabelName(String),  // A label without an index in the output
-    LabelIdx(usize),      // A label that has been indexed
+    LabelIdx(usize),    // A label that has been indexed
 }
 
 /// YJIT IR instruction
@@ -466,14 +470,22 @@ impl Assembler
         // Mutate the pool bitmap to indicate that the register at that index
         // has been allocated and is live.
         fn alloc_reg(pool: &mut u32, regs: &Vec<Reg>) -> Reg {
-            for index in 0..regs.len() {
+            for (index, reg) in regs.iter().enumerate() {
                 if (*pool & (1 << index)) == 0 {
                     *pool |= 1 << index;
-                    return regs[index];
+                    return *reg;
                 }
             }
 
             unreachable!("Register spill not supported");
+        }
+
+        // Allocate a specific register
+        fn take_reg(pool: &mut u32, regs: &Vec<Reg>, reg: &Reg) -> Reg {
+            let reg_index = regs.iter().position(|elem| elem == reg).unwrap();
+            assert_eq!(*pool & (1 << reg_index), 0);
+            *pool |= 1 << reg_index;
+            return regs[reg_index];
         }
 
         // Mutate the pool bitmap to indicate that the given register is being
@@ -510,10 +522,21 @@ impl Assembler
                 }
             }
 
+            // C return values need to be mapped to the C return register
+            if op == Op::CCall {
+                assert_eq!(pool, 0, "register lives past C function call");
+            }
+
             // If this instruction is used by another instruction,
             // we need to allocate a register to it
             let mut out_reg = Opnd::None;
             if live_ranges[index] != index {
+
+                // C return values need to be mapped to the C return register
+                if op == Op::CCall {
+                    out_reg = Opnd::Reg(take_reg(&mut pool, &regs, &RET_REG))
+                }
+
                 // If this instruction's first operand maps to a register and
                 // this is the last use of the register, reuse the register
                 // We do this to improve register allocation on x86
@@ -523,7 +546,7 @@ impl Assembler
                     if let Opnd::InsnOut(idx) = opnds[0] {
                         if live_ranges[idx] == index {
                             if let Opnd::Reg(reg) = asm.insns[idx].out {
-                                out_reg = Opnd::Reg(alloc_reg(&mut pool, &vec![reg]))
+                                out_reg = Opnd::Reg(take_reg(&mut pool, &regs, &reg))
                             }
                         }
                     }
@@ -579,6 +602,12 @@ impl Assembler
     pub fn jbe(&mut self, target: Target)
     {
         self.push_insn(Op::Jbe, vec![], Some(target));
+    }
+
+    pub fn ccall(&mut self, fptr: *const u8, opnds: Vec<Opnd>) -> Opnd
+    {
+        let target = Target::FunPtr(fptr);
+        self.push_insn(Op::CCall, opnds, Some(target))
     }
 }
 
@@ -796,6 +825,25 @@ mod tests {
         let v1 = asm.add(Opnd::mem(64, SP, 8), Opnd::UImm(1));
         let v2 = asm.add(v0, Opnd::UImm(1));
         asm.add(v0, v2);
+
+        asm.compile_with_regs(&mut cb, vec![regs[0], regs[1]]);
+    }
+
+    #[test]
+    fn test_c_call()
+    {
+        extern "sysv64" fn dummy_c_fun(v0: usize, v1: usize)
+        {
+        }
+
+        let mut asm = Assembler::new();
+        let mut cb = CodeBlock::new_dummy(1024);
+        let regs = Assembler::get_scratch_regs();
+
+        asm.ccall(
+            dummy_c_fun as *const u8,
+            vec![Opnd::mem(64, SP, 0), Opnd::UImm(1)]
+        );
 
         asm.compile_with_regs(&mut cb, vec![regs[0], regs[1]]);
     }
