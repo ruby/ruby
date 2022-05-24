@@ -51,18 +51,6 @@
 #  define USE_EVENTFD (0)
 #endif
 
-#ifdef NON_SCALAR_THREAD_ID
-  #define DEBUG_OUT_NT_ID (NULL)
-#else
-  #define DEBUG_OUT_NT_ID ((void *)pthread_self())
-#endif
-
-#define DEBUG_OUT() \
-  pthread_mutex_lock(&debug_mutex); \
-  printf(POSITION_FORMAT"%"PRI_THREAD_ID" - %s" POSITION_ARGS, DEBUG_OUT_NT_ID, buf);	\
-  fflush(stdout); \
-  pthread_mutex_unlock(&debug_mutex);
-
 #if defined(SIGVTALRM) && !defined(__CYGWIN__) && !defined(__EMSCRIPTEN__)
 #  define USE_UBF_LIST 1
 #endif
