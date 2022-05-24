@@ -282,6 +282,27 @@ RSpec.describe "bundle install with install-time dependencies" do
         expect(err).not_to include("That means the author of parallel_tests (3.8.0) has removed it.")
       end
 
+      it "gives a meaningful error on ruby version mismatches between dependencies" do
+        build_repo4 do
+          build_gem "requires-old-ruby" do |s|
+            s.required_ruby_version = "< #{RUBY_VERSION}"
+          end
+        end
+
+        build_lib("foo", :path => bundled_app) do |s|
+          s.required_ruby_version = ">= #{RUBY_VERSION}"
+
+          s.add_dependency "requires-old-ruby"
+        end
+
+        install_gemfile <<-G, :raise_on_error => false
+          source "#{file_uri_for(gem_repo4)}"
+          gemspec
+        G
+
+        expect(err).to include("Bundler found conflicting requirements for the Ruby\0 version:")
+      end
+
       it "installs the older version under rate limiting conditions" do
         build_repo4 do
           build_gem "rack", "9001.0.0" do |s|

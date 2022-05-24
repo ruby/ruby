@@ -19,13 +19,15 @@ module Bundler
     #   collection of gemspecs is returned. Otherwise, nil is returned.
     def self.resolve(requirements, source_requirements = {}, base = [], gem_version_promoter = GemVersionPromoter.new, additional_base_requirements = [], platforms = nil)
       base = SpecSet.new(base) unless base.is_a?(SpecSet)
-      resolver = new(source_requirements, base, gem_version_promoter, additional_base_requirements, platforms)
+      metadata_requirements, regular_requirements = requirements.partition {|dep| dep.name.end_with?("\0") }
+      resolver = new(source_requirements, base, gem_version_promoter, additional_base_requirements, platforms, metadata_requirements)
       result = resolver.start(requirements)
-      SpecSet.new(SpecSet.new(result).for(requirements.reject {|dep| dep.name.end_with?("\0") }))
+      SpecSet.new(SpecSet.new(result).for(regular_requirements))
     end
 
-    def initialize(source_requirements, base, gem_version_promoter, additional_base_requirements, platforms)
+    def initialize(source_requirements, base, gem_version_promoter, additional_base_requirements, platforms, metadata_requirements)
       @source_requirements = source_requirements
+      @metadata_requirements = metadata_requirements
       @base = base
       @resolver = Molinillo::Resolver.new(self, self)
       @search_for = {}
@@ -344,8 +346,6 @@ module Bundler
             trees.sort_by! {|t| t.reverse.map(&:name) }
           end
 
-          metadata_requirements = {}
-
           o << trees.map do |tree|
             t = "".dup
             depth = 2
@@ -354,7 +354,6 @@ module Bundler
             base_tree_name = base_tree.name
 
             if base_tree_name.end_with?("\0")
-              metadata_requirements[base_tree_name] = base_tree
               t = nil
             else
               tree.each do |req|
@@ -393,7 +392,7 @@ module Bundler
               end
             end
           elsif name.end_with?("\0")
-            o << %(\n  Current #{name} version:\n    #{SharedHelpers.pretty_dependency(metadata_requirements[name])}\n\n)
+            o << %(\n  Current #{name} version:\n    #{SharedHelpers.pretty_dependency(@metadata_requirements.find {|req| req.name == name })}\n\n)
           elsif conflict.locked_requirement
             o << "\n"
             o << %(Running `bundle update` will rebuild your snapshot from scratch, using only\n)
