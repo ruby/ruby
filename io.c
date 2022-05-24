@@ -3385,7 +3385,7 @@ io_read_nonblock(rb_execution_context_t *ec, VALUE io, VALUE length, VALUE str, 
     }
 
     shrinkable = io_setstrbuf(&str, len);
-    rb_bool_expected(ex, "exception");
+    rb_bool_expected(ex, "exception", TRUE);
 
     GetOpenFile(io, fptr);
     rb_io_check_byte_readable(fptr);
@@ -3433,7 +3433,7 @@ io_write_nonblock(rb_execution_context_t *ec, VALUE io, VALUE str, VALUE ex)
 
     if (!RB_TYPE_P(str, T_STRING))
 	str = rb_obj_as_string(str);
-    rb_bool_expected(ex, "exception");
+    rb_bool_expected(ex, "exception", TRUE);
 
     io = GetWriteIO(io);
     GetOpenFile(io, fptr);

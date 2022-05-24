@@ -2948,7 +2948,7 @@ dir_glob_option_base(VALUE base)
 static int
 dir_glob_option_sort(VALUE sort)
 {
-    return (rb_bool_expected(sort, "sort") ? 0 : FNM_GLOB_NOSORT);
+    return (rb_bool_expected(sort, "sort", TRUE) ? 0 : FNM_GLOB_NOSORT);
 }
 
 static VALUE

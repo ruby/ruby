@@ -22,7 +22,7 @@ double rb_num_to_dbl(VALUE val);
 VALUE rb_obj_dig(int argc, VALUE *argv, VALUE self, VALUE notfound);
 VALUE rb_immutable_obj_clone(int, VALUE *, VALUE);
 VALUE rb_check_convert_type_with_id(VALUE,int,const char*,ID);
-int rb_bool_expected(VALUE, const char *);
+int rb_bool_expected(VALUE, const char *, int raise);
 static inline void RBASIC_CLEAR_CLASS(VALUE obj);
 static inline void RBASIC_SET_CLASS_RAW(VALUE obj, VALUE klass);
 static inline void RBASIC_SET_CLASS(VALUE obj, VALUE klass);

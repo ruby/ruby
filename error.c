@@ -1273,7 +1273,7 @@ check_highlight_keyword(VALUE opt, int auto_tty_detect)
 
         switch (highlight) {
           default:
-            rb_bool_expected(highlight, "highlight");
+            rb_bool_expected(highlight, "highlight", TRUE);
             UNREACHABLE;
           case Qtrue: case Qfalse: case Qnil: break;
         }
