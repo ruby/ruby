@@ -219,7 +219,7 @@ pub enum Opnd
 
 impl Opnd
 {
-    // Convenience constructor for memory operands
+    /// Convenience constructor for memory operands
     pub fn mem(num_bits: u8, base: Opnd, disp: i32) -> Self {
         match base {
             Opnd::Reg(base_reg) => {
@@ -232,6 +232,11 @@ impl Opnd
             },
             _ => unreachable!()
         }
+    }
+
+    /// Constant pointer operand
+    pub fn const_ptr(ptr: *const u8) -> Self {
+        Opnd::UImm(ptr as u64)
     }
 }
 
@@ -436,7 +441,32 @@ impl Assembler
     /// can.
     pub(super) fn split_loads(self) -> Assembler
     {
+        // Load operands that are GC values into a register
+        fn load_gc_opnds(op: Op, opnds: Vec<Opnd>, asm: &mut Assembler) -> Vec<Opnd>
+        {
+            if op == Op::Load || op == Op::Mov {
+                return opnds;
+            }
+
+            fn map_opnd(opnd: Opnd, asm: &mut Assembler) -> Opnd {
+                if let Opnd::Value(val) = opnd {
+                    // If this is a heap object, load it into a register
+                    if !val.special_const_p() {
+                        asm.load(opnd);
+                    }
+                }
+
+                opnd
+            }
+
+            opnds.into_iter().map(|opnd| map_opnd(opnd, asm)).collect()
+        }
+
         self.transform_insns(|asm, _, op, opnds, target| {
+            // Load heap object operands into registers because most
+            // instructions can't directly work with 64-bit constants
+            let opnds = load_gc_opnds(op, opnds, asm);
+
             match op {
                 // Check for Add, Sub, And, Mov, with two memory operands.
                 // Load one operand into memory.
