@@ -15,8 +15,6 @@
 
 #include <time.h>
 
-#define DEBUG_OUT() (void)(0);
-
 #define TIME_QUANTUM_MSEC (100)
 #define TIME_QUANTUM_USEC (TIME_QUANTUM_MSEC * 1000)
 #define TIME_QUANTUM_NSEC (TIME_QUANTUM_USEC * 1000)
