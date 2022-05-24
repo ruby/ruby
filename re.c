@@ -2780,7 +2780,7 @@ escape_asis:
           case '#':
             if ((options & ONIG_OPTION_EXTEND) && !in_char_class) {
                 /* consume and ignore comment in extended regexp */
-                while ((c = *p++) && (c != '\n'));
+                while ((p < end) && ((c = *p++) != '\n'));
                 break;
             }
             rb_str_buf_cat(buf, (char *)&c, 1);
@@ -2796,15 +2796,23 @@ escape_asis:
             rb_str_buf_cat(buf, (char *)&c, 1);
             break;
           case '(':
-            if (!in_char_class && *p == '?' && *(p+1) == '#') {
+            if (!in_char_class && p + 1 < end && *p == '?' && *(p+1) == '#') {
                 /* (?# is comment inside any regexp, and content inside should be ignored */
                 const char *orig_p = p;
                 int cont = 1;
 
-                while (cont && (c = *p++)) {
-                    switch(c) {
+                while (cont && (p < end)) {
+                    switch (c = *p++) {
+		      default:
+                        if (!(c & 0x80)) break;
+			--p;
+			/* fallthrough */
                       case '\\':
-                        p++;
+                        chlen = rb_enc_precise_mbclen(p, end, enc);
+                        if (!MBCLEN_CHARFOUND_P(chlen)) {
+                            goto invalid_multibyte;
+                        }
+                        p += MBCLEN_CHARFOUND_LEN(chlen);
                         break;
                       case ')':
                         cont = 0;

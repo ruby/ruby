@@ -132,6 +132,10 @@ class TestRegexp < Test::Unit::TestCase
       re = /[-(?# fca)]oobar/
       assert_match(re, 'foobar')
       assert_not_match(re, 'foobaz')
+
+      re = /f(?# ca\0\\M-ca)oobar/
+      assert_match(re, 'foobar')
+      assert_not_match(re, 'foobaz')
     RUBY
 
     assert_raise(SyntaxError) {eval "/\\users/x"}
