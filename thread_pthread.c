@@ -1761,13 +1761,28 @@ native_thread_native_thread_id(rb_thread_t *target_th)
     return INT2FIX(tid);
 #elif defined(__APPLE__)
     uint64_t tid;
-    if (MAC_OS_X_VERSION_MAX_ALLOWED < MAC_OS_X_VERSION_10_6 ||
-        !&pthread_threadid_np /* check weakly linked symbol */) {
+# if ((MAC_OS_X_VERSION_MAX_ALLOWED < MAC_OS_X_VERSION_10_6) || \
+      defined(__POWERPC__) /* never defined for PowerPC platforms */)
+    const bool no_pthread_threadid_np = true;
+#   define NO_PTHREAD_MACH_THREAD_NP 1
+# elif MAC_OS_X_VERSION_MIN_REQUIRED >= MAC_OS_X_VERSION_10_6
+    const bool no_pthread_threadid_np = false;
+# else
+#   if !(defined(__has_attribute) && __has_attribute(availability))
+    /* __API_AVAILABLE macro does nothing on gcc */
+    __attribute__((weak)) int pthread_threadid_np(pthread_t, uint64_t*);
+#   endif
+    /* Check weakly linked symbol */
+    const bool no_pthread_threadid_np = !&pthread_threadid_np;
+# endif
+    if (no_pthread_threadid_np) {
         return ULL2NUM(pthread_mach_thread_np(pthread_self()));
     }
+# ifndef NO_PTHREAD_MACH_THREAD_NP
     int e = pthread_threadid_np(target_th->nt->thread_id, &tid);
     if (e != 0) rb_syserr_fail(e, "pthread_threadid_np");
     return ULL2NUM((unsigned long long)tid);
+# endif
 #endif
 }
 # define USE_NATIVE_THREAD_NATIVE_THREAD_ID 1
