@@ -101,9 +101,6 @@ extern int ruby_assert_critical_section_entered;
 #include "vm_opts.h"
 
 #include "ruby/thread_native.h"
-#include THREAD_IMPL_H
-
-#define RUBY_VM_THREAD_MODEL 2
 
 /*
  * implementation selector of get_insn_info algorithm
@@ -161,6 +158,9 @@ void *rb_register_sigaltstack(void *);
 #  define RB_ALTSTACK_FREE(var)
 #  define RB_ALTSTACK(var) (0)
 #endif
+
+#include THREAD_IMPL_H
+#define RUBY_VM_THREAD_MODEL 2
 
 /*****************/
 /* configuration */
@@ -1072,10 +1072,6 @@ typedef struct rb_thread_struct {
     VALUE name;
 
     struct rb_ext_config ext_config;
-
-#ifdef USE_SIGALTSTACK
-    void *altstack;
-#endif
 } rb_thread_t;
 
 static inline unsigned int

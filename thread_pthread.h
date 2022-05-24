@@ -50,6 +50,10 @@ struct rb_native_thread {
         rb_nativethread_cond_t intr; /* th->interrupt_lock */
         rb_nativethread_cond_t readyq; /* use sched->lock */
     } cond;
+
+#ifdef USE_SIGALTSTACK
+    void *altstack;
+#endif
 };
 
 #undef except
