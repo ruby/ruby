@@ -529,6 +529,7 @@ p Foo::Bar
           t2 = Thread.new {Bar}
 
           t1.join
+          GC.start # force GC.
           t2.join
 
           Object.send(:remove_const, :Foo)

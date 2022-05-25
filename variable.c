@@ -2669,12 +2669,6 @@ autoload_try_load(VALUE _arguments)
 {
     struct autoload_load_arguments *arguments = (struct autoload_load_arguments*)_arguments;
 
-    // We have tried to require the autoload feature, so we shouldn't bother trying again in any
-    // other threads. More specifically, `arguments->result` starts of as nil, but then contains the
-    // result of `require` which is either true or false. Provided it's not nil, it means some other
-    // thread has got as far as evaluating the require statement completely.
-    if (arguments->result != Qnil) return arguments->result;
-
     // Try to require the autoload feature:
     rb_ensure(autoload_feature_require, _arguments, autoload_feature_require_ensure, _arguments);
 
@@ -2722,7 +2716,15 @@ rb_autoload_load(VALUE module, ID name)
     arguments.flag = ce->flag & (CONST_DEPRECATED | CONST_VISIBILITY_MASK);
 
     // Only one thread will enter here at a time:
-    return rb_mutex_synchronize(arguments.mutex, autoload_try_load, (VALUE)&arguments);
+    VALUE result = rb_mutex_synchronize(arguments.mutex, autoload_try_load, (VALUE)&arguments);
+
+    // If you don't guard this value, it's possible for the autoload constant to
+    // be freed by another thread which loads multiple constants, one of which
+    // resolves to the constant this thread is trying to load, so proteect this
+    // so that it is not freed until we are done with it in `autoload_try_load`:
+    RB_GC_GUARD(autoload_const_value);
+
+    return result;
 }
 
 VALUE
@@ -3312,18 +3314,19 @@ rb_const_set(VALUE klass, ID id, VALUE val)
 }
 
 static struct autoload_data *
-autoload_data_for_named_constant(VALUE mod, ID id, struct autoload_const **acp)
+autoload_data_for_named_constant(VALUE module, ID name, struct autoload_const **autoload_const_pointer)
 {
-    struct autoload_data *ele;
-    VALUE load = autoload_data(mod, id);
-    if (!load) return 0;
-    ele = get_autoload_data(load, acp);
-    if (!ele) return 0;
+    VALUE autoload_data_value = autoload_data(module, name);
+    if (!autoload_data_value) return 0;
+
+    struct autoload_data *autoload_data = get_autoload_data(autoload_data_value, autoload_const_pointer);
+    if (!autoload_data) return 0;
 
     /* for autoloading thread, keep the defined value to autoloading storage */
-    if (autoload_by_current(ele)) {
-        return ele;
+    if (autoload_by_current(autoload_data)) {
+        return autoload_data;
     }
+
     return 0;
 }
 
