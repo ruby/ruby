@@ -739,7 +739,8 @@ fiber_pool_stack_release(struct fiber_pool_stack * stack)
         fiber_pool_stack_free(&vacancy->stack);
     }
 #else
-    // This is entirely optional, but clears the dirty flag from the stack memory, so it won't get swapped to disk when there is memory pressure:
+    // This is entirely optional, but clears the dirty flag from the stack
+    // memory, so it won't get swapped to disk when there is memory pressure:
     if (stack->pool->free_stacks) {
         fiber_pool_stack_free(&vacancy->stack);
     }
@@ -778,7 +779,16 @@ fiber_entry(struct coroutine_context * from, struct coroutine_context * to)
     rb_fiber_t *fiber = to->argument;
 
 #if defined(COROUTINE_SANITIZE_ADDRESS)
-    __sanitizer_finish_switch_fiber(to->fake_stack, NULL, NULL);
+    // Address sanitizer will copy the previous stack base and stack size into
+    // the "from" fiber. `coroutine_initialize_main` doesn't generally know the
+    // stack bounds (base + size). Therefore, the main fiber `stack_base` and
+    // `stack_size` will be NULL/0. It's specifically important in that case to
+    // get the (base+size) of the previous fiber and save it, so that later when
+    // we return to the main coroutine, we don't supply (NULL, 0) to
+    // __sanitizer_start_switch_fiber which royally messes up the internal state
+    // of ASAN and causes (sometimes) the following message:
+    // "WARNING: ASan is ignoring requested __asan_handle_no_return"
+    __sanitizer_finish_switch_fiber(to->fake_stack, (const void**)&from->stack_base, &from->stack_size);
 #endif
 
     rb_thread_t *thread = fiber->cont.saved_ec.thread_ptr;
@@ -821,7 +831,8 @@ fiber_initialize_coroutine(rb_fiber_t *fiber, size_t * vm_stack_size)
     return vm_stack;
 }
 
-// Release the stack from the fiber, it's execution context, and return it to the fiber pool.
+// Release the stack from the fiber, it's execution context, and return it to
+// the fiber pool.
 static void
 fiber_stack_release(rb_fiber_t * fiber)
 {
