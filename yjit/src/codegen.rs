@@ -1,3 +1,6 @@
+// We use the YARV bytecode constants which have a CRuby-style name
+#![allow(non_upper_case_globals)]
+
 use crate::asm::x86_64::*;
 use crate::asm::*;
 use crate::core::*;
@@ -728,7 +731,7 @@ pub fn gen_single_block(
 
         // opt_getinlinecache wants to be in a block all on its own. Cut the block short
         // if we run into it. See gen_opt_getinlinecache() for details.
-        if opcode == OP_OPT_GETINLINECACHE && insn_idx > starting_insn_idx {
+        if opcode == YARVINSN_opt_getinlinecache.as_usize() && insn_idx > starting_insn_idx {
             jump_to_next_insn(&mut jit, &ctx, cb, ocb);
             break;
         }
@@ -988,7 +991,7 @@ fn gen_putobject_int2fix(
     _ocb: &mut OutlinedCb,
 ) -> CodegenStatus {
     let opcode = jit.opcode;
-    let cst_val: usize = if opcode == OP_PUTOBJECT_INT2FIX_0_ {
+    let cst_val: usize = if opcode == YARVINSN_putobject_INT2FIX_0_.as_usize() {
         0
     } else {
         1
@@ -5811,95 +5814,96 @@ fn gen_opt_invokebuiltin_delegate(
 /// Maps a YARV opcode to a code generation function (if supported)
 fn get_gen_fn(opcode: VALUE) -> Option<InsnGenFn> {
     let VALUE(opcode) = opcode;
+    let opcode = opcode as ruby_vminsn_type;
     assert!(opcode < VM_INSTRUCTION_SIZE);
 
     match opcode {
-        OP_NOP => Some(gen_nop),
-        OP_POP => Some(gen_pop),
-        OP_DUP => Some(gen_dup),
-        OP_DUPN => Some(gen_dupn),
-        OP_SWAP => Some(gen_swap),
-        OP_PUTNIL => Some(gen_putnil),
-        OP_PUTOBJECT => Some(gen_putobject),
-        OP_PUTOBJECT_INT2FIX_0_ => Some(gen_putobject_int2fix),
-        OP_PUTOBJECT_INT2FIX_1_ => Some(gen_putobject_int2fix),
-        OP_PUTSELF => Some(gen_putself),
-        OP_PUTSPECIALOBJECT => Some(gen_putspecialobject),
-        OP_SETN => Some(gen_setn),
-        OP_TOPN => Some(gen_topn),
-        OP_ADJUSTSTACK => Some(gen_adjuststack),
-        OP_GETLOCAL => Some(gen_getlocal),
-        OP_GETLOCAL_WC_0 => Some(gen_getlocal_wc0),
-        OP_GETLOCAL_WC_1 => Some(gen_getlocal_wc1),
-        OP_SETLOCAL => Some(gen_setlocal),
-        OP_SETLOCAL_WC_0 => Some(gen_setlocal_wc0),
-        OP_SETLOCAL_WC_1 => Some(gen_setlocal_wc1),
-        OP_OPT_PLUS => Some(gen_opt_plus),
-        OP_OPT_MINUS => Some(gen_opt_minus),
-        OP_OPT_AND => Some(gen_opt_and),
-        OP_OPT_OR => Some(gen_opt_or),
-        OP_NEWHASH => Some(gen_newhash),
-        OP_DUPHASH => Some(gen_duphash),
-        OP_NEWARRAY => Some(gen_newarray),
-        OP_DUPARRAY => Some(gen_duparray),
-        OP_CHECKTYPE => Some(gen_checktype),
-        OP_OPT_LT => Some(gen_opt_lt),
-        OP_OPT_LE => Some(gen_opt_le),
-        OP_OPT_GT => Some(gen_opt_gt),
-        OP_OPT_GE => Some(gen_opt_ge),
-        OP_OPT_MOD => Some(gen_opt_mod),
-        OP_OPT_STR_FREEZE => Some(gen_opt_str_freeze),
-        OP_OPT_STR_UMINUS => Some(gen_opt_str_uminus),
-        OP_SPLATARRAY => Some(gen_splatarray),
-        OP_NEWRANGE => Some(gen_newrange),
-        OP_PUTSTRING => Some(gen_putstring),
-        OP_EXPANDARRAY => Some(gen_expandarray),
-        OP_DEFINED => Some(gen_defined),
-        OP_CHECKKEYWORD => Some(gen_checkkeyword),
-        OP_CONCATSTRINGS => Some(gen_concatstrings),
-        OP_GETINSTANCEVARIABLE => Some(gen_getinstancevariable),
-        OP_SETINSTANCEVARIABLE => Some(gen_setinstancevariable),
+        YARVINSN_nop => Some(gen_nop),
+        YARVINSN_pop => Some(gen_pop),
+        YARVINSN_dup => Some(gen_dup),
+        YARVINSN_dupn => Some(gen_dupn),
+        YARVINSN_swap => Some(gen_swap),
+        YARVINSN_putnil => Some(gen_putnil),
+        YARVINSN_putobject => Some(gen_putobject),
+        YARVINSN_putobject_INT2FIX_0_ => Some(gen_putobject_int2fix),
+        YARVINSN_putobject_INT2FIX_1_ => Some(gen_putobject_int2fix),
+        YARVINSN_putself => Some(gen_putself),
+        YARVINSN_putspecialobject => Some(gen_putspecialobject),
+        YARVINSN_setn => Some(gen_setn),
+        YARVINSN_topn => Some(gen_topn),
+        YARVINSN_adjuststack => Some(gen_adjuststack),
+        YARVINSN_getlocal => Some(gen_getlocal),
+        YARVINSN_getlocal_WC_0 => Some(gen_getlocal_wc0),
+        YARVINSN_getlocal_WC_1 => Some(gen_getlocal_wc1),
+        YARVINSN_setlocal => Some(gen_setlocal),
+        YARVINSN_setlocal_WC_0 => Some(gen_setlocal_wc0),
+        YARVINSN_setlocal_WC_1 => Some(gen_setlocal_wc1),
+        YARVINSN_opt_plus => Some(gen_opt_plus),
+        YARVINSN_opt_minus => Some(gen_opt_minus),
+        YARVINSN_opt_and => Some(gen_opt_and),
+        YARVINSN_opt_or => Some(gen_opt_or),
+        YARVINSN_newhash => Some(gen_newhash),
+        YARVINSN_duphash => Some(gen_duphash),
+        YARVINSN_newarray => Some(gen_newarray),
+        YARVINSN_duparray => Some(gen_duparray),
+        YARVINSN_checktype => Some(gen_checktype),
+        YARVINSN_opt_lt => Some(gen_opt_lt),
+        YARVINSN_opt_le => Some(gen_opt_le),
+        YARVINSN_opt_gt => Some(gen_opt_gt),
+        YARVINSN_opt_ge => Some(gen_opt_ge),
+        YARVINSN_opt_mod => Some(gen_opt_mod),
+        YARVINSN_opt_str_freeze => Some(gen_opt_str_freeze),
+        YARVINSN_opt_str_uminus => Some(gen_opt_str_uminus),
+        YARVINSN_splatarray => Some(gen_splatarray),
+        YARVINSN_newrange => Some(gen_newrange),
+        YARVINSN_putstring => Some(gen_putstring),
+        YARVINSN_expandarray => Some(gen_expandarray),
+        YARVINSN_defined => Some(gen_defined),
+        YARVINSN_checkkeyword => Some(gen_checkkeyword),
+        YARVINSN_concatstrings => Some(gen_concatstrings),
+        YARVINSN_getinstancevariable => Some(gen_getinstancevariable),
+        YARVINSN_setinstancevariable => Some(gen_setinstancevariable),
 
-        OP_OPT_EQ => Some(gen_opt_eq),
-        OP_OPT_NEQ => Some(gen_opt_neq),
-        OP_OPT_AREF => Some(gen_opt_aref),
-        OP_OPT_ASET => Some(gen_opt_aset),
-        OP_OPT_MULT => Some(gen_opt_mult),
-        OP_OPT_DIV => Some(gen_opt_div),
-        OP_OPT_LTLT => Some(gen_opt_ltlt),
-        OP_OPT_NIL_P => Some(gen_opt_nil_p),
-        OP_OPT_EMPTY_P => Some(gen_opt_empty_p),
-        OP_OPT_SUCC => Some(gen_opt_succ),
-        OP_OPT_NOT => Some(gen_opt_not),
-        OP_OPT_SIZE => Some(gen_opt_size),
-        OP_OPT_LENGTH => Some(gen_opt_length),
-        OP_OPT_REGEXPMATCH2 => Some(gen_opt_regexpmatch2),
-        OP_OPT_GETINLINECACHE => Some(gen_opt_getinlinecache),
-        OP_INVOKEBUILTIN => Some(gen_invokebuiltin),
-        OP_OPT_INVOKEBUILTIN_DELEGATE => Some(gen_opt_invokebuiltin_delegate),
-        OP_OPT_INVOKEBUILTIN_DELEGATE_LEAVE => Some(gen_opt_invokebuiltin_delegate),
-        OP_OPT_CASE_DISPATCH => Some(gen_opt_case_dispatch),
-        OP_BRANCHIF => Some(gen_branchif),
-        OP_BRANCHUNLESS => Some(gen_branchunless),
-        OP_BRANCHNIL => Some(gen_branchnil),
-        OP_JUMP => Some(gen_jump),
+        YARVINSN_opt_eq => Some(gen_opt_eq),
+        YARVINSN_opt_neq => Some(gen_opt_neq),
+        YARVINSN_opt_aref => Some(gen_opt_aref),
+        YARVINSN_opt_aset => Some(gen_opt_aset),
+        YARVINSN_opt_mult => Some(gen_opt_mult),
+        YARVINSN_opt_div => Some(gen_opt_div),
+        YARVINSN_opt_ltlt => Some(gen_opt_ltlt),
+        YARVINSN_opt_nil_p => Some(gen_opt_nil_p),
+        YARVINSN_opt_empty_p => Some(gen_opt_empty_p),
+        YARVINSN_opt_succ => Some(gen_opt_succ),
+        YARVINSN_opt_not => Some(gen_opt_not),
+        YARVINSN_opt_size => Some(gen_opt_size),
+        YARVINSN_opt_length => Some(gen_opt_length),
+        YARVINSN_opt_regexpmatch2 => Some(gen_opt_regexpmatch2),
+        YARVINSN_opt_getinlinecache => Some(gen_opt_getinlinecache),
+        YARVINSN_invokebuiltin => Some(gen_invokebuiltin),
+        YARVINSN_opt_invokebuiltin_delegate => Some(gen_opt_invokebuiltin_delegate),
+        YARVINSN_opt_invokebuiltin_delegate_leave => Some(gen_opt_invokebuiltin_delegate),
+        YARVINSN_opt_case_dispatch => Some(gen_opt_case_dispatch),
+        YARVINSN_branchif => Some(gen_branchif),
+        YARVINSN_branchunless => Some(gen_branchunless),
+        YARVINSN_branchnil => Some(gen_branchnil),
+        YARVINSN_jump => Some(gen_jump),
 
-        OP_GETBLOCKPARAMPROXY => Some(gen_getblockparamproxy),
-        OP_GETBLOCKPARAM => Some(gen_getblockparam),
-        OP_OPT_SEND_WITHOUT_BLOCK => Some(gen_opt_send_without_block),
-        OP_SEND => Some(gen_send),
-        OP_INVOKESUPER => Some(gen_invokesuper),
-        OP_LEAVE => Some(gen_leave),
+        YARVINSN_getblockparamproxy => Some(gen_getblockparamproxy),
+        YARVINSN_getblockparam => Some(gen_getblockparam),
+        YARVINSN_opt_send_without_block => Some(gen_opt_send_without_block),
+        YARVINSN_send => Some(gen_send),
+        YARVINSN_invokesuper => Some(gen_invokesuper),
+        YARVINSN_leave => Some(gen_leave),
 
-        OP_GETGLOBAL => Some(gen_getglobal),
-        OP_SETGLOBAL => Some(gen_setglobal),
-        OP_ANYTOSTRING => Some(gen_anytostring),
-        OP_OBJTOSTRING => Some(gen_objtostring),
-        OP_INTERN => Some(gen_intern),
-        OP_TOREGEXP => Some(gen_toregexp),
-        OP_GETSPECIAL => Some(gen_getspecial),
-        OP_GETCLASSVARIABLE => Some(gen_getclassvariable),
-        OP_SETCLASSVARIABLE => Some(gen_setclassvariable),
+        YARVINSN_getglobal => Some(gen_getglobal),
+        YARVINSN_setglobal => Some(gen_setglobal),
+        YARVINSN_anytostring => Some(gen_anytostring),
+        YARVINSN_objtostring => Some(gen_objtostring),
+        YARVINSN_intern => Some(gen_intern),
+        YARVINSN_toregexp => Some(gen_toregexp),
+        YARVINSN_getspecial => Some(gen_getspecial),
+        YARVINSN_getclassvariable => Some(gen_getclassvariable),
+        YARVINSN_setclassvariable => Some(gen_setclassvariable),
 
         // Unimplemented opcode, YJIT won't generate code for this yet
         _ => None,
@@ -6311,7 +6315,7 @@ mod tests {
     #[test]
     fn test_int2fix() {
         let (mut jit, mut context, mut cb, mut ocb) = setup_codegen();
-        jit.opcode = OP_PUTOBJECT_INT2FIX_0_;
+        jit.opcode = YARVINSN_putobject_INT2FIX_0_.as_usize();
         let status = gen_putobject_int2fix(&mut jit, &mut context, &mut cb, &mut ocb);
 
         let (_, tmp_type_top) = context.get_opnd_mapping(StackOpnd(0));

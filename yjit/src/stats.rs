@@ -9,7 +9,8 @@ use crate::options::*;
 use crate::yjit::yjit_enabled_p;
 
 // YJIT exit counts for each instruction type
-static mut EXIT_OP_COUNT: [u64; VM_INSTRUCTION_SIZE] = [0; VM_INSTRUCTION_SIZE];
+const VM_INSTRUCTION_SIZE_USIZE:usize = VM_INSTRUCTION_SIZE as usize;
+static mut EXIT_OP_COUNT: [u64; VM_INSTRUCTION_SIZE_USIZE] = [0; VM_INSTRUCTION_SIZE_USIZE];
 
 // Macro to declare the stat counters
 macro_rules! make_counters {
@@ -218,7 +219,7 @@ fn rb_yjit_gen_stats_dict() -> VALUE {
 
         // For each entry in exit_op_count, add a stats entry with key "exit_INSTRUCTION_NAME"
         // and the value is the count of side exits for that instruction.
-        for op_idx in 0..VM_INSTRUCTION_SIZE {
+        for op_idx in 0..VM_INSTRUCTION_SIZE_USIZE {
             let op_name = insn_name(op_idx);
             let key_string = "exit_".to_owned() + &op_name;
             let key = rust_str_to_sym(&key_string);
@@ -234,7 +235,7 @@ fn rb_yjit_gen_stats_dict() -> VALUE {
 #[no_mangle]
 pub extern "C" fn rb_yjit_reset_stats_bang(_ec: EcPtr, _ruby_self: VALUE) -> VALUE {
     unsafe {
-        EXIT_OP_COUNT = [0; VM_INSTRUCTION_SIZE];
+        EXIT_OP_COUNT = [0; VM_INSTRUCTION_SIZE_USIZE];
         COUNTERS = Counters::default();
     }
 
