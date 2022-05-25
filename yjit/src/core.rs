@@ -390,7 +390,7 @@ pub struct Block {
 
     // FIXME: should these be code pointers instead?
     // Offsets for GC managed objects in the mainline code block
-    gc_object_offsets: Vec<u32>,
+    gc_obj_offsets: Vec<u32>,
 
     // CME dependencies of this block, to help to remove all pointers to this
     // block in the system.
@@ -582,7 +582,7 @@ pub extern "C" fn rb_yjit_iseq_mark(payload: *mut c_void) {
             }
 
             // Walk over references to objects in generated code.
-            for offset in &block.gc_object_offsets {
+            for offset in &block.gc_obj_offsets {
                 let value_address: *const u8 = cb.get_ptr(offset.as_usize()).raw_ptr();
                 // Creating an unaligned pointer is well defined unlike in C.
                 let value_address = value_address as *const VALUE;
@@ -640,7 +640,7 @@ pub extern "C" fn rb_yjit_iseq_update_references(payload: *mut c_void) {
             }
 
             // Walk over references to objects in generated code.
-            for offset in &block.gc_object_offsets {
+            for offset in &block.gc_obj_offsets {
                 let offset_to_value = offset.as_usize();
                 let value_code_ptr = cb.get_ptr(offset_to_value);
                 let value_ptr: *const u8 = value_code_ptr.raw_ptr();
@@ -808,7 +808,7 @@ fn add_block_version(blockref: &BlockRef, cb: &CodeBlock) {
     }
 
     // Run write barriers for all objects in generated code.
-    for offset in &block.gc_object_offsets {
+    for offset in &block.gc_obj_offsets {
         let value_address: *const u8 = cb.get_ptr(offset.as_usize()).raw_ptr();
         // Creating an unaligned pointer is well defined unlike in C.
         let value_address: *const VALUE = value_address.cast();
@@ -844,7 +844,7 @@ impl Block {
             end_addr: None,
             incoming: Vec::new(),
             outgoing: Vec::new(),
-            gc_object_offsets: Vec::new(),
+            gc_obj_offsets: Vec::new(),
             cme_dependencies: Vec::new(),
             entry_exit: None,
         };
@@ -905,8 +905,8 @@ impl Block {
         self.end_idx = end_idx;
     }
 
-    pub fn add_gc_object_offset(self: &mut Block, ptr_offset: u32) {
-        self.gc_object_offsets.push(ptr_offset);
+    pub fn add_gc_obj_offset(self: &mut Block, ptr_offset: u32) {
+        self.gc_obj_offsets.push(ptr_offset);
     }
 
     /// Instantiate a new CmeDependency struct and add it to the list of

@@ -118,10 +118,9 @@ impl JITState {
         self.opcode
     }
 
-    pub fn add_gc_object_offset(self: &mut JITState, ptr_offset: u32) {
+    pub fn add_gc_obj_offset(self: &mut JITState, ptr_offset: u32) {
         let mut gc_obj_vec: RefMut<_> = self.block.borrow_mut();
-        gc_obj_vec.add_gc_object_offset(ptr_offset);
-
+        gc_obj_vec.add_gc_obj_offset(ptr_offset);
         incr_counter!(num_gc_obj_refs);
     }
 
@@ -161,7 +160,7 @@ pub fn jit_mov_gc_ptr(jit: &mut JITState, cb: &mut CodeBlock, reg: X86Opnd, ptr:
     let ptr_offset: u32 = (cb.get_write_pos() as u32) - (SIZEOF_VALUE as u32);
 
     if !ptr.special_const_p() {
-        jit.add_gc_object_offset(ptr_offset);
+        jit.add_gc_obj_offset(ptr_offset);
     }
 }
 
@@ -292,6 +291,18 @@ fn jit_save_pc(jit: &JITState, cb: &mut CodeBlock, scratch_reg: X86Opnd) {
     mov(cb, mem_opnd(64, REG_CFP, RUBY_OFFSET_CFP_PC), scratch_reg);
 }
 
+// Save the incremented PC on the CFP
+// This is necessary when callees can raise or allocate
+fn ir_jit_save_pc(jit: &JITState, asm: &mut Assembler) {
+    let pc: *mut VALUE = jit.get_pc();
+    let ptr: *mut VALUE = unsafe {
+        let cur_insn_len = insn_len(jit.get_opcode()) as isize;
+        pc.offset(cur_insn_len)
+    };
+
+    asm.mov(Opnd::mem(64, CFP, RUBY_OFFSET_CFP_PC), Opnd::const_ptr(ptr as *const u8));
+}
+
 /// Save the current SP on the CFP
 /// This realigns the interpreter SP with the JIT SP
 /// Note: this will change the current value of REG_SP,
@@ -305,6 +316,25 @@ fn gen_save_sp(cb: &mut CodeBlock, ctx: &mut Context) {
         ctx.set_sp_offset(0);
     }
 }
+
+/// Save the current SP on the CFP
+/// This realigns the interpreter SP with the JIT SP
+/// Note: this will change the current value of REG_SP,
+///       which could invalidate memory operands
+fn ir_gen_save_sp(jit: &JITState, asm: &mut Assembler, ctx: &mut Context) {
+    if ctx.get_sp_offset() != 0 {
+        let stack_pointer = ctx.ir_sp_opnd(0);
+        asm.lea(SP, stack_pointer);
+        let cfp_sp_opnd = Opnd::mem(64, CFP, RUBY_OFFSET_CFP_SP);
+        asm.mov(cfp_sp_opnd, SP);
+        ctx.set_sp_offset(0);
+    }
+}
+
+
+
+
+
 
 /// jit_save_pc() + gen_save_sp(). Should be used before calling a routine that
 /// could:
@@ -325,6 +355,15 @@ fn jit_prepare_routine_call(
     // through Kernel#binding and other means.
     ctx.clear_local_types();
 }
+
+
+
+
+
+
+
+
+
 
 /// Record the current codeblock write position for rewriting into a jump into
 /// the outlined block later. Used to implement global code invalidation.
@@ -909,7 +948,7 @@ fn gen_dup(
 
 #[allow(dead_code)]
 fn gen_dup(
-    _jit: &mut JITState,
+    jit: &mut JITState,
     ctx: &mut Context,
     cb: &mut CodeBlock,
     _ocb: &mut OutlinedCb,
@@ -923,7 +962,7 @@ fn gen_dup(
     let loc0 = ctx.ir_stack_push_mapping((mapping, tmp_type));
     asm.mov(loc0, dup_val);
 
-    asm.compile(cb);
+    asm.compile(jit, cb);
 
     KeepCompiling
 }
@@ -995,23 +1034,24 @@ fn gen_dupn(
     let dst0: Opnd = ctx.ir_stack_push_mapping(mapping0);
     asm.mov(dst0, opnd0);
 
-    asm.compile(cb);
+    asm.compile(jit, cb);
 
     KeepCompiling
 }
 
 // Swap top 2 stack entries
 fn gen_swap(
-    _jit: &mut JITState,
+    jit: &mut JITState,
     ctx: &mut Context,
     cb: &mut CodeBlock,
     _ocb: &mut OutlinedCb,
 ) -> CodegenStatus {
-    stack_swap(ctx, cb, 0, 1, REG0, REG1);
+    stack_swap(jit, ctx, cb, 0, 1, REG0, REG1);
     KeepCompiling
 }
 
 fn stack_swap(
+    jit: &mut JITState,
     ctx: &mut Context,
     cb: &mut CodeBlock,
     offset0: u16,
@@ -1035,7 +1075,7 @@ fn stack_swap(
     ctx.set_opnd_mapping(StackOpnd(offset0), mapping1);
     ctx.set_opnd_mapping(StackOpnd(offset1), mapping0);
 
-    asm.compile(cb);
+    asm.compile(jit, cb);
 }
 
 fn gen_putnil(
@@ -4621,7 +4661,7 @@ fn gen_send_iseq(
                     let offset1: u16 = (argc - 1 - kwarg_idx_i32 - args_before_kw)
                         .try_into()
                         .unwrap();
-                    stack_swap(ctx, cb, offset0, offset1, REG1, REG0);
+                    stack_swap(jit, ctx, cb, offset0, offset1, REG1, REG0);
 
                     // Next we're going to do some bookkeeping on our end so
                     // that we know the order that the arguments are
