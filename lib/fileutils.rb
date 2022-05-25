@@ -607,7 +607,7 @@ module FileUtils
   #     'src1/dir1/t3.txt',
   #     ]
   #   FileUtils.touch(src_file_paths)
-  #   File.exist?('dest1')
+  #   File.exist?('dest1')             # => true
   #   FileUtils.link_entry('src1', 'dest1')
   #   File.exist?('dest1/dir0/t0.txt') # => true
   #   File.exist?('dest1/dir0/t1.txt') # => true
@@ -777,21 +777,43 @@ module FileUtils
   end
   module_function :cp_r
 
+  # Recursively copies files from +src+ to +dest+.
   #
-  # Copies a file system entry +src+ to +dest+.
-  # If +src+ is a directory, this method copies its contents recursively.
-  # This method preserves file types, c.f. symlink, directory...
-  # (FIFO, device files and etc. are not supported yet)
+  # If +src+ is the path to a file, copies +src+ to +dest+:
   #
-  # Both of +src+ and +dest+ must be a path name.
-  # +src+ must exist, +dest+ must not exist.
+  #   FileUtils.touch('src0.txt')
+  #   File.exist?('dest0.txt') # => false
+  #   FileUtils.copy_entry('src0.txt', 'dest0.txt')
+  #   File.file?('dest0.txt')  # => true
   #
-  # If +preserve+ is true, this method preserves owner, group, and
-  # modified time.  Permissions are copied regardless +preserve+.
+  # If +src+ is a directory, recursively copies +src+ to +dest+:
   #
-  # If +dereference_root+ is true, this method dereference tree root.
+  #   src1
+  #   |-- dir0
+  #   |   |-- src0.txt
+  #   |   `-- src1.txt
+  #   `-- dir1
+  #       |-- src2.txt
+  #       `-- src3.txt
+  #   FileUtils.copy_entry('src1', 'dest1')
+  #   dest1
+  #   |-- dir0
+  #   |   |-- src0.txt
+  #   |   `-- src1.txt
+  #   `-- dir1
+  #       |-- src2.txt
+  #       `-- src3.txt
   #
-  # If +remove_destination+ is true, this method removes each destination file before copy.
+  # The recursive copying preserves file types for regular files,
+  # directories, and symbolic links;
+  # other file types (FIFO streams, device files, etc.) are not supported.
+  #
+  # Keyword arguments:
+  #
+  # - <tt>dereference_root: true</tt> - if +src+ is a symbolic link,
+  #   follows the link.
+  # - <tt>preserve</tt> - preserves file times.
+  # - <tt>remove_destination: true</tt> - removes +dest+ before copying files.
   #
   def copy_entry(src, dest, preserve = false, dereference_root = false, remove_destination = false)
     if dereference_root
