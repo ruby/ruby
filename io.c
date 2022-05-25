@@ -2096,8 +2096,7 @@ rb_io_writev(VALUE io, int argc, const VALUE *argv)
 
         do rb_io_write(io, *argv++); while (--argc);
 
-        /* unused right now */
-        return argv[0];
+        return Qnil;
     }
 
     return rb_funcallv(io, id_write, argc, argv);
