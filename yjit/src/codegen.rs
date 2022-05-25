@@ -3599,6 +3599,43 @@ fn jit_rb_obj_equal(
     true
 }
 
+/// If string is frozen, duplicate it to get a non-frozen string. Otherwise, return it.
+fn jit_rb_str_uplus(
+    _jit: &mut JITState,
+    ctx: &mut Context,
+    cb: &mut CodeBlock,
+    _ocb: &mut OutlinedCb,
+    _ci: *const rb_callinfo,
+    _cme: *const rb_callable_method_entry_t,
+    _block: Option<IseqPtr>,
+    _argc: i32,
+    _known_recv_class: *const VALUE,
+) -> bool
+{
+    let recv = ctx.stack_pop(1);
+
+    add_comment(cb, "Unary plus on string");
+    mov(cb, REG0, recv);
+    mov(cb, REG1, mem_opnd(64, REG0, RUBY_OFFSET_RBASIC_FLAGS));
+    test(cb, REG1, imm_opnd(RUBY_FL_FREEZE as i64));
+
+    let ret_label = cb.new_label("stack_ret".to_string());
+    // If the string isn't frozen, we just return it. It's already in REG0.
+    jz_label(cb, ret_label);
+
+    // Str is frozen - duplicate
+    mov(cb, C_ARG_REGS[0], REG0);
+    call_ptr(cb, REG0, rb_str_dup as *const u8);
+    // Return value is in REG0, drop through and return it.
+
+    cb.write_label(ret_label);
+    let stack_ret = ctx.stack_push(Type::String);
+    mov(cb, stack_ret, REG0);
+
+    cb.link_labels();
+    true
+}
+
 fn jit_rb_str_bytesize(
     _jit: &mut JITState,
     ctx: &mut Context,
@@ -6045,6 +6082,7 @@ impl CodegenGlobals {
             self.yjit_reg_method(rb_cString, "to_str", jit_rb_str_to_s);
             self.yjit_reg_method(rb_cString, "bytesize", jit_rb_str_bytesize);
             self.yjit_reg_method(rb_cString, "<<", jit_rb_str_concat);
+            self.yjit_reg_method(rb_cString, "+@", jit_rb_str_uplus);
 
             // Thread.current
             self.yjit_reg_method(

@@ -62,6 +62,7 @@ fn main() {
         // From include/ruby/internal/intern/string.h
         .allowlist_function("rb_utf8_str_new")
         .allowlist_function("rb_str_append")
+        .allowlist_function("rb_str_dup")
 
         // This struct is public to Ruby C extensions
         // From include/ruby/internal/core/rbasic.h
