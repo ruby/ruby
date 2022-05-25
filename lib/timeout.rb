@@ -99,6 +99,7 @@ module Timeout
 
   def self.create_timeout_thread
     Thread.new do
+      Thread.current.thread_variable_set(:"\0__detached_thread__", true)
       requests = []
       while true
         until QUEUE.empty? and !requests.empty? # wait to have at least one request
