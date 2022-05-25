@@ -8,12 +8,17 @@ use crate::cruby::{VALUE};
 use crate::asm::{CodeBlock, CodePtr};
 use crate::asm::x86_64::{X86Opnd, X86Imm, X86UImm, X86Reg, X86Mem, RegType};
 use crate::core::{Context, Type, TempMapping};
+use crate::codegen::{JITState};
 
 #[cfg(target_arch = "x86_64")]
 use crate::backend::x86_64::*;
 
 //#[cfg(target_arch = "aarch64")]
 //use crate::backend:aarch64::*
+
+pub const EC: Opnd = _EC;
+pub const CFP: Opnd = _CFP;
+pub const SP: Opnd = _SP;
 
 /// Instruction opcodes
 #[derive(Copy, Clone, PartialEq, Eq, Debug)]
@@ -61,6 +66,9 @@ pub enum Op
 
     // A low-level mov instruction. It accepts two operands.
     Mov,
+
+    // Load effective address
+    Lea,
 
     // Bitwise AND test instruction
     Test,
@@ -314,7 +322,7 @@ pub struct Assembler
 
     /// Parallel vec with insns
     /// Index of the last insn using the output of this insn
-    pub(super) live_ranges: Vec<usize>
+    pub(super) live_ranges: Vec<usize>,
 }
 
 impl Assembler
@@ -322,7 +330,7 @@ impl Assembler
     pub fn new() -> Assembler {
         Assembler {
             insns: Vec::default(),
-            live_ranges: Vec::default()
+            live_ranges: Vec::default(),
         }
     }
 
@@ -607,10 +615,10 @@ impl Assembler
     }
 
     /// Compile the instructions down to machine code
-    pub fn compile(self, cb: &mut CodeBlock)
+    pub fn compile(self, jit: &mut JITState, cb: &mut CodeBlock)
     {
         let scratch_regs = Self::get_scratch_regs();
-        self.compile_with_regs(cb, scratch_regs);
+        self.compile_with_regs(jit, cb, scratch_regs);
     }
 }
 
@@ -681,6 +689,7 @@ def_push_2_opnd!(sub, Op::Sub);
 def_push_2_opnd!(and, Op::And);
 def_push_1_opnd!(load, Op::Load);
 def_push_2_opnd_no_out!(mov, Op::Mov);
+def_push_2_opnd_no_out!(lea, Op::Lea);
 def_push_2_opnd_no_out!(cmp, Op::Cmp);
 def_push_2_opnd_no_out!(test, Op::Test);
 
@@ -689,6 +698,10 @@ def_push_2_opnd_no_out!(test, Op::Test);
 // They are just wrappers to convert from X86Opnd into the IR Opnd type
 impl Context
 {
+    pub fn ir_sp_opnd(&mut self, idx: isize) -> Opnd {
+        self.sp_opnd(idx).into()
+    }
+
     pub fn ir_stack_opnd(&mut self, idx: i32) -> Opnd {
         self.stack_opnd(idx).into()
     }
@@ -800,62 +813,71 @@ mod tests {
         assert_eq!(result.insns[5].out, Opnd::Reg(regs[0]));
     }
 
+    fn setup_asm(num_regs: usize) -> (Assembler, JITState, CodeBlock, Vec<Reg>) {
+        let blockid = BlockId {
+            iseq: std::ptr::null(),
+            idx: 0,
+        };
+        let block = Block::new(blockid, &Context::default());
+
+        let mut regs = Assembler::get_scratch_regs();
+
+        return (
+            Assembler::new(),
+            JITState::new(&block),
+            CodeBlock::new_dummy(1024),
+            regs.drain(0..num_regs).collect()
+        );
+    }
+
     // Test full codegen pipeline
     #[test]
     fn test_compile()
     {
-        let mut asm = Assembler::new();
-        let mut cb = CodeBlock::new_dummy(1024);
-        let regs = Assembler::get_scratch_regs();
+        let (mut asm, mut jit, mut cb, regs) = setup_asm(1);
 
         let out = asm.add(Opnd::Reg(regs[0]), Opnd::UImm(2));
         asm.add(out, Opnd::UImm(2));
 
-        asm.compile(&mut cb);
+        asm.compile(&mut jit, &mut cb);
     }
 
     // Test memory-to-memory move
     #[test]
     fn test_mov_mem2mem()
     {
-        let mut asm = Assembler::new();
-        let mut cb = CodeBlock::new_dummy(1024);
-        let regs = Assembler::get_scratch_regs();
+        let (mut asm, mut jit, mut cb, regs) = setup_asm(1);
 
         asm.comment("check that comments work too");
         asm.mov(Opnd::mem(64, SP, 0), Opnd::mem(64, SP, 8));
 
-        asm.compile_with_regs(&mut cb, vec![regs[0]]);
+        asm.compile_with_regs(&mut jit, &mut cb, regs);
     }
 
     // Test load of register into new register
     #[test]
     fn test_load_reg()
     {
-        let mut asm = Assembler::new();
-        let mut cb = CodeBlock::new_dummy(1024);
-        let regs = Assembler::get_scratch_regs();
+        let (mut asm, mut jit, mut cb, regs) = setup_asm(1);
 
         let out = asm.load(SP);
         asm.mov(Opnd::mem(64, SP, 0), out);
 
-        asm.compile_with_regs(&mut cb, vec![regs[0]]);
+        asm.compile_with_regs(&mut jit, &mut cb, regs);
     }
 
     // Multiple registers needed and register reuse
     #[test]
     fn test_reuse_reg()
     {
-        let mut asm = Assembler::new();
-        let mut cb = CodeBlock::new_dummy(1024);
-        let regs = Assembler::get_scratch_regs();
+        let (mut asm, mut jit, mut cb, regs) = setup_asm(2);
 
         let v0 = asm.add(Opnd::mem(64, SP, 0), Opnd::UImm(1));
         let v1 = asm.add(Opnd::mem(64, SP, 8), Opnd::UImm(1));
         let v2 = asm.add(v0, Opnd::UImm(1));
         asm.add(v0, v2);
 
-        asm.compile_with_regs(&mut cb, vec![regs[0], regs[1]]);
+        asm.compile_with_regs(&mut jit, &mut cb, regs);
     }
 
     #[test]
@@ -865,15 +887,13 @@ mod tests {
         {
         }
 
-        let mut asm = Assembler::new();
-        let mut cb = CodeBlock::new_dummy(1024);
-        let regs = Assembler::get_scratch_regs();
+        let (mut asm, mut jit, mut cb, regs) = setup_asm(2);
 
         asm.ccall(
             dummy_c_fun as *const u8,
             vec![Opnd::mem(64, SP, 0), Opnd::UImm(1)]
         );
 
-        asm.compile_with_regs(&mut cb, vec![regs[0], regs[1]]);
+        asm.compile_with_regs(&mut jit, &mut cb, regs);
     }
 }

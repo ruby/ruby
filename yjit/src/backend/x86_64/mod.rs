@@ -4,15 +4,17 @@
 
 use crate::asm::{CodeBlock};
 use crate::asm::x86_64::*;
+use crate::codegen::{JITState};
+use crate::cruby::*;
 use crate::backend::ir::*;
 
 // Use the x86 register type for this platform
 pub type Reg = X86Reg;
 
 // Callee-saved registers
-pub const CFP: Opnd = Opnd::Reg(R13_REG);
-pub const EC: Opnd = Opnd::Reg(R12_REG);
-pub const SP: Opnd = Opnd::Reg(RBX_REG);
+pub const _CFP: Opnd = Opnd::Reg(R13_REG);
+pub const _EC: Opnd = Opnd::Reg(R12_REG);
+pub const _SP: Opnd = Opnd::Reg(RBX_REG);
 
 // C return value register on this platform
 pub const RET_REG: Reg = RAX_REG;
@@ -91,7 +93,7 @@ impl Assembler
     }
 
     // Emit platform-specific machine code
-    pub fn x86_emit(&self, cb: &mut CodeBlock)
+    pub fn x86_emit(&mut self, jit: &mut JITState, cb: &mut CodeBlock)
     {
         // For each instruction
         for insn in &self.insns {
@@ -107,8 +109,22 @@ impl Assembler
                     add(cb, insn.opnds[0].into(), insn.opnds[1].into())
                 },
 
-                Op::Load => mov(cb, insn.out.into(), insn.opnds[0].into()),
+                //TODO:
                 //Store
+
+                Op::Load => {
+                    mov(cb, insn.out.into(), insn.opnds[0].into());
+
+                    // If the value being loaded is a heapp object
+                    if let Opnd::Value(val) = insn.opnds[0] {
+                        if !val.special_const_p() {
+                            // The pointer immediate is encoded as the last part of the mov written out
+                            let ptr_offset: u32 = (cb.get_write_pos() as u32) - (SIZEOF_VALUE as u32);
+                            jit.add_gc_obj_offset(ptr_offset);
+                        }
+                    }
+                },
+
                 Op::Mov => mov(cb, insn.opnds[0].into(), insn.opnds[1].into()),
 
                 // Test and set flags
@@ -137,12 +153,12 @@ impl Assembler
     }
 
     // Optimize and compile the stored instructions
-    pub fn compile_with_regs(self, cb: &mut CodeBlock, regs: Vec<Reg>)
+    pub fn compile_with_regs(self, jit: &mut JITState, cb: &mut CodeBlock, regs: Vec<Reg>)
     {
         self
         .x86_split()
         .split_loads()
         .alloc_regs(regs)
-        .x86_emit(cb);
+        .x86_emit(jit, cb);
     }
 }
