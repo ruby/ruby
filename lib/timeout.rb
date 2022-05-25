@@ -98,8 +98,7 @@ module Timeout
   private_constant :Request
 
   def self.create_timeout_thread
-    Thread.new do
-      Thread.current.thread_variable_set(:"\0__detached_thread__", true)
+    watcher = Thread.new do
       requests = []
       while true
         until QUEUE.empty? and !requests.empty? # wait to have at least one request
@@ -121,6 +120,8 @@ module Timeout
         requests.reject!(&:done?)
       end
     end
+    watcher.thread_variable_set(:"\0__detached_thread__", true)
+    watcher
   end
   private_class_method :create_timeout_thread
 
