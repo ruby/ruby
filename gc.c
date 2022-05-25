@@ -958,6 +958,24 @@ struct heap_page {
     bits_t pinned_bits[HEAP_PAGE_BITMAP_LIMIT];
 };
 
+/*
+ * When asan is enabled, this will prohibit writing to the freelist until it is unlocked
+ */
+static void
+asan_lock_freelist(struct heap_page *page)
+{
+    asan_poison_memory_region(&page->freelist, sizeof(RVALUE*));
+}
+
+/*
+ * When asan is enabled, this will enable the ability to write to the freelist
+ */
+static void
+asan_unlock_freelist(struct heap_page *page)
+{
+    asan_unpoison_memory_region(&page->freelist, sizeof(RVALUE*), false);
+}
+
 #define GET_PAGE_BODY(x)   ((struct heap_page_body *)((bits_t)(x) & ~(HEAP_PAGE_ALIGN_MASK)))
 #define GET_PAGE_HEADER(x) (&GET_PAGE_BODY(x)->header)
 #define GET_HEAP_PAGE(x)   (GET_PAGE_HEADER(x)->page)
@@ -1939,12 +1957,12 @@ heap_page_add_freeobj(rb_objspace_t *objspace, struct heap_page *page, VALUE obj
 
     asan_unpoison_object(obj, false);
 
-    asan_unpoison_memory_region(&page->freelist, sizeof(RVALUE*), false);
+    asan_unlock_freelist(page);
 
     p->as.free.flags = 0;
     p->as.free.next = page->freelist;
     page->freelist = p;
-    asan_poison_memory_region(&page->freelist, sizeof(RVALUE*));
+    asan_lock_freelist(page);
 
     if (RGENGC_CHECK_MODE &&
         /* obj should belong to page */
@@ -1961,7 +1979,7 @@ heap_page_add_freeobj(rb_objspace_t *objspace, struct heap_page *page, VALUE obj
 static inline void
 heap_add_freepage(rb_heap_t *heap, struct heap_page *page)
 {
-    asan_unpoison_memory_region(&page->freelist, sizeof(RVALUE*), false);
+    asan_unlock_freelist(page);
     GC_ASSERT(page->free_slots != 0);
     GC_ASSERT(page->freelist != NULL);
 
@@ -1970,14 +1988,14 @@ heap_add_freepage(rb_heap_t *heap, struct heap_page *page)
 
     RUBY_DEBUG_LOG("page:%p freelist:%p", (void *)page, (void *)page->freelist);
 
-    asan_poison_memory_region(&page->freelist, sizeof(RVALUE*));
+    asan_lock_freelist(page);
 }
 
 #if GC_ENABLE_INCREMENTAL_MARK
 static inline void
 heap_add_poolpage(rb_objspace_t *objspace, rb_heap_t *heap, struct heap_page *page)
 {
-    asan_unpoison_memory_region(&page->freelist, sizeof(RVALUE*), false);
+    asan_unlock_freelist(page);
     GC_ASSERT(page->free_slots != 0);
     GC_ASSERT(page->freelist != NULL);
 
@@ -1985,7 +2003,7 @@ heap_add_poolpage(rb_objspace_t *objspace, rb_heap_t *heap, struct heap_page *pa
     heap->pooled_pages = page;
     objspace->rincgc.pooled_slots += page->free_slots;
 
-    asan_poison_memory_region(&page->freelist, sizeof(RVALUE*));
+    asan_lock_freelist(page);
 }
 #endif
 
@@ -2209,7 +2227,7 @@ heap_page_allocate(rb_objspace_t *objspace, rb_size_pool_t *size_pool)
     }
     page->free_slots = limit;
 
-    asan_poison_memory_region(&page->freelist, sizeof(RVALUE*));
+    asan_lock_freelist(page);
     return page;
 }
 
@@ -2219,12 +2237,12 @@ heap_page_resurrect(rb_objspace_t *objspace, rb_size_pool_t *size_pool)
     struct heap_page *page = 0, *next;
 
     ccan_list_for_each_safe(&SIZE_POOL_TOMB_HEAP(size_pool)->pages, page, next, page_node) {
-        asan_unpoison_memory_region(&page->freelist, sizeof(RVALUE*), false);
-        if (page->freelist != NULL) {
-            heap_unlink_page(objspace, &size_pool->tomb_heap, page);
-            asan_poison_memory_region(&page->freelist, sizeof(RVALUE*));
-            return page;
-        }
+        asan_unlock_freelist(page);
+	if (page->freelist != NULL) {
+	    heap_unlink_page(objspace, &size_pool->tomb_heap, page);
+            asan_lock_freelist(page);
+	    return page;
+	}
     }
 
     return NULL;
@@ -2618,7 +2636,7 @@ heap_next_free_page(rb_objspace_t *objspace, rb_size_pool_t *size_pool, rb_heap_
     GC_ASSERT(page->free_slots != 0);
     RUBY_DEBUG_LOG("page:%p freelist:%p cnt:%d", (void *)page, (void *)page->freelist, page->free_slots);
 
-    asan_unpoison_memory_region(&page->freelist, sizeof(RVALUE*), false);
+    asan_unlock_freelist(page);
 
     return page;
 }
@@ -5659,13 +5677,13 @@ gc_sweep_page(rb_objspace_t *objspace, rb_heap_t *heap, struct gc_sweep_context 
 
 #if RGENGC_CHECK_MODE
     short freelist_len = 0;
-    asan_unpoison_memory_region(&sweep_page->freelist, sizeof(RVALUE*), false);
+    asan_unlock_freelist(sweep_page);
     RVALUE *ptr = sweep_page->freelist;
     while (ptr) {
         freelist_len++;
         ptr = ptr->as.free.next;
     }
-    asan_poison_memory_region(&sweep_page->freelist, sizeof(RVALUE*));
+    asan_lock_freelist(sweep_page);
     if (freelist_len != sweep_page->free_slots) {
         rb_bug("inconsistent freelist length: expected %d but was %d", sweep_page->free_slots, freelist_len);
     }
@@ -5723,7 +5741,7 @@ static void
 heap_page_freelist_append(struct heap_page *page, RVALUE *freelist)
 {
     if (freelist) {
-        asan_unpoison_memory_region(&page->freelist, sizeof(RVALUE*), false);
+        asan_unlock_freelist(page);
         if (page->freelist) {
             RVALUE *p = page->freelist;
             asan_unpoison_object((VALUE)p, false);
@@ -5739,7 +5757,7 @@ heap_page_freelist_append(struct heap_page *page, RVALUE *freelist)
         else {
             page->freelist = freelist;
         }
-        asan_poison_memory_region(&page->freelist, sizeof(RVALUE*));
+        asan_lock_freelist(page);
     }
 }
 
@@ -7934,7 +7952,7 @@ gc_verify_heap_pages_(rb_objspace_t *objspace, struct ccan_list_head *head)
     struct heap_page *page = 0;
 
     ccan_list_for_each(head, page, page_node) {
-        asan_unpoison_memory_region(&page->freelist, sizeof(RVALUE*), false);
+        asan_unlock_freelist(page);
         RVALUE *p = page->freelist;
         while (p) {
             VALUE vp = (VALUE)p;
@@ -7946,7 +7964,7 @@ gc_verify_heap_pages_(rb_objspace_t *objspace, struct ccan_list_head *head)
             p = p->as.free.next;
             asan_poison_object(prev);
         }
-        asan_poison_memory_region(&page->freelist, sizeof(RVALUE*));
+        asan_lock_freelist(page);
 
         if (page->flags.has_remembered_objects == FALSE) {
             remembered_old_objects += gc_verify_heap_page(objspace, page, Qfalse);
@@ -10582,8 +10600,8 @@ static int
 gc_ref_update(void *vstart, void *vend, size_t stride, rb_objspace_t * objspace, struct heap_page *page)
 {
     VALUE v = (VALUE)vstart;
-    asan_unpoison_memory_region(&page->freelist, sizeof(RVALUE*), false);
-    asan_poison_memory_region(&page->freelist, sizeof(RVALUE*));
+    asan_unlock_freelist(page);
+    asan_lock_freelist(page);
     page->flags.has_uncollectible_shady_objects = FALSE;
     page->flags.has_remembered_objects = FALSE;
 
