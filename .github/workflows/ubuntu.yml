@@ -29,6 +29,9 @@ concurrency:
 permissions:
   contents: read
 
+env:
+  ASAN_OPTIONS: halt_on_error=0:use_sigaltstack=0:detect_leaks=0
+
 jobs:
   make:
     strategy:
@@ -45,6 +48,8 @@ jobs:
           - test_task: test-all TESTS=--repeat-count=2
           - test_task: test-bundler-parallel
           - test_task: test-bundled-gems
+          - test_task: test-all
+            configure: cppflags="-fsanitize=address -fno-omit-frame-pointer" optflags=-O0 LDFLAGS="-fsanitize=address"
       fail-fast: false
     env:
       GITPULLOPTIONS: --no-tags origin ${{github.ref}}
