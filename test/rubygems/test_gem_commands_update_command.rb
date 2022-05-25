@@ -191,6 +191,37 @@ class TestGemCommandsUpdateCommand < Gem::TestCase
     assert_empty out
   end
 
+  def test_execute_system_update_installed_in_non_default_gem_path
+    rubygems_update_spec = quick_gem "rubygems-update", 9 do |s|
+      write_file File.join(@tempdir, 'setup.rb')
+
+      s.files += %w[setup.rb]
+    end
+
+    util_setup_spec_fetcher rubygems_update_spec
+
+    rubygems_update_package = Gem::Package.build rubygems_update_spec
+
+    gemhome2 = "#{@gemhome}2"
+
+    Gem::Installer.at(rubygems_update_package, :install_dir => gemhome2).install
+
+    Gem.use_paths @gemhome, [gemhome2, @gemhome]
+
+    @cmd.options[:args]          = []
+    @cmd.options[:system]        = true
+
+    use_ui @ui do
+      @cmd.execute
+    end
+
+    out = @ui.output.split "\n"
+    assert_equal "Installing RubyGems 9", out.shift
+    assert_equal "RubyGems system software updated", out.shift
+
+    assert_empty out
+  end
+
   def test_execute_system_specific
     spec_fetcher do |fetcher|
       fetcher.download 'rubygems-update', 8 do |s|
