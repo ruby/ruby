@@ -509,7 +509,7 @@ clean-local::
 	  enc/encinit.c enc/encinit.$(OBJEXT) $(pkgconfig_DATA) \
 	  ruby-runner.$(OBJEXT) ruby-runner.h \
 	|| $(NULLCMD)
-	/usr/bin/find . -name '*.bc' -o -name '*.[is]' -delete
+	$(Q)find . -name '*.bc' -o -name '*.[is]' -delete
 	-$(Q)$(RMALL) exe/ *.dSYM
 
 distclean-local::
