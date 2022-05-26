@@ -584,6 +584,13 @@ class TestStringIO < Test::Unit::TestCase
     end
   end
 
+  def test_each_string_sep
+    f = StringIO.new('a||b||c')
+    assert_equal(["a||", "b||", "c"], f.each("||").to_a)
+    f.rewind
+    assert_equal(["a", "b", "c"], f.each("||", chomp: true).to_a)
+  end
+
   def test_each
     f = StringIO.new("foo\nbar\nbaz\n")
     assert_equal(["foo\n", "bar\n", "baz\n"], f.each.to_a)

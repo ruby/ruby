@@ -1181,7 +1181,7 @@ strio_getline(struct getline_arg *arg, struct StringIO *ptr)
     const char *s, *e, *p;
     long n, limit = arg->limit;
     VALUE str = arg->rs;
-    int w = 0;
+    long w = 0;
     rb_encoding *enc = get_enc(ptr);
 
     if (ptr->pos >= (n = RSTRING_LEN(ptr->string))) {
@@ -1237,7 +1237,8 @@ strio_getline(struct getline_arg *arg, struct StringIO *ptr)
 	    if (e - s < 1024) {
 		for (p = s; p + n <= e; ++p) {
 		    if (MEMCMP(p, RSTRING_PTR(str), char, n) == 0) {
-			e = p + (arg->chomp ? 0 : n);
+			e = p + n;
+			w = (arg->chomp ? n : 0);
 			break;
 		    }
 		}
