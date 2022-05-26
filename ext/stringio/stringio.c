@@ -1127,6 +1127,7 @@ prepare_getline_args(struct getline_arg *arg, int argc, VALUE *argv)
     long limit = -1;
 
     argc = rb_scan_args(argc, argv, "02:", &str, &lim, &opts);
+    int respect_chomp = argc == 0 || !NIL_P(str);
     switch (argc) {
       case 0:
 	str = rb_rs;
@@ -1160,7 +1161,9 @@ prepare_getline_args(struct getline_arg *arg, int argc, VALUE *argv)
 	    keywords[0] = rb_intern_const("chomp");
 	}
 	rb_get_kwargs(opts, keywords, 0, 1, &vchomp);
-	arg->chomp = (vchomp != Qundef) && RTEST(vchomp);
+        if (respect_chomp) {
+	    arg->chomp = (vchomp != Qundef) && RTEST(vchomp);
+        }
     }
     return arg;
 }
