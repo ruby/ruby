@@ -16,7 +16,7 @@
 
 /* global variable */
 
-#define ROBJECT_TRANSIENT_FLAG    FL_USER13
+#define ROBJECT_TRANSIENT_FLAG    FL_USER2
 
 /* variable.c */
 void rb_gc_mark_global_tbl(void);
