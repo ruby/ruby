@@ -2588,6 +2588,8 @@ class TestIO < Test::Unit::TestCase
       bug = '[ruby-dev:31525]'
       assert_raise(ArgumentError, bug) {IO.foreach}
 
+      assert_raise(ArgumentError, "[Bug #18767] [ruby-core:108499]") {IO.foreach(__FILE__, 0){}}
+
       a = nil
       assert_nothing_raised(ArgumentError, bug) {a = IO.foreach(t.path).to_a}
       assert_equal(["foo\n", "bar\n", "baz\n"], a, bug)

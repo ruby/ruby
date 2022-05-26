@@ -11275,6 +11275,8 @@ io_s_foreach(VALUE v)
     struct getline_arg *arg = (void *)v;
     VALUE str;
 
+    if (arg->limit == 0)
+        rb_raise(rb_eArgError, "invalid limit: 0 for foreach");
     while (!NIL_P(str = rb_io_getline_1(arg->rs, arg->limit, arg->chomp, arg->io))) {
 	rb_lastline_set(str);
 	rb_yield(str);
