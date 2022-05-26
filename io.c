@@ -3875,7 +3875,6 @@ rb_io_getline_0(VALUE rs, long limit, int chomp, rb_io_t *fptr)
     if (NIL_P(rs) && limit < 0) {
         str = read_all(fptr, 0, Qnil);
         if (RSTRING_LEN(str) == 0) return Qnil;
-        if (chomp) rb_str_chomp_string(str, rb_default_rs);
     }
     else if (limit == 0) {
         return rb_enc_str_new(0, 0, io_read_encoding(fptr));
