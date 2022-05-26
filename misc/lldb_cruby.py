@@ -599,9 +599,13 @@ def dump_page_internal(page, target, process, thread, frame, result, debugger, h
                 try:
                     flidx = "%3d" % freelist.index(obj_addr)
                 except ValueError:
-                    flidx = '   '
+                    flidx = ' -1'
 
-            result_str = "%s idx: [%3d] freelist_idx: {%s} Addr: %0#x (flags: %0#x)" % (rb_type(flags, ruby_type_map), page_index, flidx, obj_addr, flags)
+            if flType == RUBY_T_NONE:
+                klass = obj.GetChildMemberWithName('klass').GetValueAsUnsigned()
+                result_str = "%s idx: [%3d] freelist_idx: {%s} Addr: %0#x (flags: %0#x, next: %0#x)" % (rb_type(flags, ruby_type_map), page_index, flidx, obj_addr, flags, klass)
+            else:
+                result_str = "%s idx: [%3d] freelist_idx: {%s} Addr: %0#x (flags: %0#x)" % (rb_type(flags, ruby_type_map), page_index, flidx, obj_addr, flags)
 
             if highlight == obj_addr:
                 result_str = ' '.join([result_str, "<<<<<"])
