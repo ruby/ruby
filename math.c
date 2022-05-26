@@ -12,7 +12,7 @@
 #include "ruby/internal/config.h"
 
 #ifdef _MSC_VER
-# define _USE_MATH_DEFINES 1
+#    define _USE_MATH_DEFINES 1
 #endif
 
 #include <errno.h>
@@ -31,12 +31,9 @@ VALUE rb_eMathDomainError;
 
 #define Get_Double(x) rb_num_to_dbl(x)
 
-#define domain_error(msg) \
-    rb_raise(rb_eMathDomainError, "Numerical argument is out of domain - " msg)
-#define domain_check_min(val, min, msg) \
-    ((val) < (min) ? domain_error(msg) : (void)0)
-#define domain_check_range(val, min, max, msg) \
-    ((val) < (min) || (max) < (val) ? domain_error(msg) : (void)0)
+#define domain_error(msg) rb_raise(rb_eMathDomainError, "Numerical argument is out of domain - " msg)
+#define domain_check_min(val, min, msg) ((val) < (min) ? domain_error(msg) : (void)0)
+#define domain_check_range(val, min, max, msg) ((val) < (min) || (max) < (val) ? domain_error(msg) : (void)0)
 
 /*
  *  call-seq:
@@ -65,28 +62,25 @@ math_atan2(VALUE unused_obj, VALUE y, VALUE x)
     dx = Get_Double(x);
     dy = Get_Double(y);
     if (dx == 0.0 && dy == 0.0) {
-	if (!signbit(dx))
-	    return DBL2NUM(dy);
-        if (!signbit(dy))
-	    return DBL2NUM(M_PI);
-	return DBL2NUM(-M_PI);
+        if (!signbit(dx)) return DBL2NUM(dy);
+        if (!signbit(dy)) return DBL2NUM(M_PI);
+        return DBL2NUM(-M_PI);
     }
 #ifndef ATAN2_INF_C99
     if (isinf(dx) && isinf(dy)) {
-	/* optimization for FLONUM */
-	if (dx < 0.0) {
-	    const double dz = (3.0 * M_PI / 4.0);
-	    return (dy < 0.0) ? DBL2NUM(-dz) : DBL2NUM(dz);
-	}
-	else {
-	    const double dz = (M_PI / 4.0);
-	    return (dy < 0.0) ? DBL2NUM(-dz) : DBL2NUM(dz);
-	}
+        /* optimization for FLONUM */
+        if (dx < 0.0) {
+            const double dz = (3.0 * M_PI / 4.0);
+            return (dy < 0.0) ? DBL2NUM(-dz) : DBL2NUM(dz);
+        }
+        else {
+            const double dz = (M_PI / 4.0);
+            return (dy < 0.0) ? DBL2NUM(-dz) : DBL2NUM(dz);
+        }
     }
 #endif
     return DBL2NUM(atan2(dy, dx));
 }
-
 
 /*
  *  call-seq:
@@ -141,7 +135,6 @@ math_sin(VALUE unused_obj, VALUE x)
 {
     return DBL2NUM(sin(Get_Double(x)));
 }
-
 
 /*
  *  call-seq:
@@ -319,13 +312,13 @@ math_sinh(VALUE unused_obj, VALUE x)
 double
 tanh(double x)
 {
-# if defined(HAVE_SINH) && defined(HAVE_COSH)
+#    if defined(HAVE_SINH) && defined(HAVE_COSH)
     const double c = cosh(x);
     if (!isinf(c)) return sinh(x) / c;
-# else
-    const double e = exp(x+x);
+#    else
+    const double e = exp(x + x);
     if (!isinf(e)) return (e - 1) / (e + 1);
-# endif
+#    endif
     return x > 0 ? 1.0 : -1.0;
 }
 #endif
@@ -461,19 +454,19 @@ math_exp(VALUE unused_obj, VALUE x)
 }
 
 #if defined __CYGWIN__
-# include <cygwin/version.h>
-# if CYGWIN_VERSION_DLL_MAJOR < 1005
-#  define nan(x) nan()
-# endif
-# define log(x) ((x) < 0.0 ? nan("") : log(x))
-# define log10(x) ((x) < 0.0 ? nan("") : log10(x))
+#    include <cygwin/version.h>
+#    if CYGWIN_VERSION_DLL_MAJOR < 1005
+#        define nan(x) nan()
+#    endif
+#    define log(x) ((x) < 0.0 ? nan("") : log(x))
+#    define log10(x) ((x) < 0.0 ? nan("") : log10(x))
 #endif
 
 #ifndef M_LN2
-# define M_LN2 0.693147180559945309417232121458176568
+#    define M_LN2 0.693147180559945309417232121458176568
 #endif
 #ifndef M_LN10
-# define M_LN10 2.30258509299404568401799145468436421
+#    define M_LN10 2.30258509299404568401799145468436421
 #endif
 
 static double math_log1(VALUE x);
@@ -520,7 +513,7 @@ rb_math_log(int argc, const VALUE *argv)
     rb_scan_args(argc, argv, "11", &x, &base);
     d = math_log1(x);
     if (argc == 2) {
-	d /= math_log1(base);
+        d /= math_log1(base);
     }
     return DBL2NUM(d);
 }
@@ -530,13 +523,12 @@ get_double_rshift(VALUE x, size_t *pnumbits)
 {
     size_t numbits;
 
-    if (RB_BIGNUM_TYPE_P(x) && BIGNUM_POSITIVE_P(x) &&
-            DBL_MAX_EXP <= (numbits = rb_absint_numwords(x, 1, NULL))) {
+    if (RB_BIGNUM_TYPE_P(x) && BIGNUM_POSITIVE_P(x) && DBL_MAX_EXP <= (numbits = rb_absint_numwords(x, 1, NULL))) {
         numbits -= DBL_MANT_DIG;
         x = rb_big_rshift(x, SIZET2NUM(numbits));
     }
     else {
-	numbits = 0;
+        numbits = 0;
     }
     *pnumbits = numbits;
     return Get_Double(x);
@@ -556,15 +548,15 @@ math_log1(VALUE x)
 }
 
 #ifndef log2
-#ifndef HAVE_LOG2
+#    ifndef HAVE_LOG2
 double
 log2(double x)
 {
-    return log10(x)/log10(2.0);
+    return log10(x) / log10(2.0);
 }
-#else
+#    else
 extern double log2(double);
-#endif
+#    endif
 #endif
 
 /*
@@ -661,8 +653,7 @@ math_sqrt(VALUE unused_obj, VALUE x)
 inline static VALUE
 f_negative_p(VALUE x)
 {
-    if (FIXNUM_P(x))
-        return RBOOL(FIX2LONG(x) < 0);
+    if (FIXNUM_P(x)) return RBOOL(FIX2LONG(x) < 0);
     return rb_funcall(x, '<', 1, INT2FIX(0));
 }
 inline static VALUE
@@ -681,13 +672,13 @@ rb_math_sqrt(VALUE x)
     double d;
 
     if (RB_TYPE_P(x, T_COMPLEX)) {
-	VALUE neg = f_signbit(RCOMPLEX(x)->imag);
-	double re = Get_Double(RCOMPLEX(x)->real), im;
-	d = Get_Double(rb_complex_abs(x));
-	im = sqrt((d - re) / 2.0);
-	re = sqrt((d + re) / 2.0);
-	if (neg) im = -im;
-	return rb_complex_new(DBL2NUM(re), DBL2NUM(im));
+        VALUE neg = f_signbit(RCOMPLEX(x)->imag);
+        double re = Get_Double(RCOMPLEX(x)->real), im;
+        d = Get_Double(rb_complex_abs(x));
+        im = sqrt((d - re) / 2.0);
+        re = sqrt((d + re) / 2.0);
+        if (neg) im = -im;
+        return rb_complex_new(DBL2NUM(re), DBL2NUM(im));
     }
     d = Get_Double(x);
     domain_check_min(d, 0.0, "sqrt");
@@ -727,7 +718,7 @@ math_cbrt(VALUE unused_obj, VALUE x)
     double r = cbrt(f);
 #if defined __GLIBC__
     if (isfinite(r) && !(f == 0.0 && r == 0.0)) {
-	r = (2.0 * r + (f / r / r)) / 3.0;
+        r = (2.0 * r + (f / r / r)) / 3.0;
     }
 #endif
     return DBL2NUM(r);
@@ -742,7 +733,8 @@ math_cbrt(VALUE unused_obj, VALUE x)
  *
  *    x = fraction * 2**exponent
  *
- *  See {IEEE 754 double-precision binary floating-point format: binary64}[https://en.wikipedia.org/wiki/Double-precision_floating-point_format#IEEE_754_double-precision_binary_floating-point_format:_binary64].
+ *  See {IEEE 754 double-precision binary floating-point format:
+ * binary64}[https://en.wikipedia.org/wiki/Double-precision_floating-point_format#IEEE_754_double-precision_binary_floating-point_format:_binary64].
  *
  *  - Domain: <tt>[-INFINITY, INFINITY]</tt>.
  *  - Range <tt>[-INFINITY, INFINITY]</tt>.
@@ -781,7 +773,8 @@ math_frexp(VALUE unused_obj, VALUE x)
  *  - Domain of +exponent+: <tt>[0, 1024]</tt>
  *    (larger values are equivalent to 1024).
  *
- *  See {IEEE 754 double-precision binary floating-point format: binary64}[https://en.wikipedia.org/wiki/Double-precision_floating-point_format#IEEE_754_double-precision_binary_floating-point_format:_binary64].
+ *  See {IEEE 754 double-precision binary floating-point format:
+ * binary64}[https://en.wikipedia.org/wiki/Double-precision_floating-point_format#IEEE_754_double-precision_binary_floating-point_format:_binary64].
  *
  *  Examples:
  *
@@ -863,7 +856,8 @@ math_erf(VALUE unused_obj, VALUE x)
  * call-seq:
  *    Math.erfc(x)  -> Float
  *
- *  Returns the value of the {complementary error function}[https://en.wikipedia.org/wiki/Error_function#Complementary_error_function] for +x+.
+ *  Returns the value of the {complementary error
+ * function}[https://en.wikipedia.org/wiki/Error_function#Complementary_error_function] for +x+.
  *
  *  - Domain: <tt>[-INFINITY, INFINITY]</tt>.
  *  - Range: <tt>[0, 2]</tt>.
@@ -940,22 +934,24 @@ math_gamma(VALUE unused_obj, VALUE x)
          * impossible to represent exactly in IEEE 754 double which have
          * 53bit mantissa. */
     };
-    enum {NFACT_TABLE = numberof(fact_table)};
+    enum {
+        NFACT_TABLE = numberof(fact_table)
+    };
     double d;
     d = Get_Double(x);
     /* check for domain error */
     if (isinf(d)) {
-	if (signbit(d)) domain_error("gamma");
-	return DBL2NUM(HUGE_VAL);
+        if (signbit(d)) domain_error("gamma");
+        return DBL2NUM(HUGE_VAL);
     }
     if (d == 0.0) {
-	return signbit(d) ? DBL2NUM(-HUGE_VAL) : DBL2NUM(HUGE_VAL);
+        return signbit(d) ? DBL2NUM(-HUGE_VAL) : DBL2NUM(HUGE_VAL);
     }
     if (d == floor(d)) {
-	domain_check_min(d, 0.0, "gamma");
-	if (1.0 <= d && d <= (double)NFACT_TABLE) {
-	    return DBL2NUM(fact_table[(int)d - 1]);
-	}
+        domain_check_min(d, 0.0, "gamma");
+        if (1.0 <= d && d <= (double)NFACT_TABLE) {
+            return DBL2NUM(fact_table[(int)d - 1]);
+        }
     }
     return DBL2NUM(tgamma(d));
 }
@@ -1002,75 +998,65 @@ static VALUE
 math_lgamma(VALUE unused_obj, VALUE x)
 {
     double d;
-    int sign=1;
+    int sign = 1;
     VALUE v;
     d = Get_Double(x);
     /* check for domain error */
     if (isinf(d)) {
-	if (signbit(d)) domain_error("lgamma");
-	return rb_assoc_new(DBL2NUM(HUGE_VAL), INT2FIX(1));
+        if (signbit(d)) domain_error("lgamma");
+        return rb_assoc_new(DBL2NUM(HUGE_VAL), INT2FIX(1));
     }
     if (d == 0.0) {
-	VALUE vsign = signbit(d) ? INT2FIX(-1) : INT2FIX(+1);
-	return rb_assoc_new(DBL2NUM(HUGE_VAL), vsign);
+        VALUE vsign = signbit(d) ? INT2FIX(-1) : INT2FIX(+1);
+        return rb_assoc_new(DBL2NUM(HUGE_VAL), vsign);
     }
     v = DBL2NUM(lgamma_r(d, &sign));
     return rb_assoc_new(v, INT2FIX(sign));
 }
 
-
 #define exp1(n) \
-VALUE \
-rb_math_##n(VALUE x)\
-{\
-    return math_##n(0, x);\
-}
+    VALUE \
+    rb_math_##n(VALUE x) \
+    { \
+        return math_##n(0, x); \
+    }
 
 #define exp2(n) \
-VALUE \
-rb_math_##n(VALUE x, VALUE y)\
-{\
-    return math_##n(0, x, y);\
-}
+    VALUE \
+    rb_math_##n(VALUE x, VALUE y) \
+    { \
+        return math_##n(0, x, y); \
+    }
 
-exp2(atan2)
-exp1(cos)
-exp1(cosh)
-exp1(exp)
-exp2(hypot)
-exp1(sin)
-exp1(sinh)
+exp2(atan2) exp1(cos) exp1(cosh) exp1(exp) exp2(hypot) exp1(sin) exp1(sinh)
 #if 0
 exp1(sqrt)
 #endif
 
+    /*
+     *  Document-class: Math::DomainError
+     *
+     *  Raised when a mathematical function is evaluated outside of its
+     *  domain of definition.
+     *
+     *  For example, since +cos+ returns values in the range -1..1,
+     *  its inverse function +acos+ is only defined on that interval:
+     *
+     *     Math.acos(42)
+     *
+     *  <em>produces:</em>
+     *
+     *     Math::DomainError: Numerical argument is out of domain - "acos"
+     */
 
-/*
- *  Document-class: Math::DomainError
- *
- *  Raised when a mathematical function is evaluated outside of its
- *  domain of definition.
- *
- *  For example, since +cos+ returns values in the range -1..1,
- *  its inverse function +acos+ is only defined on that interval:
- *
- *     Math.acos(42)
- *
- *  <em>produces:</em>
- *
- *     Math::DomainError: Numerical argument is out of domain - "acos"
- */
+    /*
+     *  Document-class: Math
+     *
+     *  :include: doc/math/math.rdoc
+     *
+     */
 
-/*
- *  Document-class: Math
- *
- *  :include: doc/math/math.rdoc
- *
- */
-
-
-void
-InitVM_Math(void)
+    void InitVM_Math(void)
 {
     rb_mMath = rb_define_module("Math");
     rb_eMathDomainError = rb_define_class_under(rb_mMath, "DomainError", rb_eStandardError);
@@ -1114,7 +1100,7 @@ InitVM_Math(void)
 
     rb_define_module_function(rb_mMath, "hypot", math_hypot, 2);
 
-    rb_define_module_function(rb_mMath, "erf",  math_erf,  1);
+    rb_define_module_function(rb_mMath, "erf", math_erf, 1);
     rb_define_module_function(rb_mMath, "erfc", math_erfc, 1);
 
     rb_define_module_function(rb_mMath, "gamma", math_gamma, 1);

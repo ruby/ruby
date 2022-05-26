@@ -1,11 +1,11 @@
-#include "ruby/ruby.h"
-#include "ruby/ractor.h"
-#include "vm_core.h"
 #include "id_table.h"
+#include "ruby/ractor.h"
+#include "ruby/ruby.h"
+#include "vm_core.h"
 #include "vm_debug.h"
 
 #ifndef RACTOR_CHECK_MODE
-#define RACTOR_CHECK_MODE (0 || VM_CHECK_MODE || RUBY_DEBUG)
+#    define RACTOR_CHECK_MODE (0 || VM_CHECK_MODE || RUBY_DEBUG)
 #endif
 
 enum rb_ractor_basket_type {
@@ -49,7 +49,7 @@ struct rb_ractor_sync {
     rb_nativethread_cond_t cond;
 
     // communication
-    struct rb_ractor_queue  incoming_queue;
+    struct rb_ractor_queue incoming_queue;
     struct rb_ractor_waiting_list taking_ractors;
 
     bool incoming_port_closed;
@@ -57,11 +57,11 @@ struct rb_ractor_sync {
 
     struct ractor_wait {
         enum ractor_wait_status {
-            wait_none      = 0x00,
+            wait_none = 0x00,
             wait_receiving = 0x01,
-            wait_taking    = 0x02,
-            wait_yielding  = 0x04,
-            wait_moving    = 0x08,
+            wait_taking = 0x02,
+            wait_yielding = 0x04,
+            wait_moving = 0x08,
         } status;
 
         enum ractor_wakeup_status {
@@ -145,9 +145,8 @@ struct rb_ractor_struct {
     struct gc_mark_func_data_struct {
         void *data;
         void (*mark_func)(VALUE v, void *data);
-    } *mfd;
+    } * mfd;
 }; // rb_ractor_t is defined in vm_core.h
-
 
 static inline VALUE
 rb_ractor_self(const rb_ractor_t *r)
@@ -172,8 +171,10 @@ bool rb_ractor_p(VALUE rv);
 void rb_ractor_living_threads_init(rb_ractor_t *r);
 void rb_ractor_living_threads_insert(rb_ractor_t *r, rb_thread_t *th);
 void rb_ractor_living_threads_remove(rb_ractor_t *r, rb_thread_t *th);
-void rb_ractor_blocking_threads_inc(rb_ractor_t *r, const char *file, int line); // TODO: file, line only for RUBY_DEBUG_LOG
-void rb_ractor_blocking_threads_dec(rb_ractor_t *r, const char *file, int line); // TODO: file, line only for RUBY_DEBUG_LOG
+void rb_ractor_blocking_threads_inc(
+    rb_ractor_t *r, const char *file, int line); // TODO: file, line only for RUBY_DEBUG_LOG
+void rb_ractor_blocking_threads_dec(
+    rb_ractor_t *r, const char *file, int line); // TODO: file, line only for RUBY_DEBUG_LOG
 
 void rb_ractor_vm_barrier_interrupt_running_thread(rb_ractor_t *r);
 void rb_ractor_terminate_interrupt_main_thread(rb_ractor_t *r);
@@ -239,8 +240,7 @@ rb_ractor_thread_switch(rb_ractor_t *cr, rb_thread_t *th)
 {
     if (cr->threads.running_ec != th->ec) {
         if (0) {
-            ruby_debug_printf("rb_ractor_thread_switch ec:%p->%p\n",
-                              (void *)cr->threads.running_ec, (void *)th->ec);
+            ruby_debug_printf("rb_ractor_thread_switch ec:%p->%p\n", (void *)cr->threads.running_ec, (void *)th->ec);
         }
     }
     else {
@@ -262,11 +262,11 @@ static inline void
 rb_ractor_set_current_ec_(rb_ractor_t *cr, rb_execution_context_t *ec, const char *file, int line)
 {
 #ifdef RB_THREAD_LOCAL_SPECIFIER
-  #ifdef __APPLE__
+#    ifdef __APPLE__
     rb_current_ec_set(ec);
-  #else
+#    else
     ruby_current_ec = ec;
-  #endif
+#    endif
 #else
     native_tls_set(ruby_current_ec_key, ec);
 #endif
@@ -334,5 +334,5 @@ rb_ractor_confirm_belonging(VALUE obj)
     return obj;
 }
 #else
-#define rb_ractor_confirm_belonging(obj) obj
+#    define rb_ractor_confirm_belonging(obj) obj
 #endif

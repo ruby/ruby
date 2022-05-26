@@ -12,8 +12,7 @@
 VALUE mX509;
 
 #define DefX509Const(x) rb_define_const(mX509, #x, INT2NUM(X509_##x))
-#define DefX509Default(x,i) \
-  rb_define_const(mX509, "DEFAULT_" #x, rb_str_new2(X509_get_default_##i()))
+#define DefX509Default(x, i) rb_define_const(mX509, "DEFAULT_" #x, rb_str_new2(X509_get_default_##i()))
 
 ASN1_TIME *
 ossl_x509_time_adjust(ASN1_TIME *s, VALUE time)

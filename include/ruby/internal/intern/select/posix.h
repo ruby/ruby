@@ -1,4 +1,4 @@
-#ifndef RBIMPL_INTERN_SELECT_POSIX_H                 /*-*-C++-*-vi:se ft=cpp:*/
+#ifndef RBIMPL_INTERN_SELECT_POSIX_H /*-*-C++-*-vi:se ft=cpp:*/
 #define RBIMPL_INTERN_SELECT_POSIX_H
 /**
  * @file
@@ -23,11 +23,11 @@
 #include "ruby/internal/config.h"
 
 #ifdef HAVE_SYS_SELECT_H
-# include <sys/select.h>        /* for select(2) (modern POSIX) */
+#    include <sys/select.h> /* for select(2) (modern POSIX) */
 #endif
 
 #ifdef HAVE_UNISTD_H
-# include <unistd.h>            /* for select(2) (archaic UNIX) */
+#    include <unistd.h> /* for select(2) (archaic UNIX) */
 #endif
 
 #include "ruby/internal/attr/const.h"
@@ -48,28 +48,28 @@
 typedef fd_set rb_fdset_t;
 
 /** Clears the given ::rb_fdset_t. */
-#define rb_fd_zero   FD_ZERO
+#define rb_fd_zero FD_ZERO
 
 /** Sets the given fd to the ::rb_fdset_t. */
-#define rb_fd_set    FD_SET
+#define rb_fd_set FD_SET
 
 /** Unsets the given fd from the ::rb_fdset_t. */
-#define rb_fd_clr    FD_CLR
+#define rb_fd_clr FD_CLR
 
 /** Queries if the given fd is in the ::rb_fdset_t. */
-#define rb_fd_isset  FD_ISSET
+#define rb_fd_isset FD_ISSET
 
 /** Initialises the :given :rb_fdset_t. */
-#define rb_fd_init   FD_ZERO
+#define rb_fd_init FD_ZERO
 
 /** Waits for multiple file descriptors at once. */
 #define rb_fd_select select
 
 /**@cond INTERNAL_MACRO */
-#define rb_fd_copy  rb_fd_copy
-#define rb_fd_dup   rb_fd_dup
-#define rb_fd_ptr   rb_fd_ptr
-#define rb_fd_max   rb_fd_max
+#define rb_fd_copy rb_fd_copy
+#define rb_fd_dup rb_fd_dup
+#define rb_fd_ptr rb_fd_ptr
+#define rb_fd_max rb_fd_max
 /** @endcond */
 
 RBIMPL_ATTR_NONNULL(())
@@ -138,7 +138,7 @@ rb_fd_max(const rb_fdset_t *f)
 /** @cond INTERNAL_MACRO */
 /* :FIXME: What are these?  They don't exist for shibling implementations. */
 #define rb_fd_init_copy(d, s) (*(d) = *(s))
-#define rb_fd_term(f)   ((void)(f))
+#define rb_fd_term(f) ((void)(f))
 /** @endcond */
 
 #endif /* RBIMPL_INTERN_SELECT_POSIX_H */

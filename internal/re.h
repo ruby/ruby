@@ -1,4 +1,4 @@
-#ifndef INTERNAL_RE_H                                    /*-*-C-*-vi:se ft=c:*/
+#ifndef INTERNAL_RE_H /*-*-C-*-vi:se ft=c:*/
 #define INTERNAL_RE_H
 /**
  * @author     Ruby developers <ruby-core@ruby-lang.org>
@@ -8,8 +8,8 @@
  *             file COPYING are met.  Consult the file for details.
  * @brief      Internal header for Regexp.
  */
-#include "ruby/internal/stdbool.h"     /* for bool */
-#include "ruby/ruby.h"          /* for VALUE */
+#include "ruby/internal/stdbool.h" /* for bool */
+#include "ruby/ruby.h"             /* for VALUE */
 
 /* re.c */
 VALUE rb_reg_compile(VALUE str, int options, const char *sourcefile, int sourceline);

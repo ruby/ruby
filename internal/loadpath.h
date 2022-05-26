@@ -1,4 +1,4 @@
-#ifndef INTERNAL_LOADPATH_H                              /*-*-C-*-vi:se ft=c:*/
+#ifndef INTERNAL_LOADPATH_H /*-*-C-*-vi:se ft=c:*/
 #define INTERNAL_LOADPATH_H
 /**
  * @author     Ruby developers <ruby-core@ruby-lang.org>

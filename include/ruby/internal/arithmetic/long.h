@@ -1,4 +1,4 @@
-#ifndef RBIMPL_ARITHMETIC_LONG_H                     /*-*-C++-*-vi:se ft=cpp:*/
+#ifndef RBIMPL_ARITHMETIC_LONG_H /*-*-C++-*-vi:se ft=cpp:*/
 #define RBIMPL_ARITHMETIC_LONG_H
 /**
  * @file
@@ -28,7 +28,7 @@
  *      understand the difference of `int`  and `long` when they designed those
  *      macros.
  */
-#include "ruby/internal/config.h"
+#include "ruby/assert.h"
 #include "ruby/internal/arithmetic/fixnum.h"   /* FIXABLE */
 #include "ruby/internal/arithmetic/intptr_t.h" /* rb_int2big etc.*/
 #include "ruby/internal/assume.h"
@@ -38,28 +38,28 @@
 #include "ruby/internal/attr/constexpr.h"
 #include "ruby/internal/attr/noreturn.h"
 #include "ruby/internal/cast.h"
+#include "ruby/internal/config.h"
 #include "ruby/internal/dllexport.h"
-#include "ruby/internal/special_consts.h"      /* FIXNUM_FLAG */
+#include "ruby/internal/special_consts.h" /* FIXNUM_FLAG */
 #include "ruby/internal/value.h"
-#include "ruby/assert.h"
 
-#define FIX2LONG     RB_FIX2LONG          /**< @old{RB_FIX2LONG} */
-#define FIX2ULONG    RB_FIX2ULONG         /**< @old{RB_FIX2ULONG} */
-#define INT2FIX      RB_INT2FIX           /**< @old{RB_INT2FIX} */
-#define LONG2FIX     RB_INT2FIX           /**< @old{RB_INT2FIX} */
-#define LONG2NUM     RB_LONG2NUM          /**< @old{RB_LONG2NUM} */
-#define NUM2LONG     RB_NUM2LONG          /**< @old{RB_NUM2LONG} */
-#define NUM2ULONG    RB_NUM2ULONG         /**< @old{RB_NUM2ULONG} */
-#define RB_FIX2LONG  rb_fix2long          /**< @alias{rb_fix2long} */
-#define RB_FIX2ULONG rb_fix2ulong         /**< @alias{rb_fix2ulong} */
-#define RB_LONG2FIX  RB_INT2FIX           /**< @alias{RB_INT2FIX} */
-#define RB_LONG2NUM  rb_long2num_inline   /**< @alias{rb_long2num_inline} */
-#define RB_NUM2LONG  rb_num2long_inline   /**< @alias{rb_num2long_inline} */
-#define RB_NUM2ULONG rb_num2ulong_inline  /**< @alias{rb_num2ulong_inline} */
-#define RB_ULONG2NUM rb_ulong2num_inline  /**< @alias{rb_ulong2num_inline} */
-#define ULONG2NUM    RB_ULONG2NUM         /**< @old{RB_ULONG2NUM} */
-#define rb_fix_new   RB_INT2FIX           /**< @alias{RB_INT2FIX} */
-#define rb_long2int  rb_long2int_inline   /**< @alias{rb_long2int_inline} */
+#define FIX2LONG RB_FIX2LONG             /**< @old{RB_FIX2LONG} */
+#define FIX2ULONG RB_FIX2ULONG           /**< @old{RB_FIX2ULONG} */
+#define INT2FIX RB_INT2FIX               /**< @old{RB_INT2FIX} */
+#define LONG2FIX RB_INT2FIX              /**< @old{RB_INT2FIX} */
+#define LONG2NUM RB_LONG2NUM             /**< @old{RB_LONG2NUM} */
+#define NUM2LONG RB_NUM2LONG             /**< @old{RB_NUM2LONG} */
+#define NUM2ULONG RB_NUM2ULONG           /**< @old{RB_NUM2ULONG} */
+#define RB_FIX2LONG rb_fix2long          /**< @alias{rb_fix2long} */
+#define RB_FIX2ULONG rb_fix2ulong        /**< @alias{rb_fix2ulong} */
+#define RB_LONG2FIX RB_INT2FIX           /**< @alias{RB_INT2FIX} */
+#define RB_LONG2NUM rb_long2num_inline   /**< @alias{rb_long2num_inline} */
+#define RB_NUM2LONG rb_num2long_inline   /**< @alias{rb_num2long_inline} */
+#define RB_NUM2ULONG rb_num2ulong_inline /**< @alias{rb_num2ulong_inline} */
+#define RB_ULONG2NUM rb_ulong2num_inline /**< @alias{rb_ulong2num_inline} */
+#define ULONG2NUM RB_ULONG2NUM           /**< @old{RB_ULONG2NUM} */
+#define rb_fix_new RB_INT2FIX            /**< @alias{RB_INT2FIX} */
+#define rb_long2int rb_long2int_inline   /**< @alias{rb_long2int_inline} */
 
 /** @cond INTERNAL_MACRO */
 #define RB_INT2FIX RB_INT2FIX
@@ -116,9 +116,9 @@ RB_INT2FIX(long i)
      * defined. Also it can be compiled into a single LEA instruction. */
     const unsigned long j = i;
     const unsigned long k = 2 * j + RUBY_FIXNUM_FLAG;
-    const long          l = k;
-    const SIGNED_VALUE  m = l; /* Sign extend */
-    const VALUE         n = m;
+    const long l = k;
+    const SIGNED_VALUE m = l; /* Sign extend */
+    const VALUE n = m;
 
     RBIMPL_ASSERT_OR_ASSUME(RB_FIXNUM_P(n));
     return n;
@@ -140,8 +140,7 @@ rb_long2int_inline(long n)
         RBIMPL_ASSUME(i == n);
     }
 
-    if (i != n)
-        rb_out_of_int(n);
+    if (i != n) rb_out_of_int(n);
 
     return i;
 }
@@ -168,7 +167,7 @@ rbimpl_fix2long_by_idiv(VALUE x)
      * below. */
     const SIGNED_VALUE y = x - RUBY_FIXNUM_FLAG;
     const SIGNED_VALUE z = y / 2;
-    const long         w = RBIMPL_CAST((long)z);
+    const long w = RBIMPL_CAST((long)z);
 
     RBIMPL_ASSERT_OR_ASSUME(RB_FIXABLE(w));
     return w;
@@ -195,7 +194,7 @@ rbimpl_fix2long_by_shift(VALUE x)
      * is noticeably faster than above. */
     const SIGNED_VALUE y = x;
     const SIGNED_VALUE z = y >> 1;
-    const long         w = RBIMPL_CAST((long)z);
+    const long w = RBIMPL_CAST((long)z);
 
     RBIMPL_ASSERT_OR_ASSUME(RB_FIXABLE(w));
     return w;
@@ -337,19 +336,16 @@ rb_ulong2num_inline(unsigned long v)
  * break existing codes.
  */
 #if RBIMPL_HAS_ATTR_CONSTEXPR_CXX14
-# /* C++ can write constexpr as enum values. */
+#    /* C++ can write constexpr as enum values. */
 
-#elif ! defined(HAVE_BUILTIN___BUILTIN_CHOOSE_EXPR_CONSTANT_P)
-# undef INT2FIX
-# define INT2FIX(i) (RBIMPL_CAST((VALUE)(i)) << 1 | RUBY_FIXNUM_FLAG)
+#elif !defined(HAVE_BUILTIN___BUILTIN_CHOOSE_EXPR_CONSTANT_P)
+#    undef INT2FIX
+#    define INT2FIX(i) (RBIMPL_CAST((VALUE)(i)) << 1 | RUBY_FIXNUM_FLAG)
 
 #else
-# undef INT2FIX
-# define INT2FIX(i)                                     \
-    __builtin_choose_expr(                              \
-        __builtin_constant_p(i),                        \
-        RBIMPL_CAST((VALUE)(i)) << 1 | RUBY_FIXNUM_FLAG, \
-        RB_INT2FIX(i))
+#    undef INT2FIX
+#    define INT2FIX(i) \
+        __builtin_choose_expr(__builtin_constant_p(i), RBIMPL_CAST((VALUE)(i)) << 1 | RUBY_FIXNUM_FLAG, RB_INT2FIX(i))
 #endif
 /** @endcond */
 

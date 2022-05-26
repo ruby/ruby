@@ -1,4 +1,4 @@
-#ifndef RBIMPL_ATTR_COLD_H                           /*-*-C++-*-vi:se ft=cpp:*/
+#ifndef RBIMPL_ATTR_COLD_H /*-*-C++-*-vi:se ft=cpp:*/
 #define RBIMPL_ATTR_COLD_H
 /**
  * @file
@@ -25,13 +25,13 @@
 
 /** Wraps (or simulates) `__attribute__((cold))` */
 #if RBIMPL_COMPILER_IS(SunPro)
-# /* Recent SunPro has __has_attribute, and is broken. */
-# /* It reports it has attribute cold, reality isn't (warnings issued). */
-# define RBIMPL_ATTR_COLD() /* void */
+#                              /* Recent SunPro has __has_attribute, and is broken. */
+#                              /* It reports it has attribute cold, reality isn't (warnings issued). */
+#    define RBIMPL_ATTR_COLD() /* void */
 #elif RBIMPL_HAS_ATTRIBUTE(cold)
-# define RBIMPL_ATTR_COLD() __attribute__((__cold__))
+#    define RBIMPL_ATTR_COLD() __attribute__((__cold__))
 #else
-# define RBIMPL_ATTR_COLD() /* void */
+#    define RBIMPL_ATTR_COLD() /* void */
 #endif
 
 #endif /* RBIMPL_ATTR_COLD_H */

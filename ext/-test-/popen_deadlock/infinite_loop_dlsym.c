@@ -7,7 +7,7 @@ struct data_for_loop_dlsym {
     volatile int stop;
 };
 
-static void*
+static void *
 native_loop_dlsym(void *data)
 {
     struct data_for_loop_dlsym *s = data;
@@ -37,8 +37,7 @@ loop_dlsym(VALUE self, VALUE name)
     d.stop = 0;
     d.name = StringValuePtr(name);
 
-    rb_thread_call_without_gvl(native_loop_dlsym, &d,
-                               ubf_for_loop_dlsym, &d);
+    rb_thread_call_without_gvl(native_loop_dlsym, &d, ubf_for_loop_dlsym, &d);
 
     return self;
 }

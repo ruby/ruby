@@ -12,8 +12,10 @@ struct rb_native_thread {
     void *thread_id; // NULL
 };
 
-struct rb_thread_sched_item {};
-struct rb_thread_sched {};
+struct rb_thread_sched_item {
+};
+struct rb_thread_sched {
+};
 
 RUBY_EXTERN struct rb_execution_context_struct *ruby_current_ec;
 

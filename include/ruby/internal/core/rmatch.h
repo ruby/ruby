@@ -1,4 +1,4 @@
-#ifndef RBIMPL_RMATCH_H                              /*-*-C++-*-vi:se ft=cpp:*/
+#ifndef RBIMPL_RMATCH_H /*-*-C++-*-vi:se ft=cpp:*/
 #define RBIMPL_RMATCH_H
 /**
  * @file
@@ -20,13 +20,13 @@
  *             extension libraries.  They could be written in C++98.
  * @brief      Defines struct ::RMatch.
  */
+#include "ruby/assert.h"
 #include "ruby/internal/attr/artificial.h"
 #include "ruby/internal/attr/pure.h"
 #include "ruby/internal/cast.h"
 #include "ruby/internal/core/rbasic.h"
 #include "ruby/internal/value.h"
 #include "ruby/internal/value_type.h"
-#include "ruby/assert.h"
 
 /**
  * Convenient casting macro.
@@ -109,7 +109,7 @@ struct RMatch {
     /**
      * The expression of this match.
      */
-    VALUE regexp;  /* RRegexp */
+    VALUE regexp; /* RRegexp */
 };
 
 RBIMPL_ATTR_PURE_UNLESS_DEBUG()

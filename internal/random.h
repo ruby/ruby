@@ -1,4 +1,4 @@
-#ifndef INTERNAL_RANDOM_H                                /*-*-C-*-vi:se ft=c:*/
+#ifndef INTERNAL_RANDOM_H /*-*-C-*-vi:se ft=c:*/
 #define INTERNAL_RANDOM_H
 /**
  * @author     Ruby developers <ruby-core@ruby-lang.org>
@@ -8,7 +8,7 @@
  *             file COPYING are met.  Consult the file for details.
  * @brief      Internal header for Random.
  */
-#include <stddef.h>             /* for size_t */
+#include <stddef.h> /* for size_t */
 
 /* random.c */
 int ruby_fill_random_bytes(void *, size_t, int);

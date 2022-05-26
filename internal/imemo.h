@@ -1,4 +1,4 @@
-#ifndef INTERNAL_IMEMO_H                                 /*-*-C-*-vi:se ft=c:*/
+#ifndef INTERNAL_IMEMO_H /*-*-C-*-vi:se ft=c:*/
 #define INTERNAL_IMEMO_H
 /**
  * @author     Ruby developers <ruby-core@ruby-lang.org>
@@ -8,18 +8,18 @@
  *             file COPYING are met.  Consult the file for details.
  * @brief      IMEMO: Internal memo object.
  */
+#include "internal/array.h" /* for rb_ary_tmp_new_fill */
+#include "internal/gc.h"    /* for RB_OBJ_WRITE */
 #include "ruby/internal/config.h"
-#include <stddef.h>             /* for size_t */
-#include "internal/array.h"     /* for rb_ary_tmp_new_fill */
-#include "internal/gc.h"        /* for RB_OBJ_WRITE */
-#include "ruby/internal/stdbool.h"     /* for bool */
-#include "ruby/ruby.h"          /* for rb_block_call_func_t */
+#include "ruby/internal/stdbool.h" /* for bool */
+#include "ruby/ruby.h"             /* for rb_block_call_func_t */
+#include <stddef.h>                /* for size_t */
 
 #ifndef IMEMO_DEBUG
-# define IMEMO_DEBUG 0
+#    define IMEMO_DEBUG 0
 #endif
 
-#define IMEMO_MASK   0x0f
+#define IMEMO_MASK 0x0f
 
 /* FL_USER0 to FL_USER3 is for type */
 #define IMEMO_FL_USHIFT (FL_USHIFT + 4)
@@ -31,20 +31,20 @@
 #define IMEMO_FL_USER5 FL_USER9
 
 enum imemo_type {
-    imemo_env            =  0,
-    imemo_cref           =  1, /*!< class reference */
-    imemo_svar           =  2, /*!< special variable */
-    imemo_throw_data     =  3,
-    imemo_ifunc          =  4, /*!< iterator function */
-    imemo_memo           =  5,
-    imemo_ment           =  6,
-    imemo_iseq           =  7,
-    imemo_tmpbuf         =  8,
-    imemo_ast            =  9,
+    imemo_env = 0,
+    imemo_cref = 1, /*!< class reference */
+    imemo_svar = 2, /*!< special variable */
+    imemo_throw_data = 3,
+    imemo_ifunc = 4, /*!< iterator function */
+    imemo_memo = 5,
+    imemo_ment = 6,
+    imemo_iseq = 7,
+    imemo_tmpbuf = 8,
+    imemo_ast = 9,
     imemo_parser_strterm = 10,
-    imemo_callinfo       = 11,
-    imemo_callcache      = 12,
-    imemo_constcache     = 13,
+    imemo_callinfo = 11,
+    imemo_callcache = 12,
+    imemo_constcache = 13,
 };
 
 /* CREF (Class REFerence) is defined in method.h */
@@ -73,8 +73,8 @@ struct vm_throw_data {
 
 struct vm_ifunc_argc {
 #if SIZEOF_INT * 2 > SIZEOF_VALUE
-    signed int min: (SIZEOF_VALUE * CHAR_BIT) / 2;
-    signed int max: (SIZEOF_VALUE * CHAR_BIT) / 2;
+    signed int min : (SIZEOF_VALUE *CHAR_BIT) / 2;
+    signed int max : (SIZEOF_VALUE *CHAR_BIT) / 2;
 #else
     int min, max;
 #endif
@@ -92,9 +92,9 @@ struct vm_ifunc {
 struct rb_imemo_tmpbuf_struct {
     VALUE flags;
     VALUE reserved;
-    VALUE *ptr; /* malloc'ed buffer */
+    VALUE *ptr;                          /* malloc'ed buffer */
     struct rb_imemo_tmpbuf_struct *next; /* next imemo */
-    size_t cnt; /* buffer size in VALUE */
+    size_t cnt;                          /* buffer size in VALUE */
 };
 
 /*! MEMO
@@ -120,12 +120,10 @@ struct MEMO {
 #define MEMO_CAST(m) ((struct MEMO *)(m))
 #define MEMO_NEW(a, b, c) ((struct MEMO *)rb_imemo_new(imemo_memo, (VALUE)(a), (VALUE)(b), (VALUE)(c), 0))
 #define MEMO_FOR(type, value) ((type *)RARRAY_PTR(value))
-#define NEW_MEMO_FOR(type, value) \
-  ((value) = rb_ary_tmp_new_fill(type_roomof(type, VALUE)), MEMO_FOR(type, value))
+#define NEW_MEMO_FOR(type, value) ((value) = rb_ary_tmp_new_fill(type_roomof(type, VALUE)), MEMO_FOR(type, value))
 #define NEW_PARTIAL_MEMO_FOR(type, value, member) \
-  ((value) = rb_ary_tmp_new_fill(type_roomof(type, VALUE)), \
-   rb_ary_set_len((value), offsetof(type, member) / sizeof(VALUE)), \
-   MEMO_FOR(type, value))
+    ((value) = rb_ary_tmp_new_fill(type_roomof(type, VALUE)), \
+        rb_ary_set_len((value), offsetof(type, member) / sizeof(VALUE)), MEMO_FOR(type, value))
 
 typedef struct rb_imemo_tmpbuf_struct rb_imemo_tmpbuf_t;
 VALUE rb_imemo_new(enum imemo_type type, VALUE v1, VALUE v2, VALUE v3, VALUE v0);
@@ -146,7 +144,7 @@ static inline void MEMO_V2_SET(struct MEMO *m, VALUE v);
 RUBY_SYMBOL_EXPORT_BEGIN
 #if IMEMO_DEBUG
 VALUE rb_imemo_new_debug(enum imemo_type type, VALUE v1, VALUE v2, VALUE v3, VALUE v0, const char *file, int line);
-#define rb_imemo_new(type, v1, v2, v3, v0) rb_imemo_new_debug(type, v1, v2, v3, v0, __FILE__, __LINE__)
+#    define rb_imemo_new(type, v1, v2, v3, v0) rb_imemo_new_debug(type, v1, v2, v3, v0, __FILE__, __LINE__)
 #else
 VALUE rb_imemo_new(enum imemo_type type, VALUE v1, VALUE v2, VALUE v3, VALUE v0);
 #endif

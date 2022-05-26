@@ -1,4 +1,4 @@
-#ifndef RUBY_RUBY_H                                  /*-*-C++-*-vi:se ft=cpp:*/
+#ifndef RUBY_RUBY_H /*-*-C++-*-vi:se ft=cpp:*/
 #define RUBY_RUBY_H 1
 /**
  * @file
@@ -17,12 +17,16 @@
 /* @shyouhei  doesn't  understand  why  we need  <intrinsics.h>  at  this  very
  * beginning of the entire <ruby.h> circus. */
 #ifdef HAVE_INTRINSICS_H
-# include <intrinsics.h>
+#    include <intrinsics.h>
 #endif
 
 #include <stdarg.h>
 
 #include "defines.h"
+#include "ruby/assert.h"
+#include "ruby/backward/2/assume.h"
+#include "ruby/backward/2/inttypes.h"
+#include "ruby/backward/2/limits.h"
 #include "ruby/internal/abi.h"
 #include "ruby/internal/anyargs.h"
 #include "ruby/internal/arithmetic.h"
@@ -50,10 +54,6 @@
 #include "ruby/internal/value.h"
 #include "ruby/internal/value_type.h"
 #include "ruby/internal/variable.h"
-#include "ruby/assert.h"
-#include "ruby/backward/2/assume.h"
-#include "ruby/backward/2/inttypes.h"
-#include "ruby/backward/2/limits.h"
 
 RBIMPL_SYMBOL_EXPORT_BEGIN()
 
@@ -105,29 +105,24 @@ VALUE rb_get_path_no_checksafe(VALUE);
 
 /** @cond INTERNAL_MACRO */
 #if defined(HAVE_BUILTIN___BUILTIN_CONSTANT_P) && defined(HAVE_STMT_AND_DECL_IN_EXPR)
-# define rb_varargs_argc_check_runtime(argc, vargc) \
-    (((argc) <= (vargc)) ? (argc) : \
-     (rb_fatal("argc(%d) exceeds actual arguments(%d)", \
-	       argc, vargc), 0))
-# define rb_varargs_argc_valid_p(argc, vargc) \
-    ((argc) == 0 ? (vargc) <= 1 : /* [ruby-core:85266] [Bug #14425] */ \
-     (argc) == (vargc))
-# if defined(HAVE_BUILTIN___BUILTIN_CHOOSE_EXPR_CONSTANT_P)
-#   ifdef HAVE_ATTRIBUTE_ERRORFUNC
-ERRORFUNC((" argument length doesn't match"), int rb_varargs_bad_length(int,int));
-#   else
-#     define rb_varargs_bad_length(argc, vargc) \
-	((argc)/rb_varargs_argc_valid_p(argc, vargc))
-#   endif
-#   define rb_varargs_argc_check(argc, vargc) \
-    __builtin_choose_expr(__builtin_constant_p(argc), \
-	(rb_varargs_argc_valid_p(argc, vargc) ? (argc) : \
-	 rb_varargs_bad_length(argc, vargc)), \
-	rb_varargs_argc_check_runtime(argc, vargc))
-# else
-#   define rb_varargs_argc_check(argc, vargc) \
-	rb_varargs_argc_check_runtime(argc, vargc)
-# endif
+#    define rb_varargs_argc_check_runtime(argc, vargc) \
+        (((argc) <= (vargc)) ? (argc) : (rb_fatal("argc(%d) exceeds actual arguments(%d)", argc, vargc), 0))
+#    define rb_varargs_argc_valid_p(argc, vargc) \
+        ((argc) == 0 ? (vargc) <= 1 : /* [ruby-core:85266] [Bug #14425] */ \
+                (argc) == (vargc))
+#    if defined(HAVE_BUILTIN___BUILTIN_CHOOSE_EXPR_CONSTANT_P)
+#        ifdef HAVE_ATTRIBUTE_ERRORFUNC
+ERRORFUNC((" argument length doesn't match"), int rb_varargs_bad_length(int, int));
+#        else
+#            define rb_varargs_bad_length(argc, vargc) ((argc) / rb_varargs_argc_valid_p(argc, vargc))
+#        endif
+#        define rb_varargs_argc_check(argc, vargc) \
+            __builtin_choose_expr(__builtin_constant_p(argc), \
+                (rb_varargs_argc_valid_p(argc, vargc) ? (argc) : rb_varargs_bad_length(argc, vargc)), \
+                rb_varargs_argc_check_runtime(argc, vargc))
+#    else
+#        define rb_varargs_argc_check(argc, vargc) rb_varargs_argc_check_runtime(argc, vargc)
+#    endif
 #endif
 /** @endcond */
 
@@ -227,7 +222,11 @@ int ruby_native_thread_p(void);
  *
  * This macro is for internal use.  Must be a mistake to place here.
  */
-#define InitVM(ext) {void InitVM_##ext(void);InitVM_##ext();}
+#define InitVM(ext) \
+    { \
+        void InitVM_##ext(void); \
+        InitVM_##ext(); \
+    }
 
 RBIMPL_ATTR_NONNULL((3))
 RBIMPL_ATTR_FORMAT(RBIMPL_PRINTF_FORMAT, 3, 4)
@@ -273,38 +272,34 @@ int ruby_vsnprintf(char *str, size_t n, char const *fmt, va_list ap);
 
 /** @cond INTERNAL_MACRO */
 #if RBIMPL_HAS_WARNING("-Wgnu-zero-variadic-macro-arguments")
-# /* Skip it; clang -pedantic doesn't like the following */
+#    /* Skip it; clang -pedantic doesn't like the following */
 #elif defined(__GNUC__) && defined(HAVE_VA_ARGS_MACRO) && defined(__OPTIMIZE__)
-# define rb_yield_values(argc, ...) \
-__extension__({ \
-	const int rb_yield_values_argc = (argc); \
-	const VALUE rb_yield_values_args[] = {__VA_ARGS__}; \
-	const int rb_yield_values_nargs = \
-	    (int)(sizeof(rb_yield_values_args) / sizeof(VALUE)); \
-	rb_yield_values2( \
-	    rb_varargs_argc_check(rb_yield_values_argc, rb_yield_values_nargs), \
-	    rb_yield_values_nargs ? rb_yield_values_args : NULL); \
-    })
+#    define rb_yield_values(argc, ...) \
+        __extension__({ \
+            const int rb_yield_values_argc = (argc); \
+            const VALUE rb_yield_values_args[] = {__VA_ARGS__}; \
+            const int rb_yield_values_nargs = (int)(sizeof(rb_yield_values_args) / sizeof(VALUE)); \
+            rb_yield_values2(rb_varargs_argc_check(rb_yield_values_argc, rb_yield_values_nargs), \
+                rb_yield_values_nargs ? rb_yield_values_args : NULL); \
+        })
 
-# define rb_funcall(recv, mid, argc, ...) \
-__extension__({ \
-	const int rb_funcall_argc = (argc); \
-	const VALUE rb_funcall_args[] = {__VA_ARGS__}; \
-	const int rb_funcall_nargs = \
-	    (int)(sizeof(rb_funcall_args) / sizeof(VALUE)); \
-        rb_funcallv(recv, mid, \
-	    rb_varargs_argc_check(rb_funcall_argc, rb_funcall_nargs), \
-	    rb_funcall_nargs ? rb_funcall_args : NULL); \
-    })
+#    define rb_funcall(recv, mid, argc, ...) \
+        __extension__({ \
+            const int rb_funcall_argc = (argc); \
+            const VALUE rb_funcall_args[] = {__VA_ARGS__}; \
+            const int rb_funcall_nargs = (int)(sizeof(rb_funcall_args) / sizeof(VALUE)); \
+            rb_funcallv(recv, mid, rb_varargs_argc_check(rb_funcall_argc, rb_funcall_nargs), \
+                rb_funcall_nargs ? rb_funcall_args : NULL); \
+        })
 #endif
 /** @endcond */
 
 #ifndef RUBY_DONT_SUBST
-#include "ruby/subst.h"
+#    include "ruby/subst.h"
 #endif
 
 #if !defined RUBY_EXPORT && !defined RUBY_NO_OLD_COMPATIBILITY
-# include "ruby/backward.h"
+#    include "ruby/backward.h"
 #endif
 
 RBIMPL_SYMBOL_EXPORT_END()

@@ -1,4 +1,4 @@
-#ifndef RBIMPL_GLOBALS_H                             /*-*-C++-*-vi:se ft=cpp:*/
+#ifndef RBIMPL_GLOBALS_H /*-*-C++-*-vi:se ft=cpp:*/
 #define RBIMPL_GLOBALS_H
 /**
  * @file
@@ -53,52 +53,52 @@ RBIMPL_SYMBOL_EXPORT_BEGIN()
  */
 #define RUBY_INTEGER_UNIFICATION 1
 
-RUBY_EXTERN VALUE rb_mKernel;                 /**< `Kernel` module. */
-RUBY_EXTERN VALUE rb_mComparable;             /**< `Comparable` module. */
-RUBY_EXTERN VALUE rb_mEnumerable;             /**< `Enumerable` module. */
-RUBY_EXTERN VALUE rb_mErrno;                  /**< `Errno` module. */
-RUBY_EXTERN VALUE rb_mFileTest;               /**< `FileTest` module. */
-RUBY_EXTERN VALUE rb_mGC;                     /**< `GC` module. */
-RUBY_EXTERN VALUE rb_mMath;                   /**< `Math` module. */
-RUBY_EXTERN VALUE rb_mProcess;                /**< `Process` module. */
-RUBY_EXTERN VALUE rb_mWaitReadable;           /**< `IO::WaitReadable` module. */
-RUBY_EXTERN VALUE rb_mWaitWritable;           /**< `IO::WaitReadable` module. */
+RUBY_EXTERN VALUE rb_mKernel;       /**< `Kernel` module. */
+RUBY_EXTERN VALUE rb_mComparable;   /**< `Comparable` module. */
+RUBY_EXTERN VALUE rb_mEnumerable;   /**< `Enumerable` module. */
+RUBY_EXTERN VALUE rb_mErrno;        /**< `Errno` module. */
+RUBY_EXTERN VALUE rb_mFileTest;     /**< `FileTest` module. */
+RUBY_EXTERN VALUE rb_mGC;           /**< `GC` module. */
+RUBY_EXTERN VALUE rb_mMath;         /**< `Math` module. */
+RUBY_EXTERN VALUE rb_mProcess;      /**< `Process` module. */
+RUBY_EXTERN VALUE rb_mWaitReadable; /**< `IO::WaitReadable` module. */
+RUBY_EXTERN VALUE rb_mWaitWritable; /**< `IO::WaitReadable` module. */
 
-RUBY_EXTERN VALUE rb_cBasicObject;            /**< `BasicObject` class. */
-RUBY_EXTERN VALUE rb_cObject;                 /**< `Object` class. */
-RUBY_EXTERN VALUE rb_cArray;                  /**< `Array` class. */
-RUBY_EXTERN VALUE rb_cBinding;                /**< `Binding` class. */
-RUBY_EXTERN VALUE rb_cClass;                  /**< `Class` class. */
-RUBY_EXTERN VALUE rb_cDir;                    /**< `Dir` class. */
-RUBY_EXTERN VALUE rb_cEncoding;               /**< `Encoding` class. */
-RUBY_EXTERN VALUE rb_cEnumerator;             /**< `Enumerator` class. */
-RUBY_EXTERN VALUE rb_cFalseClass;             /**< `FalseClass` class. */
-RUBY_EXTERN VALUE rb_cFile;                   /**< `File` class. */
-RUBY_EXTERN VALUE rb_cComplex;                /**< `Complex` class. */
-RUBY_EXTERN VALUE rb_cFloat;                  /**< `Float` class. */
-RUBY_EXTERN VALUE rb_cHash;                   /**< `Hash` class. */
-RUBY_EXTERN VALUE rb_cIO;                     /**< `IO` class. */
-RUBY_EXTERN VALUE rb_cInteger;                /**< `Module` class. */
-RUBY_EXTERN VALUE rb_cMatch;                  /**< `MatchData` class. */
-RUBY_EXTERN VALUE rb_cMethod;                 /**< `Method` class. */
-RUBY_EXTERN VALUE rb_cModule;                 /**< `Module` class. */
-RUBY_EXTERN VALUE rb_cRefinement;             /**< `Refinement` class. */
-RUBY_EXTERN VALUE rb_cNameErrorMesg;          /**< `NameError::Message` class. */
-RUBY_EXTERN VALUE rb_cNilClass;               /**< `NilClass` class. */
-RUBY_EXTERN VALUE rb_cNumeric;                /**< `Numeric` class. */
-RUBY_EXTERN VALUE rb_cProc;                   /**< `Proc` class. */
-RUBY_EXTERN VALUE rb_cRandom;                 /**< `Random` class. */
-RUBY_EXTERN VALUE rb_cRange;                  /**< `Range` class. */
-RUBY_EXTERN VALUE rb_cRational;               /**< `Rational` class. */
-RUBY_EXTERN VALUE rb_cRegexp;                 /**< `Regexp` class. */
-RUBY_EXTERN VALUE rb_cStat;                   /**< `File::Stat` class. */
-RUBY_EXTERN VALUE rb_cString;                 /**< `String` class. */
-RUBY_EXTERN VALUE rb_cStruct;                 /**< `Struct` class. */
-RUBY_EXTERN VALUE rb_cSymbol;                 /**< `Sumbol` class. */
-RUBY_EXTERN VALUE rb_cThread;                 /**< `Thread` class. */
-RUBY_EXTERN VALUE rb_cTime;                   /**< `Time` class. */
-RUBY_EXTERN VALUE rb_cTrueClass;              /**< `TrueClass` class. */
-RUBY_EXTERN VALUE rb_cUnboundMethod;          /**< `UnboundMethod` class. */
+RUBY_EXTERN VALUE rb_cBasicObject;   /**< `BasicObject` class. */
+RUBY_EXTERN VALUE rb_cObject;        /**< `Object` class. */
+RUBY_EXTERN VALUE rb_cArray;         /**< `Array` class. */
+RUBY_EXTERN VALUE rb_cBinding;       /**< `Binding` class. */
+RUBY_EXTERN VALUE rb_cClass;         /**< `Class` class. */
+RUBY_EXTERN VALUE rb_cDir;           /**< `Dir` class. */
+RUBY_EXTERN VALUE rb_cEncoding;      /**< `Encoding` class. */
+RUBY_EXTERN VALUE rb_cEnumerator;    /**< `Enumerator` class. */
+RUBY_EXTERN VALUE rb_cFalseClass;    /**< `FalseClass` class. */
+RUBY_EXTERN VALUE rb_cFile;          /**< `File` class. */
+RUBY_EXTERN VALUE rb_cComplex;       /**< `Complex` class. */
+RUBY_EXTERN VALUE rb_cFloat;         /**< `Float` class. */
+RUBY_EXTERN VALUE rb_cHash;          /**< `Hash` class. */
+RUBY_EXTERN VALUE rb_cIO;            /**< `IO` class. */
+RUBY_EXTERN VALUE rb_cInteger;       /**< `Module` class. */
+RUBY_EXTERN VALUE rb_cMatch;         /**< `MatchData` class. */
+RUBY_EXTERN VALUE rb_cMethod;        /**< `Method` class. */
+RUBY_EXTERN VALUE rb_cModule;        /**< `Module` class. */
+RUBY_EXTERN VALUE rb_cRefinement;    /**< `Refinement` class. */
+RUBY_EXTERN VALUE rb_cNameErrorMesg; /**< `NameError::Message` class. */
+RUBY_EXTERN VALUE rb_cNilClass;      /**< `NilClass` class. */
+RUBY_EXTERN VALUE rb_cNumeric;       /**< `Numeric` class. */
+RUBY_EXTERN VALUE rb_cProc;          /**< `Proc` class. */
+RUBY_EXTERN VALUE rb_cRandom;        /**< `Random` class. */
+RUBY_EXTERN VALUE rb_cRange;         /**< `Range` class. */
+RUBY_EXTERN VALUE rb_cRational;      /**< `Rational` class. */
+RUBY_EXTERN VALUE rb_cRegexp;        /**< `Regexp` class. */
+RUBY_EXTERN VALUE rb_cStat;          /**< `File::Stat` class. */
+RUBY_EXTERN VALUE rb_cString;        /**< `String` class. */
+RUBY_EXTERN VALUE rb_cStruct;        /**< `Struct` class. */
+RUBY_EXTERN VALUE rb_cSymbol;        /**< `Sumbol` class. */
+RUBY_EXTERN VALUE rb_cThread;        /**< `Thread` class. */
+RUBY_EXTERN VALUE rb_cTime;          /**< `Time` class. */
+RUBY_EXTERN VALUE rb_cTrueClass;     /**< `TrueClass` class. */
+RUBY_EXTERN VALUE rb_cUnboundMethod; /**< `UnboundMethod` class. */
 
 /**
  * @}
@@ -138,12 +138,12 @@ RUBY_EXTERN VALUE rb_eEncCompatError;            /**< `Encoding::CompatibilityEr
 RUBY_EXTERN VALUE rb_eNoMatchingPatternError;    /**< `NoMatchingPatternError` exception. */
 RUBY_EXTERN VALUE rb_eNoMatchingPatternKeyError; /**< `NoMatchingPatternKeyError` exception. */
 
-RUBY_EXTERN VALUE rb_eScriptError;               /**< `ScriptError` exception. */
-RUBY_EXTERN VALUE rb_eNameError;                 /**< `NameError` exception. */
-RUBY_EXTERN VALUE rb_eSyntaxError;               /**< `SyntaxError` exception. */
-RUBY_EXTERN VALUE rb_eLoadError;                 /**< `LoadError` exception. */
+RUBY_EXTERN VALUE rb_eScriptError; /**< `ScriptError` exception. */
+RUBY_EXTERN VALUE rb_eNameError;   /**< `NameError` exception. */
+RUBY_EXTERN VALUE rb_eSyntaxError; /**< `SyntaxError` exception. */
+RUBY_EXTERN VALUE rb_eLoadError;   /**< `LoadError` exception. */
 
-RUBY_EXTERN VALUE rb_eMathDomainError;           /**< `Math::DomainError` exception. */
+RUBY_EXTERN VALUE rb_eMathDomainError; /**< `Math::DomainError` exception. */
 
 /**
  * @}
@@ -151,9 +151,9 @@ RUBY_EXTERN VALUE rb_eMathDomainError;           /**< `Math::DomainError` except
  * @{
  */
 
-RUBY_EXTERN VALUE rb_stdin;                      /**< `STDIN` constant. */
-RUBY_EXTERN VALUE rb_stdout;                     /**< `STDOUT` constant. */
-RUBY_EXTERN VALUE rb_stderr;                     /**< `STDERR` constant. */
+RUBY_EXTERN VALUE rb_stdin;  /**< `STDIN` constant. */
+RUBY_EXTERN VALUE rb_stdout; /**< `STDOUT` constant. */
+RUBY_EXTERN VALUE rb_stderr; /**< `STDERR` constant. */
 
 RBIMPL_ATTR_PURE()
 /**
@@ -171,7 +171,7 @@ RBIMPL_ATTR_PURE()
 static inline VALUE
 rb_class_of(VALUE obj)
 {
-    if (! RB_SPECIAL_CONST_P(obj)) {
+    if (!RB_SPECIAL_CONST_P(obj)) {
         return RBASIC_CLASS(obj);
     }
     else if (obj == RUBY_Qfalse) {

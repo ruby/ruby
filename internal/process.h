@@ -1,4 +1,4 @@
-#ifndef INTERNAL_PROCESS_H                               /*-*-C-*-vi:se ft=c:*/
+#ifndef INTERNAL_PROCESS_H /*-*-C-*-vi:se ft=c:*/
 #define INTERNAL_PROCESS_H
 /**
  * @author     Ruby developers <ruby-core@ruby-lang.org>
@@ -8,20 +8,20 @@
  *             file COPYING are met.  Consult the file for details.
  * @brief      Internal header for Process.
  */
-#include "ruby/internal/config.h"      /* for rb_pid_t */
-#include <stddef.h>             /* for size_t */
+#include "ruby/internal/config.h" /* for rb_pid_t */
+#include <stddef.h>               /* for size_t */
 
 #ifdef HAVE_SYS_TYPES_H
-# include <sys/types.h>         /* for mode_t */
+#    include <sys/types.h> /* for mode_t */
 #endif
 
 #ifdef _WIN32
-# include "ruby/win32.h"        /* for mode_t */
+#    include "ruby/win32.h" /* for mode_t */
 #endif
 
-#include "ruby/ruby.h"          /* for VALUE */
-#include "internal/imemo.h"     /* for RB_IMEMO_TMPBUF_PTR */
-#include "internal/warnings.h"  /* for COMPILER_WARNING_PUSH */
+#include "internal/imemo.h"    /* for RB_IMEMO_TMPBUF_PTR */
+#include "internal/warnings.h" /* for COMPILER_WARNING_PUSH */
+#include "ruby/ruby.h"         /* for VALUE */
 
 #define RB_MAX_GROUPS (65536)
 
@@ -59,8 +59,8 @@ struct rb_execarg {
     unsigned exception_given : 1;
     struct rb_process_status *status;
     struct waitpid_state *waitpid_state; /* for async process management */
-    rb_pid_t pgroup_pgid; /* asis(-1), new pgroup(0), specified pgroup (0<V). */
-    VALUE rlimit_limits; /* Qfalse or [[rtype, softlim, hardlim], ...] */
+    rb_pid_t pgroup_pgid;                /* asis(-1), new pgroup(0), specified pgroup (0<V). */
+    VALUE rlimit_limits;                 /* Qfalse or [[rtype, softlim, hardlim], ...] */
     mode_t umask_mask;
     rb_uid_t uid;
     rb_gid_t gid;
@@ -82,20 +82,21 @@ static inline size_t ARGVSTR2ARGC(VALUE argv_str);
 
 #ifdef HAVE_PWD_H
 VALUE rb_getlogin(void);
-VALUE rb_getpwdirnam_for_login(VALUE login);  /* read as: "get pwd db home dir by username for login" */
-VALUE rb_getpwdiruid(void);                   /* read as: "get pwd db home dir for getuid()" */
+VALUE rb_getpwdirnam_for_login(VALUE login); /* read as: "get pwd db home dir by username for login" */
+VALUE rb_getpwdiruid(void);                  /* read as: "get pwd db home dir for getuid()" */
 #endif
 
 RUBY_SYMBOL_EXPORT_BEGIN
 /* process.c (export) */
 int rb_exec_async_signal_safe(const struct rb_execarg *e, char *errmsg, size_t errmsg_buflen);
-rb_pid_t rb_fork_async_signal_safe(int *status, int (*chfunc)(void*, char *, size_t), void *charg, VALUE fds, char *errmsg, size_t errmsg_buflen);
+rb_pid_t rb_fork_async_signal_safe(
+    int *status, int (*chfunc)(void *, char *, size_t), void *charg, VALUE fds, char *errmsg, size_t errmsg_buflen);
 VALUE rb_execarg_new(int argc, const VALUE *argv, int accept_shell, int allow_exc_opt);
 struct rb_execarg *rb_execarg_get(VALUE execarg_obj); /* dangerous.  needs GC guard. */
 int rb_execarg_addopt(VALUE execarg_obj, VALUE key, VALUE val);
 void rb_execarg_parent_start(VALUE execarg_obj);
 void rb_execarg_parent_end(VALUE execarg_obj);
-int rb_execarg_run_options(const struct rb_execarg *e, struct rb_execarg *s, char* errmsg, size_t errmsg_buflen);
+int rb_execarg_run_options(const struct rb_execarg *e, struct rb_execarg *s, char *errmsg, size_t errmsg_buflen);
 VALUE rb_execarg_extract_options(VALUE execarg_obj, VALUE opthash);
 void rb_execarg_setenv(VALUE execarg_obj, VALUE env);
 RUBY_SYMBOL_EXPORT_END
@@ -123,9 +124,9 @@ ARGVSTR2ARGC(VALUE argv_str)
 
 #ifdef HAVE_WORKING_FORK
 COMPILER_WARNING_PUSH
-#if __has_warning("-Wdeprecated-declarations") || RBIMPL_COMPILER_IS(GCC)
-COMPILER_WARNING_IGNORED(-Wdeprecated-declarations)
-#endif
+#    if __has_warning("-Wdeprecated-declarations") || RBIMPL_COMPILER_IS(GCC)
+COMPILER_WARNING_IGNORED(-Wdeprecated - declarations)
+#    endif
 static inline rb_pid_t
 rb_fork(void)
 {

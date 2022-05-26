@@ -1,4 +1,4 @@
-#ifndef RBIMPL_ATTR_ARTIFICIAL_H                     /*-*-C++-*-vi:se ft=cpp:*/
+#ifndef RBIMPL_ATTR_ARTIFICIAL_H /*-*-C++-*-vi:se ft=cpp:*/
 #define RBIMPL_ATTR_ARTIFICIAL_H
 /**
  * @file
@@ -38,9 +38,9 @@
 
 /** Wraps (or simulates) `__attribute__((artificial))` */
 #if RBIMPL_HAS_ATTRIBUTE(artificial)
-# define RBIMPL_ATTR_ARTIFICIAL() __attribute__((__artificial__))
+#    define RBIMPL_ATTR_ARTIFICIAL() __attribute__((__artificial__))
 #else
-# define RBIMPL_ATTR_ARTIFICIAL() /* void */
+#    define RBIMPL_ATTR_ARTIFICIAL() /* void */
 #endif
 
 #endif /* RBIMPL_ATTR_ARTIFICIAL_H */

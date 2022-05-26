@@ -1,4 +1,4 @@
-#ifndef RBIMPL_HAS_DECLSPEC_ATTRIBUTE_H              /*-*-C++-*-vi:se ft=cpp:*/
+#ifndef RBIMPL_HAS_DECLSPEC_ATTRIBUTE_H /*-*-C++-*-vi:se ft=cpp:*/
 #define RBIMPL_HAS_DECLSPEC_ATTRIBUTE_H
 /**
  * @file
@@ -24,24 +24,24 @@
 
 /** Wraps (or simulates) `__has_declspec_attribute`. */
 #if defined(__has_declspec_attribute)
-# define RBIMPL_HAS_DECLSPEC_ATTRIBUTE(_) __has_declspec_attribute(_)
+#    define RBIMPL_HAS_DECLSPEC_ATTRIBUTE(_) __has_declspec_attribute(_)
 #else
-# define RBIMPL_HAS_DECLSPEC_ATTRIBUTE(_) (RBIMPL_HAS_DECLSPEC_ATTRIBUTE_ ## _)
-# define RBIMPL_HAS_DECLSPEC_ATTRIBUTE_align       RBIMPL_COMPILER_SINCE(MSVC, 8, 0, 0)
-# define RBIMPL_HAS_DECLSPEC_ATTRIBUTE_deprecated  RBIMPL_COMPILER_SINCE(MSVC,13, 0, 0)
-# define RBIMPL_HAS_DECLSPEC_ATTRIBUTE_dllexport   RBIMPL_COMPILER_SINCE(MSVC, 8, 0, 0)
-# define RBIMPL_HAS_DECLSPEC_ATTRIBUTE_dllimport   RBIMPL_COMPILER_SINCE(MSVC, 8, 0, 0)
-# define RBIMPL_HAS_DECLSPEC_ATTRIBUTE_empty_bases RBIMPL_COMPILER_SINCE(MSVC,19, 0, 23918)
-# define RBIMPL_HAS_DECLSPEC_ATTRIBUTE_noalias     RBIMPL_COMPILER_SINCE(MSVC, 8, 0, 0)
-# define RBIMPL_HAS_DECLSPEC_ATTRIBUTE_noinline    RBIMPL_COMPILER_SINCE(MSVC,13, 0, 0)
-# define RBIMPL_HAS_DECLSPEC_ATTRIBUTE_noreturn    RBIMPL_COMPILER_SINCE(MSVC,11, 0, 0)
-# define RBIMPL_HAS_DECLSPEC_ATTRIBUTE_nothrow     RBIMPL_COMPILER_SINCE(MSVC, 8, 0, 0)
-# define RBIMPL_HAS_DECLSPEC_ATTRIBUTE_restrict    RBIMPL_COMPILER_SINCE(MSVC,14, 0, 0)
-# /* Note that "8, 0, 0" might be inaccurate. */
-# if ! defined(__cplusplus)
-#  /* Clang has this in both C/C++, but MSVC has this in C++ only.*/
-#  undef RBIMPL_HAS_DECLSPEC_ATTRIBUTE_nothrow
-# endif
+#    define RBIMPL_HAS_DECLSPEC_ATTRIBUTE(_) (RBIMPL_HAS_DECLSPEC_ATTRIBUTE_##_)
+#    define RBIMPL_HAS_DECLSPEC_ATTRIBUTE_align RBIMPL_COMPILER_SINCE(MSVC, 8, 0, 0)
+#    define RBIMPL_HAS_DECLSPEC_ATTRIBUTE_deprecated RBIMPL_COMPILER_SINCE(MSVC, 13, 0, 0)
+#    define RBIMPL_HAS_DECLSPEC_ATTRIBUTE_dllexport RBIMPL_COMPILER_SINCE(MSVC, 8, 0, 0)
+#    define RBIMPL_HAS_DECLSPEC_ATTRIBUTE_dllimport RBIMPL_COMPILER_SINCE(MSVC, 8, 0, 0)
+#    define RBIMPL_HAS_DECLSPEC_ATTRIBUTE_empty_bases RBIMPL_COMPILER_SINCE(MSVC, 19, 0, 23918)
+#    define RBIMPL_HAS_DECLSPEC_ATTRIBUTE_noalias RBIMPL_COMPILER_SINCE(MSVC, 8, 0, 0)
+#    define RBIMPL_HAS_DECLSPEC_ATTRIBUTE_noinline RBIMPL_COMPILER_SINCE(MSVC, 13, 0, 0)
+#    define RBIMPL_HAS_DECLSPEC_ATTRIBUTE_noreturn RBIMPL_COMPILER_SINCE(MSVC, 11, 0, 0)
+#    define RBIMPL_HAS_DECLSPEC_ATTRIBUTE_nothrow RBIMPL_COMPILER_SINCE(MSVC, 8, 0, 0)
+#    define RBIMPL_HAS_DECLSPEC_ATTRIBUTE_restrict RBIMPL_COMPILER_SINCE(MSVC, 14, 0, 0)
+#    /* Note that "8, 0, 0" might be inaccurate. */
+#    if !defined(__cplusplus)
+#        /* Clang has this in both C/C++, but MSVC has this in C++ only.*/
+#        undef RBIMPL_HAS_DECLSPEC_ATTRIBUTE_nothrow
+#    endif
 #endif
 
 #endif /* RBIMPL_HAS_DECLSPEC_ATTRIBUTE_H */

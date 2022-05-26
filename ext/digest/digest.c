@@ -102,10 +102,7 @@ hexencode_str_new(VALUE str_digest)
     size_t i;
     VALUE str;
     char *p;
-    static const char hex[] = {
-        '0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
-        'a', 'b', 'c', 'd', 'e', 'f'
-    };
+    static const char hex[] = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f'};
 
     StringValue(str_digest);
     digest = RSTRING_PTR(str_digest);
@@ -120,7 +117,7 @@ hexencode_str_new(VALUE str_digest)
     for (i = 0, p = RSTRING_PTR(str); i < digest_len; i++) {
         unsigned char byte = digest[i];
 
-        p[i + i]     = hex[byte >> 4];
+        p[i + i] = hex[byte >> 4];
         p[i + i + 1] = hex[byte & 0x0f];
     }
 
@@ -153,8 +150,7 @@ NORETURN(static void rb_digest_instance_method_unimpl(VALUE self, const char *me
 static void
 rb_digest_instance_method_unimpl(VALUE self, const char *method)
 {
-    rb_raise(rb_eRuntimeError, "%s does not implement %s()",
-	     rb_obj_classname(self), method);
+    rb_raise(rb_eRuntimeError, "%s does not implement %s()", rb_obj_classname(self), method);
 }
 
 /*
@@ -249,7 +245,8 @@ rb_digest_instance_digest(int argc, VALUE *argv, VALUE self)
         rb_funcall(self, id_update, 1, str);
         value = rb_funcall(self, id_finish, 0);
         rb_funcall(self, id_reset, 0);
-    } else {
+    }
+    else {
         value = rb_funcall(rb_obj_clone(self), id_finish, 0);
     }
 
@@ -294,7 +291,8 @@ rb_digest_instance_hexdigest(int argc, VALUE *argv, VALUE self)
         rb_funcall(self, id_update, 1, str);
         value = rb_funcall(self, id_finish, 0);
         rb_funcall(self, id_reset, 0);
-    } else {
+    }
+    else {
         value = rb_funcall(rb_obj_clone(self), id_finish, 0);
     }
 
@@ -339,7 +337,7 @@ static VALUE
 rb_digest_instance_inspect(VALUE self)
 {
     VALUE str;
-    size_t digest_len = 32;	/* about this size at least */
+    size_t digest_len = 32; /* about this size at least */
     const char *cname;
 
     cname = rb_obj_classname(self);
@@ -372,7 +370,8 @@ rb_digest_instance_equal(VALUE self, VALUE other)
     if (rb_obj_is_kind_of(other, rb_mDigest_Instance) == Qtrue) {
         str1 = rb_digest_instance_digest(0, 0, self);
         str2 = rb_digest_instance_digest(0, 0, other);
-    } else {
+    }
+    else {
         str1 = rb_digest_instance_to_s(self);
         str2 = rb_check_string_type(other);
         if (NIL_P(str2)) return Qfalse;
@@ -382,9 +381,8 @@ rb_digest_instance_equal(VALUE self, VALUE other)
     StringValue(str1);
     StringValue(str2);
 
-    if (RSTRING_LEN(str1) == RSTRING_LEN(str2) &&
-	rb_str_cmp(str1, str2) == 0) {
-	return Qtrue;
+    if (RSTRING_LEN(str1) == RSTRING_LEN(str2) && rb_str_cmp(str1, str2) == 0) {
+        return Qtrue;
     }
     return Qfalse;
 }
@@ -551,17 +549,14 @@ get_digest_base_metadata(VALUE klass)
         }
     }
 
-    if (NIL_P(p))
-        rb_raise(rb_eRuntimeError, "Digest::Base cannot be directly inherited in Ruby");
+    if (NIL_P(p)) rb_raise(rb_eRuntimeError, "Digest::Base cannot be directly inherited in Ruby");
 
     if (!RB_TYPE_P(obj, T_DATA) || RTYPEDDATA_P(obj)) {
-      wrong:
+    wrong:
         if (p == klass)
-            rb_raise(rb_eTypeError, "%"PRIsVALUE"::metadata is not initialized properly",
-                     klass);
+            rb_raise(rb_eTypeError, "%" PRIsVALUE "::metadata is not initialized properly", klass);
         else
-            rb_raise(rb_eTypeError, "%"PRIsVALUE"(%"PRIsVALUE")::metadata is not initialized properly",
-                     klass, p);
+            rb_raise(rb_eTypeError, "%" PRIsVALUE "(%" PRIsVALUE ")::metadata is not initialized properly", klass, p);
     }
 
 #undef RUBY_UNTYPED_DATA_WARNING
@@ -571,14 +566,14 @@ get_digest_base_metadata(VALUE klass)
     if (!algo) goto wrong;
 
     switch (algo->api_version) {
-      case 3:
+    case 3:
         break;
 
-      /*
-       * put conversion here if possible when API is updated
-       */
+        /*
+         * put conversion here if possible when API is updated
+         */
 
-      default:
+    default:
         rb_raise(rb_eRuntimeError, "Incompatible digest API version");
     }
 
@@ -593,16 +588,21 @@ get_digest_obj_metadata(VALUE obj)
 
 static const rb_data_type_t digest_type = {
     "digest",
-    {0, RUBY_TYPED_DEFAULT_FREE, 0,},
-    0, 0,
-    (RUBY_TYPED_FREE_IMMEDIATELY|RUBY_TYPED_WB_PROTECTED),
+    {
+        0,
+        RUBY_TYPED_DEFAULT_FREE,
+        0,
+    },
+    0,
+    0,
+    (RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED),
 };
 
 static inline void
 algo_init(const rb_digest_metadata_t *algo, void *pctx)
 {
     if (algo->init_func(pctx) != 1) {
-	rb_raise(rb_eRuntimeError, "Digest initialization failed.");
+        rb_raise(rb_eRuntimeError, "Digest initialization failed.");
     }
 }
 
@@ -614,7 +614,7 @@ rb_digest_base_alloc(VALUE klass)
     void *pctx;
 
     if (klass == rb_cDigest_Base) {
-	rb_raise(rb_eNotImpError, "Digest::Base is an abstract class");
+        rb_raise(rb_eNotImpError, "Digest::Base is an abstract class");
     }
 
     algo = get_digest_base_metadata(klass);
@@ -638,8 +638,7 @@ rb_digest_base_copy(VALUE copy, VALUE obj)
     rb_check_frozen(copy);
 
     algo = get_digest_obj_metadata(copy);
-    if (algo != get_digest_obj_metadata(obj))
-	rb_raise(rb_eTypeError, "different algorithms");
+    if (algo != get_digest_obj_metadata(obj)) rb_raise(rb_eTypeError, "different algorithms");
 
     TypedData_Get_Struct(obj, void, &digest_type, pctx1);
     TypedData_Get_Struct(copy, void, &digest_type, pctx2);
@@ -747,13 +746,13 @@ void
 Init_digest(void)
 {
 #undef rb_intern
-    id_reset           = rb_intern("reset");
-    id_update          = rb_intern("update");
-    id_finish          = rb_intern("finish");
-    id_digest          = rb_intern("digest");
-    id_hexdigest       = rb_intern("hexdigest");
-    id_digest_length   = rb_intern("digest_length");
-    id_metadata        = rb_id_metadata();
+    id_reset = rb_intern("reset");
+    id_update = rb_intern("update");
+    id_finish = rb_intern("finish");
+    id_digest = rb_intern("digest");
+    id_hexdigest = rb_intern("hexdigest");
+    id_digest_length = rb_intern("digest_length");
+    id_metadata = rb_id_metadata();
     InitVM(digest);
 }
 
@@ -803,7 +802,7 @@ InitVM_digest(void)
      * class Digest::Class
      */
     rb_cDigest_Class = rb_define_class_under(rb_mDigest, "Class", rb_cObject);
-    rb_define_method(rb_cDigest_Class, "initialize",  rb_digest_class_init, 0);
+    rb_define_method(rb_cDigest_Class, "initialize", rb_digest_class_init, 0);
     rb_include_module(rb_cDigest_Class, rb_mDigest_Instance);
 
     /* class methods */
@@ -815,7 +814,7 @@ InitVM_digest(void)
 
     rb_define_alloc_func(rb_cDigest_Base, rb_digest_base_alloc);
 
-    rb_define_method(rb_cDigest_Base, "initialize_copy",  rb_digest_base_copy, 1);
+    rb_define_method(rb_cDigest_Base, "initialize_copy", rb_digest_base_copy, 1);
     rb_define_method(rb_cDigest_Base, "reset", rb_digest_base_reset, 0);
     rb_define_method(rb_cDigest_Base, "update", rb_digest_base_update, 1);
     rb_define_method(rb_cDigest_Base, "<<", rb_digest_base_update, 1);

@@ -22,11 +22,13 @@ monitor_memsize(const void *ptr)
     return sizeof(struct rb_monitor);
 }
 
-static const rb_data_type_t monitor_data_type = {
-    "monitor",
-    {monitor_mark, RUBY_TYPED_DEFAULT_FREE, monitor_memsize,},
-    0, 0, RUBY_TYPED_FREE_IMMEDIATELY|RUBY_TYPED_WB_PROTECTED
-};
+static const rb_data_type_t monitor_data_type = {"monitor",
+    {
+        monitor_mark,
+        RUBY_TYPED_DEFAULT_FREE,
+        monitor_memsize,
+    },
+    0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED};
 
 static VALUE
 monitor_alloc(VALUE klass)
@@ -177,8 +179,7 @@ monitor_wait_for_cond(VALUE monitor, VALUE cond, VALUE timeout)
         count,
     };
 
-    return rb_ensure(monitor_wait_for_cond_body, (VALUE)&data,
-                     monitor_enter_for_cond, (VALUE)&data);
+    return rb_ensure(monitor_wait_for_cond_body, (VALUE)&data, monitor_enter_for_cond, (VALUE)&data);
 }
 
 static VALUE

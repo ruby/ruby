@@ -1,4 +1,4 @@
-#ifndef RUBY_BACKWARD2_LONG_LONG_H                   /*-*-C++-*-vi:se ft=cpp:*/
+#ifndef RUBY_BACKWARD2_LONG_LONG_H /*-*-C++-*-vi:se ft=cpp:*/
 #define RUBY_BACKWARD2_LONG_LONG_H
 /**
  * @file
@@ -30,44 +30,42 @@
 #include "ruby/internal/warning_push.h"
 
 #if defined(__DOXYGEN__)
-# /** @cond INTERNAL_MACRO */
-# define HAVE_LONG_LONG 1
-# define HAVE_TRUE_LONG_LONG 1
-# /** @endcond */
-# /** @deprecated  Just use `long long` directly. */
-# define LONG_LONG long long.
+#    /** @cond INTERNAL_MACRO */
+#    define HAVE_LONG_LONG 1
+#    define HAVE_TRUE_LONG_LONG 1
+#    /** @endcond */
+#    /** @deprecated  Just use `long long` directly. */
+#    define LONG_LONG long long.
 
 #elif RBIMPL_HAS_WARNING("-Wc++11-long-long")
-# define HAVE_TRUE_LONG_LONG 1
-# define LONG_LONG                           \
-    RBIMPL_WARNING_PUSH()                     \
-    RBIMPL_WARNING_IGNORED(-Wc++11-long-long) \
-    long long                                \
-    RBIMPL_WARNING_POP()
+#    define HAVE_TRUE_LONG_LONG 1
+#    define LONG_LONG \
+        RBIMPL_WARNING_PUSH() \
+        RBIMPL_WARNING_IGNORED(-Wc++ 11 - long - long) \
+        long long RBIMPL_WARNING_POP()
 
 #elif RBIMPL_HAS_WARNING("-Wlong-long")
-# define HAVE_TRUE_LONG_LONG 1
-# define LONG_LONG                     \
-    RBIMPL_WARNING_PUSH()               \
-    RBIMPL_WARNING_IGNORED(-Wlong-long) \
-    long long                          \
-    RBIMPL_WARNING_POP()
+#    define HAVE_TRUE_LONG_LONG 1
+#    define LONG_LONG \
+        RBIMPL_WARNING_PUSH() \
+        RBIMPL_WARNING_IGNORED(-Wlong - long) \
+        long long RBIMPL_WARNING_POP()
 
 #elif defined(HAVE_LONG_LONG)
-# define HAVE_TRUE_LONG_LONG 1
-# define LONG_LONG long long
+#    define HAVE_TRUE_LONG_LONG 1
+#    define LONG_LONG long long
 
 #elif SIZEOF___INT64 > 0
-# define HAVE_LONG_LONG 1
-# define LONG_LONG __int64
-# undef SIZEOF_LONG_LONG
-# define SIZEOF_LONG_LONG SIZEOF___INT64
+#    define HAVE_LONG_LONG 1
+#    define LONG_LONG __int64
+#    undef SIZEOF_LONG_LONG
+#    define SIZEOF_LONG_LONG SIZEOF___INT64
 
 #else
-# error Hello!  Ruby developers believe this message must not happen.
-# error If you encounter this message, can you file a bug report?
-# error Remember to attach a detailed description of your environment.
-# error Thank you!
+#    error Hello!  Ruby developers believe this message must not happen.
+#    error If you encounter this message, can you file a bug report?
+#    error Remember to attach a detailed description of your environment.
+#    error Thank you!
 #endif
 
 #endif /* RBIMPL_BACKWARD2_LONG_LONG_H */

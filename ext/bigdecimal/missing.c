@@ -1,21 +1,20 @@
 #include <ruby/ruby.h>
 
 #ifdef HAVE_RUBY_ATOMIC_H
-# include <ruby/atomic.h>
+#    include <ruby/atomic.h>
 #endif
 
 #ifdef RUBY_ATOMIC_PTR_CAS
-# define ATOMIC_PTR_CAS(var, old, new) RUBY_ATOMIC_PTR_CAS(var, old, new)
+#    define ATOMIC_PTR_CAS(var, old, new) RUBY_ATOMIC_PTR_CAS(var, old, new)
 #endif
 
 #if defined(__GNUC__) && (__GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 6))
 /* GCC warns about unknown sanitizer, which is annoying. */
-# undef NO_SANITIZE
-# define NO_SANITIZE(x, y) \
-    _Pragma("GCC diagnostic push") \
-    _Pragma("GCC diagnostic ignored \"-Wattributes\"") \
-    __attribute__((__no_sanitize__(x))) y; \
-    _Pragma("GCC diagnostic pop")
+#    undef NO_SANITIZE
+#    define NO_SANITIZE(x, y) \
+        _Pragma("GCC diagnostic push") _Pragma("GCC diagnostic ignored \"-Wattributes\"") \
+            __attribute__((__no_sanitize__(x))) y; \
+        _Pragma("GCC diagnostic pop")
 #endif
 
 #undef strtod

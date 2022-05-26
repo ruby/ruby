@@ -1,23 +1,23 @@
 #ifndef _GENERATOR_H_
 #define _GENERATOR_H_
 
-#include <math.h>
 #include <ctype.h>
+#include <math.h>
 
 #include "ruby.h"
 
 #ifdef HAVE_RUBY_RE_H
-#include "ruby/re.h"
+#    include "ruby/re.h"
 #else
-#include "re.h"
+#    include "re.h"
 #endif
 
 #ifndef rb_intern_str
-#define rb_intern_str(string) SYM2ID(rb_str_intern(string))
+#    define rb_intern_str(string) SYM2ID(rb_str_intern(string))
 #endif
 
 #ifndef rb_obj_instance_variables
-#define rb_obj_instance_variables(object) rb_funcall(object, rb_intern("instance_variables"), 0)
+#    define rb_obj_instance_variables(object) rb_funcall(object, rb_intern("instance_variables"), 0)
 #endif
 
 #define option_given_p(opts, key) RTEST(rb_funcall(opts, i_key_p, 1, key))
@@ -26,9 +26,9 @@
 
 #define UNI_STRICT_CONVERSION 1
 
-typedef unsigned long  UTF32; /* at least 32 bits */
+typedef unsigned long UTF32;  /* at least 32 bits */
 typedef unsigned short UTF16; /* at least 16 bits */
-typedef unsigned char  UTF8;  /* typically 8 bits */
+typedef unsigned char UTF8;   /* typically 8 bits */
 
 #define UNI_REPLACEMENT_CHAR (UTF32)0x0000FFFD
 #define UNI_MAX_BMP (UTF32)0x0000FFFF
@@ -36,12 +36,12 @@ typedef unsigned char  UTF8;  /* typically 8 bits */
 #define UNI_MAX_UTF32 (UTF32)0x7FFFFFFF
 #define UNI_MAX_LEGAL_UTF32 (UTF32)0x0010FFFF
 
-#define UNI_SUR_HIGH_START  (UTF32)0xD800
-#define UNI_SUR_HIGH_END    (UTF32)0xDBFF
-#define UNI_SUR_LOW_START   (UTF32)0xDC00
-#define UNI_SUR_LOW_END     (UTF32)0xDFFF
+#define UNI_SUR_HIGH_START (UTF32)0xD800
+#define UNI_SUR_HIGH_END (UTF32)0xDBFF
+#define UNI_SUR_LOW_START (UTF32)0xDC00
+#define UNI_SUR_LOW_END (UTF32)0xDFFF
 
-static const int halfShift  = 10; /* used for shifting by 10 bits */
+static const int halfShift = 10; /* used for shifting by 10 bits */
 
 static const UTF32 halfBase = 0x0010000UL;
 static const UTF32 halfMask = 0x3FFUL;
@@ -77,23 +77,22 @@ typedef struct JSON_Generator_StateStruct {
     long buffer_initial_length;
 } JSON_Generator_State;
 
-#define GET_STATE_TO(self, state) \
-    TypedData_Get_Struct(self, JSON_Generator_State, &JSON_Generator_State_type, state)
+#define GET_STATE_TO(self, state) TypedData_Get_Struct(self, JSON_Generator_State, &JSON_Generator_State_type, state)
 
-#define GET_STATE(self)                       \
-    JSON_Generator_State *state;              \
+#define GET_STATE(self) \
+    JSON_Generator_State *state; \
     GET_STATE_TO(self, state)
 
-#define GENERATE_JSON(type)                                                                     \
-    FBuffer *buffer;                                                                            \
-    VALUE Vstate;                                                                               \
-    JSON_Generator_State *state;                                                                \
-                                                                                                \
-    rb_scan_args(argc, argv, "01", &Vstate);                                                    \
-    Vstate = cState_from_state_s(cState, Vstate);                                               \
-    TypedData_Get_Struct(Vstate, JSON_Generator_State, &JSON_Generator_State_type, state);	\
-    buffer = cState_prepare_buffer(Vstate);                                                     \
-    generate_json_##type(buffer, Vstate, state, self);                                          \
+#define GENERATE_JSON(type) \
+    FBuffer *buffer; \
+    VALUE Vstate; \
+    JSON_Generator_State *state; \
+\
+    rb_scan_args(argc, argv, "01", &Vstate); \
+    Vstate = cState_from_state_s(cState, Vstate); \
+    TypedData_Get_Struct(Vstate, JSON_Generator_State, &JSON_Generator_State_type, state); \
+    buffer = cState_prepare_buffer(Vstate); \
+    generate_json_##type(buffer, Vstate, state, self); \
     return fbuffer_to_s(buffer)
 
 static VALUE mHash_to_json(int argc, VALUE *argv, VALUE self);
@@ -155,8 +154,9 @@ static VALUE cState_escape_slash(VALUE self);
 static VALUE cState_escape_slash_set(VALUE self, VALUE depth);
 static FBuffer *cState_prepare_buffer(VALUE self);
 #ifndef ZALLOC
-#define ZALLOC(type) ((type *)ruby_zalloc(sizeof(type)))
-static inline void *ruby_zalloc(size_t n)
+#    define ZALLOC(type) ((type *)ruby_zalloc(sizeof(type)))
+static inline void *
+ruby_zalloc(size_t n)
 {
     void *p = ruby_xmalloc(n);
     memset(p, 0, n);
@@ -165,10 +165,11 @@ static inline void *ruby_zalloc(size_t n)
 #endif
 #ifdef TypedData_Make_Struct
 static const rb_data_type_t JSON_Generator_State_type;
-#define NEW_TYPEDDATA_WRAPPER 1
+#    define NEW_TYPEDDATA_WRAPPER 1
 #else
-#define TypedData_Make_Struct(klass, type, ignore, json) Data_Make_Struct(klass, type, NULL, State_free, json)
-#define TypedData_Get_Struct(self, JSON_Generator_State, ignore, json) Data_Get_Struct(self, JSON_Generator_State, json)
+#    define TypedData_Make_Struct(klass, type, ignore, json) Data_Make_Struct(klass, type, NULL, State_free, json)
+#    define TypedData_Get_Struct(self, JSON_Generator_State, ignore, json) \
+        Data_Get_Struct(self, JSON_Generator_State, json)
 #endif
 
 #endif

@@ -18,23 +18,26 @@ rb_sparc_flush_register_windows(void)
  * https://gcc.gnu.org/onlinedocs/gcc/Alternate-Keywords.html
  */
 #ifndef __GNUC__
-#define __asm__ asm
+#    define __asm__ asm
 #endif
 
     __asm__
 #ifdef __GNUC__
-    __volatile__
+        __volatile__
 #endif
 
 /* This condition should be in sync with one in configure.ac */
 #if defined(__sparcv9) || defined(__sparc_v9__) || defined(__arch64__)
-# ifdef __GNUC__
-    ("flushw" : : : "%o7")
-# else
-    ("flushw")
-# endif /* __GNUC__ */
+#    ifdef __GNUC__
+        ("flushw"
+            :
+            :
+            : "%o7")
+#    else
+        ("flushw")
+#    endif /* __GNUC__ */
 #else
-    ("ta 0x03")
+        ("ta 0x03")
 #endif
-    ;
+            ;
 }

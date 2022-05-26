@@ -8,4 +8,5 @@ ruby_abi_version(void)
 
 void
 Init_abi(void)
-{}
+{
+}

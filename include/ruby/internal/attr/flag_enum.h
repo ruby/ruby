@@ -1,4 +1,4 @@
-#ifndef RBIMPL_ATTR_FLAG_ENUM_H                      /*-*-C++-*-vi:se ft=cpp:*/
+#ifndef RBIMPL_ATTR_FLAG_ENUM_H /*-*-C++-*-vi:se ft=cpp:*/
 #define RBIMPL_ATTR_FLAG_ENUM_H
 /**
  * @file
@@ -25,9 +25,9 @@
 
 /** Wraps (or simulates) `__attribute__((flag_enum)` */
 #if RBIMPL_HAS_ATTRIBUTE(flag_enum)
-# define RBIMPL_ATTR_FLAG_ENUM() __attribute__((__flag_enum__))
+#    define RBIMPL_ATTR_FLAG_ENUM() __attribute__((__flag_enum__))
 #else
-# define RBIMPL_ATTR_FLAG_ENUM() /* void */
+#    define RBIMPL_ATTR_FLAG_ENUM() /* void */
 #endif
 
 #endif /* RBIMPLATTR_FLAG_ENUM_H */

@@ -1,4 +1,4 @@
-#ifndef RUBY_INTERNAL_ENCODING_TRANSCODE_H           /*-*-C++-*-vi:se ft=cpp:*/
+#ifndef RUBY_INTERNAL_ENCODING_TRANSCODE_H /*-*-C++-*-vi:se ft=cpp:*/
 #define RUBY_INTERNAL_ENCODING_TRANSCODE_H
 /**
  * @file
@@ -118,7 +118,7 @@ VALUE rb_str_encode(VALUE str, VALUE to, int ecflags, VALUE ecopts);
  * everything  can  eventually  be  converted  to/from  UTF-8,  which  connects
  * everything.
  */
-int rb_econv_has_convpath_p(const char* from_encoding, const char* to_encoding);
+int rb_econv_has_convpath_p(const char *from_encoding, const char *to_encoding);
 
 /**
  * Identical  to  rb_econv_prepare_opts(),  except it  additionally  takes  the
@@ -176,7 +176,8 @@ rb_econv_t *rb_econv_open(const char *source_encoding, const char *destination_e
  * @retval     otherwise             Allocated struct ::rb_econv_t.
  * @warning    Return value must be passed to rb_econv_close() exactly once.
  */
-rb_econv_t *rb_econv_open_opts(const char *source_encoding, const char *destination_encoding, int ecflags, VALUE ecopts);
+rb_econv_t *rb_econv_open_opts(
+    const char *source_encoding, const char *destination_encoding, int ecflags, VALUE ecopts);
 
 /**
  * Converts a string from an encoding to another.
@@ -194,10 +195,9 @@ rb_econv_t *rb_econv_open_opts(const char *source_encoding, const char *destinat
  * @return         The status of the conversion.
  * @post           `destination_buffer_ptr` holds conversion results.
  */
-rb_econv_result_t rb_econv_convert(rb_econv_t *ec,
-    const unsigned char **source_buffer_ptr, const unsigned char *source_buffer_end,
-    unsigned char **destination_buffer_ptr, unsigned char *destination_buffer_end,
-    int flags);
+rb_econv_result_t rb_econv_convert(rb_econv_t *ec, const unsigned char **source_buffer_ptr,
+    const unsigned char *source_buffer_end, unsigned char **destination_buffer_ptr,
+    unsigned char *destination_buffer_end, int flags);
 
 /**
  * Destructs a converter.  Note that a converter  can have a buffer, and can be
@@ -282,8 +282,7 @@ VALUE rb_econv_open_exc(const char *senc, const char *denc, int ecflags);
  * @note        `str_encoding` can  be anything, and `str`  itself is converted
  *              when necessary.
  */
-int rb_econv_insert_output(rb_econv_t *ec,
-    const unsigned char *str, size_t len, const char *str_encoding);
+int rb_econv_insert_output(rb_econv_t *ec, const unsigned char *str, size_t len, const char *str_encoding);
 
 /**
  * Queries  an encoding  name which  best suits  for rb_econv_insert_output()'s
@@ -458,82 +457,89 @@ enum ruby_econv_flag_type {
      */
 
     /** Mask for error handling related bits. */
-    RUBY_ECONV_ERROR_HANDLER_MASK               = 0x000000ff,
+    RUBY_ECONV_ERROR_HANDLER_MASK = 0x000000ff,
 
     /** Special handling of invalid sequences are there. */
-    RUBY_ECONV_INVALID_MASK                     = 0x0000000f,
+    RUBY_ECONV_INVALID_MASK = 0x0000000f,
 
     /** Invalid sequences shall be replaced. */
-    RUBY_ECONV_INVALID_REPLACE                  = 0x00000002,
+    RUBY_ECONV_INVALID_REPLACE = 0x00000002,
 
     /** Special handling of undefined conversion are there. */
-    RUBY_ECONV_UNDEF_MASK                       = 0x000000f0,
+    RUBY_ECONV_UNDEF_MASK = 0x000000f0,
 
     /** Undefined characters shall be replaced. */
-    RUBY_ECONV_UNDEF_REPLACE                    = 0x00000020,
+    RUBY_ECONV_UNDEF_REPLACE = 0x00000020,
 
     /** Undefined characters shall be escaped. */
-    RUBY_ECONV_UNDEF_HEX_CHARREF                = 0x00000030,
+    RUBY_ECONV_UNDEF_HEX_CHARREF = 0x00000030,
 
     /** Decorators are there. */
-    RUBY_ECONV_DECORATOR_MASK                   = 0x0000ff00,
+    RUBY_ECONV_DECORATOR_MASK = 0x0000ff00,
 
     /** Newline converters are there. */
-    RUBY_ECONV_NEWLINE_DECORATOR_MASK           = 0x00003f00,
+    RUBY_ECONV_NEWLINE_DECORATOR_MASK = 0x00003f00,
 
     /** (Unclear; seems unused). */
-    RUBY_ECONV_NEWLINE_DECORATOR_READ_MASK      = 0x00000f00,
+    RUBY_ECONV_NEWLINE_DECORATOR_READ_MASK = 0x00000f00,
 
     /** (Unclear; seems unused). */
-    RUBY_ECONV_NEWLINE_DECORATOR_WRITE_MASK     = 0x00003000,
+    RUBY_ECONV_NEWLINE_DECORATOR_WRITE_MASK = 0x00003000,
 
     /** Universal newline mode. */
-    RUBY_ECONV_UNIVERSAL_NEWLINE_DECORATOR      = 0x00000100,
+    RUBY_ECONV_UNIVERSAL_NEWLINE_DECORATOR = 0x00000100,
 
     /** CR to CRLF conversion shall happen. */
-    RUBY_ECONV_CRLF_NEWLINE_DECORATOR           = 0x00001000,
+    RUBY_ECONV_CRLF_NEWLINE_DECORATOR = 0x00001000,
 
     /** CRLF to CR conversion shall happen. */
-    RUBY_ECONV_CR_NEWLINE_DECORATOR             = 0x00002000,
+    RUBY_ECONV_CR_NEWLINE_DECORATOR = 0x00002000,
 
     /** Texts shall be XML-escaped. */
-    RUBY_ECONV_XML_TEXT_DECORATOR               = 0x00004000,
+    RUBY_ECONV_XML_TEXT_DECORATOR = 0x00004000,
 
     /** Texts shall be AttrValue escaped */
-    RUBY_ECONV_XML_ATTR_CONTENT_DECORATOR       = 0x00008000,
+    RUBY_ECONV_XML_ATTR_CONTENT_DECORATOR = 0x00008000,
 
     /** (Unclear; seems unused). */
-    RUBY_ECONV_STATEFUL_DECORATOR_MASK          = 0x00f00000,
+    RUBY_ECONV_STATEFUL_DECORATOR_MASK = 0x00f00000,
 
     /** Texts shall be AttrValue escaped. */
-    RUBY_ECONV_XML_ATTR_QUOTE_DECORATOR         = 0x00100000,
+    RUBY_ECONV_XML_ATTR_QUOTE_DECORATOR = 0x00100000,
 
     /** Newline decorator's default. */
-    RUBY_ECONV_DEFAULT_NEWLINE_DECORATOR        =
+    RUBY_ECONV_DEFAULT_NEWLINE_DECORATOR =
 #if defined(RUBY_TEST_CRLF_ENVIRONMENT) || defined(_WIN32)
         RUBY_ECONV_CRLF_NEWLINE_DECORATOR,
 #else
         0,
 #endif
 
-#define ECONV_ERROR_HANDLER_MASK                RUBY_ECONV_ERROR_HANDLER_MASK           /**< @old{RUBY_ECONV_ERROR_HANDLER_MASK} */
-#define ECONV_INVALID_MASK                      RUBY_ECONV_INVALID_MASK                 /**< @old{RUBY_ECONV_INVALID_MASK} */
-#define ECONV_INVALID_REPLACE                   RUBY_ECONV_INVALID_REPLACE              /**< @old{RUBY_ECONV_INVALID_REPLACE} */
-#define ECONV_UNDEF_MASK                        RUBY_ECONV_UNDEF_MASK                   /**< @old{RUBY_ECONV_UNDEF_MASK} */
-#define ECONV_UNDEF_REPLACE                     RUBY_ECONV_UNDEF_REPLACE                /**< @old{RUBY_ECONV_UNDEF_REPLACE} */
-#define ECONV_UNDEF_HEX_CHARREF                 RUBY_ECONV_UNDEF_HEX_CHARREF            /**< @old{RUBY_ECONV_UNDEF_HEX_CHARREF} */
-#define ECONV_DECORATOR_MASK                    RUBY_ECONV_DECORATOR_MASK               /**< @old{RUBY_ECONV_DECORATOR_MASK} */
-#define ECONV_NEWLINE_DECORATOR_MASK            RUBY_ECONV_NEWLINE_DECORATOR_MASK       /**< @old{RUBY_ECONV_NEWLINE_DECORATOR_MASK} */
-#define ECONV_NEWLINE_DECORATOR_READ_MASK       RUBY_ECONV_NEWLINE_DECORATOR_READ_MASK  /**< @old{RUBY_ECONV_NEWLINE_DECORATOR_READ_MASK} */
-#define ECONV_NEWLINE_DECORATOR_WRITE_MASK      RUBY_ECONV_NEWLINE_DECORATOR_WRITE_MASK /**< @old{RUBY_ECONV_NEWLINE_DECORATOR_WRITE_MASK} */
-#define ECONV_UNIVERSAL_NEWLINE_DECORATOR       RUBY_ECONV_UNIVERSAL_NEWLINE_DECORATOR  /**< @old{RUBY_ECONV_UNIVERSAL_NEWLINE_DECORATOR} */
-#define ECONV_CRLF_NEWLINE_DECORATOR            RUBY_ECONV_CRLF_NEWLINE_DECORATOR       /**< @old{RUBY_ECONV_CRLF_NEWLINE_DECORATOR} */
-#define ECONV_CR_NEWLINE_DECORATOR              RUBY_ECONV_CR_NEWLINE_DECORATOR         /**< @old{RUBY_ECONV_CR_NEWLINE_DECORATOR} */
-#define ECONV_XML_TEXT_DECORATOR                RUBY_ECONV_XML_TEXT_DECORATOR           /**< @old{RUBY_ECONV_XML_TEXT_DECORATOR} */
-#define ECONV_XML_ATTR_CONTENT_DECORATOR        RUBY_ECONV_XML_ATTR_CONTENT_DECORATOR   /**< @old{RUBY_ECONV_XML_ATTR_CONTENT_DECORATOR} */
-#define ECONV_STATEFUL_DECORATOR_MASK           RUBY_ECONV_STATEFUL_DECORATOR_MASK      /**< @old{RUBY_ECONV_STATEFUL_DECORATOR_MASK} */
-#define ECONV_XML_ATTR_QUOTE_DECORATOR          RUBY_ECONV_XML_ATTR_QUOTE_DECORATOR     /**< @old{RUBY_ECONV_XML_ATTR_QUOTE_DECORATOR} */
-#define ECONV_DEFAULT_NEWLINE_DECORATOR         RUBY_ECONV_DEFAULT_NEWLINE_DECORATOR    /**< @old{RUBY_ECONV_DEFAULT_NEWLINE_DECORATOR} */
+#define ECONV_ERROR_HANDLER_MASK RUBY_ECONV_ERROR_HANDLER_MASK         /**< @old{RUBY_ECONV_ERROR_HANDLER_MASK} */
+#define ECONV_INVALID_MASK RUBY_ECONV_INVALID_MASK                     /**< @old{RUBY_ECONV_INVALID_MASK} */
+#define ECONV_INVALID_REPLACE RUBY_ECONV_INVALID_REPLACE               /**< @old{RUBY_ECONV_INVALID_REPLACE} */
+#define ECONV_UNDEF_MASK RUBY_ECONV_UNDEF_MASK                         /**< @old{RUBY_ECONV_UNDEF_MASK} */
+#define ECONV_UNDEF_REPLACE RUBY_ECONV_UNDEF_REPLACE                   /**< @old{RUBY_ECONV_UNDEF_REPLACE} */
+#define ECONV_UNDEF_HEX_CHARREF RUBY_ECONV_UNDEF_HEX_CHARREF           /**< @old{RUBY_ECONV_UNDEF_HEX_CHARREF} */
+#define ECONV_DECORATOR_MASK RUBY_ECONV_DECORATOR_MASK                 /**< @old{RUBY_ECONV_DECORATOR_MASK} */
+#define ECONV_NEWLINE_DECORATOR_MASK RUBY_ECONV_NEWLINE_DECORATOR_MASK /**< @old{RUBY_ECONV_NEWLINE_DECORATOR_MASK} */
+#define ECONV_NEWLINE_DECORATOR_READ_MASK \
+    RUBY_ECONV_NEWLINE_DECORATOR_READ_MASK /**< @old{RUBY_ECONV_NEWLINE_DECORATOR_READ_MASK} */
+#define ECONV_NEWLINE_DECORATOR_WRITE_MASK \
+    RUBY_ECONV_NEWLINE_DECORATOR_WRITE_MASK /**< @old{RUBY_ECONV_NEWLINE_DECORATOR_WRITE_MASK} */
+#define ECONV_UNIVERSAL_NEWLINE_DECORATOR \
+    RUBY_ECONV_UNIVERSAL_NEWLINE_DECORATOR /**< @old{RUBY_ECONV_UNIVERSAL_NEWLINE_DECORATOR} */
+#define ECONV_CRLF_NEWLINE_DECORATOR RUBY_ECONV_CRLF_NEWLINE_DECORATOR /**< @old{RUBY_ECONV_CRLF_NEWLINE_DECORATOR} */
+#define ECONV_CR_NEWLINE_DECORATOR RUBY_ECONV_CR_NEWLINE_DECORATOR     /**< @old{RUBY_ECONV_CR_NEWLINE_DECORATOR} */
+#define ECONV_XML_TEXT_DECORATOR RUBY_ECONV_XML_TEXT_DECORATOR         /**< @old{RUBY_ECONV_XML_TEXT_DECORATOR} */
+#define ECONV_XML_ATTR_CONTENT_DECORATOR \
+    RUBY_ECONV_XML_ATTR_CONTENT_DECORATOR /**< @old{RUBY_ECONV_XML_ATTR_CONTENT_DECORATOR} */
+#define ECONV_STATEFUL_DECORATOR_MASK \
+    RUBY_ECONV_STATEFUL_DECORATOR_MASK /**< @old{RUBY_ECONV_STATEFUL_DECORATOR_MASK} */
+#define ECONV_XML_ATTR_QUOTE_DECORATOR \
+    RUBY_ECONV_XML_ATTR_QUOTE_DECORATOR /**< @old{RUBY_ECONV_XML_ATTR_QUOTE_DECORATOR} */
+#define ECONV_DEFAULT_NEWLINE_DECORATOR \
+    RUBY_ECONV_DEFAULT_NEWLINE_DECORATOR /**< @old{RUBY_ECONV_DEFAULT_NEWLINE_DECORATOR} */
     /** @} */
 
     /**
@@ -543,12 +549,12 @@ enum ruby_econv_flag_type {
      */
 
     /** Indicates the input is a part of much larger one. */
-    RUBY_ECONV_PARTIAL_INPUT                    = 0x00010000,
+    RUBY_ECONV_PARTIAL_INPUT = 0x00010000,
 
     /** Instructs the converter to stop after output. */
-    RUBY_ECONV_AFTER_OUTPUT                     = 0x00020000,
-#define ECONV_PARTIAL_INPUT                     RUBY_ECONV_PARTIAL_INPUT /**< @old{RUBY_ECONV_PARTIAL_INPUT} */
-#define ECONV_AFTER_OUTPUT                      RUBY_ECONV_AFTER_OUTPUT  /**< @old{RUBY_ECONV_AFTER_OUTPUT} */
+    RUBY_ECONV_AFTER_OUTPUT = 0x00020000,
+#define ECONV_PARTIAL_INPUT RUBY_ECONV_PARTIAL_INPUT /**< @old{RUBY_ECONV_PARTIAL_INPUT} */
+#define ECONV_AFTER_OUTPUT RUBY_ECONV_AFTER_OUTPUT   /**< @old{RUBY_ECONV_AFTER_OUTPUT} */
 
     RUBY_ECONV_FLAGS_PLACEHOLDER /**< Placeholder (not used) */
 };

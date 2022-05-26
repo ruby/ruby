@@ -20,19 +20,19 @@
 
  This implementation will be replaced with future stack-switching feature.
  */
-#include <stdint.h>
-#include <stdlib.h>
-#include <assert.h>
-#include <stdbool.h>
+#include "wasm/setjmp.h"
 #include "wasm/asyncify.h"
 #include "wasm/machine.h"
-#include "wasm/setjmp.h"
+#include <assert.h>
+#include <stdbool.h>
+#include <stdint.h>
+#include <stdlib.h>
 
 #ifdef RB_WASM_ENABLE_DEBUG_LOG
-# include <stdio.h>
-# define RB_WASM_DEBUG_LOG(...) fprintf(stderr, __VA_ARGS__)
+#    include <stdio.h>
+#    define RB_WASM_DEBUG_LOG(...) fprintf(stderr, __VA_ARGS__)
 #else
-# define RB_WASM_DEBUG_LOG(...)
+#    define RB_WASM_DEBUG_LOG(...)
 #endif
 
 enum rb_wasm_jmp_buf_state {
@@ -40,16 +40,16 @@ enum rb_wasm_jmp_buf_state {
     JMP_BUF_STATE_INITIALIZED = 0,
     // Unwinding to the root or rewinding to the setjmp call
     // to capture the current execution context
-    JMP_BUF_STATE_CAPTURING   = 1,
+    JMP_BUF_STATE_CAPTURING = 1,
     // Ready for longjmp
-    JMP_BUF_STATE_CAPTURED    = 2,
+    JMP_BUF_STATE_CAPTURED = 2,
     // Unwinding to the root or rewinding to the setjmp call
     // to restore the execution context
-    JMP_BUF_STATE_RETURNING   = 3,
+    JMP_BUF_STATE_RETURNING = 3,
 };
 
 void
-async_buf_init(struct __rb_wasm_asyncify_jmp_buf* buf)
+async_buf_init(struct __rb_wasm_asyncify_jmp_buf *buf)
 {
     buf->top = &buf->buffer[0];
     buf->end = &buf->buffer[WASM_SETJMP_STACK_BUFFER_SIZE];
@@ -59,11 +59,11 @@ async_buf_init(struct __rb_wasm_asyncify_jmp_buf* buf)
 static rb_wasm_jmp_buf *_rb_wasm_active_jmpbuf;
 void *rb_asyncify_unwind_buf;
 
-__attribute__((noinline))
-int
+__attribute__((noinline)) int
 _rb_wasm_setjmp_internal(rb_wasm_jmp_buf *env)
 {
-    RB_WASM_DEBUG_LOG("[%s] env = %p, env->state = %d, _rb_wasm_active_jmpbuf = %p\n", __func__, env, env->state, _rb_wasm_active_jmpbuf);
+    RB_WASM_DEBUG_LOG("[%s] env = %p, env->state = %d, _rb_wasm_active_jmpbuf = %p\n", __func__, env, env->state,
+        _rb_wasm_active_jmpbuf);
     switch (env->state) {
     case JMP_BUF_STATE_INITIALIZED: {
         RB_WASM_DEBUG_LOG("[%s] JMP_BUF_STATE_INITIALIZED\n", __func__);
@@ -95,7 +95,7 @@ _rb_wasm_setjmp_internal(rb_wasm_jmp_buf *env)
 }
 
 void
-_rb_wasm_longjmp(rb_wasm_jmp_buf* env, int value)
+_rb_wasm_longjmp(rb_wasm_jmp_buf *env, int value)
 {
     RB_WASM_DEBUG_LOG("[%s] env = %p, env->state = %d, value = %d\n", __func__, env, env->state, value);
     assert(env->state == JMP_BUF_STATE_CAPTURED);
@@ -107,17 +107,14 @@ _rb_wasm_longjmp(rb_wasm_jmp_buf* env, int value)
     asyncify_start_unwind(&env->longjmp_buf);
 }
 
-
 enum try_catch_phase {
-  TRY_CATCH_PHASE_MAIN   = 0,
-  TRY_CATCH_PHASE_RESCUE = 1,
+    TRY_CATCH_PHASE_MAIN = 0,
+    TRY_CATCH_PHASE_RESCUE = 1,
 };
 
 void
-rb_wasm_try_catch_init(struct rb_wasm_try_catch *try_catch,
-                       rb_wasm_try_catch_func_t try_f,
-                       rb_wasm_try_catch_func_t catch_f,
-                       void *context)
+rb_wasm_try_catch_init(struct rb_wasm_try_catch *try_catch, rb_wasm_try_catch_func_t try_f,
+    rb_wasm_try_catch_func_t catch_f, void *context)
 {
     try_catch->state = TRY_CATCH_PHASE_MAIN;
     try_catch->try_f = try_f;
@@ -167,7 +164,8 @@ rb_wasm_try_catch_loop_run(struct rb_wasm_try_catch *try_catch, rb_wasm_jmp_buf 
                 try_catch->catch_f(try_catch->context);
             }
             continue;
-        } else if (rb_asyncify_unwind_buf /* unrelated unwind */) {
+        }
+        else if (rb_asyncify_unwind_buf /* unrelated unwind */) {
             return;
         }
         // no unwind, then exit

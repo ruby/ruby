@@ -1,10 +1,10 @@
 /* Licensed under BSD-MIT - see ccan/licenses/BSD-MIT file for details */
 #ifndef CCAN_LIST_H
 #define CCAN_LIST_H
-#include <assert.h>
-#include "ccan/str/str.h"
-#include "ccan/container_of/container_of.h"
 #include "ccan/check_type/check_type.h"
+#include "ccan/container_of/container_of.h"
+#include "ccan/str/str.h"
+#include <assert.h>
 
 /**
  * struct ccan_list_node - an entry in a doubly-linked list
@@ -19,9 +19,8 @@
  *		struct ccan_list_node list;
  *	};
  */
-struct ccan_list_node
-{
-	struct ccan_list_node *next, *prev;
+struct ccan_list_node {
+    struct ccan_list_node *next, *prev;
 };
 
 /**
@@ -36,12 +35,11 @@ struct ccan_list_node
  *		unsigned int num_children;
  *	};
  */
-struct ccan_list_head
-{
-	struct ccan_list_node n;
+struct ccan_list_head {
+    struct ccan_list_node n;
 };
 
-#define CCAN_LIST_LOC __FILE__  ":" ccan_stringify(__LINE__)
+#define CCAN_LIST_LOC __FILE__ ":" ccan_stringify(__LINE__)
 #define ccan_list_debug(h, loc) ((void)loc, h)
 #define ccan_list_debug_node(n, loc) ((void)loc, n)
 
@@ -57,7 +55,12 @@ struct ccan_list_head
  * Example:
  *	static struct ccan_list_head my_list = CCAN_LIST_HEAD_INIT(my_list);
  */
-#define CCAN_LIST_HEAD_INIT(name) { { &(name).n, &(name).n } }
+#define CCAN_LIST_HEAD_INIT(name) \
+    { \
+        { \
+            &(name).n, &(name).n \
+        } \
+    }
 
 /**
  * CCAN_LIST_HEAD - define and initialize an empty ccan_list_head
@@ -72,8 +75,7 @@ struct ccan_list_head
  * Example:
  *	static CCAN_LIST_HEAD(my_global_list);
  */
-#define CCAN_LIST_HEAD(name) \
-	struct ccan_list_head name = CCAN_LIST_HEAD_INIT(name)
+#define CCAN_LIST_HEAD(name) struct ccan_list_head name = CCAN_LIST_HEAD_INIT(name)
 
 /**
  * ccan_list_head_init - initialize a ccan_list_head
@@ -86,9 +88,10 @@ struct ccan_list_head
  *	ccan_list_head_init(&parent->children);
  *	parent->num_children = 0;
  */
-static inline void ccan_list_head_init(struct ccan_list_head *h)
+static inline void
+ccan_list_head_init(struct ccan_list_head *h)
 {
-	h->n.next = h->n.prev = &h->n;
+    h->n.next = h->n.prev = &h->n;
 }
 
 /**
@@ -98,9 +101,10 @@ static inline void ccan_list_head_init(struct ccan_list_head *h)
  * You don't need to use this normally!  But it lets you ccan_list_del(@n)
  * safely.
  */
-static inline void ccan_list_node_init(struct ccan_list_node *n)
+static inline void
+ccan_list_node_init(struct ccan_list_node *n)
 {
-	n->next = n->prev = n;
+    n->next = n->prev = n;
 }
 
 /**
@@ -121,16 +125,14 @@ static inline void ccan_list_node_init(struct ccan_list_node *n)
  *	ccan_list_add_after(&h, &c1.list, &c2.list);
  */
 #define ccan_list_add_after(h, p, n) ccan_list_add_after_(h, p, n, CCAN_LIST_LOC)
-static inline void ccan_list_add_after_(struct ccan_list_head *h,
-				   struct ccan_list_node *p,
-				   struct ccan_list_node *n,
-				   const char *abortstr)
+static inline void
+ccan_list_add_after_(struct ccan_list_head *h, struct ccan_list_node *p, struct ccan_list_node *n, const char *abortstr)
 {
-	n->next = p->next;
-	n->prev = p;
-	p->next->prev = n;
-	p->next = n;
-	(void)ccan_list_debug(h, abortstr);
+    n->next = p->next;
+    n->prev = p;
+    p->next->prev = n;
+    p->next = n;
+    (void)ccan_list_debug(h, abortstr);
 }
 
 /**
@@ -147,11 +149,10 @@ static inline void ccan_list_add_after_(struct ccan_list_head *h,
  *	parent->num_children++;
  */
 #define ccan_list_add(h, n) ccan_list_add_(h, n, CCAN_LIST_LOC)
-static inline void ccan_list_add_(struct ccan_list_head *h,
-			     struct ccan_list_node *n,
-			     const char *abortstr)
+static inline void
+ccan_list_add_(struct ccan_list_head *h, struct ccan_list_node *n, const char *abortstr)
 {
-	ccan_list_add_after_(h, &h->n, n, abortstr);
+    ccan_list_add_after_(h, &h->n, n, abortstr);
 }
 
 /**
@@ -170,16 +171,15 @@ static inline void ccan_list_add_(struct ccan_list_head *h,
  *	ccan_list_add_before(&h, &c3.list, &c2.list);
  */
 #define ccan_list_add_before(h, p, n) ccan_list_add_before_(h, p, n, CCAN_LIST_LOC)
-static inline void ccan_list_add_before_(struct ccan_list_head *h,
-				    struct ccan_list_node *p,
-				    struct ccan_list_node *n,
-				    const char *abortstr)
+static inline void
+ccan_list_add_before_(
+    struct ccan_list_head *h, struct ccan_list_node *p, struct ccan_list_node *n, const char *abortstr)
 {
-	n->next = p;
-	n->prev = p->prev;
-	p->prev->next = n;
-	p->prev = n;
-	(void)ccan_list_debug(h, abortstr);
+    n->next = p;
+    n->prev = p->prev;
+    p->prev->next = n;
+    p->prev = n;
+    (void)ccan_list_debug(h, abortstr);
 }
 
 /**
@@ -193,11 +193,10 @@ static inline void ccan_list_add_before_(struct ccan_list_head *h,
  *	parent->num_children++;
  */
 #define ccan_list_add_tail(h, n) ccan_list_add_tail_(h, n, CCAN_LIST_LOC)
-static inline void ccan_list_add_tail_(struct ccan_list_head *h,
-				  struct ccan_list_node *n,
-				  const char *abortstr)
+static inline void
+ccan_list_add_tail_(struct ccan_list_head *h, struct ccan_list_node *n, const char *abortstr)
 {
-	ccan_list_add_before_(h, &h->n, n, abortstr);
+    ccan_list_add_before_(h, &h->n, n, abortstr);
 }
 
 /**
@@ -210,10 +209,11 @@ static inline void ccan_list_add_tail_(struct ccan_list_head *h,
  *	assert(ccan_list_empty(&parent->children) == (parent->num_children == 0));
  */
 #define ccan_list_empty(h) ccan_list_empty_(h, CCAN_LIST_LOC)
-static inline int ccan_list_empty_(const struct ccan_list_head *h, const char* abortstr)
+static inline int
+ccan_list_empty_(const struct ccan_list_head *h, const char *abortstr)
 {
-	(void)ccan_list_debug(h, abortstr);
-	return h->n.next == &h->n;
+    (void)ccan_list_debug(h, abortstr);
+    return h->n.next == &h->n;
 }
 
 /**
@@ -229,11 +229,12 @@ static inline int ccan_list_empty_(const struct ccan_list_head *h, const char* a
  *	assert(ccan_list_empty_nodebug(&parent->children) == (parent->num_children == 0));
  */
 #ifndef CCAN_LIST_DEBUG
-#define ccan_list_empty_nodebug(h) ccan_list_empty(h)
+#    define ccan_list_empty_nodebug(h) ccan_list_empty(h)
 #else
-static inline int ccan_list_empty_nodebug(const struct ccan_list_head *h)
+static inline int
+ccan_list_empty_nodebug(const struct ccan_list_head *h)
 {
-	return h->n.next == &h->n;
+    return h->n.next == &h->n;
 }
 #endif
 
@@ -247,9 +248,10 @@ static inline int ccan_list_empty_nodebug(const struct ccan_list_head *h)
  * checks where an incorrect result is not an issue (optimized
  * bail out path for example).
  */
-static inline bool ccan_list_empty_nocheck(const struct ccan_list_head *h)
+static inline bool
+ccan_list_empty_nocheck(const struct ccan_list_head *h)
 {
-	return h->n.next == &h->n;
+    return h->n.next == &h->n;
 }
 
 /**
@@ -267,14 +269,15 @@ static inline bool ccan_list_empty_nocheck(const struct ccan_list_head *h)
  *	parent->num_children--;
  */
 #define ccan_list_del(n) ccan_list_del_(n, CCAN_LIST_LOC)
-static inline void ccan_list_del_(struct ccan_list_node *n, const char* abortstr)
+static inline void
+ccan_list_del_(struct ccan_list_node *n, const char *abortstr)
 {
-	(void)ccan_list_debug_node(n, abortstr);
-	n->next->prev = n->prev;
-	n->prev->next = n->next;
+    (void)ccan_list_debug_node(n, abortstr);
+    n->next->prev = n->prev;
+    n->prev->next = n->next;
 #ifdef CCAN_LIST_DEBUG
-	/* Catch use-after-del. */
-	n->next = n->prev = NULL;
+    /* Catch use-after-del. */
+    n->next = n->prev = NULL;
 #endif
 }
 
@@ -293,10 +296,11 @@ static inline void ccan_list_del_(struct ccan_list_node *n, const char* abortstr
  *	parent->num_children--;
  */
 #define ccan_list_del_init(n) ccan_list_del_init_(n, CCAN_LIST_LOC)
-static inline void ccan_list_del_init_(struct ccan_list_node *n, const char *abortstr)
+static inline void
+ccan_list_del_init_(struct ccan_list_node *n, const char *abortstr)
 {
-	ccan_list_del_(n, abortstr);
-	ccan_list_node_init(n);
+    ccan_list_del_(n, abortstr);
+    ccan_list_node_init(n);
 }
 
 /**
@@ -313,20 +317,21 @@ static inline void ccan_list_del_init_(struct ccan_list_node *n, const char *abo
  *	ccan_list_del_from(&parent->children, &child->list);
  *	parent->num_children--;
  */
-static inline void ccan_list_del_from(struct ccan_list_head *h, struct ccan_list_node *n)
+static inline void
+ccan_list_del_from(struct ccan_list_head *h, struct ccan_list_node *n)
 {
 #ifdef CCAN_LIST_DEBUG
-	{
-		/* Thorough check: make sure it was in list! */
-		struct ccan_list_node *i;
-		for (i = h->n.next; i != n; i = i->next)
-			assert(i != &h->n);
-	}
+    {
+        /* Thorough check: make sure it was in list! */
+        struct ccan_list_node *i;
+        for (i = h->n.next; i != n; i = i->next)
+            assert(i != &h->n);
+    }
 #endif /* CCAN_LIST_DEBUG */
 
-	/* Quick test that catches a surprising number of bugs. */
-	assert(!ccan_list_empty(h));
-	ccan_list_del(n);
+    /* Quick test that catches a surprising number of bugs. */
+    assert(!ccan_list_empty(h));
+    ccan_list_del(n);
 }
 
 /**
@@ -348,17 +353,16 @@ static inline void ccan_list_del_from(struct ccan_list_head *h, struct ccan_list
  *	ccan_list_swap(&x1.list, &x2.list);
  */
 #define ccan_list_swap(o, n) ccan_list_swap_(o, n, CCAN_LIST_LOC)
-static inline void ccan_list_swap_(struct ccan_list_node *o,
-			      struct ccan_list_node *n,
-			      const char* abortstr)
+static inline void
+ccan_list_swap_(struct ccan_list_node *o, struct ccan_list_node *n, const char *abortstr)
 {
-	(void)ccan_list_debug_node(o, abortstr);
-	*n = *o;
-	n->next->prev = n;
-	n->prev->next = n;
+    (void)ccan_list_debug_node(o, abortstr);
+    *n = *o;
+    n->next->prev = n;
+    n->prev->next = n;
 #ifdef CCAN_LIST_DEBUG
-	/* Catch use-after-del. */
-	o->next = o->prev = NULL;
+    /* Catch use-after-del. */
+    o->next = o->prev = NULL;
 #endif
 }
 
@@ -391,14 +395,13 @@ static inline void ccan_list_swap_(struct ccan_list_node *o,
  *	if (!first)
  *		printf("Empty list!\n");
  */
-#define ccan_list_top(h, type, member)					\
-	((type *)ccan_list_top_((h), ccan_list_off_(type, member)))
+#define ccan_list_top(h, type, member) ((type *)ccan_list_top_((h), ccan_list_off_(type, member)))
 
-static inline const void *ccan_list_top_(const struct ccan_list_head *h, size_t off)
+static inline const void *
+ccan_list_top_(const struct ccan_list_head *h, size_t off)
 {
-	if (ccan_list_empty(h))
-		return NULL;
-	return (const char *)h->n.next - off;
+    if (ccan_list_empty(h)) return NULL;
+    return (const char *)h->n.next - off;
 }
 
 /**
@@ -415,18 +418,17 @@ static inline const void *ccan_list_top_(const struct ccan_list_head *h, size_t 
  *	if (!one)
  *		printf("Empty list!\n");
  */
-#define ccan_list_pop(h, type, member)					\
-	((type *)ccan_list_pop_((h), ccan_list_off_(type, member)))
+#define ccan_list_pop(h, type, member) ((type *)ccan_list_pop_((h), ccan_list_off_(type, member)))
 
-static inline const void *ccan_list_pop_(const struct ccan_list_head *h, size_t off)
+static inline const void *
+ccan_list_pop_(const struct ccan_list_head *h, size_t off)
 {
-	struct ccan_list_node *n;
+    struct ccan_list_node *n;
 
-	if (ccan_list_empty(h))
-		return NULL;
-	n = h->n.next;
-	ccan_list_del(n);
-	return (const char *)n - off;
+    if (ccan_list_empty(h)) return NULL;
+    n = h->n.next;
+    ccan_list_del(n);
+    return (const char *)n - off;
 }
 
 /**
@@ -443,14 +445,13 @@ static inline const void *ccan_list_pop_(const struct ccan_list_head *h, size_t 
  *	if (!last)
  *		printf("Empty list!\n");
  */
-#define ccan_list_tail(h, type, member) \
-	((type *)ccan_list_tail_((h), ccan_list_off_(type, member)))
+#define ccan_list_tail(h, type, member) ((type *)ccan_list_tail_((h), ccan_list_off_(type, member)))
 
-static inline const void *ccan_list_tail_(const struct ccan_list_head *h, size_t off)
+static inline const void *
+ccan_list_tail_(const struct ccan_list_head *h, size_t off)
 {
-	if (ccan_list_empty(h))
-		return NULL;
-	return (const char *)h->n.prev - off;
+    if (ccan_list_empty(h)) return NULL;
+    return (const char *)h->n.prev - off;
 }
 
 /**
@@ -466,8 +467,7 @@ static inline const void *ccan_list_tail_(const struct ccan_list_head *h, size_t
  *	ccan_list_for_each(&parent->children, child, list)
  *		printf("Name: %s\n", child->name);
  */
-#define ccan_list_for_each(h, i, member)					\
-	ccan_list_for_each_off(h, i, ccan_list_off_var_(i, member))
+#define ccan_list_for_each(h, i, member) ccan_list_for_each_off(h, i, ccan_list_off_var_(i, member))
 
 /**
  * ccan_list_for_each_rev - iterate through a list backwards.
@@ -482,8 +482,7 @@ static inline const void *ccan_list_tail_(const struct ccan_list_head *h, size_t
  *	ccan_list_for_each_rev(&parent->children, child, list)
  *		printf("Name: %s\n", child->name);
  */
-#define ccan_list_for_each_rev(h, i, member)					\
-	ccan_list_for_each_rev_off(h, i, ccan_list_off_var_(i, member))
+#define ccan_list_for_each_rev(h, i, member) ccan_list_for_each_rev_off(h, i, ccan_list_off_var_(i, member))
 
 /**
  * ccan_list_for_each_rev_safe - iterate through a list backwards,
@@ -504,8 +503,8 @@ static inline const void *ccan_list_tail_(const struct ccan_list_head *h, size_t
  *		printf("Name: %s\n", child->name);
  *	}
  */
-#define ccan_list_for_each_rev_safe(h, i, nxt, member)			\
-	ccan_list_for_each_rev_safe_off(h, i, nxt, ccan_list_off_var_(i, member))
+#define ccan_list_for_each_rev_safe(h, i, nxt, member) \
+    ccan_list_for_each_rev_safe_off(h, i, nxt, ccan_list_off_var_(i, member))
 
 /**
  * ccan_list_for_each_safe - iterate through a list, maybe during deletion
@@ -524,8 +523,7 @@ static inline const void *ccan_list_tail_(const struct ccan_list_head *h, size_t
  *		parent->num_children--;
  *	}
  */
-#define ccan_list_for_each_safe(h, i, nxt, member)				\
-	ccan_list_for_each_safe_off(h, i, nxt, ccan_list_off_var_(i, member))
+#define ccan_list_for_each_safe(h, i, nxt, member) ccan_list_for_each_safe_off(h, i, nxt, ccan_list_off_var_(i, member))
 
 /**
  * ccan_list_next - get the next entry in a list
@@ -541,11 +539,9 @@ static inline const void *ccan_list_tail_(const struct ccan_list_head *h, size_t
  *	if (!second)
  *		printf("No second child!\n");
  */
-#define ccan_list_next(h, i, member)						\
-	((ccan_list_typeof(i))ccan_list_entry_or_null(ccan_list_debug(h,		\
-					    __FILE__ ":" ccan_stringify(__LINE__)), \
-					    (i)->member.next,		\
-					    ccan_list_off_var_((i), member)))
+#define ccan_list_next(h, i, member) \
+    ((ccan_list_typeof(i))ccan_list_entry_or_null( \
+        ccan_list_debug(h, __FILE__ ":" ccan_stringify(__LINE__)), (i)->member.next, ccan_list_off_var_((i), member)))
 
 /**
  * ccan_list_prev - get the previous entry in a list
@@ -560,11 +556,9 @@ static inline const void *ccan_list_tail_(const struct ccan_list_head *h, size_t
  *	if (!first)
  *		printf("Can't go back to first child?!\n");
  */
-#define ccan_list_prev(h, i, member)						\
-	((ccan_list_typeof(i))ccan_list_entry_or_null(ccan_list_debug(h,		\
-					    __FILE__ ":" ccan_stringify(__LINE__)), \
-					    (i)->member.prev,		\
-					    ccan_list_off_var_((i), member)))
+#define ccan_list_prev(h, i, member) \
+    ((ccan_list_typeof(i))ccan_list_entry_or_null( \
+        ccan_list_debug(h, __FILE__ ":" ccan_stringify(__LINE__)), (i)->member.prev, ccan_list_off_var_((i), member)))
 
 /**
  * ccan_list_append_list - empty one list onto the end of another.
@@ -581,24 +575,22 @@ static inline const void *ccan_list_tail_(const struct ccan_list_head *h, size_t
  *	assert(ccan_list_empty(&parent->children));
  *	parent->num_children = 0;
  */
-#define ccan_list_append_list(t, f) ccan_list_append_list_(t, f,			\
-				   __FILE__ ":" ccan_stringify(__LINE__))
-static inline void ccan_list_append_list_(struct ccan_list_head *to,
-				     struct ccan_list_head *from,
-				     const char *abortstr)
+#define ccan_list_append_list(t, f) ccan_list_append_list_(t, f, __FILE__ ":" ccan_stringify(__LINE__))
+static inline void
+ccan_list_append_list_(struct ccan_list_head *to, struct ccan_list_head *from, const char *abortstr)
 {
-	struct ccan_list_node *from_tail = ccan_list_debug(from, abortstr)->n.prev;
-	struct ccan_list_node *to_tail = ccan_list_debug(to, abortstr)->n.prev;
+    struct ccan_list_node *from_tail = ccan_list_debug(from, abortstr)->n.prev;
+    struct ccan_list_node *to_tail = ccan_list_debug(to, abortstr)->n.prev;
 
-	/* Sew in head and entire list. */
-	to->n.prev = from_tail;
-	from_tail->next = &to->n;
-	to_tail->next = &from->n;
-	from->n.prev = to_tail;
+    /* Sew in head and entire list. */
+    to->n.prev = from_tail;
+    from_tail->next = &to->n;
+    to_tail->next = &from->n;
+    from->n.prev = to_tail;
 
-	/* Now remove head. */
-	ccan_list_del(&from->n);
-	ccan_list_head_init(from);
+    /* Now remove head. */
+    ccan_list_del(&from->n);
+    ccan_list_head_init(from);
 }
 
 /**
@@ -615,41 +607,34 @@ static inline void ccan_list_append_list_(struct ccan_list_head *to,
  *	parent->num_children = 0;
  */
 #define ccan_list_prepend_list(t, f) ccan_list_prepend_list_(t, f, CCAN_LIST_LOC)
-static inline void ccan_list_prepend_list_(struct ccan_list_head *to,
-				      struct ccan_list_head *from,
-				      const char *abortstr)
+static inline void
+ccan_list_prepend_list_(struct ccan_list_head *to, struct ccan_list_head *from, const char *abortstr)
 {
-	struct ccan_list_node *from_tail = ccan_list_debug(from, abortstr)->n.prev;
-	struct ccan_list_node *to_head = ccan_list_debug(to, abortstr)->n.next;
+    struct ccan_list_node *from_tail = ccan_list_debug(from, abortstr)->n.prev;
+    struct ccan_list_node *to_head = ccan_list_debug(to, abortstr)->n.next;
 
-	/* Sew in head and entire list. */
-	to->n.next = &from->n;
-	from->n.prev = &to->n;
-	to_head->prev = from_tail;
-	from_tail->next = to_head;
+    /* Sew in head and entire list. */
+    to->n.next = &from->n;
+    from->n.prev = &to->n;
+    to_head->prev = from_tail;
+    from_tail->next = to_head;
 
-	/* Now remove head. */
-	ccan_list_del(&from->n);
-	ccan_list_head_init(from);
+    /* Now remove head. */
+    ccan_list_del(&from->n);
+    ccan_list_head_init(from);
 }
 
 /* internal macros, do not use directly */
-#define ccan_list_for_each_off_dir_(h, i, off, dir)				\
-	for (i = ccan_list_node_to_off_(ccan_list_debug(h, CCAN_LIST_LOC)->n.dir,	\
-				   (off));				\
-	ccan_list_node_from_off_((void *)i, (off)) != &(h)->n;		\
-	i = ccan_list_node_to_off_(ccan_list_node_from_off_((void *)i, (off))->dir, \
-			      (off)))
+#define ccan_list_for_each_off_dir_(h, i, off, dir) \
+    for (i = ccan_list_node_to_off_(ccan_list_debug(h, CCAN_LIST_LOC)->n.dir, (off)); \
+         ccan_list_node_from_off_((void *)i, (off)) != &(h)->n; \
+         i = ccan_list_node_to_off_(ccan_list_node_from_off_((void *)i, (off))->dir, (off)))
 
-#define ccan_list_for_each_safe_off_dir_(h, i, nxt, off, dir)		\
-	for (i = ccan_list_node_to_off_(ccan_list_debug(h, CCAN_LIST_LOC)->n.dir,	\
-				   (off)),				\
-	nxt = ccan_list_node_to_off_(ccan_list_node_from_off_(i, (off))->dir,	\
-				(off));					\
-	ccan_list_node_from_off_(i, (off)) != &(h)->n;			\
-	i = nxt,							\
-	nxt = ccan_list_node_to_off_(ccan_list_node_from_off_(i, (off))->dir,	\
-				(off)))
+#define ccan_list_for_each_safe_off_dir_(h, i, nxt, off, dir) \
+    for (i = ccan_list_node_to_off_(ccan_list_debug(h, CCAN_LIST_LOC)->n.dir, (off)), \
+        nxt = ccan_list_node_to_off_(ccan_list_node_from_off_(i, (off))->dir, (off)); \
+         ccan_list_node_from_off_(i, (off)) != &(h)->n; \
+         i = nxt, nxt = ccan_list_node_to_off_(ccan_list_node_from_off_(i, (off))->dir, (off)))
 
 /**
  * ccan_list_for_each_off - iterate through a list of memory regions.
@@ -680,8 +665,7 @@ static inline void ccan_list_prepend_list_(struct ccan_list_head *to,
  *				offsetof(struct child, list))
  *		printf("Name: %s\n", child->name);
  */
-#define ccan_list_for_each_off(h, i, off)                                    \
-	ccan_list_for_each_off_dir_((h),(i),(off),next)
+#define ccan_list_for_each_off(h, i, off) ccan_list_for_each_off_dir_((h), (i), (off), next)
 
 /**
  * ccan_list_for_each_rev_off - iterate through a list of memory regions backwards
@@ -691,8 +675,7 @@ static inline void ccan_list_prepend_list_(struct ccan_list_head *to,
  *
  * See ccan_list_for_each_off for details
  */
-#define ccan_list_for_each_rev_off(h, i, off)                                    \
-	ccan_list_for_each_off_dir_((h),(i),(off),prev)
+#define ccan_list_for_each_rev_off(h, i, off) ccan_list_for_each_off_dir_((h), (i), (off), prev)
 
 /**
  * ccan_list_for_each_safe_off - iterate through a list of memory regions, maybe
@@ -710,8 +693,7 @@ static inline void ccan_list_prepend_list_(struct ccan_list_head *to,
  *		next, offsetof(struct child, list))
  *		printf("Name: %s\n", child->name);
  */
-#define ccan_list_for_each_safe_off(h, i, nxt, off)                          \
-	ccan_list_for_each_safe_off_dir_((h),(i),(nxt),(off),next)
+#define ccan_list_for_each_safe_off(h, i, nxt, off) ccan_list_for_each_safe_off_dir_((h), (i), (nxt), (off), next)
 
 /**
  * ccan_list_for_each_rev_safe_off - iterate backwards through a list of
@@ -729,61 +711,52 @@ static inline void ccan_list_prepend_list_(struct ccan_list_head *to,
  *		next, offsetof(struct child, list))
  *		printf("Name: %s\n", child->name);
  */
-#define ccan_list_for_each_rev_safe_off(h, i, nxt, off)                      \
-	ccan_list_for_each_safe_off_dir_((h),(i),(nxt),(off),prev)
+#define ccan_list_for_each_rev_safe_off(h, i, nxt, off) ccan_list_for_each_safe_off_dir_((h), (i), (nxt), (off), prev)
 
 /* Other -off variants. */
-#define ccan_list_entry_off(n, type, off)		\
-	((type *)ccan_list_node_from_off_((n), (off)))
+#define ccan_list_entry_off(n, type, off) ((type *)ccan_list_node_from_off_((n), (off)))
 
-#define ccan_list_head_off(h, type, off)		\
-	((type *)ccan_list_head_off((h), (off)))
+#define ccan_list_head_off(h, type, off) ((type *)ccan_list_head_off((h), (off)))
 
-#define ccan_list_tail_off(h, type, off)		\
-	((type *)ccan_list_tail_((h), (off)))
+#define ccan_list_tail_off(h, type, off) ((type *)ccan_list_tail_((h), (off)))
 
-#define ccan_list_add_off(h, n, off)                 \
-	ccan_list_add((h), ccan_list_node_from_off_((n), (off)))
+#define ccan_list_add_off(h, n, off) ccan_list_add((h), ccan_list_node_from_off_((n), (off)))
 
-#define ccan_list_del_off(n, off)                    \
-	ccan_list_del(ccan_list_node_from_off_((n), (off)))
+#define ccan_list_del_off(n, off) ccan_list_del(ccan_list_node_from_off_((n), (off)))
 
-#define ccan_list_del_from_off(h, n, off)			\
-	ccan_list_del_from(h, ccan_list_node_from_off_((n), (off)))
+#define ccan_list_del_from_off(h, n, off) ccan_list_del_from(h, ccan_list_node_from_off_((n), (off)))
 
 /* Offset helper functions so we only single-evaluate. */
-static inline void *ccan_list_node_to_off_(struct ccan_list_node *node, size_t off)
+static inline void *
+ccan_list_node_to_off_(struct ccan_list_node *node, size_t off)
 {
-	return (void *)((char *)node - off);
+    return (void *)((char *)node - off);
 }
-static inline struct ccan_list_node *ccan_list_node_from_off_(void *ptr, size_t off)
+static inline struct ccan_list_node *
+ccan_list_node_from_off_(void *ptr, size_t off)
 {
-	return (struct ccan_list_node *)((char *)ptr + off);
+    return (struct ccan_list_node *)((char *)ptr + off);
 }
 
 /* Get the offset of the member, but make sure it's a ccan_list_node. */
-#define ccan_list_off_(type, member)					\
-	(ccan_container_off(type, member) +				\
-	 ccan_check_type(((type *)0)->member, struct ccan_list_node))
+#define ccan_list_off_(type, member) \
+    (ccan_container_off(type, member) + ccan_check_type(((type *)0)->member, struct ccan_list_node))
 
-#define ccan_list_off_var_(var, member)			\
-	(ccan_container_off_var(var, member) +		\
-	 ccan_check_type(var->member, struct ccan_list_node))
+#define ccan_list_off_var_(var, member) \
+    (ccan_container_off_var(var, member) + ccan_check_type(var->member, struct ccan_list_node))
 
 #if HAVE_TYPEOF
-#define ccan_list_typeof(var) typeof(var)
+#    define ccan_list_typeof(var) typeof(var)
 #else
-#define ccan_list_typeof(var) void *
+#    define ccan_list_typeof(var) void *
 #endif
 
 /* Returns member, or NULL if at end of list. */
-static inline void *ccan_list_entry_or_null(const struct ccan_list_head *h,
-				       const struct ccan_list_node *n,
-				       size_t off)
+static inline void *
+ccan_list_entry_or_null(const struct ccan_list_head *h, const struct ccan_list_node *n, size_t off)
 {
-	if (n == &h->n)
-		return NULL;
-	return (char *)n - off;
+    if (n == &h->n) return NULL;
+    return (char *)n - off;
 }
 
 #endif /* CCAN_LIST_H */

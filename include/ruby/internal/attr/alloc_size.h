@@ -1,4 +1,4 @@
-#ifndef RBIMPL_ATTR_ALLOC_SIZE_H                     /*-*-C++-*-vi:se ft=cpp:*/
+#ifndef RBIMPL_ATTR_ALLOC_SIZE_H /*-*-C++-*-vi:se ft=cpp:*/
 #define RBIMPL_ATTR_ALLOC_SIZE_H
 /**
  * @file
@@ -24,9 +24,9 @@
 
 /** Wraps (or simulates) `__attribute__((alloc_size))` */
 #if RBIMPL_HAS_ATTRIBUTE(alloc_size)
-# define RBIMPL_ATTR_ALLOC_SIZE(tuple) __attribute__((__alloc_size__ tuple))
+#    define RBIMPL_ATTR_ALLOC_SIZE(tuple) __attribute__((__alloc_size__ tuple))
 #else
-# define RBIMPL_ATTR_ALLOC_SIZE(tuple) /* void */
+#    define RBIMPL_ATTR_ALLOC_SIZE(tuple) /* void */
 #endif
 
 #endif /* RBIMPL_ATTR_ALLOC_SIZE_H */

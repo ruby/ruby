@@ -62,13 +62,13 @@ total_i(VALUE v, void *ptr)
     struct total_data *data = (struct total_data *)ptr;
 
     if (!rb_objspace_internal_object_p(v)) {
-          if (data->klass == 0 || rb_obj_is_kind_of(v, data->klass)) {
-              data->total += rb_obj_memsize_of(v);
-          }
+        if (data->klass == 0 || rb_obj_is_kind_of(v, data->klass)) {
+            data->total += rb_obj_memsize_of(v);
+        }
     }
 }
 
-typedef void (*each_obj_with_flags)(VALUE, void*);
+typedef void (*each_obj_with_flags)(VALUE, void *);
 
 struct obj_itr {
     each_obj_with_flags cb;
@@ -78,7 +78,7 @@ struct obj_itr {
 static int
 heap_iter(void *vstart, void *vend, size_t stride, void *ptr)
 {
-    struct obj_itr * ctx = (struct obj_itr *)ptr;
+    struct obj_itr *ctx = (struct obj_itr *)ptr;
     VALUE v;
 
     for (v = (VALUE)vstart; v != (VALUE)vend; v += stride) {
@@ -140,7 +140,7 @@ memsize_of_all_m(int argc, VALUE *argv, VALUE self)
     struct total_data data = {0, 0};
 
     if (argc > 0) {
-	rb_scan_args(argc, argv, "01", &data.klass);
+        rb_scan_args(argc, argv, "01", &data.klass);
     }
 
     each_object_with_flags(total_i, &data);
@@ -162,8 +162,7 @@ setup_hash(int argc, VALUE *argv)
     VALUE hash;
 
     if (rb_scan_args(argc, argv, "01", &hash) == 1) {
-        if (!RB_TYPE_P(hash, T_HASH))
-            rb_raise(rb_eTypeError, "non-hash given");
+        if (!RB_TYPE_P(hash, T_HASH)) rb_raise(rb_eTypeError, "non-hash given");
     }
 
     if (hash == Qnil) {
@@ -189,36 +188,40 @@ type2sym(enum ruby_value_type i)
 {
     VALUE type;
     switch (i) {
-#define CASE_TYPE(t) case t: type = ID2SYM(rb_intern(#t)); break;
-	CASE_TYPE(T_NONE);
-	CASE_TYPE(T_OBJECT);
-	CASE_TYPE(T_CLASS);
-	CASE_TYPE(T_MODULE);
-	CASE_TYPE(T_FLOAT);
-	CASE_TYPE(T_STRING);
-	CASE_TYPE(T_REGEXP);
-	CASE_TYPE(T_ARRAY);
-	CASE_TYPE(T_HASH);
-	CASE_TYPE(T_STRUCT);
-	CASE_TYPE(T_BIGNUM);
-	CASE_TYPE(T_FILE);
-	CASE_TYPE(T_DATA);
-	CASE_TYPE(T_MATCH);
-	CASE_TYPE(T_COMPLEX);
-	CASE_TYPE(T_RATIONAL);
-	CASE_TYPE(T_NIL);
-	CASE_TYPE(T_TRUE);
-	CASE_TYPE(T_FALSE);
-	CASE_TYPE(T_SYMBOL);
-	CASE_TYPE(T_FIXNUM);
-	CASE_TYPE(T_UNDEF);
-	CASE_TYPE(T_IMEMO);
-	CASE_TYPE(T_NODE);
-	CASE_TYPE(T_ICLASS);
+#define CASE_TYPE(t) \
+    case t: \
+        type = ID2SYM(rb_intern(#t)); \
+        break;
+        CASE_TYPE(T_NONE);
+        CASE_TYPE(T_OBJECT);
+        CASE_TYPE(T_CLASS);
+        CASE_TYPE(T_MODULE);
+        CASE_TYPE(T_FLOAT);
+        CASE_TYPE(T_STRING);
+        CASE_TYPE(T_REGEXP);
+        CASE_TYPE(T_ARRAY);
+        CASE_TYPE(T_HASH);
+        CASE_TYPE(T_STRUCT);
+        CASE_TYPE(T_BIGNUM);
+        CASE_TYPE(T_FILE);
+        CASE_TYPE(T_DATA);
+        CASE_TYPE(T_MATCH);
+        CASE_TYPE(T_COMPLEX);
+        CASE_TYPE(T_RATIONAL);
+        CASE_TYPE(T_NIL);
+        CASE_TYPE(T_TRUE);
+        CASE_TYPE(T_FALSE);
+        CASE_TYPE(T_SYMBOL);
+        CASE_TYPE(T_FIXNUM);
+        CASE_TYPE(T_UNDEF);
+        CASE_TYPE(T_IMEMO);
+        CASE_TYPE(T_NODE);
+        CASE_TYPE(T_ICLASS);
         CASE_TYPE(T_MOVED);
-	CASE_TYPE(T_ZOMBIE);
+        CASE_TYPE(T_ZOMBIE);
 #undef CASE_TYPE
-      default: rb_bug("type2sym: unknown type (%d)", i);
+    default:
+        rb_bug("type2sym: unknown type (%d)", i);
     }
     return type;
 }
@@ -249,23 +252,23 @@ type2sym(enum ruby_value_type i)
 static VALUE
 count_objects_size(int argc, VALUE *argv, VALUE os)
 {
-    size_t counts[T_MASK+1];
+    size_t counts[T_MASK + 1];
     size_t total = 0;
     enum ruby_value_type i;
     VALUE hash = setup_hash(argc, argv);
 
     for (i = 0; i <= T_MASK; i++) {
-	counts[i] = 0;
+        counts[i] = 0;
     }
 
     each_object_with_flags(cos_i, &counts[0]);
 
     for (i = 0; i <= T_MASK; i++) {
-	if (counts[i]) {
-	    VALUE type = type2sym(i);
-	    total += counts[i];
-	    rb_hash_aset(hash, type, SIZET2NUM(counts[i]));
-	}
+        if (counts[i]) {
+            VALUE type = type2sym(i);
+            total += counts[i];
+            rb_hash_aset(hash, type, SIZET2NUM(counts[i]));
+        }
     }
     rb_hash_aset(hash, ID2SYM(rb_intern("TOTAL")), SIZET2NUM(total));
     return hash;
@@ -329,10 +332,11 @@ count_symbols(int argc, VALUE *argv, VALUE os)
     size_t immortal_symbols = rb_sym_immortal_count();
     each_object_with_flags(cs_i, &dynamic_counts);
 
-    rb_hash_aset(hash, ID2SYM(rb_intern("mortal_dynamic_symbol")),   SIZET2NUM(dynamic_counts.mortal));
+    rb_hash_aset(hash, ID2SYM(rb_intern("mortal_dynamic_symbol")), SIZET2NUM(dynamic_counts.mortal));
     rb_hash_aset(hash, ID2SYM(rb_intern("immortal_dynamic_symbol")), SIZET2NUM(dynamic_counts.immortal));
-    rb_hash_aset(hash, ID2SYM(rb_intern("immortal_static_symbol")),  SIZET2NUM(immortal_symbols - dynamic_counts.immortal));
-    rb_hash_aset(hash, ID2SYM(rb_intern("immortal_symbol")),         SIZET2NUM(immortal_symbols));
+    rb_hash_aset(
+        hash, ID2SYM(rb_intern("immortal_static_symbol")), SIZET2NUM(immortal_symbols - dynamic_counts.immortal));
+    rb_hash_aset(hash, ID2SYM(rb_intern("immortal_symbol")), SIZET2NUM(immortal_symbols));
 
     return hash;
 }
@@ -374,132 +378,136 @@ cn_i(VALUE v, void *n)
 static VALUE
 count_nodes(int argc, VALUE *argv, VALUE os)
 {
-    size_t nodes[NODE_LAST+1];
+    size_t nodes[NODE_LAST + 1];
     enum node_type i;
     VALUE hash = setup_hash(argc, argv);
 
     for (i = 0; i <= NODE_LAST; i++) {
-	nodes[i] = 0;
+        nodes[i] = 0;
     }
 
     each_object_with_flags(cn_i, &nodes[0]);
 
-    for (i=0; i<NODE_LAST; i++) {
-	if (nodes[i] != 0) {
-	    VALUE node;
-	    switch (i) {
-#define COUNT_NODE(n) case n: node = ID2SYM(rb_intern(#n)); goto set
-		COUNT_NODE(NODE_SCOPE);
-		COUNT_NODE(NODE_BLOCK);
-		COUNT_NODE(NODE_IF);
-		COUNT_NODE(NODE_UNLESS);
-		COUNT_NODE(NODE_CASE);
-		COUNT_NODE(NODE_CASE2);
-		COUNT_NODE(NODE_CASE3);
-		COUNT_NODE(NODE_WHEN);
-		COUNT_NODE(NODE_IN);
-		COUNT_NODE(NODE_WHILE);
-		COUNT_NODE(NODE_UNTIL);
-		COUNT_NODE(NODE_ITER);
-		COUNT_NODE(NODE_FOR);
-		COUNT_NODE(NODE_FOR_MASGN);
-		COUNT_NODE(NODE_BREAK);
-		COUNT_NODE(NODE_NEXT);
-		COUNT_NODE(NODE_REDO);
-		COUNT_NODE(NODE_RETRY);
-		COUNT_NODE(NODE_BEGIN);
-		COUNT_NODE(NODE_RESCUE);
-		COUNT_NODE(NODE_RESBODY);
-		COUNT_NODE(NODE_ENSURE);
-		COUNT_NODE(NODE_AND);
-		COUNT_NODE(NODE_OR);
-		COUNT_NODE(NODE_MASGN);
-		COUNT_NODE(NODE_LASGN);
-		COUNT_NODE(NODE_DASGN);
-		COUNT_NODE(NODE_GASGN);
-		COUNT_NODE(NODE_IASGN);
-		COUNT_NODE(NODE_CDECL);
-		COUNT_NODE(NODE_CVASGN);
-		COUNT_NODE(NODE_OP_ASGN1);
-		COUNT_NODE(NODE_OP_ASGN2);
-		COUNT_NODE(NODE_OP_ASGN_AND);
-		COUNT_NODE(NODE_OP_ASGN_OR);
-		COUNT_NODE(NODE_OP_CDECL);
-		COUNT_NODE(NODE_CALL);
-		COUNT_NODE(NODE_OPCALL);
-		COUNT_NODE(NODE_FCALL);
-		COUNT_NODE(NODE_VCALL);
-		COUNT_NODE(NODE_QCALL);
-		COUNT_NODE(NODE_SUPER);
-		COUNT_NODE(NODE_ZSUPER);
-		COUNT_NODE(NODE_LIST);
-		COUNT_NODE(NODE_ZLIST);
-		COUNT_NODE(NODE_VALUES);
-		COUNT_NODE(NODE_HASH);
-		COUNT_NODE(NODE_RETURN);
-		COUNT_NODE(NODE_YIELD);
-		COUNT_NODE(NODE_LVAR);
-		COUNT_NODE(NODE_DVAR);
-		COUNT_NODE(NODE_GVAR);
-		COUNT_NODE(NODE_IVAR);
-		COUNT_NODE(NODE_CONST);
-		COUNT_NODE(NODE_CVAR);
-		COUNT_NODE(NODE_NTH_REF);
-		COUNT_NODE(NODE_BACK_REF);
-		COUNT_NODE(NODE_MATCH);
-		COUNT_NODE(NODE_MATCH2);
-		COUNT_NODE(NODE_MATCH3);
-		COUNT_NODE(NODE_LIT);
-		COUNT_NODE(NODE_STR);
-		COUNT_NODE(NODE_DSTR);
-		COUNT_NODE(NODE_XSTR);
-		COUNT_NODE(NODE_DXSTR);
-		COUNT_NODE(NODE_EVSTR);
-		COUNT_NODE(NODE_DREGX);
-		COUNT_NODE(NODE_ONCE);
-		COUNT_NODE(NODE_ARGS);
-		COUNT_NODE(NODE_ARGS_AUX);
-		COUNT_NODE(NODE_OPT_ARG);
-		COUNT_NODE(NODE_KW_ARG);
-		COUNT_NODE(NODE_POSTARG);
-		COUNT_NODE(NODE_ARGSCAT);
-		COUNT_NODE(NODE_ARGSPUSH);
-		COUNT_NODE(NODE_SPLAT);
-		COUNT_NODE(NODE_BLOCK_PASS);
-		COUNT_NODE(NODE_DEFN);
-		COUNT_NODE(NODE_DEFS);
-		COUNT_NODE(NODE_ALIAS);
-		COUNT_NODE(NODE_VALIAS);
-		COUNT_NODE(NODE_UNDEF);
-		COUNT_NODE(NODE_CLASS);
-		COUNT_NODE(NODE_MODULE);
-		COUNT_NODE(NODE_SCLASS);
-		COUNT_NODE(NODE_COLON2);
-		COUNT_NODE(NODE_COLON3);
-		COUNT_NODE(NODE_DOT2);
-		COUNT_NODE(NODE_DOT3);
-		COUNT_NODE(NODE_FLIP2);
-		COUNT_NODE(NODE_FLIP3);
-		COUNT_NODE(NODE_SELF);
-		COUNT_NODE(NODE_NIL);
-		COUNT_NODE(NODE_TRUE);
-		COUNT_NODE(NODE_FALSE);
-		COUNT_NODE(NODE_ERRINFO);
-		COUNT_NODE(NODE_DEFINED);
-		COUNT_NODE(NODE_POSTEXE);
-		COUNT_NODE(NODE_DSYM);
-		COUNT_NODE(NODE_ATTRASGN);
-		COUNT_NODE(NODE_LAMBDA);
-		COUNT_NODE(NODE_ARYPTN);
-		COUNT_NODE(NODE_FNDPTN);
-		COUNT_NODE(NODE_HSHPTN);
+    for (i = 0; i < NODE_LAST; i++) {
+        if (nodes[i] != 0) {
+            VALUE node;
+            switch (i) {
+#define COUNT_NODE(n) \
+    case n: \
+        node = ID2SYM(rb_intern(#n)); \
+        goto set
+                COUNT_NODE(NODE_SCOPE);
+                COUNT_NODE(NODE_BLOCK);
+                COUNT_NODE(NODE_IF);
+                COUNT_NODE(NODE_UNLESS);
+                COUNT_NODE(NODE_CASE);
+                COUNT_NODE(NODE_CASE2);
+                COUNT_NODE(NODE_CASE3);
+                COUNT_NODE(NODE_WHEN);
+                COUNT_NODE(NODE_IN);
+                COUNT_NODE(NODE_WHILE);
+                COUNT_NODE(NODE_UNTIL);
+                COUNT_NODE(NODE_ITER);
+                COUNT_NODE(NODE_FOR);
+                COUNT_NODE(NODE_FOR_MASGN);
+                COUNT_NODE(NODE_BREAK);
+                COUNT_NODE(NODE_NEXT);
+                COUNT_NODE(NODE_REDO);
+                COUNT_NODE(NODE_RETRY);
+                COUNT_NODE(NODE_BEGIN);
+                COUNT_NODE(NODE_RESCUE);
+                COUNT_NODE(NODE_RESBODY);
+                COUNT_NODE(NODE_ENSURE);
+                COUNT_NODE(NODE_AND);
+                COUNT_NODE(NODE_OR);
+                COUNT_NODE(NODE_MASGN);
+                COUNT_NODE(NODE_LASGN);
+                COUNT_NODE(NODE_DASGN);
+                COUNT_NODE(NODE_GASGN);
+                COUNT_NODE(NODE_IASGN);
+                COUNT_NODE(NODE_CDECL);
+                COUNT_NODE(NODE_CVASGN);
+                COUNT_NODE(NODE_OP_ASGN1);
+                COUNT_NODE(NODE_OP_ASGN2);
+                COUNT_NODE(NODE_OP_ASGN_AND);
+                COUNT_NODE(NODE_OP_ASGN_OR);
+                COUNT_NODE(NODE_OP_CDECL);
+                COUNT_NODE(NODE_CALL);
+                COUNT_NODE(NODE_OPCALL);
+                COUNT_NODE(NODE_FCALL);
+                COUNT_NODE(NODE_VCALL);
+                COUNT_NODE(NODE_QCALL);
+                COUNT_NODE(NODE_SUPER);
+                COUNT_NODE(NODE_ZSUPER);
+                COUNT_NODE(NODE_LIST);
+                COUNT_NODE(NODE_ZLIST);
+                COUNT_NODE(NODE_VALUES);
+                COUNT_NODE(NODE_HASH);
+                COUNT_NODE(NODE_RETURN);
+                COUNT_NODE(NODE_YIELD);
+                COUNT_NODE(NODE_LVAR);
+                COUNT_NODE(NODE_DVAR);
+                COUNT_NODE(NODE_GVAR);
+                COUNT_NODE(NODE_IVAR);
+                COUNT_NODE(NODE_CONST);
+                COUNT_NODE(NODE_CVAR);
+                COUNT_NODE(NODE_NTH_REF);
+                COUNT_NODE(NODE_BACK_REF);
+                COUNT_NODE(NODE_MATCH);
+                COUNT_NODE(NODE_MATCH2);
+                COUNT_NODE(NODE_MATCH3);
+                COUNT_NODE(NODE_LIT);
+                COUNT_NODE(NODE_STR);
+                COUNT_NODE(NODE_DSTR);
+                COUNT_NODE(NODE_XSTR);
+                COUNT_NODE(NODE_DXSTR);
+                COUNT_NODE(NODE_EVSTR);
+                COUNT_NODE(NODE_DREGX);
+                COUNT_NODE(NODE_ONCE);
+                COUNT_NODE(NODE_ARGS);
+                COUNT_NODE(NODE_ARGS_AUX);
+                COUNT_NODE(NODE_OPT_ARG);
+                COUNT_NODE(NODE_KW_ARG);
+                COUNT_NODE(NODE_POSTARG);
+                COUNT_NODE(NODE_ARGSCAT);
+                COUNT_NODE(NODE_ARGSPUSH);
+                COUNT_NODE(NODE_SPLAT);
+                COUNT_NODE(NODE_BLOCK_PASS);
+                COUNT_NODE(NODE_DEFN);
+                COUNT_NODE(NODE_DEFS);
+                COUNT_NODE(NODE_ALIAS);
+                COUNT_NODE(NODE_VALIAS);
+                COUNT_NODE(NODE_UNDEF);
+                COUNT_NODE(NODE_CLASS);
+                COUNT_NODE(NODE_MODULE);
+                COUNT_NODE(NODE_SCLASS);
+                COUNT_NODE(NODE_COLON2);
+                COUNT_NODE(NODE_COLON3);
+                COUNT_NODE(NODE_DOT2);
+                COUNT_NODE(NODE_DOT3);
+                COUNT_NODE(NODE_FLIP2);
+                COUNT_NODE(NODE_FLIP3);
+                COUNT_NODE(NODE_SELF);
+                COUNT_NODE(NODE_NIL);
+                COUNT_NODE(NODE_TRUE);
+                COUNT_NODE(NODE_FALSE);
+                COUNT_NODE(NODE_ERRINFO);
+                COUNT_NODE(NODE_DEFINED);
+                COUNT_NODE(NODE_POSTEXE);
+                COUNT_NODE(NODE_DSYM);
+                COUNT_NODE(NODE_ATTRASGN);
+                COUNT_NODE(NODE_LAMBDA);
+                COUNT_NODE(NODE_ARYPTN);
+                COUNT_NODE(NODE_FNDPTN);
+                COUNT_NODE(NODE_HSHPTN);
 #undef COUNT_NODE
-	      case NODE_LAST: break;
-	    }
-	    UNREACHABLE;
-	  set:
-	    rb_hash_aset(hash, node, SIZET2NUM(nodes[i]));
-	}
+            case NODE_LAST:
+                break;
+            }
+            UNREACHABLE;
+        set:
+            rb_hash_aset(hash, node, SIZET2NUM(nodes[i]));
+        }
     }
     return hash;
 }
@@ -571,7 +579,7 @@ count_tdata_objects(int argc, VALUE *argv, VALUE self)
     return hash;
 }
 
-static ID imemo_type_ids[IMEMO_MASK+1];
+static ID imemo_type_ids[IMEMO_MASK + 1];
 
 static void
 count_imemo_objects_i(VALUE v, void *data)
@@ -665,11 +673,13 @@ iow_size(const void *ptr)
     return rb_obj_memsize_of(obj);
 }
 
-static const rb_data_type_t iow_data_type = {
-    "ObjectSpace::InternalObjectWrapper",
-    {iow_mark, 0, iow_size,},
-    0, 0, RUBY_TYPED_FREE_IMMEDIATELY
-};
+static const rb_data_type_t iow_data_type = {"ObjectSpace::InternalObjectWrapper",
+    {
+        iow_mark,
+        0,
+        iow_size,
+    },
+    0, 0, RUBY_TYPED_FREE_IMMEDIATELY};
 
 static VALUE rb_cInternalObjectWrapper;
 
@@ -694,7 +704,7 @@ iow_inspect(VALUE self)
     VALUE obj = (VALUE)DATA_PTR(self);
     VALUE type = type2sym(BUILTIN_TYPE(obj));
 
-    return rb_sprintf("#<InternalObject:%p %"PRIsVALUE">", (void *)obj, rb_sym2str(type));
+    return rb_sprintf("#<InternalObject:%p %" PRIsVALUE ">", (void *)obj, rb_sym2str(type));
 }
 
 /* Returns the Object#object_id of the internal object. */
@@ -817,26 +827,24 @@ reachable_object_from_root_i(const char *category, VALUE obj, void *ptr)
     VALUE category_objects;
 
     if (category == data->last_category) {
-	category_str = data->last_category_str;
-	category_objects = data->last_category_objects;
+        category_str = data->last_category_str;
+        category_objects = data->last_category_objects;
     }
     else {
-	data->last_category = category;
-	category_str = data->last_category_str = rb_str_new2(category);
-	category_objects = data->last_category_objects = rb_ident_hash_new();
-	if (!NIL_P(rb_hash_lookup(data->categories, category_str))) {
-	    rb_bug("reachable_object_from_root_i: category should insert at once");
-	}
-	rb_hash_aset(data->categories, category_str, category_objects);
+        data->last_category = category;
+        category_str = data->last_category_str = rb_str_new2(category);
+        category_objects = data->last_category_objects = rb_ident_hash_new();
+        if (!NIL_P(rb_hash_lookup(data->categories, category_str))) {
+            rb_bug("reachable_object_from_root_i: category should insert at once");
+        }
+        rb_hash_aset(data->categories, category_str, category_objects);
     }
 
-    if (rb_objspace_markable_object_p(obj) &&
-	obj != data->categories &&
-	obj != data->last_category_objects) {
-	if (rb_objspace_internal_object_p(obj)) {
-	    obj = iow_newobj(obj);
-	}
-	rb_hash_aset(category_objects, obj, obj);
+    if (rb_objspace_markable_object_p(obj) && obj != data->categories && obj != data->last_category_objects) {
+        if (rb_objspace_internal_object_p(obj)) {
+            obj = iow_newobj(obj);
+        }
+        rb_hash_aset(category_objects, obj, obj);
     }
 }
 
@@ -872,14 +880,13 @@ static VALUE
 wrap_klass_iow(VALUE klass)
 {
     if (!RTEST(klass)) {
-	return Qnil;
+        return Qnil;
     }
-    else if (RB_TYPE_P(klass, T_ICLASS) ||
-             CLASS_OF(klass) == Qfalse /* hidden object */) {
-	return iow_newobj(klass);
+    else if (RB_TYPE_P(klass, T_ICLASS) || CLASS_OF(klass) == Qfalse /* hidden object */) {
+        return iow_newobj(klass);
     }
     else {
-	return klass;
+        return klass;
     }
 }
 
@@ -898,7 +905,7 @@ objspace_internal_class_of(VALUE self, VALUE obj)
     VALUE klass;
 
     if (rb_typeddata_is_kind_of(obj, &iow_data_type)) {
-	obj = (VALUE)DATA_PTR(obj);
+        obj = (VALUE)DATA_PTR(obj);
     }
 
     if (RB_TYPE_P(obj, T_IMEMO)) {
@@ -925,17 +932,17 @@ objspace_internal_super_of(VALUE self, VALUE obj)
     VALUE super;
 
     if (rb_typeddata_is_kind_of(obj, &iow_data_type)) {
-	obj = (VALUE)DATA_PTR(obj);
+        obj = (VALUE)DATA_PTR(obj);
     }
 
     switch (OBJ_BUILTIN_TYPE(obj)) {
-      case T_MODULE:
-      case T_CLASS:
-      case T_ICLASS:
-	super = RCLASS_SUPER(obj);
-	break;
-      default:
-	rb_raise(rb_eArgError, "class or module is expected");
+    case T_MODULE:
+    case T_CLASS:
+    case T_ICLASS:
+        super = RCLASS_SUPER(obj);
+        break;
+    default:
+        rb_raise(rb_eArgError, "class or module is expected");
     }
 
     return wrap_klass_iow(super);

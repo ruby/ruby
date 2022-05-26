@@ -1,4 +1,4 @@
-#ifndef RUBY_RE_H                                    /*-*-C++-*-vi:se ft=cpp:*/
+#ifndef RUBY_RE_H /*-*-C++-*-vi:se ft=cpp:*/
 #define RUBY_RE_H 1
 /**
  * @file
@@ -13,16 +13,16 @@
 #include "ruby/internal/config.h"
 
 #ifdef HAVE_SYS_TYPES_H
-# include <sys/types.h>
+#    include <sys/types.h>
 #endif
 
 #include <stdio.h>
 
-#include "ruby/regex.h"
 #include "ruby/internal/core/rmatch.h"
 #include "ruby/internal/dllexport.h"
+#include "ruby/regex.h"
 
-struct re_registers;            /* Defined in onigmo.h */
+struct re_registers; /* Defined in onigmo.h */
 
 RBIMPL_SYMBOL_EXPORT_BEGIN()
 

@@ -1,4 +1,4 @@
-#ifndef RBIMPL_INTERN_TIME_H                         /*-*-C++-*-vi:se ft=cpp:*/
+#ifndef RBIMPL_INTERN_TIME_H /*-*-C++-*-vi:se ft=cpp:*/
 #define RBIMPL_INTERN_TIME_H
 /**
  * @file
@@ -23,7 +23,7 @@
 #include "ruby/internal/config.h"
 
 #ifdef HAVE_TIME_H
-# include <time.h>              /* for time_t */
+#    include <time.h> /* for time_t */
 #endif
 
 #include "ruby/internal/attr/nonnull.h"

@@ -1,4 +1,4 @@
-#ifndef INTERNAL_VARIABLE_H                              /*-*-C-*-vi:se ft=c:*/
+#ifndef INTERNAL_VARIABLE_H /*-*-C-*-vi:se ft=c:*/
 #define INTERNAL_VARIABLE_H
 /**
  * @author     Ruby developers <ruby-core@ruby-lang.org>
@@ -8,15 +8,15 @@
  *             file COPYING are met.  Consult the file for details.
  * @brief      Internal header for variables.
  */
+#include "constant.h" /* for rb_const_entry_t */
 #include "ruby/internal/config.h"
-#include <stddef.h>             /* for size_t */
-#include "constant.h"           /* for rb_const_entry_t */
-#include "ruby/internal/stdbool.h"     /* for bool */
-#include "ruby/ruby.h"          /* for VALUE */
+#include "ruby/internal/stdbool.h" /* for bool */
+#include "ruby/ruby.h"             /* for VALUE */
+#include <stddef.h>                /* for size_t */
 
 /* global variable */
 
-#define ROBJECT_TRANSIENT_FLAG    FL_USER13
+#define ROBJECT_TRANSIENT_FLAG FL_USER13
 
 /* variable.c */
 void rb_gc_mark_global_tbl(void);
@@ -27,7 +27,7 @@ VALUE rb_attr_delete(VALUE, ID);
 VALUE rb_ivar_lookup(VALUE obj, ID id, VALUE undef);
 void rb_autoload_str(VALUE mod, ID id, VALUE file);
 VALUE rb_autoload_at_p(VALUE, ID, int);
-NORETURN(VALUE rb_mod_const_missing(VALUE,VALUE));
+NORETURN(VALUE rb_mod_const_missing(VALUE, VALUE));
 rb_gvar_getter_t *rb_gvar_getter_function_of(ID);
 rb_gvar_setter_t *rb_gvar_setter_function_of(ID);
 void rb_gvar_readonly_setter(VALUE v, ID id, VALUE *_);

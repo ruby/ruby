@@ -6,30 +6,30 @@
 // Similarly, we wrap OS facilities we need in simple functions to help with
 // FFI and to avoid the need to use external crates.io Rust libraries.
 
-#include "internal.h"
-#include "internal/sanitizers.h"
-#include "internal/string.h"
-#include "internal/hash.h"
-#include "internal/variable.h"
-#include "internal/compile.h"
-#include "internal/class.h"
-#include "gc.h"
-#include "vm_core.h"
-#include "vm_callinfo.h"
+#include "yjit.h"
 #include "builtin.h"
+#include "gc.h"
 #include "insns.inc"
 #include "insns_info.inc"
-#include "vm_sync.h"
-#include "yjit.h"
-#include "vm_insnhelper.h"
+#include "internal.h"
+#include "internal/class.h"
+#include "internal/compile.h"
+#include "internal/hash.h"
+#include "internal/sanitizers.h"
+#include "internal/string.h"
+#include "internal/variable.h"
+#include "iseq.h"
 #include "probes.h"
 #include "probes_helper.h"
-#include "iseq.h"
+#include "vm_callinfo.h"
+#include "vm_core.h"
+#include "vm_insnhelper.h"
+#include "vm_sync.h"
 
 // For mmapp(), sysconf()
 #ifndef _WIN32
-#include <unistd.h>
-#include <sys/mman.h>
+#    include <sys/mman.h>
+#    include <unistd.h>
 #endif
 
 #include <errno.h>
@@ -69,8 +69,8 @@ void
 rb_yjit_mark_writable(void *mem_block, uint32_t mem_size)
 {
     if (mprotect(mem_block, mem_size, PROT_READ | PROT_WRITE)) {
-        rb_bug("Couldn't make JIT page region (%p, %lu bytes) writeable, errno: %s\n",
-            mem_block, (unsigned long)mem_size, strerror(errno));
+        rb_bug("Couldn't make JIT page region (%p, %lu bytes) writeable, errno: %s\n", mem_block,
+            (unsigned long)mem_size, strerror(errno));
     }
 }
 
@@ -78,8 +78,8 @@ void
 rb_yjit_mark_executable(void *mem_block, uint32_t mem_size)
 {
     if (mprotect(mem_block, mem_size, PROT_READ | PROT_EXEC)) {
-        rb_bug("Couldn't make JIT page (%p, %lu bytes) executable, errno: %s\n",
-            mem_block, (unsigned long)mem_size, strerror(errno));
+        rb_bug("Couldn't make JIT page (%p, %lu bytes) executable, errno: %s\n", mem_block, (unsigned long)mem_size,
+            strerror(errno));
     }
 }
 
@@ -97,7 +97,7 @@ rb_yjit_get_page_size(void)
 
     return (uint32_t)page_size;
 #else
-#error "YJIT supports POSIX only for now"
+#    error "YJIT supports POSIX only for now"
 #endif
 }
 
@@ -110,8 +110,7 @@ align_ptr(uint8_t *ptr, uint32_t multiple)
     uint32_t rem = ((uint32_t)(uintptr_t)ptr) % multiple;
 
     // If the pointer is already aligned, stop
-    if (rem == 0)
-        return ptr;
+    if (rem == 0) return ptr;
 
     // Pad the pointer by the necessary amount to align it
     uint32_t pad = multiple - rem;
@@ -127,56 +126,37 @@ rb_yjit_alloc_exec_mem(uint32_t mem_size)
 #ifndef _WIN32
     uint8_t *mem_block;
 
-    // On Linux
-    #if defined(MAP_FIXED_NOREPLACE) && defined(_SC_PAGESIZE)
-        // Align the requested address to page size
-        uint32_t page_size = (uint32_t)sysconf(_SC_PAGESIZE);
-        uint8_t *req_addr = align_ptr((uint8_t*)&rb_yjit_alloc_exec_mem, page_size);
+// On Linux
+#    if defined(MAP_FIXED_NOREPLACE) && defined(_SC_PAGESIZE)
+    // Align the requested address to page size
+    uint32_t page_size = (uint32_t)sysconf(_SC_PAGESIZE);
+    uint8_t *req_addr = align_ptr((uint8_t *)&rb_yjit_alloc_exec_mem, page_size);
 
-        do {
-            // Try to map a chunk of memory as executable
-            mem_block = (uint8_t*)mmap(
-                (void*)req_addr,
-                mem_size,
-                PROT_READ | PROT_EXEC,
-                MAP_PRIVATE | MAP_ANONYMOUS | MAP_FIXED_NOREPLACE,
-                -1,
-                0
-            );
-
-            // If we succeeded, stop
-            if (mem_block != MAP_FAILED) {
-                break;
-            }
-
-            // +4MB
-            req_addr += 4 * 1024 * 1024;
-        } while (req_addr < (uint8_t*)&rb_yjit_alloc_exec_mem + INT32_MAX);
-
-    // On MacOS and other platforms
-    #else
+    do {
         // Try to map a chunk of memory as executable
-        mem_block = (uint8_t*)mmap(
-            (void*)rb_yjit_alloc_exec_mem,
-            mem_size,
-            PROT_READ | PROT_EXEC,
-            MAP_PRIVATE | MAP_ANONYMOUS,
-            -1,
-            0
-        );
-    #endif
+        mem_block = (uint8_t *)mmap((void *)req_addr, mem_size, PROT_READ | PROT_EXEC,
+            MAP_PRIVATE | MAP_ANONYMOUS | MAP_FIXED_NOREPLACE, -1, 0);
+
+        // If we succeeded, stop
+        if (mem_block != MAP_FAILED) {
+            break;
+        }
+
+        // +4MB
+        req_addr += 4 * 1024 * 1024;
+    } while (req_addr < (uint8_t *)&rb_yjit_alloc_exec_mem + INT32_MAX);
+
+// On MacOS and other platforms
+#    else
+    // Try to map a chunk of memory as executable
+    mem_block = (uint8_t *)mmap(
+        (void *)rb_yjit_alloc_exec_mem, mem_size, PROT_READ | PROT_EXEC, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+#    endif
 
     // Fallback
     if (mem_block == MAP_FAILED) {
         // Try again without the address hint (e.g., valgrind)
-        mem_block = (uint8_t*)mmap(
-            NULL,
-            mem_size,
-            PROT_READ | PROT_EXEC,
-            MAP_PRIVATE | MAP_ANONYMOUS,
-            -1,
-            0
-        );
+        mem_block = (uint8_t *)mmap(NULL, mem_size, PROT_READ | PROT_EXEC, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
     }
 
     // Check that the memory mapping was successful
@@ -423,7 +403,7 @@ rb_get_mct_argc(rb_method_cfunc_t *mct)
 void *
 rb_get_mct_func(rb_method_cfunc_t *mct)
 {
-    return (void*)mct->func; // this field is defined as type VALUE (*func)(ANYARGS)
+    return (void *)mct->func; // this field is defined as type VALUE (*func)(ANYARGS)
 }
 
 const rb_iseq_t *
@@ -433,7 +413,7 @@ rb_get_def_iseq_ptr(rb_method_definition_t *def)
 }
 
 rb_iseq_t *
-rb_get_iseq_body_local_iseq(rb_iseq_t  *iseq)
+rb_get_iseq_body_local_iseq(rb_iseq_t *iseq)
 {
     return iseq->body->local_iseq;
 }
@@ -542,18 +522,16 @@ rb_leaf_invokebuiltin_iseq_p(const rb_iseq_t *iseq)
     unsigned int leave_len = insn_len(BIN(leave));
 
     return (iseq->body->iseq_size == (invokebuiltin_len + leave_len) &&
-        rb_vm_insn_addr2opcode((void *)iseq->body->iseq_encoded[0]) == BIN(opt_invokebuiltin_delegate_leave) &&
-        rb_vm_insn_addr2opcode((void *)iseq->body->iseq_encoded[invokebuiltin_len]) == BIN(leave) &&
-        iseq->body->builtin_inline_p
-    );
+            rb_vm_insn_addr2opcode((void *)iseq->body->iseq_encoded[0]) == BIN(opt_invokebuiltin_delegate_leave) &&
+            rb_vm_insn_addr2opcode((void *)iseq->body->iseq_encoded[invokebuiltin_len]) == BIN(leave) &&
+            iseq->body->builtin_inline_p);
 }
 
 // Return an rb_builtin_function if the iseq contains only that leaf builtin function.
 const struct rb_builtin_function *
 rb_leaf_builtin_function(const rb_iseq_t *iseq)
 {
-    if (!rb_leaf_invokebuiltin_iseq_p(iseq))
-        return NULL;
+    if (!rb_leaf_invokebuiltin_iseq_p(iseq)) return NULL;
     return (const struct rb_builtin_function *)iseq->body->iseq_encoded[1];
 }
 
@@ -572,7 +550,7 @@ rb_get_ec_cfp(rb_execution_context_t *ec)
 VALUE *
 rb_get_cfp_pc(struct rb_control_frame_struct *cfp)
 {
-    return (VALUE*)cfp->pc;
+    return (VALUE *)cfp->pc;
 }
 
 VALUE *
@@ -597,7 +575,7 @@ rb_iseq_t *
 rb_cfp_get_iseq(struct rb_control_frame_struct *cfp)
 {
     // TODO(alan) could assert frame type here to make sure that it's a ruby frame with an iseq.
-    return (rb_iseq_t*)cfp->iseq;
+    return (rb_iseq_t *)cfp->iseq;
 }
 
 VALUE
@@ -609,7 +587,7 @@ rb_get_cfp_self(struct rb_control_frame_struct *cfp)
 VALUE *
 rb_get_cfp_ep(struct rb_control_frame_struct *cfp)
 {
-    return (VALUE*)cfp->ep;
+    return (VALUE *)cfp->ep;
 }
 
 VALUE
@@ -844,11 +822,9 @@ void rb_yjit_root_mark(void *ptr); // in Rust
 
 // Custom type for interacting with the GC
 // TODO: make this write barrier protected
-static const rb_data_type_t yjit_root_type = {
-    "yjit_root",
-    {rb_yjit_root_mark, yjit_root_free, yjit_root_memsize, yjit_root_update_references},
-    0, 0, RUBY_TYPED_FREE_IMMEDIATELY
-};
+static const rb_data_type_t yjit_root_type = {"yjit_root",
+    {rb_yjit_root_mark, yjit_root_free, yjit_root_memsize, yjit_root_update_references}, 0, 0,
+    RUBY_TYPED_FREE_IMMEDIATELY};
 
 // For dealing with refinements
 void

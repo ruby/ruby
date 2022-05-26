@@ -1,5 +1,5 @@
-#ifndef  RBIMPL_INTERN_LOAD_H                        /*-*-C++-*-vi:se ft=cpp:*/
-#define  RBIMPL_INTERN_LOAD_H
+#ifndef RBIMPL_INTERN_LOAD_H /*-*-C++-*-vi:se ft=cpp:*/
+#define RBIMPL_INTERN_LOAD_H
 /**
  * @file
  * @author     Ruby developers <ruby-core@ruby-lang.org>

@@ -1,4 +1,4 @@
-#ifndef RBIMPL_ARITHMETIC_H                          /*-*-C++-*-vi:se ft=cpp:*/
+#ifndef RBIMPL_ARITHMETIC_H /*-*-C++-*-vi:se ft=cpp:*/
 #define RBIMPL_ARITHMETIC_H
 /**
  * @file

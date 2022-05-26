@@ -1,4 +1,4 @@
-#ifndef RBIMPL_RTYPEDDATA_H                          /*-*-C++-*-vi:se ft=cpp:*/
+#ifndef RBIMPL_RTYPEDDATA_H /*-*-C++-*-vi:se ft=cpp:*/
 #define RBIMPL_RTYPEDDATA_H
 /**
  * @file
@@ -23,7 +23,7 @@
 #include "ruby/internal/config.h"
 
 #ifdef STDC_HEADERS
-# include <stddef.h>
+#    include <stddef.h>
 #endif
 
 #include "ruby/internal/assume.h"
@@ -47,7 +47,7 @@
  *              any  longer today.   Exists  here  for backwards  compatibility
  *              only.  You can safely forget about it.
  */
-#define HAVE_TYPE_RB_DATA_TYPE_T     1
+#define HAVE_TYPE_RB_DATA_TYPE_T 1
 
 /**
  * @private
@@ -65,7 +65,7 @@
  *              any  longer today.   Exists  here  for backwards  compatibility
  *              only.  You can safely forget about it.
  */
-#define HAVE_RB_DATA_TYPE_T_PARENT   1
+#define HAVE_RB_DATA_TYPE_T_PARENT 1
 
 /**
  * This is a  value you can set to  ::rb_data_type_struct::dfree.  Setting this
@@ -76,14 +76,14 @@
  *           system  and  Ruby  might  or  might  not  share  the  same  malloc
  *           implementation.
  */
-#define RUBY_TYPED_DEFAULT_FREE      RUBY_DEFAULT_FREE
+#define RUBY_TYPED_DEFAULT_FREE RUBY_DEFAULT_FREE
 
 /**
  * This is a  value you can set to  ::rb_data_type_struct::dfree.  Setting this
  * means the data  is managed by someone else, like,  statically allocated.  Of
  * course you are on your own then.
  */
-#define RUBY_TYPED_NEVER_FREE        RUBY_NEVER_FREE
+#define RUBY_TYPED_NEVER_FREE RUBY_NEVER_FREE
 
 /**
  * Convenient casting macro.
@@ -91,7 +91,7 @@
  * @param   obj  An object, which is in fact an ::RTypedData.
  * @return  The passed object casted to ::RTypedData.
  */
-#define RTYPEDDATA(obj)              RBIMPL_CAST((struct RTypedData *)(obj))
+#define RTYPEDDATA(obj) RBIMPL_CAST((struct RTypedData *)(obj))
 
 /**
  * Convenient getter macro.
@@ -99,19 +99,18 @@
  * @param   v  An object, which is in fact an ::RTypedData.
  * @return  The passed object's ::RTypedData::data field.
  */
-#define RTYPEDDATA_DATA(v)           (RTYPEDDATA(v)->data)
+#define RTYPEDDATA_DATA(v) (RTYPEDDATA(v)->data)
 
 /** @old{rb_check_typeddata} */
-#define Check_TypedStruct(v, t)      \
-    rb_check_typeddata(RBIMPL_CAST((VALUE)(v)), (t))
+#define Check_TypedStruct(v, t) rb_check_typeddata(RBIMPL_CAST((VALUE)(v)), (t))
 
 /** @cond INTERNAL_MACRO */
-#define RTYPEDDATA_P                 RTYPEDDATA_P
-#define RTYPEDDATA_TYPE              RTYPEDDATA_TYPE
-#define RUBY_TYPED_FREE_IMMEDIATELY  RUBY_TYPED_FREE_IMMEDIATELY
-#define RUBY_TYPED_FROZEN_SHAREABLE  RUBY_TYPED_FROZEN_SHAREABLE
-#define RUBY_TYPED_WB_PROTECTED      RUBY_TYPED_WB_PROTECTED
-#define RUBY_TYPED_PROMOTED1         RUBY_TYPED_PROMOTED1
+#define RTYPEDDATA_P RTYPEDDATA_P
+#define RTYPEDDATA_TYPE RTYPEDDATA_TYPE
+#define RUBY_TYPED_FREE_IMMEDIATELY RUBY_TYPED_FREE_IMMEDIATELY
+#define RUBY_TYPED_FROZEN_SHAREABLE RUBY_TYPED_FROZEN_SHAREABLE
+#define RUBY_TYPED_WB_PROTECTED RUBY_TYPED_WB_PROTECTED
+#define RUBY_TYPED_PROMOTED1 RUBY_TYPED_PROMOTED1
 /** @endcond */
 
 /**
@@ -119,9 +118,7 @@
  *
  * Bits for rb_data_type_struct::flags.
  */
-enum
-RBIMPL_ATTR_FLAG_ENUM()
-rbimpl_typeddata_flags {
+enum RBIMPL_ATTR_FLAG_ENUM() rbimpl_typeddata_flags {
     /**
      * This flag has something to do  with Ruby's global interpreter lock.  For
      * maximum  safety, Ruby  locks  the  entire VM  during  GC.  However  your
@@ -170,13 +167,13 @@ rbimpl_typeddata_flags {
      * Using this  flag needs deep understanding  of GC internals, often at the
      * level of source code.  You would better leave it unspecified.
      */
-    RUBY_TYPED_WB_PROTECTED     = RUBY_FL_WB_PROTECTED, /* THIS FLAG DEPENDS ON Ruby version */
+    RUBY_TYPED_WB_PROTECTED = RUBY_FL_WB_PROTECTED, /* THIS FLAG DEPENDS ON Ruby version */
 
     /**
      * This flag  is mysterious.  It seems  nobody is currently using  it.  The
      * intention of this flag is also unclear.  We need further investigations.
      */
-    RUBY_TYPED_PROMOTED1        = RUBY_FL_PROMOTED1     /* THIS FLAG DEPENDS ON Ruby version */
+    RUBY_TYPED_PROMOTED1 = RUBY_FL_PROMOTED1 /* THIS FLAG DEPENDS ON Ruby version */
 };
 
 /**
@@ -283,8 +280,8 @@ struct rb_data_type_struct {
      * Type-specific static data.   This area can be used for  any purpose by a
      * programmer who define the type.  Ruby does not manage this at all.
      */
-    void *data;        /* This area can be used for any purpose
-                          by a programmer who define the type. */
+    void *data; /* This area can be used for any purpose
+                   by a programmer who define the type. */
 
     /**
      * Type-specific behavioural  characteristics.  This is a  bitfield.  It is
@@ -296,7 +293,7 @@ struct rb_data_type_struct {
      *
      * Why it has to be a ::VALUE?  @shyouhei doesn't understand the design.
      */
-    VALUE flags;       /* RUBY_FL_WB_PROTECTED */
+    VALUE flags; /* RUBY_FL_WB_PROTECTED */
 };
 
 /**
@@ -438,8 +435,7 @@ RBIMPL_SYMBOL_EXPORT_END()
  * @exception  rb_eNoMemError  Out of memory.
  * @return     A created Ruby object.
  */
-#define TypedData_Wrap_Struct(klass,data_type,sval)\
-  rb_data_typed_object_wrap((klass),(sval),(data_type))
+#define TypedData_Wrap_Struct(klass, data_type, sval) rb_data_typed_object_wrap((klass), (sval), (data_type))
 
 /**
  * @private
@@ -455,9 +451,9 @@ RBIMPL_SYMBOL_EXPORT_END()
  * @param  sval       Variable name of created C struct.
  */
 #define TypedData_Make_Struct0(result, klass, type, size, data_type, sval) \
-    VALUE result = rb_data_typed_object_zalloc(klass, size, data_type);    \
-    (sval) = RBIMPL_CAST((type *)RTYPEDDATA_DATA(result));                  \
-    RBIMPL_CAST(/*suppress unused variable warnings*/(void)(sval))
+    VALUE result = rb_data_typed_object_zalloc(klass, size, data_type); \
+    (sval) = RBIMPL_CAST((type *)RTYPEDDATA_DATA(result)); \
+    RBIMPL_CAST(/*suppress unused variable warnings*/ (void)(sval))
 
 /**
  * Identical to #TypedData_Wrap_Struct,  except it allocates a  new data region
@@ -474,24 +470,14 @@ RBIMPL_SYMBOL_EXPORT_END()
  * @return     A created Ruby object.
  */
 #ifdef HAVE_STMT_AND_DECL_IN_EXPR
-#define TypedData_Make_Struct(klass, type, data_type, sval) \
-    RB_GNUC_EXTENSION({         \
-        TypedData_Make_Struct0( \
-            data_struct_obj,    \
-            klass,              \
-            type,               \
-            sizeof(type),       \
-            data_type,          \
-            sval);              \
-        data_struct_obj;        \
-    })
+#    define TypedData_Make_Struct(klass, type, data_type, sval) \
+        RB_GNUC_EXTENSION({ \
+            TypedData_Make_Struct0(data_struct_obj, klass, type, sizeof(type), data_type, sval); \
+            data_struct_obj; \
+        })
 #else
-#define TypedData_Make_Struct(klass, type, data_type, sval) \
-    rb_data_typed_object_make(        \
-        (klass),                      \
-        (data_type),                  \
-        RBIMPL_CAST((void **)&(sval)), \
-        sizeof(type))
+#    define TypedData_Make_Struct(klass, type, data_type, sval) \
+        rb_data_typed_object_make((klass), (data_type), RBIMPL_CAST((void **)&(sval)), sizeof(type))
 #endif
 
 /**
@@ -504,7 +490,7 @@ RBIMPL_SYMBOL_EXPORT_END()
  * @exception  rb_eTypeError  `obj` is not a kind of `data_type`.
  * @return     Unwrapped C struct that `obj` holds.
  */
-#define TypedData_Get_Struct(obj,type,data_type,sval) \
+#define TypedData_Get_Struct(obj, type, data_type, sval) \
     ((sval) = RBIMPL_CAST((type *)rb_check_typeddata((obj), (data_type))))
 
 RBIMPL_ATTR_PURE()
@@ -540,7 +526,7 @@ static inline bool
 RTYPEDDATA_P(VALUE obj)
 {
 #if RUBY_DEBUG
-    if (RB_UNLIKELY(! RB_TYPE_P(obj, RUBY_T_DATA))) {
+    if (RB_UNLIKELY(!RB_TYPE_P(obj, RUBY_T_DATA))) {
         Check_Type(obj, RUBY_T_DATA);
         RBIMPL_UNREACHABLE_RETURN(false);
     }
@@ -563,7 +549,7 @@ static inline const struct rb_data_type_struct *
 RTYPEDDATA_TYPE(VALUE obj)
 {
 #if RUBY_DEBUG
-    if (RB_UNLIKELY(! RTYPEDDATA_P(obj))) {
+    if (RB_UNLIKELY(!RTYPEDDATA_P(obj))) {
         rb_unexpected_type(obj, RUBY_T_DATA);
         RBIMPL_UNREACHABLE_RETURN(NULL);
     }

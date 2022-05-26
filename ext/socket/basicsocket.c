@@ -11,15 +11,14 @@
 #include "rubysocket.h"
 
 #ifdef _WIN32
-#define is_socket(fd) rb_w32_is_socket(fd)
+#    define is_socket(fd) rb_w32_is_socket(fd)
 #else
 static int
 is_socket(int fd)
 {
     struct stat sbuf;
 
-    if (fstat(fd, &sbuf) < 0)
-        rb_sys_fail("fstat(2)");
+    if (fstat(fd, &sbuf) < 0) rb_sys_fail("fstat(2)");
     return S_ISSOCK(sbuf.st_mode);
 }
 #endif
@@ -94,16 +93,15 @@ bsock_shutdown(int argc, VALUE *argv, VALUE sock)
 
     rb_scan_args(argc, argv, "01", &howto);
     if (howto == Qnil)
-	how = SHUT_RDWR;
+        how = SHUT_RDWR;
     else {
-	how = rsock_shutdown_how_arg(howto);
+        how = rsock_shutdown_how_arg(howto);
         if (how != SHUT_WR && how != SHUT_RD && how != SHUT_RDWR) {
-	    rb_raise(rb_eArgError, "`how' should be either :SHUT_RD, :SHUT_WR, :SHUT_RDWR");
-	}
+            rb_raise(rb_eArgError, "`how' should be either :SHUT_RD, :SHUT_WR, :SHUT_RDWR");
+        }
     }
     GetOpenFile(sock, fptr);
-    if (shutdown(fptr->fd, how) == -1)
-	rb_sys_fail("shutdown(2)");
+    if (shutdown(fptr->fd, how) == -1) rb_sys_fail("shutdown(2)");
 
     return INT2FIX(0);
 }
@@ -126,7 +124,7 @@ bsock_close_read(VALUE sock)
     GetOpenFile(sock, fptr);
     shutdown(fptr->fd, 0);
     if (!(fptr->mode & FMODE_WRITABLE)) {
-	return rb_io_close(sock);
+        return rb_io_close(sock);
     }
     fptr->mode &= ~FMODE_READABLE;
 
@@ -155,7 +153,7 @@ bsock_close_write(VALUE sock)
 
     GetOpenFile(sock, fptr);
     if (!(fptr->mode & FMODE_READABLE)) {
-	return rb_io_close(sock);
+        return rb_io_close(sock);
     }
     shutdown(fptr->fd, 1);
     fptr->mode &= ~FMODE_WRITABLE;
@@ -219,7 +217,7 @@ bsock_close_write(VALUE sock)
  *            IPAddr.new(Socket::INADDR_ANY, Socket::AF_INET).hton
  *   sock.setsockopt(Socket::IPPROTO_IP, Socket::IP_ADD_MEMBERSHIP, optval)
  *
-*/
+ */
 static VALUE
 bsock_setsockopt(int argc, VALUE *argv, VALUE sock)
 {
@@ -245,27 +243,27 @@ bsock_setsockopt(int argc, VALUE *argv, VALUE sock)
     option = rsock_optname_arg(family, level, optname);
 
     switch (TYPE(val)) {
-      case T_FIXNUM:
-	i = FIX2INT(val);
-	goto numval;
-      case T_FALSE:
-	i = 0;
-	goto numval;
-      case T_TRUE:
-	i = 1;
-      numval:
-	v = (char*)&i; vlen = (int)sizeof(i);
-	break;
-      default:
-	StringValue(val);
-	v = RSTRING_PTR(val);
-	vlen = RSTRING_SOCKLEN(val);
-	break;
+    case T_FIXNUM:
+        i = FIX2INT(val);
+        goto numval;
+    case T_FALSE:
+        i = 0;
+        goto numval;
+    case T_TRUE:
+        i = 1;
+    numval:
+        v = (char *)&i;
+        vlen = (int)sizeof(i);
+        break;
+    default:
+        StringValue(val);
+        v = RSTRING_PTR(val);
+        vlen = RSTRING_SOCKLEN(val);
+        break;
     }
 
     rb_io_check_closed(fptr);
-    if (setsockopt(fptr->fd, level, option, v, vlen) < 0)
-        rsock_sys_fail_path("setsockopt(2)", fptr->pathv);
+    if (setsockopt(fptr->fd, level, option, v, vlen) < 0) rsock_sys_fail_path("setsockopt(2)", fptr->pathv);
 
     return INT2FIX(0);
 }
@@ -325,7 +323,7 @@ bsock_setsockopt(int argc, VALUE *argv, VALUE sock)
  *   optval =  sock.getsockopt(Socket::SOL_SOCKET, Socket::SO_LINGER)
  *   onoff, linger = optval.unpack "ii"
  *   onoff = onoff == 0 ? false : true
-*/
+ */
 static VALUE
 bsock_getsockopt(VALUE sock, VALUE lev, VALUE optname)
 {
@@ -342,22 +340,21 @@ bsock_getsockopt(VALUE sock, VALUE lev, VALUE optname)
     len = 256;
 #ifdef _AIX
     switch (option) {
-      case SO_DEBUG:
-      case SO_REUSEADDR:
-      case SO_KEEPALIVE:
-      case SO_DONTROUTE:
-      case SO_BROADCAST:
-      case SO_OOBINLINE:
+    case SO_DEBUG:
+    case SO_REUSEADDR:
+    case SO_KEEPALIVE:
+    case SO_DONTROUTE:
+    case SO_BROADCAST:
+    case SO_OOBINLINE:
         /* AIX doesn't set len for boolean options */
         len = sizeof(int);
     }
 #endif
-    buf = ALLOCA_N(char,len);
+    buf = ALLOCA_N(char, len);
 
     rb_io_check_closed(fptr);
 
-    if (getsockopt(fptr->fd, level, option, buf, &len) < 0)
-	rsock_sys_fail_path("getsockopt(2)", fptr->pathv);
+    if (getsockopt(fptr->fd, level, option, buf, &len) < 0) rsock_sys_fail_path("getsockopt(2)", fptr->pathv);
 
     return rsock_sockopt_new(family, level, option, rb_str_new(buf, len));
 }
@@ -384,10 +381,9 @@ bsock_getsockname(VALUE sock)
     rb_io_t *fptr;
 
     GetOpenFile(sock, fptr);
-    if (getsockname(fptr->fd, &buf.addr, &len) < 0)
-	rb_sys_fail("getsockname(2)");
+    if (getsockname(fptr->fd, &buf.addr, &len) < 0) rb_sys_fail("getsockname(2)");
     if (len0 < len) len = len0;
-    return rb_str_new((char*)&buf, len);
+    return rb_str_new((char *)&buf, len);
 }
 
 /*
@@ -415,10 +411,9 @@ bsock_getpeername(VALUE sock)
     rb_io_t *fptr;
 
     GetOpenFile(sock, fptr);
-    if (getpeername(fptr->fd, &buf.addr, &len) < 0)
-	rb_sys_fail("getpeername(2)");
+    if (getpeername(fptr->fd, &buf.addr, &len) < 0) rb_sys_fail("getpeername(2)");
     if (len0 < len) len = len0;
-    return rb_str_new((char*)&buf, len);
+    return rb_str_new((char *)&buf, len);
 }
 
 #if defined(HAVE_GETPEEREID) || defined(SO_PEERCRED) || defined(HAVE_GETPEERUCRED)
@@ -447,36 +442,33 @@ bsock_getpeername(VALUE sock)
 static VALUE
 bsock_getpeereid(VALUE self)
 {
-#if defined(HAVE_GETPEEREID)
+#    if defined(HAVE_GETPEEREID)
     rb_io_t *fptr;
     uid_t euid;
     gid_t egid;
     GetOpenFile(self, fptr);
-    if (getpeereid(fptr->fd, &euid, &egid) == -1)
-	rb_sys_fail("getpeereid(3)");
+    if (getpeereid(fptr->fd, &euid, &egid) == -1) rb_sys_fail("getpeereid(3)");
     return rb_assoc_new(UIDT2NUM(euid), GIDT2NUM(egid));
-#elif defined(SO_PEERCRED) /* GNU/Linux */
+#    elif defined(SO_PEERCRED)       /* GNU/Linux */
     rb_io_t *fptr;
     struct ucred cred;
     socklen_t len = sizeof(cred);
     GetOpenFile(self, fptr);
-    if (getsockopt(fptr->fd, SOL_SOCKET, SO_PEERCRED, &cred, &len) == -1)
-	rb_sys_fail("getsockopt(SO_PEERCRED)");
+    if (getsockopt(fptr->fd, SOL_SOCKET, SO_PEERCRED, &cred, &len) == -1) rb_sys_fail("getsockopt(SO_PEERCRED)");
     return rb_assoc_new(UIDT2NUM(cred.uid), GIDT2NUM(cred.gid));
-#elif defined(HAVE_GETPEERUCRED) /* Solaris */
+#    elif defined(HAVE_GETPEERUCRED) /* Solaris */
     rb_io_t *fptr;
     ucred_t *uc = NULL;
     VALUE ret;
     GetOpenFile(self, fptr);
-    if (getpeerucred(fptr->fd, &uc) == -1)
-	rb_sys_fail("getpeerucred(3C)");
+    if (getpeerucred(fptr->fd, &uc) == -1) rb_sys_fail("getpeerucred(3C)");
     ret = rb_assoc_new(UIDT2NUM(ucred_geteuid(uc)), GIDT2NUM(ucred_getegid(uc)));
     ucred_free(uc);
     return ret;
-#endif
+#    endif
 }
 #else
-#define bsock_getpeereid rb_f_notimplement
+#    define bsock_getpeereid rb_f_notimplement
 #endif
 
 /*
@@ -505,8 +497,7 @@ bsock_local_address(VALUE sock)
     rb_io_t *fptr;
 
     GetOpenFile(sock, fptr);
-    if (getsockname(fptr->fd, &buf.addr, &len) < 0)
-	rb_sys_fail("getsockname(2)");
+    if (getsockname(fptr->fd, &buf.addr, &len) < 0) rb_sys_fail("getsockname(2)");
     if (len0 < len) len = len0;
     return rsock_fd_socket_addrinfo(fptr->fd, &buf.addr, len);
 }
@@ -539,8 +530,7 @@ bsock_remote_address(VALUE sock)
     rb_io_t *fptr;
 
     GetOpenFile(sock, fptr);
-    if (getpeername(fptr->fd, &buf.addr, &len) < 0)
-	rb_sys_fail("getpeername(2)");
+    if (getpeername(fptr->fd, &buf.addr, &len) < 0) rb_sys_fail("getpeername(2)");
     if (len0 < len) len = len0;
     return rsock_fd_socket_addrinfo(fptr->fd, &buf.addr, len);
 }
@@ -656,10 +646,10 @@ bsock_do_not_reverse_lookup_set(VALUE sock, VALUE state)
 
     GetOpenFile(sock, fptr);
     if (RTEST(state)) {
-	fptr->mode |= FMODE_NOREVLOOKUP;
+        fptr->mode |= FMODE_NOREVLOOKUP;
     }
     else {
-	fptr->mode &= ~FMODE_NOREVLOOKUP;
+        fptr->mode &= ~FMODE_NOREVLOOKUP;
     }
     return sock;
 }
@@ -709,7 +699,7 @@ bsock_recv_nonblock(VALUE sock, VALUE len, VALUE flg, VALUE str, VALUE ex)
 static VALUE
 bsock_do_not_rev_lookup(VALUE _)
 {
-    return rsock_do_not_reverse_lookup?Qtrue:Qfalse;
+    return rsock_do_not_reverse_lookup ? Qtrue : Qfalse;
 }
 
 /*
@@ -746,10 +736,8 @@ rsock_init_basicsocket(void)
     rb_cBasicSocket = rb_define_class("BasicSocket", rb_cIO);
     rb_undef_method(rb_cBasicSocket, "initialize");
 
-    rb_define_singleton_method(rb_cBasicSocket, "do_not_reverse_lookup",
-			       bsock_do_not_rev_lookup, 0);
-    rb_define_singleton_method(rb_cBasicSocket, "do_not_reverse_lookup=",
-			       bsock_do_not_rev_lookup_set, 1);
+    rb_define_singleton_method(rb_cBasicSocket, "do_not_reverse_lookup", bsock_do_not_rev_lookup, 0);
+    rb_define_singleton_method(rb_cBasicSocket, "do_not_reverse_lookup=", bsock_do_not_rev_lookup_set, 1);
     rb_define_singleton_method(rb_cBasicSocket, "for_fd", bsock_s_for_fd, 1);
 
     rb_define_method(rb_cBasicSocket, "close_read", bsock_close_read, 0);
@@ -769,24 +757,16 @@ rsock_init_basicsocket(void)
     rb_define_method(rb_cBasicSocket, "do_not_reverse_lookup=", bsock_do_not_reverse_lookup_set, 1);
 
     /* for ext/socket/lib/socket.rb use only: */
-    rb_define_private_method(rb_cBasicSocket,
-			     "__recv_nonblock", bsock_recv_nonblock, 4);
+    rb_define_private_method(rb_cBasicSocket, "__recv_nonblock", bsock_recv_nonblock, 4);
 
 #if MSG_DONTWAIT_RELIABLE
-    rb_define_private_method(rb_cBasicSocket,
-			     "__read_nonblock", rsock_read_nonblock, 3);
-    rb_define_private_method(rb_cBasicSocket,
-			     "__write_nonblock", rsock_write_nonblock, 2);
+    rb_define_private_method(rb_cBasicSocket, "__read_nonblock", rsock_read_nonblock, 3);
+    rb_define_private_method(rb_cBasicSocket, "__write_nonblock", rsock_write_nonblock, 2);
 #endif
 
     /* in ancdata.c */
-    rb_define_private_method(rb_cBasicSocket, "__sendmsg",
-			     rsock_bsock_sendmsg, 4);
-    rb_define_private_method(rb_cBasicSocket, "__sendmsg_nonblock",
-			     rsock_bsock_sendmsg_nonblock, 5);
-    rb_define_private_method(rb_cBasicSocket, "__recvmsg",
-			     rsock_bsock_recvmsg, 4);
-    rb_define_private_method(rb_cBasicSocket, "__recvmsg_nonblock",
-			    rsock_bsock_recvmsg_nonblock, 5);
-
+    rb_define_private_method(rb_cBasicSocket, "__sendmsg", rsock_bsock_sendmsg, 4);
+    rb_define_private_method(rb_cBasicSocket, "__sendmsg_nonblock", rsock_bsock_sendmsg_nonblock, 5);
+    rb_define_private_method(rb_cBasicSocket, "__recvmsg", rsock_bsock_recvmsg, 4);
+    rb_define_private_method(rb_cBasicSocket, "__recvmsg_nonblock", rsock_bsock_recvmsg_nonblock, 5);
 }

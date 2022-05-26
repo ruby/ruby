@@ -1,4 +1,4 @@
-#ifndef RBIMPL_CTYPE_H                               /*-*-C++-*-vi:se ft=cpp:*/
+#ifndef RBIMPL_CTYPE_H /*-*-C++-*-vi:se ft=cpp:*/
 #define RBIMPL_CTYPE_H
 /**
  * @file
@@ -23,7 +23,7 @@
 #include "ruby/internal/config.h"
 
 #ifdef STDC_HEADERS
-# include <ctype.h>
+#    include <ctype.h>
 #endif
 
 #include "ruby/internal/attr/artificial.h"
@@ -82,26 +82,26 @@
  * @{
  */
 #ifndef ISPRINT
-# define ISASCII  rb_isascii    /**< @old{rb_isascii}*/
-# define ISPRINT  rb_isprint    /**< @old{rb_isprint}*/
-# define ISGRAPH  rb_isgraph    /**< @old{rb_isgraph}*/
-# define ISSPACE  rb_isspace    /**< @old{rb_isspace}*/
-# define ISUPPER  rb_isupper    /**< @old{rb_isupper}*/
-# define ISLOWER  rb_islower    /**< @old{rb_islower}*/
-# define ISALNUM  rb_isalnum    /**< @old{rb_isalnum}*/
-# define ISALPHA  rb_isalpha    /**< @old{rb_isalpha}*/
-# define ISDIGIT  rb_isdigit    /**< @old{rb_isdigit}*/
-# define ISXDIGIT rb_isxdigit   /**< @old{rb_isxdigit}*/
-# define ISBLANK  rb_isblank    /**< @old{rb_isblank}*/
-# define ISCNTRL  rb_iscntrl    /**< @old{rb_iscntrl}*/
-# define ISPUNCT  rb_ispunct    /**< @old{rb_ispunct}*/
+#    define ISASCII rb_isascii   /**< @old{rb_isascii}*/
+#    define ISPRINT rb_isprint   /**< @old{rb_isprint}*/
+#    define ISGRAPH rb_isgraph   /**< @old{rb_isgraph}*/
+#    define ISSPACE rb_isspace   /**< @old{rb_isspace}*/
+#    define ISUPPER rb_isupper   /**< @old{rb_isupper}*/
+#    define ISLOWER rb_islower   /**< @old{rb_islower}*/
+#    define ISALNUM rb_isalnum   /**< @old{rb_isalnum}*/
+#    define ISALPHA rb_isalpha   /**< @old{rb_isalpha}*/
+#    define ISDIGIT rb_isdigit   /**< @old{rb_isdigit}*/
+#    define ISXDIGIT rb_isxdigit /**< @old{rb_isxdigit}*/
+#    define ISBLANK rb_isblank   /**< @old{rb_isblank}*/
+#    define ISCNTRL rb_iscntrl   /**< @old{rb_iscntrl}*/
+#    define ISPUNCT rb_ispunct   /**< @old{rb_ispunct}*/
 #endif
 
-#define TOUPPER     rb_toupper    /**< @old{rb_toupper}*/
-#define TOLOWER     rb_tolower    /**< @old{rb_tolower}*/
-#define STRCASECMP  st_locale_insensitive_strcasecmp  /**< @old{st_locale_insensitive_strcasecmp}*/
+#define TOUPPER rb_toupper                            /**< @old{rb_toupper}*/
+#define TOLOWER rb_tolower                            /**< @old{rb_tolower}*/
+#define STRCASECMP st_locale_insensitive_strcasecmp   /**< @old{st_locale_insensitive_strcasecmp}*/
 #define STRNCASECMP st_locale_insensitive_strncasecmp /**< @old{st_locale_insensitive_strncasecmp}*/
-#define STRTOUL     ruby_strtoul  /**< @old{ruby_strtoul}*/
+#define STRTOUL ruby_strtoul                          /**< @old{ruby_strtoul}*/
 
 /** @} */
 
@@ -513,7 +513,7 @@ RBIMPL_ATTR_ARTIFICIAL()
 static inline int
 rb_tolower(int c)
 {
-    return rb_isupper(c) ? (c|0x20) : c;
+    return rb_isupper(c) ? (c | 0x20) : c;
 }
 
 RBIMPL_ATTR_CONST()
@@ -538,7 +538,7 @@ RBIMPL_ATTR_ARTIFICIAL()
 static inline int
 rb_toupper(int c)
 {
-    return rb_islower(c) ? (c&0x5f) : c;
+    return rb_islower(c) ? (c & 0x5f) : c;
 }
 
 /** @} */

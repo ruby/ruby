@@ -1,5 +1,5 @@
-#include "ruby.h"
 #include "internal/string.h"
+#include "ruby.h"
 
 static VALUE
 bug_str_capacity(VALUE klass, VALUE str)

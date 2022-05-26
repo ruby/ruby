@@ -10,12 +10,16 @@
 **********************************************************************/
 
 #include "internal/inits.h"
-#include "ruby.h"
 #include "builtin.h"
+#include "ruby.h"
 static void Init_builtin_prelude(void);
 #include "prelude.rbinc"
 
-#define CALL(n) {void Init_##n(void); Init_##n();}
+#define CALL(n) \
+    { \
+        void Init_##n(void); \
+        Init_##n(); \
+    }
 
 void
 rb_call_inits(void)

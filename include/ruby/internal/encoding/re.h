@@ -1,4 +1,4 @@
-#ifndef RUBY_INTERNAL_ENCODING_RE_H                  /*-*-C++-*-vi:se ft=cpp:*/
+#ifndef RUBY_INTERNAL_ENCODING_RE_H /*-*-C++-*-vi:se ft=cpp:*/
 #define RUBY_INTERNAL_ENCODING_RE_H
 /**
  * @file

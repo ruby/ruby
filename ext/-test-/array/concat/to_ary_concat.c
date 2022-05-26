@@ -8,7 +8,7 @@ typedef struct {
 
 static rb_data_type_t Bar_type = {
     "Bar",
-    {NULL, RUBY_TYPED_DEFAULT_FREE, NULL },
+    {NULL, RUBY_TYPED_DEFAULT_FREE, NULL},
 };
 
 static VALUE

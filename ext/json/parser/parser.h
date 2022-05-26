@@ -4,17 +4,17 @@
 #include "ruby.h"
 
 #ifndef HAVE_RUBY_RE_H
-#include "re.h"
+#    include "re.h"
 #endif
 
 #ifdef HAVE_RUBY_ST_H
-#include "ruby/st.h"
+#    include "ruby/st.h"
 #else
-#include "st.h"
+#    include "st.h"
 #endif
 
 #ifndef MAYBE_UNUSED
-# define MAYBE_UNUSED(x) x
+#    define MAYBE_UNUSED(x) x
 #endif
 
 #define option_given_p(opts, key) RTEST(rb_funcall(opts, i_key_p, 1, key))
@@ -26,10 +26,10 @@ typedef unsigned short UTF16; /* at least 16 bits */
 typedef unsigned char UTF8;   /* typically 8 bits */
 
 #define UNI_REPLACEMENT_CHAR (UTF32)0x0000FFFD
-#define UNI_SUR_HIGH_START  (UTF32)0xD800
-#define UNI_SUR_HIGH_END    (UTF32)0xDBFF
-#define UNI_SUR_LOW_START   (UTF32)0xDC00
-#define UNI_SUR_LOW_END     (UTF32)0xDFFF
+#define UNI_SUR_HIGH_START (UTF32)0xD800
+#define UNI_SUR_HIGH_END (UTF32)0xDBFF
+#define UNI_SUR_LOW_START (UTF32)0xDC00
+#define UNI_SUR_LOW_END (UTF32)0xDFFF
 
 typedef struct JSON_ParserStruct {
     VALUE Vsource;
@@ -50,11 +50,11 @@ typedef struct JSON_ParserStruct {
     FBuffer *fbuffer;
 } JSON_Parser;
 
-#define GET_PARSER                          \
-    GET_PARSER_INIT;                        \
+#define GET_PARSER \
+    GET_PARSER_INIT; \
     if (!json->Vsource) rb_raise(rb_eTypeError, "uninitialized instance")
-#define GET_PARSER_INIT                     \
-    JSON_Parser *json;                      \
+#define GET_PARSER_INIT \
+    JSON_Parser *json; \
     TypedData_Get_Struct(self, JSON_Parser, &JSON_Parser_type, json)
 
 #define MinusInfinity "-Infinity"
@@ -77,8 +77,9 @@ static void JSON_free(void *json);
 static VALUE cJSON_parser_s_allocate(VALUE klass);
 static VALUE cParser_source(VALUE self);
 #ifndef ZALLOC
-#define ZALLOC(type) ((type *)ruby_zalloc(sizeof(type)))
-static inline void *ruby_zalloc(size_t n)
+#    define ZALLOC(type) ((type *)ruby_zalloc(sizeof(type)))
+static inline void *
+ruby_zalloc(size_t n)
 {
     void *p = ruby_xmalloc(n);
     memset(p, 0, n);
@@ -87,10 +88,10 @@ static inline void *ruby_zalloc(size_t n)
 #endif
 #ifdef TypedData_Make_Struct
 static const rb_data_type_t JSON_Parser_type;
-#define NEW_TYPEDDATA_WRAPPER 1
+#    define NEW_TYPEDDATA_WRAPPER 1
 #else
-#define TypedData_Make_Struct(klass, type, ignore, json) Data_Make_Struct(klass, type, NULL, JSON_free, json)
-#define TypedData_Get_Struct(self, JSON_Parser, ignore, json) Data_Get_Struct(self, JSON_Parser, json)
+#    define TypedData_Make_Struct(klass, type, ignore, json) Data_Make_Struct(klass, type, NULL, JSON_free, json)
+#    define TypedData_Get_Struct(self, JSON_Parser, ignore, json) Data_Get_Struct(self, JSON_Parser, json)
 #endif
 
 #endif

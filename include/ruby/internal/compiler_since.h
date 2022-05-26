@@ -1,4 +1,4 @@
-#ifndef RBIMPL_COMPILER_SINCE_H                      /*-*-C++-*-vi:se ft=cpp:*/
+#ifndef RBIMPL_COMPILER_SINCE_H /*-*-C++-*-vi:se ft=cpp:*/
 #define RBIMPL_COMPILER_SINCE_H
 /**
  * @file
@@ -32,13 +32,12 @@
  * @retval  true   cc >= x.y.z.
  * @retval  false  otherwise.
  */
-#define RBIMPL_COMPILER_SINCE(cc, x, y, z)     \
-     (RBIMPL_COMPILER_IS(cc)                && \
-    ((RBIMPL_COMPILER_VERSION_MAJOR >  (x)) || \
-    ((RBIMPL_COMPILER_VERSION_MAJOR == (x)) && \
-    ((RBIMPL_COMPILER_VERSION_MINOR >  (y)) || \
-    ((RBIMPL_COMPILER_VERSION_MINOR == (y)) && \
-     (RBIMPL_COMPILER_VERSION_PATCH >= (z)))))))
+#define RBIMPL_COMPILER_SINCE(cc, x, y, z) \
+    (RBIMPL_COMPILER_IS(cc) && \
+        ((RBIMPL_COMPILER_VERSION_MAJOR > (x)) || \
+            ((RBIMPL_COMPILER_VERSION_MAJOR == (x)) && \
+                ((RBIMPL_COMPILER_VERSION_MINOR > (y)) || \
+                    ((RBIMPL_COMPILER_VERSION_MINOR == (y)) && (RBIMPL_COMPILER_VERSION_PATCH >= (z)))))))
 
 /**
  * @brief   Checks if  the compiler  is of  given brand and  is older  than the
@@ -50,12 +49,11 @@
  * @retval  true   cc < x.y.z.
  * @retval  false  otherwise.
  */
-#define RBIMPL_COMPILER_BEFORE(cc, x, y, z)    \
-     (RBIMPL_COMPILER_IS(cc)                && \
-    ((RBIMPL_COMPILER_VERSION_MAJOR <  (x)) || \
-    ((RBIMPL_COMPILER_VERSION_MAJOR == (x)) && \
-    ((RBIMPL_COMPILER_VERSION_MINOR <  (y)) || \
-    ((RBIMPL_COMPILER_VERSION_MINOR == (y)) && \
-     (RBIMPL_COMPILER_VERSION_PATCH <  (z)))))))
+#define RBIMPL_COMPILER_BEFORE(cc, x, y, z) \
+    (RBIMPL_COMPILER_IS(cc) && \
+        ((RBIMPL_COMPILER_VERSION_MAJOR < (x)) || \
+            ((RBIMPL_COMPILER_VERSION_MAJOR == (x)) && \
+                ((RBIMPL_COMPILER_VERSION_MINOR < (y)) || \
+                    ((RBIMPL_COMPILER_VERSION_MINOR == (y)) && (RBIMPL_COMPILER_VERSION_PATCH < (z)))))))
 
 #endif /* RBIMPL_COMPILER_SINCE_H */

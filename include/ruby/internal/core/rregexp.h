@@ -1,4 +1,4 @@
-#ifndef RBIMPL_RREGEXP_H                             /*-*-C++-*-vi:se ft=cpp:*/
+#ifndef RBIMPL_RREGEXP_H /*-*-C++-*-vi:se ft=cpp:*/
 #define RBIMPL_RREGEXP_H
 /**
  * @file
@@ -34,7 +34,7 @@
  * @param   obj  An object, which is in fact an ::RRegexp.
  * @return  The passed object casted to ::RRegexp.
  */
-#define RREGEXP(obj)     RBIMPL_CAST((struct RRegexp *)(obj))
+#define RREGEXP(obj) RBIMPL_CAST((struct RRegexp *)(obj))
 
 /**
  * Convenient accessor macro.
@@ -44,13 +44,13 @@
  */
 #define RREGEXP_PTR(obj) (RREGEXP(obj)->ptr)
 /** @cond INTERNAL_MACRO */
-#define RREGEXP_SRC      RREGEXP_SRC
-#define RREGEXP_SRC_PTR  RREGEXP_SRC_PTR
-#define RREGEXP_SRC_LEN  RREGEXP_SRC_LEN
-#define RREGEXP_SRC_END  RREGEXP_SRC_END
+#define RREGEXP_SRC RREGEXP_SRC
+#define RREGEXP_SRC_PTR RREGEXP_SRC_PTR
+#define RREGEXP_SRC_LEN RREGEXP_SRC_LEN
+#define RREGEXP_SRC_END RREGEXP_SRC_END
 /** @endcond */
 
-struct re_patter_buffer;  /* a.k.a. OnigRegexType, defined in onigmo.h */
+struct re_patter_buffer; /* a.k.a. OnigRegexType, defined in onigmo.h */
 
 /**
  * Ruby's regular expression.   A regexp is compiled into  its own intermediate

@@ -1,4 +1,4 @@
-#ifndef RUBY_BACKWARD2_RMODULE_H                     /*-*-C++-*-vi:se ft=cpp:*/
+#ifndef RUBY_BACKWARD2_RMODULE_H /*-*-C++-*-vi:se ft=cpp:*/
 #define RUBY_BACKWARD2_RMODULE_H
 /**
  * @author     Ruby developers <ruby-core@ruby-lang.org>
@@ -29,8 +29,8 @@
 #define RMODULE_SUPER(m) RCLASS_SUPER(m)
 
 #if defined(__GNUC__)
-# warning RMODULE_* macros are deprecated
+#    warning RMODULE_* macros are deprecated
 #elif defined(_MSC_VER)
-# pragma message("warning: RMODULE_* macros are deprecated")
+#    pragma message("warning: RMODULE_* macros are deprecated")
 #endif
 #endif /* RUBY_BACKWARD2_RMODULE_H */

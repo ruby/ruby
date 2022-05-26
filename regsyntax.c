@@ -30,359 +30,328 @@
 
 #include "regint.h"
 
-const OnigSyntaxType OnigSyntaxASIS = {
-    0
-  , ONIG_SYN_OP2_INEFFECTIVE_ESCAPE
-  , 0
-  , ONIG_OPTION_NONE
-  ,
-  {
-      (OnigCodePoint )'\\'                       /* esc */
-    , (OnigCodePoint )ONIG_INEFFECTIVE_META_CHAR /* anychar '.'  */
-    , (OnigCodePoint )ONIG_INEFFECTIVE_META_CHAR /* anytime '*'  */
-    , (OnigCodePoint )ONIG_INEFFECTIVE_META_CHAR /* zero or one time '?' */
-    , (OnigCodePoint )ONIG_INEFFECTIVE_META_CHAR /* one or more time '+' */
-    , (OnigCodePoint )ONIG_INEFFECTIVE_META_CHAR /* anychar anytime */
-  }
-};
+const OnigSyntaxType OnigSyntaxASIS = {0, ONIG_SYN_OP2_INEFFECTIVE_ESCAPE, 0, ONIG_OPTION_NONE,
+    {
+        (OnigCodePoint)'\\' /* esc */
+        ,
+        (OnigCodePoint)ONIG_INEFFECTIVE_META_CHAR /* anychar '.'  */
+        ,
+        (OnigCodePoint)ONIG_INEFFECTIVE_META_CHAR /* anytime '*'  */
+        ,
+        (OnigCodePoint)ONIG_INEFFECTIVE_META_CHAR /* zero or one time '?' */
+        ,
+        (OnigCodePoint)ONIG_INEFFECTIVE_META_CHAR /* one or more time '+' */
+        ,
+        (OnigCodePoint)ONIG_INEFFECTIVE_META_CHAR /* anychar anytime */
+    }};
 
 const OnigSyntaxType OnigSyntaxPosixBasic = {
-  ( SYN_POSIX_COMMON_OP | ONIG_SYN_OP_ESC_LPAREN_SUBEXP |
-    ONIG_SYN_OP_ESC_BRACE_INTERVAL )
-  , 0
-  , 0
-  , ( ONIG_OPTION_SINGLELINE | ONIG_OPTION_MULTILINE )
-  ,
-  {
-      (OnigCodePoint )'\\'                       /* esc */
-    , (OnigCodePoint )ONIG_INEFFECTIVE_META_CHAR /* anychar '.'  */
-    , (OnigCodePoint )ONIG_INEFFECTIVE_META_CHAR /* anytime '*'  */
-    , (OnigCodePoint )ONIG_INEFFECTIVE_META_CHAR /* zero or one time '?' */
-    , (OnigCodePoint )ONIG_INEFFECTIVE_META_CHAR /* one or more time '+' */
-    , (OnigCodePoint )ONIG_INEFFECTIVE_META_CHAR /* anychar anytime */
-  }
-};
+    (SYN_POSIX_COMMON_OP | ONIG_SYN_OP_ESC_LPAREN_SUBEXP | ONIG_SYN_OP_ESC_BRACE_INTERVAL), 0, 0,
+    (ONIG_OPTION_SINGLELINE | ONIG_OPTION_MULTILINE),
+    {
+        (OnigCodePoint)'\\' /* esc */
+        ,
+        (OnigCodePoint)ONIG_INEFFECTIVE_META_CHAR /* anychar '.'  */
+        ,
+        (OnigCodePoint)ONIG_INEFFECTIVE_META_CHAR /* anytime '*'  */
+        ,
+        (OnigCodePoint)ONIG_INEFFECTIVE_META_CHAR /* zero or one time '?' */
+        ,
+        (OnigCodePoint)ONIG_INEFFECTIVE_META_CHAR /* one or more time '+' */
+        ,
+        (OnigCodePoint)ONIG_INEFFECTIVE_META_CHAR /* anychar anytime */
+    }};
 
 const OnigSyntaxType OnigSyntaxPosixExtended = {
-  ( SYN_POSIX_COMMON_OP | ONIG_SYN_OP_LPAREN_SUBEXP |
-    ONIG_SYN_OP_BRACE_INTERVAL |
-    ONIG_SYN_OP_PLUS_ONE_INF | ONIG_SYN_OP_QMARK_ZERO_ONE | ONIG_SYN_OP_VBAR_ALT )
-  , 0
-  , ( ONIG_SYN_CONTEXT_INDEP_ANCHORS |
-      ONIG_SYN_CONTEXT_INDEP_REPEAT_OPS | ONIG_SYN_CONTEXT_INVALID_REPEAT_OPS |
-      ONIG_SYN_ALLOW_UNMATCHED_CLOSE_SUBEXP |
-      ONIG_SYN_ALLOW_DOUBLE_RANGE_OP_IN_CC )
-  , ( ONIG_OPTION_SINGLELINE | ONIG_OPTION_MULTILINE )
-  ,
-  {
-      (OnigCodePoint )'\\'                       /* esc */
-    , (OnigCodePoint )ONIG_INEFFECTIVE_META_CHAR /* anychar '.'  */
-    , (OnigCodePoint )ONIG_INEFFECTIVE_META_CHAR /* anytime '*'  */
-    , (OnigCodePoint )ONIG_INEFFECTIVE_META_CHAR /* zero or one time '?' */
-    , (OnigCodePoint )ONIG_INEFFECTIVE_META_CHAR /* one or more time '+' */
-    , (OnigCodePoint )ONIG_INEFFECTIVE_META_CHAR /* anychar anytime */
-  }
-};
+    (SYN_POSIX_COMMON_OP | ONIG_SYN_OP_LPAREN_SUBEXP | ONIG_SYN_OP_BRACE_INTERVAL | ONIG_SYN_OP_PLUS_ONE_INF |
+        ONIG_SYN_OP_QMARK_ZERO_ONE | ONIG_SYN_OP_VBAR_ALT),
+    0,
+    (ONIG_SYN_CONTEXT_INDEP_ANCHORS | ONIG_SYN_CONTEXT_INDEP_REPEAT_OPS | ONIG_SYN_CONTEXT_INVALID_REPEAT_OPS |
+        ONIG_SYN_ALLOW_UNMATCHED_CLOSE_SUBEXP | ONIG_SYN_ALLOW_DOUBLE_RANGE_OP_IN_CC),
+    (ONIG_OPTION_SINGLELINE | ONIG_OPTION_MULTILINE),
+    {
+        (OnigCodePoint)'\\' /* esc */
+        ,
+        (OnigCodePoint)ONIG_INEFFECTIVE_META_CHAR /* anychar '.'  */
+        ,
+        (OnigCodePoint)ONIG_INEFFECTIVE_META_CHAR /* anytime '*'  */
+        ,
+        (OnigCodePoint)ONIG_INEFFECTIVE_META_CHAR /* zero or one time '?' */
+        ,
+        (OnigCodePoint)ONIG_INEFFECTIVE_META_CHAR /* one or more time '+' */
+        ,
+        (OnigCodePoint)ONIG_INEFFECTIVE_META_CHAR /* anychar anytime */
+    }};
 
 const OnigSyntaxType OnigSyntaxEmacs = {
-  ( ONIG_SYN_OP_DOT_ANYCHAR | ONIG_SYN_OP_BRACKET_CC |
-    ONIG_SYN_OP_ESC_BRACE_INTERVAL |
-    ONIG_SYN_OP_ESC_LPAREN_SUBEXP | ONIG_SYN_OP_ESC_VBAR_ALT |
-    ONIG_SYN_OP_ASTERISK_ZERO_INF | ONIG_SYN_OP_PLUS_ONE_INF |
-    ONIG_SYN_OP_QMARK_ZERO_ONE | ONIG_SYN_OP_DECIMAL_BACKREF |
-    ONIG_SYN_OP_LINE_ANCHOR | ONIG_SYN_OP_ESC_CONTROL_CHARS )
-  , ONIG_SYN_OP2_ESC_GNU_BUF_ANCHOR
-  , ONIG_SYN_ALLOW_EMPTY_RANGE_IN_CC
-  , ONIG_OPTION_NONE
-  ,
-  {
-      (OnigCodePoint )'\\'                       /* esc */
-    , (OnigCodePoint )ONIG_INEFFECTIVE_META_CHAR /* anychar '.'  */
-    , (OnigCodePoint )ONIG_INEFFECTIVE_META_CHAR /* anytime '*'  */
-    , (OnigCodePoint )ONIG_INEFFECTIVE_META_CHAR /* zero or one time '?' */
-    , (OnigCodePoint )ONIG_INEFFECTIVE_META_CHAR /* one or more time '+' */
-    , (OnigCodePoint )ONIG_INEFFECTIVE_META_CHAR /* anychar anytime */
-  }
-};
+    (ONIG_SYN_OP_DOT_ANYCHAR | ONIG_SYN_OP_BRACKET_CC | ONIG_SYN_OP_ESC_BRACE_INTERVAL | ONIG_SYN_OP_ESC_LPAREN_SUBEXP |
+        ONIG_SYN_OP_ESC_VBAR_ALT | ONIG_SYN_OP_ASTERISK_ZERO_INF | ONIG_SYN_OP_PLUS_ONE_INF |
+        ONIG_SYN_OP_QMARK_ZERO_ONE | ONIG_SYN_OP_DECIMAL_BACKREF | ONIG_SYN_OP_LINE_ANCHOR |
+        ONIG_SYN_OP_ESC_CONTROL_CHARS),
+    ONIG_SYN_OP2_ESC_GNU_BUF_ANCHOR, ONIG_SYN_ALLOW_EMPTY_RANGE_IN_CC, ONIG_OPTION_NONE,
+    {
+        (OnigCodePoint)'\\' /* esc */
+        ,
+        (OnigCodePoint)ONIG_INEFFECTIVE_META_CHAR /* anychar '.'  */
+        ,
+        (OnigCodePoint)ONIG_INEFFECTIVE_META_CHAR /* anytime '*'  */
+        ,
+        (OnigCodePoint)ONIG_INEFFECTIVE_META_CHAR /* zero or one time '?' */
+        ,
+        (OnigCodePoint)ONIG_INEFFECTIVE_META_CHAR /* one or more time '+' */
+        ,
+        (OnigCodePoint)ONIG_INEFFECTIVE_META_CHAR /* anychar anytime */
+    }};
 
 const OnigSyntaxType OnigSyntaxGrep = {
-  ( ONIG_SYN_OP_DOT_ANYCHAR | ONIG_SYN_OP_BRACKET_CC | ONIG_SYN_OP_POSIX_BRACKET |
-    ONIG_SYN_OP_ESC_BRACE_INTERVAL | ONIG_SYN_OP_ESC_LPAREN_SUBEXP |
-    ONIG_SYN_OP_ESC_VBAR_ALT |
-    ONIG_SYN_OP_ASTERISK_ZERO_INF | ONIG_SYN_OP_ESC_PLUS_ONE_INF |
-    ONIG_SYN_OP_ESC_QMARK_ZERO_ONE | ONIG_SYN_OP_LINE_ANCHOR |
-    ONIG_SYN_OP_ESC_W_WORD | ONIG_SYN_OP_ESC_B_WORD_BOUND |
-    ONIG_SYN_OP_ESC_LTGT_WORD_BEGIN_END | ONIG_SYN_OP_DECIMAL_BACKREF )
-  , 0
-  , ( ONIG_SYN_ALLOW_EMPTY_RANGE_IN_CC | ONIG_SYN_NOT_NEWLINE_IN_NEGATIVE_CC )
-  , ONIG_OPTION_NONE
-  ,
-  {
-      (OnigCodePoint )'\\'                       /* esc */
-    , (OnigCodePoint )ONIG_INEFFECTIVE_META_CHAR /* anychar '.'  */
-    , (OnigCodePoint )ONIG_INEFFECTIVE_META_CHAR /* anytime '*'  */
-    , (OnigCodePoint )ONIG_INEFFECTIVE_META_CHAR /* zero or one time '?' */
-    , (OnigCodePoint )ONIG_INEFFECTIVE_META_CHAR /* one or more time '+' */
-    , (OnigCodePoint )ONIG_INEFFECTIVE_META_CHAR /* anychar anytime */
-  }
-};
+    (ONIG_SYN_OP_DOT_ANYCHAR | ONIG_SYN_OP_BRACKET_CC | ONIG_SYN_OP_POSIX_BRACKET | ONIG_SYN_OP_ESC_BRACE_INTERVAL |
+        ONIG_SYN_OP_ESC_LPAREN_SUBEXP | ONIG_SYN_OP_ESC_VBAR_ALT | ONIG_SYN_OP_ASTERISK_ZERO_INF |
+        ONIG_SYN_OP_ESC_PLUS_ONE_INF | ONIG_SYN_OP_ESC_QMARK_ZERO_ONE | ONIG_SYN_OP_LINE_ANCHOR |
+        ONIG_SYN_OP_ESC_W_WORD | ONIG_SYN_OP_ESC_B_WORD_BOUND | ONIG_SYN_OP_ESC_LTGT_WORD_BEGIN_END |
+        ONIG_SYN_OP_DECIMAL_BACKREF),
+    0, (ONIG_SYN_ALLOW_EMPTY_RANGE_IN_CC | ONIG_SYN_NOT_NEWLINE_IN_NEGATIVE_CC), ONIG_OPTION_NONE,
+    {
+        (OnigCodePoint)'\\' /* esc */
+        ,
+        (OnigCodePoint)ONIG_INEFFECTIVE_META_CHAR /* anychar '.'  */
+        ,
+        (OnigCodePoint)ONIG_INEFFECTIVE_META_CHAR /* anytime '*'  */
+        ,
+        (OnigCodePoint)ONIG_INEFFECTIVE_META_CHAR /* zero or one time '?' */
+        ,
+        (OnigCodePoint)ONIG_INEFFECTIVE_META_CHAR /* one or more time '+' */
+        ,
+        (OnigCodePoint)ONIG_INEFFECTIVE_META_CHAR /* anychar anytime */
+    }};
 
-const OnigSyntaxType OnigSyntaxGnuRegex = {
-  SYN_GNU_REGEX_OP
-  , 0
-  , SYN_GNU_REGEX_BV
-  , ONIG_OPTION_NONE
-  ,
-  {
-      (OnigCodePoint )'\\'                       /* esc */
-    , (OnigCodePoint )ONIG_INEFFECTIVE_META_CHAR /* anychar '.'  */
-    , (OnigCodePoint )ONIG_INEFFECTIVE_META_CHAR /* anytime '*'  */
-    , (OnigCodePoint )ONIG_INEFFECTIVE_META_CHAR /* zero or one time '?' */
-    , (OnigCodePoint )ONIG_INEFFECTIVE_META_CHAR /* one or more time '+' */
-    , (OnigCodePoint )ONIG_INEFFECTIVE_META_CHAR /* anychar anytime */
-  }
-};
+const OnigSyntaxType OnigSyntaxGnuRegex = {SYN_GNU_REGEX_OP, 0, SYN_GNU_REGEX_BV, ONIG_OPTION_NONE,
+    {
+        (OnigCodePoint)'\\' /* esc */
+        ,
+        (OnigCodePoint)ONIG_INEFFECTIVE_META_CHAR /* anychar '.'  */
+        ,
+        (OnigCodePoint)ONIG_INEFFECTIVE_META_CHAR /* anytime '*'  */
+        ,
+        (OnigCodePoint)ONIG_INEFFECTIVE_META_CHAR /* zero or one time '?' */
+        ,
+        (OnigCodePoint)ONIG_INEFFECTIVE_META_CHAR /* one or more time '+' */
+        ,
+        (OnigCodePoint)ONIG_INEFFECTIVE_META_CHAR /* anychar anytime */
+    }};
 
 const OnigSyntaxType OnigSyntaxJava = {
-  (( SYN_GNU_REGEX_OP | ONIG_SYN_OP_QMARK_NON_GREEDY |
-     ONIG_SYN_OP_ESC_CONTROL_CHARS | ONIG_SYN_OP_ESC_C_CONTROL |
-     ONIG_SYN_OP_ESC_OCTAL3 | ONIG_SYN_OP_ESC_X_HEX2 )
-   & ~ONIG_SYN_OP_ESC_LTGT_WORD_BEGIN_END )
-  , ( ONIG_SYN_OP2_ESC_CAPITAL_Q_QUOTE | ONIG_SYN_OP2_QMARK_GROUP_EFFECT |
-      ONIG_SYN_OP2_OPTION_PERL | ONIG_SYN_OP2_PLUS_POSSESSIVE_REPEAT |
-      ONIG_SYN_OP2_PLUS_POSSESSIVE_INTERVAL | ONIG_SYN_OP2_CCLASS_SET_OP |
-      ONIG_SYN_OP2_ESC_V_VTAB | ONIG_SYN_OP2_ESC_U_HEX4 |
-      ONIG_SYN_OP2_ESC_P_BRACE_CHAR_PROPERTY )
-  , ( SYN_GNU_REGEX_BV | ONIG_SYN_DIFFERENT_LEN_ALT_LOOK_BEHIND )
-  , ( ONIG_OPTION_SINGLELINE | ONIG_OPTION_ASCII_RANGE |
-      ONIG_OPTION_WORD_BOUND_ALL_RANGE )
-  ,
-  {
-      (OnigCodePoint )'\\'                       /* esc */
-    , (OnigCodePoint )ONIG_INEFFECTIVE_META_CHAR /* anychar '.'  */
-    , (OnigCodePoint )ONIG_INEFFECTIVE_META_CHAR /* anytime '*'  */
-    , (OnigCodePoint )ONIG_INEFFECTIVE_META_CHAR /* zero or one time '?' */
-    , (OnigCodePoint )ONIG_INEFFECTIVE_META_CHAR /* one or more time '+' */
-    , (OnigCodePoint )ONIG_INEFFECTIVE_META_CHAR /* anychar anytime */
-  }
-};
+    ((SYN_GNU_REGEX_OP | ONIG_SYN_OP_QMARK_NON_GREEDY | ONIG_SYN_OP_ESC_CONTROL_CHARS | ONIG_SYN_OP_ESC_C_CONTROL |
+         ONIG_SYN_OP_ESC_OCTAL3 | ONIG_SYN_OP_ESC_X_HEX2) &
+        ~ONIG_SYN_OP_ESC_LTGT_WORD_BEGIN_END),
+    (ONIG_SYN_OP2_ESC_CAPITAL_Q_QUOTE | ONIG_SYN_OP2_QMARK_GROUP_EFFECT | ONIG_SYN_OP2_OPTION_PERL |
+        ONIG_SYN_OP2_PLUS_POSSESSIVE_REPEAT | ONIG_SYN_OP2_PLUS_POSSESSIVE_INTERVAL | ONIG_SYN_OP2_CCLASS_SET_OP |
+        ONIG_SYN_OP2_ESC_V_VTAB | ONIG_SYN_OP2_ESC_U_HEX4 | ONIG_SYN_OP2_ESC_P_BRACE_CHAR_PROPERTY),
+    (SYN_GNU_REGEX_BV | ONIG_SYN_DIFFERENT_LEN_ALT_LOOK_BEHIND),
+    (ONIG_OPTION_SINGLELINE | ONIG_OPTION_ASCII_RANGE | ONIG_OPTION_WORD_BOUND_ALL_RANGE),
+    {
+        (OnigCodePoint)'\\' /* esc */
+        ,
+        (OnigCodePoint)ONIG_INEFFECTIVE_META_CHAR /* anychar '.'  */
+        ,
+        (OnigCodePoint)ONIG_INEFFECTIVE_META_CHAR /* anytime '*'  */
+        ,
+        (OnigCodePoint)ONIG_INEFFECTIVE_META_CHAR /* zero or one time '?' */
+        ,
+        (OnigCodePoint)ONIG_INEFFECTIVE_META_CHAR /* one or more time '+' */
+        ,
+        (OnigCodePoint)ONIG_INEFFECTIVE_META_CHAR /* anychar anytime */
+    }};
 
 /* Perl 5.8 */
 const OnigSyntaxType OnigSyntaxPerl58 = {
-  (( SYN_GNU_REGEX_OP | ONIG_SYN_OP_QMARK_NON_GREEDY |
-     ONIG_SYN_OP_ESC_OCTAL3 | ONIG_SYN_OP_ESC_X_HEX2 |
-     ONIG_SYN_OP_ESC_X_BRACE_HEX8 | ONIG_SYN_OP_ESC_CONTROL_CHARS |
-     ONIG_SYN_OP_ESC_C_CONTROL )
-   & ~ONIG_SYN_OP_ESC_LTGT_WORD_BEGIN_END )
-  , ( ONIG_SYN_OP2_ESC_CAPITAL_Q_QUOTE |
-      ONIG_SYN_OP2_QMARK_GROUP_EFFECT | ONIG_SYN_OP2_OPTION_PERL |
-      ONIG_SYN_OP2_ESC_P_BRACE_CHAR_PROPERTY |
-      ONIG_SYN_OP2_ESC_P_BRACE_CIRCUMFLEX_NOT |
-      ONIG_SYN_OP2_ESC_CAPITAL_X_EXTENDED_GRAPHEME_CLUSTER |
-      ONIG_SYN_OP2_QMARK_LPAREN_CONDITION)
-  , SYN_GNU_REGEX_BV
-  , ONIG_OPTION_SINGLELINE
-  ,
-  {
-      (OnigCodePoint )'\\'                       /* esc */
-    , (OnigCodePoint )ONIG_INEFFECTIVE_META_CHAR /* anychar '.'  */
-    , (OnigCodePoint )ONIG_INEFFECTIVE_META_CHAR /* anytime '*'  */
-    , (OnigCodePoint )ONIG_INEFFECTIVE_META_CHAR /* zero or one time '?' */
-    , (OnigCodePoint )ONIG_INEFFECTIVE_META_CHAR /* one or more time '+' */
-    , (OnigCodePoint )ONIG_INEFFECTIVE_META_CHAR /* anychar anytime */
-  }
-};
+    ((SYN_GNU_REGEX_OP | ONIG_SYN_OP_QMARK_NON_GREEDY | ONIG_SYN_OP_ESC_OCTAL3 | ONIG_SYN_OP_ESC_X_HEX2 |
+         ONIG_SYN_OP_ESC_X_BRACE_HEX8 | ONIG_SYN_OP_ESC_CONTROL_CHARS | ONIG_SYN_OP_ESC_C_CONTROL) &
+        ~ONIG_SYN_OP_ESC_LTGT_WORD_BEGIN_END),
+    (ONIG_SYN_OP2_ESC_CAPITAL_Q_QUOTE | ONIG_SYN_OP2_QMARK_GROUP_EFFECT | ONIG_SYN_OP2_OPTION_PERL |
+        ONIG_SYN_OP2_ESC_P_BRACE_CHAR_PROPERTY | ONIG_SYN_OP2_ESC_P_BRACE_CIRCUMFLEX_NOT |
+        ONIG_SYN_OP2_ESC_CAPITAL_X_EXTENDED_GRAPHEME_CLUSTER | ONIG_SYN_OP2_QMARK_LPAREN_CONDITION),
+    SYN_GNU_REGEX_BV, ONIG_OPTION_SINGLELINE,
+    {
+        (OnigCodePoint)'\\' /* esc */
+        ,
+        (OnigCodePoint)ONIG_INEFFECTIVE_META_CHAR /* anychar '.'  */
+        ,
+        (OnigCodePoint)ONIG_INEFFECTIVE_META_CHAR /* anytime '*'  */
+        ,
+        (OnigCodePoint)ONIG_INEFFECTIVE_META_CHAR /* zero or one time '?' */
+        ,
+        (OnigCodePoint)ONIG_INEFFECTIVE_META_CHAR /* one or more time '+' */
+        ,
+        (OnigCodePoint)ONIG_INEFFECTIVE_META_CHAR /* anychar anytime */
+    }};
 
 /* Perl 5.8 + named group */
 const OnigSyntaxType OnigSyntaxPerl58_NG = {
-  (( SYN_GNU_REGEX_OP | ONIG_SYN_OP_QMARK_NON_GREEDY |
-     ONIG_SYN_OP_ESC_OCTAL3 | ONIG_SYN_OP_ESC_X_HEX2 |
-     ONIG_SYN_OP_ESC_X_BRACE_HEX8 | ONIG_SYN_OP_ESC_CONTROL_CHARS |
-     ONIG_SYN_OP_ESC_C_CONTROL )
-   & ~ONIG_SYN_OP_ESC_LTGT_WORD_BEGIN_END )
-  , ( ONIG_SYN_OP2_ESC_CAPITAL_Q_QUOTE |
-      ONIG_SYN_OP2_QMARK_GROUP_EFFECT | ONIG_SYN_OP2_OPTION_PERL |
-      ONIG_SYN_OP2_ESC_P_BRACE_CHAR_PROPERTY  |
-      ONIG_SYN_OP2_ESC_P_BRACE_CIRCUMFLEX_NOT |
-      ONIG_SYN_OP2_ESC_CAPITAL_X_EXTENDED_GRAPHEME_CLUSTER |
-      ONIG_SYN_OP2_QMARK_LPAREN_CONDITION     |
-      ONIG_SYN_OP2_QMARK_LT_NAMED_GROUP       |
-      ONIG_SYN_OP2_ESC_K_NAMED_BACKREF        |
-      ONIG_SYN_OP2_ESC_G_SUBEXP_CALL )
-  , ( SYN_GNU_REGEX_BV |
-      ONIG_SYN_CAPTURE_ONLY_NAMED_GROUP |
-      ONIG_SYN_ALLOW_MULTIPLEX_DEFINITION_NAME )
-  , ONIG_OPTION_SINGLELINE
-  ,
-  {
-      (OnigCodePoint )'\\'                       /* esc */
-    , (OnigCodePoint )ONIG_INEFFECTIVE_META_CHAR /* anychar '.'  */
-    , (OnigCodePoint )ONIG_INEFFECTIVE_META_CHAR /* anytime '*'  */
-    , (OnigCodePoint )ONIG_INEFFECTIVE_META_CHAR /* zero or one time '?' */
-    , (OnigCodePoint )ONIG_INEFFECTIVE_META_CHAR /* one or more time '+' */
-    , (OnigCodePoint )ONIG_INEFFECTIVE_META_CHAR /* anychar anytime */
-  }
-};
+    ((SYN_GNU_REGEX_OP | ONIG_SYN_OP_QMARK_NON_GREEDY | ONIG_SYN_OP_ESC_OCTAL3 | ONIG_SYN_OP_ESC_X_HEX2 |
+         ONIG_SYN_OP_ESC_X_BRACE_HEX8 | ONIG_SYN_OP_ESC_CONTROL_CHARS | ONIG_SYN_OP_ESC_C_CONTROL) &
+        ~ONIG_SYN_OP_ESC_LTGT_WORD_BEGIN_END),
+    (ONIG_SYN_OP2_ESC_CAPITAL_Q_QUOTE | ONIG_SYN_OP2_QMARK_GROUP_EFFECT | ONIG_SYN_OP2_OPTION_PERL |
+        ONIG_SYN_OP2_ESC_P_BRACE_CHAR_PROPERTY | ONIG_SYN_OP2_ESC_P_BRACE_CIRCUMFLEX_NOT |
+        ONIG_SYN_OP2_ESC_CAPITAL_X_EXTENDED_GRAPHEME_CLUSTER | ONIG_SYN_OP2_QMARK_LPAREN_CONDITION |
+        ONIG_SYN_OP2_QMARK_LT_NAMED_GROUP | ONIG_SYN_OP2_ESC_K_NAMED_BACKREF | ONIG_SYN_OP2_ESC_G_SUBEXP_CALL),
+    (SYN_GNU_REGEX_BV | ONIG_SYN_CAPTURE_ONLY_NAMED_GROUP | ONIG_SYN_ALLOW_MULTIPLEX_DEFINITION_NAME),
+    ONIG_OPTION_SINGLELINE,
+    {
+        (OnigCodePoint)'\\' /* esc */
+        ,
+        (OnigCodePoint)ONIG_INEFFECTIVE_META_CHAR /* anychar '.'  */
+        ,
+        (OnigCodePoint)ONIG_INEFFECTIVE_META_CHAR /* anytime '*'  */
+        ,
+        (OnigCodePoint)ONIG_INEFFECTIVE_META_CHAR /* zero or one time '?' */
+        ,
+        (OnigCodePoint)ONIG_INEFFECTIVE_META_CHAR /* one or more time '+' */
+        ,
+        (OnigCodePoint)ONIG_INEFFECTIVE_META_CHAR /* anychar anytime */
+    }};
 
 /* Perl 5.10+ */
 const OnigSyntaxType OnigSyntaxPerl = {
-  (( SYN_GNU_REGEX_OP | ONIG_SYN_OP_QMARK_NON_GREEDY |
-     ONIG_SYN_OP_ESC_OCTAL3 | ONIG_SYN_OP_ESC_X_HEX2 |
-     ONIG_SYN_OP_ESC_X_BRACE_HEX8 | ONIG_SYN_OP_ESC_CONTROL_CHARS |
-     ONIG_SYN_OP_ESC_O_BRACE_OCTAL | ONIG_SYN_OP_ESC_C_CONTROL )
-   & ~ONIG_SYN_OP_ESC_LTGT_WORD_BEGIN_END )
-  , ( ONIG_SYN_OP2_ESC_CAPITAL_Q_QUOTE |
-      ONIG_SYN_OP2_QMARK_GROUP_EFFECT | ONIG_SYN_OP2_OPTION_PERL |
-      ONIG_SYN_OP2_ESC_P_BRACE_CHAR_PROPERTY  |
-      ONIG_SYN_OP2_ESC_P_BRACE_CIRCUMFLEX_NOT |
-      ONIG_SYN_OP2_ESC_CAPITAL_X_EXTENDED_GRAPHEME_CLUSTER |
-      ONIG_SYN_OP2_QMARK_LPAREN_CONDITION |
-      ONIG_SYN_OP2_PLUS_POSSESSIVE_REPEAT |
-      ONIG_SYN_OP2_PLUS_POSSESSIVE_INTERVAL |
-      ONIG_SYN_OP2_ESC_CAPITAL_R_LINEBREAK |
-      ONIG_SYN_OP2_ESC_CAPITAL_K_KEEP |
-      ONIG_SYN_OP2_QMARK_SUBEXP_CALL |
-      ONIG_SYN_OP2_ESC_G_BRACE_BACKREF |
-      ONIG_SYN_OP2_QMARK_CAPITAL_P_NAMED_GROUP |
-      ONIG_SYN_OP2_QMARK_LT_NAMED_GROUP |
-      ONIG_SYN_OP2_ESC_K_NAMED_BACKREF )
-  , ( SYN_GNU_REGEX_BV |
-      ONIG_SYN_ALLOW_MULTIPLEX_DEFINITION_NAME |
-      ONIG_SYN_ALLOW_MULTIPLEX_DEFINITION_NAME_CALL |
-      ONIG_SYN_USE_LEFT_MOST_NAMED_GROUP )
-  , ( ONIG_OPTION_SINGLELINE | ONIG_OPTION_CAPTURE_GROUP )
-  ,
-  {
-      (OnigCodePoint )'\\'                       /* esc */
-    , (OnigCodePoint )ONIG_INEFFECTIVE_META_CHAR /* anychar '.'  */
-    , (OnigCodePoint )ONIG_INEFFECTIVE_META_CHAR /* anytime '*'  */
-    , (OnigCodePoint )ONIG_INEFFECTIVE_META_CHAR /* zero or one time '?' */
-    , (OnigCodePoint )ONIG_INEFFECTIVE_META_CHAR /* one or more time '+' */
-    , (OnigCodePoint )ONIG_INEFFECTIVE_META_CHAR /* anychar anytime */
-  }
-};
+    ((SYN_GNU_REGEX_OP | ONIG_SYN_OP_QMARK_NON_GREEDY | ONIG_SYN_OP_ESC_OCTAL3 | ONIG_SYN_OP_ESC_X_HEX2 |
+         ONIG_SYN_OP_ESC_X_BRACE_HEX8 | ONIG_SYN_OP_ESC_CONTROL_CHARS | ONIG_SYN_OP_ESC_O_BRACE_OCTAL |
+         ONIG_SYN_OP_ESC_C_CONTROL) &
+        ~ONIG_SYN_OP_ESC_LTGT_WORD_BEGIN_END),
+    (ONIG_SYN_OP2_ESC_CAPITAL_Q_QUOTE | ONIG_SYN_OP2_QMARK_GROUP_EFFECT | ONIG_SYN_OP2_OPTION_PERL |
+        ONIG_SYN_OP2_ESC_P_BRACE_CHAR_PROPERTY | ONIG_SYN_OP2_ESC_P_BRACE_CIRCUMFLEX_NOT |
+        ONIG_SYN_OP2_ESC_CAPITAL_X_EXTENDED_GRAPHEME_CLUSTER | ONIG_SYN_OP2_QMARK_LPAREN_CONDITION |
+        ONIG_SYN_OP2_PLUS_POSSESSIVE_REPEAT | ONIG_SYN_OP2_PLUS_POSSESSIVE_INTERVAL |
+        ONIG_SYN_OP2_ESC_CAPITAL_R_LINEBREAK | ONIG_SYN_OP2_ESC_CAPITAL_K_KEEP | ONIG_SYN_OP2_QMARK_SUBEXP_CALL |
+        ONIG_SYN_OP2_ESC_G_BRACE_BACKREF | ONIG_SYN_OP2_QMARK_CAPITAL_P_NAMED_GROUP |
+        ONIG_SYN_OP2_QMARK_LT_NAMED_GROUP | ONIG_SYN_OP2_ESC_K_NAMED_BACKREF),
+    (SYN_GNU_REGEX_BV | ONIG_SYN_ALLOW_MULTIPLEX_DEFINITION_NAME | ONIG_SYN_ALLOW_MULTIPLEX_DEFINITION_NAME_CALL |
+        ONIG_SYN_USE_LEFT_MOST_NAMED_GROUP),
+    (ONIG_OPTION_SINGLELINE | ONIG_OPTION_CAPTURE_GROUP),
+    {
+        (OnigCodePoint)'\\' /* esc */
+        ,
+        (OnigCodePoint)ONIG_INEFFECTIVE_META_CHAR /* anychar '.'  */
+        ,
+        (OnigCodePoint)ONIG_INEFFECTIVE_META_CHAR /* anytime '*'  */
+        ,
+        (OnigCodePoint)ONIG_INEFFECTIVE_META_CHAR /* zero or one time '?' */
+        ,
+        (OnigCodePoint)ONIG_INEFFECTIVE_META_CHAR /* one or more time '+' */
+        ,
+        (OnigCodePoint)ONIG_INEFFECTIVE_META_CHAR /* anychar anytime */
+    }};
 
 const OnigSyntaxType OnigSyntaxPython = {
-  (( SYN_GNU_REGEX_OP | ONIG_SYN_OP_QMARK_NON_GREEDY |
-     ONIG_SYN_OP_ESC_OCTAL3 | ONIG_SYN_OP_ESC_X_HEX2 |
-     ONIG_SYN_OP_ESC_X_BRACE_HEX8 | ONIG_SYN_OP_ESC_CONTROL_CHARS |
-     ONIG_SYN_OP_ESC_C_CONTROL )
-   & ~ONIG_SYN_OP_ESC_LTGT_WORD_BEGIN_END )
-  , ( ONIG_SYN_OP2_QMARK_GROUP_EFFECT | ONIG_SYN_OP2_OPTION_PERL |
-      ONIG_SYN_OP2_ESC_P_BRACE_CHAR_PROPERTY  |
-      ONIG_SYN_OP2_ESC_P_BRACE_CIRCUMFLEX_NOT |
-      ONIG_SYN_OP2_PLUS_POSSESSIVE_REPEAT |
-      ONIG_SYN_OP2_ESC_V_VTAB |
-      ONIG_SYN_OP2_ESC_U_HEX4 |
-      ONIG_SYN_OP2_QMARK_LPAREN_CONDITION |
-      ONIG_SYN_OP2_QMARK_CAPITAL_P_NAMED_GROUP )
-  , ( SYN_GNU_REGEX_BV |
-      ONIG_SYN_ALLOW_INTERVAL_LOW_ABBREV )
-  , ( ONIG_OPTION_SINGLELINE | ONIG_OPTION_ASCII_RANGE )
-  ,
-  {
-      (OnigCodePoint )'\\'                       /* esc */
-    , (OnigCodePoint )ONIG_INEFFECTIVE_META_CHAR /* anychar '.'  */
-    , (OnigCodePoint )ONIG_INEFFECTIVE_META_CHAR /* anytime '*'  */
-    , (OnigCodePoint )ONIG_INEFFECTIVE_META_CHAR /* zero or one time '?' */
-    , (OnigCodePoint )ONIG_INEFFECTIVE_META_CHAR /* one or more time '+' */
-    , (OnigCodePoint )ONIG_INEFFECTIVE_META_CHAR /* anychar anytime */
-  }
-};
-
-
+    ((SYN_GNU_REGEX_OP | ONIG_SYN_OP_QMARK_NON_GREEDY | ONIG_SYN_OP_ESC_OCTAL3 | ONIG_SYN_OP_ESC_X_HEX2 |
+         ONIG_SYN_OP_ESC_X_BRACE_HEX8 | ONIG_SYN_OP_ESC_CONTROL_CHARS | ONIG_SYN_OP_ESC_C_CONTROL) &
+        ~ONIG_SYN_OP_ESC_LTGT_WORD_BEGIN_END),
+    (ONIG_SYN_OP2_QMARK_GROUP_EFFECT | ONIG_SYN_OP2_OPTION_PERL | ONIG_SYN_OP2_ESC_P_BRACE_CHAR_PROPERTY |
+        ONIG_SYN_OP2_ESC_P_BRACE_CIRCUMFLEX_NOT | ONIG_SYN_OP2_PLUS_POSSESSIVE_REPEAT | ONIG_SYN_OP2_ESC_V_VTAB |
+        ONIG_SYN_OP2_ESC_U_HEX4 | ONIG_SYN_OP2_QMARK_LPAREN_CONDITION | ONIG_SYN_OP2_QMARK_CAPITAL_P_NAMED_GROUP),
+    (SYN_GNU_REGEX_BV | ONIG_SYN_ALLOW_INTERVAL_LOW_ABBREV), (ONIG_OPTION_SINGLELINE | ONIG_OPTION_ASCII_RANGE),
+    {
+        (OnigCodePoint)'\\' /* esc */
+        ,
+        (OnigCodePoint)ONIG_INEFFECTIVE_META_CHAR /* anychar '.'  */
+        ,
+        (OnigCodePoint)ONIG_INEFFECTIVE_META_CHAR /* anytime '*'  */
+        ,
+        (OnigCodePoint)ONIG_INEFFECTIVE_META_CHAR /* zero or one time '?' */
+        ,
+        (OnigCodePoint)ONIG_INEFFECTIVE_META_CHAR /* one or more time '+' */
+        ,
+        (OnigCodePoint)ONIG_INEFFECTIVE_META_CHAR /* anychar anytime */
+    }};
 
 extern int
-onig_set_default_syntax(const OnigSyntaxType* syntax)
+onig_set_default_syntax(const OnigSyntaxType *syntax)
 {
-  if (IS_NULL(syntax))
-    syntax = ONIG_SYNTAX_RUBY;
+    if (IS_NULL(syntax)) syntax = ONIG_SYNTAX_RUBY;
 
-  OnigDefaultSyntax = syntax;
-  return 0;
+    OnigDefaultSyntax = syntax;
+    return 0;
 }
 
 extern void
-onig_copy_syntax(OnigSyntaxType* to, const OnigSyntaxType* from)
+onig_copy_syntax(OnigSyntaxType *to, const OnigSyntaxType *from)
 {
-  *to = *from;
+    *to = *from;
 }
 
 extern void
-onig_set_syntax_op(OnigSyntaxType* syntax, unsigned int op)
+onig_set_syntax_op(OnigSyntaxType *syntax, unsigned int op)
 {
-  syntax->op = op;
+    syntax->op = op;
 }
 
 extern void
-onig_set_syntax_op2(OnigSyntaxType* syntax, unsigned int op2)
+onig_set_syntax_op2(OnigSyntaxType *syntax, unsigned int op2)
 {
-  syntax->op2 = op2;
+    syntax->op2 = op2;
 }
 
 extern void
-onig_set_syntax_behavior(OnigSyntaxType* syntax, unsigned int behavior)
+onig_set_syntax_behavior(OnigSyntaxType *syntax, unsigned int behavior)
 {
-  syntax->behavior = behavior;
+    syntax->behavior = behavior;
 }
 
 extern void
-onig_set_syntax_options(OnigSyntaxType* syntax, OnigOptionType options)
+onig_set_syntax_options(OnigSyntaxType *syntax, OnigOptionType options)
 {
-  syntax->options = options;
+    syntax->options = options;
 }
 
 extern unsigned int
-onig_get_syntax_op(const OnigSyntaxType* syntax)
+onig_get_syntax_op(const OnigSyntaxType *syntax)
 {
-  return syntax->op;
+    return syntax->op;
 }
 
 extern unsigned int
-onig_get_syntax_op2(const OnigSyntaxType* syntax)
+onig_get_syntax_op2(const OnigSyntaxType *syntax)
 {
-  return syntax->op2;
+    return syntax->op2;
 }
 
 extern unsigned int
-onig_get_syntax_behavior(const OnigSyntaxType* syntax)
+onig_get_syntax_behavior(const OnigSyntaxType *syntax)
 {
-  return syntax->behavior;
+    return syntax->behavior;
 }
 
 extern OnigOptionType
-onig_get_syntax_options(const OnigSyntaxType* syntax)
+onig_get_syntax_options(const OnigSyntaxType *syntax)
 {
-  return syntax->options;
+    return syntax->options;
 }
 
 #ifdef USE_VARIABLE_META_CHARS
-extern int onig_set_meta_char(OnigSyntaxType* enc,
-                              unsigned int what, OnigCodePoint code)
+extern int
+onig_set_meta_char(OnigSyntaxType *enc, unsigned int what, OnigCodePoint code)
 {
-  switch (what) {
-  case ONIG_META_CHAR_ESCAPE:
-    enc->meta_char_table.esc = code;
-    break;
-  case ONIG_META_CHAR_ANYCHAR:
-    enc->meta_char_table.anychar = code;
-    break;
-  case ONIG_META_CHAR_ANYTIME:
-    enc->meta_char_table.anytime = code;
-    break;
-  case ONIG_META_CHAR_ZERO_OR_ONE_TIME:
-    enc->meta_char_table.zero_or_one_time = code;
-    break;
-  case ONIG_META_CHAR_ONE_OR_MORE_TIME:
-    enc->meta_char_table.one_or_more_time = code;
-    break;
-  case ONIG_META_CHAR_ANYCHAR_ANYTIME:
-    enc->meta_char_table.anychar_anytime = code;
-    break;
-  default:
-    return ONIGERR_INVALID_ARGUMENT;
-    break;
-  }
-  return 0;
+    switch (what) {
+    case ONIG_META_CHAR_ESCAPE:
+        enc->meta_char_table.esc = code;
+        break;
+    case ONIG_META_CHAR_ANYCHAR:
+        enc->meta_char_table.anychar = code;
+        break;
+    case ONIG_META_CHAR_ANYTIME:
+        enc->meta_char_table.anytime = code;
+        break;
+    case ONIG_META_CHAR_ZERO_OR_ONE_TIME:
+        enc->meta_char_table.zero_or_one_time = code;
+        break;
+    case ONIG_META_CHAR_ONE_OR_MORE_TIME:
+        enc->meta_char_table.one_or_more_time = code;
+        break;
+    case ONIG_META_CHAR_ANYCHAR_ANYTIME:
+        enc->meta_char_table.anychar_anytime = code;
+        break;
+    default:
+        return ONIGERR_INVALID_ARGUMENT;
+        break;
+    }
+    return 0;
 }
 #endif /* USE_VARIABLE_META_CHARS */

@@ -11,17 +11,19 @@
 
 #if !defined(OPENSSL_NO_DSA)
 
-#define GetPKeyDSA(obj, pkey) do { \
-    GetPKey((obj), (pkey)); \
-    if (EVP_PKEY_base_id(pkey) != EVP_PKEY_DSA) { /* PARANOIA? */ \
-	ossl_raise(rb_eRuntimeError, "THIS IS NOT A DSA!"); \
-    } \
-} while (0)
-#define GetDSA(obj, dsa) do { \
-    EVP_PKEY *_pkey; \
-    GetPKeyDSA((obj), _pkey); \
-    (dsa) = EVP_PKEY_get0_DSA(_pkey); \
-} while (0)
+#    define GetPKeyDSA(obj, pkey) \
+        do { \
+            GetPKey((obj), (pkey)); \
+            if (EVP_PKEY_base_id(pkey) != EVP_PKEY_DSA) { /* PARANOIA? */ \
+                ossl_raise(rb_eRuntimeError, "THIS IS NOT A DSA!"); \
+            } \
+        } while (0)
+#    define GetDSA(obj, dsa) \
+        do { \
+            EVP_PKEY *_pkey; \
+            GetPKeyDSA((obj), _pkey); \
+            (dsa) = EVP_PKEY_get0_DSA(_pkey); \
+        } while (0)
 
 static inline int
 DSA_HAS_PRIVATE(DSA *dsa)
@@ -90,15 +92,13 @@ ossl_dsa_initialize(int argc, VALUE *argv, VALUE self)
     int type;
 
     TypedData_Get_Struct(self, EVP_PKEY, &ossl_evp_pkey_type, pkey);
-    if (pkey)
-        rb_raise(rb_eTypeError, "pkey already initialized");
+    if (pkey) rb_raise(rb_eTypeError, "pkey already initialized");
 
     /* The DSA.new(size, generator) form is handled by lib/openssl/pkey.rb */
     rb_scan_args(argc, argv, "02", &arg, &pass);
     if (argc == 0) {
         dsa = DSA_new();
-        if (!dsa)
-            ossl_raise(eDSAError, "DSA_new");
+        if (!dsa) ossl_raise(eDSAError, "DSA_new");
         goto legacy;
     }
 
@@ -107,17 +107,13 @@ ossl_dsa_initialize(int argc, VALUE *argv, VALUE self)
     in = ossl_obj2bio(&arg);
 
     /* DER-encoded DSAPublicKey format isn't supported by the generic routine */
-    dsa = (DSA *)PEM_ASN1_read_bio((d2i_of_void *)d2i_DSAPublicKey,
-                                   PEM_STRING_DSA_PUBLIC,
-                                   in, NULL, NULL, NULL);
-    if (dsa)
-        goto legacy;
+    dsa = (DSA *)PEM_ASN1_read_bio((d2i_of_void *)d2i_DSAPublicKey, PEM_STRING_DSA_PUBLIC, in, NULL, NULL, NULL);
+    if (dsa) goto legacy;
     OSSL_BIO_reset(in);
 
     pkey = ossl_pkey_read_generic(in, pass);
     BIO_free(in);
-    if (!pkey)
-        ossl_raise(eDSAError, "Neither PUB key nor PRIV key");
+    if (!pkey) ossl_raise(eDSAError, "Neither PUB key nor PRIV key");
 
     type = EVP_PKEY_base_id(pkey);
     if (type != EVP_PKEY_DSA) {
@@ -127,7 +123,7 @@ ossl_dsa_initialize(int argc, VALUE *argv, VALUE self)
     RTYPEDDATA_DATA(self) = pkey;
     return self;
 
-  legacy:
+legacy:
     BIO_free(in);
     pkey = EVP_PKEY_new();
     if (!pkey || EVP_PKEY_assign_DSA(pkey, dsa) != 1) {
@@ -139,7 +135,7 @@ ossl_dsa_initialize(int argc, VALUE *argv, VALUE self)
     return self;
 }
 
-#ifndef HAVE_EVP_PKEY_DUP
+#    ifndef HAVE_EVP_PKEY_DUP
 static VALUE
 ossl_dsa_initialize_copy(VALUE self, VALUE other)
 {
@@ -147,15 +143,11 @@ ossl_dsa_initialize_copy(VALUE self, VALUE other)
     DSA *dsa, *dsa_new;
 
     TypedData_Get_Struct(self, EVP_PKEY, &ossl_evp_pkey_type, pkey);
-    if (pkey)
-        rb_raise(rb_eTypeError, "pkey already initialized");
+    if (pkey) rb_raise(rb_eTypeError, "pkey already initialized");
     GetDSA(other, dsa);
 
-    dsa_new = (DSA *)ASN1_dup((i2d_of_void *)i2d_DSAPrivateKey,
-                              (d2i_of_void *)d2i_DSAPrivateKey,
-                              (char *)dsa);
-    if (!dsa_new)
-	ossl_raise(eDSAError, "ASN1_dup");
+    dsa_new = (DSA *)ASN1_dup((i2d_of_void *)i2d_DSAPrivateKey, (d2i_of_void *)d2i_DSAPrivateKey, (char *)dsa);
+    if (!dsa_new) ossl_raise(eDSAError, "ASN1_dup");
 
     pkey = EVP_PKEY_new();
     if (!pkey || EVP_PKEY_assign_DSA(pkey, dsa_new) != 1) {
@@ -167,7 +159,7 @@ ossl_dsa_initialize_copy(VALUE self, VALUE other)
 
     return self;
 }
-#endif
+#    endif
 
 /*
  *  call-seq:
@@ -253,7 +245,6 @@ ossl_dsa_to_der(VALUE self)
         return ossl_pkey_export_spki(self, 1);
 }
 
-
 /*
  *  call-seq:
  *    dsa.params -> hash
@@ -306,11 +297,11 @@ OSSL_PKEY_BN_DEF2(dsa, DSA, key, pub_key, priv_key)
 void
 Init_ossl_dsa(void)
 {
-#if 0
+#    if 0
     mPKey = rb_define_module_under(mOSSL, "PKey");
     cPKey = rb_define_class_under(mPKey, "PKey", rb_cObject);
     ePKeyError = rb_define_class_under(mPKey, "PKeyError", eOSSLError);
-#endif
+#    endif
 
     /* Document-class: OpenSSL::PKey::DSAError
      *
@@ -329,9 +320,9 @@ Init_ossl_dsa(void)
     cDSA = rb_define_class_under(mPKey, "DSA", cPKey);
 
     rb_define_method(cDSA, "initialize", ossl_dsa_initialize, -1);
-#ifndef HAVE_EVP_PKEY_DUP
+#    ifndef HAVE_EVP_PKEY_DUP
     rb_define_method(cDSA, "initialize_copy", ossl_dsa_initialize_copy, 1);
-#endif
+#    endif
 
     rb_define_method(cDSA, "public?", ossl_dsa_is_public, 0);
     rb_define_method(cDSA, "private?", ossl_dsa_is_private, 0);
@@ -351,7 +342,7 @@ Init_ossl_dsa(void)
     rb_define_method(cDSA, "params", ossl_dsa_get_params, 0);
 }
 
-#else /* defined NO_DSA */
+#else  /* defined NO_DSA */
 void
 Init_ossl_dsa(void)
 {

@@ -9,8 +9,8 @@
 
 **********************************************************************/
 
-#include "ruby/ruby.h"
 #include "ruby/encoding.h"
+#include "ruby/ruby.h"
 
 /* loadpath.c */
 const char ruby_exec_prefix[] = "";

@@ -13,8 +13,8 @@
 
 #pragma once
 
-#include "ruby/ruby.h"
 #include "ruby/internal/config.h"
+#include "ruby/ruby.h"
 
 RBIMPL_SYMBOL_EXPORT_BEGIN()
 
@@ -88,4 +88,4 @@ VALUE rb_io_buffer_pwrite(VALUE self, VALUE io, size_t length, off_t offset);
 
 RBIMPL_SYMBOL_EXPORT_END()
 
-#endif  /* RUBY_IO_BUFFER_T */
+#endif /* RUBY_IO_BUFFER_T */

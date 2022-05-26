@@ -1,4 +1,4 @@
-#ifndef RBIMPL_COMPILER_IS_INTEL_H                   /*-*-C++-*-vi:se ft=cpp:*/
+#ifndef RBIMPL_COMPILER_IS_INTEL_H /*-*-C++-*-vi:se ft=cpp:*/
 #define RBIMPL_COMPILER_IS_INTEL_H
 /**
  * @author     Ruby developers <ruby-core@ruby-lang.org>
@@ -19,22 +19,22 @@
  *             extension libraries.  They could be written in C++98.
  * @brief      Defines RBIMPL_COMPILER_IS_Intel.
  */
-#if ! defined(__INTEL_COMPILER)
-# define RBIMPL_COMPILER_IS_Intel 0
+#if !defined(__INTEL_COMPILER)
+#    define RBIMPL_COMPILER_IS_Intel 0
 
-#elif ! defined(__INTEL_COMPILER_UPDATE)
-# define RBIMPL_COMPILER_IS_Intel 1
-# /* __INTEL_COMPILER = XXYZ */
-# define RBIMPL_COMPILER_VERSION_MAJOR (__INTEL_COMPILER / 100)
-# define RBIMPL_COMPILER_VERSION_MINOR (__INTEL_COMPILER % 100 / 10)
-# define RBIMPL_COMPILER_VERSION_PATCH (__INTEL_COMPILER       % 10)
+#elif !defined(__INTEL_COMPILER_UPDATE)
+#    define RBIMPL_COMPILER_IS_Intel 1
+#    /* __INTEL_COMPILER = XXYZ */
+#    define RBIMPL_COMPILER_VERSION_MAJOR (__INTEL_COMPILER / 100)
+#    define RBIMPL_COMPILER_VERSION_MINOR (__INTEL_COMPILER % 100 / 10)
+#    define RBIMPL_COMPILER_VERSION_PATCH (__INTEL_COMPILER % 10)
 
 #else
-# define RBIMPL_COMPILER_IS_Intel 1
-# /* __INTEL_COMPILER = XXYZ */
-# define RBIMPL_COMPILER_VERSION_MAJOR (__INTEL_COMPILER / 100)
-# define RBIMPL_COMPILER_VERSION_MINOR (__INTEL_COMPILER % 100 / 10)
-# define RBIMPL_COMPILER_VERSION_PATCH __INTEL_COMPILER_UPDATE
+#    define RBIMPL_COMPILER_IS_Intel 1
+#    /* __INTEL_COMPILER = XXYZ */
+#    define RBIMPL_COMPILER_VERSION_MAJOR (__INTEL_COMPILER / 100)
+#    define RBIMPL_COMPILER_VERSION_MINOR (__INTEL_COMPILER % 100 / 10)
+#    define RBIMPL_COMPILER_VERSION_PATCH __INTEL_COMPILER_UPDATE
 #endif
 
 #endif /* RBIMPL_COMPILER_IS_INTEL_H */

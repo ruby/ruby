@@ -39,44 +39,44 @@ RUBY_FUNC_EXPORTED void ruby_init_setproctitle(int argc, char *argv[]);
 
 #ifndef HAVE_SETPROCTITLE
 
-#include <stdarg.h>
-#include <stdlib.h>
-#ifdef HAVE_UNISTD_H
-#include <unistd.h>
-#endif
-#ifdef HAVE_SYS_PSTAT_H
-#include <sys/pstat.h>
-#endif
-#include <string.h>
+#    include <stdarg.h>
+#    include <stdlib.h>
+#    ifdef HAVE_UNISTD_H
+#        include <unistd.h>
+#    endif
+#    ifdef HAVE_SYS_PSTAT_H
+#        include <sys/pstat.h>
+#    endif
+#    include <string.h>
 
-#if defined(__APPLE__)
-# ifdef HAVE_CRT_EXTERNS_H
-#  include <crt_externs.h>
-#  undef environ
-#  define environ (*_NSGetEnviron())
-# else
-#  include "crt_externs.h"
-# endif
-#endif
+#    if defined(__APPLE__)
+#        ifdef HAVE_CRT_EXTERNS_H
+#            include <crt_externs.h>
+#            undef environ
+#            define environ (*_NSGetEnviron())
+#        else
+#            include "crt_externs.h"
+#        endif
+#    endif
 
-#define SPT_NONE	0	/* don't use it at all */
-#define SPT_PSTAT	1	/* use pstat(PSTAT_SETCMD, ...) */
-#define SPT_REUSEARGV	2	/* cover argv with title information */
+#    define SPT_NONE 0      /* don't use it at all */
+#    define SPT_PSTAT 1     /* use pstat(PSTAT_SETCMD, ...) */
+#    define SPT_REUSEARGV 2 /* cover argv with title information */
 
-#ifndef SPT_TYPE
-# define SPT_TYPE	SPT_NONE
-#endif
+#    ifndef SPT_TYPE
+#        define SPT_TYPE SPT_NONE
+#    endif
 
-#ifndef SPT_PADCHAR
-# define SPT_PADCHAR	'\0'
-#endif
+#    ifndef SPT_PADCHAR
+#        define SPT_PADCHAR '\0'
+#    endif
 
-#if SPT_TYPE == SPT_REUSEARGV
+#    if SPT_TYPE == SPT_REUSEARGV
 static char *argv_start = NULL;
 static size_t argv_env_len = 0;
 static size_t argv_len = 0;
 static char **argv1_addr = NULL;
-#endif
+#    endif
 
 #endif /* HAVE_SETPROCTITLE */
 
@@ -84,53 +84,50 @@ void
 compat_init_setproctitle(int argc, char *argv[])
 {
 #if defined(SPT_TYPE) && SPT_TYPE == SPT_REUSEARGV
-	extern char **environ;
-	char *lastargv = NULL;
-	char *lastenvp = NULL;
-	char **envp = environ;
-	int i;
+    extern char **environ;
+    char *lastargv = NULL;
+    char *lastenvp = NULL;
+    char **envp = environ;
+    int i;
 
-	/*
-	 * NB: This assumes that argv has already been copied out of the
-	 * way. This is true for sshd, but may not be true for other
-	 * programs. Beware.
-	 */
+    /*
+     * NB: This assumes that argv has already been copied out of the
+     * way. This is true for sshd, but may not be true for other
+     * programs. Beware.
+     */
 
-	if (argc == 0 || argv[0] == NULL)
-		return;
+    if (argc == 0 || argv[0] == NULL) return;
 
-	/* Fail if we can't allocate room for the new environment */
-	for (i = 0; envp[i] != NULL; i++)
-		;
-	if ((environ = calloc(i + 1, sizeof(*environ))) == NULL) {
-		environ = envp;	/* put it back */
-		return;
-	}
+    /* Fail if we can't allocate room for the new environment */
+    for (i = 0; envp[i] != NULL; i++)
+        ;
+    if ((environ = calloc(i + 1, sizeof(*environ))) == NULL) {
+        environ = envp; /* put it back */
+        return;
+    }
 
-	/*
-	 * Find the last argv string or environment variable within
-	 * our process memory area.
-	 */
-	for (i = 0; i < argc; i++) {
-		if (lastargv == NULL || lastargv + 1 == argv[i])
-			lastargv = argv[i] + strlen(argv[i]);
-	}
-	lastenvp = lastargv;
-	for (i = 0; envp[i] != NULL; i++) {
-		if (lastenvp + 1 == envp[i])
-			lastenvp = envp[i] + strlen(envp[i]);
-	}
+    /*
+     * Find the last argv string or environment variable within
+     * our process memory area.
+     */
+    for (i = 0; i < argc; i++) {
+        if (lastargv == NULL || lastargv + 1 == argv[i]) lastargv = argv[i] + strlen(argv[i]);
+    }
+    lastenvp = lastargv;
+    for (i = 0; envp[i] != NULL; i++) {
+        if (lastenvp + 1 == envp[i]) lastenvp = envp[i] + strlen(envp[i]);
+    }
 
-	/* We keep argv[1], argv[2], etc. at this moment,
-	   because the ps command of AIX refers to them. */
-	argv1_addr = &argv[1];
-	argv_start = argv[0];
-	argv_len = lastargv - argv[0];
-	argv_env_len = lastenvp - argv[0];
+    /* We keep argv[1], argv[2], etc. at this moment,
+       because the ps command of AIX refers to them. */
+    argv1_addr = &argv[1];
+    argv_start = argv[0];
+    argv_len = lastargv - argv[0];
+    argv_env_len = lastenvp - argv[0];
 
-	for (i = 0; envp[i] != NULL; i++)
-		environ[i] = ruby_strdup(envp[i]);
-	environ[i] = NULL;
+    for (i = 0; envp[i] != NULL; i++)
+        environ[i] = ruby_strdup(envp[i]);
+    environ[i] = NULL;
 #endif /* SPT_REUSEARGV */
 }
 
@@ -138,38 +135,37 @@ compat_init_setproctitle(int argc, char *argv[])
 void
 setproctitle(const char *fmt, ...)
 {
-#if SPT_TYPE != SPT_NONE
-	va_list ap;
-	char ptitle[1024];
-	size_t len;
-	size_t argvlen;
-#if SPT_TYPE == SPT_PSTAT
-	union pstun pst;
-#endif
+#    if SPT_TYPE != SPT_NONE
+    va_list ap;
+    char ptitle[1024];
+    size_t len;
+    size_t argvlen;
+#        if SPT_TYPE == SPT_PSTAT
+    union pstun pst;
+#        endif
 
-#if SPT_TYPE == SPT_REUSEARGV
-	if (argv_env_len <= 0)
-		return;
-#endif
+#        if SPT_TYPE == SPT_REUSEARGV
+    if (argv_env_len <= 0) return;
+#        endif
 
-	/* fmt must be non-NULL */
-	va_start(ap, fmt);
-	vsnprintf(ptitle, sizeof(ptitle), fmt, ap);
-	va_end(ap);
+    /* fmt must be non-NULL */
+    va_start(ap, fmt);
+    vsnprintf(ptitle, sizeof(ptitle), fmt, ap);
+    va_end(ap);
 
-#if SPT_TYPE == SPT_PSTAT
-	pst.pst_command = ptitle;
-	pstat(PSTAT_SETCMD, pst, strlen(ptitle), 0, 0);
-#elif SPT_TYPE == SPT_REUSEARGV
-	len = strlcpy(argv_start, ptitle, argv_env_len);
-	argvlen = len > argv_len ? argv_env_len : argv_len;
-	for(; len < argvlen; len++)
-		argv_start[len] = SPT_PADCHAR;
-	/* argv[1], argv[2], etc. are no longer valid. */
-	*argv1_addr = NULL;
-#endif
+#        if SPT_TYPE == SPT_PSTAT
+    pst.pst_command = ptitle;
+    pstat(PSTAT_SETCMD, pst, strlen(ptitle), 0, 0);
+#        elif SPT_TYPE == SPT_REUSEARGV
+    len = strlcpy(argv_start, ptitle, argv_env_len);
+    argvlen = len > argv_len ? argv_env_len : argv_len;
+    for (; len < argvlen; len++)
+        argv_start[len] = SPT_PADCHAR;
+    /* argv[1], argv[2], etc. are no longer valid. */
+    *argv1_addr = NULL;
+#        endif
 
-#endif /* SPT_NONE */
+#    endif /* SPT_NONE */
 }
 
 #endif /* HAVE_SETPROCTITLE */

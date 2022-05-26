@@ -6,15 +6,15 @@
  * ifa_flags is usually unsigned int.
  * However it is uint64_t on SunOS 5.11 (OpenIndiana).
  */
-#ifdef HAVE_LONG_LONG
+#    ifdef HAVE_LONG_LONG
 typedef unsigned LONG_LONG ifa_flags_t;
-#define PRIxIFAFLAGS PRI_LL_PREFIX"x"
-#define IFAFLAGS2NUM(flags) ULL2NUM(flags)
-#else
+#        define PRIxIFAFLAGS PRI_LL_PREFIX "x"
+#        define IFAFLAGS2NUM(flags) ULL2NUM(flags)
+#    else
 typedef unsigned int ifa_flags_t;
-#define PRIxIFAFLAGS "x"
-#define IFAFLAGS2NUM(flags) UINT2NUM(flags)
-#endif
+#        define PRIxIFAFLAGS "x"
+#        define IFAFLAGS2NUM(flags) UINT2NUM(flags)
+#    endif
 
 VALUE rb_cSockIfaddr;
 
@@ -35,8 +35,7 @@ struct rb_ifaddr_root_tag {
 static rb_ifaddr_root_t *
 get_root(const rb_ifaddr_t *ifaddr)
 {
-    return (rb_ifaddr_root_t *)((char *)&ifaddr[-ifaddr->ord] -
-                                offsetof(rb_ifaddr_root_t, ary));
+    return (rb_ifaddr_root_t *)((char *)&ifaddr[-ifaddr->ord] - offsetof(rb_ifaddr_root_t, ary));
 }
 
 static void
@@ -64,13 +63,17 @@ ifaddr_memsize(const void *ptr)
 
 static const rb_data_type_t ifaddr_type = {
     "socket/ifaddr",
-    {0, ifaddr_free, ifaddr_memsize,},
+    {
+        0,
+        ifaddr_free,
+        ifaddr_memsize,
+    },
 };
 
 static inline rb_ifaddr_t *
 check_ifaddr(VALUE self)
 {
-      return rb_check_typeddata(self, &ifaddr_type);
+    return rb_check_typeddata(self, &ifaddr_type);
 }
 
 static rb_ifaddr_t *
@@ -100,11 +103,10 @@ rsock_getifaddrs(void)
     VALUE result, addr;
 
     ret = getifaddrs(&ifaddrs);
-    if (ret == -1)
-        rb_sys_fail("getifaddrs");
+    if (ret == -1) rb_sys_fail("getifaddrs");
 
     if (!ifaddrs) {
-	return rb_ary_new();
+        return rb_ary_new();
     }
 
     numifaddrs = 0;
@@ -128,9 +130,9 @@ rsock_getifaddrs(void)
     result = rb_ary_new2(numifaddrs);
     rb_ary_push(result, addr);
     for (i = 1; i < numifaddrs; i++) {
-	addr = TypedData_Wrap_Struct(rb_cSockIfaddr, &ifaddr_type, &root->ary[i]);
-	root->refcount++;
-	rb_ary_push(result, addr);
+        addr = TypedData_Wrap_Struct(rb_cSockIfaddr, &ifaddr_type, &root->ary[i]);
+        root->refcount++;
+        rb_ary_push(result, addr);
     }
 
     return result;
@@ -150,7 +152,7 @@ ifaddr_name(VALUE self)
     return rb_str_new_cstr(ifa->ifa_name);
 }
 
-#ifdef HAVE_IF_NAMETOINDEX
+#    ifdef HAVE_IF_NAMETOINDEX
 /*
  * call-seq:
  *   ifaddr.ifindex => integer
@@ -168,9 +170,9 @@ ifaddr_ifindex(VALUE self)
     }
     return UINT2NUM(ifindex);
 }
-#else
-#define ifaddr_ifindex rb_f_notimplement
-#endif
+#    else
+#        define ifaddr_ifindex rb_f_notimplement
+#    endif
 
 /*
  * call-seq:
@@ -198,8 +200,7 @@ static VALUE
 ifaddr_addr(VALUE self)
 {
     struct ifaddrs *ifa = get_ifaddrs(self);
-    if (ifa->ifa_addr)
-        return rsock_sockaddr_obj(ifa->ifa_addr, rsock_sockaddr_len(ifa->ifa_addr));
+    if (ifa->ifa_addr) return rsock_sockaddr_obj(ifa->ifa_addr, rsock_sockaddr_len(ifa->ifa_addr));
     return Qnil;
 }
 
@@ -215,8 +216,7 @@ static VALUE
 ifaddr_netmask(VALUE self)
 {
     struct ifaddrs *ifa = get_ifaddrs(self);
-    if (ifa->ifa_netmask)
-        return rsock_sockaddr_obj(ifa->ifa_netmask, rsock_sockaddr_len(ifa->ifa_netmask));
+    if (ifa->ifa_netmask) return rsock_sockaddr_obj(ifa->ifa_netmask, rsock_sockaddr_len(ifa->ifa_netmask));
     return Qnil;
 }
 
@@ -254,7 +254,7 @@ ifaddr_dstaddr(VALUE self)
     return Qnil;
 }
 
-#ifdef HAVE_STRUCT_IF_DATA_IFI_VHID
+#    ifdef HAVE_STRUCT_IF_DATA_IFI_VHID
 /*
  * call-seq:
  *   ifaddr.vhid => Integer
@@ -268,81 +268,85 @@ ifaddr_vhid(VALUE self)
 {
     struct ifaddrs *ifa = get_ifaddrs(self);
     if (ifa->ifa_data)
-        return (INT2FIX(((struct if_data*)ifa->ifa_data)->ifi_vhid));
+        return (INT2FIX(((struct if_data *)ifa->ifa_data)->ifi_vhid));
     else
         return Qnil;
 }
-#endif
+#    endif
 
 static void
 ifaddr_inspect_flags(ifa_flags_t flags, VALUE result)
 {
     const char *sep = " ";
-#define INSPECT_BIT(bit, name) \
-    if (flags & (bit)) { rb_str_catf(result, "%s" name, sep); flags &= ~(ifa_flags_t)(bit); sep = ","; }
-#ifdef IFF_UP
+#    define INSPECT_BIT(bit, name) \
+        if (flags & (bit)) { \
+            rb_str_catf(result, "%s" name, sep); \
+            flags &= ~(ifa_flags_t)(bit); \
+            sep = ","; \
+        }
+#    ifdef IFF_UP
     INSPECT_BIT(IFF_UP, "UP")
-#endif
-#ifdef IFF_BROADCAST
+#    endif
+#    ifdef IFF_BROADCAST
     INSPECT_BIT(IFF_BROADCAST, "BROADCAST")
-#endif
-#ifdef IFF_DEBUG
+#    endif
+#    ifdef IFF_DEBUG
     INSPECT_BIT(IFF_DEBUG, "DEBUG")
-#endif
-#ifdef IFF_LOOPBACK
+#    endif
+#    ifdef IFF_LOOPBACK
     INSPECT_BIT(IFF_LOOPBACK, "LOOPBACK")
-#endif
-#ifdef IFF_POINTOPOINT
+#    endif
+#    ifdef IFF_POINTOPOINT
     INSPECT_BIT(IFF_POINTOPOINT, "POINTOPOINT")
-#endif
-#ifdef IFF_RUNNING
+#    endif
+#    ifdef IFF_RUNNING
     INSPECT_BIT(IFF_RUNNING, "RUNNING")
-#endif
-#ifdef IFF_NOARP
+#    endif
+#    ifdef IFF_NOARP
     INSPECT_BIT(IFF_NOARP, "NOARP")
-#endif
-#ifdef IFF_PROMISC
+#    endif
+#    ifdef IFF_PROMISC
     INSPECT_BIT(IFF_PROMISC, "PROMISC")
-#endif
-#ifdef IFF_NOTRAILERS
+#    endif
+#    ifdef IFF_NOTRAILERS
     INSPECT_BIT(IFF_NOTRAILERS, "NOTRAILERS")
-#endif
-#ifdef IFF_ALLMULTI
+#    endif
+#    ifdef IFF_ALLMULTI
     INSPECT_BIT(IFF_ALLMULTI, "ALLMULTI")
-#endif
-#ifdef IFF_SIMPLEX
+#    endif
+#    ifdef IFF_SIMPLEX
     INSPECT_BIT(IFF_SIMPLEX, "SIMPLEX")
-#endif
-#ifdef IFF_MASTER
+#    endif
+#    ifdef IFF_MASTER
     INSPECT_BIT(IFF_MASTER, "MASTER")
-#endif
-#ifdef IFF_SLAVE
+#    endif
+#    ifdef IFF_SLAVE
     INSPECT_BIT(IFF_SLAVE, "SLAVE")
-#endif
-#ifdef IFF_MULTICAST
+#    endif
+#    ifdef IFF_MULTICAST
     INSPECT_BIT(IFF_MULTICAST, "MULTICAST")
-#endif
-#ifdef IFF_PORTSEL
+#    endif
+#    ifdef IFF_PORTSEL
     INSPECT_BIT(IFF_PORTSEL, "PORTSEL")
-#endif
-#ifdef IFF_AUTOMEDIA
+#    endif
+#    ifdef IFF_AUTOMEDIA
     INSPECT_BIT(IFF_AUTOMEDIA, "AUTOMEDIA")
-#endif
-#ifdef IFF_DYNAMIC
+#    endif
+#    ifdef IFF_DYNAMIC
     INSPECT_BIT(IFF_DYNAMIC, "DYNAMIC")
-#endif
-#ifdef IFF_LOWER_UP
+#    endif
+#    ifdef IFF_LOWER_UP
     INSPECT_BIT(IFF_LOWER_UP, "LOWER_UP")
-#endif
-#ifdef IFF_DORMANT
+#    endif
+#    ifdef IFF_DORMANT
     INSPECT_BIT(IFF_DORMANT, "DORMANT")
-#endif
-#ifdef IFF_ECHO
+#    endif
+#    ifdef IFF_ECHO
     INSPECT_BIT(IFF_ECHO, "ECHO")
-#endif
-#undef INSPECT_BIT
+#    endif
+#    undef INSPECT_BIT
     if (flags) {
-        rb_str_catf(result, "%s%#"PRIxIFAFLAGS, sep, flags);
+        rb_str_catf(result, "%s%#" PRIxIFAFLAGS, sep, flags);
     }
 }
 
@@ -365,34 +369,25 @@ ifaddr_inspect(VALUE self)
     rb_str_cat2(result, " ");
     rb_str_cat2(result, ifa->ifa_name);
 
-    if (ifa->ifa_flags)
-        ifaddr_inspect_flags(ifa->ifa_flags, result);
+    if (ifa->ifa_flags) ifaddr_inspect_flags(ifa->ifa_flags, result);
 
     if (ifa->ifa_addr) {
-      rb_str_cat2(result, " ");
-      rsock_inspect_sockaddr(ifa->ifa_addr,
-          rsock_sockaddr_len(ifa->ifa_addr),
-          result);
+        rb_str_cat2(result, " ");
+        rsock_inspect_sockaddr(ifa->ifa_addr, rsock_sockaddr_len(ifa->ifa_addr), result);
     }
     if (ifa->ifa_netmask) {
-      rb_str_cat2(result, " netmask=");
-      rsock_inspect_sockaddr(ifa->ifa_netmask,
-          rsock_sockaddr_len(ifa->ifa_netmask),
-          result);
+        rb_str_cat2(result, " netmask=");
+        rsock_inspect_sockaddr(ifa->ifa_netmask, rsock_sockaddr_len(ifa->ifa_netmask), result);
     }
 
     if ((ifa->ifa_flags & IFF_BROADCAST) && ifa->ifa_broadaddr) {
-      rb_str_cat2(result, " broadcast=");
-      rsock_inspect_sockaddr(ifa->ifa_broadaddr,
-          rsock_sockaddr_len(ifa->ifa_broadaddr),
-          result);
+        rb_str_cat2(result, " broadcast=");
+        rsock_inspect_sockaddr(ifa->ifa_broadaddr, rsock_sockaddr_len(ifa->ifa_broadaddr), result);
     }
 
     if ((ifa->ifa_flags & IFF_POINTOPOINT) && ifa->ifa_dstaddr) {
-      rb_str_cat2(result, " dstaddr=");
-      rsock_inspect_sockaddr(ifa->ifa_dstaddr,
-          rsock_sockaddr_len(ifa->ifa_dstaddr),
-          result);
+        rb_str_cat2(result, " dstaddr=");
+        rsock_inspect_sockaddr(ifa->ifa_dstaddr, rsock_sockaddr_len(ifa->ifa_dstaddr), result);
     }
 
     rb_str_cat2(result, ">");
@@ -418,26 +413,28 @@ ifaddr_inspect(VALUE self)
  *
  * Example result on GNU/Linux:
  *   pp Socket.getifaddrs
- *   #=> [#<Socket::Ifaddr lo UP,LOOPBACK,RUNNING,0x10000 PACKET[protocol=0 lo hatype=772 HOST hwaddr=00:00:00:00:00:00]>,
- *   #    #<Socket::Ifaddr eth0 UP,BROADCAST,RUNNING,MULTICAST,0x10000 PACKET[protocol=0 eth0 hatype=1 HOST hwaddr=00:16:3e:95:88:bb] broadcast=PACKET[protocol=0 eth0 hatype=1 HOST hwaddr=ff:ff:ff:ff:ff:ff]>,
- *   #    #<Socket::Ifaddr sit0 NOARP PACKET[protocol=0 sit0 hatype=776 HOST hwaddr=00:00:00:00]>,
- *   #    #<Socket::Ifaddr lo UP,LOOPBACK,RUNNING,0x10000 127.0.0.1 netmask=255.0.0.0>,
- *   #    #<Socket::Ifaddr eth0 UP,BROADCAST,RUNNING,MULTICAST,0x10000 221.186.184.67 netmask=255.255.255.240 broadcast=221.186.184.79>,
- *   #    #<Socket::Ifaddr lo UP,LOOPBACK,RUNNING,0x10000 ::1 netmask=ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff>,
- *   #    #<Socket::Ifaddr eth0 UP,BROADCAST,RUNNING,MULTICAST,0x10000 fe80::216:3eff:fe95:88bb%eth0 netmask=ffff:ffff:ffff:ffff::>]
+ *   #=> [#<Socket::Ifaddr lo UP,LOOPBACK,RUNNING,0x10000 PACKET[protocol=0 lo hatype=772 HOST
+ * hwaddr=00:00:00:00:00:00]>, #    #<Socket::Ifaddr eth0 UP,BROADCAST,RUNNING,MULTICAST,0x10000 PACKET[protocol=0 eth0
+ * hatype=1 HOST hwaddr=00:16:3e:95:88:bb] broadcast=PACKET[protocol=0 eth0 hatype=1 HOST hwaddr=ff:ff:ff:ff:ff:ff]>, #
+ * #<Socket::Ifaddr sit0 NOARP PACKET[protocol=0 sit0 hatype=776 HOST hwaddr=00:00:00:00]>, #    #<Socket::Ifaddr lo
+ * UP,LOOPBACK,RUNNING,0x10000 127.0.0.1 netmask=255.0.0.0>, #    #<Socket::Ifaddr eth0
+ * UP,BROADCAST,RUNNING,MULTICAST,0x10000 221.186.184.67 netmask=255.255.255.240 broadcast=221.186.184.79>, #
+ * #<Socket::Ifaddr lo UP,LOOPBACK,RUNNING,0x10000 ::1 netmask=ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff>, #
+ * #<Socket::Ifaddr eth0 UP,BROADCAST,RUNNING,MULTICAST,0x10000 fe80::216:3eff:fe95:88bb%eth0
+ * netmask=ffff:ffff:ffff:ffff::>]
  *
  * Example result on FreeBSD:
  *   pp Socket.getifaddrs
  *   #=> [#<Socket::Ifaddr usbus0 UP,0x10000 LINK[usbus0]>,
  *   #    #<Socket::Ifaddr re0 UP,BROADCAST,RUNNING,MULTICAST,0x800 LINK[re0 3a:d0:40:9a:fe:e8]>,
- *   #    #<Socket::Ifaddr re0 UP,BROADCAST,RUNNING,MULTICAST,0x800 10.250.10.18 netmask=255.255.255.? (7 bytes for 16 bytes sockaddr_in) broadcast=10.250.10.255>,
- *   #    #<Socket::Ifaddr re0 UP,BROADCAST,RUNNING,MULTICAST,0x800 fe80:2::38d0:40ff:fe9a:fee8 netmask=ffff:ffff:ffff:ffff::>,
- *   #    #<Socket::Ifaddr re0 UP,BROADCAST,RUNNING,MULTICAST,0x800 2001:2e8:408:10::12 netmask=UNSPEC>,
- *   #    #<Socket::Ifaddr plip0 POINTOPOINT,MULTICAST,0x800 LINK[plip0]>,
- *   #    #<Socket::Ifaddr lo0 UP,LOOPBACK,RUNNING,MULTICAST LINK[lo0]>,
- *   #    #<Socket::Ifaddr lo0 UP,LOOPBACK,RUNNING,MULTICAST ::1 netmask=ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff>,
- *   #    #<Socket::Ifaddr lo0 UP,LOOPBACK,RUNNING,MULTICAST fe80:4::1 netmask=ffff:ffff:ffff:ffff::>,
- *   #    #<Socket::Ifaddr lo0 UP,LOOPBACK,RUNNING,MULTICAST 127.0.0.1 netmask=255.?.?.? (5 bytes for 16 bytes sockaddr_in)>]
+ *   #    #<Socket::Ifaddr re0 UP,BROADCAST,RUNNING,MULTICAST,0x800 10.250.10.18 netmask=255.255.255.? (7 bytes for 16
+ * bytes sockaddr_in) broadcast=10.250.10.255>, #    #<Socket::Ifaddr re0 UP,BROADCAST,RUNNING,MULTICAST,0x800
+ * fe80:2::38d0:40ff:fe9a:fee8 netmask=ffff:ffff:ffff:ffff::>, #    #<Socket::Ifaddr re0
+ * UP,BROADCAST,RUNNING,MULTICAST,0x800 2001:2e8:408:10::12 netmask=UNSPEC>, #    #<Socket::Ifaddr plip0
+ * POINTOPOINT,MULTICAST,0x800 LINK[plip0]>, #    #<Socket::Ifaddr lo0 UP,LOOPBACK,RUNNING,MULTICAST LINK[lo0]>, #
+ * #<Socket::Ifaddr lo0 UP,LOOPBACK,RUNNING,MULTICAST ::1 netmask=ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff>, #
+ * #<Socket::Ifaddr lo0 UP,LOOPBACK,RUNNING,MULTICAST fe80:4::1 netmask=ffff:ffff:ffff:ffff::>, #    #<Socket::Ifaddr
+ * lo0 UP,LOOPBACK,RUNNING,MULTICAST 127.0.0.1 netmask=255.?.?.? (5 bytes for 16 bytes sockaddr_in)>]
  *
  */
 
@@ -447,7 +444,7 @@ socket_s_getifaddrs(VALUE self)
     return rsock_getifaddrs();
 }
 #else
-#define socket_s_getifaddrs rb_f_notimplement
+#    define socket_s_getifaddrs rb_f_notimplement
 #endif
 
 void
@@ -469,9 +466,9 @@ rsock_init_sockifaddr(void)
     rb_define_method(rb_cSockIfaddr, "netmask", ifaddr_netmask, 0);
     rb_define_method(rb_cSockIfaddr, "broadaddr", ifaddr_broadaddr, 0);
     rb_define_method(rb_cSockIfaddr, "dstaddr", ifaddr_dstaddr, 0);
-#ifdef HAVE_STRUCT_IF_DATA_IFI_VHID
+#    ifdef HAVE_STRUCT_IF_DATA_IFI_VHID
     rb_define_method(rb_cSockIfaddr, "vhid", ifaddr_vhid, 0);
-#endif
+#    endif
 #endif
 
     rb_define_singleton_method(rb_cSocket, "getifaddrs", socket_s_getifaddrs, 0);

@@ -1,5 +1,5 @@
 #ifndef DATE_TMX_H
-#define DATE_TMX_H
+#    define DATE_TMX_H
 
 struct tmx_funcs {
     VALUE (*year)(void *dat);
@@ -26,26 +26,26 @@ struct tmx {
     const struct tmx_funcs *funcs;
 };
 
-#define tmx_attr(x) (tmx->funcs->x)(tmx->dat)
+#    define tmx_attr(x) (tmx->funcs->x)(tmx->dat)
 
-#define tmx_year tmx_attr(year)
-#define tmx_yday tmx_attr(yday)
-#define tmx_mon tmx_attr(mon)
-#define tmx_mday tmx_attr(mday)
-#define tmx_cwyear tmx_attr(cwyear)
-#define tmx_cweek tmx_attr(cweek)
-#define tmx_cwday tmx_attr(cwday)
-#define tmx_wnum0 tmx_attr(wnum0)
-#define tmx_wnum1 tmx_attr(wnum1)
-#define tmx_wday tmx_attr(wday)
-#define tmx_hour tmx_attr(hour)
-#define tmx_min tmx_attr(min)
-#define tmx_sec tmx_attr(sec)
-#define tmx_sec_fraction tmx_attr(sec_fraction)
-#define tmx_secs tmx_attr(secs)
-#define tmx_msecs tmx_attr(msecs)
-#define tmx_offset tmx_attr(offset)
-#define tmx_zone tmx_attr(zone)
+#    define tmx_year tmx_attr(year)
+#    define tmx_yday tmx_attr(yday)
+#    define tmx_mon tmx_attr(mon)
+#    define tmx_mday tmx_attr(mday)
+#    define tmx_cwyear tmx_attr(cwyear)
+#    define tmx_cweek tmx_attr(cweek)
+#    define tmx_cwday tmx_attr(cwday)
+#    define tmx_wnum0 tmx_attr(wnum0)
+#    define tmx_wnum1 tmx_attr(wnum1)
+#    define tmx_wday tmx_attr(wday)
+#    define tmx_hour tmx_attr(hour)
+#    define tmx_min tmx_attr(min)
+#    define tmx_sec tmx_attr(sec)
+#    define tmx_sec_fraction tmx_attr(sec_fraction)
+#    define tmx_secs tmx_attr(secs)
+#    define tmx_msecs tmx_attr(msecs)
+#    define tmx_offset tmx_attr(offset)
+#    define tmx_zone tmx_attr(zone)
 
 #endif
 

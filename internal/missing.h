@@ -1,4 +1,4 @@
-#ifndef INTERNAL_MISSING_H                               /*-*-C-*-vi:se ft=c:*/
+#ifndef INTERNAL_MISSING_H /*-*-C-*-vi:se ft=c:*/
 #define INTERNAL_MISSING_H
 /**
  * @author     Ruby developers <ruby-core@ruby-lang.org>
@@ -8,7 +8,7 @@
  *             file COPYING are met.  Consult the file for details.
  * @brief      Internal header corresponding missing.
  */
-#include "ruby/internal/config.h"      /* for HAVE_SETPROCTITLE */
+#include "ruby/internal/config.h" /* for HAVE_SETPROCTITLE */
 
 /* missing/setproctitle.c */
 #ifndef HAVE_SETPROCTITLE

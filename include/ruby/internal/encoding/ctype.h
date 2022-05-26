@@ -1,4 +1,4 @@
-#ifndef RUBY_INTERNAL_ENCODING_CTYPE_H               /*-*-C++-*-vi:se ft=cpp:*/
+#ifndef RUBY_INTERNAL_ENCODING_CTYPE_H /*-*-C++-*-vi:se ft=cpp:*/
 #define RUBY_INTERNAL_ENCODING_CTYPE_H
 /**
  * @file
@@ -21,11 +21,11 @@
  * @brief      Routines to query chacater types.
  */
 
-#include "ruby/onigmo.h"
 #include "ruby/internal/attr/const.h"
 #include "ruby/internal/dllexport.h"
 #include "ruby/internal/encoding/encoding.h"
 #include "ruby/internal/value.h"
+#include "ruby/onigmo.h"
 
 RBIMPL_SYMBOL_EXPORT_BEGIN()
 
@@ -40,7 +40,7 @@ RBIMPL_SYMBOL_EXPORT_BEGIN()
  * @retval     otherwise  It is.
  */
 static inline bool
-rb_enc_is_newline(const char *p,  const char *e, rb_encoding *enc)
+rb_enc_is_newline(const char *p, const char *e, rb_encoding *enc)
 {
     OnigUChar *up = RBIMPL_CAST((OnigUChar *)p);
     OnigUChar *ue = RBIMPL_CAST((OnigUChar *)e);
@@ -228,16 +228,16 @@ RBIMPL_SYMBOL_EXPORT_END()
 
 /** @cond INTERNAL_MACRO */
 #define rb_enc_is_newline rb_enc_is_newline
-#define rb_enc_isalnum    rb_enc_isalnum
-#define rb_enc_isalpha    rb_enc_isalpha
-#define rb_enc_isascii    rb_enc_isascii
-#define rb_enc_isctype    rb_enc_isctype
-#define rb_enc_isdigit    rb_enc_isdigit
-#define rb_enc_islower    rb_enc_islower
-#define rb_enc_isprint    rb_enc_isprint
-#define rb_enc_ispunct    rb_enc_ispunct
-#define rb_enc_isspace    rb_enc_isspace
-#define rb_enc_isupper    rb_enc_isupper
+#define rb_enc_isalnum rb_enc_isalnum
+#define rb_enc_isalpha rb_enc_isalpha
+#define rb_enc_isascii rb_enc_isascii
+#define rb_enc_isctype rb_enc_isctype
+#define rb_enc_isdigit rb_enc_isdigit
+#define rb_enc_islower rb_enc_islower
+#define rb_enc_isprint rb_enc_isprint
+#define rb_enc_ispunct rb_enc_ispunct
+#define rb_enc_isspace rb_enc_isspace
+#define rb_enc_isupper rb_enc_isupper
 /** @endcond */
 
 #endif /* RUBY_INTERNAL_ENCODING_CTYPE_H */

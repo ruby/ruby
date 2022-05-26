@@ -1,4 +1,4 @@
-#ifndef INTERNAL_CONT_H                                  /*-*-C-*-vi:se ft=c:*/
+#ifndef INTERNAL_CONT_H /*-*-C-*-vi:se ft=c:*/
 #define INTERNAL_CONT_H
 /**
  * @author     Ruby developers <ruby-core@ruby-lang.org>
@@ -8,10 +8,10 @@
  *             file COPYING are met.  Consult the file for details.
  * @brief      Internal header for Fiber.
  */
-#include "ruby/ruby.h"          /* for VALUE */
+#include "ruby/ruby.h" /* for VALUE */
 
-struct rb_thread_struct;        /* in vm_core.h */
-struct rb_fiber_struct;         /* in cont.c */
+struct rb_thread_struct; /* in vm_core.h */
+struct rb_fiber_struct;  /* in cont.c */
 
 /* cont.c */
 void rb_fiber_reset_root_local_storage(struct rb_thread_struct *);

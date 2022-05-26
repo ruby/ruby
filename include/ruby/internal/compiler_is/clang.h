@@ -1,4 +1,4 @@
-#ifndef RBIMPL_COMPILER_IS_CLANG_H                   /*-*-C++-*-vi:se ft=cpp:*/
+#ifndef RBIMPL_COMPILER_IS_CLANG_H /*-*-C++-*-vi:se ft=cpp:*/
 #define RBIMPL_COMPILER_IS_CLANG_H
 /**
  * @author     Ruby developers <ruby-core@ruby-lang.org>
@@ -21,17 +21,17 @@
  */
 #include "ruby/internal/compiler_is/apple.h"
 
-#if ! defined(__clang__)
-# define RBIMPL_COMPILER_IS_Clang 0
+#if !defined(__clang__)
+#    define RBIMPL_COMPILER_IS_Clang 0
 
 #elif RBIMPL_COMPILER_IS(Apple)
-# define RBIMPL_COMPILER_IS_Clang 0
+#    define RBIMPL_COMPILER_IS_Clang 0
 
 #else
-# define RBIMPL_COMPILER_IS_Clang 1
-# define RBIMPL_COMPILER_VERSION_MAJOR __clang_major__
-# define RBIMPL_COMPILER_VERSION_MINOR __clang_minor__
-# define RBIMPL_COMPILER_VERSION_PATCH __clang_patchlevel__
+#    define RBIMPL_COMPILER_IS_Clang 1
+#    define RBIMPL_COMPILER_VERSION_MAJOR __clang_major__
+#    define RBIMPL_COMPILER_VERSION_MINOR __clang_minor__
+#    define RBIMPL_COMPILER_VERSION_PATCH __clang_patchlevel__
 #endif
 
 #endif /* RBIMPL_COMPILER_IS_CLANG_H */

@@ -1,4 +1,4 @@
-#ifndef RBIMPL_COMPILER_IS_APPLE_H                   /*-*-C++-*-vi:se ft=cpp:*/
+#ifndef RBIMPL_COMPILER_IS_APPLE_H /*-*-C++-*-vi:se ft=cpp:*/
 #define RBIMPL_COMPILER_IS_APPLE_H
 /**
  * @author     Ruby developers <ruby-core@ruby-lang.org>
@@ -24,17 +24,17 @@
  * from LLVM's,  when it comes  to compiler  detection business in  this header
  * file.
  */
-#if ! defined(__clang__)
-# define RBIMPL_COMPILER_IS_Apple 0
+#if !defined(__clang__)
+#    define RBIMPL_COMPILER_IS_Apple 0
 
-#elif ! defined(__apple_build_version__)
-# define RBIMPL_COMPILER_IS_Apple 0
+#elif !defined(__apple_build_version__)
+#    define RBIMPL_COMPILER_IS_Apple 0
 
 #else
-# define RBIMPL_COMPILER_IS_Apple 1
-# define RBIMPL_COMPILER_VERSION_MAJOR __clang_major__
-# define RBIMPL_COMPILER_VERSION_MINOR __clang_minor__
-# define RBIMPL_COMPILER_VERSION_PATCH __clang_patchlevel__
+#    define RBIMPL_COMPILER_IS_Apple 1
+#    define RBIMPL_COMPILER_VERSION_MAJOR __clang_major__
+#    define RBIMPL_COMPILER_VERSION_MINOR __clang_minor__
+#    define RBIMPL_COMPILER_VERSION_PATCH __clang_patchlevel__
 #endif
 
 #endif /* RBIMPL_COMPILER_IS_APPLE_H */

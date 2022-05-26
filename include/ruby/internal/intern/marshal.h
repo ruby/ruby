@@ -1,4 +1,4 @@
-#ifndef RBIMPL_INTERN_MARSHAL_H                      /*-*-C++-*-vi:se ft=cpp:*/
+#ifndef RBIMPL_INTERN_MARSHAL_H /*-*-C++-*-vi:se ft=cpp:*/
 #define RBIMPL_INTERN_MARSHAL_H
 /**
  * @file

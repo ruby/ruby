@@ -1,4 +1,4 @@
-#ifndef RUBY_BACKWARD2_STDALIGN_H                    /*-*-C++-*-vi:se ft=cpp:*/
+#ifndef RUBY_BACKWARD2_STDALIGN_H /*-*-C++-*-vi:se ft=cpp:*/
 #define RUBY_BACKWARD2_STDALIGN_H
 /**
  * @file

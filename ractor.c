@@ -1,21 +1,21 @@
 // Ractor implementation
 
-#include "ruby/ruby.h"
-#include "ruby/thread.h"
 #include "ruby/ractor.h"
-#include "ruby/thread_native.h"
-#include "vm_core.h"
-#include "vm_sync.h"
-#include "ractor_core.h"
+#include "gc.h"
 #include "internal/complex.h"
 #include "internal/error.h"
 #include "internal/hash.h"
 #include "internal/rational.h"
 #include "internal/struct.h"
 #include "internal/thread.h"
-#include "variable.h"
-#include "gc.h"
+#include "ractor_core.h"
+#include "ruby/ruby.h"
+#include "ruby/thread.h"
+#include "ruby/thread_native.h"
 #include "transient_heap.h"
+#include "variable.h"
+#include "vm_core.h"
+#include "vm_sync.h"
 #include "yjit.h"
 
 VALUE rb_cRactor;
@@ -121,10 +121,14 @@ static const char *
 ractor_status_str(enum ractor_status status)
 {
     switch (status) {
-      case ractor_created: return "created";
-      case ractor_running: return "running";
-      case ractor_blocking: return "blocking";
-      case ractor_terminated: return "terminated";
+    case ractor_created:
+        return "created";
+    case ractor_running:
+        return "running";
+    case ractor_blocking:
+        return "blocking";
+    case ractor_terminated:
+        return "terminated";
     }
     rb_bug("unreachable");
 }
@@ -142,17 +146,16 @@ ractor_status_set(rb_ractor_t *r, enum ractor_status status)
 
     // check2: transition check. assume it will be vanished on non-debug build.
     switch (r->status_) {
-      case ractor_created:
+    case ractor_created:
         VM_ASSERT(status == ractor_blocking);
         break;
-      case ractor_running:
-        VM_ASSERT(status == ractor_blocking||
-                  status == ractor_terminated);
+    case ractor_running:
+        VM_ASSERT(status == ractor_blocking || status == ractor_terminated);
         break;
-      case ractor_blocking:
+    case ractor_blocking:
         VM_ASSERT(status == ractor_running);
         break;
-      case ractor_terminated:
+    case ractor_terminated:
         VM_ASSERT(0); // unreachable
         break;
     }
@@ -171,7 +174,7 @@ static struct rb_ractor_basket *ractor_queue_at(struct rb_ractor_queue *rq, int 
 static void
 ractor_queue_mark(struct rb_ractor_queue *rq)
 {
-    for (int i=0; i<rq->cnt; i++) {
+    for (int i = 0; i < rq->cnt; i++) {
         struct rb_ractor_basket *b = ractor_queue_at(rq, i);
         rb_gc_mark(b->v);
         rb_gc_mark(b->sender);
@@ -202,7 +205,8 @@ ractor_mark(void *ptr)
 
     if (r->threads.cnt > 0) {
         rb_thread_t *th = 0;
-        ccan_list_for_each(&r->threads.set, th, lt_node) {
+        ccan_list_for_each(&r->threads.set, th, lt_node)
+        {
             VM_ASSERT(th != NULL);
             rb_gc_mark(th->self);
         }
@@ -254,17 +258,14 @@ ractor_memsize(const void *ptr)
     rb_ractor_t *r = (rb_ractor_t *)ptr;
 
     // TODO
-    return sizeof(rb_ractor_t) +
-      ractor_queue_memsize(&r->sync.incoming_queue) +
-      ractor_waiting_list_memsize(&r->sync.taking_ractors);
+    return sizeof(rb_ractor_t) + ractor_queue_memsize(&r->sync.incoming_queue) +
+           ractor_waiting_list_memsize(&r->sync.taking_ractors);
 }
 
 static const rb_data_type_t ractor_data_type = {
     "ractor",
     {
-        ractor_mark,
-	ractor_free,
-        ractor_memsize,
+        ractor_mark, ractor_free, ractor_memsize,
         NULL, // update
     },
     0, 0, RUBY_TYPED_FREE_IMMEDIATELY /* | RUBY_TYPED_WB_PROTECTED */
@@ -340,8 +341,7 @@ static bool
 ractor_queue_skip_p(struct rb_ractor_queue *rq, int i)
 {
     struct rb_ractor_basket *b = ractor_queue_at(rq, i);
-    return b->type == basket_type_deleted ||
-           b->type == basket_type_reserved;
+    return b->type == basket_type_deleted || b->type == basket_type_reserved;
 }
 
 static void
@@ -365,7 +365,7 @@ ractor_queue_empty_p(rb_ractor_t *r, struct rb_ractor_queue *rq)
 
     ractor_queue_compact(r, rq);
 
-    for (int i=0; i<rq->cnt; i++) {
+    for (int i = 0; i < rq->cnt; i++) {
         if (!ractor_queue_skip_p(rq, i)) {
             return false;
         }
@@ -382,7 +382,7 @@ ractor_queue_deq(rb_ractor_t *r, struct rb_ractor_queue *rq, struct rb_ractor_ba
     RACTOR_LOCK(r);
     {
         if (!ractor_queue_empty_p(r, rq)) {
-            for (int i=0; i<rq->cnt; i++) {
+            for (int i = 0; i < rq->cnt; i++) {
                 if (!ractor_queue_skip_p(rq, i)) {
                     struct rb_ractor_basket *b = ractor_queue_at(rq, i);
                     *basket = *b;
@@ -408,7 +408,7 @@ ractor_queue_enq(rb_ractor_t *r, struct rb_ractor_queue *rq, struct rb_ractor_ba
 
     if (rq->size <= rq->cnt) {
         rq->baskets = realloc(rq->baskets, sizeof(struct rb_ractor_basket) * rq->size * 2);
-        for (int i=rq->size - rq->start; i<rq->cnt; i++) {
+        for (int i = rq->size - rq->start; i < rq->cnt; i++) {
             rq->baskets[i + rq->start] = rq->baskets[i + rq->start - rq->size];
         }
         rq->size *= 2;
@@ -431,15 +431,15 @@ static VALUE
 ractor_basket_value(struct rb_ractor_basket *b)
 {
     switch (b->type) {
-      case basket_type_ref:
+    case basket_type_ref:
         break;
-      case basket_type_copy:
-      case basket_type_move:
-      case basket_type_will:
+    case basket_type_copy:
+    case basket_type_move:
+    case basket_type_will:
         b->type = basket_type_ref;
         b->v = ractor_reset_belonging(b->v);
         break;
-      default:
+    default:
         rb_bug("unreachable");
     }
 
@@ -550,14 +550,22 @@ static const char *
 wait_status_str(enum ractor_wait_status wait_status)
 {
     switch ((int)wait_status) {
-      case wait_none: return "none";
-      case wait_receiving: return "receiving";
-      case wait_taking: return "taking";
-      case wait_yielding: return "yielding";
-      case wait_receiving|wait_taking: return "receiving|taking";
-      case wait_receiving|wait_yielding: return "receiving|yielding";
-      case wait_taking|wait_yielding: return "taking|yielding";
-      case wait_receiving|wait_taking|wait_yielding: return "receiving|taking|yielding";
+    case wait_none:
+        return "none";
+    case wait_receiving:
+        return "receiving";
+    case wait_taking:
+        return "taking";
+    case wait_yielding:
+        return "yielding";
+    case wait_receiving | wait_taking:
+        return "receiving|taking";
+    case wait_receiving | wait_yielding:
+        return "receiving|yielding";
+    case wait_taking | wait_yielding:
+        return "taking|yielding";
+    case wait_receiving | wait_taking | wait_yielding:
+        return "receiving|taking|yielding";
     }
     rb_bug("unreachable");
 }
@@ -566,13 +574,20 @@ static const char *
 wakeup_status_str(enum ractor_wakeup_status wakeup_status)
 {
     switch (wakeup_status) {
-      case wakeup_none: return "none";
-      case wakeup_by_send: return "by_send";
-      case wakeup_by_yield: return "by_yield";
-      case wakeup_by_take: return "by_take";
-      case wakeup_by_close: return "by_close";
-      case wakeup_by_interrupt: return "by_interrupt";
-      case wakeup_by_retry: return "by_retry";
+    case wakeup_none:
+        return "none";
+    case wakeup_by_send:
+        return "by_send";
+    case wakeup_by_yield:
+        return "by_yield";
+    case wakeup_by_take:
+        return "by_take";
+    case wakeup_by_close:
+        return "by_close";
+    case wakeup_by_interrupt:
+        return "by_interrupt";
+    case wakeup_by_retry:
+        return "by_retry";
     }
     rb_bug("unreachable");
 }
@@ -588,9 +603,7 @@ ractor_sleep(rb_execution_context_t *ec, rb_ractor_t *cr)
 
     RACTOR_UNLOCK(cr);
     {
-        rb_nogvl(ractor_sleep_wo_gvl, cr,
-                 ractor_sleep_interrupt, cr,
-                 RB_NOGVL_UBF_ASYNC_SAFE | RB_NOGVL_INTR_FAIL);
+        rb_nogvl(ractor_sleep_wo_gvl, cr, ractor_sleep_interrupt, cr, RB_NOGVL_UBF_ASYNC_SAFE | RB_NOGVL_INTR_FAIL);
     }
     RACTOR_LOCK(cr);
 
@@ -621,7 +634,7 @@ ractor_register_taking(rb_ractor_t *r, rb_ractor_t *cr)
             // insert cr into taking list
             struct rb_ractor_waiting_list *wl = &r->sync.taking_ractors;
 
-            for (int i=0; i<wl->cnt; i++) {
+            for (int i = 0; i < wl->cnt; i++) {
                 if (wl->ractors[i] == cr) {
                     // TODO: make it clean code.
                     rb_native_mutex_unlock(&r->sync.lock);
@@ -664,7 +677,7 @@ ractor_waiting_list_del(rb_ractor_t *r, struct rb_ractor_waiting_list *wl, rb_ra
     RACTOR_LOCK(r);
     {
         int pos = -1;
-        for (int i=0; i<wl->cnt; i++) {
+        for (int i = 0; i < wl->cnt; i++) {
             if (wl->ractors[i] == wr) {
                 pos = i;
                 break;
@@ -672,8 +685,8 @@ ractor_waiting_list_del(rb_ractor_t *r, struct rb_ractor_waiting_list *wl, rb_ra
         }
         if (pos >= 0) { // found
             wl->cnt--;
-            for (int i=pos; i<wl->cnt; i++) {
-                wl->ractors[i] = wl->ractors[i+1];
+            for (int i = pos; i < wl->cnt; i++) {
+                wl->ractors[i] = wl->ractors[i + 1];
             }
         }
     }
@@ -688,8 +701,8 @@ ractor_waiting_list_shift(rb_ractor_t *r, struct rb_ractor_waiting_list *wl)
 
     if (wl->cnt > 0) {
         rb_ractor_t *tr = wl->ractors[0];
-        for (int i=1; i<wl->cnt; i++) {
-            wl->ractors[i-1] = wl->ractors[i];
+        for (int i = 1; i < wl->cnt; i++) {
+            wl->ractors[i - 1] = wl->ractors[i];
         }
         wl->cnt--;
         return tr;
@@ -737,7 +750,9 @@ static const char *
 basket_type_name(enum rb_ractor_basket_type type)
 {
     switch (type) {
-#define T(t) case basket_type_##t: return #t
+#    define T(t) \
+    case basket_type_##t: \
+        return #t
         T(none);
         T(ref);
         T(copy);
@@ -858,7 +873,7 @@ ractor_receive_if(rb_execution_context_t *ec, VALUE crv, VALUE b)
             }
 
             // check newer version
-            for (int i=index; i<rq->cnt; i++) {
+            for (int i = index; i < rq->cnt; i++) {
                 if (!ractor_queue_skip_p(rq, i)) {
                     struct rb_ractor_basket *b = ractor_queue_at(rq, i);
                     v = ractor_basket_value(b);
@@ -880,8 +895,7 @@ ractor_receive_if(rb_execution_context_t *ec, VALUE crv, VALUE b)
                 .success = false,
             };
 
-            VALUE result = rb_ensure(receive_if_body, (VALUE)&data,
-                                     receive_if_ensure, (VALUE)&data);
+            VALUE result = rb_ensure(receive_if_body, (VALUE)&data, receive_if_ensure, (VALUE)&data);
 
             if (result != Qundef) return result;
             index++;
@@ -920,7 +934,8 @@ static VALUE ractor_move(VALUE obj); // in this file
 static VALUE ractor_copy(VALUE obj); // in this file
 
 static void
-ractor_basket_setup(rb_execution_context_t *ec, struct rb_ractor_basket *basket, VALUE obj, VALUE move, bool exc, bool is_will, bool is_yield)
+ractor_basket_setup(rb_execution_context_t *ec, struct rb_ractor_basket *basket, VALUE obj, VALUE move, bool exc,
+    bool is_will, bool is_yield)
 {
     basket->sender = rb_ec_ractor_ptr(ec)->pub.self;
     basket->exception = exc;
@@ -1019,7 +1034,7 @@ ractor_try_yield(rb_execution_context_t *ec, rb_ractor_t *cr, struct rb_ractor_b
 
     rb_ractor_t *r;
 
-  retry_shift:
+retry_shift:
     RACTOR_LOCK(cr);
     {
         r = ractor_waiting_list_shift(cr, &cr->sync.taking_ractors);
@@ -1083,7 +1098,8 @@ ractor_try_yield(rb_execution_context_t *ec, rb_ractor_t *cr, struct rb_ractor_b
 
 // select(r1, r2, r3, receive: true, yield: obj)
 static VALUE
-ractor_select(rb_execution_context_t *ec, const VALUE *rs, const int rs_len, VALUE yielded_value, bool move, VALUE *ret_r)
+ractor_select(
+    rb_execution_context_t *ec, const VALUE *rs, const int rs_len, VALUE yielded_value, bool move, VALUE *ret_r)
 {
     rb_ractor_t *cr = rb_ec_ractor_ptr(ec);
     VALUE crv = cr->pub.self;
@@ -1109,7 +1125,7 @@ ractor_select(rb_execution_context_t *ec, const VALUE *rs, const int rs_len, VAL
     VM_ASSERT(cr->sync.wait.yielded_basket.type == basket_type_none);
 
     // setup actions
-    for (i=0; i<rs_len; i++) {
+    for (i = 0; i < rs_len; i++) {
         VALUE v = rs[i];
 
         if (v == crv) {
@@ -1123,12 +1139,12 @@ ractor_select(rb_execution_context_t *ec, const VALUE *rs, const int rs_len, VAL
             wait_status |= wait_taking;
         }
         else {
-            rb_raise(rb_eArgError, "should be a ractor object, but %"PRIsVALUE, v);
+            rb_raise(rb_eArgError, "should be a ractor object, but %" PRIsVALUE, v);
         }
     }
     rs = NULL;
 
-  restart:
+restart:
 
     if (yield_p) {
         actions[rs_len].type = ractor_select_action_yield;
@@ -1142,10 +1158,10 @@ ractor_select(rb_execution_context_t *ec, const VALUE *rs, const int rs_len, VAL
     while (1) {
         RUBY_DEBUG_LOG("try actions (%s)", wait_status_str(wait_status));
 
-        for (i=0; i<alen; i++) {
+        for (i = 0; i < alen; i++) {
             VALUE v, rv;
             switch (actions[i].type) {
-              case ractor_select_action_take:
+            case ractor_select_action_take:
                 rv = actions[i].v;
                 v = ractor_try_take(ec, RACTOR_PTR(rv));
                 if (v != Qundef) {
@@ -1154,7 +1170,7 @@ ractor_select(rb_execution_context_t *ec, const VALUE *rs, const int rs_len, VAL
                     goto cleanup;
                 }
                 break;
-              case ractor_select_action_receive:
+            case ractor_select_action_receive:
                 v = ractor_try_receive(ec, cr);
                 if (v != Qundef) {
                     *ret_r = ID2SYM(rb_intern("receive"));
@@ -1162,15 +1178,13 @@ ractor_select(rb_execution_context_t *ec, const VALUE *rs, const int rs_len, VAL
                     goto cleanup;
                 }
                 break;
-              case ractor_select_action_yield:
-                {
-                    if (ractor_try_yield(ec, cr, &cr->sync.wait.yielded_basket)) {
-                        *ret_r = ID2SYM(rb_intern("yield"));
-                        ret = Qnil;
-                        goto cleanup;
-                    }
+            case ractor_select_action_yield: {
+                if (ractor_try_yield(ec, cr, &cr->sync.wait.yielded_basket)) {
+                    *ret_r = ID2SYM(rb_intern("yield"));
+                    ret = Qnil;
+                    goto cleanup;
                 }
-                break;
+            } break;
             }
         }
 
@@ -1185,15 +1199,15 @@ ractor_select(rb_execution_context_t *ec, const VALUE *rs, const int rs_len, VAL
         RACTOR_UNLOCK(cr);
 
         // prepare waiting
-        for (i=0; i<alen; i++) {
+        for (i = 0; i < alen; i++) {
             rb_ractor_t *r;
             switch (actions[i].type) {
-              case ractor_select_action_take:
+            case ractor_select_action_take:
                 r = RACTOR_PTR(actions[i].v);
                 ractor_register_taking(r, cr);
                 break;
-              case ractor_select_action_yield:
-              case ractor_select_action_receive:
+            case ractor_select_action_yield:
+            case ractor_select_action_receive:
                 break;
             }
         }
@@ -1202,11 +1216,11 @@ ractor_select(rb_execution_context_t *ec, const VALUE *rs, const int rs_len, VAL
         RACTOR_LOCK(cr);
         {
             if (cr->sync.wait.wakeup_status == wakeup_none) {
-                for (i=0; i<alen; i++) {
+                for (i = 0; i < alen; i++) {
                     rb_ractor_t *r;
 
                     switch (actions[i].type) {
-                      case ractor_select_action_take:
+                    case ractor_select_action_take:
                         r = RACTOR_PTR(actions[i].v);
                         if (ractor_sleeping_by(r, wait_yielding)) {
                             RUBY_DEBUG_LOG("wakeup_none, but r:%u is waiting for yielding", r->pub.id);
@@ -1214,16 +1228,18 @@ ractor_select(rb_execution_context_t *ec, const VALUE *rs, const int rs_len, VAL
                             goto skip_sleep;
                         }
                         break;
-                      case ractor_select_action_receive:
+                    case ractor_select_action_receive:
                         if (cr->sync.incoming_queue.cnt > 0) {
-                            RUBY_DEBUG_LOG("wakeup_none, but incoming_queue has %u messages", cr->sync.incoming_queue.cnt);
+                            RUBY_DEBUG_LOG(
+                                "wakeup_none, but incoming_queue has %u messages", cr->sync.incoming_queue.cnt);
                             cr->sync.wait.wakeup_status = wakeup_by_retry;
                             goto skip_sleep;
                         }
                         break;
-                      case ractor_select_action_yield:
+                    case ractor_select_action_yield:
                         if (cr->sync.taking_ractors.cnt > 0) {
-                            RUBY_DEBUG_LOG("wakeup_none, but %u taking_ractors are waiting", cr->sync.taking_ractors.cnt);
+                            RUBY_DEBUG_LOG(
+                                "wakeup_none, but %u taking_ractors are waiting", cr->sync.taking_ractors.cnt);
                             cr->sync.wait.wakeup_status = wakeup_by_retry;
                             goto skip_sleep;
                         }
@@ -1240,25 +1256,24 @@ ractor_select(rb_execution_context_t *ec, const VALUE *rs, const int rs_len, VAL
                 RUBY_DEBUG_LOG("awaken %s", wakeup_status_str(cr->sync.wait.wakeup_status));
             }
             else {
-              skip_sleep:
-                RUBY_DEBUG_LOG("no need to sleep %s->%s",
-                               wait_status_str(cr->sync.wait.status),
-                               wakeup_status_str(cr->sync.wait.wakeup_status));
+            skip_sleep:
+                RUBY_DEBUG_LOG("no need to sleep %s->%s", wait_status_str(cr->sync.wait.status),
+                    wakeup_status_str(cr->sync.wait.wakeup_status));
                 cr->sync.wait.status = wait_none;
             }
         }
         RACTOR_UNLOCK(cr);
 
         // cleanup waiting
-        for (i=0; i<alen; i++) {
+        for (i = 0; i < alen; i++) {
             rb_ractor_t *r;
             switch (actions[i].type) {
-              case ractor_select_action_take:
+            case ractor_select_action_take:
                 r = RACTOR_PTR(actions[i].v);
                 ractor_waiting_list_del(r, &r->sync.taking_ractors, cr);
                 break;
-              case ractor_select_action_receive:
-              case ractor_select_action_yield:
+            case ractor_select_action_receive:
+            case ractor_select_action_yield:
                 break;
             }
         }
@@ -1268,18 +1283,18 @@ ractor_select(rb_execution_context_t *ec, const VALUE *rs, const int rs_len, VAL
         cr->sync.wait.wakeup_status = wakeup_none;
 
         switch (wakeup_status) {
-          case wakeup_none:
+        case wakeup_none:
             // OK. something happens.
             // retry loop.
             break;
-          case wakeup_by_retry:
+        case wakeup_by_retry:
             // Retry request.
             break;
-          case wakeup_by_send:
+        case wakeup_by_send:
             // OK.
             // retry loop and try_receive will succss.
             break;
-          case wakeup_by_yield:
+        case wakeup_by_yield:
             // take was succeeded!
             // cr.wait.taken_basket contains passed block
             VM_ASSERT(cr->sync.wait.taken_basket.type != basket_type_none);
@@ -1287,22 +1302,22 @@ ractor_select(rb_execution_context_t *ec, const VALUE *rs, const int rs_len, VAL
             VM_ASSERT(rb_ractor_p(*ret_r));
             ret = ractor_basket_accept(&cr->sync.wait.taken_basket);
             goto cleanup;
-          case wakeup_by_take:
+        case wakeup_by_take:
             *ret_r = ID2SYM(rb_intern("yield"));
             ret = Qnil;
             goto cleanup;
-          case wakeup_by_close:
+        case wakeup_by_close:
             // OK.
             // retry loop and will get CloseError.
             break;
-          case wakeup_by_interrupt:
+        case wakeup_by_interrupt:
             ret = Qundef;
             interrupted = true;
             goto cleanup;
         }
     }
 
-  cleanup:
+cleanup:
     RUBY_DEBUG_LOG("cleanup actions (%s)", wait_status_str(wait_status));
 
     if (cr->sync.wait.yielded_basket.type != basket_type_none) {
@@ -1387,8 +1402,7 @@ ractor_close_outgoing(rb_execution_context_t *ec, rb_ractor_t *r)
         }
 
         // raising yielding Ractor
-        if (!r->yield_atexit &&
-            ractor_wakeup(r, wait_yielding, wakeup_by_close)) {
+        if (!r->yield_atexit && ractor_wakeup(r, wait_yielding, wakeup_by_close)) {
             RUBY_DEBUG_LOG("cancel yielding");
         }
     }
@@ -1437,8 +1451,8 @@ cancel_single_ractor_mode(void)
 
     if (rb_warning_category_enabled_p(RB_WARN_CATEGORY_EXPERIMENTAL)) {
         rb_category_warn(RB_WARN_CATEGORY_EXPERIMENTAL,
-                         "Ractor is experimental, and the behavior may change in future versions of Ruby! "
-                         "Also there are many implementation issues.");
+            "Ractor is experimental, and the behavior may change in future versions of Ruby! "
+            "Also there are many implementation issues.");
     }
 }
 
@@ -1479,8 +1493,7 @@ vm_remove_ractor(rb_vm_t *vm, rb_ractor_t *cr)
 
     RB_VM_LOCK();
     {
-        RUBY_DEBUG_LOG("ractor.cnt:%u-- terminate_waiting:%d",
-                       vm->ractor.cnt,  vm->ractor.sync.terminate_waiting);
+        RUBY_DEBUG_LOG("ractor.cnt:%u-- terminate_waiting:%d", vm->ractor.cnt, vm->ractor.sync.terminate_waiting);
 
         VM_ASSERT(vm->ractor.cnt > 0);
         ccan_list_del(&cr->vmlr_node);
@@ -1514,7 +1527,7 @@ rb_ractor_main_alloc(void)
 {
     rb_ractor_t *r = ruby_mimmalloc(sizeof(rb_ractor_t));
     if (r == NULL) {
-	fprintf(stderr, "[FATAL] failed to allocate memory for main ractor\n");
+        fprintf(stderr, "[FATAL] failed to allocate memory for main ractor\n");
         exit(EXIT_FAILURE);
     }
     MEMZERO(r, rb_ractor_t, 1);
@@ -1573,8 +1586,7 @@ ractor_init(rb_ractor_t *r, VALUE name, VALUE loc)
         StringValueCStr(name);
         enc = rb_enc_get(name);
         if (!rb_enc_asciicompat(enc)) {
-            rb_raise(rb_eArgError, "ASCII incompatible encoding (%s)",
-                 rb_enc_name(enc));
+            rb_raise(rb_eArgError, "ASCII incompatible encoding (%s)", rb_enc_name(enc));
         }
         name = rb_str_new_frozen(name);
     }
@@ -1626,7 +1638,7 @@ ractor_yield_atexit(rb_execution_context_t *ec, rb_ractor_t *cr, VALUE v, bool e
     struct rb_ractor_basket basket;
     ractor_basket_setup(ec, &basket, v, Qfalse, exc, true, true /* this flag is ignored because move is Qfalse */);
 
-  retry:
+retry:
     if (ractor_try_yield(ec, cr, &basket)) {
         // OK.
     }
@@ -1687,7 +1699,7 @@ rb_ractor_atexit_exception(rb_execution_context_t *ec)
 void
 rb_ractor_receive_parameters(rb_execution_context_t *ec, rb_ractor_t *r, int len, VALUE *ptr)
 {
-    for (int i=0; i<len; i++) {
+    for (int i = 0; i < len; i++) {
         ptr[i] = ractor_receive(ec, r);
     }
 }
@@ -1696,7 +1708,7 @@ void
 rb_ractor_send_parameters(rb_execution_context_t *ec, rb_ractor_t *r, VALUE args)
 {
     int len = RARRAY_LENINT(args);
-    for (int i=0; i<len; i++) {
+    for (int i = 0; i < len; i++) {
         ractor_send(ec, r, RARRAY_AREF(args, i), false);
     }
 }
@@ -1735,13 +1747,14 @@ rb_ractor_thread_list(rb_ractor_t *r)
         ts = ALLOCA_N(VALUE, r->threads.cnt);
         ts_cnt = 0;
 
-        ccan_list_for_each(&r->threads.set, th, lt_node) {
+        ccan_list_for_each(&r->threads.set, th, lt_node)
+        {
             switch (th->status) {
-              case THREAD_RUNNABLE:
-              case THREAD_STOPPED:
-              case THREAD_STOPPED_FOREVER:
+            case THREAD_RUNNABLE:
+            case THREAD_STOPPED:
+            case THREAD_STOPPED_FOREVER:
                 ts[ts_cnt++] = th->self;
-              default:
+            default:
                 break;
             }
         }
@@ -1749,7 +1762,7 @@ rb_ractor_thread_list(rb_ractor_t *r)
     RACTOR_UNLOCK(r);
 
     VALUE ary = rb_ary_new();
-    for (int i=0; i<ts_cnt; i++) {
+    for (int i = 0; i < ts_cnt; i++) {
         rb_ary_push(ary, ts[i]);
     }
 
@@ -1813,9 +1826,8 @@ ractor_check_blocking(rb_ractor_t *cr, unsigned int remained_thread_cnt, const c
     VM_ASSERT(cr == GET_RACTOR());
 
     RUBY_DEBUG_LOG2(file, line,
-                    "cr->threads.cnt:%u cr->threads.blocking_cnt:%u vm->ractor.cnt:%u vm->ractor.blocking_cnt:%u",
-                    cr->threads.cnt, cr->threads.blocking_cnt,
-                    GET_VM()->ractor.cnt, GET_VM()->ractor.blocking_cnt);
+        "cr->threads.cnt:%u cr->threads.blocking_cnt:%u vm->ractor.cnt:%u vm->ractor.blocking_cnt:%u", cr->threads.cnt,
+        cr->threads.blocking_cnt, GET_VM()->ractor.cnt, GET_VM()->ractor.blocking_cnt);
 
     VM_ASSERT(cr->threads.cnt >= cr->threads.blocking_cnt + 1);
 
@@ -1869,9 +1881,8 @@ rb_ractor_blocking_threads_inc(rb_ractor_t *cr, const char *file, int line)
 void
 rb_ractor_blocking_threads_dec(rb_ractor_t *cr, const char *file, int line)
 {
-    RUBY_DEBUG_LOG2(file, line,
-                    "r->threads.blocking_cnt:%d--, r->threads.cnt:%u",
-                    cr->threads.blocking_cnt, cr->threads.cnt);
+    RUBY_DEBUG_LOG2(
+        file, line, "r->threads.blocking_cnt:%d--, r->threads.cnt:%u", cr->threads.blocking_cnt, cr->threads.cnt);
 
     VM_ASSERT(cr == GET_RACTOR());
 
@@ -1934,7 +1945,8 @@ ractor_terminal_interrupt_all(rb_vm_t *vm)
     if (vm->ractor.cnt > 1) {
         // send terminate notification to all ractors
         rb_ractor_t *r = 0;
-        ccan_list_for_each(&vm->ractor.set, r, vmlr_node) {
+        ccan_list_for_each(&vm->ractor.set, r, vmlr_node)
+        {
             if (r != vm->ractor.main_ractor) {
                 rb_ractor_terminate_interrupt_main_thread(r);
             }
@@ -2085,12 +2097,12 @@ Init_Ractor(void)
     rb_cRactor = rb_define_class("Ractor", rb_cObject);
     rb_undef_alloc_func(rb_cRactor);
 
-    rb_eRactorError          = rb_define_class_under(rb_cRactor, "Error", rb_eRuntimeError);
+    rb_eRactorError = rb_define_class_under(rb_cRactor, "Error", rb_eRuntimeError);
     rb_eRactorIsolationError = rb_define_class_under(rb_cRactor, "IsolationError", rb_eRactorError);
-    rb_eRactorRemoteError    = rb_define_class_under(rb_cRactor, "RemoteError", rb_eRactorError);
-    rb_eRactorMovedError     = rb_define_class_under(rb_cRactor, "MovedError",  rb_eRactorError);
-    rb_eRactorClosedError    = rb_define_class_under(rb_cRactor, "ClosedError", rb_eStopIteration);
-    rb_eRactorUnsafeError    = rb_define_class_under(rb_cRactor, "UnsafeError", rb_eRactorError);
+    rb_eRactorRemoteError = rb_define_class_under(rb_cRactor, "RemoteError", rb_eRactorError);
+    rb_eRactorMovedError = rb_define_class_under(rb_cRactor, "MovedError", rb_eRactorError);
+    rb_eRactorClosedError = rb_define_class_under(rb_cRactor, "ClosedError", rb_eStopIteration);
+    rb_eRactorUnsafeError = rb_define_class_under(rb_cRactor, "UnsafeError", rb_eRactorError);
 
     rb_cRactorMovedObject = rb_define_class_under(rb_cRactor, "MovedObject", rb_cBasicObject);
     rb_undef_alloc_func(rb_cRactorMovedObject);
@@ -2113,7 +2125,8 @@ rb_ractor_dump(void)
     rb_vm_t *vm = GET_VM();
     rb_ractor_t *r = 0;
 
-    ccan_list_for_each(&vm->ractor.set, r, vmlr_node) {
+    ccan_list_for_each(&vm->ractor.set, r, vmlr_node)
+    {
         if (r != vm->ractor.main_ractor) {
             fprintf(stderr, "r:%u (%s)\n", r->pub.id, ractor_status_str(r->status_));
         }
@@ -2224,7 +2237,6 @@ struct obj_traverse_data {
     VALUE rec_hash;
 };
 
-
 struct obj_traverse_callback_data {
     bool stop;
     struct obj_traverse_data *data;
@@ -2276,9 +2288,12 @@ obj_traverse_i(VALUE obj, struct obj_traverse_data *data)
     if (RB_SPECIAL_CONST_P(obj)) return 0;
 
     switch (data->enter_func(obj)) {
-      case traverse_cont: break;
-      case traverse_skip: return 0; // skip children
-      case traverse_stop: return 1; // stop search
+    case traverse_cont:
+        break;
+    case traverse_skip:
+        return 0; // skip children
+    case traverse_stop:
+        return 1; // stop search
     }
 
     if (UNLIKELY(st_insert(obj_traverse_rec(data), obj, 1))) {
@@ -2296,91 +2311,81 @@ obj_traverse_i(VALUE obj, struct obj_traverse_data *data)
     }
 
     switch (BUILTIN_TYPE(obj)) {
-      // no child node
-      case T_STRING:
-      case T_FLOAT:
-      case T_BIGNUM:
-      case T_REGEXP:
-      case T_FILE:
-      case T_SYMBOL:
-      case T_MATCH:
+    // no child node
+    case T_STRING:
+    case T_FLOAT:
+    case T_BIGNUM:
+    case T_REGEXP:
+    case T_FILE:
+    case T_SYMBOL:
+    case T_MATCH:
         break;
 
-      case T_OBJECT:
-        {
-            uint32_t len = ROBJECT_NUMIV(obj);
-            VALUE *ptr = ROBJECT_IVPTR(obj);
+    case T_OBJECT: {
+        uint32_t len = ROBJECT_NUMIV(obj);
+        VALUE *ptr = ROBJECT_IVPTR(obj);
 
-            for (uint32_t i=0; i<len; i++) {
-                VALUE val = ptr[i];
-                if (val != Qundef && obj_traverse_i(val, data)) return 1;
-            }
+        for (uint32_t i = 0; i < len; i++) {
+            VALUE val = ptr[i];
+            if (val != Qundef && obj_traverse_i(val, data)) return 1;
         }
-        break;
+    } break;
 
-      case T_ARRAY:
-        {
-            for (int i = 0; i < RARRAY_LENINT(obj); i++) {
-                VALUE e = rb_ary_entry(obj, i);
-                if (obj_traverse_i(e, data)) return 1;
-            }
+    case T_ARRAY: {
+        for (int i = 0; i < RARRAY_LENINT(obj); i++) {
+            VALUE e = rb_ary_entry(obj, i);
+            if (obj_traverse_i(e, data)) return 1;
         }
-        break;
+    } break;
 
-      case T_HASH:
-        {
-            if (obj_traverse_i(RHASH_IFNONE(obj), data)) return 1;
+    case T_HASH: {
+        if (obj_traverse_i(RHASH_IFNONE(obj), data)) return 1;
 
-            struct obj_traverse_callback_data d = {
-                .stop = false,
-                .data = data,
-            };
-            rb_hash_foreach(obj, obj_hash_traverse_i, (VALUE)&d);
-            if (d.stop) return 1;
+        struct obj_traverse_callback_data d = {
+            .stop = false,
+            .data = data,
+        };
+        rb_hash_foreach(obj, obj_hash_traverse_i, (VALUE)&d);
+        if (d.stop) return 1;
+    } break;
+
+    case T_STRUCT: {
+        long len = RSTRUCT_LEN(obj);
+        const VALUE *ptr = RSTRUCT_CONST_PTR(obj);
+
+        for (long i = 0; i < len; i++) {
+            if (obj_traverse_i(ptr[i], data)) return 1;
         }
-        break;
+    } break;
 
-      case T_STRUCT:
-        {
-            long len = RSTRUCT_LEN(obj);
-            const VALUE *ptr = RSTRUCT_CONST_PTR(obj);
-
-            for (long i=0; i<len; i++) {
-                if (obj_traverse_i(ptr[i], data)) return 1;
-            }
-        }
-        break;
-
-      case T_RATIONAL:
+    case T_RATIONAL:
         if (obj_traverse_i(RRATIONAL(obj)->num, data)) return 1;
         if (obj_traverse_i(RRATIONAL(obj)->den, data)) return 1;
         break;
-      case T_COMPLEX:
+    case T_COMPLEX:
         if (obj_traverse_i(RCOMPLEX(obj)->real, data)) return 1;
         if (obj_traverse_i(RCOMPLEX(obj)->imag, data)) return 1;
         break;
 
-      case T_DATA:
-      case T_IMEMO:
+    case T_DATA:
+    case T_IMEMO: {
+        struct obj_traverse_callback_data d = {
+            .stop = false,
+            .data = data,
+        };
+        RB_VM_LOCK_ENTER_NO_BARRIER();
         {
-            struct obj_traverse_callback_data d = {
-                .stop = false,
-                .data = data,
-            };
-            RB_VM_LOCK_ENTER_NO_BARRIER();
-            {
-                rb_objspace_reachable_objects_from(obj, obj_traverse_reachable_i, &d);
-            }
-            RB_VM_LOCK_LEAVE_NO_BARRIER();
-            if (d.stop) return 1;
+            rb_objspace_reachable_objects_from(obj, obj_traverse_reachable_i, &d);
         }
-        break;
+        RB_VM_LOCK_LEAVE_NO_BARRIER();
+        if (d.stop) return 1;
+    } break;
 
-      // unreachable
-      case T_CLASS:
-      case T_MODULE:
-      case T_ICLASS:
-      default:
+    // unreachable
+    case T_CLASS:
+    case T_MODULE:
+    case T_ICLASS:
+    default:
         rp(obj);
         rb_bug("unreachable");
     }
@@ -2412,10 +2417,8 @@ obj_traverse_final_i(st_data_t key, st_data_t val, st_data_t arg)
 // 0: traverse all
 // 1: stopped
 static int
-rb_obj_traverse(VALUE obj,
-                rb_obj_traverse_enter_func enter_func,
-                rb_obj_traverse_leave_func leave_func,
-                rb_obj_traverse_final_func final_func)
+rb_obj_traverse(VALUE obj, rb_obj_traverse_enter_func enter_func, rb_obj_traverse_leave_func leave_func,
+    rb_obj_traverse_final_func final_func)
 {
     struct obj_traverse_data data = {
         .enter_func = enter_func,
@@ -2469,7 +2472,7 @@ make_shareable_check_shareable(VALUE obj)
             return traverse_skip;
         }
         else {
-            rb_raise(rb_eRactorError, "can not make shareable object for %"PRIsVALUE, obj);
+            rb_raise(rb_eRactorError, "can not make shareable object for %" PRIsVALUE, obj);
         }
     }
 
@@ -2498,9 +2501,7 @@ mark_shareable(VALUE obj)
 VALUE
 rb_ractor_make_shareable(VALUE obj)
 {
-    rb_obj_traverse(obj,
-                    make_shareable_check_shareable,
-                    null_leave, mark_shareable);
+    rb_obj_traverse(obj, make_shareable_check_shareable, null_leave, mark_shareable);
     return obj;
 }
 
@@ -2508,9 +2509,7 @@ VALUE
 rb_ractor_make_shareable_copy(VALUE obj)
 {
     VALUE copy = ractor_copy(obj);
-    rb_obj_traverse(copy,
-                    make_shareable_check_shareable,
-                    null_leave, mark_shareable);
+    rb_obj_traverse(copy, make_shareable_check_shareable, null_leave, mark_shareable);
     return copy;
 }
 
@@ -2518,8 +2517,7 @@ VALUE
 rb_ractor_ensure_shareable(VALUE obj, VALUE name)
 {
     if (!rb_ractor_shareable_p(obj)) {
-        VALUE message = rb_sprintf("cannot assign unshareable object to %"PRIsVALUE,
-                                   name);
+        VALUE message = rb_sprintf("cannot assign unshareable object to %" PRIsVALUE, name);
         rb_exc_raise(rb_exc_new_str(rb_eRactorIsolationError, message));
     }
     return obj;
@@ -2539,15 +2537,12 @@ shareable_p_enter(VALUE obj)
     if (RB_OBJ_SHAREABLE_P(obj)) {
         return traverse_skip;
     }
-    else if (RB_TYPE_P(obj, T_CLASS)  ||
-             RB_TYPE_P(obj, T_MODULE) ||
-             RB_TYPE_P(obj, T_ICLASS)) {
+    else if (RB_TYPE_P(obj, T_CLASS) || RB_TYPE_P(obj, T_MODULE) || RB_TYPE_P(obj, T_ICLASS)) {
         // TODO: remove it
         mark_shareable(obj);
         return traverse_skip;
     }
-    else if (RB_OBJ_FROZEN_RAW(obj) &&
-             frozen_shareable_p(obj, NULL)) {
+    else if (RB_OBJ_FROZEN_RAW(obj) && frozen_shareable_p(obj, NULL)) {
         return traverse_cont;
     }
 
@@ -2557,9 +2552,7 @@ shareable_p_enter(VALUE obj)
 MJIT_FUNC_EXPORTED bool
 rb_ractor_shareable_p_continue(VALUE obj)
 {
-    if (rb_obj_traverse(obj,
-                        shareable_p_enter, null_leave,
-                        mark_shareable)) {
+    if (rb_obj_traverse(obj, shareable_p_enter, null_leave, mark_shareable)) {
         return false;
     }
     else {
@@ -2596,7 +2589,6 @@ ractor_reset_belonging(VALUE obj)
     return obj;
 }
 
-
 /// traverse and replace function
 
 // 2: stop search
@@ -2605,8 +2597,10 @@ ractor_reset_belonging(VALUE obj)
 
 struct obj_traverse_replace_data;
 static int obj_traverse_replace_i(VALUE obj, struct obj_traverse_replace_data *data);
-typedef enum obj_traverse_iterator_result (*rb_obj_traverse_replace_enter_func)(VALUE obj, struct obj_traverse_replace_data *data);
-typedef enum obj_traverse_iterator_result (*rb_obj_traverse_replace_leave_func)(VALUE obj, struct obj_traverse_replace_data *data);
+typedef enum obj_traverse_iterator_result (*rb_obj_traverse_replace_enter_func)(
+    VALUE obj, struct obj_traverse_replace_data *data);
+typedef enum obj_traverse_iterator_result (*rb_obj_traverse_replace_leave_func)(
+    VALUE obj, struct obj_traverse_replace_data *data);
 
 struct obj_traverse_replace_data {
     rb_obj_traverse_replace_enter_func enter_func;
@@ -2708,9 +2702,12 @@ obj_traverse_replace_i(VALUE obj, struct obj_traverse_replace_data *data)
     }
 
     switch (data->enter_func(obj, data)) {
-      case traverse_cont: break;
-      case traverse_skip: return 0; // skip children
-      case traverse_stop: return 1; // stop search
+    case traverse_cont:
+        break;
+    case traverse_skip:
+        return 0; // skip children
+    case traverse_stop:
+        return 1; // stop search
     }
 
     replacement = (st_data_t)data->replacement;
@@ -2727,11 +2724,16 @@ obj_traverse_replace_i(VALUE obj, struct obj_traverse_replace_data *data)
         obj = replacement;
     }
 
-#define CHECK_AND_REPLACE(v) do { \
-    VALUE _val = (v); \
-    if (obj_traverse_replace_i(_val, data)) { return 1; } \
-    else if (data->replacement != _val)     { RB_OBJ_WRITE(obj, &v, data->replacement); } \
-} while (0)
+#define CHECK_AND_REPLACE(v) \
+    do { \
+        VALUE _val = (v); \
+        if (obj_traverse_replace_i(_val, data)) { \
+            return 1; \
+        } \
+        else if (data->replacement != _val) { \
+            RB_OBJ_WRITE(obj, &v, data->replacement); \
+        } \
+    } while (0)
 
     if (UNLIKELY(FL_TEST_RAW(obj, FL_EXIVAR))) {
         struct gen_ivtbl *ivtbl;
@@ -2744,124 +2746,114 @@ obj_traverse_replace_i(VALUE obj, struct obj_traverse_replace_data *data)
     }
 
     switch (BUILTIN_TYPE(obj)) {
-      // no child node
-      case T_FLOAT:
-      case T_BIGNUM:
-      case T_REGEXP:
-      case T_FILE:
-      case T_SYMBOL:
-      case T_MATCH:
+    // no child node
+    case T_FLOAT:
+    case T_BIGNUM:
+    case T_REGEXP:
+    case T_FILE:
+    case T_SYMBOL:
+    case T_MATCH:
         break;
-      case T_STRING:
+    case T_STRING:
         rb_str_make_independent(obj);
         break;
 
-      case T_OBJECT:
-        {
+    case T_OBJECT: {
 #if USE_TRANSIENT_HEAP
-            if (data->move) rb_obj_transient_heap_evacuate(obj, TRUE);
+        if (data->move) rb_obj_transient_heap_evacuate(obj, TRUE);
 #endif
 
-            uint32_t len = ROBJECT_NUMIV(obj);
-            VALUE *ptr = ROBJECT_IVPTR(obj);
+        uint32_t len = ROBJECT_NUMIV(obj);
+        VALUE *ptr = ROBJECT_IVPTR(obj);
 
-            for (uint32_t i=0; i<len; i++) {
-                if (ptr[i] != Qundef) {
-                    CHECK_AND_REPLACE(ptr[i]);
-                }
-            }
-        }
-        break;
-
-      case T_ARRAY:
-        {
-            rb_ary_cancel_sharing(obj);
-#if USE_TRANSIENT_HEAP
-            if (data->move) rb_ary_transient_heap_evacuate(obj, TRUE);
-#endif
-
-            for (int i = 0; i < RARRAY_LENINT(obj); i++) {
-                VALUE e = rb_ary_entry(obj, i);
-
-                if (obj_traverse_replace_i(e, data)) {
-                    return 1;
-                }
-                else if (e != data->replacement) {
-                    RARRAY_ASET(obj, i, data->replacement);
-                }
-            }
-            RB_GC_GUARD(obj);
-        }
-        break;
-
-      case T_HASH:
-        {
-#if USE_TRANSIENT_HEAP
-            if (data->move) rb_hash_transient_heap_evacuate(obj, TRUE);
-#endif
-            struct obj_traverse_replace_callback_data d = {
-                .stop = false,
-                .data = data,
-                .src = obj,
-            };
-            rb_hash_stlike_foreach_with_replace(obj,
-                                                obj_hash_traverse_replace_foreach_i,
-                                                obj_hash_traverse_replace_i,
-                                                (VALUE)&d);
-            if (d.stop) return 1;
-            // TODO: rehash here?
-
-            VALUE ifnone = RHASH_IFNONE(obj);
-            if (obj_traverse_replace_i(ifnone, data)) {
-                return 1;
-            }
-            else if (ifnone != data->replacement) {
-                RHASH_SET_IFNONE(obj, data->replacement);
-            }
-        }
-        break;
-
-      case T_STRUCT:
-        {
-#if USE_TRANSIENT_HEAP
-            if (data->move) rb_struct_transient_heap_evacuate(obj, TRUE);
-#endif
-            long len = RSTRUCT_LEN(obj);
-            const VALUE *ptr = RSTRUCT_CONST_PTR(obj);
-
-            for (long i=0; i<len; i++) {
+        for (uint32_t i = 0; i < len; i++) {
+            if (ptr[i] != Qundef) {
                 CHECK_AND_REPLACE(ptr[i]);
             }
         }
-        break;
+    } break;
 
-      case T_RATIONAL:
+    case T_ARRAY: {
+        rb_ary_cancel_sharing(obj);
+#if USE_TRANSIENT_HEAP
+        if (data->move) rb_ary_transient_heap_evacuate(obj, TRUE);
+#endif
+
+        for (int i = 0; i < RARRAY_LENINT(obj); i++) {
+            VALUE e = rb_ary_entry(obj, i);
+
+            if (obj_traverse_replace_i(e, data)) {
+                return 1;
+            }
+            else if (e != data->replacement) {
+                RARRAY_ASET(obj, i, data->replacement);
+            }
+        }
+        RB_GC_GUARD(obj);
+    } break;
+
+    case T_HASH: {
+#if USE_TRANSIENT_HEAP
+        if (data->move) rb_hash_transient_heap_evacuate(obj, TRUE);
+#endif
+        struct obj_traverse_replace_callback_data d = {
+            .stop = false,
+            .data = data,
+            .src = obj,
+        };
+        rb_hash_stlike_foreach_with_replace(
+            obj, obj_hash_traverse_replace_foreach_i, obj_hash_traverse_replace_i, (VALUE)&d);
+        if (d.stop) return 1;
+        // TODO: rehash here?
+
+        VALUE ifnone = RHASH_IFNONE(obj);
+        if (obj_traverse_replace_i(ifnone, data)) {
+            return 1;
+        }
+        else if (ifnone != data->replacement) {
+            RHASH_SET_IFNONE(obj, data->replacement);
+        }
+    } break;
+
+    case T_STRUCT: {
+#if USE_TRANSIENT_HEAP
+        if (data->move) rb_struct_transient_heap_evacuate(obj, TRUE);
+#endif
+        long len = RSTRUCT_LEN(obj);
+        const VALUE *ptr = RSTRUCT_CONST_PTR(obj);
+
+        for (long i = 0; i < len; i++) {
+            CHECK_AND_REPLACE(ptr[i]);
+        }
+    } break;
+
+    case T_RATIONAL:
         CHECK_AND_REPLACE(RRATIONAL(obj)->num);
         CHECK_AND_REPLACE(RRATIONAL(obj)->den);
         break;
-      case T_COMPLEX:
+    case T_COMPLEX:
         CHECK_AND_REPLACE(RCOMPLEX(obj)->real);
         CHECK_AND_REPLACE(RCOMPLEX(obj)->imag);
         break;
 
-      case T_DATA:
+    case T_DATA:
         if (!data->move && obj_refer_only_shareables_p(obj)) {
             break;
         }
         else {
-            rb_raise(rb_eRactorError, "can not %s %"PRIsVALUE" object.",
-                     data->move ? "move" : "copy", rb_class_of(obj));
+            rb_raise(
+                rb_eRactorError, "can not %s %" PRIsVALUE " object.", data->move ? "move" : "copy", rb_class_of(obj));
         }
 
-      case T_IMEMO:
+    case T_IMEMO:
         // not supported yet
         return 1;
 
-      // unreachable
-      case T_CLASS:
-      case T_MODULE:
-      case T_ICLASS:
-      default:
+    // unreachable
+    case T_CLASS:
+    case T_MODULE:
+    case T_ICLASS:
+    default:
         rp(obj);
         rb_bug("unreachable");
     }
@@ -2879,10 +2871,8 @@ obj_traverse_replace_i(VALUE obj, struct obj_traverse_replace_data *data)
 // 0: traverse all
 // 1: stopped
 static VALUE
-rb_obj_traverse_replace(VALUE obj,
-                        rb_obj_traverse_replace_enter_func enter_func,
-                        rb_obj_traverse_replace_leave_func leave_func,
-                        bool move)
+rb_obj_traverse_replace(
+    VALUE obj, rb_obj_traverse_replace_enter_func enter_func, rb_obj_traverse_replace_leave_func leave_func, bool move)
 {
     struct obj_traverse_replace_data data = {
         .enter_func = enter_func,
@@ -2908,10 +2898,8 @@ struct RVALUE {
     VALUE v3;
 };
 
-static const VALUE fl_users = FL_USER1  | FL_USER2  | FL_USER3  |
-                              FL_USER4  | FL_USER5  | FL_USER6  | FL_USER7  |
-                              FL_USER8  | FL_USER9  | FL_USER10 | FL_USER11 |
-                              FL_USER12 | FL_USER13 | FL_USER14 | FL_USER15 |
+static const VALUE fl_users = FL_USER1 | FL_USER2 | FL_USER3 | FL_USER4 | FL_USER5 | FL_USER6 | FL_USER7 | FL_USER8 |
+                              FL_USER9 | FL_USER10 | FL_USER11 | FL_USER12 | FL_USER13 | FL_USER14 | FL_USER15 |
                               FL_USER16 | FL_USER17 | FL_USER18 | FL_USER19;
 
 static void
@@ -3044,11 +3032,10 @@ ractor_local_storage_mark(rb_ractor_t *r)
     if (r->local_storage) {
         st_foreach(r->local_storage, ractor_local_storage_mark_i, 0);
 
-        for (int i=0; i<freed_ractor_local_keys.cnt; i++) {
+        for (int i = 0; i < freed_ractor_local_keys.cnt; i++) {
             rb_ractor_local_key_t key = freed_ractor_local_keys.keys[i];
             st_data_t val, k = (st_data_t)key;
-            if (st_delete(r->local_storage, &k, &val) &&
-                (key = (rb_ractor_local_key_t)k)->type->free) {
+            if (st_delete(r->local_storage, &k, &val) && (key = (rb_ractor_local_key_t)k)->type->free) {
                 (*key->type->free)((void *)val);
             }
         }
@@ -3222,7 +3209,7 @@ rb_ractor_local_storage_ptr_set(rb_ractor_local_key_t key, void *ptr)
 void
 rb_ractor_finish_marking(void)
 {
-    for (int i=0; i<freed_ractor_local_keys.cnt; i++) {
+    for (int i = 0; i < freed_ractor_local_keys.cnt; i++) {
         ruby_xfree(freed_ractor_local_keys.keys[i]);
     }
     freed_ractor_local_keys.cnt = 0;

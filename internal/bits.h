@@ -1,4 +1,4 @@
-#ifndef INTERNAL_BITS_H                                  /*-*-C-*-vi:se ft=c:*/
+#ifndef INTERNAL_BITS_H /*-*-C-*-vi:se ft=c:*/
 #define INTERNAL_BITS_H
 /**
  * @author     Ruby developers <ruby-core@ruby-lang.org>
@@ -13,7 +13,7 @@
  * @see        https://gcc.gnu.org/onlinedocs/gcc/Other-Builtins.html
  * @see        https://clang.llvm.org/docs/LanguageExtensions.html#builtin-rotateleft
  * @see        https://clang.llvm.org/docs/LanguageExtensions.html#builtin-rotateright
- * @see        https://docs.microsoft.com/en-us/cpp/c-runtime-library/reference/byteswap-uint64-byteswap-ulong-byteswap-ushort
+ * @see https://docs.microsoft.com/en-us/cpp/c-runtime-library/reference/byteswap-uint64-byteswap-ulong-byteswap-ushort
  * @see        https://docs.microsoft.com/en-us/cpp/c-runtime-library/reference/rotl-rotl64-rotr-rotr64
  * @see        https://docs.microsoft.com/en-us/cpp/intrinsics/bitscanforward-bitscanforward64
  * @see        https://docs.microsoft.com/en-us/cpp/intrinsics/bitscanreverse-bitscanreverse64
@@ -25,133 +25,133 @@
  * @see        https://software.intel.com/sites/landingpage/IntrinsicsGuide/#text=_rotr64
  * @see        https://stackoverflow.com/a/776523
  */
-#include "ruby/internal/config.h"
-#include <limits.h>             /* for CHAR_BITS */
-#include <stdint.h>             /* for uintptr_t */
 #include "internal/compilers.h" /* for MSC_VERSION_SINCE */
+#include "ruby/internal/config.h"
+#include <limits.h> /* for CHAR_BITS */
+#include <stdint.h> /* for uintptr_t */
 
 #if MSC_VERSION_SINCE(1310)
-# include <stdlib.h>            /* for _byteswap_uint64 */
+#    include <stdlib.h> /* for _byteswap_uint64 */
 #endif
 
-#if defined(HAVE_X86INTRIN_H) && ! defined(MJIT_HEADER)
-# /* Rule out MJIT_HEADER, which does not interface well with <immintrin.h> */
-# include <x86intrin.h>         /* for _lzcnt_u64 */
+#if defined(HAVE_X86INTRIN_H) && !defined(MJIT_HEADER)
+#                          /* Rule out MJIT_HEADER, which does not interface well with <immintrin.h> */
+#    include <x86intrin.h> /* for _lzcnt_u64 */
 #elif MSC_VERSION_SINCE(1310)
-# include <intrin.h>            /* for the following intrinsics */
+#    include <intrin.h> /* for the following intrinsics */
 #endif
 
 #if defined(_MSC_VER) && defined(__AVX__)
-# pragma intrinsic(__popcnt)
-# pragma intrinsic(__popcnt64)
+#    pragma intrinsic(__popcnt)
+#    pragma intrinsic(__popcnt64)
 #endif
 
 #if defined(_MSC_VER) && defined(__AVX2__)
-# pragma intrinsic(__lzcnt)
-# pragma intrinsic(__lzcnt64)
+#    pragma intrinsic(__lzcnt)
+#    pragma intrinsic(__lzcnt64)
 #endif
 
 #if MSC_VERSION_SINCE(1310)
-# pragma intrinsic(_rotl)
-# pragma intrinsic(_rotr)
-# ifdef _WIN64
-#  pragma intrinsic(_rotl64)
-#  pragma intrinsic(_rotr64)
-# endif
+#    pragma intrinsic(_rotl)
+#    pragma intrinsic(_rotr)
+#    ifdef _WIN64
+#        pragma intrinsic(_rotl64)
+#        pragma intrinsic(_rotr64)
+#    endif
 #endif
 
 #if MSC_VERSION_SINCE(1400)
-# pragma intrinsic(_BitScanForward)
-# pragma intrinsic(_BitScanReverse)
-# ifdef _WIN64
-#  pragma intrinsic(_BitScanForward64)
-#  pragma intrinsic(_BitScanReverse64)
-# endif
+#    pragma intrinsic(_BitScanForward)
+#    pragma intrinsic(_BitScanReverse)
+#    ifdef _WIN64
+#        pragma intrinsic(_BitScanForward64)
+#        pragma intrinsic(_BitScanReverse64)
+#    endif
 #endif
 
-#include "ruby/ruby.h"              /* for VALUE */
 #include "internal/static_assert.h" /* for STATIC_ASSERT */
+#include "ruby/ruby.h"              /* for VALUE */
 
 /* The most significant bit of the lower part of half-long integer.
  * If sizeof(long) == 4, this is 0x8000.
  * If sizeof(long) == 8, this is 0x80000000.
  */
-#define HALF_LONG_MSB ((SIGNED_VALUE)1<<((SIZEOF_LONG*CHAR_BIT-1)/2))
+#define HALF_LONG_MSB ((SIGNED_VALUE)1 << ((SIZEOF_LONG * CHAR_BIT - 1) / 2))
 
-#define SIGNED_INTEGER_TYPE_P(T) (0 > ((T)0)-1)
+#define SIGNED_INTEGER_TYPE_P(T) (0 > ((T)0) - 1)
 
-#define SIGNED_INTEGER_MIN(T)                           \
-    ((sizeof(T) == sizeof(int8_t))  ? ((T)INT8_MIN)  :  \
-    ((sizeof(T) == sizeof(int16_t)) ? ((T)INT16_MIN) :  \
-    ((sizeof(T) == sizeof(int32_t)) ? ((T)INT32_MIN) :  \
-    ((sizeof(T) == sizeof(int64_t)) ? ((T)INT64_MIN) :  \
-     0))))
+#define SIGNED_INTEGER_MIN(T) \
+    ((sizeof(T) == sizeof(int8_t)) \
+            ? ((T)INT8_MIN) \
+            : ((sizeof(T) == sizeof(int16_t)) \
+                      ? ((T)INT16_MIN) \
+                      : ((sizeof(T) == sizeof(int32_t)) ? ((T)INT32_MIN) \
+                                                        : ((sizeof(T) == sizeof(int64_t)) ? ((T)INT64_MIN) : 0))))
 
-#define SIGNED_INTEGER_MAX(T) ((T)(SIGNED_INTEGER_MIN(T) ^ ((T)~(T)0)))
+#define SIGNED_INTEGER_MAX(T) ((T)(SIGNED_INTEGER_MIN(T) ^ ((T) ~(T)0)))
 
-#define UNSIGNED_INTEGER_MAX(T) ((T)~(T)0)
+#define UNSIGNED_INTEGER_MAX(T) ((T) ~(T)0)
 
 #if __has_builtin(__builtin_mul_overflow_p)
-# define MUL_OVERFLOW_P(a, b) \
-    __builtin_mul_overflow_p((a), (b), (__typeof__(a * b))0)
+#    define MUL_OVERFLOW_P(a, b) __builtin_mul_overflow_p((a), (b), (__typeof__(a * b))0)
 #elif __has_builtin(__builtin_mul_overflow)
-# define MUL_OVERFLOW_P(a, b) \
-    __extension__ ({ __typeof__(a) c; __builtin_mul_overflow((a), (b), &c); })
+#    define MUL_OVERFLOW_P(a, b) \
+        __extension__({ \
+            __typeof__(a) c; \
+            __builtin_mul_overflow((a), (b), &c); \
+        })
 #endif
 
-#define MUL_OVERFLOW_SIGNED_INTEGER_P(a, b, min, max) ( \
-    (a) == 0 ? 0 : \
-    (a) == -1 ? (b) < -(max) : \
-    (a) > 0 ? \
-      ((b) > 0 ? (max) / (a) < (b) : (min) / (a) > (b)) : \
-      ((b) > 0 ? (min) / (a) < (b) : (max) / (a) > (b)))
+#define MUL_OVERFLOW_SIGNED_INTEGER_P(a, b, min, max) \
+    ((a) == 0       ? 0 \
+        : (a) == -1 ? (b) < -(max) \
+        : (a) > 0   ? ((b) > 0 ? (max) / (a) < (b) : (min) / (a) > (b)) \
+                    : ((b) > 0 ? (min) / (a) < (b) : (max) / (a) > (b)))
 
 #if __has_builtin(__builtin_mul_overflow_p)
 /* __builtin_mul_overflow_p can take bitfield */
 /* and GCC permits bitfields for integers other than int */
-# define MUL_OVERFLOW_FIXNUM_P(a, b) \
-    __extension__ ({ \
-        struct { long fixnum : sizeof(long) * CHAR_BIT - 1; } c = { 0 }; \
-        __builtin_mul_overflow_p((a), (b), c.fixnum); \
-    })
+#    define MUL_OVERFLOW_FIXNUM_P(a, b) \
+        __extension__({ \
+            struct { \
+                long fixnum : sizeof(long) * CHAR_BIT - 1; \
+            } c = {0}; \
+            __builtin_mul_overflow_p((a), (b), c.fixnum); \
+        })
 #else
-# define MUL_OVERFLOW_FIXNUM_P(a, b) \
-    MUL_OVERFLOW_SIGNED_INTEGER_P(a, b, FIXNUM_MIN, FIXNUM_MAX)
+#    define MUL_OVERFLOW_FIXNUM_P(a, b) MUL_OVERFLOW_SIGNED_INTEGER_P(a, b, FIXNUM_MIN, FIXNUM_MAX)
 #endif
 
 #ifdef MUL_OVERFLOW_P
-# define MUL_OVERFLOW_LONG_LONG_P(a, b) MUL_OVERFLOW_P(a, b)
-# define MUL_OVERFLOW_LONG_P(a, b)      MUL_OVERFLOW_P(a, b)
-# define MUL_OVERFLOW_INT_P(a, b)       MUL_OVERFLOW_P(a, b)
+#    define MUL_OVERFLOW_LONG_LONG_P(a, b) MUL_OVERFLOW_P(a, b)
+#    define MUL_OVERFLOW_LONG_P(a, b) MUL_OVERFLOW_P(a, b)
+#    define MUL_OVERFLOW_INT_P(a, b) MUL_OVERFLOW_P(a, b)
 #else
-# define MUL_OVERFLOW_LONG_LONG_P(a, b) MUL_OVERFLOW_SIGNED_INTEGER_P(a, b, LLONG_MIN, LLONG_MAX)
-# define MUL_OVERFLOW_LONG_P(a, b)      MUL_OVERFLOW_SIGNED_INTEGER_P(a, b, LONG_MIN, LONG_MAX)
-# define MUL_OVERFLOW_INT_P(a, b)       MUL_OVERFLOW_SIGNED_INTEGER_P(a, b, INT_MIN, INT_MAX)
+#    define MUL_OVERFLOW_LONG_LONG_P(a, b) MUL_OVERFLOW_SIGNED_INTEGER_P(a, b, LLONG_MIN, LLONG_MAX)
+#    define MUL_OVERFLOW_LONG_P(a, b) MUL_OVERFLOW_SIGNED_INTEGER_P(a, b, LONG_MIN, LONG_MAX)
+#    define MUL_OVERFLOW_INT_P(a, b) MUL_OVERFLOW_SIGNED_INTEGER_P(a, b, INT_MIN, INT_MAX)
 #endif
 
 #ifdef HAVE_UINT128_T
-# define bit_length(x) \
-    (unsigned int) \
-    (sizeof(x) <= sizeof(int32_t) ? 32 - nlz_int32((uint32_t)(x)) : \
-     sizeof(x) <= sizeof(int64_t) ? 64 - nlz_int64((uint64_t)(x)) : \
-                                   128 - nlz_int128((uint128_t)(x)))
+#    define bit_length(x) \
+        (unsigned int)(sizeof(x) <= sizeof(int32_t)   ? 32 - nlz_int32((uint32_t)(x)) \
+                       : sizeof(x) <= sizeof(int64_t) ? 64 - nlz_int64((uint64_t)(x)) \
+                                                      : 128 - nlz_int128((uint128_t)(x)))
 #else
-# define bit_length(x) \
-    (unsigned int) \
-    (sizeof(x) <= sizeof(int32_t) ? 32 - nlz_int32((uint32_t)(x)) : \
-                                    64 - nlz_int64((uint64_t)(x)))
+#    define bit_length(x) \
+        (unsigned int)(sizeof(x) <= sizeof(int32_t) ? 32 - nlz_int32((uint32_t)(x)) : 64 - nlz_int64((uint64_t)(x)))
 #endif
 
 #ifndef swap16
-# define swap16 ruby_swap16
+#    define swap16 ruby_swap16
 #endif
 
 #ifndef swap32
-# define swap32 ruby_swap32
+#    define swap32 ruby_swap32
 #endif
 
 #ifndef swap64
-# define swap64 ruby_swap64
+#    define swap64 ruby_swap64
 #endif
 
 static inline uint16_t ruby_swap16(uint16_t);
@@ -201,7 +201,7 @@ ruby_swap32(uint32_t x)
 
 #else
     x = ((x & 0x0000FFFF) << 16) | ((x & 0xFFFF0000) >> 16);
-    x = ((x & 0x00FF00FF) <<  8) | ((x & 0xFF00FF00) >>  8);
+    x = ((x & 0x00FF00FF) << 8) | ((x & 0xFF00FF00) >> 8);
     return x;
 
 #endif
@@ -219,7 +219,7 @@ ruby_swap64(uint64_t x)
 #else
     x = ((x & 0x00000000FFFFFFFFULL) << 32) | ((x & 0xFFFFFFFF00000000ULL) >> 32);
     x = ((x & 0x0000FFFF0000FFFFULL) << 16) | ((x & 0xFFFF0000FFFF0000ULL) >> 16);
-    x = ((x & 0x00FF00FF00FF00FFULL) <<  8) | ((x & 0xFF00FF00FF00FF00ULL) >>  8);
+    x = ((x & 0x00FF00FF00FF00FFULL) << 8) | ((x & 0xFF00FF00FF00FF00ULL) >> 8);
     return x;
 
 #endif
@@ -235,7 +235,7 @@ nlz_int32(uint32_t x)
      * safety. */
     return (unsigned int)__lzcnt(x);
 
-#elif defined(__x86_64__) && defined(__LZCNT__) && ! defined(MJIT_HEADER)
+#elif defined(__x86_64__) && defined(__LZCNT__) && !defined(MJIT_HEADER)
     return (unsigned int)_lzcnt_u32(x);
 
 #elif MSC_VERSION_SINCE(1400) /* &&! defined(__AVX2__) */
@@ -249,11 +249,30 @@ nlz_int32(uint32_t x)
 #else
     uint32_t y;
     unsigned n = 32;
-    y = x >> 16; if (y) {n -= 16; x = y;}
-    y = x >>  8; if (y) {n -=  8; x = y;}
-    y = x >>  4; if (y) {n -=  4; x = y;}
-    y = x >>  2; if (y) {n -=  2; x = y;}
-    y = x >>  1; if (y) {return n - 2;}
+    y = x >> 16;
+    if (y) {
+        n -= 16;
+        x = y;
+    }
+    y = x >> 8;
+    if (y) {
+        n -= 8;
+        x = y;
+    }
+    y = x >> 4;
+    if (y) {
+        n -= 4;
+        x = y;
+    }
+    y = x >> 2;
+    if (y) {
+        n -= 2;
+        x = y;
+    }
+    y = x >> 1;
+    if (y) {
+        return n - 2;
+    }
     return (unsigned int)(n - x);
 #endif
 }
@@ -264,7 +283,7 @@ nlz_int64(uint64_t x)
 #if defined(_MSC_VER) && defined(__AVX2__)
     return (unsigned int)__lzcnt64(x);
 
-#elif defined(__x86_64__) && defined(__LZCNT__) && ! defined(MJIT_HEADER)
+#elif defined(__x86_64__) && defined(__LZCNT__) && !defined(MJIT_HEADER)
     return (unsigned int)_lzcnt_u64(x);
 
 #elif defined(_WIN64) && MSC_VERSION_SINCE(1400) /* &&! defined(__AVX2__) */
@@ -289,12 +308,35 @@ nlz_int64(uint64_t x)
 #else
     uint64_t y;
     unsigned int n = 64;
-    y = x >> 32; if (y) {n -= 32; x = y;}
-    y = x >> 16; if (y) {n -= 16; x = y;}
-    y = x >>  8; if (y) {n -=  8; x = y;}
-    y = x >>  4; if (y) {n -=  4; x = y;}
-    y = x >>  2; if (y) {n -=  2; x = y;}
-    y = x >>  1; if (y) {return n - 2;}
+    y = x >> 32;
+    if (y) {
+        n -= 32;
+        x = y;
+    }
+    y = x >> 16;
+    if (y) {
+        n -= 16;
+        x = y;
+    }
+    y = x >> 8;
+    if (y) {
+        n -= 8;
+        x = y;
+    }
+    y = x >> 4;
+    if (y) {
+        n -= 4;
+        x = y;
+    }
+    y = x >> 2;
+    if (y) {
+        n -= 2;
+        x = y;
+    }
+    y = x >> 1;
+    if (y) {
+        return n - 2;
+    }
     return (unsigned int)(n - x);
 
 #endif
@@ -397,7 +439,7 @@ rb_popcount32(uint32_t x)
     x = (x & 0x33333333) + (x >> 2 & 0x33333333);
     x = (x & 0x0f0f0f0f) + (x >> 4 & 0x0f0f0f0f);
     x = (x & 0x001f001f) + (x >> 8 & 0x001f001f);
-    x = (x & 0x0000003f) + (x >>16 & 0x0000003f);
+    x = (x & 0x0000003f) + (x >> 16 & 0x0000003f);
     return (unsigned int)x;
 
 #endif
@@ -426,8 +468,8 @@ rb_popcount64(uint64_t x)
     x = (x & 0x3333333333333333) + (x >> 2 & 0x3333333333333333);
     x = (x & 0x0707070707070707) + (x >> 4 & 0x0707070707070707);
     x = (x & 0x001f001f001f001f) + (x >> 8 & 0x001f001f001f001f);
-    x = (x & 0x0000003f0000003f) + (x >>16 & 0x0000003f0000003f);
-    x = (x & 0x000000000000007f) + (x >>32 & 0x000000000000007f);
+    x = (x & 0x0000003f0000003f) + (x >> 16 & 0x0000003f0000003f);
+    x = (x & 0x000000000000007f) + (x >> 32 & 0x000000000000007f);
     return (unsigned int)x;
 
 #endif
@@ -450,7 +492,7 @@ rb_popcount_intptr(uintptr_t x)
 static inline int
 ntz_int32(uint32_t x)
 {
-#if defined(__x86_64__) && defined(__BMI__) && ! defined(MJIT_HEADER)
+#if defined(__x86_64__) && defined(__BMI__) && !defined(MJIT_HEADER)
     return (unsigned)_tzcnt_u32(x);
 
 #elif MSC_VERSION_SINCE(1400)
@@ -464,7 +506,7 @@ ntz_int32(uint32_t x)
     return x ? (unsigned)__builtin_ctz(x) : 32;
 
 #else
-    return rb_popcount32((~x) & (x-1));
+    return rb_popcount32((~x) & (x - 1));
 
 #endif
 }
@@ -472,7 +514,7 @@ ntz_int32(uint32_t x)
 static inline int
 ntz_int64(uint64_t x)
 {
-#if defined(__x86_64__) && defined(__BMI__) && ! defined(MJIT_HEADER)
+#if defined(__x86_64__) && defined(__BMI__) && !defined(MJIT_HEADER)
     return (unsigned)_tzcnt_u64(x);
 
 #elif defined(_WIN64) && MSC_VERSION_SINCE(1400)
@@ -495,7 +537,7 @@ ntz_int64(uint64_t x)
     }
 
 #else
-    return rb_popcount64((~x) & (x-1));
+    return rb_popcount64((~x) & (x - 1));
 
 #endif
 }

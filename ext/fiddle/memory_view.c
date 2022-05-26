@@ -2,21 +2,21 @@
 
 #ifdef HAVE_RUBY_MEMORY_VIEW_H
 
-#include <stdbool.h>
-#include <ruby/ruby.h>
-#include <ruby/encoding.h>
-#include <ruby/memory_view.h>
+#    include <ruby/encoding.h>
+#    include <ruby/memory_view.h>
+#    include <ruby/ruby.h>
+#    include <stdbool.h>
 
-#if SIZEOF_INTPTR_T == SIZEOF_LONG_LONG
-#   define INTPTR2NUM LL2NUM
-#   define UINTPTR2NUM ULL2NUM
-#elif SIZEOF_INTPTR_T == SIZEOF_LONG
-#   define INTPTR2NUM LONG2NUM
-#   define UINTPTR2NUM ULONG2NUM
-#else
-#   define INTPTR2NUM INT2NUM
-#   define UINTPTR2NUM UINT2NUM
-#endif
+#    if SIZEOF_INTPTR_T == SIZEOF_LONG_LONG
+#        define INTPTR2NUM LL2NUM
+#        define UINTPTR2NUM ULL2NUM
+#    elif SIZEOF_INTPTR_T == SIZEOF_LONG
+#        define INTPTR2NUM LONG2NUM
+#        define UINTPTR2NUM ULONG2NUM
+#    else
+#        define INTPTR2NUM INT2NUM
+#        define UINTPTR2NUM UINT2NUM
+#    endif
 
 VALUE rb_cMemoryView = Qnil;
 
@@ -60,12 +60,16 @@ static size_t
 fiddle_memview_memsize(const void *ptr)
 {
     const struct memview_data *data = ptr;
-    return sizeof(*data) + sizeof(rb_memory_view_item_component_t)*data->n_members + (size_t)data->view.byte_size;
+    return sizeof(*data) + sizeof(rb_memory_view_item_component_t) * data->n_members + (size_t)data->view.byte_size;
 }
 
 static const rb_data_type_t fiddle_memview_data_type = {
     "fiddle/memory_view",
-    {fiddle_memview_mark, fiddle_memview_free, fiddle_memview_memsize,},
+    {
+        fiddle_memview_mark,
+        fiddle_memview_free,
+        fiddle_memview_memsize,
+    },
 };
 
 static VALUE
@@ -108,7 +112,7 @@ rb_fiddle_memview_initialize(VALUE obj, VALUE target)
 
     if (!rb_memory_view_get(target, &data->view, 0)) {
         data->view.obj = Qnil;
-        rb_raise(rb_eArgError, "Unable to get a memory view from %+"PRIsVALUE, target);
+        rb_raise(rb_eArgError, "Unable to get a memory view from %+" PRIsVALUE, target);
     }
 
     return Qnil;
@@ -237,7 +241,7 @@ rb_fiddle_memview_aref(int argc, VALUE *argv, VALUE obj)
 
     const ssize_t ndim = data->view.ndim;
     if (argc != ndim) {
-        rb_raise(rb_eIndexError, "wrong number of index (%d for %"PRIdSIZE")", argc, ndim);
+        rb_raise(rb_eIndexError, "wrong number of index (%d for %" PRIdSIZE ")", argc, ndim);
     }
 
     VALUE indices_v = 0;
@@ -259,8 +263,8 @@ rb_fiddle_memview_aref(int argc, VALUE *argv, VALUE obj)
     if (!data->members) {
         const char *err;
         if (rb_memory_view_parse_item_format(data->view.format, &data->members, &data->n_members, &err) < 0) {
-            rb_raise(rb_eRuntimeError, "Unable to recognize item format at %"PRIdSIZE" in \"%s\"",
-                     err - data->view.format, data->view.format);
+            rb_raise(rb_eRuntimeError, "Unable to recognize item format at %" PRIdSIZE " in \"%s\"",
+                err - data->view.format, data->view.format);
         }
     }
 
@@ -275,15 +279,13 @@ rb_fiddle_memview_to_s(VALUE self)
     long byte_size;
     VALUE string;
 
-    TypedData_Get_Struct(self,
-                         struct memview_data,
-                         &fiddle_memview_data_type,
-                         data);
+    TypedData_Get_Struct(self, struct memview_data, &fiddle_memview_data_type, data);
 
     if (NIL_P(data->view.obj)) {
         raw_data = NULL;
         byte_size = 0;
-    } else {
+    }
+    else {
         raw_data = data->view.data;
         byte_size = data->view.byte_size;
     }

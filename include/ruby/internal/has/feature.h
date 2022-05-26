@@ -1,4 +1,4 @@
-#ifndef RBIMPL_HAS_FEATURE_H                         /*-*-C++-*-vi:se ft=cpp:*/
+#ifndef RBIMPL_HAS_FEATURE_H /*-*-C++-*-vi:se ft=cpp:*/
 #define RBIMPL_HAS_FEATURE_H
 /**
  * @file
@@ -23,9 +23,9 @@
 
 /** Wraps (or simulates) `__has_feature`. */
 #if defined(__has_feature)
-# define RBIMPL_HAS_FEATURE(_) __has_feature(_)
+#    define RBIMPL_HAS_FEATURE(_) __has_feature(_)
 #else
-# define RBIMPL_HAS_FEATURE(_) 0
+#    define RBIMPL_HAS_FEATURE(_) 0
 #endif
 
 #endif /* RBIMPL_HAS_FEATURE_H */

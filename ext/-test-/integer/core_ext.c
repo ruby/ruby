@@ -15,8 +15,7 @@ int_fixnum_p(VALUE klass, VALUE self)
 static VALUE
 rb_int_to_bignum(VALUE klass, VALUE x)
 {
-    if (FIXNUM_P(x))
-        x = rb_int2big(FIX2LONG(x));
+    if (FIXNUM_P(x)) x = rb_int2big(FIX2LONG(x));
     return x;
 }
 

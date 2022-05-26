@@ -1,4 +1,4 @@
-#ifndef INTERNAL_ENCODING_H                              /*-*-C-*-vi:se ft=c:*/
+#ifndef INTERNAL_ENCODING_H /*-*-C-*-vi:se ft=c:*/
 #define INTERNAL_ENCODING_H
 /**
  * @author     Ruby developers <ruby-core@ruby-lang.org>
@@ -8,8 +8,8 @@
  *             file COPYING are met.  Consult the file for details.
  * @brief      Internal header for Encoding.
  */
-#include "ruby/ruby.h"          /* for ID */
-#include "ruby/encoding.h"      /* for rb_encoding */
+#include "ruby/encoding.h" /* for rb_encoding */
+#include "ruby/ruby.h"     /* for ID */
 
 #define rb_enc_autoload_p(enc) (!rb_enc_mbmaxlen(enc))
 

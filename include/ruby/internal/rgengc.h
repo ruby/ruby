@@ -1,4 +1,4 @@
-#ifndef RBIMPL_RGENGC_H                              /*-*-C++-*-vi:se ft=cpp:*/
+#ifndef RBIMPL_RGENGC_H /*-*-C++-*-vi:se ft=cpp:*/
 #define RBIMPL_RGENGC_H
 /**
  * @file
@@ -24,6 +24,7 @@
  *             International  Symposium on  Memory Management  (ISMM 2019),  pp
  *             115-121, 2019.  https://doi.org/10.1145/3315573.3329986
  */
+#include "ruby/assert.h"
 #include "ruby/internal/attr/artificial.h"
 #include "ruby/internal/attr/maybe_unused.h"
 #include "ruby/internal/attr/pure.h"
@@ -31,7 +32,6 @@
 #include "ruby/internal/special_consts.h"
 #include "ruby/internal/stdbool.h"
 #include "ruby/internal/value.h"
-#include "ruby/assert.h"
 
 /**
  * @private
@@ -52,7 +52,7 @@
  * anything.
  */
 #ifndef USE_RINCGC
-# define USE_RINCGC 1
+#    define USE_RINCGC 1
 #endif
 
 /**
@@ -60,7 +60,7 @@
  *              zero just doesn't compile.  We need to KonMari.
  */
 #ifndef USE_RGENGC_LOGGING_WB_UNPROTECT
-# define USE_RGENGC_LOGGING_WB_UNPROTECT 0
+#    define USE_RGENGC_LOGGING_WB_UNPROTECT 0
 #endif
 
 /**
@@ -71,7 +71,7 @@
  * no sense for 3rd parties.
  */
 #ifndef RGENGC_WB_PROTECTED_ARRAY
-# define RGENGC_WB_PROTECTED_ARRAY 1
+#    define RGENGC_WB_PROTECTED_ARRAY 1
 #endif
 
 /**
@@ -82,7 +82,7 @@
  * no sense for 3rd parties.
  */
 #ifndef RGENGC_WB_PROTECTED_HASH
-# define RGENGC_WB_PROTECTED_HASH 1
+#    define RGENGC_WB_PROTECTED_HASH 1
 #endif
 
 /**
@@ -93,7 +93,7 @@
  * no sense for 3rd parties.
  */
 #ifndef RGENGC_WB_PROTECTED_STRUCT
-# define RGENGC_WB_PROTECTED_STRUCT 1
+#    define RGENGC_WB_PROTECTED_STRUCT 1
 #endif
 
 /**
@@ -104,7 +104,7 @@
  * no sense for 3rd parties.
  */
 #ifndef RGENGC_WB_PROTECTED_STRING
-# define RGENGC_WB_PROTECTED_STRING 1
+#    define RGENGC_WB_PROTECTED_STRING 1
 #endif
 
 /**
@@ -115,7 +115,7 @@
  * no sense for 3rd parties.
  */
 #ifndef RGENGC_WB_PROTECTED_OBJECT
-# define RGENGC_WB_PROTECTED_OBJECT 1
+#    define RGENGC_WB_PROTECTED_OBJECT 1
 #endif
 
 /**
@@ -126,7 +126,7 @@
  * no sense for 3rd parties.
  */
 #ifndef RGENGC_WB_PROTECTED_REGEXP
-# define RGENGC_WB_PROTECTED_REGEXP 1
+#    define RGENGC_WB_PROTECTED_REGEXP 1
 #endif
 
 /**
@@ -137,7 +137,7 @@
  * no sense for 3rd parties.
  */
 #ifndef RGENGC_WB_PROTECTED_CLASS
-# define RGENGC_WB_PROTECTED_CLASS 1
+#    define RGENGC_WB_PROTECTED_CLASS 1
 #endif
 
 /**
@@ -148,7 +148,7 @@
  * no sense for 3rd parties.
  */
 #ifndef RGENGC_WB_PROTECTED_FLOAT
-# define RGENGC_WB_PROTECTED_FLOAT 1
+#    define RGENGC_WB_PROTECTED_FLOAT 1
 #endif
 
 /**
@@ -159,7 +159,7 @@
  * Makes no sense for 3rd parties.
  */
 #ifndef RGENGC_WB_PROTECTED_COMPLEX
-# define RGENGC_WB_PROTECTED_COMPLEX 1
+#    define RGENGC_WB_PROTECTED_COMPLEX 1
 #endif
 
 /**
@@ -170,7 +170,7 @@
  * Makes no sense for 3rd parties.
  */
 #ifndef RGENGC_WB_PROTECTED_RATIONAL
-# define RGENGC_WB_PROTECTED_RATIONAL 1
+#    define RGENGC_WB_PROTECTED_RATIONAL 1
 #endif
 
 /**
@@ -181,7 +181,7 @@
  * no sense for 3rd parties.
  */
 #ifndef RGENGC_WB_PROTECTED_BIGNUM
-# define RGENGC_WB_PROTECTED_BIGNUM 1
+#    define RGENGC_WB_PROTECTED_BIGNUM 1
 #endif
 
 /**
@@ -196,7 +196,7 @@
  * @shyouhei doesn't think anybody uses this right now.
  */
 #ifndef RGENGC_WB_PROTECTED_NODE_CREF
-# define RGENGC_WB_PROTECTED_NODE_CREF 1
+#    define RGENGC_WB_PROTECTED_NODE_CREF 1
 #endif
 
 /**
@@ -234,7 +234,7 @@
 /** @} */
 
 #define OBJ_PROMOTED_RAW RB_OBJ_PROMOTED_RAW /**< @old{RB_OBJ_PROMOTED_RAW} */
-#define OBJ_PROMOTED     RB_OBJ_PROMOTED     /**< @old{RB_OBJ_PROMOTED} */
+#define OBJ_PROMOTED RB_OBJ_PROMOTED         /**< @old{RB_OBJ_PROMOTED} */
 #define OBJ_WB_UNPROTECT RB_OBJ_WB_UNPROTECT /**< @old{RB_OBJ_WB_UNPROTECT} */
 
 /**
@@ -257,8 +257,7 @@
  *
  * @shyouhei doesn't understand why this has to be visible from extensions.
  */
-#define RB_OBJ_WB_UNPROTECT_FOR(type, obj) \
-    (RGENGC_WB_PROTECTED_##type ? OBJ_WB_UNPROTECT(obj) : obj)
+#define RB_OBJ_WB_UNPROTECT_FOR(type, obj) (RGENGC_WB_PROTECTED_##type ? OBJ_WB_UNPROTECT(obj) : obj)
 
 /**
  * @private
@@ -270,7 +269,7 @@
 
 /** @cond INTERNAL_MACRO */
 #define RB_OBJ_PROMOTED_RAW RB_OBJ_PROMOTED_RAW
-#define RB_OBJ_PROMOTED     RB_OBJ_PROMOTED
+#define RB_OBJ_PROMOTED RB_OBJ_PROMOTED
 /** @endcond */
 
 RBIMPL_SYMBOL_EXPORT_BEGIN()
@@ -323,7 +322,7 @@ static inline bool
 RB_OBJ_PROMOTED_RAW(VALUE obj)
 {
     RBIMPL_ASSERT_OR_ASSUME(RB_FL_ABLE(obj));
-    return RB_FL_ANY_RAW(obj,  RUBY_FL_PROMOTED);
+    return RB_FL_ANY_RAW(obj, RUBY_FL_PROMOTED);
 }
 
 RBIMPL_ATTR_PURE_UNLESS_DEBUG()
@@ -342,7 +341,7 @@ RBIMPL_ATTR_ARTIFICIAL()
 static inline bool
 RB_OBJ_PROMOTED(VALUE obj)
 {
-    if (! RB_FL_ABLE(obj)) {
+    if (!RB_FL_ABLE(obj)) {
         return false;
     }
     else {
@@ -360,12 +359,7 @@ RB_OBJ_PROMOTED(VALUE obj)
  * @return      x
  */
 static inline VALUE
-rb_obj_wb_unprotect(
-    VALUE x,
-    RBIMPL_ATTR_MAYBE_UNUSED()
-    const char *filename,
-    RBIMPL_ATTR_MAYBE_UNUSED()
-    int line)
+rb_obj_wb_unprotect(VALUE x, RBIMPL_ATTR_MAYBE_UNUSED() const char *filename, RBIMPL_ATTR_MAYBE_UNUSED() int line)
 {
 #if USE_RGENGC_LOGGING_WB_UNPROTECT
     RGENGC_LOGGING_WB_UNPROTECT(RBIMPL_CAST((void *)x), filename, line);
@@ -388,15 +382,8 @@ rb_obj_wb_unprotect(
  * @return      a
  */
 static inline VALUE
-rb_obj_written(
-    VALUE a,
-    RBIMPL_ATTR_MAYBE_UNUSED()
-    VALUE oldv,
-    VALUE b,
-    RBIMPL_ATTR_MAYBE_UNUSED()
-    const char *filename,
-    RBIMPL_ATTR_MAYBE_UNUSED()
-    int line)
+rb_obj_written(VALUE a, RBIMPL_ATTR_MAYBE_UNUSED() VALUE oldv, VALUE b, RBIMPL_ATTR_MAYBE_UNUSED() const char *filename,
+    RBIMPL_ATTR_MAYBE_UNUSED() int line)
 {
 #if USE_RGENGC_LOGGING_WB_UNPROTECT
     RGENGC_LOGGING_OBJ_WRITTEN(a, oldv, b, filename, line);
@@ -424,11 +411,7 @@ rb_obj_written(
  */
 static inline VALUE
 rb_obj_write(
-    VALUE a, VALUE *slot, VALUE b,
-    RBIMPL_ATTR_MAYBE_UNUSED()
-    const char *filename,
-    RBIMPL_ATTR_MAYBE_UNUSED()
-    int line)
+    VALUE a, VALUE *slot, VALUE b, RBIMPL_ATTR_MAYBE_UNUSED() const char *filename, RBIMPL_ATTR_MAYBE_UNUSED() int line)
 {
 #ifdef RGENGC_LOGGING_WRITE
     RGENGC_LOGGING_WRITE(a, slot, b, filename, line);

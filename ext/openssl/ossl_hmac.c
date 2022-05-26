@@ -9,14 +9,14 @@
  */
 #include "ossl.h"
 
-#define NewHMAC(klass) \
-    TypedData_Wrap_Struct((klass), &ossl_hmac_type, 0)
-#define GetHMAC(obj, ctx) do { \
-    TypedData_Get_Struct((obj), EVP_MD_CTX, &ossl_hmac_type, (ctx)); \
-    if (!(ctx)) { \
-	ossl_raise(rb_eRuntimeError, "HMAC wasn't initialized"); \
-    } \
-} while (0)
+#define NewHMAC(klass) TypedData_Wrap_Struct((klass), &ossl_hmac_type, 0)
+#define GetHMAC(obj, ctx) \
+    do { \
+        TypedData_Get_Struct((obj), EVP_MD_CTX, &ossl_hmac_type, (ctx)); \
+        if (!(ctx)) { \
+            ossl_raise(rb_eRuntimeError, "HMAC wasn't initialized"); \
+        } \
+    } while (0)
 
 /*
  * Classes
@@ -40,9 +40,12 @@ ossl_hmac_free(void *ctx)
 static const rb_data_type_t ossl_hmac_type = {
     "OpenSSL/HMAC",
     {
-	0, ossl_hmac_free,
+        0,
+        ossl_hmac_free,
     },
-    0, 0, RUBY_TYPED_FREE_IMMEDIATELY,
+    0,
+    0,
+    RUBY_TYPED_FREE_IMMEDIATELY,
 };
 
 static VALUE
@@ -53,13 +56,11 @@ ossl_hmac_alloc(VALUE klass)
 
     obj = NewHMAC(klass);
     ctx = EVP_MD_CTX_new();
-    if (!ctx)
-        ossl_raise(eHMACError, "EVP_MD_CTX");
+    if (!ctx) ossl_raise(eHMACError, "EVP_MD_CTX");
     RTYPEDDATA_DATA(obj) = ctx;
 
     return obj;
 }
-
 
 /*
  *  call-seq:
@@ -97,13 +98,9 @@ ossl_hmac_initialize(VALUE self, VALUE key, VALUE digest)
 
     GetHMAC(self, ctx);
     StringValue(key);
-    pkey = EVP_PKEY_new_mac_key(EVP_PKEY_HMAC, NULL,
-                                (unsigned char *)RSTRING_PTR(key),
-                                RSTRING_LENINT(key));
-    if (!pkey)
-        ossl_raise(eHMACError, "EVP_PKEY_new_mac_key");
-    if (EVP_DigestSignInit(ctx, NULL, ossl_evp_get_digestbyname(digest),
-                           NULL, pkey) != 1) {
+    pkey = EVP_PKEY_new_mac_key(EVP_PKEY_HMAC, NULL, (unsigned char *)RSTRING_PTR(key), RSTRING_LENINT(key));
+    if (!pkey) ossl_raise(eHMACError, "EVP_PKEY_new_mac_key");
+    if (EVP_DigestSignInit(ctx, NULL, ossl_evp_get_digestbyname(digest), NULL, pkey) != 1) {
         EVP_PKEY_free(pkey);
         ossl_raise(eHMACError, "EVP_DigestSignInit");
     }
@@ -123,8 +120,7 @@ ossl_hmac_copy(VALUE self, VALUE other)
 
     GetHMAC(self, ctx1);
     GetHMAC(other, ctx2);
-    if (EVP_MD_CTX_copy(ctx1, ctx2) != 1)
-        ossl_raise(eHMACError, "EVP_MD_CTX_copy");
+    if (EVP_MD_CTX_copy(ctx1, ctx2) != 1) ossl_raise(eHMACError, "EVP_MD_CTX_copy");
     return self;
 }
 
@@ -180,8 +176,7 @@ ossl_hmac_digest(VALUE self)
 
     GetHMAC(self, ctx);
     ret = rb_str_new(NULL, EVP_MAX_MD_SIZE);
-    if (EVP_DigestSignFinal(ctx, (unsigned char *)RSTRING_PTR(ret),
-                            &buf_len) != 1)
+    if (EVP_DigestSignFinal(ctx, (unsigned char *)RSTRING_PTR(ret), &buf_len) != 1)
         ossl_raise(eHMACError, "EVP_DigestSignFinal");
     rb_str_set_len(ret, (long)buf_len);
 
@@ -204,8 +199,7 @@ ossl_hmac_hexdigest(VALUE self)
     VALUE ret;
 
     GetHMAC(self, ctx);
-    if (EVP_DigestSignFinal(ctx, buf, &buf_len) != 1)
-        ossl_raise(eHMACError, "EVP_DigestSignFinal");
+    if (EVP_DigestSignFinal(ctx, buf, &buf_len) != 1) ossl_raise(eHMACError, "EVP_DigestSignFinal");
     ret = rb_str_new(NULL, buf_len * 2);
     ossl_bin2hex(buf, RSTRING_PTR(ret), buf_len);
 

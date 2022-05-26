@@ -1,4 +1,4 @@
-#ifndef RUBY_INTERNAL_ENCODING_ENCODING_H            /*-*-C++-*-vi:se ft=cpp:*/
+#ifndef RUBY_INTERNAL_ENCODING_ENCODING_H /*-*-C++-*-vi:se ft=cpp:*/
 #define RUBY_INTERNAL_ENCODING_ENCODING_H
 /**
  * @file
@@ -21,16 +21,16 @@
  * @brief      Defines ::rb_encoding
  */
 
-#include "ruby/oniguruma.h"
 #include "ruby/internal/attr/const.h"
 #include "ruby/internal/attr/deprecated.h"
 #include "ruby/internal/attr/noalias.h"
 #include "ruby/internal/attr/pure.h"
 #include "ruby/internal/attr/returns_nonnull.h"
-#include "ruby/internal/dllexport.h"
-#include "ruby/internal/value.h"
 #include "ruby/internal/core/rbasic.h"
+#include "ruby/internal/dllexport.h"
 #include "ruby/internal/fl_type.h"
+#include "ruby/internal/value.h"
+#include "ruby/oniguruma.h"
 
 RBIMPL_SYMBOL_EXPORT_BEGIN()
 
@@ -53,11 +53,11 @@ enum ruby_encoding_consts {
     RUBY_ENCODING_INLINE_MAX = 127,
 
     /** Where inline encodings reside. */
-    RUBY_ENCODING_SHIFT = (RUBY_FL_USHIFT+10),
+    RUBY_ENCODING_SHIFT = (RUBY_FL_USHIFT + 10),
 
     /** Bits we use to store inline encodings. */
-    RUBY_ENCODING_MASK = (RUBY_ENCODING_INLINE_MAX<<RUBY_ENCODING_SHIFT
-                          /* RUBY_FL_USER10..RUBY_FL_USER16 */),
+    RUBY_ENCODING_MASK = (RUBY_ENCODING_INLINE_MAX << RUBY_ENCODING_SHIFT
+        /* RUBY_FL_USER10..RUBY_FL_USER16 */),
 
     /** Max possible length of an encoding name. */
     RUBY_ENCODING_MAXNAMELEN = 42
@@ -102,12 +102,12 @@ RB_ENCODING_GET_INLINED(VALUE obj)
     return RBIMPL_CAST((int)ret);
 }
 
-#define ENCODING_SET_INLINED(obj,i) RB_ENCODING_SET_INLINED(obj,i) /**< @old{RB_ENCODING_SET_INLINED} */
-#define ENCODING_SET(obj,i) RB_ENCODING_SET(obj,i)                 /**< @old{RB_ENCODING_SET} */
-#define ENCODING_GET_INLINED(obj) RB_ENCODING_GET_INLINED(obj)     /**< @old{RB_ENCODING_GET_INLINED} */
-#define ENCODING_GET(obj) RB_ENCODING_GET(obj)                     /**< @old{RB_ENCODING_GET} */
-#define ENCODING_IS_ASCII8BIT(obj) RB_ENCODING_IS_ASCII8BIT(obj)   /**< @old{RB_ENCODING_IS_ASCII8BIT} */
-#define ENCODING_MAXNAMELEN RUBY_ENCODING_MAXNAMELEN               /**< @old{RUBY_ENCODING_MAXNAMELEN} */
+#define ENCODING_SET_INLINED(obj, i) RB_ENCODING_SET_INLINED(obj, i) /**< @old{RB_ENCODING_SET_INLINED} */
+#define ENCODING_SET(obj, i) RB_ENCODING_SET(obj, i)                 /**< @old{RB_ENCODING_SET} */
+#define ENCODING_GET_INLINED(obj) RB_ENCODING_GET_INLINED(obj)       /**< @old{RB_ENCODING_GET_INLINED} */
+#define ENCODING_GET(obj) RB_ENCODING_GET(obj)                       /**< @old{RB_ENCODING_GET} */
+#define ENCODING_IS_ASCII8BIT(obj) RB_ENCODING_IS_ASCII8BIT(obj)     /**< @old{RB_ENCODING_IS_ASCII8BIT} */
+#define ENCODING_MAXNAMELEN RUBY_ENCODING_MAXNAMELEN                 /**< @old{RUBY_ENCODING_MAXNAMELEN} */
 
 /**
  * The  type  of encoding.   Our  design  here  is we  take  Oniguruma/Onigmo's
@@ -356,7 +356,7 @@ rb_encoding *rb_enc_compatible(VALUE str1, VALUE str2);
  * @return     Common encoding between the two.
  * @note       Arguments can be non-string, e.g. Regexp.
  */
-rb_encoding *rb_enc_check(VALUE str1,VALUE str2);
+rb_encoding *rb_enc_check(VALUE str1, VALUE str2);
 
 /**
  * Identical to rb_enc_set_index(), except it additionally does contents fix-up
@@ -401,7 +401,6 @@ VALUE rb_enc_associate(VALUE obj, rb_encoding *enc);
  * @post        `dst`'s encoding is that of `src`'s.
  */
 void rb_enc_copy(VALUE dst, VALUE src);
-
 
 /**
  * Identical to rb_find_encoding(),  except it takes an  encoding index instead
@@ -529,11 +528,11 @@ int rb_enc_fast_mbclen(const char *p, const char *e, rb_encoding *enc);
  */
 int rb_enc_precise_mbclen(const char *p, const char *e, rb_encoding *enc);
 
-#define MBCLEN_CHARFOUND_P(ret)   ONIGENC_MBCLEN_CHARFOUND_P(ret)   /**< @old{ONIGENC_MBCLEN_CHARFOUND_P} */
+#define MBCLEN_CHARFOUND_P(ret) ONIGENC_MBCLEN_CHARFOUND_P(ret)     /**< @old{ONIGENC_MBCLEN_CHARFOUND_P} */
 #define MBCLEN_CHARFOUND_LEN(ret) ONIGENC_MBCLEN_CHARFOUND_LEN(ret) /**< @old{ONIGENC_MBCLEN_CHARFOUND_LEN} */
-#define MBCLEN_INVALID_P(ret)     ONIGENC_MBCLEN_INVALID_P(ret)     /**< @old{ONIGENC_MBCLEN_INVALID_P} */
-#define MBCLEN_NEEDMORE_P(ret)    ONIGENC_MBCLEN_NEEDMORE_P(ret)    /**< @old{ONIGENC_MBCLEN_NEEDMORE_P} */
-#define MBCLEN_NEEDMORE_LEN(ret)  ONIGENC_MBCLEN_NEEDMORE_LEN(ret)  /**< @old{ONIGENC_MBCLEN_NEEDMORE_LEN} */
+#define MBCLEN_INVALID_P(ret) ONIGENC_MBCLEN_INVALID_P(ret)         /**< @old{ONIGENC_MBCLEN_INVALID_P} */
+#define MBCLEN_NEEDMORE_P(ret) ONIGENC_MBCLEN_NEEDMORE_P(ret)       /**< @old{ONIGENC_MBCLEN_NEEDMORE_P} */
+#define MBCLEN_NEEDMORE_LEN(ret) ONIGENC_MBCLEN_NEEDMORE_LEN(ret)   /**< @old{ONIGENC_MBCLEN_NEEDMORE_LEN} */
 
 /**
  * Queries the code point of character  pointed by the passed pointer.  If that
@@ -592,7 +591,6 @@ rb_enc_codepoint(const char *p, const char *e, rb_encoding *enc)
      * We choose the most portable one here.
      */
 }
-
 
 /**
  * Identical to rb_enc_codepoint(),  except it assumes the  passed character is
@@ -760,7 +758,7 @@ rb_enc_step_back(const char *s, const char *p, const char *e, int n, rb_encoding
 static inline int
 rb_enc_asciicompat_inline(rb_encoding *enc)
 {
-    return rb_enc_mbminlen(enc)==1 && !rb_enc_dummy_p(enc);
+    return rb_enc_mbminlen(enc) == 1 && !rb_enc_dummy_p(enc);
 }
 
 /**
@@ -1035,23 +1033,23 @@ VALUE rb_locale_charmap(VALUE klass);
 RBIMPL_SYMBOL_EXPORT_END()
 
 /** @cond INTERNAL_MACRO */
-#define RB_ENCODING_GET          RB_ENCODING_GET
-#define RB_ENCODING_GET_INLINED  RB_ENCODING_GET_INLINED
+#define RB_ENCODING_GET RB_ENCODING_GET
+#define RB_ENCODING_GET_INLINED RB_ENCODING_GET_INLINED
 #define RB_ENCODING_IS_ASCII8BIT RB_ENCODING_IS_ASCII8BIT
-#define RB_ENCODING_SET          RB_ENCODING_SET
-#define RB_ENCODING_SET_INLINED  RB_ENCODING_SET_INLINED
-#define rb_enc_asciicompat       rb_enc_asciicompat
-#define rb_enc_code_to_mbclen    rb_enc_code_to_mbclen
-#define rb_enc_codepoint         rb_enc_codepoint
-#define rb_enc_left_char_head    rb_enc_left_char_head
-#define rb_enc_mbc_to_codepoint  rb_enc_mbc_to_codepoint
-#define rb_enc_mbcput            rb_enc_mbcput
-#define rb_enc_mbmaxlen          rb_enc_mbmaxlen
-#define rb_enc_mbminlen          rb_enc_mbminlen
-#define rb_enc_name              rb_enc_name
-#define rb_enc_prev_char         rb_enc_prev_char
-#define rb_enc_right_char_head   rb_enc_right_char_head
-#define rb_enc_step_back         rb_enc_step_back
+#define RB_ENCODING_SET RB_ENCODING_SET
+#define RB_ENCODING_SET_INLINED RB_ENCODING_SET_INLINED
+#define rb_enc_asciicompat rb_enc_asciicompat
+#define rb_enc_code_to_mbclen rb_enc_code_to_mbclen
+#define rb_enc_codepoint rb_enc_codepoint
+#define rb_enc_left_char_head rb_enc_left_char_head
+#define rb_enc_mbc_to_codepoint rb_enc_mbc_to_codepoint
+#define rb_enc_mbcput rb_enc_mbcput
+#define rb_enc_mbmaxlen rb_enc_mbmaxlen
+#define rb_enc_mbminlen rb_enc_mbminlen
+#define rb_enc_name rb_enc_name
+#define rb_enc_prev_char rb_enc_prev_char
+#define rb_enc_right_char_head rb_enc_right_char_head
+#define rb_enc_step_back rb_enc_step_back
 #define rb_enc_str_asciicompat_p rb_enc_str_asciicompat_p
 /** @endcond */
 

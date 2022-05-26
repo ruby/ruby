@@ -18,31 +18,32 @@ static ID id_end_mapping;
 static ID id_event_location;
 
 #define PSYCH_TRANSCODE(_str, _yaml_enc, _internal_enc) \
-  do { \
-    rb_enc_associate_index((_str), (_yaml_enc)); \
-    if(_internal_enc) \
-      (_str) = rb_str_export_to_enc((_str), (_internal_enc)); \
-  } while (0)
+    do { \
+        rb_enc_associate_index((_str), (_yaml_enc)); \
+        if (_internal_enc) (_str) = rb_str_export_to_enc((_str), (_internal_enc)); \
+    } while (0)
 
-static int io_reader(void * data, unsigned char *buf, size_t size, size_t *read)
+static int
+io_reader(void *data, unsigned char *buf, size_t size, size_t *read)
 {
     VALUE io = (VALUE)data;
     VALUE string = rb_funcall(io, id_read, 1, SIZET2NUM(size));
 
     *read = 0;
 
-    if(! NIL_P(string)) {
-	void * str = (void *)StringValuePtr(string);
-	*read = (size_t)RSTRING_LEN(string);
-	memcpy(buf, str, *read);
+    if (!NIL_P(string)) {
+        void *str = (void *)StringValuePtr(string);
+        *read = (size_t)RSTRING_LEN(string);
+        memcpy(buf, str, *read);
     }
 
     return 1;
 }
 
-static void dealloc(void * ptr)
+static void
+dealloc(void *ptr)
 {
-    yaml_parser_t * parser;
+    yaml_parser_t *parser;
 
     parser = (yaml_parser_t *)ptr;
     yaml_parser_delete(parser);
@@ -60,16 +61,22 @@ static size_t memsize(const void *ptr)
 
 static const rb_data_type_t psych_parser_type = {
     "Psych/parser",
-    {0, dealloc, 0,},
-    0, 0,
+    {
+        0,
+        dealloc,
+        0,
+    },
+    0,
+    0,
 #ifdef RUBY_TYPED_FREE_IMMEDIATELY
     RUBY_TYPED_FREE_IMMEDIATELY,
 #endif
 };
 
-static VALUE allocate(VALUE klass)
+static VALUE
+allocate(VALUE klass)
 {
-    yaml_parser_t * parser;
+    yaml_parser_t *parser;
     VALUE obj = TypedData_Make_Struct(klass, yaml_parser_t, &psych_parser_type, parser);
 
     yaml_parser_initialize(parser);
@@ -77,7 +84,8 @@ static VALUE allocate(VALUE klass)
     return obj;
 }
 
-static VALUE make_exception(yaml_parser_t * parser, VALUE path)
+static VALUE
+make_exception(yaml_parser_t *parser, VALUE path)
 {
     size_t line, column;
     VALUE ePsychSyntaxError;
@@ -87,35 +95,32 @@ static VALUE make_exception(yaml_parser_t * parser, VALUE path)
 
     ePsychSyntaxError = rb_const_get(mPsych, rb_intern("SyntaxError"));
 
-    return rb_funcall(ePsychSyntaxError, rb_intern("new"), 6,
-	    path,
-	    SIZET2NUM(line),
-	    SIZET2NUM(column),
-	    SIZET2NUM(parser->problem_offset),
-	    parser->problem ? rb_usascii_str_new2(parser->problem) : Qnil,
-	    parser->context ? rb_usascii_str_new2(parser->context) : Qnil);
+    return rb_funcall(ePsychSyntaxError, rb_intern("new"), 6, path, SIZET2NUM(line), SIZET2NUM(column),
+        SIZET2NUM(parser->problem_offset), parser->problem ? rb_usascii_str_new2(parser->problem) : Qnil,
+        parser->context ? rb_usascii_str_new2(parser->context) : Qnil);
 }
 
-static VALUE transcode_string(VALUE src, int * parser_encoding)
+static VALUE
+transcode_string(VALUE src, int *parser_encoding)
 {
-    int utf8    = rb_utf8_encindex();
+    int utf8 = rb_utf8_encindex();
     int utf16le = rb_enc_find_index("UTF-16LE");
     int utf16be = rb_enc_find_index("UTF-16BE");
     int source_encoding = rb_enc_get_index(src);
 
     if (source_encoding == utf8) {
-	*parser_encoding = YAML_UTF8_ENCODING;
-	return src;
+        *parser_encoding = YAML_UTF8_ENCODING;
+        return src;
     }
 
     if (source_encoding == utf16le) {
-	*parser_encoding = YAML_UTF16LE_ENCODING;
-	return src;
+        *parser_encoding = YAML_UTF16LE_ENCODING;
+        return src;
     }
 
     if (source_encoding == utf16be) {
-	*parser_encoding = YAML_UTF16BE_ENCODING;
-	return src;
+        *parser_encoding = YAML_UTF16BE_ENCODING;
+        return src;
     }
 
     src = rb_str_export_to_enc(src, rb_utf8_encoding());
@@ -125,7 +130,8 @@ static VALUE transcode_string(VALUE src, int * parser_encoding)
     return src;
 }
 
-static VALUE transcode_io(VALUE src, int * parser_encoding)
+static VALUE
+transcode_io(VALUE src, int *parser_encoding)
 {
     VALUE io_external_encoding;
     int io_external_enc_index;
@@ -134,36 +140,37 @@ static VALUE transcode_io(VALUE src, int * parser_encoding)
 
     /* if no encoding is returned, assume ascii8bit. */
     if (NIL_P(io_external_encoding)) {
-	io_external_enc_index = rb_ascii8bit_encindex();
-    } else {
-	io_external_enc_index = rb_to_encoding_index(io_external_encoding);
+        io_external_enc_index = rb_ascii8bit_encindex();
+    }
+    else {
+        io_external_enc_index = rb_to_encoding_index(io_external_encoding);
     }
 
     /* Treat US-ASCII as utf_8 */
     if (io_external_enc_index == rb_usascii_encindex()) {
-	*parser_encoding = YAML_UTF8_ENCODING;
-	return src;
+        *parser_encoding = YAML_UTF8_ENCODING;
+        return src;
     }
 
     if (io_external_enc_index == rb_utf8_encindex()) {
-	*parser_encoding = YAML_UTF8_ENCODING;
-	return src;
+        *parser_encoding = YAML_UTF8_ENCODING;
+        return src;
     }
 
     if (io_external_enc_index == rb_enc_find_index("UTF-16LE")) {
-	*parser_encoding = YAML_UTF16LE_ENCODING;
-	return src;
+        *parser_encoding = YAML_UTF16LE_ENCODING;
+        return src;
     }
 
     if (io_external_enc_index == rb_enc_find_index("UTF-16BE")) {
-	*parser_encoding = YAML_UTF16BE_ENCODING;
-	return src;
+        *parser_encoding = YAML_UTF16BE_ENCODING;
+        return src;
     }
 
     /* Just guess on ASCII-8BIT */
     if (io_external_enc_index == rb_ascii8bit_encindex()) {
-	*parser_encoding = YAML_ANY_ENCODING;
-	return src;
+        *parser_encoding = YAML_ANY_ENCODING;
+        return src;
     }
 
     /* If the external encoding is something we don't know how to handle,
@@ -173,69 +180,81 @@ static VALUE transcode_io(VALUE src, int * parser_encoding)
     return src;
 }
 
-static VALUE protected_start_stream(VALUE pointer)
+static VALUE
+protected_start_stream(VALUE pointer)
 {
     VALUE *args = (VALUE *)pointer;
     return rb_funcall(args[0], id_start_stream, 1, args[1]);
 }
 
-static VALUE protected_start_document(VALUE pointer)
+static VALUE
+protected_start_document(VALUE pointer)
 {
     VALUE *args = (VALUE *)pointer;
     return rb_funcall3(args[0], id_start_document, 3, args + 1);
 }
 
-static VALUE protected_end_document(VALUE pointer)
+static VALUE
+protected_end_document(VALUE pointer)
 {
     VALUE *args = (VALUE *)pointer;
     return rb_funcall(args[0], id_end_document, 1, args[1]);
 }
 
-static VALUE protected_alias(VALUE pointer)
+static VALUE
+protected_alias(VALUE pointer)
 {
     VALUE *args = (VALUE *)pointer;
     return rb_funcall(args[0], id_alias, 1, args[1]);
 }
 
-static VALUE protected_scalar(VALUE pointer)
+static VALUE
+protected_scalar(VALUE pointer)
 {
     VALUE *args = (VALUE *)pointer;
     return rb_funcall3(args[0], id_scalar, 6, args + 1);
 }
 
-static VALUE protected_start_sequence(VALUE pointer)
+static VALUE
+protected_start_sequence(VALUE pointer)
 {
     VALUE *args = (VALUE *)pointer;
     return rb_funcall3(args[0], id_start_sequence, 4, args + 1);
 }
 
-static VALUE protected_end_sequence(VALUE handler)
+static VALUE
+protected_end_sequence(VALUE handler)
 {
     return rb_funcall(handler, id_end_sequence, 0);
 }
 
-static VALUE protected_start_mapping(VALUE pointer)
+static VALUE
+protected_start_mapping(VALUE pointer)
 {
     VALUE *args = (VALUE *)pointer;
     return rb_funcall3(args[0], id_start_mapping, 4, args + 1);
 }
 
-static VALUE protected_end_mapping(VALUE handler)
+static VALUE
+protected_end_mapping(VALUE handler)
 {
     return rb_funcall(handler, id_end_mapping, 0);
 }
 
-static VALUE protected_empty(VALUE handler)
+static VALUE
+protected_empty(VALUE handler)
 {
     return rb_funcall(handler, id_empty, 0);
 }
 
-static VALUE protected_end_stream(VALUE handler)
+static VALUE
+protected_end_stream(VALUE handler)
 {
     return rb_funcall(handler, id_end_stream, 0);
 }
 
-static VALUE protected_event_location(VALUE pointer)
+static VALUE
+protected_event_location(VALUE pointer)
 {
     VALUE *args = (VALUE *)pointer;
     return rb_funcall3(args[0], id_event_location, 4, args + 1);
@@ -250,23 +269,24 @@ static VALUE protected_event_location(VALUE pointer)
  *
  * See Psych::Parser and Psych::Parser#handler
  */
-static VALUE parse(int argc, VALUE *argv, VALUE self)
+static VALUE
+parse(int argc, VALUE *argv, VALUE self)
 {
     VALUE yaml, path;
-    yaml_parser_t * parser;
+    yaml_parser_t *parser;
     yaml_event_t event;
     int done = 0;
     int state = 0;
     int parser_encoding = YAML_ANY_ENCODING;
     int encoding = rb_utf8_encindex();
-    rb_encoding * internal_enc = rb_default_internal_encoding();
+    rb_encoding *internal_enc = rb_default_internal_encoding();
     VALUE handler = rb_iv_get(self, "@handler");
 
     if (rb_scan_args(argc, argv, "11", &yaml, &path) == 1) {
-	if(rb_respond_to(yaml, id_path))
-	    path = rb_funcall(yaml, id_path, 0);
-	else
-	    path = rb_str_new2("<unknown>");
+        if (rb_respond_to(yaml, id_path))
+            path = rb_funcall(yaml, id_path, 0);
+        else
+            path = rb_str_new2("<unknown>");
     }
 
     TypedData_Get_Struct(self, yaml_parser_t, &psych_parser_type, parser);
@@ -275,238 +295,210 @@ static VALUE parse(int argc, VALUE *argv, VALUE self)
     yaml_parser_initialize(parser);
 
     if (rb_respond_to(yaml, id_read)) {
-	yaml = transcode_io(yaml, &parser_encoding);
-	yaml_parser_set_encoding(parser, parser_encoding);
-	yaml_parser_set_input(parser, io_reader, (void *)yaml);
-    } else {
-	StringValue(yaml);
-	yaml = transcode_string(yaml, &parser_encoding);
-	yaml_parser_set_encoding(parser, parser_encoding);
-	yaml_parser_set_input_string(
-		parser,
-		(const unsigned char *)RSTRING_PTR(yaml),
-		(size_t)RSTRING_LEN(yaml)
-		);
+        yaml = transcode_io(yaml, &parser_encoding);
+        yaml_parser_set_encoding(parser, parser_encoding);
+        yaml_parser_set_input(parser, io_reader, (void *)yaml);
+    }
+    else {
+        StringValue(yaml);
+        yaml = transcode_string(yaml, &parser_encoding);
+        yaml_parser_set_encoding(parser, parser_encoding);
+        yaml_parser_set_input_string(parser, (const unsigned char *)RSTRING_PTR(yaml), (size_t)RSTRING_LEN(yaml));
     }
 
-    while(!done) {
-	VALUE event_args[5];
-	VALUE start_line, start_column, end_line, end_column;
+    while (!done) {
+        VALUE event_args[5];
+        VALUE start_line, start_column, end_line, end_column;
 
-	if(!yaml_parser_parse(parser, &event)) {
-	    VALUE exception;
+        if (!yaml_parser_parse(parser, &event)) {
+            VALUE exception;
 
-	    exception = make_exception(parser, path);
-	    yaml_parser_delete(parser);
-	    yaml_parser_initialize(parser);
+            exception = make_exception(parser, path);
+            yaml_parser_delete(parser);
+            yaml_parser_initialize(parser);
 
-	    rb_exc_raise(exception);
-	}
+            rb_exc_raise(exception);
+        }
 
-	start_line = SIZET2NUM(event.start_mark.line);
-	start_column = SIZET2NUM(event.start_mark.column);
-	end_line = SIZET2NUM(event.end_mark.line);
-	end_column = SIZET2NUM(event.end_mark.column);
+        start_line = SIZET2NUM(event.start_mark.line);
+        start_column = SIZET2NUM(event.start_mark.column);
+        end_line = SIZET2NUM(event.end_mark.line);
+        end_column = SIZET2NUM(event.end_mark.column);
 
-	event_args[0] = handler;
-	event_args[1] = start_line;
-	event_args[2] = start_column;
-	event_args[3] = end_line;
-	event_args[4] = end_column;
-	rb_protect(protected_event_location, (VALUE)event_args, &state);
+        event_args[0] = handler;
+        event_args[1] = start_line;
+        event_args[2] = start_column;
+        event_args[3] = end_line;
+        event_args[4] = end_column;
+        rb_protect(protected_event_location, (VALUE)event_args, &state);
 
-	switch(event.type) {
-	    case YAML_STREAM_START_EVENT:
-	      {
-		  VALUE args[2];
+        switch (event.type) {
+        case YAML_STREAM_START_EVENT: {
+            VALUE args[2];
 
-		  args[0] = handler;
-		  args[1] = INT2NUM(event.data.stream_start.encoding);
-		  rb_protect(protected_start_stream, (VALUE)args, &state);
-	      }
-	      break;
-	  case YAML_DOCUMENT_START_EVENT:
-	    {
-		VALUE args[4];
-		/* Get a list of tag directives (if any) */
-		VALUE tag_directives = rb_ary_new();
-		/* Grab the document version */
-		VALUE version = event.data.document_start.version_directive ?
-		    rb_ary_new3(
-			(long)2,
-			INT2NUM(event.data.document_start.version_directive->major),
-			INT2NUM(event.data.document_start.version_directive->minor)
-			) : rb_ary_new();
+            args[0] = handler;
+            args[1] = INT2NUM(event.data.stream_start.encoding);
+            rb_protect(protected_start_stream, (VALUE)args, &state);
+        } break;
+        case YAML_DOCUMENT_START_EVENT: {
+            VALUE args[4];
+            /* Get a list of tag directives (if any) */
+            VALUE tag_directives = rb_ary_new();
+            /* Grab the document version */
+            VALUE version = event.data.document_start.version_directive
+                                ? rb_ary_new3((long)2, INT2NUM(event.data.document_start.version_directive->major),
+                                      INT2NUM(event.data.document_start.version_directive->minor))
+                                : rb_ary_new();
 
-		if(event.data.document_start.tag_directives.start) {
-		    yaml_tag_directive_t *start =
-			event.data.document_start.tag_directives.start;
-		    yaml_tag_directive_t *end =
-			event.data.document_start.tag_directives.end;
-		    for(; start != end; start++) {
-			VALUE handle = Qnil;
-			VALUE prefix = Qnil;
-			if(start->handle) {
-			    handle = rb_str_new2((const char *)start->handle);
-			    PSYCH_TRANSCODE(handle, encoding, internal_enc);
-			}
+            if (event.data.document_start.tag_directives.start) {
+                yaml_tag_directive_t *start = event.data.document_start.tag_directives.start;
+                yaml_tag_directive_t *end = event.data.document_start.tag_directives.end;
+                for (; start != end; start++) {
+                    VALUE handle = Qnil;
+                    VALUE prefix = Qnil;
+                    if (start->handle) {
+                        handle = rb_str_new2((const char *)start->handle);
+                        PSYCH_TRANSCODE(handle, encoding, internal_enc);
+                    }
 
-			if(start->prefix) {
-			    prefix = rb_str_new2((const char *)start->prefix);
-			    PSYCH_TRANSCODE(prefix, encoding, internal_enc);
-			}
+                    if (start->prefix) {
+                        prefix = rb_str_new2((const char *)start->prefix);
+                        PSYCH_TRANSCODE(prefix, encoding, internal_enc);
+                    }
 
-			rb_ary_push(tag_directives, rb_ary_new3((long)2, handle, prefix));
-		    }
-		}
-		args[0] = handler;
-		args[1] = version;
-		args[2] = tag_directives;
-		args[3] = event.data.document_start.implicit == 1 ? Qtrue : Qfalse;
-		rb_protect(protected_start_document, (VALUE)args, &state);
-	    }
-	    break;
-	  case YAML_DOCUMENT_END_EVENT:
-	    {
-		VALUE args[2];
+                    rb_ary_push(tag_directives, rb_ary_new3((long)2, handle, prefix));
+                }
+            }
+            args[0] = handler;
+            args[1] = version;
+            args[2] = tag_directives;
+            args[3] = event.data.document_start.implicit == 1 ? Qtrue : Qfalse;
+            rb_protect(protected_start_document, (VALUE)args, &state);
+        } break;
+        case YAML_DOCUMENT_END_EVENT: {
+            VALUE args[2];
 
-		args[0] = handler;
-		args[1] = event.data.document_end.implicit == 1 ? Qtrue : Qfalse;
-		rb_protect(protected_end_document, (VALUE)args, &state);
-	    }
-	    break;
-	  case YAML_ALIAS_EVENT:
-	    {
-		VALUE args[2];
-		VALUE alias = Qnil;
-		if(event.data.alias.anchor) {
-		    alias = rb_str_new2((const char *)event.data.alias.anchor);
-		    PSYCH_TRANSCODE(alias, encoding, internal_enc);
-		}
+            args[0] = handler;
+            args[1] = event.data.document_end.implicit == 1 ? Qtrue : Qfalse;
+            rb_protect(protected_end_document, (VALUE)args, &state);
+        } break;
+        case YAML_ALIAS_EVENT: {
+            VALUE args[2];
+            VALUE alias = Qnil;
+            if (event.data.alias.anchor) {
+                alias = rb_str_new2((const char *)event.data.alias.anchor);
+                PSYCH_TRANSCODE(alias, encoding, internal_enc);
+            }
 
-		args[0] = handler;
-		args[1] = alias;
-		rb_protect(protected_alias, (VALUE)args, &state);
-	    }
-	    break;
-	  case YAML_SCALAR_EVENT:
-	    {
-		VALUE args[7];
-		VALUE anchor = Qnil;
-		VALUE tag = Qnil;
-		VALUE plain_implicit, quoted_implicit, style;
-		VALUE val = rb_str_new(
-		    (const char *)event.data.scalar.value,
-		    (long)event.data.scalar.length
-		    );
+            args[0] = handler;
+            args[1] = alias;
+            rb_protect(protected_alias, (VALUE)args, &state);
+        } break;
+        case YAML_SCALAR_EVENT: {
+            VALUE args[7];
+            VALUE anchor = Qnil;
+            VALUE tag = Qnil;
+            VALUE plain_implicit, quoted_implicit, style;
+            VALUE val = rb_str_new((const char *)event.data.scalar.value, (long)event.data.scalar.length);
 
-		PSYCH_TRANSCODE(val, encoding, internal_enc);
+            PSYCH_TRANSCODE(val, encoding, internal_enc);
 
-		if(event.data.scalar.anchor) {
-		    anchor = rb_str_new2((const char *)event.data.scalar.anchor);
-		    PSYCH_TRANSCODE(anchor, encoding, internal_enc);
-		}
+            if (event.data.scalar.anchor) {
+                anchor = rb_str_new2((const char *)event.data.scalar.anchor);
+                PSYCH_TRANSCODE(anchor, encoding, internal_enc);
+            }
 
-		if(event.data.scalar.tag) {
-		    tag = rb_str_new2((const char *)event.data.scalar.tag);
-		    PSYCH_TRANSCODE(tag, encoding, internal_enc);
-		}
+            if (event.data.scalar.tag) {
+                tag = rb_str_new2((const char *)event.data.scalar.tag);
+                PSYCH_TRANSCODE(tag, encoding, internal_enc);
+            }
 
-		plain_implicit =
-		    event.data.scalar.plain_implicit == 0 ? Qfalse : Qtrue;
+            plain_implicit = event.data.scalar.plain_implicit == 0 ? Qfalse : Qtrue;
 
-		quoted_implicit =
-		    event.data.scalar.quoted_implicit == 0 ? Qfalse : Qtrue;
+            quoted_implicit = event.data.scalar.quoted_implicit == 0 ? Qfalse : Qtrue;
 
-		style = INT2NUM(event.data.scalar.style);
+            style = INT2NUM(event.data.scalar.style);
 
-		args[0] = handler;
-		args[1] = val;
-		args[2] = anchor;
-		args[3] = tag;
-		args[4] = plain_implicit;
-		args[5] = quoted_implicit;
-		args[6] = style;
-		rb_protect(protected_scalar, (VALUE)args, &state);
-	    }
-	    break;
-	  case YAML_SEQUENCE_START_EVENT:
-	    {
-		VALUE args[5];
-		VALUE anchor = Qnil;
-		VALUE tag = Qnil;
-		VALUE implicit, style;
-		if(event.data.sequence_start.anchor) {
-		    anchor = rb_str_new2((const char *)event.data.sequence_start.anchor);
-		    PSYCH_TRANSCODE(anchor, encoding, internal_enc);
-		}
+            args[0] = handler;
+            args[1] = val;
+            args[2] = anchor;
+            args[3] = tag;
+            args[4] = plain_implicit;
+            args[5] = quoted_implicit;
+            args[6] = style;
+            rb_protect(protected_scalar, (VALUE)args, &state);
+        } break;
+        case YAML_SEQUENCE_START_EVENT: {
+            VALUE args[5];
+            VALUE anchor = Qnil;
+            VALUE tag = Qnil;
+            VALUE implicit, style;
+            if (event.data.sequence_start.anchor) {
+                anchor = rb_str_new2((const char *)event.data.sequence_start.anchor);
+                PSYCH_TRANSCODE(anchor, encoding, internal_enc);
+            }
 
-		tag = Qnil;
-		if(event.data.sequence_start.tag) {
-		    tag = rb_str_new2((const char *)event.data.sequence_start.tag);
-		    PSYCH_TRANSCODE(tag, encoding, internal_enc);
-		}
+            tag = Qnil;
+            if (event.data.sequence_start.tag) {
+                tag = rb_str_new2((const char *)event.data.sequence_start.tag);
+                PSYCH_TRANSCODE(tag, encoding, internal_enc);
+            }
 
-		implicit =
-		    event.data.sequence_start.implicit == 0 ? Qfalse : Qtrue;
+            implicit = event.data.sequence_start.implicit == 0 ? Qfalse : Qtrue;
 
-		style = INT2NUM(event.data.sequence_start.style);
+            style = INT2NUM(event.data.sequence_start.style);
 
-		args[0] = handler;
-		args[1] = anchor;
-		args[2] = tag;
-		args[3] = implicit;
-		args[4] = style;
+            args[0] = handler;
+            args[1] = anchor;
+            args[2] = tag;
+            args[3] = implicit;
+            args[4] = style;
 
-		rb_protect(protected_start_sequence, (VALUE)args, &state);
-	    }
-	    break;
-	  case YAML_SEQUENCE_END_EVENT:
-	    rb_protect(protected_end_sequence, handler, &state);
-	    break;
-	  case YAML_MAPPING_START_EVENT:
-	    {
-		VALUE args[5];
-		VALUE anchor = Qnil;
-		VALUE tag = Qnil;
-		VALUE implicit, style;
-		if(event.data.mapping_start.anchor) {
-		    anchor = rb_str_new2((const char *)event.data.mapping_start.anchor);
-		    PSYCH_TRANSCODE(anchor, encoding, internal_enc);
-		}
+            rb_protect(protected_start_sequence, (VALUE)args, &state);
+        } break;
+        case YAML_SEQUENCE_END_EVENT:
+            rb_protect(protected_end_sequence, handler, &state);
+            break;
+        case YAML_MAPPING_START_EVENT: {
+            VALUE args[5];
+            VALUE anchor = Qnil;
+            VALUE tag = Qnil;
+            VALUE implicit, style;
+            if (event.data.mapping_start.anchor) {
+                anchor = rb_str_new2((const char *)event.data.mapping_start.anchor);
+                PSYCH_TRANSCODE(anchor, encoding, internal_enc);
+            }
 
-		if(event.data.mapping_start.tag) {
-		    tag = rb_str_new2((const char *)event.data.mapping_start.tag);
-		    PSYCH_TRANSCODE(tag, encoding, internal_enc);
-		}
+            if (event.data.mapping_start.tag) {
+                tag = rb_str_new2((const char *)event.data.mapping_start.tag);
+                PSYCH_TRANSCODE(tag, encoding, internal_enc);
+            }
 
-		implicit =
-		    event.data.mapping_start.implicit == 0 ? Qfalse : Qtrue;
+            implicit = event.data.mapping_start.implicit == 0 ? Qfalse : Qtrue;
 
-		style = INT2NUM(event.data.mapping_start.style);
+            style = INT2NUM(event.data.mapping_start.style);
 
-		args[0] = handler;
-		args[1] = anchor;
-		args[2] = tag;
-		args[3] = implicit;
-		args[4] = style;
+            args[0] = handler;
+            args[1] = anchor;
+            args[2] = tag;
+            args[3] = implicit;
+            args[4] = style;
 
-		rb_protect(protected_start_mapping, (VALUE)args, &state);
-	    }
-	    break;
-	  case YAML_MAPPING_END_EVENT:
-	    rb_protect(protected_end_mapping, handler, &state);
-	    break;
-	  case YAML_NO_EVENT:
-	    rb_protect(protected_empty, handler, &state);
-	    break;
-	  case YAML_STREAM_END_EVENT:
-	    rb_protect(protected_end_stream, handler, &state);
-	    done = 1;
-	    break;
-	}
-	yaml_event_delete(&event);
-	if (state) rb_jump_tag(state);
+            rb_protect(protected_start_mapping, (VALUE)args, &state);
+        } break;
+        case YAML_MAPPING_END_EVENT:
+            rb_protect(protected_end_mapping, handler, &state);
+            break;
+        case YAML_NO_EVENT:
+            rb_protect(protected_empty, handler, &state);
+            break;
+        case YAML_STREAM_END_EVENT:
+            rb_protect(protected_end_stream, handler, &state);
+            done = 1;
+            break;
+        }
+        yaml_event_delete(&event);
+        if (state) rb_jump_tag(state);
     }
 
     return self;
@@ -519,11 +511,12 @@ static VALUE parse(int argc, VALUE *argv, VALUE self)
  * Returns a Psych::Parser::Mark object that contains line, column, and index
  * information.
  */
-static VALUE mark(VALUE self)
+static VALUE
+mark(VALUE self)
 {
     VALUE mark_klass;
     VALUE args[3];
-    yaml_parser_t * parser;
+    yaml_parser_t *parser;
 
     TypedData_Get_Struct(self, yaml_parser_t, &psych_parser_type, parser);
     mark_klass = rb_const_get_at(cPsychParser, rb_intern("Mark"));
@@ -534,7 +527,8 @@ static VALUE mark(VALUE self)
     return rb_class_new_instance(3, args, mark_klass);
 }
 
-void Init_psych_parser(void)
+void
+Init_psych_parser(void)
 {
 #undef rb_intern
 #if 0
@@ -561,19 +555,19 @@ void Init_psych_parser(void)
     rb_define_method(cPsychParser, "parse", parse, -1);
     rb_define_method(cPsychParser, "mark", mark, 0);
 
-    id_read            = rb_intern("read");
-    id_path            = rb_intern("path");
-    id_empty           = rb_intern("empty");
-    id_start_stream    = rb_intern("start_stream");
-    id_end_stream      = rb_intern("end_stream");
-    id_start_document  = rb_intern("start_document");
-    id_end_document    = rb_intern("end_document");
-    id_alias           = rb_intern("alias");
-    id_scalar          = rb_intern("scalar");
-    id_start_sequence  = rb_intern("start_sequence");
-    id_end_sequence    = rb_intern("end_sequence");
-    id_start_mapping   = rb_intern("start_mapping");
-    id_end_mapping     = rb_intern("end_mapping");
-    id_event_location  = rb_intern("event_location");
+    id_read = rb_intern("read");
+    id_path = rb_intern("path");
+    id_empty = rb_intern("empty");
+    id_start_stream = rb_intern("start_stream");
+    id_end_stream = rb_intern("end_stream");
+    id_start_document = rb_intern("start_document");
+    id_end_document = rb_intern("end_document");
+    id_alias = rb_intern("alias");
+    id_scalar = rb_intern("scalar");
+    id_start_sequence = rb_intern("start_sequence");
+    id_end_sequence = rb_intern("end_sequence");
+    id_start_mapping = rb_intern("start_mapping");
+    id_end_mapping = rb_intern("end_mapping");
+    id_event_location = rb_intern("event_location");
 }
 /* vim: set noet sws=4 sw=4: */

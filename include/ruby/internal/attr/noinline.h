@@ -1,4 +1,4 @@
-#ifndef RBIMPL_ATTR_NOINLINE_H                       /*-*-C++-*-vi:se ft=cpp:*/
+#ifndef RBIMPL_ATTR_NOINLINE_H /*-*-C++-*-vi:se ft=cpp:*/
 #define RBIMPL_ATTR_NOINLINE_H
 /**
  * @file
@@ -25,11 +25,11 @@
 
 /** Wraps (or simulates) `__declspec(noinline)` */
 #if RBIMPL_HAS_DECLSPEC_ATTRIBUTE(noinline)
-# define RBIMPL_ATTR_NOINLINE() __declspec(noinline)
+#    define RBIMPL_ATTR_NOINLINE() __declspec(noinline)
 #elif RBIMPL_HAS_ATTRIBUTE(noinline)
-# define RBIMPL_ATTR_NOINLINE() __attribute__((__noinline__))
+#    define RBIMPL_ATTR_NOINLINE() __attribute__((__noinline__))
 #else
-# define RBIMPL_ATTR_NOINLINE() /* void */
+#    define RBIMPL_ATTR_NOINLINE() /* void */
 #endif
 
 #endif /* RBIMPL_ATTR_NOINLINE_H */

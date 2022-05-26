@@ -22,7 +22,7 @@ nan(const char *spec)
     else
 #endif
     {
-	assert(!spec || !spec[0]);
-	return (double)NAN;
+        assert(!spec || !spec[0]);
+        return (double)NAN;
     }
 }

@@ -1,4 +1,4 @@
-#ifndef RBIMPL_INTERN_STRUCT_H                       /*-*-C++-*-vi:se ft=cpp:*/
+#ifndef RBIMPL_INTERN_STRUCT_H /*-*-C++-*-vi:se ft=cpp:*/
 #define RBIMPL_INTERN_STRUCT_H
 /**
  * @file
@@ -196,7 +196,8 @@ RBIMPL_ATTR_NONNULL((2))
  * @note        In contrast to  rb_struct_define_without_accessor(), it doesn't
  *              make any sense to pass a null name.
  */
-VALUE rb_struct_define_without_accessor_under(VALUE outer, const char *class_name, VALUE super, rb_alloc_func_t alloc, ...);
+VALUE rb_struct_define_without_accessor_under(
+    VALUE outer, const char *class_name, VALUE super, rb_alloc_func_t alloc, ...);
 
 RBIMPL_SYMBOL_EXPORT_END()
 

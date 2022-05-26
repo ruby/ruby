@@ -4,7 +4,8 @@
  *
  * Returns the version of libyaml being used
  */
-static VALUE libyaml_version(VALUE module)
+static VALUE
+libyaml_version(VALUE module)
 {
     int major, minor, patch;
     VALUE list[3];
@@ -20,11 +21,12 @@ static VALUE libyaml_version(VALUE module)
 
 VALUE mPsych;
 
-void Init_psych(void)
+void
+Init_psych(void)
 {
-    #ifdef HAVE_RB_EXT_RACTOR_SAFE
-	RB_EXT_RACTOR_SAFE(true);
-    #endif
+#ifdef HAVE_RB_EXT_RACTOR_SAFE
+    RB_EXT_RACTOR_SAFE(true);
+#endif
     mPsych = rb_define_module("Psych");
 
     rb_define_singleton_method(mPsych, "libyaml_version", libyaml_version, 0);

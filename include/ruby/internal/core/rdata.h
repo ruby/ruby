@@ -1,4 +1,4 @@
-#ifndef RBIMPL_RDATA_H                               /*-*-C++-*-vi:se ft=cpp:*/
+#ifndef RBIMPL_RDATA_H /*-*-C++-*-vi:se ft=cpp:*/
 #define RBIMPL_RDATA_H
 /**
  * @file
@@ -23,9 +23,10 @@
 #include "ruby/internal/config.h"
 
 #ifdef STDC_HEADERS
-# include <stddef.h>
+#    include <stddef.h>
 #endif
 
+#include "ruby/defines.h"
 #include "ruby/internal/attr/deprecated.h"
 #include "ruby/internal/attr/warning.h"
 #include "ruby/internal/cast.h"
@@ -34,15 +35,14 @@
 #include "ruby/internal/fl_type.h"
 #include "ruby/internal/value.h"
 #include "ruby/internal/value_type.h"
-#include "ruby/defines.h"
 
 /** @cond INTERNAL_MACRO */
 #ifdef RUBY_UNTYPED_DATA_WARNING
-# /* Take that. */
+#    /* Take that. */
 #elif defined(RUBY_EXPORT)
-# define RUBY_UNTYPED_DATA_WARNING 1
+#    define RUBY_UNTYPED_DATA_WARNING 1
 #else
-# define RUBY_UNTYPED_DATA_WARNING 0
+#    define RUBY_UNTYPED_DATA_WARNING 0
 #endif
 
 #define RBIMPL_DATA_FUNC(f) RBIMPL_CAST((void (*)(void *))(f))
@@ -50,8 +50,8 @@
     RBIMPL_ATTR_WARNING(("untyped Data is unsafe; use TypedData instead")) \
     RBIMPL_ATTR_DEPRECATED(("by TypedData"))
 
-#define RBIMPL_MACRO_SELECT(x, y) x ## y
-#define RUBY_MACRO_SELECT(x, y)   RBIMPL_MACRO_SELECT(x, y)
+#define RBIMPL_MACRO_SELECT(x, y) x##y
+#define RUBY_MACRO_SELECT(x, y) RBIMPL_MACRO_SELECT(x, y)
 /** @endcond */
 
 /**
@@ -60,7 +60,7 @@
  * @param   obj  An object, which is in fact an ::RData.
  * @return  The passed object casted to ::RData.
  */
-#define RDATA(obj)                RBIMPL_CAST((struct RData *)(obj))
+#define RDATA(obj) RBIMPL_CAST((struct RData *)(obj))
 
 /**
  * Convenient getter macro.
@@ -68,7 +68,7 @@
  * @param   obj  An object, which is in fact an ::RData.
  * @return  The passed object's ::RData::data field.
  */
-#define DATA_PTR(obj)             RDATA(obj)->data
+#define DATA_PTR(obj) RDATA(obj)->data
 
 /**
  * This is a value you can set  to ::RData::dfree.  Setting this means the data
@@ -79,14 +79,14 @@
  *           system  and  Ruby  might  or  might  not  share  the  same  malloc
  *           implementation.
  */
-#define RUBY_DEFAULT_FREE         RBIMPL_DATA_FUNC(-1)
+#define RUBY_DEFAULT_FREE RBIMPL_DATA_FUNC(-1)
 
 /**
  * This is a value you can set  to ::RData::dfree.  Setting this means the data
  * is managed by  someone else, like, statically allocated.  Of  course you are
  * on your own then.
  */
-#define RUBY_NEVER_FREE           RBIMPL_DATA_FUNC(0)
+#define RUBY_NEVER_FREE RBIMPL_DATA_FUNC(0)
 
 /**
  * @private
@@ -105,7 +105,7 @@
  * This is  the type of callbacks  registered to ::RData.  The  argument is the
  * `data` field.
  */
-typedef void (*RUBY_DATA_FUNC)(void*);
+typedef void (*RUBY_DATA_FUNC)(void *);
 
 /**
  * @deprecated
@@ -200,11 +200,7 @@ RBIMPL_SYMBOL_EXPORT_END()
  * @return     A created Ruby object.
  */
 #define Data_Wrap_Struct(klass, mark, free, sval) \
-    rb_data_object_wrap(                          \
-        (klass),                                  \
-        (sval),                                   \
-        RBIMPL_DATA_FUNC(mark),                    \
-        RBIMPL_DATA_FUNC(free))
+    rb_data_object_wrap((klass), (sval), RBIMPL_DATA_FUNC(mark), RBIMPL_DATA_FUNC(free))
 
 /**
  * @private
@@ -220,14 +216,10 @@ RBIMPL_SYMBOL_EXPORT_END()
  * @param  free       Free function.
  * @param  sval       Variable name of created C struct.
  */
-#define Data_Make_Struct0(result, klass, type, size, mark, free, sval)  \
-    VALUE result = rb_data_object_zalloc(          \
-        (klass),                                   \
-        (size),                                    \
-        RBIMPL_DATA_FUNC(mark),                     \
-        RBIMPL_DATA_FUNC(free));                    \
+#define Data_Make_Struct0(result, klass, type, size, mark, free, sval) \
+    VALUE result = rb_data_object_zalloc((klass), (size), RBIMPL_DATA_FUNC(mark), RBIMPL_DATA_FUNC(free)); \
     (sval) = RBIMPL_CAST((type *)DATA_PTR(result)); \
-    RBIMPL_CAST(/*suppress unused variable warnings*/(void)(sval))
+    RBIMPL_CAST(/*suppress unused variable warnings*/ (void)(sval))
 
 /**
  * Identical  to  #Data_Wrap_Struct, except  it  allocates  a new  data  region
@@ -245,26 +237,15 @@ RBIMPL_SYMBOL_EXPORT_END()
  * @return     A created Ruby object.
  */
 #ifdef HAVE_STMT_AND_DECL_IN_EXPR
-#define Data_Make_Struct(klass, type, mark, free, sval) \
-    RB_GNUC_EXTENSION({      \
-        Data_Make_Struct0(   \
-            data_struct_obj, \
-            klass,           \
-            type,            \
-            sizeof(type),    \
-            mark,            \
-            free,            \
-            sval);           \
-        data_struct_obj;     \
-    })
+#    define Data_Make_Struct(klass, type, mark, free, sval) \
+        RB_GNUC_EXTENSION({ \
+            Data_Make_Struct0(data_struct_obj, klass, type, sizeof(type), mark, free, sval); \
+            data_struct_obj; \
+        })
 #else
-#define Data_Make_Struct(klass, type, mark, free, sval) \
-    rb_data_object_make(              \
-        (klass),                      \
-        RBIMPL_DATA_FUNC(mark),        \
-        RBIMPL_DATA_FUNC(free),        \
-        RBIMPL_CAST((void **)&(sval)), \
-        sizeof(type))
+#    define Data_Make_Struct(klass, type, mark, free, sval) \
+        rb_data_object_make( \
+            (klass), RBIMPL_DATA_FUNC(mark), RBIMPL_DATA_FUNC(free), RBIMPL_CAST((void **)&(sval)), sizeof(type))
 #endif
 
 /**
@@ -275,8 +256,7 @@ RBIMPL_SYMBOL_EXPORT_END()
  * @param      sval           Variable name of obtained C struct.
  * @return     Unwrapped C struct that `obj` holds.
  */
-#define Data_Get_Struct(obj, type, sval) \
-    ((sval) = RBIMPL_CAST((type*)rb_data_object_get(obj)))
+#define Data_Get_Struct(obj, type, sval) ((sval) = RBIMPL_CAST((type *)rb_data_object_get(obj)))
 
 RBIMPL_ATTRSET_UNTYPED_DATA_FUNC()
 /**
@@ -332,12 +312,9 @@ rb_data_object_get_warning(VALUE obj)
 }
 
 #if defined(HAVE_BUILTIN___BUILTIN_CHOOSE_EXPR_CONSTANT_P)
-# define rb_data_object_wrap_warning(klass, ptr, mark, free) \
-    RB_GNUC_EXTENSION(                                       \
-        __builtin_choose_expr(                               \
-            __builtin_constant_p(klass) && !(klass),         \
-            rb_data_object_wrap(klass, ptr, mark, free),     \
-            (rb_data_object_wrap_warning)(klass, ptr, mark, free)))
+#    define rb_data_object_wrap_warning(klass, ptr, mark, free) \
+        RB_GNUC_EXTENSION(__builtin_choose_expr(__builtin_constant_p(klass) && !(klass), \
+            rb_data_object_wrap(klass, ptr, mark, free), (rb_data_object_wrap_warning)(klass, ptr, mark, free)))
 #endif
 
 /**
@@ -373,14 +350,14 @@ rb_data_object_alloc(VALUE klass, void *data, RUBY_DATA_FUNC dmark, RUBY_DATA_FU
 #define rb_data_object_wrap_0 rb_data_object_wrap
 #define rb_data_object_wrap_1 rb_data_object_wrap_warning
 #define rb_data_object_wrap_2 rb_data_object_wrap_ /* Used here vvvv */
-#define rb_data_object_wrap   RUBY_MACRO_SELECT(rb_data_object_wrap_2, RUBY_UNTYPED_DATA_WARNING)
-#define rb_data_object_get_0  rb_data_object_get
-#define rb_data_object_get_1  rb_data_object_get_warning
-#define rb_data_object_get_2  rb_data_object_get_ /* Used here vvvv */
-#define rb_data_object_get    RUBY_MACRO_SELECT(rb_data_object_get_2, RUBY_UNTYPED_DATA_WARNING)
+#define rb_data_object_wrap RUBY_MACRO_SELECT(rb_data_object_wrap_2, RUBY_UNTYPED_DATA_WARNING)
+#define rb_data_object_get_0 rb_data_object_get
+#define rb_data_object_get_1 rb_data_object_get_warning
+#define rb_data_object_get_2 rb_data_object_get_ /* Used here vvvv */
+#define rb_data_object_get RUBY_MACRO_SELECT(rb_data_object_get_2, RUBY_UNTYPED_DATA_WARNING)
 #define rb_data_object_make_0 rb_data_object_make
 #define rb_data_object_make_1 rb_data_object_make_warning
 #define rb_data_object_make_2 rb_data_object_make_ /* Used here vvvv */
-#define rb_data_object_make   RUBY_MACRO_SELECT(rb_data_object_make_2, RUBY_UNTYPED_DATA_WARNING)
+#define rb_data_object_make RUBY_MACRO_SELECT(rb_data_object_make_2, RUBY_UNTYPED_DATA_WARNING)
 /** @endcond */
 #endif /* RBIMPL_RDATA_H */

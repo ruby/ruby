@@ -1,4 +1,4 @@
-#ifndef INTERNAL_EVAL_H                                  /*-*-C-*-vi:se ft=c:*/
+#ifndef INTERNAL_EVAL_H /*-*-C-*-vi:se ft=c:*/
 #define INTERNAL_EVAL_H
 /**
  * @author     Ruby developers <ruby-core@ruby-lang.org>
@@ -10,7 +10,7 @@
  * @note       There  also  is  eval_intern.h, which  is  evaluator's  internal
  *             header (related to this file, but not the same role).
  */
-#include "ruby/ruby.h"          /* for ID */
+#include "ruby/ruby.h" /* for ID */
 
 #define id_signo ruby_static_id_signo
 #define id_status ruby_static_id_status

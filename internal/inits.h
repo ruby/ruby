@@ -1,4 +1,4 @@
-#ifndef INTERNAL_INITS_H                                 /*-*-C-*-vi:se ft=c:*/
+#ifndef INTERNAL_INITS_H /*-*-C-*-vi:se ft=c:*/
 #define INTERNAL_INITS_H
 /**
  * @author     Ruby developers <ruby-core@ruby-lang.org>

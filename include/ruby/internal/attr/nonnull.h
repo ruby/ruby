@@ -1,4 +1,4 @@
-#ifndef RBIMPL_ATTR_NONNULL_H                        /*-*-C++-*-vi:se ft=cpp:*/
+#ifndef RBIMPL_ATTR_NONNULL_H /*-*-C++-*-vi:se ft=cpp:*/
 #define RBIMPL_ATTR_NONNULL_H
 /**
  * @file
@@ -24,11 +24,11 @@
 
 /** Wraps (or simulates) `__attribute__((nonnull))` */
 #if RBIMPL_HAS_ATTRIBUTE(nonnull)
-# define RBIMPL_ATTR_NONNULL(list) __attribute__((__nonnull__ list))
-# define RBIMPL_NONNULL_ARG(arg) RBIMPL_ASSERT_NOTHING
+#    define RBIMPL_ATTR_NONNULL(list) __attribute__((__nonnull__ list))
+#    define RBIMPL_NONNULL_ARG(arg) RBIMPL_ASSERT_NOTHING
 #else
-# define RBIMPL_ATTR_NONNULL(list) /* void */
-# define RBIMPL_NONNULL_ARG(arg) RUBY_ASSERT(arg)
+#    define RBIMPL_ATTR_NONNULL(list) /* void */
+#    define RBIMPL_NONNULL_ARG(arg) RUBY_ASSERT(arg)
 #endif
 
 #endif /* RBIMPL_ATTR_NONNULL_H */

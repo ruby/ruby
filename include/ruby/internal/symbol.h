@@ -1,4 +1,4 @@
-#ifndef RBIMPL_SYMBOL_H                              /*-*-C++-*-vi:se ft=cpp:*/
+#ifndef RBIMPL_SYMBOL_H /*-*-C++-*-vi:se ft=cpp:*/
 #define RBIMPL_SYMBOL_H
 /**
  * @file
@@ -23,11 +23,11 @@
 #include "ruby/internal/config.h"
 
 #ifdef STDC_HEADERS
-# include <stddef.h>
+#    include <stddef.h>
 #endif
 
 #ifdef HAVE_STRING_H
-# include <string.h>
+#    include <string.h>
 #endif
 
 #include "ruby/internal/attr/noalias.h"
@@ -39,12 +39,12 @@
 #include "ruby/internal/has/builtin.h"
 #include "ruby/internal/value.h"
 
-#define RB_ID2SYM      rb_id2sym           /**< @alias{rb_id2sym} */
-#define RB_SYM2ID      rb_sym2id           /**< @alias{rb_sym2id} */
-#define ID2SYM         RB_ID2SYM           /**< @old{RB_ID2SYM} */
-#define SYM2ID         RB_SYM2ID           /**< @old{RB_SYM2ID} */
+#define RB_ID2SYM rb_id2sym                /**< @alias{rb_id2sym} */
+#define RB_SYM2ID rb_sym2id                /**< @alias{rb_sym2id} */
+#define ID2SYM RB_ID2SYM                   /**< @old{RB_ID2SYM} */
+#define SYM2ID RB_SYM2ID                   /**< @old{RB_SYM2ID} */
 #define CONST_ID_CACHE RUBY_CONST_ID_CACHE /**< @old{RUBY_CONST_ID_CACHE} */
-#define CONST_ID       RUBY_CONST_ID       /**< @old{RUBY_CONST_ID} */
+#define CONST_ID RUBY_CONST_ID             /**< @old{RUBY_CONST_ID} */
 
 /** @cond INTERNAL_MACRO */
 #define rb_intern_const rb_intern_const
@@ -289,7 +289,7 @@ RBIMPL_ATTR_NONNULL(())
 static inline ID
 rbimpl_intern_const(ID *ptr, const char *str)
 {
-    while (! *ptr) {
+    while (!*ptr) {
         *ptr = rb_intern_const(str);
     }
 
@@ -300,11 +300,11 @@ rbimpl_intern_const(ID *ptr, const char *str)
  * Old implementation detail of rb_intern().
  * @deprecated Does anyone use it?  Preserved for backward compat.
  */
-#define RUBY_CONST_ID_CACHE(result, str)                \
-    {                                                   \
-        static ID rb_intern_id_cache;                   \
+#define RUBY_CONST_ID_CACHE(result, str) \
+    { \
+        static ID rb_intern_id_cache; \
         rbimpl_intern_const(&rb_intern_id_cache, (str)); \
-        result rb_intern_id_cache;                      \
+        result rb_intern_id_cache; \
     }
 
 /**
@@ -320,13 +320,12 @@ rbimpl_intern_const(ID *ptr, const char *str)
 #if defined(HAVE_STMT_AND_DECL_IN_EXPR)
 /* __builtin_constant_p and statement expression is available
  * since gcc-2.7.2.3 at least. */
-#define rb_intern(str) \
-    (RBIMPL_CONSTANT_P(str) ? \
-     __extension__ ({ \
-         static ID rbimpl_id; \
-         rbimpl_intern_const(&rbimpl_id, (str)); \
-     }) : \
-     (rb_intern)(str))
+#    define rb_intern(str) \
+        (RBIMPL_CONSTANT_P(str) ? __extension__({ \
+            static ID rbimpl_id; \
+            rbimpl_intern_const(&rbimpl_id, (str)); \
+        }) \
+                                : (rb_intern)(str))
 #endif
 
 #endif /* RBIMPL_SYMBOL_H */

@@ -23,28 +23,28 @@ pass_passed_block_handler(rb_execution_context_t *ec)
 #define PASS_PASSED_BLOCK_HANDLER() pass_passed_block_handler(GET_EC())
 
 #ifdef HAVE_STDLIB_H
-#include <stdlib.h>
+#    include <stdlib.h>
 #endif
 #ifndef EXIT_SUCCESS
-#define EXIT_SUCCESS 0
+#    define EXIT_SUCCESS 0
 #endif
 #ifndef EXIT_FAILURE
-#define EXIT_FAILURE 1
+#    define EXIT_FAILURE 1
 #endif
 
 #include <stdio.h>
 #if defined(__wasm__) && !defined(__EMSCRIPTEN__)
-# include "wasm/setjmp.h"
+#    include "wasm/setjmp.h"
 #else
-# include <setjmp.h>
+#    include <setjmp.h>
 #endif
 
 #ifdef __APPLE__
-# ifdef HAVE_CRT_EXTERNS_H
-#  include <crt_externs.h>
-# else
-#  include "missing/crt_externs.h"
-# endif
+#    ifdef HAVE_CRT_EXTERNS_H
+#        include <crt_externs.h>
+#    else
+#        include "missing/crt_externs.h"
+#    endif
 #endif
 
 #ifndef HAVE_STRING_H
@@ -52,30 +52,30 @@ char *strrchr(const char *, const char);
 #endif
 
 #ifdef HAVE_UNISTD_H
-#include <unistd.h>
+#    include <unistd.h>
 #endif
 
 #ifdef HAVE_NET_SOCKET_H
-#include <net/socket.h>
+#    include <net/socket.h>
 #endif
 
 #define ruby_setjmp(env) RUBY_SETJMP(env)
-#define ruby_longjmp(env,val) RUBY_LONGJMP((env),(val))
+#define ruby_longjmp(env, val) RUBY_LONGJMP((env), (val))
 #ifdef __CYGWIN__
-# ifndef _setjmp
+#    ifndef _setjmp
 int _setjmp(jmp_buf);
-# endif
-# ifndef _longjmp
+#    endif
+#    ifndef _longjmp
 NORETURN(void _longjmp(jmp_buf, int));
-# endif
+#    endif
 #endif
 
-#include <sys/types.h>
-#include <signal.h>
 #include <errno.h>
+#include <signal.h>
+#include <sys/types.h>
 
 #ifdef HAVE_SYS_SELECT_H
-#include <sys/select.h>
+#    include <sys/select.h>
 #endif
 
 /*
@@ -85,38 +85,40 @@ NORETURN(void _longjmp(jmp_buf, int));
   So following definition is required to use select_large_fdset.
 */
 #ifdef HAVE_SELECT_LARGE_FDSET
-#define select(n, r, w, e, t) select_large_fdset((n), (r), (w), (e), (t))
+#    define select(n, r, w, e, t) select_large_fdset((n), (r), (w), (e), (t))
 extern int select_large_fdset(int, fd_set *, fd_set *, fd_set *, struct timeval *);
 #endif
 
 #ifdef HAVE_SYS_PARAM_H
-#include <sys/param.h>
+#    include <sys/param.h>
 #endif
 
 #include <sys/stat.h>
 
+#define SAVE_ROOT_JMPBUF(th, stmt) \
+    do \
+        if (true) { \
+            stmt; \
+        } \
+        else if (th) { /* suppress unused-variable warning */ \
+        } \
+    while (0)
 
-#define SAVE_ROOT_JMPBUF(th, stmt) do \
-  if (true) { \
-      stmt; \
-  } \
-  else if (th) { /* suppress unused-variable warning */ \
-  } while (0)
-
-#define EC_PUSH_TAG(ec) do { \
-  rb_execution_context_t * const _ec = (ec); \
-  struct rb_vm_tag _tag; \
-  _tag.state = TAG_NONE; \
-  _tag.tag = Qundef; \
-  _tag.prev = _ec->tag; \
-  _tag.lock_rec = rb_ec_vm_lock_rec(_ec); \
+#define EC_PUSH_TAG(ec) \
+    do { \
+        rb_execution_context_t *const _ec = (ec); \
+        struct rb_vm_tag _tag; \
+        _tag.state = TAG_NONE; \
+        _tag.tag = Qundef; \
+        _tag.prev = _ec->tag; \
+        _tag.lock_rec = rb_ec_vm_lock_rec(_ec);
 
 #define EC_POP_TAG() \
-  _ec->tag = _tag.prev; \
-} while (0)
+    _ec->tag = _tag.prev; \
+    } \
+    while (0)
 
-#define EC_TMPPOP_TAG() \
-  _ec->tag = _tag.prev
+#define EC_TMPPOP_TAG() _ec->tag = _tag.prev
 
 #define EC_REPUSH_TAG() (void)(_ec->tag = &_tag)
 
@@ -125,13 +127,13 @@ extern int select_large_fdset(int, fd_set *, fd_set *, fd_set *, struct timeval 
  * This macro also prevents Clang from dumping core in EC_EXEC_TAG().
  * (I confirmed Clang 4.0.1 and 5.0.0.)
  */
-# define VAR_FROM_MEMORY(var) __extension__(*(__typeof__(var) volatile *)&(var))
-# define VAR_INITIALIZED(var) ((var) = VAR_FROM_MEMORY(var))
-# define VAR_NOCLOBBERED(var) volatile var
+#    define VAR_FROM_MEMORY(var) __extension__(*(__typeof__(var) volatile *)&(var))
+#    define VAR_INITIALIZED(var) ((var) = VAR_FROM_MEMORY(var))
+#    define VAR_NOCLOBBERED(var) volatile var
 #else
-# define VAR_FROM_MEMORY(var) (var)
-# define VAR_INITIALIZED(var) ((void)&(var))
-# define VAR_NOCLOBBERED(var) var
+#    define VAR_FROM_MEMORY(var) (var)
+#    define VAR_INITIALIZED(var) ((void)&(var))
+#    define VAR_NOCLOBBERED(var) var
 #endif
 
 static inline void
@@ -166,8 +168,7 @@ rb_ec_tag_jump(const rb_execution_context_t *ec, enum ruby_tag_type st)
   setjmp() in assignment expression rhs is undefined behavior
   [ISO/IEC 9899:1999] 7.13.1.1
 */
-#define EC_EXEC_TAG() \
-    (ruby_setjmp(_tag.buf) ? rb_ec_tag_state(VAR_FROM_MEMORY(_ec)) : (EC_REPUSH_TAG(), 0))
+#define EC_EXEC_TAG() (ruby_setjmp(_tag.buf) ? rb_ec_tag_state(VAR_FROM_MEMORY(_ec)) : (EC_REPUSH_TAG(), 0))
 
 #define EC_JUMP_TAG(ec, st) rb_ec_tag_jump(ec, st)
 
@@ -176,8 +177,8 @@ rb_ec_tag_jump(const rb_execution_context_t *ec, enum ruby_tag_type st)
 /* CREF operators */
 
 #define CREF_FL_PUSHED_BY_EVAL IMEMO_FL_USER1
-#define CREF_FL_OMOD_SHARED    IMEMO_FL_USER2
-#define CREF_FL_SINGLETON      IMEMO_FL_USER3
+#define CREF_FL_OMOD_SHARED IMEMO_FL_USER2
+#define CREF_FL_SINGLETON IMEMO_FL_USER3
 
 static inline int CREF_SINGLETON(const rb_cref_t *cref);
 
@@ -274,10 +275,10 @@ enum {
     RAISED_STACKOVERFLOW = 2,
     RAISED_NOMEMORY = 4
 };
-#define rb_ec_raised_set(ec, f)   ((ec)->raised_flag |= (f))
+#define rb_ec_raised_set(ec, f) ((ec)->raised_flag |= (f))
 #define rb_ec_raised_reset(ec, f) ((ec)->raised_flag &= ~(f))
-#define rb_ec_raised_p(ec, f)    (((ec)->raised_flag & (f)) != 0)
-#define rb_ec_raised_clear(ec)    ((ec)->raised_flag = 0)
+#define rb_ec_raised_p(ec, f) (((ec)->raised_flag & (f)) != 0)
+#define rb_ec_raised_clear(ec) ((ec)->raised_flag = 0)
 int rb_ec_set_raised(rb_execution_context_t *ec);
 int rb_ec_reset_raised(rb_execution_context_t *ec);
 int rb_ec_stack_check(rb_execution_context_t *ec);
@@ -287,12 +288,12 @@ VALUE rb_make_exception(int argc, const VALUE *argv);
 
 NORETURN(void rb_method_name_error(VALUE, VALUE));
 
-NORETURN(void rb_fiber_start(rb_fiber_t*));
+NORETURN(void rb_fiber_start(rb_fiber_t *));
 
 NORETURN(void rb_print_undef(VALUE, ID, rb_method_visibility_t));
 NORETURN(void rb_print_undef_str(VALUE, VALUE));
 NORETURN(void rb_print_inaccessible(VALUE, ID, rb_method_visibility_t));
-NORETURN(void rb_vm_localjump_error(const char *,VALUE, int));
+NORETURN(void rb_vm_localjump_error(const char *, VALUE, int));
 NORETURN(void rb_vm_jump_tag_but_local_jump(int));
 
 VALUE rb_vm_make_jump_tag_but_local_jump(int state, VALUE val);
@@ -307,9 +308,9 @@ VALUE rb_ec_backtrace_object(const rb_execution_context_t *ec);
 VALUE rb_ec_backtrace_str_ary(const rb_execution_context_t *ec, long lev, long n);
 VALUE rb_ec_backtrace_location_ary(const rb_execution_context_t *ec, long lev, long n, bool skip_internal);
 
-#ifndef CharNext		/* defined as CharNext[AW] on Windows. */
-# ifdef HAVE_MBLEN
-#  define CharNext(p) rb_char_next(p)
+#ifndef CharNext /* defined as CharNext[AW] on Windows. */
+#    ifdef HAVE_MBLEN
+#        define CharNext(p) rb_char_next(p)
 static inline char *
 rb_char_next(const char *p)
 {
@@ -319,9 +320,9 @@ rb_char_next(const char *p)
     }
     return (char *)p;
 }
-# else
-#  define CharNext(p) ((p) + 1)
-# endif
+#    else
+#        define CharNext(p) ((p) + 1)
+#    endif
 #endif
 
 #if defined DOSISH || defined __CYGWIN__
@@ -329,9 +330,8 @@ static inline void
 translit_char(char *p, int from, int to)
 {
     while (*p) {
-	if ((unsigned char)*p == from)
-	    *p = to;
-	p = CharNext(p);
+        if ((unsigned char)*p == from) *p = to;
+        p = CharNext(p);
     }
 }
 #endif

@@ -24,18 +24,18 @@ RB_DEBUG_COUNTER(mc_inline_miss_same_cme)    // IMC miss, but same CME
 RB_DEBUG_COUNTER(mc_inline_miss_same_def)    // IMC miss, but same definition
 RB_DEBUG_COUNTER(mc_inline_miss_diff)        // IMC miss, different methods
 
-RB_DEBUG_COUNTER(cvar_write_inline_hit)      // cvar cache hit on write
-RB_DEBUG_COUNTER(cvar_read_inline_hit)       // cvar cache hit on read
-RB_DEBUG_COUNTER(cvar_inline_miss)           // miss inline cache
-RB_DEBUG_COUNTER(cvar_class_invalidate)      // invalidate cvar cache when define a cvar that's defined on a subclass
-RB_DEBUG_COUNTER(cvar_include_invalidate)    // invalidate cvar cache on module include or prepend
+RB_DEBUG_COUNTER(cvar_write_inline_hit)   // cvar cache hit on write
+RB_DEBUG_COUNTER(cvar_read_inline_hit)    // cvar cache hit on read
+RB_DEBUG_COUNTER(cvar_inline_miss)        // miss inline cache
+RB_DEBUG_COUNTER(cvar_class_invalidate)   // invalidate cvar cache when define a cvar that's defined on a subclass
+RB_DEBUG_COUNTER(cvar_include_invalidate) // invalidate cvar cache on module include or prepend
 
-RB_DEBUG_COUNTER(mc_cme_complement)          // number of acquiring complement CME
-RB_DEBUG_COUNTER(mc_cme_complement_hit)      // number of cache hit for complemented CME
+RB_DEBUG_COUNTER(mc_cme_complement)     // number of acquiring complement CME
+RB_DEBUG_COUNTER(mc_cme_complement_hit) // number of cache hit for complemented CME
 
-RB_DEBUG_COUNTER(mc_search)                  // count for method lookup in class tree
-RB_DEBUG_COUNTER(mc_search_notfound)         //           method lookup, but not found
-RB_DEBUG_COUNTER(mc_search_super)            // total traversed classes
+RB_DEBUG_COUNTER(mc_search)          // count for method lookup in class tree
+RB_DEBUG_COUNTER(mc_search_notfound) //           method lookup, but not found
+RB_DEBUG_COUNTER(mc_search_super)    // total traversed classes
 
 // callinfo
 RB_DEBUG_COUNTER(ci_packed)  // number of packed CI
@@ -44,10 +44,10 @@ RB_DEBUG_COUNTER(ci_nokw)    //           non-packed CI w/o keywords
 RB_DEBUG_COUNTER(ci_runtime) //           creating temporary CI
 
 // callcache
-RB_DEBUG_COUNTER(cc_new)        // number of CC
-RB_DEBUG_COUNTER(cc_temp)       //           dummy CC (stack-allocated)
-RB_DEBUG_COUNTER(cc_found_in_ccs)      // count for CC lookup success in CCS
-RB_DEBUG_COUNTER(cc_not_found_in_ccs)  // count for CC lookup success in CCS
+RB_DEBUG_COUNTER(cc_new)              // number of CC
+RB_DEBUG_COUNTER(cc_temp)             //           dummy CC (stack-allocated)
+RB_DEBUG_COUNTER(cc_found_in_ccs)     // count for CC lookup success in CCS
+RB_DEBUG_COUNTER(cc_not_found_in_ccs) // count for CC lookup success in CCS
 
 RB_DEBUG_COUNTER(cc_ent_invalidate) // count for invalidating cc (cc->klass = 0)
 RB_DEBUG_COUNTER(cc_cme_invalidate) // count for invalidating CME
@@ -56,14 +56,14 @@ RB_DEBUG_COUNTER(cc_invalidate_leaf)          // count for invalidating klass if
 RB_DEBUG_COUNTER(cc_invalidate_leaf_ccs)      //                        corresponding CCS
 RB_DEBUG_COUNTER(cc_invalidate_leaf_callable) //                        complimented cache (no-subclasses)
 RB_DEBUG_COUNTER(cc_invalidate_tree)          // count for invalidating klass if klass has subclasses
-RB_DEBUG_COUNTER(cc_invalidate_tree_cme)      //                        cme if cme is found in this class or superclasses
+RB_DEBUG_COUNTER(cc_invalidate_tree_cme) //                        cme if cme is found in this class or superclasses
 RB_DEBUG_COUNTER(cc_invalidate_tree_callable) //                        complimented cache (subclasses)
 RB_DEBUG_COUNTER(cc_invalidate_negative)      // count for invalidating negative cache
 
-RB_DEBUG_COUNTER(ccs_free)   // count for free'ing ccs
-RB_DEBUG_COUNTER(ccs_maxlen) // maximum length of ccs
-RB_DEBUG_COUNTER(ccs_found)      // count for finding corresponding ccs on method lookup
-RB_DEBUG_COUNTER(ccs_not_found)  // count for not found corresponding ccs on method lookup
+RB_DEBUG_COUNTER(ccs_free)      // count for free'ing ccs
+RB_DEBUG_COUNTER(ccs_maxlen)    // maximum length of ccs
+RB_DEBUG_COUNTER(ccs_found)     // count for finding corresponding ccs on method lookup
+RB_DEBUG_COUNTER(ccs_not_found) // count for not found corresponding ccs on method lookup
 
 // vm_eval.c
 RB_DEBUG_COUNTER(call0_public)
@@ -89,7 +89,7 @@ RB_DEBUG_COUNTER(ccf_iseq_kw1) /* vm_call_iseq_setup_kwparm_kwarg() */
 RB_DEBUG_COUNTER(ccf_iseq_kw2) /* vm_call_iseq_setup_kwparm_nokwarg() */
 RB_DEBUG_COUNTER(ccf_cfunc)
 RB_DEBUG_COUNTER(ccf_cfunc_with_frame)
-RB_DEBUG_COUNTER(ccf_ivar) /* attr_reader */
+RB_DEBUG_COUNTER(ccf_ivar)    /* attr_reader */
 RB_DEBUG_COUNTER(ccf_attrset) /* attr_writer */
 RB_DEBUG_COUNTER(ccf_method_missing)
 RB_DEBUG_COUNTER(ccf_zsuper)
@@ -393,11 +393,11 @@ RB_DEBUG_COUNTER(load_path_is_not_realpath)
 #define RUBY_DEBUG_COUNTER_H 1
 
 #include "ruby/internal/config.h"
-#include <stddef.h>             /* for size_t */
-#include "ruby/ruby.h"          /* for VALUE */
+#include "ruby/ruby.h" /* for VALUE */
+#include <stddef.h>    /* for size_t */
 
 #if !defined(__GNUC__) && USE_DEBUG_COUNTER
-#error "USE_DEBUG_COUNTER is not supported by other than __GNUC__"
+#    error "USE_DEBUG_COUNTER is not supported by other than __GNUC__"
 #endif
 
 enum rb_debug_counter_type {
@@ -442,18 +442,18 @@ rb_debug_counter_max(enum rb_debug_counter_type type, unsigned int num)
 VALUE rb_debug_counter_reset(VALUE klass);
 VALUE rb_debug_counter_show(VALUE klass);
 
-#define RB_DEBUG_COUNTER_INC(type)                rb_debug_counter_add(RB_DEBUG_COUNTER_##type, 1, 1)
-#define RB_DEBUG_COUNTER_INC_UNLESS(type, cond) (!rb_debug_counter_add(RB_DEBUG_COUNTER_##type, 1, !(cond)))
-#define RB_DEBUG_COUNTER_INC_IF(type, cond)       rb_debug_counter_add(RB_DEBUG_COUNTER_##type, 1, !!(cond))
-#define RB_DEBUG_COUNTER_ADD(type, num)           rb_debug_counter_add(RB_DEBUG_COUNTER_##type, (num), 1)
-#define RB_DEBUG_COUNTER_SETMAX(type, num)        rb_debug_counter_max(RB_DEBUG_COUNTER_##type, (unsigned int)(num))
+#    define RB_DEBUG_COUNTER_INC(type) rb_debug_counter_add(RB_DEBUG_COUNTER_##type, 1, 1)
+#    define RB_DEBUG_COUNTER_INC_UNLESS(type, cond) (!rb_debug_counter_add(RB_DEBUG_COUNTER_##type, 1, !(cond)))
+#    define RB_DEBUG_COUNTER_INC_IF(type, cond) rb_debug_counter_add(RB_DEBUG_COUNTER_##type, 1, !!(cond))
+#    define RB_DEBUG_COUNTER_ADD(type, num) rb_debug_counter_add(RB_DEBUG_COUNTER_##type, (num), 1)
+#    define RB_DEBUG_COUNTER_SETMAX(type, num) rb_debug_counter_max(RB_DEBUG_COUNTER_##type, (unsigned int)(num))
 
 #else
-#define RB_DEBUG_COUNTER_INC(type)              ((void)0)
-#define RB_DEBUG_COUNTER_INC_UNLESS(type, cond) (!!(cond))
-#define RB_DEBUG_COUNTER_INC_IF(type, cond)     (!!(cond))
-#define RB_DEBUG_COUNTER_ADD(type, num)         ((void)0)
-#define RB_DEBUG_COUNTER_SETMAX(type, num)      0
+#    define RB_DEBUG_COUNTER_INC(type) ((void)0)
+#    define RB_DEBUG_COUNTER_INC_UNLESS(type, cond) (!!(cond))
+#    define RB_DEBUG_COUNTER_INC_IF(type, cond) (!!(cond))
+#    define RB_DEBUG_COUNTER_ADD(type, num) ((void)0)
+#    define RB_DEBUG_COUNTER_SETMAX(type, num) 0
 #endif
 
 void rb_debug_counter_show_results(const char *msg);

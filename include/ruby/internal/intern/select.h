@@ -1,4 +1,4 @@
-#ifndef RBIMPL_INTERN_SELECT_H                       /*-*-C++-*-vi:se ft=cpp:*/
+#ifndef RBIMPL_INTERN_SELECT_H /*-*-C++-*-vi:se ft=cpp:*/
 #define RBIMPL_INTERN_SELECT_H
 /**
  * @file
@@ -25,22 +25,22 @@
 #include "ruby/internal/config.h"
 
 #ifdef HAVE_SYS_TYPES_H
-# include <sys/types.h>         /* for NFDBITS (BSD Net/2) */
+#    include <sys/types.h> /* for NFDBITS (BSD Net/2) */
 #endif
 
 #include "ruby/internal/dllexport.h"
 
 /* thread.c */
 #if defined(NFDBITS) && defined(HAVE_RB_FD_INIT)
-# include "ruby/internal/intern/select/largesize.h"
+#    include "ruby/internal/intern/select/largesize.h"
 #elif defined(_WIN32)
-# include "ruby/internal/intern/select/win32.h"
-# /** Does nothing (defined for compatibility). */
-# define rb_fd_resize(n, f) ((void)(f))
+#    include "ruby/internal/intern/select/win32.h"
+#    /** Does nothing (defined for compatibility). */
+#    define rb_fd_resize(n, f) ((void)(f))
 #else
-# include "ruby/internal/intern/select/posix.h"
-# /** Does nothing (defined for compatibility). */
-# define rb_fd_resize(n, f) ((void)(f))
+#    include "ruby/internal/intern/select/posix.h"
+#    /** Does nothing (defined for compatibility). */
+#    define rb_fd_resize(n, f) ((void)(f))
 #endif
 
 RBIMPL_SYMBOL_EXPORT_BEGIN()

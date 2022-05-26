@@ -1,4 +1,4 @@
-#ifndef RB_DEBUG_H                                   /*-*-C++-*-vi:se ft=cpp:*/
+#ifndef RB_DEBUG_H /*-*-C++-*-vi:se ft=cpp:*/
 #define RB_DEBUG_H 1
 /**
  * @file
@@ -377,7 +377,8 @@ int rb_thread_remove_event_hook_with_data(VALUE thval, rb_event_hook_func_t func
  * internal           events          #RUBY_INTERNAL_EVENT_NEWOBJ           and
  * #RUBY_INTERNAL_EVENT_FREEOBJ.
  */
-VALUE rb_tracepoint_new(VALUE target_thread_not_supported_yet, rb_event_flag_t events, void (*func)(VALUE, void *), void *data);
+VALUE rb_tracepoint_new(
+    VALUE target_thread_not_supported_yet, rb_event_flag_t events, void (*func)(VALUE, void *), void *data);
 
 /**
  * Starts (enables) trace(s) defined by the passed object.  A TracePoint object
@@ -562,7 +563,6 @@ RBIMPL_ATTR_NONNULL(())
  */
 VALUE rb_tracearg_object(rb_trace_arg_t *trace_arg);
 
-
 /** @} */
 
 /**
@@ -629,13 +629,14 @@ int rb_postponed_job_register_one(unsigned int flags, rb_postponed_job_func_t fu
 /* undocumented advanced tracing APIs */
 
 typedef enum {
-    RUBY_EVENT_HOOK_FLAG_SAFE    = 0x01,
+    RUBY_EVENT_HOOK_FLAG_SAFE = 0x01,
     RUBY_EVENT_HOOK_FLAG_DELETED = 0x02,
     RUBY_EVENT_HOOK_FLAG_RAW_ARG = 0x04
 } rb_event_hook_flag_t;
 
 void rb_add_event_hook2(rb_event_hook_func_t func, rb_event_flag_t events, VALUE data, rb_event_hook_flag_t hook_flag);
-void rb_thread_add_event_hook2(VALUE thval, rb_event_hook_func_t func, rb_event_flag_t events, VALUE data, rb_event_hook_flag_t hook_flag);
+void rb_thread_add_event_hook2(
+    VALUE thval, rb_event_hook_func_t func, rb_event_flag_t events, VALUE data, rb_event_hook_flag_t hook_flag);
 
 /** @endcond */
 

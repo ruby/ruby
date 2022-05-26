@@ -1,4 +1,4 @@
-#ifndef RBIMPL_EVAL_H                                /*-*-C++-*-vi:se ft=cpp:*/
+#ifndef RBIMPL_EVAL_H /*-*-C++-*-vi:se ft=cpp:*/
 #define RBIMPL_EVAL_H
 /**
  * @file
@@ -20,8 +20,8 @@
  *             extension libraries.  They could be written in C++98.
  * @brief      Declares ::rb_eval_string().
  */
-#include "ruby/internal/dllexport.h"
 #include "ruby/internal/attr/nonnull.h"
+#include "ruby/internal/dllexport.h"
 #include "ruby/internal/value.h"
 
 RBIMPL_SYMBOL_EXPORT_BEGIN()

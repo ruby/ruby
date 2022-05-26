@@ -1,4 +1,4 @@
-#ifndef RBIMPL_DLLEXPORT_H                           /*-*-C++-*-vi:se ft=cpp:*/
+#ifndef RBIMPL_DLLEXPORT_H /*-*-C++-*-vi:se ft=cpp:*/
 #define RBIMPL_DLLEXPORT_H
 /**
  * @file
@@ -20,8 +20,8 @@
  *             extension libraries.  They could be written in C++98.
  * @brief      Tweaking visibility of C variables/functions.
  */
-#include "ruby/internal/config.h"
 #include "ruby/internal/compiler_is.h"
+#include "ruby/internal/config.h"
 
 /**
  * Declaration of externally visible global variables.  Here "externally" means
@@ -38,25 +38,25 @@
  */
 #undef RUBY_EXTERN
 #if defined(MJIT_HEADER) && defined(_WIN32)
-# define RUBY_EXTERN extern __declspec(dllimport)
+#    define RUBY_EXTERN extern __declspec(dllimport)
 #elif defined(RUBY_EXPORT)
-# define RUBY_EXTERN extern
+#    define RUBY_EXTERN extern
 #elif defined(_WIN32)
-# define RUBY_EXTERN extern __declspec(dllimport)
+#    define RUBY_EXTERN extern __declspec(dllimport)
 #else
-# define RUBY_EXTERN extern
+#    define RUBY_EXTERN extern
 #endif
 
 #ifndef RUBY_SYMBOL_EXPORT_BEGIN
-# define RUBY_SYMBOL_EXPORT_BEGIN /* begin */
+#    define RUBY_SYMBOL_EXPORT_BEGIN /* begin */
 #endif
 
 #ifndef RUBY_SYMBOL_EXPORT_END
-# define RUBY_SYMBOL_EXPORT_END   /* end */
+#    define RUBY_SYMBOL_EXPORT_END /* end */
 #endif
 
 #ifndef RUBY_FUNC_EXPORTED
-# define RUBY_FUNC_EXPORTED /* void */
+#    define RUBY_FUNC_EXPORTED /* void */
 #endif
 
 /**
@@ -69,24 +69,24 @@
 /* These macros are used for functions which are exported only for MJIT
    and NOT ensured to be exported in future versions. */
 
-#if ! defined(MJIT_HEADER)
-# define MJIT_FUNC_EXPORTED RUBY_FUNC_EXPORTED
-#elif ! RBIMPL_COMPILER_IS(MSVC)
-# define MJIT_FUNC_EXPORTED RUBY_FUNC_EXPORTED
+#if !defined(MJIT_HEADER)
+#    define MJIT_FUNC_EXPORTED RUBY_FUNC_EXPORTED
+#elif !RBIMPL_COMPILER_IS(MSVC)
+#    define MJIT_FUNC_EXPORTED RUBY_FUNC_EXPORTED
 #else
-# define MJIT_FUNC_EXPORTED static
+#    define MJIT_FUNC_EXPORTED static
 #endif
 
 #define MJIT_SYMBOL_EXPORT_BEGIN RUBY_SYMBOL_EXPORT_BEGIN
-#define MJIT_SYMBOL_EXPORT_END   RUBY_SYMBOL_EXPORT_END
+#define MJIT_SYMBOL_EXPORT_END RUBY_SYMBOL_EXPORT_END
 
 /* On mswin, MJIT header transformation can't be used since cl.exe can't output
    preprocessed output preserving macros. So this `MJIT_STATIC` is needed
    to force non-static function to static on MJIT header to avoid symbol conflict. */
 #ifdef MJIT_HEADER
-# define MJIT_STATIC static
+#    define MJIT_STATIC static
 #else
-# define MJIT_STATIC
+#    define MJIT_STATIC
 #endif
 
 /** @endcond */
@@ -94,19 +94,23 @@
 /** Shortcut macro equivalent to `RUBY_SYMBOL_EXPORT_BEGIN extern "C" {`.
  * \@shyouhei finds it handy. */
 #if defined(__DOXYGEN__)
-# define RBIMPL_SYMBOL_EXPORT_BEGIN() /* void */
+#    define RBIMPL_SYMBOL_EXPORT_BEGIN() /* void */
 #elif defined(__cplusplus)
-# define RBIMPL_SYMBOL_EXPORT_BEGIN() RUBY_SYMBOL_EXPORT_BEGIN extern "C" {
+#    define RBIMPL_SYMBOL_EXPORT_BEGIN() \
+        RUBY_SYMBOL_EXPORT_BEGIN extern "C" \
+        {
 #else
-# define RBIMPL_SYMBOL_EXPORT_BEGIN() RUBY_SYMBOL_EXPORT_BEGIN
+#    define RBIMPL_SYMBOL_EXPORT_BEGIN() RUBY_SYMBOL_EXPORT_BEGIN
 #endif
 
 /** Counterpart of #RBIMPL_SYMBOL_EXPORT_BEGIN */
 #if defined(__DOXYGEN__)
-# define RBIMPL_SYMBOL_EXPORT_END() /* void */
+#    define RBIMPL_SYMBOL_EXPORT_END() /* void */
 #elif defined(__cplusplus)
-# define RBIMPL_SYMBOL_EXPORT_END() } RUBY_SYMBOL_EXPORT_END
+#    define RBIMPL_SYMBOL_EXPORT_END() \
+        } \
+        RUBY_SYMBOL_EXPORT_END
 #else
-# define RBIMPL_SYMBOL_EXPORT_END()   RUBY_SYMBOL_EXPORT_END
+#    define RBIMPL_SYMBOL_EXPORT_END() RUBY_SYMBOL_EXPORT_END
 #endif
 #endif /* RBIMPL_DLLEXPORT_H */

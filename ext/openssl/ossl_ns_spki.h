@@ -8,7 +8,7 @@
  * (See the file 'LICENCE'.)
  */
 #if !defined(_OSSL_NS_SPKI_H_)
-#define _OSSL_NS_SPKI_H_
+#    define _OSSL_NS_SPKI_H_
 
 extern VALUE mNetscape;
 extern VALUE cSPKI;

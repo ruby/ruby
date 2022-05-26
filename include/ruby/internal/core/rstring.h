@@ -1,4 +1,4 @@
-#ifndef RBIMPL_RSTRING_H                             /*-*-C++-*-vi:se ft=cpp:*/
+#ifndef RBIMPL_RSTRING_H /*-*-C++-*-vi:se ft=cpp:*/
 #define RBIMPL_RSTRING_H
 /**
  * @file
@@ -20,17 +20,17 @@
  *             extension libraries.  They could be written in C++98.
  * @brief      Defines struct ::RString.
  */
-#include "ruby/internal/config.h"
+#include "ruby/assert.h"
 #include "ruby/internal/arithmetic/long.h"
 #include "ruby/internal/attr/artificial.h"
 #include "ruby/internal/attr/pure.h"
 #include "ruby/internal/cast.h"
+#include "ruby/internal/config.h"
 #include "ruby/internal/core/rbasic.h"
 #include "ruby/internal/dllexport.h"
 #include "ruby/internal/fl_type.h"
 #include "ruby/internal/value_type.h"
 #include "ruby/internal/warning_push.h"
-#include "ruby/assert.h"
 
 /**
  * Convenient casting macro.
@@ -38,21 +38,21 @@
  * @param   obj  An object, which is in fact an ::RString.
  * @return  The passed object casted to ::RString.
  */
-#define RSTRING(obj)            RBIMPL_CAST((struct RString *)(obj))
+#define RSTRING(obj) RBIMPL_CAST((struct RString *)(obj))
 
 /** @cond INTERNAL_MACRO */
-#define RSTRING_NOEMBED         RSTRING_NOEMBED
+#define RSTRING_NOEMBED RSTRING_NOEMBED
 #if !USE_RVARGC
-#define RSTRING_EMBED_LEN_MASK  RSTRING_EMBED_LEN_MASK
-#define RSTRING_EMBED_LEN_SHIFT RSTRING_EMBED_LEN_SHIFT
-#define RSTRING_EMBED_LEN_MAX   RSTRING_EMBED_LEN_MAX
+#    define RSTRING_EMBED_LEN_MASK RSTRING_EMBED_LEN_MASK
+#    define RSTRING_EMBED_LEN_SHIFT RSTRING_EMBED_LEN_SHIFT
+#    define RSTRING_EMBED_LEN_MAX RSTRING_EMBED_LEN_MAX
 #endif
-#define RSTRING_FSTR            RSTRING_FSTR
+#define RSTRING_FSTR RSTRING_FSTR
 #define RSTRING_EMBED_LEN RSTRING_EMBED_LEN
-#define RSTRING_LEN       RSTRING_LEN
-#define RSTRING_LENINT    RSTRING_LENINT
-#define RSTRING_PTR       RSTRING_PTR
-#define RSTRING_END       RSTRING_END
+#define RSTRING_LEN RSTRING_LEN
+#define RSTRING_LENINT RSTRING_LENINT
+#define RSTRING_PTR RSTRING_PTR
+#define RSTRING_END RSTRING_END
 /** @endcond */
 
 /**
@@ -69,7 +69,7 @@
  * @exception      rb_eTypeError  No implicit conversion defined.
  * @post           `v` is a String.
  */
-#define StringValue(v)     rb_string_value(&(v))
+#define StringValue(v) rb_string_value(&(v))
 
 /**
  * Identical to #StringValue, except it returns a `char*`.
@@ -79,7 +79,7 @@
  * @return         Converted Ruby string's backend C string.
  * @post           `v` is a String.
  */
-#define StringValuePtr(v)  rb_string_value_ptr(&(v))
+#define StringValuePtr(v) rb_string_value_ptr(&(v))
 
 /**
  * Identical to #StringValuePtr, except it additionally checks for the contents
@@ -120,10 +120,11 @@
  * Not   sure  but   it  seems   this  macro   does  not   raise  on   encoding
  * incompatibilities?  Doesn't sound right to @shyouhei.
  */
-#define ExportStringValue(v) do { \
-    StringValue(v);               \
-    (v) = rb_str_export(v);       \
-} while (0)
+#define ExportStringValue(v) \
+    do { \
+        StringValue(v); \
+        (v) = rb_str_export(v); \
+    } while (0)
 
 /** @} */
 
@@ -160,7 +161,7 @@ enum ruby_rstring_flags {
      * 3rd parties must  not be aware that  there even is more than  one way to
      * store a string.  Might better be hidden.
      */
-    RSTRING_NOEMBED         = RUBY_FL_USER1,
+    RSTRING_NOEMBED = RUBY_FL_USER1,
 
 #if !USE_RVARGC
     /**
@@ -173,8 +174,7 @@ enum ruby_rstring_flags {
      * 3rd parties must  not be aware that  there even is more than  one way to
      * store a string.  Might better be hidden.
      */
-    RSTRING_EMBED_LEN_MASK  = RUBY_FL_USER2 | RUBY_FL_USER3 | RUBY_FL_USER4 |
-                              RUBY_FL_USER5 | RUBY_FL_USER6,
+    RSTRING_EMBED_LEN_MASK = RUBY_FL_USER2 | RUBY_FL_USER3 | RUBY_FL_USER4 | RUBY_FL_USER5 | RUBY_FL_USER6,
 #endif
 
     /* Actually,  string  encodings are  also  encoded  into the  flags,  using
@@ -199,7 +199,7 @@ enum ruby_rstring_flags {
      * Given there are more "polite" ways to create fstrings, it seems this bit
      * need not be exposed to extension libraries.  Might better be hidden.
      */
-    RSTRING_FSTR            = RUBY_FL_USER17
+    RSTRING_FSTR = RUBY_FL_USER17
 };
 
 #if !USE_RVARGC
@@ -212,7 +212,7 @@ enum ruby_rstring_consts {
     RSTRING_EMBED_LEN_SHIFT = RUBY_FL_USHIFT + 2,
 
     /** Max possible number of characters that can be embedded. */
-    RSTRING_EMBED_LEN_MAX   = RBIMPL_EMBED_LEN_MAX_OF(char) - 1
+    RSTRING_EMBED_LEN_MAX = RBIMPL_EMBED_LEN_MAX_OF(char) - 1
 };
 #endif
 
@@ -423,7 +423,7 @@ static inline long
 RSTRING_EMBED_LEN(VALUE str)
 {
     RBIMPL_ASSERT_TYPE(str, RUBY_T_STRING);
-    RBIMPL_ASSERT_OR_ASSUME(! RB_FL_ANY_RAW(str, RSTRING_NOEMBED));
+    RBIMPL_ASSERT_OR_ASSUME(!RB_FL_ANY_RAW(str, RSTRING_NOEMBED));
 
 #if USE_RVARGC
     long f = RSTRING(str)->as.embed.len;
@@ -499,7 +499,7 @@ RSTRING_PTR(VALUE str)
 {
     char *ptr = rbimpl_rstring_getmem(str).as.heap.ptr;
 
-    if (RB_UNLIKELY(! ptr)) {
+    if (RB_UNLIKELY(!ptr)) {
         /* :BEWARE: @shyouhei thinks  that currently, there are  rooms for this
          * function to return  NULL.  In the 20th century that  was a pointless
          * concern.  However struct RString can hold fake strings nowadays.  It
@@ -529,7 +529,7 @@ RSTRING_END(VALUE str)
 {
     struct RString buf = rbimpl_rstring_getmem(str);
 
-    if (RB_UNLIKELY(! buf.as.heap.ptr)) {
+    if (RB_UNLIKELY(!buf.as.heap.ptr)) {
         /* Ditto. */
         rb_debug_rstring_null_ptr("RSTRING_END");
     }
@@ -564,15 +564,13 @@ RSTRING_LENINT(VALUE str)
  * @param  lenvar  Variable where its length is stored.
  */
 #ifdef HAVE_STMT_AND_DECL_IN_EXPR
-# define RSTRING_GETMEM(str, ptrvar, lenvar) \
-    __extension__ ({ \
-        struct RString rbimpl_str = rbimpl_rstring_getmem(str); \
-        (ptrvar) = rbimpl_str.as.heap.ptr; \
-        (lenvar) = rbimpl_str.as.heap.len; \
-    })
+#    define RSTRING_GETMEM(str, ptrvar, lenvar) \
+        __extension__({ \
+            struct RString rbimpl_str = rbimpl_rstring_getmem(str); \
+            (ptrvar) = rbimpl_str.as.heap.ptr; \
+            (lenvar) = rbimpl_str.as.heap.len; \
+        })
 #else
-# define RSTRING_GETMEM(str, ptrvar, lenvar) \
-    ((ptrvar) = RSTRING_PTR(str),           \
-     (lenvar) = RSTRING_LEN(str))
+#    define RSTRING_GETMEM(str, ptrvar, lenvar) ((ptrvar) = RSTRING_PTR(str), (lenvar) = RSTRING_LEN(str))
 #endif /* HAVE_STMT_AND_DECL_IN_EXPR */
 #endif /* RBIMPL_RSTRING_H */

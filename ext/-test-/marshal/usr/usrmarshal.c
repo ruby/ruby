@@ -8,9 +8,14 @@ usr_size(const void *ptr)
 
 static const rb_data_type_t usrmarshal_type = {
     "UsrMarshal",
-    {0, RUBY_DEFAULT_FREE, usr_size,},
-    0, 0,
-    RUBY_TYPED_FREE_IMMEDIATELY|RUBY_TYPED_WB_PROTECTED,
+    {
+        0,
+        RUBY_DEFAULT_FREE,
+        usr_size,
+    },
+    0,
+    0,
+    RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED,
 };
 
 static VALUE

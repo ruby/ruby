@@ -1,4 +1,4 @@
-#ifndef RUBY_FIBER_SCHEDULER_H                       /*-*-C++-*-vi:se ft=cpp:*/
+#ifndef RUBY_FIBER_SCHEDULER_H /*-*-C++-*-vi:se ft=cpp:*/
 #define RUBY_FIBER_SCHEDULER_H
 /**
  * @file
@@ -14,12 +14,12 @@
 #include <errno.h>
 
 #ifdef STDC_HEADERS
-#include <stddef.h> /* size_t */
+#    include <stddef.h> /* size_t */
 #endif
 
-#include "ruby/ruby.h"
-#include "ruby/internal/dllexport.h"
 #include "ruby/internal/arithmetic.h"
+#include "ruby/internal/dllexport.h"
+#include "ruby/ruby.h"
 
 RBIMPL_SYMBOL_EXPORT_BEGIN()
 
@@ -43,10 +43,12 @@ struct timeval;
  * @return              A `VALUE` which contains the result and/or errno.
  */
 static inline VALUE
-rb_fiber_scheduler_io_result(ssize_t result, int error) {
+rb_fiber_scheduler_io_result(ssize_t result, int error)
+{
     if (result == -1) {
         return RB_INT2NUM(-error);
-    } else {
+    }
+    else {
         return RB_SIZE2NUM(result);
     }
 }
@@ -63,11 +65,13 @@ rb_fiber_scheduler_io_result(ssize_t result, int error) {
  * @return              The original result of the system call.
  */
 static inline ssize_t
-rb_fiber_scheduler_io_result_apply(VALUE result) {
+rb_fiber_scheduler_io_result_apply(VALUE result)
+{
     if (RB_FIXNUM_P(result) && RB_NUM2INT(result) < 0) {
         errno = -RB_NUM2INT(result);
         return -1;
-    } else {
+    }
+    else {
         return RB_NUM2SIZE(result);
     }
 }
@@ -158,7 +162,7 @@ VALUE rb_fiber_scheduler_kernel_sleep(VALUE scheduler, VALUE duration);
  * @param[in]  argv       Passed as-is to `scheduler.kernel_sleep`
  * @return     What `scheduler.kernel_sleep` returns.
  */
-VALUE rb_fiber_scheduler_kernel_sleepv(VALUE scheduler, int argc, VALUE * argv);
+VALUE rb_fiber_scheduler_kernel_sleepv(VALUE scheduler, int argc, VALUE *argv);
 
 /* Description TBW */
 #if 0

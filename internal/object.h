@@ -1,4 +1,4 @@
-#ifndef INTERNAL_OBJECT_H                                /*-*-C-*-vi:se ft=c:*/
+#ifndef INTERNAL_OBJECT_H /*-*-C-*-vi:se ft=c:*/
 #define INTERNAL_OBJECT_H
 /**
  * @author     Ruby developers <ruby-core@ruby-lang.org>
@@ -8,11 +8,11 @@
  *             file COPYING are met.  Consult the file for details.
  * @brief      Internal header for Object.
  */
-#include "ruby/ruby.h"          /* for VALUE */
-#include "internal/class.h"     /* for RCLASS_IV_INDEX_TBL */
+#include "internal/class.h" /* for RCLASS_IV_INDEX_TBL */
+#include "ruby/ruby.h"      /* for VALUE */
 
 #ifdef ROBJECT_IV_INDEX_TBL
-# undef ROBJECT_IV_INDEX_TBL
+#    undef ROBJECT_IV_INDEX_TBL
 #endif
 
 /* object.c */
@@ -21,7 +21,7 @@ NORETURN(void rb_undefined_alloc(VALUE klass));
 double rb_num_to_dbl(VALUE val);
 VALUE rb_obj_dig(int argc, VALUE *argv, VALUE self, VALUE notfound);
 VALUE rb_immutable_obj_clone(int, VALUE *, VALUE);
-VALUE rb_check_convert_type_with_id(VALUE,int,const char*,ID);
+VALUE rb_check_convert_type_with_id(VALUE, int, const char *, ID);
 int rb_bool_expected(VALUE, const char *);
 static inline void RBASIC_CLEAR_CLASS(VALUE obj);
 static inline void RBASIC_SET_CLASS_RAW(VALUE obj, VALUE klass);
@@ -39,7 +39,7 @@ CONSTFUNC(VALUE rb_obj_not(VALUE obj));
 VALUE rb_obj_not_equal(VALUE obj1, VALUE obj2);
 void rb_obj_copy_ivar(VALUE dest, VALUE obj);
 VALUE rb_false(VALUE obj);
-VALUE rb_convert_type_with_id(VALUE v, int t, const char* nam, ID mid);
+VALUE rb_convert_type_with_id(VALUE v, int t, const char *nam, ID mid);
 VALUE rb_obj_size(VALUE self, VALUE args, VALUE obj);
 VALUE rb_get_freeze_opt(int argc, VALUE *argv);
 MJIT_SYMBOL_EXPORT_END

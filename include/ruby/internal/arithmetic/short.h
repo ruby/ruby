@@ -1,4 +1,4 @@
-#ifndef RBIMPL_ARITHMETIC_SHORT_H                    /*-*-C++-*-vi:se ft=cpp:*/
+#ifndef RBIMPL_ARITHMETIC_SHORT_H /*-*-C++-*-vi:se ft=cpp:*/
 #define RBIMPL_ARITHMETIC_SHORT_H
 /**
  * @file
@@ -23,17 +23,17 @@
  * Shyouhei  wonders:  why  there  is   no  SHORT2NUM,  given  there  are  both
  * #USHORT2NUM and #CHR2FIX?
  */
-#include "ruby/internal/value.h"
 #include "ruby/internal/dllexport.h"
 #include "ruby/internal/special_consts.h"
+#include "ruby/internal/value.h"
 
-#define RB_NUM2SHORT  rb_num2short_inline /**< @alias{rb_num2short_inline} */
-#define RB_NUM2USHORT rb_num2ushort       /**< @alias{rb_num2ushort} */
-#define NUM2SHORT     RB_NUM2SHORT        /**< @old{RB_NUM2SHORT} */
-#define NUM2USHORT    RB_NUM2USHORT       /**< @old{RB_NUM2USHORT} */
-#define USHORT2NUM    RB_INT2FIX          /**< @old{RB_INT2FIX} */
-#define RB_FIX2SHORT  rb_fix2short        /**< @alias{rb_fix2ushort} */
-#define FIX2SHORT     RB_FIX2SHORT        /**< @old{RB_FIX2SHORT} */
+#define RB_NUM2SHORT rb_num2short_inline /**< @alias{rb_num2short_inline} */
+#define RB_NUM2USHORT rb_num2ushort      /**< @alias{rb_num2ushort} */
+#define NUM2SHORT RB_NUM2SHORT           /**< @old{RB_NUM2SHORT} */
+#define NUM2USHORT RB_NUM2USHORT         /**< @old{RB_NUM2USHORT} */
+#define USHORT2NUM RB_INT2FIX            /**< @old{RB_INT2FIX} */
+#define RB_FIX2SHORT rb_fix2short        /**< @alias{rb_fix2ushort} */
+#define FIX2SHORT RB_FIX2SHORT           /**< @old{RB_FIX2SHORT} */
 
 RBIMPL_SYMBOL_EXPORT_BEGIN()
 

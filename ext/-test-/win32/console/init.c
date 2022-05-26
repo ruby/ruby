@@ -1,6 +1,10 @@
 #include "ruby.h"
 
-#define init(n) {void Init_##n(VALUE m); Init_##n(m);}
+#define init(n) \
+    { \
+        void Init_##n(VALUE m); \
+        Init_##n(m); \
+    }
 
 void
 Init_console(void)

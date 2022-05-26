@@ -1,4 +1,4 @@
-#ifndef RBIMPL_ATTR_WEAKREF_H                        /*-*-C++-*-vi:se ft=cpp:*/
+#ifndef RBIMPL_ATTR_WEAKREF_H /*-*-C++-*-vi:se ft=cpp:*/
 #define RBIMPL_ATTR_WEAKREF_H
 /**
  * @file
@@ -24,9 +24,9 @@
 
 /** Wraps (or simulates) `__attribute__((weakref))` */
 #if RBIMPL_HAS_ATTRIBUTE(weakref)
-# define RBIMPL_ATTR_WEAKREF(sym) __attribute__((__weakref__(# sym)))
+#    define RBIMPL_ATTR_WEAKREF(sym) __attribute__((__weakref__(#    sym)))
 #else
-# define RBIMPL_ATTR_WEAKREF(sym) /* void */
+#    define RBIMPL_ATTR_WEAKREF(sym) /* void */
 #endif
 
 #endif /* RBIMPL_ATTR_WEAKREF_H */

@@ -82,36 +82,36 @@
 */
 
 #ifdef __sun
-#define __EXTENSIONS__ 1
+#    define __EXTENSIONS__ 1
 #endif
 
-#include "vm_core.h"
-#include "vm_callinfo.h"
-#include "mjit.h"
-#include "gc.h"
-#include "ruby_assert.h"
-#include "ruby/debug.h"
-#include "ruby/thread.h"
-#include "ruby/version.h"
 #include "builtin.h"
+#include "gc.h"
 #include "insns.inc"
 #include "insns_info.inc"
 #include "internal/compile.h"
+#include "mjit.h"
+#include "ruby/debug.h"
+#include "ruby/thread.h"
+#include "ruby/version.h"
+#include "ruby_assert.h"
+#include "vm_callinfo.h"
+#include "vm_core.h"
 
 #ifdef _WIN32
-#include <winsock2.h>
-#include <windows.h>
+#    include <windows.h>
+#    include <winsock2.h>
 #else
-#include <sys/wait.h>
-#include <sys/time.h>
-#include <dlfcn.h>
+#    include <dlfcn.h>
+#    include <sys/time.h>
+#    include <sys/wait.h>
 #endif
 #include <errno.h>
 #ifdef HAVE_FCNTL_H
-#include <fcntl.h>
+#    include <fcntl.h>
 #endif
 #ifdef HAVE_SYS_PARAM_H
-# include <sys/param.h>
+#    include <sys/param.h>
 #endif
 #include "dln.h"
 
@@ -119,20 +119,22 @@
 #undef strdup // ruby_strdup may trigger GC
 
 #ifndef MAXPATHLEN
-# define MAXPATHLEN 1024
+#    define MAXPATHLEN 1024
 #endif
 
 #ifdef _WIN32
-#define dlopen(name,flag) ((void*)LoadLibrary(name))
-#define dlerror() strerror(rb_w32_map_errno(GetLastError()))
-#define dlsym(handle,name) ((void*)GetProcAddress((handle),(name)))
-#define dlclose(handle) (!FreeLibrary(handle))
-#define RTLD_NOW  -1
+#    define dlopen(name, flag) ((void *)LoadLibrary(name))
+#    define dlerror() strerror(rb_w32_map_errno(GetLastError()))
+#    define dlsym(handle, name) ((void *)GetProcAddress((handle), (name)))
+#    define dlclose(handle) (!FreeLibrary(handle))
+#    define RTLD_NOW -1
 
-#define waitpid(pid,stat_loc,options) (WaitForSingleObject((HANDLE)(pid), INFINITE), GetExitCodeProcess((HANDLE)(pid), (LPDWORD)(stat_loc)), CloseHandle((HANDLE)pid), (pid))
-#define WIFEXITED(S) ((S) != STILL_ACTIVE)
-#define WEXITSTATUS(S) (S)
-#define WIFSIGNALED(S) (0)
+#    define waitpid(pid, stat_loc, options) \
+        (WaitForSingleObject((HANDLE)(pid), INFINITE), GetExitCodeProcess((HANDLE)(pid), (LPDWORD)(stat_loc)), \
+            CloseHandle((HANDLE)pid), (pid))
+#    define WIFEXITED(S) ((S) != STILL_ACTIVE)
+#    define WEXITSTATUS(S) (S)
+#    define WIFSIGNALED(S) (0)
 typedef intptr_t pid_t;
 #endif
 
@@ -145,9 +147,9 @@ typedef intptr_t pid_t;
 // doesn't work without having `static` in the same function definitions. We currently
 // don't support transforming the MJIT header on Windows.
 #ifdef _WIN32
-# define USE_JIT_COMPACTION 0
+#    define USE_JIT_COMPACTION 0
 #else
-# define USE_JIT_COMPACTION 1
+#    define USE_JIT_COMPACTION 1
 #endif
 
 // The unit structure that holds metadata of ISeq for MJIT.
@@ -206,13 +208,13 @@ bool mjit_call_p = false;
 
 // Priority queue of iseqs waiting for JIT compilation.
 // This variable is a pointer to head unit of the queue.
-static struct rb_mjit_unit_list unit_queue = { CCAN_LIST_HEAD_INIT(unit_queue.head) };
+static struct rb_mjit_unit_list unit_queue = {CCAN_LIST_HEAD_INIT(unit_queue.head)};
 // List of units which are successfully compiled.
-static struct rb_mjit_unit_list active_units = { CCAN_LIST_HEAD_INIT(active_units.head) };
+static struct rb_mjit_unit_list active_units = {CCAN_LIST_HEAD_INIT(active_units.head)};
 // List of compacted so files which will be cleaned up by `free_list()` in `mjit_finish()`.
-static struct rb_mjit_unit_list compact_units = { CCAN_LIST_HEAD_INIT(compact_units.head) };
+static struct rb_mjit_unit_list compact_units = {CCAN_LIST_HEAD_INIT(compact_units.head)};
 // List of units before recompilation and just waiting for dlclose().
-static struct rb_mjit_unit_list stale_units = { CCAN_LIST_HEAD_INIT(stale_units.head) };
+static struct rb_mjit_unit_list stale_units = {CCAN_LIST_HEAD_INIT(stale_units.head)};
 // The number of so far processed ISEQs, used to generate unique id.
 static int current_unit_num;
 // A mutex for conitionals and critical sections.
@@ -257,7 +259,11 @@ static char *pch_file;
 static rb_pid_t pch_owner_pid;
 // Status of the precompiled header creation.  The status is
 // shared by the workers and the pch thread.
-static enum {PCH_NOT_READY, PCH_FAILED, PCH_SUCCESS} pch_status;
+static enum {
+    PCH_NOT_READY,
+    PCH_FAILED,
+    PCH_SUCCESS
+} pch_status;
 
 #ifndef _MSC_VER
 // Name of the header file.
@@ -271,28 +277,24 @@ static char *libruby_pathflag;
 
 #include "mjit_config.h"
 
-#if defined(__GNUC__) && \
-     (!defined(__clang__) || \
-      (defined(__clang__) && (defined(__FreeBSD__) || defined(__GLIBC__))))
-# define GCC_PIC_FLAGS "-Wfatal-errors", "-fPIC", "-shared", "-w", "-pipe",
-# define MJIT_CFLAGS_PIPE 1
+#if defined(__GNUC__) && (!defined(__clang__) || (defined(__clang__) && (defined(__FreeBSD__) || defined(__GLIBC__))))
+#    define GCC_PIC_FLAGS "-Wfatal-errors", "-fPIC", "-shared", "-w", "-pipe",
+#    define MJIT_CFLAGS_PIPE 1
 #else
-# define GCC_PIC_FLAGS /* empty */
-# define MJIT_CFLAGS_PIPE 0
+#    define GCC_PIC_FLAGS /* empty */
+#    define MJIT_CFLAGS_PIPE 0
 #endif
 
 // Use `-nodefaultlibs -nostdlib` for GCC where possible, which does not work on mingw, cygwin, AIX, and OpenBSD.
 // This seems to improve MJIT performance on GCC.
-#if defined __GNUC__ && !defined __clang__ && !defined(_WIN32) && !defined(__CYGWIN__) && !defined(_AIX) && !defined(__OpenBSD__)
-# define GCC_NOSTDLIB_FLAGS "-nodefaultlibs", "-nostdlib",
+#if defined __GNUC__ && !defined __clang__ && !defined(_WIN32) && !defined(__CYGWIN__) && !defined(_AIX) && \
+    !defined(__OpenBSD__)
+#    define GCC_NOSTDLIB_FLAGS "-nodefaultlibs", "-nostdlib",
 #else
-# define GCC_NOSTDLIB_FLAGS // empty
+#    define GCC_NOSTDLIB_FLAGS // empty
 #endif
 
-static const char *const CC_COMMON_ARGS[] = {
-    MJIT_CC_COMMON MJIT_CFLAGS GCC_PIC_FLAGS
-    NULL
-};
+static const char *const CC_COMMON_ARGS[] = {MJIT_CC_COMMON MJIT_CFLAGS GCC_PIC_FLAGS NULL};
 
 static const char *const CC_DEBUG_ARGS[] = {MJIT_DEBUGFLAGS NULL};
 static const char *const CC_OPTIMIZE_ARGS[] = {MJIT_OPTFLAGS NULL};
@@ -304,24 +306,22 @@ static const char *const CC_LINKER_ARGS[] = {
 #if defined __GNUC__ && !defined __clang__ && !defined(__OpenBSD__)
     "-nostartfiles",
 #endif
-    GCC_NOSTDLIB_FLAGS NULL
-};
+    GCC_NOSTDLIB_FLAGS NULL};
 
 static const char *const CC_LIBS[] = {
 #if defined(_WIN32) || defined(__CYGWIN__)
     MJIT_LIBS // mswin, mingw, cygwin
 #endif
 #if defined __GNUC__ && !defined __clang__
-# if defined(_WIN32)
+#    if defined(_WIN32)
     "-lmsvcrt", // mingw
-# endif
+#    endif
     "-lgcc", // mingw, cygwin, and GCC platforms using `-nodefaultlibs -nostdlib`
 #endif
 #if defined __ANDROID__
     "-lm", // to avoid 'cannot locate symbol "modf" referenced by .../_ruby_mjit_XXX.so"'
 #endif
-    NULL
-};
+    NULL};
 
 #define CC_CODEFLAG_ARGS (mjit_opts.debug ? CC_DEBUG_ARGS : CC_OPTIMIZE_ARGS)
 
@@ -338,7 +338,7 @@ verbose(int level, const char *format, ...)
         // Creating `format + '\n'` to atomically print format and '\n'.
         memcpy(full_format, format, len);
         full_format[len] = '\n';
-        full_format[len+1] = '\0';
+        full_format[len + 1] = '\0';
 
         va_start(args, format);
         vfprintf(stderr, full_format, args);
@@ -459,33 +459,33 @@ CRITICAL_SECTION_FINISH(int level, const char *msg)
 static int
 sprint_uniq_filename(char *str, size_t size, unsigned long id, const char *prefix, const char *suffix)
 {
-    return snprintf(str, size, "%s/%sp%"PRI_PIDT_PREFIX"uu%lu%s", tmp_dir, prefix, getpid(), id, suffix);
+    return snprintf(str, size, "%s/%sp%" PRI_PIDT_PREFIX "uu%lu%s", tmp_dir, prefix, getpid(), id, suffix);
 }
 
 // Return time in milliseconds as a double.
 #ifdef __APPLE__
 double ruby_real_ms_time(void);
-# define real_ms_time() ruby_real_ms_time()
+#    define real_ms_time() ruby_real_ms_time()
 #else
 static double
 real_ms_time(void)
 {
-# ifdef HAVE_CLOCK_GETTIME
-    struct timespec  tv;
-#  ifdef CLOCK_MONOTONIC
+#    ifdef HAVE_CLOCK_GETTIME
+    struct timespec tv;
+#        ifdef CLOCK_MONOTONIC
     const clockid_t c = CLOCK_MONOTONIC;
-#  else
+#        else
     const clockid_t c = CLOCK_REALTIME;
-#  endif
+#        endif
 
     clock_gettime(c, &tv);
     return tv.tv_nsec / 1000000.0 + tv.tv_sec * 1000.0;
-# else
-    struct timeval  tv;
+#    else
+    struct timeval tv;
 
     gettimeofday(&tv, NULL);
     return tv.tv_usec / 1000.0 + tv.tv_sec * 1000.0;
-# endif
+#    endif
 }
 #endif
 
@@ -503,7 +503,8 @@ get_from_list(struct rb_mjit_unit_list *list)
 
     // Find iseq with max total_calls
     struct rb_mjit_unit *unit = NULL, *next, *best = NULL;
-    ccan_list_for_each_safe(&list->head, unit, next, unode) {
+    ccan_list_for_each_safe(&list->head, unit, next, unode)
+    {
         if (unit->iseq == NULL) { // ISeq is GCed.
             remove_from_list(unit, list);
             free_unit(unit);
@@ -531,7 +532,7 @@ args_len(char *const *args)
 {
     size_t i;
 
-    for (i = 0; (args[i]) != NULL;i++)
+    for (i = 0; (args[i]) != NULL; i++)
         ;
     return i;
 }
@@ -566,7 +567,7 @@ form_args(int num, ...)
 
 COMPILER_WARNING_PUSH
 #if __has_warning("-Wdeprecated-declarations") || RBIMPL_COMPILER_IS(GCC)
-COMPILER_WARNING_IGNORED(-Wdeprecated-declarations)
+COMPILER_WARNING_IGNORED(-Wdeprecated - declarations)
 #endif
 // Start an OS process of absolute executable path with arguments `argv`.
 // Return PID of the process.
@@ -644,14 +645,12 @@ exec_process(const char *path, char *const argv[])
     }
 
     pid_t pid = start_process(path, argv);
-    for (;pid > 0;) {
-        pid_t r = vm ? ruby_waitpid_locked(vm, pid, &stat, 0, &cond)
-                     : waitpid(pid, &stat, 0);
+    for (; pid > 0;) {
+        pid_t r = vm ? ruby_waitpid_locked(vm, pid, &stat, 0, &cond) : waitpid(pid, &stat, 0);
         if (r == -1) {
             if (errno == EINTR) continue;
-            fprintf(stderr, "[%"PRI_PIDT_PREFIX"d] waitpid(%lu): %s (SIGCHLD=%d,%u)\n",
-                    getpid(), (unsigned long)pid, strerror(errno),
-                    RUBY_SIGCHLD, SIGCHLD_LOSSY);
+            fprintf(stderr, "[%" PRI_PIDT_PREFIX "d] waitpid(%lu): %s (SIGCHLD=%d,%u)\n", getpid(), (unsigned long)pid,
+                strerror(errno), RUBY_SIGCHLD, SIGCHLD_LOSSY);
             break;
         }
         else if (r == pid) {
@@ -726,8 +725,7 @@ static bool
 set_compiling_iseqs(const rb_iseq_t *iseq)
 {
     compiling_iseqs = calloc(ISEQ_BODY(iseq)->iseq_size + 2, sizeof(rb_iseq_t *)); // 2: 1 (unit->iseq) + 1 (NULL end)
-    if (compiling_iseqs == NULL)
-        return false;
+    if (compiling_iseqs == NULL) return false;
 
     compiling_iseqs[0] = iseq;
     int i = 1;
@@ -775,12 +773,12 @@ rb_mjit_compiling_iseq_p(const rb_iseq_t *iseq)
 
 static const int c_file_access_mode =
 #ifdef O_BINARY
-    O_BINARY|
+    O_BINARY |
 #endif
-    O_WRONLY|O_EXCL|O_CREAT;
+    O_WRONLY | O_EXCL | O_CREAT;
 
-#define append_str2(p, str, len) ((char *)memcpy((p), str, (len))+(len))
-#define append_str(p, str) append_str2(p, str, sizeof(str)-1)
+#define append_str2(p, str, len) ((char *)memcpy((p), str, (len)) + (len))
+#define append_str(p, str) append_str2(p, str, sizeof(str) - 1)
 #define append_lit(p, str) append_str2(p, str, rb_strlen_lit(str))
 
 #ifdef _MSC_VER
@@ -788,7 +786,7 @@ static const int c_file_access_mode =
 static bool
 compile_c_to_so(const char *c_file, const char *so_file)
 {
-    const char *files[] = { NULL, NULL, NULL, NULL, NULL, NULL, NULL, "-link", libruby_pathflag, NULL };
+    const char *files[] = {NULL, NULL, NULL, NULL, NULL, NULL, NULL, "-link", libruby_pathflag, NULL};
     char *p;
 
     // files[0] = "-Fe*.dll"
@@ -799,7 +797,8 @@ compile_c_to_so(const char *c_file, const char *so_file)
 
     // files[1] = "-Fo*.obj"
     // We don't need .obj file, but it's somehow created to cwd without -Fo and we want to control the output directory.
-    files[1] = p = alloca(sizeof(char) * (rb_strlen_lit("-Fo") + strlen(so_file) - rb_strlen_lit(DLEXT) + rb_strlen_lit(".obj") + 1));
+    files[1] = p = alloca(
+        sizeof(char) * (rb_strlen_lit("-Fo") + strlen(so_file) - rb_strlen_lit(DLEXT) + rb_strlen_lit(".obj") + 1));
     char *obj_file = p = append_lit(p, "-Fo");
     p = append_str2(p, so_file, strlen(so_file) - rb_strlen_lit(DLEXT));
     p = append_lit(p, ".obj");
@@ -825,7 +824,8 @@ compile_c_to_so(const char *c_file, const char *so_file)
 
     // files[5] = "-Fd*.pdb"
     // Generate .pdb file in temporary directory instead of cwd.
-    files[5] = p = alloca(sizeof(char) * (rb_strlen_lit("-Fd") + strlen(so_file) - rb_strlen_lit(DLEXT) + rb_strlen_lit(".pdb") + 1));
+    files[5] = p = alloca(
+        sizeof(char) * (rb_strlen_lit("-Fd") + strlen(so_file) - rb_strlen_lit(DLEXT) + rb_strlen_lit(".pdb") + 1));
     p = append_lit(p, "-Fd");
     p = append_str2(p, so_file, strlen(so_file) - rb_strlen_lit(DLEXT));
     p = append_lit(p, ".pdb");
@@ -837,10 +837,8 @@ compile_c_to_so(const char *c_file, const char *so_file)
     p = append_lit(p, "-Z7");
     *p = '\0';
 
-    char **args = form_args(5, CC_LDSHARED_ARGS, CC_CODEFLAG_ARGS,
-            files, CC_LIBS, CC_DLDFLAGS_ARGS);
-    if (args == NULL)
-        return false;
+    char **args = form_args(5, CC_LDSHARED_ARGS, CC_CODEFLAG_ARGS, files, CC_LIBS, CC_DLDFLAGS_ARGS);
+    if (args == NULL) return false;
 
     int exit_code = exec_process(cc_path, args);
     free(args);
@@ -852,9 +850,12 @@ compile_c_to_so(const char *c_file, const char *so_file)
             remove_file(obj_file);
 
             before_dot = obj_file + strlen(obj_file) - rb_strlen_lit(".obj");
-            append_lit(before_dot, ".lib"); remove_file(obj_file);
-            append_lit(before_dot, ".exp"); remove_file(obj_file);
-            append_lit(before_dot, ".pdb"); remove_file(obj_file);
+            append_lit(before_dot, ".lib");
+            remove_file(obj_file);
+            append_lit(before_dot, ".exp");
+            remove_file(obj_file);
+            append_lit(before_dot, ".pdb");
+            remove_file(obj_file);
         }
     }
     else {
@@ -869,14 +870,16 @@ static void
 make_pch(void)
 {
     const char *rest_args[] = {
-# ifdef __clang__
+#    ifdef __clang__
         "-emit-pch",
         "-c",
-# endif
-        // -nodefaultlibs is a linker flag, but it may affect cc1 behavior on Gentoo, which should NOT be changed on pch:
+#    endif
+        // -nodefaultlibs is a linker flag, but it may affect cc1 behavior on Gentoo, which should NOT be changed on
+        // pch:
         // https://gitweb.gentoo.org/proj/gcc-patches.git/tree/7.3.0/gentoo/13_all_default-ssp-fix.patch
-        GCC_NOSTDLIB_FLAGS
-        "-o", pch_file, header_file,
+        GCC_NOSTDLIB_FLAGS "-o",
+        pch_file,
+        header_file,
         NULL,
     };
 
@@ -912,17 +915,15 @@ make_pch(void)
 static bool
 compile_c_to_so(const char *c_file, const char *so_file)
 {
-    char* o_file = alloca(strlen(c_file) + 1);
+    char *o_file = alloca(strlen(c_file) + 1);
     strcpy(o_file, c_file);
     o_file[strlen(c_file) - 1] = 'o';
 
-    const char *o_args[] = {
-        "-o", o_file, c_file,
-# ifdef __clang__
+    const char *o_args[] = {"-o", o_file, c_file,
+#    ifdef __clang__
         "-include-pch", pch_file,
-# endif
-        "-c", NULL
-    };
+#    endif
+        "-c", NULL};
     char **args = form_args(5, cc_common_args, CC_CODEFLAG_ARGS, cc_added_args, o_args, CC_LINKER_ARGS);
     if (args == NULL) return false;
     int exit_code = exec_process(cc_path, args);
@@ -932,13 +933,11 @@ compile_c_to_so(const char *c_file, const char *so_file)
         return false;
     }
 
-    const char *so_args[] = {
-        "-o", so_file,
-# ifdef _WIN32
+    const char *so_args[] = {"-o", so_file,
+#    ifdef _WIN32
         libruby_pathflag,
-# endif
-        o_file, NULL
-    };
+#    endif
+        o_file, NULL};
     args = form_args(6, CC_LDSHARED_ARGS, CC_CODEFLAG_ARGS, so_args, CC_LIBS, CC_DLDFLAGS_ARGS, CC_LINKER_ARGS);
     if (args == NULL) return false;
     exit_code = exec_process(cc_path, args);
@@ -955,7 +954,7 @@ compile_c_to_so(const char *c_file, const char *so_file)
 static void compile_prelude(FILE *f);
 
 static bool
-compile_compact_jit_code(char* c_file)
+compile_compact_jit_code(char *c_file)
 {
     FILE *f;
     int fd = rb_cloexec_open(c_file, c_file_access_mode, 0600);
@@ -977,10 +976,12 @@ compile_compact_jit_code(char* c_file)
     // We need to check again here because we could've waited on GC above
     bool iseq_gced = false;
     struct rb_mjit_unit *child_unit = 0, *next;
-    ccan_list_for_each_safe(&active_units.head, child_unit, next, unode) {
+    ccan_list_for_each_safe(&active_units.head, child_unit, next, unode)
+    {
         if (child_unit->iseq == NULL) { // ISeq is GC-ed
             iseq_gced = true;
-            verbose(1, "JIT compaction: A method for JIT code u%d is obsoleted. Compaction will be skipped.", child_unit->id);
+            verbose(1, "JIT compaction: A method for JIT code u%d is obsoleted. Compaction will be skipped.",
+                child_unit->id);
             remove_from_list(child_unit, &active_units);
             free_unit(child_unit); // unload it without waiting for throttled unload_units to retry compaction quickly
         }
@@ -989,8 +990,7 @@ compile_compact_jit_code(char* c_file)
     CRITICAL_SECTION_FINISH(3, "before mjit_compile to wait GC finish");
     if (!in_jit) {
         fclose(f);
-        if (!mjit_opts.save_temps)
-            remove_file(c_file);
+        if (!mjit_opts.save_temps) remove_file(c_file);
         return false;
     }
 
@@ -1002,7 +1002,8 @@ compile_compact_jit_code(char* c_file)
     // TODO: Consider using a more granular lock after we implement inlining across
     // compacted functions (not done yet).
     bool success = true;
-    ccan_list_for_each(&active_units.head, child_unit, unode) {
+    ccan_list_for_each(&active_units.head, child_unit, unode)
+    {
         CRITICAL_SECTION_START(3, "before set_compiling_iseqs");
         success &= set_compiling_iseqs(child_unit->iseq);
         CRITICAL_SECTION_FINISH(3, "after set_compiling_iseqs");
@@ -1013,7 +1014,8 @@ compile_compact_jit_code(char* c_file)
 
         long iseq_lineno = 0;
         if (FIXNUM_P(ISEQ_BODY(child_unit->iseq)->location.first_lineno))
-            // FIX2INT may fallback to rb_num2long(), which is a method call and dangerous in MJIT worker. So using only FIX2LONG.
+            // FIX2INT may fallback to rb_num2long(), which is a method call and dangerous in MJIT worker. So using only
+            // FIX2LONG.
             iseq_lineno = FIX2LONG(ISEQ_BODY(child_unit->iseq)->location.first_lineno);
         const char *sep = "@";
         const char *iseq_label = RSTRING_PTR(ISEQ_BODY(child_unit->iseq)->location.label);
@@ -1059,8 +1061,7 @@ compact_all_jit_code(void)
     double start_time = real_ms_time();
     if (success) {
         success = compile_c_to_so(c_file, so_file);
-        if (!mjit_opts.save_temps)
-            remove_file(c_file);
+        if (!mjit_opts.save_temps) remove_file(c_file);
     }
     double end_time = real_ms_time();
 
@@ -1076,11 +1077,11 @@ compact_all_jit_code(void)
         // lazily dlclose handle (and .so file for win32) on `mjit_finish()`.
         add_to_list(unit, &compact_units);
 
-        if (!mjit_opts.save_temps)
-            remove_so_file(so_file, unit);
+        if (!mjit_opts.save_temps) remove_so_file(so_file, unit);
 
         CRITICAL_SECTION_START(3, "in compact_all_jit_code to read list");
-        ccan_list_for_each(&active_units.head, cur, unode) {
+        ccan_list_for_each(&active_units.head, cur, unode)
+        {
             void *func;
             char funcname[MAXPATHLEN];
             sprint_funcname(funcname, cur);
@@ -1096,7 +1097,8 @@ compact_all_jit_code(void)
             }
         }
         CRITICAL_SECTION_FINISH(3, "in compact_all_jit_code to read list");
-        verbose(1, "JIT compaction (%.1fms): Compacted %d methods %s -> %s", end_time - start_time, active_units.length, c_file, so_file);
+        verbose(1, "JIT compaction (%.1fms): Compacted %d methods %s -> %s", end_time - start_time, active_units.length,
+            c_file, so_file);
     }
     else {
         free(unit);
@@ -1126,14 +1128,14 @@ static const char *
 header_name_end(const char *s)
 {
     const char *e = s + strlen(s);
-# ifdef __GNUC__ // don't chomp .pch for mswin
+#    ifdef __GNUC__ // don't chomp .pch for mswin
     static const char suffix[] = ".gch";
 
     // chomp .gch suffix
-    if (e > s+sizeof(suffix)-1 && strcmp(e-sizeof(suffix)+1, suffix) == 0) {
-        e -= sizeof(suffix)-1;
+    if (e > s + sizeof(suffix) - 1 && strcmp(e - sizeof(suffix) + 1, suffix) == 0) {
+        e -= sizeof(suffix) - 1;
     }
-# endif
+#    endif
     return e;
 }
 #endif
@@ -1150,7 +1152,8 @@ compile_prelude(FILE *f)
     // print pch_file except .gch for gcc, but keep .pch for mswin
     for (; s < e; s++) {
         switch (*s) {
-          case '\\': case '"':
+        case '\\':
+        case '"':
             fputc('\\', f);
         }
         fputc(*s, f);
@@ -1160,7 +1163,8 @@ compile_prelude(FILE *f)
 
 #ifdef _WIN32
     fprintf(f, "void _pei386_runtime_relocator(void){}\n");
-    fprintf(f, "int __stdcall DllMainCRTStartup(void* hinstDLL, unsigned int fdwReason, void* lpvReserved) { return 1; }\n");
+    fprintf(f,
+        "int __stdcall DllMainCRTStartup(void* hinstDLL, unsigned int fdwReason, void* lpvReserved) { return 1; }\n");
 #endif
 }
 
@@ -1197,25 +1201,24 @@ convert_unit_to_func(struct rb_mjit_unit *unit)
     }
     // We need to check again here because we could've waited on GC above
     in_jit = (unit->iseq != NULL);
-    if (in_jit)
-        in_jit &= set_compiling_iseqs(unit->iseq);
+    if (in_jit) in_jit &= set_compiling_iseqs(unit->iseq);
     CRITICAL_SECTION_FINISH(3, "before mjit_compile to wait GC finish");
     if (!in_jit) {
         fclose(f);
-        if (!mjit_opts.save_temps)
-            remove_file(c_file);
+        if (!mjit_opts.save_temps) remove_file(c_file);
         return (mjit_func_t)NOT_COMPILED_JIT_ISEQ_FUNC;
     }
 
     // To make MJIT worker thread-safe against GC.compact, copy ISeq values while `in_jit` is true.
     long iseq_lineno = 0;
     if (FIXNUM_P(ISEQ_BODY(unit->iseq)->location.first_lineno))
-        // FIX2INT may fallback to rb_num2long(), which is a method call and dangerous in MJIT worker. So using only FIX2LONG.
+        // FIX2INT may fallback to rb_num2long(), which is a method call and dangerous in MJIT worker. So using only
+        // FIX2LONG.
         iseq_lineno = FIX2LONG(ISEQ_BODY(unit->iseq)->location.first_lineno);
     char *iseq_label = alloca(RSTRING_LEN(ISEQ_BODY(unit->iseq)->location.label) + 1);
-    char *iseq_path  = alloca(RSTRING_LEN(rb_iseq_path(unit->iseq)) + 1);
+    char *iseq_path = alloca(RSTRING_LEN(rb_iseq_path(unit->iseq)) + 1);
     strcpy(iseq_label, RSTRING_PTR(ISEQ_BODY(unit->iseq)->location.label));
-    strcpy(iseq_path,  RSTRING_PTR(rb_iseq_path(unit->iseq)));
+    strcpy(iseq_path, RSTRING_PTR(rb_iseq_path(unit->iseq)));
 
     verbose(2, "start compilation: %s@%s:%ld -> %s", iseq_label, iseq_path, iseq_lineno, c_file);
     fprintf(f, "/* %s@%s:%ld */\n\n", iseq_label, iseq_path, iseq_lineno);
@@ -1231,16 +1234,14 @@ convert_unit_to_func(struct rb_mjit_unit *unit)
 
     fclose(f);
     if (!success) {
-        if (!mjit_opts.save_temps)
-            remove_file(c_file);
+        if (!mjit_opts.save_temps) remove_file(c_file);
         verbose(1, "JIT failure: %s@%s:%ld -> %s", iseq_label, iseq_path, iseq_lineno, c_file);
         return (mjit_func_t)NOT_COMPILED_JIT_ISEQ_FUNC;
     }
 
     double start_time = real_ms_time();
     success = compile_c_to_so(c_file, so_file);
-    if (!mjit_opts.save_temps)
-        remove_file(c_file);
+    if (!mjit_opts.save_temps) remove_file(c_file);
     double end_time = real_ms_time();
 
     if (!success) {
@@ -1249,12 +1250,11 @@ convert_unit_to_func(struct rb_mjit_unit *unit)
     }
 
     void *func = load_func_from_so(so_file, funcname, unit);
-    if (!mjit_opts.save_temps)
-        remove_so_file(so_file, unit);
+    if (!mjit_opts.save_temps) remove_so_file(so_file, unit);
 
     if ((uintptr_t)func > (uintptr_t)LAST_JIT_ISEQ_FUNC) {
-        verbose(1, "JIT success (%.1fms): %s@%s:%ld -> %s",
-                end_time - start_time, iseq_label, iseq_path, iseq_lineno, c_file);
+        verbose(1, "JIT success (%.1fms): %s@%s:%ld -> %s", end_time - start_time, iseq_label, iseq_path, iseq_lineno,
+            c_file);
     }
     return (mjit_func_t)func;
 }
@@ -1274,7 +1274,8 @@ mjit_iseq_cc_entries(const struct rb_iseq_constant_body *const body)
 //
 // This assumes that it's safe to reference cc without acquiring GVL.
 int
-mjit_capture_cc_entries(const struct rb_iseq_constant_body *compiled_iseq, const struct rb_iseq_constant_body *captured_iseq)
+mjit_capture_cc_entries(
+    const struct rb_iseq_constant_body *compiled_iseq, const struct rb_iseq_constant_body *captured_iseq)
 {
     struct rb_mjit_unit *unit = compiled_iseq->jit_unit;
     unsigned int new_entries_size = unit->cc_entries_size + captured_iseq->ci_size;
@@ -1311,24 +1312,21 @@ mark_ec_units(rb_execution_context_t *ec)
 {
     const rb_control_frame_t *cfp;
 
-    if (ec->vm_stack == NULL)
-        return;
-    for (cfp = RUBY_VM_END_CONTROL_FRAME(ec) - 1; ; cfp = RUBY_VM_NEXT_CONTROL_FRAME(cfp)) {
+    if (ec->vm_stack == NULL) return;
+    for (cfp = RUBY_VM_END_CONTROL_FRAME(ec) - 1;; cfp = RUBY_VM_NEXT_CONTROL_FRAME(cfp)) {
         const rb_iseq_t *iseq;
-        if (cfp->pc && (iseq = cfp->iseq) != NULL
-            && imemo_type((VALUE) iseq) == imemo_iseq
-            && (ISEQ_BODY(iseq)->jit_unit) != NULL) {
+        if (cfp->pc && (iseq = cfp->iseq) != NULL && imemo_type((VALUE)iseq) == imemo_iseq &&
+            (ISEQ_BODY(iseq)->jit_unit) != NULL) {
             ISEQ_BODY(iseq)->jit_unit->used_code_p = true;
         }
 
-        if (cfp == ec->cfp)
-            break; // reached the most recent cfp
+        if (cfp == ec->cfp) break; // reached the most recent cfp
     }
 }
 
 // MJIT info related to an existing continutaion.
 struct mjit_cont {
-    rb_execution_context_t *ec; // continuation ec
+    rb_execution_context_t *ec;    // continuation ec
     struct mjit_cont *prev, *next; // used to form lists
 };
 
@@ -1347,7 +1345,8 @@ unload_units(void)
 
     // For now, we don't unload units when ISeq is GCed. We should
     // unload such ISeqs first here.
-    ccan_list_for_each_safe(&active_units.head, unit, next, unode) {
+    ccan_list_for_each_safe(&active_units.head, unit, next, unode)
+    {
         if (unit->iseq == NULL) { // ISeq is GCed.
             remove_from_list(unit, &active_units);
             free_unit(unit);
@@ -1355,7 +1354,8 @@ unload_units(void)
     }
 
     // Detect units which are in use and can't be unloaded.
-    ccan_list_for_each(&active_units.head, unit, unode) {
+    ccan_list_for_each(&active_units.head, unit, unode)
+    {
         assert(unit->iseq != NULL && unit->handle != NULL);
         unit->used_code_p = false;
     }
@@ -1372,22 +1372,24 @@ unload_units(void)
     while (true) {
         // Calculate the next max total_calls in unit_queue
         long unsigned max_queue_calls = 0;
-        ccan_list_for_each(&unit_queue.head, unit, unode) {
-            if (unit->iseq != NULL && max_queue_calls < ISEQ_BODY(unit->iseq)->total_calls
-                    && ISEQ_BODY(unit->iseq)->total_calls < prev_queue_calls) {
+        ccan_list_for_each(&unit_queue.head, unit, unode)
+        {
+            if (unit->iseq != NULL && max_queue_calls < ISEQ_BODY(unit->iseq)->total_calls &&
+                ISEQ_BODY(unit->iseq)->total_calls < prev_queue_calls) {
                 max_queue_calls = ISEQ_BODY(unit->iseq)->total_calls;
             }
         }
         prev_queue_calls = max_queue_calls;
 
         bool unloaded_p = false;
-        ccan_list_for_each_safe(&active_units.head, unit, next, unode) {
+        ccan_list_for_each_safe(&active_units.head, unit, next, unode)
+        {
             if (unit->used_code_p) // We can't unload code on stack.
                 continue;
 
             if (max_queue_calls > ISEQ_BODY(unit->iseq)->total_calls) {
-                verbose(2, "Unloading unit %d (calls=%lu, threshold=%lu)",
-                        unit->id, ISEQ_BODY(unit->iseq)->total_calls, max_queue_calls);
+                verbose(2, "Unloading unit %d (calls=%lu, threshold=%lu)", unit->id, ISEQ_BODY(unit->iseq)->total_calls,
+                    max_queue_calls);
                 assert(unit->handle != NULL);
                 remove_from_list(unit, &active_units);
                 free_unit(unit);
@@ -1403,7 +1405,8 @@ unload_units(void)
     }
 }
 
-static void mjit_add_iseq_to_process(const rb_iseq_t *iseq, const struct rb_mjit_compile_info *compile_info, bool worker_p);
+static void mjit_add_iseq_to_process(
+    const rb_iseq_t *iseq, const struct rb_mjit_compile_info *compile_info, bool worker_p);
 
 // The function implementing a worker. It is executed in a separate
 // thread by rb_thread_create_mjit_thread. It compiles precompiled header
@@ -1441,7 +1444,8 @@ mjit_worker(void)
 
         // Wait until a unit becomes available
         CRITICAL_SECTION_START(3, "in worker dequeue");
-        while ((ccan_list_empty(&unit_queue.head) || active_units.length >= mjit_opts.max_cache_size) && !stop_worker_p) {
+        while (
+            (ccan_list_empty(&unit_queue.head) || active_units.length >= mjit_opts.max_cache_size) && !stop_worker_p) {
             rb_native_cond_wait(&mjit_worker_wakeup, &mjit_engine_mutex);
             verbose(3, "Getting wakeup from client");
 
@@ -1449,7 +1453,8 @@ mjit_worker(void)
             if (pending_stale_p) {
                 pending_stale_p = false;
                 struct rb_mjit_unit *next;
-                ccan_list_for_each_safe(&active_units.head, unit, next, unode) {
+                ccan_list_for_each_safe(&active_units.head, unit, next, unode)
+                {
                     if (unit->stale_p) {
                         unit->stale_p = false;
                         remove_from_list(unit, &active_units);
@@ -1476,9 +1481,12 @@ mjit_worker(void)
                 verbose(3, "Sending wakeup signal to client in a mjit-worker for GC");
                 rb_native_cond_signal(&mjit_client_wakeup);
             }
-            if (active_units.length == mjit_opts.max_cache_size && mjit_opts.wait) { // Sometimes all methods may be in use
-                mjit_opts.max_cache_size++; // avoid infinite loop on `rb_mjit_wait_call`. Note that --jit-wait is just for testing.
-                verbose(1, "No units can be unloaded -- incremented max-cache-size to %d for --jit-wait", mjit_opts.max_cache_size);
+            if (active_units.length == mjit_opts.max_cache_size &&
+                mjit_opts.wait) {           // Sometimes all methods may be in use
+                mjit_opts.max_cache_size++; // avoid infinite loop on `rb_mjit_wait_call`. Note that --jit-wait is just
+                                            // for testing.
+                verbose(1, "No units can be unloaded -- incremented max-cache-size to %d for --jit-wait",
+                    mjit_opts.max_cache_size);
             }
         }
         unit = get_from_list(&unit_queue);
@@ -1508,9 +1516,11 @@ mjit_worker(void)
 
 #if USE_JIT_COMPACTION
             // Combine .o files to one .so and reload all jit_func to improve memory locality.
-            if (compact_units.length < max_compact_size
-                && ((!mjit_opts.wait && unit_queue.length == 0 && active_units.length > 1)
-                    || (active_units.length == mjit_opts.max_cache_size && compact_units.length * throttle_threshold <= total_unloads))) { // throttle compaction by total_unloads
+            if (compact_units.length < max_compact_size &&
+                ((!mjit_opts.wait && unit_queue.length == 0 && active_units.length > 1) ||
+                    (active_units.length == mjit_opts.max_cache_size &&
+                        compact_units.length * throttle_threshold <=
+                            total_unloads))) { // throttle compaction by total_unloads
                 compact_all_jit_code();
             }
 #endif

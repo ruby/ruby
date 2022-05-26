@@ -1,4 +1,4 @@
-#ifndef INTERNAL_FIXNUM_H                                /*-*-C-*-vi:se ft=c:*/
+#ifndef INTERNAL_FIXNUM_H /*-*-C-*-vi:se ft=c:*/
 #define INTERNAL_FIXNUM_H
 /**
  * @author     Ruby developers <ruby-core@ruby-lang.org>
@@ -8,19 +8,19 @@
  *             file COPYING are met.  Consult the file for details.
  * @brief      Internal header for Fixnums.
  */
-#include "ruby/internal/config.h"      /* for HAVE_LONG_LONG */
-#include <limits.h>             /* for CHAR_BIT */
-#include "internal/compilers.h" /* for __has_builtin */
-#include "ruby/internal/stdbool.h"     /* for bool */
-#include "ruby/intern.h"        /* for rb_big_mul */
-#include "ruby/ruby.h"          /* for RB_FIXABLE */
+#include "internal/compilers.h"    /* for __has_builtin */
+#include "ruby/intern.h"           /* for rb_big_mul */
+#include "ruby/internal/config.h"  /* for HAVE_LONG_LONG */
+#include "ruby/internal/stdbool.h" /* for bool */
+#include "ruby/ruby.h"             /* for RB_FIXABLE */
+#include <limits.h>                /* for CHAR_BIT */
 
 #if HAVE_LONG_LONG && SIZEOF_LONG * 2 <= SIZEOF_LONG_LONG
-# define DLONG LONG_LONG
-# define DL2NUM(x) LL2NUM(x)
+#    define DLONG LONG_LONG
+#    define DL2NUM(x) LL2NUM(x)
 #elif defined(HAVE_INT128_T)
-# define DLONG int128_t
-# define DL2NUM(x) (RB_FIXABLE(x) ? LONG2FIX(x) : rb_int128t2big(x))
+#    define DLONG int128_t
+#    define DL2NUM(x) (RB_FIXABLE(x) ? LONG2FIX(x) : rb_int128t2big(x))
 VALUE rb_int128t2big(int128_t n); /* in bignum.c */
 #endif
 
@@ -69,7 +69,7 @@ rb_fix_plus_fix(VALUE x, VALUE y)
      *         * positive: 0b01xxx...
      *         * negative: 0b10xxx...
      */
-    if (__builtin_add_overflow((long)x, (long)y-1, &lz)) {
+    if (__builtin_add_overflow((long)x, (long)y - 1, &lz)) {
         return rb_int2big(rb_overflowed_fix_to_int(lz));
     }
     else {
@@ -86,7 +86,7 @@ rb_fix_minus_fix(VALUE x, VALUE y)
     return LONG2NUM(lz);
 #else
     long lz;
-    if (__builtin_sub_overflow((long)x, (long)y-1, &lz)) {
+    if (__builtin_sub_overflow((long)x, (long)y - 1, &lz)) {
         return rb_int2big(rb_overflowed_fix_to_int(lz));
     }
     else {

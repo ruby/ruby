@@ -1,4 +1,4 @@
-#ifndef INTERNAL_COMPLEX_H                               /*-*-C-*-vi:se ft=c:*/
+#ifndef INTERNAL_COMPLEX_H /*-*-C-*-vi:se ft=c:*/
 #define INTERNAL_COMPLEX_H
 /**
  * @author     Ruby developers <ruby-core@ruby-lang.org>
@@ -8,7 +8,7 @@
  *             file COPYING are met.  Consult the file for details.
  * @brief      Internal header for Complex.
  */
-#include "ruby/internal/value.h"          /* for struct RBasic */
+#include "ruby/internal/value.h" /* for struct RBasic */
 
 struct RComplex {
     struct RBasic basic;

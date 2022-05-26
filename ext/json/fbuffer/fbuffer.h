@@ -5,42 +5,42 @@
 #include "ruby.h"
 
 #ifndef RHASH_SIZE
-#define RHASH_SIZE(hsh) (RHASH(hsh)->tbl->num_entries)
+#    define RHASH_SIZE(hsh) (RHASH(hsh)->tbl->num_entries)
 #endif
 
 #ifndef RFLOAT_VALUE
-#define RFLOAT_VALUE(val) (RFLOAT(val)->value)
+#    define RFLOAT_VALUE(val) (RFLOAT(val)->value)
 #endif
 
 #ifndef RARRAY_LEN
-#define RARRAY_LEN(ARRAY) RARRAY(ARRAY)->len
+#    define RARRAY_LEN(ARRAY) RARRAY(ARRAY)->len
 #endif
 #ifndef RSTRING_PTR
-#define RSTRING_PTR(string) RSTRING(string)->ptr
+#    define RSTRING_PTR(string) RSTRING(string)->ptr
 #endif
 #ifndef RSTRING_LEN
-#define RSTRING_LEN(string) RSTRING(string)->len
+#    define RSTRING_LEN(string) RSTRING(string)->len
 #endif
 
 #ifdef PRIsVALUE
-# define RB_OBJ_CLASSNAME(obj) rb_obj_class(obj)
-# define RB_OBJ_STRING(obj) (obj)
+#    define RB_OBJ_CLASSNAME(obj) rb_obj_class(obj)
+#    define RB_OBJ_STRING(obj) (obj)
 #else
-# define PRIsVALUE "s"
-# define RB_OBJ_CLASSNAME(obj) rb_obj_classname(obj)
-# define RB_OBJ_STRING(obj) StringValueCStr(obj)
+#    define PRIsVALUE "s"
+#    define RB_OBJ_CLASSNAME(obj) rb_obj_classname(obj)
+#    define RB_OBJ_STRING(obj) StringValueCStr(obj)
 #endif
 
 #ifdef HAVE_RUBY_ENCODING_H
-#include "ruby/encoding.h"
-#define FORCE_UTF8(obj) rb_enc_associate((obj), rb_utf8_encoding())
+#    include "ruby/encoding.h"
+#    define FORCE_UTF8(obj) rb_enc_associate((obj), rb_utf8_encoding())
 #else
-#define FORCE_UTF8(obj)
+#    define FORCE_UTF8(obj)
 #endif
 
 /* We don't need to guard objects for rbx, so let's do nothing at all. */
 #ifndef RB_GC_GUARD
-#define RB_GC_GUARD(object)
+#    define RB_GC_GUARD(object)
 #endif
 
 typedef struct FBufferStruct {
@@ -70,28 +70,32 @@ static FBuffer *fbuffer_dup(FBuffer *fb);
 static VALUE fbuffer_to_s(FBuffer *fb);
 #endif
 
-static FBuffer *fbuffer_alloc(unsigned long initial_length)
+static FBuffer *
+fbuffer_alloc(unsigned long initial_length)
 {
     FBuffer *fb;
     if (initial_length <= 0) initial_length = FBUFFER_INITIAL_LENGTH_DEFAULT;
     fb = ALLOC(FBuffer);
-    memset((void *) fb, 0, sizeof(FBuffer));
+    memset((void *)fb, 0, sizeof(FBuffer));
     fb->initial_length = initial_length;
     return fb;
 }
 
-static void fbuffer_free(FBuffer *fb)
+static void
+fbuffer_free(FBuffer *fb)
 {
     if (fb->ptr) ruby_xfree(fb->ptr);
     ruby_xfree(fb);
 }
 
-static void fbuffer_clear(FBuffer *fb)
+static void
+fbuffer_clear(FBuffer *fb)
 {
     fb->len = 0;
 }
 
-static void fbuffer_inc_capa(FBuffer *fb, unsigned long requested)
+static void
+fbuffer_inc_capa(FBuffer *fb, unsigned long requested)
 {
     unsigned long required;
 
@@ -100,7 +104,8 @@ static void fbuffer_inc_capa(FBuffer *fb, unsigned long requested)
         fb->capa = fb->initial_length;
     }
 
-    for (required = fb->capa; requested > required - fb->len; required <<= 1);
+    for (required = fb->capa; requested > required - fb->len; required <<= 1)
+        ;
 
     if (required > fb->capa) {
         REALLOC_N(fb->ptr, char, required);
@@ -108,7 +113,8 @@ static void fbuffer_inc_capa(FBuffer *fb, unsigned long requested)
     }
 }
 
-static void fbuffer_append(FBuffer *fb, const char *newstr, unsigned long len)
+static void
+fbuffer_append(FBuffer *fb, const char *newstr, unsigned long len)
 {
     if (len > 0) {
         fbuffer_inc_capa(fb, len);
@@ -118,7 +124,8 @@ static void fbuffer_append(FBuffer *fb, const char *newstr, unsigned long len)
 }
 
 #ifdef JSON_GENERATOR
-static void fbuffer_append_str(FBuffer *fb, VALUE str)
+static void
+fbuffer_append_str(FBuffer *fb, VALUE str)
 {
     const char *newstr = StringValuePtr(str);
     unsigned long len = RSTRING_LEN(str);
@@ -129,7 +136,8 @@ static void fbuffer_append_str(FBuffer *fb, VALUE str)
 }
 #endif
 
-static void fbuffer_append_char(FBuffer *fb, char newchr)
+static void
+fbuffer_append_char(FBuffer *fb, char newchr)
 {
     fbuffer_inc_capa(fb, 1);
     *(fb->ptr + fb->len) = newchr;
@@ -137,7 +145,8 @@ static void fbuffer_append_char(FBuffer *fb, char newchr)
 }
 
 #ifdef JSON_GENERATOR
-static void freverse(char *start, char *end)
+static void
+freverse(char *start, char *end)
 {
     char c;
 
@@ -146,27 +155,32 @@ static void freverse(char *start, char *end)
     }
 }
 
-static long fltoa(long number, char *buf)
+static long
+fltoa(long number, char *buf)
 {
     static char digits[] = "0123456789";
     long sign = number;
-    char* tmp = buf;
+    char *tmp = buf;
 
     if (sign < 0) number = -number;
-    do *tmp++ = digits[number % 10]; while (number /= 10);
+    do
+        *tmp++ = digits[number % 10];
+    while (number /= 10);
     if (sign < 0) *tmp++ = '-';
     freverse(buf, tmp - 1);
     return tmp - buf;
 }
 
-static void fbuffer_append_long(FBuffer *fb, long number)
+static void
+fbuffer_append_long(FBuffer *fb, long number)
 {
     char buf[20];
     unsigned long len = fltoa(number, buf);
     fbuffer_append(fb, buf, len);
 }
 
-static FBuffer *fbuffer_dup(FBuffer *fb)
+static FBuffer *
+fbuffer_dup(FBuffer *fb)
 {
     unsigned long len = fb->len;
     FBuffer *result;
@@ -176,7 +190,8 @@ static FBuffer *fbuffer_dup(FBuffer *fb)
     return result;
 }
 
-static VALUE fbuffer_to_s(FBuffer *fb)
+static VALUE
+fbuffer_to_s(FBuffer *fb)
 {
     VALUE result = rb_str_new(FBUFFER_PTR(fb), FBUFFER_LEN(fb));
     fbuffer_free(fb);

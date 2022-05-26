@@ -7,15 +7,15 @@
  * This Asyncify based implementation is not much efficient and will be replaced with future stack-switching feature.
  */
 
-#include <stdlib.h>
 #include "wasm/fiber.h"
 #include "wasm/asyncify.h"
+#include <stdlib.h>
 
 #ifdef RB_WASM_ENABLE_DEBUG_LOG
-# include <stdio.h>
-# define RB_WASM_DEBUG_LOG(...) fprintf(stderr, __VA_ARGS__)
+#    include <stdio.h>
+#    define RB_WASM_DEBUG_LOG(...) fprintf(stderr, __VA_ARGS__)
 #else
-# define RB_WASM_DEBUG_LOG(...)
+#    define RB_WASM_DEBUG_LOG(...)
 #endif
 
 void
@@ -48,8 +48,8 @@ rb_wasm_swapcontext(rb_wasm_fiber_context *ofcp, rb_wasm_fiber_context *fcp)
 }
 
 void *
-rb_wasm_handle_fiber_unwind(void (**new_fiber_entry)(void *, void *),
-                            void **arg0, void **arg1, bool *is_new_fiber_started)
+rb_wasm_handle_fiber_unwind(
+    void (**new_fiber_entry)(void *, void *), void **arg0, void **arg1, bool *is_new_fiber_started)
 {
     rb_wasm_fiber_context *next_fiber;
     if (!_rb_wasm_active_next_fiber) {
@@ -73,7 +73,8 @@ rb_wasm_handle_fiber_unwind(void (**new_fiber_entry)(void *, void *),
         next_fiber->is_started = true;
         *is_new_fiber_started = true;
         return NULL;
-    } else {
+    }
+    else {
         RB_WASM_DEBUG_LOG("[%s] resume a fiber\n", __func__);
         // resume a fiber again
         next_fiber->is_rewinding = true;

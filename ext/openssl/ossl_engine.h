@@ -9,7 +9,7 @@
  * (See the file 'LICENCE'.)
  */
 #if !defined(OSSL_ENGINE_H)
-#define OSSL_ENGINE_H
+#    define OSSL_ENGINE_H
 
 extern VALUE cEngine;
 extern VALUE eEngineError;

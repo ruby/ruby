@@ -1,4 +1,4 @@
-#ifndef RBIMPL_INTERN_STRING_H                       /*-*-C++-*-vi:se ft=cpp:*/
+#ifndef RBIMPL_INTERN_STRING_H /*-*-C++-*-vi:se ft=cpp:*/
 #define RBIMPL_INTERN_STRING_H
 /**
  * @file
@@ -23,15 +23,15 @@
 #include "ruby/internal/config.h"
 
 #ifdef STDC_HEADERS
-# include <stddef.h>
+#    include <stddef.h>
 #endif
 
 #ifdef HAVE_STRING_H
-# include <string.h>
+#    include <string.h>
 #endif
 
 #ifdef HAVE_STDINT_H
-# include <stdint.h>
+#    include <stdint.h>
 #endif
 
 #include "ruby/internal/attr/deprecated.h"
@@ -41,7 +41,7 @@
 #include "ruby/internal/dllexport.h"
 #include "ruby/internal/value.h"
 #include "ruby/internal/variable.h" /* rb_gvar_setter_t */
-#include "ruby/st.h"         /* st_index_t */
+#include "ruby/st.h"                /* st_index_t */
 
 RBIMPL_SYMBOL_EXPORT_BEGIN()
 
@@ -520,10 +520,10 @@ void rb_str_shared_replace(VALUE dst, VALUE src);
 VALUE rb_str_buf_append(VALUE dst, VALUE src);
 
 /** @alias{rb_str_cat} */
-VALUE rb_str_buf_cat(VALUE, const char*, long);
+VALUE rb_str_buf_cat(VALUE, const char *, long);
 
 /** @alias{rb_str_cat_cstr} */
-VALUE rb_str_buf_cat2(VALUE, const char*);
+VALUE rb_str_buf_cat2(VALUE, const char *);
 
 RBIMPL_ATTR_NONNULL(())
 /**
@@ -858,7 +858,7 @@ VALUE rb_str_cat(VALUE dst, const char *src, long srclen);
 VALUE rb_str_cat_cstr(VALUE dst, const char *src);
 
 /** @alias{rb_str_cat_cstr} */
-VALUE rb_str_cat2(VALUE, const char*);
+VALUE rb_str_cat2(VALUE, const char *);
 
 /**
  * Identical to  rb_str_buf_append(), except  it converts  the right  hand side
@@ -904,7 +904,7 @@ VALUE rb_str_concat(VALUE dst, VALUE src);
  *             PRF",  In  proceedings  of   13th  International  Conference  on
  *             Cryptology in  India (INDOCRYPT 2012), LNCS  7668, pp.  489-508,
  *             2012.  http://doi.org/10.1007/978-3-642-34931-7_28
-*/
+ */
 st_index_t rb_memhash(const void *ptr, long len);
 
 /**
@@ -1495,11 +1495,8 @@ rbimpl_exc_new_cstr(VALUE exc, const char *str)
  * @pre        At  least  `len` bytes  of  continuous  memory region  shall  be
  *             accessible via `str`.
  */
-#define rb_str_new(str, len)                    \
-    ((RBIMPL_CONSTANT_P(str) &&                 \
-      RBIMPL_CONSTANT_P(len) ?                  \
-      rb_str_new_static      :                  \
-      rb_str_new) ((str), (len)))
+#define rb_str_new(str, len) \
+    ((RBIMPL_CONSTANT_P(str) && RBIMPL_CONSTANT_P(len) ? rb_str_new_static : rb_str_new)((str), (len)))
 
 /**
  * Identical to #rb_str_new, except it assumes  the passed pointer is a pointer
@@ -1511,10 +1508,7 @@ rbimpl_exc_new_cstr(VALUE exc, const char *str)
  *             contents are verbatim copy of `str`.
  * @pre        `str` must not be a null pointer.
  */
-#define rb_str_new_cstr(str)                    \
-    ((RBIMPL_CONSTANT_P(str) ?                  \
-      rbimpl_str_new_cstr    :                  \
-      rb_str_new_cstr) (str))
+#define rb_str_new_cstr(str) ((RBIMPL_CONSTANT_P(str) ? rbimpl_str_new_cstr : rb_str_new_cstr)(str))
 
 /**
  * Identical  to  #rb_str_new, except  it  generates  a  string of  "US  ASCII"
@@ -1529,11 +1523,8 @@ rbimpl_exc_new_cstr(VALUE exc, const char *str)
  * @return     An  instance   of  ::rb_cString,  of  `len`   bytes  length,  of
  *             "US ASCII" encoding, whose contents are verbatim copy of `str`.
  */
-#define rb_usascii_str_new(str, len)            \
-    ((RBIMPL_CONSTANT_P(str)    &&              \
-      RBIMPL_CONSTANT_P(len)    ?               \
-      rb_usascii_str_new_static :               \
-      rb_usascii_str_new) ((str), (len)))
+#define rb_usascii_str_new(str, len) \
+    ((RBIMPL_CONSTANT_P(str) && RBIMPL_CONSTANT_P(len) ? rb_usascii_str_new_static : rb_usascii_str_new)((str), (len)))
 
 /**
  * Identical to #rb_str_new, except it generates a string of "UTF-8" encoding.
@@ -1546,11 +1537,8 @@ rbimpl_exc_new_cstr(VALUE exc, const char *str)
  * @return     An  instance   of  ::rb_cString,  of  `len`   bytes  length,  of
  *             "UTF-8" encoding, whose contents are verbatim copy of `str`.
  */
-#define rb_utf8_str_new(str, len)               \
-    ((RBIMPL_CONSTANT_P(str) &&                 \
-      RBIMPL_CONSTANT_P(len) ?                  \
-      rb_utf8_str_new_static :                  \
-      rb_utf8_str_new) ((str), (len)))
+#define rb_utf8_str_new(str, len) \
+    ((RBIMPL_CONSTANT_P(str) && RBIMPL_CONSTANT_P(len) ? rb_utf8_str_new_static : rb_utf8_str_new)((str), (len)))
 
 /**
  * Identical to  #rb_str_new_cstr, except it  generates a string of  "US ASCII"
@@ -1564,10 +1552,8 @@ rbimpl_exc_new_cstr(VALUE exc, const char *str)
  *             contents are verbatim copy of `str`.
  * @pre        `str` must not be a null pointer.
  */
-#define rb_usascii_str_new_cstr(str)            \
-    ((RBIMPL_CONSTANT_P(str)      ?             \
-      rbimpl_usascii_str_new_cstr :             \
-      rb_usascii_str_new_cstr) (str))
+#define rb_usascii_str_new_cstr(str) \
+    ((RBIMPL_CONSTANT_P(str) ? rbimpl_usascii_str_new_cstr : rb_usascii_str_new_cstr)(str))
 
 /**
  * Identical  to #rb_str_new_cstr,  except  it generates  a  string of  "UTF-8"
@@ -1580,10 +1566,7 @@ rbimpl_exc_new_cstr(VALUE exc, const char *str)
  *             are verbatim copy of `str`.
  * @pre        `str` must not be a null pointer.
  */
-#define rb_utf8_str_new_cstr(str)               \
-    ((RBIMPL_CONSTANT_P(str)   ?                \
-      rbimpl_utf8_str_new_cstr :                \
-      rb_utf8_str_new_cstr) (str))
+#define rb_utf8_str_new_cstr(str) ((RBIMPL_CONSTANT_P(str) ? rbimpl_utf8_str_new_cstr : rb_utf8_str_new_cstr)(str))
 
 /**
  * Identical  to #rb_str_new_cstr,  except it  generates a  string of  "default
@@ -1601,10 +1584,8 @@ rbimpl_exc_new_cstr(VALUE exc, const char *str)
  *             `valid_encoding?` of the result object.
  * @pre        `str` must not be a null pointer.
  */
-#define rb_external_str_new_cstr(str)           \
-    ((RBIMPL_CONSTANT_P(str)       ?            \
-      rbimpl_external_str_new_cstr :            \
-      rb_external_str_new_cstr) (str))
+#define rb_external_str_new_cstr(str) \
+    ((RBIMPL_CONSTANT_P(str) ? rbimpl_external_str_new_cstr : rb_external_str_new_cstr)(str))
 
 /**
  * Identical  to #rb_external_str_new_cstr,  except  it generates  a string  of
@@ -1622,10 +1603,8 @@ rbimpl_exc_new_cstr(VALUE exc, const char *str)
  *             `valid_encoding?` of the result object.
  * @pre        `str` must not be a null pointer.
  */
-#define rb_locale_str_new_cstr(str)             \
-    ((RBIMPL_CONSTANT_P(str)     ?              \
-      rbimpl_locale_str_new_cstr :              \
-      rb_locale_str_new_cstr) (str))
+#define rb_locale_str_new_cstr(str) \
+    ((RBIMPL_CONSTANT_P(str) ? rbimpl_locale_str_new_cstr : rb_locale_str_new_cstr)(str))
 
 /**
  * Identical to #rb_str_new_cstr, except done differently.
@@ -1636,10 +1615,7 @@ rbimpl_exc_new_cstr(VALUE exc, const char *str)
  *             contents are verbatim copy of `str`.
  * @pre        `str` must not be a null pointer.
  */
-#define rb_str_buf_new_cstr(str)                \
-    ((RBIMPL_CONSTANT_P(str)  ?                 \
-      rbimpl_str_buf_new_cstr :                 \
-      rb_str_buf_new_cstr) (str))
+#define rb_str_buf_new_cstr(str) ((RBIMPL_CONSTANT_P(str) ? rbimpl_str_buf_new_cstr : rb_str_buf_new_cstr)(str))
 
 /**
  * Identical to rb_str_cat(), except it assumes the passed pointer is a pointer
@@ -1653,10 +1629,7 @@ rbimpl_exc_new_cstr(VALUE exc, const char *str)
  * @pre         `str` must not be a null pointer.
  * @post        `buf` has the contents of `str` appended.
  */
-#define rb_str_cat_cstr(buf, str)               \
-    ((RBIMPL_CONSTANT_P(str) ?                  \
-      rbimpl_str_cat_cstr    :                  \
-      rb_str_cat_cstr) ((buf), (str)))
+#define rb_str_cat_cstr(buf, str) ((RBIMPL_CONSTANT_P(str) ? rbimpl_str_cat_cstr : rb_str_cat_cstr)((buf), (str)))
 
 /**
  * Identical to rb_exc_new(), except it assumes the passed pointer is a pointer
@@ -1667,20 +1640,17 @@ rbimpl_exc_new_cstr(VALUE exc, const char *str)
  * @return      An instance of `exc` whose message is `str`.
  * @pre         `str` must not be a null pointer.
  */
-#define rb_exc_new_cstr(exc, str)               \
-    ((RBIMPL_CONSTANT_P(str) ?                  \
-      rbimpl_exc_new_cstr    :                  \
-      rb_exc_new_cstr) ((exc), (str)))
+#define rb_exc_new_cstr(exc, str) ((RBIMPL_CONSTANT_P(str) ? rbimpl_exc_new_cstr : rb_exc_new_cstr)((exc), (str)))
 
-#define rb_str_new2 rb_str_new_cstr                  /**< @old{rb_str_new_cstr} */
-#define rb_str_new3 rb_str_new_shared                /**< @old{rb_str_new_shared} */
-#define rb_str_new4 rb_str_new_frozen                /**< @old{rb_str_new_frozen} */
-#define rb_str_new5 rb_str_new_with_class            /**< @old{rb_str_new_with_class} */
-#define rb_str_buf_new2 rb_str_buf_new_cstr          /**< @old{rb_str_buf_new_cstr} */
-#define rb_usascii_str_new2 rb_usascii_str_new_cstr  /**< @old{rb_usascii_str_new_cstr} */
-#define rb_str_buf_cat rb_str_cat                    /**< @alias{rb_str_cat} */
-#define rb_str_buf_cat2 rb_str_cat_cstr              /**< @old{rb_usascii_str_new_cstr} */
-#define rb_str_cat2 rb_str_cat_cstr                  /**< @old{rb_str_cat_cstr} */
+#define rb_str_new2 rb_str_new_cstr                 /**< @old{rb_str_new_cstr} */
+#define rb_str_new3 rb_str_new_shared               /**< @old{rb_str_new_shared} */
+#define rb_str_new4 rb_str_new_frozen               /**< @old{rb_str_new_frozen} */
+#define rb_str_new5 rb_str_new_with_class           /**< @old{rb_str_new_with_class} */
+#define rb_str_buf_new2 rb_str_buf_new_cstr         /**< @old{rb_str_buf_new_cstr} */
+#define rb_usascii_str_new2 rb_usascii_str_new_cstr /**< @old{rb_usascii_str_new_cstr} */
+#define rb_str_buf_cat rb_str_cat                   /**< @alias{rb_str_cat} */
+#define rb_str_buf_cat2 rb_str_cat_cstr             /**< @old{rb_usascii_str_new_cstr} */
+#define rb_str_cat2 rb_str_cat_cstr                 /**< @old{rb_str_cat_cstr} */
 
 /**
  * Length of a string literal.
@@ -1747,10 +1717,10 @@ rbimpl_exc_new_cstr(VALUE exc, const char *str)
  */
 #define rb_enc_str_new_lit(str, enc) rb_enc_str_new_static((str), rb_strlen_lit(str), (enc))
 
-#define rb_str_new_literal(str) rb_str_new_lit(str)                    /**< @alias{rb_str_new_lit} */
-#define rb_usascii_str_new_literal(str) rb_usascii_str_new_lit(str)    /**< @alias{rb_usascii_str_new_lit} */
-#define rb_utf8_str_new_literal(str) rb_utf8_str_new_lit(str)          /**< @alias{rb_utf8_str_new_lit} */
-#define rb_enc_str_new_literal(str, enc) rb_enc_str_new_lit(str, enc)  /**< @alias{rb_enc_str_new_lit} */
+#define rb_str_new_literal(str) rb_str_new_lit(str)                   /**< @alias{rb_str_new_lit} */
+#define rb_usascii_str_new_literal(str) rb_usascii_str_new_lit(str)   /**< @alias{rb_usascii_str_new_lit} */
+#define rb_utf8_str_new_literal(str) rb_utf8_str_new_lit(str)         /**< @alias{rb_utf8_str_new_lit} */
+#define rb_enc_str_new_literal(str, enc) rb_enc_str_new_lit(str, enc) /**< @alias{rb_enc_str_new_lit} */
 
 RBIMPL_SYMBOL_EXPORT_END()
 

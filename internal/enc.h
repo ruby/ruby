@@ -1,4 +1,4 @@
-#ifndef INTERNAL_ENC_H                                   /*-*-C-*-vi:se ft=c:*/
+#ifndef INTERNAL_ENC_H /*-*-C-*-vi:se ft=c:*/
 #define INTERNAL_ENC_H
 /**
  * @author     Ruby developers <ruby-core@ruby-lang.org>
@@ -8,7 +8,7 @@
  *             file COPYING are met.  Consult the file for details.
  * @brief      Internal header for Encoding.
  */
-#include "ruby/encoding.h"      /* for rb_encoding */
+#include "ruby/encoding.h" /* for rb_encoding */
 
 /* us_ascii.c */
 extern rb_encoding OnigEncodingUS_ASCII;

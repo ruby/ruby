@@ -1,4 +1,4 @@
-#ifndef RUBY_VM_CALLINFO_H                               /*-*-C-*-vi:se ft=c:*/
+#ifndef RUBY_VM_CALLINFO_H /*-*-C-*-vi:se ft=c:*/
 #define RUBY_VM_CALLINFO_H
 /**
  * @author     Ruby developers <ruby-core@ruby-lang.org>
@@ -11,35 +11,35 @@
 #include "debug_counter.h"
 
 enum vm_call_flag_bits {
-    VM_CALL_ARGS_SPLAT_bit,     /* m(*args) */
-    VM_CALL_ARGS_BLOCKARG_bit,  /* m(&block) */
-    VM_CALL_FCALL_bit,          /* m(...) */
-    VM_CALL_VCALL_bit,          /* m */
-    VM_CALL_ARGS_SIMPLE_bit,    /* (ci->flag & (SPLAT|BLOCKARG)) && blockiseq == NULL && ci->kw_arg == NULL */
-    VM_CALL_BLOCKISEQ_bit,      /* has blockiseq */
-    VM_CALL_KWARG_bit,          /* has kwarg */
-    VM_CALL_KW_SPLAT_bit,       /* m(**opts) */
-    VM_CALL_TAILCALL_bit,       /* located at tail position */
-    VM_CALL_SUPER_bit,          /* super */
-    VM_CALL_ZSUPER_bit,         /* zsuper */
-    VM_CALL_OPT_SEND_bit,       /* internal flag */
-    VM_CALL_KW_SPLAT_MUT_bit,   /* kw splat hash can be modified (to avoid allocating a new one) */
+    VM_CALL_ARGS_SPLAT_bit,    /* m(*args) */
+    VM_CALL_ARGS_BLOCKARG_bit, /* m(&block) */
+    VM_CALL_FCALL_bit,         /* m(...) */
+    VM_CALL_VCALL_bit,         /* m */
+    VM_CALL_ARGS_SIMPLE_bit,   /* (ci->flag & (SPLAT|BLOCKARG)) && blockiseq == NULL && ci->kw_arg == NULL */
+    VM_CALL_BLOCKISEQ_bit,     /* has blockiseq */
+    VM_CALL_KWARG_bit,         /* has kwarg */
+    VM_CALL_KW_SPLAT_bit,      /* m(**opts) */
+    VM_CALL_TAILCALL_bit,      /* located at tail position */
+    VM_CALL_SUPER_bit,         /* super */
+    VM_CALL_ZSUPER_bit,        /* zsuper */
+    VM_CALL_OPT_SEND_bit,      /* internal flag */
+    VM_CALL_KW_SPLAT_MUT_bit,  /* kw splat hash can be modified (to avoid allocating a new one) */
     VM_CALL__END
 };
 
-#define VM_CALL_ARGS_SPLAT      (0x01 << VM_CALL_ARGS_SPLAT_bit)
-#define VM_CALL_ARGS_BLOCKARG   (0x01 << VM_CALL_ARGS_BLOCKARG_bit)
-#define VM_CALL_FCALL           (0x01 << VM_CALL_FCALL_bit)
-#define VM_CALL_VCALL           (0x01 << VM_CALL_VCALL_bit)
-#define VM_CALL_ARGS_SIMPLE     (0x01 << VM_CALL_ARGS_SIMPLE_bit)
-#define VM_CALL_BLOCKISEQ       (0x01 << VM_CALL_BLOCKISEQ_bit)
-#define VM_CALL_KWARG           (0x01 << VM_CALL_KWARG_bit)
-#define VM_CALL_KW_SPLAT        (0x01 << VM_CALL_KW_SPLAT_bit)
-#define VM_CALL_TAILCALL        (0x01 << VM_CALL_TAILCALL_bit)
-#define VM_CALL_SUPER           (0x01 << VM_CALL_SUPER_bit)
-#define VM_CALL_ZSUPER          (0x01 << VM_CALL_ZSUPER_bit)
-#define VM_CALL_OPT_SEND        (0x01 << VM_CALL_OPT_SEND_bit)
-#define VM_CALL_KW_SPLAT_MUT    (0x01 << VM_CALL_KW_SPLAT_MUT_bit)
+#define VM_CALL_ARGS_SPLAT (0x01 << VM_CALL_ARGS_SPLAT_bit)
+#define VM_CALL_ARGS_BLOCKARG (0x01 << VM_CALL_ARGS_BLOCKARG_bit)
+#define VM_CALL_FCALL (0x01 << VM_CALL_FCALL_bit)
+#define VM_CALL_VCALL (0x01 << VM_CALL_VCALL_bit)
+#define VM_CALL_ARGS_SIMPLE (0x01 << VM_CALL_ARGS_SIMPLE_bit)
+#define VM_CALL_BLOCKISEQ (0x01 << VM_CALL_BLOCKISEQ_bit)
+#define VM_CALL_KWARG (0x01 << VM_CALL_KWARG_bit)
+#define VM_CALL_KW_SPLAT (0x01 << VM_CALL_KW_SPLAT_bit)
+#define VM_CALL_TAILCALL (0x01 << VM_CALL_TAILCALL_bit)
+#define VM_CALL_SUPER (0x01 << VM_CALL_SUPER_bit)
+#define VM_CALL_ZSUPER (0x01 << VM_CALL_ZSUPER_bit)
+#define VM_CALL_OPT_SEND (0x01 << VM_CALL_OPT_SEND_bit)
+#define VM_CALL_KW_SPLAT_MUT (0x01 << VM_CALL_KW_SPLAT_MUT_bit)
 
 struct rb_callinfo_kwarg {
     int keyword_len;
@@ -49,11 +49,7 @@ struct rb_callinfo_kwarg {
 static inline size_t
 rb_callinfo_kwarg_bytes(int keyword_len)
 {
-    return rb_size_mul_add_or_raise(
-        keyword_len,
-        sizeof(VALUE),
-        sizeof(struct rb_callinfo_kwarg),
-        rb_eRuntimeError);
+    return rb_size_mul_add_or_raise(keyword_len, sizeof(VALUE), sizeof(struct rb_callinfo_kwarg), rb_eRuntimeError);
 }
 
 // imemo_callinfo
@@ -66,32 +62,32 @@ struct rb_callinfo {
 };
 
 #ifndef USE_EMBED_CI
-#define USE_EMBED_CI 1
+#    define USE_EMBED_CI 1
 #endif
 
 #if SIZEOF_VALUE == 8
-#define CI_EMBED_TAG_bits   1
-#define CI_EMBED_ARGC_bits 15
-#define CI_EMBED_FLAG_bits 16
-#define CI_EMBED_ID_bits   32
+#    define CI_EMBED_TAG_bits 1
+#    define CI_EMBED_ARGC_bits 15
+#    define CI_EMBED_FLAG_bits 16
+#    define CI_EMBED_ID_bits 32
 #elif SIZEOF_VALUE == 4
-#define CI_EMBED_TAG_bits   1
-#define CI_EMBED_ARGC_bits  3
-#define CI_EMBED_FLAG_bits 13
-#define CI_EMBED_ID_bits   15
+#    define CI_EMBED_TAG_bits 1
+#    define CI_EMBED_ARGC_bits 3
+#    define CI_EMBED_FLAG_bits 13
+#    define CI_EMBED_ID_bits 15
 #endif
 
 #if (CI_EMBED_TAG_bits + CI_EMBED_ARGC_bits + CI_EMBED_FLAG_bits + CI_EMBED_ID_bits) != (SIZEOF_VALUE * 8)
-#error
+#    error
 #endif
 
 #define CI_EMBED_FLAG 0x01
 #define CI_EMBED_ARGC_SHFT (CI_EMBED_TAG_bits)
-#define CI_EMBED_ARGC_MASK ((((VALUE)1)<<CI_EMBED_ARGC_bits) - 1)
+#define CI_EMBED_ARGC_MASK ((((VALUE)1) << CI_EMBED_ARGC_bits) - 1)
 #define CI_EMBED_FLAG_SHFT (CI_EMBED_TAG_bits + CI_EMBED_ARGC_bits)
-#define CI_EMBED_FLAG_MASK ((((VALUE)1)<<CI_EMBED_FLAG_bits) - 1)
-#define CI_EMBED_ID_SHFT   (CI_EMBED_TAG_bits + CI_EMBED_ARGC_bits + CI_EMBED_FLAG_bits)
-#define CI_EMBED_ID_MASK   ((((VALUE)1)<<CI_EMBED_ID_bits) - 1)
+#define CI_EMBED_FLAG_MASK ((((VALUE)1) << CI_EMBED_FLAG_bits) - 1)
+#define CI_EMBED_ID_SHFT (CI_EMBED_TAG_bits + CI_EMBED_ARGC_bits + CI_EMBED_FLAG_bits)
+#define CI_EMBED_ID_MASK ((((VALUE)1) << CI_EMBED_ID_bits) - 1)
 
 static inline bool
 vm_ci_packed_p(const struct rb_callinfo *ci)
@@ -168,8 +164,8 @@ static inline void
 vm_ci_dump(const struct rb_callinfo *ci)
 {
     if (vm_ci_packed_p(ci)) {
-        ruby_debug_printf("packed_ci ID:%s flag:%x argc:%u\n",
-                          rb_id2name(vm_ci_mid(ci)), vm_ci_flag(ci), vm_ci_argc(ci));
+        ruby_debug_printf(
+            "packed_ci ID:%s flag:%x argc:%u\n", rb_id2name(vm_ci_mid(ci)), vm_ci_flag(ci), vm_ci_argc(ci));
     }
     else {
         rp(ci);
@@ -181,20 +177,19 @@ vm_ci_dump(const struct rb_callinfo *ci)
 
 /* This is passed to STATIC_ASSERT.  Cannot be an inline function. */
 #define VM_CI_EMBEDDABLE_P(mid, flag, argc, kwarg) \
-    (((mid ) & ~CI_EMBED_ID_MASK)   ? false :      \
-     ((flag) & ~CI_EMBED_FLAG_MASK) ? false :      \
-     ((argc) & ~CI_EMBED_ARGC_MASK) ? false :      \
-      (kwarg)                       ? false : true)
+    (((mid) & ~CI_EMBED_ID_MASK)         ? false \
+        : ((flag) & ~CI_EMBED_FLAG_MASK) ? false \
+        : ((argc) & ~CI_EMBED_ARGC_MASK) ? false \
+        : (kwarg)                        ? false \
+                                         : true)
 
 #define vm_ci_new_id(mid, flag, argc, must_zero) \
-    ((const struct rb_callinfo *)                \
-     ((((VALUE)(mid )) << CI_EMBED_ID_SHFT)   |  \
-      (((VALUE)(flag)) << CI_EMBED_FLAG_SHFT) |  \
-      (((VALUE)(argc)) << CI_EMBED_ARGC_SHFT) |  \
-      RUBY_FIXNUM_FLAG))
+    ((const struct rb_callinfo *)((((VALUE)(mid)) << CI_EMBED_ID_SHFT) | (((VALUE)(flag)) << CI_EMBED_FLAG_SHFT) | \
+                                  (((VALUE)(argc)) << CI_EMBED_ARGC_SHFT) | RUBY_FIXNUM_FLAG))
 
 static inline const struct rb_callinfo *
-vm_ci_new_(ID mid, unsigned int flag, unsigned int argc, const struct rb_callinfo_kwarg *kwarg, const char *file, int line)
+vm_ci_new_(
+    ID mid, unsigned int flag, unsigned int argc, const struct rb_callinfo_kwarg *kwarg, const char *file, int line)
 {
 #if USE_EMBED_CI
     if (VM_CI_EMBEDDABLE_P(mid, flag, argc, kwarg)) {
@@ -207,12 +202,8 @@ vm_ci_new_(ID mid, unsigned int flag, unsigned int argc, const struct rb_callinf
     if (debug) ruby_debug_printf("%s:%d ", file, line);
 
     // TODO: dedup
-    const struct rb_callinfo *ci = (const struct rb_callinfo *)
-      rb_imemo_new(imemo_callinfo,
-                   (VALUE)mid,
-                   (VALUE)flag,
-                   (VALUE)argc,
-                   (VALUE)kwarg);
+    const struct rb_callinfo *ci =
+        (const struct rb_callinfo *)rb_imemo_new(imemo_callinfo, (VALUE)mid, (VALUE)flag, (VALUE)argc, (VALUE)kwarg);
     if (debug) rp(ci);
     if (kwarg) {
         RB_DEBUG_COUNTER_INC(ci_kw);
@@ -227,9 +218,9 @@ vm_ci_new_(ID mid, unsigned int flag, unsigned int argc, const struct rb_callinf
     return ci;
 }
 
-
 static inline const struct rb_callinfo *
-vm_ci_new_runtime_(ID mid, unsigned int flag, unsigned int argc, const struct rb_callinfo_kwarg *kwarg, const char *file, int line)
+vm_ci_new_runtime_(
+    ID mid, unsigned int flag, unsigned int argc, const struct rb_callinfo_kwarg *kwarg, const char *file, int line)
 {
     RB_DEBUG_COUNTER_INC(ci_runtime);
     return vm_ci_new_(mid, flag, argc, kwarg, file, line);
@@ -240,7 +231,7 @@ vm_ci_new_runtime_(ID mid, unsigned int flag, unsigned int argc, const struct rb
 static inline bool
 vm_ci_markable(const struct rb_callinfo *ci)
 {
-    if (! ci) {
+    if (!ci) {
         return false; /* or true? This is Qfalse... */
     }
     else if (vm_ci_packed_p(ci)) {
@@ -248,25 +239,19 @@ vm_ci_markable(const struct rb_callinfo *ci)
     }
     else {
         VM_ASSERT(IMEMO_TYPE_P(ci, imemo_callinfo));
-        return ! FL_ANY_RAW((VALUE)ci, VM_CALLINFO_NOT_UNDER_GC);
+        return !FL_ANY_RAW((VALUE)ci, VM_CALLINFO_NOT_UNDER_GC);
     }
 }
 
 #define VM_CI_ON_STACK(mid_, flags_, argc_, kwarg_) \
-    (struct rb_callinfo) {                          \
-        .flags = T_IMEMO |                          \
-            (imemo_callinfo << FL_USHIFT) |         \
-            VM_CALLINFO_NOT_UNDER_GC,               \
-        .mid   = mid_,                              \
-        .flag  = flags_,                            \
-        .argc  = argc_,                             \
-        .kwarg = kwarg_,                            \
+    (struct rb_callinfo) \
+    { \
+        .flags = T_IMEMO | (imemo_callinfo << FL_USHIFT) | VM_CALLINFO_NOT_UNDER_GC, .mid = mid_, .flag = flags_, \
+        .argc = argc_, .kwarg = kwarg_, \
     }
 
 typedef VALUE (*vm_call_handler)(
-    struct rb_execution_context_struct *ec,
-    struct rb_control_frame_struct *cfp,
-    struct rb_calling_info *calling);
+    struct rb_execution_context_struct *ec, struct rb_control_frame_struct *cfp, struct rb_calling_info *calling);
 
 // imemo_callcache
 
@@ -279,7 +264,7 @@ struct rb_callcache {
                        // cc will be cleared (cc->klass = 0) at vm_ccs_free().
 
     /* inline cache: values */
-    const struct rb_callable_method_entry_struct * const cme_;
+    const struct rb_callable_method_entry_struct *const cme_;
     const vm_call_handler call_;
 
     union {
@@ -290,36 +275,29 @@ struct rb_callcache {
 };
 
 #define VM_CALLCACHE_UNMARKABLE IMEMO_FL_USER0
-#define VM_CALLCACHE_ON_STACK   IMEMO_FL_USER1
+#define VM_CALLCACHE_ON_STACK IMEMO_FL_USER1
 
 static inline const struct rb_callcache *
-vm_cc_new(VALUE klass,
-          const struct rb_callable_method_entry_struct *cme,
-          vm_call_handler call)
+vm_cc_new(VALUE klass, const struct rb_callable_method_entry_struct *cme, vm_call_handler call)
 {
-    const struct rb_callcache *cc = (const struct rb_callcache *)rb_imemo_new(imemo_callcache, (VALUE)cme, (VALUE)call, 0, klass);
+    const struct rb_callcache *cc =
+        (const struct rb_callcache *)rb_imemo_new(imemo_callcache, (VALUE)cme, (VALUE)call, 0, klass);
     RB_DEBUG_COUNTER_INC(cc_new);
     return cc;
 }
 
 #define VM_CC_ON_STACK(clazz, call, aux, cme) \
-    (struct rb_callcache) {                   \
-        .flags = T_IMEMO |                    \
-            (imemo_callcache << FL_USHIFT) |  \
-            VM_CALLCACHE_UNMARKABLE |         \
-            VM_CALLCACHE_ON_STACK,            \
-        .klass = clazz,                       \
-        .cme_  = cme,                         \
-        .call_ = call,                        \
-        .aux_  = aux,                         \
+    (struct rb_callcache) \
+    { \
+        .flags = T_IMEMO | (imemo_callcache << FL_USHIFT) | VM_CALLCACHE_UNMARKABLE | VM_CALLCACHE_ON_STACK, \
+        .klass = clazz, .cme_ = cme, .call_ = call, .aux_ = aux, \
     }
 
 static inline bool
 vm_cc_class_check(const struct rb_callcache *cc, VALUE klass)
 {
     VM_ASSERT(IMEMO_TYPE_P(cc, imemo_callcache));
-    VM_ASSERT(cc->klass == 0 ||
-              RB_TYPE_P(cc->klass, T_CLASS) || RB_TYPE_P(cc->klass, T_ICLASS));
+    VM_ASSERT(cc->klass == 0 || RB_TYPE_P(cc->klass, T_CLASS) || RB_TYPE_P(cc->klass, T_ICLASS));
     return cc->klass == klass;
 }
 
@@ -334,9 +312,8 @@ static inline const struct rb_callable_method_entry_struct *
 vm_cc_cme(const struct rb_callcache *cc)
 {
     VM_ASSERT(IMEMO_TYPE_P(cc, imemo_callcache));
-    VM_ASSERT(cc->call_ == NULL   || // not initialized yet
-              !vm_cc_markable(cc) ||
-              cc->cme_ != NULL);
+    VM_ASSERT(cc->call_ == NULL || // not initialized yet
+              !vm_cc_markable(cc) || cc->cme_ != NULL);
 
     return cc->cme_;
 }
@@ -460,7 +437,7 @@ struct rb_class_cc_entries {
     struct rb_class_cc_entries_entry {
         const struct rb_callinfo *ci;
         const struct rb_callcache *cc;
-    } *entries;
+    } * entries;
 };
 
 #if VM_CHECK_MODE > 0
@@ -477,19 +454,18 @@ vm_ccs_p(const struct rb_class_cc_entries *ccs)
 static inline bool
 vm_cc_check_cme(const struct rb_callcache *cc, const rb_callable_method_entry_t *cme)
 {
-    if (vm_cc_cme(cc) == cme ||
-        (cme->def->iseq_overload && vm_cc_cme(cc) == rb_vm_lookup_overloaded_cme(cme))) {
+    if (vm_cc_cme(cc) == cme || (cme->def->iseq_overload && vm_cc_cme(cc) == rb_vm_lookup_overloaded_cme(cme))) {
         return true;
     }
     else {
-#if 1
+#    if 1
         // debug print
 
         fprintf(stderr, "iseq_overload:%d\n", (int)cme->def->iseq_overload);
         rp(cme);
         rp(vm_cc_cme(cc));
         rb_vm_lookup_overloaded_cme(cme);
-#endif
+#    endif
         return false;
     }
 }

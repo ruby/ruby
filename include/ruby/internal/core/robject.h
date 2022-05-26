@@ -1,4 +1,4 @@
-#ifndef RBIMPL_ROBJECT_H                             /*-*-C++-*-vi:se ft=cpp:*/
+#ifndef RBIMPL_ROBJECT_H /*-*-C++-*-vi:se ft=cpp:*/
 #define RBIMPL_ROBJECT_H
 /**
  * @file
@@ -23,7 +23,7 @@
 #include "ruby/internal/config.h"
 
 #ifdef HAVE_STDINT_H
-# include <stdint.h>
+#    include <stdint.h>
 #endif
 
 #include "ruby/internal/attr/artificial.h"
@@ -40,13 +40,13 @@
  * @param   obj  An object, which is in fact an ::RRegexp.
  * @return  The passed object casted to ::RRegexp.
  */
-#define ROBJECT(obj)          RBIMPL_CAST((struct RObject *)(obj))
+#define ROBJECT(obj) RBIMPL_CAST((struct RObject *)(obj))
 /** @cond INTERNAL_MACRO */
 #define ROBJECT_EMBED_LEN_MAX ROBJECT_EMBED_LEN_MAX
-#define ROBJECT_EMBED         ROBJECT_EMBED
-#define ROBJECT_NUMIV         ROBJECT_NUMIV
-#define ROBJECT_IVPTR         ROBJECT_IVPTR
-#define ROBJECT_IV_INDEX_TBL  ROBJECT_IV_INDEX_TBL
+#define ROBJECT_EMBED ROBJECT_EMBED
+#define ROBJECT_NUMIV ROBJECT_NUMIV
+#define ROBJECT_IVPTR ROBJECT_IVPTR
+#define ROBJECT_IV_INDEX_TBL ROBJECT_IV_INDEX_TBL
 /** @endcond */
 
 /**

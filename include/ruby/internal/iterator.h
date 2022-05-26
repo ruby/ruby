@@ -1,4 +1,4 @@
-#ifndef RBIMPL_ITERATOR_H                            /*-*-C++-*-vi:se ft=cpp:*/
+#ifndef RBIMPL_ITERATOR_H /*-*-C++-*-vi:se ft=cpp:*/
 #define RBIMPL_ITERATOR_H
 /**
  * @file
@@ -301,7 +301,9 @@ static inline VALUE
 rb_iterate_deprecated(VALUE (*iter)(VALUE), VALUE data1, rb_block_call_func_t bl, VALUE data2)
 {
     return ::rb_iterate(iter, data1, bl, data2);
-}}}
+}
+} // namespace backward
+} // namespace ruby
 
 RBIMPL_ATTR_DEPRECATED(("by: rb_block_call since 1.9"))
 VALUE rb_iterate(VALUE (*func1)(VALUE), VALUE data1, rb_block_call_func_t proc, VALUE data2);
@@ -340,7 +342,8 @@ VALUE rb_block_call(VALUE obj, ID mid, int argc, const VALUE *argv, rb_block_cal
  *   - RB_PASS_CALLED_KEYWORDS  it depends if there is a passed block.
  * @return         What `obj.mid` returns.
  */
-VALUE rb_block_call_kw(VALUE obj, ID mid, int argc, const VALUE *argv, rb_block_call_func_t proc, VALUE data2, int kw_splat);
+VALUE rb_block_call_kw(
+    VALUE obj, ID mid, int argc, const VALUE *argv, rb_block_call_func_t proc, VALUE data2, int kw_splat);
 
 /**
  * Identical  to rb_rescue2(),  except it  does not  take a  list of  exception

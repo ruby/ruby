@@ -3,13 +3,13 @@
 
 #include "ruby.h"
 
-int ffs(int arg)
+int
+ffs(int arg)
 {
     unsigned int x = (unsigned int)arg;
     int r;
 
-    if (x == 0)
-        return 0;
+    if (x == 0) return 0;
 
     r = 1;
 

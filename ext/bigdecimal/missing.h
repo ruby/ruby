@@ -3,70 +3,70 @@
 
 #if defined(__cplusplus)
 extern "C" {
-#if 0
+#    if 0
 } /* satisfy cc-mode */
-#endif
+#    endif
 #endif
 
 #ifdef HAVE_STDLIB_H
-# include <stdlib.h>
+#    include <stdlib.h>
 #endif
 
 #ifdef HAVE_MATH_H
-# include <math.h>
+#    include <math.h>
 #endif
 
 #ifndef RB_UNUSED_VAR
-# if defined(_MSC_VER) && _MSC_VER >= 1911
-#  define RB_UNUSED_VAR(x) x [[maybe_unused]]
+#    if defined(_MSC_VER) && _MSC_VER >= 1911
+#        define RB_UNUSED_VAR(x) x [[maybe_unused]]
 
-# elif defined(__has_cpp_attribute) && __has_cpp_attribute(maybe_unused)
-#  define RB_UNUSED_VAR(x) x [[maybe_unused]]
+#    elif defined(__has_cpp_attribute) && __has_cpp_attribute(maybe_unused)
+#        define RB_UNUSED_VAR(x) x [[maybe_unused]]
 
-# elif defined(__has_c_attribute) && __has_c_attribute(maybe_unused)
-#  define RB_UNUSED_VAR(x) x [[maybe_unused]]
+#    elif defined(__has_c_attribute) && __has_c_attribute(maybe_unused)
+#        define RB_UNUSED_VAR(x) x [[maybe_unused]]
 
-# elif defined(__GNUC__)
-#  define RB_UNUSED_VAR(x) x __attribute__ ((unused))
+#    elif defined(__GNUC__)
+#        define RB_UNUSED_VAR(x) x __attribute__((unused))
 
-# else
-#  define RB_UNUSED_VAR(x) x
-# endif
+#    else
+#        define RB_UNUSED_VAR(x) x
+#    endif
 #endif /* RB_UNUSED_VAR */
 
 #if defined(_MSC_VER) && _MSC_VER >= 1310
-# define HAVE___ASSUME
+#    define HAVE___ASSUME
 
 #elif defined(__INTEL_COMPILER) && __INTEL_COMPILER >= 1300
-# define HAVE___ASSUME
+#    define HAVE___ASSUME
 #endif
 
 #ifndef UNREACHABLE
-# if __has_builtin(__builtin_unreachable)
-#  define UNREACHABLE __builtin_unreachable()
+#    if __has_builtin(__builtin_unreachable)
+#        define UNREACHABLE __builtin_unreachable()
 
-# elif defined(HAVE___ASSUME)
-#  define UNREACHABLE __assume(0)
+#    elif defined(HAVE___ASSUME)
+#        define UNREACHABLE __assume(0)
 
-# else
-#  define UNREACHABLE		/* unreachable */
-# endif
+#    else
+#        define UNREACHABLE /* unreachable */
+#    endif
 #endif /* UNREACHABLE */
 
 /* bool */
 
 #if defined(__bool_true_false_are_defined)
-# /* Take that. */
+#    /* Take that. */
 
 #elif defined(HAVE_STDBOOL_H)
-# include <stdbool.h>
+#    include <stdbool.h>
 
 #else
 typedef unsigned char _Bool;
-# define bool _Bool
-# define true  ((_Bool)+1)
-# define false ((_Bool)-1)
-# define __bool_true_false_are_defined
+#    define bool _Bool
+#    define true ((_Bool) + 1)
+#    define false ((_Bool)-1)
+#    define __bool_true_false_are_defined
 #endif
 
 /* abs */
@@ -90,14 +90,14 @@ llabs(LONG_LONG const x)
 #endif
 
 #ifdef vabs
-# undef vabs
+#    undef vabs
 #endif
 #if SIZEOF_VALUE <= SIZEOF_INT
-# define vabs abs
+#    define vabs abs
 #elif SIZEOF_VALUE <= SIZEOF_LONG
-# define vabs labs
+#    define vabs labs
 #elif SIZEOF_VALUE <= SIZEOF_LONG_LONG
-# define vabs llabs
+#    define vabs llabs
 #endif
 
 /* finite */
@@ -111,10 +111,10 @@ finite(double)
 #endif
 
 #ifndef isfinite
-# ifndef HAVE_ISFINITE
-#  define HAVE_ISFINITE 1
-#  define isfinite(x) finite(x)
-# endif
+#    ifndef HAVE_ISFINITE
+#        define HAVE_ISFINITE 1
+#        define isfinite(x) finite(x)
+#    endif
 #endif
 
 /* dtoa */
@@ -126,11 +126,11 @@ char *BigDecimal_dtoa(double d_, int mode, int ndigits, int *decpt, int *sign, c
 static inline VALUE
 rb_rational_num(VALUE rat)
 {
-#ifdef HAVE_TYPE_STRUCT_RRATIONAL
+#    ifdef HAVE_TYPE_STRUCT_RRATIONAL
     return RRATIONAL(rat)->num;
-#else
+#    else
     return rb_funcall(rat, rb_intern("numerator"), 0);
-#endif
+#    endif
 }
 #endif
 
@@ -138,11 +138,11 @@ rb_rational_num(VALUE rat)
 static inline VALUE
 rb_rational_den(VALUE rat)
 {
-#ifdef HAVE_TYPE_STRUCT_RRATIONAL
+#    ifdef HAVE_TYPE_STRUCT_RRATIONAL
     return RRATIONAL(rat)->den;
-#else
+#    else
     return rb_funcall(rat, rb_intern("denominator"), 0);
-#endif
+#    endif
 }
 #endif
 
@@ -152,11 +152,11 @@ rb_rational_den(VALUE rat)
 static inline VALUE
 rb_complex_real(VALUE cmp)
 {
-#ifdef HAVE_TYPE_STRUCT_RCOMPLEX
-  return RCOMPLEX(cmp)->real;
-#else
-  return rb_funcall(cmp, rb_intern("real"), 0);
-#endif
+#    ifdef HAVE_TYPE_STRUCT_RCOMPLEX
+    return RCOMPLEX(cmp)->real;
+#    else
+    return rb_funcall(cmp, rb_intern("real"), 0);
+#    endif
 }
 #endif
 
@@ -164,41 +164,39 @@ rb_complex_real(VALUE cmp)
 static inline VALUE
 rb_complex_imag(VALUE cmp)
 {
-# ifdef HAVE_TYPE_STRUCT_RCOMPLEX
-  return RCOMPLEX(cmp)->imag;
-# else
-  return rb_funcall(cmp, rb_intern("imag"), 0);
-# endif
+#    ifdef HAVE_TYPE_STRUCT_RCOMPLEX
+    return RCOMPLEX(cmp)->imag;
+#    else
+    return rb_funcall(cmp, rb_intern("imag"), 0);
+#    endif
 }
 #endif
 
 /* array */
 
 #ifndef FIX_CONST_VALUE_PTR
-# if defined(__fcc__) || defined(__fcc_version) || \
-    defined(__FCC__) || defined(__FCC_VERSION)
+#    if defined(__fcc__) || defined(__fcc_version) || defined(__FCC__) || defined(__FCC_VERSION)
 /* workaround for old version of Fujitsu C Compiler (fcc) */
-#  define FIX_CONST_VALUE_PTR(x) ((const VALUE *)(x))
-# else
-#  define FIX_CONST_VALUE_PTR(x) (x)
-# endif
+#        define FIX_CONST_VALUE_PTR(x) ((const VALUE *)(x))
+#    else
+#        define FIX_CONST_VALUE_PTR(x) (x)
+#    endif
 #endif
 
 #ifndef HAVE_RB_ARRAY_CONST_PTR
 static inline const VALUE *
 rb_array_const_ptr(VALUE a)
 {
-    return FIX_CONST_VALUE_PTR((RBASIC(a)->flags & RARRAY_EMBED_FLAG) ?
-	RARRAY(a)->as.ary : RARRAY(a)->as.heap.ptr);
+    return FIX_CONST_VALUE_PTR((RBASIC(a)->flags & RARRAY_EMBED_FLAG) ? RARRAY(a)->as.ary : RARRAY(a)->as.heap.ptr);
 }
 #endif
 
 #ifndef RARRAY_CONST_PTR
-# define RARRAY_CONST_PTR(a) rb_array_const_ptr(a)
+#    define RARRAY_CONST_PTR(a) rb_array_const_ptr(a)
 #endif
 
 #ifndef RARRAY_AREF
-# define RARRAY_AREF(a, i) (RARRAY_CONST_PTR(a)[i])
+#    define RARRAY_AREF(a, i) (RARRAY_CONST_PTR(a)[i])
 #endif
 
 /* symbol */
@@ -214,22 +212,22 @@ rb_sym2str(VALUE sym)
 /* st */
 
 #ifndef ST2FIX
-# undef RB_ST2FIX
-# define RB_ST2FIX(h) LONG2FIX((long)(h))
-# define ST2FIX(h) RB_ST2FIX(h)
+#    undef RB_ST2FIX
+#    define RB_ST2FIX(h) LONG2FIX((long)(h))
+#    define ST2FIX(h) RB_ST2FIX(h)
 #endif
 
 /* warning */
 
 #if !defined(HAVE_RB_CATEGORY_WARN) || !defined(HAVE_CONST_RB_WARN_CATEGORY_DEPRECATED)
-#   define rb_category_warn(category, ...) rb_warn(__VA_ARGS__)
+#    define rb_category_warn(category, ...) rb_warn(__VA_ARGS__)
 #endif
 
 #if defined(__cplusplus)
-#if 0
+#    if 0
 { /* satisfy cc-mode */
-#endif
-}  /* extern "C" { */
+#    endif
+} /* extern "C" { */
 #endif
 
 #endif /* MISSING_H */

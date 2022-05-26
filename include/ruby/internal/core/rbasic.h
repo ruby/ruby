@@ -1,4 +1,4 @@
-#ifndef RBIMPL_RBASIC_H                              /*-*-C++-*-vi:se ft=cpp:*/
+#ifndef RBIMPL_RBASIC_H /*-*-C++-*-vi:se ft=cpp:*/
 #define RBIMPL_RBASIC_H
 /**
  * @file
@@ -20,6 +20,7 @@
  *             extension libraries.  They could be written in C++98.
  * @brief      Defines struct ::RBasic.
  */
+#include "ruby/assert.h"
 #include "ruby/internal/attr/artificial.h"
 #include "ruby/internal/attr/constexpr.h"
 #include "ruby/internal/attr/forceinline.h"
@@ -29,7 +30,6 @@
 #include "ruby/internal/dllexport.h"
 #include "ruby/internal/special_consts.h"
 #include "ruby/internal/value.h"
-#include "ruby/assert.h"
 
 /**
  * Convenient casting macro.
@@ -37,13 +37,12 @@
  * @param   obj  Arbitrary Ruby object.
  * @return  The passed object casted to ::RBasic.
  */
-#define RBASIC(obj)                 RBIMPL_CAST((struct RBasic *)(obj))
+#define RBASIC(obj) RBIMPL_CAST((struct RBasic *)(obj))
 /** @cond INTERNAL_MACRO */
-#define RBASIC_CLASS                RBASIC_CLASS
+#define RBASIC_CLASS RBASIC_CLASS
 #define RBIMPL_RVALUE_EMBED_LEN_MAX 3
-#define RVALUE_EMBED_LEN_MAX        RVALUE_EMBED_LEN_MAX
-#define RBIMPL_EMBED_LEN_MAX_OF(T) \
-    RBIMPL_CAST((int)(sizeof(VALUE[RBIMPL_RVALUE_EMBED_LEN_MAX]) / (sizeof(T))))
+#define RVALUE_EMBED_LEN_MAX RVALUE_EMBED_LEN_MAX
+#define RBIMPL_EMBED_LEN_MAX_OF(T) RBIMPL_CAST((int)(sizeof(VALUE[RBIMPL_RVALUE_EMBED_LEN_MAX]) / (sizeof(T))))
 /** @endcond */
 
 /**
@@ -59,9 +58,7 @@ enum ruby_rvalue_flags {
  * Ruby's object's,  base components.  Every  single ruby objects have  them in
  * common.
  */
-struct
-RUBY_ALIGNAS(SIZEOF_VALUE)
-RBasic {
+struct RUBY_ALIGNAS(SIZEOF_VALUE) RBasic {
 
     /**
      * Per-object  flags.  Each  ruby  objects have  their own  characteristics
@@ -99,9 +96,7 @@ RBasic {
      * constructor as "deleted"  (as of C++11) --  No way but to  define one by
      * ourselves.
      */
-    RBasic() :
-        flags(RBIMPL_VALUE_NULL),
-        klass(RBIMPL_VALUE_NULL)
+    RBasic() : flags(RBIMPL_VALUE_NULL), klass(RBIMPL_VALUE_NULL)
     {
     }
 #endif
@@ -151,7 +146,7 @@ RBIMPL_ATTR_ARTIFICIAL()
 static inline VALUE
 RBASIC_CLASS(VALUE obj)
 {
-    RBIMPL_ASSERT_OR_ASSUME(! RB_SPECIAL_CONST_P(obj));
+    RBIMPL_ASSERT_OR_ASSUME(!RB_SPECIAL_CONST_P(obj));
     return RBASIC(obj)->klass;
 }
 

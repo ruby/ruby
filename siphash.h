@@ -2,17 +2,17 @@
 #define SIPHASH_H 1
 #include <stdlib.h>
 #ifdef HAVE_STDINT_H
-#include <stdint.h>
+#    include <stdint.h>
 #endif
 #ifdef HAVE_INTTYPES_H
-#include <inttypes.h>
+#    include <inttypes.h>
 #endif
 
 #ifndef HAVE_UINT64_T
 typedef struct {
     uint32_t u32[2];
 } sip_uint64_t;
-#define uint64_t sip_uint64_t
+#    define uint64_t sip_uint64_t
 #else
 typedef uint64_t sip_uint64_t;
 #endif

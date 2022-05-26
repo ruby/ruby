@@ -1,4 +1,4 @@
-#ifndef RBIMPL_ATTR_CONST_H                          /*-*-C++-*-vi:se ft=cpp:*/
+#ifndef RBIMPL_ATTR_CONST_H /*-*-C++-*-vi:se ft=cpp:*/
 #define RBIMPL_ATTR_CONST_H
 /**
  * @file
@@ -26,21 +26,21 @@
 
 /** Wraps (or simulates) `__attribute__((const))` */
 #if RBIMPL_HAS_ATTRIBUTE(const)
-# define RBIMPL_ATTR_CONST() __attribute__((__const__))
+#    define RBIMPL_ATTR_CONST() __attribute__((__const__))
 #elif RBIMPL_HAS_DECLSPEC_ATTRIBUTE(noalias)
-# /* If a function can be a const, that is also a noalias. */
-# define RBIMPL_ATTR_CONST() __declspec(noalias)
+#    /* If a function can be a const, that is also a noalias. */
+#    define RBIMPL_ATTR_CONST() __declspec(noalias)
 #elif RBIMPL_COMPILER_SINCE(SunPro, 5, 10, 0)
-# define RBIMPL_ATTR_CONST() _Pragma("no_side_effect")
+#    define RBIMPL_ATTR_CONST() _Pragma("no_side_effect")
 #else
-# define RBIMPL_ATTR_CONST() /* void */
+#    define RBIMPL_ATTR_CONST() /* void */
 #endif
 
 /** Enables #RBIMPL_ATTR_CONST if and only if. ! #RUBY_DEBUG. */
 #if !defined(RUBY_DEBUG) || !RUBY_DEBUG
-# define RBIMPL_ATTR_CONST_UNLESS_DEBUG() RBIMPL_ATTR_CONST()
+#    define RBIMPL_ATTR_CONST_UNLESS_DEBUG() RBIMPL_ATTR_CONST()
 #else
-# define RBIMPL_ATTR_CONST_UNLESS_DEBUG() /* void */
+#    define RBIMPL_ATTR_CONST_UNLESS_DEBUG() /* void */
 #endif
 
 #endif /* RBIMPL_ATTR_CONST_H */

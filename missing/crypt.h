@@ -35,20 +35,20 @@
 /* =====  Configuration ==================== */
 
 #ifdef CHAR_BITS
-#if CHAR_BITS != 8
-	#error C_block structure assumes 8 bit characters
-#endif
+#    if CHAR_BITS != 8
+#        error C_block structure assumes 8 bit characters
+#    endif
 #endif
 
 #ifndef LONG_LONG
-# if SIZEOF_LONG_LONG > 0
-#   define LONG_LONG long long
-# elif SIZEOF___INT64 > 0
-#   define HAVE_LONG_LONG 1
-#   define LONG_LONG __int64
-#   undef SIZEOF_LONG_LONG
-#   define SIZEOF_LONG_LONG SIZEOF___INT64
-# endif
+#    if SIZEOF_LONG_LONG > 0
+#        define LONG_LONG long long
+#    elif SIZEOF___INT64 > 0
+#        define HAVE_LONG_LONG 1
+#        define LONG_LONG __int64
+#        undef SIZEOF_LONG_LONG
+#        define SIZEOF_LONG_LONG SIZEOF___INT64
+#    endif
 #endif
 
 /*
@@ -56,7 +56,7 @@
  * This avoids use of bit fields (your compiler may be sloppy with them).
  */
 #if SIZEOF_LONG == 4
-#define	LONG_IS_32_BITS
+#    define LONG_IS_32_BITS
 #endif
 
 /*
@@ -64,9 +64,9 @@
  * XXX this feature is currently unused, see "endian" comment below.
  */
 #if SIZEOF_LONG == 8
-#define	B64	long
+#    define B64 long
 #elif SIZEOF_LONG_LONG == 8
-#define	B64	LONG_LONG
+#    define B64 LONG_LONG
 #endif
 
 /*
@@ -75,12 +75,12 @@
  * little effect on crypt().
  */
 #if defined(notdef)
-#define	LARGEDATA
+#    define LARGEDATA
 #endif
 
 /* compile with "-DSTATIC=int" when profiling */
 #ifndef STATIC
-#define	STATIC	static
+#    define STATIC static
 #endif
 
 /* ==================================== */
@@ -200,40 +200,40 @@
  */
 
 typedef union {
-	unsigned char b[8];
-	struct {
+    unsigned char b[8];
+    struct {
 #if defined(LONG_IS_32_BITS)
-		/* long is often faster than a 32-bit bit field */
-		long	i0;
-		long	i1;
+        /* long is often faster than a 32-bit bit field */
+        long i0;
+        long i1;
 #else
-		long	i0: 32;
-		long	i1: 32;
+        long i0 : 32;
+        long i1 : 32;
 #endif
-	} b32;
+    } b32;
 #if defined(B64)
-	B64	b64;
+    B64 b64;
 #endif
 } C_block;
 
 #if defined(LARGEDATA)
-	/* Waste memory like crazy.  Also, do permutations in line */
-#define	LGCHUNKBITS	3
-#define	CHUNKBITS	(1<<LGCHUNKBITS)
+/* Waste memory like crazy.  Also, do permutations in line */
+#    define LGCHUNKBITS 3
+#    define CHUNKBITS (1 << LGCHUNKBITS)
 #else
-	/* "small data" */
-#define	LGCHUNKBITS	2
-#define	CHUNKBITS	(1<<LGCHUNKBITS)
+/* "small data" */
+#    define LGCHUNKBITS 2
+#    define CHUNKBITS (1 << LGCHUNKBITS)
 #endif
 
 struct crypt_data {
-	/* The Key Schedule, filled in by des_setkey() or setkey(). */
-#define	KS_SIZE	16
-	C_block	KS[KS_SIZE];
+    /* The Key Schedule, filled in by des_setkey() or setkey(). */
+#define KS_SIZE 16
+    C_block KS[KS_SIZE];
 
-	/* ==================================== */
+    /* ==================================== */
 
-	char	cryptresult[1+4+4+11+1];	/* encrypted result */
+    char cryptresult[1 + 4 + 4 + 11 + 1]; /* encrypted result */
 };
 
 char *crypt(const char *key, const char *setting);

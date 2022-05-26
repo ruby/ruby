@@ -1,4 +1,4 @@
-#ifndef RBIMPL_ARITHMETIC_OFF_T_H                    /*-*-C++-*-vi:se ft=cpp:*/
+#ifndef RBIMPL_ARITHMETIC_OFF_T_H /*-*-C++-*-vi:se ft=cpp:*/
 #define RBIMPL_ARITHMETIC_OFF_T_H
 /**
  * @file
@@ -20,43 +20,43 @@
  *             extension libraries.  They could be written in C++98.
  * @brief      Arithmetic conversion between C's `off_t` and Ruby's.
  */
-#include "ruby/internal/config.h"
+#include "ruby/backward/2/long_long.h"
 #include "ruby/internal/arithmetic/int.h"
 #include "ruby/internal/arithmetic/long.h"
 #include "ruby/internal/arithmetic/long_long.h"
-#include "ruby/backward/2/long_long.h"
+#include "ruby/internal/config.h"
 
 /** Converts a C's `off_t` into an instance of ::rb_cInteger. */
 #ifdef OFFT2NUM
-# /* take that. */
+#    /* take that. */
 #elif SIZEOF_OFF_T == SIZEOF_LONG_LONG
-# define OFFT2NUM RB_LL2NUM
+#    define OFFT2NUM RB_LL2NUM
 #elif SIZEOF_OFF_T == SIZEOF_LONG
-# define OFFT2NUM RB_LONG2NUM
+#    define OFFT2NUM RB_LONG2NUM
 #else
-# define OFFT2NUM RB_INT2NUM
+#    define OFFT2NUM RB_INT2NUM
 #endif
 
 /** Converts an instance of ::rb_cNumeric into C's `off_t`. */
 #ifdef NUM2OFFT
-# /* take that. */
+#    /* take that. */
 #elif SIZEOF_OFF_T == SIZEOF_LONG_LONG
-# define NUM2OFFT RB_NUM2LL
+#    define NUM2OFFT RB_NUM2LL
 #elif SIZEOF_OFF_T == SIZEOF_LONG
-# define NUM2OFFT RB_NUM2LONG
+#    define NUM2OFFT RB_NUM2LONG
 #else
-# define NUM2OFFT RB_NUM2INT
+#    define NUM2OFFT RB_NUM2INT
 #endif
 
 /** A rb_sprintf() format prefix to be used for an `off_t` parameter. */
 #ifdef PRI_OFFT_PREFIX
-# /* take that. */
+#    /* take that. */
 #elif SIZEOF_OFF_T == SIZEOF_LONG_LONG
-# define PRI_OFFT_PREFIX PRI_LL_PREFIX
+#    define PRI_OFFT_PREFIX PRI_LL_PREFIX
 #elif SIZEOF_OFF_T == SIZEOF_LONG
-# define PRI_OFFT_PREFIX PRI_LONG_PREFIX
+#    define PRI_OFFT_PREFIX PRI_LONG_PREFIX
 #else
-# define PRI_OFFT_PREFIX PRI_INT_PREFIX
+#    define PRI_OFFT_PREFIX PRI_INT_PREFIX
 #endif
 
 #endif /* RBIMPL_ARITHMETIC_OFF_T_H */

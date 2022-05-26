@@ -1,4 +1,4 @@
-#ifndef RBIMPL_INTERN_OBJECT_H                       /*-*-C++-*-vi:se ft=cpp:*/
+#ifndef RBIMPL_INTERN_OBJECT_H /*-*-C++-*-vi:se ft=cpp:*/
 #define RBIMPL_INTERN_OBJECT_H
 /**
  * @file
@@ -35,8 +35,7 @@ RBIMPL_SYMBOL_EXPORT_BEGIN()
  * - `obj != orig` check is done anyways inside of rb_obj_init_copy().
  * - rb_obj_init_copy() returns something.  No need are there to add `, 1`.
  */
-#define RB_OBJ_INIT_COPY(obj, orig) \
-    ((obj) != (orig) && (rb_obj_init_copy((obj), (orig)), 1))
+#define RB_OBJ_INIT_COPY(obj, orig) ((obj) != (orig) && (rb_obj_init_copy((obj), (orig)), 1))
 /** @old{RB_OBJ_INIT_COPY} */
 #define OBJ_INIT_COPY(obj, orig) RB_OBJ_INIT_COPY(obj, orig)
 

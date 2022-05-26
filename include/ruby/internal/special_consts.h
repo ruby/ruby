@@ -1,4 +1,4 @@
-#ifndef RBIMPL_SPECIAL_CONSTS_H                      /*-*-C++-*-vi:se ft=cpp:*/
+#ifndef RBIMPL_SPECIAL_CONSTS_H /*-*-C++-*-vi:se ft=cpp:*/
 #define RBIMPL_SPECIAL_CONSTS_H
 /**
  * @file
@@ -40,81 +40,79 @@
  *           occur.
  */
 #if defined(USE_FLONUM)
-# /* Take that. */
+#    /* Take that. */
 #elif SIZEOF_VALUE >= SIZEOF_DOUBLE
-# define USE_FLONUM 1
+#    define USE_FLONUM 1
 #else
-# define USE_FLONUM 0
+#    define USE_FLONUM 0
 #endif
 
 /** This is an old name of #RB_TEST.  Not sure which name is preferred. */
-#define RTEST           RB_TEST
+#define RTEST RB_TEST
 
-#define FIXNUM_P        RB_FIXNUM_P            /**< @old{RB_FIXNUM_P} */
-#define IMMEDIATE_P     RB_IMMEDIATE_P         /**< @old{RB_IMMEDIATE_P} */
-#define NIL_P           RB_NIL_P               /**< @old{RB_NIL_P} */
-#define SPECIAL_CONST_P RB_SPECIAL_CONST_P     /**< @old{RB_SPECIAL_CONST_P} */
-#define STATIC_SYM_P    RB_STATIC_SYM_P        /**< @old{RB_STATIC_SYM_P} */
+#define FIXNUM_P RB_FIXNUM_P               /**< @old{RB_FIXNUM_P} */
+#define IMMEDIATE_P RB_IMMEDIATE_P         /**< @old{RB_IMMEDIATE_P} */
+#define NIL_P RB_NIL_P                     /**< @old{RB_NIL_P} */
+#define SPECIAL_CONST_P RB_SPECIAL_CONST_P /**< @old{RB_SPECIAL_CONST_P} */
+#define STATIC_SYM_P RB_STATIC_SYM_P       /**< @old{RB_STATIC_SYM_P} */
 
-#define Qfalse          RUBY_Qfalse            /**< @old{RUBY_Qfalse} */
-#define Qnil            RUBY_Qnil              /**< @old{RUBY_Qnil} */
-#define Qtrue           RUBY_Qtrue             /**< @old{RUBY_Qtrue} */
-#define Qundef          RUBY_Qundef            /**< @old{RUBY_Qundef} */
+#define Qfalse RUBY_Qfalse /**< @old{RUBY_Qfalse} */
+#define Qnil RUBY_Qnil     /**< @old{RUBY_Qnil} */
+#define Qtrue RUBY_Qtrue   /**< @old{RUBY_Qtrue} */
+#define Qundef RUBY_Qundef /**< @old{RUBY_Qundef} */
 
-#define FIXNUM_FLAG        RUBY_FIXNUM_FLAG    /**< @old{RUBY_FIXNUM_FLAG} */
-#define FLONUM_FLAG        RUBY_FLONUM_FLAG    /**< @old{RUBY_FLONUM_FLAG} */
-#define FLONUM_MASK        RUBY_FLONUM_MASK    /**< @old{RUBY_FLONUM_MASK} */
-#define FLONUM_P           RB_FLONUM_P         /**< @old{RB_FLONUM_P} */
-#define IMMEDIATE_MASK     RUBY_IMMEDIATE_MASK /**< @old{RUBY_IMMEDIATE_MASK} */
-#define SYMBOL_FLAG        RUBY_SYMBOL_FLAG    /**< @old{RUBY_SYMBOL_FLAG} */
+#define FIXNUM_FLAG RUBY_FIXNUM_FLAG       /**< @old{RUBY_FIXNUM_FLAG} */
+#define FLONUM_FLAG RUBY_FLONUM_FLAG       /**< @old{RUBY_FLONUM_FLAG} */
+#define FLONUM_MASK RUBY_FLONUM_MASK       /**< @old{RUBY_FLONUM_MASK} */
+#define FLONUM_P RB_FLONUM_P               /**< @old{RB_FLONUM_P} */
+#define IMMEDIATE_MASK RUBY_IMMEDIATE_MASK /**< @old{RUBY_IMMEDIATE_MASK} */
+#define SYMBOL_FLAG RUBY_SYMBOL_FLAG       /**< @old{RUBY_SYMBOL_FLAG} */
 
 /** @cond INTERNAL_MACRO */
-#define RB_FIXNUM_P        RB_FIXNUM_P
-#define RB_FLONUM_P        RB_FLONUM_P
-#define RB_IMMEDIATE_P     RB_IMMEDIATE_P
-#define RB_NIL_P           RB_NIL_P
+#define RB_FIXNUM_P RB_FIXNUM_P
+#define RB_FLONUM_P RB_FLONUM_P
+#define RB_IMMEDIATE_P RB_IMMEDIATE_P
+#define RB_NIL_P RB_NIL_P
 #define RB_SPECIAL_CONST_P RB_SPECIAL_CONST_P
-#define RB_STATIC_SYM_P    RB_STATIC_SYM_P
-#define RB_TEST            RB_TEST
+#define RB_STATIC_SYM_P RB_STATIC_SYM_P
+#define RB_TEST RB_TEST
 /** @endcond */
 
 /** special constants - i.e. non-zero and non-fixnum constants */
-enum
-RBIMPL_ATTR_ENUM_EXTENSIBILITY(closed)
-ruby_special_consts {
+enum RBIMPL_ATTR_ENUM_EXTENSIBILITY(closed) ruby_special_consts {
 #if defined(__DOXYGEN__)
-    RUBY_Qfalse,                /**< @see ::rb_cFalseClass */
-    RUBY_Qtrue,                 /**< @see ::rb_cTrueClass */
-    RUBY_Qnil,                  /**< @see ::rb_cNilClass */
-    RUBY_Qundef,                /**< Represents so-called undef. */
-    RUBY_IMMEDIATE_MASK,        /**< Bit mask detecting special consts. */
-    RUBY_FIXNUM_FLAG,           /**< Flag to denote a fixnum. */
-    RUBY_FLONUM_MASK,           /**< Bit mask detecting a flonum. */
-    RUBY_FLONUM_FLAG,           /**< Flag to denote a flonum. */
-    RUBY_SYMBOL_FLAG,           /**< Flag to denote a static symbol. */
+    RUBY_Qfalse,         /**< @see ::rb_cFalseClass */
+    RUBY_Qtrue,          /**< @see ::rb_cTrueClass */
+    RUBY_Qnil,           /**< @see ::rb_cNilClass */
+    RUBY_Qundef,         /**< Represents so-called undef. */
+    RUBY_IMMEDIATE_MASK, /**< Bit mask detecting special consts. */
+    RUBY_FIXNUM_FLAG,    /**< Flag to denote a fixnum. */
+    RUBY_FLONUM_MASK,    /**< Bit mask detecting a flonum. */
+    RUBY_FLONUM_FLAG,    /**< Flag to denote a flonum. */
+    RUBY_SYMBOL_FLAG,    /**< Flag to denote a static symbol. */
 #elif USE_FLONUM
-    RUBY_Qfalse         = 0x00, /* ...0000 0000 */
-    RUBY_Qtrue          = 0x14, /* ...0001 0100 */
-    RUBY_Qnil           = 0x08, /* ...0000 1000 */
-    RUBY_Qundef         = 0x34, /* ...0011 0100 */
+    RUBY_Qfalse = 0x00,         /* ...0000 0000 */
+    RUBY_Qtrue = 0x14,          /* ...0001 0100 */
+    RUBY_Qnil = 0x08,           /* ...0000 1000 */
+    RUBY_Qundef = 0x34,         /* ...0011 0100 */
     RUBY_IMMEDIATE_MASK = 0x07, /* ...0000 0111 */
-    RUBY_FIXNUM_FLAG    = 0x01, /* ...xxxx xxx1 */
-    RUBY_FLONUM_MASK    = 0x03, /* ...0000 0011 */
-    RUBY_FLONUM_FLAG    = 0x02, /* ...xxxx xx10 */
-    RUBY_SYMBOL_FLAG    = 0x0c, /* ...xxxx 1100 */
+    RUBY_FIXNUM_FLAG = 0x01,    /* ...xxxx xxx1 */
+    RUBY_FLONUM_MASK = 0x03,    /* ...0000 0011 */
+    RUBY_FLONUM_FLAG = 0x02,    /* ...xxxx xx10 */
+    RUBY_SYMBOL_FLAG = 0x0c,    /* ...xxxx 1100 */
 #else
-    RUBY_Qfalse         = 0x00, /* ...0000 0000 */
-    RUBY_Qtrue          = 0x02, /* ...0000 0010 */
-    RUBY_Qnil           = 0x04, /* ...0000 0100 */
-    RUBY_Qundef         = 0x06, /* ...0000 0110 */
+    RUBY_Qfalse = 0x00,         /* ...0000 0000 */
+    RUBY_Qtrue = 0x02,          /* ...0000 0010 */
+    RUBY_Qnil = 0x04,           /* ...0000 0100 */
+    RUBY_Qundef = 0x06,         /* ...0000 0110 */
     RUBY_IMMEDIATE_MASK = 0x03, /* ...0000 0011 */
-    RUBY_FIXNUM_FLAG    = 0x01, /* ...xxxx xxx1 */
-    RUBY_FLONUM_MASK    = 0x00, /* any values ANDed with FLONUM_MASK cannot be FLONUM_FLAG */
-    RUBY_FLONUM_FLAG    = 0x02, /* ...0000 0010 */
-    RUBY_SYMBOL_FLAG    = 0x0e, /* ...0000 1110 */
+    RUBY_FIXNUM_FLAG = 0x01,    /* ...xxxx xxx1 */
+    RUBY_FLONUM_MASK = 0x00,    /* any values ANDed with FLONUM_MASK cannot be FLONUM_FLAG */
+    RUBY_FLONUM_FLAG = 0x02,    /* ...0000 0010 */
+    RUBY_SYMBOL_FLAG = 0x0e,    /* ...0000 1110 */
 #endif
 
-    RUBY_SPECIAL_SHIFT  = 8 /**< Least significant 8 bits are reserved. */
+    RUBY_SPECIAL_SHIFT = 8 /**< Least significant 8 bits are reserved. */
 };
 
 RBIMPL_ATTR_CONST()
@@ -259,7 +257,7 @@ RBIMPL_ATTR_ARTIFICIAL()
 static inline bool
 RB_SPECIAL_CONST_P(VALUE obj)
 {
-    return RB_IMMEDIATE_P(obj) || ! RB_TEST(obj);
+    return RB_IMMEDIATE_P(obj) || !RB_TEST(obj);
 }
 
 RBIMPL_ATTR_CONST()
@@ -287,8 +285,8 @@ rb_special_const_p(VALUE obj)
  * See [ruby-dev:27513] for the following macros.
  */
 #define RUBY_Qfalse RBIMPL_CAST((VALUE)RUBY_Qfalse)
-#define RUBY_Qtrue  RBIMPL_CAST((VALUE)RUBY_Qtrue)
-#define RUBY_Qnil   RBIMPL_CAST((VALUE)RUBY_Qnil)
+#define RUBY_Qtrue RBIMPL_CAST((VALUE)RUBY_Qtrue)
+#define RUBY_Qnil RBIMPL_CAST((VALUE)RUBY_Qnil)
 #define RUBY_Qundef RBIMPL_CAST((VALUE)RUBY_Qundef)
 /** @endcond */
 

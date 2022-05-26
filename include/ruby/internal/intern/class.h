@@ -1,4 +1,4 @@
-#ifndef RBIMPL_INTERN_CLASS_H                        /*-*-C++-*-vi:se ft=cpp:*/
+#ifndef RBIMPL_INTERN_CLASS_H /*-*-C++-*-vi:se ft=cpp:*/
 #define RBIMPL_INTERN_CLASS_H
 /**
  * @file
@@ -20,9 +20,9 @@
  *             extension libraries.  They could be written in C++98.
  * @brief      Public APIs related to ::rb_cClass/::rb_cModule.
  */
+#include "ruby/backward/2/stdarg.h"
 #include "ruby/internal/dllexport.h"
 #include "ruby/internal/value.h"
-#include "ruby/backward/2/stdarg.h"
 
 RBIMPL_SYMBOL_EXPORT_BEGIN()
 
@@ -99,7 +99,6 @@ VALUE rb_define_class_id_under(VALUE outer, ID id, VALUE super);
  * @return An anonymous module.
  */
 VALUE rb_module_new(void);
-
 
 /**
  * Creates a new, anonymous refinement.
@@ -350,7 +349,7 @@ RBIMPL_ATTR_NONNULL(())
  * @note        There are in fact 18 different prototypes for func.
  * @see         ::ruby::backward::cxxanyargs::define_method::rb_define_singleton_method
  */
-void rb_define_singleton_method(VALUE obj, const char *mid, VALUE(*func)(ANYARGS), int arity);
+void rb_define_singleton_method(VALUE obj, const char *mid, VALUE (*func)(ANYARGS), int arity);
 
 /**
  * Finds or creates the singleton class of the passed object.

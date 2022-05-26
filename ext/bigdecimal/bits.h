@@ -5,38 +5,34 @@
 #include "static_assert.h"
 
 #if defined(__x86_64__) && defined(HAVE_X86INTRIN_H)
-# include <x86intrin.h>         /* for _lzcnt_u64, etc. */
+#    include <x86intrin.h> /* for _lzcnt_u64, etc. */
 #elif defined(_MSC_VER) && defined(HAVE_INTRIN_H)
-# include <intrin.h>            /* for the following intrinsics */
+#    include <intrin.h> /* for the following intrinsics */
 #endif
 
 #if defined(_MSC_VER) && defined(__AVX2__)
-# pragma intrinsic(__lzcnt)
-# pragma intrinsic(__lzcnt64)
+#    pragma intrinsic(__lzcnt)
+#    pragma intrinsic(__lzcnt64)
 #endif
 
 #define numberof(array) ((int)(sizeof(array) / sizeof((array)[0])))
-#define roomof(x, y) (((x) + (y) - 1) / (y))
+#define roomof(x, y) (((x) + (y)-1) / (y))
 #define type_roomof(x, y) roomof(sizeof(x), sizeof(y))
 
-#define MUL_OVERFLOW_SIGNED_INTEGER_P(a, b, min, max) ( \
-    (a) == 0 ? 0 : \
-    (a) == -1 ? (b) < -(max) : \
-    (a) > 0 ? \
-      ((b) > 0 ? (max) / (a) < (b) : (min) / (a) > (b)) : \
-      ((b) > 0 ? (min) / (a) < (b) : (max) / (a) > (b)))
+#define MUL_OVERFLOW_SIGNED_INTEGER_P(a, b, min, max) \
+    ((a) == 0       ? 0 \
+        : (a) == -1 ? (b) < -(max) \
+        : (a) > 0   ? ((b) > 0 ? (max) / (a) < (b) : (min) / (a) > (b)) \
+                    : ((b) > 0 ? (min) / (a) < (b) : (max) / (a) > (b)))
 
 #ifdef HAVE_UINT128_T
-# define bit_length(x) \
-    (unsigned int) \
-    (sizeof(x) <= sizeof(int32_t) ? 32 - nlz_int32((uint32_t)(x)) : \
-     sizeof(x) <= sizeof(int64_t) ? 64 - nlz_int64((uint64_t)(x)) : \
-                                   128 - nlz_int128((uint128_t)(x)))
+#    define bit_length(x) \
+        (unsigned int)(sizeof(x) <= sizeof(int32_t)   ? 32 - nlz_int32((uint32_t)(x)) \
+                       : sizeof(x) <= sizeof(int64_t) ? 64 - nlz_int64((uint64_t)(x)) \
+                                                      : 128 - nlz_int128((uint128_t)(x)))
 #else
-# define bit_length(x) \
-    (unsigned int) \
-    (sizeof(x) <= sizeof(int32_t) ? 32 - nlz_int32((uint32_t)(x)) : \
-                                    64 - nlz_int64((uint64_t)(x)))
+#    define bit_length(x) \
+        (unsigned int)(sizeof(x) <= sizeof(int32_t) ? 32 - nlz_int32((uint32_t)(x)) : 64 - nlz_int64((uint64_t)(x)))
 #endif
 
 static inline unsigned nlz_int32(uint32_t x);
@@ -69,11 +65,30 @@ nlz_int32(uint32_t x)
 #else
     uint32_t y;
     unsigned n = 32;
-    y = x >> 16; if (y) {n -= 16; x = y;}
-    y = x >>  8; if (y) {n -=  8; x = y;}
-    y = x >>  4; if (y) {n -=  4; x = y;}
-    y = x >>  2; if (y) {n -=  2; x = y;}
-    y = x >>  1; if (y) {return n - 2;}
+    y = x >> 16;
+    if (y) {
+        n -= 16;
+        x = y;
+    }
+    y = x >> 8;
+    if (y) {
+        n -= 8;
+        x = y;
+    }
+    y = x >> 4;
+    if (y) {
+        n -= 4;
+        x = y;
+    }
+    y = x >> 2;
+    if (y) {
+        n -= 2;
+        x = y;
+    }
+    y = x >> 1;
+    if (y) {
+        return n - 2;
+    }
     return (unsigned int)(n - x);
 #endif
 }
@@ -109,12 +124,35 @@ nlz_int64(uint64_t x)
 #else
     uint64_t y;
     unsigned int n = 64;
-    y = x >> 32; if (y) {n -= 32; x = y;}
-    y = x >> 16; if (y) {n -= 16; x = y;}
-    y = x >>  8; if (y) {n -=  8; x = y;}
-    y = x >>  4; if (y) {n -=  4; x = y;}
-    y = x >>  2; if (y) {n -=  2; x = y;}
-    y = x >>  1; if (y) {return n - 2;}
+    y = x >> 32;
+    if (y) {
+        n -= 32;
+        x = y;
+    }
+    y = x >> 16;
+    if (y) {
+        n -= 16;
+        x = y;
+    }
+    y = x >> 8;
+    if (y) {
+        n -= 8;
+        x = y;
+    }
+    y = x >> 4;
+    if (y) {
+        n -= 4;
+        x = y;
+    }
+    y = x >> 2;
+    if (y) {
+        n -= 2;
+        x = y;
+    }
+    y = x >> 1;
+    if (y) {
+        return n - 2;
+    }
     return (unsigned int)(n - x);
 
 #endif

@@ -10,7 +10,7 @@ struct pinned_data {
 static void
 pinned_mark(void *ptr)
 {
-    struct pinned_data *data = (struct pinned_data*)ptr;
+    struct pinned_data *data = (struct pinned_data *)ptr;
     /* Ensure reference is pinned */
     if (data->ptr) {
         rb_gc_mark(data->ptr);
@@ -23,11 +23,13 @@ pinned_memsize(const void *ptr)
     return sizeof(struct pinned_data);
 }
 
-static const rb_data_type_t pinned_data_type = {
-    "fiddle/pinned",
-    {pinned_mark, xfree, pinned_memsize, },
-    0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED
-};
+static const rb_data_type_t pinned_data_type = {"fiddle/pinned",
+    {
+        pinned_mark,
+        xfree,
+        pinned_memsize,
+    },
+    0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED};
 
 static VALUE
 allocate(VALUE klass)
@@ -65,9 +67,10 @@ ref(VALUE self)
     struct pinned_data *data;
     TypedData_Get_Struct(self, struct pinned_data, &pinned_data_type, data);
     if (data->ptr) {
-      return data->ptr;
-    } else {
-      rb_raise(rb_eFiddleClearedReferenceError, "`ref` called on a cleared object");
+        return data->ptr;
+    }
+    else {
+        rb_raise(rb_eFiddleClearedReferenceError, "`ref` called on a cleared object");
     }
 }
 
@@ -97,7 +100,8 @@ cleared_p(VALUE self)
     TypedData_Get_Struct(self, struct pinned_data, &pinned_data_type, data);
     if (data->ptr) {
         return Qfalse;
-    } else {
+    }
+    else {
         return Qtrue;
     }
 }

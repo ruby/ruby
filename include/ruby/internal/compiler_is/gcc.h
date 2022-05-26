@@ -1,4 +1,4 @@
-#ifndef RBIMPL_COMPILER_IS_GCC_H                     /*-*-C++-*-vi:se ft=cpp:*/
+#ifndef RBIMPL_COMPILER_IS_GCC_H /*-*-C++-*-vi:se ft=cpp:*/
 #define RBIMPL_COMPILER_IS_GCC_H
 /**
  * @author     Ruby developers <ruby-core@ruby-lang.org>
@@ -23,23 +23,23 @@
 #include "ruby/internal/compiler_is/clang.h"
 #include "ruby/internal/compiler_is/intel.h"
 
-#if ! defined(__GNUC__)
-# define RBIMPL_COMPILER_IS_GCC 0
+#if !defined(__GNUC__)
+#    define RBIMPL_COMPILER_IS_GCC 0
 
 #elif RBIMPL_COMPILER_IS(Apple)
-# define RBIMPL_COMPILER_IS_GCC 0
+#    define RBIMPL_COMPILER_IS_GCC 0
 
 #elif RBIMPL_COMPILER_IS(Clang)
-# define RBIMPL_COMPILER_IS_GCC 0
+#    define RBIMPL_COMPILER_IS_GCC 0
 
 #elif RBIMPL_COMPILER_IS(Intel)
-# define RBIMPL_COMPILER_IS_GCC 0
+#    define RBIMPL_COMPILER_IS_GCC 0
 
 #else
-# define RBIMPL_COMPILER_IS_GCC 1
-# define RBIMPL_COMPILER_VERSION_MAJOR __GNUC__
-# define RBIMPL_COMPILER_VERSION_MINOR __GNUC_MINOR__
-# define RBIMPL_COMPILER_VERSION_PATCH __GNUC_PATCHLEVEL__
+#    define RBIMPL_COMPILER_IS_GCC 1
+#    define RBIMPL_COMPILER_VERSION_MAJOR __GNUC__
+#    define RBIMPL_COMPILER_VERSION_MINOR __GNUC_MINOR__
+#    define RBIMPL_COMPILER_VERSION_PATCH __GNUC_PATCHLEVEL__
 #endif
 
 #endif /* RBIMPL_COMPILER_IS_GCC_H */

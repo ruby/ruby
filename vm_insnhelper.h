@@ -22,19 +22,19 @@ RUBY_EXTERN rb_serial_t ruby_vm_global_cvar_state;
 MJIT_SYMBOL_EXPORT_END
 
 #if VM_COLLECT_USAGE_DETAILS
-#define COLLECT_USAGE_INSN(insn)           vm_collect_usage_insn(insn)
-#define COLLECT_USAGE_OPERAND(insn, n, op) vm_collect_usage_operand((insn), (n), ((VALUE)(op)))
+#    define COLLECT_USAGE_INSN(insn) vm_collect_usage_insn(insn)
+#    define COLLECT_USAGE_OPERAND(insn, n, op) vm_collect_usage_operand((insn), (n), ((VALUE)(op)))
 
-#define COLLECT_USAGE_REGISTER(reg, s)     vm_collect_usage_register((reg), (s))
+#    define COLLECT_USAGE_REGISTER(reg, s) vm_collect_usage_register((reg), (s))
 #elif YJIT_STATS
 /* for --yjit-stats */
-#define COLLECT_USAGE_INSN(insn)           rb_yjit_collect_vm_usage_insn(insn)
-#define COLLECT_USAGE_OPERAND(insn, n, op)	/* none */
-#define COLLECT_USAGE_REGISTER(reg, s)		/* none */
+#    define COLLECT_USAGE_INSN(insn) rb_yjit_collect_vm_usage_insn(insn)
+#    define COLLECT_USAGE_OPERAND(insn, n, op) /* none */
+#    define COLLECT_USAGE_REGISTER(reg, s)     /* none */
 #else
-#define COLLECT_USAGE_INSN(insn)		/* none */
-#define COLLECT_USAGE_OPERAND(insn, n, op)	/* none */
-#define COLLECT_USAGE_REGISTER(reg, s)		/* none */
+#    define COLLECT_USAGE_INSN(insn)           /* none */
+#    define COLLECT_USAGE_OPERAND(insn, n, op) /* none */
+#    define COLLECT_USAGE_REGISTER(reg, s)     /* none */
 #endif
 
 /**********************************************************/
@@ -42,23 +42,24 @@ MJIT_SYMBOL_EXPORT_END
 /**********************************************************/
 
 #define PUSH(x) (SET_SV(x), INC_SP(1))
-#define TOPN(n) (*(GET_SP()-(n)-1))
+#define TOPN(n) (*(GET_SP() - (n)-1))
 #define POPN(n) (DEC_SP(n))
-#define POP()   (DEC_SP(1))
-#define STACK_ADDR_FROM_TOP(n) (GET_SP()-(n))
+#define POP() (DEC_SP(1))
+#define STACK_ADDR_FROM_TOP(n) (GET_SP() - (n))
 
 /**********************************************************/
 /* deal with registers                                    */
 /**********************************************************/
 
 #define VM_REG_CFP (reg_cfp)
-#define VM_REG_PC  (VM_REG_CFP->pc)
-#define VM_REG_SP  (VM_REG_CFP->sp)
-#define VM_REG_EP  (VM_REG_CFP->ep)
+#define VM_REG_PC (VM_REG_CFP->pc)
+#define VM_REG_SP (VM_REG_CFP->sp)
+#define VM_REG_EP (VM_REG_CFP->ep)
 
-#define RESTORE_REGS() do { \
-    VM_REG_CFP = ec->cfp; \
-} while (0)
+#define RESTORE_REGS() \
+    do { \
+        VM_REG_CFP = ec->cfp; \
+    } while (0)
 
 #if VM_COLLECT_USAGE_DETAILS
 enum vm_regan_regtype {
@@ -74,33 +75,32 @@ enum vm_regan_acttype {
     VM_REGAN_ACT_SET = 1
 };
 
-#define COLLECT_USAGE_REGISTER_HELPER(a, b, v) \
-  (COLLECT_USAGE_REGISTER((VM_REGAN_##a), (VM_REGAN_ACT_##b)), (v))
+#    define COLLECT_USAGE_REGISTER_HELPER(a, b, v) (COLLECT_USAGE_REGISTER((VM_REGAN_##a), (VM_REGAN_ACT_##b)), (v))
 #else
-#define COLLECT_USAGE_REGISTER_HELPER(a, b, v) (v)
+#    define COLLECT_USAGE_REGISTER_HELPER(a, b, v) (v)
 #endif
 
 /* PC */
-#define GET_PC()           (COLLECT_USAGE_REGISTER_HELPER(PC, GET, VM_REG_PC))
-#define SET_PC(x)          (VM_REG_PC = (COLLECT_USAGE_REGISTER_HELPER(PC, SET, (x))))
+#define GET_PC() (COLLECT_USAGE_REGISTER_HELPER(PC, GET, VM_REG_PC))
+#define SET_PC(x) (VM_REG_PC = (COLLECT_USAGE_REGISTER_HELPER(PC, SET, (x))))
 #define GET_CURRENT_INSN() (*GET_PC())
-#define GET_OPERAND(n)     (GET_PC()[(n)])
-#define ADD_PC(n)          (SET_PC(VM_REG_PC + (n)))
-#define JUMP(dst)          (SET_PC(VM_REG_PC + (dst)))
+#define GET_OPERAND(n) (GET_PC()[(n)])
+#define ADD_PC(n) (SET_PC(VM_REG_PC + (n)))
+#define JUMP(dst) (SET_PC(VM_REG_PC + (dst)))
 
 /* frame pointer, environment pointer */
-#define GET_CFP()  (COLLECT_USAGE_REGISTER_HELPER(CFP, GET, VM_REG_CFP))
-#define GET_EP()   (COLLECT_USAGE_REGISTER_HELPER(EP, GET, VM_REG_EP))
-#define SET_EP(x)  (VM_REG_EP = (COLLECT_USAGE_REGISTER_HELPER(EP, SET, (x))))
-#define GET_LEP()  (VM_EP_LEP(GET_EP()))
+#define GET_CFP() (COLLECT_USAGE_REGISTER_HELPER(CFP, GET, VM_REG_CFP))
+#define GET_EP() (COLLECT_USAGE_REGISTER_HELPER(EP, GET, VM_REG_EP))
+#define SET_EP(x) (VM_REG_EP = (COLLECT_USAGE_REGISTER_HELPER(EP, SET, (x))))
+#define GET_LEP() (VM_EP_LEP(GET_EP()))
 
 /* SP */
-#define GET_SP()   (COLLECT_USAGE_REGISTER_HELPER(SP, GET, VM_REG_SP))
-#define SET_SP(x)  (VM_REG_SP  = (COLLECT_USAGE_REGISTER_HELPER(SP, SET, (x))))
-#define INC_SP(x)  (VM_REG_SP += (COLLECT_USAGE_REGISTER_HELPER(SP, SET, (x))))
-#define DEC_SP(x)  (VM_REG_SP -= (COLLECT_USAGE_REGISTER_HELPER(SP, SET, (x))))
-#define SET_SV(x)  (*GET_SP() = rb_ractor_confirm_belonging(x))
-  /* set current stack value as x */
+#define GET_SP() (COLLECT_USAGE_REGISTER_HELPER(SP, GET, VM_REG_SP))
+#define SET_SP(x) (VM_REG_SP = (COLLECT_USAGE_REGISTER_HELPER(SP, SET, (x))))
+#define INC_SP(x) (VM_REG_SP += (COLLECT_USAGE_REGISTER_HELPER(SP, SET, (x))))
+#define DEC_SP(x) (VM_REG_SP -= (COLLECT_USAGE_REGISTER_HELPER(SP, SET, (x))))
+#define SET_SV(x) (*GET_SP() = rb_ractor_confirm_belonging(x))
+/* set current stack value as x */
 
 /* instruction sequence C struct */
 #define GET_ISEQ() (GET_CFP()->iseq)
@@ -109,7 +109,7 @@ enum vm_regan_acttype {
 /* deal with variables                                    */
 /**********************************************************/
 
-#define GET_PREV_EP(ep)                ((VALUE *)((ep)[VM_ENV_DATA_INDEX_SPECVAL] & ~0x03))
+#define GET_PREV_EP(ep) ((VALUE *)((ep)[VM_ENV_DATA_INDEX_SPECVAL] & ~0x03))
 
 /**********************************************************/
 /* deal with values                                       */
@@ -139,33 +139,39 @@ CC_SET_FASTPATH(const struct rb_callcache *cc, vm_call_handler func, bool enable
 /* deal with control flow 3: exception                    */
 /**********************************************************/
 
-
 /**********************************************************/
 /* deal with stack canary                                 */
 /**********************************************************/
 
 #if VM_CHECK_MODE > 0
-#define SETUP_CANARY(cond) \
-    VALUE *canary = 0; \
-    if (cond) { \
-        canary = GET_SP(); \
-        SET_SV(vm_stack_canary); \
-    } \
-    else {\
-        SET_SV(Qfalse); /* cleanup */ \
-    }
-#define CHECK_CANARY(cond, insn) \
-    if (cond) { \
-        if (*canary == vm_stack_canary) { \
-            *canary = Qfalse; /* cleanup */ \
+#    define SETUP_CANARY(cond) \
+        VALUE *canary = 0; \
+        if (cond) { \
+            canary = GET_SP(); \
+            SET_SV(vm_stack_canary); \
         } \
         else { \
-            rb_vm_canary_is_found_dead(insn, *canary); \
-        } \
-    }
+            SET_SV(Qfalse); /* cleanup */ \
+        }
+#    define CHECK_CANARY(cond, insn) \
+        if (cond) { \
+            if (*canary == vm_stack_canary) { \
+                *canary = Qfalse; /* cleanup */ \
+            } \
+            else { \
+                rb_vm_canary_is_found_dead(insn, *canary); \
+            } \
+        }
 #else
-#define SETUP_CANARY(cond)       if (cond) {} else {}
-#define CHECK_CANARY(cond, insn) if (cond) {(void)(insn);}
+#    define SETUP_CANARY(cond) \
+        if (cond) { \
+        } \
+        else { \
+        }
+#    define CHECK_CANARY(cond, insn) \
+        if (cond) { \
+            (void)(insn); \
+        }
 #endif
 
 /**********************************************************/
@@ -173,13 +179,14 @@ CC_SET_FASTPATH(const struct rb_callcache *cc, vm_call_handler func, bool enable
 /**********************************************************/
 
 #ifndef MJIT_HEADER
-#define CALL_SIMPLE_METHOD() do { \
-    rb_snum_t x = leaf ? INSN_ATTR(width) : 0; \
-    rb_snum_t y = attr_width_opt_send_without_block(0); \
-    rb_snum_t z = x - y; \
-    ADD_PC(z); \
-    DISPATCH_ORIGINAL_INSN(opt_send_without_block); \
-} while (0)
+#    define CALL_SIMPLE_METHOD() \
+        do { \
+            rb_snum_t x = leaf ? INSN_ATTR(width) : 0; \
+            rb_snum_t y = attr_width_opt_send_without_block(0); \
+            rb_snum_t z = x - y; \
+            ADD_PC(z); \
+            DISPATCH_ORIGINAL_INSN(opt_send_without_block); \
+        } while (0)
 #endif
 
 #define PREV_CLASS_SERIAL() (ruby_vm_class_serial)
@@ -240,25 +247,23 @@ THROW_DATA_STATE_SET(struct vm_throw_data *obj, int st)
 static inline void
 THROW_DATA_CONSUMED_SET(struct vm_throw_data *obj)
 {
-    if (THROW_DATA_P(obj) &&
-	THROW_DATA_STATE(obj) == TAG_BREAK) {
-	obj->flags |= THROW_DATA_CONSUMED;
+    if (THROW_DATA_P(obj) && THROW_DATA_STATE(obj) == TAG_BREAK) {
+        obj->flags |= THROW_DATA_CONSUMED;
     }
 }
 
-#define IS_ARGS_SPLAT(ci)          (vm_ci_flag(ci) & VM_CALL_ARGS_SPLAT)
-#define IS_ARGS_KEYWORD(ci)        (vm_ci_flag(ci) & VM_CALL_KWARG)
-#define IS_ARGS_KW_SPLAT(ci)       (vm_ci_flag(ci) & VM_CALL_KW_SPLAT)
+#define IS_ARGS_SPLAT(ci) (vm_ci_flag(ci) & VM_CALL_ARGS_SPLAT)
+#define IS_ARGS_KEYWORD(ci) (vm_ci_flag(ci) & VM_CALL_KWARG)
+#define IS_ARGS_KW_SPLAT(ci) (vm_ci_flag(ci) & VM_CALL_KW_SPLAT)
 #define IS_ARGS_KW_OR_KW_SPLAT(ci) (vm_ci_flag(ci) & (VM_CALL_KWARG | VM_CALL_KW_SPLAT))
-#define IS_ARGS_KW_SPLAT_MUT(ci)   (vm_ci_flag(ci) & VM_CALL_KW_SPLAT_MUT)
+#define IS_ARGS_KW_SPLAT_MUT(ci) (vm_ci_flag(ci) & VM_CALL_KW_SPLAT_MUT)
 
 /* If this returns true, an optimized function returned by `vm_call_iseq_setup_func`
    can be used as a fastpath. */
 static inline bool
 vm_call_iseq_optimizable_p(const struct rb_callinfo *ci, const struct rb_callcache *cc)
 {
-    return !IS_ARGS_SPLAT(ci) && !IS_ARGS_KEYWORD(ci) &&
-        METHOD_ENTRY_CACHEABLE(vm_cc_cme(cc));
+    return !IS_ARGS_SPLAT(ci) && !IS_ARGS_KEYWORD(ci) && METHOD_ENTRY_CACHEABLE(vm_cc_cme(cc));
 }
 
 #endif /* RUBY_INSNHELPER_H */

@@ -1,4 +1,4 @@
-#ifndef RUBY_BACKWARD2_R_CAST_H                      /*-*-C++-*-vi:se ft=cpp:*/
+#ifndef RUBY_BACKWARD2_R_CAST_H /*-*-C++-*-vi:se ft=cpp:*/
 #define RUBY_BACKWARD2_R_CAST_H
 /**
  * @author     Ruby developers <ruby-core@ruby-lang.org>
@@ -21,12 +21,12 @@
  *
  * Nobody is actively using this macro.
  */
-#define R_CAST(st)   (struct st*)
-#define RMOVED(obj)  (R_CAST(RMoved)(obj))
+#define R_CAST(st) (struct st *)
+#define RMOVED(obj) (R_CAST(RMoved)(obj))
 
 #if defined(__GNUC__)
-# warning R_CAST and RMOVED are deprecated
+#    warning R_CAST and RMOVED are deprecated
 #elif defined(_MSC_VER)
-# pragma message("warning: R_CAST and RMOVED are deprecated")
+#    pragma message("warning: R_CAST and RMOVED are deprecated")
 #endif
 #endif /* RUBY_BACKWARD2_R_CAST_H */

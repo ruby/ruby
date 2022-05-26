@@ -2,19 +2,19 @@
  * load methods from eval.c
  */
 
+#include "internal/load.h"
+#include "darray.h"
 #include "dln.h"
 #include "eval_intern.h"
 #include "internal.h"
 #include "internal/dir.h"
 #include "internal/error.h"
 #include "internal/file.h"
-#include "internal/load.h"
 #include "internal/parse.h"
 #include "internal/thread.h"
 #include "internal/variable.h"
 #include "iseq.h"
 #include "probes.h"
-#include "darray.h"
 #include "ruby/encoding.h"
 #include "ruby/util.h"
 
@@ -24,15 +24,9 @@ static VALUE ruby_dln_librefs;
 #define IS_SOEXT(e) (strcmp((e), ".so") == 0 || strcmp((e), ".o") == 0)
 #define IS_DLEXT(e) (strcmp((e), DLEXT) == 0)
 
-static const char *const loadable_ext[] = {
-    ".rb", DLEXT,
-    0
-};
+static const char *const loadable_ext[] = {".rb", DLEXT, 0};
 
-static const char *const ruby_ext[] = {
-    ".rb",
-    0
-};
+static const char *const ruby_ext[] = {".rb", 0};
 
 enum expand_type {
     EXPAND_ALL,
@@ -56,37 +50,31 @@ rb_construct_expanded_load_path(rb_vm_t *vm, enum expand_type type, int *has_rel
 
     ary = rb_ary_tmp_new(RARRAY_LEN(load_path));
     for (i = 0; i < RARRAY_LEN(load_path); ++i) {
-	VALUE path, as_str, expanded_path;
-	int is_string, non_cache;
-	char *as_cstr;
-	as_str = path = RARRAY_AREF(load_path, i);
-	is_string = RB_TYPE_P(path, T_STRING) ? 1 : 0;
-	non_cache = !is_string ? 1 : 0;
+        VALUE path, as_str, expanded_path;
+        int is_string, non_cache;
+        char *as_cstr;
+        as_str = path = RARRAY_AREF(load_path, i);
+        is_string = RB_TYPE_P(path, T_STRING) ? 1 : 0;
+        non_cache = !is_string ? 1 : 0;
         as_str = rb_get_path_check_to_string(path);
-	as_cstr = RSTRING_PTR(as_str);
+        as_cstr = RSTRING_PTR(as_str);
 
-	if (!non_cache) {
-	    if ((type == EXPAND_RELATIVE &&
-		    rb_is_absolute_path(as_cstr)) ||
-		(type == EXPAND_HOME &&
-		    (!as_cstr[0] || as_cstr[0] != '~')) ||
-		(type == EXPAND_NON_CACHE)) {
-		    /* Use cached expanded path. */
-		    rb_ary_push(ary, RARRAY_AREF(expanded_load_path, i));
-		    continue;
-	    }
-	}
-	if (!*has_relative && !rb_is_absolute_path(as_cstr))
-	    *has_relative = 1;
-	if (!*has_non_cache && non_cache)
-	    *has_non_cache = 1;
-	/* Freeze only string object. We expand other objects every time. */
-	if (is_string)
-	    rb_str_freeze(path);
+        if (!non_cache) {
+            if ((type == EXPAND_RELATIVE && rb_is_absolute_path(as_cstr)) ||
+                (type == EXPAND_HOME && (!as_cstr[0] || as_cstr[0] != '~')) || (type == EXPAND_NON_CACHE)) {
+                /* Use cached expanded path. */
+                rb_ary_push(ary, RARRAY_AREF(expanded_load_path, i));
+                continue;
+            }
+        }
+        if (!*has_relative && !rb_is_absolute_path(as_cstr)) *has_relative = 1;
+        if (!*has_non_cache && non_cache) *has_non_cache = 1;
+        /* Freeze only string object. We expand other objects every time. */
+        if (is_string) rb_str_freeze(path);
         as_str = rb_get_path_check_convert(as_str);
-	expanded_path = rb_check_realpath(Qnil, as_str, NULL);
-	if (NIL_P(expanded_path)) expanded_path = as_str;
-	rb_ary_push(ary, rb_fstring(expanded_path));
+        expanded_path = rb_check_realpath(Qnil, as_str, NULL);
+        if (NIL_P(expanded_path)) expanded_path = as_str;
+        rb_ary_push(ary, rb_fstring(expanded_path));
     }
     rb_obj_freeze(ary);
     vm->expanded_load_path = ary;
@@ -99,41 +87,38 @@ get_expanded_load_path(rb_vm_t *vm)
     const VALUE non_cache = Qtrue;
 
     if (!rb_ary_shared_with_p(vm->load_path_snapshot, vm->load_path)) {
-	/* The load path was modified. Rebuild the expanded load path. */
-	int has_relative = 0, has_non_cache = 0;
-	rb_construct_expanded_load_path(vm, EXPAND_ALL, &has_relative, &has_non_cache);
-	if (has_relative) {
-	    vm->load_path_check_cache = rb_dir_getwd_ospath();
-	}
-	else if (has_non_cache) {
-	    /* Non string object. */
-	    vm->load_path_check_cache = non_cache;
-	}
-	else {
-	    vm->load_path_check_cache = 0;
-	}
+        /* The load path was modified. Rebuild the expanded load path. */
+        int has_relative = 0, has_non_cache = 0;
+        rb_construct_expanded_load_path(vm, EXPAND_ALL, &has_relative, &has_non_cache);
+        if (has_relative) {
+            vm->load_path_check_cache = rb_dir_getwd_ospath();
+        }
+        else if (has_non_cache) {
+            /* Non string object. */
+            vm->load_path_check_cache = non_cache;
+        }
+        else {
+            vm->load_path_check_cache = 0;
+        }
     }
     else if (vm->load_path_check_cache == non_cache) {
-	int has_relative = 1, has_non_cache = 1;
-	/* Expand only non-cacheable objects. */
-	rb_construct_expanded_load_path(vm, EXPAND_NON_CACHE,
-					&has_relative, &has_non_cache);
+        int has_relative = 1, has_non_cache = 1;
+        /* Expand only non-cacheable objects. */
+        rb_construct_expanded_load_path(vm, EXPAND_NON_CACHE, &has_relative, &has_non_cache);
     }
     else if (vm->load_path_check_cache) {
-	int has_relative = 1, has_non_cache = 1;
-	VALUE cwd = rb_dir_getwd_ospath();
-	if (!rb_str_equal(vm->load_path_check_cache, cwd)) {
-	    /* Current working directory or filesystem encoding was changed.
-	       Expand relative load path and non-cacheable objects again. */
-	    vm->load_path_check_cache = cwd;
-	    rb_construct_expanded_load_path(vm, EXPAND_RELATIVE,
-					    &has_relative, &has_non_cache);
-	}
-	else {
-	    /* Expand only tilde (User HOME) and non-cacheable objects. */
-	    rb_construct_expanded_load_path(vm, EXPAND_HOME,
-					    &has_relative, &has_non_cache);
-	}
+        int has_relative = 1, has_non_cache = 1;
+        VALUE cwd = rb_dir_getwd_ospath();
+        if (!rb_str_equal(vm->load_path_check_cache, cwd)) {
+            /* Current working directory or filesystem encoding was changed.
+               Expand relative load path and non-cacheable objects again. */
+            vm->load_path_check_cache = cwd;
+            rb_construct_expanded_load_path(vm, EXPAND_RELATIVE, &has_relative, &has_non_cache);
+        }
+        else {
+            /* Expand only tilde (User HOME) and non-cacheable objects. */
+            rb_construct_expanded_load_path(vm, EXPAND_HOME, &has_relative, &has_non_cache);
+        }
     }
     return vm->expanded_load_path;
 }
@@ -145,7 +130,7 @@ rb_get_expanded_load_path(void)
 }
 
 static VALUE
-load_path_getter(ID id, VALUE * p)
+load_path_getter(ID id, VALUE *p)
 {
     rb_vm_t *vm = (void *)p;
     return vm->load_path;
@@ -228,8 +213,8 @@ features_index_add_single_callback(st_data_t *key, st_data_t *value, st_data_t r
             feature_indexes_t feature_indexes;
             rb_darray_make(&feature_indexes, 2);
             int top = (rb && !is_rbext_path(this_feature_path)) ? 1 : 0;
-            rb_darray_set(feature_indexes, top^0, FIX2LONG(this_feature_index));
-            rb_darray_set(feature_indexes, top^1, FIX2LONG(offset));
+            rb_darray_set(feature_indexes, top ^ 0, FIX2LONG(this_feature_index));
+            rb_darray_set(feature_indexes, top ^ 1, FIX2LONG(offset));
 
             assert(rb_darray_size(feature_indexes) == 2);
             // assert feature_indexes does not look like a special const
@@ -274,7 +259,7 @@ features_index_add_single_callback(st_data_t *key, st_data_t *value, st_data_t r
 }
 
 static void
-features_index_add_single(rb_vm_t *vm, const char* str, size_t len, VALUE offset, bool rb)
+features_index_add_single(rb_vm_t *vm, const char *str, size_t len, VALUE offset, bool rb)
 {
     struct st_table *features_index;
     st_data_t short_feature_key;
@@ -311,10 +296,9 @@ features_index_add(rb_vm_t *vm, VALUE feature, VALUE offset)
     feature_end = feature_str + RSTRING_LEN(feature);
 
     for (ext = feature_end; ext > feature_str; ext--)
-	if (*ext == '.' || *ext == '/')
-	    break;
+        if (*ext == '.' || *ext == '/') break;
     if (*ext != '.')
-	ext = NULL;
+        ext = NULL;
     else
         rb = IS_RBEXT(ext);
     /* Now `ext` points to the only string matching %r{^\.[^./]*$} that is
@@ -322,20 +306,19 @@ features_index_add(rb_vm_t *vm, VALUE feature, VALUE offset)
 
     p = ext ? ext : feature_end;
     while (1) {
-	p--;
-	while (p >= feature_str && *p != '/')
-	    p--;
-	if (p < feature_str)
-	    break;
-	/* Now *p == '/'.  We reach this point for every '/' in `feature`. */
-	features_index_add_single(vm, p + 1, feature_end - p - 1, offset, false);
-	if (ext) {
-	    features_index_add_single(vm, p + 1, ext - p - 1, offset, rb);
-	}
+        p--;
+        while (p >= feature_str && *p != '/')
+            p--;
+        if (p < feature_str) break;
+        /* Now *p == '/'.  We reach this point for every '/' in `feature`. */
+        features_index_add_single(vm, p + 1, feature_end - p - 1, offset, false);
+        if (ext) {
+            features_index_add_single(vm, p + 1, ext - p - 1, offset, rb);
+        }
     }
     features_index_add_single(vm, feature_str, feature_end - feature_str, offset, false);
     if (ext) {
-	features_index_add_single(vm, feature_str, ext - feature_str, offset, rb);
+        features_index_add_single(vm, feature_str, ext - feature_str, offset, rb);
     }
 }
 
@@ -356,23 +339,22 @@ get_loaded_features_index(rb_vm_t *vm)
     int i;
 
     if (!rb_ary_shared_with_p(vm->loaded_features_snapshot, vm->loaded_features)) {
-	/* The sharing was broken; something (other than us in rb_provide_feature())
-	   modified loaded_features.  Rebuild the index. */
-	st_foreach(vm->loaded_features_index, loaded_features_index_clear_i, 0);
+        /* The sharing was broken; something (other than us in rb_provide_feature())
+           modified loaded_features.  Rebuild the index. */
+        st_foreach(vm->loaded_features_index, loaded_features_index_clear_i, 0);
 
         VALUE realpaths = vm->loaded_features_realpaths;
         rb_hash_clear(realpaths);
-	features = vm->loaded_features;
-	for (i = 0; i < RARRAY_LEN(features); i++) {
-	    VALUE entry, as_str;
-	    as_str = entry = rb_ary_entry(features, i);
-	    StringValue(as_str);
-	    as_str = rb_fstring(rb_str_freeze(as_str));
-	    if (as_str != entry)
-		rb_ary_store(features, i, as_str);
-	    features_index_add(vm, as_str, INT2FIX(i));
-	}
-	reset_loaded_features_snapshot(vm);
+        features = vm->loaded_features;
+        for (i = 0; i < RARRAY_LEN(features); i++) {
+            VALUE entry, as_str;
+            as_str = entry = rb_ary_entry(features, i);
+            StringValue(as_str);
+            as_str = rb_fstring(rb_str_freeze(as_str));
+            if (as_str != entry) rb_ary_store(features, i, as_str);
+            features_index_add(vm, as_str, INT2FIX(i));
+        }
+        reset_loaded_features_snapshot(vm);
 
         features = rb_ary_dup(vm->loaded_features_snapshot);
         long j = RARRAY_LEN(features);
@@ -398,45 +380,40 @@ get_loaded_features_index(rb_vm_t *vm)
    or have any value matching `%r{^\.[^./]*$}`.
 */
 static VALUE
-loaded_feature_path(const char *name, long vlen, const char *feature, long len,
-		    int type, VALUE load_path)
+loaded_feature_path(const char *name, long vlen, const char *feature, long len, int type, VALUE load_path)
 {
     long i;
     long plen;
     const char *e;
 
-    if (vlen < len+1) return 0;
-    if (strchr(feature, '.') && !strncmp(name+(vlen-len), feature, len)) {
-	plen = vlen - len;
+    if (vlen < len + 1) return 0;
+    if (strchr(feature, '.') && !strncmp(name + (vlen - len), feature, len)) {
+        plen = vlen - len;
     }
     else {
-	for (e = name + vlen; name != e && *e != '.' && *e != '/'; --e);
-	if (*e != '.' ||
-	    e-name < len ||
-	    strncmp(e-len, feature, len))
-	    return 0;
-	plen = e - name - len;
+        for (e = name + vlen; name != e && *e != '.' && *e != '/'; --e)
+            ;
+        if (*e != '.' || e - name < len || strncmp(e - len, feature, len)) return 0;
+        plen = e - name - len;
     }
-    if (plen > 0 && name[plen-1] != '/') {
-	return 0;
+    if (plen > 0 && name[plen - 1] != '/') {
+        return 0;
     }
-    if (type == 's' ? !IS_DLEXT(&name[plen+len]) :
-	type == 'r' ? !IS_RBEXT(&name[plen+len]) :
-	0) {
-	return 0;
+    if (type == 's' ? !IS_DLEXT(&name[plen + len]) : type == 'r' ? !IS_RBEXT(&name[plen + len]) : 0) {
+        return 0;
     }
     /* Now name == "#{prefix}/#{feature}#{ext}" where ext is acceptable
        (possibly empty) and prefix is some string of length plen. */
 
-    if (plen > 0) --plen;	/* exclude '.' */
+    if (plen > 0) --plen; /* exclude '.' */
     for (i = 0; i < RARRAY_LEN(load_path); ++i) {
-	VALUE p = RARRAY_AREF(load_path, i);
-	const char *s = StringValuePtr(p);
-	long n = RSTRING_LEN(p);
+        VALUE p = RARRAY_AREF(load_path, i);
+        const char *s = StringValuePtr(p);
+        long n = RSTRING_LEN(p);
 
-	if (n != plen) continue;
-	if (n && strncmp(name, s, n)) continue;
-	return p;
+        if (n != plen) continue;
+        if (n && strncmp(name, s, n)) continue;
+        return p;
     }
     return 0;
 }
@@ -454,8 +431,7 @@ loaded_feature_path_i(st_data_t v, st_data_t b, st_data_t f)
 {
     const char *s = (const char *)v;
     struct loaded_feature_searching *fp = (struct loaded_feature_searching *)f;
-    VALUE p = loaded_feature_path(s, strlen(s), fp->name, fp->len,
-				  fp->type, fp->load_path);
+    VALUE p = loaded_feature_path(s, strlen(s), fp->name, fp->len, fp->type, fp->load_path);
     if (!p) return ST_CONTINUE;
     fp->result = s;
     return ST_STOP;
@@ -474,14 +450,14 @@ rb_feature_p(rb_vm_t *vm, const char *feature, const char *ext, int rb, int expa
 
     if (fn) *fn = 0;
     if (ext) {
-	elen = strlen(ext);
-	len = strlen(feature) - elen;
-	type = rb ? 'r' : 's';
+        elen = strlen(ext);
+        len = strlen(feature) - elen;
+        type = rb ? 'r' : 's';
     }
     else {
-	len = strlen(feature);
-	elen = 0;
-	type = 0;
+        len = strlen(feature);
+        elen = 0;
+        type = 0;
     }
     features = get_loaded_features(vm);
     features_index = get_loaded_features_index(vm);
@@ -514,94 +490,94 @@ rb_feature_p(rb_vm_t *vm, const char *feature, const char *ext, int rb, int expa
        as any distractors, so we may ignore all other entries in `features`.
      */
     if (st_lookup(features_index, key, &data) && !NIL_P(this_feature_index = (VALUE)data)) {
-        for (size_t i = 0; ; i++) {
-	    long index;
+        for (size_t i = 0;; i++) {
+            long index;
             if (FIXNUM_P(this_feature_index)) {
-		if (i > 0) break;
+                if (i > 0) break;
                 index = FIX2LONG(this_feature_index);
-	    }
+            }
             else {
                 feature_indexes_t feature_indexes = (feature_indexes_t)this_feature_index;
                 if (i >= rb_darray_size(feature_indexes)) break;
                 index = rb_darray_get(feature_indexes, i);
             }
 
-	    v = RARRAY_AREF(features, index);
-	    f = StringValuePtr(v);
-	    if ((n = RSTRING_LEN(v)) < len) continue;
-	    if (strncmp(f, feature, len) != 0) {
-		if (expanded) continue;
-		if (!load_path) load_path = get_expanded_load_path(vm);
-		if (!(p = loaded_feature_path(f, n, feature, len, type, load_path)))
-		    continue;
-		expanded = 1;
-		f += RSTRING_LEN(p) + 1;
-	    }
-	    if (!*(e = f + len)) {
-		if (ext) continue;
-		return 'u';
-	    }
-	    if (*e != '.') continue;
-	    if ((!rb || !ext) && (IS_SOEXT(e) || IS_DLEXT(e))) {
-		return 's';
-	    }
-	    if ((rb || !ext) && (IS_RBEXT(e))) {
-		return 'r';
-	    }
-	}
+            v = RARRAY_AREF(features, index);
+            f = StringValuePtr(v);
+            if ((n = RSTRING_LEN(v)) < len) continue;
+            if (strncmp(f, feature, len) != 0) {
+                if (expanded) continue;
+                if (!load_path) load_path = get_expanded_load_path(vm);
+                if (!(p = loaded_feature_path(f, n, feature, len, type, load_path))) continue;
+                expanded = 1;
+                f += RSTRING_LEN(p) + 1;
+            }
+            if (!*(e = f + len)) {
+                if (ext) continue;
+                return 'u';
+            }
+            if (*e != '.') continue;
+            if ((!rb || !ext) && (IS_SOEXT(e) || IS_DLEXT(e))) {
+                return 's';
+            }
+            if ((rb || !ext) && (IS_RBEXT(e))) {
+                return 'r';
+            }
+        }
     }
 
     loading_tbl = get_loading_table(vm);
     f = 0;
     if (!expanded) {
-	struct loaded_feature_searching fs;
-	fs.name = feature;
-	fs.len = len;
-	fs.type = type;
-	fs.load_path = load_path ? load_path : get_expanded_load_path(vm);
-	fs.result = 0;
-	st_foreach(loading_tbl, loaded_feature_path_i, (st_data_t)&fs);
-	if ((f = fs.result) != 0) {
-	    if (fn) *fn = f;
-	    goto loading;
-	}
+        struct loaded_feature_searching fs;
+        fs.name = feature;
+        fs.len = len;
+        fs.type = type;
+        fs.load_path = load_path ? load_path : get_expanded_load_path(vm);
+        fs.result = 0;
+        st_foreach(loading_tbl, loaded_feature_path_i, (st_data_t)&fs);
+        if ((f = fs.result) != 0) {
+            if (fn) *fn = f;
+            goto loading;
+        }
     }
     if (st_get_key(loading_tbl, (st_data_t)feature, &data)) {
-	if (fn) *fn = (const char*)data;
+        if (fn) *fn = (const char *)data;
         goto loading;
     }
     else {
-	VALUE bufstr;
-	char *buf;
-	static const char so_ext[][4] = {
-	    ".so", ".o",
-	};
+        VALUE bufstr;
+        char *buf;
+        static const char so_ext[][4] = {
+            ".so",
+            ".o",
+        };
 
-	if (ext && *ext) return 0;
-	bufstr = rb_str_tmp_new(len + DLEXT_MAXLEN);
-	buf = RSTRING_PTR(bufstr);
-	MEMCPY(buf, feature, char, len);
-	for (i = 0; (e = loadable_ext[i]) != 0; i++) {
-	    strlcpy(buf + len, e, DLEXT_MAXLEN + 1);
-	    if (st_get_key(loading_tbl, (st_data_t)buf, &data)) {
-		rb_str_resize(bufstr, 0);
-		if (fn) *fn = (const char*)data;
-		return i ? 's' : 'r';
-	    }
-	}
-	for (i = 0; i < numberof(so_ext); i++) {
-	    strlcpy(buf + len, so_ext[i], DLEXT_MAXLEN + 1);
-	    if (st_get_key(loading_tbl, (st_data_t)buf, &data)) {
-		rb_str_resize(bufstr, 0);
-		if (fn) *fn = (const char*)data;
-		return 's';
-	    }
-	}
-	rb_str_resize(bufstr, 0);
+        if (ext && *ext) return 0;
+        bufstr = rb_str_tmp_new(len + DLEXT_MAXLEN);
+        buf = RSTRING_PTR(bufstr);
+        MEMCPY(buf, feature, char, len);
+        for (i = 0; (e = loadable_ext[i]) != 0; i++) {
+            strlcpy(buf + len, e, DLEXT_MAXLEN + 1);
+            if (st_get_key(loading_tbl, (st_data_t)buf, &data)) {
+                rb_str_resize(bufstr, 0);
+                if (fn) *fn = (const char *)data;
+                return i ? 's' : 'r';
+            }
+        }
+        for (i = 0; i < numberof(so_ext); i++) {
+            strlcpy(buf + len, so_ext[i], DLEXT_MAXLEN + 1);
+            if (st_get_key(loading_tbl, (st_data_t)buf, &data)) {
+                rb_str_resize(bufstr, 0);
+                if (fn) *fn = (const char *)data;
+                return 's';
+            }
+        }
+        rb_str_resize(bufstr, 0);
     }
     return 0;
 
-  loading:
+loading:
     if (!ext) return 'u';
     return !IS_RBEXT(ext) ? 's' : 'r';
 }
@@ -618,23 +594,21 @@ feature_provided(rb_vm_t *vm, const char *feature, const char **loading)
     const char *ext = strrchr(feature, '.');
     VALUE fullpath = 0;
 
-    if (*feature == '.' &&
-	(feature[1] == '/' || strncmp(feature+1, "./", 2) == 0)) {
-	fullpath = rb_file_expand_path_fast(rb_get_path(rb_str_new2(feature)), Qnil);
-	feature = RSTRING_PTR(fullpath);
+    if (*feature == '.' && (feature[1] == '/' || strncmp(feature + 1, "./", 2) == 0)) {
+        fullpath = rb_file_expand_path_fast(rb_get_path(rb_str_new2(feature)), Qnil);
+        feature = RSTRING_PTR(fullpath);
     }
     if (ext && !strchr(ext, '/')) {
-	if (IS_RBEXT(ext)) {
-	    if (rb_feature_p(vm, feature, ext, TRUE, FALSE, loading)) return TRUE;
-	    return FALSE;
-	}
-	else if (IS_SOEXT(ext) || IS_DLEXT(ext)) {
-	    if (rb_feature_p(vm, feature, ext, FALSE, FALSE, loading)) return TRUE;
-	    return FALSE;
-	}
+        if (IS_RBEXT(ext)) {
+            if (rb_feature_p(vm, feature, ext, TRUE, FALSE, loading)) return TRUE;
+            return FALSE;
+        }
+        else if (IS_SOEXT(ext) || IS_DLEXT(ext)) {
+            if (rb_feature_p(vm, feature, ext, FALSE, FALSE, loading)) return TRUE;
+            return FALSE;
+        }
     }
-    if (rb_feature_p(vm, feature, 0, TRUE, FALSE, loading))
-	return TRUE;
+    if (rb_feature_p(vm, feature, 0, TRUE, FALSE, loading)) return TRUE;
     RB_GC_GUARD(fullpath);
     return FALSE;
 }
@@ -652,8 +626,7 @@ rb_provide_feature(rb_vm_t *vm, VALUE feature)
 
     features = get_loaded_features(vm);
     if (OBJ_FROZEN(features)) {
-	rb_raise(rb_eRuntimeError,
-		 "$LOADED_FEATURES is frozen; cannot append feature");
+        rb_raise(rb_eRuntimeError, "$LOADED_FEATURES is frozen; cannot append feature");
     }
     rb_str_freeze(feature);
 
@@ -663,7 +636,7 @@ rb_provide_feature(rb_vm_t *vm, VALUE feature)
     // To avoid this we first clear loaded_features_snapshot.
     rb_ary_clear(vm->loaded_features_snapshot);
     rb_ary_push(features, rb_fstring(feature));
-    features_index_add(vm, feature, INT2FIX(RARRAY_LEN(features)-1));
+    features_index_add(vm, feature, INT2FIX(RARRAY_LEN(features) - 1));
     reset_loaded_features_snapshot(vm);
 }
 
@@ -685,8 +658,8 @@ load_iseq_eval(rb_execution_context_t *ec, VALUE fname)
         VALUE parser = rb_parser_new();
         rb_parser_set_context(parser, NULL, FALSE);
         ast = (rb_ast_t *)rb_parser_load_file(parser, fname);
-        iseq = rb_iseq_new_top(&ast->body, rb_fstring_lit("<top (required)>"),
-                               fname, rb_realpath_internal(Qnil, fname, 1), NULL);
+        iseq = rb_iseq_new_top(
+            &ast->body, rb_fstring_lit("<top (required)>"), fname, rb_realpath_internal(Qnil, fname, 1), NULL);
         rb_ast_dispose(ast);
     }
     rb_exec_event_hook_script_compiled(ec, iseq, Qnil);
@@ -822,9 +795,8 @@ rb_f_load(int argc, VALUE *argv, VALUE _)
 
     path = rb_find_file(fname);
     if (!path) {
-	if (!rb_file_load_ok(RSTRING_PTR(fname)))
-	    load_failed(orig_fname);
-	path = fname;
+        if (!rb_file_load_ok(RSTRING_PTR(fname))) load_failed(orig_fname);
+        path = fname;
     }
     rb_load_internal(path, wrap);
 
@@ -840,29 +812,29 @@ load_lock(rb_vm_t *vm, const char *ftptr, bool warn)
     st_table *loading_tbl = get_loading_table(vm);
 
     if (!st_lookup(loading_tbl, (st_data_t)ftptr, &data)) {
-	/* partial state */
-	ftptr = ruby_strdup(ftptr);
-	data = (st_data_t)rb_thread_shield_new();
-	st_insert(loading_tbl, (st_data_t)ftptr, data);
-	return (char *)ftptr;
+        /* partial state */
+        ftptr = ruby_strdup(ftptr);
+        data = (st_data_t)rb_thread_shield_new();
+        st_insert(loading_tbl, (st_data_t)ftptr, data);
+        return (char *)ftptr;
     }
     else if (imemo_type_p(data, imemo_memo)) {
-	struct MEMO *memo = MEMO_CAST(data);
+        struct MEMO *memo = MEMO_CAST(data);
         void (*init)(void) = memo->u3.func;
-	data = (st_data_t)rb_thread_shield_new();
-	st_insert(loading_tbl, (st_data_t)ftptr, data);
-	(*init)();
-	return (char *)"";
+        data = (st_data_t)rb_thread_shield_new();
+        st_insert(loading_tbl, (st_data_t)ftptr, data);
+        (*init)();
+        return (char *)"";
     }
     if (warn) {
-	VALUE warning = rb_warning_string("loading in progress, circular require considered harmful - %s", ftptr);
-	rb_backtrace_each(rb_str_append, warning);
-	rb_warning("%"PRIsVALUE, warning);
+        VALUE warning = rb_warning_string("loading in progress, circular require considered harmful - %s", ftptr);
+        rb_backtrace_each(rb_str_append, warning);
+        rb_warning("%" PRIsVALUE, warning);
     }
     switch (rb_thread_shield_wait((VALUE)data)) {
-      case Qfalse:
-      case Qnil:
-	return 0;
+    case Qfalse:
+    case Qnil:
+        return 0;
     }
     return (char *)ftptr;
 }
@@ -873,13 +845,13 @@ release_thread_shield(st_data_t *key, st_data_t *value, st_data_t done, int exis
     VALUE thread_shield = (VALUE)*value;
     if (!existing) return ST_STOP;
     if (done) {
-	rb_thread_shield_destroy(thread_shield);
-	/* Delete the entry even if there are waiting threads, because they
-	 * won't load the file and won't delete the entry. */
+        rb_thread_shield_destroy(thread_shield);
+        /* Delete the entry even if there are waiting threads, because they
+         * won't load the file and won't delete the entry. */
     }
     else if (rb_thread_shield_release(thread_shield)) {
-	/* still in-use */
-	return ST_CONTINUE;
+        /* still in-use */
+        return ST_CONTINUE;
     }
     xfree((char *)*key);
     return ST_DELETE;
@@ -889,13 +861,12 @@ static void
 load_unlock(rb_vm_t *vm, const char *ftptr, int done)
 {
     if (ftptr) {
-	st_data_t key = (st_data_t)ftptr;
-	st_table *loading_tbl = get_loading_table(vm);
+        st_data_t key = (st_data_t)ftptr;
+        st_table *loading_tbl = get_loading_table(vm);
 
-	st_update(loading_tbl, key, release_thread_shield, done);
+        st_update(loading_tbl, key, release_thread_shield, done);
     }
 }
-
 
 /*
  *  call-seq:
@@ -954,7 +925,7 @@ rb_f_require_relative(VALUE obj, VALUE fname)
 {
     VALUE base = rb_current_realfilepath();
     if (NIL_P(base)) {
-	rb_loaderror("cannot infer basepath");
+        rb_loaderror("cannot infer basepath");
     }
     base = rb_file_dirname(base);
     return rb_require_string(rb_file_absolute_path(fname, base));
@@ -973,74 +944,69 @@ search_required(rb_vm_t *vm, VALUE fname, volatile VALUE *path, feature_func rb_
     *path = 0;
     ext = strrchr(ftptr = RSTRING_PTR(fname), '.');
     if (ext && !strchr(ext, '/')) {
-	if (IS_RBEXT(ext)) {
-	    if (rb_feature_p(vm, ftptr, ext, TRUE, FALSE, &loading)) {
-		if (loading) *path = rb_filesystem_str_new_cstr(loading);
-		return 'r';
-	    }
+        if (IS_RBEXT(ext)) {
+            if (rb_feature_p(vm, ftptr, ext, TRUE, FALSE, &loading)) {
+                if (loading) *path = rb_filesystem_str_new_cstr(loading);
+                return 'r';
+            }
             if ((tmp = rb_find_file(fname)) != 0) {
-		ext = strrchr(ftptr = RSTRING_PTR(tmp), '.');
-		if (!rb_feature_p(vm, ftptr, ext, TRUE, TRUE, &loading) || loading)
-		    *path = tmp;
-		return 'r';
-	    }
-	    return 0;
-	}
-	else if (IS_SOEXT(ext)) {
-	    if (rb_feature_p(vm, ftptr, ext, FALSE, FALSE, &loading)) {
-		if (loading) *path = rb_filesystem_str_new_cstr(loading);
-		return 's';
-	    }
-	    tmp = rb_str_subseq(fname, 0, ext - RSTRING_PTR(fname));
-	    rb_str_cat2(tmp, DLEXT);
-	    OBJ_FREEZE(tmp);
+                ext = strrchr(ftptr = RSTRING_PTR(tmp), '.');
+                if (!rb_feature_p(vm, ftptr, ext, TRUE, TRUE, &loading) || loading) *path = tmp;
+                return 'r';
+            }
+            return 0;
+        }
+        else if (IS_SOEXT(ext)) {
+            if (rb_feature_p(vm, ftptr, ext, FALSE, FALSE, &loading)) {
+                if (loading) *path = rb_filesystem_str_new_cstr(loading);
+                return 's';
+            }
+            tmp = rb_str_subseq(fname, 0, ext - RSTRING_PTR(fname));
+            rb_str_cat2(tmp, DLEXT);
+            OBJ_FREEZE(tmp);
             if ((tmp = rb_find_file(tmp)) != 0) {
-		ext = strrchr(ftptr = RSTRING_PTR(tmp), '.');
-		if (!rb_feature_p(vm, ftptr, ext, FALSE, TRUE, &loading) || loading)
-		    *path = tmp;
-		return 's';
-	    }
-	}
-	else if (IS_DLEXT(ext)) {
-	    if (rb_feature_p(vm, ftptr, ext, FALSE, FALSE, &loading)) {
-		if (loading) *path = rb_filesystem_str_new_cstr(loading);
-		return 's';
-	    }
+                ext = strrchr(ftptr = RSTRING_PTR(tmp), '.');
+                if (!rb_feature_p(vm, ftptr, ext, FALSE, TRUE, &loading) || loading) *path = tmp;
+                return 's';
+            }
+        }
+        else if (IS_DLEXT(ext)) {
+            if (rb_feature_p(vm, ftptr, ext, FALSE, FALSE, &loading)) {
+                if (loading) *path = rb_filesystem_str_new_cstr(loading);
+                return 's';
+            }
             if ((tmp = rb_find_file(fname)) != 0) {
-		ext = strrchr(ftptr = RSTRING_PTR(tmp), '.');
-		if (!rb_feature_p(vm, ftptr, ext, FALSE, TRUE, &loading) || loading)
-		    *path = tmp;
-		return 's';
-	    }
-	}
+                ext = strrchr(ftptr = RSTRING_PTR(tmp), '.');
+                if (!rb_feature_p(vm, ftptr, ext, FALSE, TRUE, &loading) || loading) *path = tmp;
+                return 's';
+            }
+        }
     }
     else if ((ft = rb_feature_p(vm, ftptr, 0, FALSE, FALSE, &loading)) == 'r') {
-	if (loading) *path = rb_filesystem_str_new_cstr(loading);
-	return 'r';
+        if (loading) *path = rb_filesystem_str_new_cstr(loading);
+        return 'r';
     }
     tmp = fname;
     type = rb_find_file_ext(&tmp, ft == 's' ? ruby_ext : loadable_ext);
     switch (type) {
-      case 0:
-	if (ft)
-	    goto statically_linked;
-	ftptr = RSTRING_PTR(tmp);
-	return rb_feature_p(vm, ftptr, 0, FALSE, TRUE, 0);
+    case 0:
+        if (ft) goto statically_linked;
+        ftptr = RSTRING_PTR(tmp);
+        return rb_feature_p(vm, ftptr, 0, FALSE, TRUE, 0);
 
-      default:
-	if (ft) {
+    default:
+        if (ft) {
             goto statically_linked;
-	}
+        }
         /* fall through */
-      case 1:
-	ext = strrchr(ftptr = RSTRING_PTR(tmp), '.');
-	if (rb_feature_p(vm, ftptr, ext, !--type, TRUE, &loading) && !loading)
-	    break;
-	*path = tmp;
+    case 1:
+        ext = strrchr(ftptr = RSTRING_PTR(tmp), '.');
+        if (rb_feature_p(vm, ftptr, ext, !--type, TRUE, &loading) && !loading) break;
+        *path = tmp;
     }
     return type ? 's' : 'r';
 
-  statically_linked:
+statically_linked:
     if (loading) *path = rb_filesystem_str_new_cstr(loading);
     return ft;
 }
@@ -1077,13 +1043,13 @@ rb_resolve_feature_path(VALUE klass, VALUE fname)
     found = search_required(GET_VM(), path, &path, no_feature_p);
 
     switch (found) {
-      case 'r':
+    case 'r':
         sym = ID2SYM(rb_intern("rb"));
         break;
-      case 's':
+    case 's':
         sym = ID2SYM(rb_intern("so"));
         break;
-      default:
+    default:
         return Qnil;
     }
 
@@ -1124,7 +1090,9 @@ require_internal(rb_execution_context_t *ec, VALUE fname, int exception, bool wa
     volatile const struct {
         VALUE wrapper, self, errinfo;
     } saved = {
-        th->top_wrapper, th->top_self, ec->errinfo,
+        th->top_wrapper,
+        th->top_self,
+        ec->errinfo,
     };
     enum ruby_tag_type state;
     char *volatile ftptr = 0;
@@ -1144,42 +1112,40 @@ require_internal(rb_execution_context_t *ec, VALUE fname, int exception, bool wa
     ec->errinfo = Qnil; /* ensure */
     th->top_wrapper = 0;
     if ((state = EC_EXEC_TAG()) == TAG_NONE) {
-	long handle;
-	int found;
+        long handle;
+        int found;
 
-	RUBY_DTRACE_HOOK(FIND_REQUIRE_ENTRY, RSTRING_PTR(fname));
+        RUBY_DTRACE_HOOK(FIND_REQUIRE_ENTRY, RSTRING_PTR(fname));
         found = search_required(th->vm, path, &saved_path, rb_feature_p);
-	RUBY_DTRACE_HOOK(FIND_REQUIRE_RETURN, RSTRING_PTR(fname));
+        RUBY_DTRACE_HOOK(FIND_REQUIRE_RETURN, RSTRING_PTR(fname));
         path = saved_path;
 
-	if (found) {
+        if (found) {
             if (!path || !(ftptr = load_lock(th->vm, RSTRING_PTR(path), warn))) {
-		result = 0;
-	    }
-	    else if (!*ftptr) {
-		result = TAG_RETURN;
-	    }
-            else if (RTEST(rb_hash_aref(realpaths,
-                                        realpath = rb_realpath_internal(Qnil, path, 1)))) {
                 result = 0;
             }
-	    else {
-		switch (found) {
-		  case 'r':
+            else if (!*ftptr) {
+                result = TAG_RETURN;
+            }
+            else if (RTEST(rb_hash_aref(realpaths, realpath = rb_realpath_internal(Qnil, path, 1)))) {
+                result = 0;
+            }
+            else {
+                switch (found) {
+                case 'r':
                     load_iseq_eval(ec, path);
-		    break;
+                    break;
 
-		  case 's':
+                case 's':
                     reset_ext_config = true;
                     ext_config_push(th, &prev_ext_config);
-		    handle = (long)rb_vm_call_cfunc(rb_vm_top_self(), load_ext,
-						    path, VM_BLOCK_HANDLER_NONE, path);
-		    rb_ary_push(ruby_dln_librefs, LONG2NUM(handle));
-		    break;
-		}
+                    handle = (long)rb_vm_call_cfunc(rb_vm_top_self(), load_ext, path, VM_BLOCK_HANDLER_NONE, path);
+                    rb_ary_push(ruby_dln_librefs, LONG2NUM(handle));
+                    break;
+                }
                 result = TAG_RETURN;
-	    }
-	}
+            }
+        }
     }
     EC_POP_TAG();
 
@@ -1205,9 +1171,9 @@ require_internal(rb_execution_context_t *ec, VALUE fname, int exception, bool wa
         else if (state == TAG_RETURN) {
             return TAG_RAISE;
         }
-	RB_GC_GUARD(fname);
-	/* never TAG_RETURN */
-	return state;
+        RB_GC_GUARD(fname);
+        /* never TAG_RETURN */
+        return state;
     }
     if (!NIL_P(ec->errinfo)) {
         if (!exception) return TAG_RAISE;
@@ -1263,7 +1229,7 @@ rb_require_string(VALUE fname)
         EC_JUMP_TAG(ec, result);
     }
     if (result < 0) {
-	load_failed(fname);
+        load_failed(fname);
     }
 
     return RBOOL(result);
@@ -1280,12 +1246,12 @@ register_init_ext(st_data_t *key, st_data_t *value, st_data_t init, int existing
 {
     const char *name = (char *)*key;
     if (existing) {
-	/* already registered */
-	rb_warn("%s is already registered", name);
+        /* already registered */
+        rb_warn("%s is already registered", name);
     }
     else {
-	*value = (st_data_t)MEMO_NEW(0, 0, init);
-	*key = (st_data_t)ruby_strdup(name);
+        *value = (st_data_t)MEMO_NEW(0, 0, init);
+        *key = (st_data_t)ruby_strdup(name);
     }
     return ST_CONTINUE;
 }
@@ -1296,8 +1262,7 @@ ruby_init_ext(const char *name, void (*init)(void))
     rb_vm_t *vm = GET_VM();
     st_table *loading_tbl = get_loading_table(vm);
 
-    if (feature_provided(vm, name, 0))
-	return;
+    if (feature_provided(vm, name, 0)) return;
     st_update(loading_tbl, (st_data_t)name, register_init_ext, (st_data_t)init);
 }
 
@@ -1359,7 +1324,7 @@ rb_mod_autoload_p(int argc, VALUE *argv, VALUE mod)
 
     ID id = rb_check_id(&sym);
     if (!id) {
-	return Qnil;
+        return Qnil;
     }
     return rb_autoload_at_p(mod, id, recur);
 }
@@ -1380,7 +1345,7 @@ rb_f_autoload(VALUE obj, VALUE sym, VALUE file)
 {
     VALUE klass = rb_class_real(rb_vm_cbase());
     if (!klass) {
-	rb_raise(rb_eTypeError, "Can not set autoload on singleton class");
+        rb_raise(rb_eTypeError, "Can not set autoload on singleton class");
     }
     return rb_mod_autoload(klass, sym, file);
 }
@@ -1402,7 +1367,7 @@ rb_f_autoload_p(int argc, VALUE *argv, VALUE obj)
     /* use rb_vm_cbase() as same as rb_f_autoload. */
     VALUE klass = rb_vm_cbase();
     if (NIL_P(klass)) {
-	return Qnil;
+        return Qnil;
     }
     return rb_mod_autoload_p(argc, argv, klass);
 }
@@ -1412,9 +1377,9 @@ Init_load(void)
 {
     rb_vm_t *vm = GET_VM();
     static const char var_load_path[] = "$:";
-    ID id_load_path = rb_intern2(var_load_path, sizeof(var_load_path)-1);
+    ID id_load_path = rb_intern2(var_load_path, sizeof(var_load_path) - 1);
 
-    rb_define_hooked_variable(var_load_path, (VALUE*)vm, load_path_getter, rb_gvar_readonly_setter);
+    rb_define_hooked_variable(var_load_path, (VALUE *)vm, load_path_getter, rb_gvar_readonly_setter);
     rb_alias_variable(rb_intern_const("$-I"), id_load_path);
     rb_alias_variable(rb_intern_const("$LOAD_PATH"), id_load_path);
     vm->load_path = rb_ary_new();

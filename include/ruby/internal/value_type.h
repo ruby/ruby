@@ -1,4 +1,4 @@
-#ifndef RBIMPL_VALUE_TYPE_H                          /*-*-C++-*-vi:se ft=cpp:*/
+#ifndef RBIMPL_VALUE_TYPE_H /*-*-C++-*-vi:se ft=cpp:*/
 #define RBIMPL_VALUE_TYPE_H
 /**
  * @file
@@ -20,6 +20,7 @@
  *             extension libraries.  They could be written in C++98.
  * @brief      Defines enum ::ruby_value_type.
  */
+#include "ruby/assert.h"
 #include "ruby/internal/assume.h"
 #include "ruby/internal/attr/artificial.h"
 #include "ruby/internal/attr/cold.h"
@@ -35,7 +36,6 @@
 #include "ruby/internal/special_consts.h"
 #include "ruby/internal/stdbool.h"
 #include "ruby/internal/value.h"
-#include "ruby/assert.h"
 
 #if defined(T_DATA)
 /*
@@ -50,98 +50,96 @@
  *
  * See also [ruby-core:4261]
  */
-# error Bail out due to conflicting definition of T_DATA.
+#    error Bail out due to conflicting definition of T_DATA.
 #endif
 
-#define T_ARRAY    RUBY_T_ARRAY    /**< @old{RUBY_T_ARRAY} */
-#define T_BIGNUM   RUBY_T_BIGNUM   /**< @old{RUBY_T_BIGNUM} */
-#define T_CLASS    RUBY_T_CLASS    /**< @old{RUBY_T_CLASS} */
-#define T_COMPLEX  RUBY_T_COMPLEX  /**< @old{RUBY_T_COMPLEX} */
-#define T_DATA     RUBY_T_DATA     /**< @old{RUBY_T_DATA} */
-#define T_FALSE    RUBY_T_FALSE    /**< @old{RUBY_T_FALSE} */
-#define T_FILE     RUBY_T_FILE     /**< @old{RUBY_T_FILE} */
-#define T_FIXNUM   RUBY_T_FIXNUM   /**< @old{RUBY_T_FIXNUM} */
-#define T_FLOAT    RUBY_T_FLOAT    /**< @old{RUBY_T_FLOAT} */
-#define T_HASH     RUBY_T_HASH     /**< @old{RUBY_T_HASH} */
-#define T_ICLASS   RUBY_T_ICLASS   /**< @old{RUBY_T_ICLASS} */
-#define T_IMEMO    RUBY_T_IMEMO    /**< @old{RUBY_T_IMEMO} */
-#define T_MASK     RUBY_T_MASK     /**< @old{RUBY_T_MASK} */
-#define T_MATCH    RUBY_T_MATCH    /**< @old{RUBY_T_MATCH} */
-#define T_MODULE   RUBY_T_MODULE   /**< @old{RUBY_T_MODULE} */
-#define T_MOVED    RUBY_T_MOVED    /**< @old{RUBY_T_MOVED} */
-#define T_NIL      RUBY_T_NIL      /**< @old{RUBY_T_NIL} */
-#define T_NODE     RUBY_T_NODE     /**< @old{RUBY_T_NODE} */
-#define T_NONE     RUBY_T_NONE     /**< @old{RUBY_T_NONE} */
-#define T_OBJECT   RUBY_T_OBJECT   /**< @old{RUBY_T_OBJECT} */
+#define T_ARRAY RUBY_T_ARRAY       /**< @old{RUBY_T_ARRAY} */
+#define T_BIGNUM RUBY_T_BIGNUM     /**< @old{RUBY_T_BIGNUM} */
+#define T_CLASS RUBY_T_CLASS       /**< @old{RUBY_T_CLASS} */
+#define T_COMPLEX RUBY_T_COMPLEX   /**< @old{RUBY_T_COMPLEX} */
+#define T_DATA RUBY_T_DATA         /**< @old{RUBY_T_DATA} */
+#define T_FALSE RUBY_T_FALSE       /**< @old{RUBY_T_FALSE} */
+#define T_FILE RUBY_T_FILE         /**< @old{RUBY_T_FILE} */
+#define T_FIXNUM RUBY_T_FIXNUM     /**< @old{RUBY_T_FIXNUM} */
+#define T_FLOAT RUBY_T_FLOAT       /**< @old{RUBY_T_FLOAT} */
+#define T_HASH RUBY_T_HASH         /**< @old{RUBY_T_HASH} */
+#define T_ICLASS RUBY_T_ICLASS     /**< @old{RUBY_T_ICLASS} */
+#define T_IMEMO RUBY_T_IMEMO       /**< @old{RUBY_T_IMEMO} */
+#define T_MASK RUBY_T_MASK         /**< @old{RUBY_T_MASK} */
+#define T_MATCH RUBY_T_MATCH       /**< @old{RUBY_T_MATCH} */
+#define T_MODULE RUBY_T_MODULE     /**< @old{RUBY_T_MODULE} */
+#define T_MOVED RUBY_T_MOVED       /**< @old{RUBY_T_MOVED} */
+#define T_NIL RUBY_T_NIL           /**< @old{RUBY_T_NIL} */
+#define T_NODE RUBY_T_NODE         /**< @old{RUBY_T_NODE} */
+#define T_NONE RUBY_T_NONE         /**< @old{RUBY_T_NONE} */
+#define T_OBJECT RUBY_T_OBJECT     /**< @old{RUBY_T_OBJECT} */
 #define T_RATIONAL RUBY_T_RATIONAL /**< @old{RUBY_T_RATIONAL} */
-#define T_REGEXP   RUBY_T_REGEXP   /**< @old{RUBY_T_REGEXP} */
-#define T_STRING   RUBY_T_STRING   /**< @old{RUBY_T_STRING} */
-#define T_STRUCT   RUBY_T_STRUCT   /**< @old{RUBY_T_STRUCT} */
-#define T_SYMBOL   RUBY_T_SYMBOL   /**< @old{RUBY_T_SYMBOL} */
-#define T_TRUE     RUBY_T_TRUE     /**< @old{RUBY_T_TRUE} */
-#define T_UNDEF    RUBY_T_UNDEF    /**< @old{RUBY_T_UNDEF} */
-#define T_ZOMBIE   RUBY_T_ZOMBIE   /**< @old{RUBY_T_ZOMBIE} */
+#define T_REGEXP RUBY_T_REGEXP     /**< @old{RUBY_T_REGEXP} */
+#define T_STRING RUBY_T_STRING     /**< @old{RUBY_T_STRING} */
+#define T_STRUCT RUBY_T_STRUCT     /**< @old{RUBY_T_STRUCT} */
+#define T_SYMBOL RUBY_T_SYMBOL     /**< @old{RUBY_T_SYMBOL} */
+#define T_TRUE RUBY_T_TRUE         /**< @old{RUBY_T_TRUE} */
+#define T_UNDEF RUBY_T_UNDEF       /**< @old{RUBY_T_UNDEF} */
+#define T_ZOMBIE RUBY_T_ZOMBIE     /**< @old{RUBY_T_ZOMBIE} */
 
-#define BUILTIN_TYPE      RB_BUILTIN_TYPE   /**< @old{RB_BUILTIN_TYPE} */
-#define DYNAMIC_SYM_P     RB_DYNAMIC_SYM_P  /**< @old{RB_DYNAMIC_SYM_P} */
+#define BUILTIN_TYPE RB_BUILTIN_TYPE        /**< @old{RB_BUILTIN_TYPE} */
+#define DYNAMIC_SYM_P RB_DYNAMIC_SYM_P      /**< @old{RB_DYNAMIC_SYM_P} */
 #define RB_INTEGER_TYPE_P rb_integer_type_p /**< @old{rb_integer_type_p} */
-#define SYMBOL_P          RB_SYMBOL_P       /**< @old{RB_SYMBOL_P} */
-#define rb_type_p         RB_TYPE_P         /**< @alias{RB_TYPE_P} */
+#define SYMBOL_P RB_SYMBOL_P                /**< @old{RB_SYMBOL_P} */
+#define rb_type_p RB_TYPE_P                 /**< @alias{RB_TYPE_P} */
 
 /** @cond INTERNAL_MACRO */
-#define RB_BUILTIN_TYPE   RB_BUILTIN_TYPE
-#define RB_DYNAMIC_SYM_P  RB_DYNAMIC_SYM_P
-#define RB_FLOAT_TYPE_P   RB_FLOAT_TYPE_P
-#define RB_SYMBOL_P       RB_SYMBOL_P
-#define RB_TYPE_P         RB_TYPE_P
-#define Check_Type        Check_Type
+#define RB_BUILTIN_TYPE RB_BUILTIN_TYPE
+#define RB_DYNAMIC_SYM_P RB_DYNAMIC_SYM_P
+#define RB_FLOAT_TYPE_P RB_FLOAT_TYPE_P
+#define RB_SYMBOL_P RB_SYMBOL_P
+#define RB_TYPE_P RB_TYPE_P
+#define Check_Type Check_Type
 
 #if !RUBY_DEBUG
-# define RBIMPL_ASSERT_TYPE(v, t) RBIMPL_ASSERT_OR_ASSUME(RB_TYPE_P((v), (t)))
+#    define RBIMPL_ASSERT_TYPE(v, t) RBIMPL_ASSERT_OR_ASSUME(RB_TYPE_P((v), (t)))
 #else
-# define RBIMPL_ASSERT_TYPE Check_Type
+#    define RBIMPL_ASSERT_TYPE Check_Type
 #endif
 /** @endcond */
 
 /** @old{rb_type} */
-#define TYPE(_)           RBIMPL_CAST((int)rb_type(_))
+#define TYPE(_) RBIMPL_CAST((int)rb_type(_))
 
 /** C-level type of an object. */
-enum
-RBIMPL_ATTR_ENUM_EXTENSIBILITY(closed)
-ruby_value_type {
-    RUBY_T_NONE     = 0x00, /**< Non-object (swept etc.) */
+enum RBIMPL_ATTR_ENUM_EXTENSIBILITY(closed) ruby_value_type {
+    RUBY_T_NONE = 0x00, /**< Non-object (swept etc.) */
 
-    RUBY_T_OBJECT   = 0x01, /**< @see struct ::RObject */
-    RUBY_T_CLASS    = 0x02, /**< @see struct ::RClass and ::rb_cClass */
-    RUBY_T_MODULE   = 0x03, /**< @see struct ::RClass and ::rb_cModule */
-    RUBY_T_FLOAT    = 0x04, /**< @see struct ::RFloat */
-    RUBY_T_STRING   = 0x05, /**< @see struct ::RString */
-    RUBY_T_REGEXP   = 0x06, /**< @see struct ::RRegexp */
-    RUBY_T_ARRAY    = 0x07, /**< @see struct ::RArray */
-    RUBY_T_HASH     = 0x08, /**< @see struct ::RHash */
-    RUBY_T_STRUCT   = 0x09, /**< @see struct ::RStruct */
-    RUBY_T_BIGNUM   = 0x0a, /**< @see struct ::RBignum */
-    RUBY_T_FILE     = 0x0b, /**< @see struct ::RFile */
-    RUBY_T_DATA     = 0x0c, /**< @see struct ::RTypedData */
-    RUBY_T_MATCH    = 0x0d, /**< @see struct ::RMatch */
-    RUBY_T_COMPLEX  = 0x0e, /**< @see struct ::RComplex */
+    RUBY_T_OBJECT = 0x01,   /**< @see struct ::RObject */
+    RUBY_T_CLASS = 0x02,    /**< @see struct ::RClass and ::rb_cClass */
+    RUBY_T_MODULE = 0x03,   /**< @see struct ::RClass and ::rb_cModule */
+    RUBY_T_FLOAT = 0x04,    /**< @see struct ::RFloat */
+    RUBY_T_STRING = 0x05,   /**< @see struct ::RString */
+    RUBY_T_REGEXP = 0x06,   /**< @see struct ::RRegexp */
+    RUBY_T_ARRAY = 0x07,    /**< @see struct ::RArray */
+    RUBY_T_HASH = 0x08,     /**< @see struct ::RHash */
+    RUBY_T_STRUCT = 0x09,   /**< @see struct ::RStruct */
+    RUBY_T_BIGNUM = 0x0a,   /**< @see struct ::RBignum */
+    RUBY_T_FILE = 0x0b,     /**< @see struct ::RFile */
+    RUBY_T_DATA = 0x0c,     /**< @see struct ::RTypedData */
+    RUBY_T_MATCH = 0x0d,    /**< @see struct ::RMatch */
+    RUBY_T_COMPLEX = 0x0e,  /**< @see struct ::RComplex */
     RUBY_T_RATIONAL = 0x0f, /**< @see struct ::RRational */
 
-    RUBY_T_NIL      = 0x11, /**< @see ::RUBY_Qnil */
-    RUBY_T_TRUE     = 0x12, /**< @see ::RUBY_Qfalse */
-    RUBY_T_FALSE    = 0x13, /**< @see ::RUBY_Qtrue */
-    RUBY_T_SYMBOL   = 0x14, /**< @see struct ::RSymbol */
-    RUBY_T_FIXNUM   = 0x15, /**< Integers formerly known as Fixnums. */
-    RUBY_T_UNDEF    = 0x16, /**< @see ::RUBY_Qundef */
+    RUBY_T_NIL = 0x11,    /**< @see ::RUBY_Qnil */
+    RUBY_T_TRUE = 0x12,   /**< @see ::RUBY_Qfalse */
+    RUBY_T_FALSE = 0x13,  /**< @see ::RUBY_Qtrue */
+    RUBY_T_SYMBOL = 0x14, /**< @see struct ::RSymbol */
+    RUBY_T_FIXNUM = 0x15, /**< Integers formerly known as Fixnums. */
+    RUBY_T_UNDEF = 0x16,  /**< @see ::RUBY_Qundef */
 
-    RUBY_T_IMEMO    = 0x1a, /**< @see struct ::RIMemo */
-    RUBY_T_NODE     = 0x1b, /**< @see struct ::RNode */
-    RUBY_T_ICLASS   = 0x1c, /**< Hidden classes known as IClasses. */
-    RUBY_T_ZOMBIE   = 0x1d, /**< @see struct ::RZombie */
-    RUBY_T_MOVED    = 0x1e, /**< @see struct ::RMoved */
+    RUBY_T_IMEMO = 0x1a,  /**< @see struct ::RIMemo */
+    RUBY_T_NODE = 0x1b,   /**< @see struct ::RNode */
+    RUBY_T_ICLASS = 0x1c, /**< Hidden classes known as IClasses. */
+    RUBY_T_ZOMBIE = 0x1d, /**< @see struct ::RZombie */
+    RUBY_T_MOVED = 0x1e,  /**< @see struct ::RMoved */
 
-    RUBY_T_MASK     = 0x1f  /**< Bitmask of ::ruby_value_type. */
+    RUBY_T_MASK = 0x1f /**< Bitmask of ::ruby_value_type. */
 };
 
 RBIMPL_SYMBOL_EXPORT_BEGIN()
@@ -180,7 +178,7 @@ RBIMPL_ATTR_ARTIFICIAL()
 static inline enum ruby_value_type
 RB_BUILTIN_TYPE(VALUE obj)
 {
-    RBIMPL_ASSERT_OR_ASSUME(! RB_SPECIAL_CONST_P(obj));
+    RBIMPL_ASSERT_OR_ASSUME(!RB_SPECIAL_CONST_P(obj));
 
 #if 0 && defined __GNUC__ && !defined __clang__
     /* Don't move the access to `flags` before the preceding
@@ -223,7 +221,7 @@ RBIMPL_ATTR_PURE_UNLESS_DEBUG()
 static inline enum ruby_value_type
 rb_type(VALUE obj)
 {
-    if (! RB_SPECIAL_CONST_P(obj)) {
+    if (!RB_SPECIAL_CONST_P(obj)) {
         return RB_BUILTIN_TYPE(obj);
     }
     else if (obj == RUBY_Qfalse) {
@@ -386,11 +384,8 @@ RB_TYPE_P(VALUE obj, enum ruby_value_type t)
 /* Clang, unlike GCC, cannot propagate __builtin_constant_p beyond function
  * boundary. */
 #if defined(__clang__)
-# undef RB_TYPE_P
-# define RB_TYPE_P(obj, t)                  \
-    (RBIMPL_CONSTANT_P(t)                  ? \
-     rbimpl_RB_TYPE_P_fastpath((obj), (t)) : \
-     (RB_TYPE_P)((obj), (t)))
+#    undef RB_TYPE_P
+#    define RB_TYPE_P(obj, t) (RBIMPL_CONSTANT_P(t) ? rbimpl_RB_TYPE_P_fastpath((obj), (t)) : (RB_TYPE_P)((obj), (t)))
 #endif
 
 /* clang 3.x (4.2 compatible) can't eliminate CSE of RB_BUILTIN_TYPE
@@ -398,14 +393,13 @@ RB_TYPE_P(VALUE obj, enum ruby_value_type t)
  * See also 8998c06461ea0bef11b3aeb30b6d2ab71c8762ba
  */
 #if RBIMPL_COMPILER_BEFORE(Clang, 4, 0, 0)
-# undef rb_integer_type_p
-# define rb_integer_type_p(obj)                                 \
-    __extension__ ({                                            \
-        const VALUE integer_type_obj = (obj);                   \
-        (RB_FIXNUM_P(integer_type_obj) ||                       \
-         (!RB_SPECIAL_CONST_P(integer_type_obj) &&              \
-          RB_BUILTIN_TYPE(integer_type_obj) == RUBY_T_BIGNUM)); \
-    })
+#    undef rb_integer_type_p
+#    define rb_integer_type_p(obj) \
+        __extension__({ \
+            const VALUE integer_type_obj = (obj); \
+            (RB_FIXNUM_P(integer_type_obj) || \
+                (!RB_SPECIAL_CONST_P(integer_type_obj) && RB_BUILTIN_TYPE(integer_type_obj) == RUBY_T_BIGNUM)); \
+        })
 #endif
 /** @endcond */
 
@@ -431,7 +425,7 @@ RBIMPL_ATTR_ARTIFICIAL()
 static inline void
 Check_Type(VALUE v, enum ruby_value_type t)
 {
-    if (RB_UNLIKELY(! RB_TYPE_P(v, t))) {
+    if (RB_UNLIKELY(!RB_TYPE_P(v, t))) {
         goto unexpected_type;
     }
     else if (t == RUBY_T_DATA && rbimpl_rtypeddata_p(v)) {
@@ -442,7 +436,7 @@ Check_Type(VALUE v, enum ruby_value_type t)
         return;
     }
 
-  unexpected_type:
+unexpected_type:
     rb_unexpected_type(v, t);
 }
 

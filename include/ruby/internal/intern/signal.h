@@ -1,4 +1,4 @@
-#ifndef RBIMPL_INTERN_SIGNAL_H                       /*-*-C++-*-vi:se ft=cpp:*/
+#ifndef RBIMPL_INTERN_SIGNAL_H /*-*-C++-*-vi:se ft=cpp:*/
 #define RBIMPL_INTERN_SIGNAL_H
 /**
  * @file
@@ -115,7 +115,7 @@ VALUE rb_f_kill(int argc, const VALUE *argv);
 
 /* This must be private, @shyouhei guesses. */
 #ifdef POSIX_SIGNAL
-#define posix_signal ruby_posix_signal
+#    define posix_signal ruby_posix_signal
 void (*posix_signal(int, void (*)(int)))(int);
 #endif
 

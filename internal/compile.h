@@ -1,4 +1,4 @@
-#ifndef INTERNAL_COMPILE_H                               /*-*-C-*-vi:se ft=c:*/
+#ifndef INTERNAL_COMPILE_H /*-*-C-*-vi:se ft=c:*/
 #define INTERNAL_COMPILE_H
 /**
  * @author     Ruby developers <ruby-core@ruby-lang.org>
@@ -9,10 +9,10 @@
  * @brief      Internal header for the compiler.
  */
 #include "ruby/internal/config.h"
-#include <stddef.h>             /* for size_t */
-#include "ruby/ruby.h"          /* for rb_event_flag_t */
+#include "ruby/ruby.h" /* for rb_event_flag_t */
+#include <stddef.h>    /* for size_t */
 
-struct rb_iseq_struct;          /* in vm_core.h */
+struct rb_iseq_struct; /* in vm_core.h */
 
 /* compile.c */
 int rb_dvar_defined(ID, const struct rb_iseq_struct *);

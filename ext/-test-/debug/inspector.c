@@ -1,5 +1,5 @@
-#include "ruby/ruby.h"
 #include "ruby/debug.h"
+#include "ruby/ruby.h"
 
 static VALUE
 callback(const rb_debug_inspector_t *dbg_context, void *data)
@@ -8,13 +8,13 @@ callback(const rb_debug_inspector_t *dbg_context, void *data)
     long i, len = RARRAY_LEN(locs);
     VALUE binds = rb_ary_new();
     for (i = 0; i < len; ++i) {
-	VALUE entry = rb_ary_new();
-	rb_ary_push(binds, entry);
-	rb_ary_push(entry, rb_debug_inspector_frame_self_get(dbg_context, i));
-	rb_ary_push(entry, rb_debug_inspector_frame_binding_get(dbg_context, i));
-	rb_ary_push(entry, rb_debug_inspector_frame_class_get(dbg_context, i));
-	rb_ary_push(entry, rb_debug_inspector_frame_iseq_get(dbg_context, i));
-	rb_ary_push(entry, rb_ary_entry(locs, i));
+        VALUE entry = rb_ary_new();
+        rb_ary_push(binds, entry);
+        rb_ary_push(entry, rb_debug_inspector_frame_self_get(dbg_context, i));
+        rb_ary_push(entry, rb_debug_inspector_frame_binding_get(dbg_context, i));
+        rb_ary_push(entry, rb_debug_inspector_frame_class_get(dbg_context, i));
+        rb_ary_push(entry, rb_debug_inspector_frame_iseq_get(dbg_context, i));
+        rb_ary_push(entry, rb_ary_entry(locs, i));
     }
     return binds;
 }

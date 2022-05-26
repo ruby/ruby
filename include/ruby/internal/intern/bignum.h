@@ -1,4 +1,4 @@
-#ifndef RBIMPL_INTERN_BIGNUM_H                       /*-*-C++-*-vi:se ft=cpp:*/
+#ifndef RBIMPL_INTERN_BIGNUM_H /*-*-C++-*-vi:se ft=cpp:*/
 #define RBIMPL_INTERN_BIGNUM_H
 /**
  * @file
@@ -23,13 +23,13 @@
 #include "ruby/internal/config.h"
 
 #ifdef STDC_HEADERS
-# include <stddef.h>
+#    include <stddef.h>
 #endif
 
+#include "ruby/backward/2/long_long.h"
 #include "ruby/internal/attr/nonnull.h"
 #include "ruby/internal/dllexport.h"
 #include "ruby/internal/value.h"
-#include "ruby/backward/2/long_long.h"
 
 RBIMPL_SYMBOL_EXPORT_BEGIN()
 
@@ -263,7 +263,7 @@ LONG_LONG rb_big2ll(VALUE);
  */
 unsigned LONG_LONG rb_big2ull(VALUE);
 
-#endif  /* HAVE_LONG_LONG */
+#endif /* HAVE_LONG_LONG */
 
 RBIMPL_ATTR_NONNULL(())
 /**
@@ -522,56 +522,52 @@ VALUE rb_big_rshift(VALUE x, VALUE y);
  */
 
 /** Stores/interprets the most significant word as the first word. */
-#define INTEGER_PACK_MSWORD_FIRST       0x01
+#define INTEGER_PACK_MSWORD_FIRST 0x01
 
 /** Stores/interprets the least significant word as the first word. */
-#define INTEGER_PACK_LSWORD_FIRST       0x02
+#define INTEGER_PACK_LSWORD_FIRST 0x02
 
 /**
  * Stores/interprets the most  significant byte in a word as  the first byte in
  * the word.
  */
-#define INTEGER_PACK_MSBYTE_FIRST       0x10
+#define INTEGER_PACK_MSBYTE_FIRST 0x10
 
 /**
  * Stores/interprets the least significant byte in  a word as the first byte in
  * the word.
  */
-#define INTEGER_PACK_LSBYTE_FIRST       0x20
+#define INTEGER_PACK_LSBYTE_FIRST 0x20
 
 /**
  * Means   either  #INTEGER_PACK_MSBYTE_FIRST   or  #INTEGER_PACK_LSBYTE_FIRST,
  * depending on the host processor's endian.
  */
-#define INTEGER_PACK_NATIVE_BYTE_ORDER  0x40
+#define INTEGER_PACK_NATIVE_BYTE_ORDER 0x40
 
 /** Uses 2's complement representation. */
-#define INTEGER_PACK_2COMP              0x80
+#define INTEGER_PACK_2COMP 0x80
 
 /** Uses "generic" implementation (handy on test). */
-#define INTEGER_PACK_FORCE_GENERIC_IMPLEMENTATION     0x400
+#define INTEGER_PACK_FORCE_GENERIC_IMPLEMENTATION 0x400
 
 /**
  * Always generates  a bignum object even  if the integer can  be representable
  * using fixnum scheme (unpack only)
  */
-#define INTEGER_PACK_FORCE_BIGNUM       0x100
+#define INTEGER_PACK_FORCE_BIGNUM 0x100
 
 /**
  * Interprets the  input as  a signed  negative number  (unpack only).   If not
  * specified returns a positive number.
  */
-#define INTEGER_PACK_NEGATIVE           0x200
+#define INTEGER_PACK_NEGATIVE 0x200
 
 /** Little endian combination. */
-#define INTEGER_PACK_LITTLE_ENDIAN \
-    (INTEGER_PACK_LSWORD_FIRST | \
-     INTEGER_PACK_LSBYTE_FIRST)
+#define INTEGER_PACK_LITTLE_ENDIAN (INTEGER_PACK_LSWORD_FIRST | INTEGER_PACK_LSBYTE_FIRST)
 
 /** Big endian combination */
-#define INTEGER_PACK_BIG_ENDIAN \
-    (INTEGER_PACK_MSWORD_FIRST | \
-     INTEGER_PACK_MSBYTE_FIRST)
+#define INTEGER_PACK_BIG_ENDIAN (INTEGER_PACK_MSWORD_FIRST | INTEGER_PACK_MSBYTE_FIRST)
 
 /** @} */
 

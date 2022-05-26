@@ -1,4 +1,4 @@
-#ifndef RBIMPL_ASSUME_H                              /*-*-C++-*-vi:se ft=cpp:*/
+#ifndef RBIMPL_ASSUME_H /*-*-C++-*-vi:se ft=cpp:*/
 #define RBIMPL_ASSUME_H
 /**
  * @file
@@ -25,63 +25,61 @@
  * - #RBIMPL_ASSUME could fallback to #RBIMPL_UNREACHABLE.
  * - #RBIMPL_UNREACHABLE could fallback to #RBIMPL_ASSUME.
  */
-#include "ruby/internal/config.h"
 #include "ruby/internal/cast.h"
 #include "ruby/internal/compiler_since.h"
+#include "ruby/internal/config.h"
 #include "ruby/internal/has/builtin.h"
 #include "ruby/internal/warning_push.h"
 
 /** @cond INTERNAL_MACRO */
 #if defined(HAVE___ASSUME)
-# define RBIMPL_HAVE___ASSUME
+#    define RBIMPL_HAVE___ASSUME
 #endif
 /** @endcond */
 
 /** Wraps (or simulates) `__builtin_unreachable`. */
 #if RBIMPL_HAS_BUILTIN(__builtin_unreachable)
-# define RBIMPL_UNREACHABLE_RETURN(_) __builtin_unreachable()
+#    define RBIMPL_UNREACHABLE_RETURN(_) __builtin_unreachable()
 
 #elif defined(RBIMPL_HAVE___ASSUME)
-# define RBIMPL_UNREACHABLE_RETURN(_) return (__assume(0), (_))
+#    define RBIMPL_UNREACHABLE_RETURN(_) return (__assume(0), (_))
 
 #else
-# define RBIMPL_UNREACHABLE_RETURN(_) return (_)
+#    define RBIMPL_UNREACHABLE_RETURN(_) return (_)
 #endif
 
 /** Wraps (or simulates) `__builtin_unreachable`. */
 #if RBIMPL_HAS_BUILTIN(__builtin_unreachable)
-# define RBIMPL_UNREACHABLE __builtin_unreachable
+#    define RBIMPL_UNREACHABLE __builtin_unreachable
 
 #elif defined(RBIMPL_HAVE___ASSUME)
-# define RBIMPL_UNREACHABLE() __assume(0)
+#    define RBIMPL_UNREACHABLE() __assume(0)
 #endif
 
 /** Wraps (or simulates) `__assume`. */
 #if RBIMPL_COMPILER_SINCE(Intel, 13, 0, 0)
-# /* icc warnings are false positives.  Ignore them. */
-# /* "warning #2261: __assume expression with side effects discarded" */
-# define RBIMPL_ASSUME(expr)     \
-    RBIMPL_WARNING_PUSH()        \
-    RBIMPL_WARNING_IGNORED(2261) \
-    __assume(expr)              \
-    RBIMPL_WARNING_POP()
+#    /* icc warnings are false positives.  Ignore them. */
+#    /* "warning #2261: __assume expression with side effects discarded" */
+#    define RBIMPL_ASSUME(expr) \
+        RBIMPL_WARNING_PUSH() \
+        RBIMPL_WARNING_IGNORED(2261) \
+        __assume(expr) RBIMPL_WARNING_POP()
 
 #elif defined(RBIMPL_HAVE___ASSUME)
-# define RBIMPL_ASSUME __assume
+#    define RBIMPL_ASSUME __assume
 
 #elif RBIMPL_HAS_BUILTIN(__builtin_assume)
-# define RBIMPL_ASSUME __builtin_assume
+#    define RBIMPL_ASSUME __builtin_assume
 
-#elif ! defined(RBIMPL_UNREACHABLE)
-# define RBIMPL_ASSUME(_) RBIMPL_CAST((void)(_))
+#elif !defined(RBIMPL_UNREACHABLE)
+#    define RBIMPL_ASSUME(_) RBIMPL_CAST((void)(_))
 
 #else
-# define RBIMPL_ASSUME(_) \
-    (RB_LIKELY(!!(_)) ? RBIMPL_CAST((void)0) : RBIMPL_UNREACHABLE())
+#    define RBIMPL_ASSUME(_) (RB_LIKELY(!!(_)) ? RBIMPL_CAST((void)0) : RBIMPL_UNREACHABLE())
 #endif
 
-#if ! defined(RBIMPL_UNREACHABLE)
-# define RBIMPL_UNREACHABLE() RBIMPL_ASSUME(0)
+#if !defined(RBIMPL_UNREACHABLE)
+#    define RBIMPL_UNREACHABLE() RBIMPL_ASSUME(0)
 #endif
 
 #endif /* RBIMPL_ASSUME_H */

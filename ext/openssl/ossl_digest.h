@@ -8,7 +8,7 @@
  * (See the file 'LICENCE'.)
  */
 #if !defined(_OSSL_DIGEST_H_)
-#define _OSSL_DIGEST_H_
+#    define _OSSL_DIGEST_H_
 
 extern VALUE cDigest;
 extern VALUE eDigestError;

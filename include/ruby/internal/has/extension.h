@@ -1,4 +1,4 @@
-#ifndef RBIMPL_HAS_EXTENSION_H                       /*-*-C++-*-vi:se ft=cpp:*/
+#ifndef RBIMPL_HAS_EXTENSION_H /*-*-C++-*-vi:se ft=cpp:*/
 #define RBIMPL_HAS_EXTENSION_H
 /**
  * @file
@@ -24,10 +24,10 @@
 
 /** Wraps (or simulates) `__has_extension`. */
 #if defined(__has_extension)
-# define RBIMPL_HAS_EXTENSION(_) __has_extension(_)
+#    define RBIMPL_HAS_EXTENSION(_) __has_extension(_)
 #else
-# /* Pre-3.0 clang had __has_feature but not __has_extension. */
-# define RBIMPL_HAS_EXTENSION(_) RBIMPL_HAS_FEATURE(_)
+#    /* Pre-3.0 clang had __has_feature but not __has_extension. */
+#    define RBIMPL_HAS_EXTENSION(_) RBIMPL_HAS_FEATURE(_)
 #endif
 
 #endif /* RBIMPL_HAS_EXTENSION_H */

@@ -1,4 +1,4 @@
-#ifndef RBIMPL_HAS_WARNING_H                         /*-*-C++-*-vi:se ft=cpp:*/
+#ifndef RBIMPL_HAS_WARNING_H /*-*-C++-*-vi:se ft=cpp:*/
 #define RBIMPL_HAS_WARNING_H
 /**
  * @file
@@ -23,9 +23,9 @@
 
 /** Wraps (or simulates) `__has_warning`. */
 #if defined(__has_warning)
-# define RBIMPL_HAS_WARNING(_) __has_warning(_)
+#    define RBIMPL_HAS_WARNING(_) __has_warning(_)
 #else
-# define RBIMPL_HAS_WARNING(_) 0
+#    define RBIMPL_HAS_WARNING(_) 0
 #endif
 
 #endif /* RBIMPL_HAS_WARNING_H */

@@ -1,4 +1,4 @@
-#ifndef RBIMPL_METHOD_H                              /*-*-C++-*-vi:se ft=cpp:*/
+#ifndef RBIMPL_METHOD_H /*-*-C++-*-vi:se ft=cpp:*/
 #define RBIMPL_METHOD_H
 /**
  * @file
@@ -20,10 +20,10 @@
  *             extension libraries.  They could be written in C++98.
  * @brief      Creation and modification of Ruby methods.
  */
+#include "ruby/backward/2/stdarg.h"
 #include "ruby/internal/attr/nonnull.h"
 #include "ruby/internal/dllexport.h"
 #include "ruby/internal/value.h"
-#include "ruby/backward/2/stdarg.h"
 
 /**
  * @defgroup  defmethod  Defining methods

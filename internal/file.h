@@ -1,4 +1,4 @@
-#ifndef INTERNAL_FILE_H                                  /*-*-C-*-vi:se ft=c:*/
+#ifndef INTERNAL_FILE_H /*-*-C-*-vi:se ft=c:*/
 #define INTERNAL_FILE_H
 /**
  * @author     Ruby developers <ruby-core@ruby-lang.org>
@@ -8,8 +8,8 @@
  *             file COPYING are met.  Consult the file for details.
  * @brief      Internal header for File.
  */
-#include "ruby/ruby.h"          /* for VALUE */
-#include "ruby/encoding.h"      /* for rb_encodinng */
+#include "ruby/encoding.h" /* for rb_encodinng */
+#include "ruby/ruby.h"     /* for VALUE */
 
 /* file.c */
 extern const char ruby_null_device[];
@@ -17,7 +17,7 @@ VALUE rb_home_dir_of(VALUE user, VALUE result);
 VALUE rb_default_home_dir(VALUE result);
 VALUE rb_realpath_internal(VALUE basedir, VALUE path, int strict);
 VALUE rb_check_realpath(VALUE basedir, VALUE path, rb_encoding *origenc);
-void rb_file_const(const char*, VALUE);
+void rb_file_const(const char *, VALUE);
 int rb_file_load_ok(const char *);
 VALUE rb_file_expand_path_fast(VALUE, VALUE);
 VALUE rb_file_expand_path_internal(VALUE, VALUE, int, int, VALUE);

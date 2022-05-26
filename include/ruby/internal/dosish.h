@@ -1,4 +1,4 @@
-#ifndef RBIMPL_DOSISH_H                              /*-*-C++-*-vi:se ft=cpp:*/
+#ifndef RBIMPL_DOSISH_H /*-*-C++-*-vi:se ft=cpp:*/
 #define RBIMPL_DOSISH_H
 /**
  * @file
@@ -21,7 +21,7 @@
  * @brief      Support for so-called dosish systems.
  */
 #ifdef __CYGWIN__
-#undef _WIN32
+#    undef _WIN32
 #endif
 
 #if defined(_WIN32)
@@ -30,19 +30,19 @@
   But you should use more precise macros like DOSISH_DRIVE_LETTER, PATH_SEP,
   ENV_IGNORECASE or CASEFOLD_FILESYSTEM.
  */
-#define DOSISH 1
-# define DOSISH_DRIVE_LETTER
+#    define DOSISH 1
+#    define DOSISH_DRIVE_LETTER
 #endif
 
 #ifdef _WIN32
-#include "ruby/win32.h"
+#    include "ruby/win32.h"
 #endif
 
 /** The delimiter of `PATH` environment variable. */
 #if defined(DOSISH)
-#define PATH_SEP ";"
+#    define PATH_SEP ";"
 #else
-#define PATH_SEP ":"
+#    define PATH_SEP ":"
 #endif
 
 /** Identical to #PATH_SEP, except it is of type `char`. */
@@ -63,7 +63,7 @@
 #define PATH_ENV "PATH"
 
 #if defined(DOSISH)
-#define ENV_IGNORECASE
+#    define ENV_IGNORECASE
 #endif
 
 /**
@@ -79,11 +79,11 @@
  * to use it today.  Please just find another way.
  */
 #ifndef CASEFOLD_FILESYSTEM
-# if defined DOSISH
-#   define CASEFOLD_FILESYSTEM 1
-# else
-#   define CASEFOLD_FILESYSTEM 0
-# endif
+#    if defined DOSISH
+#        define CASEFOLD_FILESYSTEM 1
+#    else
+#        define CASEFOLD_FILESYSTEM 0
+#    endif
 #endif
 
 #endif /* RBIMPL_DOSISH_H */

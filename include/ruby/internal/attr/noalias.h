@@ -1,4 +1,4 @@
-#ifndef RBIMPL_ATTR_NOALIAS_H                        /*-*-C++-*-vi:se ft=cpp:*/
+#ifndef RBIMPL_ATTR_NOALIAS_H /*-*-C++-*-vi:se ft=cpp:*/
 #define RBIMPL_ATTR_NOALIAS_H
 /**
  * @file
@@ -51,7 +51,7 @@
 
 /** Wraps (or simulates) `__declspec((noalias))` */
 #if RBIMPL_COMPILER_BEFORE(Clang, 12, 0, 0)
-# /*
+#                                 /*
 #  * `::llvm::Attribute::ArgMemOnly`  was buggy  before.  Maybe  because nobody
 #  * actually seriously used it.  It seems they somehow mitigated the situation
 #  * in  LLVM  12.  Still  not  found  the  exact  changeset which  fiexed  the
@@ -59,11 +59,11 @@
 #  *
 #  * :FIXME: others (armclang, xlclang, ...) can also be affected?
 #  */
-# define RBIMPL_ATTR_NOALIAS() /* void */
+#    define RBIMPL_ATTR_NOALIAS() /* void */
 #elif RBIMPL_HAS_DECLSPEC_ATTRIBUTE(noalias)
-# define RBIMPL_ATTR_NOALIAS() __declspec(noalias)
+#    define RBIMPL_ATTR_NOALIAS() __declspec(noalias)
 #else
-# define RBIMPL_ATTR_NOALIAS() /* void */
+#    define RBIMPL_ATTR_NOALIAS() /* void */
 #endif
 
 #endif /* RBIMPL_ATTR_NOALIAS_H */

@@ -1,4 +1,4 @@
-#ifndef INTERNAL_TIME_H                                  /*-*-C-*-vi:se ft=c:*/
+#ifndef INTERNAL_TIME_H /*-*-C-*-vi:se ft=c:*/
 #define INTERNAL_TIME_H
 /**
  * @author     Ruby developers <ruby-core@ruby-lang.org>
@@ -8,16 +8,16 @@
  *             file COPYING are met.  Consult the file for details.
  * @brief      Internal header for Time.
  */
-#include "ruby/internal/config.h"      /* for SIGNEDNESS_OF_TIME_T */
-#include "internal/bits.h"      /* for SIGNED_INTEGER_MAX */
-#include "ruby/ruby.h"          /* for VALUE */
+#include "internal/bits.h"        /* for SIGNED_INTEGER_MAX */
+#include "ruby/internal/config.h" /* for SIGNEDNESS_OF_TIME_T */
+#include "ruby/ruby.h"            /* for VALUE */
 
-#if SIGNEDNESS_OF_TIME_T < 0    /* signed */
-# define TIMET_MAX SIGNED_INTEGER_MAX(time_t)
-# define TIMET_MIN SIGNED_INTEGER_MIN(time_t)
-#elif SIGNEDNESS_OF_TIME_T > 0  /* unsigned */
-# define TIMET_MAX UNSIGNED_INTEGER_MAX(time_t)
-# define TIMET_MIN ((time_t)0)
+#if SIGNEDNESS_OF_TIME_T < 0 /* signed */
+#    define TIMET_MAX SIGNED_INTEGER_MAX(time_t)
+#    define TIMET_MIN SIGNED_INTEGER_MIN(time_t)
+#elif SIGNEDNESS_OF_TIME_T > 0 /* unsigned */
+#    define TIMET_MAX UNSIGNED_INTEGER_MAX(time_t)
+#    define TIMET_MIN ((time_t)0)
 #endif
 
 struct timeval; /* <- in <sys/time.h> or <winsock2.h> */

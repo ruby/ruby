@@ -1,4 +1,4 @@
-#ifndef RBIMPL_INTERN_SPRINTF_H                      /*-*-C++-*-vi:se ft=cpp:*/
+#ifndef RBIMPL_INTERN_SPRINTF_H /*-*-C++-*-vi:se ft=cpp:*/
 #define RBIMPL_INTERN_SPRINTF_H
 /**
  * @file

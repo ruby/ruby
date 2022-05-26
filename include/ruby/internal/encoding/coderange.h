@@ -1,4 +1,4 @@
-#ifndef RUBY_INTERNAL_ENCODING_CODERANGE_H           /*-*-C++-*-vi:se ft=cpp:*/
+#ifndef RUBY_INTERNAL_ENCODING_CODERANGE_H /*-*-C++-*-vi:se ft=cpp:*/
 #define RUBY_INTERNAL_ENCODING_CODERANGE_H
 /**
  * @file
@@ -33,21 +33,19 @@ RBIMPL_SYMBOL_EXPORT_BEGIN()
 enum ruby_coderange_type {
 
     /** The object's coderange is unclear yet. */
-    RUBY_ENC_CODERANGE_UNKNOWN  = 0,
+    RUBY_ENC_CODERANGE_UNKNOWN = 0,
 
     /** The object holds 0 to 127 inclusive and nothing else. */
-    RUBY_ENC_CODERANGE_7BIT     = ((int)RUBY_FL_USER8),
+    RUBY_ENC_CODERANGE_7BIT = ((int)RUBY_FL_USER8),
 
     /** The object's encoding and contents are consistent each other */
-    RUBY_ENC_CODERANGE_VALID    = ((int)RUBY_FL_USER9),
+    RUBY_ENC_CODERANGE_VALID = ((int)RUBY_FL_USER9),
 
     /** The object holds invalid/malformed/broken character(s). */
-    RUBY_ENC_CODERANGE_BROKEN   = ((int)(RUBY_FL_USER8|RUBY_FL_USER9)),
+    RUBY_ENC_CODERANGE_BROKEN = ((int)(RUBY_FL_USER8 | RUBY_FL_USER9)),
 
     /** Where the coderange resides. */
-    RUBY_ENC_CODERANGE_MASK     = (RUBY_ENC_CODERANGE_7BIT|
-                                   RUBY_ENC_CODERANGE_VALID|
-                                   RUBY_ENC_CODERANGE_BROKEN)
+    RUBY_ENC_CODERANGE_MASK = (RUBY_ENC_CODERANGE_7BIT | RUBY_ENC_CODERANGE_VALID | RUBY_ENC_CODERANGE_BROKEN)
 };
 
 RBIMPL_ATTR_CONST()
@@ -175,26 +173,27 @@ RB_ENC_CODERANGE_AND(enum ruby_coderange_type a, enum ruby_coderange_type b)
     }
 }
 
-#define ENC_CODERANGE_MASK                        RUBY_ENC_CODERANGE_MASK                      /**< @old{RUBY_ENC_CODERANGE_MASK} */
-#define ENC_CODERANGE_UNKNOWN                     RUBY_ENC_CODERANGE_UNKNOWN                   /**< @old{RUBY_ENC_CODERANGE_UNKNOWN} */
-#define ENC_CODERANGE_7BIT                        RUBY_ENC_CODERANGE_7BIT                      /**< @old{RUBY_ENC_CODERANGE_7BIT} */
-#define ENC_CODERANGE_VALID                       RUBY_ENC_CODERANGE_VALID                     /**< @old{RUBY_ENC_CODERANGE_VALID} */
-#define ENC_CODERANGE_BROKEN                      RUBY_ENC_CODERANGE_BROKEN                    /**< @old{RUBY_ENC_CODERANGE_BROKEN} */
-#define ENC_CODERANGE_CLEAN_P(cr)                 RB_ENC_CODERANGE_CLEAN_P(cr)                 /**< @old{RB_ENC_CODERANGE_CLEAN_P} */
-#define ENC_CODERANGE(obj)                        RB_ENC_CODERANGE(obj)                        /**< @old{RB_ENC_CODERANGE} */
-#define ENC_CODERANGE_ASCIIONLY(obj)              RB_ENC_CODERANGE_ASCIIONLY(obj)              /**< @old{RB_ENC_CODERANGE_ASCIIONLY} */
-#define ENC_CODERANGE_SET(obj,cr)                 RB_ENC_CODERANGE_SET(obj,cr)                 /**< @old{RB_ENC_CODERANGE_SET} */
-#define ENC_CODERANGE_CLEAR(obj)                  RB_ENC_CODERANGE_CLEAR(obj)                  /**< @old{RB_ENC_CODERANGE_CLEAR} */
-#define ENC_CODERANGE_AND(a, b)                   RB_ENC_CODERANGE_AND(a, b)                   /**< @old{RB_ENC_CODERANGE_AND} */
-#define ENCODING_CODERANGE_SET(obj, encindex, cr) RB_ENCODING_CODERANGE_SET(obj, encindex, cr) /**< @old{RB_ENCODING_CODERANGE_SET} */
+#define ENC_CODERANGE_MASK RUBY_ENC_CODERANGE_MASK                   /**< @old{RUBY_ENC_CODERANGE_MASK} */
+#define ENC_CODERANGE_UNKNOWN RUBY_ENC_CODERANGE_UNKNOWN             /**< @old{RUBY_ENC_CODERANGE_UNKNOWN} */
+#define ENC_CODERANGE_7BIT RUBY_ENC_CODERANGE_7BIT                   /**< @old{RUBY_ENC_CODERANGE_7BIT} */
+#define ENC_CODERANGE_VALID RUBY_ENC_CODERANGE_VALID                 /**< @old{RUBY_ENC_CODERANGE_VALID} */
+#define ENC_CODERANGE_BROKEN RUBY_ENC_CODERANGE_BROKEN               /**< @old{RUBY_ENC_CODERANGE_BROKEN} */
+#define ENC_CODERANGE_CLEAN_P(cr) RB_ENC_CODERANGE_CLEAN_P(cr)       /**< @old{RB_ENC_CODERANGE_CLEAN_P} */
+#define ENC_CODERANGE(obj) RB_ENC_CODERANGE(obj)                     /**< @old{RB_ENC_CODERANGE} */
+#define ENC_CODERANGE_ASCIIONLY(obj) RB_ENC_CODERANGE_ASCIIONLY(obj) /**< @old{RB_ENC_CODERANGE_ASCIIONLY} */
+#define ENC_CODERANGE_SET(obj, cr) RB_ENC_CODERANGE_SET(obj, cr)     /**< @old{RB_ENC_CODERANGE_SET} */
+#define ENC_CODERANGE_CLEAR(obj) RB_ENC_CODERANGE_CLEAR(obj)         /**< @old{RB_ENC_CODERANGE_CLEAR} */
+#define ENC_CODERANGE_AND(a, b) RB_ENC_CODERANGE_AND(a, b)           /**< @old{RB_ENC_CODERANGE_AND} */
+#define ENCODING_CODERANGE_SET(obj, encindex, cr) \
+    RB_ENCODING_CODERANGE_SET(obj, encindex, cr) /**< @old{RB_ENCODING_CODERANGE_SET} */
 
 /** @cond INTERNAL_MACRO */
-#define RB_ENC_CODERANGE           RB_ENC_CODERANGE
-#define RB_ENC_CODERANGE_AND       RB_ENC_CODERANGE_AND
+#define RB_ENC_CODERANGE RB_ENC_CODERANGE
+#define RB_ENC_CODERANGE_AND RB_ENC_CODERANGE_AND
 #define RB_ENC_CODERANGE_ASCIIONLY RB_ENC_CODERANGE_ASCIIONLY
-#define RB_ENC_CODERANGE_CLEAN_P   RB_ENC_CODERANGE_CLEAN_P
-#define RB_ENC_CODERANGE_CLEAR     RB_ENC_CODERANGE_CLEAR
-#define RB_ENC_CODERANGE_SET       RB_ENC_CODERANGE_SET
+#define RB_ENC_CODERANGE_CLEAN_P RB_ENC_CODERANGE_CLEAN_P
+#define RB_ENC_CODERANGE_CLEAR RB_ENC_CODERANGE_CLEAR
+#define RB_ENC_CODERANGE_SET RB_ENC_CODERANGE_SET
 /** @endcond */
 
 RBIMPL_SYMBOL_EXPORT_END()
