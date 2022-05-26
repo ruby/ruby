@@ -2596,6 +2596,8 @@ class TestIO < Test::Unit::TestCase
       assert_raise_with_message(IOError, /not opened for reading/, bug6054) do
         IO.foreach(t.path, mode:"w").next
       end
+
+      assert_raise(ArgumentError, "[Bug #18771] [ruby-core:108503]") {IO.foreach(t, "\n", 10, true){}}
     }
   end
 
@@ -2605,6 +2607,7 @@ class TestIO < Test::Unit::TestCase
       assert_equal(["foo\nb", "ar\nb", "az\n"], IO.readlines(t.path, "b"))
       assert_equal(["fo", "o\n", "ba", "r\n", "ba", "z\n"], IO.readlines(t.path, 2))
       assert_equal(["fo", "o\n", "b", "ar", "\nb", "az", "\n"], IO.readlines(t.path, "b", 2))
+      assert_raise(ArgumentError, "[Bug #18771] [ruby-core:108503]") {IO.readlines(t, "\n", 10, true){}}
     }
   end
 
