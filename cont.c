@@ -1266,10 +1266,7 @@ show_vm_pcs(const rb_control_frame_t *cfp,
     }
 }
 #endif
-COMPILER_WARNING_PUSH
-#ifdef __clang__
-COMPILER_WARNING_IGNORED(-Wduplicate-decl-specifier)
-#endif
+
 static VALUE
 cont_capture(volatile int *volatile stat)
 {
@@ -1334,7 +1331,6 @@ cont_capture(volatile int *volatile stat)
         return contval;
     }
 }
-COMPILER_WARNING_POP
 
 static inline void
 cont_restore_thread(rb_context_t *cont)
