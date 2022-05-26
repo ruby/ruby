@@ -8880,6 +8880,7 @@ rb_str_enumerate_lines(int argc, VALUE *argv, VALUE str, VALUE ary)
 	const char *eol = NULL;
 	subend = subptr;
 	while (subend < pend) {
+            long chomp_rslen = 0;
 	    do {
 		if (rb_enc_ascget(subend, pend, &n, enc) != '\r')
 		    n = 0;
@@ -8887,7 +8888,10 @@ rb_str_enumerate_lines(int argc, VALUE *argv, VALUE str, VALUE ary)
 		if (rb_enc_is_newline(subend + n, pend, enc)) {
 		    if (eol == subend) break;
 		    subend += rslen;
-		    if (subptr) eol = subend;
+                    if (subptr) {
+                        eol = subend;
+                        chomp_rslen = -rslen;
+                    }
 		}
 		else {
 		    if (!subptr) subptr = subend;
@@ -8896,8 +8900,9 @@ rb_str_enumerate_lines(int argc, VALUE *argv, VALUE str, VALUE ary)
 		rslen = 0;
 	    } while (subend < pend);
 	    if (!subptr) break;
+            if (rslen == 0) chomp_rslen = 0;
 	    line = rb_str_subseq(str, subptr - ptr,
-				 subend - subptr + (chomp ? 0 : rslen));
+                                 subend - subptr + (chomp ? chomp_rslen : rslen));
 	    if (ENUM_ELEM(ary, line)) {
 		str_mod_check(str, ptr, len);
 	    }
