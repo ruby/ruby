@@ -6,7 +6,7 @@
 name = "yjit"
 version = "0.1.0"       # YJIT version
 edition = "2021"        # Rust 2021 edition to compile with
-rust-version = "1.60.0" # Minimally supported rust version
+rust-version = "1.58.1" # Minimally supported rust version
 publish = false         # Don't publish to crates.io
 
 [lib]
