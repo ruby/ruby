@@ -2669,9 +2669,19 @@ autoload_try_load(VALUE _arguments)
     rb_const_entry_t *ce = rb_const_lookup(arguments->module, arguments->name);
 
     if (!ce || ce->value == Qundef) {
+        VALUE module = arguments->module;
+        ID name = arguments->name;
+
         result = Qfalse;
 
-        rb_const_remove(arguments->module, arguments->name);
+        rb_const_remove(module, name);
+
+        VALUE message = rb_str_new_cstr("autoload ");
+        rb_str_append(message, rb_inspect(arguments->autoload_data->feature));
+        rb_str_cat_cstr(message, " failed to resolve ");
+        if (module != rb_cObject) rb_str_catf(message, "%"PRIsVALUE"::", module);
+        rb_str_append(message, QUOTE_ID(name));
+        rb_exc_raise(rb_name_err_new(message, module, ID2SYM(name)));
     }
     else {
         // Otherwise, it was loaded, copy the flags from the autoload constant:

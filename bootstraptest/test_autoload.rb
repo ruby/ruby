@@ -60,7 +60,7 @@ assert_finish 5, %q{
 }, '[ruby-core:21696]'
 
 assert_equal 'A::C', %q{
-  open("zzz7.rb", "w") {}
+  File.write("zzz7.rb", "class A::C; end")
   class A
     autoload :C, "./zzz7"
     class C
