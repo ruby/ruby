@@ -312,7 +312,7 @@ class TestIO < Test::Unit::TestCase
       w.print "a\n\nb\n\n"
       w.close
     end, proc do |r|
-      assert_equal "a\n\nb\n", r.gets(nil, chomp: true)
+      assert_equal("a\n\nb\n\n", r.gets(nil, chomp: true), "[Bug #18770]")
       assert_nil r.gets("")
       r.close
     end)
@@ -1893,6 +1893,20 @@ class TestIO < Test::Unit::TestCase
       assert_equal("bar\n", e.next)
       assert_equal("baz\n", e.next)
       assert_raise(StopIteration) { e.next }
+    end)
+
+    pipe(proc do |w|
+      w.write "foo\n"
+      w.close
+    end, proc do |r|
+      assert_equal(["foo\n"], r.each_line(nil, chomp: true).to_a, "[Bug #18770]")
+    end)
+
+    pipe(proc do |w|
+      w.write "foo\n"
+      w.close
+    end, proc do |r|
+      assert_equal(["fo", "o\n"], r.each_line(nil, 2, chomp: true).to_a, "[Bug #18770]")
     end)
   end
 
