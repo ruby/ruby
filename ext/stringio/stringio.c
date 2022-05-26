@@ -1204,6 +1204,7 @@ strio_getline(struct getline_arg *arg, struct StringIO *ptr)
 	str = strio_substr(ptr, ptr->pos, e - s - w, enc);
     }
     else if ((n = RSTRING_LEN(str)) == 0) {
+        const char *paragraph_end = NULL;
 	p = s;
 	while (p[(p + 1 < e) && (*p == '\r') && 0] == '\n') {
 	    p += *p == '\r';
@@ -1213,19 +1214,21 @@ strio_getline(struct getline_arg *arg, struct StringIO *ptr)
 	}
 	s = p;
 	while ((p = memchr(p, '\n', e - p)) && (p != e)) {
-	    if (*++p == '\n') {
-		e = p + 1;
-		w = (arg->chomp ? 1 : 0);
-		break;
-	    }
-	    else if (*p == '\r' && p < e && p[1] == '\n') {
-		e = p + 2;
-		w = (arg->chomp ? 2 : 0);
-		break;
-	    }
+            p++;
+            if (!((p < e && *p == '\n') ||
+                  (p + 1 < e && *p == '\r' && *(p+1) == '\n'))) {
+                continue;
+            }
+            paragraph_end = p - ((*(p-2) == '\r') ? 2 : 1);
+            while ((p < e && *p == '\n') ||
+                   (p + 1 < e && *p == '\r' && *(p+1) == '\n')) {
+                p += (*p == '\r') ? 2 : 1;
+            }
+            e = p;
+            break;
 	}
-	if (!w && arg->chomp) {
-	    w = chomp_newline_width(s, e);
+	if (arg->chomp && paragraph_end) {
+	    w = e - paragraph_end;
 	}
 	str = strio_substr(ptr, s - RSTRING_PTR(ptr->string), e - s - w, enc);
     }

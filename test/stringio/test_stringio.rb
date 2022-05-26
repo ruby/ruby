@@ -93,10 +93,10 @@ class TestStringIO < Test::Unit::TestCase
     assert_equal("a", StringIO.new("a\nb").gets(chomp: true))
     assert_equal("abc", StringIO.new("abc\n\ndef\n").gets(chomp: true))
     assert_equal("abc\n\ndef\n", StringIO.new("abc\n\ndef\n").gets(nil, chomp: true))
-    assert_equal("abc\n", StringIO.new("abc\n\ndef\n").gets("", chomp: true))
+    assert_equal("abc", StringIO.new("abc\n\ndef\n").gets("", chomp: true))
     stringio = StringIO.new("abc\n\ndef\n")
-    assert_equal("abc\n", stringio.gets("", chomp: true))
-    assert_equal("def", stringio.gets("", chomp: true))
+    assert_equal("abc", stringio.gets("", chomp: true))
+    assert_equal("def\n", stringio.gets("", chomp: true))
 
     assert_string("", Encoding::UTF_8, StringIO.new("\n").gets(chomp: true))
   end
@@ -110,10 +110,10 @@ class TestStringIO < Test::Unit::TestCase
     assert_equal("a", StringIO.new("a\r\nb").gets(chomp: true))
     assert_equal("abc", StringIO.new("abc\r\n\r\ndef\r\n").gets(chomp: true))
     assert_equal("abc\r\n\r\ndef\r\n", StringIO.new("abc\r\n\r\ndef\r\n").gets(nil, chomp: true))
-    assert_equal("abc\r\n", StringIO.new("abc\r\n\r\ndef\r\n").gets("", chomp: true))
+    assert_equal("abc", StringIO.new("abc\r\n\r\ndef\r\n").gets("", chomp: true))
     stringio = StringIO.new("abc\r\n\r\ndef\r\n")
-    assert_equal("abc\r\n", stringio.gets("", chomp: true))
-    assert_equal("def", stringio.gets("", chomp: true))
+    assert_equal("abc", stringio.gets("", chomp: true))
+    assert_equal("def\r\n", stringio.gets("", chomp: true))
   end
 
   def test_readlines
@@ -596,15 +596,15 @@ class TestStringIO < Test::Unit::TestCase
     assert_equal(["foo\n", "bar\n", "baz\n"], f.each.to_a)
     f.rewind
     assert_equal(["foo", "bar", "baz"], f.each(chomp: true).to_a)
-    f = StringIO.new("foo\nbar\n\nbaz\n")
-    assert_equal(["foo\nbar\n\n", "baz\n"], f.each("").to_a)
+    f = StringIO.new("foo\nbar\n\n\nbaz\n")
+    assert_equal(["foo\nbar\n\n\n", "baz\n"], f.each("").to_a)
     f.rewind
-    assert_equal(["foo\nbar\n", "baz"], f.each("", chomp: true).to_a)
+    assert_equal(["foo\nbar", "baz\n"], f.each("", chomp: true).to_a)
 
-    f = StringIO.new("foo\r\nbar\r\n\r\nbaz\r\n")
-    assert_equal(["foo\r\nbar\r\n\r\n", "baz\r\n"], f.each("").to_a)
+    f = StringIO.new("foo\r\nbar\r\n\r\n\r\nbaz\r\n")
+    assert_equal(["foo\r\nbar\r\n\r\n\r\n", "baz\r\n"], f.each("").to_a)
     f.rewind
-    assert_equal(["foo\r\nbar\r\n", "baz"], f.each("", chomp: true).to_a)
+    assert_equal(["foo\r\nbar", "baz\r\n"], f.each("", chomp: true).to_a)
 
     f = StringIO.new("abc\n\ndef\n")
     assert_equal(["ab", "c\n", "\nd", "ef", "\n"], f.each(nil, 2, chomp: true).to_a)
