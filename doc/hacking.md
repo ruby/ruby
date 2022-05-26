@@ -103,6 +103,7 @@ Using the address sanitizer is a great way to detect memory issues.
 ``` shell
 > ./autogen.sh
 > mkdir build && cd build
+> export ASAN_OPTIONS="halt_on_error=0:use_sigaltstack=0:detect_leaks=0"
 > ../configure cppflags="-fsanitize=address -fno-omit-frame-pointer" optflags=-O0 LDFLAGS="-fsanitize=address -fno-omit-frame-pointer"
 > make
 ```
