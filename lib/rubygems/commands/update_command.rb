@@ -162,11 +162,7 @@ command to remove old versions.
   def highest_remote_name_tuple(spec) # :nodoc:
     spec_tuples = fetch_remote_gems spec
 
-    matching_gems = spec_tuples.select do |g,_|
-      g.name == spec.name and g.match_platform?
-    end
-
-    highest_remote_gem = matching_gems.max
+    highest_remote_gem = spec_tuples.max
 
     highest_remote_gem ||= [Gem::NameTuple.null]
 
