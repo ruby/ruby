@@ -11400,7 +11400,7 @@ rb_io_s_foreach(int argc, VALUE *argv, VALUE self)
     struct foreach_arg arg;
     struct getline_arg garg;
 
-    argc = rb_scan_args(argc, argv, "13:", NULL, NULL, NULL, NULL, &opt);
+    argc = rb_scan_args(argc, argv, "12:", NULL, NULL, NULL, &opt);
     RETURN_ENUMERATOR(self, orig_argc, argv);
     extract_getline_args(argc-1, argv+1, &garg);
     open_key_args(self, argc, argv, opt, &arg);
@@ -11495,7 +11495,7 @@ rb_io_s_readlines(int argc, VALUE *argv, VALUE io)
     struct foreach_arg arg;
     struct getline_arg garg;
 
-    argc = rb_scan_args(argc, argv, "13:", NULL, NULL, NULL, NULL, &opt);
+    argc = rb_scan_args(argc, argv, "12:", NULL, NULL, NULL, &opt);
     extract_getline_args(argc-1, argv+1, &garg);
     open_key_args(io, argc, argv, opt, &arg);
     if (NIL_P(arg.io)) return Qnil;
