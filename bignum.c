@@ -23,8 +23,14 @@
 # include <ieeefp.h>
 #endif
 
+#if !defined(USE_GMP)
 #if defined(HAVE_LIBGMP) && defined(HAVE_GMP_H)
-# define USE_GMP
+# define USE_GMP 1
+#else
+# define USE_GMP 0
+#endif
+#endif
+#if USE_GMP
 # include <gmp.h>
 #endif
 
@@ -145,7 +151,7 @@ STATIC_ASSERT(sizeof_long_and_sizeof_bdigit, SIZEOF_BDIGIT % SIZEOF_LONG == 0);
 #define GMP_DIV_DIGITS 20
 #define GMP_BIG2STR_DIGITS 20
 #define GMP_STR2BIG_DIGITS 20
-#ifdef USE_GMP
+#if USE_GMP
 # define NAIVE_MUL_DIGITS GMP_MUL_DIGITS
 #else
 # define NAIVE_MUL_DIGITS KARATSUBA_MUL_DIGITS
@@ -1573,7 +1579,7 @@ rb_big_mul_normal(VALUE x, VALUE y)
 
 /* efficient squaring (2 times faster than normal multiplication)
  * ref: Handbook of Applied Cryptography, Algorithm 14.16
- *      http://www.cacr.math.uwaterloo.ca/hac/about/chap14.pdf
+ *      https://www.cacr.math.uwaterloo.ca/hac/about/chap14.pdf
  */
 static void
 bary_sq_fast(BDIGIT *zds, size_t zn, const BDIGIT *xds, size_t xn)
@@ -2291,7 +2297,7 @@ rb_big_mul_toom3(VALUE x, VALUE y)
     return z;
 }
 
-#ifdef USE_GMP
+#if USE_GMP
 static inline void
 bdigits_to_mpz(mpz_t mp, const BDIGIT *digits, size_t len)
 {
@@ -2556,7 +2562,7 @@ bary_mul(BDIGIT *zds, size_t zn, const BDIGIT *xds, size_t xn, const BDIGIT *yds
         }
     }
 
-#ifdef USE_GMP
+#if USE_GMP
     bary_mul_gmp(zds, zn, xds, xn, yds, yn);
 #else
     bary_mul_toom3_start(zds, zn, xds, xn, yds, yn, NULL, 0);
@@ -2776,7 +2782,7 @@ rb_big_divrem_normal(VALUE x, VALUE y)
     return rb_assoc_new(q, r);
 }
 
-#ifdef USE_GMP
+#if USE_GMP
 static void
 bary_divmod_gmp(BDIGIT *qds, size_t qn, BDIGIT *rds, size_t rn, const BDIGIT *xds, size_t xn, const BDIGIT *yds, size_t yn)
 {
@@ -2860,7 +2866,7 @@ rb_big_divrem_gmp(VALUE x, VALUE y)
 static void
 bary_divmod_branch(BDIGIT *qds, size_t qn, BDIGIT *rds, size_t rn, const BDIGIT *xds, size_t xn, const BDIGIT *yds, size_t yn)
 {
-#ifdef USE_GMP
+#if USE_GMP
     if (GMP_DIV_DIGITS < xn) {
         bary_divmod_gmp(qds, qn, rds, rn, xds, xn, yds, yn);
         return;
@@ -3957,7 +3963,7 @@ str2big_karatsuba(
     return z;
 }
 
-#ifdef USE_GMP
+#if USE_GMP
 static VALUE
 str2big_gmp(
     int sign,
@@ -4222,7 +4228,7 @@ rb_int_parse_cstr(const char *str, ssize_t len, char **endp, size_t *ndigits,
         maxpow_in_bdigit_dbl(base, &digits_per_bdigits_dbl);
         num_bdigits = roomof(num_digits, digits_per_bdigits_dbl)*2;
 
-#ifdef USE_GMP
+#if USE_GMP
         if (GMP_STR2BIG_DIGITS < num_bdigits) {
             z = str2big_gmp(sign, digits_start, digits_end, num_digits,
                     num_bdigits, base);
@@ -4402,7 +4408,7 @@ rb_str2big_karatsuba(VALUE arg, int base, int badcheck)
     return bignorm(z);
 }
 
-#ifdef USE_GMP
+#if USE_GMP
 VALUE
 rb_str2big_gmp(VALUE arg, int base, int badcheck)
 {
@@ -5012,7 +5018,7 @@ rb_big2str_generic(VALUE x, int base)
     return big2str_generic(x, base);
 }
 
-#ifdef USE_GMP
+#if USE_GMP
 static VALUE
 big2str_gmp(VALUE x, int base)
 {
@@ -5083,7 +5089,7 @@ rb_big2str1(VALUE x, int base)
         return big2str_base_poweroftwo(x, base);
     }
 
-#ifdef USE_GMP
+#if USE_GMP
     if (GMP_BIG2STR_DIGITS < xn) {
         return big2str_gmp(x, base);
     }
@@ -6940,7 +6946,7 @@ rb_big_isqrt(VALUE n)
     return x;
 }
 
-#ifdef USE_GMP
+#if USE_GMP
 static void
 bary_powm_gmp(BDIGIT *zds, size_t zn, const BDIGIT *xds, size_t xn, const BDIGIT *yds, size_t yn, const BDIGIT *mds, size_t mn)
 {
@@ -6966,7 +6972,7 @@ bary_powm_gmp(BDIGIT *zds, size_t zn, const BDIGIT *xds, size_t xn, const BDIGIT
 static VALUE
 int_pow_tmp3(VALUE x, VALUE y, VALUE m, int nega_flg)
 {
-#ifdef USE_GMP
+#if USE_GMP
     VALUE z;
     size_t xn, yn, mn, zn;
 
@@ -7172,7 +7178,7 @@ Init_Bignum(void)
 {
     rb_define_method(rb_cInteger, "coerce", rb_int_coerce, 1);
 
-#ifdef USE_GMP
+#if USE_GMP
     /* The version of loaded GMP. */
     rb_define_const(rb_cInteger, "GMP_VERSION", rb_sprintf("GMP %s", gmp_version));
 #endif

@@ -63,7 +63,7 @@ class Gem::Ext::Builder
 
       require "open3"
       # Set $SOURCE_DATE_EPOCH for the subprocess.
-      env = {'SOURCE_DATE_EPOCH' => Gem.source_date_epoch_string}
+      env = { 'SOURCE_DATE_EPOCH' => Gem.source_date_epoch_string }
       output, status = begin
                          Open3.capture2e(env, *command, :chdir => dir)
                        rescue => error
@@ -123,6 +123,9 @@ class Gem::Ext::Builder
       Gem::Ext::RakeBuilder
     when /CMakeLists.txt/ then
       Gem::Ext::CmakeBuilder
+    when /Cargo.toml/ then
+      # We use the spec name here to ensure we invoke the correct init function later
+      Gem::Ext::CargoBuilder.new(@spec)
     else
       build_error("No builder for extension '#{extension}'")
     end

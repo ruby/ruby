@@ -42,20 +42,6 @@ describe :array_collect, shared: true do
     }.should raise_error(ArgumentError)
   end
 
-  ruby_version_is ''...'2.7' do
-    it "does not copy tainted status" do
-      a = [1, 2, 3]
-      a.taint
-      a.send(@method){|x| x}.tainted?.should be_false
-    end
-
-    it "does not copy untrusted status" do
-      a = [1, 2, 3]
-      a.untrust
-      a.send(@method){|x| x}.untrusted?.should be_false
-    end
-  end
-
   before :all do
     @object = [1, 2, 3, 4]
   end
@@ -94,23 +80,6 @@ describe :array_collect_b, shared: true do
     enum.should be_an_instance_of(Enumerator)
     enum.each{|i| "#{i}!" }
     a.should == ["1!", "2!", "3!"]
-  end
-
-  ruby_version_is ''...'2.7' do
-    it "keeps tainted status" do
-      a = [1, 2, 3]
-      a.taint
-      a.tainted?.should be_true
-      a.send(@method){|x| x}
-      a.tainted?.should be_true
-    end
-
-    it "keeps untrusted status" do
-      a = [1, 2, 3]
-      a.untrust
-      a.send(@method){|x| x}
-      a.untrusted?.should be_true
-    end
   end
 
   describe "when frozen" do

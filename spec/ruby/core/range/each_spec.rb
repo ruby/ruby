@@ -58,10 +58,8 @@ describe "Range#each" do
     a.should == ["A", "B", "C", "D"]
   end
 
-  ruby_version_is "2.7" do
-    it "raises a TypeError beginless ranges" do
-      -> { eval("(..2)").each { |x| x } }.should raise_error(TypeError)
-    end
+  it "raises a TypeError beginless ranges" do
+    -> { (..2).each { |x| x } }.should raise_error(TypeError)
   end
 
   it "raises a TypeError if the first element does not respond to #succ" do

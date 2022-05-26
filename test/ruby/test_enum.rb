@@ -234,6 +234,8 @@ class TestEnumerable < Test::Unit::TestCase
     assert_equal(24, @obj.inject(2) {|z, x| z * x })
     assert_equal(24, assert_warning(/given block not used/) {@obj.inject(2, :*) {|z, x| z * x }})
     assert_equal(nil, @empty.inject() {9})
+
+    assert_raise(ArgumentError) {@obj.inject}
   end
 
   FIXNUM_MIN = RbConfig::LIMITS['FIXNUM_MIN']

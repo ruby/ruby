@@ -3,7 +3,7 @@
 require 'rubygems'
 
 # If bundler gemspec exists, add to stubs
-bundler_gemspec = File.expand_path("../../../bundler/bundler.gemspec", __FILE__)
+bundler_gemspec = File.expand_path('../../bundler/bundler.gemspec', __dir__)
 if File.exist?(bundler_gemspec)
   Gem::Specification.dirs.unshift File.dirname(bundler_gemspec)
   Gem::Specification.class_variable_set :@@stubs, nil
@@ -302,10 +302,14 @@ class Gem::TestCase < Test::Unit::TestCase
   # or <tt>i686-darwin8.10.1</tt> otherwise.
 
   def setup
+    @orig_hooks = {}
     @orig_env = ENV.to_hash
     @tmp = File.expand_path("tmp")
 
     FileUtils.mkdir_p @tmp
+
+    @tempdir = Dir.mktmpdir("test_rubygems_", @tmp)
+    @tempdir.tap(&Gem::UNTAINT)
 
     ENV['GEM_VENDOR'] = nil
     ENV['GEMRC'] = nil
@@ -323,9 +327,6 @@ class Gem::TestCase < Test::Unit::TestCase
     # This needs to be a new instance since we call use_ui(@ui) when we want to
     # capture output
     Gem::DefaultUserInteraction.ui = Gem::MockGemUi.new
-
-    @tempdir = Dir.mktmpdir("test_rubygems_", @tmp)
-    @tempdir.tap(&Gem::UNTAINT)
 
     ENV["TMPDIR"] = @tempdir
 
@@ -426,7 +427,6 @@ class Gem::TestCase < Test::Unit::TestCase
       util_set_arch 'i686-darwin8.10.1'
     end
 
-    @orig_hooks = {}
     %w[post_install_hooks done_installing_hooks post_uninstall_hooks pre_uninstall_hooks pre_install_hooks pre_reset_hooks post_reset_hooks post_build_hooks].each do |name|
       @orig_hooks[name] = Gem.send(name).dup
     end
@@ -618,7 +618,7 @@ class Gem::TestCase < Test::Unit::TestCase
       gem = File.join(@tempdir, File.basename(gem)).tap(&Gem::UNTAINT)
     end
 
-    Gem::Installer.at(gem, options.merge({:wrappers => true})).install
+    Gem::Installer.at(gem, options.merge({ :wrappers => true })).install
   end
 
   ##
@@ -1098,7 +1098,7 @@ Also, a list:
     Zlib::Deflate.deflate data
   end
 
-  def util_set_RUBY_VERSION(version, patchlevel = nil, revision = nil, description = nil, engine = "ruby", engine_version = nil)
+  def util_set_RUBY_VERSION(version, patchlevel, revision, description, engine = "ruby", engine_version = nil)
     if Gem.instance_variables.include? :@ruby_version
       Gem.send :remove_instance_variable, :@ruby_version
     end
@@ -1106,16 +1106,16 @@ Also, a list:
     @RUBY_VERSION        = RUBY_VERSION
     @RUBY_PATCHLEVEL     = RUBY_PATCHLEVEL     if defined?(RUBY_PATCHLEVEL)
     @RUBY_REVISION       = RUBY_REVISION       if defined?(RUBY_REVISION)
-    @RUBY_DESCRIPTION    = RUBY_DESCRIPTION    if defined?(RUBY_DESCRIPTION)
+    @RUBY_DESCRIPTION    = RUBY_DESCRIPTION
     @RUBY_ENGINE         = RUBY_ENGINE
     @RUBY_ENGINE_VERSION = RUBY_ENGINE_VERSION if defined?(RUBY_ENGINE_VERSION)
 
     util_clear_RUBY_VERSION
 
     Object.const_set :RUBY_VERSION,        version
-    Object.const_set :RUBY_PATCHLEVEL,     patchlevel     if patchlevel
-    Object.const_set :RUBY_REVISION,       revision       if revision
-    Object.const_set :RUBY_DESCRIPTION,    description    if description
+    Object.const_set :RUBY_PATCHLEVEL,     patchlevel
+    Object.const_set :RUBY_REVISION,       revision
+    Object.const_set :RUBY_DESCRIPTION,    description
     Object.const_set :RUBY_ENGINE,         engine
     Object.const_set :RUBY_ENGINE_VERSION, engine_version if engine_version
   end
@@ -1128,8 +1128,7 @@ Also, a list:
       defined?(@RUBY_PATCHLEVEL)
     Object.const_set :RUBY_REVISION,       @RUBY_REVISION    if
       defined?(@RUBY_REVISION)
-    Object.const_set :RUBY_DESCRIPTION,    @RUBY_DESCRIPTION if
-      defined?(@RUBY_DESCRIPTION)
+    Object.const_set :RUBY_DESCRIPTION,    @RUBY_DESCRIPTION
     Object.const_set :RUBY_ENGINE,         @RUBY_ENGINE
     Object.const_set :RUBY_ENGINE_VERSION, @RUBY_ENGINE_VERSION if
       defined?(@RUBY_ENGINE_VERSION)
@@ -1186,6 +1185,14 @@ Also, a list:
 
   def vc_windows?
     RUBY_PLATFORM.match('mswin')
+  end
+
+  ##
+  # Is this test being run on a ruby/ruby repository?
+  #
+
+  def testing_ruby_repo?
+    !ENV["GEM_COMMAND"].nil?
   end
 
   ##
@@ -1287,7 +1294,7 @@ Also, a list:
   end
 
   def rubygems_path
-    $LOAD_PATH.find{|p| p == File.dirname($LOADED_FEATURES.find{|f| f.end_with?("/rubygems.rb") }) }
+    $LOAD_PATH.find {|p| p == File.dirname($LOADED_FEATURES.find {|f| f.end_with?("/rubygems.rb") }) }
   end
 
   def with_clean_path_to_ruby

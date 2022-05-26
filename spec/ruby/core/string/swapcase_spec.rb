@@ -9,13 +9,6 @@ describe "String#swapcase" do
    "+++---111222???".swapcase.should == "+++---111222???"
   end
 
-  ruby_version_is ''...'2.7' do
-    it "taints resulting string when self is tainted" do
-      "".taint.swapcase.should.tainted?
-      "hello".taint.swapcase.should.tainted?
-    end
-  end
-
   describe "full Unicode case mapping" do
     it "works for all of Unicode with no option" do
       "äÖü".swapcase.should == "ÄöÜ"

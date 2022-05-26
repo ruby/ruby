@@ -323,6 +323,17 @@ class TestMethod < Test::Unit::TestCase
     assert_equal(:foo, o.foo)
   end
 
+  PUBLIC_SINGLETON_TEST = Object.new
+  class << PUBLIC_SINGLETON_TEST
+    private
+    PUBLIC_SINGLETON_TEST.define_singleton_method(:dsm){}
+    def PUBLIC_SINGLETON_TEST.def; end
+  end
+  def test_define_singleton_method_public
+    assert_equal(true, PUBLIC_SINGLETON_TEST.method(:dsm).public?)
+    assert_equal(true, PUBLIC_SINGLETON_TEST.method(:def).public?)
+  end
+
   def test_define_singleton_method_no_proc
     o = Object.new
     assert_raise(ArgumentError) {

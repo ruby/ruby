@@ -1398,8 +1398,8 @@ rb_io_wait_writable(int f)
          * In old Linux, several special files under /proc and /sys don't handle
          * select properly. Thus we need avoid to call if don't use O_NONBLOCK.
          * Otherwise, we face nasty hang up. Sigh.
-         * e.g. http://git.kernel.org/?p=linux/kernel/git/torvalds/linux-2.6.git;a=commit;h=31b07093c44a7a442394d44423e21d783f5523b8
-         * http://git.kernel.org/?p=linux/kernel/git/torvalds/linux-2.6.git;a=commit;h=31b07093c44a7a442394d44423e21d783f5523b8
+         * e.g. https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/commit/?id=31b07093c44a7a442394d44423e21d783f5523b8
+         * https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/commit/?id=31b07093c44a7a442394d44423e21d783f5523b8
          * In EINTR case, we only need to call RUBY_VM_CHECK_INTS_BLOCKING().
          * Then rb_thread_check_ints() is enough.
          */
@@ -1457,8 +1457,8 @@ rb_io_maybe_wait(int error, VALUE io, VALUE events, VALUE timeout)
       // In old Linux, several special files under /proc and /sys don't handle
       // select properly. Thus we need avoid to call if don't use O_NONBLOCK.
       // Otherwise, we face nasty hang up. Sigh.
-      // e.g. http://git.kernel.org/?p=linux/kernel/git/torvalds/linux-2.6.git;a=commit;h=31b07093c44a7a442394d44423e21d783f5523b8
-      // http://git.kernel.org/?p=linux/kernel/git/torvalds/linux-2.6.git;a=commit;h=31b07093c44a7a442394d44423e21d783f5523b8
+      // e.g. https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/commit/?id=31b07093c44a7a442394d44423e21d783f5523b8
+      // https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/commit/?id=31b07093c44a7a442394d44423e21d783f5523b8
       // In EINTR case, we only need to call RUBY_VM_CHECK_INTS_BLOCKING().
       // Then rb_thread_check_ints() is enough.
       case EINTR:
@@ -2096,8 +2096,7 @@ rb_io_writev(VALUE io, int argc, const VALUE *argv)
 
         do rb_io_write(io, *argv++); while (--argc);
 
-        /* unused right now */
-        return argv[0];
+        return Qnil;
     }
 
     return rb_funcallv(io, id_write, argc, argv);
@@ -5191,7 +5190,7 @@ static void clear_codeconv(rb_io_t *fptr);
 
 static void
 fptr_finalize_flush(rb_io_t *fptr, int noraise, int keepgvl,
-                    struct list_head *busy)
+                    struct ccan_list_head *busy)
 {
     VALUE err = Qnil;
     int fd = fptr->fd;
@@ -5233,7 +5232,7 @@ fptr_finalize_flush(rb_io_t *fptr, int noraise, int keepgvl,
     // Ensure waiting_fd users do not hit EBADF.
     if (busy) {
         // Wait for them to exit before we call close().
-        do rb_thread_schedule(); while (!list_empty(busy));
+        do rb_thread_schedule(); while (!ccan_list_empty(busy));
     }
 
     // Disable for now.
@@ -5378,16 +5377,16 @@ rb_io_memsize(const rb_io_t *fptr)
 # define KEEPGVL FALSE
 #endif
 
-int rb_notify_fd_close(int fd, struct list_head *);
+int rb_notify_fd_close(int fd, struct ccan_list_head *);
 static rb_io_t *
 io_close_fptr(VALUE io)
 {
     rb_io_t *fptr;
     VALUE write_io;
     rb_io_t *write_fptr;
-    struct list_head busy;
+    struct ccan_list_head busy;
 
-    list_head_init(&busy);
+    ccan_list_head_init(&busy);
     write_io = GetWriteIO(io);
     if (io != write_io) {
         write_fptr = RFILE(write_io)->fptr;
@@ -7423,7 +7422,7 @@ static VALUE popen_finish(VALUE port, VALUE klass);
  *  whose $stdin and $stdout are connected to a new stream +io+.
  *
  *  This method has potential security vulnerabilities if called with untrusted input;
- *  see {Command Injection}[command_injection.rdoc].
+ *  see {Command Injection}[rdoc-ref:command_injection.rdoc].
  *
  *  If no block is given, returns the new stream,
  *  which depending on given +mode+ may be open for reading, writing, or both.
@@ -7458,7 +7457,7 @@ static VALUE popen_finish(VALUE port, VALUE klass);
  *  Optional keyword arguments +opts+ specify:
  *
  *  - {Open options}[rdoc-ref:IO@Open+Options].
- *  - {Encoding options}[rdoc-ref:encoding.rdoc@Encoding+Options].
+ *  - {Encoding options}[rdoc-ref:encodings.rdoc@Encoding+Options].
  *  - Options for Kernel#spawn.
  *
  *  <b>Forked \Process</b>
@@ -7524,7 +7523,7 @@ static VALUE popen_finish(VALUE port, VALUE klass);
  *
  *  - <tt>cmd[0][0]</tt> (the first string in the nested array) is the name of a program that is run.
  *  - <tt>cmd[0][1]</tt> (the second string in the nested array) is set as the program's <tt>argv[0]</tt>.
- *  - <tt>cmd[1..-1] (the strings in the outer array) are the program's arguments.
+ *  - <tt>cmd[1..-1]</tt> (the strings in the outer array) are the program's arguments.
  *
  *  Example (sets <tt>$0</tt> to 'foo'):
  *
@@ -8080,7 +8079,7 @@ rb_freopen(VALUE fname, const char *mode, FILE *fp)
  *  Optional keyword arguments +opts+ specify:
  *
  *  - {Open Options}[rdoc-ref:IO@Open+Options].
- *  - {Encoding options}[rdoc-ref:encoding.rdoc@Encoding+Options].
+ *  - {Encoding options}[rdoc-ref:encodings.rdoc@Encoding+Options].
  *
  */
 
@@ -8220,7 +8219,10 @@ rb_io_init_copy(VALUE dest, VALUE io)
  *    printf(format_string, *objects) -> nil
  *
  *  Formats and writes +objects+ to the stream.
- *  See Kernel#sprintf for formatting details.
+ *
+ *  For details on +format_string+, see
+ *  {Format Specifications}[rdoc-ref:format_specifications.rdoc].
+ *
  */
 
 VALUE
@@ -8232,14 +8234,17 @@ rb_io_printf(int argc, const VALUE *argv, VALUE out)
 
 /*
  *  call-seq:
- *    printf(string, *objects)               -> nil
- *    printf(io, string, *objects) -> nil
+ *    printf(format_string, *objects)               -> nil
+ *    printf(io, format_string, *objects) -> nil
  *
  *  Equivalent to:
  *
- *    io.write(sprintf(string, *objects))
+ *    io.write(sprintf(format_string, *objects))
  *
- *  With the single argument +string+, formats +objects+ into the string,
+ *  For details on +format_string+, see
+ *  {Format Specifications}[rdoc-ref:format_specifications.rdoc].
+ *
+ *  With the single argument +format_string+, formats +objects+ into the string,
  *  then writes the formatted string to $stdout:
  *
  *    printf('%4.4d %10s %2.2f', 24, 24, 24.0)
@@ -8248,7 +8253,7 @@ rb_io_printf(int argc, const VALUE *argv, VALUE out)
  *
  *    0024         24 24.00#
  *
- *  With arguments +io+ and +string, formats +objects+ into the string,
+ *  With arguments +io+ and +format_string+, formats +objects+ into the string,
  *  then writes the formatted string to +io+:
  *
  *    printf($stderr, '%4.4d %10s %2.2f', 24, 24, 24.0)
@@ -9012,7 +9017,7 @@ rb_io_make_open_file(VALUE obj)
  *  Optional keyword arguments +opts+ specify:
  *
  *  - {Open Options}[rdoc-ref:IO@Open+Options].
- *  - {Encoding options}[rdoc-ref:encoding.rdoc@Encoding+Options].
+ *  - {Encoding options}[rdoc-ref:encodings.rdoc@Encoding+Options].
  *
  *  Examples:
  *
@@ -9156,7 +9161,7 @@ rb_io_set_encoding_by_bom(VALUE io)
  *  Optional keyword arguments +opts+ specify:
  *
  *  - {Open Options}[rdoc-ref:IO@Open+Options].
- *  - {Encoding options}[rdoc-ref:encoding.rdoc@Encoding+Options].
+ *  - {Encoding options}[rdoc-ref:encodings.rdoc@Encoding+Options].
  *
  *  Examples:
  *
@@ -9348,7 +9353,7 @@ argf_set_lineno(VALUE argf, VALUE val)
 {
     ARGF.lineno = NUM2INT(val);
     ARGF.last_lineno = ARGF.lineno;
-    return Qnil;
+    return val;
 }
 
 /*
@@ -9835,7 +9840,7 @@ static VALUE argf_readlines(int, VALUE *, VALUE);
  *  For all forms above, optional keyword arguments specify:
  *
  *  - {Line Options}[rdoc-ref:IO@Line+Options].
- *  - {Encoding options}[rdoc-ref:encoding.rdoc@Encoding+Options].
+ *  - {Encoding options}[rdoc-ref:encodings.rdoc@Encoding+Options].
  *
  *  Examples:
  *
@@ -9901,7 +9906,7 @@ argf_readlines(int argc, VALUE *argv, VALUE argf)
  *  sets global variable <tt>$?</tt> to the process status.
  *
  *  This method has potential security vulnerabilities if called with untrusted input;
- *  see {Command Injection}[command_injection.rdoc].
+ *  see {Command Injection}[rdoc-ref:command_injection.rdoc].
  *
  *  Examples:
  *
@@ -11100,7 +11105,7 @@ pipe_pair_close(VALUE rw)
  *  Optional keyword arguments +opts+ specify:
  *
  *  - {Open Options}[rdoc-ref:IO@Open+Options].
- *  - {Encoding Options}[rdoc-ref:encoding.rdoc@Encoding+Options].
+ *  - {Encoding Options}[rdoc-ref:encodings.rdoc@Encoding+Options].
  *
  *  With no block given, returns the two endpoints in an array:
  *
@@ -11292,7 +11297,7 @@ io_s_foreach(VALUE v)
  *
  *  When called from class \IO (but not subclasses of \IO),
  *  this method has potential security vulnerabilities if called with untrusted input;
- *  see {Command Injection}[command_injection.rdoc].
+ *  see {Command Injection}[rdoc-ref:command_injection.rdoc].
  *
  *  The first argument must be a string that is one of the following:
  *
@@ -11302,7 +11307,8 @@ io_s_foreach(VALUE v)
  *  - Command: if +self+ is the class \IO,
  *    and if the string starts with the pipe character,
  *    the rest of the string is a command to be executed as a subprocess.
- *    See the {Note on Security}[@Note+on+Security].
+ *    This usage has potential security vulnerabilities if called with untrusted input;
+ *    see {Command Injection}[rdoc-ref:command_injection.rdoc].
  *
  *  With only argument +path+ given, parses lines from the file at the given +path+,
  *  as determined by the default line separator,
@@ -11362,7 +11368,7 @@ io_s_foreach(VALUE v)
  *  Optional keyword arguments +opts+ specify:
  *
  *  - {Open Options}[rdoc-ref:IO@Open+Options].
- *  - {Encoding options}[rdoc-ref:encoding.rdoc@Encoding+Options].
+ *  - {Encoding options}[rdoc-ref:encodings.rdoc@Encoding+Options].
  *  - {Line Options}[rdoc-ref:IO@Line+Options].
  *
  *  Returns an Enumerator if no block is given.
@@ -11407,7 +11413,7 @@ io_s_readlines(VALUE v)
  *
  *  When called from class \IO (but not subclasses of \IO),
  *  this method has potential security vulnerabilities if called with untrusted input;
- *  see {Command Injection}[command_injection.rdoc].
+ *  see {Command Injection}[rdoc-ref:command_injection.rdoc].
  *
  *  The first argument must be a string;
  *  its meaning depends on whether it starts with the pipe character (<tt>'|'</tt>):
@@ -11460,7 +11466,7 @@ io_s_readlines(VALUE v)
  *  Optional keyword arguments +opts+ specify:
  *
  *  - {Open Options}[rdoc-ref:IO@Open+Options].
- *  - {Encoding options}[rdoc-ref:encoding.rdoc@Encoding+Options].
+ *  - {Encoding options}[rdoc-ref:encodings.rdoc@Encoding+Options].
  *  - {Line Options}[rdoc-ref:IO@Line+Options].
  *
  */
@@ -11512,7 +11518,7 @@ seek_before_access(VALUE argp)
  *
  *  When called from class \IO (but not subclasses of \IO),
  *  this method has potential security vulnerabilities if called with untrusted input;
- *  see {Command Injection}[command_injection.rdoc].
+ *  see {Command Injection}[rdoc-ref:command_injection.rdoc].
  *
  *  The first argument must be a string;
  *  its meaning depends on whether it starts with the pipe character (<tt>'|'</tt>):
@@ -11550,7 +11556,7 @@ seek_before_access(VALUE argp)
  *  Optional keyword arguments +opts+ specify:
  *
  *  - {Open Options}[rdoc-ref:IO@Open+Options].
- *  - {Encoding options}[rdoc-ref:encoding.rdoc@Encoding+Options].
+ *  - {Encoding options}[rdoc-ref:encodings.rdoc@Encoding+Options].
  *
  */
 
@@ -11589,7 +11595,7 @@ rb_io_s_read(int argc, VALUE *argv, VALUE io)
  *
  *  When called from class \IO (but not subclasses of \IO),
  *  this method has potential security vulnerabilities if called with untrusted input;
- *  see {Command Injection}[command_injection.rdoc].
+ *  see {Command Injection}[rdoc-ref:command_injection.rdoc].
  *
  */
 
@@ -11694,7 +11700,7 @@ io_s_write(int argc, VALUE *argv, VALUE klass, int binary)
  *
  *  When called from class \IO (but not subclasses of \IO),
  *  this method has potential security vulnerabilities if called with untrusted input;
- *  see {Command Injection}[command_injection.rdoc].
+ *  see {Command Injection}[rdoc-ref:command_injection.rdoc].
  *
  *  The first argument must be a string;
  *  its meaning depends on whether it starts with the pipe character (<tt>'|'</tt>):
@@ -11741,7 +11747,7 @@ io_s_write(int argc, VALUE *argv, VALUE klass, int binary)
  *  Optional keyword arguments +opts+ specify:
  *
  *  - {Open Options}[rdoc-ref:IO@Open+Options].
- *  - {Encoding options}[rdoc-ref:encoding.rdoc@Encoding+Options].
+ *  - {Encoding options}[rdoc-ref:encodings.rdoc@Encoding+Options].
  *
  */
 
@@ -11761,7 +11767,7 @@ rb_io_s_write(int argc, VALUE *argv, VALUE io)
  *
  *  When called from class \IO (but not subclasses of \IO),
  *  this method has potential security vulnerabilities if called with untrusted input;
- *  see {Command Injection}[command_injection.rdoc].
+ *  see {Command Injection}[rdoc-ref:command_injection.rdoc].
  *
  */
 
@@ -12825,7 +12831,7 @@ rb_io_internal_encoding(VALUE io)
  *  and internal encodings for the stream.
  *
  *  Optional keyword arguments +enc_opts+ specify
- *  {Encoding options}[rdoc-ref:encoding.rdoc@Encoding+Options].
+ *  {Encoding options}[rdoc-ref:encodings.rdoc@Encoding+Options].
  *
  */
 
@@ -14205,7 +14211,7 @@ set_LAST_READ_LINE(VALUE val, ID _x, VALUE *_y)
  *  ==== Read/Write Mode Specified as an \Integer
  *
  *  When +mode+ is an integer it must be one or more (combined by bitwise OR (<tt>|</tt>)
- *  of the modes defined in File::Constants:
+ *  of the following modes:
  *
  *  - +File::RDONLY+: Open for reading only.
  *  - +File::WRONLY+: Open for writing only.
@@ -14269,6 +14275,12 @@ set_LAST_READ_LINE(VALUE val, ID _x, VALUE *_y)
  *  Example:
  *
  *    File.open('t.tmp', 'wx')
+ *
+ *  Note that when using integer flags to set the read/write mode, it's not
+ *  possible to also set the binary data mode by adding the File::BINARY flag
+ *  to the bitwise OR combination of integer flags. This is because, as
+ *  documented in File::Constants, the File::BINARY flag only disables line code
+ *  conversion, but does not change the external encoding at all.
  *
  *  == Encodings
  *
@@ -14508,133 +14520,133 @@ set_LAST_READ_LINE(VALUE val, ID _x, VALUE *_y)
  *
  *  === Creating
  *
- *  - ::new (aliased as ::for_fd):: Creates and returns a new \IO object for the given
- *                                  integer file descriptor.
- *  - ::open:: Creates a new \IO object.
- *  - ::pipe:: Creates a connected pair of reader and writer \IO objects.
- *  - ::popen:: Creates an \IO object to interact with a subprocess.
- *  - ::select:: Selects which given \IO instances are ready for reading,
+ *  - ::new (aliased as ::for_fd): Creates and returns a new \IO object for the given
+ *    integer file descriptor.
+ *  - ::open: Creates a new \IO object.
+ *  - ::pipe: Creates a connected pair of reader and writer \IO objects.
+ *  - ::popen: Creates an \IO object to interact with a subprocess.
+ *  - ::select: Selects which given \IO instances are ready for reading,
  *    writing, or have pending exceptions.
  *
  *  === Reading
  *
- *  - ::binread:: Returns a binary string with all or a subset of bytes
- *                from the given file.
- *  - ::read:: Returns a string with all or a subset of bytes from the given file.
- *  - ::readlines:: Returns an array of strings, which are the lines from the given file.
- *  - #getbyte:: Returns the next 8-bit byte read from +self+ as an integer.
- *  - #getc:: Returns the next character read from +self+ as a string.
- *  - #gets:: Returns the line read from +self+.
- *  - #pread:: Returns all or the next _n_ bytes read from +self+,
- *             not updating the receiver's offset.
- *  - #read:: Returns all remaining or the next _n_ bytes read from +self+
- *            for a given _n_.
- *  - #read_nonblock:: the next _n_ bytes read from +self+ for a given _n_,
- *                     in non-block mode.
- *  - #readbyte:: Returns the next byte read from +self+;
- *                same as #getbyte, but raises an exception on end-of-file.
- *  - #readchar:: Returns the next character read from +self+;
- *                same as #getc, but raises an exception on end-of-file.
- *  - #readline:: Returns the next line read from +self+;
- *                same as #getline, but raises an exception of end-of-file.
- *  - #readlines:: Returns an array of all lines read read from +self+.
- *  - #readpartial:: Returns up to the given number of bytes from +self+.
+ *  - ::binread: Returns a binary string with all or a subset of bytes
+ *    from the given file.
+ *  - ::read: Returns a string with all or a subset of bytes from the given file.
+ *  - ::readlines: Returns an array of strings, which are the lines from the given file.
+ *  - #getbyte: Returns the next 8-bit byte read from +self+ as an integer.
+ *  - #getc: Returns the next character read from +self+ as a string.
+ *  - #gets: Returns the line read from +self+.
+ *  - #pread: Returns all or the next _n_ bytes read from +self+,
+ *    not updating the receiver's offset.
+ *  - #read: Returns all remaining or the next _n_ bytes read from +self+
+ *    for a given _n_.
+ *  - #read_nonblock: the next _n_ bytes read from +self+ for a given _n_,
+ *    in non-block mode.
+ *  - #readbyte: Returns the next byte read from +self+;
+ *    same as #getbyte, but raises an exception on end-of-file.
+ *  - #readchar: Returns the next character read from +self+;
+ *    same as #getc, but raises an exception on end-of-file.
+ *  - #readline: Returns the next line read from +self+;
+ *    same as #getline, but raises an exception of end-of-file.
+ *  - #readlines: Returns an array of all lines read read from +self+.
+ *  - #readpartial: Returns up to the given number of bytes from +self+.
  *
  *  === Writing
  *
- *  - ::binwrite:: Writes the given string to the file at the given filepath,
- *                 in binary mode.
- *  - ::write:: Writes the given string to +self+.
- *  - ::<<:: Appends the given string to +self+.
- *  - #print:: Prints last read line or given objects to +self+.
- *  - #printf:: Writes to +self+ based on the given format string and objects.
- *  - #putc:: Writes a character to +self+.
- *  - #puts:: Writes lines to +self+, making sure line ends with a newline.
- *  - #pwrite:: Writes the given string at the given offset,
- *              not updating the receiver's offset.
- *  - #write:: Writes one or more given strings to +self+.
- *  - #write_nonblock:: Writes one or more given strings to +self+ in non-blocking mode.
+ *  - ::binwrite: Writes the given string to the file at the given filepath,
+ *    in binary mode.
+ *  - ::write: Writes the given string to +self+.
+ *  - #<<: Appends the given string to +self+.
+ *  - #print: Prints last read line or given objects to +self+.
+ *  - #printf: Writes to +self+ based on the given format string and objects.
+ *  - #putc: Writes a character to +self+.
+ *  - #puts: Writes lines to +self+, making sure line ends with a newline.
+ *  - #pwrite: Writes the given string at the given offset,
+ *    not updating the receiver's offset.
+ *  - #write: Writes one or more given strings to +self+.
+ *  - #write_nonblock: Writes one or more given strings to +self+ in non-blocking mode.
  *
  *  === Positioning
  *
- *  - #lineno:: Returns the current line number in +self+.
- *  - #lineno=:: Sets the line number is +self+.
- *  - #pos (aliased as #tell):: Returns the current byte offset in +self+.
- *  - #pos=:: Sets the byte offset in +self+.
- *  - #reopen:: Reassociates +self+ with a new or existing \IO stream.
- *  - #rewind:: Positions +self+ to the beginning of input.
- *  - #seek:: Sets the offset for +self+ relative to given position.
+ *  - #lineno: Returns the current line number in +self+.
+ *  - #lineno=: Sets the line number is +self+.
+ *  - #pos (aliased as #tell): Returns the current byte offset in +self+.
+ *  - #pos=: Sets the byte offset in +self+.
+ *  - #reopen: Reassociates +self+ with a new or existing \IO stream.
+ *  - #rewind: Positions +self+ to the beginning of input.
+ *  - #seek: Sets the offset for +self+ relative to given position.
  *
  *  === Iterating
  *
- *  - ::foreach:: Yields each line of given file to the block.
- *  - #each (aliased as #each_line):: Calls the given block
- *                                    with each successive line in +self+.
- *  - #each_byte:: Calls the given block with each successive byte in +self+
- *                 as an integer.
- *  - #each_char:: Calls the given block with each successive character in +self+
- *                 as a string.
- *  - #each_codepoint:: Calls the given block with each successive codepoint in +self+
- *                      as an integer.
+ *  - ::foreach: Yields each line of given file to the block.
+ *  - #each (aliased as #each_line): Calls the given block
+ *    with each successive line in +self+.
+ *  - #each_byte: Calls the given block with each successive byte in +self+
+ *    as an integer.
+ *  - #each_char: Calls the given block with each successive character in +self+
+ *    as a string.
+ *  - #each_codepoint: Calls the given block with each successive codepoint in +self+
+ *    as an integer.
  *
  *  === Settings
  *
- *  - #autoclose=:: Sets whether +self+ auto-closes.
- *  - #binmode:: Sets +self+ to binary mode.
- *  - #close:: Closes +self+.
- *  - #close_on_exec=:: Sets the close-on-exec flag.
- *  - #close_read:: Closes +self+ for reading.
- *  - #close_write:: Closes +self+ for writing.
- *  - #set_encoding:: Sets the encoding for +self+.
- *  - #set_encoding_by_bom:: Sets the encoding for +self+, based on its
- *                           Unicode byte-order-mark.
- *  - #sync=:: Sets the sync-mode to the given value.
+ *  - #autoclose=: Sets whether +self+ auto-closes.
+ *  - #binmode: Sets +self+ to binary mode.
+ *  - #close: Closes +self+.
+ *  - #close_on_exec=: Sets the close-on-exec flag.
+ *  - #close_read: Closes +self+ for reading.
+ *  - #close_write: Closes +self+ for writing.
+ *  - #set_encoding: Sets the encoding for +self+.
+ *  - #set_encoding_by_bom: Sets the encoding for +self+, based on its
+ *    Unicode byte-order-mark.
+ *  - #sync=: Sets the sync-mode to the given value.
  *
  *  === Querying
  *
- *  - #autoclose?:: Returns whether +self+ auto-closes.
- *  - #binmode?:: Returns whether +self+ is in binary mode.
- *  - #close_on_exec?:: Returns the close-on-exec flag for +self+.
- *  - #closed?:: Returns whether +self+ is closed.
- *  - #eof? (aliased as #eof):: Returns whether +self+ is at end-of-file.
- *  - #external_encoding:: Returns the external encoding object for +self+.
- *  - #fileno (aliased as #to_i):: Returns the integer file descriptor for +self+
- *  - #internal_encoding:: Returns the internal encoding object for +self+.
- *  - #pid:: Returns the process ID of a child process associated with +self+,
- *           if +self+ was created by ::popen.
- *  - #stat:: Returns the File::Stat object containing status information for +self+.
- *  - #sync:: Returns whether +self+ is in sync-mode.
- *  - #tty (aliased as #isatty):: Returns whether +self+ is a terminal.
+ *  - #autoclose?: Returns whether +self+ auto-closes.
+ *  - #binmode?: Returns whether +self+ is in binary mode.
+ *  - #close_on_exec?: Returns the close-on-exec flag for +self+.
+ *  - #closed?: Returns whether +self+ is closed.
+ *  - #eof? (aliased as #eof): Returns whether +self+ is at end-of-file.
+ *  - #external_encoding: Returns the external encoding object for +self+.
+ *  - #fileno (aliased as #to_i): Returns the integer file descriptor for +self+
+ *  - #internal_encoding: Returns the internal encoding object for +self+.
+ *  - #pid: Returns the process ID of a child process associated with +self+,
+ *    if +self+ was created by ::popen.
+ *  - #stat: Returns the File::Stat object containing status information for +self+.
+ *  - #sync: Returns whether +self+ is in sync-mode.
+ *  - #tty? (aliased as #isatty): Returns whether +self+ is a terminal.
  *
  *  === Buffering
  *
- *  - #fdatasync:: Immediately writes all buffered data in +self+ to disk.
- *  - #flush:: Flushes any buffered data within +self+ to the underlying
- *             operating system.
- *  - #fsync:: Immediately writes all buffered data and attributes in +self+ to disk.
- *  - #ungetbyte:: Prepends buffer for +self+ with given integer byte or string.
- *  - #ungetc:: Prepends buffer for +self+ with given string.
+ *  - #fdatasync: Immediately writes all buffered data in +self+ to disk.
+ *  - #flush: Flushes any buffered data within +self+ to the underlying
+ *    operating system.
+ *  - #fsync: Immediately writes all buffered data and attributes in +self+ to disk.
+ *  - #ungetbyte: Prepends buffer for +self+ with given integer byte or string.
+ *  - #ungetc: Prepends buffer for +self+ with given string.
  *
  *  === Low-Level Access
  *
- *  - ::sysopen:: Opens the file given by its path,
- *                returning the integer file descriptor.
- *  - #advise:: Announces the intention to access data from +self+ in a specific way.
- *  - #fcntl:: Passes a low-level command to the file specified
- *             by the given file descriptor.
- *  - #ioctl:: Passes a low-level command to the device specified
- *             by the given file descriptor.
- *  - #sysread:: Returns up to the next _n_ bytes read from self using a low-level read.
- *  - #sysseek:: Sets the offset for +self+.
- *  - #syswrite:: Writes the given string to +self+ using a low-level write.
+ *  - ::sysopen: Opens the file given by its path,
+ *    returning the integer file descriptor.
+ *  - #advise: Announces the intention to access data from +self+ in a specific way.
+ *  - #fcntl: Passes a low-level command to the file specified
+ *    by the given file descriptor.
+ *  - #ioctl: Passes a low-level command to the device specified
+ *    by the given file descriptor.
+ *  - #sysread: Returns up to the next _n_ bytes read from self using a low-level read.
+ *  - #sysseek: Sets the offset for +self+.
+ *  - #syswrite: Writes the given string to +self+ using a low-level write.
  *
  *  === Other
  *
- *  - ::copy_stream:: Copies data from a source to a destination,
- *                    each of which is a filepath or an \IO-like object.
- *  - ::try_convert:: Returns a new \IO object resulting from converting
- *                    the given object.
- *  - #inspect:: Returns the string representation of +self+.
+ *  - ::copy_stream: Copies data from a source to a destination,
+ *    each of which is a filepath or an \IO-like object.
+ *  - ::try_convert: Returns a new \IO object resulting from converting
+ *    the given object.
+ *  - #inspect: Returns the string representation of +self+.
  *
  */
 

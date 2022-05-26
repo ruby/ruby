@@ -38,14 +38,6 @@ describe "IO#gets" do
       IOSpecs.lines.each { |line| line.should == @io.gets }
     end
 
-    ruby_version_is ''...'2.7' do
-      it "returns tainted strings" do
-        while line = @io.gets
-          line.should.tainted?
-        end
-      end
-    end
-
     it "updates lineno with each invocation" do
       while @io.gets
         @io.lineno.should == @count += 1
@@ -62,14 +54,6 @@ describe "IO#gets" do
   describe "with nil separator" do
     it "returns the entire contents" do
       @io.gets(nil).should == IOSpecs.lines.join("")
-    end
-
-    ruby_version_is ''...'2.7' do
-      it "returns tainted strings" do
-        while line = @io.gets(nil)
-          line.should.tainted?
-        end
-      end
     end
 
     it "updates lineno with each invocation" do
@@ -100,14 +84,6 @@ describe "IO#gets" do
       @io.gets.should == IOSpecs.lines[4]
     end
 
-    ruby_version_is ''...'2.7' do
-      it "returns tainted strings" do
-        while line = @io.gets("")
-          line.should.tainted?
-        end
-      end
-    end
-
     it "updates lineno with each invocation" do
       while @io.gets("")
         @io.lineno.should == @count += 1
@@ -124,14 +100,6 @@ describe "IO#gets" do
   describe "with an arbitrary String separator" do
     it "reads up to and including the separator" do
       @io.gets("la linea").should == "Voici la ligne une.\nQui \303\250 la linea"
-    end
-
-    ruby_version_is ''...'2.7' do
-      it "returns tainted strings" do
-        while line = @io.gets("la")
-          line.should.tainted?
-        end
-      end
     end
 
     it "updates lineno with each invocation" do

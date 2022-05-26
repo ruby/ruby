@@ -14,7 +14,8 @@
 MJIT_SYMBOL_EXPORT_BEGIN
 
 RUBY_EXTERN VALUE ruby_vm_const_missing_count;
-RUBY_EXTERN rb_serial_t ruby_vm_global_constant_state;
+RUBY_EXTERN rb_serial_t ruby_vm_constant_cache_invalidations;
+RUBY_EXTERN rb_serial_t ruby_vm_constant_cache_misses;
 RUBY_EXTERN rb_serial_t ruby_vm_class_serial;
 RUBY_EXTERN rb_serial_t ruby_vm_global_cvar_state;
 
@@ -183,8 +184,6 @@ CC_SET_FASTPATH(const struct rb_callcache *cc, vm_call_handler func, bool enable
 
 #define PREV_CLASS_SERIAL() (ruby_vm_class_serial)
 #define NEXT_CLASS_SERIAL() (++ruby_vm_class_serial)
-#define GET_GLOBAL_CONSTANT_STATE() (ruby_vm_global_constant_state)
-#define INC_GLOBAL_CONSTANT_STATE() (++ruby_vm_global_constant_state)
 #define GET_GLOBAL_CVAR_STATE() (ruby_vm_global_cvar_state)
 #define INC_GLOBAL_CVAR_STATE() (++ruby_vm_global_cvar_state)
 

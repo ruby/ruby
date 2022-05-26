@@ -186,7 +186,7 @@ describe "The yield call" do
 end
 
 describe "Using yield in a singleton class literal" do
-  ruby_version_is "2.7"..."3.0" do
+  ruby_version_is ""..."3.0" do
     it 'emits a deprecation warning' do
       code = <<~RUBY
         def m

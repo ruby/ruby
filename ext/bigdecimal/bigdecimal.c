@@ -3281,7 +3281,7 @@ rb_float_convert_to_BigDecimal(VALUE val, size_t digs, int raise_exception)
 
     VALUE inum;
     size_t RB_UNUSED_VAR(prec) = 0;
-    size_t exp = 0;
+    SIGNED_VALUE exp = 0;
     if (decpt > 0) {
         if (decpt < len10) {
             /*

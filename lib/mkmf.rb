@@ -7,9 +7,7 @@ require 'rbconfig'
 require 'fileutils'
 require 'shellwords'
 
-class String
-  # :stopdoc:
-
+class String # :nodoc:
   # Wraps a string in escaped quotes if it contains whitespace.
   def quote
     /\s/ =~ self ? "\"#{self}\"" : "#{self}"
@@ -32,19 +30,13 @@ class String
   def sans_arguments
     self[/\A[^()]+/]
   end
-
-  # :startdoc:
 end
 
-class Array
-  # :stopdoc:
-
+class Array # :nodoc:
   # Wraps all strings in escaped quotes if they contain whitespace.
   def quote
     map {|s| s.quote}
   end
-
-  # :startdoc:
 end
 
 ##
@@ -75,7 +67,7 @@ module MakeMakefile
   C_EXT = %w[c m]
 
   ##
-  # Extensions for files complied with a C++ compiler
+  # Extensions for files compiled with a C++ compiler
 
   CXX_EXT = %w[cc mm cxx cpp]
   unless File.exist?(File.join(*File.split(__FILE__).tap {|d, b| b.swapcase}))
@@ -688,16 +680,6 @@ MSG
     try_compile(MAIN_DOES_NOTHING, flags, {:werror => true}.update(opts))
   end
 
-  def append_cflags(flags, *opts)
-    Array(flags).each do |flag|
-      if checking_for("whether #{flag} is accepted as CFLAGS") {
-           try_cflags(flag, *opts)
-         }
-        $CFLAGS << " " << flag
-      end
-    end
-  end
-
   def with_ldflags(flags)
     ldflags = $LDFLAGS
     $LDFLAGS = flags.dup
@@ -1032,6 +1014,21 @@ SRC
 
   # :startdoc:
 
+  # Check whether each given C compiler flag is acceptable and append it
+  # to <tt>$CFLAGS</tt> if so.
+  #
+  # [+flags+] a C compiler flag as a +String+ or an +Array+ of them
+  #
+  def append_cflags(flags, *opts)
+    Array(flags).each do |flag|
+      if checking_for("whether #{flag} is accepted as CFLAGS") {
+           try_cflags(flag, *opts)
+         }
+        $CFLAGS << " " << flag
+      end
+    end
+  end
+
   # Returns whether or not +macro+ is defined either in the common header
   # files or within any +headers+ you provide.
   #
@@ -1359,8 +1356,10 @@ SRC
 
   # :stopdoc:
   STRING_OR_FAILED_FORMAT = "%s"
-  def STRING_OR_FAILED_FORMAT.%(x) # :nodoc:
-    x ? super : "failed"
+  class << STRING_OR_FAILED_FORMAT # :nodoc:
+    def %(x)
+      x ? super : "failed"
+    end
   end
 
   def typedef_expr(type, headers)
@@ -1965,13 +1964,14 @@ SRC
 
   def configuration(srcdir)
     mk = []
+    CONFIG['MKMF_VERBOSE'] ||= "0"
     vpath = $VPATH.dup
     CONFIG["hdrdir"] ||= $hdrdir
     mk << %{
 SHELL = /bin/sh
 
 # V=0 quiet, V=1 verbose.  other values don't work.
-V = 0
+V = #{CONFIG['MKMF_VERBOSE']}
 V0 = $(V:0=)
 Q1 = $(V:1=)
 Q = $(Q1:0=@)
@@ -2110,7 +2110,7 @@ preload = #{defined?($preload) && $preload ? $preload.join(' ') : ''}
   end
   # :startdoc:
 
-  # creates a stub Makefile.
+  # Creates a stub Makefile.
   #
   def dummy_makefile(srcdir)
     configuration(srcdir) << <<RULES << CLEANINGS
@@ -2281,7 +2281,7 @@ RULES
     RbConfig.expand(srcdir = srcprefix.dup)
 
     ext = ".#{$OBJEXT}"
-    orig_srcs = Dir[File.join(srcdir, "*.{#{SRC_EXT.join(%q{,})}}")].sort
+    orig_srcs = Dir[File.join(srcdir, "*.{#{SRC_EXT.join(%q{,})}}")]
     if not $objs
       srcs = $srcs || orig_srcs
       $objs = []
@@ -2291,7 +2291,7 @@ RULES
         h
       }
       unless objs.delete_if {|b, f| f.size == 1}.empty?
-        dups = objs.sort.map {|b, f|
+        dups = objs.map {|b, f|
           "#{b[/.*\./]}{#{f.collect {|n| n[/([^.]+)\z/]}.join(',')}}"
         }
         abort "source files duplication - #{dups.join(", ")}"
@@ -2572,7 +2572,7 @@ site-install-rb: install-rb
 
     if $warnflags = CONFIG['warnflags'] and CONFIG['GCC'] == 'yes'
       # turn warnings into errors only for bundled extensions.
-      config['warnflags'] = $warnflags.gsub(/(\A|\s)-Werror[-=]/, '\1-W')
+      config['warnflags'] = $warnflags.gsub(/(?:\A|\s)-W\Kerror[-=](?!implicit-function-declaration)/, '')
       if /icc\z/ =~ config['CC']
         config['warnflags'].gsub!(/(\A|\s)-W(?:division-by-zero|deprecated-declarations)/, '\1')
       end

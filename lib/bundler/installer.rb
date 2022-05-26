@@ -13,7 +13,7 @@ module Bundler
       Installer.ambiguous_gems = []
     end
 
-    attr_reader :post_install_messages
+    attr_reader :post_install_messages, :definition
 
     # Begins the installation process for Bundler.
     # For more information see the #run method on this class.
@@ -119,7 +119,7 @@ module Bundler
       relative_gemfile_path = relative_gemfile_path
       ruby_command = Thor::Util.ruby_command
       ruby_command = ruby_command
-      template_path = File.expand_path("../templates/Executable", __FILE__)
+      template_path = File.expand_path("templates/Executable", __dir__)
       if spec.name == "bundler"
         template_path += ".bundler"
         spec.executables = %(bundle)
@@ -172,7 +172,7 @@ module Bundler
       end
       standalone_path = Bundler.root.join(path).relative_path_from(bin_path)
       standalone_path = standalone_path
-      template = File.read(File.expand_path("../templates/Executable.standalone", __FILE__))
+      template = File.read(File.expand_path("templates/Executable.standalone", __dir__))
       ruby_command = Thor::Util.ruby_command
       ruby_command = ruby_command
 

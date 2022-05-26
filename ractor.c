@@ -202,7 +202,7 @@ ractor_mark(void *ptr)
 
     if (r->threads.cnt > 0) {
         rb_thread_t *th = 0;
-        list_for_each(&r->threads.set, th, lt_node) {
+        ccan_list_for_each(&r->threads.set, th, lt_node) {
             VM_ASSERT(th != NULL);
             rb_gc_mark(th->self);
         }
@@ -886,6 +886,8 @@ ractor_receive_if(rb_execution_context_t *ec, VALUE crv, VALUE b)
             if (result != Qundef) return result;
             index++;
         }
+
+        RUBY_VM_CHECK_INTS(ec);
     }
 }
 
@@ -1412,7 +1414,7 @@ vm_insert_ractor0(rb_vm_t *vm, rb_ractor_t *r, bool single_ractor_mode)
     RUBY_DEBUG_LOG("r:%u ractor.cnt:%u++", r->pub.id, vm->ractor.cnt);
     VM_ASSERT(single_ractor_mode || RB_VM_LOCKED_P());
 
-    list_add_tail(&vm->ractor.set, &r->vmlr_node);
+    ccan_list_add_tail(&vm->ractor.set, &r->vmlr_node);
     vm->ractor.cnt++;
 }
 
@@ -1481,7 +1483,7 @@ vm_remove_ractor(rb_vm_t *vm, rb_ractor_t *cr)
                        vm->ractor.cnt,  vm->ractor.sync.terminate_waiting);
 
         VM_ASSERT(vm->ractor.cnt > 0);
-        list_del(&cr->vmlr_node);
+        ccan_list_del(&cr->vmlr_node);
 
         if (vm->ractor.cnt <= 2 && vm->ractor.sync.terminate_waiting) {
             rb_native_cond_signal(&vm->ractor.sync.terminate_cond);
@@ -1543,12 +1545,12 @@ rb_ractor_atfork(rb_vm_t *vm, rb_thread_t *th)
 }
 #endif
 
-void rb_gvl_init(rb_global_vm_lock_t *gvl);
+void rb_thread_sched_init(struct rb_thread_sched *);
 
 void
 rb_ractor_living_threads_init(rb_ractor_t *r)
 {
-    list_head_init(&r->threads.set);
+    ccan_list_head_init(&r->threads.set);
     r->threads.cnt = 0;
     r->threads.blocking_cnt = 0;
 }
@@ -1562,7 +1564,7 @@ ractor_init(rb_ractor_t *r, VALUE name, VALUE loc)
     rb_native_cond_initialize(&r->barrier_wait_cond);
 
     // thread management
-    rb_gvl_init(&r->threads.gvl);
+    rb_thread_sched_init(&r->threads.sched);
     rb_ractor_living_threads_init(r);
 
     // naming
@@ -1715,12 +1717,6 @@ rb_obj_is_main_ractor(VALUE gv)
     return r == GET_VM()->ractor.main_ractor;
 }
 
-rb_global_vm_lock_t *
-rb_ractor_gvl(rb_ractor_t *r)
-{
-    return &r->threads.gvl;
-}
-
 int
 rb_ractor_living_thread_num(const rb_ractor_t *r)
 {
@@ -1739,7 +1735,7 @@ rb_ractor_thread_list(rb_ractor_t *r)
         ts = ALLOCA_N(VALUE, r->threads.cnt);
         ts_cnt = 0;
 
-        list_for_each(&r->threads.set, th, lt_node) {
+        ccan_list_for_each(&r->threads.set, th, lt_node) {
             switch (th->status) {
               case THREAD_RUNNABLE:
               case THREAD_STOPPED:
@@ -1768,7 +1764,7 @@ rb_ractor_living_threads_insert(rb_ractor_t *r, rb_thread_t *th)
     RACTOR_LOCK(r);
     {
         RUBY_DEBUG_LOG("r(%d)->threads.cnt:%d++", r->pub.id, r->threads.cnt);
-        list_add_tail(&r->threads.set, &th->lt_node);
+        ccan_list_add_tail(&r->threads.set, &th->lt_node);
         r->threads.cnt++;
     }
     RACTOR_UNLOCK(r);
@@ -1851,7 +1847,7 @@ rb_ractor_living_threads_remove(rb_ractor_t *cr, rb_thread_t *th)
     else {
         RACTOR_LOCK(cr);
         {
-            list_del(&th->lt_node);
+            ccan_list_del(&th->lt_node);
             cr->threads.cnt--;
         }
         RACTOR_UNLOCK(cr);
@@ -1938,7 +1934,7 @@ ractor_terminal_interrupt_all(rb_vm_t *vm)
     if (vm->ractor.cnt > 1) {
         // send terminate notification to all ractors
         rb_ractor_t *r = 0;
-        list_for_each(&vm->ractor.set, r, vmlr_node) {
+        ccan_list_for_each(&vm->ractor.set, r, vmlr_node) {
             if (r != vm->ractor.main_ractor) {
                 rb_ractor_terminate_interrupt_main_thread(r);
             }
@@ -2117,7 +2113,7 @@ rb_ractor_dump(void)
     rb_vm_t *vm = GET_VM();
     rb_ractor_t *r = 0;
 
-    list_for_each(&vm->ractor.set, r, vmlr_node) {
+    ccan_list_for_each(&vm->ractor.set, r, vmlr_node) {
         if (r != vm->ractor.main_ractor) {
             fprintf(stderr, "r:%u (%s)\n", r->pub.id, ractor_status_str(r->status_));
         }
@@ -2529,6 +2525,14 @@ rb_ractor_ensure_shareable(VALUE obj, VALUE name)
     return obj;
 }
 
+void
+rb_ractor_ensure_main_ractor(const char *msg)
+{
+    if (!rb_ractor_main_p()) {
+        rb_raise(rb_eRactorIsolationError, "%s", msg);
+    }
+}
+
 static enum obj_traverse_iterator_result
 shareable_p_enter(VALUE obj)
 {
@@ -2696,7 +2700,7 @@ obj_refer_only_shareables_p(VALUE obj)
 static int
 obj_traverse_replace_i(VALUE obj, struct obj_traverse_replace_data *data)
 {
-    VALUE replacement;
+    st_data_t replacement;
 
     if (RB_SPECIAL_CONST_P(obj)) {
         data->replacement = obj;
@@ -2709,14 +2713,14 @@ obj_traverse_replace_i(VALUE obj, struct obj_traverse_replace_data *data)
       case traverse_stop: return 1; // stop search
     }
 
-    replacement = data->replacement;
+    replacement = (st_data_t)data->replacement;
 
-    if (UNLIKELY(st_lookup(obj_traverse_replace_rec(data), (st_data_t)obj, (st_data_t *)&replacement))) {
-        data->replacement = replacement;
+    if (UNLIKELY(st_lookup(obj_traverse_replace_rec(data), (st_data_t)obj, &replacement))) {
+        data->replacement = (VALUE)replacement;
         return 0;
     }
     else {
-        st_insert(obj_traverse_replace_rec(data), (st_data_t)obj, (st_data_t)replacement);
+        st_insert(obj_traverse_replace_rec(data), (st_data_t)obj, replacement);
     }
 
     if (!data->move) {
@@ -2862,7 +2866,7 @@ obj_traverse_replace_i(VALUE obj, struct obj_traverse_replace_data *data)
         rb_bug("unreachable");
     }
 
-    data->replacement = replacement;
+    data->replacement = (VALUE)replacement;
 
     if (data->leave_func(obj, data) == traverse_stop) {
         return 1;
@@ -3042,9 +3046,9 @@ ractor_local_storage_mark(rb_ractor_t *r)
 
         for (int i=0; i<freed_ractor_local_keys.cnt; i++) {
             rb_ractor_local_key_t key = freed_ractor_local_keys.keys[i];
-            st_data_t val;
-            if (st_delete(r->local_storage, (st_data_t *)&key, &val) &&
-                key->type->free) {
+            st_data_t val, k = (st_data_t)key;
+            if (st_delete(r->local_storage, &k, &val) &&
+                (key = (rb_ractor_local_key_t)k)->type->free) {
                 (*key->type->free)((void *)val);
             }
         }
@@ -3169,9 +3173,9 @@ ractor_local_set(rb_ractor_local_key_t key, void *ptr)
 VALUE
 rb_ractor_local_storage_value(rb_ractor_local_key_t key)
 {
-    VALUE val;
-    if (ractor_local_ref(key, (void **)&val)) {
-        return val;
+    void *val;
+    if (ractor_local_ref(key, &val)) {
+        return (VALUE)val;
     }
     else {
         return Qnil;

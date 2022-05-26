@@ -1,33 +1,34 @@
 # frozen_string_literal: false
-# Net::HTTP exception class.
-# You cannot use Net::HTTPExceptions directly; instead, you must use
-# its subclasses.
-module Net::HTTPExceptions
-  def initialize(msg, res)   #:nodoc:
-    super msg
-    @response = res
-  end
-  attr_reader :response
-  alias data response    #:nodoc: obsolete
-end
-class Net::HTTPError < Net::ProtocolError
-  include Net::HTTPExceptions
-end
-class Net::HTTPRetriableError < Net::ProtoRetriableError
-  include Net::HTTPExceptions
-end
-class Net::HTTPServerException < Net::ProtoServerError
-  # We cannot use the name "HTTPServerError", it is the name of the response.
-  include Net::HTTPExceptions
-end
-
-# for compatibility
-Net::HTTPClientException = Net::HTTPServerException
-
-class Net::HTTPFatalError < Net::ProtoFatalError
-  include Net::HTTPExceptions
-end
-
 module Net
+  # Net::HTTP exception class.
+  # You cannot use Net::HTTPExceptions directly; instead, you must use
+  # its subclasses.
+  module HTTPExceptions
+    def initialize(msg, res)   #:nodoc:
+      super msg
+      @response = res
+    end
+    attr_reader :response
+    alias data response    #:nodoc: obsolete
+  end
+
+  class HTTPError < ProtocolError
+    include HTTPExceptions
+  end
+
+  class HTTPRetriableError < ProtoRetriableError
+    include HTTPExceptions
+  end
+
+  class HTTPClientException < ProtoServerError
+    include HTTPExceptions
+  end
+
+  class HTTPFatalError < ProtoFatalError
+    include HTTPExceptions
+  end
+
+  # We cannot use the name "HTTPServerError", it is the name of the response.
+  HTTPServerException = HTTPClientException # :nodoc:
   deprecate_constant(:HTTPServerException)
 end

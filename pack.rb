@@ -1,5 +1,3 @@
-# for pack.c
-
 class Array
   #  call-seq:
   #     arr.pack( aTemplateString ) -> aBinaryString

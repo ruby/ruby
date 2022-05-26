@@ -50,7 +50,7 @@
 #
 # === New to \Gem::OptionParser?
 #
-# See the {Tutorial}[./doc/optparse/tutorial_rdoc.html].
+# See the {Tutorial}[optparse/tutorial.rdoc].
 #
 # === Introduction
 #
@@ -420,7 +420,7 @@
 # === Further documentation
 #
 # The above examples, along with the accompanying
-# {Tutorial}[./doc/optparse/tutorial_rdoc.html],
+# {Tutorial}[optparse/tutorial.rdoc],
 # should be enough to learn how to use this class.
 # If you have any questions, file a ticket at http://bugs.ruby-lang.org.
 #
@@ -674,6 +674,29 @@ class Gem::OptionParser
       end
     end
 
+    def pretty_print_contents(q) # :nodoc:
+      if @block
+        q.text ":" + @block.source_location.join(":") + ":"
+        first = false
+      else
+        first = true
+      end
+      [@short, @long].each do |list|
+        list.each do |opt|
+          if first
+            q.text ":"
+            first = false
+          end
+          q.breakable
+          q.text opt
+        end
+      end
+    end
+
+    def pretty_print(q)         # :nodoc:
+      q.object_group(self) {pretty_print_contents(q)}
+    end
+
     #
     # Switch that takes no arguments.
     #
@@ -693,6 +716,10 @@ class Gem::OptionParser
       def self.pattern
         Object
       end
+
+      def pretty_head           # :nodoc:
+        "NoArgument"
+      end
     end
 
     #
@@ -710,6 +737,10 @@ class Gem::OptionParser
         end
         conv_arg(*parse_arg(arg, &method(:raise)))
       end
+
+      def pretty_head           # :nodoc:
+        "Required"
+      end
     end
 
     #
@@ -726,6 +757,10 @@ class Gem::OptionParser
         else
           conv_arg(arg)
         end
+      end
+
+      def pretty_head           # :nodoc:
+        "Optional"
       end
     end
 
@@ -749,6 +784,10 @@ class Gem::OptionParser
           val[0] = nil
         end
         val
+      end
+
+      def pretty_head           # :nodoc:
+        "Placed"
       end
     end
   end
@@ -779,6 +818,17 @@ class Gem::OptionParser
       @short = OptionMap.new
       @long = OptionMap.new
       @list = []
+    end
+
+    def pretty_print(q)         # :nodoc:
+      q.group(1, "(", ")") do
+        @list.each do |sw|
+          next unless Switch === sw
+          q.group(1, "(" + sw.pretty_head, ")") do
+            sw.pretty_print_contents(q)
+          end
+        end
+      end
     end
 
     #
@@ -1292,6 +1342,29 @@ XXX
   #
   def help; summarize("#{banner}".sub(/\n?\z/, "\n")) end
   alias to_s help
+
+  def pretty_print(q)           # :nodoc:
+    q.object_group(self) do
+      first = true
+      if @stack.size > 2
+        @stack.each_with_index do |s, i|
+          next if i < 2
+          next if s.list.empty?
+          if first
+            first = false
+            q.text ":"
+          end
+          q.breakable
+          s.pretty_print(q)
+        end
+      end
+    end
+  end
+
+  def inspect                   # :nodoc:
+    require 'pp'
+    pretty_print_inspect
+  end
 
   #
   # Returns option summary list.

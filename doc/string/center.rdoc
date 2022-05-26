@@ -1,0 +1,16 @@
+Returns a centered copy of +self+.
+
+If integer argument +size+ is greater than the size (in characters) of +self+,
+returns a new string of length +size+ that is a copy of +self+,
+centered and padded on both ends with +pad_string+:
+
+  'hello'.center(10)       # => "  hello   "
+  '  hello'.center(10)     # => "   hello  "
+  'hello'.center(10, 'ab') # => "abhelloaba"
+  'тест'.center(10)        # => "   тест   "
+  'こんにちは'.center(10)    # => "  こんにちは   "
+
+If +size+ is not greater than the size of +self+, returns a copy of +self+:
+
+  'hello'.center(5)  # => "hello"
+  'hello'.center(1)  # => "hello"

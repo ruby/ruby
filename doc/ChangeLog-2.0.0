@@ -16451,7 +16451,7 @@ Mon Mar  5 17:11:44 2012  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 	  Exception#initialize doesn't use visible instance variable for
 	  the exception message, so call the method with the message.
 	  patched by Jingwen Owen Ou <jingweno AT gmail.com>.
-	  http://github.com/ruby/ruby/pull/41
+	  https://github.com/ruby/ruby/pull/41
 
 Mon Mar  5 16:50:22 2012  NAKAMURA Usaku  <usa@ruby-lang.org>
 
@@ -16858,13 +16858,13 @@ Fri Feb 24 13:54:33 2012  Aaron Patterson <aaron@tenderlovemaking.com>
 Fri Feb 24 12:07:34 2012  Ayumu AIZAWA  <ayumu.aizawa@gmail.com>
 
 	* lib/net/http.rb: Fix documentation. Patched from Florian Mhun
-	  via http://github.com/ruby/ruby/pull/96
+	  via https://github.com/ruby/ruby/pull/96
 
 Fri Feb 24 11:48:07 2012  Ayumu AIZAWA  <ayumu.aizawa@gmail.com>
 
 	* string.c (rb_str_prepend): Fix documentation for String#prepend.
-	  Patched from Franck Verrot via http://github.com/ruby/ruby/pull/98
-	  and Andrew Horsman via http://github.com/ruby/ruby/pull/55
+	  Patched from Franck Verrot via https://github.com/ruby/ruby/pull/98
+	  and Andrew Horsman via https://github.com/ruby/ruby/pull/55
 
 Fri Feb 24 10:08:33 2012  Eric Hodel  <drbrain@segment7.net>
 

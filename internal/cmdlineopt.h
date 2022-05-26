@@ -26,9 +26,6 @@ typedef struct ruby_cmdline_options {
 #if USE_MJIT
     struct mjit_options mjit;
 #endif
-#if YJIT_SUPPORTED_P
-    struct rb_yjit_options yjit;
-#endif
 
     int sflag, xflag;
     unsigned int warning: 1;

@@ -2522,12 +2522,12 @@ fole_initialize(int argc, VALUE *argv, VALUE self)
             OLE_RELEASE(pIClassFactory2);
         }
     }
-    pDispatch = p;
     if(FAILED(hr)) {
         ole_raise(hr, eWIN32OLERuntimeError,
                   "failed to create WIN32OLE object from `%s'",
                   StringValuePtr(svr_name));
     }
+    pDispatch = p;
 
     ole_set_member(self, pDispatch);
     return self;

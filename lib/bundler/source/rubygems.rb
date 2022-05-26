@@ -135,9 +135,9 @@ module Bundler
         end
       end
 
-      def install(spec, opts = {})
-        force = opts[:force]
-        ensure_builtin_gems_cached = opts[:ensure_builtin_gems_cached]
+      def install(spec, options = {})
+        force = options[:force]
+        ensure_builtin_gems_cached = options[:ensure_builtin_gems_cached]
 
         if ensure_builtin_gems_cached && spec.default_gem?
           if !cached_path(spec)
@@ -162,7 +162,7 @@ module Bundler
           uris.uniq!
           Installer.ambiguous_gems << [spec.name, *uris] if uris.length > 1
 
-          path = fetch_gem(spec)
+          path = fetch_gem(spec, options[:previous_spec])
           begin
             s = Bundler.rubygems.spec_from_gem(path, Bundler.settings["trust-policy"])
             spec.__swap__(s)
@@ -173,7 +173,7 @@ module Bundler
         end
 
         unless Bundler.settings[:no_install]
-          message = "Installing #{version_message(spec)}"
+          message = "Installing #{version_message(spec, options[:previous_spec])}"
           message += " with native extensions" if spec.extensions.any?
           Bundler.ui.confirm message
 
@@ -198,7 +198,7 @@ module Bundler
             :ignore_dependencies => true,
             :wrappers            => true,
             :env_shebang         => true,
-            :build_args          => opts[:build_args],
+            :build_args          => options[:build_args],
             :bundler_expected_checksum => spec.respond_to?(:checksum) && spec.checksum,
             :bundler_extension_cache_path => extension_cache_path(spec)
           ).install
@@ -458,7 +458,7 @@ module Bundler
         end
       end
 
-      def fetch_gem(spec)
+      def fetch_gem(spec, previous_spec = nil)
         return false unless spec.remote
 
         spec.fetch_platform
@@ -476,7 +476,7 @@ module Bundler
         SharedHelpers.filesystem_access(download_cache_path) do |p|
           FileUtils.mkdir_p(p)
         end
-        download_gem(spec, download_cache_path)
+        download_gem(spec, download_cache_path, previous_spec)
 
         if requires_sudo?
           SharedHelpers.filesystem_access(cache_path) do |p|
@@ -521,9 +521,12 @@ module Bundler
       # @param  [String] download_cache_path
       #         the local directory the .gem will end up in.
       #
-      def download_gem(spec, download_cache_path)
+      # @param  [Specification] previous_spec
+      #         the spec previously locked
+      #
+      def download_gem(spec, download_cache_path, previous_spec = nil)
         uri = spec.remote.uri
-        Bundler.ui.confirm("Fetching #{version_message(spec)}")
+        Bundler.ui.confirm("Fetching #{version_message(spec, previous_spec)}")
         Bundler.rubygems.download_gem(spec, uri, download_cache_path)
       end
 

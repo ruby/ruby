@@ -42,20 +42,6 @@ describe "Module#extend_object" do
     ScratchPad.recorded.should == :extended
   end
 
-  ruby_version_is ''...'2.7' do
-    it "does not copy own tainted status to the given object" do
-      other = Object.new
-      Module.new.taint.send :extend_object, other
-      other.tainted?.should be_false
-    end
-
-    it "does not copy own untrusted status to the given object" do
-      other = Object.new
-      Module.new.untrust.send :extend_object, other
-      other.untrusted?.should be_false
-    end
-  end
-
   describe "when given a frozen object" do
     before :each do
       @receiver = Module.new

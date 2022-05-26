@@ -1065,13 +1065,13 @@ rai_unixsocket_len(const rb_addrinfo_t *rai)
  * Socket.sockaddr_in or Socket.unpack_sockaddr_un.
  *
  * sockaddr examples:
- * - ["AF_INET", 46102, "localhost.localdomain", "127.0.0.1"]
- * - ["AF_INET6", 42304, "ip6-localhost", "::1"]
- * - ["AF_UNIX", "/tmp/sock"]
- * - Socket.sockaddr_in("smtp", "2001:DB8::1")
- * - Socket.sockaddr_in(80, "172.18.22.42")
- * - Socket.sockaddr_in(80, "www.ruby-lang.org")
- * - Socket.sockaddr_un("/tmp/sock")
+ * - <code>["AF_INET", 46102, "localhost.localdomain", "127.0.0.1"]</code>
+ * - <code>["AF_INET6", 42304, "ip6-localhost", "::1"]</code>
+ * - <code>["AF_UNIX", "/tmp/sock"]</code>
+ * - <code>Socket.sockaddr_in("smtp", "2001:DB8::1")</code>
+ * - <code>Socket.sockaddr_in(80, "172.18.22.42")</code>
+ * - <code>Socket.sockaddr_in(80, "www.ruby-lang.org")</code>
+ * - <code>Socket.sockaddr_un("/tmp/sock")</code>
  *
  * In an AF_INET/AF_INET6 sockaddr array, the 4th element,
  * numeric IP address, is used to construct socket address in the Addrinfo instance.

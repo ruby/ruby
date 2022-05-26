@@ -152,12 +152,14 @@ class TestNetHTTPS < Test::Unit::TestCase
     end
 
     http.start
-    assert_equal false, http.instance_variable_get(:@socket).io.session_reused?
+    session_reused = http.instance_variable_get(:@socket).io.session_reused?
+    assert_false session_reused unless session_reused.nil? # can not detect re-use under JRuby
     http.get("/")
     http.finish
 
     http.start
-    assert_equal true, http.instance_variable_get(:@socket).io.session_reused?
+    session_reused = http.instance_variable_get(:@socket).io.session_reused?
+    assert_true session_reused unless session_reused.nil? # can not detect re-use under JRuby
     assert_equal $test_net_http_data, http.get("/").body
     http.finish
   end
@@ -301,7 +303,7 @@ class TestNetHTTPS < Test::Unit::TestCase
     ex = assert_raise(OpenSSL::SSL::SSLError){
       http.request_get("/") {|res| }
     }
-    re_msg = /\ASSL_connect returned=1 errno=0 |SSL_CTX_set_max_proto_version/
+    re_msg = /\ASSL_connect returned=1 errno=0 |SSL_CTX_set_max_proto_version|No appropriate protocol/
     assert_match(re_msg, ex.message)
   end
 

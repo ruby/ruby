@@ -638,6 +638,17 @@ void Init_File(void) {
     assert_equal 'LOCK_SH',          constant.name
     assert_equal 'INT2FIX(LOCK_SH)', constant.value
     assert_equal 'Shared lock',      constant.comment.text
+
+    @parser = util_parser <<-EOF
+void Init_File(void) {
+  rb_cFile = rb_define_class("File", rb_cIO);
+  rb_mFConst = rb_define_module_under(rb_cFile, "Constants");
+}
+    EOF
+    @parser.do_classes_and_modules
+    @parser.do_constants
+
+    assert_equal 'File::Constants',  klass.full_name
   end
 
   def test_do_includes

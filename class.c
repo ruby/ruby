@@ -567,6 +567,8 @@ rb_mod_init_copy(VALUE clone, VALUE orig)
         else {
             rb_bug("no origin for class that has origin");
         }
+
+        rb_class_update_superclasses(clone);
     }
 
     return clone;
@@ -1109,24 +1111,32 @@ rb_include_module(VALUE klass, VALUE module)
     if (RB_TYPE_P(klass, T_MODULE)) {
         rb_subclass_entry_t *iclass = RCLASS_SUBCLASSES(klass);
         // skip the placeholder subclass entry at the head of the list
-        if (iclass && !iclass->klass) {
+        if (iclass) {
+            RUBY_ASSERT(!iclass->klass);
             iclass = iclass->next;
         }
 
         int do_include = 1;
         while (iclass) {
             VALUE check_class = iclass->klass;
-            while (check_class) {
-                if (RB_TYPE_P(check_class, T_ICLASS) &&
-                        (METACLASS_OF(check_class) == module)) {
-                    do_include = 0;
+            /* During lazy sweeping, iclass->klass could be a dead object that
+             * has not yet been swept. */
+            if (!rb_objspace_garbage_object_p(check_class)) {
+                while (check_class) {
+                    RUBY_ASSERT(!rb_objspace_garbage_object_p(check_class));
+
+                    if (RB_TYPE_P(check_class, T_ICLASS) &&
+                            (METACLASS_OF(check_class) == module)) {
+                        do_include = 0;
+                    }
+                    check_class = RCLASS_SUPER(check_class);
                 }
-                check_class = RCLASS_SUPER(check_class);
+
+                if (do_include) {
+                    include_modules_at(iclass->klass, RCLASS_ORIGIN(iclass->klass), module, TRUE);
+                }
             }
 
-            if (do_include) {
-                include_modules_at(iclass->klass, RCLASS_ORIGIN(iclass->klass), module, TRUE);
-            }
             iclass = iclass->next;
         }
     }
@@ -1161,11 +1171,20 @@ module_in_super_chain(const VALUE klass, VALUE module)
     return false;
 }
 
+// For each ID key in the class constant table, we're going to clear the VM's
+// inline constant caches associated with it.
+static enum rb_id_table_iterator_result
+clear_constant_cache_i(ID id, VALUE value, void *data)
+{
+    rb_clear_constant_cache_for_id(id);
+    return ID_TABLE_CONTINUE;
+}
+
 static int
 do_include_modules_at(const VALUE klass, VALUE c, VALUE module, int search_super, bool check_cyclic)
 {
     VALUE p, iclass, origin_stack = 0;
-    int method_changed = 0, constant_changed = 0, add_subclass;
+    int method_changed = 0, add_subclass;
     long origin_len;
     VALUE klass_origin = RCLASS_ORIGIN(klass);
     VALUE original_klass = klass;
@@ -1249,21 +1268,21 @@ do_include_modules_at(const VALUE klass, VALUE c, VALUE module, int search_super
             rb_module_add_to_subclasses_list(m, iclass);
 	}
 
-	if (FL_TEST(klass, RMODULE_IS_REFINEMENT)) {
+	if (BUILTIN_TYPE(klass) == T_MODULE && FL_TEST(klass, RMODULE_IS_REFINEMENT)) {
 	    VALUE refined_class =
 		rb_refinement_module_get_refined_class(klass);
 
             rb_id_table_foreach(RCLASS_M_TBL(module), add_refined_method_entry_i, (void *)refined_class);
+            RUBY_ASSERT(BUILTIN_TYPE(c) == T_MODULE);
 	    FL_SET(c, RMODULE_INCLUDED_INTO_REFINEMENT);
 	}
 
         tbl = RCLASS_CONST_TBL(module);
-	if (tbl && rb_id_table_size(tbl)) constant_changed = 1;
+	if (tbl && rb_id_table_size(tbl))
+	    rb_id_table_foreach(tbl, clear_constant_cache_i, NULL);
       skip:
 	module = RCLASS_SUPER(module);
     }
-
-    if (constant_changed) rb_clear_constant_cache();
 
     return method_changed;
 }
@@ -1353,7 +1372,7 @@ rb_prepend_module(VALUE klass, VALUE module)
     if (RB_TYPE_P(klass, T_MODULE)) {
         rb_subclass_entry_t *iclass = RCLASS_SUBCLASSES(klass);
         // skip the placeholder subclass entry at the head of the list if it exists
-        if (iclass && iclass->next) {
+        if (iclass) {
             RUBY_ASSERT(!iclass->klass);
             iclass = iclass->next;
         }
@@ -1362,17 +1381,23 @@ rb_prepend_module(VALUE klass, VALUE module)
         struct rb_id_table *klass_m_tbl = RCLASS_M_TBL(klass);
         struct rb_id_table *klass_origin_m_tbl = RCLASS_M_TBL(klass_origin);
         while (iclass) {
-            if (klass_had_no_origin && klass_origin_m_tbl == RCLASS_M_TBL(iclass->klass)) {
-                // backfill an origin iclass to handle refinements and future prepends
-                rb_id_table_foreach(RCLASS_M_TBL(iclass->klass), clear_module_cache_i, (void *)iclass->klass);
-                RCLASS_M_TBL(iclass->klass) = klass_m_tbl;
-                VALUE origin = rb_include_class_new(klass_origin, RCLASS_SUPER(iclass->klass));
-                RCLASS_SET_SUPER(iclass->klass, origin);
-                RCLASS_SET_INCLUDER(origin, RCLASS_INCLUDER(iclass->klass));
-                RCLASS_SET_ORIGIN(iclass->klass, origin);
-                RICLASS_SET_ORIGIN_SHARED_MTBL(origin);
+            /* During lazy sweeping, iclass->klass could be a dead object that
+             * has not yet been swept. */
+            if (!rb_objspace_garbage_object_p(iclass->klass)) {
+                const VALUE subclass = iclass->klass;
+                if (klass_had_no_origin && klass_origin_m_tbl == RCLASS_M_TBL(subclass)) {
+                    // backfill an origin iclass to handle refinements and future prepends
+                    rb_id_table_foreach(RCLASS_M_TBL(subclass), clear_module_cache_i, (void *)subclass);
+                    RCLASS_M_TBL(subclass) = klass_m_tbl;
+                    VALUE origin = rb_include_class_new(klass_origin, RCLASS_SUPER(subclass));
+                    RCLASS_SET_SUPER(subclass, origin);
+                    RCLASS_SET_INCLUDER(origin, RCLASS_INCLUDER(subclass));
+                    RCLASS_SET_ORIGIN(subclass, origin);
+                    RICLASS_SET_ORIGIN_SHARED_MTBL(origin);
+                }
+                include_modules_at(subclass, subclass, module, FALSE);
             }
-            include_modules_at(iclass->klass, iclass->klass, module, FALSE);
+
             iclass = iclass->next;
         }
     }
@@ -1473,7 +1498,7 @@ rb_mod_ancestors(VALUE mod)
 {
     VALUE p, ary = rb_ary_new();
     VALUE refined_class = Qnil;
-    if (FL_TEST(mod, RMODULE_IS_REFINEMENT)) {
+    if (BUILTIN_TYPE(mod) == T_MODULE && FL_TEST(mod, RMODULE_IS_REFINEMENT)) {
         refined_class = rb_refinement_module_get_refined_class(mod);
     }
 

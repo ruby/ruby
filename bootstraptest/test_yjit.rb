@@ -1,34 +1,3 @@
-assert_equal '2022', %q{
- def contrivance(hash, key)
-    # Expect this to compile to an `opt_aref`.
-    hash[key]
-
-    # The [] call above tracks that the `hash` local has a VALUE that
-    # is a heap pointer and the guard for the Kernel#itself call below
-    # doesn't check that it's a heap pointer VALUE.
-    #
-    # As you can see from the crash, the call to rb_hash_aref() can set the
-    # `hash` local, making eliding the heap object guard unsound.
-    hash.itself
-  end
-
-  # This is similar to ->(recv, mid) { send(recv, mid).local_variable_set(...) }.
-  # By composing we avoid creating new Ruby frames and so sending :binding
-  # captures the environment of the frame that does the missing key lookup.
-  # We use it to capture the environment inside of `contrivance`.
-  cap_then_set =
-    Kernel.instance_method(:send).method(:bind_call).to_proc >>
-      ->(binding) { binding.local_variable_set(:hash, 2022) }
-  special_missing = Hash.new(&cap_then_set)
-
-  # Make YJIT speculate that it's a hash and generate code
-  # that calls rb_hash_aref().
-  contrivance({}, :warmup)
-  contrivance({}, :warmup)
-
-  contrivance(special_missing, :binding)
-}
-
 assert_equal '18374962167983112447', %q{
   # regression test for incorrectly discarding 32 bits of a pointer when it
   # comes to default values.
@@ -1368,6 +1337,16 @@ assert_equal 'foo123', %q{
   make_str("foo", 123)
 }
 
+# test that invalidation of String#to_s doesn't crash
+assert_equal 'meh', %q{
+  class String
+    def to_s
+      "meh"
+    end
+  end
+  "".to_s
+}
+
 # test string interpolation with overridden to_s
 assert_equal 'foo', %q{
   class String
@@ -2087,7 +2066,6 @@ assert_equal '[:itself]', %q{
   def traced_method
     itself
   end
-
 
   tracing_ractor = Ractor.new do
     # 1: start tracing
@@ -2836,4 +2814,49 @@ assert_equal '', %q{
 
   foo
   foo
+}
+
+# Make sure we're correctly reading RStruct's as.ary union for embedded RStructs
+assert_equal '3,12', %q{
+  pt_struct = Struct.new(:x, :y)
+  p = pt_struct.new(3, 12)
+  def pt_inspect(pt)
+    "#{pt.x},#{pt.y}"
+  end
+
+  # Make sure pt_inspect is JITted
+  10.times { pt_inspect(p) }
+
+  # Make sure it's returning '3,12' instead of e.g. '3,false'
+  pt_inspect(p)
+}
+
+# Regression test for deadlock between branch_stub_hit and ractor_receive_if
+assert_equal '10', %q{
+  r = Ractor.new Ractor.current do |main|
+    main << 1
+    main << 2
+    main << 3
+    main << 4
+    main << 5
+    main << 6
+    main << 7
+    main << 8
+    main << 9
+    main << 10
+  end
+
+  a = []
+  a << Ractor.receive_if{|msg| msg == 10}
+  a << Ractor.receive_if{|msg| msg == 9}
+  a << Ractor.receive_if{|msg| msg == 8}
+  a << Ractor.receive_if{|msg| msg == 7}
+  a << Ractor.receive_if{|msg| msg == 6}
+  a << Ractor.receive_if{|msg| msg == 5}
+  a << Ractor.receive_if{|msg| msg == 4}
+  a << Ractor.receive_if{|msg| msg == 3}
+  a << Ractor.receive_if{|msg| msg == 2}
+  a << Ractor.receive_if{|msg| msg == 1}
+
+  a.length
 }

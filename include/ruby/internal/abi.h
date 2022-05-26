@@ -22,11 +22,11 @@
  * In released versions of Ruby, this number should not be changed since teeny
  * versions of Ruby should guarantee ABI compatibility.
  */
-#define RUBY_ABI_VERSION 0
+#define RUBY_ABI_VERSION 1
 
 /* Windows does not support weak symbols so ruby_abi_version will not exist
  * in the shared library. */
-#if defined(HAVE_FUNC_WEAK) && !defined(_WIN32) && !defined(__MINGW32__)
+#if defined(HAVE_FUNC_WEAK) && !defined(_WIN32) && !defined(__MINGW32__) && !defined(__CYGWIN__)
 # define RUBY_DLN_CHECK_ABI
 #endif
 

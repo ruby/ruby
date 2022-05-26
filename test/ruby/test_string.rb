@@ -2384,6 +2384,7 @@ CODE
     assert_equal(S("HELLO"), S("HELLO").upcase)
     assert_equal(S("ABC HELLO 123"), S("abc HELLO 123").upcase)
     assert_equal(S("H\0""ELLO"), S("H\0""ello").upcase)
+    assert_equal(S("\u{10574}"), S("\u{1059B}").upcase)
   end
 
   def test_upcase!
@@ -3393,6 +3394,50 @@ CODE
     assert_nil(S("こんにち").byterindex(S("こんにちは")))
     assert_nil(S("こ").byterindex(S("こんにちは")))
     assert_nil(S("").byterindex(S("こんにちは")))
+  end
+
+  def test_bytesplice
+    assert_bytesplice_raise(IndexError, S("hello"), -6, 0, "xxx")
+    assert_bytesplice_result("xxxhello", S("hello"), -5, 0, "xxx")
+    assert_bytesplice_result("xxxhello", S("hello"), 0, 0, "xxx")
+    assert_bytesplice_result("xxxello", S("hello"), 0, 1, "xxx")
+    assert_bytesplice_result("xxx", S("hello"), 0, 5, "xxx")
+    assert_bytesplice_result("xxx", S("hello"), 0, 6, "xxx")
+
+    assert_bytesplice_raise(RangeError, S("hello"), -6...-6, "xxx")
+    assert_bytesplice_result("xxxhello", S("hello"), -5...-5, "xxx")
+    assert_bytesplice_result("xxxhello", S("hello"), 0...0, "xxx")
+    assert_bytesplice_result("xxxello", S("hello"), 0..0, "xxx")
+    assert_bytesplice_result("xxxello", S("hello"), 0...1, "xxx")
+    assert_bytesplice_result("xxxllo", S("hello"), 0..1, "xxx")
+    assert_bytesplice_result("xxx", S("hello"), 0..-1, "xxx")
+    assert_bytesplice_result("xxx", S("hello"), 0...5, "xxx")
+    assert_bytesplice_result("xxx", S("hello"), 0...6, "xxx")
+
+    assert_bytesplice_raise(TypeError, S("hello"), 0, "xxx")
+
+    assert_bytesplice_raise(IndexError, S("こんにちは"), -16, 0, "xxx")
+    assert_bytesplice_result("xxxこんにちは", S("こんにちは"), -15, 0, "xxx")
+    assert_bytesplice_result("xxxこんにちは", S("こんにちは"), 0, 0, "xxx")
+    assert_bytesplice_raise(IndexError, S("こんにちは"), 1, 0, "xxx")
+    assert_bytesplice_raise(IndexError, S("こんにちは"), 0, 1, "xxx")
+    assert_bytesplice_raise(IndexError, S("こんにちは"), 0, 2, "xxx")
+    assert_bytesplice_result("xxxんにちは", S("こんにちは"), 0, 3, "xxx")
+    assert_bytesplice_result("こんにちはxxx", S("こんにちは"), 15, 0, "xxx")
+
+    assert_bytesplice_result("", S(""), 0, 0, "")
+    assert_bytesplice_result("xxx", S(""), 0, 0, "xxx")
+  end
+
+  private
+
+  def assert_bytesplice_result(expected, s, *args)
+    assert_equal(args.last, s.send(:bytesplice, *args))
+    assert_equal(expected, s)
+  end
+
+  def assert_bytesplice_raise(e, s, *args)
+    assert_raise(e) { s.send(:bytesplice, *args) }
   end
 end
 

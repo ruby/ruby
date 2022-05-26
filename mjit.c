@@ -105,8 +105,8 @@ mjit_update_references(const rb_iseq_t *iseq)
         return;
 
     CRITICAL_SECTION_START(4, "mjit_update_references");
-    if (iseq->body->jit_unit) {
-        iseq->body->jit_unit->iseq = (rb_iseq_t *)rb_gc_location((VALUE)iseq->body->jit_unit->iseq);
+    if (ISEQ_BODY(iseq)->jit_unit) {
+        ISEQ_BODY(iseq)->jit_unit->iseq = (rb_iseq_t *)rb_gc_location((VALUE)ISEQ_BODY(iseq)->jit_unit->iseq);
         // We need to invalidate JIT-ed code for the ISeq because it embeds pointer addresses.
         // To efficiently do that, we use the same thing as TracePoint and thus everything is cancelled for now.
         // See mjit.h and tool/ruby_vm/views/_mjit_compile_insn.erb for how `mjit_call_p` is used.
@@ -114,10 +114,10 @@ mjit_update_references(const rb_iseq_t *iseq)
     }
 
     // Units in stale_units (list of over-speculated and invalidated code) are not referenced from
-    // `iseq->body->jit_unit` anymore (because new one replaces that). So we need to check them too.
+    // `ISEQ_BODY(iseq)->jit_unit` anymore (because new one replaces that). So we need to check them too.
     // TODO: we should be able to reduce the number of units checked here.
     struct rb_mjit_unit *unit = NULL;
-    list_for_each(&stale_units.head, unit, unode) {
+    ccan_list_for_each(&stale_units.head, unit, unode) {
         if (unit->iseq == iseq) {
             unit->iseq = (rb_iseq_t *)rb_gc_location((VALUE)unit->iseq);
         }
@@ -136,16 +136,16 @@ mjit_free_iseq(const rb_iseq_t *iseq)
     CRITICAL_SECTION_START(4, "mjit_free_iseq");
     RUBY_ASSERT_ALWAYS(in_gc);
     RUBY_ASSERT_ALWAYS(!in_jit);
-    if (iseq->body->jit_unit) {
+    if (ISEQ_BODY(iseq)->jit_unit) {
         // jit_unit is not freed here because it may be referred by multiple
         // lists of units. `get_from_list` and `mjit_finish` do the job.
-        iseq->body->jit_unit->iseq = NULL;
+        ISEQ_BODY(iseq)->jit_unit->iseq = NULL;
     }
     // Units in stale_units (list of over-speculated and invalidated code) are not referenced from
-    // `iseq->body->jit_unit` anymore (because new one replaces that). So we need to check them too.
+    // `ISEQ_BODY(iseq)->jit_unit` anymore (because new one replaces that). So we need to check them too.
     // TODO: we should be able to reduce the number of units checked here.
     struct rb_mjit_unit *unit = NULL;
-    list_for_each(&stale_units.head, unit, unode) {
+    ccan_list_for_each(&stale_units.head, unit, unode) {
         if (unit->iseq == iseq) {
             unit->iseq = NULL;
         }
@@ -161,8 +161,8 @@ free_list(struct rb_mjit_unit_list *list, bool close_handle_p)
 {
     struct rb_mjit_unit *unit = 0, *next;
 
-    list_for_each_safe(&list->head, unit, next, unode) {
-        list_del(&unit->unode);
+    ccan_list_for_each_safe(&list->head, unit, next, unode) {
+        ccan_list_del(&unit->unode);
         if (!close_handle_p) unit->handle = NULL; /* Skip dlclose in free_unit() */
 
         if (list == &stale_units) { // `free_unit(unit)` crashes after GC.compact on `stale_units`
@@ -257,7 +257,7 @@ create_unit(const rb_iseq_t *iseq)
 
     unit->id = current_unit_num++;
     unit->iseq = (rb_iseq_t *)iseq;
-    iseq->body->jit_unit = unit;
+    ISEQ_BODY(iseq)->jit_unit = unit;
 }
 
 // Return true if given ISeq body should be compiled by MJIT
@@ -275,8 +275,8 @@ mjit_add_iseq_to_process(const rb_iseq_t *iseq, const struct rb_mjit_compile_inf
 {
     if (!mjit_enabled || pch_status == PCH_FAILED)
         return;
-    if (!mjit_target_iseq_p(iseq->body)) {
-        iseq->body->jit_func = (mjit_func_t)NOT_COMPILED_JIT_ISEQ_FUNC; // skip mjit_wait
+    if (!mjit_target_iseq_p(ISEQ_BODY(iseq))) {
+        ISEQ_BODY(iseq)->jit_func = (mjit_func_t)NOT_COMPILED_JIT_ISEQ_FUNC; // skip mjit_wait
         return;
     }
 
@@ -284,21 +284,21 @@ mjit_add_iseq_to_process(const rb_iseq_t *iseq, const struct rb_mjit_compile_inf
         CRITICAL_SECTION_START(3, "in add_iseq_to_process");
 
         // This prevents multiple Ractors from enqueueing the same ISeq twice.
-        if (rb_multi_ractor_p() && (uintptr_t)iseq->body->jit_func != NOT_ADDED_JIT_ISEQ_FUNC) {
+        if (rb_multi_ractor_p() && (uintptr_t)ISEQ_BODY(iseq)->jit_func != NOT_ADDED_JIT_ISEQ_FUNC) {
             CRITICAL_SECTION_FINISH(3, "in add_iseq_to_process");
             return;
         }
     }
 
     RB_DEBUG_COUNTER_INC(mjit_add_iseq_to_process);
-    iseq->body->jit_func = (mjit_func_t)NOT_READY_JIT_ISEQ_FUNC;
+    ISEQ_BODY(iseq)->jit_func = (mjit_func_t)NOT_READY_JIT_ISEQ_FUNC;
     create_unit(iseq);
-    if (iseq->body->jit_unit == NULL)
+    if (ISEQ_BODY(iseq)->jit_unit == NULL)
         // Failure in creating the unit.
         return;
     if (compile_info != NULL)
-        iseq->body->jit_unit->compile_info = *compile_info;
-    add_to_list(iseq->body->jit_unit, &unit_queue);
+        ISEQ_BODY(iseq)->jit_unit->compile_info = *compile_info;
+    add_to_list(ISEQ_BODY(iseq)->jit_unit, &unit_queue);
     if (active_units.length >= mjit_opts.max_cache_size) {
         unload_requests++;
     }
@@ -370,28 +370,28 @@ rb_mjit_iseq_compile_info(const struct rb_iseq_constant_body *body)
 static void
 mjit_recompile(const rb_iseq_t *iseq)
 {
-    if ((uintptr_t)iseq->body->jit_func <= (uintptr_t)LAST_JIT_ISEQ_FUNC)
+    if ((uintptr_t)ISEQ_BODY(iseq)->jit_func <= (uintptr_t)LAST_JIT_ISEQ_FUNC)
         return;
 
-    verbose(1, "JIT recompile: %s@%s:%d", RSTRING_PTR(iseq->body->location.label),
-            RSTRING_PTR(rb_iseq_path(iseq)), FIX2INT(iseq->body->location.first_lineno));
-    assert(iseq->body->jit_unit != NULL);
+    verbose(1, "JIT recompile: %s@%s:%d", RSTRING_PTR(ISEQ_BODY(iseq)->location.label),
+            RSTRING_PTR(rb_iseq_path(iseq)), FIX2INT(ISEQ_BODY(iseq)->location.first_lineno));
+    assert(ISEQ_BODY(iseq)->jit_unit != NULL);
 
     if (UNLIKELY(mjit_opts.wait)) {
         CRITICAL_SECTION_START(3, "in rb_mjit_recompile_iseq");
-        remove_from_list(iseq->body->jit_unit, &active_units);
-        add_to_list(iseq->body->jit_unit, &stale_units);
-        mjit_add_iseq_to_process(iseq, &iseq->body->jit_unit->compile_info, true);
+        remove_from_list(ISEQ_BODY(iseq)->jit_unit, &active_units);
+        add_to_list(ISEQ_BODY(iseq)->jit_unit, &stale_units);
+        mjit_add_iseq_to_process(iseq, &ISEQ_BODY(iseq)->jit_unit->compile_info, true);
         CRITICAL_SECTION_FINISH(3, "in rb_mjit_recompile_iseq");
-        mjit_wait(iseq->body);
+        mjit_wait(ISEQ_BODY(iseq));
     }
     else {
         // Lazily move active_units to stale_units to avoid race conditions around active_units with compaction.
         // Also, it's lazily moved to unit_queue as well because otherwise it won't be added to stale_units properly.
         // It's good to avoid a race condition between mjit_add_iseq_to_process and mjit_compile around jit_unit as well.
         CRITICAL_SECTION_START(3, "in rb_mjit_recompile_iseq");
-        iseq->body->jit_unit->stale_p = true;
-        iseq->body->jit_func = (mjit_func_t)NOT_READY_JIT_ISEQ_FUNC;
+        ISEQ_BODY(iseq)->jit_unit->stale_p = true;
+        ISEQ_BODY(iseq)->jit_func = (mjit_func_t)NOT_READY_JIT_ISEQ_FUNC;
         pending_stale_p = true;
         CRITICAL_SECTION_FINISH(3, "in rb_mjit_recompile_iseq");
     }
@@ -401,7 +401,7 @@ mjit_recompile(const rb_iseq_t *iseq)
 void
 rb_mjit_recompile_send(const rb_iseq_t *iseq)
 {
-    rb_mjit_iseq_compile_info(iseq->body)->disable_send_cache = true;
+    rb_mjit_iseq_compile_info(ISEQ_BODY(iseq))->disable_send_cache = true;
     mjit_recompile(iseq);
 }
 
@@ -409,7 +409,7 @@ rb_mjit_recompile_send(const rb_iseq_t *iseq)
 void
 rb_mjit_recompile_ivar(const rb_iseq_t *iseq)
 {
-    rb_mjit_iseq_compile_info(iseq->body)->disable_ivar_cache = true;
+    rb_mjit_iseq_compile_info(ISEQ_BODY(iseq))->disable_ivar_cache = true;
     mjit_recompile(iseq);
 }
 
@@ -417,7 +417,7 @@ rb_mjit_recompile_ivar(const rb_iseq_t *iseq)
 void
 rb_mjit_recompile_exivar(const rb_iseq_t *iseq)
 {
-    rb_mjit_iseq_compile_info(iseq->body)->disable_exivar_cache = true;
+    rb_mjit_iseq_compile_info(ISEQ_BODY(iseq))->disable_exivar_cache = true;
     mjit_recompile(iseq);
 }
 
@@ -425,7 +425,7 @@ rb_mjit_recompile_exivar(const rb_iseq_t *iseq)
 void
 rb_mjit_recompile_inlining(const rb_iseq_t *iseq)
 {
-    rb_mjit_iseq_compile_info(iseq->body)->disable_inlining = true;
+    rb_mjit_iseq_compile_info(ISEQ_BODY(iseq))->disable_inlining = true;
     mjit_recompile(iseq);
 }
 
@@ -433,7 +433,7 @@ rb_mjit_recompile_inlining(const rb_iseq_t *iseq)
 void
 rb_mjit_recompile_const(const rb_iseq_t *iseq)
 {
-    rb_mjit_iseq_compile_info(iseq->body)->disable_const_cache = true;
+    rb_mjit_iseq_compile_info(ISEQ_BODY(iseq))->disable_const_cache = true;
     mjit_recompile(iseq);
 }
 
@@ -886,7 +886,7 @@ skip_cleaning_object_files(struct rb_mjit_unit_list *list)
     struct rb_mjit_unit *unit = NULL, *next;
 
     // No mutex for list, assuming MJIT worker does not exist yet since it's immediately after fork.
-    list_for_each_safe(&list->head, unit, next, unode) {
+    ccan_list_for_each_safe(&list->head, unit, next, unode) {
 #if defined(_WIN32) // mswin doesn't reach here either. This is for MinGW.
         if (unit->so_file) unit->so_file = NULL;
 #endif
@@ -930,10 +930,10 @@ mjit_dump_total_calls(void)
 {
     struct rb_mjit_unit *unit;
     fprintf(stderr, "[MJIT_COUNTER] total_calls of active_units:\n");
-    list_for_each(&active_units.head, unit, unode) {
+    ccan_list_for_each(&active_units.head, unit, unode) {
         const rb_iseq_t *iseq = unit->iseq;
-        fprintf(stderr, "%8ld: %s@%s:%d\n", iseq->body->total_calls, RSTRING_PTR(iseq->body->location.label),
-                RSTRING_PTR(rb_iseq_path(iseq)), FIX2INT(iseq->body->location.first_lineno));
+        fprintf(stderr, "%8ld: %s@%s:%d\n", ISEQ_BODY(iseq)->total_calls, RSTRING_PTR(ISEQ_BODY(iseq)->location.label),
+                RSTRING_PTR(rb_iseq_path(iseq)), FIX2INT(ISEQ_BODY(iseq)->location.first_lineno));
     }
 }
 #endif
@@ -1036,7 +1036,7 @@ mjit_mark(void)
             i++;
         }
     }
-    list_for_each(&active_units.head, unit, unode) {
+    ccan_list_for_each(&active_units.head, unit, unode) {
         iseqs[i] = unit->iseq;
         i++;
     }

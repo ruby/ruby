@@ -2,8 +2,9 @@
 
 require_relative "nop"
 
-# :stopdoc:
 module IRB
+  # :stopdoc:
+
   module ExtendCommand
     class Whereami < Nop
       def execute(*)
@@ -16,5 +17,6 @@ module IRB
       end
     end
   end
+
+  # :startdoc:
 end
-# :startdoc:

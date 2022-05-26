@@ -1,0 +1,51 @@
+Returns a new \String that is a copy of +string+.
+
+With no arguments, returns the empty string with the Encoding <tt>ASCII-8BIT</tt>:
+
+  s = String.new
+  s # => ""
+  s.encoding # => #<Encoding:ASCII-8BIT>
+
+With optional argument +string+ and no keyword arguments,
+returns a copy of +string+ with the same encoding:
+
+  String.new('foo')               # => "foo"
+  String.new('тест')              # => "тест"
+  String.new('こんにちは')          # => "こんにちは"
+
+(Unlike \String.new,
+a {string literal}[rdoc-ref:syntax/literals.rdoc@String+Literals] like <tt>''</tt> or a
+{here document literal}[rdoc-ref:syntax/literals.rdoc@Here+Document+Literals]
+always has {script encoding}[rdoc-ref:encodings.rdoc@Script+Encoding].)
+
+With optional keyword argument +encoding+, returns a copy of +string+
+with the specified encoding;
+the +encoding+ may be an Encoding object, an encoding name,
+or an encoding name alias:
+
+  String.new('foo', encoding: Encoding::US_ASCII).encoding # => #<Encoding:US-ASCII>
+  String.new('foo', encoding: 'US-ASCII').encoding         # => #<Encoding:US-ASCII>
+  String.new('foo', encoding: 'ASCII').encoding            # => #<Encoding:US-ASCII>
+
+The given encoding need not be valid for the string's content,
+and that validity is not checked:
+
+  s = String.new('こんにちは', encoding: 'ascii')
+  s.valid_encoding? # => false
+
+But the given +encoding+ itself is checked:
+
+  String.new('foo', encoding: 'bar') # Raises ArgumentError.
+
+With optional keyword argument +capacity+, returns a copy of +string+
+(or an empty string, if +string+ is not given);
+the given +capacity+ is advisory only,
+and may or may not set the size of the internal buffer,
+which may in turn affect performance:
+
+  String.new(capacity: 1)
+  String.new('foo', capacity: 4096)
+
+The +string+, +encoding+, and +capacity+ arguments may all be used together:
+
+  String.new('hello', encoding: 'UTF-8', capacity: 25)

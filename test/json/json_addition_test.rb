@@ -165,7 +165,7 @@ class JSONAdditionTest < Test::Unit::TestCase
 
   def test_utc_datetime
     now = Time.now
-    d = DateTime.parse(now.to_s, :create_additions => true) # usual case
+    d = DateTime.parse(now.to_s) # usual case
     assert_equal d, parse(d.to_json, :create_additions => true)
     d = DateTime.parse(now.utc.to_s) # of = 0
     assert_equal d, parse(d.to_json, :create_additions => true)

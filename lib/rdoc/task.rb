@@ -323,7 +323,7 @@ module Rake
   ##
   # For backwards compatibility
 
-  RDocTask = RDoc::Task
+  RDocTask = RDoc::Task # :nodoc:
 
 end
 # :startdoc:

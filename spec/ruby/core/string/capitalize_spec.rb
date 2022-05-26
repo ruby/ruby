@@ -12,13 +12,6 @@ describe "String#capitalize" do
     "123ABC".capitalize.should == "123abc"
   end
 
-  ruby_version_is ''...'2.7' do
-    it "taints resulting string when self is tainted" do
-      "".taint.capitalize.should.tainted?
-      "hello".taint.capitalize.should.tainted?
-    end
-  end
-
   describe "full Unicode case mapping" do
     it "works for all of Unicode with no option" do
       "äöÜ".capitalize.should == "Äöü"

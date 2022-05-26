@@ -13,8 +13,9 @@
 require_relative "nop"
 require_relative "../ext/workspaces"
 
-# :stopdoc:
 module IRB
+  # :stopdoc:
+
   module ExtendCommand
     class Workspaces < Nop
       def execute(*obj)
@@ -36,5 +37,6 @@ module IRB
       end
     end
   end
+
+  # :startdoc:
 end
-# :startdoc:

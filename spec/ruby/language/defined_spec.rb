@@ -48,6 +48,20 @@ describe "The defined? keyword for literals" do
 end
 
 describe "The defined? keyword when called with a method name" do
+  before :each do
+    ScratchPad.clear
+  end
+
+  it "does not call the method" do
+    defined?(DefinedSpecs.side_effects).should == "method"
+    ScratchPad.recorded.should != :defined_specs_side_effects
+  end
+
+  it "does not execute the arguments" do
+    defined?(DefinedSpecs.any_args(DefinedSpecs.side_effects)).should == "method"
+    ScratchPad.recorded.should != :defined_specs_side_effects
+  end
+
   describe "without a receiver" do
     it "returns 'method' if the method is defined" do
       ret = defined?(puts)

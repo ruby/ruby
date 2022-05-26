@@ -448,11 +448,11 @@ get_local_variable_ptr(const rb_env_t **envp, ID lid)
 
 	    VM_ASSERT(rb_obj_is_iseq((VALUE)iseq));
 
-	    for (i=0; i<iseq->body->local_table_size; i++) {
-		if (iseq->body->local_table[i] == lid) {
-		    if (iseq->body->local_iseq == iseq &&
-			iseq->body->param.flags.has_block &&
-			(unsigned int)iseq->body->param.block_start == i) {
+            for (i=0; i<ISEQ_BODY(iseq)->local_table_size; i++) {
+                if (ISEQ_BODY(iseq)->local_table[i] == lid) {
+                    if (ISEQ_BODY(iseq)->local_iseq == iseq &&
+                            ISEQ_BODY(iseq)->param.flags.has_block &&
+                            (unsigned int)ISEQ_BODY(iseq)->param.block_start == i) {
 			const VALUE *ep = env->ep;
 			if (!VM_ENV_FLAGS(ep, VM_FRAME_FLAG_MODIFIED_BLOCK_PARAM)) {
 			    RB_OBJ_WRITE(env, &env->env[i], rb_vm_bh_to_procval(GET_EC(), VM_ENV_BLOCK_HANDLER(ep)));
@@ -1078,11 +1078,11 @@ proc_arity(VALUE self)
 static inline int
 rb_iseq_min_max_arity(const rb_iseq_t *iseq, int *max)
 {
-    *max = iseq->body->param.flags.has_rest == FALSE ?
-      iseq->body->param.lead_num + iseq->body->param.opt_num + iseq->body->param.post_num +
-      (iseq->body->param.flags.has_kw == TRUE || iseq->body->param.flags.has_kwrest == TRUE)
+    *max = ISEQ_BODY(iseq)->param.flags.has_rest == FALSE ?
+      ISEQ_BODY(iseq)->param.lead_num + ISEQ_BODY(iseq)->param.opt_num + ISEQ_BODY(iseq)->param.post_num +
+      (ISEQ_BODY(iseq)->param.flags.has_kw == TRUE || ISEQ_BODY(iseq)->param.flags.has_kwrest == TRUE)
       : UNLIMITED_ARGUMENTS;
-    return iseq->body->param.lead_num + iseq->body->param.post_num + (iseq->body->param.flags.has_kw && iseq->body->param.keyword->required_num > 0);
+    return ISEQ_BODY(iseq)->param.lead_num + ISEQ_BODY(iseq)->param.post_num + (ISEQ_BODY(iseq)->param.flags.has_kw && ISEQ_BODY(iseq)->param.keyword->required_num > 0);
 }
 
 static int
@@ -1208,21 +1208,16 @@ rb_block_arity(void)
     }
 
     block_setup(&block, block_handler);
-    min = rb_vm_block_min_max_arity(&block, &max);
 
     switch (vm_block_type(&block)) {
       case block_handler_type_symbol:
 	return -1;
 
       case block_handler_type_proc:
-	{
-	    VALUE procval = block_handler;
-	    rb_proc_t *proc;
-	    GetProcPtr(procval, proc);
-	    return (proc->is_lambda ? min == max : max != UNLIMITED_ARGUMENTS) ? min : -min-1;
-	}
+        return rb_proc_arity(block_handler);
 
       default:
+        min = rb_vm_block_min_max_arity(&block, &max);
 	return max != UNLIMITED_ARGUMENTS ? min : -min-1;
     }
 }
@@ -1369,7 +1364,7 @@ iseq_location(const rb_iseq_t *iseq)
     if (!iseq) return Qnil;
     rb_iseq_check(iseq);
     loc[0] = rb_iseq_path(iseq);
-    loc[1] = iseq->body->location.first_lineno;
+    loc[1] = ISEQ_BODY(iseq)->location.first_lineno;
 
     return rb_ary_new4(2, loc);
 }
@@ -1415,19 +1410,46 @@ rb_unnamed_parameters(int arity)
 
 /*
  * call-seq:
- *    prc.parameters  -> array
+ *    prc.parameters(lambda: nil)  -> array
  *
- * Returns the parameter information of this proc.
+ * Returns the parameter information of this proc.  If the lambda
+ * keyword is provided and not nil, treats the proc as a lambda if
+ * true and as a non-lambda if false.
  *
+ *    prc = proc{|x, y=42, *other|}
+ *    prc.parameters  #=> [[:opt, :x], [:opt, :y], [:rest, :other]]
  *    prc = lambda{|x, y=42, *other|}
  *    prc.parameters  #=> [[:req, :x], [:opt, :y], [:rest, :other]]
+ *    prc = proc{|x, y=42, *other|}
+ *    prc.parameters(lambda: true)  #=> [[:req, :x], [:opt, :y], [:rest, :other]]
+ *    prc = lambda{|x, y=42, *other|}
+ *    prc.parameters(lambda: false) #=> [[:opt, :x], [:opt, :y], [:rest, :other]]
  */
 
 static VALUE
-rb_proc_parameters(VALUE self)
+rb_proc_parameters(int argc, VALUE *argv, VALUE self)
 {
-    int is_proc;
-    const rb_iseq_t *iseq = rb_proc_get_iseq(self, &is_proc);
+    static ID keyword_ids[1];
+    VALUE opt, lambda;
+    VALUE kwargs[1];
+    int is_proc ;
+    const rb_iseq_t *iseq;
+
+    iseq = rb_proc_get_iseq(self, &is_proc);
+
+    if (!keyword_ids[0]) {
+        CONST_ID(keyword_ids[0], "lambda");
+    }
+
+    rb_scan_args(argc, argv, "0:", &opt);
+    if (!NIL_P(opt)) {
+        rb_get_kwargs(opt, keyword_ids, 0, 1, kwargs);
+        lambda = kwargs[0];
+        if (!NIL_P(lambda)) {
+            is_proc = !RTEST(lambda);
+        }
+    }
+
     if (!iseq) {
 	return rb_unnamed_parameters(rb_proc_arity(self));
     }
@@ -1443,6 +1465,21 @@ rb_hash_proc(st_index_t hash, VALUE prc)
     hash = rb_hash_uint(hash, (st_index_t)proc->block.as.captured.self);
     return rb_hash_uint(hash, (st_index_t)proc->block.as.captured.ep);
 }
+
+
+/*
+ *  call-seq:
+ *    to_proc
+ *
+ *  Returns a Proc object which calls the method with name of +self+
+ *  on the first parameter and passes the remaining parameters to the method.
+ *
+ *    proc = :to_s.to_proc   # => #<Proc:0x000001afe0e48680(&:to_s) (lambda)>
+ *    proc.call(1000)        # => "1000"
+ *    proc.call(1000, 16)    # => "3e8"
+ *    (1..3).collect(&:to_s) # => ["1", "2", "3"]
+ *
+ */
 
 MJIT_FUNC_EXPORTED VALUE
 rb_sym_to_proc(VALUE sym)
@@ -1508,7 +1545,7 @@ rb_block_to_s(VALUE self, const struct rb_block *block, const char *additional_i
 	    const rb_iseq_t *iseq = rb_iseq_check(block->as.captured.code.iseq);
             rb_str_catf(str, "%p %"PRIsVALUE":%d", (void *)self,
 			rb_iseq_path(iseq),
-			FIX2INT(iseq->body->location.first_lineno));
+                        FIX2INT(ISEQ_BODY(iseq)->location.first_lineno));
 	}
 	break;
       case block_type_symbol:
@@ -2138,60 +2175,13 @@ rb_mod_public_instance_method(VALUE mod, VALUE vid)
     return mnew_unbound(mod, id, rb_cUnboundMethod, TRUE);
 }
 
-/*
- *  call-seq:
- *     define_method(symbol, method)     -> symbol
- *     define_method(symbol) { block }   -> symbol
- *
- *  Defines an instance method in the receiver. The _method_
- *  parameter can be a +Proc+, a +Method+ or an +UnboundMethod+ object.
- *  If a block is specified, it is used as the method body.
- *  If a block or the _method_ parameter has parameters,
- *  they're used as method parameters.
- *  This block is evaluated using #instance_eval.
- *
- *     class A
- *       def fred
- *         puts "In Fred"
- *       end
- *       def create_method(name, &block)
- *         self.class.define_method(name, &block)
- *       end
- *       define_method(:wilma) { puts "Charge it!" }
- *       define_method(:flint) {|name| puts "I'm #{name}!"}
- *     end
- *     class B < A
- *       define_method(:barney, instance_method(:fred))
- *     end
- *     a = B.new
- *     a.barney
- *     a.wilma
- *     a.flint('Dino')
- *     a.create_method(:betty) { p self }
- *     a.betty
- *
- *  <em>produces:</em>
- *
- *     In Fred
- *     Charge it!
- *     I'm Dino!
- *     #<B:0x401b39e8>
- */
-
 static VALUE
-rb_mod_define_method(int argc, VALUE *argv, VALUE mod)
+rb_mod_define_method_with_visibility(int argc, VALUE *argv, VALUE mod, const struct rb_scope_visi_struct* scope_visi)
 {
     ID id;
     VALUE body;
     VALUE name;
-    const rb_cref_t *cref = rb_vm_cref_in_context(mod, mod);
-    const rb_scope_visibility_t default_scope_visi = {METHOD_VISI_PUBLIC, FALSE};
-    const rb_scope_visibility_t *scope_visi = &default_scope_visi;
     int is_method = FALSE;
-
-    if (cref) {
-	scope_visi = CREF_SCOPE_VISI(cref);
-    }
 
     rb_check_arity(argc, 1, 2);
     name = argv[0];
@@ -2255,10 +2245,64 @@ rb_mod_define_method(int argc, VALUE *argv, VALUE mod)
 
 /*
  *  call-seq:
+ *     define_method(symbol, method)     -> symbol
+ *     define_method(symbol) { block }   -> symbol
+ *
+ *  Defines an instance method in the receiver. The _method_
+ *  parameter can be a +Proc+, a +Method+ or an +UnboundMethod+ object.
+ *  If a block is specified, it is used as the method body.
+ *  If a block or the _method_ parameter has parameters,
+ *  they're used as method parameters.
+ *  This block is evaluated using #instance_eval.
+ *
+ *     class A
+ *       def fred
+ *         puts "In Fred"
+ *       end
+ *       def create_method(name, &block)
+ *         self.class.define_method(name, &block)
+ *       end
+ *       define_method(:wilma) { puts "Charge it!" }
+ *       define_method(:flint) {|name| puts "I'm #{name}!"}
+ *     end
+ *     class B < A
+ *       define_method(:barney, instance_method(:fred))
+ *     end
+ *     a = B.new
+ *     a.barney
+ *     a.wilma
+ *     a.flint('Dino')
+ *     a.create_method(:betty) { p self }
+ *     a.betty
+ *
+ *  <em>produces:</em>
+ *
+ *     In Fred
+ *     Charge it!
+ *     I'm Dino!
+ *     #<B:0x401b39e8>
+ */
+
+static VALUE
+rb_mod_define_method(int argc, VALUE *argv, VALUE mod)
+{
+    const rb_cref_t *cref = rb_vm_cref_in_context(mod, mod);
+    const rb_scope_visibility_t default_scope_visi = {METHOD_VISI_PUBLIC, FALSE};
+    const rb_scope_visibility_t *scope_visi = &default_scope_visi;
+
+    if (cref) {
+        scope_visi = CREF_SCOPE_VISI(cref);
+    }
+
+    return rb_mod_define_method_with_visibility(argc, argv, mod, scope_visi);
+}
+
+/*
+ *  call-seq:
  *     define_singleton_method(symbol, method) -> symbol
  *     define_singleton_method(symbol) { block } -> symbol
  *
- *  Defines a singleton method in the receiver. The _method_
+ *  Defines a public singleton method in the receiver. The _method_
  *  parameter can be a +Proc+, a +Method+ or an +UnboundMethod+ object.
  *  If a block is specified, it is used as the method body.
  *  If a block or a method has parameters, they're used as method parameters.
@@ -2288,8 +2332,9 @@ static VALUE
 rb_obj_define_method(int argc, VALUE *argv, VALUE obj)
 {
     VALUE klass = rb_singleton_class(obj);
+    const rb_scope_visibility_t scope_visi = {METHOD_VISI_PUBLIC, FALSE};
 
-    return rb_mod_define_method(argc, argv, klass);
+    return rb_mod_define_method_with_visibility(argc, argv, klass, &scope_visi);
 }
 
 /*
@@ -3476,7 +3521,7 @@ proc_binding(VALUE self)
 
     if (iseq) {
 	rb_iseq_check(iseq);
-	RB_OBJ_WRITE(bindval, &bind->pathobj, iseq->body->location.pathobj);
+        RB_OBJ_WRITE(bindval, &bind->pathobj, ISEQ_BODY(iseq)->location.pathobj);
 	bind->first_lineno = FIX2INT(rb_iseq_first_lineno(iseq));
     }
     else {
@@ -3541,6 +3586,10 @@ curry(RB_BLOCK_CALL_FUNC_ARGLIST(_, args))
   *  arguments are supplied, it passes the supplied arguments to the original
   *  proc and returns the result. Otherwise, returns another curried proc that
   *  takes the rest of arguments.
+  *
+  *  The optional <i>arity</i> argument should be supplied when currying procs with
+  *  variable arguments to determine how many arguments are needed before the proc is
+  *  called.
   *
   *     b = proc {|x, y, z| (x||0) + (y||0) + (z||0) }
   *     p b.curry[1][2][3]           #=> 6
@@ -3858,10 +3907,10 @@ proc_ruby2_keywords(VALUE procval)
 
     switch (proc->block.type) {
       case block_type_iseq:
-        if (proc->block.as.captured.code.iseq->body->param.flags.has_rest &&
-                !proc->block.as.captured.code.iseq->body->param.flags.has_kw &&
-                !proc->block.as.captured.code.iseq->body->param.flags.has_kwrest) {
-            proc->block.as.captured.code.iseq->body->param.flags.ruby2_keywords = 1;
+        if (ISEQ_BODY(proc->block.as.captured.code.iseq)->param.flags.has_rest &&
+                !ISEQ_BODY(proc->block.as.captured.code.iseq)->param.flags.has_kw &&
+                !ISEQ_BODY(proc->block.as.captured.code.iseq)->param.flags.has_kwrest) {
+            ISEQ_BODY(proc->block.as.captured.code.iseq)->param.flags.ruby2_keywords = 1;
         }
         else {
             rb_warn("Skipping set of ruby2_keywords flag for proc (proc accepts keywords or proc does not accept argument splat)");
@@ -4248,7 +4297,7 @@ Init_Proc(void)
     rb_define_method(rb_cProc, "==", proc_eq, 1);
     rb_define_method(rb_cProc, "eql?", proc_eq, 1);
     rb_define_method(rb_cProc, "source_location", rb_proc_location, 0);
-    rb_define_method(rb_cProc, "parameters", rb_proc_parameters, 0);
+    rb_define_method(rb_cProc, "parameters", rb_proc_parameters, -1);
     rb_define_method(rb_cProc, "ruby2_keywords", proc_ruby2_keywords, 0);
     // rb_define_method(rb_cProc, "isolate", rb_proc_isolate, 0); is not accepted.
 

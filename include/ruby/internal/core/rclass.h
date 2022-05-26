@@ -26,7 +26,6 @@
 #include "ruby/internal/cast.h"
 
 /** @cond INTERNAL_MACRO */
-#define RMODULE_IS_OVERLAID              RMODULE_IS_OVERLAID
 #define RMODULE_IS_REFINEMENT            RMODULE_IS_REFINEMENT
 #define RMODULE_INCLUDED_INTO_REFINEMENT RMODULE_INCLUDED_INTO_REFINEMENT
 /** @endcond */
@@ -55,15 +54,6 @@
  * Why is it here, given RClass itself is not?
  */
 enum ruby_rmodule_flags {
-
-    /**
-     * This flag has something to do with refinements... I guess?  It is set on
-     * occasions  for modules  that are  refined by  refinements, but  it seems
-     * ...  nobody cares  about  such things?   Not sure  but  this flag  could
-     * perhaps be a write-only information.
-     */
-    RMODULE_IS_OVERLAID              = RUBY_FL_USER2,
-
     /**
      * This flag has something to do  with refinements.  A module created using
      * rb_mod_refine()  has this  flag set.   This  is the  bit which  controls

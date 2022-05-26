@@ -4,6 +4,7 @@
 
 # YJIT sources and tests
 yjit* @maximecb @xrxr @tenderlove
+yjit/* @maximecb @xrxr @tenderlove
 doc/yjit/* @maximecb @xrxr @tenderlove
 bootstraptest/test_yjit* @maximecb @xrxr @tenderlove
 test/ruby/test_yjit* @maximecb @xrxr @tenderlove

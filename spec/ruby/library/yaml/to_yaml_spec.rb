@@ -72,16 +72,8 @@ describe "Object#to_yaml" do
     true_klass.to_yaml.should match_yaml("--- true\n")
   end
 
-  ruby_version_is ""..."2.7" do
-    it "returns the YAML representation of a Error object" do
-      StandardError.new("foobar").to_yaml.should match_yaml("--- !ruby/exception:StandardError\nmessage: foobar\n")
-    end
-  end
-
-  ruby_version_is "2.7" do
-    it "returns the YAML representation of a Error object" do
-      StandardError.new("foobar").to_yaml.should match_yaml("--- !ruby/exception:StandardError\nmessage: foobar\nbacktrace: \n")
-    end
+  it "returns the YAML representation of a Error object" do
+    StandardError.new("foobar").to_yaml.should match_yaml("--- !ruby/exception:StandardError\nmessage: foobar\nbacktrace: \n")
   end
 
   it "returns the YAML representation for Range objects" do

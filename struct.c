@@ -43,13 +43,14 @@ struct_ivar_get(VALUE c, ID id)
 	return ivar;
 
     for (;;) {
-	c = RCLASS_SUPER(c);
-	if (c == 0 || c == rb_cStruct)
-	    return Qnil;
-	ivar = rb_attr_get(c, id);
-	if (!NIL_P(ivar)) {
-	    return rb_ivar_set(orig, id, ivar);
-	}
+        c = rb_class_superclass(c);
+        if (c == 0 || c == rb_cStruct)
+            return Qnil;
+        RUBY_ASSERT(RB_TYPE_P(c, T_CLASS));
+        ivar = rb_attr_get(c, id);
+        if (!NIL_P(ivar)) {
+            return rb_ivar_set(orig, id, ivar);
+        }
     }
 }
 
@@ -576,8 +577,9 @@ rb_struct_s_def(int argc, VALUE *argv, VALUE klass)
     long i;
     VALUE st;
     st_table *tbl;
+    VALUE opt;
 
-    rb_check_arity(argc, 1, UNLIMITED_ARGUMENTS);
+    argc = rb_scan_args(argc, argv, "1*:", NULL, NULL, &opt);
     name = argv[0];
     if (SYMBOL_P(name)) {
 	name = Qnil;
@@ -587,20 +589,19 @@ rb_struct_s_def(int argc, VALUE *argv, VALUE klass)
 	++argv;
     }
 
-    if (RB_TYPE_P(argv[argc-1], T_HASH)) {
+    if (!NIL_P(opt)) {
 	static ID keyword_ids[1];
 
 	if (!keyword_ids[0]) {
 	    keyword_ids[0] = rb_intern("keyword_init");
 	}
-        rb_get_kwargs(argv[argc-1], keyword_ids, 0, 1, &keyword_init);
+        rb_get_kwargs(opt, keyword_ids, 0, 1, &keyword_init);
         if (keyword_init == Qundef) {
             keyword_init = Qnil;
         }
         else if (RTEST(keyword_init)) {
             keyword_init = Qtrue;
         }
-	--argc;
     }
 
     rest = rb_ident_hash_new();
@@ -1433,12 +1434,12 @@ recursive_eql(VALUE s, VALUE s2, int recur)
  *  - <tt>other.class == self.class</tt>.
  *  - For each member name +name+, <tt>other.name.eql?(self.name)</tt>.
  *
- *    Customer = Struct.new(:name, :address, :zip)
- *    joe    = Customer.new("Joe Smith", "123 Maple, Anytown NC", 12345)
- *    joe_jr = Customer.new("Joe Smith", "123 Maple, Anytown NC", 12345)
- *    joe_jr.eql?(joe) # => true
- *    joe_jr[:name] = 'Joe Smith, Jr.'
- *    joe_jr.eql?(joe) # => false
+ *     Customer = Struct.new(:name, :address, :zip)
+ *     joe    = Customer.new("Joe Smith", "123 Maple, Anytown NC", 12345)
+ *     joe_jr = Customer.new("Joe Smith", "123 Maple, Anytown NC", 12345)
+ *     joe_jr.eql?(joe) # => true
+ *     joe_jr[:name] = 'Joe Smith, Jr.'
+ *     joe_jr.eql?(joe) # => false
  *
  *  Related: Object#==.
  */
@@ -1578,46 +1579,46 @@ rb_struct_dig(int argc, VALUE *argv, VALUE self)
  *
  *  === Methods for Creating a Struct Subclass
  *
- *  ::new:: Returns a new subclass of \Struct.
+ *  - ::new: Returns a new subclass of \Struct.
  *
  *  === Methods for Querying
  *
- *  #hash:: Returns the integer hash code.
- *  #length, #size:: Returns the number of members.
+ *  - #hash: Returns the integer hash code.
+ *  - #length, #size: Returns the number of members.
  *
  *  === Methods for Comparing
  *
- *  #==:: Returns whether a given object is equal to +self+, using <tt>==</tt>
- *        to compare member values.
- *  #eql?:: Returns whether a given object is equal to +self+,
- *          using <tt>eql?</tt> to compare member values.
+ *  - #==: Returns whether a given object is equal to +self+, using <tt>==</tt>
+ *    to compare member values.
+ *  - #eql?: Returns whether a given object is equal to +self+,
+ *    using <tt>eql?</tt> to compare member values.
  *
  *  === Methods for Fetching
  *
- *  #[]:: Returns the value associated with a given member name.
- *  #to_a, #values, #deconstruct:: Returns the member values in +self+ as an array.
- *  #deconstruct_keys:: Returns a hash of the name/value pairs
- *                      for given member names.
- *  #dig:: Returns the object in nested objects that is specified
- *         by a given member name and additional arguments.
- *  #members:: Returns an array of the member names.
- *  #select, #filter:: Returns an array of member values from +self+,
- *                     as selected by the given block.
- *  #values_at:: Returns an array containing values for given member names.
+ *  - #[]: Returns the value associated with a given member name.
+ *  - #to_a, #values, #deconstruct: Returns the member values in +self+ as an array.
+ *  - #deconstruct_keys: Returns a hash of the name/value pairs
+ *    for given member names.
+ *  - #dig: Returns the object in nested objects that is specified
+ *    by a given member name and additional arguments.
+ *  - #members: Returns an array of the member names.
+ *  - #select, #filter: Returns an array of member values from +self+,
+ *    as selected by the given block.
+ *  - #values_at: Returns an array containing values for given member names.
  *
  *  === Methods for Assigning
  *
- *  #[]=:: Assigns a given value to a given member name.
+ *  - #[]=: Assigns a given value to a given member name.
  *
  *  === Methods for Iterating
  *
- *  #each:: Calls a given block with each member name.
- *  #each_pair:: Calls a given block with each member name/value pair.
+ *  - #each: Calls a given block with each member name.
+ *  - #each_pair: Calls a given block with each member name/value pair.
  *
  *  === Methods for Converting
  *
- *  #inspect, #to_s:: Returns a string representation of +self+.
- *  #to_h:: Returns a hash of the member name/value pairs in +self+.
+ *  - #inspect, #to_s: Returns a string representation of +self+.
+ *  - #to_h: Returns a hash of the member name/value pairs in +self+.
  *
  */
 void

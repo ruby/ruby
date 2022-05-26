@@ -2108,7 +2108,7 @@ range_count(int argc, VALUE *argv, VALUE range)
  *
  *   Range.new(1, nil) # => 1..
  *
- * The literal for  an endless range may be written with either two dots
+ * The literal for an endless range may be written with either two dots
  * or three.
  * The range has the same elements, either way.
  * But note that the two are not equal:
@@ -2134,6 +2134,15 @@ range_count(int argc, VALUE *argv, VALUE range)
  *     break if i > 10
  *   end
  *   a # => [2, 4, 6, 8, 10]
+ *
+ * A range can be both beginless and endless.  For literal beginless, endless
+ * ranges, at least the beginning or end of the range must be given as an
+ * explicit nil value. It is recommended to use an explicit nil beginning and
+ * implicit nil end, since that is what Ruby uses for Range#inspect:
+ *
+ *   (nil..)    # => (nil..)
+ *   (..nil)    # => (nil..)
+ *   (nil..nil) # => (nil..)
  *
  * == Ranges and Other Classes
  *
@@ -2224,44 +2233,44 @@ range_count(int argc, VALUE *argv, VALUE range)
  *
  * === Methods for Creating a \Range
  *
- * - ::new:: Returns a new range.
+ * - ::new: Returns a new range.
  *
  * === Methods for Querying
  *
- * - #begin:: Returns the begin value given for +self+.
- * - #bsearch:: Returns an element from +self+ selected by a binary search.
- * - #count:: Returns a count of elements in +self+.
- * - #end:: Returns the end value given for +self+.
- * - #exclude_end?:: Returns whether the end object is excluded.
- * - #first:: Returns the first elements of +self+.
- * - #hash:: Returns the integer hash code.
- * - #last:: Returns the last elements of +self+.
- * - #max:: Returns the maximum values in +self+.
- * - #min:: Returns the minimum values in +self+.
- * - #minmax:: Returns the minimum and maximum values in +self+.
- * - #size:: Returns the count of elements in +self+.
+ * - #begin: Returns the begin value given for +self+.
+ * - #bsearch: Returns an element from +self+ selected by a binary search.
+ * - #count: Returns a count of elements in +self+.
+ * - #end: Returns the end value given for +self+.
+ * - #exclude_end?: Returns whether the end object is excluded.
+ * - #first: Returns the first elements of +self+.
+ * - #hash: Returns the integer hash code.
+ * - #last: Returns the last elements of +self+.
+ * - #max: Returns the maximum values in +self+.
+ * - #min: Returns the minimum values in +self+.
+ * - #minmax: Returns the minimum and maximum values in +self+.
+ * - #size: Returns the count of elements in +self+.
  *
  * === Methods for Comparing
  *
- * - #==:: Returns whether a given object is equal to +self+ (uses #==).
- * - #===:: Returns whether the given object is between the begin and end values.
- * - #cover?:: Returns whether a given object is within +self+.
- * - #eql?:: Returns whether a given object is equal to +self+ (uses #eql?).
- * - #include? (aliased as #member?):: Returns whether a given object
- *                                     is an element of +self+.
+ * - #==: Returns whether a given object is equal to +self+ (uses #==).
+ * - #===: Returns whether the given object is between the begin and end values.
+ * - #cover?: Returns whether a given object is within +self+.
+ * - #eql?: Returns whether a given object is equal to +self+ (uses #eql?).
+ * - #include? (aliased as #member?): Returns whether a given object
+ *   is an element of +self+.
  *
  * === Methods for Iterating
  *
- * - #%:: Requires argument +n+; calls the block with each +n+-th element of +self+.
- * - #each:: Calls the block with each element of +self+.
- * - #step:: Takes optional argument +n+ (defaults to 1);
-             calls the block with each +n+-th element of +self+.
+ * - #%: Requires argument +n+; calls the block with each +n+-th element of +self+.
+ * - #each: Calls the block with each element of +self+.
+ * - #step: Takes optional argument +n+ (defaults to 1);
+     calls the block with each +n+-th element of +self+.
  *
  * === Methods for Converting
  *
- * - #inspect:: Returns a string representation of +self+ (uses #inspect).
- * - #to_a (aliased as #entries):: Returns elements of +self+ in an array.
- * - #to_s:: Returns a string representation of +self+ (uses #to_s).
+ * - #inspect: Returns a string representation of +self+ (uses #inspect).
+ * - #to_a (aliased as #entries): Returns elements of +self+ in an array.
+ * - #to_s: Returns a string representation of +self+ (uses #to_s).
  *
  */
 

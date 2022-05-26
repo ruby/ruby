@@ -40,19 +40,16 @@
 #include <time.h>
 #include <signal.h>
 
+#if defined __APPLE__
+# include <AvailabilityMacros.h>
+#endif
+
 #if defined(HAVE_SYS_EVENTFD_H) && defined(HAVE_EVENTFD)
 #  define USE_EVENTFD (1)
 #  include <sys/eventfd.h>
 #else
 #  define USE_EVENTFD (0)
 #endif
-
-#define DEBUG_OUT() \
-  pthread_mutex_lock(&debug_mutex); \
-  printf(POSITION_FORMAT"%"PRI_THREAD_ID" - %s" POSITION_ARGS, \
-	 fill_thread_id_string(pthread_self(), thread_id_string), buf);	\
-  fflush(stdout); \
-  pthread_mutex_unlock(&debug_mutex);
 
 #if defined(SIGVTALRM) && !defined(__CYGWIN__) && !defined(__EMSCRIPTEN__)
 #  define USE_UBF_LIST 1
@@ -176,7 +173,6 @@ static const rb_hrtime_t *sigwait_timeout(rb_thread_t *, int sigwait_fd,
                                               int *drained_p);
 static void ubf_timer_disarm(void);
 static void threadptr_trap_interrupt(rb_thread_t *);
-static void clear_thread_cache_altstack(void);
 static void ubf_wakeup_all_threads(void);
 static int ubf_threads_empty(void);
 
@@ -220,20 +216,23 @@ static rb_hrtime_t native_cond_timeout(rb_nativethread_cond_t *, rb_hrtime_t);
 static int native_cond_timedwait(rb_nativethread_cond_t *cond, pthread_mutex_t *mutex, const rb_hrtime_t *abs);
 
 /*
- * Designate the next gvl.timer thread, favor the last thread in
- * the waitq since it will be in waitq longest
+ * Designate the next sched.timer thread, favor the last thread in
+ * the readyq since it will be in readyq longest
  */
 static int
-designate_timer_thread(rb_global_vm_lock_t *gvl)
+designate_timer_thread(struct rb_thread_sched *sched)
 {
-    native_thread_data_t *last;
+    rb_thread_t *last;
 
-    last = list_tail(&gvl->waitq, native_thread_data_t, node.ubf);
+    last = ccan_list_tail(&sched->readyq, rb_thread_t, sched.node.readyq);
+
     if (last) {
-        rb_native_cond_signal(&last->cond.gvlq);
+        rb_native_cond_signal(&last->nt->cond.readyq);
         return TRUE;
     }
-    return FALSE;
+    else {
+        return FALSE;
+    }
 }
 
 /*
@@ -241,21 +240,20 @@ designate_timer_thread(rb_global_vm_lock_t *gvl)
  * periodically.  Continue on old timeout if it expired.
  */
 static void
-do_gvl_timer(rb_global_vm_lock_t *gvl, rb_thread_t *th)
+do_gvl_timer(struct rb_thread_sched *sched, rb_thread_t *th)
 {
     rb_vm_t *vm = GET_VM();
     static rb_hrtime_t abs;
-    native_thread_data_t *nd = &th->native_thread_data;
 
-    gvl->timer = th;
+    sched->timer = th;
 
     /* take over wakeups from UBF_TIMER */
     ubf_timer_disarm();
 
-    if (gvl->timer_err == ETIMEDOUT) {
-        abs = native_cond_timeout(&nd->cond.gvlq, TIME_QUANTUM_NSEC);
+    if (sched->timer_err == ETIMEDOUT) {
+        abs = native_cond_timeout(&th->nt->cond.readyq, TIME_QUANTUM_NSEC);
     }
-    gvl->timer_err = native_cond_timedwait(&nd->cond.gvlq, &gvl->lock, &abs);
+    sched->timer_err = native_cond_timedwait(&th->nt->cond.readyq, &sched->lock, &abs);
 
     ubf_wakeup_all_threads();
     ruby_sigchld_handler(vm);
@@ -273,131 +271,146 @@ do_gvl_timer(rb_global_vm_lock_t *gvl, rb_thread_t *th)
      * Timeslice.  Warning: the process may fork while this
      * thread is contending for GVL:
      */
-    if (gvl->owner) {
-        // strictly speaking, accessing "gvl->owner" is not thread-safe
-        RUBY_VM_SET_TIMER_INTERRUPT(gvl->owner->ec);
+    const rb_thread_t *running;
+    if ((running = sched->running) != 0) {
+        // strictly speaking, accessing "running" is not thread-safe
+        RUBY_VM_SET_TIMER_INTERRUPT(running->ec);
     }
-    gvl->timer = 0;
+    sched->timer = 0;
 }
 
 static void
-gvl_acquire_common(rb_global_vm_lock_t *gvl, rb_thread_t *th)
+thread_sched_to_ready_common(struct rb_thread_sched *sched, rb_thread_t *th)
 {
-    if (gvl->owner) {
-        native_thread_data_t *nd = &th->native_thread_data;
+    ccan_list_add_tail(&sched->readyq, &th->sched.node.readyq);
+}
 
+static void
+thread_sched_to_running_common(struct rb_thread_sched *sched, rb_thread_t *th)
+{
+    if (sched->running) {
         VM_ASSERT(th->unblock.func == 0 &&
-	          "we must not be in ubf_list and GVL waitq at the same time");
+                  "we must not be in ubf_list and GVL readyq at the same time");
 
-        list_add_tail(&gvl->waitq, &nd->node.gvl);
+        // waiting -> ready
+        thread_sched_to_ready_common(sched, th);
 
+        // wait for running chance
         do {
-            if (!gvl->timer) {
-                do_gvl_timer(gvl, th);
+            if (!sched->timer) {
+                do_gvl_timer(sched, th);
             }
             else {
-                rb_native_cond_wait(&nd->cond.gvlq, &gvl->lock);
+                rb_native_cond_wait(&th->nt->cond.readyq, &sched->lock);
             }
-        } while (gvl->owner);
+        } while (sched->running);
 
-        list_del_init(&nd->node.gvl);
+        ccan_list_del_init(&th->sched.node.readyq);
 
-        if (gvl->need_yield) {
-            gvl->need_yield = 0;
-            rb_native_cond_signal(&gvl->switch_cond);
+        if (sched->need_yield) {
+            sched->need_yield = 0;
+            rb_native_cond_signal(&sched->switch_cond);
         }
     }
     else { /* reset timer if uncontended */
-        gvl->timer_err = ETIMEDOUT;
+        sched->timer_err = ETIMEDOUT;
     }
-    gvl->owner = th;
-    if (!gvl->timer) {
-        if (!designate_timer_thread(gvl) && !ubf_threads_empty()) {
+
+    // ready -> running
+    sched->running = th;
+
+    if (!sched->timer) {
+        if (!designate_timer_thread(sched) && !ubf_threads_empty()) {
             rb_thread_wakeup_timer_thread(-1);
         }
     }
 }
 
 static void
-gvl_acquire(rb_global_vm_lock_t *gvl, rb_thread_t *th)
+thread_sched_to_running(struct rb_thread_sched *sched, rb_thread_t *th)
 {
-    rb_native_mutex_lock(&gvl->lock);
-    gvl_acquire_common(gvl, th);
-    rb_native_mutex_unlock(&gvl->lock);
+    rb_native_mutex_lock(&sched->lock);
+    thread_sched_to_running_common(sched, th);
+    rb_native_mutex_unlock(&sched->lock);
 }
 
-static const native_thread_data_t *
-gvl_release_common(rb_global_vm_lock_t *gvl)
+static rb_thread_t *
+thread_sched_to_waiting_common(struct rb_thread_sched *sched)
 {
-    native_thread_data_t *next;
-    gvl->owner = 0;
-    next = list_top(&gvl->waitq, native_thread_data_t, node.ubf);
-    if (next) rb_native_cond_signal(&next->cond.gvlq);
+    rb_thread_t *next;
+    sched->running = NULL;
+    next = ccan_list_top(&sched->readyq, rb_thread_t, sched.node.readyq);
+    if (next) rb_native_cond_signal(&next->nt->cond.readyq);
 
     return next;
 }
 
 static void
-gvl_release(rb_global_vm_lock_t *gvl)
+thread_sched_to_waiting(struct rb_thread_sched *sched)
 {
-    rb_native_mutex_lock(&gvl->lock);
-    gvl_release_common(gvl);
-    rb_native_mutex_unlock(&gvl->lock);
+    rb_native_mutex_lock(&sched->lock);
+    thread_sched_to_waiting_common(sched);
+    rb_native_mutex_unlock(&sched->lock);
 }
 
 static void
-gvl_yield(rb_global_vm_lock_t *gvl, rb_thread_t *th)
+thread_sched_yield(struct rb_thread_sched *sched, rb_thread_t *th)
 {
-    const native_thread_data_t *next;
+    rb_thread_t *next;
 
     /*
      * Perhaps other threads are stuck in blocking region w/o GVL, too,
      * (perhaps looping in io_close_fptr) so we kick them:
      */
     ubf_wakeup_all_threads();
-    rb_native_mutex_lock(&gvl->lock);
-    next = gvl_release_common(gvl);
+    rb_native_mutex_lock(&sched->lock);
+    next = thread_sched_to_waiting_common(sched);
 
     /* An another thread is processing GVL yield. */
-    if (UNLIKELY(gvl->wait_yield)) {
-        while (gvl->wait_yield)
-            rb_native_cond_wait(&gvl->switch_wait_cond, &gvl->lock);
+    if (UNLIKELY(sched->wait_yield)) {
+        while (sched->wait_yield)
+            rb_native_cond_wait(&sched->switch_wait_cond, &sched->lock);
     }
     else if (next) {
         /* Wait until another thread task takes GVL. */
-        gvl->need_yield = 1;
-        gvl->wait_yield = 1;
-        while (gvl->need_yield)
-            rb_native_cond_wait(&gvl->switch_cond, &gvl->lock);
-        gvl->wait_yield = 0;
-        rb_native_cond_broadcast(&gvl->switch_wait_cond);
+        sched->need_yield = 1;
+        sched->wait_yield = 1;
+        while (sched->need_yield)
+            rb_native_cond_wait(&sched->switch_cond, &sched->lock);
+        sched->wait_yield = 0;
+        rb_native_cond_broadcast(&sched->switch_wait_cond);
     }
     else {
-        rb_native_mutex_unlock(&gvl->lock);
+        rb_native_mutex_unlock(&sched->lock);
         native_thread_yield();
-        rb_native_mutex_lock(&gvl->lock);
-        rb_native_cond_broadcast(&gvl->switch_wait_cond);
+        rb_native_mutex_lock(&sched->lock);
+        rb_native_cond_broadcast(&sched->switch_wait_cond);
     }
-    gvl_acquire_common(gvl, th);
-    rb_native_mutex_unlock(&gvl->lock);
+    thread_sched_to_running_common(sched, th);
+    rb_native_mutex_unlock(&sched->lock);
 }
 
 void
-rb_gvl_init(rb_global_vm_lock_t *gvl)
+rb_thread_sched_init(struct rb_thread_sched *sched)
 {
-    rb_native_mutex_initialize(&gvl->lock);
-    rb_native_cond_initialize(&gvl->switch_cond);
-    rb_native_cond_initialize(&gvl->switch_wait_cond);
-    list_head_init(&gvl->waitq);
-    gvl->owner = 0;
-    gvl->timer = 0;
-    gvl->timer_err = ETIMEDOUT;
-    gvl->need_yield = 0;
-    gvl->wait_yield = 0;
+    rb_native_mutex_initialize(&sched->lock);
+    rb_native_cond_initialize(&sched->switch_cond);
+    rb_native_cond_initialize(&sched->switch_wait_cond);
+    ccan_list_head_init(&sched->readyq);
+    sched->running = NULL;
+    sched->timer = 0;
+    sched->timer_err = ETIMEDOUT;
+    sched->need_yield = 0;
+    sched->wait_yield = 0;
 }
 
+#if 0
+// TODO
+
+static void clear_thread_cache_altstack(void);
+
 static void
-gvl_destroy(rb_global_vm_lock_t *gvl)
+rb_thread_sched_destroy(struct rb_thread_sched *sched)
 {
     /*
      * only called once at VM shutdown (not atfork), another thread
@@ -405,21 +418,22 @@ gvl_destroy(rb_global_vm_lock_t *gvl)
      * the end of thread_start_func_2
      */
     if (0) {
-        rb_native_cond_destroy(&gvl->switch_wait_cond);
-        rb_native_cond_destroy(&gvl->switch_cond);
-        rb_native_mutex_destroy(&gvl->lock);
+        rb_native_cond_destroy(&sched->switch_wait_cond);
+        rb_native_cond_destroy(&sched->switch_cond);
+        rb_native_mutex_destroy(&sched->lock);
     }
     clear_thread_cache_altstack();
 }
+#endif
 
 #if defined(HAVE_WORKING_FORK)
 static void thread_cache_reset(void);
 static void
-gvl_atfork(rb_global_vm_lock_t *gvl)
+thread_sched_atfork(struct rb_thread_sched *sched)
 {
     thread_cache_reset();
-    rb_gvl_init(gvl);
-    gvl_acquire(gvl, GET_THREAD());
+    rb_thread_sched_init(sched);
+    thread_sched_to_running(sched, GET_THREAD());
 }
 #endif
 
@@ -628,6 +642,14 @@ ruby_thread_from_native(void)
 int
 ruby_thread_set_native(rb_thread_t *th)
 {
+    if (th) {
+#ifdef USE_UBF_LIST
+        ccan_list_node_init(&th->sched.node.ubf);
+#endif
+    }
+
+    // setup TLS
+
     if (th && th->ec) {
         rb_ractor_set_current_ec(th->ractor, th->ec);
     }
@@ -639,10 +661,31 @@ ruby_thread_set_native(rb_thread_t *th)
 #endif
 }
 
-static void native_thread_init(rb_thread_t *th);
+#ifdef RB_THREAD_T_HAS_NATIVE_ID
+static int
+get_native_thread_id(void)
+{
+#ifdef __linux__
+    return (int)syscall(SYS_gettid);
+#elif defined(__FreeBSD__)
+    return pthread_getthreadid_np();
+#endif
+}
+#endif
+
+static void
+native_thread_init(struct rb_native_thread *nt)
+{
+#ifdef RB_THREAD_T_HAS_NATIVE_ID
+    nt->tid = get_native_thread_id();
+#endif
+    rb_native_cond_initialize(&nt->cond.readyq);
+    if (&nt->cond.readyq != &nt->cond.intr)
+      rb_native_cond_initialize(&nt->cond.intr);
+}
 
 void
-Init_native_thread(rb_thread_t *th)
+Init_native_thread(rb_thread_t *main_th)
 {
 #if defined(HAVE_PTHREAD_CONDATTR_SETCLOCK)
     if (condattr_monotonic) {
@@ -662,39 +705,12 @@ Init_native_thread(rb_thread_t *th)
         rb_bug("pthread_key_create failed (ruby_current_ec_key)");
     }
 #endif
-    th->thread_id = pthread_self();
-    ruby_thread_set_native(th);
-    fill_thread_id_str(th);
-    native_thread_init(th);
     posix_signal(SIGVTALRM, null_func);
-}
 
-#ifdef RB_THREAD_T_HAS_NATIVE_ID
-static int
-get_native_thread_id(void)
-{
-#ifdef __linux__
-    return (int)syscall(SYS_gettid);
-#elif defined(__FreeBSD__)
-    return pthread_getthreadid_np();
-#endif
-}
-#endif
-
-static void
-native_thread_init(rb_thread_t *th)
-{
-    native_thread_data_t *nd = &th->native_thread_data;
-
-#ifdef RB_THREAD_T_HAS_NATIVE_ID
-    th->tid = get_native_thread_id();
-#endif
-#ifdef USE_UBF_LIST
-    list_node_init(&nd->node.ubf);
-#endif
-    rb_native_cond_initialize(&nd->cond.gvlq);
-    if (&nd->cond.gvlq != &nd->cond.intr)
-        rb_native_cond_initialize(&nd->cond.intr);
+    // setup main thread
+    main_th->nt->thread_id = pthread_self();
+    ruby_thread_set_native(main_th);
+    native_thread_init(main_th->nt);
 }
 
 #ifndef USE_THREAD_CACHE
@@ -704,11 +720,12 @@ native_thread_init(rb_thread_t *th)
 static void
 native_thread_destroy(rb_thread_t *th)
 {
-    native_thread_data_t *nd = &th->native_thread_data;
+    struct rb_native_thread *nt = th->nt;
 
-    rb_native_cond_destroy(&nd->cond.gvlq);
-    if (&nd->cond.gvlq != &nd->cond.intr)
-        rb_native_cond_destroy(&nd->cond.intr);
+    rb_native_cond_destroy(&nt->cond.readyq);
+
+    if (&nt->cond.readyq != &nt->cond.intr)
+      rb_native_cond_destroy(&nt->cond.intr);
 
     /*
      * prevent false positive from ruby_thread_has_gvl_p if that
@@ -1035,7 +1052,7 @@ static void *
 thread_start_func_1(void *th_ptr)
 {
     rb_thread_t *th = th_ptr;
-    RB_ALTSTACK_INIT(void *altstack, th->altstack);
+    RB_ALTSTACK_INIT(void *altstack, th->nt->altstack);
 #if USE_THREAD_CACHE
   thread_start:
 #endif
@@ -1044,12 +1061,13 @@ thread_start_func_1(void *th_ptr)
 	VALUE stack_start;
 #endif
 
-	fill_thread_id_str(th);
 #if defined USE_NATIVE_THREAD_INIT
 	native_thread_init_stack(th);
 #endif
-	native_thread_init(th);
-	/* run */
+
+        native_thread_init(th->nt);
+
+        /* run */
 #if defined USE_NATIVE_THREAD_INIT
         thread_start_func_2(th, th->ec->machine.stack_start);
 #else
@@ -1072,19 +1090,19 @@ struct cached_thread_entry {
     rb_nativethread_id_t thread_id;
     rb_thread_t *th;
     void *altstack;
-    struct list_node node;
+    struct ccan_list_node node;
 };
 
 #if USE_THREAD_CACHE
 static rb_nativethread_lock_t thread_cache_lock = RB_NATIVETHREAD_LOCK_INIT;
-static LIST_HEAD(cached_thread_head);
+static CCAN_LIST_HEAD(cached_thread_head);
 
 #  if defined(HAVE_WORKING_FORK)
 static void
 thread_cache_reset(void)
 {
     rb_native_mutex_initialize(&thread_cache_lock);
-    list_head_init(&cached_thread_head);
+    ccan_list_head_init(&cached_thread_head);
 }
 #  endif
 
@@ -1111,12 +1129,12 @@ register_cached_thread_and_wait(void *altstack)
 
     rb_native_mutex_lock(&thread_cache_lock);
     {
-        list_add(&cached_thread_head, &entry.node);
+        ccan_list_add(&cached_thread_head, &entry.node);
 
         native_cond_timedwait(&entry.cond, &thread_cache_lock, &end);
 
         if (entry.th == NULL) { /* unused */
-            list_del(&entry.node);
+            ccan_list_del(&entry.node);
         }
     }
     rb_native_mutex_unlock(&thread_cache_lock);
@@ -1141,12 +1159,11 @@ use_cached_thread(rb_thread_t *th)
     struct cached_thread_entry *entry;
 
     rb_native_mutex_lock(&thread_cache_lock);
-    entry = list_pop(&cached_thread_head, struct cached_thread_entry, node);
+    entry = ccan_list_pop(&cached_thread_head, struct cached_thread_entry, node);
     if (entry) {
         entry->th = th;
-        /* th->thread_id must be set before signal for Thread#name= */
-        th->thread_id = entry->thread_id;
-        fill_thread_id_str(th);
+        /* th->nt->thread_id must be set before signal for Thread#name= */
+        th->nt->thread_id = entry->thread_id;
         rb_native_cond_signal(&entry->cond);
     }
     rb_native_mutex_unlock(&thread_cache_lock);
@@ -1155,6 +1172,8 @@ use_cached_thread(rb_thread_t *th)
     return 0;
 }
 
+#if 0
+// TODO
 static void
 clear_thread_cache_altstack(void)
 {
@@ -1162,7 +1181,7 @@ clear_thread_cache_altstack(void)
     struct cached_thread_entry *entry;
 
     rb_native_mutex_lock(&thread_cache_lock);
-    list_for_each(&cached_thread_head, entry, node) {
+    ccan_list_for_each(&cached_thread_head, entry, node) {
         void MAYBE_UNUSED(*altstack) = entry->altstack;
         entry->altstack = 0;
         RB_ALTSTACK_FREE(altstack);
@@ -1170,14 +1189,18 @@ clear_thread_cache_altstack(void)
     rb_native_mutex_unlock(&thread_cache_lock);
 #endif
 }
+#endif
 
 static int
 native_thread_create(rb_thread_t *th)
 {
     int err = 0;
 
+    VM_ASSERT(th->nt == 0);
+    th->nt = ZALLOC(struct rb_native_thread);
+
     if (use_cached_thread(th)) {
-	thread_debug("create (use cached thread): %p\n", (void *)th);
+        RUBY_DEBUG_LOG("use cached nt. th:%u", rb_th_serial(th));
     }
     else {
 	pthread_attr_t attr;
@@ -1185,15 +1208,15 @@ native_thread_create(rb_thread_t *th)
 	const size_t space = space_size(stack_size);
 
 #ifdef USE_SIGALTSTACK
-        th->altstack = rb_allocate_sigaltstack();
+        th->nt->altstack = rb_allocate_sigaltstack();
 #endif
         th->ec->machine.stack_maxsize = stack_size - space;
 
 	CHECK_ERR(pthread_attr_init(&attr));
 
 # ifdef PTHREAD_STACK_MIN
-	thread_debug("create - stack size: %lu\n", (unsigned long)stack_size);
-	CHECK_ERR(pthread_attr_setstacksize(&attr, stack_size));
+        RUBY_DEBUG_LOG("stack size: %lu", (unsigned long)stack_size);
+        CHECK_ERR(pthread_attr_setstacksize(&attr, stack_size));
 # endif
 
 # ifdef HAVE_PTHREAD_ATTR_SETINHERITSCHED
@@ -1201,10 +1224,11 @@ native_thread_create(rb_thread_t *th)
 # endif
 	CHECK_ERR(pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED));
 
-        err = pthread_create(&th->thread_id, &attr, thread_start_func_1, th);
-	thread_debug("create: %p (%d)\n", (void *)th, err);
-	/* should be done in the created thread */
-	fill_thread_id_str(th);
+        err = pthread_create(&th->nt->thread_id, &attr, thread_start_func_1, th);
+
+        RUBY_DEBUG_LOG("th:%u err:%d", rb_th_serial(th), err);
+
+        /* should be done in the created thread */
 	CHECK_ERR(pthread_attr_destroy(&attr));
     }
     return err;
@@ -1220,7 +1244,7 @@ native_thread_apply_priority(rb_thread_t *th)
     int policy;
     int priority = 0 - th->priority;
     int max, min;
-    pthread_getschedparam(th->thread_id, &policy, &sp);
+    pthread_getschedparam(th->nt->thread_id, &policy, &sp);
     max = sched_get_priority_max(policy);
     min = sched_get_priority_min(policy);
 
@@ -1232,7 +1256,7 @@ native_thread_apply_priority(rb_thread_t *th)
     }
 
     sp.sched_priority = priority;
-    pthread_setschedparam(th->thread_id, policy, &sp);
+    pthread_setschedparam(th->nt->thread_id, policy, &sp);
 #else
     /* not touched */
 #endif
@@ -1250,15 +1274,15 @@ static void
 ubf_pthread_cond_signal(void *ptr)
 {
     rb_thread_t *th = (rb_thread_t *)ptr;
-    thread_debug("ubf_pthread_cond_signal (%p)\n", (void *)th);
-    rb_native_cond_signal(&th->native_thread_data.cond.intr);
+    RUBY_DEBUG_LOG("th:%u", rb_th_serial(th));
+    rb_native_cond_signal(&th->nt->cond.intr);
 }
 
 static void
 native_cond_sleep(rb_thread_t *th, rb_hrtime_t *rel)
 {
     rb_nativethread_lock_t *lock = &th->interrupt_lock;
-    rb_nativethread_cond_t *cond = &th->native_thread_data.cond.intr;
+    rb_nativethread_cond_t *cond = &th->nt->cond.intr;
 
     /* Solaris cond_timedwait() return EINVAL if an argument is greater than
      * current_time + 100,000,000.  So cut up to 100,000,000.  This is
@@ -1270,7 +1294,7 @@ native_cond_sleep(rb_thread_t *th, rb_hrtime_t *rel)
      */
     const rb_hrtime_t max = (rb_hrtime_t)100000000 * RB_HRTIME_PER_SEC;
 
-    GVL_UNLOCK_BEGIN(th);
+    THREAD_BLOCKING_BEGIN(th);
     {
         rb_native_mutex_lock(lock);
 	th->unblock.func = ubf_pthread_cond_signal;
@@ -1278,7 +1302,7 @@ native_cond_sleep(rb_thread_t *th, rb_hrtime_t *rel)
 
 	if (RUBY_VM_INTERRUPTED(th->ec)) {
 	    /* interrupted.  return immediate */
-	    thread_debug("native_sleep: interrupted before sleep\n");
+            RUBY_DEBUG_LOG("interrupted before sleep th:%u", rb_th_serial(th));
 	}
 	else {
 	    if (!rel) {
@@ -1299,19 +1323,19 @@ native_cond_sleep(rb_thread_t *th, rb_hrtime_t *rel)
 
 	rb_native_mutex_unlock(lock);
     }
-    GVL_UNLOCK_END(th);
+    THREAD_BLOCKING_END(th);
 
-    thread_debug("native_sleep done\n");
+    RUBY_DEBUG_LOG("done th:%u", rb_th_serial(th));
 }
 
 #ifdef USE_UBF_LIST
-static LIST_HEAD(ubf_list_head);
+static CCAN_LIST_HEAD(ubf_list_head);
 static rb_nativethread_lock_t ubf_list_lock = RB_NATIVETHREAD_LOCK_INIT;
 
 static void
 ubf_list_atfork(void)
 {
-    list_head_init(&ubf_list_head);
+    ccan_list_head_init(&ubf_list_head);
     rb_native_mutex_initialize(&ubf_list_lock);
 }
 
@@ -1319,11 +1343,11 @@ ubf_list_atfork(void)
 static void
 register_ubf_list(rb_thread_t *th)
 {
-    struct list_node *node = &th->native_thread_data.node.ubf;
+    struct ccan_list_node *node = &th->sched.node.ubf;
 
-    if (list_empty((struct list_head*)node)) {
+    if (ccan_list_empty((struct ccan_list_head*)node)) {
         rb_native_mutex_lock(&ubf_list_lock);
-	list_add(&ubf_list_head, node);
+	ccan_list_add(&ubf_list_head, node);
         rb_native_mutex_unlock(&ubf_list_lock);
     }
 }
@@ -1332,15 +1356,15 @@ register_ubf_list(rb_thread_t *th)
 static void
 unregister_ubf_list(rb_thread_t *th)
 {
-    struct list_node *node = &th->native_thread_data.node.ubf;
+    struct ccan_list_node *node = &th->sched.node.ubf;
 
     /* we can't allow re-entry into ubf_list_head */
     VM_ASSERT(th->unblock.func == 0);
 
-    if (!list_empty((struct list_head*)node)) {
+    if (!ccan_list_empty((struct ccan_list_head*)node)) {
         rb_native_mutex_lock(&ubf_list_lock);
-        list_del_init(node);
-        if (list_empty(&ubf_list_head) && !rb_signal_buff_size()) {
+        ccan_list_del_init(node);
+        if (ccan_list_empty(&ubf_list_head) && !rb_signal_buff_size()) {
             ubf_timer_disarm();
         }
         rb_native_mutex_unlock(&ubf_list_lock);
@@ -1354,15 +1378,15 @@ unregister_ubf_list(rb_thread_t *th)
 static void
 ubf_wakeup_thread(rb_thread_t *th)
 {
-    thread_debug("thread_wait_queue_wakeup (%"PRI_THREAD_ID")\n", thread_id_str(th));
-    pthread_kill(th->thread_id, SIGVTALRM);
+    RUBY_DEBUG_LOG("th:%u", rb_th_serial(th));
+    pthread_kill(th->nt->thread_id, SIGVTALRM);
 }
 
 static void
 ubf_select(void *ptr)
 {
     rb_thread_t *th = (rb_thread_t *)ptr;
-    rb_global_vm_lock_t *gvl = rb_ractor_gvl(th->ractor);
+    struct rb_thread_sched *sched = TH_SCHED(th);
     const rb_thread_t *cur = ruby_thread_from_native(); /* may be 0 */
 
     register_ubf_list(th);
@@ -1377,17 +1401,17 @@ ubf_select(void *ptr)
      * sigwait_th thread, otherwise we can deadlock with a thread
      * in unblock_function_clear.
      */
-    if (cur != gvl->timer && cur != sigwait_th) {
+    if (cur != sched->timer && cur != sigwait_th) {
         /*
          * Double-checked locking above was to prevent nested locking
          * by the SAME thread.  We use trylock here to prevent deadlocks
          * between DIFFERENT threads
          */
-        if (rb_native_mutex_trylock(&gvl->lock) == 0) {
-            if (!gvl->timer) {
+        if (rb_native_mutex_trylock(&sched->lock) == 0) {
+            if (!sched->timer) {
                 rb_thread_wakeup_timer_thread(-1);
             }
-            rb_native_mutex_unlock(&gvl->lock);
+            rb_native_mutex_unlock(&sched->lock);
         }
     }
 
@@ -1397,19 +1421,17 @@ ubf_select(void *ptr)
 static int
 ubf_threads_empty(void)
 {
-    return list_empty(&ubf_list_head);
+    return ccan_list_empty(&ubf_list_head);
 }
 
 static void
 ubf_wakeup_all_threads(void)
 {
-    rb_thread_t *th;
-    native_thread_data_t *dat;
-
     if (!ubf_threads_empty()) {
         rb_native_mutex_lock(&ubf_list_lock);
-	list_for_each(&ubf_list_head, dat, node.ubf) {
-	    th = container_of(dat, rb_thread_t, native_thread_data);
+        rb_thread_t *th;
+
+        ccan_list_for_each(&ubf_list_head, th, sched.node.ubf) {
 	    ubf_wakeup_thread(th);
 	}
         rb_native_mutex_unlock(&ubf_list_lock);
@@ -1734,12 +1756,16 @@ static VALUE
 native_thread_native_thread_id(rb_thread_t *target_th)
 {
 #ifdef RB_THREAD_T_HAS_NATIVE_ID
-    int tid = target_th->tid;
+    int tid = target_th->nt->tid;
     if (tid == 0) return Qnil;
     return INT2FIX(tid);
 #elif defined(__APPLE__)
     uint64_t tid;
-    int e = pthread_threadid_np(target_th->thread_id, &tid);
+    if (MAC_OS_X_VERSION_MAX_ALLOWED < MAC_OS_X_VERSION_10_6 ||
+        !&pthread_threadid_np /* check weakly linked symbol */) {
+        return ULL2NUM(pthread_mach_thread_np(pthread_self()));
+    }
+    int e = pthread_threadid_np(target_th->nt->thread_id, &tid);
     if (e != 0) rb_syserr_fail(e, "pthread_threadid_np");
     return ULL2NUM((unsigned long long)tid);
 #endif
@@ -1949,7 +1975,7 @@ ruby_stack_overflowed_p(const rb_thread_t *th, const void *addr)
 #ifdef STACKADDR_AVAILABLE
     if (get_stack(&base, &size) == 0) {
 # ifdef __APPLE__
-	if (pthread_equal(th->thread_id, native_main_thread.id)) {
+	if (pthread_equal(th->nt->thread_id, native_main_thread.id)) {
 	    struct rlimit rlim;
 	    if (getrlimit(RLIMIT_STACK, &rlim) == 0 && rlim.rlim_cur > size) {
 		size = (size_t)rlim.rlim_cur;
@@ -2116,7 +2142,7 @@ rb_sigwait_sleep(rb_thread_t *th, int sigwait_fd, const rb_hrtime_t *rel)
         check_signals_nogvl(th, sigwait_fd);
     }
     else {
-        rb_hrtime_t to = RB_HRTIME_MAX, end;
+        rb_hrtime_t to = RB_HRTIME_MAX, end = 0;
         int n = 0;
 
         if (rel) {
@@ -2167,13 +2193,13 @@ ubf_ppoll_sleep(void *ignore)
  * Confirmed on FreeBSD 11.2 and Linux 4.19.
  * [ruby-core:90417] [Bug #15398]
  */
-#define GVL_UNLOCK_BEGIN_YIELD(th) do { \
-    const native_thread_data_t *next; \
-    rb_global_vm_lock_t *gvl = rb_ractor_gvl(th->ractor); \
+#define THREAD_BLOCKING_YIELD(th) do { \
+    const rb_thread_t *next; \
+    struct rb_thread_sched *sched = TH_SCHED(th); \
     RB_GC_SAVE_MACHINE_CONTEXT(th); \
-    rb_native_mutex_lock(&gvl->lock); \
-    next = gvl_release_common(gvl); \
-    rb_native_mutex_unlock(&gvl->lock); \
+    rb_native_mutex_lock(&sched->lock); \
+    next = thread_sched_to_waiting_common(sched); \
+    rb_native_mutex_unlock(&sched->lock); \
     if (!next && rb_ractor_living_thread_num(th->ractor) > 1) { \
         native_thread_yield(); \
     }
@@ -2195,28 +2221,29 @@ native_ppoll_sleep(rb_thread_t *th, rb_hrtime_t *rel)
     th->unblock.func = ubf_ppoll_sleep;
     rb_native_mutex_unlock(&th->interrupt_lock);
 
-    GVL_UNLOCK_BEGIN_YIELD(th);
+    THREAD_BLOCKING_YIELD(th);
+    {
+        if (!RUBY_VM_INTERRUPTED(th->ec)) {
+            struct pollfd pfd[2];
+            struct timespec ts;
 
-    if (!RUBY_VM_INTERRUPTED(th->ec)) {
-        struct pollfd pfd[2];
-        struct timespec ts;
-
-        pfd[0].fd = signal_self_pipe.normal[0]; /* sigwait_fd */
-        pfd[1].fd = signal_self_pipe.ub_main[0];
-        pfd[0].events = pfd[1].events = POLLIN;
-        if (ppoll(pfd, 2, rb_hrtime2timespec(&ts, rel), 0) > 0) {
-            if (pfd[1].revents & POLLIN) {
-                (void)consume_communication_pipe(pfd[1].fd);
+            pfd[0].fd = signal_self_pipe.normal[0]; /* sigwait_fd */
+            pfd[1].fd = signal_self_pipe.ub_main[0];
+            pfd[0].events = pfd[1].events = POLLIN;
+            if (ppoll(pfd, 2, rb_hrtime2timespec(&ts, rel), 0) > 0) {
+                if (pfd[1].revents & POLLIN) {
+                    (void)consume_communication_pipe(pfd[1].fd);
+                }
             }
+            /*
+             * do not read the sigwait_fd, here, let uplevel callers
+             * or other threads that, otherwise we may steal and starve
+             * other threads
+             */
         }
-        /*
-         * do not read the sigwait_fd, here, let uplevel callers
-         * or other threads that, otherwise we may steal and starve
-         * other threads
-         */
+        unblock_function_clear(th);
     }
-    unblock_function_clear(th);
-    GVL_UNLOCK_END(th);
+    THREAD_BLOCKING_END(th);
 }
 
 static void
@@ -2230,16 +2257,18 @@ native_sleep(rb_thread_t *th, rb_hrtime_t *rel)
         th->unblock.func = ubf_sigwait;
         rb_native_mutex_unlock(&th->interrupt_lock);
 
-        GVL_UNLOCK_BEGIN_YIELD(th);
+        THREAD_BLOCKING_YIELD(th);
+        {
+            if (!RUBY_VM_INTERRUPTED(th->ec)) {
+                rb_sigwait_sleep(th, sigwait_fd, rel);
+            }
+            else {
+                check_signals_nogvl(th, sigwait_fd);
+            }
+            unblock_function_clear(th);
+        }
+        THREAD_BLOCKING_END(th);
 
-        if (!RUBY_VM_INTERRUPTED(th->ec)) {
-            rb_sigwait_sleep(th, sigwait_fd, rel);
-        }
-        else {
-            check_signals_nogvl(th, sigwait_fd);
-        }
-        unblock_function_clear(th);
-        GVL_UNLOCK_END(th);
         rb_sigwait_fd_put(th, sigwait_fd);
         rb_sigwait_fd_migrate(th->vm);
     }
@@ -2258,7 +2287,7 @@ static void *
 timer_pthread_fn(void *p)
 {
     rb_vm_t *vm = p;
-    pthread_t main_thread_id = vm->ractor.main_thread->thread_id;
+    pthread_t main_thread_id = vm->ractor.main_thread->nt->thread_id;
     struct pollfd pfd;
     int timeout = -1;
     int ccp;

@@ -74,16 +74,16 @@ module Test
         end
       end
 
-      module JITFirst
+      module MJITFirst
         def group(list)
-          # JIT first
-          jit, others = list.partition {|e| /test_jit/ =~ e}
-          jit + others
+          # MJIT first
+          mjit, others = list.partition {|e| /test_mjit/ =~ e}
+          mjit + others
         end
       end
 
       class Alpha < NoSort
-        include JITFirst
+        include MJITFirst
 
         def sort_by_name(list)
           list.sort_by(&:name)
@@ -97,7 +97,7 @@ module Test
 
       # shuffle test suites based on CRC32 of their names
       Shuffle = Struct.new(:seed, :salt) do
-        include JITFirst
+        include MJITFirst
 
         def initialize(seed)
           self.class::CRC_TBL ||= (0..255).map {|i|
@@ -473,8 +473,8 @@ module Test
         real_file = worker.real_file and warn "running file: #{real_file}"
         @need_quit = true
         warn ""
-        warn "Some worker was crashed. It seems ruby interpreter's bug"
-        warn "or, a bug of test/unit/parallel.rb. try again without -j"
+        warn "A test worker crashed. It might be an interpreter bug or"
+        warn "a bug in test/unit/parallel.rb. Try again without the -j"
         warn "option."
         warn ""
         if File.exist?('core')
@@ -684,7 +684,7 @@ module Test
 
             if !(_io = IO.select(@ios, nil, nil, timeout))
               timeout = Time.now - @worker_timeout
-              quit_workers {|w| w.response_at < timeout}&.map {|w|
+              quit_workers {|w| w.response_at&.<(timeout) }&.map {|w|
                 rep << {file: w.real_file, result: nil, testcase: w.current[0], error: w.current}
               }
             elsif _io.first.any? {|io|

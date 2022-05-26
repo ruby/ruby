@@ -112,6 +112,8 @@ unless Object.const_defined?(:RUBY_EXE) and RUBY_EXE
 end
 
 def ruby_exe(code = :not_given, opts = {})
+  skip "WASI doesn't provide subprocess" if PlatformGuard.wasi?
+
   if opts[:dir]
     raise "ruby_exe(..., dir: dir) is no longer supported, use Dir.chdir"
   end

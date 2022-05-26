@@ -144,7 +144,7 @@ class IseqDisassembler:
     def insn_len(self, target, offset):
         size_of_char = self.tChar.GetByteSize()
 
-        symbol = target.FindSymbols("insn_len.t")[0].GetSymbol()
+        symbol = target.FindSymbols("rb_vm_insn_len_info")[0].GetSymbol()
         section = symbol.GetStartAddress().GetSection()
         addr_of_table = symbol.GetStartAddress().GetOffset()
 
@@ -162,7 +162,7 @@ class IseqDisassembler:
         size_of_short = tUShort.GetByteSize()
         size_of_char =  self.tChar.GetByteSize()
 
-        symbol = target.FindSymbols("insn_op_types.y")[0].GetSymbol()
+        symbol = target.FindSymbols("rb_vm_insn_op_offset")[0].GetSymbol()
         section = symbol.GetStartAddress().GetSection()
         addr_of_table = symbol.GetStartAddress().GetOffset()
 
@@ -174,7 +174,7 @@ class IseqDisassembler:
         if not error.Success():
             print("error getting op type offset: ", error)
 
-        symbol = target.FindSymbols("insn_op_types.x")[0].GetSymbol()
+        symbol = target.FindSymbols("rb_vm_insn_op_base")[0].GetSymbol()
         section = symbol.GetStartAddress().GetSection()
         addr_of_table = symbol.GetStartAddress().GetOffset()
         addr_in_name_table = addr_of_table + (offset * size_of_char)
@@ -190,7 +190,7 @@ class IseqDisassembler:
         tUShort = target.FindFirstType("unsigned short")
         size_of_short = tUShort.GetByteSize()
 
-        symbol = target.FindSymbols("insn_name.y")[0].GetSymbol()
+        symbol = target.FindSymbols("rb_vm_insn_name_offset")[0].GetSymbol()
         section = symbol.GetStartAddress().GetSection()
         table_offset = symbol.GetStartAddress().GetOffset()
 
@@ -205,7 +205,7 @@ class IseqDisassembler:
             print("error getting insn name table offset: ", error)
 
     def insn_name(self, target, process, result, offset):
-        symbol = target.FindSymbols("insn_name.x")[0].GetSymbol()
+        symbol = target.FindSymbols("rb_vm_insn_name_base")[0].GetSymbol()
         section = symbol.GetStartAddress().GetSection()
         addr_of_table = symbol.GetStartAddress().GetOffset()
 

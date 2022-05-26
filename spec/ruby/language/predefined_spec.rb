@@ -654,10 +654,8 @@ describe "Predefined global $," do
     -> { $, = Object.new }.should raise_error(TypeError)
   end
 
-  ruby_version_is "2.7" do
-    it "warns if assigned non-nil" do
-      -> { $, = "_" }.should complain(/warning: `\$,' is deprecated/)
-    end
+  it "warns if assigned non-nil" do
+    -> { $, = "_" }.should complain(/warning: `\$,' is deprecated/)
   end
 end
 
@@ -693,10 +691,8 @@ describe "Predefined global $;" do
     $; = nil
   end
 
-  ruby_version_is "2.7" do
-    it "warns if assigned non-nil" do
-      -> { $; = "_" }.should complain(/warning: `\$;' is deprecated/)
-    end
+  it "warns if assigned non-nil" do
+    -> { $; = "_" }.should complain(/warning: `\$;' is deprecated/)
   end
 end
 
@@ -1316,33 +1312,31 @@ describe "The predefined global constant" do
   end
 end
 
-ruby_version_is "2.7" do
-  describe "$LOAD_PATH.resolve_feature_path" do
-    it "returns what will be loaded without actual loading, .rb file" do
-      extension, path = $LOAD_PATH.resolve_feature_path('set')
-      extension.should == :rb
-      path.should.end_with?('/set.rb')
+describe "$LOAD_PATH.resolve_feature_path" do
+  it "returns what will be loaded without actual loading, .rb file" do
+    extension, path = $LOAD_PATH.resolve_feature_path('set')
+    extension.should == :rb
+    path.should.end_with?('/set.rb')
+  end
+
+  it "returns what will be loaded without actual loading, .so file" do
+    require 'rbconfig'
+    skip "no dynamically loadable standard extension" if RbConfig::CONFIG["EXTSTATIC"] == "static"
+
+    extension, path = $LOAD_PATH.resolve_feature_path('etc')
+    extension.should == :so
+    path.should.end_with?("/etc.#{RbConfig::CONFIG['DLEXT']}")
+  end
+
+  ruby_version_is ""..."3.1" do
+    it "raises LoadError if feature cannot be found" do
+      -> { $LOAD_PATH.resolve_feature_path('noop') }.should raise_error(LoadError)
     end
+  end
 
-    it "returns what will be loaded without actual loading, .so file" do
-      require 'rbconfig'
-      skip "no dynamically loadable standard extension" if RbConfig::CONFIG["EXTSTATIC"] == "static"
-
-      extension, path = $LOAD_PATH.resolve_feature_path('etc')
-      extension.should == :so
-      path.should.end_with?("/etc.#{RbConfig::CONFIG['DLEXT']}")
-    end
-
-    ruby_version_is "2.7"..."3.1" do
-      it "raises LoadError if feature cannot be found" do
-        -> { $LOAD_PATH.resolve_feature_path('noop') }.should raise_error(LoadError)
-      end
-    end
-
-    ruby_version_is "3.1" do
-      it "return nil if feature cannot be found" do
-        $LOAD_PATH.resolve_feature_path('noop').should be_nil
-      end
+  ruby_version_is "3.1" do
+    it "return nil if feature cannot be found" do
+      $LOAD_PATH.resolve_feature_path('noop').should be_nil
     end
   end
 end

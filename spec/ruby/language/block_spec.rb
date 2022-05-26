@@ -40,8 +40,17 @@ describe "A block yielded a single" do
       m([1, 2]) { |a=5, b, c, d| [a, b, c, d] }.should == [5, 1, 2, nil]
     end
 
-    it "assigns elements to required arguments when a keyword rest argument is present" do
-      m([1, 2]) { |a, **k| [a, k] }.should == [1, {}]
+    ruby_version_is "3.2" do
+      it "does not autosplat single argument to required arguments when a keyword rest argument is present" do
+        m([1, 2]) { |a, **k| [a, k] }.should == [[1, 2], {}]
+      end
+    end
+
+    ruby_version_is ''..."3.2" do
+      # https://bugs.ruby-lang.org/issues/18633
+      it "autosplats single argument to required arguments when a keyword rest argument is present" do
+        m([1, 2]) { |a, **k| [a, k] }.should == [1, {}]
+      end
     end
 
     ruby_version_is ''..."3.0" do
@@ -92,17 +101,7 @@ describe "A block yielded a single" do
       end
     end
 
-    ruby_version_is ""..."2.7" do
-      it "calls #to_hash on the argument and uses resulting hash as first argument when optional argument and keyword argument accepted" do
-        obj = mock("coerce block keyword arguments")
-        obj.should_receive(:to_hash).and_return({"a" => 1, "b" => 2})
-
-        result = m([obj]) { |a=nil, **b| [a, b] }
-        result.should == [{"a" => 1, "b" => 2}, {}]
-      end
-    end
-
-    ruby_version_is "2.7"...'3.0' do
+    ruby_version_is ""...'3.0' do
       it "calls #to_hash on the argument but ignores result when optional argument and keyword argument accepted" do
         obj = mock("coerce block keyword arguments")
         obj.should_receive(:to_hash).and_return({"a" => 1, "b" => 2})
@@ -949,38 +948,18 @@ describe "Post-args" do
     end
 
     describe "with a circular argument reference" do
-      ruby_version_is ''...'2.7' do
-        it "warns and uses a nil value when there is an existing local variable with same name" do
-          a = 1
-          -> {
-            @proc = eval "proc { |a=a| a }"
-          }.should complain(/circular argument reference/)
-          @proc.call.should == nil
-        end
-
-        it "warns and uses a nil value when there is an existing method with same name" do
-          def a; 1; end
-          -> {
-            @proc = eval "proc { |a=a| a }"
-          }.should complain(/circular argument reference/)
-          @proc.call.should == nil
-        end
+      it "raises a SyntaxError if using an existing local with the same name as the argument" do
+        a = 1
+        -> {
+          @proc = eval "proc { |a=a| a }"
+        }.should raise_error(SyntaxError)
       end
 
-      ruby_version_is '2.7' do
-        it "raises a SyntaxError if using an existing local with the same name as the argument" do
-          a = 1
-          -> {
-            @proc = eval "proc { |a=a| a }"
-          }.should raise_error(SyntaxError)
-        end
-
-        it "raises a SyntaxError if there is an existing method with the same name as the argument" do
-          def a; 1; end
-          -> {
-            @proc = eval "proc { |a=a| a }"
-          }.should raise_error(SyntaxError)
-        end
+      it "raises a SyntaxError if there is an existing method with the same name as the argument" do
+        def a; 1; end
+        -> {
+          @proc = eval "proc { |a=a| a }"
+        }.should raise_error(SyntaxError)
       end
 
       it "calls an existing method with the same name as the argument if explicitly using ()" do

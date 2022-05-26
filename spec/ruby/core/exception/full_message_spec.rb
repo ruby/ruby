@@ -15,13 +15,19 @@ describe "Exception#full_message" do
   it "supports :highlight option and adds escape sequences to highlight some strings" do
     e = RuntimeError.new("Some runtime error")
 
-    full_message = e.full_message(highlight: true, order: :bottom)
-    full_message.should include "\e[1mTraceback\e[m (most recent call last)"
-    full_message.should include "\e[1mSome runtime error (\e[1;4mRuntimeError\e[m\e[1m)"
+    full_message = e.full_message(highlight: true, order: :top).lines
+    full_message[0].should.end_with? "\e[1mSome runtime error (\e[1;4mRuntimeError\e[m\e[1m)\e[m\n"
 
-    full_message = e.full_message(highlight: false, order: :bottom)
-    full_message.should include "Traceback (most recent call last)"
-    full_message.should include "Some runtime error (RuntimeError)"
+    full_message = e.full_message(highlight: true, order: :bottom).lines
+    full_message[0].should == "\e[1mTraceback\e[m (most recent call last):\n"
+    full_message[-1].should.end_with? "\e[1mSome runtime error (\e[1;4mRuntimeError\e[m\e[1m)\e[m\n"
+
+    full_message = e.full_message(highlight: false, order: :top).lines
+    full_message[0].should.end_with? "Some runtime error (RuntimeError)\n"
+
+    full_message = e.full_message(highlight: false, order: :bottom).lines
+    full_message[0].should == "Traceback (most recent call last):\n"
+    full_message[-1].should.end_with? "Some runtime error (RuntimeError)\n"
   end
 
   it "supports :order option and places the error message and the backtrace at the top or the bottom" do
@@ -35,9 +41,9 @@ describe "Exception#full_message" do
   it "shows the caller if the exception has no backtrace" do
     e = RuntimeError.new("Some runtime error")
     e.backtrace.should == nil
-    full_message = e.full_message(highlight: false, order: :top)
-    full_message.should include("#{__FILE__}:#{__LINE__-1}:in `")
-    full_message.should include("': Some runtime error (RuntimeError)\n")
+    full_message = e.full_message(highlight: false, order: :top).lines
+    full_message[0].should.start_with?("#{__FILE__}:#{__LINE__-1}:in `")
+    full_message[0].should.end_with?("': Some runtime error (RuntimeError)\n")
   end
 
   it "shows the exception class at the end of the first line of the message when the message contains multiple lines" do
@@ -45,9 +51,21 @@ describe "Exception#full_message" do
       line = __LINE__; raise "first line\nsecond line"
     rescue => e
       full_message = e.full_message(highlight: false, order: :top).lines
-      full_message[0].should include("#{__FILE__}:#{line}:in `")
-      full_message[0].should include(": first line (RuntimeError)\n")
+      full_message[0].should.start_with?("#{__FILE__}:#{line}:in `")
+      full_message[0].should.end_with?(": first line (RuntimeError)\n")
       full_message[1].should == "second line\n"
+    end
+  end
+
+  it "highlights the entire message when the message contains multiple lines" do
+    begin
+      line = __LINE__; raise "first line\nsecond line\nthird line"
+    rescue => e
+      full_message = e.full_message(highlight: true, order: :top).lines
+      full_message[0].should.start_with?("#{__FILE__}:#{line}:in `")
+      full_message[0].should.end_with?(": \e[1mfirst line (\e[1;4mRuntimeError\e[m\e[1m)\e[m\n")
+      full_message[1].should == "\e[1msecond line\e[m\n"
+      full_message[2].should == "\e[1mthird line\e[m\n"
     end
   end
 

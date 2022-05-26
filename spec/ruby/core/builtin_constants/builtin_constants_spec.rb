@@ -49,15 +49,7 @@ describe "RUBY_RELEASE_DATE" do
 end
 
 describe "RUBY_REVISION" do
-  ruby_version_is ""..."2.7" do
-    it "is an Integer" do
-      RUBY_REVISION.should be_kind_of(Integer)
-    end
-  end
-
-  ruby_version_is "2.7" do
-    it "is a String" do
-      RUBY_REVISION.should be_kind_of(String)
-    end
+  it "is a String" do
+    RUBY_REVISION.should be_kind_of(String)
   end
 end

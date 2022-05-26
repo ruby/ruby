@@ -25,61 +25,61 @@
 #
 # === Reading
 #
-# - #close:: Closes the directory stream for +self+.
-# - #pos=:: Sets the position in the directory stream for +self+.
-# - #read:: Reads and returns the next entry in the directory stream for +self+.
-# - #rewind:: Sets the position in the directory stream for +self+ to the first entry.
-# - #seek:: Sets the position in the directory stream for +self+
-#           the entry at the given offset.
+# - #close: Closes the directory stream for +self+.
+# - #pos=: Sets the position in the directory stream for +self+.
+# - #read: Reads and returns the next entry in the directory stream for +self+.
+# - #rewind: Sets the position in the directory stream for +self+ to the first entry.
+# - #seek: Sets the position in the directory stream for +self+
+#   the entry at the given offset.
 #
 # === Setting
 #
-# - ::chdir:: Changes the working directory of the current process
-#             to the given directory.
-# - ::chroot:: Changes the file-system root for the current process
-#              to the given directory.
+# - ::chdir: Changes the working directory of the current process
+#   to the given directory.
+# - ::chroot: Changes the file-system root for the current process
+#   to the given directory.
 #
 # === Querying
 #
-# - ::[]:: Same as ::glob without the ability to pass flags.
-# - ::children:: Returns an array of names of the children
-#                (both files and directories) of the given directory,
-#                but not including <tt>.</tt> or <tt>..</tt>.
-# - ::empty?:: Returns whether the given path is an empty directory.
-# - ::entries:: Returns an array of names of the children
-#               (both files and directories) of the given directory,
-#               including <tt>.</tt> and <tt>..</tt>.
-# - ::exist?:: Returns whether the given path is a directory.
-# - ::getwd (aliased as #pwd):: Returns the path to the current working directory.
-# - ::glob:: Returns an array of file paths matching the given pattern and flags.
-# - ::home:: Returns the home directory path for a given user or the current user.
-# - #children:: Returns an array of names of the children
-#               (both files and directories) of +self+,
-#               but not including <tt>.</tt> or <tt>..</tt>.
-# - #fileno:: Returns the integer file descriptor for +self+.
-# - #path (aliased as #to_path):: Returns the path used to create +self+.
-# - #tell (aliased as #pos):: Returns the integer position
-#                             in the directory stream for +self+.
+# - ::[]: Same as ::glob without the ability to pass flags.
+# - ::children: Returns an array of names of the children
+#   (both files and directories) of the given directory,
+#   but not including <tt>.</tt> or <tt>..</tt>.
+# - ::empty?: Returns whether the given path is an empty directory.
+# - ::entries: Returns an array of names of the children
+#   (both files and directories) of the given directory,
+#   including <tt>.</tt> and <tt>..</tt>.
+# - ::exist?: Returns whether the given path is a directory.
+# - ::getwd (aliased as #pwd): Returns the path to the current working directory.
+# - ::glob: Returns an array of file paths matching the given pattern and flags.
+# - ::home: Returns the home directory path for a given user or the current user.
+# - #children: Returns an array of names of the children
+#   (both files and directories) of +self+,
+#   but not including <tt>.</tt> or <tt>..</tt>.
+# - #fileno: Returns the integer file descriptor for +self+.
+# - #path (aliased as #to_path): Returns the path used to create +self+.
+# - #tell (aliased as #pos): Returns the integer position
+#   in the directory stream for +self+.
 #
 # === Iterating
 #
-# - ::each_child:: Calls the given block with each entry in the given directory,
-#                  but not including <tt>.</tt> or <tt>..</tt>.
-# - ::foreach:: Calls the given block with each entryin the given directory,
-#               including <tt>.</tt> and <tt>..</tt>.
-# - #each:: Calls the given block with each entry in +self+,
-#           including <tt>.</tt> and <tt>..</tt>.
-# - #each_child:: Calls the given block with each entry in +self+,
-#                 but not including <tt>.</tt> or <tt>..</tt>.
+# - ::each_child: Calls the given block with each entry in the given directory,
+#   but not including <tt>.</tt> or <tt>..</tt>.
+# - ::foreach: Calls the given block with each entryin the given directory,
+#   including <tt>.</tt> and <tt>..</tt>.
+# - #each: Calls the given block with each entry in +self+,
+#   including <tt>.</tt> and <tt>..</tt>.
+# - #each_child: Calls the given block with each entry in +self+,
+#   but not including <tt>.</tt> or <tt>..</tt>.
 #
 # === Other
 #
-# - ::mkdir:: Creates a directory at the given path, with optional permissions.
-# - ::new:: Returns a new \Dir for the given path, with optional encoding.
-# - ::open:: Same as ::new, but if a block is given, yields the \Dir to the block,
-#            closing it upon block exit.
-# - ::unlink (aliased as ::delete and ::rmdir):: Removes the given directory.
-# - #inspect:: Returns a string description of +self+.
+# - ::mkdir: Creates a directory at the given path, with optional permissions.
+# - ::new: Returns a new \Dir for the given path, with optional encoding.
+# - ::open: Same as ::new, but if a block is given, yields the \Dir to the block,
+#   closing it upon block exit.
+# - ::unlink (aliased as ::delete and ::rmdir): Removes the given directory.
+# - #inspect: Returns a string description of +self+.
 class Dir
   # call-seq:
   #    Dir.open( string ) -> aDir

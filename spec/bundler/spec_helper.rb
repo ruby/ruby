@@ -113,6 +113,10 @@ RSpec.configure do |config|
     end
   end
 
+  config.before :each, :sudo => true do
+    Spec::Sudo.write_safe_config
+  end
+
   config.after :suite do
     FileUtils.rm_r Spec::Path.pristine_system_gem_path
   end

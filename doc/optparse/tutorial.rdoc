@@ -657,7 +657,7 @@ Though you may never need to call it directly,
 here's the core method for defining an option:
 
 - \Method \OptionParser#make_switch accepts an array of parameters and a block.
-  See {Parameters for New Options}[./option_params.rdoc].
+  See {Parameters for New Options}[optparse/option_params.rdoc].
   This method is unlike others here in that it:
   - Accepts an <em>array of parameters</em>;
     others accept a <em>sequence of parameter arguments</em>.

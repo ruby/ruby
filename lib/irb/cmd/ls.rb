@@ -4,8 +4,9 @@ require "reline"
 require_relative "nop"
 require_relative "../color"
 
-# :stopdoc:
 module IRB
+  # :stopdoc:
+
   module ExtendCommand
     class Ls < Nop
       def execute(*arg, grep: nil)
@@ -97,5 +98,6 @@ module IRB
       private_constant :Output
     end
   end
+
+  # :startdoc:
 end
-# :startdoc:

@@ -46,7 +46,7 @@ jobs:
         run: |
           git config --global advice.detachedHead 0
           git config --global init.defaultBranch garbage
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
         with:
           path: src
       - name: Install libraries

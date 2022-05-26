@@ -37,24 +37,24 @@ inline static int
 calc_pos(const rb_iseq_t *iseq, const VALUE *pc, int *lineno, int *node_id)
 {
     VM_ASSERT(iseq);
-    VM_ASSERT(iseq->body);
-    VM_ASSERT(iseq->body->iseq_encoded);
-    VM_ASSERT(iseq->body->iseq_size);
+    VM_ASSERT(ISEQ_BODY(iseq));
+    VM_ASSERT(ISEQ_BODY(iseq)->iseq_encoded);
+    VM_ASSERT(ISEQ_BODY(iseq)->iseq_size);
     if (! pc) {
-        if (iseq->body->type == ISEQ_TYPE_TOP) {
-            VM_ASSERT(! iseq->body->local_table);
-            VM_ASSERT(! iseq->body->local_table_size);
+        if (ISEQ_BODY(iseq)->type == ISEQ_TYPE_TOP) {
+            VM_ASSERT(! ISEQ_BODY(iseq)->local_table);
+            VM_ASSERT(! ISEQ_BODY(iseq)->local_table_size);
             return 0;
         }
-        if (lineno) *lineno = FIX2INT(iseq->body->location.first_lineno);
+        if (lineno) *lineno = FIX2INT(ISEQ_BODY(iseq)->location.first_lineno);
 #ifdef USE_ISEQ_NODE_ID
         if (node_id) *node_id = -1;
 #endif
         return 1;
     }
     else {
-        ptrdiff_t n = pc - iseq->body->iseq_encoded;
-        VM_ASSERT(n <= iseq->body->iseq_size);
+        ptrdiff_t n = pc - ISEQ_BODY(iseq)->iseq_encoded;
+        VM_ASSERT(n <= ISEQ_BODY(iseq)->iseq_size);
         VM_ASSERT(n >= 0);
         ASSUME(n >= 0);
         size_t pos = n; /* no overflow */
@@ -216,7 +216,7 @@ location_label(rb_backtrace_location_t *loc)
 {
     switch (loc->type) {
       case LOCATION_TYPE_ISEQ:
-        return loc->iseq->body->location.label;
+        return ISEQ_BODY(loc->iseq)->location.label;
       case LOCATION_TYPE_CFUNC:
         return rb_id2str(loc->mid);
       default:
@@ -263,7 +263,7 @@ location_base_label(rb_backtrace_location_t *loc)
 {
     switch (loc->type) {
       case LOCATION_TYPE_ISEQ:
-        return loc->iseq->body->location.base_label;
+        return ISEQ_BODY(loc->iseq)->location.base_label;
       case LOCATION_TYPE_CFUNC:
         return rb_id2str(loc->mid);
       default:
@@ -407,7 +407,7 @@ location_to_str(rb_backtrace_location_t *loc)
     switch (loc->type) {
       case LOCATION_TYPE_ISEQ:
         file = rb_iseq_path(loc->iseq);
-        name = loc->iseq->body->location.label;
+        name = ISEQ_BODY(loc->iseq)->location.label;
 
         lineno = calc_lineno(loc->iseq, loc->pc);
 	break;
@@ -800,7 +800,7 @@ backtrace_load_data(VALUE self, VALUE str)
 }
 
 /*
- *  call-seq: Threade::Backtrace::limit -> integer
+ *  call-seq: Thread::Backtrace::limit -> integer
  *
  *  Returns maximum backtrace length set by <tt>--backtrace-limit</tt>
  *  command-line option. The defalt is <tt>-1</tt> which means unlimited
@@ -950,7 +950,7 @@ oldbt_iter_iseq(void *ptr, const rb_control_frame_t *cfp)
     const VALUE *pc = cfp->pc;
     struct oldbt_arg *arg = (struct oldbt_arg *)ptr;
     VALUE file = arg->filename = rb_iseq_path(iseq);
-    VALUE name = iseq->body->location.label;
+    VALUE name = ISEQ_BODY(iseq)->location.label;
     int lineno = arg->lineno = calc_lineno(iseq, pc);
 
     (arg->func)(arg->data, file, lineno, name);

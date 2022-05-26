@@ -152,7 +152,7 @@ typedef intptr_t pid_t;
 
 // The unit structure that holds metadata of ISeq for MJIT.
 struct rb_mjit_unit {
-    struct list_node unode;
+    struct ccan_list_node unode;
     // Unique order number of unit.
     int id;
     // Dlopen handle of the loaded object file.
@@ -170,12 +170,12 @@ struct rb_mjit_unit {
     struct rb_mjit_compile_info compile_info;
     // captured CC values, they should be marked with iseq.
     const struct rb_callcache **cc_entries;
-    unsigned int cc_entries_size; // iseq->body->ci_size + ones of inlined iseqs
+    unsigned int cc_entries_size; // ISEQ_BODY(iseq)->ci_size + ones of inlined iseqs
 };
 
 // Linked list of struct rb_mjit_unit.
 struct rb_mjit_unit_list {
-    struct list_head head;
+    struct ccan_list_head head;
     int length; // the list length
 };
 
@@ -206,13 +206,13 @@ bool mjit_call_p = false;
 
 // Priority queue of iseqs waiting for JIT compilation.
 // This variable is a pointer to head unit of the queue.
-static struct rb_mjit_unit_list unit_queue = { LIST_HEAD_INIT(unit_queue.head) };
+static struct rb_mjit_unit_list unit_queue = { CCAN_LIST_HEAD_INIT(unit_queue.head) };
 // List of units which are successfully compiled.
-static struct rb_mjit_unit_list active_units = { LIST_HEAD_INIT(active_units.head) };
+static struct rb_mjit_unit_list active_units = { CCAN_LIST_HEAD_INIT(active_units.head) };
 // List of compacted so files which will be cleaned up by `free_list()` in `mjit_finish()`.
-static struct rb_mjit_unit_list compact_units = { LIST_HEAD_INIT(compact_units.head) };
+static struct rb_mjit_unit_list compact_units = { CCAN_LIST_HEAD_INIT(compact_units.head) };
 // List of units before recompilation and just waiting for dlclose().
-static struct rb_mjit_unit_list stale_units = { LIST_HEAD_INIT(stale_units.head) };
+static struct rb_mjit_unit_list stale_units = { CCAN_LIST_HEAD_INIT(stale_units.head) };
 // The number of so far processed ISEQs, used to generate unique id.
 static int current_unit_num;
 // A mutex for conitionals and critical sections.
@@ -370,7 +370,7 @@ add_to_list(struct rb_mjit_unit *unit, struct rb_mjit_unit_list *list)
     (void)RB_DEBUG_COUNTER_INC_IF(mjit_length_compact_units, list == &compact_units);
     (void)RB_DEBUG_COUNTER_INC_IF(mjit_length_stale_units, list == &stale_units);
 
-    list_add_tail(&list->head, &unit->unode);
+    ccan_list_add_tail(&list->head, &unit->unode);
     list->length++;
 }
 
@@ -384,7 +384,7 @@ remove_from_list(struct rb_mjit_unit *unit, struct rb_mjit_unit_list *list)
     rb_debug_counter_add(RB_DEBUG_COUNTER_mjit_length_stale_units, -1, list == &stale_units);
 #endif
 
-    list_del(&unit->unode);
+    ccan_list_del(&unit->unode);
     list->length--;
 }
 
@@ -424,8 +424,8 @@ static void
 free_unit(struct rb_mjit_unit *unit)
 {
     if (unit->iseq) { // ISeq is not GCed
-        unit->iseq->body->jit_func = (mjit_func_t)NOT_COMPILED_JIT_ISEQ_FUNC;
-        unit->iseq->body->jit_unit = NULL;
+        ISEQ_BODY(unit->iseq)->jit_func = (mjit_func_t)NOT_COMPILED_JIT_ISEQ_FUNC;
+        ISEQ_BODY(unit->iseq)->jit_unit = NULL;
     }
     if (unit->cc_entries) {
         void *entries = (void *)unit->cc_entries;
@@ -503,14 +503,14 @@ get_from_list(struct rb_mjit_unit_list *list)
 
     // Find iseq with max total_calls
     struct rb_mjit_unit *unit = NULL, *next, *best = NULL;
-    list_for_each_safe(&list->head, unit, next, unode) {
+    ccan_list_for_each_safe(&list->head, unit, next, unode) {
         if (unit->iseq == NULL) { // ISeq is GCed.
             remove_from_list(unit, list);
             free_unit(unit);
             continue;
         }
 
-        if (best == NULL || best->iseq->body->total_calls < unit->iseq->body->total_calls) {
+        if (best == NULL || ISEQ_BODY(best->iseq)->total_calls < ISEQ_BODY(unit->iseq)->total_calls) {
             best = unit;
         }
     }
@@ -706,7 +706,7 @@ sprint_funcname(char *funcname, const struct rb_mjit_unit *unit)
         path = strstr(path, version) + strlen(version);
 
     // Annotate all-normalized method names
-    const char *method = RSTRING_PTR(iseq->body->location.label);
+    const char *method = RSTRING_PTR(ISEQ_BODY(iseq)->location.label);
     if (!strcmp(method, "[]")) method = "AREF";
     if (!strcmp(method, "[]=")) method = "ASET";
 
@@ -725,7 +725,7 @@ static const rb_iseq_t **compiling_iseqs = NULL;
 static bool
 set_compiling_iseqs(const rb_iseq_t *iseq)
 {
-    compiling_iseqs = calloc(iseq->body->iseq_size + 2, sizeof(rb_iseq_t *)); // 2: 1 (unit->iseq) + 1 (NULL end)
+    compiling_iseqs = calloc(ISEQ_BODY(iseq)->iseq_size + 2, sizeof(rb_iseq_t *)); // 2: 1 (unit->iseq) + 1 (NULL end)
     if (compiling_iseqs == NULL)
         return false;
 
@@ -733,10 +733,10 @@ set_compiling_iseqs(const rb_iseq_t *iseq)
     int i = 1;
 
     unsigned int pos = 0;
-    while (pos < iseq->body->iseq_size) {
-        int insn = rb_vm_insn_decode(iseq->body->iseq_encoded[pos]);
+    while (pos < ISEQ_BODY(iseq)->iseq_size) {
+        int insn = rb_vm_insn_decode(ISEQ_BODY(iseq)->iseq_encoded[pos]);
         if (insn == BIN(opt_send_without_block) || insn == BIN(opt_size)) {
-            CALL_DATA cd = (CALL_DATA)iseq->body->iseq_encoded[pos + 1];
+            CALL_DATA cd = (CALL_DATA)ISEQ_BODY(iseq)->iseq_encoded[pos + 1];
             extern const rb_iseq_t *rb_mjit_inlinable_iseq(const struct rb_callinfo *ci, const struct rb_callcache *cc);
             const rb_iseq_t *iseq = rb_mjit_inlinable_iseq(cd->ci, cd->cc);
             if (iseq != NULL) {
@@ -977,7 +977,7 @@ compile_compact_jit_code(char* c_file)
     // We need to check again here because we could've waited on GC above
     bool iseq_gced = false;
     struct rb_mjit_unit *child_unit = 0, *next;
-    list_for_each_safe(&active_units.head, child_unit, next, unode) {
+    ccan_list_for_each_safe(&active_units.head, child_unit, next, unode) {
         if (child_unit->iseq == NULL) { // ISeq is GC-ed
             iseq_gced = true;
             verbose(1, "JIT compaction: A method for JIT code u%d is obsoleted. Compaction will be skipped.", child_unit->id);
@@ -1002,7 +1002,7 @@ compile_compact_jit_code(char* c_file)
     // TODO: Consider using a more granular lock after we implement inlining across
     // compacted functions (not done yet).
     bool success = true;
-    list_for_each(&active_units.head, child_unit, unode) {
+    ccan_list_for_each(&active_units.head, child_unit, unode) {
         CRITICAL_SECTION_START(3, "before set_compiling_iseqs");
         success &= set_compiling_iseqs(child_unit->iseq);
         CRITICAL_SECTION_FINISH(3, "after set_compiling_iseqs");
@@ -1012,11 +1012,11 @@ compile_compact_jit_code(char* c_file)
         sprint_funcname(funcname, child_unit);
 
         long iseq_lineno = 0;
-        if (FIXNUM_P(child_unit->iseq->body->location.first_lineno))
+        if (FIXNUM_P(ISEQ_BODY(child_unit->iseq)->location.first_lineno))
             // FIX2INT may fallback to rb_num2long(), which is a method call and dangerous in MJIT worker. So using only FIX2LONG.
-            iseq_lineno = FIX2LONG(child_unit->iseq->body->location.first_lineno);
+            iseq_lineno = FIX2LONG(ISEQ_BODY(child_unit->iseq)->location.first_lineno);
         const char *sep = "@";
-        const char *iseq_label = RSTRING_PTR(child_unit->iseq->body->location.label);
+        const char *iseq_label = RSTRING_PTR(ISEQ_BODY(child_unit->iseq)->location.label);
         const char *iseq_path = RSTRING_PTR(rb_iseq_path(child_unit->iseq));
         if (!iseq_label) iseq_label = sep = "";
         fprintf(f, "\n/* %s%s%s:%ld */\n", iseq_label, sep, iseq_path, iseq_lineno);
@@ -1080,7 +1080,7 @@ compact_all_jit_code(void)
             remove_so_file(so_file, unit);
 
         CRITICAL_SECTION_START(3, "in compact_all_jit_code to read list");
-        list_for_each(&active_units.head, cur, unode) {
+        ccan_list_for_each(&active_units.head, cur, unode) {
             void *func;
             char funcname[MAXPATHLEN];
             sprint_funcname(funcname, cur);
@@ -1092,7 +1092,7 @@ compact_all_jit_code(void)
 
             if (cur->iseq) { // Check whether GCed or not
                 // Usage of jit_code might be not in a critical section.
-                MJIT_ATOMIC_SET(cur->iseq->body->jit_func, (mjit_func_t)func);
+                MJIT_ATOMIC_SET(ISEQ_BODY(cur->iseq)->jit_func, (mjit_func_t)func);
             }
         }
         CRITICAL_SECTION_FINISH(3, "in compact_all_jit_code to read list");
@@ -1209,12 +1209,12 @@ convert_unit_to_func(struct rb_mjit_unit *unit)
 
     // To make MJIT worker thread-safe against GC.compact, copy ISeq values while `in_jit` is true.
     long iseq_lineno = 0;
-    if (FIXNUM_P(unit->iseq->body->location.first_lineno))
+    if (FIXNUM_P(ISEQ_BODY(unit->iseq)->location.first_lineno))
         // FIX2INT may fallback to rb_num2long(), which is a method call and dangerous in MJIT worker. So using only FIX2LONG.
-        iseq_lineno = FIX2LONG(unit->iseq->body->location.first_lineno);
-    char *iseq_label = alloca(RSTRING_LEN(unit->iseq->body->location.label) + 1);
+        iseq_lineno = FIX2LONG(ISEQ_BODY(unit->iseq)->location.first_lineno);
+    char *iseq_label = alloca(RSTRING_LEN(ISEQ_BODY(unit->iseq)->location.label) + 1);
     char *iseq_path  = alloca(RSTRING_LEN(rb_iseq_path(unit->iseq)) + 1);
-    strcpy(iseq_label, RSTRING_PTR(unit->iseq->body->location.label));
+    strcpy(iseq_label, RSTRING_PTR(ISEQ_BODY(unit->iseq)->location.label));
     strcpy(iseq_path,  RSTRING_PTR(rb_iseq_path(unit->iseq)));
 
     verbose(2, "start compilation: %s@%s:%ld -> %s", iseq_label, iseq_path, iseq_lineno, c_file);
@@ -1317,8 +1317,8 @@ mark_ec_units(rb_execution_context_t *ec)
         const rb_iseq_t *iseq;
         if (cfp->pc && (iseq = cfp->iseq) != NULL
             && imemo_type((VALUE) iseq) == imemo_iseq
-            && (iseq->body->jit_unit) != NULL) {
-            iseq->body->jit_unit->used_code_p = true;
+            && (ISEQ_BODY(iseq)->jit_unit) != NULL) {
+            ISEQ_BODY(iseq)->jit_unit->used_code_p = true;
         }
 
         if (cfp == ec->cfp)
@@ -1347,7 +1347,7 @@ unload_units(void)
 
     // For now, we don't unload units when ISeq is GCed. We should
     // unload such ISeqs first here.
-    list_for_each_safe(&active_units.head, unit, next, unode) {
+    ccan_list_for_each_safe(&active_units.head, unit, next, unode) {
         if (unit->iseq == NULL) { // ISeq is GCed.
             remove_from_list(unit, &active_units);
             free_unit(unit);
@@ -1355,7 +1355,7 @@ unload_units(void)
     }
 
     // Detect units which are in use and can't be unloaded.
-    list_for_each(&active_units.head, unit, unode) {
+    ccan_list_for_each(&active_units.head, unit, unode) {
         assert(unit->iseq != NULL && unit->handle != NULL);
         unit->used_code_p = false;
     }
@@ -1372,22 +1372,22 @@ unload_units(void)
     while (true) {
         // Calculate the next max total_calls in unit_queue
         long unsigned max_queue_calls = 0;
-        list_for_each(&unit_queue.head, unit, unode) {
-            if (unit->iseq != NULL && max_queue_calls < unit->iseq->body->total_calls
-                    && unit->iseq->body->total_calls < prev_queue_calls) {
-                max_queue_calls = unit->iseq->body->total_calls;
+        ccan_list_for_each(&unit_queue.head, unit, unode) {
+            if (unit->iseq != NULL && max_queue_calls < ISEQ_BODY(unit->iseq)->total_calls
+                    && ISEQ_BODY(unit->iseq)->total_calls < prev_queue_calls) {
+                max_queue_calls = ISEQ_BODY(unit->iseq)->total_calls;
             }
         }
         prev_queue_calls = max_queue_calls;
 
         bool unloaded_p = false;
-        list_for_each_safe(&active_units.head, unit, next, unode) {
+        ccan_list_for_each_safe(&active_units.head, unit, next, unode) {
             if (unit->used_code_p) // We can't unload code on stack.
                 continue;
 
-            if (max_queue_calls > unit->iseq->body->total_calls) {
+            if (max_queue_calls > ISEQ_BODY(unit->iseq)->total_calls) {
                 verbose(2, "Unloading unit %d (calls=%lu, threshold=%lu)",
-                        unit->id, unit->iseq->body->total_calls, max_queue_calls);
+                        unit->id, ISEQ_BODY(unit->iseq)->total_calls, max_queue_calls);
                 assert(unit->handle != NULL);
                 remove_from_list(unit, &active_units);
                 free_unit(unit);
@@ -1441,7 +1441,7 @@ mjit_worker(void)
 
         // Wait until a unit becomes available
         CRITICAL_SECTION_START(3, "in worker dequeue");
-        while ((list_empty(&unit_queue.head) || active_units.length >= mjit_opts.max_cache_size) && !stop_worker_p) {
+        while ((ccan_list_empty(&unit_queue.head) || active_units.length >= mjit_opts.max_cache_size) && !stop_worker_p) {
             rb_native_cond_wait(&mjit_worker_wakeup, &mjit_engine_mutex);
             verbose(3, "Getting wakeup from client");
 
@@ -1449,13 +1449,13 @@ mjit_worker(void)
             if (pending_stale_p) {
                 pending_stale_p = false;
                 struct rb_mjit_unit *next;
-                list_for_each_safe(&active_units.head, unit, next, unode) {
+                ccan_list_for_each_safe(&active_units.head, unit, next, unode) {
                     if (unit->stale_p) {
                         unit->stale_p = false;
                         remove_from_list(unit, &active_units);
                         add_to_list(unit, &stale_units);
                         // Lazily put it to unit_queue as well to avoid race conditions on jit_unit with mjit_compile.
-                        mjit_add_iseq_to_process(unit->iseq, &unit->iseq->body->jit_unit->compile_info, true);
+                        mjit_add_iseq_to_process(unit->iseq, &ISEQ_BODY(unit->iseq)->jit_unit->compile_info, true);
                     }
                 }
             }
@@ -1499,7 +1499,7 @@ mjit_worker(void)
                     add_to_list(unit, &active_units);
                 }
                 // Usage of jit_code might be not in a critical section.
-                MJIT_ATOMIC_SET(unit->iseq->body->jit_func, func);
+                MJIT_ATOMIC_SET(ISEQ_BODY(unit->iseq)->jit_func, func);
             }
             else {
                 free_unit(unit);

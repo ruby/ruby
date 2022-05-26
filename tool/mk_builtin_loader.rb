@@ -321,7 +321,7 @@ def mk_builtin_header file
         f.puts %'        fprintf(f, "    const VALUE *argv = &stack[%d];\\n", stack_size - #{argc});'
         f.puts %'    }'
         f.puts %'    else {'
-        f.puts %'        fprintf(f, "    const unsigned int lnum = GET_ISEQ()->body->local_table_size;\\n");'
+        f.puts %'        fprintf(f, "    const unsigned int lnum = ISEQ_BODY(GET_ISEQ())->local_table_size;\\n");'
         f.puts %'        fprintf(f, "    const VALUE *argv = GET_EP() - lnum - VM_ENV_DATA_SIZE + 1 + %ld;\\n", index);'
         f.puts %'    }'
       end

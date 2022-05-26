@@ -77,6 +77,10 @@ describe "File.utime" do
     File.mtime(@file1).nsec.should.between?(0, 123500000)
   end
 
+  it "returns the number of filenames in the arguments" do
+    File.utime(@atime.to_f, @mtime.to_f, @file1, @file2).should == 2
+  end
+
   platform_is :linux do
     platform_is wordsize: 64 do
       it "allows Time instances in the far future to set mtime and atime (but some filesystems limit it up to 2446-05-10 or 2038-01-19)" do

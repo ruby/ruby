@@ -303,6 +303,19 @@ objid_hash(VALUE obj)
  *
  * Certain core classes such as Integer use built-in hash calculations and
  * do not call the #hash method when used as a hash key.
+ *
+ * When implementing your own #hash based on multiple values, the best
+ * practice is to combine the class and any values using the hash code of an
+ * array:
+ *
+ * For example:
+ *
+ *   def hash
+ *     [self.class, a, b, c].hash
+ *   end
+ *
+ * The reason for this is that the Array#hash method already has logic for
+ * safely and efficiently combining multiple hash values.
  *--
  * \private
  *++
@@ -1573,6 +1586,12 @@ rb_hash_new_with_size(st_index_t size)
         RHASH_ST_TABLE_SET(ret, st_init_table_with_size(&objhash, size));
     }
     return ret;
+}
+
+VALUE
+rb_hash_new_capa(long capa)
+{
+    return rb_hash_new_with_size((st_index_t)capa);
 }
 
 static VALUE
@@ -7036,107 +7055,107 @@ static const rb_data_type_t env_data_type = {
  *
  *  ==== Methods for Creating a \Hash
  *
- *  ::[]:: Returns a new hash populated with given objects.
- *  ::new:: Returns a new empty hash.
- *  ::try_convert:: Returns a new hash created from a given object.
+ *  - ::[]: Returns a new hash populated with given objects.
+ *  - ::new: Returns a new empty hash.
+ *  - ::try_convert: Returns a new hash created from a given object.
  *
  *  ==== Methods for Setting \Hash State
  *
- *  #compare_by_identity:: Sets +self+ to consider only identity in comparing keys.
- *  #default=:: Sets the default to a given value.
- *  #default_proc=:: Sets the default proc to a given proc.
- *  #rehash:: Rebuilds the hash table by recomputing the hash index for each key.
+ *  - #compare_by_identity: Sets +self+ to consider only identity in comparing keys.
+ *  - #default=: Sets the default to a given value.
+ *  - #default_proc=: Sets the default proc to a given proc.
+ *  - #rehash: Rebuilds the hash table by recomputing the hash index for each key.
  *
  *  ==== Methods for Querying
  *
- *  #any?:: Returns whether any element satisfies a given criterion.
- *  #compare_by_identity?:: Returns whether the hash considers only identity when comparing keys.
- *  #default:: Returns the default value, or the default value for a given key.
- *  #default_proc:: Returns the default proc.
- *  #empty?:: Returns whether there are no entries.
- *  #eql?:: Returns whether a given object is equal to +self+.
- *  #hash:: Returns the integer hash code.
- *  #has_value?:: Returns whether a given object is a value in +self+.
- *  #include?, #has_key?, #member?, #key?:: Returns whether a given object is a key in +self+.
- *  #length, #size:: Returns the count of entries.
- *  #value?:: Returns whether a given object is a value in +self+.
+ *  - #any?: Returns whether any element satisfies a given criterion.
+ *  - #compare_by_identity?: Returns whether the hash considers only identity when comparing keys.
+ *  - #default: Returns the default value, or the default value for a given key.
+ *  - #default_proc: Returns the default proc.
+ *  - #empty?: Returns whether there are no entries.
+ *  - #eql?: Returns whether a given object is equal to +self+.
+ *  - #hash: Returns the integer hash code.
+ *  - #has_value?: Returns whether a given object is a value in +self+.
+ *  - #include?, #has_key?, #member?, #key?: Returns whether a given object is a key in +self+.
+ *  - #length, #size: Returns the count of entries.
+ *  - #value?: Returns whether a given object is a value in +self+.
  *
  *  ==== Methods for Comparing
  *
- *  #<:: Returns whether +self+ is a proper subset of a given object.
- *  #<=:: Returns whether +self+ is a subset of a given object.
- *  #==:: Returns whether a given object is equal to +self+.
- *  #>:: Returns whether +self+ is a proper superset of a given object
- *  #>=:: Returns whether +self+ is a proper superset of a given object.
+ *  - #<: Returns whether +self+ is a proper subset of a given object.
+ *  - #<=: Returns whether +self+ is a subset of a given object.
+ *  - #==: Returns whether a given object is equal to +self+.
+ *  - #>: Returns whether +self+ is a proper superset of a given object
+ *  - #>=: Returns whether +self+ is a proper superset of a given object.
  *
  *  ==== Methods for Fetching
  *
- *  #[]:: Returns the value associated with a given key.
- *  #assoc:: Returns a 2-element array containing a given key and its value.
- *  #dig:: Returns the object in nested objects that is specified
- *         by a given key and additional arguments.
- *  #fetch:: Returns the value for a given key.
- *  #fetch_values:: Returns array containing the values associated with given keys.
- *  #key:: Returns the key for the first-found entry with a given value.
- *  #keys:: Returns an array containing all keys in +self+.
- *  #rassoc:: Returns a 2-element array consisting of the key and value
-              of the first-found entry having a given value.
- *  #values:: Returns an array containing all values in +self+/
- *  #values_at:: Returns an array containing values for given keys.
+ *  - #[]: Returns the value associated with a given key.
+ *  - #assoc: Returns a 2-element array containing a given key and its value.
+ *  - #dig: Returns the object in nested objects that is specified
+ *    by a given key and additional arguments.
+ *  - #fetch: Returns the value for a given key.
+ *  - #fetch_values: Returns array containing the values associated with given keys.
+ *  - #key: Returns the key for the first-found entry with a given value.
+ *  - #keys: Returns an array containing all keys in +self+.
+ *  - #rassoc: Returns a 2-element array consisting of the key and value
+      of the first-found entry having a given value.
+ *  - #values: Returns an array containing all values in +self+/
+ *  - #values_at: Returns an array containing values for given keys.
  *
  *  ==== Methods for Assigning
  *
- *  #[]=, #store:: Associates a given key with a given value.
- *  #merge:: Returns the hash formed by merging each given hash into a copy of +self+.
- *  #merge!, #update:: Merges each given hash into +self+.
- *  #replace:: Replaces the entire contents of +self+ with the contents of a given hash.
+ *  - #[]=, #store: Associates a given key with a given value.
+ *  - #merge: Returns the hash formed by merging each given hash into a copy of +self+.
+ *  - #merge!, #update: Merges each given hash into +self+.
+ *  - #replace: Replaces the entire contents of +self+ with the contents of a given hash.
  *
  *  ==== Methods for Deleting
  *
  *  These methods remove entries from +self+:
  *
- *  #clear:: Removes all entries from +self+.
- *  #compact!:: Removes all +nil+-valued entries from +self+.
- *  #delete:: Removes the entry for a given key.
- *  #delete_if:: Removes entries selected by a given block.
- *  #filter!, #select!:: Keep only those entries selected by a given block.
- *  #keep_if:: Keep only those entries selected by a given block.
- *  #reject!:: Removes entries selected by a given block.
- *  #shift:: Removes and returns the first entry.
+ *  - #clear: Removes all entries from +self+.
+ *  - #compact!: Removes all +nil+-valued entries from +self+.
+ *  - #delete: Removes the entry for a given key.
+ *  - #delete_if: Removes entries selected by a given block.
+ *  - #filter!, #select!: Keep only those entries selected by a given block.
+ *  - #keep_if: Keep only those entries selected by a given block.
+ *  - #reject!: Removes entries selected by a given block.
+ *  - #shift: Removes and returns the first entry.
  *
  *  These methods return a copy of +self+ with some entries removed:
  *
- *  #compact:: Returns a copy of +self+ with all +nil+-valued entries removed.
- *  #except:: Returns a copy of +self+ with entries removed for specified keys.
- *  #filter, #select:: Returns a copy of +self+ with only those entries selected by a given block.
- *  #reject:: Returns a copy of +self+ with entries removed as specified by a given block.
- *  #slice:: Returns a hash containing the entries for given keys.
+ *  - #compact: Returns a copy of +self+ with all +nil+-valued entries removed.
+ *  - #except: Returns a copy of +self+ with entries removed for specified keys.
+ *  - #filter, #select: Returns a copy of +self+ with only those entries selected by a given block.
+ *  - #reject: Returns a copy of +self+ with entries removed as specified by a given block.
+ *  - #slice: Returns a hash containing the entries for given keys.
  *
  *  ==== Methods for Iterating
- *  #each, #each_pair:: Calls a given block with each key-value pair.
- *  #each_key:: Calls a given block with each key.
- *  #each_value:: Calls a given block with each value.
+ *  - #each, #each_pair: Calls a given block with each key-value pair.
+ *  - #each_key: Calls a given block with each key.
+ *  - #each_value: Calls a given block with each value.
  *
  *  ==== Methods for Converting
  *
- *  #inspect, #to_s:: Returns a new String containing the hash entries.
- *  #to_a:: Returns a new array of 2-element arrays;
- *          each nested array contains a key-value pair from +self+.
- *  #to_h:: Returns +self+ if a \Hash;
- *          if a subclass of \Hash, returns a \Hash containing the entries from +self+.
- *  #to_hash:: Returns +self+.
- *  #to_proc:: Returns a proc that maps a given key to its value.
+ *  - #inspect, #to_s: Returns a new String containing the hash entries.
+ *  - #to_a: Returns a new array of 2-element arrays;
+ *    each nested array contains a key-value pair from +self+.
+ *  - #to_h: Returns +self+ if a \Hash;
+ *    if a subclass of \Hash, returns a \Hash containing the entries from +self+.
+ *  - #to_hash: Returns +self+.
+ *  - #to_proc: Returns a proc that maps a given key to its value.
  *
  *  ==== Methods for Transforming Keys and Values
  *
- *  #transform_keys:: Returns a copy of +self+ with modified keys.
- *  #transform_keys!:: Modifies keys in +self+
- *  #transform_values:: Returns a copy of +self+ with modified values.
- *  #transform_values!:: Modifies values in +self+.
+ *  - #transform_keys: Returns a copy of +self+ with modified keys.
+ *  - #transform_keys!: Modifies keys in +self+
+ *  - #transform_values: Returns a copy of +self+ with modified values.
+ *  - #transform_values!: Modifies values in +self+.
  *
  *  ==== Other Methods
- *  #flatten:: Returns an array that is a 1-dimensional flattening of +self+.
- *  #invert:: Returns a hash with the each key-value pair inverted.
+ *  - #flatten: Returns an array that is a 1-dimensional flattening of +self+.
+ *  - #invert: Returns a hash with the each key-value pair inverted.
  *
  */
 
@@ -7341,66 +7360,66 @@ Init_Hash(void)
      *
      * === Methods for Querying
      *
-     * - ::[]:: Returns the value for the given environment variable name if it exists:
-     * - ::empty?:: Returns whether \ENV is empty.
-     * - ::has_value?, ::value?:: Returns whether the given value is in \ENV.
-     * - ::include?, ::has_key?, ::key?, ::member?:: Returns whether the given name
-                                                     is in \ENV.
-     * - ::key:: Returns the name of the first entry with the given value.
-     * - ::size, ::length:: Returns the number of entries.
-     * - ::value?:: Returns whether any entry has the given value.
+     * - ::[]: Returns the value for the given environment variable name if it exists:
+     * - ::empty?: Returns whether \ENV is empty.
+     * - ::has_value?, ::value?: Returns whether the given value is in \ENV.
+     * - ::include?, ::has_key?, ::key?, ::member?: Returns whether the given name
+         is in \ENV.
+     * - ::key: Returns the name of the first entry with the given value.
+     * - ::size, ::length: Returns the number of entries.
+     * - ::value?: Returns whether any entry has the given value.
      *
      * === Methods for Assigning
      *
-     * - ::[]=, ::store:: Creates, updates, or deletes the named environment variable.
-     * - ::clear:: Removes every environment variable; returns \ENV:
-     * - ::update, ::merge!:: Adds to \ENV each key/value pair in the given hash.
-     * - ::replace:: Replaces the entire content of the \ENV
-     *               with the name/value pairs in the given hash.
+     * - ::[]=, ::store: Creates, updates, or deletes the named environment variable.
+     * - ::clear: Removes every environment variable; returns \ENV:
+     * - ::update, ::merge!: Adds to \ENV each key/value pair in the given hash.
+     * - ::replace: Replaces the entire content of the \ENV
+     *   with the name/value pairs in the given hash.
      *
      * === Methods for Deleting
      *
-     * - ::delete:: Deletes the named environment variable name if it exists.
-     * - ::delete_if:: Deletes entries selected by the block.
-     * - ::keep_if:: Deletes entries not selected by the block.
-     * - ::reject!:: Similar to #delete_if, but returns +nil+ if no change was made.
-     * - ::select!, ::filter!:: Deletes entries selected by the block.
-     * - ::shift:: Removes and returns the first entry.
+     * - ::delete: Deletes the named environment variable name if it exists.
+     * - ::delete_if: Deletes entries selected by the block.
+     * - ::keep_if: Deletes entries not selected by the block.
+     * - ::reject!: Similar to #delete_if, but returns +nil+ if no change was made.
+     * - ::select!, ::filter!: Deletes entries selected by the block.
+     * - ::shift: Removes and returns the first entry.
      *
      * === Methods for Iterating
      *
-     * - ::each, ::each_pair:: Calls the block with each name/value pair.
-     * - ::each_key:: Calls the block with each name.
-     * - ::each_value:: Calls the block with each value.
+     * - ::each, ::each_pair: Calls the block with each name/value pair.
+     * - ::each_key: Calls the block with each name.
+     * - ::each_value: Calls the block with each value.
      *
      * === Methods for Converting
      *
-     * - ::assoc:: Returns a 2-element array containing the name and value
-     *             of the named environment variable if it exists:
-     * - ::clone:: Returns \ENV (and issues a warning).
-     * - ::except:: Returns a hash of all name/value pairs except those given.
-     * - ::fetch:: Returns the value for the given name.
-     * - ::inspect:: Returns the contents of \ENV as a string.
-     * - ::invert:: Returns a hash whose keys are the ENV values,
-                    and whose values are the corresponding ENV names.
-     * - ::keys:: Returns an array of all names.
-     * - ::rassoc:: Returns the name and value of the first found entry
-     *              that has the given value.
-     * - ::reject:: Returns a hash of those entries not rejected by the block.
-     * - ::select, ::filter:: Returns a hash of name/value pairs selected by the block.
-     * - ::slice:: Returns a hash of the given names and their corresponding values.
-     * - ::to_a:: Returns the entries as an array of 2-element Arrays.
-     * - ::to_h:: Returns a hash of entries selected by the block.
-     * - ::to_hash:: Returns a hash of all entries.
-     * - ::to_s:: Returns the string <tt>'ENV'</tt>.
-     * - ::values:: Returns all values as an array.
-     * - ::values_at:: Returns an array of the values for the given name.
+     * - ::assoc: Returns a 2-element array containing the name and value
+     *   of the named environment variable if it exists:
+     * - ::clone: Returns \ENV (and issues a warning).
+     * - ::except: Returns a hash of all name/value pairs except those given.
+     * - ::fetch: Returns the value for the given name.
+     * - ::inspect: Returns the contents of \ENV as a string.
+     * - ::invert: Returns a hash whose keys are the ENV values,
+         and whose values are the corresponding ENV names.
+     * - ::keys: Returns an array of all names.
+     * - ::rassoc: Returns the name and value of the first found entry
+     *   that has the given value.
+     * - ::reject: Returns a hash of those entries not rejected by the block.
+     * - ::select, ::filter: Returns a hash of name/value pairs selected by the block.
+     * - ::slice: Returns a hash of the given names and their corresponding values.
+     * - ::to_a: Returns the entries as an array of 2-element Arrays.
+     * - ::to_h: Returns a hash of entries selected by the block.
+     * - ::to_hash: Returns a hash of all entries.
+     * - ::to_s: Returns the string <tt>'ENV'</tt>.
+     * - ::values: Returns all values as an array.
+     * - ::values_at: Returns an array of the values for the given name.
      *
      * === More Methods
      *
-     * - ::dup:: Raises an exception.
-     * - ::freeze:: Raises an exception.
-     * - ::rehash:: Returns +nil+, without modifying \ENV.
+     * - ::dup: Raises an exception.
+     * - ::freeze: Raises an exception.
+     * - ::rehash: Returns +nil+, without modifying \ENV.
      *
      */
 

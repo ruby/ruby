@@ -15,10 +15,8 @@ describe "Literal Ranges" do
     (1...).should == Range.new(1, nil, true)
   end
 
-  ruby_version_is "2.7" do
-    it "creates beginless ranges" do
-      eval("(..1)").should == Range.new(nil, 1)
-      eval("(...1)").should == Range.new(nil, 1, true)
-    end
+  it "creates beginless ranges" do
+    (..1).should == Range.new(nil, 1)
+    (...1).should == Range.new(nil, 1, true)
   end
 end

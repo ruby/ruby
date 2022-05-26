@@ -40,7 +40,7 @@ module Bundler
     end
 
     def self.verbalize_groups(groups)
-      groups.map!{|g| "'#{g}'" }
+      groups.map! {|g| "'#{g}'" }
       group_list = [groups[0...-1].join(", "), groups[-1..-1]].
         reject {|s| s.to_s.empty? }.join(" and ")
       group_str = groups.size == 1 ? "group" : "groups"

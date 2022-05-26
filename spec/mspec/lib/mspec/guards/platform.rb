@@ -41,6 +41,10 @@ class PlatformGuard < SpecGuard
     os?(:windows)
   end
 
+  def self.wasi?
+    os?(:wasi)
+  end
+
   def self.wsl?
     if defined?(@wsl_p)
       @wsl_p

@@ -148,7 +148,12 @@ class Gem::CommandManager
   def run(args, build_args=nil)
     process_args(args, build_args)
   rescue StandardError, Timeout::Error => ex
-    alert_error clean_text("While executing gem ... (#{ex.class})\n    #{ex}")
+    if ex.respond_to?(:detailed_message)
+      msg = ex.detailed_message(highlight: false).sub(/\A(.*?)(?: \(.+?\))/) { $1 }
+    else
+      msg = ex.message
+    end
+    alert_error clean_text("While executing gem ... (#{ex.class})\n    #{msg}")
     ui.backtrace ex
 
     terminate_interaction(1)

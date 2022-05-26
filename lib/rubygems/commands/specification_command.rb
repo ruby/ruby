@@ -129,7 +129,7 @@ Specific fields in the specification can be extracted in YAML format:
     platform = get_platform_from_requirements(options)
 
     if platform
-      specs = specs.select{|s| s.platform.to_s == platform }
+      specs = specs.select {|s| s.platform.to_s == platform }
     end
 
     unless options[:all]

@@ -13,8 +13,9 @@
 require_relative "nop"
 require_relative "../ext/change-ws"
 
-# :stopdoc:
 module IRB
+  # :stopdoc:
+
   module ExtendCommand
 
     class CurrentWorkingWorkspace < Nop
@@ -30,5 +31,6 @@ module IRB
       end
     end
   end
+
+  # :startdoc:
 end
-# :startdoc:

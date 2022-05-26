@@ -13,6 +13,8 @@ require_relative "rfc2396_parser"
 require_relative "rfc3986_parser"
 
 module URI
+  include RFC2396_REGEXP
+
   REGEXP = RFC2396_REGEXP
   Parser = RFC2396_Parser
   RFC3986_PARSER = RFC3986_Parser.new
@@ -62,14 +64,17 @@ module URI
     module_function :make_components_hash
   end
 
-  include REGEXP
-
   module Schemes
   end
   private_constant :Schemes
 
+  #
+  # Register the given +klass+ to be instantiated when parsing URLs with the given +scheme+.
+  # Note that currently only schemes which after .upcase are valid constant names
+  # can be registered (no -/+/. allowed).
+  #
   def self.register_scheme(scheme, klass)
-    Schemes.const_set(scheme, klass)
+    Schemes.const_set(scheme.to_s.upcase, klass)
   end
 
   # Returns a Hash of the defined schemes.
@@ -295,6 +300,7 @@ module URI
   256.times do |i|
     TBLENCWWWCOMP_[-i.chr] = -('%%%02X' % i)
   end
+  TBLENCURICOMP_ = TBLENCWWWCOMP_.dup.freeze
   TBLENCWWWCOMP_[' '] = '+'
   TBLENCWWWCOMP_.freeze
   TBLDECWWWCOMP_ = {} # :nodoc:
@@ -320,16 +326,7 @@ module URI
   #
   # See URI.decode_www_form_component, URI.encode_www_form.
   def self.encode_www_form_component(str, enc=nil)
-    str = str.to_s.dup
-    if str.encoding != Encoding::ASCII_8BIT
-      if enc && enc != Encoding::ASCII_8BIT
-        str.encode!(Encoding::UTF_8, invalid: :replace, undef: :replace)
-        str.encode!(enc, fallback: ->(x){"&##{x.ord};"})
-      end
-      str.force_encoding(Encoding::ASCII_8BIT)
-    end
-    str.gsub!(/[^*\-.0-9A-Z_a-z]/, TBLENCWWWCOMP_)
-    str.force_encoding(Encoding::US_ASCII)
+    _encode_uri_component(/[^*\-.0-9A-Z_a-z]/, TBLENCWWWCOMP_, str, enc)
   end
 
   # Decodes given +str+ of URL-encoded form data.
@@ -338,9 +335,42 @@ module URI
   #
   # See URI.encode_www_form_component, URI.decode_www_form.
   def self.decode_www_form_component(str, enc=Encoding::UTF_8)
-    raise ArgumentError, "invalid %-encoding (#{str})" if /%(?!\h\h)/.match?(str)
-    str.b.gsub(/\+|%\h\h/, TBLDECWWWCOMP_).force_encoding(enc)
+    _decode_uri_component(/\+|%\h\h/, str, enc)
   end
+
+  # Encodes +str+ using URL encoding
+  #
+  # This encodes SP to %20 instead of +.
+  def self.encode_uri_component(str, enc=nil)
+    _encode_uri_component(/[^*\-.0-9A-Z_a-z]/, TBLENCURICOMP_, str, enc)
+  end
+
+  # Decodes given +str+ of URL-encoded data.
+  #
+  # This does not decode + to SP.
+  def self.decode_uri_component(str, enc=Encoding::UTF_8)
+    _decode_uri_component(/%\h\h/, str, enc)
+  end
+
+  def self._encode_uri_component(regexp, table, str, enc)
+    str = str.to_s.dup
+    if str.encoding != Encoding::ASCII_8BIT
+      if enc && enc != Encoding::ASCII_8BIT
+        str.encode!(Encoding::UTF_8, invalid: :replace, undef: :replace)
+        str.encode!(enc, fallback: ->(x){"&##{x.ord};"})
+      end
+      str.force_encoding(Encoding::ASCII_8BIT)
+    end
+    str.gsub!(regexp, table)
+    str.force_encoding(Encoding::US_ASCII)
+  end
+  private_class_method :_encode_uri_component
+
+  def self._decode_uri_component(regexp, str, enc)
+    raise ArgumentError, "invalid %-encoding (#{str})" if /%(?!\h\h)/.match?(str)
+    str.b.gsub(regexp, TBLDECWWWCOMP_).force_encoding(enc)
+  end
+  private_class_method :_decode_uri_component
 
   # Generates URL-encoded form data from given +enum+.
   #

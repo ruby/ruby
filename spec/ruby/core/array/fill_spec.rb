@@ -323,10 +323,8 @@ describe "Array#fill with (filler, range)" do
     [1, 2, 3, 4].fill(eval("(3...)")) { |x| x + 2 }.should == [1, 2, 3, 5]
   end
 
-  ruby_version_is "2.7" do
-    it "works with beginless ranges" do
-      [1, 2, 3, 4].fill('x', eval("(..2)")).should == ["x", "x", "x", 4]
-      [1, 2, 3, 4].fill(eval("(...2)")) { |x| x + 2 }.should == [2, 3, 3, 4]
-    end
+  it "works with beginless ranges" do
+    [1, 2, 3, 4].fill('x', (..2)).should == ["x", "x", "x", 4]
+    [1, 2, 3, 4].fill((...2)) { |x| x + 2 }.should == [2, 3, 3, 4]
   end
 end

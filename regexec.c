@@ -421,6 +421,8 @@ onig_region_copy(OnigRegion* to, const OnigRegion* from)
   (msa).start    = (arg_start);\
   (msa).gpos     = (arg_gpos);\
   (msa).best_len = ONIG_MISMATCH;\
+  (msa).counter  = 0;\
+  (msa).end_time = 0;\
 } while(0)
 #else
 # define MATCH_ARG_INIT(msa, arg_option, arg_region, arg_start, arg_gpos) do {\
@@ -429,6 +431,8 @@ onig_region_copy(OnigRegion* to, const OnigRegion* from)
   (msa).region   = (arg_region);\
   (msa).start    = (arg_start);\
   (msa).gpos     = (arg_gpos);\
+  (msa).counter  = 0;\
+  (msa).end_time = 0;\
 } while(0)
 #endif
 
@@ -1176,11 +1180,13 @@ static int string_cmp_ic(OnigEncoding enc, int case_fold_flag,
 # define DATA_ENSURE_CHECK1    (s < right_range)
 # define DATA_ENSURE_CHECK(n)  (s + (n) <= right_range)
 # define DATA_ENSURE(n)        if (s + (n) > right_range) goto fail
+# define DATA_ENSURE_CONTINUE(n) if (s + (n) > right_range) continue
 # define ABSENT_END_POS        right_range
 #else
 # define DATA_ENSURE_CHECK1    (s < end)
 # define DATA_ENSURE_CHECK(n)  (s + (n) <= end)
 # define DATA_ENSURE(n)        if (s + (n) > end) goto fail
+# define DATA_ENSURE_CONTINUE(n) if (s + (n) > end) continue
 # define ABSENT_END_POS        end
 #endif /* USE_MATCH_RANGE_MUST_BE_INSIDE_OF_SPECIFIED_RANGE */
 
@@ -2643,7 +2649,7 @@ match_at(regex_t* reg, const UChar* str, const UChar* end,
 		  ? STACK_AT(mem_end_stk[mem])->u.mem.pstr
 		  : (UChar* )((void* )mem_end_stk[mem]));
 	  n = pend - pstart;
-	  DATA_ENSURE(n);
+	  DATA_ENSURE_CONTINUE(n);
 	  sprev = s;
 	  swork = s;
 	  STRING_CMP_VALUE(pstart, swork, n, is_fail);
@@ -2682,7 +2688,7 @@ match_at(regex_t* reg, const UChar* str, const UChar* end,
 		  ? STACK_AT(mem_end_stk[mem])->u.mem.pstr
 		  : (UChar* )((void* )mem_end_stk[mem]));
 	  n = pend - pstart;
-	  DATA_ENSURE(n);
+	  DATA_ENSURE_CONTINUE(n);
 	  sprev = s;
 	  swork = s;
 	  STRING_CMP_VALUE_IC(case_fold_flag, pstart, &swork, n, end, is_fail);

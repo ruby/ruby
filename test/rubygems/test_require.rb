@@ -63,8 +63,8 @@ class TestGemRequire < Gem::TestCase
 
   # Providing -I on the commandline should always beat gems
   def test_dash_i_beats_gems
-    a1 = util_spec "a", "1", {"b" => "= 1"}, "lib/test_gem_require_a.rb"
-    b1 = util_spec "b", "1", {"c" => "> 0"}, "lib/b/c.rb"
+    a1 = util_spec "a", "1", { "b" => "= 1" }, "lib/test_gem_require_a.rb"
+    b1 = util_spec "b", "1", { "c" => "> 0" }, "lib/b/c.rb"
     c1 = util_spec "c", "1", nil, "lib/c/c.rb"
     c2 = util_spec "c", "2", nil, "lib/c/c.rb"
 
@@ -102,8 +102,8 @@ class TestGemRequire < Gem::TestCase
 
   # Providing -I on the commandline should always beat gems
   def test_dash_i_beats_default_gems
-    a1 = new_default_spec "a", "1", {"b" => "= 1"}, "test_gem_require_a.rb"
-    b1 = new_default_spec "b", "1", {"c" => "> 0"}, "b/c.rb"
+    a1 = new_default_spec "a", "1", { "b" => "= 1" }, "test_gem_require_a.rb"
+    b1 = new_default_spec "b", "1", { "c" => "> 0" }, "b/c.rb"
     c1 = new_default_spec "c", "1", nil, "c/c.rb"
     c2 = new_default_spec "c", "2", nil, "c/c.rb"
 
@@ -152,8 +152,8 @@ class TestGemRequire < Gem::TestCase
 
     install_specs a1, b1
 
-    t1 = create_sync_thread{ assert_require "a#{$$}" }
-    t2 = create_sync_thread{ assert_require "b#{$$}" }
+    t1 = create_sync_thread { assert_require "a#{$$}" }
+    t2 = create_sync_thread { assert_require "b#{$$}" }
 
     # wait until both files are waiting on the exit latch
     FILE_ENTERED_LATCH.await
@@ -169,7 +169,7 @@ class TestGemRequire < Gem::TestCase
   end
 
   def test_require_is_not_lazy_with_exact_req
-    a1 = util_spec "a", "1", {"b" => "= 1"}, "lib/test_gem_require_a.rb"
+    a1 = util_spec "a", "1", { "b" => "= 1" }, "lib/test_gem_require_a.rb"
     b1 = util_spec "b", "1", nil, "lib/b/c.rb"
     b2 = util_spec "b", "2", nil, "lib/b/c.rb"
 
@@ -184,7 +184,7 @@ class TestGemRequire < Gem::TestCase
   end
 
   def test_require_is_lazy_with_inexact_req
-    a1 = util_spec "a", "1", {"b" => ">= 1"}, "lib/test_gem_require_a.rb"
+    a1 = util_spec "a", "1", { "b" => ">= 1" }, "lib/test_gem_require_a.rb"
     b1 = util_spec "b", "1", nil, "lib/b/c.rb"
     b2 = util_spec "b", "2", nil, "lib/b/c.rb"
 
@@ -199,7 +199,7 @@ class TestGemRequire < Gem::TestCase
   end
 
   def test_require_is_not_lazy_with_one_possible
-    a1 = util_spec "a", "1", {"b" => ">= 1"}, "lib/test_gem_require_a.rb"
+    a1 = util_spec "a", "1", { "b" => ">= 1" }, "lib/test_gem_require_a.rb"
     b1 = util_spec "b", "1", nil, "lib/b/c.rb"
 
     install_specs b1, a1
@@ -230,7 +230,7 @@ class TestGemRequire < Gem::TestCase
 
     pend "not installed yet" unless RbConfig::TOPDIR
 
-    lib_dir = File.expand_path("../../lib", File.dirname(__FILE__))
+    lib_dir = File.expand_path("../lib", __dir__)
     rubylibdir = File.realdirpath(RbConfig::CONFIG["rubylibdir"])
     if rubylibdir == lib_dir
       # testing in the ruby repository where RubyGems' lib/ == stdlib lib/
@@ -243,7 +243,7 @@ class TestGemRequire < Gem::TestCase
 
     require 'benchmark' # the stdlib
 
-    a1 = util_spec "a", "1", {"b" => ">= 1"}, "lib/test_gem_require_a.rb"
+    a1 = util_spec "a", "1", { "b" => ">= 1" }, "lib/test_gem_require_a.rb"
     b1 = util_spec "b", "1", nil, "lib/benchmark.rb"
     b2 = util_spec "b", "2", nil, "lib/benchmark.rb"
 
@@ -670,10 +670,6 @@ class TestGemRequire < Gem::TestCase
   end
 
   private
-
-  def testing_ruby_repo?
-    !ENV["GEM_COMMAND"].nil?
-  end
 
   def util_install_extension_file(name)
     spec = quick_gem name

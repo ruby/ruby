@@ -118,8 +118,8 @@ control_frame_dump(const rb_execution_context_t *ec, const rb_control_frame_t *c
 	}
 	else {
             iseq = cfp->iseq;
-	    pc = cfp->pc - iseq->body->iseq_encoded;
-	    iseq_name = RSTRING_PTR(iseq->body->location.label);
+            pc = cfp->pc - ISEQ_BODY(iseq)->iseq_encoded;
+            iseq_name = RSTRING_PTR(ISEQ_BODY(iseq)->location.label);
 	    line = rb_vm_get_sourceline(cfp);
 	    if (line) {
 		snprintf(posbuf, MAX_POSBUF, "%s:%d", RSTRING_PTR(rb_iseq_path(iseq)), line);
@@ -178,12 +178,12 @@ control_frame_dump(const rb_execution_context_t *ec, const rb_control_frame_t *c
         fprintf(stderr, "  self: %s\n", rb_raw_obj_info(buff, 0x100, cfp->self));
 
         if (iseq) {
-            if (iseq->body->local_table_size > 0) {
+            if (ISEQ_BODY(iseq)->local_table_size > 0) {
                 fprintf(stderr, "  lvars:\n");
-                for (unsigned int i=0; i<iseq->body->local_table_size; i++) {
-                    const VALUE *argv = cfp->ep - cfp->iseq->body->local_table_size - VM_ENV_DATA_SIZE + 1;
+                for (unsigned int i=0; i<ISEQ_BODY(iseq)->local_table_size; i++) {
+                    const VALUE *argv = cfp->ep - ISEQ_BODY(cfp->iseq)->local_table_size - VM_ENV_DATA_SIZE + 1;
                     fprintf(stderr, "    %s: %s\n",
-                            rb_id2name(iseq->body->local_table[i]),
+                            rb_id2name(ISEQ_BODY(iseq)->local_table[i]),
                             rb_raw_obj_info(buff, 0x100, argv[i]));
                 }
             }
@@ -278,9 +278,9 @@ static const VALUE *
 vm_base_ptr(const rb_control_frame_t *cfp)
 {
     const rb_control_frame_t *prev_cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp);
-    const VALUE *bp = prev_cfp->sp + cfp->iseq->body->local_table_size + VM_ENV_DATA_SIZE;
+    const VALUE *bp = prev_cfp->sp + ISEQ_BODY(cfp->iseq)->local_table_size + VM_ENV_DATA_SIZE;
 
-    if (cfp->iseq->body->type == ISEQ_TYPE_METHOD) {
+    if (ISEQ_BODY(cfp->iseq)->type == ISEQ_TYPE_METHOD) {
 	bp += 1;
     }
     return bp;
@@ -296,8 +296,8 @@ vm_stack_dump_each(const rb_execution_context_t *ec, const rb_control_frame_t *c
 
     if (VM_FRAME_RUBYFRAME_P(cfp)) {
 	const rb_iseq_t *iseq = cfp->iseq;
-	argc = iseq->body->param.lead_num;
-	local_table_size = iseq->body->local_table_size;
+        argc = ISEQ_BODY(iseq)->param.lead_num;
+        local_table_size = ISEQ_BODY(iseq)->local_table_size;
     }
 
     /* stack trace header */
@@ -366,7 +366,7 @@ rb_vmdebug_debug_print_register(const rb_execution_context_t *ec)
     ptrdiff_t cfpi;
 
     if (VM_FRAME_RUBYFRAME_P(cfp)) {
-	pc = cfp->pc - cfp->iseq->body->iseq_encoded;
+        pc = cfp->pc - ISEQ_BODY(cfp->iseq)->iseq_encoded;
     }
 
     if (ep < 0 || (size_t)ep > ec->vm_stack_size) {
@@ -390,7 +390,7 @@ rb_vmdebug_debug_print_pre(const rb_execution_context_t *ec, const rb_control_fr
     const rb_iseq_t *iseq = cfp->iseq;
 
     if (iseq != 0) {
-	ptrdiff_t pc = _pc - iseq->body->iseq_encoded;
+        ptrdiff_t pc = _pc - ISEQ_BODY(iseq)->iseq_encoded;
 	int i;
 
 	for (i=0; i<(int)VM_CFP_CNT(ec, cfp); i++) {
@@ -474,7 +474,7 @@ rb_vmdebug_thread_dump_state(VALUE self)
 # ifdef HAVE_LIBUNWIND
 #  undef backtrace
 #  define backtrace unw_backtrace
-# elif defined(__APPLE__) && defined(__x86_64__) && defined(HAVE_LIBUNWIND_H)
+# elif defined(__APPLE__) && defined(HAVE_LIBUNWIND_H)
 #  define UNW_LOCAL_ONLY
 #  include <libunwind.h>
 #  include <sys/mman.h>
@@ -503,12 +503,13 @@ backtrace(void **trace, int size)
 darwin_sigtramp:
     /* darwin's bundled libunwind doesn't support signal trampoline */
     {
+#if defined(__x86_64__)
 	ucontext_t *uctx;
 	char vec[1];
 	int r;
 	/* get previous frame information from %rbx at _sigtramp and set values to cursor
-	 * http://www.opensource.apple.com/source/Libc/Libc-825.25/i386/sys/_sigtramp.s
-	 * http://www.opensource.apple.com/source/libunwind/libunwind-35.1/src/unw_getcontext.s
+	 * https://www.opensource.apple.com/source/Libc/Libc-825.25/i386/sys/_sigtramp.s
+	 * https://www.opensource.apple.com/source/libunwind/libunwind-35.1/src/unw_getcontext.s
 	 */
 	unw_get_reg(&cursor, UNW_X86_64_RBX, &ip);
 	uctx = (ucontext_t *)ip;
@@ -563,6 +564,8 @@ darwin_sigtramp:
 	    trace[n++] = (void *)ip;
 	    ip = *(unw_word_t*)uctx->uc_mcontext->MCTX_SS_REG(rsp);
 	}
+#endif
+
 	trace[n++] = (void *)ip;
 	unw_set_reg(&cursor, UNW_REG_IP, ip);
     }
@@ -1177,10 +1180,6 @@ rb_vm_bugreport(const void *ctx)
     }
 }
 
-#ifdef NON_SCALAR_THREAD_ID
-const char *ruby_fill_thread_id_string(rb_nativethread_id_t thid, rb_thread_id_string_t buf);
-#endif
-
 void
 rb_vmdebug_stack_dump_all_threads(void)
 {
@@ -1188,13 +1187,11 @@ rb_vmdebug_stack_dump_all_threads(void)
     rb_ractor_t *r = GET_RACTOR();
 
     // TODO: now it only shows current ractor
-    list_for_each(&r->threads.set, th, lt_node) {
+    ccan_list_for_each(&r->threads.set, th, lt_node) {
 #ifdef NON_SCALAR_THREAD_ID
-        rb_thread_id_string_t buf;
-	ruby_fill_thread_id_string(th->thread_id, buf);
-	fprintf(stderr, "th: %p, native_id: %s\n", th, buf);
+	fprintf(stderr, "th: %p, native_id: N/A\n", th);
 #else
-        fprintf(stderr, "th: %p, native_id: %p\n", (void *)th, (void *)(uintptr_t)th->thread_id);
+        fprintf(stderr, "th: %p, native_id: %p\n", (void *)th, (void *)(uintptr_t)th->nt->thread_id);
 #endif
 	rb_vmdebug_stack_dump_raw(th->ec, th->ec->cfp);
     }

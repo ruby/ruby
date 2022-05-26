@@ -332,6 +332,10 @@ def package(vcs, rev, destdir, tmp = nil)
     end
   end
 
+  Dir.glob("#{exported}/.*.yml") do |file|
+    FileUtils.rm(file, verbose: $VERBOSE)
+  end
+
   status = IO.read(File.dirname(__FILE__) + "/prereq.status")
   Dir.chdir(tmp) if tmp
 
