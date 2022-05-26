@@ -259,6 +259,7 @@ fn main() {
         .allowlist_function("rb_yjit_obj_written")
         .allowlist_function("rb_yjit_str_simple_append")
         .allowlist_function("rb_ENCODING_GET")
+        .allowlist_function("rb_yjit_exit_locations_dict")
 
         // from vm_sync.h
         .allowlist_function("rb_vm_barrier")
@@ -292,6 +293,9 @@ fn main() {
         // From gc.h and internal/gc.h
         .allowlist_function("rb_class_allocate_instance")
         .allowlist_function("rb_obj_info")
+
+        // From include/ruby/debug.h
+        .allowlist_function("rb_profile_frames")
 
         // We define VALUE manually, don't import it
         .blocklist_type("VALUE")

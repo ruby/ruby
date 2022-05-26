@@ -424,6 +424,13 @@ fn gen_exit(exit_pc: *mut VALUE, ctx: &Context, cb: &mut CodeBlock) -> CodePtr {
     if get_option!(gen_stats) {
         mov(cb, RDI, const_ptr_opnd(exit_pc as *const u8));
         call_ptr(cb, RSI, rb_yjit_count_side_exit_op as *const u8);
+
+        // If --yjit-trace-exits option is enabled, record the exit stack
+        // while recording the side exits.
+        if get_option!(gen_trace_exits) {
+            mov(cb, C_ARG_REGS[0], const_ptr_opnd(exit_pc as *const u8));
+            call_ptr(cb, REG0, rb_yjit_record_exit_stack as *const u8);
+        }
     }
 
     pop(cb, REG_SP);
