@@ -67,8 +67,8 @@ ossl_rand_add(VALUE self, VALUE str, VALUE entropy)
 static VALUE
 ossl_rand_load_file(VALUE self, VALUE filename)
 {
-    if(!RAND_load_file(StringValueCStr(filename), -1)) {
-	ossl_raise(eRandomError, NULL);
+    if (!RAND_load_file(StringValueCStr(filename), -1)) {
+        ossl_raise(eRandomError, NULL);
     }
     return Qtrue;
 }
@@ -85,7 +85,7 @@ static VALUE
 ossl_rand_write_file(VALUE self, VALUE filename)
 {
     if (RAND_write_file(StringValueCStr(filename)) == -1) {
-	ossl_raise(eRandomError, NULL);
+        ossl_raise(eRandomError, NULL);
     }
     return Qtrue;
 }
@@ -112,9 +112,10 @@ ossl_rand_bytes(VALUE self, VALUE len)
     str = rb_str_new(0, n);
     ret = RAND_bytes((unsigned char *)RSTRING_PTR(str), n);
     if (ret == 0) {
-	ossl_raise(eRandomError, "RAND_bytes");
-    } else if (ret == -1) {
-	ossl_raise(eRandomError, "RAND_bytes is not supported");
+        ossl_raise(eRandomError, "RAND_bytes");
+    }
+    else if (ret == -1) {
+        ossl_raise(eRandomError, "RAND_bytes is not supported");
     }
 
     return str;
@@ -131,7 +132,7 @@ static VALUE
 ossl_rand_egd(VALUE self, VALUE filename)
 {
     if (RAND_egd(StringValueCStr(filename)) == -1) {
-	ossl_raise(eRandomError, NULL);
+        ossl_raise(eRandomError, NULL);
     }
     return Qtrue;
 }
@@ -151,7 +152,7 @@ ossl_rand_egd_bytes(VALUE self, VALUE filename, VALUE len)
     int n = NUM2INT(len);
 
     if (RAND_egd_bytes(StringValueCStr(filename), n) == -1) {
-	ossl_raise(eRandomError, NULL);
+        ossl_raise(eRandomError, NULL);
     }
     return Qtrue;
 }

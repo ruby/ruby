@@ -1,4 +1,4 @@
-#ifndef RBIMPL_ATTR_ENUM_EXTENSIBILITY_H             /*-*-C++-*-vi:se ft=cpp:*/
+#ifndef RBIMPL_ATTR_ENUM_EXTENSIBILITY_H /*-*-C++-*-vi:se ft=cpp:*/
 #define RBIMPL_ATTR_ENUM_EXTENSIBILITY_H
 /**
  * @file
@@ -24,9 +24,9 @@
 
 /** Wraps (or simulates) `__attribute__((enum_extensibility))` */
 #if RBIMPL_HAS_ATTRIBUTE(enum_extensibility)
-# define RBIMPL_ATTR_ENUM_EXTENSIBILITY(_) __attribute__((__enum_extensibility__(_)))
+#    define RBIMPL_ATTR_ENUM_EXTENSIBILITY(_) __attribute__((__enum_extensibility__(_)))
 #else
-# define RBIMPL_ATTR_ENUM_EXTENSIBILITY(_) /* void */
+#    define RBIMPL_ATTR_ENUM_EXTENSIBILITY(_) /* void */
 #endif
 
 #endif /* RBIMPL_ATTR_ENUM_EXTENSIBILITY_H */

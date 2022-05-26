@@ -1,4 +1,4 @@
-#ifndef RBIMPL_INTERN_COMPLEX_H                      /*-*-C++-*-vi:se ft=cpp:*/
+#ifndef RBIMPL_INTERN_COMPLEX_H /*-*-C++-*-vi:se ft=cpp:*/
 #define RBIMPL_INTERN_COMPLEX_H
 /**
  * @file
@@ -20,11 +20,11 @@
  *             extension libraries.  They could be written in C++98.
  * @brief      Public APIs related to ::rb_cComplex.
  */
+#include "ruby/internal/arithmetic/long.h" /* INT2FIX is here. */
 #include "ruby/internal/attr/deprecated.h"
 #include "ruby/internal/attr/pure.h"
 #include "ruby/internal/dllexport.h"
 #include "ruby/internal/value.h"
-#include "ruby/internal/arithmetic/long.h" /* INT2FIX is here. */
 
 RBIMPL_SYMBOL_EXPORT_BEGIN()
 
@@ -50,7 +50,7 @@ VALUE rb_complex_raw(VALUE real, VALUE imag);
 #define rb_complex_raw1(x) rb_complex_raw((x), INT2FIX(0))
 
 /** @alias{rb_complex_raw} */
-#define rb_complex_raw2(x,y) rb_complex_raw((x), (y))
+#define rb_complex_raw2(x, y) rb_complex_raw((x), (y))
 
 /**
  * Constructs a Complex, by first multiplying the imaginary part with `1i` then
@@ -74,7 +74,7 @@ VALUE rb_complex_new(VALUE real, VALUE imag);
 #define rb_complex_new1(x) rb_complex_new((x), INT2FIX(0))
 
 /** @alias{rb_complex_new} */
-#define rb_complex_new2(x,y) rb_complex_new((x), (y))
+#define rb_complex_new2(x, y) rb_complex_new((x), (y))
 
 /**
  * Constructs a  Complex using polar representations.   Unlike rb_complex_new()
@@ -246,7 +246,7 @@ VALUE rb_Complex(VALUE real, VALUE imag);
 #define rb_Complex1(x) rb_Complex((x), INT2FIX(0))
 
 /** @alias{rb_Complex} */
-#define rb_Complex2(x,y) rb_Complex((x), (y))
+#define rb_Complex2(x, y) rb_Complex((x), (y))
 
 RBIMPL_SYMBOL_EXPORT_END()
 

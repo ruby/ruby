@@ -1,4 +1,4 @@
-#ifndef RUBY_INTERNAL_ENCODING_STRING_H              /*-*-C++-*-vi:se ft=cpp:*/
+#ifndef RUBY_INTERNAL_ENCODING_STRING_H /*-*-C++-*-vi:se ft=cpp:*/
 #define RUBY_INTERNAL_ENCODING_STRING_H
 /**
  * @file
@@ -21,11 +21,11 @@
  * @brief      Routines to manipulate encodings of strings.
  */
 
-#include "ruby/internal/dllexport.h"
-#include "ruby/internal/value.h"
-#include "ruby/internal/encoding/encoding.h"
 #include "ruby/internal/attr/nonnull.h"
+#include "ruby/internal/dllexport.h"
+#include "ruby/internal/encoding/encoding.h"
 #include "ruby/internal/intern/string.h" /* rbimpl_strlen */
+#include "ruby/internal/value.h"
 
 RBIMPL_SYMBOL_EXPORT_BEGIN()
 
@@ -328,16 +328,11 @@ rbimpl_enc_str_new_cstr(const char *str, rb_encoding *enc)
     return rb_enc_str_new_static(str, len, enc);
 }
 
-#define rb_enc_str_new(str, len, enc)           \
-    ((RBIMPL_CONSTANT_P(str) &&                 \
-      RBIMPL_CONSTANT_P(len) ?                  \
-      rb_enc_str_new_static:                    \
-      rb_enc_str_new) ((str), (len), (enc)))
+#define rb_enc_str_new(str, len, enc) \
+    ((RBIMPL_CONSTANT_P(str) && RBIMPL_CONSTANT_P(len) ? rb_enc_str_new_static : rb_enc_str_new)((str), (len), (enc)))
 
-#define rb_enc_str_new_cstr(str, enc)           \
-    ((RBIMPL_CONSTANT_P(str)  ?                 \
-      rbimpl_enc_str_new_cstr :                 \
-      rb_enc_str_new_cstr) ((str), (enc)))
+#define rb_enc_str_new_cstr(str, enc) \
+    ((RBIMPL_CONSTANT_P(str) ? rbimpl_enc_str_new_cstr : rb_enc_str_new_cstr)((str), (enc)))
 
 /** @endcond */
 

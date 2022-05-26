@@ -12,14 +12,13 @@
 
 /* interface */
 
-# ifdef __CYGWIN__
-# undef _WIN32
-# endif
+#ifdef __CYGWIN__
+#    undef _WIN32
+#endif
 
 #define USE_VM_CLOCK 1
 
-WINBASEAPI BOOL WINAPI
-TryEnterCriticalSection(IN OUT LPCRITICAL_SECTION lpCriticalSection);
+WINBASEAPI BOOL WINAPI TryEnterCriticalSection(IN OUT LPCRITICAL_SECTION lpCriticalSection);
 
 struct rb_thread_cond_struct {
     struct cond_event_entry *next;

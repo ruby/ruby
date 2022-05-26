@@ -33,7 +33,8 @@ static int syslog_options = -1, syslog_facility = -1, syslog_mask = -1;
 static int syslog_opened = 0;
 
 /* Package helper routines */
-static void syslog_write(int pri, int argc, VALUE *argv)
+static void
+syslog_write(int pri, int argc, VALUE *argv)
 {
     VALUE str;
 
@@ -53,7 +54,8 @@ static void syslog_write(int pri, int argc, VALUE *argv)
 /* Closes the syslog facility.
  * Raises a runtime exception if it is not open.
  */
-static VALUE mSyslog_close(VALUE self)
+static VALUE
+mSyslog_close(VALUE self)
 {
     if (!syslog_opened) {
         rb_raise(rb_eRuntimeError, "syslog not opened");
@@ -147,7 +149,8 @@ static VALUE mSyslog_close(VALUE self)
  *              Syslog::LOG_DAEMON | Syslog::LOG_LOCAL3)
  *
  */
-static VALUE mSyslog_open(int argc, VALUE *argv, VALUE self)
+static VALUE
+mSyslog_open(int argc, VALUE *argv, VALUE self)
 {
     VALUE ident, opt, fac;
     const char *ident_ptr;
@@ -165,15 +168,17 @@ static VALUE mSyslog_open(int argc, VALUE *argv, VALUE self)
     syslog_ident = strdup(ident_ptr);
 
     if (NIL_P(opt)) {
-	syslog_options = LOG_PID | LOG_CONS;
-    } else {
-	syslog_options = NUM2INT(opt);
+        syslog_options = LOG_PID | LOG_CONS;
+    }
+    else {
+        syslog_options = NUM2INT(opt);
     }
 
     if (NIL_P(fac)) {
-	syslog_facility = LOG_USER;
-    } else {
-	syslog_facility = NUM2INT(fac);
+        syslog_facility = LOG_USER;
+    }
+    else {
+        syslog_facility = NUM2INT(fac);
     }
 
     openlog(syslog_ident, syslog_options, syslog_facility);
@@ -199,7 +204,8 @@ static VALUE mSyslog_open(int argc, VALUE *argv, VALUE self)
  *
  * Arguments are the same as for open().
  */
-static VALUE mSyslog_reopen(int argc, VALUE *argv, VALUE self)
+static VALUE
+mSyslog_reopen(int argc, VALUE *argv, VALUE self)
 {
     mSyslog_close(self);
 
@@ -211,28 +217,32 @@ static VALUE mSyslog_reopen(int argc, VALUE *argv, VALUE self)
  *
  * Returns true if the syslog is open.
  */
-static VALUE mSyslog_isopen(VALUE self)
+static VALUE
+mSyslog_isopen(VALUE self)
 {
     return syslog_opened ? Qtrue : Qfalse;
 }
 
 /* Returns the identity string used in the last call to open()
  */
-static VALUE mSyslog_ident(VALUE self)
+static VALUE
+mSyslog_ident(VALUE self)
 {
     return syslog_opened ? rb_str_new2(syslog_ident) : Qnil;
 }
 
 /* Returns the options bitmask used in the last call to open()
  */
-static VALUE mSyslog_options(VALUE self)
+static VALUE
+mSyslog_options(VALUE self)
 {
     return syslog_opened ? INT2NUM(syslog_options) : Qnil;
 }
 
 /* Returns the facility number used in the last call to open()
  */
-static VALUE mSyslog_facility(VALUE self)
+static VALUE
+mSyslog_facility(VALUE self)
 {
     return syslog_opened ? INT2NUM(syslog_facility) : Qnil;
 }
@@ -240,7 +250,8 @@ static VALUE mSyslog_facility(VALUE self)
 /* Returns the log priority mask in effect. The mask is not reset by opening
  * or closing syslog.
  */
-static VALUE mSyslog_get_mask(VALUE self)
+static VALUE
+mSyslog_get_mask(VALUE self)
 {
     return syslog_opened ? INT2NUM(syslog_mask) : Qnil;
 }
@@ -260,7 +271,8 @@ static VALUE mSyslog_get_mask(VALUE self)
  *
  * The priority mask persists through calls to open() and close().
  */
-static VALUE mSyslog_set_mask(VALUE self, VALUE mask)
+static VALUE
+mSyslog_set_mask(VALUE self, VALUE mask)
 {
     if (!syslog_opened) {
         rb_raise(rb_eRuntimeError, "must open syslog before setting log mask");
@@ -297,7 +309,8 @@ static VALUE mSyslog_set_mask(VALUE self, VALUE mask)
  *   Syslog.alert("Out of memory")
  *
  */
-static VALUE mSyslog_log(int argc, VALUE *argv, VALUE self)
+static VALUE
+mSyslog_log(int argc, VALUE *argv, VALUE self)
 {
     VALUE pri;
 
@@ -307,7 +320,7 @@ static VALUE mSyslog_log(int argc, VALUE *argv, VALUE self)
     pri = *argv++;
 
     if (!FIXNUM_P(pri)) {
-	rb_raise(rb_eTypeError, "type mismatch: %"PRIsVALUE" given", rb_obj_class(pri));
+        rb_raise(rb_eTypeError, "type mismatch: %" PRIsVALUE " given", rb_obj_class(pri));
     }
 
     syslog_write(FIX2INT(pri), argc, argv);
@@ -317,67 +330,64 @@ static VALUE mSyslog_log(int argc, VALUE *argv, VALUE self)
 
 /* Returns an inspect() string summarizing the object state.
  */
-static VALUE mSyslog_inspect(VALUE self)
+static VALUE
+mSyslog_inspect(VALUE self)
 {
     Check_Type(self, T_MODULE);
 
-    if (!syslog_opened)
-	return rb_sprintf("<#%"PRIsVALUE": opened=false>", self);
+    if (!syslog_opened) return rb_sprintf("<#%" PRIsVALUE ": opened=false>", self);
 
-    return rb_sprintf("<#%"PRIsVALUE": opened=true, ident=\"%s\", options=%d, facility=%d, mask=%d>",
-		      self,
-		      syslog_ident,
-		      syslog_options,
-		      syslog_facility,
-		      syslog_mask);
+    return rb_sprintf("<#%" PRIsVALUE ": opened=true, ident=\"%s\", options=%d, facility=%d, mask=%d>", self,
+        syslog_ident, syslog_options, syslog_facility, syslog_mask);
 }
 
 /* Returns self, for backward compatibility.
  */
-static VALUE mSyslog_instance(VALUE self)
+static VALUE
+mSyslog_instance(VALUE self)
 {
     return self;
 }
 
 #define define_syslog_shortcut_method(pri, name) \
-static VALUE mSyslog_##name(int argc, VALUE *argv, VALUE self) \
-{ \
-    syslog_write((pri), argc, argv); \
+    static VALUE mSyslog_##name(int argc, VALUE *argv, VALUE self) \
+    { \
+        syslog_write((pri), argc, argv); \
 \
-    return self; \
-}
+        return self; \
+    }
 
 #ifdef LOG_EMERG
 define_syslog_shortcut_method(LOG_EMERG, emerg)
 #endif
 #ifdef LOG_ALERT
-define_syslog_shortcut_method(LOG_ALERT, alert)
+    define_syslog_shortcut_method(LOG_ALERT, alert)
 #endif
 #ifdef LOG_CRIT
-define_syslog_shortcut_method(LOG_CRIT, crit)
+        define_syslog_shortcut_method(LOG_CRIT, crit)
 #endif
 #ifdef LOG_ERR
-define_syslog_shortcut_method(LOG_ERR, err)
+            define_syslog_shortcut_method(LOG_ERR, err)
 #endif
 #ifdef LOG_WARNING
-define_syslog_shortcut_method(LOG_WARNING, warning)
+                define_syslog_shortcut_method(LOG_WARNING, warning)
 #endif
 #ifdef LOG_NOTICE
-define_syslog_shortcut_method(LOG_NOTICE, notice)
+                    define_syslog_shortcut_method(LOG_NOTICE, notice)
 #endif
 #ifdef LOG_INFO
-define_syslog_shortcut_method(LOG_INFO, info)
+                        define_syslog_shortcut_method(LOG_INFO, info)
 #endif
 #ifdef LOG_DEBUG
-define_syslog_shortcut_method(LOG_DEBUG, debug)
+                            define_syslog_shortcut_method(LOG_DEBUG, debug)
 #endif
 
-/* call-seq:
- *   LOG_MASK(priority_level) => priority_mask
- *
- * Generates a mask bit for a priority level. See #mask=
- */
-static VALUE mSyslogMacros_LOG_MASK(VALUE mod, VALUE pri)
+    /* call-seq:
+     *   LOG_MASK(priority_level) => priority_mask
+     *
+     * Generates a mask bit for a priority level. See #mask=
+     */
+    static VALUE mSyslogMacros_LOG_MASK(VALUE mod, VALUE pri)
 {
     return INT2FIX(LOG_MASK(NUM2INT(pri)));
 }
@@ -388,12 +398,14 @@ static VALUE mSyslogMacros_LOG_MASK(VALUE mod, VALUE pri)
  * Generates a mask value for priority levels at or below the level specified.
  * See #mask=
  */
-static VALUE mSyslogMacros_LOG_UPTO(VALUE mod, VALUE pri)
+static VALUE
+mSyslogMacros_LOG_UPTO(VALUE mod, VALUE pri)
 {
     return INT2FIX(LOG_UPTO(NUM2INT(pri)));
 }
 
-static VALUE mSyslogMacros_included(VALUE mod, VALUE target)
+static VALUE
+mSyslogMacros_included(VALUE mod, VALUE target)
 {
     rb_extend_object(target, mSyslogMacros);
     return mod;
@@ -413,17 +425,18 @@ static VALUE mSyslogMacros_included(VALUE mod, VALUE target)
  *
  * The syslog protocol is standardized in RFC 5424.
  */
-void Init_syslog(void)
+void
+Init_syslog(void)
 {
 #undef rb_intern
     mSyslog = rb_define_module("Syslog");
 
-    mSyslogConstants    = rb_define_module_under(mSyslog, "Constants");
+    mSyslogConstants = rb_define_module_under(mSyslog, "Constants");
 
-    mSyslogOption       = rb_define_module_under(mSyslog, "Option");
-    mSyslogFacility     = rb_define_module_under(mSyslog, "Facility");
-    mSyslogLevel        = rb_define_module_under(mSyslog, "Level");
-    mSyslogMacros       = rb_define_module_under(mSyslog, "Macros");
+    mSyslogOption = rb_define_module_under(mSyslog, "Option");
+    mSyslogFacility = rb_define_module_under(mSyslog, "Facility");
+    mSyslogLevel = rb_define_module_under(mSyslog, "Level");
+    mSyslogMacros = rb_define_module_under(mSyslog, "Macros");
 
     rb_define_module_function(mSyslog, "open", mSyslog_open, -1);
     rb_define_module_function(mSyslog, "reopen", mSyslog_reopen, -1);
@@ -444,8 +457,7 @@ void Init_syslog(void)
 
     /* Syslog options */
 
-#define rb_define_syslog_option(c) \
-    rb_define_const(mSyslogOption, #c, INT2NUM(c))
+#define rb_define_syslog_option(c) rb_define_const(mSyslogOption, #c, INT2NUM(c))
 
 #ifdef LOG_PID
     rb_define_syslog_option(LOG_PID);
@@ -468,8 +480,7 @@ void Init_syslog(void)
 
     /* Syslog facilities */
 
-#define rb_define_syslog_facility(c) \
-    rb_define_const(mSyslogFacility, #c, INT2NUM(c))
+#define rb_define_syslog_facility(c) rb_define_const(mSyslogFacility, #c, INT2NUM(c))
 
 #ifdef LOG_AUTH
     rb_define_syslog_facility(LOG_AUTH);
@@ -543,8 +554,8 @@ void Init_syslog(void)
 
     /* Syslog levels and the shortcut methods */
 
-#define rb_define_syslog_level(c, m)				\
-    rb_define_const(mSyslogLevel, #c, INT2NUM(c));		\
+#define rb_define_syslog_level(c, m) \
+    rb_define_const(mSyslogLevel, #c, INT2NUM(c)); \
     rb_define_module_function(mSyslog, #m, mSyslog_##m, -1)
 
 #ifdef LOG_EMERG

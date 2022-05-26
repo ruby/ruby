@@ -9,29 +9,29 @@
 
 **********************************************************************/
 
-#include "ruby/encoding.h"
-#include "internal.h"
 #include "encindex.h"
+#include "internal.h"
+#include "ruby/encoding.h"
 #ifdef __CYGWIN__
-#include <windows.h>
+#    include <windows.h>
 #endif
 #ifdef HAVE_LANGINFO_H
-#include <langinfo.h>
+#    include <langinfo.h>
 #endif
 
 #if defined _WIN32 || defined __CYGWIN__
-#define SIZEOF_CP_NAME ((sizeof(UINT) * 8 / 3) + 4)
-#define CP_FORMAT(buf, codepage) snprintf(buf, sizeof(buf), "CP%u", (codepage))
+#    define SIZEOF_CP_NAME ((sizeof(UINT) * 8 / 3) + 4)
+#    define CP_FORMAT(buf, codepage) snprintf(buf, sizeof(buf), "CP%u", (codepage))
 
 extern UINT ruby_w32_codepage[2];
 #endif
 
 #ifndef NO_LOCALE_CHARMAP
-# if defined _WIN32 || defined __CYGWIN__ || defined HAVE_LANGINFO_H
-#   define NO_LOCALE_CHARMAP 0
-# else
-#   define NO_LOCALE_CHARMAP 1
-# endif
+#    if defined _WIN32 || defined __CYGWIN__ || defined HAVE_LANGINFO_H
+#        define NO_LOCALE_CHARMAP 0
+#    else
+#        define NO_LOCALE_CHARMAP 1
+#    endif
 #endif
 
 #if !NO_LOCALE_CHARMAP
@@ -39,25 +39,25 @@ static VALUE
 locale_charmap(VALUE (*conv)(const char *))
 {
     const char *codeset = 0;
-#if defined _WIN32 || defined __CYGWIN__
+#    if defined _WIN32 || defined __CYGWIN__
     char cp[SIZEOF_CP_NAME];
-# ifdef __CYGWIN__
+#        ifdef __CYGWIN__
     const char *nl_langinfo_codeset(void);
     codeset = nl_langinfo_codeset();
-# endif
+#        endif
     if (!codeset) {
-	UINT codepage = ruby_w32_codepage[0];
-	if (!codepage) codepage = GetConsoleCP();
-	if (!codepage) codepage = GetACP();
-	CP_FORMAT(cp, codepage);
-	codeset = cp;
+        UINT codepage = ruby_w32_codepage[0];
+        if (!codepage) codepage = GetConsoleCP();
+        if (!codepage) codepage = GetACP();
+        CP_FORMAT(cp, codepage);
+        codeset = cp;
     }
-#elif defined HAVE_LANGINFO_H
+#    elif defined HAVE_LANGINFO_H
     codeset = nl_langinfo(CODESET);
     ASSUME(codeset);
-#else
-# error locale_charmap() is not implemented
-#endif
+#    else
+#        error locale_charmap() is not implemented
+#    endif
     return (*conv)(codeset);
 }
 #endif

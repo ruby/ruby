@@ -1,4 +1,4 @@
-#ifndef RBIMPL_ATTR_MAYBE_UNUSED_H                   /*-*-C++-*-vi:se ft=cpp:*/
+#ifndef RBIMPL_ATTR_MAYBE_UNUSED_H /*-*-C++-*-vi:se ft=cpp:*/
 #define RBIMPL_ATTR_MAYBE_UNUSED_H
 /**
  * @file
@@ -26,13 +26,13 @@
 
 /** Wraps  (or simulates)  `[[maybe_unused]]` */
 #if RBIMPL_HAS_CPP_ATTRIBUTE(maybe_unused)
-# define RBIMPL_ATTR_MAYBE_UNUSED() [[maybe_unused]]
+#    define RBIMPL_ATTR_MAYBE_UNUSED() [[maybe_unused]]
 #elif RBIMPL_HAS_C_ATTRIBUTE(maybe_unused)
-# define RBIMPL_ATTR_MAYBE_UNUSED() [[maybe_unused]]
+#    define RBIMPL_ATTR_MAYBE_UNUSED() [[maybe_unused]]
 #elif RBIMPL_HAS_ATTRIBUTE(unused)
-# define RBIMPL_ATTR_MAYBE_UNUSED() __attribute__((__unused__))
+#    define RBIMPL_ATTR_MAYBE_UNUSED() __attribute__((__unused__))
 #else
-# define RBIMPL_ATTR_MAYBE_UNUSED() /* void */
+#    define RBIMPL_ATTR_MAYBE_UNUSED() /* void */
 #endif
 
 #endif /* RBIMPL_ATTR_MAYBE_UNUSED */

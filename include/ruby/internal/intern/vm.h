@@ -1,4 +1,4 @@
-#ifndef RBIMPL_INTERN_VM_H                           /*-*-C++-*-vi:se ft=cpp:*/
+#ifndef RBIMPL_INTERN_VM_H /*-*-C++-*-vi:se ft=cpp:*/
 #define RBIMPL_INTERN_VM_H
 /**
  * @file
@@ -399,7 +399,7 @@ RBIMPL_ATTR_NORETURN()
 VALUE rb_f_notimplement(int argc, const VALUE *argv, VALUE obj, VALUE marker);
 #if !defined(RUBY_EXPORT) && defined(_WIN32)
 RUBY_EXTERN VALUE (*const rb_f_notimplement_)(int, const VALUE *, VALUE, VALUE marker);
-#define rb_f_notimplement (*rb_f_notimplement_)
+#    define rb_f_notimplement (*rb_f_notimplement_)
 #endif
 
 /* vm_backtrace.c */

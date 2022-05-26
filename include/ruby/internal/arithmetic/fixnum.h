@@ -1,4 +1,4 @@
-#ifndef RBIMPL_ARITHMETIC_FIXNUM_H                   /*-*-C++-*-vi:se ft=cpp:*/
+#ifndef RBIMPL_ARITHMETIC_FIXNUM_H /*-*-C++-*-vi:se ft=cpp:*/
 #define RBIMPL_ARITHMETIC_FIXNUM_H
 /**
  * @file
@@ -22,7 +22,7 @@
  */
 #include "ruby/backward/2/limits.h"
 
-#define FIXABLE    RB_FIXABLE      /**< @old{RB_FIXABLE} */
+#define FIXABLE RB_FIXABLE         /**< @old{RB_FIXABLE} */
 #define FIXNUM_MAX RUBY_FIXNUM_MAX /**< @old{RUBY_FIXNUM_MAX} */
 #define FIXNUM_MIN RUBY_FIXNUM_MIN /**< @old{RUBY_FIXNUM_MIN} */
 #define NEGFIXABLE RB_NEGFIXABLE   /**< @old{RB_NEGFIXABLE} */
@@ -40,7 +40,7 @@
  * represent  is   4,611,686,018,427,387,904,  which   is  not   fixable.   The
  * seemingly-strange "< FIXNUM_MAX + 1" expression below is due to this.
  */
-#define RB_POSFIXABLE(_) ((_) <  RUBY_FIXNUM_MAX + 1)
+#define RB_POSFIXABLE(_) ((_) < RUBY_FIXNUM_MAX + 1)
 
 /**
  * Checks if the passed value is in  range of fixnum, assuming it is a negative
@@ -49,12 +49,12 @@
 #define RB_NEGFIXABLE(_) ((_) >= RUBY_FIXNUM_MIN)
 
 /** Checks if the passed value is in  range of fixnum */
-#define RB_FIXABLE(_)    (RB_POSFIXABLE(_) && RB_NEGFIXABLE(_))
+#define RB_FIXABLE(_) (RB_POSFIXABLE(_) && RB_NEGFIXABLE(_))
 
 /** Maximum possible value that a fixnum can represent. */
-#define RUBY_FIXNUM_MAX  (LONG_MAX / 2)
+#define RUBY_FIXNUM_MAX (LONG_MAX / 2)
 
 /** Minimum possible value that a fixnum can represent. */
-#define RUBY_FIXNUM_MIN  (LONG_MIN / 2)
+#define RUBY_FIXNUM_MIN (LONG_MIN / 2)
 
 #endif /* RBIMPL_ARITHMETIC_FIXNUM_H */

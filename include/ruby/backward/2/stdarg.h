@@ -1,4 +1,4 @@
-#ifndef RUBY_BACKWARD2_STDARG_H                      /*-*-C++-*-vi:se ft=cpp:*/
+#ifndef RUBY_BACKWARD2_STDARG_H /*-*-C++-*-vi:se ft=cpp:*/
 #define RUBY_BACKWARD2_STDARG_H
 /**
  * @file
@@ -30,9 +30,9 @@
  * @brief       This was a transition path from K&R to ANSI.
  */
 #ifdef HAVE_PROTOTYPES
-# define _(args) args
+#    define _(args) args
 #else
-# define _(args) ()
+#    define _(args) ()
 #endif
 
 #undef __
@@ -41,9 +41,9 @@
  * @brief       This was a transition path from K&R to ANSI.
  */
 #ifdef HAVE_STDARG_PROTOTYPES
-# define __(args) args
+#    define __(args) args
 #else
-# define __(args) ()
+#    define __(args) ()
 #endif
 
 /**
@@ -61,9 +61,9 @@
  * @see ruby::backward::cxxanyargs
  */
 #ifdef __cplusplus
-#define ANYARGS ...
+#    define ANYARGS ...
 #else
-#define ANYARGS
+#    define ANYARGS
 #endif
 
 #endif /* RUBY_BACKWARD2_STDARG_H */

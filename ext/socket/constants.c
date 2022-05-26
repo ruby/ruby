@@ -15,7 +15,7 @@ static VALUE rb_mSockConst;
 #include "constdefs.c"
 
 static int
-constant_arg(VALUE arg, int (*str_to_int)(const char*, long, int*), const char *errmsg)
+constant_arg(VALUE arg, int (*str_to_int)(const char *, long, int *), const char *errmsg)
 {
     VALUE tmp;
     char *ptr;
@@ -26,14 +26,13 @@ constant_arg(VALUE arg, int (*str_to_int)(const char*, long, int*), const char *
         goto str;
     }
     else if (!NIL_P(tmp = rb_check_string_type(arg))) {
-	arg = tmp;
-      str:
+        arg = tmp;
+    str:
         ptr = RSTRING_PTR(arg);
-        if (str_to_int(ptr, RSTRING_LEN(arg), &ret) == -1)
-	    rb_raise(rb_eSocket, "%s: %s", errmsg, ptr);
+        if (str_to_int(ptr, RSTRING_LEN(arg), &ret) == -1) rb_raise(rb_eSocket, "%s: %s", errmsg, ptr);
     }
     else {
-	ret = NUM2INT(arg);
+        ret = NUM2INT(arg);
     }
     return ret;
 }
@@ -69,27 +68,27 @@ rsock_optname_arg(int family, int level, VALUE optname)
 {
     if (IS_IP_FAMILY(family)) {
         switch (level) {
-          case SOL_SOCKET:
+        case SOL_SOCKET:
             return constant_arg(optname, rsock_so_optname_to_int, "unknown socket level option name");
-          case IPPROTO_IP:
+        case IPPROTO_IP:
             return constant_arg(optname, rsock_ip_optname_to_int, "unknown IP level option name");
 #ifdef IPPROTO_IPV6
-          case IPPROTO_IPV6:
+        case IPPROTO_IPV6:
             return constant_arg(optname, rsock_ipv6_optname_to_int, "unknown IPv6 level option name");
 #endif
-          case IPPROTO_TCP:
+        case IPPROTO_TCP:
             return constant_arg(optname, rsock_tcp_optname_to_int, "unknown TCP level option name");
-          case IPPROTO_UDP:
+        case IPPROTO_UDP:
             return constant_arg(optname, rsock_udp_optname_to_int, "unknown UDP level option name");
-          default:
+        default:
             return NUM2INT(optname);
         }
     }
     else {
         switch (level) {
-          case SOL_SOCKET:
+        case SOL_SOCKET:
             return constant_arg(optname, rsock_so_optname_to_int, "unknown socket level option name");
-          default:
+        default:
             return NUM2INT(optname);
         }
     }
@@ -100,27 +99,27 @@ rsock_cmsg_type_arg(int family, int level, VALUE type)
 {
     if (IS_IP_FAMILY(family)) {
         switch (level) {
-          case SOL_SOCKET:
+        case SOL_SOCKET:
             return constant_arg(type, rsock_scm_optname_to_int, "unknown UNIX control message");
-          case IPPROTO_IP:
+        case IPPROTO_IP:
             return constant_arg(type, rsock_ip_optname_to_int, "unknown IP control message");
 #ifdef IPPROTO_IPV6
-          case IPPROTO_IPV6:
+        case IPPROTO_IPV6:
             return constant_arg(type, rsock_ipv6_optname_to_int, "unknown IPv6 control message");
 #endif
-          case IPPROTO_TCP:
+        case IPPROTO_TCP:
             return constant_arg(type, rsock_tcp_optname_to_int, "unknown TCP control message");
-          case IPPROTO_UDP:
+        case IPPROTO_UDP:
             return constant_arg(type, rsock_udp_optname_to_int, "unknown UDP control message");
-          default:
+        default:
             return NUM2INT(type);
         }
     }
     else {
         switch (level) {
-          case SOL_SOCKET:
+        case SOL_SOCKET:
             return constant_arg(type, rsock_scm_optname_to_int, "unknown UNIX control message");
-          default:
+        default:
             return NUM2INT(type);
         }
     }

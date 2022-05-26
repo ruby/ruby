@@ -1,4 +1,4 @@
-#ifndef RBIMPL_ATTR_PURE_H                           /*-*-C++-*-vi:se ft=cpp:*/
+#ifndef RBIMPL_ATTR_PURE_H /*-*-C++-*-vi:se ft=cpp:*/
 #define RBIMPL_ATTR_PURE_H
 /**
  * @file
@@ -20,24 +20,24 @@
  *             extension libraries.  They could be written in C++98.
  * @brief      Defines #RBIMPL_ATTR_PURE.
  */
+#include "ruby/assert.h"
 #include "ruby/internal/compiler_since.h"
 #include "ruby/internal/has/attribute.h"
-#include "ruby/assert.h"
 
 /** Wraps (or simulates) `__attribute__((pure))` */
 #if RBIMPL_HAS_ATTRIBUTE(pure)
-# define RBIMPL_ATTR_PURE() __attribute__((__pure__))
+#    define RBIMPL_ATTR_PURE() __attribute__((__pure__))
 #elif RBIMPL_COMPILER_SINCE(SunPro, 5, 10, 0)
-# define RBIMPL_ATTR_PURE() _Pragma("does_not_write_global_data")
+#    define RBIMPL_ATTR_PURE() _Pragma("does_not_write_global_data")
 #else
-# define RBIMPL_ATTR_PURE() /* void */
+#    define RBIMPL_ATTR_PURE() /* void */
 #endif
 
 /** Enables #RBIMPL_ATTR_PURE if and only if. ! #RUBY_DEBUG. */
 #if !RUBY_DEBUG
-# define RBIMPL_ATTR_PURE_UNLESS_DEBUG() RBIMPL_ATTR_PURE()
+#    define RBIMPL_ATTR_PURE_UNLESS_DEBUG() RBIMPL_ATTR_PURE()
 #else
-# define RBIMPL_ATTR_PURE_UNLESS_DEBUG() /* void */
+#    define RBIMPL_ATTR_PURE_UNLESS_DEBUG() /* void */
 #endif
 
 #endif /* RBIMPL_ATTR_PURE_H */

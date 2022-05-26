@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+
+# This hook will update all non-git-ignored files using clang-format.
+
+for path in $(find . -type f -name "*.[c|h]")
+do
+  if ! git check-ignore -q $path
+  then
+    echo "Formatting $path..."
+    clang-format -i $path
+    git add $path
+  fi
+done

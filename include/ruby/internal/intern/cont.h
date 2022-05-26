@@ -1,5 +1,5 @@
-#ifndef  RBIMPL_INTERN_CONT_H                        /*-*-C++-*-vi:se ft=cpp:*/
-#define  RBIMPL_INTERN_CONT_H
+#ifndef RBIMPL_INTERN_CONT_H /*-*-C++-*-vi:se ft=cpp:*/
+#define RBIMPL_INTERN_CONT_H
 /**
  * @file
  * @author     Ruby developers <ruby-core@ruby-lang.org>
@@ -21,8 +21,8 @@
  * @brief      Public APIs related to rb_cFiber.
  */
 #include "ruby/internal/dllexport.h"
-#include "ruby/internal/value.h"
 #include "ruby/internal/iterator.h"
+#include "ruby/internal/value.h"
 
 RBIMPL_SYMBOL_EXPORT_BEGIN()
 

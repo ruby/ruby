@@ -1,4 +1,4 @@
-#ifndef RBIMPL_ARITHMETIC_DOUBLE_H                   /*-*-C++-*-vi:se ft=cpp:*/
+#ifndef RBIMPL_ARITHMETIC_DOUBLE_H /*-*-C++-*-vi:se ft=cpp:*/
 #define RBIMPL_ARITHMETIC_DOUBLE_H
 /**
  * @file
@@ -24,9 +24,9 @@
 #include "ruby/internal/dllexport.h"
 #include "ruby/internal/value.h"
 
-#define NUM2DBL      rb_num2dbl       /**< @old{rb_num2dbl} */
-#define RFLOAT_VALUE rb_float_value   /**< @old{rb_float_value} */
-#define DBL2NUM      rb_float_new     /**< @old{rb_float_new} */
+#define NUM2DBL rb_num2dbl          /**< @old{rb_num2dbl} */
+#define RFLOAT_VALUE rb_float_value /**< @old{rb_float_value} */
+#define DBL2NUM rb_float_new        /**< @old{rb_float_new} */
 
 RBIMPL_SYMBOL_EXPORT_BEGIN()
 /**

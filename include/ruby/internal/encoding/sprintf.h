@@ -1,4 +1,4 @@
-#ifndef RUBY_INTERNAL_ENCODING_SPRINTF_H             /*-*-C++-*-vi:se ft=cpp:*/
+#ifndef RUBY_INTERNAL_ENCODING_SPRINTF_H /*-*-C++-*-vi:se ft=cpp:*/
 #define RUBY_INTERNAL_ENCODING_SPRINTF_H
 /**
  * @file
@@ -20,14 +20,14 @@
  *             extension libraries.  They could be written in C++98.
  * @brief      Routines to manipulate encodings of symbols.
  */
-#include "ruby/internal/config.h"
-#include <stdarg.h>
 #include "ruby/internal/attr/format.h"
 #include "ruby/internal/attr/nonnull.h"
 #include "ruby/internal/attr/noreturn.h"
+#include "ruby/internal/config.h"
 #include "ruby/internal/dllexport.h"
 #include "ruby/internal/encoding/encoding.h"
 #include "ruby/internal/value.h"
+#include <stdarg.h>
 
 RBIMPL_SYMBOL_EXPORT_BEGIN()
 RBIMPL_ATTR_NONNULL((2))

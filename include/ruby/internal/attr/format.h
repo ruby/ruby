@@ -1,4 +1,4 @@
-#ifndef RBIMPL_ATTR_FORMAT_H                         /*-*-C++-*-vi:se ft=cpp:*/
+#ifndef RBIMPL_ATTR_FORMAT_H /*-*-C++-*-vi:se ft=cpp:*/
 #define RBIMPL_ATTR_FORMAT_H
 /**
  * @file
@@ -24,15 +24,15 @@
 
 /** Wraps (or simulates) `__attribute__((format))` */
 #if RBIMPL_HAS_ATTRIBUTE(format)
-# define RBIMPL_ATTR_FORMAT(x, y, z) __attribute__((__format__(x, y, z)))
+#    define RBIMPL_ATTR_FORMAT(x, y, z) __attribute__((__format__(x, y, z)))
 #else
-# define RBIMPL_ATTR_FORMAT(x, y, z) /* void */
+#    define RBIMPL_ATTR_FORMAT(x, y, z) /* void */
 #endif
 
 #if defined(__MINGW_PRINTF_FORMAT)
-# define RBIMPL_PRINTF_FORMAT __MINGW_PRINTF_FORMAT
+#    define RBIMPL_PRINTF_FORMAT __MINGW_PRINTF_FORMAT
 #else
-# define RBIMPL_PRINTF_FORMAT __printf__
+#    define RBIMPL_PRINTF_FORMAT __printf__
 #endif
 
 #endif /* RBIMPL_ATTR_FORMAT_H */

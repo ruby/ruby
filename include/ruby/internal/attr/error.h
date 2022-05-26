@@ -1,4 +1,4 @@
-#ifndef RBIMPL_ATTR_ERROR_H                          /*-*-C++-*-vi:se ft=cpp:*/
+#ifndef RBIMPL_ATTR_ERROR_H /*-*-C++-*-vi:se ft=cpp:*/
 #define RBIMPL_ATTR_ERROR_H
 /**
  * @file
@@ -24,9 +24,9 @@
 
 /** Wraps (or simulates) `__attribute__((error))` */
 #if RBIMPL_HAS_ATTRIBUTE(error)
-# define RBIMPL_ATTR_ERROR(msg) __attribute__((__error__ msg))
+#    define RBIMPL_ATTR_ERROR(msg) __attribute__((__error__ msg))
 #else
-# define RBIMPL_ATTR_ERROR(msg) /* void */
+#    define RBIMPL_ATTR_ERROR(msg) /* void */
 #endif
 
 #endif /* RBIMPL_ATTR_ERROR_H */

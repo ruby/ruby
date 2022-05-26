@@ -1,4 +1,4 @@
-#ifndef RBIMPL_SCAN_ARGS_H                           /*-*-C++-*-vi:se ft=cpp:*/
+#ifndef RBIMPL_SCAN_ARGS_H /*-*-C++-*-vi:se ft=cpp:*/
 #define RBIMPL_SCAN_ARGS_H
 /**
  * @file
@@ -174,7 +174,7 @@ RBIMPL_ATTR_ERROR(("bad scan arg format"))
  * This is  an implementation  detail of rb_scan_args().   People don't  use it
  * directly.
  */
-void rb_scan_args_bad_format(const char*);
+void rb_scan_args_bad_format(const char *);
 
 RBIMPL_ATTR_ERROR(("variable argument length doesn't match"))
 /**
@@ -183,7 +183,7 @@ RBIMPL_ATTR_ERROR(("variable argument length doesn't match"))
  * This is  an implementation  detail of rb_scan_args().   People don't  use it
  * directly.
  */
-void rb_scan_args_length_mismatch(const char*,int);
+void rb_scan_args_length_mismatch(const char *, int);
 
 RBIMPL_SYMBOL_EXPORT_END()
 
@@ -192,48 +192,40 @@ RBIMPL_SYMBOL_EXPORT_END()
 /* If we could use constexpr the following macros could be inline functions
  * ... but sadly we cannot. */
 
-#define rb_scan_args_isdigit(c) (RBIMPL_CAST((unsigned char)((c)-'0'))<10)
+#define rb_scan_args_isdigit(c) (RBIMPL_CAST((unsigned char)((c) - '0')) < 10)
 
-#define rb_scan_args_count_end(fmt, ofs, vari) \
-    ((fmt)[ofs] ? -1 : (vari))
+#define rb_scan_args_count_end(fmt, ofs, vari) ((fmt)[ofs] ? -1 : (vari))
 
 #define rb_scan_args_count_block(fmt, ofs, vari) \
-    ((fmt)[ofs]!='&' ? \
-     rb_scan_args_count_end(fmt, ofs, vari) : \
-     rb_scan_args_count_end(fmt, (ofs)+1, (vari)+1))
+    ((fmt)[ofs] != '&' ? rb_scan_args_count_end(fmt, ofs, vari) : rb_scan_args_count_end(fmt, (ofs) + 1, (vari) + 1))
 
 #define rb_scan_args_count_hash(fmt, ofs, vari) \
-    ((fmt)[ofs]!=':' ? \
-     rb_scan_args_count_block(fmt, ofs, vari) : \
-     rb_scan_args_count_block(fmt, (ofs)+1, (vari)+1))
+    ((fmt)[ofs] != ':' ? rb_scan_args_count_block(fmt, ofs, vari) \
+                       : rb_scan_args_count_block(fmt, (ofs) + 1, (vari) + 1))
 
 #define rb_scan_args_count_trail(fmt, ofs, vari) \
-    (!rb_scan_args_isdigit((fmt)[ofs]) ? \
-     rb_scan_args_count_hash(fmt, ofs, vari) : \
-     rb_scan_args_count_hash(fmt, (ofs)+1, (vari)+((fmt)[ofs]-'0')))
+    (!rb_scan_args_isdigit((fmt)[ofs]) ? rb_scan_args_count_hash(fmt, ofs, vari) \
+                                       : rb_scan_args_count_hash(fmt, (ofs) + 1, (vari) + ((fmt)[ofs] - '0')))
 
 #define rb_scan_args_count_var(fmt, ofs, vari) \
-    ((fmt)[ofs]!='*' ? \
-     rb_scan_args_count_trail(fmt, ofs, vari) : \
-     rb_scan_args_count_trail(fmt, (ofs)+1, (vari)+1))
+    ((fmt)[ofs] != '*' ? rb_scan_args_count_trail(fmt, ofs, vari) \
+                       : rb_scan_args_count_trail(fmt, (ofs) + 1, (vari) + 1))
 
 #define rb_scan_args_count_opt(fmt, ofs, vari) \
-    (!rb_scan_args_isdigit((fmt)[ofs]) ? \
-     rb_scan_args_count_var(fmt, ofs, vari) : \
-     rb_scan_args_count_var(fmt, (ofs)+1, (vari)+(fmt)[ofs]-'0'))
+    (!rb_scan_args_isdigit((fmt)[ofs]) ? rb_scan_args_count_var(fmt, ofs, vari) \
+                                       : rb_scan_args_count_var(fmt, (ofs) + 1, (vari) + (fmt)[ofs] - '0'))
 
 #define rb_scan_args_count_lead(fmt, ofs, vari) \
-    (!rb_scan_args_isdigit((fmt)[ofs]) ? \
-     rb_scan_args_count_var(fmt, ofs, vari) : \
-     rb_scan_args_count_opt(fmt, (ofs)+1, (vari)+(fmt)[ofs]-'0'))
+    (!rb_scan_args_isdigit((fmt)[ofs]) ? rb_scan_args_count_var(fmt, ofs, vari) \
+                                       : rb_scan_args_count_opt(fmt, (ofs) + 1, (vari) + (fmt)[ofs] - '0'))
 
 #define rb_scan_args_count(fmt) rb_scan_args_count_lead(fmt, 0, 0)
 
 #if RBIMPL_HAS_ATTRIBUTE(diagnose_if)
-# /* Assertions done in the attribute. */
-# define rb_scan_args_verify(fmt, varc) RBIMPL_ASSERT_NOTHING
+#    /* Assertions done in the attribute. */
+#    define rb_scan_args_verify(fmt, varc) RBIMPL_ASSERT_NOTHING
 #else
-# /* At  one sight  it _seems_  the expressions  below could  be written  using
+#    /* At  one sight  it _seems_  the expressions  below could  be written  using
 #  * static  assertions.  The  reality is  no, they  don't.  Because  fmt is  a
 #  * string literal,  any operations  against fmt  cannot produce  the "integer
 #  * constant  expression"s,  as  defined  in  ISO/IEC  9899:2018  section  6.6
@@ -241,25 +233,23 @@ RBIMPL_SYMBOL_EXPORT_END()
 #  * defined in ISO/IEC 9899:2018 section 6.7.10 paragraph #3.
 #  *
 #  * GCC nonetheless constant-folds this into a no-op, though. */
-# define rb_scan_args_verify(fmt, varc) \
-    (sizeof(char[1-2*(rb_scan_args_count(fmt)<0)])!=1 ? \
-     rb_scan_args_bad_format(fmt) : \
-     sizeof(char[1-2*(rb_scan_args_count(fmt)!=(varc))])!=1 ? \
-     rb_scan_args_length_mismatch(fmt, varc) : \
-     RBIMPL_ASSERT_NOTHING)
+#    define rb_scan_args_verify(fmt, varc) \
+        (sizeof(char[1 - 2 * (rb_scan_args_count(fmt) < 0)]) != 1            ? rb_scan_args_bad_format(fmt) \
+            : sizeof(char[1 - 2 * (rb_scan_args_count(fmt) != (varc))]) != 1 ? rb_scan_args_length_mismatch(fmt, varc) \
+                                                                             : RBIMPL_ASSERT_NOTHING)
 #endif
 
 static inline bool
 rb_scan_args_keyword_p(int kw_flag, VALUE last)
 {
     switch (kw_flag) {
-      case RB_SCAN_ARGS_PASS_CALLED_KEYWORDS:
-        return !! rb_keyword_given_p();
-      case RB_SCAN_ARGS_KEYWORDS:
+    case RB_SCAN_ARGS_PASS_CALLED_KEYWORDS:
+        return !!rb_keyword_given_p();
+    case RB_SCAN_ARGS_KEYWORDS:
         return true;
-      case RB_SCAN_ARGS_LAST_HASH_KEYWORDS:
+    case RB_SCAN_ARGS_LAST_HASH_KEYWORDS:
         return RB_TYPE_P(last, T_HASH);
-      default:
+    default:
         return false;
     }
 }
@@ -275,7 +265,7 @@ RBIMPL_ATTR_FORCEINLINE()
 static int
 rb_scan_args_n_lead(const char *fmt)
 {
-    return (rb_scan_args_lead_p(fmt) ? fmt[0]-'0' : 0);
+    return (rb_scan_args_lead_p(fmt) ? fmt[0] - '0' : 0);
 }
 
 RBIMPL_ATTR_FORCEINLINE()
@@ -289,7 +279,7 @@ RBIMPL_ATTR_FORCEINLINE()
 static int
 rb_scan_args_n_opt(const char *fmt)
 {
-    return (rb_scan_args_opt_p(fmt) ? fmt[1]-'0' : 0);
+    return (rb_scan_args_opt_p(fmt) ? fmt[1] - '0' : 0);
 }
 
 RBIMPL_ATTR_FORCEINLINE()
@@ -303,7 +293,7 @@ RBIMPL_ATTR_FORCEINLINE()
 static bool
 rb_scan_args_f_var(const char *fmt)
 {
-    return (fmt[rb_scan_args_var_idx(fmt)]=='*');
+    return (fmt[rb_scan_args_var_idx(fmt)] == '*');
 }
 
 RBIMPL_ATTR_FORCEINLINE()
@@ -311,7 +301,7 @@ static int
 rb_scan_args_trail_idx(const char *fmt)
 {
     const int idx = rb_scan_args_var_idx(fmt);
-    return idx+(fmt[idx]=='*');
+    return idx + (fmt[idx] == '*');
 }
 
 RBIMPL_ATTR_FORCEINLINE()
@@ -319,7 +309,7 @@ static int
 rb_scan_args_n_trail(const char *fmt)
 {
     const int idx = rb_scan_args_trail_idx(fmt);
-    return (rb_scan_args_isdigit(fmt[idx]) ? fmt[idx]-'0' : 0);
+    return (rb_scan_args_isdigit(fmt[idx]) ? fmt[idx] - '0' : 0);
 }
 
 RBIMPL_ATTR_FORCEINLINE()
@@ -327,14 +317,14 @@ static int
 rb_scan_args_hash_idx(const char *fmt)
 {
     const int idx = rb_scan_args_trail_idx(fmt);
-    return idx+rb_scan_args_isdigit(fmt[idx]);
+    return idx + rb_scan_args_isdigit(fmt[idx]);
 }
 
 RBIMPL_ATTR_FORCEINLINE()
 static bool
 rb_scan_args_f_hash(const char *fmt)
 {
-    return (fmt[rb_scan_args_hash_idx(fmt)]==':');
+    return (fmt[rb_scan_args_hash_idx(fmt)] == ':');
 }
 
 RBIMPL_ATTR_FORCEINLINE()
@@ -342,17 +332,17 @@ static int
 rb_scan_args_block_idx(const char *fmt)
 {
     const int idx = rb_scan_args_hash_idx(fmt);
-    return idx+(fmt[idx]==':');
+    return idx + (fmt[idx] == ':');
 }
 
 RBIMPL_ATTR_FORCEINLINE()
 static bool
 rb_scan_args_f_block(const char *fmt)
 {
-    return (fmt[rb_scan_args_block_idx(fmt)]=='&');
+    return (fmt[rb_scan_args_block_idx(fmt)] == '&');
 }
 
-# if 0
+#if 0
 RBIMPL_ATTR_FORCEINLINE()
 static int
 rb_scan_args_end_idx(const char *fmt)
@@ -360,37 +350,25 @@ rb_scan_args_end_idx(const char *fmt)
     const int idx = rb_scan_args_block_idx(fmt);
     return idx+(fmt[idx]=='&');
 }
-# endif
+#endif
 
 /* NOTE: Use `char *fmt` instead of `const char *fmt` because of clang's bug*/
 /* https://bugs.llvm.org/show_bug.cgi?id=38095 */
-# define rb_scan_args0(argc, argv, fmt, varc, vars) \
-    rb_scan_args_set(RB_SCAN_ARGS_PASS_CALLED_KEYWORDS, argc, argv, \
-                     rb_scan_args_n_lead(fmt), \
-                     rb_scan_args_n_opt(fmt), \
-                     rb_scan_args_n_trail(fmt), \
-                     rb_scan_args_f_var(fmt), \
-                     rb_scan_args_f_hash(fmt), \
-                     rb_scan_args_f_block(fmt), \
-                     (rb_scan_args_verify(fmt, varc), vars), (char *)fmt, varc)
-# define rb_scan_args_kw0(kw_flag, argc, argv, fmt, varc, vars) \
-    rb_scan_args_set(kw_flag, argc, argv, \
-                     rb_scan_args_n_lead(fmt), \
-                     rb_scan_args_n_opt(fmt), \
-                     rb_scan_args_n_trail(fmt), \
-                     rb_scan_args_f_var(fmt), \
-                     rb_scan_args_f_hash(fmt), \
-                     rb_scan_args_f_block(fmt), \
-                     (rb_scan_args_verify(fmt, varc), vars), (char *)fmt, varc)
+#define rb_scan_args0(argc, argv, fmt, varc, vars) \
+    rb_scan_args_set(RB_SCAN_ARGS_PASS_CALLED_KEYWORDS, argc, argv, rb_scan_args_n_lead(fmt), rb_scan_args_n_opt(fmt), \
+        rb_scan_args_n_trail(fmt), rb_scan_args_f_var(fmt), rb_scan_args_f_hash(fmt), rb_scan_args_f_block(fmt), \
+        (rb_scan_args_verify(fmt, varc), vars), (char *)fmt, varc)
+#define rb_scan_args_kw0(kw_flag, argc, argv, fmt, varc, vars) \
+    rb_scan_args_set(kw_flag, argc, argv, rb_scan_args_n_lead(fmt), rb_scan_args_n_opt(fmt), \
+        rb_scan_args_n_trail(fmt), rb_scan_args_f_var(fmt), rb_scan_args_f_hash(fmt), rb_scan_args_f_block(fmt), \
+        (rb_scan_args_verify(fmt, varc), vars), (char *)fmt, varc)
 
 RBIMPL_ATTR_FORCEINLINE()
 static int
-rb_scan_args_set(int kw_flag, int argc, const VALUE *argv,
-                 int n_lead, int n_opt, int n_trail,
-                 bool f_var, bool f_hash, bool f_block,
-                 VALUE *vars[], RB_UNUSED_VAR(const char *fmt), RB_UNUSED_VAR(int varc))
-    RBIMPL_ATTR_DIAGNOSE_IF(rb_scan_args_count(fmt) <  0,    "bad scan arg format",                    "error")
-    RBIMPL_ATTR_DIAGNOSE_IF(rb_scan_args_count(fmt) != varc, "variable argument length doesn't match", "error")
+rb_scan_args_set(int kw_flag, int argc, const VALUE *argv, int n_lead, int n_opt, int n_trail, bool f_var, bool f_hash,
+    bool f_block, VALUE *vars[], RB_UNUSED_VAR(const char *fmt), RB_UNUSED_VAR(int varc))
+    RBIMPL_ATTR_DIAGNOSE_IF(rb_scan_args_count(fmt) < 0, "bad scan arg format", "error")
+        RBIMPL_ATTR_DIAGNOSE_IF(rb_scan_args_count(fmt) != varc, "variable argument length doesn't match", "error")
 {
     int i, argi = 0, vari = 0;
     VALUE *var, hash = Qnil;
@@ -471,7 +449,7 @@ rb_scan_args_set(int kw_flag, int argc, const VALUE *argv,
         return argc;
     }
 
-  argc_error:
+argc_error:
     rb_error_arity(argc, n_mand, f_var ? UNLIMITED_ARGUMENTS : n_mand + n_opt);
     UNREACHABLE_RETURN(-1);
 #undef rb_scan_args_next_param
@@ -480,55 +458,43 @@ rb_scan_args_set(int kw_flag, int argc, const VALUE *argv,
 /** @endcond */
 
 #if defined(__DOXYGEN__)
-# /* don't bother */
+#    /* don't bother */
 
-#elif ! defined(HAVE_BUILTIN___BUILTIN_CHOOSE_EXPR_CONSTANT_P)
-# /* skip */
+#elif !defined(HAVE_BUILTIN___BUILTIN_CHOOSE_EXPR_CONSTANT_P)
+#    /* skip */
 
-#elif ! defined(HAVE_VA_ARGS_MACRO)
-# /* skip */
+#elif !defined(HAVE_VA_ARGS_MACRO)
+#    /* skip */
 
-#elif ! defined(__OPTIMIZE__)
-# /* skip */
+#elif !defined(__OPTIMIZE__)
+#    /* skip */
 
 #elif defined(HAVE___VA_OPT__)
-# define rb_scan_args(argc, argvp, fmt, ...)                  \
-    __builtin_choose_expr(                                    \
-        __builtin_constant_p(fmt),                            \
-        rb_scan_args0(                                        \
-            argc, argvp, fmt,                                 \
-            (sizeof((VALUE*[]){__VA_ARGS__})/sizeof(VALUE*)), \
-            ((VALUE*[]){__VA_ARGS__})),                       \
-        (rb_scan_args)(argc, argvp, fmt __VA_OPT__(, __VA_ARGS__)))
-# define rb_scan_args_kw(kw_flag, argc, argvp, fmt, ...)      \
-    __builtin_choose_expr(                                    \
-        __builtin_constant_p(fmt),                            \
-        rb_scan_args_kw0(                                     \
-            kw_flag, argc, argvp, fmt,                        \
-            (sizeof((VALUE*[]){__VA_ARGS__})/sizeof(VALUE*)), \
-            ((VALUE*[]){__VA_ARGS__})),                       \
-        (rb_scan_args_kw)(kw_flag, argc, argvp, fmt __VA_OPT__(, __VA_ARGS__)))
+#    define rb_scan_args(argc, argvp, fmt, ...) \
+        __builtin_choose_expr(__builtin_constant_p(fmt), \
+            rb_scan_args0( \
+                argc, argvp, fmt, (sizeof((VALUE *[]){__VA_ARGS__}) / sizeof(VALUE *)), ((VALUE *[]){__VA_ARGS__})), \
+            (rb_scan_args)(argc, argvp, fmt __VA_OPT__(, __VA_ARGS__)))
+#    define rb_scan_args_kw(kw_flag, argc, argvp, fmt, ...) \
+        __builtin_choose_expr(__builtin_constant_p(fmt), \
+            rb_scan_args_kw0(kw_flag, argc, argvp, fmt, (sizeof((VALUE *[]){__VA_ARGS__}) / sizeof(VALUE *)), \
+                ((VALUE *[]){__VA_ARGS__})), \
+            (rb_scan_args_kw)(kw_flag, argc, argvp, fmt __VA_OPT__(, __VA_ARGS__)))
 
 #elif defined(__STRICT_ANSI__)
-# /* skip */
+#    /* skip */
 
 #elif defined(__GNUC__)
-# define rb_scan_args(argc, argvp, fmt, ...)                  \
-    __builtin_choose_expr(                                    \
-        __builtin_constant_p(fmt),                            \
-        rb_scan_args0(                                        \
-            argc, argvp, fmt,                                 \
-            (sizeof((VALUE*[]){__VA_ARGS__})/sizeof(VALUE*)), \
-            ((VALUE*[]){__VA_ARGS__})),                       \
-        (rb_scan_args)(argc, argvp, fmt, __VA_ARGS__))
-# define rb_scan_args_kw(kw_flag, argc, argvp, fmt, ...)      \
-    __builtin_choose_expr(                                    \
-        __builtin_constant_p(fmt),                            \
-        rb_scan_args_kw0(                                     \
-            kw_flag, argc, argvp, fmt,                        \
-            (sizeof((VALUE*[]){__VA_ARGS__})/sizeof(VALUE*)), \
-            ((VALUE*[]){__VA_ARGS__})),                       \
-        (rb_scan_args_kw)(kw_flag, argc, argvp, fmt, __VA_ARGS__ /**/))
+#    define rb_scan_args(argc, argvp, fmt, ...) \
+        __builtin_choose_expr(__builtin_constant_p(fmt), \
+            rb_scan_args0( \
+                argc, argvp, fmt, (sizeof((VALUE *[]){__VA_ARGS__}) / sizeof(VALUE *)), ((VALUE *[]){__VA_ARGS__})), \
+            (rb_scan_args)(argc, argvp, fmt, __VA_ARGS__))
+#    define rb_scan_args_kw(kw_flag, argc, argvp, fmt, ...) \
+        __builtin_choose_expr(__builtin_constant_p(fmt), \
+            rb_scan_args_kw0(kw_flag, argc, argvp, fmt, (sizeof((VALUE *[]){__VA_ARGS__}) / sizeof(VALUE *)), \
+                ((VALUE *[]){__VA_ARGS__})), \
+            (rb_scan_args_kw)(kw_flag, argc, argvp, fmt, __VA_ARGS__ /**/))
 #endif
 
 #endif /* RBIMPL_SCAN_ARGS_H */

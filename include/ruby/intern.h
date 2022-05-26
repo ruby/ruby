@@ -1,4 +1,4 @@
-#ifndef RUBY_INTERN_H                                /*-*-C++-*-vi:se ft=cpp:*/
+#ifndef RUBY_INTERN_H /*-*-C++-*-vi:se ft=cpp:*/
 #define RUBY_INTERN_H 1
 /**
  * @file
@@ -12,8 +12,8 @@
  *             modify this file, provided that  the conditions mentioned in the
  *             file COPYING are met.  Consult the file for details.
  */
-#include "ruby/internal/config.h"
 #include "ruby/defines.h"
+#include "ruby/internal/config.h"
 
 #include <stdarg.h>
 

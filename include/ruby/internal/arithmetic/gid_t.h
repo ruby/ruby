@@ -1,4 +1,4 @@
-#ifndef RBIMPL_ARITHMETIC_GID_T_H                    /*-*-C++-*-vi:se ft=cpp:*/
+#ifndef RBIMPL_ARITHMETIC_GID_T_H /*-*-C++-*-vi:se ft=cpp:*/
 #define RBIMPL_ARITHMETIC_GID_T_H
 /**
  * @file
@@ -20,22 +20,22 @@
  *             extension libraries.  They could be written in C++98.
  * @brief      Arithmetic conversion between C's `gid_t` and Ruby's.
  */
-#include "ruby/internal/config.h"
 #include "ruby/internal/arithmetic/long.h"
+#include "ruby/internal/config.h"
 
 /** Converts a C's `gid_t` into an instance of ::rb_cInteger. */
 #ifndef GIDT2NUM
-# define GIDT2NUM RB_LONG2NUM
+#    define GIDT2NUM RB_LONG2NUM
 #endif
 
 /** Converts an instance of ::rb_cNumeric into C's `gid_t`. */
 #ifndef NUM2GIDT
-# define NUM2GIDT RB_NUM2LONG
+#    define NUM2GIDT RB_NUM2LONG
 #endif
 
 /** A rb_sprintf() format prefix to be used for a `gid_t` parameter. */
 #ifndef PRI_GIDT_PREFIX
-# define PRI_GIDT_PREFIX PRI_LONG_PREFIX
+#    define PRI_GIDT_PREFIX PRI_LONG_PREFIX
 #endif
 
 #endif /* RBIMPL_ARITHMETIC_GID_T_H */

@@ -1,4 +1,4 @@
-#ifndef RBIMPL_ATTR_NOEXCEPT_H                       /*-*-C++-*-vi:se ft=cpp:*/
+#ifndef RBIMPL_ATTR_NOEXCEPT_H /*-*-C++-*-vi:se ft=cpp:*/
 #define RBIMPL_ATTR_NOEXCEPT_H
 /**
  * @file
@@ -65,27 +65,27 @@
 #include "ruby/internal/has/feature.h"
 
 /** Wraps (or simulates) C++11 `noexcept` */
-#if ! defined(__cplusplus)
-# /* Doesn't make sense. */
-# define RBIMPL_ATTR_NOEXCEPT(_) /* void */
+#if !defined(__cplusplus)
+#                                   /* Doesn't make sense. */
+#    define RBIMPL_ATTR_NOEXCEPT(_) /* void */
 
 #elif RBIMPL_HAS_FEATURE(cxx_noexcept)
-# define RBIMPL_ATTR_NOEXCEPT(_) noexcept(noexcept(_))
+#    define RBIMPL_ATTR_NOEXCEPT(_) noexcept(noexcept(_))
 
 #elif defined(__GXX_EXPERIMENTAL_CXX0X__) && __GXX_EXPERIMENTAL_CXX0X__
-# define RBIMPL_ATTR_NOEXCEPT(_) noexcept(noexcept(_))
+#    define RBIMPL_ATTR_NOEXCEPT(_) noexcept(noexcept(_))
 
 #elif defined(__INTEL_CXX11_MODE__)
-# define RBIMPL_ATTR_NOEXCEPT(_) noexcept(noexcept(_))
+#    define RBIMPL_ATTR_NOEXCEPT(_) noexcept(noexcept(_))
 
 #elif RBIMPL_COMPILER_SINCE(MSVC, 19, 0, 0)
-# define RBIMPL_ATTR_NOEXCEPT(_) noexcept(noexcept(_))
+#    define RBIMPL_ATTR_NOEXCEPT(_) noexcept(noexcept(_))
 
 #elif __cplusplus >= 201103L
-# define RBIMPL_ATTR_NOEXCEPT(_) noexcept(noexcept(_))
+#    define RBIMPL_ATTR_NOEXCEPT(_) noexcept(noexcept(_))
 
 #else
-# define RBIMPL_ATTR_NOEXCEPT(_) /* void */
+#    define RBIMPL_ATTR_NOEXCEPT(_) /* void */
 #endif
 
 #endif /* RBIMPL_ATTR_NOEXCEPT_H */

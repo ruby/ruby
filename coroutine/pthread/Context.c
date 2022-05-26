@@ -3,25 +3,26 @@
  *
  *  Created by Samuel Williams on 24/6/2021.
  *  Copyright, 2021, by Samuel Williams.
-*/
+ */
 
 #include "Context.h"
-#include <stdlib.h>
-#include <stdio.h>
 #include <errno.h>
+#include <stdio.h>
+#include <stdlib.h>
 
 static const int DEBUG = 0;
 
-static
-int check(const char * message, int result) {
+static int
+check(const char *message, int result)
+{
     if (result) {
         switch (result) {
-            case EDEADLK:
-                if (DEBUG) fprintf(stderr, "deadlock detected result=%d errno=%d\n", result, errno);
-                break;
-            default:
-                if (DEBUG) fprintf(stderr, "error detected result=%d errno=%d\n", result, errno);
-                perror(message);
+        case EDEADLK:
+            if (DEBUG) fprintf(stderr, "deadlock detected result=%d errno=%d\n", result, errno);
+            break;
+        default:
+            if (DEBUG) fprintf(stderr, "error detected result=%d errno=%d\n", result, errno);
+            perror(message);
         }
     }
 
@@ -30,14 +31,14 @@ int check(const char * message, int result) {
     return result;
 }
 
-void coroutine_initialize_main(struct coroutine_context * context) {
+void
+coroutine_initialize_main(struct coroutine_context *context)
+{
     context->id = pthread_self();
 
-    check("coroutine_initialize_main:pthread_cond_init",
-        pthread_cond_init(&context->schedule, NULL)
-    );
+    check("coroutine_initialize_main:pthread_cond_init", pthread_cond_init(&context->schedule, NULL));
 
-    context->shared = (struct coroutine_shared*)malloc(sizeof(struct coroutine_shared));
+    context->shared = (struct coroutine_shared *)malloc(sizeof(struct coroutine_shared));
     assert(context->shared);
 
     context->shared->main = context;
@@ -48,18 +49,16 @@ void coroutine_initialize_main(struct coroutine_context * context) {
         pthread_mutexattr_init(&attr);
         pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_ERRORCHECK);
 
-        check("coroutine_initialize_main:pthread_mutex_init",
-            pthread_mutex_init(&context->shared->guard, &attr)
-        );
-    } else {
-        check("coroutine_initialize_main:pthread_mutex_init",
-            pthread_mutex_init(&context->shared->guard, NULL)
-        );
+        check("coroutine_initialize_main:pthread_mutex_init", pthread_mutex_init(&context->shared->guard, &attr));
+    }
+    else {
+        check("coroutine_initialize_main:pthread_mutex_init", pthread_mutex_init(&context->shared->guard, NULL));
     }
 }
 
-static
-void coroutine_release(struct coroutine_context *context) {
+static void
+coroutine_release(struct coroutine_context *context)
+{
     if (context->shared) {
         size_t count = (context->shared->count -= 1);
 
@@ -76,12 +75,9 @@ void coroutine_release(struct coroutine_context *context) {
     }
 }
 
-void coroutine_initialize(
-    struct coroutine_context *context,
-    coroutine_start start,
-    void *stack,
-    size_t size
-) {
+void
+coroutine_initialize(struct coroutine_context *context, coroutine_start start, void *stack, size_t size)
+{
     assert(start && stack && size >= 1024);
 
     // We will create the thread when we first transfer, but save the details now:
@@ -91,8 +87,9 @@ void coroutine_initialize(
     context->size = size;
 }
 
-static
-int is_locked(pthread_mutex_t * mutex) {
+static int
+is_locked(pthread_mutex_t *mutex)
+{
     int result = pthread_mutex_trylock(mutex);
 
     // If we could successfully lock the mutex:
@@ -100,45 +97,46 @@ int is_locked(pthread_mutex_t * mutex) {
         pthread_mutex_unlock(mutex);
         // We could lock the mutex, so it wasn't locked:
         return 0;
-    } else {
+    }
+    else {
         // Otherwise we couldn't lock it because it's already locked:
         return 1;
     }
 }
 
-static
-void coroutine_guard_unlock(void * _context)
+static void
+coroutine_guard_unlock(void *_context)
 {
-    struct coroutine_context * context = _context;
+    struct coroutine_context *context = _context;
 
     if (DEBUG) fprintf(stderr, "coroutine_guard_unlock:pthread_mutex_unlock\n");
 
-    check("coroutine_guard_unlock:pthread_mutex_unlock",
-        pthread_mutex_unlock(&context->shared->guard)
-    );
+    check("coroutine_guard_unlock:pthread_mutex_unlock", pthread_mutex_unlock(&context->shared->guard));
 }
 
-static
-void coroutine_wait(struct coroutine_context *context)
+static void
+coroutine_wait(struct coroutine_context *context)
 {
-    if (DEBUG) fprintf(stderr, "coroutine_wait:pthread_mutex_lock(guard=%p is_locked=%d)\n", &context->shared->guard, is_locked(&context->shared->guard));
-    check("coroutine_wait:pthread_mutex_lock",
-        pthread_mutex_lock(&context->shared->guard)
-    );
+    if (DEBUG)
+        fprintf(stderr, "coroutine_wait:pthread_mutex_lock(guard=%p is_locked=%d)\n", &context->shared->guard,
+            is_locked(&context->shared->guard));
+    check("coroutine_wait:pthread_mutex_lock", pthread_mutex_lock(&context->shared->guard));
 
     if (DEBUG) fprintf(stderr, "coroutine_wait:pthread_mutex_unlock(guard)\n");
     pthread_mutex_unlock(&context->shared->guard);
 }
 
-static
-void coroutine_trampoline_cleanup(void *_context) {
-    struct coroutine_context * context = _context;
+static void
+coroutine_trampoline_cleanup(void *_context)
+{
+    struct coroutine_context *context = _context;
     coroutine_release(context);
 }
 
-void * coroutine_trampoline(void * _context)
+void *
+coroutine_trampoline(void *_context)
 {
-    struct coroutine_context * context = _context;
+    struct coroutine_context *context = _context;
     assert(context->shared);
 
     pthread_cleanup_push(coroutine_trampoline_cleanup, context);
@@ -152,8 +150,8 @@ void * coroutine_trampoline(void * _context)
     return NULL;
 }
 
-static
-int coroutine_create_thread(struct coroutine_context *context)
+static int
+coroutine_create_thread(struct coroutine_context *context)
 {
     int result;
 
@@ -188,14 +186,17 @@ int coroutine_create_thread(struct coroutine_context *context)
     return result;
 }
 
-struct coroutine_context * coroutine_transfer(struct coroutine_context * current, struct coroutine_context * target)
+struct coroutine_context *
+coroutine_transfer(struct coroutine_context *current, struct coroutine_context *target)
 {
     assert(current->shared);
 
-    struct coroutine_context * previous = target->from;
+    struct coroutine_context *previous = target->from;
     target->from = current;
 
-    if (DEBUG) fprintf(stderr, "coroutine_transfer:pthread_mutex_lock(guard=%p is_locked=%d)\n", &current->shared->guard, is_locked(&current->shared->guard));
+    if (DEBUG)
+        fprintf(stderr, "coroutine_transfer:pthread_mutex_lock(guard=%p is_locked=%d)\n", &current->shared->guard,
+            is_locked(&current->shared->guard));
     pthread_mutex_lock(&current->shared->guard);
     pthread_cleanup_push(coroutine_guard_unlock, current);
 
@@ -210,16 +211,19 @@ struct coroutine_context * coroutine_transfer(struct coroutine_context * current
             target->from = previous;
             return NULL;
         }
-    } else {
+    }
+    else {
         if (DEBUG) fprintf(stderr, "coroutine_transfer:pthread_cond_signal(target)\n");
         pthread_cond_signal(&target->schedule);
     }
 
-    // A side effect of acting upon a cancellation request while in a condition wait is that the mutex is (in effect) re-acquired before calling the first cancellation cleanup handler. If cancelled, pthread_cond_wait immediately invokes cleanup handlers.
-    if (DEBUG) fprintf(stderr, "coroutine_transfer:pthread_cond_wait(schedule=%p, guard=%p, is_locked=%d)\n", &current->schedule, &current->shared->guard, is_locked(&current->shared->guard));
-    check("coroutine_transfer:pthread_cond_wait",
-        pthread_cond_wait(&current->schedule, &current->shared->guard)
-    );
+    // A side effect of acting upon a cancellation request while in a condition wait is that the mutex is (in effect)
+    // re-acquired before calling the first cancellation cleanup handler. If cancelled, pthread_cond_wait immediately
+    // invokes cleanup handlers.
+    if (DEBUG)
+        fprintf(stderr, "coroutine_transfer:pthread_cond_wait(schedule=%p, guard=%p, is_locked=%d)\n",
+            &current->schedule, &current->shared->guard, is_locked(&current->shared->guard));
+    check("coroutine_transfer:pthread_cond_wait", pthread_cond_wait(&current->schedule, &current->shared->guard));
 
     if (DEBUG) fprintf(stderr, "coroutine_transfer:pthread_cleanup_pop\n");
     pthread_cleanup_pop(1);
@@ -234,8 +238,9 @@ struct coroutine_context * coroutine_transfer(struct coroutine_context * current
     return target;
 }
 
-static
-void coroutine_join(struct coroutine_context * context) {
+static void
+coroutine_join(struct coroutine_context *context)
+{
     if (DEBUG) fprintf(stderr, "coroutine_join:pthread_cancel\n");
     int result = pthread_cancel(context->id);
     if (result == -1 && errno == ESRCH) {
@@ -246,14 +251,13 @@ void coroutine_join(struct coroutine_context * context) {
     check("coroutine_join:pthread_cancel", result);
 
     if (DEBUG) fprintf(stderr, "coroutine_join:pthread_join\n");
-    check("coroutine_join:pthread_join",
-        pthread_join(context->id, NULL)
-    );
+    check("coroutine_join:pthread_join", pthread_join(context->id, NULL));
 
     if (DEBUG) fprintf(stderr, "coroutine_join:pthread_join done\n");
 }
 
-void coroutine_destroy(struct coroutine_context * context)
+void
+coroutine_destroy(struct coroutine_context *context)
 {
     if (DEBUG) fprintf(stderr, "coroutine_destroy\n");
 
@@ -265,7 +269,8 @@ void coroutine_destroy(struct coroutine_context * context)
     if (context == context->shared->main) {
         context->shared->main = NULL;
         coroutine_release(context);
-    } else {
+    }
+    else {
         coroutine_join(context);
         assert(context->shared == NULL);
     }

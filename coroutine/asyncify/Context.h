@@ -11,18 +11,17 @@
  * See also: wasm/fiber.c
 */
 
+#include "wasm/asyncify.h"
+#include "wasm/fiber.h"
+#include "wasm/machine.h"
 #include <stddef.h>
 #include <stdio.h>
-#include "wasm/asyncify.h"
-#include "wasm/machine.h"
-#include "wasm/fiber.h"
 
 #define COROUTINE void __attribute__((__noreturn__))
 
 static const int ASYNCIFY_CORO_DEBUG = 0;
 
-struct coroutine_context
-{
+struct coroutine_context {
     rb_wasm_fiber_context fc;
     void *argument;
     struct coroutine_context *from;
@@ -32,11 +31,12 @@ struct coroutine_context
     size_t size;
 };
 
-typedef COROUTINE(* coroutine_start)(struct coroutine_context *from, struct coroutine_context *self);
+typedef COROUTINE (*coroutine_start)(struct coroutine_context *from, struct coroutine_context *self);
 
-COROUTINE coroutine_trampoline(void * _start, void * _context);
+COROUTINE coroutine_trampoline(void *_start, void *_context);
 
-static inline void coroutine_initialize_main(struct coroutine_context * context)
+static inline void
+coroutine_initialize_main(struct coroutine_context *context)
 {
     if (ASYNCIFY_CORO_DEBUG) fprintf(stderr, "[%s] entry (context = %p)\n", __func__, context);
     // NULL fiber entry means it's the main fiber, and handled specially.
@@ -45,9 +45,12 @@ static inline void coroutine_initialize_main(struct coroutine_context * context)
     context->fc.is_started = true;
 }
 
-static inline void coroutine_initialize(struct coroutine_context *context, coroutine_start start, void *stack, size_t size)
+static inline void
+coroutine_initialize(struct coroutine_context *context, coroutine_start start, void *stack, size_t size)
 {
-    if (ASYNCIFY_CORO_DEBUG) fprintf(stderr, "[%s] entry (context = %p, stack = %p ... %p)\n", __func__, context, stack, (char *)stack + size);
+    if (ASYNCIFY_CORO_DEBUG)
+        fprintf(
+            stderr, "[%s] entry (context = %p, stack = %p ... %p)\n", __func__, context, stack, (char *)stack + size);
     rb_wasm_init_context(&context->fc, coroutine_trampoline, start, context);
     // record the initial stack pointer position to restore it after resumption
     context->current_sp = (char *)stack + size;
@@ -55,13 +58,16 @@ static inline void coroutine_initialize(struct coroutine_context *context, corou
     context->size = size;
 }
 
-static inline struct coroutine_context * coroutine_transfer(struct coroutine_context * current, struct coroutine_context * target)
+static inline struct coroutine_context *
+coroutine_transfer(struct coroutine_context *current, struct coroutine_context *target)
 {
     if (ASYNCIFY_CORO_DEBUG) fprintf(stderr, "[%s] entry (current = %p, target = %p)\n", __func__, current, target);
-    struct coroutine_context * previous = target->from;
+    struct coroutine_context *previous = target->from;
 
     target->from = current;
-    if (ASYNCIFY_CORO_DEBUG) fprintf(stderr, "[%s] current->current_sp = %p -> %p\n", __func__, current->current_sp, rb_wasm_get_stack_pointer());
+    if (ASYNCIFY_CORO_DEBUG)
+        fprintf(stderr, "[%s] current->current_sp = %p -> %p\n", __func__, current->current_sp,
+            rb_wasm_get_stack_pointer());
     // record the current stack pointer position to restore it after resumption
     current->current_sp = rb_wasm_get_stack_pointer();
 
@@ -78,7 +84,8 @@ static inline struct coroutine_context * coroutine_transfer(struct coroutine_con
     return target;
 }
 
-static inline void coroutine_destroy(struct coroutine_context * context)
+static inline void
+coroutine_destroy(struct coroutine_context *context)
 {
     if (ASYNCIFY_CORO_DEBUG) fprintf(stderr, "[%s] entry (context = %p)\n", __func__, context);
     context->stack_base = NULL;

@@ -1,4 +1,4 @@
-#ifndef RBIMPL_RFILE_H                               /*-*-C++-*-vi:se ft=cpp:*/
+#ifndef RBIMPL_RFILE_H /*-*-C++-*-vi:se ft=cpp:*/
 #define RBIMPL_RFILE_H
 /**
  * @file
@@ -20,8 +20,8 @@
  *             extension libraries.  They could be written in C++98.
  * @brief      Defines struct ::RFile.
  */
-#include "ruby/internal/core/rbasic.h"
 #include "ruby/internal/cast.h"
+#include "ruby/internal/core/rbasic.h"
 
 /* rb_io_t is in ruby/io.h.  The header file has historically not been included
  * into ruby/ruby.h.  We follow that tradition. */

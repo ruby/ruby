@@ -1,4 +1,4 @@
-#ifndef RBIMPL_ATTR_FORCEINLINE_H                    /*-*-C++-*-vi:se ft=cpp:*/
+#ifndef RBIMPL_ATTR_FORCEINLINE_H /*-*-C++-*-vi:se ft=cpp:*/
 #define RBIMPL_ATTR_FORCEINLINE_H
 /**
  * @file
@@ -30,11 +30,11 @@
  * non-MSVC compilers.
  */
 #if RBIMPL_COMPILER_SINCE(MSVC, 12, 0, 0)
-# define RBIMPL_ATTR_FORCEINLINE() __forceinline
+#    define RBIMPL_ATTR_FORCEINLINE() __forceinline
 #elif RBIMPL_HAS_ATTRIBUTE(always_inline)
-# define RBIMPL_ATTR_FORCEINLINE() __attribute__((__always_inline__)) inline
+#    define RBIMPL_ATTR_FORCEINLINE() __attribute__((__always_inline__)) inline
 #else
-# define RBIMPL_ATTR_FORCEINLINE() inline
+#    define RBIMPL_ATTR_FORCEINLINE() inline
 #endif
 
 #endif /* RBIMPL_ATTR_FORCEINLINE_H */

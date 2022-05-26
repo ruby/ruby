@@ -1,4 +1,4 @@
-#ifndef INTERNAL_CLASS_H                                 /*-*-C-*-vi:se ft=c:*/
+#ifndef INTERNAL_CLASS_H /*-*-C-*-vi:se ft=c:*/
 #define INTERNAL_CLASS_H
 /**
  * @author     Ruby developers <ruby-core@ruby-lang.org>
@@ -8,15 +8,15 @@
  *             file COPYING are met.  Consult the file for details.
  * @brief      Internal header for Class.
  */
-#include "id_table.h"           /* for struct rb_id_table */
-#include "internal/gc.h"        /* for RB_OBJ_WRITE */
-#include "internal/serial.h"    /* for rb_serial_t */
-#include "ruby/internal/stdbool.h"     /* for bool */
-#include "ruby/intern.h"        /* for rb_alloc_func_t */
-#include "ruby/ruby.h"          /* for struct RBasic */
+#include "id_table.h"              /* for struct rb_id_table */
+#include "internal/gc.h"           /* for RB_OBJ_WRITE */
+#include "internal/serial.h"       /* for rb_serial_t */
+#include "ruby/intern.h"           /* for rb_alloc_func_t */
+#include "ruby/internal/stdbool.h" /* for bool */
+#include "ruby/ruby.h"             /* for struct RBasic */
 
 #ifdef RCLASS_SUPER
-# undef RCLASS_SUPER
+#    undef RCLASS_SUPER
 #endif
 
 struct rb_subclass_entry {
@@ -78,9 +78,9 @@ struct RClass {
 #else
     /* Class serial does not fit into struct RClass. Place m_tbl instead. */
     struct rb_id_table *m_tbl;
-# if USE_RVARGC
+#    if USE_RVARGC
     rb_serial_t *class_serial_ptr;
-# endif
+#    endif
 #endif
 };
 
@@ -88,16 +88,16 @@ typedef struct rb_subclass_entry rb_subclass_entry_t;
 typedef struct rb_classext_struct rb_classext_t;
 
 #if USE_RVARGC
-#  define RCLASS_EXT(c) ((rb_classext_t *)((char *)(c) + sizeof(struct RClass)))
+#    define RCLASS_EXT(c) ((rb_classext_t *)((char *)(c) + sizeof(struct RClass)))
 #else
-#  define RCLASS_EXT(c) (RCLASS(c)->ptr)
+#    define RCLASS_EXT(c) (RCLASS(c)->ptr)
 #endif
 #define RCLASS_IV_TBL(c) (RCLASS_EXT(c)->iv_tbl)
 #define RCLASS_CONST_TBL(c) (RCLASS_EXT(c)->const_tbl)
 #if SIZEOF_SERIAL_T == SIZEOF_VALUE
-# define RCLASS_M_TBL(c) (RCLASS_EXT(c)->m_tbl)
+#    define RCLASS_M_TBL(c) (RCLASS_EXT(c)->m_tbl)
 #else
-# define RCLASS_M_TBL(c) (RCLASS(c)->m_tbl)
+#    define RCLASS_M_TBL(c) (RCLASS(c)->m_tbl)
 #endif
 #define RCLASS_CALLABLE_M_TBL(c) (RCLASS_EXT(c)->callable_m_tbl)
 #define RCLASS_CC_TBL(c) (RCLASS_EXT(c)->cc_tbl)
@@ -106,13 +106,13 @@ typedef struct rb_classext_struct rb_classext_t;
 #define RCLASS_ORIGIN(c) (RCLASS_EXT(c)->origin_)
 #define RCLASS_REFINED_CLASS(c) (RCLASS_EXT(c)->refined_class)
 #if SIZEOF_SERIAL_T == SIZEOF_VALUE
-# define RCLASS_SERIAL(c) (RCLASS(c)->class_serial)
+#    define RCLASS_SERIAL(c) (RCLASS(c)->class_serial)
 #else
-# if USE_RVARGC
-#  define RCLASS_SERIAL(c) (*RCLASS(c)->class_serial_ptr)
-# else
-#  define RCLASS_SERIAL(c) (RCLASS_EXT(c)->class_serial)
-# endif
+#    if USE_RVARGC
+#        define RCLASS_SERIAL(c) (*RCLASS(c)->class_serial_ptr)
+#    else
+#        define RCLASS_SERIAL(c) (RCLASS_EXT(c)->class_serial)
+#    endif
 #endif
 #define RCLASS_INCLUDER(c) (RCLASS_EXT(c)->includer)
 #define RCLASS_SUBCLASS_ENTRY(c) (RCLASS_EXT(c)->subclass_entry)
@@ -123,7 +123,7 @@ typedef struct rb_classext_struct rb_classext_t;
 #define RCLASS_SUPERCLASSES(c) (RCLASS_EXT(c)->superclasses)
 
 #define RICLASS_IS_ORIGIN FL_USER5
-#define RCLASS_CLONED     FL_USER6
+#define RCLASS_CLONED FL_USER6
 #define RCLASS_SUPERCLASSES_INCLUDE_SELF FL_USER7
 #define RICLASS_ORIGIN_SHARED_MTBL FL_USER8
 

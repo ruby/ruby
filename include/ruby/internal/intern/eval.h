@@ -1,5 +1,5 @@
-#ifndef  RBIMPL_INTERN_EVAL_H                        /*-*-C++-*-vi:se ft=cpp:*/
-#define  RBIMPL_INTERN_EVAL_H
+#ifndef RBIMPL_INTERN_EVAL_H /*-*-C++-*-vi:se ft=cpp:*/
+#define RBIMPL_INTERN_EVAL_H
 /**
  * @file
  * @author     Ruby developers <ruby-core@ruby-lang.org>
@@ -165,7 +165,7 @@ void rb_obj_call_init(VALUE obj, int argc, const VALUE *argv);
  * @exception  rb_eNoMethodError  No such method.
  * @exception  rb_eException      Any exceptions happen inside.
  */
-void rb_obj_call_init_kw(VALUE, int, const VALUE*, int);
+void rb_obj_call_init_kw(VALUE, int, const VALUE *, int);
 
 /**
  * Identical to rb_frame_this_func(), except it  returns the named used to call

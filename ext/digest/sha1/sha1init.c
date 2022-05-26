@@ -1,12 +1,12 @@
 /* $RoughId: sha1init.c,v 1.2 2001/07/13 19:49:10 knu Exp $ */
 /* $Id$ */
 
-#include <ruby/ruby.h>
 #include "../digest.h"
+#include <ruby/ruby.h>
 #if defined(SHA1_USE_COMMONDIGEST)
-#include "sha1cc.h"
+#    include "sha1cc.h"
 #else
-#include "sha1.h"
+#    include "sha1.h"
 #endif
 
 static const rb_digest_metadata_t sha1 = {

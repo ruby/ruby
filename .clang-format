@@ -1,0 +1,14 @@
+---
+ColumnLimit: 120
+IndentWidth: 4
+AlignAfterOpenBracket: DontAlign
+AlwaysBreakAfterReturnType: TopLevelDefinitions
+BreakBeforeBraces: Custom
+BraceWrapping:
+  AfterFunction: true
+  BeforeElse: true
+AllowShortEnumsOnASingleLine: false
+AllowShortFunctionsOnASingleLine: false
+AllowShortIfStatementsOnASingleLine: true
+AlignEscapedNewlines: DontAlign
+IndentPPDirectives: AfterHash

@@ -1,4 +1,4 @@
-#ifndef RBIMPL_STDALIGN_H                            /*-*-C++-*-vi:se ft=cpp:*/
+#ifndef RBIMPL_STDALIGN_H /*-*-C++-*-vi:se ft=cpp:*/
 #define RBIMPL_STDALIGN_H
 /**
  * @file
@@ -23,7 +23,7 @@
 #include "ruby/internal/config.h"
 
 #ifdef STDC_HEADERS
-# include <stddef.h>
+#    include <stddef.h>
 #endif
 
 #include "ruby/internal/compiler_is.h"
@@ -51,25 +51,25 @@
  * - A `typedef` cannot have alignments.
  */
 #if defined(__cplusplus) && RBIMPL_HAS_FEATURE(cxx_alignas)
-# define RBIMPL_ALIGNAS alignas
+#    define RBIMPL_ALIGNAS alignas
 
 #elif defined(__cplusplus) && (__cplusplus >= 201103L)
-# define RBIMPL_ALIGNAS alignas
+#    define RBIMPL_ALIGNAS alignas
 
 #elif defined(__INTEL_CXX11_MODE__)
-# define RBIMPL_ALIGNAS alignas
+#    define RBIMPL_ALIGNAS alignas
 
 #elif defined(__GXX_EXPERIMENTAL_CXX0X__)
-# define RBIMPL_ALIGNAS alignas
+#    define RBIMPL_ALIGNAS alignas
 
 #elif RBIMPL_HAS_DECLSPEC_ATTRIBUTE(align)
-# define RBIMPL_ALIGNAS(_) __declspec(align(_))
+#    define RBIMPL_ALIGNAS(_) __declspec(align(_))
 
 #elif RBIMPL_HAS_ATTRIBUTE(aligned)
-# define RBIMPL_ALIGNAS(_) __attribute__((__aligned__(_)))
+#    define RBIMPL_ALIGNAS(_) __attribute__((__aligned__(_)))
 
 #else
-# define RBIMPL_ALIGNAS(_) /* void */
+#    define RBIMPL_ALIGNAS(_) /* void */
 #endif
 
 /**
@@ -84,16 +84,15 @@
  * @see https://bugs.llvm.org/show_bug.cgi?id=26547
  */
 #if defined(__DOXYGEN__)
-# define RBIMPL_ALIGNOF alignof
+#    define RBIMPL_ALIGNOF alignof
 #elif defined(__cplusplus)
-# /* C++11 `alignof()` can be buggy. */
-# /* see: https://gcc.gnu.org/bugzilla/show_bug.cgi?id=69560 */
-# /* But don't worry, we can use templates. */
-# define RBIMPL_ALIGNOF(T) (static_cast<size_t>(ruby::rbimpl_alignof<T>::value))
+#    /* C++11 `alignof()` can be buggy. */
+#    /* see: https://gcc.gnu.org/bugzilla/show_bug.cgi?id=69560 */
+#    /* But don't worry, we can use templates. */
+#    define RBIMPL_ALIGNOF(T) (static_cast<size_t>(ruby::rbimpl_alignof<T>::value))
 
 namespace ruby {
-template<typename T>
-struct rbimpl_alignof {
+template <typename T> struct rbimpl_alignof {
     typedef struct {
         char _;
         T t;
@@ -103,18 +102,18 @@ struct rbimpl_alignof {
         value = offsetof(type, t)
     };
 };
-}
+} // namespace ruby
 
 #elif RBIMPL_COMPILER_IS(MSVC)
-# /* Windows have no alignment glitch.*/
-# define RBIMPL_ALIGNOF __alignof
+#    /* Windows have no alignment glitch.*/
+#    define RBIMPL_ALIGNOF __alignof
 
 #elif defined(HAVE__ALIGNOF)
-# /* Autoconf detected availability of a sane `_Alignof()`. */
-# define RBIMPL_ALIGNOF(T) RB_GNUC_EXTENSION(_Alignof(T))
+#    /* Autoconf detected availability of a sane `_Alignof()`. */
+#    define RBIMPL_ALIGNOF(T) RB_GNUC_EXTENSION(_Alignof(T))
 
 #else
-# /* :BEWARE:  This is  the last  resort.   If your  compiler somehow  supports
+#    /* :BEWARE:  This is  the last  resort.   If your  compiler somehow  supports
 #  * querying the alignment of a type,  you definitely should use that instead.
 #  * There are 2 known pitfalls for this fallback implementation:
 #  *
@@ -126,9 +125,15 @@ struct rbimpl_alignof {
 #  * known example is  when T is a  struct with a flexible  array member.  Such
 #  * struct cannot be enclosed into another one.
 #  */
-# /* see: http://www.open-std.org/jtc1/sc22/wg14/www/docs/n2083.htm */
-# /* see: http://www.open-std.org/jtc1/sc22/wg14/www/docs/n2350.htm */
-# define RBIMPL_ALIGNOF(T) offsetof(struct { char _; T t; }, t)
+#    /* see: http://www.open-std.org/jtc1/sc22/wg14/www/docs/n2083.htm */
+#    /* see: http://www.open-std.org/jtc1/sc22/wg14/www/docs/n2350.htm */
+#    define RBIMPL_ALIGNOF(T) \
+        offsetof( \
+            struct { \
+                char _; \
+                T t; \
+            }, \
+            t)
 
 #endif
 

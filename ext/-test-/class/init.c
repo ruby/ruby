@@ -1,6 +1,10 @@
 #include "ruby.h"
 
-#define init(n) {void Init_##n(VALUE mod); Init_##n(mod);}
+#define init(n) \
+    { \
+        void Init_##n(VALUE mod); \
+        Init_##n(mod); \
+    }
 
 void
 Init_class(void)

@@ -1,4 +1,4 @@
-#ifndef RBIMPL_INTERN_ERROR_H                        /*-*-C++-*-vi:se ft=cpp:*/
+#ifndef RBIMPL_INTERN_ERROR_H /*-*-C++-*-vi:se ft=cpp:*/
 #define RBIMPL_INTERN_ERROR_H
 /**
  * @file
@@ -20,25 +20,25 @@
  *             extension libraries.  They could be written in C++98.
  * @brief      Public APIs related to ::rb_eException.
  */
+#include "ruby/backward/2/assume.h"
 #include "ruby/internal/attr/format.h"
 #include "ruby/internal/attr/noreturn.h"
 #include "ruby/internal/dllexport.h"
-#include "ruby/internal/value.h"
 #include "ruby/internal/fl_type.h"
-#include "ruby/backward/2/assume.h"
+#include "ruby/internal/value.h"
 
 /**
  * This macro is used in conjunction  with rb_check_arity().  If you pass it to
  * the function's last  (max) argument, that means the function  does not check
  * upper limit.
  */
-#define UNLIMITED_ARGUMENTS     (-1)
+#define UNLIMITED_ARGUMENTS (-1)
 
-#define rb_exc_new2             rb_exc_new_cstr  /**< @old{rb_exc_new_cstr} */
-#define rb_exc_new3             rb_exc_new_str  /**< @old{rb_exc_new_str} */
+#define rb_exc_new2 rb_exc_new_cstr /**< @old{rb_exc_new_cstr} */
+#define rb_exc_new3 rb_exc_new_str  /**< @old{rb_exc_new_str} */
 
 /** @cond INTERNAL_MACRO */
-#define rb_check_arity          rb_check_arity
+#define rb_check_arity rb_check_arity
 /** @endcond */
 
 RBIMPL_SYMBOL_EXPORT_BEGIN()
@@ -244,7 +244,8 @@ RBIMPL_SYMBOL_EXPORT_END()
  *
  * Does anyone use this?  Remain not deleted for compatibility.
  */
-#define rb_check_frozen_internal(obj) do { \
+#define rb_check_frozen_internal(obj) \
+    do { \
         VALUE frozen_obj = (obj); \
         if (RB_UNLIKELY(RB_OBJ_FROZEN(frozen_obj))) { \
             rb_error_frozen_object(frozen_obj); \
@@ -279,8 +280,7 @@ rb_check_frozen_inline(VALUE obj)
 static inline int
 rb_check_arity(int argc, int min, int max)
 {
-    if ((argc < min) || (max != UNLIMITED_ARGUMENTS && argc > max))
-        rb_error_arity(argc, min, max);
+    if ((argc < min) || (max != UNLIMITED_ARGUMENTS && argc > max)) rb_error_arity(argc, min, max);
     return argc;
 }
 

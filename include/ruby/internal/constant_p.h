@@ -1,4 +1,4 @@
-#ifndef RBIMPL_CONSTANT_P_H                          /*-*-C++-*-vi:se ft=cpp:*/
+#ifndef RBIMPL_CONSTANT_P_H /*-*-C++-*-vi:se ft=cpp:*/
 #define RBIMPL_CONSTANT_P_H
 /**
  * @file
@@ -30,9 +30,9 @@
 
 /** Wraps (or simulates) `__builtin_constant_p` */
 #if RBIMPL_HAS_BUILTIN(__builtin_constant_p)
-# define RBIMPL_CONSTANT_P(expr) __builtin_constant_p(expr)
+#    define RBIMPL_CONSTANT_P(expr) __builtin_constant_p(expr)
 #else
-# define RBIMPL_CONSTANT_P(expr) 0
+#    define RBIMPL_CONSTANT_P(expr) 0
 #endif
 
 #endif /* RBIMPL_CONSTANT_P_H */

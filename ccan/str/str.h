@@ -9,9 +9,9 @@
  *	#define PRINT_COND_IF_FALSE(cond) \
  *		((cond) || printf("%s is false!", ccan_stringify(cond)))
  */
-#define stringify(expr)		ccan_stringify_1(expr)
-#define ccan_stringify(expr)	ccan_stringify_1(expr)
+#define stringify(expr) ccan_stringify_1(expr)
+#define ccan_stringify(expr) ccan_stringify_1(expr)
 /* Double-indirection required to stringify expansions */
-#define ccan_stringify_1(expr)	#expr
+#define ccan_stringify_1(expr) #expr
 
 #endif /* CCAN_STR_H */

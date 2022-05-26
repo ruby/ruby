@@ -1,6 +1,6 @@
+#include "ruby/missing.h"
 #include <errno.h>
 #include <sys/types.h>
-#include "ruby/missing.h"
 
 // Produce weak symbols for missing functions to replace them with actual ones if exists.
 #define WASM_MISSING_LIBC_FUNC __attribute__((weak))
@@ -165,7 +165,6 @@ kill(rb_pid_t pid, int sig)
     errno = ENOTSUP;
     return -1;
 }
-
 
 WASM_MISSING_LIBC_FUNC
 void

@@ -1,4 +1,4 @@
-#ifndef RBIMPL_INTERN_RE_H                           /*-*-C++-*-vi:se ft=cpp:*/
+#ifndef RBIMPL_INTERN_RE_H /*-*-C++-*-vi:se ft=cpp:*/
 #define RBIMPL_INTERN_RE_H
 /**
  * @file
@@ -57,7 +57,7 @@ RBIMPL_SYMBOL_EXPORT_BEGIN()
  *
  * Can accept NULLs as long as n is also 0, and returns 0.
  */
-int rb_memcicmp(const void *s1,const void *s2, long n);
+int rb_memcicmp(const void *s1, const void *s2, long n);
 
 /**
  * Asserts  that  the given  MatchData  is  "occupied".  MatchData  shares  its

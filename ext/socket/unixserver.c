@@ -52,7 +52,7 @@ unix_accept(VALUE server)
     struct sockaddr_un buffer;
     socklen_t length = sizeof(buffer);
 
-    return rsock_s_accept(rb_cUNIXSocket, server, (struct sockaddr*)&buffer, &length);
+    return rsock_s_accept(rb_cUNIXSocket, server, (struct sockaddr *)&buffer, &length);
 }
 
 /* :nodoc: */
@@ -65,8 +65,7 @@ unix_accept_nonblock(VALUE sock, VALUE ex)
 
     GetOpenFile(sock, fptr);
     fromlen = (socklen_t)sizeof(from);
-    return rsock_s_accept_nonblock(rb_cUNIXSocket, ex, fptr,
-			           (struct sockaddr *)&from, &fromlen);
+    return rsock_s_accept_nonblock(rb_cUNIXSocket, ex, fptr, (struct sockaddr *)&from, &fromlen);
 }
 
 /*
@@ -93,7 +92,7 @@ unix_sysaccept(VALUE server)
     struct sockaddr_un buffer;
     socklen_t length = sizeof(buffer);
 
-    return rsock_s_accept(0, server, (struct sockaddr*)&buffer, &length);
+    return rsock_s_accept(0, server, (struct sockaddr *)&buffer, &length);
 }
 
 #endif
@@ -112,8 +111,7 @@ rsock_init_unixserver(void)
     rb_define_method(rb_cUNIXServer, "initialize", unix_svr_init, 1);
     rb_define_method(rb_cUNIXServer, "accept", unix_accept, 0);
 
-    rb_define_private_method(rb_cUNIXServer,
-			     "__accept_nonblock", unix_accept_nonblock, 1);
+    rb_define_private_method(rb_cUNIXServer, "__accept_nonblock", unix_accept_nonblock, 1);
 
     rb_define_method(rb_cUNIXServer, "sysaccept", unix_sysaccept, 0);
     rb_define_method(rb_cUNIXServer, "listen", rsock_sock_listen, 1); /* in socket.c */

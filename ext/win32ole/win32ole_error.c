@@ -13,18 +13,12 @@ ole_hresult2msg(HRESULT hr)
     char strhr[100];
     sprintf(strhr, "    HRESULT error code:0x%08x\n      ", (unsigned)hr);
     msg = rb_str_new2(strhr);
-    dwCount = FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER |
-                            FORMAT_MESSAGE_FROM_SYSTEM |
-                            FORMAT_MESSAGE_IGNORE_INSERTS,
-                            NULL, hr,
-                            MAKELANGID(LANG_ENGLISH, SUBLANG_ENGLISH_US),
-                            (LPTSTR)&p_msg, 0, NULL);
+    dwCount = FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
+        NULL, hr, MAKELANGID(LANG_ENGLISH, SUBLANG_ENGLISH_US), (LPTSTR)&p_msg, 0, NULL);
     if (dwCount == 0) {
-        dwCount = FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER |
-                                FORMAT_MESSAGE_FROM_SYSTEM |
-                                FORMAT_MESSAGE_IGNORE_INSERTS,
-                                NULL, hr, cWIN32OLE_lcid,
-                                (LPTSTR)&p_msg, 0, NULL);
+        dwCount =
+            FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
+                NULL, hr, cWIN32OLE_lcid, (LPTSTR)&p_msg, 0, NULL);
     }
     if (dwCount > 0) {
         term = p_msg + strlen(p_msg);
@@ -32,7 +26,8 @@ ole_hresult2msg(HRESULT hr)
             term--;
             if (*term == '\r' || *term == '\n')
                 *term = '\0';
-            else break;
+            else
+                break;
         }
         if (p_msg[0] != '\0') {
             rb_str_cat2(msg, p_msg);
@@ -53,7 +48,7 @@ ole_raise(HRESULT hr, VALUE ecs, const char *fmt, ...)
     va_end(args);
 
     err_msg = ole_hresult2msg(hr);
-    if(err_msg != Qnil) {
+    if (err_msg != Qnil) {
         rb_str_cat2(msg, "\n");
         rb_str_append(msg, err_msg);
     }

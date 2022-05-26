@@ -59,7 +59,7 @@ pjob_call_direct(VALUE self, VALUE obj)
 }
 
 #ifdef HAVE_PTHREAD_H
-#include <pthread.h>
+#    include <pthread.h>
 
 static void *
 pjob_register_in_c_thread_i(void *obj)
@@ -97,4 +97,3 @@ Init_postponed_job(VALUE self)
     rb_define_module_function(mBug, "postponed_job_register_in_c_thread", pjob_register_in_c_thread, 1);
 #endif
 }
-

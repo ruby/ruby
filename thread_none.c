@@ -13,11 +13,11 @@
 
 #ifdef THREAD_SYSTEM_DEPENDENT_IMPLEMENTATION
 
-#include <time.h>
+#    include <time.h>
 
-#define TIME_QUANTUM_MSEC (100)
-#define TIME_QUANTUM_USEC (TIME_QUANTUM_MSEC * 1000)
-#define TIME_QUANTUM_NSEC (TIME_QUANTUM_USEC * 1000)
+#    define TIME_QUANTUM_MSEC (100)
+#    define TIME_QUANTUM_USEC (TIME_QUANTUM_MSEC * 1000)
+#    define TIME_QUANTUM_NSEC (TIME_QUANTUM_USEC * 1000)
 
 // Do nothing for GVL
 static void
@@ -40,12 +40,12 @@ rb_thread_sched_init(struct rb_thread_sched *sched)
 {
 }
 
-#if 0
+#    if 0
 static void
 rb_thread_sched_destroy(struct rb_thread_sched *sched)
 {
 }
-#endif
+#    endif
 
 // Do nothing for mutex guard
 void
@@ -155,9 +155,9 @@ native_thread_create(rb_thread_t *th)
 }
 
 // Do nothing for handling ubf because no other thread doesn't exist and unblock anything
-#define register_ubf_list(th) (void)(th)
-#define unregister_ubf_list(th) (void)(th)
-#define ubf_select 0
+#    define register_ubf_list(th) (void)(th)
+#    define unregister_ubf_list(th) (void)(th)
+#    define ubf_select 0
 
 inline static void
 ubf_wakeup_all_threads(void)
@@ -181,9 +181,8 @@ ubf_timer_disarm(void)
 {
 }
 
-
 // No timer thread because thread switching won't happen
-#define TIMER_THREAD_CREATED_P() (1)
+#    define TIMER_THREAD_CREATED_P() (1)
 inline static void
 rb_thread_create_timer_thread(void)
 {
@@ -217,7 +216,7 @@ native_set_another_thread_name(rb_nativethread_id_t thread_id, VALUE name)
 }
 
 // Don't expose native thread id for now to keep system's thread API agnostic
-#define USE_NATIVE_THREAD_NATIVE_THREAD_ID 0
+#    define USE_NATIVE_THREAD_NATIVE_THREAD_ID 0
 
 // No reserved fd for piping threads
 int
@@ -264,7 +263,8 @@ native_sleep(rb_thread_t *th, rb_hrtime_t *rel)
 }
 
 static int
-native_fd_select(int n, rb_fdset_t *readfds, rb_fdset_t *writefds, rb_fdset_t *exceptfds, struct timeval *timeout, rb_thread_t *th)
+native_fd_select(
+    int n, rb_fdset_t *readfds, rb_fdset_t *writefds, rb_fdset_t *exceptfds, struct timeval *timeout, rb_thread_t *th)
 {
     return rb_fd_select(n, readfds, writefds, exceptfds, timeout);
 }

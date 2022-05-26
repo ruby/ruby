@@ -1,4 +1,4 @@
-#ifndef INTERNAL_GC_H                                    /*-*-C-*-vi:se ft=c:*/
+#ifndef INTERNAL_GC_H /*-*-C-*-vi:se ft=c:*/
 #define INTERNAL_GC_H
 /**
  * @author     Ruby developers <ruby-core@ruby-lang.org>
@@ -10,31 +10,29 @@
  */
 #include "ruby/internal/config.h"
 
-#include <stddef.h>             /* for size_t */
+#include <stddef.h> /* for size_t */
 
 #include "internal/compilers.h" /* for __has_attribute */
 #include "ruby/ruby.h"          /* for rb_event_flag_t */
 
 struct rb_execution_context_struct; /* in vm_core.h */
-struct rb_objspace; /* in vm_core.h */
+struct rb_objspace;                 /* in vm_core.h */
 
 #ifdef NEWOBJ_OF
-# undef NEWOBJ_OF
-# undef RB_NEWOBJ_OF
-# undef RB_OBJ_WRITE
+#    undef NEWOBJ_OF
+#    undef RB_NEWOBJ_OF
+#    undef RB_OBJ_WRITE
 #endif
 
 #define RVALUE_SIZE (sizeof(struct RBasic) + sizeof(VALUE[RBIMPL_RVALUE_EMBED_LEN_MAX]))
 
 #define RB_RVARGC_NEWOBJ_OF(var, T, c, f, s) \
-  T *(var) = (T *)(((f) & FL_WB_PROTECTED) ? \
-                   rb_wb_protected_newobj_of((c), (f) & ~FL_WB_PROTECTED, s) : \
-                   rb_wb_unprotected_newobj_of((c), (f), s))
+    T *(var) = (T *)(((f)&FL_WB_PROTECTED) ? rb_wb_protected_newobj_of((c), (f) & ~FL_WB_PROTECTED, s) \
+                                           : rb_wb_unprotected_newobj_of((c), (f), s))
 
 #define RB_RVARGC_EC_NEWOBJ_OF(ec, var, T, c, f, s) \
-  T *(var) = (T *)(((f) & FL_WB_PROTECTED) ? \
-                   rb_ec_wb_protected_newobj_of((ec), (c), (f) & ~FL_WB_PROTECTED, s) : \
-                   rb_wb_unprotected_newobj_of((c), (f), s))
+    T *(var) = (T *)(((f)&FL_WB_PROTECTED) ? rb_ec_wb_protected_newobj_of((ec), (c), (f) & ~FL_WB_PROTECTED, s) \
+                                           : rb_wb_unprotected_newobj_of((c), (f), s))
 
 /* optimized version of NEWOBJ() */
 #define RB_NEWOBJ_OF(var, T, c, f) RB_RVARGC_NEWOBJ_OF(var, T, c, f, RVALUE_SIZE)
@@ -43,34 +41,34 @@ struct rb_objspace; /* in vm_core.h */
 
 #define NEWOBJ_OF(var, T, c, f) RB_NEWOBJ_OF((var), T, (c), (f))
 #define RVARGC_NEWOBJ_OF(var, T, c, f, s) RB_RVARGC_NEWOBJ_OF((var), T, (c), (f), (s))
-#define RB_OBJ_GC_FLAGS_MAX 6   /* used in ext/objspace */
+#define RB_OBJ_GC_FLAGS_MAX 6 /* used in ext/objspace */
 
 #ifndef USE_UNALIGNED_MEMBER_ACCESS
-# define UNALIGNED_MEMBER_ACCESS(expr) (expr)
-#elif ! USE_UNALIGNED_MEMBER_ACCESS
-# define UNALIGNED_MEMBER_ACCESS(expr) (expr)
-#elif ! (__has_warning("-Waddress-of-packed-member") || GCC_VERSION_SINCE(9, 0, 0))
-# define UNALIGNED_MEMBER_ACCESS(expr) (expr)
+#    define UNALIGNED_MEMBER_ACCESS(expr) (expr)
+#elif !USE_UNALIGNED_MEMBER_ACCESS
+#    define UNALIGNED_MEMBER_ACCESS(expr) (expr)
+#elif !(__has_warning("-Waddress-of-packed-member") || GCC_VERSION_SINCE(9, 0, 0))
+#    define UNALIGNED_MEMBER_ACCESS(expr) (expr)
 #else
-# include "internal/warnings.h"
-# define UNALIGNED_MEMBER_ACCESS(expr) __extension__({ \
-    COMPILER_WARNING_PUSH; \
-    COMPILER_WARNING_IGNORED(-Waddress-of-packed-member); \
-    __typeof__(expr) unaligned_member_access_result = (expr); \
-    COMPILER_WARNING_POP; \
-    unaligned_member_access_result; \
-})
+#    include "internal/warnings.h"
+#    define UNALIGNED_MEMBER_ACCESS(expr) \
+        __extension__({ \
+            COMPILER_WARNING_PUSH; \
+            COMPILER_WARNING_IGNORED(-Waddress - of - packed - member); \
+            __typeof__(expr) unaligned_member_access_result = (expr); \
+            COMPILER_WARNING_POP; \
+            unaligned_member_access_result; \
+        })
 #endif
 
 #define UNALIGNED_MEMBER_PTR(ptr, mem) UNALIGNED_MEMBER_ACCESS(&(ptr)->mem)
 #define RB_OBJ_WRITE(a, slot, b) \
-    rb_obj_write((VALUE)(a), UNALIGNED_MEMBER_ACCESS((VALUE *)(slot)), \
-                 (VALUE)(b), __FILE__, __LINE__)
+    rb_obj_write((VALUE)(a), UNALIGNED_MEMBER_ACCESS((VALUE *)(slot)), (VALUE)(b), __FILE__, __LINE__)
 
 #if USE_RVARGC
-# define SIZE_POOL_COUNT 5
+#    define SIZE_POOL_COUNT 5
 #else
-# define SIZE_POOL_COUNT 1
+#    define SIZE_POOL_COUNT 1
 #endif
 
 typedef struct ractor_newobj_size_pool_cache {
@@ -97,15 +95,17 @@ void rb_copy_wb_protected_attribute(VALUE dest, VALUE obj);
 __attribute__((__alloc_align__(1)))
 #endif
 RUBY_ATTR_MALLOC void *rb_aligned_malloc(size_t, size_t) RUBY_ATTR_ALLOC_SIZE((2));
-size_t rb_size_mul_or_raise(size_t, size_t, VALUE); /* used in compile.c */
+size_t rb_size_mul_or_raise(size_t, size_t, VALUE);             /* used in compile.c */
 size_t rb_size_mul_add_or_raise(size_t, size_t, size_t, VALUE); /* used in iseq.h */
 RUBY_ATTR_MALLOC void *rb_xmalloc_mul_add(size_t, size_t, size_t);
 RUBY_ATTR_MALLOC void *rb_xcalloc_mul_add(size_t, size_t, size_t);
 void *rb_xrealloc_mul_add(const void *, size_t, size_t, size_t);
 RUBY_ATTR_MALLOC void *rb_xmalloc_mul_add_mul(size_t, size_t, size_t, size_t);
 RUBY_ATTR_MALLOC void *rb_xcalloc_mul_add_mul(size_t, size_t, size_t, size_t);
-static inline void *ruby_sized_xrealloc_inlined(void *ptr, size_t new_size, size_t old_size) RUBY_ATTR_RETURNS_NONNULL RUBY_ATTR_ALLOC_SIZE((2));
-static inline void *ruby_sized_xrealloc2_inlined(void *ptr, size_t new_count, size_t elemsiz, size_t old_count) RUBY_ATTR_RETURNS_NONNULL RUBY_ATTR_ALLOC_SIZE((2, 3));
+static inline void *ruby_sized_xrealloc_inlined(void *ptr, size_t new_size, size_t old_size) RUBY_ATTR_RETURNS_NONNULL
+    RUBY_ATTR_ALLOC_SIZE((2));
+static inline void *ruby_sized_xrealloc2_inlined(void *ptr, size_t new_count, size_t elemsiz,
+    size_t old_count) RUBY_ATTR_RETURNS_NONNULL RUBY_ATTR_ALLOC_SIZE((2, 3));
 static inline void ruby_sized_xfree_inlined(void *ptr, size_t size);
 VALUE rb_class_allocate_instance(VALUE klass);
 void rb_gc_ractor_newobj_cache_clear(rb_ractor_newobj_cache_t *newobj_cache);
@@ -124,8 +124,10 @@ void rb_gc_verify_internal_consistency(void);
 size_t rb_obj_gc_flags(VALUE, ID[], size_t);
 void rb_gc_mark_values(long n, const VALUE *values);
 void rb_gc_mark_vm_stack_values(long n, const VALUE *values);
-void *ruby_sized_xrealloc(void *ptr, size_t new_size, size_t old_size) RUBY_ATTR_RETURNS_NONNULL RUBY_ATTR_ALLOC_SIZE((2));
-void *ruby_sized_xrealloc2(void *ptr, size_t new_count, size_t element_size, size_t old_count) RUBY_ATTR_RETURNS_NONNULL RUBY_ATTR_ALLOC_SIZE((2, 3));
+void *ruby_sized_xrealloc(void *ptr, size_t new_size, size_t old_size) RUBY_ATTR_RETURNS_NONNULL
+    RUBY_ATTR_ALLOC_SIZE((2));
+void *ruby_sized_xrealloc2(void *ptr, size_t new_count, size_t element_size, size_t old_count) RUBY_ATTR_RETURNS_NONNULL
+    RUBY_ATTR_ALLOC_SIZE((2, 3));
 void ruby_sized_xfree(void *x, size_t size);
 RUBY_SYMBOL_EXPORT_END
 
@@ -155,7 +157,7 @@ ruby_sized_xfree_inlined(void *ptr, size_t size)
     ruby_xfree(ptr);
 }
 
-# define SIZED_REALLOC_N(x, y, z, w) REALLOC_N(x, y, z)
+#    define SIZED_REALLOC_N(x, y, z, w) REALLOC_N(x, y, z)
 
 #else
 
@@ -177,8 +179,7 @@ ruby_sized_xfree_inlined(void *ptr, size_t size)
     ruby_sized_xfree(ptr, size);
 }
 
-# define SIZED_REALLOC_N(v, T, m, n) \
-    ((v) = (T *)ruby_sized_xrealloc2((void *)(v), (m), sizeof(T), (n)))
+#    define SIZED_REALLOC_N(v, T, m, n) ((v) = (T *)ruby_sized_xrealloc2((void *)(v), (m), sizeof(T), (n)))
 
 #endif /* HAVE_MALLOC_USABLE_SIZE */
 

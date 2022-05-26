@@ -1,4 +1,4 @@
-#ifndef RBIMPL_GLOB_H                                /*-*-C++-*-vi:se ft=cpp:*/
+#ifndef RBIMPL_GLOB_H /*-*-C++-*-vi:se ft=cpp:*/
 #define RBIMPL_GLOB_H
 /**
  * @file

@@ -34,8 +34,8 @@
 
   1999-11-04 lpd Edited comments slightly for automatic TOC extraction.
   1999-10-18 lpd Fixed typo in header comment (ansi2knr rather than md5);
-	added conditionalization for C++ compilation from Martin
-	Purschke <purschke@bnl.gov>.
+        added conditionalization for C++ compilation from Martin
+        Purschke <purschke@bnl.gov>.
   1999-05-03 lpd Original version.
  */
 
@@ -44,7 +44,7 @@
 /* $Id$ */
 
 #ifndef MD5_INCLUDED
-#  define MD5_INCLUDED
+#define MD5_INCLUDED
 
 #include "../defs.h"
 
@@ -57,24 +57,24 @@
 
 /* Define the state of the MD5 Algorithm. */
 typedef struct md5_state_s {
-    uint32_t count[2];	/* message length in bits, lsw first */
-    uint32_t state[4];	/* digest buffer */
-    uint8_t buffer[64];	/* accumulate block */
+    uint32_t count[2];  /* message length in bits, lsw first */
+    uint32_t state[4];  /* digest buffer */
+    uint8_t buffer[64]; /* accumulate block */
 } MD5_CTX;
 
 #ifdef RUBY
 /* avoid name clash */
-#define MD5_Init	rb_Digest_MD5_Init
-#define MD5_Update	rb_Digest_MD5_Update
-#define MD5_Finish	rb_Digest_MD5_Finish
+#    define MD5_Init rb_Digest_MD5_Init
+#    define MD5_Update rb_Digest_MD5_Update
+#    define MD5_Finish rb_Digest_MD5_Finish
 #endif
 
-int	MD5_Init _((MD5_CTX *pms));
-void	MD5_Update _((MD5_CTX *pms, const uint8_t *data, size_t nbytes));
-int	MD5_Finish _((MD5_CTX *pms, uint8_t *digest));
+int MD5_Init _((MD5_CTX * pms));
+void MD5_Update _((MD5_CTX * pms, const uint8_t *data, size_t nbytes));
+int MD5_Finish _((MD5_CTX * pms, uint8_t *digest));
 
-#define MD5_BLOCK_LENGTH		64
-#define MD5_DIGEST_LENGTH		16
-#define MD5_DIGEST_STRING_LENGTH	(MD5_DIGEST_LENGTH * 2 + 1)
+#define MD5_BLOCK_LENGTH 64
+#define MD5_DIGEST_LENGTH 16
+#define MD5_DIGEST_STRING_LENGTH (MD5_DIGEST_LENGTH * 2 + 1)
 
 #endif /* MD5_INCLUDED */

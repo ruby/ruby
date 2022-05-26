@@ -1,22 +1,17 @@
-#include "../fbuffer/fbuffer.h"
 #include "generator.h"
+#include "../fbuffer/fbuffer.h"
 
-static VALUE mJSON, mExt, mGenerator, cState, mGeneratorMethods, mObject,
-             mHash, mArray,
+static VALUE mJSON, mExt, mGenerator, cState, mGeneratorMethods, mObject, mHash, mArray,
 #ifdef RUBY_INTEGER_UNIFICATION
-             mInteger,
+    mInteger,
 #else
-             mFixnum, mBignum,
+    mFixnum, mBignum,
 #endif
-             mFloat, mString, mString_Extend,
-             mTrueClass, mFalseClass, mNilClass, eGeneratorError,
-             eNestingError;
+    mFloat, mString, mString_Extend, mTrueClass, mFalseClass, mNilClass, eGeneratorError, eNestingError;
 
-static ID i_to_s, i_to_json, i_new, i_indent, i_space, i_space_before,
-          i_object_nl, i_array_nl, i_max_nesting, i_allow_nan, i_ascii_only,
-          i_pack, i_unpack, i_create_id, i_extend, i_key_p,
-          i_aref, i_send, i_respond_to_p, i_match, i_keys, i_depth,
-          i_buffer_initial_length, i_dup, i_escape_slash;
+static ID i_to_s, i_to_json, i_new, i_indent, i_space, i_space_before, i_object_nl, i_array_nl, i_max_nesting,
+    i_allow_nan, i_ascii_only, i_pack, i_unpack, i_create_id, i_extend, i_key_p, i_aref, i_send, i_respond_to_p,
+    i_match, i_keys, i_depth, i_buffer_initial_length, i_dup, i_escape_slash;
 
 /*
  * Copyright 2001-2004 Unicode, Inc.
@@ -47,24 +42,21 @@ static ID i_to_s, i_to_json, i_new, i_indent, i_space, i_space_before,
  * left as-is for anyone who may want to do such conversion, which was
  * allowed in earlier algorithms.
  */
-static const char trailingBytesForUTF8[256] = {
-    0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-    0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-    0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-    0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-    0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-    0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-    1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1, 1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
-    2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2, 3,3,3,3,3,3,3,3,4,4,4,4,5,5,5,5
-};
+static const char trailingBytesForUTF8[256] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+    1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 4, 4, 4, 4, 5, 5, 5, 5};
 
 /*
  * Magic values subtracted from a buffer value during UTF8 conversion.
  * This table contains as many values as there might be trailing bytes
  * in a UTF-8 sequence.
  */
-static const UTF32 offsetsFromUTF8[6] = { 0x00000000UL, 0x00003080UL, 0x000E2080UL,
-    0x03C82080UL, 0xFA082080UL, 0x82082080UL };
+static const UTF32 offsetsFromUTF8[6] = {
+    0x00000000UL, 0x00003080UL, 0x000E2080UL, 0x03C82080UL, 0xFA082080UL, 0x82082080UL};
 
 /*
  * Utility routine to tell whether a sequence of bytes is legal UTF-8.
@@ -76,34 +68,50 @@ static const UTF32 offsetsFromUTF8[6] = { 0x00000000UL, 0x00003080UL, 0x000E2080
  * If presented with a length > 4, this returns 0.  The Unicode
  * definition of UTF-8 goes up to 4-byte sequences.
  */
-static unsigned char isLegalUTF8(const UTF8 *source, unsigned long length)
+static unsigned char
+isLegalUTF8(const UTF8 *source, unsigned long length)
 {
     UTF8 a;
-    const UTF8 *srcptr = source+length;
+    const UTF8 *srcptr = source + length;
     switch (length) {
-        default: return 0;
-                 /* Everything else falls through when "1"... */
-        case 4: if ((a = (*--srcptr)) < 0x80 || a > 0xBF) return 0;
-        case 3: if ((a = (*--srcptr)) < 0x80 || a > 0xBF) return 0;
-        case 2: if ((a = (*--srcptr)) > 0xBF) return 0;
+    default:
+        return 0;
+        /* Everything else falls through when "1"... */
+    case 4:
+        if ((a = (*--srcptr)) < 0x80 || a > 0xBF) return 0;
+    case 3:
+        if ((a = (*--srcptr)) < 0x80 || a > 0xBF) return 0;
+    case 2:
+        if ((a = (*--srcptr)) > 0xBF) return 0;
 
-                    switch (*source) {
-                        /* no fall-through in this inner switch */
-                        case 0xE0: if (a < 0xA0) return 0; break;
-                        case 0xED: if (a > 0x9F) return 0; break;
-                        case 0xF0: if (a < 0x90) return 0; break;
-                        case 0xF4: if (a > 0x8F) return 0; break;
-                        default:   if (a < 0x80) return 0;
-                    }
+        switch (*source) {
+        /* no fall-through in this inner switch */
+        case 0xE0:
+            if (a < 0xA0) return 0;
+            break;
+        case 0xED:
+            if (a > 0x9F) return 0;
+            break;
+        case 0xF0:
+            if (a < 0x90) return 0;
+            break;
+        case 0xF4:
+            if (a > 0x8F) return 0;
+            break;
+        default:
+            if (a < 0x80) return 0;
+        }
 
-        case 1: if (*source >= 0x80 && *source < 0xC2) return 0;
+    case 1:
+        if (*source >= 0x80 && *source < 0xC2) return 0;
     }
     if (*source > 0xF4) return 0;
     return 1;
 }
 
 /* Escapes the UTF16 character and stores the result in the buffer buf. */
-static void unicode_escape(char *buf, UTF16 character)
+static void
+unicode_escape(char *buf, UTF16 character)
 {
     const char *digits = "0123456789abcdef";
 
@@ -115,8 +123,8 @@ static void unicode_escape(char *buf, UTF16 character)
 
 /* Escapes the UTF16 character and stores the result in the buffer buf, then
  * the buffer buf is appended to the FBuffer buffer. */
-static void unicode_escape_to_buffer(FBuffer *buffer, char buf[6], UTF16
-        character)
+static void
+unicode_escape_to_buffer(FBuffer *buffer, char buf[6], UTF16 character)
 {
     unicode_escape(buf, character);
     fbuffer_append(buffer, buf, 6);
@@ -124,33 +132,43 @@ static void unicode_escape_to_buffer(FBuffer *buffer, char buf[6], UTF16
 
 /* Converts string to a JSON string in FBuffer buffer, where all but the ASCII
  * and control characters are JSON escaped. */
-static void convert_UTF8_to_JSON_ASCII(FBuffer *buffer, VALUE string, char escape_slash)
+static void
+convert_UTF8_to_JSON_ASCII(FBuffer *buffer, VALUE string, char escape_slash)
 {
-    const UTF8 *source = (UTF8 *) RSTRING_PTR(string);
+    const UTF8 *source = (UTF8 *)RSTRING_PTR(string);
     const UTF8 *sourceEnd = source + RSTRING_LEN(string);
-    char buf[6] = { '\\', 'u' };
+    char buf[6] = {'\\', 'u'};
 
     while (source < sourceEnd) {
         UTF32 ch = 0;
         unsigned short extraBytesToRead = trailingBytesForUTF8[*source];
         if (source + extraBytesToRead >= sourceEnd) {
-            rb_raise(rb_path2class("JSON::GeneratorError"),
-                    "partial character in source, but hit end");
+            rb_raise(rb_path2class("JSON::GeneratorError"), "partial character in source, but hit end");
         }
-        if (!isLegalUTF8(source, extraBytesToRead+1)) {
-            rb_raise(rb_path2class("JSON::GeneratorError"),
-                    "source sequence is illegal/malformed utf-8");
+        if (!isLegalUTF8(source, extraBytesToRead + 1)) {
+            rb_raise(rb_path2class("JSON::GeneratorError"), "source sequence is illegal/malformed utf-8");
         }
         /*
          * The cases all fall through. See "Note A" below.
          */
         switch (extraBytesToRead) {
-            case 5: ch += *source++; ch <<= 6; /* remember, illegal UTF-8 */
-            case 4: ch += *source++; ch <<= 6; /* remember, illegal UTF-8 */
-            case 3: ch += *source++; ch <<= 6;
-            case 2: ch += *source++; ch <<= 6;
-            case 1: ch += *source++; ch <<= 6;
-            case 0: ch += *source++;
+        case 5:
+            ch += *source++;
+            ch <<= 6; /* remember, illegal UTF-8 */
+        case 4:
+            ch += *source++;
+            ch <<= 6; /* remember, illegal UTF-8 */
+        case 3:
+            ch += *source++;
+            ch <<= 6;
+        case 2:
+            ch += *source++;
+            ch <<= 6;
+        case 1:
+            ch += *source++;
+            ch <<= 6;
+        case 0:
+            ch += *source++;
         }
         ch -= offsetsFromUTF8[extraBytesToRead];
 
@@ -158,63 +176,65 @@ static void convert_UTF8_to_JSON_ASCII(FBuffer *buffer, VALUE string, char escap
             /* UTF-16 surrogate values are illegal in UTF-32 */
             if (ch >= UNI_SUR_HIGH_START && ch <= UNI_SUR_LOW_END) {
 #if UNI_STRICT_CONVERSION
-                source -= (extraBytesToRead+1); /* return to the illegal value itself */
-                rb_raise(rb_path2class("JSON::GeneratorError"),
-                        "source sequence is illegal/malformed utf-8");
+                source -= (extraBytesToRead + 1); /* return to the illegal value itself */
+                rb_raise(rb_path2class("JSON::GeneratorError"), "source sequence is illegal/malformed utf-8");
 #else
                 unicode_escape_to_buffer(buffer, buf, UNI_REPLACEMENT_CHAR);
 #endif
-            } else {
+            }
+            else {
                 /* normal case */
                 if (ch >= 0x20 && ch <= 0x7f) {
                     switch (ch) {
-                        case '\\':
-                            fbuffer_append(buffer, "\\\\", 2);
+                    case '\\':
+                        fbuffer_append(buffer, "\\\\", 2);
+                        break;
+                    case '"':
+                        fbuffer_append(buffer, "\\\"", 2);
+                        break;
+                    case '/':
+                        if (escape_slash) {
+                            fbuffer_append(buffer, "\\/", 2);
                             break;
-                        case '"':
-                            fbuffer_append(buffer, "\\\"", 2);
-                            break;
-                        case '/':
-                            if(escape_slash) {
-                                fbuffer_append(buffer, "\\/", 2);
-                                break;
-                            }
-                        default:
-                            fbuffer_append_char(buffer, (char)ch);
-                            break;
+                        }
+                    default:
+                        fbuffer_append_char(buffer, (char)ch);
+                        break;
                     }
-                } else {
+                }
+                else {
                     switch (ch) {
-                        case '\n':
-                            fbuffer_append(buffer, "\\n", 2);
-                            break;
-                        case '\r':
-                            fbuffer_append(buffer, "\\r", 2);
-                            break;
-                        case '\t':
-                            fbuffer_append(buffer, "\\t", 2);
-                            break;
-                        case '\f':
-                            fbuffer_append(buffer, "\\f", 2);
-                            break;
-                        case '\b':
-                            fbuffer_append(buffer, "\\b", 2);
-                            break;
-                        default:
-                            unicode_escape_to_buffer(buffer, buf, (UTF16) ch);
-                            break;
+                    case '\n':
+                        fbuffer_append(buffer, "\\n", 2);
+                        break;
+                    case '\r':
+                        fbuffer_append(buffer, "\\r", 2);
+                        break;
+                    case '\t':
+                        fbuffer_append(buffer, "\\t", 2);
+                        break;
+                    case '\f':
+                        fbuffer_append(buffer, "\\f", 2);
+                        break;
+                    case '\b':
+                        fbuffer_append(buffer, "\\b", 2);
+                        break;
+                    default:
+                        unicode_escape_to_buffer(buffer, buf, (UTF16)ch);
+                        break;
                     }
                 }
             }
-        } else if (ch > UNI_MAX_UTF16) {
+        }
+        else if (ch > UNI_MAX_UTF16) {
 #if UNI_STRICT_CONVERSION
-            source -= (extraBytesToRead+1); /* return to the start */
-            rb_raise(rb_path2class("JSON::GeneratorError"),
-                    "source sequence is illegal/malformed utf8");
+            source -= (extraBytesToRead + 1); /* return to the start */
+            rb_raise(rb_path2class("JSON::GeneratorError"), "source sequence is illegal/malformed utf8");
 #else
             unicode_escape_to_buffer(buffer, buf, UNI_REPLACEMENT_CHAR);
 #endif
-        } else {
+        }
+        else {
             /* target is a character in range 0xFFFF - 0x10FFFF. */
             ch -= halfBase;
             unicode_escape_to_buffer(buffer, buf, (UTF16)((ch >> halfShift) + UNI_SUR_HIGH_START));
@@ -228,81 +248,80 @@ static void convert_UTF8_to_JSON_ASCII(FBuffer *buffer, VALUE string, char escap
  * characters required by the JSON standard are JSON escaped. The remaining
  * characters (should be UTF8) are just passed through and appended to the
  * result. */
-static void convert_UTF8_to_JSON(FBuffer *buffer, VALUE string, char escape_slash)
+static void
+convert_UTF8_to_JSON(FBuffer *buffer, VALUE string, char escape_slash)
 {
     const char *ptr = RSTRING_PTR(string), *p;
     unsigned long len = RSTRING_LEN(string), start = 0, end = 0;
     const char *escape = NULL;
     int escape_len;
     unsigned char c;
-    char buf[6] = { '\\', 'u' };
+    char buf[6] = {'\\', 'u'};
     int ascii_only = rb_enc_str_asciionly_p(string);
 
     for (start = 0, end = 0; end < len;) {
         p = ptr + end;
-        c = (unsigned char) *p;
+        c = (unsigned char)*p;
         if (c < 0x20) {
             switch (c) {
-                case '\n':
-                    escape = "\\n";
-                    escape_len = 2;
-                    break;
-                case '\r':
-                    escape = "\\r";
-                    escape_len = 2;
-                    break;
-                case '\t':
-                    escape = "\\t";
-                    escape_len = 2;
-                    break;
-                case '\f':
-                    escape = "\\f";
-                    escape_len = 2;
-                    break;
-                case '\b':
-                    escape = "\\b";
-                    escape_len = 2;
-                    break;
-                default:
-                    unicode_escape(buf, (UTF16) *p);
-                    escape = buf;
-                    escape_len = 6;
-                    break;
+            case '\n':
+                escape = "\\n";
+                escape_len = 2;
+                break;
+            case '\r':
+                escape = "\\r";
+                escape_len = 2;
+                break;
+            case '\t':
+                escape = "\\t";
+                escape_len = 2;
+                break;
+            case '\f':
+                escape = "\\f";
+                escape_len = 2;
+                break;
+            case '\b':
+                escape = "\\b";
+                escape_len = 2;
+                break;
+            default:
+                unicode_escape(buf, (UTF16)*p);
+                escape = buf;
+                escape_len = 6;
+                break;
             }
-        } else {
+        }
+        else {
             switch (c) {
-                case '\\':
-                    escape = "\\\\";
+            case '\\':
+                escape = "\\\\";
+                escape_len = 2;
+                break;
+            case '"':
+                escape = "\\\"";
+                escape_len = 2;
+                break;
+            case '/':
+                if (escape_slash) {
+                    escape = "\\/";
                     escape_len = 2;
                     break;
-                case '"':
-                    escape =  "\\\"";
-                    escape_len = 2;
-                    break;
-                case '/':
-                    if(escape_slash) {
-                        escape = "\\/";
-                        escape_len = 2;
-                        break;
+                }
+            default: {
+                unsigned short clen = 1;
+                if (!ascii_only) {
+                    clen += trailingBytesForUTF8[c];
+                    if (end + clen > len) {
+                        rb_raise(rb_path2class("JSON::GeneratorError"), "partial character in source, but hit end");
                     }
-                default:
-                    {
-                        unsigned short clen = 1;
-                        if (!ascii_only) {
-                            clen += trailingBytesForUTF8[c];
-                            if (end + clen > len) {
-                                rb_raise(rb_path2class("JSON::GeneratorError"),
-                                        "partial character in source, but hit end");
-                            }
-                            if (!isLegalUTF8((UTF8 *) p, clen)) {
-                                rb_raise(rb_path2class("JSON::GeneratorError"),
-                                        "source sequence is illegal/malformed utf-8");
-                            }
-                        }
-                        end += clen;
+                    if (!isLegalUTF8((UTF8 *)p, clen)) {
+                        rb_raise(rb_path2class("JSON::GeneratorError"), "source sequence is illegal/malformed utf-8");
                     }
-                    continue;
-                    break;
+                }
+                end += clen;
+            }
+                continue;
+                break;
             }
         }
         fbuffer_append(buffer, ptr + start, end - start);
@@ -313,12 +332,14 @@ static void convert_UTF8_to_JSON(FBuffer *buffer, VALUE string, char escape_slas
     fbuffer_append(buffer, ptr + start, end - start);
 }
 
-static char *fstrndup(const char *ptr, unsigned long len) {
-  char *result;
-  if (len <= 0) return NULL;
-  result = ALLOC_N(char, len);
-  memcpy(result, ptr, len);
-  return result;
+static char *
+fstrndup(const char *ptr, unsigned long len)
+{
+    char *result;
+    if (len <= 0) return NULL;
+    result = ALLOC_N(char, len);
+    memcpy(result, ptr, len);
+    return result;
 }
 
 /*
@@ -411,7 +432,8 @@ static char *fstrndup(const char *ptr, unsigned long len) {
  * _state_ is a JSON::State object, that can also be used to configure the
  * produced JSON string output further.
  */
-static VALUE mHash_to_json(int argc, VALUE *argv, VALUE self)
+static VALUE
+mHash_to_json(int argc, VALUE *argv, VALUE self)
 {
     GENERATE_JSON(object);
 }
@@ -424,7 +446,9 @@ static VALUE mHash_to_json(int argc, VALUE *argv, VALUE self)
  * _state_ is a JSON::State object, that can also be used to configure the
  * produced JSON string output further.
  */
-static VALUE mArray_to_json(int argc, VALUE *argv, VALUE self) {
+static VALUE
+mArray_to_json(int argc, VALUE *argv, VALUE self)
+{
     GENERATE_JSON(array);
 }
 
@@ -434,7 +458,8 @@ static VALUE mArray_to_json(int argc, VALUE *argv, VALUE self) {
  *
  * Returns a JSON string representation for this Integer number.
  */
-static VALUE mInteger_to_json(int argc, VALUE *argv, VALUE self)
+static VALUE
+mInteger_to_json(int argc, VALUE *argv, VALUE self)
 {
     GENERATE_JSON(integer);
 }
@@ -445,7 +470,8 @@ static VALUE mInteger_to_json(int argc, VALUE *argv, VALUE self)
  *
  * Returns a JSON string representation for this Integer number.
  */
-static VALUE mFixnum_to_json(int argc, VALUE *argv, VALUE self)
+static VALUE
+mFixnum_to_json(int argc, VALUE *argv, VALUE self)
 {
     GENERATE_JSON(fixnum);
 }
@@ -455,7 +481,8 @@ static VALUE mFixnum_to_json(int argc, VALUE *argv, VALUE self)
  *
  * Returns a JSON string representation for this Integer number.
  */
-static VALUE mBignum_to_json(int argc, VALUE *argv, VALUE self)
+static VALUE
+mBignum_to_json(int argc, VALUE *argv, VALUE self)
 {
     GENERATE_JSON(bignum);
 }
@@ -466,7 +493,8 @@ static VALUE mBignum_to_json(int argc, VALUE *argv, VALUE self)
  *
  * Returns a JSON string representation for this Float number.
  */
-static VALUE mFloat_to_json(int argc, VALUE *argv, VALUE self)
+static VALUE
+mFloat_to_json(int argc, VALUE *argv, VALUE self)
 {
     GENERATE_JSON(float);
 }
@@ -476,7 +504,9 @@ static VALUE mFloat_to_json(int argc, VALUE *argv, VALUE self)
  *
  * Extends _modul_ with the String::Extend module.
  */
-static VALUE mString_included_s(VALUE self, VALUE modul) {
+static VALUE
+mString_included_s(VALUE self, VALUE modul)
+{
     VALUE result = rb_funcall(modul, i_extend, 1, mString_Extend);
     return result;
 }
@@ -488,7 +518,8 @@ static VALUE mString_included_s(VALUE self, VALUE modul) {
  * returns a JSON string encoded with UTF16 big endian characters as
  * \u????.
  */
-static VALUE mString_to_json(int argc, VALUE *argv, VALUE self)
+static VALUE
+mString_to_json(int argc, VALUE *argv, VALUE self)
 {
     GENERATE_JSON(string);
 }
@@ -501,7 +532,8 @@ static VALUE mString_to_json(int argc, VALUE *argv, VALUE self)
  * method should be used, if you want to convert raw strings to JSON
  * instead of UTF-8 strings, e. g. binary data.
  */
-static VALUE mString_to_json_raw_object(VALUE self)
+static VALUE
+mString_to_json_raw_object(VALUE self)
 {
     VALUE ary;
     VALUE result = rb_hash_new();
@@ -517,7 +549,8 @@ static VALUE mString_to_json_raw_object(VALUE self)
  * This method creates a JSON text from the result of a call to
  * to_json_raw_object of this String.
  */
-static VALUE mString_to_json_raw(int argc, VALUE *argv, VALUE self)
+static VALUE
+mString_to_json_raw(int argc, VALUE *argv, VALUE self)
 {
     VALUE obj = mString_to_json_raw_object(self);
     Check_Type(obj, T_HASH);
@@ -530,7 +563,8 @@ static VALUE mString_to_json_raw(int argc, VALUE *argv, VALUE self)
  * Raw Strings are JSON Objects (the raw bytes are stored in an array for the
  * key "raw"). The Ruby String can be created by this module method.
  */
-static VALUE mString_Extend_json_create(VALUE self, VALUE o)
+static VALUE
+mString_Extend_json_create(VALUE self, VALUE o)
 {
     VALUE ary;
     Check_Type(o, T_HASH);
@@ -543,7 +577,8 @@ static VALUE mString_Extend_json_create(VALUE self, VALUE o)
  *
  * Returns a JSON string for true: 'true'.
  */
-static VALUE mTrueClass_to_json(int argc, VALUE *argv, VALUE self)
+static VALUE
+mTrueClass_to_json(int argc, VALUE *argv, VALUE self)
 {
     GENERATE_JSON(true);
 }
@@ -553,7 +588,8 @@ static VALUE mTrueClass_to_json(int argc, VALUE *argv, VALUE self)
  *
  * Returns a JSON string for false: 'false'.
  */
-static VALUE mFalseClass_to_json(int argc, VALUE *argv, VALUE self)
+static VALUE
+mFalseClass_to_json(int argc, VALUE *argv, VALUE self)
 {
     GENERATE_JSON(false);
 }
@@ -563,7 +599,8 @@ static VALUE mFalseClass_to_json(int argc, VALUE *argv, VALUE self)
  *
  * Returns a JSON string for nil: 'null'.
  */
-static VALUE mNilClass_to_json(int argc, VALUE *argv, VALUE self)
+static VALUE
+mNilClass_to_json(int argc, VALUE *argv, VALUE self)
 {
     GENERATE_JSON(null);
 }
@@ -575,7 +612,8 @@ static VALUE mNilClass_to_json(int argc, VALUE *argv, VALUE self)
  * it to a JSON string, and returns the result. This is a fallback, if no
  * special method #to_json was defined for some object.
  */
-static VALUE mObject_to_json(int argc, VALUE *argv, VALUE self)
+static VALUE
+mObject_to_json(int argc, VALUE *argv, VALUE self)
 {
     VALUE state;
     VALUE string = rb_funcall(self, i_to_s, 0);
@@ -585,7 +623,8 @@ static VALUE mObject_to_json(int argc, VALUE *argv, VALUE self)
     return cState_partial_generate(state, string);
 }
 
-static void State_free(void *ptr)
+static void
+State_free(void *ptr)
 {
     JSON_Generator_State *state = ptr;
     if (state->indent) ruby_xfree(state->indent);
@@ -599,7 +638,8 @@ static void State_free(void *ptr)
     ruby_xfree(state);
 }
 
-static size_t State_memsize(const void *ptr)
+static size_t
+State_memsize(const void *ptr)
 {
     const JSON_Generator_State *state = ptr;
     size_t size = sizeof(*state);
@@ -615,26 +655,31 @@ static size_t State_memsize(const void *ptr)
 }
 
 #ifndef HAVE_RB_EXT_RACTOR_SAFE
-#   undef RUBY_TYPED_FROZEN_SHAREABLE
-#   define RUBY_TYPED_FROZEN_SHAREABLE 0
+#    undef RUBY_TYPED_FROZEN_SHAREABLE
+#    define RUBY_TYPED_FROZEN_SHAREABLE 0
 #endif
 
 #ifdef NEW_TYPEDDATA_WRAPPER
 static const rb_data_type_t JSON_Generator_State_type = {
     "JSON/Generator/State",
-    {NULL, State_free, State_memsize,},
-#ifdef RUBY_TYPED_FREE_IMMEDIATELY
-    0, 0,
+    {
+        NULL,
+        State_free,
+        State_memsize,
+    },
+#    ifdef RUBY_TYPED_FREE_IMMEDIATELY
+    0,
+    0,
     RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_FROZEN_SHAREABLE,
-#endif
+#    endif
 };
 #endif
 
-static VALUE cState_s_allocate(VALUE klass)
+static VALUE
+cState_s_allocate(VALUE klass)
 {
     JSON_Generator_State *state;
-    return TypedData_Make_Struct(klass, JSON_Generator_State,
-				 &JSON_Generator_State_type, state);
+    return TypedData_Make_Struct(klass, JSON_Generator_State, &JSON_Generator_State_type, state);
 }
 
 /*
@@ -643,7 +688,8 @@ static VALUE cState_s_allocate(VALUE klass)
  * Configure this State instance with the Hash _opts_, and return
  * itself.
  */
-static VALUE cState_configure(VALUE self, VALUE opts)
+static VALUE
+cState_configure(VALUE self, VALUE opts)
 {
     VALUE tmp;
     GET_STATE(self);
@@ -697,7 +743,8 @@ static VALUE cState_configure(VALUE self, VALUE opts)
         if (RTEST(max_nesting)) {
             Check_Type(max_nesting, T_FIXNUM);
             state->max_nesting = FIX2LONG(max_nesting);
-        } else {
+        }
+        else {
             state->max_nesting = 0;
         }
     }
@@ -708,7 +755,8 @@ static VALUE cState_configure(VALUE self, VALUE opts)
         if (RTEST(depth)) {
             Check_Type(depth, T_FIXNUM);
             state->depth = FIX2LONG(depth);
-        } else {
+        }
+        else {
             state->depth = 0;
         }
     }
@@ -731,7 +779,8 @@ static VALUE cState_configure(VALUE self, VALUE opts)
     return self;
 }
 
-static void set_state_ivars(VALUE hash, VALUE state)
+static void
+set_state_ivars(VALUE hash, VALUE state)
 {
     VALUE ivars = rb_obj_instance_variables(state);
     int i = 0;
@@ -749,7 +798,8 @@ static void set_state_ivars(VALUE hash, VALUE state)
  * Returns the configuration instance variables as a hash, that can be
  * passed to the configure method.
  */
-static VALUE cState_to_h(VALUE self)
+static VALUE
+cState_to_h(VALUE self)
 {
     VALUE result = rb_hash_new();
     GET_STATE(self);
@@ -769,26 +819,29 @@ static VALUE cState_to_h(VALUE self)
 }
 
 /*
-* call-seq: [](name)
-*
-* Returns the value returned by method +name+.
-*/
-static VALUE cState_aref(VALUE self, VALUE name)
+ * call-seq: [](name)
+ *
+ * Returns the value returned by method +name+.
+ */
+static VALUE
+cState_aref(VALUE self, VALUE name)
 {
     name = rb_funcall(name, i_to_s, 0);
     if (RTEST(rb_funcall(self, i_respond_to_p, 1, name))) {
         return rb_funcall(self, i_send, 1, name);
-    } else {
+    }
+    else {
         return rb_attr_get(self, rb_intern_str(rb_str_concat(rb_str_new2("@"), name)));
     }
 }
 
 /*
-* call-seq: []=(name, value)
-*
-* Sets the attribute name to value.
-*/
-static VALUE cState_aset(VALUE self, VALUE name, VALUE value)
+ * call-seq: []=(name, value)
+ *
+ * Sets the attribute name to value.
+ */
+static VALUE
+cState_aset(VALUE self, VALUE name, VALUE value)
 {
     VALUE name_writer;
 
@@ -796,7 +849,8 @@ static VALUE cState_aset(VALUE self, VALUE name, VALUE value)
     name_writer = rb_str_cat2(rb_str_dup(name), "=");
     if (RTEST(rb_funcall(self, i_respond_to_p, 1, name_writer))) {
         return rb_funcall(self, i_send, 2, name_writer, value);
-    } else {
+    }
+    else {
         rb_ivar_set(self, rb_intern_str(rb_str_concat(rb_str_new2("@"), name)), value);
     }
     return Qnil;
@@ -842,9 +896,11 @@ json_object_i(VALUE key, VALUE val, VALUE _arg)
     klass = CLASS_OF(key);
     if (klass == rb_cString) {
         key_to_s = key;
-    } else if (klass == rb_cSymbol) {
+    }
+    else if (klass == rb_cSymbol) {
         key_to_s = rb_id2str(SYM2ID(key));
-    } else {
+    }
+    else {
         key_to_s = rb_funcall(key, i_to_s, 0);
     }
     Check_Type(key_to_s, T_STRING);
@@ -856,7 +912,8 @@ json_object_i(VALUE key, VALUE val, VALUE _arg)
     return ST_CONTINUE;
 }
 
-static void generate_json_object(FBuffer *buffer, VALUE Vstate, JSON_Generator_State *state, VALUE obj)
+static void
+generate_json_object(FBuffer *buffer, VALUE Vstate, JSON_Generator_State *state, VALUE obj)
 {
     char *object_nl = state->object_nl;
     long object_nl_len = state->object_nl_len;
@@ -891,7 +948,8 @@ static void generate_json_object(FBuffer *buffer, VALUE Vstate, JSON_Generator_S
     fbuffer_append_char(buffer, '}');
 }
 
-static void generate_json_array(FBuffer *buffer, VALUE Vstate, JSON_Generator_State *state, VALUE obj)
+static void
+generate_json_array(FBuffer *buffer, VALUE Vstate, JSON_Generator_State *state, VALUE obj)
 {
     char *array_nl = state->array_nl;
     long array_nl_len = state->array_nl_len;
@@ -908,7 +966,7 @@ static void generate_json_array(FBuffer *buffer, VALUE Vstate, JSON_Generator_St
     }
     fbuffer_append_char(buffer, '[');
     if (array_nl) fbuffer_append(buffer, array_nl, array_nl_len);
-    for(i = 0; i < RARRAY_LEN(obj); i++) {
+    for (i = 0; i < RARRAY_LEN(obj); i++) {
         if (i > 0) fbuffer_append(buffer, delim, delim_len);
         if (indent) {
             for (j = 0; j < depth; j++) {
@@ -930,7 +988,8 @@ static void generate_json_array(FBuffer *buffer, VALUE Vstate, JSON_Generator_St
 }
 
 #ifdef HAVE_RUBY_ENCODING_H
-static int enc_utf8_compatible_p(rb_encoding *enc)
+static int
+enc_utf8_compatible_p(rb_encoding *enc)
 {
     if (enc == rb_usascii_encoding()) return 1;
     if (enc == rb_utf8_encoding()) return 1;
@@ -938,7 +997,8 @@ static int enc_utf8_compatible_p(rb_encoding *enc)
 }
 #endif
 
-static void generate_json_string(FBuffer *buffer, VALUE Vstate, JSON_Generator_State *state, VALUE obj)
+static void
+generate_json_string(FBuffer *buffer, VALUE Vstate, JSON_Generator_State *state, VALUE obj)
 {
     fbuffer_append_char(buffer, '"');
 #ifdef HAVE_RUBY_ENCODING_H
@@ -948,40 +1008,47 @@ static void generate_json_string(FBuffer *buffer, VALUE Vstate, JSON_Generator_S
 #endif
     if (state->ascii_only) {
         convert_UTF8_to_JSON_ASCII(buffer, obj, state->escape_slash);
-    } else {
+    }
+    else {
         convert_UTF8_to_JSON(buffer, obj, state->escape_slash);
     }
     fbuffer_append_char(buffer, '"');
 }
 
-static void generate_json_null(FBuffer *buffer, VALUE Vstate, JSON_Generator_State *state, VALUE obj)
+static void
+generate_json_null(FBuffer *buffer, VALUE Vstate, JSON_Generator_State *state, VALUE obj)
 {
     fbuffer_append(buffer, "null", 4);
 }
 
-static void generate_json_false(FBuffer *buffer, VALUE Vstate, JSON_Generator_State *state, VALUE obj)
+static void
+generate_json_false(FBuffer *buffer, VALUE Vstate, JSON_Generator_State *state, VALUE obj)
 {
     fbuffer_append(buffer, "false", 5);
 }
 
-static void generate_json_true(FBuffer *buffer, VALUE Vstate, JSON_Generator_State *state, VALUE obj)
+static void
+generate_json_true(FBuffer *buffer, VALUE Vstate, JSON_Generator_State *state, VALUE obj)
 {
     fbuffer_append(buffer, "true", 4);
 }
 
-static void generate_json_fixnum(FBuffer *buffer, VALUE Vstate, JSON_Generator_State *state, VALUE obj)
+static void
+generate_json_fixnum(FBuffer *buffer, VALUE Vstate, JSON_Generator_State *state, VALUE obj)
 {
     fbuffer_append_long(buffer, FIX2LONG(obj));
 }
 
-static void generate_json_bignum(FBuffer *buffer, VALUE Vstate, JSON_Generator_State *state, VALUE obj)
+static void
+generate_json_bignum(FBuffer *buffer, VALUE Vstate, JSON_Generator_State *state, VALUE obj)
 {
     VALUE tmp = rb_funcall(obj, i_to_s, 0);
     fbuffer_append_str(buffer, tmp);
 }
 
 #ifdef RUBY_INTEGER_UNIFICATION
-static void generate_json_integer(FBuffer *buffer, VALUE Vstate, JSON_Generator_State *state, VALUE obj)
+static void
+generate_json_integer(FBuffer *buffer, VALUE Vstate, JSON_Generator_State *state, VALUE obj)
 {
     if (FIXNUM_P(obj))
         generate_json_fixnum(buffer, Vstate, state, obj);
@@ -989,7 +1056,8 @@ static void generate_json_integer(FBuffer *buffer, VALUE Vstate, JSON_Generator_
         generate_json_bignum(buffer, Vstate, state, obj);
 }
 #endif
-static void generate_json_float(FBuffer *buffer, VALUE Vstate, JSON_Generator_State *state, VALUE obj)
+static void
+generate_json_float(FBuffer *buffer, VALUE Vstate, JSON_Generator_State *state, VALUE obj)
 {
     double value = RFLOAT_VALUE(obj);
     char allow_nan = state->allow_nan;
@@ -997,49 +1065,62 @@ static void generate_json_float(FBuffer *buffer, VALUE Vstate, JSON_Generator_St
     if (!allow_nan) {
         if (isinf(value)) {
             fbuffer_free(buffer);
-            rb_raise(eGeneratorError, "%u: %"PRIsVALUE" not allowed in JSON", __LINE__, RB_OBJ_STRING(tmp));
-        } else if (isnan(value)) {
+            rb_raise(eGeneratorError, "%u: %" PRIsVALUE " not allowed in JSON", __LINE__, RB_OBJ_STRING(tmp));
+        }
+        else if (isnan(value)) {
             fbuffer_free(buffer);
-            rb_raise(eGeneratorError, "%u: %"PRIsVALUE" not allowed in JSON", __LINE__, RB_OBJ_STRING(tmp));
+            rb_raise(eGeneratorError, "%u: %" PRIsVALUE " not allowed in JSON", __LINE__, RB_OBJ_STRING(tmp));
         }
     }
     fbuffer_append_str(buffer, tmp);
 }
 
-static void generate_json(FBuffer *buffer, VALUE Vstate, JSON_Generator_State *state, VALUE obj)
+static void
+generate_json(FBuffer *buffer, VALUE Vstate, JSON_Generator_State *state, VALUE obj)
 {
     VALUE tmp;
     VALUE klass = CLASS_OF(obj);
     if (klass == rb_cHash) {
         generate_json_object(buffer, Vstate, state, obj);
-    } else if (klass == rb_cArray) {
+    }
+    else if (klass == rb_cArray) {
         generate_json_array(buffer, Vstate, state, obj);
-    } else if (klass == rb_cString) {
+    }
+    else if (klass == rb_cString) {
         generate_json_string(buffer, Vstate, state, obj);
-    } else if (obj == Qnil) {
+    }
+    else if (obj == Qnil) {
         generate_json_null(buffer, Vstate, state, obj);
-    } else if (obj == Qfalse) {
+    }
+    else if (obj == Qfalse) {
         generate_json_false(buffer, Vstate, state, obj);
-    } else if (obj == Qtrue) {
+    }
+    else if (obj == Qtrue) {
         generate_json_true(buffer, Vstate, state, obj);
-    } else if (FIXNUM_P(obj)) {
+    }
+    else if (FIXNUM_P(obj)) {
         generate_json_fixnum(buffer, Vstate, state, obj);
-    } else if (RB_TYPE_P(obj, T_BIGNUM)) {
+    }
+    else if (RB_TYPE_P(obj, T_BIGNUM)) {
         generate_json_bignum(buffer, Vstate, state, obj);
-    } else if (klass == rb_cFloat) {
+    }
+    else if (klass == rb_cFloat) {
         generate_json_float(buffer, Vstate, state, obj);
-    } else if (rb_respond_to(obj, i_to_json)) {
+    }
+    else if (rb_respond_to(obj, i_to_json)) {
         tmp = rb_funcall(obj, i_to_json, 1, Vstate);
         Check_Type(tmp, T_STRING);
         fbuffer_append_str(buffer, tmp);
-    } else {
+    }
+    else {
         tmp = rb_funcall(obj, i_to_s, 0);
         Check_Type(tmp, T_STRING);
         generate_json_string(buffer, Vstate, state, tmp);
     }
 }
 
-static FBuffer *cState_prepare_buffer(VALUE self)
+static FBuffer *
+cState_prepare_buffer(VALUE self)
 {
     FBuffer *buffer;
     GET_STATE(self);
@@ -1047,13 +1128,15 @@ static FBuffer *cState_prepare_buffer(VALUE self)
 
     if (state->object_delim) {
         fbuffer_clear(state->object_delim);
-    } else {
+    }
+    else {
         state->object_delim = fbuffer_alloc(16);
     }
     fbuffer_append_char(state->object_delim, ',');
     if (state->object_delim2) {
         fbuffer_clear(state->object_delim2);
-    } else {
+    }
+    else {
         state->object_delim2 = fbuffer_alloc(16);
     }
     if (state->space_before) fbuffer_append(state->object_delim2, state->space_before, state->space_before_len);
@@ -1062,7 +1145,8 @@ static FBuffer *cState_prepare_buffer(VALUE self)
 
     if (state->array_delim) {
         fbuffer_clear(state->array_delim);
-    } else {
+    }
+    else {
         state->array_delim = fbuffer_alloc(16);
     }
     fbuffer_append_char(state->array_delim, ',');
@@ -1070,7 +1154,8 @@ static FBuffer *cState_prepare_buffer(VALUE self)
     return buffer;
 }
 
-static VALUE cState_partial_generate(VALUE self, VALUE obj)
+static VALUE
+cState_partial_generate(VALUE self, VALUE obj)
 {
     FBuffer *buffer = cState_prepare_buffer(self);
     GET_STATE(self);
@@ -1085,7 +1170,8 @@ static VALUE cState_partial_generate(VALUE self, VALUE obj)
  * result. If no valid JSON document can be created this method raises a
  * GeneratorError exception.
  */
-static VALUE cState_generate(VALUE self, VALUE obj)
+static VALUE
+cState_generate(VALUE self, VALUE obj)
 {
     VALUE result = cState_partial_generate(self, obj);
     GET_STATE(self);
@@ -1113,7 +1199,8 @@ static VALUE cState_generate(VALUE self, VALUE obj)
  * * *buffer_initial_length*: sets the initial length of the generator's
  *   internal buffer.
  */
-static VALUE cState_initialize(int argc, VALUE *argv, VALUE self)
+static VALUE
+cState_initialize(int argc, VALUE *argv, VALUE self)
 {
     VALUE opts;
     GET_STATE(self);
@@ -1129,8 +1216,9 @@ static VALUE cState_initialize(int argc, VALUE *argv, VALUE self)
  *
  * Initializes this object from orig if it can be duplicated/cloned and returns
  * it.
-*/
-static VALUE cState_init_copy(VALUE obj, VALUE orig)
+ */
+static VALUE
+cState_init_copy(VALUE obj, VALUE orig)
 {
     JSON_Generator_State *objState, *origState;
 
@@ -1158,13 +1246,16 @@ static VALUE cState_init_copy(VALUE obj, VALUE orig)
  * new State instance configured by _opts_, something else to create an
  * unconfigured instance. If _opts_ is a State object, it is just returned.
  */
-static VALUE cState_from_state_s(VALUE self, VALUE opts)
+static VALUE
+cState_from_state_s(VALUE self, VALUE opts)
 {
     if (rb_obj_is_kind_of(opts, self)) {
         return opts;
-    } else if (rb_obj_is_kind_of(opts, rb_cHash)) {
+    }
+    else if (rb_obj_is_kind_of(opts, rb_cHash)) {
         return rb_funcall(self, i_new, 1, opts);
-    } else {
+    }
+    else {
         return rb_class_new_instance(0, NULL, cState);
     }
 }
@@ -1174,7 +1265,8 @@ static VALUE cState_from_state_s(VALUE self, VALUE opts)
  *
  * Returns the string that is used to indent levels in the JSON text.
  */
-static VALUE cState_indent(VALUE self)
+static VALUE
+cState_indent(VALUE self)
 {
     GET_STATE(self);
     return state->indent ? rb_str_new(state->indent, state->indent_len) : rb_str_new2("");
@@ -1185,7 +1277,8 @@ static VALUE cState_indent(VALUE self)
  *
  * Sets the string that is used to indent levels in the JSON text.
  */
-static VALUE cState_indent_set(VALUE self, VALUE indent)
+static VALUE
+cState_indent_set(VALUE self, VALUE indent)
 {
     unsigned long len;
     GET_STATE(self);
@@ -1197,7 +1290,8 @@ static VALUE cState_indent_set(VALUE self, VALUE indent)
             state->indent = NULL;
             state->indent_len = 0;
         }
-    } else {
+    }
+    else {
         if (state->indent) ruby_xfree(state->indent);
         state->indent = fstrndup(RSTRING_PTR(indent), len);
         state->indent_len = len;
@@ -1211,7 +1305,8 @@ static VALUE cState_indent_set(VALUE self, VALUE indent)
  * Returns the string that is used to insert a space between the tokens in a JSON
  * string.
  */
-static VALUE cState_space(VALUE self)
+static VALUE
+cState_space(VALUE self)
 {
     GET_STATE(self);
     return state->space ? rb_str_new(state->space, state->space_len) : rb_str_new2("");
@@ -1223,7 +1318,8 @@ static VALUE cState_space(VALUE self)
  * Sets _space_ to the string that is used to insert a space between the tokens in a JSON
  * string.
  */
-static VALUE cState_space_set(VALUE self, VALUE space)
+static VALUE
+cState_space_set(VALUE self, VALUE space)
 {
     unsigned long len;
     GET_STATE(self);
@@ -1235,7 +1331,8 @@ static VALUE cState_space_set(VALUE self, VALUE space)
             state->space = NULL;
             state->space_len = 0;
         }
-    } else {
+    }
+    else {
         if (state->space) ruby_xfree(state->space);
         state->space = fstrndup(RSTRING_PTR(space), len);
         state->space_len = len;
@@ -1248,7 +1345,8 @@ static VALUE cState_space_set(VALUE self, VALUE space)
  *
  * Returns the string that is used to insert a space before the ':' in JSON objects.
  */
-static VALUE cState_space_before(VALUE self)
+static VALUE
+cState_space_before(VALUE self)
 {
     GET_STATE(self);
     return state->space_before ? rb_str_new(state->space_before, state->space_before_len) : rb_str_new2("");
@@ -1259,7 +1357,8 @@ static VALUE cState_space_before(VALUE self)
  *
  * Sets the string that is used to insert a space before the ':' in JSON objects.
  */
-static VALUE cState_space_before_set(VALUE self, VALUE space_before)
+static VALUE
+cState_space_before_set(VALUE self, VALUE space_before)
 {
     unsigned long len;
     GET_STATE(self);
@@ -1271,7 +1370,8 @@ static VALUE cState_space_before_set(VALUE self, VALUE space_before)
             state->space_before = NULL;
             state->space_before_len = 0;
         }
-    } else {
+    }
+    else {
         if (state->space_before) ruby_xfree(state->space_before);
         state->space_before = fstrndup(RSTRING_PTR(space_before), len);
         state->space_before_len = len;
@@ -1285,7 +1385,8 @@ static VALUE cState_space_before_set(VALUE self, VALUE space_before)
  * This string is put at the end of a line that holds a JSON object (or
  * Hash).
  */
-static VALUE cState_object_nl(VALUE self)
+static VALUE
+cState_object_nl(VALUE self)
 {
     GET_STATE(self);
     return state->object_nl ? rb_str_new(state->object_nl, state->object_nl_len) : rb_str_new2("");
@@ -1297,7 +1398,8 @@ static VALUE cState_object_nl(VALUE self)
  * This string is put at the end of a line that holds a JSON object (or
  * Hash).
  */
-static VALUE cState_object_nl_set(VALUE self, VALUE object_nl)
+static VALUE
+cState_object_nl_set(VALUE self, VALUE object_nl)
 {
     unsigned long len;
     GET_STATE(self);
@@ -1308,7 +1410,8 @@ static VALUE cState_object_nl_set(VALUE self, VALUE object_nl)
             ruby_xfree(state->object_nl);
             state->object_nl = NULL;
         }
-    } else {
+    }
+    else {
         if (state->object_nl) ruby_xfree(state->object_nl);
         state->object_nl = fstrndup(RSTRING_PTR(object_nl), len);
         state->object_nl_len = len;
@@ -1321,7 +1424,8 @@ static VALUE cState_object_nl_set(VALUE self, VALUE object_nl)
  *
  * This string is put at the end of a line that holds a JSON array.
  */
-static VALUE cState_array_nl(VALUE self)
+static VALUE
+cState_array_nl(VALUE self)
 {
     GET_STATE(self);
     return state->array_nl ? rb_str_new(state->array_nl, state->array_nl_len) : rb_str_new2("");
@@ -1332,7 +1436,8 @@ static VALUE cState_array_nl(VALUE self)
  *
  * This string is put at the end of a line that holds a JSON array.
  */
-static VALUE cState_array_nl_set(VALUE self, VALUE array_nl)
+static VALUE
+cState_array_nl_set(VALUE self, VALUE array_nl)
 {
     unsigned long len;
     GET_STATE(self);
@@ -1343,7 +1448,8 @@ static VALUE cState_array_nl_set(VALUE self, VALUE array_nl)
             ruby_xfree(state->array_nl);
             state->array_nl = NULL;
         }
-    } else {
+    }
+    else {
         if (state->array_nl) ruby_xfree(state->array_nl);
         state->array_nl = fstrndup(RSTRING_PTR(array_nl), len);
         state->array_nl_len = len;
@@ -1351,14 +1457,14 @@ static VALUE cState_array_nl_set(VALUE self, VALUE array_nl)
     return Qnil;
 }
 
-
 /*
-* call-seq: check_circular?
-*
-* Returns true, if circular data structures should be checked,
-* otherwise returns false.
-*/
-static VALUE cState_check_circular_p(VALUE self)
+ * call-seq: check_circular?
+ *
+ * Returns true, if circular data structures should be checked,
+ * otherwise returns false.
+ */
+static VALUE
+cState_check_circular_p(VALUE self)
 {
     GET_STATE(self);
     return state->max_nesting ? Qtrue : Qfalse;
@@ -1370,7 +1476,8 @@ static VALUE cState_check_circular_p(VALUE self)
  * This integer returns the maximum level of data structure nesting in
  * the generated JSON, max_nesting = 0 if no maximum is checked.
  */
-static VALUE cState_max_nesting(VALUE self)
+static VALUE
+cState_max_nesting(VALUE self)
 {
     GET_STATE(self);
     return LONG2FIX(state->max_nesting);
@@ -1382,7 +1489,8 @@ static VALUE cState_max_nesting(VALUE self)
  * This sets the maximum level of data structure nesting in the generated JSON
  * to the integer depth, max_nesting = 0 if no maximum should be checked.
  */
-static VALUE cState_max_nesting_set(VALUE self, VALUE depth)
+static VALUE
+cState_max_nesting_set(VALUE self, VALUE depth)
 {
     GET_STATE(self);
     Check_Type(depth, T_FIXNUM);
@@ -1395,7 +1503,8 @@ static VALUE cState_max_nesting_set(VALUE self, VALUE depth)
  * If this boolean is true, the forward slashes will be escaped in
  * the json output.
  */
-static VALUE cState_escape_slash(VALUE self)
+static VALUE
+cState_escape_slash(VALUE self)
 {
     GET_STATE(self);
     return state->escape_slash ? Qtrue : Qfalse;
@@ -1407,7 +1516,8 @@ static VALUE cState_escape_slash(VALUE self)
  * This sets whether or not the forward slashes will be escaped in
  * the json output.
  */
-static VALUE cState_escape_slash_set(VALUE self, VALUE enable)
+static VALUE
+cState_escape_slash_set(VALUE self, VALUE enable)
 {
     GET_STATE(self);
     state->escape_slash = RTEST(enable);
@@ -1420,7 +1530,8 @@ static VALUE cState_escape_slash_set(VALUE self, VALUE enable)
  * Returns true, if NaN, Infinity, and -Infinity should be generated, otherwise
  * returns false.
  */
-static VALUE cState_allow_nan_p(VALUE self)
+static VALUE
+cState_allow_nan_p(VALUE self)
 {
     GET_STATE(self);
     return state->allow_nan ? Qtrue : Qfalse;
@@ -1432,7 +1543,8 @@ static VALUE cState_allow_nan_p(VALUE self)
  * Returns true, if only ASCII characters should be generated. Otherwise
  * returns false.
  */
-static VALUE cState_ascii_only_p(VALUE self)
+static VALUE
+cState_ascii_only_p(VALUE self)
 {
     GET_STATE(self);
     return state->ascii_only ? Qtrue : Qfalse;
@@ -1443,7 +1555,8 @@ static VALUE cState_ascii_only_p(VALUE self)
  *
  * This integer returns the current depth of data structure nesting.
  */
-static VALUE cState_depth(VALUE self)
+static VALUE
+cState_depth(VALUE self)
 {
     GET_STATE(self);
     return LONG2FIX(state->depth);
@@ -1455,7 +1568,8 @@ static VALUE cState_depth(VALUE self)
  * This sets the maximum level of data structure nesting in the generated JSON
  * to the integer depth, max_nesting = 0 if no maximum should be checked.
  */
-static VALUE cState_depth_set(VALUE self, VALUE depth)
+static VALUE
+cState_depth_set(VALUE self, VALUE depth)
 {
     GET_STATE(self);
     Check_Type(depth, T_FIXNUM);
@@ -1468,7 +1582,8 @@ static VALUE cState_depth_set(VALUE self, VALUE depth)
  *
  * This integer returns the current initial length of the buffer.
  */
-static VALUE cState_buffer_initial_length(VALUE self)
+static VALUE
+cState_buffer_initial_length(VALUE self)
 {
     GET_STATE(self);
     return LONG2FIX(state->buffer_initial_length);
@@ -1480,7 +1595,8 @@ static VALUE cState_buffer_initial_length(VALUE self)
  * This sets the initial length of the buffer to +length+, if +length+ > 0,
  * otherwise its value isn't changed.
  */
-static VALUE cState_buffer_initial_length_set(VALUE self, VALUE buffer_initial_length)
+static VALUE
+cState_buffer_initial_length_set(VALUE self, VALUE buffer_initial_length)
 {
     long initial_length;
     GET_STATE(self);
@@ -1495,7 +1611,8 @@ static VALUE cState_buffer_initial_length_set(VALUE self, VALUE buffer_initial_l
 /*
  *
  */
-void Init_generator(void)
+void
+Init_generator(void)
 {
 #ifdef HAVE_RB_EXT_RACTOR_SAFE
     rb_ext_ractor_safe(true);

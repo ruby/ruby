@@ -1,4 +1,4 @@
-#ifndef RBIMPL_RBIGNUM_H                             /*-*-C++-*-vi:se ft=cpp:*/
+#ifndef RBIMPL_RBIGNUM_H /*-*-C++-*-vi:se ft=cpp:*/
 #define RBIMPL_RBIGNUM_H
 /**
  * @file
@@ -22,9 +22,9 @@
  * @note       The struct RBignum itself is opaque.
  */
 #include "ruby/internal/dllexport.h"
+#include "ruby/internal/stdbool.h"
 #include "ruby/internal/value.h"
 #include "ruby/internal/value_type.h"
-#include "ruby/internal/stdbool.h"
 
 #define RBIGNUM_SIGN rb_big_sign /**< @alias{rb_big_sign} */
 
@@ -74,7 +74,7 @@ static inline bool
 RBIGNUM_NEGATIVE_P(VALUE b)
 {
     RBIMPL_ASSERT_TYPE(b, RUBY_T_BIGNUM);
-    return ! RBIGNUM_POSITIVE_P(b);
+    return !RBIGNUM_POSITIVE_P(b);
 }
 
 #endif /* RBIMPL_RBIGNUM_H */

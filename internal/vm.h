@@ -1,4 +1,4 @@
-#ifndef INTERNAL_VM_H                                    /*-*-C-*-vi:se ft=c:*/
+#ifndef INTERNAL_VM_H /*-*-C-*-vi:se ft=c:*/
 #define INTERNAL_VM_H
 /**
  * @author     Ruby developers <ruby-core@ruby-lang.org>
@@ -8,18 +8,18 @@
  *             file COPYING are met.  Consult the file for details.
  * @brief      Internal header for RubyVM.
  */
-#include "ruby/internal/stdbool.h"         /* for bool */
 #include "internal/serial.h"        /* for rb_serial_t */
 #include "internal/static_assert.h" /* for STATIC_ASSERT */
+#include "ruby/internal/stdbool.h"  /* for bool */
 #include "ruby/ruby.h"              /* for ID */
 #include "ruby/st.h"                /* for st_table */
 
 #ifdef rb_funcallv
-# undef rb_funcallv
+#    undef rb_funcallv
 #endif
 
 #ifdef rb_method_basic_definition_p
-# undef rb_method_basic_definition_p
+#    undef rb_method_basic_definition_p
 #endif
 
 struct rb_callable_method_entry_struct; /* in method.h */
@@ -29,14 +29,14 @@ struct rb_control_frame_struct;         /* in vm_core.h */
 struct rb_callinfo;                     /* in vm_core.h */
 
 enum method_missing_reason {
-    MISSING_NOENTRY   = 0x00,
-    MISSING_PRIVATE   = 0x01,
+    MISSING_NOENTRY = 0x00,
+    MISSING_PRIVATE = 0x01,
     MISSING_PROTECTED = 0x02,
-    MISSING_FCALL     = 0x04,
-    MISSING_VCALL     = 0x08,
-    MISSING_SUPER     = 0x10,
-    MISSING_MISSING   = 0x20,
-    MISSING_NONE      = 0x40
+    MISSING_FCALL = 0x04,
+    MISSING_VCALL = 0x08,
+    MISSING_SUPER = 0x10,
+    MISSING_MISSING = 0x20,
+    MISSING_NONE = 0x40
 };
 
 /* vm_insnhelper.h */
@@ -45,7 +45,7 @@ rb_serial_t rb_next_class_serial(void);
 /* vm.c */
 VALUE rb_obj_is_thread(VALUE obj);
 void rb_vm_mark(void *ptr);
-void rb_vm_each_stack_value(void *ptr, void (*cb)(VALUE, void*), void *ctx);
+void rb_vm_each_stack_value(void *ptr, void (*cb)(VALUE, void *), void *ctx);
 PUREFUNC(VALUE rb_vm_top_self(void));
 const void **rb_vm_get_insns_address_table(void);
 VALUE rb_source_location(int *pline);
@@ -66,18 +66,17 @@ MJIT_SYMBOL_EXPORT_END
 VALUE rb_current_realfilepath(void);
 VALUE rb_check_block_call(VALUE, ID, int, const VALUE *, rb_block_call_func_t, VALUE);
 typedef void rb_check_funcall_hook(int, VALUE, ID, int, const VALUE *, VALUE);
-VALUE rb_check_funcall_with_hook(VALUE recv, ID mid, int argc, const VALUE *argv,
-                                 rb_check_funcall_hook *hook, VALUE arg);
-VALUE rb_check_funcall_with_hook_kw(VALUE recv, ID mid, int argc, const VALUE *argv,
-                                 rb_check_funcall_hook *hook, VALUE arg, int kw_splat);
+VALUE rb_check_funcall_with_hook(
+    VALUE recv, ID mid, int argc, const VALUE *argv, rb_check_funcall_hook *hook, VALUE arg);
+VALUE rb_check_funcall_with_hook_kw(
+    VALUE recv, ID mid, int argc, const VALUE *argv, rb_check_funcall_hook *hook, VALUE arg, int kw_splat);
 const char *rb_type_str(enum ruby_value_type type);
 VALUE rb_check_funcall_default(VALUE, ID, int, const VALUE *, VALUE);
-VALUE rb_check_funcall_basic_kw(VALUE, ID, VALUE, int, const VALUE*, int);
+VALUE rb_check_funcall_basic_kw(VALUE, ID, VALUE, int, const VALUE *, int);
 VALUE rb_yield_1(VALUE val);
 VALUE rb_yield_force_blockarg(VALUE values);
-VALUE rb_lambda_call(VALUE obj, ID mid, int argc, const VALUE *argv,
-                     rb_block_call_func_t bl_proc, int min_argc, int max_argc,
-                     VALUE data2);
+VALUE rb_lambda_call(VALUE obj, ID mid, int argc, const VALUE *argv, rb_block_call_func_t bl_proc, int min_argc,
+    int max_argc, VALUE data2);
 void rb_check_stack_overflow(void);
 
 /* vm_insnhelper.c */
@@ -103,8 +102,8 @@ void rb_print_backtrace(void);
 /* vm_backtrace.c */
 VALUE rb_vm_thread_backtrace(int argc, const VALUE *argv, VALUE thval);
 VALUE rb_vm_thread_backtrace_locations(int argc, const VALUE *argv, VALUE thval);
-VALUE rb_vm_backtrace(int argc, const VALUE * argv, struct rb_execution_context_struct * ec);
-VALUE rb_vm_backtrace_locations(int argc, const VALUE * argv, struct rb_execution_context_struct * ec);
+VALUE rb_vm_backtrace(int argc, const VALUE *argv, struct rb_execution_context_struct *ec);
+VALUE rb_vm_backtrace_locations(int argc, const VALUE *argv, struct rb_execution_context_struct *ec);
 VALUE rb_make_backtrace(void);
 void rb_backtrace_print_as_bugreport(void);
 int rb_backtrace_p(VALUE obj);
@@ -120,15 +119,14 @@ VALUE rb_ec_backtrace_object(const struct rb_execution_context_struct *ec);
 void rb_backtrace_use_iseq_first_lineno_for_last_location(VALUE self);
 MJIT_SYMBOL_EXPORT_END
 
-#define RUBY_DTRACE_CREATE_HOOK(name, arg) \
-    RUBY_DTRACE_HOOK(name##_CREATE, arg)
+#define RUBY_DTRACE_CREATE_HOOK(name, arg) RUBY_DTRACE_HOOK(name##_CREATE, arg)
 #define RUBY_DTRACE_HOOK(name, arg) \
-do { \
-    if (UNLIKELY(RUBY_DTRACE_##name##_ENABLED())) { \
-        int dtrace_line; \
-        const char *dtrace_file = rb_source_location_cstr(&dtrace_line); \
-        if (!dtrace_file) dtrace_file = ""; \
-        RUBY_DTRACE_##name(arg, dtrace_file, dtrace_line); \
-    } \
-} while (0)
+    do { \
+        if (UNLIKELY(RUBY_DTRACE_##name##_ENABLED())) { \
+            int dtrace_line; \
+            const char *dtrace_file = rb_source_location_cstr(&dtrace_line); \
+            if (!dtrace_file) dtrace_file = ""; \
+            RUBY_DTRACE_##name(arg, dtrace_file, dtrace_line); \
+        } \
+    } while (0)
 #endif /* INTERNAL_VM_H */

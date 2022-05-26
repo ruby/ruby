@@ -9,33 +9,35 @@
  */
 #include "ossl.h"
 
-#define NewX509Ext(klass) \
-    TypedData_Wrap_Struct((klass), &ossl_x509ext_type, 0)
-#define SetX509Ext(obj, ext) do { \
-    if (!(ext)) { \
-	ossl_raise(rb_eRuntimeError, "EXT wasn't initialized!"); \
-    } \
-    RTYPEDDATA_DATA(obj) = (ext); \
-} while (0)
-#define GetX509Ext(obj, ext) do { \
-    TypedData_Get_Struct((obj), X509_EXTENSION, &ossl_x509ext_type, (ext)); \
-    if (!(ext)) { \
-	ossl_raise(rb_eRuntimeError, "EXT wasn't initialized!"); \
-    } \
-} while (0)
-#define MakeX509ExtFactory(klass, obj, ctx) do { \
-    (obj) = TypedData_Wrap_Struct((klass), &ossl_x509extfactory_type, 0); \
-    if (!((ctx) = OPENSSL_malloc(sizeof(X509V3_CTX)))) \
-        ossl_raise(rb_eRuntimeError, "CTX wasn't allocated!"); \
-    X509V3_set_ctx((ctx), NULL, NULL, NULL, NULL, 0); \
-    RTYPEDDATA_DATA(obj) = (ctx); \
-} while (0)
-#define GetX509ExtFactory(obj, ctx) do { \
-    TypedData_Get_Struct((obj), X509V3_CTX, &ossl_x509extfactory_type, (ctx)); \
-    if (!(ctx)) { \
-	ossl_raise(rb_eRuntimeError, "CTX wasn't initialized!"); \
-    } \
-} while (0)
+#define NewX509Ext(klass) TypedData_Wrap_Struct((klass), &ossl_x509ext_type, 0)
+#define SetX509Ext(obj, ext) \
+    do { \
+        if (!(ext)) { \
+            ossl_raise(rb_eRuntimeError, "EXT wasn't initialized!"); \
+        } \
+        RTYPEDDATA_DATA(obj) = (ext); \
+    } while (0)
+#define GetX509Ext(obj, ext) \
+    do { \
+        TypedData_Get_Struct((obj), X509_EXTENSION, &ossl_x509ext_type, (ext)); \
+        if (!(ext)) { \
+            ossl_raise(rb_eRuntimeError, "EXT wasn't initialized!"); \
+        } \
+    } while (0)
+#define MakeX509ExtFactory(klass, obj, ctx) \
+    do { \
+        (obj) = TypedData_Wrap_Struct((klass), &ossl_x509extfactory_type, 0); \
+        if (!((ctx) = OPENSSL_malloc(sizeof(X509V3_CTX)))) ossl_raise(rb_eRuntimeError, "CTX wasn't allocated!"); \
+        X509V3_set_ctx((ctx), NULL, NULL, NULL, NULL, 0); \
+        RTYPEDDATA_DATA(obj) = (ctx); \
+    } while (0)
+#define GetX509ExtFactory(obj, ctx) \
+    do { \
+        TypedData_Get_Struct((obj), X509V3_CTX, &ossl_x509extfactory_type, (ctx)); \
+        if (!(ctx)) { \
+            ossl_raise(rb_eRuntimeError, "CTX wasn't initialized!"); \
+        } \
+    } while (0)
 
 /*
  * Classes
@@ -53,9 +55,12 @@ ossl_x509ext_free(void *ptr)
 static const rb_data_type_t ossl_x509ext_type = {
     "OpenSSL/X509/EXTENSION",
     {
-	0, ossl_x509ext_free,
+        0,
+        ossl_x509ext_free,
     },
-    0, 0, RUBY_TYPED_FREE_IMMEDIATELY,
+    0,
+    0,
+    RUBY_TYPED_FREE_IMMEDIATELY,
 };
 
 /*
@@ -69,12 +74,13 @@ ossl_x509ext_new(X509_EXTENSION *ext)
 
     obj = NewX509Ext(cX509Ext);
     if (!ext) {
-	new = X509_EXTENSION_new();
-    } else {
-	new = X509_EXTENSION_dup(ext);
+        new = X509_EXTENSION_new();
+    }
+    else {
+        new = X509_EXTENSION_dup(ext);
     }
     if (!new) {
-	ossl_raise(eX509ExtError, NULL);
+        ossl_raise(eX509ExtError, NULL);
     }
     SetX509Ext(obj, new);
 
@@ -106,9 +112,12 @@ ossl_x509extfactory_free(void *ctx)
 static const rb_data_type_t ossl_x509extfactory_type = {
     "OpenSSL/X509/EXTENSION/Factory",
     {
-	0, ossl_x509extfactory_free,
+        0,
+        ossl_x509extfactory_free,
     },
-    0, 0, RUBY_TYPED_FREE_IMMEDIATELY,
+    0,
+    0,
+    RUBY_TYPED_FREE_IMMEDIATELY,
 };
 
 static VALUE
@@ -179,16 +188,11 @@ ossl_x509extfactory_initialize(int argc, VALUE *argv, VALUE self)
 
     /*GetX509ExtFactory(self, ctx);*/
 
-    rb_scan_args(argc, argv, "04",
-		 &issuer_cert, &subject_cert, &subject_req, &crl);
-    if (!NIL_P(issuer_cert))
-	ossl_x509extfactory_set_issuer_cert(self, issuer_cert);
-    if (!NIL_P(subject_cert))
-	ossl_x509extfactory_set_subject_cert(self, subject_cert);
-    if (!NIL_P(subject_req))
-	ossl_x509extfactory_set_subject_req(self, subject_req);
-    if (!NIL_P(crl))
-	ossl_x509extfactory_set_crl(self, crl);
+    rb_scan_args(argc, argv, "04", &issuer_cert, &subject_cert, &subject_req, &crl);
+    if (!NIL_P(issuer_cert)) ossl_x509extfactory_set_issuer_cert(self, issuer_cert);
+    if (!NIL_P(subject_cert)) ossl_x509extfactory_set_subject_cert(self, subject_cert);
+    if (!NIL_P(subject_req)) ossl_x509extfactory_set_subject_req(self, subject_req);
+    if (!NIL_P(crl)) ossl_x509extfactory_set_crl(self, crl);
 
     return self;
 }
@@ -213,11 +217,11 @@ ossl_x509extfactory_create_ext(int argc, VALUE *argv, VALUE self)
     rb_scan_args(argc, argv, "21", &oid, &value, &critical);
     StringValueCStr(oid);
     StringValue(value);
-    if(NIL_P(critical)) critical = Qfalse;
+    if (NIL_P(critical)) critical = Qfalse;
 
     nid = OBJ_ln2nid(RSTRING_PTR(oid));
-    if(!nid) nid = OBJ_sn2nid(RSTRING_PTR(oid));
-    if(!nid) ossl_raise(eX509ExtError, "unknown OID `%"PRIsVALUE"'", oid);
+    if (!nid) nid = OBJ_sn2nid(RSTRING_PTR(oid));
+    if (!nid) ossl_raise(eX509ExtError, "unknown OID `%" PRIsVALUE "'", oid);
 
     valstr = rb_str_new2(RTEST(critical) ? "critical," : "");
     rb_str_append(valstr, value);
@@ -230,8 +234,8 @@ ossl_x509extfactory_create_ext(int argc, VALUE *argv, VALUE self)
     X509V3_set_nconf(ctx, conf);
     ext = X509V3_EXT_nconf_nid(conf, ctx, nid, RSTRING_PTR(valstr));
     X509V3_set_ctx_nodb(ctx);
-    if (!ext){
-	ossl_raise(eX509ExtError, "%"PRIsVALUE" = %"PRIsVALUE, oid, valstr);
+    if (!ext) {
+        ossl_raise(eX509ExtError, "%" PRIsVALUE " = %" PRIsVALUE, oid, valstr);
     }
     SetX509Ext(obj, ext);
 
@@ -248,8 +252,8 @@ ossl_x509ext_alloc(VALUE klass)
     VALUE obj;
 
     obj = NewX509Ext(klass);
-    if(!(ext = X509_EXTENSION_new())){
-	ossl_raise(eX509ExtError, NULL);
+    if (!(ext = X509_EXTENSION_new())) {
+        ossl_raise(eX509ExtError, NULL);
     }
     SetX509Ext(obj, ext);
 
@@ -276,19 +280,18 @@ ossl_x509ext_initialize(int argc, VALUE *argv, VALUE self)
     X509_EXTENSION *ext, *x;
 
     GetX509Ext(self, ext);
-    if(rb_scan_args(argc, argv, "12", &oid, &value, &critical) == 1){
-	oid = ossl_to_der_if_possible(oid);
-	StringValue(oid);
-	p = (unsigned char *)RSTRING_PTR(oid);
-	x = d2i_X509_EXTENSION(&ext, &p, RSTRING_LEN(oid));
-	DATA_PTR(self) = ext;
-	if(!x)
-	    ossl_raise(eX509ExtError, NULL);
-	return self;
+    if (rb_scan_args(argc, argv, "12", &oid, &value, &critical) == 1) {
+        oid = ossl_to_der_if_possible(oid);
+        StringValue(oid);
+        p = (unsigned char *)RSTRING_PTR(oid);
+        x = d2i_X509_EXTENSION(&ext, &p, RSTRING_LEN(oid));
+        DATA_PTR(self) = ext;
+        if (!x) ossl_raise(eX509ExtError, NULL);
+        return self;
     }
     rb_funcall(self, rb_intern("oid="), 1, oid);
     rb_funcall(self, rb_intern("value="), 1, value);
-    if(argc > 2) rb_funcall(self, rb_intern("critical="), 1, critical);
+    if (argc > 2) rb_funcall(self, rb_intern("critical="), 1, critical);
 
     return self;
 }
@@ -303,8 +306,7 @@ ossl_x509ext_initialize_copy(VALUE self, VALUE other)
     GetX509Ext(other, ext_other);
 
     ext_new = X509_EXTENSION_dup(ext_other);
-    if (!ext_new)
-	ossl_raise(eX509ExtError, "X509_EXTENSION_dup");
+    if (!ext_new) ossl_raise(eX509ExtError, "X509_EXTENSION_dup");
 
     SetX509Ext(self, ext_new);
     X509_EXTENSION_free(ext);
@@ -320,11 +322,10 @@ ossl_x509ext_set_oid(VALUE self, VALUE oid)
 
     GetX509Ext(self, ext);
     obj = OBJ_txt2obj(StringValueCStr(oid), 0);
-    if (!obj)
-	ossl_raise(eX509ExtError, "OBJ_txt2obj");
+    if (!obj) ossl_raise(eX509ExtError, "OBJ_txt2obj");
     if (!X509_EXTENSION_set_object(ext, obj)) {
-	ASN1_OBJECT_free(obj);
-	ossl_raise(eX509ExtError, "X509_EXTENSION_set_object");
+        ASN1_OBJECT_free(obj);
+        ossl_raise(eX509ExtError, "X509_EXTENSION_set_object");
     }
     ASN1_OBJECT_free(obj);
 
@@ -342,9 +343,8 @@ ossl_x509ext_set_value(VALUE self, VALUE data)
     StringValue(data);
     asn1s = X509_EXTENSION_get_data(ext);
 
-    if (!ASN1_OCTET_STRING_set(asn1s, (unsigned char *)RSTRING_PTR(data),
-			       RSTRING_LENINT(data))) {
-	ossl_raise(eX509ExtError, "ASN1_OCTET_STRING_set");
+    if (!ASN1_OCTET_STRING_set(asn1s, (unsigned char *)RSTRING_PTR(data), RSTRING_LENINT(data))) {
+        ossl_raise(eX509ExtError, "ASN1_OCTET_STRING_set");
     }
 
     return data;
@@ -373,12 +373,11 @@ ossl_x509ext_get_oid(VALUE obj)
     GetX509Ext(obj, ext);
     extobj = X509_EXTENSION_get_object(ext);
     if ((nid = OBJ_obj2nid(extobj)) != NID_undef)
-	ret = rb_str_new2(OBJ_nid2sn(nid));
-    else{
-	if (!(out = BIO_new(BIO_s_mem())))
-	    ossl_raise(eX509ExtError, NULL);
-	i2a_ASN1_OBJECT(out, extobj);
-	ret = ossl_membio2str(out);
+        ret = rb_str_new2(OBJ_nid2sn(nid));
+    else {
+        if (!(out = BIO_new(BIO_s_mem()))) ossl_raise(eX509ExtError, NULL);
+        i2a_ASN1_OBJECT(out, extobj);
+        ret = ossl_membio2str(out);
     }
 
     return ret;
@@ -392,10 +391,8 @@ ossl_x509ext_get_value(VALUE obj)
     VALUE ret;
 
     GetX509Ext(obj, ext);
-    if (!(out = BIO_new(BIO_s_mem())))
-	ossl_raise(eX509ExtError, NULL);
-    if (!X509V3_EXT_print(out, ext, 0, 0))
-	ASN1_STRING_print(out, (ASN1_STRING *)X509_EXTENSION_get_data(ext));
+    if (!(out = BIO_new(BIO_s_mem()))) ossl_raise(eX509ExtError, NULL);
+    if (!X509V3_EXT_print(out, ext, 0, 0)) ASN1_STRING_print(out, (ASN1_STRING *)X509_EXTENSION_get_data(ext));
     ret = ossl_membio2str(out);
 
     return ret;
@@ -408,8 +405,7 @@ ossl_x509ext_get_value_der(VALUE obj)
     ASN1_OCTET_STRING *value;
 
     GetX509Ext(obj, ext);
-    if ((value = X509_EXTENSION_get_data(ext)) == NULL)
-	ossl_raise(eX509ExtError, NULL);
+    if ((value = X509_EXTENSION_get_data(ext)) == NULL) ossl_raise(eX509ExtError, NULL);
 
     return rb_str_new((const char *)value->data, value->length);
 }
@@ -432,12 +428,10 @@ ossl_x509ext_to_der(VALUE obj)
     VALUE str;
 
     GetX509Ext(obj, ext);
-    if((len = i2d_X509_EXTENSION(ext, NULL)) <= 0)
-	ossl_raise(eX509ExtError, NULL);
+    if ((len = i2d_X509_EXTENSION(ext, NULL)) <= 0) ossl_raise(eX509ExtError, NULL);
     str = rb_str_new(0, len);
     p = (unsigned char *)RSTRING_PTR(str);
-    if(i2d_X509_EXTENSION(ext, &p) < 0)
-	ossl_raise(eX509ExtError, NULL);
+    if (i2d_X509_EXTENSION(ext, &p) < 0) ossl_raise(eX509ExtError, NULL);
     ossl_str_adjust(str, p);
 
     return str;

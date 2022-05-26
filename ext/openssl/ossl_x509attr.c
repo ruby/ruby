@@ -9,20 +9,21 @@
  */
 #include "ossl.h"
 
-#define NewX509Attr(klass) \
-    TypedData_Wrap_Struct((klass), &ossl_x509attr_type, 0)
-#define SetX509Attr(obj, attr) do { \
-    if (!(attr)) { \
-	ossl_raise(rb_eRuntimeError, "ATTR wasn't initialized!"); \
-    } \
-    RTYPEDDATA_DATA(obj) = (attr); \
-} while (0)
-#define GetX509Attr(obj, attr) do { \
-    TypedData_Get_Struct((obj), X509_ATTRIBUTE, &ossl_x509attr_type, (attr)); \
-    if (!(attr)) { \
-	ossl_raise(rb_eRuntimeError, "ATTR wasn't initialized!"); \
-    } \
-} while (0)
+#define NewX509Attr(klass) TypedData_Wrap_Struct((klass), &ossl_x509attr_type, 0)
+#define SetX509Attr(obj, attr) \
+    do { \
+        if (!(attr)) { \
+            ossl_raise(rb_eRuntimeError, "ATTR wasn't initialized!"); \
+        } \
+        RTYPEDDATA_DATA(obj) = (attr); \
+    } while (0)
+#define GetX509Attr(obj, attr) \
+    do { \
+        TypedData_Get_Struct((obj), X509_ATTRIBUTE, &ossl_x509attr_type, (attr)); \
+        if (!(attr)) { \
+            ossl_raise(rb_eRuntimeError, "ATTR wasn't initialized!"); \
+        } \
+    } while (0)
 
 /*
  * Classes
@@ -39,9 +40,12 @@ ossl_x509attr_free(void *ptr)
 static const rb_data_type_t ossl_x509attr_type = {
     "OpenSSL/X509/ATTRIBUTE",
     {
-	0, ossl_x509attr_free,
+        0,
+        ossl_x509attr_free,
     },
-    0, 0, RUBY_TYPED_FREE_IMMEDIATELY,
+    0,
+    0,
+    RUBY_TYPED_FREE_IMMEDIATELY,
 };
 
 /*
@@ -55,12 +59,13 @@ ossl_x509attr_new(X509_ATTRIBUTE *attr)
 
     obj = NewX509Attr(cX509Attr);
     if (!attr) {
-	new = X509_ATTRIBUTE_new();
-    } else {
-	new = X509_ATTRIBUTE_dup(attr);
+        new = X509_ATTRIBUTE_new();
+    }
+    else {
+        new = X509_ATTRIBUTE_dup(attr);
     }
     if (!new) {
-	ossl_raise(eX509AttrError, NULL);
+        ossl_raise(eX509AttrError, NULL);
     }
     SetX509Attr(obj, new);
 
@@ -87,8 +92,7 @@ ossl_x509attr_alloc(VALUE klass)
     VALUE obj;
 
     obj = NewX509Attr(klass);
-    if (!(attr = X509_ATTRIBUTE_new()))
-	ossl_raise(eX509AttrError, NULL);
+    if (!(attr = X509_ATTRIBUTE_new())) ossl_raise(eX509AttrError, NULL);
     SetX509Attr(obj, attr);
 
     return obj;
@@ -106,16 +110,16 @@ ossl_x509attr_initialize(int argc, VALUE *argv, VALUE self)
     const unsigned char *p;
 
     GetX509Attr(self, attr);
-    if(rb_scan_args(argc, argv, "11", &oid, &value) == 1){
-	oid = ossl_to_der_if_possible(oid);
-	StringValue(oid);
-	p = (unsigned char *)RSTRING_PTR(oid);
-	x = d2i_X509_ATTRIBUTE(&attr, &p, RSTRING_LEN(oid));
-	DATA_PTR(self) = attr;
-	if(!x){
-	    ossl_raise(eX509AttrError, NULL);
-	}
-	return self;
+    if (rb_scan_args(argc, argv, "11", &oid, &value) == 1) {
+        oid = ossl_to_der_if_possible(oid);
+        StringValue(oid);
+        p = (unsigned char *)RSTRING_PTR(oid);
+        x = d2i_X509_ATTRIBUTE(&attr, &p, RSTRING_LEN(oid));
+        DATA_PTR(self) = attr;
+        if (!x) {
+            ossl_raise(eX509AttrError, NULL);
+        }
+        return self;
     }
     rb_funcall(self, rb_intern("oid="), 1, oid);
     rb_funcall(self, rb_intern("value="), 1, value);
@@ -133,8 +137,7 @@ ossl_x509attr_initialize_copy(VALUE self, VALUE other)
     GetX509Attr(other, attr_other);
 
     attr_new = X509_ATTRIBUTE_dup(attr_other);
-    if (!attr_new)
-	ossl_raise(eX509AttrError, "X509_ATTRIBUTE_dup");
+    if (!attr_new) ossl_raise(eX509AttrError, "X509_ATTRIBUTE_dup");
 
     SetX509Attr(self, attr_new);
     X509_ATTRIBUTE_free(attr);
@@ -156,10 +159,10 @@ ossl_x509attr_set_oid(VALUE self, VALUE oid)
     GetX509Attr(self, attr);
     s = StringValueCStr(oid);
     obj = OBJ_txt2obj(s, 0);
-    if(!obj) ossl_raise(eX509AttrError, NULL);
+    if (!obj) ossl_raise(eX509AttrError, NULL);
     if (!X509_ATTRIBUTE_set1_object(attr, obj)) {
-	ASN1_OBJECT_free(obj);
-	ossl_raise(eX509AttrError, "X509_ATTRIBUTE_set1_object");
+        ASN1_OBJECT_free(obj);
+        ossl_raise(eX509AttrError, "X509_ATTRIBUTE_set1_object");
     }
     ASN1_OBJECT_free(obj);
 
@@ -182,12 +185,11 @@ ossl_x509attr_get_oid(VALUE self)
     GetX509Attr(self, attr);
     oid = X509_ATTRIBUTE_get0_object(attr);
     if ((nid = OBJ_obj2nid(oid)) != NID_undef)
-	ret = rb_str_new2(OBJ_nid2sn(nid));
-    else{
-	if (!(out = BIO_new(BIO_s_mem())))
-	    ossl_raise(eX509AttrError, NULL);
-	i2a_ASN1_OBJECT(out, oid);
-	ret = ossl_membio2str(out);
+        ret = rb_str_new2(OBJ_nid2sn(nid));
+    else {
+        if (!(out = BIO_new(BIO_s_mem()))) ossl_raise(eX509AttrError, NULL);
+        i2a_ASN1_OBJECT(out, oid);
+        ret = ossl_membio2str(out);
     }
 
     return ret;
@@ -207,30 +209,26 @@ ossl_x509attr_set_value(VALUE self, VALUE value)
     OSSL_Check_Kind(value, cASN1Data);
     asn1_tag = NUM2INT(rb_attr_get(value, rb_intern("@tag")));
     asn1_value = rb_attr_get(value, rb_intern("@value"));
-    if (asn1_tag != V_ASN1_SET)
-	ossl_raise(eASN1Error, "argument must be ASN1::Set");
-    if (!RB_TYPE_P(asn1_value, T_ARRAY))
-	ossl_raise(eASN1Error, "ASN1::Set has non-array value");
+    if (asn1_tag != V_ASN1_SET) ossl_raise(eASN1Error, "argument must be ASN1::Set");
+    if (!RB_TYPE_P(asn1_value, T_ARRAY)) ossl_raise(eASN1Error, "ASN1::Set has non-array value");
 
     GetX509Attr(self, attr);
     if (X509_ATTRIBUTE_count(attr)) { /* populated, reset first */
-	ASN1_OBJECT *obj = X509_ATTRIBUTE_get0_object(attr);
-	X509_ATTRIBUTE *new_attr = X509_ATTRIBUTE_create_by_OBJ(NULL, obj, 0, NULL, -1);
-	if (!new_attr)
-	    ossl_raise(eX509AttrError, NULL);
-	SetX509Attr(self, new_attr);
-	X509_ATTRIBUTE_free(attr);
-	attr = new_attr;
+        ASN1_OBJECT *obj = X509_ATTRIBUTE_get0_object(attr);
+        X509_ATTRIBUTE *new_attr = X509_ATTRIBUTE_create_by_OBJ(NULL, obj, 0, NULL, -1);
+        if (!new_attr) ossl_raise(eX509AttrError, NULL);
+        SetX509Attr(self, new_attr);
+        X509_ATTRIBUTE_free(attr);
+        attr = new_attr;
     }
 
     for (i = 0; i < RARRAY_LEN(asn1_value); i++) {
-	ASN1_TYPE *a1type = ossl_asn1_get_asn1type(RARRAY_AREF(asn1_value, i));
-	if (!X509_ATTRIBUTE_set1_data(attr, ASN1_TYPE_get(a1type),
-				      a1type->value.ptr, -1)) {
-	    ASN1_TYPE_free(a1type);
-	    ossl_raise(eX509AttrError, NULL);
-	}
-	ASN1_TYPE_free(a1type);
+        ASN1_TYPE *a1type = ossl_asn1_get_asn1type(RARRAY_AREF(asn1_value, i));
+        if (!X509_ATTRIBUTE_set1_data(attr, ASN1_TYPE_get(a1type), a1type->value.ptr, -1)) {
+            ASN1_TYPE_free(a1type);
+            ossl_raise(eX509AttrError, NULL);
+        }
+        ASN1_TYPE_free(a1type);
     }
 
     return value;
@@ -244,29 +242,28 @@ static VALUE
 ossl_x509attr_get_value(VALUE self)
 {
     X509_ATTRIBUTE *attr;
-    STACK_OF(ASN1_TYPE) *sk;
+    STACK_OF(ASN1_TYPE) * sk;
     VALUE str;
     int i, count, len;
     unsigned char *p;
 
     GetX509Attr(self, attr);
     /* there is no X509_ATTRIBUTE_get0_set() :( */
-    if (!(sk = sk_ASN1_TYPE_new_null()))
-	ossl_raise(eX509AttrError, "sk_new");
+    if (!(sk = sk_ASN1_TYPE_new_null())) ossl_raise(eX509AttrError, "sk_new");
 
     count = X509_ATTRIBUTE_count(attr);
     for (i = 0; i < count; i++)
-	sk_ASN1_TYPE_push(sk, X509_ATTRIBUTE_get0_type(attr, i));
+        sk_ASN1_TYPE_push(sk, X509_ATTRIBUTE_get0_type(attr, i));
 
     if ((len = i2d_ASN1_SET_ANY(sk, NULL)) <= 0) {
-	sk_ASN1_TYPE_free(sk);
-	ossl_raise(eX509AttrError, NULL);
+        sk_ASN1_TYPE_free(sk);
+        ossl_raise(eX509AttrError, NULL);
     }
     str = rb_str_new(0, len);
     p = (unsigned char *)RSTRING_PTR(str);
     if (i2d_ASN1_SET_ANY(sk, &p) <= 0) {
-	sk_ASN1_TYPE_free(sk);
-	ossl_raise(eX509AttrError, NULL);
+        sk_ASN1_TYPE_free(sk);
+        ossl_raise(eX509AttrError, NULL);
     }
     ossl_str_adjust(str, p);
     sk_ASN1_TYPE_free(sk);
@@ -287,12 +284,10 @@ ossl_x509attr_to_der(VALUE self)
     unsigned char *p;
 
     GetX509Attr(self, attr);
-    if((len = i2d_X509_ATTRIBUTE(attr, NULL)) <= 0)
-	ossl_raise(eX509AttrError, NULL);
+    if ((len = i2d_X509_ATTRIBUTE(attr, NULL)) <= 0) ossl_raise(eX509AttrError, NULL);
     str = rb_str_new(0, len);
     p = (unsigned char *)RSTRING_PTR(str);
-    if(i2d_X509_ATTRIBUTE(attr, &p) <= 0)
-	ossl_raise(eX509AttrError, NULL);
+    if (i2d_X509_ATTRIBUTE(attr, &p) <= 0) ossl_raise(eX509AttrError, NULL);
     ossl_str_adjust(str, p);
 
     return str;

@@ -1,4 +1,4 @@
-#ifndef RBIMPL_NEWOBJ_H                              /*-*-C++-*-vi:se ft=cpp:*/
+#ifndef RBIMPL_NEWOBJ_H /*-*-C++-*-vi:se ft=cpp:*/
 #define RBIMPL_NEWOBJ_H
 /**
  * @file
@@ -20,6 +20,7 @@
  *             extension libraries.  They could be written in C++98.
  * @brief      Defines #NEWOBJ.
  */
+#include "ruby/assert.h"
 #include "ruby/internal/attr/deprecated.h"
 #include "ruby/internal/cast.h"
 #include "ruby/internal/core/rbasic.h"
@@ -27,7 +28,6 @@
 #include "ruby/internal/fl_type.h"
 #include "ruby/internal/special_consts.h"
 #include "ruby/internal/value.h"
-#include "ruby/assert.h"
 
 /**
  * Declares, allocates, then assigns a new object to the given variable.
@@ -42,7 +42,7 @@
  *
  * :FIXME: Should we deprecate it?
  */
-#define RB_NEWOBJ(obj,type) type *(obj) = RBIMPL_CAST((type *)rb_newobj())
+#define RB_NEWOBJ(obj, type) type *(obj) = RBIMPL_CAST((type *)rb_newobj())
 
 /**
  * Identical  to #RB_NEWOBJ,  except it  also accepts  the allocating  object's
@@ -55,13 +55,13 @@
  * @exception  rb_eNoMemError  No space left.
  * @return     An allocated object, filled with the arguments.
  */
-#define RB_NEWOBJ_OF(obj,type,klass,flags) type *(obj) = RBIMPL_CAST((type *)rb_newobj_of(klass, flags))
+#define RB_NEWOBJ_OF(obj, type, klass, flags) type *(obj) = RBIMPL_CAST((type *)rb_newobj_of(klass, flags))
 
-#define NEWOBJ     RB_NEWOBJ      /**< @old{RB_NEWOBJ} */
-#define NEWOBJ_OF  RB_NEWOBJ_OF   /**< @old{RB_NEWOBJ_OF} */
-#define OBJSETUP   rb_obj_setup   /**< @old{rb_obj_setup} */
+#define NEWOBJ RB_NEWOBJ          /**< @old{RB_NEWOBJ} */
+#define NEWOBJ_OF RB_NEWOBJ_OF    /**< @old{RB_NEWOBJ_OF} */
+#define OBJSETUP rb_obj_setup     /**< @old{rb_obj_setup} */
 #define CLONESETUP rb_clone_setup /**< @old{rb_clone_setup} */
-#define DUPSETUP   rb_dup_setup   /**< @old{rb_dup_setup} */
+#define DUPSETUP rb_dup_setup     /**< @old{rb_dup_setup} */
 
 RBIMPL_SYMBOL_EXPORT_BEGIN()
 /**

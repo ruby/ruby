@@ -1,4 +1,4 @@
-#ifndef RUBY_THREAD_H                                /*-*-C++-*-vi:se ft=cpp:*/
+#ifndef RUBY_THREAD_H /*-*-C++-*-vi:se ft=cpp:*/
 #define RUBY_THREAD_H 1
 /**
  * @file
@@ -11,8 +11,8 @@
  *             file COPYING are met.  Consult the file for details.
  */
 #include "ruby/internal/attr/nonnull.h"
-#include "ruby/internal/intern/thread.h" /* rb_unblock_function_t */
 #include "ruby/internal/dllexport.h"
+#include "ruby/internal/intern/thread.h" /* rb_unblock_function_t */
 
 /**
  * @name Flags for rb_nogvl()
@@ -45,7 +45,7 @@
  * of problem you should set this flag.  And check interrupts elsewhere at your
  * own risk.
  */
-#define RB_NOGVL_INTR_FAIL       (0x1)
+#define RB_NOGVL_INTR_FAIL (0x1)
 
 /**
  * Passing  this  flag   to  rb_nogvl()  indicates  that  the   passed  UBF  is
@@ -57,7 +57,7 @@
  *
  * This makes sense only in case of POSIX threads.
  */
-#define RB_NOGVL_UBF_ASYNC_SAFE  (0x2)
+#define RB_NOGVL_UBF_ASYNC_SAFE (0x2)
 
 /** @} */
 
@@ -127,8 +127,7 @@ RBIMPL_ATTR_NONNULL((1))
  *                 `func` with blocking everything  else.  Be sure to benchmark
  *                 your code to see if it is actually worth releasing the GVL.
  */
-void *rb_thread_call_without_gvl(void *(*func)(void *), void *data1,
-				 rb_unblock_function_t *ubf, void *data2);
+void *rb_thread_call_without_gvl(void *(*func)(void *), void *data1, rb_unblock_function_t *ubf, void *data2);
 
 RBIMPL_ATTR_NONNULL((1))
 /**
@@ -151,8 +150,7 @@ RBIMPL_ATTR_NONNULL((1))
  * @param[in,out]  data2  Passed as-is to `ubf`.
  * @return         What `func` returned, or 0 in case `func` did not return.
  */
-void *rb_thread_call_without_gvl2(void *(*func)(void *), void *data1,
-				  rb_unblock_function_t *ubf, void *data2);
+void *rb_thread_call_without_gvl2(void *(*func)(void *), void *data1, rb_unblock_function_t *ubf, void *data2);
 
 /*
  * XXX: unstable/unapproved - out-of-tree code should NOT not depend
@@ -171,9 +169,7 @@ RBIMPL_ATTR_NONNULL((1))
  * @param[in]      flags  Flags.
  * @return         What `func` returned, or 0 in case `func` did not return.
  */
-void *rb_nogvl(void *(*func)(void *), void *data1,
-               rb_unblock_function_t *ubf, void *data2,
-               int flags);
+void *rb_nogvl(void *(*func)(void *), void *data1, rb_unblock_function_t *ubf, void *data2, int flags);
 
 /**
  * @private

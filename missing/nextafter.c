@@ -1,7 +1,7 @@
 #include "ruby/missing.h"
 
-#include <math.h>
 #include <float.h>
+#include <math.h>
 
 /* This function doesn't set errno.  It should on POSIX, though. */
 
@@ -11,19 +11,15 @@ nextafter(double x, double y)
     double x1, x2, d;
     int e;
 
-    if (isnan(x))
-        return x;
-    if (isnan(y))
-        return y;
+    if (isnan(x)) return x;
+    if (isnan(y)) return y;
 
-    if (x == y)
-        return y;
+    if (x == y) return y;
 
     if (x == 0) {
         /* the minimum "subnormal" float */
         x1 = ldexp(0.5, DBL_MIN_EXP - DBL_MANT_DIG + 1);
-        if (x1 == 0)
-            x1 = DBL_MIN; /* the minimum "normal" float */
+        if (x1 == 0) x1 = DBL_MIN; /* the minimum "normal" float */
         if (0 < y)
             return x1;
         else
@@ -31,29 +27,25 @@ nextafter(double x, double y)
     }
 
     if (x < 0) {
-        if (isinf(x))
-            return -DBL_MAX;
-        if (x == -DBL_MAX && y < 0 && isinf(y))
-            return y;
+        if (isinf(x)) return -DBL_MAX;
+        if (x == -DBL_MAX && y < 0 && isinf(y)) return y;
     }
     else {
-        if (isinf(x))
-            return DBL_MAX;
-        if (x == DBL_MAX && 0 < y && isinf(y))
-            return y;
+        if (isinf(x)) return DBL_MAX;
+        if (x == DBL_MAX && 0 < y && isinf(y)) return y;
     }
 
     x1 = frexp(x, &e);
 
     if (x < y) {
-        d = DBL_EPSILON/2;
+        d = DBL_EPSILON / 2;
         if (x1 == -0.5) {
             x1 *= 2;
             e--;
         }
     }
     else {
-        d = -DBL_EPSILON/2;
+        d = -DBL_EPSILON / 2;
         if (x1 == 0.5) {
             x1 *= 2;
             e--;
@@ -61,7 +53,7 @@ nextafter(double x, double y)
     }
 
     if (e < DBL_MIN_EXP) {
-        d = ldexp(d, DBL_MIN_EXP-e);
+        d = ldexp(d, DBL_MIN_EXP - e);
     }
 
     x2 = x1 + d;

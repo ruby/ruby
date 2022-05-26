@@ -1,7 +1,7 @@
 #include "ruby/ruby.h"
 #include "ruby/thread.h"
 
-static void*
+static void *
 native_sleep_callback(void *data)
 {
     struct timeval *timeval = data;
@@ -10,14 +10,13 @@ native_sleep_callback(void *data)
     return NULL;
 }
 
-
 static VALUE
 thread_runnable_sleep(VALUE thread, VALUE timeout)
 {
     struct timeval timeval;
 
     if (NIL_P(timeout)) {
-	rb_raise(rb_eArgError, "timeout must be non nil");
+        rb_raise(rb_eArgError, "timeout must be non nil");
     }
 
     timeval = rb_time_interval(timeout);
@@ -42,7 +41,7 @@ do_loop(void *p)
     if (err == -1) rb_bug("write error");
 
     while (!ctl->stop) {
-        struct timeval tv = { 0, 10000 };
+        struct timeval tv = {0, 10000};
         select(0, NULL, NULL, NULL, &tv);
     }
     return 0;

@@ -1,4 +1,4 @@
-#ifndef RBIMPL_XMALLOC_H                             /*-*-C++-*-vi:se ft=cpp:*/
+#ifndef RBIMPL_XMALLOC_H /*-*-C++-*-vi:se ft=cpp:*/
 #define RBIMPL_XMALLOC_H
 /**
  * @file
@@ -23,11 +23,11 @@
 #include "ruby/internal/config.h"
 
 #ifdef STDC_HEADERS
-# include <stddef.h>
+#    include <stddef.h>
 #endif
 
 #ifdef HAVE_STDLIB_H
-# include <stdlib.h>
+#    include <stdlib.h>
 #endif
 
 #include "ruby/internal/attr/alloc_size.h"
@@ -47,15 +47,15 @@
  *           occur.
  */
 #ifndef USE_GC_MALLOC_OBJ_INFO_DETAILS
-# define USE_GC_MALLOC_OBJ_INFO_DETAILS 0
+#    define USE_GC_MALLOC_OBJ_INFO_DETAILS 0
 #endif
 
-#define xmalloc   ruby_xmalloc   /**< @old{ruby_xmalloc} */
-#define xmalloc2  ruby_xmalloc2  /**< @old{ruby_xmalloc2} */
-#define xcalloc   ruby_xcalloc   /**< @old{ruby_xcalloc} */
-#define xrealloc  ruby_xrealloc  /**< @old{ruby_xrealloc} */
+#define xmalloc ruby_xmalloc     /**< @old{ruby_xmalloc} */
+#define xmalloc2 ruby_xmalloc2   /**< @old{ruby_xmalloc2} */
+#define xcalloc ruby_xcalloc     /**< @old{ruby_xcalloc} */
+#define xrealloc ruby_xrealloc   /**< @old{ruby_xrealloc} */
 #define xrealloc2 ruby_xrealloc2 /**< @old{ruby_xrealloc2} */
-#define xfree     ruby_xfree     /**< @old{ruby_xfree} */
+#define xfree ruby_xfree         /**< @old{ruby_xfree} */
 
 RBIMPL_SYMBOL_EXPORT_BEGIN()
 
@@ -83,14 +83,12 @@ RBIMPL_ATTR_ALLOC_SIZE((1))
  *             failure to pass it to system free(), because the system and Ruby
  *             might or might not share the same malloc() implementation.
  */
-void *ruby_xmalloc(size_t size)
-RBIMPL_ATTR_NOEXCEPT(malloc(size))
-;
+void *ruby_xmalloc(size_t size) RBIMPL_ATTR_NOEXCEPT(malloc(size));
 
 RBIMPL_ATTR_NODISCARD()
 RBIMPL_ATTR_RESTRICT()
 RBIMPL_ATTR_RETURNS_NONNULL()
-RBIMPL_ATTR_ALLOC_SIZE((1,2))
+RBIMPL_ATTR_ALLOC_SIZE((1, 2))
 /**
  * Identical to ruby_xmalloc(), except it allocates `nelems` * `elemsiz` bytes.
  * This is needed  because the multiplication could integer  overflow.  On such
@@ -114,14 +112,12 @@ RBIMPL_ATTR_ALLOC_SIZE((1,2))
  *             failure to pass it to system free(), because the system and Ruby
  *             might or might not share the same malloc() implementation.
  */
-void *ruby_xmalloc2(size_t nelems, size_t elemsiz)
-RBIMPL_ATTR_NOEXCEPT(malloc(nelems * elemsiz))
-;
+void *ruby_xmalloc2(size_t nelems, size_t elemsiz) RBIMPL_ATTR_NOEXCEPT(malloc(nelems *elemsiz));
 
 RBIMPL_ATTR_NODISCARD()
 RBIMPL_ATTR_RESTRICT()
 RBIMPL_ATTR_RETURNS_NONNULL()
-RBIMPL_ATTR_ALLOC_SIZE((1,2))
+RBIMPL_ATTR_ALLOC_SIZE((1, 2))
 /**
  * Identical  to  ruby_xmalloc2(),  except  it returns  a  zero-filled  storage
  * instance.  It  can also be  seen as  a routine identical  to ruby_xmalloc(),
@@ -144,9 +140,7 @@ RBIMPL_ATTR_ALLOC_SIZE((1,2))
  *             failure to pass it to system free(), because the system and Ruby
  *             might or might not share the same malloc() implementation.
  */
-void *ruby_xcalloc(size_t nelems, size_t elemsiz)
-RBIMPL_ATTR_NOEXCEPT(calloc(nelems, elemsiz))
-;
+void *ruby_xcalloc(size_t nelems, size_t elemsiz) RBIMPL_ATTR_NOEXCEPT(calloc(nelems, elemsiz));
 
 RBIMPL_ATTR_NODISCARD()
 RBIMPL_ATTR_RETURNS_NONNULL()
@@ -190,13 +184,11 @@ RBIMPL_ATTR_ALLOC_SIZE((2))
  *             failure to pass it to system free(), because the system and Ruby
  *             might or might not share the same malloc() implementation.
  */
-void *ruby_xrealloc(void *ptr, size_t newsiz)
-RBIMPL_ATTR_NOEXCEPT(realloc(ptr, newsiz))
-;
+void *ruby_xrealloc(void *ptr, size_t newsiz) RBIMPL_ATTR_NOEXCEPT(realloc(ptr, newsiz));
 
 RBIMPL_ATTR_NODISCARD()
 RBIMPL_ATTR_RETURNS_NONNULL()
-RBIMPL_ATTR_ALLOC_SIZE((2,3))
+RBIMPL_ATTR_ALLOC_SIZE((2, 3))
 /**
  * Identical to ruby_xrealloc(),  except it resizes the  given storage instance
  * to `newelems` *  `newsiz` bytes.  This is needed  because the multiplication
@@ -247,9 +239,7 @@ RBIMPL_ATTR_ALLOC_SIZE((2,3))
  *             failure to pass it to system free(), because the system and Ruby
  *             might or might not share the same malloc() implementation.
  */
-void *ruby_xrealloc2(void *ptr, size_t newelems, size_t newsiz)
-RBIMPL_ATTR_NOEXCEPT(realloc(ptr, newelems * newsiz))
-;
+void *ruby_xrealloc2(void *ptr, size_t newelems, size_t newsiz) RBIMPL_ATTR_NOEXCEPT(realloc(ptr, newelems *newsiz));
 
 /**
  * Deallocates a storage instance.
@@ -279,54 +269,43 @@ RBIMPL_ATTR_NOEXCEPT(realloc(ptr, newelems * newsiz))
  * @warning     Do  not pass  any invalid  pointers  to this  function e.g.  by
  *              calling it twice with a same argument.
  */
-void ruby_xfree(void *ptr)
-RBIMPL_ATTR_NOEXCEPT(free(ptr))
-;
+void ruby_xfree(void *ptr) RBIMPL_ATTR_NOEXCEPT(free(ptr));
 
 #if USE_GC_MALLOC_OBJ_INFO_DETAILS
-# define ruby_xmalloc(s1)            ruby_xmalloc_with_location(s1, __FILE__, __LINE__)
-# define ruby_xmalloc2(s1, s2)       ruby_xmalloc2_with_location(s1, s2, __FILE__, __LINE__)
-# define ruby_xcalloc(s1, s2)        ruby_xcalloc_with_location(s1, s2, __FILE__, __LINE__)
-# define ruby_xrealloc(ptr, s1)      ruby_xrealloc_with_location(ptr, s1, __FILE__, __LINE__)
-# define ruby_xrealloc2(ptr, s1, s2) ruby_xrealloc2_with_location(ptr, s1, s2, __FILE__, __LINE__)
+#    define ruby_xmalloc(s1) ruby_xmalloc_with_location(s1, __FILE__, __LINE__)
+#    define ruby_xmalloc2(s1, s2) ruby_xmalloc2_with_location(s1, s2, __FILE__, __LINE__)
+#    define ruby_xcalloc(s1, s2) ruby_xcalloc_with_location(s1, s2, __FILE__, __LINE__)
+#    define ruby_xrealloc(ptr, s1) ruby_xrealloc_with_location(ptr, s1, __FILE__, __LINE__)
+#    define ruby_xrealloc2(ptr, s1, s2) ruby_xrealloc2_with_location(ptr, s1, s2, __FILE__, __LINE__)
 
 RBIMPL_ATTR_NODISCARD()
 RBIMPL_ATTR_RESTRICT()
 RBIMPL_ATTR_RETURNS_NONNULL()
 RBIMPL_ATTR_ALLOC_SIZE((1))
-void *ruby_xmalloc_body(size_t size)
-RBIMPL_ATTR_NOEXCEPT(malloc(size))
-;
+void *ruby_xmalloc_body(size_t size) RBIMPL_ATTR_NOEXCEPT(malloc(size));
 
 RBIMPL_ATTR_NODISCARD()
 RBIMPL_ATTR_RESTRICT()
 RBIMPL_ATTR_RETURNS_NONNULL()
-RBIMPL_ATTR_ALLOC_SIZE((1,2))
-void *ruby_xmalloc2_body(size_t nelems, size_t elemsiz)
-RBIMPL_ATTR_NOEXCEPT(malloc(nelems * elemsiz))
-;
+RBIMPL_ATTR_ALLOC_SIZE((1, 2))
+void *ruby_xmalloc2_body(size_t nelems, size_t elemsiz) RBIMPL_ATTR_NOEXCEPT(malloc(nelems *elemsiz));
 
 RBIMPL_ATTR_NODISCARD()
 RBIMPL_ATTR_RESTRICT()
 RBIMPL_ATTR_RETURNS_NONNULL()
-RBIMPL_ATTR_ALLOC_SIZE((1,2))
-void *ruby_xcalloc_body(size_t nelems, size_t elemsiz)
-RBIMPL_ATTR_NOEXCEPT(calloc(nelems, elemsiz))
-;
+RBIMPL_ATTR_ALLOC_SIZE((1, 2))
+void *ruby_xcalloc_body(size_t nelems, size_t elemsiz) RBIMPL_ATTR_NOEXCEPT(calloc(nelems, elemsiz));
 
 RBIMPL_ATTR_NODISCARD()
 RBIMPL_ATTR_RETURNS_NONNULL()
 RBIMPL_ATTR_ALLOC_SIZE((2))
-void *ruby_xrealloc_body(void *ptr, size_t newsiz)
-RBIMPL_ATTR_NOEXCEPT(realloc(ptr, newsiz))
-;
+void *ruby_xrealloc_body(void *ptr, size_t newsiz) RBIMPL_ATTR_NOEXCEPT(realloc(ptr, newsiz));
 
 RBIMPL_ATTR_NODISCARD()
 RBIMPL_ATTR_RETURNS_NONNULL()
-RBIMPL_ATTR_ALLOC_SIZE((2,3))
+RBIMPL_ATTR_ALLOC_SIZE((2, 3))
 void *ruby_xrealloc2_body(void *ptr, size_t newelems, size_t newsiz)
-RBIMPL_ATTR_NOEXCEPT(realloc(ptr, newelems * newsiz))
-;
+    RBIMPL_ATTR_NOEXCEPT(realloc(ptr, newelems *newsiz));
 
 RUBY_EXTERN const char *ruby_malloc_info_file;
 RUBY_EXTERN int ruby_malloc_info_line;

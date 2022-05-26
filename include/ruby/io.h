@@ -1,4 +1,4 @@
-#ifndef RUBY_IO_H                                    /*-*-C++-*-vi:se ft=cpp:*/
+#ifndef RUBY_IO_H /*-*-C++-*-vi:se ft=cpp:*/
 #define RUBY_IO_H 1
 /**
  * @file
@@ -12,48 +12,48 @@
  */
 #include "ruby/internal/config.h"
 
-#include <stdio.h>
 #include "ruby/encoding.h"
+#include <stdio.h>
 
 #if defined(HAVE_STDIO_EXT_H)
-#include <stdio_ext.h>
+#    include <stdio_ext.h>
 #endif
 
 #include <errno.h>
 
 /** @cond INTERNAL_MACRO */
 #if defined(HAVE_POLL)
-#  ifdef _AIX
-#    define reqevents events
-#    define rtnevents revents
-#  endif
-#  include <poll.h>
-#  ifdef _AIX
-#    undef reqevents
-#    undef rtnevents
-#    undef events
-#    undef revents
-#  endif
-#  define RB_WAITFD_IN  POLLIN
-#  if defined(POLLPRI)
-#    define RB_WAITFD_PRI POLLPRI
-#  else
-#    define RB_WAITFD_PRI 0
-#  endif
-#  define RB_WAITFD_OUT POLLOUT
+#    ifdef _AIX
+#        define reqevents events
+#        define rtnevents revents
+#    endif
+#    include <poll.h>
+#    ifdef _AIX
+#        undef reqevents
+#        undef rtnevents
+#        undef events
+#        undef revents
+#    endif
+#    define RB_WAITFD_IN POLLIN
+#    if defined(POLLPRI)
+#        define RB_WAITFD_PRI POLLPRI
+#    else
+#        define RB_WAITFD_PRI 0
+#    endif
+#    define RB_WAITFD_OUT POLLOUT
 #else
-#  define RB_WAITFD_IN  0x001
-#  define RB_WAITFD_PRI 0x002
-#  define RB_WAITFD_OUT 0x004
+#    define RB_WAITFD_IN 0x001
+#    define RB_WAITFD_PRI 0x002
+#    define RB_WAITFD_OUT 0x004
 #endif
 /** @endcond */
 
+#include "ruby/backward/2/attributes.h" /* PACKED_STRUCT_UNALIGNED */
 #include "ruby/internal/attr/const.h"
-#include "ruby/internal/attr/pure.h"
 #include "ruby/internal/attr/noreturn.h"
+#include "ruby/internal/attr/pure.h"
 #include "ruby/internal/dllexport.h"
 #include "ruby/internal/value.h"
-#include "ruby/backward/2/attributes.h" /* PACKED_STRUCT_UNALIGNED */
 
 RBIMPL_SYMBOL_EXPORT_BEGIN()
 
@@ -78,9 +78,8 @@ typedef enum {
  * ::rb_io_t::rbuf.  People don't manipulate it directly.
  */
 PACKED_STRUCT_UNALIGNED(struct rb_io_buffer_t {
-
     /** Pointer to the underlying memory region, of at least `capa` bytes. */
-    char *ptr;                  /* off + len <= capa */
+    char *ptr; /* off + len <= capa */
 
     /** Offset inside of `ptr`. */
     int off;
@@ -120,7 +119,7 @@ typedef struct rb_io_t {
     VALUE pathv;
 
     /** finalize proc */
-    void (*finalize)(struct rb_io_t*,int);
+    void (*finalize)(struct rb_io_t *, int);
 
     /** Write buffer. */
     rb_io_buffer_t wbuf;
@@ -233,13 +232,13 @@ typedef struct rb_io_enc_t rb_io_enc_t;
  */
 
 /** The IO is opened for reading. */
-#define FMODE_READABLE              0x00000001
+#define FMODE_READABLE 0x00000001
 
 /** The IO is opened for writing. */
-#define FMODE_WRITABLE              0x00000002
+#define FMODE_WRITABLE 0x00000002
 
 /** The IO is opened for both read/write. */
-#define FMODE_READWRITE             (FMODE_READABLE|FMODE_WRITABLE)
+#define FMODE_READWRITE (FMODE_READABLE | FMODE_WRITABLE)
 
 /**
  * The IO  is in "binary  mode".  This  is not what  everything rb_io_binmode()
@@ -250,20 +249,20 @@ typedef struct rb_io_enc_t rb_io_enc_t;
  * Setting this one and #ECONV_NEWLINE_DECORATOR_MASK  at the same time is also
  * a contradiction.
  */
-#define FMODE_BINMODE               0x00000004
+#define FMODE_BINMODE 0x00000004
 
 /**
  * The  IO  is in  "sync  mode".   All output  is  immediately  flushed to  the
  * underlying operating system then.  Can  be set via rb_io_synchronized(), but
  * there is no way except calling `IO#sync=` to reset.
  */
-#define FMODE_SYNC                  0x00000008
+#define FMODE_SYNC 0x00000008
 
 /**
  * The IO  is a TTY.  What  is a TTY and  what isn't depends on  the underlying
  * operating system's `isatty(3)` output.  You cannot change this.
  */
-#define FMODE_TTY                   0x00000010
+#define FMODE_TTY 0x00000010
 
 /**
  * Ruby eventually  detects that the IO  is bidirectional.  For instance  a TTY
@@ -271,14 +270,14 @@ typedef struct rb_io_enc_t rb_io_enc_t;
  * Additionally you  (extension library  authors) can  also implement  your own
  * bidirectional IO subclasses.  One of such example is `Socket`.
  */
-#define FMODE_DUPLEX                0x00000020
+#define FMODE_DUPLEX 0x00000020
 
 /**
  * The IO is opened  for appending.  This mode always writes at  the end of the
  * IO.  Ruby manages  this flag for record but basically  the logic behind this
  * mode is at the underlying operating system.  We almost do nothing.
  */
-#define FMODE_APPEND                0x00000040
+#define FMODE_APPEND 0x00000040
 
 /**
  * The IO is  opened for creating.  This makes sense  only when the destination
@@ -286,7 +285,7 @@ typedef struct rb_io_enc_t rb_io_enc_t;
  * default mode  for writing,  but you  can pass `"r+"`  to `IO.open`  etc., to
  * reroute this creation.
  */
-#define FMODE_CREATE                0x00000080
+#define FMODE_CREATE 0x00000080
 /* #define FMODE_NOREVLOOKUP        0x00000100 */
 
 /**
@@ -294,13 +293,13 @@ typedef struct rb_io_enc_t rb_io_enc_t;
  * file at the given path the operation fails.  Using this you can be sure that
  * the file you get is a fresh new one.
  */
-#define FMODE_EXCL                  0x00000400
+#define FMODE_EXCL 0x00000400
 
 /**
  * This flag amends the effect of #FMODE_CREATE,  so that if there already is a
  * file at the given path it gets truncated.
  */
-#define FMODE_TRUNC                 0x00000800
+#define FMODE_TRUNC 0x00000800
 
 /**
  * The IO is in "text mode".  On  systems where such mode make sense, this flag
@@ -314,7 +313,7 @@ typedef struct rb_io_enc_t rb_io_enc_t;
  *
  * Setting this one and #FMODE_BINMODE at the same time is a contradiction.
  */
-#define FMODE_TEXTMODE              0x00001000
+#define FMODE_TEXTMODE 0x00001000
 /* #define FMODE_PREP               0x00010000 */
 /* #define FMODE_SIGNAL_ON_EPIPE    0x00020000 */
 
@@ -322,7 +321,7 @@ typedef struct rb_io_enc_t rb_io_enc_t;
  * This flag amends the  encoding of the IO so that the BOM  of the contents of
  * the IO takes effect.
  */
-#define FMODE_SETENC_BY_BOM         0x00100000
+#define FMODE_SETENC_BY_BOM 0x00100000
 /* #define FMODE_UNIX                  0x00200000 */
 /* #define FMODE_INET                  0x00400000 */
 /* #define FMODE_INET6                 0x00800000 */
@@ -338,7 +337,7 @@ typedef struct rb_io_enc_t rb_io_enc_t;
  * @exception   rb_eIOError      `obj` is closed.
  * @post        `fp` holds `obj`'s underlying IO.
  */
-#define RB_IO_POINTER(obj,fp) rb_io_check_closed((fp) = RFILE(rb_io_taint_check(obj))->fptr)
+#define RB_IO_POINTER(obj, fp) rb_io_check_closed((fp) = RFILE(rb_io_taint_check(obj))->fptr)
 
 /**
  * This is  an old name  of #RB_IO_POINTER.  Not sure  if we want  to deprecate
@@ -359,9 +358,10 @@ typedef struct rb_io_enc_t rb_io_enc_t;
  * @exception   rb_eTypeError    `obj` is not ::RUBY_T_FILE.
  * @post        `fp` holds `obj`'s underlying IO.
  */
-#define RB_IO_OPEN(obj, fp) do {\
-    (fp) = rb_io_make_open_file(obj);\
-} while (0)
+#define RB_IO_OPEN(obj, fp) \
+    do { \
+        (fp) = rb_io_make_open_file(obj); \
+    } while (0)
 
 /**
  * This is an old  name of #RB_IO_OPEN.  Not sure if we  want to deprecate this
@@ -782,7 +782,8 @@ int rb_io_extract_encoding_option(VALUE opt, rb_encoding **enc_p, rb_encoding **
  *   ) -> void
  * ```
  */
-void rb_io_extract_modeenc(VALUE *vmode_p, VALUE *vperm_p, VALUE opthash, int *oflags_p, int *fmode_p, rb_io_enc_t *convconfig_p);
+void rb_io_extract_modeenc(
+    VALUE *vmode_p, VALUE *vperm_p, VALUE opthash, int *oflags_p, int *fmode_p, rb_io_enc_t *convconfig_p);
 
 /* :TODO: can this function be __attribute__((warn_unused_result)) or not? */
 /**
@@ -802,7 +803,7 @@ void rb_io_extract_modeenc(VALUE *vmode_p, VALUE *vperm_p, VALUE opthash, int *o
  */
 ssize_t rb_io_bufwrite(VALUE io, const void *buf, size_t size);
 
-//RBIMPL_ATTR_DEPRECATED(("use rb_io_maybe_wait_readable"))
+// RBIMPL_ATTR_DEPRECATED(("use rb_io_maybe_wait_readable"))
 /**
  * Blocks until the passed file descriptor gets readable.
  *
@@ -814,7 +815,7 @@ ssize_t rb_io_bufwrite(VALUE io, const void *buf, size_t size);
  */
 int rb_io_wait_readable(int fd);
 
-//RBIMPL_ATTR_DEPRECATED(("use rb_io_maybe_wait_writable"))
+// RBIMPL_ATTR_DEPRECATED(("use rb_io_maybe_wait_writable"))
 /**
  * Blocks until the passed file descriptor gets writable.
  *
@@ -825,7 +826,7 @@ int rb_io_wait_readable(int fd);
  */
 int rb_io_wait_writable(int fd);
 
-//RBIMPL_ATTR_DEPRECATED(("use rb_io_wait"))
+// RBIMPL_ATTR_DEPRECATED(("use rb_io_wait"))
 /**
  * Blocks until the passed file descriptor is ready for the passed events.
  *

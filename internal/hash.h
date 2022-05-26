@@ -1,4 +1,4 @@
-#ifndef INTERNAL_HASH_H                                  /*-*-C-*-vi:se ft=c:*/
+#ifndef INTERNAL_HASH_H /*-*-C-*-vi:se ft=c:*/
 #define INTERNAL_HASH_H
 /**
  * @author     Ruby developers <ruby-core@ruby-lang.org>
@@ -9,10 +9,10 @@
  * @brief      Internal header for Hash.
  */
 #include "ruby/internal/config.h"
-#include <stddef.h>             /* for size_t */
-#include "ruby/internal/stdbool.h"     /* for bool */
-#include "ruby/ruby.h"          /* for struct RBasic */
-#include "ruby/st.h"            /* for struct st_table */
+#include "ruby/internal/stdbool.h" /* for bool */
+#include "ruby/ruby.h"             /* for struct RBasic */
+#include "ruby/st.h"               /* for struct st_table */
+#include <stddef.h>                /* for size_t */
 
 #define RHASH_AR_TABLE_MAX_SIZE SIZEOF_VALUE
 
@@ -20,21 +20,22 @@ struct ar_table_struct;
 typedef unsigned char ar_hint_t;
 
 enum ruby_rhash_flags {
-    RHASH_PASS_AS_KEYWORDS = FL_USER1,                                   /* FL 1 */
-    RHASH_PROC_DEFAULT = FL_USER2,                                       /* FL 2 */
-    RHASH_ST_TABLE_FLAG = FL_USER3,                                      /* FL 3 */
-    RHASH_AR_TABLE_SIZE_MASK = (FL_USER4|FL_USER5|FL_USER6|FL_USER7),    /* FL 4..7 */
-    RHASH_AR_TABLE_SIZE_SHIFT = (FL_USHIFT+4),
-    RHASH_AR_TABLE_BOUND_MASK = (FL_USER8|FL_USER9|FL_USER10|FL_USER11), /* FL 8..11 */
-    RHASH_AR_TABLE_BOUND_SHIFT = (FL_USHIFT+8),
+    RHASH_PASS_AS_KEYWORDS = FL_USER1,                                      /* FL 1 */
+    RHASH_PROC_DEFAULT = FL_USER2,                                          /* FL 2 */
+    RHASH_ST_TABLE_FLAG = FL_USER3,                                         /* FL 3 */
+    RHASH_AR_TABLE_SIZE_MASK = (FL_USER4 | FL_USER5 | FL_USER6 | FL_USER7), /* FL 4..7 */
+    RHASH_AR_TABLE_SIZE_SHIFT = (FL_USHIFT + 4),
+    RHASH_AR_TABLE_BOUND_MASK = (FL_USER8 | FL_USER9 | FL_USER10 | FL_USER11), /* FL 8..11 */
+    RHASH_AR_TABLE_BOUND_SHIFT = (FL_USHIFT + 8),
 
 #if USE_TRANSIENT_HEAP
-    RHASH_TRANSIENT_FLAG = FL_USER12,                                    /* FL 12 */
+    RHASH_TRANSIENT_FLAG = FL_USER12, /* FL 12 */
 #endif
 
     // we can not put it in "enum" because it can exceed "int" range.
-#define RHASH_LEV_MASK (FL_USER13 | FL_USER14 | FL_USER15 |                /* FL 13..19 */ \
-                        FL_USER16 | FL_USER17 | FL_USER18 | FL_USER19)
+#define RHASH_LEV_MASK \
+    (FL_USER13 | FL_USER14 | FL_USER15 | /* FL 13..19 */ \
+        FL_USER16 | FL_USER17 | FL_USER18 | FL_USER19)
 
     RHASH_LEV_SHIFT = (FL_USHIFT + 13),
     RHASH_LEV_MAX = 127, /* 7 bits */
@@ -56,15 +57,15 @@ struct RHash {
 #define RHASH(obj) ((struct RHash *)(obj))
 
 #ifdef RHASH_IFNONE
-# undef RHASH_IFNONE
+#    undef RHASH_IFNONE
 #endif
 
 #ifdef RHASH_SIZE
-# undef RHASH_SIZE
+#    undef RHASH_SIZE
 #endif
 
 #ifdef RHASH_EMPTY_P
-# undef RHASH_EMPTY_P
+#    undef RHASH_EMPTY_P
 #endif
 
 /* hash.c */
@@ -80,7 +81,8 @@ VALUE rb_hash_rehash(VALUE hash);
 int rb_hash_add_new_element(VALUE hash, VALUE key, VALUE val);
 VALUE rb_hash_set_pair(VALUE hash, VALUE pair);
 int rb_hash_stlike_delete(VALUE hash, st_data_t *pkey, st_data_t *pval);
-int rb_hash_stlike_foreach_with_replace(VALUE hash, st_foreach_check_callback_func *func, st_update_callback_func *replace, st_data_t arg);
+int rb_hash_stlike_foreach_with_replace(
+    VALUE hash, st_foreach_check_callback_func *func, st_update_callback_func *replace, st_data_t arg);
 int rb_hash_stlike_update(VALUE hash, st_data_t key, st_update_callback_func *func, st_data_t arg);
 extern st_table *rb_hash_st_table(VALUE hash);
 VALUE rb_ident_hash_new_with_size(st_index_t size);
@@ -147,7 +149,7 @@ RHASH_ST_TABLE(VALUE h)
 static inline bool
 RHASH_AR_TABLE_P(VALUE h)
 {
-    return ! FL_TEST_RAW(h, RHASH_ST_TABLE_FLAG);
+    return !FL_TEST_RAW(h, RHASH_ST_TABLE_FLAG);
 }
 
 static inline struct ar_table_struct *
@@ -190,7 +192,7 @@ RHASH_EMPTY_P(VALUE h)
 static inline bool
 RHASH_ST_TABLE_P(VALUE h)
 {
-    return ! RHASH_AR_TABLE_P(h);
+    return !RHASH_AR_TABLE_P(h);
 }
 
 static inline size_t

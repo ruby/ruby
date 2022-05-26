@@ -1,4 +1,4 @@
-#ifndef RUBY_VM_H                                    /*-*-C++-*-vi:se ft=cpp:*/
+#ifndef RUBY_VM_H /*-*-C++-*-vi:se ft=cpp:*/
 #define RUBY_VM_H 1
 /**
  * @file
@@ -47,7 +47,7 @@ int ruby_vm_destruct(ruby_vm_t *vm);
  *
  * @param[in] func the function to register.
  */
-void ruby_vm_at_exit(void(*func)(ruby_vm_t *));
+void ruby_vm_at_exit(void (*func)(ruby_vm_t *));
 
 RBIMPL_SYMBOL_EXPORT_END()
 

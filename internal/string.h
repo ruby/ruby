@@ -1,4 +1,4 @@
-#ifndef INTERNAL_STRING_H                                /*-*-C-*-vi:se ft=c:*/
+#ifndef INTERNAL_STRING_H /*-*-C-*-vi:se ft=c:*/
 #define INTERNAL_STRING_H
 /**
  * @author     Ruby developers <ruby-core@ruby-lang.org>
@@ -8,18 +8,18 @@
  *             file COPYING are met.  Consult the file for details.
  * @brief      Internal header for String.
  */
-#include "ruby/internal/config.h"
-#include <stddef.h>             /* for size_t */
 #include "internal/compilers.h" /* for __has_builtin */
-#include "ruby/internal/stdbool.h"     /* for bool */
 #include "ruby/encoding.h"      /* for rb_encoding */
-#include "ruby/ruby.h"          /* for VALUE */
+#include "ruby/internal/config.h"
+#include "ruby/internal/stdbool.h" /* for bool */
+#include "ruby/ruby.h"             /* for VALUE */
+#include <stddef.h>                /* for size_t */
 
-#define STR_NOEMBED      FL_USER1
-#define STR_SHARED       FL_USER2 /* = ELTS_SHARED */
+#define STR_NOEMBED FL_USER1
+#define STR_SHARED FL_USER2 /* = ELTS_SHARED */
 
 #ifdef rb_fstring_cstr
-# undef rb_fstring_cstr
+#    undef rb_fstring_cstr
 #endif
 
 /* string.c */
@@ -34,8 +34,8 @@ void rb_str_change_terminator_length(VALUE str, const int oldtermlen, const int 
 VALUE rb_str_locktmp_ensure(VALUE str, VALUE (*func)(VALUE), VALUE arg);
 VALUE rb_str_chomp_string(VALUE str, VALUE chomp);
 VALUE rb_external_str_with_enc(VALUE str, rb_encoding *eenc);
-VALUE rb_str_cat_conv_enc_opts(VALUE newstr, long ofs, const char *ptr, long len,
-                               rb_encoding *from, int ecflags, VALUE ecopts);
+VALUE rb_str_cat_conv_enc_opts(
+    VALUE newstr, long ofs, const char *ptr, long len, rb_encoding *from, int ecflags, VALUE ecopts);
 VALUE rb_enc_str_scrub(rb_encoding *enc, VALUE str, VALUE repl);
 VALUE rb_str_escape(VALUE str);
 size_t rb_str_memsize(VALUE);
@@ -94,7 +94,7 @@ QUOTE_ID(ID i)
 static inline bool
 STR_EMBED_P(VALUE str)
 {
-    return ! FL_TEST_RAW(str, STR_NOEMBED);
+    return !FL_TEST_RAW(str, STR_NOEMBED);
 }
 
 static inline bool
@@ -125,17 +125,13 @@ rb_str_eql_internal(const VALUE str1, const VALUE str2)
 
     if (len != RSTRING_LEN(str2)) return Qfalse;
     if (!rb_str_comparable(str1, str2)) return Qfalse;
-    if ((ptr1 = RSTRING_PTR(str1)) == (ptr2 = RSTRING_PTR(str2)))
-        return Qtrue;
-    if (memcmp(ptr1, ptr2, len) == 0)
-        return Qtrue;
+    if ((ptr1 = RSTRING_PTR(str1)) == (ptr2 = RSTRING_PTR(str2))) return Qtrue;
+    if (memcmp(ptr1, ptr2, len) == 0) return Qtrue;
     return Qfalse;
 }
 
 #if __has_builtin(__builtin_constant_p)
-# define rb_fstring_cstr(str) \
-    (__builtin_constant_p(str) ? \
-        rb_fstring_new((str), (long)strlen(str)) : \
-        (rb_fstring_cstr)(str))
+#    define rb_fstring_cstr(str) \
+        (__builtin_constant_p(str) ? rb_fstring_new((str), (long)strlen(str)) : (rb_fstring_cstr)(str))
 #endif
 #endif /* INTERNAL_STRING_H */

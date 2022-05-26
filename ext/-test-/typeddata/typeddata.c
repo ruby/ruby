@@ -3,8 +3,9 @@
 static const rb_data_type_t test_data = {
     "typed_data",
     {0, ruby_xfree, 0},
-    NULL, NULL,
-    0/* deferred free */,
+    NULL,
+    NULL,
+    0 /* deferred free */,
 };
 
 static VALUE
@@ -27,7 +28,7 @@ test_make(VALUE klass, VALUE num)
     unsigned long i, n = NUM2UINT(num);
 
     for (i = 0; i < n; i++) {
-	test_alloc(klass);
+        test_alloc(klass);
     }
 
     return Qnil;

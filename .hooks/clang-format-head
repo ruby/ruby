@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+
+# To use this hook, install it like this:
+# ln -s ../../.hooks/clang-format .git/hooks/pre-commit
+# When you make a commit, formatting rules will be applied to the file before committing it.
+
+for path in $(git diff HEAD --name-only | grep -E '.*\.(c|h)\b')
+do
+  clang-format -i $path
+  git add $path
+done

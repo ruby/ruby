@@ -1,4 +1,4 @@
-#ifndef INTERNAL_SIGNAL_H                                /*-*-C-*-vi:se ft=c:*/
+#ifndef INTERNAL_SIGNAL_H /*-*-C-*-vi:se ft=c:*/
 #define INTERNAL_SIGNAL_H
 /**
  * @author     Ruby developers <ruby-core@ruby-lang.org>

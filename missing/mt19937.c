@@ -51,13 +51,15 @@ The original copyright notice follows.
 /* Period parameters */
 #define N 624
 #define M 397
-#define MATRIX_A 0x9908b0dfU	/* constant vector a */
-#define UMASK 0x80000000U	/* most significant w-r bits */
-#define LMASK 0x7fffffffU	/* least significant r bits */
-#define MIXBITS(u,v) ( ((u) & UMASK) | ((v) & LMASK) )
-#define TWIST(u,v) ((MIXBITS((u),(v)) >> 1) ^ ((v)&1U ? MATRIX_A : 0U))
+#define MATRIX_A 0x9908b0dfU /* constant vector a */
+#define UMASK 0x80000000U    /* most significant w-r bits */
+#define LMASK 0x7fffffffU    /* least significant r bits */
+#define MIXBITS(u, v) (((u)&UMASK) | ((v)&LMASK))
+#define TWIST(u, v) ((MIXBITS((u), (v)) >> 1) ^ ((v)&1U ? MATRIX_A : 0U))
 
-enum {MT_MAX_STATE = N};
+enum {
+    MT_MAX_STATE = N
+};
 
 struct MT {
     /* assume int is enough to store 32bits */
@@ -70,7 +72,8 @@ struct MT {
 #define uninit_genrand(mt) ((mt)->next = 0)
 
 NO_SANITIZE("unsigned-integer-overflow", static void init_genrand(struct MT *mt, unsigned int s));
-NO_SANITIZE("unsigned-integer-overflow", static void init_by_array(struct MT *mt, const uint32_t init_key[], int key_length));
+NO_SANITIZE(
+    "unsigned-integer-overflow", static void init_by_array(struct MT *mt, const uint32_t init_key[], int key_length));
 
 /* initializes state[N] with a seed */
 static void
@@ -78,13 +81,13 @@ init_genrand(struct MT *mt, unsigned int s)
 {
     int j;
     mt->state[0] = s & 0xffffffffU;
-    for (j=1; j<N; j++) {
-        mt->state[j] = (1812433253U * (mt->state[j-1] ^ (mt->state[j-1] >> 30)) + j);
+    for (j = 1; j < N; j++) {
+        mt->state[j] = (1812433253U * (mt->state[j - 1] ^ (mt->state[j - 1] >> 30)) + j);
         /* See Knuth TAOCP Vol2. 3rd Ed. P.106 for multiplier. */
         /* In the previous versions, MSBs of the seed affect   */
         /* only MSBs of the array state[].                     */
         /* 2002/01/09 modified by Makoto Matsumoto             */
-        mt->state[j] &= 0xffffffff;  /* for >32 bit machines */
+        mt->state[j] &= 0xffffffff; /* for >32 bit machines */
     }
     mt->left = 1;
     mt->next = mt->state + N;
@@ -99,22 +102,30 @@ init_by_array(struct MT *mt, const uint32_t init_key[], int key_length)
 {
     int i, j, k;
     init_genrand(mt, 19650218U);
-    i=1; j=0;
-    k = (N>key_length ? N : key_length);
+    i = 1;
+    j = 0;
+    k = (N > key_length ? N : key_length);
     for (; k; k--) {
-        mt->state[i] = (mt->state[i] ^ ((mt->state[i-1] ^ (mt->state[i-1] >> 30)) * 1664525U))
-          + init_key[j] + j; /* non linear */
-        mt->state[i] &= 0xffffffffU; /* for WORDSIZE > 32 machines */
-        i++; j++;
-        if (i>=N) { mt->state[0] = mt->state[N-1]; i=1; }
-        if (j>=key_length) j=0;
-    }
-    for (k=N-1; k; k--) {
-        mt->state[i] = (mt->state[i] ^ ((mt->state[i-1] ^ (mt->state[i-1] >> 30)) * 1566083941U))
-          - i; /* non linear */
+        mt->state[i] = (mt->state[i] ^ ((mt->state[i - 1] ^ (mt->state[i - 1] >> 30)) * 1664525U)) + init_key[j] +
+                       j;            /* non linear */
         mt->state[i] &= 0xffffffffU; /* for WORDSIZE > 32 machines */
         i++;
-        if (i>=N) { mt->state[0] = mt->state[N-1]; i=1; }
+        j++;
+        if (i >= N) {
+            mt->state[0] = mt->state[N - 1];
+            i = 1;
+        }
+        if (j >= key_length) j = 0;
+    }
+    for (k = N - 1; k; k--) {
+        mt->state[i] =
+            (mt->state[i] ^ ((mt->state[i - 1] ^ (mt->state[i - 1] >> 30)) * 1566083941U)) - i; /* non linear */
+        mt->state[i] &= 0xffffffffU; /* for WORDSIZE > 32 machines */
+        i++;
+        if (i >= N) {
+            mt->state[0] = mt->state[N - 1];
+            i = 1;
+        }
     }
 
     mt->state[0] = 0x80000000U; /* MSB is 1; assuring non-zero initial array */
@@ -129,13 +140,13 @@ next_state(struct MT *mt)
     mt->left = N;
     mt->next = mt->state;
 
-    for (j=N-M+1; --j; p++)
+    for (j = N - M + 1; --j; p++)
         *p = p[M] ^ TWIST(p[0], p[1]);
 
-    for (j=M; --j; p++)
-        *p = p[M-N] ^ TWIST(p[0], p[1]);
+    for (j = M; --j; p++)
+        *p = p[M - N] ^ TWIST(p[0], p[1]);
 
-    *p = p[M-N] ^ TWIST(p[0], mt->state[0]);
+    *p = p[M - N] ^ TWIST(p[0], mt->state[0]);
 }
 
 /* generates a random number on [0,0xffffffff]-interval */

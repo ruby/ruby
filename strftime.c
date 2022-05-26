@@ -50,18 +50,18 @@
 #include "ruby/internal/config.h"
 
 #ifndef GAWK
-#include <stdio.h>
-#include <ctype.h>
-#include <string.h>
-#include <time.h>
-#include <sys/types.h>
-#include <errno.h>
+#    include <ctype.h>
+#    include <errno.h>
+#    include <stdio.h>
+#    include <string.h>
+#    include <sys/types.h>
+#    include <time.h>
 #endif
 #if defined(TM_IN_SYS_TIME) || !defined(GAWK)
-#include <sys/types.h>
-#ifdef HAVE_SYS_TIME_H
-#include <sys/time.h>
-#endif
+#    include <sys/types.h>
+#    ifdef HAVE_SYS_TIME_H
+#        include <sys/time.h>
+#    endif
 #endif
 #include <math.h>
 
@@ -74,154 +74,153 @@
 #include "timev.h"
 
 /* defaults: season to taste */
-#define SYSV_EXT	1	/* stuff in System V ascftime routine */
-#define SUNOS_EXT	1	/* stuff in SunOS strftime routine */
-#define POSIX2_DATE	1	/* stuff in Posix 1003.2 date command */
-#define VMS_EXT		1	/* include %v for VMS date format */
-#define MAILHEADER_EXT	1	/* add %z for HHMM format */
-#define ISO_DATE_EXT	1	/* %G and %g for year of ISO week */
+#define SYSV_EXT 1       /* stuff in System V ascftime routine */
+#define SUNOS_EXT 1      /* stuff in SunOS strftime routine */
+#define POSIX2_DATE 1    /* stuff in Posix 1003.2 date command */
+#define VMS_EXT 1        /* include %v for VMS date format */
+#define MAILHEADER_EXT 1 /* add %z for HHMM format */
+#define ISO_DATE_EXT 1   /* %G and %g for year of ISO week */
 
 #if defined(ISO_DATE_EXT)
-#if ! defined(POSIX2_DATE)
-#define POSIX2_DATE	1
-#endif
-#endif
-
-#if defined(POSIX2_DATE)
-#if ! defined(SYSV_EXT)
-#define SYSV_EXT	1
-#endif
-#if ! defined(SUNOS_EXT)
-#define SUNOS_EXT	1
-#endif
+#    if !defined(POSIX2_DATE)
+#        define POSIX2_DATE 1
+#    endif
 #endif
 
 #if defined(POSIX2_DATE)
-#define adddecl(stuff)	stuff
+#    if !defined(SYSV_EXT)
+#        define SYSV_EXT 1
+#    endif
+#    if !defined(SUNOS_EXT)
+#        define SUNOS_EXT 1
+#    endif
+#endif
+
+#if defined(POSIX2_DATE)
+#    define adddecl(stuff) stuff
 #else
-#define adddecl(stuff)
+#    define adddecl(stuff)
 #endif
 
-#undef strchr	/* avoid AIX weirdness */
+#undef strchr /* avoid AIX weirdness */
 
 #if !defined __STDC__ && !defined _WIN32
-#define const	/**/
+#    define const /**/
 static int weeknumber();
-adddecl(static int iso8601wknum();)
-static int weeknumber_v();
+adddecl(static int iso8601wknum();) static int weeknumber_v();
 adddecl(static int iso8601wknum_v();)
 #else
 static int weeknumber(const struct tm *timeptr, int firstweekday);
-adddecl(static int iso8601wknum(const struct tm *timeptr);)
-static int weeknumber_v(const struct vtm *vtm, int firstweekday);
+adddecl(static int iso8601wknum(const struct tm *timeptr);) static int weeknumber_v(
+    const struct vtm *vtm, int firstweekday);
 adddecl(static int iso8601wknum_v(const struct vtm *vtm);)
 #endif
 
 #ifdef STDC_HEADERS
-#include <stdlib.h>
-#include <string.h>
+#    include <stdlib.h>
+#    include <string.h>
 #else
-extern void *malloc();
+    extern void *malloc();
 extern void *realloc();
 extern char *getenv();
 extern char *strchr();
 #endif
 
-#define range(low, item, hi)	max((low), min((item), (hi)))
+#define range(low, item, hi) max((low), min((item), (hi)))
 
-#undef min	/* just in case */
+#undef min /* just in case */
 
-/* min --- return minimum of two numbers */
+    /* min --- return minimum of two numbers */
 
-static inline int
-min(int a, int b)
+    static inline int min(int a, int b)
 {
-	return (a < b ? a : b);
+    return (a < b ? a : b);
 }
 
-#undef max	/* also, just in case */
+#undef max /* also, just in case */
 
 /* max --- return maximum of two numbers */
 
 static inline int
 max(int a, int b)
 {
-	return (a > b ? a : b);
+    return (a > b ? a : b);
 }
 
 #ifdef NO_STRING_LITERAL_CONCATENATION
-#error No string literal concatenation
+#    error No string literal concatenation
 #endif
 
-#define add(x,y) (rb_funcall((x), '+', 1, (y)))
-#define sub(x,y) (rb_funcall((x), '-', 1, (y)))
-#define mul(x,y) (rb_funcall((x), '*', 1, (y)))
-#define quo(x,y) (rb_funcall((x), rb_intern("quo"), 1, (y)))
-#define div(x,y) (rb_funcall((x), rb_intern("div"), 1, (y)))
-#define mod(x,y) (rb_funcall((x), '%', 1, (y)))
+#define add(x, y) (rb_funcall((x), '+', 1, (y)))
+#define sub(x, y) (rb_funcall((x), '-', 1, (y)))
+#define mul(x, y) (rb_funcall((x), '*', 1, (y)))
+#define quo(x, y) (rb_funcall((x), rb_intern("quo"), 1, (y)))
+#define div(x, y) (rb_funcall((x), rb_intern("div"), 1, (y)))
+#define mod(x, y) (rb_funcall((x), '%', 1, (y)))
 
 /* strftime --- produce formatted time */
 
-enum {LEFT, CHCASE, LOWER, UPPER};
-#define BIT_OF(n) (1U<<(n))
+enum {
+    LEFT,
+    CHCASE,
+    LOWER,
+    UPPER
+};
+#define BIT_OF(n) (1U << (n))
 
 static char *
-resize_buffer(VALUE ftime, char *s, const char **start, const char **endp,
-	      ptrdiff_t n, size_t maxsize)
+resize_buffer(VALUE ftime, char *s, const char **start, const char **endp, ptrdiff_t n, size_t maxsize)
 {
-	size_t len = s - *start;
-	size_t nlen = len + n * 2;
+    size_t len = s - *start;
+    size_t nlen = len + n * 2;
 
-	if (nlen < len || nlen > maxsize) {
-		return 0;
-	}
-	rb_str_set_len(ftime, len);
-	rb_str_modify_expand(ftime, nlen-len);
-	s = RSTRING_PTR(ftime);
-	*endp = s + nlen;
-	*start = s;
-	return s += len;
+    if (nlen < len || nlen > maxsize) {
+        return 0;
+    }
+    rb_str_set_len(ftime, len);
+    rb_str_modify_expand(ftime, nlen - len);
+    s = RSTRING_PTR(ftime);
+    *endp = s + nlen;
+    *start = s;
+    return s += len;
 }
 
 static void
-buffer_size_check(const char *s,
-		  const char *format_end, size_t format_len,
-		  rb_encoding *enc)
+buffer_size_check(const char *s, const char *format_end, size_t format_len, rb_encoding *enc)
 {
-	if (!s) {
-		const char *format = format_end-format_len;
-		VALUE fmt = rb_enc_str_new(format, format_len, enc);
-		rb_syserr_fail_str(ERANGE, fmt);
-	}
+    if (!s) {
+        const char *format = format_end - format_len;
+        VALUE fmt = rb_enc_str_new(format, format_len, enc);
+        rb_syserr_fail_str(ERANGE, fmt);
+    }
 }
 
 static char *
 case_conv(char *s, ptrdiff_t i, int flags)
 {
-	switch (flags & (BIT_OF(UPPER)|BIT_OF(LOWER))) {
-	case BIT_OF(UPPER):
-		do {
-			if (ISLOWER(*s)) *s = TOUPPER(*s);
-		} while (s++, --i);
-		break;
-	case BIT_OF(LOWER):
-		do {
-			if (ISUPPER(*s)) *s = TOLOWER(*s);
-		} while (s++, --i);
-		break;
-	default:
-		s += i;
-		break;
-	}
-	return s;
+    switch (flags & (BIT_OF(UPPER) | BIT_OF(LOWER))) {
+    case BIT_OF(UPPER):
+        do {
+            if (ISLOWER(*s)) *s = TOUPPER(*s);
+        } while (s++, --i);
+        break;
+    case BIT_OF(LOWER):
+        do {
+            if (ISUPPER(*s)) *s = TOLOWER(*s);
+        } while (s++, --i);
+        break;
+    default:
+        s += i;
+        break;
+    }
+    return s;
 }
 
 static VALUE
 format_value(VALUE val, int base)
 {
-	if (!RB_BIGNUM_TYPE_P(val))
-		val = rb_Integer(val);
-	return rb_big2str(val, base);
+    if (!RB_BIGNUM_TYPE_P(val)) val = rb_Integer(val);
+    return rb_big2str(val, base);
 }
 
 /*
@@ -230,718 +229,724 @@ format_value(VALUE val, int base)
  * is only used for the timezone name on Windows.
  */
 static VALUE
-rb_strftime_with_timespec(VALUE ftime, const char *format, size_t format_len,
-			  rb_encoding *enc, VALUE time, const struct vtm *vtm,
-			  VALUE timev, struct timespec *ts, int gmt, size_t maxsize)
+rb_strftime_with_timespec(VALUE ftime, const char *format, size_t format_len, rb_encoding *enc, VALUE time,
+    const struct vtm *vtm, VALUE timev, struct timespec *ts, int gmt, size_t maxsize)
 {
-	size_t len = RSTRING_LEN(ftime);
-	char *s = RSTRING_PTR(ftime);
-	const char *start = s;
-	const char *endp = start + rb_str_capacity(ftime);
-	const char *const format_end = format + format_len;
-	const char *sp, *tp;
+    size_t len = RSTRING_LEN(ftime);
+    char *s = RSTRING_PTR(ftime);
+    const char *start = s;
+    const char *endp = start + rb_str_capacity(ftime);
+    const char *const format_end = format + format_len;
+    const char *sp, *tp;
 #define TBUFSIZE 100
-	auto char tbuf[TBUFSIZE];
-	long off;
-	ptrdiff_t i;
-	int w;
-	long y;
-	int precision, flags, colons;
-	char padding;
+    auto char tbuf[TBUFSIZE];
+    long off;
+    ptrdiff_t i;
+    int w;
+    long y;
+    int precision, flags, colons;
+    char padding;
 #ifdef MAILHEADER_EXT
-	int sign;
+    int sign;
 #endif
-	VALUE zone = Qnil;
+    VALUE zone = Qnil;
 
-	/* various tables, useful in North America */
-	static const char days_l[][10] = {
-		"Sunday", "Monday", "Tuesday", "Wednesday",
-		"Thursday", "Friday", "Saturday",
-	};
-	static const char months_l[][10] = {
-		"January", "February", "March", "April",
-		"May", "June", "July", "August", "September",
-		"October", "November", "December",
-	};
-	static const char ampm[][3] = { "AM", "PM", };
+    /* various tables, useful in North America */
+    static const char days_l[][10] = {
+        "Sunday",
+        "Monday",
+        "Tuesday",
+        "Wednesday",
+        "Thursday",
+        "Friday",
+        "Saturday",
+    };
+    static const char months_l[][10] = {
+        "January",
+        "February",
+        "March",
+        "April",
+        "May",
+        "June",
+        "July",
+        "August",
+        "September",
+        "October",
+        "November",
+        "December",
+    };
+    static const char ampm[][3] = {
+        "AM",
+        "PM",
+    };
 
-	if (format == NULL || format_len == 0 || vtm == NULL) {
-                goto err;
-	}
+    if (format == NULL || format_len == 0 || vtm == NULL) {
+        goto err;
+    }
 
-	if (enc &&
-	    (enc == rb_usascii_encoding() ||
-	     enc == rb_ascii8bit_encoding() ||
-	     enc == rb_locale_encoding())) {
-		enc = NULL;
-	}
+    if (enc && (enc == rb_usascii_encoding() || enc == rb_ascii8bit_encoding() || enc == rb_locale_encoding())) {
+        enc = NULL;
+    }
 
-	s += len;
-	for (; format < format_end; format++) {
-#define FLAG_FOUND() do { \
-			if (precision > 0) \
-				goto unknown; \
-		} while (0)
-#define NEEDS(n) do { \
-			if (s >= endp || (n) >= endp - s - 1) { \
-				s = resize_buffer(ftime, s, &start, &endp, (n), maxsize); \
-				buffer_size_check(s, format_end, format_len, enc); \
-			} \
-		} while (0)
-#define FILL_PADDING(i) do { \
-	if (!(flags & BIT_OF(LEFT)) && precision > (i)) { \
-		NEEDS(precision); \
-		memset(s, padding ? padding : ' ', precision - (i)); \
-		s += precision - (i); \
-	} \
-	else { \
-		NEEDS(i); \
-	} \
-} while (0);
+    s += len;
+    for (; format < format_end; format++) {
+#define FLAG_FOUND() \
+    do { \
+        if (precision > 0) goto unknown; \
+    } while (0)
+#define NEEDS(n) \
+    do { \
+        if (s >= endp || (n) >= endp - s - 1) { \
+            s = resize_buffer(ftime, s, &start, &endp, (n), maxsize); \
+            buffer_size_check(s, format_end, format_len, enc); \
+        } \
+    } while (0)
+#define FILL_PADDING(i) \
+    do { \
+        if (!(flags & BIT_OF(LEFT)) && precision > (i)) { \
+            NEEDS(precision); \
+            memset(s, padding ? padding : ' ', precision - (i)); \
+            s += precision - (i); \
+        } \
+        else { \
+            NEEDS(i); \
+        } \
+    } while (0);
 #define FMT_PADDING(fmt, def_pad) \
-		(&"%*"fmt"\0""%0*"fmt[\
-			(padding == '0' || (!padding && (def_pad) == '0')) ? \
-			rb_strlen_lit("%*"fmt)+1 : 0])
-#define FMT_PRECISION(def_prec) \
-		((flags & BIT_OF(LEFT)) ? (1) : \
-		 (precision <= 0) ? (def_prec) : (precision))
+    (&"%*" fmt "\0" \
+      "%0*" fmt[(padding == '0' || (!padding && (def_pad) == '0')) ? rb_strlen_lit("%*" fmt) + 1 : 0])
+#define FMT_PRECISION(def_prec) ((flags & BIT_OF(LEFT)) ? (1) : (precision <= 0) ? (def_prec) : (precision))
 #define FMT(def_pad, def_prec, fmt, val) \
-		do { \
-			precision = FMT_PRECISION(def_prec); \
-			len = s - start; \
-			NEEDS(precision); \
-			rb_str_set_len(ftime, len); \
-			rb_str_catf(ftime, FMT_PADDING(fmt, def_pad), \
-				    precision, (val)); \
-			RSTRING_GETMEM(ftime, s, len); \
-			endp = (start = s) + rb_str_capacity(ftime); \
-			s += len; \
-		} while (0)
+    do { \
+        precision = FMT_PRECISION(def_prec); \
+        len = s - start; \
+        NEEDS(precision); \
+        rb_str_set_len(ftime, len); \
+        rb_str_catf(ftime, FMT_PADDING(fmt, def_pad), precision, (val)); \
+        RSTRING_GETMEM(ftime, s, len); \
+        endp = (start = s) + rb_str_capacity(ftime); \
+        s += len; \
+    } while (0)
 #define STRFTIME(fmt) \
-		do { \
-			len = s - start; \
-			rb_str_set_len(ftime, len); \
-			if (!rb_strftime_with_timespec(ftime, (fmt), rb_strlen_lit(fmt), \
-						       enc, time, vtm, timev, ts, gmt, maxsize)) \
-				return 0; \
-			s = RSTRING_PTR(ftime); \
-			i = RSTRING_LEN(ftime) - len; \
-			endp = (start = s) + rb_str_capacity(ftime); \
-			s += len; \
-			if (i > 0) case_conv(s, i, flags); \
-			if (precision > i) {\
-				s += i; \
-				NEEDS(precision); \
-				s -= i; \
-				memmove(s + precision - i, s, i);\
-				memset(s, padding ? padding : ' ', precision - i); \
-				s += precision;	\
-			} \
-			else s += i; \
-		} while (0)
+    do { \
+        len = s - start; \
+        rb_str_set_len(ftime, len); \
+        if (!rb_strftime_with_timespec(ftime, (fmt), rb_strlen_lit(fmt), enc, time, vtm, timev, ts, gmt, maxsize)) \
+            return 0; \
+        s = RSTRING_PTR(ftime); \
+        i = RSTRING_LEN(ftime) - len; \
+        endp = (start = s) + rb_str_capacity(ftime); \
+        s += len; \
+        if (i > 0) case_conv(s, i, flags); \
+        if (precision > i) { \
+            s += i; \
+            NEEDS(precision); \
+            s -= i; \
+            memmove(s + precision - i, s, i); \
+            memset(s, padding ? padding : ' ', precision - i); \
+            s += precision; \
+        } \
+        else \
+            s += i; \
+    } while (0)
 #define FMTV(def_pad, def_prec, fmt, val) \
-                do { \
-                        VALUE tmp = (val); \
-                        if (FIXNUM_P(tmp)) { \
-                                FMT((def_pad), (def_prec), "l"fmt, FIX2LONG(tmp)); \
-                        } \
-                        else { \
-				const int base = ((fmt[0] == 'x') ? 16 : \
-						  (fmt[0] == 'o') ? 8 : \
-						  10); \
-				precision = FMT_PRECISION(def_prec); \
-				if (!padding) padding = (def_pad); \
-				tmp = format_value(tmp, base); \
-				i = RSTRING_LEN(tmp); \
-				FILL_PADDING(i); \
-				rb_str_set_len(ftime, s-start); \
-				rb_str_append(ftime, tmp); \
-				RSTRING_GETMEM(ftime, s, len); \
-				endp = (start = s) + rb_str_capacity(ftime); \
-				s += len; \
-                        } \
-                } while (0)
+    do { \
+        VALUE tmp = (val); \
+        if (FIXNUM_P(tmp)) { \
+            FMT((def_pad), (def_prec), "l" fmt, FIX2LONG(tmp)); \
+        } \
+        else { \
+            const int base = ((fmt[0] == 'x') ? 16 : (fmt[0] == 'o') ? 8 : 10); \
+            precision = FMT_PRECISION(def_prec); \
+            if (!padding) padding = (def_pad); \
+            tmp = format_value(tmp, base); \
+            i = RSTRING_LEN(tmp); \
+            FILL_PADDING(i); \
+            rb_str_set_len(ftime, s - start); \
+            rb_str_append(ftime, tmp); \
+            RSTRING_GETMEM(ftime, s, len); \
+            endp = (start = s) + rb_str_capacity(ftime); \
+            s += len; \
+        } \
+    } while (0)
 
-		tp = memchr(format, '%', format_end - format);
-		if (!tp) tp = format_end;
-		NEEDS(tp - format);
-		memcpy(s, format, tp - format);
-		s += tp - format;
-		format = tp;
-		if (format == format_end) break;
+        tp = memchr(format, '%', format_end - format);
+        if (!tp) tp = format_end;
+        NEEDS(tp - format);
+        memcpy(s, format, tp - format);
+        s += tp - format;
+        format = tp;
+        if (format == format_end) break;
 
-		tp = tbuf;
-		sp = format;
-		precision = -1;
-		flags = 0;
-		padding = 0;
-                colons = 0;
-	again:
-		if (++format >= format_end) goto unknown;
-		switch (*format) {
-		case '%':
-			FILL_PADDING(1);
-			*s++ = '%';
-			continue;
+        tp = tbuf;
+        sp = format;
+        precision = -1;
+        flags = 0;
+        padding = 0;
+        colons = 0;
+    again:
+        if (++format >= format_end) goto unknown;
+        switch (*format) {
+        case '%':
+            FILL_PADDING(1);
+            *s++ = '%';
+            continue;
 
-		case 'a':	/* abbreviated weekday name */
-			if (flags & BIT_OF(CHCASE)) {
-				flags &= ~(BIT_OF(LOWER)|BIT_OF(CHCASE));
-				flags |= BIT_OF(UPPER);
-			}
-			if (vtm->wday > 6)
-				i = 1, tp = "?";
-			else
-				i = 3, tp = days_l[vtm->wday];
-			break;
+        case 'a': /* abbreviated weekday name */
+            if (flags & BIT_OF(CHCASE)) {
+                flags &= ~(BIT_OF(LOWER) | BIT_OF(CHCASE));
+                flags |= BIT_OF(UPPER);
+            }
+            if (vtm->wday > 6)
+                i = 1, tp = "?";
+            else
+                i = 3, tp = days_l[vtm->wday];
+            break;
 
-		case 'A':	/* full weekday name */
-			if (flags & BIT_OF(CHCASE)) {
-				flags &= ~(BIT_OF(LOWER)|BIT_OF(CHCASE));
-				flags |= BIT_OF(UPPER);
-			}
-			if (vtm->wday > 6)
-				i = 1, tp = "?";
-			else
-				i = strlen(tp = days_l[vtm->wday]);
-			break;
+        case 'A': /* full weekday name */
+            if (flags & BIT_OF(CHCASE)) {
+                flags &= ~(BIT_OF(LOWER) | BIT_OF(CHCASE));
+                flags |= BIT_OF(UPPER);
+            }
+            if (vtm->wday > 6)
+                i = 1, tp = "?";
+            else
+                i = strlen(tp = days_l[vtm->wday]);
+            break;
 
 #ifdef SYSV_EXT
-		case 'h':	/* abbreviated month name */
+        case 'h': /* abbreviated month name */
 #endif
-		case 'b':	/* abbreviated month name */
-			if (flags & BIT_OF(CHCASE)) {
-				flags &= ~(BIT_OF(LOWER)|BIT_OF(CHCASE));
-				flags |= BIT_OF(UPPER);
-			}
-			if (vtm->mon < 1 || vtm->mon > 12)
-				i = 1, tp = "?";
-			else
-				i = 3, tp = months_l[vtm->mon-1];
-			break;
+        case 'b': /* abbreviated month name */
+            if (flags & BIT_OF(CHCASE)) {
+                flags &= ~(BIT_OF(LOWER) | BIT_OF(CHCASE));
+                flags |= BIT_OF(UPPER);
+            }
+            if (vtm->mon < 1 || vtm->mon > 12)
+                i = 1, tp = "?";
+            else
+                i = 3, tp = months_l[vtm->mon - 1];
+            break;
 
-		case 'B':	/* full month name */
-			if (flags & BIT_OF(CHCASE)) {
-				flags &= ~(BIT_OF(LOWER)|BIT_OF(CHCASE));
-				flags |= BIT_OF(UPPER);
-			}
-			if (vtm->mon < 1 || vtm->mon > 12)
-				i = 1, tp = "?";
-			else
-				i = strlen(tp = months_l[vtm->mon-1]);
-			break;
+        case 'B': /* full month name */
+            if (flags & BIT_OF(CHCASE)) {
+                flags &= ~(BIT_OF(LOWER) | BIT_OF(CHCASE));
+                flags |= BIT_OF(UPPER);
+            }
+            if (vtm->mon < 1 || vtm->mon > 12)
+                i = 1, tp = "?";
+            else
+                i = strlen(tp = months_l[vtm->mon - 1]);
+            break;
 
-		case 'c':	/* appropriate date and time representation */
-			STRFTIME("%a %b %e %H:%M:%S %Y");
-			continue;
+        case 'c': /* appropriate date and time representation */
+            STRFTIME("%a %b %e %H:%M:%S %Y");
+            continue;
 
-		case 'd':	/* day of the month, 01 - 31 */
-			i = range(1, vtm->mday, 31);
-			FMT('0', 2, "d", (int)i);
-			continue;
+        case 'd': /* day of the month, 01 - 31 */
+            i = range(1, vtm->mday, 31);
+            FMT('0', 2, "d", (int)i);
+            continue;
 
-		case 'H':	/* hour, 24-hour clock, 00 - 23 */
-			i = range(0, vtm->hour, 23);
-			FMT('0', 2, "d", (int)i);
-			continue;
+        case 'H': /* hour, 24-hour clock, 00 - 23 */
+            i = range(0, vtm->hour, 23);
+            FMT('0', 2, "d", (int)i);
+            continue;
 
-		case 'I':	/* hour, 12-hour clock, 01 - 12 */
-			i = range(0, vtm->hour, 23);
-			if (i == 0)
-				i = 12;
-			else if (i > 12)
-				i -= 12;
-			FMT('0', 2, "d", (int)i);
-			continue;
+        case 'I': /* hour, 12-hour clock, 01 - 12 */
+            i = range(0, vtm->hour, 23);
+            if (i == 0)
+                i = 12;
+            else if (i > 12)
+                i -= 12;
+            FMT('0', 2, "d", (int)i);
+            continue;
 
-		case 'j':	/* day of the year, 001 - 366 */
-			i = range(1, vtm->yday, 366);
-			FMT('0', 3, "d", (int)i);
-			continue;
+        case 'j': /* day of the year, 001 - 366 */
+            i = range(1, vtm->yday, 366);
+            FMT('0', 3, "d", (int)i);
+            continue;
 
-		case 'm':	/* month, 01 - 12 */
-			i = range(1, vtm->mon, 12);
-			FMT('0', 2, "d", (int)i);
-			continue;
+        case 'm': /* month, 01 - 12 */
+            i = range(1, vtm->mon, 12);
+            FMT('0', 2, "d", (int)i);
+            continue;
 
-		case 'M':	/* minute, 00 - 59 */
-			i = range(0, vtm->min, 59);
-			FMT('0', 2, "d", (int)i);
-			continue;
+        case 'M': /* minute, 00 - 59 */
+            i = range(0, vtm->min, 59);
+            FMT('0', 2, "d", (int)i);
+            continue;
 
-		case 'p':	/* AM or PM based on 12-hour clock */
-		case 'P':	/* am or pm based on 12-hour clock */
-			if ((*format == 'p' && (flags & BIT_OF(CHCASE))) ||
-			    (*format == 'P' && !(flags & (BIT_OF(CHCASE)|BIT_OF(UPPER))))) {
-				flags &= ~(BIT_OF(UPPER)|BIT_OF(CHCASE));
-				flags |= BIT_OF(LOWER);
-			}
-			i = range(0, vtm->hour, 23);
-			if (i < 12)
-				tp = ampm[0];
-			else
-				tp = ampm[1];
-			i = 2;
-			break;
+        case 'p': /* AM or PM based on 12-hour clock */
+        case 'P': /* am or pm based on 12-hour clock */
+            if ((*format == 'p' && (flags & BIT_OF(CHCASE))) ||
+                (*format == 'P' && !(flags & (BIT_OF(CHCASE) | BIT_OF(UPPER))))) {
+                flags &= ~(BIT_OF(UPPER) | BIT_OF(CHCASE));
+                flags |= BIT_OF(LOWER);
+            }
+            i = range(0, vtm->hour, 23);
+            if (i < 12)
+                tp = ampm[0];
+            else
+                tp = ampm[1];
+            i = 2;
+            break;
 
-		case 's':
-                        if (ts) {
-                                time_t sec = ts->tv_sec;
-                                if (~(time_t)0 <= 0)
-                                    FMT('0', 1, PRI_TIMET_PREFIX"d", sec);
-                                else
-                                    FMT('0', 1, PRI_TIMET_PREFIX"u", sec);
-                        }
-                        else {
-                                VALUE sec = div(timev, INT2FIX(1));
-                                FMTV('0', 1, "d", sec);
-                        }
-                        continue;
+        case 's':
+            if (ts) {
+                time_t sec = ts->tv_sec;
+                if (~(time_t)0 <= 0)
+                    FMT('0', 1, PRI_TIMET_PREFIX "d", sec);
+                else
+                    FMT('0', 1, PRI_TIMET_PREFIX "u", sec);
+            }
+            else {
+                VALUE sec = div(timev, INT2FIX(1));
+                FMTV('0', 1, "d", sec);
+            }
+            continue;
 
-		case 'S':	/* second, 00 - 60 */
-			i = range(0, vtm->sec, 60);
-			FMT('0', 2, "d", (int)i);
-			continue;
+        case 'S': /* second, 00 - 60 */
+            i = range(0, vtm->sec, 60);
+            FMT('0', 2, "d", (int)i);
+            continue;
 
-		case 'U':	/* week of year, Sunday is first day of week */
-			FMT('0', 2, "d", weeknumber_v(vtm, 0));
-			continue;
+        case 'U': /* week of year, Sunday is first day of week */
+            FMT('0', 2, "d", weeknumber_v(vtm, 0));
+            continue;
 
-		case 'w':	/* weekday, Sunday == 0, 0 - 6 */
-			i = range(0, vtm->wday, 6);
-			FMT('0', 1, "d", (int)i);
-			continue;
+        case 'w': /* weekday, Sunday == 0, 0 - 6 */
+            i = range(0, vtm->wday, 6);
+            FMT('0', 1, "d", (int)i);
+            continue;
 
-		case 'W':	/* week of year, Monday is first day of week */
-			FMT('0', 2, "d", weeknumber_v(vtm, 1));
-			continue;
+        case 'W': /* week of year, Monday is first day of week */
+            FMT('0', 2, "d", weeknumber_v(vtm, 1));
+            continue;
 
-		case 'x':	/* appropriate date representation */
-			STRFTIME("%m/%d/%y");
-			continue;
+        case 'x': /* appropriate date representation */
+            STRFTIME("%m/%d/%y");
+            continue;
 
-		case 'X':	/* appropriate time representation */
-			STRFTIME("%H:%M:%S");
-			continue;
+        case 'X': /* appropriate time representation */
+            STRFTIME("%H:%M:%S");
+            continue;
 
-		case 'y':	/* year without a century, 00 - 99 */
-			i = NUM2INT(mod(vtm->year, INT2FIX(100)));
-			FMT('0', 2, "d", (int)i);
-			continue;
+        case 'y': /* year without a century, 00 - 99 */
+            i = NUM2INT(mod(vtm->year, INT2FIX(100)));
+            FMT('0', 2, "d", (int)i);
+            continue;
 
-		case 'Y':	/* year with century */
-                        if (FIXNUM_P(vtm->year)) {
-				long y = FIX2LONG(vtm->year);
-				FMT('0', 0 <= y ? 4 : 5, "ld", y);
-                        }
-                        else {
-				FMTV('0', 4, "d", vtm->year);
-                        }
-			continue;
+        case 'Y': /* year with century */
+            if (FIXNUM_P(vtm->year)) {
+                long y = FIX2LONG(vtm->year);
+                FMT('0', 0 <= y ? 4 : 5, "ld", y);
+            }
+            else {
+                FMTV('0', 4, "d", vtm->year);
+            }
+            continue;
 
 #ifdef MAILHEADER_EXT
-		case 'z':	/* time zone offset east of GMT e.g. -0600 */
-			if (gmt) {
-				off = 0;
-			}
-			else {
-				off = NUM2LONG(rb_funcall(vtm->utc_offset, rb_intern("round"), 0));
-			}
-			if (off < 0 || (gmt && (flags & BIT_OF(LEFT)))) {
-				off = -off;
-				sign = -1;
-			}
-			else {
-				sign = +1;
-			}
-                        switch (colons) {
-			case 0: /* %z -> +hhmm */
-				precision = precision <= 5 ? 2 : precision-3;
-				NEEDS(precision + 3);
-				break;
+        case 'z': /* time zone offset east of GMT e.g. -0600 */
+            if (gmt) {
+                off = 0;
+            }
+            else {
+                off = NUM2LONG(rb_funcall(vtm->utc_offset, rb_intern("round"), 0));
+            }
+            if (off < 0 || (gmt && (flags & BIT_OF(LEFT)))) {
+                off = -off;
+                sign = -1;
+            }
+            else {
+                sign = +1;
+            }
+            switch (colons) {
+            case 0: /* %z -> +hhmm */
+                precision = precision <= 5 ? 2 : precision - 3;
+                NEEDS(precision + 3);
+                break;
 
-			case 1: /* %:z -> +hh:mm */
-				precision = precision <= 6 ? 2 : precision-4;
-				NEEDS(precision + 4);
-				break;
+            case 1: /* %:z -> +hh:mm */
+                precision = precision <= 6 ? 2 : precision - 4;
+                NEEDS(precision + 4);
+                break;
 
-			case 2: /* %::z -> +hh:mm:ss */
-				precision = precision <= 9 ? 2 : precision-7;
-				NEEDS(precision + 7);
-				break;
+            case 2: /* %::z -> +hh:mm:ss */
+                precision = precision <= 9 ? 2 : precision - 7;
+                NEEDS(precision + 7);
+                break;
 
-			case 3: /* %:::z -> +hh[:mm[:ss]] */
-				if (off % 3600 == 0) {
-					precision = precision <= 3 ? 2 : precision-1;
-					NEEDS(precision + 3);
-				}
-				else if (off % 60 == 0) {
-					precision = precision <= 6 ? 2 : precision-4;
-					NEEDS(precision + 4);
-				}
-				else {
-					precision = precision <= 9 ? 2 : precision-7;
-					NEEDS(precision + 9);
-				}
-				break;
+            case 3: /* %:::z -> +hh[:mm[:ss]] */
+                if (off % 3600 == 0) {
+                    precision = precision <= 3 ? 2 : precision - 1;
+                    NEEDS(precision + 3);
+                }
+                else if (off % 60 == 0) {
+                    precision = precision <= 6 ? 2 : precision - 4;
+                    NEEDS(precision + 4);
+                }
+                else {
+                    precision = precision <= 9 ? 2 : precision - 7;
+                    NEEDS(precision + 9);
+                }
+                break;
 
-			default:
-				format--;
-				goto unknown;
-                        }
-			i = snprintf(s, endp - s, (padding == ' ' ? "%+*ld" : "%+.*ld"),
-				     precision + (padding == ' '), sign * (off / 3600));
-			if (i < 0) goto err;
-			if (sign < 0 && off < 3600) {
-				*(padding == ' ' ? s + i - 2 : s) = '-';
-			}
-			s += i;
-                        off = off % 3600;
-			if (colons == 3 && off == 0)
-				continue;
-                        if (1 <= colons)
-                            *s++ = ':';
-			i = snprintf(s, endp - s, "%02d", (int)(off / 60));
-			if (i < 0) goto err;
-			s += i;
-                        off = off % 60;
-			if (colons == 3 && off == 0)
-				continue;
-                        if (2 <= colons) {
-                            *s++ = ':';
-                            i = snprintf(s, endp - s, "%02d", (int)off);
-                            if (i < 0) goto err;
-                            s += i;
-                        }
-			continue;
+            default:
+                format--;
+                goto unknown;
+            }
+            i = snprintf(
+                s, endp - s, (padding == ' ' ? "%+*ld" : "%+.*ld"), precision + (padding == ' '), sign * (off / 3600));
+            if (i < 0) goto err;
+            if (sign < 0 && off < 3600) {
+                *(padding == ' ' ? s + i - 2 : s) = '-';
+            }
+            s += i;
+            off = off % 3600;
+            if (colons == 3 && off == 0) continue;
+            if (1 <= colons) *s++ = ':';
+            i = snprintf(s, endp - s, "%02d", (int)(off / 60));
+            if (i < 0) goto err;
+            s += i;
+            off = off % 60;
+            if (colons == 3 && off == 0) continue;
+            if (2 <= colons) {
+                *s++ = ':';
+                i = snprintf(s, endp - s, "%02d", (int)off);
+                if (i < 0) goto err;
+                s += i;
+            }
+            continue;
 #endif /* MAILHEADER_EXT */
 
-		case 'Z':	/* time zone name or abbreviation */
-			if (flags & BIT_OF(CHCASE)) {
-				flags &= ~(BIT_OF(UPPER)|BIT_OF(CHCASE));
-				flags |= BIT_OF(LOWER);
-			}
-			if (gmt) {
-				i = 3;
-				tp = "UTC";
-				break;
-			}
-			if (NIL_P(vtm->zone)) {
-			    i = 0;
-			}
-			else {
-			    if (NIL_P(zone)) {
-				zone = rb_time_zone_abbreviation(vtm->zone, time);
-			    }
-			    tp = RSTRING_PTR(zone);
-			    if (enc) {
-				for (i = 0; i < TBUFSIZE && tp[i]; i++) {
-				    if ((unsigned char)tp[i] > 0x7F) {
-					VALUE str = rb_str_conv_enc_opts(rb_str_new_cstr(tp), rb_locale_encoding(), enc, ECONV_UNDEF_REPLACE|ECONV_INVALID_REPLACE, Qnil);
-					i = strlcpy(tbuf, RSTRING_PTR(str), TBUFSIZE);
-					tp = tbuf;
-					break;
-				    }
-				}
-			    }
-			    else
-				i = strlen(tp);
-			}
-			break;
+        case 'Z': /* time zone name or abbreviation */
+            if (flags & BIT_OF(CHCASE)) {
+                flags &= ~(BIT_OF(UPPER) | BIT_OF(CHCASE));
+                flags |= BIT_OF(LOWER);
+            }
+            if (gmt) {
+                i = 3;
+                tp = "UTC";
+                break;
+            }
+            if (NIL_P(vtm->zone)) {
+                i = 0;
+            }
+            else {
+                if (NIL_P(zone)) {
+                    zone = rb_time_zone_abbreviation(vtm->zone, time);
+                }
+                tp = RSTRING_PTR(zone);
+                if (enc) {
+                    for (i = 0; i < TBUFSIZE && tp[i]; i++) {
+                        if ((unsigned char)tp[i] > 0x7F) {
+                            VALUE str = rb_str_conv_enc_opts(rb_str_new_cstr(tp), rb_locale_encoding(), enc,
+                                ECONV_UNDEF_REPLACE | ECONV_INVALID_REPLACE, Qnil);
+                            i = strlcpy(tbuf, RSTRING_PTR(str), TBUFSIZE);
+                            tp = tbuf;
+                            break;
+                        }
+                    }
+                }
+                else
+                    i = strlen(tp);
+            }
+            break;
 
 #ifdef SYSV_EXT
-		case 'n':	/* same as \n */
-			FILL_PADDING(1);
-			*s++ = '\n';
-			continue;
+        case 'n': /* same as \n */
+            FILL_PADDING(1);
+            *s++ = '\n';
+            continue;
 
-		case 't':	/* same as \t */
-			FILL_PADDING(1);
-			*s++ = '\t';
-			continue;
+        case 't': /* same as \t */
+            FILL_PADDING(1);
+            *s++ = '\t';
+            continue;
 
-		case 'D':	/* date as %m/%d/%y */
-			STRFTIME("%m/%d/%y");
-			continue;
+        case 'D': /* date as %m/%d/%y */
+            STRFTIME("%m/%d/%y");
+            continue;
 
-		case 'e':	/* day of month, blank padded */
-			FMT(' ', 2, "d", range(1, vtm->mday, 31));
-			continue;
+        case 'e': /* day of month, blank padded */
+            FMT(' ', 2, "d", range(1, vtm->mday, 31));
+            continue;
 
-		case 'r':	/* time as %I:%M:%S %p */
-			STRFTIME("%I:%M:%S %p");
-			continue;
+        case 'r': /* time as %I:%M:%S %p */
+            STRFTIME("%I:%M:%S %p");
+            continue;
 
-		case 'R':	/* time as %H:%M */
-			STRFTIME("%H:%M");
-			continue;
+        case 'R': /* time as %H:%M */
+            STRFTIME("%H:%M");
+            continue;
 
-		case 'T':	/* time as %H:%M:%S */
-			STRFTIME("%H:%M:%S");
-			continue;
+        case 'T': /* time as %H:%M:%S */
+            STRFTIME("%H:%M:%S");
+            continue;
 #endif
 
 #ifdef SUNOS_EXT
-		case 'k':	/* hour, 24-hour clock, blank pad */
-			i = range(0, vtm->hour, 23);
-			FMT(' ', 2, "d", (int)i);
-			continue;
+        case 'k': /* hour, 24-hour clock, blank pad */
+            i = range(0, vtm->hour, 23);
+            FMT(' ', 2, "d", (int)i);
+            continue;
 
-		case 'l':	/* hour, 12-hour clock, 1 - 12, blank pad */
-			i = range(0, vtm->hour, 23);
-			if (i == 0)
-				i = 12;
-			else if (i > 12)
-				i -= 12;
-			FMT(' ', 2, "d", (int)i);
-			continue;
+        case 'l': /* hour, 12-hour clock, 1 - 12, blank pad */
+            i = range(0, vtm->hour, 23);
+            if (i == 0)
+                i = 12;
+            else if (i > 12)
+                i -= 12;
+            FMT(' ', 2, "d", (int)i);
+            continue;
 #endif
-
 
 #ifdef VMS_EXT
-		case 'v':	/* date as dd-bbb-YYYY */
-			STRFTIME("%e-%^b-%4Y");
-			continue;
+        case 'v': /* date as dd-bbb-YYYY */
+            STRFTIME("%e-%^b-%4Y");
+            continue;
 #endif
 
-
 #ifdef POSIX2_DATE
-		case 'C':
-                        FMTV('0', 2, "d", div(vtm->year, INT2FIX(100)));
-			continue;
+        case 'C':
+            FMTV('0', 2, "d", div(vtm->year, INT2FIX(100)));
+            continue;
 
-		case 'E':
-			/* POSIX locale extensions, ignored for now */
-			if (!format[1] || !strchr("cCxXyY", format[1]))
-				goto unknown;
-			goto again;
-		case 'O':
-			/* POSIX locale extensions, ignored for now */
-			if (!format[1] || !strchr("deHkIlmMSuUVwWy", format[1]))
-				goto unknown;
-			goto again;
+        case 'E':
+            /* POSIX locale extensions, ignored for now */
+            if (!format[1] || !strchr("cCxXyY", format[1])) goto unknown;
+            goto again;
+        case 'O':
+            /* POSIX locale extensions, ignored for now */
+            if (!format[1] || !strchr("deHkIlmMSuUVwWy", format[1])) goto unknown;
+            goto again;
 
-		case 'V':	/* week of year according ISO 8601 */
-			FMT('0', 2, "d", iso8601wknum_v(vtm));
-			continue;
+        case 'V': /* week of year according ISO 8601 */
+            FMT('0', 2, "d", iso8601wknum_v(vtm));
+            continue;
 
-		case 'u':
-		/* ISO 8601: Weekday as a decimal number [1 (Monday) - 7] */
-			FMT('0', 1, "d", vtm->wday == 0 ? 7 : vtm->wday);
-			continue;
-#endif	/* POSIX2_DATE */
+        case 'u':
+            /* ISO 8601: Weekday as a decimal number [1 (Monday) - 7] */
+            FMT('0', 1, "d", vtm->wday == 0 ? 7 : vtm->wday);
+            continue;
+#endif /* POSIX2_DATE */
 
 #ifdef ISO_DATE_EXT
-		case 'G':
-		case 'g':
-			/*
-			 * Year of ISO week.
-			 *
-			 * If it's December but the ISO week number is one,
-			 * that week is in next year.
-			 * If it's January but the ISO week number is 52 or
-			 * 53, that week is in last year.
-			 * Otherwise, it's this year.
-			 */
-                        {
-                                VALUE yv = vtm->year;
-                                w = iso8601wknum_v(vtm);
-                                if (vtm->mon == 12 && w == 1)
-                                        yv = add(yv, INT2FIX(1));
-                                else if (vtm->mon == 1 && w >= 52)
-                                        yv = sub(yv, INT2FIX(1));
+        case 'G':
+        case 'g':
+            /*
+             * Year of ISO week.
+             *
+             * If it's December but the ISO week number is one,
+             * that week is in next year.
+             * If it's January but the ISO week number is 52 or
+             * 53, that week is in last year.
+             * Otherwise, it's this year.
+             */
+            {
+                VALUE yv = vtm->year;
+                w = iso8601wknum_v(vtm);
+                if (vtm->mon == 12 && w == 1)
+                    yv = add(yv, INT2FIX(1));
+                else if (vtm->mon == 1 && w >= 52)
+                    yv = sub(yv, INT2FIX(1));
 
-                                if (*format == 'G') {
-                                        if (FIXNUM_P(yv)) {
-                                                const long y = FIX2LONG(yv);
-                                                FMT('0', 0 <= y ? 4 : 5, "ld", y);
-                                        }
-                                        else {
-                                                FMTV('0', 4, "d", yv);
-                                        }
-                                }
-                                else {
-                                        yv = mod(yv, INT2FIX(100));
-                                        y = FIX2LONG(yv);
-                                        FMT('0', 2, "ld", y);
-                                }
-                                continue;
-                        }
+                if (*format == 'G') {
+                    if (FIXNUM_P(yv)) {
+                        const long y = FIX2LONG(yv);
+                        FMT('0', 0 <= y ? 4 : 5, "ld", y);
+                    }
+                    else {
+                        FMTV('0', 4, "d", yv);
+                    }
+                }
+                else {
+                    yv = mod(yv, INT2FIX(100));
+                    y = FIX2LONG(yv);
+                    FMT('0', 2, "ld", y);
+                }
+                continue;
+            }
 
 #endif /* ISO_DATE_EXT */
 
+        case 'L':
+            w = 3;
+            goto subsec;
 
-		case 'L':
-			w = 3;
-			goto subsec;
+        case 'N':
+            /*
+             * fractional second digits. default is 9 digits
+             * (nanosecond).
+             *
+             * %3N  millisecond (3 digits)
+             * %6N  microsecond (6 digits)
+             * %9N  nanosecond (9 digits)
+             */
+            w = 9;
+        subsec:
+            if (precision <= 0) {
+                precision = w;
+            }
+            NEEDS(precision);
 
-		case 'N':
-			/*
-			 * fractional second digits. default is 9 digits
-			 * (nanosecond).
-			 *
-			 * %3N  millisecond (3 digits)
-			 * %6N  microsecond (6 digits)
-			 * %9N  nanosecond (9 digits)
-			 */
-			w = 9;
-		subsec:
-                        if (precision <= 0) {
-                            precision = w;
-                        }
-                        NEEDS(precision);
+            if (ts) {
+                long subsec = ts->tv_nsec;
+                if (9 < precision) {
+                    snprintf(s, endp - s, "%09ld", subsec);
+                    memset(s + 9, '0', precision - 9);
+                    s += precision;
+                }
+                else {
+                    int i;
+                    for (i = 0; i < 9 - precision; i++)
+                        subsec /= 10;
+                    snprintf(s, endp - s, "%0*ld", precision, subsec);
+                    s += precision;
+                }
+            }
+            else {
+                VALUE subsec = mod(timev, INT2FIX(1));
+                int ww;
+                long n;
 
-                        if (ts) {
-                                long subsec = ts->tv_nsec;
-                                if (9 < precision) {
-                                        snprintf(s, endp - s, "%09ld", subsec);
-                                        memset(s+9, '0', precision-9);
-                                        s += precision;
-                                }
-                                else {
-                                        int i;
-                                        for (i = 0; i < 9-precision; i++)
-                                                subsec /= 10;
-                                        snprintf(s, endp - s, "%0*ld", precision, subsec);
-                                        s += precision;
-                                }
-                        }
-                        else {
-                                VALUE subsec = mod(timev, INT2FIX(1));
-                                int ww;
-                                long n;
+                ww = precision;
+                while (9 <= ww) {
+                    subsec = mul(subsec, INT2FIX(1000000000));
+                    ww -= 9;
+                }
+                n = 1;
+                for (; 0 < ww; ww--)
+                    n *= 10;
+                if (n != 1) subsec = mul(subsec, INT2FIX(n));
+                subsec = div(subsec, INT2FIX(1));
 
-                                ww = precision;
-                                while (9 <= ww) {
-                                        subsec = mul(subsec, INT2FIX(1000000000));
-                                        ww -= 9;
-                                }
-                                n = 1;
-                                for (; 0 < ww; ww--)
-                                        n *= 10;
-                                if (n != 1)
-                                        subsec = mul(subsec, INT2FIX(n));
-                                subsec = div(subsec, INT2FIX(1));
+                if (FIXNUM_P(subsec)) {
+                    (void)snprintf(s, endp - s, "%0*ld", precision, FIX2LONG(subsec));
+                    s += precision;
+                }
+                else {
+                    VALUE args[2], result;
+                    args[0] = INT2FIX(precision);
+                    args[1] = subsec;
+                    result = rb_str_format(2, args, rb_fstring_lit("%0*d"));
+                    (void)strlcpy(s, StringValueCStr(result), endp - s);
+                    s += precision;
+                }
+            }
+            continue;
 
-                                if (FIXNUM_P(subsec)) {
-                                        (void)snprintf(s, endp - s, "%0*ld", precision, FIX2LONG(subsec));
-                                        s += precision;
-                                }
-                                else {
-                                        VALUE args[2], result;
-                                        args[0] = INT2FIX(precision);
-                                        args[1] = subsec;
-                                        result = rb_str_format(2, args,
-                                                      rb_fstring_lit("%0*d"));
-                                        (void)strlcpy(s, StringValueCStr(result), endp-s);
-                                        s += precision;
-                                }
-			}
-			continue;
+        case 'F': /*  Equivalent to %Y-%m-%d */
+            STRFTIME("%Y-%m-%d");
+            continue;
 
-		case 'F':	/*  Equivalent to %Y-%m-%d */
-			STRFTIME("%Y-%m-%d");
-			continue;
+        case '-':
+            FLAG_FOUND();
+            flags |= BIT_OF(LEFT);
+            padding = precision = 0;
+            goto again;
 
-		case '-':
-			FLAG_FOUND();
-			flags |= BIT_OF(LEFT);
-			padding = precision = 0;
-			goto again;
+        case '^':
+            FLAG_FOUND();
+            flags |= BIT_OF(UPPER);
+            goto again;
 
-		case '^':
-			FLAG_FOUND();
-			flags |= BIT_OF(UPPER);
-			goto again;
+        case '#':
+            FLAG_FOUND();
+            flags |= BIT_OF(CHCASE);
+            goto again;
 
-		case '#':
-			FLAG_FOUND();
-			flags |= BIT_OF(CHCASE);
-			goto again;
+        case '_':
+            FLAG_FOUND();
+            padding = ' ';
+            goto again;
 
-		case '_':
-			FLAG_FOUND();
-			padding = ' ';
-			goto again;
+        case ':':
+            for (colons = 1; colons <= 3; ++colons) {
+                if (format + colons >= format_end) goto unknown;
+                if (format[colons] == 'z') break;
+                if (format[colons] != ':') goto unknown;
+            }
+            format += colons - 1;
+            goto again;
 
-		case ':':
-			for (colons = 1; colons <= 3; ++colons) {
-				if (format+colons >= format_end) goto unknown;
-				if (format[colons] == 'z') break;
-				if (format[colons] != ':') goto unknown;
-			}
-			format += colons - 1;
-			goto again;
+        case '0':
+            padding = '0';
+        case '1':
+        case '2':
+        case '3':
+        case '4':
+        case '5':
+        case '6':
+        case '7':
+        case '8':
+        case '9': {
+            size_t n;
+            int ov;
+            unsigned long u = ruby_scan_digits(format, format_end - format, 10, &n, &ov);
+            if (ov || u > INT_MAX) goto unknown;
+            precision = (int)u;
+            format += n - 1;
+            goto again;
+        }
 
-		case '0':
-			padding = '0';
-		case '1':  case '2': case '3': case '4':
-		case '5': case '6':  case '7': case '8': case '9':
-			{
-				size_t n;
-				int ov;
-				unsigned long u = ruby_scan_digits(format, format_end-format, 10, &n, &ov);
-				if (ov || u > INT_MAX) goto unknown;
-				precision = (int)u;
-				format += n - 1;
-				goto again;
-			}
-
-		default:
-		unknown:
-			i = format - sp + 1;
-			tp = sp;
-			precision = -1;
-			flags = 0;
-			padding = 0;
-                        colons = 0;
-			break;
-		}
-		if (i) {
-			FILL_PADDING(i);
-			memcpy(s, tp, i);
-			s = case_conv(s, i, flags);
-		}
-	}
-	if (format != format_end) {
-		return 0;
-	}
-	len = s - start;
-	rb_str_set_len(ftime, len);
-	rb_str_resize(ftime, len);
-	return ftime;
+        default:
+        unknown:
+            i = format - sp + 1;
+            tp = sp;
+            precision = -1;
+            flags = 0;
+            padding = 0;
+            colons = 0;
+            break;
+        }
+        if (i) {
+            FILL_PADDING(i);
+            memcpy(s, tp, i);
+            s = case_conv(s, i, flags);
+        }
+    }
+    if (format != format_end) {
+        return 0;
+    }
+    len = s - start;
+    rb_str_set_len(ftime, len);
+    rb_str_resize(ftime, len);
+    return ftime;
 
 err:
-        return 0;
+    return 0;
 }
 
 static size_t
 strftime_size_limit(size_t format_len)
 {
-	size_t limit = format_len * (1*1024*1024);
-	if (limit < format_len) limit = format_len;
-	else if (limit < 1024) limit = 1024;
-	return limit;
+    size_t limit = format_len * (1 * 1024 * 1024);
+    if (limit < format_len)
+        limit = format_len;
+    else if (limit < 1024)
+        limit = 1024;
+    return limit;
 }
 
 VALUE
-rb_strftime(const char *format, size_t format_len, rb_encoding *enc,
-	    VALUE time, const struct vtm *vtm, VALUE timev, int gmt)
+rb_strftime(
+    const char *format, size_t format_len, rb_encoding *enc, VALUE time, const struct vtm *vtm, VALUE timev, int gmt)
 {
-	VALUE result = rb_enc_str_new(0, 0, enc);
-	return rb_strftime_with_timespec(result, format, format_len, enc,
-					 time, vtm, timev, NULL, gmt,
-					 strftime_size_limit(format_len));
+    VALUE result = rb_enc_str_new(0, 0, enc);
+    return rb_strftime_with_timespec(
+        result, format, format_len, enc, time, vtm, timev, NULL, gmt, strftime_size_limit(format_len));
 }
 
 VALUE
-rb_strftime_timespec(const char *format, size_t format_len, rb_encoding *enc,
-		     VALUE time, const struct vtm *vtm, struct timespec *ts, int gmt)
+rb_strftime_timespec(const char *format, size_t format_len, rb_encoding *enc, VALUE time, const struct vtm *vtm,
+    struct timespec *ts, int gmt)
 {
-	VALUE result = rb_enc_str_new(0, 0, enc);
-	return rb_strftime_with_timespec(result, format, format_len, enc,
-					 time, vtm, Qnil, ts, gmt,
-					 strftime_size_limit(format_len));
+    VALUE result = rb_enc_str_new(0, 0, enc);
+    return rb_strftime_with_timespec(
+        result, format, format_len, enc, time, vtm, Qnil, ts, gmt, strftime_size_limit(format_len));
 }
 
 #if 0
@@ -961,9 +966,8 @@ rb_strftime_limit(const char *format, size_t format_len, rb_encoding *enc,
 static int
 isleap(long year)
 {
-	return ((year % 4 == 0 && year % 100 != 0) || year % 400 == 0);
+    return ((year % 4 == 0 && year % 100 != 0) || year % 400 == 0);
 }
-
 
 static void
 vtm2tm_noyear(const struct vtm *vtm, struct tm *result)
@@ -973,13 +977,13 @@ vtm2tm_noyear(const struct vtm *vtm, struct tm *result)
     /* for isleap() in iso8601wknum.  +100 is -1900 (mod 400). */
     tm.tm_year = FIX2INT(mod(vtm->year, INT2FIX(400))) + 100;
 
-    tm.tm_mon = vtm->mon-1;
+    tm.tm_mon = vtm->mon - 1;
     tm.tm_mday = vtm->mday;
     tm.tm_hour = vtm->hour;
     tm.tm_min = vtm->min;
     tm.tm_sec = vtm->sec;
     tm.tm_wday = vtm->wday;
-    tm.tm_yday = vtm->yday-1;
+    tm.tm_yday = vtm->yday - 1;
     tm.tm_isdst = vtm->isdst;
 #if defined(HAVE_STRUCT_TM_TM_GMTOFF)
     tm.tm_gmtoff = NUM2LONG(vtm->utc_offset);
@@ -996,116 +1000,114 @@ vtm2tm_noyear(const struct vtm *vtm, struct tm *result)
 static int
 iso8601wknum(const struct tm *timeptr)
 {
-	/*
-	 * From 1003.2:
-	 *	If the week (Monday to Sunday) containing January 1
-	 *	has four or more days in the new year, then it is week 1;
-	 *	otherwise it is the highest numbered week of the previous
-	 *	year (52 or 53), and the next week is week 1.
-	 *
-	 * ADR: This means if Jan 1 was Monday through Thursday,
-	 *	it was week 1, otherwise week 52 or 53.
-	 *
-	 * XPG4 erroneously included POSIX.2 rationale text in the
-	 * main body of the standard. Thus it requires week 53.
-	 */
+    /*
+     * From 1003.2:
+     *	If the week (Monday to Sunday) containing January 1
+     *	has four or more days in the new year, then it is week 1;
+     *	otherwise it is the highest numbered week of the previous
+     *	year (52 or 53), and the next week is week 1.
+     *
+     * ADR: This means if Jan 1 was Monday through Thursday,
+     *	it was week 1, otherwise week 52 or 53.
+     *
+     * XPG4 erroneously included POSIX.2 rationale text in the
+     * main body of the standard. Thus it requires week 53.
+     */
 
-	int weeknum, jan1day;
+    int weeknum, jan1day;
 
-	/* get week number, Monday as first day of the week */
-	weeknum = weeknumber(timeptr, 1);
+    /* get week number, Monday as first day of the week */
+    weeknum = weeknumber(timeptr, 1);
 
-	/*
-	 * With thanks and tip of the hatlo to tml@tik.vtt.fi
-	 *
-	 * What day of the week does January 1 fall on?
-	 * We know that
-	 *	(timeptr->tm_yday - jan1.tm_yday) MOD 7 ==
-	 *		(timeptr->tm_wday - jan1.tm_wday) MOD 7
-	 * and that
-	 * 	jan1.tm_yday == 0
-	 * and that
-	 * 	timeptr->tm_wday MOD 7 == timeptr->tm_wday
-	 * from which it follows that. . .
-	 */
-	jan1day = timeptr->tm_wday - (timeptr->tm_yday % 7);
-	if (jan1day < 0)
-		jan1day += 7;
+    /*
+     * With thanks and tip of the hatlo to tml@tik.vtt.fi
+     *
+     * What day of the week does January 1 fall on?
+     * We know that
+     *	(timeptr->tm_yday - jan1.tm_yday) MOD 7 ==
+     *		(timeptr->tm_wday - jan1.tm_wday) MOD 7
+     * and that
+     * 	jan1.tm_yday == 0
+     * and that
+     * 	timeptr->tm_wday MOD 7 == timeptr->tm_wday
+     * from which it follows that. . .
+     */
+    jan1day = timeptr->tm_wday - (timeptr->tm_yday % 7);
+    if (jan1day < 0) jan1day += 7;
 
-	/*
-	 * If Jan 1 was a Monday through Thursday, it was in
-	 * week 1.  Otherwise it was last year's highest week, which is
-	 * this year's week 0.
-	 *
-	 * What does that mean?
-	 * If Jan 1 was Monday, the week number is exactly right, it can
-	 *	never be 0.
-	 * If it was Tuesday through Thursday, the weeknumber is one
-	 *	less than it should be, so we add one.
-	 * Otherwise, Friday, Saturday or Sunday, the week number is
-	 * OK, but if it is 0, it needs to be 52 or 53.
-	 */
-	switch (jan1day) {
-	case 1:		/* Monday */
-		break;
-	case 2:		/* Tuesday */
-	case 3:		/* Wednesday */
-	case 4:		/* Thursday */
-		weeknum++;
-		break;
-	case 5:		/* Friday */
-	case 6:		/* Saturday */
-	case 0:		/* Sunday */
-		if (weeknum == 0) {
-#ifdef USE_BROKEN_XPG4
-			/* XPG4 (as of March 1994) says 53 unconditionally */
-			weeknum = 53;
-#else
-			/* get week number of last week of last year */
-			struct tm dec31ly;	/* 12/31 last year */
-			dec31ly = *timeptr;
-			dec31ly.tm_year--;
-			dec31ly.tm_mon = 11;
-			dec31ly.tm_mday = 31;
-			dec31ly.tm_wday = (jan1day == 0) ? 6 : jan1day - 1;
-			dec31ly.tm_yday = 364 + isleap(dec31ly.tm_year + 1900L);
-			weeknum = iso8601wknum(& dec31ly);
-#endif
-		}
-		break;
-	}
+    /*
+     * If Jan 1 was a Monday through Thursday, it was in
+     * week 1.  Otherwise it was last year's highest week, which is
+     * this year's week 0.
+     *
+     * What does that mean?
+     * If Jan 1 was Monday, the week number is exactly right, it can
+     *	never be 0.
+     * If it was Tuesday through Thursday, the weeknumber is one
+     *	less than it should be, so we add one.
+     * Otherwise, Friday, Saturday or Sunday, the week number is
+     * OK, but if it is 0, it needs to be 52 or 53.
+     */
+    switch (jan1day) {
+    case 1: /* Monday */
+        break;
+    case 2: /* Tuesday */
+    case 3: /* Wednesday */
+    case 4: /* Thursday */
+        weeknum++;
+        break;
+    case 5: /* Friday */
+    case 6: /* Saturday */
+    case 0: /* Sunday */
+        if (weeknum == 0) {
+#    ifdef USE_BROKEN_XPG4
+            /* XPG4 (as of March 1994) says 53 unconditionally */
+            weeknum = 53;
+#    else
+            /* get week number of last week of last year */
+            struct tm dec31ly; /* 12/31 last year */
+            dec31ly = *timeptr;
+            dec31ly.tm_year--;
+            dec31ly.tm_mon = 11;
+            dec31ly.tm_mday = 31;
+            dec31ly.tm_wday = (jan1day == 0) ? 6 : jan1day - 1;
+            dec31ly.tm_yday = 364 + isleap(dec31ly.tm_year + 1900L);
+            weeknum = iso8601wknum(&dec31ly);
+#    endif
+        }
+        break;
+    }
 
-	if (timeptr->tm_mon == 11) {
-		/*
-		 * The last week of the year
-		 * can be in week 1 of next year.
-		 * Sigh.
-		 *
-		 * This can only happen if
-		 *	M   T  W
-		 *	29  30 31
-		 *	30  31
-		 *	31
-		 */
-		int wday, mday;
+    if (timeptr->tm_mon == 11) {
+        /*
+         * The last week of the year
+         * can be in week 1 of next year.
+         * Sigh.
+         *
+         * This can only happen if
+         *	M   T  W
+         *	29  30 31
+         *	30  31
+         *	31
+         */
+        int wday, mday;
 
-		wday = timeptr->tm_wday;
-		mday = timeptr->tm_mday;
-		if (   (wday == 1 && (mday >= 29 && mday <= 31))
-		    || (wday == 2 && (mday == 30 || mday == 31))
-		    || (wday == 3 &&  mday == 31))
-			weeknum = 1;
-	}
+        wday = timeptr->tm_wday;
+        mday = timeptr->tm_mday;
+        if ((wday == 1 && (mday >= 29 && mday <= 31)) || (wday == 2 && (mday == 30 || mday == 31)) ||
+            (wday == 3 && mday == 31))
+            weeknum = 1;
+    }
 
-	return weeknum;
+    return weeknum;
 }
 
 static int
 iso8601wknum_v(const struct vtm *vtm)
 {
-        struct tm tm;
-        vtm2tm_noyear(vtm, &tm);
-        return iso8601wknum(&tm);
+    struct tm tm;
+    vtm2tm_noyear(vtm, &tm);
+    return iso8601wknum(&tm);
 }
 
 #endif
@@ -1117,27 +1119,26 @@ iso8601wknum_v(const struct vtm *vtm)
 static int
 weeknumber(const struct tm *timeptr, int firstweekday)
 {
-	int wday = timeptr->tm_wday;
-	int ret;
+    int wday = timeptr->tm_wday;
+    int ret;
 
-	if (firstweekday == 1) {
-		if (wday == 0)	/* sunday */
-			wday = 6;
-		else
-			wday--;
-	}
-	ret = ((timeptr->tm_yday + 7 - wday) / 7);
-	if (ret < 0)
-		ret = 0;
-	return ret;
+    if (firstweekday == 1) {
+        if (wday == 0) /* sunday */
+            wday = 6;
+        else
+            wday--;
+    }
+    ret = ((timeptr->tm_yday + 7 - wday) / 7);
+    if (ret < 0) ret = 0;
+    return ret;
 }
 
 static int
 weeknumber_v(const struct vtm *vtm, int firstweekday)
 {
-        struct tm tm;
-        vtm2tm_noyear(vtm, &tm);
-        return weeknumber(&tm, firstweekday);
+    struct tm tm;
+    vtm2tm_noyear(vtm, &tm);
+    return weeknumber(&tm, firstweekday);
 }
 
 #if 0
@@ -1166,7 +1167,7 @@ How nicer it depends on a compiler, of course, but always a tiny bit.
    ntomczak@vm.ucs.ualberta.ca
 #endif
 
-#ifdef	TEST_STRFTIME
+#ifdef TEST_STRFTIME
 
 /*
  * NAME:
@@ -1195,86 +1196,82 @@ How nicer it depends on a compiler, of course, but always a tiny bit.
 
 /* ADR: I reformatted this to my liking, and deleted some unneeded code. */
 
-#ifndef NULL
-#include	<stdio.h>
-#endif
-#include	<sys/time.h>
-#include	<string.h>
+#    ifndef NULL
+#        include <stdio.h>
+#    endif
+#    include <string.h>
+#    include <sys/time.h>
 
-#define		MAXTIME		132
+#    define MAXTIME 132
 
 /*
  * Array of time formats.
  */
 
-static char *array[] =
-{
-	"(%%A)      full weekday name, var length (Sunday..Saturday)  %A",
-	"(%%B)       full month name, var length (January..December)  %B",
-	"(%%C)                                               Century  %C",
-	"(%%D)                                       date (%%m/%%d/%%y)  %D",
-	"(%%E)                           Locale extensions (ignored)  %E",
-	"(%%H)                          hour (24-hour clock, 00..23)  %H",
-	"(%%I)                          hour (12-hour clock, 01..12)  %I",
-	"(%%M)                                       minute (00..59)  %M",
-	"(%%O)                           Locale extensions (ignored)  %O",
-	"(%%R)                                 time, 24-hour (%%H:%%M)  %R",
-	"(%%S)                                       second (00..60)  %S",
-	"(%%T)                              time, 24-hour (%%H:%%M:%%S)  %T",
-	"(%%U)    week of year, Sunday as first day of week (00..53)  %U",
-	"(%%V)                    week of year according to ISO 8601  %V",
-	"(%%W)    week of year, Monday as first day of week (00..53)  %W",
-	"(%%X)     appropriate locale time representation (%H:%M:%S)  %X",
-	"(%%Y)                           year with century (1970...)  %Y",
-	"(%%Z) timezone (EDT), or blank if timezone not determinable  %Z",
-	"(%%a)          locale's abbreviated weekday name (Sun..Sat)  %a",
-	"(%%b)            locale's abbreviated month name (Jan..Dec)  %b",
-	"(%%c)           full date (Sat Nov  4 12:02:33 1989)%n%t%t%t  %c",
-	"(%%d)                             day of the month (01..31)  %d",
-	"(%%e)               day of the month, blank-padded ( 1..31)  %e",
-	"(%%h)                                should be same as (%%b)  %h",
-	"(%%j)                            day of the year (001..366)  %j",
-	"(%%k)               hour, 24-hour clock, blank pad ( 0..23)  %k",
-	"(%%l)               hour, 12-hour clock, blank pad ( 1..12)  %l",
-	"(%%m)                                        month (01..12)  %m",
-	"(%%p)              locale's AM or PM based on 12-hour clock  %p",
-	"(%%r)                   time, 12-hour (same as %%I:%%M:%%S %%p)  %r",
-	"(%%u) ISO 8601: Weekday as decimal number [1 (Monday) - 7]   %u",
-	"(%%v)                                VMS date (dd-bbb-YYYY)  %v",
-	"(%%w)                       day of week (0..6, Sunday == 0)  %w",
-	"(%%x)                appropriate locale date representation  %x",
-	"(%%y)                      last two digits of year (00..99)  %y",
-	"(%%z)      timezone offset east of GMT as HHMM (e.g. -0500)  %z",
-	(char *) NULL
-};
+static char *array[] = {"(%%A)      full weekday name, var length (Sunday..Saturday)  %A",
+    "(%%B)       full month name, var length (January..December)  %B",
+    "(%%C)                                               Century  %C",
+    "(%%D)                                       date (%%m/%%d/%%y)  %D",
+    "(%%E)                           Locale extensions (ignored)  %E",
+    "(%%H)                          hour (24-hour clock, 00..23)  %H",
+    "(%%I)                          hour (12-hour clock, 01..12)  %I",
+    "(%%M)                                       minute (00..59)  %M",
+    "(%%O)                           Locale extensions (ignored)  %O",
+    "(%%R)                                 time, 24-hour (%%H:%%M)  %R",
+    "(%%S)                                       second (00..60)  %S",
+    "(%%T)                              time, 24-hour (%%H:%%M:%%S)  %T",
+    "(%%U)    week of year, Sunday as first day of week (00..53)  %U",
+    "(%%V)                    week of year according to ISO 8601  %V",
+    "(%%W)    week of year, Monday as first day of week (00..53)  %W",
+    "(%%X)     appropriate locale time representation (%H:%M:%S)  %X",
+    "(%%Y)                           year with century (1970...)  %Y",
+    "(%%Z) timezone (EDT), or blank if timezone not determinable  %Z",
+    "(%%a)          locale's abbreviated weekday name (Sun..Sat)  %a",
+    "(%%b)            locale's abbreviated month name (Jan..Dec)  %b",
+    "(%%c)           full date (Sat Nov  4 12:02:33 1989)%n%t%t%t  %c",
+    "(%%d)                             day of the month (01..31)  %d",
+    "(%%e)               day of the month, blank-padded ( 1..31)  %e",
+    "(%%h)                                should be same as (%%b)  %h",
+    "(%%j)                            day of the year (001..366)  %j",
+    "(%%k)               hour, 24-hour clock, blank pad ( 0..23)  %k",
+    "(%%l)               hour, 12-hour clock, blank pad ( 1..12)  %l",
+    "(%%m)                                        month (01..12)  %m",
+    "(%%p)              locale's AM or PM based on 12-hour clock  %p",
+    "(%%r)                   time, 12-hour (same as %%I:%%M:%%S %%p)  %r",
+    "(%%u) ISO 8601: Weekday as decimal number [1 (Monday) - 7]   %u",
+    "(%%v)                                VMS date (dd-bbb-YYYY)  %v",
+    "(%%w)                       day of week (0..6, Sunday == 0)  %w",
+    "(%%x)                appropriate locale date representation  %x",
+    "(%%y)                      last two digits of year (00..99)  %y",
+    "(%%z)      timezone offset east of GMT as HHMM (e.g. -0500)  %z", (char *)NULL};
 
 /* main routine. */
 
 int
 main(int argc, char **argv)
 {
-	long time();
+    long time();
 
-	char *next;
-	char string[MAXTIME];
+    char *next;
+    char string[MAXTIME];
 
-	int k;
-	int length;
+    int k;
+    int length;
 
-	struct tm *tm;
+    struct tm *tm;
 
-	long clock;
+    long clock;
 
-	/* Call the function. */
+    /* Call the function. */
 
-	clock = time((long *) 0);
-	tm = localtime(&clock);
+    clock = time((long *)0);
+    tm = localtime(&clock);
 
-	for (k = 0; next = array[k]; k++) {
-		length = strftime(string, MAXTIME, next, tm);
-		printf("%s\n", string);
-	}
+    for (k = 0; next = array[k]; k++) {
+        length = strftime(string, MAXTIME, next, tm);
+        printf("%s\n", string);
+    }
 
-	exit(0);
+    exit(0);
 }
-#endif	/* TEST_STRFTIME */
+#endif /* TEST_STRFTIME */

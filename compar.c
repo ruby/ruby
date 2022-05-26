@@ -9,9 +9,9 @@
 
 **********************************************************************/
 
+#include "internal/compar.h"
 #include "id.h"
 #include "internal.h"
-#include "internal/compar.h"
 #include "internal/error.h"
 #include "internal/vm.h"
 #include "ruby/ruby.h"
@@ -30,13 +30,12 @@ rb_cmperr(VALUE x, VALUE y)
     VALUE classname;
 
     if (SPECIAL_CONST_P(y) || BUILTIN_TYPE(y) == T_FLOAT) {
-	classname = rb_inspect(y);
+        classname = rb_inspect(y);
     }
     else {
-	classname = rb_obj_class(y);
+        classname = rb_obj_class(y);
     }
-    rb_raise(rb_eArgError, "comparison of %"PRIsVALUE" with %"PRIsVALUE" failed",
-	     rb_obj_class(x), classname);
+    rb_raise(rb_eArgError, "comparison of %" PRIsVALUE " with %" PRIsVALUE " failed", rb_obj_class(x), classname);
 }
 
 static VALUE
@@ -51,11 +50,11 @@ rb_invcmp(VALUE x, VALUE y)
 {
     VALUE invcmp = rb_exec_recursive(invcmp_recursive, x, y);
     if (invcmp == Qundef || NIL_P(invcmp)) {
-	return Qnil;
+        return Qnil;
     }
     else {
-	int result = -rb_cmpint(invcmp, x, y);
-	return INT2FIX(result);
+        int result = -rb_cmpint(invcmp, x, y);
+        return INT2FIX(result);
     }
 }
 
@@ -223,15 +222,14 @@ cmp_clamp(int argc, VALUE *argv, VALUE x)
     if (rb_scan_args(argc, argv, "11", &min, &max) == 1) {
         VALUE range = min;
         if (!rb_range_values(range, &min, &max, &excl)) {
-            rb_raise(rb_eTypeError, "wrong argument type %s (expected Range)",
-                     rb_builtin_class_name(range));
+            rb_raise(rb_eTypeError, "wrong argument type %s (expected Range)", rb_builtin_class_name(range));
         }
         if (!NIL_P(max)) {
             if (excl) rb_raise(rb_eArgError, "cannot clamp with an exclusive range");
         }
     }
     if (!NIL_P(min) && !NIL_P(max) && cmpint(min, max) > 0) {
-	rb_raise(rb_eArgError, "min argument must be smaller than max argument");
+        rb_raise(rb_eArgError, "min argument must be smaller than max argument");
     }
 
     if (!NIL_P(min)) {

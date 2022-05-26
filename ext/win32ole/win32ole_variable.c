@@ -22,11 +22,13 @@ static VALUE ole_variable_varkind(ITypeInfo *pTypeInfo, UINT var_index);
 static VALUE folevariable_varkind(VALUE self);
 static VALUE folevariable_inspect(VALUE self);
 
-static const rb_data_type_t olevariable_datatype = {
-    "win32ole_variable",
-    {NULL, olevariable_free, olevariable_size,},
-    0, 0, RUBY_TYPED_FREE_IMMEDIATELY
-};
+static const rb_data_type_t olevariable_datatype = {"win32ole_variable",
+    {
+        NULL,
+        olevariable_free,
+        olevariable_size,
+    },
+    0, 0, RUBY_TYPED_FREE_IMMEDIATELY};
 
 static void
 olevariable_free(void *ptr)
@@ -52,8 +54,7 @@ VALUE
 create_win32ole_variable(ITypeInfo *pTypeInfo, UINT index, VALUE name)
 {
     struct olevariabledata *pvar;
-    VALUE obj = TypedData_Make_Struct(cWIN32OLE_VARIABLE, struct olevariabledata,
-                                      &olevariable_datatype, pvar);
+    VALUE obj = TypedData_Make_Struct(cWIN32OLE_VARIABLE, struct olevariabledata, &olevariable_datatype, pvar);
     pvar->pTypeInfo = pTypeInfo;
     OLE_ADDREF(pTypeInfo);
     pvar->index = index;
@@ -94,8 +95,7 @@ ole_variable_ole_type(ITypeInfo *pTypeInfo, UINT var_index)
     HRESULT hr;
     VALUE type;
     hr = pTypeInfo->lpVtbl->GetVarDesc(pTypeInfo, var_index, &pVarDesc);
-    if (FAILED(hr))
-        ole_raise(hr, eWIN32OLERuntimeError, "failed to GetVarDesc");
+    if (FAILED(hr)) ole_raise(hr, eWIN32OLERuntimeError, "failed to GetVarDesc");
     type = ole_typedesc2val(pTypeInfo, &(pVarDesc->elemdescVar.tdesc), Qnil);
     pTypeInfo->lpVtbl->ReleaseVarDesc(pTypeInfo, pVarDesc);
     return type;
@@ -136,8 +136,7 @@ ole_variable_ole_type_detail(ITypeInfo *pTypeInfo, UINT var_index)
     HRESULT hr;
     VALUE type = rb_ary_new();
     hr = pTypeInfo->lpVtbl->GetVarDesc(pTypeInfo, var_index, &pVarDesc);
-    if (FAILED(hr))
-        ole_raise(hr, eWIN32OLERuntimeError, "failed to GetVarDesc");
+    if (FAILED(hr)) ole_raise(hr, eWIN32OLERuntimeError, "failed to GetVarDesc");
     ole_typedesc2val(pTypeInfo, &(pVarDesc->elemdescVar.tdesc), type);
     pTypeInfo->lpVtbl->ReleaseVarDesc(pTypeInfo, pVarDesc);
     return type;
@@ -170,10 +169,8 @@ ole_variable_value(ITypeInfo *pTypeInfo, UINT var_index)
     HRESULT hr;
     VALUE val = Qnil;
     hr = pTypeInfo->lpVtbl->GetVarDesc(pTypeInfo, var_index, &pVarDesc);
-    if (FAILED(hr))
-        return Qnil;
-    if(pVarDesc->varkind == VAR_CONST)
-        val = ole_variant2val(V_UNION1(pVarDesc, lpvarValue));
+    if (FAILED(hr)) return Qnil;
+    if (pVarDesc->varkind == VAR_CONST) val = ole_variant2val(V_UNION1(pVarDesc, lpvarValue));
     pTypeInfo->lpVtbl->ReleaseVarDesc(pTypeInfo, pVarDesc);
     return val;
 }
@@ -214,11 +211,8 @@ ole_variable_visible(ITypeInfo *pTypeInfo, UINT var_index)
     HRESULT hr;
     VALUE visible = Qfalse;
     hr = pTypeInfo->lpVtbl->GetVarDesc(pTypeInfo, var_index, &pVarDesc);
-    if (FAILED(hr))
-        return visible;
-    if (!(pVarDesc->wVarFlags & (VARFLAG_FHIDDEN |
-                                 VARFLAG_FRESTRICTED |
-                                 VARFLAG_FNONBROWSABLE))) {
+    if (FAILED(hr)) return visible;
+    if (!(pVarDesc->wVarFlags & (VARFLAG_FHIDDEN | VARFLAG_FRESTRICTED | VARFLAG_FNONBROWSABLE))) {
         visible = Qtrue;
     }
     pTypeInfo->lpVtbl->ReleaseVarDesc(pTypeInfo, pVarDesc);
@@ -260,9 +254,8 @@ ole_variable_kind(ITypeInfo *pTypeInfo, UINT var_index)
     HRESULT hr;
     VALUE kind = rb_str_new2("UNKNOWN");
     hr = pTypeInfo->lpVtbl->GetVarDesc(pTypeInfo, var_index, &pVarDesc);
-    if (FAILED(hr))
-        return kind;
-    switch(pVarDesc->varkind) {
+    if (FAILED(hr)) return kind;
+    switch (pVarDesc->varkind) {
     case VAR_PERINSTANCE:
         kind = rb_str_new2("PERINSTANCE");
         break;
@@ -316,8 +309,7 @@ ole_variable_varkind(ITypeInfo *pTypeInfo, UINT var_index)
     HRESULT hr;
     VALUE kind = Qnil;
     hr = pTypeInfo->lpVtbl->GetVarDesc(pTypeInfo, var_index, &pVarDesc);
-    if (FAILED(hr))
-        return kind;
+    if (FAILED(hr)) return kind;
     pTypeInfo->lpVtbl->ReleaseVarDesc(pTypeInfo, pVarDesc);
     kind = RB_INT2FIX(pVarDesc->varkind);
     return kind;
@@ -361,13 +353,14 @@ folevariable_inspect(VALUE self)
 {
     VALUE v = rb_inspect(folevariable_value(self));
     VALUE n = folevariable_name(self);
-    VALUE detail = rb_sprintf("%"PRIsVALUE"=%"PRIsVALUE, n, v);
+    VALUE detail = rb_sprintf("%" PRIsVALUE "=%" PRIsVALUE, n, v);
     return make_inspect("WIN32OLE_VARIABLE", detail);
 }
 
 VALUE cWIN32OLE_VARIABLE;
 
-void Init_win32ole_variable(void)
+void
+Init_win32ole_variable(void)
 {
     cWIN32OLE_VARIABLE = rb_define_class_under(cWIN32OLE, "Variable", rb_cObject);
     rb_define_const(rb_cObject, "WIN32OLE_VARIABLE", cWIN32OLE_VARIABLE);

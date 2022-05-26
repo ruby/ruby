@@ -1,4 +1,4 @@
-#ifndef RBIMPL_ATTR_RETURNS_NONNULL_H                /*-*-C++-*-vi:se ft=cpp:*/
+#ifndef RBIMPL_ATTR_RETURNS_NONNULL_H /*-*-C++-*-vi:se ft=cpp:*/
 #define RBIMPL_ATTR_RETURNS_NONNULL_H
 /**
  * @file
@@ -24,14 +24,14 @@
 
 /** Wraps (or simulates) `__attribute__((returns_nonnull))` */
 #if defined(_Ret_nonnull_)
-# /* Take SAL definition. */
-# define RBIMPL_ATTR_RETURNS_NONNULL() _Ret_nonnull_
+#    /* Take SAL definition. */
+#    define RBIMPL_ATTR_RETURNS_NONNULL() _Ret_nonnull_
 
 #elif RBIMPL_HAS_ATTRIBUTE(returns_nonnull)
-# define RBIMPL_ATTR_RETURNS_NONNULL() __attribute__((__returns_nonnull__))
+#    define RBIMPL_ATTR_RETURNS_NONNULL() __attribute__((__returns_nonnull__))
 
 #else
-# define RBIMPL_ATTR_RETURNS_NONNULL() /* void */
+#    define RBIMPL_ATTR_RETURNS_NONNULL() /* void */
 #endif
 
 #endif /* RBIMPL_ATTR_RETURNS_NONNULL_H */

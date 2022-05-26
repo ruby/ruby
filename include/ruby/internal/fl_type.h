@@ -1,4 +1,4 @@
-#ifndef RBIMPL_FL_TYPE_H                             /*-*-C++-*-vi:se ft=cpp:*/
+#ifndef RBIMPL_FL_TYPE_H /*-*-C++-*-vi:se ft=cpp:*/
 #define RBIMPL_FL_TYPE_H
 /**
  * @file
@@ -20,7 +20,8 @@
  *             extension libraries.  They could be written in C++98.
  * @brief      Defines enum ::ruby_fl_type.
  */
-#include "ruby/internal/config.h"      /* for ENUM_OVER_INT */
+#include "ruby/assert.h"
+#include "ruby/defines.h"
 #include "ruby/internal/attr/artificial.h"
 #include "ruby/internal/attr/deprecated.h"
 #include "ruby/internal/attr/flag_enum.h"
@@ -29,6 +30,7 @@
 #include "ruby/internal/attr/pure.h"
 #include "ruby/internal/cast.h"
 #include "ruby/internal/compiler_since.h"
+#include "ruby/internal/config.h" /* for ENUM_OVER_INT */
 #include "ruby/internal/core/rbasic.h"
 #include "ruby/internal/dllexport.h"
 #include "ruby/internal/has/extension.h"
@@ -36,90 +38,88 @@
 #include "ruby/internal/stdbool.h"
 #include "ruby/internal/value.h"
 #include "ruby/internal/value_type.h"
-#include "ruby/assert.h"
-#include "ruby/defines.h"
 
 /** @cond INTERNAL_MACRO */
 #if RBIMPL_HAS_EXTENSION(enumerator_attributes)
-# define RBIMPL_HAVE_ENUM_ATTRIBUTE 1
+#    define RBIMPL_HAVE_ENUM_ATTRIBUTE 1
 #elif RBIMPL_COMPILER_SINCE(GCC, 6, 0, 0)
-# define RBIMPL_HAVE_ENUM_ATTRIBUTE 1
+#    define RBIMPL_HAVE_ENUM_ATTRIBUTE 1
 #endif
 
 #ifdef ENUM_OVER_INT
-# define RBIMPL_WIDER_ENUM 1
-#elif SIZEOF_INT * CHAR_BIT > 12+19+1
-# define RBIMPL_WIDER_ENUM 1
+#    define RBIMPL_WIDER_ENUM 1
+#elif SIZEOF_INT * CHAR_BIT > 12 + 19 + 1
+#    define RBIMPL_WIDER_ENUM 1
 #else
-# define RBIMPL_WIDER_ENUM 0
+#    define RBIMPL_WIDER_ENUM 0
 #endif
 /** @endcond */
 
-#define FL_SINGLETON    RBIMPL_CAST((VALUE)RUBY_FL_SINGLETON)            /**< @old{RUBY_FL_SINGLETON} */
-#define FL_WB_PROTECTED RBIMPL_CAST((VALUE)RUBY_FL_WB_PROTECTED)         /**< @old{RUBY_FL_WB_PROTECTED} */
-#define FL_PROMOTED0    RBIMPL_CAST((VALUE)RUBY_FL_PROMOTED0)            /**< @old{RUBY_FL_PROMOTED0} */
-#define FL_PROMOTED1    RBIMPL_CAST((VALUE)RUBY_FL_PROMOTED1)            /**< @old{RUBY_FL_PROMOTED1} */
-#define FL_FINALIZE     RBIMPL_CAST((VALUE)RUBY_FL_FINALIZE)             /**< @old{RUBY_FL_FINALIZE} */
-#define FL_TAINT        RBIMPL_CAST((VALUE)RUBY_FL_TAINT)                /**< @old{RUBY_FL_TAINT} */
-#define FL_SHAREABLE    RBIMPL_CAST((VALUE)RUBY_FL_SHAREABLE)            /**< @old{RUBY_FL_SHAREABLE} */
-#define FL_UNTRUSTED    RBIMPL_CAST((VALUE)RUBY_FL_UNTRUSTED)            /**< @old{RUBY_FL_UNTRUSTED} */
-#define FL_SEEN_OBJ_ID  RBIMPL_CAST((VALUE)RUBY_FL_SEEN_OBJ_ID)          /**< @old{RUBY_FL_SEEN_OBJ_ID} */
-#define FL_EXIVAR       RBIMPL_CAST((VALUE)RUBY_FL_EXIVAR)               /**< @old{RUBY_FL_EXIVAR} */
-#define FL_FREEZE       RBIMPL_CAST((VALUE)RUBY_FL_FREEZE)               /**< @old{RUBY_FL_FREEZE} */
+#define FL_SINGLETON RBIMPL_CAST((VALUE)RUBY_FL_SINGLETON)       /**< @old{RUBY_FL_SINGLETON} */
+#define FL_WB_PROTECTED RBIMPL_CAST((VALUE)RUBY_FL_WB_PROTECTED) /**< @old{RUBY_FL_WB_PROTECTED} */
+#define FL_PROMOTED0 RBIMPL_CAST((VALUE)RUBY_FL_PROMOTED0)       /**< @old{RUBY_FL_PROMOTED0} */
+#define FL_PROMOTED1 RBIMPL_CAST((VALUE)RUBY_FL_PROMOTED1)       /**< @old{RUBY_FL_PROMOTED1} */
+#define FL_FINALIZE RBIMPL_CAST((VALUE)RUBY_FL_FINALIZE)         /**< @old{RUBY_FL_FINALIZE} */
+#define FL_TAINT RBIMPL_CAST((VALUE)RUBY_FL_TAINT)               /**< @old{RUBY_FL_TAINT} */
+#define FL_SHAREABLE RBIMPL_CAST((VALUE)RUBY_FL_SHAREABLE)       /**< @old{RUBY_FL_SHAREABLE} */
+#define FL_UNTRUSTED RBIMPL_CAST((VALUE)RUBY_FL_UNTRUSTED)       /**< @old{RUBY_FL_UNTRUSTED} */
+#define FL_SEEN_OBJ_ID RBIMPL_CAST((VALUE)RUBY_FL_SEEN_OBJ_ID)   /**< @old{RUBY_FL_SEEN_OBJ_ID} */
+#define FL_EXIVAR RBIMPL_CAST((VALUE)RUBY_FL_EXIVAR)             /**< @old{RUBY_FL_EXIVAR} */
+#define FL_FREEZE RBIMPL_CAST((VALUE)RUBY_FL_FREEZE)             /**< @old{RUBY_FL_FREEZE} */
 
-#define FL_USHIFT       RBIMPL_CAST((VALUE)RUBY_FL_USHIFT)               /**< @old{RUBY_FL_USHIFT} */
+#define FL_USHIFT RBIMPL_CAST((VALUE)RUBY_FL_USHIFT) /**< @old{RUBY_FL_USHIFT} */
 
-#define FL_USER0        RBIMPL_CAST((VALUE)RUBY_FL_USER0)                /**< @old{RUBY_FL_USER0} */
-#define FL_USER1        RBIMPL_CAST((VALUE)RUBY_FL_USER1)                /**< @old{RUBY_FL_USER1} */
-#define FL_USER2        RBIMPL_CAST((VALUE)RUBY_FL_USER2)                /**< @old{RUBY_FL_USER2} */
-#define FL_USER3        RBIMPL_CAST((VALUE)RUBY_FL_USER3)                /**< @old{RUBY_FL_USER3} */
-#define FL_USER4        RBIMPL_CAST((VALUE)RUBY_FL_USER4)                /**< @old{RUBY_FL_USER4} */
-#define FL_USER5        RBIMPL_CAST((VALUE)RUBY_FL_USER5)                /**< @old{RUBY_FL_USER5} */
-#define FL_USER6        RBIMPL_CAST((VALUE)RUBY_FL_USER6)                /**< @old{RUBY_FL_USER6} */
-#define FL_USER7        RBIMPL_CAST((VALUE)RUBY_FL_USER7)                /**< @old{RUBY_FL_USER7} */
-#define FL_USER8        RBIMPL_CAST((VALUE)RUBY_FL_USER8)                /**< @old{RUBY_FL_USER8} */
-#define FL_USER9        RBIMPL_CAST((VALUE)RUBY_FL_USER9)                /**< @old{RUBY_FL_USER9} */
-#define FL_USER10       RBIMPL_CAST((VALUE)RUBY_FL_USER10)               /**< @old{RUBY_FL_USER10} */
-#define FL_USER11       RBIMPL_CAST((VALUE)RUBY_FL_USER11)               /**< @old{RUBY_FL_USER11} */
-#define FL_USER12       RBIMPL_CAST((VALUE)RUBY_FL_USER12)               /**< @old{RUBY_FL_USER12} */
-#define FL_USER13       RBIMPL_CAST((VALUE)RUBY_FL_USER13)               /**< @old{RUBY_FL_USER13} */
-#define FL_USER14       RBIMPL_CAST((VALUE)RUBY_FL_USER14)               /**< @old{RUBY_FL_USER14} */
-#define FL_USER15       RBIMPL_CAST((VALUE)RUBY_FL_USER15)               /**< @old{RUBY_FL_USER15} */
-#define FL_USER16       RBIMPL_CAST((VALUE)RUBY_FL_USER16)               /**< @old{RUBY_FL_USER16} */
-#define FL_USER17       RBIMPL_CAST((VALUE)RUBY_FL_USER17)               /**< @old{RUBY_FL_USER17} */
-#define FL_USER18       RBIMPL_CAST((VALUE)RUBY_FL_USER18)               /**< @old{RUBY_FL_USER18} */
-#define FL_USER19       RBIMPL_CAST((VALUE)(unsigned int)RUBY_FL_USER19) /**< @old{RUBY_FL_USER19} */
+#define FL_USER0 RBIMPL_CAST((VALUE)RUBY_FL_USER0)                 /**< @old{RUBY_FL_USER0} */
+#define FL_USER1 RBIMPL_CAST((VALUE)RUBY_FL_USER1)                 /**< @old{RUBY_FL_USER1} */
+#define FL_USER2 RBIMPL_CAST((VALUE)RUBY_FL_USER2)                 /**< @old{RUBY_FL_USER2} */
+#define FL_USER3 RBIMPL_CAST((VALUE)RUBY_FL_USER3)                 /**< @old{RUBY_FL_USER3} */
+#define FL_USER4 RBIMPL_CAST((VALUE)RUBY_FL_USER4)                 /**< @old{RUBY_FL_USER4} */
+#define FL_USER5 RBIMPL_CAST((VALUE)RUBY_FL_USER5)                 /**< @old{RUBY_FL_USER5} */
+#define FL_USER6 RBIMPL_CAST((VALUE)RUBY_FL_USER6)                 /**< @old{RUBY_FL_USER6} */
+#define FL_USER7 RBIMPL_CAST((VALUE)RUBY_FL_USER7)                 /**< @old{RUBY_FL_USER7} */
+#define FL_USER8 RBIMPL_CAST((VALUE)RUBY_FL_USER8)                 /**< @old{RUBY_FL_USER8} */
+#define FL_USER9 RBIMPL_CAST((VALUE)RUBY_FL_USER9)                 /**< @old{RUBY_FL_USER9} */
+#define FL_USER10 RBIMPL_CAST((VALUE)RUBY_FL_USER10)               /**< @old{RUBY_FL_USER10} */
+#define FL_USER11 RBIMPL_CAST((VALUE)RUBY_FL_USER11)               /**< @old{RUBY_FL_USER11} */
+#define FL_USER12 RBIMPL_CAST((VALUE)RUBY_FL_USER12)               /**< @old{RUBY_FL_USER12} */
+#define FL_USER13 RBIMPL_CAST((VALUE)RUBY_FL_USER13)               /**< @old{RUBY_FL_USER13} */
+#define FL_USER14 RBIMPL_CAST((VALUE)RUBY_FL_USER14)               /**< @old{RUBY_FL_USER14} */
+#define FL_USER15 RBIMPL_CAST((VALUE)RUBY_FL_USER15)               /**< @old{RUBY_FL_USER15} */
+#define FL_USER16 RBIMPL_CAST((VALUE)RUBY_FL_USER16)               /**< @old{RUBY_FL_USER16} */
+#define FL_USER17 RBIMPL_CAST((VALUE)RUBY_FL_USER17)               /**< @old{RUBY_FL_USER17} */
+#define FL_USER18 RBIMPL_CAST((VALUE)RUBY_FL_USER18)               /**< @old{RUBY_FL_USER18} */
+#define FL_USER19 RBIMPL_CAST((VALUE)(unsigned int)RUBY_FL_USER19) /**< @old{RUBY_FL_USER19} */
 
-#define ELTS_SHARED          RUBY_ELTS_SHARED     /**< @old{RUBY_ELTS_SHARED} */
-#define RB_OBJ_FREEZE        rb_obj_freeze_inline /**< @alias{rb_obj_freeze_inline} */
+#define ELTS_SHARED RUBY_ELTS_SHARED       /**< @old{RUBY_ELTS_SHARED} */
+#define RB_OBJ_FREEZE rb_obj_freeze_inline /**< @alias{rb_obj_freeze_inline} */
 
 /** @cond INTERNAL_MACRO */
-#define RUBY_ELTS_SHARED     RUBY_ELTS_SHARED
-#define RB_FL_ABLE           RB_FL_ABLE
-#define RB_FL_ALL            RB_FL_ALL
-#define RB_FL_ALL_RAW        RB_FL_ALL_RAW
-#define RB_FL_ANY            RB_FL_ANY
-#define RB_FL_ANY_RAW        RB_FL_ANY_RAW
-#define RB_FL_REVERSE        RB_FL_REVERSE
-#define RB_FL_REVERSE_RAW    RB_FL_REVERSE_RAW
-#define RB_FL_SET            RB_FL_SET
-#define RB_FL_SET_RAW        RB_FL_SET_RAW
-#define RB_FL_TEST           RB_FL_TEST
-#define RB_FL_TEST_RAW       RB_FL_TEST_RAW
-#define RB_FL_UNSET          RB_FL_UNSET
-#define RB_FL_UNSET_RAW      RB_FL_UNSET_RAW
-#define RB_OBJ_FREEZE_RAW    RB_OBJ_FREEZE_RAW
-#define RB_OBJ_FROZEN        RB_OBJ_FROZEN
-#define RB_OBJ_FROZEN_RAW    RB_OBJ_FROZEN_RAW
-#define RB_OBJ_INFECT        RB_OBJ_INFECT
-#define RB_OBJ_INFECT_RAW    RB_OBJ_INFECT_RAW
-#define RB_OBJ_TAINT         RB_OBJ_TAINT
-#define RB_OBJ_TAINTABLE     RB_OBJ_TAINTABLE
-#define RB_OBJ_TAINTED       RB_OBJ_TAINTED
-#define RB_OBJ_TAINTED_RAW   RB_OBJ_TAINTED_RAW
-#define RB_OBJ_TAINT_RAW     RB_OBJ_TAINT_RAW
-#define RB_OBJ_UNTRUST       RB_OBJ_TAINT
-#define RB_OBJ_UNTRUSTED     RB_OBJ_TAINTED
+#define RUBY_ELTS_SHARED RUBY_ELTS_SHARED
+#define RB_FL_ABLE RB_FL_ABLE
+#define RB_FL_ALL RB_FL_ALL
+#define RB_FL_ALL_RAW RB_FL_ALL_RAW
+#define RB_FL_ANY RB_FL_ANY
+#define RB_FL_ANY_RAW RB_FL_ANY_RAW
+#define RB_FL_REVERSE RB_FL_REVERSE
+#define RB_FL_REVERSE_RAW RB_FL_REVERSE_RAW
+#define RB_FL_SET RB_FL_SET
+#define RB_FL_SET_RAW RB_FL_SET_RAW
+#define RB_FL_TEST RB_FL_TEST
+#define RB_FL_TEST_RAW RB_FL_TEST_RAW
+#define RB_FL_UNSET RB_FL_UNSET
+#define RB_FL_UNSET_RAW RB_FL_UNSET_RAW
+#define RB_OBJ_FREEZE_RAW RB_OBJ_FREEZE_RAW
+#define RB_OBJ_FROZEN RB_OBJ_FROZEN
+#define RB_OBJ_FROZEN_RAW RB_OBJ_FROZEN_RAW
+#define RB_OBJ_INFECT RB_OBJ_INFECT
+#define RB_OBJ_INFECT_RAW RB_OBJ_INFECT_RAW
+#define RB_OBJ_TAINT RB_OBJ_TAINT
+#define RB_OBJ_TAINTABLE RB_OBJ_TAINTABLE
+#define RB_OBJ_TAINTED RB_OBJ_TAINTED
+#define RB_OBJ_TAINTED_RAW RB_OBJ_TAINTED_RAW
+#define RB_OBJ_TAINT_RAW RB_OBJ_TAINT_RAW
+#define RB_OBJ_UNTRUST RB_OBJ_TAINT
+#define RB_OBJ_UNTRUSTED RB_OBJ_TAINTED
 /** @endcond */
 
 /**
@@ -127,32 +127,32 @@
  * @{
  * These macros are deprecated.  Prefer their `RB_`-prefixed versions.
  */
-#define FL_ABLE         RB_FL_ABLE         /**< @old{RB_FL_ABLE} */
-#define FL_ALL          RB_FL_ALL          /**< @old{RB_FL_ALL} */
-#define FL_ALL_RAW      RB_FL_ALL_RAW      /**< @old{RB_FL_ALL_RAW} */
-#define FL_ANY          RB_FL_ANY          /**< @old{RB_FL_ANY} */
-#define FL_ANY_RAW      RB_FL_ANY_RAW      /**< @old{RB_FL_ANY_RAW} */
-#define FL_REVERSE      RB_FL_REVERSE      /**< @old{RB_FL_REVERSE} */
-#define FL_REVERSE_RAW  RB_FL_REVERSE_RAW  /**< @old{RB_FL_REVERSE_RAW} */
-#define FL_SET          RB_FL_SET          /**< @old{RB_FL_SET} */
-#define FL_SET_RAW      RB_FL_SET_RAW      /**< @old{RB_FL_SET_RAW} */
-#define FL_TEST         RB_FL_TEST         /**< @old{RB_FL_TEST} */
-#define FL_TEST_RAW     RB_FL_TEST_RAW     /**< @old{RB_FL_TEST_RAW} */
-#define FL_UNSET        RB_FL_UNSET        /**< @old{RB_FL_UNSET} */
-#define FL_UNSET_RAW    RB_FL_UNSET_RAW    /**< @old{RB_FL_UNSET_RAW} */
-#define OBJ_FREEZE      RB_OBJ_FREEZE      /**< @old{RB_OBJ_FREEZE} */
-#define OBJ_FREEZE_RAW  RB_OBJ_FREEZE_RAW  /**< @old{RB_OBJ_FREEZE_RAW} */
-#define OBJ_FROZEN      RB_OBJ_FROZEN      /**< @old{RB_OBJ_FROZEN} */
-#define OBJ_FROZEN_RAW  RB_OBJ_FROZEN_RAW  /**< @old{RB_OBJ_FROZEN_RAW} */
-#define OBJ_INFECT      RB_OBJ_INFECT      /**< @old{RB_OBJ_INFECT} */
-#define OBJ_INFECT_RAW  RB_OBJ_INFECT_RAW  /**< @old{RB_OBJ_INFECT_RAW} */
-#define OBJ_TAINT       RB_OBJ_TAINT       /**< @old{RB_OBJ_TAINT} */
-#define OBJ_TAINTABLE   RB_OBJ_TAINTABLE   /**< @old{RB_OBJ_TAINT_RAW} */
-#define OBJ_TAINTED     RB_OBJ_TAINTED     /**< @old{RB_OBJ_TAINTED} */
+#define FL_ABLE RB_FL_ABLE                 /**< @old{RB_FL_ABLE} */
+#define FL_ALL RB_FL_ALL                   /**< @old{RB_FL_ALL} */
+#define FL_ALL_RAW RB_FL_ALL_RAW           /**< @old{RB_FL_ALL_RAW} */
+#define FL_ANY RB_FL_ANY                   /**< @old{RB_FL_ANY} */
+#define FL_ANY_RAW RB_FL_ANY_RAW           /**< @old{RB_FL_ANY_RAW} */
+#define FL_REVERSE RB_FL_REVERSE           /**< @old{RB_FL_REVERSE} */
+#define FL_REVERSE_RAW RB_FL_REVERSE_RAW   /**< @old{RB_FL_REVERSE_RAW} */
+#define FL_SET RB_FL_SET                   /**< @old{RB_FL_SET} */
+#define FL_SET_RAW RB_FL_SET_RAW           /**< @old{RB_FL_SET_RAW} */
+#define FL_TEST RB_FL_TEST                 /**< @old{RB_FL_TEST} */
+#define FL_TEST_RAW RB_FL_TEST_RAW         /**< @old{RB_FL_TEST_RAW} */
+#define FL_UNSET RB_FL_UNSET               /**< @old{RB_FL_UNSET} */
+#define FL_UNSET_RAW RB_FL_UNSET_RAW       /**< @old{RB_FL_UNSET_RAW} */
+#define OBJ_FREEZE RB_OBJ_FREEZE           /**< @old{RB_OBJ_FREEZE} */
+#define OBJ_FREEZE_RAW RB_OBJ_FREEZE_RAW   /**< @old{RB_OBJ_FREEZE_RAW} */
+#define OBJ_FROZEN RB_OBJ_FROZEN           /**< @old{RB_OBJ_FROZEN} */
+#define OBJ_FROZEN_RAW RB_OBJ_FROZEN_RAW   /**< @old{RB_OBJ_FROZEN_RAW} */
+#define OBJ_INFECT RB_OBJ_INFECT           /**< @old{RB_OBJ_INFECT} */
+#define OBJ_INFECT_RAW RB_OBJ_INFECT_RAW   /**< @old{RB_OBJ_INFECT_RAW} */
+#define OBJ_TAINT RB_OBJ_TAINT             /**< @old{RB_OBJ_TAINT} */
+#define OBJ_TAINTABLE RB_OBJ_TAINTABLE     /**< @old{RB_OBJ_TAINT_RAW} */
+#define OBJ_TAINTED RB_OBJ_TAINTED         /**< @old{RB_OBJ_TAINTED} */
 #define OBJ_TAINTED_RAW RB_OBJ_TAINTED_RAW /**< @old{RB_OBJ_TAINTED_RAW} */
-#define OBJ_TAINT_RAW   RB_OBJ_TAINT_RAW   /**< @old{RB_OBJ_TAINT_RAW} */
-#define OBJ_UNTRUST     RB_OBJ_UNTRUST     /**< @old{RB_OBJ_TAINT} */
-#define OBJ_UNTRUSTED   RB_OBJ_UNTRUSTED   /**< @old{RB_OBJ_TAINTED} */
+#define OBJ_TAINT_RAW RB_OBJ_TAINT_RAW     /**< @old{RB_OBJ_TAINT_RAW} */
+#define OBJ_UNTRUST RB_OBJ_UNTRUST         /**< @old{RB_OBJ_TAINT} */
+#define OBJ_UNTRUSTED RB_OBJ_UNTRUSTED     /**< @old{RB_OBJ_TAINTED} */
 /** @} */
 
 /**
@@ -188,9 +188,7 @@ RB_GNUC_EXTENSION
  *        ::RUBY_T_OBJECT  use these  bits  for their  own  purpose.  See  also
  *        https://bugs.ruby-lang.org/issues/18059
  */
-enum
-RBIMPL_ATTR_FLAG_ENUM()
-ruby_fl_type {
+enum RBIMPL_ATTR_FLAG_ENUM() ruby_fl_type {
 
     /**
      * @deprecated  This flag once was a thing  back in the old days, but makes
@@ -204,7 +202,7 @@ ruby_fl_type {
      * internally.   The  current  usages  of this  flag  should  be  something
      * different, which is unclear to @shyouhei.
      */
-    RUBY_FL_WB_PROTECTED = (1<<5),
+    RUBY_FL_WB_PROTECTED = (1 << 5),
 
     /**
      * This flag  has something to do  with our garbage collector.   These days
@@ -220,7 +218,7 @@ ruby_fl_type {
      * 3rd parties.  It must be an implementation detail that they should never
      * know.  Might better be hidden.
      */
-    RUBY_FL_PROMOTED0    = (1<<5),
+    RUBY_FL_PROMOTED0 = (1 << 5),
 
     /**
      * This flag  has something to do  with our garbage collector.   These days
@@ -237,7 +235,7 @@ ruby_fl_type {
      * 3rd parties.  It must be an implementation detail that they should never
      * know.  Might better be hidden.
      */
-    RUBY_FL_PROMOTED1    = (1<<6),
+    RUBY_FL_PROMOTED1 = (1 << 6),
 
     /**
      * This flag  has something to do  with our garbage collector.   These days
@@ -254,7 +252,7 @@ ruby_fl_type {
      * 3rd parties.  It must be an implementation detail that they should never
      * know.  Might better be hidden.
      */
-    RUBY_FL_PROMOTED     = RUBY_FL_PROMOTED0 | RUBY_FL_PROMOTED1,
+    RUBY_FL_PROMOTED = RUBY_FL_PROMOTED0 | RUBY_FL_PROMOTED1,
 
     /**
      * This flag has  something to do with finalisers.  A  ruby object can have
@@ -268,7 +266,7 @@ ruby_fl_type {
      * 3rd parties.  It must be an implementation detail that they should never
      * know.  Might better be hidden.
      */
-    RUBY_FL_FINALIZE     = (1<<7),
+    RUBY_FL_FINALIZE = (1 << 7),
 
     /**
      * @deprecated  This flag once was a thing  back in the old days, but makes
@@ -278,12 +276,12 @@ ruby_fl_type {
     RUBY_FL_TAINT
 
 #if defined(RBIMPL_HAVE_ENUM_ATTRIBUTE)
-    RBIMPL_ATTR_DEPRECATED(("taintedness turned out to be a wrong idea."))
+        RBIMPL_ATTR_DEPRECATED(("taintedness turned out to be a wrong idea."))
 #elif defined(_MSC_VER)
-# pragma deprecated(RUBY_FL_TAINT)
+#    pragma deprecated(RUBY_FL_TAINT)
 #endif
 
-                         = (1<<8),
+        = (1 << 8),
 
     /**
      * This flag has something to do with Ractor.  Multiple Ractors run without
@@ -295,7 +293,7 @@ ruby_fl_type {
      * This flag  needs deep  understanding of multithreaded  programming.  You
      * would better not use it.
      */
-    RUBY_FL_SHAREABLE    = (1<<8),
+    RUBY_FL_SHAREABLE = (1 << 8),
 
     /**
      * @deprecated  This flag once was a thing  back in the old days, but makes
@@ -305,12 +303,12 @@ ruby_fl_type {
     RUBY_FL_UNTRUSTED
 
 #if defined(RBIMPL_HAVE_ENUM_ATTRIBUTE)
-    RBIMPL_ATTR_DEPRECATED(("trustedness turned out to be a wrong idea."))
+        RBIMPL_ATTR_DEPRECATED(("trustedness turned out to be a wrong idea."))
 #elif defined(_MSC_VER)
-# pragma deprecated(RUBY_FL_UNTRUSTED)
+#    pragma deprecated(RUBY_FL_UNTRUSTED)
 #endif
 
-                         = (1<<8),
+        = (1 << 8),
 
     /**
      * This flag has something to do with  object IDs.  Unlike in the old days,
@@ -329,7 +327,7 @@ ruby_fl_type {
      * 3rd parties.  It must be an implementation detail that they should never
      * know.  Might better be hidden.
      */
-    RUBY_FL_SEEN_OBJ_ID  = (1<<9),
+    RUBY_FL_SEEN_OBJ_ID = (1 << 9),
 
     /**
      * This flag has something to do with instance variables.  3rd parties need
@@ -342,7 +340,7 @@ ruby_fl_type {
      *
      * As of writing everything except ::RObject and RModule use this scheme.
      */
-    RUBY_FL_EXIVAR       = (1<<10),
+    RUBY_FL_EXIVAR = (1 << 10),
 
     /**
      * This flag has something to do with data immutability.  When this flag is
@@ -353,10 +351,10 @@ ruby_fl_type {
      *
      * @see rb_check_frozen()
      */
-    RUBY_FL_FREEZE       = (1<<11),
+    RUBY_FL_FREEZE = (1 << 11),
 
 /** (@shyouhei doesn't know how to excude this macro from doxygen). */
-#define RBIMPL_FL_USER_N(n) RUBY_FL_USER##n = (1<<(RUBY_FL_USHIFT+n))
+#define RBIMPL_FL_USER_N(n) RUBY_FL_USER##n = (1 << (RUBY_FL_USHIFT + n))
     RBIMPL_FL_USER_N(0),  /**< User-defined flag. */
     RBIMPL_FL_USER_N(1),  /**< User-defined flag. */
     RBIMPL_FL_USER_N(2),  /**< User-defined flag. */
@@ -379,7 +377,7 @@ ruby_fl_type {
 #ifdef ENUM_OVER_INT
     RBIMPL_FL_USER_N(19), /**< User-defined flag. */
 #else
-# define RUBY_FL_USER19 (RBIMPL_VALUE_ONE<<(RUBY_FL_USHIFT+19))
+#    define RUBY_FL_USER19 (RBIMPL_VALUE_ONE << (RUBY_FL_USHIFT + 19))
 #endif
 #undef RBIMPL_FL_USER_N
 #undef RBIMPL_WIDER_ENUM
@@ -402,7 +400,7 @@ ruby_fl_type {
      * 3rd parties.  It must be an implementation detail that they should never
      * know.  Might better be hidden.
      */
-    RUBY_ELTS_SHARED  = RUBY_FL_USER2,
+    RUBY_ELTS_SHARED = RUBY_FL_USER2,
 
     /**
      * This flag has something to do with an object's class.  There are kind of
@@ -439,12 +437,12 @@ enum {
     RUBY_FL_DUPPED
 
 #if defined(RBIMPL_HAVE_ENUM_ATTRIBUTE)
-    RBIMPL_ATTR_DEPRECATED(("It seems there is no actual usage of this enum."))
+        RBIMPL_ATTR_DEPRECATED(("It seems there is no actual usage of this enum."))
 #elif defined(_MSC_VER)
-# pragma deprecated(RUBY_FL_DUPPED)
+#    pragma deprecated(RUBY_FL_DUPPED)
 #endif
 
-    = (int)RUBY_T_MASK | (int)RUBY_FL_EXIVAR
+        = (int)RUBY_T_MASK | (int)RUBY_FL_EXIVAR
 };
 
 #undef RBIMPL_HAVE_ENUM_ATTRIBUTE
@@ -920,7 +918,7 @@ RBIMPL_ATTR_ARTIFICIAL()
 static inline bool
 RB_OBJ_FROZEN(VALUE obj)
 {
-    if (! RB_FL_ABLE(obj)) {
+    if (!RB_FL_ABLE(obj)) {
         return true;
     }
     else {

@@ -1,4 +1,4 @@
-#ifndef INTERNAL_BIGNUM_H                                /*-*-C-*-vi:se ft=c:*/
+#ifndef INTERNAL_BIGNUM_H /*-*-C-*-vi:se ft=c:*/
 #define INTERNAL_BIGNUM_H
 /**
  * @author     Ruby developers <ruby-core@ruby-lang.org>
@@ -8,93 +8,91 @@
  *             file COPYING are met.  Consult the file for details.
  * @brief      Internal header for Bignums.
  */
-#include "ruby/internal/config.h"      /* for HAVE_LIBGMP */
-#include <stddef.h>             /* for size_t */
+#include "ruby/internal/config.h" /* for HAVE_LIBGMP */
+#include <stddef.h>               /* for size_t */
 
 #ifdef HAVE_SYS_TYPES_H
-# include <sys/types.h>         /* for ssize_t (note: on Windows ssize_t is */
-#endif                          /* `#define`d in ruby/config.h) */
+#    include <sys/types.h> /* for ssize_t (note: on Windows ssize_t is */
+#endif                     /* `#define`d in ruby/config.h) */
 
-#include "ruby/internal/stdbool.h"     /* for bool */
-#include "ruby/ruby.h"          /* for struct RBasic */
+#include "ruby/internal/stdbool.h" /* for bool */
+#include "ruby/ruby.h"             /* for struct RBasic */
 
 #ifndef BDIGIT
-# if SIZEOF_INT*2 <= SIZEOF_LONG_LONG
-#  define BDIGIT unsigned int
-#  define SIZEOF_BDIGIT SIZEOF_INT
-#  define BDIGIT_DBL unsigned LONG_LONG
-#  define BDIGIT_DBL_SIGNED LONG_LONG
-#  define PRI_BDIGIT_PREFIX ""
-#  define PRI_BDIGIT_DBL_PREFIX PRI_LL_PREFIX
-# elif SIZEOF_INT*2 <= SIZEOF_LONG
-#  define BDIGIT unsigned int
-#  define SIZEOF_BDIGIT SIZEOF_INT
-#  define BDIGIT_DBL unsigned long
-#  define BDIGIT_DBL_SIGNED long
-#  define PRI_BDIGIT_PREFIX ""
-#  define PRI_BDIGIT_DBL_PREFIX "l"
-# elif SIZEOF_SHORT*2 <= SIZEOF_LONG
-#  define BDIGIT unsigned short
-#  define SIZEOF_BDIGIT SIZEOF_SHORT
-#  define BDIGIT_DBL unsigned long
-#  define BDIGIT_DBL_SIGNED long
-#  define PRI_BDIGIT_PREFIX "h"
-#  define PRI_BDIGIT_DBL_PREFIX "l"
-# else
-#  define BDIGIT unsigned short
-#  define SIZEOF_BDIGIT (SIZEOF_LONG/2)
-#  define SIZEOF_ACTUAL_BDIGIT SIZEOF_LONG
-#  define BDIGIT_DBL unsigned long
-#  define BDIGIT_DBL_SIGNED long
-#  define PRI_BDIGIT_PREFIX "h"
-#  define PRI_BDIGIT_DBL_PREFIX "l"
-# endif
+#    if SIZEOF_INT * 2 <= SIZEOF_LONG_LONG
+#        define BDIGIT unsigned int
+#        define SIZEOF_BDIGIT SIZEOF_INT
+#        define BDIGIT_DBL unsigned LONG_LONG
+#        define BDIGIT_DBL_SIGNED LONG_LONG
+#        define PRI_BDIGIT_PREFIX ""
+#        define PRI_BDIGIT_DBL_PREFIX PRI_LL_PREFIX
+#    elif SIZEOF_INT * 2 <= SIZEOF_LONG
+#        define BDIGIT unsigned int
+#        define SIZEOF_BDIGIT SIZEOF_INT
+#        define BDIGIT_DBL unsigned long
+#        define BDIGIT_DBL_SIGNED long
+#        define PRI_BDIGIT_PREFIX ""
+#        define PRI_BDIGIT_DBL_PREFIX "l"
+#    elif SIZEOF_SHORT * 2 <= SIZEOF_LONG
+#        define BDIGIT unsigned short
+#        define SIZEOF_BDIGIT SIZEOF_SHORT
+#        define BDIGIT_DBL unsigned long
+#        define BDIGIT_DBL_SIGNED long
+#        define PRI_BDIGIT_PREFIX "h"
+#        define PRI_BDIGIT_DBL_PREFIX "l"
+#    else
+#        define BDIGIT unsigned short
+#        define SIZEOF_BDIGIT (SIZEOF_LONG / 2)
+#        define SIZEOF_ACTUAL_BDIGIT SIZEOF_LONG
+#        define BDIGIT_DBL unsigned long
+#        define BDIGIT_DBL_SIGNED long
+#        define PRI_BDIGIT_PREFIX "h"
+#        define PRI_BDIGIT_DBL_PREFIX "l"
+#    endif
 #endif
 
 #ifndef SIZEOF_ACTUAL_BDIGIT
-# define SIZEOF_ACTUAL_BDIGIT SIZEOF_BDIGIT
+#    define SIZEOF_ACTUAL_BDIGIT SIZEOF_BDIGIT
 #endif
 
 #ifdef PRI_BDIGIT_PREFIX
-# define PRIdBDIGIT PRI_BDIGIT_PREFIX"d"
-# define PRIiBDIGIT PRI_BDIGIT_PREFIX"i"
-# define PRIoBDIGIT PRI_BDIGIT_PREFIX"o"
-# define PRIuBDIGIT PRI_BDIGIT_PREFIX"u"
-# define PRIxBDIGIT PRI_BDIGIT_PREFIX"x"
-# define PRIXBDIGIT PRI_BDIGIT_PREFIX"X"
+#    define PRIdBDIGIT PRI_BDIGIT_PREFIX "d"
+#    define PRIiBDIGIT PRI_BDIGIT_PREFIX "i"
+#    define PRIoBDIGIT PRI_BDIGIT_PREFIX "o"
+#    define PRIuBDIGIT PRI_BDIGIT_PREFIX "u"
+#    define PRIxBDIGIT PRI_BDIGIT_PREFIX "x"
+#    define PRIXBDIGIT PRI_BDIGIT_PREFIX "X"
 #endif
 
 #ifdef PRI_BDIGIT_DBL_PREFIX
-# define PRIdBDIGIT_DBL PRI_BDIGIT_DBL_PREFIX"d"
-# define PRIiBDIGIT_DBL PRI_BDIGIT_DBL_PREFIX"i"
-# define PRIoBDIGIT_DBL PRI_BDIGIT_DBL_PREFIX"o"
-# define PRIuBDIGIT_DBL PRI_BDIGIT_DBL_PREFIX"u"
-# define PRIxBDIGIT_DBL PRI_BDIGIT_DBL_PREFIX"x"
-# define PRIXBDIGIT_DBL PRI_BDIGIT_DBL_PREFIX"X"
+#    define PRIdBDIGIT_DBL PRI_BDIGIT_DBL_PREFIX "d"
+#    define PRIiBDIGIT_DBL PRI_BDIGIT_DBL_PREFIX "i"
+#    define PRIoBDIGIT_DBL PRI_BDIGIT_DBL_PREFIX "o"
+#    define PRIuBDIGIT_DBL PRI_BDIGIT_DBL_PREFIX "u"
+#    define PRIxBDIGIT_DBL PRI_BDIGIT_DBL_PREFIX "x"
+#    define PRIXBDIGIT_DBL PRI_BDIGIT_DBL_PREFIX "X"
 #endif
 
 #define RBIGNUM(obj) ((struct RBignum *)(obj))
 #define BIGNUM_SIGN_BIT FL_USER1
 #define BIGNUM_EMBED_FLAG ((VALUE)FL_USER2)
 #define BIGNUM_EMBED_LEN_NUMBITS 3
-#define BIGNUM_EMBED_LEN_MASK \
-    (~(~(VALUE)0U << BIGNUM_EMBED_LEN_NUMBITS) << BIGNUM_EMBED_LEN_SHIFT)
-#define BIGNUM_EMBED_LEN_SHIFT \
-    (FL_USHIFT+3) /* bit offset of BIGNUM_EMBED_LEN_MASK */
+#define BIGNUM_EMBED_LEN_MASK (~(~(VALUE)0U << BIGNUM_EMBED_LEN_NUMBITS) << BIGNUM_EMBED_LEN_SHIFT)
+#define BIGNUM_EMBED_LEN_SHIFT (FL_USHIFT + 3) /* bit offset of BIGNUM_EMBED_LEN_MASK */
 #ifndef BIGNUM_EMBED_LEN_MAX
-# if (SIZEOF_VALUE*RBIMPL_RVALUE_EMBED_LEN_MAX/SIZEOF_ACTUAL_BDIGIT) < (1 << BIGNUM_EMBED_LEN_NUMBITS)-1
-#  define BIGNUM_EMBED_LEN_MAX (SIZEOF_VALUE*RBIMPL_RVALUE_EMBED_LEN_MAX/SIZEOF_ACTUAL_BDIGIT)
-# else
-#  define BIGNUM_EMBED_LEN_MAX ((1 << BIGNUM_EMBED_LEN_NUMBITS)-1)
-# endif
+#    if (SIZEOF_VALUE * RBIMPL_RVALUE_EMBED_LEN_MAX / SIZEOF_ACTUAL_BDIGIT) < (1 << BIGNUM_EMBED_LEN_NUMBITS) - 1
+#        define BIGNUM_EMBED_LEN_MAX (SIZEOF_VALUE * RBIMPL_RVALUE_EMBED_LEN_MAX / SIZEOF_ACTUAL_BDIGIT)
+#    else
+#        define BIGNUM_EMBED_LEN_MAX ((1 << BIGNUM_EMBED_LEN_NUMBITS) - 1)
+#    endif
 #endif
 
 enum rb_int_parse_flags {
-    RB_INT_PARSE_SIGN       = 0x01,
+    RB_INT_PARSE_SIGN = 0x01,
     RB_INT_PARSE_UNDERSCORE = 0x02,
-    RB_INT_PARSE_PREFIX     = 0x04,
-    RB_INT_PARSE_ALL        = 0x07,
-    RB_INT_PARSE_DEFAULT    = 0x07,
+    RB_INT_PARSE_PREFIX = 0x04,
+    RB_INT_PARSE_ALL = 0x07,
+    RB_INT_PARSE_DEFAULT = 0x07,
 };
 
 struct RBignum {
@@ -129,7 +127,7 @@ VALUE rb_big_gt(VALUE x, VALUE y);
 VALUE rb_big_ge(VALUE x, VALUE y);
 VALUE rb_big_lt(VALUE x, VALUE y);
 VALUE rb_big_le(VALUE x, VALUE y);
-VALUE rb_int_powm(int const argc, VALUE * const argv, VALUE const num);
+VALUE rb_int_powm(int const argc, VALUE *const argv, VALUE const num);
 VALUE rb_big_isqrt(VALUE n);
 static inline bool BIGNUM_SIGN(VALUE b);
 static inline bool BIGNUM_POSITIVE_P(VALUE b);
@@ -185,7 +183,7 @@ BIGNUM_POSITIVE_P(VALUE b)
 static inline bool
 BIGNUM_NEGATIVE_P(VALUE b)
 {
-    return ! BIGNUM_POSITIVE_P(b);
+    return !BIGNUM_POSITIVE_P(b);
 }
 
 static inline void
@@ -208,7 +206,7 @@ BIGNUM_NEGATE(VALUE b)
 static inline size_t
 BIGNUM_LEN(VALUE b)
 {
-    if (! BIGNUM_EMBED_P(b)) {
+    if (!BIGNUM_EMBED_P(b)) {
         return RBIGNUM(b)->as.heap.len;
     }
     else {

@@ -1,4 +1,4 @@
-#ifndef INTERNAL_UTIL_H                                  /*-*-C-*-vi:se ft=c:*/
+#ifndef INTERNAL_UTIL_H /*-*-C-*-vi:se ft=c:*/
 #define INTERNAL_UTIL_H
 /**
  * @author     Ruby developers <ruby-core@ruby-lang.org>
@@ -10,11 +10,11 @@
  * @warning    DO NOT ADD RANDOM GARBAGE HERE THIS FILE IS FOR util.c
  */
 #include "ruby/internal/config.h"
-#include <stddef.h>             /* for size_t */
+#include <stddef.h> /* for size_t */
 
 #ifdef HAVE_SYS_TYPES_H
-# include <sys/types.h>         /* for ssize_t (note: on Windows ssize_t is */
-#endif                          /* `#define`d in ruby/config.h) */
+#    include <sys/types.h> /* for ssize_t (note: on Windows ssize_t is */
+#endif                     /* `#define`d in ruby/config.h) */
 
 /* util.c */
 char *ruby_dtoa(double d_, int mode, int ndigits, int *decpt, int *sign, char **rve);

@@ -78,8 +78,7 @@ get_strpath(VALUE obj)
 {
     VALUE strpath;
     strpath = rb_ivar_get(obj, id_at_path);
-    if (!RB_TYPE_P(strpath, T_STRING))
-        rb_raise(rb_eTypeError, "unexpected @path");
+    if (!RB_TYPE_P(strpath, T_STRING)) rb_raise(rb_eTypeError, "unexpected @path");
     return strpath;
 }
 
@@ -102,12 +101,10 @@ path_initialize(VALUE self, VALUE arg)
     }
     else {
         str = rb_check_funcall(arg, id_to_path, 0, NULL);
-        if (str == Qundef)
-            str = arg;
+        if (str == Qundef) str = arg;
         StringValue(str);
     }
-    if (memchr(RSTRING_PTR(str), '\0', RSTRING_LEN(str)))
-        rb_raise(rb_eArgError, "pathname contains null byte");
+    if (memchr(RSTRING_PTR(str), '\0', RSTRING_LEN(str))) rb_raise(rb_eArgError, "pathname contains null byte");
     str = rb_obj_dup(str);
 
     set_strpath(self, str);
@@ -164,8 +161,7 @@ path_untaint(VALUE self)
 static VALUE
 path_eq(VALUE self, VALUE other)
 {
-    if (!rb_obj_is_kind_of(other, rb_cPathname))
-        return Qfalse;
+    if (!rb_obj_is_kind_of(other, rb_cPathname)) return Qfalse;
     return rb_str_equal(get_strpath(self), get_strpath(other));
 }
 
@@ -189,8 +185,7 @@ path_cmp(VALUE self, VALUE other)
     VALUE s1, s2;
     char *p1, *p2;
     char *e1, *e2;
-    if (!rb_obj_is_kind_of(other, rb_cPathname))
-        return Qnil;
+    if (!rb_obj_is_kind_of(other, rb_cPathname)) return Qnil;
     s1 = get_strpath(self);
     s2 = get_strpath(other);
     p1 = RSTRING_PTR(s1);
@@ -210,15 +205,13 @@ path_cmp(VALUE self, VALUE other)
                 return INT2FIX(1);
         }
     }
-    if (p1 < e1)
-        return INT2FIX(1);
-    if (p2 < e2)
-        return INT2FIX(-1);
+    if (p1 < e1) return INT2FIX(1);
+    if (p2 < e2) return INT2FIX(-1);
     return INT2FIX(0);
 }
 
 #ifndef ST2FIX
-#define ST2FIX(h) LONG2FIX((long)(h))
+#    define ST2FIX(h) LONG2FIX((long)(h))
 #endif
 
 /* :nodoc: */
@@ -249,7 +242,7 @@ path_inspect(VALUE self)
 {
     const char *c = rb_obj_classname(self);
     VALUE str = get_strpath(self);
-    return rb_sprintf("#<%s:%"PRIsVALUE">", c, str);
+    return rb_sprintf("#<%s:%" PRIsVALUE ">", c, str);
 }
 
 /*
@@ -300,7 +293,7 @@ path_sub_ext(VALUE self, VALUE repl)
     else if (extlen <= 1) {
         ext += extlen;
     }
-    str2 = rb_str_subseq(str, 0, ext-p);
+    str2 = rb_str_subseq(str, 0, ext - p);
     rb_str_append(str2, repl);
     return rb_class_new_instance(1, &str2, rb_obj_class(self));
 }
@@ -361,10 +354,10 @@ path_each_line(int argc, VALUE *argv, VALUE self)
     args[0] = get_strpath(self);
     n = rb_scan_args(argc, argv, "03", &args[1], &args[2], &args[3]);
     if (rb_block_given_p()) {
-        return rb_block_call_kw(rb_cFile, id_foreach, 1+n, args, 0, 0, RB_PASS_CALLED_KEYWORDS);
+        return rb_block_call_kw(rb_cFile, id_foreach, 1 + n, args, 0, 0, RB_PASS_CALLED_KEYWORDS);
     }
     else {
-        return rb_funcallv_kw(rb_cFile, id_foreach, 1+n, args, RB_PASS_CALLED_KEYWORDS);
+        return rb_funcallv_kw(rb_cFile, id_foreach, 1 + n, args, RB_PASS_CALLED_KEYWORDS);
     }
 }
 
@@ -386,7 +379,7 @@ path_read(int argc, VALUE *argv, VALUE self)
 
     args[0] = get_strpath(self);
     n = rb_scan_args(argc, argv, "03", &args[1], &args[2], &args[3]);
-    return rb_funcallv_kw(rb_cFile, id_read, 1+n, args, RB_PASS_CALLED_KEYWORDS);
+    return rb_funcallv_kw(rb_cFile, id_read, 1 + n, args, RB_PASS_CALLED_KEYWORDS);
 }
 
 /*
@@ -406,7 +399,7 @@ path_binread(int argc, VALUE *argv, VALUE self)
 
     args[0] = get_strpath(self);
     n = rb_scan_args(argc, argv, "02", &args[1], &args[2]);
-    return rb_funcallv(rb_cFile, id_binread, 1+n, args);
+    return rb_funcallv(rb_cFile, id_binread, 1 + n, args);
 }
 
 /*
@@ -427,7 +420,7 @@ path_write(int argc, VALUE *argv, VALUE self)
 
     args[0] = get_strpath(self);
     n = rb_scan_args(argc, argv, "03", &args[1], &args[2], &args[3]);
-    return rb_funcallv_kw(rb_cFile, id_write, 1+n, args, RB_PASS_CALLED_KEYWORDS);
+    return rb_funcallv_kw(rb_cFile, id_write, 1 + n, args, RB_PASS_CALLED_KEYWORDS);
 }
 
 /*
@@ -448,7 +441,7 @@ path_binwrite(int argc, VALUE *argv, VALUE self)
 
     args[0] = get_strpath(self);
     n = rb_scan_args(argc, argv, "03", &args[1], &args[2], &args[3]);
-    return rb_funcallv_kw(rb_cFile, id_binwrite, 1+n, args, RB_PASS_CALLED_KEYWORDS);
+    return rb_funcallv_kw(rb_cFile, id_binwrite, 1 + n, args, RB_PASS_CALLED_KEYWORDS);
 }
 
 /*
@@ -470,7 +463,7 @@ path_readlines(int argc, VALUE *argv, VALUE self)
 
     args[0] = get_strpath(self);
     n = rb_scan_args(argc, argv, "03", &args[1], &args[2], &args[3]);
-    return rb_funcallv_kw(rb_cFile, id_readlines, 1+n, args, RB_PASS_CALLED_KEYWORDS);
+    return rb_funcallv_kw(rb_cFile, id_readlines, 1 + n, args, RB_PASS_CALLED_KEYWORDS);
 }
 
 /*
@@ -488,7 +481,7 @@ path_sysopen(int argc, VALUE *argv, VALUE self)
 
     args[0] = get_strpath(self);
     n = rb_scan_args(argc, argv, "02", &args[1], &args[2]);
-    return rb_funcallv(rb_cIO, id_sysopen, 1+n, args);
+    return rb_funcallv(rb_cIO, id_sysopen, 1 + n, args);
 }
 
 /*
@@ -522,7 +515,7 @@ path_birthtime(VALUE self)
 }
 #else
 /* check at compilation time for `respond_to?` */
-# define path_birthtime rb_f_notimplement
+#    define path_birthtime rb_f_notimplement
 #endif
 
 /*
@@ -678,10 +671,10 @@ path_open(int argc, VALUE *argv, VALUE self)
     args[0] = get_strpath(self);
     n = rb_scan_args(argc, argv, "03", &args[1], &args[2], &args[3]);
     if (rb_block_given_p()) {
-        return rb_block_call_kw(rb_cFile, id_open, 1+n, args, 0, 0, RB_PASS_CALLED_KEYWORDS);
+        return rb_block_call_kw(rb_cFile, id_open, 1 + n, args, 0, 0, RB_PASS_CALLED_KEYWORDS);
     }
     else {
-        return rb_funcallv_kw(rb_cFile, id_open, 1+n, args, RB_PASS_CALLED_KEYWORDS);
+        return rb_funcallv_kw(rb_cFile, id_open, 1 + n, args, RB_PASS_CALLED_KEYWORDS);
     }
 }
 
@@ -1149,8 +1142,7 @@ path_glob(int argc, VALUE *argv, VALUE self)
     int n;
 
     n = rb_scan_args(argc, argv, "11", &args[0], &args[1]);
-    if (n == 1)
-      args[1] = INT2FIX(0);
+    if (n == 1) args[1] = INT2FIX(0);
 
     args[2] = rb_hash_new();
     rb_hash_aset(args[2], ID2SYM(id_base), get_strpath(self));
@@ -1226,7 +1218,7 @@ path_entries(VALUE self)
     ary = rb_funcall(rb_cDir, id_entries, 1, str);
     ary = rb_convert_type(ary, T_ARRAY, "Array", "to_ary");
     for (i = 0; i < RARRAY_LEN(ary); i++) {
-	VALUE elt = RARRAY_AREF(ary, i);
+        VALUE elt = RARRAY_AREF(ary, i);
         elt = rb_class_new_instance(1, &elt, klass);
         rb_ary_store(ary, i, elt);
     }
@@ -1337,8 +1329,7 @@ path_unlink(VALUE self)
 static VALUE
 path_f_pathname(VALUE self, VALUE str)
 {
-    if (CLASS_OF(str) == rb_cPathname)
-        return str;
+    if (CLASS_OF(str) == rb_cPathname) return str;
     return rb_class_new_instance(1, &str, rb_cPathname);
 }
 

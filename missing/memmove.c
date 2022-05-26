@@ -10,13 +10,13 @@ memmove(void *d, const void *s, size_t n)
     const char *src = (const char *)s;
 
     if (src < dst) {
-	src += n;
-	dst += n;
-	for (; n; --n)
-	    *--dst = *--src;
+        src += n;
+        dst += n;
+        for (; n; --n)
+            *--dst = *--src;
     }
     else if (dst < src)
-	for (; n; --n)
-	    *dst++ = *src++;
+        for (; n; --n)
+            *dst++ = *src++;
     return d;
 }

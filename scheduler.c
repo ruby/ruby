@@ -8,10 +8,10 @@
 
 **********************************************************************/
 
-#include "vm_core.h"
 #include "ruby/fiber/scheduler.h"
 #include "ruby/io.h"
 #include "ruby/io/buffer.h"
+#include "vm_core.h"
 
 #include "internal/thread.h"
 
@@ -99,7 +99,9 @@ rb_fiber_scheduler_set(VALUE scheduler)
         verify_interface(scheduler);
     }
 
-    // We invoke Scheduler#close when setting it to something else, to ensure the previous scheduler runs to completion before changing the scheduler. That way, we do not need to consider interactions, e.g., of a Fiber from the previous scheduler with the new scheduler.
+    // We invoke Scheduler#close when setting it to something else, to ensure the previous scheduler runs to completion
+    // before changing the scheduler. That way, we do not need to consider interactions, e.g., of a Fiber from the
+    // previous scheduler with the new scheduler.
     if (thread->scheduler != Qnil) {
         rb_fiber_scheduler_close(thread->scheduler);
     }
@@ -128,7 +130,8 @@ rb_fiber_scheduler_current(void)
     return rb_fiber_scheduler_current_for_threadptr(GET_THREAD());
 }
 
-VALUE rb_fiber_scheduler_current_for_thread(VALUE thread)
+VALUE
+rb_fiber_scheduler_current_for_thread(VALUE thread)
 {
     return rb_fiber_scheduler_current_for_threadptr(rb_thread_ptr(thread));
 }
@@ -166,7 +169,7 @@ rb_fiber_scheduler_kernel_sleep(VALUE scheduler, VALUE timeout)
 }
 
 VALUE
-rb_fiber_scheduler_kernel_sleepv(VALUE scheduler, int argc, VALUE * argv)
+rb_fiber_scheduler_kernel_sleepv(VALUE scheduler, int argc, VALUE *argv)
 {
     return rb_funcallv(scheduler, id_kernel_sleep, argc, argv);
 }
@@ -192,9 +195,7 @@ rb_fiber_scheduler_timeout_afterv(VALUE scheduler, int argc, VALUE * argv)
 VALUE
 rb_fiber_scheduler_process_wait(VALUE scheduler, rb_pid_t pid, int flags)
 {
-    VALUE arguments[] = {
-        PIDT2NUM(pid), RB_INT2NUM(flags)
-    };
+    VALUE arguments[] = {PIDT2NUM(pid), RB_INT2NUM(flags)};
 
     return rb_check_funcall(scheduler, id_process_wait, 2, arguments);
 }
@@ -234,9 +235,7 @@ rb_fiber_scheduler_io_wait_writable(VALUE scheduler, VALUE io)
 VALUE
 rb_fiber_scheduler_io_read(VALUE scheduler, VALUE io, VALUE buffer, size_t length)
 {
-    VALUE arguments[] = {
-        io, buffer, SIZET2NUM(length)
-    };
+    VALUE arguments[] = {io, buffer, SIZET2NUM(length)};
 
     return rb_check_funcall(scheduler, id_io_read, 3, arguments);
 }
@@ -244,9 +243,7 @@ rb_fiber_scheduler_io_read(VALUE scheduler, VALUE io, VALUE buffer, size_t lengt
 VALUE
 rb_fiber_scheduler_io_pread(VALUE scheduler, VALUE io, VALUE buffer, size_t length, off_t offset)
 {
-    VALUE arguments[] = {
-        io, buffer, SIZET2NUM(length), OFFT2NUM(offset)
-    };
+    VALUE arguments[] = {io, buffer, SIZET2NUM(length), OFFT2NUM(offset)};
 
     return rb_check_funcall(scheduler, id_io_pread, 4, arguments);
 }
@@ -254,9 +251,7 @@ rb_fiber_scheduler_io_pread(VALUE scheduler, VALUE io, VALUE buffer, size_t leng
 VALUE
 rb_fiber_scheduler_io_write(VALUE scheduler, VALUE io, VALUE buffer, size_t length)
 {
-    VALUE arguments[] = {
-        io, buffer, SIZET2NUM(length)
-    };
+    VALUE arguments[] = {io, buffer, SIZET2NUM(length)};
 
     return rb_check_funcall(scheduler, id_io_write, 3, arguments);
 }
@@ -264,9 +259,7 @@ rb_fiber_scheduler_io_write(VALUE scheduler, VALUE io, VALUE buffer, size_t leng
 VALUE
 rb_fiber_scheduler_io_pwrite(VALUE scheduler, VALUE io, VALUE buffer, size_t length, off_t offset)
 {
-    VALUE arguments[] = {
-        io, buffer, SIZET2NUM(length), OFFT2NUM(offset)
-    };
+    VALUE arguments[] = {io, buffer, SIZET2NUM(length), OFFT2NUM(offset)};
 
     return rb_check_funcall(scheduler, id_io_pwrite, 4, arguments);
 }
@@ -287,7 +280,7 @@ rb_fiber_scheduler_io_read_memory(VALUE scheduler, VALUE io, void *base, size_t 
 VALUE
 rb_fiber_scheduler_io_write_memory(VALUE scheduler, VALUE io, const void *base, size_t size, size_t length)
 {
-    VALUE buffer = rb_io_buffer_new((void*)base, size, RB_IO_BUFFER_LOCKED|RB_IO_BUFFER_READONLY);
+    VALUE buffer = rb_io_buffer_new((void *)base, size, RB_IO_BUFFER_LOCKED | RB_IO_BUFFER_READONLY);
 
     VALUE result = rb_fiber_scheduler_io_write(scheduler, io, buffer, length);
 
@@ -308,9 +301,7 @@ rb_fiber_scheduler_io_close(VALUE scheduler, VALUE io)
 VALUE
 rb_fiber_scheduler_address_resolve(VALUE scheduler, VALUE hostname)
 {
-    VALUE arguments[] = {
-        hostname
-    };
+    VALUE arguments[] = {hostname};
 
     return rb_check_funcall(scheduler, id_address_resolve, 1, arguments);
 }

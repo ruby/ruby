@@ -2,7 +2,8 @@
 
 VALUE mWIN32OLE_VARIANT;
 
-void Init_win32ole_variant_m(void)
+void
+Init_win32ole_variant_m(void)
 {
     /*
      * Document-module: WIN32OLE::VARIANT
@@ -147,5 +148,4 @@ void Init_win32ole_variant_m(void)
      * represents VT_BYREF type constant.
      */
     rb_define_const(mWIN32OLE_VARIANT, "VT_BYREF", RB_INT2FIX(VT_BYREF));
-
 }

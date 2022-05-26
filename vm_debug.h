@@ -15,24 +15,24 @@
 
 RUBY_SYMBOL_EXPORT_BEGIN
 
-#define dpv(h,v) ruby_debug_print_value(-1, 0, (h), (v))
-#define dp(v)    ruby_debug_print_value(-1, 0, "", (v))
-#define dpi(i)   ruby_debug_print_id(-1, 0, "", (i))
-#define dpn(n)   ruby_debug_print_node(-1, 0, "", (n))
+#define dpv(h, v) ruby_debug_print_value(-1, 0, (h), (v))
+#define dp(v) ruby_debug_print_value(-1, 0, "", (v))
+#define dpi(i) ruby_debug_print_id(-1, 0, "", (i))
+#define dpn(n) ruby_debug_print_node(-1, 0, "", (n))
 
 struct RNode;
 
 VALUE ruby_debug_print_value(int level, int debug_level, const char *header, VALUE v);
-ID    ruby_debug_print_id(int level, int debug_level, const char *header, ID id);
+ID ruby_debug_print_id(int level, int debug_level, const char *header, ID id);
 struct RNode *ruby_debug_print_node(int level, int debug_level, const char *header, const struct RNode *node);
-int   ruby_debug_print_indent(int level, int debug_level, int indent_level);
-void  ruby_debug_gc_check_func(void);
+int ruby_debug_print_indent(int level, int debug_level, int indent_level);
+void ruby_debug_gc_check_func(void);
 void ruby_set_debug_option(const char *str);
 
 RUBY_SYMBOL_EXPORT_END
 
 #ifndef USE_RUBY_DEBUG_LOG
-#define USE_RUBY_DEBUG_LOG 0
+#    define USE_RUBY_DEBUG_LOG 0
 #endif
 
 /* RUBY_DEBUG_LOG: Logging debug information mechanism
@@ -76,9 +76,9 @@ RUBY_SYMBOL_EXPORT_END
 
 extern enum ruby_debug_log_mode {
     ruby_debug_log_disabled = 0x00,
-    ruby_debug_log_memory   = 0x01,
-    ruby_debug_log_stderr   = 0x02,
-    ruby_debug_log_file     = 0x04,
+    ruby_debug_log_memory = 0x01,
+    ruby_debug_log_stderr = 0x02,
+    ruby_debug_log_file = 0x04,
 } ruby_debug_log_mode;
 
 RBIMPL_ATTR_FORMAT(RBIMPL_PRINTF_FORMAT, 4, 5)
@@ -91,23 +91,24 @@ bool ruby_debug_log_filter(const char *func_name);
 #define _RUBY_DEBUG_LOG(...) ruby_debug_log(__FILE__, __LINE__, RUBY_FUNCTION_NAME_STRING, "" __VA_ARGS__)
 
 #if USE_RUBY_DEBUG_LOG
-# define RUBY_DEBUG_LOG_ENABLED(func_name) \
-    (ruby_debug_log_mode && ruby_debug_log_filter(func_name))
+#    define RUBY_DEBUG_LOG_ENABLED(func_name) (ruby_debug_log_mode && ruby_debug_log_filter(func_name))
 
-#define RUBY_DEBUG_LOG(...) do { \
-    if (RUBY_DEBUG_LOG_ENABLED(RUBY_FUNCTION_NAME_STRING)) \
-        ruby_debug_log(__FILE__, __LINE__, RUBY_FUNCTION_NAME_STRING, "" __VA_ARGS__); \
-} while (0)
+#    define RUBY_DEBUG_LOG(...) \
+        do { \
+            if (RUBY_DEBUG_LOG_ENABLED(RUBY_FUNCTION_NAME_STRING)) \
+                ruby_debug_log(__FILE__, __LINE__, RUBY_FUNCTION_NAME_STRING, "" __VA_ARGS__); \
+        } while (0)
 
-#define RUBY_DEBUG_LOG2(file, line, ...) do { \
-    if (RUBY_DEBUG_LOG_ENABLED(RUBY_FUNCTION_NAME_STRING)) \
-        ruby_debug_log(file, line, RUBY_FUNCTION_NAME_STRING, "" __VA_ARGS__); \
-} while (0)
+#    define RUBY_DEBUG_LOG2(file, line, ...) \
+        do { \
+            if (RUBY_DEBUG_LOG_ENABLED(RUBY_FUNCTION_NAME_STRING)) \
+                ruby_debug_log(file, line, RUBY_FUNCTION_NAME_STRING, "" __VA_ARGS__); \
+        } while (0)
 
 #else // USE_RUBY_DEBUG_LOG
 // do nothing
-#define RUBY_DEBUG_LOG(...)
-#define RUBY_DEBUG_LOG2(file, line, ...)
+#    define RUBY_DEBUG_LOG(...)
+#    define RUBY_DEBUG_LOG2(file, line, ...)
 #endif // USE_RUBY_DEBUG_LOG
 
 #endif /* RUBY_DEBUG_H */

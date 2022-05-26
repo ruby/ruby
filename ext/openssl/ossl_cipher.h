@@ -8,7 +8,7 @@
  * (See the file 'LICENCE'.)
  */
 #if !defined(_OSSL_CIPHER_H_)
-#define _OSSL_CIPHER_H_
+#    define _OSSL_CIPHER_H_
 
 extern VALUE cCipher;
 extern VALUE eCipherError;

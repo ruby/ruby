@@ -1,12 +1,12 @@
 /* $RoughId: md5init.c,v 1.2 2001/07/13 19:49:10 knu Exp $ */
 /* $Id$ */
 
-#include <ruby/ruby.h>
 #include "../digest.h"
+#include <ruby/ruby.h>
 #if defined(MD5_USE_COMMONDIGEST)
-#include "md5cc.h"
+#    include "md5cc.h"
 #else
-#include "md5.h"
+#    include "md5.h"
 #endif
 
 static const rb_digest_metadata_t md5 = {

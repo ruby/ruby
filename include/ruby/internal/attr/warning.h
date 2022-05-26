@@ -1,4 +1,4 @@
-#ifndef RBIMPL_ATTR_WARNING_H                        /*-*-C++-*-vi:se ft=cpp:*/
+#ifndef RBIMPL_ATTR_WARNING_H /*-*-C++-*-vi:se ft=cpp:*/
 #define RBIMPL_ATTR_WARNING_H
 /**
  * @file
@@ -24,9 +24,9 @@
 
 /** Wraps (or simulates) `__attribute__((warning))` */
 #if RBIMPL_HAS_ATTRIBUTE(warning)
-# define RBIMPL_ATTR_WARNING(msg) __attribute__((__warning__ msg))
+#    define RBIMPL_ATTR_WARNING(msg) __attribute__((__warning__ msg))
 #else
-# define RBIMPL_ATTR_WARNING(msg) /* void */
+#    define RBIMPL_ATTR_WARNING(msg) /* void */
 #endif
 
 #endif /* RBIMPL_ATTR_WARNING_H */

@@ -1,4 +1,4 @@
-#ifndef RBIMPL_INTERN_ARRAY_H                        /*-*-C++-*-vi:se ft=cpp:*/
+#ifndef RBIMPL_INTERN_ARRAY_H /*-*-C++-*-vi:se ft=cpp:*/
 #define RBIMPL_INTERN_ARRAY_H
 /**
  * @file
@@ -40,9 +40,7 @@ RBIMPL_ATTR_NOALIAS()
  * @param[in]   len  Number of objects of `buf`.
  * @post        `buf` is filled with ::RUBY_Qnil.
  */
-void rb_mem_clear(VALUE *buf, long len)
-    RBIMPL_ATTR_NOEXCEPT(true)
-    ;
+void rb_mem_clear(VALUE *buf, long len) RBIMPL_ATTR_NOEXCEPT(true);
 
 /**
  * Identical  to  rb_ary_new_from_values(),  except   it  expects  exactly  two
@@ -648,9 +646,9 @@ VALUE rb_get_values_at(VALUE obj, long olen, int argc, const VALUE *argv, VALUE 
  */
 VALUE rb_ary_resize(VALUE ary, long len);
 
-#define rb_ary_new2 rb_ary_new_capa         /**< @old{rb_ary_new_capa} */
-#define rb_ary_new3 rb_ary_new_from_args    /**< @old{rb_ary_new_from_args} */
-#define rb_ary_new4 rb_ary_new_from_values  /**< @old{rb_ary_new_from_values} */
+#define rb_ary_new2 rb_ary_new_capa        /**< @old{rb_ary_new_capa} */
+#define rb_ary_new3 rb_ary_new_from_args   /**< @old{rb_ary_new_from_args} */
+#define rb_ary_new4 rb_ary_new_from_values /**< @old{rb_ary_new_from_values} */
 
 RBIMPL_SYMBOL_EXPORT_END()
 

@@ -11,8 +11,8 @@
 
 ************************************************/
 
-#include <ruby/ruby.h>
 #include "../digest.h"
+#include <ruby/ruby.h>
 
 static ID id_digest;
 
@@ -24,20 +24,16 @@ bubblebabble_str_new(VALUE str_digest)
     VALUE str;
     char *p;
     size_t i, j, seed = 1;
-    static const char vowels[] = {
-        'a', 'e', 'i', 'o', 'u', 'y'
-    };
+    static const char vowels[] = {'a', 'e', 'i', 'o', 'u', 'y'};
     static const char consonants[] = {
-        'b', 'c', 'd', 'f', 'g', 'h', 'k', 'l', 'm', 'n',
-        'p', 'r', 's', 't', 'v', 'z', 'x'
-    };
+        'b', 'c', 'd', 'f', 'g', 'h', 'k', 'l', 'm', 'n', 'p', 'r', 's', 't', 'v', 'z', 'x'};
 
     StringValue(str_digest);
     digest = RSTRING_PTR(str_digest);
     digest_len = RSTRING_LEN(str_digest);
 
     if ((LONG_MAX - 2) / 3 < (digest_len | 1)) {
-	rb_raise(rb_eRuntimeError, "digest string too long");
+        rb_raise(rb_eRuntimeError, "digest string too long");
     }
 
     str = rb_str_new(0, (digest_len | 1) * 3 + 2);

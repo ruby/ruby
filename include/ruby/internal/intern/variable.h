@@ -1,4 +1,4 @@
-#ifndef RBIMPL_INTERN_VARIABLE_H                     /*-*-C++-*-vi:se ft=cpp:*/
+#ifndef RBIMPL_INTERN_VARIABLE_H /*-*-C++-*-vi:se ft=cpp:*/
 #define RBIMPL_INTERN_VARIABLE_H
 /**
  * @file
@@ -313,14 +313,14 @@ VALUE rb_obj_remove_instance_variable(VALUE obj, VALUE name);
  *
  * Simply put, don't try to understand this API.
  */
-void *rb_mod_const_at(VALUE, void*);
+void *rb_mod_const_at(VALUE, void *);
 
 /**
  * This is a variant of rb_mod_const_at().  As a result, it is also mysterious.
  * It _seems_ it iterates over the ancestry  tree of the module.  But what that
  * means is beyond a human brain.
  */
-void *rb_mod_const_of(VALUE, void*);
+void *rb_mod_const_of(VALUE, void *);
 
 /**
  * This is  another mysterious  API that  comes with no  documents at  all.  It
@@ -328,7 +328,7 @@ void *rb_mod_const_of(VALUE, void*);
  * the details has  never been made explicit.  It seems  nobody should use this
  * API.
  */
-VALUE rb_const_list(void*);
+VALUE rb_const_list(void *);
 
 /**
  * Resembles  `Module#constants`.   List  up   the  constants  defined  at  the
@@ -595,7 +595,7 @@ RBIMPL_ATTR_NONNULL(())
  *
  * Am I missing something?  Why we have the same thing in different names?
  */
-void rb_define_class_variable(VALUE, const char*, VALUE);
+void rb_define_class_variable(VALUE, const char *, VALUE);
 
 /**
  * Resembles `Module#class_variables`.   List up  the variables defined  at the

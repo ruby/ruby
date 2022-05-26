@@ -1,4 +1,4 @@
-#ifndef RBIMPL_INTERN_PROCESS_H                      /*-*-C++-*-vi:se ft=cpp:*/
+#ifndef RBIMPL_INTERN_PROCESS_H /*-*-C++-*-vi:se ft=cpp:*/
 #define RBIMPL_INTERN_PROCESS_H
 /**
  * @file
@@ -22,7 +22,7 @@
  */
 #include "ruby/internal/attr/nonnull.h"
 #include "ruby/internal/attr/noreturn.h"
-#include "ruby/internal/config.h"      /* rb_pid_t is defined here. */
+#include "ruby/internal/config.h" /* rb_pid_t is defined here. */
 #include "ruby/internal/dllexport.h"
 #include "ruby/internal/value.h"
 

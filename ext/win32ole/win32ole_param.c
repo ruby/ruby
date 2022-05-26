@@ -28,11 +28,13 @@ static VALUE ole_param_default(ITypeInfo *pTypeInfo, UINT method_index, UINT ind
 static VALUE foleparam_default(VALUE self);
 static VALUE foleparam_inspect(VALUE self);
 
-static const rb_data_type_t oleparam_datatype = {
-    "win32ole_param",
-    {NULL, oleparam_free, oleparam_size,},
-    0, 0, RUBY_TYPED_FREE_IMMEDIATELY
-};
+static const rb_data_type_t oleparam_datatype = {"win32ole_param",
+    {
+        NULL,
+        oleparam_free,
+        oleparam_size,
+    },
+    0, 0, RUBY_TYPED_FREE_IMMEDIATELY};
 
 static void
 oleparam_free(void *ptr)
@@ -74,9 +76,7 @@ foleparam_s_allocate(VALUE klass)
 {
     struct oleparamdata *pparam;
     VALUE obj;
-    obj = TypedData_Make_Struct(klass,
-                                struct oleparamdata,
-                                &oleparam_datatype, pparam);
+    obj = TypedData_Make_Struct(klass, struct oleparamdata, &oleparam_datatype, pparam);
     pparam->pTypeInfo = NULL;
     pparam->method_index = 0;
     pparam->index = 0;
@@ -92,21 +92,17 @@ oleparam_ole_param_from_index(VALUE self, ITypeInfo *pTypeInfo, UINT method_inde
     UINT len;
     struct oleparamdata *pparam;
     hr = pTypeInfo->lpVtbl->GetFuncDesc(pTypeInfo, method_index, &pFuncDesc);
-    if (FAILED(hr))
-        ole_raise(hr, rb_eRuntimeError, "fail to ITypeInfo::GetFuncDesc");
+    if (FAILED(hr)) ole_raise(hr, rb_eRuntimeError, "fail to ITypeInfo::GetFuncDesc");
 
     len = 0;
     bstrs = ALLOCA_N(BSTR, pFuncDesc->cParams + 1);
-    hr = pTypeInfo->lpVtbl->GetNames(pTypeInfo, pFuncDesc->memid,
-                                     bstrs, pFuncDesc->cParams + 1,
-                                     &len);
+    hr = pTypeInfo->lpVtbl->GetNames(pTypeInfo, pFuncDesc->memid, bstrs, pFuncDesc->cParams + 1, &len);
     if (FAILED(hr)) {
         pTypeInfo->lpVtbl->ReleaseFuncDesc(pTypeInfo, pFuncDesc);
         ole_raise(hr, rb_eRuntimeError, "fail to ITypeInfo::GetNames");
     }
     SysFreeString(bstrs[0]);
-    if (param_index < 1 || len <= (UINT)param_index)
-    {
+    if (param_index < 1 || len <= (UINT)param_index) {
         pTypeInfo->lpVtbl->ReleaseFuncDesc(pTypeInfo, pFuncDesc);
         rb_raise(rb_eIndexError, "index of param must be in 1..%d", len);
     }
@@ -176,10 +172,8 @@ ole_param_ole_type(ITypeInfo *pTypeInfo, UINT method_index, UINT index)
     HRESULT hr;
     VALUE type = rb_str_new2("unknown type");
     hr = pTypeInfo->lpVtbl->GetFuncDesc(pTypeInfo, method_index, &pFuncDesc);
-    if (FAILED(hr))
-        return type;
-    type = ole_typedesc2val(pTypeInfo,
-                            &(pFuncDesc->lprgelemdescParam[index].tdesc), Qnil);
+    if (FAILED(hr)) return type;
+    type = ole_typedesc2val(pTypeInfo, &(pFuncDesc->lprgelemdescParam[index].tdesc), Qnil);
     pTypeInfo->lpVtbl->ReleaseFuncDesc(pTypeInfo, pFuncDesc);
     return type;
 }
@@ -199,8 +193,7 @@ foleparam_ole_type(VALUE self)
 {
     struct oleparamdata *pparam;
     TypedData_Get_Struct(self, struct oleparamdata, &oleparam_datatype, pparam);
-    return ole_param_ole_type(pparam->pTypeInfo, pparam->method_index,
-                              pparam->index);
+    return ole_param_ole_type(pparam->pTypeInfo, pparam->method_index, pparam->index);
 }
 
 static VALUE
@@ -210,10 +203,8 @@ ole_param_ole_type_detail(ITypeInfo *pTypeInfo, UINT method_index, UINT index)
     HRESULT hr;
     VALUE typedetail = rb_ary_new();
     hr = pTypeInfo->lpVtbl->GetFuncDesc(pTypeInfo, method_index, &pFuncDesc);
-    if (FAILED(hr))
-        return typedetail;
-    ole_typedesc2val(pTypeInfo,
-                     &(pFuncDesc->lprgelemdescParam[index].tdesc), typedetail);
+    if (FAILED(hr)) return typedetail;
+    ole_typedesc2val(pTypeInfo, &(pFuncDesc->lprgelemdescParam[index].tdesc), typedetail);
     pTypeInfo->lpVtbl->ReleaseFuncDesc(pTypeInfo, pFuncDesc);
     return typedetail;
 }
@@ -233,8 +224,7 @@ foleparam_ole_type_detail(VALUE self)
 {
     struct oleparamdata *pparam;
     TypedData_Get_Struct(self, struct oleparamdata, &oleparam_datatype, pparam);
-    return ole_param_ole_type_detail(pparam->pTypeInfo, pparam->method_index,
-                                     pparam->index);
+    return ole_param_ole_type_detail(pparam->pTypeInfo, pparam->method_index, pparam->index);
 }
 
 static VALUE
@@ -244,10 +234,8 @@ ole_param_flag_mask(ITypeInfo *pTypeInfo, UINT method_index, UINT index, USHORT 
     HRESULT hr;
     VALUE ret = Qfalse;
     hr = pTypeInfo->lpVtbl->GetFuncDesc(pTypeInfo, method_index, &pFuncDesc);
-    if(FAILED(hr))
-        return ret;
-    if (V_UNION1((&(pFuncDesc->lprgelemdescParam[index])), paramdesc).wParamFlags &mask)
-        ret = Qtrue;
+    if (FAILED(hr)) return ret;
+    if (V_UNION1((&(pFuncDesc->lprgelemdescParam[index])), paramdesc).wParamFlags & mask) ret = Qtrue;
     pTypeInfo->lpVtbl->ReleaseFuncDesc(pTypeInfo, pFuncDesc);
     return ret;
 }
@@ -267,8 +255,7 @@ foleparam_input(VALUE self)
 {
     struct oleparamdata *pparam;
     TypedData_Get_Struct(self, struct oleparamdata, &oleparam_datatype, pparam);
-    return ole_param_flag_mask(pparam->pTypeInfo, pparam->method_index,
-                               pparam->index, PARAMFLAG_FIN);
+    return ole_param_flag_mask(pparam->pTypeInfo, pparam->method_index, pparam->index, PARAMFLAG_FIN);
 }
 
 /*
@@ -295,8 +282,7 @@ foleparam_output(VALUE self)
 {
     struct oleparamdata *pparam;
     TypedData_Get_Struct(self, struct oleparamdata, &oleparam_datatype, pparam);
-    return ole_param_flag_mask(pparam->pTypeInfo, pparam->method_index,
-                               pparam->index, PARAMFLAG_FOUT);
+    return ole_param_flag_mask(pparam->pTypeInfo, pparam->method_index, pparam->index, PARAMFLAG_FOUT);
 }
 
 /*
@@ -314,8 +300,7 @@ foleparam_optional(VALUE self)
 {
     struct oleparamdata *pparam;
     TypedData_Get_Struct(self, struct oleparamdata, &oleparam_datatype, pparam);
-    return ole_param_flag_mask(pparam->pTypeInfo, pparam->method_index,
-                               pparam->index, PARAMFLAG_FOPT);
+    return ole_param_flag_mask(pparam->pTypeInfo, pparam->method_index, pparam->index, PARAMFLAG_FOPT);
 }
 
 /*
@@ -334,8 +319,7 @@ foleparam_retval(VALUE self)
 {
     struct oleparamdata *pparam;
     TypedData_Get_Struct(self, struct oleparamdata, &oleparam_datatype, pparam);
-    return ole_param_flag_mask(pparam->pTypeInfo, pparam->method_index,
-                               pparam->index, PARAMFLAG_FRETVAL);
+    return ole_param_flag_mask(pparam->pTypeInfo, pparam->method_index, pparam->index, PARAMFLAG_FRETVAL);
 }
 
 static VALUE
@@ -343,19 +327,18 @@ ole_param_default(ITypeInfo *pTypeInfo, UINT method_index, UINT index)
 {
     FUNCDESC *pFuncDesc;
     ELEMDESC *pElemDesc;
-    PARAMDESCEX * pParamDescEx;
+    PARAMDESCEX *pParamDescEx;
     HRESULT hr;
     USHORT wParamFlags;
-    USHORT mask = PARAMFLAG_FOPT|PARAMFLAG_FHASDEFAULT;
+    USHORT mask = PARAMFLAG_FOPT | PARAMFLAG_FHASDEFAULT;
     VALUE defval = Qnil;
     hr = pTypeInfo->lpVtbl->GetFuncDesc(pTypeInfo, method_index, &pFuncDesc);
-    if (FAILED(hr))
-        return defval;
+    if (FAILED(hr)) return defval;
     pElemDesc = &pFuncDesc->lprgelemdescParam[index];
     wParamFlags = V_UNION1(pElemDesc, paramdesc).wParamFlags;
     if ((wParamFlags & mask) == mask) {
-         pParamDescEx = V_UNION1(pElemDesc, paramdesc).pparamdescex;
-         defval = ole_variant2val(&pParamDescEx->varDefaultValue);
+        pParamDescEx = V_UNION1(pElemDesc, paramdesc).pparamdescex;
+        defval = ole_variant2val(&pParamDescEx->varDefaultValue);
     }
     pTypeInfo->lpVtbl->ReleaseFuncDesc(pTypeInfo, pFuncDesc);
     return defval;
@@ -395,8 +378,7 @@ foleparam_default(VALUE self)
 {
     struct oleparamdata *pparam;
     TypedData_Get_Struct(self, struct oleparamdata, &oleparam_datatype, pparam);
-    return ole_param_default(pparam->pTypeInfo, pparam->method_index,
-                             pparam->index);
+    return ole_param_default(pparam->pTypeInfo, pparam->method_index, pparam->index);
 }
 
 /*

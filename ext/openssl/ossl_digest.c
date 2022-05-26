@@ -9,12 +9,13 @@
  */
 #include "ossl.h"
 
-#define GetDigest(obj, ctx) do { \
-    TypedData_Get_Struct((obj), EVP_MD_CTX, &ossl_digest_type, (ctx)); \
-    if (!(ctx)) { \
-	ossl_raise(rb_eRuntimeError, "Digest CTX wasn't initialized!"); \
-    } \
-} while (0)
+#define GetDigest(obj, ctx) \
+    do { \
+        TypedData_Get_Struct((obj), EVP_MD_CTX, &ossl_digest_type, (ctx)); \
+        if (!(ctx)) { \
+            ossl_raise(rb_eRuntimeError, "Digest CTX wasn't initialized!"); \
+        } \
+    } while (0)
 
 /*
  * Classes
@@ -33,9 +34,12 @@ ossl_digest_free(void *ctx)
 static const rb_data_type_t ossl_digest_type = {
     "OpenSSL/Digest",
     {
-	0, ossl_digest_free,
+        0,
+        ossl_digest_free,
     },
-    0, 0, RUBY_TYPED_FREE_IMMEDIATELY,
+    0,
+    0,
+    RUBY_TYPED_FREE_IMMEDIATELY,
 };
 
 /*
@@ -48,17 +52,17 @@ ossl_evp_get_digestbyname(VALUE obj)
     ASN1_OBJECT *oid = NULL;
 
     if (RB_TYPE_P(obj, T_STRING)) {
-    	const char *name = StringValueCStr(obj);
+        const char *name = StringValueCStr(obj);
 
-	md = EVP_get_digestbyname(name);
-	if (!md) {
-	    oid = OBJ_txt2obj(name, 0);
-	    md = EVP_get_digestbyobj(oid);
-	    ASN1_OBJECT_free(oid);
-	}
-	if(!md)
-            ossl_raise(rb_eRuntimeError, "Unsupported digest algorithm (%"PRIsVALUE").", obj);
-    } else {
+        md = EVP_get_digestbyname(name);
+        if (!md) {
+            oid = OBJ_txt2obj(name, 0);
+            md = EVP_get_digestbyobj(oid);
+            ASN1_OBJECT_free(oid);
+        }
+        if (!md) ossl_raise(rb_eRuntimeError, "Unsupported digest algorithm (%" PRIsVALUE ").", obj);
+    }
+    else {
         EVP_MD_CTX *ctx;
 
         GetDigest(obj, ctx);
@@ -77,12 +81,10 @@ ossl_digest_new(const EVP_MD *md)
 
     ret = ossl_digest_alloc(cDigest);
     ctx = EVP_MD_CTX_new();
-    if (!ctx)
-	ossl_raise(eDigestError, "EVP_MD_CTX_new");
+    if (!ctx) ossl_raise(eDigestError, "EVP_MD_CTX_new");
     RTYPEDDATA_DATA(ret) = ctx;
 
-    if (!EVP_DigestInit_ex(ctx, md, NULL))
-	ossl_raise(eDigestError, "Digest initialization failed");
+    if (!EVP_DigestInit_ex(ctx, md, NULL)) ossl_raise(eDigestError, "Digest initialization failed");
 
     return ret;
 }
@@ -128,13 +130,11 @@ ossl_digest_initialize(int argc, VALUE *argv, VALUE self)
 
     TypedData_Get_Struct(self, EVP_MD_CTX, &ossl_digest_type, ctx);
     if (!ctx) {
-	RTYPEDDATA_DATA(self) = ctx = EVP_MD_CTX_new();
-	if (!ctx)
-	    ossl_raise(eDigestError, "EVP_MD_CTX_new");
+        RTYPEDDATA_DATA(self) = ctx = EVP_MD_CTX_new();
+        if (!ctx) ossl_raise(eDigestError, "EVP_MD_CTX_new");
     }
 
-    if (!EVP_DigestInit_ex(ctx, md, NULL))
-	ossl_raise(eDigestError, "Digest initialization failed");
+    if (!EVP_DigestInit_ex(ctx, md, NULL)) ossl_raise(eDigestError, "Digest initialization failed");
 
     if (!NIL_P(data)) return ossl_digest_update(self, data);
     return self;
@@ -150,14 +150,13 @@ ossl_digest_copy(VALUE self, VALUE other)
 
     TypedData_Get_Struct(self, EVP_MD_CTX, &ossl_digest_type, ctx1);
     if (!ctx1) {
-	RTYPEDDATA_DATA(self) = ctx1 = EVP_MD_CTX_new();
-	if (!ctx1)
-	    ossl_raise(eDigestError, "EVP_MD_CTX_new");
+        RTYPEDDATA_DATA(self) = ctx1 = EVP_MD_CTX_new();
+        if (!ctx1) ossl_raise(eDigestError, "EVP_MD_CTX_new");
     }
     GetDigest(other, ctx2);
 
     if (!EVP_MD_CTX_copy(ctx1, ctx2)) {
-	ossl_raise(eDigestError, NULL);
+        ossl_raise(eDigestError, NULL);
     }
     return self;
 }
@@ -177,7 +176,7 @@ ossl_digest_reset(VALUE self)
 
     GetDigest(self, ctx);
     if (EVP_DigestInit_ex(ctx, EVP_MD_CTX_get0_md(ctx), NULL) != 1) {
-	ossl_raise(eDigestError, "Digest initialization failed.");
+        ossl_raise(eDigestError, "Digest initialization failed.");
     }
 
     return self;
@@ -206,8 +205,7 @@ ossl_digest_update(VALUE self, VALUE data)
     StringValue(data);
     GetDigest(self, ctx);
 
-    if (!EVP_DigestUpdate(ctx, RSTRING_PTR(data), RSTRING_LEN(data)))
-	ossl_raise(eDigestError, "EVP_DigestUpdate");
+    if (!EVP_DigestUpdate(ctx, RSTRING_PTR(data), RSTRING_LEN(data))) ossl_raise(eDigestError, "EVP_DigestUpdate");
 
     return self;
 }
@@ -230,13 +228,14 @@ ossl_digest_finish(int argc, VALUE *argv, VALUE self)
 
     if (NIL_P(str)) {
         str = rb_str_new(NULL, out_len);
-    } else {
+    }
+    else {
         StringValue(str);
         rb_str_resize(str, out_len);
     }
 
     if (!EVP_DigestFinal_ex(ctx, (unsigned char *)RSTRING_PTR(str), NULL))
-	ossl_raise(eDigestError, "EVP_DigestFinal_ex");
+        ossl_raise(eDigestError, "EVP_DigestFinal_ex");
 
     return str;
 }

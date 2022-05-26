@@ -21,7 +21,7 @@ static VALUE
 rb_fiddle_malloc(VALUE self, VALUE size)
 {
     void *ptr;
-    ptr = (void*)ruby_xcalloc(1, NUM2SIZET(size));
+    ptr = (void *)ruby_xcalloc(1, NUM2SIZET(size));
     return PTR2NUM(ptr);
 }
 
@@ -37,7 +37,7 @@ rb_fiddle_realloc(VALUE self, VALUE addr, VALUE size)
 {
     void *ptr = NUM2PTR(addr);
 
-    ptr = (void*)ruby_xrealloc(ptr, NUM2SIZET(size));
+    ptr = (void *)ruby_xrealloc(ptr, NUM2SIZET(size));
     return PTR2NUM(ptr);
 }
 
@@ -93,7 +93,7 @@ rb_fiddle_ptr2value(VALUE self, VALUE addr)
 static VALUE
 rb_fiddle_value2ptr(VALUE self, VALUE val)
 {
-    return PTR2NUM((void*)val);
+    return PTR2NUM((void *)val);
 }
 
 void Init_fiddle_handle(void);
@@ -168,37 +168,37 @@ Init_fiddle(void)
      *
      * C type - void
      */
-    rb_define_const(mFiddle, "TYPE_VOID",      INT2NUM(TYPE_VOID));
+    rb_define_const(mFiddle, "TYPE_VOID", INT2NUM(TYPE_VOID));
 
     /* Document-const: TYPE_VOIDP
      *
      * C type - void*
      */
-    rb_define_const(mFiddle, "TYPE_VOIDP",     INT2NUM(TYPE_VOIDP));
+    rb_define_const(mFiddle, "TYPE_VOIDP", INT2NUM(TYPE_VOIDP));
 
     /* Document-const: TYPE_CHAR
      *
      * C type - char
      */
-    rb_define_const(mFiddle, "TYPE_CHAR",      INT2NUM(TYPE_CHAR));
+    rb_define_const(mFiddle, "TYPE_CHAR", INT2NUM(TYPE_CHAR));
 
     /* Document-const: TYPE_SHORT
      *
      * C type - short
      */
-    rb_define_const(mFiddle, "TYPE_SHORT",     INT2NUM(TYPE_SHORT));
+    rb_define_const(mFiddle, "TYPE_SHORT", INT2NUM(TYPE_SHORT));
 
     /* Document-const: TYPE_INT
      *
      * C type - int
      */
-    rb_define_const(mFiddle, "TYPE_INT",       INT2NUM(TYPE_INT));
+    rb_define_const(mFiddle, "TYPE_INT", INT2NUM(TYPE_INT));
 
     /* Document-const: TYPE_LONG
      *
      * C type - long
      */
-    rb_define_const(mFiddle, "TYPE_LONG",      INT2NUM(TYPE_LONG));
+    rb_define_const(mFiddle, "TYPE_LONG", INT2NUM(TYPE_LONG));
 
 #if HAVE_LONG_LONG
     /* Document-const: TYPE_LONG_LONG
@@ -213,7 +213,7 @@ Init_fiddle(void)
      *
      * C type - int8_t
      */
-    rb_define_const(mFiddle, "TYPE_INT8_T",    INT2NUM(TYPE_INT8_T));
+    rb_define_const(mFiddle, "TYPE_INT8_T", INT2NUM(TYPE_INT8_T));
 #endif
 
 #ifdef TYPE_INT16_T
@@ -221,7 +221,7 @@ Init_fiddle(void)
      *
      * C type - int16_t
      */
-    rb_define_const(mFiddle, "TYPE_INT16_T",   INT2NUM(TYPE_INT16_T));
+    rb_define_const(mFiddle, "TYPE_INT16_T", INT2NUM(TYPE_INT16_T));
 #endif
 
 #ifdef TYPE_INT32_T
@@ -229,7 +229,7 @@ Init_fiddle(void)
      *
      * C type - int32_t
      */
-    rb_define_const(mFiddle, "TYPE_INT32_T",   INT2NUM(TYPE_INT32_T));
+    rb_define_const(mFiddle, "TYPE_INT32_T", INT2NUM(TYPE_INT32_T));
 #endif
 
 #ifdef TYPE_INT64_T
@@ -237,46 +237,46 @@ Init_fiddle(void)
      *
      * C type - int64_t
      */
-    rb_define_const(mFiddle, "TYPE_INT64_T",   INT2NUM(TYPE_INT64_T));
+    rb_define_const(mFiddle, "TYPE_INT64_T", INT2NUM(TYPE_INT64_T));
 #endif
 
     /* Document-const: TYPE_FLOAT
      *
      * C type - float
      */
-    rb_define_const(mFiddle, "TYPE_FLOAT",     INT2NUM(TYPE_FLOAT));
+    rb_define_const(mFiddle, "TYPE_FLOAT", INT2NUM(TYPE_FLOAT));
 
     /* Document-const: TYPE_DOUBLE
      *
      * C type - double
      */
-    rb_define_const(mFiddle, "TYPE_DOUBLE",    INT2NUM(TYPE_DOUBLE));
+    rb_define_const(mFiddle, "TYPE_DOUBLE", INT2NUM(TYPE_DOUBLE));
 
 #ifdef HAVE_FFI_PREP_CIF_VAR
     /* Document-const: TYPE_VARIADIC
      *
      * C type - ...
      */
-    rb_define_const(mFiddle, "TYPE_VARIADIC",  INT2NUM(TYPE_VARIADIC));
+    rb_define_const(mFiddle, "TYPE_VARIADIC", INT2NUM(TYPE_VARIADIC));
 #endif
 
     /* Document-const: TYPE_CONST_STRING
      *
      * C type - const char* ('\0' terminated const char*)
      */
-    rb_define_const(mFiddle, "TYPE_CONST_STRING",  INT2NUM(TYPE_CONST_STRING));
+    rb_define_const(mFiddle, "TYPE_CONST_STRING", INT2NUM(TYPE_CONST_STRING));
 
     /* Document-const: TYPE_SIZE_T
      *
      * C type - size_t
      */
-    rb_define_const(mFiddle, "TYPE_SIZE_T",   INT2NUM(TYPE_SIZE_T));
+    rb_define_const(mFiddle, "TYPE_SIZE_T", INT2NUM(TYPE_SIZE_T));
 
     /* Document-const: TYPE_SSIZE_T
      *
      * C type - ssize_t
      */
-    rb_define_const(mFiddle, "TYPE_SSIZE_T",   INT2NUM(TYPE_SSIZE_T));
+    rb_define_const(mFiddle, "TYPE_SSIZE_T", INT2NUM(TYPE_SSIZE_T));
 
     /* Document-const: TYPE_PTRDIFF_T
      *
@@ -288,13 +288,13 @@ Init_fiddle(void)
      *
      * C type - intptr_t
      */
-    rb_define_const(mFiddle, "TYPE_INTPTR_T",  INT2NUM(TYPE_INTPTR_T));
+    rb_define_const(mFiddle, "TYPE_INTPTR_T", INT2NUM(TYPE_INTPTR_T));
 
     /* Document-const: TYPE_UINTPTR_T
      *
      * C type - uintptr_t
      */
-    rb_define_const(mFiddle, "TYPE_UINTPTR_T",  INT2NUM(TYPE_UINTPTR_T));
+    rb_define_const(mFiddle, "TYPE_UINTPTR_T", INT2NUM(TYPE_UINTPTR_T));
 
     /* Document-const: ALIGN_VOIDP
      *
@@ -306,7 +306,7 @@ Init_fiddle(void)
      *
      * The alignment size of a char
      */
-    rb_define_const(mFiddle, "ALIGN_CHAR",  INT2NUM(ALIGN_CHAR));
+    rb_define_const(mFiddle, "ALIGN_CHAR", INT2NUM(ALIGN_CHAR));
 
     /* Document-const: ALIGN_SHORT
      *
@@ -318,27 +318,27 @@ Init_fiddle(void)
      *
      * The alignment size of an int
      */
-    rb_define_const(mFiddle, "ALIGN_INT",   INT2NUM(ALIGN_INT));
+    rb_define_const(mFiddle, "ALIGN_INT", INT2NUM(ALIGN_INT));
 
     /* Document-const: ALIGN_LONG
      *
      * The alignment size of a long
      */
-    rb_define_const(mFiddle, "ALIGN_LONG",  INT2NUM(ALIGN_LONG));
+    rb_define_const(mFiddle, "ALIGN_LONG", INT2NUM(ALIGN_LONG));
 
 #if HAVE_LONG_LONG
     /* Document-const: ALIGN_LONG_LONG
      *
      * The alignment size of a long long
      */
-    rb_define_const(mFiddle, "ALIGN_LONG_LONG",  INT2NUM(ALIGN_LONG_LONG));
+    rb_define_const(mFiddle, "ALIGN_LONG_LONG", INT2NUM(ALIGN_LONG_LONG));
 #endif
 
     /* Document-const: ALIGN_INT8_T
      *
      * The alignment size of a int8_t
      */
-    rb_define_const(mFiddle, "ALIGN_INT8_T",  INT2NUM(ALIGN_INT8_T));
+    rb_define_const(mFiddle, "ALIGN_INT8_T", INT2NUM(ALIGN_INT8_T));
 
     /* Document-const: ALIGN_INT16_T
      *
@@ -368,7 +368,7 @@ Init_fiddle(void)
      *
      * The alignment size of a double
      */
-    rb_define_const(mFiddle, "ALIGN_DOUBLE",INT2NUM(ALIGN_DOUBLE));
+    rb_define_const(mFiddle, "ALIGN_DOUBLE", INT2NUM(ALIGN_DOUBLE));
 
     /* Document-const: ALIGN_SIZE_T
      *
@@ -414,13 +414,13 @@ Init_fiddle(void)
      *
      * size of a void*
      */
-    rb_define_const(mFiddle, "SIZEOF_VOIDP", INT2NUM(sizeof(void*)));
+    rb_define_const(mFiddle, "SIZEOF_VOIDP", INT2NUM(sizeof(void *)));
 
     /* Document-const: SIZEOF_CHAR
      *
      * size of a char
      */
-    rb_define_const(mFiddle, "SIZEOF_CHAR",  INT2NUM(sizeof(char)));
+    rb_define_const(mFiddle, "SIZEOF_CHAR", INT2NUM(sizeof(char)));
 
     /* Document-const: SIZEOF_SHORT
      *
@@ -432,27 +432,27 @@ Init_fiddle(void)
      *
      * size of an int
      */
-    rb_define_const(mFiddle, "SIZEOF_INT",   INT2NUM(sizeof(int)));
+    rb_define_const(mFiddle, "SIZEOF_INT", INT2NUM(sizeof(int)));
 
     /* Document-const: SIZEOF_LONG
      *
      * size of a long
      */
-    rb_define_const(mFiddle, "SIZEOF_LONG",  INT2NUM(sizeof(long)));
+    rb_define_const(mFiddle, "SIZEOF_LONG", INT2NUM(sizeof(long)));
 
 #if HAVE_LONG_LONG
     /* Document-const: SIZEOF_LONG_LONG
      *
      * size of a long long
      */
-    rb_define_const(mFiddle, "SIZEOF_LONG_LONG",  INT2NUM(sizeof(LONG_LONG)));
+    rb_define_const(mFiddle, "SIZEOF_LONG_LONG", INT2NUM(sizeof(LONG_LONG)));
 #endif
 
     /* Document-const: SIZEOF_INT8_T
      *
      * size of a int8_t
      */
-    rb_define_const(mFiddle, "SIZEOF_INT8_T",  INT2NUM(sizeof(int8_t)));
+    rb_define_const(mFiddle, "SIZEOF_INT8_T", INT2NUM(sizeof(int8_t)));
 
     /* Document-const: SIZEOF_INT16_T
      *
@@ -482,43 +482,43 @@ Init_fiddle(void)
      *
      * size of a double
      */
-    rb_define_const(mFiddle, "SIZEOF_DOUBLE",INT2NUM(sizeof(double)));
+    rb_define_const(mFiddle, "SIZEOF_DOUBLE", INT2NUM(sizeof(double)));
 
     /* Document-const: SIZEOF_SIZE_T
      *
      * size of a size_t
      */
-    rb_define_const(mFiddle, "SIZEOF_SIZE_T",  INT2NUM(sizeof(size_t)));
+    rb_define_const(mFiddle, "SIZEOF_SIZE_T", INT2NUM(sizeof(size_t)));
 
     /* Document-const: SIZEOF_SSIZE_T
      *
      * size of a ssize_t
      */
-    rb_define_const(mFiddle, "SIZEOF_SSIZE_T",  INT2NUM(sizeof(size_t))); /* same as size_t */
+    rb_define_const(mFiddle, "SIZEOF_SSIZE_T", INT2NUM(sizeof(size_t))); /* same as size_t */
 
     /* Document-const: SIZEOF_PTRDIFF_T
      *
      * size of a ptrdiff_t
      */
-    rb_define_const(mFiddle, "SIZEOF_PTRDIFF_T",  INT2NUM(sizeof(ptrdiff_t)));
+    rb_define_const(mFiddle, "SIZEOF_PTRDIFF_T", INT2NUM(sizeof(ptrdiff_t)));
 
     /* Document-const: SIZEOF_INTPTR_T
      *
      * size of a intptr_t
      */
-    rb_define_const(mFiddle, "SIZEOF_INTPTR_T",  INT2NUM(sizeof(intptr_t)));
+    rb_define_const(mFiddle, "SIZEOF_INTPTR_T", INT2NUM(sizeof(intptr_t)));
 
     /* Document-const: SIZEOF_UINTPTR_T
      *
      * size of a uintptr_t
      */
-    rb_define_const(mFiddle, "SIZEOF_UINTPTR_T",  INT2NUM(sizeof(uintptr_t)));
+    rb_define_const(mFiddle, "SIZEOF_UINTPTR_T", INT2NUM(sizeof(uintptr_t)));
 
     /* Document-const: SIZEOF_CONST_STRING
      *
      * size of a const char*
      */
-    rb_define_const(mFiddle, "SIZEOF_CONST_STRING", INT2NUM(sizeof(const char*)));
+    rb_define_const(mFiddle, "SIZEOF_CONST_STRING", INT2NUM(sizeof(const char *)));
 
     /* Document-const: RUBY_FREE
      *

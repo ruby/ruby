@@ -5,7 +5,7 @@
 #include "ruby/missing.h"
 #include <string.h>
 #ifdef HAVE_MEMSET_S
-# include <string.h>
+#include <string.h>
 #endif
 
 #ifdef _WIN32
@@ -28,31 +28,31 @@
  */
 
 #ifndef FUNC_UNOPTIMIZED
-# define FUNC_UNOPTIMIZED(x) x
+#define FUNC_UNOPTIMIZED(x) x
 #endif
 
 #undef explicit_bzero
 #ifndef HAVE_EXPLICIT_BZERO
- #ifdef HAVE_EXPLICIT_MEMSET
+#ifdef HAVE_EXPLICIT_MEMSET
 void
 explicit_bzero(void *b, size_t len)
 {
     (void)explicit_memset(b, 0, len);
 }
- #elif defined HAVE_MEMSET_S
+#elif defined HAVE_MEMSET_S
 void
 explicit_bzero(void *b, size_t len)
 {
     memset_s(b, len, 0, len);
 }
- #elif defined SecureZeroMemory
+#elif defined SecureZeroMemory
 void
 explicit_bzero(void *b, size_t len)
 {
     SecureZeroMemory(b, len);
 }
 
- #elif defined HAVE_FUNC_WEAK
+#elif defined HAVE_FUNC_WEAK
 
 /* A weak function never be optimized away. Even if nobody uses it. */
 WEAK(void ruby_explicit_bzero_hook_unused(void *buf, size_t len));
@@ -68,10 +68,10 @@ explicit_bzero(void *b, size_t len)
     ruby_explicit_bzero_hook_unused(b, len);
 }
 
- #else /* Your OS have no capability. Sigh. */
+#else /* Your OS have no capability. Sigh. */
 
 FUNC_UNOPTIMIZED(void explicit_bzero(void *b, size_t len));
-#undef explicit_bzero
+#    undef explicit_bzero
 
 void
 explicit_bzero(void *b, size_t len)
@@ -82,13 +82,13 @@ explicit_bzero(void *b, size_t len)
      * However, gcc and major other compilers never optimize a volatile
      * variable away. So, using volatile is practically ok.
      */
-    volatile char* p = (volatile char*)b;
+    volatile char *p = (volatile char *)b;
 
-    while(len) {
-	*p = 0;
-	p++;
-	len--;
+    while (len) {
+        *p = 0;
+        p++;
+        len--;
     }
 }
- #endif
+#endif
 #endif /* HAVE_EXPLICIT_BZERO */

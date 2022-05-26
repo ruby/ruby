@@ -1,6 +1,10 @@
 #include "ruby.h"
 
-#define init(n) {void Init_##n(VALUE klass); Init_##n(klass);}
+#define init(n) \
+    { \
+        void Init_##n(VALUE klass); \
+        Init_##n(klass); \
+    }
 
 static VALUE
 sym_find(VALUE dummy, VALUE sym)

@@ -3,12 +3,9 @@
 static VALUE
 big(VALUE x)
 {
-    if (FIXNUM_P(x))
-        return rb_int2big(FIX2LONG(x));
-    if (RB_TYPE_P(x, T_BIGNUM))
-        return x;
-    rb_raise(rb_eTypeError, "can't convert %s to Bignum",
-            rb_obj_classname(x));
+    if (FIXNUM_P(x)) return rb_int2big(FIX2LONG(x));
+    if (RB_TYPE_P(x, T_BIGNUM)) return x;
+    rb_raise(rb_eTypeError, "can't convert %s to Bignum", rb_obj_classname(x));
 }
 
 static VALUE
@@ -48,7 +45,7 @@ mul_gmp(VALUE klass, VALUE x, VALUE y)
     return rb_big_norm(rb_big_mul_gmp(big(x), big(y)));
 }
 #else
-#define mul_gmp rb_f_notimplement
+#    define mul_gmp rb_f_notimplement
 #endif
 
 void

@@ -20,9 +20,12 @@ nconf_free(void *conf)
 static const rb_data_type_t ossl_config_type = {
     "OpenSSL/CONF",
     {
-        0, nconf_free,
+        0,
+        nconf_free,
     },
-    0, 0, RUBY_TYPED_FREE_IMMEDIATELY,
+    0,
+    0,
+    RUBY_TYPED_FREE_IMMEDIATELY,
 };
 
 CONF *
@@ -31,8 +34,7 @@ GetConfig(VALUE obj)
     CONF *conf;
 
     TypedData_Get_Struct(obj, CONF, &ossl_config_type, conf);
-    if (!conf)
-        rb_raise(rb_eRuntimeError, "CONF is not initialized");
+    if (!conf) rb_raise(rb_eRuntimeError, "CONF is not initialized");
     return conf;
 }
 
@@ -44,8 +46,7 @@ config_s_alloc(VALUE klass)
 
     obj = TypedData_Wrap_Struct(klass, &ossl_config_type, 0);
     conf = NCONF_new(NULL);
-    if (!conf)
-        ossl_raise(eConfigError, "NCONF_new");
+    if (!conf) ossl_raise(eConfigError, "NCONF_new");
     RTYPEDDATA_DATA(obj) = conf;
     return obj;
 }
@@ -140,8 +141,7 @@ config_initialize(int argc, VALUE *argv, VALUE self)
     rb_check_frozen(self);
     if (!NIL_P(filename)) {
         BIO *bio = BIO_new_file(StringValueCStr(filename), "rb");
-        if (!bio)
-            ossl_raise(eConfigError, "BIO_new_file");
+        if (!bio) ossl_raise(eConfigError, "BIO_new_file");
         config_load_bio(conf, bio); /* Consumes BIO */
     }
     return self;
@@ -224,7 +224,7 @@ static VALUE
 config_get_section(VALUE self, VALUE section)
 {
     CONF *conf = GetConfig(self);
-    STACK_OF(CONF_VALUE) *sk;
+    STACK_OF(CONF_VALUE) * sk;
     int i, entries;
     VALUE hash;
 
@@ -237,8 +237,7 @@ config_get_section(VALUE self, VALUE section)
     entries = sk_CONF_VALUE_num(sk);
     for (i = 0; i < entries; i++) {
         CONF_VALUE *entry = sk_CONF_VALUE_value(sk, i);
-        rb_hash_aset(hash, rb_str_new_cstr(entry->name),
-                     rb_str_new_cstr(entry->value));
+        rb_hash_aset(hash, rb_str_new_cstr(entry->name), rb_str_new_cstr(entry->value));
     }
     return hash;
 }
@@ -246,29 +245,26 @@ config_get_section(VALUE self, VALUE section)
 static void
 get_conf_section_doall_arg(CONF_VALUE *cv, VALUE *aryp)
 {
-    if (cv->name)
-        return;
+    if (cv->name) return;
     rb_ary_push(*aryp, rb_str_new_cstr(cv->section));
 }
 
 /* IMPLEMENT_LHASH_DOALL_ARG_CONST() requires >= OpenSSL 1.1.0 */
 static IMPLEMENT_LHASH_DOALL_ARG_FN(get_conf_section, CONF_VALUE, VALUE)
 
-/*
- * call-seq:
- *    config.sections -> array of string
- *
- * Get the names of all sections in the current configuration.
- */
-static VALUE
-config_get_sections(VALUE self)
+    /*
+     * call-seq:
+     *    config.sections -> array of string
+     *
+     * Get the names of all sections in the current configuration.
+     */
+    static VALUE config_get_sections(VALUE self)
 {
     CONF *conf = GetConfig(self);
     VALUE ary;
 
     ary = rb_ary_new();
-    lh_doall_arg((_LHASH *)conf->data, LHASH_DOALL_ARG_FN(get_conf_section),
-                 &ary);
+    lh_doall_arg((_LHASH *)conf->data, LHASH_DOALL_ARG_FN(get_conf_section), &ary);
     return ary;
 }
 
@@ -276,17 +272,16 @@ static void
 dump_conf_value_doall_arg(CONF_VALUE *cv, VALUE *strp)
 {
     VALUE str = *strp;
-    STACK_OF(CONF_VALUE) *sk;
+    STACK_OF(CONF_VALUE) * sk;
     int i, num;
 
-    if (cv->name)
-        return;
+    if (cv->name) return;
     sk = (STACK_OF(CONF_VALUE) *)cv->value;
     num = sk_CONF_VALUE_num(sk);
     rb_str_cat_cstr(str, "[ ");
     rb_str_cat_cstr(str, cv->section);
     rb_str_cat_cstr(str, " ]\n");
-    for (i = 0; i < num; i++){
+    for (i = 0; i < num; i++) {
         CONF_VALUE *v = sk_CONF_VALUE_value(sk, i);
         rb_str_cat_cstr(str, v->name ? v->name : "None");
         rb_str_cat_cstr(str, "=");
@@ -298,61 +293,58 @@ dump_conf_value_doall_arg(CONF_VALUE *cv, VALUE *strp)
 
 static IMPLEMENT_LHASH_DOALL_ARG_FN(dump_conf_value, CONF_VALUE, VALUE)
 
-/*
- * call-seq:
- *    config.to_s -> string
- *
- *
- * Gets the parsable form of the current configuration.
- *
- * Given the following configuration being created:
- *
- *   config = OpenSSL::Config.new
- *     #=> #<OpenSSL::Config sections=[]>
- *   config['default'] = {"foo"=>"bar","baz"=>"buz"}
- *     #=> {"foo"=>"bar", "baz"=>"buz"}
- *   puts config.to_s
- *     #=> [ default ]
- *     #   foo=bar
- *     #   baz=buz
- *
- * You can parse get the serialized configuration using #to_s and then parse
- * it later:
- *
- *   serialized_config = config.to_s
- *   # much later...
- *   new_config = OpenSSL::Config.parse(serialized_config)
- *     #=> #<OpenSSL::Config sections=["default"]>
- *   puts new_config
- *     #=> [ default ]
- *         foo=bar
- *         baz=buz
- */
-static VALUE
-config_to_s(VALUE self)
+    /*
+     * call-seq:
+     *    config.to_s -> string
+     *
+     *
+     * Gets the parsable form of the current configuration.
+     *
+     * Given the following configuration being created:
+     *
+     *   config = OpenSSL::Config.new
+     *     #=> #<OpenSSL::Config sections=[]>
+     *   config['default'] = {"foo"=>"bar","baz"=>"buz"}
+     *     #=> {"foo"=>"bar", "baz"=>"buz"}
+     *   puts config.to_s
+     *     #=> [ default ]
+     *     #   foo=bar
+     *     #   baz=buz
+     *
+     * You can parse get the serialized configuration using #to_s and then parse
+     * it later:
+     *
+     *   serialized_config = config.to_s
+     *   # much later...
+     *   new_config = OpenSSL::Config.parse(serialized_config)
+     *     #=> #<OpenSSL::Config sections=["default"]>
+     *   puts new_config
+     *     #=> [ default ]
+     *         foo=bar
+     *         baz=buz
+     */
+    static VALUE config_to_s(VALUE self)
 {
     CONF *conf = GetConfig(self);
     VALUE str;
 
     str = rb_str_new(NULL, 0);
-    lh_doall_arg((_LHASH *)conf->data, LHASH_DOALL_ARG_FN(dump_conf_value),
-                 &str);
+    lh_doall_arg((_LHASH *)conf->data, LHASH_DOALL_ARG_FN(dump_conf_value), &str);
     return str;
 }
 
 static void
 each_conf_value_doall_arg(CONF_VALUE *cv, void *unused)
 {
-    STACK_OF(CONF_VALUE) *sk;
+    STACK_OF(CONF_VALUE) * sk;
     VALUE section;
     int i, num;
 
-    if (cv->name)
-        return;
+    if (cv->name) return;
     sk = (STACK_OF(CONF_VALUE) *)cv->value;
     num = sk_CONF_VALUE_num(sk);
     section = rb_str_new_cstr(cv->section);
-    for (i = 0; i < num; i++){
+    for (i = 0; i < num; i++) {
         CONF_VALUE *v = sk_CONF_VALUE_value(sk, i);
         VALUE name = v->name ? rb_str_new_cstr(v->name) : Qnil;
         VALUE value = v->value ? rb_str_new_cstr(v->value) : Qnil;
@@ -362,25 +354,23 @@ each_conf_value_doall_arg(CONF_VALUE *cv, void *unused)
 
 static IMPLEMENT_LHASH_DOALL_ARG_FN(each_conf_value, CONF_VALUE, void)
 
-/*
- * call-seq:
- *    config.each { |section, key, value| }
- *
- * Retrieves the section and its pairs for the current configuration.
- *
- *    config.each do |section, key, value|
- *      # ...
- *    end
- */
-static VALUE
-config_each(VALUE self)
+    /*
+     * call-seq:
+     *    config.each { |section, key, value| }
+     *
+     * Retrieves the section and its pairs for the current configuration.
+     *
+     *    config.each do |section, key, value|
+     *      # ...
+     *    end
+     */
+    static VALUE config_each(VALUE self)
 {
     CONF *conf = GetConfig(self);
 
     RETURN_ENUMERATOR(self, 0, 0);
 
-    lh_doall_arg((_LHASH *)conf->data, LHASH_DOALL_ARG_FN(each_conf_value),
-                 NULL);
+    lh_doall_arg((_LHASH *)conf->data, LHASH_DOALL_ARG_FN(each_conf_value), NULL);
     return self;
 }
 

@@ -6,14 +6,13 @@
 int
 memcmp(const void *s1, const void *s2, size_t len)
 {
-    register unsigned char *a = (unsigned char*)s1;
-    register unsigned char *b = (unsigned char*)s2;
+    register unsigned char *a = (unsigned char *)s1;
+    register unsigned char *b = (unsigned char *)s2;
     register int tmp;
 
     for (; len; --len) {
-	tmp = *a++ - *b++;
-	if (tmp)
-	    return tmp;
+        tmp = *a++ - *b++;
+        if (tmp) return tmp;
     }
     return 0;
 }

@@ -1,9 +1,9 @@
-#include <stdlib.h>
 #include "wasm/machine.h"
 #include "wasm/asyncify.h"
+#include <stdlib.h>
 
 #ifndef WASM_SCAN_STACK_BUFFER_SIZE
-# define WASM_SCAN_STACK_BUFFER_SIZE 6144
+#    define WASM_SCAN_STACK_BUFFER_SIZE 6144
 #endif
 
 struct asyncify_buf {
@@ -13,7 +13,7 @@ struct asyncify_buf {
 };
 
 static void
-init_asyncify_buf(struct asyncify_buf* buf)
+init_asyncify_buf(struct asyncify_buf *buf)
 {
     buf->top = &buf->buffer[0];
     buf->end = &buf->buffer[WASM_SCAN_STACK_BUFFER_SIZE];
@@ -31,7 +31,8 @@ rb_wasm_scan_locals(rb_wasm_scan_func scan)
         init_asyncify_buf(&buf);
         _rb_wasm_active_scan_buf = &buf;
         asyncify_start_unwind(&buf);
-    } else {
+    }
+    else {
         asyncify_stop_rewind();
         spilling = 0;
         _rb_wasm_active_scan_buf = NULL;
@@ -41,8 +42,7 @@ rb_wasm_scan_locals(rb_wasm_scan_func scan)
 
 static void *rb_wasm_stack_base = NULL;
 
-__attribute__((constructor))
-int
+__attribute__((constructor)) int
 rb_wasm_record_stack_base(void)
 {
     rb_wasm_stack_base = rb_wasm_get_stack_pointer();

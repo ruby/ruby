@@ -1,4 +1,4 @@
-#ifndef RBIMPL_ARITHMERIC_ST_DATA_T_H                /*-*-C++-*-vi:se ft=cpp:*/
+#ifndef RBIMPL_ARITHMERIC_ST_DATA_T_H /*-*-C++-*-vi:se ft=cpp:*/
 #define RBIMPL_ARITHMERIC_ST_DATA_T_H
 /**
  * @file
@@ -20,6 +20,7 @@
  *             extension libraries.  They could be written in C++98.
  * @brief      Arithmetic conversion between C's `st_data_t` and Ruby's.
  */
+#include "ruby/assert.h"
 #include "ruby/internal/arithmetic/fixnum.h"
 #include "ruby/internal/arithmetic/long.h"
 #include "ruby/internal/attr/artificial.h"
@@ -27,10 +28,9 @@
 #include "ruby/internal/attr/constexpr.h"
 #include "ruby/internal/cast.h"
 #include "ruby/internal/value.h"
-#include "ruby/assert.h"
 #include "ruby/st.h"
 
-#define ST2FIX    RB_ST2FIX     /**< @old{RB_ST2FIX} */
+#define ST2FIX RB_ST2FIX /**< @old{RB_ST2FIX} */
 /** @cond INTERNAL_MACRO */
 #define RB_ST2FIX RB_ST2FIX
 /** @endcond */

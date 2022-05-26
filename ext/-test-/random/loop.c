@@ -8,10 +8,7 @@ typedef struct {
 } rand_loop_t;
 
 RB_RANDOM_INTERFACE_DECLARE_WITH_REAL(loop);
-static const rb_random_interface_t random_loop_if = {
-    32,
-    RB_RANDOM_INTERFACE_DEFINE_WITH_REAL(loop)
-};
+static const rb_random_interface_t random_loop_if = {32, RB_RANDOM_INTERFACE_DEFINE_WITH_REAL(loop)};
 
 static size_t
 random_loop_memsize(const void *ptr)
@@ -20,18 +17,13 @@ random_loop_memsize(const void *ptr)
     return sizeof(*r) + r->num * sizeof(r->buf[0]);
 }
 
-static rb_random_data_type_t random_loop_type = {
-    "random/loop",
+static rb_random_data_type_t random_loop_type = {"random/loop",
     {
         rb_random_mark,
         RUBY_TYPED_DEFAULT_FREE,
         random_loop_memsize,
     },
-    RB_RANDOM_PARENT,
-    (void *)&random_loop_if,
-    RUBY_TYPED_FREE_IMMEDIATELY
-};
-
+    RB_RANDOM_PARENT, (void *)&random_loop_if, RUBY_TYPED_FREE_IMMEDIATELY};
 
 static VALUE
 loop_alloc(VALUE klass)
@@ -60,19 +52,19 @@ loop_get_bytes(rb_random_t *rnd, void *p, size_t n)
     while (n > 0) {
         uint32_t x = loop_get_int32(rnd);
         switch (n % 4) {
-          case 0:
+        case 0:
             *buf++ = (uint8_t)x;
             n--;
             /* FALLTHROUGH */
-          case 3:
+        case 3:
             *buf++ = (uint8_t)x;
             n--;
             /* FALLTHROUGH */
-          case 2:
+        case 2:
             *buf++ = (uint8_t)x;
             n--;
             /* FALLTHROUGH */
-          case 1:
+        case 1:
             *buf++ = (uint8_t)x;
             n--;
         }

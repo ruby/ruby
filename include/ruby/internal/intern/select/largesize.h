@@ -1,4 +1,4 @@
-#ifndef RBIMPL_INTERN_SELECT_LARGESIZE_H             /*-*-C++-*-vi:se ft=cpp:*/
+#ifndef RBIMPL_INTERN_SELECT_LARGESIZE_H /*-*-C++-*-vi:se ft=cpp:*/
 #define RBIMPL_INTERN_SELECT_LARGESIZE_H
 /**
  * @file
@@ -69,8 +69,8 @@ struct timeval;
  * on modern platforms.
  */
 typedef struct {
-    int maxfd;                  /**< Maximum allowed number of FDs. */
-    fd_set *fdset;              /**< File descriptors buffer */
+    int maxfd;     /**< Maximum allowed number of FDs. */
+    fd_set *fdset; /**< File descriptors buffer */
 } rb_fdset_t;
 
 RBIMPL_SYMBOL_EXPORT_BEGIN()

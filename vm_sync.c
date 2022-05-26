@@ -1,8 +1,8 @@
-#include "vm_core.h"
 #include "vm_sync.h"
-#include "ractor_core.h"
-#include "vm_debug.h"
 #include "gc.h"
+#include "ractor_core.h"
+#include "vm_core.h"
+#include "vm_debug.h"
 
 static bool vm_barrier_finish_p(rb_vm_t *vm);
 
@@ -216,10 +216,8 @@ rb_vm_cond_timedwait(rb_vm_t *vm, rb_nativethread_cond_t *cond, unsigned long ms
 static bool
 vm_barrier_finish_p(rb_vm_t *vm)
 {
-    RUBY_DEBUG_LOG("cnt:%u living:%u blocking:%u",
-                   vm->ractor.sync.barrier_cnt,
-                   vm->ractor.cnt,
-                   vm->ractor.blocking_cnt);
+    RUBY_DEBUG_LOG(
+        "cnt:%u living:%u blocking:%u", vm->ractor.sync.barrier_cnt, vm->ractor.cnt, vm->ractor.blocking_cnt);
 
     VM_ASSERT(vm->ractor.blocking_cnt <= vm->ractor.cnt);
     return vm->ractor.blocking_cnt == vm->ractor.cnt;
@@ -245,16 +243,15 @@ rb_vm_barrier(void)
 
         vm->ractor.sync.barrier_waiting = true;
 
-        RUBY_DEBUG_LOG("barrier start. cnt:%u living:%u blocking:%u",
-                       vm->ractor.sync.barrier_cnt,
-                       vm->ractor.cnt,
-                       vm->ractor.blocking_cnt);
+        RUBY_DEBUG_LOG("barrier start. cnt:%u living:%u blocking:%u", vm->ractor.sync.barrier_cnt, vm->ractor.cnt,
+            vm->ractor.blocking_cnt);
 
         rb_vm_ractor_blocking_cnt_inc(vm, cr, __FILE__, __LINE__);
 
         // send signal
         rb_ractor_t *r = 0;
-        ccan_list_for_each(&vm->ractor.set, r, vmlr_node) {
+        ccan_list_for_each(&vm->ractor.set, r, vmlr_node)
+        {
             if (r != cr) {
                 rb_ractor_vm_barrier_interrupt_running_thread(r);
             }
@@ -272,22 +269,21 @@ rb_vm_barrier(void)
         vm->ractor.sync.barrier_waiting = false;
         vm->ractor.sync.barrier_cnt++;
 
-        ccan_list_for_each(&vm->ractor.set, r, vmlr_node) {
+        ccan_list_for_each(&vm->ractor.set, r, vmlr_node)
+        {
             rb_native_cond_signal(&r->barrier_wait_cond);
         }
     }
 }
 
 void
-rb_ec_vm_lock_rec_release(const rb_execution_context_t *ec,
-                          unsigned int recorded_lock_rec,
-                          unsigned int current_lock_rec)
+rb_ec_vm_lock_rec_release(
+    const rb_execution_context_t *ec, unsigned int recorded_lock_rec, unsigned int current_lock_rec)
 {
     VM_ASSERT(recorded_lock_rec != current_lock_rec);
 
     if (UNLIKELY(recorded_lock_rec > current_lock_rec)) {
-        rb_bug("unexpected situation - recordd:%u current:%u",
-               recorded_lock_rec, current_lock_rec);
+        rb_bug("unexpected situation - recordd:%u current:%u", recorded_lock_rec, current_lock_rec);
     }
     else {
         while (recorded_lock_rec < current_lock_rec) {

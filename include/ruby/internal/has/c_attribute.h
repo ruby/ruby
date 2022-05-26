@@ -1,4 +1,4 @@
-#ifndef RBIMPL_HAS_C_ATTRIBUTE_H                     /*-*-C++-*-vi:se ft=cpp:*/
+#ifndef RBIMPL_HAS_C_ATTRIBUTE_H /*-*-C++-*-vi:se ft=cpp:*/
 #define RBIMPL_HAS_C_ATTRIBUTE_H
 /**
  * @file
@@ -23,16 +23,16 @@
 
 /** Wraps (or simulates) `__has_c_attribute`. */
 #if defined(__cplusplus)
-# /* Makes no sense. */
-# define RBIMPL_HAS_C_ATTRIBUTE(_) 0
+#    /* Makes no sense. */
+#    define RBIMPL_HAS_C_ATTRIBUTE(_) 0
 
 #elif defined(__has_c_attribute)
-# define RBIMPL_HAS_C_ATTRIBUTE(_) __has_c_attribute(_)
+#    define RBIMPL_HAS_C_ATTRIBUTE(_) __has_c_attribute(_)
 
 #else
-# /* As  of writing  everything  that lacks  __has_c_attribute also  completely
+#    /* As  of writing  everything  that lacks  __has_c_attribute also  completely
 #  * lacks C2x attributes as well.  Might change in future? */
-# define RBIMPL_HAS_C_ATTRIBUTE(_) 0
+#    define RBIMPL_HAS_C_ATTRIBUTE(_) 0
 #endif
 
 #endif /* RBIMPL_HAS_C_ATTRIBUTE_H */

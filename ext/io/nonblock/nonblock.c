@@ -13,7 +13,7 @@
 #include "ruby.h"
 #include "ruby/io.h"
 #ifdef HAVE_UNISTD_H
-#include <unistd.h>
+#    include <unistd.h>
 #endif
 #include <fcntl.h>
 
@@ -26,7 +26,7 @@ get_fcntl_flags(int fd)
     return f;
 }
 #else
-#define get_fcntl_flags(fd) ((void)(fd), 0)
+#    define get_fcntl_flags(fd) ((void)(fd), 0)
 #endif
 
 #ifdef F_GETFL
@@ -41,34 +41,30 @@ rb_io_nonblock_p(VALUE io)
 {
     rb_io_t *fptr;
     GetOpenFile(io, fptr);
-    if (get_fcntl_flags(fptr->fd) & O_NONBLOCK)
-	return Qtrue;
+    if (get_fcntl_flags(fptr->fd) & O_NONBLOCK) return Qtrue;
     return Qfalse;
 }
 #else
-#define rb_io_nonblock_p rb_f_notimplement
+#    define rb_io_nonblock_p rb_f_notimplement
 #endif
 
 #ifdef F_SETFL
 static void
 set_fcntl_flags(int fd, int f)
 {
-    if (fcntl(fd, F_SETFL, f) == -1)
-	rb_sys_fail(0);
+    if (fcntl(fd, F_SETFL, f) == -1) rb_sys_fail(0);
 }
 
 static int
 io_nonblock_set(int fd, int f, int nb)
 {
     if (nb) {
-	if ((f & O_NONBLOCK) != 0)
-	    return 0;
-	f |= O_NONBLOCK;
+        if ((f & O_NONBLOCK) != 0) return 0;
+        f |= O_NONBLOCK;
     }
     else {
-	if ((f & O_NONBLOCK) == 0)
-	    return 0;
-	f &= ~O_NONBLOCK;
+        if ((f & O_NONBLOCK) == 0) return 0;
+        f &= ~O_NONBLOCK;
     }
     set_fcntl_flags(fd, f);
     return 1;
@@ -127,9 +123,9 @@ rb_io_nonblock_set(VALUE io, VALUE nb)
     rb_io_t *fptr;
     GetOpenFile(io, fptr);
     if (RTEST(nb))
-	rb_io_set_nonblock(fptr);
+        rb_io_set_nonblock(fptr);
     else
-	io_nonblock_set(fptr->fd, get_fcntl_flags(fptr->fd), RTEST(nb));
+        io_nonblock_set(fptr->fd, get_fcntl_flags(fptr->fd), RTEST(nb));
     return io;
 }
 
@@ -160,20 +156,19 @@ rb_io_nonblock_block(int argc, VALUE *argv, VALUE io)
 
     GetOpenFile(io, fptr);
     if (argc > 0) {
-	VALUE v;
-	rb_scan_args(argc, argv, "01", &v);
-	nb = RTEST(v);
+        VALUE v;
+        rb_scan_args(argc, argv, "01", &v);
+        nb = RTEST(v);
     }
     f = get_fcntl_flags(fptr->fd);
     restore[0] = fptr->fd;
     restore[1] = f;
-    if (!io_nonblock_set(fptr->fd, f, nb))
-	return rb_yield(io);
+    if (!io_nonblock_set(fptr->fd, f, nb)) return rb_yield(io);
     return rb_ensure(rb_yield, io, io_nonblock_restore, (VALUE)restore);
 }
 #else
-#define rb_io_nonblock_set rb_f_notimplement
-#define rb_io_nonblock_block rb_f_notimplement
+#    define rb_io_nonblock_set rb_f_notimplement
+#    define rb_io_nonblock_block rb_f_notimplement
 #endif
 
 void

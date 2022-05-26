@@ -1,4 +1,4 @@
-#ifndef RBIMPL_ATTR_DIAGNOSE_IF_H                    /*-*-C++-*-vi:se ft=cpp:*/
+#ifndef RBIMPL_ATTR_DIAGNOSE_IF_H /*-*-C++-*-vi:se ft=cpp:*/
 #define RBIMPL_ATTR_DIAGNOSE_IF_H
 /**
  * @file
@@ -25,18 +25,17 @@
 
 /** Wraps (or simulates) `__attribute__((diagnose_if))` */
 #if RBIMPL_COMPILER_BEFORE(Clang, 5, 0, 0)
-# /* https://bugs.llvm.org/show_bug.cgi?id=34319 */
-# define RBIMPL_ATTR_DIAGNOSE_IF(_, __, ___) /* void */
+#                                               /* https://bugs.llvm.org/show_bug.cgi?id=34319 */
+#    define RBIMPL_ATTR_DIAGNOSE_IF(_, __, ___) /* void */
 
 #elif RBIMPL_HAS_ATTRIBUTE(diagnose_if)
-# define RBIMPL_ATTR_DIAGNOSE_IF(_, __, ___) \
-    RBIMPL_WARNING_PUSH() \
-    RBIMPL_WARNING_IGNORED(-Wgcc-compat) \
-    __attribute__((__diagnose_if__(_, __, ___))) \
-    RBIMPL_WARNING_POP()
+#    define RBIMPL_ATTR_DIAGNOSE_IF(_, __, ___) \
+        RBIMPL_WARNING_PUSH() \
+        RBIMPL_WARNING_IGNORED(-Wgcc - compat) \
+        __attribute__((__diagnose_if__(_, __, ___))) RBIMPL_WARNING_POP()
 
 #else
-# define RBIMPL_ATTR_DIAGNOSE_IF(_, __, ___) /* void */
+#    define RBIMPL_ATTR_DIAGNOSE_IF(_, __, ___) /* void */
 #endif
 
 #endif /* RBIMPL_ATTR_DIAGNOSE_IF_H */

@@ -1,4 +1,4 @@
-#ifndef INTERNAL_STATIC_ASSERT_H                         /*-*-C-*-vi:se ft=c:*/
+#ifndef INTERNAL_STATIC_ASSERT_H /*-*-C-*-vi:se ft=c:*/
 #define INTERNAL_STATIC_ASSERT_H
 /**
  * @author     Ruby developers <ruby-core@ruby-lang.org>
@@ -10,7 +10,7 @@
  */
 #include "ruby/internal/static_assert.h"
 #ifndef STATIC_ASSERT
-# define STATIC_ASSERT RBIMPL_STATIC_ASSERT
+#    define STATIC_ASSERT RBIMPL_STATIC_ASSERT
 #endif
 
 #endif /* INTERNAL_STATIC_ASSERT_H */

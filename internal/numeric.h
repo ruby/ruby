@@ -1,4 +1,4 @@
-#ifndef INTERNAL_NUMERIC_H                               /*-*-C-*-vi:se ft=c:*/
+#ifndef INTERNAL_NUMERIC_H /*-*-C-*-vi:se ft=c:*/
 #define INTERNAL_NUMERIC_H
 /**
  * @author     Ruby developers <ruby-core@ruby-lang.org>
@@ -8,24 +8,20 @@
  *             file COPYING are met.  Consult the file for details.
  * @brief      Internal header for Numeric.
  */
-#include "internal/bignum.h"    /* for BIGNUM_POSITIVE_P */
-#include "internal/bits.h"      /* for RUBY_BIT_ROTL */
-#include "internal/fixnum.h"    /* for FIXNUM_POSITIVE_P */
-#include "internal/vm.h"        /* for rb_method_basic_definition_p */
-#include "ruby/intern.h"        /* for rb_cmperr */
-#include "ruby/ruby.h"          /* for USE_FLONUM */
+#include "internal/bignum.h" /* for BIGNUM_POSITIVE_P */
+#include "internal/bits.h"   /* for RUBY_BIT_ROTL */
+#include "internal/fixnum.h" /* for FIXNUM_POSITIVE_P */
+#include "internal/vm.h"     /* for rb_method_basic_definition_p */
+#include "ruby/intern.h"     /* for rb_cmperr */
+#include "ruby/ruby.h"       /* for USE_FLONUM */
 
 #define ROUND_TO(mode, even, up, down) \
-    ((mode) == RUBY_NUM_ROUND_HALF_EVEN ? even : \
-     (mode) == RUBY_NUM_ROUND_HALF_UP ? up : down)
-#define ROUND_FUNC(mode, name) \
-    ROUND_TO(mode, name##_half_even, name##_half_up, name##_half_down)
-#define ROUND_CALL(mode, name, args) \
-    ROUND_TO(mode, name##_half_even args, \
-             name##_half_up args, name##_half_down args)
+    ((mode) == RUBY_NUM_ROUND_HALF_EVEN ? even : (mode) == RUBY_NUM_ROUND_HALF_UP ? up : down)
+#define ROUND_FUNC(mode, name) ROUND_TO(mode, name##_half_even, name##_half_up, name##_half_down)
+#define ROUND_CALL(mode, name, args) ROUND_TO(mode, name##_half_even args, name##_half_up args, name##_half_down args)
 
 #ifndef ROUND_DEFAULT
-# define ROUND_DEFAULT RUBY_NUM_ROUND_HALF_UP
+#    define ROUND_DEFAULT RUBY_NUM_ROUND_HALF_UP
 #endif
 
 enum ruby_num_rounding_mode {
@@ -49,7 +45,7 @@ struct RFloat {
     rb_float_value_type float_value;
 };
 
-#define RFLOAT(obj)  ((struct RFloat *)(obj))
+#define RFLOAT(obj) ((struct RFloat *)(obj))
 
 /* numeric.c */
 int rb_num_to_uint(VALUE val, unsigned int *ret);
@@ -101,7 +97,7 @@ static inline bool INT_POSITIVE_P(VALUE num);
 static inline bool INT_NEGATIVE_P(VALUE num);
 static inline bool FLOAT_ZERO_P(VALUE num);
 #define rb_float_value rb_float_value_inline
-#define rb_float_new   rb_float_new_inline
+#define rb_float_new rb_float_new_inline
 
 RUBY_SYMBOL_EXPORT_BEGIN
 /* numeric.c (export) */
@@ -168,12 +164,10 @@ rb_num_positive_int_p(VALUE num)
     const ID mid = '>';
 
     if (FIXNUM_P(num)) {
-        if (rb_method_basic_definition_p(rb_cInteger, mid))
-            return FIXNUM_POSITIVE_P(num);
+        if (rb_method_basic_definition_p(rb_cInteger, mid)) return FIXNUM_POSITIVE_P(num);
     }
     else if (RB_TYPE_P(num, T_BIGNUM)) {
-        if (rb_method_basic_definition_p(rb_cInteger, mid))
-            return BIGNUM_POSITIVE_P(num);
+        if (rb_method_basic_definition_p(rb_cInteger, mid)) return BIGNUM_POSITIVE_P(num);
     }
     return RTEST(rb_num_compare_with_zero(num, mid));
 }
@@ -184,12 +178,10 @@ rb_num_negative_int_p(VALUE num)
     const ID mid = '<';
 
     if (FIXNUM_P(num)) {
-        if (rb_method_basic_definition_p(rb_cInteger, mid))
-            return FIXNUM_NEGATIVE_P(num);
+        if (rb_method_basic_definition_p(rb_cInteger, mid)) return FIXNUM_NEGATIVE_P(num);
     }
     else if (RB_TYPE_P(num, T_BIGNUM)) {
-        if (rb_method_basic_definition_p(rb_cInteger, mid))
-            return BIGNUM_NEGATIVE_P(num);
+        if (rb_method_basic_definition_p(rb_cInteger, mid)) return BIGNUM_NEGATIVE_P(num);
     }
     return RTEST(rb_num_compare_with_zero(num, mid));
 }
@@ -255,8 +247,7 @@ rb_float_new_inline(double d)
     /*   b011 -> b000 */
     /*   b100 -> b001 */
 
-    if (t.v != 0x3000000000000000 /* 1.72723e-77 */ &&
-        !((bits-3) & ~0x01)) {
+    if (t.v != 0x3000000000000000 /* 1.72723e-77 */ && !((bits - 3) & ~0x01)) {
         return (RUBY_BIT_ROTL(t.v, 3) & ~(VALUE)0x01) | 0x02;
     }
     else if (t.v == (VALUE)0) {

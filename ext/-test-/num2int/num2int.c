@@ -53,7 +53,7 @@ static VALUE
 test_num2ll(VALUE obj, VALUE num)
 {
     char buf[128];
-    sprintf(buf, "%"PRI_LL_PREFIX"d", NUM2LL(num));
+    sprintf(buf, "%" PRI_LL_PREFIX "d", NUM2LL(num));
     return rb_str_new_cstr(buf);
 }
 
@@ -61,7 +61,7 @@ static VALUE
 test_num2ull(VALUE obj, VALUE num)
 {
     char buf[128];
-    sprintf(buf, "%"PRI_LL_PREFIX"u", NUM2ULL(num));
+    sprintf(buf, "%" PRI_LL_PREFIX "u", NUM2ULL(num));
     return rb_str_new_cstr(buf);
 }
 #endif
@@ -133,4 +133,3 @@ Init_num2int(void)
     rb_define_module_function(mNum2int, "FIX2LONG", test_fix2long, 1);
     rb_define_module_function(mNum2int, "FIX2ULONG", test_fix2ulong, 1);
 }
-

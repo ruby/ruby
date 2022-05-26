@@ -9,20 +9,21 @@
  */
 #include "ossl.h"
 
-#define NewX509Req(klass) \
-    TypedData_Wrap_Struct((klass), &ossl_x509req_type, 0)
-#define SetX509Req(obj, req) do { \
-    if (!(req)) { \
-	ossl_raise(rb_eRuntimeError, "Req wasn't initialized!"); \
-    } \
-    RTYPEDDATA_DATA(obj) = (req); \
-} while (0)
-#define GetX509Req(obj, req) do { \
-    TypedData_Get_Struct((obj), X509_REQ, &ossl_x509req_type, (req)); \
-    if (!(req)) { \
-	ossl_raise(rb_eRuntimeError, "Req wasn't initialized!"); \
-    } \
-} while (0)
+#define NewX509Req(klass) TypedData_Wrap_Struct((klass), &ossl_x509req_type, 0)
+#define SetX509Req(obj, req) \
+    do { \
+        if (!(req)) { \
+            ossl_raise(rb_eRuntimeError, "Req wasn't initialized!"); \
+        } \
+        RTYPEDDATA_DATA(obj) = (req); \
+    } while (0)
+#define GetX509Req(obj, req) \
+    do { \
+        TypedData_Get_Struct((obj), X509_REQ, &ossl_x509req_type, (req)); \
+        if (!(req)) { \
+            ossl_raise(rb_eRuntimeError, "Req wasn't initialized!"); \
+        } \
+    } while (0)
 
 /*
  * Classes
@@ -39,9 +40,12 @@ ossl_x509req_free(void *ptr)
 static const rb_data_type_t ossl_x509req_type = {
     "OpenSSL/X509/REQ",
     {
-	0, ossl_x509req_free,
+        0,
+        ossl_x509req_free,
     },
-    0, 0, RUBY_TYPED_FREE_IMMEDIATELY,
+    0,
+    0,
+    RUBY_TYPED_FREE_IMMEDIATELY,
 };
 
 /*
@@ -68,7 +72,7 @@ ossl_x509req_alloc(VALUE klass)
 
     obj = NewX509Req(klass);
     if (!(req = X509_REQ_new())) {
-	ossl_raise(eX509ReqError, NULL);
+        ossl_raise(eX509ReqError, NULL);
     }
     SetX509Req(obj, req);
 
@@ -84,7 +88,7 @@ ossl_x509req_initialize(int argc, VALUE *argv, VALUE self)
 
     rb_check_frozen(self);
     if (rb_scan_args(argc, argv, "01", &arg) == 0) {
-	return self;
+        return self;
     }
     arg = ossl_to_der_if_possible(arg);
     in = ossl_obj2bio(&arg);
@@ -94,8 +98,7 @@ ossl_x509req_initialize(int argc, VALUE *argv, VALUE self)
         req = PEM_read_bio_X509_REQ(in, NULL, NULL, NULL);
     }
     BIO_free(in);
-    if (!req)
-        ossl_raise(eX509ReqError, "PEM_read_bio_X509_REQ");
+    if (!req) ossl_raise(eX509ReqError, "PEM_read_bio_X509_REQ");
 
     RTYPEDDATA_DATA(self) = req;
     X509_REQ_free(req_orig);
@@ -113,7 +116,7 @@ ossl_x509req_copy(VALUE self, VALUE other)
     GetX509Req(self, a);
     GetX509Req(other, b);
     if (!(req = X509_REQ_dup(b))) {
-	ossl_raise(eX509ReqError, NULL);
+        ossl_raise(eX509ReqError, NULL);
     }
     X509_REQ_free(a);
     DATA_PTR(self) = req;
@@ -129,11 +132,11 @@ ossl_x509req_to_pem(VALUE self)
 
     GetX509Req(self, req);
     if (!(out = BIO_new(BIO_s_mem()))) {
-	ossl_raise(eX509ReqError, NULL);
+        ossl_raise(eX509ReqError, NULL);
     }
     if (!PEM_write_bio_X509_REQ(out, req)) {
-	BIO_free(out);
-	ossl_raise(eX509ReqError, NULL);
+        BIO_free(out);
+        ossl_raise(eX509ReqError, NULL);
     }
 
     return ossl_membio2str(out);
@@ -148,12 +151,10 @@ ossl_x509req_to_der(VALUE self)
     unsigned char *p;
 
     GetX509Req(self, req);
-    if ((len = i2d_X509_REQ(req, NULL)) <= 0)
-	ossl_raise(eX509ReqError, NULL);
+    if ((len = i2d_X509_REQ(req, NULL)) <= 0) ossl_raise(eX509ReqError, NULL);
     str = rb_str_new(0, len);
     p = (unsigned char *)RSTRING_PTR(str);
-    if (i2d_X509_REQ(req, &p) <= 0)
-	ossl_raise(eX509ReqError, NULL);
+    if (i2d_X509_REQ(req, &p) <= 0) ossl_raise(eX509ReqError, NULL);
     ossl_str_adjust(str, p);
 
     return str;
@@ -167,11 +168,11 @@ ossl_x509req_to_text(VALUE self)
 
     GetX509Req(self, req);
     if (!(out = BIO_new(BIO_s_mem()))) {
-	ossl_raise(eX509ReqError, NULL);
+        ossl_raise(eX509ReqError, NULL);
     }
     if (!X509_REQ_print(out, req)) {
-	BIO_free(out);
-	ossl_raise(eX509ReqError, NULL);
+        BIO_free(out);
+        ossl_raise(eX509ReqError, NULL);
     }
 
     return ossl_membio2str(out);
@@ -216,11 +217,11 @@ ossl_x509req_set_version(VALUE self, VALUE version)
     long ver;
 
     if ((ver = NUM2LONG(version)) < 0) {
-	ossl_raise(eX509ReqError, "version must be >= 0!");
+        ossl_raise(eX509ReqError, "version must be >= 0!");
     }
     GetX509Req(self, req);
     if (!X509_REQ_set_version(req, ver)) {
-	ossl_raise(eX509ReqError, "X509_REQ_set_version");
+        ossl_raise(eX509ReqError, "X509_REQ_set_version");
     }
 
     return version;
@@ -234,7 +235,7 @@ ossl_x509req_get_subject(VALUE self)
 
     GetX509Req(self, req);
     if (!(name = X509_REQ_get_subject_name(req))) { /* NO DUP - don't free */
-	ossl_raise(eX509ReqError, NULL);
+        ossl_raise(eX509ReqError, NULL);
     }
 
     return ossl_x509name_new(name);
@@ -248,7 +249,7 @@ ossl_x509req_set_subject(VALUE self, VALUE subject)
     GetX509Req(self, req);
     /* DUPs name */
     if (!X509_REQ_set_subject_name(req, GetX509NamePtr(subject))) {
-	ossl_raise(eX509ReqError, NULL);
+        ossl_raise(eX509ReqError, NULL);
     }
 
     return subject;
@@ -264,12 +265,12 @@ ossl_x509req_get_signature_algorithm(VALUE self)
     GetX509Req(self, req);
 
     if (!(out = BIO_new(BIO_s_mem()))) {
-	ossl_raise(eX509ReqError, NULL);
+        ossl_raise(eX509ReqError, NULL);
     }
     X509_REQ_get0_signature(req, NULL, &alg);
     if (!i2a_ASN1_OBJECT(out, alg->algorithm)) {
-	BIO_free(out);
-	ossl_raise(eX509ReqError, NULL);
+        BIO_free(out);
+        ossl_raise(eX509ReqError, NULL);
     }
 
     return ossl_membio2str(out);
@@ -283,7 +284,7 @@ ossl_x509req_get_public_key(VALUE self)
 
     GetX509Req(self, req);
     if (!(pkey = X509_REQ_get_pubkey(req))) { /* adds reference */
-	ossl_raise(eX509ReqError, NULL);
+        ossl_raise(eX509ReqError, NULL);
     }
 
     return ossl_pkey_new(pkey); /* NO DUP - OK */
@@ -298,8 +299,7 @@ ossl_x509req_set_public_key(VALUE self, VALUE key)
     GetX509Req(self, req);
     pkey = GetPKeyPtr(key);
     ossl_pkey_check_public_key(pkey);
-    if (!X509_REQ_set_pubkey(req, pkey))
-	ossl_raise(eX509ReqError, "X509_REQ_set_pubkey");
+    if (!X509_REQ_set_pubkey(req, pkey)) ossl_raise(eX509ReqError, "X509_REQ_set_pubkey");
     return key;
 }
 
@@ -314,7 +314,7 @@ ossl_x509req_sign(VALUE self, VALUE key, VALUE digest)
     pkey = GetPrivPKeyPtr(key); /* NO NEED TO DUP */
     md = ossl_evp_get_digestbyname(digest);
     if (!X509_REQ_sign(req, pkey, md)) {
-	ossl_raise(eX509ReqError, NULL);
+        ossl_raise(eX509ReqError, NULL);
     }
 
     return self;
@@ -333,13 +333,13 @@ ossl_x509req_verify(VALUE self, VALUE key)
     pkey = GetPKeyPtr(key);
     ossl_pkey_check_public_key(pkey);
     switch (X509_REQ_verify(req, pkey)) {
-      case 1:
-	return Qtrue;
-      case 0:
-	ossl_clear_error();
-	return Qfalse;
-      default:
-	ossl_raise(eX509ReqError, NULL);
+    case 1:
+        return Qtrue;
+    case 0:
+        ossl_clear_error();
+        return Qfalse;
+    default:
+        ossl_raise(eX509ReqError, NULL);
     }
 }
 
@@ -355,13 +355,13 @@ ossl_x509req_get_attributes(VALUE self)
 
     count = X509_REQ_get_attr_count(req);
     if (count < 0) {
-	OSSL_Debug("count < 0???");
-	return rb_ary_new();
+        OSSL_Debug("count < 0???");
+        return rb_ary_new();
     }
     ary = rb_ary_new2(count);
-    for (i=0; i<count; i++) {
-	attr = X509_REQ_get_attr(req, i);
-	rb_ary_push(ary, ossl_x509attr_new(attr));
+    for (i = 0; i < count; i++) {
+        attr = X509_REQ_get_attr(req, i);
+        rb_ary_push(ary, ossl_x509attr_new(attr));
     }
 
     return ary;
@@ -376,18 +376,18 @@ ossl_x509req_set_attributes(VALUE self, VALUE ary)
     VALUE item;
 
     Check_Type(ary, T_ARRAY);
-    for (i=0;i<RARRAY_LEN(ary); i++) {
-	OSSL_Check_Kind(RARRAY_AREF(ary, i), cX509Attr);
+    for (i = 0; i < RARRAY_LEN(ary); i++) {
+        OSSL_Check_Kind(RARRAY_AREF(ary, i), cX509Attr);
     }
     GetX509Req(self, req);
     while ((attr = X509_REQ_delete_attr(req, 0)))
-	X509_ATTRIBUTE_free(attr);
-    for (i=0;i<RARRAY_LEN(ary); i++) {
-	item = RARRAY_AREF(ary, i);
-	attr = GetX509AttrPtr(item);
-	if (!X509_REQ_add1_attr(req, attr)) {
-	    ossl_raise(eX509ReqError, NULL);
-	}
+        X509_ATTRIBUTE_free(attr);
+    for (i = 0; i < RARRAY_LEN(ary); i++) {
+        item = RARRAY_AREF(ary, i);
+        attr = GetX509AttrPtr(item);
+        if (!X509_REQ_add1_attr(req, attr)) {
+            ossl_raise(eX509ReqError, NULL);
+        }
     }
     return ary;
 }
@@ -399,7 +399,7 @@ ossl_x509req_add_attribute(VALUE self, VALUE attr)
 
     GetX509Req(self, req);
     if (!X509_REQ_add1_attr(req, GetX509AttrPtr(attr))) {
-	ossl_raise(eX509ReqError, NULL);
+        ossl_raise(eX509ReqError, NULL);
     }
 
     return attr;

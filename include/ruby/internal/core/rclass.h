@@ -1,4 +1,4 @@
-#ifndef RBIMPL_RCLASS_H                              /*-*-C++-*-vi:se ft=cpp:*/
+#ifndef RBIMPL_RCLASS_H /*-*-C++-*-vi:se ft=cpp:*/
 #define RBIMPL_RCLASS_H
 /**
  * @file
@@ -21,12 +21,12 @@
  * @brief      Routines to manipulate struct RClass.
  * @note       The struct RClass itself is opaque.
  */
+#include "ruby/internal/cast.h"
 #include "ruby/internal/dllexport.h"
 #include "ruby/internal/value.h"
-#include "ruby/internal/cast.h"
 
 /** @cond INTERNAL_MACRO */
-#define RMODULE_IS_REFINEMENT            RMODULE_IS_REFINEMENT
+#define RMODULE_IS_REFINEMENT RMODULE_IS_REFINEMENT
 #define RMODULE_INCLUDED_INTO_REFINEMENT RMODULE_INCLUDED_INTO_REFINEMENT
 /** @endcond */
 
@@ -36,10 +36,10 @@
  * @param   obj  An object, which is in fact an RClass.
  * @return  The passed object casted to RClass.
  */
-#define RCLASS(obj)  RBIMPL_CAST((struct RClass *)(obj))
+#define RCLASS(obj) RBIMPL_CAST((struct RClass *)(obj))
 
 /** @alias{RCLASS} */
-#define RMODULE      RCLASS
+#define RMODULE RCLASS
 
 /** @alias{rb_class_get_superclass} */
 #define RCLASS_SUPER rb_class_get_superclass
@@ -59,7 +59,7 @@ enum ruby_rmodule_flags {
      * rb_mod_refine()  has this  flag set.   This  is the  bit which  controls
      * difference between normal inclusion versus refinements.
      */
-    RMODULE_IS_REFINEMENT            = RUBY_FL_USER3,
+    RMODULE_IS_REFINEMENT = RUBY_FL_USER3,
 
     /**
      * This flag  has something  to do  with refinements.  This  is set  when a

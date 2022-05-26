@@ -1,6 +1,10 @@
 #include "ruby.h"
 
-#define init(n) {void Init_random_##n(VALUE mod, VALUE base); Init_random_##n(mod, base);}
+#define init(n) \
+    { \
+        void Init_random_##n(VALUE mod, VALUE base); \
+        Init_random_##n(mod, base); \
+    }
 
 void
 Init_random(void)

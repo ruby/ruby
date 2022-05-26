@@ -1,4 +1,4 @@
-#ifndef RBIMPL_GC_H                                  /*-*-C++-*-vi:se ft=cpp:*/
+#ifndef RBIMPL_GC_H /*-*-C++-*-vi:se ft=cpp:*/
 #define RBIMPL_GC_H
 /**
  * @file

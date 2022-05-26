@@ -1,4 +1,4 @@
-#ifndef RUBY_MISSING_H                               /*-*-C++-*-vi:se ft=cpp:*/
+#ifndef RUBY_MISSING_H /*-*-C++-*-vi:se ft=cpp:*/
 #define RUBY_MISSING_H 1
 /**
  * @author     $Author$
@@ -12,57 +12,57 @@
 #include "ruby/internal/config.h"
 
 #ifdef STDC_HEADERS
-# include <stddef.h>
+#    include <stddef.h>
 #endif
 
 #if defined(__cplusplus)
-# include <cmath>
+#    include <cmath>
 #else
-# include <math.h> /* for INFINITY and NAN */
+#    include <math.h> /* for INFINITY and NAN */
 #endif
 
 #ifdef RUBY_ALTERNATIVE_MALLOC_HEADER
-# include RUBY_ALTERNATIVE_MALLOC_HEADER
+#    include RUBY_ALTERNATIVE_MALLOC_HEADER
 #endif
 
 #if defined(HAVE_TIME_H)
-# include <time.h>
+#    include <time.h>
 #endif
 
 #if defined(HAVE_SYS_TIME_H)
-# include <sys/time.h>
+#    include <sys/time.h>
 #endif
 
 #ifdef HAVE_SYS_STAT_H
-# include <sys/stat.h>
+#    include <sys/stat.h>
 #endif
 
 #ifdef HAVE_UNISTD_H
-# include <unistd.h>
+#    include <unistd.h>
 #endif
 
 #ifdef HAVE_STDIO_H
-# include <stdio.h>
+#    include <stdio.h>
 #endif
 
 #ifdef HAVE_IEEEFP_H
-# include <ieeefp.h>
+#    include <ieeefp.h>
 #endif
 
-#include "ruby/internal/dllexport.h"
 #include "ruby/internal/attr/format.h"
+#include "ruby/internal/dllexport.h"
 
 #ifndef M_PI
-# define M_PI 3.14159265358979323846
+#    define M_PI 3.14159265358979323846
 #endif
 #ifndef M_PI_2
-# define M_PI_2 (M_PI/2)
+#    define M_PI_2 (M_PI / 2)
 #endif
 
 #if !defined(HAVE_STRUCT_TIMEVAL)
 struct timeval {
-    time_t tv_sec;	/* seconds */
-    long tv_usec;	/* microseconds */
+    time_t tv_sec; /* seconds */
+    long tv_usec;  /* microseconds */
 };
 #endif /* HAVE_STRUCT_TIMEVAL */
 
@@ -72,8 +72,8 @@ struct timeval {
  * could expect  something other  than just `long`  (results stack  smashing if
  * that happens).  See also https://ewontfix.com/19/ */
 struct timespec {
-    time_t tv_sec;	/* seconds */
-    long tv_nsec;	/* nanoseconds */
+    time_t tv_sec; /* seconds */
+    long tv_nsec;  /* nanoseconds */
 };
 #endif
 
@@ -97,11 +97,11 @@ RUBY_EXTERN char *crypt(const char *, const char *);
 #endif
 
 #ifndef HAVE_EACCESS
-RUBY_EXTERN int eaccess(const char*, int);
+RUBY_EXTERN int eaccess(const char *, int);
 #endif
 
 #ifndef HAVE_ROUND
-RUBY_EXTERN double round(double);	/* numeric.c */
+RUBY_EXTERN double round(double); /* numeric.c */
 #endif
 
 #ifndef HAVE_FLOCK
@@ -137,32 +137,32 @@ RUBY_EXTERN double cbrt(double);
 
 #if !defined(INFINITY) || !defined(NAN)
 union bytesequence4_or_float {
-  unsigned char bytesequence[4];
-  float float_value;
+    unsigned char bytesequence[4];
+    float float_value;
 };
 #endif
 
 #ifndef INFINITY
 /** @internal */
 RUBY_EXTERN const union bytesequence4_or_float rb_infinity;
-# define INFINITY (rb_infinity.float_value)
-# define USE_RB_INFINITY 1
+#    define INFINITY (rb_infinity.float_value)
+#    define USE_RB_INFINITY 1
 #endif
 
 #ifndef NAN
 /** @internal */
 RUBY_EXTERN const union bytesequence4_or_float rb_nan;
-# define NAN (rb_nan.float_value)
-# define USE_RB_NAN 1
+#    define NAN (rb_nan.float_value)
+#    define USE_RB_NAN 1
 #endif
 
 #ifndef HUGE_VAL
-# define HUGE_VAL ((double)INFINITY)
+#    define HUGE_VAL ((double)INFINITY)
 #endif
 
 #ifndef HAVE_FINITE
-# define HAVE_FINITE 1
-# define finite(x) isfinite(x)
+#    define HAVE_FINITE 1
+#    define finite(x) isfinite(x)
 #endif
 
 #ifndef HAVE_NAN
@@ -203,11 +203,11 @@ RUBY_EXTERN char *strstr(const char *, const char *);
 #endif
 
 #ifndef HAVE_STRLCPY
-RUBY_EXTERN size_t strlcpy(char *, const char*, size_t);
+RUBY_EXTERN size_t strlcpy(char *, const char *, size_t);
 #endif
 
 #ifndef HAVE_STRLCAT
-RUBY_EXTERN size_t strlcat(char *, const char*, size_t);
+RUBY_EXTERN size_t strlcat(char *, const char *, size_t);
 #endif
 
 #ifndef HAVE_FFS
@@ -215,8 +215,8 @@ RUBY_EXTERN int ffs(int);
 #endif
 
 #ifdef BROKEN_CLOSE
-# include <sys/types.h>
-# include <sys/socket.h>
+#    include <sys/socket.h>
+#    include <sys/types.h>
 RUBY_EXTERN int ruby_getpeername(int, struct sockaddr *, socklen_t *);
 RUBY_EXTERN int ruby_getsockname(int, struct sockaddr *, socklen_t *);
 RUBY_EXTERN int ruby_shutdown(int, int);
@@ -229,9 +229,9 @@ RUBY_EXTERN void setproctitle(const char *fmt, ...);
 #endif
 
 #ifdef HAVE_EXPLICIT_BZERO
-# /* Take that. */
+#    /* Take that. */
 #elif defined(SecureZeroMemory)
-# define explicit_bzero(b, len) SecureZeroMemory(b, len)
+#    define explicit_bzero(b, len) SecureZeroMemory(b, len)
 #else
 RUBY_EXTERN void explicit_bzero(void *b, size_t len);
 #endif
@@ -289,7 +289,7 @@ RUBY_EXTERN FILE *popen(const char *, const char *);
 #endif
 
 #ifndef HAVE_PIPE
-RUBY_EXTERN int pipe(int [2]);
+RUBY_EXTERN int pipe(int[2]);
 #endif
 
 #ifndef HAVE_DUP
@@ -313,11 +313,11 @@ RUBY_EXTERN int execle(const char *, const char *, ...);
 #endif
 
 #ifndef HAVE_EXECV
-RUBY_EXTERN int execv(const char *, char *const []);
+RUBY_EXTERN int execv(const char *, char *const[]);
 #endif
 
 #ifndef HAVE_EXECVE
-RUBY_EXTERN int execve(const char *, char *const [], char *const []);
+RUBY_EXTERN int execve(const char *, char *const[], char *const[]);
 #endif
 
 #ifndef HAVE_SHUTDOWN
@@ -329,11 +329,11 @@ RUBY_EXTERN int system(const char *);
 #endif
 
 #ifndef WNOHANG
-# define WNOHANG 0
+#    define WNOHANG 0
 #endif
 
 #ifndef HAVE_WAITPID
-# define HAVE_WAITPID 1
+#    define HAVE_WAITPID 1
 RUBY_EXTERN rb_pid_t waitpid(rb_pid_t, int *, int);
 #endif
 

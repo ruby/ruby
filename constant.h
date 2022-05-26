@@ -10,31 +10,28 @@
   Copyright (C) 2009 Yusuke Endoh
 
 **********************************************************************/
-#include "ruby/ruby.h"
 #include "id_table.h"
+#include "ruby/ruby.h"
 
 typedef enum {
     CONST_DEPRECATED = 0x100,
 
     CONST_VISIBILITY_MASK = 0xff,
-    CONST_PUBLIC    = 0x00,
+    CONST_PUBLIC = 0x00,
     CONST_PRIVATE,
     CONST_VISIBILITY_MAX
 } rb_const_flag_t;
 
-#define RB_CONST_PRIVATE_P(ce) \
-    (((ce)->flag & CONST_VISIBILITY_MASK) == CONST_PRIVATE)
-#define RB_CONST_PUBLIC_P(ce) \
-    (((ce)->flag & CONST_VISIBILITY_MASK) == CONST_PUBLIC)
+#define RB_CONST_PRIVATE_P(ce) (((ce)->flag & CONST_VISIBILITY_MASK) == CONST_PRIVATE)
+#define RB_CONST_PUBLIC_P(ce) (((ce)->flag & CONST_VISIBILITY_MASK) == CONST_PUBLIC)
 
-#define RB_CONST_DEPRECATED_P(ce) \
-    ((ce)->flag & CONST_DEPRECATED)
+#define RB_CONST_DEPRECATED_P(ce) ((ce)->flag & CONST_DEPRECATED)
 
 typedef struct rb_const_entry_struct {
     rb_const_flag_t flag;
     int line;
-    VALUE value;            /* should be mark */
-    VALUE file;             /* should be mark */
+    VALUE value; /* should be mark */
+    VALUE file;  /* should be mark */
 } rb_const_entry_t;
 
 VALUE rb_mod_private_constant(int argc, const VALUE *argv, VALUE obj);

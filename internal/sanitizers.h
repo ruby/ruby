@@ -1,4 +1,4 @@
-#ifndef INTERNAL_SANITIZERS_H                            /*-*-C-*-vi:se ft=c:*/
+#ifndef INTERNAL_SANITIZERS_H /*-*-C-*-vi:se ft=c:*/
 #define INTERNAL_SANITIZERS_H
 /**
  * @author     Ruby developers <ruby-core@ruby-lang.org>
@@ -8,85 +8,81 @@
  *             file COPYING are met.  Consult the file for details.
  * @brief      Internal header for ASAN / MSAN / etc.
  */
-#include "ruby/internal/config.h"
 #include "internal/compilers.h" /* for __has_feature */
+#include "ruby/internal/config.h"
 
 #ifdef HAVE_VALGRIND_MEMCHECK_H
-# include <valgrind/memcheck.h>
+#    include <valgrind/memcheck.h>
 #endif
 
 #ifdef HAVE_SANITIZER_ASAN_INTERFACE_H
-# include <sanitizer/asan_interface.h>
+#    include <sanitizer/asan_interface.h>
 #endif
 
 #ifdef HAVE_SANITIZER_MSAN_INTERFACE_H
-# if __has_feature(memory_sanitizer)
-#  include <sanitizer/msan_interface.h>
-# endif
+#    if __has_feature(memory_sanitizer)
+#        include <sanitizer/msan_interface.h>
+#    endif
 #endif
 
-#include "ruby/internal/stdbool.h"     /* for bool */
-#include "ruby/ruby.h"          /* for VALUE */
+#include "ruby/internal/stdbool.h" /* for bool */
+#include "ruby/ruby.h"             /* for VALUE */
 
 #if 0
 #elif __has_feature(memory_sanitizer) && __has_feature(address_sanitizer)
-# define ATTRIBUTE_NO_ADDRESS_SAFETY_ANALYSIS(x) \
-    __attribute__((__no_sanitize__("memory, address"), __noinline__)) x
+#    define ATTRIBUTE_NO_ADDRESS_SAFETY_ANALYSIS(x) __attribute__((__no_sanitize__("memory, address"), __noinline__)) x
 #elif __has_feature(address_sanitizer)
-# define ATTRIBUTE_NO_ADDRESS_SAFETY_ANALYSIS(x) \
-    __attribute__((__no_sanitize__("address"), __noinline__)) x
+#    define ATTRIBUTE_NO_ADDRESS_SAFETY_ANALYSIS(x) __attribute__((__no_sanitize__("address"), __noinline__)) x
 #elif defined(NO_SANITIZE_ADDRESS)
-# define ATTRIBUTE_NO_ADDRESS_SAFETY_ANALYSIS(x) \
-    NO_SANITIZE_ADDRESS(NOINLINE(x))
+#    define ATTRIBUTE_NO_ADDRESS_SAFETY_ANALYSIS(x) NO_SANITIZE_ADDRESS(NOINLINE(x))
 #elif defined(NO_ADDRESS_SAFETY_ANALYSIS)
-# define ATTRIBUTE_NO_ADDRESS_SAFETY_ANALYSIS(x) \
-    NO_ADDRESS_SAFETY_ANALYSIS(NOINLINE(x))
+#    define ATTRIBUTE_NO_ADDRESS_SAFETY_ANALYSIS(x) NO_ADDRESS_SAFETY_ANALYSIS(NOINLINE(x))
 #else
-# define ATTRIBUTE_NO_ADDRESS_SAFETY_ANALYSIS(x) x
+#    define ATTRIBUTE_NO_ADDRESS_SAFETY_ANALYSIS(x) x
 #endif
 
 #if defined(NO_SANITIZE) && RBIMPL_COMPILER_IS(GCC)
 /* GCC warns about unknown sanitizer, which is annoying. */
-# include "internal/warnings.h"
-# undef NO_SANITIZE
-# define NO_SANITIZE(x, y) \
-    COMPILER_WARNING_PUSH; \
-    COMPILER_WARNING_IGNORED(-Wattributes); \
-    __attribute__((__no_sanitize__(x))) y; \
-    COMPILER_WARNING_POP
+#    include "internal/warnings.h"
+#    undef NO_SANITIZE
+#    define NO_SANITIZE(x, y) \
+        COMPILER_WARNING_PUSH; \
+        COMPILER_WARNING_IGNORED(-Wattributes); \
+        __attribute__((__no_sanitize__(x))) y; \
+        COMPILER_WARNING_POP
 #endif
 
 #ifndef NO_SANITIZE
-# define NO_SANITIZE(x, y) y
+#    define NO_SANITIZE(x, y) y
 #endif
 
 #if !__has_feature(address_sanitizer)
-# define __asan_poison_memory_region(x, y)
-# define __asan_unpoison_memory_region(x, y)
-# define __asan_region_is_poisoned(x, y) 0
+#    define __asan_poison_memory_region(x, y)
+#    define __asan_unpoison_memory_region(x, y)
+#    define __asan_region_is_poisoned(x, y) 0
 #endif
 
 #if !__has_feature(memory_sanitizer)
-# define __msan_allocated_memory(x, y) ((void)(x), (void)(y))
-# define __msan_poison(x, y) ((void)(x), (void)(y))
-# define __msan_unpoison(x, y) ((void)(x), (void)(y))
-# define __msan_unpoison_string(x) ((void)(x))
+#    define __msan_allocated_memory(x, y) ((void)(x), (void)(y))
+#    define __msan_poison(x, y) ((void)(x), (void)(y))
+#    define __msan_unpoison(x, y) ((void)(x), (void)(y))
+#    define __msan_unpoison_string(x) ((void)(x))
 #endif
 
 #ifdef VALGRIND_MAKE_READABLE
-# define VALGRIND_MAKE_MEM_DEFINED(p, n) VALGRIND_MAKE_READABLE((p), (n))
+#    define VALGRIND_MAKE_MEM_DEFINED(p, n) VALGRIND_MAKE_READABLE((p), (n))
 #endif
 
 #ifdef VALGRIND_MAKE_WRITABLE
-# define VALGRIND_MAKE_MEM_UNDEFINED(p, n) VALGRIND_MAKE_WRITABLE((p), (n))
+#    define VALGRIND_MAKE_MEM_UNDEFINED(p, n) VALGRIND_MAKE_WRITABLE((p), (n))
 #endif
 
 #ifndef VALGRIND_MAKE_MEM_DEFINED
-# define VALGRIND_MAKE_MEM_DEFINED(p, n) 0
+#    define VALGRIND_MAKE_MEM_DEFINED(p, n) 0
 #endif
 
 #ifndef VALGRIND_MAKE_MEM_UNDEFINED
-# define VALGRIND_MAKE_MEM_UNDEFINED(p, n) 0
+#    define VALGRIND_MAKE_MEM_UNDEFINED(p, n) 0
 #endif
 
 #ifndef MJIT_HEADER
@@ -123,13 +119,14 @@ asan_poison_object(VALUE obj)
     asan_poison_memory_region(ptr, SIZEOF_VALUE);
 }
 
-#if !__has_feature(address_sanitizer)
-#define asan_poison_object_if(ptr, obj) ((void)(ptr), (void)(obj))
-#else
-#define asan_poison_object_if(ptr, obj) do { \
-        if (ptr) asan_poison_object(obj); \
-    } while (0)
-#endif
+#    if !__has_feature(address_sanitizer)
+#        define asan_poison_object_if(ptr, obj) ((void)(ptr), (void)(obj))
+#    else
+#        define asan_poison_object_if(ptr, obj) \
+            do { \
+                if (ptr) asan_poison_object(obj); \
+            } while (0)
+#    endif
 
 /*!
  * This function predicates if the given object is fully addressable or not.

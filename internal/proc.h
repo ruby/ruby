@@ -1,4 +1,4 @@
-#ifndef INTERNAL_PROC_H                                  /*-*-C-*-vi:se ft=c:*/
+#ifndef INTERNAL_PROC_H /*-*-C-*-vi:se ft=c:*/
 #define INTERNAL_PROC_H
 /**
  * @author     Ruby developers <ruby-core@ruby-lang.org>
@@ -8,10 +8,10 @@
  *             file COPYING are met.  Consult the file for details.
  * @brief      Internal header for Proc.
  */
-#include "ruby/ruby.h"          /* for rb_block_call_func_t */
-#include "ruby/st.h"            /* for st_index_t */
-struct rb_block;                /* in vm_core.h */
-struct rb_iseq_struct;          /* in vm_core.h */
+#include "ruby/ruby.h" /* for rb_block_call_func_t */
+#include "ruby/st.h"   /* for st_index_t */
+struct rb_block;       /* in vm_core.h */
+struct rb_iseq_struct; /* in vm_core.h */
 
 /* proc.c */
 VALUE rb_proc_location(VALUE self);

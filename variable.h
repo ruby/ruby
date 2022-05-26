@@ -1,4 +1,4 @@
-#ifndef RUBY_TOPLEVEL_VARIABLE_H                         /*-*-C-*-vi:se ft=c:*/
+#ifndef RUBY_TOPLEVEL_VARIABLE_H /*-*-C-*-vi:se ft=c:*/
 #define RUBY_TOPLEVEL_VARIABLE_H
 /**
  * @author     Ruby developers <ruby-core@ruby-lang.org>

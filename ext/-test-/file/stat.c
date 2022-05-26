@@ -1,5 +1,5 @@
-#include "ruby/ruby.h"
 #include "ruby/io.h"
+#include "ruby/ruby.h"
 
 static VALUE
 stat_for_fd(VALUE self, VALUE fileno)

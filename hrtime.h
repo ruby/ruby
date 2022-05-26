@@ -3,7 +3,7 @@
 #include "ruby/ruby.h"
 #include <time.h>
 #if defined(HAVE_SYS_TIME_H)
-#  include <sys/time.h>
+#    include <sys/time.h>
 #endif
 
 /*
@@ -34,8 +34,8 @@
  */
 #define RB_HRTIME_PER_USEC ((rb_hrtime_t)1000)
 #define RB_HRTIME_PER_MSEC (RB_HRTIME_PER_USEC * (rb_hrtime_t)1000)
-#define RB_HRTIME_PER_SEC  (RB_HRTIME_PER_MSEC * (rb_hrtime_t)1000)
-#define RB_HRTIME_MAX      UINT64_MAX
+#define RB_HRTIME_PER_SEC (RB_HRTIME_PER_MSEC * (rb_hrtime_t)1000)
+#define RB_HRTIME_MAX UINT64_MAX
 
 /*
  * Lets try to support time travelers.  Lets assume anybody with a time machine
@@ -61,8 +61,7 @@ rb_hrtime_mul(rb_hrtime_t a, rb_hrtime_t b)
     rb_hrtime_t c;
 
 #ifdef HAVE_BUILTIN___BUILTIN_MUL_OVERFLOW
-    if (__builtin_mul_overflow(a, b, &c))
-        return RB_HRTIME_MAX;
+    if (__builtin_mul_overflow(a, b, &c)) return RB_HRTIME_MAX;
 #else
     if (b != 0 && a > RB_HRTIME_MAX / b) /* overflow */
         return RB_HRTIME_MAX;
@@ -81,8 +80,7 @@ rb_hrtime_add(rb_hrtime_t a, rb_hrtime_t b)
     rb_hrtime_t c;
 
 #ifdef HAVE_BUILTIN___BUILTIN_ADD_OVERFLOW
-    if (__builtin_add_overflow(a, b, &c))
-        return RB_HRTIME_MAX;
+    if (__builtin_add_overflow(a, b, &c)) return RB_HRTIME_MAX;
 #else
     c = a + b;
     if (c < a) /* overflow */
@@ -159,15 +157,15 @@ rb_hrtime2timeval(struct timeval *tv, const rb_hrtime_t *hrt)
 {
     if (hrt) {
         tv->tv_sec = (time_t)(*hrt / RB_HRTIME_PER_SEC);
-        tv->tv_usec = (int32_t)((*hrt % RB_HRTIME_PER_SEC)/RB_HRTIME_PER_USEC);
+        tv->tv_usec = (int32_t)((*hrt % RB_HRTIME_PER_SEC) / RB_HRTIME_PER_USEC);
 
         return tv;
     }
     return 0;
 }
 
-#include "internal/warnings.h"
 #include "internal/time.h"
+#include "internal/warnings.h"
 
 /*
  * Back when we used "struct timeval", not all platforms implemented
@@ -181,7 +179,7 @@ rb_hrtime2timeval(struct timeval *tv, const rb_hrtime_t *hrt)
 
 COMPILER_WARNING_PUSH
 #if __has_warning("-Wimplicit-int-float-conversion")
-COMPILER_WARNING_IGNORED(-Wimplicit-int-float-conversion)
+COMPILER_WARNING_IGNORED(-Wimplicit - int - float - conversion)
 #elif defined(_MSC_VER)
 /* C4305: 'initializing': truncation from '__int64' to 'const double' */
 COMPILER_WARNING_IGNORED(4305)

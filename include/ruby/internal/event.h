@@ -1,4 +1,4 @@
-#ifndef RBIMPL_EVENT_H                               /*-*-C++-*-vi:se ft=cpp:*/
+#ifndef RBIMPL_EVENT_H /*-*-C++-*-vi:se ft=cpp:*/
 #define RBIMPL_EVENT_H
 /**
  * @file
@@ -30,16 +30,16 @@
  *
  * @{
  */
-#define RUBY_EVENT_NONE      0x0000 /**< No events. */
-#define RUBY_EVENT_LINE      0x0001 /**< Encountered a new line. */
-#define RUBY_EVENT_CLASS     0x0002 /**< Encountered a new class. */
-#define RUBY_EVENT_END       0x0004 /**< Encountered an end of a class clause. */
-#define RUBY_EVENT_CALL      0x0008 /**< A method, written in Ruby, is called. */
-#define RUBY_EVENT_RETURN    0x0010 /**< Encountered a `return` statement. */
-#define RUBY_EVENT_C_CALL    0x0020 /**< A method, written in C, is called. */
-#define RUBY_EVENT_C_RETURN  0x0040 /**< Return from a method, written in C. */
-#define RUBY_EVENT_RAISE     0x0080 /**< Encountered a `raise` statement. */
-#define RUBY_EVENT_ALL       0x00ff /**< Bitmask of traditional events. */
+#define RUBY_EVENT_NONE 0x0000     /**< No events. */
+#define RUBY_EVENT_LINE 0x0001     /**< Encountered a new line. */
+#define RUBY_EVENT_CLASS 0x0002    /**< Encountered a new class. */
+#define RUBY_EVENT_END 0x0004      /**< Encountered an end of a class clause. */
+#define RUBY_EVENT_CALL 0x0008     /**< A method, written in Ruby, is called. */
+#define RUBY_EVENT_RETURN 0x0010   /**< Encountered a `return` statement. */
+#define RUBY_EVENT_C_CALL 0x0020   /**< A method, written in C, is called. */
+#define RUBY_EVENT_C_RETURN 0x0040 /**< Return from a method, written in C. */
+#define RUBY_EVENT_RAISE 0x0080    /**< Encountered a `raise` statement. */
+#define RUBY_EVENT_ALL 0x00ff      /**< Bitmask of traditional events. */
 
 /** @} */
 
@@ -48,13 +48,13 @@
  *
  * @{
  */
-#define RUBY_EVENT_B_CALL            0x0100 /**< Encountered an `yield` statement. */
-#define RUBY_EVENT_B_RETURN          0x0200 /**< Encountered a `next` statement. */
-#define RUBY_EVENT_THREAD_BEGIN      0x0400 /**< Encountered a new thread. */
-#define RUBY_EVENT_THREAD_END        0x0800 /**< Encountered an end of a thread. */
-#define RUBY_EVENT_FIBER_SWITCH      0x1000 /**< Encountered a `Fiber#yield`. */
-#define RUBY_EVENT_SCRIPT_COMPILED   0x2000 /**< Encountered an `eval`. */
-#define RUBY_EVENT_TRACEPOINT_ALL    0xffff /**< Bitmask of extended events. */
+#define RUBY_EVENT_B_CALL 0x0100          /**< Encountered an `yield` statement. */
+#define RUBY_EVENT_B_RETURN 0x0200        /**< Encountered a `next` statement. */
+#define RUBY_EVENT_THREAD_BEGIN 0x0400    /**< Encountered a new thread. */
+#define RUBY_EVENT_THREAD_END 0x0800      /**< Encountered an end of a thread. */
+#define RUBY_EVENT_FIBER_SWITCH 0x1000    /**< Encountered a `Fiber#yield`. */
+#define RUBY_EVENT_SCRIPT_COMPILED 0x2000 /**< Encountered an `eval`. */
+#define RUBY_EVENT_TRACEPOINT_ALL 0xffff  /**< Bitmask of extended events. */
 
 /** @} */
 
@@ -82,18 +82,18 @@
  *
  * @{
  */
-#define RUBY_INTERNAL_EVENT_SWITCH          0x040000 /**< Thread switched. */
-#define RUBY_EVENT_SWITCH                   0x040000 /**< @old{RUBY_INTERNAL_EVENT_SWITCH} */
-                                         /* 0x080000 */
-#define RUBY_INTERNAL_EVENT_NEWOBJ          0x100000 /**< Object allocated. */
-#define RUBY_INTERNAL_EVENT_FREEOBJ         0x200000 /**< Object swept. */
-#define RUBY_INTERNAL_EVENT_GC_START        0x400000 /**< GC started. */
-#define RUBY_INTERNAL_EVENT_GC_END_MARK     0x800000 /**< GC ended mark phase. */
-#define RUBY_INTERNAL_EVENT_GC_END_SWEEP   0x1000000 /**< GC ended sweep phase. */
-#define RUBY_INTERNAL_EVENT_GC_ENTER       0x2000000 /**< `gc_enter()` is called. */
-#define RUBY_INTERNAL_EVENT_GC_EXIT        0x4000000 /**< `gc_exit()` is called. */
-#define RUBY_INTERNAL_EVENT_OBJSPACE_MASK  0x7f00000 /**< Bitmask of GC events. */
-#define RUBY_INTERNAL_EVENT_MASK          0xffff0000 /**< Bitmask of internal events. */
+#define RUBY_INTERNAL_EVENT_SWITCH 0x040000         /**< Thread switched. */
+#define RUBY_EVENT_SWITCH 0x040000                  /**< @old{RUBY_INTERNAL_EVENT_SWITCH} */
+                                                    /* 0x080000 */
+#define RUBY_INTERNAL_EVENT_NEWOBJ 0x100000         /**< Object allocated. */
+#define RUBY_INTERNAL_EVENT_FREEOBJ 0x200000        /**< Object swept. */
+#define RUBY_INTERNAL_EVENT_GC_START 0x400000       /**< GC started. */
+#define RUBY_INTERNAL_EVENT_GC_END_MARK 0x800000    /**< GC ended mark phase. */
+#define RUBY_INTERNAL_EVENT_GC_END_SWEEP 0x1000000  /**< GC ended sweep phase. */
+#define RUBY_INTERNAL_EVENT_GC_ENTER 0x2000000      /**< `gc_enter()` is called. */
+#define RUBY_INTERNAL_EVENT_GC_EXIT 0x4000000       /**< `gc_exit()` is called. */
+#define RUBY_INTERNAL_EVENT_OBJSPACE_MASK 0x7f00000 /**< Bitmask of GC events. */
+#define RUBY_INTERNAL_EVENT_MASK 0xffff0000         /**< Bitmask of internal events. */
 
 /** @} */
 

@@ -1,4 +1,4 @@
-#ifndef INTERNAL_THREAD_H                                /*-*-C-*-vi:se ft=c:*/
+#ifndef INTERNAL_THREAD_H /*-*-C-*-vi:se ft=c:*/
 #define INTERNAL_THREAD_H
 /**
  * @author     Ruby developers <ruby-core@ruby-lang.org>
@@ -8,17 +8,17 @@
  *             file COPYING are met.  Consult the file for details.
  * @brief      Internal header for Thread.
  */
-#include "ruby/ruby.h"          /* for VALUE */
-#include "ruby/intern.h"        /* for rb_blocking_function_t */
+#include "ruby/intern.h" /* for rb_blocking_function_t */
+#include "ruby/ruby.h"   /* for VALUE */
 
-struct rb_thread_struct;        /* in vm_core.h */
+struct rb_thread_struct; /* in vm_core.h */
 
 /* thread.c */
-#define COVERAGE_INDEX_LINES    0
+#define COVERAGE_INDEX_LINES 0
 #define COVERAGE_INDEX_BRANCHES 1
-#define COVERAGE_TARGET_LINES    1
+#define COVERAGE_TARGET_LINES 1
 #define COVERAGE_TARGET_BRANCHES 2
-#define COVERAGE_TARGET_METHODS  4
+#define COVERAGE_TARGET_METHODS 4
 #define COVERAGE_TARGET_ONESHOT_LINES 8
 
 VALUE rb_obj_is_mutex(VALUE obj);
@@ -36,7 +36,7 @@ void rb_mutex_allow_trap(VALUE self, int val);
 VALUE rb_uninterruptible(VALUE (*b_proc)(VALUE), VALUE data);
 VALUE rb_mutex_owned_p(VALUE self);
 
-int rb_thread_wait_for_single_fd(int fd, int events, struct timeval * timeout);
+int rb_thread_wait_for_single_fd(int fd, int events, struct timeval *timeout);
 
 RUBY_SYMBOL_EXPORT_BEGIN
 /* Temporary.  This API will be removed (renamed). */

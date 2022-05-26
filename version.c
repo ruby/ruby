@@ -9,19 +9,19 @@
 
 **********************************************************************/
 
-#include "ruby/ruby.h"
 #include "version.h"
-#include "vm_core.h"
 #include "mjit.h"
+#include "ruby/ruby.h"
+#include "vm_core.h"
 #include "yjit.h"
 #include <stdio.h>
 
 #ifndef EXIT_SUCCESS
-#define EXIT_SUCCESS 0
+#    define EXIT_SUCCESS 0
 #endif
 
 #define PRINT(type) puts(ruby_##type)
-#define MKSTR(type) rb_obj_freeze(rb_usascii_str_new_static(ruby_##type, sizeof(ruby_##type)-1))
+#define MKSTR(type) rb_obj_freeze(rb_usascii_str_new_static(ruby_##type, sizeof(ruby_##type) - 1))
 #define MKINT(name) INT2FIX(ruby_##name)
 
 const int ruby_api_version[] = {
@@ -30,11 +30,9 @@ const int ruby_api_version[] = {
     RUBY_API_VERSION_TEENY,
 };
 #define RUBY_VERSION \
-    STRINGIZE(RUBY_VERSION_MAJOR) "." \
-    STRINGIZE(RUBY_VERSION_MINOR) "." \
-    STRINGIZE(RUBY_VERSION_TEENY) ""
+    STRINGIZE(RUBY_VERSION_MAJOR) "." STRINGIZE(RUBY_VERSION_MINOR) "." STRINGIZE(RUBY_VERSION_TEENY) ""
 #ifndef RUBY_FULL_REVISION
-# define RUBY_FULL_REVISION RUBY_REVISION
+#    define RUBY_FULL_REVISION RUBY_REVISION
 #endif
 const char ruby_version[] = RUBY_VERSION;
 const char ruby_revision[] = RUBY_FULL_REVISION;
@@ -51,7 +49,9 @@ const char ruby_engine[] = "ruby";
 void
 Init_version(void)
 {
-    enum {ruby_patchlevel = RUBY_PATCHLEVEL};
+    enum {
+        ruby_patchlevel = RUBY_PATCHLEVEL
+    };
     VALUE version;
     VALUE ruby_engine_name;
     /*
@@ -93,9 +93,9 @@ Init_version(void)
 }
 
 #if USE_MJIT
-#define MJIT_OPTS_ON mjit_opts.on
+#    define MJIT_OPTS_ON mjit_opts.on
 #else
-#define MJIT_OPTS_ON 0
+#    define MJIT_OPTS_ON 0
 #endif
 
 void

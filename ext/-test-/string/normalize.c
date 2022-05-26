@@ -7,7 +7,7 @@ normalize_ospath(VALUE str)
     return rb_str_normalize_ospath(RSTRING_PTR(str), RSTRING_LEN(str));
 }
 #else
-#define normalize_ospath rb_f_notimplement
+#    define normalize_ospath rb_f_notimplement
 #endif
 
 void

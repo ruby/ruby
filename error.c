@@ -16,15 +16,15 @@
 #include <stdio.h>
 
 #ifdef HAVE_STDLIB_H
-# include <stdlib.h>
+#    include <stdlib.h>
 #endif
 
 #ifdef HAVE_UNISTD_H
-# include <unistd.h>
+#    include <unistd.h>
 #endif
 
 #if defined __APPLE__
-# include <AvailabilityMacros.h>
+#    include <AvailabilityMacros.h>
 #endif
 
 #include "internal.h"
@@ -50,15 +50,15 @@
  */
 
 #ifndef EXIT_SUCCESS
-#define EXIT_SUCCESS 0
+#    define EXIT_SUCCESS 0
 #endif
 
 #ifndef WIFEXITED
-#define WIFEXITED(status) 1
+#    define WIFEXITED(status) 1
 #endif
 
 #ifndef WEXITSTATUS
-#define WEXITSTATUS(status) (status)
+#    define WEXITSTATUS(status) (status)
 #endif
 
 VALUE rb_iseqw_local_variables(VALUE iseqval);
@@ -87,7 +87,8 @@ extern const char ruby_description[];
 static const char *
 rb_strerrno(int err)
 {
-#define defined_error(name, num) if (err == (num)) return (name);
+#define defined_error(name, num) \
+    if (err == (num)) return (name);
 #define undefined_error(name)
 #include "known_errors.inc"
 #undef defined_error
@@ -99,25 +100,24 @@ static int
 err_position_0(char *buf, long len, const char *file, int line)
 {
     if (!file) {
-	return 0;
+        return 0;
     }
     else if (line == 0) {
-	return snprintf(buf, len, "%s: ", file);
+        return snprintf(buf, len, "%s: ", file);
     }
     else {
-	return snprintf(buf, len, "%s:%d: ", file, line);
+        return snprintf(buf, len, "%s:%d: ", file, line);
     }
 }
 
 RBIMPL_ATTR_FORMAT(RBIMPL_PRINTF_FORMAT, 5, 0)
 static VALUE
-err_vcatf(VALUE str, const char *pre, const char *file, int line,
-	  const char *fmt, va_list args)
+err_vcatf(VALUE str, const char *pre, const char *file, int line, const char *fmt, va_list args)
 {
     if (file) {
-	rb_str_cat2(str, file);
-	if (line) rb_str_catf(str, ":%d", line);
-	rb_str_cat2(str, ": ");
+        rb_str_cat2(str, file);
+        if (line) rb_str_catf(str, ":%d", line);
+        rb_str_cat2(str, ": ");
     }
     if (pre) rb_str_cat2(str, pre);
     rb_str_vcatf(str, fmt, args);
@@ -125,36 +125,32 @@ err_vcatf(VALUE str, const char *pre, const char *file, int line,
 }
 
 VALUE
-rb_syntax_error_append(VALUE exc, VALUE file, int line, int column,
-		       rb_encoding *enc, const char *fmt, va_list args)
+rb_syntax_error_append(VALUE exc, VALUE file, int line, int column, rb_encoding *enc, const char *fmt, va_list args)
 {
     const char *fn = NIL_P(file) ? NULL : RSTRING_PTR(file);
     if (!exc) {
-	VALUE mesg = rb_enc_str_new(0, 0, enc);
-	err_vcatf(mesg, NULL, fn, line, fmt, args);
-	rb_str_cat2(mesg, "\n");
-	rb_write_error_str(mesg);
+        VALUE mesg = rb_enc_str_new(0, 0, enc);
+        err_vcatf(mesg, NULL, fn, line, fmt, args);
+        rb_str_cat2(mesg, "\n");
+        rb_write_error_str(mesg);
     }
     else {
-	VALUE mesg;
-	if (NIL_P(exc)) {
-	    mesg = rb_enc_str_new(0, 0, enc);
-	    exc = rb_class_new_instance(1, &mesg, rb_eSyntaxError);
-	}
-	else {
-	    mesg = rb_attr_get(exc, idMesg);
-	    if (RSTRING_LEN(mesg) > 0 && *(RSTRING_END(mesg)-1) != '\n')
-		rb_str_cat_cstr(mesg, "\n");
-	}
-	err_vcatf(mesg, NULL, fn, line, fmt, args);
+        VALUE mesg;
+        if (NIL_P(exc)) {
+            mesg = rb_enc_str_new(0, 0, enc);
+            exc = rb_class_new_instance(1, &mesg, rb_eSyntaxError);
+        }
+        else {
+            mesg = rb_attr_get(exc, idMesg);
+            if (RSTRING_LEN(mesg) > 0 && *(RSTRING_END(mesg) - 1) != '\n') rb_str_cat_cstr(mesg, "\n");
+        }
+        err_vcatf(mesg, NULL, fn, line, fmt, args);
     }
 
     return exc;
 }
 
-static unsigned int warning_disabled_categories = (
-    1U << RB_WARN_CATEGORY_DEPRECATED |
-    0);
+static unsigned int warning_disabled_categories = (1U << RB_WARN_CATEGORY_DEPRECATED | 0);
 
 static unsigned int
 rb_warning_category_mask(VALUE category)
@@ -168,9 +164,8 @@ rb_warning_category_from_name(VALUE category)
     st_data_t cat_value;
     ID cat_id;
     Check_Type(category, T_SYMBOL);
-    if (!(cat_id = rb_check_id(&category)) ||
-        !st_lookup(warning_categories.id2enum, cat_id, &cat_value)) {
-        rb_raise(rb_eArgError, "unknown category: %"PRIsVALUE, category);
+    if (!(cat_id = rb_check_id(&category)) || !st_lookup(warning_categories.id2enum, cat_id, &cat_value)) {
+        rb_raise(rb_eArgError, "unknown category: %" PRIsVALUE, category);
     }
     return (rb_warning_category_t)cat_value;
 }
@@ -314,7 +309,6 @@ rb_warning_warn(VALUE mod, VALUE str)
     return rb_funcallv(mod, id_warn, 1, &str);
 }
 
-
 static int
 rb_warning_warn_arity(void)
 {
@@ -411,7 +405,8 @@ warning_string(rb_encoding *enc, const char *fmt, va_list args)
 
 #define with_warning_string(mesg, enc, fmt) \
     VALUE mesg; \
-    va_list args; va_start(args, fmt); \
+    va_list args; \
+    va_start(args, fmt); \
     mesg = warning_string(enc, fmt, args); \
     va_end(args);
 
@@ -419,9 +414,10 @@ void
 rb_warn(const char *fmt, ...)
 {
     if (!NIL_P(ruby_verbose)) {
-	with_warning_string(mesg, 0, fmt) {
-	    rb_write_warning_str(mesg);
-	}
+        with_warning_string(mesg, 0, fmt)
+        {
+            rb_write_warning_str(mesg);
+        }
     }
 }
 
@@ -429,7 +425,8 @@ void
 rb_category_warn(rb_warning_category_t category, const char *fmt, ...)
 {
     if (!NIL_P(ruby_verbose)) {
-        with_warning_string(mesg, 0, fmt) {
+        with_warning_string(mesg, 0, fmt)
+        {
             rb_warn_category(mesg, rb_warning_category_to_name(category));
         }
     }
@@ -439,9 +436,10 @@ void
 rb_enc_warn(rb_encoding *enc, const char *fmt, ...)
 {
     if (!NIL_P(ruby_verbose)) {
-	with_warning_string(mesg, enc, fmt) {
-	    rb_write_warning_str(mesg);
-	}
+        with_warning_string(mesg, enc, fmt)
+        {
+            rb_write_warning_str(mesg);
+        }
     }
 }
 
@@ -450,9 +448,10 @@ void
 rb_warning(const char *fmt, ...)
 {
     if (RTEST(ruby_verbose)) {
-	with_warning_string(mesg, 0, fmt) {
-	    rb_write_warning_str(mesg);
-	}
+        with_warning_string(mesg, 0, fmt)
+        {
+            rb_write_warning_str(mesg);
+        }
     }
 }
 
@@ -461,7 +460,8 @@ void
 rb_category_warning(rb_warning_category_t category, const char *fmt, ...)
 {
     if (RTEST(ruby_verbose)) {
-        with_warning_string(mesg, 0, fmt) {
+        with_warning_string(mesg, 0, fmt)
+        {
             rb_warn_category(mesg, rb_warning_category_to_name(category));
         }
     }
@@ -470,7 +470,8 @@ rb_category_warning(rb_warning_category_t category, const char *fmt, ...)
 VALUE
 rb_warning_string(const char *fmt, ...)
 {
-    with_warning_string(mesg, 0, fmt) {
+    with_warning_string(mesg, 0, fmt)
+    {
     }
     return mesg;
 }
@@ -537,8 +538,7 @@ rb_warn_deprecated_to_remove(const char *removal, const char *fmt, const char *s
 static inline int
 end_with_asciichar(VALUE str, int c)
 {
-    return RB_TYPE_P(str, T_STRING) &&
-	rb_str_end_with_asciichar(str, c);
+    return RB_TYPE_P(str, T_STRING) && rb_str_end_with_asciichar(str, c);
 }
 
 /* :nodoc: */
@@ -546,7 +546,7 @@ static VALUE
 warning_write(int argc, VALUE *argv, VALUE buf)
 {
     while (argc-- > 0) {
-	rb_str_append(buf, *argv++);
+        rb_str_append(buf, *argv++);
     }
     return buf;
 }
@@ -571,38 +571,36 @@ rb_warn_m(rb_execution_context_t *ec, VALUE exc, VALUE msgs, VALUE uplevel, VALU
             if (!NIL_P(location)) {
                 location = rb_ary_entry(location, 0);
             }
-	}
-	if (argc > 1 || !NIL_P(uplevel) || !end_with_asciichar(str, '\n')) {
-	    VALUE path;
-	    if (NIL_P(uplevel)) {
-		str = rb_str_tmp_new(0);
-	    }
-	    else if (NIL_P(location) ||
-		     NIL_P(path = rb_funcall(location, rb_intern("path"), 0))) {
-		str = rb_str_new_cstr("warning: ");
-	    }
-	    else {
-		str = rb_sprintf("%s:%ld: warning: ",
-		    rb_string_value_ptr(&path),
-		    NUM2LONG(rb_funcall(location, rb_intern("lineno"), 0)));
-	    }
-	    RBASIC_SET_CLASS(str, rb_cWarningBuffer);
-	    rb_io_puts(argc, argv, str);
-	    RBASIC_SET_CLASS(str, rb_cString);
-	}
+        }
+        if (argc > 1 || !NIL_P(uplevel) || !end_with_asciichar(str, '\n')) {
+            VALUE path;
+            if (NIL_P(uplevel)) {
+                str = rb_str_tmp_new(0);
+            }
+            else if (NIL_P(location) || NIL_P(path = rb_funcall(location, rb_intern("path"), 0))) {
+                str = rb_str_new_cstr("warning: ");
+            }
+            else {
+                str = rb_sprintf("%s:%ld: warning: ", rb_string_value_ptr(&path),
+                    NUM2LONG(rb_funcall(location, rb_intern("lineno"), 0)));
+            }
+            RBASIC_SET_CLASS(str, rb_cWarningBuffer);
+            rb_io_puts(argc, argv, str);
+            RBASIC_SET_CLASS(str, rb_cString);
+        }
 
         if (!NIL_P(category)) {
             category = rb_to_symbol_type(category);
             rb_warning_category_from_name(category);
         }
 
-	if (exc == rb_mWarning) {
-	    rb_must_asciicompat(str);
-	    rb_write_error_str(str);
-	}
-	else {
+        if (exc == rb_mWarning) {
+            rb_must_asciicompat(str);
+            rb_write_error_str(str);
+        }
+        else {
             rb_warn_category(str, category);
-	}
+        }
     }
     return Qnil;
 }
@@ -621,7 +619,7 @@ rb_bug_reporter_add(void (*func)(FILE *, void *), void *data)
 {
     struct bug_reporters *reporter;
     if (bug_reporters_size >= MAX_BUG_REPORTERS) {
-	return 0; /* failed to register */
+        return 0; /* failed to register */
     }
     reporter = &bug_reporters[bug_reporters_size++];
     reporter->func = func;
@@ -640,7 +638,7 @@ bug_report_file(const char *file, int line)
     int len = err_position_0(buf, sizeof(buf), file, line);
 
     if ((ssize_t)fwrite(buf, 1, len, out) == (ssize_t)len ||
-	(ssize_t)fwrite(buf, 1, len, (out = stdout)) == (ssize_t)len) {
+        (ssize_t)fwrite(buf, 1, len, (out = stdout)) == (ssize_t)len) {
         return out;
     }
 
@@ -657,19 +655,20 @@ bug_important_message(FILE *out, const char *const msg, size_t len)
 
     if (!len) return;
     if (isatty(fileno(out))) {
-	static const char red[] = "\033[;31;1;7m";
-	static const char green[] = "\033[;32;7m";
-	static const char reset[] = "\033[m";
-	const char *e = strchr(p, '\n');
-	const int w = (int)(e - p);
-	do {
-	    int i = (int)(e - p);
-	    fputs(*p == ' ' ? green : red, out);
-	    fwrite(p, 1, e - p, out);
-	    for (; i < w; ++i) fputc(' ', out);
-	    fputs(reset, out);
-	    fputc('\n', out);
-	} while ((p = e + 1) < endmsg && (e = strchr(p, '\n')) != 0 && e > p + 1);
+        static const char red[] = "\033[;31;1;7m";
+        static const char green[] = "\033[;32;7m";
+        static const char reset[] = "\033[m";
+        const char *e = strchr(p, '\n');
+        const int w = (int)(e - p);
+        do {
+            int i = (int)(e - p);
+            fputs(*p == ' ' ? green : red, out);
+            fwrite(p, 1, e - p, out);
+            for (; i < w; ++i)
+                fputc(' ', out);
+            fputs(reset, out);
+            fputc('\n', out);
+        } while ((p = e + 1) < endmsg && (e = strchr(p, '\n')) != 0 && e > p + 1);
     }
     fwrite(p, 1, endmsg - p, out);
 }
@@ -679,18 +678,18 @@ preface_dump(FILE *out)
 {
 #if defined __APPLE__
     static const char msg[] = ""
-	"-- Crash Report log information "
-	"--------------------------------------------\n"
-	"   See Crash Report log file in one of the following locations:\n"
-# if MAC_OS_X_VERSION_MIN_REQUIRED < MAC_OS_X_VERSION_10_6
-	"     * ~/Library/Logs/CrashReporter\n"
-	"     * /Library/Logs/CrashReporter\n"
-# endif
-	"     * ~/Library/Logs/DiagnosticReports\n"
-	"     * /Library/Logs/DiagnosticReports\n"
-	"   for more details.\n"
-	"Don't forget to include the above Crash Report log file in bug reports.\n"
-	"\n";
+                              "-- Crash Report log information "
+                              "--------------------------------------------\n"
+                              "   See Crash Report log file in one of the following locations:\n"
+#    if MAC_OS_X_VERSION_MIN_REQUIRED < MAC_OS_X_VERSION_10_6
+                              "     * ~/Library/Logs/CrashReporter\n"
+                              "     * /Library/Logs/CrashReporter\n"
+#    endif
+                              "     * ~/Library/Logs/DiagnosticReports\n"
+                              "     * /Library/Logs/DiagnosticReports\n"
+                              "   for more details.\n"
+                              "Don't forget to include the above Crash Report log file in bug reports.\n"
+                              "\n";
     const size_t msglen = sizeof(msg) - 1;
 #else
     const char *msg = NULL;
@@ -704,15 +703,16 @@ postscript_dump(FILE *out)
 {
 #if defined __APPLE__
     static const char msg[] = ""
-	"[IMPORTANT]"
-	/*" ------------------------------------------------"*/
-	"\n""Don't forget to include the Crash Report log file under\n"
-# if MAC_OS_X_VERSION_MIN_REQUIRED < MAC_OS_X_VERSION_10_6
-	"CrashReporter or "
-# endif
-	"DiagnosticReports directory in bug reports.\n"
-	/*"------------------------------------------------------------\n"*/
-	"\n";
+                              "[IMPORTANT]"
+                              /*" ------------------------------------------------"*/
+                              "\n"
+                              "Don't forget to include the Crash Report log file under\n"
+#    if MAC_OS_X_VERSION_MIN_REQUIRED < MAC_OS_X_VERSION_10_6
+                              "CrashReporter or "
+#    endif
+                              "DiagnosticReports directory in bug reports.\n"
+                              /*"------------------------------------------------------------\n"*/
+                              "\n";
     const size_t msglen = sizeof(msg) - 1;
 #else
     const char *msg = NULL;
@@ -735,51 +735,54 @@ bug_report_begin_valist(FILE *out, const char *fmt, va_list args)
     preface_dump(out);
 }
 
-#define bug_report_begin(out, fmt) do { \
-    va_list args; \
-    va_start(args, fmt); \
-    bug_report_begin_valist(out, fmt, args); \
-    va_end(args); \
-} while (0)
+#define bug_report_begin(out, fmt) \
+    do { \
+        va_list args; \
+        va_start(args, fmt); \
+        bug_report_begin_valist(out, fmt, args); \
+        va_end(args); \
+    } while (0)
 
 static void
 bug_report_end(FILE *out)
 {
     /* call additional bug reporters */
     {
-	int i;
-	for (i=0; i<bug_reporters_size; i++) {
-	    struct bug_reporters *reporter = &bug_reporters[i];
-	    (*reporter->func)(out, reporter->data);
-	}
+        int i;
+        for (i = 0; i < bug_reporters_size; i++) {
+            struct bug_reporters *reporter = &bug_reporters[i];
+            (*reporter->func)(out, reporter->data);
+        }
     }
     postscript_dump(out);
 }
 
-#define report_bug(file, line, fmt, ctx) do { \
-    FILE *out = bug_report_file(file, line); \
-    if (out) { \
-	bug_report_begin(out, fmt); \
-	rb_vm_bugreport(ctx); \
-	bug_report_end(out); \
-    } \
-} while (0) \
+#define report_bug(file, line, fmt, ctx) \
+    do { \
+        FILE *out = bug_report_file(file, line); \
+        if (out) { \
+            bug_report_begin(out, fmt); \
+            rb_vm_bugreport(ctx); \
+            bug_report_end(out); \
+        } \
+    } while (0)
 
-#define report_bug_valist(file, line, fmt, ctx, args) do { \
-    FILE *out = bug_report_file(file, line); \
-    if (out) { \
-	bug_report_begin_valist(out, fmt, args); \
-	rb_vm_bugreport(ctx); \
-	bug_report_end(out); \
-    } \
-} while (0) \
+#define report_bug_valist(file, line, fmt, ctx, args) \
+    do { \
+        FILE *out = bug_report_file(file, line); \
+        if (out) { \
+            bug_report_begin_valist(out, fmt, args); \
+            rb_vm_bugreport(ctx); \
+            bug_report_end(out); \
+        } \
+    } while (0)
 
 NORETURN(static void die(void));
 static void
 die(void)
 {
 #if defined(_WIN32) && defined(RUBY_MSVCRT_VERSION) && RUBY_MSVCRT_VERSION >= 80
-    _set_abort_behavior( 0, _CALL_REPORTFAULT);
+    _set_abort_behavior(0, _CALL_REPORTFAULT);
 #endif
 
     abort();
@@ -816,7 +819,7 @@ rb_bug_for_fatal_signal(ruby_sighandler_t default_sighandler, int sig, const voi
     int line = 0;
 
     if (GET_EC()) {
-	file = rb_source_location_cstr(&line);
+        file = rb_source_location_cstr(&line);
     }
 
     report_bug(file, line, fmt, ctx);
@@ -825,7 +828,6 @@ rb_bug_for_fatal_signal(ruby_sighandler_t default_sighandler, int sig, const voi
 
     die();
 }
-
 
 void
 rb_bug_errno(const char *mesg, int errno_arg)
@@ -846,7 +848,7 @@ rb_bug_errno(const char *mesg, int errno_arg)
  * (which isn't a Ruby Thread object)
  */
 #define write_or_abort(fd, str, len) (write((fd), (str), (len)) < 0 ? abort() : (void)0)
-#define WRITE_CONST(fd,str) write_or_abort((fd),(str),sizeof(str) - 1)
+#define WRITE_CONST(fd, str) write_or_abort((fd), (str), sizeof(str) - 1)
 
 void
 rb_async_bug_errno(const char *mesg, int errno_arg)
@@ -856,14 +858,13 @@ rb_async_bug_errno(const char *mesg, int errno_arg)
     WRITE_CONST(2, "\n");
 
     if (errno_arg == 0) {
-	WRITE_CONST(2, "errno == 0 (NOERROR)\n");
+        WRITE_CONST(2, "errno == 0 (NOERROR)\n");
     }
     else {
-	const char *errno_str = rb_strerrno(errno_arg);
+        const char *errno_str = rb_strerrno(errno_arg);
 
-	if (!errno_str)
-	    errno_str = "undefined errno";
-	write_or_abort(2, errno_str, strlen(errno_str));
+        if (!errno_str) errno_str = "undefined errno";
+        write_or_abort(2, errno_str, strlen(errno_str));
     }
     WRITE_CONST(2, "\n\n");
     write_or_abort(2, ruby_description, strlen(ruby_description));
@@ -890,35 +891,19 @@ rb_assert_failure(const char *file, int line, const char *name, const char *expr
 }
 
 static const char builtin_types[][10] = {
-    "", 			/* 0x00, */
-    "Object",
-    "Class",
-    "Module",
-    "Float",
-    "String",
-    "Regexp",
-    "Array",
-    "Hash",
-    "Struct",
-    "Integer",
-    "File",
-    "Data",			/* internal use: wrapped C pointers */
-    "MatchData",		/* data of $~ */
-    "Complex",
-    "Rational",
-    "",				/* 0x10 */
-    "nil",
-    "true",
-    "false",
-    "Symbol",			/* :symbol */
-    "Integer",
-    "undef",			/* internal use: #undef; should not happen */
-    "",				/* 0x17 */
-    "",				/* 0x18 */
-    "",				/* 0x19 */
-    "<Memo>",			/* internal use: general memo */
-    "<Node>",			/* internal use: syntax tree node */
-    "<iClass>", 		/* internal use: mixed-in module holder */
+    "", /* 0x00, */
+    "Object", "Class", "Module", "Float", "String", "Regexp", "Array", "Hash", "Struct", "Integer", "File",
+    "Data",                           /* internal use: wrapped C pointers */
+    "MatchData",                      /* data of $~ */
+    "Complex", "Rational", "",        /* 0x10 */
+    "nil", "true", "false", "Symbol", /* :symbol */
+    "Integer", "undef",               /* internal use: #undef; should not happen */
+    "",                               /* 0x17 */
+    "",                               /* 0x18 */
+    "",                               /* 0x19 */
+    "<Memo>",                         /* internal use: general memo */
+    "<Node>",                         /* internal use: syntax tree node */
+    "<iClass>",                       /* internal use: mixed-in module holder */
 };
 
 const char *
@@ -935,10 +920,14 @@ static VALUE
 displaying_class_of(VALUE x)
 {
     switch (x) {
-      case Qfalse: return rb_fstring_cstr("false");
-      case Qnil:   return rb_fstring_cstr("nil");
-      case Qtrue:  return rb_fstring_cstr("true");
-      default:     return rb_obj_class(x);
+    case Qfalse:
+        return rb_fstring_cstr("false");
+    case Qnil:
+        return rb_fstring_cstr("nil");
+    case Qtrue:
+        return rb_fstring_cstr("true");
+    default:
+        return rb_obj_class(x);
     }
 }
 
@@ -948,22 +937,22 @@ builtin_class_name(VALUE x)
     const char *etype;
 
     if (NIL_P(x)) {
-	etype = "nil";
+        etype = "nil";
     }
     else if (FIXNUM_P(x)) {
-	etype = "Integer";
+        etype = "Integer";
     }
     else if (SYMBOL_P(x)) {
-	etype = "Symbol";
+        etype = "Symbol";
     }
     else if (RB_TYPE_P(x, T_TRUE)) {
-	etype = "true";
+        etype = "true";
     }
     else if (RB_TYPE_P(x, T_FALSE)) {
-	etype = "false";
+        etype = "false";
     }
     else {
-	etype = NULL;
+        etype = NULL;
     }
     return etype;
 }
@@ -974,7 +963,7 @@ rb_builtin_class_name(VALUE x)
     const char *etype = builtin_class_name(x);
 
     if (!etype) {
-	etype = rb_obj_classname(x);
+        etype = rb_obj_classname(x);
     }
     return etype;
 }
@@ -989,16 +978,16 @@ unexpected_type(VALUE x, int xt, int t)
     VALUE mesg, exc = rb_eFatal;
 
     if (tname) {
-        mesg = rb_sprintf("wrong argument type %"PRIsVALUE" (expected %s)",
-                          displaying_class_of(x), tname);
-	exc = rb_eTypeError;
+        mesg = rb_sprintf("wrong argument type %" PRIsVALUE " (expected %s)", displaying_class_of(x), tname);
+        exc = rb_eTypeError;
     }
     else if (xt > T_MASK && xt <= 0x3f) {
-	mesg = rb_sprintf("unknown type 0x%x (0x%x given, probably comes"
-			  " from extension library for ruby 1.8)", t, xt);
+        mesg = rb_sprintf("unknown type 0x%x (0x%x given, probably comes"
+                          " from extension library for ruby 1.8)",
+            t, xt);
     }
     else {
-	mesg = rb_sprintf("unknown type 0x%x (0x%x given)", t, xt);
+        mesg = rb_sprintf("unknown type 0x%x (0x%x given)", t, xt);
     }
     rb_exc_raise(rb_exc_new_str(exc, mesg));
 }
@@ -1009,7 +998,7 @@ rb_check_type(VALUE x, int t)
     int xt;
 
     if (RB_UNLIKELY(x == Qundef)) {
-	rb_bug(UNDEF_LEAKED);
+        rb_bug(UNDEF_LEAKED);
     }
 
     xt = TYPE(x);
@@ -1022,7 +1011,7 @@ rb_check_type(VALUE x, int t)
          * So it is not enough to just check `T_DATA`, it must be
          * identified by its `type` using `Check_TypedStruct` instead.
          */
-	unexpected_type(x, xt, t);
+        unexpected_type(x, xt, t);
     }
 }
 
@@ -1030,7 +1019,7 @@ void
 rb_unexpected_type(VALUE x, int t)
 {
     if (RB_UNLIKELY(x == Qundef)) {
-	rb_bug(UNDEF_LEAKED);
+        rb_bug(UNDEF_LEAKED);
     }
 
     unexpected_type(x, TYPE(x), t);
@@ -1040,8 +1029,8 @@ int
 rb_typeddata_inherited_p(const rb_data_type_t *child, const rb_data_type_t *parent)
 {
     while (child) {
-	if (child == parent) return 1;
-	child = child->parent;
+        if (child == parent) return 1;
+        child = child->parent;
     }
     return 0;
 }
@@ -1049,9 +1038,8 @@ rb_typeddata_inherited_p(const rb_data_type_t *child, const rb_data_type_t *pare
 int
 rb_typeddata_is_kind_of(VALUE obj, const rb_data_type_t *data_type)
 {
-    if (!RB_TYPE_P(obj, T_DATA) ||
-	!RTYPEDDATA_P(obj) || !rb_typeddata_inherited_p(RTYPEDDATA_TYPE(obj), data_type)) {
-	return 0;
+    if (!RB_TYPE_P(obj, T_DATA) || !RTYPEDDATA_P(obj) || !rb_typeddata_inherited_p(RTYPEDDATA_TYPE(obj), data_type)) {
+        return 0;
     }
     return 1;
 }
@@ -1083,8 +1071,7 @@ rb_check_typeddata(VALUE obj, const rb_data_type_t *data_type)
     }
 
     const char *expected = data_type->wrap_struct_name;
-    rb_raise(rb_eTypeError, "wrong argument type %"PRIsVALUE" (expected %s)",
-             actual, expected);
+    rb_raise(rb_eTypeError, "wrong argument type %" PRIsVALUE " (expected %s)", actual, expected);
     UNREACHABLE_RETURN(NULL);
 }
 
@@ -1272,10 +1259,13 @@ check_highlight_keyword(VALUE opt, int auto_tty_detect)
         highlight = rb_hash_lookup(opt, sym_highlight);
 
         switch (highlight) {
-          default:
+        default:
             rb_bool_expected(highlight, "highlight");
             UNREACHABLE;
-          case Qtrue: case Qfalse: case Qnil: break;
+        case Qtrue:
+        case Qfalse:
+        case Qnil:
+            break;
         }
     }
 
@@ -1304,11 +1294,15 @@ check_order_keyword(VALUE opt)
 
         if (order != Qnil) {
             ID id = rb_check_id(&order);
-            if (id == id_bottom) order = Qtrue;
-            else if (id == id_top) order = Qfalse;
+            if (id == id_bottom)
+                order = Qtrue;
+            else if (id == id_top)
+                order = Qfalse;
             else {
-                rb_raise(rb_eArgError, "expected :top or :bottom as "
-                        "order: %+"PRIsVALUE, order);
+                rb_raise(rb_eArgError,
+                    "expected :top or :bottom as "
+                    "order: %+" PRIsVALUE,
+                    order);
             }
         }
     }
@@ -1467,7 +1461,7 @@ exc_inspect(VALUE exc)
  *    ex = StandardError.new
  *    ex.backtrace
  *    #=> nil
-*/
+ */
 
 static VALUE
 exc_backtrace(VALUE exc)
@@ -1477,8 +1471,8 @@ exc_backtrace(VALUE exc)
     obj = rb_attr_get(exc, id_bt);
 
     if (rb_backtrace_p(obj)) {
-	obj = rb_backtrace_to_str_ary(obj);
-	/* rb_ivar_set(exc, id_bt, obj); */
+        obj = rb_backtrace_to_str_ary(obj);
+        /* rb_ivar_set(exc, id_bt, obj); */
     }
 
     return obj;
@@ -1492,16 +1486,15 @@ rb_get_backtrace(VALUE exc)
     ID mid = id_backtrace;
     VALUE info;
     if (rb_method_basic_definition_p(CLASS_OF(exc), id_backtrace)) {
-	VALUE klass = rb_eException;
-	rb_execution_context_t *ec = GET_EC();
-	if (NIL_P(exc))
-	    return Qnil;
-	EXEC_EVENT_HOOK(ec, RUBY_EVENT_C_CALL, exc, mid, mid, klass, Qundef);
-	info = exc_backtrace(exc);
-	EXEC_EVENT_HOOK(ec, RUBY_EVENT_C_RETURN, exc, mid, mid, klass, info);
+        VALUE klass = rb_eException;
+        rb_execution_context_t *ec = GET_EC();
+        if (NIL_P(exc)) return Qnil;
+        EXEC_EVENT_HOOK(ec, RUBY_EVENT_C_CALL, exc, mid, mid, klass, Qundef);
+        info = exc_backtrace(exc);
+        EXEC_EVENT_HOOK(ec, RUBY_EVENT_C_RETURN, exc, mid, mid, klass, info);
     }
     else {
-	info = rb_funcallv(exc, mid, 0, 0);
+        info = rb_funcallv(exc, mid, 0, 0);
     }
     if (NIL_P(info)) return Qnil;
     return rb_check_backtrace(info);
@@ -1524,7 +1517,7 @@ exc_backtrace_locations(VALUE exc)
 
     obj = rb_attr_get(exc, id_bt_locations);
     if (!NIL_P(obj)) {
-	obj = rb_backtrace_to_location_ary(obj);
+        obj = rb_backtrace_to_location_ary(obj);
     }
     return obj;
 }
@@ -1536,17 +1529,17 @@ rb_check_backtrace(VALUE bt)
     static const char err[] = "backtrace must be Array of String";
 
     if (!NIL_P(bt)) {
-	if (RB_TYPE_P(bt, T_STRING)) return rb_ary_new3(1, bt);
-	if (rb_backtrace_p(bt)) return bt;
-	if (!RB_TYPE_P(bt, T_ARRAY)) {
-	    rb_raise(rb_eTypeError, err);
-	}
-	for (i=0;i<RARRAY_LEN(bt);i++) {
-	    VALUE e = RARRAY_AREF(bt, i);
-	    if (!RB_TYPE_P(e, T_STRING)) {
-		rb_raise(rb_eTypeError, err);
-	    }
-	}
+        if (RB_TYPE_P(bt, T_STRING)) return rb_ary_new3(1, bt);
+        if (rb_backtrace_p(bt)) return bt;
+        if (!RB_TYPE_P(bt, T_ARRAY)) {
+            rb_raise(rb_eTypeError, err);
+        }
+        for (i = 0; i < RARRAY_LEN(bt); i++) {
+            VALUE e = RARRAY_AREF(bt, i);
+            if (!RB_TYPE_P(e, T_STRING)) {
+                rb_raise(rb_eTypeError, err);
+            }
+        }
     }
     return bt;
 }
@@ -1611,26 +1604,25 @@ exc_equal(VALUE exc, VALUE obj)
     if (exc == obj) return Qtrue;
 
     if (rb_obj_class(exc) != rb_obj_class(obj)) {
-	int state;
+        int state;
 
-	obj = rb_protect(try_convert_to_exception, obj, &state);
-	if (state || obj == Qundef) {
-	    rb_set_errinfo(Qnil);
-	    return Qfalse;
-	}
-	if (rb_obj_class(exc) != rb_obj_class(obj)) return Qfalse;
-	mesg = rb_check_funcall(obj, id_message, 0, 0);
-	if (mesg == Qundef) return Qfalse;
-	backtrace = rb_check_funcall(obj, id_backtrace, 0, 0);
-	if (backtrace == Qundef) return Qfalse;
+        obj = rb_protect(try_convert_to_exception, obj, &state);
+        if (state || obj == Qundef) {
+            rb_set_errinfo(Qnil);
+            return Qfalse;
+        }
+        if (rb_obj_class(exc) != rb_obj_class(obj)) return Qfalse;
+        mesg = rb_check_funcall(obj, id_message, 0, 0);
+        if (mesg == Qundef) return Qfalse;
+        backtrace = rb_check_funcall(obj, id_backtrace, 0, 0);
+        if (backtrace == Qundef) return Qfalse;
     }
     else {
-	mesg = rb_attr_get(obj, id_mesg);
-	backtrace = exc_backtrace(obj);
+        mesg = rb_attr_get(obj, id_mesg);
+        backtrace = exc_backtrace(obj);
     }
 
-    if (!rb_equal(rb_attr_get(exc, id_mesg), mesg))
-	return Qfalse;
+    if (!rb_equal(rb_attr_get(exc, id_mesg), mesg)) return Qfalse;
     return rb_equal(exc_backtrace(exc), backtrace);
 }
 
@@ -1651,43 +1643,41 @@ exit_initialize(int argc, VALUE *argv, VALUE exc)
 {
     VALUE status;
     if (argc > 0) {
-	status = *argv;
+        status = *argv;
 
-	switch (status) {
-	  case Qtrue:
-	    status = INT2FIX(EXIT_SUCCESS);
-	    ++argv;
-	    --argc;
-	    break;
-	  case Qfalse:
-	    status = INT2FIX(EXIT_FAILURE);
-	    ++argv;
-	    --argc;
-	    break;
-	  default:
-	    status = rb_check_to_int(status);
-	    if (NIL_P(status)) {
-		status = INT2FIX(EXIT_SUCCESS);
-	    }
-	    else {
+        switch (status) {
+        case Qtrue:
+            status = INT2FIX(EXIT_SUCCESS);
+            ++argv;
+            --argc;
+            break;
+        case Qfalse:
+            status = INT2FIX(EXIT_FAILURE);
+            ++argv;
+            --argc;
+            break;
+        default:
+            status = rb_check_to_int(status);
+            if (NIL_P(status)) {
+                status = INT2FIX(EXIT_SUCCESS);
+            }
+            else {
 #if EXIT_SUCCESS != 0
-		if (status == INT2FIX(0))
-		    status = INT2FIX(EXIT_SUCCESS);
+                if (status == INT2FIX(0)) status = INT2FIX(EXIT_SUCCESS);
 #endif
-		++argv;
-		--argc;
-	    }
-	    break;
-	}
+                ++argv;
+                --argc;
+            }
+            break;
+        }
     }
     else {
-	status = INT2FIX(EXIT_SUCCESS);
+        status = INT2FIX(EXIT_SUCCESS);
     }
     rb_call_super(argc, argv);
     rb_ivar_set(exc, id_status, status);
     return exc;
 }
-
 
 /*
  * call-seq:
@@ -1702,7 +1692,6 @@ exit_status(VALUE exc)
     return rb_attr_get(exc, id_status);
 }
 
-
 /*
  * call-seq:
  *   system_exit.success?  -> true or false
@@ -1716,8 +1705,7 @@ exit_success_p(VALUE exc)
     VALUE status_val = rb_attr_get(exc, id_status);
     int status;
 
-    if (NIL_P(status_val))
-	return Qtrue;
+    if (NIL_P(status_val)) return Qtrue;
     status = NUM2INT(status_val);
     return RBOOL(WIFEXITED(status) && WEXITSTATUS(status) == EXIT_SUCCESS);
 }
@@ -1880,10 +1868,10 @@ name_err_local_variables(VALUE self)
     VALUE vars = rb_attr_get(self, id_local_variables);
 
     if (NIL_P(vars)) {
-	VALUE iseqw = rb_attr_get(self, id_iseq);
-	if (!NIL_P(iseqw)) vars = rb_iseqw_local_variables(iseqw);
-	if (NIL_P(vars)) vars = rb_ary_new();
-	rb_ivar_set(self, id_local_variables, vars);
+        VALUE iseqw = rb_attr_get(self, id_iseq);
+        if (!NIL_P(iseqw)) vars = rb_iseqw_local_variables(iseqw);
+        if (NIL_P(vars)) vars = rb_ary_new();
+        rb_ivar_set(self, id_local_variables, vars);
     }
     return vars;
 }
@@ -1945,7 +1933,7 @@ static void
 name_err_mesg_mark(void *p)
 {
     VALUE *ptr = p;
-    rb_gc_mark_locations(ptr, ptr+NAME_ERR_MESG_COUNT);
+    rb_gc_mark_locations(ptr, ptr + NAME_ERR_MESG_COUNT);
 }
 
 #define name_err_mesg_free RUBY_TYPED_DEFAULT_FREE
@@ -1956,15 +1944,13 @@ name_err_mesg_memsize(const void *p)
     return NAME_ERR_MESG_COUNT * sizeof(VALUE);
 }
 
-static const rb_data_type_t name_err_mesg_data_type = {
-    "name_err_mesg",
+static const rb_data_type_t name_err_mesg_data_type = {"name_err_mesg",
     {
-	name_err_mesg_mark,
-	name_err_mesg_free,
-	name_err_mesg_memsize,
+        name_err_mesg_mark,
+        name_err_mesg_free,
+        name_err_mesg_memsize,
     },
-    0, 0, RUBY_TYPED_FREE_IMMEDIATELY
-};
+    0, 0, RUBY_TYPED_FREE_IMMEDIATELY};
 
 /* :nodoc: */
 static VALUE
@@ -2017,14 +2003,12 @@ name_err_mesg_equal(VALUE obj1, VALUE obj2)
     int i;
 
     if (obj1 == obj2) return Qtrue;
-    if (rb_obj_class(obj2) != rb_cNameErrorMesg)
-	return Qfalse;
+    if (rb_obj_class(obj2) != rb_cNameErrorMesg) return Qfalse;
 
     TypedData_Get_Struct(obj1, VALUE, &name_err_mesg_data_type, ptr1);
     TypedData_Get_Struct(obj2, VALUE, &name_err_mesg_data_type, ptr2);
-    for (i=0; i<NAME_ERR_MESG_COUNT; i++) {
-	if (!rb_equal(ptr1[i], ptr2[i]))
-	    return Qfalse;
+    for (i = 0; i < NAME_ERR_MESG_COUNT; i++) {
+        if (!rb_equal(ptr1[i], ptr2[i])) return Qfalse;
     }
     return Qtrue;
 }
@@ -2048,51 +2032,51 @@ name_err_mesg_to_str(VALUE obj)
     TypedData_Get_Struct(obj, VALUE, &name_err_mesg_data_type, ptr);
 
     mesg = ptr[NAME_ERR_MESG__MESG];
-    if (NIL_P(mesg)) return Qnil;
+    if (NIL_P(mesg))
+        return Qnil;
     else {
-	struct RString s_str, d_str;
-	VALUE c, s, d = 0, args[4];
-	int state = 0, singleton = 0;
-	rb_encoding *usascii = rb_usascii_encoding();
+        struct RString s_str, d_str;
+        VALUE c, s, d = 0, args[4];
+        int state = 0, singleton = 0;
+        rb_encoding *usascii = rb_usascii_encoding();
 
 #define FAKE_CSTR(v, str) rb_setup_fake_str((v), (str), rb_strlen_lit(str), usascii)
-	obj = ptr[NAME_ERR_MESG__RECV];
-	switch (obj) {
-	  case Qnil:
-	    d = FAKE_CSTR(&d_str, "nil");
-	    break;
-	  case Qtrue:
-	    d = FAKE_CSTR(&d_str, "true");
-	    break;
-	  case Qfalse:
-	    d = FAKE_CSTR(&d_str, "false");
-	    break;
-	  default:
-	    d = rb_protect(name_err_mesg_receiver_name, obj, &state);
-	    if (state || d == Qundef || NIL_P(d))
-		d = rb_protect(rb_inspect, obj, &state);
-	    if (state) {
-		rb_set_errinfo(Qnil);
-	    }
-	    d = rb_check_string_type(d);
-	    if (NIL_P(d)) {
-		d = rb_any_to_s(obj);
-	    }
-	    singleton = (RSTRING_LEN(d) > 0 && RSTRING_PTR(d)[0] == '#');
-	    break;
-	}
-	if (!singleton) {
-	    s = FAKE_CSTR(&s_str, ":");
-	    c = rb_class_name(CLASS_OF(obj));
-	}
-	else {
-	    c = s = FAKE_CSTR(&s_str, "");
-	}
+        obj = ptr[NAME_ERR_MESG__RECV];
+        switch (obj) {
+        case Qnil:
+            d = FAKE_CSTR(&d_str, "nil");
+            break;
+        case Qtrue:
+            d = FAKE_CSTR(&d_str, "true");
+            break;
+        case Qfalse:
+            d = FAKE_CSTR(&d_str, "false");
+            break;
+        default:
+            d = rb_protect(name_err_mesg_receiver_name, obj, &state);
+            if (state || d == Qundef || NIL_P(d)) d = rb_protect(rb_inspect, obj, &state);
+            if (state) {
+                rb_set_errinfo(Qnil);
+            }
+            d = rb_check_string_type(d);
+            if (NIL_P(d)) {
+                d = rb_any_to_s(obj);
+            }
+            singleton = (RSTRING_LEN(d) > 0 && RSTRING_PTR(d)[0] == '#');
+            break;
+        }
+        if (!singleton) {
+            s = FAKE_CSTR(&s_str, ":");
+            c = rb_class_name(CLASS_OF(obj));
+        }
+        else {
+            c = s = FAKE_CSTR(&s_str, "");
+        }
         args[0] = rb_obj_as_string(ptr[NAME_ERR_MESG__NAME]);
-	args[1] = d;
-	args[2] = s;
-	args[3] = c;
-	mesg = rb_str_format(4, args, mesg);
+        args[1] = d;
+        args[2] = s;
+        args[3] = c;
+        mesg = rb_str_format(4, args, mesg);
     }
     return mesg;
 }
@@ -2128,7 +2112,7 @@ name_err_receiver(VALUE self)
 
     mesg = rb_attr_get(self, id_mesg);
     if (!rb_typeddata_is_kind_of(mesg, &name_err_mesg_data_type)) {
-	rb_raise(rb_eArgError, "no receiver is available");
+        rb_raise(rb_eArgError, "no receiver is available");
     }
     ptr = DATA_PTR(mesg);
     return ptr[NAME_ERR_MESG__RECV];
@@ -2166,7 +2150,7 @@ rb_invalid_str(const char *str, const char *type)
 {
     VALUE s = rb_str_new2(str);
 
-    rb_raise(rb_eArgError, "invalid value for %s: %+"PRIsVALUE, type, s);
+    rb_raise(rb_eArgError, "invalid value for %s: %+" PRIsVALUE, type, s);
 }
 
 /*
@@ -2230,17 +2214,17 @@ key_err_initialize(int argc, VALUE *argv, VALUE self)
     rb_call_super(rb_scan_args(argc, argv, "01:", NULL, &options), argv);
 
     if (!NIL_P(options)) {
-	ID keywords[2];
-	VALUE values[numberof(keywords)];
-	int i;
-	keywords[0] = id_receiver;
-	keywords[1] = id_key;
-	rb_get_kwargs(options, keywords, 0, numberof(values), values);
-	for (i = 0; i < numberof(values); ++i) {
-	    if (values[i] != Qundef) {
-		rb_ivar_set(self, keywords[i], values[i]);
-	    }
-	}
+        ID keywords[2];
+        VALUE values[numberof(keywords)];
+        int i;
+        keywords[0] = id_receiver;
+        keywords[1] = id_key;
+        rb_get_kwargs(options, keywords, 0, numberof(values), values);
+        for (i = 0; i < numberof(values); ++i) {
+            if (values[i] != Qundef) {
+                rb_ivar_set(self, keywords[i], values[i]);
+            }
+        }
     }
 
     return self;
@@ -2312,7 +2296,6 @@ no_matching_pattern_key_err_initialize(int argc, VALUE *argv, VALUE self)
     return self;
 }
 
-
 /*
  * call-seq:
  *   SyntaxError.new([msg])  -> syntax_error
@@ -2325,9 +2308,9 @@ syntax_error_initialize(int argc, VALUE *argv, VALUE self)
 {
     VALUE mesg;
     if (argc == 0) {
-	mesg = rb_fstring_lit("compile error");
-	argc = 1;
-	argv = &mesg;
+        mesg = rb_fstring_lit("compile error");
+        argc = 1;
+        argv = &mesg;
     }
     return rb_call_super(argc, argv);
 }
@@ -2370,30 +2353,30 @@ set_syserr(int n, const char *name)
     st_data_t error;
 
     if (!st_lookup(syserr_tbl, n, &error)) {
-	error = rb_define_class_under(rb_mErrno, name, rb_eSystemCallError);
+        error = rb_define_class_under(rb_mErrno, name, rb_eSystemCallError);
 
-	/* capture nonblock errnos for WaitReadable/WaitWritable subclasses */
-	switch (n) {
-	  case EAGAIN:
-	    rb_eEAGAIN = error;
+        /* capture nonblock errnos for WaitReadable/WaitWritable subclasses */
+        switch (n) {
+        case EAGAIN:
+            rb_eEAGAIN = error;
 
 #if defined(EWOULDBLOCK) && EWOULDBLOCK != EAGAIN
-	    break;
-	  case EWOULDBLOCK:
+            break;
+        case EWOULDBLOCK:
 #endif
 
-	    rb_eEWOULDBLOCK = error;
-	    break;
-	  case EINPROGRESS:
-	    rb_eEINPROGRESS = error;
-	    break;
-	}
+            rb_eEWOULDBLOCK = error;
+            break;
+        case EINPROGRESS:
+            rb_eEINPROGRESS = error;
+            break;
+        }
 
-	rb_define_const(error, "Errno", INT2NUM(n));
-	st_add_direct(syserr_tbl, n, error);
+        rb_define_const(error, "Errno", INT2NUM(n));
+        st_add_direct(syserr_tbl, n, error);
     }
     else {
-	rb_define_const(rb_mErrno, name, error);
+        rb_define_const(rb_mErrno, name, error);
     }
     return error;
 }
@@ -2404,10 +2387,10 @@ get_syserr(int n)
     st_data_t error;
 
     if (!st_lookup(syserr_tbl, n, &error)) {
-	char name[8];	/* some Windows' errno have 5 digits. */
+        char name[8]; /* some Windows' errno have 5 digits. */
 
-	snprintf(name, sizeof(name), "E%03d", n);
-	error = set_syserr(n, name);
+        snprintf(name, sizeof(name), "E%03d", n);
+        error = set_syserr(n, name);
     }
     return error;
 }
@@ -2433,33 +2416,36 @@ syserr_initialize(int argc, VALUE *argv, VALUE self)
     VALUE klass = rb_obj_class(self);
 
     if (klass == rb_eSystemCallError) {
-	st_data_t data = (st_data_t)klass;
-	rb_scan_args(argc, argv, "12", &mesg, &error, &func);
-	if (argc == 1 && FIXNUM_P(mesg)) {
-	    error = mesg; mesg = Qnil;
-	}
-	if (!NIL_P(error) && st_lookup(syserr_tbl, NUM2LONG(error), &data)) {
-	    klass = (VALUE)data;
-	    /* change class */
-	    if (!RB_TYPE_P(self, T_OBJECT)) { /* insurance to avoid type crash */
-		rb_raise(rb_eTypeError, "invalid instance type");
-	    }
-	    RBASIC_SET_CLASS(self, klass);
-	}
+        st_data_t data = (st_data_t)klass;
+        rb_scan_args(argc, argv, "12", &mesg, &error, &func);
+        if (argc == 1 && FIXNUM_P(mesg)) {
+            error = mesg;
+            mesg = Qnil;
+        }
+        if (!NIL_P(error) && st_lookup(syserr_tbl, NUM2LONG(error), &data)) {
+            klass = (VALUE)data;
+            /* change class */
+            if (!RB_TYPE_P(self, T_OBJECT)) { /* insurance to avoid type crash */
+                rb_raise(rb_eTypeError, "invalid instance type");
+            }
+            RBASIC_SET_CLASS(self, klass);
+        }
     }
     else {
-	rb_scan_args(argc, argv, "02", &mesg, &func);
-	error = rb_const_get(klass, id_Errno);
+        rb_scan_args(argc, argv, "02", &mesg, &func);
+        error = rb_const_get(klass, id_Errno);
     }
-    if (!NIL_P(error)) err = strerror(NUM2INT(error));
-    else err = "unknown error";
+    if (!NIL_P(error))
+        err = strerror(NUM2INT(error));
+    else
+        err = "unknown error";
 
     errmsg = rb_enc_str_new_cstr(err, rb_locale_encoding());
     if (!NIL_P(mesg)) {
-	VALUE str = StringValue(mesg);
+        VALUE str = StringValue(mesg);
 
-	if (!NIL_P(func)) rb_str_catf(errmsg, " @ %"PRIsVALUE, func);
-	rb_str_catf(errmsg, " - %"PRIsVALUE, str);
+        if (!NIL_P(func)) rb_str_catf(errmsg, " @ %" PRIsVALUE, func);
+        rb_str_catf(errmsg, " - %" PRIsVALUE, str);
     }
     mesg = errmsg;
 
@@ -2495,18 +2481,18 @@ syserr_eqq(VALUE self, VALUE exc)
     VALUE num, e;
 
     if (!rb_obj_is_kind_of(exc, rb_eSystemCallError)) {
-	if (!rb_respond_to(exc, id_errno)) return Qfalse;
+        if (!rb_respond_to(exc, id_errno)) return Qfalse;
     }
-    else if (self == rb_eSystemCallError) return Qtrue;
+    else if (self == rb_eSystemCallError)
+        return Qtrue;
 
     num = rb_attr_get(exc, id_errno);
     if (NIL_P(num)) {
-	num = rb_funcallv(exc, id_errno, 0, 0);
+        num = rb_funcallv(exc, id_errno, 0, 0);
     }
     e = rb_const_get(self, id_Errno);
     return RBOOL(FIXNUM_P(num) ? num == e : rb_equal(num, e));
 }
-
 
 /*
  *  Document-class: StandardError
@@ -2924,7 +2910,7 @@ exception_dumper(VALUE exc)
 static int
 ivar_copy_i(st_data_t key, st_data_t val, st_data_t exc)
 {
-    rb_ivar_set((VALUE) exc, (ID) key, (VALUE) val);
+    rb_ivar_set((VALUE)exc, (ID)key, (VALUE)val);
     return ST_CONTINUE;
 }
 
@@ -2952,7 +2938,7 @@ exception_loader(VALUE exc, VALUE obj)
 void
 Init_Exception(void)
 {
-    rb_eException   = rb_define_class("Exception", rb_cObject);
+    rb_eException = rb_define_class("Exception", rb_cObject);
     rb_define_alloc_func(rb_eException, exception_alloc);
     rb_marshal_define_compat(rb_eException, rb_eException, exception_dumper, exception_loader);
     rb_define_singleton_method(rb_eException, "exception", rb_class_new_instance, -1);
@@ -2970,36 +2956,36 @@ Init_Exception(void)
     rb_define_method(rb_eException, "set_backtrace", exc_set_backtrace, 1);
     rb_define_method(rb_eException, "cause", exc_cause, 0);
 
-    rb_eSystemExit  = rb_define_class("SystemExit", rb_eException);
+    rb_eSystemExit = rb_define_class("SystemExit", rb_eException);
     rb_define_method(rb_eSystemExit, "initialize", exit_initialize, -1);
     rb_define_method(rb_eSystemExit, "status", exit_status, 0);
     rb_define_method(rb_eSystemExit, "success?", exit_success_p, 0);
 
-    rb_eFatal  	    = rb_define_class("fatal", rb_eException);
-    rb_eSignal      = rb_define_class("SignalException", rb_eException);
-    rb_eInterrupt   = rb_define_class("Interrupt", rb_eSignal);
+    rb_eFatal = rb_define_class("fatal", rb_eException);
+    rb_eSignal = rb_define_class("SignalException", rb_eException);
+    rb_eInterrupt = rb_define_class("Interrupt", rb_eSignal);
 
     rb_eStandardError = rb_define_class("StandardError", rb_eException);
-    rb_eTypeError     = rb_define_class("TypeError", rb_eStandardError);
-    rb_eArgError      = rb_define_class("ArgumentError", rb_eStandardError);
-    rb_eIndexError    = rb_define_class("IndexError", rb_eStandardError);
-    rb_eKeyError      = rb_define_class("KeyError", rb_eIndexError);
+    rb_eTypeError = rb_define_class("TypeError", rb_eStandardError);
+    rb_eArgError = rb_define_class("ArgumentError", rb_eStandardError);
+    rb_eIndexError = rb_define_class("IndexError", rb_eStandardError);
+    rb_eKeyError = rb_define_class("KeyError", rb_eIndexError);
     rb_define_method(rb_eKeyError, "initialize", key_err_initialize, -1);
     rb_define_method(rb_eKeyError, "receiver", key_err_receiver, 0);
     rb_define_method(rb_eKeyError, "key", key_err_key, 0);
-    rb_eRangeError    = rb_define_class("RangeError", rb_eStandardError);
+    rb_eRangeError = rb_define_class("RangeError", rb_eStandardError);
 
     rb_eScriptError = rb_define_class("ScriptError", rb_eException);
     rb_eSyntaxError = rb_define_class("SyntaxError", rb_eScriptError);
     rb_define_method(rb_eSyntaxError, "initialize", syntax_error_initialize, -1);
 
-    rb_eLoadError   = rb_define_class("LoadError", rb_eScriptError);
+    rb_eLoadError = rb_define_class("LoadError", rb_eScriptError);
     /* the path failed to load */
     rb_attr(rb_eLoadError, rb_intern_const("path"), 1, 0, Qfalse);
 
     rb_eNotImpError = rb_define_class("NotImplementedError", rb_eScriptError);
 
-    rb_eNameError     = rb_define_class("NameError", rb_eStandardError);
+    rb_eNameError = rb_define_class("NameError", rb_eStandardError);
     rb_define_method(rb_eNameError, "initialize", name_err_initialize, -1);
     rb_define_method(rb_eNameError, "name", name_err_name, 0);
     rb_define_method(rb_eNameError, "receiver", name_err_receiver, 0);
@@ -3148,9 +3134,8 @@ rb_loaderror_with_path(VALUE path, const char *fmt, ...)
 void
 rb_notimplement(void)
 {
-    rb_raise(rb_eNotImpError,
-	     "%"PRIsVALUE"() function is unimplemented on this machine",
-	     rb_id2str(rb_frame_this_func()));
+    rb_raise(
+        rb_eNotImpError, "%" PRIsVALUE "() function is unimplemented on this machine", rb_id2str(rb_frame_this_func()));
 }
 
 void
@@ -3159,7 +3144,7 @@ rb_fatal(const char *fmt, ...)
     va_list args;
     VALUE mesg;
 
-    if (! ruby_thread_has_gvl_p()) {
+    if (!ruby_thread_has_gvl_p()) {
         /* The thread has no GVL.  Object allocation impossible (cant run GC),
          * thus no message can be printed out. */
         fprintf(stderr, "[FATAL] rb_fatal() outside of GVL\n");
@@ -3181,7 +3166,7 @@ make_errno_exc(const char *mesg)
 
     errno = 0;
     if (n == 0) {
-	rb_bug("rb_sys_fail(%s) - errno == 0", mesg ? mesg : "");
+        rb_bug("rb_sys_fail(%s) - errno == 0", mesg ? mesg : "");
     }
     return rb_syserr_new(n, mesg);
 }
@@ -3194,8 +3179,8 @@ make_errno_exc_str(VALUE mesg)
     errno = 0;
     if (!mesg) mesg = Qnil;
     if (n == 0) {
-	const char *s = !NIL_P(mesg) ? RSTRING_PTR(mesg) : "";
-	rb_bug("rb_sys_fail_str(%s) - errno == 0", s);
+        const char *s = !NIL_P(mesg) ? RSTRING_PTR(mesg) : "";
+        rb_bug("rb_sys_fail_str(%s) - errno == 0", s);
     }
     return rb_syserr_new_str(n, mesg);
 }
@@ -3261,10 +3246,9 @@ rb_syserr_new_path_in(const char *func_name, int n, VALUE path)
 
     if (!path) path = Qnil;
     if (n == 0) {
-	const char *s = !NIL_P(path) ? RSTRING_PTR(path) : "";
-	if (!func_name) func_name = "(null)";
-	rb_bug("rb_sys_fail_path_in(%s, %s) - errno == 0",
-	       func_name, s);
+        const char *s = !NIL_P(path) ? RSTRING_PTR(path) : "";
+        if (!func_name) func_name = "(null)";
+        rb_bug("rb_sys_fail_path_in(%s, %s) - errno == 0", func_name, s);
     }
     args[0] = path;
     args[1] = rb_str_new_cstr(func_name);
@@ -3312,7 +3296,7 @@ rb_mod_syserr_fail_str(VALUE mod, int e, VALUE mesg)
 static void
 syserr_warning(VALUE mesg, int err)
 {
-    rb_str_set_len(mesg, RSTRING_LEN(mesg)-1);
+    rb_str_set_len(mesg, RSTRING_LEN(mesg) - 1);
     rb_str_catf(mesg, ": %s\n", strerror(err));
     rb_write_warning_str(mesg);
 }
@@ -3367,11 +3351,12 @@ void
 rb_sys_warning(const char *fmt, ...)
 {
     if (RTEST(ruby_verbose)) {
-	int errno_save = errno;
-	with_warning_string(mesg, 0, fmt) {
-	    syserr_warning(mesg, errno_save);
-	}
-	errno = errno_save;
+        int errno_save = errno;
+        with_warning_string(mesg, 0, fmt)
+        {
+            syserr_warning(mesg, errno_save);
+        }
+        errno = errno_save;
     }
 }
 
@@ -3391,11 +3376,12 @@ void
 rb_sys_enc_warning(rb_encoding *enc, const char *fmt, ...)
 {
     if (RTEST(ruby_verbose)) {
-	int errno_save = errno;
-	with_warning_string(mesg, enc, fmt) {
-	    syserr_warning(mesg, errno_save);
-	}
-	errno = errno_save;
+        int errno_save = errno;
+        with_warning_string(mesg, enc, fmt)
+        {
+            syserr_warning(mesg, errno_save);
+        }
+        errno = errno_save;
     }
 }
 
@@ -3403,9 +3389,10 @@ void
 rb_syserr_enc_warning(int err, rb_encoding *enc, const char *fmt, ...)
 {
     if (RTEST(ruby_verbose)) {
-	with_warning_string(mesg, enc, fmt) {
-	    syserr_warning(mesg, err);
-	}
+        with_warning_string(mesg, enc, fmt)
+        {
+            syserr_warning(mesg, err);
+        }
     }
 }
 
@@ -3414,7 +3401,7 @@ rb_load_fail(VALUE path, const char *err)
 {
     VALUE mesg = rb_str_buf_new_cstr(err);
     rb_str_cat2(mesg, " -- ");
-    rb_str_append(mesg, path);	/* should be ASCII compatible */
+    rb_str_append(mesg, path); /* should be ASCII compatible */
     raise_loaderror(path, mesg);
 }
 
@@ -3455,18 +3442,17 @@ rb_error_frozen_object(VALUE frozen_obj)
 {
     VALUE debug_info;
     const ID created_info = id_debug_created_info;
-    VALUE mesg = rb_sprintf("can't modify frozen %"PRIsVALUE": ",
-                            CLASS_OF(frozen_obj));
+    VALUE mesg = rb_sprintf("can't modify frozen %" PRIsVALUE ": ", CLASS_OF(frozen_obj));
     VALUE exc = rb_exc_new_str(rb_eFrozenError, mesg);
 
     rb_ivar_set(exc, id_recv, frozen_obj);
     rb_exec_recursive(inspect_frozen_obj, frozen_obj, mesg);
 
     if (!NIL_P(debug_info = rb_attr_get(frozen_obj, created_info))) {
-	VALUE path = rb_ary_entry(debug_info, 0);
-	VALUE line = rb_ary_entry(debug_info, 1);
+        VALUE path = rb_ary_entry(debug_info, 0);
+        VALUE line = rb_ary_entry(debug_info, 1);
 
-        rb_str_catf(mesg, ", created at %"PRIsVALUE":%"PRIsVALUE, path, line);
+        rb_str_catf(mesg, ", created at %" PRIsVALUE ":%" PRIsVALUE, path, line);
     }
     rb_exc_raise(exc);
 }

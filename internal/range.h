@@ -1,4 +1,4 @@
-#ifndef INTERNAL_RANGE_H                                  /*-*-C-*-vi:se ft=c:*/
+#ifndef INTERNAL_RANGE_H /*-*-C-*-vi:se ft=c:*/
 #define INTERNAL_RANGE_H
 /**
  * @author     Ruby developers <ruby-core@ruby-lang.org>
@@ -8,7 +8,7 @@
  *             file COPYING are met.  Consult the file for details.
  * @brief      Internal header for Range.
  */
-#include "internal/struct.h"    /* for RSTRUCT */
+#include "internal/struct.h" /* for RSTRUCT */
 
 /* range.c */
 static inline VALUE RANGE_BEG(VALUE r);
@@ -34,7 +34,6 @@ RANGE_EXCL(VALUE r)
 }
 
 VALUE
-rb_range_component_beg_len(VALUE b, VALUE e, int excl,
-                           long *begp, long *lenp, long len, int err);
+rb_range_component_beg_len(VALUE b, VALUE e, int excl, long *begp, long *lenp, long len, int err);
 
 #endif /* INTERNAL_RANGE_H */

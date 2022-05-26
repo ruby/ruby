@@ -1,4 +1,4 @@
-#ifndef RBIMPL_COMPILER_IS_H                         /*-*-C++-*-vi:se ft=cpp:*/
+#ifndef RBIMPL_COMPILER_IS_H /*-*-C++-*-vi:se ft=cpp:*/
 #define RBIMPL_COMPILER_IS_H
 /**
  * @file
@@ -27,7 +27,7 @@
  * @retval  true   It is.
  * @retval  false  It isn't.
  */
-#define RBIMPL_COMPILER_IS(cc) RBIMPL_COMPILER_IS_ ## cc
+#define RBIMPL_COMPILER_IS(cc) RBIMPL_COMPILER_IS_##cc
 
 #include "ruby/internal/compiler_is/apple.h"
 #include "ruby/internal/compiler_is/clang.h"

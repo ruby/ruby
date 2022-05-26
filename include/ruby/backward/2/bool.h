@@ -1,4 +1,4 @@
-#ifndef RUBY_BACKWARD2_BOOL_H                        /*-*-C++-*-vi:se ft=cpp:*/
+#ifndef RUBY_BACKWARD2_BOOL_H /*-*-C++-*-vi:se ft=cpp:*/
 #define RUBY_BACKWARD2_BOOL_H
 /**
  * @author     Ruby developers <ruby-core@ruby-lang.org>
@@ -22,15 +22,15 @@
 #include "ruby/internal/stdbool.h"
 
 #ifndef FALSE
-# define FALSE false
+#    define FALSE false
 #elif FALSE
-# error FALSE must be false
+#    error FALSE must be false
 #endif
 
 #ifndef TRUE
-# define TRUE true
-#elif ! TRUE
-# error TRUE must be true
+#    define TRUE true
+#elif !TRUE
+#    error TRUE must be true
 #endif
 
 #endif /* RUBY_BACKWARD2_BOOL_H */

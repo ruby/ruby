@@ -2,24 +2,24 @@
  * $Id$
  */
 
-#include <stdbool.h>
-#include <ruby/ruby.h>
 #include <ruby/io.h>
+#include <ruby/ruby.h>
+#include <stdbool.h>
 
 #include <ctype.h>
 #include <fiddle.h>
 
 #ifdef HAVE_RUBY_MEMORY_VIEW_H
-# include <ruby/memory_view.h>
+#    include <ruby/memory_view.h>
 #endif
 
 #ifdef PRIsVALUE
-# define RB_OBJ_CLASSNAME(obj) rb_obj_class(obj)
-# define RB_OBJ_STRING(obj) (obj)
+#    define RB_OBJ_CLASSNAME(obj) rb_obj_class(obj)
+#    define RB_OBJ_STRING(obj) (obj)
 #else
-# define PRIsVALUE "s"
-# define RB_OBJ_CLASSNAME(obj) rb_obj_classname(obj)
-# define RB_OBJ_STRING(obj) StringValueCStr(obj)
+#    define PRIsVALUE "s"
+#    define RB_OBJ_CLASSNAME(obj) rb_obj_classname(obj)
+#    define RB_OBJ_STRING(obj) StringValueCStr(obj)
 #endif
 
 VALUE rb_cPointer;
@@ -41,8 +41,8 @@ get_freefunc(VALUE func, volatile VALUE *wrap)
 {
     VALUE addrnum;
     if (NIL_P(func)) {
-	*wrap = 0;
-	return NULL;
+        *wrap = 0;
+        return NULL;
     }
     addrnum = rb_Integer(func);
     *wrap = (addrnum != func) ? func : 0;
@@ -56,10 +56,10 @@ fiddle_ptr_mark(void *ptr)
 {
     struct ptr_data *data = ptr;
     if (data->wrap[0]) {
-	rb_gc_mark(data->wrap[0]);
+        rb_gc_mark(data->wrap[0]);
     }
     if (data->wrap[1]) {
-	rb_gc_mark(data->wrap[1]);
+        rb_gc_mark(data->wrap[1]);
     }
 }
 
@@ -68,8 +68,8 @@ fiddle_ptr_free_ptr(void *ptr)
 {
     struct ptr_data *data = ptr;
     if (data->ptr && data->free && !data->freed) {
-	data->freed = true;
-	(*(data->free))(data->ptr);
+        data->freed = true;
+        (*(data->free))(data->ptr);
     }
 }
 
@@ -89,7 +89,11 @@ fiddle_ptr_memsize(const void *ptr)
 
 static const rb_data_type_t fiddle_ptr_data_type = {
     "fiddle/pointer",
-    {fiddle_ptr_mark, fiddle_ptr_free, fiddle_ptr_memsize,},
+    {
+        fiddle_ptr_mark,
+        fiddle_ptr_free,
+        fiddle_ptr_memsize,
+    },
 };
 
 #ifdef HAVE_RUBY_MEMORY_VIEW_H
@@ -118,10 +122,7 @@ fiddle_ptr_get_memory_view(VALUE obj, rb_memory_view_t *view, int flags)
 }
 
 static const rb_memory_view_entry_t fiddle_ptr_memory_view_entry = {
-    fiddle_ptr_get_memory_view,
-    NULL,
-    fiddle_ptr_memory_view_available_p
-};
+    fiddle_ptr_get_memory_view, NULL, fiddle_ptr_memory_view_available_p};
 #endif
 
 static VALUE
@@ -159,7 +160,7 @@ rb_fiddle_ptr_malloc(VALUE klass, long size, freefunc_t func)
     void *ptr;
 
     ptr = ruby_xmalloc((size_t)size);
-    memset(ptr,0,(size_t)size);
+    memset(ptr, 0, (size_t)size);
     return rb_fiddle_ptr_new2(klass, ptr, size, func, 0, 0);
 }
 
@@ -170,14 +171,14 @@ rb_fiddle_ptr2cptr(VALUE val)
     void *ptr;
 
     if (rb_obj_is_kind_of(val, rb_cPointer)) {
-	TypedData_Get_Struct(val, struct ptr_data, &fiddle_ptr_data_type, data);
-	ptr = data->ptr;
+        TypedData_Get_Struct(val, struct ptr_data, &fiddle_ptr_data_type, data);
+        ptr = data->ptr;
     }
     else if (val == Qnil) {
-	ptr = NULL;
+        ptr = NULL;
     }
-    else{
-	rb_raise(rb_eTypeError, "Fiddle::Pointer was expected");
+    else {
+        rb_raise(rb_eTypeError, "Fiddle::Pointer was expected");
     }
 
     return ptr;
@@ -218,35 +219,34 @@ rb_fiddle_ptr_initialize(int argc, VALUE argv[], VALUE self)
     long s = 0;
 
     if (rb_scan_args(argc, argv, "12", &ptr, &size, &sym) >= 1) {
-	VALUE addrnum = rb_Integer(ptr);
-	if (addrnum != ptr) wrap = ptr;
-	p = NUM2PTR(addrnum);
+        VALUE addrnum = rb_Integer(ptr);
+        if (addrnum != ptr) wrap = ptr;
+        p = NUM2PTR(addrnum);
     }
     if (argc >= 2) {
-	s = NUM2LONG(size);
+        s = NUM2LONG(size);
     }
     if (argc >= 3) {
-	f = get_freefunc(sym, &funcwrap);
+        f = get_freefunc(sym, &funcwrap);
     }
 
     if (p) {
-	TypedData_Get_Struct(self, struct ptr_data, &fiddle_ptr_data_type, data);
-	if (data->ptr && data->free) {
-	    /* Free previous memory. Use of inappropriate initialize may cause SEGV. */
-	    (*(data->free))(data->ptr);
-	}
-	data->wrap[0] = wrap;
-	data->wrap[1] = funcwrap;
-	data->ptr  = p;
-	data->size = s;
-	data->free = f;
+        TypedData_Get_Struct(self, struct ptr_data, &fiddle_ptr_data_type, data);
+        if (data->ptr && data->free) {
+            /* Free previous memory. Use of inappropriate initialize may cause SEGV. */
+            (*(data->free))(data->ptr);
+        }
+        data->wrap[0] = wrap;
+        data->wrap[1] = funcwrap;
+        data->ptr = p;
+        data->size = s;
+        data->free = f;
     }
 
     return Qnil;
 }
 
-static VALUE
-rb_fiddle_ptr_call_free(VALUE self);
+static VALUE rb_fiddle_ptr_call_free(VALUE self);
 
 /*
  * call-seq:
@@ -301,27 +301,29 @@ rb_fiddle_ptr_s_malloc(int argc, VALUE argv[], VALUE klass)
     freefunc_t f;
 
     switch (rb_scan_args(argc, argv, "11", &size, &sym)) {
-      case 1:
-	s = NUM2LONG(size);
-	f = NULL;
-	break;
-      case 2:
-	s = NUM2LONG(size);
-	f = get_freefunc(sym, &wrap);
-	break;
-      default:
-	rb_bug("rb_fiddle_ptr_s_malloc");
+    case 1:
+        s = NUM2LONG(size);
+        f = NULL;
+        break;
+    case 2:
+        s = NUM2LONG(size);
+        f = get_freefunc(sym, &wrap);
+        break;
+    default:
+        rb_bug("rb_fiddle_ptr_s_malloc");
     }
 
-    obj = rb_fiddle_ptr_malloc(klass, s,f);
+    obj = rb_fiddle_ptr_malloc(klass, s, f);
     if (wrap) RPTR_DATA(obj)->wrap[1] = wrap;
 
     if (rb_block_given_p()) {
         if (!f) {
-            rb_raise(rb_eArgError, "a free function must be supplied to Fiddle::Pointer.malloc when it is called with a block");
+            rb_raise(rb_eArgError,
+                "a free function must be supplied to Fiddle::Pointer.malloc when it is called with a block");
         }
         return rb_ensure(rb_yield, obj, rb_fiddle_ptr_call_free, obj);
-    } else {
+    }
+    else {
         return obj;
     }
 }
@@ -367,7 +369,7 @@ rb_fiddle_ptr_ptr(VALUE self)
     struct ptr_data *data;
 
     TypedData_Get_Struct(self, struct ptr_data, &fiddle_ptr_data_type, data);
-    return rb_fiddle_ptr_new(*((void**)(data->ptr)),0,0);
+    return rb_fiddle_ptr_new(*((void **)(data->ptr)), 0, 0);
 }
 
 /*
@@ -384,7 +386,7 @@ rb_fiddle_ptr_ref(VALUE self)
     struct ptr_data *data;
 
     TypedData_Get_Struct(self, struct ptr_data, &fiddle_ptr_data_type, data);
-    return rb_fiddle_ptr_new(&(data->ptr),0,0);
+    return rb_fiddle_ptr_new(&(data->ptr), 0, 0);
 }
 
 /*
@@ -437,8 +439,7 @@ rb_fiddle_ptr_free_get(VALUE self)
 
     TypedData_Get_Struct(self, struct ptr_data, &fiddle_ptr_data_type, pdata);
 
-    if (!pdata->free)
-	return Qnil;
+    if (!pdata->free) return Qnil;
 
     address = PTR2NUM(pdata->free);
     ret_type = INT2NUM(TYPE_VOID);
@@ -500,15 +501,15 @@ rb_fiddle_ptr_to_s(int argc, VALUE argv[], VALUE self)
 
     TypedData_Get_Struct(self, struct ptr_data, &fiddle_ptr_data_type, data);
     switch (rb_scan_args(argc, argv, "01", &arg1)) {
-      case 0:
-	val = rb_str_new2((char*)(data->ptr));
-	break;
-      case 1:
-	len = NUM2INT(arg1);
-	val = rb_str_new((char*)(data->ptr), len);
-	break;
-      default:
-	rb_bug("rb_fiddle_ptr_to_s");
+    case 0:
+        val = rb_str_new2((char *)(data->ptr));
+        break;
+    case 1:
+        len = NUM2INT(arg1);
+        val = rb_str_new((char *)(data->ptr), len);
+        break;
+    default:
+        rb_bug("rb_fiddle_ptr_to_s");
     }
 
     return val;
@@ -538,15 +539,15 @@ rb_fiddle_ptr_to_str(int argc, VALUE argv[], VALUE self)
 
     TypedData_Get_Struct(self, struct ptr_data, &fiddle_ptr_data_type, data);
     switch (rb_scan_args(argc, argv, "01", &arg1)) {
-      case 0:
-	val = rb_str_new((char*)(data->ptr),data->size);
-	break;
-      case 1:
-	len = NUM2INT(arg1);
-	val = rb_str_new((char*)(data->ptr), len);
-	break;
-      default:
-	rb_bug("rb_fiddle_ptr_to_str");
+    case 0:
+        val = rb_str_new((char *)(data->ptr), data->size);
+        break;
+    case 1:
+        len = NUM2INT(arg1);
+        val = rb_str_new((char *)(data->ptr), len);
+        break;
+    default:
+        rb_bug("rb_fiddle_ptr_to_str");
     }
 
     return val;
@@ -564,8 +565,8 @@ rb_fiddle_ptr_inspect(VALUE self)
     struct ptr_data *data;
 
     TypedData_Get_Struct(self, struct ptr_data, &fiddle_ptr_data_type, data);
-    return rb_sprintf("#<%"PRIsVALUE":%p ptr=%p size=%ld free=%p>",
-		      RB_OBJ_CLASSNAME(self), (void *)data, data->ptr, data->size, (void *)data->free);
+    return rb_sprintf("#<%" PRIsVALUE ":%p ptr=%p size=%ld free=%p>", RB_OBJ_CLASSNAME(self), (void *)data, data->ptr,
+        data->size, (void *)data->free);
 }
 
 /*
@@ -581,7 +582,7 @@ rb_fiddle_ptr_eql(VALUE self, VALUE other)
 {
     void *ptr1, *ptr2;
 
-    if(!rb_obj_is_kind_of(other, rb_cPointer)) return Qfalse;
+    if (!rb_obj_is_kind_of(other, rb_cPointer)) return Qfalse;
 
     ptr1 = rb_fiddle_ptr2cptr(self);
     ptr2 = rb_fiddle_ptr2cptr(other);
@@ -603,7 +604,7 @@ rb_fiddle_ptr_cmp(VALUE self, VALUE other)
     void *ptr1, *ptr2;
     SIGNED_VALUE diff;
 
-    if(!rb_obj_is_kind_of(other, rb_cPointer)) return Qnil;
+    if (!rb_obj_is_kind_of(other, rb_cPointer)) return Qnil;
 
     ptr1 = rb_fiddle_ptr2cptr(self);
     ptr2 = rb_fiddle_ptr2cptr(other);
@@ -668,18 +669,18 @@ rb_fiddle_ptr_aref(int argc, VALUE argv[], VALUE self)
 
     TypedData_Get_Struct(self, struct ptr_data, &fiddle_ptr_data_type, data);
     if (!data->ptr) rb_raise(rb_eFiddleDLError, "NULL pointer dereference");
-    switch( rb_scan_args(argc, argv, "11", &arg0, &arg1) ){
-      case 1:
-	offset = NUM2ULONG(arg0);
-	retval = INT2NUM(*((char *)data->ptr + offset));
-	break;
-      case 2:
-	offset = NUM2ULONG(arg0);
-	len    = NUM2ULONG(arg1);
-	retval = rb_str_new((char *)data->ptr + offset, len);
-	break;
-      default:
-	rb_bug("rb_fiddle_ptr_aref()");
+    switch (rb_scan_args(argc, argv, "11", &arg0, &arg1)) {
+    case 1:
+        offset = NUM2ULONG(arg0);
+        retval = INT2NUM(*((char *)data->ptr + offset));
+        break;
+    case 2:
+        offset = NUM2ULONG(arg0);
+        len = NUM2ULONG(arg1);
+        retval = rb_str_new((char *)data->ptr + offset, len);
+        break;
+    default:
+        rb_bug("rb_fiddle_ptr_aref()");
     }
     return retval;
 }
@@ -706,29 +707,29 @@ rb_fiddle_ptr_aset(int argc, VALUE argv[], VALUE self)
 
     TypedData_Get_Struct(self, struct ptr_data, &fiddle_ptr_data_type, data);
     if (!data->ptr) rb_raise(rb_eFiddleDLError, "NULL pointer dereference");
-    switch( rb_scan_args(argc, argv, "21", &arg0, &arg1, &arg2) ){
-      case 2:
-	offset = NUM2ULONG(arg0);
-	((char*)data->ptr)[offset] = NUM2UINT(arg1);
-	retval = arg1;
-	break;
-      case 3:
-	offset = NUM2ULONG(arg0);
-	len    = NUM2ULONG(arg1);
-	if (RB_TYPE_P(arg2, T_STRING)) {
-	    mem = StringValuePtr(arg2);
-	}
-	else if( rb_obj_is_kind_of(arg2, rb_cPointer) ){
-	    mem = rb_fiddle_ptr2cptr(arg2);
-	}
-	else{
-	    mem    = NUM2PTR(arg2);
-	}
-	memcpy((char *)data->ptr + offset, mem, len);
-	retval = arg2;
-	break;
-      default:
-	rb_bug("rb_fiddle_ptr_aset()");
+    switch (rb_scan_args(argc, argv, "21", &arg0, &arg1, &arg2)) {
+    case 2:
+        offset = NUM2ULONG(arg0);
+        ((char *)data->ptr)[offset] = NUM2UINT(arg1);
+        retval = arg1;
+        break;
+    case 3:
+        offset = NUM2ULONG(arg0);
+        len = NUM2ULONG(arg1);
+        if (RB_TYPE_P(arg2, T_STRING)) {
+            mem = StringValuePtr(arg2);
+        }
+        else if (rb_obj_is_kind_of(arg2, rb_cPointer)) {
+            mem = rb_fiddle_ptr2cptr(arg2);
+        }
+        else {
+            mem = NUM2PTR(arg2);
+        }
+        memcpy((char *)data->ptr + offset, mem, len);
+        retval = arg2;
+        break;
+    default:
+        rb_bug("rb_fiddle_ptr_aset()");
     }
     return retval;
 }
@@ -769,31 +770,31 @@ rb_fiddle_ptr_s_to_ptr(VALUE self, VALUE val)
 {
     VALUE ptr, wrap = val, vptr;
 
-    if (RTEST(rb_obj_is_kind_of(val, rb_cIO))){
-	rb_io_t *fptr;
-	FILE *fp;
-	GetOpenFile(val, fptr);
-	fp = rb_io_stdio_file(fptr);
-	ptr = rb_fiddle_ptr_new(fp, 0, NULL);
+    if (RTEST(rb_obj_is_kind_of(val, rb_cIO))) {
+        rb_io_t *fptr;
+        FILE *fp;
+        GetOpenFile(val, fptr);
+        fp = rb_io_stdio_file(fptr);
+        ptr = rb_fiddle_ptr_new(fp, 0, NULL);
     }
-    else if (RTEST(rb_obj_is_kind_of(val, rb_cString))){
-	char *str = StringValuePtr(val);
+    else if (RTEST(rb_obj_is_kind_of(val, rb_cString))) {
+        char *str = StringValuePtr(val);
         wrap = val;
-	ptr = rb_fiddle_ptr_new(str, RSTRING_LEN(val), NULL);
+        ptr = rb_fiddle_ptr_new(str, RSTRING_LEN(val), NULL);
     }
-    else if ((vptr = rb_check_funcall(val, id_to_ptr, 0, 0)) != Qundef){
-	if (rb_obj_is_kind_of(vptr, rb_cPointer)){
-	    ptr = vptr;
-	    wrap = 0;
-	}
-	else{
-	    rb_raise(rb_eFiddleDLError, "to_ptr should return a Fiddle::Pointer object");
-	}
+    else if ((vptr = rb_check_funcall(val, id_to_ptr, 0, 0)) != Qundef) {
+        if (rb_obj_is_kind_of(vptr, rb_cPointer)) {
+            ptr = vptr;
+            wrap = 0;
+        }
+        else {
+            rb_raise(rb_eFiddleDLError, "to_ptr should return a Fiddle::Pointer object");
+        }
     }
-    else{
-	VALUE num = rb_Integer(val);
-	if (num == val) wrap = 0;
-	ptr = rb_fiddle_ptr_new(NUM2PTR(num), 0, NULL);
+    else {
+        VALUE num = rb_Integer(val);
+        if (num == val) wrap = 0;
+        ptr = rb_fiddle_ptr_new(NUM2PTR(num), 0, NULL);
     }
     if (wrap) RPTR_DATA(ptr)->wrap[0] = wrap;
     return ptr;
@@ -817,15 +818,15 @@ Init_fiddle_pointer(void)
     rb_define_singleton_method(rb_cPointer, "[]", rb_fiddle_ptr_s_to_ptr, 1);
     rb_define_method(rb_cPointer, "initialize", rb_fiddle_ptr_initialize, -1);
     rb_define_method(rb_cPointer, "free=", rb_fiddle_ptr_free_set, 1);
-    rb_define_method(rb_cPointer, "free",  rb_fiddle_ptr_free_get, 0);
-    rb_define_method(rb_cPointer, "call_free",  rb_fiddle_ptr_call_free, 0);
-    rb_define_method(rb_cPointer, "freed?",  rb_fiddle_ptr_freed_p, 0);
-    rb_define_method(rb_cPointer, "to_i",  rb_fiddle_ptr_to_i, 0);
-    rb_define_method(rb_cPointer, "to_int",  rb_fiddle_ptr_to_i, 0);
-    rb_define_method(rb_cPointer, "to_value",  rb_fiddle_ptr_to_value, 0);
-    rb_define_method(rb_cPointer, "ptr",   rb_fiddle_ptr_ptr, 0);
+    rb_define_method(rb_cPointer, "free", rb_fiddle_ptr_free_get, 0);
+    rb_define_method(rb_cPointer, "call_free", rb_fiddle_ptr_call_free, 0);
+    rb_define_method(rb_cPointer, "freed?", rb_fiddle_ptr_freed_p, 0);
+    rb_define_method(rb_cPointer, "to_i", rb_fiddle_ptr_to_i, 0);
+    rb_define_method(rb_cPointer, "to_int", rb_fiddle_ptr_to_i, 0);
+    rb_define_method(rb_cPointer, "to_value", rb_fiddle_ptr_to_value, 0);
+    rb_define_method(rb_cPointer, "ptr", rb_fiddle_ptr_ptr, 0);
     rb_define_method(rb_cPointer, "+@", rb_fiddle_ptr_ptr, 0);
-    rb_define_method(rb_cPointer, "ref",   rb_fiddle_ptr_ref, 0);
+    rb_define_method(rb_cPointer, "ref", rb_fiddle_ptr_ref, 0);
     rb_define_method(rb_cPointer, "-@", rb_fiddle_ptr_ref, 0);
     rb_define_method(rb_cPointer, "null?", rb_fiddle_ptr_null_p, 0);
     rb_define_method(rb_cPointer, "to_s", rb_fiddle_ptr_to_s, -1);

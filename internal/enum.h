@@ -1,4 +1,4 @@
-#ifndef INTERNAL_ENUM_H                                  /*-*-C-*-vi:se ft=c:*/
+#ifndef INTERNAL_ENUM_H /*-*-C-*-vi:se ft=c:*/
 #define INTERNAL_ENUM_H
 /**
  * @author     Ruby developers <ruby-core@ruby-lang.org>
@@ -8,7 +8,7 @@
  *             file COPYING are met.  Consult the file for details.
  * @brief      Internal header for Enumerable.
  */
-#include "ruby/ruby.h"          /* for VALUE */
+#include "ruby/ruby.h" /* for VALUE */
 
 /* enum.c */
 extern VALUE rb_cArithSeq;

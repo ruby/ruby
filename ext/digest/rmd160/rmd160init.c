@@ -1,9 +1,9 @@
 /* $RoughId: rmd160init.c,v 1.3 2001/07/13 20:00:43 knu Exp $ */
 /* $Id$ */
 
-#include <ruby/ruby.h>
 #include "../digest.h"
 #include "rmd160.h"
+#include <ruby/ruby.h>
 
 static const rb_digest_metadata_t rmd160 = {
     RUBY_DIGEST_API_VERSION,

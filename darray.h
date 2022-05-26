@@ -1,8 +1,8 @@
 #ifndef RUBY_DARRAY_H
 #define RUBY_DARRAY_H
 
-#include <stdint.h>
 #include <stddef.h>
+#include <stdint.h>
 #include <stdlib.h>
 
 // Type for a dynamic array. Use to declare a dynamic array.
@@ -17,7 +17,11 @@
 //      printf("pushed %c\n", *rb_darray_ref(char_array, 0));
 //      rb_darray_free(char_array);
 //
-#define rb_darray(T) struct { rb_darray_meta_t meta; T data[]; } *
+#define rb_darray(T) \
+    struct { \
+        rb_darray_meta_t meta; \
+        T data[]; \
+    } *
 
 // Copy an element out of the array. Warning: not bounds checked.
 //
@@ -41,15 +45,12 @@
 //
 // void rb_darray_append(rb_darray(T) *ptr_to_ary, T element);
 //
-#define rb_darray_append(ptr_to_ary, element) do {  \
-    rb_darray_ensure_space((ptr_to_ary), sizeof(**(ptr_to_ary)), \
-                           sizeof((*(ptr_to_ary))->data[0])); \
-    rb_darray_set(*(ptr_to_ary), \
-                  (*(ptr_to_ary))->meta.size, \
-                  (element)); \
-    (*(ptr_to_ary))->meta.size++; \
-} while (0)
-
+#define rb_darray_append(ptr_to_ary, element) \
+    do { \
+        rb_darray_ensure_space((ptr_to_ary), sizeof(**(ptr_to_ary)), sizeof((*(ptr_to_ary))->data[0])); \
+        rb_darray_set(*(ptr_to_ary), (*(ptr_to_ary))->meta.size, (element)); \
+        (*(ptr_to_ary))->meta.size++; \
+    } while (0)
 
 // Last element of the array
 //
@@ -60,20 +61,21 @@
 #define rb_darray_pop_back(ary) ((ary)->meta.size--)
 
 // Remove element at idx and replace it by the last element
-#define rb_darray_remove_unordered(ary, idx) do {   \
-    rb_darray_set(ary, idx, rb_darray_back(ary));   \
-    rb_darray_pop_back(ary);                        \
-} while (0);
+#define rb_darray_remove_unordered(ary, idx) \
+    do { \
+        rb_darray_set(ary, idx, rb_darray_back(ary)); \
+        rb_darray_pop_back(ary); \
+    } while (0);
 
 // Iterate over items of the array in a for loop
 //
 #define rb_darray_foreach(ary, idx_name, elem_ptr_var) \
-    for (size_t idx_name = 0; idx_name < rb_darray_size(ary) && ((elem_ptr_var) = rb_darray_ref(ary, idx_name)); ++idx_name)
+    for (size_t idx_name = 0; idx_name < rb_darray_size(ary) && ((elem_ptr_var) = rb_darray_ref(ary, idx_name)); \
+         ++idx_name)
 
 // Iterate over valid indicies in the array in a for loop
 //
-#define rb_darray_for(ary, idx_name) \
-    for (size_t idx_name = 0; idx_name < rb_darray_size(ary); ++idx_name)
+#define rb_darray_for(ary, idx_name) for (size_t idx_name = 0; idx_name < rb_darray_size(ary); ++idx_name)
 
 // Make a dynamic array of a certain size. All bytes backing the elements are set to zero.
 //
@@ -82,8 +84,7 @@
 // void rb_darray_make(rb_darray(T) *ptr_to_ary, size_t size);
 //
 #define rb_darray_make(ptr_to_ary, size) \
-    rb_darray_make_impl((ptr_to_ary), size, sizeof(**(ptr_to_ary)), \
-                         sizeof((*(ptr_to_ary))->data[0]))
+    rb_darray_make_impl((ptr_to_ary), size, sizeof(**(ptr_to_ary)), sizeof((*(ptr_to_ary))->data[0]))
 
 #define rb_darray_data_ptr(ary) ((ary)->data)
 

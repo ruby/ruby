@@ -3,9 +3,9 @@
 
 #if defined(__cplusplus)
 extern "C" {
-#if 0
+#    if 0
 } /* satisfy cc-mode */
-#endif
+#    endif
 #endif
 
 RUBY_SYMBOL_EXPORT_BEGIN
@@ -22,30 +22,29 @@ RUBY_SYMBOL_EXPORT_BEGIN
  * Definitions for NT port of Perl
  */
 
-
 /*
  * Ok now we can include the normal include files.
  */
 
 /* #include <stdarg.h> conflict with varargs.h? */
 #if !defined(WSAAPI)
-#if defined(__cplusplus) && defined(_MSC_VER)
-extern "C++" {			/* template without extern "C++" */
-#endif
-#if !defined(_WIN64) && !defined(WIN32)
-#define WIN32
-#endif
-#if defined(_MSC_VER) && _MSC_VER <= 1200
-#include <windows.h>
-#endif
-#include <winsock2.h>
-#include <ws2tcpip.h>
-#if !defined(_MSC_VER) || _MSC_VER >= 1400
-#include <iphlpapi.h>
-#endif
-#if defined(__cplusplus) && defined(_MSC_VER)
+#    if defined(__cplusplus) && defined(_MSC_VER)
+extern "C++" { /* template without extern "C++" */
+#    endif
+#    if !defined(_WIN64) && !defined(WIN32)
+#        define WIN32
+#    endif
+#    if defined(_MSC_VER) && _MSC_VER <= 1200
+#        include <windows.h>
+#    endif
+#    include <winsock2.h>
+#    include <ws2tcpip.h>
+#    if !defined(_MSC_VER) || _MSC_VER >= 1400
+#        include <iphlpapi.h>
+#    endif
+#    if defined(__cplusplus) && defined(_MSC_VER)
 }
-#endif
+#    endif
 #endif
 
 /*
@@ -57,14 +56,14 @@ extern "C++" {			/* template without extern "C++" */
 #undef finally
 #undef leave
 
+#include <direct.h>
+#include <process.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <direct.h>
-#include <process.h>
 #include <time.h>
 #if defined(__cplusplus) && defined(_MSC_VER) && _MSC_VER == 1200
-extern "C++" {			/* template without extern "C++" */
+extern "C++" { /* template without extern "C++" */
 #endif
 #include <math.h>
 #if defined(__cplusplus) && defined(_MSC_VER) && _MSC_VER == 1200
@@ -74,63 +73,63 @@ extern "C++" {			/* template without extern "C++" */
 #include <sys/stat.h>
 #include <sys/types.h>
 #ifdef HAVE_SYS_UTIME_H
-# include <sys/utime.h>
+#    include <sys/utime.h>
 #else
-# include <utime.h>
+#    include <utime.h>
 #endif
 #include <io.h>
 #include <malloc.h>
 #if defined __MINGW32__
-# include <stdint.h>
+#    include <stdint.h>
 #else
-# if !defined(_INTPTR_T_DEFINED)
-#  ifdef _WIN64
+#    if !defined(_INTPTR_T_DEFINED)
+#        ifdef _WIN64
 typedef __int64 intptr_t;
-#  else
+#        else
 typedef int intptr_t;
-#  endif
-#  define _INTPTR_T_DEFINED
-# endif
-# if !defined(INTPTR_MAX)
-#  ifdef _WIN64
-#    define INTPTR_MAX 9223372036854775807I64
-#  else
-#    define INTPTR_MAX 2147483647
-#  endif
-#  define INTPTR_MIN (-INTPTR_MAX-1)
-# endif
-# if !defined(_UINTPTR_T_DEFINED)
-#  ifdef _WIN64
+#        endif
+#        define _INTPTR_T_DEFINED
+#    endif
+#    if !defined(INTPTR_MAX)
+#        ifdef _WIN64
+#            define INTPTR_MAX 9223372036854775807I64
+#        else
+#            define INTPTR_MAX 2147483647
+#        endif
+#        define INTPTR_MIN (-INTPTR_MAX - 1)
+#    endif
+#    if !defined(_UINTPTR_T_DEFINED)
+#        ifdef _WIN64
 typedef unsigned __int64 uintptr_t;
-#  else
+#        else
 typedef unsigned int uintptr_t;
-#  endif
-#  define _UINTPTR_T_DEFINED
-# endif
-# if !defined(UINTPTR_MAX)
-#  ifdef _WIN64
-#    define UINTPTR_MAX 18446744073709551615UI64
-#  else
-#    define UINTPTR_MAX 4294967295U
-#  endif
-# endif
+#        endif
+#        define _UINTPTR_T_DEFINED
+#    endif
+#    if !defined(UINTPTR_MAX)
+#        ifdef _WIN64
+#            define UINTPTR_MAX 18446744073709551615UI64
+#        else
+#            define UINTPTR_MAX 4294967295U
+#        endif
+#    endif
 #endif
 #ifndef __MINGW32__
-# define mode_t int
+#    define mode_t int
 #endif
 #ifdef HAVE_UNISTD_H
-# include <unistd.h>
+#    include <unistd.h>
 #endif
 
-#define rb_w32_iswinnt()  TRUE
-#define rb_w32_iswin95()  FALSE
+#define rb_w32_iswinnt() TRUE
+#define rb_w32_iswin95() FALSE
 
 #define WNOHANG -1
 
 #define O_SHARE_DELETE 0x20000000 /* for rb_w32_open(), rb_w32_wopen() */
 
 typedef int clockid_t;
-#define CLOCK_REALTIME  0
+#define CLOCK_REALTIME 0
 #define CLOCK_MONOTONIC 1
 
 #undef utime
@@ -138,61 +137,61 @@ typedef int clockid_t;
 #undef stat
 #undef fstat
 #ifdef RUBY_EXPORT
-#define utime(_p, _t)		rb_w32_uutime(_p, _t)
-#undef HAVE_UTIMES
-#define HAVE_UTIMES 1
-#define utimes(_p, _t)		rb_w32_uutimes(_p, _t)
-#undef HAVE_UTIMENSAT
-#define HAVE_UTIMENSAT 1
-#define AT_FDCWD		-100
-#define utimensat(_d, _p, _t, _f)	rb_w32_uutimensat(_d, _p, _t, _f)
-#define lseek(_f, _o, _w)	rb_w32_lseek(_f, _o, _w)
+#    define utime(_p, _t) rb_w32_uutime(_p, _t)
+#    undef HAVE_UTIMES
+#    define HAVE_UTIMES 1
+#    define utimes(_p, _t) rb_w32_uutimes(_p, _t)
+#    undef HAVE_UTIMENSAT
+#    define HAVE_UTIMENSAT 1
+#    define AT_FDCWD -100
+#    define utimensat(_d, _p, _t, _f) rb_w32_uutimensat(_d, _p, _t, _f)
+#    define lseek(_f, _o, _w) rb_w32_lseek(_f, _o, _w)
 
-#define pipe(p)			rb_w32_pipe(p)
-#define open			rb_w32_uopen
-#define close(h)		rb_w32_close(h)
-#define fclose(f)		rb_w32_fclose(f)
-#define read(f, b, s)		rb_w32_read(f, b, s)
-#define write(f, b, s)		rb_w32_write(f, b, s)
-#define getpid()		rb_w32_getpid()
-#undef HAVE_GETPPID
-#define HAVE_GETPPID 1
-#define getppid()		rb_w32_getppid()
-#define sleep(x)		rb_w32_Sleep((x)*1000)
-#define Sleep(msec)		(void)rb_w32_Sleep(msec)
+#    define pipe(p) rb_w32_pipe(p)
+#    define open rb_w32_uopen
+#    define close(h) rb_w32_close(h)
+#    define fclose(f) rb_w32_fclose(f)
+#    define read(f, b, s) rb_w32_read(f, b, s)
+#    define write(f, b, s) rb_w32_write(f, b, s)
+#    define getpid() rb_w32_getpid()
+#    undef HAVE_GETPPID
+#    define HAVE_GETPPID 1
+#    define getppid() rb_w32_getppid()
+#    define sleep(x) rb_w32_Sleep((x)*1000)
+#    define Sleep(msec) (void)rb_w32_Sleep(msec)
 
-#undef HAVE_EXECV
-#define HAVE_EXECV 1
-#undef execv
-#define execv(path,argv)	rb_w32_uaspawn(P_OVERLAY,path,argv)
-#undef isatty
-#define isatty(h)		rb_w32_isatty(h)
+#    undef HAVE_EXECV
+#    define HAVE_EXECV 1
+#    undef execv
+#    define execv(path, argv) rb_w32_uaspawn(P_OVERLAY, path, argv)
+#    undef isatty
+#    define isatty(h) rb_w32_isatty(h)
 
-#undef mkdir
-#define mkdir(p, m)		rb_w32_umkdir(p, m)
-#undef rmdir
-#define rmdir(p)		rb_w32_urmdir(p)
-#undef unlink
-#define unlink(p)		rb_w32_uunlink(p)
+#    undef mkdir
+#    define mkdir(p, m) rb_w32_umkdir(p, m)
+#    undef rmdir
+#    define rmdir(p) rb_w32_urmdir(p)
+#    undef unlink
+#    define unlink(p) rb_w32_uunlink(p)
 #endif /* RUBY_EXPORT */
 
 /* same with stati64 except the size of st_ino and nanosecond timestamps */
 struct stati128 {
-  _dev_t st_dev;
-  unsigned __int64 st_ino;
-  __int64 st_inohigh;
-  unsigned short st_mode;
-  short st_nlink;
-  short st_uid;
-  short st_gid;
-  _dev_t st_rdev;
-  __int64 st_size;
-  __time64_t st_atime;
-  long st_atimensec;
-  __time64_t st_mtime;
-  long st_mtimensec;
-  __time64_t st_ctime;
-  long st_ctimensec;
+    _dev_t st_dev;
+    unsigned __int64 st_ino;
+    __int64 st_inohigh;
+    unsigned short st_mode;
+    short st_nlink;
+    short st_uid;
+    short st_gid;
+    _dev_t st_rdev;
+    __int64 st_size;
+    __time64_t st_atime;
+    long st_atimensec;
+    __time64_t st_mtime;
+    long st_mtimensec;
+    __time64_t st_ctime;
+    long st_ctimensec;
 };
 
 #define off_t __int64
@@ -203,20 +202,20 @@ struct stati128 {
 #define HAVE_STRUCT_STAT_ST_ATIMENSEC
 #define HAVE_STRUCT_STAT_ST_MTIMENSEC
 #define HAVE_STRUCT_STAT_ST_CTIMENSEC
-#define fstat(fd,st)		rb_w32_fstati128(fd,st)
-#define stati128(path, st)	rb_w32_ustati128(path,st)
-#define lstat(path,st)		rb_w32_ulstati128(path,st)
-#define access(path,mode)	rb_w32_uaccess(path,mode)
+#define fstat(fd, st) rb_w32_fstati128(fd, st)
+#define stati128(path, st) rb_w32_ustati128(path, st)
+#define lstat(path, st) rb_w32_ulstati128(path, st)
+#define access(path, mode) rb_w32_uaccess(path, mode)
 
-#define strcasecmp		_stricmp
-#define strncasecmp		_strnicmp
-#define fsync			_commit
+#define strcasecmp _stricmp
+#define strncasecmp _strnicmp
+#define fsync _commit
 
 struct timezone;
 
 #ifdef __MINGW32__
-#undef isascii
-#define isascii __isascii
+#    undef isascii
+#    define isascii __isascii
 #endif
 
 struct iovec {
@@ -245,60 +244,60 @@ struct ifaddrs {
     void *ifa_data;
 };
 #ifdef IF_NAMESIZE
-#define IFNAMSIZ IF_NAMESIZE
+#    define IFNAMSIZ IF_NAMESIZE
 #else
-#define IFNAMSIZ 256
+#    define IFNAMSIZ 256
 #endif
 #ifdef IFF_POINTTOPOINT
-#define IFF_POINTOPOINT IFF_POINTTOPOINT
+#    define IFF_POINTOPOINT IFF_POINTTOPOINT
 #endif
 
-extern void   rb_w32_sysinit(int *, char ***);
-extern DWORD  rb_w32_osid(void);
-extern int    flock(int fd, int oper);
-extern int    rb_w32_io_cancelable_p(int);
-extern int    rb_w32_is_socket(int);
-extern int    WSAAPI rb_w32_accept(int, struct sockaddr *, int *);
-extern int    WSAAPI rb_w32_bind(int, const struct sockaddr *, int);
-extern int    WSAAPI rb_w32_connect(int, const struct sockaddr *, int);
-extern void   rb_w32_fdset(int, fd_set*);
-extern void   rb_w32_fdclr(int, fd_set*);
-extern int    rb_w32_fdisset(int, fd_set*);
-extern int    WSAAPI rb_w32_select(int, fd_set *, fd_set *, fd_set *, struct timeval *);
-extern int    WSAAPI rb_w32_getpeername(int, struct sockaddr *, int *);
-extern int    WSAAPI rb_w32_getsockname(int, struct sockaddr *, int *);
-extern int    WSAAPI rb_w32_getsockopt(int, int, int, char *, int *);
-extern int    WSAAPI rb_w32_ioctlsocket(int, long, u_long *);
-extern int    WSAAPI rb_w32_listen(int, int);
-extern int    WSAAPI rb_w32_recv(int, char *, int, int);
-extern int    WSAAPI rb_w32_recvfrom(int, char *, int, int, struct sockaddr *, int *);
-extern int    WSAAPI rb_w32_send(int, const char *, int, int);
-extern int    WSAAPI rb_w32_sendto(int, const char *, int, int, const struct sockaddr *, int);
-extern int    recvmsg(int, struct msghdr *, int);
-extern int    sendmsg(int, const struct msghdr *, int);
-extern int    WSAAPI rb_w32_setsockopt(int, int, int, const char *, int);
-extern int    WSAAPI rb_w32_shutdown(int, int);
-extern int    WSAAPI rb_w32_socket(int, int, int);
+extern void rb_w32_sysinit(int *, char ***);
+extern DWORD rb_w32_osid(void);
+extern int flock(int fd, int oper);
+extern int rb_w32_io_cancelable_p(int);
+extern int rb_w32_is_socket(int);
+extern int WSAAPI rb_w32_accept(int, struct sockaddr *, int *);
+extern int WSAAPI rb_w32_bind(int, const struct sockaddr *, int);
+extern int WSAAPI rb_w32_connect(int, const struct sockaddr *, int);
+extern void rb_w32_fdset(int, fd_set *);
+extern void rb_w32_fdclr(int, fd_set *);
+extern int rb_w32_fdisset(int, fd_set *);
+extern int WSAAPI rb_w32_select(int, fd_set *, fd_set *, fd_set *, struct timeval *);
+extern int WSAAPI rb_w32_getpeername(int, struct sockaddr *, int *);
+extern int WSAAPI rb_w32_getsockname(int, struct sockaddr *, int *);
+extern int WSAAPI rb_w32_getsockopt(int, int, int, char *, int *);
+extern int WSAAPI rb_w32_ioctlsocket(int, long, u_long *);
+extern int WSAAPI rb_w32_listen(int, int);
+extern int WSAAPI rb_w32_recv(int, char *, int, int);
+extern int WSAAPI rb_w32_recvfrom(int, char *, int, int, struct sockaddr *, int *);
+extern int WSAAPI rb_w32_send(int, const char *, int, int);
+extern int WSAAPI rb_w32_sendto(int, const char *, int, int, const struct sockaddr *, int);
+extern int recvmsg(int, struct msghdr *, int);
+extern int sendmsg(int, const struct msghdr *, int);
+extern int WSAAPI rb_w32_setsockopt(int, int, int, const char *, int);
+extern int WSAAPI rb_w32_shutdown(int, int);
+extern int WSAAPI rb_w32_socket(int, int, int);
 extern SOCKET rb_w32_get_osfhandle(int);
 extern struct hostent *WSAAPI rb_w32_gethostbyaddr(const char *, int, int);
 extern struct hostent *WSAAPI rb_w32_gethostbyname(const char *);
-extern int    WSAAPI rb_w32_gethostname(char *, int);
+extern int WSAAPI rb_w32_gethostname(char *, int);
 extern struct protoent *WSAAPI rb_w32_getprotobyname(const char *);
 extern struct protoent *WSAAPI rb_w32_getprotobynumber(int);
-extern struct servent  *WSAAPI rb_w32_getservbyname(const char *, const char *);
-extern struct servent  *WSAAPI rb_w32_getservbyport(int, const char *);
-extern int    socketpair(int, int, int, int *);
-extern int    getifaddrs(struct ifaddrs **);
-extern void   freeifaddrs(struct ifaddrs *);
-extern char * rb_w32_ugetcwd(char *, int);
-extern char * rb_w32_ugetenv(const char *);
-extern int    rb_w32_urename(const char *, const char *);
+extern struct servent *WSAAPI rb_w32_getservbyname(const char *, const char *);
+extern struct servent *WSAAPI rb_w32_getservbyport(int, const char *);
+extern int socketpair(int, int, int, int *);
+extern int getifaddrs(struct ifaddrs **);
+extern void freeifaddrs(struct ifaddrs *);
+extern char *rb_w32_ugetcwd(char *, int);
+extern char *rb_w32_ugetenv(const char *);
+extern int rb_w32_urename(const char *, const char *);
 extern char **rb_w32_get_environ(void);
-extern void   rb_w32_free_environ(char **);
-extern int    rb_w32_map_errno(DWORD);
-extern const char *WSAAPI rb_w32_inet_ntop(int,const void *,char *,size_t);
-extern int WSAAPI rb_w32_inet_pton(int,const char *,void *);
-extern DWORD  rb_w32_osver(void);
+extern void rb_w32_free_environ(char **);
+extern int rb_w32_map_errno(DWORD);
+extern const char *WSAAPI rb_w32_inet_ntop(int, const void *, char *, size_t);
+extern int WSAAPI rb_w32_inet_pton(int, const char *, void *);
+extern DWORD rb_w32_osver(void);
 
 extern int rb_w32_uchown(const char *, int, int);
 extern int rb_w32_ulink(const char *, const char *);
@@ -310,7 +309,7 @@ extern int clock_gettime(clockid_t, struct timespec *);
 extern int clock_getres(clockid_t, struct timespec *);
 extern rb_pid_t waitpid(rb_pid_t, int *, int);
 extern rb_pid_t wait(int *);
-extern rb_pid_t rb_w32_uspawn(int, const char *, const char*);
+extern rb_pid_t rb_w32_uspawn(int, const char *, const char *);
 extern rb_pid_t rb_w32_uaspawn(int, const char *, char *const *);
 extern rb_pid_t rb_w32_uaspawn_flags(int, const char *, char *const *, DWORD);
 #undef HAVE_KILL
@@ -336,22 +335,22 @@ extern int rb_w32_dup2(int, int);
 #include <float.h>
 
 #if defined _MSC_VER && _MSC_VER >= 1800 && defined INFINITY
-#pragma warning(push)
-#pragma warning(disable:4756)
+#    pragma warning(push)
+#    pragma warning(disable : 4756)
 static inline float
 rb_infinity_float(void)
 {
     return INFINITY;
 }
-#pragma warning(pop)
-#undef INFINITY
-#define INFINITY rb_infinity_float()
+#    pragma warning(pop)
+#    undef INFINITY
+#    define INFINITY rb_infinity_float()
 #endif
 
 #if !defined __MINGW32__ || defined __NO_ISOCEXT
-#ifndef copysign
-#define copysign(a, b) _copysign(a, b)
-#endif
+#    ifndef copysign
+#        define copysign(a, b) _copysign(a, b)
+#    endif
 static inline double
 scalb(double a, long b)
 {
@@ -360,37 +359,37 @@ scalb(double a, long b)
 #endif
 
 #if !defined S_IFIFO && defined _S_IFIFO
-#define S_IFIFO _S_IFIFO
+#    define S_IFIFO _S_IFIFO
 #endif
 
 #if !defined S_IRUSR && !defined __MINGW32__
-#define S_IRUSR 0400
+#    define S_IRUSR 0400
 #endif
 #ifndef S_IRGRP
-#define S_IRGRP 0040
+#    define S_IRGRP 0040
 #endif
 #ifndef S_IROTH
-#define S_IROTH 0004
+#    define S_IROTH 0004
 #endif
 
 #if !defined S_IWUSR && !defined __MINGW32__
-#define S_IWUSR 0200
+#    define S_IWUSR 0200
 #endif
 #ifndef S_IWGRP
-#define S_IWGRP 0020
+#    define S_IWGRP 0020
 #endif
 #ifndef S_IWOTH
-#define S_IWOTH 0002
+#    define S_IWOTH 0002
 #endif
 
 #if !defined S_IXUSR && !defined __MINGW32__
-#define S_IXUSR 0100
+#    define S_IXUSR 0100
 #endif
 #ifndef S_IXGRP
-#define S_IXGRP 0010
+#    define S_IXGRP 0010
 #endif
 #ifndef S_IXOTH
-#define S_IXOTH 0001
+#    define S_IXOTH 0001
 #endif
 
 #define S_IFLNK 0xa000
@@ -408,9 +407,9 @@ extern int rb_w32_utruncate(const char *path, off_t length);
 #undef HAVE_FTRUNCATE
 #define HAVE_FTRUNCATE 1
 #if defined HAVE_FTRUNCATE64
-#define ftruncate ftruncate64
+#    define ftruncate ftruncate64
 #else
-#define ftruncate rb_w32_ftruncate
+#    define ftruncate rb_w32_ftruncate
 #endif
 
 #undef HAVE_TRUNCATE
@@ -418,25 +417,25 @@ extern int rb_w32_utruncate(const char *path, off_t length);
 #define truncate rb_w32_utruncate
 
 #if defined(_MSC_VER) && _MSC_VER >= 1400 && _MSC_VER < 1800
-#define strtoll  _strtoi64
-#define strtoull _strtoui64
+#    define strtoll _strtoi64
+#    define strtoull _strtoui64
 #endif
 
 /*
  * stubs
  */
-extern int       ioctl (int, int, ...);
-extern rb_uid_t  getuid (void);
-extern rb_uid_t  geteuid (void);
-extern rb_gid_t  getgid (void);
-extern rb_gid_t  getegid (void);
-extern int       setuid (rb_uid_t);
-extern int       setgid (rb_gid_t);
+extern int ioctl(int, int, ...);
+extern rb_uid_t getuid(void);
+extern rb_uid_t geteuid(void);
+extern rb_gid_t getgid(void);
+extern rb_gid_t getegid(void);
+extern int setuid(rb_uid_t);
+extern int setgid(rb_gid_t);
 
 extern char *rb_w32_strerror(int);
 
 #ifdef RUBY_EXPORT
-#define strerror(e) rb_w32_strerror(e)
+#    define strerror(e) rb_w32_strerror(e)
 #endif
 
 #define PIPE_BUF 1024
@@ -446,14 +445,12 @@ extern char *rb_w32_strerror(int);
 #define LOCK_NB 4
 #define LOCK_UN 8
 
-
 #ifndef SIGINT
-#define SIGINT 2
+#    define SIGINT 2
 #endif
 #ifndef SIGKILL
-#define SIGKILL	9
+#    define SIGKILL 9
 #endif
-
 
 /* #undef va_start */
 /* #undef va_end */
@@ -462,118 +459,118 @@ extern char *rb_w32_strerror(int);
 #include <errno.h>
 
 #ifndef EWOULDBLOCK
-# define EWOULDBLOCK		WSAEWOULDBLOCK
+#    define EWOULDBLOCK WSAEWOULDBLOCK
 #endif
 #ifndef EINPROGRESS
-# define EINPROGRESS		WSAEINPROGRESS
+#    define EINPROGRESS WSAEINPROGRESS
 #endif
 #ifndef EALREADY
-# define EALREADY		WSAEALREADY
+#    define EALREADY WSAEALREADY
 #endif
 #ifndef ENOTSOCK
-# define ENOTSOCK		WSAENOTSOCK
+#    define ENOTSOCK WSAENOTSOCK
 #endif
 #ifndef EDESTADDRREQ
-# define EDESTADDRREQ		WSAEDESTADDRREQ
+#    define EDESTADDRREQ WSAEDESTADDRREQ
 #endif
 #ifndef EMSGSIZE
-# define EMSGSIZE		WSAEMSGSIZE
+#    define EMSGSIZE WSAEMSGSIZE
 #endif
 #ifndef EPROTOTYPE
-# define EPROTOTYPE		WSAEPROTOTYPE
+#    define EPROTOTYPE WSAEPROTOTYPE
 #endif
 #ifndef ENOPROTOOPT
-# define ENOPROTOOPT		WSAENOPROTOOPT
+#    define ENOPROTOOPT WSAENOPROTOOPT
 #endif
 #ifndef EPROTONOSUPPORT
-# define EPROTONOSUPPORT	WSAEPROTONOSUPPORT
+#    define EPROTONOSUPPORT WSAEPROTONOSUPPORT
 #endif
 #ifndef ESOCKTNOSUPPORT
-# define ESOCKTNOSUPPORT	WSAESOCKTNOSUPPORT
+#    define ESOCKTNOSUPPORT WSAESOCKTNOSUPPORT
 #endif
 #ifndef EOPNOTSUPP
-# define EOPNOTSUPP		WSAEOPNOTSUPP
+#    define EOPNOTSUPP WSAEOPNOTSUPP
 #endif
 #ifndef EPFNOSUPPORT
-# define EPFNOSUPPORT		WSAEPFNOSUPPORT
+#    define EPFNOSUPPORT WSAEPFNOSUPPORT
 #endif
 #ifndef EAFNOSUPPORT
-# define EAFNOSUPPORT		WSAEAFNOSUPPORT
+#    define EAFNOSUPPORT WSAEAFNOSUPPORT
 #endif
 #ifndef EADDRINUSE
-# define EADDRINUSE		WSAEADDRINUSE
+#    define EADDRINUSE WSAEADDRINUSE
 #endif
 #ifndef EADDRNOTAVAIL
-# define EADDRNOTAVAIL		WSAEADDRNOTAVAIL
+#    define EADDRNOTAVAIL WSAEADDRNOTAVAIL
 #endif
 #ifndef ENETDOWN
-# define ENETDOWN		WSAENETDOWN
+#    define ENETDOWN WSAENETDOWN
 #endif
 #ifndef ENETUNREACH
-# define ENETUNREACH		WSAENETUNREACH
+#    define ENETUNREACH WSAENETUNREACH
 #endif
 #ifndef ENETRESET
-# define ENETRESET		WSAENETRESET
+#    define ENETRESET WSAENETRESET
 #endif
 #ifndef ECONNABORTED
-# define ECONNABORTED		WSAECONNABORTED
+#    define ECONNABORTED WSAECONNABORTED
 #endif
 #ifndef ECONNRESET
-# define ECONNRESET		WSAECONNRESET
+#    define ECONNRESET WSAECONNRESET
 #endif
 #ifndef ENOBUFS
-# define ENOBUFS		WSAENOBUFS
+#    define ENOBUFS WSAENOBUFS
 #endif
 #ifndef EISCONN
-# define EISCONN		WSAEISCONN
+#    define EISCONN WSAEISCONN
 #endif
 #ifndef ENOTCONN
-# define ENOTCONN		WSAENOTCONN
+#    define ENOTCONN WSAENOTCONN
 #endif
 #ifndef ESHUTDOWN
-# define ESHUTDOWN		WSAESHUTDOWN
+#    define ESHUTDOWN WSAESHUTDOWN
 #endif
 #ifndef ETOOMANYREFS
-# define ETOOMANYREFS		WSAETOOMANYREFS
+#    define ETOOMANYREFS WSAETOOMANYREFS
 #endif
 #ifndef ETIMEDOUT
-# define ETIMEDOUT		WSAETIMEDOUT
+#    define ETIMEDOUT WSAETIMEDOUT
 #endif
 #ifndef ECONNREFUSED
-# define ECONNREFUSED		WSAECONNREFUSED
+#    define ECONNREFUSED WSAECONNREFUSED
 #endif
 #ifndef ELOOP
-# define ELOOP			WSAELOOP
+#    define ELOOP WSAELOOP
 #endif
 /*#define ENAMETOOLONG	WSAENAMETOOLONG*/
 #ifndef EHOSTDOWN
-# define EHOSTDOWN		WSAEHOSTDOWN
+#    define EHOSTDOWN WSAEHOSTDOWN
 #endif
 #ifndef EHOSTUNREACH
-# define EHOSTUNREACH		WSAEHOSTUNREACH
+#    define EHOSTUNREACH WSAEHOSTUNREACH
 #endif
 /*#define ENOTEMPTY	WSAENOTEMPTY*/
 #ifndef EPROCLIM
-# define EPROCLIM		WSAEPROCLIM
+#    define EPROCLIM WSAEPROCLIM
 #endif
 #ifndef EUSERS
-# define EUSERS			WSAEUSERS
+#    define EUSERS WSAEUSERS
 #endif
 #ifndef EDQUOT
-# define EDQUOT			WSAEDQUOT
+#    define EDQUOT WSAEDQUOT
 #endif
 #ifndef ESTALE
-# define ESTALE			WSAESTALE
+#    define ESTALE WSAESTALE
 #endif
 #ifndef EREMOTE
-# define EREMOTE		WSAEREMOTE
+#    define EREMOTE WSAEREMOTE
 #endif
 
 #define F_DUPFD 0
 #define F_GETFD 1
 #define F_SETFD 2
 #if 0
-#define F_GETFL 3
+#    define F_GETFL 3
 #endif
 #define F_SETFL 4
 #define F_DUPFD_CLOEXEC 67
@@ -581,131 +578,132 @@ extern char *rb_w32_strerror(int);
 #define O_NONBLOCK 1
 
 #undef FD_SET
-#define FD_SET(fd, set)	do {\
-    unsigned int i;\
-    SOCKET s = _get_osfhandle(fd);\
+#define FD_SET(fd, set) \
+    do { \
+        unsigned int i; \
+        SOCKET s = _get_osfhandle(fd); \
 \
-    for (i = 0; i < (set)->fd_count; i++) {\
-        if ((set)->fd_array[i] == s) {\
-            break;\
-        }\
-    }\
-    if (i == (set)->fd_count) {\
-        if ((set)->fd_count < FD_SETSIZE) {\
-            (set)->fd_array[i] = s;\
-            (set)->fd_count++;\
-        }\
-    }\
-} while(0)
+        for (i = 0; i < (set)->fd_count; i++) { \
+            if ((set)->fd_array[i] == s) { \
+                break; \
+            } \
+        } \
+        if (i == (set)->fd_count) { \
+            if ((set)->fd_count < FD_SETSIZE) { \
+                (set)->fd_array[i] = s; \
+                (set)->fd_count++; \
+            } \
+        } \
+    } while (0)
 
 #undef FD_CLR
-#define FD_CLR(f, s)		rb_w32_fdclr(f, s)
+#define FD_CLR(f, s) rb_w32_fdclr(f, s)
 
 #undef FD_ISSET
-#define FD_ISSET(f, s)		rb_w32_fdisset(f, s)
+#define FD_ISSET(f, s) rb_w32_fdisset(f, s)
 
 #ifdef RUBY_EXPORT
-#undef inet_ntop
-#define inet_ntop(f,a,n,l)      rb_w32_inet_ntop(f,a,n,l)
+#    undef inet_ntop
+#    define inet_ntop(f, a, n, l) rb_w32_inet_ntop(f, a, n, l)
 
-#undef inet_pton
-#define inet_pton(f,s,d)        rb_w32_inet_pton(f,s,d)
+#    undef inet_pton
+#    define inet_pton(f, s, d) rb_w32_inet_pton(f, s, d)
 
-#undef accept
-#define accept(s, a, l)		rb_w32_accept(s, a, l)
+#    undef accept
+#    define accept(s, a, l) rb_w32_accept(s, a, l)
 
-#undef bind
-#define bind(s, a, l)		rb_w32_bind(s, a, l)
+#    undef bind
+#    define bind(s, a, l) rb_w32_bind(s, a, l)
 
-#undef connect
-#define connect(s, a, l)	rb_w32_connect(s, a, l)
+#    undef connect
+#    define connect(s, a, l) rb_w32_connect(s, a, l)
 
-#undef select
-#define select(n, r, w, e, t)	rb_w32_select(n, r, w, e, t)
+#    undef select
+#    define select(n, r, w, e, t) rb_w32_select(n, r, w, e, t)
 
-#undef getpeername
-#define getpeername(s, a, l)	rb_w32_getpeername(s, a, l)
+#    undef getpeername
+#    define getpeername(s, a, l) rb_w32_getpeername(s, a, l)
 
-#undef getsockname
-#define getsockname(s, a, l)	rb_w32_getsockname(s, a, l)
+#    undef getsockname
+#    define getsockname(s, a, l) rb_w32_getsockname(s, a, l)
 
-#undef getsockopt
-#define getsockopt(s, v, n, o, l) rb_w32_getsockopt(s, v, n, o, l)
+#    undef getsockopt
+#    define getsockopt(s, v, n, o, l) rb_w32_getsockopt(s, v, n, o, l)
 
-#undef ioctlsocket
-#define ioctlsocket(s, c, a)	rb_w32_ioctlsocket(s, c, a)
+#    undef ioctlsocket
+#    define ioctlsocket(s, c, a) rb_w32_ioctlsocket(s, c, a)
 
-#undef listen
-#define listen(s, b)		rb_w32_listen(s, b)
+#    undef listen
+#    define listen(s, b) rb_w32_listen(s, b)
 
-#undef recv
-#define recv(s, b, l, f)	rb_w32_recv(s, b, l, f)
+#    undef recv
+#    define recv(s, b, l, f) rb_w32_recv(s, b, l, f)
 
-#undef recvfrom
-#define recvfrom(s, b, l, f, fr, frl) rb_w32_recvfrom(s, b, l, f, fr, frl)
+#    undef recvfrom
+#    define recvfrom(s, b, l, f, fr, frl) rb_w32_recvfrom(s, b, l, f, fr, frl)
 
-#undef send
-#define send(s, b, l, f)	rb_w32_send(s, b, l, f)
+#    undef send
+#    define send(s, b, l, f) rb_w32_send(s, b, l, f)
 
-#undef sendto
-#define sendto(s, b, l, f, t, tl) rb_w32_sendto(s, b, l, f, t, tl)
+#    undef sendto
+#    define sendto(s, b, l, f, t, tl) rb_w32_sendto(s, b, l, f, t, tl)
 
-#undef setsockopt
-#define setsockopt(s, v, n, o, l) rb_w32_setsockopt(s, v, n, o, l)
+#    undef setsockopt
+#    define setsockopt(s, v, n, o, l) rb_w32_setsockopt(s, v, n, o, l)
 
-#undef HAVE_SHUTDOWN
-#define HAVE_SHUTDOWN 1
-#undef shutdown
-#define shutdown(s, h)		rb_w32_shutdown(s, h)
+#    undef HAVE_SHUTDOWN
+#    define HAVE_SHUTDOWN 1
+#    undef shutdown
+#    define shutdown(s, h) rb_w32_shutdown(s, h)
 
-#undef socket
-#define socket(s, t, p)		rb_w32_socket(s, t, p)
+#    undef socket
+#    define socket(s, t, p) rb_w32_socket(s, t, p)
 
-#undef gethostbyaddr
-#define gethostbyaddr(a, l, t)	rb_w32_gethostbyaddr(a, l, t)
+#    undef gethostbyaddr
+#    define gethostbyaddr(a, l, t) rb_w32_gethostbyaddr(a, l, t)
 
-#undef gethostbyname
-#define gethostbyname(n)	rb_w32_gethostbyname(n)
+#    undef gethostbyname
+#    define gethostbyname(n) rb_w32_gethostbyname(n)
 
-#undef gethostname
-#define gethostname(n, l)	rb_w32_gethostname(n, l)
+#    undef gethostname
+#    define gethostname(n, l) rb_w32_gethostname(n, l)
 
-#undef getprotobyname
-#define getprotobyname(n)	rb_w32_getprotobyname(n)
+#    undef getprotobyname
+#    define getprotobyname(n) rb_w32_getprotobyname(n)
 
-#undef getprotobynumber
-#define getprotobynumber(n)	rb_w32_getprotobynumber(n)
+#    undef getprotobynumber
+#    define getprotobynumber(n) rb_w32_getprotobynumber(n)
 
-#undef getservbyname
-#define getservbyname(n, p)	rb_w32_getservbyname(n, p)
+#    undef getservbyname
+#    define getservbyname(n, p) rb_w32_getservbyname(n, p)
 
-#undef getservbyport
-#define getservbyport(p, pr)	rb_w32_getservbyport(p, pr)
+#    undef getservbyport
+#    define getservbyport(p, pr) rb_w32_getservbyport(p, pr)
 
-#undef get_osfhandle
-#define get_osfhandle(h)	rb_w32_get_osfhandle(h)
+#    undef get_osfhandle
+#    define get_osfhandle(h) rb_w32_get_osfhandle(h)
 
-#undef getcwd
-#define getcwd(b, s)		rb_w32_ugetcwd(b, s)
+#    undef getcwd
+#    define getcwd(b, s) rb_w32_ugetcwd(b, s)
 
-#undef getenv
-#define getenv(n)		rb_w32_ugetenv(n)
+#    undef getenv
+#    define getenv(n) rb_w32_ugetenv(n)
 
-#undef rename
-#define rename(o, n)		rb_w32_urename(o, n)
+#    undef rename
+#    define rename(o, n) rb_w32_urename(o, n)
 
-#undef times
-#define times(t)		rb_w32_times(t)
+#    undef times
+#    define times(t) rb_w32_times(t)
 
-#undef dup2
-#define dup2(o, n)		rb_w32_dup2(o, n)
+#    undef dup2
+#    define dup2(o, n) rb_w32_dup2(o, n)
 #endif
 
 struct tms {
-	long	tms_utime;
-	long	tms_stime;
-	long	tms_cutime;
-	long	tms_cstime;
+    long tms_utime;
+    long tms_stime;
+    long tms_cutime;
+    long tms_cstime;
 };
 
 int rb_w32_times(struct tms *);
@@ -714,24 +712,24 @@ struct tm *gmtime_r(const time_t *, struct tm *);
 struct tm *localtime_r(const time_t *, struct tm *);
 
 /* thread stuff */
-int  rb_w32_sleep(unsigned long msec);
-int  rb_w32_uopen(const char *, int, ...);
-int  rb_w32_wopen(const WCHAR *, int, ...);
-int  rb_w32_close(int);
-int  rb_w32_fclose(FILE*);
-int  rb_w32_pipe(int[2]);
+int rb_w32_sleep(unsigned long msec);
+int rb_w32_uopen(const char *, int, ...);
+int rb_w32_wopen(const WCHAR *, int, ...);
+int rb_w32_close(int);
+int rb_w32_fclose(FILE *);
+int rb_w32_pipe(int[2]);
 ssize_t rb_w32_read(int, void *, size_t);
 ssize_t rb_w32_write(int, const void *, size_t);
-off_t  rb_w32_lseek(int, off_t, int);
-int  rb_w32_uutime(const char *, const struct utimbuf *);
-int  rb_w32_uutimes(const char *, const struct timeval *);
-int  rb_w32_uutimensat(int /* must be AT_FDCWD */, const char *, const struct timespec *, int /* must be 0 */);
-long rb_w32_write_console(uintptr_t, int);	/* use uintptr_t instead of VALUE because it's not defined yet here */
-int  WINAPI rb_w32_Sleep(unsigned long msec);
-int  rb_w32_wait_events_blocking(HANDLE *events, int num, DWORD timeout);
-int  rb_w32_time_subtract(struct timeval *rest, const struct timeval *wait);
-int  rb_w32_wrap_io_handle(HANDLE, int);
-int  rb_w32_unwrap_io_handle(int);
+off_t rb_w32_lseek(int, off_t, int);
+int rb_w32_uutime(const char *, const struct utimbuf *);
+int rb_w32_uutimes(const char *, const struct timeval *);
+int rb_w32_uutimensat(int /* must be AT_FDCWD */, const char *, const struct timespec *, int /* must be 0 */);
+long rb_w32_write_console(uintptr_t, int); /* use uintptr_t instead of VALUE because it's not defined yet here */
+int WINAPI rb_w32_Sleep(unsigned long msec);
+int rb_w32_wait_events_blocking(HANDLE *events, int num, DWORD timeout);
+int rb_w32_time_subtract(struct timeval *rest, const struct timeval *wait);
+int rb_w32_wrap_io_handle(HANDLE, int);
+int rb_w32_unwrap_io_handle(int);
 WCHAR *rb_w32_mbstr_to_wstr(UINT, const char *, int, long *);
 char *rb_w32_wstr_to_mbstr(UINT, const WCHAR *, int, long *);
 
@@ -752,7 +750,7 @@ DEPRECATED_BY(rb_w32_uutimensat, int rb_w32_utimensat(int, const char *, const s
 DEPRECATED_BY(rb_w32_ustati128, int rb_w32_stati128(const char *, struct stati128 *));
 DEPRECATED_BY(rb_w32_ulstati128, int rb_w32_lstati128(const char *, struct stati128 *));
 DEPRECATED_BY(rb_w32_uaccess, int rb_w32_access(const char *, int));
-DEPRECATED_BY(rb_w32_uspawn, rb_pid_t rb_w32_spawn(int, const char *, const char*));
+DEPRECATED_BY(rb_w32_uspawn, rb_pid_t rb_w32_spawn(int, const char *, const char *));
 DEPRECATED_BY(rb_w32_uaspawn, rb_pid_t rb_w32_aspawn(int, const char *, char *const *));
 DEPRECATED_BY(rb_w32_uaspawn_flags, rb_pid_t rb_w32_aspawn_flags(int, const char *, char *const *, DWORD));
 
@@ -763,31 +761,33 @@ Since this function is very dangerous, ((*NEVER*))
 * use anything like rb_thread_call_without_gvl,
 in asynchronous_func_t.
 */
-typedef uintptr_t (*asynchronous_func_t)(uintptr_t self, int argc, uintptr_t* argv);
-uintptr_t rb_w32_asynchronize(asynchronous_func_t func, uintptr_t self, int argc, uintptr_t* argv, uintptr_t intrval);
+typedef uintptr_t (*asynchronous_func_t)(uintptr_t self, int argc, uintptr_t *argv);
+uintptr_t rb_w32_asynchronize(asynchronous_func_t func, uintptr_t self, int argc, uintptr_t *argv, uintptr_t intrval);
 
 RUBY_SYMBOL_EXPORT_END
 
 #if (defined(__MINGW64_VERSION_MAJOR) || defined(__MINGW64__)) && !defined(__cplusplus)
-#ifdef RUBY_MINGW64_BROKEN_FREXP_MODF
+#    ifdef RUBY_MINGW64_BROKEN_FREXP_MODF
 /* License: Ruby's */
 /* get rid of bugs in math.h of mingw */
-#define frexp(_X, _Y) __extension__ ({\
-    int intpart_frexp_bug = intpart_frexp_bug;\
-    double result_frexp_bug = frexp((_X), &intpart_frexp_bug);\
-    *(_Y) = intpart_frexp_bug;\
-    result_frexp_bug;\
-})
+#        define frexp(_X, _Y) \
+            __extension__({ \
+                int intpart_frexp_bug = intpart_frexp_bug; \
+                double result_frexp_bug = frexp((_X), &intpart_frexp_bug); \
+                *(_Y) = intpart_frexp_bug; \
+                result_frexp_bug; \
+            })
 /* License: Ruby's */
-#define modf(_X, _Y) __extension__ ({\
-    double intpart_modf_bug = intpart_modf_bug;\
-    double result_modf_bug = modf((_X), &intpart_modf_bug);\
-    *(_Y) = intpart_modf_bug;\
-    result_modf_bug;\
-})
-#endif
+#        define modf(_X, _Y) \
+            __extension__({ \
+                double intpart_modf_bug = intpart_modf_bug; \
+                double result_modf_bug = modf((_X), &intpart_modf_bug); \
+                *(_Y) = intpart_modf_bug; \
+                result_modf_bug; \
+            })
+#    endif
 
-#if defined(__MINGW64__)
+#    if defined(__MINGW64__)
 /*
  * Use powl() instead of broken pow() of x86_64-w64-mingw32.
  * This workaround will fix test failures in test_bignum.rb,
@@ -798,22 +798,22 @@ rb_w32_pow(double x, double y)
 {
     return (double)powl(x, y);
 }
-#elif defined(__MINGW64_VERSION_MAJOR)
+#    elif defined(__MINGW64_VERSION_MAJOR)
 double rb_w32_pow(double x, double y);
-#endif
-#define pow rb_w32_pow
+#    endif
+#    define pow rb_w32_pow
 #endif
 
 // mmap tiny emulation
-#define MAP_FAILED	((void *)-1)
+#define MAP_FAILED ((void *)-1)
 
-#define PROT_READ	0x01
-#define PROT_WRITE	0x02
-#define PROT_EXEC	0x04
+#define PROT_READ 0x01
+#define PROT_WRITE 0x02
+#define PROT_EXEC 0x04
 
-#define MAP_PRIVATE	0x0002
-#define MAP_ANON	0x1000
-#define MAP_ANONYMOUS	MAP_ANON
+#define MAP_PRIVATE 0x0002
+#define MAP_ANON 0x1000
+#define MAP_ANONYMOUS MAP_ANON
 
 extern void *rb_w32_mmap(void *, size_t, int, int, int, off_t);
 extern int rb_w32_munmap(void *, size_t);
@@ -824,10 +824,10 @@ extern int rb_w32_mprotect(void *, size_t, int);
 #define mprotect(a, l, prot) rb_w32_mprotect(a, l, prot)
 
 #if defined(__cplusplus)
-#if 0
+#    if 0
 { /* satisfy cc-mode */
-#endif
-}  /* extern "C" { */
+#    endif
+} /* extern "C" { */
 #endif
 
 #endif /* RUBY_WIN32_H */

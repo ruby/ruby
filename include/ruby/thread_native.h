@@ -1,4 +1,4 @@
-#ifndef RUBY_THREAD_NATIVE_H                         /*-*-C++-*-vi:se ft=cpp:*/
+#ifndef RUBY_THREAD_NATIVE_H /*-*-C++-*-vi:se ft=cpp:*/
 #define RUBY_THREAD_NATIVE_H 1
 /**
  * @file
@@ -20,7 +20,7 @@
  */
 
 #if defined(_WIN32)
-#include <windows.h>
+#    include <windows.h>
 typedef HANDLE rb_nativethread_id_t;
 
 typedef union rb_thread_lock_union {
@@ -32,7 +32,7 @@ typedef struct rb_thread_cond_struct rb_nativethread_cond_t;
 
 #elif defined(HAVE_PTHREAD_H)
 
-#include <pthread.h>
+#    include <pthread.h>
 typedef pthread_t rb_nativethread_id_t;
 typedef pthread_mutex_t rb_nativethread_lock_t;
 typedef pthread_cond_t rb_nativethread_cond_t;
@@ -55,7 +55,7 @@ struct rb_nativethread_lock_t;
 struct rb_nativethread_cond_t;
 
 #else
-#error "unsupported thread type"
+#    error "unsupported thread type"
 
 #endif
 
@@ -129,7 +129,7 @@ void rb_native_mutex_lock(rb_nativethread_lock_t *lock);
  * @retval      0      `lock` is successfully owned by the current thread.
  * @retval      EBUSY  `lock` is owned by someone else.
  */
-int  rb_native_mutex_trylock(rb_nativethread_lock_t *lock);
+int rb_native_mutex_trylock(rb_nativethread_lock_t *lock);
 
 /** @alias{rb_nativethread_lock_unlock} */
 void rb_native_mutex_unlock(rb_nativethread_lock_t *lock);

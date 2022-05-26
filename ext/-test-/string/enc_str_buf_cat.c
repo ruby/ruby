@@ -1,5 +1,5 @@
-#include "ruby/ruby.h"
 #include "ruby/encoding.h"
+#include "ruby/ruby.h"
 
 static VALUE
 enc_str_buf_cat(VALUE str, VALUE str2)

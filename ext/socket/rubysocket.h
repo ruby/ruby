@@ -10,121 +10,121 @@
  *
  * See also [ruby-core:4261]
  */
-# include "ruby/ruby.h"
-# undef T_DATA
+#    include "ruby/ruby.h"
+#    undef T_DATA
 #endif
 
 #include <errno.h>
 #include <stdio.h>
 
-#include <sys/types.h>
 #include <sys/stat.h>
+#include <sys/types.h>
 
 #ifdef HAVE_UNISTD_H
-#  include <unistd.h>
+#    include <unistd.h>
 #endif
 
 #ifdef HAVE_SYS_UIO_H
-#  include <sys/uio.h>
+#    include <sys/uio.h>
 #endif
 
 #ifdef HAVE_XTI_H
-#  include <xti.h>
+#    include <xti.h>
 #endif
 
 #ifdef _WIN32
-#  if defined(_MSC_VER)
-#    undef HAVE_TYPE_STRUCT_SOCKADDR_DL
-#  endif
+#    if defined(_MSC_VER)
+#        undef HAVE_TYPE_STRUCT_SOCKADDR_DL
+#    endif
 #else
-#  include <sys/socket.h>
-#  include <netinet/in.h>
-#  ifdef HAVE_NETINET_IN_SYSTM_H
-#    include <netinet/in_systm.h>
-#  endif
-#  ifdef HAVE_NETINET_TCP_H
-#    include <netinet/tcp.h>
-#  endif
-#  ifdef HAVE_NETINET_TCP_FSM_H
-#    include <netinet/tcp_fsm.h>
-#  endif
-#  ifdef HAVE_NETINET_UDP_H
-#    include <netinet/udp.h>
-#  endif
-#  ifdef HAVE_ARPA_INET_H
-#    include <arpa/inet.h>
-#  endif
-#  include <netdb.h>
+#    include <netinet/in.h>
+#    include <sys/socket.h>
+#    ifdef HAVE_NETINET_IN_SYSTM_H
+#        include <netinet/in_systm.h>
+#    endif
+#    ifdef HAVE_NETINET_TCP_H
+#        include <netinet/tcp.h>
+#    endif
+#    ifdef HAVE_NETINET_TCP_FSM_H
+#        include <netinet/tcp_fsm.h>
+#    endif
+#    ifdef HAVE_NETINET_UDP_H
+#        include <netinet/udp.h>
+#    endif
+#    ifdef HAVE_ARPA_INET_H
+#        include <arpa/inet.h>
+#    endif
+#    include <netdb.h>
 #endif
 
 #ifdef HAVE_NETPACKET_PACKET_H
-#  include <netpacket/packet.h>
+#    include <netpacket/packet.h>
 #endif
 
 #ifdef HAVE_NET_ETHERNET_H
-#  include <net/ethernet.h>
+#    include <net/ethernet.h>
 #endif
 
 #ifdef HAVE_SYS_UN_H
-#  include <sys/un.h>
+#    include <sys/un.h>
 #endif
 
 #if defined(HAVE_FCNTL)
-#  ifdef HAVE_SYS_SELECT_H
-#    include <sys/select.h>
-#  endif
-#  ifdef HAVE_SYS_TYPES_H
-#    include <sys/types.h>
-#  endif
-#  ifdef HAVE_SYS_TIME_H
-#    include <sys/time.h>
-#  endif
-#  ifdef HAVE_FCNTL_H
-#    include <fcntl.h>
-#  endif
+#    ifdef HAVE_SYS_SELECT_H
+#        include <sys/select.h>
+#    endif
+#    ifdef HAVE_SYS_TYPES_H
+#        include <sys/types.h>
+#    endif
+#    ifdef HAVE_SYS_TIME_H
+#        include <sys/time.h>
+#    endif
+#    ifdef HAVE_FCNTL_H
+#        include <fcntl.h>
+#    endif
 #endif
 
 #ifdef HAVE_IFADDRS_H
-#  ifdef __HAIKU__
-#    define _BSD_SOURCE
-#  endif
-#  include <ifaddrs.h>
+#    ifdef __HAIKU__
+#        define _BSD_SOURCE
+#    endif
+#    include <ifaddrs.h>
 #endif
 
 #ifdef HAVE_SYS_IOCTL_H
-#  include <sys/ioctl.h>
+#    include <sys/ioctl.h>
 #endif
 
 #ifdef HAVE_SYS_SOCKIO_H
-#  include <sys/sockio.h>
+#    include <sys/sockio.h>
 #endif
 
 #ifdef HAVE_NET_IF_H
-#  include <net/if.h>
+#    include <net/if.h>
 #endif
 
 #ifdef HAVE_SYS_PARAM_H
-#  include <sys/param.h>
+#    include <sys/param.h>
 #endif
 
 #ifdef HAVE_SYS_UCRED_H
-#  include <sys/ucred.h>
+#    include <sys/ucred.h>
 #endif
 
 #ifdef HAVE_UCRED_H
-#  include <ucred.h>
+#    include <ucred.h>
 #endif
 
 #ifdef HAVE_NET_IF_DL_H
-#  include <net/if_dl.h>
+#    include <net/if_dl.h>
 #endif
 
 #ifdef SOCKS5
-#  include <socks.h>
+#    include <socks.h>
 #endif
 
 #ifndef HAVE_GETADDRINFO
-#  include "addrinfo.h"
+#    include "addrinfo.h"
 #endif
 
 #include "internal.h"
@@ -134,12 +134,12 @@
 #include "internal/io.h"
 #include "internal/thread.h"
 #include "internal/vm.h"
+#include "ruby/fiber/scheduler.h"
 #include "ruby/io.h"
 #include "ruby/ruby.h"
 #include "ruby/thread.h"
 #include "ruby/util.h"
 #include "sockport.h"
-#include "ruby/fiber/scheduler.h"
 
 #ifndef HAVE_TYPE_SOCKLEN_T
 typedef int socklen_t;
@@ -153,16 +153,14 @@ unsigned int if_nametoindex(const char *);
 #endif
 
 #define SOCKLEN_MAX \
-  (0 < (socklen_t)-1 ? \
-   ~(socklen_t)0 : \
-   (((((socklen_t)1) << (sizeof(socklen_t) * CHAR_BIT - 2)) - 1) * 2 + 1))
+    (0 < (socklen_t)-1 ? ~(socklen_t)0 : (((((socklen_t)1) << (sizeof(socklen_t) * CHAR_BIT - 2)) - 1) * 2 + 1))
 
 #ifndef RSTRING_SOCKLEN
-#  define RSTRING_SOCKLEN (socklen_t)RSTRING_LENINT
+#    define RSTRING_SOCKLEN (socklen_t) RSTRING_LENINT
 #endif
 
 #ifndef EWOULDBLOCK
-#  define EWOULDBLOCK EAGAIN
+#    define EWOULDBLOCK EAGAIN
 #endif
 
 /*
@@ -174,61 +172,59 @@ unsigned int if_nametoindex(const char *);
  */
 #define pseudo_AF_FTIP pseudo_AF_RTIP
 
-
 #ifndef NI_MAXHOST
-#  define NI_MAXHOST 1025
+#    define NI_MAXHOST 1025
 #endif
 #ifndef NI_MAXSERV
-#  define NI_MAXSERV 32
+#    define NI_MAXSERV 32
 #endif
 
 #ifdef AF_INET6
-#  define IS_IP_FAMILY(af) ((af) == AF_INET || (af) == AF_INET6)
+#    define IS_IP_FAMILY(af) ((af) == AF_INET || (af) == AF_INET6)
 #else
-#  define IS_IP_FAMILY(af) ((af) == AF_INET)
+#    define IS_IP_FAMILY(af) ((af) == AF_INET)
 #endif
 
 #ifndef IN6_IS_ADDR_UNIQUE_LOCAL
-#  define IN6_IS_ADDR_UNIQUE_LOCAL(a) (((a)->s6_addr[0] == 0xfc) || ((a)->s6_addr[0] == 0xfd))
+#    define IN6_IS_ADDR_UNIQUE_LOCAL(a) (((a)->s6_addr[0] == 0xfc) || ((a)->s6_addr[0] == 0xfd))
 #endif
 
 #ifndef HAVE_TYPE_STRUCT_SOCKADDR_STORAGE
 /*
  * RFC 2553: protocol-independent placeholder for socket addresses
  */
-#  define _SS_MAXSIZE     128
-#  define _SS_ALIGNSIZE   (sizeof(double))
-#  define _SS_PAD1SIZE    (_SS_ALIGNSIZE - sizeof(unsigned char) * 2)
-#  define _SS_PAD2SIZE    (_SS_MAXSIZE - sizeof(unsigned char) * 2 - \
-                                _SS_PAD1SIZE - _SS_ALIGNSIZE)
+#    define _SS_MAXSIZE 128
+#    define _SS_ALIGNSIZE (sizeof(double))
+#    define _SS_PAD1SIZE (_SS_ALIGNSIZE - sizeof(unsigned char) * 2)
+#    define _SS_PAD2SIZE (_SS_MAXSIZE - sizeof(unsigned char) * 2 - _SS_PAD1SIZE - _SS_ALIGNSIZE)
 
 struct sockaddr_storage {
-#  ifdef HAVE_STRUCT_SOCKADDR_SA_LEN
-        unsigned char ss_len;           /* address length */
-        unsigned char ss_family;        /* address family */
-#  else
-        unsigned short ss_family;
-#  endif
-        char    __ss_pad1[_SS_PAD1SIZE];
-        double  __ss_align;     /* force desired structure storage alignment */
-        char    __ss_pad2[_SS_PAD2SIZE];
+#    ifdef HAVE_STRUCT_SOCKADDR_SA_LEN
+    unsigned char ss_len;    /* address length */
+    unsigned char ss_family; /* address family */
+#    else
+    unsigned short ss_family;
+#    endif
+    char __ss_pad1[_SS_PAD1SIZE];
+    double __ss_align; /* force desired structure storage alignment */
+    char __ss_pad2[_SS_PAD2SIZE];
 };
 #endif
 
 typedef union {
-  struct sockaddr addr;
-  struct sockaddr_in in;
+    struct sockaddr addr;
+    struct sockaddr_in in;
 #ifdef AF_INET6
-  struct sockaddr_in6 in6;
+    struct sockaddr_in6 in6;
 #endif
 #ifdef HAVE_TYPE_STRUCT_SOCKADDR_UN
-  struct sockaddr_un un;
+    struct sockaddr_un un;
 #endif
 #ifdef HAVE_TYPE_STRUCT_SOCKADDR_DL
-  struct sockaddr_dl dl; /* AF_LINK */
+    struct sockaddr_dl dl; /* AF_LINK */
 #endif
-  struct sockaddr_storage storage;
-  char place_holder[2048]; /* sockaddr_storage is not enough for Unix domain sockets on SunOS and Darwin. */
+    struct sockaddr_storage storage;
+    char place_holder[2048]; /* sockaddr_storage is not enough for Unix domain sockets on SunOS and Darwin. */
 } union_sockaddr;
 
 #ifdef __APPLE__
@@ -237,31 +233,31 @@ typedef union {
  * aligns up to __darwin_size_t which is 64bit, but CMSG_DATA is
  * 32bit-aligned.
  */
-#  undef __DARWIN_ALIGNBYTES
-#  define __DARWIN_ALIGNBYTES (sizeof(unsigned int) - 1)
+#    undef __DARWIN_ALIGNBYTES
+#    define __DARWIN_ALIGNBYTES (sizeof(unsigned int) - 1)
 #endif
 
 #if defined(_AIX)
-#  ifndef CMSG_SPACE
-#    define CMSG_SPACE(len) (_CMSG_ALIGN(sizeof(struct cmsghdr)) + _CMSG_ALIGN(len))
-#  endif
-#  ifndef CMSG_LEN
-#    define CMSG_LEN(len) (_CMSG_ALIGN(sizeof(struct cmsghdr)) + (len))
-#  endif
+#    ifndef CMSG_SPACE
+#        define CMSG_SPACE(len) (_CMSG_ALIGN(sizeof(struct cmsghdr)) + _CMSG_ALIGN(len))
+#    endif
+#    ifndef CMSG_LEN
+#        define CMSG_LEN(len) (_CMSG_ALIGN(sizeof(struct cmsghdr)) + (len))
+#    endif
 #endif
 
 #define INET_CLIENT 0
 #define INET_SERVER 1
-#define INET_SOCKS  2
+#define INET_SOCKS 2
 
 extern int rsock_do_not_reverse_lookup;
 #define FMODE_NOREVLOOKUP 0x100
 
 /* common socket families only */
-#define FMODE_UNIX        0x00200000
-#define FMODE_INET        0x00400000
-#define FMODE_INET6       0x00800000
-#define FMODE_SOCK        (FMODE_UNIX|FMODE_INET|FMODE_INET6)
+#define FMODE_UNIX 0x00200000
+#define FMODE_INET 0x00400000
+#define FMODE_INET6 0x00800000
+#define FMODE_SOCK (FMODE_UNIX | FMODE_INET | FMODE_INET6)
 
 extern VALUE rb_cBasicSocket;
 extern VALUE rb_cIPSocket;
@@ -280,10 +276,10 @@ extern VALUE rb_eSocket;
 
 #ifdef SOCKS
 extern VALUE rb_cSOCKSSocket;
-#  ifndef SOCKS5
+#    ifndef SOCKS5
 void SOCKSinit();
 int Rconnect();
-#  endif
+#    endif
 #endif
 
 #include "constdefs.h"
@@ -311,12 +307,13 @@ int rsock_shutdown_how_arg(VALUE how);
 int rsock_getfamily(rb_io_t *fptr);
 
 struct rb_addrinfo {
-  struct addrinfo *ai;
-  int allocated_by_malloc;
+    struct addrinfo *ai;
+    int allocated_by_malloc;
 };
 void rb_freeaddrinfo(struct rb_addrinfo *ai);
 VALUE rsock_freeaddrinfo(VALUE arg);
-int rb_getnameinfo(const struct sockaddr *sa, socklen_t salen, char *host, size_t hostlen, char *serv, size_t servlen, int flags);
+int rb_getnameinfo(
+    const struct sockaddr *sa, socklen_t salen, char *host, size_t hostlen, char *serv, size_t servlen, int flags);
 int rsock_fd_family(int fd);
 struct rb_addrinfo *rsock_addrinfo(VALUE host, VALUE port, int family, int socktype, int flags);
 struct rb_addrinfo *rsock_getaddrinfo(VALUE host, VALUE port, struct addrinfo *hints, int socktype_hack);
@@ -324,7 +321,8 @@ struct rb_addrinfo *rsock_getaddrinfo(VALUE host, VALUE port, struct addrinfo *h
 VALUE rsock_fd_socket_addrinfo(int fd, struct sockaddr *addr, socklen_t len);
 VALUE rsock_io_socket_addrinfo(VALUE io, struct sockaddr *addr, socklen_t len);
 
-VALUE rsock_addrinfo_new(struct sockaddr *addr, socklen_t len, int family, int socktype, int protocol, VALUE canonname, VALUE inspectname);
+VALUE rsock_addrinfo_new(
+    struct sockaddr *addr, socklen_t len, int family, int socktype, int protocol, VALUE canonname, VALUE inspectname);
 VALUE rsock_addrinfo_inspect_sockaddr(VALUE rai);
 
 VALUE rsock_make_ipaddr(struct sockaddr *addr, socklen_t addrlen);
@@ -346,7 +344,8 @@ int rsock_socket(int domain, int type, int proto);
 int rsock_detect_cloexec(int fd);
 VALUE rsock_init_sock(VALUE sock, int fd);
 VALUE rsock_sock_s_socketpair(int argc, VALUE *argv, VALUE klass);
-VALUE rsock_init_inetsock(VALUE sock, VALUE remote_host, VALUE remote_serv, VALUE local_host, VALUE local_serv, int type, VALUE resolv_timeout, VALUE connect_timeout);
+VALUE rsock_init_inetsock(VALUE sock, VALUE remote_host, VALUE remote_serv, VALUE local_host, VALUE local_serv,
+    int type, VALUE resolv_timeout, VALUE connect_timeout);
 VALUE rsock_init_unixsock(VALUE sock, VALUE path, int server);
 
 struct rsock_send_arg {
@@ -361,44 +360,38 @@ VALUE rsock_send_blocking(void *data);
 VALUE rsock_bsock_send(int argc, VALUE *argv, VALUE sock);
 
 enum sock_recv_type {
-    RECV_RECV,                  /* BasicSocket#recv(no from) */
-    RECV_IP,                    /* IPSocket#recvfrom */
-    RECV_UNIX,                  /* UNIXSocket#recvfrom */
-    RECV_SOCKET                 /* Socket#recvfrom */
+    RECV_RECV,  /* BasicSocket#recv(no from) */
+    RECV_IP,    /* IPSocket#recvfrom */
+    RECV_UNIX,  /* UNIXSocket#recvfrom */
+    RECV_SOCKET /* Socket#recvfrom */
 };
 
-VALUE rsock_s_recvfrom_nonblock(VALUE sock, VALUE len, VALUE flg, VALUE str,
-			        VALUE ex, enum sock_recv_type from);
+VALUE rsock_s_recvfrom_nonblock(VALUE sock, VALUE len, VALUE flg, VALUE str, VALUE ex, enum sock_recv_type from);
 VALUE rsock_s_recvfrom(VALUE sock, int argc, VALUE *argv, enum sock_recv_type from);
 
 int rsock_connect(int fd, const struct sockaddr *sockaddr, int len, int socks, struct timeval *timeout);
 
 VALUE rsock_s_accept(VALUE klass, VALUE io, struct sockaddr *sockaddr, socklen_t *len);
-VALUE rsock_s_accept_nonblock(VALUE klass, VALUE ex, rb_io_t *fptr,
-			      struct sockaddr *sockaddr, socklen_t *len);
+VALUE rsock_s_accept_nonblock(VALUE klass, VALUE ex, rb_io_t *fptr, struct sockaddr *sockaddr, socklen_t *len);
 VALUE rsock_sock_listen(VALUE sock, VALUE log);
 
 VALUE rsock_sockopt_new(int family, int level, int optname, VALUE data);
 
 #if defined(HAVE_SENDMSG)
-VALUE rsock_bsock_sendmsg(VALUE sock, VALUE data, VALUE flags,
-			  VALUE dest_sockaddr, VALUE controls);
-VALUE rsock_bsock_sendmsg_nonblock(VALUE sock, VALUE data, VALUE flags,
-			     VALUE dest_sockaddr, VALUE controls, VALUE ex);
+VALUE rsock_bsock_sendmsg(VALUE sock, VALUE data, VALUE flags, VALUE dest_sockaddr, VALUE controls);
+VALUE rsock_bsock_sendmsg_nonblock(VALUE sock, VALUE data, VALUE flags, VALUE dest_sockaddr, VALUE controls, VALUE ex);
 #else
-#define rsock_bsock_sendmsg rb_f_notimplement
-#define rsock_bsock_sendmsg_nonblock rb_f_notimplement
+#    define rsock_bsock_sendmsg rb_f_notimplement
+#    define rsock_bsock_sendmsg_nonblock rb_f_notimplement
 #endif
 
 #if defined(HAVE_RECVMSG)
-VALUE rsock_bsock_recvmsg(VALUE sock, VALUE dlen, VALUE clen, VALUE flags,
-			  VALUE scm_rights);
-VALUE rsock_bsock_recvmsg_nonblock(VALUE sock, VALUE dlen, VALUE clen,
-				   VALUE flags, VALUE scm_rights, VALUE ex);
+VALUE rsock_bsock_recvmsg(VALUE sock, VALUE dlen, VALUE clen, VALUE flags, VALUE scm_rights);
+VALUE rsock_bsock_recvmsg_nonblock(VALUE sock, VALUE dlen, VALUE clen, VALUE flags, VALUE scm_rights, VALUE ex);
 ssize_t rsock_recvmsg(int socket, struct msghdr *message, int flags);
 #else
-#define rsock_bsock_recvmsg rb_f_notimplement
-#define rsock_bsock_recvmsg_nonblock rb_f_notimplement
+#    define rsock_bsock_recvmsg rb_f_notimplement
+#    define rsock_bsock_recvmsg_nonblock rb_f_notimplement
 #endif
 
 #ifdef HAVE_STRUCT_MSGHDR_MSG_CONTROL
@@ -433,7 +426,7 @@ NORETURN(void rsock_sys_fail_raddrinfo(const char *, VALUE rai));
 NORETURN(void rsock_sys_fail_raddrinfo_or_sockaddr(const char *, VALUE addr, VALUE rai));
 
 #if defined(__MINGW32__) || defined(_WIN32)
-#define RSOCK_WAIT_BEFORE_BLOCKING
+#    define RSOCK_WAIT_BEFORE_BLOCKING
 #endif
 
 /*
@@ -441,9 +434,9 @@ NORETURN(void rsock_sys_fail_raddrinfo_or_sockaddr(const char *, VALUE addr, VAL
  * type, we only expect Linux to support it consistently for all socket types.
  */
 #if defined(MSG_DONTWAIT) && defined(__linux__)
-#  define MSG_DONTWAIT_RELIABLE 1
+#    define MSG_DONTWAIT_RELIABLE 1
 #else
-#  define MSG_DONTWAIT_RELIABLE 0
+#    define MSG_DONTWAIT_RELIABLE 0
 #endif
 
 VALUE rsock_read_nonblock(VALUE sock, VALUE length, VALUE buf, VALUE ex);
@@ -451,10 +444,10 @@ VALUE rsock_write_nonblock(VALUE sock, VALUE buf, VALUE ex);
 
 void rsock_make_fd_nonblock(int fd);
 
-#if !defined HAVE_INET_NTOP && ! defined _WIN32
+#if !defined HAVE_INET_NTOP && !defined _WIN32
 const char *inet_ntop(int, const void *, char *, size_t);
 #elif defined __MINGW32__
-# define inet_ntop(f,a,n,l)      rb_w32_inet_ntop(f,a,n,l)
+#    define inet_ntop(f, a, n, l) rb_w32_inet_ntop(f, a, n, l)
 #elif defined _MSC_VER && RUBY_MSVCRT_VERSION < 90
 const char *WSAAPI inet_ntop(int, const void *, char *, size_t);
 #endif

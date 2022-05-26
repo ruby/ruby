@@ -1,4 +1,4 @@
-#ifndef RBIMPL_ARITHMETIC_SIZE_T_H                   /*-*-C++-*-vi:se ft=cpp:*/
+#ifndef RBIMPL_ARITHMETIC_SIZE_T_H /*-*-C++-*-vi:se ft=cpp:*/
 #define RBIMPL_ARITHMETIC_SIZE_T_H
 /**
  * @file
@@ -20,42 +20,42 @@
  *             extension libraries.  They could be written in C++98.
  * @brief      Arithmetic conversion between C's `size_t` and Ruby's.
  */
-#include "ruby/internal/config.h"
+#include "ruby/backward/2/long_long.h"
 #include "ruby/internal/arithmetic/int.h"
 #include "ruby/internal/arithmetic/long.h"
 #include "ruby/internal/arithmetic/long_long.h"
-#include "ruby/backward/2/long_long.h"
+#include "ruby/internal/config.h"
 
 #if defined(__DOXYGEN__)
-# /** Converts a C's `size_t` into an instance of ::rb_cInteger. */
-# define RB_SIZE2NUM RB_ULONG2NUM
-# /** Converts a C's `ssize_t` into an instance of ::rb_cInteger. */
-# define RB_SSIZE2NUM RB_LONG2NUM
+#    /** Converts a C's `size_t` into an instance of ::rb_cInteger. */
+#    define RB_SIZE2NUM RB_ULONG2NUM
+#    /** Converts a C's `ssize_t` into an instance of ::rb_cInteger. */
+#    define RB_SSIZE2NUM RB_LONG2NUM
 #elif SIZEOF_SIZE_T == SIZEOF_LONG_LONG
-# define RB_SIZE2NUM RB_ULL2NUM
-# define RB_SSIZE2NUM RB_LL2NUM
+#    define RB_SIZE2NUM RB_ULL2NUM
+#    define RB_SSIZE2NUM RB_LL2NUM
 #elif SIZEOF_SIZE_T == SIZEOF_LONG
-# define RB_SIZE2NUM RB_ULONG2NUM
-# define RB_SSIZE2NUM RB_LONG2NUM
+#    define RB_SIZE2NUM RB_ULONG2NUM
+#    define RB_SSIZE2NUM RB_LONG2NUM
 #else
-# define RB_SIZE2NUM RB_UINT2NUM
-# define RB_SSIZE2NUM RB_INT2NUM
+#    define RB_SIZE2NUM RB_UINT2NUM
+#    define RB_SSIZE2NUM RB_INT2NUM
 #endif
 
 #if defined(__DOXYGEN__)
-# /** Converts an instance of ::rb_cInteger into C's `size_t`. */
-# define RB_NUM2SIZE RB_NUM2ULONG
-# /** Converts an instance of ::rb_cInteger into C's `ssize_t`. */
-# define RB_NUM2SSIZE RB_NUM2LONG
+#    /** Converts an instance of ::rb_cInteger into C's `size_t`. */
+#    define RB_NUM2SIZE RB_NUM2ULONG
+#    /** Converts an instance of ::rb_cInteger into C's `ssize_t`. */
+#    define RB_NUM2SSIZE RB_NUM2LONG
 #elif SIZEOF_SIZE_T == SIZEOF_LONG_LONG
-# define RB_NUM2SIZE RB_NUM2ULL
-# define RB_NUM2SSIZE RB_NUM2LL
+#    define RB_NUM2SIZE RB_NUM2ULL
+#    define RB_NUM2SSIZE RB_NUM2LL
 #elif SIZEOF_SIZE_T == SIZEOF_LONG
-# define RB_NUM2SIZE RB_NUM2ULONG
-# define RB_NUM2SSIZE RB_NUM2LONG
+#    define RB_NUM2SIZE RB_NUM2ULONG
+#    define RB_NUM2SSIZE RB_NUM2LONG
 #else
-# define RB_NUM2SIZE RB_NUM2UINT
-# define RB_NUM2SSIZE RB_NUM2INT
+#    define RB_NUM2SIZE RB_NUM2UINT
+#    define RB_NUM2SSIZE RB_NUM2INT
 #endif
 
 #define NUM2SIZET RB_NUM2SIZE   /**< @old{RB_NUM2SIZE} */

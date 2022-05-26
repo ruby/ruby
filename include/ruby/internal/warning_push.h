@@ -1,4 +1,4 @@
-#ifndef RBIMPL_WARNING_PUSH_H                        /*-*-C++-*-vi:se ft=cpp:*/
+#ifndef RBIMPL_WARNING_PUSH_H /*-*-C++-*-vi:se ft=cpp:*/
 #define RBIMPL_WARNING_PUSH_H
 /**
  * @file
@@ -52,14 +52,14 @@
  *
  * Pushes compiler warning state.
  */
-#define RBIMPL_WARNING_PUSH()        __pragma(warning(push))
+#    define RBIMPL_WARNING_PUSH() __pragma(warning(push))
 
 /**
  * @private
  *
  * Pops compiler warning state.
  */
-#define RBIMPL_WARNING_POP()         __pragma(warning(pop))
+#    define RBIMPL_WARNING_POP() __pragma(warning(pop))
 
 /**
  * @private
@@ -68,7 +68,7 @@
  *
  * @param  flag  A flag that represents the kind of warnings.
  */
-#define RBIMPL_WARNING_ERROR(flag)   __pragma(warning(error: flag))
+#    define RBIMPL_WARNING_ERROR(flag) __pragma(warning(error : flag))
 
 /**
  * @private
@@ -77,48 +77,48 @@
  *
  * @param  flag  A flag that represents the kind of warnings.
  */
-#define RBIMPL_WARNING_IGNORED(flag) __pragma(warning(disable: flag))
+#    define RBIMPL_WARNING_IGNORED(flag) __pragma(warning(disable : flag))
 
 #elif RBIMPL_COMPILER_SINCE(MSVC, 12, 0, 0)
-# /* Not sure exactly when but it seems VC++ 6.0 is a version with it.*/
-# define RBIMPL_WARNING_PUSH()        __pragma(warning(push))
-# define RBIMPL_WARNING_POP()         __pragma(warning(pop))
-# define RBIMPL_WARNING_ERROR(flag)   __pragma(warning(error: flag))
-# define RBIMPL_WARNING_IGNORED(flag) __pragma(warning(disable: flag))
+#    /* Not sure exactly when but it seems VC++ 6.0 is a version with it.*/
+#    define RBIMPL_WARNING_PUSH() __pragma(warning(push))
+#    define RBIMPL_WARNING_POP() __pragma(warning(pop))
+#    define RBIMPL_WARNING_ERROR(flag) __pragma(warning(error : flag))
+#    define RBIMPL_WARNING_IGNORED(flag) __pragma(warning(disable : flag))
 
 #elif RBIMPL_COMPILER_SINCE(Intel, 13, 0, 0)
-# define RBIMPL_WARNING_PUSH()        __pragma(warning(push))
-# define RBIMPL_WARNING_POP()         __pragma(warning(pop))
-# define RBIMPL_WARNING_ERROR(flag)   __pragma(warning(error: flag))
-# define RBIMPL_WARNING_IGNORED(flag) __pragma(warning(disable: flag))
+#    define RBIMPL_WARNING_PUSH() __pragma(warning(push))
+#    define RBIMPL_WARNING_POP() __pragma(warning(pop))
+#    define RBIMPL_WARNING_ERROR(flag) __pragma(warning(error : flag))
+#    define RBIMPL_WARNING_IGNORED(flag) __pragma(warning(disable : flag))
 
 #elif RBIMPL_COMPILER_IS(Clang) || RBIMPL_COMPILER_IS(Apple)
-# /* Not sure exactly when but it seems LLVM 2.6.0 is a version with it. */
-# define RBIMPL_WARNING_PRAGMA0(x)    _Pragma(# x)
-# define RBIMPL_WARNING_PRAGMA1(x)    RBIMPL_WARNING_PRAGMA0(clang diagnostic x)
-# define RBIMPL_WARNING_PRAGMA2(x, y) RBIMPL_WARNING_PRAGMA1(x # y)
-# define RBIMPL_WARNING_PUSH()        RBIMPL_WARNING_PRAGMA1(push)
-# define RBIMPL_WARNING_POP()         RBIMPL_WARNING_PRAGMA1(pop)
-# define RBIMPL_WARNING_ERROR(flag)   RBIMPL_WARNING_PRAGMA2(error, flag)
-# define RBIMPL_WARNING_IGNORED(flag) RBIMPL_WARNING_PRAGMA2(ignored, flag)
+#    /* Not sure exactly when but it seems LLVM 2.6.0 is a version with it. */
+#    define RBIMPL_WARNING_PRAGMA0(x) _Pragma(#    x)
+#    define RBIMPL_WARNING_PRAGMA1(x) RBIMPL_WARNING_PRAGMA0(clang diagnostic x)
+#    define RBIMPL_WARNING_PRAGMA2(x, y) RBIMPL_WARNING_PRAGMA1(x #    y)
+#    define RBIMPL_WARNING_PUSH() RBIMPL_WARNING_PRAGMA1(push)
+#    define RBIMPL_WARNING_POP() RBIMPL_WARNING_PRAGMA1(pop)
+#    define RBIMPL_WARNING_ERROR(flag) RBIMPL_WARNING_PRAGMA2(error, flag)
+#    define RBIMPL_WARNING_IGNORED(flag) RBIMPL_WARNING_PRAGMA2(ignored, flag)
 
 #elif RBIMPL_COMPILER_SINCE(GCC, 4, 6, 0)
-# /* https://gcc.gnu.org/onlinedocs/gcc-4.6.0/gcc/Diagnostic-Pragmas.html */
-# define RBIMPL_WARNING_PRAGMA0(x)    _Pragma(# x)
-# define RBIMPL_WARNING_PRAGMA1(x)    RBIMPL_WARNING_PRAGMA0(GCC diagnostic x)
-# define RBIMPL_WARNING_PRAGMA2(x, y) RBIMPL_WARNING_PRAGMA1(x # y)
-# define RBIMPL_WARNING_PUSH()        RBIMPL_WARNING_PRAGMA1(push)
-# define RBIMPL_WARNING_POP()         RBIMPL_WARNING_PRAGMA1(pop)
-# define RBIMPL_WARNING_ERROR(flag)   RBIMPL_WARNING_PRAGMA2(error, flag)
-# define RBIMPL_WARNING_IGNORED(flag) RBIMPL_WARNING_PRAGMA2(ignored, flag)
+#    /* https://gcc.gnu.org/onlinedocs/gcc-4.6.0/gcc/Diagnostic-Pragmas.html */
+#    define RBIMPL_WARNING_PRAGMA0(x) _Pragma(#    x)
+#    define RBIMPL_WARNING_PRAGMA1(x) RBIMPL_WARNING_PRAGMA0(GCC diagnostic x)
+#    define RBIMPL_WARNING_PRAGMA2(x, y) RBIMPL_WARNING_PRAGMA1(x #    y)
+#    define RBIMPL_WARNING_PUSH() RBIMPL_WARNING_PRAGMA1(push)
+#    define RBIMPL_WARNING_POP() RBIMPL_WARNING_PRAGMA1(pop)
+#    define RBIMPL_WARNING_ERROR(flag) RBIMPL_WARNING_PRAGMA2(error, flag)
+#    define RBIMPL_WARNING_IGNORED(flag) RBIMPL_WARNING_PRAGMA2(ignored, flag)
 
 #else
-# /* :FIXME: improve here */
-# define RBIMPL_WARNING_PUSH()        /* void */
-# define RBIMPL_WARNING_POP()         /* void */
-# define RBIMPL_WARNING_ERROR(flag)   /* void */
-# define RBIMPL_WARNING_IGNORED(flag) /* void */
-#endif /* _MSC_VER */
+#                                        /* :FIXME: improve here */
+#    define RBIMPL_WARNING_PUSH()        /* void */
+#    define RBIMPL_WARNING_POP()         /* void */
+#    define RBIMPL_WARNING_ERROR(flag)   /* void */
+#    define RBIMPL_WARNING_IGNORED(flag) /* void */
+#endif                                   /* _MSC_VER */
 /** @endcond */
 
 #endif /* RBIMPL_WARNING_PUSH_H */

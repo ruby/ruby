@@ -8,7 +8,7 @@
  * (See the file 'LICENCE'.)
  */
 #if !defined(_OSSL_X509_H_)
-#define _OSSL_X509_H_
+#    define _OSSL_X509_H_
 
 /*
  * X509 main module

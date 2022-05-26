@@ -5,11 +5,11 @@ struct olevariantdata {
     VARIANT var;
 };
 
-static void  olevariant_free(void *ptr);
-static size_t  olevariant_size(const void *ptr);
+static void olevariant_free(void *ptr);
+static size_t olevariant_size(const void *ptr);
 static void ole_val2olevariantdata(VALUE val, VARTYPE vt, struct olevariantdata *pvar);
 static void ole_val2variant_err(VALUE val, VARIANT *var);
-static void ole_set_byref(VARIANT *realvar, VARIANT *var,  VARTYPE vt);
+static void ole_set_byref(VARIANT *realvar, VARIANT *var, VARTYPE vt);
 static VALUE folevariant_s_allocate(VALUE klass);
 static VALUE folevariant_s_array(VALUE klass, VALUE dims, VALUE vvt);
 static void check_type_val2variant(VALUE val);
@@ -23,11 +23,13 @@ static VALUE folevariant_value(VALUE self);
 static VALUE folevariant_vartype(VALUE self);
 static VALUE folevariant_set_value(VALUE self, VALUE val);
 
-static const rb_data_type_t olevariant_datatype = {
-    "win32ole_variant",
-    {NULL, olevariant_free, olevariant_size,},
-    0, 0, RUBY_TYPED_FREE_IMMEDIATELY
-};
+static const rb_data_type_t olevariant_datatype = {"win32ole_variant",
+    {
+        NULL,
+        olevariant_free,
+        olevariant_size,
+    },
+    0, 0, RUBY_TYPED_FREE_IMMEDIATELY};
 
 static void
 olevariant_free(void *ptr)
@@ -49,7 +51,7 @@ ole_val2olevariantdata(VALUE val, VARTYPE vt, struct olevariantdata *pvar)
 {
     HRESULT hr = S_OK;
 
-    if (((vt & ~VT_BYREF) ==  (VT_ARRAY | VT_UI1)) && RB_TYPE_P(val, T_STRING)) {
+    if (((vt & ~VT_BYREF) == (VT_ARRAY | VT_UI1)) && RB_TYPE_P(val, T_STRING)) {
         long len = RSTRING_LEN(val);
         void *pdest = NULL;
         SAFEARRAY *p = NULL;
@@ -70,32 +72,37 @@ ole_val2olevariantdata(VALUE val, VARTYPE vt, struct olevariantdata *pvar)
             if (vt & VT_BYREF) {
                 V_VT(&(pvar->var)) = vt;
                 V_ARRAYREF(&(pvar->var)) = &(V_ARRAY(&(pvar->realvar)));
-            } else {
+            }
+            else {
                 hr = VariantCopy(&(pvar->var), &(pvar->realvar));
             }
-        } else {
-            if (psa)
-                SafeArrayDestroy(psa);
         }
-    } else if (vt & VT_ARRAY) {
+        else {
+            if (psa) SafeArrayDestroy(psa);
+        }
+    }
+    else if (vt & VT_ARRAY) {
         if (val == Qnil) {
             V_VT(&(pvar->var)) = vt;
             if (vt & VT_BYREF) {
                 V_ARRAYREF(&(pvar->var)) = &(V_ARRAY(&(pvar->realvar)));
             }
-        } else {
+        }
+        else {
             hr = ole_val_ary2variant_ary(val, &(pvar->realvar), (VARTYPE)(vt & ~VT_BYREF));
             if (SUCCEEDED(hr)) {
                 if (vt & VT_BYREF) {
                     V_VT(&(pvar->var)) = vt;
                     V_ARRAYREF(&(pvar->var)) = &(V_ARRAY(&(pvar->realvar)));
-                } else {
+                }
+                else {
                     hr = VariantCopy(&(pvar->var), &(pvar->realvar));
                 }
             }
         }
 #if (defined(_MSC_VER) && (_MSC_VER >= 1300)) || defined(__CYGWIN__) || defined(__MINGW32__)
-    } else if ( (vt & ~VT_BYREF) == VT_I8 || (vt & ~VT_BYREF) == VT_UI8) {
+    }
+    else if ((vt & ~VT_BYREF) == VT_I8 || (vt & ~VT_BYREF) == VT_UI8) {
         ole_val2variant_ex(val, &(pvar->realvar), (vt & ~VT_BYREF));
         ole_val2variant_ex(val, &(pvar->var), (vt & ~VT_BYREF));
         V_VT(&(pvar->var)) = vt;
@@ -103,42 +110,49 @@ ole_val2olevariantdata(VALUE val, VARTYPE vt, struct olevariantdata *pvar)
             ole_set_byref(&(pvar->realvar), &(pvar->var), vt);
         }
 #endif
-    } else if ( (vt & ~VT_BYREF) == VT_ERROR) {
+    }
+    else if ((vt & ~VT_BYREF) == VT_ERROR) {
         ole_val2variant_err(val, &(pvar->realvar));
         if (vt & VT_BYREF) {
             ole_set_byref(&(pvar->realvar), &(pvar->var), vt);
-        } else {
+        }
+        else {
             hr = VariantCopy(&(pvar->var), &(pvar->realvar));
         }
-    } else {
+    }
+    else {
         if (val == Qnil) {
             V_VT(&(pvar->var)) = vt;
             if (vt == (VT_BYREF | VT_VARIANT)) {
                 ole_set_byref(&(pvar->realvar), &(pvar->var), vt);
-            } else {
+            }
+            else {
                 V_VT(&(pvar->realvar)) = vt & ~VT_BYREF;
                 if (vt & VT_BYREF) {
                     ole_set_byref(&(pvar->realvar), &(pvar->var), vt);
                 }
             }
-        } else {
+        }
+        else {
             ole_val2variant_ex(val, &(pvar->realvar), (VARTYPE)(vt & ~VT_BYREF));
             if (vt == (VT_BYREF | VT_VARIANT)) {
                 ole_set_byref(&(pvar->realvar), &(pvar->var), vt);
-            } else if (vt & VT_BYREF) {
-                if ( (vt & ~VT_BYREF) != V_VT(&(pvar->realvar))) {
-                    hr = VariantChangeTypeEx(&(pvar->realvar), &(pvar->realvar),
-                            cWIN32OLE_lcid, 0, (VARTYPE)(vt & ~VT_BYREF));
+            }
+            else if (vt & VT_BYREF) {
+                if ((vt & ~VT_BYREF) != V_VT(&(pvar->realvar))) {
+                    hr = VariantChangeTypeEx(
+                        &(pvar->realvar), &(pvar->realvar), cWIN32OLE_lcid, 0, (VARTYPE)(vt & ~VT_BYREF));
                 }
                 if (SUCCEEDED(hr)) {
                     ole_set_byref(&(pvar->realvar), &(pvar->var), vt);
                 }
-            } else {
+            }
+            else {
                 if (vt == V_VT(&(pvar->realvar))) {
                     hr = VariantCopy(&(pvar->var), &(pvar->realvar));
-                } else {
-                    hr = VariantChangeTypeEx(&(pvar->var), &(pvar->realvar),
-                            cWIN32OLE_lcid, 0, vt);
+                }
+                else {
+                    hr = VariantChangeTypeEx(&(pvar->var), &(pvar->realvar), cWIN32OLE_lcid, 0, vt);
                 }
             }
         }
@@ -156,27 +170,29 @@ ole_val2variant_err(VALUE val, VARIANT *var)
         v = folevariant_value(v);
     }
     if (!(FIXNUM_P(v) || RB_TYPE_P(v, T_BIGNUM) || v == Qnil)) {
-        rb_raise(eWIN32OLERuntimeError, "failed to convert VT_ERROR VARIANT:`%"PRIsVALUE"'", rb_inspect(v));
+        rb_raise(eWIN32OLERuntimeError, "failed to convert VT_ERROR VARIANT:`%" PRIsVALUE "'", rb_inspect(v));
     }
     V_VT(var) = VT_ERROR;
     if (v != Qnil) {
         V_ERROR(var) = RB_NUM2LONG(val);
-    } else {
+    }
+    else {
         V_ERROR(var) = 0;
     }
 }
 
 static void
-ole_set_byref(VARIANT *realvar, VARIANT *var,  VARTYPE vt)
+ole_set_byref(VARIANT *realvar, VARIANT *var, VARTYPE vt)
 {
     V_VT(var) = vt;
-    if (vt == (VT_VARIANT|VT_BYREF)) {
+    if (vt == (VT_VARIANT | VT_BYREF)) {
         V_VARIANTREF(var) = realvar;
-    } else {
+    }
+    else {
         if (V_VT(realvar) != (vt & ~VT_BYREF)) {
             rb_raise(eWIN32OLERuntimeError, "variant type mismatch");
         }
-        switch(vt & ~VT_BYREF) {
+        switch (vt & ~VT_BYREF) {
         case VT_I1:
             V_I1REF(var) = &V_I1(realvar);
             break;
@@ -203,16 +219,16 @@ ole_set_byref(VARIANT *realvar, VARIANT *var,  VARTYPE vt)
             break;
 
 #if (defined(_MSC_VER) && (_MSC_VER >= 1300)) || defined(__CYGWIN__) || defined(__MINGW32__)
-#ifdef V_I8REF
+#    ifdef V_I8REF
         case VT_I8:
             V_I8REF(var) = &V_I8(realvar);
             break;
-#endif
-#ifdef V_UI8REF
+#    endif
+#    ifdef V_UI8REF
         case VT_UI8:
             V_UI8REF(var) = &V_UI8(realvar);
             break;
-#endif
+#    endif
 #endif
         case VT_INT:
             V_INTREF(var) = &V_INT(realvar);
@@ -304,7 +320,7 @@ folevariant_s_array(VALUE klass, VALUE elems, VALUE vvt)
 
     psab = ALLOC_N(SAFEARRAYBOUND, dim);
 
-    if(!psab) {
+    if (!psab) {
         rb_raise(rb_eRuntimeError, "memory allocation error");
     }
 
@@ -324,7 +340,8 @@ folevariant_s_array(VALUE klass, VALUE elems, VALUE vvt)
         V_VT(&(pvar->realvar)) = (vt & ~VT_BYREF);
         V_ARRAY(&(pvar->realvar)) = psa;
         V_ARRAYREF(&(pvar->var)) = &(V_ARRAY(&(pvar->realvar)));
-    } else {
+    }
+    else {
         V_ARRAY(&(pvar->var)) = psa;
     }
     if (psab) free(psab);
@@ -337,13 +354,12 @@ check_type_val2variant(VALUE val)
     VALUE elem;
     int len = 0;
     int i = 0;
-    if(!rb_obj_is_kind_of(val, cWIN32OLE) &&
-       !rb_obj_is_kind_of(val, cWIN32OLE_VARIANT) &&
-       !rb_obj_is_kind_of(val, rb_cTime)) {
+    if (!rb_obj_is_kind_of(val, cWIN32OLE) && !rb_obj_is_kind_of(val, cWIN32OLE_VARIANT) &&
+        !rb_obj_is_kind_of(val, rb_cTime)) {
         switch (TYPE(val)) {
         case T_ARRAY:
             len = RARRAY_LEN(val);
-            for(i = 0; i < len; i++) {
+            for (i = 0; i < len; i++) {
                 elem = rb_ary_entry(val, i);
                 check_type_val2variant(elem);
             }
@@ -357,8 +373,7 @@ check_type_val2variant(VALUE val)
         case T_NIL:
             break;
         default:
-            rb_raise(rb_eTypeError, "can not convert WIN32OLE_VARIANT from type %s",
-                     rb_obj_classname(val));
+            rb_raise(rb_eTypeError, "can not convert WIN32OLE_VARIANT from type %s", rb_obj_classname(val));
         }
     }
 }
@@ -418,7 +433,8 @@ folevariant_initialize(VALUE self, VALUE args)
     TypedData_Get_Struct(self, struct olevariantdata, &olevariant_datatype, pvar);
     if (len == 1) {
         ole_val2variant(val, &(pvar->var));
-    } else {
+    }
+    else {
         vvt = rb_ary_entry(args, 1);
         vt = RB_NUM2INT(vvt);
         if ((vt & VT_TYPEMASK) == VT_RECORD) {
@@ -512,8 +528,7 @@ folevariant_ary_aref(int argc, VALUE *argv, VALUE self)
 
     TypedData_Get_Struct(self, struct olevariantdata, &olevariant_datatype, pvar);
     if (!V_ISARRAY(&(pvar->var))) {
-        rb_raise(eWIN32OLERuntimeError,
-                 "`[]' is not available for this variant type object");
+        rb_raise(eWIN32OLERuntimeError, "`[]' is not available for this variant type object");
     }
     psa = get_locked_safe_array(self);
     if (psa == NULL) {
@@ -569,19 +584,18 @@ folevariant_ary_aset(int argc, VALUE *argv, VALUE self)
 
     TypedData_Get_Struct(self, struct olevariantdata, &olevariant_datatype, pvar);
     if (!V_ISARRAY(&(pvar->var))) {
-        rb_raise(eWIN32OLERuntimeError,
-                 "`[]' is not available for this variant type object");
+        rb_raise(eWIN32OLERuntimeError, "`[]' is not available for this variant type object");
     }
     psa = get_locked_safe_array(self);
     if (psa == NULL) {
         rb_raise(rb_eRuntimeError, "failed to get SafeArray pointer");
     }
 
-    pid = ary2safe_array_index(argc-1, argv, psa);
+    pid = ary2safe_array_index(argc - 1, argv, psa);
 
     VariantInit(&var);
     vt = (V_VT(&(pvar->var)) & ~VT_ARRAY);
-    p = val2variant_ptr(argv[argc-1], &var, vt);
+    p = val2variant_ptr(argv[argc - 1], &var, vt);
     if ((V_VT(&var) == VT_DISPATCH && V_DISPATCH(&var) == NULL) ||
         (V_VT(&var) == VT_UNKNOWN && V_UNKNOWN(&var) == NULL)) {
         rb_raise(eWIN32OLERuntimeError, "argument does not have IDispatch or IUnknown Interface");
@@ -593,7 +607,7 @@ folevariant_ary_aset(int argc, VALUE *argv, VALUE self)
 
     unlock_safe_array(psa);
     if (pid) free(pid);
-    return argv[argc-1];
+    return argv[argc - 1];
 }
 
 /*
@@ -618,11 +632,12 @@ folevariant_value(VALUE self)
     val = ole_variant2val(&(pvar->var));
     vt = V_VT(&(pvar->var));
 
-    if ((vt & ~VT_BYREF) == (VT_UI1|VT_ARRAY)) {
+    if ((vt & ~VT_BYREF) == (VT_UI1 | VT_ARRAY)) {
         if (vt & VT_BYREF) {
             psa = *V_ARRAYREF(&(pvar->var));
-        } else {
-            psa  = V_ARRAY(&(pvar->var));
+        }
+        else {
+            psa = V_ARRAY(&(pvar->var));
         }
         if (!psa) {
             return val;
@@ -673,9 +688,8 @@ folevariant_set_value(VALUE self, VALUE val)
     VARTYPE vt;
     TypedData_Get_Struct(self, struct olevariantdata, &olevariant_datatype, pvar);
     vt = V_VT(&(pvar->var));
-    if (V_ISARRAY(&(pvar->var)) && ((vt & ~VT_BYREF) != (VT_UI1|VT_ARRAY) || !RB_TYPE_P(val, T_STRING))) {
-        rb_raise(eWIN32OLERuntimeError,
-                 "`value=' is not available for this variant type object");
+    if (V_ISARRAY(&(pvar->var)) && ((vt & ~VT_BYREF) != (VT_UI1 | VT_ARRAY) || !RB_TYPE_P(val, T_STRING))) {
+        rb_raise(eWIN32OLERuntimeError, "`value=' is not available for this variant type object");
     }
     ole_val2olevariantdata(val, vt, pvar);
     return Qnil;
@@ -709,20 +723,20 @@ Init_win32ole_variant(void)
     /*
      * represents VT_EMPTY OLE object.
      */
-    rb_define_const(cWIN32OLE_VARIANT, "Empty",
-            rb_funcall(cWIN32OLE_VARIANT, rb_intern("new"), 2, Qnil, RB_INT2FIX(VT_EMPTY)));
+    rb_define_const(
+        cWIN32OLE_VARIANT, "Empty", rb_funcall(cWIN32OLE_VARIANT, rb_intern("new"), 2, Qnil, RB_INT2FIX(VT_EMPTY)));
 
     /*
      * represents VT_NULL OLE object.
      */
-    rb_define_const(cWIN32OLE_VARIANT, "Null",
-            rb_funcall(cWIN32OLE_VARIANT, rb_intern("new"), 2, Qnil, RB_INT2FIX(VT_NULL)));
+    rb_define_const(
+        cWIN32OLE_VARIANT, "Null", rb_funcall(cWIN32OLE_VARIANT, rb_intern("new"), 2, Qnil, RB_INT2FIX(VT_NULL)));
 
     /*
      * represents Nothing of VB.NET or VB.
      */
     rb_define_const(cWIN32OLE_VARIANT, "Nothing",
-            rb_funcall(cWIN32OLE_VARIANT, rb_intern("new"), 2, Qnil, RB_INT2FIX(VT_DISPATCH)));
+        rb_funcall(cWIN32OLE_VARIANT, rb_intern("new"), 2, Qnil, RB_INT2FIX(VT_DISPATCH)));
 
     /*
      * represents VT_ERROR variant with DISP_E_PARAMNOTFOUND.
@@ -732,5 +746,5 @@ Init_win32ole_variant(void)
      *  fso.openTextFile(filename, WIN32OLE_VARIANT::NoParam, false)
      */
     rb_define_const(cWIN32OLE_VARIANT, "NoParam",
-            rb_funcall(cWIN32OLE_VARIANT, rb_intern("new"), 2, INT2NUM(DISP_E_PARAMNOTFOUND), RB_INT2FIX(VT_ERROR)));
+        rb_funcall(cWIN32OLE_VARIANT, rb_intern("new"), 2, INT2NUM(DISP_E_PARAMNOTFOUND), RB_INT2FIX(VT_ERROR)));
 }

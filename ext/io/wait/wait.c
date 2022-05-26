@@ -16,28 +16,28 @@
 
 #include <sys/types.h>
 #if defined(HAVE_UNISTD_H) && (defined(__sun))
-#include <unistd.h>
+#    include <unistd.h>
 #endif
 #if defined(HAVE_SYS_IOCTL_H)
-#include <sys/ioctl.h>
+#    include <sys/ioctl.h>
 #endif
 #if defined(FIONREAD_HEADER)
-#include FIONREAD_HEADER
+#    include FIONREAD_HEADER
 #endif
 
 #ifdef HAVE_RB_W32_IOCTLSOCKET
-#define ioctl ioctlsocket
-#define ioctl_arg u_long
-#define ioctl_arg2num(i) ULONG2NUM(i)
+#    define ioctl ioctlsocket
+#    define ioctl_arg u_long
+#    define ioctl_arg2num(i) ULONG2NUM(i)
 #else
-#define ioctl_arg int
-#define ioctl_arg2num(i) INT2NUM(i)
+#    define ioctl_arg int
+#    define ioctl_arg2num(i) INT2NUM(i)
 #endif
 
 #ifdef HAVE_RB_W32_IS_SOCKET
-#define FIONREAD_POSSIBLE_P(fd) rb_w32_is_socket(fd)
+#    define FIONREAD_POSSIBLE_P(fd) rb_w32_is_socket(fd)
 #else
-#define FIONREAD_POSSIBLE_P(fd) ((void)(fd),Qtrue)
+#    define FIONREAD_POSSIBLE_P(fd) ((void)(fd), Qtrue)
 #endif
 
 #ifndef HAVE_RB_IO_WAIT
@@ -52,11 +52,11 @@ get_timeout(int argc, VALUE *argv, struct timeval *timerec)
     VALUE timeout = Qnil;
     rb_check_arity(argc, 0, 1);
     if (!argc || NIL_P(timeout = argv[0])) {
-	return NULL;
+        return NULL;
     }
     else {
-	*timerec = rb_time_interval(timeout);
-	return timerec;
+        *timerec = rb_time_interval(timeout);
+        return timerec;
     }
 }
 
@@ -64,8 +64,7 @@ static int
 wait_for_single_fd(rb_io_t *fptr, int events, struct timeval *tv)
 {
     int i = rb_wait_for_single_fd(fptr->fd, events, tv);
-    if (i < 0)
-	rb_sys_fail(0);
+    if (i < 0) rb_sys_fail(0);
     rb_io_check_closed(fptr);
     return (i & events);
 }
@@ -105,16 +104,16 @@ io_wait_event(VALUE io, int event, VALUE timeout)
     VALUE result = rb_io_wait(io, RB_INT2NUM(event), timeout);
 
     if (!RB_TEST(result)) {
-	return Qnil;
+        return Qnil;
     }
 
     int mask = RB_NUM2INT(result);
 
     if (mask & event) {
-	return io;
+        return io;
     }
     else {
-	return Qfalse;
+        return Qfalse;
     }
 }
 #endif
@@ -142,11 +141,9 @@ io_ready_p(VALUE io)
     if (rb_io_read_pending(fptr)) return Qtrue;
 
 #ifndef HAVE_RB_IO_WAIT
-    if (wait_for_single_fd(fptr, RB_WAITFD_IN, &tv))
-	return Qtrue;
+    if (wait_for_single_fd(fptr, RB_WAITFD_IN, &tv)) return Qtrue;
 #else
-    if (RTEST(io_wait_event(io, RUBY_IO_READABLE, RB_INT2NUM(0))))
-	return Qtrue;
+    if (RTEST(io_wait_event(io, RUBY_IO_READABLE, RB_INT2NUM(0)))) return Qtrue;
 #endif
     return Qfalse;
 }
@@ -182,7 +179,7 @@ io_wait_readable(int argc, VALUE *argv, VALUE io)
 
 #ifndef HAVE_RB_IO_WAIT
     if (wait_for_single_fd(fptr, RB_WAITFD_IN, tv)) {
-	return io;
+        return io;
     }
     return Qnil;
 #else
@@ -218,7 +215,7 @@ io_wait_writable(int argc, VALUE *argv, VALUE io)
 #ifndef HAVE_RB_IO_WAIT
     tv = get_timeout(argc, argv, &timerec);
     if (wait_for_single_fd(fptr, RB_WAITFD_OUT, tv)) {
-	return io;
+        return io;
     }
     return Qnil;
 #else
@@ -261,33 +258,33 @@ static int
 wait_mode_sym(VALUE mode)
 {
     if (mode == ID2SYM(rb_intern("r"))) {
-	return RB_WAITFD_IN;
+        return RB_WAITFD_IN;
     }
     if (mode == ID2SYM(rb_intern("read"))) {
-	return RB_WAITFD_IN;
+        return RB_WAITFD_IN;
     }
     if (mode == ID2SYM(rb_intern("readable"))) {
-	return RB_WAITFD_IN;
+        return RB_WAITFD_IN;
     }
     if (mode == ID2SYM(rb_intern("w"))) {
-	return RB_WAITFD_OUT;
+        return RB_WAITFD_OUT;
     }
     if (mode == ID2SYM(rb_intern("write"))) {
-	return RB_WAITFD_OUT;
+        return RB_WAITFD_OUT;
     }
     if (mode == ID2SYM(rb_intern("writable"))) {
-	return RB_WAITFD_OUT;
+        return RB_WAITFD_OUT;
     }
     if (mode == ID2SYM(rb_intern("rw"))) {
-	return RB_WAITFD_IN|RB_WAITFD_OUT;
+        return RB_WAITFD_IN | RB_WAITFD_OUT;
     }
     if (mode == ID2SYM(rb_intern("read_write"))) {
-	return RB_WAITFD_IN|RB_WAITFD_OUT;
+        return RB_WAITFD_IN | RB_WAITFD_OUT;
     }
     if (mode == ID2SYM(rb_intern("readable_writable"))) {
-	return RB_WAITFD_IN|RB_WAITFD_OUT;
+        return RB_WAITFD_IN | RB_WAITFD_OUT;
     }
-    rb_raise(rb_eArgError, "unsupported mode: %"PRIsVALUE, mode);
+    rb_raise(rb_eArgError, "unsupported mode: %" PRIsVALUE, mode);
     return 0;
 }
 
@@ -322,55 +319,53 @@ io_wait(int argc, VALUE *argv, VALUE io)
 
     GetOpenFile(io, fptr);
     for (i = 0; i < argc; ++i) {
-	if (SYMBOL_P(argv[i])) {
-	    event |= wait_mode_sym(argv[i]);
-	}
-	else {
-	    *(tv = &timerec) = rb_time_interval(argv[i]);
-	}
+        if (SYMBOL_P(argv[i])) {
+            event |= wait_mode_sym(argv[i]);
+        }
+        else {
+            *(tv = &timerec) = rb_time_interval(argv[i]);
+        }
     }
     /* rb_time_interval() and might_mode() might convert the argument */
     rb_io_check_closed(fptr);
     if (!event) event = RB_WAITFD_IN;
-    if ((event & RB_WAITFD_IN) && rb_io_read_pending(fptr))
-	return Qtrue;
-    if (wait_for_single_fd(fptr, event, tv))
-	return io;
+    if ((event & RB_WAITFD_IN) && rb_io_read_pending(fptr)) return Qtrue;
+    if (wait_for_single_fd(fptr, event, tv)) return io;
     return Qnil;
 #else
     VALUE timeout = Qundef;
     rb_io_event_t events = 0;
 
     if (argc != 2 || (RB_SYMBOL_P(argv[0]) || RB_SYMBOL_P(argv[1]))) {
-	for (int i = 0; i < argc; i += 1) {
-	    if (RB_SYMBOL_P(argv[i])) {
-		events |= wait_mode_sym(argv[i]);
-	    }
-	    else if (timeout == Qundef) {
-		rb_time_interval(timeout = argv[i]);
-	    }
-	    else {
-		rb_raise(rb_eArgError, "timeout given more than once");
-	    }
-	}
-	if (timeout == Qundef) timeout = Qnil;
+        for (int i = 0; i < argc; i += 1) {
+            if (RB_SYMBOL_P(argv[i])) {
+                events |= wait_mode_sym(argv[i]);
+            }
+            else if (timeout == Qundef) {
+                rb_time_interval(timeout = argv[i]);
+            }
+            else {
+                rb_raise(rb_eArgError, "timeout given more than once");
+            }
+        }
+        if (timeout == Qundef) timeout = Qnil;
     }
     else /* argc == 2 */ {
-	events = RB_NUM2UINT(argv[0]);
-	timeout = argv[1];
+        events = RB_NUM2UINT(argv[0]);
+        timeout = argv[1];
     }
 
     if (events == 0) {
-	events = RUBY_IO_READABLE;
+        events = RUBY_IO_READABLE;
     }
 
     if (events & RUBY_IO_READABLE) {
-	rb_io_t *fptr = NULL;
-	RB_IO_POINTER(io, fptr);
+        rb_io_t *fptr = NULL;
+        RB_IO_POINTER(io, fptr);
 
-	if (rb_io_read_pending(fptr)) {
-	    return Qtrue;
-	}
+        if (rb_io_read_pending(fptr)) {
+            return Qtrue;
+        }
     }
 
     return io_wait_event(io, events, timeout);

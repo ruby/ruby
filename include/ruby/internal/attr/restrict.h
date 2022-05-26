@@ -1,4 +1,4 @@
-#ifndef RBIMPL_ATTR_RESTRICT_H                       /*-*-C++-*-vi:se ft=cpp:*/
+#ifndef RBIMPL_ATTR_RESTRICT_H /*-*-C++-*-vi:se ft=cpp:*/
 #define RBIMPL_ATTR_RESTRICT_H
 /**
  * @file
@@ -29,16 +29,16 @@
 
 /** Wraps (or simulates) `__declspec(restrict)` */
 #if RBIMPL_COMPILER_SINCE(MSVC, 14, 0, 0)
-# define RBIMPL_ATTR_RESTRICT() __declspec(re ## strict)
+#    define RBIMPL_ATTR_RESTRICT() __declspec(re##strict)
 
 #elif RBIMPL_HAS_ATTRIBUTE(malloc)
-# define RBIMPL_ATTR_RESTRICT() __attribute__((__malloc__))
+#    define RBIMPL_ATTR_RESTRICT() __attribute__((__malloc__))
 
 #elif RBIMPL_COMPILER_SINCE(SunPro, 5, 10, 0)
-# define RBIMPL_ATTR_RESTRICT() _Pragma("returns_new_memory")
+#    define RBIMPL_ATTR_RESTRICT() _Pragma("returns_new_memory")
 
 #else
-# define RBIMPL_ATTR_RESTRICT() /* void */
+#    define RBIMPL_ATTR_RESTRICT() /* void */
 #endif
 
 #endif /* RBIMPL_ATTR_RESTRICT_H */

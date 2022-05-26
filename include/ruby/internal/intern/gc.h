@@ -1,4 +1,4 @@
-#ifndef RBIMPL_INTERN_GC_H                           /*-*-C++-*-vi:se ft=cpp:*/
+#ifndef RBIMPL_INTERN_GC_H /*-*-C++-*-vi:se ft=cpp:*/
 #define RBIMPL_INTERN_GC_H
 /**
  * @file
@@ -23,16 +23,16 @@
 #include "ruby/internal/config.h"
 
 #ifdef STDC_HEADERS
-# include <stddef.h>                       /* size_t */
+#    include <stddef.h> /* size_t */
 #endif
 
 #if HAVE_SYS_TYPES_H
-# include <sys/types.h>                    /* ssize_t */
+#    include <sys/types.h> /* ssize_t */
 #endif
 
 #include "ruby/internal/attr/cold.h"
-#include "ruby/internal/attr/noreturn.h"
 #include "ruby/internal/attr/nonnull.h"
+#include "ruby/internal/attr/noreturn.h"
 #include "ruby/internal/attr/pure.h"
 #include "ruby/internal/dllexport.h"
 #include "ruby/internal/value.h"

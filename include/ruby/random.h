@@ -1,4 +1,4 @@
-#ifndef RUBY_RANDOM_H                                /*-*-C++-*-vi:se ft=cpp:*/
+#ifndef RUBY_RANDOM_H /*-*-C++-*-vi:se ft=cpp:*/
 #define RUBY_RANDOM_H 1
 /**
  * @file
@@ -160,22 +160,17 @@ typedef struct {
  * };
  * ```
  */
-#define RB_RANDOM_INTERFACE_DEFINE(prefix) \
-    prefix##_init, \
-    prefix##_get_int32, \
-    prefix##_get_bytes
+#define RB_RANDOM_INTERFACE_DEFINE(prefix) prefix##_init, prefix##_get_int32, prefix##_get_bytes
 
 /**
  * Identical   to   #RB_RANDOM_INTERFACE_DEFINE    except   it   also   defines
  * prefix_get_real.
  */
-#define RB_RANDOM_INTERFACE_DEFINE_WITH_REAL(prefix) \
-    RB_RANDOM_INTERFACE_DEFINE(prefix), \
-    prefix##_get_real
+#define RB_RANDOM_INTERFACE_DEFINE_WITH_REAL(prefix) RB_RANDOM_INTERFACE_DEFINE(prefix), prefix##_get_real
 
 #if defined _WIN32 && !defined __CYGWIN__
 typedef rb_data_type_t rb_random_data_type_t;
-# define RB_RANDOM_PARENT 0
+#    define RB_RANDOM_PARENT 0
 #else
 
 /** This is the type of ::rb_random_data_type. */
@@ -198,7 +193,7 @@ typedef const rb_data_type_t rb_random_data_type_t;
  * }
  * ```
  */
-# define RB_RANDOM_PARENT &rb_random_data_type
+#    define RB_RANDOM_PARENT &rb_random_data_type
 #endif
 
 /**
@@ -207,8 +202,7 @@ typedef const rb_data_type_t rb_random_data_type_t;
  * platforms #RB_RANDOM_PARENT  can require  a fixup.   This routine  does that
  * when necessary.
  */
-#define RB_RANDOM_DATA_INIT_PARENT(random_data) \
-    rbimpl_random_data_init_parent(&random_data)
+#define RB_RANDOM_DATA_INIT_PARENT(random_data) rbimpl_random_data_init_parent(&random_data)
 
 /**
  * This   is    the   implementation   of    ::rb_data_type_struct::dmark   for

@@ -1,4 +1,4 @@
-#ifndef RUBY_VERSION_H                               /*-*-C++-*-vi:se ft=cpp:*/
+#ifndef RUBY_VERSION_H /*-*-C++-*-vi:se ft=cpp:*/
 #define RUBY_VERSION_H 1
 /**
  * @file
@@ -81,7 +81,7 @@
  * @note  Use mkmf.
  * @note  Don't rely on it.
  */
-#define RUBY_API_VERSION_CODE (RUBY_API_VERSION_MAJOR*10000+RUBY_API_VERSION_MINOR*100+RUBY_API_VERSION_TEENY)
+#define RUBY_API_VERSION_CODE (RUBY_API_VERSION_MAJOR * 10000 + RUBY_API_VERSION_MINOR * 100 + RUBY_API_VERSION_TEENY)
 
 /** @} */
 
@@ -133,7 +133,7 @@ RUBY_EXTERN const char ruby_platform[];
  * (and ::ruby_version), unless  this is -1.  -1 means there  is no release yet
  * for the version; ruby is actively developed. 0 means the initial GA version.
  */
-RUBY_EXTERN const int  ruby_patchlevel;
+RUBY_EXTERN const int ruby_patchlevel;
 
 /**
  * This is what `ruby -v` prints to the standard error.  Something like:

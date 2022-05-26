@@ -1,4 +1,4 @@
-#ifndef RBIMPL_ANYARGS_H                             /*-*-C++-*-vi:se ft=cpp:*/
+#ifndef RBIMPL_ANYARGS_H /*-*-C++-*-vi:se ft=cpp:*/
 #define RBIMPL_ANYARGS_H
 /**
  * @file
@@ -67,6 +67,7 @@
  *      `__builtin_types_compatible_p`, and in doing  so we need to distinguish
  *      ::rb_f_notimplement from others, by type.
  */
+#include "ruby/backward/2/stdarg.h"
 #include "ruby/internal/attr/maybe_unused.h"
 #include "ruby/internal/attr/nonnull.h"
 #include "ruby/internal/attr/weakref.h"
@@ -77,196 +78,450 @@
 #include "ruby/internal/intern/vm.h"
 #include "ruby/internal/method.h"
 #include "ruby/internal/value.h"
-#include "ruby/backward/2/stdarg.h"
 
 #if defined(__cplusplus)
-# include "ruby/backward/cxxanyargs.hpp"
+#    include "ruby/backward/cxxanyargs.hpp"
 
 #elif defined(_WIN32) || defined(__CYGWIN__)
-# /* Skip due to [Bug #16134] */
+#    /* Skip due to [Bug #16134] */
 
-#elif ! RBIMPL_HAS_ATTRIBUTE(transparent_union)
-# /* :TODO: improve here, please find a way to support. */
+#elif !RBIMPL_HAS_ATTRIBUTE(transparent_union)
+#    /* :TODO: improve here, please find a way to support. */
 
-#elif ! defined(HAVE_VA_ARGS_MACRO)
-# /* :TODO: improve here, please find a way to support. */
+#elif !defined(HAVE_VA_ARGS_MACRO)
+#    /* :TODO: improve here, please find a way to support. */
 
 #else
-# /** @cond INTERNAL_MACRO */
-# if ! defined(HAVE_BUILTIN___BUILTIN_TYPES_COMPATIBLE_P)
-#  define RBIMPL_CFUNC_IS_rb_f_notimplement(f) 0
-# else
-#  define RBIMPL_CFUNC_IS_rb_f_notimplement(f) \
-    __builtin_types_compatible_p(             \
-        __typeof__(f),                        \
-        __typeof__(rb_f_notimplement))
-# endif
+#    /** @cond INTERNAL_MACRO */
+#    if !defined(HAVE_BUILTIN___BUILTIN_TYPES_COMPATIBLE_P)
+#        define RBIMPL_CFUNC_IS_rb_f_notimplement(f) 0
+#    else
+#        define RBIMPL_CFUNC_IS_rb_f_notimplement(f) \
+            __builtin_types_compatible_p(__typeof__(f), __typeof__(rb_f_notimplement))
+#    endif
 
-# if ! defined(HAVE_BUILTIN___BUILTIN_CHOOSE_EXPR_CONSTANT_P)
-#  define RBIMPL_ANYARGS_DISPATCH(expr, truthy, falsy) (falsy)
-# else
-#  define RBIMPL_ANYARGS_DISPATCH(expr, truthy, falsy) \
-    __builtin_choose_expr(                            \
-        __builtin_choose_expr(                        \
-            __builtin_constant_p(expr),               \
-            (expr), 0),                               \
-        (truthy), (falsy))
-# endif
+#    if !defined(HAVE_BUILTIN___BUILTIN_CHOOSE_EXPR_CONSTANT_P)
+#        define RBIMPL_ANYARGS_DISPATCH(expr, truthy, falsy) (falsy)
+#    else
+#        define RBIMPL_ANYARGS_DISPATCH(expr, truthy, falsy) \
+            __builtin_choose_expr(__builtin_choose_expr(__builtin_constant_p(expr), (expr), 0), (truthy), (falsy))
+#    endif
 
-# define RBIMPL_ANYARGS_DISPATCH_rb_define_singleton_method_m2(n) RBIMPL_ANYARGS_DISPATCH((n) == -2, rb_define_singleton_method_m2, rb_define_singleton_method_m3)
-# define RBIMPL_ANYARGS_DISPATCH_rb_define_singleton_method_m1(n) RBIMPL_ANYARGS_DISPATCH((n) == -1, rb_define_singleton_method_m1, RBIMPL_ANYARGS_DISPATCH_rb_define_singleton_method_m2(n))
-# define RBIMPL_ANYARGS_DISPATCH_rb_define_singleton_method_00(n) RBIMPL_ANYARGS_DISPATCH((n) ==  0, rb_define_singleton_method_00, RBIMPL_ANYARGS_DISPATCH_rb_define_singleton_method_m1(n))
-# define RBIMPL_ANYARGS_DISPATCH_rb_define_singleton_method_01(n) RBIMPL_ANYARGS_DISPATCH((n) ==  1, rb_define_singleton_method_01, RBIMPL_ANYARGS_DISPATCH_rb_define_singleton_method_00(n))
-# define RBIMPL_ANYARGS_DISPATCH_rb_define_singleton_method_02(n) RBIMPL_ANYARGS_DISPATCH((n) ==  2, rb_define_singleton_method_02, RBIMPL_ANYARGS_DISPATCH_rb_define_singleton_method_01(n))
-# define RBIMPL_ANYARGS_DISPATCH_rb_define_singleton_method_03(n) RBIMPL_ANYARGS_DISPATCH((n) ==  3, rb_define_singleton_method_03, RBIMPL_ANYARGS_DISPATCH_rb_define_singleton_method_02(n))
-# define RBIMPL_ANYARGS_DISPATCH_rb_define_singleton_method_04(n) RBIMPL_ANYARGS_DISPATCH((n) ==  4, rb_define_singleton_method_04, RBIMPL_ANYARGS_DISPATCH_rb_define_singleton_method_03(n))
-# define RBIMPL_ANYARGS_DISPATCH_rb_define_singleton_method_05(n) RBIMPL_ANYARGS_DISPATCH((n) ==  5, rb_define_singleton_method_05, RBIMPL_ANYARGS_DISPATCH_rb_define_singleton_method_04(n))
-# define RBIMPL_ANYARGS_DISPATCH_rb_define_singleton_method_06(n) RBIMPL_ANYARGS_DISPATCH((n) ==  6, rb_define_singleton_method_06, RBIMPL_ANYARGS_DISPATCH_rb_define_singleton_method_05(n))
-# define RBIMPL_ANYARGS_DISPATCH_rb_define_singleton_method_07(n) RBIMPL_ANYARGS_DISPATCH((n) ==  7, rb_define_singleton_method_07, RBIMPL_ANYARGS_DISPATCH_rb_define_singleton_method_06(n))
-# define RBIMPL_ANYARGS_DISPATCH_rb_define_singleton_method_08(n) RBIMPL_ANYARGS_DISPATCH((n) ==  8, rb_define_singleton_method_08, RBIMPL_ANYARGS_DISPATCH_rb_define_singleton_method_07(n))
-# define RBIMPL_ANYARGS_DISPATCH_rb_define_singleton_method_09(n) RBIMPL_ANYARGS_DISPATCH((n) ==  9, rb_define_singleton_method_09, RBIMPL_ANYARGS_DISPATCH_rb_define_singleton_method_08(n))
-# define RBIMPL_ANYARGS_DISPATCH_rb_define_singleton_method_10(n) RBIMPL_ANYARGS_DISPATCH((n) == 10, rb_define_singleton_method_10, RBIMPL_ANYARGS_DISPATCH_rb_define_singleton_method_09(n))
-# define RBIMPL_ANYARGS_DISPATCH_rb_define_singleton_method_11(n) RBIMPL_ANYARGS_DISPATCH((n) == 11, rb_define_singleton_method_11, RBIMPL_ANYARGS_DISPATCH_rb_define_singleton_method_10(n))
-# define RBIMPL_ANYARGS_DISPATCH_rb_define_singleton_method_12(n) RBIMPL_ANYARGS_DISPATCH((n) == 12, rb_define_singleton_method_12, RBIMPL_ANYARGS_DISPATCH_rb_define_singleton_method_11(n))
-# define RBIMPL_ANYARGS_DISPATCH_rb_define_singleton_method_13(n) RBIMPL_ANYARGS_DISPATCH((n) == 13, rb_define_singleton_method_13, RBIMPL_ANYARGS_DISPATCH_rb_define_singleton_method_12(n))
-# define RBIMPL_ANYARGS_DISPATCH_rb_define_singleton_method_14(n) RBIMPL_ANYARGS_DISPATCH((n) == 14, rb_define_singleton_method_14, RBIMPL_ANYARGS_DISPATCH_rb_define_singleton_method_13(n))
-# define RBIMPL_ANYARGS_DISPATCH_rb_define_singleton_method_15(n) RBIMPL_ANYARGS_DISPATCH((n) == 15, rb_define_singleton_method_15, RBIMPL_ANYARGS_DISPATCH_rb_define_singleton_method_14(n))
-# define RBIMPL_ANYARGS_DISPATCH_rb_define_protected_method_m2(n) RBIMPL_ANYARGS_DISPATCH((n) == -2, rb_define_protected_method_m2, rb_define_protected_method_m3)
-# define RBIMPL_ANYARGS_DISPATCH_rb_define_protected_method_m1(n) RBIMPL_ANYARGS_DISPATCH((n) == -1, rb_define_protected_method_m1, RBIMPL_ANYARGS_DISPATCH_rb_define_protected_method_m2(n))
-# define RBIMPL_ANYARGS_DISPATCH_rb_define_protected_method_00(n) RBIMPL_ANYARGS_DISPATCH((n) ==  0, rb_define_protected_method_00, RBIMPL_ANYARGS_DISPATCH_rb_define_protected_method_m1(n))
-# define RBIMPL_ANYARGS_DISPATCH_rb_define_protected_method_01(n) RBIMPL_ANYARGS_DISPATCH((n) ==  1, rb_define_protected_method_01, RBIMPL_ANYARGS_DISPATCH_rb_define_protected_method_00(n))
-# define RBIMPL_ANYARGS_DISPATCH_rb_define_protected_method_02(n) RBIMPL_ANYARGS_DISPATCH((n) ==  2, rb_define_protected_method_02, RBIMPL_ANYARGS_DISPATCH_rb_define_protected_method_01(n))
-# define RBIMPL_ANYARGS_DISPATCH_rb_define_protected_method_03(n) RBIMPL_ANYARGS_DISPATCH((n) ==  3, rb_define_protected_method_03, RBIMPL_ANYARGS_DISPATCH_rb_define_protected_method_02(n))
-# define RBIMPL_ANYARGS_DISPATCH_rb_define_protected_method_04(n) RBIMPL_ANYARGS_DISPATCH((n) ==  4, rb_define_protected_method_04, RBIMPL_ANYARGS_DISPATCH_rb_define_protected_method_03(n))
-# define RBIMPL_ANYARGS_DISPATCH_rb_define_protected_method_05(n) RBIMPL_ANYARGS_DISPATCH((n) ==  5, rb_define_protected_method_05, RBIMPL_ANYARGS_DISPATCH_rb_define_protected_method_04(n))
-# define RBIMPL_ANYARGS_DISPATCH_rb_define_protected_method_06(n) RBIMPL_ANYARGS_DISPATCH((n) ==  6, rb_define_protected_method_06, RBIMPL_ANYARGS_DISPATCH_rb_define_protected_method_05(n))
-# define RBIMPL_ANYARGS_DISPATCH_rb_define_protected_method_07(n) RBIMPL_ANYARGS_DISPATCH((n) ==  7, rb_define_protected_method_07, RBIMPL_ANYARGS_DISPATCH_rb_define_protected_method_06(n))
-# define RBIMPL_ANYARGS_DISPATCH_rb_define_protected_method_08(n) RBIMPL_ANYARGS_DISPATCH((n) ==  8, rb_define_protected_method_08, RBIMPL_ANYARGS_DISPATCH_rb_define_protected_method_07(n))
-# define RBIMPL_ANYARGS_DISPATCH_rb_define_protected_method_09(n) RBIMPL_ANYARGS_DISPATCH((n) ==  9, rb_define_protected_method_09, RBIMPL_ANYARGS_DISPATCH_rb_define_protected_method_08(n))
-# define RBIMPL_ANYARGS_DISPATCH_rb_define_protected_method_10(n) RBIMPL_ANYARGS_DISPATCH((n) == 10, rb_define_protected_method_10, RBIMPL_ANYARGS_DISPATCH_rb_define_protected_method_09(n))
-# define RBIMPL_ANYARGS_DISPATCH_rb_define_protected_method_11(n) RBIMPL_ANYARGS_DISPATCH((n) == 11, rb_define_protected_method_11, RBIMPL_ANYARGS_DISPATCH_rb_define_protected_method_10(n))
-# define RBIMPL_ANYARGS_DISPATCH_rb_define_protected_method_12(n) RBIMPL_ANYARGS_DISPATCH((n) == 12, rb_define_protected_method_12, RBIMPL_ANYARGS_DISPATCH_rb_define_protected_method_11(n))
-# define RBIMPL_ANYARGS_DISPATCH_rb_define_protected_method_13(n) RBIMPL_ANYARGS_DISPATCH((n) == 13, rb_define_protected_method_13, RBIMPL_ANYARGS_DISPATCH_rb_define_protected_method_12(n))
-# define RBIMPL_ANYARGS_DISPATCH_rb_define_protected_method_14(n) RBIMPL_ANYARGS_DISPATCH((n) == 14, rb_define_protected_method_14, RBIMPL_ANYARGS_DISPATCH_rb_define_protected_method_13(n))
-# define RBIMPL_ANYARGS_DISPATCH_rb_define_protected_method_15(n) RBIMPL_ANYARGS_DISPATCH((n) == 15, rb_define_protected_method_15, RBIMPL_ANYARGS_DISPATCH_rb_define_protected_method_14(n))
-# define RBIMPL_ANYARGS_DISPATCH_rb_define_private_method_m2(n)   RBIMPL_ANYARGS_DISPATCH((n) == -2, rb_define_private_method_m2,   rb_define_private_method_m3)
-# define RBIMPL_ANYARGS_DISPATCH_rb_define_private_method_m1(n)   RBIMPL_ANYARGS_DISPATCH((n) == -1, rb_define_private_method_m1,   RBIMPL_ANYARGS_DISPATCH_rb_define_private_method_m2(n))
-# define RBIMPL_ANYARGS_DISPATCH_rb_define_private_method_00(n)   RBIMPL_ANYARGS_DISPATCH((n) ==  0, rb_define_private_method_00,   RBIMPL_ANYARGS_DISPATCH_rb_define_private_method_m1(n))
-# define RBIMPL_ANYARGS_DISPATCH_rb_define_private_method_01(n)   RBIMPL_ANYARGS_DISPATCH((n) ==  1, rb_define_private_method_01,   RBIMPL_ANYARGS_DISPATCH_rb_define_private_method_00(n))
-# define RBIMPL_ANYARGS_DISPATCH_rb_define_private_method_02(n)   RBIMPL_ANYARGS_DISPATCH((n) ==  2, rb_define_private_method_02,   RBIMPL_ANYARGS_DISPATCH_rb_define_private_method_01(n))
-# define RBIMPL_ANYARGS_DISPATCH_rb_define_private_method_03(n)   RBIMPL_ANYARGS_DISPATCH((n) ==  3, rb_define_private_method_03,   RBIMPL_ANYARGS_DISPATCH_rb_define_private_method_02(n))
-# define RBIMPL_ANYARGS_DISPATCH_rb_define_private_method_04(n)   RBIMPL_ANYARGS_DISPATCH((n) ==  4, rb_define_private_method_04,   RBIMPL_ANYARGS_DISPATCH_rb_define_private_method_03(n))
-# define RBIMPL_ANYARGS_DISPATCH_rb_define_private_method_05(n)   RBIMPL_ANYARGS_DISPATCH((n) ==  5, rb_define_private_method_05,   RBIMPL_ANYARGS_DISPATCH_rb_define_private_method_04(n))
-# define RBIMPL_ANYARGS_DISPATCH_rb_define_private_method_06(n)   RBIMPL_ANYARGS_DISPATCH((n) ==  6, rb_define_private_method_06,   RBIMPL_ANYARGS_DISPATCH_rb_define_private_method_05(n))
-# define RBIMPL_ANYARGS_DISPATCH_rb_define_private_method_07(n)   RBIMPL_ANYARGS_DISPATCH((n) ==  7, rb_define_private_method_07,   RBIMPL_ANYARGS_DISPATCH_rb_define_private_method_06(n))
-# define RBIMPL_ANYARGS_DISPATCH_rb_define_private_method_08(n)   RBIMPL_ANYARGS_DISPATCH((n) ==  8, rb_define_private_method_08,   RBIMPL_ANYARGS_DISPATCH_rb_define_private_method_07(n))
-# define RBIMPL_ANYARGS_DISPATCH_rb_define_private_method_09(n)   RBIMPL_ANYARGS_DISPATCH((n) ==  9, rb_define_private_method_09,   RBIMPL_ANYARGS_DISPATCH_rb_define_private_method_08(n))
-# define RBIMPL_ANYARGS_DISPATCH_rb_define_private_method_10(n)   RBIMPL_ANYARGS_DISPATCH((n) == 10, rb_define_private_method_10,   RBIMPL_ANYARGS_DISPATCH_rb_define_private_method_09(n))
-# define RBIMPL_ANYARGS_DISPATCH_rb_define_private_method_11(n)   RBIMPL_ANYARGS_DISPATCH((n) == 11, rb_define_private_method_11,   RBIMPL_ANYARGS_DISPATCH_rb_define_private_method_10(n))
-# define RBIMPL_ANYARGS_DISPATCH_rb_define_private_method_12(n)   RBIMPL_ANYARGS_DISPATCH((n) == 12, rb_define_private_method_12,   RBIMPL_ANYARGS_DISPATCH_rb_define_private_method_11(n))
-# define RBIMPL_ANYARGS_DISPATCH_rb_define_private_method_13(n)   RBIMPL_ANYARGS_DISPATCH((n) == 13, rb_define_private_method_13,   RBIMPL_ANYARGS_DISPATCH_rb_define_private_method_12(n))
-# define RBIMPL_ANYARGS_DISPATCH_rb_define_private_method_14(n)   RBIMPL_ANYARGS_DISPATCH((n) == 14, rb_define_private_method_14,   RBIMPL_ANYARGS_DISPATCH_rb_define_private_method_13(n))
-# define RBIMPL_ANYARGS_DISPATCH_rb_define_private_method_15(n)   RBIMPL_ANYARGS_DISPATCH((n) == 15, rb_define_private_method_15,   RBIMPL_ANYARGS_DISPATCH_rb_define_private_method_14(n))
-# define RBIMPL_ANYARGS_DISPATCH_rb_define_module_function_m2(n)  RBIMPL_ANYARGS_DISPATCH((n) == -2, rb_define_module_function_m2,  rb_define_module_function_m3)
-# define RBIMPL_ANYARGS_DISPATCH_rb_define_module_function_m1(n)  RBIMPL_ANYARGS_DISPATCH((n) == -1, rb_define_module_function_m1,  RBIMPL_ANYARGS_DISPATCH_rb_define_module_function_m2(n))
-# define RBIMPL_ANYARGS_DISPATCH_rb_define_module_function_00(n)  RBIMPL_ANYARGS_DISPATCH((n) ==  0, rb_define_module_function_00,  RBIMPL_ANYARGS_DISPATCH_rb_define_module_function_m1(n))
-# define RBIMPL_ANYARGS_DISPATCH_rb_define_module_function_01(n)  RBIMPL_ANYARGS_DISPATCH((n) ==  1, rb_define_module_function_01,  RBIMPL_ANYARGS_DISPATCH_rb_define_module_function_00(n))
-# define RBIMPL_ANYARGS_DISPATCH_rb_define_module_function_02(n)  RBIMPL_ANYARGS_DISPATCH((n) ==  2, rb_define_module_function_02,  RBIMPL_ANYARGS_DISPATCH_rb_define_module_function_01(n))
-# define RBIMPL_ANYARGS_DISPATCH_rb_define_module_function_03(n)  RBIMPL_ANYARGS_DISPATCH((n) ==  3, rb_define_module_function_03,  RBIMPL_ANYARGS_DISPATCH_rb_define_module_function_02(n))
-# define RBIMPL_ANYARGS_DISPATCH_rb_define_module_function_04(n)  RBIMPL_ANYARGS_DISPATCH((n) ==  4, rb_define_module_function_04,  RBIMPL_ANYARGS_DISPATCH_rb_define_module_function_03(n))
-# define RBIMPL_ANYARGS_DISPATCH_rb_define_module_function_05(n)  RBIMPL_ANYARGS_DISPATCH((n) ==  5, rb_define_module_function_05,  RBIMPL_ANYARGS_DISPATCH_rb_define_module_function_04(n))
-# define RBIMPL_ANYARGS_DISPATCH_rb_define_module_function_06(n)  RBIMPL_ANYARGS_DISPATCH((n) ==  6, rb_define_module_function_06,  RBIMPL_ANYARGS_DISPATCH_rb_define_module_function_05(n))
-# define RBIMPL_ANYARGS_DISPATCH_rb_define_module_function_07(n)  RBIMPL_ANYARGS_DISPATCH((n) ==  7, rb_define_module_function_07,  RBIMPL_ANYARGS_DISPATCH_rb_define_module_function_06(n))
-# define RBIMPL_ANYARGS_DISPATCH_rb_define_module_function_08(n)  RBIMPL_ANYARGS_DISPATCH((n) ==  8, rb_define_module_function_08,  RBIMPL_ANYARGS_DISPATCH_rb_define_module_function_07(n))
-# define RBIMPL_ANYARGS_DISPATCH_rb_define_module_function_09(n)  RBIMPL_ANYARGS_DISPATCH((n) ==  9, rb_define_module_function_09,  RBIMPL_ANYARGS_DISPATCH_rb_define_module_function_08(n))
-# define RBIMPL_ANYARGS_DISPATCH_rb_define_module_function_10(n)  RBIMPL_ANYARGS_DISPATCH((n) == 10, rb_define_module_function_10,  RBIMPL_ANYARGS_DISPATCH_rb_define_module_function_09(n))
-# define RBIMPL_ANYARGS_DISPATCH_rb_define_module_function_11(n)  RBIMPL_ANYARGS_DISPATCH((n) == 11, rb_define_module_function_11,  RBIMPL_ANYARGS_DISPATCH_rb_define_module_function_10(n))
-# define RBIMPL_ANYARGS_DISPATCH_rb_define_module_function_12(n)  RBIMPL_ANYARGS_DISPATCH((n) == 12, rb_define_module_function_12,  RBIMPL_ANYARGS_DISPATCH_rb_define_module_function_11(n))
-# define RBIMPL_ANYARGS_DISPATCH_rb_define_module_function_13(n)  RBIMPL_ANYARGS_DISPATCH((n) == 13, rb_define_module_function_13,  RBIMPL_ANYARGS_DISPATCH_rb_define_module_function_12(n))
-# define RBIMPL_ANYARGS_DISPATCH_rb_define_module_function_14(n)  RBIMPL_ANYARGS_DISPATCH((n) == 14, rb_define_module_function_14,  RBIMPL_ANYARGS_DISPATCH_rb_define_module_function_13(n))
-# define RBIMPL_ANYARGS_DISPATCH_rb_define_module_function_15(n)  RBIMPL_ANYARGS_DISPATCH((n) == 15, rb_define_module_function_15,  RBIMPL_ANYARGS_DISPATCH_rb_define_module_function_14(n))
-# define RBIMPL_ANYARGS_DISPATCH_rb_define_global_function_m2(n)  RBIMPL_ANYARGS_DISPATCH((n) == -2, rb_define_global_function_m2,  rb_define_global_function_m3)
-# define RBIMPL_ANYARGS_DISPATCH_rb_define_global_function_m1(n)  RBIMPL_ANYARGS_DISPATCH((n) == -1, rb_define_global_function_m1,  RBIMPL_ANYARGS_DISPATCH_rb_define_global_function_m2(n))
-# define RBIMPL_ANYARGS_DISPATCH_rb_define_global_function_00(n)  RBIMPL_ANYARGS_DISPATCH((n) ==  0, rb_define_global_function_00,  RBIMPL_ANYARGS_DISPATCH_rb_define_global_function_m1(n))
-# define RBIMPL_ANYARGS_DISPATCH_rb_define_global_function_01(n)  RBIMPL_ANYARGS_DISPATCH((n) ==  1, rb_define_global_function_01,  RBIMPL_ANYARGS_DISPATCH_rb_define_global_function_00(n))
-# define RBIMPL_ANYARGS_DISPATCH_rb_define_global_function_02(n)  RBIMPL_ANYARGS_DISPATCH((n) ==  2, rb_define_global_function_02,  RBIMPL_ANYARGS_DISPATCH_rb_define_global_function_01(n))
-# define RBIMPL_ANYARGS_DISPATCH_rb_define_global_function_03(n)  RBIMPL_ANYARGS_DISPATCH((n) ==  3, rb_define_global_function_03,  RBIMPL_ANYARGS_DISPATCH_rb_define_global_function_02(n))
-# define RBIMPL_ANYARGS_DISPATCH_rb_define_global_function_04(n)  RBIMPL_ANYARGS_DISPATCH((n) ==  4, rb_define_global_function_04,  RBIMPL_ANYARGS_DISPATCH_rb_define_global_function_03(n))
-# define RBIMPL_ANYARGS_DISPATCH_rb_define_global_function_05(n)  RBIMPL_ANYARGS_DISPATCH((n) ==  5, rb_define_global_function_05,  RBIMPL_ANYARGS_DISPATCH_rb_define_global_function_04(n))
-# define RBIMPL_ANYARGS_DISPATCH_rb_define_global_function_06(n)  RBIMPL_ANYARGS_DISPATCH((n) ==  6, rb_define_global_function_06,  RBIMPL_ANYARGS_DISPATCH_rb_define_global_function_05(n))
-# define RBIMPL_ANYARGS_DISPATCH_rb_define_global_function_07(n)  RBIMPL_ANYARGS_DISPATCH((n) ==  7, rb_define_global_function_07,  RBIMPL_ANYARGS_DISPATCH_rb_define_global_function_06(n))
-# define RBIMPL_ANYARGS_DISPATCH_rb_define_global_function_08(n)  RBIMPL_ANYARGS_DISPATCH((n) ==  8, rb_define_global_function_08,  RBIMPL_ANYARGS_DISPATCH_rb_define_global_function_07(n))
-# define RBIMPL_ANYARGS_DISPATCH_rb_define_global_function_09(n)  RBIMPL_ANYARGS_DISPATCH((n) ==  9, rb_define_global_function_09,  RBIMPL_ANYARGS_DISPATCH_rb_define_global_function_08(n))
-# define RBIMPL_ANYARGS_DISPATCH_rb_define_global_function_10(n)  RBIMPL_ANYARGS_DISPATCH((n) == 10, rb_define_global_function_10,  RBIMPL_ANYARGS_DISPATCH_rb_define_global_function_09(n))
-# define RBIMPL_ANYARGS_DISPATCH_rb_define_global_function_11(n)  RBIMPL_ANYARGS_DISPATCH((n) == 11, rb_define_global_function_11,  RBIMPL_ANYARGS_DISPATCH_rb_define_global_function_10(n))
-# define RBIMPL_ANYARGS_DISPATCH_rb_define_global_function_12(n)  RBIMPL_ANYARGS_DISPATCH((n) == 12, rb_define_global_function_12,  RBIMPL_ANYARGS_DISPATCH_rb_define_global_function_11(n))
-# define RBIMPL_ANYARGS_DISPATCH_rb_define_global_function_13(n)  RBIMPL_ANYARGS_DISPATCH((n) == 13, rb_define_global_function_13,  RBIMPL_ANYARGS_DISPATCH_rb_define_global_function_12(n))
-# define RBIMPL_ANYARGS_DISPATCH_rb_define_global_function_14(n)  RBIMPL_ANYARGS_DISPATCH((n) == 14, rb_define_global_function_14,  RBIMPL_ANYARGS_DISPATCH_rb_define_global_function_13(n))
-# define RBIMPL_ANYARGS_DISPATCH_rb_define_global_function_15(n)  RBIMPL_ANYARGS_DISPATCH((n) == 15, rb_define_global_function_15,  RBIMPL_ANYARGS_DISPATCH_rb_define_global_function_14(n))
-# define RBIMPL_ANYARGS_DISPATCH_rb_define_method_id_m2(n)        RBIMPL_ANYARGS_DISPATCH((n) == -2, rb_define_method_id_m2,        rb_define_method_id_m3)
-# define RBIMPL_ANYARGS_DISPATCH_rb_define_method_id_m1(n)        RBIMPL_ANYARGS_DISPATCH((n) == -1, rb_define_method_id_m1,        RBIMPL_ANYARGS_DISPATCH_rb_define_method_id_m2(n))
-# define RBIMPL_ANYARGS_DISPATCH_rb_define_method_id_00(n)        RBIMPL_ANYARGS_DISPATCH((n) ==  0, rb_define_method_id_00,        RBIMPL_ANYARGS_DISPATCH_rb_define_method_id_m1(n))
-# define RBIMPL_ANYARGS_DISPATCH_rb_define_method_id_01(n)        RBIMPL_ANYARGS_DISPATCH((n) ==  1, rb_define_method_id_01,        RBIMPL_ANYARGS_DISPATCH_rb_define_method_id_00(n))
-# define RBIMPL_ANYARGS_DISPATCH_rb_define_method_id_02(n)        RBIMPL_ANYARGS_DISPATCH((n) ==  2, rb_define_method_id_02,        RBIMPL_ANYARGS_DISPATCH_rb_define_method_id_01(n))
-# define RBIMPL_ANYARGS_DISPATCH_rb_define_method_id_03(n)        RBIMPL_ANYARGS_DISPATCH((n) ==  3, rb_define_method_id_03,        RBIMPL_ANYARGS_DISPATCH_rb_define_method_id_02(n))
-# define RBIMPL_ANYARGS_DISPATCH_rb_define_method_id_04(n)        RBIMPL_ANYARGS_DISPATCH((n) ==  4, rb_define_method_id_04,        RBIMPL_ANYARGS_DISPATCH_rb_define_method_id_03(n))
-# define RBIMPL_ANYARGS_DISPATCH_rb_define_method_id_05(n)        RBIMPL_ANYARGS_DISPATCH((n) ==  5, rb_define_method_id_05,        RBIMPL_ANYARGS_DISPATCH_rb_define_method_id_04(n))
-# define RBIMPL_ANYARGS_DISPATCH_rb_define_method_id_06(n)        RBIMPL_ANYARGS_DISPATCH((n) ==  6, rb_define_method_id_06,        RBIMPL_ANYARGS_DISPATCH_rb_define_method_id_05(n))
-# define RBIMPL_ANYARGS_DISPATCH_rb_define_method_id_07(n)        RBIMPL_ANYARGS_DISPATCH((n) ==  7, rb_define_method_id_07,        RBIMPL_ANYARGS_DISPATCH_rb_define_method_id_06(n))
-# define RBIMPL_ANYARGS_DISPATCH_rb_define_method_id_08(n)        RBIMPL_ANYARGS_DISPATCH((n) ==  8, rb_define_method_id_08,        RBIMPL_ANYARGS_DISPATCH_rb_define_method_id_07(n))
-# define RBIMPL_ANYARGS_DISPATCH_rb_define_method_id_09(n)        RBIMPL_ANYARGS_DISPATCH((n) ==  9, rb_define_method_id_09,        RBIMPL_ANYARGS_DISPATCH_rb_define_method_id_08(n))
-# define RBIMPL_ANYARGS_DISPATCH_rb_define_method_id_10(n)        RBIMPL_ANYARGS_DISPATCH((n) == 10, rb_define_method_id_10,        RBIMPL_ANYARGS_DISPATCH_rb_define_method_id_09(n))
-# define RBIMPL_ANYARGS_DISPATCH_rb_define_method_id_11(n)        RBIMPL_ANYARGS_DISPATCH((n) == 11, rb_define_method_id_11,        RBIMPL_ANYARGS_DISPATCH_rb_define_method_id_10(n))
-# define RBIMPL_ANYARGS_DISPATCH_rb_define_method_id_12(n)        RBIMPL_ANYARGS_DISPATCH((n) == 12, rb_define_method_id_12,        RBIMPL_ANYARGS_DISPATCH_rb_define_method_id_11(n))
-# define RBIMPL_ANYARGS_DISPATCH_rb_define_method_id_13(n)        RBIMPL_ANYARGS_DISPATCH((n) == 13, rb_define_method_id_13,        RBIMPL_ANYARGS_DISPATCH_rb_define_method_id_12(n))
-# define RBIMPL_ANYARGS_DISPATCH_rb_define_method_id_14(n)        RBIMPL_ANYARGS_DISPATCH((n) == 14, rb_define_method_id_14,        RBIMPL_ANYARGS_DISPATCH_rb_define_method_id_13(n))
-# define RBIMPL_ANYARGS_DISPATCH_rb_define_method_id_15(n)        RBIMPL_ANYARGS_DISPATCH((n) == 15, rb_define_method_id_15,        RBIMPL_ANYARGS_DISPATCH_rb_define_method_id_14(n))
-# define RBIMPL_ANYARGS_DISPATCH_rb_define_method_m2(n)           RBIMPL_ANYARGS_DISPATCH((n) == -2, rb_define_method_m2,           rb_define_method_m3)
-# define RBIMPL_ANYARGS_DISPATCH_rb_define_method_m1(n)           RBIMPL_ANYARGS_DISPATCH((n) == -1, rb_define_method_m1,           RBIMPL_ANYARGS_DISPATCH_rb_define_method_m2(n))
-# define RBIMPL_ANYARGS_DISPATCH_rb_define_method_00(n)           RBIMPL_ANYARGS_DISPATCH((n) ==  0, rb_define_method_00,           RBIMPL_ANYARGS_DISPATCH_rb_define_method_m1(n))
-# define RBIMPL_ANYARGS_DISPATCH_rb_define_method_01(n)           RBIMPL_ANYARGS_DISPATCH((n) ==  1, rb_define_method_01,           RBIMPL_ANYARGS_DISPATCH_rb_define_method_00(n))
-# define RBIMPL_ANYARGS_DISPATCH_rb_define_method_02(n)           RBIMPL_ANYARGS_DISPATCH((n) ==  2, rb_define_method_02,           RBIMPL_ANYARGS_DISPATCH_rb_define_method_01(n))
-# define RBIMPL_ANYARGS_DISPATCH_rb_define_method_03(n)           RBIMPL_ANYARGS_DISPATCH((n) ==  3, rb_define_method_03,           RBIMPL_ANYARGS_DISPATCH_rb_define_method_02(n))
-# define RBIMPL_ANYARGS_DISPATCH_rb_define_method_04(n)           RBIMPL_ANYARGS_DISPATCH((n) ==  4, rb_define_method_04,           RBIMPL_ANYARGS_DISPATCH_rb_define_method_03(n))
-# define RBIMPL_ANYARGS_DISPATCH_rb_define_method_05(n)           RBIMPL_ANYARGS_DISPATCH((n) ==  5, rb_define_method_05,           RBIMPL_ANYARGS_DISPATCH_rb_define_method_04(n))
-# define RBIMPL_ANYARGS_DISPATCH_rb_define_method_06(n)           RBIMPL_ANYARGS_DISPATCH((n) ==  6, rb_define_method_06,           RBIMPL_ANYARGS_DISPATCH_rb_define_method_05(n))
-# define RBIMPL_ANYARGS_DISPATCH_rb_define_method_07(n)           RBIMPL_ANYARGS_DISPATCH((n) ==  7, rb_define_method_07,           RBIMPL_ANYARGS_DISPATCH_rb_define_method_06(n))
-# define RBIMPL_ANYARGS_DISPATCH_rb_define_method_08(n)           RBIMPL_ANYARGS_DISPATCH((n) ==  8, rb_define_method_08,           RBIMPL_ANYARGS_DISPATCH_rb_define_method_07(n))
-# define RBIMPL_ANYARGS_DISPATCH_rb_define_method_09(n)           RBIMPL_ANYARGS_DISPATCH((n) ==  9, rb_define_method_09,           RBIMPL_ANYARGS_DISPATCH_rb_define_method_08(n))
-# define RBIMPL_ANYARGS_DISPATCH_rb_define_method_10(n)           RBIMPL_ANYARGS_DISPATCH((n) == 10, rb_define_method_10,           RBIMPL_ANYARGS_DISPATCH_rb_define_method_09(n))
-# define RBIMPL_ANYARGS_DISPATCH_rb_define_method_11(n)           RBIMPL_ANYARGS_DISPATCH((n) == 11, rb_define_method_11,           RBIMPL_ANYARGS_DISPATCH_rb_define_method_10(n))
-# define RBIMPL_ANYARGS_DISPATCH_rb_define_method_12(n)           RBIMPL_ANYARGS_DISPATCH((n) == 12, rb_define_method_12,           RBIMPL_ANYARGS_DISPATCH_rb_define_method_11(n))
-# define RBIMPL_ANYARGS_DISPATCH_rb_define_method_13(n)           RBIMPL_ANYARGS_DISPATCH((n) == 13, rb_define_method_13,           RBIMPL_ANYARGS_DISPATCH_rb_define_method_12(n))
-# define RBIMPL_ANYARGS_DISPATCH_rb_define_method_14(n)           RBIMPL_ANYARGS_DISPATCH((n) == 14, rb_define_method_14,           RBIMPL_ANYARGS_DISPATCH_rb_define_method_13(n))
-# define RBIMPL_ANYARGS_DISPATCH_rb_define_method_15(n)           RBIMPL_ANYARGS_DISPATCH((n) == 15, rb_define_method_15,           RBIMPL_ANYARGS_DISPATCH_rb_define_method_14(n))
-# define RBIMPL_ANYARGS_DISPATCH_rb_define_singleton_method(n, f) RBIMPL_ANYARGS_DISPATCH(RBIMPL_CFUNC_IS_rb_f_notimplement(f), rb_define_singleton_method_m3, RBIMPL_ANYARGS_DISPATCH_rb_define_singleton_method_15(n))
-# define RBIMPL_ANYARGS_DISPATCH_rb_define_protected_method(n, f) RBIMPL_ANYARGS_DISPATCH(RBIMPL_CFUNC_IS_rb_f_notimplement(f), rb_define_protected_method_m3, RBIMPL_ANYARGS_DISPATCH_rb_define_protected_method_15(n))
-# define RBIMPL_ANYARGS_DISPATCH_rb_define_private_method(n, f)   RBIMPL_ANYARGS_DISPATCH(RBIMPL_CFUNC_IS_rb_f_notimplement(f), rb_define_private_method_m3,   RBIMPL_ANYARGS_DISPATCH_rb_define_private_method_15(n))
-# define RBIMPL_ANYARGS_DISPATCH_rb_define_module_function(n, f)  RBIMPL_ANYARGS_DISPATCH(RBIMPL_CFUNC_IS_rb_f_notimplement(f), rb_define_module_function_m3,  RBIMPL_ANYARGS_DISPATCH_rb_define_module_function_15(n))
-# define RBIMPL_ANYARGS_DISPATCH_rb_define_global_function(n, f)  RBIMPL_ANYARGS_DISPATCH(RBIMPL_CFUNC_IS_rb_f_notimplement(f), rb_define_global_function_m3,  RBIMPL_ANYARGS_DISPATCH_rb_define_global_function_15(n))
-# define RBIMPL_ANYARGS_DISPATCH_rb_define_method_id(n, f)        RBIMPL_ANYARGS_DISPATCH(RBIMPL_CFUNC_IS_rb_f_notimplement(f), rb_define_method_id_m3,        RBIMPL_ANYARGS_DISPATCH_rb_define_method_id_15(n))
-# define RBIMPL_ANYARGS_DISPATCH_rb_define_method(n, f)           RBIMPL_ANYARGS_DISPATCH(RBIMPL_CFUNC_IS_rb_f_notimplement(f), rb_define_method_m3,           RBIMPL_ANYARGS_DISPATCH_rb_define_method_15(n))
-# define RBIMPL_ANYARGS_ATTRSET(sym) RBIMPL_ATTR_MAYBE_UNUSED() RBIMPL_ATTR_NONNULL(()) RBIMPL_ATTR_WEAKREF(sym)
-# define RBIMPL_ANYARGS_DECL(sym, ...) \
-RBIMPL_ANYARGS_ATTRSET(sym) static void sym ## _m3(__VA_ARGS__, VALUE(*)(ANYARGS), int); \
-RBIMPL_ANYARGS_ATTRSET(sym) static void sym ## _m2(__VA_ARGS__, VALUE(*)(VALUE, VALUE), int); \
-RBIMPL_ANYARGS_ATTRSET(sym) static void sym ## _m1(__VA_ARGS__, VALUE(*)(int, union { VALUE *x; const VALUE *y; } __attribute__((__transparent_union__)), VALUE), int); \
-RBIMPL_ANYARGS_ATTRSET(sym) static void sym ## _00(__VA_ARGS__, VALUE(*)(VALUE), int); \
-RBIMPL_ANYARGS_ATTRSET(sym) static void sym ## _01(__VA_ARGS__, VALUE(*)(VALUE, VALUE), int); \
-RBIMPL_ANYARGS_ATTRSET(sym) static void sym ## _02(__VA_ARGS__, VALUE(*)(VALUE, VALUE, VALUE), int); \
-RBIMPL_ANYARGS_ATTRSET(sym) static void sym ## _03(__VA_ARGS__, VALUE(*)(VALUE, VALUE, VALUE, VALUE), int); \
-RBIMPL_ANYARGS_ATTRSET(sym) static void sym ## _04(__VA_ARGS__, VALUE(*)(VALUE, VALUE, VALUE, VALUE, VALUE), int); \
-RBIMPL_ANYARGS_ATTRSET(sym) static void sym ## _05(__VA_ARGS__, VALUE(*)(VALUE, VALUE, VALUE, VALUE, VALUE, VALUE), int); \
-RBIMPL_ANYARGS_ATTRSET(sym) static void sym ## _06(__VA_ARGS__, VALUE(*)(VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE), int); \
-RBIMPL_ANYARGS_ATTRSET(sym) static void sym ## _07(__VA_ARGS__, VALUE(*)(VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE), int); \
-RBIMPL_ANYARGS_ATTRSET(sym) static void sym ## _08(__VA_ARGS__, VALUE(*)(VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE), int); \
-RBIMPL_ANYARGS_ATTRSET(sym) static void sym ## _09(__VA_ARGS__, VALUE(*)(VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE), int); \
-RBIMPL_ANYARGS_ATTRSET(sym) static void sym ## _10(__VA_ARGS__, VALUE(*)(VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE), int); \
-RBIMPL_ANYARGS_ATTRSET(sym) static void sym ## _11(__VA_ARGS__, VALUE(*)(VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE), int); \
-RBIMPL_ANYARGS_ATTRSET(sym) static void sym ## _12(__VA_ARGS__, VALUE(*)(VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE), int); \
-RBIMPL_ANYARGS_ATTRSET(sym) static void sym ## _13(__VA_ARGS__, VALUE(*)(VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE), int); \
-RBIMPL_ANYARGS_ATTRSET(sym) static void sym ## _14(__VA_ARGS__, VALUE(*)(VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE), int); \
-RBIMPL_ANYARGS_ATTRSET(sym) static void sym ## _15(__VA_ARGS__, VALUE(*)(VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE), int);
+#    define RBIMPL_ANYARGS_DISPATCH_rb_define_singleton_method_m2(n) \
+        RBIMPL_ANYARGS_DISPATCH((n) == -2, rb_define_singleton_method_m2, rb_define_singleton_method_m3)
+#    define RBIMPL_ANYARGS_DISPATCH_rb_define_singleton_method_m1(n) \
+        RBIMPL_ANYARGS_DISPATCH( \
+            (n) == -1, rb_define_singleton_method_m1, RBIMPL_ANYARGS_DISPATCH_rb_define_singleton_method_m2(n))
+#    define RBIMPL_ANYARGS_DISPATCH_rb_define_singleton_method_00(n) \
+        RBIMPL_ANYARGS_DISPATCH( \
+            (n) == 0, rb_define_singleton_method_00, RBIMPL_ANYARGS_DISPATCH_rb_define_singleton_method_m1(n))
+#    define RBIMPL_ANYARGS_DISPATCH_rb_define_singleton_method_01(n) \
+        RBIMPL_ANYARGS_DISPATCH( \
+            (n) == 1, rb_define_singleton_method_01, RBIMPL_ANYARGS_DISPATCH_rb_define_singleton_method_00(n))
+#    define RBIMPL_ANYARGS_DISPATCH_rb_define_singleton_method_02(n) \
+        RBIMPL_ANYARGS_DISPATCH( \
+            (n) == 2, rb_define_singleton_method_02, RBIMPL_ANYARGS_DISPATCH_rb_define_singleton_method_01(n))
+#    define RBIMPL_ANYARGS_DISPATCH_rb_define_singleton_method_03(n) \
+        RBIMPL_ANYARGS_DISPATCH( \
+            (n) == 3, rb_define_singleton_method_03, RBIMPL_ANYARGS_DISPATCH_rb_define_singleton_method_02(n))
+#    define RBIMPL_ANYARGS_DISPATCH_rb_define_singleton_method_04(n) \
+        RBIMPL_ANYARGS_DISPATCH( \
+            (n) == 4, rb_define_singleton_method_04, RBIMPL_ANYARGS_DISPATCH_rb_define_singleton_method_03(n))
+#    define RBIMPL_ANYARGS_DISPATCH_rb_define_singleton_method_05(n) \
+        RBIMPL_ANYARGS_DISPATCH( \
+            (n) == 5, rb_define_singleton_method_05, RBIMPL_ANYARGS_DISPATCH_rb_define_singleton_method_04(n))
+#    define RBIMPL_ANYARGS_DISPATCH_rb_define_singleton_method_06(n) \
+        RBIMPL_ANYARGS_DISPATCH( \
+            (n) == 6, rb_define_singleton_method_06, RBIMPL_ANYARGS_DISPATCH_rb_define_singleton_method_05(n))
+#    define RBIMPL_ANYARGS_DISPATCH_rb_define_singleton_method_07(n) \
+        RBIMPL_ANYARGS_DISPATCH( \
+            (n) == 7, rb_define_singleton_method_07, RBIMPL_ANYARGS_DISPATCH_rb_define_singleton_method_06(n))
+#    define RBIMPL_ANYARGS_DISPATCH_rb_define_singleton_method_08(n) \
+        RBIMPL_ANYARGS_DISPATCH( \
+            (n) == 8, rb_define_singleton_method_08, RBIMPL_ANYARGS_DISPATCH_rb_define_singleton_method_07(n))
+#    define RBIMPL_ANYARGS_DISPATCH_rb_define_singleton_method_09(n) \
+        RBIMPL_ANYARGS_DISPATCH( \
+            (n) == 9, rb_define_singleton_method_09, RBIMPL_ANYARGS_DISPATCH_rb_define_singleton_method_08(n))
+#    define RBIMPL_ANYARGS_DISPATCH_rb_define_singleton_method_10(n) \
+        RBIMPL_ANYARGS_DISPATCH( \
+            (n) == 10, rb_define_singleton_method_10, RBIMPL_ANYARGS_DISPATCH_rb_define_singleton_method_09(n))
+#    define RBIMPL_ANYARGS_DISPATCH_rb_define_singleton_method_11(n) \
+        RBIMPL_ANYARGS_DISPATCH( \
+            (n) == 11, rb_define_singleton_method_11, RBIMPL_ANYARGS_DISPATCH_rb_define_singleton_method_10(n))
+#    define RBIMPL_ANYARGS_DISPATCH_rb_define_singleton_method_12(n) \
+        RBIMPL_ANYARGS_DISPATCH( \
+            (n) == 12, rb_define_singleton_method_12, RBIMPL_ANYARGS_DISPATCH_rb_define_singleton_method_11(n))
+#    define RBIMPL_ANYARGS_DISPATCH_rb_define_singleton_method_13(n) \
+        RBIMPL_ANYARGS_DISPATCH( \
+            (n) == 13, rb_define_singleton_method_13, RBIMPL_ANYARGS_DISPATCH_rb_define_singleton_method_12(n))
+#    define RBIMPL_ANYARGS_DISPATCH_rb_define_singleton_method_14(n) \
+        RBIMPL_ANYARGS_DISPATCH( \
+            (n) == 14, rb_define_singleton_method_14, RBIMPL_ANYARGS_DISPATCH_rb_define_singleton_method_13(n))
+#    define RBIMPL_ANYARGS_DISPATCH_rb_define_singleton_method_15(n) \
+        RBIMPL_ANYARGS_DISPATCH( \
+            (n) == 15, rb_define_singleton_method_15, RBIMPL_ANYARGS_DISPATCH_rb_define_singleton_method_14(n))
+#    define RBIMPL_ANYARGS_DISPATCH_rb_define_protected_method_m2(n) \
+        RBIMPL_ANYARGS_DISPATCH((n) == -2, rb_define_protected_method_m2, rb_define_protected_method_m3)
+#    define RBIMPL_ANYARGS_DISPATCH_rb_define_protected_method_m1(n) \
+        RBIMPL_ANYARGS_DISPATCH( \
+            (n) == -1, rb_define_protected_method_m1, RBIMPL_ANYARGS_DISPATCH_rb_define_protected_method_m2(n))
+#    define RBIMPL_ANYARGS_DISPATCH_rb_define_protected_method_00(n) \
+        RBIMPL_ANYARGS_DISPATCH( \
+            (n) == 0, rb_define_protected_method_00, RBIMPL_ANYARGS_DISPATCH_rb_define_protected_method_m1(n))
+#    define RBIMPL_ANYARGS_DISPATCH_rb_define_protected_method_01(n) \
+        RBIMPL_ANYARGS_DISPATCH( \
+            (n) == 1, rb_define_protected_method_01, RBIMPL_ANYARGS_DISPATCH_rb_define_protected_method_00(n))
+#    define RBIMPL_ANYARGS_DISPATCH_rb_define_protected_method_02(n) \
+        RBIMPL_ANYARGS_DISPATCH( \
+            (n) == 2, rb_define_protected_method_02, RBIMPL_ANYARGS_DISPATCH_rb_define_protected_method_01(n))
+#    define RBIMPL_ANYARGS_DISPATCH_rb_define_protected_method_03(n) \
+        RBIMPL_ANYARGS_DISPATCH( \
+            (n) == 3, rb_define_protected_method_03, RBIMPL_ANYARGS_DISPATCH_rb_define_protected_method_02(n))
+#    define RBIMPL_ANYARGS_DISPATCH_rb_define_protected_method_04(n) \
+        RBIMPL_ANYARGS_DISPATCH( \
+            (n) == 4, rb_define_protected_method_04, RBIMPL_ANYARGS_DISPATCH_rb_define_protected_method_03(n))
+#    define RBIMPL_ANYARGS_DISPATCH_rb_define_protected_method_05(n) \
+        RBIMPL_ANYARGS_DISPATCH( \
+            (n) == 5, rb_define_protected_method_05, RBIMPL_ANYARGS_DISPATCH_rb_define_protected_method_04(n))
+#    define RBIMPL_ANYARGS_DISPATCH_rb_define_protected_method_06(n) \
+        RBIMPL_ANYARGS_DISPATCH( \
+            (n) == 6, rb_define_protected_method_06, RBIMPL_ANYARGS_DISPATCH_rb_define_protected_method_05(n))
+#    define RBIMPL_ANYARGS_DISPATCH_rb_define_protected_method_07(n) \
+        RBIMPL_ANYARGS_DISPATCH( \
+            (n) == 7, rb_define_protected_method_07, RBIMPL_ANYARGS_DISPATCH_rb_define_protected_method_06(n))
+#    define RBIMPL_ANYARGS_DISPATCH_rb_define_protected_method_08(n) \
+        RBIMPL_ANYARGS_DISPATCH( \
+            (n) == 8, rb_define_protected_method_08, RBIMPL_ANYARGS_DISPATCH_rb_define_protected_method_07(n))
+#    define RBIMPL_ANYARGS_DISPATCH_rb_define_protected_method_09(n) \
+        RBIMPL_ANYARGS_DISPATCH( \
+            (n) == 9, rb_define_protected_method_09, RBIMPL_ANYARGS_DISPATCH_rb_define_protected_method_08(n))
+#    define RBIMPL_ANYARGS_DISPATCH_rb_define_protected_method_10(n) \
+        RBIMPL_ANYARGS_DISPATCH( \
+            (n) == 10, rb_define_protected_method_10, RBIMPL_ANYARGS_DISPATCH_rb_define_protected_method_09(n))
+#    define RBIMPL_ANYARGS_DISPATCH_rb_define_protected_method_11(n) \
+        RBIMPL_ANYARGS_DISPATCH( \
+            (n) == 11, rb_define_protected_method_11, RBIMPL_ANYARGS_DISPATCH_rb_define_protected_method_10(n))
+#    define RBIMPL_ANYARGS_DISPATCH_rb_define_protected_method_12(n) \
+        RBIMPL_ANYARGS_DISPATCH( \
+            (n) == 12, rb_define_protected_method_12, RBIMPL_ANYARGS_DISPATCH_rb_define_protected_method_11(n))
+#    define RBIMPL_ANYARGS_DISPATCH_rb_define_protected_method_13(n) \
+        RBIMPL_ANYARGS_DISPATCH( \
+            (n) == 13, rb_define_protected_method_13, RBIMPL_ANYARGS_DISPATCH_rb_define_protected_method_12(n))
+#    define RBIMPL_ANYARGS_DISPATCH_rb_define_protected_method_14(n) \
+        RBIMPL_ANYARGS_DISPATCH( \
+            (n) == 14, rb_define_protected_method_14, RBIMPL_ANYARGS_DISPATCH_rb_define_protected_method_13(n))
+#    define RBIMPL_ANYARGS_DISPATCH_rb_define_protected_method_15(n) \
+        RBIMPL_ANYARGS_DISPATCH( \
+            (n) == 15, rb_define_protected_method_15, RBIMPL_ANYARGS_DISPATCH_rb_define_protected_method_14(n))
+#    define RBIMPL_ANYARGS_DISPATCH_rb_define_private_method_m2(n) \
+        RBIMPL_ANYARGS_DISPATCH((n) == -2, rb_define_private_method_m2, rb_define_private_method_m3)
+#    define RBIMPL_ANYARGS_DISPATCH_rb_define_private_method_m1(n) \
+        RBIMPL_ANYARGS_DISPATCH( \
+            (n) == -1, rb_define_private_method_m1, RBIMPL_ANYARGS_DISPATCH_rb_define_private_method_m2(n))
+#    define RBIMPL_ANYARGS_DISPATCH_rb_define_private_method_00(n) \
+        RBIMPL_ANYARGS_DISPATCH( \
+            (n) == 0, rb_define_private_method_00, RBIMPL_ANYARGS_DISPATCH_rb_define_private_method_m1(n))
+#    define RBIMPL_ANYARGS_DISPATCH_rb_define_private_method_01(n) \
+        RBIMPL_ANYARGS_DISPATCH( \
+            (n) == 1, rb_define_private_method_01, RBIMPL_ANYARGS_DISPATCH_rb_define_private_method_00(n))
+#    define RBIMPL_ANYARGS_DISPATCH_rb_define_private_method_02(n) \
+        RBIMPL_ANYARGS_DISPATCH( \
+            (n) == 2, rb_define_private_method_02, RBIMPL_ANYARGS_DISPATCH_rb_define_private_method_01(n))
+#    define RBIMPL_ANYARGS_DISPATCH_rb_define_private_method_03(n) \
+        RBIMPL_ANYARGS_DISPATCH( \
+            (n) == 3, rb_define_private_method_03, RBIMPL_ANYARGS_DISPATCH_rb_define_private_method_02(n))
+#    define RBIMPL_ANYARGS_DISPATCH_rb_define_private_method_04(n) \
+        RBIMPL_ANYARGS_DISPATCH( \
+            (n) == 4, rb_define_private_method_04, RBIMPL_ANYARGS_DISPATCH_rb_define_private_method_03(n))
+#    define RBIMPL_ANYARGS_DISPATCH_rb_define_private_method_05(n) \
+        RBIMPL_ANYARGS_DISPATCH( \
+            (n) == 5, rb_define_private_method_05, RBIMPL_ANYARGS_DISPATCH_rb_define_private_method_04(n))
+#    define RBIMPL_ANYARGS_DISPATCH_rb_define_private_method_06(n) \
+        RBIMPL_ANYARGS_DISPATCH( \
+            (n) == 6, rb_define_private_method_06, RBIMPL_ANYARGS_DISPATCH_rb_define_private_method_05(n))
+#    define RBIMPL_ANYARGS_DISPATCH_rb_define_private_method_07(n) \
+        RBIMPL_ANYARGS_DISPATCH( \
+            (n) == 7, rb_define_private_method_07, RBIMPL_ANYARGS_DISPATCH_rb_define_private_method_06(n))
+#    define RBIMPL_ANYARGS_DISPATCH_rb_define_private_method_08(n) \
+        RBIMPL_ANYARGS_DISPATCH( \
+            (n) == 8, rb_define_private_method_08, RBIMPL_ANYARGS_DISPATCH_rb_define_private_method_07(n))
+#    define RBIMPL_ANYARGS_DISPATCH_rb_define_private_method_09(n) \
+        RBIMPL_ANYARGS_DISPATCH( \
+            (n) == 9, rb_define_private_method_09, RBIMPL_ANYARGS_DISPATCH_rb_define_private_method_08(n))
+#    define RBIMPL_ANYARGS_DISPATCH_rb_define_private_method_10(n) \
+        RBIMPL_ANYARGS_DISPATCH( \
+            (n) == 10, rb_define_private_method_10, RBIMPL_ANYARGS_DISPATCH_rb_define_private_method_09(n))
+#    define RBIMPL_ANYARGS_DISPATCH_rb_define_private_method_11(n) \
+        RBIMPL_ANYARGS_DISPATCH( \
+            (n) == 11, rb_define_private_method_11, RBIMPL_ANYARGS_DISPATCH_rb_define_private_method_10(n))
+#    define RBIMPL_ANYARGS_DISPATCH_rb_define_private_method_12(n) \
+        RBIMPL_ANYARGS_DISPATCH( \
+            (n) == 12, rb_define_private_method_12, RBIMPL_ANYARGS_DISPATCH_rb_define_private_method_11(n))
+#    define RBIMPL_ANYARGS_DISPATCH_rb_define_private_method_13(n) \
+        RBIMPL_ANYARGS_DISPATCH( \
+            (n) == 13, rb_define_private_method_13, RBIMPL_ANYARGS_DISPATCH_rb_define_private_method_12(n))
+#    define RBIMPL_ANYARGS_DISPATCH_rb_define_private_method_14(n) \
+        RBIMPL_ANYARGS_DISPATCH( \
+            (n) == 14, rb_define_private_method_14, RBIMPL_ANYARGS_DISPATCH_rb_define_private_method_13(n))
+#    define RBIMPL_ANYARGS_DISPATCH_rb_define_private_method_15(n) \
+        RBIMPL_ANYARGS_DISPATCH( \
+            (n) == 15, rb_define_private_method_15, RBIMPL_ANYARGS_DISPATCH_rb_define_private_method_14(n))
+#    define RBIMPL_ANYARGS_DISPATCH_rb_define_module_function_m2(n) \
+        RBIMPL_ANYARGS_DISPATCH((n) == -2, rb_define_module_function_m2, rb_define_module_function_m3)
+#    define RBIMPL_ANYARGS_DISPATCH_rb_define_module_function_m1(n) \
+        RBIMPL_ANYARGS_DISPATCH( \
+            (n) == -1, rb_define_module_function_m1, RBIMPL_ANYARGS_DISPATCH_rb_define_module_function_m2(n))
+#    define RBIMPL_ANYARGS_DISPATCH_rb_define_module_function_00(n) \
+        RBIMPL_ANYARGS_DISPATCH( \
+            (n) == 0, rb_define_module_function_00, RBIMPL_ANYARGS_DISPATCH_rb_define_module_function_m1(n))
+#    define RBIMPL_ANYARGS_DISPATCH_rb_define_module_function_01(n) \
+        RBIMPL_ANYARGS_DISPATCH( \
+            (n) == 1, rb_define_module_function_01, RBIMPL_ANYARGS_DISPATCH_rb_define_module_function_00(n))
+#    define RBIMPL_ANYARGS_DISPATCH_rb_define_module_function_02(n) \
+        RBIMPL_ANYARGS_DISPATCH( \
+            (n) == 2, rb_define_module_function_02, RBIMPL_ANYARGS_DISPATCH_rb_define_module_function_01(n))
+#    define RBIMPL_ANYARGS_DISPATCH_rb_define_module_function_03(n) \
+        RBIMPL_ANYARGS_DISPATCH( \
+            (n) == 3, rb_define_module_function_03, RBIMPL_ANYARGS_DISPATCH_rb_define_module_function_02(n))
+#    define RBIMPL_ANYARGS_DISPATCH_rb_define_module_function_04(n) \
+        RBIMPL_ANYARGS_DISPATCH( \
+            (n) == 4, rb_define_module_function_04, RBIMPL_ANYARGS_DISPATCH_rb_define_module_function_03(n))
+#    define RBIMPL_ANYARGS_DISPATCH_rb_define_module_function_05(n) \
+        RBIMPL_ANYARGS_DISPATCH( \
+            (n) == 5, rb_define_module_function_05, RBIMPL_ANYARGS_DISPATCH_rb_define_module_function_04(n))
+#    define RBIMPL_ANYARGS_DISPATCH_rb_define_module_function_06(n) \
+        RBIMPL_ANYARGS_DISPATCH( \
+            (n) == 6, rb_define_module_function_06, RBIMPL_ANYARGS_DISPATCH_rb_define_module_function_05(n))
+#    define RBIMPL_ANYARGS_DISPATCH_rb_define_module_function_07(n) \
+        RBIMPL_ANYARGS_DISPATCH( \
+            (n) == 7, rb_define_module_function_07, RBIMPL_ANYARGS_DISPATCH_rb_define_module_function_06(n))
+#    define RBIMPL_ANYARGS_DISPATCH_rb_define_module_function_08(n) \
+        RBIMPL_ANYARGS_DISPATCH( \
+            (n) == 8, rb_define_module_function_08, RBIMPL_ANYARGS_DISPATCH_rb_define_module_function_07(n))
+#    define RBIMPL_ANYARGS_DISPATCH_rb_define_module_function_09(n) \
+        RBIMPL_ANYARGS_DISPATCH( \
+            (n) == 9, rb_define_module_function_09, RBIMPL_ANYARGS_DISPATCH_rb_define_module_function_08(n))
+#    define RBIMPL_ANYARGS_DISPATCH_rb_define_module_function_10(n) \
+        RBIMPL_ANYARGS_DISPATCH( \
+            (n) == 10, rb_define_module_function_10, RBIMPL_ANYARGS_DISPATCH_rb_define_module_function_09(n))
+#    define RBIMPL_ANYARGS_DISPATCH_rb_define_module_function_11(n) \
+        RBIMPL_ANYARGS_DISPATCH( \
+            (n) == 11, rb_define_module_function_11, RBIMPL_ANYARGS_DISPATCH_rb_define_module_function_10(n))
+#    define RBIMPL_ANYARGS_DISPATCH_rb_define_module_function_12(n) \
+        RBIMPL_ANYARGS_DISPATCH( \
+            (n) == 12, rb_define_module_function_12, RBIMPL_ANYARGS_DISPATCH_rb_define_module_function_11(n))
+#    define RBIMPL_ANYARGS_DISPATCH_rb_define_module_function_13(n) \
+        RBIMPL_ANYARGS_DISPATCH( \
+            (n) == 13, rb_define_module_function_13, RBIMPL_ANYARGS_DISPATCH_rb_define_module_function_12(n))
+#    define RBIMPL_ANYARGS_DISPATCH_rb_define_module_function_14(n) \
+        RBIMPL_ANYARGS_DISPATCH( \
+            (n) == 14, rb_define_module_function_14, RBIMPL_ANYARGS_DISPATCH_rb_define_module_function_13(n))
+#    define RBIMPL_ANYARGS_DISPATCH_rb_define_module_function_15(n) \
+        RBIMPL_ANYARGS_DISPATCH( \
+            (n) == 15, rb_define_module_function_15, RBIMPL_ANYARGS_DISPATCH_rb_define_module_function_14(n))
+#    define RBIMPL_ANYARGS_DISPATCH_rb_define_global_function_m2(n) \
+        RBIMPL_ANYARGS_DISPATCH((n) == -2, rb_define_global_function_m2, rb_define_global_function_m3)
+#    define RBIMPL_ANYARGS_DISPATCH_rb_define_global_function_m1(n) \
+        RBIMPL_ANYARGS_DISPATCH( \
+            (n) == -1, rb_define_global_function_m1, RBIMPL_ANYARGS_DISPATCH_rb_define_global_function_m2(n))
+#    define RBIMPL_ANYARGS_DISPATCH_rb_define_global_function_00(n) \
+        RBIMPL_ANYARGS_DISPATCH( \
+            (n) == 0, rb_define_global_function_00, RBIMPL_ANYARGS_DISPATCH_rb_define_global_function_m1(n))
+#    define RBIMPL_ANYARGS_DISPATCH_rb_define_global_function_01(n) \
+        RBIMPL_ANYARGS_DISPATCH( \
+            (n) == 1, rb_define_global_function_01, RBIMPL_ANYARGS_DISPATCH_rb_define_global_function_00(n))
+#    define RBIMPL_ANYARGS_DISPATCH_rb_define_global_function_02(n) \
+        RBIMPL_ANYARGS_DISPATCH( \
+            (n) == 2, rb_define_global_function_02, RBIMPL_ANYARGS_DISPATCH_rb_define_global_function_01(n))
+#    define RBIMPL_ANYARGS_DISPATCH_rb_define_global_function_03(n) \
+        RBIMPL_ANYARGS_DISPATCH( \
+            (n) == 3, rb_define_global_function_03, RBIMPL_ANYARGS_DISPATCH_rb_define_global_function_02(n))
+#    define RBIMPL_ANYARGS_DISPATCH_rb_define_global_function_04(n) \
+        RBIMPL_ANYARGS_DISPATCH( \
+            (n) == 4, rb_define_global_function_04, RBIMPL_ANYARGS_DISPATCH_rb_define_global_function_03(n))
+#    define RBIMPL_ANYARGS_DISPATCH_rb_define_global_function_05(n) \
+        RBIMPL_ANYARGS_DISPATCH( \
+            (n) == 5, rb_define_global_function_05, RBIMPL_ANYARGS_DISPATCH_rb_define_global_function_04(n))
+#    define RBIMPL_ANYARGS_DISPATCH_rb_define_global_function_06(n) \
+        RBIMPL_ANYARGS_DISPATCH( \
+            (n) == 6, rb_define_global_function_06, RBIMPL_ANYARGS_DISPATCH_rb_define_global_function_05(n))
+#    define RBIMPL_ANYARGS_DISPATCH_rb_define_global_function_07(n) \
+        RBIMPL_ANYARGS_DISPATCH( \
+            (n) == 7, rb_define_global_function_07, RBIMPL_ANYARGS_DISPATCH_rb_define_global_function_06(n))
+#    define RBIMPL_ANYARGS_DISPATCH_rb_define_global_function_08(n) \
+        RBIMPL_ANYARGS_DISPATCH( \
+            (n) == 8, rb_define_global_function_08, RBIMPL_ANYARGS_DISPATCH_rb_define_global_function_07(n))
+#    define RBIMPL_ANYARGS_DISPATCH_rb_define_global_function_09(n) \
+        RBIMPL_ANYARGS_DISPATCH( \
+            (n) == 9, rb_define_global_function_09, RBIMPL_ANYARGS_DISPATCH_rb_define_global_function_08(n))
+#    define RBIMPL_ANYARGS_DISPATCH_rb_define_global_function_10(n) \
+        RBIMPL_ANYARGS_DISPATCH( \
+            (n) == 10, rb_define_global_function_10, RBIMPL_ANYARGS_DISPATCH_rb_define_global_function_09(n))
+#    define RBIMPL_ANYARGS_DISPATCH_rb_define_global_function_11(n) \
+        RBIMPL_ANYARGS_DISPATCH( \
+            (n) == 11, rb_define_global_function_11, RBIMPL_ANYARGS_DISPATCH_rb_define_global_function_10(n))
+#    define RBIMPL_ANYARGS_DISPATCH_rb_define_global_function_12(n) \
+        RBIMPL_ANYARGS_DISPATCH( \
+            (n) == 12, rb_define_global_function_12, RBIMPL_ANYARGS_DISPATCH_rb_define_global_function_11(n))
+#    define RBIMPL_ANYARGS_DISPATCH_rb_define_global_function_13(n) \
+        RBIMPL_ANYARGS_DISPATCH( \
+            (n) == 13, rb_define_global_function_13, RBIMPL_ANYARGS_DISPATCH_rb_define_global_function_12(n))
+#    define RBIMPL_ANYARGS_DISPATCH_rb_define_global_function_14(n) \
+        RBIMPL_ANYARGS_DISPATCH( \
+            (n) == 14, rb_define_global_function_14, RBIMPL_ANYARGS_DISPATCH_rb_define_global_function_13(n))
+#    define RBIMPL_ANYARGS_DISPATCH_rb_define_global_function_15(n) \
+        RBIMPL_ANYARGS_DISPATCH( \
+            (n) == 15, rb_define_global_function_15, RBIMPL_ANYARGS_DISPATCH_rb_define_global_function_14(n))
+#    define RBIMPL_ANYARGS_DISPATCH_rb_define_method_id_m2(n) \
+        RBIMPL_ANYARGS_DISPATCH((n) == -2, rb_define_method_id_m2, rb_define_method_id_m3)
+#    define RBIMPL_ANYARGS_DISPATCH_rb_define_method_id_m1(n) \
+        RBIMPL_ANYARGS_DISPATCH((n) == -1, rb_define_method_id_m1, RBIMPL_ANYARGS_DISPATCH_rb_define_method_id_m2(n))
+#    define RBIMPL_ANYARGS_DISPATCH_rb_define_method_id_00(n) \
+        RBIMPL_ANYARGS_DISPATCH((n) == 0, rb_define_method_id_00, RBIMPL_ANYARGS_DISPATCH_rb_define_method_id_m1(n))
+#    define RBIMPL_ANYARGS_DISPATCH_rb_define_method_id_01(n) \
+        RBIMPL_ANYARGS_DISPATCH((n) == 1, rb_define_method_id_01, RBIMPL_ANYARGS_DISPATCH_rb_define_method_id_00(n))
+#    define RBIMPL_ANYARGS_DISPATCH_rb_define_method_id_02(n) \
+        RBIMPL_ANYARGS_DISPATCH((n) == 2, rb_define_method_id_02, RBIMPL_ANYARGS_DISPATCH_rb_define_method_id_01(n))
+#    define RBIMPL_ANYARGS_DISPATCH_rb_define_method_id_03(n) \
+        RBIMPL_ANYARGS_DISPATCH((n) == 3, rb_define_method_id_03, RBIMPL_ANYARGS_DISPATCH_rb_define_method_id_02(n))
+#    define RBIMPL_ANYARGS_DISPATCH_rb_define_method_id_04(n) \
+        RBIMPL_ANYARGS_DISPATCH((n) == 4, rb_define_method_id_04, RBIMPL_ANYARGS_DISPATCH_rb_define_method_id_03(n))
+#    define RBIMPL_ANYARGS_DISPATCH_rb_define_method_id_05(n) \
+        RBIMPL_ANYARGS_DISPATCH((n) == 5, rb_define_method_id_05, RBIMPL_ANYARGS_DISPATCH_rb_define_method_id_04(n))
+#    define RBIMPL_ANYARGS_DISPATCH_rb_define_method_id_06(n) \
+        RBIMPL_ANYARGS_DISPATCH((n) == 6, rb_define_method_id_06, RBIMPL_ANYARGS_DISPATCH_rb_define_method_id_05(n))
+#    define RBIMPL_ANYARGS_DISPATCH_rb_define_method_id_07(n) \
+        RBIMPL_ANYARGS_DISPATCH((n) == 7, rb_define_method_id_07, RBIMPL_ANYARGS_DISPATCH_rb_define_method_id_06(n))
+#    define RBIMPL_ANYARGS_DISPATCH_rb_define_method_id_08(n) \
+        RBIMPL_ANYARGS_DISPATCH((n) == 8, rb_define_method_id_08, RBIMPL_ANYARGS_DISPATCH_rb_define_method_id_07(n))
+#    define RBIMPL_ANYARGS_DISPATCH_rb_define_method_id_09(n) \
+        RBIMPL_ANYARGS_DISPATCH((n) == 9, rb_define_method_id_09, RBIMPL_ANYARGS_DISPATCH_rb_define_method_id_08(n))
+#    define RBIMPL_ANYARGS_DISPATCH_rb_define_method_id_10(n) \
+        RBIMPL_ANYARGS_DISPATCH((n) == 10, rb_define_method_id_10, RBIMPL_ANYARGS_DISPATCH_rb_define_method_id_09(n))
+#    define RBIMPL_ANYARGS_DISPATCH_rb_define_method_id_11(n) \
+        RBIMPL_ANYARGS_DISPATCH((n) == 11, rb_define_method_id_11, RBIMPL_ANYARGS_DISPATCH_rb_define_method_id_10(n))
+#    define RBIMPL_ANYARGS_DISPATCH_rb_define_method_id_12(n) \
+        RBIMPL_ANYARGS_DISPATCH((n) == 12, rb_define_method_id_12, RBIMPL_ANYARGS_DISPATCH_rb_define_method_id_11(n))
+#    define RBIMPL_ANYARGS_DISPATCH_rb_define_method_id_13(n) \
+        RBIMPL_ANYARGS_DISPATCH((n) == 13, rb_define_method_id_13, RBIMPL_ANYARGS_DISPATCH_rb_define_method_id_12(n))
+#    define RBIMPL_ANYARGS_DISPATCH_rb_define_method_id_14(n) \
+        RBIMPL_ANYARGS_DISPATCH((n) == 14, rb_define_method_id_14, RBIMPL_ANYARGS_DISPATCH_rb_define_method_id_13(n))
+#    define RBIMPL_ANYARGS_DISPATCH_rb_define_method_id_15(n) \
+        RBIMPL_ANYARGS_DISPATCH((n) == 15, rb_define_method_id_15, RBIMPL_ANYARGS_DISPATCH_rb_define_method_id_14(n))
+#    define RBIMPL_ANYARGS_DISPATCH_rb_define_method_m2(n) \
+        RBIMPL_ANYARGS_DISPATCH((n) == -2, rb_define_method_m2, rb_define_method_m3)
+#    define RBIMPL_ANYARGS_DISPATCH_rb_define_method_m1(n) \
+        RBIMPL_ANYARGS_DISPATCH((n) == -1, rb_define_method_m1, RBIMPL_ANYARGS_DISPATCH_rb_define_method_m2(n))
+#    define RBIMPL_ANYARGS_DISPATCH_rb_define_method_00(n) \
+        RBIMPL_ANYARGS_DISPATCH((n) == 0, rb_define_method_00, RBIMPL_ANYARGS_DISPATCH_rb_define_method_m1(n))
+#    define RBIMPL_ANYARGS_DISPATCH_rb_define_method_01(n) \
+        RBIMPL_ANYARGS_DISPATCH((n) == 1, rb_define_method_01, RBIMPL_ANYARGS_DISPATCH_rb_define_method_00(n))
+#    define RBIMPL_ANYARGS_DISPATCH_rb_define_method_02(n) \
+        RBIMPL_ANYARGS_DISPATCH((n) == 2, rb_define_method_02, RBIMPL_ANYARGS_DISPATCH_rb_define_method_01(n))
+#    define RBIMPL_ANYARGS_DISPATCH_rb_define_method_03(n) \
+        RBIMPL_ANYARGS_DISPATCH((n) == 3, rb_define_method_03, RBIMPL_ANYARGS_DISPATCH_rb_define_method_02(n))
+#    define RBIMPL_ANYARGS_DISPATCH_rb_define_method_04(n) \
+        RBIMPL_ANYARGS_DISPATCH((n) == 4, rb_define_method_04, RBIMPL_ANYARGS_DISPATCH_rb_define_method_03(n))
+#    define RBIMPL_ANYARGS_DISPATCH_rb_define_method_05(n) \
+        RBIMPL_ANYARGS_DISPATCH((n) == 5, rb_define_method_05, RBIMPL_ANYARGS_DISPATCH_rb_define_method_04(n))
+#    define RBIMPL_ANYARGS_DISPATCH_rb_define_method_06(n) \
+        RBIMPL_ANYARGS_DISPATCH((n) == 6, rb_define_method_06, RBIMPL_ANYARGS_DISPATCH_rb_define_method_05(n))
+#    define RBIMPL_ANYARGS_DISPATCH_rb_define_method_07(n) \
+        RBIMPL_ANYARGS_DISPATCH((n) == 7, rb_define_method_07, RBIMPL_ANYARGS_DISPATCH_rb_define_method_06(n))
+#    define RBIMPL_ANYARGS_DISPATCH_rb_define_method_08(n) \
+        RBIMPL_ANYARGS_DISPATCH((n) == 8, rb_define_method_08, RBIMPL_ANYARGS_DISPATCH_rb_define_method_07(n))
+#    define RBIMPL_ANYARGS_DISPATCH_rb_define_method_09(n) \
+        RBIMPL_ANYARGS_DISPATCH((n) == 9, rb_define_method_09, RBIMPL_ANYARGS_DISPATCH_rb_define_method_08(n))
+#    define RBIMPL_ANYARGS_DISPATCH_rb_define_method_10(n) \
+        RBIMPL_ANYARGS_DISPATCH((n) == 10, rb_define_method_10, RBIMPL_ANYARGS_DISPATCH_rb_define_method_09(n))
+#    define RBIMPL_ANYARGS_DISPATCH_rb_define_method_11(n) \
+        RBIMPL_ANYARGS_DISPATCH((n) == 11, rb_define_method_11, RBIMPL_ANYARGS_DISPATCH_rb_define_method_10(n))
+#    define RBIMPL_ANYARGS_DISPATCH_rb_define_method_12(n) \
+        RBIMPL_ANYARGS_DISPATCH((n) == 12, rb_define_method_12, RBIMPL_ANYARGS_DISPATCH_rb_define_method_11(n))
+#    define RBIMPL_ANYARGS_DISPATCH_rb_define_method_13(n) \
+        RBIMPL_ANYARGS_DISPATCH((n) == 13, rb_define_method_13, RBIMPL_ANYARGS_DISPATCH_rb_define_method_12(n))
+#    define RBIMPL_ANYARGS_DISPATCH_rb_define_method_14(n) \
+        RBIMPL_ANYARGS_DISPATCH((n) == 14, rb_define_method_14, RBIMPL_ANYARGS_DISPATCH_rb_define_method_13(n))
+#    define RBIMPL_ANYARGS_DISPATCH_rb_define_method_15(n) \
+        RBIMPL_ANYARGS_DISPATCH((n) == 15, rb_define_method_15, RBIMPL_ANYARGS_DISPATCH_rb_define_method_14(n))
+#    define RBIMPL_ANYARGS_DISPATCH_rb_define_singleton_method(n, f) \
+        RBIMPL_ANYARGS_DISPATCH(RBIMPL_CFUNC_IS_rb_f_notimplement(f), rb_define_singleton_method_m3, \
+            RBIMPL_ANYARGS_DISPATCH_rb_define_singleton_method_15(n))
+#    define RBIMPL_ANYARGS_DISPATCH_rb_define_protected_method(n, f) \
+        RBIMPL_ANYARGS_DISPATCH(RBIMPL_CFUNC_IS_rb_f_notimplement(f), rb_define_protected_method_m3, \
+            RBIMPL_ANYARGS_DISPATCH_rb_define_protected_method_15(n))
+#    define RBIMPL_ANYARGS_DISPATCH_rb_define_private_method(n, f) \
+        RBIMPL_ANYARGS_DISPATCH(RBIMPL_CFUNC_IS_rb_f_notimplement(f), rb_define_private_method_m3, \
+            RBIMPL_ANYARGS_DISPATCH_rb_define_private_method_15(n))
+#    define RBIMPL_ANYARGS_DISPATCH_rb_define_module_function(n, f) \
+        RBIMPL_ANYARGS_DISPATCH(RBIMPL_CFUNC_IS_rb_f_notimplement(f), rb_define_module_function_m3, \
+            RBIMPL_ANYARGS_DISPATCH_rb_define_module_function_15(n))
+#    define RBIMPL_ANYARGS_DISPATCH_rb_define_global_function(n, f) \
+        RBIMPL_ANYARGS_DISPATCH(RBIMPL_CFUNC_IS_rb_f_notimplement(f), rb_define_global_function_m3, \
+            RBIMPL_ANYARGS_DISPATCH_rb_define_global_function_15(n))
+#    define RBIMPL_ANYARGS_DISPATCH_rb_define_method_id(n, f) \
+        RBIMPL_ANYARGS_DISPATCH(RBIMPL_CFUNC_IS_rb_f_notimplement(f), rb_define_method_id_m3, \
+            RBIMPL_ANYARGS_DISPATCH_rb_define_method_id_15(n))
+#    define RBIMPL_ANYARGS_DISPATCH_rb_define_method(n, f) \
+        RBIMPL_ANYARGS_DISPATCH( \
+            RBIMPL_CFUNC_IS_rb_f_notimplement(f), rb_define_method_m3, RBIMPL_ANYARGS_DISPATCH_rb_define_method_15(n))
+#    define RBIMPL_ANYARGS_ATTRSET(sym) RBIMPL_ATTR_MAYBE_UNUSED() RBIMPL_ATTR_NONNULL(()) RBIMPL_ATTR_WEAKREF(sym)
+#    define RBIMPL_ANYARGS_DECL(sym, ...) \
+        RBIMPL_ANYARGS_ATTRSET(sym) static void sym##_m3(__VA_ARGS__, VALUE (*)(ANYARGS), int); \
+        RBIMPL_ANYARGS_ATTRSET(sym) static void sym##_m2(__VA_ARGS__, VALUE (*)(VALUE, VALUE), int); \
+        RBIMPL_ANYARGS_ATTRSET(sym) \
+        static void sym##_m1(__VA_ARGS__, \
+            VALUE (*)( \
+                int, \
+                union { \
+                    VALUE *x; \
+                    const VALUE *y; \
+                } __attribute__((__transparent_union__)), \
+                VALUE), \
+            int); \
+        RBIMPL_ANYARGS_ATTRSET(sym) static void sym##_00(__VA_ARGS__, VALUE (*)(VALUE), int); \
+        RBIMPL_ANYARGS_ATTRSET(sym) static void sym##_01(__VA_ARGS__, VALUE (*)(VALUE, VALUE), int); \
+        RBIMPL_ANYARGS_ATTRSET(sym) static void sym##_02(__VA_ARGS__, VALUE (*)(VALUE, VALUE, VALUE), int); \
+        RBIMPL_ANYARGS_ATTRSET(sym) static void sym##_03(__VA_ARGS__, VALUE (*)(VALUE, VALUE, VALUE, VALUE), int); \
+        RBIMPL_ANYARGS_ATTRSET(sym) \
+        static void sym##_04(__VA_ARGS__, VALUE (*)(VALUE, VALUE, VALUE, VALUE, VALUE), int); \
+        RBIMPL_ANYARGS_ATTRSET(sym) \
+        static void sym##_05(__VA_ARGS__, VALUE (*)(VALUE, VALUE, VALUE, VALUE, VALUE, VALUE), int); \
+        RBIMPL_ANYARGS_ATTRSET(sym) \
+        static void sym##_06(__VA_ARGS__, VALUE (*)(VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE), int); \
+        RBIMPL_ANYARGS_ATTRSET(sym) \
+        static void sym##_07(__VA_ARGS__, VALUE (*)(VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE), int); \
+        RBIMPL_ANYARGS_ATTRSET(sym) \
+        static void sym##_08( \
+            __VA_ARGS__, VALUE (*)(VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE), int); \
+        RBIMPL_ANYARGS_ATTRSET(sym) \
+        static void sym##_09( \
+            __VA_ARGS__, VALUE (*)(VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE), int); \
+        RBIMPL_ANYARGS_ATTRSET(sym) \
+        static void sym##_10( \
+            __VA_ARGS__, VALUE (*)(VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE), int); \
+        RBIMPL_ANYARGS_ATTRSET(sym) \
+        static void sym##_11(__VA_ARGS__, \
+            VALUE (*)(VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE), int); \
+        RBIMPL_ANYARGS_ATTRSET(sym) \
+        static void sym##_12(__VA_ARGS__, \
+            VALUE (*)(VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE), \
+            int); \
+        RBIMPL_ANYARGS_ATTRSET(sym) \
+        static void sym##_13(__VA_ARGS__, \
+            VALUE (*)( \
+                VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE), \
+            int); \
+        RBIMPL_ANYARGS_ATTRSET(sym) \
+        static void sym##_14(__VA_ARGS__, \
+            VALUE (*)(VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, \
+                VALUE, VALUE), \
+            int); \
+        RBIMPL_ANYARGS_ATTRSET(sym) \
+        static void sym##_15(__VA_ARGS__, \
+            VALUE (*)(VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, \
+                VALUE, VALUE, VALUE), \
+            int);
 RBIMPL_ANYARGS_DECL(rb_define_singleton_method, VALUE, const char *)
 RBIMPL_ANYARGS_DECL(rb_define_protected_method, VALUE, const char *)
 RBIMPL_ANYARGS_DECL(rb_define_private_method, VALUE, const char *)
@@ -284,7 +539,8 @@ RBIMPL_ANYARGS_DECL(rb_define_method, VALUE, const char *)
  * @param  func   Implementation of klass\#mid.
  * @param  arity  Arity of klass\#mid.
  */
-#define rb_define_method(klass, mid, func, arity)           RBIMPL_ANYARGS_DISPATCH_rb_define_method((arity), (func))((klass), (mid), (func), (arity))
+#    define rb_define_method(klass, mid, func, arity) \
+        RBIMPL_ANYARGS_DISPATCH_rb_define_method((arity), (func))((klass), (mid), (func), (arity))
 
 /**
  * @brief  Defines klass\#mid.
@@ -294,7 +550,8 @@ RBIMPL_ANYARGS_DECL(rb_define_method, VALUE, const char *)
  * @param  func   Implementation of klass\#mid.
  * @param  arity  Arity of klass\#mid.
  */
-#define rb_define_method_id(klass, mid, func, arity)        RBIMPL_ANYARGS_DISPATCH_rb_define_method_id((arity), (func))((klass), (mid), (func), (arity))
+#    define rb_define_method_id(klass, mid, func, arity) \
+        RBIMPL_ANYARGS_DISPATCH_rb_define_method_id((arity), (func))((klass), (mid), (func), (arity))
 
 /**
  * @brief  Defines obj.mid.
@@ -304,7 +561,8 @@ RBIMPL_ANYARGS_DECL(rb_define_method, VALUE, const char *)
  * @param  func   Implementation of obj.mid.
  * @param  arity  Arity of obj.mid.
  */
-#define rb_define_singleton_method(obj, mid, func, arity)   RBIMPL_ANYARGS_DISPATCH_rb_define_singleton_method((arity), (func))((obj), (mid), (func), (arity))
+#    define rb_define_singleton_method(obj, mid, func, arity) \
+        RBIMPL_ANYARGS_DISPATCH_rb_define_singleton_method((arity), (func))((obj), (mid), (func), (arity))
 
 /**
  * @brief  Defines klass\#mid and make it protected.
@@ -314,7 +572,8 @@ RBIMPL_ANYARGS_DECL(rb_define_method, VALUE, const char *)
  * @param  func   Implementation of klass\#mid.
  * @param  arity  Arity of klass\#mid.
  */
-#define rb_define_protected_method(klass, mid, func, arity) RBIMPL_ANYARGS_DISPATCH_rb_define_protected_method((arity), (func))((klass), (mid), (func), (arity))
+#    define rb_define_protected_method(klass, mid, func, arity) \
+        RBIMPL_ANYARGS_DISPATCH_rb_define_protected_method((arity), (func))((klass), (mid), (func), (arity))
 
 /**
  * @brief  Defines klass\#mid and make it private.
@@ -324,7 +583,8 @@ RBIMPL_ANYARGS_DECL(rb_define_method, VALUE, const char *)
  * @param  func   Implementation of klass\#mid.
  * @param  arity  Arity of klass\#mid.
  */
-#define rb_define_private_method(klass, mid, func, arity)   RBIMPL_ANYARGS_DISPATCH_rb_define_private_method((arity), (func))((klass), (mid), (func), (arity))
+#    define rb_define_private_method(klass, mid, func, arity) \
+        RBIMPL_ANYARGS_DISPATCH_rb_define_private_method((arity), (func))((klass), (mid), (func), (arity))
 
 /**
  * @brief  Defines mod\#mid and make it a module function.
@@ -334,7 +594,8 @@ RBIMPL_ANYARGS_DECL(rb_define_method, VALUE, const char *)
  * @param  func   Implementation of mod\#mid.
  * @param  arity  Arity of mod\#mid.
  */
-#define rb_define_module_function(mod, mid, func, arity)    RBIMPL_ANYARGS_DISPATCH_rb_define_module_function((arity), (func))((mod), (mid), (func), (arity))
+#    define rb_define_module_function(mod, mid, func, arity) \
+        RBIMPL_ANYARGS_DISPATCH_rb_define_module_function((arity), (func))((mod), (mid), (func), (arity))
 
 /**
  * @brief  Defines ::rb_mKerbel \#mid.
@@ -343,7 +604,8 @@ RBIMPL_ANYARGS_DECL(rb_define_method, VALUE, const char *)
  * @param  func   Implementation of ::rb_mKernel \#mid.
  * @param  arity  Arity of ::rb_mKernel \#mid.
  */
-#define rb_define_global_function(mid, func, arity)         RBIMPL_ANYARGS_DISPATCH_rb_define_global_function((arity), (func))((mid), (func), (arity))
+#    define rb_define_global_function(mid, func, arity) \
+        RBIMPL_ANYARGS_DISPATCH_rb_define_global_function((arity), (func))((mid), (func), (arity))
 
 #endif /* __cplusplus */
 
@@ -358,17 +620,17 @@ RBIMPL_ANYARGS_DECL(rb_define_method, VALUE, const char *)
  *
  * @param  func  A pointer to a function that implements a method.
  */
-#if ! defined(RUBY_DEVEL)
-# define RUBY_METHOD_FUNC(func) RBIMPL_CAST((VALUE (*)(ANYARGS))(func))
+#if !defined(RUBY_DEVEL)
+#    define RUBY_METHOD_FUNC(func) RBIMPL_CAST((VALUE(*)(ANYARGS))(func))
 
-#elif ! RUBY_DEVEL
-# define RUBY_METHOD_FUNC(func) RBIMPL_CAST((VALUE (*)(ANYARGS))(func))
+#elif !RUBY_DEVEL
+#    define RUBY_METHOD_FUNC(func) RBIMPL_CAST((VALUE(*)(ANYARGS))(func))
 
-#elif ! defined(rb_define_method)
-# define RUBY_METHOD_FUNC(func) RBIMPL_CAST((VALUE (*)(ANYARGS))(func))
+#elif !defined(rb_define_method)
+#    define RUBY_METHOD_FUNC(func) RBIMPL_CAST((VALUE(*)(ANYARGS))(func))
 
 #else
-# define RUBY_METHOD_FUNC(func) (func)
+#    define RUBY_METHOD_FUNC(func) (func)
 
 #endif
 

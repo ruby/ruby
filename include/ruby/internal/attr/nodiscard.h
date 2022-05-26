@@ -1,4 +1,4 @@
-#ifndef RBIMPL_ATTR_NODISCARD_H                      /*-*-C++-*-vi:se ft=cpp:*/
+#ifndef RBIMPL_ATTR_NODISCARD_H /*-*-C++-*-vi:se ft=cpp:*/
 #define RBIMPL_ATTR_NODISCARD_H
 /**
  * @file
@@ -30,16 +30,16 @@
  * However GCC attribute and SAL annotation cannot take them.
  */
 #if RBIMPL_HAS_CPP_ATTRIBUTE(nodiscard)
-# define RBIMPL_ATTR_NODISCARD() [[nodiscard]]
+#    define RBIMPL_ATTR_NODISCARD() [[nodiscard]]
 #elif RBIMPL_HAS_C_ATTRIBUTE(nodiscard)
-# define RBIMPL_ATTR_NODISCARD() [[nodiscard]]
+#    define RBIMPL_ATTR_NODISCARD() [[nodiscard]]
 #elif RBIMPL_HAS_ATTRIBUTE(warn_unused_result)
-# define RBIMPL_ATTR_NODISCARD() __attribute__((__warn_unused_result__))
+#    define RBIMPL_ATTR_NODISCARD() __attribute__((__warn_unused_result__))
 #elif defined(_Check_return_)
-# /* Take SAL definition. */
-# define RBIMPL_ATTR_NODISCARD() _Check_return_
+#    /* Take SAL definition. */
+#    define RBIMPL_ATTR_NODISCARD() _Check_return_
 #else
-# define RBIMPL_ATTR_NODISCARD() /* void */
+#    define RBIMPL_ATTR_NODISCARD() /* void */
 #endif
 
 #endif /* RBIMPL_ATTR_NODISCARD_H */

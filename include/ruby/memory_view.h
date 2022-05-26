@@ -1,4 +1,4 @@
-#ifndef RUBY_MEMORY_VIEW_H                           /*-*-C++-*-vi:se ft=cpp:*/
+#ifndef RUBY_MEMORY_VIEW_H /*-*-C++-*-vi:se ft=cpp:*/
 #define RUBY_MEMORY_VIEW_H 1
 /**
  * @file
@@ -13,11 +13,11 @@
 #include "ruby/internal/config.h"
 
 #ifdef STDC_HEADERS
-# include <stddef.h>                       /* size_t */
+#    include <stddef.h> /* size_t */
 #endif
 
 #if HAVE_SYS_TYPES_H
-# include <sys/types.h>                    /* ssize_t */
+#    include <sys/types.h> /* ssize_t */
 #endif
 
 #include "ruby/internal/attr/pure.h"       /* RBIMPL_ATTR_PURE */
@@ -30,15 +30,15 @@
  * Flags passed to rb_memory_view_get(), then to ::rb_memory_view_get_func_t.
  */
 enum ruby_memory_view_flags {
-    RUBY_MEMORY_VIEW_SIMPLE            = 0,
-    RUBY_MEMORY_VIEW_WRITABLE          = (1<<0),
-    RUBY_MEMORY_VIEW_FORMAT            = (1<<1),
-    RUBY_MEMORY_VIEW_MULTI_DIMENSIONAL = (1<<2),
-    RUBY_MEMORY_VIEW_STRIDES           = (1<<3) | RUBY_MEMORY_VIEW_MULTI_DIMENSIONAL,
-    RUBY_MEMORY_VIEW_ROW_MAJOR         = (1<<4) | RUBY_MEMORY_VIEW_STRIDES,
-    RUBY_MEMORY_VIEW_COLUMN_MAJOR      = (1<<5) | RUBY_MEMORY_VIEW_STRIDES,
-    RUBY_MEMORY_VIEW_ANY_CONTIGUOUS    = RUBY_MEMORY_VIEW_ROW_MAJOR | RUBY_MEMORY_VIEW_COLUMN_MAJOR,
-    RUBY_MEMORY_VIEW_INDIRECT          = (1<<6) | RUBY_MEMORY_VIEW_STRIDES,
+    RUBY_MEMORY_VIEW_SIMPLE = 0,
+    RUBY_MEMORY_VIEW_WRITABLE = (1 << 0),
+    RUBY_MEMORY_VIEW_FORMAT = (1 << 1),
+    RUBY_MEMORY_VIEW_MULTI_DIMENSIONAL = (1 << 2),
+    RUBY_MEMORY_VIEW_STRIDES = (1 << 3) | RUBY_MEMORY_VIEW_MULTI_DIMENSIONAL,
+    RUBY_MEMORY_VIEW_ROW_MAJOR = (1 << 4) | RUBY_MEMORY_VIEW_STRIDES,
+    RUBY_MEMORY_VIEW_COLUMN_MAJOR = (1 << 5) | RUBY_MEMORY_VIEW_STRIDES,
+    RUBY_MEMORY_VIEW_ANY_CONTIGUOUS = RUBY_MEMORY_VIEW_ROW_MAJOR | RUBY_MEMORY_VIEW_COLUMN_MAJOR,
+    RUBY_MEMORY_VIEW_INDIRECT = (1 << 6) | RUBY_MEMORY_VIEW_STRIDES,
 };
 
 /** Memory view component metadata. */
@@ -47,10 +47,10 @@ typedef struct {
     char format;
 
     /** :FIXME: what is a "native" size is unclear. */
-    unsigned native_size_p: 1;
+    unsigned native_size_p : 1;
 
     /** Endian of the component */
-    unsigned little_endian_p: 1;
+    unsigned little_endian_p : 1;
 
     /** The component's offset. */
     size_t offset;
@@ -154,13 +154,13 @@ typedef struct {
 } rb_memory_view_t;
 
 /** Type of function of ::rb_memory_view_entry_t::get_func. */
-typedef bool (* rb_memory_view_get_func_t)(VALUE obj, rb_memory_view_t *view, int flags);
+typedef bool (*rb_memory_view_get_func_t)(VALUE obj, rb_memory_view_t *view, int flags);
 
 /** Type of function of ::rb_memory_view_entry_t::release_func. */
-typedef bool (* rb_memory_view_release_func_t)(VALUE obj, rb_memory_view_t *view);
+typedef bool (*rb_memory_view_release_func_t)(VALUE obj, rb_memory_view_t *view);
 
 /** Type of function of ::rb_memory_view_entry_t::available_p_func. */
-typedef bool (* rb_memory_view_available_p_func_t)(VALUE obj);
+typedef bool (*rb_memory_view_available_p_func_t)(VALUE obj);
 
 /** Operations applied to a specific kind of a memory view. */
 typedef struct rb_memory_view_entry {
@@ -213,21 +213,22 @@ RBIMPL_ATTR_NOALIAS()
  * Fill the  `strides` array  with byte-Strides  of a  contiguous array  of the
  * given shape with the given element size.
  */
-void rb_memory_view_fill_contiguous_strides(const ssize_t ndim, const ssize_t item_size, const ssize_t *const shape, const bool row_major_p, ssize_t *const strides);
+void rb_memory_view_fill_contiguous_strides(const ssize_t ndim, const ssize_t item_size, const ssize_t *const shape,
+    const bool row_major_p, ssize_t *const strides);
 
 RBIMPL_ATTR_NOALIAS()
 /**
  * Fill the members of `view` as an 1-dimensional byte array.
  */
-bool rb_memory_view_init_as_byte_array(rb_memory_view_t *view, VALUE obj, void *data, const ssize_t len, const bool readonly);
+bool rb_memory_view_init_as_byte_array(
+    rb_memory_view_t *view, VALUE obj, void *data, const ssize_t len, const bool readonly);
 
 /**
  * Deconstructs    the     passed    format    string,    as     describe    in
  * ::rb_memory_view_t::format.
  */
-ssize_t rb_memory_view_parse_item_format(const char *format,
-                                         rb_memory_view_item_component_t **members,
-                                         size_t *n_members, const char **err);
+ssize_t rb_memory_view_parse_item_format(
+    const char *format, rb_memory_view_item_component_t **members, size_t *n_members, const char **err);
 
 /**
  * Calculate the number of bytes occupied by an element.
@@ -253,7 +254,8 @@ void *rb_memory_view_get_item_pointer(rb_memory_view_t *view, const ssize_t *ind
  *
  * When an item consists of multiple members, an array will be returned.
  */
-VALUE rb_memory_view_extract_item_members(const void *ptr, const rb_memory_view_item_component_t *members, const size_t n_members);
+VALUE rb_memory_view_extract_item_members(
+    const void *ptr, const rb_memory_view_item_component_t *members, const size_t n_members);
 
 /** Fill the `item_desc` member of `view`. */
 void rb_memory_view_prepare_item_desc(rb_memory_view_t *view);
@@ -282,7 +284,7 @@ bool rb_memory_view_available_p(VALUE obj);
  * The exported  MemoryView must  be released by  `rb_memory_view_release` when
  * the MemoryView is no longer needed.
  */
-bool rb_memory_view_get(VALUE obj, rb_memory_view_t* memory_view, int flags);
+bool rb_memory_view_get(VALUE obj, rb_memory_view_t *memory_view, int flags);
 
 /**
  * Release the  given MemoryView  `view` and decrement  the reference  count of
@@ -291,7 +293,7 @@ bool rb_memory_view_get(VALUE obj, rb_memory_view_t* memory_view, int flags);
  * Consumers must call  this function when the MemoryView is  no longer needed.
  * Missing to call this function leads memory leak.
  */
-bool rb_memory_view_release(rb_memory_view_t* memory_view);
+bool rb_memory_view_release(rb_memory_view_t *memory_view);
 
 /* for testing */
 /** @cond INTERNAL_MACRO */

@@ -1,4 +1,4 @@
-#ifndef RUBY_BACKWARD2_GCC_VERSION_SINCE_H           /*-*-C++-*-vi:se ft=cpp:*/
+#ifndef RUBY_BACKWARD2_GCC_VERSION_SINCE_H /*-*-C++-*-vi:se ft=cpp:*/
 #define RUBY_BACKWARD2_GCC_VERSION_SINCE_H
 /**
  * @author     Ruby developers <ruby-core@ruby-lang.org>
@@ -22,16 +22,15 @@
 #include "ruby/internal/compiler_since.h"
 
 #ifndef GCC_VERSION_SINCE
-#define GCC_VERSION_SINCE(x, y, z) RBIMPL_COMPILER_SINCE(GCC, (x), (y), (z))
+#    define GCC_VERSION_SINCE(x, y, z) RBIMPL_COMPILER_SINCE(GCC, (x), (y), (z))
 #endif
 
 #ifndef GCC_VERSION_BEFORE
-#define GCC_VERSION_BEFORE(x, y, z) \
-     (RBIMPL_COMPILER_BEFORE(GCC, (x), (y), (z)) || \
-     (RBIMPL_COMPILER_IS(GCC)                    && \
-    ((RBIMPL_COMPILER_VERSION_MAJOR == (x))      && \
-    ((RBIMPL_COMPILER_VERSION_MINOR == (y))      && \
-     (RBIMPL_COMPILER_VERSION_PATCH == (z))))))
+#    define GCC_VERSION_BEFORE(x, y, z) \
+        (RBIMPL_COMPILER_BEFORE(GCC, (x), (y), (z)) || \
+            (RBIMPL_COMPILER_IS(GCC) && \
+                ((RBIMPL_COMPILER_VERSION_MAJOR == (x)) && \
+                    ((RBIMPL_COMPILER_VERSION_MINOR == (y)) && (RBIMPL_COMPILER_VERSION_PATCH == (z))))))
 #endif
 
 #endif /* RUBY_BACKWARD2_GCC_VERSION_SINCE_H */

@@ -1,4 +1,4 @@
-#ifndef RBIMPL_ATTR_NORETURN_H                       /*-*-C++-*-vi:se ft=cpp:*/
+#ifndef RBIMPL_ATTR_NORETURN_H /*-*-C++-*-vi:se ft=cpp:*/
 #define RBIMPL_ATTR_NORETURN_H
 /**
  * @file
@@ -26,23 +26,23 @@
 
 /** Wraps (or simulates) `[[noreturn]]` */
 #if RBIMPL_HAS_DECLSPEC_ATTRIBUTE(noreturn)
-# define RBIMPL_ATTR_NORETURN() __declspec(noreturn)
+#    define RBIMPL_ATTR_NORETURN() __declspec(noreturn)
 
 #elif RBIMPL_HAS_ATTRIBUTE(noreturn)
-# define RBIMPL_ATTR_NORETURN() __attribute__((__noreturn__))
+#    define RBIMPL_ATTR_NORETURN() __attribute__((__noreturn__))
 
 #elif RBIMPL_HAS_CPP_ATTRIBUTE(noreturn)
-# define RBIMPL_ATTR_NORETURN() [[noreturn]]
+#    define RBIMPL_ATTR_NORETURN() [[noreturn]]
 
 #elif defined(__STDC_VERSION__) && (__STDC_VERSION__ >= 201112)
-# define RBIMPL_ATTR_NORETURN() _Noreturn
+#    define RBIMPL_ATTR_NORETURN() _Noreturn
 
 #elif defined(_Noreturn)
-# /* glibc <sys/cdefs.h> has this macro. */
-# define RBIMPL_ATTR_NORETURN() _Noreturn
+#    /* glibc <sys/cdefs.h> has this macro. */
+#    define RBIMPL_ATTR_NORETURN() _Noreturn
 
 #else
-# define RBIMPL_ATTR_NORETURN() /* void */
+#    define RBIMPL_ATTR_NORETURN() /* void */
 #endif
 
 #endif /* RBIMPL_ATTR_NORETURN_H */
