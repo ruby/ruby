@@ -2335,6 +2335,7 @@ Init_Complex(void)
     rb_undef_method(rb_cComplex, "%");
     rb_undef_method(rb_cComplex, "div");
     rb_undef_method(rb_cComplex, "divmod");
+    rb_undef_method(rb_cComplex, "ceildiv");
     rb_undef_method(rb_cComplex, "floor");
     rb_undef_method(rb_cComplex, "ceil");
     rb_undef_method(rb_cComplex, "modulo");

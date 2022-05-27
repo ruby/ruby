@@ -704,4 +704,21 @@ class TestInteger < Test::Unit::TestCase
     def o.to_int; Object.new; end
     assert_raise_with_message(TypeError, /can't convert Object to Integer/) {Integer.try_convert(o)}
   end
+
+  def test_ceildiv
+    assert_equal(0, 0.ceildiv(3))
+    assert_equal(1, 1.ceildiv(3))
+    assert_equal(1, 3.ceildiv(3))
+    assert_equal(2, 4.ceildiv(3))
+
+    assert_equal(-1, 4.ceildiv(-3))
+    assert_equal(-1, -4.ceildiv(3))
+    assert_equal(2, -4.ceildiv(-3))
+
+    assert_equal(3, 3.ceildiv(1.2))
+    assert_equal(3, 3.ceildiv(6/5r))
+
+    assert_equal(10, (10**100-11).ceildiv(10**99-1))
+    assert_equal(11, (10**100-9).ceildiv(10**99-1))
+  end
 end

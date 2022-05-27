@@ -658,6 +658,31 @@ num_div(VALUE x, VALUE y)
 
 /*
  *  call-seq:
+ *    ceildiv(other) -> integer
+ *
+ *  Returns the quotient <tt>self/other</tt> as an integer, rounding up to the nearest integer.
+ *  This method uses method +/+ in the derived class of +self+.
+ *  (\Numeric itself does not define method +/+.)
+ *
+ *  Of the Core and Standard Library classes,
+ *  Float and Rational use this implementation.
+ *
+ *    3.0.ceildiv(3.0) # => 1
+ *    4.0.ceildiv(3.0) # => 2
+ *
+ *    4.0.ceildiv(-3.0) # => -1
+ *    -4.0.ceildiv(3.0) # => -1
+ *    -4.0.ceildiv(-3.0) # => 2
+ */
+static VALUE
+num_ceildiv(VALUE x, VALUE y)
+{
+    VALUE tmp = num_div(x, num_uminus(y));
+    return num_uminus(tmp);
+}
+
+/*
+ *  call-seq:
  *    self % other -> real_numeric
  *
  *  Returns +self+ modulo +other+ as a real number.
@@ -4269,6 +4294,28 @@ rb_int_idiv(VALUE x, VALUE y)
     return num_div(x, y);
 }
 
+/*
+ *  call-seq:
+ *    ceildiv(other) -> integer
+ *
+ *  Returns the result of division +self+ by +other+. The result is rounded up to the nearest integer.
+ *
+ *    3.ceildiv(3) # => 1
+ *    4.ceildiv(3) # => 2
+ *
+ *    4.ceildiv(-3) # => -1
+ *    -4.ceildiv(3) # => -1
+ *    -4.ceildiv(-3) # => 2
+ *
+ *    3.ceildiv(1.2) # => 3
+ */
+VALUE
+rb_int_ceildiv(VALUE x, VALUE y)
+{
+    VALUE tmp = rb_int_idiv(x, num_uminus(y));
+    return num_uminus(tmp);
+}
+
 static VALUE
 fix_mod(VALUE x, VALUE y)
 {
@@ -6200,6 +6247,7 @@ Init_Numeric(void)
     rb_define_method(rb_cNumeric, "<=>", num_cmp, 1);
     rb_define_method(rb_cNumeric, "eql?", num_eql, 1);
     rb_define_method(rb_cNumeric, "fdiv", num_fdiv, 1);
+    rb_define_method(rb_cNumeric, "ceildiv", num_ceildiv, 1);
     rb_define_method(rb_cNumeric, "div", num_div, 1);
     rb_define_method(rb_cNumeric, "divmod", num_divmod, 1);
     rb_define_method(rb_cNumeric, "%", num_modulo, 1);
@@ -6255,6 +6303,7 @@ Init_Numeric(void)
     rb_define_method(rb_cInteger, "remainder", int_remainder, 1);
     rb_define_method(rb_cInteger, "divmod", rb_int_divmod, 1);
     rb_define_method(rb_cInteger, "fdiv", rb_int_fdiv, 1);
+    rb_define_method(rb_cInteger, "ceildiv", rb_int_ceildiv, 1);
     rb_define_method(rb_cInteger, "**", rb_int_pow, 1);
 
     rb_define_method(rb_cInteger, "pow", rb_int_powm, -1); /* in bignum.c */

@@ -482,4 +482,18 @@ class TestNumeric < Test::Unit::TestCase
     assert_equal(0, -2.pow(3, 1))
   end
 
+  def test_ceildiv
+    assert_equal(0, 0.0.ceildiv(3.0))
+    assert_equal(1, 1.0.ceildiv(3.0))
+    assert_equal(1, 3.0.ceildiv(3.0))
+    assert_equal(2, 4.0.ceildiv(3.0))
+
+    assert_equal(-1, 4.0.ceildiv(-3.0))
+    assert_equal(-1, -4.0.ceildiv(3.0))
+    assert_equal(2, -4.0.ceildiv(-3.0))
+
+    assert_equal(3, 3.0.ceildiv(1.2))
+    assert_equal(3, 3.0.ceildiv(6/5r))
+    assert_equal(3, (7r/2).ceildiv(6/5r))
+  end
 end
