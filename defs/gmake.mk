@@ -398,7 +398,7 @@ $(YJIT_LIBS): yjit-static-lib
 
 # Put this here instead of in common.mk to avoid breaking nmake builds
 # TODO: might need to move for BSD Make support
-miniruby$(EXEEXT): | $(YJIT_LIBS)
+miniruby$(EXEEXT): $(YJIT_LIBS)
 
 # Generate Rust bindings. See source for details.
 # Needs `./configure --enable-yjit=dev` and Clang.
