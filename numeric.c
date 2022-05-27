@@ -667,9 +667,9 @@ num_div(VALUE x, VALUE y)
  *
  *  For \Rational +r+ and real number +n+, these expressions are equivalent:
  *
- *    c % n
- *    c-n*(c/n).floor
- *    c.divmod(n)[1]
+ *    r % n
+ *    r-n*(r/n).floor
+ *    r.divmod(n)[1]
  *
  *  See Numeric#divmod.
  *
