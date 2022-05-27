@@ -838,13 +838,13 @@ end
     let(:full_name) { "bundler-#{Bundler::VERSION}" }
 
     before do
-      FileUtils.ln_s(gem_home, symlinked_gem_home)
+      File.symlink(gem_home, symlinked_gem_home)
       gems_dir = File.join(gem_home, "gems")
       specifications_dir = File.join(gem_home, "specifications")
       Dir.mkdir(gems_dir)
       Dir.mkdir(specifications_dir)
 
-      FileUtils.ln_s(source_root, File.join(gems_dir, full_name))
+      File.symlink(source_root, File.join(gems_dir, full_name))
 
       gemspec_content = File.binread(gemspec).
                 sub("Bundler::VERSION", %("#{Bundler::VERSION}")).
