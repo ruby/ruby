@@ -38,6 +38,7 @@ def gemfile(install = false, options = {}, &gemfile)
   raise ArgumentError, "Unknown options: #{opts.keys.join(", ")}" unless opts.empty?
 
   begin
+    Bundler.instance_variable_set(:@bundle_path, Pathname.new(Gem.dir))
     old_gemfile = ENV["BUNDLE_GEMFILE"]
     Bundler::SharedHelpers.set_env "BUNDLE_GEMFILE", "Gemfile"
 

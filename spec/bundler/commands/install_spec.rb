@@ -969,4 +969,37 @@ RSpec.describe "bundle install with gem sources" do
       expect(last_command).to be_success
     end
   end
+
+  context "with a symlinked configured as bundle path and a gem with symlinks" do
+    before do
+      symlinked_bundled_app = tmp("bundled_app-symlink")
+      File.symlink(bundled_app, symlinked_bundled_app)
+      bundle "config path #{File.join(symlinked_bundled_app, ".vendor")}"
+
+      binman_path = tmp("binman")
+      FileUtils.mkdir_p binman_path
+
+      readme_path = File.join(binman_path, "README.markdown")
+      FileUtils.touch(readme_path)
+
+      man_path = File.join(binman_path, "man", "man0")
+      FileUtils.mkdir_p man_path
+
+      File.symlink("../../README.markdown", File.join(man_path, "README.markdown"))
+
+      build_repo4 do
+        build_gem "binman", :path => gem_repo4("gems"), :lib_path => binman_path, :no_default => true do |s|
+          s.files = ["README.markdown", "man/man0/README.markdown"]
+        end
+      end
+    end
+
+    it "installs fine" do
+      install_gemfile <<~G
+        source "#{file_uri_for(gem_repo4)}"
+
+        gem "binman"
+      G
+    end
+  end
 end
