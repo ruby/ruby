@@ -749,7 +749,7 @@ strio_set_pos(VALUE self, VALUE pos)
 
 /*
  * call-seq:
- *   strio.rewind    -> 0
+ *   strio.rewind    -> strio
  *
  * Positions the stream to the beginning of input, resetting
  * +lineno+ to zero.
@@ -760,7 +760,7 @@ strio_rewind(VALUE self)
     struct StringIO *ptr = StringIO(self);
     ptr->pos = 0;
     ptr->lineno = 0;
-    return INT2FIX(0);
+    return self;
 }
 
 /*
