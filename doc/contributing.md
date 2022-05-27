@@ -9,3 +9,4 @@ This guide outlines ways to get started with contributing to Ruby:
   to change Ruby's documentation, code, test suite, or standard libraries
 * [Making changes to Ruby standard libraries](contributing/making_changes_to_stdlibs.md): How to build, test, and contribute to Ruby standard libraries
 * [Making changes to Ruby documentation](contributing/documentation_guide.md): How to make changes to Ruby documentation
+* [Benchmarking Ruby](https://github.com/ruby/ruby/tree/master/benchmark#make-benchmark): How to benchmark Ruby

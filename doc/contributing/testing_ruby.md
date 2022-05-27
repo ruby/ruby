@@ -32,6 +32,13 @@ We can run any of the make scripts [in parallel](building_ruby.md#label-Running+
     make test OPTS=-v
     ```
 
+    To run a file or directory with GNU make, we can use:
+
+    ```
+    make test/ruby/test_foo.rb
+    make test/ruby/test_foo.rb TESTOPTS="-n /test_bar/"
+    ```
+
 2. [test/](https://github.com/ruby/ruby/tree/master/test)
 
     This is a more comprehensive test suite that runs on Ruby. We can run it with:
@@ -40,7 +47,13 @@ We can run any of the make scripts [in parallel](building_ruby.md#label-Running+
     make test-all
     ```
 
-    We can run a specific test file in this suite using the `TESTS` environment variable, for example:
+    We can run a specific test directory in this suite using the `TESTS` environment variable, for example:
+
+    ```
+    make test-all TESTS=test/rubygems
+    ```
+
+    We can run a specific test file in this suite by also using the `TESTS` environment variable, for example:
 
     ```
     make test-all TESTS=test/ruby/test_array.rb
@@ -73,7 +86,13 @@ We can run any of the make scripts [in parallel](building_ruby.md#label-Running+
     make test-spec
     ```
 
-    To run a specific file, we can use `MSPECOPT` to specify the file:
+    To run a specific directory, we can use `MSPECOPT` to specify the directory:
+
+    ```
+    make test-spec MSPECOPT=spec/ruby/core/array
+    ```
+
+    To run a specific file, we can also use `MSPECOPT` to specify the file:
 
     ```
     make test-spec MSPECOPT=spec/ruby/core/array/any_spec.rb
@@ -91,10 +110,22 @@ We can run any of the make scripts [in parallel](building_ruby.md#label-Running+
     make test-spec MSPECOPT=-Vfs
     ```
 
+    To run a ruby-spec file or directory with GNU make, we can use
+
+    ```
+    make spec/ruby/core/foo/bar_spec.rb
+    ```
+
 4. [spec/bundler](https://github.com/ruby/ruby/tree/master/spec/bundler)
 
     The bundler test suite exists in [the RubyGems repository](https://github.com/rubygems/rubygems/tree/master/bundler/spec) and is mirrored into the `spec/bundler` directory in the Ruby repository. We can run this using:
 
     ```
     make test-bundler
+    ```
+
+    To run a specific bundler spec file, we can use `BUNDLER_SPECS` as follows:
+
+    ```
+    $ make test-bundler BUNDLER_SPECS=commands/exec_spec.rb
     ```
