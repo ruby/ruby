@@ -8685,7 +8685,7 @@ rb_p_result(int argc, const VALUE *argv)
     }
     VALUE r_stdout = rb_ractor_stdout();
     if (RB_TYPE_P(r_stdout, T_FILE)) {
-        rb_uninterruptible(rb_io_flush, r_stdout);
+        rb_io_flush(r_stdout);
     }
     return ret;
 }
@@ -8724,7 +8724,7 @@ rb_f_p(int argc, VALUE *argv, VALUE self)
     int i;
     for (i=0; i<argc; i++) {
         VALUE inspected = rb_obj_as_string(rb_inspect(argv[i]));
-        rb_uninterruptible(rb_p_write, inspected);
+        rb_p_write(inspected);
     }
     return rb_p_result(argc, argv);
 }

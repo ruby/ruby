@@ -861,28 +861,6 @@ class TestThread < Test::Unit::TestCase
     INPUT
   end
 
-  def test_handle_interrupt_and_p
-    assert_in_out_err([], <<-INPUT, %w(:ok :ok), [])
-      th_waiting = false
-
-      t = Thread.new {
-        Thread.current.report_on_exception = false
-        Thread.handle_interrupt(RuntimeError => :on_blocking) {
-          th_waiting = true
-          nil while th_waiting
-          # p shouldn't provide interruptible point
-          p :ok
-          p :ok
-        }
-      }
-
-      Thread.pass until th_waiting
-      t.raise RuntimeError
-      th_waiting = false
-      t.join rescue nil
-    INPUT
-  end
-
   def test_handle_interrupted?
     q = Thread::Queue.new
     Thread.handle_interrupt(RuntimeError => :never){

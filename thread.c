@@ -5665,32 +5665,3 @@ rb_default_coverage(int n)
 
     return coverage;
 }
-
-static VALUE
-uninterruptible_exit(VALUE v)
-{
-    rb_thread_t *cur_th = GET_THREAD();
-    rb_ary_pop(cur_th->pending_interrupt_mask_stack);
-
-    cur_th->pending_interrupt_queue_checked = 0;
-    if (!rb_threadptr_pending_interrupt_empty_p(cur_th)) {
-        RUBY_VM_SET_INTERRUPT(cur_th->ec);
-    }
-    return Qnil;
-}
-
-VALUE
-rb_uninterruptible(VALUE (*b_proc)(VALUE), VALUE data)
-{
-    VALUE interrupt_mask = rb_ident_hash_new();
-    rb_thread_t *cur_th = GET_THREAD();
-
-    rb_hash_aset(interrupt_mask, rb_cObject, sym_never);
-    OBJ_FREEZE_RAW(interrupt_mask);
-    rb_ary_push(cur_th->pending_interrupt_mask_stack, interrupt_mask);
-
-    VALUE ret = rb_ensure(b_proc, data, uninterruptible_exit, Qnil);
-
-    RUBY_VM_CHECK_INTS(cur_th->ec);
-    return ret;
-}
