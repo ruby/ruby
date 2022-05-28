@@ -47,19 +47,19 @@ We can run any of the make scripts [in parallel](building_ruby.md#label-Running+
     make test-all
     ```
 
-    We can run a specific test directory in this suite using the `TESTS` environment variable, for example:
+    We can run a specific test directory in this suite using the `TESTS` option, for example:
 
     ```
     make test-all TESTS=test/rubygems
     ```
 
-    We can run a specific test file in this suite by also using the `TESTS` environment variable, for example:
+    We can run a specific test file in this suite by also using the `TESTS` option, for example:
 
     ```
     make test-all TESTS=test/ruby/test_array.rb
     ```
 
-    We can run a specific test in this suite using the `TESTS` environment variable, specifying
+    We can run a specific test in this suite using the `TESTS` option, specifying
     first the file name, and then the test name, prefixed with `--name`. For example:
 
     ```

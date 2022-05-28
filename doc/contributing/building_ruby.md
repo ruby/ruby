@@ -35,7 +35,7 @@
     make install
     ```
 
-5. Optional: If you are frequently building Ruby, disabling documentation will reduce the time it takes to `make install`:
+5. Optional: If you are frequently building Ruby, disabling documentation will reduce the time it takes to `make`:
 
     ``` shell
     ../configure --disable-install-doc
@@ -45,7 +45,7 @@
 
 ### Unexplainable Build Errors
 
-If you are having unexplainable build errors, after saving all your work, try running `git clean -xfd` in the source root to remove all git ignored local files. If you are working from a source directory that's been updated several times, you may have temporary build artefacts from previous releases which can cause build failures.
+If you are having unexplainable build errors, after saving all your work, try running `git clean -xfd` in the source root to remove all git ignored local files. If you are working from a source directory that's been updated several times, you may have temporary build artifacts from previous releases which can cause build failures.
 
 ## More details
 
@@ -54,7 +54,7 @@ about Ruby's build to help out.
 
 ### Running make scripts in parallel
 
-To run a specific make script in parallel, pass flag `-j<number of processes>`. For instance,
+In GNU make and BSD make implementations, to run a specific make script in parallel, pass the flag `-j<number of processes>`. For instance,
 to run tests on 8 processes, use:
 
 ```
@@ -63,7 +63,7 @@ make test-all -j8
 
 We can also set `MAKEFLAGS` to run _all_ `make` commands in parallel.
 
-Ensuring `make` has the right `--jobs` flag will ensure all processors are utilized when building software projects To do this effectively, you can set `MAKEFLAGS` in your shell configuration/profile:
+Having the right `--jobs` flag will ensure all processors are utilized when building software projects. To do this effectively, you can set `MAKEFLAGS` in your shell configuration/profile:
 
 ``` shell
 # On macOS with Fish shell:
@@ -113,7 +113,7 @@ export ASAN_OPTIONS="halt_on_error=0:use_sigaltstack=0:detect_leaks=0"
 make
 ```
 
-On Linux it is important to specify -O0 when debugging and this is especially true for ASAN which sometimes works incorrectly at higher optimisation levels.
+On Linux it is important to specify `-O0` when debugging. This is especially true for ASAN which sometimes works incorrectly at higher optimisation levels.
 
 ## How to measure coverage of C and Ruby code
 
