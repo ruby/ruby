@@ -8678,14 +8678,14 @@ rb_p_result(int argc, const VALUE *argv)
     VALUE ret = Qnil;
 
     if (argc == 1) {
-	ret = argv[0];
+        ret = argv[0];
     }
     else if (argc > 1) {
-	ret = rb_ary_new4(argc, argv);
+        ret = rb_ary_new4(argc, argv);
     }
     VALUE r_stdout = rb_ractor_stdout();
     if (RB_TYPE_P(r_stdout, T_FILE)) {
-	rb_io_flush(r_stdout);
+        rb_uninterruptible(rb_io_flush, r_stdout);
     }
     return ret;
 }
