@@ -397,8 +397,6 @@ module ModuleSpecs
 
     module FromThread
       module A
-        autoload :B, fixture(__FILE__, "autoload_empty.rb")
-
         class B
           autoload :C, fixture(__FILE__, "autoload_abc.rb")
 

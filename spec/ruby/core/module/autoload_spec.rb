@@ -554,30 +554,52 @@ describe "Module#autoload" do
       end
     end
 
-    it "in lexical scopes if declared in parent and defined in current" do
-      module ModuleSpecs::Autoload
-        ScratchPad.record -> {
+    ruby_version_is ""..."3.2" do
+      it "in lexical scopes if declared in parent and defined in current" do
+        module ModuleSpecs::Autoload
+          ScratchPad.record -> {
+            class LexicalScope
+              DeclaredInParentDefinedInCurrent = :declared_in_parent_defined_in_current
+            end
+          }
+          autoload :DeclaredInParentDefinedInCurrent, fixture(__FILE__, "autoload_callback.rb")
+
           class LexicalScope
-            DeclaredInParentDefinedInCurrent = :declared_in_parent_defined_in_current
+            DeclaredInParentDefinedInCurrent.should == :declared_in_parent_defined_in_current
+            LexicalScope::DeclaredInParentDefinedInCurrent.should == :declared_in_parent_defined_in_current
           end
-        }
-        autoload :DeclaredInParentDefinedInCurrent, fixture(__FILE__, "autoload_callback.rb")
 
-        class LexicalScope
-          DeclaredInParentDefinedInCurrent.should == :declared_in_parent_defined_in_current
-          LexicalScope::DeclaredInParentDefinedInCurrent.should == :declared_in_parent_defined_in_current
+          # Basically, the parent autoload constant remains in a "undefined" state
+          self.autoload?(:DeclaredInParentDefinedInCurrent).should == nil
+          const_defined?(:DeclaredInParentDefinedInCurrent).should == false
+          -> { DeclaredInParentDefinedInCurrent }.should raise_error(NameError)
+
+          ModuleSpecs::Autoload::LexicalScope.send(:remove_const, :DeclaredInParentDefinedInCurrent)
         end
-
-        # Basically, the parent autoload constant remains in a "undefined" state
-        self.autoload?(:DeclaredInParentDefinedInCurrent).should == nil
-        const_defined?(:DeclaredInParentDefinedInCurrent).should == false
-        -> { DeclaredInParentDefinedInCurrent }.should raise_error(NameError)
-
-        ModuleSpecs::Autoload::LexicalScope.send(:remove_const, :DeclaredInParentDefinedInCurrent)
       end
     end
 
-    ruby_version_is "3.1" do
+    ruby_version_is "3.2" do
+      it "raises NameError if declared in parent and used in current, side-effects are fine" do
+        module ModuleSpecs::Autoload
+          ScratchPad.record -> {
+            class LexicalScope
+              DeclaredInParentDefinedInCurrent = :declared_in_parent_defined_in_current
+            end
+          }
+          autoload :DeclaredInParentDefinedInCurrent, fixture(__FILE__, "autoload_callback.rb")
+
+          class LexicalScope
+            -> { DeclaredInParentDefinedInCurrent }.should raise_error(NameError)
+            DeclaredInParentDefinedInCurrent.should == :declared_in_parent_defined_in_current
+          end
+
+          ModuleSpecs::Autoload::LexicalScope.send(:remove_const, :DeclaredInParentDefinedInCurrent)
+        end
+      end
+    end
+
+    ruby_version_is "3.1"..."3.2" do
       it "looks up in parent scope after failed autoload" do
         @remove << :DeclaredInCurrentDefinedInParent
         module ModuleSpecs::Autoload
@@ -592,6 +614,24 @@ describe "Module#autoload" do
             self.autoload?(:DeclaredInCurrentDefinedInParent).should == nil
             const_defined?(:DeclaredInCurrentDefinedInParent).should == false
             -> { const_get(:DeclaredInCurrentDefinedInParent) }.should raise_error(NameError)
+          end
+
+          DeclaredInCurrentDefinedInParent.should == :declared_in_current_defined_in_parent
+        end
+      end
+    end
+
+    ruby_version_is "3.2" do
+      it "does not look up in parent scope after failed autoload, side-effects are fine" do
+        @remove << :DeclaredInCurrentDefinedInParent
+        module ModuleSpecs::Autoload
+          ScratchPad.record -> {
+            DeclaredInCurrentDefinedInParent = :declared_in_current_defined_in_parent
+          }
+
+          class LexicalScope
+            autoload :DeclaredInCurrentDefinedInParent, fixture(__FILE__, "autoload_callback.rb")
+            -> { DeclaredInCurrentDefinedInParent }.should raise_error(NameError)
           end
 
           DeclaredInCurrentDefinedInParent.should == :declared_in_current_defined_in_parent
@@ -622,53 +662,118 @@ describe "Module#autoload" do
       end
     end
 
-    it "in the included modules" do
-      @remove << :DefinedInIncludedModule
-      module ModuleSpecs::Autoload
-        ScratchPad.record -> {
-          module DefinedInIncludedModule
-            Incl = :defined_in_included_module
-          end
-          include DefinedInIncludedModule
-        }
-        autoload :Incl, fixture(__FILE__, "autoload_callback.rb")
-        Incl.should == :defined_in_included_module
-      end
-    end
-
-    it "in the included modules of the superclass" do
-      @remove << :DefinedInSuperclassIncludedModule
-      module ModuleSpecs::Autoload
-        class LookupAfterAutoloadSuper
-        end
-        class LookupAfterAutoloadChild < LookupAfterAutoloadSuper
-        end
-
-        ScratchPad.record -> {
-          module DefinedInSuperclassIncludedModule
-            InclS = :defined_in_superclass_included_module
-          end
-          LookupAfterAutoloadSuper.include DefinedInSuperclassIncludedModule
-        }
-
-        class LookupAfterAutoloadChild
-          autoload :InclS, fixture(__FILE__, "autoload_callback.rb")
-          InclS.should == :defined_in_superclass_included_module
+    ruby_version_is ""..."3.2" do
+      it "in the included modules" do
+        @remove << :DefinedInIncludedModule
+        module ModuleSpecs::Autoload
+          ScratchPad.record -> {
+            module DefinedInIncludedModule
+              Incl = :defined_in_included_module
+            end
+            include DefinedInIncludedModule
+          }
+          autoload :Incl, fixture(__FILE__, "autoload_callback.rb")
+          Incl.should == :defined_in_included_module
         end
       end
     end
 
-    it "in the prepended modules" do
-      @remove << :DefinedInPrependedModule
-      module ModuleSpecs::Autoload
-        ScratchPad.record -> {
-          module DefinedInPrependedModule
-            Prep = :defined_in_prepended_module
+    ruby_version_is "3.2" do
+      it "does not look for ancestors, though side-effect are fine" do
+        @remove << :DefinedInIncludedModule
+        module ModuleSpecs::Autoload
+          ScratchPad.record -> {
+            module DefinedInIncludedModule
+              Incl = :defined_in_included_module
+            end
+            include DefinedInIncludedModule
+          }
+          autoload :Incl, fixture(__FILE__, "autoload_callback.rb")
+          -> { Incl }.should raise_error(NameError)
+          Incl.should == :defined_in_included_module
+        end
+      end
+    end
+
+    ruby_version_is ""..."3.2" do
+      it "in the included modules of the superclass" do
+        @remove << :DefinedInSuperclassIncludedModule
+        module ModuleSpecs::Autoload
+          class LookupAfterAutoloadSuper
           end
-          include DefinedInPrependedModule
-        }
-        autoload :Prep, fixture(__FILE__, "autoload_callback.rb")
-        Prep.should == :defined_in_prepended_module
+          class LookupAfterAutoloadChild < LookupAfterAutoloadSuper
+          end
+
+          ScratchPad.record -> {
+            module DefinedInSuperclassIncludedModule
+              InclS = :defined_in_superclass_included_module
+            end
+            LookupAfterAutoloadSuper.include DefinedInSuperclassIncludedModule
+          }
+
+          class LookupAfterAutoloadChild
+            autoload :InclS, fixture(__FILE__, "autoload_callback.rb")
+            InclS.should == :defined_in_superclass_included_module
+          end
+        end
+      end
+    end
+
+    ruby_version_is "3.2" do
+      it "does not look in the included modules of the superclass, side-effects are fine" do
+        @remove << :DefinedInSuperclassIncludedModule
+        module ModuleSpecs::Autoload
+          class LookupAfterAutoloadSuper
+          end
+          class LookupAfterAutoloadChild < LookupAfterAutoloadSuper
+          end
+
+          ScratchPad.record -> {
+            module DefinedInSuperclassIncludedModule
+              InclS = :defined_in_superclass_included_module
+            end
+            LookupAfterAutoloadSuper.include DefinedInSuperclassIncludedModule
+          }
+
+          class LookupAfterAutoloadChild
+            autoload :InclS, fixture(__FILE__, "autoload_callback.rb")
+            -> { InclS }.should raise_error(NameError)
+            InclS.should == :defined_in_superclass_included_module
+          end
+        end
+      end
+    end
+
+    ruby_version_is ""..."3.2" do
+      it "in the prepended modules" do
+        @remove << :DefinedInPrependedModule
+        module ModuleSpecs::Autoload
+          ScratchPad.record -> {
+            module DefinedInPrependedModule
+              Prep = :defined_in_prepended_module
+            end
+            include DefinedInPrependedModule
+          }
+          autoload :Prep, fixture(__FILE__, "autoload_callback.rb")
+          Prep.should == :defined_in_prepended_module
+        end
+      end
+    end
+
+    ruby_version_is "3.2" do
+      it "does not look in the prepended modules, side-effects are fine" do
+        @remove << :DefinedInPrependedModule
+        module ModuleSpecs::Autoload
+          ScratchPad.record -> {
+            module DefinedInPrependedModule
+              Prep = :defined_in_prepended_module
+            end
+            include DefinedInPrependedModule
+          }
+          autoload :Prep, fixture(__FILE__, "autoload_callback.rb")
+          -> { Prep }.should raise_error(NameError)
+          Prep.should == :defined_in_prepended_module
+        end
       end
     end
 
@@ -689,20 +794,51 @@ describe "Module#autoload" do
     end
   end
 
-  # [ruby-core:19127] [ruby-core:29941]
-  it "does NOT raise a NameError when the autoload file did not define the constant and a module is opened with the same name" do
-    module ModuleSpecs::Autoload
-      class W
-        autoload :Y, fixture(__FILE__, "autoload_w.rb")
+  ruby_version_is ""..."3.2" do
+    # [ruby-core:19127] [ruby-core:29941]
+    it "does NOT raise a NameError when the autoload file did not define the constant and a module is opened with the same name" do
+      module ModuleSpecs::Autoload
+        class W
+          autoload :Y, fixture(__FILE__, "autoload_w.rb")
 
-        class Y
+          class Y
+          end
         end
       end
-    end
-    @remove << :W
+      @remove << :W
 
-    ModuleSpecs::Autoload::W::Y.should be_kind_of(Class)
-    ScratchPad.recorded.should == :loaded
+      ModuleSpecs::Autoload::W::Y.should be_kind_of(Class)
+      ScratchPad.recorded.should == :loaded
+    end
+  end
+
+  ruby_version_is "3.2" do
+    it "raises NameError with a custom message when the autoload does not define the expected constant" do
+      autoload_w_rb = fixture(__FILE__, "autoload_w.rb")
+
+      ModuleSpecs::Autoload.autoload(:W, autoload_w_rb)
+
+      error_msg = %Q(autoload "#{autoload_w_rb}" failed to resolve ModuleSpecs::Autoload::W)
+      -> { ModuleSpecs::Autoload::W }.should raise_error(NameError, Regexp.new(error_msg))
+      ScratchPad.recorded.should == :loaded
+    end
+
+    it "removes the constant when the autoload does not define it" do
+      autoload_w_rb = fixture(__FILE__, "autoload_w.rb")
+
+      ModuleSpecs::Autoload.autoload(:W, autoload_w_rb)
+
+      # Preconditions.
+      ModuleSpecs::Autoload.autoload?(:W).should == autoload_w_rb
+      ModuleSpecs::Autoload.const_defined?(:W).should == true
+
+      -> { ModuleSpecs::Autoload::W }.should raise_error(NameError)
+
+      # Expectations.
+      ModuleSpecs::Autoload.autoload?(:W).should == nil
+      ModuleSpecs::Autoload.const_defined?(:W).should == false
+      ModuleSpecs::Autoload.should_not have_constant(:W)
+    end
   end
 
   it "does not call #require a second time and does not warn if already loading the same feature with #require" do
