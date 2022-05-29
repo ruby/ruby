@@ -42,5 +42,16 @@ RSpec.describe "process lock spec" do
         expect(processed).to eq true
       end
     end
+
+    context "when creating a lock raises Errno::EROFS" do
+      before { allow(File).to receive(:open).and_raise(Errno::EROFS) }
+
+      it "skips creating the lock file and yields" do
+        processed = false
+        Bundler::ProcessLock.lock(default_bundle_path) { processed = true }
+
+        expect(processed).to eq true
+      end
+    end
   end
 end
