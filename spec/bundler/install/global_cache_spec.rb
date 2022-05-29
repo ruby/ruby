@@ -7,12 +7,16 @@ RSpec.describe "global gem caching" do
     let(:source)  { "http://localgemserver.test" }
     let(:source2) { "http://gemserver.example.org" }
 
+    def cache_base
+      home(".bundle", "cache", "gems")
+    end
+
     def source_global_cache(*segments)
-      home(".bundle", "cache", "gems", "localgemserver.test.80.dd34752a738ee965a2a4298dc16db6c5", *segments)
+      cache_base.join("localgemserver.test.80.dd34752a738ee965a2a4298dc16db6c5", *segments)
     end
 
     def source2_global_cache(*segments)
-      home(".bundle", "cache", "gems", "gemserver.example.org.80.1ae1663619ffe0a3c9d97712f44c705b", *segments)
+      cache_base.join("gemserver.example.org.80.1ae1663619ffe0a3c9d97712f44c705b", *segments)
     end
 
     it "caches gems into the global cache on download" do
@@ -47,6 +51,39 @@ RSpec.describe "global gem caching" do
       G
 
       expect(err).to include("Gem::Package::FormatError: package metadata is missing in #{source_global_cache("myrack-1.0.0.gem")}")
+    end
+
+    it "uses a shorter path for the cache to not hit filesystem limits" do
+      install_gemfile <<-G, artifice: "compact_index", verbose: true
+        source "http://#{"a" * 255}.test"
+        gem "myrack"
+      G
+
+      expect(the_bundle).to include_gems "myrack 1.0.0"
+      source_segment = "a" * 222 + ".a3cb26de2edfce9f509a65c611d99c4b"
+      source_cache = cache_base.join(source_segment)
+      cached_gem = source_cache.join("myrack-1.0.0.gem")
+      expect(cached_gem).to exist
+    ensure
+      # We cleanup dummy files created by this spec manually because due to a
+      # Ruby on Windows bug, `FileUtils.rm_rf` (run in our global after hook)
+      # cannot traverse directories with such long names. So we delete
+      # everything explicitly to workaround the bug. An alternative workaround
+      # would be to shell out to `rm -rf`. That also works fine, but I went with
+      # the more verbose and explicit approach. This whole ensure block can be
+      # removed once/if https://bugs.ruby-lang.org/issues/21177 is fixed, and
+      # once the fix propagates to all supported rubies.
+      File.delete cached_gem
+      Dir.rmdir source_cache
+
+      File.delete compact_index_cache_path.join(source_segment, "info", "myrack")
+      Dir.rmdir compact_index_cache_path.join(source_segment, "info")
+      File.delete compact_index_cache_path.join(source_segment, "info-etags", "myrack-92f3313ce5721296f14445c3a6b9c073")
+      Dir.rmdir compact_index_cache_path.join(source_segment, "info-etags")
+      Dir.rmdir compact_index_cache_path.join(source_segment, "info-special-characters")
+      File.delete compact_index_cache_path.join(source_segment, "versions")
+      File.delete compact_index_cache_path.join(source_segment, "versions.etag")
+      Dir.rmdir compact_index_cache_path.join(source_segment)
     end
 
     describe "when the same gem from different sources is installed" do
