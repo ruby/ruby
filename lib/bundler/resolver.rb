@@ -395,7 +395,7 @@ module Bundler
             o << %(\n  Current #{name} version:\n    #{SharedHelpers.pretty_dependency(@metadata_requirements.find {|req| req.name == name })}\n\n)
           elsif conflict.locked_requirement
             o << "\n"
-            o << %(Running `bundle update` will rebuild your snapshot from scratch, using only\n)
+            o << %(Deleting your #{name_for_locking_dependency_source} file and running `bundle install` will rebuild your snapshot from scratch, using only\n)
             o << %(the gems in your Gemfile, which may resolve the conflict.\n)
           elsif !conflict.existing
             o << "\n"
