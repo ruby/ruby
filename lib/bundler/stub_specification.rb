@@ -67,6 +67,10 @@ module Bundler
       stub.full_gem_path
     end
 
+    def full_gem_path=(path)
+      stub.full_gem_path = path
+    end
+
     def full_require_paths
       stub.full_require_paths
     end
