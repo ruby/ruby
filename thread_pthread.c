@@ -40,19 +40,16 @@
 #include <time.h>
 #include <signal.h>
 
+#if defined __APPLE__
+# include <AvailabilityMacros.h>
+#endif
+
 #if defined(HAVE_SYS_EVENTFD_H) && defined(HAVE_EVENTFD)
 #  define USE_EVENTFD (1)
 #  include <sys/eventfd.h>
 #else
 #  define USE_EVENTFD (0)
 #endif
-
-#define DEBUG_OUT() \
-  pthread_mutex_lock(&debug_mutex); \
-  printf(POSITION_FORMAT"%"PRI_THREAD_ID" - %s" POSITION_ARGS, \
-	 fill_thread_id_string(pthread_self(), thread_id_string), buf);	\
-  fflush(stdout); \
-  pthread_mutex_unlock(&debug_mutex);
 
 #if defined(SIGVTALRM) && !defined(__CYGWIN__) && !defined(__EMSCRIPTEN__)
 #  define USE_UBF_LIST 1
@@ -713,7 +710,6 @@ Init_native_thread(rb_thread_t *main_th)
     // setup main thread
     main_th->nt->thread_id = pthread_self();
     ruby_thread_set_native(main_th);
-    fill_thread_id_str(main_th);
     native_thread_init(main_th->nt);
 }
 
@@ -1056,7 +1052,7 @@ static void *
 thread_start_func_1(void *th_ptr)
 {
     rb_thread_t *th = th_ptr;
-    RB_ALTSTACK_INIT(void *altstack, th->altstack);
+    RB_ALTSTACK_INIT(void *altstack, th->nt->altstack);
 #if USE_THREAD_CACHE
   thread_start:
 #endif
@@ -1065,7 +1061,6 @@ thread_start_func_1(void *th_ptr)
 	VALUE stack_start;
 #endif
 
-	fill_thread_id_str(th);
 #if defined USE_NATIVE_THREAD_INIT
 	native_thread_init_stack(th);
 #endif
@@ -1169,7 +1164,6 @@ use_cached_thread(rb_thread_t *th)
         entry->th = th;
         /* th->nt->thread_id must be set before signal for Thread#name= */
         th->nt->thread_id = entry->thread_id;
-        fill_thread_id_str(th);
         rb_native_cond_signal(&entry->cond);
     }
     rb_native_mutex_unlock(&thread_cache_lock);
@@ -1206,7 +1200,7 @@ native_thread_create(rb_thread_t *th)
     th->nt = ZALLOC(struct rb_native_thread);
 
     if (use_cached_thread(th)) {
-	thread_debug("create (use cached thread): %p\n", (void *)th);
+        RUBY_DEBUG_LOG("use cached nt. th:%u", rb_th_serial(th));
     }
     else {
 	pthread_attr_t attr;
@@ -1214,15 +1208,15 @@ native_thread_create(rb_thread_t *th)
 	const size_t space = space_size(stack_size);
 
 #ifdef USE_SIGALTSTACK
-        th->altstack = rb_allocate_sigaltstack();
+        th->nt->altstack = rb_allocate_sigaltstack();
 #endif
         th->ec->machine.stack_maxsize = stack_size - space;
 
 	CHECK_ERR(pthread_attr_init(&attr));
 
 # ifdef PTHREAD_STACK_MIN
-	thread_debug("create - stack size: %lu\n", (unsigned long)stack_size);
-	CHECK_ERR(pthread_attr_setstacksize(&attr, stack_size));
+        RUBY_DEBUG_LOG("stack size: %lu", (unsigned long)stack_size);
+        CHECK_ERR(pthread_attr_setstacksize(&attr, stack_size));
 # endif
 
 # ifdef HAVE_PTHREAD_ATTR_SETINHERITSCHED
@@ -1231,9 +1225,10 @@ native_thread_create(rb_thread_t *th)
 	CHECK_ERR(pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED));
 
         err = pthread_create(&th->nt->thread_id, &attr, thread_start_func_1, th);
-	thread_debug("create: %p (%d)\n", (void *)th, err);
-	/* should be done in the created thread */
-	fill_thread_id_str(th);
+
+        RUBY_DEBUG_LOG("th:%u err:%d", rb_th_serial(th), err);
+
+        /* should be done in the created thread */
 	CHECK_ERR(pthread_attr_destroy(&attr));
     }
     return err;
@@ -1279,7 +1274,7 @@ static void
 ubf_pthread_cond_signal(void *ptr)
 {
     rb_thread_t *th = (rb_thread_t *)ptr;
-    thread_debug("ubf_pthread_cond_signal (%p)\n", (void *)th);
+    RUBY_DEBUG_LOG("th:%u", rb_th_serial(th));
     rb_native_cond_signal(&th->nt->cond.intr);
 }
 
@@ -1307,7 +1302,7 @@ native_cond_sleep(rb_thread_t *th, rb_hrtime_t *rel)
 
 	if (RUBY_VM_INTERRUPTED(th->ec)) {
 	    /* interrupted.  return immediate */
-	    thread_debug("native_sleep: interrupted before sleep\n");
+            RUBY_DEBUG_LOG("interrupted before sleep th:%u", rb_th_serial(th));
 	}
 	else {
 	    if (!rel) {
@@ -1330,7 +1325,7 @@ native_cond_sleep(rb_thread_t *th, rb_hrtime_t *rel)
     }
     THREAD_BLOCKING_END(th);
 
-    thread_debug("native_sleep done\n");
+    RUBY_DEBUG_LOG("done th:%u", rb_th_serial(th));
 }
 
 #ifdef USE_UBF_LIST
@@ -1383,7 +1378,7 @@ unregister_ubf_list(rb_thread_t *th)
 static void
 ubf_wakeup_thread(rb_thread_t *th)
 {
-    thread_debug("thread_wait_queue_wakeup (%"PRI_THREAD_ID")\n", thread_id_str(th));
+    RUBY_DEBUG_LOG("th:%u", rb_th_serial(th));
     pthread_kill(th->nt->thread_id, SIGVTALRM);
 }
 
@@ -1766,9 +1761,28 @@ native_thread_native_thread_id(rb_thread_t *target_th)
     return INT2FIX(tid);
 #elif defined(__APPLE__)
     uint64_t tid;
+# if ((MAC_OS_X_VERSION_MAX_ALLOWED < MAC_OS_X_VERSION_10_6) || \
+      defined(__POWERPC__) /* never defined for PowerPC platforms */)
+    const bool no_pthread_threadid_np = true;
+#   define NO_PTHREAD_MACH_THREAD_NP 1
+# elif MAC_OS_X_VERSION_MIN_REQUIRED >= MAC_OS_X_VERSION_10_6
+    const bool no_pthread_threadid_np = false;
+# else
+#   if !(defined(__has_attribute) && __has_attribute(availability))
+    /* __API_AVAILABLE macro does nothing on gcc */
+    __attribute__((weak)) int pthread_threadid_np(pthread_t, uint64_t*);
+#   endif
+    /* Check weakly linked symbol */
+    const bool no_pthread_threadid_np = !&pthread_threadid_np;
+# endif
+    if (no_pthread_threadid_np) {
+        return ULL2NUM(pthread_mach_thread_np(pthread_self()));
+    }
+# ifndef NO_PTHREAD_MACH_THREAD_NP
     int e = pthread_threadid_np(target_th->nt->thread_id, &tid);
     if (e != 0) rb_syserr_fail(e, "pthread_threadid_np");
     return ULL2NUM((unsigned long long)tid);
+# endif
 #endif
 }
 # define USE_NATIVE_THREAD_NATIVE_THREAD_ID 1
@@ -2143,7 +2157,7 @@ rb_sigwait_sleep(rb_thread_t *th, int sigwait_fd, const rb_hrtime_t *rel)
         check_signals_nogvl(th, sigwait_fd);
     }
     else {
-        rb_hrtime_t to = RB_HRTIME_MAX, end;
+        rb_hrtime_t to = RB_HRTIME_MAX, end = 0;
         int n = 0;
 
         if (rel) {

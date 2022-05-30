@@ -182,11 +182,11 @@ pub fn assume_stable_constant_names(jit: &mut JITState, ocb: &mut OutlinedCb) {
         index: u64,
         data: *mut c_void,
     ) -> bool {
-        if insn.as_usize() == OP_OPT_SETINLINECACHE {
+        if insn.as_u32() == YARVINSN_opt_setinlinecache {
             return false;
         }
 
-        if insn.as_usize() == OP_GETCONSTANT {
+        if insn.as_u32() == YARVINSN_getconstant {
             let jit = &mut *(data as *mut JITState);
 
             // The first operand to GETCONSTANT is always the ID associated with
@@ -474,7 +474,7 @@ pub extern "C" fn rb_yjit_constant_ic_update(iseq: *const rb_iseq_t, ic: IC) {
                 let translated_opcode: VALUE = opcode_pc.read();
                 rb_vm_insn_decode(translated_opcode)
             },
-            OP_OPT_GETINLINECACHE.try_into().unwrap()
+            YARVINSN_opt_getinlinecache.try_into().unwrap()
         );
 
         // Find the matching opt_getinlinecache and invalidate all the blocks there

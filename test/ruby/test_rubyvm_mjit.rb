@@ -4,7 +4,7 @@ require_relative '../lib/jit_support'
 
 return if RbConfig::CONFIG["MJIT_SUPPORT"] == 'no'
 
-class TestRubyVMJIT < Test::Unit::TestCase
+class TestRubyVMMJIT < Test::Unit::TestCase
   include JITSupport
 
   def setup

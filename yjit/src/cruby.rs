@@ -461,6 +461,11 @@ impl VALUE {
         self == Qnil
     }
 
+    /// Returns true or false depending whether the value is a string
+    pub fn string_p(self) -> bool {
+        unsafe { CLASS_OF(self) == rb_cString }
+    }
+
     /// Read the flags bits from the RBasic object, then return a Ruby type enum (e.g. RUBY_T_ARRAY)
     pub fn builtin_type(self) -> ruby_value_type {
         assert!(!self.special_const_p());
@@ -810,113 +815,3 @@ mod manual_defs {
     pub const RUBY_OFFSET_ICE_VALUE: i32 = 8;
 }
 pub use manual_defs::*;
-
-#[allow(unused)]
-mod vm_opcodes {
-    // TODO: need to dynamically autogenerate constants for all the YARV opcodes from insns.def
-    // TODO: typing of these adds unnecessary casting
-    pub const OP_NOP: usize = 0;
-    pub const OP_GETLOCAL: usize = 1;
-    pub const OP_SETLOCAL: usize = 2;
-    pub const OP_GETBLOCKPARAM: usize = 3;
-    pub const OP_SETBLOCKPARAM: usize = 4;
-    pub const OP_GETBLOCKPARAMPROXY: usize = 5;
-    pub const OP_GETSPECIAL: usize = 6;
-    pub const OP_SETSPECIAL: usize = 7;
-    pub const OP_GETINSTANCEVARIABLE: usize = 8;
-    pub const OP_SETINSTANCEVARIABLE: usize = 9;
-    pub const OP_GETCLASSVARIABLE: usize = 10;
-    pub const OP_SETCLASSVARIABLE: usize = 11;
-    pub const OP_GETCONSTANT: usize = 12;
-    pub const OP_SETCONSTANT: usize = 13;
-    pub const OP_GETGLOBAL: usize = 14;
-    pub const OP_SETGLOBAL: usize = 15;
-    pub const OP_PUTNIL: usize = 16;
-    pub const OP_PUTSELF: usize = 17;
-    pub const OP_PUTOBJECT: usize = 18;
-    pub const OP_PUTSPECIALOBJECT: usize = 19;
-    pub const OP_PUTSTRING: usize = 20;
-    pub const OP_CONCATSTRINGS: usize = 21;
-    pub const OP_ANYTOSTRING: usize = 22;
-    pub const OP_TOREGEXP: usize = 23;
-    pub const OP_INTERN: usize = 24;
-    pub const OP_NEWARRAY: usize = 25;
-    pub const OP_NEWARRAYKWSPLAT: usize = 26;
-    pub const OP_DUPARRAY: usize = 27;
-    pub const OP_DUPHASH: usize = 28;
-    pub const OP_EXPANDARRAY: usize = 29;
-    pub const OP_CONCATARRAY: usize = 30;
-    pub const OP_SPLATARRAY: usize = 31;
-    pub const OP_NEWHASH: usize = 32;
-    pub const OP_NEWRANGE: usize = 33;
-    pub const OP_POP: usize = 34;
-    pub const OP_DUP: usize = 35;
-    pub const OP_DUPN: usize = 36;
-    pub const OP_SWAP: usize = 37;
-    pub const OP_TOPN: usize = 38;
-    pub const OP_SETN: usize = 39;
-    pub const OP_ADJUSTSTACK: usize = 40;
-    pub const OP_DEFINED: usize = 41;
-    pub const OP_CHECKMATCH: usize = 42;
-    pub const OP_CHECKKEYWORD: usize = 43;
-    pub const OP_CHECKTYPE: usize = 44;
-    pub const OP_DEFINECLASS: usize = 45;
-    pub const OP_DEFINEMETHOD: usize = 46;
-    pub const OP_DEFINESMETHOD: usize = 47;
-    pub const OP_SEND: usize = 48;
-    pub const OP_OPT_SEND_WITHOUT_BLOCK: usize = 49;
-    pub const OP_OBJTOSTRING: usize = 50;
-    pub const OP_OPT_STR_FREEZE: usize = 51;
-    pub const OP_OPT_NIL_P: usize = 52;
-    pub const OP_OPT_STR_UMINUS: usize = 53;
-    pub const OP_OPT_NEWARRAY_MAX: usize = 54;
-    pub const OP_OPT_NEWARRAY_MIN: usize = 55;
-    pub const OP_INVOKESUPER: usize = 56;
-    pub const OP_INVOKEBLOCK: usize = 57;
-    pub const OP_LEAVE: usize = 58;
-    pub const OP_THROW: usize = 59;
-    pub const OP_JUMP: usize = 60;
-    pub const OP_BRANCHIF: usize = 61;
-    pub const OP_BRANCHUNLESS: usize = 62;
-    pub const OP_BRANCHNIL: usize = 63;
-    pub const OP_OPT_GETINLINECACHE: usize = 64;
-    pub const OP_OPT_SETINLINECACHE: usize = 65;
-    pub const OP_ONCE: usize = 66;
-    pub const OP_OPT_CASE_DISPATCH: usize = 67;
-    pub const OP_OPT_PLUS: usize = 68;
-    pub const OP_OPT_MINUS: usize = 69;
-    pub const OP_OPT_MULT: usize = 70;
-    pub const OP_OPT_DIV: usize = 71;
-    pub const OP_OPT_MOD: usize = 72;
-    pub const OP_OPT_EQ: usize = 73;
-    pub const OP_OPT_NEQ: usize = 74;
-    pub const OP_OPT_LT: usize = 75;
-    pub const OP_OPT_LE: usize = 76;
-    pub const OP_OPT_GT: usize = 77;
-    pub const OP_OPT_GE: usize = 78;
-    pub const OP_OPT_LTLT: usize = 79;
-    pub const OP_OPT_AND: usize = 80;
-    pub const OP_OPT_OR: usize = 81;
-    pub const OP_OPT_AREF: usize = 82;
-    pub const OP_OPT_ASET: usize = 83;
-    pub const OP_OPT_ASET_WITH: usize = 84;
-    pub const OP_OPT_AREF_WITH: usize = 85;
-    pub const OP_OPT_LENGTH: usize = 86;
-    pub const OP_OPT_SIZE: usize = 87;
-    pub const OP_OPT_EMPTY_P: usize = 88;
-    pub const OP_OPT_SUCC: usize = 89;
-    pub const OP_OPT_NOT: usize = 90;
-    pub const OP_OPT_REGEXPMATCH2: usize = 91;
-    pub const OP_INVOKEBUILTIN: usize = 92;
-    pub const OP_OPT_INVOKEBUILTIN_DELEGATE: usize = 93;
-    pub const OP_OPT_INVOKEBUILTIN_DELEGATE_LEAVE: usize = 94;
-    pub const OP_GETLOCAL_WC_0: usize = 95;
-    pub const OP_GETLOCAL_WC_1: usize = 96;
-    pub const OP_SETLOCAL_WC_0: usize = 97;
-    pub const OP_SETLOCAL_WC_1: usize = 98;
-    pub const OP_PUTOBJECT_INT2FIX_0_: usize = 99;
-    pub const OP_PUTOBJECT_INT2FIX_1_: usize = 100;
-
-    pub const VM_INSTRUCTION_SIZE: usize = 202;
-}
-pub use vm_opcodes::*;

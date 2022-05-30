@@ -1208,6 +1208,9 @@ static void gc_marks_continue(rb_objspace_t *objspace, rb_size_pool_t *size_pool
 
 static void gc_sweep(rb_objspace_t *objspace);
 static void gc_sweep_start(rb_objspace_t *objspace);
+#if USE_RVARGC
+static void gc_sweep_finish_size_pool(rb_objspace_t *objspace, rb_size_pool_t *size_pool);
+#endif
 static void gc_sweep_finish(rb_objspace_t *objspace);
 static int  gc_sweep_step(rb_objspace_t *objspace, rb_size_pool_t *size_pool, rb_heap_t *heap);
 static void gc_sweep_rest(rb_objspace_t *objspace);
@@ -2299,13 +2302,17 @@ heap_add_pages(rb_objspace_t *objspace, rb_size_pool_t *size_pool, rb_heap_t *he
 }
 
 static size_t
-heap_extend_pages(rb_objspace_t *objspace, size_t free_slots, size_t total_slots, size_t used)
+heap_extend_pages(rb_objspace_t *objspace, rb_size_pool_t *size_pool, size_t free_slots, size_t total_slots, size_t used)
 {
     double goal_ratio = gc_params.heap_free_slots_goal_ratio;
     size_t next_used;
 
     if (goal_ratio == 0.0) {
 	next_used = (size_t)(used * gc_params.growth_factor);
+    }
+    else if (total_slots == 0) {
+        int multiple = size_pool->slot_size / BASE_SLOT_SIZE;
+        next_used = (gc_params.heap_init_slots * multiple) / HEAP_PAGE_OBJ_LIMIT;
     }
     else {
 	/* Find `f' where free_slots = f * total_slots * goal_ratio
@@ -5628,8 +5635,6 @@ gc_sweep_page(rb_objspace_t *objspace, rb_heap_t *heap, struct gc_sweep_context 
 {
     struct heap_page *sweep_page = ctx->page;
 
-    int i;
-
     uintptr_t p;
     bits_t *bits, bitset;
 
@@ -5652,6 +5657,13 @@ gc_sweep_page(rb_objspace_t *objspace, rb_heap_t *heap, struct gc_sweep_context 
         bits[BITMAP_INDEX(p) + page_rvalue_count / BITS_BITLENGTH] |= ~(((bits_t)1 << out_of_range_bits) - 1);
     }
 
+    /* The last bitmap plane may not be used if the last plane does not
+     * have enough space for the slot_size. In that case, the last plane must
+     * be skipped since none of the bits will be set. */
+    int bitmap_plane_count = CEILDIV(NUM_IN_PAGE(p) + page_rvalue_count, BITS_BITLENGTH);
+    GC_ASSERT(bitmap_plane_count == HEAP_PAGE_BITMAP_LIMIT - 1 ||
+                  bitmap_plane_count == HEAP_PAGE_BITMAP_LIMIT);
+
     // Skip out of range slots at the head of the page
     bitset = ~bits[0];
     bitset >>= NUM_IN_PAGE(p);
@@ -5660,7 +5672,7 @@ gc_sweep_page(rb_objspace_t *objspace, rb_heap_t *heap, struct gc_sweep_context 
     }
     p += (BITS_BITLENGTH - NUM_IN_PAGE(p)) * BASE_SLOT_SIZE;
 
-    for (i=1; i < HEAP_PAGE_BITMAP_LIMIT; i++) {
+    for (int i = 1; i < bitmap_plane_count; i++) {
         bitset = ~bits[i];
         if (bitset) {
             gc_sweep_plane(objspace, heap, p, bitset, ctx);
@@ -5811,8 +5823,18 @@ gc_sweep_start(rb_objspace_t *objspace)
 
     for (int i = 0; i < SIZE_POOL_COUNT; i++) {
         rb_size_pool_t *size_pool = &size_pools[i];
+        rb_heap_t *heap = SIZE_POOL_EDEN_HEAP(size_pool);
 
-        gc_sweep_start_heap(objspace, SIZE_POOL_EDEN_HEAP(size_pool));
+        gc_sweep_start_heap(objspace, heap);
+
+#if USE_RVARGC
+        /* We should call gc_sweep_finish_size_pool for size pools with no pages. */
+        if (heap->sweeping_page == NULL) {
+            GC_ASSERT(heap->total_pages == 0);
+            GC_ASSERT(heap->total_slots == 0);
+            gc_sweep_finish_size_pool(objspace, size_pool);
+        }
+#endif
     }
 
     rb_ractor_t *r = NULL;
@@ -5831,6 +5853,11 @@ gc_sweep_finish_size_pool(rb_objspace_t *objspace, rb_size_pool_t *size_pool)
     size_t swept_slots = size_pool->freed_slots + size_pool->empty_slots;
 
     size_t min_free_slots = (size_t)(total_slots * gc_params.heap_free_slots_min_ratio);
+    /* Some size pools may have very few pages (or even no pages). These size pools
+     * should still have allocatable pages. */
+    if (min_free_slots < gc_params.heap_init_slots) {
+        min_free_slots = gc_params.heap_init_slots;
+    }
 
     if (swept_slots < min_free_slots) {
         bool grow_heap = is_full_marking(objspace);
@@ -5850,13 +5877,11 @@ gc_sweep_finish_size_pool(rb_objspace_t *objspace, rb_size_pool_t *size_pool)
         }
 
         if (grow_heap) {
-            size_t extend_page_count = heap_extend_pages(objspace, swept_slots, total_slots, total_pages);
+            size_t extend_page_count = heap_extend_pages(objspace, size_pool, swept_slots, total_slots, total_pages);
 
             if (extend_page_count > size_pool->allocatable_pages) {
                 size_pool_allocatable_pages_set(objspace, size_pool, extend_page_count);
             }
-
-            heap_increment(objspace, size_pool, SIZE_POOL_EDEN_HEAP(size_pool));
         }
     }
 }
@@ -8354,7 +8379,7 @@ gc_marks_finish(rb_objspace_t *objspace)
               /* increment: */
 		gc_report(1, objspace, "gc_marks_finish: heap_set_increment!!\n");
                 rb_size_pool_t *size_pool = &size_pools[0];
-                size_pool_allocatable_pages_set(objspace, size_pool, heap_extend_pages(objspace, sweep_slots, total_slots, heap_allocated_pages + heap_allocatable_pages(objspace)));
+                size_pool_allocatable_pages_set(objspace, size_pool, heap_extend_pages(objspace, size_pool, sweep_slots, total_slots, heap_allocated_pages + heap_allocatable_pages(objspace)));
 
                 heap_increment(objspace, size_pool, SIZE_POOL_EDEN_HEAP(size_pool));
 	    }
@@ -9918,6 +9943,7 @@ gc_move(rb_objspace_t *objspace, VALUE scan, VALUE free, size_t slot_size)
     return (VALUE)src;
 }
 
+#if GC_COMPACTION_SUPPORTED
 static int
 compare_free_slots(const void *left, const void *right, void *dummy)
 {
@@ -9966,6 +9992,7 @@ gc_sort_heap_by_empty_slots(rb_objspace_t *objspace)
         free(page_list);
     }
 }
+#endif
 
 static void
 gc_ref_update_array(rb_objspace_t * objspace, VALUE v)
@@ -10657,8 +10684,21 @@ gc_update_references(rb_objspace_t *objspace)
     gc_update_table_refs(objspace, finalizer_table);
 }
 
+#if GC_COMPACTION_SUPPORTED
+/*
+ *  call-seq:
+ *     GC.latest_compact_info -> {:considered=>{:T_CLASS=>11}, :moved=>{:T_CLASS=>11}}
+ *
+ *  Returns information about object moved in the most recent GC compaction.
+ *
+ * The returned hash has two keys :considered and :moved.  The hash for
+ * :considered lists the number of objects that were considered for movement
+ * by the compactor, and the :moved hash lists the number of objects that
+ * were actually moved.  Some objects can't be moved (maybe they were pinned)
+ * so these numbers can be used to calculate compaction efficiency.
+ */
 static VALUE
-gc_compact_stats(rb_execution_context_t *ec, VALUE self)
+gc_compact_stats(VALUE self)
 {
     size_t i;
     rb_objspace_t *objspace = &rb_objspace;
@@ -10681,7 +10721,11 @@ gc_compact_stats(rb_execution_context_t *ec, VALUE self)
 
     return h;
 }
+#else
+#  define gc_compact_stats rb_f_notimplement
+#endif
 
+#if GC_COMPACTION_SUPPORTED
 static void
 root_obj_check_moved_i(const char *category, VALUE obj, void *data)
 {
@@ -10731,22 +10775,78 @@ heap_check_moved_i(void *vstart, void *vend, size_t stride, void *data)
     return 0;
 }
 
+/*
+ *  call-seq:
+ *     GC.compact
+ *
+ * This function compacts objects together in Ruby's heap.  It eliminates
+ * unused space (or fragmentation) in the heap by moving objects in to that
+ * unused space.  This function returns a hash which contains statistics about
+ * which objects were moved.  See `GC.latest_gc_info` for details about
+ * compaction statistics.
+ *
+ * This method is implementation specific and not expected to be implemented
+ * in any implementation besides MRI.
+ *
+ * To test whether GC compaction is supported, use the idiom:
+ *
+ *   GC.respond_to?(:compact)
+ */
 static VALUE
-gc_compact(rb_execution_context_t *ec, VALUE self)
+gc_compact(VALUE self)
 {
     /* Run GC with compaction enabled */
-    gc_start_internal(ec, self, Qtrue, Qtrue, Qtrue, Qtrue);
+    gc_start_internal(NULL, self, Qtrue, Qtrue, Qtrue, Qtrue);
 
-    return gc_compact_stats(ec, self);
+    return gc_compact_stats(self);
 }
+#else
+#  define gc_compact rb_f_notimplement
+#endif
 
+#if GC_COMPACTION_SUPPORTED
+/*
+ * call-seq:
+ *    GC.verify_compaction_references(toward: nil, double_heap: false) -> hash
+ *
+ * Verify compaction reference consistency.
+ *
+ * This method is implementation specific.  During compaction, objects that
+ * were moved are replaced with T_MOVED objects.  No object should have a
+ * reference to a T_MOVED object after compaction.
+ *
+ * This function doubles the heap to ensure room to move all objects,
+ * compacts the heap to make sure everything moves, updates all references,
+ * then performs a full GC.  If any object contains a reference to a T_MOVED
+ * object, that object should be pushed on the mark stack, and will
+ * make a SEGV.
+ */
 static VALUE
-gc_verify_compaction_references(rb_execution_context_t *ec, VALUE self, VALUE double_heap, VALUE toward_empty)
+gc_verify_compaction_references(int argc, VALUE *argv, VALUE self)
 {
     rb_objspace_t *objspace = &rb_objspace;
+    VALUE kwargs, double_heap = Qfalse, toward_empty = Qfalse;
+    static ID id_toward, id_double_heap, id_empty;
+
+    if (!id_toward) {
+        id_toward = rb_intern("toward");
+        id_double_heap = rb_intern("double_heap");
+        id_empty = rb_intern("empty");
+    }
+
+    rb_scan_args(argc, argv, ":", &kwargs);
+    if (!NIL_P(kwargs)) {
+        if (rb_hash_has_key(kwargs, ID2SYM(id_toward))) {
+            VALUE toward = rb_hash_aref(kwargs, ID2SYM(id_toward));
+            toward_empty = (toward == ID2SYM(id_empty)) ? Qtrue : Qfalse;
+        }
+        if (rb_hash_has_key(kwargs, ID2SYM(id_double_heap))) {
+            double_heap = rb_hash_aref(kwargs, ID2SYM(id_double_heap));
+        }
+    }
 
     /* Clear the heap. */
-    gc_start_internal(ec, self, Qtrue, Qtrue, Qtrue, Qfalse);
+    gc_start_internal(NULL, self, Qtrue, Qtrue, Qtrue, Qfalse);
 
     RB_VM_LOCK_ENTER();
     {
@@ -10766,13 +10866,16 @@ gc_verify_compaction_references(rb_execution_context_t *ec, VALUE self, VALUE do
     }
     RB_VM_LOCK_LEAVE();
 
-    gc_start_internal(ec, self, Qtrue, Qtrue, Qtrue, Qtrue);
+    gc_start_internal(NULL, self, Qtrue, Qtrue, Qtrue, Qtrue);
 
     objspace_reachable_objects_from_root(objspace, root_obj_check_moved_i, NULL);
     objspace_each_objects(objspace, heap_check_moved_i, NULL, TRUE);
 
-    return gc_compact_stats(ec, self);
+    return gc_compact_stats(self);
 }
+#else
+#  define gc_verify_compaction_references rb_f_notimplement
+#endif
 
 VALUE
 rb_gc_start(void)
@@ -11360,8 +11463,19 @@ gc_disable(rb_execution_context_t *ec, VALUE _)
     return rb_gc_disable();
 }
 
+#if GC_COMPACTION_SUPPORTED
+/*
+ *  call-seq:
+ *     GC.auto_compact = flag
+ *
+ *  Updates automatic compaction mode.
+ *
+ *  When enabled, the compactor will execute on every major collection.
+ *
+ *  Enabling compaction will degrade performance on major collections.
+ */
 static VALUE
-gc_set_auto_compact(rb_execution_context_t *ec, VALUE _, VALUE v)
+gc_set_auto_compact(VALUE _, VALUE v)
 {
     /* If not MinGW, Windows, or does not have mmap, we cannot use mprotect for
      * the read barrier, so we must disable automatic compaction. */
@@ -11371,19 +11485,28 @@ gc_set_auto_compact(rb_execution_context_t *ec, VALUE _, VALUE v)
     }
 #endif
 
-#if !GC_COMPACTION_SUPPORTED
-    rb_raise(rb_eNotImpError, "Automatic compaction isn't available on this platform");
-#endif
-
     ruby_enable_autocompact = RTEST(v);
     return v;
 }
+#else
+#  define gc_set_auto_compact rb_f_notimplement
+#endif
 
+#if GC_COMPACTION_SUPPORTED
+/*
+ *  call-seq:
+ *     GC.auto_compact    -> true or false
+ *
+ *  Returns whether or not automatic compaction has been enabled.
+ */
 static VALUE
-gc_get_auto_compact(rb_execution_context_t *ec, VALUE _)
+gc_get_auto_compact(VALUE _)
 {
     return RBOOL(ruby_enable_autocompact);
 }
+#else
+#  define gc_get_auto_compact rb_f_notimplement
+#endif
 
 static int
 get_envparam_size(const char *name, size_t *default_value, size_t lower_bound)
@@ -14242,6 +14365,11 @@ Init_GC(void)
     rb_define_singleton_method(rb_mGC, "malloc_allocated_size", gc_malloc_allocated_size, 0);
     rb_define_singleton_method(rb_mGC, "malloc_allocations", gc_malloc_allocations, 0);
 #endif
+    rb_define_singleton_method(rb_mGC, "compact", gc_compact, 0);
+    rb_define_singleton_method(rb_mGC, "auto_compact", gc_get_auto_compact, 0);
+    rb_define_singleton_method(rb_mGC, "auto_compact=", gc_set_auto_compact, 1);
+    rb_define_singleton_method(rb_mGC, "latest_compact_info", gc_compact_stats, 0);
+    rb_define_singleton_method(rb_mGC, "verify_compaction_references", gc_verify_compaction_references, -1);
 
 #if GC_DEBUG_STRESS_TO_CLASS
     rb_define_singleton_method(rb_mGC, "add_stress_to_class", rb_gcdebug_add_stress_to_class, -1);

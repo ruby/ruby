@@ -2941,7 +2941,9 @@ str_uplus(VALUE str)
  * Returns a frozen, possibly pre-existing copy of the string.
  *
  * The returned \String will be deduplicated as long as it does not have
- * any instance variables set on it.
+ * any instance variables set on it and is not a String subclass.
+ *
+ * String#dedup is an alias for String#-@.
  */
 static VALUE
 str_uminus(VALUE str)
@@ -11887,6 +11889,7 @@ Init_String(void)
     rb_define_method(rb_cString, "freeze", rb_str_freeze, 0);
     rb_define_method(rb_cString, "+@", str_uplus, 0);
     rb_define_method(rb_cString, "-@", str_uminus, 0);
+    rb_define_alias(rb_cString, "dedup", "-@");
 
     rb_define_method(rb_cString, "to_i", rb_str_to_i, -1);
     rb_define_method(rb_cString, "to_f", rb_str_to_f, 0);

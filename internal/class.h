@@ -122,10 +122,10 @@ typedef struct rb_classext_struct rb_classext_t;
 #define RCLASS_SUPERCLASS_DEPTH(c) (RCLASS_EXT(c)->superclass_depth)
 #define RCLASS_SUPERCLASSES(c) (RCLASS_EXT(c)->superclasses)
 
-#define RICLASS_IS_ORIGIN FL_USER5
-#define RCLASS_CLONED     FL_USER6
-#define RCLASS_SUPERCLASSES_INCLUDE_SELF FL_USER7
-#define RICLASS_ORIGIN_SHARED_MTBL FL_USER8
+#define RICLASS_IS_ORIGIN FL_USER0
+#define RCLASS_CLONED     FL_USER1
+#define RCLASS_SUPERCLASSES_INCLUDE_SELF FL_USER2
+#define RICLASS_ORIGIN_SHARED_MTBL FL_USER3
 
 /* class.c */
 void rb_class_subclass_add(VALUE super, VALUE klass);

@@ -48,6 +48,10 @@
 #endif
 #include "probes_helper.h"
 
+#ifdef RUBY_ASSERT_CRITICAL_SECTION
+int ruby_assert_critical_section_entered = 0;
+#endif
+
 VALUE rb_str_concat_literals(size_t, const VALUE*);
 
 /* :FIXME: This #ifdef is because we build pch in case of mswin and
@@ -3251,11 +3255,9 @@ rb_ec_clear_vm_stack(rb_execution_context_t *ec)
 }
 
 static void
-th_init(rb_thread_t *th, VALUE self, rb_vm_t *vm, rb_ractor_t *r)
+th_init(rb_thread_t *th, VALUE self, rb_vm_t *vm)
 {
     th->self = self;
-    th->vm = vm;
-    th->ractor = r;
 
     rb_threadptr_root_fiber_setup(th);
 
@@ -3279,10 +3281,6 @@ th_init(rb_thread_t *th, VALUE self, rb_vm_t *vm, rb_ractor_t *r)
     th->top_self = vm->top_self; // 0 while self == 0
     th->value = Qundef;
 
-#if  defined(NON_SCALAR_THREAD_ID) && !defined(__wasm__) && !defined(__EMSCRIPTEN__)
-    th->nt->thread_id_string[0] = '\0';
-#endif
-
     th->ec->errinfo = Qnil;
     th->ec->root_svar = Qfalse;
     th->ec->local_storage_recursive_hash = Qnil;
@@ -3294,6 +3292,11 @@ th_init(rb_thread_t *th, VALUE self, rb_vm_t *vm, rb_ractor_t *r)
     th->name = Qnil;
     th->report_on_exception = vm->thread_report_on_exception;
     th->ext_config.ractor_safe = true;
+
+#if USE_RUBY_DEBUG_LOG
+    static rb_atomic_t thread_serial = 0;
+    th->serial = RUBY_ATOMIC_FETCH_ADD(thread_serial, 1);
+#endif
 }
 
 VALUE
@@ -3301,7 +3304,8 @@ rb_thread_alloc(VALUE klass)
 {
     VALUE self = thread_alloc(klass);
     rb_thread_t *target_th = rb_thread_ptr(self);
-    th_init(target_th, self, GET_VM(), GET_RACTOR());
+    target_th->ractor = GET_RACTOR();
+    th_init(target_th, self, target_th->vm = GET_VM());
     return self;
 }
 
@@ -3952,8 +3956,10 @@ Init_BareVM(void)
 
     // setup main thread
     th->nt = ZALLOC(struct rb_native_thread);
+    th->vm = vm;
+    th->ractor = vm->ractor.main_ractor = rb_ractor_main_alloc();
     Init_native_thread(th);
-    th_init(th, 0, vm, vm->ractor.main_ractor = rb_ractor_main_alloc());
+    th_init(th, 0, vm);
 
     rb_ractor_set_current_ec(th->ractor, th->ec);
     ruby_thread_init_stack(th);

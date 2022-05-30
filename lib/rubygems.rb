@@ -117,7 +117,7 @@ module Gem
   # Taint support is deprecated in Ruby 2.7.
   # This allows switching ".untaint" to ".tap(&Gem::UNTAINT)",
   # to avoid deprecation warnings in Ruby 2.7.
-  UNTAINT = RUBY_VERSION < '2.7' ? :untaint.to_sym : proc{}
+  UNTAINT = RUBY_VERSION < '2.7' ? :untaint.to_sym : proc {}
 
   # When https://bugs.ruby-lang.org/issues/17259 is available, there is no need to override Kernel#warn
   KERNEL_WARN_IGNORES_INTERNAL_ENTRIES = RUBY_ENGINE == "truffleruby" ||

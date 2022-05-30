@@ -1112,12 +1112,6 @@ internal_write_func(void *ptr)
     return (VALUE)ret;
 }
 
-static void*
-internal_write_func2(void *ptr)
-{
-    return (void*)internal_write_func(ptr);
-}
-
 #ifdef HAVE_WRITEV
 static VALUE
 internal_writev_func(void *ptr)
@@ -1170,10 +1164,7 @@ rb_write_internal(rb_io_t *fptr, const void *buf, size_t count)
         .capa = count
     };
 
-    if (fptr->write_lock && rb_mutex_owned_p(fptr->write_lock))
-        return (ssize_t)rb_thread_call_without_gvl2(internal_write_func2, &iis, RUBY_UBF_IO, NULL);
-    else
-        return (ssize_t)rb_thread_io_blocking_region(internal_write_func, &iis, fptr->fd);
+    return (ssize_t)rb_thread_io_blocking_region(internal_write_func, &iis, fptr->fd);
 }
 
 #ifdef HAVE_WRITEV
@@ -1221,18 +1212,6 @@ io_flush_buffer_sync(void *arg)
     return (VALUE)-1;
 }
 
-static void*
-io_flush_buffer_sync2(void *arg)
-{
-    VALUE result = io_flush_buffer_sync(arg);
-
-    /*
-     * rb_thread_call_without_gvl2 uses 0 as interrupted.
-     * So, we need to avoid to use 0.
-     */
-    return !result ? (void*)1 : (void*)result;
-}
-
 static VALUE
 io_flush_buffer_async(VALUE arg)
 {
@@ -1240,36 +1219,13 @@ io_flush_buffer_async(VALUE arg)
     return rb_thread_io_blocking_region(io_flush_buffer_sync, fptr, fptr->fd);
 }
 
-static VALUE
-io_flush_buffer_async2(VALUE arg)
-{
-    rb_io_t *fptr = (rb_io_t *)arg;
-    VALUE ret;
-
-    ret = (VALUE)rb_thread_call_without_gvl2(io_flush_buffer_sync2, fptr, RUBY_UBF_IO, NULL);
-
-    if (!ret) {
-	/* pending async interrupt is there. */
-	errno = EAGAIN;
-	return -1;
-    }
-    else if (ret == 1) {
-	return 0;
-    }
-    return ret;
-}
-
 static inline int
 io_flush_buffer(rb_io_t *fptr)
 {
-    if (fptr->write_lock) {
-	if (rb_mutex_owned_p(fptr->write_lock))
-	    return (int)io_flush_buffer_async2((VALUE)fptr);
-	else
-	    return (int)rb_mutex_synchronize(fptr->write_lock, io_flush_buffer_async2, (VALUE)fptr);
-    }
-    else {
-	return (int)io_flush_buffer_async((VALUE)fptr);
+    if (!NIL_P(fptr->write_lock) && rb_mutex_owned_p(fptr->write_lock)) {
+        return (int)io_flush_buffer_async((VALUE)fptr);
+    } else {
+        return (int)rb_mutex_synchronize(fptr->write_lock, io_flush_buffer_async, (VALUE)fptr);
     }
 }
 
@@ -1580,72 +1536,107 @@ struct write_arg {
 };
 
 #ifdef HAVE_WRITEV
-static VALUE
-io_binwrite_string(VALUE arg)
+static ssize_t
+io_binwrite_string_internal(rb_io_t *fptr, const char *ptr, long length)
 {
-    struct binwrite_arg *p = (struct binwrite_arg *)arg;
-    rb_io_t *fptr = p->fptr;
-    long r;
-
     if (fptr->wbuf.len) {
-	struct iovec iov[2];
+        struct iovec iov[2];
 
-	iov[0].iov_base = fptr->wbuf.ptr+fptr->wbuf.off;
-	iov[0].iov_len = fptr->wbuf.len;
-	iov[1].iov_base = (char *)p->ptr;
-	iov[1].iov_len = p->length;
+        iov[0].iov_base = fptr->wbuf.ptr+fptr->wbuf.off;
+        iov[0].iov_len = fptr->wbuf.len;
+        iov[1].iov_base = (void*)ptr;
+        iov[1].iov_len = length;
 
-	r = rb_writev_internal(fptr, iov, 2);
+        ssize_t result = rb_writev_internal(fptr, iov, 2);
 
-        if (r < 0)
-            return r;
+        if (result < 0)
+            return result;
 
-	if (fptr->wbuf.len <= r) {
-	    r -= fptr->wbuf.len;
-	    fptr->wbuf.off = 0;
-	    fptr->wbuf.len = 0;
-	}
-	else {
-	    fptr->wbuf.off += (int)r;
-	    fptr->wbuf.len -= (int)r;
-	    r = 0L;
-	}
+        if (result >= fptr->wbuf.len) {
+            // We wrote more than the internal buffer:
+            result -= fptr->wbuf.len;
+            fptr->wbuf.off = 0;
+            fptr->wbuf.len = 0;
+        }
+        else {
+            // We only wrote less data than the internal buffer:
+            fptr->wbuf.off += (int)result;
+            fptr->wbuf.len -= (int)result;
+
+            result = 0;
+        }
+
+        return result;
     }
     else {
-	r = rb_write_internal(fptr, p->ptr, p->length);
+        return rb_write_internal(fptr, ptr, length);
     }
-
-    return r;
 }
 #else
+static ssize_t
+io_binwrite_string_internal(rb_io_t *fptr, const char *ptr, long length)
+{
+    long remaining = length;
+
+    if (fptr->wbuf.len) {
+        if (fptr->wbuf.len+length <= fptr->wbuf.capa) {
+            if (fptr->wbuf.capa < fptr->wbuf.off+fptr->wbuf.len+length) {
+                MEMMOVE(fptr->wbuf.ptr, fptr->wbuf.ptr+fptr->wbuf.off, char, fptr->wbuf.len);
+                fptr->wbuf.off = 0;
+            }
+
+            MEMMOVE(fptr->wbuf.ptr+fptr->wbuf.off+fptr->wbuf.len, ptr, char, length);
+            fptr->wbuf.len += (int)length;
+
+            // We copied the entire incoming data to the internal buffer:
+            remaining = 0;
+        }
+
+        // Flush the internal buffer:
+        if (io_fflush(fptr) < 0) {
+            return -1;
+        }
+
+        // If all the data was buffered, we are done:
+        if (remaining == 0) {
+            return length;
+        }
+    }
+
+    // Otherwise, we should write the data directly:
+    return rb_write_internal(fptr, ptr, length);
+}
+#endif
+
 static VALUE
 io_binwrite_string(VALUE arg)
 {
     struct binwrite_arg *p = (struct binwrite_arg *)arg;
-    rb_io_t *fptr = p->fptr;
-    long l, len;
 
-    l = len = p->length;
+    const char *ptr = p->ptr;
+    size_t remaining = p->length;
 
-    if (fptr->wbuf.len) {
-	if (fptr->wbuf.len+len <= fptr->wbuf.capa) {
-	    if (fptr->wbuf.capa < fptr->wbuf.off+fptr->wbuf.len+len) {
-		MEMMOVE(fptr->wbuf.ptr, fptr->wbuf.ptr+fptr->wbuf.off, char, fptr->wbuf.len);
-		fptr->wbuf.off = 0;
-	    }
-	    MEMMOVE(fptr->wbuf.ptr+fptr->wbuf.off+fptr->wbuf.len, p->ptr, char, len);
-	    fptr->wbuf.len += (int)len;
-	    l = 0;
-	}
-	if (io_fflush(fptr) < 0)
-	    return -2L; /* fail in fflush */
-	if (l == 0)
-	    return len;
+    while (remaining) {
+        // Write as much as possible:
+        ssize_t result = io_binwrite_string_internal(p->fptr, ptr, remaining);
+
+        if (result > 0) {
+            if ((size_t)result == remaining) break;
+            ptr += result;
+            remaining -= result;
+        }
+        // Wait for it to become writable:
+        else if (rb_io_maybe_wait_writable(errno, p->fptr->self, Qnil)) {
+            rb_io_check_closed(p->fptr);
+        }
+        else {
+            // The error was unrelated to waiting for it to become writable, so we fail:
+            return -1;
+        }
     }
 
-    return rb_write_internal(p->fptr, p->ptr, p->length);
+    return p->length;
 }
-#endif
 
 inline static void
 io_allocate_write_buffer(rb_io_t *fptr, int sync)
@@ -1655,70 +1646,65 @@ io_allocate_write_buffer(rb_io_t *fptr, int sync)
         fptr->wbuf.len = 0;
         fptr->wbuf.capa = IO_WBUF_CAPA_MIN;
         fptr->wbuf.ptr = ALLOC_N(char, fptr->wbuf.capa);
+    }
+
+    if (NIL_P(fptr->write_lock)) {
         fptr->write_lock = rb_mutex_new();
         rb_mutex_allow_trap(fptr->write_lock, 1);
     }
 }
 
+static inline int
+io_binwrite_requires_flush_write(rb_io_t *fptr, long len, int nosync)
+{
+    // If the requested operation was synchronous and the output mode is synchronus or a TTY:
+    if (!nosync && (fptr->mode & (FMODE_SYNC|FMODE_TTY)))
+        return 1;
+
+    // If the amount of data we want to write exceeds the internal buffer:
+    if (fptr->wbuf.ptr && fptr->wbuf.capa <= fptr->wbuf.len + len)
+        return 1;
+
+    // Otherwise, we can append to the internal buffer:
+    return 0;
+}
+
 static long
 io_binwrite(VALUE str, const char *ptr, long len, rb_io_t *fptr, int nosync)
 {
-    long n, r, offset = 0;
+    if (len <= 0) return len;
 
-    /* don't write anything if current thread has a pending interrupt. */
+    // Don't write anything if current thread has a pending interrupt:
     rb_thread_check_ints();
-
-    if ((n = len) <= 0) return n;
 
     io_allocate_write_buffer(fptr, !nosync);
 
-    if ((!nosync && (fptr->mode & (FMODE_SYNC|FMODE_TTY))) ||
-        (fptr->wbuf.ptr && fptr->wbuf.capa <= fptr->wbuf.len + len)) {
+    if (io_binwrite_requires_flush_write(fptr, len, nosync)) {
         struct binwrite_arg arg;
 
         arg.fptr = fptr;
         arg.str = str;
-      retry:
-        arg.ptr = ptr + offset;
-        arg.length = n;
+        arg.ptr = ptr;
+        arg.length = len;
 
-        if (fptr->write_lock) {
-            r = rb_mutex_synchronize(fptr->write_lock, io_binwrite_string, (VALUE)&arg);
+        if (!NIL_P(fptr->write_lock)) {
+            return rb_mutex_synchronize(fptr->write_lock, io_binwrite_string, (VALUE)&arg);
         }
         else {
-            r = io_binwrite_string((VALUE)&arg);
+            return io_binwrite_string((VALUE)&arg);
+        }
+    } else {
+        if (fptr->wbuf.off) {
+            if (fptr->wbuf.len)
+                MEMMOVE(fptr->wbuf.ptr, fptr->wbuf.ptr+fptr->wbuf.off, char, fptr->wbuf.len);
+            fptr->wbuf.off = 0;
         }
 
-        /* xxx: other threads may modify given string. */
-        if (r == n) return len;
-        if (0 <= r) {
-            offset += r;
-            n -= r;
-            errno = EAGAIN;
-        }
+        MEMMOVE(fptr->wbuf.ptr+fptr->wbuf.off+fptr->wbuf.len, ptr, char, len);
+        fptr->wbuf.len += (int)len;
 
-        if (r == -2L)
-            return -1L;
-        if (rb_io_maybe_wait_writable(errno, fptr->self, Qnil)) {
-            rb_io_check_closed(fptr);
-
-            if (offset < len)
-                goto retry;
-        }
-
-        return -1L;
+        return len;
     }
-
-    if (fptr->wbuf.off) {
-        if (fptr->wbuf.len)
-            MEMMOVE(fptr->wbuf.ptr, fptr->wbuf.ptr+fptr->wbuf.off, char, fptr->wbuf.len);
-        fptr->wbuf.off = 0;
-    }
-
-    MEMMOVE(fptr->wbuf.ptr+fptr->wbuf.off+fptr->wbuf.len, ptr+offset, char, len);
-    fptr->wbuf.len += (int)len;
-
-    return len;
 }
 
 # define MODE_BTMODE(a,b,c) ((fmode & FMODE_BINMODE) ? (b) : \
@@ -1792,15 +1778,17 @@ io_fwrite(VALUE str, rb_io_t *fptr, int nosync)
     VALUE tmp;
     long n, len;
     const char *ptr;
+
 #ifdef _WIN32
     if (fptr->mode & FMODE_TTY) {
-	long len = rb_w32_write_console(str, fptr->fd);
-	if (len > 0) return len;
+        long len = rb_w32_write_console(str, fptr->fd);
+        if (len > 0) return len;
     }
 #endif
+
     str = do_writeconv(str, fptr, &converted);
     if (converted)
-	OBJ_FREEZE(str);
+        OBJ_FREEZE(str);
 
     tmp = rb_str_tmp_frozen_acquire(str);
     RSTRING_GETMEM(tmp, ptr, len);
@@ -1830,10 +1818,12 @@ io_write(VALUE io, VALUE str, int nosync)
     io = GetWriteIO(io);
     str = rb_obj_as_string(str);
     tmp = rb_io_check_io(io);
+
     if (NIL_P(tmp)) {
-	/* port is not IO, call write method for it. */
-	return rb_funcall(io, id_write, 1, str);
+        /* port is not IO, call write method for it. */
+        return rb_funcall(io, id_write, 1, str);
     }
+
     io = tmp;
     if (RSTRING_LEN(str) == 0) return INT2FIX(0);
 
@@ -1849,105 +1839,124 @@ io_write(VALUE io, VALUE str, int nosync)
 #ifdef HAVE_WRITEV
 struct binwritev_arg {
     rb_io_t *fptr;
-    const struct iovec *iov;
+    struct iovec *iov;
     int iovcnt;
+    size_t total;
 };
 
 static VALUE
-call_writev_internal(VALUE arg)
+io_binwritev_internal(VALUE arg)
 {
     struct binwritev_arg *p = (struct binwritev_arg *)arg;
-    return rb_writev_internal(p->fptr, p->iov, p->iovcnt);
+
+    size_t remaining = p->total;
+    size_t offset = 0;
+
+    rb_io_t *fptr = p->fptr;
+    struct iovec *iov = p->iov;
+    int iovcnt = p->iovcnt;
+
+    while (remaining) {
+        long result = rb_writev_internal(fptr, iov, iovcnt);
+
+        if (result > 0) {
+            offset += result;
+            if (fptr->wbuf.ptr && fptr->wbuf.len) {
+                if (offset < (size_t)fptr->wbuf.len) {
+                    fptr->wbuf.off += result;
+                    fptr->wbuf.len -= result;
+                }
+                else {
+                    offset -= (size_t)fptr->wbuf.len;
+                    fptr->wbuf.off = 0;
+                    fptr->wbuf.len = 0;
+                }
+            }
+
+            if (offset == p->total) {
+                return p->total;
+            }
+
+            while (result >= (ssize_t)iov->iov_len) {
+                /* iovcnt > 0 */
+                result -= iov->iov_len;
+                iov->iov_len = 0;
+                iov++;
+
+                if (!--iovcnt) {
+                    // I don't believe this code path can ever occur.
+                    return offset;
+                }
+            }
+
+            iov->iov_base = (char *)iov->iov_base + result;
+            iov->iov_len -= result;
+        }
+        else if (rb_io_maybe_wait_writable(errno, fptr->self, Qnil)) {
+            rb_io_check_closed(fptr);
+        }
+        else {
+            return -1;
+        }
+    }
+
+    return offset;
 }
 
 static long
 io_binwritev(struct iovec *iov, int iovcnt, rb_io_t *fptr)
 {
-    int i;
-    long r, total = 0, written_len = 0;
-
-    /* don't write anything if current thread has a pending interrupt. */
+    // Don't write anything if current thread has a pending interrupt:
     rb_thread_check_ints();
 
     if (iovcnt == 0) return 0;
-    for (i = 1; i < iovcnt; i++) total += iov[i].iov_len;
+
+    size_t total = 0;
+    for (int i = 1; i < iovcnt; i++) total += iov[i].iov_len;
 
     io_allocate_write_buffer(fptr, 1);
 
     if (fptr->wbuf.ptr && fptr->wbuf.len) {
-        long offset = fptr->wbuf.off + fptr->wbuf.len;
-        if (offset + total <= fptr->wbuf.capa) {
-            for (i = 1; i < iovcnt; i++) {
+        // The end of the buffered data:
+        size_t offset = fptr->wbuf.off + fptr->wbuf.len;
+
+        if (offset + total <= (size_t)fptr->wbuf.capa) {
+            for (int i = 1; i < iovcnt; i++) {
                 memcpy(fptr->wbuf.ptr+offset, iov[i].iov_base, iov[i].iov_len);
                 offset += iov[i].iov_len;
             }
 
             fptr->wbuf.len += total;
+
             return total;
         }
         else {
             iov[0].iov_base = fptr->wbuf.ptr + fptr->wbuf.off;
-            iov[0].iov_len  = fptr->wbuf.len;
+            iov[0].iov_len = fptr->wbuf.len;
         }
     }
     else {
+        // The first iov is reserved for the internal buffer, and it's empty.
         iov++;
-        if (!--iovcnt) return 0;
+
+        if (!--iovcnt) {
+            // If there are no other io vectors we are done.
+            return 0;
+        }
     }
 
-  retry:
-    if (fptr->write_lock) {
-        struct binwritev_arg arg;
-        arg.fptr = fptr;
-        arg.iov  = iov;
-        arg.iovcnt = iovcnt;
-        r = rb_mutex_synchronize(fptr->write_lock, call_writev_internal, (VALUE)&arg);
+    struct binwritev_arg arg;
+    arg.fptr = fptr;
+    arg.iov = iov;
+    arg.iovcnt = iovcnt;
+    arg.total = total;
+
+    if (!NIL_P(fptr->write_lock)) {
+        return rb_mutex_synchronize(fptr->write_lock, io_binwritev_internal, (VALUE)&arg);
     }
     else {
-        r = rb_writev_internal(fptr, iov, iovcnt);
+        return io_binwritev_internal((VALUE)&arg);
     }
-
-    if (r >= 0) {
-        written_len += r;
-        if (fptr->wbuf.ptr && fptr->wbuf.len) {
-            if (written_len < fptr->wbuf.len) {
-                fptr->wbuf.off += r;
-                fptr->wbuf.len -= r;
-            }
-            else {
-                written_len -= fptr->wbuf.len;
-                fptr->wbuf.off = 0;
-                fptr->wbuf.len = 0;
-            }
-        }
-
-        if (written_len == total) return total;
-
-        while (r >= (ssize_t)iov->iov_len) {
-            /* iovcnt > 0 */
-            r -= iov->iov_len;
-            iov->iov_len = 0;
-            iov++;
-
-            if (!--iovcnt) {
-                // assert(written_len == total);
-
-                return total;
-            }
-        }
-
-        iov->iov_base = (char *)iov->iov_base + r;
-        iov->iov_len -= r;
-
-        errno = EAGAIN;
-    }
-
-    if (rb_io_maybe_wait_writable(errno, fptr->self, Qnil)) {
-        rb_io_check_closed(fptr);
-        goto retry;
-    }
-
-    return -1L;
 }
 
 static long
@@ -2096,8 +2105,7 @@ rb_io_writev(VALUE io, int argc, const VALUE *argv)
 
         do rb_io_write(io, *argv++); while (--argc);
 
-        /* unused right now */
-        return argv[0];
+        return Qnil;
     }
 
     return rb_funcallv(io, id_write, argc, argv);
@@ -5084,7 +5092,6 @@ finish_writeconv(rb_io_t *fptr, int noalloc)
 
     if (!fptr->wbuf.ptr) {
         unsigned char buf[1024];
-        long r;
 
         res = econv_destination_buffer_full;
         while (res == econv_destination_buffer_full) {
@@ -5092,19 +5099,20 @@ finish_writeconv(rb_io_t *fptr, int noalloc)
             de = buf + sizeof(buf);
             res = rb_econv_convert(fptr->writeconv, NULL, NULL, &dp, de, 0);
             while (dp-ds) {
-              retry:
-                r = rb_write_internal(fptr, ds, dp-ds);
-                if (r == dp-ds)
-                    break;
-                if (0 <= r) {
-                    ds += r;
+                size_t remaining = dp-ds;
+                long result = rb_write_internal(fptr, ds, remaining);
+
+                if (result > 0) {
+                    ds += result;
+                    if ((size_t)result == remaining) break;
                 }
-                if (rb_io_maybe_wait_writable(errno, fptr->self, Qnil)) {
+                else if (rb_io_maybe_wait_writable(errno, fptr->self, Qnil)) {
                     if (fptr->fd < 0)
                         return noalloc ? Qtrue : rb_exc_new3(rb_eIOError, rb_str_new_cstr(closed_stream));
-                    goto retry;
                 }
-                return noalloc ? Qtrue : INT2NUM(errno);
+                else {
+                    return noalloc ? Qtrue : INT2NUM(errno);
+                }
             }
             if (res == econv_invalid_byte_sequence ||
                 res == econv_incomplete_input ||
@@ -5119,8 +5127,9 @@ finish_writeconv(rb_io_t *fptr, int noalloc)
     res = econv_destination_buffer_full;
     while (res == econv_destination_buffer_full) {
         if (fptr->wbuf.len == fptr->wbuf.capa) {
-            if (io_fflush(fptr) < 0)
+            if (io_fflush(fptr) < 0) {
                 return noalloc ? Qtrue : INT2NUM(errno);
+            }
         }
 
         ds = dp = (unsigned char *)fptr->wbuf.ptr + fptr->wbuf.off + fptr->wbuf.len;
@@ -5193,20 +5202,20 @@ static void
 fptr_finalize_flush(rb_io_t *fptr, int noraise, int keepgvl,
                     struct ccan_list_head *busy)
 {
-    VALUE err = Qnil;
+    VALUE error = Qnil;
     int fd = fptr->fd;
     FILE *stdio_file = fptr->stdio_file;
     int mode = fptr->mode;
 
     if (fptr->writeconv) {
-        if (fptr->write_lock && !noraise) {
+        if (!NIL_P(fptr->write_lock) && !noraise) {
             struct finish_writeconv_arg arg;
             arg.fptr = fptr;
             arg.noalloc = noraise;
-            err = rb_mutex_synchronize(fptr->write_lock, finish_writeconv_sync, (VALUE)&arg);
+            error = rb_mutex_synchronize(fptr->write_lock, finish_writeconv_sync, (VALUE)&arg);
         }
         else {
-            err = finish_writeconv(fptr, noraise);
+            error = finish_writeconv(fptr, noraise);
         }
     }
     if (fptr->wbuf.len) {
@@ -5214,8 +5223,9 @@ fptr_finalize_flush(rb_io_t *fptr, int noraise, int keepgvl,
             io_flush_buffer_sync(fptr);
         }
         else {
-            if (io_fflush(fptr) < 0 && NIL_P(err))
-        	err = INT2NUM(errno);
+            if (io_fflush(fptr) < 0 && NIL_P(error)) {
+                error = INT2NUM(errno);
+            }
         }
     }
 
@@ -5247,8 +5257,11 @@ fptr_finalize_flush(rb_io_t *fptr, int noraise, int keepgvl,
 
     if (!done && stdio_file) {
         // stdio_file is deallocated anyway even if fclose failed.
-        if ((maygvl_fclose(stdio_file, noraise) < 0) && NIL_P(err))
-            if (!noraise) err = INT2NUM(errno);
+        if ((maygvl_fclose(stdio_file, noraise) < 0) && NIL_P(error)) {
+            if (!noraise) {
+                error = INT2NUM(errno);
+            }
+        }
 
         done = 1;
     }
@@ -5259,17 +5272,20 @@ fptr_finalize_flush(rb_io_t *fptr, int noraise, int keepgvl,
 
         keepgvl |= !(mode & FMODE_WRITABLE);
         keepgvl |= noraise;
-        if ((maygvl_close(fd, keepgvl) < 0) && NIL_P(err))
-            if (!noraise) err = INT2NUM(errno);
+        if ((maygvl_close(fd, keepgvl) < 0) && NIL_P(error)) {
+            if (!noraise) {
+                error = INT2NUM(errno);
+            }
+        }
 
         done = 1;
     }
 
-    if (!NIL_P(err) && !noraise) {
-        if (RB_INTEGER_TYPE_P(err))
-            rb_syserr_fail_path(NUM2INT(err), fptr->pathv);
+    if (!NIL_P(error) && !noraise) {
+        if (RB_INTEGER_TYPE_P(error))
+            rb_syserr_fail_path(NUM2INT(error), fptr->pathv);
         else
-            rb_exc_raise(err);
+            rb_exc_raise(error);
     }
 }
 
@@ -5338,7 +5354,7 @@ rb_io_fptr_finalize_internal(void *ptr)
     fptr->pathv = Qnil;
     if (0 <= fptr->fd)
         rb_io_fptr_cleanup(fptr, TRUE);
-    fptr->write_lock = 0;
+    fptr->write_lock = Qnil;
     free_io_buffer(&fptr->rbuf);
     free_io_buffer(&fptr->wbuf);
     clear_codeconv(fptr);
@@ -8662,14 +8678,14 @@ rb_p_result(int argc, const VALUE *argv)
     VALUE ret = Qnil;
 
     if (argc == 1) {
-	ret = argv[0];
+        ret = argv[0];
     }
     else if (argc > 1) {
-	ret = rb_ary_new4(argc, argv);
+        ret = rb_ary_new4(argc, argv);
     }
     VALUE r_stdout = rb_ractor_stdout();
     if (RB_TYPE_P(r_stdout, T_FILE)) {
-	rb_io_flush(r_stdout);
+        rb_uninterruptible(rb_io_flush, r_stdout);
     }
     return ret;
 }
@@ -8965,7 +8981,7 @@ rb_io_fptr_new(void)
     fp->encs.enc2 = NULL;
     fp->encs.ecflags = 0;
     fp->encs.ecopts = Qnil;
-    fp->write_lock = 0;
+    fp->write_lock = Qnil;
     return fp;
 }
 
@@ -14212,7 +14228,7 @@ set_LAST_READ_LINE(VALUE val, ID _x, VALUE *_y)
  *  ==== Read/Write Mode Specified as an \Integer
  *
  *  When +mode+ is an integer it must be one or more (combined by bitwise OR (<tt>|</tt>)
- *  of the modes defined in File::Constants:
+ *  of the following modes:
  *
  *  - +File::RDONLY+: Open for reading only.
  *  - +File::WRONLY+: Open for writing only.
@@ -14276,6 +14292,12 @@ set_LAST_READ_LINE(VALUE val, ID _x, VALUE *_y)
  *  Example:
  *
  *    File.open('t.tmp', 'wx')
+ *
+ *  Note that when using integer flags to set the read/write mode, it's not
+ *  possible to also set the binary data mode by adding the File::BINARY flag
+ *  to the bitwise OR combination of integer flags. This is because, as
+ *  documented in File::Constants, the File::BINARY flag only disables line code
+ *  conversion, but does not change the external encoding at all.
  *
  *  == Encodings
  *

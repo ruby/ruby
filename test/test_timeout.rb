@@ -10,6 +10,18 @@ class TestTimeout < Test::Unit::TestCase
     end
   end
 
+  def test_included
+    c = Class.new do
+      include Timeout
+      def test
+        timeout(1) { :ok }
+      end
+    end
+    assert_nothing_raised do
+      assert_equal :ok, c.new.test
+    end
+  end
+
   def test_yield_param
     assert_equal [5, :ok], Timeout.timeout(5){|s| [s, :ok] }
   end
@@ -43,6 +55,7 @@ class TestTimeout < Test::Unit::TestCase
         begin
           sleep 3
         rescue Exception => e
+          flunk "should not see any exception but saw #{e.inspect}"
         end
       end
     end
@@ -125,5 +138,25 @@ class TestTimeout < Test::Unit::TestCase
       }
     }
     assert(ok, bug11344)
+  end
+
+  def test_fork
+    omit 'fork not supported' unless Process.respond_to?(:fork)
+    r, w = IO.pipe
+    pid = fork do
+      r.close
+      begin
+        r = Timeout.timeout(0.01) { sleep 5 }
+        w.write r.inspect
+      rescue Timeout::Error
+        w.write 'timeout'
+      ensure
+        w.close
+      end
+    end
+    w.close
+    Process.wait pid
+    assert_equal 'timeout', r.read
+    r.close
   end
 end

@@ -268,14 +268,15 @@ ruby_set_debug_option(const char *str)
 
 #define MAX_DEBUG_LOG             0x1000
 #define MAX_DEBUG_LOG_MESSAGE_LEN 0x0200
-#define MAX_DEBUG_LOG_FILTER      0x0010
+#define MAX_DEBUG_LOG_FILTER_LEN  0x0020
+#define MAX_DEBUG_LOG_FILTER_NUM  0x0010
 
 enum ruby_debug_log_mode ruby_debug_log_mode;
 
 static struct {
     char *mem;
     unsigned int cnt;
-    char filters[MAX_DEBUG_LOG_FILTER][MAX_DEBUG_LOG_FILTER];
+    char filters[MAX_DEBUG_LOG_FILTER_NUM][MAX_DEBUG_LOG_FILTER_LEN];
     unsigned int filters_num;
     rb_nativethread_lock_t lock;
     FILE *output;
@@ -322,21 +323,21 @@ setup_debug_log(void)
     const char *filter_config = getenv("RUBY_DEBUG_LOG_FILTER");
     if (filter_config && strlen(filter_config) > 0) {
         unsigned int i;
-        for (i=0; i<MAX_DEBUG_LOG_FILTER; i++) {
+        for (i=0; i<MAX_DEBUG_LOG_FILTER_NUM; i++) {
             const char *p;
             if ((p = strchr(filter_config, ',')) == NULL) {
-                if (strlen(filter_config) >= MAX_DEBUG_LOG_FILTER) {
-                    fprintf(stderr, "too long: %s (max:%d)\n", filter_config, MAX_DEBUG_LOG_FILTER);
+                if (strlen(filter_config) >= MAX_DEBUG_LOG_FILTER_LEN) {
+                    fprintf(stderr, "too long: %s (max:%d)\n", filter_config, MAX_DEBUG_LOG_FILTER_LEN);
                     exit(1);
                 }
-                strncpy(debug_log.filters[i], filter_config, MAX_DEBUG_LOG_FILTER - 1);
+                strncpy(debug_log.filters[i], filter_config, MAX_DEBUG_LOG_FILTER_LEN - 1);
                 i++;
                 break;
             }
             else {
                 size_t n = p - filter_config;
-                if (n >= MAX_DEBUG_LOG_FILTER) {
-                    fprintf(stderr, "too long: %s (max:%d)\n", filter_config, MAX_DEBUG_LOG_FILTER);
+                if (n >= MAX_DEBUG_LOG_FILTER_LEN) {
+                    fprintf(stderr, "too long: %s (max:%d)\n", filter_config, MAX_DEBUG_LOG_FILTER_LEN);
                     exit(1);
                 }
                 strncpy(debug_log.filters[i], filter_config, n);
@@ -350,16 +351,50 @@ setup_debug_log(void)
     }
 }
 
+//
+// RUBY_DEBUG_LOG_FILTER=-foo,-bar,baz,boo
+// returns true if
+//   func_name doesn't contain foo
+// and
+//   func_name doesn't contain bar
+// and
+//   func_name contains baz or boo
+//
+// RUBY_DEBUG_LOG_FILTER=foo,bar,-baz,-boo
+// retunrs true if
+//   func_name contains foo or bar
+// or
+//   func_name doesn't contain baz and
+//   func_name doesn't contain boo and
+//
 bool
 ruby_debug_log_filter(const char *func_name)
 {
     if (debug_log.filters_num > 0) {
+        bool status = false;
+
         for (unsigned int i = 0; i<debug_log.filters_num; i++) {
-            if (strstr(func_name, debug_log.filters[i]) != NULL) {
-                return true;
+            const char *filter = debug_log.filters[i];
+
+            if (*filter == '-') {
+                if (strstr(func_name, &filter[1]) == NULL) {
+                    status = true;
+                }
+                else {
+                    return false;
+                }
+            }
+            else {
+                if (strstr(func_name, filter) != NULL) {
+                    return true;
+                }
+                else {
+                    status = false;
+                }
             }
         }
-        return false;
+
+        return status;
     }
     else {
         return true;
@@ -410,48 +445,40 @@ ruby_debug_log(const char *file, int line, const char *func_name, const char *fm
         len += r;
     }
 
-#ifdef USE_THIRD_PARTY_HEAP
-    // When using third-party heap, the GC thread may print debug logs, too.
-    // GC threads do not have Ruby-level execution context.
-    if (rb_current_execution_context(false) != NULL) {
-#endif // USE_THIRD_PARTY_HEAP
-    // Ruby location
-    int ruby_line;
-    const char *ruby_file = rb_source_location_cstr(&ruby_line);
-    if (len < MAX_DEBUG_LOG_MESSAGE_LEN) {
-        if (ruby_file) {
-            r = snprintf(buff + len, MAX_DEBUG_LOG_MESSAGE_LEN - len, "\t%s:%d", pretty_filename(ruby_file), ruby_line);
-        }
-        else {
-            r = snprintf(buff + len, MAX_DEBUG_LOG_MESSAGE_LEN - len, "\t");
-        }
-        if (r < 0) rb_bug("ruby_debug_log returns %d\n", r);
-        len += r;
-    }
-
-    // ractor information
-    if (ruby_single_main_ractor == NULL) {
-        rb_ractor_t *cr = GET_RACTOR();
-        if (r && len < MAX_DEBUG_LOG_MESSAGE_LEN) {
-            r = snprintf(buff + len, MAX_DEBUG_LOG_MESSAGE_LEN - len, "\tr:#%u/%u",
-                         (unsigned int)rb_ractor_id(cr), GET_VM()->ractor.cnt);
+    if (rb_current_execution_context(false)) {
+        // Ruby location
+        int ruby_line;
+        const char *ruby_file = rb_source_location_cstr(&ruby_line);
+        if (len < MAX_DEBUG_LOG_MESSAGE_LEN) {
+            if (ruby_file) {
+                r = snprintf(buff + len, MAX_DEBUG_LOG_MESSAGE_LEN - len, "\t%s:%d", pretty_filename(ruby_file), ruby_line);
+            }
+            else {
+                r = snprintf(buff + len, MAX_DEBUG_LOG_MESSAGE_LEN - len, "\t");
+            }
             if (r < 0) rb_bug("ruby_debug_log returns %d\n", r);
             len += r;
         }
-    }
 
-    // thread information
-    if (!rb_thread_alone()) {
+        // ractor information
+        if (ruby_single_main_ractor == NULL) {
+            rb_ractor_t *cr = GET_RACTOR();
+            if (r && len < MAX_DEBUG_LOG_MESSAGE_LEN) {
+                r = snprintf(buff + len, MAX_DEBUG_LOG_MESSAGE_LEN - len, "\tr:#%u/%u",
+                             (unsigned int)rb_ractor_id(cr), GET_VM()->ractor.cnt);
+                if (r < 0) rb_bug("ruby_debug_log returns %d\n", r);
+                len += r;
+            }
+        }
+
+        // thread information
         const rb_thread_t *th = GET_THREAD();
         if (r && len < MAX_DEBUG_LOG_MESSAGE_LEN) {
-            r = snprintf(buff + len, MAX_DEBUG_LOG_MESSAGE_LEN - len, "\tth:%p", (void *)th);
+            r = snprintf(buff + len, MAX_DEBUG_LOG_MESSAGE_LEN - len, "\tth:%u", rb_th_serial(th));
             if (r < 0) rb_bug("ruby_debug_log returns %d\n", r);
             len += r;
         }
     }
-#ifdef USE_THIRD_PARTY_HEAP
-    }
-#endif // USE_THIRD_PARTY_HEAP
 
     rb_nativethread_lock_lock(&debug_log.lock);
     {

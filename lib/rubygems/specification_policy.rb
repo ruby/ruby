@@ -154,7 +154,7 @@ class Gem::SpecificationPolicy
 
   def validate_duplicate_dependencies # :nodoc:
     # NOTE: see REFACTOR note in Gem::Dependency about types - this might be brittle
-    seen = Gem::Dependency::TYPES.inject({}) {|types, type| types.merge({ type => {}}) }
+    seen = Gem::Dependency::TYPES.inject({}) {|types, type| types.merge({ type => {} }) }
 
     error_messages = []
     @specification.dependencies.each do |dep|

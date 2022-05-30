@@ -475,7 +475,7 @@ By default, this RubyGems will install gem as:
   def files_in(dir)
     Dir.chdir dir do
       Dir.glob(File.join('**', '*'), File::FNM_DOTMATCH).
-        select{|f| !File.directory?(f) }
+        select {|f| !File.directory?(f) }
     end
   end
 

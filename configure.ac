@@ -347,10 +347,15 @@ AS_CASE(["$target_os"],
 	[!<===== pre OS X 10.5 =====>]
 	@%:@endif
 	]])],
-	[macosx_min_required=yes],
+	[AC_MSG_RESULT(yes)],
 	[AC_MSG_RESULT(no)
 	AC_MSG_ERROR([Unsupported OS X version is required])])
-    AC_MSG_RESULT(${macosx_min_required})
+    AC_CACHE_CHECK([if thread-local storage is supported], [rb_cv_tls_supported],
+	[AC_LINK_IFELSE([AC_LANG_PROGRAM([[int __thread conftest;]])],
+	    [rb_cv_tls_supported=yes],
+	    [rb_cv_tls_supported=no])])
+    AS_IF([test x"$rb_cv_tls_supported" != xyes],
+	[AC_DEFINE(RB_THREAD_LOCAL_SPECIFIER_IS_UNSUPPORTED)])
 ])
 
 RUBY_MINGW32
@@ -951,26 +956,7 @@ AS_CASE(["$target_os"],
   RUBY_APPEND_OPTION(CPPFLAGS, -D__MINGW_USE_VC2005_COMPAT)
 ])
 
-AS_CASE(["$target_os"],
-[freebsd*], [
-  AC_CACHE_CHECK([whether pthread should be enabled by default],
-    rb_cv_enable_pthread_default,
-    [AC_PREPROC_IFELSE([AC_LANG_SOURCE([[
-#include <osreldate.h>
-#if __FreeBSD_version < 502102
-#error pthread should be disabled on this platform
-#endif
-      ]])],
-      rb_cv_enable_pthread_default=yes,
-      rb_cv_enable_pthread_default=no)])
-  enable_pthread=$rb_cv_enable_pthread_default
-  ],
-[mingw*], [
-  enable_pthread=no
-  ],
-[
-  enable_pthread=yes
-  ])
+RUBY_THREAD
 
 dnl Checks for libraries.
 AS_CASE(["$target_os"],[*bsd*|dragonfly*],[],[ac_cv_func_daemon=no])
@@ -1886,7 +1872,7 @@ AS_IF([test $rb_cv_stack_end_address != no], [
 dnl Checks for library functions.
 AC_TYPE_GETGROUPS
 AS_CASE(["${target_cpu}-${target_os}:${target_archs}"],
-[powerpc-darwin*], [
+[powerpc*-darwin*], [
   AC_LIBSOURCES(alloca.c)
   AC_SUBST([ALLOCA], [\${LIBOBJDIR}alloca.${ac_objext}])
   AC_DEFINE(C_ALLOCA)
@@ -2566,6 +2552,12 @@ AS_CASE([$coroutine_type], [yes|''], [
         [arm64-darwin*], [
             coroutine_type=arm64
         ],
+        [powerpc-darwin*], [
+            coroutine_type=ppc
+        ],
+        [powerpc64-darwin*], [
+            coroutine_type=ppc64
+        ],
         [x*64-linux*], [
             AS_CASE(["$ac_cv_sizeof_voidp"],
                 [8], [ coroutine_type=amd64 ],
@@ -2653,25 +2645,7 @@ AC_DEFINE_UNQUOTED(COROUTINE_H, ["$COROUTINE_H"])
 AC_SUBST(X_COROUTINE_H, [$COROUTINE_H])
 AC_SUBST(X_COROUTINE_SRC, [$COROUTINE_SRC])
 
-AS_IF([test x"$enable_pthread" = xyes], [
-    for pthread_lib in thr pthread pthreads c c_r root; do
-	AC_CHECK_LIB($pthread_lib, pthread_create,
-		     rb_with_pthread=yes, rb_with_pthread=no)
-	AS_IF([test "$rb_with_pthread" = "yes"], [break])
-    done
-    AS_IF([test x"$rb_with_pthread" = xyes], [
-	AC_DEFINE(_REENTRANT)
-	AC_DEFINE(_THREAD_SAFE)
-	AC_DEFINE(HAVE_LIBPTHREAD)
-	AC_CHECK_HEADERS(pthread_np.h, [], [], [@%:@include <pthread.h>])
-	AS_CASE(["$pthread_lib:$target_os"],
-		[c:*], [],
-		[root:*], [],
-		[c_r:*|*:openbsd*|*:mirbsd*],  [LIBS="-pthread $LIBS"],
-		[LIBS="-l$pthread_lib $LIBS"])
-    ], [
-	AC_MSG_WARN("Don't know how to find pthread library on your system -- thread support disabled")
-    ])
+AS_IF([test "$THREAD_MODEL" = pthread], [
     AC_CACHE_CHECK([whether pthread_t is scalar type], [rb_cv_scalar_pthread_t], [
 	AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[
 	    @%:@include <pthread.h>
@@ -2760,12 +2734,12 @@ AS_IF([test x"$ac_cv_header_ucontext_h" = xyes -o x"$rb_cv_ucontext_in_signal_h"
     ], [
 	AC_DEFINE_UNQUOTED(DEFINE_MCONTEXT_PTR(mc, uc), mcontext_t *mc = &(uc)->uc_mcontext)
     ])
-    AS_IF([test x"$rb_with_pthread" = xyes], [
+    AS_IF([test x"$THREAD_MODEL" = xpthread], [
 	AC_CHECK_FUNCS(getcontext setcontext)
     ])
 ])
 
-AS_IF([test "$ac_cv_func_fork_works" = "yes" -a "$rb_with_pthread" = "yes"], [
+AS_IF([test "$ac_cv_func_fork_works" = "yes" -a x"$THREAD_MODEL" = xpthread], [
     AC_CACHE_CHECK([if fork works with pthread], rb_cv_fork_with_pthread,
 	[AC_RUN_IFELSE([AC_LANG_SOURCE([[
 #include <stdlib.h>
@@ -3896,8 +3870,6 @@ AS_CASE(["$target_os"],
 
 MINIOBJS="$MINIDLNOBJ"
 
-RUBY_THREAD
-
 AC_ARG_ENABLE(debug-env,
        AS_HELP_STRING([--enable-debug-env], [enable RUBY_DEBUG environment variable]),
        [AC_SUBST(ENABLE_DEBUG_ENV, yes)])
@@ -4270,6 +4242,13 @@ AS_IF([test -z "$MANTYPE"], [
 ])
 AC_SUBST(MANTYPE)
 
+MKMF_VERBOSE=0
+AC_ARG_ENABLE(mkmf-verbose,
+    AS_HELP_STRING([--enable-mkmf-verbose], [enable verbose in mkmf]),
+    [MKMF_VERBOSE=1],
+    [MKMF_VERBOSE=0])
+AC_SUBST(MKMF_VERBOSE)
+
 AC_ARG_ENABLE(rubygems,
 	AS_HELP_STRING([--disable-rubygems], [disable rubygems by default]),
 	[enable_rubygems="$enableval"], [enable_rubygems=yes])
@@ -4425,7 +4404,7 @@ config_summary "site libraries path" "$rubysitearchprefix"
 config_summary "vendor path"         "$vendordir"
 config_summary "target OS"           "$target_os"
 config_summary "compiler"            "$CC"
-config_summary "with pthread"        "$enable_pthread"
+config_summary "with thread"         "$THREAD_MODEL"
 config_summary "with coroutine"      "$coroutine_type"
 config_summary "enable shared libs"  "$ENABLE_SHARED"
 config_summary "dynamic library ext" "$DLEXT"

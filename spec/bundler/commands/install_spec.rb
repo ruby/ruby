@@ -755,12 +755,8 @@ RSpec.describe "bundle install with gem sources" do
       end
 
       expect(err).not_to include("ERROR REPORT TEMPLATE")
-
-      expect(err).to include(
-        "There was an error while trying to delete `#{foo_path}`. " \
-        "It is likely that you need to grant executable permissions for all parent directories " \
-        "and write permissions for `#{gems_path}`, and the same thing for all subdirectories inside #{foo_path}."
-      )
+      expect(err).to include("Could not delete previous installation of `#{foo_path}`.")
+      expect(err).to include("The underlying error was Errno::EACCES")
     end
   end
 

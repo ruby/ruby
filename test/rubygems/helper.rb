@@ -618,7 +618,7 @@ class Gem::TestCase < Test::Unit::TestCase
       gem = File.join(@tempdir, File.basename(gem)).tap(&Gem::UNTAINT)
     end
 
-    Gem::Installer.at(gem, options.merge({:wrappers => true})).install
+    Gem::Installer.at(gem, options.merge({ :wrappers => true })).install
   end
 
   ##
@@ -1294,7 +1294,7 @@ Also, a list:
   end
 
   def rubygems_path
-    $LOAD_PATH.find{|p| p == File.dirname($LOADED_FEATURES.find{|f| f.end_with?("/rubygems.rb") }) }
+    $LOAD_PATH.find {|p| p == File.dirname($LOADED_FEATURES.find {|f| f.end_with?("/rubygems.rb") }) }
   end
 
   def with_clean_path_to_ruby

@@ -283,11 +283,7 @@ module Bundler
 
           e = Gem::LoadError.new(message)
           e.name = dep.name
-          if e.respond_to?(:requirement=)
-            e.requirement = dep.requirement
-          elsif e.respond_to?(:version_requirement=)
-            e.version_requirement = dep.requirement
-          end
+          e.requirement = dep.requirement
           raise e
         end
 

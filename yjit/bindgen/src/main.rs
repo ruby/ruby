@@ -33,6 +33,7 @@ fn main() {
 
     let bindings = bindgen::builder()
         .clang_args(filtered_clang_args)
+        .header("encindex.h")
         .header("internal.h")
         .header("internal/re.h")
         .header("include/ruby/ruby.h")
@@ -55,8 +56,12 @@ fn main() {
         // Prune these types since they are system dependant and we don't use them
         .blocklist_type("__.*")
 
+        // Import YARV bytecode instruction constants
+        .allowlist_type("ruby_vminsn_type")
+
         // From include/ruby/internal/intern/string.h
         .allowlist_function("rb_utf8_str_new")
+        .allowlist_function("rb_str_append")
 
         // This struct is public to Ruby C extensions
         // From include/ruby/internal/core/rbasic.h
@@ -68,6 +73,9 @@ fn main() {
 
         // From ruby/internal/intern/object.h
         .allowlist_function("rb_obj_is_kind_of")
+
+        // From ruby/internal/encoding/encoding.h
+        .allowlist_type("ruby_encoding_consts")
 
         // From include/hash.h
         .allowlist_function("rb_hash_new")
@@ -205,6 +213,7 @@ fn main() {
         .opaque_type("rb_execution_context_.*")
         .blocklist_type("rb_control_frame_struct")
         .opaque_type("rb_control_frame_struct")
+        .allowlist_function("rb_vm_bh_to_procval")
 
         // From yjit.c
         .allowlist_function("rb_iseq_(get|set)_yjit_payload")
@@ -228,6 +237,8 @@ fn main() {
         .allowlist_function("rb_yjit_dump_iseq_loc")
         .allowlist_function("rb_yjit_for_each_iseq")
         .allowlist_function("rb_yjit_obj_written")
+        .allowlist_function("rb_yjit_str_simple_append")
+        .allowlist_function("rb_ENCODING_GET")
 
         // from vm_sync.h
         .allowlist_function("rb_vm_barrier")

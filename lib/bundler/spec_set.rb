@@ -18,13 +18,13 @@ module Bundler
 
       loop do
         break unless dep = deps.shift
-        next if handled.any?{|d| d.name == dep.name && (match_current_platform || d.__platform == dep.__platform) } || dep.name == "bundler"
+        next if handled.any? {|d| d.name == dep.name && (match_current_platform || d.__platform == dep.__platform) } || dep.name == "bundler"
 
         handled << dep
 
         specs_for_dep = spec_for_dependency(dep, match_current_platform)
         if specs_for_dep.any?
-          match_current_platform ? specs += specs_for_dep : specs |= specs_for_dep
+          specs.concat(specs_for_dep)
 
           specs_for_dep.first.dependencies.each do |d|
             next if d.type == :development
@@ -39,6 +39,8 @@ module Bundler
       if spec = lookup["bundler"].first
         specs << spec
       end
+
+      specs.uniq! unless match_current_platform
 
       check ? true : specs
     end
@@ -172,7 +174,7 @@ module Bundler
     def spec_for_dependency(dep, match_current_platform)
       specs_for_platforms = lookup[dep.name]
       if match_current_platform
-        GemHelpers.select_best_platform_match(specs_for_platforms.select{|s| Gem::Platform.match_spec?(s) }, Bundler.local_platform)
+        GemHelpers.select_best_platform_match(specs_for_platforms.select {|s| Gem::Platform.match_spec?(s) }, Bundler.local_platform)
       else
         GemHelpers.select_best_platform_match(specs_for_platforms, dep.__platform)
       end

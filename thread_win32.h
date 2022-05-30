@@ -44,11 +44,8 @@ typedef DWORD native_tls_key_t; // TLS index
 static inline void *
 native_tls_get(native_tls_key_t key)
 {
-    void *ptr = TlsGetValue(key);
-    if (UNLIKELY(ptr == NULL)) {
-        rb_bug("TlsGetValue() returns NULL");
-    }
-    return ptr;
+    // return value should be checked by caller.
+    return TlsGetValue(key);
 }
 
 static inline void

@@ -491,4 +491,53 @@ p Foo::Bar
     ::Object.class_eval {remove_const(:AutoloadTest)} if defined? Object::AutoloadTest
     TestAutoload.class_eval {remove_const(:AutoloadTest)} if defined? TestAutoload::AutoloadTest
   end
+
+  def test_autoload_module_gc
+    Dir.mktmpdir('autoload') do |tmpdir|
+      autoload_path = File.join(tmpdir, "autoload_module_gc.rb")
+      File.write(autoload_path, "X = 1; Y = 2;")
+
+      x = Module.new
+      x.autoload :X, "./feature.rb"
+
+      1000.times do
+        y = Module.new
+        y.autoload :Y, "./feature.rb"
+      end
+
+      x = y = nil
+
+      # Ensure the internal data structures are cleaned up correctly / don't crash:
+      GC.start
+    end
+  end
+
+  def test_autoload_parallel_race
+    Dir.mktmpdir('autoload') do |tmpdir|
+      autoload_path = File.join(tmpdir, "autoload_parallel_race.rb")
+      File.write(autoload_path, 'module Foo; end; module Bar; end')
+
+      assert_separately([], <<-RUBY, timeout: 100)
+        autoload_path = #{File.realpath(autoload_path).inspect}
+
+        # This should work with no errors or failures.
+        1000.times do
+          autoload :Foo, autoload_path
+          autoload :Bar, autoload_path
+
+          t1 = Thread.new {Foo}
+          t2 = Thread.new {Bar}
+
+          t1.join
+          GC.start # force GC.
+          t2.join
+
+          Object.send(:remove_const, :Foo)
+          Object.send(:remove_const, :Bar)
+
+          $LOADED_FEATURES.delete(autoload_path)
+        end
+      RUBY
+    end
+  end
 end

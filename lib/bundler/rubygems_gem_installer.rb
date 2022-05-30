@@ -93,14 +93,9 @@ module Bundler
     private
 
     def strict_rm_rf(dir)
-      # FileUtils.rm_rf should probably rise in case of permission issues like
-      # `rm -rf` does. However, it fails to delete the folder silently due to
-      # https://github.com/ruby/fileutils/issues/57. It should probably be fixed
-      # inside `fileutils` but for now I`m checking whether the folder was
-      # removed after it completes, and raising otherwise.
-      FileUtils.rm_rf dir
-
-      raise PermissionError.new(dir, :delete) if File.directory?(dir)
+      Bundler.rm_rf dir
+    rescue Errno::ENOTEMPTY => e
+      raise DirectoryRemovalError.new(e.cause, "Could not delete previous installation of `#{dir}`")
     end
 
     def validate_bundler_checksum(checksum)

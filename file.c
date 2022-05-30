@@ -1734,8 +1734,8 @@ rb_file_socket_p(VALUE obj, VALUE fname)
  *
  * Returns +true+ if +filepath+ points to a block device, +false+ otherwise:
  *
- *   File.blockdev?('/dev/sda1')      # => true
- *   File.blockdev?(File.new('t.tmp') # => false
+ *   File.blockdev?('/dev/sda1')       # => true
+ *   File.blockdev?(File.new('t.tmp')) # => false
  *
  */
 

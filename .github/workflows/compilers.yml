@@ -60,6 +60,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
+        env:
+          - {}
         entry:
           - { key: default_cc, name: gcc-11,    value: gcc-11,    container: gcc-11 }
           - { key: default_cc, name: gcc-10,    value: gcc-10,    container: gcc-10 }
@@ -75,6 +77,18 @@ jobs:
             container: gcc-11
             configure_append: '--disable-shared optflags=-O2'
             # check: true
+          - key: default_cc
+            name: 'gcc-11 annocheck'
+            # Minimal flags to pass the check.
+            value: 'gcc-11 -O2 -fcf-protection -Wl,-z,now'
+            container: gcc-11
+            env:
+              # FIXME: Drop skipping options
+              # https://bugs.ruby-lang.org/issues/18061
+              # https://sourceware.org/annobin/annobin.html/Test-pie.html
+              # https://sourceware.org/annobin/annobin.html/Test-notes.html
+              TEST_ANNOCHECK_OPTS: "--skip-pie --skip-notes"
+            check: true
           - { key: default_cc, name: clang-15,  value: clang-15,  container: clang-15 }
           - { key: default_cc, name: clang-14,  value: clang-14,  container: clang-14 }
           - { key: default_cc, name: clang-13,  value: clang-13,  container: clang-13 }
@@ -130,6 +144,7 @@ jobs:
           - { key: append_configure, name: 'coroutine=pthread',  value: '--with-coroutine=pthread' }
           - { key: append_configure, name: disable-jit-support,  value: '--disable-jit-support' }
           - { key: append_configure, name: disable-dln,          value: '--disable-dln' }
+          - { key: append_configure, name: enable-mkmf-verbose,  value: '--enable-mkmf-verbose' }
           - { key: append_configure, name: disable-rubygems,     value: '--disable-rubygems' }
 
           - { key: cppflags, name: OPT_THREADED_CODE=1,            value: '-DOPT_THREADED_CODE=1' }
@@ -148,7 +163,6 @@ jobs:
 #         - { key: cppflags, name: ID_TABLE_DEBUG,                 value: '-DID_TABLE_DEBUG' }
 #         - { key: cppflags, name: RGENGC_DEBUG=-1,                value: '-DRGENGC_DEBUG=-1' }
 #         - { key: cppflags, name: SYMBOL_DEBUG,                   value: '-DSYMBOL_DEBUG' }
-#         - { key: cppflags, name: THREAD_DEBUG=-1,                value: '-DTHREAD_DEBUG=-1' }
 
 #         - { key: cppflags, name: RGENGC_CHECK_MODE,              value: '-DRGENGC_CHECK_MODE' }
 #         - { key: cppflags, name: TRANSIENT_HEAP_CHECK_MODE,      value: '-DTRANSIENT_HEAP_CHECK_MODE' }
@@ -198,6 +212,7 @@ jobs:
       image: ghcr.io/ruby/ruby-ci-image:${{ matrix.entry.container || 'clang-14' }}
       options: --user root
     if: ${{ !startsWith(github.event.head_commit.message, '[DOC]') && !contains(github.event.pull_request.labels.*.name, 'Documentation') }}
+    env: ${{ matrix.entry.env || matrix.env }}
     steps:
       - run: id
         working-directory:
@@ -232,10 +247,19 @@ jobs:
         if: ${{ matrix.entry.check }}
       - run: make test-tool
         if: ${{ matrix.entry.check }}
+      # FIXME: Skip MJIT tests failing in the annocheck case.
+      # https://bugs.ruby-lang.org/issues/18781
+      - run: |
+          rm test/ruby/test_mjit.rb
+          rm test/ruby/test_rubyvm_mjit.rb
+        if: ${{ endsWith(matrix.entry.name, 'annocheck') }}
+        working-directory: src
       - run: make test-all TESTS='-- ruby -ext-'
         if: ${{ matrix.entry.check }}
       - run: make test-spec
         if: ${{ matrix.entry.check }}
+      - run: make test-annocheck
+        if: ${{ matrix.entry.check && endsWith(matrix.entry.name, 'annocheck') }}
 
       - uses: k0kubun/action-slack@v2.0.0
         with:

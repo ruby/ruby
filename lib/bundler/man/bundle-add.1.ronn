@@ -30,6 +30,9 @@ bundle add rails --group "development, test"
 * `--source`, , `-s`:
   Specify the source for the added gem.
 
+* `--require`, `-r`:
+  Adds require path to gem. Provide false, or a path as a string.
+
 * `--git`:
   Specify the git source for the added gem.
 
@@ -46,7 +49,7 @@ bundle add rails --group "development, test"
   Adds the gem to the Gemfile but does not install it.
 
 * `--optimistic`:
-  Adds optimistic declaration of version
+  Adds optimistic declaration of version.
 
 * `--strict`:
-  Adds strict declaration of version
+  Adds strict declaration of version.

@@ -110,10 +110,6 @@
 #define RUBY_THREAD_PRIORITY_MIN -3
 #endif
 
-#ifndef THREAD_DEBUG
-#define THREAD_DEBUG 0
-#endif
-
 static VALUE rb_cThreadShield;
 
 static VALUE sym_immediate;
@@ -261,92 +257,6 @@ timeout_prepare(rb_hrtime_t **to, rb_hrtime_t *rel, rb_hrtime_t *end,
     }
 }
 
-#if THREAD_DEBUG
-#ifdef HAVE_VA_ARGS_MACRO
-void rb_thread_debug(const char *file, int line, const char *fmt, ...);
-#define thread_debug(...) rb_thread_debug(__FILE__, __LINE__, __VA_ARGS__)
-#define POSITION_FORMAT "%s:%d:"
-#define POSITION_ARGS ,file, line
-#else
-void rb_thread_debug(const char *fmt, ...);
-#define thread_debug rb_thread_debug
-#define POSITION_FORMAT
-#define POSITION_ARGS
-#endif
-
-# ifdef NON_SCALAR_THREAD_ID
-#define fill_thread_id_string ruby_fill_thread_id_string
-const char *
-ruby_fill_thread_id_string(rb_nativethread_id_t thid, rb_thread_id_string_t buf)
-{
-    extern const char ruby_digitmap[];
-    size_t i;
-
-    buf[0] = '0';
-    buf[1] = 'x';
-    for (i = 0; i < sizeof(thid); i++) {
-# ifdef LITTLE_ENDIAN
-	size_t j = sizeof(thid) - i - 1;
-# else
-	size_t j = i;
-# endif
-	unsigned char c = (unsigned char)((char *)&thid)[j];
-	buf[2 + i * 2] = ruby_digitmap[(c >> 4) & 0xf];
-	buf[3 + i * 2] = ruby_digitmap[c & 0xf];
-    }
-    buf[sizeof(rb_thread_id_string_t)-1] = '\0';
-    return buf;
-}
-#   define fill_thread_id_str(th) fill_thread_id_string((th)->thread_id, (th)->thread_id_string)
-#   define thread_id_str(th) ((th)->thread_id_string)
-#   define PRI_THREAD_ID "s"
-# endif
-
-# if THREAD_DEBUG < 0
-static int rb_thread_debug_enabled;
-
-/*
- *  call-seq:
- *     Thread.DEBUG     -> num
- *
- *  Returns the thread debug level.  Available only if compiled with
- *  THREAD_DEBUG=-1.
- */
-
-static VALUE
-rb_thread_s_debug(VALUE _)
-{
-    return INT2NUM(rb_thread_debug_enabled);
-}
-
-/*
- *  call-seq:
- *     Thread.DEBUG = num
- *
- *  Sets the thread debug level.  Available only if compiled with
- *  THREAD_DEBUG=-1.
- */
-
-static VALUE
-rb_thread_s_debug_set(VALUE self, VALUE val)
-{
-    rb_thread_debug_enabled = RTEST(val) ? NUM2INT(val) : 0;
-    return val;
-}
-# else
-# define rb_thread_debug_enabled THREAD_DEBUG
-# endif
-#else
-#define thread_debug if(0)printf
-#endif
-
-#ifndef fill_thread_id_str
-# define fill_thread_id_string(thid, buf) ((void *)(uintptr_t)(thid))
-# define fill_thread_id_str(th) (void)0
-# define thread_id_str(th) ((void *)(uintptr_t)(th)->nt->thread_id)
-# define PRI_THREAD_ID "p"
-#endif
-
 MAYBE_UNUSED(NOINLINE(static int thread_start_func_2(rb_thread_t *th, VALUE *stack_start)));
 void ruby_sigchld_handler(rb_vm_t *); /* signal.c */
 
@@ -369,38 +279,6 @@ ubf_sigwait(void *ignore)
 
 #ifndef USE_EVENTFD
 #  define USE_EVENTFD (0)
-#endif
-
-#if THREAD_DEBUG
-static int debug_mutex_initialized = 1;
-static rb_nativethread_lock_t debug_mutex;
-
-void
-rb_thread_debug(
-#ifdef HAVE_VA_ARGS_MACRO
-    const char *file, int line,
-#endif
-    const char *fmt, ...)
-{
-    va_list args;
-    char buf[BUFSIZ];
-#ifdef NON_SCALAR_THREAD_ID
-    rb_thread_id_string_t thread_id_string;
-#endif
-
-    if (!rb_thread_debug_enabled) return;
-
-    if (debug_mutex_initialized == 1) {
-	debug_mutex_initialized = 0;
-        rb_native_mutex_initialize(&debug_mutex);
-    }
-
-    va_start(args, fmt);
-    vsnprintf(buf, BUFSIZ, fmt, args);
-    va_end(args);
-
-    DEBUG_OUT();
-}
 #endif
 
 #include "thread_sync.c"
@@ -502,15 +380,15 @@ terminate_all(rb_ractor_t *r, const rb_thread_t *main_thread)
 
     ccan_list_for_each(&r->threads.set, th, lt_node) {
         if (th != main_thread) {
-	    thread_debug("terminate_all: begin (thid: %"PRI_THREAD_ID", status: %s)\n",
-			 thread_id_str(th), thread_status_name(th, TRUE));
-	    rb_threadptr_pending_interrupt_enque(th, eTerminateSignal);
+            RUBY_DEBUG_LOG("terminate start th:%u status:%s", rb_th_serial(th), thread_status_name(th, TRUE));
+
+            rb_threadptr_pending_interrupt_enque(th, eTerminateSignal);
 	    rb_threadptr_interrupt(th);
-	    thread_debug("terminate_all: end (thid: %"PRI_THREAD_ID", status: %s)\n",
-			 thread_id_str(th), thread_status_name(th, TRUE));
-	}
+
+            RUBY_DEBUG_LOG("terminate done th:%u status:%s", rb_th_serial(th), thread_status_name(th, TRUE));
+        }
 	else {
-	    thread_debug("terminate_all: main thread (%p)\n", (void *)th);
+            RUBY_DEBUG_LOG("main thread th:%u", rb_th_serial(th));
 	}
     }
 }
@@ -575,8 +453,9 @@ rb_thread_terminate_all(rb_thread_t *th)
     EC_PUSH_TAG(ec);
     if (EC_EXEC_TAG() == TAG_NONE) {
       retry:
-	thread_debug("rb_thread_terminate_all (main thread: %p)\n", (void *)th);
-	terminate_all(cr, th);
+        RUBY_DEBUG_LOG("th:%u", rb_th_serial(th));
+
+        terminate_all(cr, th);
 
 	while (rb_ractor_living_thread_num(cr) > 1) {
             rb_hrtime_t rel = RB_HRTIME_PER_SEC;
@@ -769,7 +648,7 @@ thread_start_func_2(rb_thread_t *th, VALUE *stack_start)
     VALUE * vm_stack = NULL;
 
     VM_ASSERT(th != th->vm->ractor.main_thread);
-    thread_debug("thread start: %p\n", (void *)th);
+    RUBY_DEBUG_LOG("th:%u", rb_th_serial(th));
 
 #ifdef USE_THIRD_PARTY_HEAP
     // Threads may be reused, so we only initialize MMTk mutator once.
@@ -781,6 +660,8 @@ thread_start_func_2(rb_thread_t *th, VALUE *stack_start)
     // setup native thread
     thread_sched_to_running(TH_SCHED(th), th);
     ruby_thread_set_native(th);
+
+    RUBY_DEBUG_LOG("got lock. th:%u", rb_th_serial(th));
 
     // setup ractor
     if (rb_ractor_status_p(th->ractor, ractor_blocking)) {
@@ -805,8 +686,6 @@ thread_start_func_2(rb_thread_t *th, VALUE *stack_start)
     rb_ec_initialize_vm_stack(th->ec, vm_stack, size);
     th->ec->machine.stack_start = STACK_DIR_UPPER(vm_stack + size, vm_stack);
     th->ec->machine.stack_maxsize -= size * sizeof(VALUE);
-
-    thread_debug("thread start (get lock): %p\n", (void *)th);
 
     // Ensure that we are not joinable.
     VM_ASSERT(th->value == Qundef);
@@ -866,7 +745,7 @@ thread_start_func_2(rb_thread_t *th, VALUE *stack_start)
     }
 
     th->status = THREAD_KILLED;
-    thread_debug("thread end: %p\n", (void *)th);
+    RUBY_DEBUG_LOG("killed th:%u", rb_th_serial(th));
 
     if (th->vm->ractor.main_thread == th) {
         ruby_stop(0);
@@ -982,7 +861,7 @@ thread_create_core(VALUE thval, struct thread_create_params *params)
 
     rb_native_mutex_initialize(&th->interrupt_lock);
 
-    RUBY_DEBUG_LOG("r:%u th:%p", rb_ractor_id(th->ractor), (void *)th);
+    RUBY_DEBUG_LOG("r:%u th:%u", rb_ractor_id(th->ractor), rb_th_serial(th));
 
     rb_ractor_living_threads_insert(th->ractor, th);
 
@@ -1184,8 +1063,7 @@ thread_join_sleep(VALUE arg)
         }
         else {
             if (hrtime_update_expire(limit, end)) {
-                thread_debug("thread_join: timeout (thid: %"PRI_THREAD_ID")\n",
-                             thread_id_str(target_th));
+                RUBY_DEBUG_LOG("timeout target_th:%u", rb_th_serial(target_th));
                 return Qfalse;
             }
             th->status = THREAD_STOPPED;
@@ -1193,8 +1071,8 @@ thread_join_sleep(VALUE arg)
         }
         RUBY_VM_CHECK_INTS_BLOCKING(th->ec);
         th->status = THREAD_RUNNABLE;
-        thread_debug("thread_join: interrupted (thid: %"PRI_THREAD_ID", status: %s)\n",
-                     thread_id_str(target_th), thread_status_name(target_th, TRUE));
+
+        RUBY_DEBUG_LOG("interrupted target_th:%u status:%s", rb_th_serial(target_th), thread_status_name(target_th, TRUE));
     }
     return Qtrue;
 }
@@ -1214,8 +1092,7 @@ thread_join(rb_thread_t *target_th, VALUE timeout, rb_hrtime_t *limit)
         rb_raise(rb_eThreadError, "Target thread must not be main thread");
     }
 
-    thread_debug("thread_join (thid: %"PRI_THREAD_ID", status: %s)\n",
-                 thread_id_str(target_th), thread_status_name(target_th, TRUE));
+    RUBY_DEBUG_LOG("target_th:%u status:%s", rb_th_serial(target_th), thread_status_name(target_th, TRUE));
 
     if (target_th->status != THREAD_KILLED) {
         struct rb_waiting_list waiter;
@@ -1235,8 +1112,7 @@ thread_join(rb_thread_t *target_th, VALUE timeout, rb_hrtime_t *limit)
         }
     }
 
-    thread_debug("thread_join: success (thid: %"PRI_THREAD_ID", status: %s)\n",
-                 thread_id_str(target_th), thread_status_name(target_th, TRUE));
+    RUBY_DEBUG_LOG("success target_th:%u status:%s", rb_th_serial(target_th), thread_status_name(target_th, TRUE));
 
     if (target_th->ec->errinfo != Qnil) {
         VALUE err = target_th->ec->errinfo;
@@ -1244,8 +1120,7 @@ thread_join(rb_thread_t *target_th, VALUE timeout, rb_hrtime_t *limit)
         if (FIXNUM_P(err)) {
             switch (err) {
               case INT2FIX(TAG_FATAL):
-                thread_debug("thread_join: terminated (thid: %"PRI_THREAD_ID", status: %s)\n",
-                             thread_id_str(target_th), thread_status_name(target_th, TRUE));
+                RUBY_DEBUG_LOG("terminated target_th:%u status:%s", rb_th_serial(target_th), thread_status_name(target_th, TRUE));
 
                 /* OK. killed. */
                 break;
@@ -1430,9 +1305,9 @@ hrtime_update_expire(rb_hrtime_t *timeout, const rb_hrtime_t end)
     rb_hrtime_t now = rb_hrtime_now();
 
     if (now > end) return 1;
-    thread_debug("hrtime_update_expire: "
-                 "%"PRIu64" > %"PRIu64"\n",
-                 (uint64_t)end, (uint64_t)now);
+
+    RUBY_DEBUG_LOG("%"PRIu64" > %"PRIu64"", (uint64_t)end, (uint64_t)now);
+
     *timeout = end - now;
     return 0;
 }
@@ -1463,14 +1338,14 @@ sleep_hrtime(rb_thread_t *th, rb_hrtime_t rel, unsigned int fl)
 void
 rb_thread_sleep_forever(void)
 {
-    thread_debug("rb_thread_sleep_forever\n");
+    RUBY_DEBUG_LOG("%s", "");
     sleep_forever(GET_THREAD(), SLEEP_SPURIOUS_CHECK);
 }
 
 void
 rb_thread_sleep_deadly(void)
 {
-    thread_debug("rb_thread_sleep_deadly\n");
+    RUBY_DEBUG_LOG("%s", "");
     sleep_forever(GET_THREAD(), SLEEP_DEADLOCKABLE|SLEEP_SPURIOUS_CHECK);
 }
 
@@ -1494,7 +1369,7 @@ rb_thread_sleep_deadly_allow_spurious_wakeup(VALUE blocker)
         rb_fiber_scheduler_block(scheduler, blocker, Qnil);
     }
     else {
-        thread_debug("rb_thread_sleep_deadly_allow_spurious_wakeup\n");
+        RUBY_DEBUG_LOG("%s", "");
         sleep_forever(GET_THREAD(), SLEEP_DEADLOCKABLE);
     }
 }
@@ -1546,16 +1421,18 @@ rb_thread_sleep(int sec)
 static void
 rb_thread_schedule_limits(uint32_t limits_us)
 {
-    thread_debug("rb_thread_schedule\n");
     if (!rb_thread_alone()) {
 	rb_thread_t *th = GET_THREAD();
+        RUBY_DEBUG_LOG("us:%u", (unsigned int)limits_us);
 
 	if (th->running_time_us >= limits_us) {
-	    thread_debug("rb_thread_schedule/switch start\n");
-	    RB_GC_SAVE_MACHINE_CONTEXT(th);
+	    RUBY_DEBUG_LOG("switch %s", "start");
+
+            RB_GC_SAVE_MACHINE_CONTEXT(th);
 	    thread_sched_yield(TH_SCHED(th), th);
             rb_ractor_thread_switch(th->ractor, th);
-	    thread_debug("rb_thread_schedule/switch done\n");
+
+            RUBY_DEBUG_LOG("switch %s", "done");
 	}
     }
 }
@@ -1573,13 +1450,20 @@ static inline int
 blocking_region_begin(rb_thread_t *th, struct rb_blocking_region_buffer *region,
 		      rb_unblock_function_t *ubf, void *arg, int fail_if_interrupted)
 {
+#ifdef RUBY_VM_CRITICAL_SECTION
+    VM_ASSERT(ruby_assert_critical_section_entered == 0);
+#endif
+    VM_ASSERT(th == GET_THREAD());
+
     region->prev_status = th->status;
     if (unblock_function_set(th, ubf, arg, fail_if_interrupted)) {
 	th->blocking_region_buffer = region;
 	th->status = THREAD_STOPPED;
         rb_ractor_blocking_threads_inc(th->ractor, __FILE__, __LINE__);
-	thread_debug("enter blocking region (%p)\n", (void *)th);
-	RB_GC_SAVE_MACHINE_CONTEXT(th);
+
+        RUBY_DEBUG_LOG("%s", "");
+
+        RB_GC_SAVE_MACHINE_CONTEXT(th);
 	thread_sched_to_waiting(TH_SCHED(th));
 	return TRUE;
     }
@@ -1599,12 +1483,14 @@ blocking_region_end(rb_thread_t *th, struct rb_blocking_region_buffer *region)
     thread_sched_to_running(TH_SCHED(th), th);
     rb_ractor_thread_switch(th->ractor, th);
 
-    thread_debug("leave blocking region (%p)\n", (void *)th);
     th->blocking_region_buffer = 0;
     rb_ractor_blocking_threads_dec(th->ractor, __FILE__, __LINE__);
     if (th->status == THREAD_STOPPED) {
 	th->status = region->prev_status;
     }
+
+    RUBY_DEBUG_LOG("%s", "");
+    VM_ASSERT(th == GET_THREAD());
 }
 
 void *
@@ -2410,7 +2296,7 @@ rb_threadptr_execute_interrupts(rb_thread_t *th, int blocking_timing)
 	/* exception from another thread */
 	if (pending_interrupt && threadptr_pending_interrupt_active_p(th)) {
 	    VALUE err = rb_threadptr_pending_interrupt_deque(th, blocking_timing ? INTERRUPT_ON_BLOCKING : INTERRUPT_NONE);
-	    thread_debug("rb_thread_execute_interrupts: %"PRIdVALUE"\n", err);
+            RUBY_DEBUG_LOG("err:%"PRIdVALUE"\n", err);
             ret = TRUE;
 
 	    if (err == Qundef) {
@@ -2631,35 +2517,36 @@ thread_raise_m(int argc, VALUE *argv, VALUE self)
 VALUE
 rb_thread_kill(VALUE thread)
 {
-    rb_thread_t *th = rb_thread_ptr(thread);
+    rb_thread_t *target_th = rb_thread_ptr(thread);
 
-    if (th->to_kill || th->status == THREAD_KILLED) {
+    if (target_th->to_kill || target_th->status == THREAD_KILLED) {
 	return thread;
     }
-    if (th == th->vm->ractor.main_thread) {
+    if (target_th == target_th->vm->ractor.main_thread) {
 	rb_exit(EXIT_SUCCESS);
     }
 
-    thread_debug("rb_thread_kill: %p (%"PRI_THREAD_ID")\n", (void *)th, thread_id_str(th));
+    RUBY_DEBUG_LOG("target_th:%u", rb_th_serial(target_th));
 
-    if (th == GET_THREAD()) {
+    if (target_th == GET_THREAD()) {
 	/* kill myself immediately */
-	rb_threadptr_to_kill(th);
+	rb_threadptr_to_kill(target_th);
     }
     else {
-	threadptr_check_pending_interrupt_queue(th);
-	rb_threadptr_pending_interrupt_enque(th, eKillSignal);
-	rb_threadptr_interrupt(th);
+	threadptr_check_pending_interrupt_queue(target_th);
+	rb_threadptr_pending_interrupt_enque(target_th, eKillSignal);
+	rb_threadptr_interrupt(target_th);
     }
+
     return thread;
 }
 
 int
 rb_thread_to_be_killed(VALUE thread)
 {
-    rb_thread_t *th = rb_thread_ptr(thread);
+    rb_thread_t *target_th = rb_thread_ptr(thread);
 
-    if (th->to_kill || th->status == THREAD_KILLED) {
+    if (target_th->to_kill || target_th->status == THREAD_KILLED) {
 	return TRUE;
     }
     return FALSE;
@@ -5382,10 +5269,6 @@ Init_Thread(void)
     rb_define_singleton_method(rb_cThread, "report_on_exception=", rb_thread_s_report_exc_set, 1);
     rb_define_singleton_method(rb_cThread, "ignore_deadlock", rb_thread_s_ignore_deadlock, 0);
     rb_define_singleton_method(rb_cThread, "ignore_deadlock=", rb_thread_s_ignore_deadlock_set, 1);
-#if THREAD_DEBUG < 0
-    rb_define_singleton_method(rb_cThread, "DEBUG", rb_thread_s_debug, 0);
-    rb_define_singleton_method(rb_cThread, "DEBUG=", rb_thread_s_debug_set, 1);
-#endif
     rb_define_singleton_method(rb_cThread, "handle_interrupt", rb_thread_s_handle_interrupt, 1);
     rb_define_singleton_method(rb_cThread, "pending_interrupt?", rb_thread_s_pending_interrupt_p, -1);
     rb_define_method(rb_cThread, "pending_interrupt?", rb_thread_pending_interrupt_p, -1);
@@ -5471,6 +5354,12 @@ ruby_native_thread_p(void)
     return th != 0;
 }
 
+#ifdef NON_SCALAR_THREAD_ID
+  #define thread_id_str(th) (NULL)
+#else
+  #define thread_id_str(th) ((void *)(uintptr_t)(th)->nt->thread_id)
+#endif
+
 static void
 debug_deadlock_check(rb_ractor_t *r, VALUE msg)
 {
@@ -5483,7 +5372,7 @@ debug_deadlock_check(rb_ractor_t *r, VALUE msg)
 
     ccan_list_for_each(&r->threads.set, th, lt_node) {
         rb_str_catf(msg, "* %+"PRIsVALUE"\n   rb_thread_t:%p "
-                    "native:%"PRI_THREAD_ID" int:%u",
+                    "native:%p int:%u",
                     th->self, (void *)th, thread_id_str(th), th->ec->interrupt_flag);
 
         if (th->locking_mutex) {

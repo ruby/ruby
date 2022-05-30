@@ -15,8 +15,6 @@
 
 #include <time.h>
 
-#define DEBUG_OUT() (void)(0);
-
 #define TIME_QUANTUM_MSEC (100)
 #define TIME_QUANTUM_USEC (TIME_QUANTUM_MSEC * 1000)
 #define TIME_QUANTUM_NSEC (TIME_QUANTUM_USEC * 1000)
@@ -130,7 +128,6 @@ Init_native_thread(rb_thread_t *main_th)
 {
     // no TLS setup and no thread id setup
     ruby_thread_set_native(main_th);
-    fill_thread_id_str(main_th);
 }
 
 static void

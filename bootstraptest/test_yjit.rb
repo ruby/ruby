@@ -1337,6 +1337,16 @@ assert_equal 'foo123', %q{
   make_str("foo", 123)
 }
 
+# test that invalidation of String#to_s doesn't crash
+assert_equal 'meh', %q{
+  class String
+    def to_s
+      "meh"
+    end
+  end
+  "".to_s
+}
+
 # test string interpolation with overridden to_s
 assert_equal 'foo', %q{
   class String

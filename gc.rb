@@ -39,27 +39,6 @@ module GC
   end
 
   #  call-seq:
-  #     GC.auto_compact    -> true or false
-  #
-  #  Returns whether or not automatic compaction has been enabled.
-  #
-  def self.auto_compact
-    Primitive.gc_get_auto_compact
-  end
-
-  #  call-seq:
-  #     GC.auto_compact = flag
-  #
-  #  Updates automatic compaction mode.
-  #
-  #  When enabled, the compactor will execute on every major collection.
-  #
-  #  Enabling compaction will degrade performance on major collections.
-  def self.auto_compact=(flag)
-    Primitive.gc_set_auto_compact(flag)
-  end
-
-  #  call-seq:
   #     GC.enable    -> true or false
   #
   #  Enables garbage collection, returning +true+ if garbage
@@ -251,53 +230,6 @@ module GC
   # This is intended to avoid probe effect.
   def self.latest_gc_info hash_or_key = nil
     Primitive.gc_latest_gc_info hash_or_key
-  end
-
-  #  call-seq:
-  #     GC.latest_compact_info -> {:considered=>{:T_CLASS=>11}, :moved=>{:T_CLASS=>11}}
-  #
-  #  Returns information about object moved in the most recent GC compaction.
-  #
-  # The returned hash has two keys :considered and :moved.  The hash for
-  # :considered lists the number of objects that were considered for movement
-  # by the compactor, and the :moved hash lists the number of objects that
-  # were actually moved.  Some objects can't be moved (maybe they were pinned)
-  # so these numbers can be used to calculate compaction efficiency.
-  def self.latest_compact_info
-    Primitive.gc_compact_stats
-  end
-
-  #  call-seq:
-  #     GC.compact
-  #
-  # This function compacts objects together in Ruby's heap.  It eliminates
-  # unused space (or fragmentation) in the heap by moving objects in to that
-  # unused space.  This function returns a hash which contains statistics about
-  # which objects were moved.  See `GC.latest_gc_info` for details about
-  # compaction statistics.
-  #
-  # This method is implementation specific and not expected to be implemented
-  # in any implementation besides MRI.
-  def self.compact
-    Primitive.gc_compact
-  end
-
-  # call-seq:
-  #    GC.verify_compaction_references(toward: nil, double_heap: false) -> hash
-  #
-  # Verify compaction reference consistency.
-  #
-  # This method is implementation specific.  During compaction, objects that
-  # were moved are replaced with T_MOVED objects.  No object should have a
-  # reference to a T_MOVED object after compaction.
-  #
-  # This function doubles the heap to ensure room to move all objects,
-  # compacts the heap to make sure everything moves, updates all references,
-  # then performs a full GC.  If any object contains a reference to a T_MOVED
-  # object, that object should be pushed on the mark stack, and will
-  # make a SEGV.
-  def self.verify_compaction_references(toward: nil, double_heap: false)
-    Primitive.gc_verify_compaction_references(double_heap, toward == :empty)
   end
 
   # call-seq:

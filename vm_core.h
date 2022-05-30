@@ -56,10 +56,24 @@
 #if VM_CHECK_MODE > 0
 #define VM_ASSERT(expr) RUBY_ASSERT_MESG_WHEN(VM_CHECK_MODE > 0, expr, #expr)
 #define VM_UNREACHABLE(func) rb_bug(#func ": unreachable")
-
+#define RUBY_ASSERT_CRITICAL_SECTION
+#define RUBY_DEBUG_THREAD_SCHEDULE() rb_thread_schedule()
 #else
 #define VM_ASSERT(expr) ((void)0)
 #define VM_UNREACHABLE(func) UNREACHABLE
+#define RUBY_DEBUG_THREAD_SCHEDULE()
+#endif
+
+#define RUBY_ASSERT_MUTEX_OWNED(mutex) VM_ASSERT(rb_mutex_owned_p(mutex))
+
+#if defined(RUBY_ASSERT_CRITICAL_SECTION)
+// TODO add documentation
+extern int ruby_assert_critical_section_entered;
+#define RUBY_ASSERT_CRITICAL_SECTION_ENTER() do{ruby_assert_critical_section_entered += 1;}while(false)
+#define RUBY_ASSERT_CRITICAL_SECTION_LEAVE() do{VM_ASSERT(ruby_assert_critical_section_entered > 0);ruby_assert_critical_section_entered -= 1;}while(false)
+#else
+#define RUBY_ASSERT_CRITICAL_SECTION_ENTER()
+#define RUBY_ASSERT_CRITICAL_SECTION_LEAVE()
 #endif
 
 #if defined(__wasm__) && !defined(__EMSCRIPTEN__)
@@ -87,9 +101,6 @@
 #include "vm_opts.h"
 
 #include "ruby/thread_native.h"
-#include THREAD_IMPL_H
-
-#define RUBY_VM_THREAD_MODEL 2
 
 /*
  * implementation selector of get_insn_info algorithm
@@ -147,6 +158,9 @@ void *rb_register_sigaltstack(void *);
 #  define RB_ALTSTACK_FREE(var)
 #  define RB_ALTSTACK(var) (0)
 #endif
+
+#include THREAD_IMPL_H
+#define RUBY_VM_THREAD_MODEL 2
 
 /*****************/
 /* configuration */
@@ -882,8 +896,6 @@ typedef struct rb_ensure_list {
     struct rb_ensure_entry entry;
 } rb_ensure_list_t;
 
-typedef char rb_thread_id_string_t[sizeof(rb_nativethread_id_t) * 2 + 3];
-
 typedef struct rb_fiber_struct rb_fiber_t;
 
 struct rb_waiting_list {
@@ -983,6 +995,7 @@ typedef struct rb_thread_struct {
     rb_execution_context_t *ec;
 
     struct rb_thread_sched_item sched;
+    rb_atomic_t serial; // only for RUBY_DEBUG_LOG()
 
     VALUE last_status; /* $? */
 
@@ -1060,14 +1073,16 @@ typedef struct rb_thread_struct {
 
     struct rb_ext_config ext_config;
 
-#ifdef USE_SIGALTSTACK
-    void *altstack;
-#endif
-
 #ifdef USE_THIRD_PARTY_HEAP
     void* mutator;
 #endif // USE_THIRD_PARTY_HEAP
 } rb_thread_t;
+
+static inline unsigned int
+rb_th_serial(const rb_thread_t *th)
+{
+    return (unsigned int)th->serial;
+}
 
 typedef enum {
     VM_DEFINECLASS_TYPE_CLASS           = 0x00,
@@ -1972,9 +1987,14 @@ void rb_vm_cond_timedwait(rb_vm_t *vm, rb_nativethread_cond_t *cond, unsigned lo
 static inline void
 rb_vm_check_ints(rb_execution_context_t *ec)
 {
+#ifdef RUBY_ASSERT_CRITICAL_SECTION
+    VM_ASSERT(ruby_assert_critical_section_entered == 0);
+#endif
+
     VM_ASSERT(ec == GET_EC());
+
     if (UNLIKELY(RUBY_VM_INTERRUPTED_ANY(ec))) {
-	rb_threadptr_execute_interrupts(rb_ec_thread_ptr(ec), 0);
+        rb_threadptr_execute_interrupts(rb_ec_thread_ptr(ec), 0);
     }
 }
 
