@@ -746,7 +746,7 @@ module FileUtils
   # - <tt>dereference_root: false</tt> - if +src+ is a symbolic link,
   #   does not dereference it.
   # - <tt>noop: true</tt> - does not copy files.
-  # - <tt>preserve</tt> - preserves file times.
+  # - <tt>preserve: true</tt> - preserves file times.
   # - <tt>remove_destination: true</tt> - removes +dest+ before copying files.
   # - <tt>verbose: true</tt> - prints an equivalent command:
   #
@@ -788,6 +788,7 @@ module FileUtils
   #
   # If +src+ is a directory, recursively copies +src+ to +dest+:
   #
+  #   system('tree --charset=ascii src1')
   #   src1
   #   |-- dir0
   #   |   |-- src0.txt
@@ -796,6 +797,7 @@ module FileUtils
   #       |-- src2.txt
   #       `-- src3.txt
   #   FileUtils.copy_entry('src1', 'dest1')
+  #   system('tree --charset=ascii dest1')
   #   dest1
   #   |-- dir0
   #   |   |-- src0.txt
@@ -812,7 +814,7 @@ module FileUtils
   #
   # - <tt>dereference_root: true</tt> - if +src+ is a symbolic link,
   #   follows the link.
-  # - <tt>preserve</tt> - preserves file times.
+  # - <tt>preserve: true</tt> - preserves file times.
   # - <tt>remove_destination: true</tt> - removes +dest+ before copying files.
   #
   def copy_entry(src, dest, preserve = false, dereference_root = false, remove_destination = false)
@@ -831,9 +833,18 @@ module FileUtils
   end
   module_function :copy_entry
 
+  # Copies file from +src+ to +dest+, which should not be directories:
   #
-  # Copies file contents of +src+ to +dest+.
-  # Both of +src+ and +dest+ must be a path name.
+  #   FileUtils.touch('src0.txt')
+  #   FileUtils.copy_file('src0.txt', 'dest0.txt')
+  #   File.file?('dest0.txt') # => true
+  #
+  # Keyword arguments:
+  #
+  # - <tt>dereference: false</tt> - if +src+ is a symbolic link,
+  #   does not follow the link.
+  # - <tt>preserve: true</tt> - preserves file times.
+  # - <tt>remove_destination: true</tt> - removes +dest+ before copying files.
   #
   def copy_file(src, dest, preserve = false, dereference = true)
     ent = Entry_.new(src, nil, dereference)
@@ -842,25 +853,69 @@ module FileUtils
   end
   module_function :copy_file
 
-  #
-  # Copies stream +src+ to +dest+.
-  # +src+ must respond to #read(n) and
-  # +dest+ must respond to #write(str).
+  # Copies \IO stream +src+ to \IO stream +dest+ via
+  # {IO.copy_stream}[https://docs.ruby-lang.org/en/master/IO.html#method-c-copy_stream].
   #
   def copy_stream(src, dest)
     IO.copy_stream(src, dest)
   end
   module_function :copy_stream
 
+  # Moves files from +src+ to +dest+.
+  # If +src+ and +dest+ are on different devices,
+  # first copies, then removes +src+.
   #
-  # Moves file(s) +src+ to +dest+.  If +file+ and +dest+ exist on the different
-  # disk partition, the file is copied then the original file is removed.
+  # If +src+ is the path to a single file or directory and +dest+ does not exist,
+  # moves +src+ to +dest+:
   #
-  #   FileUtils.mv 'badname.rb', 'goodname.rb'
-  #   FileUtils.mv 'stuff.rb', '/notexist/lib/ruby', force: true  # no error
+  #   system('tree --charset=ascii src0')
+  #   src0
+  #   |-- src0.txt
+  #   `-- src1.txt
+  #   File.exist?('dest0') # => false
+  #   FileUtils.mv('src0', 'dest0')
+  #   File.exist?('src0')  # => false
+  #   system('tree --charset=ascii dest0')
+  #   dest0
+  #   |-- src0.txt
+  #   `-- src1.txt
   #
-  #   FileUtils.mv %w(junk.txt dust.txt), '/home/foo/.trash/'
-  #   FileUtils.mv Dir.glob('test*.rb'), 'test', noop: true, verbose: true
+  # If +src+ is an array of paths to files and directories
+  # and +dest+ is the path to a directory,
+  # copies from each path in the array to +dest+:
+  #
+  #   File.file?('src1.txt') # => true
+  #   system('tree --charset=ascii src1')
+  #   src1
+  #   |-- src.dat
+  #   `-- src.txt
+  #   Dir.empty?('dest1') # => true
+  #   FileUtils.mv(['src1.txt', 'src1'], 'dest1')
+  #   system('tree --charset=ascii dest1')
+  #   dest1
+  #   |-- src1
+  #   |   |-- src.dat
+  #   |   `-- src.txt
+  #   `-- src1.txt
+  #
+  # - <tt>force: true</tt> - attempts to force the move;
+  #   if the move includes removing +src+
+  #   (that is, if +src+ and +dest+ are on different devices),
+  #   ignores raised exceptions of StandardError and its descendants.
+  # - <tt>noop: true</tt> - does not move files.
+  # - <tt>secure: true</tt> - removes +src+ securely
+  #   by calling FileUtils.remove_entry_secure.
+  # - <tt>verbose: true</tt> - prints an equivalent command:
+  #
+  #     FileUtils.mv('src0', 'dest0', noop: true, verbose: true)
+  #     FileUtils.mv(['src1.txt', 'src1'], 'dest1', noop: true, verbose: true)
+  #
+  #   Output:
+  #
+  #     mv src0 dest0
+  #     mv src1.txt src1 dest1
+  #
+  # FileUtils.move is an alias for FileUtils.mv.
   #
   def mv(src, dest, force: nil, noop: nil, verbose: nil, secure: nil)
     fu_output_message "mv#{force ? ' -f' : ''} #{[src,dest].flatten.join ' '}" if verbose
