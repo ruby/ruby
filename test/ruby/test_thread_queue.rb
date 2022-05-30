@@ -151,6 +151,8 @@ class TestThreadQueue < Test::Unit::TestCase
   end
 
   def test_thr_kill
+    omit "[Bug #18613]" if /freebsd/ =~ RUBY_PLATFORM
+
     bug5343 = '[ruby-core:39634]'
     Dir.mktmpdir {|d|
       timeout = EnvUtil.apply_timeout_scale(60)
