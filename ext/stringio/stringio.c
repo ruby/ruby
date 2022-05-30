@@ -67,15 +67,20 @@ strio_extract_modeenc(VALUE *vmode_p, VALUE *vperm_p, VALUE opthash,
 	    e = strchr(++n, ':');
 	    len = e ? e - n : (long)strlen(n);
 	    if (len > 0 && len <= ENCODING_MAXNAMELEN) {
+		rb_encoding *enc;
 		if (e) {
 		    memcpy(encname, n, len);
 		    encname[len] = '\0';
 		    n = encname;
 		}
-		convconfig_p->enc = rb_enc_find(n);
+		enc = rb_enc_find(n);
+		if (e)
+		    convconfig_p->enc2 = enc;
+		else
+		    convconfig_p->enc = enc;
 	    }
 	    if (e && (len = strlen(++e)) > 0 && len <= ENCODING_MAXNAMELEN) {
-		convconfig_p->enc2 = rb_enc_find(e);
+		convconfig_p->enc = rb_enc_find(e);
 	    }
 	}
     }
