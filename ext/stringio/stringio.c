@@ -1125,9 +1125,10 @@ prepare_getline_args(struct getline_arg *arg, int argc, VALUE *argv)
 {
     VALUE str, lim, opts;
     long limit = -1;
+    int respect_chomp;
 
     argc = rb_scan_args(argc, argv, "02:", &str, &lim, &opts);
-    int respect_chomp = argc == 0 || !NIL_P(str);
+    respect_chomp = argc == 0 || !NIL_P(str);
     switch (argc) {
       case 0:
 	str = rb_rs;
