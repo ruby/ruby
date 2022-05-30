@@ -256,6 +256,12 @@ class TestStringIO < Test::Unit::TestCase
       f.set_encoding(Encoding::ASCII_8BIT)
     }
     assert_equal("foo\x83".b, f.gets)
+
+    f = StringIO.new()
+    f.set_encoding("ISO-8859-16:ISO-8859-1")
+    assert_equal(Encoding::ISO_8859_16, f.external_encoding)
+    assert_equal(Encoding::ISO_8859_16, f.string.encoding)
+    assert_nil(f.internal_encoding)
   end
 
   def test_mode_error

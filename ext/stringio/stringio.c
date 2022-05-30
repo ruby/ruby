@@ -1719,7 +1719,14 @@ strio_set_encoding(int argc, VALUE *argv, VALUE self)
 	enc = rb_default_external_encoding();
     }
     else {
-	enc = rb_to_encoding(ext_enc);
+	enc = rb_find_encoding(ext_enc);
+	if (!enc) {
+	    struct rb_io_enc_t convconfig;
+	    int oflags, fmode;
+	    VALUE vmode = rb_str_append(rb_str_new_cstr("r:"), ext_enc);
+	    rb_io_extract_modeenc(&vmode, 0, Qnil, &oflags, &fmode, &convconfig);
+	    enc = convconfig.enc2;
+	}
     }
     ptr->enc = enc;
     if (WRITABLE(self)) {
