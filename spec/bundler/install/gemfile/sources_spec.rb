@@ -1255,6 +1255,32 @@ RSpec.describe "bundle install with gems on multiple sources" do
     end
   end
 
+  context "when Gemfile overrides a gemspec development dependency to change the default source" do
+    before do
+      build_repo4 do
+        build_gem "bar"
+      end
+
+      build_lib("gemspec_test", :path => tmp.join("gemspec_test")) do |s|
+        s.add_development_dependency "bar"
+      end
+
+      install_gemfile <<-G, :artifice => "compact_index"
+        source "https://gem.repo1"
+
+        source "https://gem.repo4" do
+          gem "bar"
+        end
+
+        gemspec :path => "#{tmp.join("gemspec_test")}"
+      G
+    end
+
+    it "does not print warnings" do
+      expect(err).to be_empty
+    end
+  end
+
   it "doesn't update version when a gem uses a source block but a higher version from another source is already installed locally" do
     build_repo2 do
       build_gem "example", "0.1.0"
