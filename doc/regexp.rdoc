@@ -182,7 +182,7 @@ The following two metacharacters behave in a slightly special way:
 * <tt>/\R/</tt> - Matches with a linebreak: <tt>\r\n</tt>, <tt>\n</tt>, <tt>\v</tt>, <tt>\f</tt>, or <tt>\r</tt>.
   It does not backtrack from <tt>\r\n</tt> to <tt>\r</tt>
   For a Unicode string, it also matches with <tt>\u0085</tt> (NEXT LINE), <tt>\u2028</tt> (LINE SEPARATOR), and <tt>\u2029</tt> (PARAGRAPH SEPARATOR).
-* <tt>/\X/</tt> - Matches with a grapheme cluster for a Unicode string. For a non-Unicode string, it means <tt>(?>\r\n|\O)</tt>.
+* <tt>/\X/</tt> - Matches with a grapheme cluster for a Unicode string. For a non-Unicode string, it matches with <tt>\r\n</tt> or any one character. It does not backtrack.
 
 == Repetition
 
