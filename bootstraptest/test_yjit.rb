@@ -1339,12 +1339,42 @@ assert_equal 'foo123', %q{
 
 # test that invalidation of String#to_s doesn't crash
 assert_equal 'meh', %q{
+  def inval_method
+    "".to_s
+  end
+
+  inval_method
+
   class String
     def to_s
       "meh"
     end
   end
-  "".to_s
+
+  inval_method
+}
+
+# test that overriding to_s on a String subclass isn't over-optimised
+assert_equal 'meh', %q{
+  class MyString < String
+    def to_s
+      "meh"
+    end
+  end
+
+  def test_to_s(obj)
+    obj.to_s
+  end
+
+  OBJ = MyString.new
+
+  # Should return 'meh' both times
+  test_to_s("")
+  test_to_s("")
+
+  # Can return '' if YJIT optimises String#to_s too aggressively
+  test_to_s(OBJ)
+  test_to_s(OBJ)
 }
 
 # test string interpolation with overridden to_s

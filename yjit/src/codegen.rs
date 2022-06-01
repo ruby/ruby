@@ -3421,32 +3421,6 @@ fn jit_guard_known_klass(
             jit_chain_guard(JCC_JNE, jit, ctx, cb, ocb, max_chain_depth, side_exit);
             ctx.upgrade_opnd_type(insn_opnd, Type::Flonum);
         }
-    } else if unsafe { known_klass == rb_cString } && sample_instance.string_p() {
-        assert!(!val_type.is_imm());
-        if val_type != Type::String {
-            assert!(val_type.is_unknown());
-
-            // Need the check for immediate, because trying to look up the klass field of an immediate will segfault
-            if !val_type.is_heap() {
-                add_comment(cb, "guard not immediate (for string)");
-                assert!(Qfalse.as_i32() < Qnil.as_i32());
-                test(cb, REG0, imm_opnd(RUBY_IMMEDIATE_MASK as i64));
-                jit_chain_guard(JCC_JNZ, jit, ctx, cb, ocb, max_chain_depth, side_exit);
-                cmp(cb, REG0, imm_opnd(Qnil.into()));
-                jit_chain_guard(JCC_JBE, jit, ctx, cb, ocb, max_chain_depth, side_exit);
-            }
-
-            add_comment(cb, "guard object is string");
-            let klass_opnd = mem_opnd(64, REG0, RUBY_OFFSET_RBASIC_KLASS);
-            mov(cb, REG1, uimm_opnd(unsafe { rb_cString }.into()));
-            cmp(cb, klass_opnd, REG1);
-            jit_chain_guard(JCC_JNE, jit, ctx, cb, ocb, max_chain_depth, side_exit);
-
-            // Upgrading here causes an error with invalidation writing past end of block
-            ctx.upgrade_opnd_type(insn_opnd, Type::String);
-        } else {
-            add_comment(cb, "skip guard - known to be a string");
-        }
     } else if unsafe {
         FL_TEST(known_klass, VALUE(RUBY_FL_SINGLETON)) != VALUE(0)
             && sample_instance == rb_attr_get(known_klass, id__attached__ as ID)
