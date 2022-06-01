@@ -142,9 +142,6 @@ The following metacharacters also behave like character classes:
 * <tt>/\H/</tt> - A non-hexdigit character (<tt>[^0-9a-fA-F]</tt>)
 * <tt>/\s/</tt> - A whitespace character: <tt>/[ \t\r\n\f\v]/</tt>
 * <tt>/\S/</tt> - A non-whitespace character: <tt>/[^ \t\r\n\f\v]/</tt>
-* <tt>/\R/</tt> - A linebreak: <tt>\n</tt>, <tt>\v</tt>, <tt>\f</tt>, <tt>\r</tt>
-  <tt>\u0085</tt> (NEXT LINE), <tt>\u2028</tt> (LINE SEPARATOR), <tt>\u2029</tt> (PARAGRAPH SEPARATOR)
-  or <tt>\r\n</tt>.
 
 POSIX <i>bracket expressions</i> are also similar to character classes.
 They provide a portable alternative to the above, with the added benefit
@@ -179,6 +176,13 @@ Ruby also supports the following non-POSIX character classes:
     /[[:digit:]]/.match("\u06F2")    #=> #<MatchData "\u{06F2}">
     /[[:upper:]][[:lower:]]/.match("Hello") #=> #<MatchData "He">
     /[[:xdigit:]][[:xdigit:]]/.match("A6")  #=> #<MatchData "A6">
+
+The following two metacharacters behave in a slightly special way:
+
+* <tt>/\R/</tt> - Matches with a linebreak: <tt>\r\n</tt>, <tt>\n</tt>, <tt>\v</tt>, <tt>\f</tt>, or <tt>\r</tt>.
+  It does not backtrack from <tt>\r\n</tt> to <tt>\r</tt>
+  For a Unicode string, it also matches with <tt>\u0085</tt> (NEXT LINE), <tt>\u2028</tt> (LINE SEPARATOR), and <tt>\u2029</tt> (PARAGRAPH SEPARATOR).
+* <tt>/\X/</tt> - Matches with a grapheme cluster for a Unicode string. For a non-Unicode string, it means <tt>(?>\r\n|\O)</tt>.
 
 == Repetition
 
