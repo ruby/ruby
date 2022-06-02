@@ -5135,10 +5135,12 @@ gc_unprotect_pages(rb_objspace_t *objspace, rb_heap_t *heap)
 static void gc_update_references(rb_objspace_t * objspace);
 static void invalidate_moved_page(rb_objspace_t *objspace, struct heap_page *page);
 
+#ifndef GC_COMPACTION_SUPPORTED
 #if defined(__wasi__) /* WebAssembly doesn't support signals */
 # define GC_COMPACTION_SUPPORTED 0
 #else
 # define GC_COMPACTION_SUPPORTED 1
+#endif
 #endif
 
 #if GC_COMPACTION_SUPPORTED
@@ -10533,45 +10535,10 @@ gc_compact(VALUE self)
 #endif
 
 #if GC_COMPACTION_SUPPORTED
-/*
- * call-seq:
- *    GC.verify_compaction_references(toward: nil, double_heap: false) -> hash
- *
- * Verify compaction reference consistency.
- *
- * This method is implementation specific.  During compaction, objects that
- * were moved are replaced with T_MOVED objects.  No object should have a
- * reference to a T_MOVED object after compaction.
- *
- * This function doubles the heap to ensure room to move all objects,
- * compacts the heap to make sure everything moves, updates all references,
- * then performs a full GC.  If any object contains a reference to a T_MOVED
- * object, that object should be pushed on the mark stack, and will
- * make a SEGV.
- */
 static VALUE
-gc_verify_compaction_references(int argc, VALUE *argv, VALUE self)
+gc_verify_compaction_references(rb_execution_context_t *ec, VALUE self, VALUE double_heap, VALUE toward_empty)
 {
     rb_objspace_t *objspace = &rb_objspace;
-    VALUE kwargs, double_heap = Qfalse, toward_empty = Qfalse;
-    static ID id_toward, id_double_heap, id_empty;
-
-    if (!id_toward) {
-        id_toward = rb_intern("toward");
-        id_double_heap = rb_intern("double_heap");
-        id_empty = rb_intern("empty");
-    }
-
-    rb_scan_args(argc, argv, ":", &kwargs);
-    if (!NIL_P(kwargs)) {
-        if (rb_hash_has_key(kwargs, ID2SYM(id_toward))) {
-            VALUE toward = rb_hash_aref(kwargs, ID2SYM(id_toward));
-            toward_empty = (toward == ID2SYM(id_empty)) ? Qtrue : Qfalse;
-        }
-        if (rb_hash_has_key(kwargs, ID2SYM(id_double_heap))) {
-            double_heap = rb_hash_aref(kwargs, ID2SYM(id_double_heap));
-        }
-    }
 
     /* Clear the heap. */
     gc_start_internal(NULL, self, Qtrue, Qtrue, Qtrue, Qfalse);
@@ -10602,7 +10569,7 @@ gc_verify_compaction_references(int argc, VALUE *argv, VALUE self)
     return gc_compact_stats(self);
 }
 #else
-#  define gc_verify_compaction_references rb_f_notimplement
+#  define gc_verify_compaction_references (VALUE (*)(rb_execution_context_t*, VALUE, VALUE, VALUE))rb_f_notimplement
 #endif
 
 VALUE
@@ -14095,7 +14062,9 @@ Init_GC(void)
     rb_define_singleton_method(rb_mGC, "auto_compact", gc_get_auto_compact, 0);
     rb_define_singleton_method(rb_mGC, "auto_compact=", gc_set_auto_compact, 1);
     rb_define_singleton_method(rb_mGC, "latest_compact_info", gc_compact_stats, 0);
-    rb_define_singleton_method(rb_mGC, "verify_compaction_references", gc_verify_compaction_references, -1);
+#if !GC_COMPACTION_SUPPORTED
+    rb_define_singleton_method(rb_mGC, "verify_compaction_references", rb_f_notimplement, -1);
+#endif
 
 #if GC_DEBUG_STRESS_TO_CLASS
     rb_define_singleton_method(rb_mGC, "add_stress_to_class", rb_gcdebug_add_stress_to_class, -1);
@@ -14119,6 +14088,7 @@ Init_GC(void)
 	OPT(MALLOC_ALLOCATED_SIZE);
 	OPT(MALLOC_ALLOCATED_SIZE_CHECK);
 	OPT(GC_PROFILE_DETAIL_MEMORY);
+	OPT(GC_COMPACTION_SUPPORTED);
 #undef OPT
 	OBJ_FREEZE(opts);
     }

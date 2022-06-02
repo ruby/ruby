@@ -232,6 +232,26 @@ module GC
     Primitive.gc_latest_gc_info hash_or_key
   end
 
+  if respond_to?(:compact)
+    # call-seq:
+    #    GC.verify_compaction_references(toward: nil, double_heap: false) -> hash
+    #
+    # Verify compaction reference consistency.
+    #
+    # This method is implementation specific.  During compaction, objects that
+    # were moved are replaced with T_MOVED objects.  No object should have a
+    # reference to a T_MOVED object after compaction.
+    #
+    # This function doubles the heap to ensure room to move all objects,
+    # compacts the heap to make sure everything moves, updates all references,
+    # then performs a full GC.  If any object contains a reference to a T_MOVED
+    # object, that object should be pushed on the mark stack, and will
+    # make a SEGV.
+    def self.verify_compaction_references(toward: nil, double_heap: false)
+      Primitive.gc_verify_compaction_references(double_heap, toward == :empty)
+    end
+  end
+
   # call-seq:
   #     GC.using_rvargc? -> true or false
   #

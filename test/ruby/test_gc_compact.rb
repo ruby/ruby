@@ -11,16 +11,7 @@ end
 class TestGCCompact < Test::Unit::TestCase
   module CompactionSupportInspector
     def supports_auto_compact?
-      return false if /wasm/ =~ RUBY_PLATFORM
-      return true unless defined?(Etc::SC_PAGE_SIZE)
-
-      begin
-        return GC::INTERNAL_CONSTANTS[:HEAP_PAGE_SIZE] % Etc.sysconf(Etc::SC_PAGE_SIZE) == 0
-      rescue NotImplementedError
-      rescue ArgumentError
-      end
-
-      true
+      GC::OPTS.include?("GC_COMPACTION_SUPPORTED")
     end
   end
 
