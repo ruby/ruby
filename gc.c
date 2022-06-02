@@ -10569,7 +10569,7 @@ gc_verify_compaction_references(rb_execution_context_t *ec, VALUE self, VALUE do
     return gc_compact_stats(self);
 }
 #else
-#  define gc_verify_compaction_references (VALUE (*)(rb_execution_context_t*, VALUE, VALUE, VALUE))rb_f_notimplement
+#  define gc_verify_compaction_references (rb_builtin_arity2_function_type)rb_f_notimplement
 #endif
 
 VALUE
