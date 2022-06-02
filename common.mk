@@ -1768,6 +1768,7 @@ help: PHONY
 	"  runruby:               runs test.rb by ruby you just built" \
 	"  gdb:                   runs test.rb by miniruby under gdb" \
 	"  gdb-ruby:              runs test.rb by ruby under gdb" \
+	"  runirb:                starts irb on built ruby (not installed ruby)" \
 	"  exam:                  equals make check test-bundler-parallel test-bundled-gems" \
 	"  check:                 equals make test test-tool test-all test-spec test-syntax-suggest" \
 	"  test:                  ruby core tests [BTESTS=<bootstraptest files>]" \
