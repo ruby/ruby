@@ -230,7 +230,6 @@ RSpec.describe "bundle flex_install" do
         gem "jekyll-feed", "~> 0.12"
       G
 
-      puts lockfile
       lockfile <<-L
         GEM
           remote: #{file_uri_for(gem_repo4)}/
