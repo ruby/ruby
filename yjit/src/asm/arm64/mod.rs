@@ -8,7 +8,7 @@ mod opnd;
 use inst::DataProcessingRegister;
 use opnd::*;
 
-/// Add (shifted register)
+/// ADD (shifted register)
 /// https://developer.arm.com/documentation/ddi0596/2021-12/Base-Instructions/ADD--shifted-register---Add--shifted-register--?lang=en
 pub fn add(cb: &mut CodeBlock, rd_opnd: &Arm64Opnd, rn_opnd: &Arm64Opnd, rm_opnd: &Arm64Opnd) {
     let (rd, rn, rm) = regs((rd_opnd, rn_opnd, rm_opnd));
@@ -16,7 +16,7 @@ pub fn add(cb: &mut CodeBlock, rd_opnd: &Arm64Opnd, rn_opnd: &Arm64Opnd, rm_opnd
     cb.write_bytes(&bytes);
 }
 
-/// Sub (shifted register)
+/// SUB (shifted register)
 /// https://developer.arm.com/documentation/ddi0596/2021-12/Base-Instructions/SUB--shifted-register---Subtract--shifted-register--?lang=en
 pub fn sub(cb: &mut CodeBlock, rd_opnd: &Arm64Opnd, rn_opnd: &Arm64Opnd, rm_opnd: &Arm64Opnd) {
     let (rd, rn, rm) = regs((rd_opnd, rn_opnd, rm_opnd));
