@@ -10,7 +10,6 @@ require_relative 'deprecate'
 require_relative 'basic_specification'
 require_relative 'stub_specification'
 require_relative 'platform'
-require_relative 'requirement'
 require_relative 'util/list'
 
 ##
