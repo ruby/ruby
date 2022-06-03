@@ -20,11 +20,16 @@ module JSON
     #   ruby = [0, 1, nil]
     #   JSON[ruby] # => '[0,1,null]'
     def [](object, opts = {})
-      if object.respond_to? :to_str
-        JSON.parse(object.to_str, opts)
-      else
-        JSON.generate(object, opts)
+      if object.is_a?(String)
+        return JSON.parse(object, opts)
+      elsif object.respond_to?(:to_str)
+        str = object.to_str
+        if str.is_a?(String)
+          return JSON.parse(object.to_str, opts)
+        end
       end
+
+      JSON.generate(object, opts)
     end
 
     # Returns the JSON parser class that is used by JSON. This is either
@@ -693,11 +698,16 @@ module ::Kernel
   # The _opts_ argument is passed through to generate/parse respectively. See
   # generate and parse for their documentation.
   def JSON(object, *args)
-    if object.respond_to? :to_str
-      JSON.parse(object.to_str, args.first)
-    else
-      JSON.generate(object, args.first)
+    if object.is_a?(String)
+      return JSON.parse(object, args.first)
+    elsif object.respond_to?(:to_str)
+      str = object.to_str
+      if str.is_a?(String)
+        return JSON.parse(object.to_str, args.first)
+      end
     end
+
+    JSON.generate(object, args.first)
   end
 end
 

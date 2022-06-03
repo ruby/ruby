@@ -6,6 +6,13 @@ require 'tempfile'
 class JSONCommonInterfaceTest < Test::Unit::TestCase
   include JSON
 
+  module MethodMissing
+    def method_missing(name, *args); end
+    def respond_to_missing?(name, include_private)
+      true
+    end
+  end
+
   def setup
     @hash = {
       'a' => 2,
@@ -17,12 +24,26 @@ class JSONCommonInterfaceTest < Test::Unit::TestCase
       'h' => 1000.0,
       'i' => 0.001
     }
+
+    @hash_with_method_missing = {
+      'a' => 2,
+      'b' => 3.141,
+      'c' => 'c',
+      'd' => [ 1, "b", 3.14 ],
+      'e' => { 'foo' => 'bar' },
+      'g' => "\"\0\037",
+      'h' => 1000.0,
+      'i' => 0.001
+    }
+    @hash_with_method_missing.extend MethodMissing
+
     @json = '{"a":2,"b":3.141,"c":"c","d":[1,"b",3.14],"e":{"foo":"bar"},'\
       '"g":"\\"\\u0000\\u001f","h":1000.0,"i":0.001}'
   end
 
   def test_index
     assert_equal @json, JSON[@hash]
+    assert_equal @json, JSON[@hash_with_method_missing]
     assert_equal @hash, JSON[@json]
   end
 
@@ -129,6 +150,7 @@ class JSONCommonInterfaceTest < Test::Unit::TestCase
 
   def test_JSON
     assert_equal @json, JSON(@hash)
+    assert_equal @json, JSON(@hash_with_method_missing)
     assert_equal @hash, JSON(@json)
   end
 
