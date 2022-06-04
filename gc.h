@@ -10,6 +10,8 @@
 #define SET_MACHINE_STACK_END(p) __asm__ __volatile__ ("mr\t%0, %%r1" : "=r" (*(p)))
 #elif (defined(__powerpc__) || defined(__powerpc64__)) && defined(__GNUC__) && defined(_AIX)
 #define SET_MACHINE_STACK_END(p) __asm__ __volatile__ ("mr %0,1" : "=r" (*(p)))
+#elif defined(__POWERPC__) && defined(__APPLE__)
+#define SET_MACHINE_STACK_END(p) __asm__ volatile("mr %0, r1" : "=r" (*(p)))
 #elif defined(__aarch64__) && defined(__GNUC__)
 #define SET_MACHINE_STACK_END(p) __asm__ __volatile__ ("mov\t%0, sp" : "=r" (*(p)))
 #else

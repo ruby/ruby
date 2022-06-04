@@ -1359,6 +1359,30 @@ tick(void)
     return val;
 }
 
+#elif defined(__POWERPC__) && defined(__APPLE__)
+typedef unsigned long long tick_t;
+#define PRItick "llu"
+
+static __inline__ tick_t
+tick(void)
+{
+  unsigned long long int result=0;
+  unsigned long int upper, lower, tmp;
+  __asm__ volatile(
+                "0:                  \n"
+                "\tmftbu   %0        \n"
+                "\tmftb    %1        \n"
+                "\tmftbu   %2        \n"
+                "\tcmpw    %2,%0     \n"
+                "\tbne     0b        \n"
+                : "=r"(upper),"=r"(lower),"=r"(tmp)
+                );
+  result = upper;
+  result = result<<32;
+  result = result|lower;
+  return(result);
+}
+
 #elif defined(__aarch64__) &&  defined(__GNUC__)
 typedef unsigned long tick_t;
 #define PRItick "lu"
