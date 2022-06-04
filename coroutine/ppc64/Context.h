@@ -12,7 +12,7 @@
 
 enum {
   COROUTINE_REGISTERS =
-  19  /* 18 general purpose registers (r14–r31) and 1 return address */
+  20  /* 19 general purpose registers (r13–r31) and 1 return address */
   + 4  /* space for fiber_entry() to store the link register */
 };
 
@@ -44,7 +44,7 @@ static inline void coroutine_initialize(
     memset(context->stack_pointer, 0, sizeof(void*) * COROUTINE_REGISTERS);
 
     /* Skip a global prologue that sets the TOC register */
-    context->stack_pointer[18] = ((char*)start) + 8;
+    context->stack_pointer[19] = ((char*)start) + 8;
 }
 
 struct coroutine_context * coroutine_transfer(struct coroutine_context * current, struct coroutine_context * target);
