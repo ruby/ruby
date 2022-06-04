@@ -7,11 +7,6 @@ begin
 rescue LoadError
 end
 
-begin
-  require 'win32console'
-rescue LoadError
-end
-
 require_relative '../../rdoc'
 
 require_relative 'formatter' # For RubyGems backwards compatibility
