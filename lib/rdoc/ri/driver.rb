@@ -1521,10 +1521,6 @@ or the PAGER environment variable.
     pagers.compact.uniq.each do |pager|
       next unless pager
 
-      pager_cmd = pager.split(' ').first
-
-      next unless in_path? pager_cmd
-
       if jruby then
         case io = find_pager_jruby(pager)
         when nil   then break
