@@ -1091,23 +1091,6 @@ Foo::Bar#bother
     assert_instance_of @RM::ToBs, driver.formatter(StringIO.new)
   end
 
-  def test_in_path_eh
-    path = ENV['PATH']
-
-    test_path = File.expand_path '..', __FILE__
-
-    temp_dir do |dir|
-      nonexistent = File.join dir, 'nonexistent'
-      refute @driver.in_path?(nonexistent)
-
-      ENV['PATH'] = test_path
-
-      assert @driver.in_path?(File.basename(__FILE__))
-    end
-  ensure
-    ENV['PATH'] = path
-  end
-
   def test_method_type
     assert_equal :both,     @driver.method_type(nil)
     assert_equal :both,     @driver.method_type('.')

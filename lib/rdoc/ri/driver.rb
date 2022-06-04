@@ -1142,17 +1142,6 @@ or the PAGER environment variable.
   end
 
   ##
-  # Is +file+ in ENV['PATH']?
-
-  def in_path? file
-    return true if file =~ %r%\A/% and File.exist? file
-
-    ENV['PATH'].split(File::PATH_SEPARATOR).any? do |path|
-      File.exist? File.join(path, file)
-    end
-  end
-
-  ##
   # Lists classes known to ri starting with +names+.  If +names+ is empty all
   # known classes are shown.
 
