@@ -1246,7 +1246,7 @@ Foo::Bar#bother
     assert_equal '(unknown)#inherit', method.full_name
   end
 
-  def _test_page # this test doesn't do anything anymore :(
+  def test_page
     @driver.use_stdout = false
 
     with_dummy_pager do
@@ -1260,9 +1260,7 @@ Foo::Bar#bother
     refute @driver.paging?
   end
 
-  # this test is too fragile. Perhaps using Process.spawn will make this
-  # reliable
-  def _test_page_in_presence_of_child_status
+  def test_page_in_presence_of_child_status
     @driver.use_stdout = false
 
     with_dummy_pager do
@@ -1425,7 +1423,7 @@ Foo::Bar#bother
     end
   end
 
-  def _test_setup_pager # this test doesn't do anything anymore :(
+  def test_setup_pager # this test doesn't do anything anymore :(
     @driver.use_stdout = false
 
     pager = with_dummy_pager do @driver.setup_pager end
