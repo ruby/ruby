@@ -1164,7 +1164,7 @@ main()
 		AS_IF([test "$target_cpu" = x64], [
 		    ac_cv_func___builtin_setjmp=yes
 		    ac_cv_func_round=no
-		    coroutine_type=yes
+		    COROUTINE_TYPE=yes
 		])
 		ac_cv_func_tgamma=no
 		AC_CHECK_TYPE([NET_LUID], [], [],
@@ -2538,108 +2538,58 @@ AS_IF([test "${universal_binary-no}" = yes ], [
 
 AC_ARG_WITH(coroutine,
     AS_HELP_STRING([--with-coroutine=IMPLEMENTATION], [specify the coroutine implementation to use]),
-    [coroutine_type=$withval], [coroutine_type=])
-AS_CASE([$coroutine_type], [yes|''], [
-    coroutine_type=
+    [COROUTINE_TYPE=$withval], [COROUTINE_TYPE=])
+AS_CASE([$COROUTINE_TYPE], [yes|''], [
+    COROUTINE_TYPE=
     AS_CASE(["$target_cpu-$target_os"],
-        [universal-darwin*], [
-            coroutine_type=universal
-        ],
-        [x*64-darwin*], [
-            coroutine_type=amd64
-        ],
-        [arm64-darwin*], [
-            coroutine_type=arm64
-        ],
-        [powerpc-darwin*], [
-            coroutine_type=ppc
-        ],
-        [powerpc64-darwin*], [
-            coroutine_type=ppc64
-        ],
         [x*64-linux*], [
             AS_CASE(["$ac_cv_sizeof_voidp"],
-                [8], [ coroutine_type=amd64 ],
-                [4], [ coroutine_type=x86 ],
+                [8], [ COROUTINE_TYPE=amd64 ],
+                [4], [ COROUTINE_TYPE=x86 ],
                 dnl unknown pointer size, bail out as no Context.h soon.
             )
         ],
-        [*86-linux*], [
-            coroutine_type=x86
-        ],
-        [x64-mingw*], [
-            coroutine_type=win64
-        ],
-        [*86-mingw*], [
-            coroutine_type=win32
-        ],
-        [arm*-linux*], [
-            coroutine_type=arm32
-        ],
-        [aarch64-linux*], [
-            coroutine_type=arm64
-        ],
-        [powerpc64le-linux*], [
-            coroutine_type=ppc64le
-        ],
-        [riscv64-linux*], [
-            coroutine_type=riscv64
-        ],
-        [x86_64-freebsd*], [
-            coroutine_type=amd64
-        ],
-        [i386-freebsd*], [
-            coroutine_type=x86
-        ],
-        [aarch64-freebsd*], [
-            coroutine_type=arm64
-        ],
-        [x86_64-netbsd*], [
-            coroutine_type=amd64
-        ],
-        [i386-netbsd*], [
-            coroutine_type=x86
-        ],
-        [aarch64-netbsd*], [
-            coroutine_type=arm64
-        ],
-        [x86_64-openbsd*], [
-            coroutine_type=amd64
-        ],
-        [i386-openbsd*], [
-            coroutine_type=x86
-        ],
-        [*-openbsd*], [
-            coroutine_type=pthread
-        ],
-        [x86_64-dragonfly*], [
-            coroutine_type=amd64
-        ],
-        [*-haiku*], [
-            coroutine_type=pthread
-        ],
-        [*-emscripten*], [
-            coroutine_type=emscripten
-        ],
-        [*-wasi*], [
-            coroutine_type=asyncify
-        ],
+        [ universal-darwin*  ], [ COROUTINE_TYPE=universal  ],
+        [ x*64-darwin*       ], [ COROUTINE_TYPE=amd64      ],
+        [ arm64-darwin*      ], [ COROUTINE_TYPE=arm64      ],
+        [ powerpc-darwin*    ], [ COROUTINE_TYPE=ppc        ],
+        [ powerpc64-darwin*  ], [ COROUTINE_TYPE=ppc64      ],
+        [ *86-linux*         ], [ COROUTINE_TYPE=x86        ],
+        [ x64-mingw*         ], [ COROUTINE_TYPE=win64      ],
+        [ *86-mingw*         ], [ COROUTINE_TYPE=win32      ],
+        [ arm*-linux*        ], [ COROUTINE_TYPE=arm32      ],
+        [ aarch64-linux*     ], [ COROUTINE_TYPE=arm64      ],
+        [ powerpc64le-linux* ], [ COROUTINE_TYPE=ppc64le    ],
+        [ riscv64-linux*     ], [ COROUTINE_TYPE=riscv64    ],
+        [ x86_64-freebsd*    ], [ COROUTINE_TYPE=amd64      ],
+        [ i386-freebsd*      ], [ COROUTINE_TYPE=x86        ],
+        [ aarch64-freebsd*   ], [ COROUTINE_TYPE=arm64      ],
+        [ x86_64-netbsd*     ], [ COROUTINE_TYPE=amd64      ],
+        [ i386-netbsd*       ], [ COROUTINE_TYPE=x86        ],
+        [ aarch64-netbsd*    ], [ COROUTINE_TYPE=arm64      ],
+        [ x86_64-openbsd*    ], [ COROUTINE_TYPE=amd64      ],
+        [ i386-openbsd*      ], [ COROUTINE_TYPE=x86        ],
+        [ *-openbsd*         ], [ COROUTINE_TYPE=pthread    ],
+        [ x86_64-dragonfly*  ], [ COROUTINE_TYPE=amd64      ],
+        [ *-haiku*           ], [ COROUTINE_TYPE=pthread    ],
+        [ *-emscripten*      ], [ COROUTINE_TYPE=emscripten ],
+        [ *-wasi*            ], [ COROUTINE_TYPE=asyncify   ],
         [
             AC_CHECK_FUNCS([getcontext swapcontext makecontext],
-                [coroutine_type=ucontext],
-                [coroutine_type=pthread; break]
+                [COROUTINE_TYPE=ucontext],
+                [COROUTINE_TYPE=pthread; break]
             )
         ]
     )
     AC_MSG_CHECKING(native coroutine implementation for ${target_cpu}-${target_os})
-    AC_MSG_RESULT(${coroutine_type})
+    AC_MSG_RESULT(${COROUTINE_TYPE})
 ])
-COROUTINE_H=coroutine/$coroutine_type/Context.h
+COROUTINE_H=coroutine/$COROUTINE_TYPE/Context.h
 AS_IF([test ! -f "$srcdir/$COROUTINE_H"],
-      [AC_MSG_ERROR('$coroutine_type' is not supported as coroutine)])
-COROUTINE_SRC=coroutine/$coroutine_type/Context.c
+      [AC_MSG_ERROR('$COROUTINE_TYPE' is not supported as coroutine)])
+COROUTINE_SRC=coroutine/$COROUTINE_TYPE/Context.c
 AS_IF([test ! -f "$srcdir/$COROUTINE_SRC"],
-      [COROUTINE_SRC=coroutine/$coroutine_type/Context.'$(ASMEXT)'])
+      [COROUTINE_SRC=coroutine/$COROUTINE_TYPE/Context.'$(ASMEXT)'])
 AC_DEFINE_UNQUOTED(COROUTINE_H, ["$COROUTINE_H"])
 AC_SUBST(X_COROUTINE_H, [$COROUTINE_H])
 AC_SUBST(X_COROUTINE_SRC, [$COROUTINE_SRC])
@@ -4007,6 +3957,7 @@ AC_SUBST(EXPORT_PREFIX)
 AC_SUBST(SYMBOL_PREFIX)
 AC_SUBST(MINIOBJS)
 AC_SUBST(THREAD_MODEL)
+AC_SUBST(COROUTINE_TYPE)
 AC_SUBST(PLATFORM_DIR)
 
 firstmf=`echo $FIRSTMAKEFILE | sed 's/:.*//'`
