@@ -38,7 +38,12 @@ class TestRDocRIDriver < RDoc::TestCase
     super
   end
 
-  DUMMY_PAGER = ":;\n"
+  case RUBY_PLATFORM
+  when /mswin|mingw/
+    DUMMY_PAGER = "type nul"
+  else
+    DUMMY_PAGER = "true"
+  end
 
   def with_dummy_pager
     pager_env, ENV['RI_PAGER'] = ENV['RI_PAGER'], DUMMY_PAGER
