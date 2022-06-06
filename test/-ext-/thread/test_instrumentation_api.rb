@@ -10,7 +10,7 @@ class TestThreadInstrumentation < Test::Unit::TestCase
     Bug::ThreadInstrumentation::register_callback
 
     begin
-      threads = 5.times.map { Thread.new { sleep 0.05; 1 + 1; sleep 0.02 } }
+      threads = 5.times.map { Thread.new { sleep 0.5; 1 + 1; sleep 0.2 } }
       threads.each(&:join)
       Bug::ThreadInstrumentation.counters.each do |c|
         assert_predicate c,:nonzero?
@@ -29,7 +29,7 @@ class TestThreadInstrumentation < Test::Unit::TestCase
     begin
       pid = fork do
         Bug::ThreadInstrumentation.reset_counters
-        threads = 5.times.map { Thread.new { sleep 0.05; 1 + 1; sleep 0.02 } }
+        threads = 5.times.map { Thread.new { sleep 0.5; 1 + 1; sleep 0.2 } }
         threads.each(&:join)
         Bug::ThreadInstrumentation.counters.each do |c|
           assert_predicate c,:nonzero?
