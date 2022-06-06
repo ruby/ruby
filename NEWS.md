@@ -112,6 +112,7 @@ Note: We're only listing outstanding class updates.
     * Module.used_refinements has been added. [[Feature #14332]]
     * Module#refinements has been added. [[Feature #12737]]
     * Module#const_added has been added. [[Feature #17881]]
+    * Module#undefined_instance_methods has been added. [[Feature #12655]]
 
 * Proc
     * Proc#dup returns an instance of subclass. [[Bug #17545]]
@@ -235,6 +236,7 @@ The following deprecated APIs are removed.
 ## Miscellaneous changes
 
 [Feature #12005]: https://bugs.ruby-lang.org/issues/12005
+[Feature #12655]: https://bugs.ruby-lang.org/issues/12655
 [Feature #12737]: https://bugs.ruby-lang.org/issues/12737
 [Feature #13110]: https://bugs.ruby-lang.org/issues/13110
 [Feature #14332]: https://bugs.ruby-lang.org/issues/14332

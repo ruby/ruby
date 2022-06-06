@@ -4398,6 +4398,8 @@ InitVM_Object(void)
 		     rb_class_protected_instance_methods, -1); /* in class.c */
     rb_define_method(rb_cModule, "private_instance_methods",
 		     rb_class_private_instance_methods, -1);   /* in class.c */
+    rb_define_method(rb_cModule, "undefined_instance_methods",
+                     rb_class_undefined_instance_methods, 0); /* in class.c */
 
     rb_define_method(rb_cModule, "constants", rb_mod_constants, -1); /* in variable.c */
     rb_define_method(rb_cModule, "const_get", rb_mod_const_get, -1);
