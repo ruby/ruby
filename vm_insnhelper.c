@@ -1104,8 +1104,7 @@ fill_ivar_cache(const rb_iseq_t *iseq, IVC ic, const struct rb_callcache *cc, in
 {
     // fill cache
     if (!is_attr) {
-        ic->entry = ent;
-        RB_OBJ_WRITTEN(iseq, Qundef, ent->class_value);
+        vm_ic_entry_set(ic, ent, iseq);
     }
     else {
         vm_cc_attr_index_set(cc, ent->index);
@@ -1124,9 +1123,8 @@ vm_getivar(VALUE obj, ID id, const rb_iseq_t *iseq, IVC ic, const struct rb_call
     }
     else if (LIKELY(is_attr ?
                     RB_DEBUG_COUNTER_INC_UNLESS(ivar_get_ic_miss_unset, vm_cc_attr_index_p(cc)) :
-                    RB_DEBUG_COUNTER_INC_UNLESS(ivar_get_ic_miss_serial,
-                                                ic->entry && ic->entry->class_serial == RCLASS_SERIAL(RBASIC(obj)->klass)))) {
-        uint32_t index = !is_attr ? ic->entry->index: (vm_cc_attr_index(cc));
+                    RB_DEBUG_COUNTER_INC_UNLESS(ivar_get_ic_miss_serial, vm_ic_entry_p(ic) && ic->entry->class_serial == RCLASS_SERIAL(RBASIC(obj)->klass)))) {
+        uint32_t index = !is_attr ? vm_ic_entry_index(ic): (vm_cc_attr_index(cc));
 
         RB_DEBUG_COUNTER_INC(ivar_get_ic_hit);
 
@@ -1208,8 +1206,7 @@ vm_setivar_slowpath(VALUE obj, ID id, VALUE val, const rb_iseq_t *iseq, IVC ic, 
 
         if (iv_index_tbl_lookup(iv_index_tbl, id, &ent)) {
             if (!is_attr) {
-                ic->entry = ent;
-                RB_OBJ_WRITTEN(iseq, Qundef, ent->class_value);
+                vm_ic_entry_set(ic, ent, iseq);
             }
             else if (ent->index >= INT_MAX) {
                 rb_raise(rb_eArgError, "too many instance variables");
@@ -1257,9 +1254,9 @@ vm_setivar(VALUE obj, ID id, VALUE val, const rb_iseq_t *iseq, IVC ic, const str
         VM_ASSERT(!rb_ractor_shareable_p(obj));
 
 	if (LIKELY(
-	    (!is_attr && RB_DEBUG_COUNTER_INC_UNLESS(ivar_set_ic_miss_serial, ic->entry && ic->entry->class_serial  == RCLASS_SERIAL(RBASIC(obj)->klass))) ||
+	    (!is_attr && RB_DEBUG_COUNTER_INC_UNLESS(ivar_set_ic_miss_serial, vm_ic_entry_p(ic) && ic->entry->class_serial == RCLASS_SERIAL(RBASIC(obj)->klass))) ||
             ( is_attr && RB_DEBUG_COUNTER_INC_UNLESS(ivar_set_ic_miss_unset, vm_cc_attr_index_p(cc))))) {
-            uint32_t index = !is_attr ? ic->entry->index : vm_cc_attr_index(cc);
+            uint32_t index = !is_attr ? vm_ic_entry_index(ic) : vm_cc_attr_index(cc);
 
             if (UNLIKELY(index >= ROBJECT_NUMIV(obj))) {
                 rb_init_iv_list(obj);

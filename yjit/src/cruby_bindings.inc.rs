@@ -657,6 +657,18 @@ extern "C" {
         cfp: *const rb_control_frame_t,
     ) -> *const rb_callable_method_entry_t;
 }
+#[repr(C)]
+pub struct rb_iv_index_tbl_entry {
+    pub index: u32,
+    pub class_serial: rb_serial_t,
+    pub class_value: VALUE,
+}
+#[repr(C)]
+pub struct rb_cvar_class_tbl_entry {
+    pub index: u32,
+    pub global_cvar_state: rb_serial_t,
+    pub class_value: VALUE,
+}
 pub const VM_CALL_ARGS_SPLAT_bit: vm_call_flag_bits = 0;
 pub const VM_CALL_ARGS_BLOCKARG_bit: vm_call_flag_bits = 1;
 pub const VM_CALL_FCALL_bit: vm_call_flag_bits = 2;
@@ -712,18 +724,6 @@ extern "C" {
 }
 extern "C" {
     pub fn rb_vm_insn_decode(encoded: VALUE) -> ::std::os::raw::c_int;
-}
-#[repr(C)]
-pub struct rb_iv_index_tbl_entry {
-    pub index: u32,
-    pub class_serial: rb_serial_t,
-    pub class_value: VALUE,
-}
-#[repr(C)]
-pub struct rb_cvar_class_tbl_entry {
-    pub index: u32,
-    pub global_cvar_state: rb_serial_t,
-    pub class_value: VALUE,
 }
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
