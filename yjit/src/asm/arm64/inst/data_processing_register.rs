@@ -18,9 +18,9 @@ enum S {
 
 /// The type of shift to perform on the second operand register.
 enum Shift {
-    LSL = 0b00,
-    LSR = 0b01,
-    ASR = 0b10
+    LSL = 0b00, // logical shift left (unsigned)
+    LSR = 0b01, // logical shift right (unsigned)
+    ASR = 0b10  // arithmetic shift right (signed)
 }
 
 /// The struct that represents an A64 data processing -- register instruction
