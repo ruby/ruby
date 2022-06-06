@@ -1,3 +1,5 @@
+use crate::asm::{imm_num_bits, uimm_num_bits};
+
 /// This operand represents a signed immediate value.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct A64Imm
@@ -11,24 +13,7 @@ pub struct A64Imm
 
 impl A64Imm {
     pub fn new(value: i64) -> Self {
-        A64Imm { num_bits: Self::calculate_size(value), value }
-    }
-
-    /// Compute the number of bits needed to encode a signed value
-    fn calculate_size(imm: i64) -> u8
-    {
-        // Compute the smallest size this immediate fits in
-        if imm >= i8::MIN.into() && imm <= i8::MAX.into() {
-            return 8;
-        }
-        if imm >= i16::MIN.into() && imm <= i16::MAX.into() {
-            return 16;
-        }
-        if imm >= i32::MIN.into() && imm <= i32::MAX.into() {
-            return 32;
-        }
-
-        return 64;
+        A64Imm { num_bits: imm_num_bits(value), value }
     }
 }
 
@@ -45,24 +30,7 @@ pub struct A64UImm
 
 impl A64UImm {
     pub fn new(value: u64) -> Self {
-        A64UImm { num_bits: Self::calculate_size(value), value }
-    }
-
-    /// Compute the number of bits needed to encode an unsigned value
-    fn calculate_size(imm: u64) -> u8
-    {
-        // Compute the smallest size this immediate fits in
-        if imm <= u8::MAX.into() {
-            return 8;
-        }
-        if imm <= u16::MAX.into() {
-            return 16;
-        }
-        if imm <= u32::MAX.into() {
-            return 32;
-        }
-
-        return 64;
+        A64UImm { num_bits: uimm_num_bits(value), value }
     }
 }
 

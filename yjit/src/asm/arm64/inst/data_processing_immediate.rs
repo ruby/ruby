@@ -18,8 +18,8 @@ enum S {
 
 /// How much to shift the immediate by.
 enum Shift {
-    LSL0 = 0b0,
-    LSL12 = 0b1
+    LSL0 = 0b0, // no shift
+    LSL12 = 0b1 // logical shift left by 12 bits
 }
 
 /// The struct that represents an A64 data processing -- immediate instruction
