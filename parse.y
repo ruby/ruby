@@ -5779,8 +5779,7 @@ rbracket	: opt_nl ']'
 rbrace		: opt_nl '}'
 		;
 
-trailer		: /* none */
-		| '\n'
+trailer		: opt_nl
 		| ','
 		;
 
