@@ -1038,7 +1038,7 @@ fn gen_putspecialobject(
 ) -> CodegenStatus {
     let object_type = jit_get_arg(jit, 0);
 
-    if object_type == VALUE(VM_SPECIAL_OBJECT_VMCORE) {
+    if object_type == VALUE(VM_SPECIAL_OBJECT_VMCORE.as_usize()) {
         let stack_top: X86Opnd = ctx.stack_push(Type::UnknownHeap);
         jit_mov_gc_ptr(jit, cb, REG0, unsafe { rb_mRubyVMFrozenCore });
         mov(cb, stack_top, REG0);
@@ -1956,8 +1956,8 @@ fn gen_get_ivar(
     }
 
     // Compile time self is embedded and the ivar index lands within the object
-    let test_result = unsafe { FL_TEST_RAW(comptime_receiver, VALUE(ROBJECT_EMBED)) != VALUE(0) };
-    if test_result && ivar_index < ROBJECT_EMBED_LEN_MAX {
+    let test_result = unsafe { FL_TEST_RAW(comptime_receiver, VALUE(ROBJECT_EMBED.as_usize())) != VALUE(0) };
+    if test_result && ivar_index < (ROBJECT_EMBED_LEN_MAX.as_usize()) {
         // See ROBJECT_IVPTR() from include/ruby/internal/core/robject.h
 
         // Guard that self is embedded
@@ -2009,7 +2009,7 @@ fn gen_get_ivar(
         );
 
         // Check that the extended table is big enough
-        if ivar_index > ROBJECT_EMBED_LEN_MAX {
+        if ivar_index > (ROBJECT_EMBED_LEN_MAX.as_usize()) {
             // Check that the slot is inside the extended table (num_slots > index)
             let num_slots = mem_opnd(32, REG0, RUBY_OFFSET_ROBJECT_AS_HEAP_NUMIV);
 
@@ -3422,7 +3422,7 @@ fn jit_guard_known_klass(
             ctx.upgrade_opnd_type(insn_opnd, Type::Flonum);
         }
     } else if unsafe {
-        FL_TEST(known_klass, VALUE(RUBY_FL_SINGLETON)) != VALUE(0)
+        FL_TEST(known_klass, VALUE(RUBY_FL_SINGLETON as usize)) != VALUE(0)
             && sample_instance == rb_attr_get(known_klass, id__attached__ as ID)
     } {
         // Singleton classes are attached to one specific object, so we can
@@ -5012,7 +5012,7 @@ fn gen_invokesuper(
     // vm_search_normal_superclass
     let rbasic_ptr: *const RBasic = current_defined_class.as_ptr();
     if current_defined_class.builtin_type() == RUBY_T_ICLASS
-        && unsafe { RB_TYPE_P((*rbasic_ptr).klass, RUBY_T_MODULE) && FL_TEST_RAW((*rbasic_ptr).klass, VALUE(RMODULE_IS_REFINEMENT)) != VALUE(0) }
+        && unsafe { RB_TYPE_P((*rbasic_ptr).klass, RUBY_T_MODULE) && FL_TEST_RAW((*rbasic_ptr).klass, VALUE(RMODULE_IS_REFINEMENT.as_usize())) != VALUE(0) }
     {
         return CantCompile;
     }
