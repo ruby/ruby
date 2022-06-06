@@ -2314,23 +2314,66 @@ heap_increment(rb_objspace_t *objspace, rb_size_pool_t *size_pool, rb_heap_t *he
 }
 
 static void
+gc_continue(rb_objspace_t *objspace, rb_size_pool_t *size_pool, rb_heap_t *heap)
+{
+    /* Continue marking if in incremental marking. */
+    if (heap->free_pages == NULL && is_incremental_marking(objspace)) {
+	gc_marks_continue(objspace, size_pool, heap);
+    }
+
+    /* Continue sweeping if in lazy sweeping or the previous incremental
+     * marking finished and did not yield a free page. */
+    if (heap->free_pages == NULL && is_lazy_sweeping(objspace)) {
+        gc_sweep_continue(objspace, size_pool, heap);
+    }
+}
+
+static void
 heap_prepare(rb_objspace_t *objspace, rb_size_pool_t *size_pool, rb_heap_t *heap)
 {
     GC_ASSERT(heap->free_pages == NULL);
 
-    if (is_incremental_marking(objspace)) {
-	gc_marks_continue(objspace, size_pool, heap);
-    }
+    /* Continue incremental marking or lazy sweeping, if in any of those steps. */
+    gc_continue(objspace, size_pool, heap);
 
-    if (heap->free_pages == NULL && is_lazy_sweeping(objspace)) {
-        gc_sweep_continue(objspace, size_pool, heap);
-    }
-
+    /* If we still don't have a free page and not allowed to create a new page,
+     * we should start a new GC cycle. */
     if (heap->free_pages == NULL &&
-        (will_be_incremental_marking(objspace) || heap_increment(objspace, size_pool, heap) == FALSE) &&
-	gc_start(objspace, GPR_FLAG_NEWOBJ) == FALSE) {
-	rb_memerror();
+            (will_be_incremental_marking(objspace) ||
+                (heap_increment(objspace, size_pool, heap) == FALSE))) {
+        if (gc_start(objspace, GPR_FLAG_NEWOBJ) == FALSE) {
+            rb_memerror();
+        }
+        else {
+            /* Do steps of incremental marking or lazy sweeping if the GC run permits. */
+            gc_continue(objspace, size_pool, heap);
+
+            /* If we're not incremental marking (e.g. a minor GC) or finished
+             * sweeping and still don't have a free page, then
+             * gc_sweep_finish_size_pool should allow us to create a new page. */
+            if (heap->free_pages == NULL && !heap_increment(objspace, size_pool, heap)) {
+                if (objspace->rgengc.need_major_gc == GPR_FLAG_NONE) {
+                    rb_bug("cannot create a new page after GC");
+                }
+                else { // Major GC is required, which will allow us to create new page
+                    if (gc_start(objspace, GPR_FLAG_NEWOBJ) == FALSE) {
+                        rb_memerror();
+                    }
+                    else {
+                        /* Do steps of incremental marking or lazy sweeping. */
+                        gc_continue(objspace, size_pool, heap);
+
+                        if (heap->free_pages == NULL &&
+                                !heap_increment(objspace, size_pool, heap)) {
+                            rb_bug("cannot create a new page after major GC");
+                        }
+                    }
+                }
+            }
+        }
     }
+
+    GC_ASSERT(heap->free_pages != NULL);
 }
 
 void
@@ -2530,9 +2573,10 @@ heap_next_free_page(rb_objspace_t *objspace, rb_size_pool_t *size_pool, rb_heap_
 
     struct heap_page *page;
 
-    while (heap->free_pages == NULL) {
+    if (heap->free_pages == NULL) {
         heap_prepare(objspace, size_pool, heap);
     }
+
     page = heap->free_pages;
     heap->free_pages = page->free_next;
 
