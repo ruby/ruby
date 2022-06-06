@@ -1164,7 +1164,6 @@ main()
 		AS_IF([test "$target_cpu" = x64], [
 		    ac_cv_func___builtin_setjmp=yes
 		    ac_cv_func_round=no
-		    coroutine_type=yes
 		])
 		ac_cv_func_tgamma=no
 		AC_CHECK_TYPE([NET_LUID], [], [],
