@@ -65,11 +65,11 @@ pub enum Op
     // Low-level instruction to store a value to memory.
     Store,
 
-    // A low-level mov instruction. It accepts two operands.
-    Mov,
-
     // Load effective address
     Lea,
+
+    // A low-level mov instruction. It accepts two operands.
+    Mov,
 
     // Bitwise AND test instruction
     Test,
@@ -705,9 +705,9 @@ def_push_2_opnd!(sub, Op::Sub);
 def_push_2_opnd!(and, Op::And);
 def_push_1_opnd_no_out!(cret, Op::CRet);
 def_push_1_opnd!(load, Op::Load);
+def_push_1_opnd!(lea, Op::Lea);
 def_push_2_opnd_no_out!(store, Op::Store);
 def_push_2_opnd_no_out!(mov, Op::Mov);
-def_push_2_opnd_no_out!(lea, Op::Lea);
 def_push_2_opnd_no_out!(cmp, Op::Cmp);
 def_push_2_opnd_no_out!(test, Op::Test);
 
@@ -911,6 +911,17 @@ mod tests {
             dummy_c_fun as *const u8,
             vec![Opnd::mem(64, SP, 0), Opnd::UImm(1)]
         );
+
+        asm.compile_with_regs(&mut jit, &mut cb, regs);
+    }
+
+    #[test]
+    fn test_lea_ret()
+    {
+        let (mut asm, mut jit, mut cb, regs) = setup_asm(1);
+
+        let addr = asm.lea(Opnd::mem(64, SP, 0));
+        asm.cret(addr);
 
         asm.compile_with_regs(&mut jit, &mut cb, regs);
     }

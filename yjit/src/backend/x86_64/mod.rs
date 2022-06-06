@@ -127,7 +127,7 @@ impl Assembler
                 Op::Mov => mov(cb, insn.opnds[0].into(), insn.opnds[1].into()),
 
                 // Load effective address
-                Op::Lea => lea(cb, insn.opnds[0].into(), insn.opnds[1].into()),
+                Op::Lea => lea(cb, insn.out.into(), insn.opnds[0].into()),
 
                 // Test and set flags
                 Op::Test => test(cb, insn.opnds[0].into(), insn.opnds[1].into()),
@@ -149,7 +149,16 @@ impl Assembler
                     }
                 },
 
-                _ => panic!("unsupported instruction passed to x86 backend")
+                Op::CRet => {
+                    // TODO: bias allocation towards return register
+                    if insn.opnds[0] != Opnd::Reg(RET_REG) {
+                        mov(cb, RAX, insn.opnds[0].into());
+                    }
+
+                    ret(cb);
+                }
+
+                _ => panic!("unsupported instruction passed to x86 backend: {:?}", insn.op)
             };
         }
     }

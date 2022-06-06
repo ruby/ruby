@@ -324,7 +324,8 @@ fn gen_save_sp(cb: &mut CodeBlock, ctx: &mut Context) {
 fn ir_gen_save_sp(jit: &JITState, asm: &mut Assembler, ctx: &mut Context) {
     if ctx.get_sp_offset() != 0 {
         let stack_pointer = ctx.ir_sp_opnd(0);
-        asm.lea(SP, stack_pointer);
+        let sp_addr = asm.lea(stack_pointer);
+        asm.mov(SP, sp_addr);
         let cfp_sp_opnd = Opnd::mem(64, CFP, RUBY_OFFSET_CFP_SP);
         asm.mov(cfp_sp_opnd, SP);
         ctx.set_sp_offset(0);
