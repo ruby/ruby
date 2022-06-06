@@ -63,7 +63,7 @@ We can run any of the make scripts [in parallel](building_ruby.md#label-Running+
     first the file name, and then the test name, prefixed with `--name`. For example:
 
     ```
-    make test-all TESTS="../test/ruby/test_alias.rb --name=/test_aias_with_zsuper_method/"
+    make test-all TESTS="../test/ruby/test_alias.rb --name=/test_alias_with_zsuper_method/"
     ```
 
     To run these specs with logs, we can use:
