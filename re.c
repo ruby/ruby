@@ -1527,7 +1527,7 @@ rb_reg_fixed_encoding_p(VALUE re)
 
 static VALUE
 rb_reg_preprocess(const char *p, const char *end, rb_encoding *enc,
-        rb_encoding **fixed_enc, onig_errmsg_buffer err);
+        rb_encoding **fixed_enc, onig_errmsg_buffer err, int options);
 
 NORETURN(static void reg_enc_error(VALUE re, VALUE str));
 
@@ -1608,7 +1608,7 @@ rb_reg_prepare_re0(VALUE re, VALUE str, onig_errmsg_buffer err)
 
     unescaped = rb_reg_preprocess(
 	pattern, pattern + RREGEXP_SRC_LEN(re), enc,
-	&fixed_enc, err);
+        &fixed_enc, err, 0);
 
     if (NIL_P(unescaped)) {
 	rb_raise(rb_eArgError, "regexp preprocess failed: %s", err);
@@ -2718,10 +2718,11 @@ unescape_unicode_bmp(const char **pp, const char *end,
 static int
 unescape_nonascii(const char *p, const char *end, rb_encoding *enc,
         VALUE buf, rb_encoding **encp, int *has_property,
-        onig_errmsg_buffer err)
+        onig_errmsg_buffer err, int options)
 {
     unsigned char c;
     char smallbuf[2];
+    int in_char_class = 0;
 
     while (p < end) {
         int chlen = rb_enc_precise_mbclen(p, end, enc);
@@ -2833,6 +2834,60 @@ escape_asis:
             }
             break;
 
+          case '#':
+            if ((options & ONIG_OPTION_EXTEND) && !in_char_class) {
+                /* consume and ignore comment in extended regexp */
+                while ((p < end) && ((c = *p++) != '\n'));
+                break;
+            }
+            rb_str_buf_cat(buf, (char *)&c, 1);
+            break;
+          case '[':
+            in_char_class++;
+            rb_str_buf_cat(buf, (char *)&c, 1);
+            break;
+          case ']':
+            if (in_char_class) {
+                in_char_class--;
+            }
+            rb_str_buf_cat(buf, (char *)&c, 1);
+            break;
+          case '(':
+            if (!in_char_class && p + 1 < end && *p == '?' && *(p+1) == '#') {
+                /* (?# is comment inside any regexp, and content inside should be ignored */
+                const char *orig_p = p;
+                int cont = 1;
+
+                while (cont && (p < end)) {
+                    switch (c = *p++) {
+		      default:
+                        if (!(c & 0x80)) break;
+			--p;
+			/* fallthrough */
+                      case '\\':
+                        chlen = rb_enc_precise_mbclen(p, end, enc);
+                        if (!MBCLEN_CHARFOUND_P(chlen)) {
+                            goto invalid_multibyte;
+                        }
+                        p += MBCLEN_CHARFOUND_LEN(chlen);
+                        break;
+                      case ')':
+                        cont = 0;
+                        break;
+                    }
+                }
+
+                if (cont) {
+                    /* unterminated (?#, rewind so it is syntax error */
+                    p = orig_p;
+                    c = '(';
+                    rb_str_buf_cat(buf, (char *)&c, 1);
+                }
+            }
+            else {
+                rb_str_buf_cat(buf, (char *)&c, 1);
+            }
+            break;
           default:
             rb_str_buf_cat(buf, (char *)&c, 1);
             break;
@@ -2844,7 +2899,7 @@ escape_asis:
 
 static VALUE
 rb_reg_preprocess(const char *p, const char *end, rb_encoding *enc,
-        rb_encoding **fixed_enc, onig_errmsg_buffer err)
+        rb_encoding **fixed_enc, onig_errmsg_buffer err, int options)
 {
     VALUE buf;
     int has_property = 0;
@@ -2858,7 +2913,7 @@ rb_reg_preprocess(const char *p, const char *end, rb_encoding *enc,
         rb_enc_associate(buf, enc);
     }
 
-    if (unescape_nonascii(p, end, enc, buf, fixed_enc, &has_property, err) != 0)
+    if (unescape_nonascii(p, end, enc, buf, fixed_enc, &has_property, err, options) != 0)
         return Qnil;
 
     if (has_property && !*fixed_enc) {
@@ -2886,7 +2941,7 @@ rb_reg_check_preprocess(VALUE str)
     end = p + RSTRING_LEN(str);
     enc = rb_enc_get(str);
 
-    buf = rb_reg_preprocess(p, end, enc, &fixed_enc, err);
+    buf = rb_reg_preprocess(p, end, enc, &fixed_enc, err, 0);
     RB_GC_GUARD(str);
 
     if (NIL_P(buf)) {
@@ -2928,7 +2983,7 @@ rb_reg_preprocess_dregexp(VALUE ary, int options)
         p = RSTRING_PTR(str);
         end = p + RSTRING_LEN(str);
 
-        buf = rb_reg_preprocess(p, end, src_enc, &fixed_enc, err);
+        buf = rb_reg_preprocess(p, end, src_enc, &fixed_enc, err, options);
 
         if (NIL_P(buf))
             rb_raise(rb_eArgError, "%s", err);
@@ -2975,7 +3030,7 @@ rb_reg_initialize(VALUE obj, const char *s, long len, rb_encoding *enc,
 	return -1;
     }
 
-    unescaped = rb_reg_preprocess(s, s+len, enc, &fixed_enc, err);
+    unescaped = rb_reg_preprocess(s, s+len, enc, &fixed_enc, err, options);
     if (NIL_P(unescaped))
         return -1;
 
