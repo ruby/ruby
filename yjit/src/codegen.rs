@@ -54,7 +54,7 @@ enum CodegenStatus {
 type InsnGenFn = fn(
     jit: &mut JITState,
     ctx: &mut Context,
-    cb: &mut CodeBlock,
+    asm: &mut Assembler,
     ocb: &mut OutlinedCb,
 ) -> CodegenStatus;
 
@@ -769,6 +769,9 @@ pub fn gen_single_block(
     // Mark the start position of the block
     blockref.borrow_mut().set_start_addr(cb.get_write_ptr());
 
+    // Create a backend assembler instance
+    let mut asm = Assembler::new();
+
     // For each instruction to compile
     // NOTE: could rewrite this loop with a std::iter::Iterator
     while insn_idx < iseq_size {
@@ -823,7 +826,7 @@ pub fn gen_single_block(
             }
 
             // Call the code generation function
-            status = gen_fn(&mut jit, &mut ctx, cb, ocb);
+            status = gen_fn(&mut jit, &mut ctx, &mut asm, ocb);
         }
 
         // If we can't compile this instruction
@@ -860,6 +863,9 @@ pub fn gen_single_block(
 
     // Finish filling out the block
     {
+        // Compile code into the code block
+        asm.compile(&mut jit, cb);
+
         let mut block = jit.block.borrow_mut();
 
         // Mark the end position of the block
@@ -878,19 +884,6 @@ pub fn gen_single_block(
         return Err(());
     }
 
-    // TODO: we may want a feature for this called dump_insns? Can leave commented for now
-    /*
-    if (YJIT_DUMP_MODE >= 2) {
-        // Dump list of compiled instrutions
-        fprintf(stderr, "Compiled the following for iseq=%p:\n", (void *)iseq);
-        for (uint32_t idx = block->blockid.idx; idx < insn_idx; ) {
-            int opcode = yjit_opcode_at_pc(iseq, yjit_iseq_pc_at_idx(iseq, idx));
-            fprintf(stderr, "  %04d %s\n", idx, insn_name(opcode));
-            idx += insn_len(opcode);
-        }
-    }
-    */
-
     // Block compiled successfully
     Ok(blockref)
 }
@@ -898,7 +891,7 @@ pub fn gen_single_block(
 fn gen_nop(
     _jit: &mut JITState,
     _ctx: &mut Context,
-    _cb: &mut CodeBlock,
+    _asm: &mut Assembler,
     _ocb: &mut OutlinedCb,
 ) -> CodegenStatus {
     // Do nothing
@@ -908,7 +901,7 @@ fn gen_nop(
 fn gen_pop(
     _jit: &mut JITState,
     ctx: &mut Context,
-    _cb: &mut CodeBlock,
+    _asm: &mut Assembler,
     _ocb: &mut OutlinedCb,
 ) -> CodegenStatus {
     // Decrement SP
@@ -916,36 +909,12 @@ fn gen_pop(
     KeepCompiling
 }
 
-
-
-
-/*
-fn gen_dup(
-    _jit: &mut JITState,
-    ctx: &mut Context,
-    cb: &mut CodeBlock,
-    _ocb: &mut OutlinedCb,
-) -> CodegenStatus {
-    let dup_val = ctx.stack_pop(0);
-    let (mapping, tmp_type) = ctx.get_opnd_mapping(StackOpnd(0));
-
-    let loc0 = ctx.stack_push_mapping((mapping, tmp_type));
-    mov(cb, REG0, dup_val);
-    mov(cb, loc0, REG0);
-
-    KeepCompiling
-}
-*/
-
-#[allow(dead_code)]
 fn gen_dup(
     jit: &mut JITState,
     ctx: &mut Context,
-    cb: &mut CodeBlock,
+    asm: &mut Assembler,
     _ocb: &mut OutlinedCb,
 ) -> CodegenStatus {
-
-    let mut asm = Assembler::new();
 
     let dup_val = ctx.ir_stack_pop(0);
     let (mapping, tmp_type) = ctx.get_opnd_mapping(StackOpnd(0));
@@ -953,53 +922,14 @@ fn gen_dup(
     let loc0 = ctx.ir_stack_push_mapping((mapping, tmp_type));
     asm.mov(loc0, dup_val);
 
-    asm.compile(jit, cb);
-
     KeepCompiling
 }
-
-
-
-
-/*
-// duplicate stack top n elements
-fn gen_dupn(
-    jit: &mut JITState,
-    ctx: &mut Context,
-    cb: &mut CodeBlock,
-    _ocb: &mut OutlinedCb,
-) -> CodegenStatus {
-    let nval: VALUE = jit_get_arg(jit, 0);
-    let VALUE(n) = nval;
-
-    // In practice, seems to be only used for n==2
-    if n != 2 {
-        return CantCompile;
-    }
-
-    let opnd1: X86Opnd = ctx.stack_opnd(1);
-    let opnd0: X86Opnd = ctx.stack_opnd(0);
-
-    let mapping1 = ctx.get_opnd_mapping(StackOpnd(1));
-    let mapping0 = ctx.get_opnd_mapping(StackOpnd(0));
-
-    let dst1: X86Opnd = ctx.stack_push_mapping(mapping1);
-    mov(cb, REG0, opnd1);
-    mov(cb, dst1, REG0);
-
-    let dst0: X86Opnd = ctx.stack_push_mapping(mapping0);
-    mov(cb, REG0, opnd0);
-    mov(cb, dst0, REG0);
-
-    KeepCompiling
-}
-*/
 
 // duplicate stack top n elements
 fn gen_dupn(
     jit: &mut JITState,
     ctx: &mut Context,
-    cb: &mut CodeBlock,
+    asm: &mut Assembler,
     _ocb: &mut OutlinedCb,
 ) -> CodegenStatus {
 
@@ -1025,8 +955,6 @@ fn gen_dupn(
     let dst0: Opnd = ctx.ir_stack_push_mapping(mapping0);
     asm.mov(dst0, opnd0);
 
-    asm.compile(jit, cb);
-
     KeepCompiling
 }
 
@@ -1034,24 +962,22 @@ fn gen_dupn(
 fn gen_swap(
     jit: &mut JITState,
     ctx: &mut Context,
-    cb: &mut CodeBlock,
+    asm: &mut Assembler,
     _ocb: &mut OutlinedCb,
 ) -> CodegenStatus {
-    stack_swap(jit, ctx, cb, 0, 1, REG0, REG1);
+    stack_swap(jit, ctx, asm, 0, 1, REG0, REG1);
     KeepCompiling
 }
 
 fn stack_swap(
     jit: &mut JITState,
     ctx: &mut Context,
-    cb: &mut CodeBlock,
+    asm: &mut Assembler,
     offset0: u16,
     offset1: u16,
     _reg0: X86Opnd,
     _reg1: X86Opnd,
 ) {
-    let mut asm = Assembler::new();
-
     let stack0_mem = ctx.ir_stack_opnd(offset0 as i32);
     let stack1_mem = ctx.ir_stack_opnd(offset1 as i32);
 
@@ -1065,10 +991,18 @@ fn stack_swap(
 
     ctx.set_opnd_mapping(StackOpnd(offset0), mapping1);
     ctx.set_opnd_mapping(StackOpnd(offset1), mapping0);
-
-    asm.compile(jit, cb);
 }
 
+
+
+
+
+
+
+
+
+
+/*
 fn gen_putnil(
     jit: &mut JITState,
     ctx: &mut Context,
@@ -5986,6 +5920,7 @@ fn gen_opt_invokebuiltin_delegate(
 
     KeepCompiling
 }
+*/
 
 /// Maps a YARV opcode to a code generation function (if supported)
 fn get_gen_fn(opcode: VALUE) -> Option<InsnGenFn> {
@@ -5995,10 +5930,12 @@ fn get_gen_fn(opcode: VALUE) -> Option<InsnGenFn> {
 
     match opcode {
         YARVINSN_nop => Some(gen_nop),
-        YARVINSN_pop => Some(gen_pop),
+        //YARVINSN_pop => Some(gen_pop),
         YARVINSN_dup => Some(gen_dup),
         YARVINSN_dupn => Some(gen_dupn),
         YARVINSN_swap => Some(gen_swap),
+
+        /*
         YARVINSN_putnil => Some(gen_putnil),
         YARVINSN_putobject => Some(gen_putobject),
         YARVINSN_putobject_INT2FIX_0_ => Some(gen_putobject_int2fix),
@@ -6080,6 +6017,7 @@ fn get_gen_fn(opcode: VALUE) -> Option<InsnGenFn> {
         YARVINSN_getspecial => Some(gen_getspecial),
         YARVINSN_getclassvariable => Some(gen_getclassvariable),
         YARVINSN_setclassvariable => Some(gen_setclassvariable),
+        */
 
         // Unimplemented opcode, YJIT won't generate code for this yet
         _ => None,
@@ -6267,6 +6205,7 @@ impl CodegenGlobals {
 
     /// Register codegen functions for some Ruby core methods
     fn reg_method_codegen_fns(&mut self) {
+        /*
         unsafe {
             // Specialization for C methods. See yjit_reg_method() for details.
             self.yjit_reg_method(rb_cBasicObject, "!", jit_rb_obj_not);
@@ -6295,6 +6234,7 @@ impl CodegenGlobals {
                 jit_thread_s_current,
             );
         }
+        */
     }
 
     /// Get a mutable reference to the codegen globals instance
@@ -6359,6 +6299,7 @@ impl CodegenGlobals {
     }
 }
 
+/*
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -6621,3 +6562,4 @@ mod tests {
         gen_leave(&mut jit, &mut context, &mut cb, &mut ocb);
     }
 }
+*/

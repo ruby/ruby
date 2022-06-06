@@ -83,6 +83,9 @@ pub enum Op
     // C function call with N arguments (variadic)
     CCall,
 
+    // C function return
+    CRet,
+
     /*
     // The following are conditional jump instructions. They all accept as their
     // first operand an EIR_LABEL_NAME, which is used as the target of the jump.
@@ -660,6 +663,18 @@ macro_rules! def_push_1_opnd {
     };
 }
 
+macro_rules! def_push_1_opnd_no_out {
+    ($op_name:ident, $opcode:expr) => {
+        impl Assembler
+        {
+            pub fn $op_name(&mut self, opnd0: Opnd)
+            {
+                self.push_insn($opcode, vec![opnd0], None);
+            }
+        }
+    };
+}
+
 macro_rules! def_push_2_opnd {
     ($op_name:ident, $opcode:expr) => {
         impl Assembler
@@ -687,7 +702,9 @@ macro_rules! def_push_2_opnd_no_out {
 def_push_2_opnd!(add, Op::Add);
 def_push_2_opnd!(sub, Op::Sub);
 def_push_2_opnd!(and, Op::And);
+def_push_1_opnd_no_out!(cret, Op::CRet);
 def_push_1_opnd!(load, Op::Load);
+def_push_2_opnd_no_out!(store, Op::Store);
 def_push_2_opnd_no_out!(mov, Op::Mov);
 def_push_2_opnd_no_out!(lea, Op::Lea);
 def_push_2_opnd_no_out!(cmp, Op::Cmp);
