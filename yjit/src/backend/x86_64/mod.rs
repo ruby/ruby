@@ -109,8 +109,7 @@ impl Assembler
                     add(cb, insn.opnds[0].into(), insn.opnds[1].into())
                 },
 
-                //TODO:
-                //Store
+                Op::Store => mov(cb, insn.opnds[0].into(), insn.opnds[1].into()),
 
                 Op::Load => {
                     mov(cb, insn.out.into(), insn.opnds[0].into());
@@ -126,6 +125,9 @@ impl Assembler
                 },
 
                 Op::Mov => mov(cb, insn.opnds[0].into(), insn.opnds[1].into()),
+
+                // Load effective address
+                Op::Lea => lea(cb, insn.opnds[0].into(), insn.opnds[1].into()),
 
                 // Test and set flags
                 Op::Test => test(cb, insn.opnds[0].into(), insn.opnds[1].into()),
