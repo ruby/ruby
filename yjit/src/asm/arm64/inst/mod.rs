@@ -10,10 +10,10 @@ use crate::asm::CodeBlock;
 use super::opnd::*;
 
 /// ADD
-pub fn add(cb: &mut CodeBlock, rd: &Arm64Opnd, rn: &Arm64Opnd, rm: &Arm64Opnd) {
+pub fn add(cb: &mut CodeBlock, rd: &A64Opnd, rn: &A64Opnd, rm: &A64Opnd) {
     let bytes: [u8; 4] = match rm {
-        Arm64Opnd::UImm(_) => DataProcessingImmediate::add(rd, rn, rm).into(),
-        Arm64Opnd::Reg(_) => DataProcessingRegister::add(rd, rn, rm).into(),
+        A64Opnd::UImm(_) => DataProcessingImmediate::add(rd, rn, rm).into(),
+        A64Opnd::Reg(_) => DataProcessingRegister::add(rd, rn, rm).into(),
         _ => panic!("Invalid operand combination to add.")
     };
 
@@ -21,10 +21,10 @@ pub fn add(cb: &mut CodeBlock, rd: &Arm64Opnd, rn: &Arm64Opnd, rm: &Arm64Opnd) {
 }
 
 /// SUB
-pub fn sub(cb: &mut CodeBlock, rd: &Arm64Opnd, rn: &Arm64Opnd, rm: &Arm64Opnd) {
+pub fn sub(cb: &mut CodeBlock, rd: &A64Opnd, rn: &A64Opnd, rm: &A64Opnd) {
     let bytes: [u8; 4] = match rm {
-        Arm64Opnd::UImm(_) => DataProcessingImmediate::sub(rd, rn, rm).into(),
-        Arm64Opnd::Reg(_) => DataProcessingRegister::sub(rd, rn, rm).into(),
+        A64Opnd::UImm(_) => DataProcessingImmediate::sub(rd, rn, rm).into(),
+        A64Opnd::Reg(_) => DataProcessingRegister::sub(rd, rn, rm).into(),
         _ => panic!("Invalid operand combination to add.")
     };
 

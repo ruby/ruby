@@ -9,7 +9,7 @@ use crate::cruby::*;
 use crate::backend::ir::*;
 
 // Use the arm64 register type for this platform
-pub type Reg = Arm64Reg;
+pub type Reg = A64Reg;
 
 // Callee-saved registers
 pub const _CFP: Opnd = Opnd::Reg(X9);
@@ -19,13 +19,13 @@ pub const _SP: Opnd = Opnd::Reg(X11);
 // C return value register on this platform
 pub const RET_REG: Reg = X0;
 
-/// Map Opnd to Arm64Opnd
-impl From<Opnd> for Arm64Opnd {
+/// Map Opnd to A64Opnd
+impl From<Opnd> for A64Opnd {
     fn from(opnd: Opnd) -> Self {
         match opnd {
             Opnd::UImm(val) => uimm_opnd(val),
             Opnd::Imm(val) => imm_opnd(val),
-            Opnd::Reg(reg) => Arm64Opnd::Reg(reg),
+            Opnd::Reg(reg) => A64Opnd::Reg(reg),
             _ => panic!("unsupported arm64 operand type")
         }
     }

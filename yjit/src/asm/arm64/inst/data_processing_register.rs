@@ -62,7 +62,7 @@ pub struct DataProcessingRegister {
 impl DataProcessingRegister {
     /// ADD (shifted register)
     /// https://developer.arm.com/documentation/ddi0596/2021-12/Base-Instructions/ADD--shifted-register---Add--shifted-register--?lang=en
-    pub fn add(rd: &Arm64Opnd, rn: &Arm64Opnd, rm: &Arm64Opnd) -> Self {
+    pub fn add(rd: &A64Opnd, rn: &A64Opnd, rm: &A64Opnd) -> Self {
         let (rd, rn, rm) = Self::unwrap(rd, rn, rm);
 
         Self {
@@ -79,7 +79,7 @@ impl DataProcessingRegister {
 
     /// ADDS (shifted register, set flags)
     /// https://developer.arm.com/documentation/ddi0596/2021-12/Base-Instructions/ADDS--shifted-register---Add--shifted-register---setting-flags-?lang=en
-    pub fn adds(rd: &Arm64Opnd, rn: &Arm64Opnd, rm: &Arm64Opnd) -> Self {
+    pub fn adds(rd: &A64Opnd, rn: &A64Opnd, rm: &A64Opnd) -> Self {
         let (rd, rn, rm) = Self::unwrap(rd, rn, rm);
 
         Self {
@@ -96,7 +96,7 @@ impl DataProcessingRegister {
 
     /// SUB (shifted register)
     /// https://developer.arm.com/documentation/ddi0596/2021-12/Base-Instructions/SUB--shifted-register---Subtract--shifted-register--?lang=en
-    pub fn sub(rd: &Arm64Opnd, rn: &Arm64Opnd, rm: &Arm64Opnd) -> Self {
+    pub fn sub(rd: &A64Opnd, rn: &A64Opnd, rm: &A64Opnd) -> Self {
         let (rd, rn, rm) = Self::unwrap(rd, rn, rm);
 
         Self {
@@ -113,7 +113,7 @@ impl DataProcessingRegister {
 
     /// SUBS (shifted register, set flags)
     /// https://developer.arm.com/documentation/ddi0596/2021-12/Base-Instructions/SUBS--shifted-register---Subtract--shifted-register---setting-flags-?lang=en
-    pub fn subs(rd: &Arm64Opnd, rn: &Arm64Opnd, rm: &Arm64Opnd) -> Self {
+    pub fn subs(rd: &A64Opnd, rn: &A64Opnd, rm: &A64Opnd) -> Self {
         let (rd, rn, rm) = Self::unwrap(rd, rn, rm);
 
         Self {
@@ -130,9 +130,9 @@ impl DataProcessingRegister {
 
     /// Extract out three registers from the given operands. Panic if any of the
     /// operands are not registers or if they are not the same size.
-    fn unwrap<'a>(rd: &'a Arm64Opnd, rn: &'a Arm64Opnd, rm: &'a Arm64Opnd) -> (&'a Arm64Reg, &'a Arm64Reg, &'a Arm64Reg) {
+    fn unwrap<'a>(rd: &'a A64Opnd, rn: &'a A64Opnd, rm: &'a A64Opnd) -> (&'a A64Reg, &'a A64Reg, &'a A64Reg) {
         match (rd, rn, rm) {
-            (Arm64Opnd::Reg(rd), Arm64Opnd::Reg(rn), Arm64Opnd::Reg(rm)) => {
+            (A64Opnd::Reg(rd), A64Opnd::Reg(rn), A64Opnd::Reg(rm)) => {
                 assert!(rd.num_bits == rn.num_bits && rn.num_bits == rm.num_bits, "All operands to a data processing register instruction must be of the same size.");
                 (rd, rn, rm)
             },

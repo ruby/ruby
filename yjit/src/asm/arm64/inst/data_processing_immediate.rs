@@ -58,7 +58,7 @@ pub struct DataProcessingImmediate {
 impl DataProcessingImmediate {
     /// ADD (immediate)
     /// https://developer.arm.com/documentation/ddi0596/2021-12/Base-Instructions/ADD--immediate---Add--immediate--?lang=en
-    pub fn add(rd: &Arm64Opnd, rn: &Arm64Opnd, imm12: &Arm64Opnd) -> Self {
+    pub fn add(rd: &A64Opnd, rn: &A64Opnd, imm12: &A64Opnd) -> Self {
         let (rd, rn, imm12) = Self::unwrap(rd, rn, imm12);
 
         Self {
@@ -74,7 +74,7 @@ impl DataProcessingImmediate {
 
     /// ADDS (immediate, set flags)
     /// https://developer.arm.com/documentation/ddi0596/2021-12/Base-Instructions/ADDS--immediate---Add--immediate---setting-flags-?lang=en
-    pub fn adds(rd: &Arm64Opnd, rn: &Arm64Opnd, imm12: &Arm64Opnd) -> Self {
+    pub fn adds(rd: &A64Opnd, rn: &A64Opnd, imm12: &A64Opnd) -> Self {
         let (rd, rn, imm12) = Self::unwrap(rd, rn, imm12);
 
         Self {
@@ -90,7 +90,7 @@ impl DataProcessingImmediate {
 
     /// SUB (immediate)
     /// https://developer.arm.com/documentation/ddi0596/2021-12/Base-Instructions/SUB--immediate---Subtract--immediate--?lang=en
-    pub fn sub(rd: &Arm64Opnd, rn: &Arm64Opnd, imm12: &Arm64Opnd) -> Self {
+    pub fn sub(rd: &A64Opnd, rn: &A64Opnd, imm12: &A64Opnd) -> Self {
         let (rd, rn, imm12) = Self::unwrap(rd, rn, imm12);
 
         Self {
@@ -106,7 +106,7 @@ impl DataProcessingImmediate {
 
     /// SUBS (immediate, set flags)
     /// https://developer.arm.com/documentation/ddi0596/2021-12/Base-Instructions/SUBS--immediate---Subtract--immediate---setting-flags-?lang=en
-    pub fn subs(rd: &Arm64Opnd, rn: &Arm64Opnd, imm12: &Arm64Opnd) -> Self {
+    pub fn subs(rd: &A64Opnd, rn: &A64Opnd, imm12: &A64Opnd) -> Self {
         let (rd, rn, imm12) = Self::unwrap(rd, rn, imm12);
 
         Self {
@@ -122,9 +122,9 @@ impl DataProcessingImmediate {
 
     /// Extract out two registers and an immediate from the given operands.
     /// Panic if any of the operands do not match the expected type or size.
-    fn unwrap<'a>(rd: &'a Arm64Opnd, rn: &'a Arm64Opnd, imm12: &'a Arm64Opnd) -> (&'a Arm64Reg, &'a Arm64Reg, &'a Arm64UImm) {
+    fn unwrap<'a>(rd: &'a A64Opnd, rn: &'a A64Opnd, imm12: &'a A64Opnd) -> (&'a A64Reg, &'a A64Reg, &'a A64UImm) {
         match (rd, rn, imm12) {
-            (Arm64Opnd::Reg(rd), Arm64Opnd::Reg(rn), Arm64Opnd::UImm(imm12)) => {
+            (A64Opnd::Reg(rd), A64Opnd::Reg(rn), A64Opnd::UImm(imm12)) => {
                 assert!(rd.num_bits == rn.num_bits, "Both rd and rn operands to a data processing immediate instruction must be of the same size.");
                 assert!(imm12.num_bits <= 12, "The immediate operand to a data processing immediate instruction must be 12 bits or less.");
                 (rd, rn, imm12)
@@ -166,7 +166,7 @@ mod tests {
 
     #[test]
     fn test_add() {
-        let uimm12 = Arm64Opnd::new_uimm(7);
+        let uimm12 = A64Opnd::new_uimm(7);
         let inst = DataProcessingImmediate::add(&X0, &X1, &uimm12);
         let result: u32 = inst.into();
         assert_eq!(0x91001c20, result);
@@ -174,7 +174,7 @@ mod tests {
 
     #[test]
     fn test_adds() {
-        let uimm12 = Arm64Opnd::new_uimm(7);
+        let uimm12 = A64Opnd::new_uimm(7);
         let inst = DataProcessingImmediate::adds(&X0, &X1, &uimm12);
         let result: u32 = inst.into();
         assert_eq!(0xb1001c20, result);
@@ -182,7 +182,7 @@ mod tests {
 
     #[test]
     fn test_sub() {
-        let uimm12 = Arm64Opnd::new_uimm(7);
+        let uimm12 = A64Opnd::new_uimm(7);
         let inst = DataProcessingImmediate::sub(&X0, &X1, &uimm12);
         let result: u32 = inst.into();
         assert_eq!(0xd1001c20, result);
@@ -190,7 +190,7 @@ mod tests {
 
     #[test]
     fn test_subs() {
-        let uimm12 = Arm64Opnd::new_uimm(7);
+        let uimm12 = A64Opnd::new_uimm(7);
         let inst = DataProcessingImmediate::subs(&X0, &X1, &uimm12);
         let result: u32 = inst.into();
         assert_eq!(0xf1001c20, result);
