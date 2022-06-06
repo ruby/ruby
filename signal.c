@@ -44,6 +44,7 @@
 #include "ruby_atomic.h"
 #include "vm_core.h"
 #include "ractor_core.h"
+#include "mjit.h"
 
 #ifdef NEED_RUBY_ATOMIC_OPS
 rb_atomic_t
@@ -729,6 +730,10 @@ sighandler(int sig)
         /* avoid spurious wakeup in main thread if and only if nobody uses trap(:CHLD) */
         if (vm && ACCESS_ONCE(VALUE, vm->trap_list.cmd[sig])) {
             signal_enque(sig);
+        }
+
+        if (mjit_enabled) { // TODO: Use a flag that becomes false when no longer waiting for CC
+            RUBY_VM_SET_MJIT_SIGCHLD_INTERRUPT(GET_EC());
         }
 #endif
     }

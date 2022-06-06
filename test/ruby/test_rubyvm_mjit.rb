@@ -87,7 +87,11 @@ class TestRubyVMMJIT < Test::Unit::TestCase
       print RubyVM::MJIT.pause(wait: false)
     EOS
     assert_equal('truefalse', out)
-    assert_equal(true, err.scan(/#{JITSupport::JIT_SUCCESS_PREFIX}/).size < 10)
+    if RUBY_PLATFORM.match?(/mswin|mingw/) # MJIT synchronously compiles methods on Windows
+      assert_equal(10, err.scan(/#{JITSupport::JIT_SUCCESS_PREFIX}/).size)
+    else
+      assert_equal(true, err.scan(/#{JITSupport::JIT_SUCCESS_PREFIX}/).size < 10)
+    end
   end
 
   def test_resume

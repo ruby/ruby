@@ -2248,12 +2248,20 @@ rb_threadptr_execute_interrupts(rb_thread_t *th, int blocking_timing)
 	int pending_interrupt;
 	int trap_interrupt;
         int terminate_interrupt;
+        int mjit_sigchld_interrupt;
 
 	timer_interrupt = interrupt & TIMER_INTERRUPT_MASK;
 	pending_interrupt = interrupt & PENDING_INTERRUPT_MASK;
 	postponed_job_interrupt = interrupt & POSTPONED_JOB_INTERRUPT_MASK;
 	trap_interrupt = interrupt & TRAP_INTERRUPT_MASK;
         terminate_interrupt = interrupt & TERMINATE_INTERRUPT_MASK; // request from other ractors
+        mjit_sigchld_interrupt = interrupt & MJIT_SIGCHLD_INTERRUPT_MASK;
+
+#if USE_MJIT
+        if (mjit_sigchld_interrupt) {
+            mjit_check_process();
+        }
+#endif
 
         if (interrupt & VM_BARRIER_INTERRUPT_MASK) {
             RB_VM_LOCK_ENTER();

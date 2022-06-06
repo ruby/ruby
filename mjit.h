@@ -103,6 +103,7 @@ extern void mjit_mark(void);
 extern struct mjit_cont *mjit_cont_new(rb_execution_context_t *ec);
 extern void mjit_cont_free(struct mjit_cont *cont);
 extern void mjit_mark_cc_entries(const struct rb_iseq_constant_body *const body);
+extern void mjit_check_process(void);
 
 #  ifdef MJIT_HEADER
 NOINLINE(static COLDFUNC VALUE mjit_exec_slowpath(rb_execution_context_t *ec, const rb_iseq_t *iseq, struct rb_iseq_constant_body *body));
