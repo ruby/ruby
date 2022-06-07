@@ -122,6 +122,11 @@ class RDoc::Parser::C < RDoc::Parser
 
   include RDoc::Text
 
+  #--
+  BOOL_ARG_PATTERN = /\s*+\b([01]|Q?(?:true|false)|TRUE|FALSE)\b\s*/
+  TRUE_VALUES = ['1', 'TRUE', 'true', 'Qtrue'].freeze
+  #++
+
   ##
   # Maps C variable names to names of Ruby classes or modules
 
@@ -259,18 +264,18 @@ class RDoc::Parser::C < RDoc::Parser
     @content.scan(/rb_attr\s*\(
                    \s*(\w+),
                    \s*([\w"()]+),
-                   \s*([01]),
-                   \s*([01]),
-                   \s*\w+\);/xm) do |var_name, attr_name, read, write|
+                   #{BOOL_ARG_PATTERN},
+                   #{BOOL_ARG_PATTERN},
+                   \s*\w+\);/xmo) do |var_name, attr_name, read, write|
       handle_attr var_name, attr_name, read, write
     end
 
     @content.scan(%r%rb_define_attr\(
                              \s*([\w\.]+),
                              \s*"([^"]+)",
-                             \s*(\d+),
-                             \s*(\d+)\s*\);
-                %xm) do |var_name, attr_name, read, write|
+                             #{BOOL_ARG_PATTERN},
+                             #{BOOL_ARG_PATTERN}\);
+                %xmo) do |var_name, attr_name, read, write|
       handle_attr var_name, attr_name, read, write
     end
   end
@@ -815,8 +820,8 @@ class RDoc::Parser::C < RDoc::Parser
 
   def handle_attr(var_name, attr_name, read, write)
     rw = ''
-    rw += 'R' if '1' == read
-    rw += 'W' if '1' == write
+    rw += 'R' if TRUE_VALUES.include?(read)
+    rw += 'W' if TRUE_VALUES.include?(write)
 
     class_name = @known_classes[var_name]
 

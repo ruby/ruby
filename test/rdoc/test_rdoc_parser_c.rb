@@ -132,7 +132,7 @@ class TestRDocParserC < RDoc::TestCase
     assert_equal expected, known_classes
   end
 
-  def test_do_attr_rb_attr
+  def assert_do_attr(flags)
     content = <<-EOF
 void Init_Blah(void) {
   cBlah = rb_define_class("Blah", rb_cObject);
@@ -140,17 +140,17 @@ void Init_Blah(void) {
   /*
    * This is an accessor
    */
-  rb_attr(cBlah, rb_intern("accessor"), 1, 1, Qfalse);
+  #{yield "cBlah", "accessor", flags[1], flags[1]};
 
   /*
    * This is a reader
    */
-  rb_attr(cBlah, rb_intern("reader"), 1, 0, Qfalse);
+  #{yield "cBlah", "reader", flags[1], flags[0]};
 
   /*
    * This is a writer
    */
-  rb_attr(cBlah, rb_intern("writer"), 0, 1, Qfalse);
+  #{yield "cBlah", "writer", flags[0], flags[1]};
 }
     EOF
 
@@ -176,72 +176,21 @@ void Init_Blah(void) {
     assert_equal 'This is a writer', writer.comment.text
   end
 
-  def test_do_attr_rb_attr_2
-    content = <<-EOF
-void Init_Blah(void) {
-  cBlah = rb_define_class("Blah", rb_cObject);
-
-  /*
-   * This is an accessor
-   */
-  rb_attr(cBlah, rb_intern_const("accessor"), 1, 1, Qfalse);
-
-  /*
-   * This is a reader
-   */
-  rb_attr(cBlah, rb_intern_const("reader"), 1, 0, Qfalse);
-
-  /*
-   * This is a writer
-   */
-  rb_attr(cBlah, rb_intern_const("writer"), 0, 1, Qfalse);
-}
-    EOF
-
-    klass = util_get_class content, 'cBlah'
-
-    attrs = klass.attributes
-    assert_equal 3, attrs.length, attrs.inspect
-
-    accessor = attrs.shift
-    assert_equal 'accessor',            accessor.name
-    assert_equal 'RW',                  accessor.rw
-    assert_equal 'This is an accessor', accessor.comment.text
-    assert_equal @top_level,            accessor.file
-
-    reader = attrs.shift
-    assert_equal 'reader',           reader.name
-    assert_equal 'R',                reader.rw
-    assert_equal 'This is a reader', reader.comment.text
-
-    writer = attrs.shift
-    assert_equal 'writer',           writer.name
-    assert_equal 'W',                writer.rw
-    assert_equal 'This is a writer', writer.comment.text
-  end
-
-  def test_do_attr_rb_define_attr
-    content = <<-EOF
-void Init_Blah(void) {
-  cBlah = rb_define_class("Blah", rb_cObject);
-
-  /*
-   * This is an accessor
-   */
-  rb_define_attr(cBlah, "accessor", 1, 1);
-}
-    EOF
-
-    klass = util_get_class content, 'cBlah'
-
-    attrs = klass.attributes
-    assert_equal 1, attrs.length, attrs.inspect
-
-    accessor = attrs.shift
-    assert_equal 'accessor',            accessor.name
-    assert_equal 'RW',                  accessor.rw
-    assert_equal 'This is an accessor', accessor.comment.text
-    assert_equal @top_level,            accessor.file
+  {
+    num: %w[0 1],
+    macro: %w[FALSE TRUE],
+    ruby: %w[Qfalse Qtrue],
+    bool: %w[false true],
+  }.each_pair do |name, values|
+    define_method("test_do_attr:rb_attr:intern:#{name}") do
+      assert_do_attr(values) {|c, name, r, w| %[rb_attr(#{c}, rb_intern("#{name}"), #{r}, #{w}, Qfalse)]}
+    end
+    define_method("test_do_attr:rb_attr:intern_const:#{name}") do
+      assert_do_attr(values) {|c, name, r, w| %[rb_attr(#{c}, rb_intern_const("#{name}"), #{r}, #{w}, Qfalse)]}
+    end
+    define_method("test_do_attr:rb_define_attr:#{name}") do
+      assert_do_attr(values) {|c, name, r, w| %[rb_define_attr(#{c}, "#{name}", #{r}, #{w})]}
+    end
   end
 
   def test_do_aliases
