@@ -146,6 +146,8 @@ impl DataProcessingRegister {
 impl From<DataProcessingRegister> for u32 {
     /// Convert a data processing instruction into a 32-bit value.
     fn from(inst: DataProcessingRegister) -> Self {
+        let imm6 = (inst.imm6 as u32) & (2_u32.pow(6) - 1);
+
         0
         | (inst.sf as u32).wrapping_shl(31)
         | (inst.op as u32).wrapping_shl(30)
@@ -154,7 +156,7 @@ impl From<DataProcessingRegister> for u32 {
         | (0b1 << 24)
         | (inst.shift as u32).wrapping_shl(22)
         | (inst.rm as u32).wrapping_shl(16)
-        | (inst.imm6 as u32).wrapping_shl(10)
+        | imm6.wrapping_shl(10)
         | (inst.rn as u32).wrapping_shl(5)
         | inst.rd as u32
     }

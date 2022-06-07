@@ -139,6 +139,8 @@ impl DataProcessingImmediate {
 impl From<DataProcessingImmediate> for u32 {
     /// Convert a data processing instruction into a 32-bit value.
     fn from(inst: DataProcessingImmediate) -> Self {
+        let imm12 = (inst.imm12 as u32) & (2_u32.pow(12) - 1);
+
         0
         | (inst.sf as u32).wrapping_shl(31)
         | (inst.op as u32).wrapping_shl(30)
@@ -146,7 +148,7 @@ impl From<DataProcessingImmediate> for u32 {
         | (Family::DataProcessingImmediate as u32).wrapping_shl(25)
         | (0b1 << 24)
         | (inst.shift as u32).wrapping_shl(22)
-        | (inst.imm12 as u32).wrapping_shl(10)
+        | imm12.wrapping_shl(10)
         | (inst.rn as u32).wrapping_shl(5)
         | inst.rd as u32
     }
