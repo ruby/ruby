@@ -1,8 +1,4 @@
-use super::{
-    super::opnd::*,
-    family::Family,
-    sf::Sf
-};
+use super::family::Family;
 
 /// The struct that represents an A64 branches and system instruction that can
 /// be encoded.
@@ -14,7 +10,7 @@ use super::{
 /// |                                                                             rn.............. rm.............. |
 /// +-------------+-------------+-------------+-------------+-------------+-------------+-------------+-------------+
 ///
-struct BranchesAndSystem {
+pub struct BranchesAndSystem {
     /// The register holding the address to be branched to.
     rn: u8
 }
@@ -22,17 +18,13 @@ struct BranchesAndSystem {
 impl BranchesAndSystem {
     /// RET
     /// https://developer.arm.com/documentation/ddi0596/2021-12/Base-Instructions/RET--Return-from-subroutine-?lang=en
-    pub fn ret(rn: A64Opnd) -> Self {
-        match rn {
-            A64Opnd::None => BranchesAndSystem { rn: 30 },
-            A64Opnd::Reg(reg) => BranchesAndSystem { rn: reg.reg_no },
-            _ => panic!("Invalid operand for RET")
-        }
+    pub fn ret(rn: u8) -> Self {
+        Self { rn }
     }
 }
 
 impl From<BranchesAndSystem> for u32 {
-    /// Convert a data processing instruction into a 32-bit value.
+    /// Convert an instruction into a 32-bit value.
     fn from(inst: BranchesAndSystem) -> Self {
         0
         | (0b11 << 30)
@@ -43,7 +35,7 @@ impl From<BranchesAndSystem> for u32 {
 }
 
 impl From<BranchesAndSystem> for [u8; 4] {
-    /// Convert a data processing instruction into a 4 byte array.
+    /// Convert an instruction into a 4 byte array.
     fn from(inst: BranchesAndSystem) -> [u8; 4] {
         let result: u32 = inst.into();
         result.to_le_bytes()
@@ -56,14 +48,14 @@ mod tests {
 
     #[test]
     fn test_ret() {
-        let inst = BranchesAndSystem::ret(A64Opnd::None);
+        let inst = BranchesAndSystem::ret(30);
         let result: u32 = inst.into();
         assert_eq!(0xd65f03C0, result);
     }
 
     #[test]
     fn test_ret_rn() {
-        let inst = BranchesAndSystem::ret(X20);
+        let inst = BranchesAndSystem::ret(20);
         let result: u32 = inst.into();
         assert_eq!(0xd65f0280, result);
     }

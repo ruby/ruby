@@ -1,8 +1,4 @@
-use super::{
-    super::opnd::*,
-    family::Family,
-    sf::Sf
-};
+use super::{family::Family, sf::Sf};
 
 /// The operation being performed by this instruction.
 enum Op {
@@ -58,88 +54,65 @@ pub struct DataProcessingImmediate {
 impl DataProcessingImmediate {
     /// ADD (immediate)
     /// https://developer.arm.com/documentation/ddi0596/2021-12/Base-Instructions/ADD--immediate---Add--immediate--?lang=en
-    pub fn add(rd: A64Opnd, rn: A64Opnd, imm12: A64Opnd) -> Self {
-        let (rd, rn, imm12) = Self::unwrap(rd, rn, imm12);
-
+    pub fn add(rd: u8, rn: u8, imm12: u16, num_bits: u8) -> Self {
         Self {
-            rd: rd.reg_no,
-            rn: rn.reg_no,
-            imm12: imm12.value as u16,
+            rd,
+            rn,
+            imm12,
             shift: Shift::LSL0,
             s: S::LeaveFlags,
             op: Op::Add,
-            sf: rd.num_bits.into()
+            sf: num_bits.into()
         }
     }
 
     /// ADDS (immediate, set flags)
     /// https://developer.arm.com/documentation/ddi0596/2021-12/Base-Instructions/ADDS--immediate---Add--immediate---setting-flags-?lang=en
-    pub fn adds(rd: A64Opnd, rn: A64Opnd, imm12: A64Opnd) -> Self {
-        let (rd, rn, imm12) = Self::unwrap(rd, rn, imm12);
-
+    pub fn adds(rd: u8, rn: u8, imm12: u16, num_bits: u8) -> Self {
         Self {
-            rd: rd.reg_no,
-            rn: rn.reg_no,
-            imm12: imm12.value as u16,
+            rd,
+            rn,
+            imm12,
             shift: Shift::LSL0,
             s: S::UpdateFlags,
             op: Op::Add,
-            sf: rd.num_bits.into()
+            sf: num_bits.into()
         }
     }
 
     /// SUB (immediate)
     /// https://developer.arm.com/documentation/ddi0596/2021-12/Base-Instructions/SUB--immediate---Subtract--immediate--?lang=en
-    pub fn sub(rd: A64Opnd, rn: A64Opnd, imm12: A64Opnd) -> Self {
-        let (rd, rn, imm12) = Self::unwrap(rd, rn, imm12);
-
+    pub fn sub(rd: u8, rn: u8, imm12: u16, num_bits: u8) -> Self {
         Self {
-            rd: rd.reg_no,
-            rn: rn.reg_no,
-            imm12: imm12.value as u16,
+            rd,
+            rn,
+            imm12,
             shift: Shift::LSL0,
             s: S::LeaveFlags,
             op: Op::Sub,
-            sf: rd.num_bits.into()
+            sf: num_bits.into()
         }
     }
 
     /// SUBS (immediate, set flags)
     /// https://developer.arm.com/documentation/ddi0596/2021-12/Base-Instructions/SUBS--immediate---Subtract--immediate---setting-flags-?lang=en
-    pub fn subs(rd: A64Opnd, rn: A64Opnd, imm12: A64Opnd) -> Self {
-        let (rd, rn, imm12) = Self::unwrap(rd, rn, imm12);
-
+    pub fn subs(rd: u8, rn: u8, imm12: u16, num_bits: u8) -> Self {
         Self {
-            rd: rd.reg_no,
-            rn: rn.reg_no,
-            imm12: imm12.value as u16,
+            rd,
+            rn,
+            imm12,
             shift: Shift::LSL0,
             s: S::UpdateFlags,
             op: Op::Sub,
-            sf: rd.num_bits.into()
-        }
-    }
-
-    /// Extract out two registers and an immediate from the given operands.
-    /// Panic if any of the operands do not match the expected type or size.
-    fn unwrap(rd: A64Opnd, rn: A64Opnd, imm12: A64Opnd) -> (A64Reg, A64Reg, A64UImm) {
-        match (rd, rn, imm12) {
-            (A64Opnd::Reg(rd), A64Opnd::Reg(rn), A64Opnd::UImm(imm12)) => {
-                assert!(rd.num_bits == rn.num_bits, "Both rd and rn operands to a data processing immediate instruction must be of the same size.");
-                assert!(imm12.num_bits <= 12, "The immediate operand to a data processing immediate instruction must be 12 bits or less.");
-                (rd, rn, imm12)
-            },
-            _ => {
-                panic!("Expected 2 register operands and an immediate operand for a data processing immediate instruction.");
-            }
+            sf: num_bits.into()
         }
     }
 }
 
 impl From<DataProcessingImmediate> for u32 {
-    /// Convert a data processing instruction into a 32-bit value.
+    /// Convert an instruction into a 32-bit value.
     fn from(inst: DataProcessingImmediate) -> Self {
-        let imm12 = (inst.imm12 as u32) & (2_u32.pow(12) - 1);
+        let imm12 = (inst.imm12 as u32) & ((0b1 << 12) - 1);
 
         0
         | (inst.sf as u32).wrapping_shl(31)
@@ -155,7 +128,7 @@ impl From<DataProcessingImmediate> for u32 {
 }
 
 impl From<DataProcessingImmediate> for [u8; 4] {
-    /// Convert a data processing instruction into a 4 byte array.
+    /// Convert an instruction into a 4 byte array.
     fn from(inst: DataProcessingImmediate) -> [u8; 4] {
         let result: u32 = inst.into();
         result.to_le_bytes()
@@ -168,32 +141,28 @@ mod tests {
 
     #[test]
     fn test_add() {
-        let uimm12 = A64Opnd::new_uimm(7);
-        let inst = DataProcessingImmediate::add(X0, X1, uimm12);
+        let inst = DataProcessingImmediate::add(0, 1, 7, 64);
         let result: u32 = inst.into();
         assert_eq!(0x91001c20, result);
     }
 
     #[test]
     fn test_adds() {
-        let uimm12 = A64Opnd::new_uimm(7);
-        let inst = DataProcessingImmediate::adds(X0, X1, uimm12);
+        let inst = DataProcessingImmediate::adds(0, 1, 7, 64);
         let result: u32 = inst.into();
         assert_eq!(0xb1001c20, result);
     }
 
     #[test]
     fn test_sub() {
-        let uimm12 = A64Opnd::new_uimm(7);
-        let inst = DataProcessingImmediate::sub(X0, X1, uimm12);
+        let inst = DataProcessingImmediate::sub(0, 1, 7, 64);
         let result: u32 = inst.into();
         assert_eq!(0xd1001c20, result);
     }
 
     #[test]
     fn test_subs() {
-        let uimm12 = A64Opnd::new_uimm(7);
-        let inst = DataProcessingImmediate::subs(X0, X1, uimm12);
+        let inst = DataProcessingImmediate::subs(0, 1, 7, 64);
         let result: u32 = inst.into();
         assert_eq!(0xf1001c20, result);
     }
