@@ -33,26 +33,26 @@ enum Shift {
 /// +-------------+-------------+-------------+-------------+-------------+-------------+-------------+-------------+
 ///
 pub struct DataProcessingImmediate {
-    /// Whether or not this instruction is operating on 64-bit operands.
-    sf: Sf,
-
-    /// The opcode for this instruction.
-    op: Op,
-
-    /// Whether or not to update the flags when this instruction is performed.
-    s: S,
-
-    /// How much to shift the immediate by.
-    shift: Shift,
-
-    /// The value of the immediate.
-    imm12: u16,
+    /// The register number of the destination register.
+    rd: u8,
 
     /// The register number of the first operand register.
     rn: u8,
 
-    /// The register number of the destination register.
-    rd: u8
+    /// The value of the immediate.
+    imm12: u16,
+
+    /// How much to shift the immediate by.
+    shift: Shift,
+
+    /// Whether or not to update the flags when this instruction is performed.
+    s: S,
+
+    /// The opcode for this instruction.
+    op: Op,
+
+    /// Whether or not this instruction is operating on 64-bit operands.
+    sf: Sf
 }
 
 impl DataProcessingImmediate {
@@ -62,13 +62,13 @@ impl DataProcessingImmediate {
         let (rd, rn, imm12) = Self::unwrap(rd, rn, imm12);
 
         Self {
-            sf: rd.num_bits.into(),
-            op: Op::Add,
-            s: S::LeaveFlags,
-            shift: Shift::LSL0,
-            imm12: imm12.value as u16,
+            rd: rd.reg_no,
             rn: rn.reg_no,
-            rd: rd.reg_no
+            imm12: imm12.value as u16,
+            shift: Shift::LSL0,
+            s: S::LeaveFlags,
+            op: Op::Add,
+            sf: rd.num_bits.into()
         }
     }
 
@@ -78,13 +78,13 @@ impl DataProcessingImmediate {
         let (rd, rn, imm12) = Self::unwrap(rd, rn, imm12);
 
         Self {
-            sf: rd.num_bits.into(),
-            op: Op::Add,
-            s: S::UpdateFlags,
-            shift: Shift::LSL0,
-            imm12: imm12.value as u16,
+            rd: rd.reg_no,
             rn: rn.reg_no,
-            rd: rd.reg_no
+            imm12: imm12.value as u16,
+            shift: Shift::LSL0,
+            s: S::UpdateFlags,
+            op: Op::Add,
+            sf: rd.num_bits.into()
         }
     }
 
@@ -94,13 +94,13 @@ impl DataProcessingImmediate {
         let (rd, rn, imm12) = Self::unwrap(rd, rn, imm12);
 
         Self {
-            sf: rd.num_bits.into(),
-            op: Op::Sub,
-            s: S::LeaveFlags,
-            shift: Shift::LSL0,
-            imm12: imm12.value as u16,
+            rd: rd.reg_no,
             rn: rn.reg_no,
-            rd: rd.reg_no
+            imm12: imm12.value as u16,
+            shift: Shift::LSL0,
+            s: S::LeaveFlags,
+            op: Op::Sub,
+            sf: rd.num_bits.into()
         }
     }
 
@@ -110,13 +110,13 @@ impl DataProcessingImmediate {
         let (rd, rn, imm12) = Self::unwrap(rd, rn, imm12);
 
         Self {
-            sf: rd.num_bits.into(),
-            op: Op::Sub,
-            s: S::UpdateFlags,
-            shift: Shift::LSL0,
-            imm12: imm12.value as u16,
+            rd: rd.reg_no,
             rn: rn.reg_no,
-            rd: rd.reg_no
+            imm12: imm12.value as u16,
+            shift: Shift::LSL0,
+            s: S::UpdateFlags,
+            op: Op::Sub,
+            sf: rd.num_bits.into()
         }
     }
 

@@ -34,29 +34,29 @@ enum Shift {
 /// +-------------+-------------+-------------+-------------+-------------+-------------+-------------+-------------+
 ///
 pub struct DataProcessingRegister {
-    /// Whether or not this instruction is operating on 64-bit operands.
-    sf: Sf,
-
-    /// The opcode for this instruction.
-    op: Op,
-
-    /// Whether or not to update the flags when this instruction is performed.
-    s: S,
-
-    /// The type of shift to perform on the second operand register.
-    shift: Shift,
-
-    /// The register number of the second operand register.
-    rm: u8,
-
-    /// The amount to shift the second operand register by.
-    imm6: u8,
+    /// The register number of the destination register.
+    rd: u8,
 
     /// The register number of the first operand register.
     rn: u8,
 
-    /// The register number of the destination register.
-    rd: u8
+    /// The amount to shift the second operand register by.
+    imm6: u8,
+
+    /// The register number of the second operand register.
+    rm: u8,
+
+    /// The type of shift to perform on the second operand register.
+    shift: Shift,
+
+    /// Whether or not to update the flags when this instruction is performed.
+    s: S,
+
+    /// The opcode for this instruction.
+    op: Op,
+
+    /// Whether or not this instruction is operating on 64-bit operands.
+    sf: Sf
 }
 
 impl DataProcessingRegister {
@@ -66,14 +66,14 @@ impl DataProcessingRegister {
         let (rd, rn, rm) = Self::unwrap(rd, rn, rm);
 
         Self {
-            sf: rd.num_bits.into(),
-            op: Op::Add,
-            s: S::LeaveFlags,
-            shift: Shift::LSL,
-            rm: rm.reg_no,
-            imm6: 0,
+            rd: rd.reg_no,
             rn: rn.reg_no,
-            rd: rd.reg_no
+            imm6: 0,
+            rm: rm.reg_no,
+            shift: Shift::LSL,
+            s: S::LeaveFlags,
+            op: Op::Add,
+            sf: rd.num_bits.into()
         }
     }
 
@@ -83,14 +83,14 @@ impl DataProcessingRegister {
         let (rd, rn, rm) = Self::unwrap(rd, rn, rm);
 
         Self {
-            sf: rd.num_bits.into(),
-            op: Op::Add,
-            s: S::UpdateFlags,
-            shift: Shift::LSL,
-            rm: rm.reg_no,
-            imm6: 0,
+            rd: rd.reg_no,
             rn: rn.reg_no,
-            rd: rd.reg_no
+            imm6: 0,
+            rm: rm.reg_no,
+            shift: Shift::LSL,
+            s: S::UpdateFlags,
+            op: Op::Add,
+            sf: rd.num_bits.into()
         }
     }
 
@@ -100,14 +100,14 @@ impl DataProcessingRegister {
         let (rd, rn, rm) = Self::unwrap(rd, rn, rm);
 
         Self {
-            sf: rd.num_bits.into(),
-            op: Op::Sub,
-            s: S::LeaveFlags,
-            shift: Shift::LSL,
-            rm: rm.reg_no,
-            imm6: 0,
+            rd: rd.reg_no,
             rn: rn.reg_no,
-            rd: rd.reg_no
+            imm6: 0,
+            rm: rm.reg_no,
+            shift: Shift::LSL,
+            s: S::LeaveFlags,
+            op: Op::Sub,
+            sf: rd.num_bits.into()
         }
     }
 
@@ -117,14 +117,14 @@ impl DataProcessingRegister {
         let (rd, rn, rm) = Self::unwrap(rd, rn, rm);
 
         Self {
-            sf: rd.num_bits.into(),
-            op: Op::Sub,
-            s: S::UpdateFlags,
-            shift: Shift::LSL,
-            rm: rm.reg_no,
-            imm6: 0,
+            rd: rd.reg_no,
             rn: rn.reg_no,
-            rd: rd.reg_no
+            imm6: 0,
+            rm: rm.reg_no,
+            shift: Shift::LSL,
+            s: S::UpdateFlags,
+            op: Op::Sub,
+            sf: rd.num_bits.into()
         }
     }
 

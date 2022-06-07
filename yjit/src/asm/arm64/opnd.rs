@@ -13,7 +13,7 @@ pub struct A64Imm
 
 impl A64Imm {
     pub fn new(value: i64) -> Self {
-        A64Imm { num_bits: imm_num_bits(value), value }
+        Self { num_bits: imm_num_bits(value), value }
     }
 }
 
@@ -30,7 +30,7 @@ pub struct A64UImm
 
 impl A64UImm {
     pub fn new(value: u64) -> Self {
-        A64UImm { num_bits: uimm_num_bits(value), value }
+        Self { num_bits: uimm_num_bits(value), value }
     }
 }
 
@@ -43,6 +43,34 @@ pub struct A64Reg
 
     // Register index number
     pub reg_no: u8,
+}
+
+#[derive(Clone, Copy, Debug)]
+pub struct A64Mem
+{
+    // Size in bits
+    pub num_bits: u8,
+
+    /// Base register number
+    pub base_reg_no: u8,
+
+    /// Constant displacement from the base, not scaled
+    pub disp: i32,
+}
+
+impl A64Mem {
+    pub fn new(reg: A64Opnd, disp: i32) -> Self {
+        match reg {
+            A64Opnd::Reg(reg) => {
+                Self {
+                    num_bits: reg.num_bits,
+                    base_reg_no: reg.reg_no,
+                    disp
+                }
+            },
+            _ => panic!("Expected register operand")
+        }
+    }
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -59,6 +87,9 @@ pub enum A64Opnd
 
     // Register
     Reg(A64Reg),
+
+    // Memory
+    Mem(A64Mem)
 }
 
 impl A64Opnd {
@@ -70,6 +101,11 @@ impl A64Opnd {
     /// Create a new unsigned immediate value operand.
     pub fn new_uimm(value: u64) -> Self {
         A64Opnd::UImm(A64UImm::new(value))
+    }
+
+    /// Creates a new memory operand.
+    pub fn new_mem(reg: A64Opnd, disp: i32) -> Self {
+        A64Opnd::Mem(A64Mem::new(reg, disp))
     }
 
     /// Convenience function to check if this operand is a register.

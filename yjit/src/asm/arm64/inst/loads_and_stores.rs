@@ -1,3 +1,5 @@
+use crate::asm::imm_num_bits;
+
 use super::{
     super::opnd::*,
     family::Family
@@ -32,37 +34,37 @@ impl From<u8> for Size {
 /// +-------------+-------------+-------------+-------------+-------------+-------------+-------------+-------------+
 ///
 struct LoadsAndStores {
-    /// The size of the operands being operated on.
-    size: Size,
-
-    /// The optional signed immediate byte offset from the base register.
-    imm9: u16,
+    /// The number of the register to load the value into.
+    rt: u8,
 
     /// The base register with which to form the address.
     rn: u8,
 
-    /// The number of the register to load the value into.
-    rt: u8
+    /// The optional signed immediate byte offset from the base register.
+    imm9: u16,
+
+    /// The size of the operands being operated on.
+    size: Size
 }
 
 impl LoadsAndStores {
     /// LDUR (load register, unscaled)
     /// https://developer.arm.com/documentation/ddi0596/2021-12/Base-Instructions/LDUR--Load-Register--unscaled--?lang=en
-    pub fn ldur(rt: A64Opnd, rn: A64Opnd, imm9: A64Opnd) -> Self {
-        let (rt, rn, imm9) = match (rt, rn, imm9) {
-            (A64Opnd::Reg(rt), A64Opnd::Reg(rn), A64Opnd::Imm(imm9)) => {
+    pub fn ldur(rt: A64Opnd, rn: A64Opnd) -> Self {
+        let (rt, rn) = match (rt, rn) {
+            (A64Opnd::Reg(rt), A64Opnd::Mem(rn)) => {
                 assert!(rt.num_bits == rn.num_bits, "Expected registers to be the same size");
-                assert!(imm9.num_bits <= 9, "Expected immediate to be 9 bits or less");
-                (rt, rn, imm9)
+                assert!(imm_num_bits(rn.disp.into()) <= 9, "Expected displacement to be 9 bits or less");
+                (rt, rn)
             },
             _ => panic!("Invalid operands for LDUR")
         };
 
         Self {
-            size: rt.num_bits.into(),
-            imm9: imm9.value as u16,
-            rn: rn.reg_no,
-            rt: rt.reg_no
+            rt: rt.reg_no,
+            rn: rn.base_reg_no,
+            imm9: rn.disp as u16,
+            size: rt.num_bits.into()
         }
     }
 }
@@ -97,16 +99,16 @@ mod tests {
 
     #[test]
     fn test_ldur() {
-        let imm9 = A64Opnd::new_imm(0);
-        let inst = LoadsAndStores::ldur(X0, X1, imm9);
+        let rn = A64Opnd::new_mem(X1, 0);
+        let inst = LoadsAndStores::ldur(X0, rn);
         let result: u32 = inst.into();
         assert_eq!(0xf8400020, result);
     }
 
     #[test]
     fn test_ldur_with_imm() {
-        let imm9 = A64Opnd::new_imm(123);
-        let inst = LoadsAndStores::ldur(X0, X1, imm9);
+        let rn = A64Opnd::new_mem(X1, 123);
+        let inst = LoadsAndStores::ldur(X0, rn);
         let result: u32 = inst.into();
         assert_eq!(0xf847b020, result);
     }
