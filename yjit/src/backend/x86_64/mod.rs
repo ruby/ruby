@@ -49,7 +49,7 @@ impl From<Opnd> for X86Opnd {
 
 impl Assembler
 {
-    // Get the list of registers from which we can allocate on this platform
+    /// Get the list of registers from which we can allocate on this platform
     pub fn get_scratch_regs() -> Vec<Reg>
     {
         vec![
@@ -58,7 +58,7 @@ impl Assembler
         ]
     }
 
-    // Emit platform-specific machine code
+    /// Emit platform-specific machine code
     fn x86_split(mut self) -> Assembler
     {
         let live_ranges: Vec<usize> = std::mem::take(&mut self.live_ranges);
@@ -92,9 +92,12 @@ impl Assembler
         })
     }
 
-    // Emit platform-specific machine code
-    pub fn x86_emit(&mut self, jit: &mut JITState, cb: &mut CodeBlock)
+    /// Emit platform-specific machine code
+    pub fn x86_emit(&mut self, cb: &mut CodeBlock) -> Vec<u32>
     {
+        // List of GC offsets
+        let mut gc_offsets: Vec<u32> = Vec::new();
+
         // For each instruction
         for insn in &self.insns {
             match insn.op {
@@ -120,7 +123,7 @@ impl Assembler
                         if !val.special_const_p() {
                             // The pointer immediate is encoded as the last part of the mov written out
                             let ptr_offset: u32 = (cb.get_write_pos() as u32) - (SIZEOF_VALUE as u32);
-                            jit.add_gc_obj_offset(ptr_offset);
+                            gc_offsets.push(ptr_offset);
                         }
                     }
                 },
@@ -162,15 +165,17 @@ impl Assembler
                 _ => panic!("unsupported instruction passed to x86 backend: {:?}", insn.op)
             };
         }
+
+        gc_offsets
     }
 
-    // Optimize and compile the stored instructions
-    pub fn compile_with_regs(self, jit: &mut JITState, cb: &mut CodeBlock, regs: Vec<Reg>)
+    /// Optimize and compile the stored instructions
+    pub fn compile_with_regs(self, cb: &mut CodeBlock, regs: Vec<Reg>) -> Vec<u32>
     {
         self
         .x86_split()
         .split_loads()
         .alloc_regs(regs)
-        .x86_emit(jit, cb);
+        .x86_emit(cb)
     }
 }

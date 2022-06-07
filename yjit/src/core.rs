@@ -908,6 +908,7 @@ impl Block {
 
     pub fn add_gc_obj_offset(self: &mut Block, ptr_offset: u32) {
         self.gc_obj_offsets.push(ptr_offset);
+        incr_counter!(num_gc_obj_refs);
     }
 
     /// Instantiate a new CmeDependency struct and add it to the list of

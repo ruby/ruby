@@ -118,12 +118,6 @@ impl JITState {
         self.opcode
     }
 
-    pub fn add_gc_obj_offset(self: &mut JITState, ptr_offset: u32) {
-        let mut gc_obj_vec: RefMut<_> = self.block.borrow_mut();
-        gc_obj_vec.add_gc_obj_offset(ptr_offset);
-        incr_counter!(num_gc_obj_refs);
-    }
-
     pub fn get_pc(self: &JITState) -> *mut VALUE {
         self.pc
     }
@@ -838,9 +832,12 @@ pub fn gen_single_block(
     // Finish filling out the block
     {
         // Compile code into the code block
-        asm.compile(&mut jit, cb);
+        let gc_offsets = asm.compile(cb);
 
         let mut block = jit.block.borrow_mut();
+
+        // Add the GC offsets to the block
+        gc_offsets.iter().map(|offs| { block.add_gc_obj_offset(*offs) });
 
         // Mark the end position of the block
         block.set_end_addr(cb.get_write_ptr());

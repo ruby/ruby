@@ -33,31 +33,32 @@ impl From<Opnd> for A64Opnd {
 
 impl Assembler
 {
-    // Get the list of registers from which we can allocate on this platform
+    /// Get the list of registers from which we can allocate on this platform
     pub fn get_scratch_regs() -> Vec<Reg>
     {
         vec![X12_REG, X13_REG]
     }
 
-    // Split platform-specific instructions
+    /// Split platform-specific instructions
     fn arm64_split(mut self) -> Assembler
     {
         todo!();
     }
 
-    // Emit platform-specific machine code
-    pub fn arm64_emit(&mut self, jit: &mut JITState, cb: &mut CodeBlock)
+    /// Emit platform-specific machine code
+    /// Returns a list of GC offsets
+    pub fn arm64_emit(&mut self, cb: &mut CodeBlock) -> Vec<u32>
     {
         todo!();
     }
 
-    // Optimize and compile the stored instructions
-    pub fn compile_with_regs(self, jit: &mut JITState, cb: &mut CodeBlock, regs: Vec<Reg>)
+    /// Optimize and compile the stored instructions
+    pub fn compile_with_regs(self, cb: &mut CodeBlock, regs: Vec<Reg>)
     {
         self
             .arm64_split()
             .split_loads()
             .alloc_regs(regs)
-            .arm64_emit(jit, cb);
+            .arm64_emit(jit, cb)
     }
 }
