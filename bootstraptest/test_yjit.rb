@@ -1393,6 +1393,33 @@ assert_equal 'foo', %q{
   make_str("foo")
 }
 
+# Test that String unary plus returns the same object ID for an unfrozen string.
+assert_equal '', %q{
+  str = "bar"
+
+  old_obj_id = str.object_id
+  uplus_str = +str
+
+  if uplus_str.object_id != old_obj_id
+    raise "String unary plus on unfrozen should return the string exactly, not a duplicate"
+  end
+
+  ''
+}
+
+# Test that String unary plus returns a different unfrozen string when given a frozen string
+assert_equal 'false', %q{
+  frozen_str = "foo".freeze
+
+  old_obj_id = frozen_str.object_id
+  uplus_str = +frozen_str
+
+  if uplus_str.object_id == old_obj_id
+    raise "String unary plus on frozen should return a new duplicated string"
+  end
+
+  uplus_str.frozen?
+}
 
 # test invokebuiltin as used in struct assignment
 assert_equal '123', %q{
