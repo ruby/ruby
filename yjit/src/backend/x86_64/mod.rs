@@ -111,10 +111,11 @@ impl Assembler
 
                 Op::Store => mov(cb, insn.opnds[0].into(), insn.opnds[1].into()),
 
+                // This assumes only load instructions can contain references to GC'd Value operands
                 Op::Load => {
                     mov(cb, insn.out.into(), insn.opnds[0].into());
 
-                    // If the value being loaded is a heapp object
+                    // If the value being loaded is a heap object
                     if let Opnd::Value(val) = insn.opnds[0] {
                         if !val.special_const_p() {
                             // The pointer immediate is encoded as the last part of the mov written out

@@ -426,7 +426,7 @@ fn gen_exit(exit_pc: *mut VALUE, ctx: &Context, cb: &mut CodeBlock) -> CodePtr {
     // Write the adjusted SP back into the CFP
     if ctx.get_sp_offset() != 0 {
         let stack_pointer = ctx.sp_opnd(0);
-        lea(cb, REG_SP, stack_pointer);
+        lea(cb, REG_SP, stack_pointer.into());
         mov(cb, mem_opnd(64, REG_CFP, RUBY_OFFSET_CFP_SP), REG_SP);
     }
 
@@ -791,7 +791,7 @@ pub fn gen_single_block(
             gen_counter_incr!(cb, exec_instruction);
 
             // Add a comment for the name of the YARV instruction
-            add_comment(cb, &insn_name(opcode));
+            asm.comment(&insn_name(opcode));
 
             // If requested, dump instructions for debugging
             if get_option!(dump_insns) {
