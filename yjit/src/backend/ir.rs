@@ -618,10 +618,12 @@ impl Assembler
     }
 
     /// Compile the instructions down to machine code
-    pub fn compile(self, jit: &mut JITState, cb: &mut CodeBlock)
+    /// NOTE: should compile return a list of block labels to enable
+    ///       compiling multiple blocks at a time?
+    pub fn compile(self, cb: &mut CodeBlock) -> Vec<u32>
     {
         let scratch_regs = Self::get_scratch_regs();
-        self.compile_with_regs(jit, cb, scratch_regs);
+        self.compile_with_regs(cb, scratch_regs)
     }
 }
 
@@ -830,18 +832,11 @@ mod tests {
         assert_eq!(result.insns[5].out, Opnd::Reg(regs[0]));
     }
 
-    fn setup_asm(num_regs: usize) -> (Assembler, JITState, CodeBlock, Vec<Reg>) {
-        let blockid = BlockId {
-            iseq: std::ptr::null(),
-            idx: 0,
-        };
-        let block = Block::new(blockid, &Context::default());
-
+    fn setup_asm(num_regs: usize) -> (Assembler, CodeBlock, Vec<Reg>) {
         let mut regs = Assembler::get_scratch_regs();
 
         return (
             Assembler::new(),
-            JITState::new(&block),
             CodeBlock::new_dummy(1024),
             regs.drain(0..num_regs).collect()
         );
@@ -851,50 +846,50 @@ mod tests {
     #[test]
     fn test_compile()
     {
-        let (mut asm, mut jit, mut cb, regs) = setup_asm(1);
+        let (mut asm, mut cb, regs) = setup_asm(1);
 
         let out = asm.add(Opnd::Reg(regs[0]), Opnd::UImm(2));
         asm.add(out, Opnd::UImm(2));
 
-        asm.compile(&mut jit, &mut cb);
+        asm.compile(&mut cb);
     }
 
     // Test memory-to-memory move
     #[test]
     fn test_mov_mem2mem()
     {
-        let (mut asm, mut jit, mut cb, regs) = setup_asm(1);
+        let (mut asm, mut cb, regs) = setup_asm(1);
 
         asm.comment("check that comments work too");
         asm.mov(Opnd::mem(64, SP, 0), Opnd::mem(64, SP, 8));
 
-        asm.compile_with_regs(&mut jit, &mut cb, regs);
+        asm.compile_with_regs(&mut cb, regs);
     }
 
     // Test load of register into new register
     #[test]
     fn test_load_reg()
     {
-        let (mut asm, mut jit, mut cb, regs) = setup_asm(1);
+        let (mut asm, mut cb, regs) = setup_asm(1);
 
         let out = asm.load(SP);
         asm.mov(Opnd::mem(64, SP, 0), out);
 
-        asm.compile_with_regs(&mut jit, &mut cb, regs);
+        asm.compile_with_regs(&mut cb, regs);
     }
 
     // Multiple registers needed and register reuse
     #[test]
     fn test_reuse_reg()
     {
-        let (mut asm, mut jit, mut cb, regs) = setup_asm(2);
+        let (mut asm, mut cb, regs) = setup_asm(2);
 
         let v0 = asm.add(Opnd::mem(64, SP, 0), Opnd::UImm(1));
         let v1 = asm.add(Opnd::mem(64, SP, 8), Opnd::UImm(1));
         let v2 = asm.add(v0, Opnd::UImm(1));
         asm.add(v0, v2);
 
-        asm.compile_with_regs(&mut jit, &mut cb, regs);
+        asm.compile_with_regs(&mut cb, regs);
     }
 
     #[test]
@@ -904,24 +899,24 @@ mod tests {
         {
         }
 
-        let (mut asm, mut jit, mut cb, regs) = setup_asm(2);
+        let (mut asm, mut cb, regs) = setup_asm(2);
 
         asm.ccall(
             dummy_c_fun as *const u8,
             vec![Opnd::mem(64, SP, 0), Opnd::UImm(1)]
         );
 
-        asm.compile_with_regs(&mut jit, &mut cb, regs);
+        asm.compile_with_regs(&mut cb, regs);
     }
 
     #[test]
     fn test_lea_ret()
     {
-        let (mut asm, mut jit, mut cb, regs) = setup_asm(1);
+        let (mut asm, mut cb, regs) = setup_asm(1);
 
         let addr = asm.lea(Opnd::mem(64, SP, 0));
         asm.cret(addr);
 
-        asm.compile_with_regs(&mut jit, &mut cb, regs);
+        asm.compile_with_regs(&mut cb, regs);
     }
 }
