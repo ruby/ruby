@@ -10,10 +10,10 @@ class TestThreadInstrumentation < Test::Unit::TestCase
     Bug::ThreadInstrumentation::register_callback
 
     begin
-      threads = 5.times.map { Thread.new { sleep 0.5; 1 + 1; sleep 0.2 } }
-      threads.each(&:join)
-      Bug::ThreadInstrumentation.counters.each do |c|
-        assert_predicate c,:nonzero?
+      threaded_cpu_work
+      counters = Bug::ThreadInstrumentation.counters
+      counters.each do |c|
+        assert_predicate c,:nonzero?, "Call counters: #{counters.inspect}"
       end
     ensure
       Bug::ThreadInstrumentation::unregister_callback
@@ -26,17 +26,26 @@ class TestThreadInstrumentation < Test::Unit::TestCase
     require '-test-/thread/instrumentation'
     Bug::ThreadInstrumentation::register_callback
 
+    read_pipe, write_pipe = IO.pipe
+
     begin
       pid = fork do
         Bug::ThreadInstrumentation.reset_counters
-        threads = 5.times.map { Thread.new { sleep 0.5; 1 + 1; sleep 0.2 } }
-        threads.each(&:join)
-        Bug::ThreadInstrumentation.counters.each do |c|
-          assert_predicate c,:nonzero?
-        end
+        threaded_cpu_work
+
+        write_pipe.write(Marshal.dump(Bug::ThreadInstrumentation.counters))
+        write_pipe.close
+        exit!(0)
       end
+      write_pipe.close
       _, status = Process.wait2(pid)
       assert_predicate status, :success?
+
+      counters = Marshal.load(read_pipe)
+      read_pipe.close
+      counters.each do |c|
+        assert_predicate c,:nonzero?, "Call counters: #{counters.inspect}"
+      end
     ensure
       Bug::ThreadInstrumentation::unregister_callback
     end
@@ -46,5 +55,10 @@ class TestThreadInstrumentation < Test::Unit::TestCase
     require '-test-/thread/instrumentation'
     assert Bug::ThreadInstrumentation::register_and_unregister_callbacks
   end
-end
 
+  private
+
+  def threaded_cpu_work
+    5.times.map { Thread.new { 100.times { |i| i + i } } }.each(&:join)
+  end
+end
