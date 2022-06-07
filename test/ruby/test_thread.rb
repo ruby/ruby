@@ -1442,6 +1442,11 @@ q.pop
       omit "can't trap a signal from another process on Windows"
       # opt = {new_pgroup: true}
     end
+
+    if /freebsd/ =~ RUBY_PLATFORM
+      omit "[Bug #18613]"
+    end
+
     assert_separately([], "#{<<~"{#"}\n#{<<~'};'}", timeout: 120)
     {#
       n = 1000

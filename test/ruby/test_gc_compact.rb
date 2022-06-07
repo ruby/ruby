@@ -11,16 +11,7 @@ end
 class TestGCCompact < Test::Unit::TestCase
   module CompactionSupportInspector
     def supports_auto_compact?
-      return false if /wasm/ =~ RUBY_PLATFORM
-      return true unless defined?(Etc::SC_PAGE_SIZE)
-
-      begin
-        return GC::INTERNAL_CONSTANTS[:HEAP_PAGE_SIZE] % Etc.sysconf(Etc::SC_PAGE_SIZE) == 0
-      rescue NotImplementedError
-      rescue ArgumentError
-      end
-
-      true
+      GC::OPTS.include?("GC_COMPACTION_SUPPORTED")
     end
   end
 
@@ -199,5 +190,22 @@ class TestGCCompact < Test::Unit::TestCase
     count = GC.stat(:compact_count)
     GC.compact
     assert_equal count + 1, GC.stat(:compact_count)
+  end
+
+  def test_compacting_from_trace_point
+    obj = Object.new
+    def obj.tracee
+      :ret # expected to emit both line and call event from one instruction
+    end
+
+    results = []
+    TracePoint.new(:call, :line) do |tp|
+      results << tp.event
+      GC.verify_compaction_references
+    end.enable(target: obj.method(:tracee)) do
+      obj.tracee
+    end
+
+    assert_equal([:call, :line], results)
   end
 end

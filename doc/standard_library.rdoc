@@ -31,7 +31,6 @@ Benchmark:: Provides methods to measure and report the time used to execute code
 Bundler:: Manage your Ruby application's gem dependencies
 CGI:: Support for the Common Gateway Interface protocol
 CSV:: Provides an interface to read and write CSV files and data
-DEBUGGER__:: Debugging functionality for Ruby
 Delegator:: Provides three abilities to delegate method calls to an object
 DidYouMean:: "Did you mean?" experience in Ruby
 DRb:: Distributed object system for Ruby
@@ -113,3 +112,4 @@ Matrix:: Represents a mathematical matrix.
 Prime:: Prime numbers and factorization library
 RBS:: RBS is a language to describe the structure of Ruby programs
 TypeProf:: A type analysis tool for Ruby code based on abstract interpretation
+DEBUGGER__:: Debugging functionality for Ruby

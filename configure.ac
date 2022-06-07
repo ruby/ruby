@@ -1165,7 +1165,6 @@ main()
 		AS_IF([test "$target_cpu" = x64], [
 		    ac_cv_func___builtin_setjmp=yes
 		    ac_cv_func_round=no
-		    coroutine_type=yes
 		])
 		ac_cv_func_tgamma=no
 		AC_CHECK_TYPE([NET_LUID], [], [],
@@ -4011,6 +4010,7 @@ AC_SUBST(EXPORT_PREFIX)
 AC_SUBST(SYMBOL_PREFIX)
 AC_SUBST(MINIOBJS)
 AC_SUBST(THREAD_MODEL)
+AC_SUBST(COROUTINE_TYPE, ${coroutine_type})
 AC_SUBST(PLATFORM_DIR)
 
 firstmf=`echo $FIRSTMAKEFILE | sed 's/:.*//'`

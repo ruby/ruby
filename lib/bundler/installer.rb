@@ -66,7 +66,7 @@ module Bundler
     # require paths and save them in a `setup.rb` file. See `bundle standalone --help` for more
     # information.
     def run(options)
-      create_bundle_path
+      Bundler.create_bundle_path
 
       ProcessLock.lock do
         if Bundler.frozen_bundle?
@@ -260,15 +260,6 @@ module Bundler
       spec_installations.each do |installation|
         post_install_messages[installation.name] = installation.post_install_message if installation.has_post_install_message?
       end
-    end
-
-    def create_bundle_path
-      SharedHelpers.filesystem_access(Bundler.bundle_path.to_s) do |p|
-        Bundler.mkdir_p(p)
-      end unless Bundler.bundle_path.exist?
-    rescue Errno::EEXIST
-      raise PathError, "Could not install to path `#{Bundler.bundle_path}` " \
-        "because a file already exists at that path. Either remove or rename the file so the directory can be created."
     end
 
     # returns whether or not a re-resolve was needed

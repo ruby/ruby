@@ -1638,6 +1638,15 @@ ins_methods_pub_i(st_data_t name, st_data_t type, st_data_t ary)
     return ins_methods_type_i(name, type, ary, METHOD_VISI_PUBLIC);
 }
 
+static int
+ins_methods_undef_i(st_data_t name, st_data_t type, st_data_t ary)
+{
+    if ((rb_method_visibility_t)type == METHOD_VISI_UNDEF) {
+	ins_methods_push(name, ary);
+    }
+    return ST_CONTINUE;
+}
+
 struct method_entry_arg {
     st_table *list;
     int recur;
@@ -1805,6 +1814,21 @@ VALUE
 rb_class_public_instance_methods(int argc, const VALUE *argv, VALUE mod)
 {
     return class_instance_method_list(argc, argv, mod, 0, ins_methods_pub_i);
+}
+
+/*
+ *  call-seq:
+ *     mod.undefined_instance_methods   -> array
+ *
+ *  Returns a list of the undefined instance methods defined in <i>mod</i>.
+ *  The undefined methods of any ancestors are not included.
+ */
+
+VALUE
+rb_class_undefined_instance_methods(VALUE mod)
+{
+    VALUE include_super = Qfalse;
+    return class_instance_method_list(1, &include_super, mod, 0, ins_methods_undef_i);
 }
 
 /*

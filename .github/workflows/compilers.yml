@@ -80,9 +80,10 @@ jobs:
           - key: default_cc
             name: 'gcc-11 annocheck'
             # Minimal flags to pass the check.
-            value: 'gcc-11 -O2 -fcf-protection -Wl,-z,now'
+            value: 'gcc-11 -O2 -fcf-protection'
             container: gcc-11
             env:
+              append_configure: 'LDFLAGS=-Wl,-z,now'
               # FIXME: Drop skipping options
               # https://bugs.ruby-lang.org/issues/18061
               # https://sourceware.org/annobin/annobin.html/Test-pie.html
@@ -247,13 +248,6 @@ jobs:
         if: ${{ matrix.entry.check }}
       - run: make test-tool
         if: ${{ matrix.entry.check }}
-      # FIXME: Skip MJIT tests failing in the annocheck case.
-      # https://bugs.ruby-lang.org/issues/18781
-      - run: |
-          rm test/ruby/test_mjit.rb
-          rm test/ruby/test_rubyvm_mjit.rb
-        if: ${{ endsWith(matrix.entry.name, 'annocheck') }}
-        working-directory: src
       - run: make test-all TESTS='-- ruby -ext-'
         if: ${{ matrix.entry.check }}
       - run: make test-spec

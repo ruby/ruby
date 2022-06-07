@@ -128,7 +128,7 @@ XDLDFLAGS = @DLDFLAGS@
 DLDFLAGS = @LIBRUBY_DLDFLAGS@ $(XLDFLAGS) $(ARCH_FLAG)
 SOLIBS = @SOLIBS@
 ENABLE_DEBUG_ENV = @ENABLE_DEBUG_ENV@
-MAINLIBS = @YJIT_LIBS@ @MAINLIBS@
+MAINLIBS = $(YJIT_LIBS) @MAINLIBS@
 ARCHMINIOBJS = @MINIOBJS@
 DLNOBJ = @DLNOBJ@
 ENCOBJS = @ENCOBJS@
@@ -166,7 +166,7 @@ XRUBY_RUBYHDRDIR = @XRUBY_RUBYHDRDIR@
 BOOTSTRAPRUBY = @BOOTSTRAPRUBY@
 
 COROUTINE_H = @X_COROUTINE_H@
-COROUTINE_OBJ = $(COROUTINE_H:.h=.@OBJEXT@)
+COROUTINE_OBJ = $(COROUTINE_H:.h=.$(OBJEXT))
 COROUTINE_SRC = @X_COROUTINE_SRC@
 
 #### End of system configuration section. ####
@@ -200,7 +200,8 @@ DTRACE_DEPENDENT_OBJS = array.$(OBJEXT) \
 			parse.$(OBJEXT) \
 			string.$(OBJEXT) \
 			symbol.$(OBJEXT) \
-			vm.$(OBJEXT)
+			vm.$(OBJEXT) \
+			$(YJIT_OBJ)
 
 THREAD_MODEL  = @THREAD_MODEL@
 
@@ -253,7 +254,7 @@ MINIPRELUDE_C = miniprelude.c
 GOLF_PRELUDE_C= golf_prelude.c
 RBCONFIG      = .rbconfig.time
 
-MAINSRC = $(MAINOBJ:.@OBJEXT@=.c)
+MAINSRC = $(MAINOBJ:.$(OBJEXT)=.c)
 
 SRC_FILE      = $<
 OS_SRC_FILE   = $<
@@ -446,11 +447,11 @@ $(srcdir)/enc/jis/props.h: enc/jis/props.kwd
 	  $(CP) $@ $(?:.kwd=.h.blt); \
 	fi
 
-.c.@OBJEXT@:
+.c.$(OBJEXT):
 	@$(ECHO) compiling $<
 	$(Q) $(CC) $(CFLAGS) $(XCFLAGS) $(CPPFLAGS) $(COUTFLAG)$@ -c $<
 
-.$(ASMEXT).@OBJEXT@:
+.$(ASMEXT).$(OBJEXT):
 	@$(ECHO) assembling $<
 	$(Q) $(CC) $(ASFLAGS) -DSYMBOL_PREFIX=$(SYMBOL_PREFIX) -o $@ -c $<
 

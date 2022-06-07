@@ -98,6 +98,95 @@
 #  endif
 #endif
 
+struct rb_internal_thread_event_hook {
+    rb_internal_thread_event_callback callback;
+    rb_event_flag_t event;
+    void *user_data;
+
+    struct rb_internal_thread_event_hook *next;
+};
+
+static rb_internal_thread_event_hook_t *rb_internal_thread_event_hooks = NULL;
+static pthread_rwlock_t rb_internal_thread_event_hooks_rw_lock = PTHREAD_RWLOCK_INITIALIZER;
+
+rb_internal_thread_event_hook_t *
+rb_internal_thread_add_event_hook(rb_internal_thread_event_callback callback, rb_event_flag_t internal_event, void *user_data)
+{
+    rb_internal_thread_event_hook_t *hook = ALLOC_N(rb_internal_thread_event_hook_t, 1);
+    hook->callback = callback;
+    hook->user_data = user_data;
+    hook->event = internal_event;
+
+    int r;
+    if ((r = pthread_rwlock_wrlock(&rb_internal_thread_event_hooks_rw_lock))) {
+        rb_bug_errno("pthread_rwlock_wrlock", r);
+    }
+
+    hook->next = rb_internal_thread_event_hooks;
+    ATOMIC_PTR_EXCHANGE(rb_internal_thread_event_hooks, hook);
+
+    if ((r = pthread_rwlock_unlock(&rb_internal_thread_event_hooks_rw_lock))) {
+        rb_bug_errno("pthread_rwlock_unlock", r);
+    }
+    return hook;
+}
+
+bool
+rb_internal_thread_remove_event_hook(rb_internal_thread_event_hook_t * hook)
+{
+    int r;
+    if ((r = pthread_rwlock_wrlock(&rb_internal_thread_event_hooks_rw_lock))) {
+        rb_bug_errno("pthread_rwlock_wrlock", r);
+    }
+
+    bool success = FALSE;
+
+    if (rb_internal_thread_event_hooks == hook) {
+        ATOMIC_PTR_EXCHANGE(rb_internal_thread_event_hooks, hook->next);
+        success = TRUE;
+    } else {
+        rb_internal_thread_event_hook_t *h = rb_internal_thread_event_hooks;
+
+        do {
+            if (h->next == hook) {
+                h->next = hook->next;
+                success = TRUE;
+                break;
+            }
+        } while ((h = h->next));
+    }
+
+    if ((r = pthread_rwlock_unlock(&rb_internal_thread_event_hooks_rw_lock))) {
+        rb_bug_errno("pthread_rwlock_unlock", r);
+    }
+
+    if (success) {
+        ruby_xfree(hook);
+    }
+    return success;
+}
+
+static void
+rb_thread_execute_hooks(rb_event_flag_t event)
+{
+    int r;
+    if ((r = pthread_rwlock_rdlock(&rb_internal_thread_event_hooks_rw_lock))) {
+        rb_bug_errno("pthread_rwlock_rdlock", r);
+    }
+
+    if (rb_internal_thread_event_hooks) {
+        rb_internal_thread_event_hook_t *h = rb_internal_thread_event_hooks;
+        do {
+            if (h->event & event) {
+                (*h->callback)(event, NULL, h->user_data);
+            }
+        } while((h = h->next));
+    }
+    if ((r = pthread_rwlock_unlock(&rb_internal_thread_event_hooks_rw_lock))) {
+        rb_bug_errno("pthread_rwlock_unlock", r);
+    }
+}
+
 enum rtimer_state {
     /* alive, after timer_create: */
     RTIMER_DISARM,
@@ -295,6 +384,10 @@ thread_sched_to_running_common(struct rb_thread_sched *sched, rb_thread_t *th)
         // waiting -> ready
         thread_sched_to_ready_common(sched, th);
 
+        if (rb_internal_thread_event_hooks) {
+            rb_thread_execute_hooks(RUBY_INTERNAL_THREAD_EVENT_READY);
+        }
+
         // wait for running chance
         do {
             if (!sched->timer) {
@@ -319,6 +412,10 @@ thread_sched_to_running_common(struct rb_thread_sched *sched, rb_thread_t *th)
     // ready -> running
     sched->running = th;
 
+    if (rb_internal_thread_event_hooks) {
+        rb_thread_execute_hooks(RUBY_INTERNAL_THREAD_EVENT_RESUMED);
+    }
+
     if (!sched->timer) {
         if (!designate_timer_thread(sched) && !ubf_threads_empty()) {
             rb_thread_wakeup_timer_thread(-1);
@@ -337,6 +434,10 @@ thread_sched_to_running(struct rb_thread_sched *sched, rb_thread_t *th)
 static rb_thread_t *
 thread_sched_to_waiting_common(struct rb_thread_sched *sched)
 {
+    if (rb_internal_thread_event_hooks) {
+        rb_thread_execute_hooks(RUBY_INTERNAL_THREAD_EVENT_SUSPENDED);
+    }
+
     rb_thread_t *next;
     sched->running = NULL;
     next = ccan_list_top(&sched->readyq, rb_thread_t, sched.node.readyq);
@@ -687,9 +788,14 @@ native_thread_init(struct rb_native_thread *nt)
 void
 Init_native_thread(rb_thread_t *main_th)
 {
+    int r;
+    if ((r = pthread_rwlock_init(&rb_internal_thread_event_hooks_rw_lock, NULL))) {
+        rb_bug_errno("pthread_rwlock_init", r);
+    }
+
 #if defined(HAVE_PTHREAD_CONDATTR_SETCLOCK)
     if (condattr_monotonic) {
-        int r = pthread_condattr_init(condattr_monotonic);
+        r = pthread_condattr_init(condattr_monotonic);
         if (r == 0) {
             r = pthread_condattr_setclock(condattr_monotonic, CLOCK_MONOTONIC);
         }

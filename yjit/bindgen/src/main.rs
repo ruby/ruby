@@ -125,6 +125,21 @@ fn main() {
         .allowlist_var("rb_cArray")
         .allowlist_var("rb_cHash")
 
+        // From include/ruby/internal/fl_type.h
+        .allowlist_type("ruby_fl_type")
+        .allowlist_type("ruby_fl_ushift")
+
+        // From include/ruby/internal/core/robject.h
+        .allowlist_type("ruby_robject_flags")
+        .allowlist_type("ruby_robject_consts")
+
+        // From include/ruby/internal/core/rarray.h
+        .allowlist_type("ruby_rarray_flags")
+        .allowlist_type("ruby_rarray_consts")
+
+        // From include/ruby/internal/core/rclass.h
+        .allowlist_type("ruby_rmodule_flags")
+
         // From ruby/internal/globals.h
         .allowlist_var("rb_mKernel")
 
@@ -214,6 +229,10 @@ fn main() {
         .blocklist_type("rb_control_frame_struct")
         .opaque_type("rb_control_frame_struct")
         .allowlist_function("rb_vm_bh_to_procval")
+        .allowlist_type("vm_special_object_type")
+        .allowlist_var("VM_ENV_DATA_INDEX_SPECVAL")
+        .allowlist_var("VM_ENV_DATA_INDEX_FLAGS")
+        .allowlist_var("VM_ENV_DATA_SIZE")
 
         // From yjit.c
         .allowlist_function("rb_iseq_(get|set)_yjit_payload")

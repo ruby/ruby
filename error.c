@@ -1280,12 +1280,7 @@ check_highlight_keyword(VALUE opt, int auto_tty_detect)
     }
 
     if (NIL_P(highlight)) {
-        if (auto_tty_detect) {
-            highlight = rb_stderr_tty_p() ? Qtrue : Qfalse;
-        }
-        else {
-            highlight = Qfalse;
-        }
+        highlight = RBOOL(auto_tty_detect && rb_stderr_tty_p());
     }
 
     return highlight;

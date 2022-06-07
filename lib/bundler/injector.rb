@@ -72,6 +72,10 @@ module Bundler
 
         deps.each {|dep| Bundler.ui.confirm "#{SharedHelpers.pretty_dependency(dep, false)} was removed." }
       end
+
+      # Invalidate the cached Bundler.definition.
+      # This prevents e.g. `bundle remove ...` from using outdated information.
+      Bundler.reset_paths!
     end
 
     private

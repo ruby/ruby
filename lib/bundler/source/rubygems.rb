@@ -499,7 +499,7 @@ module Bundler
       end
 
       def rubygems_dir
-        Bundler.rubygems.gem_dir
+        Bundler.bundle_path
       end
 
       def default_cache_path_for(dir)

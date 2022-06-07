@@ -824,6 +824,8 @@ class TestRequire < Test::Unit::TestCase
   end if File.respond_to?(:mkfifo)
 
   def test_loading_fifo_threading_success
+    omit "[Bug #18613]" if /freebsd/=~ RUBY_PLATFORM
+
     Tempfile.create(%w'fifo .rb') {|f|
       f.close
       File.unlink(f.path)

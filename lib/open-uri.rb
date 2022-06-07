@@ -9,7 +9,7 @@ module URI
   # If the first argument responds to the 'open' method, 'open' is called on
   # it with the rest of the arguments.
   #
-  # If the first argument is a string that begins with <code>(protocol)://<code>, it is parsed by
+  # If the first argument is a string that begins with <code>(protocol)://</code>, it is parsed by
   # URI.parse.  If the parsed object responds to the 'open' method,
   # 'open' is called on it with the rest of the arguments.
   #

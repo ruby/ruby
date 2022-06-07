@@ -435,6 +435,34 @@ E
     end
   end
 
+  describe "commented out settings with urls" do
+    before do
+      bundle "config set #mirror.https://rails-assets.org http://localhost:9292"
+    end
+
+    it "does not make bundler crash and ignores the configuration" do
+      bundle "config list --parseable"
+
+      expect(out).to eq("#mirror.https://rails-assets.org/=http://localhost:9292")
+      expect(err).to be_empty
+
+      ruby(<<~RUBY)
+        require "#{entrypoint}"
+        print Bundler.settings.mirror_for("https://rails-assets.org")
+      RUBY
+      expect(out).to eq("https://rails-assets.org/")
+      expect(err).to be_empty
+
+      bundle "config set mirror.all http://localhost:9293"
+      ruby(<<~RUBY)
+        require "#{entrypoint}"
+        print Bundler.settings.mirror_for("https://rails-assets.org")
+      RUBY
+      expect(out).to eq("http://localhost:9293/")
+      expect(err).to be_empty
+    end
+  end
+
   describe "subcommands" do
     it "list" do
       bundle "config list", :env => { "BUNDLE_FOO" => "bar" }

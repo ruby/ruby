@@ -645,7 +645,7 @@ num_fdiv(VALUE x, VALUE y)
  *  (\Numeric itself does not define method +/+.)
  *
  *  Of the Core and Standard Library classes,
- *  Float, Rational, and Complex use this implementation.
+ *  Only Float and Rational use this implementation.
  *
  */
 

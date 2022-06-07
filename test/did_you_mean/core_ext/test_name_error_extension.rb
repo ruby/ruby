@@ -1,6 +1,8 @@
 require_relative '../helper'
 
 class NameErrorExtensionTest < Test::Unit::TestCase
+  include DidYouMean::TestHelper
+
   SPELL_CHECKERS = DidYouMean.spell_checkers
 
   class TestSpellChecker
@@ -20,8 +22,12 @@ class NameErrorExtensionTest < Test::Unit::TestCase
   end
 
   def test_message
-    assert_match(/Did you mean\?  does_exist/, @error.to_s)
-    assert_match(/Did you mean\?  does_exist/, @error.message)
+    if Exception.method_defined?(:detailed_message)
+      assert_match(/Did you mean\?  does_exist/, @error.detailed_message)
+    else
+      assert_match(/Did you mean\?  does_exist/, @error.to_s)
+      assert_match(/Did you mean\?  does_exist/, @error.message)
+    end
   end
 
   def test_to_s_does_not_make_disruptive_changes_to_error_message
@@ -29,8 +35,8 @@ class NameErrorExtensionTest < Test::Unit::TestCase
       raise NameError, "uninitialized constant Object"
     end
 
-    error.to_s
-    assert_equal 1, error.to_s.scan("Did you mean?").count
+    get_message(error)
+    assert_equal 1, get_message(error).scan("Did you mean?").count
   end
 
   def test_correctable_error_objects_are_dumpable
@@ -41,7 +47,7 @@ class NameErrorExtensionTest < Test::Unit::TestCase
         e
       end
 
-    error.to_s
+    get_message(error)
 
     assert_equal "undefined method `sizee' for #<File:test_name_error_extension.rb (closed)>",
                  Marshal.load(Marshal.dump(error)).original_message

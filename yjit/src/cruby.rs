@@ -701,7 +701,8 @@ pub const Qundef: VALUE = VALUE(52);
 mod manual_defs {
     use super::*;
 
-    pub const RUBY_SYMBOL_FLAG: usize = 0x0c;
+    pub const SIZEOF_VALUE: usize = 8;
+    pub const SIZEOF_VALUE_I32: i32 = SIZEOF_VALUE as i32;
 
     pub const RUBY_LONG_MIN: isize = std::os::raw::c_long::MIN as isize;
     pub const RUBY_LONG_MAX: isize = std::os::raw::c_long::MAX as isize;
@@ -710,20 +711,16 @@ mod manual_defs {
     pub const RUBY_FIXNUM_MAX: isize = RUBY_LONG_MAX / 2;
     pub const RUBY_FIXNUM_FLAG: usize = 0x1;
 
+    // All these are defined in include/ruby/internal/special_consts.h,
+    // in the same enum as RUBY_Qfalse, etc.
+    // Do we want to switch to using Ruby's definition of Qnil, Qfalse, etc?
+    pub const RUBY_SYMBOL_FLAG: usize = 0x0c;
     pub const RUBY_FLONUM_FLAG: usize = 0x2;
     pub const RUBY_FLONUM_MASK: usize = 0x3;
-
+    pub const RUBY_SPECIAL_SHIFT: usize = 8;
     pub const RUBY_IMMEDIATE_MASK: usize = 0x7;
 
-    pub const RUBY_SPECIAL_SHIFT: usize = 8;
-
-    // Constants from vm_core.h
-    pub const VM_SPECIAL_OBJECT_VMCORE: usize = 0x1;
-    pub const VM_ENV_DATA_INDEX_SPECVAL: isize = -1;
-    pub const VM_ENV_DATA_INDEX_FLAGS: isize = 0;
-    pub const VM_ENV_DATA_SIZE: usize = 3;
-
-    // From vm_callinfo.h
+    // From vm_callinfo.h - uses calculation that seems to confuse bindgen
     pub const VM_CALL_ARGS_SPLAT: u32 = 1 << VM_CALL_ARGS_SPLAT_bit;
     pub const VM_CALL_ARGS_BLOCKARG: u32 = 1 << VM_CALL_ARGS_BLOCKARG_bit;
     pub const VM_CALL_FCALL: u32 = 1 << VM_CALL_FCALL_bit;
@@ -731,49 +728,11 @@ mod manual_defs {
     pub const VM_CALL_KW_SPLAT: u32 = 1 << VM_CALL_KW_SPLAT_bit;
     pub const VM_CALL_TAILCALL: u32 = 1 << VM_CALL_TAILCALL_bit;
 
-    pub const SIZEOF_VALUE: usize = 8;
-    pub const SIZEOF_VALUE_I32: i32 = SIZEOF_VALUE as i32;
+    // From internal/struct.h - in anonymous enum, so we can't easily import it
+    pub const RSTRUCT_EMBED_LEN_MASK: usize = (RUBY_FL_USER2 | RUBY_FL_USER1) as usize;
 
-    pub const RUBY_FL_SINGLETON: usize = RUBY_FL_USER_0;
-
-    pub const ROBJECT_EMBED: usize = RUBY_FL_USER_1;
-    pub const ROBJECT_EMBED_LEN_MAX: usize = 3; // This is a complex calculation in ruby/internal/core/robject.h
-
-    pub const RMODULE_IS_REFINEMENT: usize = RUBY_FL_USER_3;
-
-    // Constants from include/ruby/internal/fl_type.h
-    pub const RUBY_FL_USHIFT: usize = 12;
-    pub const RUBY_FL_USER_0: usize = 1 << (RUBY_FL_USHIFT + 0);
-    pub const RUBY_FL_USER_1: usize = 1 << (RUBY_FL_USHIFT + 1);
-    pub const RUBY_FL_USER_2: usize = 1 << (RUBY_FL_USHIFT + 2);
-    pub const RUBY_FL_USER_3: usize = 1 << (RUBY_FL_USHIFT + 3);
-    pub const RUBY_FL_USER_4: usize = 1 << (RUBY_FL_USHIFT + 4);
-    pub const RUBY_FL_USER_5: usize = 1 << (RUBY_FL_USHIFT + 5);
-    pub const RUBY_FL_USER_6: usize = 1 << (RUBY_FL_USHIFT + 6);
-    pub const RUBY_FL_USER_7: usize = 1 << (RUBY_FL_USHIFT + 7);
-    pub const RUBY_FL_USER_8: usize = 1 << (RUBY_FL_USHIFT + 8);
-    pub const RUBY_FL_USER_9: usize = 1 << (RUBY_FL_USHIFT + 9);
-    pub const RUBY_FL_USER_10: usize = 1 << (RUBY_FL_USHIFT + 10);
-    pub const RUBY_FL_USER_11: usize = 1 << (RUBY_FL_USHIFT + 11);
-    pub const RUBY_FL_USER_12: usize = 1 << (RUBY_FL_USHIFT + 12);
-    pub const RUBY_FL_USER_13: usize = 1 << (RUBY_FL_USHIFT + 13);
-    pub const RUBY_FL_USER_14: usize = 1 << (RUBY_FL_USHIFT + 14);
-    pub const RUBY_FL_USER_15: usize = 1 << (RUBY_FL_USHIFT + 15);
-    pub const RUBY_FL_USER_16: usize = 1 << (RUBY_FL_USHIFT + 16);
-    pub const RUBY_FL_USER_17: usize = 1 << (RUBY_FL_USHIFT + 17);
-    pub const RUBY_FL_USER_18: usize = 1 << (RUBY_FL_USHIFT + 18);
-    pub const RUBY_FL_USER_19: usize = 1 << (RUBY_FL_USHIFT + 19);
-
-    // Constants from include/ruby/internal/core/rarray.h
-    pub const RARRAY_EMBED_FLAG: usize = RUBY_FL_USER_1;
-    pub const RARRAY_EMBED_LEN_SHIFT: usize = RUBY_FL_USHIFT + 3;
-    pub const RARRAY_EMBED_LEN_MASK: usize = RUBY_FL_USER_3 | RUBY_FL_USER_4;
-
-    // From internal/struct.h
-    pub const RSTRUCT_EMBED_LEN_MASK: usize = RUBY_FL_USER_2 | RUBY_FL_USER_1;
-
-    // From iseq.h
-    pub const ISEQ_TRANSLATED: usize = RUBY_FL_USER_7;
+    // From iseq.h - via a different constant, which seems to confuse bindgen
+    pub const ISEQ_TRANSLATED: usize = RUBY_FL_USER7 as usize;
 
     // We'll need to encode a lot of Ruby struct/field offsets as constants unless we want to
     // redeclare all the Ruby C structs and write our own offsetof macro. For now, we use constants.
