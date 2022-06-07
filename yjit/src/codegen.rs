@@ -40,7 +40,7 @@ pub const REG1: X86Opnd = RCX;
 // be invalidated. In this case the JMP takes 5 bytes, but
 // gen_send_general will always MOV the receiving object
 // into place, so 2 bytes are always written automatically.
-pub const JUMP_SIZE_IN_BYTES:usize = 3;
+//pub const JUMP_SIZE_IN_BYTES: usize = 3;
 
 /// Status returned by code generation functions
 #[derive(PartialEq, Debug)]
@@ -148,6 +148,7 @@ pub fn jit_get_arg(jit: &JITState, arg_idx: isize) -> VALUE {
     unsafe { *(jit.pc.offset(arg_idx + 1)) }
 }
 
+/*
 // Load a VALUE into a register and keep track of the reference if it is on the GC heap.
 pub fn jit_mov_gc_ptr(jit: &mut JITState, cb: &mut CodeBlock, reg: X86Opnd, ptr: VALUE) {
     assert!(matches!(reg, X86Opnd::Reg(_)));
@@ -163,6 +164,7 @@ pub fn jit_mov_gc_ptr(jit: &mut JITState, cb: &mut CodeBlock, reg: X86Opnd, ptr:
         jit.add_gc_obj_offset(ptr_offset);
     }
 }
+*/
 
 // Get the index of the next instruction
 fn jit_next_insn_idx(jit: &JITState) -> u32 {
@@ -272,19 +274,7 @@ macro_rules! counted_exit {
 
 // Save the incremented PC on the CFP
 // This is necessary when callees can raise or allocate
-fn jit_save_pc(jit: &JITState, cb: &mut CodeBlock, scratch_reg: X86Opnd) {
-    let pc: *mut VALUE = jit.get_pc();
-    let ptr: *mut VALUE = unsafe {
-        let cur_insn_len = insn_len(jit.get_opcode()) as isize;
-        pc.offset(cur_insn_len)
-    };
-    mov(cb, scratch_reg, const_ptr_opnd(ptr as *const u8));
-    mov(cb, mem_opnd(64, REG_CFP, RUBY_OFFSET_CFP_PC), scratch_reg);
-}
-
-// Save the incremented PC on the CFP
-// This is necessary when callees can raise or allocate
-fn ir_jit_save_pc(jit: &JITState, asm: &mut Assembler) {
+fn jit_save_pc(jit: &JITState, asm: &mut Assembler) {
     let pc: *mut VALUE = jit.get_pc();
     let ptr: *mut VALUE = unsafe {
         let cur_insn_len = insn_len(jit.get_opcode()) as isize;
@@ -298,21 +288,7 @@ fn ir_jit_save_pc(jit: &JITState, asm: &mut Assembler) {
 /// This realigns the interpreter SP with the JIT SP
 /// Note: this will change the current value of REG_SP,
 ///       which could invalidate memory operands
-fn gen_save_sp(cb: &mut CodeBlock, ctx: &mut Context) {
-    if ctx.get_sp_offset() != 0 {
-        let stack_pointer = ctx.sp_opnd(0);
-        lea(cb, REG_SP, stack_pointer);
-        let cfp_sp_opnd = mem_opnd(64, REG_CFP, RUBY_OFFSET_CFP_SP);
-        mov(cb, cfp_sp_opnd, REG_SP);
-        ctx.set_sp_offset(0);
-    }
-}
-
-/// Save the current SP on the CFP
-/// This realigns the interpreter SP with the JIT SP
-/// Note: this will change the current value of REG_SP,
-///       which could invalidate memory operands
-fn ir_gen_save_sp(jit: &JITState, asm: &mut Assembler, ctx: &mut Context) {
+fn gen_save_sp(jit: &JITState, asm: &mut Assembler, ctx: &mut Context) {
     if ctx.get_sp_offset() != 0 {
         let stack_pointer = ctx.ir_sp_opnd(0);
         let sp_addr = asm.lea(stack_pointer);
@@ -323,11 +299,6 @@ fn ir_gen_save_sp(jit: &JITState, asm: &mut Assembler, ctx: &mut Context) {
     }
 }
 
-
-
-
-
-
 /// jit_save_pc() + gen_save_sp(). Should be used before calling a routine that
 /// could:
 ///  - Perform GC allocation
@@ -336,26 +307,17 @@ fn ir_gen_save_sp(jit: &JITState, asm: &mut Assembler, ctx: &mut Context) {
 fn jit_prepare_routine_call(
     jit: &mut JITState,
     ctx: &mut Context,
-    cb: &mut CodeBlock,
+    asm: &mut Assembler,
     scratch_reg: X86Opnd,
 ) {
     jit.record_boundary_patch_point = true;
-    jit_save_pc(jit, cb, scratch_reg);
-    gen_save_sp(cb, ctx);
+    jit_save_pc(jit, asm);
+    gen_save_sp(jit, asm, ctx);
 
     // In case the routine calls Ruby methods, it can set local variables
     // through Kernel#binding and other means.
     ctx.clear_local_types();
 }
-
-
-
-
-
-
-
-
-
 
 /// Record the current codeblock write position for rewriting into a jump into
 /// the outlined block later. Used to implement global code invalidation.
@@ -686,6 +648,7 @@ pub fn gen_entry_prologue(cb: &mut CodeBlock, iseq: IseqPtr, insn_idx: u32) -> O
     return Some(code_ptr);
 }
 
+/*
 // Generate code to check for interrupts and take a side-exit.
 // Warning: this function clobbers REG0
 fn gen_check_ints(cb: &mut CodeBlock, side_exit: CodePtr) {
@@ -705,6 +668,7 @@ fn gen_check_ints(cb: &mut CodeBlock, side_exit: CodePtr) {
     );
     jnz_ptr(cb, side_exit);
 }
+*/
 
 // Generate a stubbed unconditional jump to the next bytecode instruction.
 // Blocks that are part of a guard chain can use this to share the same successor.
