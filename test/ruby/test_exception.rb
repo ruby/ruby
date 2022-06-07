@@ -478,12 +478,6 @@ end.join
       def to_s; ""; end
     end
     assert_equal(e.inspect, e.new.inspect)
-
-    # https://bugs.ruby-lang.org/issues/18170#note-13
-    assert_equal('#<Exception:"foo\nbar">', Exception.new("foo\nbar").inspect)
-    assert_equal('#<Exception: foo bar>', Exception.new("foo bar").inspect)
-    assert_equal('#<Exception: foo\bar>', Exception.new("foo\\bar").inspect)
-    assert_equal('#<Exception: "foo\nbar">', Exception.new('"foo\nbar"').inspect)
   end
 
   def test_to_s
