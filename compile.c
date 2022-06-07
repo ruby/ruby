@@ -3706,18 +3706,23 @@ iseq_specialized_instruction(rb_iseq_t *iseq, INSN *iobj)
         if (IS_INSN_ID(niobj, send)) {
             const struct rb_callinfo *ci = (struct rb_callinfo *)OPERAND_AT(niobj, 0);
             if ((vm_ci_flag(ci) & VM_CALL_ARGS_SIMPLE) && vm_ci_argc(ci) == 0) {
-                switch (vm_ci_mid(ci)) {
-                  case idMax:
-                    iobj->insn_id = BIN(opt_newarray_max);
-                    ELEM_REMOVE(&niobj->link);
-                    return COMPILE_OK;
-                  case idMin:
-                    iobj->insn_id = BIN(opt_newarray_min);
-                    ELEM_REMOVE(&niobj->link);
-                    return COMPILE_OK;
-                }
-            }
-        }
+		switch (vm_ci_mid(ci)) {
+		  case idMax:
+		  case idMin:
+		  case idHash:
+                      {
+                          rb_num_t num = (rb_num_t)iobj->operands[0];
+                          iobj->insn_id = BIN(opt_newarray_send);
+                          iobj->operands = compile_data_calloc2(iseq, insn_len(iobj->insn_id) - 1, sizeof(VALUE));
+                          iobj->operands[0] = (VALUE)num;
+                          iobj->operands[1] = (VALUE)rb_id2sym(vm_ci_mid(ci));
+                          iobj->operand_size = insn_len(iobj->insn_id) - 1;
+                          ELEM_REMOVE(&niobj->link);
+                          return COMPILE_OK;
+                      }
+		}
+	    }
+	}
     }
 
     if (IS_INSN_ID(iobj, send)) {
