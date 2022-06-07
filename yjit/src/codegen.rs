@@ -610,30 +610,32 @@ pub fn gen_entry_prologue(cb: &mut CodeBlock, iseq: IseqPtr, insn_idx: u32) -> O
 
     let old_write_pos = cb.get_write_pos();
 
+    // TODO: figure out if this is actually beneficial for performance
     // Align the current write position to cache line boundaries
     cb.align_pos(64);
 
     let code_ptr = cb.get_write_ptr();
     add_comment(cb, "yjit entry");
 
-    push(cb, REG_CFP);
-    push(cb, REG_EC);
-    push(cb, REG_SP);
+    let mut asm = Assembler::new();
+
+    // FIXME
+    //push(cb, REG_CFP);
+    //push(cb, REG_EC);
+    //push(cb, REG_SP);
 
     // We are passed EC and CFP
-    mov(cb, REG_EC, C_ARG_REGS[0]);
-    mov(cb, REG_CFP, C_ARG_REGS[1]);
+    asm.mov(EC, C_ARG_REGS[0].into());
+    asm.mov(CFP, C_ARG_REGS[1].into());
 
     // Load the current SP from the CFP into REG_SP
-    mov(cb, REG_SP, mem_opnd(64, REG_CFP, RUBY_OFFSET_CFP_SP));
+    asm.mov(SP, Opnd::mem(64, CFP, RUBY_OFFSET_CFP_SP));
 
     // Setup cfp->jit_return
-    mov(
-        cb,
-        REG0,
-        code_ptr_opnd(CodegenGlobals::get_leave_exit_code()),
+    asm.mov(
+        Opnd::mem(64, CFP, RUBY_OFFSET_CFP_JIT_RETURN),
+        Opnd::const_ptr(CodegenGlobals::get_leave_exit_code().raw_ptr()),
     );
-    mov(cb, mem_opnd(64, REG_CFP, RUBY_OFFSET_CFP_JIT_RETURN), REG0);
 
     // We're compiling iseqs that we *expect* to start at `insn_idx`. But in
     // the case of optional parameters, the interpreter can set the pc to a
@@ -642,8 +644,14 @@ pub fn gen_entry_prologue(cb: &mut CodeBlock, iseq: IseqPtr, insn_idx: u32) -> O
     // compiled for is the same PC that the interpreter wants us to run with.
     // If they don't match, then we'll take a side exit.
     if unsafe { get_iseq_flags_has_opt(iseq) } {
-        gen_pc_guard(cb, iseq, insn_idx);
+
+        // FIXME
+        todo!();
+
+        //gen_pc_guard(cb, iseq, insn_idx);
     }
+
+    asm.compile(cb);
 
     // Verify MAX_PROLOGUE_SIZE
     assert!(cb.get_write_pos() - old_write_pos <= MAX_PROLOGUE_SIZE);
