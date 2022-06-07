@@ -22,7 +22,7 @@ struct BranchesAndSystem {
 impl BranchesAndSystem {
     /// RET
     /// https://developer.arm.com/documentation/ddi0596/2021-12/Base-Instructions/RET--Return-from-subroutine-?lang=en
-    pub fn ret(rn: &A64Opnd) -> Self {
+    pub fn ret(rn: A64Opnd) -> Self {
         match rn {
             A64Opnd::None => BranchesAndSystem { rn: 30 },
             A64Opnd::Reg(reg) => BranchesAndSystem { rn: reg.reg_no },
@@ -56,14 +56,14 @@ mod tests {
 
     #[test]
     fn test_ret() {
-        let inst = BranchesAndSystem::ret(&A64Opnd::None);
+        let inst = BranchesAndSystem::ret(A64Opnd::None);
         let result: u32 = inst.into();
         assert_eq!(0xd65f03C0, result);
     }
 
     #[test]
     fn test_ret_rn() {
-        let inst = BranchesAndSystem::ret(&X20);
+        let inst = BranchesAndSystem::ret(X20);
         let result: u32 = inst.into();
         assert_eq!(0xd65f0280, result);
     }

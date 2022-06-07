@@ -12,7 +12,7 @@ use crate::asm::CodeBlock;
 use super::opnd::*;
 
 /// ADD
-pub fn add(cb: &mut CodeBlock, rd: &A64Opnd, rn: &A64Opnd, rm: &A64Opnd) {
+pub fn add(cb: &mut CodeBlock, rd: A64Opnd, rn: A64Opnd, rm: A64Opnd) {
     let bytes: [u8; 4] = match rm {
         A64Opnd::UImm(_) => DataProcessingImmediate::add(rd, rn, rm).into(),
         A64Opnd::Reg(_) => DataProcessingRegister::add(rd, rn, rm).into(),
@@ -23,7 +23,7 @@ pub fn add(cb: &mut CodeBlock, rd: &A64Opnd, rn: &A64Opnd, rm: &A64Opnd) {
 }
 
 /// SUB
-pub fn sub(cb: &mut CodeBlock, rd: &A64Opnd, rn: &A64Opnd, rm: &A64Opnd) {
+pub fn sub(cb: &mut CodeBlock, rd: A64Opnd, rn: A64Opnd, rm: A64Opnd) {
     let bytes: [u8; 4] = match rm {
         A64Opnd::UImm(_) => DataProcessingImmediate::sub(rd, rn, rm).into(),
         A64Opnd::Reg(_) => DataProcessingRegister::sub(rd, rn, rm).into(),

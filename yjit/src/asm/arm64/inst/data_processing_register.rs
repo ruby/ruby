@@ -62,7 +62,7 @@ pub struct DataProcessingRegister {
 impl DataProcessingRegister {
     /// ADD (shifted register)
     /// https://developer.arm.com/documentation/ddi0596/2021-12/Base-Instructions/ADD--shifted-register---Add--shifted-register--?lang=en
-    pub fn add(rd: &A64Opnd, rn: &A64Opnd, rm: &A64Opnd) -> Self {
+    pub fn add(rd: A64Opnd, rn: A64Opnd, rm: A64Opnd) -> Self {
         let (rd, rn, rm) = Self::unwrap(rd, rn, rm);
 
         Self {
@@ -79,7 +79,7 @@ impl DataProcessingRegister {
 
     /// ADDS (shifted register, set flags)
     /// https://developer.arm.com/documentation/ddi0596/2021-12/Base-Instructions/ADDS--shifted-register---Add--shifted-register---setting-flags-?lang=en
-    pub fn adds(rd: &A64Opnd, rn: &A64Opnd, rm: &A64Opnd) -> Self {
+    pub fn adds(rd: A64Opnd, rn: A64Opnd, rm: A64Opnd) -> Self {
         let (rd, rn, rm) = Self::unwrap(rd, rn, rm);
 
         Self {
@@ -96,7 +96,7 @@ impl DataProcessingRegister {
 
     /// SUB (shifted register)
     /// https://developer.arm.com/documentation/ddi0596/2021-12/Base-Instructions/SUB--shifted-register---Subtract--shifted-register--?lang=en
-    pub fn sub(rd: &A64Opnd, rn: &A64Opnd, rm: &A64Opnd) -> Self {
+    pub fn sub(rd: A64Opnd, rn: A64Opnd, rm: A64Opnd) -> Self {
         let (rd, rn, rm) = Self::unwrap(rd, rn, rm);
 
         Self {
@@ -113,7 +113,7 @@ impl DataProcessingRegister {
 
     /// SUBS (shifted register, set flags)
     /// https://developer.arm.com/documentation/ddi0596/2021-12/Base-Instructions/SUBS--shifted-register---Subtract--shifted-register---setting-flags-?lang=en
-    pub fn subs(rd: &A64Opnd, rn: &A64Opnd, rm: &A64Opnd) -> Self {
+    pub fn subs(rd: A64Opnd, rn: A64Opnd, rm: A64Opnd) -> Self {
         let (rd, rn, rm) = Self::unwrap(rd, rn, rm);
 
         Self {
@@ -130,7 +130,7 @@ impl DataProcessingRegister {
 
     /// Extract out three registers from the given operands. Panic if any of the
     /// operands are not registers or if they are not the same size.
-    fn unwrap<'a>(rd: &'a A64Opnd, rn: &'a A64Opnd, rm: &'a A64Opnd) -> (&'a A64Reg, &'a A64Reg, &'a A64Reg) {
+    fn unwrap(rd: A64Opnd, rn: A64Opnd, rm: A64Opnd) -> (A64Reg, A64Reg, A64Reg) {
         match (rd, rn, rm) {
             (A64Opnd::Reg(rd), A64Opnd::Reg(rn), A64Opnd::Reg(rm)) => {
                 assert!(rd.num_bits == rn.num_bits && rn.num_bits == rm.num_bits, "All operands to a data processing register instruction must be of the same size.");
@@ -176,28 +176,28 @@ mod tests {
 
     #[test]
     fn test_add() {
-        let inst = DataProcessingRegister::add(&X0, &X1, &X2);
+        let inst = DataProcessingRegister::add(X0, X1, X2);
         let result: u32 = inst.into();
         assert_eq!(0x8b020020, result);
     }
 
     #[test]
     fn test_adds() {
-        let inst = DataProcessingRegister::adds(&X0, &X1, &X2);
+        let inst = DataProcessingRegister::adds(X0, X1, X2);
         let result: u32 = inst.into();
         assert_eq!(0xab020020, result);
     }
 
     #[test]
     fn test_sub() {
-        let inst = DataProcessingRegister::sub(&X0, &X1, &X2);
+        let inst = DataProcessingRegister::sub(X0, X1, X2);
         let result: u32 = inst.into();
         assert_eq!(0xcb020020, result);
     }
 
     #[test]
     fn test_subs() {
-        let inst = DataProcessingRegister::subs(&X0, &X1, &X2);
+        let inst = DataProcessingRegister::subs(X0, X1, X2);
         let result: u32 = inst.into();
         assert_eq!(0xeb020020, result);
     }
