@@ -6376,7 +6376,7 @@ rb_str_reverse_bang(VALUE str)
  *
  */
 
-VALUE
+static VALUE
 rb_str_include(VALUE str, VALUE arg)
 {
     long i;
