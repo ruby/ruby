@@ -122,10 +122,10 @@ class RDoc::Parser::C < RDoc::Parser
 
   include RDoc::Text
 
-  #--
+  # :stopdoc:
   BOOL_ARG_PATTERN = /\s*+\b([01]|Q?(?:true|false)|TRUE|FALSE)\b\s*/
   TRUE_VALUES = ['1', 'TRUE', 'true', 'Qtrue'].freeze
-  #++
+  # :startdoc:
 
   ##
   # Maps C variable names to names of Ruby classes or modules
