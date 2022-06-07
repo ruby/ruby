@@ -2,6 +2,7 @@ mod branches_and_system;
 mod data_processing_immediate;
 mod data_processing_register;
 mod family;
+mod loads_and_stores;
 mod sf;
 
 use data_processing_immediate::DataProcessingImmediate;
