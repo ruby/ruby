@@ -1969,6 +1969,7 @@ vm_init_redefined_flag(void)
     OP(UMinus, UMINUS), (C(String));
     OP(Max, MAX), (C(Array));
     OP(Min, MIN), (C(Array));
+    OP(Hash, HASH), (C(Array));
     OP(Call, CALL), (C(Proc));
     OP(And, AND), (C(Integer));
     OP(Or, OR), (C(Integer));

@@ -3489,6 +3489,10 @@ iseq_specialized_instruction(rb_iseq_t *iseq, INSN *iobj)
 		    iobj->insn_id = BIN(opt_newarray_min);
 		    ELEM_REMOVE(&niobj->link);
 		    return COMPILE_OK;
+		  case idHash:
+		    iobj->insn_id = BIN(opt_newarray_hash);
+		    ELEM_REMOVE(&niobj->link);
+		    return COMPILE_OK;
 		}
 	    }
 	}

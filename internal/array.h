@@ -21,6 +21,7 @@
 #define RARRAY_PTR_IN_USE_FLAG FL_USER14
 
 /* array.c */
+VALUE rb_ary_hash_values(long len, const VALUE *elements);
 VALUE rb_ary_last(int, const VALUE *, VALUE);
 void rb_ary_set_len(VALUE, long);
 void rb_ary_delete_same(VALUE, VALUE);

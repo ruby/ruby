@@ -5306,6 +5306,23 @@ rb_ary_eql(VALUE ary1, VALUE ary2)
     return rb_exec_recursive_paired(recursive_eql, ary1, ary2, ary2);
 }
 
+VALUE
+rb_ary_hash_values(long len, const VALUE *elements)
+{
+    long i;
+    st_index_t h;
+    VALUE n;
+
+    h = rb_hash_start(len);
+    h = rb_hash_uint(h, (st_index_t)rb_ary_hash_values);
+    for (i=0; i<len; i++) {
+	n = rb_hash(elements[i]);
+	h = rb_hash_uint(h, NUM2LONG(n));
+    }
+    h = rb_hash_end(h);
+    return ST2FIX(h);
+}
+
 /*
  *  call-seq:
  *    array.hash -> integer
@@ -5322,18 +5339,7 @@ rb_ary_eql(VALUE ary1, VALUE ary2)
 static VALUE
 rb_ary_hash(VALUE ary)
 {
-    long i;
-    st_index_t h;
-    VALUE n;
-
-    h = rb_hash_start(RARRAY_LEN(ary));
-    h = rb_hash_uint(h, (st_index_t)rb_ary_hash);
-    for (i=0; i<RARRAY_LEN(ary); i++) {
-	n = rb_hash(RARRAY_AREF(ary, i));
-	h = rb_hash_uint(h, NUM2LONG(n));
-    }
-    h = rb_hash_end(h);
-    return ST2FIX(h);
+    return rb_ary_hash_values(RARRAY_LEN(ary), RARRAY_CONST_PTR(ary));
 }
 
 /*

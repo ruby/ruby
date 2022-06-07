@@ -4922,6 +4922,18 @@ vm_opt_newarray_min(rb_execution_context_t *ec, rb_num_t num, const VALUE *ptr)
     }
 }
 
+static VALUE
+vm_opt_newarray_hash(rb_execution_context_t *ec, rb_num_t num, const VALUE *ptr)
+{
+    // If Array#hash is _not_ monkeypatched, use the optimized call
+    if (BASIC_OP_UNREDEFINED_P(BOP_HASH, ARRAY_REDEFINED_OP_FLAG)) {
+        return rb_ary_hash_values(num, ptr);
+    }
+    else {
+        return rb_vm_call_with_refinements(ec, rb_ary_new4(num, ptr), idHash, 0, NULL, RB_NO_KEYWORDS);
+    }
+}
+
 #undef id_cmp
 
 #define IMEMO_CONST_CACHE_SHAREABLE IMEMO_FL_USER0

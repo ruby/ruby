@@ -867,6 +867,18 @@ opt_newarray_min
     val = vm_opt_newarray_min(ec, num, STACK_ADDR_FROM_TOP(num));
 }
 
+DEFINE_INSN
+opt_newarray_hash
+(rb_num_t num)
+(...)
+(VALUE val)
+/* Same discussion as opt_newarray_max. */
+// attr bool leaf = false; /* has rb_funcall() */
+// attr rb_snum_t sp_inc = 1 - (rb_snum_t)num;
+{
+    val = vm_opt_newarray_hash(ec, num, STACK_ADDR_FROM_TOP(num));
+}
+
 /* super(args) # args.size => num */
 DEFINE_INSN
 invokesuper
