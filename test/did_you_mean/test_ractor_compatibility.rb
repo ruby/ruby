@@ -35,7 +35,7 @@ class RactorCompatibilityTest < Test::Unit::TestCase
               }.take
 
       assert_correction ":bar", error.corrections
-      assert_match "Did you mean?  :bar", error.to_s
+      assert_match "Did you mean?  :bar", get_message(error)
     CODE
   end
 
@@ -52,7 +52,7 @@ class RactorCompatibilityTest < Test::Unit::TestCase
               }.take
 
       assert_correction :to_s, error.corrections
-      assert_match "Did you mean?  to_s",  error.to_s
+      assert_match "Did you mean?  to_s",  get_message(error)
     CODE
   end
 
@@ -74,7 +74,7 @@ class RactorCompatibilityTest < Test::Unit::TestCase
                 }.take
 
         assert_correction ":foo", error.corrections
-        assert_match "Did you mean?  :foo", error.to_s
+        assert_match "Did you mean?  :foo", get_message(error)
       CODE
     end
   end
@@ -111,7 +111,7 @@ class RactorCompatibilityTest < Test::Unit::TestCase
       }.take
 
       assert_correction :in_ractor, error.corrections
-      assert_match "Did you mean?  in_ractor", error.to_s
+      assert_match "Did you mean?  in_ractor", get_message(error)
     CODE
   end
 end
