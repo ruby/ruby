@@ -377,16 +377,16 @@ thread_sched_to_ready_common(struct rb_thread_sched *sched, rb_thread_t *th)
 static void
 thread_sched_to_running_common(struct rb_thread_sched *sched, rb_thread_t *th)
 {
+    if (rb_internal_thread_event_hooks) {
+        rb_thread_execute_hooks(RUBY_INTERNAL_THREAD_EVENT_READY);
+    }
+
     if (sched->running) {
         VM_ASSERT(th->unblock.func == 0 &&
                   "we must not be in ubf_list and GVL readyq at the same time");
 
         // waiting -> ready
         thread_sched_to_ready_common(sched, th);
-
-        if (rb_internal_thread_event_hooks) {
-            rb_thread_execute_hooks(RUBY_INTERNAL_THREAD_EVENT_READY);
-        }
 
         // wait for running chance
         do {
