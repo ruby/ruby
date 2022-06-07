@@ -1,8 +1,4 @@
-use super::{
-    super::opnd::*,
-    family::Family,
-    sf::Sf
-};
+use super::{family::Family, sf::Sf};
 
 /// The operation being performed by this instruction.
 enum Op {
@@ -34,134 +30,114 @@ enum Shift {
 /// +-------------+-------------+-------------+-------------+-------------+-------------+-------------+-------------+
 ///
 pub struct DataProcessingRegister {
-    /// Whether or not this instruction is operating on 64-bit operands.
-    sf: Sf,
-
-    /// The opcode for this instruction.
-    op: Op,
-
-    /// Whether or not to update the flags when this instruction is performed.
-    s: S,
-
-    /// The type of shift to perform on the second operand register.
-    shift: Shift,
-
-    /// The register number of the second operand register.
-    rm: u8,
-
-    /// The amount to shift the second operand register by.
-    imm6: u8,
+    /// The register number of the destination register.
+    rd: u8,
 
     /// The register number of the first operand register.
     rn: u8,
 
-    /// The register number of the destination register.
-    rd: u8
+    /// The amount to shift the second operand register by.
+    imm6: u8,
+
+    /// The register number of the second operand register.
+    rm: u8,
+
+    /// The type of shift to perform on the second operand register.
+    shift: Shift,
+
+    /// Whether or not to update the flags when this instruction is performed.
+    s: S,
+
+    /// The opcode for this instruction.
+    op: Op,
+
+    /// Whether or not this instruction is operating on 64-bit operands.
+    sf: Sf
 }
 
 impl DataProcessingRegister {
     /// ADD (shifted register)
     /// https://developer.arm.com/documentation/ddi0596/2021-12/Base-Instructions/ADD--shifted-register---Add--shifted-register--?lang=en
-    pub fn add(rd: &A64Opnd, rn: &A64Opnd, rm: &A64Opnd) -> Self {
-        let (rd, rn, rm) = Self::unwrap(rd, rn, rm);
-
+    pub fn add(rd: u8, rn: u8, rm: u8, num_bits: u8) -> Self {
         Self {
-            sf: rd.num_bits.into(),
-            op: Op::Add,
-            s: S::LeaveFlags,
-            shift: Shift::LSL,
-            rm: rm.reg_no,
+            rd,
+            rn,
             imm6: 0,
-            rn: rn.reg_no,
-            rd: rd.reg_no
+            rm,
+            shift: Shift::LSL,
+            s: S::LeaveFlags,
+            op: Op::Add,
+            sf: num_bits.into()
         }
     }
 
     /// ADDS (shifted register, set flags)
     /// https://developer.arm.com/documentation/ddi0596/2021-12/Base-Instructions/ADDS--shifted-register---Add--shifted-register---setting-flags-?lang=en
-    pub fn adds(rd: &A64Opnd, rn: &A64Opnd, rm: &A64Opnd) -> Self {
-        let (rd, rn, rm) = Self::unwrap(rd, rn, rm);
-
+    pub fn adds(rd: u8, rn: u8, rm: u8, num_bits: u8) -> Self {
         Self {
-            sf: rd.num_bits.into(),
-            op: Op::Add,
-            s: S::UpdateFlags,
-            shift: Shift::LSL,
-            rm: rm.reg_no,
+            rd,
+            rn,
             imm6: 0,
-            rn: rn.reg_no,
-            rd: rd.reg_no
+            rm,
+            shift: Shift::LSL,
+            s: S::UpdateFlags,
+            op: Op::Add,
+            sf: num_bits.into()
         }
     }
 
     /// SUB (shifted register)
     /// https://developer.arm.com/documentation/ddi0596/2021-12/Base-Instructions/SUB--shifted-register---Subtract--shifted-register--?lang=en
-    pub fn sub(rd: &A64Opnd, rn: &A64Opnd, rm: &A64Opnd) -> Self {
-        let (rd, rn, rm) = Self::unwrap(rd, rn, rm);
-
+    pub fn sub(rd: u8, rn: u8, rm: u8, num_bits: u8) -> Self {
         Self {
-            sf: rd.num_bits.into(),
-            op: Op::Sub,
-            s: S::LeaveFlags,
-            shift: Shift::LSL,
-            rm: rm.reg_no,
+            rd,
+            rn,
             imm6: 0,
-            rn: rn.reg_no,
-            rd: rd.reg_no
+            rm,
+            shift: Shift::LSL,
+            s: S::LeaveFlags,
+            op: Op::Sub,
+            sf: num_bits.into()
         }
     }
 
     /// SUBS (shifted register, set flags)
     /// https://developer.arm.com/documentation/ddi0596/2021-12/Base-Instructions/SUBS--shifted-register---Subtract--shifted-register---setting-flags-?lang=en
-    pub fn subs(rd: &A64Opnd, rn: &A64Opnd, rm: &A64Opnd) -> Self {
-        let (rd, rn, rm) = Self::unwrap(rd, rn, rm);
-
+    pub fn subs(rd: u8, rn: u8, rm: u8, num_bits: u8) -> Self {
         Self {
-            sf: rd.num_bits.into(),
-            op: Op::Sub,
-            s: S::UpdateFlags,
-            shift: Shift::LSL,
-            rm: rm.reg_no,
+            rd,
+            rn,
             imm6: 0,
-            rn: rn.reg_no,
-            rd: rd.reg_no
-        }
-    }
-
-    /// Extract out three registers from the given operands. Panic if any of the
-    /// operands are not registers or if they are not the same size.
-    fn unwrap<'a>(rd: &'a A64Opnd, rn: &'a A64Opnd, rm: &'a A64Opnd) -> (&'a A64Reg, &'a A64Reg, &'a A64Reg) {
-        match (rd, rn, rm) {
-            (A64Opnd::Reg(rd), A64Opnd::Reg(rn), A64Opnd::Reg(rm)) => {
-                assert!(rd.num_bits == rn.num_bits && rn.num_bits == rm.num_bits, "All operands to a data processing register instruction must be of the same size.");
-                (rd, rn, rm)
-            },
-            _ => {
-                panic!("Expected 3 register operands for a data processing register instruction.");
-            }
+            rm,
+            shift: Shift::LSL,
+            s: S::UpdateFlags,
+            op: Op::Sub,
+            sf: num_bits.into()
         }
     }
 }
 
 impl From<DataProcessingRegister> for u32 {
-    /// Convert a data processing instruction into a 32-bit value.
+    /// Convert an instruction into a 32-bit value.
     fn from(inst: DataProcessingRegister) -> Self {
+        let imm6 = (inst.imm6 as u32) & ((1 << 6) - 1);
+
         0
-        | (inst.sf as u32).wrapping_shl(31)
-        | (inst.op as u32).wrapping_shl(30)
-        | (inst.s as u32).wrapping_shl(29)
-        | (Family::DataProcessingRegister as u32).wrapping_shl(25)
-        | (0b1 << 24)
-        | (inst.shift as u32).wrapping_shl(22)
-        | (inst.rm as u32).wrapping_shl(16)
-        | (inst.imm6 as u32).wrapping_shl(10)
-        | (inst.rn as u32).wrapping_shl(5)
+        | ((inst.sf as u32) << 31)
+        | ((inst.op as u32) << 30)
+        | ((inst.s as u32) << 29)
+        | ((Family::DataProcessingRegister as u32) << 25)
+        | (1 << 24)
+        | ((inst.shift as u32) << 22)
+        | ((inst.rm as u32) << 16)
+        | (imm6 << 10)
+        | ((inst.rn as u32) << 5)
         | inst.rd as u32
     }
 }
 
 impl From<DataProcessingRegister> for [u8; 4] {
-    /// Convert a data processing instruction into a 4 byte array.
+    /// Convert an instruction into a 4 byte array.
     fn from(inst: DataProcessingRegister) -> [u8; 4] {
         let result: u32 = inst.into();
         result.to_le_bytes()
@@ -174,28 +150,28 @@ mod tests {
 
     #[test]
     fn test_add() {
-        let inst = DataProcessingRegister::add(&X0, &X1, &X2);
+        let inst = DataProcessingRegister::add(0, 1, 2, 64);
         let result: u32 = inst.into();
         assert_eq!(0x8b020020, result);
     }
 
     #[test]
     fn test_adds() {
-        let inst = DataProcessingRegister::adds(&X0, &X1, &X2);
+        let inst = DataProcessingRegister::adds(0, 1, 2, 64);
         let result: u32 = inst.into();
         assert_eq!(0xab020020, result);
     }
 
     #[test]
     fn test_sub() {
-        let inst = DataProcessingRegister::sub(&X0, &X1, &X2);
+        let inst = DataProcessingRegister::sub(0, 1, 2, 64);
         let result: u32 = inst.into();
         assert_eq!(0xcb020020, result);
     }
 
     #[test]
     fn test_subs() {
-        let inst = DataProcessingRegister::subs(&X0, &X1, &X2);
+        let inst = DataProcessingRegister::subs(0, 1, 2, 64);
         let result: u32 = inst.into();
         assert_eq!(0xeb020020, result);
     }
