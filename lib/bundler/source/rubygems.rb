@@ -139,13 +139,9 @@ module Bundler
         force = options[:force]
         ensure_builtin_gems_cached = options[:ensure_builtin_gems_cached]
 
-        if ensure_builtin_gems_cached && spec.default_gem?
-          if !cached_path(spec)
-            cached_built_in_gem(spec) unless spec.remote
-            force = true
-          else
-            spec.loaded_from = loaded_from(spec)
-          end
+        if ensure_builtin_gems_cached && spec.default_gem? && !cached_path(spec)
+          cached_built_in_gem(spec) unless spec.remote
+          force = true
         end
 
         if installed?(spec) && !force
@@ -201,6 +197,7 @@ module Bundler
           :bundler_extension_cache_path => extension_cache_path(spec)
         ).install
         spec.full_gem_path = installed_spec.full_gem_path
+        spec.loaded_from = installed_spec.loaded_from
 
         # SUDO HAX
         if requires_sudo?
@@ -226,8 +223,6 @@ module Bundler
             Bundler.sudo "cp -R #{install_path}/bin/#{exe} #{Bundler.system_bindir}/"
           end
         end
-        installed_spec.loaded_from = loaded_from(spec)
-        spec.loaded_from = loaded_from(spec)
 
         spec.post_install_message
       ensure
@@ -343,10 +338,6 @@ module Bundler
           uris << s.remote if s.remote
           uris
         end
-      end
-
-      def loaded_from(spec)
-        "#{rubygems_dir}/specifications/#{spec.full_name}.gemspec"
       end
 
       def cached_gem(spec)
