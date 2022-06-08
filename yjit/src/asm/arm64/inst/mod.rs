@@ -151,43 +151,30 @@ pub fn ret(cb: &mut CodeBlock, rn: A64Opnd) {
 mod tests {
     use super::*;
 
+    /// Check that the bytes for an instruction sequence match a hex string
+    fn check_bytes<R>(bytes: &str, run: R) where R: FnOnce(&mut super::CodeBlock) {
+        let mut cb = super::CodeBlock::new_dummy(128);
+        run(&mut cb);
+        assert_eq!(format!("{:x}", cb), bytes);
+    }
+
     #[test]
     fn test_add_register() {
-        let mut cb = CodeBlock::new_dummy(1024);
-
-        add(&mut cb, X0, X1, X2);
-
-        let bytes = &cb.dummy_block[0..4];
-        assert_eq!(bytes, [0x20, 0x00, 0x02, 0x8b]);
+        check_bytes("2000028b", |cb| add(cb, X0, X1, X2));
     }
 
     #[test]
     fn test_add_immediate() {
-        let mut cb = CodeBlock::new_dummy(1024);
-
-        add(&mut cb, X0, X1, A64Opnd::new_uimm(7));
-
-        let bytes = &cb.dummy_block[0..4];
-        assert_eq!(bytes, [0x20, 0x1c, 0x00, 0x91]);
+        check_bytes("201c0091", |cb| add(cb, X0, X1, A64Opnd::new_uimm(7)));
     }
 
     #[test]
     fn test_adds_register() {
-        let mut cb = CodeBlock::new_dummy(1024);
-
-        adds(&mut cb, X0, X1, X2);
-
-        let bytes = &cb.dummy_block[0..4];
-        assert_eq!(bytes, [0x20, 0x00, 0x02, 0xab]);
+        check_bytes("200002ab", |cb| adds(cb, X0, X1, X2));
     }
 
     #[test]
     fn test_adds_immediate() {
-        let mut cb = CodeBlock::new_dummy(1024);
-
-        adds(&mut cb, X0, X1, A64Opnd::new_uimm(7));
-
-        let bytes = &cb.dummy_block[0..4];
-        assert_eq!(bytes, [0x20, 0x1c, 0x00, 0xb1]);
+        check_bytes("201c00b1", |cb| adds(cb, X0, X1, A64Opnd::new_uimm(7)));
     }
 }
