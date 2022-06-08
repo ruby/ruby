@@ -58,13 +58,13 @@ impl LoadsAndStores {
 impl From<LoadsAndStores> for u32 {
     /// Convert an instruction into a 32-bit value.
     fn from(inst: LoadsAndStores) -> Self {
-        let imm9 = (inst.imm9 as u32) & (2_u32.pow(9) - 1);
+        let imm9 = (inst.imm9 as u32) & ((1 << 9) - 1);
 
         0
         | (inst.size as u32).wrapping_shl(30)
         | (0b11 << 28)
         | (Family::LoadsAndStores as u32).wrapping_shl(25)
-        | (0b1 << 22)
+        | (1 << 22)
         | imm9.wrapping_shl(12)
         | (inst.rn as u32).wrapping_shl(5)
         | inst.rt as u32
