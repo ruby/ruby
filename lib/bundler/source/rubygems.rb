@@ -168,6 +168,9 @@ module Bundler
             Bundler.rm_rf(path)
             raise
           end
+        else
+          path = cached_gem(spec)
+          raise GemNotFound, "Could not find #{spec.file_name} for installation" unless path
         end
 
         unless Bundler.settings[:no_install]
@@ -175,8 +178,6 @@ module Bundler
           message += " with native extensions" if spec.extensions.any?
           Bundler.ui.confirm message
 
-          path = cached_gem(spec)
-          raise GemNotFound, "Could not find #{spec.file_name} for installation" unless path
           if requires_sudo?
             install_path = Bundler.tmp(spec.full_name)
             bin_path     = install_path.join("bin")
