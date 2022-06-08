@@ -490,38 +490,6 @@ pub fn jit_ensure_block_entry_exit(jit: &mut JITState, ocb: &mut OutlinedCb) {
     }
 }
 
-// Generate a runtime guard that ensures the PC is at the expected
-// instruction index in the iseq, otherwise takes a side-exit.
-// This is to handle the situation of optional parameters.
-// When a function with optional parameters is called, the entry
-// PC for the method isn't necessarily 0.
-fn gen_pc_guard(cb: &mut CodeBlock, iseq: IseqPtr, insn_idx: u32) {
-    let pc_opnd = mem_opnd(64, REG_CFP, RUBY_OFFSET_CFP_PC);
-    let expected_pc = unsafe { rb_iseq_pc_at_idx(iseq, insn_idx) };
-    let expected_pc_opnd = const_ptr_opnd(expected_pc as *const u8);
-
-    mov(cb, REG0, pc_opnd);
-    mov(cb, REG1, expected_pc_opnd);
-    cmp(cb, REG0, REG1);
-
-    let pc_match = cb.new_label("pc_match".to_string());
-    je_label(cb, pc_match);
-
-    // We're not starting at the first PC, so we need to exit.
-    gen_counter_incr!(cb, leave_start_pc_non_zero);
-
-    pop(cb, REG_SP);
-    pop(cb, REG_EC);
-    pop(cb, REG_CFP);
-
-    mov(cb, RAX, imm_opnd(Qundef.into()));
-    ret(cb);
-
-    // PC should match the expected insn_idx
-    cb.write_label(pc_match);
-    cb.link_labels();
-}
-
 // Landing code for when c_return tracing is enabled. See full_cfunc_return().
 fn gen_full_cfunc_return(ocb: &mut OutlinedCb) -> CodePtr {
     let cb = ocb.unwrap();
@@ -570,6 +538,38 @@ fn gen_leave_exit(ocb: &mut OutlinedCb) -> CodePtr {
     return code_ptr;
 }
 
+// Generate a runtime guard that ensures the PC is at the expected
+// instruction index in the iseq, otherwise takes a side-exit.
+// This is to handle the situation of optional parameters.
+// When a function with optional parameters is called, the entry
+// PC for the method isn't necessarily 0.
+fn gen_pc_guard(cb: &mut CodeBlock, iseq: IseqPtr, insn_idx: u32) {
+    let pc_opnd = mem_opnd(64, REG_CFP, RUBY_OFFSET_CFP_PC);
+    let expected_pc = unsafe { rb_iseq_pc_at_idx(iseq, insn_idx) };
+    let expected_pc_opnd = const_ptr_opnd(expected_pc as *const u8);
+
+    mov(cb, REG0, pc_opnd);
+    mov(cb, REG1, expected_pc_opnd);
+    cmp(cb, REG0, REG1);
+
+    let pc_match = cb.new_label("pc_match".to_string());
+    je_label(cb, pc_match);
+
+    // We're not starting at the first PC, so we need to exit.
+    gen_counter_incr!(cb, leave_start_pc_non_zero);
+
+    pop(cb, REG_SP);
+    pop(cb, REG_EC);
+    pop(cb, REG_CFP);
+
+    mov(cb, RAX, imm_opnd(Qundef.into()));
+    ret(cb);
+
+    // PC should match the expected insn_idx
+    cb.write_label(pc_match);
+    cb.link_labels();
+}
+
 /// Compile an interpreter entry block to be inserted into an iseq
 /// Returns None if compilation fails.
 pub fn gen_entry_prologue(cb: &mut CodeBlock, iseq: IseqPtr, insn_idx: u32) -> Option<CodePtr> {
@@ -591,12 +591,10 @@ pub fn gen_entry_prologue(cb: &mut CodeBlock, iseq: IseqPtr, insn_idx: u32) -> O
 
     let mut asm = Assembler::new();
 
-    // TODO: on arm, we need to push the return address here?
-
-    // FIXME
-    //push(cb, REG_CFP);
-    //push(cb, REG_EC);
-    //push(cb, REG_SP);
+    // Save the CFP, EC, SP registers to the C stack
+    asm.cpush(CFP);
+    asm.cpush(EC);
+    asm.cpush(SP);
 
     // We are passed EC and CFP as arguments
     asm.mov(EC, C_ARG_REGS[0].into());
