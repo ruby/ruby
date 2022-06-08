@@ -1,4 +1,4 @@
-use super::{family::Family, sf::Sf};
+use super::sf::Sf;
 
 /// The operation being performed by this instruction.
 enum Op {
@@ -29,7 +29,7 @@ enum Shift {
 /// | sf op  S                    shift    rm..............   imm6............... rn.............. rd.............. |
 /// +-------------+-------------+-------------+-------------+-------------+-------------+-------------+-------------+
 ///
-pub struct DataProcessingRegister {
+pub struct DataReg {
     /// The register number of the destination register.
     rd: u8,
 
@@ -55,7 +55,7 @@ pub struct DataProcessingRegister {
     sf: Sf
 }
 
-impl DataProcessingRegister {
+impl DataReg {
     /// ADD (shifted register)
     /// https://developer.arm.com/documentation/ddi0596/2021-12/Base-Instructions/ADD--shifted-register---Add--shifted-register--?lang=en
     pub fn add(rd: u8, rn: u8, rm: u8, num_bits: u8) -> Self {
@@ -117,16 +117,19 @@ impl DataProcessingRegister {
     }
 }
 
-impl From<DataProcessingRegister> for u32 {
+/// https://developer.arm.com/documentation/ddi0602/2022-03/Index-by-Encoding/Data-Processing----Register?lang=en
+const FAMILY: u32 = 0b0101;
+
+impl From<DataReg> for u32 {
     /// Convert an instruction into a 32-bit value.
-    fn from(inst: DataProcessingRegister) -> Self {
+    fn from(inst: DataReg) -> Self {
         let imm6 = (inst.imm6 as u32) & ((1 << 6) - 1);
 
         0
         | ((inst.sf as u32) << 31)
         | ((inst.op as u32) << 30)
         | ((inst.s as u32) << 29)
-        | ((Family::DataProcessingRegister as u32) << 25)
+        | (FAMILY << 25)
         | (1 << 24)
         | ((inst.shift as u32) << 22)
         | ((inst.rm as u32) << 16)
@@ -136,9 +139,9 @@ impl From<DataProcessingRegister> for u32 {
     }
 }
 
-impl From<DataProcessingRegister> for [u8; 4] {
+impl From<DataReg> for [u8; 4] {
     /// Convert an instruction into a 4 byte array.
-    fn from(inst: DataProcessingRegister) -> [u8; 4] {
+    fn from(inst: DataReg) -> [u8; 4] {
         let result: u32 = inst.into();
         result.to_le_bytes()
     }
@@ -150,28 +153,28 @@ mod tests {
 
     #[test]
     fn test_add() {
-        let inst = DataProcessingRegister::add(0, 1, 2, 64);
+        let inst = DataReg::add(0, 1, 2, 64);
         let result: u32 = inst.into();
         assert_eq!(0x8b020020, result);
     }
 
     #[test]
     fn test_adds() {
-        let inst = DataProcessingRegister::adds(0, 1, 2, 64);
+        let inst = DataReg::adds(0, 1, 2, 64);
         let result: u32 = inst.into();
         assert_eq!(0xab020020, result);
     }
 
     #[test]
     fn test_sub() {
-        let inst = DataProcessingRegister::sub(0, 1, 2, 64);
+        let inst = DataReg::sub(0, 1, 2, 64);
         let result: u32 = inst.into();
         assert_eq!(0xcb020020, result);
     }
 
     #[test]
     fn test_subs() {
-        let inst = DataProcessingRegister::subs(0, 1, 2, 64);
+        let inst = DataReg::subs(0, 1, 2, 64);
         let result: u32 = inst.into();
         assert_eq!(0xeb020020, result);
     }

@@ -1,4 +1,4 @@
-use super::{family::Family, sf::Sf};
+use super::sf::Sf;
 
 /// The operation being performed by this instruction.
 enum Op {
@@ -28,7 +28,7 @@ enum Shift {
 /// | sf op  S                       sh imm12.................................... rn.............. rd.............. |
 /// +-------------+-------------+-------------+-------------+-------------+-------------+-------------+-------------+
 ///
-pub struct DataProcessingImmediate {
+pub struct DataImm {
     /// The register number of the destination register.
     rd: u8,
 
@@ -51,7 +51,7 @@ pub struct DataProcessingImmediate {
     sf: Sf
 }
 
-impl DataProcessingImmediate {
+impl DataImm {
     /// ADD (immediate)
     /// https://developer.arm.com/documentation/ddi0596/2021-12/Base-Instructions/ADD--immediate---Add--immediate--?lang=en
     pub fn add(rd: u8, rn: u8, imm12: u16, num_bits: u8) -> Self {
@@ -109,16 +109,19 @@ impl DataProcessingImmediate {
     }
 }
 
-impl From<DataProcessingImmediate> for u32 {
+/// https://developer.arm.com/documentation/ddi0602/2022-03/Index-by-Encoding/Data-Processing----Immediate?lang=en
+const FAMILY: u32 = 0b1000;
+
+impl From<DataImm> for u32 {
     /// Convert an instruction into a 32-bit value.
-    fn from(inst: DataProcessingImmediate) -> Self {
+    fn from(inst: DataImm) -> Self {
         let imm12 = (inst.imm12 as u32) & ((1 << 12) - 1);
 
         0
         | ((inst.sf as u32) << 31)
         | ((inst.op as u32) << 30)
         | ((inst.s as u32) << 29)
-        | ((Family::DataProcessingImmediate as u32) << 25)
+        | (FAMILY << 25)
         | (1 << 24)
         | ((inst.shift as u32) << 22)
         | (imm12 << 10)
@@ -127,9 +130,9 @@ impl From<DataProcessingImmediate> for u32 {
     }
 }
 
-impl From<DataProcessingImmediate> for [u8; 4] {
+impl From<DataImm> for [u8; 4] {
     /// Convert an instruction into a 4 byte array.
-    fn from(inst: DataProcessingImmediate) -> [u8; 4] {
+    fn from(inst: DataImm) -> [u8; 4] {
         let result: u32 = inst.into();
         result.to_le_bytes()
     }
@@ -141,28 +144,28 @@ mod tests {
 
     #[test]
     fn test_add() {
-        let inst = DataProcessingImmediate::add(0, 1, 7, 64);
+        let inst = DataImm::add(0, 1, 7, 64);
         let result: u32 = inst.into();
         assert_eq!(0x91001c20, result);
     }
 
     #[test]
     fn test_adds() {
-        let inst = DataProcessingImmediate::adds(0, 1, 7, 64);
+        let inst = DataImm::adds(0, 1, 7, 64);
         let result: u32 = inst.into();
         assert_eq!(0xb1001c20, result);
     }
 
     #[test]
     fn test_sub() {
-        let inst = DataProcessingImmediate::sub(0, 1, 7, 64);
+        let inst = DataImm::sub(0, 1, 7, 64);
         let result: u32 = inst.into();
         assert_eq!(0xd1001c20, result);
     }
 
     #[test]
     fn test_subs() {
-        let inst = DataProcessingImmediate::subs(0, 1, 7, 64);
+        let inst = DataImm::subs(0, 1, 7, 64);
         let result: u32 = inst.into();
         assert_eq!(0xf1001c20, result);
     }
