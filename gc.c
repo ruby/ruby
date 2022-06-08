@@ -5684,9 +5684,11 @@ gc_sweep_finish_size_pool(rb_objspace_t *objspace, rb_size_pool_t *size_pool)
         bool grow_heap = is_full_marking(objspace);
 
         if (!is_full_marking(objspace)) {
-            /* The heap is a growth heap if it freed more slots than had empty slots. */
-            bool is_growth_heap = size_pool->empty_slots == 0 ||
-                                    size_pool->freed_slots > size_pool->empty_slots;
+            /* The heap is a growth heap if it freed more slots than had empty
+             * slots and used up all of its allocatable pages. */
+            bool is_growth_heap = (size_pool->empty_slots == 0 ||
+                                       size_pool->freed_slots > size_pool->empty_slots) &&
+                                   size_pool->allocatable_pages == 0;
 
             if (objspace->profile.count - objspace->rgengc.last_major_gc < RVALUE_OLD_AGE) {
                 grow_heap = TRUE;
