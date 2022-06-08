@@ -78,8 +78,9 @@ pub enum Op
     Cmp,
 
     // Low-level conditional jump instructions
-    Jnz,
     Jbe,
+    Je,
+    Jnz,
 
     // C function call with N arguments (variadic)
     CCall,
@@ -636,22 +637,23 @@ impl fmt::Debug for Assembler {
 
 impl Assembler
 {
-    // Jump if not zero
-    pub fn jnz(&mut self, target: Target)
-    {
-        self.push_insn(Op::Jnz, vec![], Some(target));
-    }
-
-    pub fn jbe(&mut self, target: Target)
-    {
-        self.push_insn(Op::Jbe, vec![], Some(target));
-    }
-
     pub fn ccall(&mut self, fptr: *const u8, opnds: Vec<Opnd>) -> Opnd
     {
         let target = Target::FunPtr(fptr);
         self.push_insn(Op::CCall, opnds, Some(target))
     }
+}
+
+macro_rules! def_push_jcc {
+    ($op_name:ident, $opcode:expr) => {
+        impl Assembler
+        {
+            pub fn $op_name(&mut self, target: Target)
+            {
+                self.push_insn($opcode, vec![], Some(target));
+            }
+        }
+    };
 }
 
 macro_rules! def_push_1_opnd {
@@ -702,6 +704,9 @@ macro_rules! def_push_2_opnd_no_out {
     };
 }
 
+def_push_jcc!(je, Op::Je);
+def_push_jcc!(jbe, Op::Jbe);
+def_push_jcc!(jnz, Op::Jnz);
 def_push_2_opnd!(add, Op::Add);
 def_push_2_opnd!(sub, Op::Sub);
 def_push_2_opnd!(and, Op::And);

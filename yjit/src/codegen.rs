@@ -142,24 +142,6 @@ pub fn jit_get_arg(jit: &JITState, arg_idx: isize) -> VALUE {
     unsafe { *(jit.pc.offset(arg_idx + 1)) }
 }
 
-/*
-// Load a VALUE into a register and keep track of the reference if it is on the GC heap.
-pub fn jit_mov_gc_ptr(jit: &mut JITState, cb: &mut CodeBlock, reg: X86Opnd, ptr: VALUE) {
-    assert!(matches!(reg, X86Opnd::Reg(_)));
-    assert!(reg.num_bits() == 64);
-
-    // Load the pointer constant into the specified register
-    mov(cb, reg, const_ptr_opnd(ptr.as_ptr()));
-
-    // The pointer immediate is encoded as the last part of the mov written out
-    let ptr_offset: u32 = (cb.get_write_pos() as u32) - (SIZEOF_VALUE as u32);
-
-    if !ptr.special_const_p() {
-        jit.add_gc_obj_offset(ptr_offset);
-    }
-}
-*/
-
 // Get the index of the next instruction
 fn jit_next_insn_idx(jit: &JITState) -> u32 {
     jit.insn_idx + insn_len(jit.get_opcode())
@@ -523,11 +505,10 @@ pub fn jit_ensure_block_entry_exit(jit: &mut JITState, ocb: &mut OutlinedCb) {
 // When a function with optional parameters is called, the entry
 // PC for the method isn't necessarily 0.
 fn gen_pc_guard(cb: &mut CodeBlock, iseq: IseqPtr, insn_idx: u32) {
-    //RUBY_ASSERT(cb != NULL);
-
     let pc_opnd = mem_opnd(64, REG_CFP, RUBY_OFFSET_CFP_PC);
     let expected_pc = unsafe { rb_iseq_pc_at_idx(iseq, insn_idx) };
     let expected_pc_opnd = const_ptr_opnd(expected_pc as *const u8);
+
     mov(cb, REG0, pc_opnd);
     mov(cb, REG1, expected_pc_opnd);
     cmp(cb, REG0, REG1);
@@ -619,12 +600,14 @@ pub fn gen_entry_prologue(cb: &mut CodeBlock, iseq: IseqPtr, insn_idx: u32) -> O
 
     let mut asm = Assembler::new();
 
+    // TODO: on arm, we need to push the return address here?
+
     // FIXME
     //push(cb, REG_CFP);
     //push(cb, REG_EC);
     //push(cb, REG_SP);
 
-    // We are passed EC and CFP
+    // We are passed EC and CFP as arguments
     asm.mov(EC, C_ARG_REGS[0].into());
     asm.mov(CFP, C_ARG_REGS[1].into());
 
