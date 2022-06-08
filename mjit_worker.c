@@ -297,7 +297,7 @@ static const char *const CC_COMMON_ARGS[] = {
 static const char *const CC_DEBUG_ARGS[] = {MJIT_DEBUGFLAGS NULL};
 static const char *const CC_OPTIMIZE_ARGS[] = {MJIT_OPTFLAGS NULL};
 
-static const char *const CC_LDSHARED_ARGS[] = {MJIT_LDSHARED GCC_PIC_FLAGS NULL};
+static const char *const CC_LDSHARED_ARGS[] = {MJIT_LDSHARED MJIT_CFLAGS GCC_PIC_FLAGS NULL};
 static const char *const CC_DLDFLAGS_ARGS[] = {MJIT_DLDFLAGS NULL};
 // `CC_LINKER_ARGS` are linker flags which must be passed to `-c` as well.
 static const char *const CC_LINKER_ARGS[] = {
@@ -920,7 +920,8 @@ compile_c_to_so(const char *c_file, const char *so_file)
 # endif
         c_file, NULL
     };
-    char **args = form_args(6, CC_LDSHARED_ARGS, CC_CODEFLAG_ARGS, so_args, CC_LIBS, CC_DLDFLAGS_ARGS, CC_LINKER_ARGS);
+    char **args = form_args(7, CC_LDSHARED_ARGS, CC_CODEFLAG_ARGS, cc_added_args,
+                            so_args, CC_LIBS, CC_DLDFLAGS_ARGS, CC_LINKER_ARGS);
     if (args == NULL) return false;
     int exit_code = exec_process(cc_path, args);
     free(args);
