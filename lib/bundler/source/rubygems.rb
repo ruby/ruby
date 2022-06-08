@@ -149,8 +149,6 @@ module Bundler
           return nil # no post-install message
         end
 
-        # Download the gem to get the spec, because some specs that are returned
-        # by rubygems.org are broken and wrong.
         if spec.remote
           # Check for this spec from other sources
           uris = [spec.remote, *remotes_for_spec(spec)].map(&:anonymized_uri).uniq
