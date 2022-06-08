@@ -690,14 +690,12 @@ typedef struct rb_size_pool_struct {
     /* Basic statistics */
     size_t total_allocated_pages;
     size_t total_freed_pages;
+    size_t force_major_gc_count;
 
 #if USE_RVARGC
     /* Sweeping statistics */
     size_t freed_slots;
     size_t empty_slots;
-
-    /* Global statistics */
-    size_t force_major_gc_count;
 #endif
 
     rb_heap_t eden_heap;
