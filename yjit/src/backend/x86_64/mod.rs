@@ -101,8 +101,11 @@ impl Assembler
         // For each instruction
         for insn in &self.insns {
             match insn.op {
-                // TODO: need to map the position of comments in the machine code
-                Op::Comment => {},
+                Op::Comment => {
+                    if cfg!(feature = "asm_comments") {
+                        cb.add_comment(&insn.text.as_ref().unwrap());
+                    }
+                },
 
                 Op::Label => {},
 
