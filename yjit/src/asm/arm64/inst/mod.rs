@@ -3,12 +3,14 @@ mod data_processing_immediate;
 mod data_processing_register;
 mod family;
 mod loads_and_stores;
+mod movk;
 mod sf;
 
 use branches_and_system::BranchesAndSystem;
 use data_processing_immediate::DataProcessingImmediate;
 use data_processing_register::DataProcessingRegister;
 use loads_and_stores::LoadsAndStores;
+use movk::Movk;
 
 use crate::asm::{CodeBlock, imm_num_bits};
 use super::opnd::*;
@@ -74,6 +76,20 @@ pub fn ldur(cb: &mut CodeBlock, rt: A64Opnd, rn: A64Opnd) {
     cb.write_bytes(&bytes);
 }
 
+/// MOVK
+pub fn movk(cb: &mut CodeBlock, rd: A64Opnd, imm16: A64Opnd, shift: u8) {
+    let bytes: [u8; 4] = match (rd, imm16) {
+        (A64Opnd::Reg(rd), A64Opnd::UImm(imm16)) => {
+            assert!(imm16.num_bits <= 16, "The immediate operand must be 16 bits or less.");
+
+            Movk::movk(rd.reg_no, imm16.value as u16, shift, rd.num_bits).into()
+        },
+        _ => panic!("Invalid operand combination to movk instruction.")
+    };
+
+    cb.write_bytes(&bytes);
+}
+
 /// SUB
 pub fn sub(cb: &mut CodeBlock, rd: A64Opnd, rn: A64Opnd, rm: A64Opnd) {
     let bytes: [u8; 4] = match (rd, rn, rm) {
@@ -129,4 +145,49 @@ pub fn ret(cb: &mut CodeBlock, rn: A64Opnd) {
     };
 
     cb.write_bytes(&bytes);
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_add_register() {
+        let mut cb = CodeBlock::new_dummy(1024);
+
+        add(&mut cb, X0, X1, X2);
+
+        let bytes = &cb.dummy_block[0..4];
+        assert_eq!(bytes, [0x20, 0x00, 0x02, 0x8b]);
+    }
+
+    #[test]
+    fn test_add_immediate() {
+        let mut cb = CodeBlock::new_dummy(1024);
+
+        add(&mut cb, X0, X1, A64Opnd::new_uimm(7));
+
+        let bytes = &cb.dummy_block[0..4];
+        assert_eq!(bytes, [0x20, 0x1c, 0x00, 0x91]);
+    }
+
+    #[test]
+    fn test_adds_register() {
+        let mut cb = CodeBlock::new_dummy(1024);
+
+        adds(&mut cb, X0, X1, X2);
+
+        let bytes = &cb.dummy_block[0..4];
+        assert_eq!(bytes, [0x20, 0x00, 0x02, 0xab]);
+    }
+
+    #[test]
+    fn test_adds_immediate() {
+        let mut cb = CodeBlock::new_dummy(1024);
+
+        adds(&mut cb, X0, X1, A64Opnd::new_uimm(7));
+
+        let bytes = &cb.dummy_block[0..4];
+        assert_eq!(bytes, [0x20, 0x1c, 0x00, 0xb1]);
+    }
 }
