@@ -160,6 +160,7 @@ class TestGc < Test::Unit::TestCase
       assert_operator stat_heap[:heap_tomb_slots], :>=, 0
       assert_operator stat_heap[:total_allocated_pages], :>=, 0
       assert_operator stat_heap[:total_freed_pages], :>=, 0
+      assert_operator stat_heap[:force_major_gc_count], :>=, 0
     end
 
     GC.stat_heap(0, stat_heap)

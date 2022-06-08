@@ -690,14 +690,12 @@ typedef struct rb_size_pool_struct {
     /* Basic statistics */
     size_t total_allocated_pages;
     size_t total_freed_pages;
+    size_t force_major_gc_count;
 
 #if USE_RVARGC
     /* Sweeping statistics */
     size_t freed_slots;
     size_t empty_slots;
-
-    /* Global statistics */
-    size_t force_major_gc_count;
 #endif
 
     rb_heap_t eden_heap;
@@ -11005,6 +11003,7 @@ enum gc_stat_heap_sym {
     gc_stat_heap_sym_heap_tomb_slots,
     gc_stat_heap_sym_total_allocated_pages,
     gc_stat_heap_sym_total_freed_pages,
+    gc_stat_heap_sym_force_major_gc_count,
     gc_stat_heap_sym_last
 };
 
@@ -11023,6 +11022,7 @@ setup_gc_stat_heap_symbols(void)
         S(heap_tomb_slots);
         S(total_allocated_pages);
         S(total_freed_pages);
+        S(force_major_gc_count);
 #undef S
     }
 }
@@ -11065,6 +11065,7 @@ gc_stat_heap_internal(int size_pool_idx, VALUE hash_or_sym)
     SET(heap_tomb_slots, SIZE_POOL_TOMB_HEAP(size_pool)->total_slots);
     SET(total_allocated_pages, size_pool->total_allocated_pages);
     SET(total_freed_pages, size_pool->total_freed_pages);
+    SET(force_major_gc_count, size_pool->force_major_gc_count);
 #undef SET
 
     if (!NIL_P(key)) { /* matched key should return above */

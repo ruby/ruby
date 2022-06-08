@@ -18,6 +18,38 @@ end
 #
 # Namespace for several file utility methods for copying, moving, removing, etc.
 #
+# == About the Examples
+#
+# Some examples here involve trees of file entries.
+# For these, we sometimes display trees using the
+# {tree command-line utility}[https://en.wikipedia.org/wiki/Tree_(command)],
+# which is a recursive directory-listing utility that produces
+# a depth-indented listing of files and directories.
+#
+# We use a helper method to launch the command and control the format:
+#
+#   def tree(dirpath = '.')
+#     command = "tree --noreport --charset=ascii #{dirpath}"
+#     system(command)
+#   end
+#
+# To illustrate, here's the tree for the test directory for \FileUtils:
+#   tree('test')
+#   test
+#   |-- fileutils
+#   |   |-- clobber.rb
+#   |   |-- fileasserts.rb
+#   |   |-- test_dryrun.rb
+#   |   |-- test_fileutils.rb
+#   |   |-- test_nowrite.rb
+#   |   |-- test_verbose.rb
+#   |   `-- visibility_tests.rb
+#   `-- lib
+#       |-- core_assertions.rb
+#       |-- envutil.rb
+#       |-- find_executable.rb
+#       `-- helper.rb
+#
 # === Module Functions
 #
 #   require 'fileutils'
@@ -839,7 +871,7 @@ module FileUtils
   #
   # If +src+ is a directory, recursively copies +src+ to +dest+:
   #
-  #   system('tree --charset=ascii src1')
+  #   tree('src1')
   #   src1
   #   |-- dir0
   #   |   |-- src0.txt
@@ -848,7 +880,7 @@ module FileUtils
   #       |-- src2.txt
   #       `-- src3.txt
   #   FileUtils.copy_entry('src1', 'dest1')
-  #   system('tree --charset=ascii dest1')
+  #   tree('dest1')
   #   dest1
   #   |-- dir0
   #   |   |-- src0.txt
@@ -923,14 +955,14 @@ module FileUtils
   # If +src+ is the path to a single file or directory and +dest+ does not exist,
   # moves +src+ to +dest+:
   #
-  #   system('tree --charset=ascii src0')
+  #   tree('src0')
   #   src0
   #   |-- src0.txt
   #   `-- src1.txt
   #   File.exist?('dest0') # => false
   #   FileUtils.mv('src0', 'dest0')
   #   File.exist?('src0')  # => false
-  #   system('tree --charset=ascii dest0')
+  #   tree('dest0')
   #   dest0
   #   |-- src0.txt
   #   `-- src1.txt
@@ -940,13 +972,13 @@ module FileUtils
   # copies from each path in the array to +dest+:
   #
   #   File.file?('src1.txt') # => true
-  #   system('tree --charset=ascii src1')
+  #   tree('src1')
   #   src1
   #   |-- src.dat
   #   `-- src.txt
   #   Dir.empty?('dest1') # => true
   #   FileUtils.mv(['src1.txt', 'src1'], 'dest1')
-  #   system('tree --charset=ascii dest1')
+  #   tree('dest1')
   #   dest1
   #   |-- src1
   #   |   |-- src.dat
@@ -1076,7 +1108,7 @@ module FileUtils
   #
   # For each directory path, recursively removes files and directories:
   #
-  #   system('tree --charset=ascii src1')
+  #   tree('src1')
   #   src1
   #   |-- dir0
   #   |   |-- src0.txt
