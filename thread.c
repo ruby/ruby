@@ -5070,10 +5070,9 @@ exec_recursive_i(RB_BLOCK_CALL_FUNC_ARGLIST(tag, data))
  */
 
 static VALUE
-exec_recursive(VALUE (*func) (VALUE, VALUE, int), VALUE obj, VALUE pairid, VALUE arg, int outer)
+exec_recursive(VALUE (*func) (VALUE, VALUE, int), VALUE obj, VALUE pairid, VALUE arg, int outer, ID mid)
 {
     VALUE result = Qundef;
-    const ID mid = rb_frame_last_func();
     const VALUE sym = mid ? ID2SYM(mid) : ID2SYM(idNULL);
     struct exec_recursive_params p;
     int outermost;
@@ -5138,7 +5137,7 @@ exec_recursive(VALUE (*func) (VALUE, VALUE, int), VALUE obj, VALUE pairid, VALUE
 VALUE
 rb_exec_recursive(VALUE (*func) (VALUE, VALUE, int), VALUE obj, VALUE arg)
 {
-    return exec_recursive(func, obj, 0, arg, 0);
+    return exec_recursive(func, obj, 0, arg, 0, rb_frame_last_func());
 }
 
 /*
@@ -5149,7 +5148,7 @@ rb_exec_recursive(VALUE (*func) (VALUE, VALUE, int), VALUE obj, VALUE arg)
 VALUE
 rb_exec_recursive_paired(VALUE (*func) (VALUE, VALUE, int), VALUE obj, VALUE paired_obj, VALUE arg)
 {
-    return exec_recursive(func, obj, rb_memory_id(paired_obj), arg, 0);
+    return exec_recursive(func, obj, rb_memory_id(paired_obj), arg, 0, rb_frame_last_func());
 }
 
 /*
@@ -5161,7 +5160,7 @@ rb_exec_recursive_paired(VALUE (*func) (VALUE, VALUE, int), VALUE obj, VALUE pai
 VALUE
 rb_exec_recursive_outer(VALUE (*func) (VALUE, VALUE, int), VALUE obj, VALUE arg)
 {
-    return exec_recursive(func, obj, 0, arg, 1);
+    return exec_recursive(func, obj, 0, arg, 1, rb_frame_last_func());
 }
 
 /*
@@ -5173,7 +5172,7 @@ rb_exec_recursive_outer(VALUE (*func) (VALUE, VALUE, int), VALUE obj, VALUE arg)
 VALUE
 rb_exec_recursive_paired_outer(VALUE (*func) (VALUE, VALUE, int), VALUE obj, VALUE paired_obj, VALUE arg)
 {
-    return exec_recursive(func, obj, rb_memory_id(paired_obj), arg, 1);
+    return exec_recursive(func, obj, rb_memory_id(paired_obj), arg, 1, rb_frame_last_func());
 }
 
 /*
