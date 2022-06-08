@@ -136,14 +136,9 @@ impl Assembler
                 // Load effective address
                 Op::Lea => lea(cb, insn.out.into(), insn.opnds[0].into()),
 
-                // Test and set flags
-                Op::Test => test(cb, insn.opnds[0].into(), insn.opnds[1].into()),
-
-                /*
-                Cmp,
-                Jnz,
-                Jbe,
-                */
+                // Push and pop to the C stack
+                Op::CPush => push(cb, insn.opnds[0].into()),
+                Op::CPop => pop(cb, insn.opnds[0].into()),
 
                 // C function call
                 Op::CCall => {
@@ -164,6 +159,15 @@ impl Assembler
 
                     ret(cb);
                 }
+
+                // Test and set flags
+                Op::Test => test(cb, insn.opnds[0].into(), insn.opnds[1].into()),
+
+                /*
+                Cmp,
+                Jnz,
+                Jbe,
+                */
 
                 _ => panic!("unsupported instruction passed to x86 backend: {:?}", insn.op)
             };

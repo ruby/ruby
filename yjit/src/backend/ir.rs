@@ -82,6 +82,10 @@ pub enum Op
     Je,
     Jnz,
 
+    // Push and pop registers to/from the C stack
+    CPush,
+    CPop,
+
     // C function call with N arguments (variadic)
     CCall,
 
@@ -710,6 +714,8 @@ def_push_jcc!(jnz, Op::Jnz);
 def_push_2_opnd!(add, Op::Add);
 def_push_2_opnd!(sub, Op::Sub);
 def_push_2_opnd!(and, Op::And);
+def_push_1_opnd_no_out!(cpush, Op::CPush);
+def_push_1_opnd_no_out!(cpop, Op::CPop);
 def_push_1_opnd_no_out!(cret, Op::CRet);
 def_push_1_opnd!(load, Op::Load);
 def_push_1_opnd!(lea, Op::Lea);
