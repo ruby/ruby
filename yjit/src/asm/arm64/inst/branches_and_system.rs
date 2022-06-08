@@ -28,9 +28,9 @@ impl From<BranchesAndSystem> for u32 {
     fn from(inst: BranchesAndSystem) -> Self {
         0
         | (0b11 << 30)
-        | (Family::BranchesAndSystem as u32).wrapping_shl(25)
+        | ((Family::BranchesAndSystem as u32) << 25)
         | (0b1001011111 << 16)
-        | (inst.rn as u32).wrapping_shl(5)
+        | ((inst.rn as u32) << 5)
     }
 }
 

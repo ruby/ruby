@@ -61,13 +61,13 @@ impl From<LoadsAndStores> for u32 {
         let imm9 = (inst.imm9 as u32) & ((1 << 9) - 1);
 
         0
-        | (inst.size as u32).wrapping_shl(30)
+        | ((inst.size as u32) << 30)
         | (0b11 << 28)
-        | (Family::LoadsAndStores as u32).wrapping_shl(25)
+        | ((Family::LoadsAndStores as u32) << 25)
         | (1 << 22)
-        | imm9.wrapping_shl(12)
-        | (inst.rn as u32).wrapping_shl(5)
-        | inst.rt as u32
+        | (imm9 << 12)
+        | ((inst.rn as u32) << 5)
+        | (inst.rt as u32)
     }
 }
 

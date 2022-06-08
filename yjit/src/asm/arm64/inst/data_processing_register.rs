@@ -123,15 +123,15 @@ impl From<DataProcessingRegister> for u32 {
         let imm6 = (inst.imm6 as u32) & ((1 << 6) - 1);
 
         0
-        | (inst.sf as u32).wrapping_shl(31)
-        | (inst.op as u32).wrapping_shl(30)
-        | (inst.s as u32).wrapping_shl(29)
-        | (Family::DataProcessingRegister as u32).wrapping_shl(25)
+        | ((inst.sf as u32) << 31)
+        | ((inst.op as u32) << 30)
+        | ((inst.s as u32) << 29)
+        | ((Family::DataProcessingRegister as u32) << 25)
         | (1 << 24)
-        | (inst.shift as u32).wrapping_shl(22)
-        | (inst.rm as u32).wrapping_shl(16)
-        | imm6.wrapping_shl(10)
-        | (inst.rn as u32).wrapping_shl(5)
+        | ((inst.shift as u32) << 22)
+        | ((inst.rm as u32) << 16)
+        | (imm6 << 10)
+        | ((inst.rn as u32) << 5)
         | inst.rd as u32
     }
 }
