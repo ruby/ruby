@@ -1,7 +1,7 @@
 // We use the YARV bytecode constants which have a CRuby-style name
 #![allow(non_upper_case_globals)]
 
-use crate::asm::x86_64::*;
+//use crate::asm::x86_64::*;
 use crate::asm::*;
 use crate::backend::ir::*;
 use crate::core::*;
@@ -25,15 +25,15 @@ use std::slice;
 pub use crate::virtualmem::CodePtr;
 
 // Callee-saved registers
-pub const REG_CFP: X86Opnd = R13;
-pub const REG_EC: X86Opnd = R12;
-pub const REG_SP: X86Opnd = RBX;
+//pub const REG_CFP: X86Opnd = R13;
+//pub const REG_EC: X86Opnd = R12;
+//pub const REG_SP: X86Opnd = RBX;
 
 // Scratch registers used by YJIT
-pub const REG0: X86Opnd = RAX;
-pub const REG0_32: X86Opnd = EAX;
-pub const REG0_8: X86Opnd = AL;
-pub const REG1: X86Opnd = RCX;
+//pub const REG0: X86Opnd = RAX;
+//pub const REG0_32: X86Opnd = EAX;
+//pub const REG0_8: X86Opnd = AL;
+//pub const REG1: X86Opnd = RCX;
 
 // A block that can be invalidated needs space to write a jump.
 // We'll reserve a minimum size for any block that could
@@ -283,8 +283,7 @@ fn gen_save_sp(jit: &JITState, asm: &mut Assembler, ctx: &mut Context) {
 fn jit_prepare_routine_call(
     jit: &mut JITState,
     ctx: &mut Context,
-    asm: &mut Assembler,
-    scratch_reg: X86Opnd,
+    asm: &mut Assembler
 ) {
     jit.record_boundary_patch_point = true;
     jit_save_pc(jit, asm);
@@ -387,6 +386,9 @@ fn verify_ctx(jit: &JITState, ctx: &Context) {
 fn gen_exit(exit_pc: *mut VALUE, ctx: &Context, cb: &mut CodeBlock) -> CodePtr {
     let code_ptr = cb.get_write_ptr();
 
+    todo!();
+
+    /*
     add_comment(cb, "exit to interpreter");
 
     // Generate the code to exit to the interpreters
@@ -423,6 +425,7 @@ fn gen_exit(exit_pc: *mut VALUE, ctx: &Context, cb: &mut CodeBlock) -> CodePtr {
     ret(cb);
 
     return code_ptr;
+    */
 }
 
 // Fill code_for_exit_from_stub. This is used by branch_stub_hit() to exit
@@ -433,6 +436,9 @@ fn gen_code_for_exit_from_stub(ocb: &mut OutlinedCb) -> CodePtr {
     let ocb = ocb.unwrap();
     let code_ptr = ocb.get_write_ptr();
 
+    todo!();
+
+    /*
     gen_counter_incr!(ocb, exit_from_branch_stub);
 
     pop(ocb, REG_SP);
@@ -443,6 +449,7 @@ fn gen_code_for_exit_from_stub(ocb: &mut OutlinedCb) -> CodePtr {
     ret(ocb);
 
     return code_ptr;
+    */
 }
 
 // :side-exit:
@@ -495,6 +502,9 @@ fn gen_full_cfunc_return(ocb: &mut OutlinedCb) -> CodePtr {
     let cb = ocb.unwrap();
     let code_ptr = cb.get_write_ptr();
 
+    todo!();
+
+    /*
     // This chunk of code expect REG_EC to be filled properly and
     // RAX to contain the return value of the C method.
 
@@ -515,6 +525,7 @@ fn gen_full_cfunc_return(ocb: &mut OutlinedCb) -> CodePtr {
     ret(cb);
 
     return code_ptr;
+    */
 }
 
 /// Generate a continuation for leave that exits to the interpreter at REG_CFP->pc.
@@ -522,6 +533,7 @@ fn gen_full_cfunc_return(ocb: &mut OutlinedCb) -> CodePtr {
 fn gen_leave_exit(ocb: &mut OutlinedCb) -> CodePtr {
     let ocb = ocb.unwrap();
     let code_ptr = ocb.get_write_ptr();
+    let mut asm = Assembler::new();
 
     // Note, gen_leave() fully reconstructs interpreter state and leaves the
     // return value in RAX before coming here.
@@ -530,11 +542,22 @@ fn gen_leave_exit(ocb: &mut OutlinedCb) -> CodePtr {
     // Every exit to the interpreter should be counted
     //gen_counter_incr!(ocb, leave_interp_return);
 
-    pop(ocb, REG_SP);
-    pop(ocb, REG_EC);
-    pop(ocb, REG_CFP);
+    asm.cpop(SP);
+    asm.cpop(EC);
+    asm.cpop(CFP);
 
-    ret(ocb);
+    // FIXME: we're currently assuming that the return value is in RAX,
+    // left there by gen_leave() ...
+    //
+    // What are our options?
+    // We could put the return value in C_RET_REG?
+    // Then call asm.ret with C_RET_REG?
+
+    todo!();
+
+    //asm.ret();
+
+    asm.compile(ocb);
 
     return code_ptr;
 }
@@ -595,8 +618,8 @@ pub fn gen_entry_prologue(cb: &mut CodeBlock, iseq: IseqPtr, insn_idx: u32) -> O
     asm.cpush(SP);
 
     // We are passed EC and CFP as arguments
-    asm.mov(EC, C_ARG_REGS[0].into());
-    asm.mov(CFP, C_ARG_REGS[1].into());
+    asm.mov(EC, C_ARG_OPNDS[0]);
+    asm.mov(CFP, C_ARG_OPNDS[1]);
 
     // Load the current SP from the CFP into REG_SP
     asm.mov(SP, Opnd::mem(64, CFP, RUBY_OFFSET_CFP_SP));
@@ -910,7 +933,7 @@ fn gen_swap(
     asm: &mut Assembler,
     _ocb: &mut OutlinedCb,
 ) -> CodegenStatus {
-    stack_swap(jit, ctx, asm, 0, 1, REG0, REG1);
+    stack_swap(jit, ctx, asm, 0, 1);
     KeepCompiling
 }
 
@@ -920,8 +943,6 @@ fn stack_swap(
     asm: &mut Assembler,
     offset0: u16,
     offset1: u16,
-    _reg0: X86Opnd,
-    _reg1: X86Opnd,
 ) {
     let stack0_mem = ctx.ir_stack_opnd(offset0 as i32);
     let stack1_mem = ctx.ir_stack_opnd(offset1 as i32);

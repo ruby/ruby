@@ -20,6 +20,9 @@ pub const EC: Opnd = _EC;
 pub const CFP: Opnd = _CFP;
 pub const SP: Opnd = _SP;
 
+pub const C_ARG_OPNDS: [Opnd; 6] = _C_ARG_OPNDS;
+pub const C_RET_OPND: Opnd = _C_RET_OPND;
+
 /// Instruction opcodes
 #[derive(Copy, Clone, PartialEq, Eq, Debug)]
 pub enum Op
@@ -608,7 +611,7 @@ impl Assembler
 
                 // C return values need to be mapped to the C return register
                 if op == Op::CCall {
-                    out_reg = Opnd::Reg(take_reg(&mut pool, &regs, &RET_REG))
+                    out_reg = Opnd::Reg(take_reg(&mut pool, &regs, &C_RET_REG))
                 }
 
                 // If this instruction's first operand maps to a register and

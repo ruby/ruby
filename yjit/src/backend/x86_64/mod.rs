@@ -6,7 +6,7 @@ use crate::asm::{CodeBlock};
 use crate::asm::x86_64::*;
 use crate::codegen::{JITState};
 use crate::cruby::*;
-use crate::backend::ir::*;
+use crate::backend::ir::{Assembler, Opnd, Target, Op, Mem};
 
 // Use the x86 register type for this platform
 pub type Reg = X86Reg;
@@ -16,8 +16,19 @@ pub const _CFP: Opnd = Opnd::Reg(R13_REG);
 pub const _EC: Opnd = Opnd::Reg(R12_REG);
 pub const _SP: Opnd = Opnd::Reg(RBX_REG);
 
+// C argument registers on this platform
+pub const _C_ARG_OPNDS: [Opnd; 6] = [
+    Opnd::Reg(RDI_REG),
+    Opnd::Reg(RSI_REG),
+    Opnd::Reg(RDX_REG),
+    Opnd::Reg(RCX_REG),
+    Opnd::Reg(R8_REG),
+    Opnd::Reg(R9_REG)
+];
+
 // C return value register on this platform
-pub const RET_REG: Reg = RAX_REG;
+pub const C_RET_REG: Reg = RAX_REG;
+pub const _C_RET_OPND: Opnd = Opnd::Reg(RAX_REG);
 
 /// Map Opnd to X86Opnd
 impl From<Opnd> for X86Opnd {
@@ -154,7 +165,7 @@ impl Assembler
 
                 Op::CRet => {
                     // TODO: bias allocation towards return register
-                    if insn.opnds[0] != Opnd::Reg(RET_REG) {
+                    if insn.opnds[0] != Opnd::Reg(C_RET_REG) {
                         mov(cb, RAX, insn.opnds[0].into());
                     }
 
