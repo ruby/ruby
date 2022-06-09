@@ -18,6 +18,8 @@ class TestOptionParserPlaceArg < TestOptionParser
   def test_short
     assert_equal(%w"", no_error {@opt.parse!(%w"-x -n")})
     assert_equal(nil, @flag)
+    assert_equal(%w"", no_error {@opt.parse!(%w"-x -")})
+    assert_equal("-", @flag)
     @flag = false
     assert_equal(%w"", no_error {@opt.parse!(%w"-x foo")})
     assert_equal("foo", @flag)
@@ -30,6 +32,8 @@ class TestOptionParserPlaceArg < TestOptionParser
   def test_abbrev
     assert_equal(%w"", no_error {@opt.parse!(%w"-o -n")})
     assert_equal(nil, @flag)
+    assert_equal(%w"", no_error {@opt.parse!(%w"-o -")})
+    assert_equal("-", @flag)
     @flag = false
     assert_equal(%w"", no_error {@opt.parse!(%w"-o foo")})
     assert_equal("foo", @flag)
@@ -42,6 +46,8 @@ class TestOptionParserPlaceArg < TestOptionParser
   def test_long
     assert_equal(%w"", no_error {@opt.parse!(%w"--opt -n")})
     assert_equal(nil, @flag)
+    assert_equal(%w"", no_error {@opt.parse!(%w"--opt -")})
+    assert_equal("-", @flag)
     assert_equal(%w"foo", no_error {@opt.parse!(%w"--opt= foo")})
     assert_equal("", @flag)
     assert_equal(%w"", no_error {@opt.parse!(%w"--opt=foo")})
