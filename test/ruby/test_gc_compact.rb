@@ -209,6 +209,46 @@ class TestGCCompact < Test::Unit::TestCase
     assert_equal([:call, :line], results)
   end
 
+  def test_moving_arrays_down_size_pools
+    omit if !GC.using_rvargc?
+    assert_separately([], "#{<<~"begin;"}\n#{<<~"end;"}", timeout: 10, signal: :SEGV)
+    begin;
+      ARY_COUNT = 500
+
+      GC.verify_compaction_references(expand_heap: true, toward: :empty)
+
+      arys = ARY_COUNT.times.map do
+        ary = "abbbbbbbbbb".chars
+        ary.uniq!
+      end
+
+      stats = GC.verify_compaction_references(expand_heap: true, toward: :empty)
+      assert_operator(stats.dig(:moved_down, :T_ARRAY), :>=, ARY_COUNT)
+      assert(arys) # warning: assigned but unused variable - arys
+    end;
+  end
+
+  def test_moving_arrays_up_size_pools
+    omit if !GC.using_rvargc?
+    assert_separately([], "#{<<~"begin;"}\n#{<<~"end;"}", timeout: 10, signal: :SEGV)
+    begin;
+      ARY_COUNT = 500
+
+      GC.verify_compaction_references(expand_heap: true, toward: :empty)
+
+      ary = "hello".chars
+      arys = ARY_COUNT.times.map do
+        x = []
+        ary.each { |e| x << e }
+        x
+      end
+
+      stats = GC.verify_compaction_references(expand_heap: true, toward: :empty)
+      assert_operator(stats.dig(:moved_up, :T_ARRAY), :>=, ARY_COUNT)
+      assert(arys) # warning: assigned but unused variable - arys
+    end;
+  end
+
   def test_moving_strings_up_size_pools
     assert_separately([], "#{<<~"begin;"}\n#{<<~"end;"}", timeout: 10, signal: :SEGV)
     begin;

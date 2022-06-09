@@ -30,6 +30,9 @@ size_t rb_ary_memsize(VALUE);
 VALUE rb_to_array_type(VALUE obj);
 VALUE rb_to_array(VALUE obj);
 void rb_ary_cancel_sharing(VALUE ary);
+size_t rb_ary_size_as_embedded(VALUE ary);
+void rb_ary_make_embedded(VALUE ary);
+bool rb_ary_embeddable_p(VALUE ary);
 
 static inline VALUE rb_ary_entry_internal(VALUE ary, long offset);
 static inline bool ARY_PTR_USING_P(VALUE ary);
