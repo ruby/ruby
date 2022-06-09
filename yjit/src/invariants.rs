@@ -360,6 +360,11 @@ pub extern "C" fn rb_yjit_constant_state_changed(id: ID) {
 /// See `struct yjijt_root_struct` in C.
 #[no_mangle]
 pub extern "C" fn rb_yjit_root_mark() {
+    // Call rb_gc_mark on exit location's raw_samples to
+    // wrap frames in a GC allocated object. This needs to be called
+    // at the same time as root mark.
+    YjitExitLocations::gc_mark_raw_samples();
+
     // Comment from C YJIT:
     //
     // Why not let the GC move the cme keys in this table?

@@ -3,6 +3,7 @@ use crate::core::*;
 use crate::cruby::*;
 use crate::invariants::*;
 use crate::options::*;
+use crate::stats::YjitExitLocations;
 
 use std::os::raw;
 use std::sync::atomic::{AtomicBool, Ordering};
@@ -54,6 +55,7 @@ pub extern "C" fn rb_yjit_init_rust() {
     let result = std::panic::catch_unwind(|| {
         Invariants::init();
         CodegenGlobals::init();
+        YjitExitLocations::init();
 
         // YJIT enabled and initialized successfully
         YJIT_ENABLED.store(true, Ordering::Release);
