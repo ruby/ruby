@@ -621,6 +621,16 @@ class TestMJIT < Test::Unit::TestCase
     end;
   end
 
+  def test_compile_opt_pc
+    assert_eval_with_jit("#{<<~"begin;"}\n#{<<~"end;"}", stdout: 'hello', success_count: 1)
+    begin;
+      def test(arg = 'hello')
+        print arg
+      end
+      test
+    end;
+  end
+
   def test_mjit_output
     out, err = eval_with_jit('5.times { puts "MJIT" }', verbose: 1, min_calls: 5)
     assert_equal("MJIT\n" * 5, out)

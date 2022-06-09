@@ -370,7 +370,7 @@ mjit_compile_body(FILE *f, const rb_iseq_t *iseq, struct compile_status *status)
     if (body->param.flags.has_opt) {
         int i;
         fprintf(f, "\n");
-        fprintf(f, "    switch (reg_cfp->pc - reg_cfp->ISEQ_BODY(iseq)->iseq_encoded) {\n");
+        fprintf(f, "    switch (reg_cfp->pc - ISEQ_BODY(reg_cfp->iseq)->iseq_encoded) {\n");
         for (i = 0; i <= body->param.opt_num; i++) {
             VALUE pc_offset = body->param.opt_table[i];
             fprintf(f, "      case %"PRIdVALUE":\n", pc_offset);
