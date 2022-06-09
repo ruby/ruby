@@ -157,11 +157,12 @@ module Bundler
           path = fetch_gem(spec, options[:previous_spec])
           begin
             s = Bundler.rubygems.spec_from_gem(path, Bundler.settings["trust-policy"])
-            spec.__swap__(s)
           rescue Gem::Package::FormatError
             Bundler.rm_rf(path)
             raise
           end
+
+          spec.__swap__(s)
         else
           path = cached_gem(spec)
           raise GemNotFound, "Could not find #{spec.file_name} for installation" unless path
