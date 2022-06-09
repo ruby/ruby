@@ -8,7 +8,7 @@ require 'envutil'
 require 'tmpdir'
 require_relative '../lib/jit_support'
 
-return unless defined?(RubyVM::YJIT) && RubyVM::YJIT.enabled? && RubyVM::YJIT.trace_exit_locations_enabled?
+return unless defined?(RubyVM::YJIT) && RubyVM::YJIT.enabled?
 
 # Tests for YJIT with assertions on tracing exits
 # insipired by the MJIT tests in test/ruby/test_yjit.rb
@@ -40,7 +40,10 @@ class TestYJITExitLocations < Test::Unit::TestCase
 
   def assert_exit_locations(test_script)
     write_results = <<~RUBY
-      IO.open(3).write Marshal.dump(RubyVM::YJIT.exit_locations)
+      IO.open(3).write Marshal.dump({
+        enabled: RubyVM::YJIT.trace_exit_locations_enabled?,
+        exit_locations: RubyVM::YJIT.exit_locations
+      })
     RUBY
 
     script = <<~RUBY
@@ -51,7 +54,13 @@ class TestYJITExitLocations < Test::Unit::TestCase
       #{write_results}
     RUBY
 
-    exit_locations = eval_with_jit(script)
+    run_script = eval_with_jit(script)
+    # If stats are disabled when configuring, --yjit-exit-locations
+    # can't be true. We don't want to check if exit_locations hash
+    # is not empty because that could indicate a bug in the exit
+    # locations collection.
+    return unless run_script[:enabled]
+    exit_locations = run_script[:exit_locations]
 
     assert exit_locations.key?(:raw)
     assert exit_locations.key?(:frames)
