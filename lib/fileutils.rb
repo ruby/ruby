@@ -1357,10 +1357,17 @@ module FileUtils
   #
   # If the entry at +dest+ does not exist, copies from +src+ to +dest+:
   #
+  #   # With string paths.
   #   File.read('src0.txt')    # => "aaa\n"
   #   File.exist?('dest0.txt') # => false
   #   FileUtils.install('src0.txt', 'dest0.txt')
   #   File.read('dest0.txt')   # => "aaa\n"
+  #
+  #   # With Pathnames.
+  #   require 'pathname'
+  #   src_path = Pathname.new('src0.txt')
+  #   dest_path = Pathname.new('dest0.txt')
+  #   FileUtils.install(src_path, dest_path)
   #
   # If +dest+ is a file entry, copies from +src+ to +dest+, overwriting:
   #
@@ -1378,10 +1385,6 @@ module FileUtils
   #   File.read('dest2/src2.txt') # => "aaa\n"
   #
   # Keyword arguments:
-  #
-  #   {chown(2)}[https://man7.org/linux/man-pages/man2/chown.2.html]
-  #   and {chmod(2)}[https://man7.org/linux/man-pages/man2/chmod.2.html]
-  #
   #
   # - <tt>group: <i>group</i></tt> - changes the group if not +nil+,
   #   using {File.chown}[https://docs.ruby-lang.org/en/master/File.html#method-c-chown].
@@ -1520,37 +1523,79 @@ module FileUtils
   end
   private_module_function :mode_to_s
 
+  # Changes permissions on the entries at the paths given in +list+
+  # to the permissions given by +mode+:
   #
-  # Changes permission bits on the named files (in +list+) to the bit pattern
-  # represented by +mode+.
+  # - Modifies each entry that is a regular file using
+  #   {File.chmod}[https://docs.ruby-lang.org/en/master/File.html#method-c-chmod].
+  # - Modifies each entry that is a symbolic link using
+  #   {File.lchmod}[https://docs.ruby-lang.org/en/master/File.html#method-c-lchmod].
   #
-  # +mode+ is the symbolic and absolute mode can be used.
+  # Each path may be either a string or a
+  # {Pathname}[https://docs.ruby-lang.org/en/master/Pathname.html].
   #
-  # Absolute mode is
-  #   FileUtils.chmod 0755, 'somecommand'
-  #   FileUtils.chmod 0644, %w(my.rb your.rb his.rb her.rb)
-  #   FileUtils.chmod 0755, '/usr/bin/ruby', verbose: true
+  # Argument +mode+ may be either an integer or a string:
   #
-  # Symbolic mode is
-  #   FileUtils.chmod "u=wrx,go=rx", 'somecommand'
-  #   FileUtils.chmod "u=wr,go=rr", %w(my.rb your.rb his.rb her.rb)
-  #   FileUtils.chmod "u=wrx,go=rx", '/usr/bin/ruby', verbose: true
+  # - \Integer +mode+: represents the permission bits to be set:
   #
-  # "a" :: is user, group, other mask.
-  # "u" :: is user's mask.
-  # "g" :: is group's mask.
-  # "o" :: is other's mask.
-  # "w" :: is write permission.
-  # "r" :: is read permission.
-  # "x" :: is execute permission.
-  # "X" ::
-  #   is execute permission for directories only, must be used in conjunction with "+"
-  # "s" :: is uid, gid.
-  # "t" :: is sticky bit.
-  # "+" :: is added to a class given the specified mode.
-  # "-" :: Is removed from a given class given mode.
-  # "=" :: Is the exact nature of the class will be given a specified mode.
-
+  #     # List is a string path.
+  #     FileUtils.chmod(0755, 'src0.txt')
+  #     # List is an array of string paths.
+  #     FileUtils.chmod(0644, ['src0.txt', 'src0.dat'])
+  #     # List is a Pathname.
+  #     require 'pathname'
+  #     path = Pathname.new('src0.txt')
+  #     FileUtils.chmod(0755, path)
+  #
+  # - \String +mode+: represents the permissions to be set:
+  #
+  #   The string is of the form <tt>[targets][[operator][perms[,perms]]</tt>, where:
+  #
+  #   - +targets+ may be any combination of these letters:
+  #
+  #     - <tt>'u'</tt>: permissions apply to the file's owner.
+  #     - <tt>'g'</tt>: permissions apply to users in the file's group.
+  #     - <tt>'o'</tt>: permissions apply to other users not in the file's group.
+  #     - <tt>'a'</tt> (the default): permissions apply to all users.
+  #
+  #   - +operator+ may be one of these letters:
+  #
+  #     - <tt>'+'</tt>: adds permissions.
+  #     - <tt>'-'</tt>: removes permissions.
+  #     - <tt>'='</tt>: sets (replaces) permissions.
+  #
+  #   - +perms+ (may be repeated, with separating commas)
+  #     may be any combination of these letters:
+  #
+  #     - <tt>'r'</tt>: Read.
+  #     - <tt>'w'</tt>: Write.
+  #     - <tt>'x'</tt>: Execute (search, for a directory).
+  #     - <tt>'X'</tt>: Search (for a directories only;
+  #       must be used with <tt>'+'</tt>)
+  #     - <tt>'s'</tt>: Uid or gid.
+  #     - <tt>'t'</tt>: Sticky bit.
+  #
+  #   Examples:
+  #
+  #     FileUtils.chmod('u=wrx,go=rx', 'src1.txt')
+  #     FileUtils.chmod('u=wrx,go=rx', '/usr/bin/ruby')
+  # Keyword arguments:
+  #
+  # - <tt>noop: true</tt> - does not change permissions; returns +nil+.
+  # - <tt>verbose: true</tt> - prints an equivalent command:
+  #
+  #     FileUtils.chmod(0755, 'src0.txt', noop: true, verbose: true)
+  #     FileUtils.chmod(0644, ['src0.txt', 'src0.dat'], noop: true, verbose: true)
+  #     FileUtils.chmod('u=wrx,go=rx', 'src1.txt', noop: true, verbose: true)
+  #     FileUtils.chmod('u=wrx,go=rx', '/usr/bin/ruby', noop: true, verbose: true)
+  #
+  #   Output:
+  #
+  #     chmod 755 src0.txt
+  #     chmod 644 src0.txt src0.dat
+  #     chmod u=wrx,go=rx src1.txt
+  #     chmod u=wrx,go=rx /usr/bin/ruby
+  #
   def chmod(mode, list, noop: nil, verbose: nil)
     list = fu_list(list)
     fu_output_message sprintf('chmod %s %s', mode_to_s(mode), list.join(' ')) if verbose
