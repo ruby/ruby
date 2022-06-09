@@ -214,16 +214,12 @@ impl CodeBlock {
 
     /// Write a label at the current address
     pub fn write_label(&mut self, label_idx: usize) {
-        // TODO: make sure that label_idx is valid
-        // TODO: add an asseer here
-
         self.label_addrs[label_idx] = self.write_pos;
     }
 
     // Add a label reference at the current write position
     pub fn label_ref(&mut self, label_idx: usize) {
-        // TODO: make sure that label_idx is valid
-        // TODO: add an asseer here
+        assert!(label_idx < self.label_addrs.len());
 
         // Keep track of the reference
         self.label_refs.push(LabelRef {

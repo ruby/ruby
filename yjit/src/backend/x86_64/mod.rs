@@ -107,11 +107,12 @@ impl Assembler
                     }
                 },
 
-                Op::Label => {},
+                // Write the label at the current position
+                Op::Label => {
+                    cb.write_label(insn.target.unwrap().unwrap_label_idx());
+                },
 
                 Op::Add => {
-                    // FIXME: this fails because insn.out is none sometimes
-                    //assert_eq!(insn.out, insn.opnds[0]);
                     add(cb, insn.opnds[0].into(), insn.opnds[1].into())
                 },
 
@@ -160,14 +161,23 @@ impl Assembler
                     ret(cb);
                 }
 
+                // Compare
+                Op::Cmp => test(cb, insn.opnds[0].into(), insn.opnds[1].into()),
+
                 // Test and set flags
                 Op::Test => test(cb, insn.opnds[0].into(), insn.opnds[1].into()),
 
-                /*
-                Cmp,
-                Jnz,
-                Jbe,
-                */
+                Op::Je => {
+                    match insn.target.unwrap() {
+                        Target::Label(idx) => {
+
+                            dbg!(idx);
+                            je_label(cb, idx);
+
+                        },
+                        _ => unimplemented!()
+                    }
+                }
 
                 _ => panic!("unsupported instruction passed to x86 backend: {:?}", insn.op)
             };
@@ -179,10 +189,21 @@ impl Assembler
     /// Optimize and compile the stored instructions
     pub fn compile_with_regs(self, cb: &mut CodeBlock, regs: Vec<Reg>) -> Vec<u32>
     {
-        self
-        .x86_split()
-        .split_loads()
-        .alloc_regs(regs)
-        .x86_emit(cb)
+        let mut asm = self.x86_split();
+        let mut asm = asm.split_loads();
+        let mut asm = asm.alloc_regs(regs);
+
+        // Create label instances in the code block
+        for (idx, name) in asm.label_names.iter().enumerate() {
+            dbg!("creating label, idx={}", idx);
+            let label_idx = cb.new_label(name.to_string());
+            assert!(label_idx == idx);
+        }
+
+        let gc_offsets = asm.x86_emit(cb);
+
+        cb.link_labels();
+
+        gc_offsets
     }
 }
