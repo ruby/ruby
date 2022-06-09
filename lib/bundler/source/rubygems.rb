@@ -157,6 +157,10 @@ module Bundler
           path = fetch_gem(spec, options[:previous_spec])
           begin
             s = Bundler.rubygems.spec_from_gem(path, Bundler.settings["trust-policy"])
+          rescue Gem::Security::Exception => e
+            raise SecurityError,
+              "The gem #{File.basename(path, ".gem")} can't be installed because " \
+              "the security policy didn't allow it, with the message: #{e.message}"
           rescue Gem::Package::FormatError
             Bundler.rm_rf(path)
             raise
