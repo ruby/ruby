@@ -1,6 +1,6 @@
 Returns whether +self+ starts with any of the given +string_or_regexp+.
 
-Matches patterns against the beginning of+self+.
+Matches patterns against the beginning of +self+.
 For each given +string_or_regexp+, the pattern is:
 
 - +string_or_regexp+ itself, if it is a Regexp.

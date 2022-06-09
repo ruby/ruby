@@ -7998,7 +7998,7 @@ rb_str_tr_bang(VALUE str, VALUE src, VALUE repl)
  *
  *  - Each occurrence of the first character specified by +selector+
  *    is translated to the first character in +replacements+.
- *  - Each occurrence of the second character specified by selector+
+ *  - Each occurrence of the second character specified by +selector+
  *    is translated to the second character in +replacements+.
  *  - And so on.
  *
