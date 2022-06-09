@@ -8324,15 +8324,19 @@ gc_compact_destination_pool(rb_objspace_t *objspace, rb_size_pool_t *src_pool, V
     switch (BUILTIN_TYPE(src)) {
         case T_STRING:
             obj_size = rb_str_size_as_embedded(src);
-            if (rb_gc_size_allocatable_p(obj_size)){
-                return &size_pools[size_pool_idx_for_size(obj_size)];
-            }
-            else {
-                GC_ASSERT(!STR_EMBED_P(src));
-                return &size_pools[0];
-            }
+            break;
+        case T_ARRAY:
+            obj_size = rb_ary_size_as_embedded(src);
+            break;
         default:
             return src_pool;
+    }
+
+    if (rb_gc_size_allocatable_p(obj_size)) {
+        return &size_pools[size_pool_idx_for_size(obj_size)];
+    }
+    else {
+        return &size_pools[0];
     }
 }
 
@@ -10368,6 +10372,13 @@ gc_update_object_references(rb_objspace_t *objspace, VALUE obj)
         else {
             gc_ref_update_array(objspace, obj);
         }
+#if USE_RVARGC
+        if ((size_t)GET_HEAP_PAGE(obj)->slot_size >= rb_ary_size_as_embedded(obj)) {
+            if (rb_ary_embeddable_p(obj)) {
+                rb_ary_make_embedded(obj);
+            }
+        }
+#endif
         break;
 
       case T_HASH:

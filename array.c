@@ -107,7 +107,6 @@ should_not_be_shared_and_embedded(VALUE ary)
 #define ARY_SET_EMBED_LEN(ary, n) do { \
     long tmp_n = (n); \
     assert(ARY_EMBED_P(ary)); \
-    assert(!OBJ_FROZEN(ary)); \
     RBASIC(ary)->flags &= ~RARRAY_EMBED_LEN_MASK; \
     RBASIC(ary)->flags |= (tmp_n) << RARRAY_EMBED_LEN_SHIFT; \
 } while (0)
@@ -210,6 +209,30 @@ ary_embeddable_p(long capa)
 #else
     return capa <= RARRAY_EMBED_LEN_MAX;
 #endif
+}
+
+bool
+rb_ary_embeddable_p(VALUE ary)
+{
+    // if the array is shared or a shared root then it's not moveable
+    return !(ARY_SHARED_P(ary) || ARY_SHARED_ROOT_P(ary));
+}
+
+size_t
+rb_ary_size_as_embedded(VALUE ary)
+{
+    size_t real_size;
+
+    if (ARY_EMBED_P(ary)) {
+        real_size = ary_embed_size(ARY_EMBED_LEN(ary));
+    }
+    else if (rb_ary_embeddable_p(ary)) {
+        real_size = ary_embed_size(ARY_HEAP_CAPA(ary));
+    }
+    else {
+        real_size = sizeof(struct RString);
+    }
+    return real_size;
 }
 
 
@@ -467,6 +490,23 @@ rb_ary_detransient(VALUE ary)
     /* do nothing */
 }
 #endif
+
+void
+rb_ary_make_embedded(VALUE ary)
+{
+    assert(rb_ary_embeddable_p(ary));
+    if (!ARY_EMBED_P(ary)) {
+        VALUE *buf = RARRAY_PTR(ary);
+        long len = RARRAY_LEN(ary);
+
+        FL_SET_EMBED(ary);
+        ARY_SET_EMBED_LEN(ary, len);
+        RARY_TRANSIENT_UNSET(ary);
+
+        memmove(RARRAY_PTR(ary), buf, len * sizeof(VALUE));
+        ary_heap_free_ptr(ary, buf, len * sizeof(VALUE));
+    }
+}
 
 static void
 ary_resize_capa(VALUE ary, long capacity)
