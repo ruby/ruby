@@ -526,8 +526,9 @@ fn gen_leave_exit(ocb: &mut OutlinedCb) -> CodePtr {
     // Note, gen_leave() fully reconstructs interpreter state and leaves the
     // return value in RAX before coming here.
 
+    // FIXME
     // Every exit to the interpreter should be counted
-    gen_counter_incr!(ocb, leave_interp_return);
+    //gen_counter_incr!(ocb, leave_interp_return);
 
     pop(ocb, REG_SP);
     pop(ocb, REG_EC);
@@ -543,31 +544,28 @@ fn gen_leave_exit(ocb: &mut OutlinedCb) -> CodePtr {
 // This is to handle the situation of optional parameters.
 // When a function with optional parameters is called, the entry
 // PC for the method isn't necessarily 0.
-fn gen_pc_guard(cb: &mut CodeBlock, iseq: IseqPtr, insn_idx: u32) {
-    let pc_opnd = mem_opnd(64, REG_CFP, RUBY_OFFSET_CFP_PC);
+fn gen_pc_guard(asm: &mut Assembler, iseq: IseqPtr, insn_idx: u32) {
+    let pc_opnd = Opnd::mem(64, CFP, RUBY_OFFSET_CFP_PC);
     let expected_pc = unsafe { rb_iseq_pc_at_idx(iseq, insn_idx) };
-    let expected_pc_opnd = const_ptr_opnd(expected_pc as *const u8);
+    let expected_pc_opnd = Opnd::const_ptr(expected_pc as *const u8);
 
-    mov(cb, REG0, pc_opnd);
-    mov(cb, REG1, expected_pc_opnd);
-    cmp(cb, REG0, REG1);
+    asm.cmp(pc_opnd, expected_pc_opnd);
 
-    let pc_match = cb.new_label("pc_match".to_string());
-    je_label(cb, pc_match);
+    let pc_match = asm.new_label("pc_match");
+    asm.je(pc_match);
 
+    // FIXME
     // We're not starting at the first PC, so we need to exit.
-    gen_counter_incr!(cb, leave_start_pc_non_zero);
+    //gen_counter_incr!(cb, leave_start_pc_non_zero);
 
-    pop(cb, REG_SP);
-    pop(cb, REG_EC);
-    pop(cb, REG_CFP);
+    asm.cpop(SP);
+    asm.cpop(EC);
+    asm.cpop(CFP);
 
-    mov(cb, RAX, imm_opnd(Qundef.into()));
-    ret(cb);
+    asm.cret(Qundef.into());
 
     // PC should match the expected insn_idx
-    cb.write_label(pc_match);
-    cb.link_labels();
+    asm.write_label(pc_match);
 }
 
 /// Compile an interpreter entry block to be inserted into an iseq
@@ -616,11 +614,7 @@ pub fn gen_entry_prologue(cb: &mut CodeBlock, iseq: IseqPtr, insn_idx: u32) -> O
     // compiled for is the same PC that the interpreter wants us to run with.
     // If they don't match, then we'll take a side exit.
     if unsafe { get_iseq_flags_has_opt(iseq) } {
-
-        // FIXME
-        todo!();
-
-        //gen_pc_guard(cb, iseq, insn_idx);
+        gen_pc_guard(&mut asm, iseq, insn_idx);
     }
 
     asm.compile(cb);

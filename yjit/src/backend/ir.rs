@@ -255,6 +255,13 @@ impl Opnd
     }
 }
 
+impl From<VALUE> for Opnd {
+    fn from(value: VALUE) -> Self {
+        let VALUE(uimm) = value;
+        Opnd::UImm(uimm as u64)
+    }
+}
+
 /// NOTE: this is useful during the port but can probably be removed once
 /// Context returns ir::Opnd instead of X86Opnd
 ///
@@ -289,13 +296,22 @@ impl From<X86Opnd> for Opnd {
 
 /// Branch target (something that we can jump to)
 /// for branch instructions
-#[derive(Clone, PartialEq, Eq, Debug)]
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub enum Target
 {
     CodePtr(CodePtr),   // Pointer to a piece of YJIT-generated code (e.g. side-exit)
     FunPtr(*const u8),  // Pointer to a C function
-    LabelName(String),  // A label without an index in the output
-    LabelIdx(usize),    // A label that has been indexed
+    Label(usize),       // A label within the generated code
+}
+
+impl Target
+{
+    pub fn unwrap_label_idx(&self) -> usize {
+        match self {
+            Target::Label(idx) => *idx,
+            _ => unreachable!()
+        }
+    }
 }
 
 /// YJIT IR instruction
@@ -331,6 +347,9 @@ pub struct Assembler
     /// Parallel vec with insns
     /// Index of the last insn using the output of this insn
     pub(super) live_ranges: Vec<usize>,
+
+    /// Names of labels
+    pub(super) label_names: Vec<String>,
 }
 
 impl Assembler
@@ -339,6 +358,7 @@ impl Assembler
         Assembler {
             insns: Vec::default(),
             live_ranges: Vec::default(),
+            label_names: Vec::default(),
         }
     }
 
@@ -386,30 +406,42 @@ impl Assembler
         self.live_ranges.push(self.insns.len());
     }
 
-    /// Add a label at the current position
-    pub fn label(&mut self, name: &str) -> Target
+    /// Create a new label instance that we can jump to
+    pub fn new_label(&mut self, name: &str) -> Target
     {
-        let insn_idx = self.insns.len();
+        let label_idx = self.label_names.len();
+        dbg!(label_idx);
+
+        self.label_names.push(name.to_string());
+        Target::Label(label_idx)
+    }
+
+    /// Add a label at the current position
+    pub fn write_label(&mut self, label: Target)
+    {
+        assert!(label.unwrap_label_idx() < self.label_names.len());
 
         let insn = Insn {
             op: Op::Label,
-            text: Some(name.to_owned()),
+            text: None,
             opnds: vec![],
             out: Opnd::None,
-            target: None,
+            target: Some(label),
             pos: None
         };
         self.insns.push(insn);
         self.live_ranges.push(self.insns.len());
-
-        Target::LabelIdx(insn_idx)
     }
 
     /// Transform input instructions, consumes the input assembler
     pub(super) fn transform_insns<F>(mut self, mut map_insn: F) -> Assembler
         where F: FnMut(&mut Assembler, usize, Op, Vec<Opnd>, Option<Target>)
     {
-        let mut asm = Assembler::new();
+        let mut asm = Assembler {
+            insns: Vec::default(),
+            live_ranges: Vec::default(),
+            label_names: self.label_names,
+        };
 
         // indices maps from the old instruction index to the new instruction
         // index.
@@ -433,9 +465,6 @@ impl Assembler
             match insn.op {
                 Op::Comment => {
                     asm.comment(insn.text.unwrap().as_str());
-                },
-                Op::Label => {
-                    asm.label(insn.text.unwrap().as_str());
                 },
                 _ => {
                     map_insn(&mut asm, index, insn.op, opnds, insn.target);
@@ -927,6 +956,19 @@ mod tests {
 
         let addr = asm.lea(Opnd::mem(64, SP, 0));
         asm.cret(addr);
+
+        asm.compile_with_regs(&mut cb, regs);
+    }
+
+    #[test]
+    fn test_jcc_label()
+    {
+        let (mut asm, mut cb, regs) = setup_asm(1);
+
+        let label = asm.new_label("foo");
+        asm.cmp(EC, EC);
+        asm.je(label);
+        asm.write_label(label);
 
         asm.compile_with_regs(&mut cb, regs);
     }
