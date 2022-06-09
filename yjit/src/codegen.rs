@@ -1,7 +1,7 @@
 // We use the YARV bytecode constants which have a CRuby-style name
 #![allow(non_upper_case_globals)]
 
-use crate::asm::x86_64::*;
+//use crate::asm::x86_64::*;
 use crate::asm::*;
 use crate::backend::ir::*;
 use crate::core::*;
@@ -25,15 +25,15 @@ use std::slice;
 pub use crate::virtualmem::CodePtr;
 
 // Callee-saved registers
-pub const REG_CFP: X86Opnd = R13;
-pub const REG_EC: X86Opnd = R12;
-pub const REG_SP: X86Opnd = RBX;
+//pub const REG_CFP: X86Opnd = R13;
+//pub const REG_EC: X86Opnd = R12;
+//pub const REG_SP: X86Opnd = RBX;
 
 // Scratch registers used by YJIT
-pub const REG0: X86Opnd = RAX;
-pub const REG0_32: X86Opnd = EAX;
-pub const REG0_8: X86Opnd = AL;
-pub const REG1: X86Opnd = RCX;
+//pub const REG0: X86Opnd = RAX;
+//pub const REG0_32: X86Opnd = EAX;
+//pub const REG0_8: X86Opnd = AL;
+//pub const REG1: X86Opnd = RCX;
 
 // A block that can be invalidated needs space to write a jump.
 // We'll reserve a minimum size for any block that could
@@ -210,19 +210,25 @@ fn add_comment(cb: &mut CodeBlock, comment_str: &str) {
 /// Increment a profiling counter with counter_name
 #[cfg(not(feature = "stats"))]
 macro_rules! gen_counter_incr {
-    ($cb:tt, $counter_name:ident) => {};
+    ($asm:tt, $counter_name:ident) => {};
 }
 #[cfg(feature = "stats")]
 macro_rules! gen_counter_incr {
-    ($cb:tt, $counter_name:ident) => {
+    ($asm:tt, $counter_name:ident) => {
         if (get_option!(gen_stats)) {
             // Get a pointer to the counter variable
             let ptr = ptr_to_counter!($counter_name);
 
-            // Use REG1 because there might be return value in REG0
-            mov($cb, REG1, const_ptr_opnd(ptr as *const u8));
-            write_lock_prefix($cb); // for ractors.
-            add($cb, mem_opnd(64, REG1, 0), imm_opnd(1));
+            // Load the pointer into a register
+            let ptr_reg = $asm.load(Opnd::const_ptr(ptr as *const u8));
+            let counter_opnd = Opnd::mem(64, ptr_reg, 0);
+
+            // FIXME: do we want an atomic add, or an atomic store or swap for arm?
+            //write_lock_prefix($cb); // for ractors.
+
+            // Increment and store the updated value
+            let incr_opnd = $asm.add(counter_opnd, 1.into());
+            $asm.store(counter_opnd, incr_opnd);
         }
     };
 }
@@ -292,8 +298,7 @@ fn gen_save_sp(jit: &JITState, asm: &mut Assembler, ctx: &mut Context) {
 fn jit_prepare_routine_call(
     jit: &mut JITState,
     ctx: &mut Context,
-    asm: &mut Assembler,
-    scratch_reg: X86Opnd,
+    asm: &mut Assembler
 ) {
     jit.record_boundary_patch_point = true;
     jit_save_pc(jit, asm);
@@ -396,6 +401,9 @@ fn verify_ctx(jit: &JITState, ctx: &Context) {
 fn gen_exit(exit_pc: *mut VALUE, ctx: &Context, cb: &mut CodeBlock) -> CodePtr {
     let code_ptr = cb.get_write_ptr();
 
+    todo!();
+
+    /*
     add_comment(cb, "exit to interpreter");
 
     // Generate the code to exit to the interpreters
@@ -432,6 +440,7 @@ fn gen_exit(exit_pc: *mut VALUE, ctx: &Context, cb: &mut CodeBlock) -> CodePtr {
     ret(cb);
 
     return code_ptr;
+    */
 }
 
 // Fill code_for_exit_from_stub. This is used by branch_stub_hit() to exit
@@ -442,16 +451,20 @@ fn gen_code_for_exit_from_stub(ocb: &mut OutlinedCb) -> CodePtr {
     let ocb = ocb.unwrap();
     let code_ptr = ocb.get_write_ptr();
 
+    todo!();
+
+    /*
     gen_counter_incr!(ocb, exit_from_branch_stub);
 
-    pop(ocb, REG_SP);
-    pop(ocb, REG_EC);
-    pop(ocb, REG_CFP);
+    cpop(ocb, REG_SP);
+    cpop(ocb, REG_EC);
+    cpop(ocb, REG_CFP);
 
     mov(ocb, RAX, uimm_opnd(Qundef.into()));
     ret(ocb);
 
     return code_ptr;
+    */
 }
 
 // :side-exit:
@@ -504,6 +517,9 @@ fn gen_full_cfunc_return(ocb: &mut OutlinedCb) -> CodePtr {
     let cb = ocb.unwrap();
     let code_ptr = cb.get_write_ptr();
 
+    todo!();
+
+    /*
     // This chunk of code expect REG_EC to be filled properly and
     // RAX to contain the return value of the C method.
 
@@ -524,6 +540,7 @@ fn gen_full_cfunc_return(ocb: &mut OutlinedCb) -> CodePtr {
     ret(cb);
 
     return code_ptr;
+    */
 }
 
 /// Generate a continuation for leave that exits to the interpreter at REG_CFP->pc.
@@ -531,6 +548,7 @@ fn gen_full_cfunc_return(ocb: &mut OutlinedCb) -> CodePtr {
 fn gen_leave_exit(ocb: &mut OutlinedCb) -> CodePtr {
     let ocb = ocb.unwrap();
     let code_ptr = ocb.get_write_ptr();
+    let mut asm = Assembler::new();
 
     // Note, gen_leave() fully reconstructs interpreter state and leaves the
     // return value in RAX before coming here.
@@ -539,11 +557,22 @@ fn gen_leave_exit(ocb: &mut OutlinedCb) -> CodePtr {
     // Every exit to the interpreter should be counted
     //gen_counter_incr!(ocb, leave_interp_return);
 
-    pop(ocb, REG_SP);
-    pop(ocb, REG_EC);
-    pop(ocb, REG_CFP);
+    asm.cpop(SP);
+    asm.cpop(EC);
+    asm.cpop(CFP);
 
-    ret(ocb);
+    // FIXME: we're currently assuming that the return value is in RAX,
+    // left there by gen_leave() ...
+    //
+    // What are our options?
+    // We could put the return value in C_RET_REG?
+    // Then call asm.ret with C_RET_REG?
+
+
+
+    asm.cret(C_RET_OPND);
+
+    asm.compile(ocb);
 
     return code_ptr;
 }
@@ -604,8 +633,8 @@ pub fn gen_entry_prologue(cb: &mut CodeBlock, iseq: IseqPtr, insn_idx: u32) -> O
     asm.cpush(SP);
 
     // We are passed EC and CFP as arguments
-    asm.mov(EC, C_ARG_REGS[0].into());
-    asm.mov(CFP, C_ARG_REGS[1].into());
+    asm.mov(EC, C_ARG_OPNDS[0]);
+    asm.mov(CFP, C_ARG_OPNDS[1]);
 
     // Load the current SP from the CFP into REG_SP
     asm.mov(SP, Opnd::mem(64, CFP, RUBY_OFFSET_CFP_SP));
@@ -765,7 +794,7 @@ pub fn gen_single_block(
             // :count-placement:
             // Count bytecode instructions that execute in generated code.
             // Note that the increment happens even when the output takes side exit.
-            gen_counter_incr!(cb, exec_instruction);
+            gen_counter_incr!(asm, exec_instruction);
 
             // Add a comment for the name of the YARV instruction
             asm.comment(&insn_name(opcode));
@@ -919,7 +948,7 @@ fn gen_swap(
     asm: &mut Assembler,
     _ocb: &mut OutlinedCb,
 ) -> CodegenStatus {
-    stack_swap(jit, ctx, asm, 0, 1, REG0, REG1);
+    stack_swap(jit, ctx, asm, 0, 1);
     KeepCompiling
 }
 
@@ -929,8 +958,6 @@ fn stack_swap(
     asm: &mut Assembler,
     offset0: u16,
     offset1: u16,
-    _reg0: X86Opnd,
-    _reg1: X86Opnd,
 ) {
     let stack0_mem = ctx.ir_stack_opnd(offset0 as i32);
     let stack1_mem = ctx.ir_stack_opnd(offset1 as i32);
@@ -947,56 +974,26 @@ fn stack_swap(
     ctx.set_opnd_mapping(StackOpnd(offset1), mapping0);
 }
 
-
-
-
-
-
-
-
-
-
-/*
 fn gen_putnil(
     jit: &mut JITState,
     ctx: &mut Context,
-    cb: &mut CodeBlock,
+    asm: &mut Assembler,
     _ocb: &mut OutlinedCb,
 ) -> CodegenStatus {
-    jit_putobject(jit, ctx, cb, Qnil);
+    jit_putobject(jit, ctx, asm, Qnil);
     KeepCompiling
 }
 
-fn jit_putobject(jit: &mut JITState, ctx: &mut Context, cb: &mut CodeBlock, arg: VALUE) {
+fn jit_putobject(jit: &mut JITState, ctx: &mut Context, asm: &mut Assembler, arg: VALUE) {
     let val_type: Type = Type::from(arg);
     let stack_top = ctx.stack_push(val_type);
-
-    if arg.special_const_p() {
-        // Immediates will not move and do not need to be tracked for GC
-        // Thanks to this we can mov directly to memory when possible.
-        let imm = imm_opnd(arg.as_i64());
-
-        // 64-bit immediates can't be directly written to memory
-        if imm.num_bits() <= 32 {
-            mov(cb, stack_top, imm);
-        } else {
-            mov(cb, REG0, imm);
-            mov(cb, stack_top, REG0);
-        }
-    } else {
-        // Load the value to push into REG0
-        // Note that this value may get moved by the GC
-        jit_mov_gc_ptr(jit, cb, REG0, arg);
-
-        // Write argument at SP
-        mov(cb, stack_top, REG0);
-    }
+    asm.mov(stack_top, arg.into());
 }
 
 fn gen_putobject_int2fix(
     jit: &mut JITState,
     ctx: &mut Context,
-    cb: &mut CodeBlock,
+    asm: &mut Assembler,
     _ocb: &mut OutlinedCb,
 ) -> CodegenStatus {
     let opcode = jit.opcode;
@@ -1006,22 +1003,23 @@ fn gen_putobject_int2fix(
         1
     };
 
-    jit_putobject(jit, ctx, cb, VALUE::fixnum_from_usize(cst_val));
+    jit_putobject(jit, ctx, asm, VALUE::fixnum_from_usize(cst_val));
     KeepCompiling
 }
 
 fn gen_putobject(
     jit: &mut JITState,
     ctx: &mut Context,
-    cb: &mut CodeBlock,
+    asm: &mut Assembler,
     _ocb: &mut OutlinedCb,
 ) -> CodegenStatus {
     let arg: VALUE = jit_get_arg(jit, 0);
 
-    jit_putobject(jit, ctx, cb, arg);
+    jit_putobject(jit, ctx, asm, arg);
     KeepCompiling
 }
 
+/*
 fn gen_putself(
     _jit: &mut JITState,
     ctx: &mut Context,
@@ -5250,48 +5248,53 @@ fn gen_invokesuper(
         _ => unreachable!(),
     }
 }
+*/
 
 fn gen_leave(
     jit: &mut JITState,
     ctx: &mut Context,
-    cb: &mut CodeBlock,
+    asm: &mut Assembler,
     ocb: &mut OutlinedCb,
 ) -> CodegenStatus {
     // Only the return value should be on the stack
     assert!(ctx.get_stack_size() == 1);
 
+    // FIXME
+    /*
     // Create a side-exit to fall back to the interpreter
-    let side_exit = get_side_exit(jit, ocb, ctx);
-
-    // Load environment pointer EP from CFP
-    mov(cb, REG1, mem_opnd(64, REG_CFP, RUBY_OFFSET_CFP_EP));
+    //let side_exit = get_side_exit(jit, ocb, ctx);
 
     // Check for interrupts
-    add_comment(cb, "check for interrupts");
-    gen_check_ints(cb, counted_exit!(ocb, side_exit, leave_se_interrupt));
-
-    // Load the return value
-    mov(cb, REG0, ctx.stack_pop(1));
+    //gen_check_ints(cb, counted_exit!(ocb, side_exit, leave_se_interrupt));
+    */
 
     // Pop the current frame (ec->cfp++)
     // Note: the return PC is already in the previous CFP
-    add_comment(cb, "pop stack frame");
-    add(cb, REG_CFP, uimm_opnd(RUBY_SIZEOF_CONTROL_FRAME as u64));
-    mov(cb, mem_opnd(64, REG_EC, RUBY_OFFSET_EC_CFP), REG_CFP);
+    asm.comment("pop stack frame");
+    let incr_cfp = asm.add(CFP, RUBY_SIZEOF_CONTROL_FRAME.into());
+    asm.mov(CFP, incr_cfp);
+    asm.mov(Opnd::mem(64, EC, RUBY_OFFSET_EC_CFP), incr_cfp);
+
+    // Load the return value
+    let retval_opnd = ctx.stack_pop(1);
+
+    // Move the return value into the C return register for gen_leave_exit()
+    asm.mov(C_RET_OPND, retval_opnd);
 
     // Reload REG_SP for the caller and write the return value.
     // Top of the stack is REG_SP[0] since the caller has sp_offset=1.
-    mov(cb, REG_SP, mem_opnd(64, REG_CFP, RUBY_OFFSET_CFP_SP));
-    mov(cb, mem_opnd(64, REG_SP, 0), REG0);
+    asm.mov(SP, Opnd::mem(64, CFP, RUBY_OFFSET_CFP_SP));
+    asm.mov(Opnd::mem(64, SP, 0), C_RET_OPND);
 
     // Jump to the JIT return address on the frame that was just popped
     let offset_to_jit_return =
         -(RUBY_SIZEOF_CONTROL_FRAME as i32) + (RUBY_OFFSET_CFP_JIT_RETURN as i32);
-    jmp_rm(cb, mem_opnd(64, REG_CFP, offset_to_jit_return));
+    asm.jmp_opnd(Opnd::mem(64, CFP, offset_to_jit_return));
 
     EndBlock
 }
 
+/*
 fn gen_getglobal(
     jit: &mut JITState,
     ctx: &mut Context,
@@ -5958,21 +5961,21 @@ fn get_gen_fn(opcode: VALUE) -> Option<InsnGenFn> {
 
     match opcode {
         YARVINSN_nop => Some(gen_nop),
-        //YARVINSN_pop => Some(gen_pop),
+        YARVINSN_pop => Some(gen_pop),
         YARVINSN_dup => Some(gen_dup),
         YARVINSN_dupn => Some(gen_dupn),
         YARVINSN_swap => Some(gen_swap),
-
-        /*
         YARVINSN_putnil => Some(gen_putnil),
         YARVINSN_putobject => Some(gen_putobject),
         YARVINSN_putobject_INT2FIX_0_ => Some(gen_putobject_int2fix),
         YARVINSN_putobject_INT2FIX_1_ => Some(gen_putobject_int2fix),
-        YARVINSN_putself => Some(gen_putself),
-        YARVINSN_putspecialobject => Some(gen_putspecialobject),
-        YARVINSN_setn => Some(gen_setn),
-        YARVINSN_topn => Some(gen_topn),
-        YARVINSN_adjuststack => Some(gen_adjuststack),
+        //YARVINSN_putself => Some(gen_putself),
+        //YARVINSN_putspecialobject => Some(gen_putspecialobject),
+        //YARVINSN_setn => Some(gen_setn),
+        //YARVINSN_topn => Some(gen_topn),
+        //YARVINSN_adjuststack => Some(gen_adjuststack),
+
+        /*
         YARVINSN_getlocal => Some(gen_getlocal),
         YARVINSN_getlocal_WC_0 => Some(gen_getlocal_wc0),
         YARVINSN_getlocal_WC_1 => Some(gen_getlocal_wc1),
@@ -6028,14 +6031,16 @@ fn get_gen_fn(opcode: VALUE) -> Option<InsnGenFn> {
         YARVINSN_branchunless => Some(gen_branchunless),
         YARVINSN_branchnil => Some(gen_branchnil),
         YARVINSN_jump => Some(gen_jump),
+        */
 
-        YARVINSN_getblockparamproxy => Some(gen_getblockparamproxy),
-        YARVINSN_getblockparam => Some(gen_getblockparam),
-        YARVINSN_opt_send_without_block => Some(gen_opt_send_without_block),
-        YARVINSN_send => Some(gen_send),
-        YARVINSN_invokesuper => Some(gen_invokesuper),
+        //YARVINSN_getblockparamproxy => Some(gen_getblockparamproxy),
+        //YARVINSN_getblockparam => Some(gen_getblockparam),
+        //YARVINSN_opt_send_without_block => Some(gen_opt_send_without_block),
+        //YARVINSN_send => Some(gen_send),
+        //YARVINSN_invokesuper => Some(gen_invokesuper),
         YARVINSN_leave => Some(gen_leave),
 
+        /*
         YARVINSN_getglobal => Some(gen_getglobal),
         YARVINSN_setglobal => Some(gen_setglobal),
         YARVINSN_anytostring => Some(gen_anytostring),
@@ -6176,10 +6181,10 @@ impl CodegenGlobals {
 
         let leave_exit_code = gen_leave_exit(&mut ocb);
 
-        let stub_exit_code = gen_code_for_exit_from_stub(&mut ocb);
+        //let stub_exit_code = gen_code_for_exit_from_stub(&mut ocb);
 
         // Generate full exit code for C func
-        let cfunc_exit_code = gen_full_cfunc_return(&mut ocb);
+        //let cfunc_exit_code = gen_full_cfunc_return(&mut ocb);
 
         // Mark all code memory as executable
         cb.mark_all_executable();
@@ -6189,8 +6194,8 @@ impl CodegenGlobals {
             inline_cb: cb,
             outlined_cb: ocb,
             leave_exit_code: leave_exit_code,
-            stub_exit_code: stub_exit_code,
-            outline_full_cfunc_return_pos: cfunc_exit_code,
+            stub_exit_code: /*stub_exit_code*/CodePtr::from(1 as *mut u8),
+            outline_full_cfunc_return_pos: /*cfunc_exit_code*/CodePtr::from(1 as *mut u8),
             global_inval_patches: Vec::new(),
             inline_frozen_bytes: 0,
             method_codegen_table: HashMap::new(),

@@ -6,7 +6,7 @@ use std::fmt;
 use std::convert::From;
 use crate::cruby::{VALUE};
 use crate::virtualmem::{CodePtr};
-use crate::asm::{CodeBlock};
+use crate::asm::{CodeBlock, uimm_num_bits, imm_num_bits};
 use crate::asm::x86_64::{X86Opnd, X86Imm, X86UImm, X86Reg, X86Mem, RegType};
 use crate::core::{Context, Type, TempMapping};
 use crate::codegen::{JITState};
@@ -20,6 +20,9 @@ use crate::backend::arm64::*;
 pub const EC: Opnd = _EC;
 pub const CFP: Opnd = _CFP;
 pub const SP: Opnd = _SP;
+
+pub const C_ARG_OPNDS: [Opnd; 6] = _C_ARG_OPNDS;
+pub const C_RET_OPND: Opnd = _C_RET_OPND;
 
 /// Instruction opcodes
 #[derive(Copy, Clone, PartialEq, Eq, Debug)]
@@ -77,6 +80,9 @@ pub enum Op
     // Compare two operands
     Cmp,
 
+    // Unconditional jump which takes an address operand
+    JmpOpnd,
+
     // Low-level conditional jump instructions
     Jbe,
     Je,
@@ -92,110 +98,8 @@ pub enum Op
     // C function return
     CRet,
 
-    /*
-    // The following are conditional jump instructions. They all accept as their
-    // first operand an EIR_LABEL_NAME, which is used as the target of the jump.
-    //
-    // The OP_JUMP_EQ instruction accepts two additional operands, to be
-    // compared for equality. If they're equal, then the generated code jumps to
-    // the target label. If they're not, then it continues on to the next
-    // instruction.
-    JumpEq,
-
-    // The OP_JUMP_NE instruction is very similar to the OP_JUMP_EQ instruction,
-    // except it compares for inequality instead.
-    JumpNe,
-
-    // Checks the overflow flag and conditionally jumps to the target if it is
-    // currently set.
-    JumpOvf,
-
-    // A low-level call instruction for calling a function by a pointer. It
-    // accepts one operand of type EIR_IMM that should be a pointer to the
-    // function. Usually this is done by first casting the function to a void*,
-    // as in: ir_const_ptr((void *)&my_function)).
-    Call,
-
-    // Calls a function by a pointer and returns an operand that contains the
-    // result of the function. Accepts as its operands a pointer to a function
-    // of type EIR_IMM (usually generated from ir_const_ptr) and a variable
-    // number of arguments to the function being called.
-    //
-    // This is the higher-level instruction that should be used when you want to
-    // call a function with arguments, as opposed to OP_CALL which is
-    // lower-level and just calls a function without moving arguments into
-    // registers for you.
-    CCall,
-
-    // Returns from the function being generated immediately. This is different
-    // from OP_RETVAL in that it does nothing with the return value register
-    // (whatever is in there is what will get returned). Accepts no operands.
-    Ret,
-
-    // First, moves a value into the return value register. Then, returns from
-    // the generated function. Accepts as its only operand the value that should
-    // be returned from the generated function.
-    RetVal,
-
-    // A conditional move instruction that should be preceeded at some point by
-    // an OP_CMP instruction that would have set the requisite comparison flags.
-    // Accepts 2 operands, both of which are expected to be of the EIR_REG type.
-    //
-    // If the comparison indicates the left compared value is greater than or
-    // equal to the right compared value, then the conditional move is executed,
-    // otherwise we just continue on to the next instruction.
-    //
-    // This is considered a low-level instruction, and the OP_SELECT_* variants
-    // should be preferred if possible.
-    CMovGE,
-
-    // The same as OP_CMOV_GE, except the comparison is greater than.
-    CMovGT,
-
-    // The same as OP_CMOV_GE, except the comparison is less than or equal.
-    CMovLE,
-
-    // The same as OP_CMOV_GE, except the comparison is less than.
-    CMovLT,
-
-    // Selects between two different values based on a comparison of two other
-    // values. Accepts 4 operands. The first two are the basis of the
-    // comparison. The second two are the "then" case and the "else" case. You
-    // can effectively think of this instruction as a ternary operation, where
-    // the first two values are being compared.
-    //
-    // OP_SELECT_GE performs the described ternary using a greater than or equal
-    // comparison, that is if the first operand is greater than or equal to the
-    // second operand.
-    SelectGE,
-
-    // The same as OP_SELECT_GE, except the comparison is greater than.
-    SelectGT,
-
-    // The same as OP_SELECT_GE, except the comparison is less than or equal.
-    SelectLE,
-
-    // The same as OP_SELECT_GE, except the comparison is less than.
-    SelectLT,
-
-    // For later:
-    // These encode Ruby true/false semantics
-    // Can be used to enable op fusion of Ruby compare + branch.
-    // OP_JUMP_TRUE, // (opnd, target)
-    // OP_JUMP_FALSE, // (opnd, target)
-
-    // For later:
-    // OP_GUARD_HEAP, // (opnd, target)
-    // OP_GUARD_IMM, // (opnd, target)
-    // OP_GUARD_FIXNUM, // (opnd, target)
-
-    // For later:
-    // OP_COUNTER_INC, (counter_name)
-
-    // For later:
-    // OP_LEA,
-    // OP_TEST,
-    */
+    // Trigger a debugger breakpoint
+    Breakpoint,
 }
 
 // Memory location
@@ -253,6 +157,12 @@ impl Opnd
     /// Constant pointer operand
     pub fn const_ptr(ptr: *const u8) -> Self {
         Opnd::UImm(ptr as u64)
+    }
+}
+
+impl From<usize> for Opnd {
+    fn from(value: usize) -> Self {
+        Opnd::UImm(value.try_into().unwrap())
     }
 }
 
@@ -522,6 +432,18 @@ impl Assembler
                             let opnd1 = asm.load(opnds[1]);
                             asm.push_insn(op, vec![opnds[0], opnd1], None);
                         },
+
+                        [Opnd::Mem(_), Opnd::UImm(val)] => {
+                            if uimm_num_bits(*val) > 32 {
+                                let opnd1 = asm.load(opnds[1]);
+                                asm.push_insn(op, vec![opnds[0], opnd1], None);
+                            }
+                            else
+                            {
+                                asm.push_insn(op, opnds, target);
+                            }
+                        },
+
                         _ => {
                             asm.push_insn(op, opnds, target);
                         }
@@ -609,7 +531,7 @@ impl Assembler
 
                 // C return values need to be mapped to the C return register
                 if op == Op::CCall {
-                    out_reg = Opnd::Reg(take_reg(&mut pool, &regs, &RET_REG))
+                    out_reg = Opnd::Reg(take_reg(&mut pool, &regs, &C_RET_REG))
                 }
 
                 // If this instruction's first operand maps to a register and
@@ -689,6 +611,18 @@ macro_rules! def_push_jcc {
     };
 }
 
+macro_rules! def_push_0_opnd_no_out {
+    ($op_name:ident, $opcode:expr) => {
+        impl Assembler
+        {
+            pub fn $op_name(&mut self)
+            {
+                self.push_insn($opcode, vec![], None);
+            }
+        }
+    };
+}
+
 macro_rules! def_push_1_opnd {
     ($op_name:ident, $opcode:expr) => {
         impl Assembler
@@ -737,6 +671,7 @@ macro_rules! def_push_2_opnd_no_out {
     };
 }
 
+def_push_1_opnd_no_out!(jmp_opnd, Op::JmpOpnd);
 def_push_jcc!(je, Op::Je);
 def_push_jcc!(jbe, Op::Jbe);
 def_push_jcc!(jnz, Op::Jnz);
@@ -752,6 +687,7 @@ def_push_2_opnd_no_out!(store, Op::Store);
 def_push_2_opnd_no_out!(mov, Op::Mov);
 def_push_2_opnd_no_out!(cmp, Op::Cmp);
 def_push_2_opnd_no_out!(test, Op::Test);
+def_push_0_opnd_no_out!(breakpoint, Op::Breakpoint);
 
 // NOTE: these methods are temporary and will likely move
 // to context.rs later

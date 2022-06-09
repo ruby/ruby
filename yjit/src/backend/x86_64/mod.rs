@@ -6,7 +6,7 @@ use crate::asm::{CodeBlock};
 use crate::asm::x86_64::*;
 use crate::codegen::{JITState};
 use crate::cruby::*;
-use crate::backend::ir::*;
+use crate::backend::ir::{Assembler, Opnd, Target, Op, Mem};
 
 // Use the x86 register type for this platform
 pub type Reg = X86Reg;
@@ -16,8 +16,19 @@ pub const _CFP: Opnd = Opnd::Reg(R13_REG);
 pub const _EC: Opnd = Opnd::Reg(R12_REG);
 pub const _SP: Opnd = Opnd::Reg(RBX_REG);
 
+// C argument registers on this platform
+pub const _C_ARG_OPNDS: [Opnd; 6] = [
+    Opnd::Reg(RDI_REG),
+    Opnd::Reg(RSI_REG),
+    Opnd::Reg(RDX_REG),
+    Opnd::Reg(RCX_REG),
+    Opnd::Reg(R8_REG),
+    Opnd::Reg(R9_REG)
+];
+
 // C return value register on this platform
-pub const RET_REG: Reg = RAX_REG;
+pub const C_RET_REG: Reg = RAX_REG;
+pub const _C_RET_OPND: Opnd = Opnd::Reg(RAX_REG);
 
 /// Map Opnd to X86Opnd
 impl From<Opnd> for X86Opnd {
@@ -58,7 +69,7 @@ impl Assembler
         ]
     }
 
-    /// Emit platform-specific machine code
+    /// Split IR instructions for the x86 platform
     fn x86_split(mut self) -> Assembler
     {
         let live_ranges: Vec<usize> = std::mem::take(&mut self.live_ranges);
@@ -76,7 +87,8 @@ impl Assembler
                             }
                         },
 
-                        [Opnd::Mem(_), _] => {
+                        // We have to load memory and register operands to avoid corrupting them
+                        [Opnd::Mem(_) | Opnd::Reg(_), _] => {
                             let opnd0 = asm.load(opnds[0]);
                             asm.push_insn(op, vec![opnd0, opnds[1]], None);
                             return;
@@ -154,7 +166,7 @@ impl Assembler
 
                 Op::CRet => {
                     // TODO: bias allocation towards return register
-                    if insn.opnds[0] != Opnd::Reg(RET_REG) {
+                    if insn.opnds[0] != Opnd::Reg(C_RET_REG) {
                         mov(cb, RAX, insn.opnds[0].into());
                     }
 
@@ -167,17 +179,11 @@ impl Assembler
                 // Test and set flags
                 Op::Test => test(cb, insn.opnds[0].into(), insn.opnds[1].into()),
 
-                Op::Je => {
-                    match insn.target.unwrap() {
-                        Target::Label(idx) => {
+                Op::JmpOpnd => jmp_rm(cb, insn.opnds[0].into()),
 
-                            dbg!(idx);
-                            je_label(cb, idx);
+                Op::Je => je_label(cb, insn.target.unwrap().unwrap_label_idx()),
 
-                        },
-                        _ => unimplemented!()
-                    }
-                }
+                Op::Breakpoint => int3(cb),
 
                 _ => panic!("unsupported instruction passed to x86 backend: {:?}", insn.op)
             };
