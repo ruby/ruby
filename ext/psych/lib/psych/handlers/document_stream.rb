@@ -1,5 +1,5 @@
 # frozen_string_literal: true
-require 'psych/tree_builder'
+require_relative '../tree_builder'
 
 module Psych
   module Handlers

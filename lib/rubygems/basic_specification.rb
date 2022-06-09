@@ -289,14 +289,14 @@ class Gem::BasicSpecification
 
   def lib_dirs_glob
     dirs = if self.raw_require_paths
-             if self.raw_require_paths.size > 1
-               "{#{self.raw_require_paths.join(',')}}"
-             else
-               self.raw_require_paths.first
-             end
-           else
-             "lib" # default value for require_paths for bundler/inline
-           end
+      if self.raw_require_paths.size > 1
+        "{#{self.raw_require_paths.join(',')}}"
+      else
+        self.raw_require_paths.first
+      end
+    else
+      "lib" # default value for require_paths for bundler/inline
+    end
 
     "#{self.full_gem_path}/#{dirs}".dup.tap(&Gem::UNTAINT)
   end

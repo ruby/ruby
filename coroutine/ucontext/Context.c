@@ -11,6 +11,7 @@
 #if defined(__sun) && !defined(__EXTENSIONS__)
 #define __EXTENSIONS__
 #endif
+
 #include "Context.h"
 
 void coroutine_trampoline(void * _start, void * _context)

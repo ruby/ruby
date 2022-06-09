@@ -10,6 +10,6 @@ class UncorrectableNameCheckTest < Test::Unit::TestCase
   end
 
   def test_message
-    assert_equal "Other name error", @error.message
+    assert_not_match(/Did you mean\?/, @error.message)
   end
 end

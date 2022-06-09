@@ -18,6 +18,7 @@ module Bundler
 
       if spec
         return print_gem_path(spec) if @options[:path]
+        return print_gem_version(spec) if @options[:version]
         print_gem_info(spec)
       end
     end
@@ -39,13 +40,18 @@ module Bundler
       raise GemNotFound, Bundler::CLI::Common.gem_not_found_message(gem_name, Bundler.definition.dependencies)
     end
 
+    def print_gem_version(spec)
+      Bundler.ui.info spec.version.to_s
+    end
+
     def print_gem_path(spec)
-      if spec.name == "bundler"
-        path = File.expand_path("../../../..", __FILE__)
+      name = spec.name
+      if name == "bundler"
+        path = File.expand_path("../../..", __dir__)
       else
         path = spec.full_gem_path
-        unless File.directory?(path)
-          return Bundler.ui.warn "The gem #{gem_name} has been deleted. It was installed at: #{path}"
+        if spec.deleted_gem?
+          return Bundler.ui.warn "The gem #{name} has been deleted. It was installed at: #{path}"
         end
       end
 
@@ -54,8 +60,9 @@ module Bundler
 
     def print_gem_info(spec)
       metadata = spec.metadata
+      name = spec.name
       gem_info = String.new
-      gem_info << "  * #{spec.name} (#{spec.version}#{spec.git_version})\n"
+      gem_info << "  * #{name} (#{spec.version}#{spec.git_version})\n"
       gem_info << "\tSummary: #{spec.summary}\n" if spec.summary
       gem_info << "\tHomepage: #{spec.homepage}\n" if spec.homepage
       gem_info << "\tDocumentation: #{metadata["documentation_uri"]}\n" if metadata.key?("documentation_uri")
@@ -66,8 +73,22 @@ module Bundler
       gem_info << "\tBug Tracker: #{metadata["bug_tracker_uri"]}\n" if metadata.key?("bug_tracker_uri")
       gem_info << "\tMailing List: #{metadata["mailing_list_uri"]}\n" if metadata.key?("mailing_list_uri")
       gem_info << "\tPath: #{spec.full_gem_path}\n"
-      gem_info << "\tDefault Gem: yes" if spec.respond_to?(:default_gem?) && spec.default_gem?
+      gem_info << "\tDefault Gem: yes\n" if spec.respond_to?(:default_gem?) && spec.default_gem?
+      gem_info << "\tReverse Dependencies: \n\t\t#{gem_dependencies.join("\n\t\t")}" if gem_dependencies.any?
+
+      if name != "bundler" && spec.deleted_gem?
+        return Bundler.ui.warn "The gem #{name} has been deleted. Gemspec information is still available though:\n#{gem_info}"
+      end
+
       Bundler.ui.info gem_info
+    end
+
+    def gem_dependencies
+      @gem_dependencies ||= Bundler.definition.specs.map do |spec|
+        dependency = spec.dependencies.find {|dep| dep.name == gem_name }
+        next unless dependency
+        "#{spec.name} (#{spec.version}) depends on #{gem_name} (#{dependency.requirements_list.join(", ")})"
+      end.compact.sort
     end
   end
 end

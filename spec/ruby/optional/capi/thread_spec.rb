@@ -101,6 +101,16 @@ describe "C-API Thread function" do
     end
   end
 
+  describe "ruby_native_thread_p" do
+    it "returns non-zero for a ruby thread" do
+      @t.ruby_native_thread_p.should be_true
+    end
+
+    it "returns zero for a non ruby thread" do
+      @t.ruby_native_thread_p_new_thread.should be_false
+    end
+  end
+
   describe "rb_thread_call_without_gvl" do
     it "runs a C function with the global lock unlocked and can be woken by Thread#wakeup" do
       thr = Thread.new do

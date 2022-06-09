@@ -32,7 +32,7 @@ begin
 rescue Gem::LoadError
 end unless defined?(Rake)
 
-require 'rdoc'
+require_relative '../rdoc'
 require 'rake'
 require 'rake/tasklib'
 
@@ -71,7 +71,7 @@ require 'rake/tasklib'
 #   require 'rdoc/task'
 #
 #   RDoc::Task.new :rdoc_dev do |rdoc|
-#     rdoc.main = "README.doc"
+#     rdoc.main = "README.rdoc"
 #     rdoc.rdoc_files.include("README.rdoc", "lib/**/*.rb")
 #     rdoc.options << "--all"
 #   end
@@ -323,7 +323,7 @@ module Rake
   ##
   # For backwards compatibility
 
-  RDocTask = RDoc::Task
+  RDocTask = RDoc::Task # :nodoc:
 
 end
 # :startdoc:

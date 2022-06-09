@@ -56,7 +56,7 @@ class RDoc::NormalClass < RDoc::ClassModule
   def pretty_print q # :nodoc:
     superclass = @superclass ? " < #{@superclass}" : nil
 
-    q.group 2, "[class #{full_name}#{superclass} ", "]" do
+    q.group 2, "[class #{full_name}#{superclass}", "]" do
       q.breakable
       q.text "includes:"
       q.breakable

@@ -273,7 +273,7 @@ class TestFile < Test::Unit::TestCase
       begin
         File.symlink(tst, a)
       rescue Errno::EACCES, Errno::EPERM
-        skip "need privilege"
+        omit "need privilege"
       end
       assert_equal(File.join(realdir, tst), File.realpath(a))
       File.unlink(a)
@@ -317,7 +317,7 @@ class TestFile < Test::Unit::TestCase
     Dir.mktmpdir('rubytest-realpath') {|tmpdir|
       Dir.chdir(tmpdir) do
         Dir.mkdir('foo')
-        skip "cannot run mklink" unless system('mklink /j bar foo > nul')
+        omit "cannot run mklink" unless system('mklink /j bar foo > nul')
         assert_equal(File.realpath('foo'), File.realpath('bar'))
       end
     }
@@ -475,11 +475,11 @@ class TestFile < Test::Unit::TestCase
       begin
         io = File.open(tmpdir, File::RDWR | File::TMPFILE)
       rescue Errno::EINVAL
-        skip 'O_TMPFILE not supported (EINVAL)'
+        omit 'O_TMPFILE not supported (EINVAL)'
       rescue Errno::EISDIR
-        skip 'O_TMPFILE not supported (EISDIR)'
+        omit 'O_TMPFILE not supported (EISDIR)'
       rescue Errno::EOPNOTSUPP
-        skip 'O_TMPFILE not supported (EOPNOTSUPP)'
+        omit 'O_TMPFILE not supported (EOPNOTSUPP)'
       end
 
       io.write "foo"

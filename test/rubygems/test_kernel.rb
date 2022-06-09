@@ -1,5 +1,5 @@
 # frozen_string_literal: true
-require 'rubygems/test_case'
+require_relative 'helper'
 
 class TestKernel < Gem::TestCase
   def setup
@@ -8,6 +8,8 @@ class TestKernel < Gem::TestCase
     @old_path = $:.dup
 
     util_make_gems
+
+    without_any_upwards_gemfiles
   end
 
   def teardown
@@ -38,7 +40,7 @@ class TestKernel < Gem::TestCase
   def test_gem_re_gem_mismatch
     assert gem('a', '=1')
 
-    assert_raises Gem::LoadError do
+    assert_raise Gem::LoadError do
       gem('a', '= 2')
     end
 
@@ -65,7 +67,7 @@ class TestKernel < Gem::TestCase
 
   def test_gem_env_req
     ENV["GEM_REQUIREMENT_A"] = '~> 2.0'
-    assert_raises(Gem::MissingSpecVersionError) { gem('a', '= 1') }
+    assert_raise(Gem::MissingSpecVersionError) { gem('a', '= 1') }
     assert gem('a', '> 1')
     assert_equal @a2, Gem.loaded_specs['a']
   end
@@ -73,7 +75,7 @@ class TestKernel < Gem::TestCase
   def test_gem_conflicting
     assert gem('a', '= 1'), "Should load"
 
-    ex = assert_raises Gem::LoadError do
+    ex = assert_raise Gem::LoadError do
       gem 'a', '= 2'
     end
 
@@ -115,20 +117,8 @@ class TestKernel < Gem::TestCase
     assert $:.any? {|p| %r{bundler-1/lib} =~ p }
   end
 
-  def test_gem_bundler_missing_bundler_version
-    Gem::BundlerVersionFinder.stub(:bundler_version_with_reason, ["55", "reason"]) do
-      quick_gem 'bundler', '1'
-      quick_gem 'bundler', '2.a'
-
-      e = assert_raises Gem::MissingSpecVersionError do
-        gem('bundler')
-      end
-      assert_match "Could not find 'bundler' (55) required by reason.", e.message
-    end
-  end
-
   def test_gem_bundler_inferred_bundler_version
-    Gem::BundlerVersionFinder.stub(:bundler_version_with_reason, ["1", "reason"]) do
+    Gem::BundlerVersionFinder.stub(:bundler_version, Gem::Version.new("1")) do
       quick_gem 'bundler', '1'
       quick_gem 'bundler', '2.a'
 

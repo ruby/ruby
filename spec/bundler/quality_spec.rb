@@ -3,25 +3,6 @@
 require "set"
 
 RSpec.describe "The library itself" do
-  def check_for_debugging_mechanisms(filename)
-    debugging_mechanisms_regex = /
-      (binding\.pry)|
-      (debugger)|
-      (sleep\s*\(?\d+)|
-      (fit\s*\(?("|\w))
-    /x
-
-    failing_lines = []
-    each_line(filename) do |line, number|
-      if line =~ debugging_mechanisms_regex && !line.end_with?("# ignore quality_spec\n")
-        failing_lines << number + 1
-      end
-    end
-
-    return if failing_lines.empty?
-    "#{filename} has debugging mechanisms (like binding.pry, sleep, debugger, rspec focusing, etc.) on lines #{failing_lines.join(", ")}"
-  end
-
   def check_for_git_merge_conflicts(filename)
     merge_conflicts_regex = /
       <<<<<<<|
@@ -125,16 +106,6 @@ RSpec.describe "The library itself" do
     expect(error_messages.compact).to be_well_formed
   end
 
-  it "does not include any leftover debugging or development mechanisms" do
-    exempt = %r{quality_spec.rb|support/helpers|vcr_cassettes|\.md|\.ronn|index\.txt|\.5|\.1}
-    error_messages = []
-    tracked_files.each do |filename|
-      next if filename =~ exempt
-      error_messages << check_for_debugging_mechanisms(filename)
-    end
-    expect(error_messages.compact).to be_well_formed
-  end
-
   it "does not include any unresolved merge conflicts" do
     error_messages = []
     exempt = %r{lock/lockfile_spec|quality_spec|vcr_cassettes|\.ronn|lockfile_parser\.rb}
@@ -170,9 +141,16 @@ RSpec.describe "The library itself" do
   it "documents all used settings" do
     exemptions = %w[
       forget_cli_options
+      gem.changelog
+      gem.ci
       gem.coc
+      gem.linter
       gem.mit
+      gem.rubocop
+      gem.test
+      git.allow_insecure
       inline
+      trust-policy
       use_gem_version_promoter_for_major_updates
     ]
 
@@ -182,6 +160,7 @@ RSpec.describe "The library itself" do
     Bundler::Settings::BOOL_KEYS.each {|k| all_settings[k] << "in Bundler::Settings::BOOL_KEYS" }
     Bundler::Settings::NUMBER_KEYS.each {|k| all_settings[k] << "in Bundler::Settings::NUMBER_KEYS" }
     Bundler::Settings::ARRAY_KEYS.each {|k| all_settings[k] << "in Bundler::Settings::ARRAY_KEYS" }
+    Bundler::Settings::STRING_KEYS.each {|k| all_settings[k] << "in Bundler::Settings::STRING_KEYS" }
 
     key_pattern = /([a-z\._-]+)/i
     lib_tracked_files.each do |filename|
@@ -215,7 +194,7 @@ RSpec.describe "The library itself" do
   end
 
   it "ships the correct set of files" do
-    git_list = git_ls_files(ruby_core? ? "lib/bundler lib/bundler.rb man/bundle* man/gemfile* libexec/bundle*" : "lib man exe CHANGELOG.md LICENSE.md README.md bundler.gemspec")
+    git_list = git_ls_files(ruby_core? ? "lib/bundler lib/bundler.rb libexec/bundle*" : "lib exe CHANGELOG.md LICENSE.md README.md bundler.gemspec")
 
     gem_list = loaded_gemspec.files
 

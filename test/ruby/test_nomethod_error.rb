@@ -86,7 +86,7 @@ class TestNoMethodError < Test::Unit::TestCase
     str = "\u2600"
     id = :"\u2604"
     msg = "undefined method `#{id}' for \"#{str}\":String"
-    assert_raise_with_message(NoMethodError, msg, bug3237) do
+    assert_raise_with_message(NoMethodError, Regexp.compile(Regexp.quote(msg)), bug3237) do
       str.__send__(id)
     end
   end

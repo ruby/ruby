@@ -17,7 +17,7 @@ module Psych
 
     def test_some_object
       so = SomeObject.new('foo', [1,2,3])
-      assert_equal so, Psych.load(Psych.dump(so))
+      assert_equal so, Psych.unsafe_load(Psych.dump(so))
     end
 
     class StructSubclass < Struct.new(:foo)
@@ -33,7 +33,7 @@ module Psych
 
     def test_struct_subclass
       so = StructSubclass.new('foo', [1,2,3])
-      assert_equal so, Psych.load(Psych.dump(so))
+      assert_equal so, Psych.unsafe_load(Psych.dump(so))
     end
   end
 end

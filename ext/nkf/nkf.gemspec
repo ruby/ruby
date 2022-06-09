@@ -1,6 +1,6 @@
 Gem::Specification.new do |spec|
   spec.name          = "nkf"
-  spec.version       = "0.1.0"
+  spec.version       = "0.1.1"
   spec.authors       = ["NARUSE Yui"]
   spec.email         = ["naruse@airemix.jp"]
 

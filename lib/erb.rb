@@ -46,7 +46,7 @@ require 'erb/version'
 #
 #   <% Ruby code -- inline with output %>
 #   <%= Ruby expression -- replace with result %>
-#   <%# comment -- ignored -- useful in testing %>
+#   <%# comment -- ignored -- useful in testing %> (`<% #` doesn't work. Don't use Ruby comments.)
 #   % a line of Ruby code -- treated as <% line %> (optional -- see ERB.new)
 #   %% replaced with % if first thing on a line and % processing is used
 #   <%% or %%> -- replace with <% or %> respectively
@@ -724,7 +724,7 @@ class ERB
       frozen = nil
       s.scan(re) do
         comment = $+
-        comment = $1 if comment[/-\*-\s*(.*?)\s*-*-$/]
+        comment = $1 if comment[/-\*-\s*([^\s].*?)\s*-\*-$/]
         case comment
         when %r"coding\s*[=:]\s*([[:alnum:]\-_]+)"
           enc = Encoding.find($1.sub(/-(?:mac|dos|unix)/i, ''))

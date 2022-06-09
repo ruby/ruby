@@ -6,6 +6,13 @@ AC_DEFUN([RUBY_REPLACE_TYPE], [dnl
 		  [n="patsubst([$2],["],[\\"])"],
 		  [$4])
     AC_CACHE_CHECK([for convertible type of [$1]], rb_cv_[$1]_convertible, [
+	AC_COMPILE_IFELSE(
+	    [AC_LANG_BOOL_COMPILE_TRY([AC_INCLUDES_DEFAULT([$4])]
+		[typedef $n rbcv_conftest_target_type;
+		extern rbcv_conftest_target_type rbcv_conftest_var;
+		], [sizeof(&*rbcv_conftest_var)])],
+	[rb_cv_[$1]_convertible=PTR],
+	[
 	u= t=
 	AS_CASE(["$n "],
 	  [*" signed "*], [ ],
@@ -37,6 +44,7 @@ AC_DEFUN([RUBY_REPLACE_TYPE], [dnl
 	  [
 	    t=INT])
 	rb_cv_[$1]_convertible=${u}${t}])
+    ])
     AS_IF([test "${AS_TR_SH(ac_cv_type_[$1])}" = "yes"], [
 	n="$1"
     ], [
@@ -48,11 +56,13 @@ AC_DEFUN([RUBY_REPLACE_TYPE], [dnl
 	AS_CASE(["${rb_cv_[$1]_convertible}"],
 		[U*], [n="unsigned $n"])
     ])
-    AS_CASE("${rb_cv_[$1]_convertible}", [U*], [u=+1], [u=-1])
+    AS_CASE("${rb_cv_[$1]_convertible}", [PTR], [u=], [U*], [u=+1], [u=-1])
     AC_DEFINE_UNQUOTED(rb_[$1], $n)
+    AS_IF([test $u], [
     AC_DEFINE_UNQUOTED([SIGNEDNESS_OF_]AS_TR_CPP($1), $u)
     AC_DEFINE_UNQUOTED([$3]2NUM[(v)], [${rb_cv_[$1]_convertible}2NUM(v)])
     AC_DEFINE_UNQUOTED(NUM2[$3][(v)], [NUM2${rb_cv_[$1]_convertible}(v)])
     AC_DEFINE_UNQUOTED(PRI_[$3]_PREFIX,
 	[PRI_`echo ${rb_cv_[$1]_convertible} | sed ['s/^U//']`_PREFIX])
+    ])
 ])dnl

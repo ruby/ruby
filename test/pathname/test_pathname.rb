@@ -815,7 +815,7 @@ class TestPathname < Test::Unit::TestCase
   end
 
   def test_birthtime
-    skip if RUBY_PLATFORM =~ /android/
+    omit if RUBY_PLATFORM =~ /android/
     # Check under a (probably) local filesystem.
     # Remote filesystems often may not support birthtime.
     with_tmpchdir('rubytest-pathname') do |dir|
@@ -823,9 +823,9 @@ class TestPathname < Test::Unit::TestCase
       assert_kind_of(Time, Pathname("a").birthtime)
     rescue Errno::EPERM
       # Docker prohibits statx syscall by the default.
-      skip("statx(2) is prohibited by seccomp")
+      omit("statx(2) is prohibited by seccomp")
     rescue Errno::ENOSYS
-      skip("statx(2) is not supported on this filesystem")
+      omit("statx(2) is not supported on this filesystem")
     rescue NotImplementedError
       # assert_raise(NotImplementedError) do
       #   File.birthtime("a")
@@ -1043,6 +1043,25 @@ class TestPathname < Test::Unit::TestCase
     }
   end
 
+  def test_lutime
+    return if !has_symlink?
+    with_tmpchdir('rubytest-pathname') {|dir|
+      open("a", "w") {|f| f.write "abc" }
+      atime = File.atime("a")
+      mtime = File.mtime("a")
+      latime = Time.utc(2000)
+      lmtime = Time.utc(1999)
+      File.symlink("a", "l")
+      Pathname("l").utime(latime, lmtime)
+      s = File.lstat("a")
+      ls = File.lstat("l")
+      assert_equal(atime, s.atime)
+      assert_equal(mtime, s.mtime)
+      assert_equal(latime, ls.atime)
+      assert_equal(lmtime, ls.mtime)
+    }
+  end
+
   def test_basename
     assert_equal(Pathname("basename"), Pathname("dirname/basename").basename)
     assert_equal(Pathname("bar"), Pathname("foo/bar.x").basename(".x"))
@@ -1120,7 +1139,7 @@ class TestPathname < Test::Unit::TestCase
   end
 
   def test_grpowned?
-    skip "Unix file owner test" if DOSISH
+    omit "Unix file owner test" if DOSISH
     with_tmpchdir('rubytest-pathname') {|dir|
       open("f", "w") {|f| f.write "abc" }
       File.chown(-1, Process.gid, "f")
@@ -1175,7 +1194,7 @@ class TestPathname < Test::Unit::TestCase
   end
 
   def test_world_readable?
-    skip "Unix file mode bit test" if DOSISH
+    omit "Unix file mode bit test" if DOSISH
     with_tmpchdir('rubytest-pathname') {|dir|
       open("f", "w") {|f| f.write "abc" }
       File.chmod(0400, "f")
@@ -1227,7 +1246,7 @@ class TestPathname < Test::Unit::TestCase
   end
 
   def test_sticky?
-    skip "Unix file mode bit test" if DOSISH
+    omit "Unix file mode bit test" if DOSISH
     with_tmpchdir('rubytest-pathname') {|dir|
       open("f", "w") {|f| f.write "abc" }
       assert_equal(false, Pathname("f").sticky?)
@@ -1249,7 +1268,7 @@ class TestPathname < Test::Unit::TestCase
   end
 
   def test_world_writable?
-    skip "Unix file mode bit test" if DOSISH
+    omit "Unix file mode bit test" if DOSISH
     with_tmpchdir('rubytest-pathname') {|dir|
       open("f", "w") {|f| f.write "abc" }
       File.chmod(0600, "f")
@@ -1355,6 +1374,18 @@ class TestPathname < Test::Unit::TestCase
     }
   end
 
+  def test_each_entry_enumerator
+    with_tmpchdir('rubytest-pathname') {|dir|
+      open("a", "w") {}
+      open("b", "w") {}
+      a = []
+      e = Pathname(".").each_entry
+      assert_kind_of(Enumerator, e)
+      e.each {|v| a << v }
+      assert_equal([Pathname("."), Pathname(".."), Pathname("a"), Pathname("b")], a.sort)
+    }
+  end
+
   def test_mkdir
     with_tmpchdir('rubytest-pathname') {|dir|
       Pathname("d").mkdir
@@ -1409,8 +1440,8 @@ class TestPathname < Test::Unit::TestCase
         a = []; Pathname("d").find(ignore_error: true) {|v| a << v }; a.sort!
         assert_equal([Pathname("d"), Pathname("d/x")], a)
 
-        skip "no meaning test on Windows" if /mswin|mingw/ =~ RUBY_PLATFORM
-        skip 'skipped in root privilege' if Process.uid == 0
+        omit "no meaning test on Windows" if /mswin|mingw/ =~ RUBY_PLATFORM
+        omit 'skipped in root privilege' if Process.uid == 0
         a = [];
         assert_raise_with_message(Errno::EACCES, %r{d/x}) do
           Pathname(".").find(ignore_error: false) {|v| a << v }
@@ -1429,10 +1460,22 @@ class TestPathname < Test::Unit::TestCase
     }
   end
 
+  def assert_mode(val, mask, path, mesg = nil)
+    st = File.stat(path)
+    assert_equal(val.to_s(8), (st.mode & mask).to_s(8), st.inspect)
+  end
+
   def test_mkpath
     with_tmpchdir('rubytest-pathname') {|dir|
       Pathname("a/b/c/d").mkpath
       assert_file.directory?("a/b/c/d")
+      unless File.stat(dir).world_readable?
+        # mktmpdir should make unreadable
+        Pathname("x/y/z").mkpath(mode: 0775)
+        assert_mode(0775, 0777, "x")
+        assert_mode(0775, 0777, "x/y")
+        assert_mode(0775, 0777, "x/y/z")
+      end
     }
   end
 

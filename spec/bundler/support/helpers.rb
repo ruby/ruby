@@ -60,7 +60,7 @@ module Spec
     def run(cmd, *args)
       opts = args.last.is_a?(Hash) ? args.pop : {}
       groups = args.map(&:inspect).join(", ")
-      setup = "require '#{lib_dir}/bundler' ; Bundler.ui.silence { Bundler.setup(#{groups}) }"
+      setup = "require '#{entrypoint}' ; Bundler.ui.silence { Bundler.setup(#{groups}) }"
       ruby([setup, cmd].join(" ; "), opts)
     end
 
@@ -87,9 +87,10 @@ module Spec
       env = options.delete(:env) || {}
 
       requires = options.delete(:requires) || []
+      realworld = RSpec.current_example.metadata[:realworld]
 
       artifice = options.delete(:artifice) do
-        if RSpec.current_example.metadata[:realworld]
+        if realworld
           "vcr"
         else
           "fail"
@@ -164,7 +165,7 @@ module Spec
 
     def gem_command(command, options = {})
       env = options[:env] || {}
-      env["RUBYOPT"] = opt_add("-r#{spec_dir}/support/hax.rb", env["RUBYOPT"] || ENV["RUBYOPT"])
+      env["RUBYOPT"] = opt_add(opt_add("-r#{spec_dir}/support/hax.rb", env["RUBYOPT"]), ENV["RUBYOPT"])
       options[:env] = env
       sys_exec("#{Path.gem_bin} #{command}", options)
     end
@@ -179,7 +180,7 @@ module Spec
 
     def sys_exec(cmd, options = {})
       env = options[:env] || {}
-      env["RUBYOPT"] = opt_add("-r#{spec_dir}/support/switch_rubygems.rb", env["RUBYOPT"] || ENV["RUBYOPT"])
+      env["RUBYOPT"] = opt_add(opt_add("-r#{spec_dir}/support/switch_rubygems.rb", env["RUBYOPT"]), ENV["RUBYOPT"])
       dir = options[:dir] || bundled_app
       command_execution = CommandExecution.new(cmd.to_s, dir)
 
@@ -198,7 +199,7 @@ module Spec
         command_execution.exitstatus = if status.exited?
           status.exitstatus
         elsif status.signaled?
-          128 + status.termsig
+          exit_status_for_signal(status.termsig)
         end
       end
 
@@ -218,13 +219,13 @@ module Spec
     end
 
     def all_commands_output
-      return [] if command_executions.empty?
+      return "" if command_executions.empty?
 
       "\n\nCommands:\n#{command_executions.map(&:to_s_verbose).join("\n\n")}"
     end
 
     def config(config = nil, path = bundled_app(".bundle/config"))
-      return YAML.load_file(path) unless config
+      return Psych.load_file(path) unless config
       FileUtils.mkdir_p(File.dirname(path))
       File.open(path, "w") do |f|
         f.puts config.to_yaml
@@ -236,33 +237,31 @@ module Spec
       config(config, home(".bundle/config"))
     end
 
-    def create_file(*args)
-      path = bundled_app(args.shift)
-      path = args.shift if args.first.is_a?(Pathname)
-      str  = args.shift || ""
+    def create_file(path, contents = "")
+      path = Pathname.new(path).expand_path(bundled_app) unless path.is_a?(Pathname)
       path.dirname.mkpath
       File.open(path.to_s, "w") do |f|
-        f.puts strip_whitespace(str)
+        f.puts strip_whitespace(contents)
       end
     end
 
     def gemfile(*args)
-      contents = args.shift
+      contents = args.pop
 
       if contents.nil?
         File.open(bundled_app_gemfile, "r", &:read)
       else
-        create_file("Gemfile", contents, *args)
+        create_file(args.pop || "Gemfile", contents)
       end
     end
 
     def lockfile(*args)
-      contents = args.shift
+      contents = args.pop
 
       if contents.nil?
         File.open(bundled_app_lock, "r", &:read)
       else
-        create_file("Gemfile.lock", contents, *args)
+        create_file(args.pop || "Gemfile.lock", contents)
       end
     end
 
@@ -273,8 +272,8 @@ module Spec
     end
 
     def install_gemfile(*args)
+      opts = args.last.is_a?(Hash) ? args.pop : {}
       gemfile(*args)
-      opts = args.last.is_a?(Hash) ? args.last : {}
       bundle :install, opts
     end
 
@@ -346,6 +345,7 @@ module Spec
       without_env_side_effects do
         ENV["GEM_HOME"] = path.to_s
         ENV["GEM_PATH"] = path.to_s
+        ENV["BUNDLER_ORIG_GEM_HOME"] = nil
         ENV["BUNDLER_ORIG_GEM_PATH"] = nil
         yield
       end
@@ -445,30 +445,16 @@ module Spec
       ENV["BUNDLER_SPEC_PLATFORM"] = old if block_given?
     end
 
-    def simulate_ruby_version(version)
-      return if version == RUBY_VERSION
-      old = ENV["BUNDLER_SPEC_RUBY_VERSION"]
-      ENV["BUNDLER_SPEC_RUBY_VERSION"] = version
-      yield if block_given?
-    ensure
-      ENV["BUNDLER_SPEC_RUBY_VERSION"] = old if block_given?
-    end
-
     def simulate_windows(platform = mswin)
-      old = ENV["BUNDLER_SPEC_WINDOWS"]
-      ENV["BUNDLER_SPEC_WINDOWS"] = "true"
       simulate_platform platform do
         simulate_bundler_version_when_missing_prerelease_default_gem_activation do
           yield
         end
       end
-    ensure
-      ENV["BUNDLER_SPEC_WINDOWS"] = old
     end
 
-    # workaround for missing https://github.com/rubygems/rubygems/commit/929e92d752baad3a08f3ac92eaec162cb96aedd1
     def simulate_bundler_version_when_missing_prerelease_default_gem_activation
-      return yield unless Gem.rubygems_version < Gem::Version.new("3.1.0.pre.1")
+      return yield unless rubygems_version_failing_to_activate_bundler_prereleases
 
       old = ENV["BUNDLER_VERSION"]
       ENV["BUNDLER_VERSION"] = Bundler::VERSION
@@ -477,13 +463,26 @@ module Spec
       ENV["BUNDLER_VERSION"] = old
     end
 
-    # workaround for missing https://github.com/rubygems/rubygems/commit/929e92d752baad3a08f3ac92eaec162cb96aedd1
     def env_for_missing_prerelease_default_gem_activation
-      if Gem.rubygems_version < Gem::Version.new("3.1.0.pre.1")
+      if rubygems_version_failing_to_activate_bundler_prereleases
         { "BUNDLER_VERSION" => Bundler::VERSION }
       else
         {}
       end
+    end
+
+    def current_ruby_minor
+      Gem.ruby_version.segments[0..1].join(".")
+    end
+
+    def next_ruby_minor
+      Gem.ruby_version.segments[0..1].map.with_index {|s, i| i == 1 ? s + 1 : s }.join(".")
+    end
+
+    # versions providing a bundler version finder but not including
+    # https://github.com/rubygems/rubygems/commit/929e92d752baad3a08f3ac92eaec162cb96aedd1
+    def rubygems_version_failing_to_activate_bundler_prereleases
+      Gem.rubygems_version < Gem::Version.new("3.1.0.pre.1") && Gem.rubygems_version >= Gem::Version.new("2.7.0")
     end
 
     def revision_for(path)
@@ -542,7 +541,7 @@ module Spec
     def require_rack
       # need to hack, so we can require rack
       old_gem_home = ENV["GEM_HOME"]
-      ENV["GEM_HOME"] = Spec::Path.base_system_gems.to_s
+      ENV["GEM_HOME"] = Spec::Path.base_system_gem_path.to_s
       require "rack"
       ENV["GEM_HOME"] = old_gem_home
     end
@@ -565,6 +564,11 @@ module Spec
         false
       end
       port
+    end
+
+    def exit_status_for_signal(signal_number)
+      # For details see: https://en.wikipedia.org/wiki/Exit_status#Shell_and_scripts
+      128 + signal_number
     end
 
     private

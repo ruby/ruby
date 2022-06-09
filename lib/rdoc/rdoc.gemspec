@@ -50,7 +50,6 @@ RDoc includes the +rdoc+ and +ri+ tools for generating and displaying documentat
     "bin/setup",
     "exe/rdoc",
     "exe/ri",
-    "man/ri.1",
     "lib/rdoc.rb",
     "lib/rdoc/alias.rb",
     "lib/rdoc/anon_class.rb",
@@ -167,6 +166,7 @@ RDoc includes the +rdoc+ and +ri+ tools for generating and displaying documentat
     "lib/rdoc/markup/raw.rb",
     "lib/rdoc/markup/regexp_handling.rb",
     "lib/rdoc/markup/rule.rb",
+    "lib/rdoc/markup/table.rb",
     "lib/rdoc/markup/to_ansi.rb",
     "lib/rdoc/markup/to_bs.rb",
     "lib/rdoc/markup/to_html.rb",
@@ -222,27 +222,17 @@ RDoc includes the +rdoc+ and +ri+ tools for generating and displaying documentat
     "lib/rdoc/tom_doc.rb",
     "lib/rdoc/top_level.rb",
     "lib/rdoc/version.rb",
+    "man/ri.1",
     "rdoc.gemspec",
   ]
   # files from .gitignore
   s.files << "lib/rdoc/rd/block_parser.rb" << "lib/rdoc/rd/inline_parser.rb" << "lib/rdoc/markdown.rb" << "lib/rdoc/markdown/literals.rb"
 
   s.rdoc_options = ["--main", "README.rdoc"]
-  s.extra_rdoc_files += %w[
-    CVE-2013-0256.rdoc
-    CONTRIBUTING.rdoc
-    ExampleMarkdown.md
-    ExampleRDoc.rdoc
-    History.rdoc
-    LEGAL.rdoc
-    LICENSE.rdoc
-    README.rdoc
-    RI.rdoc
-    TODO.rdoc
-  ]
+  s.extra_rdoc_files += s.files.grep(%r[\A[^\/]+\.(?:rdoc|md)\z])
 
-  s.required_ruby_version = Gem::Requirement.new(">= 2.4.0")
+  s.required_ruby_version = Gem::Requirement.new(">= 2.5.0")
   s.required_rubygems_version = Gem::Requirement.new(">= 2.2")
 
-  s.add_development_dependency("gettext")
+  s.add_dependency 'psych', '>= 4.0.0'
 end

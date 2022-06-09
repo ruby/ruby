@@ -177,7 +177,7 @@ static const struct st_hash_type type_strcasehash = {
 #define PTR_EQUAL(tab, ptr, hash_val, key_) \
     ((ptr)->hash == (hash_val) && EQUAL((tab), (key_), (ptr)->key))
 
-/* As PRT_EQUAL only its result is returned in RES.  REBUILT_P is set
+/* As PTR_EQUAL only its result is returned in RES.  REBUILT_P is set
    up to TRUE if the table is rebuilt during the comparison.  */
 #define DO_PTR_EQUAL_CHECK(tab, ptr, hash_val, key, res, rebuilt_p) \
     do {							    \
@@ -841,7 +841,8 @@ find_table_entry_ind(st_table *tab, st_hash_t hash_value, st_data_t key)
 		return REBUILT_TABLE_ENTRY_IND;
 	    if (eq_p)
 		break;
-	} else if (EMPTY_BIN_P(bin))
+	}
+	else if (EMPTY_BIN_P(bin))
             return UNDEFINED_ENTRY_IND;
 #ifdef QUADRATIC_PROBE
 	ind = hash_bin(ind + d, tab);
@@ -886,7 +887,8 @@ find_table_bin_ind(st_table *tab, st_hash_t hash_value, st_data_t key)
 		return REBUILT_TABLE_BIN_IND;
 	    if (eq_p)
 		break;
-	} else if (EMPTY_BIN_P(bin))
+	}
+	else if (EMPTY_BIN_P(bin))
             return UNDEFINED_BIN_IND;
 #ifdef QUADRATIC_PROBE
 	ind = hash_bin(ind + d, tab);
@@ -1361,7 +1363,6 @@ st_shift(st_table *tab, st_data_t *key, st_data_t *value)
 	    return 1;
 	}
     }
-    tab->entries_start = tab->entries_bound = 0;
     if (value != 0) *value = 0;
     return 0;
 }
@@ -2120,7 +2121,7 @@ st_rehash_indexed(st_table *tab)
             continue;
 
         ind = hash_bin(p->hash, tab);
-        for(;;) {
+        for (;;) {
             st_index_t bin = get_bin(bins, size_ind, ind);
             if (EMPTY_OR_DELETED_BIN_P(bin)) {
                 /* ok, new room */

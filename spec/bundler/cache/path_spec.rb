@@ -5,6 +5,7 @@ RSpec.describe "bundle cache with path" do
     build_lib "foo", :path => bundled_app("lib/foo")
 
     install_gemfile <<-G
+      source "#{file_uri_for(gem_repo1)}"
       gem "foo", :path => '#{bundled_app("lib/foo")}'
     G
 
@@ -18,6 +19,7 @@ RSpec.describe "bundle cache with path" do
     build_lib "foo"
 
     install_gemfile <<-G
+      source "#{file_uri_for(gem_repo1)}"
       gem "foo", :path => '#{lib_path("foo-1.0")}'
     G
 
@@ -36,6 +38,7 @@ RSpec.describe "bundle cache with path" do
     build_lib libname, :path => libpath
 
     install_gemfile <<-G
+      source "#{file_uri_for(gem_repo1)}"
       gem "#{libname}", :path => '#{libpath}'
     G
 
@@ -51,6 +54,7 @@ RSpec.describe "bundle cache with path" do
     build_lib "foo"
 
     install_gemfile <<-G
+      source "#{file_uri_for(gem_repo1)}"
       gem "foo", :path => '#{lib_path("foo-1.0")}'
     G
 
@@ -73,6 +77,7 @@ RSpec.describe "bundle cache with path" do
     build_lib "foo"
 
     install_gemfile <<-G
+      source "#{file_uri_for(gem_repo1)}"
       gem "foo", :path => '#{lib_path("foo-1.0")}'
     G
 
@@ -84,6 +89,7 @@ RSpec.describe "bundle cache with path" do
     build_lib "bar"
 
     install_gemfile <<-G
+      source "#{file_uri_for(gem_repo1)}"
       gem "bar", :path => '#{lib_path("bar-1.0")}'
     G
 
@@ -95,6 +101,7 @@ RSpec.describe "bundle cache with path" do
     build_lib "foo"
 
     install_gemfile <<-G
+      source "#{file_uri_for(gem_repo1)}"
       gem "foo", :path => '#{lib_path("foo-1.0")}'
     G
 
@@ -107,6 +114,7 @@ RSpec.describe "bundle cache with path" do
     build_lib "foo"
 
     install_gemfile <<-G
+      source "#{file_uri_for(gem_repo1)}"
       gem "foo", :path => '#{lib_path("foo-1.0")}'
     G
 
@@ -119,6 +127,7 @@ RSpec.describe "bundle cache with path" do
     build_lib "foo"
 
     install_gemfile <<-G
+      source "#{file_uri_for(gem_repo1)}"
       gem "foo", :path => '#{lib_path("foo-1.0")}'
     G
 
@@ -127,6 +136,7 @@ RSpec.describe "bundle cache with path" do
     build_lib "bar"
 
     install_gemfile <<-G
+      source "#{file_uri_for(gem_repo1)}"
       gem "foo", :path => '#{lib_path("foo-1.0")}'
       gem "bar", :path => '#{lib_path("bar-1.0")}'
     G
@@ -139,6 +149,7 @@ RSpec.describe "bundle cache with path" do
     build_lib "foo"
 
     install_gemfile <<-G
+      source "#{file_uri_for(gem_repo1)}"
       gem "foo", :path => '#{lib_path("foo-1.0")}'
     G
 
@@ -147,6 +158,7 @@ RSpec.describe "bundle cache with path" do
     build_lib "baz"
 
     gemfile <<-G
+      source "#{file_uri_for(gem_repo1)}"
       gem "foo", :path => '#{lib_path("foo-1.0")}'
       gem "baz", :path => '#{lib_path("baz-1.0")}'
     G

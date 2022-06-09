@@ -30,7 +30,7 @@ assert_finish 10, %q{
   end
 }, '[ruby-dev:32566]'
 
-assert_finish 1, %q{
+assert_finish 5, %q{
   r, w = IO.pipe
   Thread.new {
     w << "ab"

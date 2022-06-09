@@ -2,7 +2,7 @@
 
 require_relative "endpoint"
 
-$LOAD_PATH.unshift Dir[Spec::Path.base_system_gems.join("gems/compact_index*/lib")].first.to_s
+$LOAD_PATH.unshift Dir[Spec::Path.base_system_gem_path.join("gems/compact_index*/lib")].first.to_s
 require "compact_index"
 
 class CompactIndexAPI < Endpoint
@@ -62,7 +62,7 @@ class CompactIndexAPI < Endpoint
       body.byteslice(range)
     end
 
-    def gems(gem_repo = GEM_REPO)
+    def gems(gem_repo = default_gem_repo)
       @gems ||= {}
       @gems[gem_repo] ||= begin
         specs = Bundler::Deprecate.skip_during do
@@ -80,7 +80,7 @@ class CompactIndexAPI < Endpoint
               CompactIndex::Dependency.new(d.name, reqs)
             end
             checksum = begin
-                         Digest(:SHA256).file("#{GEM_REPO}/gems/#{spec.original_name}.gem").base64digest
+                         Digest(:SHA256).file("#{gem_repo}/gems/#{spec.original_name}.gem").base64digest
                        rescue StandardError
                          nil
                        end

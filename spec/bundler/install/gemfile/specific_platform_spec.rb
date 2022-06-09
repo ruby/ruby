@@ -20,7 +20,7 @@ RSpec.describe "bundle install with specific platforms" do
       ])
     end
 
-    it "understands that a non-plaform specific gem in a old lockfile doesn't necessarily mean installing the non-specific variant" do
+    it "understands that a non-platform specific gem in a old lockfile doesn't necessarily mean installing the non-specific variant" do
       setup_multiplatform_gem
 
       system_gems "bundler-2.1.4"
@@ -54,7 +54,7 @@ RSpec.describe "bundle install with specific platforms" do
       expect(the_bundle).to include_gem("google-protobuf 3.0.0.alpha.5.0.5.1 universal-darwin")
     end
 
-    it "understands that a non-plaform specific gem in a new lockfile locked only to RUBY doesn't necessarily mean installing the non-specific variant" do
+    it "understands that a non-platform specific gem in a new lockfile locked only to RUBY doesn't necessarily mean installing the non-specific variant" do
       setup_multiplatform_gem
 
       system_gems "bundler-2.1.4"
@@ -87,7 +87,7 @@ RSpec.describe "bundle install with specific platforms" do
       expect(the_bundle).to include_gem("google-protobuf 3.0.0.alpha.5.0.5.1 universal-darwin")
 
       # make sure we're still only locked to ruby
-      lockfile_should_be <<-L
+      expect(lockfile).to eq <<~L
         GEM
           remote: #{file_uri_for(gem_repo2)}/
           specs:
@@ -141,10 +141,10 @@ RSpec.describe "bundle install with specific platforms" do
            2.1.4
       L
 
-      bundle "install --verbose", :artifice => :compact_index, :env => { "BUNDLER_VERSION" => "2.1.4", "BUNDLER_SPEC_GEM_REPO" => gem_repo2.to_s }
+      bundle "install --verbose", :artifice => "compact_index", :env => { "BUNDLER_VERSION" => "2.1.4", "BUNDLER_SPEC_GEM_REPO" => gem_repo2.to_s }
       expect(out).to include("Installing libv8 8.4.255.0 (universal-darwin)")
 
-      bundle "add mini_racer --verbose", :artifice => :compact_index, :env => { "BUNDLER_SPEC_GEM_REPO" => gem_repo2.to_s }
+      bundle "add mini_racer --verbose", :artifice => "compact_index", :env => { "BUNDLER_SPEC_GEM_REPO" => gem_repo2.to_s }
       expect(out).to include("Using libv8 8.4.255.0 (universal-darwin)")
     end
 
@@ -173,6 +173,7 @@ RSpec.describe "bundle install with specific platforms" do
       git = build_git "pg_array_parser", "1.0"
 
       gemfile <<-G
+        source "#{file_uri_for(gem_repo1)}"
         gem "pg_array_parser", :git => "#{lib_path("pg_array_parser-1.0")}"
       G
 
@@ -247,6 +248,89 @@ RSpec.describe "bundle install with specific platforms" do
         ])
       end
     end
+  end
+
+  it "installs sorbet-static, which does not provide a pure ruby variant, just fine on truffleruby", :truffleruby do
+    build_repo2 do
+      build_gem("sorbet-static", "0.5.6403") {|s| s.platform = "x86_64-linux" }
+      build_gem("sorbet-static", "0.5.6403") {|s| s.platform = "universal-darwin-20" }
+    end
+
+    gemfile <<~G
+      source "#{file_uri_for(gem_repo2)}"
+
+      gem "sorbet-static", "0.5.6403"
+    G
+
+    lockfile <<~L
+      GEM
+        remote: #{file_uri_for(gem_repo2)}/
+        specs:
+          sorbet-static (0.5.6403-universal-darwin-20)
+          sorbet-static (0.5.6403-x86_64-linux)
+
+      PLATFORMS
+        ruby
+
+      DEPENDENCIES
+        sorbet-static (= 0.5.6403)
+
+      BUNDLED WITH
+         #{Bundler::VERSION}
+    L
+
+    bundle "install --verbose"
+  end
+
+  it "does not resolve if the current platform does not match any of available platform specific variants for a top level dependency" do
+    build_repo2 do
+      build_gem("sorbet-static", "0.5.6433") {|s| s.platform = "x86_64-linux" }
+      build_gem("sorbet-static", "0.5.6433") {|s| s.platform = "universal-darwin-20" }
+    end
+
+    gemfile <<~G
+      source "#{file_uri_for(gem_repo2)}"
+
+      gem "sorbet-static", "0.5.6433"
+    G
+
+    simulate_platform "arm64-darwin-21" do
+      bundle "install", :raise_on_error => false
+    end
+
+    expect(err).to include <<~ERROR.rstrip
+      Could not find gem 'sorbet-static (= 0.5.6433) arm64-darwin-21' in rubygems repository #{file_uri_for(gem_repo2)}/ or installed locally.
+
+      The source contains the following gems matching 'sorbet-static (= 0.5.6433)':
+        * sorbet-static-0.5.6433-universal-darwin-20
+        * sorbet-static-0.5.6433-x86_64-linux
+    ERROR
+  end
+
+  it "does not resolve if the current platform does not match any of available platform specific variants for a transitive dependency" do
+    build_repo2 do
+      build_gem("sorbet", "0.5.6433") {|s| s.add_dependency "sorbet-static", "= 0.5.6433" }
+      build_gem("sorbet-static", "0.5.6433") {|s| s.platform = "x86_64-linux" }
+      build_gem("sorbet-static", "0.5.6433") {|s| s.platform = "universal-darwin-20" }
+    end
+
+    gemfile <<~G
+      source "#{file_uri_for(gem_repo2)}"
+
+      gem "sorbet", "0.5.6433"
+    G
+
+    simulate_platform "arm64-darwin-21" do
+      bundle "install", :raise_on_error => false
+    end
+
+    expect(err).to include <<~ERROR.rstrip
+      Could not find gem 'sorbet-static (= 0.5.6433) arm64-darwin-21', which is required by gem 'sorbet (= 0.5.6433)', in rubygems repository #{file_uri_for(gem_repo2)}/ or installed locally.
+
+      The source contains the following gems matching 'sorbet-static (= 0.5.6433)':
+        * sorbet-static-0.5.6433-universal-darwin-20
+        * sorbet-static-0.5.6433-x86_64-linux
+    ERROR
   end
 
   private

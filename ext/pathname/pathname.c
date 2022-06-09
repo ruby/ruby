@@ -35,6 +35,7 @@ static ID id_lchmod;
 static ID id_lchown;
 static ID id_link;
 static ID id_lstat;
+static ID id_lutime;
 static ID id_mkdir;
 static ID id_mtime;
 static ID id_open;
@@ -765,6 +766,19 @@ path_utime(VALUE self, VALUE atime, VALUE mtime)
 }
 
 /*
+ * Update the access and modification times of the file.
+ *
+ * Same as Pathname#utime, but does not follow symbolic links.
+ *
+ * See File.lutime.
+ */
+static VALUE
+path_lutime(VALUE self, VALUE atime, VALUE mtime)
+{
+    return rb_funcall(rb_cFile, id_lutime, 3, atime, mtime, get_strpath(self));
+}
+
+/*
  * Returns the last component of the path.
  *
  * See File.basename.
@@ -1274,6 +1288,7 @@ static VALUE
 path_each_entry(VALUE self)
 {
     VALUE args[1];
+    RETURN_ENUMERATOR(self, 0, 0);
 
     args[0] = get_strpath(self);
     return rb_block_call(rb_cDir, id_foreach, 1, args, each_entry_i, rb_obj_class(self));
@@ -1464,6 +1479,7 @@ path_f_pathname(VALUE self, VALUE str)
  * - #make_symlink(old)
  * - #truncate(length)
  * - #utime(atime, mtime)
+ * - #lutime(atime, mtime)
  * - #basename(*args)
  * - #dirname
  * - #extname
@@ -1562,6 +1578,7 @@ Init_pathname(void)
     rb_define_method(rb_cPathname, "make_symlink", path_make_symlink, 1);
     rb_define_method(rb_cPathname, "truncate", path_truncate, 1);
     rb_define_method(rb_cPathname, "utime", path_utime, 2);
+    rb_define_method(rb_cPathname, "lutime", path_lutime, 2);
     rb_define_method(rb_cPathname, "basename", path_basename, -1);
     rb_define_method(rb_cPathname, "dirname", path_dirname, 0);
     rb_define_method(rb_cPathname, "extname", path_extname, 0);
@@ -1645,6 +1662,7 @@ InitVM_pathname(void)
     id_lchown = rb_intern("lchown");
     id_link = rb_intern("link");
     id_lstat = rb_intern("lstat");
+    id_lutime = rb_intern("lutime");
     id_mkdir = rb_intern("mkdir");
     id_mtime = rb_intern("mtime");
     id_open = rb_intern("open");

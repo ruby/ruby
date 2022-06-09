@@ -88,3 +88,35 @@ AS_IF([test "x${ARCH_FLAG}" != x], [
 ])
 # RUBY_UNIVERSAL_ARCH end
 ])dnl
+dnl
+AC_DEFUN([RUBY_UNIVERSAL_CHECK_HEADER_COND], [ dnl
+  AC_CACHE_CHECK([for $2 when $1], [$3],
+    AC_COMPILE_IFELSE([AC_LANG_PROGRAM(
+        [AC_INCLUDES_DEFAULT([$6])[
+          @%:@if ]$1[
+          @%:@include <]$2[>
+          @%:@endif]], [[]])],
+      [AS_VAR_SET($3, yes)],
+      [AS_VAR_SET($3, no)]))
+  AS_VAR_IF([$3], [yes], [dnl
+    printf "@%:@if %s\n" "$1" >>confdefs.h
+    AC_DEFINE_UNQUOTED(HAVE_[]AS_TR_CPP($2), 1)dnl
+    printf "@%:@endif\n" >>confdefs.h dnl
+  $4], [$5])
+])dnl
+dnl
+dnl RUBY_UNIVERSAL_CHECK_HEADER(CPU-LIST, HEADER,
+dnl                      [ACTION-IF-FOUND], [ACTION-IF-NOT-FOUND],
+dnl                      [INCLUDES = DEFAULT-INCLUDES])
+AC_DEFUN([RUBY_UNIVERSAL_CHECK_HEADER], [ dnl
+  m4_if([$# dnl
+  ], [0], [], [ dnl
+    m4_foreach([rb_Header], [$1],
+      [AS_CASE([",$target_archs,"], [*,]rb_Header[,*],
+        [RUBY_UNIVERSAL_CHECK_HEADER_COND]([defined(__[]rb_Header[]__)],
+          [$2], [rb_cv_header_[]AS_TR_SH($2)_on_[]AS_TR_SH(rb_Header)],
+          [$3], [$4], [$5])
+        )
+      ])
+  ])dnl
+])dnl

@@ -53,15 +53,12 @@ tcp_svr_init(int argc, VALUE *argv, VALUE sock)
  *
  */
 static VALUE
-tcp_accept(VALUE sock)
+tcp_accept(VALUE server)
 {
-    rb_io_t *fptr;
-    union_sockaddr from;
-    socklen_t fromlen;
+    union_sockaddr buffer;
+    socklen_t length = sizeof(buffer);
 
-    GetOpenFile(sock, fptr);
-    fromlen = (socklen_t)sizeof(from);
-    return rsock_s_accept(rb_cTCPSocket, fptr->fd, &from.addr, &fromlen);
+    return rsock_s_accept(rb_cTCPSocket, server, &buffer.addr, &length);
 }
 
 /* :nodoc: */
@@ -91,15 +88,12 @@ tcp_accept_nonblock(VALUE sock, VALUE ex)
  *
  */
 static VALUE
-tcp_sysaccept(VALUE sock)
+tcp_sysaccept(VALUE server)
 {
-    rb_io_t *fptr;
-    union_sockaddr from;
-    socklen_t fromlen;
+    union_sockaddr buffer;
+    socklen_t length = sizeof(buffer);
 
-    GetOpenFile(sock, fptr);
-    fromlen = (socklen_t)sizeof(from);
-    return rsock_s_accept(0, fptr->fd, &from.addr, &fromlen);
+    return rsock_s_accept(0, server, &buffer.addr, &length);
 }
 
 void

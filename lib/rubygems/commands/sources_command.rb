@@ -1,8 +1,8 @@
 # frozen_string_literal: true
-require 'rubygems/command'
-require 'rubygems/remote_fetcher'
-require 'rubygems/spec_fetcher'
-require 'rubygems/local_remote_options'
+require_relative '../command'
+require_relative '../remote_fetcher'
+require_relative '../spec_fetcher'
+require_relative '../local_remote_options'
 
 class Gem::Commands::SourcesCommand < Gem::Command
   include Gem::LocalRemoteOptions

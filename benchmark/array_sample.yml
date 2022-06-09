@@ -1,0 +1,4 @@
+prelude: ary = (1..10_000).to_a
+benchmark:
+  - ary.sample
+  - ary.sample(2)

@@ -10,8 +10,9 @@
 #
 #
 
-# :stopdoc:
 module IRB
+  # :stopdoc:
+
   class UnrecognizedSwitch < StandardError
     def initialize(val)
       super("Unrecognized switch: #{val}")
@@ -67,5 +68,6 @@ module IRB
       super("Define illegal RC_NAME_GENERATOR.")
     end
   end
+
+  # :startdoc:
 end
-# :startdoc:

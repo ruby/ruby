@@ -1,7 +1,6 @@
 #ifndef INTERNAL_VM_H                                    /*-*-C-*-vi:se ft=c:*/
 #define INTERNAL_VM_H
 /**
- * @file
  * @author     Ruby developers <ruby-core@ruby-lang.org>
  * @copyright  This  file  is   a  part  of  the   programming  language  Ruby.
  *             Permission  is hereby  granted,  to  either redistribute  and/or
@@ -48,7 +47,6 @@ VALUE rb_obj_is_thread(VALUE obj);
 void rb_vm_mark(void *ptr);
 void rb_vm_each_stack_value(void *ptr, void (*cb)(VALUE, void*), void *ctx);
 PUREFUNC(VALUE rb_vm_top_self(void));
-void rb_vm_inc_const_missing_count(void);
 const void **rb_vm_get_insns_address_table(void);
 VALUE rb_source_location(int *pline);
 const char *rb_source_location_cstr(int *pline);
@@ -97,6 +95,8 @@ MJIT_SYMBOL_EXPORT_BEGIN
 int rb_ec_obj_respond_to(struct rb_execution_context_struct *ec, VALUE obj, ID id, int priv);
 MJIT_SYMBOL_EXPORT_END
 
+void rb_clear_constant_cache(void);
+
 /* vm_dump.c */
 void rb_print_backtrace(void);
 
@@ -111,6 +111,9 @@ int rb_backtrace_p(VALUE obj);
 VALUE rb_backtrace_to_str_ary(VALUE obj);
 VALUE rb_backtrace_to_location_ary(VALUE obj);
 void rb_backtrace_each(VALUE (*iter)(VALUE recv, VALUE str), VALUE output);
+int rb_frame_info_p(VALUE obj);
+int rb_get_node_id_from_frame_info(VALUE obj);
+const struct rb_iseq_struct *rb_get_iseq_from_frame_info(VALUE obj);
 
 MJIT_SYMBOL_EXPORT_BEGIN
 VALUE rb_ec_backtrace_object(const struct rb_execution_context_struct *ec);

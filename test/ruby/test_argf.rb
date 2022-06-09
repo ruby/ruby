@@ -257,13 +257,13 @@ class TestArgf < Test::Unit::TestCase
 
   def test_inplace_nonascii
     ext = Encoding.default_external or
-      skip "no default external encoding"
+      omit "no default external encoding"
     t = nil
     ["\u{3042}", "\u{e9}"].any? do |n|
       t = make_tempfile(n.encode(ext))
     rescue Encoding::UndefinedConversionError
     end
-    t or skip "no name to test"
+    t or omit "no name to test"
     assert_in_out_err(["-i.bak", "-", t.path],
                       "#{<<~"{#"}\n#{<<~'};'}")
     {#
@@ -1109,5 +1109,24 @@ class TestArgf < Test::Unit::TestCase
       ARGV[0] = nil
       assert_raise(TypeError, bug11610) {gets}
     };
+  end
+
+  def test_sized_read
+    s = "a"
+    [@t1, @t2, @t3].each { |t|
+      File.binwrite(t.path, s)
+      s = s.succ
+    }
+
+    ruby('-e', "print ARGF.read(3)", @t1.path, @t2.path, @t3.path) do |f|
+      assert_equal("abc", f.read)
+    end
+
+    argf = ARGF.class.new(@t1.path, @t2.path, @t3.path)
+    begin
+      assert_equal("abc", argf.read(3))
+    ensure
+      argf.close
+    end
   end
 end

@@ -86,7 +86,7 @@ RSpec.describe "bundle lock" do
   it "does not fetch remote specs when using the --local option" do
     bundle "lock --update --local", :raise_on_error => false
 
-    expect(err).to match(/installed locally/)
+    expect(err).to match(/locally installed gems/)
   end
 
   it "works with --gemfile flag" do
@@ -157,9 +157,9 @@ RSpec.describe "bundle lock" do
       gem "rack_middleware", :group => "test"
     G
     bundle "config set without test"
-    bundle "config set path .bundle"
+    bundle "config set path vendor/bundle"
     bundle "lock"
-    expect(bundled_app(".bundle")).not_to exist
+    expect(bundled_app("vendor/bundle")).not_to exist
   end
 
   # see update_spec for more coverage on same options. logic is shared so it's not necessary
@@ -314,7 +314,7 @@ RSpec.describe "bundle lock" do
 
     simulate_platform(mingw) { bundle :lock }
 
-    lockfile_should_be <<-G
+    expect(lockfile).to eq <<~G
       GEM
         remote: #{file_uri_for(gem_repo4)}/
         specs:
@@ -337,9 +337,10 @@ RSpec.describe "bundle lock" do
          #{Bundler::VERSION}
     G
 
-    simulate_platform(rb) { bundle :lock }
+    bundle "config set --local force_ruby_platform true"
+    bundle :lock
 
-    lockfile_should_be <<-G
+    expect(lockfile).to eq <<~G
       GEM
         remote: #{file_uri_for(gem_repo4)}/
         specs:
@@ -426,7 +427,7 @@ RSpec.describe "bundle lock" do
 
     simulate_platform(Gem::Platform.new("x86_64-darwin")) { bundle "lock" }
 
-    lockfile_should_be <<-G
+    expect(lockfile).to eq <<~G
       GEM
         remote: #{file_uri_for(gem_repo4)}/
         specs:
@@ -492,22 +493,25 @@ RSpec.describe "bundle lock" do
   end
 
   it "does not conflict on ruby requirements when adding new platforms" do
-    next_minor = Gem.ruby_version.segments[0..1].map.with_index {|s, i| i == 1 ? s + 1 : s }.join(".")
-
     build_repo4 do
       build_gem "raygun-apm", "1.0.78" do |s|
         s.platform = "x86_64-linux"
-        s.required_ruby_version = "< #{next_minor}.dev"
+        s.required_ruby_version = "< #{next_ruby_minor}.dev"
       end
 
       build_gem "raygun-apm", "1.0.78" do |s|
         s.platform = "universal-darwin"
-        s.required_ruby_version = "< #{next_minor}.dev"
+        s.required_ruby_version = "< #{next_ruby_minor}.dev"
       end
 
       build_gem "raygun-apm", "1.0.78" do |s|
         s.platform = "x64-mingw32"
-        s.required_ruby_version = "< #{next_minor}.dev"
+        s.required_ruby_version = "< #{next_ruby_minor}.dev"
+      end
+
+      build_gem "raygun-apm", "1.0.78" do |s|
+        s.platform = "x64-mingw-ucrt"
+        s.required_ruby_version = "< #{next_ruby_minor}.dev"
       end
     end
 
@@ -533,7 +537,41 @@ RSpec.describe "bundle lock" do
          #{Bundler::VERSION}
     L
 
-    bundle "lock --add-platform x86_64-linux", :artifice => :compact_index, :env => { "BUNDLER_SPEC_GEM_REPO" => gem_repo4.to_s }
+    bundle "lock --add-platform x86_64-linux", :artifice => "compact_index", :env => { "BUNDLER_SPEC_GEM_REPO" => gem_repo4.to_s }
+  end
+
+  it "respects lower bound ruby requirements" do
+    skip "this spec does not work with prereleases because their version is actually lower than their reported `RUBY_VERSION`" if RUBY_PATCHLEVEL == -1
+
+    build_repo4 do
+      build_gem "our_private_gem", "0.1.0" do |s|
+        s.required_ruby_version = ">= #{RUBY_VERSION}"
+      end
+    end
+
+    gemfile <<-G
+      source "https://localgemserver.test"
+
+      gem "our_private_gem"
+    G
+
+    lockfile <<-L
+      GEM
+        remote: https://localgemserver.test/
+        specs:
+          our_private_gem (0.1.0)
+
+      PLATFORMS
+        #{lockfile_platforms}
+
+      DEPENDENCIES
+        our_private_gem
+
+      BUNDLED WITH
+         #{Bundler::VERSION}
+    L
+
+    bundle "install", :artifice => "compact_index", :env => { "BUNDLER_SPEC_GEM_REPO" => gem_repo4.to_s }
   end
 
   context "when an update is available" do

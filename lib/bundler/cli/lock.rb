@@ -21,9 +21,13 @@ module Bundler
       Bundler::Fetcher.disable_endpoint = options["full-index"]
 
       update = options[:update]
+      conservative = options[:conservative]
+
       if update.is_a?(Array) # unlocking specific gems
         Bundler::CLI::Common.ensure_all_gems_in_lockfile!(update)
-        update = { :gems => update, :lock_shared_dependencies => options[:conservative] }
+        update = { :gems => update, :conservative => conservative }
+      elsif update
+        update = { :conservative => conservative } if conservative
       end
       definition = Bundler.definition(update)
 

@@ -22,23 +22,22 @@ Gem::Specification.new do |spec|
   spec.homepage      = "https://github.com/ruby/etc"
   spec.licenses      = ["Ruby", "BSD-2-Clause"]
 
+  changelogs = Dir.glob("logs/ChangeLog-[1-9]*[^~]", base: __dir__)
   spec.files         = %w[
     LICENSE.txt
     README.md
+    ChangeLog
     ext/etc/constdefs.h
     ext/etc/etc.c
     ext/etc/extconf.rb
     ext/etc/mkconstants.rb
     test/etc/test_etc.rb
-  ]
+  ] + changelogs
+  spec.rdoc_options = ["--main", "README.md"]
+  spec.extra_rdoc_files = spec.files.grep_v(/\.{rb,[ch]}\z/)
   spec.bindir        = "exe"
   spec.require_paths = ["lib"]
   spec.extensions    = %w{ext/etc/extconf.rb}
 
-  spec.required_ruby_version = ">= 2.3.0"
-
-  spec.add_development_dependency "bundler"
-  spec.add_development_dependency "rake"
-  spec.add_development_dependency "rake-compiler"
-  spec.add_development_dependency "test-unit"
+  spec.required_ruby_version = ">= 2.6.0"
 end

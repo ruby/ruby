@@ -35,7 +35,7 @@ if defined?(WIN32OLE)
   class TestWIN32OLE_WITH_WORD < Test::Unit::TestCase
     unless word_installed?
       def test_dummy_for_skip_message
-        skip "Microsoft Word is not installed"
+        omit "Microsoft Word is not installed"
       end
     else
       def setup

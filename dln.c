@@ -15,14 +15,17 @@
 #define dln_memerror rb_memerror
 #define dln_exit rb_exit
 #define dln_loaderror rb_loaderror
+#define dln_fatalerror rb_fatal
 #else
 #define dln_notimplement --->>> dln not implemented <<<---
 #define dln_memerror abort
 #define dln_exit exit
 static void dln_loaderror(const char *format, ...);
+#define dln_fatalerror dln_loaderror
 #endif
 #include "dln.h"
 #include "internal.h"
+#include "internal/compilers.h"
 
 #ifdef HAVE_STDLIB_H
 # include <stdlib.h>
@@ -69,19 +72,6 @@ void *xrealloc();
 # include <unistd.h>
 #endif
 
-#ifndef _WIN32
-char *getenv();
-#endif
-
-#ifdef __APPLE__
-# if defined(HAVE_DLOPEN)
-   /* Mac OS X with dlopen (10.3 or later) */
-#  define MACOSX_DLOPEN
-# else
-#  define MACOSX_DYLD
-# endif
-#endif
-
 #ifndef dln_loaderror
 static void
 dln_loaderror(const char *format, ...)
@@ -94,12 +84,12 @@ dln_loaderror(const char *format, ...)
 }
 #endif
 
-#if defined(HAVE_DLOPEN) && !defined(_AIX) && !defined(MACOSX_DYLD) && !defined(_UNICOSMP)
+#if defined(HAVE_DLOPEN) && !defined(_AIX) && !defined(_UNICOSMP)
 /* dynamic load with dlopen() */
 # define USE_DLN_DLOPEN
 #endif
 
-#if defined(__hp9000s300) || ((defined(__NetBSD__) || defined(__FreeBSD__) || defined(__OpenBSD__)) && !defined(__ELF__)) || defined(NeXT) || defined(MACOSX_DYLD)
+#if defined(__hp9000s300) || ((defined(__NetBSD__) || defined(__FreeBSD__) || defined(__OpenBSD__)) && !defined(__ELF__)) || defined(NeXT)
 # define EXTERNAL_PREFIX "_"
 #else
 # define EXTERNAL_PREFIX ""
@@ -112,6 +102,7 @@ dln_loaderror(const char *format, ...)
 #define isdirsep(x) ((x) == '/')
 #endif
 
+#if defined(_WIN32) || defined(USE_DLN_DLOPEN)
 static size_t
 init_funcname_len(const char **file)
 {
@@ -142,14 +133,10 @@ static const char funcname_prefix[sizeof(FUNCNAME_PREFIX) - 1] = FUNCNAME_PREFIX
     tmp[plen+flen] = '\0';\
     *(buf) = tmp;\
 } while (0)
+#endif
 
 #ifdef USE_DLN_DLOPEN
 # include <dlfcn.h>
-#endif
-
-#ifdef __hpux
-#include <errno.h>
-#include "dl.h"
 #endif
 
 #if defined(_AIX)
@@ -166,10 +153,6 @@ static const char funcname_prefix[sizeof(FUNCNAME_PREFIX) - 1] = FUNCNAME_PREFIX
 #ifndef NSLINKMODULE_OPTION_BINDNOW
 #define NSLINKMODULE_OPTION_BINDNOW 1
 #endif
-#endif
-#else
-#ifdef MACOSX_DYLD
-#include <mach-o/dyld.h>
 #endif
 #endif
 
@@ -199,13 +182,11 @@ dln_strerror(char *message, size_t size)
     return message;
 }
 #define dln_strerror() dln_strerror(message, sizeof message)
-#elif ! defined _AIX
+#elif defined USE_DLN_DLOPEN
 static const char *
 dln_strerror(void)
 {
-#ifdef USE_DLN_DLOPEN
     return (char*)dlerror();
-#endif
 }
 #endif
 
@@ -284,42 +265,66 @@ rb_w32_check_imported(HMODULE ext, HMODULE mine)
 #ifdef USE_DLN_DLOPEN
 # include "ruby/internal/stdbool.h"
 # include "internal/warnings.h"
+static bool
+dln_incompatible_func(void *handle, const char *funcname, void *const fp, const char **libname)
+{
+    Dl_info dli;
+    void *ex = dlsym(handle, funcname);
+    if (!ex) return false;
+    if (ex == fp) return false;
+    if (dladdr(ex, &dli)) {
+	*libname = dli.dli_fname;
+    }
+    return true;
+}
+
 COMPILER_WARNING_PUSH
 #if defined(__clang__) || GCC_VERSION_SINCE(4, 2, 0)
 COMPILER_WARNING_IGNORED(-Wpedantic)
 #endif
 static bool
-dln_incompatible_library_p(void *handle)
+dln_incompatible_library_p(void *handle, const char **libname)
 {
-    void *ex = dlsym(handle, EXTERNAL_PREFIX"ruby_xmalloc");
-    void *const fp = (void *)ruby_xmalloc;
-    return ex && ex != fp;
+#define check_func(func) \
+    if (dln_incompatible_func(handle, EXTERNAL_PREFIX #func, (void *)&func, libname)) \
+	return true
+    check_func(ruby_xmalloc);
+    return false;
 }
 COMPILER_WARNING_POP
 #endif
 
-void*
-dln_load(const char *file)
+#if defined(MAC_OS_X_VERSION_MIN_REQUIRED) && \
+    (MAC_OS_X_VERSION_MIN_REQUIRED < MAC_OS_X_VERSION_10_11)
+# include <sys/sysctl.h>
+
+static bool
+dln_disable_dlclose(void)
 {
-#if (defined _WIN32 || defined USE_DLN_DLOPEN) && defined RUBY_EXPORT
+    int mib[] = {CTL_KERN, KERN_OSREV};
+    int32_t rev;
+    size_t size = sizeof(rev);
+    if (sysctl(mib, numberof(mib), &rev, &size, NULL, 0)) return true;
+    if (rev < MAC_OS_X_VERSION_10_11) return true;
+    return false;
+}
+#else
+# define dln_disable_dlclose() false
+#endif
+
+#if defined(_WIN32) || defined(USE_DLN_DLOPEN)
+static void *
+dln_open(const char *file)
+{
     static const char incompatible[] = "incompatible library version";
-#endif
-#if !defined(_AIX) && !defined(NeXT)
-    const char *error = 0;
-#endif
+    const char *error = NULL;
+    void *handle;
 
-#if defined _WIN32
-    HINSTANCE handle;
-    WCHAR *winfile;
+#if defined(_WIN32)
     char message[1024];
-    void (*init_fct)();
-    char *buf;
-
-    /* Load the file as an object one */
-    init_funcname(&buf, file);
 
     /* Convert the file path to wide char */
-    winfile = rb_w32_mbstr_to_wstr(CP_UTF8, file, -1, NULL);
+    WCHAR *winfile = rb_w32_mbstr_to_wstr(CP_UTF8, file, -1, NULL);
     if (!winfile) {
 	dln_memerror();
     }
@@ -333,112 +338,131 @@ dln_load(const char *file)
 	goto failed;
     }
 
-#if defined _WIN32 && defined RUBY_EXPORT
+# if defined(RUBY_EXPORT)
     if (!rb_w32_check_imported(handle, rb_libruby_handle())) {
 	FreeLibrary(handle);
 	error = incompatible;
 	goto failed;
     }
+# endif
+
+#elif defined(USE_DLN_DLOPEN)
+
+# ifndef RTLD_LAZY
+#  define RTLD_LAZY 1
+# endif
+# ifdef __INTERIX
+#  undef RTLD_GLOBAL
+# endif
+# ifndef RTLD_GLOBAL
+#  define RTLD_GLOBAL 0
+# endif
+
+    /* Load file */
+    handle = dlopen(file, RTLD_LAZY|RTLD_GLOBAL);
+    if (handle == NULL) {
+        error = dln_strerror();
+        goto failed;
+    }
+
+# if defined(RUBY_EXPORT)
+    {
+	const char *libruby_name = NULL;
+	if (dln_incompatible_library_p(handle, &libruby_name)) {
+	    if (dln_disable_dlclose()) {
+		/* dlclose() segfaults */
+		if (libruby_name) {
+		    dln_fatalerror("linked to incompatible %s - %s", libruby_name, file);
+		}
+		dln_fatalerror("%s - %s", incompatible, file);
+	    }
+	    else {
+		dlclose(handle);
+		if (libruby_name) {
+		    dln_loaderror("linked to incompatible %s - %s", libruby_name, file);
+		}
+		error = incompatible;
+		goto failed;
+	    }
+	}
+    }
+# endif
 #endif
 
-    if ((init_fct = (void(*)())GetProcAddress(handle, buf)) == NULL) {
-	dln_loaderror("%s - %s\n%s", dln_strerror(), buf, file);
+    return handle;
+
+  failed:
+    dln_loaderror("%s - %s", error, file);
+}
+
+static void *
+dln_sym(void *handle, const char *symbol)
+{
+    void *func;
+    const char *error;
+
+#if defined(_WIN32)
+    char message[1024];
+
+    func = GetProcAddress(handle, symbol);
+    if (func == NULL) {
+        error = dln_strerror();
+        goto failed;
     }
+
+#elif defined(USE_DLN_DLOPEN)
+    func = dlsym(handle, symbol);
+    if (func == NULL) {
+        const size_t errlen = strlen(error = dln_strerror()) + 1;
+        error = memcpy(ALLOCA_N(char, errlen), error, errlen);
+        goto failed;
+    }
+#endif
+
+    return func;
+
+  failed:
+    dln_loaderror("%s - %s", error, symbol);
+}
+#endif
+
+#if defined(RUBY_DLN_CHECK_ABI) && defined(USE_DLN_DLOPEN)
+static bool
+abi_check_enabled_p(void)
+{
+    const char *val = getenv("RUBY_ABI_CHECK");
+    return val == NULL || !(val[0] == '0' && val[1] == '\0');
+}
+#endif
+
+void *
+dln_load(const char *file)
+{
+#if defined(_WIN32) || defined(USE_DLN_DLOPEN)
+    void *handle = dln_open(file);
+
+#ifdef RUBY_DLN_CHECK_ABI
+    unsigned long long (*abi_version_fct)(void) = (unsigned long long(*)(void))dln_sym(handle, "ruby_abi_version");
+    unsigned long long binary_abi_version = (*abi_version_fct)();
+    if (binary_abi_version != ruby_abi_version() && abi_check_enabled_p()) {
+        dln_loaderror("ABI version of binary is incompatible with this Ruby. Try rebuilding this binary.");
+    }
+#endif
+
+    char *init_fct_name;
+    init_funcname(&init_fct_name, file);
+    void (*init_fct)(void) = (void(*)(void))dln_sym(handle, init_fct_name);
 
     /* Call the init code */
     (*init_fct)();
+
     return handle;
-#else
-    char *buf;
-    /* Load the file as an object one */
-    init_funcname(&buf, file);
-    translit_separator(file);
 
-#ifdef USE_DLN_DLOPEN
-#define DLN_DEFINED
+#elif defined(_AIX)
     {
-	void *handle;
-	void (*init_fct)();
+	void (*init_fct)(void);
 
-#ifndef RTLD_LAZY
-# define RTLD_LAZY 1
-#endif
-#ifdef __INTERIX
-# undef RTLD_GLOBAL
-#endif
-#ifndef RTLD_GLOBAL
-# define RTLD_GLOBAL 0
-#endif
-
-	/* Load file */
-	if ((handle = (void*)dlopen(file, RTLD_LAZY|RTLD_GLOBAL)) == NULL) {
-	    error = dln_strerror();
-	    goto failed;
-	}
-# if defined RUBY_EXPORT
-	{
-	    if (dln_incompatible_library_p(handle)) {
-
-#   if defined __APPLE__ && \
-    defined(MAC_OS_X_VERSION_MIN_REQUIRED) && \
-    (MAC_OS_X_VERSION_MIN_REQUIRED < MAC_OS_X_VERSION_10_11)
-		/* dlclose() segfaults */
-		rb_fatal("%s - %s", incompatible, file);
-#   else
-		dlclose(handle);
-		error = incompatible;
-		goto failed;
-#   endif
-	    }
-	}
-# endif
-
-	init_fct = (void(*)())(VALUE)dlsym(handle, buf);
-	if (init_fct == NULL) {
-	    const size_t errlen = strlen(error = dln_strerror()) + 1;
-	    error = memcpy(ALLOCA_N(char, errlen), error, errlen);
-	    dlclose(handle);
-	    goto failed;
-	}
-	/* Call the init code */
-	(*init_fct)();
-
-	return handle;
-    }
-#endif /* USE_DLN_DLOPEN */
-
-#ifdef __hpux
-#define DLN_DEFINED
-    {
-	shl_t lib = NULL;
-	int flags;
-	void (*init_fct)();
-
-	flags = BIND_DEFERRED;
-	lib = shl_load(file, flags, 0);
-	if (lib == NULL) {
-	    extern int errno;
-	    dln_loaderror("%s - %s", strerror(errno), file);
-	}
-	shl_findsym(&lib, buf, TYPE_PROCEDURE, (void*)&init_fct);
-	if (init_fct == NULL) {
-	    shl_findsym(&lib, buf, TYPE_UNDEFINED, (void*)&init_fct);
-	    if (init_fct == NULL) {
-		errno = ENOSYM;
-		dln_loaderror("%s - %s", strerror(ENOSYM), file);
-	    }
-	}
-	(*init_fct)();
-	return (void*)lib;
-    }
-#endif /* hpux */
-
-#if defined(_AIX)
-#define DLN_DEFINED
-    {
-	void (*init_fct)();
-
-	init_fct = (void(*)())load((char*)file, 1, 0);
+	init_fct = (void(*)(void))load((char*)file, 1, 0);
 	if (init_fct == NULL) {
 	    aix_loaderror(file);
 	}
@@ -448,55 +472,8 @@ dln_load(const char *file)
 	(*init_fct)();
 	return (void*)init_fct;
     }
-#endif /* _AIX */
-
-#if defined(MACOSX_DYLD)
-#define DLN_DEFINED
-/*----------------------------------------------------
-   By SHIROYAMA Takayuki Psi@fortune.nest.or.jp
-
-   Special Thanks...
-    Yu tomoak-i@is.aist-nara.ac.jp,
-    Mi hisho@tasihara.nest.or.jp,
-    sunshine@sunshineco.com,
-    and... Miss ARAI Akino(^^;)
- ----------------------------------------------------*/
-    {
-	int dyld_result;
-	NSObjectFileImage obj_file; /* handle, but not use it */
-	/* "file" is module file name .
-	   "buf" is pointer to initial function name with "_" . */
-
-	void (*init_fct)();
-
-
-	dyld_result = NSCreateObjectFileImageFromFile(file, &obj_file);
-
-	if (dyld_result != NSObjectFileImageSuccess) {
-	    dln_loaderror("Failed to load %.200s", file);
-	}
-
-	NSLinkModule(obj_file, file, NSLINKMODULE_OPTION_BINDNOW);
-
-	/* lookup the initial function */
-	if (!NSIsSymbolNameDefined(buf)) {
-	    dln_loaderror("Failed to lookup Init function %.200s",file);
-	}
-	init_fct = NSAddressOfSymbol(NSLookupAndBindSymbol(buf));
-	(*init_fct)();
-
-	return (void*)init_fct;
-    }
-#endif
-
-#ifndef DLN_DEFINED
+#else
     dln_notimplement();
-#endif
-
-#endif
-#if !defined(_AIX) && !defined(NeXT)
-  failed:
-    dln_loaderror("%s - %s", error, file);
 #endif
 
     return 0;			/* dummy return */

@@ -289,7 +289,7 @@ class RDoc::MethodAttr < RDoc::CodeObject
   # HTML id-friendly method/attribute name
 
   def html_name
-    require 'cgi'
+    require 'cgi/util'
 
     CGI.escape(@name.gsub('-', '-2D')).gsub('%','-').sub(/^-/, '')
   end

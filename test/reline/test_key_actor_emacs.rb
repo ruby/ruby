@@ -5,11 +5,16 @@ class Reline::KeyActor::Emacs::Test < Reline::TestCase
     Reline.send(:test_mode)
     @prompt = '> '
     @config = Reline::Config.new # Emacs mode is default
+    @config.autocompletion = false
     Reline::HISTORY.instance_variable_set(:@config, @config)
     Reline::HISTORY.clear
-    @encoding = (RELINE_TEST_ENCODING rescue Encoding.default_external)
+    @encoding = Reline::IOGate.encoding
     @line_editor = Reline::LineEditor.new(@config, @encoding)
     @line_editor.reset(@prompt, encoding: @encoding)
+  end
+
+  def teardown
+    Reline.test_reset
   end
 
   def test_ed_insert_one
@@ -250,31 +255,31 @@ class Reline::KeyActor::Emacs::Test < Reline::TestCase
   end
 
   def test_em_kill_line
-    input_keys("\C-u", false)
+    @line_editor.input_key(Reline::Key.new(:em_kill_line, :em_kill_line, false))
     assert_byte_pointer_size('')
     assert_cursor(0)
     assert_cursor_max(0)
     assert_line('')
     input_keys('abc')
-    assert_byte_pointer_size('abc')
-    assert_cursor(3)
-    assert_cursor_max(3)
-    input_keys("\C-u", false)
+    @line_editor.input_key(Reline::Key.new(:em_kill_line, :em_kill_line, false))
     assert_byte_pointer_size('')
     assert_cursor(0)
     assert_cursor_max(0)
     assert_line('')
     input_keys('abc')
-    input_keys("\C-b\C-u", false)
+    input_keys("\C-b", false)
+    @line_editor.input_key(Reline::Key.new(:em_kill_line, :em_kill_line, false))
     assert_byte_pointer_size('')
     assert_cursor(0)
-    assert_cursor_max(1)
-    assert_line('c')
-    input_keys("\C-u", false)
+    assert_cursor_max(0)
+    assert_line('')
+    input_keys('abc')
+    input_keys("\C-a", false)
+    @line_editor.input_key(Reline::Key.new(:em_kill_line, :em_kill_line, false))
     assert_byte_pointer_size('')
     assert_cursor(0)
-    assert_cursor_max(1)
-    assert_line('c')
+    assert_cursor_max(0)
+    assert_line('')
   end
 
   def test_ed_move_to_beg
@@ -2136,65 +2141,65 @@ class Reline::KeyActor::Emacs::Test < Reline::TestCase
   end
 
   # Unicode emoji test
-  if RELINE_TEST_ENCODING == Encoding::UTF_8
-    def test_ed_insert_for_include_zwj_emoji
-      # U+1F468 U+200D U+1F469 U+200D U+1F467 U+200D U+1F466 is family: man, woman, girl, boy "👨‍👩‍👧‍👦"
-      input_keys("\u{1F468}") # U+1F468 is man "👨"
-      assert_line("\u{1F468}")
-      assert_byte_pointer_size("\u{1F468}")
-      assert_cursor(2)
-      assert_cursor_max(2)
-      input_keys("\u200D") # U+200D is ZERO WIDTH JOINER
-      assert_line("\u{1F468 200D}")
-      assert_byte_pointer_size("\u{1F468 200D}")
-      assert_cursor(2)
-      assert_cursor_max(2)
-      input_keys("\u{1F469}") # U+1F469 is woman "👩"
-      assert_line("\u{1F468 200D 1F469}")
-      assert_byte_pointer_size("\u{1F468 200D 1F469}")
-      assert_cursor(2)
-      assert_cursor_max(2)
-      input_keys("\u200D") # U+200D is ZERO WIDTH JOINER
-      assert_line("\u{1F468 200D 1F469 200D}")
-      assert_byte_pointer_size("\u{1F468 200D 1F469 200D}")
-      assert_cursor(2)
-      assert_cursor_max(2)
-      input_keys("\u{1F467}") # U+1F467 is girl "👧"
-      assert_line("\u{1F468 200D 1F469 200D 1F467}")
-      assert_byte_pointer_size("\u{1F468 200D 1F469 200D 1F467}")
-      assert_cursor(2)
-      assert_cursor_max(2)
-      input_keys("\u200D") # U+200D is ZERO WIDTH JOINER
-      assert_line("\u{1F468 200D 1F469 200D 1F467 200D}")
-      assert_byte_pointer_size("\u{1F468 200D 1F469 200D 1F467 200D}")
-      assert_cursor(2)
-      assert_cursor_max(2)
-      input_keys("\u{1F466}") # U+1F466 is boy "👦"
-      assert_line("\u{1F468 200D 1F469 200D 1F467 200D 1F466}")
-      assert_byte_pointer_size("\u{1F468 200D 1F469 200D 1F467 200D 1F466}")
-      assert_cursor(2)
-      assert_cursor_max(2)
-      # U+1F468 U+200D U+1F469 U+200D U+1F467 U+200D U+1F466 is family: man, woman, girl, boy "👨‍👩‍👧‍👦"
-      input_keys("\u{1F468 200D 1F469 200D 1F467 200D 1F466}")
-      assert_line("\u{1F468 200D 1F469 200D 1F467 200D 1F466 1F468 200D 1F469 200D 1F467 200D 1F466}")
-      assert_byte_pointer_size("\u{1F468 200D 1F469 200D 1F467 200D 1F466 1F468 200D 1F469 200D 1F467 200D 1F466}")
-      assert_cursor(4)
-      assert_cursor_max(4)
-    end
+  def test_ed_insert_for_include_zwj_emoji
+    omit "This test is for UTF-8 but the locale is #{Reline::IOGate.encoding}" if Reline::IOGate.encoding != Encoding::UTF_8
+    # U+1F468 U+200D U+1F469 U+200D U+1F467 U+200D U+1F466 is family: man, woman, girl, boy "👨‍👩‍👧‍👦"
+    input_keys("\u{1F468}") # U+1F468 is man "👨"
+    assert_line("\u{1F468}")
+    assert_byte_pointer_size("\u{1F468}")
+    assert_cursor(2)
+    assert_cursor_max(2)
+    input_keys("\u200D") # U+200D is ZERO WIDTH JOINER
+    assert_line("\u{1F468 200D}")
+    assert_byte_pointer_size("\u{1F468 200D}")
+    assert_cursor(2)
+    assert_cursor_max(2)
+    input_keys("\u{1F469}") # U+1F469 is woman "👩"
+    assert_line("\u{1F468 200D 1F469}")
+    assert_byte_pointer_size("\u{1F468 200D 1F469}")
+    assert_cursor(2)
+    assert_cursor_max(2)
+    input_keys("\u200D") # U+200D is ZERO WIDTH JOINER
+    assert_line("\u{1F468 200D 1F469 200D}")
+    assert_byte_pointer_size("\u{1F468 200D 1F469 200D}")
+    assert_cursor(2)
+    assert_cursor_max(2)
+    input_keys("\u{1F467}") # U+1F467 is girl "👧"
+    assert_line("\u{1F468 200D 1F469 200D 1F467}")
+    assert_byte_pointer_size("\u{1F468 200D 1F469 200D 1F467}")
+    assert_cursor(2)
+    assert_cursor_max(2)
+    input_keys("\u200D") # U+200D is ZERO WIDTH JOINER
+    assert_line("\u{1F468 200D 1F469 200D 1F467 200D}")
+    assert_byte_pointer_size("\u{1F468 200D 1F469 200D 1F467 200D}")
+    assert_cursor(2)
+    assert_cursor_max(2)
+    input_keys("\u{1F466}") # U+1F466 is boy "👦"
+    assert_line("\u{1F468 200D 1F469 200D 1F467 200D 1F466}")
+    assert_byte_pointer_size("\u{1F468 200D 1F469 200D 1F467 200D 1F466}")
+    assert_cursor(2)
+    assert_cursor_max(2)
+    # U+1F468 U+200D U+1F469 U+200D U+1F467 U+200D U+1F466 is family: man, woman, girl, boy "👨‍👩‍👧‍👦"
+    input_keys("\u{1F468 200D 1F469 200D 1F467 200D 1F466}")
+    assert_line("\u{1F468 200D 1F469 200D 1F467 200D 1F466 1F468 200D 1F469 200D 1F467 200D 1F466}")
+    assert_byte_pointer_size("\u{1F468 200D 1F469 200D 1F467 200D 1F466 1F468 200D 1F469 200D 1F467 200D 1F466}")
+    assert_cursor(4)
+    assert_cursor_max(4)
+  end
 
-    def test_ed_insert_for_include_valiation_selector
-      # U+0030 U+FE00 is DIGIT ZERO + VARIATION SELECTOR-1 "0︀"
-      input_keys("\u0030") # U+0030 is DIGIT ZERO
-      assert_line("\u0030")
-      assert_byte_pointer_size("\u0030")
-      assert_cursor(1)
-      assert_cursor_max(1)
-      input_keys("\uFE00") # U+FE00 is VARIATION SELECTOR-1
-      assert_line("\u{0030 FE00}")
-      assert_byte_pointer_size("\u{0030 FE00}")
-      assert_cursor(1)
-      assert_cursor_max(1)
-    end
+  def test_ed_insert_for_include_valiation_selector
+    omit "This test is for UTF-8 but the locale is #{Reline::IOGate.encoding}" if Reline::IOGate.encoding != Encoding::UTF_8
+    # U+0030 U+FE00 is DIGIT ZERO + VARIATION SELECTOR-1 "0︀"
+    input_keys("\u0030") # U+0030 is DIGIT ZERO
+    assert_line("\u0030")
+    assert_byte_pointer_size("\u0030")
+    assert_cursor(1)
+    assert_cursor_max(1)
+    input_keys("\uFE00") # U+FE00 is VARIATION SELECTOR-1
+    assert_line("\u{0030 FE00}")
+    assert_byte_pointer_size("\u{0030 FE00}")
+    assert_cursor(1)
+    assert_cursor_max(1)
   end
 
   def test_em_yank_pop
@@ -2280,6 +2285,43 @@ class Reline::KeyActor::Emacs::Test < Reline::TestCase
     assert_line('  12345')
   end
 
+  def test_ignore_NUL_by_ed_quoted_insert
+    input_keys(%Q{"\C-v\C-@"}, false)
+    assert_byte_pointer_size('""')
+    assert_cursor(2)
+    assert_cursor_max(2)
+  end
+
+  def test_ed_argument_digit_by_meta_num
+    input_keys('abcdef')
+    assert_byte_pointer_size('abcdef')
+    assert_cursor(6)
+    assert_cursor_max(6)
+    assert_line('abcdef')
+    input_keys("\M-2", false)
+    input_keys("\C-h", false)
+    assert_byte_pointer_size('abcd')
+    assert_cursor(4)
+    assert_cursor_max(4)
+    assert_line('abcd')
+  end
+
+  def test_halfwidth_kana_width_dakuten
+    input_raw_keys('ｶﾞｷﾞｹﾞｺﾞ')
+    assert_byte_pointer_size('ｶﾞｷﾞｹﾞｺﾞ')
+    assert_cursor(8)
+    assert_cursor_max(8)
+    input_keys("\C-b\C-b", false)
+    assert_byte_pointer_size('ｶﾞｷﾞ')
+    assert_cursor(4)
+    assert_cursor_max(8)
+    input_raw_keys('ｸﾞ', false)
+    assert_byte_pointer_size('ｶﾞｷﾞｸﾞ')
+    assert_cursor(6)
+    assert_cursor_max(10)
+    assert_line('ｶﾞｷﾞｸﾞｹﾞｺﾞ')
+  end
+
   def test_input_unknown_char
     input_keys('͸') # U+0378 (unassigned)
     assert_line('͸')
@@ -2288,28 +2330,25 @@ class Reline::KeyActor::Emacs::Test < Reline::TestCase
     assert_cursor_max(1)
   end
 
-=begin # TODO: move KeyStroke instance from Reline to LineEditor
-  def test_key_delete
-    input_keys('ab')
-    assert_byte_pointer_size('ab')
-    assert_cursor(2)
-    assert_cursor_max(2)
-    assert_line('ab')
-    [27, 91, 51, 126].each do |key|
-      @line_editor.input_key(key)
-    end
-    assert_byte_pointer_size('ab')
-    assert_cursor(2)
-    assert_cursor_max(2)
-    assert_line('ab')
-    input_keys("\C-b")
-    [27, 91, 51, 126].each do |key|
-      @line_editor.input_key(key)
-    end
-    assert_byte_pointer_size('a')
-    assert_cursor(1)
+  def test_unix_line_discard
+    input_keys("\C-u", false)
+    assert_byte_pointer_size('')
+    assert_cursor(0)
+    assert_cursor_max(0)
+    assert_line('')
+    input_keys('abc')
+    assert_byte_pointer_size('abc')
+    assert_cursor(3)
+    assert_cursor_max(3)
+    input_keys("\C-b\C-u", false)
+    assert_byte_pointer_size('')
+    assert_cursor(0)
     assert_cursor_max(1)
-    assert_line('a')
+    assert_line('c')
+    input_keys("\C-f\C-u", false)
+    assert_byte_pointer_size('')
+    assert_cursor(0)
+    assert_cursor_max(0)
+    assert_line('')
   end
-=end
 end

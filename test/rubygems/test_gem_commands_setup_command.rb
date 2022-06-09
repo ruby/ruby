@@ -1,10 +1,10 @@
 # frozen_string_literal: true
 
-require 'rubygems/test_case'
+require_relative 'helper'
 require 'rubygems/commands/setup_command'
 
 class TestGemCommandsSetupCommand < Gem::TestCase
-  bundler_gemspec = File.expand_path("../../../bundler/lib/bundler/version.rb", __FILE__)
+  bundler_gemspec = File.expand_path('../../bundler/lib/bundler/version.rb', __dir__)
   if File.exist?(bundler_gemspec)
     BUNDLER_VERS = File.read(bundler_gemspec).match(/VERSION = "(#{Gem::Version::VERSION_PATTERN})"/)[1]
   else
@@ -14,14 +14,12 @@ class TestGemCommandsSetupCommand < Gem::TestCase
   def setup
     super
 
-    @install_dir = File.join @tempdir, 'install'
     @cmd = Gem::Commands::SetupCommand.new
-    @cmd.options[:prefix] = @install_dir
 
     filelist = %w[
       bin/gem
       lib/rubygems.rb
-      lib/rubygems/test_case.rb
+      lib/rubygems/requirement.rb
       lib/rubygems/ssl_certs/rubygems.org/foo.pem
       bundler/exe/bundle
       bundler/exe/bundler
@@ -158,8 +156,23 @@ class TestGemCommandsSetupCommand < Gem::TestCase
     assert_match %r{\A#!\s*#{bin_env}#{ruby_exec}}, File.read(gem_bin_path)
   end
 
+  def test_destdir_flag_does_not_try_to_write_to_the_default_gem_home
+    FileUtils.chmod "-w", File.join(@gemhome, "plugins")
+
+    destdir = File.join(@tempdir, 'foo')
+
+    @cmd.options[:destdir] = destdir
+    @cmd.execute
+
+    spec = Gem::Specification.load("bundler/bundler.gemspec")
+
+    spec.executables.each do |e|
+      assert_path_exist File.join destdir, @gemhome.gsub(/^[a-zA-Z]:/, ''), 'gems', spec.full_name, spec.bindir, e
+    end
+  end
+
   def test_files_in
-    assert_equal %w[rubygems.rb rubygems/ssl_certs/rubygems.org/foo.pem rubygems/test_case.rb],
+    assert_equal %w[rubygems.rb rubygems/requirement.rb rubygems/ssl_certs/rubygems.org/foo.pem],
                  @cmd.files_in('lib').sort
   end
 
@@ -169,14 +182,14 @@ class TestGemCommandsSetupCommand < Gem::TestCase
     Dir.mktmpdir 'lib' do |dir|
       @cmd.install_lib dir
 
-      assert_path_exists File.join(dir, 'rubygems.rb')
-      assert_path_exists File.join(dir, 'rubygems/ssl_certs/rubygems.org/foo.pem')
+      assert_path_exist File.join(dir, 'rubygems.rb')
+      assert_path_exist File.join(dir, 'rubygems/ssl_certs/rubygems.org/foo.pem')
 
-      assert_path_exists File.join(dir, 'bundler.rb')
-      assert_path_exists File.join(dir, 'bundler/b.rb')
+      assert_path_exist File.join(dir, 'bundler.rb')
+      assert_path_exist File.join(dir, 'bundler/b.rb')
 
-      assert_path_exists File.join(dir, 'bundler/templates/.circleci/config.yml') unless RUBY_ENGINE == "truffleruby" # https://github.com/oracle/truffleruby/issues/2116
-      assert_path_exists File.join(dir, 'bundler/templates/.travis.yml')
+      assert_path_exist File.join(dir, 'bundler/templates/.circleci/config.yml')
+      assert_path_exist File.join(dir, 'bundler/templates/.travis.yml')
     end
   end
 
@@ -192,27 +205,27 @@ class TestGemCommandsSetupCommand < Gem::TestCase
 
     spec.executables.each do |e|
       if Gem.win_platform?
-        assert_path_exists File.join(bin_dir, "#{e}.bat")
+        assert_path_exist File.join(bin_dir, "#{e}.bat")
       end
 
-      assert_path_exists File.join bin_dir, e
+      assert_path_exist File.join bin_dir, e
     end
 
     default_dir = Gem.default_specifications_dir
 
     # expect to remove other versions of bundler gemspecs on default specification directory.
-    refute_path_exists File.join(default_dir, "bundler-1.15.4.gemspec")
-    assert_path_exists File.join(default_dir, "bundler-#{BUNDLER_VERS}.gemspec")
+    assert_path_not_exist File.join(default_dir, "bundler-1.15.4.gemspec")
+    assert_path_exist File.join(default_dir, "bundler-#{BUNDLER_VERS}.gemspec")
 
     # expect to not remove bundler-* gemspecs.
-    assert_path_exists File.join(Gem.dir, "specifications", "bundler-audit-1.0.0.gemspec")
+    assert_path_exist File.join(Gem.dir, "specifications", "bundler-audit-1.0.0.gemspec")
 
     # expect to remove normal gem that was same version. because it's promoted default gems.
-    refute_path_exists File.join(Gem.dir, "specifications", "bundler-#{BUNDLER_VERS}.gemspec")
+    assert_path_not_exist File.join(Gem.dir, "specifications", "bundler-#{BUNDLER_VERS}.gemspec")
 
-    assert_path_exists "#{Gem.dir}/gems/bundler-#{BUNDLER_VERS}"
-    assert_path_exists "#{Gem.dir}/gems/bundler-1.15.4"
-    assert_path_exists "#{Gem.dir}/gems/bundler-audit-1.0.0"
+    assert_path_exist "#{Gem.dir}/gems/bundler-#{BUNDLER_VERS}"
+    assert_path_exist "#{Gem.dir}/gems/bundler-1.15.4"
+    assert_path_exist "#{Gem.dir}/gems/bundler-audit-1.0.0"
   end
 
   def test_install_default_bundler_gem_with_force_flag
@@ -227,27 +240,64 @@ class TestGemCommandsSetupCommand < Gem::TestCase
       f.puts 'echo "hello"'
     end
 
-    bindir(bin_dir) do
-      @cmd.options[:force] = true
+    @cmd.options[:force] = true
 
-      @cmd.install_default_bundler_gem bin_dir
+    @cmd.install_default_bundler_gem bin_dir
 
-      bundler_spec = Gem::Specification.load("bundler/bundler.gemspec")
-      default_spec_path = File.join(Gem.default_specifications_dir, "#{bundler_spec.full_name}.gemspec")
-      spec = Gem::Specification.load(default_spec_path)
+    bundler_spec = Gem::Specification.load("bundler/bundler.gemspec")
+    default_spec_path = File.join(Gem.default_specifications_dir, "#{bundler_spec.full_name}.gemspec")
+    spec = Gem::Specification.load(default_spec_path)
 
-      spec.executables.each do |e|
-        if Gem.win_platform?
-          assert_path_exists File.join(bin_dir, "#{e}.bat")
-        end
-
-        assert_path_exists File.join bin_dir, e
+    spec.executables.each do |e|
+      if Gem.win_platform?
+        assert_path_exist File.join(bin_dir, "#{e}.bat")
       end
+
+      assert_path_exist File.join bin_dir, e
+    end
+  end
+
+  def test_install_default_bundler_gem_with_destdir_flag
+    @cmd.extend FileUtils
+
+    FileUtils.chmod "-w", @gemhome
+
+    destdir = File.join(@tempdir, 'foo')
+    bin_dir = File.join(destdir, 'bin')
+
+    @cmd.options[:destdir] = destdir
+
+    @cmd.install_default_bundler_gem bin_dir
+
+    spec = Gem::Specification.load("bundler/bundler.gemspec")
+
+    spec.executables.each do |e|
+      assert_path_exist File.join destdir, @gemhome.gsub(/^[a-zA-Z]:/, ''), 'gems', spec.full_name, spec.bindir, e
+    end
+  ensure
+    FileUtils.chmod "+w", @gemhome
+  end
+
+  def test_install_default_bundler_gem_with_destdir_and_prefix_flags
+    @cmd.extend FileUtils
+
+    destdir = File.join(@tempdir, 'foo')
+    bin_dir = File.join(destdir, 'bin')
+
+    @cmd.options[:destdir] = destdir
+    @cmd.options[:prefix] = "/"
+
+    @cmd.install_default_bundler_gem bin_dir
+
+    spec = Gem::Specification.load("bundler/bundler.gemspec")
+
+    spec.executables.each do |e|
+      assert_path_exist File.join destdir, 'gems', spec.full_name, spec.bindir, e
     end
   end
 
   def test_remove_old_lib_files
-    lib                   = File.join @install_dir, 'lib'
+    lib                   = RbConfig::CONFIG["sitelibdir"]
     lib_rubygems          = File.join lib, 'rubygems'
     lib_bundler           = File.join lib, 'bundler'
     lib_rubygems_defaults = File.join lib_rubygems, 'defaults'
@@ -272,13 +322,13 @@ class TestGemCommandsSetupCommand < Gem::TestCase
 
     @cmd.remove_old_lib_files lib
 
-    files_that_go.each {|file| refute_path_exists(file) unless file == old_bundler_ci && RUBY_ENGINE == "truffleruby" } # https://github.com/oracle/truffleruby/issues/2116
+    files_that_go.each {|file| assert_path_not_exist(file) unless file == old_bundler_ci }
 
-    files_that_stay.each {|file| assert_path_exists file }
+    files_that_stay.each {|file| assert_path_exist file }
   end
 
   def test_remove_old_man_files
-    man = File.join @install_dir, 'man'
+    man = File.join RbConfig::CONFIG['mandir'], 'man'
 
     ruby_1             = File.join man, 'man1', 'ruby.1'
     bundle_b_1         = File.join man, 'man1', 'bundle-b.1'
@@ -295,9 +345,9 @@ class TestGemCommandsSetupCommand < Gem::TestCase
 
     @cmd.remove_old_man_files man
 
-    files_that_go.each {|file| refute_path_exists file }
+    files_that_go.each {|file| assert_path_not_exist file }
 
-    files_that_stay.each {|file| assert_path_exists file }
+    files_that_stay.each {|file| assert_path_exist file }
   end
 
   def test_show_release_notes
@@ -384,14 +434,14 @@ class TestGemCommandsSetupCommand < Gem::TestCase
   end
 
   def default_gem_bin_path
-    File.join @install_dir, 'bin', 'gem'
+    File.join RbConfig::CONFIG['bindir'], 'gem'
   end
 
   def default_bundle_bin_path
-    File.join @install_dir, 'bin', 'bundle'
+    File.join RbConfig::CONFIG['bindir'], 'bundle'
   end
 
   def default_bundler_bin_path
-    File.join @install_dir, 'bin', 'bundler'
+    File.join RbConfig::CONFIG['bindir'], 'bundler'
   end
 end unless Gem.java_platform?

@@ -299,6 +299,31 @@ class TestInteger < Test::Unit::TestCase
     end
   end
 
+  def test_times_bignum_redefine_plus_lt
+    assert_separately([], "#{<<-"begin;"}\n#{<<~"end;"}")
+    begin;
+      called = false
+      Integer.class_eval do
+        alias old_plus +
+        undef +
+        define_method(:+){|x| called = true; 1}
+        alias old_lt <
+        undef <
+        define_method(:<){|x| called = true}
+      end
+      big = 2**65
+      big.times{break 0}
+      Integer.class_eval do
+        undef +
+        alias + old_plus
+        undef <
+        alias < old_lt
+      end
+      bug18377 = "[ruby-core:106361]"
+      assert_equal(false, called, bug18377)
+    end;
+  end
+
   def assert_int_equal(expected, result, mesg = nil)
     assert_kind_of(Integer, result, mesg)
     assert_equal(expected, result, mesg)
@@ -576,6 +601,8 @@ class TestInteger < Test::Unit::TestCase
     assert_equal([0, 9, 8, 7, 6, 5, 4, 3, 2, 1], 1234567890.digits)
     assert_equal([90, 78, 56, 34, 12], 1234567890.digits(100))
     assert_equal([10, 5, 6, 8, 0, 10, 8, 6, 1], 1234567890.digits(13))
+    assert_equal((2 ** 1024).to_s(7).chars.map(&:to_i).reverse, (2 ** 1024).digits(7))
+    assert_equal([0] * 100 + [1], (2 ** (128 * 100)).digits(2 ** 128))
   end
 
   def test_digits_for_negative_numbers
@@ -659,5 +686,22 @@ class TestInteger < Test::Unit::TestCase
     def o.coerce(x); [self, x]; end
     def o.fdiv(x); 1; end
     assert_equal(1.0, 1.fdiv(o))
+  end
+
+  def test_try_convert
+    assert_equal(1, Integer.try_convert(1))
+    assert_equal(1, Integer.try_convert(1.0))
+    assert_nil Integer.try_convert("1")
+    o = Object.new
+    assert_nil Integer.try_convert(o)
+    def o.to_i; 1; end
+    assert_nil Integer.try_convert(o)
+    o = Object.new
+    def o.to_int; 1; end
+    assert_equal(1, Integer.try_convert(o))
+
+    o = Object.new
+    def o.to_int; Object.new; end
+    assert_raise_with_message(TypeError, /can't convert Object to Integer/) {Integer.try_convert(o)}
   end
 end

@@ -47,6 +47,7 @@ module TestIRB
       @default_encoding = [Encoding.default_external, Encoding.default_internal]
       @stdio_encodings = [STDIN, STDOUT, STDERR].map {|io| [io.external_encoding, io.internal_encoding] }
       IRB.instance_variable_get(:@CONF).clear
+      @is_win = (RbConfig::CONFIG['host_os'] =~ /mswin|msys|mingw|cygwin|bccwin|wince|emc/)
     end
 
     def teardown
@@ -69,17 +70,24 @@ module TestIRB
       IRB.conf[:USE_MULTILINE] = true
       IRB.conf[:USE_SINGLELINE] = false
       IRB.conf[:VERBOSE] = false
+      lang_backup = ENV.delete("LANG")
+      lc_all_backup = ENV.delete("LC_ALL")
       workspace = IRB::WorkSpace.new(self)
       irb = IRB::Irb.new(workspace, TestInputMethod.new([]))
       IRB.conf[:MAIN_CONTEXT] = irb.context
       expected = %r{
-        Ruby\sversion: .+\n
-        IRB\sversion:\sirb .+\n
+        Ruby\sversion:\s.+\n
+        IRB\sversion:\sirb\s.+\n
         InputMethod:\sAbstract\sInputMethod\n
-        \.irbrc\spath: .+\n
-        RUBY_PLATFORM: .+
+        \.irbrc\spath:\s.+\n
+        RUBY_PLATFORM:\s.+\n
+        East\sAsian\sAmbiguous\sWidth:\s\d\n
+        #{@is_win ? 'Code\spage:\s\d+\n' : ''}
       }x
       assert_match expected, irb.context.main.irb_info.to_s
+    ensure
+      ENV["LANG"] = lang_backup
+      ENV["LC_ALL"] = lc_all_backup
     end
 
     def test_irb_info_singleline
@@ -89,17 +97,24 @@ module TestIRB
       IRB.conf[:USE_MULTILINE] = false
       IRB.conf[:USE_SINGLELINE] = true
       IRB.conf[:VERBOSE] = false
+      lang_backup = ENV.delete("LANG")
+      lc_all_backup = ENV.delete("LC_ALL")
       workspace = IRB::WorkSpace.new(self)
       irb = IRB::Irb.new(workspace, TestInputMethod.new([]))
       IRB.conf[:MAIN_CONTEXT] = irb.context
       expected = %r{
-        Ruby\sversion: .+\n
-        IRB\sversion:\sirb .+\n
+        Ruby\sversion:\s.+\n
+        IRB\sversion:\sirb\s.+\n
         InputMethod:\sAbstract\sInputMethod\n
-        \.irbrc\spath: .+\n
-        RUBY_PLATFORM: .+
+        \.irbrc\spath:\s.+\n
+        RUBY_PLATFORM:\s.+\n
+        East\sAsian\sAmbiguous\sWidth:\s\d\n
+        #{@is_win ? 'Code\spage:\s\d+\n' : ''}
       }x
       assert_match expected, irb.context.main.irb_info.to_s
+    ensure
+      ENV["LANG"] = lang_backup
+      ENV["LC_ALL"] = lc_all_backup
     end
 
     def test_irb_info_multiline_without_rc_files
@@ -112,14 +127,18 @@ module TestIRB
       IRB.conf[:USE_MULTILINE] = true
       IRB.conf[:USE_SINGLELINE] = false
       IRB.conf[:VERBOSE] = false
+      lang_backup = ENV.delete("LANG")
+      lc_all_backup = ENV.delete("LC_ALL")
       workspace = IRB::WorkSpace.new(self)
       irb = IRB::Irb.new(workspace, TestInputMethod.new([]))
       IRB.conf[:MAIN_CONTEXT] = irb.context
       expected = %r{
-        Ruby\sversion: .+\n
-        IRB\sversion:\sirb .+\n
+        Ruby\sversion:\s.+\n
+        IRB\sversion:\sirb\s.+\n
         InputMethod:\sAbstract\sInputMethod\n
-        RUBY_PLATFORM: .+\n
+        RUBY_PLATFORM:\s.+\n
+        East\sAsian\sAmbiguous\sWidth:\s\d\n
+        #{@is_win ? 'Code\spage:\s\d+\n' : ''}
         \z
       }x
       assert_match expected, irb.context.main.irb_info.to_s
@@ -127,6 +146,8 @@ module TestIRB
       ENV["INPUTRC"] = inputrc_backup
       IRB.__send__(:remove_const, :IRBRC_EXT)
       IRB.const_set(:IRBRC_EXT, ext_backup)
+      ENV["LANG"] = lang_backup
+      ENV["LC_ALL"] = lc_all_backup
     end
 
     def test_irb_info_singleline_without_rc_files
@@ -139,14 +160,18 @@ module TestIRB
       IRB.conf[:USE_MULTILINE] = false
       IRB.conf[:USE_SINGLELINE] = true
       IRB.conf[:VERBOSE] = false
+      lang_backup = ENV.delete("LANG")
+      lc_all_backup = ENV.delete("LC_ALL")
       workspace = IRB::WorkSpace.new(self)
       irb = IRB::Irb.new(workspace, TestInputMethod.new([]))
       IRB.conf[:MAIN_CONTEXT] = irb.context
       expected = %r{
-        Ruby\sversion: .+\n
-        IRB\sversion:\sirb .+\n
+        Ruby\sversion:\s.+\n
+        IRB\sversion:\sirb\s.+\n
         InputMethod:\sAbstract\sInputMethod\n
-        RUBY_PLATFORM: .+\n
+        RUBY_PLATFORM:\s.+\n
+        East\sAsian\sAmbiguous\sWidth:\s\d\n
+        #{@is_win ? 'Code\spage:\s\d+\n' : ''}
         \z
       }x
       assert_match expected, irb.context.main.irb_info.to_s
@@ -154,6 +179,38 @@ module TestIRB
       ENV["INPUTRC"] = inputrc_backup
       IRB.__send__(:remove_const, :IRBRC_EXT)
       IRB.const_set(:IRBRC_EXT, ext_backup)
+      ENV["LANG"] = lang_backup
+      ENV["LC_ALL"] = lc_all_backup
+    end
+
+    def test_irb_info_lang
+      FileUtils.touch("#{@tmpdir}/.inputrc")
+      FileUtils.touch("#{@tmpdir}/.irbrc")
+      IRB.setup(__FILE__, argv: [])
+      IRB.conf[:USE_MULTILINE] = true
+      IRB.conf[:USE_SINGLELINE] = false
+      IRB.conf[:VERBOSE] = false
+      lang_backup = ENV.delete("LANG")
+      lc_all_backup = ENV.delete("LC_ALL")
+      ENV["LANG"] = "ja_JP.UTF-8"
+      ENV["LC_ALL"] = "en_US.UTF-8"
+      workspace = IRB::WorkSpace.new(self)
+      irb = IRB::Irb.new(workspace, TestInputMethod.new([]))
+      IRB.conf[:MAIN_CONTEXT] = irb.context
+      expected = %r{
+        Ruby\sversion: .+\n
+        IRB\sversion:\sirb .+\n
+        InputMethod:\sAbstract\sInputMethod\n
+        \.irbrc\spath: .+\n
+        RUBY_PLATFORM: .+\n
+        LANG\senv:\sja_JP\.UTF-8\n
+        LC_ALL\senv:\sen_US\.UTF-8\n
+        East\sAsian\sAmbiguous\sWidth:\s\d\n
+      }x
+      assert_match expected, irb.context.main.irb_info.to_s
+    ensure
+      ENV["LANG"] = lang_backup
+      ENV["LC_ALL"] = lc_all_backup
     end
 
     def test_measure
@@ -377,7 +434,31 @@ module TestIRB
 
     def test_ls
       input = TestInputMethod.new([
-        "ls Object.new.tap { |o| o.instance_variable_set(:@a, 1) }\n",
+        "class P\n",
+        "  def m() end\n",
+        "  def m2() end\n",
+        "end\n",
+
+        "class C < P\n",
+        "  def m1() end\n",
+        "  def m2() end\n",
+        "end\n",
+
+        "module M\n",
+        "  def m1() end\n",
+        "  def m3() end\n",
+        "end\n",
+
+        "module M2\n",
+        "  include M\n",
+        "  def m4() end\n",
+        "end\n",
+
+        "obj = C.new\n",
+        "obj.instance_variable_set(:@a, 1)\n",
+        "obj.extend M2\n",
+        "def obj.m5() end\n",
+        "ls obj\n",
       ])
       IRB.init_config(nil)
       workspace = IRB::WorkSpace.new(self)
@@ -390,6 +471,30 @@ module TestIRB
       end
       assert_empty err
       assert_match(/^instance variables:\s+@a\n/m, out)
+      assert_match(/P#methods:\s+m\n/m, out)
+      assert_match(/C#methods:\s+m2\n/m, out)
+      assert_match(/M#methods:\s+m1\s+m3\n/m, out)
+      assert_match(/M2#methods:\s+m4\n/m, out)
+      assert_match(/C.methods:\s+m5\n/m, out)
+    end
+
+    def test_ls_with_no_singleton_class
+      input = TestInputMethod.new([
+        "ls 42",
+      ])
+      IRB.init_config(nil)
+      workspace = IRB::WorkSpace.new(self)
+      IRB.conf[:VERBOSE] = false
+      irb = IRB::Irb.new(workspace, input)
+      IRB.conf[:MAIN_CONTEXT] = irb.context
+      irb.context.return_format = "=> %s\n"
+      out, err = capture_output do
+        irb.eval_input
+      end
+      assert_empty err
+      assert_match(/Comparable#methods:\s+/, out)
+      assert_match(/Numeric#methods:\s+/, out)
+      assert_match(/Integer#methods:\s+/, out)
     end
 
     def test_show_source
@@ -407,6 +512,30 @@ module TestIRB
       end
       assert_empty err
       assert_match(%r[/irb\.rb], out)
+    end
+
+    def test_show_source_end_finder
+      pend if RUBY_ENGINE == 'truffleruby'
+      eval(code = <<-EOS, binding, __FILE__, __LINE__ + 1)
+        def show_source_test_method
+          unless true
+          end
+        end
+      EOS
+      input = TestInputMethod.new([
+        "show_source 'TestIRB::ExtendCommand#show_source_test_method'\n",
+      ])
+      IRB.init_config(nil)
+      workspace = IRB::WorkSpace.new(self)
+      IRB.conf[:VERBOSE] = false
+      irb = IRB::Irb.new(workspace, input)
+      IRB.conf[:MAIN_CONTEXT] = irb.context
+      irb.context.return_format = "=> %s\n"
+      out, err = capture_output do
+        irb.eval_input
+      end
+      assert_empty err
+      assert_include(out, code)
     end
 
     def test_whereami

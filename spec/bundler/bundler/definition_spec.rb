@@ -59,7 +59,7 @@ RSpec.describe Bundler::Definition do
       bundle :install, :env => { "DEBUG" => "1" }
 
       expect(out).to match(/re-resolving dependencies/)
-      lockfile_should_be <<-G
+      expect(lockfile).to eq <<~G
         PATH
           remote: #{lib_path("foo")}
           specs:
@@ -96,7 +96,7 @@ RSpec.describe Bundler::Definition do
       bundle :check, :env => { "DEBUG" => "1" }
 
       expect(out).to match(/using resolution from the lockfile/)
-      lockfile_should_be <<-G
+      expect(lockfile).to eq <<~G
         PATH
           remote: #{lib_path("foo")}
           specs:
@@ -129,15 +129,14 @@ RSpec.describe Bundler::Definition do
       bundle :check, :env => { "DEBUG" => "1" }
 
       expect(out).to match(/using resolution from the lockfile/)
-      lockfile_should_be <<-G
+      expect(lockfile).to eq <<~G
         GEM
           remote: #{file_uri_for(gem_repo1)}/
           specs:
             only_java (1.1-java)
 
         PLATFORMS
-          java
-          #{lockfile_platforms}
+          #{lockfile_platforms_for(["java"] + local_platforms)}
 
         DEPENDENCIES
           only_java
@@ -156,7 +155,7 @@ RSpec.describe Bundler::Definition do
       bundle :check, :env => { "DEBUG" => "1" }
 
       expect(out).to match(/using resolution from the lockfile/)
-      lockfile_should_be <<-G
+      expect(lockfile).to eq <<~G
         GEM
           remote: #{file_uri_for(gem_repo1)}/
           specs:
@@ -204,7 +203,7 @@ RSpec.describe Bundler::Definition do
       context "eager unlock" do
         let(:source_list) do
           Bundler::SourceList.new.tap do |source_list|
-            source_list.global_rubygems_source = file_uri_for(gem_repo4)
+            source_list.add_global_rubygems_remote(file_uri_for(gem_repo4))
           end
         end
 
@@ -268,7 +267,7 @@ RSpec.describe Bundler::Definition do
             bundled_app_lock,
             updated_deps_in_gemfile,
             source_list,
-            :gems => ["shared_owner_a"], :lock_shared_dependencies => true
+            :gems => ["shared_owner_a"], :conservative => true
           )
           locked = definition.send(:converge_locked_specs).map(&:name)
           expect(locked).to eq %w[isolated_dep isolated_owner shared_dep shared_owner_b]
@@ -276,33 +275,6 @@ RSpec.describe Bundler::Definition do
         end
       end
     end
-  end
-
-  describe "find_resolved_spec" do
-    it "with no platform set in SpecSet" do
-      ss = Bundler::SpecSet.new([build_stub_spec("a", "1.0"), build_stub_spec("b", "1.0")])
-      dfn = Bundler::Definition.new(nil, [], mock_source_list, true)
-      dfn.instance_variable_set("@specs", ss)
-      found = dfn.find_resolved_spec(build_spec("a", "0.9", "ruby").first)
-      expect(found.name).to eq "a"
-      expect(found.version.to_s).to eq "1.0"
-    end
-  end
-
-  describe "find_indexed_specs" do
-    it "with no platform set in indexed specs" do
-      index = Bundler::Index.new
-      %w[1.0.0 1.0.1 1.1.0].each {|v| index << build_stub_spec("foo", v) }
-
-      dfn = Bundler::Definition.new(nil, [], mock_source_list, true)
-      dfn.instance_variable_set("@index", index)
-      found = dfn.find_indexed_specs(build_spec("foo", "0.9", "ruby").first)
-      expect(found.length).to eq 3
-    end
-  end
-
-  def build_stub_spec(name, version)
-    Bundler::StubSpecification.new(name, version, nil, nil)
   end
 
   def mock_source_list

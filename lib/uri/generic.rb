@@ -564,14 +564,24 @@ module URI
       end
     end
 
-    # Returns the user component.
+    # Returns the user component (without URI decoding).
     def user
       @user
     end
 
-    # Returns the password component.
+    # Returns the password component (without URI decoding).
     def password
       @password
+    end
+
+    # Returns the user component after URI decoding.
+    def decoded_user
+      URI.decode_uri_component(@user) if @user
+    end
+
+    # Returns the password component after URI decoding.
+    def decoded_password
+      URI.decode_uri_component(@password) if @password
     end
 
     #

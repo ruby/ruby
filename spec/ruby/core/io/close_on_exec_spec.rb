@@ -44,10 +44,6 @@ describe "IO#close_on_exec=" do
       @io.close
       -> { @io.close_on_exec = true }.should raise_error(IOError)
     end
-
-    it "returns nil" do
-      @io.send(:close_on_exec=, true).should be_nil
-    end
   end
 end
 

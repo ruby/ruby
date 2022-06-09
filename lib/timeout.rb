@@ -1,4 +1,4 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 # Timeout long-running blocks
 #
 # == Synopsis
@@ -23,7 +23,7 @@
 # Copyright:: (C) 2000  Information-technology Promotion Agency, Japan
 
 module Timeout
-  VERSION = "0.1.1"
+  VERSION = "0.3.0"
 
   # Raised by Timeout.timeout when the block times out.
   class Error < RuntimeError
@@ -32,6 +32,7 @@ module Timeout
     def self.catch(*args)
       exc = new(*args)
       exc.instance_variable_set(:@thread, Thread.current)
+      exc.instance_variable_set(:@catch_value, exc)
       ::Kernel.catch(exc) {yield exc}
     end
 
@@ -40,18 +41,99 @@ module Timeout
       if self.thread == Thread.current
         bt = caller
         begin
-          throw(self, bt)
+          throw(@catch_value, bt)
         rescue UncaughtThrowError
         end
       end
-      self
+      super
     end
   end
 
   # :stopdoc:
-  THIS_FILE = /\A#{Regexp.quote(__FILE__)}:/o
-  CALLER_OFFSET = ((c = caller[0]) && THIS_FILE =~ c) ? 1 : 0
-  private_constant :THIS_FILE, :CALLER_OFFSET
+  CONDVAR = ConditionVariable.new
+  QUEUE = Queue.new
+  QUEUE_MUTEX = Mutex.new
+  TIMEOUT_THREAD_MUTEX = Mutex.new
+  @timeout_thread = nil
+  private_constant :CONDVAR, :QUEUE, :QUEUE_MUTEX, :TIMEOUT_THREAD_MUTEX
+
+  class Request
+    attr_reader :deadline
+
+    def initialize(thread, timeout, exception_class, message)
+      @thread = thread
+      @deadline = Process.clock_gettime(Process::CLOCK_MONOTONIC) + timeout
+      @exception_class = exception_class
+      @message = message
+
+      @mutex = Mutex.new
+      @done = false # protected by @mutex
+    end
+
+    def done?
+      @mutex.synchronize do
+        @done
+      end
+    end
+
+    def expired?(now)
+      now >= @deadline
+    end
+
+    def interrupt
+      @mutex.synchronize do
+        unless @done
+          @thread.raise @exception_class, @message
+          @done = true
+        end
+      end
+    end
+
+    def finished
+      @mutex.synchronize do
+        @done = true
+      end
+    end
+  end
+  private_constant :Request
+
+  def self.create_timeout_thread
+    watcher = Thread.new do
+      requests = []
+      while true
+        until QUEUE.empty? and !requests.empty? # wait to have at least one request
+          req = QUEUE.pop
+          requests << req unless req.done?
+        end
+        closest_deadline = requests.min_by(&:deadline).deadline
+
+        now = 0.0
+        QUEUE_MUTEX.synchronize do
+          while (now = Process.clock_gettime(Process::CLOCK_MONOTONIC)) < closest_deadline and QUEUE.empty?
+            CONDVAR.wait(QUEUE_MUTEX, closest_deadline - now)
+          end
+        end
+
+        requests.each do |req|
+          req.interrupt if req.expired?(now)
+        end
+        requests.reject!(&:done?)
+      end
+    end
+    watcher.thread_variable_set(:"\0__detached_thread__", true)
+    watcher
+  end
+  private_class_method :create_timeout_thread
+
+  def self.ensure_timeout_thread_created
+    unless @timeout_thread and @timeout_thread.alive?
+      TIMEOUT_THREAD_MUTEX.synchronize do
+        unless @timeout_thread and @timeout_thread.alive?
+          @timeout_thread = create_timeout_thread
+        end
+      end
+    end
+  end
   # :startdoc:
 
   # Perform an operation in a block, raising an error if it takes longer than
@@ -82,50 +164,32 @@ module Timeout
   def timeout(sec, klass = nil, message = nil, &block)   #:yield: +sec+
     return yield(sec) if sec == nil or sec.zero?
 
-    message ||= "execution expired".freeze
+    message ||= "execution expired"
 
-    if (scheduler = Fiber.current_scheduler)&.respond_to?(:timeout_after)
+    if Fiber.respond_to?(:current_scheduler) && (scheduler = Fiber.current_scheduler)&.respond_to?(:timeout_after)
       return scheduler.timeout_after(sec, klass || Error, message, &block)
     end
 
-    from = "from #{caller_locations(1, 1)[0]}" if $DEBUG
-    e = Error
-    bl = proc do |exception|
+    Timeout.ensure_timeout_thread_created
+    perform = Proc.new do |exc|
+      request = Request.new(Thread.current, sec, exc, message)
+      QUEUE_MUTEX.synchronize do
+        QUEUE << request
+        CONDVAR.signal
+      end
       begin
-        x = Thread.current
-        y = Thread.start {
-          Thread.current.name = from
-          begin
-            sleep sec
-          rescue => e
-            x.raise e
-          else
-            x.raise exception, message
-          end
-        }
         return yield(sec)
       ensure
-        if y
-          y.kill
-          y.join # make sure y is dead.
-        end
+        request.finished
       end
     end
-    if klass
-      begin
-        bl.call(klass)
-      rescue klass => e
-        bt = e.backtrace
-      end
-    else
-      bt = Error.catch(message, &bl)
-    end
-    level = -caller(CALLER_OFFSET).size-2
-    while THIS_FILE =~ bt[level]
-      bt.delete_at(level)
-    end
-    raise(e, message, bt)
-  end
 
+    if klass
+      perform.call(klass)
+    else
+      backtrace = Error.catch(&perform)
+      raise Error, message, backtrace
+    end
+  end
   module_function :timeout
 end

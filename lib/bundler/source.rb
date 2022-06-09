@@ -7,6 +7,7 @@ module Bundler
     autoload :Metadata, File.expand_path("source/metadata", __dir__)
     autoload :Path,     File.expand_path("source/path", __dir__)
     autoload :Rubygems, File.expand_path("source/rubygems", __dir__)
+    autoload :RubygemsAggregate, File.expand_path("source/rubygems_aggregate", __dir__)
 
     attr_accessor :dependency_names
 
@@ -14,13 +15,12 @@ module Bundler
       specs.unmet_dependency_names
     end
 
-    def version_message(spec)
+    def version_message(spec, locked_spec = nil)
       message = "#{spec.name} #{spec.version}"
       message += " (#{spec.platform})" if spec.platform != Gem::Platform::RUBY && !spec.platform.nil?
 
-      if Bundler.locked_gems
-        locked_spec = Bundler.locked_gems.specs.find {|s| s.name == spec.name }
-        locked_spec_version = locked_spec.version if locked_spec
+      if locked_spec
+        locked_spec_version = locked_spec.version
         if locked_spec_version && spec.version != locked_spec_version
           message += Bundler.ui.add_color(" (was #{locked_spec_version})", version_color(spec.version, locked_spec_version))
         end
@@ -35,9 +35,15 @@ module Bundler
 
     def local!; end
 
+    def local_only!; end
+
     def cached!; end
 
     def remote!; end
+
+    def add_dependency_names(names)
+      @dependency_names = Array(dependency_names) | Array(names)
+    end
 
     # it's possible that gems from one source depend on gems from some
     # other source, so now we download gemspecs and iterate over those
@@ -48,12 +54,20 @@ module Bundler
       specs.dependency_names
     end
 
+    def spec_names
+      specs.spec_names
+    end
+
     def include?(other)
       other == self
     end
 
     def inspect
       "#<#{self.class}:0x#{object_id} #{self}>"
+    end
+
+    def identifier
+      to_s
     end
 
     def path?

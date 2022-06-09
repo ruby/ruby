@@ -32,12 +32,14 @@ describe "ruby -U" do
   it "raises a RuntimeError if used with -Eext:int" do
     ruby_exe("p 1",
              options: '-U -Eascii:ascii',
-             args: '2>&1').should =~ /RuntimeError/
+             args: '2>&1',
+             exit_status: 1).should =~ /RuntimeError/
   end
 
   it "raises a RuntimeError if used with -E:int" do
     ruby_exe("p 1",
              options: '-U -E:ascii',
-             args: '2>&1').should =~ /RuntimeError/
+             args: '2>&1',
+             exit_status: 1).should =~ /RuntimeError/
   end
 end

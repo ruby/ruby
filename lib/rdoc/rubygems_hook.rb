@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 require 'rubygems/user_interaction'
 require 'fileutils'
-require 'rdoc'
+require_relative '../rdoc'
 
 ##
 # Gem::RDoc provides methods to generate RDoc and ri data for installed gems
@@ -120,7 +120,9 @@ class RDoc::RubygemsHook
     options.exclude ||= [] # TODO maybe move to RDoc::Options#finish
     options.setup_generator generator
     options.op_dir = destination
-    options.finish
+    Dir.chdir @spec.full_gem_path do
+      options.finish
+    end
 
     generator = options.generator.new @rdoc.store, options
 

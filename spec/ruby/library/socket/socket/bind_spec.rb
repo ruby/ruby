@@ -33,6 +33,7 @@ describe "Socket#bind on SOCK_DGRAM socket" do
 
   platform_is_not :windows, :cygwin do
     as_user do
+      break if File.read('/proc/sys/net/ipv4/ip_unprivileged_port_start').to_i <= 1 rescue nil
       it "raises Errno::EACCES when the current user does not have permission to bind" do
         sockaddr1 = Socket.pack_sockaddr_in(1, "127.0.0.1")
         -> { @sock.bind(sockaddr1) }.should raise_error(Errno::EACCES)
@@ -74,6 +75,7 @@ describe "Socket#bind on SOCK_STREAM socket" do
 
   platform_is_not :windows, :cygwin do
     as_user do
+      break if File.read('/proc/sys/net/ipv4/ip_unprivileged_port_start').to_i <= 1 rescue nil
       it "raises Errno::EACCES when the current user does not have permission to bind" do
         sockaddr1 = Socket.pack_sockaddr_in(1, "127.0.0.1")
         -> { @sock.bind(sockaddr1) }.should raise_error(Errno::EACCES)
@@ -113,6 +115,8 @@ describe 'Socket#bind' do
 
       platform_is_not :windows do
         as_user do
+          break if File.read('/proc/sys/net/ipv4/ip_unprivileged_port_start').to_i <= 1 rescue nil
+
           it 'raises Errno::EACCES when the user is not allowed to bind to the port' do
             sockaddr1 = Socket.pack_sockaddr_in(1, ip_address)
 

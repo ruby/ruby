@@ -654,10 +654,8 @@ describe "Predefined global $," do
     -> { $, = Object.new }.should raise_error(TypeError)
   end
 
-  ruby_version_is "2.7" do
-    it "warns if assigned non-nil" do
-      -> { $, = "_" }.should complain(/warning: `\$,' is deprecated/)
-    end
+  it "warns if assigned non-nil" do
+    -> { $, = "_" }.should complain(/warning: `\$,' is deprecated/)
   end
 end
 
@@ -693,10 +691,8 @@ describe "Predefined global $;" do
     $; = nil
   end
 
-  ruby_version_is "2.7" do
-    it "warns if assigned non-nil" do
-      -> { $; = "_" }.should complain(/warning: `\$;' is deprecated/)
-    end
+  it "warns if assigned non-nil" do
+    -> { $; = "_" }.should complain(/warning: `\$;' is deprecated/)
   end
 end
 
@@ -835,6 +831,8 @@ describe "Execution variable $:" do
   it "can be changed via <<" do
     $: << "foo"
     $:.should include("foo")
+  ensure
+    $:.delete("foo")
   end
 
   it "is read-only" do
@@ -849,6 +847,16 @@ describe "Execution variable $:" do
     -> {
       $-I = []
     }.should raise_error(NameError)
+  end
+
+  it "default $LOAD_PATH entries until sitelibdir included have @gem_prelude_index set" do
+    skip "no sense in ruby itself" if MSpecScript.instance_variable_defined?(:@testing_ruby)
+
+    $:.should.include?(RbConfig::CONFIG['sitelibdir'])
+    idx = $:.index(RbConfig::CONFIG['sitelibdir'])
+
+    $:[idx..-1].all? { |p| p.instance_variable_defined?(:@gem_prelude_index) }.should be_true
+    $:[0...idx].all? { |p| !p.instance_variable_defined?(:@gem_prelude_index) }.should be_true
   end
 end
 
@@ -1099,6 +1107,8 @@ The following constants are defined by the Ruby interpreter.
 DATA                 IO          If the main program file contains the directive __END__, then
                                  the constant DATA will be initialized so that reading from it will
                                  return lines following __END__ from the source file.
+FALSE                FalseClass  Synonym for false (deprecated, removed in Ruby 3).
+NIL                  NilClass    Synonym for nil (deprecated, removed in Ruby 3).
 RUBY_PLATFORM        String      The identifier of the platform running this program. This string
                                  is in the same form as the platform identifier used by the GNU
                                  configure utility (which is not a coincidence).
@@ -1116,9 +1126,55 @@ SCRIPT_LINES__       Hash        If a constant SCRIPT_LINES__ is defined and ref
                                  the value.
 TOPLEVEL_BINDING     Binding     A Binding object representing the binding at Ruby’s top level—
                                  the level where programs are initially executed.
+TRUE                 TrueClass   Synonym for true (deprecated, removed in Ruby 3).
 =end
 
 describe "The predefined global constants" do
+  describe "TRUE" do
+    ruby_version_is "3.0" do
+      it "is no longer defined" do
+        Object.const_defined?(:TRUE).should == false
+      end
+    end
+
+    ruby_version_is ""..."3.0" do
+      it "includes TRUE" do
+        Object.const_defined?(:TRUE).should == true
+        -> { TRUE }.should complain(/constant ::TRUE is deprecated/)
+      end
+    end
+  end
+
+  describe "FALSE" do
+    ruby_version_is "3.0" do
+      it "is no longer defined" do
+        Object.const_defined?(:FALSE).should == false
+      end
+    end
+
+    ruby_version_is ""..."3.0" do
+      it "includes FALSE" do
+        Object.const_defined?(:FALSE).should == true
+        -> { FALSE }.should complain(/constant ::FALSE is deprecated/)
+      end
+    end
+  end
+
+  describe "NIL" do
+    ruby_version_is "3.0" do
+      it "is no longer defined" do
+        Object.const_defined?(:NIL).should == false
+      end
+    end
+
+    ruby_version_is ""..."3.0" do
+      it "includes NIL" do
+        Object.const_defined?(:NIL).should == true
+        -> { NIL }.should complain(/constant ::NIL is deprecated/)
+      end
+    end
+  end
+
   it "includes STDIN" do
     Object.const_defined?(:STDIN).should == true
   end
@@ -1146,7 +1202,6 @@ describe "The predefined global constants" do
   it "includes TOPLEVEL_BINDING" do
     Object.const_defined?(:TOPLEVEL_BINDING).should == true
   end
-
 end
 
 describe "The predefined global constant" do
@@ -1161,13 +1216,24 @@ describe "The predefined global constant" do
   end
 
   describe "STDIN" do
-    it "has the same external encoding as Encoding.default_external" do
-      STDIN.external_encoding.should equal(Encoding.default_external)
-    end
+    platform_is_not :windows do
+      it "has the same external encoding as Encoding.default_external" do
+        STDIN.external_encoding.should equal(Encoding.default_external)
+      end
 
-    it "has the same external encoding as Encoding.default_external when that encoding is changed" do
-      Encoding.default_external = Encoding::ISO_8859_16
-      STDIN.external_encoding.should equal(Encoding::ISO_8859_16)
+      it "has the same external encoding as Encoding.default_external when that encoding is changed" do
+        Encoding.default_external = Encoding::ISO_8859_16
+        STDIN.external_encoding.should equal(Encoding::ISO_8859_16)
+      end
+
+      it "has nil for the internal encoding" do
+        STDIN.internal_encoding.should be_nil
+      end
+
+      it "has nil for the internal encoding despite Encoding.default_internal being changed" do
+        Encoding.default_internal = Encoding::IBM437
+        STDIN.internal_encoding.should be_nil
+      end
     end
 
     it "has the encodings set by #set_encoding" do
@@ -1181,15 +1247,6 @@ describe "The predefined global constant" do
              "Encoding.default_external = Encoding::ISO_8859_16;" \
              "p [STDIN.external_encoding.name, STDIN.internal_encoding.name]"
       ruby_exe(code).chomp.should == %{["IBM775", "IBM866"]}
-    end
-
-    it "has nil for the internal encoding" do
-      STDIN.internal_encoding.should be_nil
-    end
-
-    it "has nil for the internal encoding despite Encoding.default_internal being changed" do
-      Encoding.default_internal = Encoding::IBM437
-      STDIN.internal_encoding.should be_nil
     end
   end
 
@@ -1255,32 +1312,31 @@ describe "The predefined global constant" do
   end
 end
 
-ruby_version_is "2.7" do
-  describe "$LOAD_PATH.resolve_feature_path" do
-    it "returns what will be loaded without actual loading, .rb file" do
-      extension, path = $LOAD_PATH.resolve_feature_path('set')
-      extension.should == :rb
-      path.should.end_with?('/set.rb')
+describe "$LOAD_PATH.resolve_feature_path" do
+  it "returns what will be loaded without actual loading, .rb file" do
+    extension, path = $LOAD_PATH.resolve_feature_path('set')
+    extension.should == :rb
+    path.should.end_with?('/set.rb')
+  end
+
+  it "returns what will be loaded without actual loading, .so file" do
+    require 'rbconfig'
+    skip "no dynamically loadable standard extension" if RbConfig::CONFIG["EXTSTATIC"] == "static"
+
+    extension, path = $LOAD_PATH.resolve_feature_path('etc')
+    extension.should == :so
+    path.should.end_with?("/etc.#{RbConfig::CONFIG['DLEXT']}")
+  end
+
+  ruby_version_is ""..."3.1" do
+    it "raises LoadError if feature cannot be found" do
+      -> { $LOAD_PATH.resolve_feature_path('noop') }.should raise_error(LoadError)
     end
+  end
 
-    it "returns what will be loaded without actual loading, .so file" do
-      require 'rbconfig'
-
-      extension, path = $LOAD_PATH.resolve_feature_path('etc')
-      extension.should == :so
-      path.should.end_with?("/etc.#{RbConfig::CONFIG['DLEXT']}")
-    end
-
-    ruby_version_is "2.7"..."3.1" do
-      it "raises LoadError if feature cannot be found" do
-        -> { $LOAD_PATH.resolve_feature_path('noop') }.should raise_error(LoadError)
-      end
-    end
-
-    ruby_version_is "3.1" do
-      it "return nil if feature cannot be found" do
-        $LOAD_PATH.resolve_feature_path('noop').should be_nil
-      end
+  ruby_version_is "3.1" do
+    it "return nil if feature cannot be found" do
+      $LOAD_PATH.resolve_feature_path('noop').should be_nil
     end
   end
 end

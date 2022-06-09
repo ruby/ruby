@@ -299,4 +299,14 @@ module ConstantSpecs
   private_constant :CS_PRIVATE
 end
 
+module ConstantSpecsThree
+  module ConstantSpecsTwo
+    Foo = :cs_three_foo
+  end
+end
+
+module ConstantSpecsTwo
+  Foo = :cs_two_foo
+end
+
 include ConstantSpecs::ModuleA

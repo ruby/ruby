@@ -57,22 +57,17 @@ module Bundler
         gem_info
       end
 
-      def fetch_spec(spec)
-        spec -= [nil, "ruby", ""]
-        contents = compact_index_client.spec(*spec)
-        return nil if contents.nil?
-        contents.unshift(spec.first)
-        contents[3].map! {|d| Gem::Dependency.new(*d) }
-        EndpointSpecification.new(*contents)
-      end
-      compact_index_request :fetch_spec
-
       def available?
-        return nil unless SharedHelpers.md5_available?
-        user_home = Bundler.user_home
-        return nil unless user_home.directory? && user_home.writable?
+        unless SharedHelpers.md5_available?
+          Bundler.ui.debug("FIPS mode is enabled, bundler can't use the CompactIndex API")
+          return nil
+        end
+        if fetch_uri.scheme == "file"
+          Bundler.ui.debug("Using a local server, bundler won't use the CompactIndex API")
+          return false
+        end
         # Read info file checksums out of /versions, so we can know if gems are up to date
-        fetch_uri.scheme != "file" && compact_index_client.update_and_parse_checksums!
+        compact_index_client.update_and_parse_checksums!
       rescue CompactIndexClient::Updater::MisMatchedChecksumError => e
         Bundler.ui.debug(e.message)
         nil
@@ -111,7 +106,7 @@ module Bundler
       def bundle_worker(func = nil)
         @bundle_worker ||= begin
           worker_name = "Compact Index (#{display_uri.host})"
-          Bundler::Worker.new(Bundler.current_ruby.rbx? ? 1 : 25, worker_name, func)
+          Bundler::Worker.new(Bundler.settings.processor_count, worker_name, func)
         end
         @bundle_worker.tap do |worker|
           worker.instance_variable_set(:@func, func) if func

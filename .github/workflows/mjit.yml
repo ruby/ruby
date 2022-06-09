@@ -1,16 +1,32 @@
 name: MJIT
-on: [push, pull_request]
+on:
+  push:
+    paths-ignore:
+      - 'doc/**'
+      - '**.md'
+      - '**.rdoc'
+  pull_request:
+    paths-ignore:
+      - 'doc/**'
+      - '**.md'
+      - '**.rdoc'
+
+concurrency:
+  group: ${{ github.workflow }} / ${{ startsWith(github.event_name, 'pull') && github.ref_name || github.sha }}
+  cancel-in-progress: ${{ startsWith(github.event_name, 'pull') }}
+
 jobs:
   make:
     strategy:
       matrix:
         test_task: [ "check" ] # to make job names consistent
-        jit_opts: [ "--jit", "--jit-wait" ]
+        jit_opts: [ "--mjit", "--mjit-wait" ]
       fail-fast: false
     runs-on: ubuntu-latest
+    if: ${{ !startsWith(github.event.head_commit.message, '[DOC]') && !contains(github.event.pull_request.labels.*.name, 'Documentation') }}
     env:
       TESTOPTS: '-q --tty=no'
-      RUN_OPTS: '--disable-gems ${{ matrix.jit_opts }} --jit-debug=-ggdb3'
+      RUN_OPTS: '--disable-gems ${{ matrix.jit_opts }} --mjit-debug=-ggdb3'
       GITPULLOPTIONS: --no-tags origin ${{github.ref}}
     steps:
       - run: mkdir build
@@ -19,14 +35,18 @@ jobs:
         run: |
           set -x
           sudo apt-get update -q || :
-          sudo apt-get install --no-install-recommends -q -y build-essential libssl-dev libyaml-dev libreadline6-dev zlib1g-dev libncurses5-dev libffi-dev libgdbm-dev bison autoconf ruby
+          sudo apt-get install --no-install-recommends -q -y build-essential libssl-dev libyaml-dev libreadline6-dev zlib1g-dev libncurses5-dev libffi-dev bison autoconf ruby
       - name: git config
         run: |
           git config --global advice.detachedHead 0
           git config --global init.defaultBranch garbage
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
         with:
           path: src
+      - uses: actions/cache@v3
+        with:
+          path: src/.downloaded-cache
+          key: downloaded-cache
       - name: Fixed world writable dirs
         run: |
           chmod -v go-w $HOME $HOME/.config
@@ -34,29 +54,29 @@ jobs:
           sudo bash -c 'IFS=:; for d in '"$PATH"'; do chmod -v go-w $d; done' || :
       - name: Set ENV
         run: |
-          echo "JOBS=-j$((1 + $(nproc --all)))" >> $GITHUB_ENV
+          echo "GNUMAKEFLAGS=-j$((1 + $(nproc --all)))" >> $GITHUB_ENV
       - run: ./autogen.sh
         working-directory: src
       - name: Run configure
-        run: ../src/configure -C --disable-install-doc
-      - run: make $JOBS incs
-      - run: make $JOBS
-      - run: sudo make $JOBS -s install
+        run: ../src/configure -C --disable-install-doc cppflags=-DVM_CHECK_MODE
+      - run: make incs
+      - run: make
+      - run: sudo make -s install
       - run: sudo apt-get install gdb # used by test / test-all failure
       - name: Run test
         run: |
           ulimit -c unlimited
-          make $JOBS -s test RUN_OPTS="$RUN_OPTS"
+          make -s test RUN_OPTS="$RUN_OPTS"
         timeout-minutes: 60
       - name: Run test-all
         run: |
           ulimit -c unlimited
-          make $JOBS -s test-all RUN_OPTS="$RUN_OPTS"
+          make -s test-all RUN_OPTS="$RUN_OPTS"
         timeout-minutes: 60
       - name: Run test-spec
         run: |
           ulimit -c unlimited
-          make $JOBS -s test-spec RUN_OPTS="$RUN_OPTS"
+          make -s test-spec RUN_OPTS="$RUN_OPTS"
         timeout-minutes: 60
       - uses: k0kubun/action-slack@v2.0.0
         with:
@@ -70,7 +90,7 @@ jobs:
             }
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SIMPLER_ALERTS_URL }} # ruby-lang slack: ruby/simpler-alerts-bot
-        if: failure() && github.event_name == 'push'
+        if: ${{ failure() && github.event_name == 'push' }}
 
 defaults:
   run:

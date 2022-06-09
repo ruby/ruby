@@ -19,8 +19,16 @@ describe "Array#sample" do
     [].sample.should be_nil
   end
 
+  it "returns nil for an empty array when called without n and a Random is given" do
+    [].sample(random: Random.new(42)).should be_nil
+  end
+
   it "returns a single value when not passed a count" do
     [4].sample.should equal(4)
+  end
+
+  it "returns a single value when not passed a count and a Random is given" do
+    [4].sample(random: Random.new(42)).should equal(4)
   end
 
   it "returns an empty Array when passed zero" do

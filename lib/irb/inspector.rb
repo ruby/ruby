@@ -114,7 +114,7 @@ module IRB # :nodoc:
     end
     result
   }
-  Inspector.def_inspector([true, :pp, :pretty_inspect], proc{require "irb/color_printer"}){|v|
+  Inspector.def_inspector([true, :pp, :pretty_inspect], proc{require_relative "color_printer"}){|v|
     if IRB.conf[:MAIN_CONTEXT]&.use_colorize?
       IRB::ColorPrinter.pp(v, '').chomp
     else

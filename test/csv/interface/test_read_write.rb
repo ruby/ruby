@@ -112,4 +112,13 @@ a;b;c
     assert_equal(CSV.instance,
                  CSV {|csv| csv})
   end
+
+  def test_instance_shortcut_with_io
+    io = StringIO.new
+    from_instance = CSV.instance(io, col_sep: ";") { |csv| csv << ["a", "b", "c"] }
+    from_shortcut = CSV(io, col_sep: ";") { |csv| csv << ["e", "f", "g"] }
+
+    assert_equal(from_instance, from_shortcut)
+    assert_equal(from_instance.string, "a;b;c\ne;f;g\n")
+  end
 end

@@ -155,10 +155,14 @@ typedef int clockid_t;
 #define read(f, b, s)		rb_w32_read(f, b, s)
 #define write(f, b, s)		rb_w32_write(f, b, s)
 #define getpid()		rb_w32_getpid()
+#undef HAVE_GETPPID
+#define HAVE_GETPPID 1
 #define getppid()		rb_w32_getppid()
 #define sleep(x)		rb_w32_Sleep((x)*1000)
 #define Sleep(msec)		(void)rb_w32_Sleep(msec)
 
+#undef HAVE_EXECV
+#define HAVE_EXECV 1
 #undef execv
 #define execv(path,argv)	rb_w32_uaspawn(P_OVERLAY,path,argv)
 #undef isatty
@@ -309,7 +313,9 @@ extern rb_pid_t wait(int *);
 extern rb_pid_t rb_w32_uspawn(int, const char *, const char*);
 extern rb_pid_t rb_w32_uaspawn(int, const char *, char *const *);
 extern rb_pid_t rb_w32_uaspawn_flags(int, const char *, char *const *, DWORD);
-extern int kill(int, int);
+#undef HAVE_KILL
+#define HAVE_KILL 1
+extern int kill(rb_pid_t, int);
 extern int fcntl(int, int, ...);
 extern int rb_w32_set_nonblock(int);
 extern rb_pid_t rb_w32_getpid(void);
@@ -343,14 +349,6 @@ rb_infinity_float(void)
 #endif
 
 #if !defined __MINGW32__ || defined __NO_ISOCEXT
-#ifndef isnan
-#define isnan(x) _isnan(x)
-#endif
-static inline int
-finite(double x)
-{
-    return _finite(x);
-}
 #ifndef copysign
 #define copysign(a, b) _copysign(a, b)
 #endif
@@ -359,8 +357,6 @@ scalb(double a, long b)
 {
     return _scalb(a, b);
 }
-#else
-__declspec(dllimport) extern int finite(double);
 #endif
 
 #if !defined S_IFIFO && defined _S_IFIFO
@@ -657,6 +653,8 @@ extern char *rb_w32_strerror(int);
 #undef setsockopt
 #define setsockopt(s, v, n, o, l) rb_w32_setsockopt(s, v, n, o, l)
 
+#undef HAVE_SHUTDOWN
+#define HAVE_SHUTDOWN 1
 #undef shutdown
 #define shutdown(s, h)		rb_w32_shutdown(s, h)
 
@@ -805,6 +803,25 @@ double rb_w32_pow(double x, double y);
 #endif
 #define pow rb_w32_pow
 #endif
+
+// mmap tiny emulation
+#define MAP_FAILED	((void *)-1)
+
+#define PROT_READ	0x01
+#define PROT_WRITE	0x02
+#define PROT_EXEC	0x04
+
+#define MAP_PRIVATE	0x0002
+#define MAP_ANON	0x1000
+#define MAP_ANONYMOUS	MAP_ANON
+
+extern void *rb_w32_mmap(void *, size_t, int, int, int, off_t);
+extern int rb_w32_munmap(void *, size_t);
+extern int rb_w32_mprotect(void *, size_t, int);
+
+#define mmap(a, l, p, f, d, o) rb_w32_mmap(a, l, p, f, d, o)
+#define munmap(a, l) rb_w32_munmap(a, l)
+#define mprotect(a, l, prot) rb_w32_mprotect(a, l, prot)
 
 #if defined(__cplusplus)
 #if 0

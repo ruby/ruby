@@ -1,6 +1,6 @@
 # frozen_string_literal: true
-require 'rubygems'
-require 'rubygems/user_interaction'
+require_relative '../rubygems'
+require_relative 'user_interaction'
 
 ##
 # Cleans up after a partially-failed uninstall or for an invalid
@@ -117,11 +117,11 @@ class Gem::Doctor
       type = File.directory?(child) ? 'directory' : 'file'
 
       action = if @dry_run
-                 'Extra'
-               else
-                 FileUtils.rm_r(child)
-                 'Removed'
-               end
+        'Extra'
+      else
+        FileUtils.rm_r(child)
+        'Removed'
+      end
 
       say "#{action} #{type} #{sub_directory}/#{File.basename(child)}"
     end

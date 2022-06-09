@@ -121,6 +121,7 @@ begin
     end
 
     def test_finish_autowrapped_line_in_the_middle_of_multilines
+      omit if RUBY_VERSION < '2.7'
       start_terminal(30, 16, %W{ruby -I#{@pwd}/lib #{@pwd}/test/reline/yamatanooroti/multiline_repl}, startup_message: 'Multiline REPL.')
       write("<<~EOM\n  ABCDEFG\nEOM\n")
       close
@@ -290,7 +291,6 @@ begin
     end
 
     def test_clear_multiline_and_autowrap
-      omit # FIXME clear logic is buggy
       start_terminal(10, 15, %W{ruby -I#{@pwd}/lib #{@pwd}/test/reline/yamatanooroti/multiline_repl}, startup_message: 'Multiline REPL.')
       write("def aaaaaa\n  3\n\C-lend")
       close
@@ -425,10 +425,10 @@ begin
     def test_binding_for_vi_movement_mode
       write_inputrc <<~LINES
         set editing-mode vi
-        "\\C-j": vi-movement-mode
+        "\\C-a": vi-movement-mode
       LINES
       start_terminal(5, 30, %W{ruby -I#{@pwd}/lib #{@pwd}/test/reline/yamatanooroti/multiline_repl}, startup_message: 'Multiline REPL.')
-      write(":1234\C-jhhhi0")
+      write(":1234\C-ahhhi0")
       close
       assert_screen(<<~EOC)
         Multiline REPL.
@@ -730,7 +730,610 @@ begin
       EOC
     end
 
-    private def write_inputrc(content)
+    def test_meta_key
+      start_terminal(30, 20, %W{ruby -I#{@pwd}/lib #{@pwd}/test/reline/yamatanooroti/multiline_repl}, startup_message: 'Multiline REPL.')
+      write("def ge\M-bho")
+      close
+      assert_screen(<<~EOC)
+        Multiline REPL.
+        prompt> def hoge
+      EOC
+    end
+
+    def test_not_meta_key
+      start_terminal(5, 30, %W{ruby -I#{@pwd}/lib #{@pwd}/test/reline/yamatanooroti/multiline_repl}, startup_message: 'Multiline REPL.')
+      write("おだんご") # "だ" in UTF-8 contains "\xA0"
+      close
+      assert_screen(<<~EOC)
+        Multiline REPL.
+        prompt> おだんご
+      EOC
+    end
+
+    def test_force_enter
+      start_terminal(30, 120, %W{ruby -I#{@pwd}/lib #{@pwd}/test/reline/yamatanooroti/multiline_repl}, startup_message: 'Multiline REPL.')
+      write("def hoge\nend\C-p\C-e")
+      write("\M-\x0D")
+      close
+      assert_screen(<<~EOC)
+        Multiline REPL.
+        prompt> def hoge
+        prompt>
+        prompt> end
+      EOC
+    end
+
+    def test_with_newline
+      omit if Reline::IOGate.win?
+      cmd = %Q{ruby -e 'print(%Q{abc def \\e\\r})' | ruby -I#{@pwd}/lib -rreline -e 'p Reline.readline(%{> })'}
+      start_terminal(40, 50, ['bash', '-c', cmd])
+      sleep 1
+      close
+      assert_screen(<<~'EOC')
+        > abc def
+        "abc def "
+      EOC
+    end
+
+    def test_em_set_mark_and_em_exchange_mark
+      start_terminal(10, 50, %W{ruby -I#{@pwd}/lib #{@pwd}/test/reline/yamatanooroti/multiline_repl}, startup_message: 'Multiline REPL.')
+      write("aaa bbb ccc ddd\M-b\M-b\M-\x20\M-b\C-x\C-xX\C-x\C-xY")
+      close
+      assert_screen(<<~'EOC')
+        Multiline REPL.
+        prompt> aaa Ybbb Xccc ddd
+      EOC
+    end
+
+    def test_completion_journey_2nd_line
+      write_inputrc <<~LINES
+        set editing-mode vi
+      LINES
+      start_terminal(10, 50, %W{ruby -I#{@pwd}/lib #{@pwd}/test/reline/yamatanooroti/multiline_repl --complete}, startup_message: 'Multiline REPL.')
+      write("def hoge\n  S\C-n")
+      close
+      assert_screen(<<~'EOC')
+        Multiline REPL.
+        prompt> def hoge
+        prompt>   String
+      EOC
+    end
+
+    def test_completion_journey_with_empty_line
+      write_inputrc <<~LINES
+        set editing-mode vi
+      LINES
+      start_terminal(10, 50, %W{ruby -I#{@pwd}/lib #{@pwd}/test/reline/yamatanooroti/multiline_repl --complete}, startup_message: 'Multiline REPL.')
+      write("\C-n\C-p")
+      close
+      assert_screen(<<~'EOC')
+        Multiline REPL.
+        prompt>
+      EOC
+    end
+
+    def test_simple_dialog
+      start_terminal(20, 50, %W{ruby -I#{@pwd}/lib #{@pwd}/test/reline/yamatanooroti/multiline_repl --dialog simple}, startup_message: 'Multiline REPL.')
+      write('a')
+      write('b')
+      write('c')
+      write("\C-h")
+      close
+      assert_screen(<<~'EOC')
+        Multiline REPL.
+        prompt> ab
+                  Ruby is...
+                  A dynamic, open source programming
+                  language with a focus on simplicity
+                  and productivity. It has an elegant
+                  syntax that is natural to read and
+                  easy to write.
+      EOC
+    end
+
+    def test_simple_dialog_at_right_edge
+      start_terminal(20, 40, %W{ruby -I#{@pwd}/lib #{@pwd}/test/reline/yamatanooroti/multiline_repl --dialog simple}, startup_message: 'Multiline REPL.')
+      write('a')
+      write('b')
+      write('c')
+      write("\C-h")
+      close
+      assert_screen(<<~'EOC')
+        Multiline REPL.
+        prompt> ab
+             Ruby is...
+             A dynamic, open source programming
+             language with a focus on simplicity
+             and productivity. It has an elegant
+             syntax that is natural to read and
+             easy to write.
+      EOC
+    end
+
+    def test_autocomplete_at_bottom
+      start_terminal(15, 50, %W{ruby -I#{@pwd}/lib #{@pwd}/test/reline/yamatanooroti/multiline_repl --autocomplete}, startup_message: 'Multiline REPL.')
+      write('def hoge' + "\C-m" * 10 + "end\C-p  ")
+      write('S')
+      close
+      assert_screen(<<~'EOC')
+        Multiline REPL.
+        prompt> def hoge
+        prompt>
+        prompt>
+        prompt>   String
+        prompt>   Struct
+        prompt>   Symbol
+        prompt>   ScriptError
+        prompt>   SyntaxError
+        prompt>   Signal
+        prompt>   S
+        prompt> end
+      EOC
+    end
+
+    def test_autocomplete_return_to_original
+      start_terminal(20, 20, %W{ruby -I#{@pwd}/lib #{@pwd}/test/reline/yamatanooroti/multiline_repl --autocomplete}, startup_message: 'Multiline REPL.')
+      write('S')
+      write('t')
+      write('r')
+      3.times{ write("\C-i") }
+      close
+      assert_screen(<<~'EOC')
+        Multiline REPL.
+        prompt> Str
+                String
+                Struct
+      EOC
+    end
+
+    def test_autocomplete_target_is_wrapped
+      start_terminal(20, 20, %W{ruby -I#{@pwd}/lib #{@pwd}/test/reline/yamatanooroti/multiline_repl --autocomplete}, startup_message: 'Multiline REPL.')
+      write('          ')
+      write('S')
+      write('t')
+      write('r')
+      close
+      assert_screen(<<~'EOC')
+        Multiline REPL.
+        prompt>           St
+        r             String
+                      Struct
+      EOC
+    end
+
+    def test_simple_dialog_with_scroll_key
+      start_terminal(20, 50, %W{ruby -I#{@pwd}/lib #{@pwd}/test/reline/yamatanooroti/multiline_repl --dialog long,scrollkey}, startup_message: 'Multiline REPL.')
+      write('a')
+      5.times{ write('j') }
+      close
+      assert_screen(<<~'EOC')
+        Multiline REPL.
+        prompt> a
+                 A dynamic, open
+                 source programming
+                 language with a
+                 focus on simplicity
+      EOC
+    end
+
+    def test_simple_dialog_scrollbar_with_moving_to_right
+      start_terminal(20, 50, %W{ruby -I#{@pwd}/lib #{@pwd}/test/reline/yamatanooroti/multiline_repl --dialog long,scrollkey,scrollbar}, startup_message: 'Multiline REPL.')
+      6.times{ write('j') }
+      write('a')
+      close
+      assert_screen(<<~'EOC')
+        Multiline REPL.
+        prompt> a
+                 source programming ▄
+                 language with a    █
+                 focus on simplicity
+                 and productivity.
+      EOC
+    end
+
+    def test_simple_dialog_scrollbar_with_moving_to_left
+      start_terminal(20, 50, %W{ruby -I#{@pwd}/lib #{@pwd}/test/reline/yamatanooroti/multiline_repl --dialog long,scrollkey,scrollbar}, startup_message: 'Multiline REPL.')
+      write('a')
+      6.times{ write('j') }
+      write("\C-h")
+      close
+      assert_screen(<<~'EOC')
+        Multiline REPL.
+        prompt>
+                source programming ▄
+                language with a    █
+                focus on simplicity
+                and productivity.
+      EOC
+    end
+
+    def test_dialog_with_fullwidth_chars
+      ENV['RELINE_TEST_PROMPT'] = '> '
+      start_terminal(20, 5, %W{ruby -I#{@pwd}/lib #{@pwd}/test/reline/yamatanooroti/multiline_repl --dialog fullwidth,scrollkey,scrollbar}, startup_message: 'Multiline REPL.')
+      6.times{ write('j') }
+      close
+      assert_screen(<<~'EOC')
+        Multi
+        line
+        REPL.
+        >
+        オー
+        グ言▄
+        備え█
+        ち、█
+      EOC
+    end
+
+    def test_dialog_with_fullwidth_chars_split
+      ENV['RELINE_TEST_PROMPT'] = '> '
+      start_terminal(20, 6, %W{ruby -I#{@pwd}/lib #{@pwd}/test/reline/yamatanooroti/multiline_repl --dialog fullwidth,scrollkey,scrollbar}, startup_message: 'Multiline REPL.')
+      6.times{ write('j') }
+      close
+      assert_screen(<<~'EOC')
+        Multil
+        ine RE
+        PL.
+        >
+        オー
+        グ言 ▄
+        備え █
+        ち、 █
+      EOC
+    end
+
+    def test_autocomplete_empty
+      start_terminal(20, 30, %W{ruby -I#{@pwd}/lib #{@pwd}/test/reline/yamatanooroti/multiline_repl --autocomplete}, startup_message: 'Multiline REPL.')
+      write('Street')
+      close
+      assert_screen(<<~'EOC')
+        Multiline REPL.
+        prompt> Street
+      EOC
+    end
+
+    def test_autocomplete
+      start_terminal(20, 30, %W{ruby -I#{@pwd}/lib #{@pwd}/test/reline/yamatanooroti/multiline_repl --autocomplete}, startup_message: 'Multiline REPL.')
+      write('Str')
+      close
+      assert_screen(<<~'EOC')
+        Multiline REPL.
+        prompt> Str
+                String
+                Struct
+      EOC
+    end
+
+    def test_autocomplete_after_2nd_line
+      start_terminal(20, 30, %W{ruby -I#{@pwd}/lib #{@pwd}/test/reline/yamatanooroti/multiline_repl --autocomplete}, startup_message: 'Multiline REPL.')
+      write("def hoge\n  Str")
+      close
+      assert_screen(<<~'EOC')
+        Multiline REPL.
+        prompt> def hoge
+        prompt>   Str
+                  String
+                  Struct
+      EOC
+    end
+
+    def test_autocomplete_rerender_under_dialog
+      start_terminal(20, 30, %W{ruby -I#{@pwd}/lib #{@pwd}/test/reline/yamatanooroti/multiline_repl --autocomplete}, startup_message: 'Multiline REPL.')
+      write("def hoge\n\n  123456\n  456789\nend\C-p\C-p\C-p  a = Str")
+      write('i')
+      close
+      assert_screen(<<~'EOC')
+        Multiline REPL.
+        prompt> def hoge
+        prompt>   a = Stri
+        prompt>   1234String
+        prompt>   456789
+        prompt> end
+      EOC
+    end
+
+    def test_autocomplete_long_with_scrollbar
+      start_terminal(20, 30, %W{ruby -I#{@pwd}/lib #{@pwd}/test/reline/yamatanooroti/multiline_repl --autocomplete-long}, startup_message: 'Multiline REPL.')
+      write('S')
+      close
+      assert_screen(<<~'EOC')
+        Multiline REPL.
+        prompt> S
+                String          █
+                Struct          █
+                Symbol          █
+                StopIteration   █
+                SystemCallError █
+                SystemExit      █
+                SystemStackError█
+                ScriptError     █
+                SyntaxError     █
+                Signal          █
+                SizedQueue      █
+                Set
+                SecureRandom
+                Socket
+                StringIO
+      EOC
+    end
+
+    def test_autocomplete_long_with_scrollbar_scroll
+      start_terminal(20, 30, %W{ruby -I#{@pwd}/lib #{@pwd}/test/reline/yamatanooroti/multiline_repl --autocomplete-long}, startup_message: 'Multiline REPL.')
+      write('S' + "\C-i" * 16)
+      close
+      assert_screen(<<~'EOC')
+        Multiline REPL.
+        prompt> StringScanner
+                Struct          ▄
+                Symbol          █
+                StopIteration   █
+                SystemCallError █
+                SystemExit      █
+                SystemStackError█
+                ScriptError     █
+                SyntaxError     █
+                Signal          █
+                SizedQueue      █
+                Set             █
+                SecureRandom    ▀
+                Socket
+                StringIO
+                StringScanner
+      EOC
+    end
+
+    def test_autocomplete_super_long_and_backspace
+      start_terminal(20, 30, %W{ruby -I#{@pwd}/lib #{@pwd}/test/reline/yamatanooroti/multiline_repl --autocomplete-super-long}, startup_message: 'Multiline REPL.')
+      shift_tab = [27, 91, 90]
+      write('S' + shift_tab.map(&:chr).join)
+      write("\C-h")
+      close
+      assert_screen(<<~'EOC')
+        Multiline REPL.
+        prompt> Str_BX
+                Str_BX
+                Str_BXA
+                Str_BXB
+                Str_BXC
+                Str_BXD
+                Str_BXE
+                Str_BXF
+                Str_BXG
+                Str_BXH
+                Str_BXI
+                Str_BXJ
+                Str_BXK
+                Str_BXL
+                Str_BXM
+                Str_BXN
+      EOC
+    end
+
+    def test_dialog_callback_returns_nil
+      start_terminal(20, 30, %W{ruby -I#{@pwd}/lib #{@pwd}/test/reline/yamatanooroti/multiline_repl --dialog nil}, startup_message: 'Multiline REPL.')
+      write('a')
+      close
+      assert_screen(<<~'EOC')
+        Multiline REPL.
+        prompt> a
+      EOC
+    end
+
+    def test_dialog_narrower_than_screen
+      start_terminal(20, 11, %W{ruby -I#{@pwd}/lib #{@pwd}/test/reline/yamatanooroti/multiline_repl --dialog simple}, startup_message: 'Multiline REPL.')
+      close
+      assert_screen(<<~'EOC')
+        Multiline R
+        EPL.
+        prompt>
+        Ruby is...
+        A dynamic,
+        language wi
+        and product
+        syntax that
+        easy to wri
+      EOC
+    end
+
+    def test_dialog_narrower_than_screen_with_scrollbar
+      start_terminal(20, 11, %W{ruby -I#{@pwd}/lib #{@pwd}/test/reline/yamatanooroti/multiline_repl --autocomplete-long}, startup_message: 'Multiline REPL.')
+      write('S' + "\C-i" * 3)
+      close
+      assert_screen(<<~'EOC')
+        Multiline R
+        EPL.
+        prompt> Sym
+        String
+        Struct    █
+        Symbol    █
+        StopIterat█
+        SystemCall█
+        SystemExit█
+        SystemStac█
+        ScriptErro█
+        SyntaxErro█
+        Signal    █
+        SizedQueue█
+        Set
+        SecureRand
+        Socket
+        StringIO
+      EOC
+    end
+
+    def test_dialog_with_fullwidth_scrollbar
+      start_terminal(20, 40, %W{ruby -I#{@pwd}/lib #{@pwd}/test/reline/yamatanooroti/multiline_repl --dialog simple,scrollkey,alt-scrollbar}, startup_message: 'Multiline REPL.')
+      close
+      assert_screen(<<~'EOC')
+        Multiline REPL.
+        prompt>
+           Ruby is...                         ::
+           A dynamic, open source programming ::
+           language with a focus on simplicity''
+           and productivity. It has an elegant
+      EOC
+    end
+
+    def test_rerender_argument_prompt_after_pasting
+      start_terminal(20, 30, %W{ruby -I#{@pwd}/lib #{@pwd}/test/reline/yamatanooroti/multiline_repl}, startup_message: 'Multiline REPL.')
+      write('abcdef')
+      write("\M-3\C-h")
+      close
+      assert_screen(<<~'EOC')
+        Multiline REPL.
+        prompt> abc
+      EOC
+    end
+
+    def test_autocomplete_old_dialog_width_greater_than_dialog_width
+      start_terminal(40, 40, %W{ruby -I#{@pwd}/lib #{@pwd}/test/reline/yamatanooroti/multiline_repl --autocomplete-width-long}, startup_message: 'Multiline REPL.')
+      write("0+ \n12345678901234")
+      write("\C-p")
+      write("r")
+      write("a")
+      close
+      assert_screen(<<~'EOC')
+        Multiline REPL.
+        prompt> 0+ ra
+        prompt> 123rand 901234
+                   raise
+      EOC
+    end
+
+    def test_scroll_at_bottom_for_dialog
+      start_terminal(10, 40, %W{ruby -I#{@pwd}/lib #{@pwd}/test/reline/yamatanooroti/multiline_repl --autocomplete}, startup_message: 'Multiline REPL.')
+      write("\n\n\n\n\n\n")
+      write("def hoge\n\n\n\n\n\n\nend\C-p\C-p\C-p\C-e")
+      write("  S")
+      close
+      assert_screen(<<~'EOC')
+        prompt> def hoge
+        prompt>
+        prompt>
+        prompt>
+        prompt>   S
+        prompt>   String
+        prompt>   Struct
+        prompt> enSymbol
+                  ScriptError
+                  Signal
+      EOC
+    end
+
+    def test_clear_dialog_in_pasting
+      start_terminal(10, 40, %W{ruby -I#{@pwd}/lib #{@pwd}/test/reline/yamatanooroti/multiline_repl --autocomplete}, startup_message: 'Multiline REPL.')
+      write("S")
+      write("tring ")
+      close
+      assert_screen(<<~'EOC')
+        Multiline REPL.
+        prompt> String
+      EOC
+    end
+
+    def test_prompt_with_newline
+      ENV['RELINE_TEST_PROMPT'] = "::\n> "
+      start_terminal(5, 30, %W{ruby -I#{@pwd}/lib #{@pwd}/test/reline/yamatanooroti/multiline_repl}, startup_message: 'Multiline REPL.')
+      write("def hoge\n  3\nend")
+      close
+      assert_screen(<<~'EOC')
+        Multiline REPL.
+        ::\n> def hoge
+        ::\n>   3
+        ::\n> end
+      EOC
+    end
+
+    def test_dynamic_prompt_with_newline
+      start_terminal(5, 30, %W{ruby -I#{@pwd}/lib #{@pwd}/test/reline/yamatanooroti/multiline_repl --dynamic-prompt-with-newline}, startup_message: 'Multiline REPL.')
+      write("def hoge\n  3\nend")
+      close
+      assert_screen(<<~'EOC')
+        Multiline REPL.
+        [0000\n]> def hoge
+        [0001\n]>   3
+        [0001\n]> end
+      EOC
+    end
+
+    def test_clear_dialog_when_just_move_cursor_at_last_line
+      start_terminal(10, 30, %W{ruby -I#{@pwd}/lib #{@pwd}/test/reline/yamatanooroti/multiline_repl --autocomplete}, startup_message: 'Multiline REPL.')
+      write("class A\n  3\nend\n")
+      write("\C-p\C-p\C-p\C-e\C-hS")
+      write("\C-n")
+      write("1")
+      close
+      assert_screen(<<~'EOC')
+        prompt>   3
+        prompt> end
+        => 3
+        prompt> class S
+        prompt>   31
+        prompt> end
+      EOC
+    end
+
+    def test_clear_dialog_when_adding_new_line_to_end_of_buffer
+      start_terminal(10, 30, %W{ruby -I#{@pwd}/lib #{@pwd}/test/reline/yamatanooroti/multiline_repl --autocomplete}, startup_message: 'Multiline REPL.')
+      write("class A\n  def a\n    3\n  end\nend")
+      write("\n")
+      write("class S")
+      write("\n")
+      write("  3")
+      close
+      assert_screen(<<~'EOC')
+        prompt>   end
+        prompt> end
+        => :a
+        prompt> class S
+        prompt>   3
+      EOC
+    end
+
+    def test_insert_newline_in_the_middle_of_buffer_just_after_dialog
+      start_terminal(10, 30, %W{ruby -I#{@pwd}/lib #{@pwd}/test/reline/yamatanooroti/multiline_repl --autocomplete}, startup_message: 'Multiline REPL.')
+      write("class A\n  def a\n    3\n  end\nend")
+      write("\n")
+      write("\C-p\C-p\C-p\C-p\C-p\C-e\C-hS")
+      write("\M-\x0D")
+      write("  3")
+      close
+      assert_screen(<<~'EOC')
+        prompt>   end
+        prompt> end
+        => :a
+        prompt> class S
+        prompt>   3
+        prompt>   def a
+        prompt>     3
+        prompt>   end
+        prompt> end
+      EOC
+    end
+
+    def test_incremental_search_on_not_last_line
+      start_terminal(10, 40, %W{ruby -I#{@pwd}/lib #{@pwd}/test/reline/yamatanooroti/multiline_repl --autocomplete}, startup_message: 'Multiline REPL.')
+      write("def abc\nend\n")
+      write("def def\nend\n")
+      write("\C-p\C-p\C-e")
+      write("\C-r")
+      write("a")
+      write("\n\n")
+      close
+      assert_screen(<<~'EOC')
+        prompt> def abc
+        prompt> end
+        => :abc
+        prompt> def def
+        prompt> end
+        => :def
+        prompt> def abc
+        prompt> end
+        => :abc
+        prompt>
+      EOC
+    end
+
+    def write_inputrc(content)
       File.open(@inputrc_file, 'w') do |f|
         f.write content
       end

@@ -17,7 +17,7 @@
  *             recursively included  from extension  libraries written  in C++.
  *             Do not  expect for  instance `__VA_ARGS__` is  always available.
  *             We assume C99  for ruby itself but we don't  assume languages of
- *             extension libraries. They could be written in C++98.
+ *             extension libraries.  They could be written in C++98.
  * @brief      Arithmetic conversion between C's `long` and Ruby's.
  *
  * ### Q&A ###
@@ -43,23 +43,23 @@
 #include "ruby/internal/value.h"
 #include "ruby/assert.h"
 
-#define FIX2LONG     RB_FIX2LONG
-#define FIX2ULONG    RB_FIX2ULONG
-#define INT2FIX      RB_INT2FIX
-#define LONG2FIX     RB_INT2FIX
-#define LONG2NUM     RB_LONG2NUM
-#define NUM2LONG     RB_NUM2LONG
-#define NUM2ULONG    RB_NUM2ULONG
-#define RB_FIX2LONG  rb_fix2long
-#define RB_FIX2ULONG rb_fix2ulong
-#define RB_LONG2FIX  RB_INT2FIX
-#define RB_LONG2NUM  rb_long2num_inline
-#define RB_NUM2LONG  rb_num2long_inline
-#define RB_NUM2ULONG rb_num2ulong_inline
-#define RB_ULONG2NUM rb_ulong2num_inline
-#define ULONG2NUM    RB_ULONG2NUM
-#define rb_fix_new   RB_INT2FIX
-#define rb_long2int  rb_long2int_inline
+#define FIX2LONG     RB_FIX2LONG          /**< @old{RB_FIX2LONG} */
+#define FIX2ULONG    RB_FIX2ULONG         /**< @old{RB_FIX2ULONG} */
+#define INT2FIX      RB_INT2FIX           /**< @old{RB_INT2FIX} */
+#define LONG2FIX     RB_INT2FIX           /**< @old{RB_INT2FIX} */
+#define LONG2NUM     RB_LONG2NUM          /**< @old{RB_LONG2NUM} */
+#define NUM2LONG     RB_NUM2LONG          /**< @old{RB_NUM2LONG} */
+#define NUM2ULONG    RB_NUM2ULONG         /**< @old{RB_NUM2ULONG} */
+#define RB_FIX2LONG  rb_fix2long          /**< @alias{rb_fix2long} */
+#define RB_FIX2ULONG rb_fix2ulong         /**< @alias{rb_fix2ulong} */
+#define RB_LONG2FIX  RB_INT2FIX           /**< @alias{RB_INT2FIX} */
+#define RB_LONG2NUM  rb_long2num_inline   /**< @alias{rb_long2num_inline} */
+#define RB_NUM2LONG  rb_num2long_inline   /**< @alias{rb_num2long_inline} */
+#define RB_NUM2ULONG rb_num2ulong_inline  /**< @alias{rb_num2ulong_inline} */
+#define RB_ULONG2NUM rb_ulong2num_inline  /**< @alias{rb_ulong2num_inline} */
+#define ULONG2NUM    RB_ULONG2NUM         /**< @old{RB_ULONG2NUM} */
+#define rb_fix_new   RB_INT2FIX           /**< @alias{RB_INT2FIX} */
+#define rb_long2int  rb_long2int_inline   /**< @alias{rb_long2int_inline} */
 
 /** @cond INTERNAL_MACRO */
 #define RB_INT2FIX RB_INT2FIX
@@ -69,15 +69,44 @@ RBIMPL_SYMBOL_EXPORT_BEGIN()
 
 RBIMPL_ATTR_NORETURN()
 RBIMPL_ATTR_COLD()
+/**
+ * This is an utility function to raise an ::rb_eRangeError.
+ *
+ * @param[in]  num             A signed value about to overflow.
+ * @exception  rb_eRangeError  `num` is out of range of `int`.
+ */
 void rb_out_of_int(SIGNED_VALUE num);
 
+/**
+ * Converts an instance of ::rb_cNumeric into C's `long`.
+ *
+ * @param[in]  num             Something numeric.
+ * @exception  rb_eTypeError   `num` is not a numeric.
+ * @exception  rb_eRangeError  `num` is out of range of `long`.
+ * @return     The passed value converted into C's `long`.
+ */
 long rb_num2long(VALUE num);
+
+/**
+ * Converts an instance of ::rb_cNumeric into C's `unsigned long`.
+ *
+ * @param[in]  num             Something numeric.
+ * @exception  rb_eTypeError   `num` is not a numeric.
+ * @exception  rb_eRangeError  `num` is out of range of `unsigned long`.
+ * @return     The passed value converted into C's `unsigned long`.
+ */
 unsigned long rb_num2ulong(VALUE num);
 RBIMPL_SYMBOL_EXPORT_END()
 
 RBIMPL_ATTR_CONST_UNLESS_DEBUG()
 RBIMPL_ATTR_CONSTEXPR_UNLESS_DEBUG(CXX14)
 RBIMPL_ATTR_ARTIFICIAL()
+/**
+ * Converts a C's `long` into an instance of ::rb_cInteger.
+ *
+ * @param[in]  i  Arbitrary `long` value.
+ * @return     An instance of ::rb_cInteger.
+ */
 static inline VALUE
 RB_INT2FIX(long i)
 {
@@ -95,6 +124,13 @@ RB_INT2FIX(long i)
     return n;
 }
 
+/**
+ * Checks if `int` can hold the given integer.
+ *
+ * @param[in]  n               Arbitrary `long` value.
+ * @exception  rb_eRangeError  `n` is out of range of `int`.
+ * @return     Identical value of type `int`
+ */
 static inline int
 rb_long2int_inline(long n)
 {
@@ -112,6 +148,16 @@ rb_long2int_inline(long n)
 
 RBIMPL_ATTR_CONST_UNLESS_DEBUG()
 RBIMPL_ATTR_CONSTEXPR_UNLESS_DEBUG(CXX14)
+/**
+ * @private
+ *
+ * This  is an  implementation detail  of rb_fix2long().   People don't  use it
+ * directly.
+ *
+ * @param[in]  x  A Fixnum.
+ * @return     Identical value of type `long`
+ * @pre        Must not pass anything other than a Fixnum.
+ */
 static inline long
 rbimpl_fix2long_by_idiv(VALUE x)
 {
@@ -130,6 +176,16 @@ rbimpl_fix2long_by_idiv(VALUE x)
 
 RBIMPL_ATTR_CONST_UNLESS_DEBUG()
 RBIMPL_ATTR_CONSTEXPR_UNLESS_DEBUG(CXX14)
+/**
+ * @private
+ *
+ * This  is an  implementation detail  of rb_fix2long().   People don't  use it
+ * directly.
+ *
+ * @param[in]  x  A Fixnum.
+ * @return     Identical value of type `long`
+ * @pre        Must not pass anything other than a Fixnum.
+ */
 static inline long
 rbimpl_fix2long_by_shift(VALUE x)
 {
@@ -147,6 +203,15 @@ rbimpl_fix2long_by_shift(VALUE x)
 
 RBIMPL_ATTR_CONST()
 RBIMPL_ATTR_CONSTEXPR(CXX11)
+/**
+ * @private
+ *
+ * This  is an  implementation detail  of rb_fix2long().   People don't  use it
+ * directly.
+ *
+ * @retval  true   This C compiler's right shift operator is arithmetic.
+ * @retval  false  This C compiler's right shift operator is logical.
+ */
 static inline bool
 rbimpl_right_shift_is_arithmetic_p(void)
 {
@@ -155,6 +220,13 @@ rbimpl_right_shift_is_arithmetic_p(void)
 
 RBIMPL_ATTR_CONST_UNLESS_DEBUG()
 RBIMPL_ATTR_CONSTEXPR_UNLESS_DEBUG(CXX14)
+/**
+ * Converts a Fixnum into C's `long`.
+ *
+ * @param[in]  x  Some Fixnum.
+ * @pre        Must not pass anything other than a Fixnum.
+ * @return     The passed value converted into C's `long`.
+ */
 static inline long
 rb_fix2long(VALUE x)
 {
@@ -168,6 +240,14 @@ rb_fix2long(VALUE x)
 
 RBIMPL_ATTR_CONST_UNLESS_DEBUG()
 RBIMPL_ATTR_CONSTEXPR_UNLESS_DEBUG(CXX14)
+/**
+ * Converts a Fixnum into C's `unsigned long`.
+ *
+ * @param[in]  x  Some Fixnum.
+ * @pre        Must not pass anything other than a Fixnum.
+ * @return     The passed value converted into C's `unsigned long`.
+ * @note       Negative fixnums will be converted into large unsigned longs.
+ */
 static inline unsigned long
 rb_fix2ulong(VALUE x)
 {
@@ -175,6 +255,14 @@ rb_fix2ulong(VALUE x)
     return rb_fix2long(x);
 }
 
+/**
+ * Converts an instance of ::rb_cNumeric into C's `long`.
+ *
+ * @param[in]  x               Something numeric.
+ * @exception  rb_eTypeError   `x` is not a numeric.
+ * @exception  rb_eRangeError  `x` is out of range of `long`.
+ * @return     The passed value converted into C's `long`.
+ */
 static inline long
 rb_num2long_inline(VALUE x)
 {
@@ -184,20 +272,38 @@ rb_num2long_inline(VALUE x)
         return rb_num2long(x);
 }
 
+/**
+ * Converts an instance of ::rb_cNumeric into C's `unsigned long`.
+ *
+ * @param[in]  x               Something numeric.
+ * @exception  rb_eTypeError   `x` is not a numeric.
+ * @exception  rb_eRangeError  `x` is out of range of `unsigned long`.
+ * @return     The passed value converted into C's `unsigned long`.
+ *
+ * @internal
+ *
+ * This  (negative fixnum  would become  a large  unsigned long  while negative
+ * bignum  is an  exception)  has been  THE behaviour  of  NUM2ULONG since  the
+ * beginning.  It is strange, but we can  no longer change how it works at this
+ * moment.  We have to get by with it.
+ *
+ * @see https://bugs.ruby-lang.org/issues/9089
+ */
 static inline unsigned long
 rb_num2ulong_inline(VALUE x)
 {
-    /* This (negative fixnum would become  a large unsigned long while negative
-     * bignum is  an exception) has been  THE behaviour of NUM2ULONG  since the
-     * beginning.  It is strange,  but we can no longer change  how it works at
-     * this moment.  We have to get by with it.  See also:
-     * https://bugs.ruby-lang.org/issues/9089 */
     if (RB_FIXNUM_P(x))
         return RB_FIX2ULONG(x);
     else
         return rb_num2ulong(x);
 }
 
+/**
+ * Converts a C's `long` into an instance of ::rb_cInteger.
+ *
+ * @param[in]  v  Arbitrary `long` value.
+ * @return     An instance of ::rb_cInteger.
+ */
 static inline VALUE
 rb_long2num_inline(long v)
 {
@@ -207,6 +313,12 @@ rb_long2num_inline(long v)
         return rb_int2big(v);
 }
 
+/**
+ * Converts a C's `unsigned long` into an instance of ::rb_cInteger.
+ *
+ * @param[in]  v  Arbitrary `unsigned long` value.
+ * @return     An instance of ::rb_cInteger.
+ */
 static inline VALUE
 rb_ulong2num_inline(unsigned long v)
 {

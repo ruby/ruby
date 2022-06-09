@@ -1,13 +1,13 @@
 Gem::Specification.new do |spec|
   spec.name          = "securerandom"
-  spec.version       = "0.1.0"
+  spec.version       = "0.2.0"
   spec.authors       = ["Tanaka Akira"]
   spec.email         = ["akr@fsij.org"]
 
   spec.summary       = %q{Interface for secure random number generator.}
   spec.description   = %q{Interface for secure random number generator.}
   spec.homepage      = "https://github.com/ruby/securerandom"
-  spec.required_ruby_version = Gem::Requirement.new(">= 2.3.0")
+  spec.required_ruby_version = Gem::Requirement.new(">= 2.6.0")
   spec.licenses      = ["Ruby", "BSD-2-Clause"]
 
   spec.metadata["homepage_uri"] = spec.homepage

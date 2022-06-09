@@ -43,6 +43,12 @@ RSpec.describe ".bundle/config" do
       G
     end
 
+    it "is local by default" do
+      bundle "config set foo bar"
+      expect(bundled_app(".bundle/config")).to exist
+      expect(home(".bundle/config")).not_to exist
+    end
+
     it "can be moved with an environment variable" do
       ENV["BUNDLE_APP_CONFIG"] = tmp("foo/bar").to_s
       bundle "config set --local path vendor/bundle"
@@ -67,12 +73,42 @@ RSpec.describe ".bundle/config" do
   end
 
   describe "location without a gemfile" do
+    it "is global by default" do
+      bundle "config set foo bar"
+      expect(bundled_app(".bundle/config")).not_to exist
+      expect(home(".bundle/config")).to exist
+    end
+
     it "works with an absolute path" do
       ENV["BUNDLE_APP_CONFIG"] = tmp("foo/bar").to_s
       bundle "config set --local path vendor/bundle"
 
       expect(bundled_app(".bundle")).not_to exist
       expect(tmp("foo/bar/config")).to exist
+    end
+  end
+
+  describe "config location" do
+    let(:bundle_user_config) { File.join(Dir.home, ".config/bundler") }
+
+    before do
+      Dir.mkdir File.dirname(bundle_user_config)
+    end
+
+    it "can be configured through BUNDLE_USER_CONFIG" do
+      bundle "config set path vendor", :env => { "BUNDLE_USER_CONFIG" => bundle_user_config }
+      bundle "config get path", :env => { "BUNDLE_USER_CONFIG" => bundle_user_config }
+      expect(out).to include("Set for the current user (#{bundle_user_config}): \"vendor\"")
+    end
+
+    context "when not explicitly configured, but BUNDLE_USER_HOME set" do
+      let(:bundle_user_home) { bundled_app(".bundle").to_s }
+
+      it "uses the right location" do
+        bundle "config set path vendor", :env => { "BUNDLE_USER_HOME" => bundle_user_home }
+        bundle "config get path", :env => { "BUNDLE_USER_HOME" => bundle_user_home }
+        expect(out).to include("Set for the current user (#{bundle_user_home}/config): \"vendor\"")
+      end
     end
   end
 
@@ -321,7 +357,7 @@ E
   end
 
   describe "quoting" do
-    before(:each) { gemfile "# no gems" }
+    before(:each) { gemfile "source \"#{file_uri_for(gem_repo1)}\"" }
     let(:long_string) do
       "--with-xml2-include=/usr/pkg/include/libxml2 --with-xml2-lib=/usr/pkg/lib " \
       "--with-xslt-dir=/usr/pkg"
@@ -335,7 +371,7 @@ E
 
     it "doesn't return quotes around values" do
       bundle "config set foo '1'"
-      run "puts Bundler.settings.send(:global_config_file).read"
+      run "puts Bundler.settings.send(:local_config_file).read"
       expect(out).to include('"1"')
       run "puts Bundler.settings[:foo]"
       expect(out).to eq("1")
@@ -399,13 +435,57 @@ E
     end
   end
 
+  describe "commented out settings with urls" do
+    before do
+      bundle "config set #mirror.https://rails-assets.org http://localhost:9292"
+    end
+
+    it "does not make bundler crash and ignores the configuration" do
+      bundle "config list --parseable"
+
+      expect(out).to eq("#mirror.https://rails-assets.org/=http://localhost:9292")
+      expect(err).to be_empty
+
+      ruby(<<~RUBY)
+        require "#{entrypoint}"
+        print Bundler.settings.mirror_for("https://rails-assets.org")
+      RUBY
+      expect(out).to eq("https://rails-assets.org/")
+      expect(err).to be_empty
+
+      bundle "config set mirror.all http://localhost:9293"
+      ruby(<<~RUBY)
+        require "#{entrypoint}"
+        print Bundler.settings.mirror_for("https://rails-assets.org")
+      RUBY
+      expect(out).to eq("http://localhost:9293/")
+      expect(err).to be_empty
+    end
+  end
+
   describe "subcommands" do
     it "list" do
-      bundle "config list"
-      expect(out).to eq "Settings are listed in order of priority. The top value will be used.\nspec_run\nSet via BUNDLE_SPEC_RUN: \"true\""
+      bundle "config list", :env => { "BUNDLE_FOO" => "bar" }
+      expect(out).to eq "Settings are listed in order of priority. The top value will be used.\nfoo\nSet via BUNDLE_FOO: \"bar\""
 
-      bundle "config list", :parseable => true
-      expect(out).to eq "spec_run=true"
+      bundle "config list", :env => { "BUNDLE_FOO" => "bar" }, :parseable => true
+      expect(out).to eq "foo=bar"
+    end
+
+    it "list with credentials" do
+      bundle "config list", :env => { "BUNDLE_GEMS__MYSERVER__COM" => "user:password" }
+      expect(out).to eq "Settings are listed in order of priority. The top value will be used.\ngems.myserver.com\nSet via BUNDLE_GEMS__MYSERVER__COM: \"user:[REDACTED]\""
+
+      bundle "config list", :parseable => true, :env => { "BUNDLE_GEMS__MYSERVER__COM" => "user:password" }
+      expect(out).to eq "gems.myserver.com=user:password"
+    end
+
+    it "list with API token credentials" do
+      bundle "config list", :env => { "BUNDLE_GEMS__MYSERVER__COM" => "api_token:x-oauth-basic" }
+      expect(out).to eq "Settings are listed in order of priority. The top value will be used.\ngems.myserver.com\nSet via BUNDLE_GEMS__MYSERVER__COM: \"[REDACTED]:x-oauth-basic\""
+
+      bundle "config list", :parseable => true, :env => { "BUNDLE_GEMS__MYSERVER__COM" => "api_token:x-oauth-basic" }
+      expect(out).to eq "gems.myserver.com=api_token:x-oauth-basic"
     end
 
     it "get" do

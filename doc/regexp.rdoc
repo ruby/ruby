@@ -27,12 +27,22 @@ Here 'haystack' contains the pattern 'hay', so it matches:
 Specifically, <tt>/st/</tt> requires that the string contains the letter
 _s_ followed by the letter _t_, so it matches _haystack_, also.
 
+Note that any Regexp matching will raise a RuntimeError if timeout is set and
+exceeded. See "Timeout" section in detail.
+
+== \Regexp Interpolation
+
+A regexp may contain interpolated strings; trivially:
+
+  foo = 'bar'
+  /#{foo}/ # => /bar/
+
 == <tt>=~</tt> and Regexp#match
 
 Pattern matching may be achieved by using <tt>=~</tt> operator or Regexp#match
 method.
 
-=== <tt>=~</tt> operator
+=== <tt>=~</tt> Operator
 
 <tt>=~</tt> is Ruby's basic pattern-matching operator.  When one operand is a
 regular expression and the other is a string then the regular expression is
@@ -51,7 +61,7 @@ Using <tt>=~</tt> operator with a String and Regexp the <tt>$~</tt> global
 variable is set after a successful match.  <tt>$~</tt> holds a MatchData
 object. Regexp.last_match is equivalent to <tt>$~</tt>.
 
-=== Regexp#match method
+=== Regexp#match Method
 
 The #match method returns a MatchData object:
 
@@ -190,7 +200,7 @@ At least one uppercase character ('H'), at least one lowercase character
 
     "Hello".match(/[[:upper:]]+[[:lower:]]+l{2}o/) #=> #<MatchData "Hello">
 
-=== Greedy match
+=== Greedy Match
 
 Repetition is <i>greedy</i> by default: as many occurrences as possible
 are matched while still allowing the overall match to succeed. By
@@ -208,7 +218,7 @@ Both patterns below match the string. The first uses a greedy quantifier so
     /<.+>/.match("<a><b>")  #=> #<MatchData "<a><b>">
     /<.+?>/.match("<a><b>") #=> #<MatchData "<a>">
 
-=== Possessive match
+=== Possessive Match
 
 A quantifier followed by <tt>+</tt> matches <i>possessively</i>: once it
 has matched it does not backtrack. They behave like greedy quantifiers,
@@ -222,13 +232,13 @@ jeopardises the overall match.
 == Capturing
 
 Parentheses can be used for <i>capturing</i>. The text enclosed by the
-<i>n</i><sup>th</sup> group of parentheses can be subsequently referred to
+<i>n</i>th group of parentheses can be subsequently referred to
 with <i>n</i>. Within a pattern use the <i>backreference</i>
-<tt>\n</tt>; outside of the pattern use
-<tt>MatchData[</tt><i>n</i><tt>]</tt>.
+<tt>\n</tt> (e.g. <tt>\1</tt>); outside of the pattern use
+<tt>MatchData[n]</tt> (e.g. <tt>MatchData[1]</tt>).
 
-'at' is captured by the first group of parentheses, then referred to later
-with <tt>\1</tt>:
+In this example, <tt>'at'</tt> is captured by the first group of
+parentheses, then referred to later with <tt>\1</tt>:
 
     /[csh](..) [csh]\1 in/.match("The cat sat in the hat")
         #=> #<MatchData "cat sat in" 1:"at">
@@ -238,7 +248,22 @@ available with its #[] method:
 
     /[csh](..) [csh]\1 in/.match("The cat sat in the hat")[1] #=> 'at'
 
-=== Named captures
+While Ruby supports an arbitrary number of numbered captured groups,
+only groups 1-9 are supported using the <tt>\n</tt> backreference
+syntax.
+
+Ruby also supports <tt>\0</tt> as a special backreference, which
+references the entire matched string.  This is also available at
+<tt>MatchData[0]</tt>.  Note that the <tt>\0</tt> backreference cannot
+be used inside the regexp, as backreferences can only be used after the
+end of the capture group, and the <tt>\0</tt> backreference uses the
+implicit capture group of the entire match.  However, you can use
+this backreference when doing substitution:
+
+  "The cat sat in the hat".gsub(/[csh]at/, '\0s')
+    # => "The cats sats in the hats"
+
+=== Named Captures
 
 Capture groups can be referred to by name when defined with the
 <tt>(?<</tt><i>name</i><tt>>)</tt> or <tt>(?'</tt><i>name</i><tt>')</tt>
@@ -372,8 +397,8 @@ then matches a literal <i>)</i>:
 
 == Alternation
 
-The vertical bar metacharacter (<tt>|</tt>) combines two expressions into
-a single one that matches either of the expressions. Each expression is an
+The vertical bar metacharacter (<tt>|</tt>) combines several expressions into
+a single one that matches any of the expressions. Each expression is an
 <i>alternative</i>.
 
     /\w(and|or)\w/.match("Feliformia") #=> #<MatchData "form" 1:"or">
@@ -390,6 +415,7 @@ much like POSIX bracket classes.
 * <tt>/\p{Blank}/</tt> - Space or tab
 * <tt>/\p{Cntrl}/</tt> - Control character
 * <tt>/\p{Digit}/</tt> - Digit
+* <tt>/\p{Emoji}/</tt> - Unicode emoji
 * <tt>/\p{Graph}/</tt> - Non-blank character (excludes spaces, control
   characters, and similar)
 * <tt>/\p{Lower}/</tt> - Lowercase alphabetical character
@@ -524,6 +550,17 @@ characters, <i>anchoring</i> the match to a specific position.
 * <tt>(?<!</tt><i>pat</i><tt>)</tt> - <i>Negative lookbehind</i>
   assertion: ensures that the preceding characters do not match
   <i>pat</i>, but doesn't include those characters in the matched text
+* <tt>\K</tt> - Uses an positive lookbehind of the content preceding
+  <tt>\K</tt> in the regexp.  For example, the following two regexps are
+  almost equivalent:
+
+      /ab\Kc/
+      /(?<=ab)c/
+
+  As are the following two regexps:
+
+      /(a)\K(b)\Kc/
+      /(?<=(?<=(a))(b))c/
 
 If a pattern isn't anchored it can begin at any point in the string:
 
@@ -642,9 +679,10 @@ regexp's encoding can be explicitly fixed by supplying
        # raises Encoding::CompatibilityError: incompatible encoding regexp match
        #         (ISO-8859-1 regexp with UTF-8 string)
 
-== Special global variables
+== \Regexp Global Variables
 
 Pattern matching sets some global variables :
+
 * <tt>$~</tt> is equivalent to Regexp.last_match;
 * <tt>$&</tt> contains the complete matched text;
 * <tt>$`</tt> contains string before match;
@@ -732,3 +770,23 @@ with <i>a{0,29}</i>:
 
     Regexp.new('a{0,29}' + 'a' * 29) =~ 'a' * 29
 
+== Timeout
+
+There are two APIs to set timeout. One is Timeout.timeout=, which is
+process-global configuration of timeout for Regexp matching.
+
+    Regexp.timeout = 3
+    s = 'a' * 25 + 'd' + 'a' * 4 + 'c'
+    /(b|a+)*c/ =~ s  #=> This raises an exception in three seconds
+
+The other is timeout keyword of Regexp.new.
+
+    re = Regexp.new("(b|a+)*c", timeout: 3)
+    s = 'a' * 25 + 'd' + 'a' * 4 + 'c'
+    /(b|a+)*c/ =~ s  #=> This raises an exception in three seconds
+
+When using Regexps to process untrusted input, you should use the timeout
+feature to avoid excessive backtracking. Otherwise, a malicious user can
+provide input to Regexp causing Denail-of-Service attack.
+Note that the timeout is not set by default because an appropriate limit
+highly depends on an application requirement and context.

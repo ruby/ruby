@@ -7,7 +7,7 @@ RSpec.describe Bundler::Plugin::Installer do
     it "uses Gem.sources when non of the source is provided" do
       sources = double(:sources)
       Bundler.settings # initialize it before we have to touch rubygems.ext_lock
-      allow(Bundler).to receive_message_chain("rubygems.sources") { sources }
+      allow(Gem).to receive(:sources) { sources }
 
       allow(installer).to receive(:install_rubygems).
         with("new-plugin", [">= 0"], sources).once

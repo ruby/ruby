@@ -52,7 +52,7 @@ char *getenv();
 #endif
 char *getlogin();
 
-#define RUBY_ETC_VERSION "1.2.0"
+#define RUBY_ETC_VERSION "1.4.0"
 
 #ifdef HAVE_RB_DEPRECATE_CONSTANT
 void rb_deprecate_constant(VALUE mod, const char *name);
@@ -957,10 +957,12 @@ io_pathconf(VALUE io, VALUE arg)
 static int
 etc_nprocessors_affin(void)
 {
-    cpu_set_t *cpuset;
+    cpu_set_t *cpuset, cpuset_buff[1024 / sizeof(cpu_set_t)];
     size_t size;
     int ret;
     int n;
+
+    CPU_ZERO_S(sizeof(cpuset_buff), cpuset_buff);
 
     /*
      * XXX:
@@ -980,13 +982,12 @@ etc_nprocessors_affin(void)
      */
     for (n=64; n <= 16384; n *= 2) {
 	size = CPU_ALLOC_SIZE(n);
-	if (size >= 1024) {
+	if (size >= sizeof(cpuset_buff)) {
 	    cpuset = xcalloc(1, size);
 	    if (!cpuset)
 		return -1;
 	} else {
-	    cpuset = alloca(size);
-	    CPU_ZERO_S(size, cpuset);
+	    cpuset = cpuset_buff;
 	}
 
 	ret = sched_getaffinity(0, size, cpuset);
@@ -995,10 +996,10 @@ etc_nprocessors_affin(void)
 	    ret = CPU_COUNT_S(size, cpuset);
 	}
 
-	if (size >= 1024) {
+	if (size >= sizeof(cpuset_buff)) {
 	    xfree(cpuset);
 	}
-	if (ret > 0) {
+	if (ret > 0 || errno != EINVAL) {
 	    return ret;
 	}
     }
@@ -1157,8 +1158,7 @@ Init_etc(void)
 #endif
 				      NULL);
 #if 0
-    /* Define-const: Passwd
-     *
+    /*
      * Passwd is a Struct that contains the following members:
      *
      * name::
@@ -1196,12 +1196,11 @@ Init_etc(void)
      * expire::
      *	    account expiration time(integer) must be compiled with +HAVE_STRUCT_PASSWD_PW_EXPIRE+
      */
-    rb_define_const(mEtc, "Passwd", sPasswd);
+    sPasswd = rb_define_class_under(mEtc, "Passwd", rb_cStruct);
 #endif
-    rb_define_const(rb_cStruct, "Passwd", sPasswd); /* deprecated name */
-    rb_deprecate_constant(rb_cStruct, "Passwd");
     rb_extend_object(sPasswd, rb_mEnumerable);
     rb_define_singleton_method(sPasswd, "each", etc_each_passwd, 0);
+
 #ifdef HAVE_GETGRENT
     sGroup = rb_struct_define_under(mEtc, "Group", "name",
 #ifdef HAVE_STRUCT_GROUP_GR_PASSWD
@@ -1210,8 +1209,7 @@ Init_etc(void)
 				    "gid", "mem", NULL);
 
 #if 0
-    /* Define-const: Group
-     *
+    /*
      * Group is a Struct that is only available when compiled with +HAVE_GETGRENT+.
      *
      * The struct contains the following members:
@@ -1219,11 +1217,10 @@ Init_etc(void)
      * name::
      *	    contains the name of the group as a String.
      * passwd::
-     *	    contains the encrypted password as a String. An 'x' is
+     *	    contains the encrypted password as a String. An <code>'x'</code> is
      *	    returned if password access to the group is not available; an empty
      *	    string is returned if no password is needed to obtain membership of
      *	    the group.
-     *
      *	    Must be compiled with +HAVE_STRUCT_GROUP_GR_PASSWD+.
      * gid::
      *	    contains the group's numeric ID as an integer.
@@ -1231,10 +1228,8 @@ Init_etc(void)
      *	    is an Array of Strings containing the short login names of the
      *	    members of the group.
      */
-    rb_define_const(mEtc, "Group", sGroup);
+    sGroup = rb_define_class_under(mEtc, "Group", rb_cStruct);
 #endif
-    rb_define_const(rb_cStruct, "Group", sGroup); /* deprecated name */
-    rb_deprecate_constant(rb_cStruct, "Group");
     rb_extend_object(sGroup, rb_mEnumerable);
     rb_define_singleton_method(sGroup, "each", etc_each_group, 0);
 #endif

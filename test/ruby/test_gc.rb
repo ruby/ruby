@@ -54,7 +54,7 @@ class TestGc < Test::Unit::TestCase
 
   def test_start_full_mark
     return unless use_rgengc?
-    skip 'stress' if GC.stress
+    omit 'stress' if GC.stress
 
     3.times { GC.start } # full mark and next time it should be minor mark
     GC.start(full_mark: false)
@@ -65,7 +65,7 @@ class TestGc < Test::Unit::TestCase
   end
 
   def test_start_immediate_sweep
-    skip 'stress' if GC.stress
+    omit 'stress' if GC.stress
 
     GC.start(immediate_sweep: false)
     assert_equal false, GC.latest_gc_info(:immediate_sweep)
@@ -117,7 +117,7 @@ class TestGc < Test::Unit::TestCase
   end
 
   def test_stat_single
-    skip 'stress' if GC.stress
+    omit 'stress' if GC.stress
 
     stat = GC.stat
     assert_equal stat[:count], GC.stat(:count)
@@ -125,7 +125,7 @@ class TestGc < Test::Unit::TestCase
   end
 
   def test_stat_constraints
-    skip 'stress' if GC.stress
+    omit 'stress' if GC.stress
 
     stat = GC.stat
     assert_equal stat[:total_allocated_pages], stat[:heap_allocated_pages] + stat[:total_freed_pages]
@@ -139,8 +139,79 @@ class TestGc < Test::Unit::TestCase
     end
   end
 
+  def test_stat_heap
+    omit 'stress' if GC.stress
+
+    stat_heap = {}
+    stat = {}
+    # Initialize to prevent GC in future calls
+    GC.stat_heap(0, stat_heap)
+    GC.stat(stat)
+
+    GC::INTERNAL_CONSTANTS[:SIZE_POOL_COUNT].times do |i|
+      GC.stat_heap(i, stat_heap)
+      GC.stat(stat)
+
+      assert_equal GC::INTERNAL_CONSTANTS[:BASE_SLOT_SIZE] * (2**i), stat_heap[:slot_size]
+      assert_operator stat_heap[:heap_allocatable_pages], :<=, stat[:heap_allocatable_pages]
+      assert_operator stat_heap[:heap_eden_pages], :<=, stat[:heap_eden_pages]
+      assert_operator stat_heap[:heap_eden_slots], :>=, 0
+      assert_operator stat_heap[:heap_tomb_pages], :<=, stat[:heap_tomb_pages]
+      assert_operator stat_heap[:heap_tomb_slots], :>=, 0
+      assert_operator stat_heap[:total_allocated_pages], :>=, 0
+      assert_operator stat_heap[:total_freed_pages], :>=, 0
+      assert_operator stat_heap[:force_major_gc_count], :>=, 0
+    end
+
+    GC.stat_heap(0, stat_heap)
+    assert_equal stat_heap[:slot_size], GC.stat_heap(0, :slot_size)
+    assert_equal stat_heap[:slot_size], GC.stat_heap(0)[:slot_size]
+
+    assert_raise(ArgumentError) { GC.stat_heap(-1) }
+    assert_raise(ArgumentError) { GC.stat_heap(GC::INTERNAL_CONSTANTS[:SIZE_POOL_COUNT]) }
+  end
+
+  def test_stat_heap_all
+    stat_heap_all = {}
+    stat_heap = {}
+
+    2.times do
+      GC.stat_heap(0, stat_heap)
+      GC.stat_heap(nil, stat_heap_all)
+    end
+
+    GC::INTERNAL_CONSTANTS[:SIZE_POOL_COUNT].times do |i|
+      GC.stat_heap(i, stat_heap)
+
+      assert_equal stat_heap, stat_heap_all[i]
+    end
+
+    assert_raise(TypeError) { GC.stat_heap(nil, :slot_size) }
+  end
+
+  def test_stat_heap_constraints
+    omit 'stress' if GC.stress
+
+    stat = GC.stat
+    stat_heap = GC.stat_heap
+    GC.stat(stat)
+    GC.stat_heap(nil, stat_heap)
+
+    stat_heap_sum = Hash.new(0)
+    stat_heap.values.each do |hash|
+      hash.each { |k, v| stat_heap_sum[k] += v }
+    end
+
+    assert_equal stat[:heap_allocatable_pages], stat_heap_sum[:heap_allocatable_pages]
+    assert_equal stat[:heap_eden_pages], stat_heap_sum[:heap_eden_pages]
+    assert_equal stat[:heap_tomb_pages], stat_heap_sum[:heap_tomb_pages]
+    assert_equal stat[:heap_available_slots], stat_heap_sum[:heap_eden_slots] + stat_heap_sum[:heap_tomb_slots]
+    assert_equal stat[:total_allocated_pages], stat_heap_sum[:total_allocated_pages]
+    assert_equal stat[:total_freed_pages], stat_heap_sum[:total_freed_pages]
+  end
+
   def test_latest_gc_info
-    skip 'stress' if GC.stress
+    omit 'stress' if GC.stress
 
     assert_separately %w[--disable-gem], __FILE__, __LINE__, <<-'eom'
     GC.start
@@ -280,7 +351,7 @@ class TestGc < Test::Unit::TestCase
   end
 
   def test_profiler_clear
-    skip "for now"
+    omit "for now"
     assert_separately %w[--disable-gem], __FILE__, __LINE__, <<-'eom', timeout: 30
     GC::Profiler.enable
 
@@ -442,49 +513,43 @@ class TestGc < Test::Unit::TestCase
   end
 
   def test_exception_in_finalizer_procs
-    result = []
+    assert_in_out_err(["-W0"], "#{<<~"begin;"}\n#{<<~'end;'}", %w[c1 c2])
     c1 = proc do
-      result << :c1
+      puts "c1"
       raise
     end
     c2 = proc do
-      result << :c2
+      puts "c2"
       raise
     end
-    tap {
-      tap {
+    begin;
+      tap do
         obj = Object.new
         ObjectSpace.define_finalizer(obj, c1)
         ObjectSpace.define_finalizer(obj, c2)
         obj = nil
-      }
-    }
-    GC.start
-    skip "finalizers did not get run" if result.empty?
-    assert_equal([:c1, :c2], result)
+      end
+    end;
   end
 
   def test_exception_in_finalizer_method
-    @result = []
+    assert_in_out_err(["-W0"], "#{<<~"begin;"}\n#{<<~'end;'}", %w[c1 c2])
     def self.c1(x)
-      @result << :c1
+      puts "c1"
       raise
     end
     def self.c2(x)
-      @result << :c2
+      puts "c2"
       raise
     end
-    tap {
-      tap {
+    begin;
+      tap do
         obj = Object.new
         ObjectSpace.define_finalizer(obj, method(:c1))
         ObjectSpace.define_finalizer(obj, method(:c2))
         obj = nil
-      }
-    }
-    GC.start
-    skip "finalizers did not get run" if @result.empty?
-    assert_equal([:c1, :c2], @result)
+      end
+    end;
   end
 
   def test_object_ids_never_repeat
@@ -497,8 +562,7 @@ class TestGc < Test::Unit::TestCase
 
   def test_ast_node_buffer
     # https://github.com/ruby/ruby/pull/4416
-    Module.new.class_eval do
-      eval((["# shareable_constant_value: literal"] + (0..100000).map {|i| "M#{ i } = {}" }).join("\n"))
-    end
+    Module.new.class_eval( (["# shareable_constant_value: literal"] +
+                            (0..100000).map {|i| "M#{ i } = {}" }).join("\n"))
   end
 end

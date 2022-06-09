@@ -10,6 +10,7 @@ class SpellCheckerTest < Test::Unit::TestCase
     assert_spell 'eval',  input: 'veal',  dictionary: ['email', 'fail', 'eval']
     assert_spell 'sub!',  input: 'suv!',  dictionary: ['sub', 'gsub', 'sub!']
     assert_spell 'sub',   input: 'suv',   dictionary: ['sub', 'gsub', 'sub!']
+    assert_spell 'Foo',   input: 'FOo',   dictionary: ['Foo', 'FOo']
 
     assert_spell %w(gsub! gsub),     input: 'gsuv!', dictionary: %w(sub gsub gsub!)
     assert_spell %w(sub! sub gsub!), input: 'ssub!', dictionary: %w(sub sub! gsub gsub!)

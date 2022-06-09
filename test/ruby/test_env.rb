@@ -62,6 +62,46 @@ class TestEnv < Test::Unit::TestCase
     }
   end
 
+  def test_dup
+    assert_raise(TypeError) {
+      ENV.dup
+    }
+  end
+
+  def test_clone
+    warning = /ENV\.clone is deprecated; use ENV\.to_h instead/
+    clone = assert_deprecated_warning(warning) {
+      ENV.clone
+    }
+    assert_same(ENV, clone)
+
+    clone = assert_deprecated_warning(warning) {
+      ENV.clone(freeze: false)
+    }
+    assert_same(ENV, clone)
+
+    clone = assert_deprecated_warning(warning) {
+      ENV.clone(freeze: nil)
+    }
+    assert_same(ENV, clone)
+
+    assert_raise(TypeError) {
+      ENV.clone(freeze: true)
+    }
+    assert_raise(ArgumentError) {
+      ENV.clone(freeze: 1)
+    }
+    assert_raise(ArgumentError) {
+      ENV.clone(foo: false)
+    }
+    assert_raise(ArgumentError) {
+      ENV.clone(1)
+    }
+    assert_raise(ArgumentError) {
+      ENV.clone(1, foo: false)
+    }
+  end
+
   def test_has_value
     val = 'a'
     val.succ! while ENV.has_value?(val) || ENV.has_value?(val.upcase)
@@ -463,15 +503,15 @@ class TestEnv < Test::Unit::TestCase
   end
 
   def test_huge_value
-    huge_value = "bar" * 40960
-    ENV["foo"] = "bar"
-    if /mswin/ =~ RUBY_PLATFORM
-      assert_raise(Errno::EINVAL) { ENV["foo"] = huge_value }
-      assert_equal("bar", ENV["foo"])
+    if /mswin|ucrt/ =~ RUBY_PLATFORM
+      # On Windows >= Vista each environment variable can be max 32768 characters
+      huge_value = "bar" * 10900
     else
-      assert_nothing_raised { ENV["foo"] = huge_value }
-      assert_equal(huge_value, ENV["foo"])
+      huge_value = "bar" * 40960
     end
+    ENV["foo"] = "overwritten"
+    assert_nothing_raised { ENV["foo"] = huge_value }
+    assert_equal(huge_value, ENV["foo"])
   end
 
   if /mswin|mingw/ =~ RUBY_PLATFORM
@@ -536,6 +576,892 @@ class TestEnv < Test::Unit::TestCase
     ENV[n1], e1 = e1, ENV[n1]
     assert_equal("T#{n}", e0, bug12475)
     assert_nil(e1, bug12475)
+  end
+
+  def ignore_case_str
+    IGNORE_CASE ? "true" : "false"
+  end
+
+  def str_for_yielding_exception_class(code_str, exception_var: "raised_exception")
+    <<-"end;"
+      #{exception_var} = nil
+      begin
+        #{code_str}
+      rescue Exception => e
+        #{exception_var} = e
+      end
+      Ractor.yield #{exception_var}.class
+    end;
+  end
+
+  def str_for_assert_raise_on_yielded_exception_class(expected_error_class, ractor_var)
+    <<-"end;"
+      error_class = #{ractor_var}.take
+      assert_raise(#{expected_error_class}) do
+        if error_class < Exception
+          raise error_class
+        end
+      end
+    end;
+  end
+
+  def str_to_yield_invalid_envvar_errors(var_name, code_str)
+    <<-"end;"
+      envvars_to_check = [
+        "foo\0bar",
+        "#{'\xa1\xa1'}".force_encoding(Encoding::UTF_16LE),
+        "foo".force_encoding(Encoding::ISO_2022_JP),
+      ]
+      envvars_to_check.each do |#{var_name}|
+        #{str_for_yielding_exception_class(code_str)}
+      end
+    end;
+  end
+
+  def str_to_receive_invalid_envvar_errors(ractor_var)
+    <<-"end;"
+      3.times do
+        #{str_for_assert_raise_on_yielded_exception_class(ArgumentError, ractor_var)}
+      end
+    end;
+  end
+
+  STR_DEFINITION_FOR_CHECK = %Q{
+      def check(as, bs)
+        if #{IGNORE_CASE ? "true" : "false"}
+          as = as.map {|k, v| [k.upcase, v] }
+          bs = bs.map {|k, v| [k.upcase, v] }
+        end
+        assert_equal(as.sort, bs.sort)
+      end
+  }
+
+  def test_bracket_in_ractor
+    assert_ractor(<<-"end;")
+      r = Ractor.new do
+        Ractor.yield ENV['test']
+        Ractor.yield ENV['TEST']
+        ENV['test'] = 'foo'
+        Ractor.yield ENV['test']
+        Ractor.yield ENV['TEST']
+        ENV['TEST'] = 'bar'
+        Ractor.yield ENV['TEST']
+        Ractor.yield ENV['test']
+        #{str_for_yielding_exception_class("ENV[1]")}
+        #{str_for_yielding_exception_class("ENV[1] = 'foo'")}
+        #{str_for_yielding_exception_class("ENV['test'] = 0")}
+      end
+      assert_nil(r.take)
+      assert_nil(r.take)
+      assert_equal('foo', r.take)
+      if #{ignore_case_str}
+        assert_equal('foo', r.take)
+      else
+        assert_nil(r.take)
+      end
+      assert_equal('bar', r.take)
+      if #{ignore_case_str}
+        assert_equal('bar', r.take)
+      else
+        assert_equal('foo', r.take)
+      end
+      3.times do
+        #{str_for_assert_raise_on_yielded_exception_class(TypeError, "r")}
+      end
+    end;
+  end
+
+  def test_dup_in_ractor
+    assert_ractor(<<-"end;")
+      r = Ractor.new do
+        #{str_for_yielding_exception_class("ENV.dup")}
+      end
+      #{str_for_assert_raise_on_yielded_exception_class(TypeError, "r")}
+    end;
+  end
+
+  def test_clone_in_ractor
+    assert_ractor(<<-"end;")
+      r = Ractor.new do
+        original_warning_state = Warning[:deprecated]
+        Warning[:deprecated] = false
+
+        begin
+          Ractor.yield ENV.clone.object_id
+          Ractor.yield ENV.clone(freeze: false).object_id
+          Ractor.yield ENV.clone(freeze: nil).object_id
+
+          #{str_for_yielding_exception_class("ENV.clone(freeze: true)")}
+          #{str_for_yielding_exception_class("ENV.clone(freeze: 1)")}
+          #{str_for_yielding_exception_class("ENV.clone(foo: false)")}
+          #{str_for_yielding_exception_class("ENV.clone(1)")}
+          #{str_for_yielding_exception_class("ENV.clone(1, foo: false)")}
+
+        ensure
+          Warning[:deprecated] = original_warning_state
+        end
+      end
+      assert_equal(ENV.object_id, r.take)
+      assert_equal(ENV.object_id, r.take)
+      assert_equal(ENV.object_id, r.take)
+      #{str_for_assert_raise_on_yielded_exception_class(TypeError, "r")}
+      4.times do
+        #{str_for_assert_raise_on_yielded_exception_class(ArgumentError, "r")}
+      end
+    end;
+  end
+
+  def test_has_value_in_ractor
+    assert_ractor(<<-"end;")
+      r = Ractor.new do
+        val = 'a'
+        val.succ! while ENV.has_value?(val) || ENV.has_value?(val.upcase)
+        ENV['test'] = val[0...-1]
+        Ractor.yield(ENV.has_value?(val))
+        Ractor.yield(ENV.has_value?(val.upcase))
+        ENV['test'] = val
+        Ractor.yield(ENV.has_value?(val))
+        Ractor.yield(ENV.has_value?(val.upcase))
+        ENV['test'] = val.upcase
+        Ractor.yield ENV.has_value?(val)
+        Ractor.yield ENV.has_value?(val.upcase)
+      end
+      assert_equal(false, r.take)
+      assert_equal(false, r.take)
+      assert_equal(true, r.take)
+      assert_equal(false, r.take)
+      assert_equal(false, r.take)
+      assert_equal(true, r.take)
+    end;
+  end
+
+  def test_key_in_ractor
+    assert_ractor(<<-"end;")
+      r = Ractor.new do
+        val = 'a'
+        val.succ! while ENV.has_value?(val) || ENV.has_value?(val.upcase)
+        ENV['test'] = val[0...-1]
+        Ractor.yield ENV.key(val)
+        Ractor.yield ENV.key(val.upcase)
+        ENV['test'] = val
+        Ractor.yield ENV.key(val)
+        Ractor.yield ENV.key(val.upcase)
+        ENV['test'] = val.upcase
+        Ractor.yield ENV.key(val)
+        Ractor.yield ENV.key(val.upcase)
+      end
+      assert_nil(r.take)
+      assert_nil(r.take)
+      if #{ignore_case_str}
+        assert_equal('TEST', r.take.upcase)
+      else
+        assert_equal('test', r.take)
+      end
+      assert_nil(r.take)
+      assert_nil(r.take)
+      if #{ignore_case_str}
+        assert_equal('TEST', r.take.upcase)
+      else
+        assert_equal('test', r.take)
+      end
+    end;
+
+  end
+
+  def test_delete_in_ractor
+    assert_ractor(<<-"end;")
+      r = Ractor.new do
+        #{str_to_yield_invalid_envvar_errors("v", "ENV.delete(v)")}
+        Ractor.yield ENV.delete("TEST")
+        #{str_for_yielding_exception_class("ENV.delete('#{PATH_ENV}')")}
+        Ractor.yield(ENV.delete("TEST"){|name| "NO "+name})
+      end
+      #{str_to_receive_invalid_envvar_errors("r")}
+      assert_nil(r.take)
+      exception_class = r.take
+      assert_equal(NilClass, exception_class)
+      assert_equal("NO TEST", r.take)
+    end;
+  end
+
+  def test_getenv_in_ractor
+    assert_ractor(<<-"end;")
+      r = Ractor.new do
+        #{str_to_yield_invalid_envvar_errors("v", "ENV[v]")}
+        ENV["#{PATH_ENV}"] = ""
+        Ractor.yield ENV["#{PATH_ENV}"]
+        Ractor.yield ENV[""]
+      end
+      #{str_to_receive_invalid_envvar_errors("r")}
+      assert_equal("", r.take)
+      assert_nil(r.take)
+    end;
+  end
+
+  def test_fetch_in_ractor
+    assert_ractor(<<-"end;")
+      r = Ractor.new do
+        ENV["test"] = "foo"
+        Ractor.yield ENV.fetch("test")
+        ENV.delete("test")
+        #{str_for_yielding_exception_class("ENV.fetch('test')", exception_var: "ex")}
+        Ractor.yield ex.receiver.object_id
+        Ractor.yield ex.key
+        Ractor.yield ENV.fetch("test", "foo")
+        Ractor.yield(ENV.fetch("test"){"bar"})
+        #{str_to_yield_invalid_envvar_errors("v", "ENV.fetch(v)")}
+        #{str_for_yielding_exception_class("ENV.fetch('#{PATH_ENV}', 'foo')")}
+        ENV['#{PATH_ENV}'] = ""
+        Ractor.yield ENV.fetch('#{PATH_ENV}')
+      end
+      assert_equal("foo", r.take)
+      #{str_for_assert_raise_on_yielded_exception_class(KeyError, "r")}
+      assert_equal(ENV.object_id, r.take)
+      assert_equal("test", r.take)
+      assert_equal("foo", r.take)
+      assert_equal("bar", r.take)
+      #{str_to_receive_invalid_envvar_errors("r")}
+      exception_class = r.take
+      assert_equal(NilClass, exception_class)
+      assert_equal("", r.take)
+    end;
+  end
+
+  def test_aset_in_ractor
+    assert_ractor(<<-"end;")
+      r = Ractor.new do
+        #{str_for_yielding_exception_class("ENV['test'] = nil")}
+        ENV["test"] = nil
+        Ractor.yield ENV["test"]
+        #{str_to_yield_invalid_envvar_errors("v", "ENV[v] = 'test'")}
+        #{str_to_yield_invalid_envvar_errors("v", "ENV['test'] = v")}
+      end
+      exception_class = r.take
+      assert_equal(NilClass, exception_class)
+      assert_nil(r.take)
+      #{str_to_receive_invalid_envvar_errors("r")}
+      #{str_to_receive_invalid_envvar_errors("r")}
+    end;
+  end
+
+  def test_keys_in_ractor
+    assert_ractor(<<-"end;")
+      r = Ractor.new do
+        a = ENV.keys
+        Ractor.yield a
+      end
+      a = r.take
+      assert_kind_of(Array, a)
+      a.each {|k| assert_kind_of(String, k) }
+    end;
+
+  end
+
+  def test_each_key_in_ractor
+    assert_ractor(<<-"end;")
+      r = Ractor.new do
+        ENV.each_key {|k| Ractor.yield(k)}
+        Ractor.yield "finished"
+      end
+      while((x=r.take) != "finished")
+        assert_kind_of(String, x)
+      end
+    end;
+  end
+
+  def test_values_in_ractor
+    assert_ractor(<<-"end;")
+      r = Ractor.new do
+        a = ENV.values
+        Ractor.yield a
+      end
+      a = r.take
+      assert_kind_of(Array, a)
+      a.each {|k| assert_kind_of(String, k) }
+    end;
+  end
+
+  def test_each_value_in_ractor
+    assert_ractor(<<-"end;")
+      r = Ractor.new do
+        ENV.each_value {|k| Ractor.yield(k)}
+        Ractor.yield "finished"
+      end
+      while((x=r.take) != "finished")
+        assert_kind_of(String, x)
+      end
+    end;
+  end
+
+  def test_each_pair_in_ractor
+    assert_ractor(<<-"end;")
+      r = Ractor.new do
+        ENV.each_pair {|k, v| Ractor.yield([k,v])}
+        Ractor.yield "finished"
+      end
+      while((k,v=r.take) != "finished")
+        assert_kind_of(String, k)
+        assert_kind_of(String, v)
+      end
+    end;
+  end
+
+  def test_reject_bang_in_ractor
+    assert_ractor(<<-"end;")
+      r = Ractor.new do
+        h1 = {}
+        ENV.each_pair {|k, v| h1[k] = v }
+        ENV["test"] = "foo"
+        ENV.reject! {|k, v| #{ignore_case_str} ? k.upcase == "TEST" : k == "test" }
+        h2 = {}
+        ENV.each_pair {|k, v| h2[k] = v }
+        Ractor.yield [h1, h2]
+        Ractor.yield(ENV.reject! {|k, v| #{ignore_case_str} ? k.upcase == "TEST" : k == "test" })
+      end
+      h1, h2 = r.take
+      assert_equal(h1, h2)
+      assert_nil(r.take)
+    end;
+  end
+
+  def test_delete_if_in_ractor
+    assert_ractor(<<-"end;")
+      r = Ractor.new do
+        h1 = {}
+        ENV.each_pair {|k, v| h1[k] = v }
+        ENV["test"] = "foo"
+        ENV.delete_if {|k, v| #{ignore_case_str} ? k.upcase == "TEST" : k == "test" }
+        h2 = {}
+        ENV.each_pair {|k, v| h2[k] = v }
+        Ractor.yield [h1, h2]
+        Ractor.yield (ENV.delete_if {|k, v| #{ignore_case_str} ? k.upcase == "TEST" : k == "test" }).object_id
+      end
+      h1, h2 = r.take
+      assert_equal(h1, h2)
+      assert_equal(ENV.object_id, r.take)
+    end;
+  end
+
+  def test_select_bang_in_ractor
+    assert_ractor(<<-"end;")
+      r = Ractor.new do
+        h1 = {}
+        ENV.each_pair {|k, v| h1[k] = v }
+        ENV["test"] = "foo"
+        ENV.select! {|k, v| #{ignore_case_str} ? k.upcase != "TEST" : k != "test" }
+        h2 = {}
+        ENV.each_pair {|k, v| h2[k] = v }
+        Ractor.yield [h1, h2]
+        Ractor.yield(ENV.select! {|k, v| #{ignore_case_str} ? k.upcase != "TEST" : k != "test" })
+      end
+      h1, h2 = r.take
+      assert_equal(h1, h2)
+      assert_nil(r.take)
+    end;
+  end
+
+  def test_filter_bang_in_ractor
+    assert_ractor(<<-"end;")
+      r = Ractor.new do
+        h1 = {}
+        ENV.each_pair {|k, v| h1[k] = v }
+        ENV["test"] = "foo"
+        ENV.filter! {|k, v| #{ignore_case_str} ? k.upcase != "TEST" : k != "test" }
+        h2 = {}
+        ENV.each_pair {|k, v| h2[k] = v }
+        Ractor.yield [h1, h2]
+        Ractor.yield(ENV.filter! {|k, v| #{ignore_case_str} ? k.upcase != "TEST" : k != "test" })
+      end
+      h1, h2 = r.take
+      assert_equal(h1, h2)
+      assert_nil(r.take)
+    end;
+  end
+
+  def test_keep_if_in_ractor
+    assert_ractor(<<-"end;")
+      r = Ractor.new do
+        h1 = {}
+        ENV.each_pair {|k, v| h1[k] = v }
+        ENV["test"] = "foo"
+        ENV.keep_if {|k, v| #{ignore_case_str} ? k.upcase != "TEST" : k != "test" }
+        h2 = {}
+        ENV.each_pair {|k, v| h2[k] = v }
+        Ractor.yield [h1, h2]
+        Ractor.yield (ENV.keep_if {|k, v| #{ignore_case_str} ? k.upcase != "TEST" : k != "test" }).object_id
+      end
+      h1, h2 = r.take
+      assert_equal(h1, h2)
+      assert_equal(ENV.object_id, r.take)
+    end;
+  end
+
+  def test_values_at_in_ractor
+    assert_ractor(<<-"end;")
+      r = Ractor.new do
+        ENV["test"] = "foo"
+        Ractor.yield ENV.values_at("test", "test")
+      end
+      assert_equal(["foo", "foo"], r.take)
+    end;
+  end
+
+  def test_select_in_ractor
+    assert_ractor(<<-"end;")
+      r = Ractor.new do
+        ENV["test"] = "foo"
+        h = ENV.select {|k| #{ignore_case_str} ? k.upcase == "TEST" : k == "test" }
+        Ractor.yield h.size
+        k = h.keys.first
+        v = h.values.first
+        Ractor.yield [k, v]
+      end
+      assert_equal(1, r.take)
+      k, v = r.take
+      if #{ignore_case_str}
+        assert_equal("TEST", k.upcase)
+        assert_equal("FOO", v.upcase)
+      else
+        assert_equal("test", k)
+        assert_equal("foo", v)
+      end
+    end;
+  end
+
+  def test_filter_in_ractor
+    assert_ractor(<<-"end;")
+      r = Ractor.new do
+        ENV["test"] = "foo"
+        h = ENV.filter {|k| #{ignore_case_str} ? k.upcase == "TEST" : k == "test" }
+        Ractor.yield(h.size)
+        k = h.keys.first
+        v = h.values.first
+        Ractor.yield [k, v]
+      end
+      assert_equal(1, r.take)
+      k, v = r.take
+      if #{ignore_case_str}
+        assert_equal("TEST", k.upcase)
+        assert_equal("FOO", v.upcase)
+      else
+        assert_equal("test", k)
+        assert_equal("foo", v)
+      end
+    end;
+  end
+
+  def test_slice_in_ractor
+    assert_ractor(<<-"end;")
+      r = Ractor.new do
+        ENV.clear
+        ENV["foo"] = "bar"
+        ENV["baz"] = "qux"
+        ENV["bar"] = "rab"
+        Ractor.yield(ENV.slice())
+        Ractor.yield(ENV.slice(""))
+        Ractor.yield(ENV.slice("unknown"))
+        Ractor.yield(ENV.slice("foo", "baz"))
+      end
+      assert_equal({}, r.take)
+      assert_equal({}, r.take)
+      assert_equal({}, r.take)
+      assert_equal({"foo"=>"bar", "baz"=>"qux"}, r.take)
+    end;
+  end
+
+  def test_except_in_ractor
+    assert_ractor(<<-"end;")
+      r = Ractor.new do
+        ENV.clear
+        ENV["foo"] = "bar"
+        ENV["baz"] = "qux"
+        ENV["bar"] = "rab"
+        Ractor.yield ENV.except()
+        Ractor.yield ENV.except("")
+        Ractor.yield ENV.except("unknown")
+        Ractor.yield ENV.except("foo", "baz")
+      end
+      assert_equal({"bar"=>"rab", "baz"=>"qux", "foo"=>"bar"}, r.take)
+      assert_equal({"bar"=>"rab", "baz"=>"qux", "foo"=>"bar"}, r.take)
+      assert_equal({"bar"=>"rab", "baz"=>"qux", "foo"=>"bar"}, r.take)
+      assert_equal({"bar"=>"rab"}, r.take)
+    end;
+  end
+
+  def test_clear_in_ractor
+    assert_ractor(<<-"end;")
+      r = Ractor.new do
+        ENV.clear
+        Ractor.yield ENV.size
+      end
+      assert_equal(0, r.take)
+    end;
+  end
+
+  def test_to_s_in_ractor
+    assert_ractor(<<-"end;")
+      r = Ractor.new do
+        ENV.to_s
+      end
+      assert_equal("ENV", r.take)
+    end;
+  end
+
+  def test_inspect_in_ractor
+    assert_ractor(<<-"end;")
+      r = Ractor.new do
+        ENV.clear
+        ENV["foo"] = "bar"
+        ENV["baz"] = "qux"
+        s = ENV.inspect
+        Ractor.yield s
+      end
+      s = r.take
+      if #{ignore_case_str}
+        s = s.upcase
+        assert(s == '{"FOO"=>"BAR", "BAZ"=>"QUX"}' || s == '{"BAZ"=>"QUX", "FOO"=>"BAR"}')
+      else
+        assert(s == '{"foo"=>"bar", "baz"=>"qux"}' || s == '{"baz"=>"qux", "foo"=>"bar"}')
+      end
+    end;
+  end
+
+  def test_to_a_in_ractor
+    assert_ractor(<<-"end;")
+      r = Ractor.new do
+        ENV.clear
+        ENV["foo"] = "bar"
+        ENV["baz"] = "qux"
+        a = ENV.to_a
+        Ractor.yield a
+      end
+      a = r.take
+      assert_equal(2, a.size)
+      if #{ignore_case_str}
+        a = a.map {|x| x.map {|y| y.upcase } }
+        assert(a == [%w(FOO BAR), %w(BAZ QUX)] || a == [%w(BAZ QUX), %w(FOO BAR)])
+      else
+        assert(a == [%w(foo bar), %w(baz qux)] || a == [%w(baz qux), %w(foo bar)])
+      end
+    end;
+  end
+
+  def test_rehash_in_ractor
+    assert_ractor(<<-"end;")
+      r = Ractor.new do
+        ENV.rehash
+      end
+      assert_nil(r.take)
+    end;
+  end
+
+  def test_size_in_ractor
+    assert_ractor(<<-"end;")
+      r = Ractor.new do
+        s = ENV.size
+        ENV["test"] = "foo"
+        Ractor.yield [s, ENV.size]
+      end
+      s, s2 = r.take
+      assert_equal(s + 1, s2)
+    end;
+  end
+
+  def test_empty_p_in_ractor
+    assert_ractor(<<-"end;")
+      r = Ractor.new do
+        ENV.clear
+        Ractor.yield ENV.empty?
+        ENV["test"] = "foo"
+        Ractor.yield ENV.empty?
+      end
+      assert r.take
+      assert !r.take
+    end;
+  end
+
+  def test_has_key_in_ractor
+    assert_ractor(<<-"end;")
+      r = Ractor.new do
+        Ractor.yield ENV.has_key?("test")
+        ENV["test"] = "foo"
+        Ractor.yield ENV.has_key?("test")
+        #{str_to_yield_invalid_envvar_errors("v", "ENV.has_key?(v)")}
+      end
+      assert !r.take
+      assert r.take
+      #{str_to_receive_invalid_envvar_errors("r")}
+    end;
+  end
+
+  def test_assoc_in_ractor
+    assert_ractor(<<-"end;")
+      r = Ractor.new do
+        Ractor.yield ENV.assoc("test")
+        ENV["test"] = "foo"
+        Ractor.yield ENV.assoc("test")
+        #{str_to_yield_invalid_envvar_errors("v", "ENV.assoc(v)")}
+      end
+      assert_nil(r.take)
+      k, v = r.take
+      if #{ignore_case_str}
+        assert_equal("TEST", k.upcase)
+        assert_equal("FOO", v.upcase)
+      else
+        assert_equal("test", k)
+        assert_equal("foo", v)
+      end
+      #{str_to_receive_invalid_envvar_errors("r")}
+      encoding = /mswin|mingw/ =~ RUBY_PLATFORM ? Encoding::UTF_8 : Encoding.find("locale")
+      assert_equal(encoding, v.encoding)
+    end;
+  end
+
+  def test_has_value2_in_ractor
+    assert_ractor(<<-"end;")
+      r = Ractor.new do
+        ENV.clear
+        Ractor.yield ENV.has_value?("foo")
+        ENV["test"] = "foo"
+        Ractor.yield ENV.has_value?("foo")
+      end
+      assert !r.take
+      assert r.take
+    end;
+  end
+
+  def test_rassoc_in_ractor
+    assert_ractor(<<-"end;")
+      r = Ractor.new do
+        ENV.clear
+        Ractor.yield ENV.rassoc("foo")
+        ENV["foo"] = "bar"
+        ENV["test"] = "foo"
+        ENV["baz"] = "qux"
+        Ractor.yield ENV.rassoc("foo")
+      end
+      assert_nil(r.take)
+      k, v = r.take
+      if #{ignore_case_str}
+        assert_equal("TEST", k.upcase)
+        assert_equal("FOO", v.upcase)
+      else
+        assert_equal("test", k)
+        assert_equal("foo", v)
+      end
+    end;
+  end
+
+  def test_to_hash_in_ractor
+    assert_ractor(<<-"end;")
+      r = Ractor.new do
+        h = {}
+        ENV.each {|k, v| h[k] = v }
+        Ractor.yield [h, ENV.to_hash]
+      end
+      h, h2 = r.take
+      assert_equal(h, h2)
+    end;
+  end
+
+  def test_to_h_in_ractor
+    assert_ractor(<<-"end;")
+      r = Ractor.new do
+        Ractor.yield [ENV.to_hash, ENV.to_h]
+        Ractor.yield [ENV.map {|k, v| ["$\#{k}", v.size]}.to_h, ENV.to_h {|k, v| ["$\#{k}", v.size]}]
+      end
+      a, b = r.take
+      assert_equal(a,b)
+      c, d = r.take
+      assert_equal(c,d)
+    end;
+  end
+
+  def test_reject_in_ractor
+    assert_ractor(<<-"end;")
+      r = Ractor.new do
+        h1 = {}
+        ENV.each_pair {|k, v| h1[k] = v }
+        ENV["test"] = "foo"
+        h2 = ENV.reject {|k, v| #{ignore_case_str} ? k.upcase == "TEST" : k == "test" }
+        Ractor.yield [h1, h2]
+      end
+      h1, h2 = r.take
+      assert_equal(h1, h2)
+    end;
+  end
+
+  def test_shift_in_ractor
+    assert_ractor(<<-"end;")
+      #{STR_DEFINITION_FOR_CHECK}
+      r = Ractor.new do
+        ENV.clear
+        ENV["foo"] = "bar"
+        ENV["baz"] = "qux"
+        a = ENV.shift
+        b = ENV.shift
+        Ractor.yield [a,b]
+        Ractor.yield ENV.shift
+      end
+      a,b = r.take
+      check([a, b], [%w(foo bar), %w(baz qux)])
+      assert_nil(r.take)
+    end;
+  end
+
+  def test_invert_in_ractor
+    assert_ractor(<<-"end;")
+      #{STR_DEFINITION_FOR_CHECK}
+      r = Ractor.new do
+        ENV.clear
+        ENV["foo"] = "bar"
+        ENV["baz"] = "qux"
+        Ractor.yield(ENV.invert)
+      end
+      check(r.take.to_a, [%w(bar foo), %w(qux baz)])
+    end;
+  end
+
+  def test_replace_in_ractor
+    assert_ractor(<<-"end;")
+      #{STR_DEFINITION_FOR_CHECK}
+      r = Ractor.new do
+        ENV["foo"] = "xxx"
+        ENV.replace({"foo"=>"bar", "baz"=>"qux"})
+        Ractor.yield ENV.to_hash
+        ENV.replace({"Foo"=>"Bar", "Baz"=>"Qux"})
+        Ractor.yield ENV.to_hash
+      end
+      check(r.take.to_a, [%w(foo bar), %w(baz qux)])
+      check(r.take.to_a, [%w(Foo Bar), %w(Baz Qux)])
+    end;
+  end
+
+  def test_update_in_ractor
+    assert_ractor(<<-"end;")
+      #{STR_DEFINITION_FOR_CHECK}
+      r = Ractor.new do
+        ENV.clear
+        ENV["foo"] = "bar"
+        ENV["baz"] = "qux"
+        ENV.update({"baz"=>"quux","a"=>"b"})
+        Ractor.yield ENV.to_hash
+        ENV.clear
+        ENV["foo"] = "bar"
+        ENV["baz"] = "qux"
+        ENV.update({"baz"=>"quux","a"=>"b"}) {|k, v1, v2| k + "_" + v1 + "_" + v2 }
+        Ractor.yield ENV.to_hash
+      end
+      check(r.take.to_a, [%w(foo bar), %w(baz quux), %w(a b)])
+      check(r.take.to_a, [%w(foo bar), %w(baz baz_qux_quux), %w(a b)])
+    end;
+  end
+
+  def test_huge_value_in_ractor
+    assert_ractor(<<-"end;")
+      huge_value = "bar" * 40960
+      r = Ractor.new huge_value do |v|
+        ENV["foo"] = "bar"
+        #{str_for_yielding_exception_class("ENV['foo'] = v ")}
+        Ractor.yield ENV["foo"]
+      end
+
+      if /mswin|ucrt/ =~ RUBY_PLATFORM
+        #{str_for_assert_raise_on_yielded_exception_class(Errno::EINVAL, "r")}
+        result = r.take
+        assert_equal("bar", result)
+      else
+        exception_class = r.take
+        assert_equal(NilClass, exception_class)
+        result = r.take
+        assert_equal(huge_value, result)
+      end
+    end;
+  end
+
+  def test_frozen_env_in_ractor
+    assert_ractor(<<-"end;")
+      r = Ractor.new do
+        #{str_for_yielding_exception_class("ENV.freeze")}
+      end
+      #{str_for_assert_raise_on_yielded_exception_class(TypeError, "r")}
+    end;
+  end
+
+  def test_frozen_in_ractor
+    assert_ractor(<<-"end;")
+      r = Ractor.new do
+        ENV["#{PATH_ENV}"] = "/"
+        ENV.each do |k, v|
+          Ractor.yield [k.frozen?]
+          Ractor.yield [v.frozen?]
+        end
+        ENV.each_key do |k|
+          Ractor.yield [k.frozen?]
+        end
+        ENV.each_value do |v|
+          Ractor.yield [v.frozen?]
+        end
+        ENV.each_key do |k|
+          Ractor.yield [ENV[k].frozen?, "[\#{k.dump}]"]
+          Ractor.yield [ENV.fetch(k).frozen?, "fetch(\#{k.dump})"]
+        end
+        Ractor.yield "finished"
+      end
+      while((params=r.take) != "finished")
+        assert(*params)
+      end
+    end;
+  end
+
+  def test_shared_substring_in_ractor
+    assert_ractor(<<-"end;")
+      r = Ractor.new do
+        bug12475 = '[ruby-dev:49655] [Bug #12475]'
+        n = [*"0".."9"].join("")*3
+        e0 = ENV[n0 = "E\#{n}"]
+        e1 = ENV[n1 = "E\#{n}."]
+        ENV[n0] = nil
+        ENV[n1] = nil
+        ENV[n1.chop] = "T\#{n}.".chop
+        ENV[n0], e0 = e0, ENV[n0]
+        ENV[n1], e1 = e1, ENV[n1]
+        Ractor.yield [n, e0, e1, bug12475]
+      end
+      n, e0, e1, bug12475 = r.take
+      assert_equal("T\#{n}", e0, bug12475)
+      assert_nil(e1, bug12475)
+    end;
+  end
+
+  def test_ivar_in_env_should_not_be_access_from_non_main_ractors
+    assert_ractor <<~RUBY
+    ENV.instance_eval{ @a = "hello" }
+    assert_equal "hello", ENV.instance_variable_get(:@a)
+
+    r_get =  Ractor.new do
+      ENV.instance_variable_get(:@a)
+    rescue Ractor::IsolationError => e
+      e
+    end
+    assert_equal Ractor::IsolationError, r_get.take.class
+
+    r_get =  Ractor.new do
+      ENV.instance_eval{ @a }
+    rescue Ractor::IsolationError => e
+      e
+    end
+
+    assert_equal Ractor::IsolationError, r_get.take.class
+
+    r_set = Ractor.new do
+      ENV.instance_eval{ @b = "hello" }
+    rescue Ractor::IsolationError => e
+      e
+    end
+
+    assert_equal Ractor::IsolationError, r_set.take.class
+    RUBY
   end
 
   if RUBY_PLATFORM =~ /bccwin|mswin|mingw/

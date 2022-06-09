@@ -46,7 +46,7 @@ RSpec.describe "parallel", :realworld => true do
   end
 
   it "works with --standalone" do
-    gemfile <<-G, :standalone => true
+    gemfile <<-G
       source "https://rubygems.org"
       gem "diff-lcs"
     G

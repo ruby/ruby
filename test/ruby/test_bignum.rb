@@ -203,6 +203,15 @@ class TestBignum < Test::Unit::TestCase
     assert_equal(00_02, '00_02'.to_i)
   end
 
+  def test_very_big_str_to_inum
+    assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
+      digits = [["3", 700], ["0", 2700], ["1", 1], ["0", 26599]]
+      num = digits.inject("") {|s,(c,n)|s << c*n}.to_i
+      assert_equal digits.sum {|c,n|n}, num.to_s.size
+    end;
+  end
+
   def test_to_s2
     assert_raise(ArgumentError) { T31P.to_s(37) }
     assert_equal("9" * 32768, (10**32768-1).to_s)
@@ -632,7 +641,7 @@ class TestBignum < Test::Unit::TestCase
     time = Time.now
     end_flag = false
     num = (65536 ** 65536)
-    q = Queue.new
+    q = Thread::Queue.new
     thread = Thread.new do
       assert_raise(RuntimeError) {
         q << true
@@ -644,7 +653,7 @@ class TestBignum < Test::Unit::TestCase
     thread.raise
     thread.join
     time = Time.now - time
-    skip "too fast cpu" if end_flag
+    omit "too fast cpu" if end_flag
     assert_operator(time, :<, 10)
   end
 
@@ -675,7 +684,7 @@ class TestBignum < Test::Unit::TestCase
           return
         end
       end
-      skip "cannot create suitable test case"
+      omit "cannot create suitable test case"
     ensure
       Signal.trap(:INT, oldtrap) if oldtrap
     end

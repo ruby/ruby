@@ -1,5 +1,8 @@
 #!/usr/bin/ruby -s
 # -*- coding: us-ascii -*-
+require 'rubygems'
+require 'rubygems/package'
+require 'rubygems/package/tar_writer'
 require 'uri'
 require 'digest/sha1'
 require 'digest/sha2'
@@ -21,7 +24,6 @@ $packages ||= nil
 $digests ||= nil
 $tooldir = File.expand_path("..", __FILE__)
 $unicode_version = nil if ($unicode_version ||= nil) == ""
-$extlibs ||= "no"
 $colorize = Colorize.new
 
 def usage
@@ -158,9 +160,6 @@ at_exit {
 } unless $keep_temp
 
 def tar_create(tarball, dir)
-  require 'rubygems'
-  require 'rubygems/package'
-  require 'rubygems/package/tar_writer'
   header = Gem::Package::TarHeader
   dir_type = "5"
   uname = gname = "ruby"
@@ -333,6 +332,10 @@ def package(vcs, rev, destdir, tmp = nil)
     end
   end
 
+  Dir.glob("#{exported}/.*.yml") do |file|
+    FileUtils.rm(file, verbose: $VERBOSE)
+  end
+
   status = IO.read(File.dirname(__FILE__) + "/prereq.status")
   Dir.chdir(tmp) if tmp
 
@@ -464,7 +467,6 @@ def package(vcs, rev, destdir, tmp = nil)
       end
       vars.delete("UNICODE_FILES") # for stable branches
       vars["UNICODE_VERSION"] = $unicode_version if $unicode_version
-      vars["EXTRACT_EXTLIBS"] = "no" if $extlibs == "no"
       args = vars.dup
       mk.gsub!(/@([A-Za-z_]\w*)@/) {args.delete($1); vars[$1] || ENV[$1]}
       mk << commonmk.gsub(/\{\$([^(){}]*)[^{}]*\}/, "").sub(/^revision\.tmp::$/, '\& Makefile')

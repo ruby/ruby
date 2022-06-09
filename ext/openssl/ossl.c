@@ -9,13 +9,19 @@
  */
 #include "ossl.h"
 #include <stdarg.h> /* for ossl_raise */
-#include <ruby/thread_native.h> /* for OpenSSL < 1.1.0 locks */
+
+/* OpenSSL >= 1.1.0 and LibreSSL >= 2.9.0 */
+#if defined(LIBRESSL_VERSION_NUMBER) || OPENSSL_VERSION_NUMBER >= 0x10100000
+# define HAVE_OPENSSL_110_THREADING_API
+#else
+# include <ruby/thread_native.h>
+#endif
 
 /*
  * Data Conversion
  */
 #define OSSL_IMPL_ARY2SK(name, type, expected_class, dup)	\
-STACK_OF(type) *						\
+VALUE								\
 ossl_##name##_ary2sk0(VALUE ary)				\
 {								\
     STACK_OF(type) *sk;						\
@@ -37,7 +43,7 @@ ossl_##name##_ary2sk0(VALUE ary)				\
 	x = dup(val); /* NEED TO DUP */				\
 	sk_##type##_push(sk, x);				\
     }								\
-    return sk;							\
+    return (VALUE)sk;						\
 }								\
 								\
 STACK_OF(type) *						\
@@ -262,15 +268,11 @@ ossl_to_der_if_possible(VALUE obj)
 /*
  * Errors
  */
-static VALUE
-ossl_make_error(VALUE exc, const char *fmt, va_list args)
+VALUE
+ossl_make_error(VALUE exc, VALUE str)
 {
-    VALUE str = Qnil;
     unsigned long e;
 
-    if (fmt) {
-	str = rb_vsprintf(fmt, args);
-    }
     e = ERR_peek_last_error();
     if (e) {
 	const char *msg = ERR_reason_error_string(e);
@@ -294,37 +296,48 @@ ossl_raise(VALUE exc, const char *fmt, ...)
 {
     va_list args;
     VALUE err;
-    va_start(args, fmt);
-    err = ossl_make_error(exc, fmt, args);
-    va_end(args);
-    rb_exc_raise(err);
+
+    if (fmt) {
+	va_start(args, fmt);
+	err = rb_vsprintf(fmt, args);
+	va_end(args);
+    }
+    else {
+	err = Qnil;
+    }
+
+    rb_exc_raise(ossl_make_error(exc, err));
 }
 
 void
 ossl_clear_error(void)
 {
     if (dOSSL == Qtrue) {
-	unsigned long e;
-	const char *file, *data, *errstr;
-	int line, flags;
+        unsigned long e;
+        const char *file, *data, *func, *lib, *reason;
+        char append[256] = "";
+        int line, flags;
 
-	while ((e = ERR_get_error_line_data(&file, &line, &data, &flags))) {
-	    errstr = ERR_error_string(e, NULL);
-	    if (!errstr)
-		errstr = "(null)";
+#ifdef HAVE_ERR_GET_ERROR_ALL
+        while ((e = ERR_get_error_all(&file, &line, &func, &data, &flags))) {
+#else
+        while ((e = ERR_get_error_line_data(&file, &line, &data, &flags))) {
+            func = ERR_func_error_string(e);
+#endif
+            lib = ERR_lib_error_string(e);
+            reason = ERR_reason_error_string(e);
 
-	    if (flags & ERR_TXT_STRING) {
-		if (!data)
-		    data = "(null)";
-		rb_warn("error on stack: %s (%s)", errstr, data);
-	    }
-	    else {
-		rb_warn("error on stack: %s", errstr);
-	    }
-	}
+            if (flags & ERR_TXT_STRING) {
+                if (!data)
+                    data = "(null)";
+                snprintf(append, sizeof(append), " (%s)", data);
+            }
+            rb_warn("error on stack: error:%08lX:%s:%s:%s%s", e, lib ? lib : "",
+                    func ? func : "", reason ? reason : "", append);
+        }
     }
     else {
-	ERR_clear_error();
+        ERR_clear_error();
     }
 }
 
@@ -386,7 +399,7 @@ ossl_debug_get(VALUE self)
  * call-seq:
  *   OpenSSL.debug = boolean -> boolean
  *
- * Turns on or off debug mode. With debug mode, all erros added to the OpenSSL
+ * Turns on or off debug mode. With debug mode, all errors added to the OpenSSL
  * error queue will be printed to stderr.
  */
 static VALUE

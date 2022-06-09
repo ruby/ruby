@@ -1,0 +1,26 @@
+Returns +true+ if +self+ and +object+ are equal after Unicode case folding,
+otherwise +false+:
+
+  lower = :abc
+  upper = :ABC
+  upper.casecmp?(lower) # => true
+  lower.casecmp?(lower) # => true
+  lower.casecmp?(upper) # => true
+
+Returns nil if +self+ and +object+ have incompatible encodings,
+or if +object+ is not a symbol:
+
+  sym = 'äöü'.encode("ISO-8859-1").to_sym
+  other_sym = 'ÄÖÜ'
+  sym.casecmp?(other_sym) # => nil
+  :foo.casecmp?(2)        # => nil
+
+Unlike Symbol#casecmp, works for characters outside of 'A'..'Z' and 'a'..'z':
+
+  lower = :äöü
+  upper = :ÄÖÜ
+  upper.casecmp?(lower) # => true
+  lower.casecmp?(lower) # => true
+  lower.casecmp?(upper) # => true
+
+Related: Symbol#casecmp, String#casecmp?.

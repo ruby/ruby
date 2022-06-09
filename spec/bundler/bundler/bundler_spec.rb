@@ -21,30 +21,6 @@ RSpec.describe Bundler do
       it "catches YAML syntax errors" do
         expect { subject }.to raise_error(Bundler::GemspecError, /error while loading `test.gemspec`/)
       end
-
-      context "on Rubies with a settable YAML engine", :if => defined?(YAML::ENGINE) do
-        context "with Syck as YAML::Engine" do
-          it "raises a GemspecError after YAML load throws ArgumentError" do
-            orig_yamler = YAML::ENGINE.yamler
-            YAML::ENGINE.yamler = "syck"
-
-            expect { subject }.to raise_error(Bundler::GemspecError)
-
-            YAML::ENGINE.yamler = orig_yamler
-          end
-        end
-
-        context "with Psych as YAML::Engine" do
-          it "raises a GemspecError after YAML load throws Psych::SyntaxError" do
-            orig_yamler = YAML::ENGINE.yamler
-            YAML::ENGINE.yamler = "psych"
-
-            expect { subject }.to raise_error(Bundler::GemspecError)
-
-            YAML::ENGINE.yamler = orig_yamler
-          end
-        end
-      end
     end
 
     context "with correct YAML file", :if => defined?(Encoding) do
@@ -176,11 +152,9 @@ RSpec.describe Bundler do
   describe "configuration" do
     context "disable_shared_gems" do
       it "should unset GEM_PATH with empty string" do
-        env = {}
         expect(Bundler).to receive(:use_system_gems?).and_return(false)
-        Bundler.send(:configure_gem_path, env)
-        expect(env.keys).to include("GEM_PATH")
-        expect(env["GEM_PATH"]).to eq ""
+        Bundler.send(:configure_gem_path)
+        expect(ENV["GEM_PATH"]).to eq ""
       end
     end
   end
@@ -249,11 +223,8 @@ EOF
           allow(Bundler.rubygems).to receive(:user_home).and_return(path)
           allow(File).to receive(:directory?).with(path).and_return false
           allow(Bundler).to receive(:tmp).and_return(Pathname.new("/tmp/trulyrandom"))
-          message = <<EOF
-`/home/oggy` is not a directory.
-Bundler will use `/tmp/trulyrandom' as your home directory temporarily.
-EOF
-          expect(Bundler.ui).to receive(:warn).with(message)
+          expect(Bundler.ui).to receive(:warn).with("`/home/oggy` is not a directory.\n")
+          expect(Bundler.ui).to receive(:warn).with("Bundler will use `/tmp/trulyrandom' as your home directory temporarily.\n")
           expect(Bundler.user_home).to eq(Pathname("/tmp/trulyrandom"))
         end
       end
@@ -268,11 +239,8 @@ EOF
           allow(File).to receive(:writable?).with(path).and_return false
           allow(File).to receive(:directory?).with(dotbundle).and_return false
           allow(Bundler).to receive(:tmp).and_return(Pathname.new("/tmp/trulyrandom"))
-          message = <<EOF
-`/home/oggy` is not writable.
-Bundler will use `/tmp/trulyrandom' as your home directory temporarily.
-EOF
-          expect(Bundler.ui).to receive(:warn).with(message)
+          expect(Bundler.ui).to receive(:warn).with("`/home/oggy` is not writable.\n")
+          expect(Bundler.ui).to receive(:warn).with("Bundler will use `/tmp/trulyrandom' as your home directory temporarily.\n")
           expect(Bundler.user_home).to eq(Pathname("/tmp/trulyrandom"))
         end
 
@@ -293,11 +261,8 @@ EOF
       it "should issue warning and return a temporary user home" do
         allow(Bundler.rubygems).to receive(:user_home).and_return(nil)
         allow(Bundler).to receive(:tmp).and_return(Pathname.new("/tmp/trulyrandom"))
-        message = <<EOF
-Your home directory is not set.
-Bundler will use `/tmp/trulyrandom' as your home directory temporarily.
-EOF
-        expect(Bundler.ui).to receive(:warn).with(message)
+        expect(Bundler.ui).to receive(:warn).with("Your home directory is not set.\n")
+        expect(Bundler.ui).to receive(:warn).with("Bundler will use `/tmp/trulyrandom' as your home directory temporarily.\n")
         expect(Bundler.user_home).to eq(Pathname("/tmp/trulyrandom"))
       end
     end

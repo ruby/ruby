@@ -43,7 +43,7 @@ class TestCSVParseConvert < Test::Unit::TestCase
                  @parser.shift)
   end
 
-  def test_numberic
+  def test_numeric
     @parser.convert(:numeric)
     assert_equal(["Numbers", ":integer", 1, ":float", 3.015],
                  @parser.shift)

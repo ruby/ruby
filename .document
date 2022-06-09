@@ -17,9 +17,12 @@ dir.rb
 gc.rb
 io.rb
 kernel.rb
+marshal.rb
 numeric.rb
+nilclass.rb
 pack.rb
 ractor.rb
+string.rb
 timev.rb
 trace_point.rb
 warning.rb
@@ -38,7 +41,6 @@ README.ja.md
 
 COPYING
 COPYING.ja
-CONTRIBUTING.md
 
 LEGAL
 

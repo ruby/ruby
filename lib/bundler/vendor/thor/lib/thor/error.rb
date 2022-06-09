@@ -102,9 +102,14 @@ class Bundler::Thor
   end
 
   if Correctable
-    DidYouMean::SPELL_CHECKERS.merge!(
-      'Bundler::Thor::UndefinedCommandError' => UndefinedCommandError::SpellChecker,
-      'Bundler::Thor::UnknownArgumentError' => UnknownArgumentError::SpellChecker
-    )
+    if DidYouMean.respond_to?(:correct_error)
+      DidYouMean.correct_error(Bundler::Thor::UndefinedCommandError, UndefinedCommandError::SpellChecker)
+      DidYouMean.correct_error(Bundler::Thor::UnknownArgumentError, UnknownArgumentError::SpellChecker)
+    else
+      DidYouMean::SPELL_CHECKERS.merge!(
+        'Bundler::Thor::UndefinedCommandError' => UndefinedCommandError::SpellChecker,
+        'Bundler::Thor::UnknownArgumentError' => UnknownArgumentError::SpellChecker
+      )
+    end
   end
 end

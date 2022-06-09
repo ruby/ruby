@@ -59,9 +59,6 @@ module Gem
     private
 
     def build_message
-      if name == "bundler" && message = Gem::BundlerVersionFinder.missing_version_message
-        return message
-      end
       names = specs.map(&:full_name)
       "Could not find '#{name}' (#{requirement}) - did find: [#{names.join ','}]\n"
     end
@@ -171,8 +168,7 @@ module Gem
     # An English description of the error.
 
     def wordy
-      @source.uri.password = 'REDACTED' unless @source.uri.password.nil?
-      "Unable to download data from #{@source.uri} - #{@error.message}"
+      "Unable to download data from #{Gem::Uri.new(@source.uri).redacted} - #{@error.message}"
     end
 
     ##

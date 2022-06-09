@@ -51,7 +51,6 @@ describe "Warning.warn" do
     end
   end
 
-
   ruby_version_is '3.0' do
     it "is called by Kernel.warn with nil category keyword" do
       Warning.should_receive(:warn).with("Chunky bacon!\n", category: nil)
@@ -69,7 +68,7 @@ describe "Warning.warn" do
       verbose = $VERBOSE
       $VERBOSE = false
       begin
-        Kernel.warn("Chunky bacon!", category: 'deprecated')
+        Kernel.warn("Chunky bacon!", category: "deprecated")
       ensure
         $VERBOSE = verbose
       end

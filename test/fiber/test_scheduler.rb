@@ -55,6 +55,7 @@ class TestFiberScheduler < Test::Unit::TestCase
   def test_close_at_exit
     assert_in_out_err %W[-I#{__dir__} -], <<-RUBY, ['Running Fiber'], [], success: true
     require 'scheduler'
+    Warning[:experimental] = false
 
     scheduler = Scheduler.new
     Fiber.set_scheduler scheduler
@@ -66,9 +67,23 @@ class TestFiberScheduler < Test::Unit::TestCase
     RUBY
   end
 
-  def test_optional_close
+  def test_minimal_interface
+    scheduler = Object.new
+
+    def scheduler.block
+    end
+
+    def scheduler.unblock
+    end
+
+    def scheduler.io_wait
+    end
+
+    def scheduler.kernel_sleep
+    end
+
     thread = Thread.new do
-      Fiber.set_scheduler Object.new
+      Fiber.set_scheduler scheduler
     end
 
     thread.join
@@ -88,5 +103,27 @@ class TestFiberScheduler < Test::Unit::TestCase
     end
 
     thread.join
+  end
+
+  def test_autoload
+    100.times do
+      Object.autoload(:TestFiberSchedulerAutoload, File.expand_path("autoload.rb", __dir__))
+
+      thread = Thread.new do
+        scheduler = Scheduler.new
+        Fiber.set_scheduler scheduler
+
+        10.times do
+          Fiber.schedule do
+            Object.const_get(:TestFiberSchedulerAutoload)
+          end
+        end
+      end
+
+      thread.join
+    ensure
+      $LOADED_FEATURES.delete(File.expand_path("autoload.rb", __dir__))
+      Object.send(:remove_const, :TestFiberSchedulerAutoload)
+    end
   end
 end

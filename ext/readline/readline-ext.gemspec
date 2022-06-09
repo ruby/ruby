@@ -1,6 +1,6 @@
 Gem::Specification.new do |spec|
   spec.name          = "readline-ext"
-  spec.version       = "0.1.1"
+  spec.version       = "0.1.4"
   spec.authors       = ["Yukihiro Matsumoto"]
   spec.email         = ["matz@ruby-lang.org"]
 
@@ -19,8 +19,4 @@ Gem::Specification.new do |spec|
   spec.bindir        = "exe"
   spec.executables   = spec.files.grep(%r{^exe/}) { |f| File.basename(f) }
   spec.require_paths = ["lib"]
-
-  spec.add_development_dependency "bundler"
-  spec.add_development_dependency "rake"
-  spec.add_development_dependency "rake-compiler"
 end

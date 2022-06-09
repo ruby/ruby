@@ -11,7 +11,11 @@ describe "Integer#chr without argument" do
 
   it "raises a RangeError is self is less than 0" do
     -> { -1.chr }.should raise_error(RangeError)
-    -> { -bignum_value.chr }.should raise_error(RangeError)
+    -> { (-bignum_value).chr }.should raise_error(RangeError)
+  end
+
+  it "raises a RangeError if self is too large" do
+    -> { 2206368128.chr(Encoding::UTF_8) }.should raise_error(RangeError)
   end
 
   describe "when Encoding.default_internal is nil" do
@@ -162,7 +166,7 @@ describe "Integer#chr with an encoding argument" do
   # http://redmine.ruby-lang.org/issues/4869
   it "raises a RangeError is self is less than 0" do
     -> { -1.chr(Encoding::UTF_8) }.should raise_error(RangeError)
-    -> { -bignum_value.chr(Encoding::EUC_JP) }.should raise_error(RangeError)
+    -> { (-bignum_value).chr(Encoding::EUC_JP) }.should raise_error(RangeError)
   end
 
   it "raises a RangeError if self is too large" do
@@ -241,16 +245,14 @@ describe "Integer#chr with an encoding argument" do
     end
   end
 
-  ruby_version_is "2.7" do
-    it 'returns a String encoding self interpreted as a codepoint in the CESU-8 encoding' do
-      # see more details here https://en.wikipedia.org/wiki/CESU-8
-      # code points from U+0000 to U+FFFF is encoded in the same way as in UTF-8
-      0x0045.chr(Encoding::CESU_8).bytes.should == 0x0045.chr(Encoding::UTF_8).bytes
+  it 'returns a String encoding self interpreted as a codepoint in the CESU-8 encoding' do
+    # see more details here https://en.wikipedia.org/wiki/CESU-8
+    # code points from U+0000 to U+FFFF is encoded in the same way as in UTF-8
+    0x0045.chr(Encoding::CESU_8).bytes.should == 0x0045.chr(Encoding::UTF_8).bytes
 
-      # code points in range from U+10000 to U+10FFFF is CESU-8 data containing a 6-byte surrogate pair,
-      # which decodes to a 4-byte UTF-8 string
-      0x10400.chr(Encoding::CESU_8).bytes.should != 0x10400.chr(Encoding::UTF_8).bytes
-      0x10400.chr(Encoding::CESU_8).bytes.to_a.should == [0xED, 0xA0, 0x81, 0xED, 0xB0, 0x80]
-    end
+    # code points in range from U+10000 to U+10FFFF is CESU-8 data containing a 6-byte surrogate pair,
+    # which decodes to a 4-byte UTF-8 string
+    0x10400.chr(Encoding::CESU_8).bytes.should != 0x10400.chr(Encoding::UTF_8).bytes
+    0x10400.chr(Encoding::CESU_8).bytes.to_a.should == [0xED, 0xA0, 0x81, 0xED, 0xB0, 0x80]
   end
 end

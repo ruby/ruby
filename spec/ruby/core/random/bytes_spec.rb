@@ -18,15 +18,13 @@ describe "Random#bytes" do
   end
 
   it "returns the same numeric output for a given huge seed across all implementations and platforms" do
-    rnd = Random.new(bignum_value ** 4)
+    rnd = Random.new(2 ** (63 * 4))
     rnd.bytes(2).should == "_\x91"
     rnd.bytes(1000) # skip some
     rnd.bytes(2).should == "\x17\x12"
   end
 end
 
-ruby_version_is "2.6" do
-  describe "Random.bytes" do
-    it_behaves_like :random_bytes, :bytes, Random
-  end
+describe "Random.bytes" do
+  it_behaves_like :random_bytes, :bytes, Random
 end

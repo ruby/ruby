@@ -161,6 +161,8 @@ class Bundler::Thor
     # to the block you provide. The path is set back to the previous path when
     # the method exits.
     #
+    # Returns the value yielded by the block.
+    #
     # ==== Parameters
     # dir<String>:: the directory to move to.
     # config<Hash>:: give :verbose => true to log and use padding.
@@ -179,16 +181,18 @@ class Bundler::Thor
         FileUtils.mkdir_p(destination_root)
       end
 
+      result = nil
       if pretend
         # In pretend mode, just yield down to the block
-        block.arity == 1 ? yield(destination_root) : yield
+        result = block.arity == 1 ? yield(destination_root) : yield
       else
         require "fileutils"
-        FileUtils.cd(destination_root) { block.arity == 1 ? yield(destination_root) : yield }
+        FileUtils.cd(destination_root) { result = block.arity == 1 ? yield(destination_root) : yield }
       end
 
       @destination_stack.pop
       shell.padding -= 1 if verbose
+      result
     end
 
     # Goes to the root and execute the given block.

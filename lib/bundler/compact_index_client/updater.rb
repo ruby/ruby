@@ -50,16 +50,20 @@ module Bundler
 
           content = response.body
 
-          SharedHelpers.filesystem_access(local_temp_path) do
+          etag = (response["ETag"] || "").gsub(%r{\AW/}, "")
+          correct_response = SharedHelpers.filesystem_access(local_temp_path) do
             if response.is_a?(Net::HTTPPartialContent) && local_temp_path.size.nonzero?
               local_temp_path.open("a") {|f| f << slice_body(content, 1..-1) }
+
+              etag_for(local_temp_path) == etag
             else
               local_temp_path.open("wb") {|f| f << content }
+
+              etag.length.zero? || etag_for(local_temp_path) == etag
             end
           end
 
-          etag = (response["ETag"] || "").gsub(%r{\AW/}, "")
-          if etag.length.zero? || etag_for(local_temp_path) == etag
+          if correct_response
             SharedHelpers.filesystem_access(local_path) do
               FileUtils.mv(local_temp_path, local_path)
             end
@@ -72,11 +76,6 @@ module Bundler
 
           update(local_path, remote_path, :retrying)
         end
-      rescue Errno::EACCES
-        raise Bundler::PermissionError,
-          "Bundler does not have write access to create a temp directory " \
-          "within #{Dir.tmpdir}. Bundler must have write access to your " \
-          "systems temp directory to function properly. "
       rescue Zlib::GzipFile::Error
         raise Bundler::HTTPError
       end

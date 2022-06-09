@@ -13,7 +13,7 @@ describe "The -r command line option" do
   end
 
   it "requires the file before parsing the main script" do
-    out = ruby_exe(fixture(__FILE__, "bad_syntax.rb"), options: "-r #{@test_file}", args: "2>&1")
+    out = ruby_exe(fixture(__FILE__, "bad_syntax.rb"), options: "-r #{@test_file}", args: "2>&1", exit_status: 1)
     $?.should_not.success?
     out.should include("REQUIRED")
     out.should include("syntax error")

@@ -1,6 +1,6 @@
 Gem::Specification.new do |spec|
   spec.name          = "yaml"
-  spec.version       = "0.1.1"
+  spec.version       = "0.2.0"
   spec.authors       = ["Aaron Patterson", "SHIBATA Hiroshi"]
   spec.email         = ["aaron@tenderlovemaking.com", "hsbt@ruby-lang.org"]
 

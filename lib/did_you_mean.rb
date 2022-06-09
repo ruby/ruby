@@ -7,7 +7,8 @@ require_relative 'did_you_mean/spell_checkers/method_name_checker'
 require_relative 'did_you_mean/spell_checkers/key_error_checker'
 require_relative 'did_you_mean/spell_checkers/null_checker'
 require_relative 'did_you_mean/spell_checkers/require_path_checker'
-require_relative 'did_you_mean/formatters/plain_formatter'
+require_relative 'did_you_mean/spell_checkers/pattern_key_name_checker'
+require_relative 'did_you_mean/formatter'
 require_relative 'did_you_mean/tree_spell_checker'
 
 # The +DidYouMean+ gem adds functionality to suggest possible method/class
@@ -85,28 +86,70 @@ require_relative 'did_you_mean/tree_spell_checker'
 #
 module DidYouMean
   # Map of error types and spell checker objects.
-  SPELL_CHECKERS = Hash.new(NullChecker)
+  @spell_checkers = Hash.new(NullChecker)
+
+  # Returns a sharable hash map of error types and spell checker objects.
+  def self.spell_checkers
+    @spell_checkers
+  end
 
   # Adds +DidYouMean+ functionality to an error using a given spell checker
   def self.correct_error(error_class, spell_checker)
-    SPELL_CHECKERS[error_class.name] = spell_checker
-    error_class.prepend(Correctable) unless error_class < Correctable
+    if defined?(Ractor)
+      new_mapping = { **@spell_checkers, error_class.to_s => spell_checker }
+      new_mapping.default = NullChecker
+
+      @spell_checkers = Ractor.make_shareable(new_mapping)
+    else
+      spell_checkers[error_class.to_s] = spell_checker
+    end
+
+    error_class.prepend(Correctable) if error_class.is_a?(Class) && !(error_class < Correctable)
   end
 
   correct_error NameError, NameErrorCheckers
   correct_error KeyError, KeyErrorChecker
   correct_error NoMethodError, MethodNameChecker
   correct_error LoadError, RequirePathChecker if RUBY_VERSION >= '2.8.0'
+  correct_error NoMatchingPatternKeyError, PatternKeyNameChecker if defined?(::NoMatchingPatternKeyError)
+
+  # TODO: Remove on 3.3:
+  class DeprecatedMapping # :nodoc:
+    def []=(key, value)
+      warn "Calling `DidYouMean::SPELL_CHECKERS[#{key.to_s}] = #{value.to_s}' has been deprecated. " \
+           "Please call `DidYouMean.correct_error(#{key.to_s}, #{value.to_s})' instead."
+
+      DidYouMean.correct_error(key, value)
+    end
+
+    def merge!(hash)
+      warn "Calling `DidYouMean::SPELL_CHECKERS.merge!(error_name => spell_checker)' has been deprecated. " \
+           "Please call `DidYouMean.correct_error(error_name, spell_checker)' instead."
+
+      hash.each do |error_class, spell_checker|
+        DidYouMean.correct_error(error_class, spell_checker)
+      end
+    end
+  end
+
+  # TODO: Remove on 3.3:
+  SPELL_CHECKERS = DeprecatedMapping.new
+  deprecate_constant :SPELL_CHECKERS
+  private_constant :DeprecatedMapping
 
   # Returns the currently set formatter. By default, it is set to +DidYouMean::Formatter+.
   def self.formatter
-    @@formatter
+    if defined?(Ractor)
+      Ractor.current[:__did_you_mean_formatter__] || Formatter
+    else
+      Formatter
+    end
   end
 
   # Updates the primary formatter used to format the suggestions.
   def self.formatter=(formatter)
-    @@formatter = formatter
+    if defined?(Ractor)
+      Ractor.current[:__did_you_mean_formatter__] = formatter
+    end
   end
-
-  self.formatter = PlainFormatter.new
 end

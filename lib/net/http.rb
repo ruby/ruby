@@ -22,6 +22,7 @@
 
 require 'net/protocol'
 require 'uri'
+require 'resolv'
 autoload :OpenSSL, 'openssl'
 
 module Net   #:nodoc:
@@ -132,7 +133,7 @@ module Net   #:nodoc:
   #   puts res.class.name # => 'HTTPOK'
   #
   #   # Body
-  #   puts res.body if res.response_body_permitted?
+  #   puts res.body
   #
   # === Following Redirection
   #
@@ -327,6 +328,8 @@ module Net   #:nodoc:
   # HTTPInformation::                    1xx
   #   HTTPContinue::                        100
   #   HTTPSwitchProtocol::                  101
+  #   HTTPProcessing::                      102
+  #   HTTPEarlyHints::                      103
   # HTTPSuccess::                        2xx
   #   HTTPOK::                              200
   #   HTTPCreated::                         201
@@ -336,6 +339,7 @@ module Net   #:nodoc:
   #   HTTPResetContent::                    205
   #   HTTPPartialContent::                  206
   #   HTTPMultiStatus::                     207
+  #   HTTPAlreadyReported::                 208
   #   HTTPIMUsed::                          226
   # HTTPRedirection::                    3xx
   #   HTTPMultipleChoices::                 300
@@ -345,6 +349,7 @@ module Net   #:nodoc:
   #   HTTPNotModified::                     304
   #   HTTPUseProxy::                        305
   #   HTTPTemporaryRedirect::               307
+  #   HTTPPermanentRedirect::               308
   # HTTPClientError::                    4xx
   #   HTTPBadRequest::                      400
   #   HTTPUnauthorized::                    401
@@ -364,6 +369,7 @@ module Net   #:nodoc:
   #   HTTPUnsupportedMediaType::            415
   #   HTTPRequestedRangeNotSatisfiable::    416
   #   HTTPExpectationFailed::               417
+  #   HTTPMisdirectedRequest::              421
   #   HTTPUnprocessableEntity::             422
   #   HTTPLocked::                          423
   #   HTTPFailedDependency::                424
@@ -379,7 +385,10 @@ module Net   #:nodoc:
   #   HTTPServiceUnavailable::              503
   #   HTTPGatewayTimeOut::                  504
   #   HTTPVersionNotSupported::             505
+  #   HTTPVariantAlsoNegotiates::           506
   #   HTTPInsufficientStorage::             507
+  #   HTTPLoopDetected::                    508
+  #   HTTPNotExtended::                     510
   #   HTTPNetworkAuthenticationRequired::   511
   #
   # There is also the Net::HTTPBadResponse exception which is raised when
@@ -388,12 +397,11 @@ module Net   #:nodoc:
   class HTTP < Protocol
 
     # :stopdoc:
-    VERSION = "0.1.1"
+    VERSION = "0.2.2"
     Revision = %q$Revision$.split[1]
     HTTPVersion = '1.1'
     begin
       require 'zlib'
-      require 'stringio'  #for our purposes (unpacking gzip) lump these together
       HAVE_ZLIB=true
     rescue LoadError
       HAVE_ZLIB=false
@@ -690,6 +698,8 @@ module Net   #:nodoc:
       @continue_timeout = nil
       @max_retries = 1
       @debug_output = nil
+      @response_body_encoding = false
+      @ignore_eof = true
 
       @proxy_from_env = false
       @proxy_uri      = nil
@@ -736,6 +746,18 @@ module Net   #:nodoc:
 
     # The local port used to establish the connection.
     attr_accessor :local_port
+
+    # The encoding to use for the response body.  If Encoding, uses the
+    # specified encoding.  If other true value, tries to detect the response
+    # body encoding.
+    attr_reader :response_body_encoding
+
+    # Set the encoding to use for the response body.  If given a String, find
+    # the related Encoding.
+    def response_body_encoding=(value)
+      value = Encoding.find(value) if value.is_a?(String)
+      @response_body_encoding = value
+    end
 
     attr_writer :proxy_from_env
     attr_writer :proxy_address
@@ -817,6 +839,10 @@ module Net   #:nodoc:
     # Net::HTTP reuses the TCP/IP socket used by the previous communication.
     # The default value is 2 seconds.
     attr_accessor :keep_alive_timeout
+
+    # Whether to ignore EOF when reading response bodies with defined
+    # Content-Length headers. For backwards compatibility, the default is true.
+    attr_accessor :ignore_eof
 
     # Returns true if the HTTP session has been started.
     def started?
@@ -986,7 +1012,7 @@ module Net   #:nodoc:
         conn_port = port
       end
 
-      D "opening connection to #{conn_addr}:#{conn_port}..."
+      debug "opening connection to #{conn_addr}:#{conn_port}..."
       begin
         s = Socket.tcp conn_addr, conn_port, @local_host, @local_port, connect_timeout: @open_timeout
       rescue => e
@@ -995,7 +1021,7 @@ module Net   #:nodoc:
           "#{conn_addr}:#{conn_port} (#{e.message})"
       end
       s.setsockopt(Socket::IPPROTO_TCP, Socket::TCP_NODELAY, 1)
-      D "opened"
+      debug "opened"
       if use_ssl?
         if proxy?
           plain_sock = BufferedIO.new(s, read_timeout: @read_timeout,
@@ -1025,33 +1051,55 @@ module Net   #:nodoc:
           end
         end
         @ssl_context.set_params(ssl_parameters)
-        @ssl_context.session_cache_mode =
-          OpenSSL::SSL::SSLContext::SESSION_CACHE_CLIENT |
-          OpenSSL::SSL::SSLContext::SESSION_CACHE_NO_INTERNAL_STORE
-        @ssl_context.session_new_cb = proc {|sock, sess| @ssl_session = sess }
-        D "starting SSL for #{conn_addr}:#{conn_port}..."
+        unless @ssl_context.session_cache_mode.nil? # a dummy method on JRuby
+          @ssl_context.session_cache_mode =
+              OpenSSL::SSL::SSLContext::SESSION_CACHE_CLIENT |
+                  OpenSSL::SSL::SSLContext::SESSION_CACHE_NO_INTERNAL_STORE
+        end
+        if @ssl_context.respond_to?(:session_new_cb) # not implemented under JRuby
+          @ssl_context.session_new_cb = proc {|sock, sess| @ssl_session = sess }
+        end
+
+        # Still do the post_connection_check below even if connecting
+        # to IP address
+        verify_hostname = @ssl_context.verify_hostname
+
+        # Server Name Indication (SNI) RFC 3546/6066
+        case @address
+        when Resolv::IPv4::Regex, Resolv::IPv6::Regex
+          # don't set SNI, as IP addresses in SNI is not valid
+          # per RFC 6066, section 3.
+
+          # Avoid openssl warning
+          @ssl_context.verify_hostname = false
+        else
+          ssl_host_address = @address
+        end
+
+        debug "starting SSL for #{conn_addr}:#{conn_port}..."
         s = OpenSSL::SSL::SSLSocket.new(s, @ssl_context)
         s.sync_close = true
-        # Server Name Indication (SNI) RFC 3546
-        s.hostname = @address if s.respond_to? :hostname=
+        s.hostname = ssl_host_address if s.respond_to?(:hostname=) && ssl_host_address
+
         if @ssl_session and
            Process.clock_gettime(Process::CLOCK_REALTIME) < @ssl_session.time.to_f + @ssl_session.timeout
           s.session = @ssl_session
         end
         ssl_socket_connect(s, @open_timeout)
-        if (@ssl_context.verify_mode != OpenSSL::SSL::VERIFY_NONE) && @ssl_context.verify_hostname
+        if (@ssl_context.verify_mode != OpenSSL::SSL::VERIFY_NONE) && verify_hostname
           s.post_connection_check(@address)
         end
-        D "SSL established, protocol: #{s.ssl_version}, cipher: #{s.cipher[0]}"
+        debug "SSL established, protocol: #{s.ssl_version}, cipher: #{s.cipher[0]}"
       end
       @socket = BufferedIO.new(s, read_timeout: @read_timeout,
                                write_timeout: @write_timeout,
                                continue_timeout: @continue_timeout,
                                debug_output: @debug_output)
+      @last_communicated = nil
       on_connect
     rescue => exception
       if s
-        D "Conn close because of connect error #{exception}"
+        debug "Conn close because of connect error #{exception}"
         s.close
       end
       raise
@@ -1566,6 +1614,8 @@ module Net   #:nodoc:
           begin
             res = HTTPResponse.read_new(@socket)
             res.decode_content = req.decode_content
+            res.body_encoding = @response_body_encoding
+            res.ignore_eof = @ignore_eof
           end while res.kind_of?(HTTPInformation)
 
           res.uri = req.uri
@@ -1585,10 +1635,10 @@ module Net   #:nodoc:
         if count < max_retries && IDEMPOTENT_METHODS_.include?(req.method)
           count += 1
           @socket.close if @socket
-          D "Conn close because of error #{exception}, and retry"
+          debug "Conn close because of error #{exception}, and retry"
           retry
         end
-        D "Conn close because of error #{exception}"
+        debug "Conn close because of error #{exception}"
         @socket.close if @socket
         raise
       end
@@ -1596,7 +1646,7 @@ module Net   #:nodoc:
       end_transport req, res
       res
     rescue => exception
-      D "Conn close because of error #{exception}"
+      debug "Conn close because of error #{exception}"
       @socket.close if @socket
       raise exception
     end
@@ -1606,11 +1656,11 @@ module Net   #:nodoc:
         connect
       elsif @last_communicated
         if @last_communicated + @keep_alive_timeout < Process.clock_gettime(Process::CLOCK_MONOTONIC)
-          D 'Conn close because of keep_alive_timeout'
+          debug 'Conn close because of keep_alive_timeout'
           @socket.close
           connect
         elsif @socket.io.to_io.wait_readable(0) && @socket.eof?
-          D "Conn close because of EOF"
+          debug "Conn close because of EOF"
           @socket.close
           connect
         end
@@ -1628,15 +1678,15 @@ module Net   #:nodoc:
       @curr_http_version = res.http_version
       @last_communicated = nil
       if @socket.closed?
-        D 'Conn socket closed'
+        debug 'Conn socket closed'
       elsif not res.body and @close_on_empty_response
-        D 'Conn close'
+        debug 'Conn close'
         @socket.close
       elsif keep_alive?(req, res)
-        D 'Conn keep-alive'
+        debug 'Conn keep-alive'
         @last_communicated = Process.clock_gettime(Process::CLOCK_MONOTONIC)
       else
-        D 'Conn close'
+        debug 'Conn close'
         @socket.close
       end
     end
@@ -1691,11 +1741,14 @@ module Net   #:nodoc:
       default_port == port ? addr : "#{addr}:#{port}"
     end
 
-    def D(msg)
+    # Adds a message to debugging output
+    def debug(msg)
       return unless @debug_output
       @debug_output << msg
       @debug_output << "\n"
     end
+
+    alias_method :D, :debug
   end
 
 end

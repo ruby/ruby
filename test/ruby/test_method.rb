@@ -199,6 +199,11 @@ class TestMethod < Test::Unit::TestCase
     assert_equal(o.method(:foo), o.method(:foo))
     assert_equal(o.method(:foo), o.method(:bar))
     assert_not_equal(o.method(:foo), o.method(:baz))
+
+    class << o
+      private :bar
+    end
+    assert_not_equal(o.method(:foo), o.method(:bar))
   end
 
   def test_hash
@@ -316,6 +321,17 @@ class TestMethod < Test::Unit::TestCase
     o = Object.new
     o.instance_eval { define_singleton_method(:foo) { :foo } }
     assert_equal(:foo, o.foo)
+  end
+
+  PUBLIC_SINGLETON_TEST = Object.new
+  class << PUBLIC_SINGLETON_TEST
+    private
+    PUBLIC_SINGLETON_TEST.define_singleton_method(:dsm){}
+    def PUBLIC_SINGLETON_TEST.def; end
+  end
+  def test_define_singleton_method_public
+    assert_equal(true, PUBLIC_SINGLETON_TEST.method(:dsm).public?)
+    assert_equal(true, PUBLIC_SINGLETON_TEST.method(:def).public?)
   end
 
   def test_define_singleton_method_no_proc
@@ -566,9 +582,9 @@ class TestMethod < Test::Unit::TestCase
     assert_equal([[:req, :a], [:rest, :b], [:req, :c]], method(:mo5).parameters)
     assert_equal([[:req, :a], [:rest, :b], [:req, :c], [:block, :d]], method(:mo6).parameters)
     assert_equal([[:req, :a], [:opt, :b], [:rest, :c], [:req, :d], [:block, :e]], method(:mo7).parameters)
-    assert_equal([[:req, :a], [:opt, :b], [:rest], [:req, :d], [:block, :e]], method(:mo8).parameters)
+    assert_equal([[:req, :a], [:opt, :b], [:rest, :*], [:req, :d], [:block, :e]], method(:mo8).parameters)
     assert_equal([[:req], [:block, :b]], method(:ma1).parameters)
-    assert_equal([[:keyrest]], method(:mk1).parameters)
+    assert_equal([[:keyrest, :**]], method(:mk1).parameters)
     assert_equal([[:keyrest, :o]], method(:mk2).parameters)
     assert_equal([[:req, :a], [:keyrest, :o]], method(:mk3).parameters)
     assert_equal([[:opt, :a], [:keyrest, :o]], method(:mk4).parameters)
@@ -578,7 +594,7 @@ class TestMethod < Test::Unit::TestCase
     assert_equal([[:req, :a], [:opt, :b], [:rest, :c], [:req, :d], [:keyreq, :e], [:key, :f], [:keyrest, :o]], method(:mk8).parameters)
     assert_equal([[:nokey]], method(:mnk).parameters)
     # pending
-    assert_equal([[:rest, :*], [:block, :&]], method(:mf).parameters)
+    assert_equal([[:rest, :*], [:keyrest, :**], [:block, :&]], method(:mf).parameters)
   end
 
   def test_unbound_parameters
@@ -592,9 +608,9 @@ class TestMethod < Test::Unit::TestCase
     assert_equal([[:req, :a], [:rest, :b], [:req, :c]], self.class.instance_method(:mo5).parameters)
     assert_equal([[:req, :a], [:rest, :b], [:req, :c], [:block, :d]], self.class.instance_method(:mo6).parameters)
     assert_equal([[:req, :a], [:opt, :b], [:rest, :c], [:req, :d], [:block, :e]], self.class.instance_method(:mo7).parameters)
-    assert_equal([[:req, :a], [:opt, :b], [:rest], [:req, :d], [:block, :e]], self.class.instance_method(:mo8).parameters)
+    assert_equal([[:req, :a], [:opt, :b], [:rest, :*], [:req, :d], [:block, :e]], self.class.instance_method(:mo8).parameters)
     assert_equal([[:req], [:block, :b]], self.class.instance_method(:ma1).parameters)
-    assert_equal([[:keyrest]], self.class.instance_method(:mk1).parameters)
+    assert_equal([[:keyrest, :**]], self.class.instance_method(:mk1).parameters)
     assert_equal([[:keyrest, :o]], self.class.instance_method(:mk2).parameters)
     assert_equal([[:req, :a], [:keyrest, :o]], self.class.instance_method(:mk3).parameters)
     assert_equal([[:opt, :a], [:keyrest, :o]], self.class.instance_method(:mk4).parameters)
@@ -604,7 +620,7 @@ class TestMethod < Test::Unit::TestCase
     assert_equal([[:req, :a], [:opt, :b], [:rest, :c], [:req, :d], [:keyreq, :e], [:key, :f], [:keyrest, :o]], self.class.instance_method(:mk8).parameters)
     assert_equal([[:nokey]], self.class.instance_method(:mnk).parameters)
     # pending
-    assert_equal([[:rest, :*], [:block, :&]], self.class.instance_method(:mf).parameters)
+    assert_equal([[:rest, :*], [:keyrest, :**], [:block, :&]], self.class.instance_method(:mf).parameters)
   end
 
   def test_bmethod_bound_parameters
@@ -619,7 +635,7 @@ class TestMethod < Test::Unit::TestCase
     assert_equal([[:req, :a], [:rest, :b], [:req, :c], [:block, :d]], method(:pmo6).parameters)
     assert_equal([[:req, :a], [:opt, :b], [:rest, :c], [:req, :d], [:block, :e]], method(:pmo7).parameters)
     assert_equal([[:req], [:block, :b]], method(:pma1).parameters)
-    assert_equal([[:keyrest]], method(:pmk1).parameters)
+    assert_equal([[:keyrest, :**]], method(:pmk1).parameters)
     assert_equal([[:keyrest, :o]], method(:pmk2).parameters)
     assert_equal([[:req, :a], [:keyrest, :o]], method(:pmk3).parameters)
     assert_equal([[:opt, :a], [:keyrest, :o]], method(:pmk4).parameters)
@@ -643,7 +659,7 @@ class TestMethod < Test::Unit::TestCase
     assert_equal([[:req, :a], [:opt, :b], [:rest, :c], [:req, :d], [:block, :e]], self.class.instance_method(:pmo7).parameters)
     assert_equal([[:req], [:block, :b]], self.class.instance_method(:pma1).parameters)
     assert_equal([[:req], [:block, :b]], self.class.instance_method(:pma1).parameters)
-    assert_equal([[:keyrest]], self.class.instance_method(:pmk1).parameters)
+    assert_equal([[:keyrest, :**]], self.class.instance_method(:pmk1).parameters)
     assert_equal([[:keyrest, :o]], self.class.instance_method(:pmk2).parameters)
     assert_equal([[:req, :a], [:keyrest, :o]], self.class.instance_method(:pmk3).parameters)
     assert_equal([[:opt, :a], [:keyrest, :o]], self.class.instance_method(:pmk4).parameters)
@@ -1181,6 +1197,50 @@ class TestMethod < Test::Unit::TestCase
     assert_nil(super_method)
   end
 
+  def test_method_visibility_predicates
+    v = Visibility.new
+    assert_equal(true, v.method(:mv1).public?)
+    assert_equal(true, v.method(:mv2).private?)
+    assert_equal(true, v.method(:mv3).protected?)
+    assert_equal(false, v.method(:mv2).public?)
+    assert_equal(false, v.method(:mv3).private?)
+    assert_equal(false, v.method(:mv1).protected?)
+  end
+
+  def test_unbound_method_visibility_predicates
+    assert_equal(true, Visibility.instance_method(:mv1).public?)
+    assert_equal(true, Visibility.instance_method(:mv2).private?)
+    assert_equal(true, Visibility.instance_method(:mv3).protected?)
+    assert_equal(false, Visibility.instance_method(:mv2).public?)
+    assert_equal(false, Visibility.instance_method(:mv3).private?)
+    assert_equal(false, Visibility.instance_method(:mv1).protected?)
+  end
+
+  class VisibilitySub < Visibility
+    protected :mv1
+    public :mv2
+    private :mv3
+  end
+
+  def test_method_visibility_predicates_with_subclass_visbility_change
+    v = VisibilitySub.new
+    assert_equal(false, v.method(:mv1).public?)
+    assert_equal(false, v.method(:mv2).private?)
+    assert_equal(false, v.method(:mv3).protected?)
+    assert_equal(true, v.method(:mv2).public?)
+    assert_equal(true, v.method(:mv3).private?)
+    assert_equal(true, v.method(:mv1).protected?)
+  end
+
+  def test_unbound_method_visibility_predicates_with_subclass_visbility_change
+    assert_equal(false, VisibilitySub.instance_method(:mv1).public?)
+    assert_equal(false, VisibilitySub.instance_method(:mv2).private?)
+    assert_equal(false, VisibilitySub.instance_method(:mv3).protected?)
+    assert_equal(true, VisibilitySub.instance_method(:mv2).public?)
+    assert_equal(true, VisibilitySub.instance_method(:mv3).private?)
+    assert_equal(true, VisibilitySub.instance_method(:mv1).protected?)
+  end
+
   def rest_parameter(*rest)
     rest
   end
@@ -1188,7 +1248,7 @@ class TestMethod < Test::Unit::TestCase
   def test_splat_long_array
     if File.exist?('/etc/os-release') && File.read('/etc/os-release').include?('openSUSE Leap')
       # For RubyCI's openSUSE machine http://rubyci.s3.amazonaws.com/opensuseleap/ruby-trunk/recent.html, which tends to die with NoMemoryError here.
-      skip 'do not exhaust memory on RubyCI openSUSE Leap machine'
+      omit 'do not exhaust memory on RubyCI openSUSE Leap machine'
     end
     n = 10_000_000
     assert_equal n  , rest_parameter(*(1..n)).size, '[Feature #10440]'
@@ -1303,6 +1363,21 @@ class TestMethod < Test::Unit::TestCase
     end;
   end
 
+  def test_override_optimized_method_on_class_using_prepend
+    assert_separately(%w(--disable-gems), <<-'end;', timeout: 30)
+      # Bug #17725 [ruby-core:102884]
+      $VERBOSE = nil
+      String.prepend(Module.new)
+      class String
+        def + other
+          'blah blah'
+        end
+      end
+
+      assert_equal('blah blah', 'a' + 'b')
+    end;
+  end
+
   def test_eqq
     assert_operator(0.method(:<), :===, 5)
     assert_not_operator(0.method(:<), :===, -5)
@@ -1375,7 +1450,7 @@ class TestMethod < Test::Unit::TestCase
     # use_symbol = Object.instance_methods[0].is_a?(Symbol)
     nummodule = nummethod = 0
     mods = []
-    ObjectSpace.each_object(Module) {|m| mods << m if m.name }
+    ObjectSpace.each_object(Module) {|m| mods << m if String === m.name }
     mods = mods.sort_by {|m| m.name }
     mods.each {|mod|
       nummodule += 1

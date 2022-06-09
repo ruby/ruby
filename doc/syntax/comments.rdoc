@@ -41,8 +41,7 @@ syntax error:
 While comments are typically ignored by Ruby, special "magic comments" contain
 directives that affect how the code is interpreted.
 
-Top-level magic comments must start on the first line, or on the second line if
-the first line looks like <tt>#! shebang line</tt>.
+Top-level magic comments must appear in the first comment section of a file.
 
 NOTE: Magic comments affect only the file in which they appear;
 other files are unaffected.
@@ -74,7 +73,8 @@ regexp literals and <code>__ENCODING__</code>:
 
 Default encoding is UTF-8.
 
-It must appear in the first comment section of a file.
+Top-level magic comments must start on the first line, or on the second line if
+the first line looks like <tt>#! shebang line</tt>.
 
 The word "coding" may be used instead of "encoding".
 

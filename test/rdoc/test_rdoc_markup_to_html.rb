@@ -707,12 +707,13 @@ EXPECTED
   def test_convert_with_exclude_tag
     assert_equal "\n<p><code>aaa</code>[:symbol]</p>\n", @to.convert('+aaa+[:symbol]')
     assert_equal "\n<p><code>aaa[:symbol]</code></p>\n", @to.convert('+aaa[:symbol]+')
+    assert_equal "\n<p><code>https:</code>-foobar</p>\n", @to.convert('<tt>https:</tt>-foobar')
     assert_equal "\n<p><a href=\":symbol\">aaa</a></p>\n", @to.convert('aaa[:symbol]')
   end
 
   def test_convert_underscore_adjacent_to_code
     assert_equal "\n<p><code>aaa</code>_</p>\n", @to.convert(%q{+aaa+_})
-    assert_equal "\n<p>`<code>i386-mswin32_</code><em>MSRTVERSION</em>&#39;</p>\n", @to.convert(%q{`+i386-mswin32_+_MSRTVERSION_'})
+    assert_equal "\n<p>\u{2018}<code>i386-mswin32_</code><em>MSRTVERSION</em>\u{2019}</p>\n", @to.convert(%q{`+i386-mswin32_+_MSRTVERSION_'})
   end
 
   def test_gen_url
@@ -739,24 +740,42 @@ EXPECTED
   end
 
   def test_gen_url_rdoc_file
+    assert_equal '<a href="example_rdoc.html">example</a>',
+                 @to.gen_url('example.rdoc', 'example')
     assert_equal '<a href="doc/example_rdoc.html">example</a>',
                  @to.gen_url('doc/example.rdoc', 'example')
-    assert_equal '<a href="../ex_doc/example_rdoc.html">example</a>',
+    assert_equal '<a href="../ex.doc/example_rdoc.html">example</a>',
                  @to.gen_url('../ex.doc/example.rdoc', 'example')
+    assert_equal '<a href="doc/example_rdoc.html#label-one">example</a>',
+                 @to.gen_url('doc/example.rdoc#label-one', 'example')
+    assert_equal '<a href="../ex.doc/example_rdoc.html#label-two">example</a>',
+                 @to.gen_url('../ex.doc/example.rdoc#label-two', 'example')
   end
 
   def test_gen_url_md_file
+    assert_equal '<a href="example_md.html">example</a>',
+                 @to.gen_url('example.md', 'example')
     assert_equal '<a href="doc/example_md.html">example</a>',
                  @to.gen_url('doc/example.md', 'example')
-    assert_equal '<a href="../ex_doc/example_md.html">example</a>',
+    assert_equal '<a href="../ex.doc/example_md.html">example</a>',
                  @to.gen_url('../ex.doc/example.md', 'example')
+    assert_equal '<a href="doc/example_md.html#label-one">example</a>',
+                 @to.gen_url('doc/example.md#label-one', 'example')
+    assert_equal '<a href="../ex.doc/example_md.html#label-two">example</a>',
+                 @to.gen_url('../ex.doc/example.md#label-two', 'example')
   end
 
   def test_gen_url_rb_file
+    assert_equal '<a href="example_rb.html">example</a>',
+                 @to.gen_url('example.rb', 'example')
     assert_equal '<a href="doc/example_rb.html">example</a>',
                  @to.gen_url('doc/example.rb', 'example')
-    assert_equal '<a href="../ex_doc/example_rb.html">example</a>',
+    assert_equal '<a href="../ex.doc/example_rb.html">example</a>',
                  @to.gen_url('../ex.doc/example.rb', 'example')
+    assert_equal '<a href="doc/example_rb.html#label-one">example</a>',
+                 @to.gen_url('doc/example.rb#label-one', 'example')
+    assert_equal '<a href="../ex.doc/example_rb.html#label-two">example</a>',
+                 @to.gen_url('../ex.doc/example.rb#label-two', 'example')
   end
 
   def test_handle_regexp_HYPERLINK_link

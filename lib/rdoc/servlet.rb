@@ -1,5 +1,5 @@
 # frozen_string_literal: true
-require 'rdoc'
+require_relative '../rdoc'
 require 'erb'
 require 'time'
 require 'json'

@@ -65,12 +65,25 @@ describe 'Coverage.result' do
     result.should == {}
   end
 
-  it 'second Coverage.start does nothing' do
-    Coverage.start
-    require @config_file.chomp('.rb')
-    result = Coverage.result
+  ruby_version_is ''...'3.1' do
+    it 'second Coverage.start does nothing' do
+      Coverage.start
+      require @config_file.chomp('.rb')
+      result = Coverage.result
 
-    result.should == { @config_file => [1, 1, 1] }
+      result.should == { @config_file => [1, 1, 1] }
+    end
+  end
+
+  ruby_version_is '3.1' do
+    it 'second Coverage.start give exception' do
+      Coverage.start
+      -> {
+        require @config_file.chomp('.rb')
+      }.should raise_error(RuntimeError, 'coverage measurement is already setup')
+    ensure
+      Coverage.result
+    end
   end
 
   it 'does not include the file starting coverage since it is not tracked' do

@@ -8,7 +8,6 @@ bigdecimal.o: $(hdrdir)/ruby/assert.h
 bigdecimal.o: $(hdrdir)/ruby/backward/2/assume.h
 bigdecimal.o: $(hdrdir)/ruby/backward/2/attributes.h
 bigdecimal.o: $(hdrdir)/ruby/backward/2/bool.h
-bigdecimal.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 bigdecimal.o: $(hdrdir)/ruby/backward/2/inttypes.h
 bigdecimal.o: $(hdrdir)/ruby/backward/2/limits.h
 bigdecimal.o: $(hdrdir)/ruby/backward/2/long_long.h
@@ -16,6 +15,7 @@ bigdecimal.o: $(hdrdir)/ruby/backward/2/stdalign.h
 bigdecimal.o: $(hdrdir)/ruby/backward/2/stdarg.h
 bigdecimal.o: $(hdrdir)/ruby/defines.h
 bigdecimal.o: $(hdrdir)/ruby/intern.h
+bigdecimal.o: $(hdrdir)/ruby/internal/abi.h
 bigdecimal.o: $(hdrdir)/ruby/internal/anyargs.h
 bigdecimal.o: $(hdrdir)/ruby/internal/arithmetic.h
 bigdecimal.o: $(hdrdir)/ruby/internal/arithmetic/char.h
@@ -174,7 +174,6 @@ missing.o: $(hdrdir)/ruby/backward.h
 missing.o: $(hdrdir)/ruby/backward/2/assume.h
 missing.o: $(hdrdir)/ruby/backward/2/attributes.h
 missing.o: $(hdrdir)/ruby/backward/2/bool.h
-missing.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 missing.o: $(hdrdir)/ruby/backward/2/inttypes.h
 missing.o: $(hdrdir)/ruby/backward/2/limits.h
 missing.o: $(hdrdir)/ruby/backward/2/long_long.h
@@ -182,6 +181,7 @@ missing.o: $(hdrdir)/ruby/backward/2/stdalign.h
 missing.o: $(hdrdir)/ruby/backward/2/stdarg.h
 missing.o: $(hdrdir)/ruby/defines.h
 missing.o: $(hdrdir)/ruby/intern.h
+missing.o: $(hdrdir)/ruby/internal/abi.h
 missing.o: $(hdrdir)/ruby/internal/anyargs.h
 missing.o: $(hdrdir)/ruby/internal/arithmetic.h
 missing.o: $(hdrdir)/ruby/internal/arithmetic/char.h

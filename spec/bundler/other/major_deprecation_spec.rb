@@ -92,6 +92,18 @@ RSpec.describe "major deprecations" do
     end
   end
 
+  describe "bundle exec --no-keep-file-descriptors" do
+    before do
+      bundle "exec --no-keep-file-descriptors -e 1", :raise_on_error => false
+    end
+
+    it "is deprecated", :bundler => "< 3" do
+      expect(deprecations).to include "The `--no-keep-file-descriptors` has been deprecated. `bundle exec` no longer mess with your file descriptors. Close them in the exec'd script if you need to"
+    end
+
+    pending "is removed and shows a helpful error message about it", :bundler => "3"
+  end
+
   describe "bundle update --quiet" do
     it "does not print any deprecations" do
       bundle :update, :quiet => true, :raise_on_error => false
@@ -333,14 +345,14 @@ RSpec.describe "major deprecations" do
     end
 
     it "should print a proper warning, and use gems.rb" do
-      create_file "gems.rb"
+      create_file "gems.rb", "source \"#{file_uri_for(gem_repo1)}\""
       install_gemfile <<-G
         source "#{file_uri_for(gem_repo1)}"
         gem "rack"
       G
 
       expect(warnings).to include(
-        "Multiple gemfiles (gems.rb and Gemfile) detected. Make sure you remove Gemfile and Gemfile.lock since bundler is ignoring them in favor of gems.rb and gems.rb.locked."
+        "Multiple gemfiles (gems.rb and Gemfile) detected. Make sure you remove Gemfile and Gemfile.lock since bundler is ignoring them in favor of gems.rb and gems.locked."
       )
 
       expect(the_bundle).not_to include_gem "rack 1.0"
@@ -409,10 +421,38 @@ RSpec.describe "major deprecations" do
       )
     end
 
+    it "doesn't show lockfile deprecations if there's a lockfile", :bundler => "< 3" do
+      bundle "install"
+
+      expect(deprecations).to include(
+        "Your Gemfile contains multiple primary sources. " \
+        "Using `source` more than once without a block is a security risk, and " \
+        "may result in installing unexpected gems. To resolve this warning, use " \
+        "a block to indicate which gems should come from the secondary source."
+      )
+      expect(deprecations).not_to include(
+        "Your lockfile contains a single rubygems source section with multiple remotes, which is insecure. " \
+        "Make sure you run `bundle install` in non frozen mode and commit the result to make your lockfile secure."
+      )
+      bundle "config set --local frozen true"
+      bundle "install"
+
+      expect(deprecations).to include(
+        "Your Gemfile contains multiple primary sources. " \
+        "Using `source` more than once without a block is a security risk, and " \
+        "may result in installing unexpected gems. To resolve this warning, use " \
+        "a block to indicate which gems should come from the secondary source."
+      )
+      expect(deprecations).not_to include(
+        "Your lockfile contains a single rubygems source section with multiple remotes, which is insecure. " \
+        "Make sure you run `bundle install` in non frozen mode and commit the result to make your lockfile secure."
+      )
+    end
+
     pending "fails with a helpful error", :bundler => "3"
   end
 
-  context "bundle install with a lockfile with a single rubygems section with multiple remotes" do
+  context "bundle install in frozen mode with a lockfile with a single rubygems section with multiple remotes" do
     before do
       build_repo gem_repo3 do
         build_gem "rack", "0.9.1"
@@ -441,12 +481,14 @@ RSpec.describe "major deprecations" do
         BUNDLED WITH
            #{Bundler::VERSION}
       L
+
+      bundle "config set --local frozen true"
     end
 
     it "shows a deprecation", :bundler => "< 3" do
       bundle "install"
 
-      expect(deprecations).to include("Your lockfile contains a single rubygems source section with multiple remotes, which is insecure. You should run `bundle update` or generate your lockfile from scratch.")
+      expect(deprecations).to include("Your lockfile contains a single rubygems source section with multiple remotes, which is insecure. Make sure you run `bundle install` in non frozen mode and commit the result to make your lockfile secure.")
     end
 
     pending "fails with a helpful error", :bundler => "3"
@@ -454,14 +496,14 @@ RSpec.describe "major deprecations" do
 
   context "when Bundler.setup is run in a ruby script" do
     before do
-      create_file "gems.rb"
+      create_file "gems.rb", "source \"#{file_uri_for(gem_repo1)}\""
       install_gemfile <<-G
         source "#{file_uri_for(gem_repo1)}"
         gem "rack", :group => :test
       G
 
       ruby <<-RUBY
-        require '#{lib_dir}/bundler'
+        require '#{entrypoint}'
 
         Bundler.setup
         Bundler.setup
@@ -470,7 +512,7 @@ RSpec.describe "major deprecations" do
 
     it "should print a single deprecation warning" do
       expect(warnings).to include(
-        "Multiple gemfiles (gems.rb and Gemfile) detected. Make sure you remove Gemfile and Gemfile.lock since bundler is ignoring them in favor of gems.rb and gems.rb.locked."
+        "Multiple gemfiles (gems.rb and Gemfile) detected. Make sure you remove Gemfile and Gemfile.lock since bundler is ignoring them in favor of gems.rb and gems.locked."
       )
     end
   end
@@ -492,93 +534,12 @@ RSpec.describe "major deprecations" do
     pending "fails with a helpful error", :bundler => "3"
   end
 
-  describe Bundler::Dsl do
-    before do
-      @rubygems = double("rubygems")
-      allow(Bundler::Source::Rubygems).to receive(:new) { @rubygems }
-    end
-
-    context "with github gems" do
-      it "does not warn about removal", :bundler => "< 3" do
-        expect(Bundler.ui).not_to receive(:warn)
-        subject.gem("sparks", :github => "indirect/sparks")
-        github_uri = "https://github.com/indirect/sparks.git"
-        expect(subject.dependencies.first.source.uri).to eq(github_uri)
-      end
-
-      it "warns about removal", :bundler => "3" do
-        msg = <<-EOS
-The :github git source is deprecated, and will be removed in the future. Change any "reponame" :github sources to "username/reponame". Add this code to the top of your Gemfile to ensure it continues to work:
-
-    git_source(:github) {|repo_name| "https://github.com/\#{repo_name}.git" }
-
-        EOS
-        expect(Bundler.ui).to receive(:warn).with("[DEPRECATED] #{msg}")
-        subject.gem("sparks", :github => "indirect/sparks")
-        github_uri = "https://github.com/indirect/sparks.git"
-        expect(subject.dependencies.first.source.uri).to eq(github_uri)
-      end
-    end
-
-    context "with bitbucket gems" do
-      it "does not warn about removal", :bundler => "< 3" do
-        expect(Bundler.ui).not_to receive(:warn)
-        subject.gem("not-really-a-gem", :bitbucket => "mcorp/flatlab-rails")
-      end
-
-      it "warns about removal", :bundler => "3" do
-        msg = <<-EOS
-The :bitbucket git source is deprecated, and will be removed in the future. Add this code to the top of your Gemfile to ensure it continues to work:
-
-    git_source(:bitbucket) do |repo_name|
-      user_name, repo_name = repo_name.split("/")
-      repo_name ||= user_name
-      "https://\#{user_name}@bitbucket.org/\#{user_name}/\#{repo_name}.git"
-    end
-
-        EOS
-        expect(Bundler.ui).to receive(:warn).with("[DEPRECATED] #{msg}")
-        subject.gem("not-really-a-gem", :bitbucket => "mcorp/flatlab-rails")
-      end
-    end
-
-    context "with gist gems" do
-      it "does not warn about removal", :bundler => "< 3" do
-        expect(Bundler.ui).not_to receive(:warn)
-        subject.gem("not-really-a-gem", :gist => "1234")
-      end
-
-      it "warns about removal", :bundler => "3" do
-        msg = <<-EOS
-The :gist git source is deprecated, and will be removed in the future. Add this code to the top of your Gemfile to ensure it continues to work:
-
-    git_source(:gist) {|repo_name| "https://gist.github.com/\#{repo_name}.git" }
-
-        EOS
-        expect(Bundler.ui).to receive(:warn).with("[DEPRECATED] #{msg}")
-        subject.gem("not-really-a-gem", :gist => "1234")
-      end
-    end
-  end
-
   context "bundle show" do
     before do
       install_gemfile <<-G
         source "#{file_uri_for(gem_repo1)}"
         gem "rack"
       G
-    end
-
-    context "without flags" do
-      before do
-        bundle :show
-      end
-
-      it "prints a deprecation warning recommending `bundle list`", :bundler => "< 3" do
-        expect(deprecations).to include("use `bundle list` instead of `bundle show`")
-      end
-
-      pending "fails with a helpful message", :bundler => "3"
     end
 
     context "with --outdated flag" do
@@ -592,50 +553,21 @@ The :gist git source is deprecated, and will be removed in the future. Add this 
 
       pending "fails with a helpful message", :bundler => "3"
     end
+  end
 
-    context "with --verbose flag" do
-      before do
-        bundle "show --verbose"
-      end
-
-      it "prints a deprecation warning informing about its removal", :bundler => "< 3" do
-        expect(deprecations).to include("the `--verbose` flag to `bundle show` was undocumented and will be removed without replacement")
-      end
-
-      pending "fails with a helpful message", :bundler => "3"
+  context "bundle remove" do
+    before do
+      gemfile <<-G
+        source "#{file_uri_for(gem_repo1)}"
+        gem "rack"
+      G
     end
 
-    context "with a gem argument" do
-      before do
-        bundle "show rack"
-      end
+    context "with --install" do
+      it "shows a deprecation warning", :bundler => "< 3" do
+        bundle "remove rack --install"
 
-      it "prints a deprecation warning recommending `bundle info`", :bundler => "< 3" do
-        expect(deprecations).to include("use `bundle info rack` instead of `bundle show rack`")
-      end
-
-      pending "fails with a helpful message", :bundler => "3"
-    end
-
-    context "with the --paths option" do
-      before do
-        bundle "show --paths"
-      end
-
-      it "prints a deprecation warning recommending `bundle list`", :bundler => "< 3" do
-        expect(deprecations).to include("use `bundle list` instead of `bundle show --paths`")
-      end
-
-      pending "fails with a helpful message", :bundler => "3"
-    end
-
-    context "with a gem argument and the --paths option" do
-      before do
-        bundle "show rack --paths"
-      end
-
-      it "prints deprecation warning recommending `bundle info`", :bundler => "< 3" do
-        expect(deprecations).to include("use `bundle info rack --path` instead of `bundle show rack --paths`")
+        expect(err).to include "[DEPRECATED] The `--install` flag has been deprecated. `bundle install` is triggered by default."
       end
 
       pending "fails with a helpful message", :bundler => "3"
@@ -659,12 +591,12 @@ The :gist git source is deprecated, and will be removed in the future. Add this 
     before do
       graphviz_version = RUBY_VERSION >= "2.4" ? "1.2.5" : "1.2.4"
       realworld_system_gems "ruby-graphviz --version #{graphviz_version}"
-      create_file "gems.rb"
+      create_file "gems.rb", "source \"#{file_uri_for(gem_repo1)}\""
       bundle "viz"
     end
 
     it "prints a deprecation warning", :bundler => "< 3" do
-      expect(deprecations).to include "The `viz` command has been moved to the `bundle-viz` gem, see https://github.com/bundler/bundler-viz"
+      expect(deprecations).to include "The `viz` command has been renamed to `graph` and moved to a plugin. See https://github.com/rubygems/bundler-graph"
     end
 
     pending "fails with a helpful message", :bundler => "3"

@@ -1,4 +1,7 @@
 *.md
+*.rb
 *.rdoc
-NEWS-*
+contributing
+NEWS
 syntax
+optparse

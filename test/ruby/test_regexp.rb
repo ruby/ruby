@@ -91,6 +91,59 @@ class TestRegexp < Test::Unit::TestCase
     assert_warn('', '[ruby-core:82328] [Bug #13798]') {re.to_s}
   end
 
+  def test_extended_comment_invalid_escape_bug_18294
+    assert_separately([], <<-RUBY)
+      re = / C:\\\\[a-z]{5} # e.g. C:\\users /x
+      assert_match(re, 'C:\\users')
+      assert_not_match(re, 'C:\\user')
+
+      re = /
+        foo  # \\M-ca
+        bar
+      /x
+      assert_match(re, 'foobar')
+      assert_not_match(re, 'foobaz')
+
+      re = /
+        f[#o]o  # \\M-ca
+        bar
+      /x
+      assert_match(re, 'foobar')
+      assert_not_match(re, 'foobaz')
+
+      re = /
+        f[[:alnum:]#]o  # \\M-ca
+        bar
+      /x
+      assert_match(re, 'foobar')
+      assert_not_match(re, 'foobaz')
+
+      re = /
+        f(?# \\M-ca)oo  # \\M-ca
+        bar
+      /x
+      assert_match(re, 'foobar')
+      assert_not_match(re, 'foobaz')
+
+      re = /f(?# \\M-ca)oobar/
+      assert_match(re, 'foobar')
+      assert_not_match(re, 'foobaz')
+
+      re = /[-(?# fca)]oobar/
+      assert_match(re, 'foobar')
+      assert_not_match(re, 'foobaz')
+
+      re = /f(?# ca\0\\M-ca)oobar/
+      assert_match(re, 'foobar')
+      assert_not_match(re, 'foobaz')
+    RUBY
+
+    assert_raise(SyntaxError) {eval "/\\users/x"}
+    assert_raise(SyntaxError) {eval "/[\\users]/x"}
+    assert_raise(SyntaxError) {eval "/(?<\\users)/x"}
+    assert_raise(SyntaxError) {eval "/# \\users/"}
+  end
+
   def test_union
     assert_equal :ok, begin
       Regexp.union(
@@ -265,6 +318,27 @@ class TestRegexp < Test::Unit::TestCase
     assert_equal(re, re.match("foo").regexp)
   end
 
+  def test_match_lambda_multithread
+    bug17507 = "[ruby-core:101901]"
+    str = "a-x-foo-bar-baz-z-b"
+
+    worker = lambda do
+      m = /foo-([A-Za-z0-9_\.]+)-baz/.match(str)
+      assert_equal("bar", m[1], bug17507)
+
+      # These two lines are needed to trigger the bug
+      File.exist? "/tmp"
+      str.gsub(/foo-bar-baz/, "foo-abc-baz")
+    end
+
+    def self. threaded_test(worker)
+      6.times.map {Thread.new {10_000.times {worker.call}}}.each(&:join)
+    end
+
+    # The bug only occurs in a method calling a block/proc/lambda
+    threaded_test(worker)
+  end
+
   def test_source
     bug5484 = '[ruby-core:40364]'
     assert_equal('', //.source)
@@ -403,6 +477,27 @@ class TestRegexp < Test::Unit::TestCase
     assert_equal([2, 3], m.offset(3))
   end
 
+  def test_match_byteoffset_begin_end
+    m = /(?<x>b..)/.match("foobarbaz")
+    assert_equal([3, 6], m.byteoffset("x"))
+    assert_equal(3, m.begin("x"))
+    assert_equal(6, m.end("x"))
+    assert_raise(IndexError) { m.byteoffset("y") }
+    assert_raise(IndexError) { m.byteoffset(2) }
+    assert_raise(IndexError) { m.begin(2) }
+    assert_raise(IndexError) { m.end(2) }
+
+    m = /(?<x>q..)?/.match("foobarbaz")
+    assert_equal([nil, nil], m.byteoffset("x"))
+    assert_equal(nil, m.begin("x"))
+    assert_equal(nil, m.end("x"))
+
+    m = /\A\u3042(.)(.)?(.)\z/.match("\u3042\u3043\u3044")
+    assert_equal([3, 6], m.byteoffset(1))
+    assert_equal([nil, nil], m.byteoffset(2))
+    assert_equal([6, 9], m.byteoffset(3))
+  end
+
   def test_match_to_s
     m = /(?<x>b..)/.match("foobarbaz")
     assert_equal("bar", m.to_s)
@@ -446,6 +541,7 @@ class TestRegexp < Test::Unit::TestCase
     assert_nil(m[5])
     assert_raise(IndexError) { m[:foo] }
     assert_raise(TypeError) { m[nil] }
+    assert_equal(["baz", nil], m[-2, 3])
   end
 
   def test_match_values_at
@@ -473,6 +569,40 @@ class TestRegexp < Test::Unit::TestCase
     assert_equal("foobarbaz", m.string)
   end
 
+  def test_match_matchsubstring
+    m = /(.)(.)(\d+)(\d)(\w)?/.match("THX1138.")
+    assert_equal("HX1138", m.match(0))
+    assert_equal("8", m.match(4))
+    assert_nil(m.match(5))
+
+    m = /\A\u3042(.)(.)?(.)\z/.match("\u3042\u3043\u3044")
+    assert_equal("\u3043", m.match(1))
+    assert_nil(m.match(2))
+    assert_equal("\u3044", m.match(3))
+
+    m = /(?<foo>.)(?<n>[^aeiou])?(?<bar>.+)/.match("hoge\u3042")
+    assert_equal("h", m.match(:foo))
+    assert_nil(m.match(:n))
+    assert_equal("oge\u3042", m.match(:bar))
+  end
+
+  def test_match_match_length
+    m = /(.)(.)(\d+)(\d)(\w)?/.match("THX1138.")
+    assert_equal(6, m.match_length(0))
+    assert_equal(1, m.match_length(4))
+    assert_nil(m.match_length(5))
+
+    m = /\A\u3042(.)(.)?(.)\z/.match("\u3042\u3043\u3044")
+    assert_equal(1, m.match_length(1))
+    assert_nil(m.match_length(2))
+    assert_equal(1, m.match_length(3))
+
+    m = /(?<foo>.)(?<n>[^aeiou])?(?<bar>.+)/.match("hoge\u3042")
+    assert_equal(1, m.match_length(:foo))
+    assert_nil(m.match_length(:n))
+    assert_equal(4, m.match_length(:bar))
+  end
+
   def test_match_inspect
     m = /(...)(...)(...)(...)?/.match("foobarbaz")
     assert_equal('#<MatchData "foobarbaz" 1:"foo" 2:"bar" 3:"baz" 4:nil>', m.inspect)
@@ -481,6 +611,8 @@ class TestRegexp < Test::Unit::TestCase
   def test_initialize
     assert_raise(ArgumentError) { Regexp.new }
     assert_equal(/foo/, assert_warning(/ignored/) {Regexp.new(/foo/, Regexp::IGNORECASE)})
+    assert_equal(/foo/, assert_no_warning(/ignored/) {Regexp.new(/foo/)})
+    assert_equal(/foo/, assert_no_warning(/ignored/) {Regexp.new(/foo/, timeout: nil)})
 
     assert_equal(Encoding.find("US-ASCII"), Regexp.new("b..", nil, "n").encoding)
     assert_equal("bar", "foobarbaz"[Regexp.new("b..", nil, "n")])
@@ -494,6 +626,24 @@ class TestRegexp < Test::Unit::TestCase
     assert_raise(RegexpError) { Regexp.new('[\\40000000000') }
     assert_raise(RegexpError) { Regexp.new('[\\600000000000.') }
     assert_raise(RegexpError) { Regexp.new("((?<v>))\\g<0>") }
+  end
+
+  def test_match_control_meta_escape
+    assert_equal(0, /\c\xFF/ =~ "\c\xFF")
+    assert_equal(0, /\c\M-\xFF/ =~ "\c\M-\xFF")
+    assert_equal(0, /\C-\xFF/ =~ "\C-\xFF")
+    assert_equal(0, /\C-\M-\xFF/ =~ "\C-\M-\xFF")
+    assert_equal(0, /\M-\xFF/ =~ "\M-\xFF")
+    assert_equal(0, /\M-\C-\xFF/ =~ "\M-\C-\xFF")
+    assert_equal(0, /\M-\c\xFF/ =~ "\M-\c\xFF")
+
+    assert_nil(/\c\xFE/ =~ "\c\xFF")
+    assert_nil(/\c\M-\xFE/ =~ "\c\M-\xFF")
+    assert_nil(/\C-\xFE/ =~ "\C-\xFF")
+    assert_nil(/\C-\M-\xFE/ =~ "\C-\M-\xFF")
+    assert_nil(/\M-\xFE/ =~ "\M-\xFF")
+    assert_nil(/\M-\C-\xFE/ =~ "\M-\C-\xFF")
+    assert_nil(/\M-\c\xFE/ =~ "\M-\c\xFF")
   end
 
   def test_unescape
@@ -694,11 +844,16 @@ class TestRegexp < Test::Unit::TestCase
     test = proc {|&blk| "abc".sub("a", ""); blk.call($~) }
 
     bug10877 = '[ruby-core:68209] [Bug #10877]'
+    bug18160 = '[Bug #18160]'
     test.call {|m| assert_raise_with_message(IndexError, /foo/, bug10877) {m["foo"]} }
     key = "\u{3042}"
     [Encoding::UTF_8, Encoding::Shift_JIS, Encoding::EUC_JP].each do |enc|
       idx = key.encode(enc)
-      test.call {|m| assert_raise_with_message(IndexError, /#{idx}/, bug10877) {m[idx]} }
+      pat = /#{idx}/
+      test.call {|m| assert_raise_with_message(IndexError, pat, bug10877) {m[idx]} }
+      test.call {|m| assert_raise_with_message(IndexError, pat, bug18160) {m.offset(idx)} }
+      test.call {|m| assert_raise_with_message(IndexError, pat, bug18160) {m.begin(idx)} }
+      test.call {|m| assert_raise_with_message(IndexError, pat, bug18160) {m.end(idx)} }
     end
     test.call {|m| assert_equal(/a/, m.regexp) }
     test.call {|m| assert_equal("abc", m.string) }
@@ -1106,6 +1261,11 @@ class TestRegexp < Test::Unit::TestCase
 
     assert_no_match(/^\p{age=12.0}$/u, "\u32FF")
     assert_match(/^\p{age=12.1}$/u, "\u32FF")
+    assert_no_match(/^\p{age=13.0}$/u, "\u{10570}")
+    assert_match(/^\p{age=14.0}$/u, "\u{10570}")
+    assert_match(/^\p{age=14.0}$/u, "\u9FFF")
+    assert_match(/^\p{age=14.0}$/u, "\u{2A6DF}")
+    assert_match(/^\p{age=14.0}$/u, "\u{2B738}")
   end
 
   MatchData_A = eval("class MatchData_\u{3042} < MatchData; self; end")
@@ -1318,6 +1478,21 @@ class TestRegexp < Test::Unit::TestCase
     end
   end
 
+  def test_bug18631
+    assert_kind_of MatchData, /(?<x>a)(?<x>aa)\k<x>/.match("aaaaa")
+    assert_kind_of MatchData, /(?<x>a)(?<x>aa)\k<x>/.match("aaaa")
+    assert_kind_of MatchData, /(?<x>a)(?<x>aa)\k<x>/.match("aaaab")
+  end
+
+  def test_invalid_group
+    assert_separately([], "#{<<-"begin;"}\n#{<<-'end;'}")
+    begin;
+      assert_raise_with_message(RegexpError, /invalid conditional pattern/) do
+        Regexp.new("((?(1)x|x|)x)+")
+      end
+    end;
+  end
+
   # This assertion is for porting x2() tests in testpy.py of Onigmo.
   def assert_match_at(re, str, positions, msg = nil)
     re = Regexp.new(re) unless re.is_a?(Regexp)
@@ -1346,5 +1521,44 @@ class TestRegexp < Test::Unit::TestCase
       errs.map {|str, match| "\t#{'not ' unless match}match #{str.inspect}"}.join(",\n")
     }
     assert_empty(errs, msg)
+  end
+
+  def test_s_timeout
+    assert_separately([], "#{<<-"begin;"}\n#{<<-"end;"}")
+    begin;
+      timeout = EnvUtil.apply_timeout_scale(0.2)
+
+      Regexp.timeout = timeout
+      assert_equal(timeout, Regexp.timeout)
+
+      t = Time.now
+      assert_raise_with_message(Regexp::TimeoutError, "regexp match timeout") do
+        # A typical ReDoS case
+        /^(a*)*$/ =~ "a" * 1000000 + "x"
+      end
+      t = Time.now - t
+
+      assert_in_delta(timeout, t, timeout / 2)
+    end;
+  end
+
+  def test_timeout
+    assert_separately([], "#{<<-"begin;"}\n#{<<-"end;"}")
+    begin;
+      dummy_timeout = EnvUtil.apply_timeout_scale(10)
+      timeout = EnvUtil.apply_timeout_scale(0.2)
+
+      Regexp.timeout = dummy_timeout # This should be ignored
+
+      re = Regexp.new("^a*b?a*$", timeout: timeout)
+
+      t = Time.now
+      assert_raise_with_message(Regexp::TimeoutError, "regexp match timeout") do
+        re =~ "a" * 1000000 + "x"
+      end
+      t = Time.now - t
+
+      assert_in_delta(timeout, t, timeout / 2)
+    end;
   end
 end

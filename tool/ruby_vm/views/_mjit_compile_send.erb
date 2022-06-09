@@ -13,7 +13,9 @@
     MAYBE_UNUSED(<%= ope.fetch(:decl) %>) = (<%= ope.fetch(:type) %>)operands[<%= i %>];
 % end
 % # compiler: Use captured cc to avoid race condition
-    const struct rb_callcache *captured_cc = captured_cc_entries(status)[call_data_index(cd, body)];
+    size_t cd_index = call_data_index(cd, body);
+    const struct rb_callcache **cc_entries = captured_cc_entries(status);
+    const struct rb_callcache *captured_cc = cc_entries[cd_index];
 %
 % # compiler: Inline send insn where some supported fastpath is used.
     const rb_iseq_t *iseq = NULL;
@@ -52,7 +54,7 @@
 <%= render 'mjit_compile_pc_and_sp', locals: { insn: insn } -%>
 
 % # JIT: If ISeq is inlinable, call the inlined method without pushing a frame.
-        if (iseq && status->inlined_iseqs != NULL && iseq->body == status->inlined_iseqs[pos]) {
+        if (iseq && status->inlined_iseqs != NULL && ISEQ_BODY(iseq) == status->inlined_iseqs[pos]) {
             fprintf(f, "    {\n");
             fprintf(f, "        VALUE orig_self = reg_cfp->self;\n");
             fprintf(f, "        reg_cfp->self = stack[%d];\n", b->stack_size + sp_inc - 1);
@@ -82,8 +84,8 @@
             }
             else { // VM_METHOD_TYPE_ISEQ
 %               # fastpath_applied_iseq_p checks rb_simple_iseq_p, which ensures has_opt == FALSE
-                fprintf(f, "        vm_call_iseq_setup_normal(ec, reg_cfp, &calling, cc_cme, 0, %d, %d);\n", iseq->body->param.size, iseq->body->local_table_size);
-                if (iseq->body->catch_except_p) {
+                fprintf(f, "        vm_call_iseq_setup_normal(ec, reg_cfp, &calling, cc_cme, 0, %d, %d);\n", ISEQ_BODY(iseq)->param.size, ISEQ_BODY(iseq)->local_table_size);
+                if (ISEQ_BODY(iseq)->catch_except_p) {
                     fprintf(f, "        VM_ENV_FLAGS_SET(ec->cfp->ep, VM_FRAME_FLAG_FINISH);\n");
                     fprintf(f, "        val = vm_exec(ec, true);\n");
                 }

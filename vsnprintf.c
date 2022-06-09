@@ -101,23 +101,12 @@
 # endif
 #endif
 
-#if defined(__hpux) && !defined(__GNUC__) && !defined(__STDC__)
-#define const
-#endif
-
 #if defined(sgi)
 #undef __const
 #define __const
 #endif /* People who don't like const sys_error */
 
 #include <stddef.h>
-#if defined(__hpux) && !defined(__GNUC__) || defined(__DECC)
-#include <string.h>
-#endif
-
-#if !defined(__CYGWIN32__) && defined(__hpux) && !defined(__GNUC__)
-#include <stdlib.h>
-#endif
 
 #ifndef NULL
 #define	NULL	0
@@ -166,6 +155,8 @@ struct __sbuf {
  *
  * NB: see WARNING above before changing the layout of this structure!
  */
+struct __suio;
+
 typedef	struct __sFILE {
 	unsigned char *_p;	/* current position in (some) buffer */
 #if 0
@@ -178,8 +169,8 @@ typedef	struct __sFILE {
 #if 0
 	size_t	_lbfsize;	/* 0 or -_bf._size, for inline putc */
 #endif
-	int	(*vwrite)(/* struct __sFILE*, struct __suio * */);
-	const char *(*vextra)(/* struct __sFILE*, size_t, void*, long*, int */);
+	int	(*vwrite)(struct __sFILE*, struct __suio *);
+	const char *(*vextra)(struct __sFILE*, size_t, void*, long*, int);
 } FILE;
 
 
@@ -249,9 +240,7 @@ BSD__sfvwrite(register FILE *fp, register struct __suio *uio)
 
 	if ((len = uio->uio_resid) == 0)
 		return (0);
-#ifndef __hpux
 #define	MIN(a, b) ((a) < (b) ? (a) : (b))
-#endif
 #define	COPY(n)	  (void)memcpy((void *)fp->_p, (void *)p, (size_t)(n))
 
 	iov = uio->uio_iov;

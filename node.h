@@ -11,6 +11,8 @@
 
 **********************************************************************/
 
+#include "internal/compilers.h"
+
 #if defined(__cplusplus)
 extern "C" {
 #if 0
@@ -46,7 +48,6 @@ enum node_type {
     NODE_MASGN,
     NODE_LASGN,
     NODE_DASGN,
-    NODE_DASGN_CURR,
     NODE_GASGN,
     NODE_IASGN,
     NODE_CDECL,
@@ -146,13 +147,18 @@ code_loc_gen(const rb_code_location_t *loc1, const rb_code_location_t *loc2)
     return loc;
 }
 
+typedef struct rb_ast_id_table {
+    int size;
+    ID ids[FLEX_ARY_LEN];
+} rb_ast_id_table_t;
+
 typedef struct RNode {
     VALUE flags;
     union {
 	struct RNode *node;
 	ID id;
 	VALUE value;
-	ID *tbl;
+	rb_ast_id_table_t *tbl;
     } u1;
     union {
 	struct RNode *node;
@@ -231,11 +237,6 @@ typedef struct RNode {
 
 #define nd_entry u3.id
 #define nd_vid   u1.id
-#define nd_cflag u2.id
-#define nd_cval  u3.value
-
-#define nd_oid   u1.id
-#define nd_tbl   u1.tbl
 
 #define nd_var   u1.node
 #define nd_iter  u3.node
@@ -244,11 +245,6 @@ typedef struct RNode {
 #define nd_aid   u3.id
 
 #define nd_lit   u1.value
-
-#define nd_rest  u1.id
-#define nd_opt   u1.node
-#define nd_pid   u1.id
-#define nd_plen  u2.argc
 
 #define nd_recv  u1.node
 #define nd_mid   u2.id
@@ -263,11 +259,8 @@ typedef struct RNode {
 #define nd_beg   u1.node
 #define nd_end   u2.node
 #define nd_state u3.state
-#define nd_rval  u2.value
 
 #define nd_nth   u2.argc
-
-#define nd_tag   u1.id
 
 #define nd_alias  u1.id
 #define nd_orig   u2.id
@@ -282,6 +275,19 @@ typedef struct RNode {
 #define nd_apinfo u3.apinfo
 
 #define nd_fpinfo u3.fpinfo
+
+// for NODE_SCOPE
+#define nd_tbl   u1.tbl
+
+// for NODE_ARGS_AUX
+#define nd_pid   u1.id
+#define nd_plen  u2.argc
+#define nd_cflag u2.id
+
+// for ripper
+#define nd_cval  u3.value
+#define nd_rval  u2.value
+#define nd_tag   u1.id
 
 #define NEW_NODE(t,a0,a1,a2,loc) rb_node_newnode((t),(VALUE)(a0),(VALUE)(a1),(VALUE)(a2),loc)
 #define NEW_NODE_WITH_LOCALS(t,a1,a2,loc) node_newnode_with_locals(p, (t),(VALUE)(a1),(VALUE)(a2),loc)
@@ -320,7 +326,6 @@ typedef struct RNode {
 #define NEW_GASGN(v,val,loc) NEW_NODE(NODE_GASGN,v,val,v,loc)
 #define NEW_LASGN(v,val,loc) NEW_NODE(NODE_LASGN,v,val,0,loc)
 #define NEW_DASGN(v,val,loc) NEW_NODE(NODE_DASGN,v,val,0,loc)
-#define NEW_DASGN_CURR(v,val,loc) NEW_NODE(NODE_DASGN_CURR,v,val,0,loc)
 #define NEW_IASGN(v,val,loc) NEW_NODE(NODE_IASGN,v,val,0,loc)
 #define NEW_CDECL(v,val,path,loc) NEW_NODE(NODE_CDECL,v,val,path,loc)
 #define NEW_CVASGN(v,val,loc) NEW_NODE(NODE_CVASGN,v,val,0,loc)
@@ -398,7 +403,10 @@ typedef struct node_buffer_struct node_buffer_t;
 typedef struct rb_ast_body_struct {
     const NODE *root;
     VALUE compile_option;
-    int line_count;
+    VALUE script_lines;
+    // script_lines is either:
+    // - a Fixnum that represents the line count of the original source, or
+    // - an Array that contains the lines of the original source
 } rb_ast_body_t;
 typedef struct rb_ast_struct {
     VALUE flags;
@@ -408,13 +416,14 @@ typedef struct rb_ast_struct {
 rb_ast_t *rb_ast_new(void);
 void rb_ast_mark(rb_ast_t*);
 void rb_ast_update_references(rb_ast_t*);
-void rb_ast_add_local_table(rb_ast_t*, ID *buf);
 void rb_ast_dispose(rb_ast_t*);
 void rb_ast_free(rb_ast_t*);
 size_t rb_ast_memsize(const rb_ast_t*);
 void rb_ast_add_mark_object(rb_ast_t*, VALUE);
 NODE *rb_ast_newnode(rb_ast_t*, enum node_type type);
 void rb_ast_delete_node(rb_ast_t*, NODE *n);
+rb_ast_id_table_t *rb_ast_new_local_table(rb_ast_t*, int);
+rb_ast_id_table_t *rb_ast_resize_latest_local_table(rb_ast_t*, int);
 
 VALUE rb_parser_new(void);
 VALUE rb_parser_end_seen_p(VALUE);
@@ -486,6 +495,11 @@ rb_node_set_type(NODE *n, enum node_type t)
     return nd_init_type(n, t);
 }
 
+static inline bool
+nd_type_p(const NODE *n, enum node_type t)
+{
+    return (enum node_type)nd_type(n) == t;
+}
 #if defined(__cplusplus)
 #if 0
 { /* satisfy cc-mode */

@@ -576,6 +576,33 @@ module TestNetHTTP_version_1_1_methods
     th&.join
   end
 
+  def test_timeout_during_non_chunked_streamed_HTTP_session_write
+    th = nil
+    # listen for connections... but deliberately do not read
+    TCPServer.open('localhost', 0) {|server|
+      port = server.addr[1]
+
+      conn = Net::HTTP.new('localhost', port)
+      conn.write_timeout = 0.01
+      conn.read_timeout = 0.01 if windows?
+      conn.open_timeout = 0.1
+
+      req = Net::HTTP::Post.new('/')
+      data = "a"*50_000_000
+      req.content_length = data.size
+      req['Content-Type'] = 'application/x-www-form-urlencoded'
+      req.body_stream = StringIO.new(data)
+
+      th = Thread.new do
+        assert_raise(Net::WriteTimeout) { conn.request(req) }
+      end
+      assert th.join(10)
+    }
+  ensure
+    th&.kill
+    th&.join
+  end
+
   def test_timeout_during_HTTP_session
     bug4246 = "expected the HTTP session to have timed out but have not. c.f. [ruby-core:34203]"
 
@@ -1141,6 +1168,30 @@ class TestNetHTTPKeepAlive < Test::Unit::TestCase
     }
   end
 
+  def test_keep_alive_reset_on_new_connection
+    # Using WEBrick's debug log output on accepting connection:
+    #
+    #   "[2021-04-29 20:36:46] DEBUG accept: 127.0.0.1:50674\n"
+    @log_tester = nil
+    @server.logger.level = WEBrick::BasicLog::DEBUG
+
+    start {|http|
+      res = http.get('/')
+      http.keep_alive_timeout = 1
+      assert_kind_of Net::HTTPResponse, res
+      assert_kind_of String, res.body
+      http.finish
+      assert_equal 1, @log.grep(/accept/i).size
+
+      sleep 1.5
+      http.start
+      res = http.get('/')
+      assert_kind_of Net::HTTPResponse, res
+      assert_kind_of String, res.body
+      assert_equal 2, @log.grep(/accept/i).size
+    }
+  end
+
   class MockSocket
     attr_reader :count
     def initialize(success_after: nil)
@@ -1243,3 +1294,87 @@ class TestNetHTTPLocalBind < Test::Unit::TestCase
   end
 end
 
+class TestNetHTTPForceEncoding < Test::Unit::TestCase
+  CONFIG = {
+    'host' => 'localhost',
+    'proxy_host' => nil,
+    'proxy_port' => nil,
+  }
+
+  include TestNetHTTPUtils
+
+  def fe_request(force_enc, content_type=nil)
+    @server.mount_proc('/fe') do |req, res|
+      res['Content-Type'] = content_type if content_type
+      res.body = "hello\u1234"
+    end
+
+    http = Net::HTTP.new(config('host'), config('port'))
+    http.local_host = Addrinfo.tcp(config('host'), config('port')).ip_address
+    assert_not_nil(http.local_host)
+    assert_nil(http.local_port)
+
+    http.response_body_encoding = force_enc
+    http.get('/fe')
+  end
+
+  def test_response_body_encoding_false
+    res = fe_request(false)
+    assert_equal("hello\u1234".b, res.body)
+    assert_equal(Encoding::ASCII_8BIT, res.body.encoding)
+  end
+
+  def test_response_body_encoding_true_without_content_type
+    res = fe_request(true)
+    assert_equal("hello\u1234".b, res.body)
+    assert_equal(Encoding::ASCII_8BIT, res.body.encoding)
+  end
+
+  def test_response_body_encoding_true_with_content_type
+    res = fe_request(true, 'text/html; charset=utf-8')
+    assert_equal("hello\u1234", res.body)
+    assert_equal(Encoding::UTF_8, res.body.encoding)
+  end
+
+  def test_response_body_encoding_string_without_content_type
+    res = fe_request('utf-8')
+    assert_equal("hello\u1234", res.body)
+    assert_equal(Encoding::UTF_8, res.body.encoding)
+  end
+
+  def test_response_body_encoding_encoding_without_content_type
+    res = fe_request(Encoding::UTF_8)
+    assert_equal("hello\u1234", res.body)
+    assert_equal(Encoding::UTF_8, res.body.encoding)
+  end
+end
+
+class TestNetHTTPPartialResponse < Test::Unit::TestCase
+  CONFIG = {
+    'host' => '127.0.0.1',
+    'proxy_host' => nil,
+    'proxy_port' => nil,
+  }
+
+  include TestNetHTTPUtils
+
+  def test_partial_response
+    str = "0123456789"
+    @server.mount_proc('/') do |req, res|
+      res.status = 200
+      res['Content-Type'] = 'text/plain'
+
+      res.body = str
+      res['Content-Length'] = str.length + 1
+    end
+    @server.mount_proc('/show_ip') { |req, res| res.body = req.remote_ip }
+
+    http = Net::HTTP.new(config('host'), config('port'))
+    res = http.get('/')
+    assert_equal(str, res.body)
+
+    http = Net::HTTP.new(config('host'), config('port'))
+    http.ignore_eof = false
+    assert_raise(EOFError) {http.get('/')}
+  end
+end

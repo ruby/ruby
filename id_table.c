@@ -92,7 +92,7 @@ rb_id_table_init(struct rb_id_table *tbl, int capa)
     return tbl;
 }
 
-struct rb_id_table *
+MJIT_FUNC_EXPORTED struct rb_id_table *
 rb_id_table_create(size_t capa)
 {
     struct rb_id_table *tbl = ALLOC(struct rb_id_table);
@@ -223,7 +223,7 @@ hash_table_show(struct rb_id_table *tbl)
 }
 #endif
 
-int
+MJIT_FUNC_EXPORTED int
 rb_id_table_lookup(struct rb_id_table *tbl, ID id, VALUE *valp)
 {
     id_key_t key = id2key(id);
@@ -253,7 +253,7 @@ rb_id_table_insert_key(struct rb_id_table *tbl, const id_key_t key, const VALUE 
     return TRUE;
 }
 
-int
+MJIT_FUNC_EXPORTED int
 rb_id_table_insert(struct rb_id_table *tbl, ID id, VALUE val)
 {
     return rb_id_table_insert_key(tbl, id2key(id), val);
@@ -265,27 +265,6 @@ rb_id_table_delete(struct rb_id_table *tbl, ID id)
     const id_key_t key = id2key(id);
     int index = hash_table_index(tbl, key);
     return hash_delete_index(tbl, index);
-}
-
-void
-rb_id_table_foreach_with_replace(struct rb_id_table *tbl, rb_id_table_foreach_func_t *func, rb_id_table_update_callback_func_t *replace, void *data)
-{
-    int i, capa = tbl->capa;
-
-    for (i=0; i<capa; i++) {
-        if (ITEM_KEY_ISSET(tbl, i)) {
-            enum rb_id_table_iterator_result ret = (*func)(Qundef, tbl->items[i].val, data);
-            assert(ITEM_GET_KEY(tbl, i));
-
-            if (ret == ID_TABLE_REPLACE) {
-                VALUE val = tbl->items[i].val;
-                ret = (*replace)(NULL, &val, data, TRUE);
-                tbl->items[i].val = val;
-            }
-            else if (ret == ID_TABLE_STOP)
-                return;
-        }
-    }
 }
 
 void
@@ -323,3 +302,25 @@ rb_id_table_foreach_values(struct rb_id_table *tbl, rb_id_table_foreach_values_f
 	}
     }
 }
+
+void
+rb_id_table_foreach_values_with_replace(struct rb_id_table *tbl, rb_id_table_foreach_values_func_t *func, rb_id_table_update_value_callback_func_t *replace, void *data)
+{
+    int i, capa = tbl->capa;
+
+    for (i = 0; i < capa; i++) {
+        if (ITEM_KEY_ISSET(tbl, i)) {
+            enum rb_id_table_iterator_result ret = (*func)(tbl->items[i].val, data);
+
+            if (ret == ID_TABLE_REPLACE) {
+                VALUE val = tbl->items[i].val;
+                ret = (*replace)(&val, data, TRUE);
+                tbl->items[i].val = val;
+            }
+
+            if (ret == ID_TABLE_STOP)
+                return;
+        }
+    }
+}
+

@@ -696,7 +696,6 @@ str_subpos(const char *ptr, const char *end, long beg, long *sublen, rb_encoding
     VALUE str = rb_enc_str_new_static(ptr, end-ptr, enc);
     OBJ_FREEZE(str);
     ptr = rb_str_subpos(str, beg, sublen);
-    rb_gc_force_recycle(str);
     return ptr;
 }
 
@@ -1918,6 +1917,9 @@ username_completion_proc_call(VALUE self, VALUE str)
     return result;
 }
 
+#ifdef HAVE_RL_CATCH_SIGNALS
+RUBY_EXTERN int rl_catch_signals;
+#endif
 #ifdef HAVE_RL_CLEAR_SIGNALS
 RUBY_EXTERN int rl_clear_signals(void);
 #endif

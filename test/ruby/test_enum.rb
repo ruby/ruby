@@ -134,6 +134,12 @@ class TestEnumerable < Test::Unit::TestCase
     assert_equal([1, 2, 3, 1, 2], @obj.to_a)
   end
 
+  def test_to_a_keywords
+    @obj.singleton_class.remove_method(:each)
+    def @obj.each(foo:) yield foo end
+    assert_equal([1], @obj.to_a(foo: 1))
+  end
+
   def test_to_a_size_symbol
     sym = Object.new
     class << sym
@@ -228,6 +234,8 @@ class TestEnumerable < Test::Unit::TestCase
     assert_equal(24, @obj.inject(2) {|z, x| z * x })
     assert_equal(24, assert_warning(/given block not used/) {@obj.inject(2, :*) {|z, x| z * x }})
     assert_equal(nil, @empty.inject() {9})
+
+    assert_raise(ArgumentError) {@obj.inject}
   end
 
   FIXNUM_MIN = RbConfig::LIMITS['FIXNUM_MIN']
@@ -454,6 +462,17 @@ class TestEnumerable < Test::Unit::TestCase
       end
       empty.first
       empty.block.call
+    end;
+
+    bug18475 = '[ruby-dev:107059]'
+    assert_in_out_err([], <<-'end;', [], /unexpected break/, bug18475)
+      e = Enumerator.new do |g|
+        Thread.new do
+          g << 1
+        end.join
+      end
+
+      e.first
     end;
   end
 
@@ -731,6 +750,9 @@ class TestEnumerable < Test::Unit::TestCase
     ary.clear
     (1..10).each_slice(11) {|a| ary << a}
     assert_equal([[1, 2, 3, 4, 5, 6, 7, 8, 9, 10]], ary)
+
+    assert_equal(1..10, (1..10).each_slice(3) { })
+    assert_equal([], [].each_slice(3) { })
   end
 
   def test_each_cons
@@ -750,6 +772,9 @@ class TestEnumerable < Test::Unit::TestCase
     ary.clear
     (1..5).each_cons(6) {|a| ary << a}
     assert_empty(ary)
+
+    assert_equal(1..5, (1..5).each_cons(3) { })
+    assert_equal([], [].each_cons(3) { })
   end
 
   def test_zip

@@ -54,7 +54,7 @@ describe "Encoding.compatible? String, String" do
 
     it "returns nil if the second's Encoding is not ASCII compatible" do
       a = "abc".force_encoding("UTF-8")
-      b = "123".force_encoding("UTF-16LE")
+      b = "1234".force_encoding("UTF-16LE")
       Encoding.compatible?(a, b).should be_nil
     end
   end

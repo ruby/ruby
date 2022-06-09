@@ -53,6 +53,14 @@ describe :array_pack_float_le, shared: true do
   it "encodes a negative Float outside the range of a single precision float" do
     [-1e150].pack(pack_format).should == "\x00\x00\x80\xff"
   end
+
+  it "encodes a bignum as a float" do
+    [2 ** 65].pack(pack_format).should == [(2 ** 65).to_f].pack(pack_format)
+  end
+
+  it "encodes a rational as a float" do
+    [Rational(3, 4)].pack(pack_format).should == [Rational(3, 4).to_f].pack(pack_format)
+  end
 end
 
 describe :array_pack_float_be, shared: true do

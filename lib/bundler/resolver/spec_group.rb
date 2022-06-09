@@ -21,13 +21,9 @@ module Bundler
         @version = exemplary_spec.version
         @source = exemplary_spec.source
 
-        @all_platforms = relevant_platforms
         @activated_platforms = relevant_platforms
         @dependencies = Hash.new do |dependencies, platforms|
           dependencies[platforms] = dependencies_for(platforms)
-        end
-        @partitioned_dependency_names = Hash.new do |partitioned_dependency_names, platforms|
-          partitioned_dependency_names[platforms] = partitioned_dependency_names_for(platforms)
         end
         @specs = specs
       end
@@ -45,14 +41,6 @@ module Bundler
         end.flatten.compact.uniq
       end
 
-      def activate_platform!(platform)
-        self.activated_platforms = [platform]
-      end
-
-      def activate_all_platforms!
-        self.activated_platforms = @all_platforms
-      end
-
       def to_s
         activated_platforms_string = sorted_activated_platforms.join(", ")
         "#{name} (#{version}) (#{activated_platforms_string})"
@@ -60,10 +48,6 @@ module Bundler
 
       def dependencies_for_activated_platforms
         @dependencies[activated_platforms]
-      end
-
-      def partitioned_dependency_names_for_activated_platforms
-        @partitioned_dependency_names[activated_platforms]
       end
 
       def ==(other)
@@ -100,14 +84,6 @@ module Bundler
         end.flatten
       end
 
-      def partitioned_dependency_names_for(platforms)
-        return @dependencies[platforms].map(&:name), [] if platforms.size == 1
-
-        @dependencies[platforms].partition do |dep_proxy|
-          @dependencies[platforms].count {|dp| dp.dep == dep_proxy.dep } == platforms.size
-        end.map {|deps| deps.map(&:name) }
-      end
-
       def __dependencies(platform)
         dependencies = []
         @specs[platform].first.dependencies.each do |dep|
@@ -119,12 +95,12 @@ module Bundler
 
       def metadata_dependencies(platform)
         spec = @specs[platform].first
-        return [] unless spec.is_a?(Gem::Specification)
+        return [] if spec.is_a?(LazySpecification)
         dependencies = []
-        if !spec.required_ruby_version.nil? && !spec.required_ruby_version.none?
+        unless spec.required_ruby_version.none?
           dependencies << DepProxy.get_proxy(Gem::Dependency.new("Ruby\0", spec.required_ruby_version), platform)
         end
-        if !spec.required_rubygems_version.nil? && !spec.required_rubygems_version.none?
+        unless spec.required_rubygems_version.none?
           dependencies << DepProxy.get_proxy(Gem::Dependency.new("RubyGems\0", spec.required_rubygems_version), platform)
         end
         dependencies

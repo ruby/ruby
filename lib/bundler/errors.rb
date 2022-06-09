@@ -75,10 +75,22 @@ module Bundler
       end
     end
 
+    def permission_type
+      case @permission_type
+      when :create
+        "executable permissions for all parent directories and write permissions for `#{parent_folder}`"
+      else
+        "#{@permission_type} permissions for that path"
+      end
+    end
+
+    def parent_folder
+      File.dirname(@path)
+    end
+
     def message
       "There was an error while trying to #{action} `#{@path}`. " \
-      "It is likely that you need to grant #{@permission_type} permissions " \
-      "for that path."
+      "It is likely that you need to grant #{permission_type}."
     end
 
     status_code(23)
@@ -122,7 +134,7 @@ module Bundler
 
   class VirtualProtocolError < BundlerError
     def message
-      "There was an error relating to virtualization and file access." \
+      "There was an error relating to virtualization and file access. " \
       "It is likely that you need to grant access to or mount some file system correctly."
     end
 
@@ -155,5 +167,17 @@ module Bundler
     end
 
     status_code(32)
+  end
+
+  class DirectoryRemovalError < BundlerError
+    def initialize(orig_exception, msg)
+      full_message = "#{msg}.\n" \
+                     "The underlying error was #{orig_exception.class}: #{orig_exception.message}, with backtrace:\n" \
+                     "  #{orig_exception.backtrace.join("\n  ")}\n\n" \
+                     "Bundler Error Backtrace:"
+      super(full_message)
+    end
+
+    status_code(36)
   end
 end

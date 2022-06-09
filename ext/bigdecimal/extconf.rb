@@ -3,10 +3,7 @@ require 'mkmf'
 
 def check_bigdecimal_version(gemspec_path)
   message "checking RUBY_BIGDECIMAL_VERSION... "
-
-  bigdecimal_version =
-    IO.readlines(gemspec_path)
-      .grep(/\Abigdecimal_version\s+=\s+/)[0][/\'([^\']+)\'/, 1]
+  bigdecimal_version = File.read(gemspec_path).match(/^\s*s\.version\s+=\s+['"]([^'"]+)['"]\s*$/)[1]
 
   version_components = bigdecimal_version.split('.')
   bigdecimal_version = version_components[0, 3].join('.')

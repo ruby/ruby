@@ -48,6 +48,10 @@
 #
 # == OptionParser
 #
+# === New to \OptionParser?
+#
+# See the {Tutorial}[optparse/tutorial.rdoc].
+#
 # === Introduction
 #
 # OptionParser is a class for command-line option analysis.  It is much more
@@ -415,11 +419,13 @@
 #
 # === Further documentation
 #
-# The above examples should be enough to learn how to use this class.  If you
-# have any questions, file a ticket at http://bugs.ruby-lang.org.
+# The above examples, along with the accompanying
+# {Tutorial}[optparse/tutorial.rdoc],
+# should be enough to learn how to use this class.
+# If you have any questions, file a ticket at http://bugs.ruby-lang.org.
 #
 class OptionParser
-  OptionParser::Version = "0.1.1"
+  OptionParser::Version = "0.2.0"
 
   # :stopdoc:
   NoArgument = [NO_ARGUMENT = :NONE, nil].freeze
@@ -547,7 +553,7 @@ class OptionParser
     # Parses +arg+ and returns rest of +arg+ and matched portion to the
     # argument pattern. Yields when the pattern doesn't match substring.
     #
-    def parse_arg(arg)
+    def parse_arg(arg) # :nodoc:
       pattern or return nil, [arg]
       unless m = pattern.match(arg)
         yield(InvalidArgument, arg)
@@ -572,7 +578,7 @@ class OptionParser
     # conversion. Yields at semi-error condition instead of raising an
     # exception.
     #
-    def conv_arg(arg, val = [])
+    def conv_arg(arg, val = []) # :nodoc:
       if conv
         val = conv.call(*val)
       else
@@ -668,6 +674,29 @@ class OptionParser
       end
     end
 
+    def pretty_print_contents(q) # :nodoc:
+      if @block
+        q.text ":" + @block.source_location.join(":") + ":"
+        first = false
+      else
+        first = true
+      end
+      [@short, @long].each do |list|
+        list.each do |opt|
+          if first
+            q.text ":"
+            first = false
+          end
+          q.breakable
+          q.text opt
+        end
+      end
+    end
+
+    def pretty_print(q)         # :nodoc:
+      q.object_group(self) {pretty_print_contents(q)}
+    end
+
     #
     # Switch that takes no arguments.
     #
@@ -687,6 +716,10 @@ class OptionParser
       def self.pattern
         Object
       end
+
+      def pretty_head           # :nodoc:
+        "NoArgument"
+      end
     end
 
     #
@@ -704,6 +737,10 @@ class OptionParser
         end
         conv_arg(*parse_arg(arg, &method(:raise)))
       end
+
+      def pretty_head           # :nodoc:
+        "Required"
+      end
     end
 
     #
@@ -720,6 +757,10 @@ class OptionParser
         else
           conv_arg(arg)
         end
+      end
+
+      def pretty_head           # :nodoc:
+        "Optional"
       end
     end
 
@@ -743,6 +784,10 @@ class OptionParser
           val[0] = nil
         end
         val
+      end
+
+      def pretty_head           # :nodoc:
+        "Placed"
       end
     end
   end
@@ -773,6 +818,17 @@ class OptionParser
       @short = OptionMap.new
       @long = OptionMap.new
       @list = []
+    end
+
+    def pretty_print(q)         # :nodoc:
+      q.group(1, "(", ")") do
+        @list.each do |sw|
+          next unless Switch === sw
+          q.group(1, "(" + sw.pretty_head, ")") do
+            sw.pretty_print_contents(q)
+          end
+        end
+      end
     end
 
     #
@@ -806,7 +862,7 @@ class OptionParser
     # +lopts+::  Long style option list.
     # +nlopts+:: Negated long style options list.
     #
-    def update(sw, sopts, lopts, nsw = nil, nlopts = nil)
+    def update(sw, sopts, lopts, nsw = nil, nlopts = nil) # :nodoc:
       sopts.each {|o| @short[o] = sw} if sopts
       lopts.each {|o| @long[o] = sw} if lopts
       nlopts.each {|o| @long[o] = nsw} if nsw and nlopts
@@ -1287,6 +1343,29 @@ XXX
   def help; summarize("#{banner}".sub(/\n?\z/, "\n")) end
   alias to_s help
 
+  def pretty_print(q)           # :nodoc:
+    q.object_group(self) do
+      first = true
+      if @stack.size > 2
+        @stack.each_with_index do |s, i|
+          next if i < 2
+          next if s.list.empty?
+          if first
+            first = false
+            q.text ":"
+          end
+          q.breakable
+          s.pretty_print(q)
+        end
+      end
+    end
+  end
+
+  def inspect                   # :nodoc:
+    require 'pp'
+    pretty_print_inspect
+  end
+
   #
   # Returns option summary list.
   #
@@ -1300,7 +1379,7 @@ XXX
   # +prv+:: Previously specified argument.
   # +msg+:: Exception message.
   #
-  def notwice(obj, prv, msg)
+  def notwice(obj, prv, msg) # :nodoc:
     unless !prv or prv == obj
       raise(ArgumentError, "argument #{msg} given twice: #{obj}",
             ParseError.filter_backtrace(caller(2)))
@@ -1732,7 +1811,7 @@ XXX
   # Traverses @stack, sending each element method +id+ with +args+ and
   # +block+.
   #
-  def visit(id, *args, &block)
+  def visit(id, *args, &block) # :nodoc:
     @stack.reverse_each do |el|
       el.__send__(id, *args, &block)
     end
@@ -1743,7 +1822,7 @@ XXX
   #
   # Searches +key+ in @stack for +id+ hash and returns or yields the result.
   #
-  def search(id, key)
+  def search(id, key) # :nodoc:
     block_given = block_given?
     visit(:search, id, key) do |k|
       return block_given ? yield(k) : k
@@ -1760,7 +1839,7 @@ XXX
   # +icase+:: Search case insensitive if true.
   # +pat+::   Optional pattern for completion.
   #
-  def complete(typ, opt, icase = false, *pat)
+  def complete(typ, opt, icase = false, *pat) # :nodoc:
     if pat.empty?
       search(typ, opt) {|sw| return [sw, opt]} # exact match or...
     end

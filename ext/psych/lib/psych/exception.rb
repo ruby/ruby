@@ -7,8 +7,8 @@ module Psych
   end
 
   class DisallowedClass < Exception
-    def initialize klass_name
-      super "Tried to load unspecified class: #{klass_name}"
+    def initialize action, klass_name
+      super "Tried to #{action} unspecified class: #{klass_name}"
     end
   end
 end

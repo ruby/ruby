@@ -1,5 +1,5 @@
 # frozen_string_literal: true
-require 'rubygems/test_case'
+require_relative 'helper'
 require 'rubygems/request_set'
 require 'rubygems/request_set/lockfile'
 
@@ -443,7 +443,7 @@ DEPENDENCIES
 
     gem_deps_lock_file = "#{@gem_deps_file}.lock"
 
-    assert_path_exists gem_deps_lock_file
+    assert_path_exist gem_deps_lock_file
 
     refute_empty File.read gem_deps_lock_file
   end
@@ -457,11 +457,11 @@ DEPENDENCIES
       io.write 'hello'
     end
 
-    assert_raises Gem::UnsatisfiableDependencyError do
+    assert_raise Gem::UnsatisfiableDependencyError do
       lockfile.write
     end
 
-    assert_path_exists gem_deps_lock_file
+    assert_path_exist gem_deps_lock_file
 
     assert_equal 'hello', File.read(gem_deps_lock_file)
   end

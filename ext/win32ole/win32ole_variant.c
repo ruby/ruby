@@ -94,7 +94,7 @@ ole_val2olevariantdata(VALUE val, VARTYPE vt, struct olevariantdata *pvar)
                 }
             }
         }
-#if (_MSC_VER >= 1300) || defined(__CYGWIN__) || defined(__MINGW32__)
+#if (defined(_MSC_VER) && (_MSC_VER >= 1300)) || defined(__CYGWIN__) || defined(__MINGW32__)
     } else if ( (vt & ~VT_BYREF) == VT_I8 || (vt & ~VT_BYREF) == VT_UI8) {
         ole_val2variant_ex(val, &(pvar->realvar), (vt & ~VT_BYREF));
         ole_val2variant_ex(val, &(pvar->var), (vt & ~VT_BYREF));
@@ -202,7 +202,7 @@ ole_set_byref(VARIANT *realvar, VARIANT *var,  VARTYPE vt)
             V_R8REF(var) = &V_R8(realvar);
             break;
 
-#if (_MSC_VER >= 1300) || defined(__CYGWIN__) || defined(__MINGW32__)
+#if (defined(_MSC_VER) && (_MSC_VER >= 1300)) || defined(__CYGWIN__) || defined(__MINGW32__)
 #ifdef V_I8REF
         case VT_I8:
             V_I8REF(var) = &V_I8(realvar);
@@ -695,7 +695,8 @@ void
 Init_win32ole_variant(void)
 {
 #undef rb_intern
-    cWIN32OLE_VARIANT = rb_define_class("WIN32OLE_VARIANT", rb_cObject);
+    cWIN32OLE_VARIANT = rb_define_class_under(cWIN32OLE, "Variant", rb_cObject);
+    rb_define_const(rb_cObject, "WIN32OLE_VARIANT", cWIN32OLE_VARIANT);
     rb_define_alloc_func(cWIN32OLE_VARIANT, folevariant_s_allocate);
     rb_define_singleton_method(cWIN32OLE_VARIANT, "array", folevariant_s_array, 2);
     rb_define_method(cWIN32OLE_VARIANT, "initialize", folevariant_initialize, -2);

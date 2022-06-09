@@ -102,6 +102,7 @@ class Gem::Source::Git < Gem::Source
       success = system @git, 'reset', '--quiet', '--hard', rev_parse
 
       if @need_submodules
+        require "open3"
         _, status = Open3.capture2e(@git, 'submodule', 'update', '--quiet', '--init', '--recursive')
 
         success &&= status.success?
@@ -225,7 +226,7 @@ class Gem::Source::Git < Gem::Source
   # A hash for the git gem based on the git repository URI.
 
   def uri_hash # :nodoc:
-    require 'digest' # required here to avoid deadlocking in Gem.activate_bin_path (because digest is a gem on 2.5+)
+    require_relative '../openssl'
 
     normalized =
       if @repository =~ %r{^\w+://(\w+@)?}
@@ -235,6 +236,6 @@ class Gem::Source::Git < Gem::Source
         @repository
       end
 
-    Digest::SHA1.hexdigest normalized
+    OpenSSL::Digest::SHA1.hexdigest normalized
   end
 end

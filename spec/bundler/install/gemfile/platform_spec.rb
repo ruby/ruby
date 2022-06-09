@@ -86,13 +86,13 @@ RSpec.describe "bundle install across platforms" do
     expect(the_bundle).to include_gems "nokogiri 1.4.2 JAVA", "weakling 0.0.3"
 
     simulate_new_machine
-
-    simulate_platform "ruby"
+    bundle "config set --local force_ruby_platform true"
     bundle "install"
 
     expect(the_bundle).to include_gems "nokogiri 1.4.2"
     expect(the_bundle).not_to include_gems "weakling"
 
+    simulate_new_machine
     simulate_platform "java"
     bundle "install"
 
@@ -128,7 +128,7 @@ RSpec.describe "bundle install across platforms" do
       gem "pry"
     G
 
-    lockfile_should_be <<-L
+    expect(lockfile).to eq <<~L
       GEM
         remote: #{file_uri_for(gem_repo4)}/
         specs:
@@ -156,7 +156,7 @@ RSpec.describe "bundle install across platforms" do
 
     bundle "lock --add-platform ruby"
 
-    good_lockfile = strip_whitespace(<<-L)
+    good_lockfile = <<~L
       GEM
         remote: #{file_uri_for(gem_repo4)}/
         specs:
@@ -186,9 +186,9 @@ RSpec.describe "bundle install across platforms" do
          #{Bundler::VERSION}
     L
 
-    lockfile_should_be good_lockfile
+    expect(lockfile).to eq good_lockfile
 
-    bad_lockfile = strip_whitespace <<-L
+    bad_lockfile = <<~L
       GEM
         remote: #{file_uri_for(gem_repo4)}/
         specs:
@@ -216,29 +216,29 @@ RSpec.describe "bundle install across platforms" do
         pry
 
       BUNDLED WITH
-        #{Bundler::VERSION}
+         #{Bundler::VERSION}
     L
 
     aggregate_failures do
       lockfile bad_lockfile
       bundle :install
-      lockfile_should_be good_lockfile
+      expect(lockfile).to eq good_lockfile
 
       lockfile bad_lockfile
       bundle :update, :all => true
-      lockfile_should_be good_lockfile
+      expect(lockfile).to eq good_lockfile
 
       lockfile bad_lockfile
       bundle "update ffi"
-      lockfile_should_be good_lockfile
+      expect(lockfile).to eq good_lockfile
 
       lockfile bad_lockfile
       bundle "update empyrean"
-      lockfile_should_be good_lockfile
+      expect(lockfile).to eq good_lockfile
 
       lockfile bad_lockfile
       bundle :lock
-      lockfile_should_be good_lockfile
+      expect(lockfile).to eq good_lockfile
     end
   end
 
@@ -310,7 +310,7 @@ RSpec.describe "bundle install across platforms" do
 
     expect(the_bundle).to include_gem "platform_specific 1.0 RUBY"
 
-    lockfile_should_be <<-G
+    expect(lockfile).to eq <<~G
       GEM
         remote: #{file_uri_for(gem_repo1)}/
         specs:
@@ -358,6 +358,49 @@ RSpec.describe "bundle install with platform conditionals" do
     expect(the_bundle).not_to include_gems "nokogiri 1.4.2"
   end
 
+  it "installs gems tagged w/ another platform but also dependent on the current one transitively" do
+    build_repo4 do
+      build_gem "activesupport", "6.1.4.1" do |s|
+        s.add_dependency "tzinfo", "~> 2.0"
+      end
+
+      build_gem "tzinfo", "2.0.4"
+    end
+
+    gemfile <<~G
+      source "#{file_uri_for(gem_repo4)}"
+
+      gem "activesupport"
+
+      platforms :#{not_local_tag} do
+        gem "tzinfo", "~> 1.2"
+      end
+    G
+
+    lockfile <<~L
+      GEM
+        remote: #{file_uri_for(gem_repo4)}/
+        specs:
+          activesupport (6.1.4.1)
+            tzinfo (~> 2.0)
+          tzinfo (2.0.4)
+
+      PLATFORMS
+        #{specific_local_platform}
+
+      DEPENDENCIES
+        activesupport
+        tzinfo (~> 1.2)
+
+      BUNDLED WITH
+         #{Bundler::VERSION}
+    L
+
+    bundle "install --verbose"
+
+    expect(the_bundle).to include_gems "tzinfo 2.0.4"
+  end
+
   it "installs gems tagged w/ the current platforms inline" do
     skip "platform issues" if Gem.win_platform?
 
@@ -400,6 +443,7 @@ RSpec.describe "bundle install with platform conditionals" do
     build_git "foo"
 
     install_gemfile <<-G
+      source "#{file_uri_for(gem_repo1)}"
       platform :#{not_local_tag} do
         gem "foo", :git => "#{lib_path("foo-1.0")}"
       end
@@ -409,7 +453,7 @@ RSpec.describe "bundle install with platform conditionals" do
   end
 
   it "does not attempt to install gems from :rbx when using --local" do
-    simulate_platform "ruby"
+    bundle "config set --local force_ruby_platform true"
 
     gemfile <<-G
       source "#{file_uri_for(gem_repo1)}"
@@ -421,7 +465,7 @@ RSpec.describe "bundle install with platform conditionals" do
   end
 
   it "does not attempt to install gems from other rubies when using --local" do
-    simulate_platform "ruby"
+    bundle "config set --local force_ruby_platform true"
     other_ruby_version_tag = RUBY_VERSION =~ /^1\.8/ ? :ruby_19 : :ruby_18
 
     gemfile <<-G
@@ -434,7 +478,7 @@ RSpec.describe "bundle install with platform conditionals" do
   end
 
   it "does not print a warning when a dependency is unused on a platform different from the current one" do
-    simulate_platform "ruby"
+    bundle "config set --local force_ruby_platform true"
 
     gemfile <<-G
       source "#{file_uri_for(gem_repo1)}"
@@ -446,7 +490,7 @@ RSpec.describe "bundle install with platform conditionals" do
 
     expect(err).to be_empty
 
-    lockfile_should_be <<-L
+    expect(lockfile).to eq <<~L
       GEM
         remote: #{file_uri_for(gem_repo1)}/
         specs:

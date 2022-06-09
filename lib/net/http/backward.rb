@@ -5,22 +5,36 @@
 
 class Net::HTTP
   ProxyMod = ProxyDelta
-end
-
-module Net
-  HTTPSession = Net::HTTP
+  deprecate_constant :ProxyMod
 end
 
 module Net::NetPrivate
   HTTPRequest = ::Net::HTTPRequest
+  deprecate_constant :HTTPRequest
 end
 
-Net::HTTPInformationCode  = Net::HTTPInformation
-Net::HTTPSuccessCode      = Net::HTTPSuccess
-Net::HTTPRedirectionCode  = Net::HTTPRedirection
-Net::HTTPRetriableCode    = Net::HTTPRedirection
-Net::HTTPClientErrorCode  = Net::HTTPClientError
-Net::HTTPFatalErrorCode   = Net::HTTPClientError
-Net::HTTPServerErrorCode  = Net::HTTPServerError
-Net::HTTPResponceReceiver = Net::HTTPResponse
+module Net
+  HTTPSession = HTTP
 
+  HTTPInformationCode  = HTTPInformation
+  HTTPSuccessCode      = HTTPSuccess
+  HTTPRedirectionCode  = HTTPRedirection
+  HTTPRetriableCode    = HTTPRedirection
+  HTTPClientErrorCode  = HTTPClientError
+  HTTPFatalErrorCode   = HTTPClientError
+  HTTPServerErrorCode  = HTTPServerError
+  HTTPResponseReceiver = HTTPResponse
+
+  HTTPResponceReceiver = HTTPResponse # Typo since 2001
+
+  deprecate_constant :HTTPSession,
+                     :HTTPInformationCode,
+                     :HTTPSuccessCode,
+                     :HTTPRedirectionCode,
+                     :HTTPRetriableCode,
+                     :HTTPClientErrorCode,
+                     :HTTPFatalErrorCode,
+                     :HTTPServerErrorCode,
+                     :HTTPResponseReceiver,
+                     :HTTPResponceReceiver
+end

@@ -1,24 +1,19 @@
 require_relative '../../spec_helper'
 require_relative 'fixtures/classes'
+require_relative 'shared/strip'
 
 describe "String#strip" do
+  it_behaves_like :string_strip, :strip
+
   it "returns a new string with leading and trailing whitespace removed" do
     "   hello   ".strip.should == "hello"
     "   hello world   ".strip.should == "hello world"
     "\tgoodbye\r\v\n".strip.should == "goodbye"
   end
 
-  ruby_version_is '3.1' do
+  ruby_version_is '3.0' do
     it "returns a copy of self without leading and trailing NULL bytes and whitespace" do
       " \x00 goodbye \x00 ".strip.should == "goodbye"
-    end
-  end
-
-  ruby_version_is ''...'2.7' do
-    it "taints the result when self is tainted" do
-      "".taint.strip.should.tainted?
-      "ok".taint.strip.should.tainted?
-      "  ok  ".taint.strip.should.tainted?
     end
   end
 end
@@ -40,7 +35,7 @@ describe "String#strip!" do
     a.should == "hello"
   end
 
-  ruby_version_is '3.1' do
+  ruby_version_is '3.0' do
     it "removes leading and trailing NULL bytes and whitespace" do
       a = "\000 goodbye \000"
       a.strip!

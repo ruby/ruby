@@ -28,6 +28,10 @@ RSpec.describe "bundle gem" do
 
   let(:require_path) { "mygem" }
 
+  let(:minitest_test_file_path) { "test/test_mygem.rb" }
+
+  let(:minitest_test_class_name) { "class TestMygem < Minitest::Test" }
+
   before do
     sys_exec("git config --global user.name 'Bundler User'")
     sys_exec("git config --global user.email user@example.com")
@@ -35,36 +39,32 @@ RSpec.describe "bundle gem" do
   end
 
   describe "git repo initialization" do
-    shared_examples_for "a gem with an initial git repo" do
+    it "generates a gem skeleton with a .git folder", :readline do
+      bundle "gem #{gem_name}"
+      gem_skeleton_assertions
+      expect(bundled_app("#{gem_name}/.git")).to exist
+    end
+
+    it "generates a gem skeleton with a .git folder when passing --git", :readline do
+      bundle "gem #{gem_name} --git"
+      gem_skeleton_assertions
+      expect(bundled_app("#{gem_name}/.git")).to exist
+    end
+
+    it "generates a gem skeleton without a .git folder when passing --no-git", :readline do
+      bundle "gem #{gem_name} --no-git"
+      gem_skeleton_assertions
+      expect(bundled_app("#{gem_name}/.git")).not_to exist
+    end
+
+    context "on a path with spaces" do
       before do
-        bundle "gem #{gem_name} #{flags}"
+        Dir.mkdir(bundled_app("path with spaces"))
       end
 
-      it "generates a gem skeleton with a .git folder", :readline do
-        gem_skeleton_assertions
-        expect(bundled_app("#{gem_name}/.git")).to exist
-      end
-    end
-
-    context "when using the default" do
-      it_behaves_like "a gem with an initial git repo" do
-        let(:flags) { "" }
-      end
-    end
-
-    context "when explicitly passing --git" do
-      it_behaves_like "a gem with an initial git repo" do
-        let(:flags) { "--git" }
-      end
-    end
-
-    context "when passing --no-git", :readline do
-      before do
-        bundle "gem #{gem_name} --no-git"
-      end
-      it "generates a gem skeleton without a .git folder" do
-        gem_skeleton_assertions
-        expect(bundled_app("#{gem_name}/.git")).not_to exist
+      it "properly initializes git repo", :readline do
+        bundle "gem #{gem_name}", :dir => bundled_app("path with spaces")
+        expect(bundled_app("path with spaces/#{gem_name}/.git")).to exist
       end
     end
   end
@@ -307,42 +307,42 @@ RSpec.describe "bundle gem" do
     skip "ruby_core has an 'ast.rb' file that gets in the middle and breaks this spec" if ruby_core?
     bundle "gem #{gem_name} --linter=rubocop"
     bundle_exec_rubocop
-    expect(err).to be_empty
+    expect(last_command).to be_success
   end
 
   it "has no rubocop offenses when using --ext and --linter=rubocop flag", :readline do
     skip "ruby_core has an 'ast.rb' file that gets in the middle and breaks this spec" if ruby_core?
     bundle "gem #{gem_name} --ext --linter=rubocop"
     bundle_exec_rubocop
-    expect(err).to be_empty
+    expect(last_command).to be_success
   end
 
   it "has no rubocop offenses when using --ext, --test=minitest, and --linter=rubocop flag", :readline do
     skip "ruby_core has an 'ast.rb' file that gets in the middle and breaks this spec" if ruby_core?
     bundle "gem #{gem_name} --ext --test=minitest --linter=rubocop"
     bundle_exec_rubocop
-    expect(err).to be_empty
+    expect(last_command).to be_success
   end
 
   it "has no rubocop offenses when using --ext, --test=rspec, and --linter=rubocop flag", :readline do
     skip "ruby_core has an 'ast.rb' file that gets in the middle and breaks this spec" if ruby_core?
     bundle "gem #{gem_name} --ext --test=rspec --linter=rubocop"
     bundle_exec_rubocop
-    expect(err).to be_empty
+    expect(last_command).to be_success
   end
 
   it "has no rubocop offenses when using --ext, --ext=test-unit, and --linter=rubocop flag", :readline do
     skip "ruby_core has an 'ast.rb' file that gets in the middle and breaks this spec" if ruby_core?
     bundle "gem #{gem_name} --ext --test=test-unit --linter=rubocop"
     bundle_exec_rubocop
-    expect(err).to be_empty
+    expect(last_command).to be_success
   end
 
   it "has no standard offenses when using --linter=standard flag", :readline do
     skip "ruby_core has an 'ast.rb' file that gets in the middle and breaks this spec" if ruby_core?
     bundle "gem #{gem_name} --linter=standard"
     bundle_exec_standardrb
-    expect(err).to be_empty
+    expect(last_command).to be_success
   end
 
   shared_examples_for "CI config is absent" do
@@ -517,6 +517,7 @@ RSpec.describe "bundle gem" do
       expect(bundled_app("#{gem_name}/Rakefile")).to exist
       expect(bundled_app("#{gem_name}/lib/#{require_path}.rb")).to exist
       expect(bundled_app("#{gem_name}/lib/#{require_path}/version.rb")).to exist
+      expect(bundled_app("#{gem_name}/sig/#{require_path}.rbs")).to exist
       expect(bundled_app("#{gem_name}/.gitignore")).to exist
 
       expect(bundled_app("#{gem_name}/bin/setup")).to exist
@@ -531,6 +532,12 @@ RSpec.describe "bundle gem" do
       bundle "gem #{gem_name}"
 
       expect(bundled_app("#{gem_name}/lib/#{require_path}/version.rb").read).to match(/VERSION = "0.1.0"/)
+    end
+
+    it "declare String type for VERSION constant" do
+      bundle "gem #{gem_name}"
+
+      expect(bundled_app("#{gem_name}/sig/#{require_path}.rbs").read).to match(/VERSION: String/)
     end
 
     context "git config user.{name,email} is set" do
@@ -567,13 +574,13 @@ RSpec.describe "bundle gem" do
       bundle "gem #{gem_name}"
 
       expect(generated_gemspec.metadata["allowed_push_host"]).
-        to match(/mygemserver\.com/)
+        to match(/example\.com/)
     end
 
     it "sets a minimum ruby version" do
       bundle "gem #{gem_name}"
 
-      expect(generated_gemspec.required_ruby_version).to eq(Gem::Requirement.new(Gem.ruby_version < Gem::Version.new("2.4.a") ? ">= 2.3.0" : ">= 2.4.0"))
+      expect(generated_gemspec.required_ruby_version.to_s).to start_with(">=")
     end
 
     it "requires the version file" do
@@ -586,6 +593,14 @@ RSpec.describe "bundle gem" do
       bundle "gem #{gem_name}"
 
       expect(bundled_app("#{gem_name}/lib/#{require_path}.rb").read).to match(/class Error < StandardError; end$/)
+    end
+
+    it "does not include the gemspec file in files" do
+      bundle "gem #{gem_name}"
+
+      bundler_gemspec = Bundler::GemHelper.new(gemspec_dir).gemspec
+
+      expect(bundler_gemspec.files).not_to include("#{gem_name}.gemspec")
     end
 
     it "runs rake without problems" do
@@ -691,7 +706,7 @@ RSpec.describe "bundle gem" do
       end
 
       it "builds spec skeleton" do
-        expect(bundled_app("#{gem_name}/test/test_#{require_path}.rb")).to exist
+        expect(bundled_app("#{gem_name}/#{minitest_test_file_path}")).to exist
         expect(bundled_app("#{gem_name}/test/test_helper.rb")).to exist
       end
     end
@@ -711,7 +726,7 @@ RSpec.describe "bundle gem" do
       end
 
       it "builds spec skeleton" do
-        expect(bundled_app("#{gem_name}/test/test_#{require_path}.rb")).to exist
+        expect(bundled_app("#{gem_name}/#{minitest_test_file_path}")).to exist
         expect(bundled_app("#{gem_name}/test/test_helper.rb")).to exist
       end
 
@@ -720,11 +735,15 @@ RSpec.describe "bundle gem" do
       end
 
       it "requires 'test_helper'" do
-        expect(bundled_app("#{gem_name}/test/test_#{require_path}.rb").read).to include(%(require "test_helper"))
+        expect(bundled_app("#{gem_name}/#{minitest_test_file_path}").read).to include(%(require "test_helper"))
+      end
+
+      it "defines valid test class name" do
+        expect(bundled_app("#{gem_name}/#{minitest_test_file_path}").read).to include(minitest_test_class_name)
       end
 
       it "creates a default test which fails" do
-        expect(bundled_app("#{gem_name}/test/test_#{require_path}.rb").read).to include("assert false")
+        expect(bundled_app("#{gem_name}/#{minitest_test_file_path}").read).to include("assert false")
       end
     end
 
@@ -1289,6 +1308,10 @@ RSpec.describe "bundle gem" do
 
     let(:require_relative_path) { "test_gem" }
 
+    let(:minitest_test_file_path) { "test/test_test_gem.rb" }
+
+    let(:minitest_test_class_name) { "class TestTestGem < Minitest::Test" }
+
     let(:flags) { nil }
 
     it "does not nest constants" do
@@ -1343,6 +1366,10 @@ RSpec.describe "bundle gem" do
     let(:require_path) { "test/gem" }
 
     let(:require_relative_path) { "gem" }
+
+    let(:minitest_test_file_path) { "test/test/test_gem.rb" }
+
+    let(:minitest_test_class_name) { "class Test::TestGem < Minitest::Test" }
 
     it "nests constants so they work" do
       bundle "gem #{gem_name}"

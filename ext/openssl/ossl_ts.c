@@ -146,6 +146,12 @@ obj_to_asn1obj(VALUE obj)
 }
 
 static VALUE
+obj_to_asn1obj_i(VALUE obj)
+{
+    return (VALUE)obj_to_asn1obj(obj);
+}
+
+static VALUE
 get_asn1obj(ASN1_OBJECT *obj)
 {
     BIO *out;
@@ -205,8 +211,10 @@ ossl_ts_req_initialize(int argc, VALUE *argv, VALUE self)
     in = ossl_obj2bio(&arg);
     ts_req = d2i_TS_REQ_bio(in, &ts_req);
     BIO_free(in);
-    if (!ts_req)
+    if (!ts_req) {
+        DATA_PTR(self) = NULL;
         ossl_raise(eTimestampError, "Error when decoding the timestamp request");
+    }
     DATA_PTR(self) = ts_req;
 
     return self;
@@ -529,8 +537,10 @@ ossl_ts_resp_initialize(VALUE self, VALUE der)
     in  = ossl_obj2bio(&der);
     ts_resp = d2i_TS_RESP_bio(in, &ts_resp);
     BIO_free(in);
-    if (!ts_resp)
+    if (!ts_resp) {
+        DATA_PTR(self) = NULL;
         ossl_raise(eTimestampError, "Error when decoding the timestamp response");
+    }
     DATA_PTR(self) = ts_resp;
 
     return self;
@@ -816,17 +826,14 @@ ossl_ts_resp_verify(int argc, VALUE *argv, VALUE self)
         X509_up_ref(cert);
     }
 
-    TS_VERIFY_CTS_set_certs(ctx, x509inter);
+    TS_VERIFY_CTX_set_certs(ctx, x509inter);
     TS_VERIFY_CTX_add_flags(ctx, TS_VFY_SIGNATURE);
     TS_VERIFY_CTX_set_store(ctx, x509st);
 
     ok = TS_RESP_verify_response(ctx, resp);
-
-    /* WORKAROUND:
-     *   X509_STORE can count references, but X509_STORE_free() doesn't check
-     *   this. To prevent our X509_STORE from being freed with our
-     *   TS_VERIFY_CTX we set the store to NULL first.
-     *   Fixed in OpenSSL 1.0.2; bff9ce4db38b (master), 5b4b9ce976fc (1.0.2)
+    /*
+     * TS_VERIFY_CTX_set_store() call above does not increment the reference
+     * counter, so it must be unset before TS_VERIFY_CTX_free() is called.
      */
     TS_VERIFY_CTX_set_store(ctx, NULL);
     TS_VERIFY_CTX_free(ctx);
@@ -871,8 +878,10 @@ ossl_ts_token_info_initialize(VALUE self, VALUE der)
     in  = ossl_obj2bio(&der);
     info = d2i_TS_TST_INFO_bio(in, &info);
     BIO_free(in);
-    if (!info)
+    if (!info) {
+        DATA_PTR(self) = NULL;
         ossl_raise(eTimestampError, "Error when decoding the timestamp token info");
+    }
     DATA_PTR(self) = info;
 
     return self;
@@ -1074,11 +1083,27 @@ ossl_tsfac_serial_cb(struct TS_resp_ctx *ctx, void *data)
 }
 
 static int
+#if !defined(LIBRESSL_VERSION_NUMBER)
 ossl_tsfac_time_cb(struct TS_resp_ctx *ctx, void *data, long *sec, long *usec)
+#else
+ossl_tsfac_time_cb(struct TS_resp_ctx *ctx, void *data, time_t *sec, long *usec)
+#endif
 {
     *sec = *((long *)data);
     *usec = 0;
     return 1;
+}
+
+static VALUE
+ossl_evp_get_digestbyname_i(VALUE arg)
+{
+    return (VALUE)ossl_evp_get_digestbyname(arg);
+}
+
+static VALUE
+ossl_obj2bio_i(VALUE arg)
+{
+    return (VALUE)ossl_obj2bio((VALUE *)arg);
 }
 
 /*
@@ -1149,7 +1174,7 @@ ossl_tsfac_create_ts(VALUE self, VALUE key, VALUE certificate, VALUE request)
         goto end;
     }
     if (!NIL_P(def_policy_id) && !TS_REQ_get_policy_id(req)) {
-        def_policy_id_obj = (ASN1_OBJECT*)rb_protect((VALUE (*)(VALUE))obj_to_asn1obj, (VALUE)def_policy_id, &status);
+        def_policy_id_obj = (ASN1_OBJECT*)rb_protect(obj_to_asn1obj_i, (VALUE)def_policy_id, &status);
         if (status)
             goto end;
     }
@@ -1191,7 +1216,7 @@ ossl_tsfac_create_ts(VALUE self, VALUE key, VALUE certificate, VALUE request)
 
         for (i = 0; i < RARRAY_LEN(allowed_digests); i++) {
             rbmd = rb_ary_entry(allowed_digests, i);
-            md = (const EVP_MD *)rb_protect((VALUE (*)(VALUE))ossl_evp_get_digestbyname, rbmd, &status);
+            md = (const EVP_MD *)rb_protect(ossl_evp_get_digestbyname_i, rbmd, &status);
             if (status)
                 goto end;
             TS_RESP_CTX_add_md(ctx, md);
@@ -1202,7 +1227,7 @@ ossl_tsfac_create_ts(VALUE self, VALUE key, VALUE certificate, VALUE request)
     if (status)
         goto end;
 
-    req_bio = (BIO*)rb_protect((VALUE (*)(VALUE))ossl_obj2bio, (VALUE)&str, &status);
+    req_bio = (BIO*)rb_protect(ossl_obj2bio_i, (VALUE)&str, &status);
     if (status)
         goto end;
 
@@ -1226,7 +1251,7 @@ end:
     ASN1_OBJECT_free(def_policy_id_obj);
     TS_RESP_CTX_free(ctx);
     if (err_msg)
-        ossl_raise(eTimestampError, err_msg);
+        rb_exc_raise(ossl_make_error(eTimestampError, rb_str_new_cstr(err_msg)));
     if (status)
         rb_jump_tag(status);
     return ret;

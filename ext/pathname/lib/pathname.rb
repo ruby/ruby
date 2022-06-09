@@ -575,24 +575,25 @@ end
 
 
 class Pathname    # * FileUtils *
+  autoload(:FileUtils, 'fileutils')
+
   # Creates a full path, including any intermediate directories that don't yet
   # exist.
   #
   # See FileUtils.mkpath and FileUtils.mkdir_p
-  def mkpath
-    require 'fileutils'
-    FileUtils.mkpath(@path)
+  def mkpath(mode: nil)
+    FileUtils.mkpath(@path, mode: mode)
     nil
   end
 
   # Recursively deletes a directory, including all directories beneath it.
   #
-  # See FileUtils.rm_r
-  def rmtree
+  # See FileUtils.rm_rf
+  def rmtree(noop: nil, verbose: nil, secure: nil)
     # The name "rmtree" is borrowed from File::Path of Perl.
     # File::Path provides "mkpath" and "rmtree".
     require 'fileutils'
-    FileUtils.rm_r(@path)
+    FileUtils.rm_rf(@path, noop: noop, verbose: verbose, secure: secure)
     nil
   end
 end

@@ -12,7 +12,7 @@
 
 **********************************************************************/
 
-#define STRINGIO_VERSION "3.0.0"
+#define STRINGIO_VERSION "3.0.3"
 
 #include "ruby.h"
 #include "ruby/io.h"
@@ -65,17 +65,22 @@ strio_extract_modeenc(VALUE *vmode_p, VALUE *vperm_p, VALUE opthash,
 		n = strchr(n, '|');
 	    }
 	    e = strchr(++n, ':');
-	    len = e ? e - n : strlen(n);
+	    len = e ? e - n : (long)strlen(n);
 	    if (len > 0 && len <= ENCODING_MAXNAMELEN) {
+		rb_encoding *enc;
 		if (e) {
 		    memcpy(encname, n, len);
 		    encname[len] = '\0';
 		    n = encname;
 		}
-		convconfig_p->enc = rb_enc_find(n);
+		enc = rb_enc_find(n);
+		if (e)
+		    convconfig_p->enc2 = enc;
+		else
+		    convconfig_p->enc = enc;
 	    }
 	    if (e && (len = strlen(++e)) > 0 && len <= ENCODING_MAXNAMELEN) {
-		convconfig_p->enc2 = rb_enc_find(e);
+		convconfig_p->enc = rb_enc_find(e);
 	    }
 	}
     }
@@ -984,7 +989,7 @@ strio_unget_bytes(struct StringIO *ptr, const char *cp, long cl)
     len = RSTRING_LEN(str);
     rest = pos - len;
     if (cl > pos) {
-	long ex = (rest < 0 ? cl-pos : cl+rest);
+	long ex = cl - (rest < 0 ? pos : len);
 	rb_str_modify_expand(str, ex);
 	rb_str_set_len(str, len + ex);
 	s = RSTRING_PTR(str);
@@ -1125,8 +1130,10 @@ prepare_getline_args(struct getline_arg *arg, int argc, VALUE *argv)
 {
     VALUE str, lim, opts;
     long limit = -1;
+    int respect_chomp;
 
     argc = rb_scan_args(argc, argv, "02:", &str, &lim, &opts);
+    respect_chomp = argc == 0 || !NIL_P(str);
     switch (argc) {
       case 0:
 	str = rb_rs;
@@ -1160,7 +1167,9 @@ prepare_getline_args(struct getline_arg *arg, int argc, VALUE *argv)
 	    keywords[0] = rb_intern_const("chomp");
 	}
 	rb_get_kwargs(opts, keywords, 0, 1, &vchomp);
-	arg->chomp = (vchomp != Qundef) && RTEST(vchomp);
+        if (respect_chomp) {
+	    arg->chomp = (vchomp != Qundef) && RTEST(vchomp);
+        }
     }
     return arg;
 }
@@ -1181,7 +1190,7 @@ strio_getline(struct getline_arg *arg, struct StringIO *ptr)
     const char *s, *e, *p;
     long n, limit = arg->limit;
     VALUE str = arg->rs;
-    int w = 0;
+    long w = 0;
     rb_encoding *enc = get_enc(ptr);
 
     if (ptr->pos >= (n = RSTRING_LEN(ptr->string))) {
@@ -1200,6 +1209,7 @@ strio_getline(struct getline_arg *arg, struct StringIO *ptr)
 	str = strio_substr(ptr, ptr->pos, e - s - w, enc);
     }
     else if ((n = RSTRING_LEN(str)) == 0) {
+        const char *paragraph_end = NULL;
 	p = s;
 	while (p[(p + 1 < e) && (*p == '\r') && 0] == '\n') {
 	    p += *p == '\r';
@@ -1209,19 +1219,21 @@ strio_getline(struct getline_arg *arg, struct StringIO *ptr)
 	}
 	s = p;
 	while ((p = memchr(p, '\n', e - p)) && (p != e)) {
-	    if (*++p == '\n') {
-		e = p + 1;
-		w = (arg->chomp ? 1 : 0);
-		break;
-	    }
-	    else if (*p == '\r' && p < e && p[1] == '\n') {
-		e = p + 2;
-		w = (arg->chomp ? 2 : 0);
-		break;
-	    }
+            p++;
+            if (!((p < e && *p == '\n') ||
+                  (p + 1 < e && *p == '\r' && *(p+1) == '\n'))) {
+                continue;
+            }
+            paragraph_end = p - ((*(p-2) == '\r') ? 2 : 1);
+            while ((p < e && *p == '\n') ||
+                   (p + 1 < e && *p == '\r' && *(p+1) == '\n')) {
+                p += (*p == '\r') ? 2 : 1;
+            }
+            e = p;
+            break;
 	}
-	if (!w && arg->chomp) {
-	    w = chomp_newline_width(s, e);
+	if (arg->chomp && paragraph_end) {
+	    w = e - paragraph_end;
 	}
 	str = strio_substr(ptr, s - RSTRING_PTR(ptr->string), e - s - w, enc);
     }
@@ -1237,7 +1249,8 @@ strio_getline(struct getline_arg *arg, struct StringIO *ptr)
 	    if (e - s < 1024) {
 		for (p = s; p + n <= e; ++p) {
 		    if (MEMCMP(p, RSTRING_PTR(str), char, n) == 0) {
-			e = p + (arg->chomp ? 0 : n);
+			e = p + n;
+			w = (arg->chomp ? n : 0);
 			break;
 		    }
 		}
@@ -1711,7 +1724,14 @@ strio_set_encoding(int argc, VALUE *argv, VALUE self)
 	enc = rb_default_external_encoding();
     }
     else {
-	enc = rb_to_encoding(ext_enc);
+	enc = rb_find_encoding(ext_enc);
+	if (!enc) {
+	    struct rb_io_enc_t convconfig;
+	    int oflags, fmode;
+	    VALUE vmode = rb_str_append(rb_str_new_cstr("r:"), ext_enc);
+	    rb_io_extract_modeenc(&vmode, 0, Qnil, &oflags, &fmode, &convconfig);
+	    enc = convconfig.enc2;
+	}
     }
     ptr->enc = enc;
     if (WRITABLE(self)) {

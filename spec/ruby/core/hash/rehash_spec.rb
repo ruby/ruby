@@ -59,6 +59,24 @@ describe "Hash#rehash" do
     h.keys.should == [a]
   end
 
+  it "removes duplicate keys for large hashes" do
+    a = [1,2]
+    b = [1]
+
+    h = {}
+    h[a] = true
+    h[b] = true
+    100.times { |n| h[n] = true }
+    b << 2
+    h.size.should == 102
+    h.keys.should.include? a
+    h.keys.should.include? b
+    h.rehash
+    h.size.should == 101
+    h.keys.should.include? a
+    h.keys.should_not.include? [1]
+  end
+
   it "raises a FrozenError if called on a frozen instance" do
     -> { HashSpecs.frozen_hash.rehash  }.should raise_error(FrozenError)
     -> { HashSpecs.empty_frozen_hash.rehash }.should raise_error(FrozenError)

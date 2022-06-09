@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 require 'pp'
-require 'irb/color'
+require_relative 'color'
 
 module IRB
   class ColorPrinter < ::PP

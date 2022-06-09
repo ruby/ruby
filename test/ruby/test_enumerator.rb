@@ -79,7 +79,7 @@ class TestEnumerator < Test::Unit::TestCase
     assert_raise(NoMethodError) { enum.each {} }
     enum.freeze
     assert_raise(ArgumentError) {
-      capture_io do
+      capture_output do
         # warning: Enumerator.new without a block is deprecated; use Object#to_enum
         enum.__send__(:initialize, @obj, :foo)
       end

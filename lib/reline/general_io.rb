@@ -1,12 +1,20 @@
 require 'timeout'
+require 'io/wait'
 
 class Reline::GeneralIO
-  def self.reset
+  def self.reset(encoding: nil)
     @@pasting = false
+    @@encoding = encoding
   end
 
   def self.encoding
-    RUBY_PLATFORM =~ /mswin|mingw/ ? Encoding::UTF_8 : Encoding::default_external
+    if defined?(@@encoding)
+      @@encoding
+    elsif RUBY_PLATFORM =~ /mswin|mingw/
+      Encoding::UTF_8
+    else
+      Encoding::default_external
+    end
   end
 
   def self.win?
@@ -17,6 +25,7 @@ class Reline::GeneralIO
   end
 
   @@buf = []
+  @@input = STDIN
 
   def self.input=(val)
     @@input = val
@@ -28,7 +37,7 @@ class Reline::GeneralIO
     end
     c = nil
     loop do
-      result = select([@@input], [], [], 0.1)
+      result = @@input.wait_readable(0.1)
       next if result.nil?
       c = @@input.read(1)
       break

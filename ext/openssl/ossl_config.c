@@ -60,7 +60,7 @@ config_load_bio(CONF *conf, BIO *bio)
         if (eline <= 0)
             ossl_raise(eConfigError, "wrong config format");
         else
-            ossl_raise(eConfigError, "error in line %d", eline);
+            ossl_raise(eConfigError, "error in line %ld", eline);
     }
     BIO_free(bio);
 

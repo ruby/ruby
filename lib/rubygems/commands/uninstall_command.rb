@@ -1,7 +1,7 @@
 # frozen_string_literal: true
-require 'rubygems/command'
-require 'rubygems/version_option'
-require 'rubygems/uninstaller'
+require_relative '../command'
+require_relative '../version_option'
+require_relative '../uninstaller'
 require 'fileutils'
 
 ##
@@ -81,7 +81,7 @@ class Gem::Commands::UninstallCommand < Gem::Command
                'Uninstall gem from the vendor directory.',
                'Only for use by gem repackagers.') do |value, options|
       unless Gem.vendor_dir
-        raise OptionParser::InvalidOption.new 'your platform is not supported'
+        raise Gem::OptionParser::InvalidOption.new 'your platform is not supported'
       end
 
       alert_warning 'Use your OS package manager to uninstall vendor gems'

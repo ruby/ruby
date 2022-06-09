@@ -17,14 +17,14 @@
  *             recursively included  from extension  libraries written  in C++.
  *             Do not  expect for  instance `__VA_ARGS__` is  always available.
  *             We assume C99  for ruby itself but we don't  assume languages of
- *             extension libraries. They could be written in C++98.
+ *             extension libraries.  They could be written in C++98.
  * @brief      Defines #RUBY_ALIGNAS / #RUBY_ALIGNOF
  */
 #include "ruby/internal/stdalign.h"
 
 #undef RUBY_ALIGNAS
 #undef RUBY_ALIGNOF
-#define RUBY_ALIGNAS RBIMPL_ALIGNAS
-#define RUBY_ALIGNOF RBIMPL_ALIGNOF
+#define RUBY_ALIGNAS RBIMPL_ALIGNAS /**< @copydoc RBIMPL_ALIGNAS */
+#define RUBY_ALIGNOF RBIMPL_ALIGNOF /**< @copydoc RBIMPL_ALIGNOF */
 
 #endif /* RUBY_BACKWARD2_STDALIGN_H */

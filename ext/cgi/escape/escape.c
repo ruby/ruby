@@ -32,11 +32,21 @@ preserve_original_state(VALUE orig, VALUE dest)
     rb_enc_associate(dest, rb_enc_get(orig));
 }
 
+static inline long
+escaped_length(VALUE str)
+{
+    const long len = RSTRING_LEN(str);
+    if (len >= LONG_MAX / HTML_ESCAPE_MAX_LEN) {
+	ruby_malloc_size_overflow(len, HTML_ESCAPE_MAX_LEN);
+    }
+    return len * HTML_ESCAPE_MAX_LEN;
+}
+
 static VALUE
 optimized_escape_html(VALUE str)
 {
     VALUE vbuf;
-    char *buf = ALLOCV_N(char, vbuf, RSTRING_LEN(str) * HTML_ESCAPE_MAX_LEN);
+    char *buf = ALLOCV_N(char, vbuf, escaped_length(str));
     const char *cstr = RSTRING_PTR(str);
     const char *end = cstr + RSTRING_LEN(str);
 
@@ -388,7 +398,7 @@ cgiesc_unescape(int argc, VALUE *argv, VALUE self)
 void
 Init_escape(void)
 {
-#if HAVE_RB_EXT_RACTOR_SAFE
+#ifdef HAVE_RB_EXT_RACTOR_SAFE
     rb_ext_ractor_safe(true);
 #endif
 

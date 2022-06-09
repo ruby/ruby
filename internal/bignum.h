@@ -1,7 +1,6 @@
 #ifndef INTERNAL_BIGNUM_H                                /*-*-C-*-vi:se ft=c:*/
 #define INTERNAL_BIGNUM_H
 /**
- * @file
  * @author     Ruby developers <ruby-core@ruby-lang.org>
  * @copyright  This  file  is   a  part  of  the   programming  language  Ruby.
  *             Permission  is hereby  granted,  to  either redistribute  and/or
@@ -83,8 +82,8 @@
 #define BIGNUM_EMBED_LEN_SHIFT \
     (FL_USHIFT+3) /* bit offset of BIGNUM_EMBED_LEN_MASK */
 #ifndef BIGNUM_EMBED_LEN_MAX
-# if (SIZEOF_VALUE*RVALUE_EMBED_LEN_MAX/SIZEOF_ACTUAL_BDIGIT) < (1 << BIGNUM_EMBED_LEN_NUMBITS)-1
-#  define BIGNUM_EMBED_LEN_MAX (SIZEOF_VALUE*RVALUE_EMBED_LEN_MAX/SIZEOF_ACTUAL_BDIGIT)
+# if (SIZEOF_VALUE*RBIMPL_RVALUE_EMBED_LEN_MAX/SIZEOF_ACTUAL_BDIGIT) < (1 << BIGNUM_EMBED_LEN_NUMBITS)-1
+#  define BIGNUM_EMBED_LEN_MAX (SIZEOF_VALUE*RBIMPL_RVALUE_EMBED_LEN_MAX/SIZEOF_ACTUAL_BDIGIT)
 # else
 #  define BIGNUM_EMBED_LEN_MAX ((1 << BIGNUM_EMBED_LEN_NUMBITS)-1)
 # endif

@@ -12,4 +12,10 @@ describe "Range#dup" do
     copy.end.should == "z"
     copy.should.exclude_end?
   end
+
+  it "creates an unfrozen range" do
+    (1..2).dup.should_not.frozen?
+    (1..).dup.should_not.frozen?
+    Range.new(1, 2).dup.should_not.frozen?
+  end
 end

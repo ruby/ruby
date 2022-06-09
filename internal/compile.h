@@ -1,7 +1,6 @@
 #ifndef INTERNAL_COMPILE_H                               /*-*-C-*-vi:se ft=c:*/
 #define INTERNAL_COMPILE_H
 /**
- * @file
  * @author     Ruby developers <ruby-core@ruby-lang.org>
  * @copyright  This  file  is   a  part  of  the   programming  language  Ruby.
  *             Permission  is hereby  granted,  to  either redistribute  and/or
@@ -20,9 +19,13 @@ int rb_dvar_defined(ID, const struct rb_iseq_struct *);
 int rb_local_defined(ID, const struct rb_iseq_struct *);
 const char *rb_insns_name(int i);
 VALUE rb_insns_name_array(void);
+int rb_iseq_cdhash_cmp(VALUE val, VALUE lit);
+st_index_t rb_iseq_cdhash_hash(VALUE a);
 
 /* iseq.c */
 int rb_vm_insn_addr2insn(const void *);
+int rb_vm_insn_decode(const VALUE encoded);
+extern bool ruby_vm_keep_script_lines;
 
 MJIT_SYMBOL_EXPORT_BEGIN
 /* iseq.c (export) */

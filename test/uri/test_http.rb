@@ -1,6 +1,7 @@
 # frozen_string_literal: false
 require 'test/unit'
 require 'uri/http'
+require 'uri/https'
 
 module URI
 
@@ -24,14 +25,16 @@ class TestHTTP < Test::Unit::TestCase
   def test_parse
     u = URI.parse('http://a')
     assert_kind_of(URI::HTTP, u)
-    assert_equal(['http',
-		   nil, 'a', URI::HTTP.default_port,
-		   '', nil, nil], uri_to_ary(u))
+    assert_equal([
+      'http',
+      nil, 'a', URI::HTTP.default_port,
+      '', nil, nil
+    ], uri_to_ary(u))
   end
 
   def test_normalize
     host = 'aBcD'
-    u1 = URI.parse('http://' + host          + '/eFg?HiJ')
+    u1 = URI.parse('http://' + host + '/eFg?HiJ')
     u2 = URI.parse('http://' + host.downcase + '/eFg?HiJ')
     assert(u1.normalize.host == 'abcd')
     assert(u1.normalize.path == u1.path)
@@ -49,11 +52,11 @@ class TestHTTP < Test::Unit::TestCase
   end
 
   def test_request_uri
-    assert_equal('/',         URI.parse('http://a.b.c/').request_uri)
+    assert_equal('/', URI.parse('http://a.b.c/').request_uri)
     assert_equal('/?abc=def', URI.parse('http://a.b.c/?abc=def').request_uri)
-    assert_equal('/',         URI.parse('http://a.b.c').request_uri)
+    assert_equal('/', URI.parse('http://a.b.c').request_uri)
     assert_equal('/?abc=def', URI.parse('http://a.b.c?abc=def').request_uri)
-    assert_equal(nil,         URI.parse('http:foo').request_uri)
+    assert_equal(nil, URI.parse('http:foo').request_uri)
   end
 
   def test_select
@@ -63,6 +66,20 @@ class TestHTTP < Test::Unit::TestCase
     assert_raise(ArgumentError) do
       u.select(:scheme, :host, :not_exist, :port)
     end
+  end
+
+  def test_authority
+    assert_equal('a.b.c', URI.parse('http://a.b.c/').authority)
+    assert_equal('a.b.c:8081', URI.parse('http://a.b.c:8081/').authority)
+    assert_equal('a.b.c', URI.parse('http://a.b.c:80/').authority)
+  end
+
+
+  def test_origin
+    assert_equal('http://a.b.c', URI.parse('http://a.b.c/').origin)
+    assert_equal('http://a.b.c:8081', URI.parse('http://a.b.c:8081/').origin)
+    assert_equal('http://a.b.c', URI.parse('http://a.b.c:80/').origin)
+    assert_equal('https://a.b.c', URI.parse('https://a.b.c/').origin)
   end
 end
 

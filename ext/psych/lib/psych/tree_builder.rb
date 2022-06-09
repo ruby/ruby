@@ -1,5 +1,5 @@
 # frozen_string_literal: true
-require 'psych/handler'
+require_relative 'handler'
 
 module Psych
   ###

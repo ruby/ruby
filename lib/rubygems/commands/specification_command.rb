@@ -1,8 +1,8 @@
 # frozen_string_literal: true
-require 'rubygems/command'
-require 'rubygems/local_remote_options'
-require 'rubygems/version_option'
-require 'rubygems/package'
+require_relative '../command'
+require_relative '../local_remote_options'
+require_relative '../version_option'
+require_relative '../package'
 
 class Gem::Commands::SpecificationCommand < Gem::Command
   include Gem::LocalRemoteOptions
@@ -129,7 +129,7 @@ Specific fields in the specification can be extracted in YAML format:
     platform = get_platform_from_requirements(options)
 
     if platform
-      specs = specs.select{|s| s.platform.to_s == platform }
+      specs = specs.select {|s| s.platform.to_s == platform }
     end
 
     unless options[:all]
@@ -140,10 +140,10 @@ Specific fields in the specification can be extracted in YAML format:
       s = s.send field if field
 
       say case options[:format]
-          when :ruby then s.to_ruby
-          when :marshal then Marshal.dump s
-          else s.to_yaml
-          end
+      when :ruby then s.to_ruby
+      when :marshal then Marshal.dump s
+      else s.to_yaml
+      end
 
       say "\n"
     end

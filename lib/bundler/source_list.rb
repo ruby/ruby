@@ -21,15 +21,24 @@ module Bundler
       @rubygems_sources       = []
       @metadata_source        = Source::Metadata.new
 
-      @disable_multisource = true
+      @merged_gem_lockfile_sections = false
     end
 
-    def disable_multisource?
-      @disable_multisource
+    def merged_gem_lockfile_sections?
+      @merged_gem_lockfile_sections
     end
 
-    def merged_gem_lockfile_sections!
-      @disable_multisource = false
+    def merged_gem_lockfile_sections!(replacement_source)
+      @merged_gem_lockfile_sections = true
+      @global_rubygems_source = replacement_source
+    end
+
+    def aggregate_global_source?
+      global_rubygems_source.multiple_remotes?
+    end
+
+    def implicit_global_source?
+      global_rubygems_source.no_remotes?
     end
 
     def add_path_source(options = {})
@@ -49,18 +58,17 @@ module Bundler
     end
 
     def add_rubygems_source(options = {})
-      add_source_to_list Source::Rubygems.new(options), @rubygems_sources
+      new_source = Source::Rubygems.new(options)
+      return @global_rubygems_source if @global_rubygems_source == new_source
+
+      add_source_to_list new_source, @rubygems_sources
     end
 
     def add_plugin_source(source, options = {})
       add_source_to_list Plugin.source(source).new(options), @plugin_sources
     end
 
-    def global_rubygems_source=(uri)
-      @global_rubygems_source ||= rubygems_aggregate_class.new("remotes" => uri, "allow_local" => true)
-    end
-
-    def add_rubygems_remote(uri)
+    def add_global_rubygems_remote(uri)
       global_rubygems_source.add_remote(uri)
       global_rubygems_source
     end
@@ -70,7 +78,11 @@ module Bundler
     end
 
     def rubygems_sources
-      @rubygems_sources + [global_rubygems_source]
+      non_global_rubygems_sources + [global_rubygems_source]
+    end
+
+    def non_global_rubygems_sources
+      @rubygems_sources
     end
 
     def rubygems_remotes
@@ -81,36 +93,51 @@ module Bundler
       path_sources + git_sources + plugin_sources + rubygems_sources + [metadata_source]
     end
 
+    def non_default_explicit_sources
+      all_sources - [default_source, metadata_source]
+    end
+
     def get(source)
-      source_list_for(source).find {|s| equal_source?(source, s) || equivalent_source?(source, s) }
+      source_list_for(source).find {|s| equivalent_source?(source, s) }
     end
 
     def lock_sources
-      lock_sources = (path_sources + git_sources + plugin_sources).sort_by(&:to_s)
-      if disable_multisource?
-        lock_sources + rubygems_sources.sort_by(&:to_s).uniq
+      lock_other_sources + lock_rubygems_sources
+    end
+
+    def lock_other_sources
+      (path_sources + git_sources + plugin_sources).sort_by(&:identifier)
+    end
+
+    def lock_rubygems_sources
+      if merged_gem_lockfile_sections?
+        [combine_rubygems_sources]
       else
-        lock_sources << combine_rubygems_sources
+        rubygems_sources.sort_by(&:identifier)
       end
     end
 
     # Returns true if there are changes
     def replace_sources!(replacement_sources)
-      return true if replacement_sources.empty?
+      return false if replacement_sources.empty?
 
-      [path_sources, git_sources, plugin_sources].each do |source_list|
-        source_list.map! do |source|
-          replacement_sources.find {|s| s == source } || source
-        end
-      end
+      @rubygems_sources, @path_sources, @git_sources, @plugin_sources = map_sources(replacement_sources)
+      @global_rubygems_source = global_replacement_source(replacement_sources)
 
-      replacement_rubygems = !disable_multisource? &&
-        replacement_sources.detect {|s| s.is_a?(Source::Rubygems) }
-      @global_rubygems_source = replacement_rubygems if replacement_rubygems
+      different_sources?(lock_sources, replacement_sources)
+    end
 
-      return true if !equal_sources?(lock_sources, replacement_sources) && !equivalent_sources?(lock_sources, replacement_sources)
+    # Returns true if there are changes
+    def expired_sources?(replacement_sources)
+      return false if replacement_sources.empty?
 
-      false
+      lock_sources = dup_with_replaced_sources(replacement_sources).lock_sources
+
+      different_sources?(lock_sources, replacement_sources)
+    end
+
+    def local_only!
+      all_sources.each(&:local_only!)
     end
 
     def cached!
@@ -122,6 +149,32 @@ module Bundler
     end
 
     private
+
+    def dup_with_replaced_sources(replacement_sources)
+      new_source_list = dup
+      new_source_list.replace_sources!(replacement_sources)
+      new_source_list
+    end
+
+    def map_sources(replacement_sources)
+      [@rubygems_sources, @path_sources, @git_sources, @plugin_sources].map do |sources|
+        sources.map do |source|
+          replacement_sources.find {|s| s == source } || source
+        end
+      end
+    end
+
+    def global_replacement_source(replacement_sources)
+      replacement_source = replacement_sources.find {|s| s == global_rubygems_source }
+      return global_rubygems_source unless replacement_source
+
+      replacement_source.local!
+      replacement_source
+    end
+
+    def different_sources?(lock_sources, replacement_sources)
+      !equivalent_sources?(lock_sources, replacement_sources)
+    end
 
     def rubygems_aggregate_class
       Source::Rubygems
@@ -157,32 +210,12 @@ module Bundler
       end
     end
 
-    def equal_sources?(lock_sources, replacement_sources)
-      lock_sources.sort_by(&:to_s) == replacement_sources.sort_by(&:to_s)
-    end
-
-    def equal_source?(source, other_source)
-      source == other_source
+    def equivalent_sources?(lock_sources, replacement_sources)
+      lock_sources.sort_by(&:identifier) == replacement_sources.sort_by(&:identifier)
     end
 
     def equivalent_source?(source, other_source)
-      return false unless Bundler.settings[:allow_deployment_source_credential_changes] && source.is_a?(Source::Rubygems)
-
-      equivalent_rubygems_sources?([source], [other_source])
-    end
-
-    def equivalent_sources?(lock_sources, replacement_sources)
-      return false unless Bundler.settings[:allow_deployment_source_credential_changes]
-
-      lock_rubygems_sources, lock_other_sources = lock_sources.partition {|s| s.is_a?(Source::Rubygems) }
-      replacement_rubygems_sources, replacement_other_sources = replacement_sources.partition {|s| s.is_a?(Source::Rubygems) }
-
-      equivalent_rubygems_sources?(lock_rubygems_sources, replacement_rubygems_sources) && equal_sources?(lock_other_sources, replacement_other_sources)
-    end
-
-    def equivalent_rubygems_sources?(lock_sources, replacement_sources)
-      actual_remotes = replacement_sources.map(&:remotes).flatten.uniq
-      lock_sources.all? {|s| s.equivalent_remotes?(actual_remotes) }
+      source == other_source
     end
   end
 end

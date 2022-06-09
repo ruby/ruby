@@ -135,7 +135,7 @@ class Logger
       end
     end
 
-    if /mswin|mingw|cygwin/ =~ RUBY_PLATFORM
+    if /mswin|mingw|cygwin/ =~ RbConfig::CONFIG['host_os']
       def lock_shift_log
         yield
       end

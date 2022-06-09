@@ -17,7 +17,7 @@
  *             recursively included  from extension  libraries written  in C++.
  *             Do not  expect for  instance `__VA_ARGS__` is  always available.
  *             We assume C99  for ruby itself but we don't  assume languages of
- *             extension libraries. They could be written in C++98.
+ *             extension libraries.  They could be written in C++98.
  * @brief      Ruby-level global variables / constants, visible from C.
  */
 #include "ruby/internal/attr/pure.h"
@@ -27,97 +27,147 @@
 #include "ruby/internal/value.h"
 #include "ruby/internal/value_type.h"
 
+/**
+ * @defgroup object Core objects and their operations
+ *
+ * @internal
+ *
+ * There are several  questionable constants listed in this  header file.  They
+ * are intentionally left untouched for purely academic backwards compatibility
+ * concerns.  But for instance do any one of 3rd party extension libraries even
+ * need to know that there is NameError::Message?
+ *
+ * @endinternal
+ *
+ * @{
+ */
+
 RBIMPL_SYMBOL_EXPORT_BEGIN()
 
+/**
+ * @private
+ *
+ * @deprecated  This macro once was a thing in the old days, but makes no sense
+ *              any  longer today.   Exists  here  for backwards  compatibility
+ *              only.  You can safely forget about it.
+ */
 #define RUBY_INTEGER_UNIFICATION 1
 
-RUBY_EXTERN VALUE rb_mKernel;
-RUBY_EXTERN VALUE rb_mComparable;
-RUBY_EXTERN VALUE rb_mEnumerable;
-RUBY_EXTERN VALUE rb_mErrno;
-RUBY_EXTERN VALUE rb_mFileTest;
-RUBY_EXTERN VALUE rb_mGC;
-RUBY_EXTERN VALUE rb_mMath;
-RUBY_EXTERN VALUE rb_mProcess;
-RUBY_EXTERN VALUE rb_mWaitReadable;
-RUBY_EXTERN VALUE rb_mWaitWritable;
+RUBY_EXTERN VALUE rb_mKernel;                 /**< `Kernel` module. */
+RUBY_EXTERN VALUE rb_mComparable;             /**< `Comparable` module. */
+RUBY_EXTERN VALUE rb_mEnumerable;             /**< `Enumerable` module. */
+RUBY_EXTERN VALUE rb_mErrno;                  /**< `Errno` module. */
+RUBY_EXTERN VALUE rb_mFileTest;               /**< `FileTest` module. */
+RUBY_EXTERN VALUE rb_mGC;                     /**< `GC` module. */
+RUBY_EXTERN VALUE rb_mMath;                   /**< `Math` module. */
+RUBY_EXTERN VALUE rb_mProcess;                /**< `Process` module. */
+RUBY_EXTERN VALUE rb_mWaitReadable;           /**< `IO::WaitReadable` module. */
+RUBY_EXTERN VALUE rb_mWaitWritable;           /**< `IO::WaitReadable` module. */
 
-RUBY_EXTERN VALUE rb_cBasicObject;
-RUBY_EXTERN VALUE rb_cObject;
-RUBY_EXTERN VALUE rb_cArray;
-RUBY_EXTERN VALUE rb_cBinding;
-RUBY_EXTERN VALUE rb_cClass;
-RUBY_EXTERN VALUE rb_cDir;
-RUBY_EXTERN VALUE rb_cEncoding;
-RUBY_EXTERN VALUE rb_cEnumerator;
-RUBY_EXTERN VALUE rb_cFalseClass;
-RUBY_EXTERN VALUE rb_cFile;
-RUBY_EXTERN VALUE rb_cComplex;
-RUBY_EXTERN VALUE rb_cFloat;
-RUBY_EXTERN VALUE rb_cHash;
-RUBY_EXTERN VALUE rb_cIO;
-RUBY_EXTERN VALUE rb_cInteger;
-RUBY_EXTERN VALUE rb_cMatch;
-RUBY_EXTERN VALUE rb_cMethod;
-RUBY_EXTERN VALUE rb_cModule;
-RUBY_EXTERN VALUE rb_cNameErrorMesg;
-RUBY_EXTERN VALUE rb_cNilClass;
-RUBY_EXTERN VALUE rb_cNumeric;
-RUBY_EXTERN VALUE rb_cProc;
-RUBY_EXTERN VALUE rb_cRandom;
-RUBY_EXTERN VALUE rb_cRange;
-RUBY_EXTERN VALUE rb_cRational;
-RUBY_EXTERN VALUE rb_cRegexp;
-RUBY_EXTERN VALUE rb_cStat;
-RUBY_EXTERN VALUE rb_cString;
-RUBY_EXTERN VALUE rb_cStruct;
-RUBY_EXTERN VALUE rb_cSymbol;
-RUBY_EXTERN VALUE rb_cThread;
-RUBY_EXTERN VALUE rb_cTime;
-RUBY_EXTERN VALUE rb_cTrueClass;
-RUBY_EXTERN VALUE rb_cUnboundMethod;
+RUBY_EXTERN VALUE rb_cBasicObject;            /**< `BasicObject` class. */
+RUBY_EXTERN VALUE rb_cObject;                 /**< `Object` class. */
+RUBY_EXTERN VALUE rb_cArray;                  /**< `Array` class. */
+RUBY_EXTERN VALUE rb_cBinding;                /**< `Binding` class. */
+RUBY_EXTERN VALUE rb_cClass;                  /**< `Class` class. */
+RUBY_EXTERN VALUE rb_cDir;                    /**< `Dir` class. */
+RUBY_EXTERN VALUE rb_cEncoding;               /**< `Encoding` class. */
+RUBY_EXTERN VALUE rb_cEnumerator;             /**< `Enumerator` class. */
+RUBY_EXTERN VALUE rb_cFalseClass;             /**< `FalseClass` class. */
+RUBY_EXTERN VALUE rb_cFile;                   /**< `File` class. */
+RUBY_EXTERN VALUE rb_cComplex;                /**< `Complex` class. */
+RUBY_EXTERN VALUE rb_cFloat;                  /**< `Float` class. */
+RUBY_EXTERN VALUE rb_cHash;                   /**< `Hash` class. */
+RUBY_EXTERN VALUE rb_cIO;                     /**< `IO` class. */
+RUBY_EXTERN VALUE rb_cInteger;                /**< `Module` class. */
+RUBY_EXTERN VALUE rb_cMatch;                  /**< `MatchData` class. */
+RUBY_EXTERN VALUE rb_cMethod;                 /**< `Method` class. */
+RUBY_EXTERN VALUE rb_cModule;                 /**< `Module` class. */
+RUBY_EXTERN VALUE rb_cRefinement;             /**< `Refinement` class. */
+RUBY_EXTERN VALUE rb_cNameErrorMesg;          /**< `NameError::Message` class. */
+RUBY_EXTERN VALUE rb_cNilClass;               /**< `NilClass` class. */
+RUBY_EXTERN VALUE rb_cNumeric;                /**< `Numeric` class. */
+RUBY_EXTERN VALUE rb_cProc;                   /**< `Proc` class. */
+RUBY_EXTERN VALUE rb_cRandom;                 /**< `Random` class. */
+RUBY_EXTERN VALUE rb_cRange;                  /**< `Range` class. */
+RUBY_EXTERN VALUE rb_cRational;               /**< `Rational` class. */
+RUBY_EXTERN VALUE rb_cRegexp;                 /**< `Regexp` class. */
+RUBY_EXTERN VALUE rb_cStat;                   /**< `File::Stat` class. */
+RUBY_EXTERN VALUE rb_cString;                 /**< `String` class. */
+RUBY_EXTERN VALUE rb_cStruct;                 /**< `Struct` class. */
+RUBY_EXTERN VALUE rb_cSymbol;                 /**< `Sumbol` class. */
+RUBY_EXTERN VALUE rb_cThread;                 /**< `Thread` class. */
+RUBY_EXTERN VALUE rb_cTime;                   /**< `Time` class. */
+RUBY_EXTERN VALUE rb_cTrueClass;              /**< `TrueClass` class. */
+RUBY_EXTERN VALUE rb_cUnboundMethod;          /**< `UnboundMethod` class. */
 
-RUBY_EXTERN VALUE rb_eException;
-RUBY_EXTERN VALUE rb_eStandardError;
-RUBY_EXTERN VALUE rb_eSystemExit;
-RUBY_EXTERN VALUE rb_eInterrupt;
-RUBY_EXTERN VALUE rb_eSignal;
-RUBY_EXTERN VALUE rb_eFatal;
-RUBY_EXTERN VALUE rb_eArgError;
-RUBY_EXTERN VALUE rb_eEOFError;
-RUBY_EXTERN VALUE rb_eIndexError;
-RUBY_EXTERN VALUE rb_eStopIteration;
-RUBY_EXTERN VALUE rb_eKeyError;
-RUBY_EXTERN VALUE rb_eRangeError;
-RUBY_EXTERN VALUE rb_eIOError;
-RUBY_EXTERN VALUE rb_eRuntimeError;
-RUBY_EXTERN VALUE rb_eFrozenError;
-RUBY_EXTERN VALUE rb_eSecurityError;
-RUBY_EXTERN VALUE rb_eSystemCallError;
-RUBY_EXTERN VALUE rb_eThreadError;
-RUBY_EXTERN VALUE rb_eTypeError;
-RUBY_EXTERN VALUE rb_eZeroDivError;
-RUBY_EXTERN VALUE rb_eNotImpError;
-RUBY_EXTERN VALUE rb_eNoMemError;
-RUBY_EXTERN VALUE rb_eNoMethodError;
-RUBY_EXTERN VALUE rb_eFloatDomainError;
-RUBY_EXTERN VALUE rb_eLocalJumpError;
-RUBY_EXTERN VALUE rb_eSysStackError;
-RUBY_EXTERN VALUE rb_eRegexpError;
-RUBY_EXTERN VALUE rb_eEncodingError;
-RUBY_EXTERN VALUE rb_eEncCompatError;
-RUBY_EXTERN VALUE rb_eNoMatchingPatternError;
+/**
+ * @}
+ * @addtogroup exception
+ * @{
+ */
 
-RUBY_EXTERN VALUE rb_eScriptError;
-RUBY_EXTERN VALUE rb_eNameError;
-RUBY_EXTERN VALUE rb_eSyntaxError;
-RUBY_EXTERN VALUE rb_eLoadError;
+RUBY_EXTERN VALUE rb_eException;                 /**< Mother of all exceptions. */
+RUBY_EXTERN VALUE rb_eStandardError;             /**< `StandardError` exception. */
+RUBY_EXTERN VALUE rb_eSystemExit;                /**< `SystemExit` exception. */
+RUBY_EXTERN VALUE rb_eInterrupt;                 /**< `Interrupt` exception. */
+RUBY_EXTERN VALUE rb_eSignal;                    /**< `SignalException` exception. */
+RUBY_EXTERN VALUE rb_eFatal;                     /**< `fatal` exception. */
+RUBY_EXTERN VALUE rb_eArgError;                  /**< `ArgumentError` exception. */
+RUBY_EXTERN VALUE rb_eEOFError;                  /**< `EOFError` exception. */
+RUBY_EXTERN VALUE rb_eIndexError;                /**< `IndexError` exception. */
+RUBY_EXTERN VALUE rb_eStopIteration;             /**< `StopIteration` exception. */
+RUBY_EXTERN VALUE rb_eKeyError;                  /**< `KeyError` exception. */
+RUBY_EXTERN VALUE rb_eRangeError;                /**< `RangeError` exception. */
+RUBY_EXTERN VALUE rb_eIOError;                   /**< `IOError` exception. */
+RUBY_EXTERN VALUE rb_eRuntimeError;              /**< `RuntimeError` exception. */
+RUBY_EXTERN VALUE rb_eFrozenError;               /**< `FrozenError` exception. */
+RUBY_EXTERN VALUE rb_eSecurityError;             /**< `SecurityError` exception. */
+RUBY_EXTERN VALUE rb_eSystemCallError;           /**< `SystemCallError` exception. */
+RUBY_EXTERN VALUE rb_eThreadError;               /**< `ThreadError` exception. */
+RUBY_EXTERN VALUE rb_eTypeError;                 /**< `TypeError` exception. */
+RUBY_EXTERN VALUE rb_eZeroDivError;              /**< `ZeroDivisionError` exception. */
+RUBY_EXTERN VALUE rb_eNotImpError;               /**< `NotImplementedError` exception. */
+RUBY_EXTERN VALUE rb_eNoMemError;                /**< `NoMemoryError` exception. */
+RUBY_EXTERN VALUE rb_eNoMethodError;             /**< `NoMethodError` exception. */
+RUBY_EXTERN VALUE rb_eFloatDomainError;          /**< `FloatDomainError` exception. */
+RUBY_EXTERN VALUE rb_eLocalJumpError;            /**< `LocalJumpError` exception. */
+RUBY_EXTERN VALUE rb_eSysStackError;             /**< `SystemStackError` exception. */
+RUBY_EXTERN VALUE rb_eRegexpError;               /**< `RegexpError` exception. */
+RUBY_EXTERN VALUE rb_eEncodingError;             /**< `EncodingError` exception. */
+RUBY_EXTERN VALUE rb_eEncCompatError;            /**< `Encoding::CompatibilityError` exception. */
+RUBY_EXTERN VALUE rb_eNoMatchingPatternError;    /**< `NoMatchingPatternError` exception. */
+RUBY_EXTERN VALUE rb_eNoMatchingPatternKeyError; /**< `NoMatchingPatternKeyError` exception. */
 
-RUBY_EXTERN VALUE rb_eMathDomainError;
+RUBY_EXTERN VALUE rb_eScriptError;               /**< `ScriptError` exception. */
+RUBY_EXTERN VALUE rb_eNameError;                 /**< `NameError` exception. */
+RUBY_EXTERN VALUE rb_eSyntaxError;               /**< `SyntaxError` exception. */
+RUBY_EXTERN VALUE rb_eLoadError;                 /**< `LoadError` exception. */
 
-RUBY_EXTERN VALUE rb_stdin, rb_stdout, rb_stderr;
+RUBY_EXTERN VALUE rb_eMathDomainError;           /**< `Math::DomainError` exception. */
+
+/**
+ * @}
+ * @addtogroup object
+ * @{
+ */
+
+RUBY_EXTERN VALUE rb_stdin;                      /**< `STDIN` constant. */
+RUBY_EXTERN VALUE rb_stdout;                     /**< `STDOUT` constant. */
+RUBY_EXTERN VALUE rb_stderr;                     /**< `STDERR` constant. */
 
 RBIMPL_ATTR_PURE()
+/**
+ * Object  to class  mapping  function.   Every object  have  its class.   This
+ * function obtains that.
+ *
+ * @param[in]  obj  Target object to query.
+ * @return     The class of the given object.
+ *
+ * @internal
+ *
+ * This  function is  a super-duper  hot  path.  Optimised  targeting modern  C
+ * compilers and x86_64 architecture.
+ */
 static inline VALUE
 rb_class_of(VALUE obj)
 {
@@ -150,8 +200,10 @@ rb_class_of(VALUE obj)
 #endif
 }
 
-#define CLASS_OF rb_class_of
+#define CLASS_OF rb_class_of /**< @old{rb_class_of} */
 
 RBIMPL_SYMBOL_EXPORT_END()
+
+/** @} */
 
 #endif /* RBIMPL_GLOBALS_H */

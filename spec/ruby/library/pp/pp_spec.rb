@@ -20,4 +20,11 @@ describe "PP.pp" do
 
     other_out.to_s.should == "[1, 2, 3]\n"
   end
+
+  it 'correctly prints a Hash' do
+    hash = { 'key' => 42 }
+    -> {
+      PP.pp hash
+    }.should output('{"key"=>42}' + "\n")
+  end
 end

@@ -192,12 +192,12 @@ struct debug_section_definition {
 static char binary_filename[PATH_MAX + 1];
 
 static unsigned long
-uleb128(char **p)
+uleb128(const char **p)
 {
     unsigned long r = 0;
     int s = 0;
     for (;;) {
-	unsigned char b = *(unsigned char *)(*p)++;
+	unsigned char b = (unsigned char)*(*p)++;
 	if (b < 0x80) {
 	    r += (unsigned long)b << s;
 	    break;
@@ -209,12 +209,12 @@ uleb128(char **p)
 }
 
 static long
-sleb128(char **p)
+sleb128(const char **p)
 {
     long r = 0;
     int s = 0;
     for (;;) {
-	unsigned char b = *(unsigned char *)(*p)++;
+	unsigned char b = (unsigned char)*(*p)++;
 	if (b < 0x80) {
 	    if (b & 0x40) {
 		r -= (0x80 - b) << s;
@@ -231,7 +231,7 @@ sleb128(char **p)
 }
 
 static const char *
-get_nth_dirname(unsigned long dir, char *p)
+get_nth_dirname(unsigned long dir, const char *p)
 {
     if (!dir--) {
 	return "";
@@ -249,11 +249,11 @@ get_nth_dirname(unsigned long dir, char *p)
 }
 
 static void
-fill_filename(int file, char *include_directories, char *filenames, line_info_t *line, obj_info_t *obj)
+fill_filename(int file, const char *include_directories, const char *filenames, line_info_t *line, obj_info_t *obj)
 {
     int i;
-    char *p = filenames;
-    char *filename;
+    const char *p = filenames;
+    const char *filename;
     unsigned long dir;
     for (i = 1; i <= file; i++) {
 	filename = p;
@@ -280,7 +280,7 @@ fill_filename(int file, char *include_directories, char *filenames, line_info_t 
 
 static void
 fill_line(int num_traces, void **traces, uintptr_t addr, int file, int line,
-	  char *include_directories, char *filenames,
+	  const char *include_directories, const char *filenames,
 	  obj_info_t *obj, line_info_t *lines, int offset)
 {
     int i;
@@ -374,7 +374,7 @@ parse_debug_line_header(const char **pp, struct LineNumberProgramHeader *header)
 }
 
 static int
-parse_debug_line_cu(int num_traces, void **traces, char **debug_line,
+parse_debug_line_cu(int num_traces, void **traces, const char **debug_line,
 		obj_info_t *obj, line_info_t *lines, int offset)
 {
     const char *p = (const char *)*debug_line;
@@ -399,8 +399,8 @@ parse_debug_line_cu(int num_traces, void **traces, char **debug_line,
 #define FILL_LINE()						    \
     do {							    \
 	fill_line(num_traces, traces, addr, file, line,		    \
-                  (char *)header.include_directories,               \
-                  (char *)header.filenames,                         \
+                  header.include_directories,                       \
+                  header.filenames,                                 \
 		  obj, lines, offset);				    \
 	/*basic_block = prologue_end = epilogue_begin = 0;*/	    \
     } while (0)
@@ -413,19 +413,19 @@ parse_debug_line_cu(int num_traces, void **traces, char **debug_line,
 	    FILL_LINE();
 	    break;
 	case DW_LNS_advance_pc:
-	    a = uleb128((char **)&p) * header.minimum_instruction_length;
+	    a = uleb128(&p) * header.minimum_instruction_length;
 	    addr += a;
 	    break;
 	case DW_LNS_advance_line: {
-	    long a = sleb128((char **)&p);
+	    long a = sleb128(&p);
 	    line += a;
 	    break;
 	}
 	case DW_LNS_set_file:
-	    file = (unsigned int)uleb128((char **)&p);
+	    file = (unsigned int)uleb128(&p);
 	    break;
 	case DW_LNS_set_column:
-	    /*column = (unsigned int)*/(void)uleb128((char **)&p);
+	    /*column = (unsigned int)*/(void)uleb128(&p);
 	    break;
 	case DW_LNS_negate_stmt:
 	    is_stmt = !is_stmt;
@@ -450,10 +450,10 @@ parse_debug_line_cu(int num_traces, void **traces, char **debug_line,
 	    /* epilogue_begin = 1; */
 	    break;
 	case DW_LNS_set_isa:
-	    /* isa = (unsigned int)*/(void)uleb128((char **)&p);
+	    /* isa = (unsigned int)*/(void)uleb128(&p);
 	    break;
 	case 0:
-	    a = uleb128((char **)&p);
+	    a = uleb128(&p);
 	    op = *p++;
 	    switch (op) {
 	    case DW_LNE_end_sequence:
@@ -477,7 +477,7 @@ parse_debug_line_cu(int num_traces, void **traces, char **debug_line,
 		break;
 	    case DW_LNE_set_discriminator:
 		/* TODO:currently ignore */
-		uleb128((char **)&p);
+		uleb128(&p);
 		break;
 	    default:
 		kprintf("Unknown extended opcode: %d in %s\n",
@@ -500,10 +500,10 @@ parse_debug_line_cu(int num_traces, void **traces, char **debug_line,
 
 static int
 parse_debug_line(int num_traces, void **traces,
-		 char *debug_line, unsigned long size,
+		 const char *debug_line, unsigned long size,
 		 obj_info_t *obj, line_info_t *lines, int offset)
 {
-    char *debug_line_end = debug_line + size;
+    const char *debug_line_end = debug_line + size;
     while (debug_line < debug_line_end) {
 	if (parse_debug_line_cu(num_traces, traces, &debug_line, obj, lines, offset))
 	    return -1;
@@ -833,21 +833,21 @@ enum {
 # define ABBREV_TABLE_SIZE 256
 typedef struct {
     obj_info_t *obj;
-    char *file;
-    char *current_cu;
+    const char *file;
+    const char *current_cu;
     uint64_t current_low_pc;
-    char *debug_line_cu_end;
-    char *debug_line_files;
-    char *debug_line_directories;
-    char *p;
-    char *cu_end;
-    char *pend;
-    char *q0;
-    char *q;
+    const char *debug_line_cu_end;
+    const char *debug_line_files;
+    const char *debug_line_directories;
+    const char *p;
+    const char *cu_end;
+    const char *pend;
+    const char *q0;
+    const char *q;
     int format; // 4 or 8
     uint8_t address_size;
     int level;
-    char *abbrev_table[ABBREV_TABLE_SIZE];
+    const char *abbrev_table[ABBREV_TABLE_SIZE];
 } DebugInfoReader;
 
 typedef struct {
@@ -858,7 +858,7 @@ typedef struct {
 
 typedef struct {
     union {
-        char *ptr;
+        const char *ptr;
         uint64_t uint64;
         int64_t int64;
     } as;
@@ -891,39 +891,39 @@ get_uint64(const uint8_t *p)
 }
 
 static uint8_t
-read_uint8(char **ptr)
+read_uint8(const char **ptr)
 {
-    const unsigned char *p = (const unsigned char *)*ptr;
-    *ptr = (char *)(p + 1);
-    return *p;
+    const char *p = *ptr;
+    *ptr = (p + 1);
+    return (uint8_t)*p;
 }
 
 static uint16_t
-read_uint16(char **ptr)
+read_uint16(const char **ptr)
 {
-    const unsigned char *p = (const unsigned char *)*ptr;
-    *ptr = (char *)(p + 2);
-    return get_uint16(p);
+    const char *p = *ptr;
+    *ptr = (p + 2);
+    return get_uint16((const uint8_t *)p);
 }
 
 static uint32_t
-read_uint24(char **ptr)
+read_uint24(const char **ptr)
 {
-    const unsigned char *p = (const unsigned char *)*ptr;
-    *ptr = (char *)(p + 3);
-    return (*p << 16) | get_uint16(p+1);
+    const char *p = *ptr;
+    *ptr = (p + 3);
+    return ((uint8_t)*p << 16) | get_uint16((const uint8_t *)p+1);
 }
 
 static uint32_t
-read_uint32(char **ptr)
+read_uint32(const char **ptr)
 {
-    const unsigned char *p = (const unsigned char *)*ptr;
-    *ptr = (char *)(p + 4);
-    return get_uint32(p);
+    const char *p = *ptr;
+    *ptr = (p + 4);
+    return get_uint32((const uint8_t *)p);
 }
 
 static uint64_t
-read_uint64(char **ptr)
+read_uint64(const char **ptr)
 {
     const unsigned char *p = (const unsigned char *)*ptr;
     *ptr = (char *)(p + 8);
@@ -931,7 +931,7 @@ read_uint64(char **ptr)
 }
 
 static uintptr_t
-read_uintptr(char **ptr)
+read_uintptr(const char **ptr)
 {
     const unsigned char *p = (const unsigned char *)*ptr;
     *ptr = (char *)(p + SIZEOF_VOIDP);
@@ -976,7 +976,7 @@ debug_info_reader_init(DebugInfoReader *reader, obj_info_t *obj)
 }
 
 static void
-di_skip_die_attributes(char **p)
+di_skip_die_attributes(const char **p)
 {
     for (;;) {
         uint64_t at = uleb128(p);
@@ -996,7 +996,7 @@ static void
 di_read_debug_abbrev_cu(DebugInfoReader *reader)
 {
     uint64_t prev = 0;
-    char *p = reader->q0;
+    const char *p = reader->q0;
     for (;;) {
         uint64_t abbrev_number = uleb128(&p);
         if (abbrev_number <= prev) break;
@@ -1042,7 +1042,7 @@ set_int_value(DebugInfoValue *v, int64_t n)
 }
 
 static void
-set_cstr_value(DebugInfoValue *v, char *s)
+set_cstr_value(DebugInfoValue *v, const char *s)
 {
     v->as.ptr = s;
     v->off = 0;
@@ -1050,7 +1050,7 @@ set_cstr_value(DebugInfoValue *v, char *s)
 }
 
 static void
-set_cstrp_value(DebugInfoValue *v, char *s, uint64_t off)
+set_cstrp_value(DebugInfoValue *v, const char *s, uint64_t off)
 {
     v->as.ptr = s;
     v->off = off;
@@ -1058,7 +1058,7 @@ set_cstrp_value(DebugInfoValue *v, char *s, uint64_t off)
 }
 
 static void
-set_data_value(DebugInfoValue *v, char *s)
+set_data_value(DebugInfoValue *v, const char *s)
 {
     v->as.ptr = s;
     v->type = VAL_data;
@@ -1138,12 +1138,12 @@ debug_info_reader_read_value(DebugInfoReader *reader, uint64_t form, DebugInfoVa
         set_uint_value(v, read_uleb128(reader));
         break;
       case DW_FORM_ref_addr:
-        if (reader->address_size == 4) {
+        if (reader->format == 4) {
             set_uint_value(v, read_uint32(&reader->p));
-        } else if (reader->address_size == 8) {
+        } else if (reader->format == 8) {
             set_uint_value(v, read_uint64(&reader->p));
         } else {
-            fprintf(stderr,"unknown address_size:%d", reader->address_size);
+            fprintf(stderr,"unknown format:%d", reader->format);
             abort();
         }
         break;
@@ -1259,10 +1259,10 @@ debug_info_reader_read_value(DebugInfoReader *reader, uint64_t form, DebugInfoVa
 }
 
 /* find abbrev in current compilation unit */
-static char *
+static const char *
 di_find_abbrev(DebugInfoReader *reader, uint64_t abbrev_number)
 {
-    char *p;
+    const char *p;
     if (abbrev_number < ABBREV_TABLE_SIZE) {
         return reader->abbrev_table[abbrev_number];
     }
@@ -1313,10 +1313,10 @@ div_inspect(DebugInfoValue *v)
 {
     switch (v->type) {
       case VAL_uint:
-        fprintf(stderr,"%d: type:%d size:%zx v:%lx\n",__LINE__,v->type,v->size,v->as.uint64);
+        fprintf(stderr,"%d: type:%d size:%zx v:%"PRIx64"\n",__LINE__,v->type,v->size,v->as.uint64);
         break;
       case VAL_int:
-        fprintf(stderr,"%d: type:%d size:%zx v:%ld\n",__LINE__,v->type,v->size,(int64_t)v->as.uint64);
+        fprintf(stderr,"%d: type:%d size:%zx v:%"PRId64"\n",__LINE__,v->type,v->size,(int64_t)v->as.uint64);
         break;
       case VAL_cstr:
         fprintf(stderr,"%d: type:%d size:%zx v:'%s'\n",__LINE__,v->type,v->size,v->as.ptr);
@@ -1407,13 +1407,13 @@ ranges_set(ranges_t *ptr, DebugInfoValue *v)
 }
 
 static uint64_t
-read_dw_form_addr(DebugInfoReader *reader, char **ptr)
+read_dw_form_addr(DebugInfoReader *reader, const char **ptr)
 {
-    char *p = *ptr;
-    *ptr = p + reader->format;
-    if (reader->format == 4) {
+    const char *p = *ptr;
+    *ptr = p + reader->address_size;
+    if (reader->address_size == 4) {
         return read_uint32(&p);
-    } else if (reader->format == 8) {
+    } else if (reader->address_size == 8) {
         return read_uint64(&p);
     } else {
         fprintf(stderr,"unknown address_size:%d", reader->address_size);
@@ -1434,18 +1434,19 @@ ranges_include(DebugInfoReader *reader, ranges_t *ptr, uint64_t addr)
     }
     else if (ptr->ranges_set) {
         /* TODO: support base address selection entry */
-        char *p;
+        const char *p;
         uint64_t base = ptr->low_pc_set ? ptr->low_pc : reader->current_low_pc;
+        bool base_valid = true;
         if (reader->obj->debug_rnglists.ptr) {
             p = reader->obj->debug_rnglists.ptr + ptr->ranges;
             for (;;) {
                 uint8_t rle = read_uint8(&p);
-                uintptr_t base_address = 0;
-                uintptr_t from, to;
+                uintptr_t from = 0, to = 0;
                 if (rle == DW_RLE_end_of_list) break;
                 switch (rle) {
                   case DW_RLE_base_addressx:
                     uleb128(&p);
+                    base_valid = false; /* not supported yet */
                     break;
                   case DW_RLE_startx_endx:
                     uleb128(&p);
@@ -1456,23 +1457,25 @@ ranges_include(DebugInfoReader *reader, ranges_t *ptr, uint64_t addr)
                     uleb128(&p);
                     break;
                   case DW_RLE_offset_pair:
-                    from = base_address + uleb128(&p);
-                    to = base_address + uleb128(&p);
-                    if (base + from <= addr && addr < base + to) {
-                        return from;
-                    }
+                    if (!base_valid) break;
+                    from = (uintptr_t)base + uleb128(&p);
+                    to = (uintptr_t)base + uleb128(&p);
                     break;
                   case DW_RLE_base_address:
-                    base_address = (uintptr_t)read_dw_form_addr(reader, &p);
+                    base = read_dw_form_addr(reader, &p);
+                    base_valid = true;
                     break;
                   case DW_RLE_start_end:
-                    read_dw_form_addr(reader, &p);
-                    read_dw_form_addr(reader, &p);
+                    from = (uintptr_t)read_dw_form_addr(reader, &p);
+                    to = (uintptr_t)read_dw_form_addr(reader, &p);
                     break;
                   case DW_RLE_start_length:
-                    read_dw_form_addr(reader, &p);
-                    uleb128(&p);
+                    from = (uintptr_t)read_dw_form_addr(reader, &p);
+                    to = from + uleb128(&p);
                     break;
+                }
+                if (from <= addr && addr < to) {
+                    return from;
                 }
             }
             return false;
@@ -1487,7 +1490,7 @@ ranges_include(DebugInfoReader *reader, ranges_t *ptr, uint64_t addr)
                 base = to;
             }
             else if (base + from <= addr && addr < base + to) {
-                return from;
+                return (uintptr_t)base + from;
             }
         }
     }
@@ -1593,14 +1596,31 @@ di_read_cu(DebugInfoReader *reader)
 }
 
 static void
-read_abstract_origin(DebugInfoReader *reader, uint64_t abstract_origin, line_info_t *line)
+read_abstract_origin(DebugInfoReader *reader, uint64_t form, uint64_t abstract_origin, line_info_t *line)
 {
-    char *p = reader->p;
-    char *q = reader->q;
+    const char *p = reader->p;
+    const char *q = reader->q;
     int level = reader->level;
     DIE die;
 
-    reader->p = reader->current_cu + abstract_origin;
+    switch (form) {
+      case DW_FORM_ref1:
+      case DW_FORM_ref2:
+      case DW_FORM_ref4:
+      case DW_FORM_ref8:
+      case DW_FORM_ref_udata:
+        reader->p = reader->current_cu + abstract_origin;
+        break;
+      case DW_FORM_ref_addr:
+        goto finish; /* not supported yet */
+      case DW_FORM_ref_sig8:
+        goto finish; /* not supported yet */
+      case DW_FORM_ref_sup4:
+      case DW_FORM_ref_sup8:
+        goto finish; /* not supported yet */
+      default:
+        goto finish;
+    }
     if (!di_read_die(reader, &die)) goto finish;
 
     /* enumerate abbrev */
@@ -1665,7 +1685,7 @@ debug_info_read(DebugInfoReader *reader, int num_traces, void **traces,
                 /* 1 or 3 */
                 break; /* goto skip_die; */
               case DW_AT_abstract_origin:
-                read_abstract_origin(reader, v.as.uint64, &line);
+                read_abstract_origin(reader, v.form, v.as.uint64, &line);
                 break; /* goto skip_die; */
             }
         }
@@ -1699,6 +1719,7 @@ debug_info_read(DebugInfoReader *reader, int num_traces, void **traces,
 static unsigned long
 uncompress_debug_section(ElfW(Shdr) *shdr, char *file, char **ptr)
 {
+    *ptr = NULL;
 #ifdef SUPPORT_COMPRESSED_DEBUG_LINE
     ElfW(Chdr) *chdr = (ElfW(Chdr) *)(file + shdr->sh_offset);
     unsigned long destsize = chdr->ch_size;
@@ -1719,6 +1740,7 @@ uncompress_debug_section(ElfW(Shdr) *shdr, char *file, char **ptr)
 
 fail:
     free(*ptr);
+    *ptr = NULL;
 #endif
     return 0;
 }
@@ -2116,7 +2138,7 @@ found_mach_header:
                 char *strtab = file + cmd->stroff, *sname = 0;
                 uint32_t j;
                 uintptr_t saddr = 0;
-                /* kprintf("[%2d]: %x/symtab %p\n", i, cmd->cmd, p); */
+                /* kprintf("[%2d]: %x/symtab %p\n", i, cmd->cmd, (void *)p); */
                 for (j = 0; j < cmd->nsyms; j++) {
                     uintptr_t symsize, d;
                     struct LP(nlist) *e = &nl[j];
@@ -2168,7 +2190,7 @@ fail:
 #endif
 
 #define HAVE_MAIN_EXE_PATH
-#if defined(__FreeBSD__)
+#if defined(__FreeBSD__) || defined(__DragonFly__)
 # include <sys/sysctl.h>
 #endif
 /* ssize_t main_exe_path(void)
@@ -2191,7 +2213,7 @@ main_exe_path(void)
     binary_filename[len] = 0;
     return len;
 }
-#elif defined(__FreeBSD__)
+#elif defined(__FreeBSD__) || defined(__DragonFly__)
 static ssize_t
 main_exe_path(void)
 {
@@ -2235,8 +2257,11 @@ print_line0(line_info_t *line, void *address)
     else if (!line->path) {
         kprintf("[0x%"PRIxPTR"]\n", addr);
     }
-    else if (!line->saddr || !line->sname) {
+    else if (!line->sname) {
         kprintf("%s(0x%"PRIxPTR") [0x%"PRIxPTR"]\n", line->path, addr-line->base_addr, addr);
+    }
+    else if (!line->saddr) {
+        kprintf("%s(%s) [0x%"PRIxPTR"]\n", line->path, line->sname, addr);
     }
     else if (line->line <= 0) {
         kprintf("%s(%s+0x%"PRIxPTR") [0x%"PRIxPTR"]\n", line->path, line->sname,

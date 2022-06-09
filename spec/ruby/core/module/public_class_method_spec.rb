@@ -77,4 +77,20 @@ describe "Module#public_class_method" do
       end
     end.should raise_error(NameError)
   end
+
+  ruby_version_is "3.0" do
+    context "when single argument is passed and is an array" do
+      it "makes a class method public" do
+        c = Class.new do
+          class << self
+            private
+            def foo() "foo" end
+          end
+          public_class_method [:foo]
+        end
+
+        c.foo.should == "foo"
+      end
+    end
+  end
 end

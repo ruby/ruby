@@ -10,13 +10,16 @@ class TestISeq < Test::Unit::TestCase
   end
 
   def compile(src, line = nil, opt = nil)
+    unless line
+      line = caller_locations(1).first.lineno
+    end
     EnvUtil.suppress_warning do
       ISeq.new(src, __FILE__, __FILE__, line, opt)
     end
   end
 
-  def lines src
-    body = compile(src).to_a[13]
+  def lines src, lines = nil
+    body = compile(src, lines).to_a[13]
     body.find_all{|e| e.kind_of? Integer}
   end
 
@@ -25,24 +28,22 @@ class TestISeq < Test::Unit::TestCase
   end
 
   def test_to_a_lines
-    src = <<-EOS
+    assert_equal [__LINE__+1, __LINE__+2, __LINE__+4], lines(<<-EOS, __LINE__+1)
     p __LINE__ # 1
     p __LINE__ # 2
                # 3
     p __LINE__ # 4
     EOS
-    assert_equal [1, 2, 4], lines(src)
 
-    src = <<-EOS
+    assert_equal [__LINE__+2, __LINE__+4], lines(<<-EOS, __LINE__+1)
                # 1
     p __LINE__ # 2
                # 3
     p __LINE__ # 4
                # 5
     EOS
-    assert_equal [2, 4], lines(src)
 
-    src = <<-EOS
+    assert_equal [__LINE__+3, __LINE__+4, __LINE__+7, __LINE__+9], lines(<<~EOS, __LINE__+1)
     1 # should be optimized out
     2 # should be optimized out
     p __LINE__ # 3
@@ -53,10 +54,9 @@ class TestISeq < Test::Unit::TestCase
     8 # should be optimized out
     9
     EOS
-    assert_equal [3, 4, 7, 9], lines(src)
   end
 
-  def test_unsupport_type
+  def test_unsupported_type
     ary = compile("p").to_a
     ary[9] = :foobar
     assert_raise_with_message(TypeError, /:foobar/) {ISeq.load(ary)}
@@ -81,6 +81,91 @@ class TestISeq < Test::Unit::TestCase
       assert_equal(false, bug("false"))
     end;
   end if defined?(RubyVM::InstructionSequence.load)
+
+  def test_cdhash_after_roundtrip
+    # CDHASH was not built properly when loading from binary and
+    # was causing opt_case_dispatch to clobber its stack canary
+    # for its "leaf" instruction attribute.
+    iseq = compile(<<~EOF, __LINE__+1)
+      case Class.new(String).new("foo")
+      when "foo"
+        42
+      end
+    EOF
+    assert_equal(42, ISeq.load_from_binary(iseq.to_binary).eval)
+  end
+
+  def test_super_with_block
+    iseq = compile(<<~EOF, __LINE__+1)
+      def (Object.new).touch(*) # :nodoc:
+        foo { super }
+      end
+      42
+    EOF
+    assert_equal(42, ISeq.load_from_binary(iseq.to_binary).eval)
+  end
+
+  def test_super_with_block_hash_0
+    iseq = compile(<<~EOF, __LINE__+1)
+      # [Bug #18250] `req` specifically cause `Assertion failed: (key != 0), function hash_table_raw_insert`
+      def (Object.new).touch(req, *)
+        foo { super }
+      end
+      42
+    EOF
+    assert_equal(42, ISeq.load_from_binary(iseq.to_binary).eval)
+  end
+
+  def test_super_with_block_and_kwrest
+    iseq = compile(<<~EOF, __LINE__+1)
+      def (Object.new).touch(**) # :nodoc:
+        foo { super }
+      end
+      42
+    EOF
+    assert_equal(42, ISeq.load_from_binary(iseq.to_binary).eval)
+  end
+
+  def test_lambda_with_ractor_roundtrip
+    iseq = compile(<<~EOF, __LINE__+1)
+      x = 42
+      y = nil.instance_eval{ lambda { x } }
+      Ractor.make_shareable(y)
+      y.call
+    EOF
+    assert_equal(42, ISeq.load_from_binary(iseq.to_binary).eval)
+  end
+
+  def test_super_with_anonymous_block
+    iseq = compile(<<~EOF, __LINE__+1)
+      def (Object.new).touch(&) # :nodoc:
+        foo { super }
+      end
+      42
+    EOF
+    assert_equal(42, ISeq.load_from_binary(iseq.to_binary).eval)
+  end
+
+  def test_ractor_unshareable_outer_variable
+    name = "\u{2603 26a1}"
+    y = nil.instance_eval do
+      eval("proc {#{name} = nil; proc {|x| #{name} = x}}").call
+    end
+    assert_raise_with_message(ArgumentError, /\(#{name}\)/) do
+      Ractor.make_shareable(y)
+    end
+    y = nil.instance_eval do
+      eval("proc {#{name} = []; proc {|x| #{name}}}").call
+    end
+    assert_raise_with_message(Ractor::IsolationError, /`#{name}'/) do
+      Ractor.make_shareable(y)
+    end
+    obj = Object.new
+    def obj.foo(*) nil.instance_eval{ ->{super} } end
+    assert_raise_with_message(Ractor::IsolationError, /refer unshareable object \[\] from variable `\*'/) do
+      Ractor.make_shareable(obj.foo)
+    end
+  end
 
   def test_disasm_encoding
     src = "\u{3042} = 1; \u{3042}; \u{3043}"
@@ -124,16 +209,16 @@ class TestISeq < Test::Unit::TestCase
   end
 
   def test_line_trace
-    iseq = compile \
-  %q{ a = 1
+    iseq = compile(<<~EOF, __LINE__+1)
+      a = 1
       b = 2
       c = 3
       # d = 4
       e = 5
       # f = 6
       g = 7
+    EOF
 
-    }
     assert_equal([1, 2, 3, 5, 7], iseq.line_trace_all)
     iseq.line_trace_specify(1, true) # line 2
     iseq.line_trace_specify(3, true) # line 5
@@ -305,6 +390,30 @@ class TestISeq < Test::Unit::TestCase
     end
   end
 
+  def anon_star(*); end
+
+  def test_anon_rest_param_in_disasm
+    iseq = RubyVM::InstructionSequence.of(method(:anon_star))
+    param_names = iseq.to_a[iseq.to_a.index(:method) + 1]
+    assert_equal [:*], param_names
+  end
+
+  def anon_keyrest(**); end
+
+  def test_anon_keyrest_param_in_disasm
+    iseq = RubyVM::InstructionSequence.of(method(:anon_keyrest))
+    param_names = iseq.to_a[iseq.to_a.index(:method) + 1]
+    assert_equal [:**], param_names
+  end
+
+  def anon_block(&); end
+
+  def test_anon_block_param_in_disasm
+    iseq = RubyVM::InstructionSequence.of(method(:anon_block))
+    param_names = iseq.to_a[iseq.to_a.index(:method) + 1]
+    assert_equal [:&], param_names
+  end
+
   def strip_lineno(source)
     source.gsub(/^.*?: /, "")
   end
@@ -430,7 +539,7 @@ class TestISeq < Test::Unit::TestCase
     bin = assert_nothing_raised(mesg) do
       iseq.to_binary
     rescue RuntimeError => e
-      skip e.message if /compile with coverage/ =~ e.message
+      omit e.message if /compile with coverage/ =~ e.message
       raise
     end
     10.times do
@@ -441,6 +550,11 @@ class TestISeq < Test::Unit::TestCase
     a1 = iseq.to_a
     a2 = iseq2.to_a
     assert_equal(a1, a2, message(mesg) {diff iseq.disassemble, iseq2.disassemble})
+    if iseq2.script_lines
+      assert_kind_of(Array, iseq2.script_lines)
+    else
+      assert_nil(iseq2.script_lines)
+    end
     iseq2
   end
 
@@ -611,5 +725,29 @@ class TestISeq < Test::Unit::TestCase
     begin;
       RubyVM::InstructionSequence.compile("", debug_level: 5)
     end;
+  end
+
+  def test_mandatory_only
+    assert_separately [], <<~RUBY
+      at0 = Time.at(0)
+      assert_equal at0, Time.public_send(:at, 0, 0)
+    RUBY
+  end
+
+  def test_mandatory_only_redef
+    assert_separately ['-W0'], <<~RUBY
+      r = Ractor.new{
+        Float(10)
+        module Kernel
+          undef Float
+          def Float(n)
+            :new
+          end
+        end
+        GC.start
+        Float(30)
+      }
+      assert_equal :new, r.take
+    RUBY
   end
 end

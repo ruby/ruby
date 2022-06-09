@@ -75,6 +75,14 @@ describe :file_fnmatch, shared: true do
     File.send(@method, 'c*t', 'c/a/b/t').should == true
   end
 
+  it "does not match unterminated range of characters" do
+    File.send(@method, 'abc[de', 'abcd').should == false
+  end
+
+  it "does not match unterminated range of characters as a literal" do
+    File.send(@method, 'abc[de', 'abc[de').should == false
+  end
+
   it "matches ranges of characters using bracket expression (e.g. [a-z])" do
     File.send(@method, 'ca[a-z]', 'cat').should == true
   end

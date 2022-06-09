@@ -1,5 +1,3 @@
-# for pack.c
-
 class Array
   #  call-seq:
   #     arr.pack( aTemplateString ) -> aBinaryString
@@ -32,6 +30,16 @@ class Array
   #  If original contents of <i>aBufferString</i> exists and it's longer than
   #  the offset, the rest of <i>offsetOfBuffer</i> are overwritten by the result.
   #  If it's shorter, the gap is filled with ``<code>\0</code>''.
+  #
+  #     # packed data is appended by default
+  #     [255].pack("C", buffer:"foo".b) #=> "foo\xFF"
+  #
+  #     # "@0" (offset 0) specifies that packed data is filled from beginning.
+  #     # Also, original data after packed data is removed. ("oo" is removed.)
+  #     [255].pack("@0C", buffer:"foo".b) #=> "\xFF"
+  #
+  #     # If the offset is bigger than the original length, \x00 is filled.
+  #     [255].pack("@5C", buffer:"foo".b) #=> "foo\x00\x00\xFF"
   #
   #  Note that ``buffer:'' option does not guarantee not to allocate memory
   #  in +pack+.  If the capacity of <i>aBufferString</i> is not enough,
@@ -138,10 +146,11 @@ end
 class String
   # call-seq:
   #    str.unpack(format)    ->  anArray
+  #    str.unpack(format, offset: anInteger)    ->  anArray
   #
   # Decodes <i>str</i> (which may contain binary data) according to the
-  # format string, returning an array of each value extracted. The
-  # format string consists of a sequence of single-character directives,
+  # format string, returning an array of each value extracted.
+  # The format string consists of a sequence of single-character directives,
   # summarized in the table at the end of this entry.
   # Each directive may be followed
   # by a number, indicating the number of times to repeat with this
@@ -151,7 +160,9 @@ class String
   # exclamation mark (``<code>!</code>'') to use the underlying
   # platform's native size for the specified type; otherwise, it uses a
   # platform-independent consistent size. Spaces are ignored in the
-  # format string. See also String#unpack1,  Array#pack.
+  # format string.
+  #
+  # See also String#unpack1,  Array#pack.
   #
   #    "abc \0\0abc \0\0".unpack('A6Z6')   #=> ["abc", "abc "]
   #    "abc \0\0".unpack('a3a3')           #=> ["abc", " \000\000"]
@@ -248,20 +259,28 @@ class String
   #  X            | ---     | skip backward one byte
   #  x            | ---     | skip forward one byte
   #
+  # The keyword <i>offset</i> can be given to start the decoding after skipping
+  # the specified amount of bytes:
+  #   "abc".unpack("C*") # => [97, 98, 99]
+  #   "abc".unpack("C*", offset: 2) # => [99]
+  #   "abc".unpack("C*", offset: 4) # => offset outside of string (ArgumentError)
+  #
   # HISTORY
   #
   # * J, J! j, and j! are available since Ruby 2.3.
   # * Q_, Q!, q_, and q! are available since Ruby 2.1.
   # * I!<, i!<, I!>, and i!> are available since Ruby 1.9.3.
-  def unpack(fmt)
-    Primitive.pack_unpack(fmt)
+  def unpack(fmt, offset: 0)
+    Primitive.pack_unpack(fmt, offset)
   end
 
   # call-seq:
   #    str.unpack1(format)    ->  obj
+  #    str.unpack1(format, offset: anInteger)    ->  obj
   #
   # Decodes <i>str</i> (which may contain binary data) according to the
   # format string, returning the first value extracted.
+  #
   # See also String#unpack, Array#pack.
   #
   # Contrast with String#unpack:
@@ -272,12 +291,19 @@ class String
   # In that case data would be lost but often it's the case that the array
   # only holds one value, especially when unpacking binary data. For instance:
   #
-  # "\xff\x00\x00\x00".unpack("l")         #=>  [255]
-  # "\xff\x00\x00\x00".unpack1("l")        #=>  255
+  #    "\xff\x00\x00\x00".unpack("l")         #=>  [255]
+  #    "\xff\x00\x00\x00".unpack1("l")        #=>  255
   #
   # Thus unpack1 is convenient, makes clear the intention and signals
   # the expected return value to those reading the code.
-  def unpack1(fmt)
-    Primitive.pack_unpack1(fmt)
+  #
+  # The keyword <i>offset</i> can be given to start the decoding after skipping
+  # the specified amount of bytes:
+  #   "abc".unpack1("C*") # => 97
+  #   "abc".unpack1("C*", offset: 2) # => 99
+  #   "abc".unpack1("C*", offset: 4) # => offset outside of string (ArgumentError)
+  #
+  def unpack1(fmt, offset: 0)
+    Primitive.pack_unpack1(fmt, offset)
   end
 end

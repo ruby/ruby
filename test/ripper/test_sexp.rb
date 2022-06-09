@@ -520,4 +520,18 @@ eot
     assert_raise(SyntaxError) { Ripper.sexp('def req(true) end', raise_errors: true) }
     assert_raise(SyntaxError) { Ripper.sexp_raw('def req(true) end', raise_errors: true) }
   end
+
+  def test_hash_value_omission
+    sexp = Ripper.sexp("{x: 1, y:}")
+    assoclist = search_sexp(:assoclist_from_args, sexp)
+    x = assoclist[1][0]
+    assert_equal(:@label, x[1][0])
+    assert_equal("x:", x[1][1])
+    assert_equal(:@int, x[2][0])
+    assert_equal("1", x[2][1])
+    y = assoclist[1][1]
+    assert_equal(:@label, y[1][0])
+    assert_equal("y:", y[1][1])
+    assert_equal(nil, y[2])
+  end
 end if ripper_test

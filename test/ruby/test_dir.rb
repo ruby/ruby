@@ -131,7 +131,7 @@ class TestDir < Test::Unit::TestCase
 
   def test_chdir_conflict
     pwd = Dir.pwd
-    q = Queue.new
+    q = Thread::Queue.new
     t = Thread.new do
       q.pop
       Dir.chdir(pwd) rescue $!
@@ -152,7 +152,7 @@ class TestDir < Test::Unit::TestCase
   end
 
   def test_chroot_nodir
-    skip if RUBY_PLATFORM =~ /android/
+    omit if RUBY_PLATFORM =~ /android/
     assert_raise(NotImplementedError, Errno::ENOENT, Errno::EPERM
 		) { Dir.chroot(File.join(@nodir, "")) }
   end
@@ -171,8 +171,16 @@ class TestDir < Test::Unit::TestCase
                  Dir.glob([@root, File.join(@root, "*")]))
     assert_equal([@root] + ("a".."z").map {|f| File.join(@root, f) },
                  Dir.glob([@root, File.join(@root, "*")], sort: false).sort)
+    assert_equal([@root] + ("a".."z").map {|f| File.join(@root, f) },
+                 Dir.glob([@root, File.join(@root, "*")], sort: true))
     assert_raise_with_message(ArgumentError, /nul-separated/) do
       Dir.glob(@root + "\0\0\0" + File.join(@root, "*"))
+    end
+    assert_raise_with_message(ArgumentError, /expected true or false/) do
+      Dir.glob(@root, sort: 1)
+    end
+    assert_raise_with_message(ArgumentError, /expected true or false/) do
+      Dir.glob(@root, sort: nil)
     end
 
     assert_equal(("a".."z").step(2).map {|f| File.join(File.join(@root, f), "") },
@@ -342,6 +350,17 @@ class TestDir < Test::Unit::TestCase
     assert_equal(%w[dir/], Dir.chdir(@root) {Dir.open("a") {|d| Dir.glob("**/*/", base: d, sort: false).sort}})
   end
 
+  def test_glob_ignore_casefold_invalid_encoding
+    bug14456 = "[ruby-core:85448]"
+    filename = "\u00AAa123".encode('ISO-8859-1')
+    File.write(File.join(@root, filename), "")
+    matches = Dir.chdir(@root) {|d| Dir.glob("*a123".encode('UTF-8'), File::FNM_CASEFOLD)}
+    assert_equal(1, matches.size, bug14456)
+    matches.each{|f| f.force_encoding('ISO-8859-1')}
+    # Handle MacOS/Windows, which saves under a different filename
+    assert_include([filename, "\u00C2\u00AAa123".encode('ISO-8859-1')], matches.first, bug14456)
+  end
+
   def assert_entries(entries, children_only = false)
     entries.sort!
     expected = ("a".."z").to_a
@@ -471,9 +490,9 @@ class TestDir < Test::Unit::TestCase
     def test_glob_legacy_short_name
       bug10819 = '[ruby-core:67954] [Bug #10819]'
       bug11206 = '[ruby-core:69435] [Bug #11206]'
-      skip unless /\A\w:/ =~ ENV["ProgramFiles"]
+      omit unless /\A\w:/ =~ ENV["ProgramFiles"]
       short = "#$&/PROGRA~1"
-      skip unless File.directory?(short)
+      omit unless File.directory?(short)
       entries = Dir.glob("#{short}/Common*")
       assert_not_empty(entries, bug10819)
       long = File.expand_path(short)

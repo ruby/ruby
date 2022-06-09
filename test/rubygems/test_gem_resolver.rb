@@ -1,5 +1,5 @@
 # frozen_string_literal: true
-require 'rubygems/test_case'
+require_relative 'helper'
 
 class TestGemResolver < Gem::TestCase
   def setup
@@ -76,7 +76,7 @@ class TestGemResolver < Gem::TestCase
 
     assert_same index_set, composed
 
-    e = assert_raises ArgumentError do
+    e = assert_raise ArgumentError do
       @DR.compose_sets nil
     end
 
@@ -191,7 +191,7 @@ class TestGemResolver < Gem::TestCase
 
     # With the following gems already installed:
     # a-1, b-1, c-1, e-1
-    res.skip_gems = {'a' => [a1_spec], 'b' => [b1_spec], 'c' => [c1_spec], 'e' => [e1_spec]}
+    res.skip_gems = { 'a' => [a1_spec], 'b' => [b1_spec], 'c' => [c1_spec], 'e' => [e1_spec] }
 
     # Make sure the following gems end up getting used/installed/upgraded:
     # a-2 (upgraded)
@@ -266,14 +266,14 @@ class TestGemResolver < Gem::TestCase
 
     res = Gem::Resolver.new [a_dep], Gem::Resolver::IndexSet.new
 
-    e = assert_raises Gem::UnsatisfiableDepedencyError do
+    e = assert_raise Gem::UnsatisfiableDependencyError do
       res.resolve
     end
 
     refute_empty e.errors
   end
 
-  def test_no_overlap_specificly
+  def test_no_overlap_specifically
     a = util_spec "a", '1'
     b = util_spec "b", "1"
 
@@ -445,7 +445,7 @@ class TestGemResolver < Gem::TestCase
 
     r = Gem::Resolver.new([ad, bd], s)
 
-    e = assert_raises Gem::DependencyResolutionError do
+    e = assert_raise Gem::DependencyResolutionError do
       r.resolve
     end
 
@@ -469,7 +469,7 @@ class TestGemResolver < Gem::TestCase
 
     r = Gem::Resolver.new([ad], set)
 
-    e = assert_raises Gem::UnsatisfiableDepedencyError do
+    e = assert_raise Gem::UnsatisfiableDependencyError do
       r.resolve
     end
 
@@ -486,7 +486,7 @@ class TestGemResolver < Gem::TestCase
 
     r = Gem::Resolver.new([ad], set(a1))
 
-    e = assert_raises Gem::UnsatisfiableDepedencyError do
+    e = assert_raise Gem::UnsatisfiableDependencyError do
       r.resolve
     end
 
@@ -499,7 +499,7 @@ class TestGemResolver < Gem::TestCase
 
     r = Gem::Resolver.new([ad], set(a1))
 
-    e = assert_raises Gem::UnsatisfiableDepedencyError do
+    e = assert_raise Gem::UnsatisfiableDependencyError do
       r.resolve
     end
 
@@ -516,7 +516,7 @@ class TestGemResolver < Gem::TestCase
 
     r = Gem::Resolver.new([ad], set(a1))
 
-    e = assert_raises Gem::UnsatisfiableDepedencyError do
+    e = assert_raise Gem::UnsatisfiableDependencyError do
       r.resolve
     end
 
@@ -539,7 +539,7 @@ class TestGemResolver < Gem::TestCase
 
     r = Gem::Resolver.new([ad, bd], s)
 
-    e = assert_raises Gem::DependencyResolutionError do
+    e = assert_raise Gem::DependencyResolutionError do
       r.resolve
     end
 
@@ -611,7 +611,7 @@ class TestGemResolver < Gem::TestCase
 
     r = Gem::Resolver.new([d1, d2, d3], s)
 
-    assert_raises Gem::DependencyResolutionError do
+    assert_raise Gem::DependencyResolutionError do
       r.resolve
     end
   end
@@ -629,7 +629,7 @@ class TestGemResolver < Gem::TestCase
 
     r = Gem::Resolver.new [a_dep, b_dep], s
 
-    assert_raises Gem::DependencyResolutionError do
+    assert_raise Gem::DependencyResolutionError do
       r.resolve
     end
   end
@@ -781,7 +781,7 @@ class TestGemResolver < Gem::TestCase
 
     r = Gem::Resolver.new([ad], set(a1))
 
-    e = assert_raises Gem::UnsatisfiableDepedencyError do
+    e = assert_raise Gem::UnsatisfiableDependencyError do
       r.resolve
     end
 

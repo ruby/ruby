@@ -394,6 +394,24 @@ class TestIO < Test::Unit::TestCase
     }
   end
 
+  def test_each_byte_closed
+    pipe(proc do |w|
+      w << "abc def"
+      w.close
+    end, proc do |r|
+      assert_raise(IOError) do
+        r.each_byte {|byte| r.close if byte == 32 }
+      end
+    end)
+    make_tempfile {|t|
+      File.open(t, 'rt') {|f|
+        assert_raise(IOError) do
+          f.each_byte {|c| f.close if c == 10}
+        end
+      }
+    }
+  end
+
   def test_each_codepoint
     make_tempfile {|t|
       bug2959 = '[ruby-core:28650]'
@@ -402,6 +420,24 @@ class TestIO < Test::Unit::TestCase
         f.each_codepoint {|c| a << c}
       }
       assert_equal("foo\nbar\nbaz\n", a, bug2959)
+    }
+  end
+
+  def test_each_codepoint_closed
+    pipe(proc do |w|
+      w.print("abc def")
+      w.close
+    end, proc do |r|
+      assert_raise(IOError) do
+        r.each_codepoint {|c| r.close if c == 32}
+      end
+    end)
+    make_tempfile {|t|
+      File.open(t, 'rt') {|f|
+        assert_raise(IOError) do
+          f.each_codepoint {|c| f.close if c == 10}
+        end
+      }
     }
   end
 
@@ -436,6 +472,18 @@ class TestIO < Test::Unit::TestCase
         ret = IO.copy_stream(src, dst)
         assert_equal(content.bytesize, ret)
         assert_equal(content, File.read("dst"))
+      end
+    }
+  end
+
+  def test_copy_stream_append_to_nonempty
+    with_srccontent("foobar") {|src, content|
+      preface = 'preface'
+      File.write('dst', preface)
+      File.open('dst', 'ab') do |dst|
+        ret = IO.copy_stream(src, dst)
+        assert_equal(content.bytesize, ret)
+        assert_equal(preface + content, File.read("dst"))
       end
     }
   end
@@ -607,8 +655,8 @@ class TestIO < Test::Unit::TestCase
 
   if have_nonblock?
     def test_copy_stream_no_busy_wait
-      skip "MJIT has busy wait on GC. This sometimes fails with --jit." if defined?(RubyVM::JIT) && RubyVM::JIT.enabled?
-      skip "multiple threads already active" if Thread.list.size > 1
+      omit "MJIT has busy wait on GC. This sometimes fails with --jit." if defined?(RubyVM::MJIT) && RubyVM::MJIT.enabled?
+      omit "multiple threads already active" if Thread.list.size > 1
 
       msg = 'r58534 [ruby-core:80969] [Backport #13533]'
       IO.pipe do |r,w|
@@ -627,7 +675,7 @@ class TestIO < Test::Unit::TestCase
             begin
               w2.nonblock = true
             rescue Errno::EBADF
-              skip "nonblocking IO for pipe is not implemented"
+              omit "nonblocking IO for pipe is not implemented"
             end
             s = w2.syswrite("a" * 100000)
             t = Thread.new { sleep 0.1; r2.read }
@@ -731,7 +779,7 @@ class TestIO < Test::Unit::TestCase
               r1.nonblock = true
               w2.nonblock = true
             rescue Errno::EBADF
-              skip "nonblocking IO for pipe is not implemented"
+              omit "nonblocking IO for pipe is not implemented"
             end
             t1 = Thread.new { w1 << megacontent; w1.close }
             t2 = Thread.new { r2.read }
@@ -795,7 +843,7 @@ class TestIO < Test::Unit::TestCase
           assert_equal("bcd", r.read)
         end)
       rescue NotImplementedError
-        skip "pread(2) is not implemtented."
+        omit "pread(2) is not implemtented."
       end
     }
   end
@@ -899,7 +947,7 @@ class TestIO < Test::Unit::TestCase
         begin
           s1.nonblock = true
         rescue Errno::EBADF
-          skip "nonblocking IO for pipe is not implemented"
+          omit "nonblocking IO for pipe is not implemented"
         end
         t1 = Thread.new { s2.read }
         t2 = Thread.new {
@@ -923,7 +971,7 @@ class TestIO < Test::Unit::TestCase
         begin
           s1.nonblock = true
         rescue Errno::EBADF
-          skip "nonblocking IO for pipe is not implemented"
+          omit "nonblocking IO for pipe is not implemented"
         end
         trapping_usr2 do |rd|
           nr = 30
@@ -1446,6 +1494,13 @@ class TestIO < Test::Unit::TestCase
     end)
   end
 
+  def test_readpartial_zero_size
+    File.open(IO::NULL) do |r|
+      assert_empty(r.readpartial(0, s = "01234567"))
+      assert_empty(s)
+    end
+  end
+
   def test_readpartial_buffer_error
     with_pipe do |r, w|
       s = ""
@@ -1491,6 +1546,13 @@ class TestIO < Test::Unit::TestCase
     end)
   end
 
+  def test_read_zero_size
+    File.open(IO::NULL) do |r|
+      assert_empty(r.read(0, s = "01234567"))
+      assert_empty(s)
+    end
+  end
+
   def test_read_buffer_error
     with_pipe do |r, w|
       s = ""
@@ -1528,6 +1590,13 @@ class TestIO < Test::Unit::TestCase
     }
   end
 
+  def test_read_nonblock_zero_size
+    File.open(IO::NULL) do |r|
+      assert_empty(r.read_nonblock(0, s = "01234567"))
+      assert_empty(s)
+    end
+  end
+
   def test_write_nonblock_simple_no_exceptions
     pipe(proc do |w|
       w.write_nonblock('1', exception: false)
@@ -1562,7 +1631,7 @@ class TestIO < Test::Unit::TestCase
   end if have_nonblock?
 
   def test_read_nonblock_no_exceptions
-    skip '[ruby-core:90895] MJIT worker may leave fd open in a forked child' if defined?(RubyVM::JIT) && RubyVM::JIT.enabled? # TODO: consider acquiring GVL from MJIT worker.
+    omit '[ruby-core:90895] MJIT worker may leave fd open in a forked child' if defined?(RubyVM::MJIT) && RubyVM::MJIT.enabled? # TODO: consider acquiring GVL from MJIT worker.
     with_pipe {|r, w|
       assert_equal :wait_readable, r.read_nonblock(4096, exception: false)
       w.puts "HI!"
@@ -2210,7 +2279,7 @@ class TestIO < Test::Unit::TestCase
   def test_autoclose_true_closed_by_finalizer
     # http://ci.rvm.jp/results/trunk-mjit@silicon-docker/1465760
     # http://ci.rvm.jp/results/trunk-mjit@silicon-docker/1469765
-    skip 'this randomly fails with MJIT' if defined?(RubyVM::JIT) && RubyVM::JIT.enabled?
+    omit 'this randomly fails with MJIT' if defined?(RubyVM::MJIT) && RubyVM::MJIT.enabled?
 
     feature2250 = '[ruby-core:26222]'
     pre = 'ft2250'
@@ -2222,7 +2291,7 @@ class TestIO < Test::Unit::TestCase
         t.close
       rescue Errno::EBADF
       end
-      skip "expect IO object was GC'ed but not recycled yet"
+      omit "expect IO object was GC'ed but not recycled yet"
     rescue WeakRef::RefError
       assert_raise(Errno::EBADF, feature2250) {t.close}
     end
@@ -2238,7 +2307,7 @@ class TestIO < Test::Unit::TestCase
     begin
       w.close
       t.close
-      skip "expect IO object was GC'ed but not recycled yet"
+      omit "expect IO object was GC'ed but not recycled yet"
     rescue WeakRef::RefError
       assert_nothing_raised(Errno::EBADF, feature2250) {t.close}
     end
@@ -2601,7 +2670,7 @@ class TestIO < Test::Unit::TestCase
   end
 
   def test_puts_parallel
-    skip "not portable"
+    omit "not portable"
     pipe(proc do |w|
       threads = []
       100.times do
@@ -3235,7 +3304,7 @@ __END__
     begin
       f = File.open('/dev/tty')
     rescue Errno::ENOENT, Errno::ENXIO => e
-      skip e.message
+      omit e.message
     else
       tiocgwinsz=0x5413
       winsize=""
@@ -3316,11 +3385,17 @@ __END__
     data = "a" * 100
     with_pipe do |r,w|
       th = Thread.new {r.sysread(100, buf)}
+
       Thread.pass until th.stop?
-      buf.replace("")
-      assert_empty(buf, bug6099)
+
+      assert_equal 100, buf.bytesize
+
+      msg = /can't modify string; temporarily locked/
+      assert_raise_with_message(RuntimeError, msg) do
+        buf.replace("")
+      end
+      assert_predicate(th, :alive?)
       w.write(data)
-      Thread.pass while th.alive?
       th.join
     end
     assert_equal(data, buf, bug6099)
@@ -3355,10 +3430,10 @@ __END__
     with_pipe do |r,w|
       # Linux 2.6.15 and earlier returned EINVAL instead of ESPIPE
       assert_raise(Errno::ESPIPE, Errno::EINVAL) {
-        r.advise(:willneed) or skip "fadvise(2) is not implemented"
+        r.advise(:willneed) or omit "fadvise(2) is not implemented"
       }
       assert_raise(Errno::ESPIPE, Errno::EINVAL) {
-        w.advise(:willneed) or skip "fadvise(2) is not implemented"
+        w.advise(:willneed) or omit "fadvise(2) is not implemented"
       }
     end
   end if /linux/ =~ RUBY_PLATFORM
@@ -3498,14 +3573,14 @@ __END__
             f.write('1')
             pos = f.tell
           rescue Errno::ENOSPC
-            skip "non-sparse file system"
+            omit "non-sparse file system"
           rescue SystemCallError
           else
             assert_equal(0x1_0000_0000, pos, msg)
           end
         end;
       rescue Timeout::Error
-        skip "Timeout because of slow file writing"
+        omit "Timeout because of slow file writing"
       end
     }
   end if /mswin|mingw/ =~ RUBY_PLATFORM
@@ -3694,7 +3769,7 @@ __END__
     begin;
       bug13158 = '[ruby-core:79262] [Bug #13158]'
       closed = nil
-      q = Queue.new
+      q = Thread::Queue.new
       IO.pipe do |r, w|
         thread = Thread.new do
           begin
@@ -3804,30 +3879,6 @@ __END__
         end
       end
       end;
-    end
-
-    def test_write_no_garbage
-      skip "multiple threads already active" if Thread.list.size > 1
-      res = {}
-      ObjectSpace.count_objects(res) # creates strings on first call
-      [ 'foo'.b, '*' * 24 ].each do |buf|
-        with_pipe do |r, w|
-          GC.disable
-          begin
-            before = ObjectSpace.count_objects(res)[:T_STRING]
-            n = w.write(buf)
-            s = w.syswrite(buf)
-            after = ObjectSpace.count_objects(res)[:T_STRING]
-          ensure
-            GC.enable
-          end
-          assert_equal before, after,
-            "no strings left over after write [ruby-core:78898] [Bug #13085]: #{ before } strings before write -> #{ after } strings after write"
-          assert_not_predicate buf, :frozen?, 'no inadvertent freeze'
-          assert_equal buf.bytesize, n, 'IO#write wrote expected size'
-          assert_equal s, n, 'IO#syswrite wrote expected size'
-        end
-      end
     end
   end
 
@@ -3947,6 +3998,18 @@ __END__
       assert_raise(TypeError) {Marshal.dump(r)}
       assert_raise(TypeError) {Marshal.dump(w)}
     }
+  end
+
+  def test_marshal_closed_io
+    bug18077 = '[ruby-core:104927] [Bug #18077]'
+    r, w = IO.pipe
+    r.close; w.close
+    assert_raise(TypeError, bug18077) {Marshal.dump(r)}
+
+    class << r
+      undef_method :closed?
+    end
+    assert_raise(TypeError, bug18077) {Marshal.dump(r)}
   end
 
   def test_stdout_to_closed_pipe

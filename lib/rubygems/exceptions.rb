@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
-require 'rubygems/deprecate'
-require 'rubygems/unknown_command_spell_checker'
+require_relative 'deprecate'
+require_relative 'unknown_command_spell_checker'
 
 ##
 # Base exception class for RubyGems.  All exception raised by RubyGems are a
@@ -24,10 +24,14 @@ class Gem::UnknownCommandError < Gem::Exception
     return if defined?(@attached)
 
     if defined?(DidYouMean::SPELL_CHECKERS) && defined?(DidYouMean::Correctable)
-      DidYouMean::SPELL_CHECKERS['Gem::UnknownCommandError'] =
-        Gem::UnknownCommandSpellChecker
+      if DidYouMean.respond_to?(:correct_error)
+        DidYouMean.correct_error(Gem::UnknownCommandError, Gem::UnknownCommandSpellChecker)
+      else
+        DidYouMean::SPELL_CHECKERS['Gem::UnknownCommandError'] =
+          Gem::UnknownCommandSpellChecker
 
-      prepend DidYouMean::Correctable
+        prepend DidYouMean::Correctable
+      end
     end
 
     @attached = true
@@ -225,7 +229,7 @@ class Gem::SystemExitException < SystemExit
   def initialize(exit_code)
     @exit_code = exit_code
 
-    super "Exiting RubyGems with exit_code #{exit_code}"
+    super exit_code, "Exiting RubyGems with exit_code #{exit_code}"
   end
 end
 
@@ -284,3 +288,4 @@ end
 # Backwards compatible typo'd exception class for early RubyGems 2.0.x
 
 Gem::UnsatisfiableDepedencyError = Gem::UnsatisfiableDependencyError # :nodoc:
+Gem.deprecate_constant :UnsatisfiableDepedencyError

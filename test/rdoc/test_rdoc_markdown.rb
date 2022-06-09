@@ -2,8 +2,8 @@
 # frozen_string_literal: true
 
 require_relative 'helper'
-require 'rdoc/markup/block_quote'
-require 'rdoc/markdown'
+require_relative '../../lib/rdoc/markup/block_quote'
+require_relative '../../lib/rdoc/markdown'
 
 class TestRDocMarkdown < RDoc::TestCase
 
@@ -1068,4 +1068,3 @@ and an extra note.[^2]
   end
 
 end
-

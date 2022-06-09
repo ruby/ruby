@@ -68,14 +68,6 @@ describe "String#downcase" do
     -> { "ABC".downcase(:invalid_option) }.should raise_error(ArgumentError)
   end
 
-  ruby_version_is ''...'2.7' do
-    it "taints result when self is tainted" do
-      "".taint.downcase.should.tainted?
-      "x".taint.downcase.should.tainted?
-      "X".taint.downcase.should.tainted?
-    end
-  end
-
   ruby_version_is ''...'3.0' do
     it "returns a subclass instance for subclasses" do
       StringSpecs::MyString.new("FOObar").downcase.should be_an_instance_of(StringSpecs::MyString)

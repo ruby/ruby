@@ -11,10 +11,10 @@ module CoreExtensions
       IPV4_DELAY_SECONDS = 0.1
 
       def initialize(host, serv, *rest)
-        mutex = Mutex.new
+        mutex = Thread::Mutex.new
         addrs = []
         threads = []
-        cond_var = ConditionVariable.new
+        cond_var = Thread::ConditionVariable.new
 
         Addrinfo.foreach(host, serv, nil, :STREAM) do |addr|
           Thread.report_on_exception = false if defined? Thread.report_on_exception = ()

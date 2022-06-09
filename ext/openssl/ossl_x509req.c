@@ -79,23 +79,26 @@ static VALUE
 ossl_x509req_initialize(int argc, VALUE *argv, VALUE self)
 {
     BIO *in;
-    X509_REQ *req, *x = DATA_PTR(self);
+    X509_REQ *req, *req_orig = RTYPEDDATA_DATA(self);
     VALUE arg;
 
+    rb_check_frozen(self);
     if (rb_scan_args(argc, argv, "01", &arg) == 0) {
 	return self;
     }
     arg = ossl_to_der_if_possible(arg);
     in = ossl_obj2bio(&arg);
-    req = PEM_read_bio_X509_REQ(in, &x, NULL, NULL);
-    DATA_PTR(self) = x;
+    req = d2i_X509_REQ_bio(in, NULL);
     if (!req) {
-	OSSL_BIO_reset(in);
-	req = d2i_X509_REQ_bio(in, &x);
-	DATA_PTR(self) = x;
+        OSSL_BIO_reset(in);
+        req = PEM_read_bio_X509_REQ(in, NULL, NULL, NULL);
     }
     BIO_free(in);
-    if (!req) ossl_raise(eX509ReqError, NULL);
+    if (!req)
+        ossl_raise(eX509ReqError, "PEM_read_bio_X509_REQ");
+
+    RTYPEDDATA_DATA(self) = req;
+    X509_REQ_free(req_orig);
 
     return self;
 }

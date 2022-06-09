@@ -48,6 +48,26 @@ describe "Hash literal" do
     }.should complain(/key :foo is duplicated|duplicated key/)
     @h.keys.size.should == 1
     @h.should == {foo: :foo}
+    -> {
+      @h = eval "{%q{a} => :bar, %q{a} => :foo}"
+    }.should complain(/key "a" is duplicated|duplicated key/)
+    @h.keys.size.should == 1
+    @h.should == {%q{a} => :foo}
+    -> {
+      @h = eval "{1000 => :bar, 1000 => :foo}"
+    }.should complain(/key 1000 is duplicated|duplicated key/)
+    @h.keys.size.should == 1
+    @h.should == {1000 => :foo}
+  end
+
+  ruby_version_is "3.1" do
+    it "checks duplicated float keys on initialization" do
+      -> {
+        @h = eval "{1.0 => :bar, 1.0 => :foo}"
+      }.should complain(/key 1.0 is duplicated|duplicated key/)
+      @h.keys.size.should == 1
+      @h.should == {1.0 => :foo}
+    end
   end
 
   it "accepts a hanging comma" do
@@ -128,18 +148,9 @@ describe "Hash literal" do
     {a: 1, **obj, c: 3}.should == {a:1, b: 2, c: 3, d: 4}
   end
 
-  ruby_version_is ""..."2.7" do
-    it "raises a TypeError if any splatted elements keys are not symbols" do
-      h = {1 => 2, b: 3}
-      -> { {a: 1, **h} }.should raise_error(TypeError)
-    end
-  end
-
-  ruby_version_is "2.7" do
-    it "allows splatted elements keys that are not symbols" do
-      h = {1 => 2, b: 3}
-      {a: 1, **h}.should == {a: 1, 1 => 2, b: 3}
-    end
+  it "allows splatted elements keys that are not symbols" do
+    h = {1 => 2, b: 3}
+    {a: 1, **h}.should == {a: 1, 1 => 2, b: 3}
   end
 
   it "raises a TypeError if #to_hash does not return a Hash" do
@@ -203,6 +214,45 @@ describe "The ** operator" do
       m(**h).should == { two: 2 }
       m(**h).should.equal?(h)
       h.should == { two: 2 }
+    end
+  end
+
+  ruby_version_is "3.1" do
+    describe "hash with omitted value" do
+      it "accepts short notation 'key' for 'key: value' syntax" do
+        a, b, c = 1, 2, 3
+        h = eval('{a:}')
+        {a: 1}.should == h
+        h = eval('{a:, b:, c:}')
+        {a: 1, b: 2, c: 3}.should == h
+      end
+
+      it "ignores hanging comma on short notation" do
+        a, b, c = 1, 2, 3
+        h = eval('{a:, b:, c:,}')
+        {a: 1, b: 2, c: 3}.should == h
+      end
+
+      it "accepts mixed syntax" do
+        a, e = 1, 5
+        h = eval('{a:, b: 2, "c" => 3, :d => 4, e:}')
+        eval('{a: 1, :b => 2, "c" => 3, "d": 4, e: 5}').should == h
+      end
+
+      it "works with methods and local vars" do
+        a = Class.new
+        a.class_eval(<<-RUBY)
+          def bar
+            "baz"
+          end
+
+          def foo(val)
+            {bar:, val:}
+          end
+        RUBY
+
+        a.new.foo(1).should == {bar: "baz", val: 1}
+      end
     end
   end
 end

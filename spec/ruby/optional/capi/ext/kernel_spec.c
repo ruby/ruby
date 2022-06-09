@@ -142,7 +142,7 @@ VALUE kernel_spec_call_proc_with_raised_exc(VALUE arg_array, VALUE raised_exc) {
 
   argc = 2;
 
-  return rb_funcall2(proc, rb_intern("call"), argc, argv);
+  return rb_funcallv(proc, rb_intern("call"), argc, argv);
 }
 
 VALUE kernel_spec_rb_rescue(VALUE self, VALUE main_proc, VALUE arg,
@@ -318,8 +318,22 @@ static VALUE kernel_spec_rb_make_backtrace(VALUE self) {
   return rb_make_backtrace();
 }
 
-static VALUE kernel_spec_rb_funcall3(VALUE self, VALUE obj, VALUE method) {
-  return rb_funcall3(obj, SYM2ID(method), 0, NULL);
+static VALUE kernel_spec_rb_funcallv(VALUE self, VALUE obj, VALUE method, VALUE args) {
+  return rb_funcallv(obj, SYM2ID(method), RARRAY_LENINT(args), RARRAY_PTR(args));
+}
+
+#ifdef RUBY_VERSION_IS_3_0
+static VALUE kernel_spec_rb_funcallv_kw(VALUE self, VALUE obj, VALUE method, VALUE args) {
+  return rb_funcallv_kw(obj, SYM2ID(method), RARRAY_LENINT(args), RARRAY_PTR(args), RB_PASS_KEYWORDS);
+}
+
+static VALUE kernel_spec_rb_keyword_given_p(int argc, VALUE *args, VALUE self) {
+  return rb_keyword_given_p() ? Qtrue : Qfalse;
+}
+#endif
+
+static VALUE kernel_spec_rb_funcallv_public(VALUE self, VALUE obj, VALUE method) {
+  return rb_funcallv_public(obj, SYM2ID(method), 0, NULL);
 }
 
 static VALUE kernel_spec_rb_funcall_with_block(VALUE self, VALUE obj, VALUE method, VALUE block) {
@@ -371,7 +385,12 @@ void Init_kernel_spec(void) {
   rb_define_method(cls, "rb_set_end_proc", kernel_spec_rb_set_end_proc, 1);
   rb_define_method(cls, "rb_f_sprintf", kernel_spec_rb_f_sprintf, 1);
   rb_define_method(cls, "rb_make_backtrace", kernel_spec_rb_make_backtrace, 0);
-  rb_define_method(cls, "rb_funcall3", kernel_spec_rb_funcall3, 2);
+  rb_define_method(cls, "rb_funcallv", kernel_spec_rb_funcallv, 3);
+#ifdef RUBY_VERSION_IS_3_0
+  rb_define_method(cls, "rb_funcallv_kw", kernel_spec_rb_funcallv_kw, 3);
+  rb_define_method(cls, "rb_keyword_given_p", kernel_spec_rb_keyword_given_p, -1);
+#endif
+  rb_define_method(cls, "rb_funcallv_public", kernel_spec_rb_funcallv_public, 2);
   rb_define_method(cls, "rb_funcall_many_args", kernel_spec_rb_funcall_many_args, 2);
   rb_define_method(cls, "rb_funcall_with_block", kernel_spec_rb_funcall_with_block, 3);
 }

@@ -44,12 +44,14 @@ module IRB # :nodoc:
     @CONF[:IRB_RC] = nil
 
     @CONF[:USE_SINGLELINE] = false unless defined?(ReadlineInputMethod)
-    @CONF[:USE_COLORIZE] = true
+    @CONF[:USE_COLORIZE] = !ENV['NO_COLOR']
+    @CONF[:USE_AUTOCOMPLETE] = true
     @CONF[:INSPECT_MODE] = true
     @CONF[:USE_TRACER] = false
     @CONF[:USE_LOADER] = false
     @CONF[:IGNORE_SIGINT] = true
     @CONF[:IGNORE_EOF] = false
+    @CONF[:EXTRA_DOC_DIRS] = []
     @CONF[:ECHO] = nil
     @CONF[:ECHO_ON_ASSIGNMENT] = nil
     @CONF[:VERBOSE] = nil
@@ -120,7 +122,11 @@ module IRB # :nodoc:
       puts 'processing time: %fs' % (now - time) if IRB.conf[:MEASURE]
       result
     }
+    # arg can be either a symbol for the mode (:cpu, :wall, ..) or a hash for
+    # a more complete configuration.
+    # See https://github.com/tmm1/stackprof#all-options.
     @CONF[:MEASURE_PROC][:STACKPROF] = proc { |context, code, line_no, arg, &block|
+      return block.() unless IRB.conf[:MEASURE]
       success = false
       begin
         require 'stackprof'
@@ -130,10 +136,18 @@ module IRB # :nodoc:
       end
       if success
         result = nil
-        stackprof_result = StackProf.run(mode: arg ? arg : :cpu) do
+        arg = { mode: arg || :cpu } unless arg.is_a?(Hash)
+        stackprof_result = StackProf.run(**arg) do
           result = block.()
         end
-        StackProf::Report.new(stackprof_result).print_text if IRB.conf[:MEASURE]
+        case stackprof_result
+        when File
+          puts "StackProf report saved to #{stackprof_result.path}"
+        when Hash
+          StackProf::Report.new(stackprof_result).print_text
+        else
+          puts "Stackprof ran with #{arg.inspect}"
+        end
         result
       else
         block.()
@@ -244,6 +258,9 @@ module IRB # :nodoc:
         @CONF[:USE_MULTILINE] = true
       when "--nomultiline", "--noreidline"
         @CONF[:USE_MULTILINE] = false
+      when /^--extra-doc-dir(?:=(.+))?/
+        opt = $1 || argv.shift
+        @CONF[:EXTRA_DOC_DIRS] << opt
       when "--echo"
         @CONF[:ECHO] = true
       when "--noecho"
@@ -262,6 +279,10 @@ module IRB # :nodoc:
         @CONF[:USE_COLORIZE] = true
       when "--nocolorize"
         @CONF[:USE_COLORIZE] = false
+      when "--autocomplete"
+        @CONF[:USE_AUTOCOMPLETE] = true
+      when "--noautocomplete"
+        @CONF[:USE_AUTOCOMPLETE] = false
       when /^--prompt-mode(?:=(.+))?/, /^--prompt(?:=(.+))?/
         opt = $1 || argv.shift
         prompt_mode = opt.upcase.tr("-", "_").intern
@@ -301,11 +322,11 @@ module IRB # :nodoc:
         break
       end
     end
+
     load_path.collect! do |path|
       /\A\.\// =~ path ? path : File.expand_path(path)
     end
     $LOAD_PATH.unshift(*load_path)
-
   end
 
   # running config

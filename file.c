@@ -444,21 +444,21 @@ apply2files(int (*func)(const char *, void *), int argc, VALUE *argv, void *arg)
 
 /*
  *  call-seq:
- *     file.path  ->  filename
- *     file.to_path  ->  filename
+ *    path -> filepath
  *
- *  Returns the pathname used to create <i>file</i> as a string. Does
- *  not normalize the name.
+ *  Returns the string filepath used to create +self+:
  *
- *  The pathname may not point to the file corresponding to <i>file</i>.
- *  For instance, the pathname becomes void when the file has been
- *  moved or deleted.
+ *    f = File.new('t.txt') # => #<File:t.txt>
+      f.path                # => "t.txt"
  *
- *  This method raises IOError for a <i>file</i> created using
- *  File::Constants::TMPFILE because they don't have a pathname.
+ *  Does not normalize the returned filepath:
  *
- *     File.new("testfile").path               #=> "testfile"
- *     File.new("/tmp/../tmp/xxx", "w").path   #=> "/tmp/../tmp/xxx"
+ *    f = File.new('../files/t.txt') # => #<File:../files/t.txt>
+      f.path                         # => "../files/t.txt"
+ *
+ *  Raises IOError for a file created using File::Constants::TMPFILE, because it has no filename.
+ *
+ *  File#to_path is an alias for File#path.
  *
  */
 
@@ -886,10 +886,15 @@ stat_atimespec(const struct stat *st)
 }
 
 static VALUE
+stat_time(const struct timespec ts)
+{
+    return rb_time_nano_new(ts.tv_sec, ts.tv_nsec);
+}
+
+static VALUE
 stat_atime(const struct stat *st)
 {
-    struct timespec ts = stat_atimespec(st);
-    return rb_time_nano_new(ts.tv_sec, ts.tv_nsec);
+    return stat_time(stat_atimespec(st));
 }
 
 static struct timespec
@@ -912,8 +917,7 @@ stat_mtimespec(const struct stat *st)
 static VALUE
 stat_mtime(const struct stat *st)
 {
-    struct timespec ts = stat_mtimespec(st);
-    return rb_time_nano_new(ts.tv_sec, ts.tv_nsec);
+    return stat_time(stat_mtimespec(st));
 }
 
 static struct timespec
@@ -936,8 +940,7 @@ stat_ctimespec(const struct stat *st)
 static VALUE
 stat_ctime(const struct stat *st)
 {
-    struct timespec ts = stat_ctimespec(st);
-    return rb_time_nano_new(ts.tv_sec, ts.tv_nsec);
+    return stat_time(stat_ctimespec(st));
 }
 
 #define HAVE_STAT_BIRTHTIME
@@ -975,7 +978,7 @@ rb_stat_atime(VALUE self)
 
 /*
  *  call-seq:
- *     stat.mtime  ->  aTime
+ *     stat.mtime  ->  time
  *
  *  Returns the modification time of <i>stat</i>.
  *
@@ -991,7 +994,7 @@ rb_stat_mtime(VALUE self)
 
 /*
  *  call-seq:
- *     stat.ctime  ->  aTime
+ *     stat.ctime  ->  time
  *
  *  Returns the change time for <i>stat</i> (that is, the time
  *  directory information about the file was changed, not the file
@@ -1012,7 +1015,7 @@ rb_stat_ctime(VALUE self)
 #if defined(HAVE_STAT_BIRTHTIME)
 /*
  *  call-seq:
- *     stat.birthtime  ->  aTime
+ *     stat.birthtime  ->  time
  *
  *  Returns the birth time for <i>stat</i>.
  *
@@ -1306,11 +1309,11 @@ rb_stat(VALUE file, struct stat *st)
 
 /*
  *  call-seq:
- *     File.stat(file_name)   ->  stat
+ *    File.stat(filepath) ->  stat
  *
- *  Returns a File::Stat object for the named file (see File::Stat).
+ *  Returns a File::Stat object for the file at +filepath+ (see File::Stat):
  *
- *     File.stat("testfile").mtime   #=> Tue Apr 08 12:58:04 CDT 2003
+ *    File.stat('t.txt').class # => File::Stat
  *
  */
 
@@ -1378,15 +1381,14 @@ lstat_without_gvl(const char *path, struct stat *st)
 
 /*
  *  call-seq:
- *     File.lstat(file_name)   -> stat
+ *    File.lstat(filepath) -> stat
  *
- *  Same as File::stat, but does not follow the last symbolic link.
- *  Instead, reports on the link itself.
+ *  Like File::stat, but does not follow the last symbolic link;
+ *  instead, returns a File::Stat object for the link itself.
  *
- *     File.symlink("testfile", "link2test")   #=> 0
- *     File.stat("testfile").size              #=> 66
- *     File.lstat("link2test").size            #=> 8
- *     File.stat("link2test").size             #=> 66
+ *    File.symlink('t.txt', 'symlink')
+ *    File.stat('symlink').size  # => 47
+ *    File.lstat('symlink').size # => 5
  *
  */
 
@@ -1409,16 +1411,16 @@ rb_file_s_lstat(VALUE klass, VALUE fname)
 
 /*
  *  call-seq:
- *     file.lstat   ->  stat
+ *    lstat -> stat
  *
- *  Same as IO#stat, but does not follow the last symbolic link.
- *  Instead, reports on the link itself.
+ *  Like File#stat, but does not follow the last symbolic link;
+ *  instead, returns a File::Stat object for the link itself:
  *
- *     File.symlink("testfile", "link2test")   #=> 0
- *     File.stat("testfile").size              #=> 66
- *     f = File.new("link2test")
- *     f.lstat.size                            #=> 8
- *     f.stat.size                             #=> 66
+ *    File.symlink('t.txt', 'symlink')
+ *    f = File.new('symlink')
+ *    f.stat.size  # => 47
+ *    f.lstat.size # => 11
+ *
  */
 
 static VALUE
@@ -1448,7 +1450,7 @@ rb_group_member(GETGROUPS_T gid)
     return FALSE;
 #else
     int rv = FALSE;
-    int groups = 16;
+    int groups;
     VALUE v = 0;
     GETGROUPS_T *gary;
     int anum = -1;
@@ -1456,25 +1458,9 @@ rb_group_member(GETGROUPS_T gid)
     if (getgid() == gid || getegid() == gid)
 	return TRUE;
 
-    /*
-     * On Mac OS X (Mountain Lion), NGROUPS is 16. But libc and kernel
-     * accept more larger value.
-     * So we don't trunk NGROUPS anymore.
-     */
-    while (groups <= RB_MAX_GROUPS) {
-	gary = ALLOCV_N(GETGROUPS_T, v, groups);
-	anum = getgroups(groups, gary);
-	if (anum != -1 && anum != groups)
-	    break;
-	groups *= 2;
-	if (v) {
-	    ALLOCV_END(v);
-	    v = 0;
-	}
-    }
-    if (anum == -1)
-	return FALSE;
-
+    groups = getgroups(0, NULL);
+    gary = ALLOCV_N(GETGROUPS_T, v, groups);
+    anum = getgroups(groups, gary);
     while (--anum >= 0) {
 	if (gary[anum] == gid) {
 	    rv = TRUE;
@@ -1603,15 +1589,20 @@ rb_access(VALUE fname, int mode)
  * Document-method: directory?
  *
  * call-seq:
- *   File.directory?(file_name)   ->  true or false
+ *   File.directory?(path) -> true or false
  *
- * Returns <code>true</code> if the named file is a directory,
- * or a symlink that points at a directory, and <code>false</code>
- * otherwise.
+ * With string +object+ given, returns +true+ if +path+ is a string path
+ * leading to a directory, or to a symbolic link to a directory; +false+ otherwise:
  *
- * _file_name_ can be an IO object.
+ *   File.directory?('.')              # => true
+ *   File.directory?('foo')            # => false
+ *   File.symlink('.', 'dirlink')      # => 0
+ *   File.directory?('dirlink')        # => true
+ *   File.symlink('t,txt', 'filelink') # => 0
+ *   File.directory?('filelink')       # => false
  *
- *    File.directory?(".")
+ * Argument +path+ can be an IO object.
+ *
  */
 
 VALUE
@@ -1630,11 +1621,14 @@ rb_file_directory_p(VALUE obj, VALUE fname)
 
 /*
  * call-seq:
- *   File.pipe?(file_name)   ->  true or false
+ *   File.pipe?(filepath) -> true or false
  *
- * Returns <code>true</code> if the named file is a pipe.
+ * Returns +true+ if +filepath+ points to a pipe, +false+ otherwise:
  *
- * _file_name_ can be an IO object.
+ *   File.mkfifo('tmp/fifo')
+ *   File.pipe?('tmp/fifo') # => true
+ *   File.pipe?('t.txt')    # => false
+ *
  */
 
 static VALUE
@@ -1656,9 +1650,14 @@ rb_file_pipe_p(VALUE obj, VALUE fname)
 
 /*
  * call-seq:
- *   File.symlink?(file_name)   ->  true or false
+ *   File.symlink?(filepath) -> true or false
  *
- * Returns <code>true</code> if the named file is a symbolic link.
+ * Returns +true+ if +filepath+ points to a symbolic link, +false+ otherwise:
+ *
+ *   symlink = File.symlink('t.txt', 'symlink')
+ *   File.symlink?('symlink') # => true
+ *   File.symlink?('t.txt')   # => false
+ *
  */
 
 static VALUE
@@ -1692,11 +1691,14 @@ rb_file_symlink_p(VALUE obj, VALUE fname)
 
 /*
  * call-seq:
- *   File.socket?(file_name)   ->  true or false
+ *   File.socket?(filepath)   ->  true or false
  *
- * Returns <code>true</code> if the named file is a socket.
+ * Returns +true+ if +filepath+ points to a socket, +false+ otherwise:
  *
- * _file_name_ can be an IO object.
+ *   require 'socket'
+ *   File.socket?(Socket.new(:INET, :STREAM)) # => true
+ *   File.socket?(File.new('t.txt'))          # => false
+ *
  */
 
 static VALUE
@@ -1728,11 +1730,13 @@ rb_file_socket_p(VALUE obj, VALUE fname)
 
 /*
  * call-seq:
- *   File.blockdev?(file_name)   ->  true or false
+ *   File.blockdev?(filepath) -> true or false
  *
- * Returns <code>true</code> if the named file is a block device.
+ * Returns +true+ if +filepath+ points to a block device, +false+ otherwise:
  *
- * _file_name_ can be an IO object.
+ *   File.blockdev?('/dev/sda1')       # => true
+ *   File.blockdev?(File.new('t.tmp')) # => false
+ *
  */
 
 static VALUE
@@ -1758,11 +1762,13 @@ rb_file_blockdev_p(VALUE obj, VALUE fname)
 
 /*
  * call-seq:
- *   File.chardev?(file_name)   ->  true or false
+ *   File.chardev?(filepath) -> true or false
  *
- * Returns <code>true</code> if the named file is a character device.
+ * Returns +true+ if +filepath+ points to a character device, +false+ otherwise.
  *
- * _file_name_ can be an IO object.
+  *  File.chardev?($stdin)     # => true
+ *   File.chardev?('t.txt')     # => false
+ *
  */
 static VALUE
 rb_file_chardev_p(VALUE obj, VALUE fname)
@@ -1799,23 +1805,6 @@ rb_file_exist_p(VALUE obj, VALUE fname)
     return Qtrue;
 }
 
-/* :nodoc: */
-static VALUE
-rb_file_exists_p(VALUE obj, VALUE fname)
-{
-    const char *s = "FileTest#exist?";
-    if (obj == rb_mFileTest) {
-	s = "FileTest.exist?";
-    }
-    else if (obj == rb_cFile ||
-	     (RB_TYPE_P(obj, T_CLASS) &&
-	      RTEST(rb_class_inherited_p(obj, rb_cFile)))) {
-	s = "File.exist?";
-    }
-    rb_warn_deprecated("%.*ss?", s, (int)(strlen(s)-1), s);
-    return rb_file_exist_p(obj, fname);
-}
-
 /*
  * call-seq:
  *    File.readable?(file_name)   -> true or false
@@ -1830,8 +1819,7 @@ rb_file_exists_p(VALUE obj, VALUE fname)
 static VALUE
 rb_file_readable_p(VALUE obj, VALUE fname)
 {
-    if (rb_eaccess(fname, R_OK) < 0) return Qfalse;
-    return Qtrue;
+    return RBOOL(rb_eaccess(fname, R_OK) >= 0);
 }
 
 /*
@@ -1848,8 +1836,7 @@ rb_file_readable_p(VALUE obj, VALUE fname)
 static VALUE
 rb_file_readable_real_p(VALUE obj, VALUE fname)
 {
-    if (rb_access(fname, R_OK) < 0) return Qfalse;
-    return Qtrue;
+    return RBOOL(rb_access(fname, R_OK) >= 0);
 }
 
 #ifndef S_IRUGO
@@ -1904,8 +1891,7 @@ rb_file_world_readable_p(VALUE obj, VALUE fname)
 static VALUE
 rb_file_writable_p(VALUE obj, VALUE fname)
 {
-    if (rb_eaccess(fname, W_OK) < 0) return Qfalse;
-    return Qtrue;
+    return RBOOL(rb_eaccess(fname, W_OK) >= 0);
 }
 
 /*
@@ -1922,8 +1908,7 @@ rb_file_writable_p(VALUE obj, VALUE fname)
 static VALUE
 rb_file_writable_real_p(VALUE obj, VALUE fname)
 {
-    if (rb_access(fname, W_OK) < 0) return Qfalse;
-    return Qtrue;
+    return RBOOL(rb_access(fname, W_OK) >= 0);
 }
 
 /*
@@ -1974,8 +1959,7 @@ rb_file_world_writable_p(VALUE obj, VALUE fname)
 static VALUE
 rb_file_executable_p(VALUE obj, VALUE fname)
 {
-    if (rb_eaccess(fname, X_OK) < 0) return Qfalse;
-    return Qtrue;
+    return RBOOL(rb_eaccess(fname, X_OK) >= 0);
 }
 
 /*
@@ -1996,8 +1980,7 @@ rb_file_executable_p(VALUE obj, VALUE fname)
 static VALUE
 rb_file_executable_real_p(VALUE obj, VALUE fname)
 {
-    if (rb_access(fname, X_OK) < 0) return Qfalse;
-    return Qtrue;
+    return RBOOL(rb_access(fname, X_OK) >= 0);
 }
 
 #ifndef S_ISREG
@@ -2022,8 +2005,7 @@ rb_file_file_p(VALUE obj, VALUE fname)
     struct stat st;
 
     if (rb_stat(fname, &st) < 0) return Qfalse;
-    if (S_ISREG(st.st_mode)) return Qtrue;
-    return Qfalse;
+    return RBOOL(S_ISREG(st.st_mode));
 }
 
 /*
@@ -2042,8 +2024,7 @@ rb_file_zero_p(VALUE obj, VALUE fname)
     struct stat st;
 
     if (rb_stat(fname, &st) < 0) return Qfalse;
-    if (st.st_size == 0) return Qtrue;
-    return Qfalse;
+    return RBOOL(st.st_size == 0);
 }
 
 /*
@@ -2083,8 +2064,7 @@ rb_file_owned_p(VALUE obj, VALUE fname)
     struct stat st;
 
     if (rb_stat(fname, &st) < 0) return Qfalse;
-    if (st.st_uid == geteuid()) return Qtrue;
-    return Qfalse;
+    return RBOOL(st.st_uid == geteuid());
 }
 
 static VALUE
@@ -2093,8 +2073,7 @@ rb_file_rowned_p(VALUE obj, VALUE fname)
     struct stat st;
 
     if (rb_stat(fname, &st) < 0) return Qfalse;
-    if (st.st_uid == getuid()) return Qtrue;
-    return Qfalse;
+    return RBOOL(st.st_uid == getuid());
 }
 
 /*
@@ -2127,8 +2106,7 @@ check3rdbyte(VALUE fname, int mode)
     struct stat st;
 
     if (rb_stat(fname, &st) < 0) return Qfalse;
-    if (st.st_mode & mode) return Qtrue;
-    return Qfalse;
+    return RBOOL(st.st_mode & mode);
 }
 #endif
 
@@ -2185,7 +2163,7 @@ rb_file_sticky_p(VALUE obj, VALUE fname)
 #ifdef S_ISVTX
     return check3rdbyte(fname, S_ISVTX);
 #else
-    return Qnil;
+    return Qfalse;
 #endif
 }
 
@@ -2539,20 +2517,33 @@ rb_file_birthtime(VALUE obj)
  *
  */
 
-static VALUE
-rb_file_size(VALUE obj)
+off_t
+rb_file_size(VALUE file)
 {
-    rb_io_t *fptr;
-    struct stat st;
+    if (RB_TYPE_P(file, T_FILE)) {
+        rb_io_t *fptr;
+        struct stat st;
 
-    GetOpenFile(obj, fptr);
-    if (fptr->mode & FMODE_WRITABLE) {
-	rb_io_flush_raw(obj, 0);
+        RB_IO_POINTER(file, fptr);
+        if (fptr->mode & FMODE_WRITABLE) {
+            rb_io_flush_raw(file, 0);
+        }
+
+        if (fstat(fptr->fd, &st) == -1) {
+            rb_sys_fail_path(fptr->pathv);
+        }
+
+        return st.st_size;
     }
-    if (fstat(fptr->fd, &st) == -1) {
-	rb_sys_fail_path(fptr->pathv);
+    else {
+        return NUM2OFFT(rb_funcall(file, idSize, 0));
     }
-    return OFFT2NUM(st.st_size);
+}
+
+static VALUE
+file_size(VALUE self)
+{
+    return OFFT2NUM(rb_file_size(self));
 }
 
 static int
@@ -3363,7 +3354,6 @@ getcwdofdrv(int drv)
     }
     return drvcwd;
 }
-#endif
 
 static inline int
 not_same_drive(VALUE path, int drive)
@@ -3377,6 +3367,7 @@ not_same_drive(VALUE path, int drive)
 	return has_unc(p);
     }
 }
+#endif
 #endif
 
 static inline char *
@@ -4063,7 +4054,7 @@ rb_file_expand_path_internal(VALUE fname, VALUE dname, int abs_mode, int long_na
 }
 #endif /* _WIN32 */
 
-#define EXPAND_PATH_BUFFER() rb_usascii_str_new(0, MAXPATHLEN + 2)
+#define EXPAND_PATH_BUFFER() rb_usascii_str_new(0, 1)
 
 static VALUE
 str_shrink(VALUE str)
@@ -4408,6 +4399,21 @@ rb_check_realpath_emulate(VALUE basedir, VALUE path, rb_encoding *origenc, enum 
 
 static VALUE rb_file_join(VALUE ary);
 
+#ifndef HAVE_REALPATH
+static VALUE
+rb_check_realpath_emulate_try(VALUE arg)
+{
+    VALUE *args = (VALUE *)arg;
+    return rb_check_realpath_emulate(args[0], args[1], (rb_encoding *)args[2], RB_REALPATH_CHECK);
+}
+
+static VALUE
+rb_check_realpath_emulate_rescue(VALUE arg, VALUE exc)
+{
+    return Qnil;
+}
+#endif /* HAVE_REALPATH */
+
 static VALUE
 rb_check_realpath_internal(VALUE basedir, VALUE path, rb_encoding *origenc, enum rb_realpath_mode mode)
 {
@@ -4474,7 +4480,18 @@ rb_check_realpath_internal(VALUE basedir, VALUE path, rb_encoding *origenc, enum
     RB_GC_GUARD(unresolved_path);
     return resolved;
 #else
-    return rb_check_realpath_emulate(basedir, path, origenc, mode);
+    if (mode == RB_REALPATH_CHECK) {
+        VALUE arg[3];
+        arg[0] = basedir;
+        arg[1] = path;
+        arg[2] = (VALUE)origenc;
+
+        return rb_rescue(rb_check_realpath_emulate_try, (VALUE)arg,
+                         rb_check_realpath_emulate_rescue, Qnil);
+    }
+    else {
+        return rb_check_realpath_emulate(basedir, path, origenc, mode);
+    }
 #endif /* HAVE_REALPATH */
 }
 
@@ -5797,11 +5814,11 @@ rb_stat_r(VALUE obj)
 #endif
 #ifdef S_IRUSR
     if (rb_stat_owned(obj))
-	return st->st_mode & S_IRUSR ? Qtrue : Qfalse;
+	return RBOOL(st->st_mode & S_IRUSR);
 #endif
 #ifdef S_IRGRP
     if (rb_stat_grpowned(obj))
-	return st->st_mode & S_IRGRP ? Qtrue : Qfalse;
+	return RBOOL(st->st_mode & S_IRGRP);
 #endif
 #ifdef S_IROTH
     if (!(st->st_mode & S_IROTH)) return Qfalse;
@@ -5830,11 +5847,11 @@ rb_stat_R(VALUE obj)
 #endif
 #ifdef S_IRUSR
     if (rb_stat_rowned(obj))
-	return st->st_mode & S_IRUSR ? Qtrue : Qfalse;
+	return RBOOL(st->st_mode & S_IRUSR);
 #endif
 #ifdef S_IRGRP
     if (rb_group_member(get_stat(obj)->st_gid))
-	return st->st_mode & S_IRGRP ? Qtrue : Qfalse;
+	return RBOOL(st->st_mode & S_IRGRP);
 #endif
 #ifdef S_IROTH
     if (!(st->st_mode & S_IROTH)) return Qfalse;
@@ -5890,11 +5907,11 @@ rb_stat_w(VALUE obj)
 #endif
 #ifdef S_IWUSR
     if (rb_stat_owned(obj))
-	return st->st_mode & S_IWUSR ? Qtrue : Qfalse;
+	return RBOOL(st->st_mode & S_IWUSR);
 #endif
 #ifdef S_IWGRP
     if (rb_stat_grpowned(obj))
-	return st->st_mode & S_IWGRP ? Qtrue : Qfalse;
+	return RBOOL(st->st_mode & S_IWGRP);
 #endif
 #ifdef S_IWOTH
     if (!(st->st_mode & S_IWOTH)) return Qfalse;
@@ -5923,11 +5940,11 @@ rb_stat_W(VALUE obj)
 #endif
 #ifdef S_IWUSR
     if (rb_stat_rowned(obj))
-	return st->st_mode & S_IWUSR ? Qtrue : Qfalse;
+	return RBOOL(st->st_mode & S_IWUSR);
 #endif
 #ifdef S_IWGRP
     if (rb_group_member(get_stat(obj)->st_gid))
-	return st->st_mode & S_IWGRP ? Qtrue : Qfalse;
+	return RBOOL(st->st_mode & S_IWGRP);
 #endif
 #ifdef S_IWOTH
     if (!(st->st_mode & S_IWOTH)) return Qfalse;
@@ -5982,16 +5999,16 @@ rb_stat_x(VALUE obj)
 
 #ifdef USE_GETEUID
     if (geteuid() == 0) {
-	return st->st_mode & S_IXUGO ? Qtrue : Qfalse;
+	return RBOOL(st->st_mode & S_IXUGO);
     }
 #endif
 #ifdef S_IXUSR
     if (rb_stat_owned(obj))
-	return st->st_mode & S_IXUSR ? Qtrue : Qfalse;
+	return RBOOL(st->st_mode & S_IXUSR);
 #endif
 #ifdef S_IXGRP
     if (rb_stat_grpowned(obj))
-	return st->st_mode & S_IXGRP ? Qtrue : Qfalse;
+	return RBOOL(st->st_mode & S_IXGRP);
 #endif
 #ifdef S_IXOTH
     if (!(st->st_mode & S_IXOTH)) return Qfalse;
@@ -6014,16 +6031,16 @@ rb_stat_X(VALUE obj)
 
 #ifdef USE_GETEUID
     if (getuid() == 0) {
-	return st->st_mode & S_IXUGO ? Qtrue : Qfalse;
+	return RBOOL(st->st_mode & S_IXUGO);
     }
 #endif
 #ifdef S_IXUSR
     if (rb_stat_rowned(obj))
-	return st->st_mode & S_IXUSR ? Qtrue : Qfalse;
+	return RBOOL(st->st_mode & S_IXUSR);
 #endif
 #ifdef S_IXGRP
     if (rb_group_member(get_stat(obj)->st_gid))
-	return st->st_mode & S_IXGRP ? Qtrue : Qfalse;
+	return RBOOL(st->st_mode & S_IXGRP);
 #endif
 #ifdef S_IXOTH
     if (!(st->st_mode & S_IXOTH)) return Qfalse;
@@ -6069,11 +6086,13 @@ rb_stat_z(VALUE obj)
 
 /*
  *  call-seq:
- *     state.size    -> integer
+ *     stat.size?    -> Integer or nil
  *
- *  Returns the size of <i>stat</i> in bytes.
+ *  Returns +nil+ if <i>stat</i> is a zero-length file, the size of
+ *  the file otherwise.
  *
- *     File.stat("testfile").size   #=> 66
+ *     File.stat("testfile").size?   #=> 66
+ *     File.stat("/dev/null").size?  #=> nil
  *
  */
 
@@ -6375,6 +6394,10 @@ is_explicit_relative(const char *path)
 static VALUE
 copy_path_class(VALUE path, VALUE orig)
 {
+    int encidx = rb_enc_get_index(orig);
+    if (encidx == ENCINDEX_ASCII || encidx == ENCINDEX_US_ASCII)
+        encidx = rb_filesystem_encindex();
+    rb_enc_associate_index(path, encidx);
     str_shrink(path);
     RBASIC_SET_CLASS(path, rb_obj_class(orig));
     OBJ_FREEZE(path);
@@ -6507,36 +6530,228 @@ const char ruby_null_device[] =
     ;
 
 /*
- *  A File is an abstraction of any file object accessible by the
- *  program and is closely associated with class IO.  File includes
- *  the methods of module FileTest as class methods, allowing you to
- *  write (for example) <code>File.exist?("foo")</code>.
+ *  A \File object is a representation of a file in the underlying platform.
  *
- *  In the description of File methods,
- *  <em>permission bits</em> are a platform-specific
- *  set of bits that indicate permissions of a file. On Unix-based
- *  systems, permissions are viewed as a set of three octets, for the
- *  owner, the group, and the rest of the world. For each of these
- *  entities, permissions may be set to read, write, or execute the
- *  file:
+ *  \Class \File extends module FileTest, supporting such singleton methods
+ *  as <tt>File.exist?</tt>.
  *
- *  The permission bits <code>0644</code> (in octal) would thus be
- *  interpreted as read/write for owner, and read-only for group and
- *  other. Higher-order bits may also be used to indicate the type of
- *  file (plain, directory, pipe, socket, and so on) and various other
- *  special features. If the permissions are for a directory, the
- *  meaning of the execute bit changes; when set the directory can be
- *  searched.
+ *  == \File Permissions
  *
- *  On non-Posix operating systems, there may be only the ability to
- *  make a file read-only or read-write. In this case, the remaining
- *  permission bits will be synthesized to resemble typical values. For
- *  instance, on Windows NT the default permission bits are
- *  <code>0644</code>, which means read/write for owner, read-only for
- *  all others. The only change that can be made is to make the file
+ *  A \File object has _permissions_, an octal integer representing
+ *  the permissions of an actual file in the underlying platform.
+ *
+ *  Note that file permissions are quite different from the _mode_
+ *  of a file stream (\File object).
+ *  See IO@Modes.
+ *
+ *  In a \File object, the permissions are available thus,
+ *  where method +mode+, despite its name, returns permissions:
+ *
+ *    f = File.new('t.txt')
+ *    f.lstat.mode.to_s(8) # => "100644"
+ *
+ *  On a Unix-based operating system,
+ *  the three low-order octal digits represent the permissions
+ *  for owner (6), group (4), and world (4).
+ *  The triplet of bits in each octal digit represent, respectively,
+ *  read, write, and execute permissions.
+ *
+ *  Permissions <tt>0644</tt> thus represent read-write access for owner
+ *  and read-only access for group and world.
+ *  See man pages {open(2)}[https://www.unix.com/man-page/bsd/2/open]
+ *  and {chmod(2)}[https://www.unix.com/man-page/bsd/2/chmod].
+ *
+ *  For a directory, the meaning of the execute bit changes:
+ *  when set, the directory can be searched.
+ *
+ *  Higher-order bits in permissions may indicate the type of file
+ *  (plain, directory, pipe, socket, etc.) and various other special features.
+ *
+ *  On non-Posix operating systems, permissions may include only read-only or read-write,
+ *  in which case, the remaining permission will resemble typical values.
+ *  On Windows, for instance, the default permissions are <code>0644</code>;
+ *  The only change that can be made is to make the file
  *  read-only, which is reported as <code>0444</code>.
  *
- *  Various constants for the methods in File can be found in File::Constants.
+ *  For a method that actually creates a file in the underlying platform
+ *  (as opposed to merely creating a \File object),
+ *  permissions may be specified:
+ *
+ *    File.new('t.tmp', File::CREAT, 0644)
+ *    File.new('t.tmp', File::CREAT, 0444)
+ *
+ *  Permissions may also be changed:
+ *
+ *    f = File.new('t.tmp', File::CREAT, 0444)
+ *    f.chmod(0644)
+ *    f.chmod(0444)
+ *
+ *  == \File Constants
+ *
+ *  Various constants for use in \File and \IO methods
+ *  may be found in module File::Constants;
+ *  an array of their names is returned by <tt>File::Constants.constants</tt>.
+ *
+ *  == Example Files
+ *
+ *  Many examples here use these filenames and their corresponding files:
+ *
+ *  - <tt>t.txt</tt>: A text-only file that is assumed to exist via:
+ *
+ *      text = <<~EOT
+ *        First line
+ *        Second line
+ *
+ *        Fourth line
+ *        Fifth line
+ *      EOT
+ *      File.write('t.txt', text)
+ *
+ *  - <tt>t.dat</tt>: A data file that is assumed to exist via:
+ *
+ *      data = "\u9990\u9991\u9992\u9993\u9994"
+ *      f = File.open('t.dat', 'wb:UTF-16')
+ *      f.write(data)
+ *      f.close
+ *
+ *  - <tt>t.rus</tt>: A Russian-language text file that is assumed to exist via:
+ *
+ *      File.write('t.rus', "\u{442 435 441 442}")
+ *
+ *  - <tt>t.tmp</tt>: A file that is assumed _not_ to exist.
+ *
+ *  == What's Here
+ *
+ *  First, what's elsewhere. \Class \File:
+ *
+ *  - Inherits from {class IO}[rdoc-ref:IO@What-27s+Here],
+ *    in particular, methods for creating, reading, and writing files
+ *  - Includes {module FileTest}[rdoc-ref:FileTest@What-27s+Here].
+ *    which provides dozens of additional methods.
+ *
+ *  Here, class \File provides methods that are useful for:
+ *
+ *  - {Creating}[rdoc-ref:File@Creating]
+ *  - {Querying}[rdoc-ref:File@Querying]
+ *  - {Settings}[rdoc-ref:File@Settings]
+ *  - {Other}[rdoc-ref:File@Other]
+ *
+ *  === Creating
+ *
+ *  - ::new: Opens the file at the given path; returns the file.
+ *  - ::open: Same as ::new, but when given a block will yield the file to the block,
+ *    and close the file upon exiting the block.
+ *  - ::link: Creates a new name for an existing file using a hard link.
+ *  - ::mkfifo: Returns the FIFO file created at the given path.
+ *  - ::symlink: Creates a symbolic link for the given file path.
+ *
+ *  === Querying
+ *
+ *  _Paths_
+ *
+ *  - ::absolute_path: Returns the absolute file path for the given path.
+ *  - ::absolute_path?: Returns whether the given path is the absolute file path.
+ *  - ::basename: Returns the last component of the given file path.
+ *  - ::dirname: Returns all but the last component of the given file path.
+ *  - ::expand_path: Returns the absolute file path for the given path,
+ *    expanding <tt>~</tt> for a home directory.
+ *  - ::extname: Returns the file extension for the given file path.
+ *  - ::fnmatch? (aliased as ::fnmatch): Returns whether the given file path
+ *    matches the given pattern.
+ *  - ::join: Joins path components into a single path string.
+ *  - ::path: Returns the string representation of the given path.
+ *  - ::readlink: Returns the path to the file at the given symbolic link.
+ *  - ::realdirpath: Returns the real path for the given file path,
+ *    where the last component need not exist.
+ *  - ::realpath: Returns the real path for the given file path,
+ *    where all components must exist.
+ *  - ::split: Returns an array of two strings: the directory name and basename
+ *    of the file at the given path.
+ *  - #path (aliased as #to_path):  Returns the string representation of the given path.
+ *
+ *  _Times_
+ *
+ *  - ::atime: Returns a \Time for the most recent access to the given file.
+ *  - ::birthtime: Returns a \Time  for the creation of the given file.
+ *  - ::ctime: Returns a \Time  for the metadata change of the given file.
+ *  - ::mtime: Returns a \Time for the most recent data modification to
+ *    the content of the given file.
+ *  - #atime: Returns a \Time for the most recent access to +self+.
+ *  - #birthtime: Returns a \Time  the creation for +self+.
+ *  - #ctime: Returns a \Time for the metadata change of +self+.
+ *  - #mtime: Returns a \Time for the most recent data modification
+ *    to the content of +self+.
+ *
+ *  _Types_
+ *
+ *  - ::blockdev?: Returns whether the file at the given path is a block device.
+ *  - ::chardev?: Returns whether the file at the given path is a character device.
+ *  - ::directory?: Returns whether the file at the given path is a diretory.
+ *  - ::executable?: Returns whether the file at the given path is executable
+ *    by the effective user and group of the current process.
+ *  - ::executable_real?: Returns whether the file at the given path is executable
+ *    by the real user and group of the current process.
+ *  - ::exist?: Returns whether the file at the given path exists.
+ *  - ::file?: Returns whether the file at the given path is a regular file.
+ *  - ::ftype: Returns a string giving the type of the file at the given path.
+ *  - ::grpowned?: Returns whether the effective group of the current process
+ *    owns the file at the given path.
+ *  - ::identical?: Returns whether the files at two given paths are identical.
+ *  - ::lstat: Returns the File::Stat object for the last symbolic link
+ *    in the given path.
+ *  - ::owned?: Returns whether the effective user of the current process
+ *    owns the file at the given path.
+ *  - ::pipe?: Returns whether the file at the given path is a pipe.
+ *  - ::readable?: Returns whether the file at the given path is readable
+ *    by the effective user and group of the current process.
+ *  - ::readable_real?: Returns whether the file at the given path is readable
+ *    by the real user and group of the current process.
+ *  - ::setgid?: Returns whether the setgid bit is set for the file at the given path.
+ *  - ::setuid?: Returns whether the setuid bit is set for the file at the given path.
+ *  - ::socket?: Returns whether the file at the given path is a socket.
+ *  - ::stat: Returns the File::Stat object for the file at the given path.
+ *  - ::sticky?: Returns whether the file at the given path has its sticky bit set.
+ *  - ::symlink?: Returns whether the file at the given path is a symbolic link.
+ *  - ::umask: Returns the umask value for the current process.
+ *  - ::world_readable?: Returns whether the file at the given path is readable
+ *    by others.
+ *  - ::world_writable?: Returns whether the file at the given path is writable
+ *    by others.
+ *  - ::writable?: Returns whether the file at the given path is writable
+ *    by the effective user and group of the current process.
+ *  - ::writable_real?: Returns whether the file at the given path is writable
+ *    by the real user and group of the current process.
+ *  - #lstat: Returns the File::Stat object for the last symbolic link
+ *    in the path for +self+.
+ *
+ *  _Contents_
+ *
+ *  - ::empty? (aliased as ::zero?): Returns whether the file at the given path
+ *    exists and is empty.
+ *  - ::size: Returns the size (bytes) of the file at the given path.
+ *  - ::size?: Returns +nil+ if there is no file at the given path,
+ *    or if that file is empty; otherwise returns the file size (bytes).
+ *  - #size: Returns the size (bytes) of +self+.
+ *
+ *  === Settings
+ *
+ *  - ::chmod: Changes permissions of the file at the given path.
+ *  - ::chown: Change ownership of the file at the given path.
+ *  - ::lchmod: Changes permissions of the last symbolic link in the given path.
+ *  - ::lchown: Change ownership of the last symbolic in the given path.
+ *  - ::lutime: For each given file path, sets the access time and modification time
+ *    of the last symbolic link in the path.
+ *  - ::rename: Moves the file at one given path to another given path.
+ *  - ::utime: Sets the access time and modification time of each file
+ *    at the given paths.
+ *  - #flock: Locks or unlocks +self+.
+ *
+ *  === Other
+ *
+ *  - ::truncate: Truncates the file at the given file path to the given size.
+ *  - ::unlink (aliased as ::delete): Deletes the file for each given file path.
+ *  - #truncate: Truncates +self+ to the given size.
+ *
  */
 
 void
@@ -6549,7 +6764,6 @@ Init_File(void)
 
     define_filetest_function("directory?", rb_file_directory_p, 1);
     define_filetest_function("exist?", rb_file_exist_p, 1);
-    define_filetest_function("exists?", rb_file_exists_p, 1);
     define_filetest_function("readable?", rb_file_readable_p, 1);
     define_filetest_function("readable_real?", rb_file_readable_real_p, 1);
     define_filetest_function("world_readable?", rb_file_world_readable_p, 1);
@@ -6639,7 +6853,7 @@ Init_File(void)
     rb_define_method(rb_cFile, "mtime", rb_file_mtime, 0);
     rb_define_method(rb_cFile, "ctime", rb_file_ctime, 0);
     rb_define_method(rb_cFile, "birthtime", rb_file_birthtime, 0);
-    rb_define_method(rb_cFile, "size", rb_file_size, 0);
+    rb_define_method(rb_cFile, "size", file_size, 0);
 
     rb_define_method(rb_cFile, "chmod", rb_file_chmod, 1);
     rb_define_method(rb_cFile, "chown", rb_file_chown, 2);

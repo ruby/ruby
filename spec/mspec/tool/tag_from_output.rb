@@ -15,9 +15,10 @@ NUMBER = /^\d+\)$/
 ERROR_OR_FAILED = / (ERROR|FAILED)$/
 SPEC_FILE = /^(\/.+_spec\.rb)\:\d+/
 
-output.slice_before(NUMBER).select { |number, error_line, *rest|
-  number =~ NUMBER and error_line =~ ERROR_OR_FAILED
-}.each { |number, error_line, *rest|
+output.slice_before(NUMBER).select { |number, *rest|
+  number =~ NUMBER and rest.any? { |line| line =~ ERROR_OR_FAILED }
+}.each { |number, *rest|
+  error_line = rest.find { |line| line =~ ERROR_OR_FAILED }
   description = error_line.match(ERROR_OR_FAILED).pre_match
 
   spec_file = rest.find { |line| line =~ SPEC_FILE }

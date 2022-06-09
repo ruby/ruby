@@ -15,20 +15,37 @@
 #include "ruby.h"
 #include "vm_core.h"
 
+static enum {
+    IDLE,
+    SUSPENDED,
+    RUNNING
+} current_state = IDLE;
 static int current_mode;
 static VALUE me2counter = Qnil;
 
 /*
  * call-seq:
- *    Coverage.start  => nil
+ *    Coverage.setup                                              => nil
+ *    Coverage.setup(:all)                                        => nil
+ *    Coverage.setup(lines: bool, branches: bool, methods: bool)  => nil
+ *    Coverage.setup(oneshot_lines: true)                         => nil
  *
- * Enables coverage measurement.
+ * Set up the coverage measurement.
+ *
+ * Note that this method does not start the measurement itself.
+ * Use Coverage.resume to start the measurement.
+ *
+ * You may want to use Coverage.start to setup and then start the measurement.
  */
 static VALUE
-rb_coverage_start(int argc, VALUE *argv, VALUE klass)
+rb_coverage_setup(int argc, VALUE *argv, VALUE klass)
 {
     VALUE coverages, opt;
     int mode;
+
+    if (current_state != IDLE) {
+	rb_raise(rb_eRuntimeError, "coverage measurement is already setup");
+    }
 
     rb_scan_args(argc, argv, "01", &opt);
 
@@ -70,10 +87,57 @@ rb_coverage_start(int argc, VALUE *argv, VALUE klass)
 	current_mode = mode;
 	if (mode == 0) mode = COVERAGE_TARGET_LINES;
 	rb_set_coverages(coverages, mode, me2counter);
+        current_state = SUSPENDED;
     }
     else if (current_mode != mode) {
 	rb_raise(rb_eRuntimeError, "cannot change the measuring target during coverage measurement");
     }
+
+
+    return Qnil;
+}
+
+/*
+ * call-seq:
+ *    Coverage.resume  => nil
+ *
+ * Start/resume the coverage measurement.
+ *
+ * Caveat: Currently, only process-global coverage measurement is supported.
+ * You cannot measure per-thread covearge. If your process has multiple thread,
+ * using Coverage.resume/suspend to capture code coverage executed from only
+ * a limited code block, may yield misleading results.
+ */
+VALUE
+rb_coverage_resume(VALUE klass)
+{
+    if (current_state == IDLE) {
+	rb_raise(rb_eRuntimeError, "coverage measurement is not set up yet");
+    }
+    if (current_state == RUNNING) {
+	rb_raise(rb_eRuntimeError, "coverage measurement is already running");
+    }
+    rb_resume_coverages();
+    current_state = RUNNING;
+    return Qnil;
+}
+
+/*
+ * call-seq:
+ *    Coverage.start                                              => nil
+ *    Coverage.start(:all)                                        => nil
+ *    Coverage.start(lines: bool, branches: bool, methods: bool)  => nil
+ *    Coverage.start(oneshot_lines: true)                         => nil
+ *
+ * Enables the coverage measurement.
+ * See the documentation of Coverage class in detail.
+ * This is equivalent to Coverage.setup and Coverage.resume.
+ */
+static VALUE
+rb_coverage_start(int argc, VALUE *argv, VALUE klass)
+{
+    rb_coverage_setup(argc, argv, klass);
+    rb_coverage_resume(klass);
     return Qnil;
 }
 
@@ -280,6 +344,24 @@ clear_me2counter_i(VALUE key, VALUE value, VALUE unused)
 }
 
 /*
+ * call-seq:
+ *    Coverage.suspend  => nil
+ *
+ * Suspend the coverage measurement.
+ * You can use Coverage.resume to restart the measurement.
+ */
+VALUE
+rb_coverage_suspend(VALUE klass)
+{
+    if (current_state != RUNNING) {
+	rb_raise(rb_eRuntimeError, "coverage measurement is not running");
+    }
+    rb_suspend_coverages();
+    current_state = SUSPENDED;
+    return Qnil;
+}
+
+/*
  *  call-seq:
  *     Coverage.result(stop: true, clear: true)  => hash
  *
@@ -293,6 +375,10 @@ rb_coverage_result(int argc, VALUE *argv, VALUE klass)
     VALUE ncoverages;
     VALUE opt;
     int stop = 1, clear = 1;
+
+    if (current_state == IDLE) {
+	rb_raise(rb_eRuntimeError, "coverage measurement is not enabled");
+    }
 
     rb_scan_args(argc, argv, "01", &opt);
 
@@ -312,12 +398,33 @@ rb_coverage_result(int argc, VALUE *argv, VALUE klass)
         if (!NIL_P(me2counter)) rb_hash_foreach(me2counter, clear_me2counter_i, Qnil);
     }
     if (stop) {
+        if (current_state == RUNNING) {
+            rb_coverage_suspend(klass);
+        }
         rb_reset_coverages();
         me2counter = Qnil;
+        current_state = IDLE;
     }
     return ncoverages;
 }
 
+
+/*
+ *  call-seq:
+ *     Coverage.state  => :idle, :suspended, :running
+ *
+ * Returns the state of the coverage measurement.
+ */
+static VALUE
+rb_coverage_state(VALUE klass)
+{
+    switch (current_state) {
+        case IDLE: return ID2SYM(rb_intern("idle"));
+        case SUSPENDED: return ID2SYM(rb_intern("suspended"));
+        case RUNNING: return ID2SYM(rb_intern("running"));
+    }
+    return Qnil;
+}
 
 /*
  *  call-seq:
@@ -329,12 +436,14 @@ rb_coverage_result(int argc, VALUE *argv, VALUE klass)
 static VALUE
 rb_coverage_running(VALUE klass)
 {
-    VALUE coverages = rb_get_coverages();
-    return RTEST(coverages) ? Qtrue : Qfalse;
+    return current_state == RUNNING ? Qtrue : Qfalse;
 }
 
 /* Coverage provides coverage measurement feature for Ruby.
  * This feature is experimental, so these APIs may be changed in future.
+ *
+ * Caveat: Currently, only process-global coverage measurement is supported.
+ * You cannot measure per-thread covearge.
  *
  * = Usage
  *
@@ -480,9 +589,13 @@ void
 Init_coverage(void)
 {
     VALUE rb_mCoverage = rb_define_module("Coverage");
+    rb_define_module_function(rb_mCoverage, "setup", rb_coverage_setup, -1);
     rb_define_module_function(rb_mCoverage, "start", rb_coverage_start, -1);
+    rb_define_module_function(rb_mCoverage, "resume", rb_coverage_resume, 0);
+    rb_define_module_function(rb_mCoverage, "suspend", rb_coverage_suspend, 0);
     rb_define_module_function(rb_mCoverage, "result", rb_coverage_result, -1);
     rb_define_module_function(rb_mCoverage, "peek_result", rb_coverage_peek_result, 0);
+    rb_define_module_function(rb_mCoverage, "state", rb_coverage_state, 0);
     rb_define_module_function(rb_mCoverage, "running?", rb_coverage_running, 0);
     rb_global_variable(&me2counter);
 }

@@ -13,6 +13,58 @@ module Fiddle
       CStructEntity
     end
 
+    def self.offsetof(name, members, types) # :nodoc:
+      offset = 0
+      worklist = name.split('.')
+      this_type = self
+      while search_name = worklist.shift
+        index = 0
+        member_index = members.index(search_name)
+
+        unless member_index
+          # Possibly a sub-structure
+          member_index = members.index { |member_name, _|
+            member_name == search_name
+          }
+          return unless member_index
+        end
+
+        types.each { |type, count = 1|
+          orig_offset = offset
+          if type.respond_to?(:entity_class)
+            align = type.alignment
+            type_size = type.size
+          else
+            align = PackInfo::ALIGN_MAP[type]
+            type_size = PackInfo::SIZE_MAP[type]
+          end
+
+          # Unions shouldn't advance the offset
+          if this_type.entity_class == CUnionEntity
+            type_size = 0
+          end
+
+          offset = PackInfo.align(orig_offset, align)
+
+          if worklist.empty?
+            return offset if index == member_index
+          else
+            if index == member_index
+              subtype = types[member_index]
+              members = subtype.members
+              types = subtype.types
+              this_type = subtype
+              break
+            end
+          end
+
+          offset += (type_size * count)
+          index += 1
+        }
+      end
+      nil
+    end
+
     def each
       return enum_for(__function__) unless block_given?
 
@@ -74,6 +126,10 @@ module Fiddle
     # accessor to Fiddle::CUnionEntity
     def CUnion.entity_class
       CUnionEntity
+    end
+
+    def self.offsetof(name, members, types) # :nodoc:
+      0
     end
   end
 
@@ -172,6 +228,21 @@ module Fiddle
         define_method(:to_i){ @entity.to_i }
         define_singleton_method(:types) { types }
         define_singleton_method(:members) { members }
+
+        # Return the offset of a struct member given its name.
+        # For example:
+        #
+        #     MyStruct = struct [
+        #       "int64_t i",
+        #       "char c",
+        #     ]
+        #
+        #     MyStruct.offsetof("i") # => 0
+        #     MyStruct.offsetof("c") # => 8
+        #
+        define_singleton_method(:offsetof) { |name|
+          klass.offsetof(name, members, types)
+        }
         members.each{|name|
           name = name[0] if name.is_a?(Array) # name is a nested struct
           next if method_defined?(name)

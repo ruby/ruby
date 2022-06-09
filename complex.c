@@ -34,10 +34,6 @@
 #else
 static VALUE RFLOAT_0;
 #endif
-#if defined(HAVE_SIGNBIT) && defined(__GNUC__) && defined(__sun) && \
-    !defined(signbit)
-extern int signbit(double);
-#endif
 
 VALUE rb_cComplex;
 
@@ -53,8 +49,6 @@ static ID id_abs, id_arg,
 #define id_to_f idTo_f
 #define id_quo idQuo
 #define id_fdiv idFdiv
-
-#define f_boolcast(x) ((x) ? Qtrue : Qfalse)
 
 #define fun1(n) \
 inline static VALUE \
@@ -340,36 +334,36 @@ f_zero_p(VALUE x)
 
 #define f_nonzero_p(x) (!f_zero_p(x))
 
-VALUE rb_flo_is_finite_p(VALUE num);
+static inline bool
+always_finite_type_p(VALUE x)
+{
+    if (FIXNUM_P(x)) return true;
+    if (FLONUM_P(x)) return true; /* Infinity can't be a flonum */
+    return (RB_INTEGER_TYPE_P(x) || RB_TYPE_P(x, T_RATIONAL));
+}
+
 inline static int
 f_finite_p(VALUE x)
 {
-    if (RB_INTEGER_TYPE_P(x)) {
+    if (always_finite_type_p(x)) {
         return TRUE;
     }
     else if (RB_FLOAT_TYPE_P(x)) {
-	return (int)rb_flo_is_finite_p(x);
-    }
-    else if (RB_TYPE_P(x, T_RATIONAL)) {
-	return TRUE;
+	return isfinite(RFLOAT_VALUE(x));
     }
     return RTEST(rb_funcallv(x, id_finite_p, 0, 0));
 }
 
-VALUE rb_flo_is_infinite_p(VALUE num);
-inline static VALUE
+inline static int
 f_infinite_p(VALUE x)
 {
-    if (RB_INTEGER_TYPE_P(x)) {
-        return Qnil;
+    if (always_finite_type_p(x)) {
+        return FALSE;
     }
     else if (RB_FLOAT_TYPE_P(x)) {
-	return rb_flo_is_infinite_p(x);
+	return isinf(RFLOAT_VALUE(x));
     }
-    else if (RB_TYPE_P(x, T_RATIONAL)) {
-        return Qnil;
-    }
-    return rb_funcallv(x, id_infinite_p, 0, 0);
+    return RTEST(rb_funcallv(x, id_infinite_p, 0, 0));
 }
 
 inline static int
@@ -1062,7 +1056,7 @@ rb_complex_pow(VALUE self, VALUE other)
     if (k_numeric_p(other) && f_real_p(other)) {
 	VALUE r, theta;
 
-	if (RB_TYPE_P(other, T_BIGNUM))
+	if (RB_BIGNUM_TYPE_P(other))
 	    rb_warn("in a**b, b may be too big");
 
 	r = f_abs(self);
@@ -1092,15 +1086,15 @@ nucomp_eqeq_p(VALUE self, VALUE other)
     if (RB_TYPE_P(other, T_COMPLEX)) {
 	get_dat2(self, other);
 
-	return f_boolcast(f_eqeq_p(adat->real, bdat->real) &&
+	return RBOOL(f_eqeq_p(adat->real, bdat->real) &&
 			  f_eqeq_p(adat->imag, bdat->imag));
     }
     if (k_numeric_p(other) && f_real_p(other)) {
 	get_dat1(self);
 
-	return f_boolcast(f_eqeq_p(dat->real, other) && f_zero_p(dat->imag));
+	return RBOOL(f_eqeq_p(dat->real, other) && f_zero_p(dat->imag));
     }
-    return f_boolcast(f_eqeq_p(other, self));
+    return RBOOL(f_eqeq_p(other, self));
 }
 
 static bool
@@ -1272,7 +1266,7 @@ rb_complex_conjugate(VALUE self)
  * Returns false, even if the complex number has no imaginary part.
  */
 static VALUE
-nucomp_false(VALUE self)
+nucomp_real_p_m(VALUE self)
 {
     return Qfalse;
 }
@@ -1326,8 +1320,8 @@ nucomp_numerator(VALUE self)
 }
 
 /* :nodoc: */
-static VALUE
-nucomp_hash(VALUE self)
+st_index_t
+rb_complex_hash(VALUE self)
 {
     st_index_t v, h[2];
     VALUE n;
@@ -1338,7 +1332,13 @@ nucomp_hash(VALUE self)
     n = rb_hash(dat->imag);
     h[1] = NUM2LONG(n);
     v = rb_memhash(h, sizeof(h));
-    return ST2FIX(v);
+    return v;
+}
+
+static VALUE
+nucomp_hash(VALUE self)
+{
+    return ST2FIX(rb_complex_hash(self));
 }
 
 /* :nodoc: */
@@ -1348,7 +1348,7 @@ nucomp_eql_p(VALUE self, VALUE other)
     if (RB_TYPE_P(other, T_COMPLEX)) {
 	get_dat2(self, other);
 
-	return f_boolcast((CLASS_OF(adat->real) == CLASS_OF(bdat->real)) &&
+	return RBOOL((CLASS_OF(adat->real) == CLASS_OF(bdat->real)) &&
 			  (CLASS_OF(adat->imag) == CLASS_OF(bdat->imag)) &&
 			  f_eqeq_p(self, other));
 
@@ -1449,10 +1449,7 @@ rb_complex_finite_p(VALUE self)
 {
     get_dat1(self);
 
-    if (f_finite_p(dat->real) && f_finite_p(dat->imag)) {
-	return Qtrue;
-    }
-    return Qfalse;
+    return RBOOL(f_finite_p(dat->real) && f_finite_p(dat->imag));
 }
 
 /*
@@ -1472,7 +1469,7 @@ rb_complex_infinite_p(VALUE self)
 {
     get_dat1(self);
 
-    if (NIL_P(f_infinite_p(dat->real)) && NIL_P(f_infinite_p(dat->imag))) {
+    if (!f_infinite_p(dat->real) && !f_infinite_p(dat->imag)) {
 	return Qnil;
     }
     return ONE;
@@ -1522,8 +1519,6 @@ nucomp_marshal_load(VALUE self, VALUE a)
     return self;
 }
 
-/* --- */
-
 VALUE
 rb_complex_raw(VALUE x, VALUE y)
 {
@@ -1557,13 +1552,6 @@ rb_Complex(VALUE x, VALUE y)
     return nucomp_s_convert(2, a, rb_cComplex);
 }
 
-/*!
- * Creates a Complex object.
- *
- * \param real    real part value
- * \param imag    imaginary part value
- * \return        a new Complex object
- */
 VALUE
 rb_dbl_complex_new(double real, double imag)
 {
@@ -2146,8 +2134,6 @@ nucomp_s_convert(int argc, VALUE *argv, VALUE klass)
     return nucomp_convert(klass, a1, a2, TRUE);
 }
 
-/* --- */
-
 /*
  * call-seq:
  *    num.real  ->  self
@@ -2281,6 +2267,14 @@ float_arg(VALUE self)
  * and i is imaginary unit.  Real a equals complex a+0i
  * mathematically.
  *
+ * You can create a \Complex object explicitly with:
+ *
+ * - A {complex literal}[rdoc-ref:syntax/literals.rdoc@Complex+Literals].
+ *
+ * You can convert certain objects to \Complex objects with:
+ *
+ * - \Method #Complex.
+ *
  * Complex object can be created as literal, and also by using
  * Kernel#Complex, Complex::rect, Complex::polar or to_c method.
  *
@@ -2379,7 +2373,7 @@ Init_Complex(void)
     rb_define_method(rb_cComplex, "conjugate", rb_complex_conjugate, 0);
     rb_define_method(rb_cComplex, "conj", rb_complex_conjugate, 0);
 
-    rb_define_method(rb_cComplex, "real?", nucomp_false, 0);
+    rb_define_method(rb_cComplex, "real?", nucomp_real_p_m, 0);
 
     rb_define_method(rb_cComplex, "numerator", nucomp_numerator, 0);
     rb_define_method(rb_cComplex, "denominator", nucomp_denominator, 0);
@@ -2402,8 +2396,6 @@ Init_Complex(void)
     rb_define_private_method(compat, "marshal_load", nucomp_marshal_load, 1);
     rb_marshal_define_compat(rb_cComplex, compat, nucomp_dumper, nucomp_loader);
 
-    /* --- */
-
     rb_define_method(rb_cComplex, "to_i", nucomp_to_i, 0);
     rb_define_method(rb_cComplex, "to_f", nucomp_to_f, 0);
     rb_define_method(rb_cComplex, "to_r", nucomp_to_r, 0);
@@ -2415,8 +2407,6 @@ Init_Complex(void)
     rb_define_method(rb_cString, "to_c", string_to_c, 0);
 
     rb_define_private_method(CLASS_OF(rb_cComplex), "convert", nucomp_s_convert, -1);
-
-    /* --- */
 
     rb_define_method(rb_cNumeric, "real", numeric_real, 0);
     rb_define_method(rb_cNumeric, "imaginary", numeric_imag, 0);

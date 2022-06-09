@@ -180,7 +180,7 @@ module Bundler
         scopes = %w[global local].select {|s| options[s] }
         case scopes.size
         when 0
-          @scope = "global"
+          @scope = inside_app? ? "local" : "global"
           @explicit_scope = false
         when 1
           @scope = scopes.first
@@ -188,6 +188,15 @@ module Bundler
           raise InvalidOption,
             "The options #{scopes.join " and "} were specified. Please only use one of the switches at a time."
         end
+      end
+
+      private
+
+      def inside_app?
+        Bundler.root
+        true
+      rescue GemfileNotFound
+        false
       end
     end
   end

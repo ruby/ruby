@@ -74,6 +74,12 @@ describe "Module#constants" do
   it "returns only public constants" do
     ModuleSpecs::PrivConstModule.constants.should == [:PUBLIC_CONSTANT]
   end
+
+  it "returns only constants starting with an uppercase letter" do
+    # e.g. fatal, IO::generic_readable and IO::generic_writable should not be returned by Module#constants
+    Object.constants.each { |c| c[0].should == c[0].upcase }
+    IO.constants.each { |c| c[0].should == c[0].upcase }
+  end
 end
 
 describe "Module#constants" do

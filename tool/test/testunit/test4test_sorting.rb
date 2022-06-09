@@ -5,7 +5,7 @@ require 'test/unit'
 
 class TestForTestHideSkip < Test::Unit::TestCase
   def test_c
-    skip "do nothing"
+    omit "do nothing"
   end
 
   def test_b

@@ -1,11 +1,11 @@
 # frozen_string_literal: true
-require 'psych/nodes/node'
-require 'psych/nodes/stream'
-require 'psych/nodes/document'
-require 'psych/nodes/sequence'
-require 'psych/nodes/scalar'
-require 'psych/nodes/mapping'
-require 'psych/nodes/alias'
+require_relative 'nodes/node'
+require_relative 'nodes/stream'
+require_relative 'nodes/document'
+require_relative 'nodes/sequence'
+require_relative 'nodes/scalar'
+require_relative 'nodes/mapping'
+require_relative 'nodes/alias'
 
 module Psych
   ###

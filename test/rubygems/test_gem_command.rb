@@ -1,5 +1,5 @@
 # frozen_string_literal: true
-require 'rubygems/test_case'
+require_relative 'helper'
 require 'rubygems/command'
 
 class Gem::Command
@@ -118,7 +118,7 @@ class TestGemCommand < Gem::TestCase
     use_ui @ui do
       @cmd.when_invoked { true }
 
-      ex = assert_raises OptionParser::InvalidOption do
+      ex = assert_raise Gem::OptionParser::InvalidOption do
         @cmd.invoke('-zzz')
       end
 
@@ -187,6 +187,18 @@ class TestGemCommand < Gem::TestCase
     end
 
     assert_match %r{Usage: gem doit}, @ui.output
+  end
+
+  def test_add_option
+    assert_nothing_raised RuntimeError do
+      @cmd.add_option('--force', 'skip validation of the spec') {|v,o| }
+    end
+  end
+
+  def test_add_option_with_empty
+    assert_raise RuntimeError, "Do not pass an empty string in opts" do
+      @cmd.add_option('', 'skip validation of the spec') {|v,o| }
+    end
   end
 
   def test_option_recognition

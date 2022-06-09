@@ -34,4 +34,28 @@ describe "Kernel#method" do
     m.should be_an_instance_of(Method)
     m.call(1, 2, 3).should == "Done handled_privately([1, 2, 3])"
   end
+
+  it "can call a #method_missing accepting zero or one arguments" do
+    cls = Class.new do
+      def respond_to_missing?(name, *)
+        name == :foo or super
+      end
+      def method_missing
+        :no_args
+      end
+    end
+    m = cls.new.method(:foo)
+    -> { m.call }.should raise_error(ArgumentError)
+
+    cls = Class.new do
+      def respond_to_missing?(name, *)
+        name == :bar or super
+      end
+      def method_missing(m)
+        m
+      end
+    end
+    m = cls.new.method(:bar)
+    m.call.should == :bar
+  end
 end

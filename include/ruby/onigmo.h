@@ -793,6 +793,13 @@ typedef struct re_pattern_buffer {
   OnigDistance   dmin;                      /* min-distance of exact or map */
   OnigDistance   dmax;                      /* max-distance of exact or map */
 
+  /* rb_hrtime_t from hrtime.h */
+#ifdef MY_RUBY_BUILD_MAY_TIME_TRAVEL
+  int128_t timelimit;
+#else
+  uint64_t timelimit;
+#endif
+
   /* regex_t link chain */
   struct re_pattern_buffer* chain;  /* escape compile-conflict */
 } OnigRegexType;

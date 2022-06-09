@@ -12,6 +12,7 @@ autoload :ClassIdUnderAutoload, "#{object_path}/class_id_under_autoload_spec"
 describe :rb_path_to_class, shared: true do
   it "returns a class or module from a scoped String" do
     @s.send(@method, "CApiClassSpecs::A::B").should equal(CApiClassSpecs::A::B)
+    @s.send(@method, "CApiClassSpecs::A::M").should equal(CApiClassSpecs::A::M)
   end
 
   it "resolves autoload constants" do
@@ -27,7 +28,9 @@ describe :rb_path_to_class, shared: true do
   end
 
   it "raises a TypeError if the constant is not a class or module" do
-    -> { @s.send(@method, "CApiClassSpecs::A::C") }.should raise_error(TypeError)
+    -> {
+      @s.send(@method, "CApiClassSpecs::A::C")
+    }.should raise_error(TypeError, 'CApiClassSpecs::A::C does not refer to class/module')
   end
 
   it "raises an ArgumentError even if a constant in the path exists on toplevel" do
@@ -105,14 +108,34 @@ describe "C-API Class function" do
 
   describe "rb_class_new_instance" do
     it "allocates and initializes a new object" do
-      o = @s.rb_class_new_instance(0, nil, CApiClassSpecs::Alloc)
+      o = @s.rb_class_new_instance([], CApiClassSpecs::Alloc)
       o.class.should == CApiClassSpecs::Alloc
       o.initialized.should be_true
     end
 
     it "passes arguments to the #initialize method" do
-      o = @s.rb_class_new_instance(2, [:one, :two], CApiClassSpecs::Alloc)
+      o = @s.rb_class_new_instance([:one, :two], CApiClassSpecs::Alloc)
       o.arguments.should == [:one, :two]
+    end
+  end
+
+  ruby_version_is "3.0" do
+    describe "rb_class_new_instance_kw" do
+      it "passes arguments and keywords to the #initialize method" do
+        obj = @s.rb_class_new_instance_kw([{pos: 1}, {kw: 2}], CApiClassSpecs::KeywordAlloc)
+        obj.args.should == [{pos: 1}]
+        obj.kwargs.should == {kw: 2}
+
+        obj = @s.rb_class_new_instance_kw([{}], CApiClassSpecs::KeywordAlloc)
+        obj.args.should == []
+        obj.kwargs.should == {}
+      end
+
+      it "raises TypeError if the last argument is not a Hash" do
+        -> {
+          @s.rb_class_new_instance_kw([42], CApiClassSpecs::KeywordAlloc)
+        }.should raise_error(TypeError, 'no implicit conversion of Integer into Hash')
+      end
     end
   end
 

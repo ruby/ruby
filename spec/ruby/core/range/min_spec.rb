@@ -39,17 +39,13 @@ describe "Range#min" do
     (time_start...time_end).min.should equal(time_start)
   end
 
-  ruby_version_is "2.6" do
-    it "returns the start point for endless ranges" do
-      eval("(1..)").min.should == 1
-      eval("(1.0...)").min.should == 1.0
-    end
+  it "returns the start point for endless ranges" do
+    eval("(1..)").min.should == 1
+    eval("(1.0...)").min.should == 1.0
   end
 
-  ruby_version_is "2.7" do
-    it "raises RangeError when called on an beginless range" do
-      -> { eval("(..1)").min }.should raise_error(RangeError)
-    end
+  it "raises RangeError when called on an beginless range" do
+    -> { (..1).min }.should raise_error(RangeError)
   end
 end
 
@@ -86,9 +82,7 @@ describe "Range#min given a block" do
     (7...7).min {|x,y| x <=> y}.should be_nil
   end
 
-  ruby_version_is "2.6" do
-    it "raises RangeError when called with custom comparison method on an endless range" do
-      -> { eval("(1..)").min {|a, b| a} }.should raise_error(RangeError)
-    end
+  it "raises RangeError when called with custom comparison method on an endless range" do
+    -> { eval("(1..)").min {|a, b| a} }.should raise_error(RangeError)
   end
 end

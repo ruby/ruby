@@ -20,6 +20,21 @@ describe "Proc#parameters" do
     proc {|x| }.parameters.first.first.should == :opt
   end
 
+  ruby_version_is "3.2" do
+    it "sets the first element of each sub-Array to :req if argument would be required if a lambda if lambda keyword used" do
+      proc {|x| }.parameters(lambda: true).first.first.should == :req
+      proc {|y,*x| }.parameters(lambda: true).first.first.should == :req
+    end
+
+    it "regards named parameters in procs as required if lambda keyword used" do
+      proc {|x| }.parameters(lambda: true).first.first.should == :req
+    end
+
+    it "regards named parameters in lambda as optional if lambda: false keyword used" do
+      -> x { }.parameters(lambda: false).first.first.should == :opt
+    end
+  end
+
   it "regards optional keyword parameters in procs as optional" do
     proc {|x: :y| }.parameters.first.first.should == :key
   end
@@ -80,8 +95,16 @@ describe "Proc#parameters" do
     -> x {}.parameters.should == [[:req, :x]]
   end
 
-  it "adds nameless rest arg for \"star\" argument" do
-    -> x, * {}.parameters.should == [[:req, :x], [:rest]]
+  ruby_version_is '3.2' do
+    it "adds * rest arg for \"star\" argument" do
+      -> x, * {}.parameters.should == [[:req, :x], [:rest, :*]]
+    end
+  end
+
+  ruby_version_is ''...'3.2' do
+    it "adds nameless rest arg for \"star\" argument" do
+      -> x, * {}.parameters.should == [[:req, :x], [:rest]]
+    end
   end
 
   it "does not add locals as block options with a block and splat" do

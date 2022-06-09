@@ -11,7 +11,7 @@ class Gem::Request::ConnectionPools # :nodoc:
     @proxy_uri  = proxy_uri
     @cert_files = cert_files
     @pools      = {}
-    @pool_mutex = Mutex.new
+    @pool_mutex = Thread::Mutex.new
   end
 
   def pool_for(uri)

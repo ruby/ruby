@@ -14,6 +14,9 @@ describe "Float#<=>" do
 
   it "returns nil when the given argument is not a Float" do
     (1.0 <=> "1").should be_nil
+    (1.0 <=> "1".freeze).should be_nil
+    (1.0 <=> :one).should be_nil
+    (1.0 <=> true).should be_nil
   end
 
   it "compares using #coerce when argument is not a Float" do
@@ -62,5 +65,44 @@ describe "Float#<=>" do
 
   it "returns 1 when self is negative and other is -Infinity" do
     (-Float::MAX.to_i*2 <=> -infinity_value).should == 1
+  end
+
+  it "returns 0 when self is Infinity and other other is infinite?=1" do
+    obj = Object.new
+    def obj.infinite?
+      1
+    end
+    (infinity_value <=> obj).should == 0
+  end
+
+  it "returns 1 when self is Infinity and other is infinite?=-1" do
+    obj = Object.new
+    def obj.infinite?
+      -1
+    end
+    (infinity_value <=> obj).should == 1
+  end
+
+  it "returns 1 when self is Infinity and other is infinite?=nil (which means finite)" do
+    obj = Object.new
+    def obj.infinite?
+        nil
+    end
+    (infinity_value <=> obj).should == 1
+  end
+
+  it "returns 0 for -0.0 and 0.0" do
+    (-0.0 <=> 0.0).should == 0
+    (0.0 <=> -0.0).should == 0
+  end
+
+  it "returns 0 for -0.0 and 0" do
+    (-0.0 <=> 0).should == 0
+    (0 <=> -0.0).should == 0
+  end
+
+  it "returns 0 for 0.0 and 0" do
+    (0.0 <=> 0).should == 0
+    (0 <=> 0.0).should == 0
   end
 end

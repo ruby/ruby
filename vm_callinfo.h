@@ -1,7 +1,6 @@
 #ifndef RUBY_VM_CALLINFO_H                               /*-*-C-*-vi:se ft=c:*/
 #define RUBY_VM_CALLINFO_H
 /**
- * @file
  * @author     Ruby developers <ruby-core@ruby-lang.org>
  * @copyright  This  file  is   a  part  of  the   programming  language  Ruby.
  *             Permission  is hereby  granted,  to  either redistribute  and/or
@@ -169,8 +168,8 @@ static inline void
 vm_ci_dump(const struct rb_callinfo *ci)
 {
     if (vm_ci_packed_p(ci)) {
-        fprintf(stderr, "packed_ci ID:%s flag:%x argc:%u\n",
-                rb_id2name(vm_ci_mid(ci)), vm_ci_flag(ci), vm_ci_argc(ci));
+        ruby_debug_printf("packed_ci ID:%s flag:%x argc:%u\n",
+                          rb_id2name(vm_ci_mid(ci)), vm_ci_flag(ci), vm_ci_argc(ci));
     }
     else {
         rp(ci);
@@ -180,7 +179,7 @@ vm_ci_dump(const struct rb_callinfo *ci)
 #define vm_ci_new(mid, flag, argc, kwarg) vm_ci_new_(mid, flag, argc, kwarg, __FILE__, __LINE__)
 #define vm_ci_new_runtime(mid, flag, argc, kwarg) vm_ci_new_runtime_(mid, flag, argc, kwarg, __FILE__, __LINE__)
 
-#/* This is passed to STATIC_ASSERT.  Cannot be an inline function. */
+/* This is passed to STATIC_ASSERT.  Cannot be an inline function. */
 #define VM_CI_EMBEDDABLE_P(mid, flag, argc, kwarg) \
     (((mid ) & ~CI_EMBED_ID_MASK)   ? false :      \
      ((flag) & ~CI_EMBED_FLAG_MASK) ? false :      \
@@ -205,7 +204,7 @@ vm_ci_new_(ID mid, unsigned int flag, unsigned int argc, const struct rb_callinf
 #endif
 
     const bool debug = 0;
-    if (debug) fprintf(stderr, "%s:%d ", file, line);
+    if (debug) ruby_debug_printf("%s:%d ", file, line);
 
     // TODO: dedup
     const struct rb_callinfo *ci = (const struct rb_callinfo *)
@@ -291,6 +290,7 @@ struct rb_callcache {
 };
 
 #define VM_CALLCACHE_UNMARKABLE IMEMO_FL_USER0
+#define VM_CALLCACHE_ON_STACK   IMEMO_FL_USER1
 
 static inline const struct rb_callcache *
 vm_cc_new(VALUE klass,
@@ -306,7 +306,8 @@ vm_cc_new(VALUE klass,
     (struct rb_callcache) {                   \
         .flags = T_IMEMO |                    \
             (imemo_callcache << FL_USHIFT) |  \
-            VM_CALLCACHE_UNMARKABLE,          \
+            VM_CALLCACHE_UNMARKABLE |         \
+            VM_CALLCACHE_ON_STACK,            \
         .klass = clazz,                       \
         .cme_  = cme,                         \
         .call_ = call,                        \
@@ -322,10 +323,21 @@ vm_cc_class_check(const struct rb_callcache *cc, VALUE klass)
     return cc->klass == klass;
 }
 
+static inline int
+vm_cc_markable(const struct rb_callcache *cc)
+{
+    VM_ASSERT(IMEMO_TYPE_P(cc, imemo_callcache));
+    return FL_TEST_RAW((VALUE)cc, VM_CALLCACHE_UNMARKABLE) == 0;
+}
+
 static inline const struct rb_callable_method_entry_struct *
 vm_cc_cme(const struct rb_callcache *cc)
 {
     VM_ASSERT(IMEMO_TYPE_P(cc, imemo_callcache));
+    VM_ASSERT(cc->call_ == NULL   || // not initialized yet
+              !vm_cc_markable(cc) ||
+              cc->cme_ != NULL);
+
     return cc->cme_;
 }
 
@@ -333,6 +345,7 @@ static inline vm_call_handler
 vm_cc_call(const struct rb_callcache *cc)
 {
     VM_ASSERT(IMEMO_TYPE_P(cc, imemo_callcache));
+    VM_ASSERT(cc->call_ != NULL);
     return cc->call_;
 }
 
@@ -340,7 +353,14 @@ static inline unsigned int
 vm_cc_attr_index(const struct rb_callcache *cc)
 {
     VM_ASSERT(IMEMO_TYPE_P(cc, imemo_callcache));
-    return cc->aux_.attr_index;
+    return cc->aux_.attr_index - 1;
+}
+
+static inline bool
+vm_cc_attr_index_p(const struct rb_callcache *cc)
+{
+    VM_ASSERT(IMEMO_TYPE_P(cc, imemo_callcache));
+    return cc->aux_.attr_index > 0;
 }
 
 static inline unsigned int
@@ -348,13 +368,6 @@ vm_cc_cmethod_missing_reason(const struct rb_callcache *cc)
 {
     VM_ASSERT(IMEMO_TYPE_P(cc, imemo_callcache));
     return cc->aux_.method_missing_reason;
-}
-
-static inline int
-vm_cc_markable(const struct rb_callcache *cc)
-{
-    VM_ASSERT(IMEMO_TYPE_P(cc, imemo_callcache));
-    return FL_TEST_RAW((VALUE)cc, VM_CALLCACHE_UNMARKABLE) == 0;
 }
 
 static inline bool
@@ -382,6 +395,7 @@ vm_cc_valid_p(const struct rb_callcache *cc, const rb_callable_method_entry_t *c
 }
 
 extern const struct rb_callcache *rb_vm_empty_cc(void);
+extern const struct rb_callcache *rb_vm_empty_cc_for_super(void);
 #define vm_cc_empty() rb_vm_empty_cc()
 
 /* callcache: mutate */
@@ -399,7 +413,15 @@ vm_cc_attr_index_set(const struct rb_callcache *cc, int index)
 {
     VM_ASSERT(IMEMO_TYPE_P(cc, imemo_callcache));
     VM_ASSERT(cc != vm_cc_empty());
-    *(int *)&cc->aux_.attr_index = index;
+    *(int *)&cc->aux_.attr_index = index + 1;
+}
+
+static inline void
+vm_cc_attr_index_initialize(const struct rb_callcache *cc)
+{
+    VM_ASSERT(IMEMO_TYPE_P(cc, imemo_callcache));
+    VM_ASSERT(cc != vm_cc_empty());
+    *(int *)&cc->aux_.attr_index = 0;
 }
 
 static inline void
@@ -442,11 +464,36 @@ struct rb_class_cc_entries {
 };
 
 #if VM_CHECK_MODE > 0
+
+const rb_callable_method_entry_t *rb_vm_lookup_overloaded_cme(const rb_callable_method_entry_t *cme);
+void rb_vm_dump_overloaded_cme_table(void);
+
 static inline bool
 vm_ccs_p(const struct rb_class_cc_entries *ccs)
 {
     return ccs->debug_sig == ~(VALUE)ccs;
 }
+
+static inline bool
+vm_cc_check_cme(const struct rb_callcache *cc, const rb_callable_method_entry_t *cme)
+{
+    if (vm_cc_cme(cc) == cme ||
+        (cme->def->iseq_overload && vm_cc_cme(cc) == rb_vm_lookup_overloaded_cme(cme))) {
+        return true;
+    }
+    else {
+#if 1
+        // debug print
+
+        fprintf(stderr, "iseq_overload:%d\n", (int)cme->def->iseq_overload);
+        rp(cme);
+        rp(vm_cc_cme(cc));
+        rb_vm_lookup_overloaded_cme(cme);
+#endif
+        return false;
+    }
+}
+
 #endif
 
 // gc.c

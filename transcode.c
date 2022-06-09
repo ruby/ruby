@@ -33,6 +33,15 @@ static VALUE rb_eConverterNotFoundError;
 
 VALUE rb_cEncodingConverter;
 
+static ID id_destination_encoding;
+static ID id_destination_encoding_name;
+static ID id_error_bytes;
+static ID id_error_char;
+static ID id_incomplete_input;
+static ID id_readagain_bytes;
+static ID id_source_encoding;
+static ID id_source_encoding_name;
+
 static VALUE sym_invalid, sym_undef, sym_replace, sym_fallback;
 static VALUE sym_xml, sym_text, sym_attr;
 static VALUE sym_universal_newline;
@@ -367,6 +376,8 @@ transcode_search_path(const char *sname, const char *dname,
     return pathlen; /* is -1 if not found */
 }
 
+int rb_require_internal_silent(VALUE fname);
+
 static const rb_transcoder *
 load_transcoder_entry(transcoder_entry_t *entry)
 {
@@ -384,7 +395,7 @@ load_transcoder_entry(transcoder_entry_t *entry)
         memcpy(path + sizeof(transcoder_lib_prefix) - 1, lib, len);
         rb_str_set_len(fn, total_len);
         OBJ_FREEZE(fn);
-        rb_require_string(fn);
+        rb_require_internal_silent(fn);
     }
 
     if (entry->transcoder)
@@ -2068,9 +2079,9 @@ make_econv_exception(rb_econv_t *ec)
         }
 
         exc = rb_exc_new3(rb_eInvalidByteSequenceError, mesg);
-        rb_ivar_set(exc, rb_intern("error_bytes"), bytes);
-        rb_ivar_set(exc, rb_intern("readagain_bytes"), bytes2);
-        rb_ivar_set(exc, rb_intern("incomplete_input"), ec->last_error.result == econv_incomplete_input ? Qtrue : Qfalse);
+        rb_ivar_set(exc, id_error_bytes, bytes);
+        rb_ivar_set(exc, id_readagain_bytes, bytes2);
+        rb_ivar_set(exc, id_incomplete_input, RBOOL(ec->last_error.result == econv_incomplete_input));
         goto set_encs;
     }
     if (ec->last_error.result == econv_undefined_conversion) {
@@ -2091,7 +2102,7 @@ make_econv_exception(rb_econv_t *ec)
                 dumped = rb_sprintf("U+%04X", cc);
             }
         }
-        if (dumped == Qnil)
+        if (NIL_P(dumped))
             dumped = rb_str_dump(bytes);
         if (strcmp(ec->last_error.source_encoding,
                    ec->source_encoding_name) == 0 &&
@@ -2119,20 +2130,20 @@ make_econv_exception(rb_econv_t *ec)
         idx = rb_enc_find_index(ec->last_error.source_encoding);
         if (0 <= idx)
             rb_enc_associate_index(bytes, idx);
-        rb_ivar_set(exc, rb_intern("error_char"), bytes);
+        rb_ivar_set(exc, id_error_char, bytes);
         goto set_encs;
     }
     return Qnil;
 
   set_encs:
-    rb_ivar_set(exc, rb_intern("source_encoding_name"), rb_str_new2(ec->last_error.source_encoding));
-    rb_ivar_set(exc, rb_intern("destination_encoding_name"), rb_str_new2(ec->last_error.destination_encoding));
+    rb_ivar_set(exc, id_source_encoding_name, rb_str_new2(ec->last_error.source_encoding));
+    rb_ivar_set(exc, id_destination_encoding_name, rb_str_new2(ec->last_error.destination_encoding));
     int idx = rb_enc_find_index(ec->last_error.source_encoding);
     if (0 <= idx)
-        rb_ivar_set(exc, rb_intern("source_encoding"), rb_enc_from_encoding(rb_enc_from_index(idx)));
+        rb_ivar_set(exc, id_source_encoding, rb_enc_from_encoding(rb_enc_from_index(idx)));
     idx = rb_enc_find_index(ec->last_error.destination_encoding);
     if (0 <= idx)
-        rb_ivar_set(exc, rb_intern("destination_encoding"), rb_enc_from_encoding(rb_enc_from_index(idx)));
+        rb_ivar_set(exc, id_destination_encoding, rb_enc_from_encoding(rb_enc_from_index(idx)));
     return exc;
 }
 
@@ -2455,7 +2466,7 @@ econv_opts(VALUE opt, int ecflags)
         else if (v==sym_attr) {
             ecflags |= ECONV_XML_ATTR_CONTENT_DECORATOR|ECONV_XML_ATTR_QUOTE_DECORATOR|ECONV_UNDEF_HEX_CHARREF;
         }
-        else if (RB_TYPE_P(v, T_SYMBOL)) {
+        else if (SYMBOL_P(v)) {
             rb_raise(rb_eArgError, "unexpected value for xml option: %"PRIsVALUE, rb_sym2str(v));
         }
         else {
@@ -2719,6 +2730,12 @@ str_transcode0(int argc, VALUE *argv, VALUE *self, int ecflags, VALUE ecopts)
         }
     }
     else {
+        if (senc && denc && !rb_enc_asciicompat(senc) && !rb_enc_asciicompat(denc)) {
+            rb_encoding *utf8 = rb_utf8_encoding();
+            str = rb_str_conv_enc(str, senc, utf8);
+            senc = utf8;
+            sname = "UTF-8";
+        }
         if (encoding_equal(sname, dname)) {
             sname = "";
             dname = "";
@@ -2784,16 +2801,11 @@ str_encode_associate(VALUE str, int encidx)
 
 /*
  *  call-seq:
- *     str.encode!(encoding, **options)   -> str
- *     str.encode!(dst_encoding, src_encoding, **options)   -> str
+ *    encode!(dst_encoding = Encoding.default_internal, **enc_opts) -> self
+ *    encode!(dst_encoding, src_encoding, **enc_opts)   -> self
  *
- *  The first form transcodes the contents of <i>str</i> from
- *  str.encoding to +encoding+.
- *  The second form transcodes the contents of <i>str</i> from
- *  src_encoding to dst_encoding.
- *  The +options+ keyword arguments give details for conversion. See String#encode
- *  for details.
- *  Returns the string even if no changes were made.
+ *  Like #encode, but applies encoding changes to +self+; returns +self+.
+ *
  */
 
 static VALUE
@@ -2817,62 +2829,6 @@ str_encode_bang(int argc, VALUE *argv, VALUE str)
 }
 
 static VALUE encoded_dup(VALUE newstr, VALUE str, int encidx);
-
-/*
- *  call-seq:
- *     str.encode(encoding, **options)   -> str
- *     str.encode(dst_encoding, src_encoding, **options)   -> str
- *     str.encode(**options)   -> str
- *
- *  The first form returns a copy of +str+ transcoded
- *  to encoding +encoding+.
- *  The second form returns a copy of +str+ transcoded
- *  from src_encoding to dst_encoding.
- *  The last form returns a copy of +str+ transcoded to
- *  <tt>Encoding.default_internal</tt>.
- *
- *  By default, the first and second form raise
- *  Encoding::UndefinedConversionError for characters that are
- *  undefined in the destination encoding, and
- *  Encoding::InvalidByteSequenceError for invalid byte sequences
- *  in the source encoding. The last form by default does not raise
- *  exceptions but uses replacement strings.
- *
- *  The +options+ keyword arguments give details for conversion.
- *  The arguments are:
- *
- *  :invalid ::
- *    If the value is +:replace+, #encode replaces invalid byte sequences in
- *    +str+ with the replacement character.  The default is to raise the
- *    Encoding::InvalidByteSequenceError exception
- *  :undef ::
- *    If the value is +:replace+, #encode replaces characters which are
- *    undefined in the destination encoding with the replacement character.
- *    The default is to raise the Encoding::UndefinedConversionError.
- *  :replace ::
- *    Sets the replacement string to the given value. The default replacement
- *    string is "\uFFFD" for Unicode encoding forms, and "?" otherwise.
- *  :fallback ::
- *    Sets the replacement string by the given object for undefined
- *    character.  The object should be a Hash, a Proc, a Method, or an
- *    object which has [] method.
- *    Its key is an undefined character encoded in the source encoding
- *    of current transcoder. Its value can be any encoding until it
- *    can be converted into the destination encoding of the transcoder.
- *  :xml ::
- *    The value must be +:text+ or +:attr+.
- *    If the value is +:text+ #encode replaces undefined characters with their
- *    (upper-case hexadecimal) numeric character references. '&', '<', and '>'
- *    are converted to "&amp;", "&lt;", and "&gt;", respectively.
- *    If the value is +:attr+, #encode also quotes the replacement result
- *    (using '"'), and replaces '"' with "&quot;".
- *  :cr_newline ::
- *    Replaces LF ("\n") with CR ("\r") if value is true.
- *  :crlf_newline ::
- *    Replaces LF ("\n") with CRLF ("\r\n") if value is true.
- *  :universal_newline ::
- *    Replaces CRLF ("\r\n") and CR ("\r") with LF ("\n") if value is true.
- */
 
 static VALUE
 str_encode(int argc, VALUE *argv, VALUE str)
@@ -3104,7 +3060,7 @@ search_convpath_i(const char *sname, const char *dname, int depth, void *arg)
     VALUE *ary_p = arg;
     VALUE v;
 
-    if (*ary_p == Qnil) {
+    if (NIL_P(*ary_p)) {
         *ary_p = rb_ary_new();
     }
 
@@ -3482,6 +3438,14 @@ check_econv(VALUE self)
     return ec;
 }
 
+static VALUE
+econv_get_encoding(rb_encoding *encoding)
+{
+    if (!encoding)
+        return Qnil;
+    return rb_enc_from_encoding(encoding);
+}
+
 /*
  * call-seq:
  *   ec.source_encoding -> encoding
@@ -3492,9 +3456,7 @@ static VALUE
 econv_source_encoding(VALUE self)
 {
     rb_econv_t *ec = check_econv(self);
-    if (!ec->source_encoding)
-        return Qnil;
-    return rb_enc_from_encoding(ec->source_encoding);
+    return econv_get_encoding(ec->source_encoding);
 }
 
 /*
@@ -3507,9 +3469,7 @@ static VALUE
 econv_destination_encoding(VALUE self)
 {
     rb_econv_t *ec = check_econv(self);
-    if (!ec->destination_encoding)
-        return Qnil;
-    return rb_enc_from_encoding(ec->destination_encoding);
+    return econv_get_encoding(ec->destination_encoding);
 }
 
 /*
@@ -3752,7 +3712,11 @@ econv_primitive_convert(int argc, VALUE *argv, VALUE self)
     rb_str_modify(output);
 
     if (NIL_P(output_bytesize_v)) {
+#if USE_RVARGC
+        output_bytesize = rb_str_capacity(output);
+#else
         output_bytesize = RSTRING_EMBED_LEN_MAX;
+#endif
         if (!NIL_P(input) && output_bytesize < RSTRING_LEN(input))
             output_bytesize = RSTRING_LEN(input);
     }
@@ -4256,7 +4220,7 @@ rb_econv_check_error(rb_econv_t *ec)
 static VALUE
 ecerr_source_encoding_name(VALUE self)
 {
-    return rb_attr_get(self, rb_intern("source_encoding_name"));
+    return rb_attr_get(self, id_source_encoding_name);
 }
 
 /*
@@ -4282,7 +4246,7 @@ ecerr_source_encoding_name(VALUE self)
 static VALUE
 ecerr_source_encoding(VALUE self)
 {
-    return rb_attr_get(self, rb_intern("source_encoding"));
+    return rb_attr_get(self, id_source_encoding);
 }
 
 /*
@@ -4294,7 +4258,7 @@ ecerr_source_encoding(VALUE self)
 static VALUE
 ecerr_destination_encoding_name(VALUE self)
 {
-    return rb_attr_get(self, rb_intern("destination_encoding_name"));
+    return rb_attr_get(self, id_destination_encoding_name);
 }
 
 /*
@@ -4306,7 +4270,7 @@ ecerr_destination_encoding_name(VALUE self)
 static VALUE
 ecerr_destination_encoding(VALUE self)
 {
-    return rb_attr_get(self, rb_intern("destination_encoding"));
+    return rb_attr_get(self, id_destination_encoding);
 }
 
 /*
@@ -4327,7 +4291,7 @@ ecerr_destination_encoding(VALUE self)
 static VALUE
 ecerr_error_char(VALUE self)
 {
-    return rb_attr_get(self, rb_intern("error_char"));
+    return rb_attr_get(self, id_error_char);
 }
 
 /*
@@ -4348,7 +4312,7 @@ ecerr_error_char(VALUE self)
 static VALUE
 ecerr_error_bytes(VALUE self)
 {
-    return rb_attr_get(self, rb_intern("error_bytes"));
+    return rb_attr_get(self, id_error_bytes);
 }
 
 /*
@@ -4360,7 +4324,7 @@ ecerr_error_bytes(VALUE self)
 static VALUE
 ecerr_readagain_bytes(VALUE self)
 {
-    return rb_attr_get(self, rb_intern("readagain_bytes"));
+    return rb_attr_get(self, id_readagain_bytes);
 }
 
 /*
@@ -4390,7 +4354,7 @@ ecerr_readagain_bytes(VALUE self)
 static VALUE
 ecerr_incomplete_input(VALUE self)
 {
-    return rb_attr_get(self, rb_intern("incomplete_input"));
+    return rb_attr_get(self, id_incomplete_input);
 }
 
 /*
@@ -4415,38 +4379,46 @@ ecerr_incomplete_input(VALUE self)
  *  correspond with a known converter.
  */
 
-#undef rb_intern
 void
 Init_transcode(void)
 {
     transcoder_table = st_init_strcasetable();
 
-    sym_invalid = ID2SYM(rb_intern("invalid"));
-    sym_undef = ID2SYM(rb_intern("undef"));
-    sym_replace = ID2SYM(rb_intern("replace"));
-    sym_fallback = ID2SYM(rb_intern("fallback"));
-    sym_xml = ID2SYM(rb_intern("xml"));
-    sym_text = ID2SYM(rb_intern("text"));
-    sym_attr = ID2SYM(rb_intern("attr"));
+    id_destination_encoding = rb_intern_const("destination_encoding");
+    id_destination_encoding_name = rb_intern_const("destination_encoding_name");
+    id_error_bytes = rb_intern_const("error_bytes");
+    id_error_char = rb_intern_const("error_char");
+    id_incomplete_input = rb_intern_const("incomplete_input");
+    id_readagain_bytes = rb_intern_const("readagain_bytes");
+    id_source_encoding = rb_intern_const("source_encoding");
+    id_source_encoding_name = rb_intern_const("source_encoding_name");
 
-    sym_invalid_byte_sequence = ID2SYM(rb_intern("invalid_byte_sequence"));
-    sym_undefined_conversion = ID2SYM(rb_intern("undefined_conversion"));
-    sym_destination_buffer_full = ID2SYM(rb_intern("destination_buffer_full"));
-    sym_source_buffer_empty = ID2SYM(rb_intern("source_buffer_empty"));
-    sym_finished = ID2SYM(rb_intern("finished"));
-    sym_after_output = ID2SYM(rb_intern("after_output"));
-    sym_incomplete_input = ID2SYM(rb_intern("incomplete_input"));
-    sym_universal_newline = ID2SYM(rb_intern("universal_newline"));
-    sym_crlf_newline = ID2SYM(rb_intern("crlf_newline"));
-    sym_cr_newline = ID2SYM(rb_intern("cr_newline"));
-    sym_partial_input = ID2SYM(rb_intern("partial_input"));
+    sym_invalid = ID2SYM(rb_intern_const("invalid"));
+    sym_undef = ID2SYM(rb_intern_const("undef"));
+    sym_replace = ID2SYM(rb_intern_const("replace"));
+    sym_fallback = ID2SYM(rb_intern_const("fallback"));
+    sym_xml = ID2SYM(rb_intern_const("xml"));
+    sym_text = ID2SYM(rb_intern_const("text"));
+    sym_attr = ID2SYM(rb_intern_const("attr"));
+
+    sym_invalid_byte_sequence = ID2SYM(rb_intern_const("invalid_byte_sequence"));
+    sym_undefined_conversion = ID2SYM(rb_intern_const("undefined_conversion"));
+    sym_destination_buffer_full = ID2SYM(rb_intern_const("destination_buffer_full"));
+    sym_source_buffer_empty = ID2SYM(rb_intern_const("source_buffer_empty"));
+    sym_finished = ID2SYM(rb_intern_const("finished"));
+    sym_after_output = ID2SYM(rb_intern_const("after_output"));
+    sym_incomplete_input = ID2SYM(rb_intern_const("incomplete_input"));
+    sym_universal_newline = ID2SYM(rb_intern_const("universal_newline"));
+    sym_crlf_newline = ID2SYM(rb_intern_const("crlf_newline"));
+    sym_cr_newline = ID2SYM(rb_intern_const("cr_newline"));
+    sym_partial_input = ID2SYM(rb_intern_const("partial_input"));
 
 #ifdef ENABLE_ECONV_NEWLINE_OPTION
-    sym_newline = ID2SYM(rb_intern("newline"));
-    sym_universal = ID2SYM(rb_intern("universal"));
-    sym_crlf = ID2SYM(rb_intern("crlf"));
-    sym_cr = ID2SYM(rb_intern("cr"));
-    sym_lf = ID2SYM(rb_intern("lf"));
+    sym_newline = ID2SYM(rb_intern_const("newline"));
+    sym_universal = ID2SYM(rb_intern_const("universal"));
+    sym_crlf = ID2SYM(rb_intern_const("crlf"));
+    sym_cr = ID2SYM(rb_intern_const("cr"));
+    sym_lf = ID2SYM(rb_intern_const("lf"));
 #endif
 
     InitVM(transcode);

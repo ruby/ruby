@@ -1,6 +1,5 @@
 # frozen_string_literal: true
 
-require "rubygems/dependency_installer"
 require_relative "worker"
 require_relative "installer/parallel_installer"
 require_relative "installer/standalone"
@@ -14,7 +13,7 @@ module Bundler
       Installer.ambiguous_gems = []
     end
 
-    attr_reader :post_install_messages
+    attr_reader :post_install_messages, :definition
 
     # Begins the installation process for Bundler.
     # For more information see the #run method on this class.
@@ -67,7 +66,7 @@ module Bundler
     # require paths and save them in a `setup.rb` file. See `bundle standalone --help` for more
     # information.
     def run(options)
-      create_bundle_path
+      Bundler.create_bundle_path
 
       ProcessLock.lock do
         if Bundler.frozen_bundle?
@@ -120,7 +119,7 @@ module Bundler
       relative_gemfile_path = relative_gemfile_path
       ruby_command = Thor::Util.ruby_command
       ruby_command = ruby_command
-      template_path = File.expand_path("../templates/Executable", __FILE__)
+      template_path = File.expand_path("templates/Executable", __dir__)
       if spec.name == "bundler"
         template_path += ".bundler"
         spec.executables = %(bundle)
@@ -135,7 +134,7 @@ module Bundler
           next
         end
 
-        mode = Bundler::WINDOWS ? "wb:UTF-8" : "w"
+        mode = Gem.win_platform? ? "wb:UTF-8" : "w"
         require "erb"
         content = if RUBY_VERSION >= "2.6"
           ERB.new(template, :trim_mode => "-").result(binding)
@@ -144,7 +143,7 @@ module Bundler
         end
 
         File.write(binstub_path, content, :mode => mode, :perm => 0o777 & ~File.umask)
-        if Bundler::WINDOWS || options[:all_platforms]
+        if Gem.win_platform? || options[:all_platforms]
           prefix = "@ruby -x \"%~f0\" %*\n@exit /b %ERRORLEVEL%\n\n"
           File.write("#{binstub_path}.cmd", prefix + content, :mode => mode)
         end
@@ -173,7 +172,7 @@ module Bundler
       end
       standalone_path = Bundler.root.join(path).relative_path_from(bin_path)
       standalone_path = standalone_path
-      template = File.read(File.expand_path("../templates/Executable.standalone", __FILE__))
+      template = File.read(File.expand_path("templates/Executable.standalone", __dir__))
       ruby_command = Thor::Util.ruby_command
       ruby_command = ruby_command
 
@@ -182,7 +181,7 @@ module Bundler
         executable_path = Pathname(spec.full_gem_path).join(spec.bindir, executable).relative_path_from(bin_path)
         executable_path = executable_path
 
-        mode = Bundler::WINDOWS ? "wb:UTF-8" : "w"
+        mode = Gem.win_platform? ? "wb:UTF-8" : "w"
         require "erb"
         content = if RUBY_VERSION >= "2.6"
           ERB.new(template, :trim_mode => "-").result(binding)
@@ -191,7 +190,7 @@ module Bundler
         end
 
         File.write("#{bin_path}/#{executable}", content, :mode => mode, :perm => 0o755)
-        if Bundler::WINDOWS || options[:all_platforms]
+        if Gem.win_platform? || options[:all_platforms]
           prefix = "@ruby -x \"%~f0\" %*\n@exit /b %ERRORLEVEL%\n\n"
           File.write("#{bin_path}/#{executable}.cmd", prefix + content, :mode => mode)
         end
@@ -219,17 +218,7 @@ module Bundler
         return jobs
       end
 
-      # Parallelization has some issues on Windows, so it's not yet the default
-      return 1 if Gem.win_platform?
-
-      processor_count
-    end
-
-    def processor_count
-      require "etc"
-      Etc.nprocessors
-    rescue StandardError
-      1
+      Bundler.settings.processor_count
     end
 
     def load_plugins
@@ -250,7 +239,7 @@ module Bundler
 
     def ensure_specs_are_compatible!
       system_ruby = Bundler::RubyVersion.system
-      rubygems_version = Gem::Version.create(Gem::VERSION)
+      rubygems_version = Bundler.rubygems.version
       @definition.specs.each do |spec|
         if required_ruby_version = spec.required_ruby_version
           unless required_ruby_version.satisfied_by?(system_ruby.gem_version)
@@ -271,15 +260,6 @@ module Bundler
       spec_installations.each do |installation|
         post_install_messages[installation.name] = installation.post_install_message if installation.has_post_install_message?
       end
-    end
-
-    def create_bundle_path
-      SharedHelpers.filesystem_access(Bundler.bundle_path.to_s) do |p|
-        Bundler.mkdir_p(p)
-      end unless Bundler.bundle_path.exist?
-    rescue Errno::EEXIST
-      raise PathError, "Could not install to path `#{Bundler.bundle_path}` " \
-        "because a file already exists at that path. Either remove or rename the file so the directory can be created."
     end
 
     # returns whether or not a re-resolve was needed

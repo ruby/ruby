@@ -147,7 +147,7 @@ module TestIRB
 
     def test_colorize_code_complete_true
       unless complete_option_supported?
-        skip '`complete: true` is the same as `complete: false` in Ruby 2.6-'
+        pend '`complete: true` is the same as `complete: false` in Ruby 2.6-'
       end
 
       # `complete: true` behaviors. Warn end-of-file.

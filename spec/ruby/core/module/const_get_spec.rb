@@ -100,6 +100,16 @@ describe "Module#const_get" do
     ConstantSpecs.const_get("::CS_CONST1").should == :const1
   end
 
+  it "accepts a toplevel scope qualifier when inherit is false" do
+    ConstantSpecs.const_get("::CS_CONST1", false).should == :const1
+    -> { ConstantSpecs.const_get("CS_CONST1", false) }.should raise_error(NameError)
+  end
+
+  it "returns a constant whose module is defined the the toplevel" do
+    ConstantSpecs.const_get("ConstantSpecsTwo::Foo").should == :cs_two_foo
+    ConstantSpecsThree.const_get("ConstantSpecsTwo::Foo").should == :cs_three_foo
+  end
+
   it "accepts a scoped constant name" do
     ConstantSpecs.const_get("ClassA::CS_CONST10").should == :const10_10
   end
@@ -138,6 +148,10 @@ describe "Module#const_get" do
 
   it 'does autoload a non-toplevel module' do
     Object.const_get('CSAutoloadD::InnerModule').name.should == 'CSAutoloadD::InnerModule'
+  end
+
+  it "raises a NameError when the nested constant does not exist on the module but exists in Object" do
+    -> { Object.const_get('ConstantSpecs::CS_CONST1') }.should raise_error(NameError)
   end
 
   describe "with statically assigned constants" do

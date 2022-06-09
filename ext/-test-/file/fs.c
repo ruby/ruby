@@ -28,7 +28,7 @@ typedef struct statvfs statfs_t;
 # if defined HAVE_STRUCT_STATVFS_F_TYPE
 #   define HAVE_STRUCT_STATFS_T_F_TYPE 1
 # endif
-#elif defined(HAVE_STRUCT_STATVFS_F_BASETYPE) /* AIX, HP-UX, Solaris */
+#elif defined(HAVE_STRUCT_STATVFS_F_BASETYPE) /* AIX, Solaris */
 typedef struct statvfs statfs_t;
 # define STATFS(f, s) statvfs((f), (s))
 # define HAVE_STRUCT_STATFS_T_F_FSTYPENAME 1

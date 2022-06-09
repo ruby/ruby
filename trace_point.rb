@@ -31,7 +31,7 @@
 #
 # To filter what is traced, you can pass any of the following as +events+:
 #
-# +:line+:: execute code on a new line
+# +:line+:: execute an expression or statement on a new line
 # +:class+:: start a class or module definition
 # +:end+:: finish a class or module definition
 # +:call+:: call a Ruby method
@@ -41,6 +41,8 @@
 # +:raise+:: raise an exception
 # +:b_call+:: event hook at block entry
 # +:b_return+:: event hook at block ending
+# +:a_call+:: event hook at all calls (+call+, +b_call+, and +c_call+)
+# +:a_return+:: event hook at all returns (+return+, +b_return+, and +c_return+)
 # +:thread_begin+:: event hook at thread beginning
 # +:thread_end+:: event hook at thread ending
 # +:fiber_switch+:: event hook at fiber switch
@@ -118,13 +120,11 @@ class TracePoint
     Primitive.tracepoint_stat_s
   end
 
-  # Document-method: trace
-  #
   # call-seq:
-  #	TracePoint.trace(*events) { |obj| block }	-> obj
+  #	   TracePoint.trace(*events) { |obj| block }	-> obj
   #
-  #  A convenience method for TracePoint.new, that activates the trace
-  #  automatically.
+  # A convenience method for TracePoint.new, that activates the trace
+  # automatically.
   #
   #	    trace = TracePoint.trace(:call) { |tp| [tp.lineno, tp.event] }
   #	    #=> #<TracePoint:enabled>
@@ -136,8 +136,24 @@ class TracePoint
   end
 
   # call-seq:
+  #   TracePoint.allow_reentry
+  #
+  # In general, while a TracePoint callback is running,
+  # other registered callbacks are not called to avoid
+  # confusion by reentrance.
+  # This method allows the reentrance in a given block.
+  # This method should be used carefully, otherwise the callback
+  # can be easily called infinitely.
+  #
+  # If this method is called when the reentrance is already allowed,
+  # it raises a RuntimeError.
+  def self.allow_reentry
+    Primitive.tracepoint_allow_reentry
+  end
+
+  # call-seq:
   #    trace.enable(target: nil, target_line: nil, target_thread: nil)    -> true or false
-  #    trace.enable(target: nil, target_line: nil, target_thread: nil) { block }  -> obj
+  #    trace.enable(target: nil, target_line: nil, target_thread: :default) { block }  -> obj
   #
   # Activates the trace.
   #
@@ -151,15 +167,16 @@ class TracePoint
   #   trace.enable    #=> true (previous state)
   #                   #   trace is still enabled
   #
-  # If a block is given, the trace will only be enabled within the scope of the
-  # block.
+  # If a block is given, the trace will only be enabled during the block call.
+  # If target and target_line are both nil, then target_thread will default
+  # to the current thread if a block is given.
   #
   #    trace.enabled?
   #    #=> false
   #
   #    trace.enable do
   #      trace.enabled?
-  #      # only enabled for this block
+  #      # only enabled for this block and thread
   #    end
   #
   #    trace.enabled?
@@ -192,7 +209,7 @@ class TracePoint
   #    trace.enable { p tp.lineno }
   #    #=> RuntimeError: access from outside
   #
-  def enable(target: nil, target_line: nil, target_thread: nil)
+  def enable(target: nil, target_line: nil, target_thread: :default)
     Primitive.tracepoint_enable_m(target, target_line, target_thread)
   end
 

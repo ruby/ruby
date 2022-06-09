@@ -11,6 +11,10 @@
 #define pipe(p) rb_w32_pipe(p)
 #endif
 
+#ifndef _WIN32
+#include <pthread.h>
+#endif
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -131,6 +135,38 @@ static VALUE thread_spec_rb_thread_create(VALUE self, VALUE proc, VALUE arg) {
   return rb_thread_create(thread_spec_call_proc, (void*)args);
 }
 
+static VALUE thread_spec_ruby_native_thread_p(VALUE self) {
+  if (ruby_native_thread_p()) {
+    return Qtrue;
+  } else {
+    return Qfalse;
+  }
+}
+
+#ifndef _WIN32
+static VALUE false_result = Qfalse;
+static VALUE true_result = Qtrue;
+
+static void *new_thread_check(void *args) {
+  if (ruby_native_thread_p()) {
+    return &true_result;
+  } else {
+    return &false_result;
+  }
+}
+#endif
+
+static VALUE thread_spec_ruby_native_thread_p_new_thread(VALUE self) {
+#ifndef _WIN32
+    pthread_t t;
+    void *result = &true_result;
+    pthread_create(&t, NULL, new_thread_check, NULL);
+    pthread_join(t, &result);
+    return *(VALUE *)result;
+#else
+    return Qfalse;
+#endif
+}
 
 void Init_thread_spec(void) {
   VALUE cls = rb_define_class("CApiThreadSpecs", rb_cObject);
@@ -143,6 +179,8 @@ void Init_thread_spec(void) {
   rb_define_method(cls,  "rb_thread_wakeup", thread_spec_rb_thread_wakeup, 1);
   rb_define_method(cls,  "rb_thread_wait_for", thread_spec_rb_thread_wait_for, 2);
   rb_define_method(cls,  "rb_thread_create", thread_spec_rb_thread_create, 2);
+  rb_define_method(cls,  "ruby_native_thread_p", thread_spec_ruby_native_thread_p, 0);
+  rb_define_method(cls,  "ruby_native_thread_p_new_thread", thread_spec_ruby_native_thread_p_new_thread, 0);
 }
 
 #ifdef __cplusplus

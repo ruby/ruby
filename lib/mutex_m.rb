@@ -41,6 +41,7 @@
 module Mutex_m
 
   VERSION = "0.1.1"
+  Ractor.make_shareable(VERSION) if defined?(Ractor)
 
   def Mutex_m.define_aliases(cl) # :nodoc:
     cl.module_eval %q{
@@ -73,32 +74,32 @@ module Mutex_m
     mu_initialize
   end
 
-  # See Mutex#synchronize
+  # See Thread::Mutex#synchronize
   def mu_synchronize(&block)
     @_mutex.synchronize(&block)
   end
 
-  # See Mutex#locked?
+  # See Thread::Mutex#locked?
   def mu_locked?
     @_mutex.locked?
   end
 
-  # See Mutex#try_lock
+  # See Thread::Mutex#try_lock
   def mu_try_lock
     @_mutex.try_lock
   end
 
-  # See Mutex#lock
+  # See Thread::Mutex#lock
   def mu_lock
     @_mutex.lock
   end
 
-  # See Mutex#unlock
+  # See Thread::Mutex#unlock
   def mu_unlock
     @_mutex.unlock
   end
 
-  # See Mutex#sleep
+  # See Thread::Mutex#sleep
   def sleep(timeout = nil)
     @_mutex.sleep(timeout)
   end

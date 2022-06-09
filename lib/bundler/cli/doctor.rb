@@ -1,6 +1,8 @@
 # frozen_string_literal: true
 
 require "rbconfig"
+require "shellwords"
+require "fiddle"
 
 module Bundler
   class CLI::Doctor
@@ -22,14 +24,14 @@ module Bundler
     end
 
     def dylibs_darwin(path)
-      output = `/usr/bin/otool -L "#{path}"`.chomp
+      output = `/usr/bin/otool -L #{path.shellescape}`.chomp
       dylibs = output.split("\n")[1..-1].map {|l| l.match(DARWIN_REGEX).captures[0] }.uniq
       # ignore @rpath and friends
       dylibs.reject {|dylib| dylib.start_with? "@" }
     end
 
     def dylibs_ldd(path)
-      output = `/usr/bin/ldd "#{path}"`.chomp
+      output = `/usr/bin/ldd #{path.shellescape}`.chomp
       output.split("\n").map do |l|
         match = l.match(LDD_REGEX)
         next if match.nil?
@@ -61,7 +63,7 @@ module Bundler
     end
 
     def run
-      Bundler.ui.level = "error" if options[:quiet]
+      Bundler.ui.level = "warn" if options[:quiet]
       Bundler.settings.validate!
       check!
 
@@ -70,7 +72,14 @@ module Bundler
 
       definition.specs.each do |spec|
         bundles_for_gem(spec).each do |bundle|
-          bad_paths = dylibs(bundle).select {|f| !File.exist?(f) }
+          bad_paths = dylibs(bundle).select do |f|
+            begin
+              Fiddle.dlopen(f)
+              false
+            rescue Fiddle::DLError
+              true
+            end
+          end
           if bad_paths.any?
             broken_links[spec] ||= []
             broken_links[spec].concat(bad_paths)
@@ -100,8 +109,11 @@ module Bundler
       files_not_readable_or_writable = []
       files_not_rw_and_owned_by_different_user = []
       files_not_owned_by_current_user_but_still_rw = []
+      broken_symlinks = []
       Find.find(Bundler.bundle_path.to_s).each do |f|
-        if !File.writable?(f) || !File.readable?(f)
+        if !File.exist?(f)
+          broken_symlinks << f
+        elsif !File.writable?(f) || !File.readable?(f)
           if File.stat(f).uid != Process.uid
             files_not_rw_and_owned_by_different_user << f
           else
@@ -113,6 +125,13 @@ module Bundler
       end
 
       ok = true
+
+      if broken_symlinks.any?
+        Bundler.ui.warn "Broken links exist in the Bundler home. Please report them to the offending gem's upstream repo. These files are:\n - #{broken_symlinks.join("\n - ")}"
+
+        ok = false
+      end
+
       if files_not_owned_by_current_user_but_still_rw.any?
         Bundler.ui.warn "Files exist in the Bundler home that are owned by another " \
           "user, but are still readable/writable. These files are:\n - #{files_not_owned_by_current_user_but_still_rw.join("\n - ")}"

@@ -323,6 +323,7 @@ class TestWEBrickHTTPProxy < Test::Unit::TestCase
   end if defined?(OpenSSL::SSL)
 
   def test_upstream_proxy
+    return if /mswin/ =~ RUBY_PLATFORM && ENV.key?('GITHUB_ACTIONS') # not working from the beginning
     # Testing GET or POST through the upstream proxy server
     # Note that the upstream proxy server works as the origin server.
     #                                   +------+

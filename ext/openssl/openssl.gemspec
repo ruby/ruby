@@ -1,6 +1,6 @@
 Gem::Specification.new do |spec|
   spec.name          = "openssl"
-  spec.version       = "2.2.0"
+  spec.version       = "3.0.0"
   spec.authors       = ["Martin Bosslet", "SHIBATA Hiroshi", "Zachary Scott", "Kazuki Yamaguchi"]
   spec.email         = ["ruby-core@ruby-lang.org"]
   spec.summary       = %q{OpenSSL provides SSL, TLS and general purpose cryptography.}
@@ -15,12 +15,7 @@ Gem::Specification.new do |spec|
   spec.extra_rdoc_files = Dir["*.md"]
   spec.rdoc_options = ["--main", "README.md"]
 
-  spec.required_ruby_version = ">= 2.3.0"
-
-  spec.add_development_dependency "rake"
-  spec.add_development_dependency "rake-compiler"
-  spec.add_development_dependency "test-unit", "~> 3.0"
-  spec.add_development_dependency "rdoc"
+  spec.required_ruby_version = ">= 2.6.0"
 
   spec.metadata["msys2_mingw_dependencies"] = "openssl"
 end

@@ -1,4 +1,7 @@
 # frozen_string_literal: true
+
+require_relative 'markup/attribute_manager' # for PROTECT_ATTR
+
 ##
 # RDoc::CrossReference is a reusable way to create cross references for names.
 
@@ -15,11 +18,24 @@ class RDoc::CrossReference
   CLASS_REGEXP_STR = '\\\\?((?:\:{2})?[A-Z]\w*(?:\:\:\w+)*)'
 
   ##
+  # Regular expression to match a single method argument.
+
+  METHOD_ARG_REGEXP_STR = '[\w.+*/=<>-]+'
+
+  ##
+  # Regular expression to match method arguments.
+
+  METHOD_ARGS_REGEXP_STR = /(?:\((?:#{METHOD_ARG_REGEXP_STR}(?:,\s*#{METHOD_ARG_REGEXP_STR})*)?\))?/.source
+
+  ##
   # Regular expression to match method references.
   #
   # See CLASS_REGEXP_STR
 
-  METHOD_REGEXP_STR = '([a-z]\w*[!?=]?|%|===|\[\]=?|<<|>>|\+@|-@|-|\+|\*)(?:\([\w.+*/=<>-]*\))?'
+  METHOD_REGEXP_STR = /(
+    (?!\d)[\w#{RDoc::Markup::AttributeManager::PROTECT_ATTR}]+[!?=]?|
+    %|=(?:==?|~)|![=~]|\[\]=?|<(?:<|=>?)?|>[>=]?|[-+!]@?|\*\*?|[\/%\`|&^~]
+  )#{METHOD_ARGS_REGEXP_STR}/.source.delete("\n ").freeze
 
   ##
   # Regular expressions matching text that should potentially have
@@ -33,12 +49,6 @@ class RDoc::CrossReference
                       (?:
                        # A::B::C.meth
                        #{CLASS_REGEXP_STR}(?:[.#]|::)#{METHOD_REGEXP_STR}
-
-                       # Stand-alone method (preceded by a #)
-                       | \\?\##{METHOD_REGEXP_STR}
-
-                       # Stand-alone method (preceded by ::)
-                       | ::#{METHOD_REGEXP_STR}
 
                        # A::B::C
                        # The stuff after CLASS_REGEXP_STR is a
@@ -55,6 +65,12 @@ class RDoc::CrossReference
                        # punctuation, tag start character, or attribute
                        # marker.
                        | #{CLASS_REGEXP_STR}(?=[@\s).?!,;<\000]|\z)
+
+                       # Stand-alone method (preceded by a #)
+                       | \\?\##{METHOD_REGEXP_STR}
+
+                       # Stand-alone method (preceded by ::)
+                       | ::#{METHOD_REGEXP_STR}
 
                        # Things that look like filenames
                        # The key thing is that there must be at least
@@ -82,11 +98,11 @@ class RDoc::CrossReference
                        # A::B::C.meth
                        #{CLASS_REGEXP_STR}(?:[.#]|::)#{METHOD_REGEXP_STR}
 
-                       # Stand-alone method
-                       | \\?#{METHOD_REGEXP_STR}
-
                        # A::B::C
                        | #{CLASS_REGEXP_STR}(?=[@\s).?!,;<\000]|\z)
+
+                       # Stand-alone method
+                       | \\?#{METHOD_REGEXP_STR}
 
                        # Things that look like filenames
                        | (?:\.\.\/)*[-\/\w]+[_\/.][-\w\/.]+
@@ -115,15 +131,8 @@ class RDoc::CrossReference
     @seen = {}
   end
 
-  ##
-  # Returns a reference to +name+.
-  #
-  # If the reference is found and +name+ is not documented +text+ will be
-  # returned.  If +name+ is escaped +name+ is returned.  If +name+ is not
-  # found +text+ is returned.
-
-  def resolve name, text
-    return @seen[name] if @seen.include? name
+  def resolve_method name
+    ref = nil
 
     if /#{CLASS_REGEXP_STR}([.#]|::)#{METHOD_REGEXP_STR}/o =~ name then
       type = $2
@@ -165,12 +174,27 @@ class RDoc::CrossReference
       end
     end
 
+    ref
+  end
+
+  ##
+  # Returns a reference to +name+.
+  #
+  # If the reference is found and +name+ is not documented +text+ will be
+  # returned.  If +name+ is escaped +name+ is returned.  If +name+ is not
+  # found +text+ is returned.
+
+  def resolve name, text
+    return @seen[name] if @seen.include? name
+
     ref = case name
           when /^\\(#{CLASS_REGEXP_STR})$/o then
             @context.find_symbol $1
           else
             @context.find_symbol name
-          end unless ref
+          end
+
+    ref = resolve_method name unless ref
 
     # Try a page name
     ref = @store.page name if not ref and name =~ /^[\w.]+$/

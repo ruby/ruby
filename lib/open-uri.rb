@@ -9,7 +9,7 @@ module URI
   # If the first argument responds to the 'open' method, 'open' is called on
   # it with the rest of the arguments.
   #
-  # If the first argument is a string that begins with <code>(protocol)://<code>, it is parsed by
+  # If the first argument is a string that begins with <code>(protocol)://</code>, it is parsed by
   # URI.parse.  If the parsed object responds to the 'open' method,
   # 'open' is called on it with the rest of the arguments.
   #
@@ -750,7 +750,12 @@ module URI
         OpenURI.open_http(buf, self, proxy, options)
         return
       end
-      require 'net/ftp'
+
+      begin
+        require 'net/ftp'
+      rescue LoadError
+        abort "net/ftp is not found. You may need to `gem install net-ftp` to install net/ftp."
+      end
 
       path = self.path
       path = path.sub(%r{\A/}, '%2F') # re-encode the beginning slash because uri library decodes it.

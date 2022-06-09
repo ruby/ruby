@@ -58,6 +58,17 @@ describe "CApiWrappedTypedStruct" do
     end
   end
 
+  describe "rb_check_type" do
+    it "raises an exception when checking typed data objects" do
+      -> {
+        a = @s.typed_wrap_struct(1024)
+        @s.rb_check_type(a, a)
+      }.should raise_error(TypeError) { |e|
+        e.message.should == 'wrong argument type Object (expected Data)'
+      }
+    end
+  end
+
   describe "rb_check_typeddata" do
     it "returns data pointer when the struct has the given type" do
       a = @s.typed_wrap_struct(1024)

@@ -40,6 +40,7 @@
 #   include "ruby/defines.h"
 #  endif
 # endif
+# include "ruby.h"
 #else /* RUBY */
 # ifndef PACKAGE
 /* PACKAGE is defined in config.h */

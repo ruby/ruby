@@ -400,6 +400,29 @@ class RDoc::Parser::Ruby < RDoc::Parser
   end
 
   ##
+  # Skip opening parentheses and yield the block.
+  # Skip closing parentheses too when exists.
+
+  def skip_parentheses(&block)
+    left_tk = peek_tk
+
+    if :on_lparen == left_tk[:kind]
+      get_tk
+
+      ret = skip_parentheses(&block)
+
+      right_tk = peek_tk
+      if :on_rparen == right_tk[:kind]
+        get_tk
+      end
+
+      ret
+    else
+      yield
+    end
+  end
+
+  ##
   # Return a superclass, which can be either a constant of an expression
 
   def get_class_specification
@@ -833,7 +856,7 @@ class RDoc::Parser::Ruby < RDoc::Parser
       cls = parse_class_regular container, declaration_context, single,
         name_t, given_name, comment
     elsif name_t[:kind] == :on_op && name_t[:text] == '<<'
-      case name = get_class_specification
+      case name = skip_parentheses { get_class_specification }
       when 'self', container.name
         read_documentation_modifiers cls, RDoc::CLASS_MODIFIERS
         parse_statements container, SINGLE
@@ -1191,6 +1214,22 @@ class RDoc::Parser::Ruby < RDoc::Parser
 
       get_tk
     end
+  end
+
+  ##
+  # Parses an +included+ with a block feature of ActiveSupport::Concern.
+
+  def parse_included_with_activesupport_concern container, comment # :nodoc:
+    skip_tkspace_without_nl
+    tk = get_tk
+    unless tk[:kind] == :on_lbracket || (tk[:kind] == :on_kw && tk[:text] == 'do')
+      unget_tk tk
+      return nil # should be a block
+    end
+
+    parse_statements container
+
+    container
   end
 
   ##
@@ -1893,6 +1932,8 @@ class RDoc::Parser::Ruby < RDoc::Parser
           parse_extend_or_include RDoc::Include, container, comment
         when "extend" then
           parse_extend_or_include RDoc::Extend, container, comment
+        when "included" then
+          parse_included_with_activesupport_concern container, comment
         end
 
       else

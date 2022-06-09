@@ -29,9 +29,39 @@ describe :kernel_raise, shared: true do
         @data = data
       end
     end
-    -> { @object.raise(data_error, {:data => 42}) }.should raise_error(data_error) do |ex|
-      ex.data.should == {:data => 42}
+
+    -> { @object.raise(data_error, {data: 42}) }.should raise_error(data_error) do |ex|
+      ex.data.should == {data: 42}
     end
+  end
+
+  # https://bugs.ruby-lang.org/issues/8257#note-36
+  it "allows extra keyword arguments for compatibility" do
+    data_error = Class.new(StandardError) do
+      attr_reader :data
+      def initialize(data)
+        @data = data
+      end
+    end
+
+    -> { @object.raise(data_error, data: 42) }.should raise_error(data_error) do |ex|
+      ex.data.should == {data: 42}
+    end
+  end
+
+  it "does not allow message and extra keyword arguments" do
+    data_error = Class.new(StandardError) do
+      attr_reader :data
+      def initialize(data)
+        @data = data
+      end
+    end
+
+    -> { @object.raise(data_error, {a: 1}, b: 2) }.should raise_error(StandardError) do |e|
+      [TypeError, ArgumentError].should.include?(e.class)
+    end
+
+    -> { @object.raise(data_error, {a: 1}, [], b: 2) }.should raise_error(ArgumentError)
   end
 
   it "raises RuntimeError if no exception class is given" do

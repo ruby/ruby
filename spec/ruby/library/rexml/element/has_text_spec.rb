@@ -11,7 +11,7 @@ ruby_version_is ''...'3.0' do
       e.has_text?.should be_true
     end
 
-    it "returns false if it has no Text childs" do
+    it "returns false if it has no Text children" do
       e = REXML::Element.new("Person")
       e.has_text?.should be_false
     end

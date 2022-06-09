@@ -107,36 +107,42 @@ module Bundler::Molinillo
         end
       end
 
-      conflicts.sort.reduce(''.dup) do |o, (name, conflict)|
-        o << "\n" << incompatible_version_message_for_conflict.call(name, conflict) << "\n"
-        if conflict.locked_requirement
-          o << %(  In snapshot (#{name_for_locking_dependency_source}):\n)
-          o << %(    #{printable_requirement.call(conflict.locked_requirement)}\n)
-          o << %(\n)
-        end
-        o << %(  In #{name_for_explicit_dependency_source}:\n)
-        trees = reduce_trees.call(conflict.requirement_trees)
-
-        o << trees.map do |tree|
-          t = ''.dup
-          depth = 2
-          tree.each do |req|
-            t << '  ' * depth << printable_requirement.call(req)
-            unless tree.last == req
-              if spec = conflict.activated_by_name[name_for(req)]
-                t << %( was resolved to #{version_for_spec.call(spec)}, which)
-              end
-              t << %( depends on)
-            end
-            t << %(\n)
-            depth += 1
+      full_message_for_conflict = opts.delete(:full_message_for_conflict) do
+        proc do |name, conflict|
+          o = "\n".dup << incompatible_version_message_for_conflict.call(name, conflict) << "\n"
+          if conflict.locked_requirement
+            o << %(  In snapshot (#{name_for_locking_dependency_source}):\n)
+            o << %(    #{printable_requirement.call(conflict.locked_requirement)}\n)
+            o << %(\n)
           end
-          t
-        end.join("\n")
+          o << %(  In #{name_for_explicit_dependency_source}:\n)
+          trees = reduce_trees.call(conflict.requirement_trees)
 
-        additional_message_for_conflict.call(o, name, conflict)
+          o << trees.map do |tree|
+            t = ''.dup
+            depth = 2
+            tree.each do |req|
+              t << '  ' * depth << printable_requirement.call(req)
+              unless tree.last == req
+                if spec = conflict.activated_by_name[name_for(req)]
+                  t << %( was resolved to #{version_for_spec.call(spec)}, which)
+                end
+                t << %( depends on)
+              end
+              t << %(\n)
+              depth += 1
+            end
+            t
+          end.join("\n")
 
-        o
+          additional_message_for_conflict.call(o, name, conflict)
+
+          o
+        end
+      end
+
+      conflicts.sort.reduce(''.dup) do |o, (name, conflict)|
+        o << full_message_for_conflict.call(name, conflict)
       end.strip
     end
   end

@@ -1,9 +1,9 @@
 # frozen_string_literal: true
-require 'rubygems/remote_fetcher'
-require 'rubygems/user_interaction'
-require 'rubygems/errors'
-require 'rubygems/text'
-require 'rubygems/name_tuple'
+require_relative 'remote_fetcher'
+require_relative 'user_interaction'
+require_relative 'errors'
+require_relative 'text'
+require_relative 'name_tuple'
 
 ##
 # SpecFetcher handles metadata updates from remote gem repositories.
@@ -91,8 +91,8 @@ class Gem::SpecFetcher
 
     list.each do |source, specs|
       if dependency.name.is_a?(String) && specs.respond_to?(:bsearch)
-        start_index = (0 ... specs.length).bsearch{|i| specs[i].name >= dependency.name }
-        end_index   = (0 ... specs.length).bsearch{|i| specs[i].name > dependency.name }
+        start_index = (0 ... specs.length).bsearch {|i| specs[i].name >= dependency.name }
+        end_index   = (0 ... specs.length).bsearch {|i| specs[i].name > dependency.name }
         specs = specs[start_index ... end_index] if start_index && end_index
       end
 
@@ -121,7 +121,7 @@ class Gem::SpecFetcher
       end
     end
 
-    tuples = tuples.sort_by {|x| x[0] }
+    tuples = tuples.sort_by {|x| x[0].version }
 
     return [tuples, errors]
   end
@@ -191,10 +191,10 @@ class Gem::SpecFetcher
     end
 
     matches = if matches.empty? && type != :prerelease
-                suggest_gems_from_name gem_name, :prerelease
-              else
-                matches.uniq.sort_by {|name, dist| dist }
-              end
+      suggest_gems_from_name gem_name, :prerelease
+    else
+      matches.uniq.sort_by {|name, dist| dist }
+    end
 
     matches.map {|name, dist| name }.uniq.first(num_results)
   end
@@ -216,27 +216,27 @@ class Gem::SpecFetcher
     @sources.each_source do |source|
       begin
         names = case type
-                when :latest
-                  tuples_for source, :latest
-                when :released
-                  tuples_for source, :released
-                when :complete
-                  names =
-                    tuples_for(source, :prerelease, true) +
-                    tuples_for(source, :released)
+        when :latest
+          tuples_for source, :latest
+        when :released
+          tuples_for source, :released
+        when :complete
+          names =
+            tuples_for(source, :prerelease, true) +
+            tuples_for(source, :released)
 
-                  names.sort
-                when :abs_latest
-                  names =
-                    tuples_for(source, :prerelease, true) +
-                    tuples_for(source, :latest)
+          names.sort
+        when :abs_latest
+          names =
+            tuples_for(source, :prerelease, true) +
+            tuples_for(source, :latest)
 
-                  names.sort
-                when :prerelease
-                  tuples_for(source, :prerelease)
-                else
-                  raise Gem::Exception, "Unknown type - :#{type}"
-                end
+          names.sort
+        when :prerelease
+          tuples_for(source, :prerelease)
+        else
+          raise Gem::Exception, "Unknown type - :#{type}"
+        end
       rescue Gem::RemoteFetcher::FetchError => e
         errors << Gem::SourceFetchProblem.new(source, e)
       else

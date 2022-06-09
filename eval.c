@@ -42,7 +42,7 @@ NORETURN(static void rb_raise_jump(VALUE, VALUE));
 void rb_ec_clear_current_thread_trace_func(const rb_execution_context_t *ec);
 void rb_ec_clear_all_trace_func(const rb_execution_context_t *ec);
 
-static int rb_ec_cleanup(rb_execution_context_t *ec, volatile int ex);
+static int rb_ec_cleanup(rb_execution_context_t *ec, int ex);
 static int rb_ec_exec_node(rb_execution_context_t *ec, void *n);
 
 VALUE rb_eLocalJumpError;
@@ -61,11 +61,6 @@ extern ID ruby_static_id_cause;
     (!SPECIAL_CONST_P(obj) && \
      (BUILTIN_TYPE(obj) == T_CLASS || BUILTIN_TYPE(obj) == T_MODULE))
 
-/*!
- * Initializes the VM and builtin libraries.
- * @retval 0 if succeeded.
- * @retval non-zero an error occurred.
- */
 int
 ruby_setup(void)
 {
@@ -99,11 +94,6 @@ ruby_setup(void)
     return state;
 }
 
-/*!
- * Calls ruby_setup() and check error.
- *
- * Prints errors and calls exit(3) if an error occurred.
- */
 void
 ruby_init(void)
 {
@@ -115,16 +105,6 @@ ruby_init(void)
     }
 }
 
-/*! Processes command line arguments and compiles the Ruby source to execute.
- *
- * This function does:
- * \li Processes the given command line flags and arguments for ruby(1)
- * \li compiles the source code from the given argument, -e or stdin, and
- * \li returns the compiled source as an opaque pointer to an internal data structure
- *
- * @return an opaque pointer to the compiled source or an internal special value.
- * @sa ruby_executable_node().
- */
 void *
 ruby_options(int argc, char **argv)
 {
@@ -184,13 +164,6 @@ rb_ec_finalize(rb_execution_context_t *ec)
     rb_objspace_call_finalizer(rb_ec_vm_ptr(ec)->objspace);
 }
 
-/** Runs the VM finalization processes.
- *
- * <code>END{}</code> and procs registered by <code>Kernel.#at_exit</code> are
- * executed here. See the Ruby language spec for more details.
- *
- * @note This function is allowed to raise an exception if an error occurred.
- */
 void
 ruby_finalize(void)
 {
@@ -199,24 +172,14 @@ ruby_finalize(void)
     rb_ec_finalize(ec);
 }
 
-/** Destructs the VM.
- *
- * Runs the VM finalization processes as well as ruby_finalize(), and frees
- * resources used by the VM.
- *
- * @param ex Default value to the return value.
- * @return If an error occurred returns a non-zero. If otherwise, returns the
- *         given ex.
- * @note This function does not raise any exception.
- */
 int
-ruby_cleanup(volatile int ex)
+ruby_cleanup(int ex)
 {
     return rb_ec_cleanup(GET_EC(), ex);
 }
 
 static int
-rb_ec_cleanup(rb_execution_context_t *ec, volatile int ex)
+rb_ec_cleanup(rb_execution_context_t *ec, int ex0)
 {
     int state;
     volatile VALUE errs[2] = { Qundef, Qundef };
@@ -225,17 +188,16 @@ rb_ec_cleanup(rb_execution_context_t *ec, volatile int ex)
     rb_thread_t *const volatile th0 = th;
     volatile int sysex = EXIT_SUCCESS;
     volatile int step = 0;
+    volatile int ex = ex0;
 
     rb_threadptr_interrupt(th);
     rb_threadptr_check_signal(th);
 
     EC_PUSH_TAG(ec);
     if ((state = EC_EXEC_TAG()) == TAG_NONE) {
-        th = th0;
         SAVE_ROOT_JMPBUF(th, { RUBY_VM_CHECK_INTS(ec); });
 
       step_0: step++;
-        th = th0;
         errs[1] = ec->errinfo;
         if (THROW_DATA_P(ec->errinfo)) ec->errinfo = Qnil;
 	ruby_init_stack(&errs[STACK_UPPER(errs, 0, 1)]);
@@ -243,7 +205,6 @@ rb_ec_cleanup(rb_execution_context_t *ec, volatile int ex)
         SAVE_ROOT_JMPBUF(th, rb_ec_teardown(ec));
 
       step_1: step++;
-        th = th0;
 	/* protect from Thread#raise */
 	th->status = THREAD_KILLED;
 
@@ -251,13 +212,13 @@ rb_ec_cleanup(rb_execution_context_t *ec, volatile int ex)
 	SAVE_ROOT_JMPBUF(th, rb_ractor_terminate_all());
     }
     else {
+        th = th0;
 	switch (step) {
 	  case 0: goto step_0;
 	  case 1: goto step_1;
 	}
 	if (ex == 0) ex = state;
     }
-    th = th0;
     ec->errinfo = errs[1];
     sysex = error_handle(ec, ex);
 
@@ -296,7 +257,9 @@ rb_ec_cleanup(rb_execution_context_t *ec, volatile int ex)
 
     /* unlock again if finalizer took mutexes. */
     rb_threadptr_unlock_all_locking_mutexes(th);
+    th = th0;
     EC_POP_TAG();
+    th = th0;
     rb_thread_stop_timer_thread();
     ruby_vm_destruct(th->vm);
     if (state) ruby_default_signal(state);
@@ -322,25 +285,12 @@ rb_ec_exec_node(rb_execution_context_t *ec, void *n)
     return state;
 }
 
-/*! Calls ruby_cleanup() and exits the process */
 void
 ruby_stop(int ex)
 {
     exit(ruby_cleanup(ex));
 }
 
-/*! Checks the return value of ruby_options().
- * @param n return value of ruby_options().
- * @param status pointer to the exit status of this process.
- *
- * ruby_options() sometimes returns a special value to indicate this process
- * should immediately exit. This function checks if the case. Also stores the
- * exit status that the caller have to pass to exit(3) into
- * <code>*status</code>.
- *
- * @retval non-zero if the given opaque pointer is actually a compiled source.
- * @retval 0 if the given value is such a special value.
- */
 int
 ruby_executable_node(void *n, int *status)
 {
@@ -358,10 +308,6 @@ ruby_executable_node(void *n, int *status)
     return FALSE;
 }
 
-/*! Runs the given compiled source and exits this process.
- * @retval 0 if successfully run the source
- * @retval non-zero if an error occurred.
-*/
 int
 ruby_run_node(void *n)
 {
@@ -375,7 +321,6 @@ ruby_run_node(void *n)
     return rb_ec_cleanup(ec, rb_ec_exec_node(ec, n));
 }
 
-/*! Runs the given compiled source */
 int
 ruby_exec_node(void *n)
 {
@@ -478,6 +423,9 @@ rb_class_modify_check(VALUE klass)
 {
     if (SPECIAL_CONST_P(klass)) {
 	Check_Type(klass, T_CLASS);
+    }
+    if (RB_TYPE_P(klass, T_MODULE)) {
+        rb_module_set_initialized(klass);
     }
     if (OBJ_FROZEN(klass)) {
 	const char *desc;
@@ -738,10 +686,6 @@ rb_exc_fatal(VALUE mesg)
     rb_exc_exception(mesg, TAG_FATAL, Qnil);
 }
 
-/*!
- * Raises an \c Interrupt exception.
- * \ingroup exception
- */
 void
 rb_interrupt(void)
 {
@@ -751,17 +695,18 @@ rb_interrupt(void)
 enum {raise_opt_cause, raise_max_opt}; /*< \private */
 
 static int
-extract_raise_opts(int argc, const VALUE *argv, VALUE *opts)
+extract_raise_opts(int argc, VALUE *argv, VALUE *opts)
 {
     int i;
     if (argc > 0) {
-	VALUE opt = argv[argc-1];
-	if (RB_TYPE_P(opt, T_HASH)) {
+	VALUE opt;
+	argc = rb_scan_args(argc, argv, "*:", NULL, &opt);
+	if (!NIL_P(opt)) {
 	    if (!RHASH_EMPTY_P(opt)) {
 		ID keywords[1];
 		CONST_ID(keywords[0], "cause");
 		rb_get_kwargs(opt, keywords, 0, -1-raise_max_opt, opts);
-		if (RHASH_EMPTY_P(opt)) --argc;
+		if (!RHASH_EMPTY_P(opt)) argv[argc++] = opt;
 		return argc;
 	    }
 	}
@@ -869,26 +814,6 @@ make_exception(int argc, const VALUE *argv, int isstr)
     return mesg;
 }
 
-/*!
- * Make an \c Exception object from the list of arguments in a manner
- * similar to \c Kernel\#raise.
- *
- * \param[in] argc the number of arguments
- * \param[in] argv a pointer to the array of arguments.
- *
- * The first form of this function takes a \c String argument. Then
- * it returns a \c RuntimeError whose error message is the given value.
- *
- * The second from of this function takes an \c Exception object. Then
- * it just returns the given value.
- *
- * The last form takes an exception class, an optional error message and
- * an optional array of backtrace. Then it passes the optional arguments
- * to \c #exception method of the exception class.
- *
- * \return the exception object, or \c Qnil if \c argc is 0.
- * \ingroup exception
- */
 VALUE
 rb_make_exception(int argc, const VALUE *argv)
 {
@@ -913,14 +838,6 @@ rb_raise_jump(VALUE mesg, VALUE cause)
     rb_longjmp(ec, TAG_RAISE, mesg, cause);
 }
 
-/*!
- * Continues the exception caught by rb_protect() and rb_eval_string_protect().
- *
- * This function never return to the caller.
- * \param[in] the value of \c *state which the protect function has set to the
- *   their last parameter.
- * \ingroup exception
- */
 void
 rb_jump_tag(int tag)
 {
@@ -930,11 +847,6 @@ rb_jump_tag(int tag)
     EC_JUMP_TAG(GET_EC(), tag);
 }
 
-/*! Determines if the current method is given a block.
- * \retval zero if not given
- * \retval non-zero if given
- * \ingroup defmethod
- */
 int
 rb_block_given_p(void)
 {
@@ -956,11 +868,6 @@ rb_keyword_given_p(void)
 
 VALUE rb_eThreadError;
 
-/*! Declares that the current method needs a block.
- *
- * Raises a \c LocalJumpError if not given a block.
- * \ingroup defmethod
- */
 void
 rb_need_block(void)
 {
@@ -969,28 +876,6 @@ rb_need_block(void)
     }
 }
 
-/*! An equivalent of \c rescue clause.
- *
- * Equivalent to <code>begin .. rescue err_type .. end</code>
- *
- * \param[in] b_proc a function which potentially raises an exception.
- * \param[in] data1 the argument of \a b_proc
- * \param[in] r_proc a function which rescues an exception in \a b_proc.
- * \param[in] data2 the first argument of \a r_proc
- * \param[in] ... 1 or more exception classes. Must be terminated by \c (VALUE)0.
- *
- * First it calls the function \a b_proc, with \a data1 as the argument.
- * When \a b_proc raises an exception, it calls \a r_proc with \a data2 and
- * the exception object if the exception is a kind of one of the given
- * exception classes.
- *
- * \return the return value of \a b_proc if no exception occurs,
- *   or the return value of \a r_proc if otherwise.
- * \sa rb_rescue
- * \sa rb_ensure
- * \sa rb_protect
- * \ingroup exception
- */
 VALUE
 rb_rescue2(VALUE (* b_proc) (VALUE), VALUE data1,
            VALUE (* r_proc) (VALUE, VALUE), VALUE data2, ...)
@@ -1002,10 +887,6 @@ rb_rescue2(VALUE (* b_proc) (VALUE), VALUE data1,
     return ret;
 }
 
-/*!
- * \copydoc rb_rescue2
- * \param[in] args exception classes, terminated by (VALUE)0.
- */
 VALUE
 rb_vrescue2(VALUE (* b_proc) (VALUE), VALUE data1,
             VALUE (* r_proc) (VALUE, VALUE), VALUE data2,
@@ -1066,20 +947,6 @@ rb_vrescue2(VALUE (* b_proc) (VALUE), VALUE data1,
     return result;
 }
 
-/*! An equivalent of \c rescue clause.
- *
- * Equivalent to <code>begin .. rescue .. end</code>.
- *
- * It is the same as
- * \code{cpp}
- * rb_rescue2(b_proc, data1, r_proc, data2, rb_eStandardError, (VALUE)0);
- * \endcode
- *
- * \sa rb_rescue2
- * \sa rb_ensure
- * \sa rb_protect
- * \ingroup exception
- */
 VALUE
 rb_rescue(VALUE (* b_proc)(VALUE), VALUE data1,
           VALUE (* r_proc)(VALUE, VALUE), VALUE data2)
@@ -1088,23 +955,6 @@ rb_rescue(VALUE (* b_proc)(VALUE), VALUE data1,
 		      (VALUE)0);
 }
 
-/*! Protects a function call from potential global escapes from the function.
- *
- * Such global escapes include exceptions, \c Kernel\#throw, \c break in
- * an iterator, for example.
- * It first calls the function func with arg as the argument.
- * If no exception occurred during func, it returns the result of func and
- * *state is zero.
- * Otherwise, it returns Qnil and sets *state to nonzero.
- * If state is NULL, it is not set in both cases.
- *
- * You have to clear the error info with rb_set_errinfo(Qnil) when
- * ignoring the caught exception.
- * \ingroup exception
- * \sa rb_rescue
- * \sa rb_rescue2
- * \sa rb_ensure
- */
 VALUE
 rb_protect(VALUE (* proc) (VALUE), VALUE data, int *pstate)
 {
@@ -1112,42 +962,20 @@ rb_protect(VALUE (* proc) (VALUE), VALUE data, int *pstate)
     volatile enum ruby_tag_type state;
     rb_execution_context_t * volatile ec = GET_EC();
     rb_control_frame_t *volatile cfp = ec->cfp;
-    struct rb_vm_protect_tag protect_tag;
-    rb_jmpbuf_t org_jmpbuf;
-
-    protect_tag.prev = ec->protect_tag;
 
     EC_PUSH_TAG(ec);
-    ec->protect_tag = &protect_tag;
-    MEMCPY(&org_jmpbuf, &rb_ec_thread_ptr(ec)->root_jmpbuf, rb_jmpbuf_t, 1);
     if ((state = EC_EXEC_TAG()) == TAG_NONE) {
 	SAVE_ROOT_JMPBUF(rb_ec_thread_ptr(ec), result = (*proc) (data));
     }
     else {
 	rb_vm_rewind_cfp(ec, cfp);
     }
-    MEMCPY(&rb_ec_thread_ptr(ec)->root_jmpbuf, &org_jmpbuf, rb_jmpbuf_t, 1);
-    ec->protect_tag = protect_tag.prev;
     EC_POP_TAG();
 
     if (pstate != NULL) *pstate = state;
     return result;
 }
 
-/*!
- * An equivalent to \c ensure clause.
- *
- * Equivalent to <code>begin .. ensure .. end</code>.
- *
- * Calls the function \a b_proc with \a data1 as the argument,
- * then calls \a e_proc with \a data2 when execution terminated.
- * \return The return value of \a b_proc if no exception occurred,
- *   or \c Qnil if otherwise.
- * \sa rb_rescue
- * \sa rb_rescue2
- * \sa rb_protect
- * \ingroup exception
- */
 VALUE
 rb_ensure(VALUE (*b_proc)(VALUE), VALUE data1, VALUE (*e_proc)(VALUE), VALUE data2)
 {
@@ -1204,35 +1032,12 @@ frame_called_id(rb_control_frame_t *cfp)
     }
 }
 
-/*!
- * The original name of the current method.
- *
- * The function returns the original name of the method even if
- * an alias of the method is called.
- * The function can also return 0 if it is not in a method. This
- * case can happen in a toplevel of a source file, for example.
- *
- * \returns the ID of the name or 0
- * \sa rb_frame_callee
- * \ingroup defmethod
- */
 ID
 rb_frame_this_func(void)
 {
     return frame_func_id(GET_EC()->cfp);
 }
 
-/*!
- * The name of the current method.
- *
- * The function returns the alias if an alias of the method is called.
- * The function can also return 0 if it is not in a method. This
- * case can happen in a toplevel of a source file, for example.
- *
- * \returns the ID of the name or 0.
- * \sa rb_frame_this_func
- * \ingroup defmethod
- */
 ID
 rb_frame_callee(void)
 {
@@ -1324,9 +1129,17 @@ rb_mod_include(int argc, VALUE *argv, VALUE module)
     CONST_ID(id_append_features, "append_features");
     CONST_ID(id_included, "included");
 
+    if (BUILTIN_TYPE(module) == T_MODULE && FL_TEST(module, RMODULE_IS_REFINEMENT)) {
+        rb_raise(rb_eTypeError, "Refinement#include has been removed");
+    }
+
     rb_check_arity(argc, 1, UNLIMITED_ARGUMENTS);
-    for (i = 0; i < argc; i++)
+    for (i = 0; i < argc; i++) {
 	Check_Type(argv[i], T_MODULE);
+        if (FL_TEST(argv[i], RMODULE_IS_REFINEMENT)) {
+            rb_raise(rb_eTypeError, "Cannot include refinement");
+        }
+    }
     while (argc--) {
 	rb_funcall(argv[argc], id_append_features, 1, module);
 	rb_funcall(argv[argc], id_included, 1, module);
@@ -1370,12 +1183,20 @@ rb_mod_prepend(int argc, VALUE *argv, VALUE module)
     int i;
     ID id_prepend_features, id_prepended;
 
+    if (BUILTIN_TYPE(module) == T_MODULE && FL_TEST(module, RMODULE_IS_REFINEMENT)) {
+        rb_raise(rb_eTypeError, "Refinement#prepend has been removed");
+    }
+
     CONST_ID(id_prepend_features, "prepend_features");
     CONST_ID(id_prepended, "prepended");
 
     rb_check_arity(argc, 1, UNLIMITED_ARGUMENTS);
-    for (i = 0; i < argc; i++)
+    for (i = 0; i < argc; i++) {
 	Check_Type(argv[i], T_MODULE);
+        if (FL_TEST(argv[i], RMODULE_IS_REFINEMENT)) {
+            rb_raise(rb_eTypeError, "Cannot prepend refinement");
+        }
+    }
     while (argc--) {
 	rb_funcall(argv[argc], id_prepend_features, 1, module);
 	rb_funcall(argv[argc], id_prepended, 1, module);
@@ -1443,7 +1264,6 @@ rb_using_refinement(rb_cref_t *cref, VALUE klass, VALUE module)
 	    }
 	}
     }
-    FL_SET(module, RMODULE_IS_OVERLAID);
     superclass = refinement_superclass(superclass);
     c = iclass = rb_include_class_new(module, superclass);
     RB_OBJ_WRITE(c, &RCLASS_REFINED_CLASS(c), klass);
@@ -1452,7 +1272,6 @@ rb_using_refinement(rb_cref_t *cref, VALUE klass, VALUE module)
 
     module = RCLASS_SUPER(module);
     while (module && module != klass) {
-	FL_SET(module, RMODULE_IS_OVERLAID);
 	c = RCLASS_SET_SUPER(c, rb_include_class_new(module, RCLASS_SUPER(c)));
         RB_OBJ_WRITE(c, &RCLASS_REFINED_CLASS(c), klass);
         module = RCLASS_SUPER(module);
@@ -1510,7 +1329,12 @@ rb_using_module(const rb_cref_t *cref, VALUE module)
     rb_clear_method_cache_all();
 }
 
-/*! \private */
+/*
+ *  call-seq:
+ *     refined_class    -> class
+ *
+ *  Return the class refined by the receiver.
+ */
 VALUE
 rb_refinement_module_get_refined_class(VALUE module)
 {
@@ -1536,13 +1360,11 @@ add_activated_refinement(VALUE activated_refinements,
 	    c = RCLASS_SUPER(c);
 	}
     }
-    FL_SET(refinement, RMODULE_IS_OVERLAID);
     superclass = refinement_superclass(superclass);
     c = iclass = rb_include_class_new(refinement, superclass);
     RB_OBJ_WRITE(c, &RCLASS_REFINED_CLASS(c), klass);
     refinement = RCLASS_SUPER(refinement);
     while (refinement && refinement != klass) {
-	FL_SET(refinement, RMODULE_IS_OVERLAID);
 	c = RCLASS_SET_SUPER(c, rb_include_class_new(refinement, RCLASS_SUPER(c)));
         RB_OBJ_WRITE(c, &RCLASS_REFINED_CLASS(c), klass);
 	refinement = RCLASS_SUPER(refinement);
@@ -1593,8 +1415,9 @@ rb_mod_refine(VALUE module, VALUE klass)
     refinement = rb_hash_lookup(refinements, klass);
     if (NIL_P(refinement)) {
 	VALUE superclass = refinement_superclass(klass);
-	refinement = rb_module_new();
+	refinement = rb_refinement_new();
 	RCLASS_SET_SUPER(refinement, superclass);
+        RUBY_ASSERT(BUILTIN_TYPE(refinement) == T_MODULE);
 	FL_SET(refinement, RMODULE_IS_REFINEMENT);
 	CONST_ID(id_refined_class, "__refined_class__");
 	rb_ivar_set(refinement, id_refined_class, klass);
@@ -1645,12 +1468,47 @@ mod_using(VALUE self, VALUE module)
     return self;
 }
 
+
+/*
+ *  call-seq:
+ *     refinements -> array
+ *
+ *  Returns an array of modules defined within the receiver.
+ *
+ *     module A
+ *       refine Integer do
+ *       end
+ *
+ *       refine String do
+ *       end
+ *     end
+ *
+ *     p A.refinements
+ *
+ *  <em>produces:</em>
+ *
+ *     [#<refinement:Integer@A>, #<refinement:String@A>]
+ */
+static VALUE
+mod_refinements(VALUE self)
+{
+    ID id_refinements;
+    VALUE refinements;
+
+    CONST_ID(id_refinements, "__refinements__");
+    refinements = rb_attr_get(self, id_refinements);
+    if (NIL_P(refinements)) {
+        return rb_ary_new();
+    }
+    return rb_hash_values(refinements);
+}
+
 static int
 used_modules_i(VALUE _, VALUE mod, VALUE ary)
 {
     ID id_defined_at;
     CONST_ID(id_defined_at, "__defined_at__");
-    while (FL_TEST(rb_class_of(mod), RMODULE_IS_REFINEMENT)) {
+    while (BUILTIN_TYPE(rb_class_of(mod)) == T_MODULE && FL_TEST(rb_class_of(mod), RMODULE_IS_REFINEMENT)) {
 	rb_ary_push(ary, rb_attr_get(rb_class_of(mod), id_defined_at));
 	mod = RCLASS_SUPER(mod);
     }
@@ -1698,16 +1556,109 @@ rb_mod_s_used_modules(VALUE _)
     return rb_funcall(ary, rb_intern("uniq"), 0);
 }
 
-/*!
- * Calls \c #initialize method of \a obj with the given arguments.
+static int
+used_refinements_i(VALUE _, VALUE mod, VALUE ary)
+{
+    while (BUILTIN_TYPE(rb_class_of(mod)) == T_MODULE && FL_TEST(rb_class_of(mod), RMODULE_IS_REFINEMENT)) {
+        rb_ary_push(ary, rb_class_of(mod));
+	mod = RCLASS_SUPER(mod);
+    }
+    return ST_CONTINUE;
+}
+
+/*
+ *  call-seq:
+ *     used_refinements -> array
  *
- * It also forwards the given block to \c #initialize if given.
+ *  Returns an array of all modules used in the current scope. The ordering
+ *  of modules in the resulting array is not defined.
  *
- * \param[in] obj the receiver object
- * \param[in] argc the number of arguments
- * \param[in] argv a pointer to the array of arguments
- * \ingroup object
+ *     module A
+ *       refine Object do
+ *       end
+ *     end
+ *
+ *     module B
+ *       refine Object do
+ *       end
+ *     end
+ *
+ *     using A
+ *     using B
+ *     p Module.used_refinements
+ *
+ *  <em>produces:</em>
+ *
+ *     [#<refinement:Object@B>, #<refinement:Object@A>]
  */
+static VALUE
+rb_mod_s_used_refinements(VALUE _)
+{
+    const rb_cref_t *cref = rb_vm_cref();
+    VALUE ary = rb_ary_new();
+
+    while (cref) {
+	if (!NIL_P(CREF_REFINEMENTS(cref))) {
+	    rb_hash_foreach(CREF_REFINEMENTS(cref), used_refinements_i, ary);
+	}
+	cref = CREF_NEXT(cref);
+    }
+
+    return ary;
+}
+
+struct refinement_import_methods_arg {
+    rb_cref_t *cref;
+    VALUE refinement;
+    VALUE module;
+};
+
+/* vm.c */
+rb_cref_t *rb_vm_cref_dup_without_refinements(const rb_cref_t *cref);
+
+static enum rb_id_table_iterator_result
+refinement_import_methods_i(ID key, VALUE value, void *data)
+{
+    const rb_method_entry_t *me = (const rb_method_entry_t *)value;
+    struct refinement_import_methods_arg *arg = (struct refinement_import_methods_arg *)data;
+
+    if (me->def->type != VM_METHOD_TYPE_ISEQ) {
+        rb_raise(rb_eArgError, "Can't import method which is not defined with Ruby code: %"PRIsVALUE"#%"PRIsVALUE, rb_class_path(arg->module), rb_id2str(key));
+    }
+    rb_cref_t *new_cref = rb_vm_cref_dup_without_refinements(me->def->body.iseq.cref);
+    CREF_REFINEMENTS_SET(new_cref, CREF_REFINEMENTS(arg->cref));
+    rb_add_method_iseq(arg->refinement, key, me->def->body.iseq.iseqptr, new_cref, METHOD_ENTRY_VISI(me));
+    return ID_TABLE_CONTINUE;
+}
+
+/*
+ * Note: docs for the method are in class.c
+ */
+
+static VALUE
+refinement_import_methods(int argc, VALUE *argv, VALUE refinement)
+{
+    int i;
+    struct refinement_import_methods_arg arg;
+
+    rb_check_arity(argc, 1, UNLIMITED_ARGUMENTS);
+    for (i = 0; i < argc; i++) {
+        Check_Type(argv[i], T_MODULE);
+        if (RCLASS_SUPER(argv[i])) {
+            rb_warn("%"PRIsVALUE" has ancestors, but Refinement#import_methods doesn't import their methods", rb_class_path(argv[i]));
+        }
+    }
+    arg.cref = rb_vm_cref_replace_with_duplicated_cref();
+    arg.refinement = refinement;
+    for (i = 0; i < argc; i++) {
+        arg.module = argv[i];
+        struct rb_id_table *m_tbl = RCLASS_M_TBL(argv[i]);
+        if (!m_tbl) continue;
+        rb_id_table_foreach(m_tbl, refinement_import_methods_i, &arg);
+    }
+    return refinement;
+}
+
 void
 rb_obj_call_init(VALUE obj, int argc, const VALUE *argv)
 {
@@ -1721,12 +1672,6 @@ rb_obj_call_init_kw(VALUE obj, int argc, const VALUE *argv, int kw_splat)
     rb_funcallv_kw(obj, idInitialize, argc, argv, kw_splat);
 }
 
-/*!
- * Extend the object with the module.
- *
- * Same as \c Module\#extend_object.
- * \ingroup class
- */
 void
 rb_extend_object(VALUE obj, VALUE module)
 {
@@ -1802,8 +1747,12 @@ rb_obj_extend(int argc, VALUE *argv, VALUE obj)
     CONST_ID(id_extended, "extended");
 
     rb_check_arity(argc, 1, UNLIMITED_ARGUMENTS);
-    for (i = 0; i < argc; i++)
+    for (i = 0; i < argc; i++) {
 	Check_Type(argv[i], T_MODULE);
+        if (FL_TEST(argv[i], RMODULE_IS_REFINEMENT)) {
+            rb_raise(rb_eTypeError, "Cannot extend object with refinement");
+        }
+    }
     while (argc--) {
 	rb_funcall(argv[argc], id_extend_object, 1, obj);
 	rb_funcall(argv[argc], id_extended, 1, obj);
@@ -1864,10 +1813,10 @@ errinfo_place(const rb_execution_context_t *ec)
 
     while (RUBY_VM_VALID_CONTROL_FRAME_P(cfp, end_cfp)) {
 	if (VM_FRAME_RUBYFRAME_P(cfp)) {
-	    if (cfp->iseq->body->type == ISEQ_TYPE_RESCUE) {
+            if (ISEQ_BODY(cfp->iseq)->type == ISEQ_TYPE_RESCUE) {
 		return &cfp->ep[VM_ENV_INDEX_LAST_LVAR];
 	    }
-	    else if (cfp->iseq->body->type == ISEQ_TYPE_ENSURE &&
+            else if (ISEQ_BODY(cfp->iseq)->type == ISEQ_TYPE_ENSURE &&
 		     !THROW_DATA_P(cfp->ep[VM_ENV_INDEX_LAST_LVAR]) &&
 		     !FIXNUM_P(cfp->ep[VM_ENV_INDEX_LAST_LVAR])) {
 		return &cfp->ep[VM_ENV_INDEX_LAST_LVAR];
@@ -1902,26 +1851,12 @@ errinfo_getter(ID id, VALUE *_)
     return get_errinfo();
 }
 
-/*! The current exception in the current thread.
- *
- * Same as \c $! in Ruby.
- * \return the current exception or \c Qnil
- * \ingroup exception
- */
 VALUE
 rb_errinfo(void)
 {
     return GET_EC()->errinfo;
 }
 
-/*! Sets the current exception (\c $!) to the given value
- *
- * \param[in] err an \c Exception object or \c Qnil.
- * \exception TypeError if \a err is neither an exception nor \c nil.
- * \note this function does not raise the exception.
- *   Use \c rb_raise() when you want to raise.
- * \ingroup exception
- */
 void
 rb_set_errinfo(VALUE err)
 {
@@ -2108,9 +2043,17 @@ Init_eval(void)
     rb_define_private_method(rb_cModule, "prepend_features", rb_mod_prepend_features, 1);
     rb_define_private_method(rb_cModule, "refine", rb_mod_refine, 1);
     rb_define_private_method(rb_cModule, "using", mod_using, 1);
+    rb_define_method(rb_cModule, "refinements", mod_refinements, 0);
     rb_define_singleton_method(rb_cModule, "used_modules",
 			       rb_mod_s_used_modules, 0);
+    rb_define_singleton_method(rb_cModule, "used_refinements",
+                               rb_mod_s_used_refinements, 0);
     rb_undef_method(rb_cClass, "refine");
+    rb_define_private_method(rb_cRefinement, "import_methods", refinement_import_methods, -1);
+    rb_define_method(rb_cRefinement, "refined_class", rb_refinement_module_get_refined_class, 0);
+    rb_undef_method(rb_cRefinement, "append_features");
+    rb_undef_method(rb_cRefinement, "prepend_features");
+    rb_undef_method(rb_cRefinement, "extend_object");
 
     rb_undef_method(rb_cClass, "module_function");
 

@@ -104,6 +104,24 @@ class CGIUtilTest < Test::Unit::TestCase
     assert_not_predicate CGI.escapeHTML("Ruby".freeze),   :frozen?
   end
 
+  def test_cgi_escape_html_large
+    return if RUBY_ENGINE == 'jruby'
+    ulong_max, size_max = RbConfig::LIMITS.values_at("ULONG_MAX", "SIZE_MAX")
+    return unless ulong_max < size_max # Platforms not concerned
+
+    size = (ulong_max / 6 + 1)
+    begin
+      str = '"' * size
+      escaped = CGI.escapeHTML(str)
+    rescue NoMemoryError
+      omit "Not enough memory"
+    rescue => e
+    end
+    assert_raise_with_message(ArgumentError, /overflow/, ->{"length = #{escaped.length}"}) do
+      raise e if e
+    end
+  end
+
   def test_cgi_unescapeHTML
     assert_equal("'&\"><", CGI.unescapeHTML("&#39;&amp;&quot;&gt;&lt;"))
   end

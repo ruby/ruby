@@ -1,33 +1,36 @@
 require_relative '../../../spec_helper'
-require_relative 'spec_helper'
-require_relative 'fixtures/server'
 
-describe "Net::FTP#quit" do
-  before :each do
-    @server = NetFTPSpecs::DummyFTP.new
-    @server.serve_once
+ruby_version_is ""..."3.1" do
+  require_relative 'spec_helper'
+  require_relative 'fixtures/server'
 
-    @ftp = Net::FTP.new
-    @ftp.connect(@server.hostname, @server.server_port)
-  end
+  describe "Net::FTP#quit" do
+    before :each do
+      @server = NetFTPSpecs::DummyFTP.new
+      @server.serve_once
 
-  after :each do
-    @ftp.quit rescue nil
-    @ftp.close
-    @server.stop
-  end
+      @ftp = Net::FTP.new
+      @ftp.connect(@server.hostname, @server.server_port)
+    end
 
-  it "sends the QUIT command to the server" do
-    @ftp.quit
-    @ftp.last_response.should == "221 OK, bye\n"
-  end
+    after :each do
+      @ftp.quit rescue nil
+      @ftp.close
+      @server.stop
+    end
 
-  it "does not close the socket automatically" do
-    @ftp.quit
-    @ftp.closed?.should be_false
-  end
+    it "sends the QUIT command to the server" do
+      @ftp.quit
+      @ftp.last_response.should == "221 OK, bye\n"
+    end
 
-  it "returns nil" do
-    @ftp.quit.should be_nil
+    it "does not close the socket automatically" do
+      @ftp.quit
+      @ftp.closed?.should be_false
+    end
+
+    it "returns nil" do
+      @ftp.quit.should be_nil
+    end
   end
 end

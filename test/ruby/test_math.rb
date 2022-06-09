@@ -73,9 +73,9 @@ class TestMath < Test::Unit::TestCase
     check(1 * Math::PI / 4, Math.acos( 1.0 / Math.sqrt(2)))
     check(2 * Math::PI / 4, Math.acos( 0.0))
     check(4 * Math::PI / 4, Math.acos(-1.0))
-    assert_raise(Math::DomainError) { Math.acos(+1.0 + Float::EPSILON) }
-    assert_raise(Math::DomainError) { Math.acos(-1.0 - Float::EPSILON) }
-    assert_raise(Math::DomainError) { Math.acos(2.0) }
+    assert_raise_with_message(Math::DomainError, /\bacos\b/) { Math.acos(+1.0 + Float::EPSILON) }
+    assert_raise_with_message(Math::DomainError, /\bacos\b/) { Math.acos(-1.0 - Float::EPSILON) }
+    assert_raise_with_message(Math::DomainError, /\bacos\b/) { Math.acos(2.0) }
   end
 
   def test_asin
@@ -83,9 +83,9 @@ class TestMath < Test::Unit::TestCase
     check( 1 * Math::PI / 4, Math.asin( 1.0 / Math.sqrt(2)))
     check( 2 * Math::PI / 4, Math.asin( 1.0))
     check(-2 * Math::PI / 4, Math.asin(-1.0))
-    assert_raise(Math::DomainError) { Math.asin(+1.0 + Float::EPSILON) }
-    assert_raise(Math::DomainError) { Math.asin(-1.0 - Float::EPSILON) }
-    assert_raise(Math::DomainError) { Math.asin(2.0) }
+    assert_raise_with_message(Math::DomainError, /\basin\b/) { Math.asin(+1.0 + Float::EPSILON) }
+    assert_raise_with_message(Math::DomainError, /\basin\b/) { Math.asin(-1.0 - Float::EPSILON) }
+    assert_raise_with_message(Math::DomainError, /\basin\b/) { Math.asin(2.0) }
   end
 
   def test_atan
@@ -119,8 +119,8 @@ class TestMath < Test::Unit::TestCase
     check(0, Math.acosh(1))
     check(1, Math.acosh((Math::E ** 1 + Math::E ** -1) / 2))
     check(2, Math.acosh((Math::E ** 2 + Math::E ** -2) / 2))
-    assert_raise(Math::DomainError) { Math.acosh(1.0 - Float::EPSILON) }
-    assert_raise(Math::DomainError) { Math.acosh(0) }
+    assert_raise_with_message(Math::DomainError, /\bacosh\b/) { Math.acosh(1.0 - Float::EPSILON) }
+    assert_raise_with_message(Math::DomainError, /\bacosh\b/) { Math.acosh(0) }
   end
 
   def test_asinh
@@ -135,8 +135,8 @@ class TestMath < Test::Unit::TestCase
     check(2, Math.atanh(Math.sinh(2) / Math.cosh(2)))
     assert_nothing_raised { assert_infinity(Math.atanh(1)) }
     assert_nothing_raised { assert_infinity(-Math.atanh(-1)) }
-    assert_raise(Math::DomainError) { Math.atanh(+1.0 + Float::EPSILON) }
-    assert_raise(Math::DomainError) { Math.atanh(-1.0 - Float::EPSILON) }
+    assert_raise_with_message(Math::DomainError, /\batanh\b/) { Math.atanh(+1.0 + Float::EPSILON) }
+    assert_raise_with_message(Math::DomainError, /\batanh\b/) { Math.atanh(-1.0 - Float::EPSILON) }
   end
 
   def test_exp
@@ -157,10 +157,14 @@ class TestMath < Test::Unit::TestCase
     assert_nothing_raised { assert_infinity(Math.log(1.0/0)) }
     assert_nothing_raised { assert_infinity(-Math.log(+0.0)) }
     assert_nothing_raised { assert_infinity(-Math.log(-0.0)) }
-    assert_raise(Math::DomainError) { Math.log(-1.0) }
+    assert_raise_with_message(Math::DomainError, /\blog\b/) { Math.log(-1.0) }
+    assert_raise_with_message(Math::DomainError, /\blog\b/) { Math.log(-Float::EPSILON) }
     assert_raise(TypeError) { Math.log(1,nil) }
-    assert_raise(Math::DomainError, '[ruby-core:62309] [ruby-Bug #9797]') { Math.log(1.0, -1.0) }
+    assert_raise_with_message(Math::DomainError, /\blog\b/, '[ruby-core:62309] [ruby-Bug #9797]') { Math.log(1.0, -1.0) }
+    assert_raise_with_message(Math::DomainError, /\blog\b/) { Math.log(1.0, -Float::EPSILON) }
     assert_nothing_raised { assert_nan(Math.log(0.0, 0.0)) }
+    assert_nothing_raised { assert_nan(Math.log(Float::NAN)) }
+    assert_nothing_raised { assert_nan(Math.log(1.0, Float::NAN)) }
   end
 
   def test_log2
@@ -172,7 +176,9 @@ class TestMath < Test::Unit::TestCase
     assert_nothing_raised { assert_infinity(Math.log2(1.0/0)) }
     assert_nothing_raised { assert_infinity(-Math.log2(+0.0)) }
     assert_nothing_raised { assert_infinity(-Math.log2(-0.0)) }
-    assert_raise(Math::DomainError) { Math.log2(-1.0) }
+    assert_raise_with_message(Math::DomainError, /\blog2\b/) { Math.log2(-1.0) }
+    assert_raise_with_message(Math::DomainError, /\blog2\b/) { Math.log2(-Float::EPSILON) }
+    assert_nothing_raised { assert_nan(Math.log2(Float::NAN)) }
   end
 
   def test_log10
@@ -184,7 +190,9 @@ class TestMath < Test::Unit::TestCase
     assert_nothing_raised { assert_infinity(Math.log10(1.0/0)) }
     assert_nothing_raised { assert_infinity(-Math.log10(+0.0)) }
     assert_nothing_raised { assert_infinity(-Math.log10(-0.0)) }
-    assert_raise(Math::DomainError) { Math.log10(-1.0) }
+    assert_raise_with_message(Math::DomainError, /\blog10\b/) { Math.log10(-1.0) }
+    assert_raise_with_message(Math::DomainError, /\blog10\b/) { Math.log10(-Float::EPSILON) }
+    assert_nothing_raised { assert_nan(Math.log10(Float::NAN)) }
   end
 
   def test_sqrt
@@ -193,7 +201,9 @@ class TestMath < Test::Unit::TestCase
     check(2, Math.sqrt(4))
     assert_nothing_raised { assert_infinity(Math.sqrt(1.0/0)) }
     assert_equal("0.0", Math.sqrt(-0.0).to_s) # insure it is +0.0, not -0.0
-    assert_raise(Math::DomainError) { Math.sqrt(-1.0) }
+    assert_raise_with_message(Math::DomainError, /\bsqrt\b/) { Math.sqrt(-1.0) }
+    assert_raise_with_message(Math::DomainError, /\bsqrt\b/) { Math.sqrt(-Float::EPSILON) }
+    assert_nothing_raised { assert_nan(Math.sqrt(Float::NAN)) }
   end
 
   def test_cbrt
@@ -201,8 +211,11 @@ class TestMath < Test::Unit::TestCase
     check(-2, Math.cbrt(-8))
     check(3, Math.cbrt(27))
     check(-0.1, Math.cbrt(-0.001))
+    check(0.0, Math.cbrt(0.0))
     assert_nothing_raised { assert_infinity(Math.cbrt(1.0/0)) }
     assert_operator(Math.cbrt(1.0 - Float::EPSILON), :<=, 1.0)
+    assert_nothing_raised { assert_nan(Math.sqrt(Float::NAN)) }
+    assert_nothing_raised { assert_nan(Math.cbrt(Float::NAN)) }
   end
 
   def test_frexp
@@ -211,6 +224,7 @@ class TestMath < Test::Unit::TestCase
     assert_float_and_int([0.5,  1], Math.frexp(1.0))
     assert_float_and_int([0.5,  2], Math.frexp(2.0))
     assert_float_and_int([0.75, 2], Math.frexp(3.0))
+    assert_nan(Math.frexp(Float::NAN)[0])
   end
 
   def test_ldexp
@@ -228,11 +242,13 @@ class TestMath < Test::Unit::TestCase
   def test_erf
     check(0, Math.erf(0))
     check(1, Math.erf(1.0 / 0.0))
+    assert_nan(Math.erf(Float::NAN))
   end
 
   def test_erfc
     check(1, Math.erfc(0))
     check(0, Math.erfc(1.0 / 0.0))
+    assert_nan(Math.erfc(Float::NAN))
   end
 
   def test_gamma
@@ -257,11 +273,13 @@ class TestMath < Test::Unit::TestCase
       assert_infinity(Math.gamma(i-1), "Math.gamma(#{i-1}) should be INF")
     end
 
-    assert_raise(Math::DomainError) { Math.gamma(-Float::INFINITY) }
+    assert_raise_with_message(Math::DomainError, /\bgamma\b/) { Math.gamma(-Float::INFINITY) }
+    assert_raise_with_message(Math::DomainError, /\bgamma\b/) { Math.gamma(-1.0) }
     x = Math.gamma(-0.0)
     mesg = "Math.gamma(-0.0) should be -INF"
     assert_infinity(x, mesg)
     assert_predicate(x, :negative?, mesg)
+    assert_nan(Math.gamma(Float::NAN))
   end
 
   def test_lgamma
@@ -277,12 +295,14 @@ class TestMath < Test::Unit::TestCase
     assert_float_and_int([Math.log(15 * sqrt_pi / 8), 1], Math.lgamma(3.5))
     assert_float_and_int([Math.log(6),                1], Math.lgamma(4))
 
-    assert_raise(Math::DomainError) { Math.lgamma(-Float::INFINITY) }
+    assert_raise_with_message(Math::DomainError, /\blgamma\b/) { Math.lgamma(-Float::INFINITY) }
     x, sign = Math.lgamma(-0.0)
     mesg = "Math.lgamma(-0.0) should be [INF, -1]"
     assert_infinity(x, mesg)
     assert_predicate(x, :positive?, mesg)
     assert_equal(-1, sign, mesg)
+    x, sign = Math.lgamma(Float::NAN)
+    assert_nan(x)
   end
 
   def test_fixnum_to_f

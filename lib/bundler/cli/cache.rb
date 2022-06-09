@@ -9,7 +9,7 @@ module Bundler
     end
 
     def run
-      Bundler.ui.level = "error" if options[:quiet]
+      Bundler.ui.level = "warn" if options[:quiet]
       Bundler.settings.set_command_option_if_given :path, options[:path]
       Bundler.settings.set_command_option_if_given :cache_path, options["cache-path"]
 

@@ -27,6 +27,19 @@
 VALUE rb_mEnumerable;
 
 static ID id_next;
+static ID id__alone;
+static ID id__separator;
+static ID id_chunk_categorize;
+static ID id_chunk_enumerable;
+static ID id_sliceafter_enum;
+static ID id_sliceafter_pat;
+static ID id_sliceafter_pred;
+static ID id_slicebefore_enumerable;
+static ID id_slicebefore_sep_pat;
+static ID id_slicebefore_sep_pred;
+static ID id_slicewhen_enum;
+static ID id_slicewhen_inverted;
+static ID id_slicewhen_pred;
 
 #define id_div idDiv
 #define id_each idEach
@@ -132,21 +145,28 @@ enum_grep0(VALUE obj, VALUE pat, VALUE test)
 }
 
 /*
- *  call-seq:
- *     enum.grep(pattern)                  -> array
- *     enum.grep(pattern) { |obj| block }  -> array
+ * call-seq:
+ *   grep(pattern) -> array
+ *   grep(pattern) {|element| ... } -> array
  *
- *  Returns an array of every element in <i>enum</i> for which
- *  <code>Pattern === element</code>. If the optional <em>block</em> is
- *  supplied, each matching element is passed to it, and the block's
- *  result is stored in the output array.
+ * Returns an array of objects based elements of +self+ that match the given pattern.
  *
- *     (1..100).grep 38..44   #=> [38, 39, 40, 41, 42, 43, 44]
- *     c = IO.constants
- *     c.grep(/SEEK/)         #=> [:SEEK_SET, :SEEK_CUR, :SEEK_END]
- *     res = c.grep(/SEEK/) { |v| IO.const_get(v) }
- *     res                    #=> [0, 1, 2]
+ * With no block given, returns an array containing each element
+ * for which <tt>pattern === element</tt> is +true+:
  *
+ *   a = ['foo', 'bar', 'car', 'moo']
+ *   a.grep(/ar/)                   # => ["bar", "car"]
+ *   (1..10).grep(3..8)             # => [3, 4, 5, 6, 7, 8]
+ *   ['a', 'b', 0, 1].grep(Integer) # => [0, 1]
+ *
+ * With a block given,
+ * calls the block with each matching element and returns an array containing each
+ * object returned by the block:
+ *
+ *   a = ['foo', 'bar', 'car', 'moo']
+ *   a.grep(/ar/) {|element| element.upcase } # => ["BAR", "CAR"]
+ *
+ * Related: #grep_v.
  */
 
 static VALUE
@@ -156,18 +176,29 @@ enum_grep(VALUE obj, VALUE pat)
 }
 
 /*
- *  call-seq:
- *     enum.grep_v(pattern)                  -> array
- *     enum.grep_v(pattern) { |obj| block }  -> array
+ * call-seq:
+ *   grep_v(pattern) -> array
+ *   grep_v(pattern) {|element| ... } -> array
  *
- *  Inverted version of Enumerable#grep.
- *  Returns an array of every element in <i>enum</i> for which
- *  not <code>Pattern === element</code>.
+ * Returns an array of objects based on elements of +self+
+ * that <em>don't</em> match the given pattern.
  *
- *     (1..10).grep_v 2..5   #=> [1, 6, 7, 8, 9, 10]
- *     res =(1..10).grep_v(2..5) { |v| v * 2 }
- *     res                    #=> [2, 12, 14, 16, 18, 20]
+ * With no block given, returns an array containing each element
+ * for which <tt>pattern === element</tt> is +false+:
  *
+ *   a = ['foo', 'bar', 'car', 'moo']
+ *   a.grep_v(/ar/)                   # => ["foo", "moo"]
+ *   (1..10).grep_v(3..8)             # => [1, 2, 9, 10]
+ *   ['a', 'b', 0, 1].grep_v(Integer) # => ["a", "b"]
+ *
+ * With a block given,
+ * calls the block with each non-matching element and returns an array containing each
+ * object returned by the block:
+ *
+ *   a = ['foo', 'bar', 'car', 'moo']
+ *   a.grep_v(/ar/) {|element| element.upcase } # => ["FOO", "MOO"]
+ *
+ * Related: #grep.
  */
 
 static VALUE
@@ -238,20 +269,28 @@ count_all_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, memop))
 }
 
 /*
- *  call-seq:
- *     enum.count                 -> int
- *     enum.count(item)           -> int
- *     enum.count { |obj| block } -> int
+ * call-seq:
+ *   count -> integer
+ *   count(object) -> integer
+ *   count {|element| ... } -> integer
  *
- *  Returns the number of items in +enum+ through enumeration.
- *  If an argument is given, the number of items in +enum+ that
- *  are equal to +item+ are counted.  If a block is given, it
- *  counts the number of elements yielding a true value.
+ * Returns the count of elements, based on an argument or block criterion, if given.
  *
- *     ary = [1, 2, 4, 2]
- *     ary.count               #=> 4
- *     ary.count(2)            #=> 2
- *     ary.count{ |x| x%2==0 } #=> 3
+ * With no argument and no block given, returns the number of elements:
+ *
+ *   [0, 1, 2].count                # => 3
+ *   {foo: 0, bar: 1, baz: 2}.count # => 3
+ *
+ * With argument +object+ given,
+ * returns the number of elements that are <tt>==</tt> to +object+:
+ *
+ *   [0, 1, 2, 1].count(1)           # => 2
+ *
+ * With a block given, calls the block with each element
+ * and returns the number of elements for which the block returns a truthy value:
+ *
+ *   [0, 1, 2, 3].count {|element| element < 2}              # => 2
+ *   {foo: 0, bar: 1, baz: 2}.count {|key, value| value < 2} # => 2
  *
  */
 
@@ -298,31 +337,26 @@ find_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, memop))
 }
 
 /*
- *  call-seq:
- *     enum.detect(ifnone = nil) { |obj| block } -> obj or nil
- *     enum.find(ifnone = nil)   { |obj| block } -> obj or nil
- *     enum.detect(ifnone = nil)                 -> an_enumerator
- *     enum.find(ifnone = nil)                   -> an_enumerator
+ * call-seq:
+ *   find(if_none_proc = nil) {|element| ... } -> object or nil
+ *   find(if_none_proc = nil) -> enumerator
  *
- *  Passes each entry in <i>enum</i> to <em>block</em>. Returns the
- *  first for which <em>block</em> is not false.  If no
- *  object matches, calls <i>ifnone</i> and returns its result when it
- *  is specified, or returns <code>nil</code> otherwise.
+ * Returns the first element for which the block returns a truthy value.
  *
- *  If no block is given, an enumerator is returned instead.
+ * With a block given, calls the block with successive elements of the collection;
+ * returns the first element for which the block returns a truthy value:
  *
- *     (1..100).detect  #=> #<Enumerator: 1..100:detect>
- *     (1..100).find    #=> #<Enumerator: 1..100:find>
+ *   (0..9).find {|element| element > 2}                # => 3
  *
- *     (1..10).detect         { |i| i % 5 == 0 && i % 7 == 0 }   #=> nil
- *     (1..10).find           { |i| i % 5 == 0 && i % 7 == 0 }   #=> nil
- *     (1..10).detect(-> {0}) { |i| i % 5 == 0 && i % 7 == 0 }   #=> 0
- *     (1..10).find(-> {0})   { |i| i % 5 == 0 && i % 7 == 0 }   #=> 0
- *     (1..100).detect        { |i| i % 5 == 0 && i % 7 == 0 }   #=> 35
- *     (1..100).find          { |i| i % 5 == 0 && i % 7 == 0 }   #=> 35
+ * If no such element is found, calls +if_none_proc+ and returns its return value.
+ *
+ *   (0..9).find(proc {false}) {|element| element > 12} # => false
+ *   {foo: 0, bar: 1, baz: 2}.find {|key, value| key.start_with?('b') }            # => [:bar, 1]
+ *   {foo: 0, bar: 1, baz: 2}.find(proc {[]}) {|key, value| key.start_with?('c') } # => []
+ *
+ * With no block given, returns an \Enumerator.
  *
  */
-
 static VALUE
 enum_find(int argc, VALUE *argv, VALUE obj)
 {
@@ -371,21 +405,26 @@ find_index_iter_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, memop))
 }
 
 /*
- *  call-seq:
- *     enum.find_index(value)          -> int or nil
- *     enum.find_index { |obj| block } -> int or nil
- *     enum.find_index                 -> an_enumerator
+ * call-seq:
+ *   find_index(object) -> integer or nil
+ *   find_index {|element| ... } -> integer or nil
+ *   find_index -> enumerator
  *
- *  Compares each entry in <i>enum</i> with <em>value</em> or passes
- *  to <em>block</em>.  Returns the index for the first for which the
- *  evaluated value is non-false.  If no object matches, returns
- *  <code>nil</code>
+ * Returns the index of the first element that meets a specified criterion,
+ * or +nil+ if no such element is found.
  *
- *  If neither block nor argument is given, an enumerator is returned instead.
+ * With argument +object+ given,
+ * returns the index of the first element that is <tt>==</tt> +object+:
  *
- *     (1..10).find_index  { |i| i % 5 == 0 && i % 7 == 0 }  #=> nil
- *     (1..100).find_index { |i| i % 5 == 0 && i % 7 == 0 }  #=> 34
- *     (1..100).find_index(50)                               #=> 49
+ *   ['a', 'b', 'c', 'b'].find_index('b') # => 1
+ *
+ * With a block given, calls the block with successive elements;
+ * returns the first element for which the block returns a truthy value:
+ *
+ *   ['a', 'b', 'c', 'b'].find_index {|element| element.start_with?('b') } # => 1
+ *   {foo: 0, bar: 1, baz: 2}.find_index {|key, value| value > 1 }         # => 2
+ *
+ * With no argument and no block given, returns an \Enumerator.
  *
  */
 
@@ -449,32 +488,23 @@ enum_size_over_p(VALUE obj, long n)
 }
 
 /*
- *  call-seq:
- *     enum.find_all { |obj| block } -> array
- *     enum.select   { |obj| block } -> array
- *     enum.filter   { |obj| block } -> array
- *     enum.find_all                 -> an_enumerator
- *     enum.select                   -> an_enumerator
- *     enum.filter                   -> an_enumerator
+ * call-seq:
+ *   select {|element| ... } -> array
+ *   select -> enumerator
  *
- *  Returns an array containing all elements of +enum+
- *  for which the given +block+ returns a true value.
+ * Returns an array containing elements selected by the block.
  *
- *  The <i>find_all</i> and <i>select</i> methods are aliases.
- *  There is no performance benefit to either.
+ * With a block given, calls the block with successive elements;
+ * returns an array of those elements for which the block returns a truthy value:
  *
- *  If no block is given, an Enumerator is returned instead.
+ *   (0..9).select {|element| element % 3 == 0 } # => [0, 3, 6, 9]
+ *   a = {foo: 0, bar: 1, baz: 2}.select {|key, value| key.start_with?('b') }
+ *   a # => {:bar=>1, :baz=>2}
  *
+ * With no block given, returns an \Enumerator.
  *
- *     (1..10).find_all { |i|  i % 3 == 0 }   #=> [3, 6, 9]
- *
- *     [1,2,3,4,5].select { |num|  num.even?  }   #=> [2, 4]
- *
- *     [:foo, :bar].filter { |x| x == :foo }   #=> [:foo]
- *
- *  See also Enumerable#reject, Enumerable#grep.
+ * Related: #reject.
  */
-
 static VALUE
 enum_find_all(VALUE obj)
 {
@@ -501,17 +531,19 @@ filter_map_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, ary))
 }
 
 /*
- *  call-seq:
- *     enum.filter_map { |obj| block } -> array
- *     enum.filter_map                 -> an_enumerator
+ * call-seq:
+ *   filter_map {|element| ... } -> array
+ *   filter_map -> enumerator
  *
- *  Returns a new array containing the truthy results (everything except
- *  +false+ or +nil+) of running the +block+ for every element in +enum+.
+ * Returns an array containing truthy elements returned by the block.
  *
- *  If no block is given, an Enumerator is returned instead.
+ * With a block given, calls the block with successive elements;
+ * returns an array containing each truthy value returned by the block:
  *
+ *   (0..9).filter_map {|i| i * 2 if i.even? }                              # => [0, 4, 8, 12, 16]
+ *   {foo: 0, bar: 1, baz: 2}.filter_map {|key, value| key if value.even? } # => [:foo, :baz]
  *
- *     (1..10).filter_map { |i| i * 2 if i.even? } #=> [4, 8, 12, 16, 20]
+ * When no block given, returns an \Enumerator.
  *
  */
 static VALUE
@@ -540,20 +572,21 @@ reject_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, ary))
 }
 
 /*
- *  call-seq:
- *     enum.reject { |obj| block } -> array
- *     enum.reject                 -> an_enumerator
+ * call-seq:
+ *   reject {|element| ... } -> array
+ *   reject -> enumerator
  *
- *  Returns an array for all elements of +enum+ for which the given
- *  +block+ returns <code>false</code>.
+ * Returns an array of objects rejected by the block.
  *
- *  If no block is given, an Enumerator is returned instead.
+ * With a block given, calls the block with successive elements;
+ * returns an array of those elements for which the block returns +nil+ or +false+:
  *
- *     (1..10).reject { |i|  i % 3 == 0 }   #=> [1, 2, 4, 5, 7, 8, 10]
+ *   (0..9).reject {|i| i * 2 if i.even? }                             # => [1, 3, 5, 7, 9]
+ *   {foo: 0, bar: 1, baz: 2}.reject {|key, value| key if value.odd? } # => {:foo=>0, :baz=>2}
  *
- *     [1, 2, 3, 4, 5].reject { |num| num.even? } #=> [1, 3, 5]
+ * When no block given, returns an \Enumerator.
  *
- *  See also Enumerable#find_all.
+ * Related: #select.
  */
 
 static VALUE
@@ -586,22 +619,21 @@ collect_all(RB_BLOCK_CALL_FUNC_ARGLIST(i, ary))
 }
 
 /*
- *  call-seq:
- *     enum.collect { |obj| block } -> array
- *     enum.map     { |obj| block } -> array
- *     enum.collect                 -> an_enumerator
- *     enum.map                     -> an_enumerator
+ * call-seq:
+ *   map {|element| ... } -> array
+ *   map -> enumerator
  *
- *  Returns a new array with the results of running <em>block</em> once
- *  for every element in <i>enum</i>.
+ * Returns an array of objects returned by the block.
  *
- *  If no block is given, an enumerator is returned instead.
+ * With a block given, calls the block with successive elements;
+ * returns an array of the objects returned by the block:
  *
- *     (1..4).map { |i| i*i }      #=> [1, 4, 9, 16]
- *     (1..4).collect { "cat"  }   #=> ["cat", "cat", "cat", "cat"]
+ *   (0..4).map {|i| i*i }                               # => [0, 1, 4, 9, 16]
+ *   {foo: 0, bar: 1, baz: 2}.map {|key, value| value*2} # => [0, 2, 4]
+ *
+ * With no block given, returns an \Enumerator.
  *
  */
-
 static VALUE
 enum_collect(VALUE obj)
 {
@@ -635,22 +667,24 @@ flat_map_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, ary))
 }
 
 /*
- *  call-seq:
- *     enum.flat_map       { |obj| block } -> array
- *     enum.collect_concat { |obj| block } -> array
- *     enum.flat_map                       -> an_enumerator
- *     enum.collect_concat                 -> an_enumerator
+ * call-seq:
+ *   flat_map {|element| ... } -> array
+ *   flat_map -> enumerator
  *
- *  Returns a new array with the concatenated results of running
- *  <em>block</em> once for every element in <i>enum</i>.
+ * Returns an array of flattened objects returned by the block.
  *
- *  If no block is given, an enumerator is returned instead.
+ * With a block given, calls the block with successive elements;
+ * returns a flattened array of objects returned by the block:
  *
- *     [1, 2, 3, 4].flat_map { |e| [e, -e] } #=> [1, -1, 2, -2, 3, -3, 4, -4]
- *     [[1, 2], [3, 4]].flat_map { |e| e + [100] } #=> [1, 2, 100, 3, 4, 100]
+ *   [0, 1, 2, 3].flat_map {|element| -element }                    # => [0, -1, -2, -3]
+ *   [0, 1, 2, 3].flat_map {|element| [element, -element] }         # => [0, 0, 1, -1, 2, -2, 3, -3]
+ *   [[0, 1], [2, 3]].flat_map {|e| e + [100] }                     # => [0, 1, 100, 2, 3, 100]
+ *   {foo: 0, bar: 1, baz: 2}.flat_map {|key, value| [key, value] } # => [:foo, 0, :bar, 1, :baz, 2]
  *
+ * With no block given, returns an \Enumerator.
+ *
+ * Alias: #collect_concat.
  */
-
 static VALUE
 enum_flat_map(VALUE obj)
 {
@@ -666,23 +700,20 @@ enum_flat_map(VALUE obj)
 
 /*
  *  call-seq:
- *     enum.to_a(*args)      -> array
- *     enum.entries(*args)   -> array
+ *    to_a -> array
  *
- *  Returns an array containing the items in <i>enum</i>.
+ *  Returns an array containing the items in +self+:
  *
- *     (1..7).to_a                       #=> [1, 2, 3, 4, 5, 6, 7]
- *     { 'a'=>1, 'b'=>2, 'c'=>3 }.to_a   #=> [["a", 1], ["b", 2], ["c", 3]]
+ *    (0..4).to_a # => [0, 1, 2, 3, 4]
  *
- *     require 'prime'
- *     Prime.entries 10                  #=> [2, 3, 5, 7]
+ *  Enumerable#entries is an alias for Enumerable#to_a.
  */
 static VALUE
 enum_to_a(int argc, VALUE *argv, VALUE obj)
 {
     VALUE ary = rb_ary_new();
 
-    rb_block_call(obj, id_each, argc, argv, collect_all, ary);
+    rb_block_call_kw(obj, id_each, argc, argv, collect_all, ary, RB_PASS_CALLED_KEYWORDS);
 
     return ary;
 }
@@ -715,20 +746,23 @@ enum_to_h_ii(RB_BLOCK_CALL_FUNC_ARGLIST(i, hash))
 
 /*
  *  call-seq:
- *     enum.to_h(*args)        -> hash
- *     enum.to_h(*args) {...}  -> hash
+ *    to_h -> hash
+ *    to_h {|element| ... }  -> hash
  *
- *  Returns the result of interpreting <i>enum</i> as a list of
- *  <tt>[key, value]</tt> pairs.
+ *  When +self+ consists of 2-element arrays,
+ *  returns a hash each of whose entries is the key-value pair
+ *  formed from one of those arrays:
  *
- *     %i[hello world].each_with_index.to_h
- *       # => {:hello => 0, :world => 1}
+ *    [[:foo, 0], [:bar, 1], [:baz, 2]].to_h # => {:foo=>0, :bar=>1, :baz=>2}
  *
- *  If a block is given, the results of the block on each element of
- *  the enum will be used as pairs.
+ *  When a block is given, the block is called with each element of +self+;
+ *  the block should return a 2-element array which becomes a key-value pair
+ *  in the returned hash:
  *
- *     (1..5).to_h {|x| [x, x ** 2]}
- *       #=> {1=>1, 2=>4, 3=>9, 4=>16, 5=>25}
+ *    (0..3).to_h {|i| [i, i ** 2]} # => {0=>0, 1=>1, 2=>4, 3=>9}
+ *
+ *  Raises an exception if an element of +self+ is not a 2-element array,
+ *  and a block is not passed.
  */
 
 static VALUE
@@ -814,7 +848,7 @@ ary_inject_op(VALUE ary, VALUE init, VALUE op)
                         n = 0;
                     }
                 }
-                else if (RB_TYPE_P(e, T_BIGNUM))
+                else if (RB_BIGNUM_TYPE_P(e))
                     v = rb_big_plus(e, v);
                 else
                     goto not_integer;
@@ -837,48 +871,136 @@ ary_inject_op(VALUE ary, VALUE init, VALUE op)
 
 /*
  *  call-seq:
- *     enum.inject(initial, sym) -> obj
- *     enum.inject(sym)          -> obj
- *     enum.inject(initial) { |memo, obj| block }  -> obj
- *     enum.inject          { |memo, obj| block }  -> obj
- *     enum.reduce(initial, sym) -> obj
- *     enum.reduce(sym)          -> obj
- *     enum.reduce(initial) { |memo, obj| block }  -> obj
- *     enum.reduce          { |memo, obj| block }  -> obj
+ *    inject(symbol) -> object
+ *    inject(initial_operand, symbol) -> object
+ *    inject {|memo, operand| ... } -> object
+ *    inject(initial_operand) {|memo, operand| ... } -> object
  *
- *  Combines all elements of <i>enum</i> by applying a binary
- *  operation, specified by a block or a symbol that names a
- *  method or operator.
+ *  Returns an object formed from operands via either:
  *
- *  The <i>inject</i> and <i>reduce</i> methods are aliases. There
- *  is no performance benefit to either.
+ *  - A method named by +symbol+.
+ *  - A block to which each operand is passed.
  *
- *  If you specify a block, then for each element in <i>enum</i>
- *  the block is passed an accumulator value (<i>memo</i>) and the element.
- *  If you specify a symbol instead, then each element in the collection
- *  will be passed to the named method of <i>memo</i>.
- *  In either case, the result becomes the new value for <i>memo</i>.
- *  At the end of the iteration, the final value of <i>memo</i> is the
- *  return value for the method.
+ *  With method-name argument +symbol+,
+ *  combines operands using the method:
  *
- *  If you do not explicitly specify an <i>initial</i> value for <i>memo</i>,
- *  then the first element of collection is used as the initial value
- *  of <i>memo</i>.
+ *    # Sum, without initial_operand.
+ *    (1..4).inject(:+)     # => 10
+ *    # Sum, with initial_operand.
+ *    (1..4).inject(10, :+) # => 20
  *
+ *  With a block, passes each operand to the block:
  *
- *     # Sum some numbers
- *     (5..10).reduce(:+)                             #=> 45
- *     # Same using a block and inject
- *     (5..10).inject { |sum, n| sum + n }            #=> 45
- *     # Multiply some numbers
- *     (5..10).reduce(1, :*)                          #=> 151200
- *     # Same using a block
- *     (5..10).inject(1) { |product, n| product * n } #=> 151200
- *     # find the longest word
- *     longest = %w{ cat sheep bear }.inject do |memo, word|
- *        memo.length > word.length ? memo : word
- *     end
- *     longest                                        #=> "sheep"
+ *    # Sum of squares, without initial_operand.
+ *    (1..4).inject {|sum, n| sum + n*n }    # => 30
+ *    # Sum of squares, with initial_operand.
+ *    (1..4).inject(2) {|sum, n| sum + n*n } # => 32
+ *
+ *  <b>Operands</b>
+ *
+ *  If argument +initial_operand+ is not given,
+ *  the operands for +inject+ are simply the elements of +self+.
+ *  Example calls and their operands:
+ *
+ *  - <tt>(1..4).inject(:+)</tt>:: <tt>[1, 2, 3, 4]</tt>.
+ *  - <tt>(1...4).inject(:+)</tt>:: <tt>[1, 2, 3]</tt>.
+ *  - <tt>('a'..'d').inject(:+)</tt>:: <tt>['a', 'b', 'c', 'd']</tt>.
+ *  - <tt>('a'...'d').inject(:+)</tt>:: <tt>['a', 'b', 'c']</tt>.
+ *
+ *  Examples with first operand (which is <tt>self.first</tt>) of various types:
+ *
+ *    # Integer.
+ *    (1..4).inject(:+)                # => 10
+ *    # Float.
+ *    [1.0, 2, 3, 4].inject(:+)        # => 10.0
+ *    # Character.
+ *    ('a'..'d').inject(:+)            # => "abcd"
+ *    # Complex.
+ *    [Complex(1, 2), 3, 4].inject(:+) # => (8+2i)
+ *
+ *  If argument +initial_operand+ is given,
+ *  the operands for +inject+ are that value plus the elements of +self+.
+ *  Example calls their operands:
+ *
+ *  - <tt>(1..4).inject(10, :+)</tt>:: <tt>[10, 1, 2, 3, 4]</tt>.
+ *  - <tt>(1...4).inject(10, :+)</tt>:: <tt>[10, 1, 2, 3]</tt>.
+ *  - <tt>('a'..'d').inject('e', :+)</tt>:: <tt>['e', 'a', 'b', 'c', 'd']</tt>.
+ *  - <tt>('a'...'d').inject('e', :+)</tt>:: <tt>['e', 'a', 'b', 'c']</tt>.
+ *
+ *  Examples with +initial_operand+ of various types:
+ *
+ *    # Integer.
+ *    (1..4).inject(2, :+)               # => 12
+ *    # Float.
+ *    (1..4).inject(2.0, :+)             # => 12.0
+ *    # String.
+ *    ('a'..'d').inject('foo', :+)       # => "fooabcd"
+ *    # Array.
+ *    %w[a b c].inject(['x'], :push)     # => ["x", "a", "b", "c"]
+ *    # Complex.
+ *    (1..4).inject(Complex(2, 2), :+)   # => (12+2i)
+ *
+ *  <b>Combination by Given \Method</b>
+ *
+ *  If the method-name argument +symbol+ is given,
+ *  the operands are combined by that method:
+ *
+ *  - The first and second operands are combined.
+ *  - That result is combined with the third operand.
+ *  - That result is combined with the fourth operand.
+ *  - And so on.
+ *
+ *  The return value from +inject+ is the result of the last combination.
+ *
+ *  This call to +inject+ computes the sum of the operands:
+ *
+ *    (1..4).inject(:+) # => 10
+ *
+ *  Examples with various methods:
+ *
+ *    # Integer addition.
+ *    (1..4).inject(:+)                # => 10
+ *    # Integer multiplication.
+ *    (1..4).inject(:*)                # => 24
+ *    # Character range concatenation.
+ *    ('a'..'d').inject('', :+)        # => "abcd"
+ *    # String array concatenation.
+ *    %w[foo bar baz].inject('', :+)   # => "foobarbaz"
+ *    # Hash update.
+ *    h = [{foo: 0, bar: 1}, {baz: 2}, {bat: 3}].inject(:update)
+ *    h # => {:foo=>0, :bar=>1, :baz=>2, :bat=>3}
+ *    # Hash conversion to nested arrays.
+ *    h = {foo: 0, bar: 1}.inject([], :push)
+ *    h # => [[:foo, 0], [:bar, 1]]
+ *
+ *  <b>Combination by Given Block</b>
+ *
+ *  If a block is given, the operands are passed to the block:
+ *
+ *  - The first call passes the first and second operands.
+ *  - The second call passes the result of the first call,
+ *    along with the third operand.
+ *  - The third call passes the result of the second call,
+ *    along with the fourth operand.
+ *  - And so on.
+ *
+ *  The return value from +inject+ is the return value from the last block call.
+ *
+ *  This call to +inject+ gives a block
+ *  that writes the memo and element, and also sums the elements:
+ *
+ *    (1..4).inject do |memo, element|
+ *      p "Memo: #{memo}; element: #{element}"
+ *      memo + element
+ *    end # => 10
+ *
+ *  Output:
+ *
+ *    "Memo: 1; element: 2"
+ *    "Memo: 3; element: 3"
+ *    "Memo: 6; element: 4"
+ *
+ *  Enumerable#reduce is an alias for Enumerable#inject.
  *
  */
 static VALUE
@@ -888,8 +1010,16 @@ enum_inject(int argc, VALUE *argv, VALUE obj)
     VALUE init, op;
     rb_block_call_func *iter = inject_i;
     ID id;
+    int num_args;
 
-    switch (rb_scan_args(argc, argv, "02", &init, &op)) {
+    if (rb_block_given_p()) {
+        num_args = rb_scan_args(argc, argv, "02", &init, &op);
+    }
+    else {
+        num_args = rb_scan_args(argc, argv, "11", &init, &op);
+    }
+
+    switch (num_args) {
       case 0:
 	init = Qundef;
 	break;
@@ -944,16 +1074,29 @@ partition_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, arys))
 
 /*
  *  call-seq:
- *     enum.partition { |obj| block } -> [ true_array, false_array ]
- *     enum.partition                 -> an_enumerator
+ *    partition {|element| ... } -> [true_array, false_array]
+ *    partition -> enumerator
  *
- *  Returns two arrays, the first containing the elements of
- *  <i>enum</i> for which the block evaluates to true, the second
- *  containing the rest.
+ *  With a block given, returns an array of two arrays:
  *
- *  If no block is given, an enumerator is returned instead.
+ *  - The first having those elements for which the block returns a truthy value.
+ *  - The other having all other elements.
  *
- *     (1..6).partition { |v| v.even? }  #=> [[2, 4, 6], [1, 3, 5]]
+ *  Examples:
+ *
+ *    p = (1..4).partition {|i| i.even? }
+ *    p # => [[2, 4], [1, 3]]
+ *    p = ('a'..'d').partition {|c| c < 'c' }
+ *    p # => [["a", "b"], ["c", "d"]]
+ *    h = {foo: 0, bar: 1, baz: 2, bat: 3}
+ *    p = h.partition {|key, value| key.start_with?('b') }
+ *    p # => [[[:bar, 1], [:baz, 2], [:bat, 3]], [[:foo, 0]]]
+ *    p = h.partition {|key, value| value < 2 }
+ *    p # => [[[:foo, 0], [:bar, 1]], [[:baz, 2], [:bat, 3]]]
+ *
+ *  With no block given, returns an Enumerator.
+ *
+ *  Related: Enumerable#group_by.
  *
  */
 
@@ -992,16 +1135,23 @@ group_by_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, hash))
 
 /*
  *  call-seq:
- *     enum.group_by { |obj| block } -> a_hash
- *     enum.group_by                 -> an_enumerator
+ *    group_by {|element| ... } -> hash
+ *    group_by                  -> enumerator
  *
- *  Groups the collection by result of the block.  Returns a hash where the
- *  keys are the evaluated result from the block and the values are
- *  arrays of elements in the collection that correspond to the key.
+ *  With a block given returns a hash:
  *
- *  If no block is given an enumerator is returned.
+ *  - Each key is a return value from the block.
+ *  - Each value is an array of those elements for which the block returned that key.
  *
- *     (1..6).group_by { |i| i%3 }   #=> {0=>[3, 6], 1=>[1, 4], 2=>[2, 5]}
+ *  Examples:
+ *
+ *    g = (1..6).group_by {|i| i%3 }
+ *    g # => {1=>[1, 4], 2=>[2, 5], 0=>[3, 6]}
+ *    h = {foo: 0, bar: 1, baz: 0, bat: 1}
+ *    g = h.group_by {|key, value| value }
+ *    g # => {0=>[[:foo, 0], [:baz, 0]], 1=>[[:bar, 1], [:bat, 1]]}
+ *
+ *  With no block given, returns an Enumerator.
  *
  */
 
@@ -1051,18 +1201,30 @@ tally_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, hash))
 
 /*
  *  call-seq:
- *     enum.tally         -> a_hash
- *     enum.tally(a_hash) -> a_hash
+ *    tally -> new_hash
+ *    tally(hash) -> hash
  *
- *  Tallies the collection, i.e., counts the occurrences of each element.
- *  Returns a hash with the elements of the collection as keys and the
- *  corresponding counts as values.
+ *  Returns a hash containing the counts of equal elements:
  *
- *     ["a", "b", "c", "b"].tally  #=> {"a"=>1, "b"=>2, "c"=>1}
+ *  - Each key is an element of +self+.
+ *  - Each value is the number elements equal to that key.
  *
- *  If a hash is given, the number of occurrences is added to each value
- *  in the hash, and the hash is returned. The value corresponding to
- *  each element must be an integer.
+ *  With no argument:
+ *
+ *    %w[a b c b c a c b].tally # => {"a"=>2, "b"=>3, "c"=>3}
+ *
+ *  With a hash argument, that hash is used for the tally (instead of a new hash),
+ *  and is returned;
+ *  this may be useful for accumulating tallies across multiple enumerables:
+ *
+ *    hash = {}
+ *    hash = %w[a c d b c a].tally(hash)
+ *    hash # => {"a"=>2, "c"=>2, "d"=>1, "b"=>1}
+ *    hash = %w[b a z].tally(hash)
+ *    hash # => {"a"=>3, "c"=>2, "d"=>1, "b"=>2, "z"=>1}
+ *    hash = %w[b a m].tally(hash)
+ *    hash # => {"a"=>4, "c"=>2, "d"=>1, "b"=>3, "z"=>1, "m"=> 1}
+ *
  */
 
 static VALUE
@@ -1070,7 +1232,7 @@ enum_tally(int argc, VALUE *argv, VALUE obj)
 {
     VALUE hash;
     if (rb_check_arity(argc, 0, 1)) {
-        hash = rb_convert_type(argv[0], T_HASH, "Hash", "to_hash");
+        hash = rb_to_hash_type(argv[0]);
         rb_check_frozen(hash);
     }
     else {
@@ -1097,18 +1259,26 @@ static VALUE enum_take(VALUE obj, VALUE n);
 
 /*
  *  call-seq:
- *     enum.first       ->  obj or nil
- *     enum.first(n)    ->  an_array
+ *    first    -> element or nil
+ *    first(n) -> array
  *
- *  Returns the first element, or the first +n+ elements, of the enumerable.
- *  If the enumerable is empty, the first form returns <code>nil</code>, and the
- *  second form returns an empty array.
+ *  Returns the first element or elements.
  *
- *    %w[foo bar baz].first     #=> "foo"
- *    %w[foo bar baz].first(2)  #=> ["foo", "bar"]
- *    %w[foo bar baz].first(10) #=> ["foo", "bar", "baz"]
- *    [].first                  #=> nil
- *    [].first(10)              #=> []
+ *  With no argument, returns the first element, or +nil+ if there is none:
+ *
+ *    (1..4).first                   # => 1
+ *    %w[a b c].first                # => "a"
+ *    {foo: 1, bar: 1, baz: 2}.first # => [:foo, 1]
+ *    [].first                       # => nil
+ *
+ *  With integer argument +n+, returns an array
+ *  containing the first +n+ elements that exist:
+ *
+ *    (1..4).first(2)                   # => [1, 2]
+ *    %w[a b c d].first(3)              # => ["a", "b", "c"]
+ *    %w[a b c d].first(50)             # => ["a", "b", "c", "d"]
+ *    {foo: 1, bar: 1, baz: 2}.first(2) # => [[:foo, 1], [:bar, 1]]
+ *    [].first(2)                       # => []
  *
  */
 
@@ -1127,28 +1297,35 @@ enum_first(int argc, VALUE *argv, VALUE obj)
     }
 }
 
-
 /*
  *  call-seq:
- *     enum.sort                  -> array
- *     enum.sort { |a, b| block } -> array
+ *    sort               -> array
+ *    sort {|a, b| ... } -> array
  *
- *  Returns an array containing the items in <i>enum</i> sorted.
+ *  Returns an array containing the sorted elements of +self+.
+ *  The ordering of equal elements is indeterminate and may be unstable.
  *
- *  Comparisons for the sort will be done using the items' own
- *  <code><=></code> operator or using an optional code block.
+ *  With no block given, the sort compares
+ *  using the elements' own method <tt><=></tt>:
  *
- *  The block must implement a comparison between +a+ and +b+ and return
- *  an integer less than 0 when +b+ follows +a+, +0+ when +a+ and +b+
- *  are equivalent, or an integer greater than 0 when +a+ follows +b+.
+ *    %w[b c a d].sort              # => ["a", "b", "c", "d"]
+ *    {foo: 0, bar: 1, baz: 2}.sort # => [[:bar, 1], [:baz, 2], [:foo, 0]]
  *
- *  The result is not guaranteed to be stable.  When the comparison of two
- *  elements returns +0+, the order of the elements is unpredictable.
+ *  With a block given, comparisons in the block determine the ordering.
+ *  The block is called with two elements +a+ and +b+, and must return:
  *
- *     %w(rhea kea flea).sort           #=> ["flea", "kea", "rhea"]
- *     (1..10).sort { |a, b| b <=> a }  #=> [10, 9, 8, 7, 6, 5, 4, 3, 2, 1]
+ *  - A negative integer if <tt>a < b</tt>.
+ *  - Zero if <tt>a == b</tt>.
+ *  - A positive integer if <tt>a > b</tt>.
  *
- *  See also Enumerable#sort_by. It implements a Schwartzian transform
+ *  Examples:
+ *
+ *     a = %w[b c a d]
+ *     a.sort {|a, b| b <=> a } # => ["d", "c", "b", "a"]
+ *     h = {foo: 0, bar: 1, baz: 2}
+ *     h.sort {|a, b| b <=> a } # => [[:foo, 0], [:baz, 2], [:bar, 1]]
+ *
+ *  See also #sort_by. It implements a Schwartzian transform
  *  which is useful when key computation or comparison is expensive.
  */
 
@@ -1213,19 +1390,23 @@ sort_by_cmp(const void *ap, const void *bp, void *data)
 
 /*
  *  call-seq:
- *     enum.sort_by { |obj| block }   -> array
- *     enum.sort_by                   -> an_enumerator
+ *    sort_by {|element| ... } -> array
+ *    sort_by                  -> enumerator
  *
- *  Sorts <i>enum</i> using a set of keys generated by mapping the
- *  values in <i>enum</i> through the given block.
+ *  With a block given, returns an array of elements of +self+,
+ *  sorted according to the value returned by the block for each element.
+ *  The ordering of equal elements is indeterminate and may be unstable.
  *
- *  The result is not guaranteed to be stable.  When two keys are equal,
- *  the order of the corresponding elements is unpredictable.
+ *  Examples:
  *
- *  If no block is given, an enumerator is returned instead.
+ *    a = %w[xx xxx x xxxx]
+ *    a.sort_by {|s| s.size }        # => ["x", "xx", "xxx", "xxxx"]
+ *    a.sort_by {|s| -s.size }       # => ["xxxx", "xxx", "xx", "x"]
+ *    h = {foo: 2, bar: 1, baz: 0}
+ *    h.sort_by{|key, value| value } # => [[:baz, 0], [:bar, 1], [:foo, 2]]
+ *    h.sort_by{|key, value| key }   # => [[:bar, 1], [:baz, 0], [:foo, 2]]
  *
- *     %w{apple pear fig}.sort_by { |word| word.length }
- *                   #=> ["fig", "pear", "apple"]
+ *  With no block given, returns an Enumerator.
  *
  *  The current implementation of #sort_by generates an array of
  *  tuples containing the original collection element and the mapped
@@ -1383,25 +1564,44 @@ DEFINE_ENUMFUNCS(all)
 
 /*
  *  call-seq:
- *     enum.all? [{ |obj| block } ]   -> true or false
- *     enum.all?(pattern)             -> true or false
+ *    all?                  -> true or false
+ *    all?(pattern)         -> true or false
+ *    all? {|element| ... } -> true or false
  *
- *  Passes each element of the collection to the given block. The method
- *  returns <code>true</code> if the block never returns
- *  <code>false</code> or <code>nil</code>. If the block is not given,
- *  Ruby adds an implicit block of <code>{ |obj| obj }</code> which will
- *  cause #all? to return +true+ when none of the collection members are
- *  +false+ or +nil+.
+ *  Returns whether every element meets a given criterion.
  *
- *  If instead a pattern is supplied, the method returns whether
- *  <code>pattern === element</code> for every collection member.
+ *  With no argument and no block,
+ *  returns whether every element is truthy:
  *
- *     %w[ant bear cat].all? { |word| word.length >= 3 } #=> true
- *     %w[ant bear cat].all? { |word| word.length >= 4 } #=> false
- *     %w[ant bear cat].all?(/t/)                        #=> false
- *     [1, 2i, 3.14].all?(Numeric)                       #=> true
- *     [nil, true, 99].all?                              #=> false
- *     [].all?                                           #=> true
+ *    (1..4).all?           # => true
+ *    %w[a b c d].all?      # => true
+ *    [1, 2, nil].all?      # => false
+ *    ['a','b', false].all? # => false
+ *    [].all?               # => true
+ *
+ *  With argument +pattern+ and no block,
+ *  returns whether for each element +element+,
+ *  <tt>pattern === element</tt>:
+ *
+ *    (1..4).all?(Integer)                 # => true
+ *    (1..4).all?(Numeric)                 # => true
+ *    (1..4).all?(Float)                   # => false
+ *    %w[bar baz bat bam].all?(/ba/)       # => true
+ *    %w[bar baz bat bam].all?(/bar/)      # => false
+ *    %w[bar baz bat bam].all?('ba')       # => false
+ *    {foo: 0, bar: 1, baz: 2}.all?(Array) # => true
+ *    {foo: 0, bar: 1, baz: 2}.all?(Hash)  # => false
+ *    [].all?(Integer)                     # => true
+ *
+ *  With a block given, returns whether the block returns a truthy value
+ *  for every element:
+ *
+ *    (1..4).all? {|element| element < 5 }                    # => true
+ *    (1..4).all? {|element| element < 4 }                    # => false
+ *    {foo: 0, bar: 1, baz: 2}.all? {|key, value| value < 3 } # => true
+ *    {foo: 0, bar: 1, baz: 2}.all? {|key, value| value < 2 } # => false
+ *
+ *  Related: #any?, #none? #one?.
  *
  */
 
@@ -1425,26 +1625,44 @@ DEFINE_ENUMFUNCS(any)
 
 /*
  *  call-seq:
- *     enum.any? [{ |obj| block }]   -> true or false
- *     enum.any?(pattern)            -> true or false
+ *    any?                  -> true or false
+ *    any?(pattern)         -> true or false
+ *    any? {|element| ... } -> true or false
  *
- *  Passes each element of the collection to the given block. The method
- *  returns <code>true</code> if the block ever returns a value other
- *  than <code>false</code> or <code>nil</code>. If the block is not
- *  given, Ruby adds an implicit block of <code>{ |obj| obj }</code> that
- *  will cause #any? to return +true+ if at least one of the collection
- *  members is not +false+ or +nil+.
+ *  Returns whether any element meets a given criterion.
  *
- *  If instead a pattern is supplied, the method returns whether
- *  <code>pattern === element</code> for any collection member.
+ *  With no argument and no block,
+ *  returns whether any element is truthy:
  *
- *     %w[ant bear cat].any? { |word| word.length >= 3 } #=> true
- *     %w[ant bear cat].any? { |word| word.length >= 4 } #=> true
- *     %w[ant bear cat].any?(/d/)                        #=> false
- *     [nil, true, 99].any?(Integer)                     #=> true
- *     [nil, true, 99].any?                              #=> true
- *     [].any?                                           #=> false
+ *    (1..4).any?          # => true
+ *    %w[a b c d].any?     # => true
+ *    [1, false, nil].any? # => true
+ *    [].any?              # => false
  *
+ *  With argument +pattern+ and no block,
+ *  returns whether for any element +element+,
+ *  <tt>pattern === element</tt>:
+ *
+ *    [nil, false, 0].any?(Integer)        # => true
+ *    [nil, false, 0].any?(Numeric)        # => true
+ *    [nil, false, 0].any?(Float)          # => false
+ *    %w[bar baz bat bam].any?(/m/)        # => true
+ *    %w[bar baz bat bam].any?(/foo/)      # => false
+ *    %w[bar baz bat bam].any?('ba')       # => false
+ *    {foo: 0, bar: 1, baz: 2}.any?(Array) # => true
+ *    {foo: 0, bar: 1, baz: 2}.any?(Hash)  # => false
+ *    [].any?(Integer)                     # => false
+ *
+ *  With a block given, returns whether the block returns a truthy value
+ *  for any element:
+ *
+ *    (1..4).any? {|element| element < 2 }                    # => true
+ *    (1..4).any? {|element| element < 1 }                    # => false
+ *    {foo: 0, bar: 1, baz: 2}.any? {|key, value| value < 1 } # => true
+ *    {foo: 0, bar: 1, baz: 2}.any? {|key, value| value < 0 } # => false
+ *
+ *
+ *  Related: #all?, #none?, #one?.
  */
 
 static VALUE
@@ -1694,26 +1912,45 @@ rb_nmin_run(VALUE obj, VALUE num, int by, int rev, int ary)
 
 /*
  *  call-seq:
- *     enum.one? [{ |obj| block }]   -> true or false
- *     enum.one?(pattern)            -> true or false
+ *    one?                  -> true or false
+ *    one?(pattern)         -> true or false
+ *    one? {|element| ... } -> true or false
  *
- *  Passes each element of the collection to the given block. The method
- *  returns <code>true</code> if the block returns <code>true</code>
- *  exactly once. If the block is not given, <code>one?</code> will return
- *  <code>true</code> only if exactly one of the collection members is
- *  true.
+ *  Returns whether exactly one element meets a given criterion.
  *
- *  If instead a pattern is supplied, the method returns whether
- *  <code>pattern === element</code> for exactly one collection member.
+ *  With no argument and no block,
+ *  returns whether exactly one element is truthy:
  *
- *     %w{ant bear cat}.one? { |word| word.length == 4 }  #=> true
- *     %w{ant bear cat}.one? { |word| word.length > 4 }   #=> false
- *     %w{ant bear cat}.one? { |word| word.length < 4 }   #=> false
- *     %w{ant bear cat}.one?(/t/)                         #=> false
- *     [ nil, true, 99 ].one?                             #=> false
- *     [ nil, true, false ].one?                          #=> true
- *     [ nil, true, 99 ].one?(Integer)                    #=> true
- *     [].one?                                            #=> false
+ *    (1..1).one?           # => true
+ *    [1, nil, false].one?  # => true
+ *    (1..4).one?           # => false
+ *    {foo: 0}.one?         # => true
+ *    {foo: 0, bar: 1}.one? # => false
+ *    [].one?               # => false
+ *
+ *  With argument +pattern+ and no block,
+ *  returns whether for exactly one element +element+,
+ *  <tt>pattern === element</tt>:
+ *
+ *    [nil, false, 0].one?(Integer)        # => true
+ *    [nil, false, 0].one?(Numeric)        # => true
+ *    [nil, false, 0].one?(Float)          # => false
+ *    %w[bar baz bat bam].one?(/m/)        # => true
+ *    %w[bar baz bat bam].one?(/foo/)      # => false
+ *    %w[bar baz bat bam].one?('ba')       # => false
+ *    {foo: 0, bar: 1, baz: 2}.one?(Array) # => false
+ *    {foo: 0}.one?(Array)                 # => true
+ *    [].one?(Integer)                     # => false
+ *
+ *  With a block given, returns whether the block returns a truthy value
+ *  for exactly one element:
+ *
+ *    (1..4).one? {|element| element < 2 }                     # => true
+ *    (1..4).one? {|element| element < 1 }                     # => false
+ *    {foo: 0, bar: 1, baz: 2}.one? {|key, value| value < 1 }  # => true
+ *    {foo: 0, bar: 1, baz: 2}.one? {|key, value| value < 2 } # => false
+ *
+ *  Related: #none?, #all?, #any?.
  *
  */
 static VALUE
@@ -1740,25 +1977,43 @@ DEFINE_ENUMFUNCS(none)
 
 /*
  *  call-seq:
- *     enum.none? [{ |obj| block }]   -> true or false
- *     enum.none?(pattern)            -> true or false
+ *    none?                  -> true or false
+ *    none?(pattern)         -> true or false
+ *    none? {|element| ... } -> true or false
  *
- *  Passes each element of the collection to the given block. The method
- *  returns <code>true</code> if the block never returns <code>true</code>
- *  for all elements. If the block is not given, <code>none?</code> will return
- *  <code>true</code> only if none of the collection members is true.
+ *  Returns whether no element meets a given criterion.
  *
- *  If instead a pattern is supplied, the method returns whether
- *  <code>pattern === element</code> for none of the collection members.
+ *  With no argument and no block,
+ *  returns whether no element is truthy:
  *
- *     %w{ant bear cat}.none? { |word| word.length == 5 } #=> true
- *     %w{ant bear cat}.none? { |word| word.length >= 4 } #=> false
- *     %w{ant bear cat}.none?(/d/)                        #=> true
- *     [1, 3.14, 42].none?(Float)                         #=> false
- *     [].none?                                           #=> true
- *     [nil].none?                                        #=> true
- *     [nil, false].none?                                 #=> true
- *     [nil, false, true].none?                           #=> false
+ *    (1..4).none?           # => false
+ *    [nil, false].none?     # => true
+ *    {foo: 0}.none?         # => false
+ *    {foo: 0, bar: 1}.none? # => false
+ *    [].none?               # => true
+ *
+ *  With argument +pattern+ and no block,
+ *  returns whether for no element +element+,
+ *  <tt>pattern === element</tt>:
+ *
+ *    [nil, false, 1.1].none?(Integer)      # => true
+ *    %w[bar baz bat bam].none?(/m/)        # => false
+ *    %w[bar baz bat bam].none?(/foo/)      # => true
+ *    %w[bar baz bat bam].none?('ba')       # => true
+ *    {foo: 0, bar: 1, baz: 2}.none?(Hash)  # => true
+ *    {foo: 0}.none?(Array)                 # => false
+ *    [].none?(Integer)                     # => true
+ *
+ *  With a block given, returns whether the block returns a truthy value
+ *  for no element:
+ *
+ *    (1..4).none? {|element| element < 1 }                     # => true
+ *    (1..4).none? {|element| element < 2 }                     # => false
+ *    {foo: 0, bar: 1, baz: 2}.none? {|key, value| value < 0 }  # => true
+ *    {foo: 0, bar: 1, baz: 2}.none? {|key, value| value < 1 } # => false
+ *
+ *  Related: #one?, #all?, #any?.
+ *
  */
 static VALUE
 enum_none(int argc, VALUE *argv, VALUE obj)
@@ -1816,26 +2071,59 @@ min_ii(RB_BLOCK_CALL_FUNC_ARGLIST(i, args))
 
 /*
  *  call-seq:
- *     enum.min                     -> obj
- *     enum.min { |a, b| block }    -> obj
- *     enum.min(n)                  -> array
- *     enum.min(n) { |a, b| block } -> array
+ *    min                  -> element
+ *    min(n)               -> array
+ *    min {|a, b| ... }    -> element
+ *    min(n) {|a, b| ... } -> array
  *
- *  Returns the object in _enum_ with the minimum value. The
- *  first form assumes all objects implement <code><=></code>;
- *  the second uses the block to return <em>a <=> b</em>.
+ *  Returns the element with the minimum element according to a given criterion.
+ *  The ordering of equal elements is indeterminate and may be unstable.
  *
- *     a = %w(albatross dog horse)
- *     a.min                                   #=> "albatross"
- *     a.min { |a, b| a.length <=> b.length }  #=> "dog"
+ *  With no argument and no block, returns the minimum element,
+ *  using the elements' own method <tt><=></tt> for comparison:
  *
- *  If the +n+ argument is given, minimum +n+ elements are returned
- *  as a sorted array.
+ *    (1..4).min                   # => 1
+ *    (-4..-1).min                 # => -4
+ *    %w[d c b a].min              # => "a"
+ *    {foo: 0, bar: 1, baz: 2}.min # => [:bar, 1]
+ *    [].min                       # => nil
  *
- *     a = %w[albatross dog horse]
- *     a.min(2)                                  #=> ["albatross", "dog"]
- *     a.min(2) {|a, b| a.length <=> b.length }  #=> ["dog", "horse"]
- *     [5, 1, 3, 4, 2].min(3)                    #=> [1, 2, 3]
+ *  With positive integer argument +n+ given, and no block,
+ *  returns an array containing the first +n+ minimum elements that exist:
+ *
+ *    (1..4).min(2)                   # => [1, 2]
+ *    (-4..-1).min(2)                 # => [-4, -3]
+ *    %w[d c b a].min(2)              # => ["a", "b"]
+ *    {foo: 0, bar: 1, baz: 2}.min(2) # => [[:bar, 1], [:baz, 2]]
+ *    [].min(2)                       # => []
+ *
+ *  With a block given, the block determines the minimum elements.
+ *  The block is called with two elements +a+ and +b+, and must return:
+ *
+ *  - A negative integer if <tt>a < b</tt>.
+ *  - Zero if <tt>a == b</tt>.
+ *  - A positive integer if <tt>a > b</tt>.
+ *
+ *  With a block given and no argument,
+ *  returns the minimum element as determined by the block:
+ *
+ *    %w[xxx x xxxx xx].min {|a, b| a.size <=> b.size } # => "x"
+ *    h = {foo: 0, bar: 1, baz: 2}
+ *    h.min {|pair1, pair2| pair1[1] <=> pair2[1] } # => [:foo, 0]
+ *    [].min {|a, b| a <=> b }                          # => nil
+ *
+ *  With a block given and positive integer argument +n+ given,
+ *  returns an array containing the first +n+ minimum elements that exist,
+ *  as determined by the block.
+ *
+ *    %w[xxx x xxxx xx].min(2) {|a, b| a.size <=> b.size } # => ["x", "xx"]
+ *    h = {foo: 0, bar: 1, baz: 2}
+ *    h.min(2) {|pair1, pair2| pair1[1] <=> pair2[1] }
+ *    # => [[:foo, 0], [:bar, 1]]
+ *    [].min(2) {|a, b| a <=> b }                          # => []
+ *
+ *  Related: #min_by, #minmax, #max.
+ *
  */
 
 static VALUE
@@ -1908,26 +2196,59 @@ max_ii(RB_BLOCK_CALL_FUNC_ARGLIST(i, args))
 
 /*
  *  call-seq:
- *     enum.max                     -> obj
- *     enum.max { |a, b| block }    -> obj
- *     enum.max(n)                  -> array
- *     enum.max(n) { |a, b| block } -> array
+ *    max                  -> element
+ *    max(n)               -> array
+ *    max {|a, b| ... }    -> element
+ *    max(n) {|a, b| ... } -> array
  *
- *  Returns the object in _enum_ with the maximum value. The
- *  first form assumes all objects implement <code><=></code>;
- *  the second uses the block to return <em>a <=> b</em>.
+ *  Returns the element with the maximum element according to a given criterion.
+ *  The ordering of equal elements is indeterminate and may be unstable.
  *
- *     a = %w(albatross dog horse)
- *     a.max                                   #=> "horse"
- *     a.max { |a, b| a.length <=> b.length }  #=> "albatross"
+ *  With no argument and no block, returns the maximum element,
+ *  using the elements' own method <tt><=></tt> for comparison:
  *
- *  If the +n+ argument is given, maximum +n+ elements are returned
- *  as an array, sorted in descending order.
+ *    (1..4).max                   # => 4
+ *    (-4..-1).max                 # => -1
+ *    %w[d c b a].max              # => "d"
+ *    {foo: 0, bar: 1, baz: 2}.max # => [:foo, 0]
+ *    [].max                       # => nil
  *
- *     a = %w[albatross dog horse]
- *     a.max(2)                                  #=> ["horse", "dog"]
- *     a.max(2) {|a, b| a.length <=> b.length }  #=> ["albatross", "horse"]
- *     [5, 1, 3, 4, 2].max(3)                    #=> [5, 4, 3]
+ *  With positive integer argument +n+ given, and no block,
+ *  returns an array containing the first +n+ maximum elements that exist:
+ *
+ *    (1..4).max(2)                   # => [4, 3]
+ *    (-4..-1).max(2)                # => [-1, -2]
+ *    %w[d c b a].max(2)              # => ["d", "c"]
+ *    {foo: 0, bar: 1, baz: 2}.max(2) # => [[:foo, 0], [:baz, 2]]
+ *    [].max(2)                       # => []
+ *
+ *  With a block given, the block determines the maximum elements.
+ *  The block is called with two elements +a+ and +b+, and must return:
+ *
+ *  - A negative integer if <tt>a < b</tt>.
+ *  - Zero if <tt>a == b</tt>.
+ *  - A positive integer if <tt>a > b</tt>.
+ *
+ *  With a block given and no argument,
+ *  returns the maximum element as determined by the block:
+ *
+ *    %w[xxx x xxxx xx].max {|a, b| a.size <=> b.size } # => "xxxx"
+ *    h = {foo: 0, bar: 1, baz: 2}
+ *    h.max {|pair1, pair2| pair1[1] <=> pair2[1] }     # => [:baz, 2]
+ *    [].max {|a, b| a <=> b }                          # => nil
+ *
+ *  With a block given and positive integer argument +n+ given,
+ *  returns an array containing the first +n+ maximum elements that exist,
+ *  as determined by the block.
+ *
+ *    %w[xxx x xxxx xx].max(2) {|a, b| a.size <=> b.size } # => ["xxxx", "xxx"]
+ *    h = {foo: 0, bar: 1, baz: 2}
+ *    h.max(2) {|pair1, pair2| pair1[1] <=> pair2[1] }
+ *    # => [[:baz, 2], [:bar, 1]]
+ *    [].max(2) {|a, b| a <=> b }                          # => []
+ *
+ *  Related: #min, #minmax, #max_by.
+ *
  */
 
 static VALUE
@@ -2068,17 +2389,33 @@ minmax_ii(RB_BLOCK_CALL_FUNC_ARGLIST(i, _memo))
 
 /*
  *  call-seq:
- *     enum.minmax                  -> [min, max]
- *     enum.minmax { |a, b| block } -> [min, max]
+ *    minmax               -> [minimum, maximum]
+ *    minmax {|a, b| ... } -> [minimum, maximum]
  *
- *  Returns a two element array which contains the minimum and the
- *  maximum value in the enumerable.  The first form assumes all
- *  objects implement <code><=></code>; the second uses the
- *  block to return <em>a <=> b</em>.
+ *  Returns a 2-element array containing the minimum and maximum elements
+ *  according to a given criterion.
+ *  The ordering of equal elements is indeterminate and may be unstable.
  *
- *     a = %w(albatross dog horse)
- *     a.minmax                                  #=> ["albatross", "horse"]
- *     a.minmax { |a, b| a.length <=> b.length } #=> ["dog", "albatross"]
+ *  With no argument and no block, returns the minimum and maximum elements,
+ *  using the elements' own method <tt><=></tt> for comparison:
+ *
+ *    (1..4).minmax                   # => [1, 4]
+ *    (-4..-1).minmax                 # => [-4, -1]
+ *    %w[d c b a].minmax              # => ["a", "d"]
+ *    {foo: 0, bar: 1, baz: 2}.minmax # => [[:bar, 1], [:foo, 0]]
+ *    [].minmax                       # => [nil, nil]
+ *
+ *  With a block given, returns the minimum and maximum elements
+ *  as determined by the block:
+ *
+ *    %w[xxx x xxxx xx].minmax {|a, b| a.size <=> b.size } # => ["x", "xxxx"]
+ *    h = {foo: 0, bar: 1, baz: 2}
+ *    h.minmax {|pair1, pair2| pair1[1] <=> pair2[1] }
+ *    # => [[:foo, 0], [:baz, 2]]
+ *    [].minmax {|a, b| a <=> b }                          # => [nil, nil]
+ *
+ *  Related: #min, #max, #minmax_by.
+ *
  */
 
 static VALUE
@@ -2130,25 +2467,38 @@ min_by_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, args))
 
 /*
  *  call-seq:
- *     enum.min_by {|obj| block }      -> obj
- *     enum.min_by                     -> an_enumerator
- *     enum.min_by(n) {|obj| block }   -> array
- *     enum.min_by(n)                  -> an_enumerator
+ *    min_by {|element| ... }    -> element
+ *    min_by(n) {|element| ... } -> array
+ *    min_by                     -> enumerator
+ *    min_by(n)                  -> enumerator
  *
- *  Returns the object in <i>enum</i> that gives the minimum
- *  value from the given block.
+ *  Returns the elements for which the block returns the minimum values.
  *
- *  If no block is given, an enumerator is returned instead.
+ *  With a block given and no argument,
+ *  returns the element for which the block returns the minimum value:
  *
- *     a = %w(albatross dog horse)
- *     a.min_by { |x| x.length }   #=> "dog"
+ *    (1..4).min_by {|element| -element }                    # => 4
+ *    %w[a b c d].min_by {|element| -element.ord }           # => "d"
+ *    {foo: 0, bar: 1, baz: 2}.min_by {|key, value| -value } # => [:baz, 2]
+ *    [].min_by {|element| -element }                        # => nil
  *
- *  If the +n+ argument is given, minimum +n+ elements are returned
- *  as an array. These +n+ elements are sorted by the value from the
- *  given block.
+ *  With a block given and positive integer argument +n+ given,
+ *  returns an array containing the +n+ elements
+ *  for which the block returns minimum values:
  *
- *     a = %w[albatross dog horse]
- *     p a.min_by(2) {|x| x.length } #=> ["dog", "horse"]
+ *    (1..4).min_by(2) {|element| -element }
+ *    # => [4, 3]
+ *    %w[a b c d].min_by(2) {|element| -element.ord }
+ *    # => ["d", "c"]
+ *    {foo: 0, bar: 1, baz: 2}.min_by(2) {|key, value| -value }
+ *    # => [[:baz, 2], [:bar, 1]]
+ *    [].min_by(2) {|element| -element }
+ *    # => []
+ *
+ *  Returns an Enumerator if no block is given.
+ *
+ *  Related: #min, #minmax, #max_by.
+ *
  */
 
 static VALUE
@@ -2192,69 +2542,37 @@ max_by_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, args))
 
 /*
  *  call-seq:
- *     enum.max_by {|obj| block }      -> obj
- *     enum.max_by                     -> an_enumerator
- *     enum.max_by(n) {|obj| block }   -> obj
- *     enum.max_by(n)                  -> an_enumerator
+ *    max_by {|element| ... }    -> element
+ *    max_by(n) {|element| ... } -> array
+ *    max_by                     -> enumerator
+ *    max_by(n)                  -> enumerator
  *
- *  Returns the object in <i>enum</i> that gives the maximum
- *  value from the given block.
+ *  Returns the elements for which the block returns the maximum values.
  *
- *  If no block is given, an enumerator is returned instead.
+ *  With a block given and no argument,
+ *  returns the element for which the block returns the maximum value:
  *
- *     a = %w(albatross dog horse)
- *     a.max_by { |x| x.length }   #=> "albatross"
+ *    (1..4).max_by {|element| -element }                    # => 1
+ *    %w[a b c d].max_by {|element| -element.ord }           # => "a"
+ *    {foo: 0, bar: 1, baz: 2}.max_by {|key, value| -value } # => [:foo, 0]
+ *    [].max_by {|element| -element }                        # => nil
  *
- *  If the +n+ argument is given, maximum +n+ elements are returned
- *  as an array. These +n+ elements are sorted by the value from the
- *  given block, in descending order.
+ *  With a block given and positive integer argument +n+ given,
+ *  returns an array containing the +n+ elements
+ *  for which the block returns maximum values:
  *
- *     a = %w[albatross dog horse]
- *     a.max_by(2) {|x| x.length } #=> ["albatross", "horse"]
+ *    (1..4).max_by(2) {|element| -element }
+ *    # => [1, 2]
+ *    %w[a b c d].max_by(2) {|element| -element.ord }
+ *    # => ["a", "b"]
+ *    {foo: 0, bar: 1, baz: 2}.max_by(2) {|key, value| -value }
+ *    # => [[:foo, 0], [:bar, 1]]
+ *    [].max_by(2) {|element| -element }
+ *    # => []
  *
- *  enum.max_by(n) can be used to implement weighted random sampling.
- *  Following example implements and use Enumerable#wsample.
+ *  Returns an Enumerator if no block is given.
  *
- *     module Enumerable
- *       # weighted random sampling.
- *       #
- *       # Pavlos S. Efraimidis, Paul G. Spirakis
- *       # Weighted random sampling with a reservoir
- *       # Information Processing Letters
- *       # Volume 97, Issue 5 (16 March 2006)
- *       def wsample(n)
- *         self.max_by(n) {|v| rand ** (1.0/yield(v)) }
- *       end
- *     end
- *     e = (-20..20).to_a*10000
- *     a = e.wsample(20000) {|x|
- *       Math.exp(-(x/5.0)**2) # normal distribution
- *     }
- *     # a is 20000 samples from e.
- *     p a.length #=> 20000
- *     h = a.group_by {|x| x }
- *     -10.upto(10) {|x| puts "*" * (h[x].length/30.0).to_i if h[x] }
- *     #=> *
- *     #   ***
- *     #   ******
- *     #   ***********
- *     #   ******************
- *     #   *****************************
- *     #   *****************************************
- *     #   ****************************************************
- *     #   ***************************************************************
- *     #   ********************************************************************
- *     #   ***********************************************************************
- *     #   ***********************************************************************
- *     #   **************************************************************
- *     #   ****************************************************
- *     #   ***************************************
- *     #   ***************************
- *     #   ******************
- *     #   ***********
- *     #   *******
- *     #   ***
- *     #   *
+ *  Related: #max, #minmax, #min_by.
  *
  */
 
@@ -2351,17 +2669,25 @@ minmax_by_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, _memo))
 
 /*
  *  call-seq:
- *     enum.minmax_by { |obj| block } -> [min, max]
- *     enum.minmax_by                 -> an_enumerator
+ *    minmax_by {|element| ... } -> [minimum, maximum]
+ *    minmax_by                  -> enumerator
  *
- *  Returns a two element array containing the objects in
- *  <i>enum</i> that correspond to the minimum and maximum values respectively
- *  from the given block.
+ *  Returns a 2-element array containing the elements
+ *  for which the block returns minimum and maximum values:
  *
- *  If no block is given, an enumerator is returned instead.
+ *    (1..4).minmax_by {|element| -element }
+ *    # => [4, 1]
+ *    %w[a b c d].minmax_by {|element| -element.ord }
+ *    # => ["d", "a"]
+ *    {foo: 0, bar: 1, baz: 2}.minmax_by {|key, value| -value }
+ *    # => [[:baz, 2], [:foo, 0]]
+ *    [].minmax_by {|element| -element }
+ *    # => [nil, nil]
  *
- *     a = %w(albatross dog horse)
- *     a.minmax_by { |x| x.length }   #=> ["dog", "albatross"]
+ *  Returns an Enumerator if no block is given.
+ *
+ *  Related: #max_by, #minmax, #min_by.
+ *
  */
 
 static VALUE
@@ -2399,16 +2725,20 @@ member_i(RB_BLOCK_CALL_FUNC_ARGLIST(iter, args))
 
 /*
  *  call-seq:
- *     enum.include?(obj)     -> true or false
- *     enum.member?(obj)      -> true or false
+ *    include?(object) -> true or false
  *
- *  Returns <code>true</code> if any member of <i>enum</i> equals
- *  <i>obj</i>. Equality is tested using <code>==</code>.
+ *  Returns whether for any element <tt>object == element</tt>:
  *
- *     (1..10).include? 5  #=> true
- *     (1..10).include? 15 #=> false
- *     (1..10).member? 5   #=> true
- *     (1..10).member? 15  #=> false
+ *    (1..4).include?(2)                       # => true
+ *    (1..4).include?(5)                       # => false
+ *    (1..4).include?('2')                     # => false
+ *    %w[a b c d].include?('b')                # => true
+ *    %w[a b c d].include?('2')                # => false
+ *    {foo: 0, bar: 1, baz: 2}.include?(:foo)  # => true
+ *    {foo: 0, bar: 1, baz: 2}.include?('foo') # => false
+ *    {foo: 0, bar: 1, baz: 2}.include?(0)     # => false
+ *
+ *  Enumerable#member? is an alias for Enumerable#include?.
  *
  */
 
@@ -2433,20 +2763,28 @@ each_with_index_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, memo))
 
 /*
  *  call-seq:
- *     enum.each_with_index(*args) { |obj, i| block } ->  enum
- *     enum.each_with_index(*args)                    ->  an_enumerator
+ *    each_with_index(*args) {|element, i| ..... } -> self
+ *    each_with_index(*args)                       -> enumerator
  *
- *  Calls <em>block</em> with two arguments, the item and its index,
- *  for each item in <i>enum</i>.  Given arguments are passed through
- *  to #each().
+ *  With a block given, calls the block with each element and its index;
+ *  returns +self+:
  *
- *  If no block is given, an enumerator is returned instead.
+ *    h = {}
+ *    (1..4).each_with_index {|element, i| h[element] = i } # => 1..4
+ *    h # => {1=>0, 2=>1, 3=>2, 4=>3}
  *
- *     hash = Hash.new
- *     %w(cat dog wombat).each_with_index { |item, index|
- *       hash[item] = index
- *     }
- *     hash   #=> {"cat"=>0, "dog"=>1, "wombat"=>2}
+ *    h = {}
+ *    %w[a b c d].each_with_index {|element, i| h[element] = i }
+ *    # => ["a", "b", "c", "d"]
+ *    h # => {"a"=>0, "b"=>1, "c"=>2, "d"=>3}
+ *
+ *    a = []
+ *    h = {foo: 0, bar: 1, baz: 2}
+ *    h.each_with_index {|element, i| a.push([i, element]) }
+ *    # => {:foo=>0, :bar=>1, :baz=>2}
+ *    a # => [[0, [:foo, 0]], [1, [:bar, 1]], [2, [:baz, 2]]]
+ *
+ *  With no block given, returns an Enumerator.
  *
  */
 
@@ -2465,20 +2803,28 @@ enum_each_with_index(int argc, VALUE *argv, VALUE obj)
 
 /*
  *  call-seq:
- *     enum.reverse_each(*args) { |item| block } ->  enum
- *     enum.reverse_each(*args)                  ->  an_enumerator
+ *    reverse_each(*args) {|element| ... } ->  self
+ *    reverse_each(*args)                  ->  enumerator
  *
- *  Builds a temporary array and traverses that array in reverse order.
+ *  With a block given, calls the block with each element,
+ *  but in reverse order; returns +self+:
  *
- *  If no block is given, an enumerator is returned instead.
+ *    a = []
+ *    (1..4).reverse_each {|element| a.push(-element) } # => 1..4
+ *    a # => [-4, -3, -2, -1]
  *
- *     (1..3).reverse_each { |v| p v }
+ *    a = []
+ *    %w[a b c d].reverse_each {|element| a.push(element) }
+ *    # => ["a", "b", "c", "d"]
+ *    a # => ["d", "c", "b", "a"]
  *
- *  produces:
+ *    a = []
+ *    h.reverse_each {|element| a.push(element) }
+ *    # => {:foo=>0, :bar=>1, :baz=>2}
+ *    a # => [[:baz, 2], [:bar, 1], [:foo, 0]]
  *
- *     3
- *     2
- *     1
+ *  With no block given, returns an Enumerator.
+ *
  */
 
 static VALUE
@@ -2515,30 +2861,39 @@ each_val_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, p))
 
 /*
  *  call-seq:
- *     enum.each_entry { |obj| block }  -> enum
- *     enum.each_entry                  -> an_enumerator
+ *    each_entry(*args) {|element| ... } -> self
+ *    each_entry(*args)                  -> enumerator
  *
- *  Calls <i>block</i> once for each element in +self+, passing that
- *  element as a parameter, converting multiple values from yield to an
- *  array.
+ *  Calls the given block with each element,
+ *  converting multiple values from yield to an array; returns +self+:
  *
- *  If no block is given, an enumerator is returned instead.
+ *    a = []
+ *    (1..4).each_entry {|element| a.push(element) } # => 1..4
+ *    a # => [1, 2, 3, 4]
  *
- *     class Foo
- *       include Enumerable
- *       def each
- *         yield 1
- *         yield 1, 2
- *         yield
- *       end
- *     end
- *     Foo.new.each_entry{ |o| p o }
+ *    a = []
+ *    h = {foo: 0, bar: 1, baz:2}
+ *    h.each_entry {|element| a.push(element) }
+ *    # => {:foo=>0, :bar=>1, :baz=>2}
+ *    a # => [[:foo, 0], [:bar, 1], [:baz, 2]]
  *
- *  produces:
+ *    class Foo
+ *      include Enumerable
+ *      def each
+ *        yield 1
+ *        yield 1, 2
+ *        yield
+ *      end
+ *    end
+ *    Foo.new.each_entry {|yielded| p yielded }
  *
- *     1
- *     [1, 2]
- *     nil
+ *  Output:
+ *
+ *    1
+ *    [1, 2]
+ *    nil
+ *
+ *  With no block given, returns an Enumerator.
  *
  */
 
@@ -2603,7 +2958,7 @@ enum_each_slice_size(VALUE obj, VALUE args, VALUE eobj)
     if (slice_size <= 0) rb_raise(rb_eArgError, "invalid slice size");
 
     size = enum_size(obj, 0, 0);
-    if (size == Qnil) return Qnil;
+    if (NIL_P(size)) return Qnil;
     if (RB_FLOAT_TYPE_P(size) && RTEST(rb_funcall(size, infinite_p, 0))) {
         return size;
     }
@@ -2614,18 +2969,22 @@ enum_each_slice_size(VALUE obj, VALUE args, VALUE eobj)
 
 /*
  *  call-seq:
- *    enum.each_slice(n) { ... }  ->  nil
- *    enum.each_slice(n)          ->  an_enumerator
+ *    each_slice(n) { ... }  ->  self
+ *    each_slice(n)          ->  enumerator
  *
- *  Iterates the given block for each slice of <n> elements.  If no
- *  block is given, returns an enumerator.
+ *  Calls the block with each successive disjoint +n+-tuple of elements;
+ *  returns +self+:
  *
- *      (1..10).each_slice(3) { |a| p a }
- *      # outputs below
- *      [1, 2, 3]
- *      [4, 5, 6]
- *      [7, 8, 9]
- *      [10]
+ *    a = []
+ *    (1..10).each_slice(3) {|tuple| a.push(tuple) }
+ *    a # => [[1, 2, 3], [4, 5, 6], [7, 8, 9], [10]]
+ *
+ *    a = []
+ *    h = {foo: 0, bar: 1, baz: 2, bat: 3, bam: 4}
+ *    h.each_slice(2) {|tuple| a.push(tuple) }
+ *    a # => [[[:foo, 0], [:bar, 1]], [[:baz, 2], [:bat, 3]], [[:bam, 4]]]
+ *
+ *  With no block given, returns an Enumerator.
  *
  */
 static VALUE
@@ -2646,7 +3005,7 @@ enum_each_slice(VALUE obj, VALUE n)
     ary = memo->v1;
     if (RARRAY_LEN(ary) > 0) rb_yield(ary);
 
-    return Qnil;
+    return obj;
 }
 
 static VALUE
@@ -2681,7 +3040,7 @@ enum_each_cons_size(VALUE obj, VALUE args, VALUE eobj)
     if (cons_size <= 0) rb_raise(rb_eArgError, "invalid size");
 
     size = enum_size(obj, 0, 0);
-    if (size == Qnil) return Qnil;
+    if (NIL_P(size)) return Qnil;
 
     n = add_int(size, 1 - cons_size);
     return (OPTIMIZED_CMP(n, zero, cmp_opt) == -1) ? zero : n;
@@ -2689,23 +3048,22 @@ enum_each_cons_size(VALUE obj, VALUE args, VALUE eobj)
 
 /*
  *  call-seq:
- *    enum.each_cons(n) { ... } ->  nil
- *    enum.each_cons(n)         ->  an_enumerator
+ *    each_cons(n) { ... } ->  self
+ *    each_cons(n)         ->  enumerator
  *
- *  Iterates the given block for each array of consecutive <n>
- *  elements.  If no block is given, returns an enumerator.
+ *  Calls the block with each successive overlapped +n+-tuple of elements;
+ *  returns +self+:
  *
- *  e.g.:
- *      (1..10).each_cons(3) { |a| p a }
- *      # outputs below
- *      [1, 2, 3]
- *      [2, 3, 4]
- *      [3, 4, 5]
- *      [4, 5, 6]
- *      [5, 6, 7]
- *      [6, 7, 8]
- *      [7, 8, 9]
- *      [8, 9, 10]
+ *    a = []
+ *    (1..5).each_cons(3) {|element| a.push(element) }
+ *    a # => [[1, 2, 3], [2, 3, 4], [3, 4, 5]]
+ *
+ *    a = []
+ *    h = {foo: 0,  bar: 1, baz: 2, bam: 3}
+ *    h.each_cons(2) {|element| a.push(element) }
+ *    a # => [[[:foo, 0], [:bar, 1]], [[:bar, 1], [:baz, 2]], [[:baz, 2], [:bam, 3]]]
+ *
+ *  With no block given, returns an Enumerator.
  *
  */
 static VALUE
@@ -2718,11 +3076,11 @@ enum_each_cons(VALUE obj, VALUE n)
     if (size <= 0) rb_raise(rb_eArgError, "invalid size");
     RETURN_SIZED_ENUMERATOR(obj, 1, &n, enum_each_cons_size);
     arity = rb_block_arity();
-    if (enum_size_over_p(obj, size)) return Qnil;
+    if (enum_size_over_p(obj, size)) return obj;
     memo = MEMO_NEW(rb_ary_new2(size), dont_recycle_block_arg(arity), size);
     rb_block_call(obj, id_each, 0, 0, each_cons_i, (VALUE)memo);
 
-    return Qnil;
+    return obj;
 }
 
 static VALUE
@@ -2734,16 +3092,19 @@ each_with_object_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, memo))
 
 /*
  *  call-seq:
- *    enum.each_with_object(obj) { |(*args), memo_obj| ... }  ->  obj
- *    enum.each_with_object(obj)                              ->  an_enumerator
+ *    each_with_object(object) { |(*args), memo_object| ... }  ->  object
+ *    each_with_object(object)                                 ->  enumerator
  *
- *  Iterates the given block for each element with an arbitrary
- *  object given, and returns the initially given object.
+ *  Calls the block once for each element, passing both the element
+ *  and the given object:
  *
- *  If no block is given, returns an enumerator.
+ *    (1..4).each_with_object([]) {|i, a| a.push(i**2) }
+ *    # => [1, 4, 9, 16]
  *
- *      evens = (1..10).each_with_object([]) { |i, a| a << i*2 }
- *      #=> [2, 4, 6, 8, 10, 12, 14, 16, 18, 20]
+ *    {foo: 0, bar: 1, baz: 2}.each_with_object({}) {|(k, v), h| h[v] = k }
+ *    # => {0=>:foo, 1=>:bar, 2=>:baz}
+ *
+ *  With no block given, returns an Enumerator.
  *
  */
 static VALUE
@@ -2845,29 +3206,68 @@ zip_i(RB_BLOCK_CALL_FUNC_ARGLIST(val, memoval))
 
 /*
  *  call-seq:
- *     enum.zip(arg, ...)                  -> an_array_of_array
- *     enum.zip(arg, ...) { |arr| block }  -> nil
+ *    zip(*other_enums) -> array
+ *    zip(*other_enums) {|array| ... } -> nil
  *
- *  Takes one element from <i>enum</i> and merges corresponding
- *  elements from each <i>args</i>.  This generates a sequence of
- *  <em>n</em>-element arrays, where <em>n</em> is one more than the
- *  count of arguments.  The length of the resulting sequence will be
- *  <code>enum#size</code>.  If the size of any argument is less than
- *  <code>enum#size</code>, <code>nil</code> values are supplied. If
- *  a block is given, it is invoked for each output array, otherwise
- *  an array of arrays is returned.
+ *  With no block given, returns a new array +new_array+ of size self.size
+ *  whose elements are arrays.
+ *  Each nested array <tt>new_array[n]</tt>
+ *  is of size <tt>other_enums.size+1</tt>, and contains:
  *
- *     a = [ 4, 5, 6 ]
- *     b = [ 7, 8, 9 ]
+ *  - The +n+-th element of self.
+ *  - The +n+-th element of each of the +other_enums+.
  *
- *     a.zip(b)                 #=> [[4, 7], [5, 8], [6, 9]]
- *     [1, 2, 3].zip(a, b)      #=> [[1, 4, 7], [2, 5, 8], [3, 6, 9]]
- *     [1, 2].zip(a, b)         #=> [[1, 4, 7], [2, 5, 8]]
- *     a.zip([1, 2], [8])       #=> [[4, 1, 8], [5, 2, nil], [6, nil, nil]]
+ *  If all +other_enums+ and self are the same size,
+ *  all elements are included in the result, and there is no +nil+-filling:
  *
- *     c = []
- *     a.zip(b) { |x, y| c << x + y }  #=> nil
- *     c                               #=> [11, 13, 15]
+ *    a = [:a0, :a1, :a2, :a3]
+ *    b = [:b0, :b1, :b2, :b3]
+ *    c = [:c0, :c1, :c2, :c3]
+ *    d = a.zip(b, c)
+ *    d # => [[:a0, :b0, :c0], [:a1, :b1, :c1], [:a2, :b2, :c2], [:a3, :b3, :c3]]
+ *
+ *    f = {foo: 0, bar: 1, baz: 2}
+ *    g = {goo: 3, gar: 4, gaz: 5}
+ *    h = {hoo: 6, har: 7, haz: 8}
+ *    d = f.zip(g, h)
+ *    d # => [
+ *      #      [[:foo, 0], [:goo, 3], [:hoo, 6]],
+ *      #      [[:bar, 1], [:gar, 4], [:har, 7]],
+ *      #      [[:baz, 2], [:gaz, 5], [:haz, 8]]
+ *      #    ]
+ *
+ *  If any enumerable in other_enums is smaller than self,
+ *  fills to <tt>self.size</tt> with +nil+:
+ *
+ *    a = [:a0, :a1, :a2, :a3]
+ *    b = [:b0, :b1, :b2]
+ *    c = [:c0, :c1]
+ *    d = a.zip(b, c)
+ *    d # => [[:a0, :b0, :c0], [:a1, :b1, :c1], [:a2, :b2, nil], [:a3, nil, nil]]
+ *
+ *  If any enumerable in other_enums is larger than self,
+ *  its trailing elements are ignored:
+ *
+ *    a = [:a0, :a1, :a2, :a3]
+ *    b = [:b0, :b1, :b2, :b3, :b4]
+ *    c = [:c0, :c1, :c2, :c3, :c4, :c5]
+ *    d = a.zip(b, c)
+ *    d # => [[:a0, :b0, :c0], [:a1, :b1, :c1], [:a2, :b2, :c2], [:a3, :b3, :c3]]
+ *
+ *  When a block is given, calls the block with each of the sub-arrays
+ *  (formed as above); returns nil:
+ *
+ *    a = [:a0, :a1, :a2, :a3]
+ *    b = [:b0, :b1, :b2, :b3]
+ *    c = [:c0, :c1, :c2, :c3]
+ *    a.zip(b, c) {|sub_array| p sub_array} # => nil
+ *
+ *  Output:
+ *
+ *    [:a0, :b0, :c0]
+ *    [:a1, :b1, :c1]
+ *    [:a2, :b2, :c2]
+ *    [:a3, :b3, :c3]
  *
  */
 
@@ -2923,13 +3323,16 @@ take_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, args))
 
 /*
  *  call-seq:
- *     enum.take(n)               -> array
+ *    take(n) -> array
  *
- *  Returns first n elements from <i>enum</i>.
+ *  For non-negative integer +n+, returns the first +n+ elements:
  *
- *     a = [1, 2, 3, 4, 5, 0]
- *     a.take(3)             #=> [1, 2, 3]
- *     a.take(30)            #=> [1, 2, 3, 4, 5, 0]
+ *    r = (1..4)
+ *    r.take(2) # => [1, 2]
+ *    r.take(0) # => []
+ *
+ *    h = {foo: 0, bar: 1, baz: 2, bat: 3}
+ *    h.take(2) # => [[:foo, 0], [:bar, 1]]
  *
  */
 
@@ -2962,16 +3365,20 @@ take_while_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, ary))
 
 /*
  *  call-seq:
- *     enum.take_while { |obj| block } -> array
- *     enum.take_while                 -> an_enumerator
+ *    take_while {|element| ... } -> array
+ *    take_while                  -> enumerator
  *
- *  Passes elements to the block until the block returns +nil+ or +false+,
- *  then stops iterating and returns an array of all prior elements.
+ *  Calls the block with successive elements as long as the block
+ *  returns a truthy value;
+ *  returns an array of all elements up to that point:
  *
- *  If no block is given, an enumerator is returned instead.
  *
- *     a = [1, 2, 3, 4, 5, 0]
- *     a.take_while { |i| i < 3 }   #=> [1, 2]
+ *    (1..4).take_while{|i| i < 3 } # => [1, 2]
+ *    h = {foo: 0, bar: 1, baz: 2}
+ *    h.take_while{|element| key, value = *element; value < 2 }
+ *    # => [[:foo, 0], [:bar, 1]]
+ *
+ *  With no block given, returns an Enumerator.
  *
  */
 
@@ -3001,13 +3408,20 @@ drop_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, args))
 
 /*
  *  call-seq:
- *     enum.drop(n)               -> array
+ *    drop(n) -> array
  *
- *  Drops first n elements from <i>enum</i>, and returns rest elements
- *  in an array.
+ *  For positive integer +n+, returns an array containing
+ *  all but the first +n+ elements:
  *
- *     a = [1, 2, 3, 4, 5, 0]
- *     a.drop(3)             #=> [4, 5, 0]
+ *    r = (1..4)
+ *    r.drop(3)  # => [4]
+ *    r.drop(2)  # => [3, 4]
+ *    r.drop(1)  # => [2, 3, 4]
+ *    r.drop(0)  # => [1, 2, 3, 4]
+ *    r.drop(50) # => []
+ *
+ *    h = {foo: 0, bar: 1, baz: 2, bat: 3}
+ *    h.drop(2) # => [[:baz, 2], [:bat, 3]]
  *
  */
 
@@ -3046,17 +3460,20 @@ drop_while_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, args))
 
 /*
  *  call-seq:
- *     enum.drop_while { |obj| block }  -> array
- *     enum.drop_while                  -> an_enumerator
+ *    drop_while {|element| ... } -> array
+ *    drop_while                  -> enumerator
  *
- *  Drops elements up to, but not including, the first element for
- *  which the block returns +nil+ or +false+ and returns an array
- *  containing the remaining elements.
+ *  Calls the block with successive elements as long as the block
+ *  returns a truthy value;
+ *  returns an array of all elements after that point:
  *
- *  If no block is given, an enumerator is returned instead.
  *
- *     a = [1, 2, 3, 4, 5, 0]
- *     a.drop_while { |i| i < 3 }   #=> [3, 4, 5, 0]
+ *    (1..4).drop_while{|i| i < 3 } # => [3, 4]
+ *    h = {foo: 0, bar: 1, baz: 2}
+ *    a = h.drop_while{|element| key, value = *element; value < 2 }
+ *    a # => [[:baz, 2]]
+ *
+ *  With no block given, returns an Enumerator.
  *
  */
 
@@ -3106,22 +3523,28 @@ enum_cycle_size(VALUE self, VALUE args, VALUE eobj)
 
 /*
  *  call-seq:
- *     enum.cycle(n=nil) { |obj| block }  ->  nil
- *     enum.cycle(n=nil)                  ->  an_enumerator
+ *    cycle(n = nil) {|element| ...} ->  nil
+ *    cycle(n = nil)                 ->  enumerator
  *
- *  Calls <i>block</i> for each element of <i>enum</i> repeatedly _n_
- *  times or forever if none or +nil+ is given.  If a non-positive
- *  number is given or the collection is empty, does nothing.  Returns
- *  +nil+ if the loop has finished without getting interrupted.
+ *  When called with positive integer argument +n+ and a block,
+ *  calls the block with each element, then does so again,
+ *  until it has done so +n+ times; returns +nil+:
  *
- *  Enumerable#cycle saves elements in an internal array so changes
- *  to <i>enum</i> after the first pass have no effect.
+ *    a = []
+ *    (1..4).cycle(3) {|element| a.push(element) } # => nil
+ *    a # => [1, 2, 3, 4, 1, 2, 3, 4, 1, 2, 3, 4]
+ *    a = []
+ *    ('a'..'d').cycle(2) {|element| a.push(element) }
+ *    a # => ["a", "b", "c", "d", "a", "b", "c", "d"]
+ *    a = []
+ *    {foo: 0, bar: 1, baz: 2}.cycle(2) {|element| a.push(element) }
+ *    a # => [[:foo, 0], [:bar, 1], [:baz, 2], [:foo, 0], [:bar, 1], [:baz, 2]]
  *
- *  If no block is given, an enumerator is returned instead.
+ *  If count is zero or negative, does not call the block.
  *
- *     a = ["a", "b", "c"]
- *     a.cycle { |x| puts x }  # print, a, b, c, a, b, c,.. forever.
- *     a.cycle(2) { |x| puts x }  # print, a, b, c, a, b, c.
+ *  When called with a block and +n+ is +nil+, cycles forever.
+ *
+ *  When no block is given, returns an Enumerator.
  *
  */
 
@@ -3167,8 +3590,8 @@ chunk_ii(RB_BLOCK_CALL_FUNC_ARGLIST(i, _argp))
 {
     struct chunk_arg *argp = MEMO_FOR(struct chunk_arg, _argp);
     VALUE v, s;
-    VALUE alone = ID2SYM(rb_intern("_alone"));
-    VALUE separator = ID2SYM(rb_intern("_separator"));
+    VALUE alone = ID2SYM(id__alone);
+    VALUE separator = ID2SYM(id__separator);
 
     ENUM_WANT_SVALUE();
 
@@ -3220,8 +3643,8 @@ chunk_i(RB_BLOCK_CALL_FUNC_ARGLIST(yielder, enumerator))
     VALUE arg;
     struct chunk_arg *memo = NEW_MEMO_FOR(struct chunk_arg, arg);
 
-    enumerable = rb_ivar_get(enumerator, rb_intern("chunk_enumerable"));
-    memo->categorize = rb_ivar_get(enumerator, rb_intern("chunk_categorize"));
+    enumerable = rb_ivar_get(enumerator, id_chunk_enumerable);
+    memo->categorize = rb_ivar_get(enumerator, id_chunk_categorize);
     memo->prev_value = Qnil;
     memo->prev_elts = Qnil;
     memo->yielder = yielder;
@@ -3237,50 +3660,78 @@ chunk_i(RB_BLOCK_CALL_FUNC_ARGLIST(yielder, enumerator))
 
 /*
  *  call-seq:
- *     enum.chunk { |elt| ... }                       -> an_enumerator
+ *    chunk {|array| ... } -> enumerator
  *
- *  Enumerates over the items, chunking them together based on the return
- *  value of the block.
+ *  Each element in the returned enumerator is a 2-element array consisting of:
  *
- *  Consecutive elements which return the same block value are chunked together.
+ *  - A value returned by the block.
+ *  - An array ("chunk") containing the element for which that value was returned,
+ *    and all following elements for which the block returned the same value:
  *
- *  For example, consecutive even numbers and odd numbers can be
- *  chunked as follows.
+ *  So that:
  *
- *    [3, 1, 4, 1, 5, 9, 2, 6, 5, 3, 5].chunk { |n|
- *      n.even?
- *    }.each { |even, ary|
- *      p [even, ary]
+ *  - Each block return value that is different from its predecessor
+ *    begins a new chunk.
+ *  - Each block return value that is the same as its predecessor
+ *    continues the same chunk.
+ *
+ *  Example:
+ *
+ *    e = (0..10).chunk {|i| (i / 3).floor } # => #<Enumerator: ...>
+ *    # The enumerator elements.
+ *    e.next # => [0, [0, 1, 2]]
+ *    e.next # => [1, [3, 4, 5]]
+ *    e.next # => [2, [6, 7, 8]]
+ *    e.next # => [3, [9, 10]]
+ *
+ *  \Method +chunk+ is especially useful for an enumerable that is already sorted.
+ *  This example counts words for each initial letter in a large array of words:
+ *
+ *    # Get sorted words from a web page.
+ *    url = 'https://raw.githubusercontent.com/eneko/data-repository/master/data/words.txt'
+ *    words = URI::open(url).readlines
+ *    # Make chunks, one for each letter.
+ *    e = words.chunk {|word| word.upcase[0] } # => #<Enumerator: ...>
+ *    # Display 'A' through 'F'.
+ *    e.each {|c, words| p [c, words.length]; break if c == 'F' }
+ *
+ *  Output:
+ *
+ *    ["A", 17096]
+ *    ["B", 11070]
+ *    ["C", 19901]
+ *    ["D", 10896]
+ *    ["E", 8736]
+ *    ["F", 6860]
+ *
+ *  You can use the special symbol <tt>:_alone</tt> to force an element
+ *  into its own separate chuck:
+ *
+ *    a = [0, 0, 1, 1]
+ *    e = a.chunk{|i| i.even? ? :_alone : true }
+ *    e.to_a # => [[:_alone, [0]], [:_alone, [0]], [true, [1, 1]]]
+ *
+ *  For example, you can put each line that contains a URL into its own chunk:
+ *
+ *    pattern = /http/
+ *    open(filename) { |f|
+ *      f.chunk { |line| line =~ pattern ? :_alone : true }.each { |key, lines|
+ *        pp lines
+ *      }
  *    }
- *    #=> [false, [3, 1]]
- *    #   [true, [4]]
- *    #   [false, [1, 5, 9]]
- *    #   [true, [2, 6]]
- *    #   [false, [5, 3, 5]]
  *
- *  This method is especially useful for sorted series of elements.
- *  The following example counts words for each initial letter.
+ *  You can use the special symbol <tt>:_separator</tt> or +nil+
+ *  to force an element to be ignored (not included in any chunk):
  *
- *    open("/usr/share/dict/words", "r:iso-8859-1") { |f|
- *      f.chunk { |line| line.upcase.ord }.each { |ch, lines| p [ch.chr, lines.length] }
- *    }
- *    #=> ["\n", 1]
- *    #   ["A", 1327]
- *    #   ["B", 1372]
- *    #   ["C", 1507]
- *    #   ["D", 791]
- *    #   ...
+ *    a = [0, 0, -1, 1, 1]
+ *    e = a.chunk{|i| i < 0 ? :_separator : true }
+ *    e.to_a # => [[true, [0, 0]], [true, [1, 1]]]
  *
- *  The following key values have special meaning:
- *  - +nil+ and +:_separator+ specifies that the elements should be dropped.
- *  - +:_alone+ specifies that the element should be chunked by itself.
+ *  Note that the separator does end the chunk:
  *
- *  Any other symbols that begin with an underscore will raise an error:
- *
- *    items.chunk { |item| :_underscore }
- *    #=> RuntimeError: symbols beginning with an underscore are reserved
- *
- *  +nil+ and +:_separator+ can be used to ignore some elements.
+ *    a = [0, 0, -1, 1, -1, 1]
+ *    e = a.chunk{|i| i < 0 ? :_separator : true }
+ *    e.to_a # => [[true, [0, 0]], [true, [1]], [true, [1]]]
  *
  *  For example, the sequence of hyphens in svn log can be eliminated as follows:
  *
@@ -3310,18 +3761,6 @@ chunk_i(RB_BLOCK_CALL_FUNC_ARGLIST(yielder, enumerator))
  *      pp lines
  *    }
  *
- *  +:_alone+ can be used to force items into their own chunk.
- *  For example, you can put lines that contain a URL by themselves,
- *  and chunk the rest of the lines together, like this:
- *
- *    pattern = /http/
- *    open(filename) { |f|
- *      f.chunk { |line| line =~ pattern ? :_alone : true }.each { |key, lines|
- *        pp lines
- *      }
- *    }
- *
- *  If no block is given, an enumerator to `chunk` is returned instead.
  */
 static VALUE
 enum_chunk(VALUE enumerable)
@@ -3331,8 +3770,8 @@ enum_chunk(VALUE enumerable)
     RETURN_SIZED_ENUMERATOR(enumerable, 0, 0, enum_size);
 
     enumerator = rb_obj_alloc(rb_cEnumerator);
-    rb_ivar_set(enumerator, rb_intern("chunk_enumerable"), enumerable);
-    rb_ivar_set(enumerator, rb_intern("chunk_categorize"), rb_block_proc());
+    rb_ivar_set(enumerator, id_chunk_enumerable, enumerable);
+    rb_ivar_set(enumerator, id_chunk_categorize, rb_block_proc());
     rb_block_call(enumerator, idInitialize, 0, 0, chunk_i, enumerator);
     return enumerator;
 }
@@ -3379,9 +3818,9 @@ slicebefore_i(RB_BLOCK_CALL_FUNC_ARGLIST(yielder, enumerator))
     VALUE arg;
     struct slicebefore_arg *memo = NEW_MEMO_FOR(struct slicebefore_arg, arg);
 
-    enumerable = rb_ivar_get(enumerator, rb_intern("slicebefore_enumerable"));
-    memo->sep_pred = rb_attr_get(enumerator, rb_intern("slicebefore_sep_pred"));
-    memo->sep_pat = NIL_P(memo->sep_pred) ? rb_ivar_get(enumerator, rb_intern("slicebefore_sep_pat")) : Qnil;
+    enumerable = rb_ivar_get(enumerator, id_slicebefore_enumerable);
+    memo->sep_pred = rb_attr_get(enumerator, id_slicebefore_sep_pred);
+    memo->sep_pat = NIL_P(memo->sep_pred) ? rb_ivar_get(enumerator, id_slicebefore_sep_pat) : Qnil;
     memo->prev_elts = Qnil;
     memo->yielder = yielder;
 
@@ -3394,24 +3833,41 @@ slicebefore_i(RB_BLOCK_CALL_FUNC_ARGLIST(yielder, enumerator))
 
 /*
  *  call-seq:
- *     enum.slice_before(pattern)                             -> an_enumerator
- *     enum.slice_before { |elt| bool }                       -> an_enumerator
+ *    slice_before(pattern)       -> enumerator
+ *    slice_before {|array| ... } -> enumerator
  *
- *  Creates an enumerator for each chunked elements.
- *  The beginnings of chunks are defined by _pattern_ and the block.
-
- *  If <code>_pattern_ === _elt_</code> returns <code>true</code> or the block
- *  returns <code>true</code> for the element, the element is beginning of a
- *  chunk.
-
- *  The <code>===</code> and _block_ is called from the first element to the last
- *  element of _enum_.  The result for the first element is ignored.
-
- *  The result enumerator yields the chunked elements as an array.
- *  So +each+ method can be called as follows:
+ *  With argument +pattern+, returns an enumerator that uses the pattern
+ *  to partition elements into arrays ("slices").
+ *  An element begins a new slice if <tt>element === pattern</tt>
+ *  (or if it is the first element).
  *
- *    enum.slice_before(pattern).each { |ary| ... }
- *    enum.slice_before { |elt| bool }.each { |ary| ... }
+ *    a = %w[foo bar fop for baz fob fog bam foy]
+ *    e = a.slice_before(/ba/) # => #<Enumerator: ...>
+ *    e.each {|array| p array }
+ *
+ *  Output:
+ *
+ *    ["foo"]
+ *    ["bar", "fop", "for"]
+ *    ["baz", "fob", "fog"]
+ *    ["bam", "foy"]
+ *
+ *  With a block, returns an enumerator that uses the block
+ *  to partition elements into arrays.
+ *  An element begins a new slice if its block return is a truthy value
+ *  (or if it is the first element):
+ *
+ *    e = (1..20).slice_before {|i| i % 4 == 2 } # => #<Enumerator: ...>
+ *    e.each {|array| p array }
+ *
+ *  Output:
+ *
+ *    [1]
+ *    [2, 3, 4, 5]
+ *    [6, 7, 8, 9]
+ *    [10, 11, 12, 13]
+ *    [14, 15, 16, 17]
+ *    [18, 19, 20]
  *
  *  Other methods of the Enumerator class and Enumerable module,
  *  such as +to_a+, +map+, etc., are also usable.
@@ -3428,7 +3884,6 @@ slicebefore_i(RB_BLOCK_CALL_FUNC_ARGLIST(yielder, enumerator))
  *    open("ChangeLog") { |f|
  *      f.slice_before { |line| /\A\S/ === line }.each { |e| pp e }
  *    }
- *
  *
  *  "svn proplist -R" produces multiline output for each file.
  *  They can be chunked as follows:
@@ -3545,15 +4000,15 @@ enum_slice_before(int argc, VALUE *argv, VALUE enumerable)
         if (argc != 0)
             rb_error_arity(argc, 0, 0);
         enumerator = rb_obj_alloc(rb_cEnumerator);
-        rb_ivar_set(enumerator, rb_intern("slicebefore_sep_pred"), rb_block_proc());
+        rb_ivar_set(enumerator, id_slicebefore_sep_pred, rb_block_proc());
     }
     else {
         VALUE sep_pat;
         rb_scan_args(argc, argv, "1", &sep_pat);
         enumerator = rb_obj_alloc(rb_cEnumerator);
-        rb_ivar_set(enumerator, rb_intern("slicebefore_sep_pat"), sep_pat);
+        rb_ivar_set(enumerator, id_slicebefore_sep_pat, sep_pat);
     }
-    rb_ivar_set(enumerator, rb_intern("slicebefore_enumerable"), enumerable);
+    rb_ivar_set(enumerator, id_slicebefore_enumerable, enumerable);
     rb_block_call(enumerator, idInitialize, 0, 0, slicebefore_i, enumerator);
     return enumerator;
 }
@@ -3609,9 +4064,9 @@ sliceafter_i(RB_BLOCK_CALL_FUNC_ARGLIST(yielder, enumerator))
     VALUE arg;
     struct sliceafter_arg *memo = NEW_MEMO_FOR(struct sliceafter_arg, arg);
 
-    enumerable = rb_ivar_get(enumerator, rb_intern("sliceafter_enum"));
-    memo->pat = rb_ivar_get(enumerator, rb_intern("sliceafter_pat"));
-    memo->pred = rb_attr_get(enumerator, rb_intern("sliceafter_pred"));
+    enumerable = rb_ivar_get(enumerator, id_sliceafter_enum);
+    memo->pat = rb_ivar_get(enumerator, id_sliceafter_pat);
+    memo->pred = rb_attr_get(enumerator, id_sliceafter_pred);
     memo->prev_elts = Qnil;
     memo->yielder = yielder;
 
@@ -3674,9 +4129,9 @@ enum_slice_after(int argc, VALUE *argv, VALUE enumerable)
     }
 
     enumerator = rb_obj_alloc(rb_cEnumerator);
-    rb_ivar_set(enumerator, rb_intern("sliceafter_enum"), enumerable);
-    rb_ivar_set(enumerator, rb_intern("sliceafter_pat"), pat);
-    rb_ivar_set(enumerator, rb_intern("sliceafter_pred"), pred);
+    rb_ivar_set(enumerator, id_sliceafter_enum, enumerable);
+    rb_ivar_set(enumerator, id_sliceafter_pat, pat);
+    rb_ivar_set(enumerator, id_sliceafter_pred, pred);
 
     rb_block_call(enumerator, idInitialize, 0, 0, sliceafter_i, enumerator);
     return enumerator;
@@ -3739,12 +4194,12 @@ slicewhen_i(RB_BLOCK_CALL_FUNC_ARGLIST(yielder, enumerator))
     struct slicewhen_arg *memo =
 	NEW_PARTIAL_MEMO_FOR(struct slicewhen_arg, arg, inverted);
 
-    enumerable = rb_ivar_get(enumerator, rb_intern("slicewhen_enum"));
-    memo->pred = rb_attr_get(enumerator, rb_intern("slicewhen_pred"));
+    enumerable = rb_ivar_get(enumerator, id_slicewhen_enum);
+    memo->pred = rb_attr_get(enumerator, id_slicewhen_pred);
     memo->prev_elt = Qundef;
     memo->prev_elts = Qnil;
     memo->yielder = yielder;
-    memo->inverted = RTEST(rb_attr_get(enumerator, rb_intern("slicewhen_inverted")));
+    memo->inverted = RTEST(rb_attr_get(enumerator, id_slicewhen_inverted));
 
     rb_block_call(enumerable, id_each, 0, 0, slicewhen_ii, arg);
     memo = MEMO_FOR(struct slicewhen_arg, arg);
@@ -3824,9 +4279,9 @@ enum_slice_when(VALUE enumerable)
     pred = rb_block_proc();
 
     enumerator = rb_obj_alloc(rb_cEnumerator);
-    rb_ivar_set(enumerator, rb_intern("slicewhen_enum"), enumerable);
-    rb_ivar_set(enumerator, rb_intern("slicewhen_pred"), pred);
-    rb_ivar_set(enumerator, rb_intern("slicewhen_inverted"), Qfalse);
+    rb_ivar_set(enumerator, id_slicewhen_enum, enumerable);
+    rb_ivar_set(enumerator, id_slicewhen_pred, pred);
+    rb_ivar_set(enumerator, id_slicewhen_inverted, Qfalse);
 
     rb_block_call(enumerator, idInitialize, 0, 0, slicewhen_i, enumerator);
     return enumerator;
@@ -3890,9 +4345,9 @@ enum_chunk_while(VALUE enumerable)
     pred = rb_block_proc();
 
     enumerator = rb_obj_alloc(rb_cEnumerator);
-    rb_ivar_set(enumerator, rb_intern("slicewhen_enum"), enumerable);
-    rb_ivar_set(enumerator, rb_intern("slicewhen_pred"), pred);
-    rb_ivar_set(enumerator, rb_intern("slicewhen_inverted"), Qtrue);
+    rb_ivar_set(enumerator, id_slicewhen_enum, enumerable);
+    rb_ivar_set(enumerator, id_slicewhen_pred, pred);
+    rb_ivar_set(enumerator, id_slicewhen_inverted, Qtrue);
 
     rb_block_call(enumerator, idInitialize, 0, 0, slicewhen_i, enumerator);
     return enumerator;
@@ -4090,36 +4545,35 @@ int_range_sum(VALUE beg, VALUE end, int excl, VALUE init)
 }
 
 /*
- * call-seq:
- *   enum.sum(init=0)                   -> number
- *   enum.sum(init=0) {|e| expr }       -> number
+ *  call-seq:
+ *    sum(initial_value = 0)                  -> number
+ *    sum(initial_value = 0) {|element| ... } -> object
  *
- * Returns the sum of elements in an Enumerable.
+ *  With no block given,
+ *  returns the sum of +initial_value+ and the elements:
  *
- * If a block is given, the block is applied to each element
- * before addition.
+ *    (1..100).sum          # => 5050
+ *    (1..100).sum(1)       # => 5051
+ *    ('a'..'d').sum('foo') # => "fooabcd"
  *
- * If <i>enum</i> is empty, it returns <i>init</i>.
+ *  Generally, the sum is computed using methods <tt>+</tt> and +each+;
+ *  for performance optimizations, those methods may not be used,
+ *  and so any redefinition of those methods may not have effect here.
  *
- * For example:
+ *  One such optimization: When possible, computes using Gauss's summation
+ *  formula <em>n(n+1)/2</em>:
  *
- *   { 1 => 10, 2 => 20 }.sum {|k, v| k * v }  #=> 50
- *   (1..10).sum                               #=> 55
- *   (1..10).sum {|v| v * 2 }                  #=> 110
- *   ('a'..'z').sum                            #=> TypeError
+ *    100 * (100 + 1) / 2 # => 5050
  *
- * This method can be used for non-numeric objects by
- * explicit <i>init</i> argument.
+ *  With a block given, calls the block with each element;
+ *  returns the sum of +initial_value+ and the block return values:
  *
- *   { 1 => 10, 2 => 20 }.sum([])                   #=> [1, 10, 2, 20]
- *   "a\nb\nc".each_line.lazy.map(&:chomp).sum("")  #=> "abc"
+ *    (1..4).sum {|i| i*i }                        # => 30
+ *    (1..4).sum(100) {|i| i*i }                   # => 130
+ *    h = {a: 0, b: 1, c: 2, d: 3, e: 4, f: 5}
+ *    h.sum {|key, value| value.odd? ? value : 0 } # => 9
+ *    ('a'..'f').sum('x') {|c| c < 'd' ? c : '' }  # => "xabc"
  *
- * If the method is applied to an Integer range without a block,
- * the sum is not done by iteration, but instead using Gauss's summation
- * formula.
- *
- * Enumerable#sum method may not respect method redefinition of "+"
- * methods such as Integer#+, or "each" methods such as Range#each.
  */
 static VALUE
 enum_sum(int argc, VALUE* argv, VALUE obj)
@@ -4144,8 +4598,8 @@ enum_sum(int argc, VALUE* argv, VALUE obj)
 
     if (RTEST(rb_range_values(obj, &beg, &end, &excl))) {
         if (!memo.block_given && !memo.float_value &&
-                (FIXNUM_P(beg) || RB_TYPE_P(beg, T_BIGNUM)) &&
-                (FIXNUM_P(end) || RB_TYPE_P(end, T_BIGNUM))) {
+                (FIXNUM_P(beg) || RB_BIGNUM_TYPE_P(beg)) &&
+                (FIXNUM_P(end) || RB_BIGNUM_TYPE_P(end))) {
             return int_range_sum(beg, end, excl, memo.v);
         }
     }
@@ -4187,12 +4641,23 @@ uniq_iter(RB_BLOCK_CALL_FUNC_ARGLIST(i, hash))
 
 /*
  *  call-seq:
- *     enum.uniq                -> new_ary
- *     enum.uniq { |item| ... } -> new_ary
+ *    uniq                  -> array
+ *    uniq {|element| ... } -> array
  *
- *  Returns a new array by removing duplicate values in +self+.
+ *  With no block, returns a new array containing only unique elements;
+ *  the array has no two elements +e0+ and +e1+ such that <tt>e0.eql?(e1)</tt>:
  *
- *  See also Array#uniq.
+ *    %w[a b c c b a a b c].uniq       # => ["a", "b", "c"]
+ *    [0, 1, 2, 2, 1, 0, 0, 1, 2].uniq # => [0, 1, 2]
+ *
+ *  With a block, returns a new array containing only for which the block
+ *  returns a unique value:
+ *
+ *    a = [0, 1, 2, 3, 4, 5, 5, 4, 3, 2, 1]
+ *    a.uniq {|i| i.even? ? i : 0 } # => [0, 2, 4]
+ *    a = %w[a b c d e e d c b a a b c d e]
+      a.uniq {|c| c < 'c' }         # => ["a", "c"]
+ *
  */
 
 static VALUE
@@ -4222,21 +4687,13 @@ compact_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, ary))
 
 /*
  *  call-seq:
- *     enum.compact -> array
+ *    compact -> array
  *
- *  Returns an array of all non-+nil+ elements from enumeration.
+ *  Returns an array of all non-+nil+ elements:
  *
- *      def with_nils
- *        yield 1
- *        yield 2
- *        yield nil
- *        yield 3
- *      end
+ *    a = [nil, 0, nil, 'a', false, nil, false, nil, 'a', nil, 0, nil]
+ *    a.compact # => [0, "a", false, false, "a", 0]
  *
- *      to_enum(:with_nils).compact
- *      # => [1, 2, 3]
- *
- *  See also Array#compact.
  */
 
 static VALUE
@@ -4255,132 +4712,173 @@ enum_compact(VALUE obj)
  * == What's Here
  *
  * \Module \Enumerable provides methods that are useful to a collection class for:
- * - {Querying}[#module-Enumerable-label-Methods+for+Querying]
- * - {Fetching}[#module-Enumerable-label-Methods+for+Fetching]
- * - {Searching}[#module-Enumerable-label-Methods+for+Searching]
- * - {Sorting}[#module-Enumerable-label-Methods+for+Sorting]
- * - {Iterating}[#module-Enumerable-label-Methods+for+Iterating]
- * - {And more....}[#module-Enumerable-label-Other+Methods]
+ *
+ * - {Querying}[rdoc-ref:Enumerable@Methods+for+Querying]
+ * - {Fetching}[rdoc-ref:Enumerable@Methods+for+Fetching]
+ * - {Searching}[rdoc-ref:Enumerable@Methods+for+Searching]
+ * - {Sorting}[rdoc-ref:Enumerable@Methods+for+Sorting]
+ * - {Iterating}[rdoc-ref:Enumerable@Methods+for+Iterating]
+ * - {And more....}[rdoc-ref:Enumerable@Other+Methods]
  *
  * === Methods for Querying
  *
  * These methods return information about the \Enumerable other than the elements themselves:
  *
- * #include?, #member?:: Returns +true+ if self == object, +false+ otherwise.
- * #all?::               Returns +true+ if all elements meet a specified criterion; +false+ otherwise.
- * #any?::               Returns +true+ if any element meets a specified criterion; +false+ otherwise.
- * #none?::              Returns +true+ if no element meets a specified criterion; +false+ otherwise.
- * #one?::               Returns +true+ if exactly one element meets a specified criterion; +false+ otherwise.
- * #count::              Returns the count of elements,
- *                       based on an argument or block criterion, if given.
- * #tally::              Returns a new \Hash containing the counts of occurrences of each element.
+ * - #include?, #member?: Returns +true+ if <tt>self == object</tt>, +false+ otherwise.
+ * - #all?: Returns +true+ if all elements meet a specified criterion; +false+ otherwise.
+ * - #any?: Returns +true+ if any element meets a specified criterion; +false+ otherwise.
+ * - #none?: Returns +true+ if no element meets a specified criterion; +false+ otherwise.
+ * - #one?: Returns +true+ if exactly one element meets a specified criterion; +false+ otherwise.
+ * - #count: Returns the count of elements,
+ *   based on an argument or block criterion, if given.
+ * - #tally: Returns a new \Hash containing the counts of occurrences of each element.
  *
  * === Methods for Fetching
  *
  * These methods return entries from the \Enumerable, without modifying it:
  *
  * <i>Leading, trailing, or all elements</i>:
- * #entries, #to_a:: Returns all elements.
- * #first::          Returns the first element or leading elements.
- * #take::           Returns a specified number of leading elements.
- * #drop::           Returns a specified number of trailing elements.
- * #take_while::     Returns leading elements as specified by the given block.
- * #drop_while::     Returns trailing elements as specified by the given block.
+ *
+ * - #entries, #to_a: Returns all elements.
+ * - #first: Returns the first element or leading elements.
+ * - #take: Returns a specified number of leading elements.
+ * - #drop: Returns a specified number of trailing elements.
+ * - #take_while: Returns leading elements as specified by the given block.
+ * - #drop_while: Returns trailing elements as specified by the given block.
  *
  * <i>Minimum and maximum value elements</i>:
- * #min::            Returns the elements whose values are smallest among the elements,
- *                   as determined by <tt><=></tt> or a given block.
- * #max::            Returns the elements whose values are largest among the elements,
- *                   as determined by <tt><=></tt> or a given block.
- * #minmax::         Returns a 2-element \Array containing the smallest and largest elements.
- * #min_by::         Returns the smallest element, as determined by the given block.
- * #max_by::         Returns the largest element, as determined by the given block.
- * #minmax_by::      Returns the smallest and largest elements, as determined by the given block.
+ *
+ * - #min: Returns the elements whose values are smallest among the elements,
+ *   as determined by <tt><=></tt> or a given block.
+ * - #max: Returns the elements whose values are largest among the elements,
+ *   as determined by <tt><=></tt> or a given block.
+ * - #minmax: Returns a 2-element \Array containing the smallest and largest elements.
+ * - #min_by: Returns the smallest element, as determined by the given block.
+ * - #max_by: Returns the largest element, as determined by the given block.
+ * - #minmax_by: Returns the smallest and largest elements, as determined by the given block.
  *
  * <i>Groups, slices, and partitions</i>:
- * #group_by::       Returns a \Hash that partitions the elements into groups.
- * #partition::      Returns elements partitioned into two new Arrays, as determined by the given block.
- * #slice_after::    Returns a new \Enumerator whose entries are a partition of +self+,
-                     based either on a given +object+ or a given block.
- * #slice_before::   Returns a new \Enumerator whose entries are a partition of +self+,
-                     based either on a given +object+ or a given block.
- * #slice_when::     Returns a new \Enumerator whose entries are a partition of +self+
-                     based on the given block.
- * #chunk::          Returns elements organized into chunks as specified by the given block.
- * #chunk_while::    Returns elements organized into chunks as specified by the given block.
+ *
+ * - #group_by: Returns a \Hash that partitions the elements into groups.
+ * - #partition: Returns elements partitioned into two new Arrays, as determined by the given block.
+ * - #slice_after: Returns a new \Enumerator whose entries are a partition of +self+,
+     based either on a given +object+ or a given block.
+ * - #slice_before: Returns a new \Enumerator whose entries are a partition of +self+,
+     based either on a given +object+ or a given block.
+ * - #slice_when: Returns a new \Enumerator whose entries are a partition of +self+
+     based on the given block.
+ * - #chunk: Returns elements organized into chunks as specified by the given block.
+ * - #chunk_while: Returns elements organized into chunks as specified by the given block.
  *
  * === Methods for Searching and Filtering
  *
- * These methods return elements that meet a specified criterion.
+ * These methods return elements that meet a specified criterion:
  *
- * #find, #detect::              Returns an element selected by the block.
- * #find_all, #filter, #select:: Returns elements selected by the block.
- * #find_index::                 Returns the index of an element selected by a given object or block.
- * #reject::                     Returns elements not rejected by the block.
- * #uniq::                       Returns elements that are not duplicates.
+ * - #find, #detect: Returns an element selected by the block.
+ * - #find_all, #filter, #select: Returns elements selected by the block.
+ * - #find_index: Returns the index of an element selected by a given object or block.
+ * - #reject: Returns elements not rejected by the block.
+ * - #uniq: Returns elements that are not duplicates.
  *
  * === Methods for Sorting
  *
- * These methods return elements in sorted order.
+ * These methods return elements in sorted order:
  *
- * #sort::    Returns the elements, sorted by <tt><=></tt> or the given block.
- * #sort_by:: Returns the elements, sorted by the given block.
+ * - #sort: Returns the elements, sorted by <tt><=></tt> or the given block.
+ * - #sort_by: Returns the elements, sorted by the given block.
  *
  * === Methods for Iterating
  *
- * #each_entry::       Calls the block with each successive element
- *                     (slightly different from #each).
- * #each_with_index::  Calls the block with each successive element and its index.
- * #each_with_object:: Calls the block with each successive element and a given object.
- * #each_slice::       Calls the block with successive non-overlapping slices.
- * #each_cons::        Calls the block with successive overlapping slices.
- *                     (different from #each_slice).
- * #reverse_each::     Calls the block with each successive element, in reverse order.
+ * - #each_entry: Calls the block with each successive element
+ *   (slightly different from #each).
+ * - #each_with_index: Calls the block with each successive element and its index.
+ * - #each_with_object: Calls the block with each successive element and a given object.
+ * - #each_slice: Calls the block with successive non-overlapping slices.
+ * - #each_cons: Calls the block with successive overlapping slices.
+ *   (different from #each_slice).
+ * - #reverse_each: Calls the block with each successive element, in reverse order.
  *
  * === Other Methods
  *
- * #map, #collect::             Returns objects returned by the block.
- * #filter_map::                Returns truthy objects returned by the block.
- * #flat_map, #collect_concat:: Returns flattened objects returned by the block.
- * #grep::                      Returns elements selected by a given object
- *                              or objects returned by a given block.
- * #grep_v::                    Returns elements selected by a given object
- *                              or objects returned by a given block.
- * #reduce, #inject::           Returns the object formed by combining all elements.
- * #sum::                       Returns the sum of the elements, using method +++.
- * #zip::                       Combines each element with elements from other enumerables;
- *                              returns the n-tuples or calls the block with each.
- * #cycle::                     Calls the block with each element, cycling repeatedly.
+ * - #map, #collect: Returns objects returned by the block.
+ * - #filter_map: Returns truthy objects returned by the block.
+ * - #flat_map, #collect_concat: Returns flattened objects returned by the block.
+ * - #grep: Returns elements selected by a given object
+ *   or objects returned by a given block.
+ * - #grep_v: Returns elements selected by a given object
+ *   or objects returned by a given block.
+ * - #reduce, #inject: Returns the object formed by combining all elements.
+ * - #sum: Returns the sum of the elements, using method +++.
+ * - #zip: Combines each element with elements from other enumerables;
+ *   returns the n-tuples or calls the block with each.
+ * - #cycle: Calls the block with each element, cycling repeatedly.
  *
  * == Usage
  *
  * To use module \Enumerable in a collection class:
+ *
  * - Include it:
+ *
  *     include Enumerable
+ *
  * - Implement method <tt>#each</tt>
  *   which must yield successive elements of the collection.
- *   This method will be called by almost any \Enumerable method.
+ *   The method will be called by almost any \Enumerable method.
  *
- * == \Enumerable in Ruby Core Classes
- * Some Ruby classes include \Enumerable:
+ * Example:
+ *
+ *   class Foo
+ *     include Enumerable
+ *     def each
+ *       yield 1
+ *       yield 1, 2
+ *       yield
+ *     end
+ *   end
+ *   Foo.new.each_entry{ |element| p element }
+ *
+ * Output:
+ *
+ *   1
+ *   [1, 2]
+ *   nil
+ *
+ * == \Enumerable in Ruby Classes
+ *
+ * These Ruby core classes include (or extend) \Enumerable:
+ *
+ * - ARGF
  * - Array
  * - Dir
+ * - Enumerator
+ * - ENV (extends)
  * - Hash
  * - IO
  * - Range
- * - Set
  * - Struct
+ *
+ * These Ruby standard library classes include \Enumerable:
+ *
+ * - CSV
+ * - CSV::Table
+ * - CSV::Row
+ * - Set
+ *
  * Virtually all methods in \Enumerable call method +#each+ in the including class:
+ *
  * - <tt>Hash#each</tt> yields the next key-value pair as a 2-element \Array.
  * - <tt>Struct#each</tt> yields the next name-value pair as a 2-element \Array.
  * - For the other classes above, +#each+ yields the next object from the collection.
  *
  * == About the Examples
+ *
  * The example code snippets for the \Enumerable methods:
+ *
  * - Always show the use of one or more \Array-like classes (often \Array itself).
  * - Sometimes show the use of a \Hash-like class.
  *   For some methods, though, the usage would not make sense,
  *   and so it is not shown.  Example: #tally would find exactly one of each \Hash entry.
+ *
  */
 
 void
@@ -4448,5 +4946,18 @@ Init_Enumerable(void)
     rb_define_method(rb_mEnumerable, "uniq", enum_uniq, 0);
     rb_define_method(rb_mEnumerable, "compact", enum_compact, 0);
 
+    id__alone = rb_intern_const("_alone");
+    id__separator = rb_intern_const("_separator");
+    id_chunk_categorize = rb_intern_const("chunk_categorize");
+    id_chunk_enumerable = rb_intern_const("chunk_enumerable");
     id_next = rb_intern_const("next");
+    id_sliceafter_enum = rb_intern_const("sliceafter_enum");
+    id_sliceafter_pat = rb_intern_const("sliceafter_pat");
+    id_sliceafter_pred = rb_intern_const("sliceafter_pred");
+    id_slicebefore_enumerable = rb_intern_const("slicebefore_enumerable");
+    id_slicebefore_sep_pat = rb_intern_const("slicebefore_sep_pat");
+    id_slicebefore_sep_pred = rb_intern_const("slicebefore_sep_pred");
+    id_slicewhen_enum = rb_intern_const("slicewhen_enum");
+    id_slicewhen_inverted = rb_intern_const("slicewhen_inverted");
+    id_slicewhen_pred = rb_intern_const("slicewhen_pred");
 }

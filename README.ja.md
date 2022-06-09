@@ -1,10 +1,10 @@
-[![Build Status](https://travis-ci.org/ruby/ruby.svg?branch=master)](https://travis-ci.org/ruby/ruby)
-[![Build status](https://ci.appveyor.com/api/projects/status/0sy8rrxut4o0k960/branch/master?svg=true)](https://ci.appveyor.com/project/ruby/ruby/branch/master)
-[![Actions Status: macOS](https://github.com/ruby/ruby/workflows/macOS/badge.svg)](https://github.com/ruby/ruby/actions?query=workflow%3A"macOS")
 [![Actions Status: MinGW](https://github.com/ruby/ruby/workflows/MinGW/badge.svg)](https://github.com/ruby/ruby/actions?query=workflow%3A"MinGW")
 [![Actions Status: MJIT](https://github.com/ruby/ruby/workflows/MJIT/badge.svg)](https://github.com/ruby/ruby/actions?query=workflow%3A"MJIT")
 [![Actions Status: Ubuntu](https://github.com/ruby/ruby/workflows/Ubuntu/badge.svg)](https://github.com/ruby/ruby/actions?query=workflow%3A"Ubuntu")
 [![Actions Status: Windows](https://github.com/ruby/ruby/workflows/Windows/badge.svg)](https://github.com/ruby/ruby/actions?query=workflow%3A"Windows")
+[![AppVeyor status](https://ci.appveyor.com/api/projects/status/0sy8rrxut4o0k960/branch/master?svg=true)](https://ci.appveyor.com/project/ruby/ruby/branch/master)
+[![Travis Status](https://app.travis-ci.com/ruby/ruby.svg?branch=master)](https://app.travis-ci.com/ruby/ruby)
+[![Cirrus Status](https://api.cirrus-ci.com/github/ruby/ruby.svg)](https://cirrus-ci.com/github/ruby/ruby/master)
 
 # Rubyとは
 
@@ -167,11 +167,14 @@ UNIXであれば `configure` がほとんどの差異を吸収してくれるは
 
 ## フィードバック
 
-Rubyに関する質問は Ruby-Talk（英語）や Ruby-List（日本語） (https://www.ruby-lang.org/ja/community/mailing-lists) や，
-stackoverflow (https://ja.stackoverflow.com/) などのWebサイトに投稿してください．
+Rubyに関する質問は [Ruby-Talk]（英語）や [Ruby-List]（日本語）や，
+[stackoverflow] などのWebサイトに投稿してください．
 
 バグ報告は https://bugs.ruby-lang.org で受け付けています．
 
+[Ruby-Talk]: https://www.ruby-lang.org/en/community/mailing-lists
+[Ruby-List]: https://www.ruby-lang.org/ja/community/mailing-lists
+[stackoverflow]: https://ja.stackoverflow.com/
 
 ## 著者
 

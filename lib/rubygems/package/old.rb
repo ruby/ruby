@@ -145,7 +145,7 @@ class Gem::Package::Old < Gem::Package
 
     begin
       @spec = Gem::Specification.from_yaml yaml
-    rescue YAML::SyntaxError
+    rescue Psych::SyntaxError
       raise Gem::Exception, "Failed to parse gem specification out of gem file"
     end
   rescue ArgumentError

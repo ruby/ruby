@@ -107,11 +107,9 @@ describe "Kernel#warn" do
       ruby_exe(file, options: "--disable-gems", args: "2>&1").should == "#{file}:2: warning: warn-require-warning\n"
     end
 
-    ruby_version_is "2.6" do
-      it "shows the caller of #require and not #require itself with RubyGems loaded" do
-        file = fixture(__FILE__ , "warn_require_caller.rb")
-        ruby_exe(file, options: "-rrubygems", args: "2>&1").should == "#{file}:2: warning: warn-require-warning\n"
-      end
+    it "shows the caller of #require and not #require itself with RubyGems loaded" do
+      file = fixture(__FILE__ , "warn_require_caller.rb")
+      ruby_exe(file, options: "-rrubygems", args: "2>&1").should == "#{file}:2: warning: warn-require-warning\n"
     end
 
     guard -> { Kernel.instance_method(:tap).source_location } do
@@ -212,6 +210,70 @@ describe "Kernel#warn" do
     h = {}
     -> { warn(**h) }.should_not complain(verbose: true)
     -> { warn('foo', **h) }.should complain("foo\n")
+  end
+
+  ruby_version_is '3.0' do
+    it "calls Warning.warn without keyword arguments if Warning.warn does not accept keyword arguments" do
+      verbose = $VERBOSE
+      $VERBOSE = false
+      class << Warning
+        alias_method :_warn, :warn
+        def warn(message)
+          ScratchPad.record(message)
+        end
+      end
+
+      begin
+        ScratchPad.clear
+        Kernel.warn("Chunky bacon!")
+        ScratchPad.recorded.should == "Chunky bacon!\n"
+
+        Kernel.warn("Deprecated bacon!", category: :deprecated)
+        ScratchPad.recorded.should == "Deprecated bacon!\n"
+      ensure
+        class << Warning
+          remove_method :warn
+          alias_method :warn, :_warn
+          remove_method :_warn
+        end
+        $VERBOSE = verbose
+      end
+    end
+
+    it "calls Warning.warn with category: nil if Warning.warn accepts keyword arguments" do
+      Warning.should_receive(:warn).with("Chunky bacon!\n", category: nil)
+      verbose = $VERBOSE
+      $VERBOSE = false
+      begin
+        Kernel.warn("Chunky bacon!")
+      ensure
+        $VERBOSE = verbose
+      end
+    end
+
+    it "calls Warning.warn with given category keyword converted to a symbol" do
+      Warning.should_receive(:warn).with("Chunky bacon!\n", category: :deprecated)
+      verbose = $VERBOSE
+      $VERBOSE = false
+      begin
+        Kernel.warn("Chunky bacon!", category: 'deprecated')
+      ensure
+        $VERBOSE = verbose
+      end
+    end
+  end
+
+  ruby_version_is ''...'3.0' do
+    it "calls Warning.warn with no keyword arguments" do
+      Warning.should_receive(:warn).with("Chunky bacon!\n")
+      verbose = $VERBOSE
+      $VERBOSE = false
+      begin
+        Kernel.warn("Chunky bacon!")
+      ensure
+        $VERBOSE = verbose
+      end
+    end
   end
 
   it "does not call Warning.warn if self is the Warning module" do

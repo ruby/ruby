@@ -4,6 +4,7 @@ require 'test/unit'
 require 'stringio'
 require 'tempfile'
 require 'tmpdir'
+require 'securerandom'
 
 begin
   require 'zlib'
@@ -503,6 +504,72 @@ if defined? Zlib
       assert_raise(Zlib::StreamError) { z.set_dictionary("foo") }
       z.close
     end
+
+    def test_multithread_deflate
+      zd = Zlib::Deflate.new
+
+      s = "x" * 10000
+      (0...10).map do |x|
+        Thread.new do
+          1000.times { zd.deflate(s) }
+        end
+      end.each do |th|
+        th.join
+      end
+    ensure
+      zd&.finish
+      zd&.close
+    end
+
+    def test_multithread_inflate
+      zi = Zlib::Inflate.new
+
+      s = Zlib.deflate("x" * 10000)
+      (0...10).map do |x|
+        Thread.new do
+          1000.times { zi.inflate(s) }
+        end
+      end.each do |th|
+        th.join
+      end
+    ensure
+      zi&.finish
+      zi&.close
+    end
+
+    def test_recursive_deflate
+      original_gc_stress = GC.stress
+      GC.stress = true
+      zd = Zlib::Deflate.new
+
+      s = SecureRandom.random_bytes(1024**2)
+      assert_raise(Zlib::InProgressError) do
+        zd.deflate(s) do
+          zd.deflate(s)
+        end
+      end
+    ensure
+      GC.stress = original_gc_stress
+      zd&.finish
+      zd&.close
+    end
+
+    def test_recursive_inflate
+      original_gc_stress = GC.stress
+      GC.stress = true
+      zi = Zlib::Inflate.new
+
+      s = Zlib.deflate(SecureRandom.random_bytes(1024**2))
+
+      assert_raise(Zlib::InProgressError) do
+        zi.inflate(s) do
+          zi.inflate(s)
+        end
+      end
+    ensure
+      GC.stress = original_gc_stress
+      zi&.close
+    end
   end
 
   class TestZlibGzipFile < Test::Unit::TestCase
@@ -745,11 +812,11 @@ if defined? Zlib
           gz1.close
         end
       rescue Errno::EINVAL
-        skip 'O_TMPFILE not supported (EINVAL)'
+        omit 'O_TMPFILE not supported (EINVAL)'
       rescue Errno::EISDIR
-        skip 'O_TMPFILE not supported (EISDIR)'
+        omit 'O_TMPFILE not supported (EISDIR)'
       rescue Errno::EOPNOTSUPP
-        skip 'O_TMPFILE not supported (EOPNOTSUPP)'
+        omit 'O_TMPFILE not supported (EOPNOTSUPP)'
       end
     end
   end
@@ -1236,6 +1303,7 @@ if defined? Zlib
       assert_equal(0x02820145, Zlib.adler32("foo"))
       assert_equal(0x02820145, Zlib.adler32("o", Zlib.adler32("fo")))
       assert_equal(0x8a62c964, Zlib.adler32("abc\x01\x02\x03" * 10000))
+      assert_equal(0x97d1a9f7, Zlib.adler32("p", -305419897))
       Tempfile.create("test_zlib_gzip_file_to_io") {|t|
         File.binwrite(t.path, "foo")
         t.rewind
@@ -1257,10 +1325,10 @@ if defined? Zlib
       begin
         assert_equal(0x02820145, Zlib.adler32_combine(one, two, 1))
       rescue NotImplementedError
-        skip "adler32_combine is not implemented"
-      rescue Minitest::Assertion
+        omit "adler32_combine is not implemented"
+      rescue Test::Unit::AssertionFailedError
         if /aix/ =~ RUBY_PLATFORM
-          skip "zconf.h in zlib does not handle _LARGE_FILES in AIX. Skip until it is fixed"
+          omit "zconf.h in zlib does not handle _LARGE_FILES in AIX. Skip until it is fixed"
         end
         raise $!
       end
@@ -1271,6 +1339,7 @@ if defined? Zlib
       assert_equal(0x8c736521, Zlib.crc32("foo"))
       assert_equal(0x8c736521, Zlib.crc32("o", Zlib.crc32("fo")))
       assert_equal(0x07f0d68f, Zlib.crc32("abc\x01\x02\x03" * 10000))
+      assert_equal(0xf136439b, Zlib.crc32("p", -305419897))
       Tempfile.create("test_zlib_gzip_file_to_io") {|t|
         File.binwrite(t.path, "foo")
         t.rewind
@@ -1292,10 +1361,10 @@ if defined? Zlib
       begin
         assert_equal(0x8c736521, Zlib.crc32_combine(one, two, 1))
       rescue NotImplementedError
-        skip "crc32_combine is not implemented"
-      rescue Minitest::Assertion
+        omit "crc32_combine is not implemented"
+      rescue Test::Unit::AssertionFailedError
         if /aix/ =~ RUBY_PLATFORM
-          skip "zconf.h in zlib does not handle _LARGE_FILES in AIX. Skip until it is fixed"
+          omit "zconf.h in zlib does not handle _LARGE_FILES in AIX. Skip until it is fixed"
         end
         raise $!
       end

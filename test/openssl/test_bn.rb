@@ -1,7 +1,6 @@
 # coding: us-ascii
 # frozen_string_literal: true
 require_relative 'utils'
-require "prime"
 
 if defined?(OpenSSL)
 
@@ -131,6 +130,27 @@ class OpenSSL::TestBN < OpenSSL::TestCase
     assert_equal(-999, +@e2)
     assert_equal(-999, -@e1)
     assert_equal(+999, -@e2)
+
+    # These methods create new BN instances due to BN mutability
+    # Ensure that the instance isn't the same
+    e1_plus = +@e1
+    e1_minus = -@e1
+    assert_equal(false, @e1.equal?(e1_plus))
+    assert_equal(true, @e1 == e1_plus)
+    assert_equal(false, @e1.equal?(e1_minus))
+  end
+
+  def test_abs
+    assert_equal(@e1, @e2.abs)
+    assert_equal(@e3, @e4.abs)
+    assert_not_equal(@e2, @e2.abs)
+    assert_not_equal(@e4, @e4.abs)
+    assert_equal(false, @e2.abs.negative?)
+    assert_equal(false, @e4.abs.negative?)
+    assert_equal(true, (-@e1.abs).negative?)
+    assert_equal(true, (-@e2.abs).negative?)
+    assert_equal(true, (-@e3.abs).negative?)
+    assert_equal(true, (-@e4.abs).negative?)
   end
 
   def test_mod
@@ -228,25 +248,35 @@ class OpenSSL::TestBN < OpenSSL::TestCase
       r5 = OpenSSL::BN.rand_range(256)
       assert_include(0..255, r5)
     }
+
+    # Aliases
+    assert_include(128..255, OpenSSL::BN.pseudo_rand(8))
+    assert_include(0..255, OpenSSL::BN.pseudo_rand_range(256))
   end
 
-  def test_prime
-    p1 = OpenSSL::BN.generate_prime(32)
-    assert_include(0...2**32, p1)
-    assert_equal(true, Prime.prime?(p1.to_i))
-    p2 = OpenSSL::BN.generate_prime(32, true)
-    assert_equal(true, Prime.prime?((p2.to_i - 1) / 2))
-    p3 = OpenSSL::BN.generate_prime(32, false, 4)
-    assert_equal(1, p3 % 4)
-    p4 = OpenSSL::BN.generate_prime(32, false, 4, 3)
-    assert_equal(3, p4 % 4)
+  begin
+    require "prime"
 
-    assert_equal(true, p1.prime?)
-    assert_equal(true, p2.prime?)
-    assert_equal(true, p3.prime?)
-    assert_equal(true, p4.prime?)
-    assert_equal(true, @e3.prime?)
-    assert_equal(true, @e3.prime_fasttest?)
+    def test_prime
+      p1 = OpenSSL::BN.generate_prime(32)
+      assert_include(0...2**32, p1)
+      assert_equal(true, Prime.prime?(p1.to_i))
+      p2 = OpenSSL::BN.generate_prime(32, true)
+      assert_equal(true, Prime.prime?((p2.to_i - 1) / 2))
+      p3 = OpenSSL::BN.generate_prime(32, false, 4)
+      assert_equal(1, p3 % 4)
+      p4 = OpenSSL::BN.generate_prime(32, false, 4, 3)
+      assert_equal(3, p4 % 4)
+
+      assert_equal(true, p1.prime?)
+      assert_equal(true, p2.prime?)
+      assert_equal(true, p3.prime?)
+      assert_equal(true, p4.prime?)
+      assert_equal(true, @e3.prime?)
+      assert_equal(true, @e3.prime_fasttest?)
+    end
+  rescue LoadError
+    # prime is the bundled gems at Ruby 3.1
   end
 
   def test_num_bits_bytes
@@ -280,6 +310,54 @@ class OpenSSL::TestBN < OpenSSL::TestCase
   def test_argument_error
     bug15760 = '[ruby-core:92231] [Bug #15760]'
     assert_raise(ArgumentError, bug15760) { OpenSSL::BN.new(nil, 2) }
+  end
+
+  def test_get_flags_and_set_flags
+    e = OpenSSL::BN.new(999)
+
+    assert_equal(0, e.get_flags(OpenSSL::BN::CONSTTIME))
+
+    e.set_flags(OpenSSL::BN::CONSTTIME)
+    assert_equal(OpenSSL::BN::CONSTTIME, e.get_flags(OpenSSL::BN::CONSTTIME))
+
+    b = OpenSSL::BN.new(2)
+    m = OpenSSL::BN.new(99)
+    assert_equal("17", b.mod_exp(e, m).to_s)
+
+    # mod_exp fails when m is even and any argument has CONSTTIME flag
+    m = OpenSSL::BN.new(98)
+    assert_raise(OpenSSL::BNError) do
+      b.mod_exp(e, m)
+    end
+
+    # It looks like flags cannot be removed once enabled
+    e.set_flags(0)
+    assert_equal(4, e.get_flags(OpenSSL::BN::CONSTTIME))
+  end
+
+  if respond_to?(:ractor)
+    ractor
+    def test_ractor
+      assert_equal(@e1, Ractor.new { OpenSSL::BN.new("999") }.take)
+      assert_equal(@e3, Ractor.new { OpenSSL::BN.new("\a\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF", 2) }.take)
+      assert_equal("999", Ractor.new(@e1) { |e1| e1.to_s }.take)
+      assert_equal("07FFFFFFFFFFFFFFFFFFFFFFFFFF", Ractor.new(@e3) { |e3| e3.to_s(16) }.take)
+      assert_equal(2**107-1, Ractor.new(@e3) { _1.to_i }.take)
+      assert_equal([1000, -999], Ractor.new(@e2) { _1.coerce(1000) }.take)
+      assert_equal(false, Ractor.new  { 1.to_bn.zero? }.take)
+      assert_equal(true, Ractor.new { 1.to_bn.one? }.take)
+      assert_equal(true, Ractor.new(@e2) { _1.negative? }.take)
+      assert_equal("-03E7", Ractor.new(@e2) { _1.to_s(16) }.take)
+      assert_equal(2**107-1, Ractor.new(@e3) { _1.to_i }.take)
+      assert_equal([1000, -999], Ractor.new(@e2) { _1.coerce(1000) }.take)
+      assert_equal(true, Ractor.new { 0.to_bn.zero? }.take)
+      assert_equal(true, Ractor.new { 1.to_bn.one? }.take )
+      assert_equal(false,Ractor.new { 2.to_bn.odd? }.take)
+      assert_equal(true, Ractor.new(@e2) { _1.negative? }.take)
+      assert_include(128..255, Ractor.new { OpenSSL::BN.rand(8)}.take)
+      assert_include(0...2**32, Ractor.new { OpenSSL::BN.generate_prime(32) }.take)
+      assert_equal(0, Ractor.new { OpenSSL::BN.new(999).get_flags(OpenSSL::BN::CONSTTIME) }.take)
+    end
   end
 end
 

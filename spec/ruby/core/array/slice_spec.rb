@@ -154,36 +154,32 @@ describe "Array#slice!" do
     -> { ArraySpecs.frozen_array.slice!(0, 0) }.should raise_error(FrozenError)
   end
 
-  ruby_version_is "2.6" do
-    it "works with endless ranges" do
-      a = [1, 2, 3]
-      a.slice!(eval("(1..)")).should == [2, 3]
-      a.should == [1]
+  it "works with endless ranges" do
+    a = [1, 2, 3]
+    a.slice!(eval("(1..)")).should == [2, 3]
+    a.should == [1]
 
-      a = [1, 2, 3]
-      a.slice!(eval("(2...)")).should == [3]
-      a.should == [1, 2]
+    a = [1, 2, 3]
+    a.slice!(eval("(2...)")).should == [3]
+    a.should == [1, 2]
 
-      a = [1, 2, 3]
-      a.slice!(eval("(-2..)")).should == [2, 3]
-      a.should == [1]
+    a = [1, 2, 3]
+    a.slice!(eval("(-2..)")).should == [2, 3]
+    a.should == [1]
 
-      a = [1, 2, 3]
-      a.slice!(eval("(-1...)")).should == [3]
-      a.should == [1, 2]
-    end
+    a = [1, 2, 3]
+    a.slice!(eval("(-1...)")).should == [3]
+    a.should == [1, 2]
   end
 
-  ruby_version_is "2.7" do
-    it "works with beginless ranges" do
-      a = [0,1,2,3,4]
-      a.slice!(eval("(..3)")).should == [0, 1, 2, 3]
-      a.should == [4]
+  it "works with beginless ranges" do
+    a = [0,1,2,3,4]
+    a.slice!((..3)).should == [0, 1, 2, 3]
+    a.should == [4]
 
-      a = [0,1,2,3,4]
-      a.slice!(eval("(...-2)")).should == [0, 1, 2]
-      a.should == [3, 4]
-    end
+    a = [0,1,2,3,4]
+    a.slice!((...-2)).should == [0, 1, 2]
+    a.should == [3, 4]
   end
 
   describe "with a subclass of Array" do

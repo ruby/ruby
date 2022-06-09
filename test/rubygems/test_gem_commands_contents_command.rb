@@ -1,5 +1,5 @@
 # frozen_string_literal: true
-require 'rubygems/test_case'
+require_relative 'helper'
 require 'rubygems/commands/contents_command'
 
 class TestGemCommandsContentsCommand < Gem::TestCase
@@ -50,7 +50,7 @@ class TestGemCommandsContentsCommand < Gem::TestCase
   def test_execute_bad_gem
     @cmd.options[:args] = %w[foo]
 
-    assert_raises Gem::MockGemUi::TermError do
+    assert_raise Gem::MockGemUi::TermError do
       use_ui @ui do
         @cmd.execute
       end
@@ -94,7 +94,7 @@ class TestGemCommandsContentsCommand < Gem::TestCase
   def test_execute_missing_single
     @cmd.options[:args] = %w[foo]
 
-    assert_raises Gem::MockGemUi::TermError do
+    assert_raise Gem::MockGemUi::TermError do
       use_ui @ui do
         @cmd.execute
       end
@@ -110,7 +110,7 @@ class TestGemCommandsContentsCommand < Gem::TestCase
 
     gem 'foo', 1
 
-    assert_raises Gem::MockGemUi::TermError do
+    assert_raise Gem::MockGemUi::TermError do
       use_ui @ui do
         @cmd.execute
       end
@@ -239,7 +239,7 @@ lib/foo.rb
       [RbConfig::CONFIG['bindir'], 'default_command'],
       [RbConfig::CONFIG['rubylibdir'], 'default/gem.rb'],
       [RbConfig::CONFIG['archdir'], 'default_gem.so'],
-    ].sort.map{|a|File.join a }.join "\n"
+    ].sort.map {|a|File.join a }.join "\n"
 
     assert_equal expected, @ui.output.chomp
     assert_equal "", @ui.error

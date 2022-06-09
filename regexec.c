@@ -421,6 +421,8 @@ onig_region_copy(OnigRegion* to, const OnigRegion* from)
   (msa).start    = (arg_start);\
   (msa).gpos     = (arg_gpos);\
   (msa).best_len = ONIG_MISMATCH;\
+  (msa).counter  = 0;\
+  (msa).end_time = 0;\
 } while(0)
 #else
 # define MATCH_ARG_INIT(msa, arg_option, arg_region, arg_start, arg_gpos) do {\
@@ -429,6 +431,8 @@ onig_region_copy(OnigRegion* to, const OnigRegion* from)
   (msa).region   = (arg_region);\
   (msa).start    = (arg_start);\
   (msa).gpos     = (arg_gpos);\
+  (msa).counter  = 0;\
+  (msa).end_time = 0;\
 } while(0)
 #endif
 
@@ -601,7 +605,7 @@ stack_double(OnigStackType** arg_stk_base, OnigStackType** arg_stk_end,
   (((s) - str) * num_comb_exp_check + ((snum) - 1))
 # define STATE_CHECK_VAL(v,snum) do {\
   if (state_check_buff != NULL) {\
-    int x = STATE_CHECK_POS(s,snum);\
+    ptrdiff_t x = STATE_CHECK_POS(s,snum);\
     (v) = state_check_buff[x/8] & (1<<(x%8));\
   }\
   else (v) = 0;\
@@ -610,7 +614,7 @@ stack_double(OnigStackType** arg_stk_base, OnigStackType** arg_stk_end,
 
 # define ELSE_IF_STATE_CHECK_MARK(stk) \
   else if ((stk)->type == STK_STATE_CHECK_MARK) { \
-    int x = STATE_CHECK_POS(stk->u.state.pstr, stk->u.state.state_check);\
+    ptrdiff_t x = STATE_CHECK_POS(stk->u.state.pstr, stk->u.state.state_check);\
     state_check_buff[x/8] |= (1<<(x%8));				\
   }
 
@@ -1176,11 +1180,13 @@ static int string_cmp_ic(OnigEncoding enc, int case_fold_flag,
 # define DATA_ENSURE_CHECK1    (s < right_range)
 # define DATA_ENSURE_CHECK(n)  (s + (n) <= right_range)
 # define DATA_ENSURE(n)        if (s + (n) > right_range) goto fail
+# define DATA_ENSURE_CONTINUE(n) if (s + (n) > right_range) continue
 # define ABSENT_END_POS        right_range
 #else
 # define DATA_ENSURE_CHECK1    (s < end)
 # define DATA_ENSURE_CHECK(n)  (s + (n) <= end)
 # define DATA_ENSURE(n)        if (s + (n) > end) goto fail
+# define DATA_ENSURE_CONTINUE(n) if (s + (n) > end) continue
 # define ABSENT_END_POS        end
 #endif /* USE_MATCH_RANGE_MUST_BE_INSIDE_OF_SPECIFIED_RANGE */
 
@@ -2643,7 +2649,7 @@ match_at(regex_t* reg, const UChar* str, const UChar* end,
 		  ? STACK_AT(mem_end_stk[mem])->u.mem.pstr
 		  : (UChar* )((void* )mem_end_stk[mem]));
 	  n = pend - pstart;
-	  DATA_ENSURE(n);
+	  DATA_ENSURE_CONTINUE(n);
 	  sprev = s;
 	  swork = s;
 	  STRING_CMP_VALUE(pstart, swork, n, is_fail);
@@ -2682,7 +2688,7 @@ match_at(regex_t* reg, const UChar* str, const UChar* end,
 		  ? STACK_AT(mem_end_stk[mem])->u.mem.pstr
 		  : (UChar* )((void* )mem_end_stk[mem]));
 	  n = pend - pstart;
-	  DATA_ENSURE(n);
+	  DATA_ENSURE_CONTINUE(n);
 	  sprev = s;
 	  swork = s;
 	  STRING_CMP_VALUE_IC(case_fold_flag, pstart, &swork, n, end, is_fail);
@@ -3175,6 +3181,7 @@ match_at(regex_t* reg, const UChar* str, const UChar* end,
 #endif
 
       MOP_OUT;
+      CHECK_INTERRUPT_IN_MATCH_AT;
       JUMP;
 
     DEFAULT
@@ -3873,7 +3880,7 @@ onig_match(regex_t* reg, const UChar* str, const UChar* end, const UChar* at, On
   MATCH_ARG_INIT(msa, option, region, at, at);
 #ifdef USE_COMBINATION_EXPLOSION_CHECK
   {
-    int offset = at - str;
+    ptrdiff_t offset = at - str;
     STATE_CHECK_BUFF_INIT(msa, end - str, offset, reg->num_comb_exp_check);
   }
 #endif
@@ -4352,7 +4359,7 @@ onig_search_gpos(regex_t* reg, const UChar* str, const UChar* end,
   MATCH_ARG_INIT(msa, option, region, start, global_pos);
 #ifdef USE_COMBINATION_EXPLOSION_CHECK
   {
-    int offset = (MIN(start, range) - str);
+    ptrdiff_t offset = (MIN(start, range) - str);
     STATE_CHECK_BUFF_INIT(msa, end - str, offset, reg->num_comb_exp_check);
   }
 #endif

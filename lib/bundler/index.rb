@@ -122,10 +122,9 @@ module Bundler
       names
     end
 
-    # returns a list of the dependencies
     def unmet_dependency_names
       dependency_names.select do |name|
-        name != "bundler" && search(name).empty?
+        search(name).empty?
       end
     end
 
@@ -196,11 +195,7 @@ module Bundler
           if base # allow all platforms when searching from a lockfile
             dependency.matches_spec?(spec)
           else
-            if Gem::Platform.respond_to? :match_spec?
-              dependency.matches_spec?(spec) && Gem::Platform.match_spec?(spec)
-            else
-              dependency.matches_spec?(spec) && Gem::Platform.match(spec.platform)
-            end
+            dependency.matches_spec?(spec) && Gem::Platform.match_spec?(spec)
           end
         end
 

@@ -354,13 +354,17 @@ class TC_Set < Test::Unit::TestCase
     case expected
     when true
       assert_send([set, :intersect?, other])
+      assert_send([set, :intersect?, other.to_a])
       assert_send([other, :intersect?, set])
       assert_not_send([set, :disjoint?, other])
+      assert_not_send([set, :disjoint?, other.to_a])
       assert_not_send([other, :disjoint?, set])
     when false
       assert_not_send([set, :intersect?, other])
+      assert_not_send([set, :intersect?, other.to_a])
       assert_not_send([other, :intersect?, set])
       assert_send([set, :disjoint?, other])
+      assert_send([set, :disjoint?, other.to_a])
       assert_send([other, :disjoint?, set])
     when Class
       assert_raise(expected) {
@@ -378,7 +382,7 @@ class TC_Set < Test::Unit::TestCase
     set = Set[3,4,5]
 
     assert_intersect(ArgumentError, set, 3)
-    assert_intersect(ArgumentError, set, [2,4,6])
+    assert_intersect(true, set, Set[2,4,6])
 
     assert_intersect(true, set, set)
     assert_intersect(true, set, Set[2,4])
@@ -832,5 +836,44 @@ class TC_Enumerable < Test::Unit::TestCase
 
     assert_same set, set.to_set
     assert_not_same set, set.to_set { |o| o }
+  end
+end
+
+class TC_Set_Builtin < Test::Unit::TestCase
+  private def should_omit?
+    Gem::Version.new(RUBY_VERSION) < Gem::Version.new('3.2.0') ||
+      !File.exist?(File.expand_path('../prelude.rb', __dir__))
+  end
+
+  def test_Set
+    omit "skipping the test for the builtin Set" if should_omit?
+
+    assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
+      assert_nothing_raised do
+        set = Set.new([1, 2])
+        assert_equal('Set', set.class.name)
+      end
+    end;
+
+    assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
+      assert_nothing_raised do
+        set = Set[1, 2]
+        assert_equal('Set', set.class.name)
+      end
+    end;
+  end
+
+  def test_to_set
+    omit "skipping the test for the builtin Enumerable#to_set" if should_omit?
+
+    assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
+      assert_nothing_raised do
+        set = [1, 2].to_set
+        assert_equal('Set', set.class.name)
+      end
+    end;
   end
 end

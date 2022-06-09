@@ -21,7 +21,7 @@ module Bundler
         elsif options[:local_git]
           install_local_git(names, version, options)
         else
-          sources = options[:source] || Bundler.rubygems.sources
+          sources = options[:source] || Gem.sources
           install_rubygems(names, version, sources)
         end
       end
@@ -77,9 +77,11 @@ module Bundler
         source_list = SourceList.new
 
         source_list.add_git_source(git_source_options) if git_source_options
-        source_list.global_rubygems_source = rubygems_source if rubygems_source
+        Array(rubygems_source).each {|remote| source_list.add_global_rubygems_remote(remote) } if rubygems_source
 
         deps = names.map {|name| Dependency.new name, version }
+
+        Bundler.configure_gem_home_and_path(Plugin.root)
 
         definition = Definition.new(nil, deps, source_list, true)
         install_definition(definition)

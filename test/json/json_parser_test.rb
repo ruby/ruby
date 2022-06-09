@@ -84,6 +84,7 @@ class JSONParserTest < Test::Unit::TestCase
     assert_equal({ "a" => 23 }, parse('  { "a"  : 23  } '))
     assert_equal({ "a" => 0.23 }, parse(' { "a"  :  0.23 }  '))
     assert_equal({ "a" => 0.23 }, parse('  {  "a"  :  0.23  }  '))
+    assert_equal({ "" => 123 }, parse('{"":123}'))
   end
 
   def test_parse_numbers

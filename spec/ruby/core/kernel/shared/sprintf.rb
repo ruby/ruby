@@ -320,6 +320,10 @@ describe :kernel_sprintf, shared: true do
         @method.call("%s", "abc").should == "abc"
       end
 
+      it "substitutes '' for nil" do
+        @method.call("%s", nil).should == ""
+      end
+
       it "converts argument to string with to_s" do
         obj = mock("string")
         obj.should_receive(:to_s).and_return("abc")
@@ -341,6 +345,45 @@ describe :kernel_sprintf, shared: true do
         long_string = "aabbccddhelloddccbbaa"
         sub_string = long_string[8, 5]
         sprintf("%.#{1 * 3}s", sub_string).should == "hel"
+      end
+
+      it "formats string with precision" do
+        Kernel.format("%.3s", "hello").should == "hel"
+        Kernel.format("%-3.3s", "hello").should == "hel"
+      end
+
+      it "formats string with width" do
+        @method.call("%6s", "abc").should == "   abc"
+        @method.call("%6s", "abcdefg").should == "abcdefg"
+      end
+
+      it "formats string with width and precision" do
+        @method.call("%4.6s", "abc").should == " abc"
+        @method.call("%4.6s", "abcdefg").should == "abcdef"
+      end
+
+      it "formats nli with width" do
+        @method.call("%6s", nil).should == "      "
+      end
+
+      it "formats nli with precision" do
+        @method.call("%.6s", nil).should == ""
+      end
+
+      it "formats nil with width and precision" do
+        @method.call("%4.6s", nil).should == "    "
+      end
+
+      it "formats multibyte string with precision" do
+        Kernel.format("%.2s", "été").should == "ét"
+      end
+
+      it "preserves encoding of the format string" do
+        str = format('%s'.encode(Encoding::UTF_8), 'foobar')
+        str.encoding.should == Encoding::UTF_8
+
+        str = format('%s'.encode(Encoding::US_ASCII), 'foobar')
+        str.encoding.should == Encoding::US_ASCII
       end
     end
 

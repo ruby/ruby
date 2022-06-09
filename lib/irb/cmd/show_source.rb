@@ -4,8 +4,9 @@ require_relative "nop"
 require_relative "../color"
 require_relative "../ruby-lex"
 
-# :stopdoc:
 module IRB
+  # :stopdoc:
+
   module ExtendCommand
     class ShowSource < Nop
       def execute(str = nil)
@@ -59,11 +60,18 @@ module IRB
       def find_end(file, first_line)
         return first_line unless File.exist?(file)
         lex = RubyLex.new
-        code = +""
-        File.read(file).lines[(first_line - 1)..-1].each_with_index do |line, i|
-          _ltype, _indent, continue, code_block_open = lex.check_state(code << line)
+        lines = File.read(file).lines[(first_line - 1)..-1]
+        tokens = RubyLex.ripper_lex_without_warning(lines.join)
+        prev_tokens = []
+
+        # chunk with line number
+        tokens.chunk { |tok| tok.pos[0] }.each do |lnum, chunk|
+          code = lines[0..lnum].join
+          prev_tokens.concat chunk
+          continue = lex.process_continue(prev_tokens)
+          code_block_open = lex.check_code_block(code, prev_tokens)
           if !continue && !code_block_open
-            return first_line + i
+            return first_line + lnum
           end
         end
         first_line
@@ -82,5 +90,6 @@ module IRB
       private_constant :Source
     end
   end
+
+  # :startdoc:
 end
-# :startdoc:

@@ -208,7 +208,8 @@ allocation_info_tracer_compact(void *ptr)
 {
     struct traceobj_arg *trace_arg = (struct traceobj_arg *)ptr;
 
-    if (st_foreach_with_replace(trace_arg->object_table, hash_foreach_should_replace_key, hash_replace_key, 0)) {
+    if (trace_arg->object_table &&
+            st_foreach_with_replace(trace_arg->object_table, hash_foreach_should_replace_key, hash_replace_key, 0)) {
         rb_raise(rb_eRuntimeError, "hash modified during iteration");
     }
 }

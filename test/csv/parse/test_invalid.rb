@@ -36,4 +36,17 @@ ggg,hhh,iii
                  csv.shift)
     assert_equal(true, csv.eof?)
   end
+
+  def test_ignore_invalid_line_cr_lf
+    data = <<-CSV
+"1","OK"\r
+"2",""NOT" OK"\r
+"3","OK"\r
+CSV
+    csv = CSV.new(data)
+
+    assert_equal(['1', 'OK'], csv.shift)
+    assert_raise(CSV::MalformedCSVError) { csv.shift }
+    assert_equal(['3', 'OK'], csv.shift)
+  end
 end

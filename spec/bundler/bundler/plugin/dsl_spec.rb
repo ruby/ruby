@@ -28,7 +28,7 @@ RSpec.describe Bundler::Plugin::DSL do
       expect(dsl.inferred_plugins).to eq(["bundler-source-news"])
     end
 
-    it "registers a source type plugin only once for multiple declataions" do
+    it "registers a source type plugin only once for multiple declarations" do
       expect(dsl).to receive(:plugin).with("bundler-source-news").and_call_original.once
 
       dsl.source("some_random_url", :type => "news") {}

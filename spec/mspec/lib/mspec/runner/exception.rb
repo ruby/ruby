@@ -29,7 +29,7 @@ class ExceptionState
 
     if @failure
       message
-    elsif raise_error_message = @exception.instance_variable_get(:@mspec_raise_error_message)
+    elsif raise_error_message = RaiseErrorMatcher::FAILURE_MESSAGE_FOR_EXCEPTION[@exception]
       raise_error_message.join("\n")
     else
       "#{@exception.class}: #{message}"

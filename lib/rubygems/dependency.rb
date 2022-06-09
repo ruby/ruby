@@ -277,7 +277,7 @@ class Gem::Dependency
       requirement.satisfied_by?(spec.version) && env_req.satisfied_by?(spec.version)
     end.map(&:to_spec)
 
-    Gem::BundlerVersionFinder.filter!(matches) if filters_bundler?
+    Gem::BundlerVersionFinder.prioritize!(matches) if prioritizes_bundler?
 
     if platform_only
       matches.reject! do |spec|
@@ -295,7 +295,7 @@ class Gem::Dependency
     @requirement.specific?
   end
 
-  def filters_bundler?
+  def prioritizes_bundler?
     name == "bundler".freeze && !specific?
   end
 
@@ -325,11 +325,11 @@ class Gem::Dependency
     active = matches.find {|spec| spec.activated? }
     return active if active
 
-    return matches.first if prerelease?
-
-    # Move prereleases to the end of the list for >= 0 requirements
-    pre, matches = matches.partition {|spec| spec.version.prerelease? }
-    matches += pre if requirement == Gem::Requirement.default
+    unless prerelease?
+      # Move prereleases to the end of the list for >= 0 requirements
+      pre, matches = matches.partition {|spec| spec.version.prerelease? }
+      matches += pre if requirement == Gem::Requirement.default
+    end
 
     matches.first
   end

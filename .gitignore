@@ -10,6 +10,7 @@
 *.dylib
 *.elc
 *.i
+*.ii
 *.inc
 *.log
 *.o
@@ -126,6 +127,7 @@ lcov*.info
 /ruby-runner
 /ruby-runner.h
 /ruby-man.rd.gz
+/rubyspec_temp
 /run.gdb
 /sizes.c
 /static-ruby
@@ -182,6 +184,9 @@ lcov*.info
 /ext/-test-/win32/dln/dlntest.exp
 /ext/-test-/win32/dln/dlntest.lib
 
+# /ext/-test-/gems
+/ext/-test-/gems
+
 # /ext/etc/
 /ext/etc/constdefs.h
 
@@ -228,3 +233,6 @@ lcov*.info
 /rb_mjit_header.h
 /mjit_config.h
 /include/ruby-*/*/rb_mjit_min_header-*.h
+
+# /wasm/
+/wasm/tests/*.wasm

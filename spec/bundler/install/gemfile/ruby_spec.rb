@@ -46,18 +46,16 @@ RSpec.describe "ruby requirement" do
   it "allows changing the ruby version requirement to something compatible" do
     install_gemfile <<-G
       source "#{file_uri_for(gem_repo1)}"
-      ruby ">= 1.0.0"
+      ruby ">= #{RUBY_VERSION[0..2]}.0"
       gem "rack"
     G
 
     allow(Bundler::SharedHelpers).to receive(:find_gemfile).and_return(bundled_app_gemfile)
     expect(locked_ruby_version).to eq(Bundler::RubyVersion.system)
 
-    simulate_ruby_version "5100"
-
     install_gemfile <<-G
       source "#{file_uri_for(gem_repo1)}"
-      ruby ">= 1.0.1"
+      ruby ">= #{RUBY_VERSION}"
       gem "rack"
     G
 
@@ -72,19 +70,35 @@ RSpec.describe "ruby requirement" do
       gem "rack"
     G
 
-    allow(Bundler::SharedHelpers).to receive(:find_gemfile).and_return(bundled_app_gemfile)
-    expect(locked_ruby_version).to eq(Bundler::RubyVersion.system)
+    lockfile <<~L
+      GEM
+        remote: #{file_uri_for(gem_repo1)}/
+        specs:
+          rack (1.0.0)
 
-    simulate_ruby_version "5100"
+      PLATFORMS
+        #{lockfile_platforms}
+
+      DEPENDENCIES
+        rack
+
+      RUBY VERSION
+         ruby 2.1.4p422
+
+      BUNDLED WITH
+         #{Bundler::VERSION}
+    L
+
+    allow(Bundler::SharedHelpers).to receive(:find_gemfile).and_return(bundled_app_gemfile)
 
     install_gemfile <<-G
       source "#{file_uri_for(gem_repo1)}"
-      ruby ">= 5000.0"
+      ruby ">= #{RUBY_VERSION[0..2]}.0"
       gem "rack"
     G
 
     expect(the_bundle).to include_gems "rack 1.0.0"
-    expect(locked_ruby_version.versions).to eq(["5100"])
+    expect(locked_ruby_version).to eq(Bundler::RubyVersion.system)
   end
 
   it "allows requirements with trailing whitespace" do

@@ -39,76 +39,32 @@ describe "Array#uniq" do
     [x, y].uniq.should == [x, y]
   end
 
-  ruby_version_is '2.7' do
-    it "compares elements with matching hash codes with #eql?" do
-      a = Array.new(2) do
-        obj = mock('0')
-        obj.should_receive(:hash).at_least(1).and_return(0)
+  it "compares elements with matching hash codes with #eql?" do
+    a = Array.new(2) do
+      obj = mock('0')
+      obj.should_receive(:hash).at_least(1).and_return(0)
 
-        def obj.eql?(o)
-          false
-        end
-
-        obj
+      def obj.eql?(o)
+        false
       end
 
-      a.uniq.should == a
-
-      a = Array.new(2) do
-        obj = mock('0')
-        obj.should_receive(:hash).at_least(1).and_return(0)
-
-        def obj.eql?(o)
-          true
-        end
-
-        obj
-      end
-
-      a.uniq.size.should == 1
+      obj
     end
-  end
 
-  ruby_version_is ''...'2.7' do
-    it "compares elements with matching hash codes with #eql?" do
-      a = Array.new(2) do
-        obj = mock('0')
-        obj.should_receive(:hash).at_least(1).and_return(0)
+    a.uniq.should == a
 
-        def obj.eql?(o)
-          # It's undefined whether the impl does a[0].eql?(a[1]) or
-          # a[1].eql?(a[0]) so we taint both.
-          taint
-          o.taint
-          false
-        end
+    a = Array.new(2) do
+      obj = mock('0')
+      obj.should_receive(:hash).at_least(1).and_return(0)
 
-        obj
+      def obj.eql?(o)
+        true
       end
 
-      a.uniq.should == a
-      a[0].should.tainted?
-      a[1].should.tainted?
-
-      a = Array.new(2) do
-        obj = mock('0')
-        obj.should_receive(:hash).at_least(1).and_return(0)
-
-        def obj.eql?(o)
-          # It's undefined whether the impl does a[0].eql?(a[1]) or
-          # a[1].eql?(a[0]) so we taint both.
-          taint
-          o.taint
-          true
-        end
-
-        obj
-      end
-
-      a.uniq.size.should == 1
-      a[0].should.tainted?
-      a[1].should.tainted?
+      obj
     end
+
+    a.uniq.size.should == 1
   end
 
   it "compares elements based on the value returned from the block" do

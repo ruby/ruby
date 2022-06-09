@@ -3,7 +3,8 @@
 class Logger
   # Default formatter for log messages.
   class Formatter
-    Format = "%s, [%s#%d] %5s -- %s: %s\n"
+    Format = "%s, [%s #%d] %5s -- %s: %s\n"
+    DatetimeFormat = "%Y-%m-%dT%H:%M:%S.%6N"
 
     attr_accessor :datetime_format
 
@@ -12,14 +13,14 @@ class Logger
     end
 
     def call(severity, time, progname, msg)
-      Format % [severity[0..0], format_datetime(time), Process.pid, severity, progname,
+      Format % [severity[0, 1], format_datetime(time), Process.pid, severity, progname,
         msg2str(msg)]
     end
 
   private
 
     def format_datetime(time)
-      time.strftime(@datetime_format || "%Y-%m-%dT%H:%M:%S.%6N ")
+      time.strftime(@datetime_format || DatetimeFormat)
     end
 
     def msg2str(msg)

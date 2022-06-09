@@ -83,7 +83,7 @@ The first byte has the following special values:
   of stream objects full precision may be used.
 
 "\xfc"::
-  The total size of the integer is two bytes.  The following four bytes are a
+  The total size of the integer is five bytes.  The following four bytes are a
   negative little-endian integer.  For compatibility with 32 bit ruby,
   only Fixnums greater than -10737341824 should be represented this way.  For
   sizes of stream objects full precision may be used.

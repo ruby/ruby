@@ -142,8 +142,13 @@ bitset_on_num(BitSetRef bs)
 static void
 onig_reg_resize(regex_t *reg)
 {
-  resize:
-    if (reg->alloc > reg->used) {
+  do {
+    if (!reg->used) {
+      xfree(reg->p);
+      reg->alloc = 0;
+      reg->p = 0;
+    }
+    else if (reg->alloc > reg->used) {
       unsigned char *new_ptr = xrealloc(reg->p, reg->used);
       // Skip the right size optimization if memory allocation fails
       if (new_ptr) {
@@ -151,10 +156,7 @@ onig_reg_resize(regex_t *reg)
         reg->p = new_ptr;
       }
     }
-    if (reg->chain) {
-      reg = reg->chain;
-      goto resize;
-    }
+  } while ((reg = reg->chain) != 0);
 }
 
 extern int
@@ -3755,10 +3757,8 @@ setup_comb_exp_check(Node* node, int state, ScanEnv* env)
   switch (type) {
   case NT_LIST:
     {
-      Node* prev = NULL_NODE;
       do {
 	r = setup_comb_exp_check(NCAR(node), r, env);
-	prev = NCAR(node);
       } while (r >= 0 && IS_NOT_NULL(node = NCDR(node)));
     }
     break;
@@ -5036,7 +5036,7 @@ optimize_node_left(Node* node, NodeOptInfo* opt, OptEnv* env)
 
 	if (NSTRING_IS_DONT_GET_OPT_INFO(node)) {
 	  int n = onigenc_strlen(env->enc, sn->s, sn->end);
-	  max = ONIGENC_MBC_MAXLEN_DIST(env->enc) * n;
+	  max = ONIGENC_MBC_MAXLEN_DIST(env->enc) * (OnigDistance)n;
 	}
 	else {
 	  concat_opt_exact_info_str(&opt->exb, sn->s, sn->end,
@@ -5975,6 +5975,9 @@ onig_reg_init(regex_t* reg, OnigOptionType option,
   (reg)->name_table       = (void* )NULL;
 
   (reg)->case_fold_flag   = case_fold_flag;
+
+  (reg)->timelimit        = 0;
+
   return 0;
 }
 

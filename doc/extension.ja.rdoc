@@ -617,11 +617,13 @@ C言語とRubyの間で情報を共有する方法について解説します．
 Qtrue ::
 Qfalse ::
 
-  真偽値．QfalseはC言語でも偽とみなされます(つまり0)．
+  真偽値．C言語から見た「true」と「false」．
 
 Qnil ::
 
   C言語から見た「nil」．
+
+RTEST(obj)というマクロはobjがQfalseかQnilのとき0を返します．
 
 === CとRubyで共有される大域変数
 
@@ -697,30 +699,28 @@ Cの世界で定義されたデータ(構造体)をRubyのオブジェクトと�
 
 このマクロの戻り値は生成されたオブジェクトを表すVALUE値です．
 
-klassはこのオブジェクトのクラスです．data_typeはこの構造体を
-Rubyが管理するための情報を記述したconst rb_data_type_t型への
-ポインタです．
+klassはこのオブジェクトのクラスです．klassは, Objectクラスか
+ら派生し, 必ずrb_define_alloc_funcかrb_undef_alloc_funcを呼
+び出してallocatorを設定してください．
 
-なお, klassは, Objectや他のクラスではなくData (rb_cData)とい
-う特別なクラスから派生することが推奨されます．
-Dataから派生しない場合には, 必ずrb_undef_alloc_func(klass)
-を呼び出してください．
+data_typeはこの構造体をRubyが管理するための情報を記述した
+const rb_data_type_t型へのポインタです．
 
 rb_data_type_tは次のように定義されています．
 
   typedef struct rb_data_type_struct rb_data_type_t;
 
   struct rb_data_type_struct {
-          const char *wrap_struct_name;
-          struct {
-                  void (*dmark)(void*);
-                  void (*dfree)(void*);
-                  size_t (*dsize)(const void *);
-                  void *reserved[2];
-          } function;
-          const rb_data_type_t *parent;
-          void *data;
-          VALUE flags;
+      const char *wrap_struct_name;
+      struct {
+          void (*dmark)(void*);
+          void (*dfree)(void*);
+          size_t (*dsize)(const void *);
+          void *reserved[2];
+      } function;
+      const rb_data_type_t *parent;
+      void *data;
+      VALUE flags;
   };
 
 wrap_struct_nameはこの構造体を識別する名前です．主に統計情報
@@ -743,8 +743,8 @@ dmarkはガーベージコレクタがオブジェクトへの参照をマーク
 ++
 
 dfreeはこの構造体がもう不要になった時に呼ばれる関数です．こ
-の関数がガーベージコレクタから呼ばれます．これが-1の場合は，
-単純に構造体が解放されます．
+の関数がガーベージコレクタから呼ばれます．これが
+RUBY_DEFAULT_FREEの場合は，単純に構造体が解放されます．
 
 dsizeは構造体が消費しているメモリのバイト数を返す関数です．
 引数として構造体へのポインタが渡されます．実装困難であれば0
@@ -1065,6 +1065,20 @@ Rubyのソースはいくつかに分類することが出来ます．このう�
 スライブラリの部分は基本的に拡張ライブラリと同じ作り方になっ
 ています．これらのソースは今までの説明でほとんど理解できると
 思います．
+
+=== Rubyのヘッダファイル
+
+<tt>$repo_root/include/ruby</tt>以下はすべて<tt>make
+install</tt>でインストールされます．拡張ライブラリからは，
+<tt>#include <ruby.h></tt>でインクルードする必要があります．
++rbimpl_+，+RBIMPL_+のプレフィックスが付いた実装の詳細のため
+のシンボルを除き，すべてのシンボルは公開APIです．
+
+拡張ライブラリで直接インクルードできるのは，
+<tt>$repo_root/include/ruby/*.h</tt>のうち，対応する
+<tt>HAVE_RUBY_*_H</tt>マクロが
+<tt>$repo_root/include/ruby.h</tt>ヘッダーで定義されているも
+のです．
 
 === Ruby言語のコア
 
@@ -1681,6 +1695,9 @@ HAVE_RUBY_*_H ::
   を意味する．たとえば，HAVE_RUBY_ST_H が定義されている場合は
   単なる st.h ではなく ruby/st.h を使用する．
 
+  これらのマクロに対応するヘッダーファイルは，拡張ライブラリ
+  から直接インクルードしてもよい．
+
 RB_EVENT_HOOKS_HAVE_CALLBACK_DATA ::
 
   rb_add_event_hook() がフック関数に渡す data を第3引数として
@@ -1756,6 +1773,14 @@ check_sizeof(type, header) ::
   ズを調べる．チェックに成功すると，プリプロセッサマクロ
   `SIZEOF_{TYPE}` を定義し，そのサイズを返す．定義されていな
   いときはnilを返す．
+
+append_cppflags(array-of-flags[, opt])
+append_cflags(array-of-flags[, opt])
+append_ldflags(array-of-flags[, opt])
+
+  各flagが使用可能であれば，それぞれ$CPPFLAGS, $CFLAGS,
+  $LDFLAGSに追加する．コンパイラのフラグには移植性がないので，
+  変数に直接追加せずこれらを使うことが望ましい．
 
 create_makefile(target[, target_prefix]) ::
 

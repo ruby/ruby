@@ -12,6 +12,10 @@ cxx.instance_variable_set(:'@have_devel', true)
 ok = cxx.try_link(<<~'begin', "") do |x|
   #include "ruby/config.h"
 
+  #ifdef RUBY_ALTERNATIVE_MALLOC_HEADER
+  # include RUBY_ALTERNATIVE_MALLOC_HEADER
+  #endif
+
   namespace {
       typedef int conftest1[SIZEOF_LONG == sizeof(long) ? 1 : -1];
       typedef int conftest2[SIZEOF_VOIDP == sizeof(void*) ? 1 : -1];

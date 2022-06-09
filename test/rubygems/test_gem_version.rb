@@ -1,8 +1,6 @@
 # frozen_string_literal: true
-require 'rubygems/test_case'
+require_relative 'helper'
 require "rubygems/version"
-
-require "minitest/benchmark"
 
 class TestGemVersion < Gem::TestCase
   class V < ::Gem::Version
@@ -47,9 +45,11 @@ class TestGemVersion < Gem::TestCase
     assert_equal false, Gem::Version.correct?("an incorrect version")
 
     expected = "nil versions are discouraged and will be deprecated in Rubygems 4\n"
-    assert_output nil, expected do
+    actual_stdout, actual_stderr = capture_output do
       Gem::Version.correct?(nil)
     end
+    assert_empty actual_stdout
+    assert_equal(expected, actual_stderr)
   end
 
   def test_class_new_subclass
@@ -100,21 +100,12 @@ class TestGemVersion < Gem::TestCase
     invalid_versions << "2.3422222.222.222222222.22222.ads0as.dasd0.ddd2222.2.qd3e."
 
     invalid_versions.each do |invalid|
-      e = assert_raises ArgumentError, invalid do
+      e = assert_raise ArgumentError, invalid do
         Gem::Version.new invalid
       end
 
       assert_equal "Malformed version number string #{invalid}", e.message, invalid
     end
-  end
-
-  def bench_anchored_version_pattern
-    assert_performance_linear 0.5 do |count|
-      version_string = count.times.map {|i| "0" * i.succ }.join(".") << "."
-      version_string =~ Gem::Version::ANCHORED_VERSION_PATTERN
-    end
-  rescue RegexpError
-    skip "It fails to allocate the memory for regex pattern of Gem::Version::ANCHORED_VERSION_PATTERN"
   end
 
   def test_empty_version
@@ -162,6 +153,10 @@ class TestGemVersion < Gem::TestCase
 
     assert_equal(-1, v("5.a") <=> v("5.0.0.rc2"))
     assert_equal(1, v("5.x") <=> v("5.0.0.rc2"))
+
+    assert_equal(0, v("1.9.3")  <=> "1.9.3")
+    assert_equal(1, v("1.9.3")  <=> "1.9.2.99")
+    assert_equal(-1, v("1.9.3") <=> "1.9.3.1")
 
     assert_nil v("1.0") <=> "whatever"
   end

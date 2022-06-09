@@ -5,7 +5,7 @@ module Bundler
     class Metadata < Source
       def specs
         @specs ||= Index.build do |idx|
-          idx << Gem::Specification.new("Ruby\0", RubyVersion.system.to_gem_version_with_patchlevel)
+          idx << Gem::Specification.new("Ruby\0", RubyVersion.system.gem_version)
           idx << Gem::Specification.new("RubyGems\0", Gem::VERSION) do |s|
             s.required_rubygems_version = Gem::Requirement.default
           end
@@ -22,10 +22,10 @@ module Bundler
             s.summary  = "The best way to manage your application's dependencies"
             s.executables = %w[bundle]
             # can't point to the actual gemspec or else the require paths will be wrong
-            s.loaded_from = File.expand_path("..", __FILE__)
+            s.loaded_from = __dir__
           end
 
-          if local_spec = Bundler.rubygems.find_name("bundler").find {|s| s.version.to_s == VERSION }
+          if local_spec = Bundler.rubygems.find_bundler(VERSION)
             idx << local_spec
           end
 

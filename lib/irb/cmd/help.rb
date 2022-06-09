@@ -11,13 +11,15 @@
 
 require_relative "nop"
 
-# :stopdoc:
 module IRB
+  # :stopdoc:
+
   module ExtendCommand
     class Help < Nop
       def execute(*names)
         require 'rdoc/ri/driver'
-        IRB::ExtendCommand::Help.const_set(:Ri, RDoc::RI::Driver.new)
+        opts = RDoc::RI::Driver.process_args([])
+        IRB::ExtendCommand::Help.const_set(:Ri, RDoc::RI::Driver.new(opts))
       rescue LoadError, SystemExit
         IRB::ExtendCommand::Help.remove_method(:execute)
         # raise NoMethodError in ensure
@@ -42,5 +44,6 @@ module IRB
       end
     end
   end
+
+  # :startdoc:
 end
-# :startdoc:

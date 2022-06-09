@@ -528,19 +528,4 @@ class TestSprintf < Test::Unit::TestCase
       sprintf("%*s", RbConfig::LIMITS["INT_MIN"], "")
     end
   end
-
-  def test_no_hidden_garbage
-    skip unless Thread.list.size == 1
-
-    fmt = [4, 2, 2].map { |x| "%0#{x}d" }.join('-') # defeats optimization
-    ObjectSpace.count_objects(res = {}) # creates strings on first call
-    GC.disable
-    before = ObjectSpace.count_objects(res)[:T_STRING]
-    val = sprintf(fmt, 1970, 1, 1)
-    after = ObjectSpace.count_objects(res)[:T_STRING]
-    assert_equal before + 1, after, 'only new string is the created one'
-    assert_equal '1970-01-01', val
-  ensure
-    GC.enable
-  end
 end

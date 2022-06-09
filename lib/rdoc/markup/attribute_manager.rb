@@ -147,18 +147,13 @@ class RDoc::Markup::AttributeManager
   def convert_attrs_matching_word_pairs(str, attrs, exclusive)
     # first do matching ones
     tags = @matching_word_pairs.select { |start, bitmap|
-      if exclusive && exclusive?(bitmap)
-        true
-      elsif !exclusive && !exclusive?(bitmap)
-        true
-      else
-        false
-      end
+      exclusive == exclusive?(bitmap)
     }.keys
     return if tags.empty?
-    all_tags = @matching_word_pairs.keys
+    tags = "[#{tags.join("")}](?!#{PROTECT_ATTR})"
+    all_tags = "[#{@matching_word_pairs.keys.join("")}](?!#{PROTECT_ATTR})"
 
-    re = /(^|\W|[#{all_tags.join("")}])([#{tags.join("")}])(\2*[#\\]?[\w:.\/\[\]-]+?\S?)\2(?!\2)([#{all_tags.join("")}]|\W|$)/
+    re = /(^|\W|#{all_tags})(#{tags})(\2*[#\\]?[\w:#{PROTECT_ATTR}.\/\[\]-]+?\S?)\2(?!\2)(#{all_tags}|\W|$)/
 
     1 while str.gsub!(re) { |orig|
       attr = @matching_word_pairs[$2]
@@ -176,11 +171,7 @@ class RDoc::Markup::AttributeManager
     # then non-matching
     unless @word_pair_map.empty? then
       @word_pair_map.each do |regexp, attr|
-        if !exclusive
-          next if exclusive?(attr)
-        else
-          next if !exclusive?(attr)
-        end
+        next unless exclusive == exclusive?(attr)
         1 while str.gsub!(regexp) { |orig|
           updated = attrs.set_attrs($`.length + $1.length, $2.length, attr)
           if updated
@@ -198,13 +189,7 @@ class RDoc::Markup::AttributeManager
 
   def convert_html(str, attrs, exclusive = false)
     tags = @html_tags.select { |start, bitmap|
-      if exclusive && exclusive?(bitmap)
-        true
-      elsif !exclusive && !exclusive?(bitmap)
-        true
-      else
-        false
-      end
+      exclusive == exclusive?(bitmap)
     }.keys.join '|'
 
     1 while str.gsub!(/<(#{tags})>(.*?)<\/\1>/i) { |orig|
@@ -221,11 +206,7 @@ class RDoc::Markup::AttributeManager
 
   def convert_regexp_handlings str, attrs, exclusive = false
     @regexp_handlings.each do |regexp, attribute|
-      if exclusive
-        next if !exclusive?(attribute)
-      else
-        next if exclusive?(attribute)
-      end
+      next unless exclusive == exclusive?(attribute)
       str.scan(regexp) do
         capture = $~.size == 1 ? 0 : 1
 

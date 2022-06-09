@@ -1,7 +1,6 @@
 #ifndef RUBY_TOPLEVEL_VERSION_H                          /*-*-C-*-vi:se ft=c:*/
 #define RUBY_TOPLEVEL_VERSION_H
 /**
- * @file
  * @author     Ruby developers <ruby-core@ruby-lang.org>
  * @copyright  This  file  is   a  part  of  the   programming  language  Ruby.
  *             Permission  is hereby  granted,  to  either redistribute  and/or
@@ -14,11 +13,12 @@
 #define RUBY_RELEASE_DATE RUBY_RELEASE_YEAR_STR"-"RUBY_RELEASE_MONTH_STR"-"RUBY_RELEASE_DAY_STR
 #define RUBY_PATCHLEVEL -1
 
-#define RUBY_RELEASE_YEAR 2021
-#define RUBY_RELEASE_MONTH 4
-#define RUBY_RELEASE_DAY 30
+#define RUBY_RELEASE_YEAR 2022
+#define RUBY_RELEASE_MONTH 6
+#define RUBY_RELEASE_DAY 9
 
 #include "ruby/version.h"
+#include "ruby/internal/abi.h"
 
 #ifndef TOKEN_PASTE
 #define TOKEN_PASTE(x,y) x##y
@@ -40,16 +40,18 @@
 
 #if !defined RUBY_LIB_VERSION && defined RUBY_LIB_VERSION_STYLE
 # if RUBY_LIB_VERSION_STYLE == 3
-#   define RUBY_LIB_VERSION STRINGIZE(RUBY_API_VERSION_MAJOR)"."STRINGIZE(RUBY_API_VERSION_MINOR)"."STRINGIZE(RUBY_API_VERSION_TEENY)
+#   define RUBY_LIB_VERSION STRINGIZE(RUBY_API_VERSION_MAJOR)"."STRINGIZE(RUBY_API_VERSION_MINOR) \
+        "."STRINGIZE(RUBY_API_VERSION_TEENY)"+"STRINGIZE(RUBY_ABI_VERSION)
 # elif RUBY_LIB_VERSION_STYLE == 2
-#   define RUBY_LIB_VERSION STRINGIZE(RUBY_API_VERSION_MAJOR)"."STRINGIZE(RUBY_API_VERSION_MINOR)
+#   define RUBY_LIB_VERSION STRINGIZE(RUBY_API_VERSION_MAJOR)"."STRINGIZE(RUBY_API_VERSION_MINOR) \
+    "+"STRINGIZE(RUBY_ABI_VERSION)
 # endif
 #endif
 
 #if RUBY_PATCHLEVEL == -1
 #define RUBY_PATCHLEVEL_STR "dev"
 #else
-#define RUBY_PATCHLEVEL_STR "p"STRINGIZE(RUBY_PATCHLEVEL)
+#define RUBY_PATCHLEVEL_STR ""
 #endif
 
 #ifndef RUBY_REVISION

@@ -39,6 +39,24 @@ describe "Enumerable#grep_v" do
       ["abc", "def"].grep_v(/e/).should == ["abc"]
       $&.should == "z"
     end
+
+    it "does not modify Regexp.last_match without block" do
+      "z" =~ /z/ # Reset last match
+      ["abc", "def"].grep_v(/e/).should == ["abc"]
+      Regexp.last_match[0].should == "z"
+    end
+
+    it "correctly handles non-string elements" do
+      'set last match' =~ /set last (.*)/
+      [:a, 'b', 'z', :c, 42, nil].grep_v(/[a-d]/).should == ['z', 42, nil]
+      $1.should == 'match'
+
+      o = Object.new
+      def o.to_str
+        'hello'
+      end
+      [o].grep_v(/mm/).first.should.equal?(o)
+    end
   end
 
   describe "without block" do

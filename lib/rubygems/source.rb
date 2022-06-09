@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require "rubygems/text"
+require_relative "text"
 ##
 # A Source knows how to list and fetch gems from a RubyGems marshal index.
 #
@@ -81,12 +81,12 @@ class Gem::Source
     return Gem::Resolver::IndexSet.new self if 'file' == uri.scheme
 
     fetch_uri = if uri.host == "rubygems.org"
-                  index_uri = uri.dup
-                  index_uri.host = "index.rubygems.org"
-                  index_uri
-                else
-                  uri
-                end
+      index_uri = uri.dup
+      index_uri.host = "index.rubygems.org"
+      index_uri
+    else
+      uri
+    end
 
     bundler_api_uri = enforce_trailing_slash(fetch_uri)
 
@@ -240,9 +240,9 @@ class Gem::Source
   end
 end
 
-require 'rubygems/source/git'
-require 'rubygems/source/installed'
-require 'rubygems/source/specific_file'
-require 'rubygems/source/local'
-require 'rubygems/source/lock'
-require 'rubygems/source/vendor'
+require_relative 'source/git'
+require_relative 'source/installed'
+require_relative 'source/specific_file'
+require_relative 'source/local'
+require_relative 'source/lock'
+require_relative 'source/vendor'

@@ -30,17 +30,7 @@ RSpec.describe Bundler::Source do
     end
 
     context "when there are locked gems" do
-      let(:locked_gems) { double(:locked_gems) }
-
-      before { allow(Bundler).to receive(:locked_gems).and_return(locked_gems) }
-
       context "that contain the relevant gem spec" do
-        before do
-          specs = double(:specs)
-          allow(locked_gems).to receive(:specs).and_return(specs)
-          allow(specs).to receive(:find).and_return(locked_gem)
-        end
-
         context "without a version" do
           let(:locked_gem) { double(:locked_gem, :name => "nokogiri", :version => nil) }
 
@@ -62,7 +52,7 @@ RSpec.describe Bundler::Source do
             end
 
             it "should return a string with the spec name and version and locked spec version" do
-              expect(subject.version_message(spec)).to eq("nokogiri >= 1.6\e[32m (was < 1.5)\e[0m")
+              expect(subject.version_message(spec, locked_gem)).to eq("nokogiri >= 1.6\e[32m (was < 1.5)\e[0m")
             end
           end
 
@@ -74,7 +64,7 @@ RSpec.describe Bundler::Source do
             end
 
             it "should return a string with the spec name and version and locked spec version" do
-              expect(subject.version_message(spec)).to eq("nokogiri >= 1.6 (was < 1.5)")
+              expect(subject.version_message(spec, locked_gem)).to eq("nokogiri >= 1.6 (was < 1.5)")
             end
           end
         end
@@ -89,7 +79,7 @@ RSpec.describe Bundler::Source do
             end
 
             it "should return a string with the locked spec version in yellow" do
-              expect(subject.version_message(spec)).to eq("nokogiri 1.6.1\e[33m (was 1.7.0)\e[0m")
+              expect(subject.version_message(spec, locked_gem)).to eq("nokogiri 1.6.1\e[33m (was 1.7.0)\e[0m")
             end
           end
 
@@ -101,7 +91,7 @@ RSpec.describe Bundler::Source do
             end
 
             it "should return a string with the locked spec version in yellow" do
-              expect(subject.version_message(spec)).to eq("nokogiri 1.6.1 (was 1.7.0)")
+              expect(subject.version_message(spec, locked_gem)).to eq("nokogiri 1.6.1 (was 1.7.0)")
             end
           end
         end
@@ -116,7 +106,7 @@ RSpec.describe Bundler::Source do
             end
 
             it "should return a string with the locked spec version in green" do
-              expect(subject.version_message(spec)).to eq("nokogiri 1.7.1\e[32m (was 1.7.0)\e[0m")
+              expect(subject.version_message(spec, locked_gem)).to eq("nokogiri 1.7.1\e[32m (was 1.7.0)\e[0m")
             end
           end
 
@@ -128,27 +118,11 @@ RSpec.describe Bundler::Source do
             end
 
             it "should return a string with the locked spec version in yellow" do
-              expect(subject.version_message(spec)).to eq("nokogiri 1.7.1 (was 1.7.0)")
+              expect(subject.version_message(spec, locked_gem)).to eq("nokogiri 1.7.1 (was 1.7.0)")
             end
           end
         end
       end
-
-      context "that do not contain the relevant gem spec" do
-        before do
-          specs = double(:specs)
-          allow(locked_gems).to receive(:specs).and_return(specs)
-          allow(specs).to receive(:find).and_return(nil)
-        end
-
-        it_behaves_like "the lockfile specs are not relevant"
-      end
-    end
-
-    context "when there are no locked gems" do
-      before { allow(Bundler).to receive(:locked_gems).and_return(nil) }
-
-      it_behaves_like "the lockfile specs are not relevant"
     end
   end
 

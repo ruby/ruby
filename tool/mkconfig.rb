@@ -88,7 +88,7 @@ File.foreach "config.status" do |line|
       unless $install_name
         $install_name = "ruby"
         val.gsub!(/\$\$/, '$')
-        val.scan(%r[\G[\s;]*(/(?:\\.|[^/])*/)?([sy])(\\?\W)((?:(?!\3)(?:\\.|.))*)\3((?:(?!\3)(?:\\.|.))*)\3([gi]*)]) do
+        val.scan(%r[\G[\s;]*(/(?:\\.|[^/])*+/)?([sy])(\\?\W)((?:(?!\3)(?:\\.|.))*+)\3((?:(?!\3)(?:\\.|.))*+)\3([gi]*)]) do
           |addr, cmd, sep, pat, rep, opt|
           if addr
             Regexp.new(addr[/\A\/(.*)\/\z/, 1]) =~ $install_name or next
@@ -340,7 +340,6 @@ print <<EOS
     RbConfig::expand(val)
   end
 
-  # :nodoc:
   # call-seq:
   #
   #   RbConfig.fire_update!(key, val)               -> array
@@ -356,7 +355,7 @@ print <<EOS
   #   RbConfig::CONFIG.values_at("CC", "LDSHARED")          # => ["gcc-8", "gcc-8 -shared"]
   #
   # returns updated keys list, or +nil+ if nothing changed.
-  def RbConfig.fire_update!(key, val, mkconf = MAKEFILE_CONFIG, conf = CONFIG)
+  def RbConfig.fire_update!(key, val, mkconf = MAKEFILE_CONFIG, conf = CONFIG) # :nodoc:
     return if mkconf[key] == val
     mkconf[key] = val
     keys = [key]

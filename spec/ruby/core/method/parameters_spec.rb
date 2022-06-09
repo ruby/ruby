@@ -222,9 +222,18 @@ describe "Method#parameters" do
     m.method(:handled_via_method_missing).parameters.should == [[:rest]]
   end
 
-  it "adds nameless rest arg for \"star\" argument" do
-    m = MethodSpecs::Methods.new
-    m.method(:one_unnamed_splat).parameters.should == [[:rest]]
+  ruby_version_is '3.2' do
+    it "adds * rest arg for \"star\" argument" do
+      m = MethodSpecs::Methods.new
+      m.method(:one_unnamed_splat).parameters.should == [[:rest, :*]]
+    end
+  end
+
+  ruby_version_is ''...'3.2' do
+    it "adds nameless rest arg for \"star\" argument" do
+      m = MethodSpecs::Methods.new
+      m.method(:one_unnamed_splat).parameters.should == [[:rest]]
+    end
   end
 
   it "returns the args and block for a splat and block argument" do

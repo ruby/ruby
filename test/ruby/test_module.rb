@@ -267,7 +267,7 @@ class TestModule < Test::Unit::TestCase
     ].each do |name, msg|
       expected = "wrong constant name %s" % name
       msg = "#{msg}#{': ' if msg}wrong constant name #{name.dump}"
-      assert_raise_with_message(NameError, expected, "#{msg} to #{m}") do
+      assert_raise_with_message(NameError, Regexp.compile(Regexp.quote(expected)), "#{msg} to #{m}") do
         yield name
       end
     end
@@ -404,19 +404,20 @@ class TestModule < Test::Unit::TestCase
     assert_equal([:MIXIN, :USER], User.constants.sort)
   end
 
-  def test_self_initialize_copy
-    bug9535 = '[ruby-dev:47989] [Bug #9535]'
-    m = Module.new do
-      def foo
-        :ok
-      end
-      initialize_copy(self)
+  def test_initialize_copy
+    mod = Module.new { define_method(:foo) {:first} }
+    klass = Class.new { include mod }
+    instance = klass.new
+    assert_equal(:first, instance.foo)
+    new_mod = Module.new { define_method(:foo) { :second } }
+    assert_raise(TypeError) do
+      mod.send(:initialize_copy, new_mod)
     end
-    assert_equal(:ok, Object.new.extend(m).foo, bug9535)
+    4.times { GC.start }
+    assert_equal(:first, instance.foo) # [BUG] unreachable
   end
 
   def test_initialize_copy_empty
-    bug9813 = '[ruby-dev:48182] [Bug #9813]'
     m = Module.new do
       def x
       end
@@ -426,12 +427,61 @@ class TestModule < Test::Unit::TestCase
     assert_equal([:x], m.instance_methods)
     assert_equal([:@x], m.instance_variables)
     assert_equal([:X], m.constants)
-    m.module_eval do
-      initialize_copy(Module.new)
+    assert_raise(TypeError) do
+      m.module_eval do
+        initialize_copy(Module.new)
+      end
     end
-    assert_empty(m.instance_methods, bug9813)
-    assert_empty(m.instance_variables, bug9813)
-    assert_empty(m.constants, bug9813)
+
+    m = Class.new(Module) do
+      def initialize_copy(other)
+        # leave uninitialized
+      end
+    end.new.dup
+    c = Class.new
+    assert_operator(c.include(m), :<, m)
+    cp = Module.instance_method(:initialize_copy)
+    assert_raise(TypeError) do
+      cp.bind_call(m, Module.new)
+    end
+  end
+
+  class Bug18185 < Module
+    module InstanceMethods
+    end
+    attr_reader :ancestor_list
+    def initialize
+      @ancestor_list = ancestors
+      include InstanceMethods
+    end
+    class Foo
+      attr_reader :key
+      def initialize(key:)
+        @key = key
+      end
+    end
+  end
+
+  def test_module_subclass_initialize
+    mod = Bug18185.new
+    c = Class.new(Bug18185::Foo) do
+      include mod
+    end
+    anc = c.ancestors
+    assert_include(anc, mod)
+    assert_equal(1, anc.count(BasicObject), ->{anc.inspect})
+    b = c.new(key: 1)
+    assert_equal(1, b.key)
+    assert_not_include(mod.ancestor_list, BasicObject)
+  end
+
+  def test_module_collected_extended_object
+    m1 = labeled_module("m1")
+    m2 = labeled_module("m2")
+    Object.new.extend(m1)
+    GC.start
+    m1.include(m2)
+    assert_equal([m1, m2], m1.ancestors)
   end
 
   def test_dup
@@ -478,6 +528,16 @@ class TestModule < Test::Unit::TestCase
     assert_raise(ArgumentError) { Module.new { include } }
   end
 
+  def test_include_before_initialize
+    m = Class.new(Module) do
+      def initialize(...)
+        include Enumerable
+        super
+      end
+    end.new
+    assert_operator(m, :<, Enumerable)
+  end
+
   def test_prepend_self
     m = Module.new
     assert_equal([m], m.ancestors)
@@ -510,6 +570,26 @@ class TestModule < Test::Unit::TestCase
       def b; 1 end
     end
     assert_equal(2, a2.b)
+  end
+
+  def test_ancestry_of_duped_classes
+    m = Module.new
+    sc = Class.new
+    a = Class.new(sc) do
+      def b; 2 end
+      prepend m
+    end
+
+    a2 = a.dup.new
+
+    assert_kind_of Object, a2
+    assert_kind_of sc, a2
+    refute_kind_of a, a2
+    assert_kind_of m, a2
+
+    assert_kind_of Class, a2.class
+    assert_kind_of sc.singleton_class, a2.class
+    assert_same sc, a2.class.superclass
   end
 
   def test_gc_prepend_chain
@@ -694,6 +774,25 @@ class TestModule < Test::Unit::TestCase
     sc.prepend m1
     sc.prepend m1
     assert_equal([:m1, :m0, :m, :sc, :m1, :m0, :c], sc.new.m)
+  end
+
+  def test_protected_include_into_included_module
+    m1 = Module.new do
+      def other_foo(other)
+        other.foo
+      end
+
+      protected
+      def foo
+        :ok
+      end
+    end
+    m2 = Module.new
+    c1 = Class.new { include m2 }
+    c2 = Class.new { include m2 }
+    m2.include(m1)
+
+    assert_equal :ok, c1.new.other_foo(c2.new)
   end
 
   def test_instance_methods
@@ -895,6 +994,15 @@ class TestModule < Test::Unit::TestCase
     assert_equal([:bClass1], BClass.public_instance_methods(false))
   end
 
+  def test_undefined_instance_methods
+    assert_equal([],  AClass.undefined_instance_methods)
+    assert_equal([], BClass.undefined_instance_methods)
+    c = Class.new(AClass) {undef aClass}
+    assert_equal([:aClass], c.undefined_instance_methods)
+    c = Class.new(c)
+    assert_equal([], c.undefined_instance_methods)
+  end
+
   def test_s_public
     o = (c = Class.new(AClass)).new
     assert_raise(NoMethodError, /private method/) {o.aClass1}
@@ -973,6 +1081,28 @@ class TestModule < Test::Unit::TestCase
     assert_raise(NoMethodError, /protected method/) {o.aClass2}
   end
 
+  def test_visibility_method_return_value
+    no_arg_results = nil
+    c = Module.new do
+      singleton_class.send(:public, :public, :private, :protected, :module_function)
+      def foo; end
+      def bar; end
+      no_arg_results = [public, private, protected, module_function]
+    end
+
+    assert_equal([nil]*4, no_arg_results)
+
+    assert_equal(:foo, c.private(:foo))
+    assert_equal(:foo, c.public(:foo))
+    assert_equal(:foo, c.protected(:foo))
+    assert_equal(:foo, c.module_function(:foo))
+
+    assert_equal([:foo, :bar], c.private(:foo, :bar))
+    assert_equal([:foo, :bar], c.public(:foo, :bar))
+    assert_equal([:foo, :bar], c.protected(:foo, :bar))
+    assert_equal([:foo, :bar], c.module_function(:foo, :bar))
+  end
+
   def test_s_constants
     c1 = Module.constants
     Object.module_eval "WALTER = 99"
@@ -1047,6 +1177,7 @@ class TestModule < Test::Unit::TestCase
   def test_attr_obsoleted_flag
     c = Class.new do
       extend Test::Unit::Assertions
+      extend Test::Unit::CoreAssertions
       def initialize
         @foo = :foo
         @bar = :bar
@@ -1599,6 +1730,45 @@ class TestModule < Test::Unit::TestCase
     assert_equal("TestModule::C\u{df}", c.name, '[ruby-core:24600]')
     c = Module.new.module_eval("class X\u{df} < Module; self; end")
     assert_match(/::X\u{df}:/, c.new.to_s)
+  end
+
+
+  def test_const_added
+    eval(<<~RUBY)
+      module TestConstAdded
+        @memo = []
+        class << self
+          attr_accessor :memo
+
+          def const_added(sym)
+            memo << sym
+          end
+        end
+        CONST = 1
+        module SubModule
+        end
+
+        class SubClass
+        end
+      end
+      TestConstAdded::OUTSIDE_CONST = 2
+      module TestConstAdded::OutsideSubModule; end
+      class TestConstAdded::OutsideSubClass; end
+    RUBY
+    TestConstAdded.const_set(:CONST_SET, 3)
+    assert_equal [
+      :CONST,
+      :SubModule,
+      :SubClass,
+      :OUTSIDE_CONST,
+      :OutsideSubModule,
+      :OutsideSubClass,
+      :CONST_SET,
+    ], TestConstAdded.memo
+  ensure
+    if self.class.const_defined? :TestConstAdded
+      self.class.send(:remove_const, :TestConstAdded)
+    end
   end
 
   def test_method_added
@@ -2888,6 +3058,61 @@ class TestModule < Test::Unit::TestCase
       end
       1_000_000.times{''} # cause GC
     }
+  end
+
+  def test_prepend_constant_lookup
+    m = Module.new do
+      const_set(:C, :m)
+    end
+    c = Class.new do
+      const_set(:C, :c)
+      prepend m
+    end
+    sc = Class.new(c)
+    # Situation from [Bug #17887]
+    assert_equal(sc.ancestors.take(3), [sc, m, c])
+    assert_equal(:m, sc.const_get(:C))
+    assert_equal(:m, sc::C)
+
+    assert_equal(:c, c::C)
+
+    m.send(:remove_const, :C)
+    assert_equal(:c, sc.const_get(:C))
+    assert_equal(:c, sc::C)
+
+    # Same ancestors, built with include instead of prepend
+    m = Module.new do
+      const_set(:C, :m)
+    end
+    c = Class.new do
+      const_set(:C, :c)
+    end
+    sc = Class.new(c) do
+      include m
+    end
+
+    assert_equal(sc.ancestors.take(3), [sc, m, c])
+    assert_equal(:m, sc.const_get(:C))
+    assert_equal(:m, sc::C)
+
+    m.send(:remove_const, :C)
+    assert_equal(:c, sc.const_get(:C))
+    assert_equal(:c, sc::C)
+
+    # Situation from [Bug #17887], but with modules
+    m = Module.new do
+      const_set(:C, :m)
+    end
+    m2 = Module.new do
+      const_set(:C, :m2)
+      prepend m
+    end
+    c = Class.new do
+      include m2
+    end
+    assert_equal(c.ancestors.take(3), [c, m, m2])
+    assert_equal(:m, c.const_get(:C))
+    assert_equal(:m, c::C)
   end
 
   def test_inspect_segfault

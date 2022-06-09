@@ -4,7 +4,7 @@ require "pathname"
 
 class TestPathnameRactor < Test::Unit::TestCase
   def setup
-    skip unless defined? Ractor
+    omit unless defined? Ractor
   end
 
   def test_ractor_shareable

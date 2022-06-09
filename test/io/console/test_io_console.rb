@@ -7,7 +7,13 @@ rescue LoadError
 end
 
 class TestIO_Console < Test::Unit::TestCase
-  PATHS = $LOADED_FEATURES.grep(%r"/io/console(?:\.#{RbConfig::CONFIG['DLEXT']}|\.rb|/\w+\.rb)\z") {$`}
+  begin
+    PATHS = $LOADED_FEATURES.grep(%r"/io/console(?:\.#{RbConfig::CONFIG['DLEXT']}|\.rb|/\w+\.rb)\z") {$`}
+  rescue Encoding::CompatibilityError
+    $stderr.puts "test_io_console.rb debug"
+    $LOADED_FEATURES.each{|path| $stderr.puts [path, path.encoding].inspect}
+    raise
+  end
   PATHS.uniq!
 
   # FreeBSD seems to hang on TTOU when running parallel tests
@@ -375,9 +381,16 @@ defined?(PTY) and defined?(IO.console) and TestIO_Console.class_eval do
       if cc = ctrl["intr"]
         assert_ctrl("#{cc.ord}", cc, r, w)
         assert_ctrl("#{cc.ord}", cc, r, w)
-        assert_ctrl("Interrupt", cc, r, w) unless /linux/ =~ RUBY_PLATFORM
+        assert_ctrl("Interrupt", cc, r, w) unless /linux|solaris/ =~ RUBY_PLATFORM
       end
-      if cc = ctrl["dsusp"]
+      # This test fails randomly on FreeBSD 13
+      # http://rubyci.s3.amazonaws.com/freebsd13/ruby-master/log/20220304T163001Z.fail.html.gz
+      #
+      #   1) Failure:
+      # TestIO_Console#test_intr [/usr/home/chkbuild/chkbuild/tmp/build/20220304T163001Z/ruby/test/io/console/test_io_console.rb:387]:
+      # <"25"> expected but was
+      # <"-e:12:in `p': \e[1mexecution expired (\e[1;4mTimeout::Error\e[m\e[1m)\e[m">.
+      if (cc = ctrl["dsusp"]) && /freebsd/ !~ RUBY_PLATFORM
         assert_ctrl("#{cc.ord}", cc, r, w)
         assert_ctrl("#{cc.ord}", cc, r, w)
         assert_ctrl("#{cc.ord}", cc, r, w)
@@ -399,6 +412,10 @@ defined?(PTY) and defined?(IO.console) and TestIO_Console.class_eval do
     def test_close
       assert_equal(["true"], run_pty("IO.console.close; p IO.console.fileno >= 0"))
       assert_equal(["true"], run_pty("IO.console(:close); p IO.console(:tty?)"))
+    end
+
+    def test_console_kw
+      assert_equal(["File"], run_pty("IO.console.close; p IO.console(:clone, freeze: true).class"))
     end
 
     def test_sync
@@ -475,6 +492,12 @@ defined?(IO.console) and TestIO_Console.class_eval do
       assert(IO.console(:tty?))
     ensure
       IO.console(:close)
+    end
+
+    def test_console_kw
+      io = IO.console(:clone, freeze: true)
+      io.close
+      assert_kind_of(IO, io)
     end
 
     def test_sync

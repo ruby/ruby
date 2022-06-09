@@ -20,7 +20,7 @@ class TestCSVTable < Test::Unit::TestCase
     @header_only_table = CSV::Table.new([], headers: %w{A B C})
   end
 
-  def test_initialze
+  def test_initialize
     assert_not_nil(@table)
     assert_instance_of(CSV::Table, @table)
   end

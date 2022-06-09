@@ -7,9 +7,13 @@ require 'tempfile'
 require_relative '../lib/jit_support'
 
 class TestRubyOptions < Test::Unit::TestCase
+  def self.yjit_enabled? = defined?(RubyVM::YJIT.enabled?) && RubyVM::YJIT.enabled?
+
   NO_JIT_DESCRIPTION =
-    if defined?(RubyVM::JIT) && RubyVM::JIT.enabled? # checking -DMJIT_FORCE_ENABLE
-      RUBY_DESCRIPTION.sub(/\+JIT /, '')
+    if defined?(RubyVM::MJIT) && RubyVM::MJIT.enabled? # checking -DMJIT_FORCE_ENABLE
+      RUBY_DESCRIPTION.sub(/\+MJIT /, '')
+    elsif yjit_enabled? # checking -DYJIT_FORCE_ENABLE
+      RUBY_DESCRIPTION.sub(/\+YJIT /, '')
     else
       RUBY_DESCRIPTION
     end
@@ -117,6 +121,8 @@ class TestRubyOptions < Test::Unit::TestCase
 
     assert_in_out_err(["--disable-gems", "--debug", "-e", "p $DEBUG"],
                       "", %w(true), [])
+
+    assert_in_out_err(["--disable-gems", "--debug-", "-e", "p $DEBUG"], "", %w(), /invalid option --debug-/)
   end
 
   q = Regexp.method(:quote)
@@ -133,16 +139,18 @@ class TestRubyOptions < Test::Unit::TestCase
   VERSION_PATTERN_WITH_JIT =
     case RUBY_ENGINE
     when 'ruby'
-      /^ruby #{q[RUBY_VERSION]}(?:[p ]|dev|rc).*? \+JIT \[#{q[RUBY_PLATFORM]}\]$/
+      /^ruby #{q[RUBY_VERSION]}(?:[p ]|dev|rc).*? \+MJIT \[#{q[RUBY_PLATFORM]}\]$/
     else
       VERSION_PATTERN
     end
   private_constant :VERSION_PATTERN_WITH_JIT
 
   def test_verbose
-    assert_in_out_err(["-vve", ""]) do |r, e|
+    assert_in_out_err([{'RUBY_YJIT_ENABLE' => nil}, "-vve", ""]) do |r, e|
       assert_match(VERSION_PATTERN, r[0])
-      if defined?(RubyVM::JIT) && RubyVM::JIT.enabled? && !mjit_force_enabled? # checking -DMJIT_FORCE_ENABLE
+      if defined?(RubyVM::MJIT) && RubyVM::MJIT.enabled? && !mjit_force_enabled? # checking -DMJIT_FORCE_ENABLE
+        assert_equal(NO_JIT_DESCRIPTION, r[0])
+      elsif self.class.yjit_enabled? && !yjit_force_enabled? # checking -DYJIT_FORCE_ENABLE
         assert_equal(NO_JIT_DESCRIPTION, r[0])
       else
         assert_equal(RUBY_DESCRIPTION, r[0])
@@ -203,9 +211,12 @@ class TestRubyOptions < Test::Unit::TestCase
   end
 
   def test_version
-    assert_in_out_err(%w(--version)) do |r, e|
+    env = {'RUBY_YJIT_ENABLE' => nil} # unset in children
+    assert_in_out_err([env, '--version']) do |r, e|
       assert_match(VERSION_PATTERN, r[0])
-      if defined?(RubyVM::JIT) && RubyVM::JIT.enabled? # checking -DMJIT_FORCE_ENABLE
+      if ENV['RUBY_YJIT_ENABLE'] == '1'
+        assert_equal(NO_JIT_DESCRIPTION, r[0])
+      elsif defined?(RubyVM::MJIT) && RubyVM::MJIT.enabled? || self.class.yjit_enabled? # checking -D(M|Y)JIT_FORCE_ENABLE
         assert_equal(EnvUtil.invoke_ruby(['-e', 'print RUBY_DESCRIPTION'], '', true).first, r[0])
       else
         assert_equal(RUBY_DESCRIPTION, r[0])
@@ -214,13 +225,19 @@ class TestRubyOptions < Test::Unit::TestCase
     end
 
     return if RbConfig::CONFIG["MJIT_SUPPORT"] == 'no'
+    return if yjit_force_enabled?
 
     [
-      %w(--version --jit --disable=jit),
-      %w(--version --enable=jit --disable=jit),
-      %w(--version --enable-jit --disable-jit),
+      %w(--version --mjit --disable=mjit),
+      %w(--version --enable=mjit --disable=mjit),
+      %w(--version --enable-mjit --disable-mjit),
+      *([
+        %w(--version --jit --disable=jit),
+        %w(--version --enable=jit --disable=jit),
+        %w(--version --enable-jit --disable-jit),
+      ] unless JITSupport.yjit_supported?),
     ].each do |args|
-      assert_in_out_err(args) do |r, e|
+      assert_in_out_err([env] + args) do |r, e|
         assert_match(VERSION_PATTERN, r[0])
         assert_match(NO_JIT_DESCRIPTION, r[0])
         assert_equal([], e)
@@ -229,16 +246,21 @@ class TestRubyOptions < Test::Unit::TestCase
 
     if JITSupport.supported?
       [
-        %w(--version --jit),
-        %w(--version --enable=jit),
-        %w(--version --enable-jit),
+        %w(--version --mjit),
+        %w(--version --enable=mjit),
+        %w(--version --enable-mjit),
+        *([
+          %w(--version --jit),
+          %w(--version --enable=jit),
+          %w(--version --enable-jit),
+        ] unless JITSupport.yjit_supported?),
       ].each do |args|
-        assert_in_out_err(args) do |r, e|
+        assert_in_out_err([env] + args) do |r, e|
           assert_match(VERSION_PATTERN_WITH_JIT, r[0])
-          if defined?(RubyVM::JIT) && RubyVM::JIT.enabled? # checking -DMJIT_FORCE_ENABLE
+          if defined?(RubyVM::MJIT) && RubyVM::MJIT.enabled? # checking -DMJIT_FORCE_ENABLE
             assert_equal(RUBY_DESCRIPTION, r[0])
           else
-            assert_equal(EnvUtil.invoke_ruby(['--jit', '-e', 'print RUBY_DESCRIPTION'], '', true).first, r[0])
+            assert_equal(EnvUtil.invoke_ruby([env, '--mjit', '-e', 'print RUBY_DESCRIPTION'], '', true).first, r[0])
           end
           assert_equal([], e)
         end
@@ -335,9 +357,9 @@ class TestRubyOptions < Test::Unit::TestCase
 
     assert_in_out_err(%W(-\r -e) + [""], "", [], [])
 
-    assert_in_out_err(%W(-\rx), "", [], /invalid option -\\r  \(-h will show valid options\) \(RuntimeError\)/)
+    assert_in_out_err(%W(-\rx), "", [], /invalid option -[\r\n]  \(-h will show valid options\) \(RuntimeError\)/)
 
-    assert_in_out_err(%W(-\x01), "", [], /invalid option -\\x01  \(-h will show valid options\) \(RuntimeError\)/)
+    assert_in_out_err(%W(-\x01), "", [], /invalid option -\x01  \(-h will show valid options\) \(RuntimeError\)/)
 
     assert_in_out_err(%w(-Z), "", [], /invalid option -Z  \(-h will show valid options\) \(RuntimeError\)/)
   end
@@ -654,7 +676,7 @@ class TestRubyOptions < Test::Unit::TestCase
   end
 
   def test_set_program_name
-    skip "platform dependent feature" unless defined?(PSCMD) and PSCMD
+    omit "platform dependent feature" unless defined?(PSCMD) and PSCMD
 
     with_tmpchdir do
       write_file("test-script", "$0 = 'hello world'; /test-script/ =~ Process.argv0 or $0 = 'Process.argv0 changed!'; sleep 60")
@@ -677,7 +699,7 @@ class TestRubyOptions < Test::Unit::TestCase
   end
 
   def test_setproctitle
-    skip "platform dependent feature" unless defined?(PSCMD) and PSCMD
+    omit "platform dependent feature" unless defined?(PSCMD) and PSCMD
 
     assert_separately([], "#{<<-"{#"}\n#{<<-'};'}")
     {#
@@ -740,6 +762,7 @@ class TestRubyOptions < Test::Unit::TestCase
       %r(
         (?:
           --\sC\slevel\sbacktrace\sinformation\s-------------------------------------------\n
+          (?:Un(?:expected|supported|known)\s.*\n)*
           (?:(?:.*\s)?\[0x\h+\].*\n|.*:\d+\n)*\n
         )?
       )x,
@@ -752,7 +775,7 @@ class TestRubyOptions < Test::Unit::TestCase
   end
 
   def assert_segv(args, message=nil)
-    skip if ENV['RUBY_ON_BUG']
+    omit if ENV['RUBY_ON_BUG']
 
     test_stdin = ""
     opt = SEGVTest::ExecOptions.dup
@@ -837,7 +860,7 @@ class TestRubyOptions < Test::Unit::TestCase
           Process.wait pid
         }
       rescue RuntimeError
-        skip $!
+        omit $!
       end
     }
     assert_equal("", result, '[ruby-dev:37798]')
@@ -887,7 +910,7 @@ class TestRubyOptions < Test::Unit::TestCase
                name = c.chr(Encoding::UTF_8)
                expected = name.encode("locale") rescue nil
              }
-        skip "can't make locale name"
+        omit "can't make locale name"
       end
       name << ".rb"
       expected << ".rb"
@@ -1095,15 +1118,15 @@ class TestRubyOptions < Test::Unit::TestCase
   end
 
   def test_null_script
-    skip "#{IO::NULL} is not a character device" unless File.chardev?(IO::NULL)
+    omit "#{IO::NULL} is not a character device" unless File.chardev?(IO::NULL)
     assert_in_out_err([IO::NULL], success: true)
   end
 
-  def test_jit_debug
+  def test_mjit_debug
     # mswin uses prebuilt precompiled header. Thus it does not show a pch compilation log to check "-O0 -O1".
     if JITSupport.supported? && !RUBY_PLATFORM.match?(/mswin/)
       env = { 'MJIT_SEARCH_BUILD_DIR' => 'true' }
-      assert_in_out_err([env, "--jit-debug=-O0 -O1", "--jit-verbose=2", "" ], "", [], /-O0 -O1/)
+      assert_in_out_err([env, "--disable-yjit", "--mjit-debug=-O0 -O1", "--mjit-verbose=2", "" ], "", [], /-O0 -O1/)
     end
   end
 
@@ -1111,5 +1134,9 @@ class TestRubyOptions < Test::Unit::TestCase
 
   def mjit_force_enabled?
     "#{RbConfig::CONFIG['CFLAGS']} #{RbConfig::CONFIG['CPPFLAGS']}".match?(/(\A|\s)-D ?MJIT_FORCE_ENABLE\b/)
+  end
+
+  def yjit_force_enabled?
+    "#{RbConfig::CONFIG['CFLAGS']} #{RbConfig::CONFIG['CPPFLAGS']}".match?(/(\A|\s)-D ?YJIT_FORCE_ENABLE\b/)
   end
 end

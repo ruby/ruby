@@ -1,7 +1,7 @@
 # frozen_string_literal: true
-require 'rubygems/command'
-require 'rubygems/dependency_list'
-require 'rubygems/uninstaller'
+require_relative '../command'
+require_relative '../dependency_list'
+require_relative '../uninstaller'
 
 class Gem::Commands::CleanupCommand < Gem::Command
   def initialize
@@ -117,12 +117,12 @@ If no gems are named all gems in GEM_HOME are cleaned.
 
   def get_candidate_gems
     @candidate_gems = unless options[:args].empty?
-                        options[:args].map do |gem_name|
-                          Gem::Specification.find_all_by_name gem_name
-                        end.flatten
-                      else
-                        Gem::Specification.to_a
-                      end
+      options[:args].map do |gem_name|
+        Gem::Specification.find_all_by_name gem_name
+      end.flatten
+    else
+      Gem::Specification.to_a
+    end
   end
 
   def get_gems_to_cleanup

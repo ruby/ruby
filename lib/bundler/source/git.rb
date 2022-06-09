@@ -42,7 +42,7 @@ module Bundler
         %w[ref branch tag submodules].each do |opt|
           out << "  #{opt}: #{options[opt]}\n" if options[opt]
         end
-        out << "  glob: #{@glob}\n" unless @glob == DEFAULT_GLOB
+        out << "  glob: #{@glob}\n" unless default_glob?
         out << "  specs:\n"
       end
 
@@ -75,12 +75,20 @@ module Bundler
             git_proxy.branch
           end
 
-          rev = " (at #{at}@#{shortref_for_display(revision)})"
+          rev = "at #{at}@#{shortref_for_display(revision)}"
         rescue GitError
           ""
         end
 
-        "#{@safe_uri}#{rev}"
+        specifiers = [rev, glob_for_display].compact
+        suffix =
+          if specifiers.any?
+            " (#{specifiers.join(", ")})"
+          else
+            ""
+          end
+
+        "#{@safe_uri}#{suffix}"
       end
 
       def name
@@ -173,7 +181,7 @@ module Bundler
       def install(spec, options = {})
         force = options[:force]
 
-        print_using_message "Using #{version_message(spec)} from #{self}"
+        print_using_message "Using #{version_message(spec, options[:previous_spec])} from #{self}"
 
         if (requires_checkout? && !@copied) || force
           Bundler.ui.debug "  * Checking out revision: #{ref}"
@@ -282,6 +290,14 @@ module Bundler
         ref[0..11]
       end
 
+      def glob_for_display
+        default_glob? ? nil : "glob: #{@glob}"
+      end
+
+      def default_glob?
+        @glob == DEFAULT_GLOB
+      end
+
       def uri_hash
         if uri =~ %r{^\w+://(\w+@)?}
           # Downcase the domain component of the URI
@@ -291,7 +307,9 @@ module Bundler
           # If there is no URI scheme, assume it is an ssh/git URI
           input = uri
         end
-        SharedHelpers.digest(:SHA1).hexdigest(input)
+        # We use SHA1 here for historical reason and to preserve backward compatibility.
+        # But a transition to a simpler mangling algorithm would be welcome.
+        Bundler::Digest.sha1(input)
       end
 
       def cached_revision
@@ -318,7 +336,7 @@ module Bundler
 
       def load_gemspec(file)
         stub = Gem::StubSpecification.gemspec_stub(file, install_path.parent, install_path.parent)
-        stub.full_gem_path = Pathname.new(file).dirname.expand_path(root).to_s.tap{|x| x.untaint if RUBY_VERSION < "2.7" }
+        stub.full_gem_path = Pathname.new(file).dirname.expand_path(root).to_s.tap {|x| x.untaint if RUBY_VERSION < "2.7" }
         StubSpecification.from_stub(stub)
       end
 

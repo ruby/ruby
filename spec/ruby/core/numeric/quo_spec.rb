@@ -20,7 +20,7 @@ describe "Numeric#quo" do
     -> { 10.quo(0) }.should raise_error(ZeroDivisionError)
     -> { -10.quo(0) }.should raise_error(ZeroDivisionError)
     -> { bignum_value.quo(0) }.should raise_error(ZeroDivisionError)
-    -> { -bignum_value.quo(0) }.should raise_error(ZeroDivisionError)
+    -> { (-bignum_value).quo(0) }.should raise_error(ZeroDivisionError)
   end
 
   it "calls #to_r to convert the object to a Rational" do
@@ -51,5 +51,14 @@ describe "Numeric#quo" do
     obj.should_receive(:to_r).and_return(19.quo(20))
 
     obj.quo(19).should == 1.quo(20)
+  end
+
+  it "raises a ZeroDivisionError if the given argument is zero and not a Float" do
+    -> { 1.quo(0) }.should raise_error(ZeroDivisionError)
+  end
+
+  it "returns infinity if the given argument is zero and is a Float" do
+    (1.quo(0.0)).to_s.should == 'Infinity'
+    (-1.quo(0.0)).to_s.should == '-Infinity'
   end
 end

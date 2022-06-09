@@ -135,14 +135,11 @@ class OpenSSL::TestCipher < OpenSSL::TestCase
   end
 
   def test_ciphers
-    OpenSSL::Cipher.ciphers.each{|name|
-      next if /netbsd/ =~ RUBY_PLATFORM && /idea|rc5/i =~ name
-      begin
-        assert_kind_of(OpenSSL::Cipher, OpenSSL::Cipher.new(name))
-      rescue OpenSSL::Cipher::CipherError => e
-        raise unless /wrap/ =~ name and /wrap mode not allowed/ =~ e.message
-      end
-    }
+    ciphers = OpenSSL::Cipher.ciphers
+    assert_kind_of Array, ciphers
+    assert_include ciphers, "aes-128-cbc"
+    assert_include ciphers, "aes128" # alias of aes-128-cbc
+    assert_include ciphers, "aes-128-gcm"
   end
 
   def test_AES

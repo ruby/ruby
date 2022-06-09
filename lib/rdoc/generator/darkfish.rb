@@ -220,8 +220,8 @@ class RDoc::Generator::Darkfish
       install_rdoc_static_file @template_dir + item, "./#{item}", options
     end
 
-    @options.template_stylesheets.each do |stylesheet|
-      FileUtils.cp stylesheet, '.', options
+    unless @options.template_stylesheets.empty?
+      FileUtils.cp @options.template_stylesheets, '.', **options
     end
 
     Dir[(@template_dir + "{js,images}/**/*").to_s].each do |path|

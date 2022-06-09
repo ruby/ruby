@@ -34,8 +34,8 @@ class TestFiber < Test::Unit::TestCase
   end
 
   def test_many_fibers
-    skip 'This is unstable on GitHub Actions --jit-wait. TODO: debug it' if defined?(RubyVM::JIT) && RubyVM::JIT.enabled?
-    max = 10_000
+    omit 'This is unstable on GitHub Actions --jit-wait. TODO: debug it' if defined?(RubyVM::MJIT) && RubyVM::MJIT.enabled?
+    max = 1000
     assert_equal(max, max.times{
       Fiber.new{}
     })
@@ -50,7 +50,7 @@ class TestFiber < Test::Unit::TestCase
   end
 
   def test_many_fibers_with_threads
-    assert_normal_exit <<-SRC, timeout: (/solaris/i =~ RUBY_PLATFORM ? 300 : 60)
+    assert_normal_exit <<-SRC, timeout: (/solaris/i =~ RUBY_PLATFORM ? 1000 : 60)
       max = 1000
       @cnt = 0
       (1..100).map{|ti|
@@ -381,7 +381,7 @@ class TestFiber < Test::Unit::TestCase
 
 
   def test_fork_from_fiber
-    skip 'fork not supported' unless Process.respond_to?(:fork)
+    omit 'fork not supported' unless Process.respond_to?(:fork)
     pid = nil
     bug5700 = '[ruby-core:41456]'
     assert_nothing_raised(bug5700) do
@@ -391,13 +391,12 @@ class TestFiber < Test::Unit::TestCase
           Fiber.new {
             xpid = fork do
               # enough to trigger GC on old root fiber
-              count = 10000
-              count = 1000 if /solaris|openbsd/i =~ RUBY_PLATFORM
+              count = 1000
               count.times do
                 Fiber.new {}.transfer
                 Fiber.new { Fiber.yield }
               end
-              exit!(0)
+              exit!(true)
             end
           }.transfer
           _, status = Process.waitpid2(xpid)
@@ -406,8 +405,13 @@ class TestFiber < Test::Unit::TestCase
       end.resume
     end
     pid, status = Process.waitpid2(pid)
-    assert_equal(0, status.exitstatus, bug5700)
-    assert_equal(false, status.signaled?, bug5700)
+    assert_not_predicate(status, :signaled?, bug5700)
+    assert_predicate(status, :success?, bug5700)
+
+    pid = Fiber.new {fork}.resume
+    pid, status = Process.waitpid2(pid)
+    assert_not_predicate(status, :signaled?)
+    assert_predicate(status, :success?)
   end
 
   def test_exit_in_fiber

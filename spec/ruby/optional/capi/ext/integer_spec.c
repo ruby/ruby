@@ -13,7 +13,7 @@ static VALUE integer_spec_rb_integer_pack(VALUE self, VALUE value,
   return INT2FIX(result);
 }
 
-VALUE rb_int_positive_pow(long x, unsigned long y); /* internal.h, used in ripper */
+RUBY_EXTERN VALUE rb_int_positive_pow(long x, unsigned long y); /* internal.h, used in ripper */
 
 static VALUE integer_spec_rb_int_positive_pow(VALUE self, VALUE a, VALUE b){
   return rb_int_positive_pow(FIX2INT(a), FIX2INT(b));

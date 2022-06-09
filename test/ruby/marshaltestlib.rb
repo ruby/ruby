@@ -112,7 +112,7 @@ module MarshalTestLib
     marshal_equal(Exception.new('foo')) {|o| o.message}
     obj = Object.new
     e = assert_raise(NoMethodError) {obj.no_such_method()}
-    marshal_equal(e) {|o| o.message}
+    marshal_equal(e) {|o| o.message.lines.first.chomp}
   end
 
   def test_exception_subclass

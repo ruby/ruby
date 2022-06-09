@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 require 'rubygems'
 require 'rubygems/source_list'
-require 'rubygems/test_case'
+require_relative 'helper'
 
 class TestGemSourceList < Gem::TestCase
   def setup

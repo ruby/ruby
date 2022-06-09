@@ -29,7 +29,7 @@ begin
       write_irbrc <<~'LINES'
         puts 'start IRB'
       LINES
-      start_terminal(25, 80, %W{ruby -I#{@pwd}/lib -I#{@pwd}/../reline/lib #{@pwd}/exe/irb}, startup_message: 'start IRB')
+      start_terminal(25, 80, %W{ruby -I#{@pwd}/lib #{@pwd}/exe/irb}, startup_message: 'start IRB')
       write(<<~EOC)
         'Hello, World!'
       EOC
@@ -46,7 +46,7 @@ begin
       write_irbrc <<~'LINES'
         puts 'start IRB'
       LINES
-      start_terminal(25, 80, %W{ruby -I#{@pwd}/lib -I#{@pwd}/../reline/lib #{@pwd}/exe/irb}, startup_message: 'start IRB')
+      start_terminal(25, 80, %W{ruby -I#{@pwd}/lib #{@pwd}/exe/irb}, startup_message: 'start IRB')
       write(<<~EOC)
         class A
           def inspect; '#<A>'; end
@@ -85,7 +85,7 @@ begin
       write_irbrc <<~'LINES'
         puts 'start IRB'
       LINES
-      start_terminal(40, 80, %W{ruby -I#{@pwd}/lib -I#{@pwd}/../reline/lib #{@pwd}/exe/irb}, startup_message: 'start IRB')
+      start_terminal(40, 80, %W{ruby -I#{@pwd}/lib #{@pwd}/exe/irb}, startup_message: 'start IRB')
       write(<<~EOC)
         class A
           def inspect; '#<A>'; end
@@ -150,6 +150,69 @@ begin
         irb(main):025:0>   &.b()
         => #<A>
         irb(main):026:0>
+      EOC
+    end
+
+    def test_symbol_with_backtick
+      write_irbrc <<~'LINES'
+        puts 'start IRB'
+      LINES
+      start_terminal(40, 80, %W{ruby -I#{@pwd}/lib #{@pwd}/exe/irb}, startup_message: 'start IRB')
+      write(<<~EOC)
+        :`
+      EOC
+      close
+      assert_screen(<<~EOC)
+        start IRB
+        irb(main):001:0> :`
+        => :`
+        irb(main):002:0>
+      EOC
+    end
+
+    def test_autocomplete_with_showdoc_in_gaps_on_narrow_screen_right
+      pend "Needs a dummy document to show doc"
+      write_irbrc <<~'LINES'
+        IRB.conf[:PROMPT][:MY_PROMPT] = {
+          :PROMPT_I => "%03n> ",
+          :PROMPT_N => "%03n> ",
+          :PROMPT_S => "%03n> ",
+          :PROMPT_C => "%03n> "
+        }
+        IRB.conf[:PROMPT_MODE] = :MY_PROMPT
+        puts 'start IRB'
+      LINES
+      start_terminal(4, 19, %W{ruby -I/home/aycabta/ruby/reline/lib -I#{@pwd}/lib #{@pwd}/exe/irb}, startup_message: 'start IRB')
+      write("Str\C-i")
+      close
+      assert_screen(<<~EOC)
+        001> String
+             StringPress A
+             StructString
+                   of byte
+      EOC
+    end
+
+    def test_autocomplete_with_showdoc_in_gaps_on_narrow_screen_left
+      pend "Needs a dummy document to show doc"
+      write_irbrc <<~'LINES'
+        IRB.conf[:PROMPT][:MY_PROMPT] = {
+          :PROMPT_I => "%03n> ",
+          :PROMPT_N => "%03n> ",
+          :PROMPT_S => "%03n> ",
+          :PROMPT_C => "%03n> "
+        }
+        IRB.conf[:PROMPT_MODE] = :MY_PROMPT
+        puts 'start IRB'
+      LINES
+      start_terminal(4, 12, %W{ruby -I#{@pwd}/lib #{@pwd}/exe/irb}, startup_message: 'start IRB')
+      write("Str\C-i")
+      close
+      assert_screen(<<~EOC)
+        001> String
+        PressString
+        StrinStruct
+        of by
       EOC
     end
 

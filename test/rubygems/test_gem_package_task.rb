@@ -1,5 +1,5 @@
 # frozen_string_literal: true
-require 'rubygems/test_case'
+require_relative 'helper'
 require 'rubygems'
 
 begin
@@ -40,7 +40,7 @@ class TestGemPackageTask < Gem::TestCase
 
       Rake.application['package'].invoke
 
-      assert_path_exists 'pkg/pkgr-1.2.3.gem'
+      assert_path_exist 'pkg/pkgr-1.2.3.gem'
     end
   ensure
     RakeFileUtils.verbose_flag = original_rake_fileutils_verbosity
@@ -56,7 +56,7 @@ class TestGemPackageTask < Gem::TestCase
       g.summary = 'summary'
     end
 
-    _, err = capture_io do
+    _, err = capture_output do
       Rake.application = Rake::Application.new
 
       pkg = Gem::PackageTask.new(gem) do |p|

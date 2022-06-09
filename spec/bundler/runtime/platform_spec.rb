@@ -22,7 +22,7 @@ RSpec.describe "Bundler.setup with multi platform stuff" do
 
     ruby <<-R
       begin
-        require '#{lib_dir}/bundler'
+        require '#{entrypoint}'
         Bundler.ui.silence { Bundler.setup }
       rescue Bundler::GemNotFound => e
         puts "WIN"
@@ -61,7 +61,7 @@ RSpec.describe "Bundler.setup with multi platform stuff" do
     build_repo4 do
       build_gem "nokogiri", "1.11.1" do |s|
         s.add_dependency "mini_portile2", "~> 2.5.0"
-        s.add_dependency "racc", "~> 1.4"
+        s.add_dependency "racc", "~> 1.5.2"
       end
 
       build_gem "nokogiri", "1.11.1" do |s|
@@ -80,14 +80,13 @@ RSpec.describe "Bundler.setup with multi platform stuff" do
           mini_portile2 (2.5.0)
           nokogiri (1.11.1)
             mini_portile2 (~> 2.5.0)
-            racc (~> 1.4)
+            racc (~> 1.5.2)
           nokogiri (1.11.1-#{Bundler.local_platform})
             racc (~> 1.4)
           racc (1.5.2)
 
       PLATFORMS
-        ruby
-        #{Bundler.local_platform}
+        #{lockfile_platforms_for(["ruby"] + local_platforms)}
 
       DEPENDENCIES
         nokogiri (~> 1.11)
@@ -169,7 +168,7 @@ RSpec.describe "Bundler.setup with multi platform stuff" do
         nokogiri
 
       BUNDLED WITH
-        2.1.4
+        #{Bundler::VERSION}
     G
 
     bundle "install"
@@ -221,6 +220,20 @@ RSpec.describe "Bundler.setup with multi platform stuff" do
 
   it "allows specifying only-ruby-platform" do
     gemfile <<-G
+      source "#{file_uri_for(gem_repo1)}"
+      gem "nokogiri"
+      gem "platform_specific"
+    G
+
+    bundle "config set force_ruby_platform true"
+
+    bundle "install"
+
+    expect(the_bundle).to include_gems "nokogiri 1.4.2", "platform_specific 1.0 RUBY"
+  end
+
+  it "allows specifying only-ruby-platform even if the lockfile is locked to a specific compatible platform" do
+    install_gemfile <<-G
       source "#{file_uri_for(gem_repo1)}"
       gem "nokogiri"
       gem "platform_specific"

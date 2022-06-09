@@ -10,11 +10,4 @@ describe :string_to_s, shared: true do
     s.should == "a string"
     s.should be_an_instance_of(String)
   end
-
-  ruby_version_is ''...'2.7' do
-    it "taints the result when self is tainted" do
-      "x".taint.send(@method).should.tainted?
-      StringSpecs::MyString.new("x").taint.send(@method).should.tainted?
-    end
-  end
 end

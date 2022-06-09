@@ -1,6 +1,6 @@
 # frozen_string_literal: true
-require 'rubygems/command'
-require 'rubygems/query_utils'
+require_relative '../command'
+require_relative '../query_utils'
 
 ##
 # Searches for gems starting with the supplied argument.
@@ -10,7 +10,7 @@ class Gem::Commands::ListCommand < Gem::Command
 
   def initialize
     super 'list', 'Display local gems whose name matches REGEXP',
-         :name => //, :domain => :local, :details => false, :versions => true,
+         :domain => :local, :details => false, :versions => true,
          :installed => nil, :version => Gem::Requirement.default
 
     add_query_options

@@ -32,9 +32,18 @@ describe "main#public" do
     end
   end
 
-  it "returns Object" do
-    eval("public :main_private_method", TOPLEVEL_BINDING).should equal(Object)
+  ruby_version_is ''...'3.1' do
+    it "returns Object" do
+      eval("public :main_private_method", TOPLEVEL_BINDING).should equal(Object)
+    end
   end
+
+  ruby_version_is '3.1' do
+    it "returns argument" do
+      eval("public :main_private_method", TOPLEVEL_BINDING).should equal(:main_private_method)
+    end
+  end
+
 
   it "raises a NameError when given an undefined name" do
     -> do

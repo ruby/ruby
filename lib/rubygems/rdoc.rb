@@ -1,5 +1,5 @@
 # frozen_string_literal: true
-require 'rubygems'
+require_relative '../rubygems'
 
 begin
   require 'rdoc/rubygems_hook'

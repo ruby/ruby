@@ -1,6 +1,6 @@
 Gem::Specification.new do |spec|
   spec.name          = "open-uri"
-  spec.version       = "0.1.0"
+  spec.version       = "0.2.0"
   spec.authors       = ["Tanaka Akira"]
   spec.email         = ["akr@fsij.org"]
 
@@ -16,8 +16,7 @@ Gem::Specification.new do |spec|
   spec.files         = Dir.chdir(File.expand_path('..', __FILE__)) do
     `git ls-files -z`.split("\x0").reject { |f| f.match(%r{^(test|spec|features)/}) }
   end
-  spec.bindir        = "exe"
-  spec.executables   = spec.files.grep(%r{^exe/}) { |f| File.basename(f) }
+  spec.executables   = []
   spec.require_paths = ["lib"]
 
   spec.add_dependency "uri"

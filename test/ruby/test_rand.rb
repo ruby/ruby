@@ -317,7 +317,7 @@ class TestRand < Test::Unit::TestCase
     assert_equal(r1, r2, bug5661)
 
     assert_fork_status(1, '[ruby-core:82100] [Bug #13753]') do
-      Random::DEFAULT.rand(4)
+      Random.rand(4)
     end
   rescue NotImplementedError
   end
@@ -395,8 +395,8 @@ class TestRand < Test::Unit::TestCase
     assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
     begin;
       verbose, $VERBOSE = $VERBOSE, nil
-      seed = Random::DEFAULT::seed
-      rand1 = Random::DEFAULT::rand
+      seed = Random.seed
+      rand1 = Random.rand
       $VERBOSE = verbose
       rand2 = Random.new(seed).rand
       assert_equal(rand1, rand2)

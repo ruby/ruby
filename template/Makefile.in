@@ -27,6 +27,8 @@ CC_WRAPPER = @XCC_WRAPPER@
 CC = @CC@
 CPP = @CPP@
 LD = @LD@
+RUSTC = @RUSTC@
+CARGO = @CARGO@
 YACC = bison
 PURIFY =
 AUTOCONF = autoconf
@@ -47,6 +49,7 @@ libdir = @libdir@
 libexecdir = @libexecdir@
 datarootdir = @datarootdir@
 datadir = @datadir@
+target_os = @target_os@
 arch = @arch@
 sitearch = @sitearch@
 sitedir = @sitedir@
@@ -106,7 +109,13 @@ MJIT_MIN_HEADER_NAME = rb_mjit_min_header-$(RUBY_PROGRAM_VERSION).h
 MJIT_MIN_HEADER = $(MJIT_HEADER_BUILD_DIR)/$(MJIT_MIN_HEADER_NAME)
 MJIT_HEADER_BUILD_DIR = $(EXTOUT)/include/$(arch)
 MJIT_TABS=@MJIT_TABS@
+YJIT_SUPPORT=@YJIT_SUPPORT@
+YJIT_LIBS=@YJIT_LIBS@
+YJIT_OBJ=@YJIT_OBJ@
+CARGO_TARGET_DIR=@abs_top_builddir@/yjit/target
+CARGO_BUILD_ARGS=@CARGO_BUILD_ARGS@
 LDFLAGS = @STATIC@ $(CFLAGS) @LDFLAGS@
+EXE_LDFLAGS = $(LDFLAGS)
 EXTLDFLAGS = @EXTLDFLAGS@
 XLDFLAGS = @XLDFLAGS@ $(EXTLDFLAGS)
 EXTLIBS =
@@ -119,7 +128,7 @@ XDLDFLAGS = @DLDFLAGS@
 DLDFLAGS = @LIBRUBY_DLDFLAGS@ $(XLDFLAGS) $(ARCH_FLAG)
 SOLIBS = @SOLIBS@
 ENABLE_DEBUG_ENV = @ENABLE_DEBUG_ENV@
-MAINLIBS = @MAINLIBS@
+MAINLIBS = $(YJIT_LIBS) @MAINLIBS@
 ARCHMINIOBJS = @MINIOBJS@
 DLNOBJ = @DLNOBJ@
 ENCOBJS = @ENCOBJS@
@@ -146,8 +155,7 @@ RUNRUBY = @RUNRUBY@ $(RUN_OPTS)
 # RUNRUBY_DEBUGGER:: debugging option for runruby.rb
 RUNRUBY_DEBUGGER = --debugger='gdb -x run.gdb --quiet --args'
 XRUBY = @XRUBY@
-BTESTRUBY = @BTESTRUBY@\
-	$(MINIRUBYOPT)
+BTESTRUBY = @BTESTRUBY@ -r./$(arch)-fake
 INSTALL = @INSTALL@
 INSTALL_DATA = @INSTALL_DATA@
 INSTALL_SCRIPT = @INSTALL_SCRIPT@
@@ -158,7 +166,7 @@ XRUBY_RUBYHDRDIR = @XRUBY_RUBYHDRDIR@
 BOOTSTRAPRUBY = @BOOTSTRAPRUBY@
 
 COROUTINE_H = @X_COROUTINE_H@
-COROUTINE_OBJ = $(COROUTINE_H:.h=.@OBJEXT@)
+COROUTINE_OBJ = $(COROUTINE_H:.h=.$(OBJEXT))
 COROUTINE_SRC = @X_COROUTINE_SRC@
 
 #### End of system configuration section. ####
@@ -192,7 +200,8 @@ DTRACE_DEPENDENT_OBJS = array.$(OBJEXT) \
 			parse.$(OBJEXT) \
 			string.$(OBJEXT) \
 			symbol.$(OBJEXT) \
-			vm.$(OBJEXT)
+			vm.$(OBJEXT) \
+			$(YJIT_OBJ)
 
 THREAD_MODEL  = @THREAD_MODEL@
 
@@ -207,6 +216,7 @@ MAKEDIRS      = @MKDIR_P@
 CP            = cp
 MV            = mv
 RM            = rm -f
+RM1           = $(RM)
 RMDIR         = @RMDIR@
 RMDIRS        = @RMDIRS@
 RMALL         = @RMALL@
@@ -217,7 +227,7 @@ ARFLAGS       = @ARFLAGS@$(empty)
 RANLIB        = @RANLIB@
 AS            = @AS@
 ASFLAGS       = @ASFLAGS@ $(ARCH_FLAG) $(INCFLAGS)
-IFCHANGE      = $(tooldir)/ifchange
+IFCHANGE      = $(SHELL) $(tooldir)/ifchange
 OBJDUMP       = @OBJDUMP@
 OBJCOPY       = @OBJCOPY@
 HAVE_GIT      = @HAVE_GIT@
@@ -244,7 +254,7 @@ MINIPRELUDE_C = miniprelude.c
 GOLF_PRELUDE_C= golf_prelude.c
 RBCONFIG      = .rbconfig.time
 
-MAINSRC = $(MAINOBJ:.@OBJEXT@=.c)
+MAINSRC = $(MAINOBJ:.$(OBJEXT)=.c)
 
 SRC_FILE      = $<
 OS_SRC_FILE   = $<
@@ -256,10 +266,15 @@ MESSAGE_END = ; do echo "$$line"; done
 ECHO_BEGIN = @sep=''; for word in
 ECHO_END = ; do echo @ECHO_N@ "$$sep'$$word'@ECHO_C@"; sep=' '; done; echo
 
+ACTIONS_GROUP = @$(NULLCMD) $(empty)
+ACTIONS_ENDGROUP = @$(NULLCMD)
+
 DESTDIR       = @DESTDIR@
 
 configure_args = @configure_args@
 #### End of variables
+
+ABI_VERSION_HDR = $(hdrdir)/ruby/internal/abi.h
 
 .SUFFIXES: .inc .h .c .y .i .$(ASMEXT) .$(DTRACE_EXT)
 
@@ -271,13 +286,13 @@ all:
 miniruby$(EXEEXT):
 		@-if test -f $@; then $(MV) -f $@ $@.old; $(RM) $@.old; fi
 		$(ECHO) linking $@
-		$(Q) $(PURIFY) $(CC) $(LDFLAGS) $(XLDFLAGS) $(NORMALMAINOBJ) $(MINIOBJS) $(COMMONOBJS) $(MAINLIBS) $(LIBS) $(OUTFLAG)$@
+		$(Q) $(PURIFY) $(CC) $(EXE_LDFLAGS) $(XLDFLAGS) $(NORMALMAINOBJ) $(MINIOBJS) $(COMMONOBJS) $(MAINLIBS) $(LIBS) $(OUTFLAG)$@
 		$(Q) $(POSTLINK)
 
 $(PROGRAM):
 		@$(RM) $@
 		$(ECHO) linking $@
-		$(Q) $(PURIFY) $(CC) $(LDFLAGS) $(XLDFLAGS) $(MAINOBJ) $(EXTOBJS) $(LIBRUBYARG) $(MAINLIBS) $(LIBS) $(EXTLIBS) $(OUTFLAG)$@
+		$(Q) $(PURIFY) $(CC) $(EXE_LDFLAGS) $(XLDFLAGS) $(MAINOBJ) $(EXTOBJS) $(LIBRUBYARG) $(MAINLIBS) $(LIBS) $(EXTLIBS) $(OUTFLAG)$@
 		$(Q) $(POSTLINK)
 
 PRE_LIBRUBY_UPDATE = [ -n "$(LIBRUBY_SO_UPDATE)" ] || $(gnumake:yes=exec) $(RM) $(LIBRUBY_EXTS)
@@ -285,16 +300,28 @@ PRE_LIBRUBY_UPDATE = [ -n "$(LIBRUBY_SO_UPDATE)" ] || $(gnumake:yes=exec) $(RM) 
 # We must `rm' the library each time this rule is invoked because "updating" a
 # MAB library on Apple/NeXT (see --enable-fat-binary in configure) is not
 # supported.
+#
+# In YJIT builds, merge libyjit.a with libruby_static.a
 $(LIBRUBY_A):
 		@$(RM) $@
 		@-[ -z "$(EXTSTATIC)" ] || $(PRE_LIBRUBY_UPDATE)
 		$(ECHO) linking static-library $@
 		$(Q) $(AR) $(ARFLAGS) $@ $(LIBRUBY_A_OBJS) $(INITOBJS)
+		$(Q) if [ 'no' != '$(YJIT_SUPPORT)' ]; then \
+		  set -eu$(V0:1=x) && \
+		  $(ECHO0) 'merging $(YJIT_LIBS) into $@' && \
+		  $(RMALL)    libyjit/ && \
+		  $(MAKEDIRS) libyjit/ && \
+		  trap "$(RMALL) libyjit/" 0 && \
+		  (cd libyjit/ && $(AR) -x ../$(YJIT_LIBS)) && \
+		  :  "$(AR) $(ARFLAGS) $@ libyjit/*.$(OBJEXT)" && \
+		  find libyjit/ -name '*.$(OBJEXT)' -exec $(AR) $(ARFLAGS) $@ '{}' '+' ; \
+		fi
 		@-$(RANLIB) $@ 2> /dev/null || true
 
 verify-static-library: $(LIBRUBY_A)
 		$(ECHO) verifying static-library $@
-		@$(PURIFY) $(CC) $(LDFLAGS) $(XLDFLAGS) $(MAINOBJ) $(LIBRUBY_A) $(MAINLIBS) $(EXTLIBS) $(LIBS) $(OUTFLAG)conftest$(EXEEXT)
+		@$(PURIFY) $(CC) $(EXE_LDFLAGS) $(XLDFLAGS) $(MAINOBJ) $(LIBRUBY_A) $(MAINLIBS) $(EXTLIBS) $(LIBS) $(OUTFLAG)conftest$(EXEEXT)
 		@$(RMALL) conftest$(EXEEXT) conftest.c conftest.dSYM
 
 $(LIBRUBY_SO):
@@ -311,10 +338,17 @@ $(LIBRUBY_SO):
 LIBRUBY_WITH_EXT = @LIBRUBY_WITH_EXT@
 $(LIBRUBY_$(LIBRUBY_WITH_EXT)): $(LIBRUBY_SO_UPDATE)
 
+PKG_CONFIG = @PKG_CONFIG@
 ruby_pc = @ruby_pc@
-ruby.pc: $(ruby_pc)
-$(ruby_pc): config.status
-		@./config.status --file=$@:$(srcdir)/template/ruby.pc.in
+$(ruby_pc): config.status Makefile
+	$(Q)./config.status --file=-:$(srcdir)/template/ruby.pc.in | \
+	sed -e 's/\$$(\([A-Za-z_][A-Za-z0-9_]*\))/$${\1}/g' \
+	    -e 's|^prefix=.*|prefix=$(prefix)|' \
+	    > ruby.tmp.pc
+	$(Q)pkg_config=${PKG_CONFIG} && PKG_CONFIG_PATH=. $${pkg_config:-:} --print-errors ruby.tmp
+	$(Q)$(MV) -f ruby.tmp.pc $(ruby_pc)
+
+pre-install-local:: pkgconfig-data
 
 ruby-runner.h: template/ruby-runner.h.in config.status
 		@./config.status --file=$@:$(srcdir)/template/$(@F).in
@@ -324,7 +358,7 @@ $(RBCONFIG): $(PREP)
 rbconfig.rb: $(RBCONFIG)
 
 install-cross: $(arch)-fake.rb $(RBCONFIG) rbconfig.rb $(arch_hdrdir)/ruby/config.h \
-	$(LIBRUBY_A) $(LIBRUBY_SO) $(ARCHFILE)
+	$(LIBRUBY_A) $(LIBRUBY_SO) $(ARCHFILE) pkgconfig-data
 	$(ECHO) installing cross-compiling stuff
 	$(Q) $(MAKEDIRS) $(XRUBY_RUBYLIBDIR)/$(arch) $(XRUBY_RUBYHDRDIR)/$(arch)/ruby
 	$(Q) sed '/^\$$:\.unshift/q' $(arch)-fake.rb > fake.rb
@@ -342,7 +376,7 @@ install-cross: $(arch)-fake.rb $(RBCONFIG) rbconfig.rb $(arch_hdrdir)/ruby/confi
 
 Makefile:	$(srcdir)/template/Makefile.in $(srcdir)/enc/Makefile.in
 
-$(MKFILES): config.status $(srcdir)/version.h
+$(MKFILES): config.status $(srcdir)/version.h $(ABI_VERSION_HDR)
 		@[ -f $@ ] && mv $@ $@.old
 		MAKE=$(MAKE) $(SHELL) ./config.status $@
 		@cmp $@ $@.old > /dev/null 2>&1 && echo $@ unchanged && exit 0; \
@@ -364,7 +398,7 @@ reconfig-exec-0 = test -t 1 && { : $${CONFIGURE_TTY=yes}; export CONFIGURE_TTY; 
 reconfig-exec-1 = set -x; "$$@"
 
 reconfig config.status:	$(srcdir)/$(CONFIGURE) $(srcdir)/enc/Makefile.in \
-			$(srcdir)/include/ruby/version.h
+			$(hdrdir)/ruby/version.h $(ABI_VERSION_HDR)
 	@PWD= MINIRUBY="$(MINIRUBY)"; export MINIRUBY; \
 	set $(SHELL) $($@-args); $(reconfig-exec-$(V))
 
@@ -380,7 +414,6 @@ all-incs: probes.h
 # * with gperf v.s. without gperf
 # * committers may have various versions of gperf
 # * ./configure v.s. ../ruby/configure
-# * GNU make v.s. HP-UX make	# HP-UX make invokes the action if lex.c and keywords has same mtime.
 # * svn checkout generate a file with mtime as current time
 # * ext4 and XFS has a mtime with fractional part
 lex.c: defs/keywords
@@ -414,11 +447,11 @@ $(srcdir)/enc/jis/props.h: enc/jis/props.kwd
 	  $(CP) $@ $(?:.kwd=.h.blt); \
 	fi
 
-.c.@OBJEXT@:
+.c.$(OBJEXT):
 	@$(ECHO) compiling $<
 	$(Q) $(CC) $(CFLAGS) $(XCFLAGS) $(CPPFLAGS) $(COUTFLAG)$@ -c $<
 
-.$(ASMEXT).@OBJEXT@:
+.$(ASMEXT).$(OBJEXT):
 	@$(ECHO) assembling $<
 	$(Q) $(CC) $(ASFLAGS) -DSYMBOL_PREFIX=$(SYMBOL_PREFIX) -o $@ -c $<
 
@@ -466,7 +499,7 @@ clean-local::
 	-$(Q) $(RMDIRS) $(MJIT_HEADER_INSTALL_DIR) $(MJIT_HEADER_BUILD_DIR) $(TIMESTAMPDIR) 2> $(NULL) || $(NULLCMD)
 
 # DTrace static library hacks described here:
-# http://mail.opensolaris.org/pipermail/dtrace-discuss/2005-August/000207.html
+# https://marc.info/?l=opensolaris-dtrace-discuss&m=114761203110734&w=4
 ruby-glommed.$(OBJEXT):
 	@$(ECHO) generating a glommed object with DTrace probes for static library
 	$(Q) $(LD) -r -o $@ $(OBJS)
@@ -477,6 +510,7 @@ clean-local::
 	  enc/encinit.c enc/encinit.$(OBJEXT) $(pkgconfig_DATA) \
 	  ruby-runner.$(OBJEXT) ruby-runner.h \
 	|| $(NULLCMD)
+	$(Q)find . -name '*.bc' -o -name '*.[is]' -delete
 	-$(Q)$(RMALL) exe/ *.dSYM
 
 distclean-local::

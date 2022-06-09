@@ -1,7 +1,7 @@
 # frozen_string_literal: true
-require 'rubygems/command'
-require 'rubygems/version_option'
-require 'rubygems/rdoc'
+require_relative '../command'
+require_relative '../version_option'
+require_relative '../rdoc'
 require 'fileutils'
 
 class Gem::Commands::RdocCommand < Gem::Command
@@ -61,12 +61,12 @@ Use --overwrite to force rebuilding of documentation.
 
   def execute
     specs = if options[:all]
-              Gem::Specification.to_a
-            else
-              get_all_gem_names.map do |name|
-                Gem::Specification.find_by_name name, options[:version]
-              end.flatten.uniq
-            end
+      Gem::Specification.to_a
+    else
+      get_all_gem_names.map do |name|
+        Gem::Specification.find_by_name name, options[:version]
+      end.flatten.uniq
+    end
 
     if specs.empty?
       alert_error 'No matching gems found'

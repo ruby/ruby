@@ -14,6 +14,7 @@ module Bundler
     COMMAND_ALIASES = {
       "check" => "c",
       "install" => "i",
+      "plugin" => "",
       "list" => "ls",
       "exec" => ["e", "ex", "exe"],
       "cache" => ["package", "pack"],
@@ -60,6 +61,8 @@ module Bundler
         Bundler.reset_settings_and_root!
       end
 
+      Bundler.self_manager.restart_with_locked_bundler_if_needed
+
       Bundler.settings.set_command_option_if_given :retry, options[:retry]
 
       current_cmd = args.last[:current_command].name
@@ -72,14 +75,6 @@ module Bundler
       Bundler.ui = UI::Shell.new(options)
       Bundler.ui.level = "debug" if options["verbose"]
       unprinted_warnings.each {|w| Bundler.ui.warn(w) }
-
-      if ENV["RUBYGEMS_GEMDEPS"] && !ENV["RUBYGEMS_GEMDEPS"].empty?
-        Bundler.ui.warn(
-          "The RUBYGEMS_GEMDEPS environment variable is set. This enables RubyGems' " \
-          "experimental Gemfile mode, which may conflict with Bundler and cause unexpected errors. " \
-          "To remove this warning, unset RUBYGEMS_GEMDEPS.", :wrap => true
-        )
-      end
     end
 
     check_unknown_options!(:except => [:config, :exec])
@@ -191,6 +186,7 @@ module Bundler
     method_option "install", :type => :boolean, :banner =>
       "Runs 'bundle install' after removing the gems from the Gemfile"
     def remove(*gems)
+      SharedHelpers.major_deprecation(2, "The `--install` flag has been deprecated. `bundle install` is triggered by default.") if ARGV.include?("--install")
       require_relative "cli/remove"
       Remove.new(gems, options).run
     end
@@ -308,39 +304,19 @@ module Bundler
       end
     end
 
-    unless Bundler.feature_flag.bundler_3_mode?
-      desc "show GEM [OPTIONS]", "Shows all gems that are part of the bundle, or the path to a given gem"
-      long_desc <<-D
-        Show lists the names and versions of all gems that are required by your Gemfile.
-        Calling show with [GEM] will list the exact location of that gem on your machine.
-      D
-      method_option "paths", :type => :boolean,
-                             :banner => "List the paths of all gems that are required by your Gemfile."
-      method_option "outdated", :type => :boolean,
-                                :banner => "Show verbose output including whether gems are outdated."
-      def show(gem_name = nil)
-        if ARGV[0] == "show"
-          rest = ARGV[1..-1]
-
-          if flag = rest.find{|arg| ["--verbose", "--outdated"].include?(arg) }
-            Bundler::SharedHelpers.major_deprecation(2, "the `#{flag}` flag to `bundle show` was undocumented and will be removed without replacement")
-          else
-            new_command = rest.find {|arg| !arg.start_with?("--") } ? "info" : "list"
-
-            new_arguments = rest.map do |arg|
-              next arg if arg != "--paths"
-              next "--path" if new_command == "info"
-            end
-
-            old_argv = ARGV.join(" ")
-            new_argv = [new_command, *new_arguments.compact].join(" ")
-
-            Bundler::SharedHelpers.major_deprecation(2, "use `bundle #{new_argv}` instead of `bundle #{old_argv}`")
-          end
-        end
-        require_relative "cli/show"
-        Show.new(options, gem_name).run
-      end
+    desc "show GEM [OPTIONS]", "Shows all gems that are part of the bundle, or the path to a given gem"
+    long_desc <<-D
+      Show lists the names and versions of all gems that are required by your Gemfile.
+      Calling show with [GEM] will list the exact location of that gem on your machine.
+    D
+    method_option "paths", :type => :boolean,
+                           :banner => "List the paths of all gems that are required by your Gemfile."
+    method_option "outdated", :type => :boolean,
+                              :banner => "Show verbose output including whether gems are outdated."
+    def show(gem_name = nil)
+      SharedHelpers.major_deprecation(2, "the `--outdated` flag to `bundle show` was undocumented and will be removed without replacement") if ARGV.include?("--outdated")
+      require_relative "cli/show"
+      Show.new(options, gem_name).run
     end
 
     desc "list", "List all gems in the bundle"
@@ -357,6 +333,7 @@ module Bundler
 
     desc "info GEM [OPTIONS]", "Show information for the given gem"
     method_option "path", :type => :boolean, :banner => "Print full path to gem"
+    method_option "version", :type => :boolean, :banner => "Print gem version"
     def info(gem_name)
       require_relative "cli/info"
       Info.new(options, gem_name).run
@@ -392,8 +369,11 @@ module Bundler
     method_option "version", :aliases => "-v", :type => :string
     method_option "group", :aliases => "-g", :type => :string
     method_option "source", :aliases => "-s", :type => :string
+    method_option "require", :aliases => "-r", :type => :string, :banner => "Adds require path to gem. Provide false, or a path as a string."
     method_option "git", :type => :string
+    method_option "github", :type => :string
     method_option "branch", :type => :string
+    method_option "ref", :type => :string
     method_option "skip-install", :type => :boolean, :banner =>
       "Adds gem to the Gemfile but does not install it"
     method_option "optimistic", :type => :boolean, :banner => "Adds optimistic declaration of version to gem"
@@ -411,7 +391,7 @@ module Bundler
       are up to date, Bundler will exit with a status of 0. Otherwise, it will exit 1.
 
       For more information on patch level options (--major, --minor, --patch,
-      --update-strict) see documentation on the same options on the update command.
+      --strict) see documentation on the same options on the update command.
     D
     method_option "group", :type => :string, :banner => "List gems from a specific group"
     method_option "groups", :type => :boolean, :banner => "List gems organized by groups"
@@ -419,10 +399,9 @@ module Bundler
       "Do not attempt to fetch gems remotely and use the gem cache instead"
     method_option "pre", :type => :boolean, :banner => "Check for newer pre-release gems"
     method_option "source", :type => :array, :banner => "Check against a specific source"
-    strict_is_update = Bundler.feature_flag.forget_cli_options?
-    method_option "filter-strict", :type => :boolean, :aliases => strict_is_update ? [] : %w[--strict], :banner =>
+    method_option "filter-strict", :type => :boolean, :banner =>
       "Only list newer versions allowed by your Gemfile requirements"
-    method_option "update-strict", :type => :boolean, :aliases => strict_is_update ? %w[--strict] : [], :banner =>
+    method_option "strict", :type => :boolean, :aliases => "--update-strict", :banner =>
       "Strict conservative resolution, do not allow any gem to be updated past latest --patch | --minor | --major"
     method_option "minor", :type => :boolean, :banner => "Prefer updating only to next minor version"
     method_option "major", :type => :boolean, :banner => "Prefer updating to next major version (default)"
@@ -488,7 +467,7 @@ module Bundler
     map aliases_for("cache")
 
     desc "exec [OPTIONS]", "Run the command in context of the bundle"
-    method_option :keep_file_descriptors, :type => :boolean, :default => false
+    method_option :keep_file_descriptors, :type => :boolean, :default => true
     method_option :gemfile, :type => :string, :required => false
     long_desc <<-D
       Exec runs a command, providing it access to the gems in the bundle. While using
@@ -496,6 +475,10 @@ module Bundler
       into the system wide RubyGems repository.
     D
     def exec(*args)
+      if ARGV.include?("--no-keep-file-descriptors")
+        SharedHelpers.major_deprecation(2, "The `--no-keep-file-descriptors` has been deprecated. `bundle exec` no longer mess with your file descriptors. Close them in the exec'd script if you need to")
+      end
+
       require_relative "cli/exec"
       Exec.new(options, args).run
     end
@@ -510,8 +493,8 @@ module Bundler
       By default, setting a configuration value sets it for all projects
       on the machine.
 
-      If a global setting is superceded by local configuration, this command
-      will show the current value, as well as any superceded values and
+      If a global setting is superseded by local configuration, this command
+      will show the current value, as well as any superseded values and
       where they were specified.
     D
     require_relative "cli/config"
@@ -574,7 +557,7 @@ module Bundler
       method_option :version, :type => :boolean, :default => false, :aliases => "-v", :desc => "Set to show each gem version."
       method_option :without, :type => :array, :default => [], :aliases => "-W", :banner => "GROUP[ GROUP...]", :desc => "Exclude gems that are part of the specified named group."
       def viz
-        SharedHelpers.major_deprecation 2, "The `viz` command has been moved to the `bundle-viz` gem, see https://github.com/bundler/bundler-viz"
+        SharedHelpers.major_deprecation 2, "The `viz` command has been renamed to `graph` and moved to a plugin. See https://github.com/rubygems/bundler-graph"
         require_relative "cli/viz"
         Viz.new(options.dup).run
       end
@@ -627,7 +610,7 @@ module Bundler
     private :gem
 
     def self.source_root
-      File.expand_path(File.join(File.dirname(__FILE__), "templates"))
+      File.expand_path("templates", __dir__)
     end
 
     desc "clean [OPTIONS]", "Cleans up unused gems in your bundler directory", :hide => true
@@ -825,17 +808,10 @@ module Bundler
 
       current = Gem::Version.new(VERSION)
       return if current >= latest
-      latest_installed = Bundler.rubygems.find_name("bundler").map(&:version).max
 
-      installation = "To install the latest version, run `gem install bundler#{" --pre" if latest.prerelease?}`"
-      if latest_installed && latest_installed > current
-        suggestion = "To update to the most recent installed version (#{latest_installed}), run `bundle update --bundler`"
-        suggestion = "#{installation}\n#{suggestion}" if latest_installed < latest
-      else
-        suggestion = installation
-      end
-
-      Bundler.ui.warn "The latest bundler is #{latest}, but you are currently running #{current}.\n#{suggestion}"
+      Bundler.ui.warn \
+        "The latest bundler is #{latest}, but you are currently running #{current}.\n" \
+        "To update to the most recent version, run `bundle update --bundler`"
     rescue RuntimeError
       nil
     end

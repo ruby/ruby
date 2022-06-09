@@ -12,6 +12,10 @@
 #include <sys/mman.h>
 #endif
 
+#if defined(HAVE_LINK_H)
+# include <link.h>
+#endif
+
 #if defined(HAVE_DLFCN_H)
 # include <dlfcn.h>
 # /* some stranger systems may not define all of these */
@@ -189,14 +193,13 @@
 #define ALIGN_INT32_T ALIGN_OF(int32_t)
 #define ALIGN_INT64_T ALIGN_OF(int64_t)
 
-#ifdef HAVE_TYPE_RB_MEMORY_VIEW_T
-# define FIDDLE_MEMORY_VIEW
-#endif
-
 extern VALUE mFiddle;
 extern VALUE rb_eFiddleDLError;
 
 VALUE rb_fiddle_new_function(VALUE address, VALUE arg_types, VALUE ret_type);
+
+typedef void (*rb_fiddle_freefunc_t)(void*);
+VALUE rb_fiddle_ptr_new_wrap(void *ptr, long size, rb_fiddle_freefunc_t func, VALUE wrap0, VALUE wrap1);
 
 #endif
 /* vim: set noet sws=4 sw=4: */

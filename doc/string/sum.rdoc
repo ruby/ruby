@@ -1,0 +1,11 @@
+Returns a basic +n+-bit checksum of the characters in +self+;
+the checksum is the sum of the binary value of each byte in +self+,
+modulo <tt>2**n - 1</tt>:
+
+  'hello'.sum     # => 532
+  'hello'.sum(4)  # => 4
+  'hello'.sum(64) # => 532
+  'тест'.sum      # => 1405
+  'こんにちは'.sum  # => 2582
+
+This is not a particularly strong checksum.

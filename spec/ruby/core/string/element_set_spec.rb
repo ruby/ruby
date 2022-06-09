@@ -14,18 +14,6 @@ describe "String#[]= with Integer index" do
     a.should == "bamelo"
   end
 
-  ruby_version_is ''...'2.7' do
-    it "taints self if other_str is tainted" do
-      a = "hello"
-      a[0] = "".taint
-      a.should.tainted?
-
-      a = "hello"
-      a[0] = "x".taint
-      a.should.tainted?
-    end
-  end
-
   it "raises an IndexError without changing self if idx is outside of self" do
     str = "hello"
 
@@ -139,6 +127,12 @@ describe "String#[]= with Integer index" do
     rep = [160].pack('C').force_encoding Encoding::BINARY
     str[0] = rep
     str.encoding.should equal(Encoding::BINARY)
+  end
+
+  it "updates the string to a compatible encoding" do
+    str = "  "
+    str[1] = [0xB9].pack("C*")
+    str.encoding.should == Encoding::ASCII_8BIT
   end
 
   it "raises an Encoding::CompatibilityError if the replacement encoding is incompatible" do
@@ -485,18 +479,6 @@ describe "String#[]= with Integer index, count" do
     a = "hello"
     a[5, 0] = "bob"
     a.should == "hellobob"
-  end
-
-  ruby_version_is ''...'2.7' do
-    it "taints self if other_str is tainted" do
-      a = "hello"
-      a[0, 0] = "".taint
-      a.should.tainted?
-
-      a = "hello"
-      a[1, 4] = "x".taint
-      a.should.tainted?
-    end
   end
 
   it "calls #to_int to convert the index and count objects" do

@@ -31,13 +31,11 @@ describe :rb_enc_set_index, shared: true do
     result.first.should == result.last
   end
 
-  ruby_version_is "2.6" do
-    it "raises an ArgumentError for a non-encoding capable object" do
-      obj = Object.new
-      -> {
-        result = @s.send(@method, obj, 1)
-      }.should raise_error(ArgumentError, "cannot set encoding on non-encoding capable object")
-    end
+  it "raises an ArgumentError for a non-encoding capable object" do
+    obj = Object.new
+    -> {
+      result = @s.send(@method, obj, 1)
+    }.should raise_error(ArgumentError, "cannot set encoding on non-encoding capable object")
   end
 end
 
@@ -48,13 +46,11 @@ describe "C-API Encoding function" do
     @s = CApiEncodingSpecs.new
   end
 
-  ruby_version_is "2.6" do
-    describe "rb_enc_alias" do
-      it "creates an alias for an existing Encoding" do
-        name = "ZOMGWTFBBQ#{@n += 1}"
-        @s.rb_enc_alias(name, "UTF-8").should >= 0
-        Encoding.find(name).name.should == "UTF-8"
-      end
+  describe "rb_enc_alias" do
+    it "creates an alias for an existing Encoding" do
+      name = "ZOMGWTFBBQ#{@n += 1}"
+      @s.rb_enc_alias(name, "UTF-8").should >= 0
+      Encoding.find(name).name.should == "UTF-8"
     end
   end
 
@@ -239,11 +235,9 @@ describe "C-API Encoding function" do
       @s.rb_enc_get_index(1).should == -1
     end
 
-    ruby_version_is "2.6" do
-      it "returns -1 for an object without an encoding" do
-        obj = Object.new
-        @s.rb_enc_get_index(obj).should == -1
-      end
+    it "returns -1 for an object without an encoding" do
+      obj = Object.new
+      @s.rb_enc_get_index(obj).should == -1
     end
   end
 

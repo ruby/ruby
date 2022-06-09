@@ -24,7 +24,7 @@ class TestComprehensiveCaseMapping < Test::Unit::TestCase
 
   def test_data_files_available
     unless TestComprehensiveCaseMapping.data_files_available?
-      skip "Unicode data files not available in #{UNICODE_DATA_PATH}."
+      omit "Unicode data files not available in #{UNICODE_DATA_PATH}."
     end
   end
 end

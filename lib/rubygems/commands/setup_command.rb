@@ -1,5 +1,5 @@
 # frozen_string_literal: true
-require 'rubygems/command'
+require_relative '../command'
 
 ##
 # Installs RubyGems itself.  This command is ordinarily only available from a
@@ -12,8 +12,6 @@ class Gem::Commands::SetupCommand < Gem::Command
   ENV_PATHS = %w[/usr/bin/env /bin/env].freeze
 
   def initialize
-    require 'tmpdir'
-
     super 'setup', 'Install RubyGems',
           :format_executable => false, :document => %w[ri],
           :force => true,
@@ -56,10 +54,10 @@ class Gem::Commands::SetupCommand < Gem::Command
                'List the documentation types you wish to',
                'generate.  For example: rdoc,ri' do |value, options|
       options[:document] = case value
-                           when nil   then %w[rdoc ri]
-                           when false then []
-                           else            value
-                           end
+      when nil   then %w[rdoc ri]
+      when false then []
+      else            value
+      end
     end
 
     add_option '--[no-]rdoc',
@@ -149,13 +147,6 @@ By default, this RubyGems will install gem as:
   def execute
     @verbose = Gem.configuration.really_verbose
 
-    install_destdir = options[:destdir]
-
-    unless install_destdir.empty?
-      ENV['GEM_HOME'] ||= File.join(install_destdir,
-                                    Gem.default_dir.gsub(/^[a-zA-Z]:/, ''))
-    end
-
     check_ruby_version
 
     require 'fileutils'
@@ -166,8 +157,8 @@ By default, this RubyGems will install gem as:
     end
     extend MakeDirs
 
-    lib_dir, bin_dir = make_destination_dirs install_destdir
-    man_dir = generate_default_man_dir install_destdir
+    lib_dir, bin_dir = make_destination_dirs
+    man_dir = generate_default_man_dir
 
     install_lib lib_dir
 
@@ -189,8 +180,8 @@ By default, this RubyGems will install gem as:
 
     say "RubyGems #{Gem::VERSION} installed"
 
-    regenerate_binstubs if options[:regenerate_binstubs]
-    regenerate_plugins if options[:regenerate_plugins]
+    regenerate_binstubs(bin_dir) if options[:regenerate_binstubs]
+    regenerate_plugins(bin_dir) if options[:regenerate_plugins]
 
     uninstall_old_gemcutter
 
@@ -258,35 +249,34 @@ By default, this RubyGems will install gem as:
       say "Installing #{tool} executable" if @verbose
 
       Dir.chdir path do
-        bin_files = Dir['*']
+        bin_file = "gem"
 
-        bin_files -= %w[update_rubygems]
+        require 'tmpdir'
 
-        bin_files.each do |bin_file|
-          dest_file = target_bin_path(bin_dir, bin_file)
-          bin_tmp_file = File.join Dir.tmpdir, "#{bin_file}.#{$$}"
+        dest_file = target_bin_path(bin_dir, bin_file)
+        bin_tmp_file = File.join Dir.tmpdir, "#{bin_file}.#{$$}"
 
-          begin
-            bin = File.readlines bin_file
-            bin[0] = shebang
+        begin
+          bin = File.readlines bin_file
+          bin[0] = shebang
 
-            File.open bin_tmp_file, 'w' do |fp|
-              fp.puts bin.join
-            end
-
-            install bin_tmp_file, dest_file, :mode => prog_mode
-            bin_file_names << dest_file
-          ensure
-            rm bin_tmp_file
+          File.open bin_tmp_file, 'w' do |fp|
+            fp.puts bin.join
           end
 
-          next unless Gem.win_platform?
+          install bin_tmp_file, dest_file, :mode => prog_mode
+          bin_file_names << dest_file
+        ensure
+          rm bin_tmp_file
+        end
 
-          begin
-            bin_cmd_file = File.join Dir.tmpdir, "#{bin_file}.bat"
+        next unless Gem.win_platform?
 
-            File.open bin_cmd_file, 'w' do |file|
-              file.puts <<-TEXT
+        begin
+          bin_cmd_file = File.join Dir.tmpdir, "#{bin_file}.bat"
+
+          File.open bin_cmd_file, 'w' do |file|
+            file.puts <<-TEXT
   @ECHO OFF
   IF NOT "%~f0" == "~f0" GOTO :WinNT
   @"#{File.basename(Gem.ruby).chomp('"')}" "#{dest_file}" %1 %2 %3 %4 %5 %6 %7 %8 %9
@@ -294,12 +284,11 @@ By default, this RubyGems will install gem as:
   :WinNT
   @"#{File.basename(Gem.ruby).chomp('"')}" "%~dpn0" %*
   TEXT
-            end
-
-            install bin_cmd_file, "#{dest_file}.bat", :mode => prog_mode
-          ensure
-            rm bin_cmd_file
           end
+
+          install bin_cmd_file, "#{dest_file}.bat", :mode => prog_mode
+        ensure
+          rm bin_cmd_file
         end
       end
     end
@@ -348,11 +337,11 @@ By default, this RubyGems will install gem as:
         rm_rf dir
       end
 
-      require 'rubygems/rdoc'
+      require_relative '../rdoc'
 
       fake_spec = Gem::Specification.new 'rubygems', Gem::VERSION
       def fake_spec.full_gem_path
-        File.expand_path '../../../..', __FILE__
+        File.expand_path '../../..', __dir__
       end
 
       generate_ri   = options[:document].include? 'ri'
@@ -371,8 +360,7 @@ By default, this RubyGems will install gem as:
   end
 
   def install_default_bundler_gem(bin_dir)
-    specs_dir = Gem.default_specifications_dir
-    specs_dir = File.join(options[:destdir], specs_dir) unless Gem.win_platform?
+    specs_dir = File.join(default_dir, "specifications", "default")
     mkdir_p specs_dir, :mode => 0755
 
     bundler_spec = Dir.chdir("bundler") { Gem::Specification.load("bundler.gemspec") }
@@ -387,8 +375,20 @@ By default, this RubyGems will install gem as:
 
     bundler_spec = Gem::Specification.load(default_spec_path)
 
+    # The base_dir value for a specification is inferred by walking up from the
+    # folder where the spec was `loaded_from`. In the case of default gems, we
+    # walk up two levels, because they live at `specifications/default/`, whereas
+    # in the case of regular gems we walk up just one level because they live at
+    # `specifications/`. However, in this case, the gem we are installing is
+    # misdetected as a regular gem, when it's a default gem in reality. This is
+    # because when there's a `:destdir`, the `loaded_from` path has changed and
+    # doesn't match `Gem.default_specifications_dir` which is the criteria to
+    # tag a gem as a default gem. So, in that case, write the correct
+    # `@base_dir` directly.
+    bundler_spec.instance_variable_set(:@base_dir, File.dirname(File.dirname(specs_dir)))
+
     # Remove gemspec that was same version of vendored bundler.
-    normal_gemspec = File.join(Gem.default_dir, "specifications", "bundler-#{bundler_spec.version}.gemspec")
+    normal_gemspec = File.join(default_dir, "specifications", "bundler-#{bundler_spec.version}.gemspec")
     if File.file? normal_gemspec
       File.delete normal_gemspec
     end
@@ -401,19 +401,26 @@ By default, this RubyGems will install gem as:
     end
 
     bundler_bin_dir = bundler_spec.bin_dir
-    bundler_bin_dir = File.join(options[:destdir], bundler_bin_dir) unless Gem.win_platform?
     mkdir_p bundler_bin_dir, :mode => 0755
     bundler_spec.executables.each do |e|
       cp File.join("bundler", bundler_spec.bindir, e), File.join(bundler_bin_dir, e)
     end
 
-    require 'rubygems/installer'
+    require_relative '../installer'
 
     Dir.chdir("bundler") do
       built_gem = Gem::Package.build(bundler_spec)
       begin
-        installer = Gem::Installer.at(built_gem, env_shebang: options[:env_shebang], format_executable: options[:format_executable], force: options[:force], install_as_default: true, bin_dir: bin_dir, wrappers: true)
-        installer.install
+        Gem::Installer.at(
+          built_gem,
+          env_shebang: options[:env_shebang],
+          format_executable: options[:format_executable],
+          force: options[:force],
+          install_as_default: true,
+          bin_dir: bin_dir,
+          install_dir: default_dir,
+          wrappers: true
+        ).install
       ensure
         FileUtils.rm_f built_gem
       end
@@ -424,11 +431,11 @@ By default, this RubyGems will install gem as:
     say "Bundler #{bundler_spec.version} installed"
   end
 
-  def make_destination_dirs(install_destdir)
+  def make_destination_dirs
     lib_dir, bin_dir = Gem.default_rubygems_dirs
 
     unless lib_dir
-      lib_dir, bin_dir = generate_default_dirs(install_destdir)
+      lib_dir, bin_dir = generate_default_dirs
     end
 
     mkdir_p lib_dir, :mode => 0755
@@ -437,7 +444,7 @@ By default, this RubyGems will install gem as:
     return lib_dir, bin_dir
   end
 
-  def generate_default_man_dir(install_destdir)
+  def generate_default_man_dir
     prefix = options[:prefix]
 
     if prefix.empty?
@@ -447,14 +454,10 @@ By default, this RubyGems will install gem as:
       man_dir = File.join prefix, 'man'
     end
 
-    unless install_destdir.empty?
-      man_dir = File.join install_destdir, man_dir.gsub(/^[a-zA-Z]:/, '')
-    end
-
-    man_dir
+    prepend_destdir_if_present(man_dir)
   end
 
-  def generate_default_dirs(install_destdir)
+  def generate_default_dirs
     prefix = options[:prefix]
     site_or_vendor = options[:site_or_vendor]
 
@@ -462,34 +465,17 @@ By default, this RubyGems will install gem as:
       lib_dir = RbConfig::CONFIG[site_or_vendor]
       bin_dir = RbConfig::CONFIG['bindir']
     else
-      # Apple installed RubyGems into libdir, and RubyGems <= 1.1.0 gets
-      # confused about installation location, so switch back to
-      # sitelibdir/vendorlibdir.
-      if defined?(APPLE_GEM_HOME) and
-        # just in case Apple and RubyGems don't get this patched up proper.
-        (prefix == RbConfig::CONFIG['libdir'] or
-         # this one is important
-         prefix == File.join(RbConfig::CONFIG['libdir'], 'ruby'))
-        lib_dir = RbConfig::CONFIG[site_or_vendor]
-        bin_dir = RbConfig::CONFIG['bindir']
-      else
-        lib_dir = File.join prefix, 'lib'
-        bin_dir = File.join prefix, 'bin'
-      end
+      lib_dir = File.join prefix, 'lib'
+      bin_dir = File.join prefix, 'bin'
     end
 
-    unless install_destdir.empty?
-      lib_dir = File.join install_destdir, lib_dir.gsub(/^[a-zA-Z]:/, '')
-      bin_dir = File.join install_destdir, bin_dir.gsub(/^[a-zA-Z]:/, '')
-    end
-
-    [lib_dir, bin_dir]
+    [prepend_destdir_if_present(lib_dir), prepend_destdir_if_present(bin_dir)]
   end
 
   def files_in(dir)
     Dir.chdir dir do
       Dir.glob(File.join('**', '*'), File::FNM_DOTMATCH).
-        select{|f| !File.directory?(f) }
+        select {|f| !File.directory?(f) }
     end
   end
 
@@ -596,7 +582,7 @@ abort "#{deprecation_message}"
   end
 
   def uninstall_old_gemcutter
-    require 'rubygems/uninstaller'
+    require_relative '../uninstaller'
 
     ui = Gem::Uninstaller.new('gemcutter', :all => true, :ignore => true,
                               :version => '< 0.4')
@@ -604,11 +590,12 @@ abort "#{deprecation_message}"
   rescue Gem::InstallError
   end
 
-  def regenerate_binstubs
-    require "rubygems/commands/pristine_command"
+  def regenerate_binstubs(bindir)
+    require_relative "pristine_command"
     say "Regenerating binstubs"
 
     args = %w[--all --only-executables --silent]
+    args << "--bindir=#{bindir}"
     if options[:env_shebang]
       args << "--env-shebang"
     end
@@ -617,17 +604,38 @@ abort "#{deprecation_message}"
     command.invoke(*args)
   end
 
-  def regenerate_plugins
-    require "rubygems/commands/pristine_command"
+  def regenerate_plugins(bindir)
+    require_relative "pristine_command"
     say "Regenerating plugins"
 
     args = %w[--all --only-plugins --silent]
+    args << "--bindir=#{bindir}"
+    args << "--install-dir=#{default_dir}"
 
     command = Gem::Commands::PristineCommand.new
     command.invoke(*args)
   end
 
   private
+
+  def default_dir
+    prefix = options[:prefix]
+
+    if prefix.empty?
+      dir = Gem.default_dir
+    else
+      dir = prefix
+    end
+
+    prepend_destdir_if_present(dir)
+  end
+
+  def prepend_destdir_if_present(path)
+    destdir = options[:destdir]
+    return path if destdir.empty?
+
+    File.join(options[:destdir], path.gsub(/^[a-zA-Z]:/, ''))
+  end
 
   def install_file_list(files, dest_dir)
     files.each do |file|
@@ -658,10 +666,10 @@ abort "#{deprecation_message}"
 
   def target_bin_path(bin_dir, bin_file)
     bin_file_formatted = if options[:format_executable]
-                           Gem.default_exec_format % bin_file
-                         else
-                           bin_file
-                         end
+      Gem.default_exec_format % bin_file
+    else
+      bin_file
+    end
     File.join bin_dir, bin_file_formatted
   end
 

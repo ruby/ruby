@@ -17,6 +17,14 @@ describe "Encoding.default_external" do
     Encoding.default_external = Encoding::SHIFT_JIS
     Encoding.default_external.should == Encoding::SHIFT_JIS
   end
+
+  ruby_version_is "3.0" do
+    platform_is :windows do
+      it 'is UTF-8 by default on Windows' do
+        Encoding.default_external.should == Encoding::UTF_8
+      end
+    end
+  end
 end
 
 describe "Encoding.default_external=" do

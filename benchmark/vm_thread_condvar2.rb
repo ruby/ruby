@@ -1,16 +1,16 @@
 # many threads, one mutex, many condvars
 require 'thread'
-m = Mutex.new
-cv1 = ConditionVariable.new
-cv2 = ConditionVariable.new
+m = Thread::Mutex.new
+cv1 = Thread::ConditionVariable.new
+cv2 = Thread::ConditionVariable.new
 max = 1000
 n = 100
 waiting = 0
 scvs = []
 waiters = n.times.map do |i|
-  start_cv = ConditionVariable.new
+  start_cv = Thread::ConditionVariable.new
   scvs << start_cv
-  start_mtx = Mutex.new
+  start_mtx = Thread::Mutex.new
   start_mtx.synchronize do
     th = Thread.new(start_mtx, start_cv) do |sm, scv|
       m.synchronize do

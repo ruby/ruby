@@ -123,7 +123,7 @@ fastpath_applied_iseq_p(const CALL_INFO ci, const CALL_CACHE cc, const rb_iseq_t
     extern bool rb_simple_iseq_p(const rb_iseq_t *iseq);
     return iseq != NULL
         && !(vm_ci_flag(ci) & VM_CALL_KW_SPLAT) && rb_simple_iseq_p(iseq) // Top of vm_callee_setup_arg. In this case, opt_pc is 0.
-        && vm_ci_argc(ci) == (unsigned int)iseq->body->param.lead_num // exclude argument_arity_error (assumption: `calling->argc == ci->orig_argc` in send insns)
+        && vm_ci_argc(ci) == (unsigned int)ISEQ_BODY(iseq)->param.lead_num // exclude argument_arity_error (assumption: `calling->argc == ci->orig_argc` in send insns)
         && vm_call_iseq_optimizable_p(ci, cc); // CC_SET_FASTPATH condition
 }
 
@@ -222,18 +222,13 @@ static void
 compile_insns(FILE *f, const struct rb_iseq_constant_body *body, unsigned int stack_size,
               unsigned int pos, struct compile_status *status)
 {
-    int insn;
     struct compile_branch branch;
 
     branch.stack_size = stack_size;
     branch.finish_p = false;
 
     while (pos < body->iseq_size && !ALREADY_COMPILED_P(status, pos) && !branch.finish_p) {
-#if OPT_DIRECT_THREADED_CODE || OPT_CALL_THREADED_CODE
-        insn = rb_vm_insn_addr2insn((void *)body->iseq_encoded[pos]);
-#else
-        insn = (int)body->iseq_encoded[pos];
-#endif
+        int insn = rb_vm_insn_decode(body->iseq_encoded[pos]);
         status->stack_size_for_pos[pos] = (int)branch.stack_size;
 
         fprintf(f, "\nlabel_%d: /* %s */\n", pos, insn_name(insn));
@@ -338,7 +333,7 @@ mjit_capture_is_entries(const struct rb_iseq_constant_body *body, union iseq_inl
 static bool
 mjit_compile_body(FILE *f, const rb_iseq_t *iseq, struct compile_status *status)
 {
-    const struct rb_iseq_constant_body *body = iseq->body;
+    const struct rb_iseq_constant_body *body = ISEQ_BODY(iseq);
     status->success = true;
     status->local_stack_p = !body->catch_except_p;
 
@@ -353,6 +348,7 @@ mjit_compile_body(FILE *f, const rb_iseq_t *iseq, struct compile_status *status)
     fprintf(f, "    static const VALUE *const original_body_iseq = (VALUE *)0x%"PRIxVALUE";\n",
             (VALUE)body->iseq_encoded);
     fprintf(f, "    VALUE cfp_self = reg_cfp->self;\n"); // cache self across the method
+    fprintf(f, "#undef GET_SELF\n");
     fprintf(f, "#define GET_SELF() cfp_self\n");
 
     // Generate merged ivar guards first if needed
@@ -374,7 +370,7 @@ mjit_compile_body(FILE *f, const rb_iseq_t *iseq, struct compile_status *status)
     if (body->param.flags.has_opt) {
         int i;
         fprintf(f, "\n");
-        fprintf(f, "    switch (reg_cfp->pc - reg_cfp->iseq->body->iseq_encoded) {\n");
+        fprintf(f, "    switch (reg_cfp->pc - ISEQ_BODY(reg_cfp->iseq)->iseq_encoded) {\n");
         for (i = 0; i <= body->param.opt_num; i++) {
             VALUE pc_offset = body->param.opt_table[i];
             fprintf(f, "      case %"PRIdVALUE":\n", pc_offset);
@@ -406,11 +402,7 @@ inlinable_iseq_p(const struct rb_iseq_constant_body *body)
 
     unsigned int pos = 0;
     while (pos < body->iseq_size) {
-#if OPT_DIRECT_THREADED_CODE || OPT_CALL_THREADED_CODE
-        int insn = rb_vm_insn_addr2insn((void *)body->iseq_encoded[pos]);
-#else
-        int insn = (int)body->iseq_encoded[pos];
-#endif
+        int insn = rb_vm_insn_decode(body->iseq_encoded[pos]);
         // All insns in the ISeq except `leave` (to be overridden in the inlined code)
         // should meet following strong assumptions:
         //   * Do not require `cfp->sp` motion
@@ -441,6 +433,22 @@ inlinable_iseq_p(const struct rb_iseq_constant_body *body)
     return true;
 }
 
+// Return an iseq pointer if cc has inlinable iseq.
+const rb_iseq_t *
+rb_mjit_inlinable_iseq(const struct rb_callinfo *ci, const struct rb_callcache *cc)
+{
+    const rb_iseq_t *iseq;
+    if (has_valid_method_type(cc) &&
+        !(vm_ci_flag(ci) & VM_CALL_TAILCALL) && // inlining only non-tailcall path
+        vm_cc_cme(cc)->def->type == VM_METHOD_TYPE_ISEQ &&
+        fastpath_applied_iseq_p(ci, cc, iseq = def_iseq_ptr(vm_cc_cme(cc)->def)) &&
+        // CC_SET_FASTPATH in vm_callee_setup_arg
+        inlinable_iseq_p(ISEQ_BODY(iseq))) {
+        return iseq;
+    }
+    return NULL;
+}
+
 static void
 init_ivar_compile_status(const struct rb_iseq_constant_body *body, struct compile_status *status)
 {
@@ -452,11 +460,7 @@ init_ivar_compile_status(const struct rb_iseq_constant_body *body, struct compil
     status->ivar_serial = 0;
 
     while (pos < body->iseq_size) {
-#if OPT_DIRECT_THREADED_CODE || OPT_CALL_THREADED_CODE
-        int insn = rb_vm_insn_addr2insn((void *)body->iseq_encoded[pos]);
-#else
-        int insn = (int)body->iseq_encoded[pos];
-#endif
+        int insn = rb_vm_insn_decode(body->iseq_encoded[pos]);
         if (insn == BIN(getinstancevariable) || insn == BIN(setinstancevariable)) {
             IVC ic = (IVC)body->iseq_encoded[pos+2];
             IVC ic_copy = &(status->is_entries + ((union iseq_inline_storage_entry *)ic - body->is_entries))->iv_cache;
@@ -504,60 +508,58 @@ init_ivar_compile_status(const struct rb_iseq_constant_body *body, struct compil
         memset(status.compile_info, 0, sizeof(struct rb_mjit_compile_info)); \
 } while (0)
 
+static bool
+precompile_inlinable_child_iseq(FILE *f, const rb_iseq_t *child_iseq, struct compile_status *status,
+                                const struct rb_callinfo *ci, const struct rb_callcache *cc, unsigned int pos)
+{
+    struct compile_status child_status = { .compiled_iseq = status->compiled_iseq, .compiled_id = status->compiled_id };
+    INIT_COMPILE_STATUS(child_status, ISEQ_BODY(child_iseq), false);
+    child_status.inline_context = (struct inlined_call_context){
+        .orig_argc = vm_ci_argc(ci),
+        .me = (VALUE)vm_cc_cme(cc),
+        .param_size = ISEQ_BODY(child_iseq)->param.size,
+        .local_size = ISEQ_BODY(child_iseq)->local_table_size
+    };
+    if (ISEQ_BODY(child_iseq)->ci_size > 0 && child_status.cc_entries_index == -1) {
+        return false;
+    }
+    init_ivar_compile_status(ISEQ_BODY(child_iseq), &child_status);
+
+    fprintf(f, "ALWAYS_INLINE(static VALUE _mjit%d_inlined_%d(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, const VALUE orig_self, const rb_iseq_t *original_iseq));\n", status->compiled_id, pos);
+    fprintf(f, "static inline VALUE\n_mjit%d_inlined_%d(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, const VALUE orig_self, const rb_iseq_t *original_iseq)\n{\n", status->compiled_id, pos);
+    fprintf(f, "    const VALUE *orig_pc = reg_cfp->pc;\n");
+    fprintf(f, "    VALUE *orig_sp = reg_cfp->sp;\n");
+    bool success = mjit_compile_body(f, child_iseq, &child_status);
+    fprintf(f, "\n} /* end of _mjit%d_inlined_%d */\n\n", status->compiled_id, pos);
+
+    return success;
+}
+
 // Compile inlinable ISeqs to C code in `f`.  It returns true if it succeeds to compile them.
 static bool
 precompile_inlinable_iseqs(FILE *f, const rb_iseq_t *iseq, struct compile_status *status)
 {
-    const struct rb_iseq_constant_body *body = iseq->body;
+    const struct rb_iseq_constant_body *body = ISEQ_BODY(iseq);
     unsigned int pos = 0;
     while (pos < body->iseq_size) {
-#if OPT_DIRECT_THREADED_CODE || OPT_CALL_THREADED_CODE
-        int insn = rb_vm_insn_addr2insn((void *)body->iseq_encoded[pos]);
-#else
-        int insn = (int)body->iseq_encoded[pos];
-#endif
-        if (insn == BIN(opt_send_without_block)) { // `compile_inlined_cancel_handler` supports only `opt_send_without_block`
+        int insn = rb_vm_insn_decode(body->iseq_encoded[pos]);
+        if (insn == BIN(opt_send_without_block) || insn == BIN(opt_size)) { // `compile_inlined_cancel_handler` supports only `opt_send_without_block`
             CALL_DATA cd = (CALL_DATA)body->iseq_encoded[pos + 1];
             const struct rb_callinfo *ci = cd->ci;
             const struct rb_callcache *cc = captured_cc_entries(status)[call_data_index(cd, body)]; // use copy to avoid race condition
 
+            extern bool rb_mjit_compiling_iseq_p(const rb_iseq_t *iseq);
             const rb_iseq_t *child_iseq;
-            if (has_valid_method_type(cc) &&
-                !(vm_ci_flag(ci) & VM_CALL_TAILCALL) && // inlining only non-tailcall path
-                vm_cc_cme(cc)->def->type == VM_METHOD_TYPE_ISEQ &&
-                fastpath_applied_iseq_p(ci, cc, child_iseq = def_iseq_ptr(vm_cc_cme(cc)->def)) &&
-                // CC_SET_FASTPATH in vm_callee_setup_arg
-                inlinable_iseq_p(child_iseq->body)) {
-                status->inlined_iseqs[pos] = child_iseq->body;
+            if ((child_iseq = rb_mjit_inlinable_iseq(ci, cc)) != NULL && rb_mjit_compiling_iseq_p(child_iseq)) {
+                status->inlined_iseqs[pos] = ISEQ_BODY(child_iseq);
 
                 if (mjit_opts.verbose >= 1) // print beforehand because ISeq may be GCed during copy job.
                     fprintf(stderr, "JIT inline: %s@%s:%d => %s@%s:%d\n",
-                            RSTRING_PTR(child_iseq->body->location.label),
-                            RSTRING_PTR(rb_iseq_path(child_iseq)), FIX2INT(child_iseq->body->location.first_lineno),
-                            RSTRING_PTR(iseq->body->location.label),
-                            RSTRING_PTR(rb_iseq_path(iseq)), FIX2INT(iseq->body->location.first_lineno));
-
-                struct compile_status child_status = { .compiled_iseq = status->compiled_iseq, .compiled_id = status->compiled_id };
-                INIT_COMPILE_STATUS(child_status, child_iseq->body, false);
-                child_status.inline_context = (struct inlined_call_context){
-                    .orig_argc = vm_ci_argc(ci),
-                    .me = (VALUE)vm_cc_cme(cc),
-                    .param_size = child_iseq->body->param.size,
-                    .local_size = child_iseq->body->local_table_size
-                };
-                if (child_iseq->body->ci_size > 0 && child_status.cc_entries_index == -1) {
-                    return false;
-                }
-                init_ivar_compile_status(child_iseq->body, &child_status);
-
-                fprintf(f, "ALWAYS_INLINE(static VALUE _mjit%d_inlined_%d(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, const VALUE orig_self, const rb_iseq_t *original_iseq));\n", status->compiled_id, pos);
-                fprintf(f, "static inline VALUE\n_mjit%d_inlined_%d(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, const VALUE orig_self, const rb_iseq_t *original_iseq)\n{\n", status->compiled_id, pos);
-                fprintf(f, "    const VALUE *orig_pc = reg_cfp->pc;\n");
-                fprintf(f, "    VALUE *orig_sp = reg_cfp->sp;\n");
-                bool success = mjit_compile_body(f, child_iseq, &child_status);
-                fprintf(f, "\n} /* end of _mjit%d_inlined_%d */\n\n", status->compiled_id, pos);
-
-                if (!success)
+                            RSTRING_PTR(ISEQ_BODY(child_iseq)->location.label),
+                            RSTRING_PTR(rb_iseq_path(child_iseq)), FIX2INT(ISEQ_BODY(child_iseq)->location.first_lineno),
+                            RSTRING_PTR(ISEQ_BODY(iseq)->location.label),
+                            RSTRING_PTR(rb_iseq_path(iseq)), FIX2INT(ISEQ_BODY(iseq)->location.first_lineno));
+                if (!precompile_inlinable_child_iseq(f, child_iseq, status, ci, cc, pos))
                     return false;
             }
         }
@@ -570,12 +572,12 @@ precompile_inlinable_iseqs(FILE *f, const rb_iseq_t *iseq, struct compile_status
 bool
 mjit_compile(FILE *f, const rb_iseq_t *iseq, const char *funcname, int id)
 {
-    struct compile_status status = { .compiled_iseq = iseq->body, .compiled_id = id };
-    INIT_COMPILE_STATUS(status, iseq->body, true);
-    if (iseq->body->ci_size > 0 && status.cc_entries_index == -1) {
+    struct compile_status status = { .compiled_iseq = ISEQ_BODY(iseq), .compiled_id = id };
+    INIT_COMPILE_STATUS(status, ISEQ_BODY(iseq), true);
+    if (ISEQ_BODY(iseq)->ci_size > 0 && status.cc_entries_index == -1) {
         return false;
     }
-    init_ivar_compile_status(iseq->body, &status);
+    init_ivar_compile_status(ISEQ_BODY(iseq), &status);
 
     if (!status.compile_info->disable_send_cache && !status.compile_info->disable_inlining) {
         if (!precompile_inlinable_iseqs(f, iseq, &status))

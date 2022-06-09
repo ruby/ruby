@@ -47,7 +47,9 @@ describe "Symbol#to_proc" do
   end
 
   it "raises an ArgumentError when calling #call on the Proc without receiver" do
-    -> { :object_id.to_proc.call }.should raise_error(ArgumentError, "no receiver given")
+    -> {
+      :object_id.to_proc.call
+    }.should raise_error(ArgumentError, /no receiver given|wrong number of arguments \(given 0, expected 1\+\)/)
   end
 
   it "passes along the block passed to Proc#call" do

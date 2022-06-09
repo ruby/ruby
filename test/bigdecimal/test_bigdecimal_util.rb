@@ -25,6 +25,8 @@ class TestBigDecimalUtil < Test::Unit::TestCase
     assert_equal(9.05, 9.05.to_d.to_f)
     assert_equal("9.05", 9.05.to_d.to_s('F'))
 
+    assert_equal("65.6", 65.6.to_d.to_s("F"))
+
     assert_equal(Math::PI, Math::PI.to_d.to_f)
 
     bug9214 = '[ruby-core:58858]'
@@ -58,6 +60,19 @@ class TestBigDecimalUtil < Test::Unit::TestCase
     assert_equal((2*Math::PI).to_d,
                  2.to_d * Math::PI,
                  "[ruby-core:80234] [Bug #13331]")
+  end
+
+  def test_Float_to_d_issue_192
+    # https://github.com/ruby/bigdecimal/issues/192
+    # https://github.com/rails/rails/pull/42125
+    if BASE_FIG == 9
+      flo = 1_000_000_000.12345
+      big = BigDecimal("0.100000000012345e10")
+    else  # BASE_FIG == 4
+      flo = 1_0000.12
+      big = BigDecimal("0.1000012e5")
+    end
+    assert_equal(flo.to_d, big, "[ruby/bigdecimal#192]")
   end
 
   def test_Rational_to_d

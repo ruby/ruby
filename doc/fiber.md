@@ -48,6 +48,14 @@ When the thread exits, there is an implicit call to `set_scheduler`:
 Fiber.set_scheduler(nil)
 ```
 
+### Design
+
+The scheduler interface is designed to be a un-opinionated light-weight layer
+between user code and blocking operations. The scheduler hooks should avoid
+translating or converting arguments or return values. Ideally, the exact same
+arguments from the user code are provided directly to the scheduler hook with
+no changes.
+
 ### Interface
 
 This is the interface you need to implement.
@@ -65,13 +73,29 @@ class Scheduler
     end.value
   end
 
-  # Wait for the given file descriptor to match the specified events within
+  # Wait for the given io readiness to match the specified events within
   # the specified timeout.
   # @parameter event [Integer] A bit mask of `IO::READABLE`,
   #   `IO::WRITABLE` and `IO::PRIORITY`.
   # @parameter timeout [Numeric] The amount of time to wait for the event in seconds.
   # @returns [Integer] The subset of events that are ready.
   def io_wait(io, events, timeout)
+  end
+
+  # Read from the given io into the specified buffer.
+  # WARNING: Experimental hook! Do not use in production code!
+  # @parameter io [IO] The io to read from.
+  # @parameter buffer [IO::Buffer] The buffer to read into.
+  # @parameter length [Integer] The minimum amount to read.
+  def io_read(io, buffer, length)
+  end
+
+  # Write from the given buffer into the specified IO.
+  # WARNING: Experimental hook! Do not use in production code!
+  # @parameter io [IO] The io to write to.
+  # @parameter buffer [IO::Buffer] The buffer to write from.
+  # @parameter length [Integer] The minimum amount to write.
+  def io_write(io, buffer, length)
   end
 
   # Sleep the current task for the specified duration, or forever if not
@@ -88,6 +112,13 @@ class Scheduler
   # @parameter *arguments [Array] The arguments to send to the constructor of the exception.
   # @yields {...} The user code to execute.
   def timeout_after(duration, klass, *arguments, &block)
+  end
+
+  # Resolve hostname to an array of IP addresses.
+  # This hook is optional.
+  # @parameter hostname [String] Example: "www.ruby-lang.org".
+  # @returns [Array] An array of IPv4 and/or IPv6 address strings that the hostname resolves to.
+  def address_resolve(hostname)
   end
 
   # Block the calling fiber.

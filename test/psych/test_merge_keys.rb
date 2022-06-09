@@ -34,7 +34,7 @@ map:
     end
 
     def test_explicit_string
-      doc = Psych.load <<-eoyml
+      doc = Psych.unsafe_load <<-eoyml
 a: &me { hello: world }
 b: { !!str '<<': *me }
 eoyml
@@ -55,7 +55,7 @@ product:
   !ruby/object:#{Product.name}
   <<: *foo
       eoyml
-      hash = Psych.load s
+      hash = Psych.unsafe_load s
       assert_equal({"bar" => 10}, hash["foo"])
       product = hash["product"]
       assert_equal 10, product.bar
@@ -67,7 +67,7 @@ defaults: &defaults
 development:
   <<: *defaults
       eoyml
-      assert_equal({'<<' => nil }, Psych.load(yaml)['development'])
+      assert_equal({'<<' => nil }, Psych.unsafe_load(yaml)['development'])
     end
 
     def test_merge_array
@@ -77,7 +77,7 @@ foo: &hello
 baz:
   <<: *hello
       eoyml
-      assert_equal({'<<' => [1]}, Psych.load(yaml)['baz'])
+      assert_equal({'<<' => [1]}, Psych.unsafe_load(yaml)['baz'])
     end
 
     def test_merge_is_not_partial
@@ -89,9 +89,9 @@ foo: &hello
 baz:
   <<: [*hello, *default]
       eoyml
-      doc = Psych.load yaml
+      doc = Psych.unsafe_load yaml
       refute doc['baz'].key? 'hello'
-      assert_equal({'<<' => [[1], {"hello"=>"world"}]}, Psych.load(yaml)['baz'])
+      assert_equal({'<<' => [[1], {"hello"=>"world"}]}, Psych.unsafe_load(yaml)['baz'])
     end
 
     def test_merge_seq_nil
@@ -100,7 +100,7 @@ foo: &hello
 baz:
   <<: [*hello]
       eoyml
-      assert_equal({'<<' => [nil]}, Psych.load(yaml)['baz'])
+      assert_equal({'<<' => [nil]}, Psych.unsafe_load(yaml)['baz'])
     end
 
     def test_bad_seq_merge
@@ -109,7 +109,7 @@ defaults: &defaults [1, 2, 3]
 development:
   <<: *defaults
       eoyml
-      assert_equal({'<<' => [1,2,3]}, Psych.load(yaml)['development'])
+      assert_equal({'<<' => [1,2,3]}, Psych.unsafe_load(yaml)['development'])
     end
 
     def test_missing_merge_key
@@ -117,7 +117,7 @@ development:
 bar:
   << : *foo
       eoyml
-      exp = assert_raises(Psych::BadAlias) { Psych.load yaml }
+      exp = assert_raise(Psych::BadAlias) { Psych.load yaml }
       assert_match 'foo', exp.message
     end
 
@@ -134,7 +134,7 @@ bar:
       hash = {
         "foo" => { "hello" => "world"},
         "bar" => { "hello" => "world", "baz" => "boo" } }
-      assert_equal hash, Psych.load(yaml)
+      assert_equal hash, Psych.unsafe_load(yaml)
     end
 
     def test_multiple_maps
@@ -159,7 +159,7 @@ bar:
         'label' => 'center/big'
       }
 
-      assert_equal hash, Psych.load(yaml)[4]
+      assert_equal hash, Psych.unsafe_load(yaml)[4]
     end
 
     def test_override
@@ -185,7 +185,7 @@ bar:
         'label' => 'center/big'
       }
 
-      assert_equal hash, Psych.load(yaml)[4]
+      assert_equal hash, Psych.unsafe_load(yaml)[4]
     end
   end
 end

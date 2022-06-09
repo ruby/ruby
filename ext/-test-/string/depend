@@ -16,6 +16,7 @@ capacity.o: $(hdrdir)/ruby/backward/2/stdarg.h
 capacity.o: $(hdrdir)/ruby/defines.h
 capacity.o: $(hdrdir)/ruby/encoding.h
 capacity.o: $(hdrdir)/ruby/intern.h
+capacity.o: $(hdrdir)/ruby/internal/abi.h
 capacity.o: $(hdrdir)/ruby/internal/anyargs.h
 capacity.o: $(hdrdir)/ruby/internal/arithmetic.h
 capacity.o: $(hdrdir)/ruby/internal/arithmetic/char.h
@@ -85,6 +86,15 @@ capacity.o: $(hdrdir)/ruby/internal/core/rtypeddata.h
 capacity.o: $(hdrdir)/ruby/internal/ctype.h
 capacity.o: $(hdrdir)/ruby/internal/dllexport.h
 capacity.o: $(hdrdir)/ruby/internal/dosish.h
+capacity.o: $(hdrdir)/ruby/internal/encoding/coderange.h
+capacity.o: $(hdrdir)/ruby/internal/encoding/ctype.h
+capacity.o: $(hdrdir)/ruby/internal/encoding/encoding.h
+capacity.o: $(hdrdir)/ruby/internal/encoding/pathname.h
+capacity.o: $(hdrdir)/ruby/internal/encoding/re.h
+capacity.o: $(hdrdir)/ruby/internal/encoding/sprintf.h
+capacity.o: $(hdrdir)/ruby/internal/encoding/string.h
+capacity.o: $(hdrdir)/ruby/internal/encoding/symbol.h
+capacity.o: $(hdrdir)/ruby/internal/encoding/transcode.h
 capacity.o: $(hdrdir)/ruby/internal/error.h
 capacity.o: $(hdrdir)/ruby/internal/eval.h
 capacity.o: $(hdrdir)/ruby/internal/event.h
@@ -161,7 +171,6 @@ capacity.o: $(hdrdir)/ruby/oniguruma.h
 capacity.o: $(hdrdir)/ruby/ruby.h
 capacity.o: $(hdrdir)/ruby/st.h
 capacity.o: $(hdrdir)/ruby/subst.h
-capacity.o: $(top_srcdir)/internal.h
 capacity.o: $(top_srcdir)/internal/compilers.h
 capacity.o: $(top_srcdir)/internal/string.h
 capacity.o: capacity.c
@@ -172,7 +181,6 @@ coderange.o: $(hdrdir)/ruby/backward.h
 coderange.o: $(hdrdir)/ruby/backward/2/assume.h
 coderange.o: $(hdrdir)/ruby/backward/2/attributes.h
 coderange.o: $(hdrdir)/ruby/backward/2/bool.h
-coderange.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 coderange.o: $(hdrdir)/ruby/backward/2/inttypes.h
 coderange.o: $(hdrdir)/ruby/backward/2/limits.h
 coderange.o: $(hdrdir)/ruby/backward/2/long_long.h
@@ -181,6 +189,7 @@ coderange.o: $(hdrdir)/ruby/backward/2/stdarg.h
 coderange.o: $(hdrdir)/ruby/defines.h
 coderange.o: $(hdrdir)/ruby/encoding.h
 coderange.o: $(hdrdir)/ruby/intern.h
+coderange.o: $(hdrdir)/ruby/internal/abi.h
 coderange.o: $(hdrdir)/ruby/internal/anyargs.h
 coderange.o: $(hdrdir)/ruby/internal/arithmetic.h
 coderange.o: $(hdrdir)/ruby/internal/arithmetic/char.h
@@ -250,6 +259,15 @@ coderange.o: $(hdrdir)/ruby/internal/core/rtypeddata.h
 coderange.o: $(hdrdir)/ruby/internal/ctype.h
 coderange.o: $(hdrdir)/ruby/internal/dllexport.h
 coderange.o: $(hdrdir)/ruby/internal/dosish.h
+coderange.o: $(hdrdir)/ruby/internal/encoding/coderange.h
+coderange.o: $(hdrdir)/ruby/internal/encoding/ctype.h
+coderange.o: $(hdrdir)/ruby/internal/encoding/encoding.h
+coderange.o: $(hdrdir)/ruby/internal/encoding/pathname.h
+coderange.o: $(hdrdir)/ruby/internal/encoding/re.h
+coderange.o: $(hdrdir)/ruby/internal/encoding/sprintf.h
+coderange.o: $(hdrdir)/ruby/internal/encoding/string.h
+coderange.o: $(hdrdir)/ruby/internal/encoding/symbol.h
+coderange.o: $(hdrdir)/ruby/internal/encoding/transcode.h
 coderange.o: $(hdrdir)/ruby/internal/error.h
 coderange.o: $(hdrdir)/ruby/internal/eval.h
 coderange.o: $(hdrdir)/ruby/internal/event.h
@@ -329,7 +347,6 @@ coderange.o: $(hdrdir)/ruby/subst.h
 coderange.o: coderange.c
 cstr.o: $(RUBY_EXTCONF_H)
 cstr.o: $(arch_hdrdir)/ruby/config.h
-cstr.o: $(hdrdir)/ruby.h
 cstr.o: $(hdrdir)/ruby/assert.h
 cstr.o: $(hdrdir)/ruby/backward.h
 cstr.o: $(hdrdir)/ruby/backward/2/assume.h
@@ -344,6 +361,7 @@ cstr.o: $(hdrdir)/ruby/backward/2/stdarg.h
 cstr.o: $(hdrdir)/ruby/defines.h
 cstr.o: $(hdrdir)/ruby/encoding.h
 cstr.o: $(hdrdir)/ruby/intern.h
+cstr.o: $(hdrdir)/ruby/internal/abi.h
 cstr.o: $(hdrdir)/ruby/internal/anyargs.h
 cstr.o: $(hdrdir)/ruby/internal/arithmetic.h
 cstr.o: $(hdrdir)/ruby/internal/arithmetic/char.h
@@ -413,6 +431,15 @@ cstr.o: $(hdrdir)/ruby/internal/core/rtypeddata.h
 cstr.o: $(hdrdir)/ruby/internal/ctype.h
 cstr.o: $(hdrdir)/ruby/internal/dllexport.h
 cstr.o: $(hdrdir)/ruby/internal/dosish.h
+cstr.o: $(hdrdir)/ruby/internal/encoding/coderange.h
+cstr.o: $(hdrdir)/ruby/internal/encoding/ctype.h
+cstr.o: $(hdrdir)/ruby/internal/encoding/encoding.h
+cstr.o: $(hdrdir)/ruby/internal/encoding/pathname.h
+cstr.o: $(hdrdir)/ruby/internal/encoding/re.h
+cstr.o: $(hdrdir)/ruby/internal/encoding/sprintf.h
+cstr.o: $(hdrdir)/ruby/internal/encoding/string.h
+cstr.o: $(hdrdir)/ruby/internal/encoding/symbol.h
+cstr.o: $(hdrdir)/ruby/internal/encoding/transcode.h
 cstr.o: $(hdrdir)/ruby/internal/error.h
 cstr.o: $(hdrdir)/ruby/internal/eval.h
 cstr.o: $(hdrdir)/ruby/internal/event.h
@@ -491,7 +518,6 @@ cstr.o: $(hdrdir)/ruby/st.h
 cstr.o: $(hdrdir)/ruby/subst.h
 cstr.o: $(top_srcdir)/internal.h
 cstr.o: $(top_srcdir)/internal/compilers.h
-cstr.o: $(top_srcdir)/internal/error.h
 cstr.o: $(top_srcdir)/internal/string.h
 cstr.o: cstr.c
 ellipsize.o: $(RUBY_EXTCONF_H)
@@ -502,7 +528,6 @@ ellipsize.o: $(hdrdir)/ruby/backward.h
 ellipsize.o: $(hdrdir)/ruby/backward/2/assume.h
 ellipsize.o: $(hdrdir)/ruby/backward/2/attributes.h
 ellipsize.o: $(hdrdir)/ruby/backward/2/bool.h
-ellipsize.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 ellipsize.o: $(hdrdir)/ruby/backward/2/inttypes.h
 ellipsize.o: $(hdrdir)/ruby/backward/2/limits.h
 ellipsize.o: $(hdrdir)/ruby/backward/2/long_long.h
@@ -510,6 +535,7 @@ ellipsize.o: $(hdrdir)/ruby/backward/2/stdalign.h
 ellipsize.o: $(hdrdir)/ruby/backward/2/stdarg.h
 ellipsize.o: $(hdrdir)/ruby/defines.h
 ellipsize.o: $(hdrdir)/ruby/intern.h
+ellipsize.o: $(hdrdir)/ruby/internal/abi.h
 ellipsize.o: $(hdrdir)/ruby/internal/anyargs.h
 ellipsize.o: $(hdrdir)/ruby/internal/arithmetic.h
 ellipsize.o: $(hdrdir)/ruby/internal/arithmetic/char.h
@@ -662,7 +688,6 @@ enc_associate.o: $(hdrdir)/ruby/backward.h
 enc_associate.o: $(hdrdir)/ruby/backward/2/assume.h
 enc_associate.o: $(hdrdir)/ruby/backward/2/attributes.h
 enc_associate.o: $(hdrdir)/ruby/backward/2/bool.h
-enc_associate.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 enc_associate.o: $(hdrdir)/ruby/backward/2/inttypes.h
 enc_associate.o: $(hdrdir)/ruby/backward/2/limits.h
 enc_associate.o: $(hdrdir)/ruby/backward/2/long_long.h
@@ -671,6 +696,7 @@ enc_associate.o: $(hdrdir)/ruby/backward/2/stdarg.h
 enc_associate.o: $(hdrdir)/ruby/defines.h
 enc_associate.o: $(hdrdir)/ruby/encoding.h
 enc_associate.o: $(hdrdir)/ruby/intern.h
+enc_associate.o: $(hdrdir)/ruby/internal/abi.h
 enc_associate.o: $(hdrdir)/ruby/internal/anyargs.h
 enc_associate.o: $(hdrdir)/ruby/internal/arithmetic.h
 enc_associate.o: $(hdrdir)/ruby/internal/arithmetic/char.h
@@ -740,6 +766,15 @@ enc_associate.o: $(hdrdir)/ruby/internal/core/rtypeddata.h
 enc_associate.o: $(hdrdir)/ruby/internal/ctype.h
 enc_associate.o: $(hdrdir)/ruby/internal/dllexport.h
 enc_associate.o: $(hdrdir)/ruby/internal/dosish.h
+enc_associate.o: $(hdrdir)/ruby/internal/encoding/coderange.h
+enc_associate.o: $(hdrdir)/ruby/internal/encoding/ctype.h
+enc_associate.o: $(hdrdir)/ruby/internal/encoding/encoding.h
+enc_associate.o: $(hdrdir)/ruby/internal/encoding/pathname.h
+enc_associate.o: $(hdrdir)/ruby/internal/encoding/re.h
+enc_associate.o: $(hdrdir)/ruby/internal/encoding/sprintf.h
+enc_associate.o: $(hdrdir)/ruby/internal/encoding/string.h
+enc_associate.o: $(hdrdir)/ruby/internal/encoding/symbol.h
+enc_associate.o: $(hdrdir)/ruby/internal/encoding/transcode.h
 enc_associate.o: $(hdrdir)/ruby/internal/error.h
 enc_associate.o: $(hdrdir)/ruby/internal/eval.h
 enc_associate.o: $(hdrdir)/ruby/internal/event.h
@@ -824,7 +859,6 @@ enc_str_buf_cat.o: $(hdrdir)/ruby/backward.h
 enc_str_buf_cat.o: $(hdrdir)/ruby/backward/2/assume.h
 enc_str_buf_cat.o: $(hdrdir)/ruby/backward/2/attributes.h
 enc_str_buf_cat.o: $(hdrdir)/ruby/backward/2/bool.h
-enc_str_buf_cat.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 enc_str_buf_cat.o: $(hdrdir)/ruby/backward/2/inttypes.h
 enc_str_buf_cat.o: $(hdrdir)/ruby/backward/2/limits.h
 enc_str_buf_cat.o: $(hdrdir)/ruby/backward/2/long_long.h
@@ -833,6 +867,7 @@ enc_str_buf_cat.o: $(hdrdir)/ruby/backward/2/stdarg.h
 enc_str_buf_cat.o: $(hdrdir)/ruby/defines.h
 enc_str_buf_cat.o: $(hdrdir)/ruby/encoding.h
 enc_str_buf_cat.o: $(hdrdir)/ruby/intern.h
+enc_str_buf_cat.o: $(hdrdir)/ruby/internal/abi.h
 enc_str_buf_cat.o: $(hdrdir)/ruby/internal/anyargs.h
 enc_str_buf_cat.o: $(hdrdir)/ruby/internal/arithmetic.h
 enc_str_buf_cat.o: $(hdrdir)/ruby/internal/arithmetic/char.h
@@ -902,6 +937,15 @@ enc_str_buf_cat.o: $(hdrdir)/ruby/internal/core/rtypeddata.h
 enc_str_buf_cat.o: $(hdrdir)/ruby/internal/ctype.h
 enc_str_buf_cat.o: $(hdrdir)/ruby/internal/dllexport.h
 enc_str_buf_cat.o: $(hdrdir)/ruby/internal/dosish.h
+enc_str_buf_cat.o: $(hdrdir)/ruby/internal/encoding/coderange.h
+enc_str_buf_cat.o: $(hdrdir)/ruby/internal/encoding/ctype.h
+enc_str_buf_cat.o: $(hdrdir)/ruby/internal/encoding/encoding.h
+enc_str_buf_cat.o: $(hdrdir)/ruby/internal/encoding/pathname.h
+enc_str_buf_cat.o: $(hdrdir)/ruby/internal/encoding/re.h
+enc_str_buf_cat.o: $(hdrdir)/ruby/internal/encoding/sprintf.h
+enc_str_buf_cat.o: $(hdrdir)/ruby/internal/encoding/string.h
+enc_str_buf_cat.o: $(hdrdir)/ruby/internal/encoding/symbol.h
+enc_str_buf_cat.o: $(hdrdir)/ruby/internal/encoding/transcode.h
 enc_str_buf_cat.o: $(hdrdir)/ruby/internal/error.h
 enc_str_buf_cat.o: $(hdrdir)/ruby/internal/eval.h
 enc_str_buf_cat.o: $(hdrdir)/ruby/internal/event.h
@@ -987,7 +1031,6 @@ fstring.o: $(hdrdir)/ruby/backward.h
 fstring.o: $(hdrdir)/ruby/backward/2/assume.h
 fstring.o: $(hdrdir)/ruby/backward/2/attributes.h
 fstring.o: $(hdrdir)/ruby/backward/2/bool.h
-fstring.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 fstring.o: $(hdrdir)/ruby/backward/2/inttypes.h
 fstring.o: $(hdrdir)/ruby/backward/2/limits.h
 fstring.o: $(hdrdir)/ruby/backward/2/long_long.h
@@ -996,6 +1039,7 @@ fstring.o: $(hdrdir)/ruby/backward/2/stdarg.h
 fstring.o: $(hdrdir)/ruby/defines.h
 fstring.o: $(hdrdir)/ruby/encoding.h
 fstring.o: $(hdrdir)/ruby/intern.h
+fstring.o: $(hdrdir)/ruby/internal/abi.h
 fstring.o: $(hdrdir)/ruby/internal/anyargs.h
 fstring.o: $(hdrdir)/ruby/internal/arithmetic.h
 fstring.o: $(hdrdir)/ruby/internal/arithmetic/char.h
@@ -1065,6 +1109,15 @@ fstring.o: $(hdrdir)/ruby/internal/core/rtypeddata.h
 fstring.o: $(hdrdir)/ruby/internal/ctype.h
 fstring.o: $(hdrdir)/ruby/internal/dllexport.h
 fstring.o: $(hdrdir)/ruby/internal/dosish.h
+fstring.o: $(hdrdir)/ruby/internal/encoding/coderange.h
+fstring.o: $(hdrdir)/ruby/internal/encoding/ctype.h
+fstring.o: $(hdrdir)/ruby/internal/encoding/encoding.h
+fstring.o: $(hdrdir)/ruby/internal/encoding/pathname.h
+fstring.o: $(hdrdir)/ruby/internal/encoding/re.h
+fstring.o: $(hdrdir)/ruby/internal/encoding/sprintf.h
+fstring.o: $(hdrdir)/ruby/internal/encoding/string.h
+fstring.o: $(hdrdir)/ruby/internal/encoding/symbol.h
+fstring.o: $(hdrdir)/ruby/internal/encoding/transcode.h
 fstring.o: $(hdrdir)/ruby/internal/error.h
 fstring.o: $(hdrdir)/ruby/internal/eval.h
 fstring.o: $(hdrdir)/ruby/internal/event.h
@@ -1150,7 +1203,6 @@ init.o: $(hdrdir)/ruby/backward.h
 init.o: $(hdrdir)/ruby/backward/2/assume.h
 init.o: $(hdrdir)/ruby/backward/2/attributes.h
 init.o: $(hdrdir)/ruby/backward/2/bool.h
-init.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 init.o: $(hdrdir)/ruby/backward/2/inttypes.h
 init.o: $(hdrdir)/ruby/backward/2/limits.h
 init.o: $(hdrdir)/ruby/backward/2/long_long.h
@@ -1158,6 +1210,7 @@ init.o: $(hdrdir)/ruby/backward/2/stdalign.h
 init.o: $(hdrdir)/ruby/backward/2/stdarg.h
 init.o: $(hdrdir)/ruby/defines.h
 init.o: $(hdrdir)/ruby/intern.h
+init.o: $(hdrdir)/ruby/internal/abi.h
 init.o: $(hdrdir)/ruby/internal/anyargs.h
 init.o: $(hdrdir)/ruby/internal/arithmetic.h
 init.o: $(hdrdir)/ruby/internal/arithmetic/char.h
@@ -1310,7 +1363,6 @@ modify.o: $(hdrdir)/ruby/backward.h
 modify.o: $(hdrdir)/ruby/backward/2/assume.h
 modify.o: $(hdrdir)/ruby/backward/2/attributes.h
 modify.o: $(hdrdir)/ruby/backward/2/bool.h
-modify.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 modify.o: $(hdrdir)/ruby/backward/2/inttypes.h
 modify.o: $(hdrdir)/ruby/backward/2/limits.h
 modify.o: $(hdrdir)/ruby/backward/2/long_long.h
@@ -1318,6 +1370,7 @@ modify.o: $(hdrdir)/ruby/backward/2/stdalign.h
 modify.o: $(hdrdir)/ruby/backward/2/stdarg.h
 modify.o: $(hdrdir)/ruby/defines.h
 modify.o: $(hdrdir)/ruby/intern.h
+modify.o: $(hdrdir)/ruby/internal/abi.h
 modify.o: $(hdrdir)/ruby/internal/anyargs.h
 modify.o: $(hdrdir)/ruby/internal/arithmetic.h
 modify.o: $(hdrdir)/ruby/internal/arithmetic/char.h
@@ -1470,7 +1523,6 @@ new.o: $(hdrdir)/ruby/backward.h
 new.o: $(hdrdir)/ruby/backward/2/assume.h
 new.o: $(hdrdir)/ruby/backward/2/attributes.h
 new.o: $(hdrdir)/ruby/backward/2/bool.h
-new.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 new.o: $(hdrdir)/ruby/backward/2/inttypes.h
 new.o: $(hdrdir)/ruby/backward/2/limits.h
 new.o: $(hdrdir)/ruby/backward/2/long_long.h
@@ -1479,6 +1531,7 @@ new.o: $(hdrdir)/ruby/backward/2/stdarg.h
 new.o: $(hdrdir)/ruby/defines.h
 new.o: $(hdrdir)/ruby/encoding.h
 new.o: $(hdrdir)/ruby/intern.h
+new.o: $(hdrdir)/ruby/internal/abi.h
 new.o: $(hdrdir)/ruby/internal/anyargs.h
 new.o: $(hdrdir)/ruby/internal/arithmetic.h
 new.o: $(hdrdir)/ruby/internal/arithmetic/char.h
@@ -1548,6 +1601,15 @@ new.o: $(hdrdir)/ruby/internal/core/rtypeddata.h
 new.o: $(hdrdir)/ruby/internal/ctype.h
 new.o: $(hdrdir)/ruby/internal/dllexport.h
 new.o: $(hdrdir)/ruby/internal/dosish.h
+new.o: $(hdrdir)/ruby/internal/encoding/coderange.h
+new.o: $(hdrdir)/ruby/internal/encoding/ctype.h
+new.o: $(hdrdir)/ruby/internal/encoding/encoding.h
+new.o: $(hdrdir)/ruby/internal/encoding/pathname.h
+new.o: $(hdrdir)/ruby/internal/encoding/re.h
+new.o: $(hdrdir)/ruby/internal/encoding/sprintf.h
+new.o: $(hdrdir)/ruby/internal/encoding/string.h
+new.o: $(hdrdir)/ruby/internal/encoding/symbol.h
+new.o: $(hdrdir)/ruby/internal/encoding/transcode.h
 new.o: $(hdrdir)/ruby/internal/error.h
 new.o: $(hdrdir)/ruby/internal/eval.h
 new.o: $(hdrdir)/ruby/internal/event.h
@@ -1633,7 +1695,6 @@ nofree.o: $(hdrdir)/ruby/backward.h
 nofree.o: $(hdrdir)/ruby/backward/2/assume.h
 nofree.o: $(hdrdir)/ruby/backward/2/attributes.h
 nofree.o: $(hdrdir)/ruby/backward/2/bool.h
-nofree.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 nofree.o: $(hdrdir)/ruby/backward/2/inttypes.h
 nofree.o: $(hdrdir)/ruby/backward/2/limits.h
 nofree.o: $(hdrdir)/ruby/backward/2/long_long.h
@@ -1641,6 +1702,7 @@ nofree.o: $(hdrdir)/ruby/backward/2/stdalign.h
 nofree.o: $(hdrdir)/ruby/backward/2/stdarg.h
 nofree.o: $(hdrdir)/ruby/defines.h
 nofree.o: $(hdrdir)/ruby/intern.h
+nofree.o: $(hdrdir)/ruby/internal/abi.h
 nofree.o: $(hdrdir)/ruby/internal/anyargs.h
 nofree.o: $(hdrdir)/ruby/internal/arithmetic.h
 nofree.o: $(hdrdir)/ruby/internal/arithmetic/char.h
@@ -1787,13 +1849,11 @@ nofree.o: $(hdrdir)/ruby/subst.h
 nofree.o: nofree.c
 normalize.o: $(RUBY_EXTCONF_H)
 normalize.o: $(arch_hdrdir)/ruby/config.h
-normalize.o: $(hdrdir)/ruby.h
 normalize.o: $(hdrdir)/ruby/assert.h
 normalize.o: $(hdrdir)/ruby/backward.h
 normalize.o: $(hdrdir)/ruby/backward/2/assume.h
 normalize.o: $(hdrdir)/ruby/backward/2/attributes.h
 normalize.o: $(hdrdir)/ruby/backward/2/bool.h
-normalize.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 normalize.o: $(hdrdir)/ruby/backward/2/inttypes.h
 normalize.o: $(hdrdir)/ruby/backward/2/limits.h
 normalize.o: $(hdrdir)/ruby/backward/2/long_long.h
@@ -1802,6 +1862,7 @@ normalize.o: $(hdrdir)/ruby/backward/2/stdarg.h
 normalize.o: $(hdrdir)/ruby/defines.h
 normalize.o: $(hdrdir)/ruby/encoding.h
 normalize.o: $(hdrdir)/ruby/intern.h
+normalize.o: $(hdrdir)/ruby/internal/abi.h
 normalize.o: $(hdrdir)/ruby/internal/anyargs.h
 normalize.o: $(hdrdir)/ruby/internal/arithmetic.h
 normalize.o: $(hdrdir)/ruby/internal/arithmetic/char.h
@@ -1871,6 +1932,15 @@ normalize.o: $(hdrdir)/ruby/internal/core/rtypeddata.h
 normalize.o: $(hdrdir)/ruby/internal/ctype.h
 normalize.o: $(hdrdir)/ruby/internal/dllexport.h
 normalize.o: $(hdrdir)/ruby/internal/dosish.h
+normalize.o: $(hdrdir)/ruby/internal/encoding/coderange.h
+normalize.o: $(hdrdir)/ruby/internal/encoding/ctype.h
+normalize.o: $(hdrdir)/ruby/internal/encoding/encoding.h
+normalize.o: $(hdrdir)/ruby/internal/encoding/pathname.h
+normalize.o: $(hdrdir)/ruby/internal/encoding/re.h
+normalize.o: $(hdrdir)/ruby/internal/encoding/sprintf.h
+normalize.o: $(hdrdir)/ruby/internal/encoding/string.h
+normalize.o: $(hdrdir)/ruby/internal/encoding/symbol.h
+normalize.o: $(hdrdir)/ruby/internal/encoding/transcode.h
 normalize.o: $(hdrdir)/ruby/internal/error.h
 normalize.o: $(hdrdir)/ruby/internal/eval.h
 normalize.o: $(hdrdir)/ruby/internal/event.h
@@ -1947,7 +2017,6 @@ normalize.o: $(hdrdir)/ruby/oniguruma.h
 normalize.o: $(hdrdir)/ruby/ruby.h
 normalize.o: $(hdrdir)/ruby/st.h
 normalize.o: $(hdrdir)/ruby/subst.h
-normalize.o: $(top_srcdir)/internal.h
 normalize.o: $(top_srcdir)/internal/file.h
 normalize.o: normalize.c
 qsort.o: $(RUBY_EXTCONF_H)
@@ -1958,7 +2027,6 @@ qsort.o: $(hdrdir)/ruby/backward.h
 qsort.o: $(hdrdir)/ruby/backward/2/assume.h
 qsort.o: $(hdrdir)/ruby/backward/2/attributes.h
 qsort.o: $(hdrdir)/ruby/backward/2/bool.h
-qsort.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 qsort.o: $(hdrdir)/ruby/backward/2/inttypes.h
 qsort.o: $(hdrdir)/ruby/backward/2/limits.h
 qsort.o: $(hdrdir)/ruby/backward/2/long_long.h
@@ -1967,6 +2035,7 @@ qsort.o: $(hdrdir)/ruby/backward/2/stdarg.h
 qsort.o: $(hdrdir)/ruby/defines.h
 qsort.o: $(hdrdir)/ruby/encoding.h
 qsort.o: $(hdrdir)/ruby/intern.h
+qsort.o: $(hdrdir)/ruby/internal/abi.h
 qsort.o: $(hdrdir)/ruby/internal/anyargs.h
 qsort.o: $(hdrdir)/ruby/internal/arithmetic.h
 qsort.o: $(hdrdir)/ruby/internal/arithmetic/char.h
@@ -2036,6 +2105,15 @@ qsort.o: $(hdrdir)/ruby/internal/core/rtypeddata.h
 qsort.o: $(hdrdir)/ruby/internal/ctype.h
 qsort.o: $(hdrdir)/ruby/internal/dllexport.h
 qsort.o: $(hdrdir)/ruby/internal/dosish.h
+qsort.o: $(hdrdir)/ruby/internal/encoding/coderange.h
+qsort.o: $(hdrdir)/ruby/internal/encoding/ctype.h
+qsort.o: $(hdrdir)/ruby/internal/encoding/encoding.h
+qsort.o: $(hdrdir)/ruby/internal/encoding/pathname.h
+qsort.o: $(hdrdir)/ruby/internal/encoding/re.h
+qsort.o: $(hdrdir)/ruby/internal/encoding/sprintf.h
+qsort.o: $(hdrdir)/ruby/internal/encoding/string.h
+qsort.o: $(hdrdir)/ruby/internal/encoding/symbol.h
+qsort.o: $(hdrdir)/ruby/internal/encoding/transcode.h
 qsort.o: $(hdrdir)/ruby/internal/error.h
 qsort.o: $(hdrdir)/ruby/internal/eval.h
 qsort.o: $(hdrdir)/ruby/internal/event.h
@@ -2122,7 +2200,6 @@ rb_interned_str.o: $(hdrdir)/ruby/backward.h
 rb_interned_str.o: $(hdrdir)/ruby/backward/2/assume.h
 rb_interned_str.o: $(hdrdir)/ruby/backward/2/attributes.h
 rb_interned_str.o: $(hdrdir)/ruby/backward/2/bool.h
-rb_interned_str.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 rb_interned_str.o: $(hdrdir)/ruby/backward/2/inttypes.h
 rb_interned_str.o: $(hdrdir)/ruby/backward/2/limits.h
 rb_interned_str.o: $(hdrdir)/ruby/backward/2/long_long.h
@@ -2130,6 +2207,7 @@ rb_interned_str.o: $(hdrdir)/ruby/backward/2/stdalign.h
 rb_interned_str.o: $(hdrdir)/ruby/backward/2/stdarg.h
 rb_interned_str.o: $(hdrdir)/ruby/defines.h
 rb_interned_str.o: $(hdrdir)/ruby/intern.h
+rb_interned_str.o: $(hdrdir)/ruby/internal/abi.h
 rb_interned_str.o: $(hdrdir)/ruby/internal/anyargs.h
 rb_interned_str.o: $(hdrdir)/ruby/internal/arithmetic.h
 rb_interned_str.o: $(hdrdir)/ruby/internal/arithmetic/char.h
@@ -2282,7 +2360,6 @@ rb_str_dup.o: $(hdrdir)/ruby/backward.h
 rb_str_dup.o: $(hdrdir)/ruby/backward/2/assume.h
 rb_str_dup.o: $(hdrdir)/ruby/backward/2/attributes.h
 rb_str_dup.o: $(hdrdir)/ruby/backward/2/bool.h
-rb_str_dup.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 rb_str_dup.o: $(hdrdir)/ruby/backward/2/inttypes.h
 rb_str_dup.o: $(hdrdir)/ruby/backward/2/limits.h
 rb_str_dup.o: $(hdrdir)/ruby/backward/2/long_long.h
@@ -2290,6 +2367,7 @@ rb_str_dup.o: $(hdrdir)/ruby/backward/2/stdalign.h
 rb_str_dup.o: $(hdrdir)/ruby/backward/2/stdarg.h
 rb_str_dup.o: $(hdrdir)/ruby/defines.h
 rb_str_dup.o: $(hdrdir)/ruby/intern.h
+rb_str_dup.o: $(hdrdir)/ruby/internal/abi.h
 rb_str_dup.o: $(hdrdir)/ruby/internal/anyargs.h
 rb_str_dup.o: $(hdrdir)/ruby/internal/arithmetic.h
 rb_str_dup.o: $(hdrdir)/ruby/internal/arithmetic/char.h
@@ -2442,7 +2520,6 @@ set_len.o: $(hdrdir)/ruby/backward.h
 set_len.o: $(hdrdir)/ruby/backward/2/assume.h
 set_len.o: $(hdrdir)/ruby/backward/2/attributes.h
 set_len.o: $(hdrdir)/ruby/backward/2/bool.h
-set_len.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 set_len.o: $(hdrdir)/ruby/backward/2/inttypes.h
 set_len.o: $(hdrdir)/ruby/backward/2/limits.h
 set_len.o: $(hdrdir)/ruby/backward/2/long_long.h
@@ -2450,6 +2527,7 @@ set_len.o: $(hdrdir)/ruby/backward/2/stdalign.h
 set_len.o: $(hdrdir)/ruby/backward/2/stdarg.h
 set_len.o: $(hdrdir)/ruby/defines.h
 set_len.o: $(hdrdir)/ruby/intern.h
+set_len.o: $(hdrdir)/ruby/internal/abi.h
 set_len.o: $(hdrdir)/ruby/internal/anyargs.h
 set_len.o: $(hdrdir)/ruby/internal/arithmetic.h
 set_len.o: $(hdrdir)/ruby/internal/arithmetic/char.h

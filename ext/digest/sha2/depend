@@ -10,7 +10,6 @@ sha2.o: $(hdrdir)/ruby/backward.h
 sha2.o: $(hdrdir)/ruby/backward/2/assume.h
 sha2.o: $(hdrdir)/ruby/backward/2/attributes.h
 sha2.o: $(hdrdir)/ruby/backward/2/bool.h
-sha2.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 sha2.o: $(hdrdir)/ruby/backward/2/inttypes.h
 sha2.o: $(hdrdir)/ruby/backward/2/limits.h
 sha2.o: $(hdrdir)/ruby/backward/2/long_long.h
@@ -18,6 +17,7 @@ sha2.o: $(hdrdir)/ruby/backward/2/stdalign.h
 sha2.o: $(hdrdir)/ruby/backward/2/stdarg.h
 sha2.o: $(hdrdir)/ruby/defines.h
 sha2.o: $(hdrdir)/ruby/intern.h
+sha2.o: $(hdrdir)/ruby/internal/abi.h
 sha2.o: $(hdrdir)/ruby/internal/anyargs.h
 sha2.o: $(hdrdir)/ruby/internal/arithmetic.h
 sha2.o: $(hdrdir)/ruby/internal/arithmetic/char.h
@@ -172,7 +172,6 @@ sha2init.o: $(hdrdir)/ruby/backward.h
 sha2init.o: $(hdrdir)/ruby/backward/2/assume.h
 sha2init.o: $(hdrdir)/ruby/backward/2/attributes.h
 sha2init.o: $(hdrdir)/ruby/backward/2/bool.h
-sha2init.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 sha2init.o: $(hdrdir)/ruby/backward/2/inttypes.h
 sha2init.o: $(hdrdir)/ruby/backward/2/limits.h
 sha2init.o: $(hdrdir)/ruby/backward/2/long_long.h
@@ -180,6 +179,7 @@ sha2init.o: $(hdrdir)/ruby/backward/2/stdalign.h
 sha2init.o: $(hdrdir)/ruby/backward/2/stdarg.h
 sha2init.o: $(hdrdir)/ruby/defines.h
 sha2init.o: $(hdrdir)/ruby/intern.h
+sha2init.o: $(hdrdir)/ruby/internal/abi.h
 sha2init.o: $(hdrdir)/ruby/internal/anyargs.h
 sha2init.o: $(hdrdir)/ruby/internal/arithmetic.h
 sha2init.o: $(hdrdir)/ruby/internal/arithmetic/char.h

@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 
+require_relative "input_record_separator"
 require_relative "match_p"
 require_relative "row"
 
@@ -133,7 +134,7 @@ class CSV
       @column_separator = @options[:column_separator].to_s.encode(@encoding)
       row_separator = @options[:row_separator]
       if row_separator == :auto
-        @row_separator = $INPUT_RECORD_SEPARATOR.encode(@encoding)
+        @row_separator = InputRecordSeparator.value.encode(@encoding)
       else
         @row_separator = row_separator.to_s.encode(@encoding)
       end

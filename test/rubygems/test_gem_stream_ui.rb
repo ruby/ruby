@@ -1,11 +1,11 @@
 # frozen_string_literal: true
-require 'rubygems/test_case'
+require_relative 'helper'
 require 'rubygems/user_interaction'
 require 'timeout'
 
 class TestGemStreamUI < Gem::TestCase
   # increase timeout with MJIT for --jit-wait testing
-  mjit_enabled = defined?(RubyVM::JIT) ? RubyVM::JIT.enabled? : defined?(RubyVM::MJIT) && RubyVM::MJIT.enabled?
+  mjit_enabled = defined?(RubyVM::MJIT) && RubyVM::MJIT.enabled?
   SHORT_TIMEOUT = (RUBY_ENGINE == "ruby" && !mjit_enabled) ? 0.1 : 1.0
 
   module IsTty
@@ -90,7 +90,7 @@ class TestGemStreamUI < Gem::TestCase
     @in.tty = false
 
     Timeout.timeout(SHORT_TIMEOUT) do
-      assert_raises(Gem::OperationNotSupportedError) do
+      assert_raise(Gem::OperationNotSupportedError) do
         @sui.ask_yes_no("do coconuts migrate?")
       end
     end

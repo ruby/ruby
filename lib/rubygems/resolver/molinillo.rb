@@ -1,2 +1,2 @@
 # frozen_string_literal: true
-require 'rubygems/resolver/molinillo/lib/molinillo'
+require_relative 'molinillo/lib/molinillo'

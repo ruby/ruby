@@ -35,6 +35,7 @@ struct dump_config {
     const char *root_category;
     VALUE cur_obj;
     VALUE cur_obj_klass;
+    size_t cur_page_slot_size;
     size_t cur_obj_references;
     unsigned int roots: 1;
     unsigned int full_heap: 1;
@@ -360,6 +361,9 @@ dump_object(VALUE obj, struct dump_config *dc)
     dump_append(dc, obj_type(obj));
     dump_append(dc, "\"");
 
+    dump_append(dc, ", \"slot_size\":");
+    dump_append_sizet(dc, dc->cur_page_slot_size);
+
     if (dc->cur_obj_klass) {
         dump_append(dc, ", \"class\":");
         dump_append_ref(dc, dc->cur_obj_klass);
@@ -415,7 +419,7 @@ dump_object(VALUE obj, struct dump_config *dc)
         dump_append_ld(dc, RARRAY_LEN(obj));
         if (RARRAY_LEN(obj) > 0 && FL_TEST(obj, ELTS_SHARED))
             dump_append(dc, ", \"shared\":true");
-        if (RARRAY_LEN(obj) > 0 && FL_TEST(obj, RARRAY_EMBED_FLAG))
+        if (FL_TEST(obj, RARRAY_EMBED_FLAG))
             dump_append(dc, ", \"embedded\":true");
         break;
 
@@ -539,6 +543,7 @@ heap_i(void *vstart, void *vend, size_t stride, void *data)
     for (; v != (VALUE)vend; v += stride) {
         void *ptr = asan_poisoned_object_p(v);
         asan_unpoison_object(v, false);
+        dc->cur_page_slot_size = stride;
 
 	if (dc->full_heap || RBASIC(v)->flags)
 	    dump_object(v, dc);
@@ -616,6 +621,10 @@ static VALUE
 objspace_dump(VALUE os, VALUE obj, VALUE output)
 {
     struct dump_config dc = {0,};
+    if (!RB_SPECIAL_CONST_P(obj)) {
+        dc.cur_page_slot_size = rb_gc_obj_slot_size(obj);
+    }
+
     dump_output(&dc, output, Qnil, Qnil);
 
     dump_object(obj, &dc);

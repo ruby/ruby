@@ -563,9 +563,9 @@ end # class Parser
 require 'strscan'
 require 'rubygems'
 require 'cim'
-require File.join(File.dirname(__FILE__), 'result')
-require File.join(File.dirname(__FILE__), 'scanner')
-require File.join(File.dirname(__FILE__), 'helper')
+require File.join(__dir__, 'result')
+require File.join(__dir__, 'scanner')
+require File.join(__dir__, 'case')
 
 ---- inner ----
 

@@ -1,9 +1,9 @@
 # frozen_string_literal: true
-require 'rubygems/test_case'
+require_relative 'helper'
 require 'rubygems/command_manager'
 
 class TestGemCommandManager < Gem::TestCase
-  PROJECT_DIR = File.expand_path('../../..', __FILE__).tap(&Gem::UNTAINT)
+  PROJECT_DIR = File.expand_path('../..', __dir__).tap(&Gem::UNTAINT)
 
   def setup
     super
@@ -22,7 +22,7 @@ class TestGemCommandManager < Gem::TestCase
   end
 
   def test_find_command_ambiguous
-    e = assert_raises Gem::CommandLineError do
+    e = assert_raise Gem::CommandLineError do
       @command_manager.find_command 'u'
     end
 
@@ -34,6 +34,18 @@ class TestGemCommandManager < Gem::TestCase
     command = @command_manager.find_command 'i'
 
     assert_kind_of Gem::Commands::InstallCommand, command
+  end
+
+  def test_find_login_alias_command
+    command = @command_manager.find_command 'login'
+
+    assert_kind_of Gem::Commands::SigninCommand, command
+  end
+
+  def test_find_logout_alias_comamnd
+    command = @command_manager.find_command 'logout'
+
+    assert_kind_of Gem::Commands::SignoutCommand, command
   end
 
   def test_find_command_ambiguous_exact
@@ -50,7 +62,7 @@ class TestGemCommandManager < Gem::TestCase
   end
 
   def test_find_command_unknown
-    e = assert_raises Gem::UnknownCommandError do
+    e = assert_raise Gem::UnknownCommandError do
       @command_manager.find_command 'xyz'
     end
 
@@ -58,7 +70,7 @@ class TestGemCommandManager < Gem::TestCase
   end
 
   def test_find_command_unknown_suggestions
-    e = assert_raises Gem::UnknownCommandError do
+    e = assert_raise Gem::UnknownCommandError do
       @command_manager.find_command 'pish'
     end
 
@@ -68,7 +80,13 @@ class TestGemCommandManager < Gem::TestCase
       message << "\nDid you mean?  \"push\""
     end
 
-    assert_equal message, e.message
+    if e.respond_to?(:detailed_message)
+      actual_message = e.detailed_message(highlight: false).sub(/\A(.*?)(?: \(.+?\))/) { $1 }
+    else
+      actual_message = e.message
+    end
+
+    assert_equal message, actual_message
   end
 
   def test_run_interrupt
@@ -79,7 +97,7 @@ class TestGemCommandManager < Gem::TestCase
     @command_manager.register_command :interrupt
 
     use_ui @ui do
-      assert_raises Gem::MockGemUi::TermError do
+      assert_raise Gem::MockGemUi::TermError do
         @command_manager.run %w[interrupt]
       end
       assert_equal '', ui.output
@@ -96,7 +114,7 @@ class TestGemCommandManager < Gem::TestCase
 
     @command_manager.register_command :crash
     use_ui @ui do
-      assert_raises Gem::MockGemUi::TermError do
+      assert_raise Gem::MockGemUi::TermError do
         @command_manager.run %w[crash]
       end
       assert_equal '', ui.output
@@ -110,7 +128,7 @@ class TestGemCommandManager < Gem::TestCase
 
   def test_process_args_bad_arg
     use_ui @ui do
-      assert_raises Gem::MockGemUi::TermError do
+      assert_raise Gem::MockGemUi::TermError do
         @command_manager.process_args %w[--bad-arg]
       end
     end
@@ -240,7 +258,7 @@ class TestGemCommandManager < Gem::TestCase
     Gem::Deprecate.skip_during do
       @command_manager.process_args %w[query]
     end
-    assert_equal(//, check_options[:name])
+    assert_nil(check_options[:name])
     assert_equal :local, check_options[:domain]
     assert_equal false, check_options[:details]
 

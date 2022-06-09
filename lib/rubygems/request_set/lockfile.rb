@@ -56,10 +56,10 @@ class Gem::RequestSet::Lockfile
 
       deps[name] = if [Gem::Resolver::VendorSpecification,
                        Gem::Resolver::GitSpecification].include? spec.class
-                     Gem::Requirement.source_set
-                   else
-                     requirement
-                   end
+        Gem::Requirement.source_set
+      else
+        requirement
+      end
     end
 
     deps
@@ -236,4 +236,4 @@ class Gem::RequestSet::Lockfile
   end
 end
 
-require 'rubygems/request_set/lockfile/tokenizer'
+require_relative 'lockfile/tokenizer'

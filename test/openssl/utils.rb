@@ -189,13 +189,6 @@ class OpenSSL::SSLTestCase < OpenSSL::TestCase
     @server = nil
   end
 
-  def tls12_supported?
-    ctx = OpenSSL::SSL::SSLContext.new
-    ctx.min_version = ctx.max_version = OpenSSL::SSL::TLS1_2_VERSION
-    true
-  rescue
-  end
-
   def tls13_supported?
     return false unless defined?(OpenSSL::SSL::TLS1_3_VERSION)
     ctx = OpenSSL::SSL::SSLContext.new
@@ -222,7 +215,6 @@ class OpenSSL::SSLTestCase < OpenSSL::TestCase
       ctx.cert_store = store
       ctx.cert = @svr_cert
       ctx.key = @svr_key
-      ctx.tmp_dh_callback = proc { Fixtures.pkey("dh-1") }
       ctx.verify_mode = verify_mode
       ctx_proc.call(ctx) if ctx_proc
 
@@ -236,9 +228,7 @@ class OpenSSL::SSLTestCase < OpenSSL::TestCase
       threads = []
       begin
         server_thread = Thread.new do
-          if Thread.method_defined?(:report_on_exception=) # Ruby >= 2.4
-            Thread.current.report_on_exception = false
-          end
+          Thread.current.report_on_exception = false
 
           begin
             loop do
@@ -254,9 +244,7 @@ class OpenSSL::SSLTestCase < OpenSSL::TestCase
               end
 
               th = Thread.new do
-                if Thread.method_defined?(:report_on_exception=)
-                  Thread.current.report_on_exception = false
-                end
+                Thread.current.report_on_exception = false
 
                 begin
                   server_proc.call(ctx, ssl)
@@ -273,9 +261,7 @@ class OpenSSL::SSLTestCase < OpenSSL::TestCase
         end
 
         client_thread = Thread.new do
-          if Thread.method_defined?(:report_on_exception=)
-            Thread.current.report_on_exception = false
-          end
+          Thread.current.report_on_exception = false
 
           begin
             block.call(port)
@@ -294,8 +280,7 @@ class OpenSSL::SSLTestCase < OpenSSL::TestCase
             timeout = EnvUtil.apply_timeout_scale(30)
             th.join(timeout) or
               th.raise(RuntimeError, "[start_server] thread did not exit in #{timeout} secs")
-          rescue (defined?(MiniTest::Skip) ? MiniTest::Skip : Test::Unit::PendedError)
-            # MiniTest::Skip is for the Ruby tree
+          rescue Test::Unit::PendedError
             pend = $!
           rescue Exception
           end
@@ -312,32 +297,6 @@ class OpenSSL::PKeyTestCase < OpenSSL::TestCase
     keys.each { |comp|
       assert_equal base.send(comp), test.send(comp)
     }
-  end
-
-  def dup_public(key)
-    case key
-    when OpenSSL::PKey::RSA
-      rsa = OpenSSL::PKey::RSA.new
-      rsa.set_key(key.n, key.e, nil)
-      rsa
-    when OpenSSL::PKey::DSA
-      dsa = OpenSSL::PKey::DSA.new
-      dsa.set_pqg(key.p, key.q, key.g)
-      dsa.set_key(key.pub_key, nil)
-      dsa
-    when OpenSSL::PKey::DH
-      dh = OpenSSL::PKey::DH.new
-      dh.set_pqg(key.p, nil, key.g)
-      dh
-    else
-      if defined?(OpenSSL::PKey::EC) && OpenSSL::PKey::EC === key
-        ec = OpenSSL::PKey::EC.new(key.group)
-        ec.public_key = key.public_key
-        ec
-      else
-        raise "unknown key type"
-      end
-    end
   end
 end
 

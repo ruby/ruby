@@ -30,4 +30,18 @@ RSpec.describe Bundler::Source::Rubygems do
       end
     end
   end
+
+  describe "#no_remotes?" do
+    context "when no remote provided" do
+      it "returns a truthy value" do
+        expect(described_class.new("remotes" => []).no_remotes?).to be_truthy
+      end
+    end
+
+    context "when a remote provided" do
+      it "returns a falsey value" do
+        expect(described_class.new("remotes" => ["https://rubygems.org"]).no_remotes?).to be_falsey
+      end
+    end
+  end
 end

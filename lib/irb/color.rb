@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 require 'reline'
 require 'ripper'
-require 'irb/ruby-lex'
+require_relative 'ruby-lex'
 
 module IRB # :nodoc:
   module Color

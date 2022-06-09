@@ -26,6 +26,11 @@ describe "IO#sysseek" do
     -> { @io.sysseek(-5, IO::SEEK_CUR) }.should raise_error(IOError)
   end
 
+  it "seeks normally even when called immediately after a buffered IO#read" do
+    @io.read(15)
+    @io.sysseek(-5, IO::SEEK_CUR).should == 10
+  end
+
   it "moves the read position relative to the start with SEEK_SET" do
     @io.sysseek(43, IO::SEEK_SET)
     @io.readline.should == "Aquí está la línea tres.\n"

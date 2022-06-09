@@ -14,6 +14,6 @@ describe "String.allocate" do
   end
 
   it "returns a binary String" do
-    String.new.encoding.should == Encoding::BINARY
+    String.allocate.encoding.should == Encoding::BINARY
   end
 end

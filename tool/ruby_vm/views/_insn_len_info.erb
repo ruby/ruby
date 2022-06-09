@@ -7,15 +7,22 @@
 %# details.
 CONSTFUNC(MAYBE_UNUSED(static int insn_len(VALUE insn)));
 
+RUBY_SYMBOL_EXPORT_BEGIN /* for debuggers */
+extern const uint8_t rb_vm_insn_len_info[VM_INSTRUCTION_SIZE];
+RUBY_SYMBOL_EXPORT_END
+
+#ifdef RUBY_VM_INSNS_INFO
+const uint8_t rb_vm_insn_len_info[] = {
+% RubyVM::Instructions.each_slice 23 do |a|
+    <%= a.map(&:width).join(', ') -%>,
+% end
+};
+
+ASSERT_VM_INSTRUCTION_SIZE(rb_vm_insn_len_info);
+#endif
+
 int
 insn_len(VALUE i)
 {
-    static const char t[] = {
-% RubyVM::Instructions.each_slice 23 do |a|
-        <%= a.map(&:width).join(', ') -%>,
-% end
-    };
-
-    ASSERT_VM_INSTRUCTION_SIZE(t);
-    return t[i];
+    return rb_vm_insn_len_info[i];
 }

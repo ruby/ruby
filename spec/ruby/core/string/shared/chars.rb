@@ -63,18 +63,4 @@ describe :string_chars, shared: true do
       [0xA2].pack('C').force_encoding('SJIS')
     ]
   end
-
-  ruby_version_is ''...'2.7' do
-    it "taints resulting strings when self is tainted" do
-      str = "hello"
-
-      str.send(@method) do |x|
-        x.should_not.tainted?
-      end
-
-      str.dup.taint.send(@method) do |x|
-        x.should.tainted?
-      end
-    end
-  end
 end

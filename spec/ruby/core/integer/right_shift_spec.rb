@@ -52,17 +52,13 @@ describe "Integer#>> (with n >> m)" do
       (-7 >> 64).should == -1
     end
 
-    it "returns 0 when m is a bignum" do
-      (3 >> bignum_value).should == 0
-    end
-
-    it "returns an Bignum == fixnum_max * 2 when fixnum_max >> -1 and n > 0" do
+    it "returns a Bignum == fixnum_max * 2 when fixnum_max >> -1 and n > 0" do
       result = fixnum_max >> -1
       result.should be_an_instance_of(Integer)
       result.should == fixnum_max * 2
     end
 
-    it "returns an Bignum == fixnum_min * 2 when fixnum_min >> -1 and n < 0" do
+    it "returns a Bignum == fixnum_min * 2 when fixnum_min >> -1 and n < 0" do
       result = fixnum_min >> -1
       result.should be_an_instance_of(Integer)
       result.should == fixnum_min * 2
@@ -96,7 +92,7 @@ describe "Integer#>> (with n >> m)" do
 
   context "bignum" do
     before :each do
-      @bignum = bignum_value * 16
+      @bignum = bignum_value * 8 # 2 ** 67
     end
 
     it "returns n shifted right m bits when n > 0, m > 0" do
@@ -153,10 +149,6 @@ describe "Integer#>> (with n >> m)" do
       (@bignum >> 68).should == 0
     end
 
-    it "returns 0 when m is a Bignum" do
-      (@bignum >> bignum_value).should == 0
-    end
-
     it "returns a Fixnum == fixnum_max when (fixnum_max * 2) >> 1 and n > 0" do
       result = (fixnum_max * 2) >> 1
       result.should be_an_instance_of(Integer)
@@ -189,6 +181,53 @@ describe "Integer#>> (with n >> m)" do
 
     it "raises a TypeError when passed a String" do
       -> { @bignum >> "4" }.should raise_error(TypeError)
+    end
+  end
+
+  context "when m is a bignum or larger than int" do
+    it "returns -1 when m > 0 and n < 0" do
+      (-1 >> bignum_value).should == -1
+      (-1 >> (2**40)).should == -1
+
+      (-bignum_value >> bignum_value).should == -1
+      (-bignum_value >> (2**40)).should == -1
+    end
+
+    it "returns 0 when m > 0 and n >= 0" do
+      (0 >> bignum_value).should == 0
+      (1 >> bignum_value).should == 0
+      (bignum_value >> bignum_value).should == 0
+
+      (0 >> (2**40)).should == 0
+      (1 >> (2**40)).should == 0
+      (bignum_value >> (2**40)).should == 0
+    end
+
+    ruby_bug "#18517", ""..."3.2" do
+      it "returns 0 when m < 0 long and n == 0" do
+        (0 >> -(2**40)).should == 0
+      end
+    end
+
+    it "returns 0 when m < 0 bignum and n == 0" do
+      (0 >> -bignum_value).should == 0
+    end
+
+    ruby_bug "#18518", ""..."3.3" do
+      it "raises NoMemoryError when m < 0 and n != 0" do
+        coerce_long = mock("long")
+        coerce_long.stub!(:to_int).and_return(-(2**40))
+        coerce_bignum = mock("bignum")
+        coerce_bignum.stub!(:to_int).and_return(-bignum_value)
+        exps = [-(2**40), -bignum_value, coerce_long, coerce_bignum]
+
+        exps.each { |exp|
+          -> { (1 >> exp) }.should raise_error(NoMemoryError)
+          -> { (-1 >> exp) }.should raise_error(NoMemoryError)
+          -> { (bignum_value >> exp) }.should raise_error(NoMemoryError)
+          -> { (-bignum_value >> exp) }.should raise_error(NoMemoryError)
+        }
+      end
     end
   end
 end

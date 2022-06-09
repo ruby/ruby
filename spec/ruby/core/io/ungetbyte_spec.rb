@@ -36,33 +36,10 @@ describe "IO#ungetbyte" do
     @io.getbyte.should == 97
   end
 
-  ruby_version_is ''...'2.6' do
-    it "puts back one byte for an Integer argument..." do
-      @io.ungetbyte(4095).should be_nil
+  it "never raises RangeError" do
+    for i in [4095, 0x4f7574206f6620636861722072616e67ff] do
+      @io.ungetbyte(i).should be_nil
       @io.getbyte.should == 255
-    end
-
-    it "... but not for Integer argument (eh?)" do
-      -> {
-        @io.ungetbyte(0x4f7574206f6620636861722072616e6765)
-      }.should raise_error(TypeError)
-    end
-  end
-
-  ruby_version_is '2.6'...'2.6.1' do
-    it "is an RangeError if the integer is not in 8bit" do
-      for i in [4095, 0x4f7574206f6620636861722072616e6765] do
-        -> { @io.ungetbyte(i) }.should raise_error(RangeError)
-      end
-    end
-  end
-
-  ruby_version_is '2.6.1' do
-    it "never raises RangeError" do
-      for i in [4095, 0x4f7574206f6620636861722072616e67ff] do
-        @io.ungetbyte(i).should be_nil
-        @io.getbyte.should == 255
-      end
     end
   end
 

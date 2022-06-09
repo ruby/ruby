@@ -2833,6 +2833,10 @@ fetch_name(OnigCodePoint start_code, UChar** src, UChar* end,
 #endif /* USE_NAMED_GROUP */
 
 
+#ifdef PRINTF_ARGS
+PRINTF_ARGS(static void onig_syntax_warn(ScanEnv *env, const char *fmt, ...), 2, 3);
+#endif
+
 static void
 onig_syntax_warn(ScanEnv *env, const char *fmt, ...)
 {
@@ -2841,7 +2845,7 @@ onig_syntax_warn(ScanEnv *env, const char *fmt, ...)
     va_start(args, fmt);
     onig_vsnprintf_with_pattern(buf, WARN_BUFSIZE, env->enc,
 		env->pattern, env->pattern_end,
-		(const UChar *)fmt, args);
+		fmt, args);
     va_end(args);
 #ifdef RUBY
     if (env->sourcefile == NULL)

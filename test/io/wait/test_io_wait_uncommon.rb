@@ -13,7 +13,7 @@ class TestIOWaitUncommon < Test::Unit::TestCase
   end
 
   def test_fifo_wait
-    skip 'no mkfifo' unless File.respond_to?(:mkfifo) && IO.const_defined?(:NONBLOCK)
+    omit 'no mkfifo' unless File.respond_to?(:mkfifo) && IO.const_defined?(:NONBLOCK)
     require 'tmpdir'
     Dir.mktmpdir('rubytest-fifo') do |dir|
       fifo = "#{dir}/fifo"
@@ -45,7 +45,7 @@ class TestIOWaitUncommon < Test::Unit::TestCase
     rescue Errno::ENOENT
       return # Ignore silently
     rescue SystemCallError => e
-      skip "#{dev} could not be opened #{e.message} (#{e.class})"
+      omit "#{dev} could not be opened #{e.message} (#{e.class})"
     end
     if block
       yield fp

@@ -10,7 +10,6 @@ rmd160.o: $(hdrdir)/ruby/backward.h
 rmd160.o: $(hdrdir)/ruby/backward/2/assume.h
 rmd160.o: $(hdrdir)/ruby/backward/2/attributes.h
 rmd160.o: $(hdrdir)/ruby/backward/2/bool.h
-rmd160.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 rmd160.o: $(hdrdir)/ruby/backward/2/inttypes.h
 rmd160.o: $(hdrdir)/ruby/backward/2/limits.h
 rmd160.o: $(hdrdir)/ruby/backward/2/long_long.h
@@ -18,6 +17,7 @@ rmd160.o: $(hdrdir)/ruby/backward/2/stdalign.h
 rmd160.o: $(hdrdir)/ruby/backward/2/stdarg.h
 rmd160.o: $(hdrdir)/ruby/defines.h
 rmd160.o: $(hdrdir)/ruby/intern.h
+rmd160.o: $(hdrdir)/ruby/internal/abi.h
 rmd160.o: $(hdrdir)/ruby/internal/anyargs.h
 rmd160.o: $(hdrdir)/ruby/internal/arithmetic.h
 rmd160.o: $(hdrdir)/ruby/internal/arithmetic/char.h
@@ -172,7 +172,6 @@ rmd160init.o: $(hdrdir)/ruby/backward.h
 rmd160init.o: $(hdrdir)/ruby/backward/2/assume.h
 rmd160init.o: $(hdrdir)/ruby/backward/2/attributes.h
 rmd160init.o: $(hdrdir)/ruby/backward/2/bool.h
-rmd160init.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 rmd160init.o: $(hdrdir)/ruby/backward/2/inttypes.h
 rmd160init.o: $(hdrdir)/ruby/backward/2/limits.h
 rmd160init.o: $(hdrdir)/ruby/backward/2/long_long.h
@@ -180,6 +179,7 @@ rmd160init.o: $(hdrdir)/ruby/backward/2/stdalign.h
 rmd160init.o: $(hdrdir)/ruby/backward/2/stdarg.h
 rmd160init.o: $(hdrdir)/ruby/defines.h
 rmd160init.o: $(hdrdir)/ruby/intern.h
+rmd160init.o: $(hdrdir)/ruby/internal/abi.h
 rmd160init.o: $(hdrdir)/ruby/internal/anyargs.h
 rmd160init.o: $(hdrdir)/ruby/internal/arithmetic.h
 rmd160init.o: $(hdrdir)/ruby/internal/arithmetic/char.h

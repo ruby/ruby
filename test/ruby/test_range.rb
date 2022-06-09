@@ -604,6 +604,10 @@ class TestRange < Test::Unit::TestCase
     assert_include(0...10, 5)
     assert_include(5..., 10)
     assert_not_include(5..., 0)
+    assert_include(.."z", "z")
+    assert_not_include(..."z", "z")
+    assert_include(..10, 10)
+    assert_not_include(...10, 10)
   end
 
   def test_cover
@@ -666,6 +670,35 @@ class TestRange < Test::Unit::TestCase
     assert_not_operator(1..10, :cover?, 3...3)
     assert_not_operator('aa'..'zz', :cover?, 'aa'...'zzz')
     assert_not_operator(1..10, :cover?, 1...10.1)
+
+    assert_operator(..2, :cover?, 1)
+    assert_operator(..2, :cover?, 2)
+    assert_not_operator(..2, :cover?, 3)
+    assert_not_operator(...2, :cover?, 2)
+    assert_not_operator(..2, :cover?, "2")
+    assert_operator(..2, :cover?, ..2)
+    assert_operator(..2, :cover?, ...2)
+    assert_not_operator(..2, :cover?, .."2")
+    assert_not_operator(...2, :cover?, ..2)
+
+    assert_not_operator(2.., :cover?, 1)
+    assert_operator(2.., :cover?, 2)
+    assert_operator(2..., :cover?, 3)
+    assert_operator(2.., :cover?, 2)
+    assert_not_operator(2.., :cover?, "2")
+    assert_operator(2.., :cover?, 2..)
+    assert_operator(2.., :cover?, 2...)
+    assert_not_operator(2.., :cover?, "2"..)
+    assert_not_operator(2..., :cover?, 2..)
+    assert_operator(2..., :cover?, 3...)
+    assert_not_operator(2..., :cover?, 3..)
+    assert_not_operator(3.., :cover?, 2..)
+
+    assert_operator(nil..., :cover?, Object.new)
+    assert_operator(nil..., :cover?, nil...)
+    assert_operator(nil.., :cover?, nil...)
+    assert_not_operator(nil..., :cover?, nil..)
+    assert_not_operator(nil..., :cover?, 1..)
   end
 
   def test_beg_len

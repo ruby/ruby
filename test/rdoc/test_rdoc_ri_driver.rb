@@ -32,13 +32,18 @@ class TestRDocRIDriver < RDoc::TestCase
   end
 
   def teardown
-    ENV['RI'] = @orig_ri
-    FileUtils.rm_rf @tmpdir
+    defined?(@orig_ri) and ENV['RI'] = @orig_ri
+    defined?(@tmpdir) and FileUtils.rm_rf @tmpdir
 
     super
   end
 
-  DUMMY_PAGER = ":;\n"
+  case RUBY_PLATFORM
+  when /mswin|mingw/
+    DUMMY_PAGER = "type nul"
+  else
+    DUMMY_PAGER = "true"
+  end
 
   def with_dummy_pager
     pager_env, ENV['RI_PAGER'] = ENV['RI_PAGER'], DUMMY_PAGER
@@ -419,6 +424,30 @@ class TestRDocRIDriver < RDoc::TestCase
     util_ancestors_store
 
     assert_equal %w[X Mixin Object Foo], @driver.ancestors_of('Foo::Bar')
+  end
+
+  def test_ancestors_of_chained_inclusion
+    # Store represents something like:
+    #
+    #   module X
+    #   end
+    #
+    #   module Y
+    #     include X
+    #   end
+    #
+    #   class Z
+    #     include Y
+    #   end
+    #
+    # Y is not chosen randomly, it has to be after Object in the alphabet
+    # to reproduce https://github.com/ruby/rdoc/issues/814.
+    store = RDoc::RI::Store.new @home_ri
+    store.cache[:ancestors] = { "Z" => ["Object", "Y"], "Y" => ["X"] }
+    store.cache[:modules] = %W[X Y Z]
+    @driver.stores = [store]
+
+    assert_equal %w[X Y Object], @driver.ancestors_of('Z')
   end
 
   def test_classes
@@ -1067,23 +1096,6 @@ Foo::Bar#bother
     assert_instance_of @RM::ToBs, driver.formatter(StringIO.new)
   end
 
-  def test_in_path_eh
-    path = ENV['PATH']
-
-    test_path = File.expand_path '..', __FILE__
-
-    temp_dir do |dir|
-      nonexistent = File.join dir, 'nonexistent'
-      refute @driver.in_path?(nonexistent)
-
-      ENV['PATH'] = test_path
-
-      assert @driver.in_path?(File.basename(__FILE__))
-    end
-  ensure
-    ENV['PATH'] = path
-  end
-
   def test_method_type
     assert_equal :both,     @driver.method_type(nil)
     assert_equal :both,     @driver.method_type('.')
@@ -1222,7 +1234,7 @@ Foo::Bar#bother
     assert_equal '(unknown)#inherit', method.full_name
   end
 
-  def _test_page # this test doesn't do anything anymore :(
+  def test_page
     @driver.use_stdout = false
 
     with_dummy_pager do
@@ -1236,9 +1248,7 @@ Foo::Bar#bother
     refute @driver.paging?
   end
 
-  # this test is too fragile. Perhaps using Process.spawn will make this
-  # reliable
-  def _test_page_in_presence_of_child_status
+  def test_page_in_presence_of_child_status
     @driver.use_stdout = false
 
     with_dummy_pager do
@@ -1401,7 +1411,7 @@ Foo::Bar#bother
     end
   end
 
-  def _test_setup_pager # this test doesn't do anything anymore :(
+  def test_setup_pager # this test doesn't do anything anymore :(
     @driver.use_stdout = false
 
     pager = with_dummy_pager do @driver.setup_pager end

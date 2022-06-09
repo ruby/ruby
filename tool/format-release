@@ -45,7 +45,7 @@ eom
   #   SHA1:   21f62c369661a2ab1b521fd2fa8191a4273e12a1
   #   SHA256: 97cea8aa63dfa250ba6902b658a7aa066daf817b22f82b7ee28f44aec7c2e394
   #   SHA512: 1e2042324821bb4e110af7067f52891606dcfc71e640c194ab1c117f0b941550e0b3ac36ad3511214ac80c536b9e5cfaf8789eec74cf56971a832ea8fc4e6d94
-  def self.parse(wwwdir, version)
+  def self.parse(wwwdir, version, rubydir)
     unless /\A(\d+)\.(\d+)\.(\d+)(?:-(?:preview|rc)\d+)?\z/ =~ version
       raise "unexpected version string '#{version}'"
     end
@@ -85,7 +85,7 @@ eom
     if prev_tag
       # show diff shortstat
       tag = "v#{version.gsub(/[.\-]/, '_')}"
-      stat = `git diff --shortstat #{prev_tag}..#{tag}`
+      stat = `git -C #{rubydir} diff --shortstat #{prev_tag}..#{tag}`
       files_changed, insertions, deletions = stat.scan(/\d+/)
     end
 
@@ -175,8 +175,10 @@ eom
   post: /en/news/#{date.strftime("%Y/%m/%d")}/ruby-#{ver.tr('.', '-')}-released/
 eom
 
-    if ver.end_with?(".0")
+    if /\.0(?:-\w+)?\z/ =~ ver
+      # preview, rc, or first release
       entry <<= <<eom
+  tag: v#{ver.tr('.-', '_')}
   stats:
     files_changed: #{files_changed}
     insertions: #{insertions}
@@ -217,6 +219,8 @@ eom
     end
 
     if data.include?("\n- version: #{ver}\n")
+      # update existing entry
+      data.sub!(/\n- version: #{ver}\n(^  .*\n)*\n/, "\n#{entry}\n")
     elsif data.sub!(/\n# #{Regexp.escape(xy)} series\n/, "\\&\n#{entry}")
     else
       data.sub!(/^$/, "\n# #{xy} series\n\n#{entry}")
@@ -245,13 +249,14 @@ eom
 end
 
 def main
-  if ARGV.size != 2
-    STDERR.puts "usage: format-release <dir-of-w.r-l.o> <version>"
-    exit
-  end
   wwwdir = ARGV.shift
   version = ARGV.shift
-  Tarball.parse(wwwdir, version)
+  rubydir = ARGV.shift
+  unless rubydir
+    STDERR.puts "usage: format-release <dir-of-w.r-l.o> <version> <ruby-dir>"
+    exit
+  end
+  Tarball.parse(wwwdir, version, rubydir)
 end
 
 main

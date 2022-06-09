@@ -1,7 +1,10 @@
 require_relative '../../spec_helper'
 require_relative 'fixtures/classes'
+require_relative 'shared/strip'
 
 describe "String#lstrip" do
+  it_behaves_like :string_strip, :lstrip
+
   it "returns a copy of self with leading whitespace removed" do
    "  hello  ".lstrip.should == "hello  "
    "  hello world  ".lstrip.should == "hello world  "
@@ -9,18 +12,10 @@ describe "String#lstrip" do
    "hello".lstrip.should == "hello"
   end
 
-  ruby_version_is '3.1' do
+  ruby_version_is '3.0' do
     it "strips leading \\0" do
      "\x00hello".lstrip.should == "hello"
      "\000 \000hello\000 \000".lstrip.should == "hello\000 \000"
-    end
-  end
-
-  ruby_version_is ''...'2.7' do
-    it "taints the result when self is tainted" do
-      "".taint.lstrip.should.tainted?
-      "ok".taint.lstrip.should.tainted?
-      "   ok".taint.lstrip.should.tainted?
     end
   end
 end
@@ -32,7 +27,7 @@ describe "String#lstrip!" do
     a.should == "hello  "
   end
 
-  ruby_version_is '3.1' do
+  ruby_version_is '3.0' do
     it "strips leading \\0" do
       a = "\000 \000hello\000 \000"
       a.lstrip!

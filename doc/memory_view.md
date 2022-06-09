@@ -48,7 +48,7 @@ The MemoryView structure consists of the following members.
 
 - `ssize_t byte_size`
 
-    The numbero f bytes in the memory pointed by `data`.
+    The number of bytes in the memory pointed by `data`.
 
 - `bool readonly`
 
@@ -56,7 +56,7 @@ The MemoryView structure consists of the following members.
 
 - `const char *format`
 
-    A string to describeth e format of an element, or NULL for unsigned byte.
+    A string to describe the format of an element, or NULL for unsigned byte.
 
 - `ssize_t item_size`
 
@@ -89,7 +89,7 @@ The MemoryView structure consists of the following members.
     A `ndim` size array consisting of the offsets in each dimension when the MemoryView exposes a nested array.
     This can be `NULL` when the MemoryView exposes a flat array.
 
-- `void *const private`
+- `void *private_data`
 
     The private data that MemoryView provider uses internally.
     This can be `NULL` when any private data is unnecessary.

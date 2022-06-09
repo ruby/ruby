@@ -50,6 +50,15 @@ class URI::TestParser < Test::Unit::TestCase
     assert_raise(URI::InvalidURIError) { URI.parse('https://www.example.com/search?q=%XX') }
   end
 
+  def test_parse_auth
+    str = "http://al%40ice:p%40s%25sword@example.com/dir%2Fname/subdir?foo=bar%40example.com"
+    uri = URI.parse(str)
+    assert_equal "al%40ice", uri.user
+    assert_equal "p%40s%25sword", uri.password
+    assert_equal "al@ice", uri.decoded_user
+    assert_equal "p@s%sword", uri.decoded_password
+  end
+
   def test_raise_bad_uri_for_integer
     assert_raise(URI::InvalidURIError) do
       URI.parse(1)

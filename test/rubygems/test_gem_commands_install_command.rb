@@ -1,5 +1,5 @@
 # frozen_string_literal: true
-require 'rubygems/test_case'
+require_relative 'helper'
 require 'rubygems/commands/install_command'
 require 'rubygems/request_set'
 require 'rubygems/rdoc'
@@ -37,7 +37,7 @@ class TestGemCommandsInstallCommand < Gem::TestCase
     @cmd.options[:args] = %w[a]
 
     use_ui @ui do
-      assert_raises Gem::MockGemUi::SystemExitException, @ui.error do
+      assert_raise Gem::MockGemUi::SystemExitException, @ui.error do
         @cmd.execute
       end
     end
@@ -59,7 +59,7 @@ class TestGemCommandsInstallCommand < Gem::TestCase
     assert @cmd.options[:version].satisfied_by?(a2_pre.version)
 
     use_ui @ui do
-      assert_raises Gem::MockGemUi::SystemExitException, @ui.error do
+      assert_raise Gem::MockGemUi::SystemExitException, @ui.error do
         @cmd.execute
       end
     end
@@ -82,7 +82,7 @@ class TestGemCommandsInstallCommand < Gem::TestCase
       orig_dir = Dir.pwd
       begin
         Dir.chdir @tempdir
-        assert_raises Gem::MockGemUi::SystemExitException, @ui.error do
+        assert_raise Gem::MockGemUi::SystemExitException, @ui.error do
           @cmd.execute
         end
       ensure
@@ -110,7 +110,7 @@ class TestGemCommandsInstallCommand < Gem::TestCase
       orig_dir = Dir.pwd
       begin
         Dir.chdir @tempdir
-        e = assert_raises Gem::MockGemUi::TermError do
+        e = assert_raise Gem::MockGemUi::TermError do
           @cmd.execute
         end
         assert_equal 2, e.exit_code
@@ -142,7 +142,7 @@ ERROR:  Could not find a valid gem 'bar' (= 0.5) (required by 'foo' (>= 0)) in a
       orig_dir = Dir.pwd
       begin
         Dir.chdir orig_dir
-        assert_raises Gem::MockGemUi::SystemExitException, @ui.error do
+        assert_raise Gem::MockGemUi::SystemExitException, @ui.error do
           @cmd.execute
         end
       ensure
@@ -173,7 +173,7 @@ ERROR:  Could not find a valid gem 'bar' (= 0.5) (required by 'foo' (>= 0)) in a
       begin
         Dir.chdir @tempdir
         FileUtils.rm_r [@gemhome, "gems"]
-        assert_raises Gem::MockGemUi::SystemExitException, @ui.error do
+        assert_raise Gem::MockGemUi::SystemExitException, @ui.error do
           @cmd.execute
         end
       ensure
@@ -187,8 +187,8 @@ ERROR:  Could not find a valid gem 'bar' (= 0.5) (required by 'foo' (>= 0)) in a
   end
 
   def test_execute_no_user_install
-    skip 'skipped on MS Windows (chmod has no effect)' if win_platform?
-    skip 'skipped in root privilege' if Process.uid.zero?
+    pend 'skipped on MS Windows (chmod has no effect)' if win_platform?
+    pend 'skipped in root privilege' if Process.uid.zero?
 
     specs = spec_fetcher do |fetcher|
       fetcher.gem 'a', 2
@@ -207,7 +207,7 @@ ERROR:  Could not find a valid gem 'bar' (= 0.5) (required by 'foo' (>= 0)) in a
         FileUtils.chmod 0555, @gemhome
 
         Dir.chdir @tempdir
-        assert_raises Gem::FilePermissionError do
+        assert_raise Gem::FilePermissionError do
           @cmd.execute
         end
       ensure
@@ -225,7 +225,7 @@ ERROR:  Could not find a valid gem 'bar' (= 0.5) (required by 'foo' (>= 0)) in a
     @cmd.options[:args] = %w[no_such_gem]
 
     use_ui @ui do
-      e = assert_raises Gem::MockGemUi::TermError do
+      e = assert_raise Gem::MockGemUi::TermError do
         @cmd.execute
       end
       assert_equal 2, e.exit_code
@@ -244,7 +244,7 @@ ERROR:  Could not find a valid gem 'bar' (= 0.5) (required by 'foo' (>= 0)) in a
     @cmd.options[:args] = %w[no_such_gem]
 
     use_ui @ui do
-      e = assert_raises Gem::MockGemUi::TermError do
+      e = assert_raise Gem::MockGemUi::TermError do
         @cmd.execute
       end
       assert_equal 2, e.exit_code
@@ -257,7 +257,7 @@ ERROR:  Could not find a valid gem 'bar' (= 0.5) (required by 'foo' (>= 0)) in a
   def test_execute_no_gem
     @cmd.options[:args] = %w[]
 
-    assert_raises Gem::CommandLineError do
+    assert_raise Gem::CommandLineError do
       @cmd.execute
     end
   end
@@ -268,7 +268,23 @@ ERROR:  Could not find a valid gem 'bar' (= 0.5) (required by 'foo' (>= 0)) in a
     @cmd.options[:args] = %w[nonexistent]
 
     use_ui @ui do
-      e = assert_raises Gem::MockGemUi::TermError do
+      e = assert_raise Gem::MockGemUi::TermError do
+        @cmd.execute
+      end
+      assert_equal 2, e.exit_code
+    end
+
+    assert_match(/ould not find a valid gem 'nonexistent'/, @ui.error)
+  end
+
+  def test_execute_nonexistent_force
+    spec_fetcher
+
+    @cmd.options[:args] = %w[nonexistent]
+    @cmd.options[:force] = true
+
+    use_ui @ui do
+      e = assert_raise Gem::MockGemUi::TermError do
         @cmd.execute
       end
       assert_equal 2, e.exit_code
@@ -285,7 +301,7 @@ ERROR:  Could not find a valid gem 'bar' (= 0.5) (required by 'foo' (>= 0)) in a
     @cmd.options[:args] = ['foo']
 
     use_ui @ui do
-      e = assert_raises Gem::MockGemUi::TermError do
+      e = assert_raise Gem::MockGemUi::TermError do
         @cmd.execute
       end
 
@@ -301,7 +317,7 @@ ERROR:  Could not find a valid gem 'bar' (= 0.5) (required by 'foo' (>= 0)) in a
 
   def test_execute_http_proxy
     use_ui @ui do
-      e = assert_raises ArgumentError, @ui.error do
+      e = assert_raise ArgumentError, @ui.error do
         @cmd.handle_options %w[-p=foo.bar.com]
       end
 
@@ -327,7 +343,7 @@ ERROR:  Could not find a valid gem 'bar' (= 0.5) (required by 'foo' (>= 0)) in a
     @cmd.options[:args] = %w[nonexistent]
 
     use_ui @ui do
-      e = assert_raises Gem::MockGemUi::TermError do
+      e = assert_raise Gem::MockGemUi::TermError do
         @cmd.execute
       end
       assert_equal 2, e.exit_code
@@ -351,7 +367,7 @@ ERROR:  Could not find a valid gem 'bar' (= 0.5) (required by 'foo' (>= 0)) in a
     @cmd.options[:suggest_alternate] = false
 
     use_ui @ui do
-      e = assert_raises Gem::MockGemUi::TermError do
+      e = assert_raise Gem::MockGemUi::TermError do
         @cmd.execute
       end
 
@@ -376,7 +392,7 @@ ERROR:  Could not find a valid gem 'nonexistent_with_hint' (>= 0) in any reposit
     @cmd.options[:args] = [misspelled]
 
     use_ui @ui do
-      e = assert_raises Gem::MockGemUi::TermError do
+      e = assert_raise Gem::MockGemUi::TermError do
         @cmd.execute
       end
 
@@ -401,7 +417,7 @@ ERROR:  Possible alternatives: non_existent_with_hint
     @cmd.options[:args] = [misspelled]
 
     use_ui @ui do
-      e = assert_raises Gem::MockGemUi::TermError do
+      e = assert_raise Gem::MockGemUi::TermError do
         @cmd.execute
       end
 
@@ -423,7 +439,7 @@ ERROR:  Possible alternatives: non_existent_with_hint
     @cmd.options[:install_dir] = "whatever"
 
     use_ui @ui do
-      assert_raises Gem::MockGemUi::TermError do
+      assert_raise Gem::MockGemUi::TermError do
         @cmd.execute
       end
     end
@@ -443,7 +459,7 @@ ERROR:  Possible alternatives: non_existent_with_hint
     @cmd.options[:args] = %w[a]
 
     use_ui @ui do
-      assert_raises Gem::MockGemUi::SystemExitException, @ui.error do
+      assert_raise Gem::MockGemUi::SystemExitException, @ui.error do
         @cmd.execute
       end
     end
@@ -461,7 +477,7 @@ ERROR:  Possible alternatives: non_existent_with_hint
     @cmd.options[:args] = %w[a]
 
     use_ui @ui do
-      assert_raises Gem::MockGemUi::SystemExitException, @ui.error do
+      assert_raise Gem::MockGemUi::SystemExitException, @ui.error do
         @cmd.execute
       end
     end
@@ -478,7 +494,7 @@ ERROR:  Possible alternatives: non_existent_with_hint
     @cmd.options[:args] = %w[a:1]
 
     use_ui @ui do
-      assert_raises Gem::MockGemUi::SystemExitException, @ui.error do
+      assert_raise Gem::MockGemUi::SystemExitException, @ui.error do
         @cmd.execute
       end
     end
@@ -496,7 +512,7 @@ ERROR:  Possible alternatives: non_existent_with_hint
     @cmd.options[:args] = %w[a]
 
     use_ui @ui do
-      assert_raises Gem::MockGemUi::SystemExitException, @ui.error do
+      assert_raise Gem::MockGemUi::SystemExitException, @ui.error do
         @cmd.execute
       end
     end
@@ -505,7 +521,7 @@ ERROR:  Possible alternatives: non_existent_with_hint
   end
 
   def test_execute_required_ruby_version
-    next_ruby = Gem.ruby_version.segments.map.with_index{|n, i| i == 1 ? n + 1 : n }.join(".")
+    next_ruby = Gem.ruby_version.segments.map.with_index {|n, i| i == 1 ? n + 1 : n }.join(".")
 
     local = Gem::Platform.local
     spec_fetcher do |fetcher|
@@ -526,7 +542,7 @@ ERROR:  Possible alternatives: non_existent_with_hint
     @cmd.options[:args] = %w[a]
 
     use_ui @ui do
-      assert_raises Gem::MockGemUi::SystemExitException, @ui.error do
+      assert_raise Gem::MockGemUi::SystemExitException, @ui.error do
         @cmd.execute
       end
     end
@@ -547,7 +563,7 @@ ERROR:  Possible alternatives: non_existent_with_hint
     @cmd.options[:args] = %w[a]
 
     use_ui @ui do
-      assert_raises Gem::MockGemUi::SystemExitException, @ui.error do
+      assert_raise Gem::MockGemUi::SystemExitException, @ui.error do
         @cmd.execute
       end
     end
@@ -565,7 +581,7 @@ ERROR:  Possible alternatives: non_existent_with_hint
     @cmd.options[:args] = %w[a]
 
     use_ui @ui do
-      assert_raises Gem::MockGemUi::TermError do
+      assert_raise Gem::MockGemUi::TermError do
         @cmd.execute
       end
     end
@@ -585,7 +601,7 @@ ERROR:  Possible alternatives: non_existent_with_hint
     @cmd.options[:args] = %w[a]
 
     use_ui @ui do
-      assert_raises Gem::MockGemUi::SystemExitException, @ui.error do
+      assert_raise Gem::MockGemUi::SystemExitException, @ui.error do
         @cmd.execute
       end
     end
@@ -594,7 +610,7 @@ ERROR:  Possible alternatives: non_existent_with_hint
   end
 
   def test_execute_required_ruby_version_specific_prerelease_not_met
-    next_ruby_pre = Gem.ruby_version.segments.map.with_index{|n, i| i == 1 ? n + 1 : n }.join(".") + ".a"
+    next_ruby_pre = Gem.ruby_version.segments.map.with_index {|n, i| i == 1 ? n + 1 : n }.join(".") + ".a"
 
     spec_fetcher do |fetcher|
       fetcher.gem 'a', '1.0' do |s|
@@ -605,7 +621,7 @@ ERROR:  Possible alternatives: non_existent_with_hint
     @cmd.options[:args] = %w[a]
 
     use_ui @ui do
-      assert_raises Gem::MockGemUi::TermError do
+      assert_raise Gem::MockGemUi::TermError do
         @cmd.execute
       end
     end
@@ -625,7 +641,7 @@ ERROR:  Possible alternatives: non_existent_with_hint
     @cmd.options[:args] = %w[a]
 
     use_ui @ui do
-      assert_raises Gem::MockGemUi::TermError do
+      assert_raise Gem::MockGemUi::TermError do
         @cmd.execute
       end
     end
@@ -657,7 +673,7 @@ ERROR:  Possible alternatives: non_existent_with_hint
 
       begin
         Dir.chdir @tempdir
-        assert_raises Gem::MockGemUi::SystemExitException, @ui.error do
+        assert_raise Gem::MockGemUi::SystemExitException, @ui.error do
           @cmd.execute
         end
       ensure
@@ -667,8 +683,8 @@ ERROR:  Possible alternatives: non_existent_with_hint
 
     wait_for_child_process_to_exit
 
-    assert_path_exists File.join(a2.doc_dir, 'ri')
-    assert_path_exists File.join(a2.doc_dir, 'rdoc')
+    assert_path_exist File.join(a2.doc_dir, 'ri')
+    assert_path_exist File.join(a2.doc_dir, 'rdoc')
   end
 
   def test_execute_rdoc_with_path
@@ -694,7 +710,7 @@ ERROR:  Possible alternatives: non_existent_with_hint
 
       begin
         Dir.chdir @tempdir
-        assert_raises Gem::MockGemUi::SystemExitException, @ui.error do
+        assert_raise Gem::MockGemUi::SystemExitException, @ui.error do
           @cmd.execute
         end
       ensure
@@ -704,7 +720,7 @@ ERROR:  Possible alternatives: non_existent_with_hint
 
     wait_for_child_process_to_exit
 
-    assert_path_exists 'whatever/doc/a-2', 'documentation not installed'
+    assert_path_exist 'whatever/doc/a-2', 'documentation not installed'
   end
 
   def test_execute_saves_build_args
@@ -730,7 +746,7 @@ ERROR:  Possible alternatives: non_existent_with_hint
 
       begin
         Dir.chdir @tempdir
-        assert_raises Gem::MockGemUi::SystemExitException, @ui.error do
+        assert_raise Gem::MockGemUi::SystemExitException, @ui.error do
           @cmd.execute
         end
       ensure
@@ -739,7 +755,7 @@ ERROR:  Possible alternatives: non_existent_with_hint
     end
 
     path = a2.build_info_file
-    assert_path_exists path
+    assert_path_exist path
 
     assert_equal args, a2.build_args
   end
@@ -752,7 +768,7 @@ ERROR:  Possible alternatives: non_existent_with_hint
     @cmd.options[:args] = %w[a]
 
     use_ui @ui do
-      assert_raises Gem::MockGemUi::SystemExitException, @ui.error do
+      assert_raise Gem::MockGemUi::SystemExitException, @ui.error do
         @cmd.execute
       end
     end
@@ -772,7 +788,7 @@ ERROR:  Possible alternatives: non_existent_with_hint
     @cmd.options[:args] = %w[a]
 
     use_ui @ui do
-      assert_raises Gem::MockGemUi::SystemExitException, @ui.error do
+      assert_raise Gem::MockGemUi::SystemExitException, @ui.error do
         @cmd.execute
       end
     end
@@ -780,6 +796,39 @@ ERROR:  Possible alternatives: non_existent_with_hint
     assert_equal %w[a-2], @cmd.installed_specs.map {|spec| spec.full_name }
 
     assert_match "1 gem installed", @ui.output
+  end
+
+  def test_execute_remote_truncates_existing_gemspecs
+    spec_fetcher do |fetcher|
+      fetcher.gem 'a', 1
+    end
+
+    @cmd.options[:domain] = :remote
+
+    @cmd.options[:args] = %w[a]
+
+    use_ui @ui do
+      assert_raise Gem::MockGemUi::SystemExitException, @ui.error do
+        @cmd.execute
+      end
+    end
+
+    assert_equal %w[a-1], @cmd.installed_specs.map {|spec| spec.full_name }
+    assert_match "1 gem installed", @ui.output
+
+    a1_gemspec = File.join(@gemhome, 'specifications', "a-1.gemspec")
+
+    initial_a1_gemspec_content = File.read(a1_gemspec)
+    modified_a1_gemspec_content = initial_a1_gemspec_content + "\n  # AAAAAAA\n"
+    File.write(a1_gemspec, modified_a1_gemspec_content)
+
+    use_ui @ui do
+      assert_raise Gem::MockGemUi::SystemExitException, @ui.error do
+        @cmd.execute
+      end
+    end
+
+    assert_equal initial_a1_gemspec_content, File.read(a1_gemspec)
   end
 
   def test_execute_remote_ignores_files
@@ -812,7 +861,7 @@ ERROR:  Possible alternatives: non_existent_with_hint
 
     use_ui @ui do
       Dir.chdir @tempdir do
-        assert_raises Gem::MockGemUi::SystemExitException, @ui.error do
+        assert_raise Gem::MockGemUi::SystemExitException, @ui.error do
           @cmd.execute
         end
       end
@@ -844,7 +893,7 @@ ERROR:  Possible alternatives: non_existent_with_hint
       orig_dir = Dir.pwd
       begin
         Dir.chdir @tempdir
-        assert_raises Gem::MockGemUi::SystemExitException, @ui.error do
+        assert_raise Gem::MockGemUi::SystemExitException, @ui.error do
           @cmd.execute
         end
       ensure
@@ -862,7 +911,7 @@ ERROR:  Possible alternatives: non_existent_with_hint
     @cmd.options[:version] = Gem::Requirement.new("> 1")
 
     use_ui @ui do
-      e = assert_raises Gem::MockGemUi::TermError do
+      e = assert_raise Gem::MockGemUi::TermError do
         @cmd.execute
       end
 
@@ -889,7 +938,7 @@ ERROR:  Possible alternatives: non_existent_with_hint
     @cmd.options[:args] = %w[a:1 b:1]
 
     use_ui @ui do
-      assert_raises Gem::MockGemUi::SystemExitException, @ui.error do
+      assert_raise Gem::MockGemUi::SystemExitException, @ui.error do
         @cmd.execute
       end
     end
@@ -912,7 +961,7 @@ ERROR:  Possible alternatives: non_existent_with_hint
       orig_dir = Dir.pwd
       begin
         Dir.chdir @tempdir
-        assert_raises Gem::MockGemUi::SystemExitException do
+        assert_raise Gem::MockGemUi::SystemExitException do
           @cmd.execute
         end
       ensure
@@ -1007,7 +1056,7 @@ ERROR:  Possible alternatives: non_existent_with_hint
       orig_dir = Dir.pwd
       begin
         Dir.chdir @tempdir
-        e = assert_raises Gem::MockGemUi::TermError do
+        e = assert_raise Gem::MockGemUi::TermError do
           @cmd.execute
         end
       ensure
@@ -1029,7 +1078,7 @@ ERROR:  Possible alternatives: non_existent_with_hint
       orig_dir = Dir.pwd
       begin
         Dir.chdir @tempdir
-        e = assert_raises Gem::MockGemUi::TermError do
+        e = assert_raise Gem::MockGemUi::TermError do
           @cmd.execute
         end
       ensure
@@ -1052,7 +1101,7 @@ ERROR:  Possible alternatives: non_existent_with_hint
     @cmd.options[:args] = %w[a]
 
     use_ui @ui do
-      assert_raises Gem::MockGemUi::SystemExitException, @ui.error do
+      assert_raise Gem::MockGemUi::SystemExitException, @ui.error do
         @cmd.execute
       end
     end
@@ -1064,6 +1113,31 @@ ERROR:  Possible alternatives: non_existent_with_hint
     e = @ui.error
 
     x = "WARNING:  Unable to pull data from 'http://nonexistent.example': no data for http://nonexistent.example/specs.4.8.gz (http://nonexistent.example/specs.4.8.gz)\n"
+    assert_equal x, e
+  end
+
+  def test_redact_credentials_from_uri_on_warning
+    spec_fetcher do |fetcher|
+      fetcher.download 'a', 2
+    end
+
+    Gem.sources << "http://username:SECURE_TOKEN@nonexistent.example"
+
+    @cmd.options[:args] = %w[a]
+
+    use_ui @ui do
+      assert_raise Gem::MockGemUi::SystemExitException, @ui.error do
+        @cmd.execute
+      end
+    end
+
+    assert_equal %w[a-2], @cmd.installed_specs.map {|spec| spec.full_name }
+
+    assert_match "1 gem installed", @ui.output
+
+    e = @ui.error
+
+    x = "WARNING:  Unable to pull data from 'http://username:REDACTED@nonexistent.example': no data for http://username:REDACTED@nonexistent.example/specs.4.8.gz (http://username:REDACTED@nonexistent.example/specs.4.8.gz)\n"
     assert_equal x, e
   end
 
@@ -1079,7 +1153,7 @@ ERROR:  Possible alternatives: non_existent_with_hint
     @cmd.options[:gemdeps] = @gemdeps
 
     use_ui @ui do
-      assert_raises Gem::MockGemUi::SystemExitException, @ui.error do
+      assert_raise Gem::MockGemUi::SystemExitException, @ui.error do
         @cmd.execute
       end
     end
@@ -1103,7 +1177,7 @@ ERROR:  Possible alternatives: non_existent_with_hint
     @cmd.options[:gemdeps] = @gemdeps
 
     use_ui @ui do
-      assert_raises Gem::MockGemUi::SystemExitException, @ui.error do
+      assert_raise Gem::MockGemUi::SystemExitException, @ui.error do
         @cmd.execute
       end
     end
@@ -1128,7 +1202,7 @@ ERROR:  Possible alternatives: non_existent_with_hint
     @cmd.options[:gemdeps] = @gemdeps
 
     use_ui @ui do
-      assert_raises Gem::MockGemUi::SystemExitException, @ui.error do
+      assert_raise Gem::MockGemUi::SystemExitException, @ui.error do
         @cmd.execute
       end
     end
@@ -1150,7 +1224,7 @@ ERROR:  Possible alternatives: non_existent_with_hint
     @cmd.options[:gemdeps] = @gemdeps
 
     use_ui @ui do
-      assert_raises Gem::MockGemUi::SystemExitException, @ui.error do
+      assert_raise Gem::MockGemUi::SystemExitException, @ui.error do
         @cmd.execute
       end
     end
@@ -1173,7 +1247,7 @@ ERROR:  Possible alternatives: non_existent_with_hint
     @cmd.options[:gemdeps] = @gemdeps
 
     use_ui @ui do
-      assert_raises Gem::MockGemUi::SystemExitException, @ui.error do
+      assert_raise Gem::MockGemUi::SystemExitException, @ui.error do
         @cmd.execute
       end
     end
@@ -1200,7 +1274,7 @@ ERROR:  Possible alternatives: non_existent_with_hint
     @cmd.options[:gemdeps] = @gemdeps
 
     use_ui @ui do
-      assert_raises Gem::MockGemUi::SystemExitException, @ui.error do
+      assert_raise Gem::MockGemUi::SystemExitException, @ui.error do
         @cmd.execute
       end
     end
@@ -1227,7 +1301,7 @@ ERROR:  Possible alternatives: non_existent_with_hint
     @cmd.options[:gemdeps] = @gemdeps
 
     use_ui @ui do
-      assert_raises Gem::MockGemUi::SystemExitException, @ui.error do
+      assert_raise Gem::MockGemUi::SystemExitException, @ui.error do
         @cmd.execute
       end
     end
@@ -1259,7 +1333,7 @@ ERROR:  Possible alternatives: non_existent_with_hint
     @cmd.options[:gemdeps] = @gemdeps
 
     use_ui @ui do
-      assert_raises Gem::MockGemUi::SystemExitException, @ui.error do
+      assert_raise Gem::MockGemUi::SystemExitException, @ui.error do
         @cmd.execute
       end
     end
@@ -1294,7 +1368,7 @@ ERROR:  Possible alternatives: non_existent_with_hint
     @cmd.options[:gemdeps] = @gemdeps
 
     use_ui @ui do
-      assert_raises Gem::MockGemUi::SystemExitException, @ui.error do
+      assert_raise Gem::MockGemUi::SystemExitException, @ui.error do
         @cmd.execute
       end
     end
@@ -1379,7 +1453,7 @@ ERROR:  Possible alternatives: non_existent_with_hint
     @cmd.options[:args] = %w[a]
 
     use_ui @ui do
-      assert_raises Gem::MockGemUi::SystemExitException, @ui.error do
+      assert_raise Gem::MockGemUi::SystemExitException, @ui.error do
         @cmd.execute
       end
     end
@@ -1406,7 +1480,7 @@ ERROR:  Possible alternatives: non_existent_with_hint
     @cmd.options[:args] = %w[a]
 
     use_ui @ui do
-      assert_raises Gem::MockGemUi::SystemExitException, @ui.error do
+      assert_raise Gem::MockGemUi::SystemExitException, @ui.error do
         @cmd.execute
       end
     end
@@ -1435,7 +1509,7 @@ ERROR:  Possible alternatives: non_existent_with_hint
     @cmd.options[:args] = %w[a]
 
     use_ui @ui do
-      assert_raises Gem::MockGemUi::SystemExitException, @ui.error do
+      assert_raise Gem::MockGemUi::SystemExitException, @ui.error do
         @cmd.execute
       end
     end
@@ -1465,7 +1539,7 @@ ERROR:  Possible alternatives: non_existent_with_hint
     @cmd.options[:args] = %w[a]
 
     use_ui @ui do
-      assert_raises Gem::MockGemUi::SystemExitException, @ui.error do
+      assert_raise Gem::MockGemUi::SystemExitException, @ui.error do
         @cmd.execute
       end
     end

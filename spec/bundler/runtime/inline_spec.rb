@@ -2,7 +2,7 @@
 
 RSpec.describe "bundler/inline#gemfile" do
   def script(code, options = {})
-    requires = ["#{lib_dir}/bundler/inline"]
+    requires = ["#{entrypoint}/inline"]
     requires.unshift "#{spec_dir}/support/artifice/" + options.delete(:artifice) if options.key?(:artifice)
     requires = requires.map {|r| "require '#{r}'" }.join("\n")
     ruby("#{requires}\n\n" + code, options)
@@ -48,6 +48,7 @@ RSpec.describe "bundler/inline#gemfile" do
   it "requires the gems" do
     script <<-RUBY
       gemfile do
+        source "#{file_uri_for(gem_repo1)}"
         path "#{lib_path}" do
           gem "two"
         end
@@ -58,6 +59,7 @@ RSpec.describe "bundler/inline#gemfile" do
 
     script <<-RUBY, :raise_on_error => false
       gemfile do
+        source "#{file_uri_for(gem_repo1)}"
         path "#{lib_path}" do
           gem "eleven"
         end
@@ -87,13 +89,13 @@ RSpec.describe "bundler/inline#gemfile" do
 
     expect(out).to include("Installing activesupport")
     err_lines = err.split("\n")
-    err_lines.reject!{|line| line =~ /\.rb:\d+: warning: / } unless RUBY_VERSION < "2.7"
+    err_lines.reject! {|line| line =~ /\.rb:\d+: warning: / } unless RUBY_VERSION < "2.7"
     expect(err_lines).to be_empty
   end
 
   it "lets me use my own ui object" do
     script <<-RUBY, :artifice => "endpoint"
-      require '#{lib_dir}/bundler'
+      require '#{entrypoint}'
       class MyBundlerUI < Bundler::UI::Silent
         def confirm(msg, newline = nil)
           puts "CONFIRMED!"
@@ -110,7 +112,7 @@ RSpec.describe "bundler/inline#gemfile" do
 
   it "has an option for quiet installation" do
     script <<-RUBY, :artifice => "endpoint"
-      require '#{lib_dir}/bundler/inline'
+      require '#{entrypoint}/inline'
 
       gemfile(true, :quiet => true) do
         source "https://notaserver.com"
@@ -136,9 +138,10 @@ RSpec.describe "bundler/inline#gemfile" do
 
   it "does not mutate the option argument" do
     script <<-RUBY
-      require '#{lib_dir}/bundler'
+      require '#{entrypoint}'
       options = { :ui => Bundler::UI::Shell.new }
       gemfile(false, options) do
+        source "#{file_uri_for(gem_repo1)}"
         path "#{lib_path}" do
           gem "two"
         end
@@ -168,6 +171,7 @@ RSpec.describe "bundler/inline#gemfile" do
     baz_ref = build_git("baz", "2.0.0").ref_for("HEAD")
     script <<-RUBY
       gemfile do
+        source "#{file_uri_for(gem_repo1)}"
         gem "foo", :git => #{lib_path("foo-1.0.0").to_s.dump}
         gem "baz", :git => #{lib_path("baz-2.0.0").to_s.dump}, :ref => #{baz_ref.dump}
       end
@@ -184,12 +188,14 @@ RSpec.describe "bundler/inline#gemfile" do
     script <<-RUBY
       gemfile do
         path "#{lib_path}" do
+          source "#{file_uri_for(gem_repo1)}"
           gem "two"
         end
       end
 
       gemfile do
         path "#{lib_path}" do
+          source "#{file_uri_for(gem_repo1)}"
           gem "four"
         end
       end
@@ -218,7 +224,7 @@ RSpec.describe "bundler/inline#gemfile" do
         rake
 
       BUNDLED WITH
-         1.13.6
+         #{Bundler::VERSION}
     G
 
     script <<-RUBY
@@ -230,6 +236,40 @@ RSpec.describe "bundler/inline#gemfile" do
       puts RACK
     RUBY
 
+    expect(err).to be_empty
+  end
+
+  it "does not leak Gemfile.lock versions to the installation output" do
+    gemfile <<-G
+      source "https://notaserver.com"
+      gem "rake"
+    G
+
+    lockfile <<-G
+      GEM
+        remote: https://rubygems.org/
+        specs:
+          rake (11.3.0)
+
+      PLATFORMS
+        ruby
+
+      DEPENDENCIES
+        rake
+
+      BUNDLED WITH
+         #{Bundler::VERSION}
+    G
+
+    script <<-RUBY
+      gemfile(true) do
+        source "#{file_uri_for(gem_repo1)}"
+        gem "rake", "~> 13.0"
+      end
+    RUBY
+
+    expect(out).to include("Installing rake 13.0")
+    expect(out).not_to include("was 11.3.0")
     expect(err).to be_empty
   end
 
@@ -293,7 +333,7 @@ RSpec.describe "bundler/inline#gemfile" do
     it "installs inline gems to the system path regardless" do
       script <<-RUBY, :env => { "BUNDLE_PATH" => "./vendor/inline" }
         gemfile(true) do
-          source "file://#{gem_repo1}"
+          source "#{file_uri_for(gem_repo1)}"
           gem "rack"
         end
       RUBY
@@ -303,7 +343,7 @@ RSpec.describe "bundler/inline#gemfile" do
   end
 
   it "skips platform warnings" do
-    simulate_platform "ruby"
+    bundle "config set --local force_ruby_platform true"
 
     script <<-RUBY
       gemfile(true) do
@@ -367,6 +407,7 @@ RSpec.describe "bundler/inline#gemfile" do
 
     script <<-RUBY, :dir => tmp("path_without_gemfile")
       gemfile do
+        source "#{file_uri_for(gem_repo2)}"
         path "#{lib_path}" do
           gem "foo", require: false
         end
@@ -383,7 +424,7 @@ RSpec.describe "bundler/inline#gemfile" do
     dependency_installer_loads_fileutils = ruby "require 'rubygems/dependency_installer'; puts $LOADED_FEATURES.grep(/fileutils/)", :raise_on_error => false
     skip "does not work if rubygems/dependency_installer loads fileutils, which happens until rubygems 3.2.0" unless dependency_installer_loads_fileutils.empty?
 
-    skip "does not work on ruby 3.0 because it changes the path to look for default gems, tsort is a default gem there, and we can't install it either like we do with fiddle because it doesn't yet exist" unless RUBY_VERSION < "3.0.0"
+    skip "pathname does not install cleanly on this ruby" if RUBY_VERSION < "2.7.0"
 
     Dir.mkdir tmp("path_without_gemfile")
 
@@ -391,6 +432,8 @@ RSpec.describe "bundler/inline#gemfile" do
     skip "fileutils isn't a default gem" if default_fileutils_version.empty?
 
     realworld_system_gems "fileutils --version 1.4.1"
+
+    realworld_system_gems "pathname --version 0.2.0"
 
     realworld_system_gems "fiddle" # not sure why, but this is needed on Windows to boot rubygems successfully
 

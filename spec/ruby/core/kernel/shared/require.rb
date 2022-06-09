@@ -251,7 +251,7 @@ describe :kernel_require, shared: true do
       ScratchPad.recorded.should == [:loaded]
     end
 
-    ruby_bug "#16926", "2.7"..."3.0" do
+    ruby_bug "#16926", ""..."3.0" do
       it "does not load a feature twice when $LOAD_PATH has been modified" do
         $LOAD_PATH.replace [CODE_LOADING_DIR]
         @object.require("load_fixture").should be_true
@@ -547,9 +547,7 @@ describe :kernel_require, shared: true do
     end
 
     provided = %w[complex enumerator rational thread]
-    ruby_version_is "2.7" do
-      provided << 'ruby2_keywords'
-    end
+    provided << 'ruby2_keywords'
 
     it "#{provided.join(', ')} are already required" do
       features = ruby_exe("puts $LOADED_FEATURES", options: '--disable-gems')

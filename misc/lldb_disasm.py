@@ -21,12 +21,13 @@ import lldb
 import os
 import shlex
 
-class IseqDissassembler:
+class IseqDisassembler:
     TS_VARIABLE = b'.'[0]
     TS_CALLDATA = b'C'[0]
     TS_CDHASH   = b'H'[0]
     TS_IC       = b'K'[0]
     TS_IVC      = b'A'[0]
+    TS_ICVARC   = b'J'[0]
     TS_ID       = b'I'[0]
     TS_ISE      = b'T'[0]
     TS_ISEQ     = b'S'[0]
@@ -48,6 +49,7 @@ class IseqDissassembler:
             TS_ISE: "(iseq_inline_storage_entry *)%0#x",
             TS_ID: "ID: %0#x",
             TS_IVC: "(struct iseq_inline_iv_cache_entry *)%0#x",
+            TS_ICVARC: "(struct iseq_inline_cvar_cache_entry *)%0#x",
             TS_IC: "(struct iseq_inline_cache_entry *)%0#x",
             TS_CDHASH: "CDHASH (VALUE)%0#x",
             TS_CALLDATA: "(struct rb_call_data *)%0#x",
@@ -142,7 +144,7 @@ class IseqDissassembler:
     def insn_len(self, target, offset):
         size_of_char = self.tChar.GetByteSize()
 
-        symbol = target.FindSymbols("insn_len.t")[0].GetSymbol()
+        symbol = target.FindSymbols("rb_vm_insn_len_info")[0].GetSymbol()
         section = symbol.GetStartAddress().GetSection()
         addr_of_table = symbol.GetStartAddress().GetOffset()
 
@@ -160,7 +162,7 @@ class IseqDissassembler:
         size_of_short = tUShort.GetByteSize()
         size_of_char =  self.tChar.GetByteSize()
 
-        symbol = target.FindSymbols("insn_op_types.y")[0].GetSymbol()
+        symbol = target.FindSymbols("rb_vm_insn_op_offset")[0].GetSymbol()
         section = symbol.GetStartAddress().GetSection()
         addr_of_table = symbol.GetStartAddress().GetOffset()
 
@@ -172,7 +174,7 @@ class IseqDissassembler:
         if not error.Success():
             print("error getting op type offset: ", error)
 
-        symbol = target.FindSymbols("insn_op_types.x")[0].GetSymbol()
+        symbol = target.FindSymbols("rb_vm_insn_op_base")[0].GetSymbol()
         section = symbol.GetStartAddress().GetSection()
         addr_of_table = symbol.GetStartAddress().GetOffset()
         addr_in_name_table = addr_of_table + (offset * size_of_char)
@@ -188,7 +190,7 @@ class IseqDissassembler:
         tUShort = target.FindFirstType("unsigned short")
         size_of_short = tUShort.GetByteSize()
 
-        symbol = target.FindSymbols("insn_name.y")[0].GetSymbol()
+        symbol = target.FindSymbols("rb_vm_insn_name_offset")[0].GetSymbol()
         section = symbol.GetStartAddress().GetSection()
         table_offset = symbol.GetStartAddress().GetOffset()
 
@@ -203,7 +205,7 @@ class IseqDissassembler:
             print("error getting insn name table offset: ", error)
 
     def insn_name(self, target, process, result, offset):
-        symbol = target.FindSymbols("insn_name.x")[0].GetSymbol()
+        symbol = target.FindSymbols("rb_vm_insn_name_base")[0].GetSymbol()
         section = symbol.GetStartAddress().GetSection()
         addr_of_table = symbol.GetStartAddress().GetOffset()
 
@@ -219,7 +221,7 @@ class IseqDissassembler:
             print('error getting insn name', error)
 
 def disasm(debugger, command, result, internal_dict):
-    disassembler = IseqDissassembler(debugger, command, result, internal_dict)
+    disassembler = IseqDisassembler(debugger, command, result, internal_dict)
     frame = disassembler.frame
 
     if frame.IsValid():

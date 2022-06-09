@@ -6,14 +6,14 @@ class TestFiberEnumerator < Test::Unit::TestCase
   MESSAGE = "Hello World"
 
   def test_read_characters
-    skip "UNIXSocket is not defined!" unless defined?(UNIXSocket)
+    omit "UNIXSocket is not defined!" unless defined?(UNIXSocket)
 
     i, o = UNIXSocket.pair
 
     unless i.nonblock? && o.nonblock?
       i.close
       o.close
-      skip "I/O is not non-blocking!"
+      omit "I/O is not non-blocking!"
     end
 
     message = String.new

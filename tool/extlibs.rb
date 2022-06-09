@@ -5,24 +5,36 @@
 
 require 'digest'
 require_relative 'downloader'
-require_relative 'lib/colorize'
-
-class Vars < Hash
-  def pattern
-    /\$\((#{Regexp.union(keys)})\)/
-  end
-
-  def expand(str)
-    if empty?
-      str
-    else
-      str.gsub(pattern) {self[$1]}
-    end
-  end
+begin
+  require_relative 'lib/colorize'
+rescue LoadError
 end
 
 class ExtLibs
-  def initialize
+  unless defined?(Colorize)
+    class Colorize
+      def pass(str) str; end
+      def fail(str) str; end
+    end
+  end
+
+  class Vars < Hash
+    def pattern
+      /\$\((#{Regexp.union(keys)})\)/
+    end
+
+    def expand(str)
+      if empty?
+        str
+      else
+        str.gsub(pattern) {self[$1]}
+      end
+    end
+  end
+
+  def initialize(mode = :all, cache_dir: nil)
+    @mode = mode
+    @cache_dir = cache_dir
     @colorize = Colorize.new
   end
 
@@ -160,7 +172,78 @@ class ExtLibs
     extracted
   end
 
-  def run(argv)
+  def process(list)
+    mode = @mode
+    cache_dir = @cache_dir
+    after_extract = (mode == :all or mode == :patch)
+    success = true
+    if $VERBOSE
+      $stdout.puts "downloading for #{list}"
+      $stdout.flush
+    end
+    vars = Vars.new
+    extracted = false
+    dest = File.dirname(list)
+    url = chksums = nil
+    IO.foreach(list) do |line|
+      line.sub!(/\s*#.*/, '')
+      if /^(\w+)\s*=\s*(.*)/ =~ line
+        vars[$1] = vars.expand($2)
+        next
+      end
+      if chksums
+        chksums.concat(line.split)
+      elsif /^\t/ =~ line
+        if extracted and after_extract
+          patch, *args = line.split.map {|s| vars.expand(s)}
+          do_patch(dest, patch, args)
+        end
+        next
+      elsif /^!\s*(?:chdir:\s*([^|\s]+)\|\s*)?(.*)/ =~ line
+        if extracted and after_extract
+          command = vars.expand($2.strip)
+          chdir = $1 and chdir = vars.expand(chdir)
+          do_exec(command, chdir, dest)
+        end
+        next
+      elsif /->/ =~ line
+        if extracted and after_extract
+          link, file = $`.strip, $'.strip
+          do_link(vars.expand(link), vars.expand(file), dest)
+        end
+        next
+      else
+        url, *chksums = line.split(' ')
+      end
+      if chksums.last == '\\'
+        chksums.pop
+        next
+      end
+      unless url
+        chksums = nil
+        next
+      end
+      url = vars.expand(url)
+      begin
+        extracted = do_command(mode, dest, url, cache_dir, chksums)
+      rescue => e
+        warn e.full_message
+        success = false
+      end
+      url = chksums = nil
+    end
+    success
+  end
+
+  def process_under(dir)
+    success = true
+    Dir.glob("#{dir}/**/extlibs") do |list|
+      success &= process(list)
+    end
+    success
+  end
+
+  def self.run(argv)
     cache_dir = nil
     mode = :all
     until argv.empty?
@@ -190,71 +273,10 @@ class ExtLibs
       argv.shift
     end
 
-    success = true
-    argv.each do |dir|
-      Dir.glob("#{dir}/**/extlibs") do |list|
-        if $VERBOSE
-          $stdout.puts "downloading for #{list}"
-          $stdout.flush
-        end
-        vars = Vars.new
-        extracted = false
-        dest = File.dirname(list)
-        url = chksums = nil
-        IO.foreach(list) do |line|
-          line.sub!(/\s*#.*/, '')
-          if /^(\w+)\s*=\s*(.*)/ =~ line
-            vars[$1] = vars.expand($2)
-            next
-          end
-          if chksums
-            chksums.concat(line.split)
-          elsif /^\t/ =~ line
-            if extracted and (mode == :all or mode == :patch)
-              patch, *args = line.split.map {|s| vars.expand(s)}
-              do_patch(dest, patch, args)
-            end
-            next
-          elsif /^!\s*(?:chdir:\s*([^|\s]+)\|\s*)?(.*)/ =~ line
-            if extracted and (mode == :all or mode == :patch)
-              command = vars.expand($2.strip)
-              chdir = $1 and chdir = vars.expand(chdir)
-              do_exec(command, chdir, dest)
-            end
-            next
-          elsif /->/ =~ line
-            if extracted and (mode == :all or mode == :patch)
-              link, file = $`.strip, $'.strip
-              do_link(vars.expand(link), vars.expand(file), dest)
-            end
-            next
-          else
-            url, *chksums = line.split(' ')
-          end
-          if chksums.last == '\\'
-            chksums.pop
-            next
-          end
-          unless url
-            chksums = nil
-            next
-          end
-          url = vars.expand(url)
-          begin
-            extracted = do_command(mode, dest, url, cache_dir, chksums)
-          rescue => e
-            warn e.inspect
-            success = false
-          end
-          url = chksums = nil
-        end
-      end
+    extlibs = new(mode, cache_dir: cache_dir)
+    argv.inject(true) do |success, dir|
+      success & extlibs.process_under(dir)
     end
-    success
-  end
-
-  def self.run(argv)
-    self.new.run(argv)
   end
 end
 

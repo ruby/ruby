@@ -190,6 +190,53 @@ class TestKeywordArguments < Test::Unit::TestCase
     assert_equal(["bar", 111111], f[str: "bar", num: 111111])
   end
 
+  def test_unset_hash_flag
+    bug18625 = "[ruby-core: 107847]"
+    singleton_class.class_eval do
+      ruby2_keywords def foo(*args)
+        args
+      end
+
+      def single(arg)
+        arg
+      end
+
+      def splat(*args)
+        args.last
+      end
+
+      def kwargs(**kw)
+        kw
+      end
+    end
+
+    h = { a: 1 }
+    args = foo(**h)
+    marked = args.last
+    assert_equal(true, Hash.ruby2_keywords_hash?(marked))
+
+    after_usage = single(*args)
+    assert_equal(h, after_usage)
+    assert_same(marked, args.last)
+    assert_not_same(marked, after_usage)
+    assert_equal(false, Hash.ruby2_keywords_hash?(after_usage))
+
+    after_usage = splat(*args)
+    assert_equal(h, after_usage)
+    assert_same(marked, args.last)
+    assert_not_same(marked, after_usage, bug18625)
+    assert_equal(false, Hash.ruby2_keywords_hash?(after_usage), bug18625)
+
+    after_usage = kwargs(*args)
+    assert_equal(h, after_usage)
+    assert_same(marked, args.last)
+    assert_not_same(marked, after_usage, bug18625)
+    assert_not_same(marked, after_usage)
+    assert_equal(false, Hash.ruby2_keywords_hash?(after_usage))
+
+    assert_equal(true, Hash.ruby2_keywords_hash?(marked))
+  end
+
   def test_keyword_splat_new
     kw = {}
     h = {a: 1}
@@ -3538,7 +3585,7 @@ class TestKeywordArguments < Test::Unit::TestCase
     assert_equal(splat_expect, pr.call(a), bug8463)
 
     pr = proc {|a, **opt| next a, opt}
-    assert_equal(splat_expect.values_at(0, -1), pr.call(splat_expect), bug8463)
+    assert_equal([splat_expect, {}], pr.call(splat_expect), bug8463)
   end
 
   def req_plus_keyword(x, **h)
@@ -4350,5 +4397,22 @@ class TestKeywordArgumentsSymProcRefinements < Test::Unit::TestCase
     bug16603 = '[ruby-core:97047] [Bug #16603]'
     assert_raise(TypeError, bug16603) { p(**42) }
     assert_raise(TypeError, bug16603) { p(k:1, **42) }
+  end
+
+  def test_value_omission
+    f = ->(**kwargs) { kwargs }
+    x = 1
+    y = 2
+    assert_equal({x: 1, y: 2}, f.call(x:, y:))
+    assert_equal({x: 1, y: 2, z: 3}, f.call(x:, y:, z: 3))
+    assert_equal({one: 1, two: 2}, f.call(one:, two:))
+  end
+
+  private def one
+    1
+  end
+
+  private def two
+    2
   end
 end

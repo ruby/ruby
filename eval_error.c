@@ -79,47 +79,6 @@ error_print(rb_execution_context_t *ec)
     rb_ec_error_print(ec, ec->errinfo);
 }
 
-static void
-write_warnq(VALUE out, VALUE str, const char *ptr, long len)
-{
-    if (NIL_P(out)) {
-        const char *beg = ptr;
-        const long olen = len;
-        for (; len > 0; --len, ++ptr) {
-            unsigned char c = *ptr;
-            switch (c) {
-              case '\n': case '\t': continue;
-            }
-            if (rb_iscntrl(c)) {
-                char buf[5];
-                const char *cc = 0;
-                if (ptr > beg) rb_write_error2(beg, ptr - beg);
-                beg = ptr + 1;
-                cc = ruby_escaped_char(c);
-                if (cc) {
-                    rb_write_error2(cc, strlen(cc));
-                }
-                else {
-                    rb_write_error2(buf, snprintf(buf, sizeof(buf), "\\x%02X", c));
-                }
-            }
-            else if (c == '\\') {
-                rb_write_error2(beg, ptr - beg + 1);
-                beg = ptr;
-            }
-        }
-        if (ptr > beg) {
-            if (beg == RSTRING_PTR(str) && olen == RSTRING_LEN(str))
-                rb_write_error_str(str);
-            else
-                rb_write_error2(beg, ptr - beg);
-        }
-    }
-    else {
-        rb_str_cat(out, ptr, len);
-    }
-}
-
 #define CSI_BEGIN "\033["
 #define CSI_SGR "m"
 
@@ -130,24 +89,20 @@ static const char reset[] = CSI_BEGIN""CSI_SGR;
 static void
 print_errinfo(const VALUE eclass, const VALUE errat, const VALUE emesg, const VALUE str, int highlight)
 {
-    const char *einfo = "";
     long elen = 0;
     VALUE mesg;
 
-    if (emesg != Qundef) {
-	if (NIL_P(errat) || RARRAY_LEN(errat) == 0 ||
-	    NIL_P(mesg = RARRAY_AREF(errat, 0))) {
-	    error_pos(str);
-	}
-	else {
-	    write_warn_str(str, mesg);
-	    write_warn(str, ": ");
-	}
+    if (NIL_P(errat) || RARRAY_LEN(errat) == 0 ||
+        NIL_P(mesg = RARRAY_AREF(errat, 0))) {
+        error_pos(str);
+    }
+    else {
+        write_warn_str(str, mesg);
+        write_warn(str, ": ");
+    }
 
-	if (!NIL_P(emesg)) {
-	    einfo = RSTRING_PTR(emesg);
-            elen = RSTRING_LEN(emesg);
-	}
+    if (!NIL_P(emesg)) {
+        elen = RSTRING_LEN(emesg);
     }
 
     if (eclass == rb_eRuntimeError && elen == 0) {
@@ -167,6 +122,39 @@ print_errinfo(const VALUE eclass, const VALUE errat, const VALUE emesg, const VA
 	    write_warn(str, "\n");
 	}
 	else {
+	    write_warn_str(str, emesg);
+	    write_warn(str, "\n");
+        }
+    }
+}
+
+VALUE
+rb_decorate_message(const VALUE eclass, const VALUE emesg, int highlight)
+{
+    const char *einfo = "";
+    long elen = 0;
+
+    VALUE str = rb_str_new2("");
+
+    if (!NIL_P(emesg)) {
+        einfo = RSTRING_PTR(emesg);
+        elen = RSTRING_LEN(emesg);
+    }
+    if (eclass == rb_eRuntimeError && elen == 0) {
+	if (highlight) write_warn(str, underline);
+	write_warn(str, "unhandled exception");
+	if (highlight) write_warn(str, reset);
+    }
+    else {
+	VALUE epath;
+
+	epath = rb_class_name(eclass);
+	if (elen == 0) {
+	    if (highlight) write_warn(str, underline);
+	    write_warn_str(str, epath);
+	    if (highlight) write_warn(str, reset);
+	}
+	else {
             /* emesg is a String instance */
 	    const char *tail = 0;
 
@@ -174,11 +162,11 @@ print_errinfo(const VALUE eclass, const VALUE errat, const VALUE emesg, const VA
 	    if (RSTRING_PTR(epath)[0] == '#')
 		epath = 0;
 	    if ((tail = memchr(einfo, '\n', elen)) != 0) {
-                write_warnq(str, emesg, einfo, tail - einfo);
+                write_warn2(str, einfo, tail - einfo);
 		tail++;		/* skip newline */
 	    }
 	    else {
-                write_warnq(str, emesg, einfo, elen);
+                write_warn_str(str, emesg);
 	    }
 	    if (epath) {
 		write_warn(str, " (");
@@ -190,41 +178,39 @@ print_errinfo(const VALUE eclass, const VALUE errat, const VALUE emesg, const VA
 		}
 		write_warn2(str, ")", 1);
 		if (highlight) write_warn(str, reset);
-		write_warn2(str, "\n", 1);
 	    }
 	    if (tail && einfo+elen > tail) {
 		if (!highlight) {
-                    write_warnq(str, emesg, tail, einfo+elen-tail);
-		    if (einfo[elen-1] != '\n') write_warn2(str, "\n", 1);
+                    write_warn2(str, "\n", 1);
+                    write_warn2(str, tail, einfo+elen-tail);
 		}
 		else {
 		    elen -= tail - einfo;
 		    einfo = tail;
+                    write_warn2(str, "\n", 1);
 		    while (elen > 0) {
 			tail = memchr(einfo, '\n', elen);
 			if (!tail || tail > einfo) {
 			    write_warn(str, bold);
-                            write_warnq(str, emesg, einfo, tail ? tail-einfo : elen);
+                            write_warn2(str, einfo, tail ? tail-einfo : elen);
 			    write_warn(str, reset);
 			    if (!tail) {
-				write_warn2(str, "\n", 1);
 				break;
 			    }
 			}
 			elen -= tail - einfo;
 			einfo = tail;
 			do ++tail; while (tail < einfo+elen && *tail == '\n');
-                        write_warnq(str, emesg, einfo, tail-einfo);
+                        write_warn2(str, einfo, tail-einfo);
 			elen -= tail - einfo;
 			einfo = tail;
 		    }
 		}
 	    }
-	    else if (!epath) {
-		write_warn2(str, "\n", 1);
-	    }
 	}
     }
+
+    return str;
 }
 
 static void
@@ -274,7 +260,7 @@ print_backtrace(const VALUE eclass, const VALUE errat, const VALUE str, int reve
     }
 }
 
-VALUE rb_get_message(VALUE exc);
+VALUE rb_get_detailed_message(VALUE exc, VALUE opt);
 
 static int
 shown_cause_p(VALUE cause, VALUE *shown_causes)
@@ -289,29 +275,29 @@ shown_cause_p(VALUE cause, VALUE *shown_causes)
 }
 
 static void
-show_cause(VALUE errinfo, VALUE str, VALUE highlight, VALUE reverse, long backtrace_limit, VALUE *shown_causes)
+show_cause(VALUE errinfo, VALUE str, VALUE opt, VALUE highlight, VALUE reverse, long backtrace_limit, VALUE *shown_causes)
 {
     VALUE cause = rb_attr_get(errinfo, id_cause);
     if (!NIL_P(cause) && rb_obj_is_kind_of(cause, rb_eException) &&
         !shown_cause_p(cause, shown_causes)) {
         volatile VALUE eclass = CLASS_OF(cause);
         VALUE errat = rb_get_backtrace(cause);
-        VALUE emesg = rb_get_message(cause);
+        VALUE emesg = rb_get_detailed_message(cause, opt);
         if (reverse) {
-            show_cause(cause, str, highlight, reverse, backtrace_limit, shown_causes);
+            show_cause(cause, str, opt, highlight, reverse, backtrace_limit, shown_causes);
             print_backtrace(eclass, errat, str, TRUE, backtrace_limit);
-            print_errinfo(eclass, errat, emesg, str, highlight!=0);
+            print_errinfo(eclass, errat, emesg, str, RTEST(highlight));
         }
         else {
-            print_errinfo(eclass, errat, emesg, str, highlight!=0);
+            print_errinfo(eclass, errat, emesg, str, RTEST(highlight));
             print_backtrace(eclass, errat, str, FALSE, backtrace_limit);
-            show_cause(cause, str, highlight, reverse, backtrace_limit, shown_causes);
+            show_cause(cause, str, opt, highlight, reverse, backtrace_limit, shown_causes);
         }
     }
 }
 
 void
-rb_error_write(VALUE errinfo, VALUE emesg, VALUE errat, VALUE str, VALUE highlight, VALUE reverse)
+rb_error_write(VALUE errinfo, VALUE emesg, VALUE errat, VALUE str, VALUE opt, VALUE highlight, VALUE reverse)
 {
     volatile VALUE eclass;
     VALUE shown_causes = 0;
@@ -324,11 +310,6 @@ rb_error_write(VALUE errinfo, VALUE emesg, VALUE errat, VALUE str, VALUE highlig
 	errat = Qnil;
     }
     eclass = CLASS_OF(errinfo);
-    if (NIL_P(reverse)) reverse = Qfalse;
-    if (NIL_P(highlight)) {
-	VALUE tty = (VALUE)rb_stderr_tty_p();
-	if (NIL_P(highlight)) highlight = tty;
-    }
     if (reverse) {
 	static const char traceback[] = "Traceback "
 	    "(most recent call last):\n";
@@ -336,7 +317,7 @@ rb_error_write(VALUE errinfo, VALUE emesg, VALUE errat, VALUE str, VALUE highlig
 	char buff[sizeof(traceback)+sizeof(bold)+sizeof(reset)-2], *p = buff;
 	const char *msg = traceback;
 	long len = sizeof(traceback) - 1;
-	if (highlight) {
+	if (RTEST(highlight)) {
 #define APPEND(s, l) (memcpy(p, s, l), p += (l))
 	    APPEND(bold, sizeof(bold)-1);
 	    APPEND(traceback, bold_part);
@@ -346,14 +327,14 @@ rb_error_write(VALUE errinfo, VALUE emesg, VALUE errat, VALUE str, VALUE highlig
 	    len = p - (msg = buff);
 	}
 	write_warn2(str, msg, len);
-        show_cause(errinfo, str, highlight, reverse, backtrace_limit, &shown_causes);
+        show_cause(errinfo, str, opt, highlight, reverse, backtrace_limit, &shown_causes);
 	print_backtrace(eclass, errat, str, TRUE, backtrace_limit);
-	print_errinfo(eclass, errat, emesg, str, highlight!=0);
+	print_errinfo(eclass, errat, emesg, str, RTEST(highlight));
     }
     else {
-	print_errinfo(eclass, errat, emesg, str, highlight!=0);
+	print_errinfo(eclass, errat, emesg, str, RTEST(highlight));
 	print_backtrace(eclass, errat, str, FALSE, backtrace_limit);
-        show_cause(errinfo, str, highlight, reverse, backtrace_limit, &shown_causes);
+        show_cause(errinfo, str, opt, highlight, reverse, backtrace_limit, &shown_causes);
     }
 }
 
@@ -365,6 +346,10 @@ rb_ec_error_print(rb_execution_context_t * volatile ec, volatile VALUE errinfo)
     volatile VALUE emesg = Qundef;
     volatile bool written = false;
 
+    VALUE opt = rb_hash_new();
+    VALUE highlight = rb_stderr_tty_p() ? Qtrue : Qfalse;
+    rb_hash_aset(opt, ID2SYM(rb_intern_const("highlight")), highlight);
+
     if (NIL_P(errinfo))
 	return;
     rb_ec_raised_clear(ec);
@@ -375,12 +360,12 @@ rb_ec_error_print(rb_execution_context_t * volatile ec, volatile VALUE errinfo)
     }
     if (emesg == Qundef) {
 	emesg = Qnil;
-	emesg = rb_get_message(errinfo);
+	emesg = rb_get_detailed_message(errinfo, opt);
     }
 
     if (!written) {
         written = true;
-        rb_error_write(errinfo, emesg, errat, Qnil, Qnil, Qfalse);
+        rb_error_write(errinfo, emesg, errat, Qnil, opt, highlight, Qfalse);
     }
 
     EC_POP_TAG();
@@ -430,8 +415,8 @@ rb_print_inaccessible(VALUE klass, ID id, rb_method_visibility_t visi)
     switch (visi & METHOD_VISI_MASK) {
       case METHOD_VISI_UNDEF:
       case METHOD_VISI_PUBLIC:    mesg = inaccessible_mesg(""); break;
-      case METHOD_VISI_PRIVATE:   mesg = inaccessible_mesg(" private"); break;
-      case METHOD_VISI_PROTECTED: mesg = inaccessible_mesg(" protected"); break;
+      case METHOD_VISI_PRIVATE:   mesg = inaccessible_mesg("private"); break;
+      case METHOD_VISI_PROTECTED: mesg = inaccessible_mesg("protected"); break;
       default: UNREACHABLE;
     }
     rb_name_err_raise_str(mesg, klass, ID2SYM(id));

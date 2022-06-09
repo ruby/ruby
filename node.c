@@ -28,8 +28,8 @@
 #define A_LONG(val) rb_str_catf(buf, "%ld", (val))
 #define A_LIT(lit) AR(rb_dump_literal(lit))
 #define A_NODE_HEADER(node, term) \
-    rb_str_catf(buf, "@ %s (line: %d, location: (%d,%d)-(%d,%d))%s"term, \
-		ruby_node_name(nd_type(node)), nd_line(node), \
+    rb_str_catf(buf, "@ %s (id: %d, line: %d, location: (%d,%d)-(%d,%d))%s"term, \
+		ruby_node_name(nd_type(node)), nd_node_id(node), nd_line(node), \
 		nd_first_lineno(node), nd_first_column(node), \
 		nd_last_lineno(node), nd_last_column(node), \
 		(node->flags & NODE_FL_NEWLINE ? "*" : ""))
@@ -136,7 +136,7 @@ dump_array(VALUE buf, VALUE indent, int comment, const NODE *node)
     const char *next_indent = default_indent;
     F_LONG(nd_alen, "length");
     F_NODE(nd_head, "element");
-    while (node->nd_next && nd_type(node->nd_next) == NODE_LIST) {
+    while (node->nd_next && nd_type_p(node->nd_next, NODE_LIST)) {
 	node = node->nd_next;
 	F_NODE(nd_head, "element");
     }
@@ -175,7 +175,7 @@ dump_node(VALUE buf, VALUE indent, int comment, const NODE * node)
 	    dump_node(buf, indent, comment, node->nd_head);
 	    D_DEDENT;
 	} while (node->nd_next &&
-		 nd_type(node->nd_next) == NODE_BLOCK &&
+		 nd_type_p(node->nd_next, NODE_BLOCK) &&
 		 (node = node->nd_next, 1));
 	if (node->nd_next) {
 	    LAST_NODE;
@@ -370,7 +370,7 @@ dump_node(VALUE buf, VALUE indent, int comment, const NODE * node)
       andor:
 	while (1) {
 	    F_NODE(nd_1st, "left expr");
-	    if (!node->nd_2nd || nd_type(node->nd_2nd) != (int)type)
+	    if (!node->nd_2nd || !nd_type_p(node->nd_2nd, type))
 		break;
 	    node = node->nd_2nd;
 	}
@@ -407,16 +407,9 @@ dump_node(VALUE buf, VALUE indent, int comment, const NODE * node)
 	}
 	return;
       case NODE_DASGN:
-	ANN("dynamic variable assignment (out of current scope)");
+	ANN("dynamic variable assignment");
 	ANN("format: [nd_vid](dvar) = [nd_value]");
 	ANN("example: x = nil; 1.times { x = foo }");
-	F_ID(nd_vid, "local variable");
-	LAST_NODE;
-	F_NODE(nd_value, "rvalue");
-	return;
-      case NODE_DASGN_CURR:
-	ANN("dynamic variable assignment (in current scope)");
-	ANN("format: [nd_vid](current dvar) = [nd_value]");
 	ANN("example: 1.times { x = foo }");
 	F_ID(nd_vid, "local variable");
 	if (NODE_REQUIRED_KEYWORD_P(node)) {
@@ -677,10 +670,8 @@ dump_node(VALUE buf, VALUE indent, int comment, const NODE * node)
 	ANN("format: $[nd_nth]");
 	ANN("example: $&, $`, $', $+");
 	F_CUSTOM1(nd_nth, "variable") {
-	    char name[3];
-	    name[0] = '$';
+	    char name[3] = "$ ";
 	    name[1] = (char)node->nd_nth;
-	    name[2] = '\0';
 	    A(name);
 	}
 	return;
@@ -1019,8 +1010,8 @@ dump_node(VALUE buf, VALUE indent, int comment, const NODE * node)
 
       case NODE_ARGS:
 	ANN("method parameters");
-	ANN("format: def method_name(.., [nd_opt=some], *[nd_rest], [nd_pid], .., &[nd_body])");
-	ANN("example: def foo(a, b, opt1=1, opt2=2, *rest, y, z, &blk); end");
+	ANN("format: def method_name(.., [nd_ainfo->nd_optargs], *[nd_ainfo->rest_arg], [nd_ainfo->first_post_arg], .., [nd_ainfo->kw_args], **[nd_ainfo->kw_rest_arg], &[nd_ainfo->block_arg])");
+	ANN("example: def foo(a, b, opt1=1, opt2=2, *rest, y, z, kw: 1, **kwrest, &blk); end");
 	F_INT(nd_ainfo->pre_args_num, "count of mandatory (pre-)arguments");
 	F_NODE(nd_ainfo->pre_init, "initialization of (pre-)arguments");
 	F_INT(nd_ainfo->post_args_num, "count of mandatory post-arguments");
@@ -1045,12 +1036,12 @@ dump_node(VALUE buf, VALUE indent, int comment, const NODE * node)
 	ANN("new scope");
 	ANN("format: [nd_tbl]: local table, [nd_args]: arguments, [nd_body]: body");
 	F_CUSTOM1(nd_tbl, "local table") {
-	    ID *tbl = node->nd_tbl;
+	    rb_ast_id_table_t *tbl = node->nd_tbl;
 	    int i;
-	    int size = tbl ? (int)*tbl++ : 0;
+	    int size = tbl ? tbl->size : 0;
 	    if (size == 0) A("(empty)");
 	    for (i = 0; i < size; i++) {
-		A_ID(tbl[i]); if (i < size - 1) A(",");
+		A_ID(tbl->ids[i]); if (i < size - 1) A(",");
 	    }
 	}
 	F_NODE(nd_args, "arguments");
@@ -1164,7 +1155,7 @@ typedef struct {
 struct node_buffer_struct {
     node_buffer_list_t unmarkable;
     node_buffer_list_t markable;
-    ID *local_tables;
+    struct rb_ast_local_table_link *local_tables;
     VALUE mark_hash;
 };
 
@@ -1207,15 +1198,22 @@ node_buffer_list_free(node_buffer_list_t * nb)
     }
 }
 
+struct rb_ast_local_table_link {
+    struct rb_ast_local_table_link *next;
+    // struct rb_ast_id_table {
+    int size;
+    ID ids[FLEX_ARY_LEN];
+    // }
+};
+
 static void
 rb_node_buffer_free(node_buffer_t *nb)
 {
     node_buffer_list_free(&nb->unmarkable);
     node_buffer_list_free(&nb->markable);
-    ID * local_table = nb->local_tables;
+    struct rb_ast_local_table_link *local_table = nb->local_tables;
     while (local_table) {
-        unsigned int size = (unsigned int)*local_table;
-        ID * next_table = (ID *)local_table[size + 1];
+        struct rb_ast_local_table_link *next_table = local_table->next;
         xfree(local_table);
         local_table = next_table;
     }
@@ -1279,12 +1277,28 @@ rb_ast_node_type_change(NODE *n, enum node_type type)
     }
 }
 
-void
-rb_ast_add_local_table(rb_ast_t *ast, ID *buf)
+rb_ast_id_table_t *
+rb_ast_new_local_table(rb_ast_t *ast, int size)
 {
-    unsigned int size = (unsigned int)*buf;
-    buf[size + 1] = (ID)ast->node_buffer->local_tables;
-    ast->node_buffer->local_tables = buf;
+    size_t alloc_size = sizeof(struct rb_ast_local_table_link) + size * sizeof(ID);
+    struct rb_ast_local_table_link *link = ruby_xmalloc(alloc_size);
+    link->next = ast->node_buffer->local_tables;
+    ast->node_buffer->local_tables = link;
+    link->size = size;
+
+    return (rb_ast_id_table_t *) &link->size;
+}
+
+rb_ast_id_table_t *
+rb_ast_resize_latest_local_table(rb_ast_t *ast, int size)
+{
+    struct rb_ast_local_table_link *link = ast->node_buffer->local_tables;
+    size_t alloc_size = sizeof(struct rb_ast_local_table_link) + size * sizeof(ID);
+    link = ruby_xrealloc(link, alloc_size);
+    ast->node_buffer->local_tables = link;
+    link->size = size;
+
+    return (rb_ast_id_table_t *) &link->size;
 }
 
 void
@@ -1407,6 +1421,7 @@ rb_ast_mark(rb_ast_t *ast)
 
         iterate_node_values(&nb->markable, mark_ast_value, NULL);
     }
+    if (ast->body.script_lines) rb_gc_mark(ast->body.script_lines);
 }
 
 void

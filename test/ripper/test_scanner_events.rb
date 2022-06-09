@@ -56,13 +56,13 @@ class TestRipper::ScannerEvents < Test::Unit::TestCase
   end
 
   def test_lex
-    assert_equal [],
+    assert_lex   [],
                  Ripper.lex('')
-    assert_equal [[[1,0], :on_ident, "a", Ripper::EXPR_CMDARG]],
+    assert_lex   [[[1,0], :on_ident, "a", Ripper::EXPR_CMDARG]],
                  Ripper.lex('a')
-    assert_equal [[[1, 0], :on_kw, "nil", Ripper::EXPR_END]],
+    assert_lex   [[[1, 0], :on_kw, "nil", Ripper::EXPR_END]],
                  Ripper.lex("nil")
-    assert_equal [[[1, 0], :on_kw, "def", Ripper::EXPR_FNAME],
+    assert_lex   [[[1, 0], :on_kw, "def", Ripper::EXPR_FNAME],
                   [[1, 3], :on_sp, " ", Ripper::EXPR_FNAME],
                   [[1, 4], :on_ident, "m", Ripper::EXPR_ENDFN],
                   [[1, 5], :on_lparen, "(", Ripper::EXPR_BEG | Ripper::EXPR_LABEL],
@@ -70,39 +70,39 @@ class TestRipper::ScannerEvents < Test::Unit::TestCase
                   [[1, 7], :on_rparen, ")", Ripper::EXPR_ENDFN],
                   [[1, 8], :on_kw, "end", Ripper::EXPR_END]],
                  Ripper.lex("def m(a)end")
-    assert_equal [[[1, 0], :on_int, "1", Ripper::EXPR_END],
+    assert_lex   [[[1, 0], :on_int, "1", Ripper::EXPR_END],
                   [[1, 1], :on_nl, "\n", Ripper::EXPR_BEG],
                   [[2, 0], :on_int, "2", Ripper::EXPR_END],
                   [[2, 1], :on_nl, "\n", Ripper::EXPR_BEG],
                   [[3, 0], :on_int, "3", Ripper::EXPR_END]],
                  Ripper.lex("1\n2\n3")
-    assert_equal [[[1, 0], :on_heredoc_beg, "<<""EOS", Ripper::EXPR_BEG],
+    assert_lex   [[[1, 0], :on_heredoc_beg, "<<""EOS", Ripper::EXPR_BEG],
                   [[1, 5], :on_nl, "\n", Ripper::EXPR_BEG],
                   [[2, 0], :on_tstring_content, "heredoc\n", Ripper::EXPR_BEG],
                   [[3, 0], :on_heredoc_end, "EOS", Ripper::EXPR_BEG]],
                  Ripper.lex("<<""EOS\nheredoc\nEOS")
-    assert_equal [[[1, 0], :on_heredoc_beg, "<<""EOS", Ripper::EXPR_BEG],
+    assert_lex   [[[1, 0], :on_heredoc_beg, "<<""EOS", Ripper::EXPR_BEG],
                   [[1, 5], :on_nl, "\n", Ripper::EXPR_BEG],
                   [[2, 0], :on_heredoc_end, "EOS", Ripper::EXPR_BEG]],
                  Ripper.lex("<<""EOS\nEOS"),
                  "bug#4543"
-    assert_equal [[[1, 0], :on_regexp_beg, "/", Ripper::EXPR_BEG],
+    assert_lex   [[[1, 0], :on_regexp_beg, "/", Ripper::EXPR_BEG],
                   [[1, 1], :on_tstring_content, "foo\nbar", Ripper::EXPR_BEG],
                   [[2, 3], :on_regexp_end, "/", Ripper::EXPR_BEG]],
                  Ripper.lex("/foo\nbar/")
-    assert_equal [[[1, 0], :on_regexp_beg, "/", Ripper::EXPR_BEG],
+    assert_lex   [[[1, 0], :on_regexp_beg, "/", Ripper::EXPR_BEG],
                   [[1, 1], :on_tstring_content, "foo\n\u3020", Ripper::EXPR_BEG],
                   [[2, 3], :on_regexp_end, "/", Ripper::EXPR_BEG]],
                  Ripper.lex("/foo\n\u3020/")
-    assert_equal [[[1, 0], :on_tstring_beg, "'", Ripper::EXPR_BEG],
+    assert_lex   [[[1, 0], :on_tstring_beg, "'", Ripper::EXPR_BEG],
                   [[1, 1], :on_tstring_content, "foo\n\xe3\x80\xa0", Ripper::EXPR_BEG],
                   [[2, 3], :on_tstring_end, "'", Ripper::EXPR_END]],
                  Ripper.lex("'foo\n\xe3\x80\xa0'")
-    assert_equal [[[1, 0], :on_tstring_beg, "'", Ripper::EXPR_BEG],
+    assert_lex   [[[1, 0], :on_tstring_beg, "'", Ripper::EXPR_BEG],
                   [[1, 1], :on_tstring_content, "\u3042\n\u3044", Ripper::EXPR_BEG],
                   [[2, 3], :on_tstring_end, "'", Ripper::EXPR_END]],
                  Ripper.lex("'\u3042\n\u3044'")
-    assert_equal [[[1, 0], :on_rational, "1r", Ripper::EXPR_END],
+    assert_lex   [[[1, 0], :on_rational, "1r", Ripper::EXPR_END],
                   [[1, 2], :on_nl, "\n", Ripper::EXPR_BEG],
                   [[2, 0], :on_imaginary, "2i", Ripper::EXPR_END],
                   [[2, 2], :on_nl, "\n", Ripper::EXPR_BEG],
@@ -113,16 +113,23 @@ class TestRipper::ScannerEvents < Test::Unit::TestCase
                   [[5, 0], :on_imaginary, "5.6ri", Ripper::EXPR_END],
                  ],
                  Ripper.lex("1r\n2i\n3ri\n4.2r\n5.6ri")
-     assert_equal [[[1, 0], :on_heredoc_beg, "<<~EOS", Ripper::EXPR_BEG],
+     assert_lex   [[[1, 0], :on_heredoc_beg, "<<~EOS", Ripper::EXPR_BEG],
                    [[1, 6], :on_nl, "\n", Ripper::EXPR_BEG],
                    [[2, 0], :on_ignored_sp, "  ", Ripper::EXPR_BEG],
                    [[2, 2], :on_tstring_content, "heredoc\n", Ripper::EXPR_BEG],
                    [[3, 0], :on_heredoc_end, "EOS", Ripper::EXPR_BEG]
                  ],
                  Ripper.lex("<<~EOS\n  heredoc\nEOS")
-    assert_equal [[[1, 0], :on_tstring_beg, "'", Ripper::EXPR_BEG],
+    assert_lex   [[[1, 0], :on_tstring_beg, "'", Ripper::EXPR_BEG],
                   [[1, 1], :on_tstring_content, "foo", Ripper::EXPR_BEG]],
                  Ripper.lex("'foo")
+  end
+
+  def assert_lex(expected, *rest)
+    expected = expected.map do |pos, type, tok, state, *rest|
+      [pos, type, tok, Ripper::Lexer::State.new(state), *rest]
+    end
+    assert_equal(expected, *rest)
   end
 
   def test_location

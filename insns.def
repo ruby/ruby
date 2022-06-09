@@ -230,26 +230,27 @@ setinstancevariable
 /* Get value of class variable id of klass as val. */
 DEFINE_INSN
 getclassvariable
-(ID id)
+(ID id, ICVARC ic)
 ()
 (VALUE val)
 /* "class variable access from toplevel" warning can be hooked. */
 // attr bool leaf = false; /* has rb_warning() */
 {
-    val = rb_cvar_get(vm_get_cvar_base(vm_get_cref(GET_EP()), GET_CFP(), 1), id);
+    rb_control_frame_t *cfp = GET_CFP();
+    val = vm_getclassvariable(GET_ISEQ(), cfp, id, ic);
 }
 
 /* Set value of class variable id of klass as val. */
 DEFINE_INSN
 setclassvariable
-(ID id)
+(ID id, ICVARC ic)
 (VALUE val)
 ()
 /* "class variable access from toplevel" warning can be hooked. */
 // attr bool leaf = false; /* has rb_warning() */
 {
     vm_ensure_not_refinement_module(GET_SELF());
-    rb_cvar_set(vm_get_cvar_base(vm_get_cref(GET_EP()), GET_CFP(), 1), id, val);
+    vm_setclassvariable(GET_ISEQ(), GET_CFP(), id,  val, ic);
 }
 
 /* Get constant variable id. If klass is Qnil and allow_nil is Qtrue, constants
@@ -349,6 +350,7 @@ putspecialobject
 (rb_num_t value_type)
 ()
 (VALUE val)
+// attr bool leaf = (value_type == VM_SPECIAL_OBJECT_VMCORE); /* others may raise when allocating singleton */
 {
     enum vm_special_object_type type;
 
@@ -380,9 +382,10 @@ concatstrings
     val = rb_str_concat_literals(num, STACK_ADDR_FROM_TOP(num));
 }
 
-/* push the result of to_s. */
+/* Convert the result to string if not already a string.
+   This is used as a backup if to_s does not return a string. */
 DEFINE_INSN
-tostring
+anytostring
 ()
 (VALUE val, VALUE str)
 (VALUE val)
@@ -524,10 +527,12 @@ newhash
 {
     RUBY_DTRACE_CREATE_HOOK(HASH, num);
 
-    val = rb_hash_new_with_size(num / 2);
-
     if (num) {
+        val = rb_hash_new_with_size(num / 2);
         rb_hash_bulk_insert(num, STACK_ADDR_FROM_TOP(num), val);
+    }
+    else {
+        val = rb_hash_new();
     }
 }
 
@@ -658,7 +663,7 @@ defined
      `flag & VM_CHECKMATCH_TYPE_MASK' describe how to check pattern.
       VM_CHECKMATCH_TYPE_WHEN: ignore target and check pattern is truthy.
       VM_CHECKMATCH_TYPE_CASE: check `patten === target'.
-      VM_CHECKMATCH_TYPE_RESCUE: check `pattern.kind_op?(Module) && pattern === target'.
+      VM_CHECKMATCH_TYPE_RESCUE: check `pattern.kind_of?(Module) && pattern === target'.
      if `flag & VM_CHECKMATCH_ARRAY' is not 0, then `patten' is array of patterns.
  */
 DEFINE_INSN
@@ -688,7 +693,7 @@ checktype
 (VALUE val)
 (VALUE ret)
 {
-    ret = (TYPE(val) == (int)type) ? Qtrue : Qfalse;
+    ret = RBOOL(TYPE(val) == (int)type);
 }
 
 /**********************************************************/
@@ -711,10 +716,10 @@ defineclass
     /* enter scope */
     vm_push_frame(ec, class_iseq, VM_FRAME_MAGIC_CLASS | VM_ENV_FLAG_LOCAL, klass,
 		  GET_BLOCK_HANDLER(),
-		  (VALUE)vm_cref_push(ec, klass, NULL, FALSE),
-		  class_iseq->body->iseq_encoded, GET_SP(),
-		  class_iseq->body->local_table_size,
-		  class_iseq->body->stack_max);
+		  (VALUE)vm_cref_push(ec, klass, NULL, FALSE, FALSE),
+                  ISEQ_BODY(class_iseq)->iseq_encoded, GET_SP(),
+                  ISEQ_BODY(class_iseq)->local_table_size,
+                  ISEQ_BODY(class_iseq)->stack_max);
     RESTORE_REGS();
     NEXT_INSN();
 }
@@ -778,6 +783,21 @@ opt_send_without_block
     }
 }
 
+/* Convert object to string using to_s or equivalent. */
+DEFINE_INSN
+objtostring
+(CALL_DATA cd)
+(VALUE recv)
+(VALUE val)
+// attr bool leaf = false;
+{
+    val = vm_objtostring(GET_ISEQ(), recv, cd);
+
+    if (val == Qundef) {
+        CALL_SIMPLE_METHOD();
+    }
+}
+
 DEFINE_INSN
 opt_str_freeze
 (VALUE str, CALL_DATA cd)
@@ -832,7 +852,7 @@ opt_newarray_max
 // attr bool leaf = false; /* has rb_funcall() */
 // attr rb_snum_t sp_inc = 1 - (rb_snum_t)num;
 {
-    val = vm_opt_newarray_max(num, STACK_ADDR_FROM_TOP(num));
+    val = vm_opt_newarray_max(ec, num, STACK_ADDR_FROM_TOP(num));
 }
 
 DEFINE_INSN
@@ -844,7 +864,7 @@ opt_newarray_min
 // attr bool leaf = false; /* has rb_funcall() */
 // attr rb_snum_t sp_inc = 1 - (rb_snum_t)num;
 {
-    val = vm_opt_newarray_min(num, STACK_ADDR_FROM_TOP(num));
+    val = vm_opt_newarray_min(ec, num, STACK_ADDR_FROM_TOP(num));
 }
 
 /* super(args) # args.size => num */
@@ -1008,12 +1028,24 @@ opt_getinlinecache
 (VALUE val)
 {
     struct iseq_inline_constant_cache_entry *ice = ic->entry;
+
+    // If there isn't an entry, then we're going to walk through the ISEQ
+    // starting at this instruction until we get to the associated
+    // opt_setinlinecache and associate this inline cache with every getconstant
+    // listed in between. We're doing this here instead of when the instructions
+    // are first compiled because it's possible to turn off inline caches and we
+    // want this to work in either case.
+    if (!ice) {
+        vm_ic_compile(GET_CFP(), ic);
+    }
+
     if (ice && vm_ic_hit_p(ice, GET_EP())) {
         val = ice->value;
         JUMP(dst);
     }
     else {
-	val = Qnil;
+        ruby_vm_constant_cache_misses++;
+        val = Qnil;
     }
 }
 
@@ -1023,6 +1055,7 @@ opt_setinlinecache
 (IC ic)
 (VALUE val)
 (VALUE val)
+// attr bool leaf = false;
 {
     vm_ic_update(GET_ISEQ(), ic, val, GET_EP());
 }

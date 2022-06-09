@@ -186,6 +186,10 @@ nav {
   font-family: Helvetica, sans-serif;
   font-size: 14px;
   border-right: 1px solid #ccc;
+  position: sticky;
+  top: 0;
+  overflow: auto;
+  height: calc(100vh - 100px); /* reduce the footer height */
 }
 
 main {
@@ -303,6 +307,25 @@ dl.note-list dt {
 
 .calls-super {
   background: url(../images/arrow_up.png) no-repeat right center;
+}
+
+.nav-section details summary {
+  display: block;
+}
+
+.nav-section details summary::-webkit-details-marker {
+  display: none;
+}
+
+.nav-section details summary:before {
+  content: "";
+}
+
+.nav-section details summary:after {
+  content: "  \25B6"; /* BLACK RIGHT-POINTING TRIANGLE */
+}
+.nav-section details[open] > summary:after {
+  content: "  \25BD"; /* WHITE DOWN-POINTING TRIANGLE */
 }
 
 /* @end */
@@ -482,7 +505,7 @@ main header h3 {
 
 main .method-source-code {
   max-height: 0;
-  overflow: hidden;
+  overflow: auto;
   transition-duration: 200ms;
   transition-delay: 0ms;
   transition-property: all;

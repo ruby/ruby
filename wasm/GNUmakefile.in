@@ -1,0 +1,32 @@
+include Makefile
+include $(srcdir)/template/GNUmakefile.in
+
+wasmdir = $(srcdir)/wasm
+GNUmakefile: $(wasmdir)/GNUmakefile.in
+WASMOPT = @WASMOPT@
+wasmoptflags = @wasmoptflags@
+
+WASM_TESTRUNNER = wasmtime
+WASM_TESTS = $(wasmdir)/tests/machine_test.wasm $(wasmdir)/tests/setjmp_test.wasm $(wasmdir)/tests/fiber_test.wasm
+WASM_OBJS  = $(wasmdir)/machine_core.o $(wasmdir)/machine.o $(wasmdir)/setjmp.o $(wasmdir)/setjmp_core.o $(wasmdir)/fiber.o $(wasmdir)/runtime.o
+
+wasm/missing.$(OBJEXT): $(wasmdir)/missing.c $(PLATFORM_D)
+wasm/fiber.$(OBJEXT): $(wasmdir)/fiber.c $(wasmdir)/fiber.h $(wasmdir)/asyncify.h $(PLATFORM_D)
+wasm/machine.$(OBJEXT): $(wasmdir)/machine.c $(srcdir)/wasm/machine.h $(wasmdir)/asyncify.h $(PLATFORM_D)
+wasm/setjmp.$(OBJEXT): $(wasmdir)/setjmp.c $(wasmdir)/setjmp.h $(wasmdir)/machine.h $(wasmdir)/asyncify.h $(PLATFORM_D)
+wasm/runtime.$(OBJEXT): $(wasmdir)/runtime.c $(wasmdir)/machine.h $(wasmdir)/asyncify.h $(wasmdir)/setjmp.h $(PLATFORM_D)
+
+wasm/%.$(OBJEXT): $(wasmdir)/%.S $(PLATFORM_D)
+	@$(ECHO) compiling $<
+	$(Q) $(CC) $(CFLAGS) $(COUTFLAG)$@ -c $<
+
+test-wasm: $(WASM_TESTS)
+	$(foreach x,$(WASM_TESTS), $(WASM_TESTRUNNER) $(x);)
+clean-test-wasm:
+	@$(RM) $(WASM_TESTS)
+
+$(wasmdir)/tests/%.wasm: $(wasmdir)/tests/%.c $(WASM_OBJS)
+	$(Q) $(CC) -g $(XCFLAGS) $(CFLAGS) $^ -o $@
+	$(Q) $(WASMOPT) -g --asyncify --pass-arg=asyncify-ignore-imports -o $@ $@
+
+.PHONY: test-wasm clean-test-wasm

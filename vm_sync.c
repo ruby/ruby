@@ -76,11 +76,11 @@ vm_lock_enter(rb_ractor_t *cr, rb_vm_t *vm, bool locked, bool no_barrier, unsign
                 VM_ASSERT(rb_ractor_status_p(cr, ractor_blocking));
 
                 if (vm_barrier_finish_p(vm)) {
-                    RUBY_DEBUG_LOG("wakeup barrier owner", 0);
+                    RUBY_DEBUG_LOG("wakeup barrier owner");
                     rb_native_cond_signal(&vm->ractor.sync.barrier_cond);
                 }
                 else {
-                    RUBY_DEBUG_LOG("wait for barrier finish", 0);
+                    RUBY_DEBUG_LOG("wait for barrier finish");
                 }
 
                 // wait for restart
@@ -91,7 +91,7 @@ vm_lock_enter(rb_ractor_t *cr, rb_vm_t *vm, bool locked, bool no_barrier, unsign
                     vm->ractor.sync.lock_owner = cr;
                 }
 
-                RUBY_DEBUG_LOG("barrier is released. Acquire vm_lock", 0);
+                RUBY_DEBUG_LOG("barrier is released. Acquire vm_lock");
 
                 if (running) {
                     rb_vm_ractor_blocking_cnt_dec(vm, cr, __FILE__, __LINE__);
@@ -254,7 +254,7 @@ rb_vm_barrier(void)
 
         // send signal
         rb_ractor_t *r = 0;
-        list_for_each(&vm->ractor.set, r, vmlr_node) {
+        ccan_list_for_each(&vm->ractor.set, r, vmlr_node) {
             if (r != cr) {
                 rb_ractor_vm_barrier_interrupt_running_thread(r);
             }
@@ -272,7 +272,7 @@ rb_vm_barrier(void)
         vm->ractor.sync.barrier_waiting = false;
         vm->ractor.sync.barrier_cnt++;
 
-        list_for_each(&vm->ractor.set, r, vmlr_node) {
+        ccan_list_for_each(&vm->ractor.set, r, vmlr_node) {
             rb_native_cond_signal(&r->barrier_wait_cond);
         }
     }

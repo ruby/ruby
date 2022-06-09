@@ -418,8 +418,8 @@ It is possible to gather arguments at the beginning or in the middle:
 
   gather_arguments 1, 2, 3, 4 # prints [2, 3]
 
-The array argument will capture a Hash as the last entry if a hash was sent by
-the caller after all positional arguments.
+The array argument will capture a Hash as the last entry if keywords were
+provided by the caller after all positional arguments.
 
   def gather_arguments(*arguments)
     p arguments
@@ -439,6 +439,13 @@ However, this only occurs if the method does not declare any keyword arguments.
 Also, note that a bare <code>*</code> can be used to ignore arguments:
 
   def ignore_arguments(*)
+  end
+
+You can also use a bare <code>*</code> when calling a method to pass the
+arguments directly to another method:
+
+  def delegate_arguments(*)
+    other_method(*)
   end
 
 === Keyword Arguments
@@ -481,6 +488,13 @@ Also, note that <code>**</code> can be used to ignore keyword arguments:
   def ignore_keywords(**)
   end
 
+You can also use <code>**</code> when calling a method to delegate
+keyword arguments to another method:
+
+  def delegate_keywords(**)
+    other_method(**)
+  end
+
 To mark a method as accepting keywords, but not actually accepting
 keywords, you can use the <code>**nil</code>:
 
@@ -491,83 +505,15 @@ Calling such a method with keywords or a non-empty keyword splat will
 result in an ArgumentError. This syntax is supported so that keywords
 can be added to the method later without affected backwards compatibility.
 
-=== Keyword and Positional Argument Separation
+If a method definition does not accept any keywords, and the
+<code>**nil</code> syntax is not used, any keywords provided when calling
+the method will be converted to a Hash positional argument:
 
-Between Ruby 2.0 and 2.6, keyword and positional arguments were not
-separated, and a keyword argument could be used as a positional argument
-and vice-versa.  In Ruby 3.0, keyword and positional arguments will
-be separated if the method definition includes keyword arguments.
-In Ruby 3.0, if the method definition does not include keyword arguments,
-keyword arguments provided when calling the method will continue to be
-treated as a final positional hash argument.
-
-In Ruby 2.7, the keyword and positional arguments are not separated,
-but cases where behavior will change in Ruby 3.0 will result in a
-warning being emitted.
-
-There are a few different types of keyword argument separation issues.
-
-==== Conversion of Hash to Keywords
-
-If a method is called with the hash, the hash could be treated as
-keywords:
-
-  def my_method(**keywords)
-    keywords
+  def meth(arg)
+    arg
   end
-  my_method({a: 1}) # {:a => 1}
-
-This occurs even if the hash could be an optional positional argument
-or an element of a rest argument:
-
-  def my_method(hash=nil, **keywords)
-    [hash, keywords]
-  end
-  my_method({a: 1}) # [nil, {:a => 1}]
-
-  def my_method(*args, **keywords)
-    [args, keywords]
-  end
-  my_method({a: 1}) # [[], {:a => 1}]
-
-However, if the hash is needed for a mandatory positional argument,
-it would not be treated as keywords:
-
-  def my_method(hash, **keywords)
-    [hash, keywords]
-  end
-  my_method({a: 1}) # [{:a => 1}, {}]
-
-==== Conversion of Keywords to Positional Arguments
-
-If a method is called with keywords, but it is missing one
-mandatory positional argument, the keywords are converted to
-a hash and the hash used as the mandatory positional argument:
-
-  def my_method(hash, **keywords)
-    [hash, keywords]
-  end
-  my_method(a: 1) # [{:a => 1}, {}]
-
-This is also true for empty keyword splats:
-
-  kw = {}
-  my_method(**kw) # [{}, {}]
-
-==== Splitting of Positional Hashes or Keywords
-
-If a method definition accepts specific keywords and not arbitrary keywords,
-keywords or a positional hash may be split if the hash includes both Symbol
-keys and non-Symbol keys and the keywords or positional hash are not needed
-as a mandatory positional argument.  In this case, the non-Symbol keys are
-separated into a positional argument hash, and the Symbol keys are used
-as the keyword arguments:
-
-  def my_method(hash=3, a: 4)
-    [hash, a]
-  end
-  my_method(a: 1, 'a' => 2)   # [{"a"=>2}, 1]
-  my_method({a: 1, 'a' => 2}) # [{"a"=>2}, 1]
+  meth(a: 1)
+  # => {:a=>1}
 
 === Block Argument
 
@@ -583,8 +529,15 @@ Most frequently the block argument is used to pass a block to another method:
     @items.each(&block)
   end
 
+You are not required to give a name to the block if you will just be passing
+it to another method:
+
+  def each_item(&)
+    @items.each(&)
+  end
+
 If you are only going to call the block and will not otherwise manipulate it
-or send it to another method using <code>yield</code> without an explicit
+or send it to another method, using <code>yield</code> without an explicit
 block parameter is preferred.  This method is equivalent to the first method
 in this section:
 

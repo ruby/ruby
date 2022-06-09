@@ -139,48 +139,46 @@ describe "Kernel.Complex()" do
     end
   end
 
-  ruby_version_is "2.6" do
-    describe "when passed exception: false" do
-      describe "and [Numeric]" do
-        it "returns a complex number" do
-          Complex("123", exception: false).should == Complex(123)
-        end
+  describe "when passed exception: false" do
+    describe "and [Numeric]" do
+      it "returns a complex number" do
+        Complex("123", exception: false).should == Complex(123)
       end
+    end
 
-      describe "and [non-Numeric]" do
-        it "swallows an error" do
-          Complex(:sym, exception: false).should == nil
-        end
+    describe "and [non-Numeric]" do
+      it "swallows an error" do
+        Complex(:sym, exception: false).should == nil
       end
+    end
 
-      describe "and [non-Numeric, Numeric] argument" do
-        it "throws a TypeError" do
-          -> { Complex(:sym, 0, exception: false) }.should raise_error(TypeError, "not a real")
-        end
+    describe "and [non-Numeric, Numeric] argument" do
+      it "throws a TypeError" do
+        -> { Complex(:sym, 0, exception: false) }.should raise_error(TypeError, "not a real")
       end
+    end
 
-      describe "and [anything, non-Numeric] argument" do
-        it "swallows an error" do
-          Complex("a",  :sym, exception: false).should == nil
-          Complex(:sym, :sym, exception: false).should == nil
-          Complex(0,    :sym, exception: false).should == nil
-        end
+    describe "and [anything, non-Numeric] argument" do
+      it "swallows an error" do
+        Complex("a",  :sym, exception: false).should == nil
+        Complex(:sym, :sym, exception: false).should == nil
+        Complex(0,    :sym, exception: false).should == nil
       end
+    end
 
-      describe "and non-numeric String arguments" do
-        it "swallows an error" do
-          Complex("a", "b", exception: false).should == nil
-          Complex("a", 0, exception: false).should == nil
-          Complex(0, "b", exception: false).should == nil
-        end
+    describe "and non-numeric String arguments" do
+      it "swallows an error" do
+        Complex("a", "b", exception: false).should == nil
+        Complex("a", 0, exception: false).should == nil
+        Complex(0, "b", exception: false).should == nil
       end
+    end
 
-      describe "and nil arguments" do
-        it "swallows an error" do
-          Complex(nil, exception: false).should == nil
-          Complex(0, nil, exception: false).should == nil
-          Complex(nil, 0, exception: false).should == nil
-        end
+    describe "and nil arguments" do
+      it "swallows an error" do
+        Complex(nil, exception: false).should == nil
+        Complex(0, nil, exception: false).should == nil
+        Complex(nil, 0, exception: false).should == nil
       end
     end
   end

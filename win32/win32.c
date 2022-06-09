@@ -42,7 +42,7 @@
 #include <shlobj.h>
 #include <mbstring.h>
 #include <shlwapi.h>
-#if _MSC_VER >= 1400
+#if defined _MSC_VER && _MSC_VER >= 1400
 #include <crtdbg.h>
 #include <rtcapi.h>
 #endif
@@ -855,7 +855,7 @@ socklist_lookup(SOCKET sock, int *flagp)
 
     thread_exclusive(socklist) {
 	if (!socklist) continue;
-	ret = st_lookup(socklist, (st_data_t)sock, (st_data_t *)&data);
+	ret = st_lookup(socklist, (st_data_t)sock, &data);
 	if (ret && flagp)
 	    *flagp = (int)data;
     }
@@ -887,6 +887,13 @@ socklist_delete(SOCKET *sockp, int *flagp)
     return ret;
 }
 
+#if RUBY_MSVCRT_VERSION >= 80
+# ifdef __MINGW32__
+#  define _CrtSetReportMode(type,mode) ((void)0)
+#  define _RTC_SetErrorFunc(func) ((void)0)
+# endif
+static void set_pioinfo_extra(void);
+#endif
 static int w32_cmdvector(const WCHAR *, char ***, UINT, rb_encoding *);
 //
 // Initialization stuff
@@ -896,7 +903,6 @@ void
 rb_w32_sysinit(int *argc, char ***argv)
 {
 #if RUBY_MSVCRT_VERSION >= 80
-    static void set_pioinfo_extra(void);
 
     _CrtSetReportMode(_CRT_ASSERT, 0);
     _set_invalid_parameter_handler(invalid_parameter);
@@ -1998,6 +2004,7 @@ get_final_path_fail(HANDLE f, WCHAR *buf, DWORD len, DWORD flag)
 static DWORD WINAPI
 get_final_path_unknown(HANDLE f, WCHAR *buf, DWORD len, DWORD flag)
 {
+    /* Since Windows Vista and Windows Server 2008 */
     get_final_path_func func = (get_final_path_func)
 	get_proc_address("kernel32", "GetFinalPathNameByHandleW", NULL);
     if (!func) func = get_final_path_fail;
@@ -2572,7 +2579,7 @@ set_pioinfo_extra(void)
     char *pend = p;
     /* _osfile(fh) & FDEV */
 
-# if _WIN64
+# ifdef _WIN64
     int32_t rel;
     char *rip;
     /* add rsp, _ */
@@ -2597,7 +2604,7 @@ set_pioinfo_extra(void)
         for (pend += 10; pend < p + 300; pend++) {
             // find end of function
             if (memcmp(pend, FUNCTION_BEFORE_RET_MARK, sizeof(FUNCTION_BEFORE_RET_MARK) - 1) == 0 &&
-                *(pend + (sizeof(FUNCTION_BEFORE_RET_MARK) - 1) + FUNCTION_SKIP_BYTES) & FUNCTION_RET == FUNCTION_RET) {
+                (*(pend + (sizeof(FUNCTION_BEFORE_RET_MARK) - 1) + FUNCTION_SKIP_BYTES) & FUNCTION_RET) == FUNCTION_RET) {
                 // search backwards from end of function
                 for (pend -= (sizeof(PIOINFO_MARK) - 1); pend > p; pend--) {
                     if (memcmp(pend, PIOINFO_MARK, sizeof(PIOINFO_MARK) - 1) == 0) {
@@ -2614,7 +2621,7 @@ set_pioinfo_extra(void)
 
     found:
     p += sizeof(PIOINFO_MARK) - 1;
-#if _WIN64
+#ifdef _WIN64
     rel = *(int32_t*)(p);
     rip = p + sizeof(int32_t);
     __pioinfo = (ioinfo**)(rip + rel);
@@ -3078,7 +3085,7 @@ is_console(SOCKET sock) /* DONT call this for SOCKET! */
     INPUT_RECORD ir;
 
     RUBY_CRITICAL {
-	ret = (PeekConsoleInput((HANDLE)sock, &ir, 1, &n));
+	ret = (PeekConsoleInputW((HANDLE)sock, &ir, 1, &n));
     }
 
     return ret;
@@ -3093,13 +3100,13 @@ is_readable_console(SOCKET sock) /* call this for console only */
     INPUT_RECORD ir;
 
     RUBY_CRITICAL {
-	if (PeekConsoleInput((HANDLE)sock, &ir, 1, &n) && n > 0) {
+	if (PeekConsoleInputW((HANDLE)sock, &ir, 1, &n) && n > 0) {
 	    if (ir.EventType == KEY_EVENT && ir.Event.KeyEvent.bKeyDown &&
 		ir.Event.KeyEvent.uChar.AsciiChar) {
 		ret = 1;
 	    }
 	    else {
-		ReadConsoleInput((HANDLE)sock, &ir, 1, &n);
+		ReadConsoleInputW((HANDLE)sock, &ir, 1, &n);
 	    }
 	}
     }
@@ -4291,6 +4298,8 @@ void setprotoent (int stayopen) {}
 void setservent (int stayopen) {}
 #endif
 
+int rb_w32_set_nonblock2(int fd, int nonblock);
+
 /* License: Ruby's */
 static int
 setfl(SOCKET sock, int arg)
@@ -4366,16 +4375,10 @@ fcntl(int fd, int cmd, ...)
 
     switch (cmd) {
       case F_SETFL: {
-	SOCKET sock = TO_SOCKET(fd);
-	if (!is_socket(sock)) {
-	    errno = EBADF;
-	    return -1;
-	}
-
 	va_start(va, cmd);
 	arg = va_arg(va, int);
 	va_end(va);
-	return setfl(sock, arg);
+	return rb_w32_set_nonblock2(fd, arg);
       }
       case F_DUPFD: case F_DUPFD_CLOEXEC: {
 	int ret;
@@ -4864,7 +4867,7 @@ rb_w32_ulchown(const char *path, int owner, int group)
 
 /* License: Ruby's */
 int
-kill(int pid, int sig)
+kill(rb_pid_t pid, int sig)
 {
     int ret = 0;
     DWORD err;
@@ -5203,6 +5206,7 @@ w32_symlink(UINT cp, const char *src, const char *link)
     static DWORD create_flag = SYMBOLIC_LINK_FLAG_ALLOW_UNPRIVILEGED_CREATE;
 
     if (create_symbolic_link == (create_symbolic_link_func)-1) {
+	/* Since Windows Vista and Windows Server 2008 */
 	create_symbolic_link = (create_symbolic_link_func)
 	    get_proc_address("kernel32", "CreateSymbolicLinkW", NULL);
     }
@@ -5337,11 +5341,13 @@ get_attr_vsn(const WCHAR *path, DWORD *atts, DWORD *vsn)
     HANDLE h = open_special(path, 0, FILE_FLAG_OPEN_REPARSE_POINT);
 
     if (h == INVALID_HANDLE_VALUE) {
-	ASSUME(e = GetLastError());
+	e = GetLastError();
+	ASSUME(e);
 	return e;
     }
     if (!GetFileInformationByHandle(h, &st)) {
-	ASSUME(e = GetLastError());
+	e = GetLastError();
+	ASSUME(e);
     }
     else {
 	*atts = st.dwFileAttributes;
@@ -5534,6 +5540,7 @@ get_ino(HANDLE h, FILE_ID_INFO *id)
     static gfibhe_t pGetFileInformationByHandleEx = (gfibhe_t)-1;
 
     if (pGetFileInformationByHandleEx == (gfibhe_t)-1)
+	/* Since Windows Vista and Windows Server 2008 */
 	pGetFileInformationByHandleEx = (gfibhe_t)get_proc_address("kernel32", "GetFileInformationByHandleEx", NULL);
 
     if (pGetFileInformationByHandleEx) {
@@ -5602,10 +5609,8 @@ filetime_to_nsec(const FILETIME *ft)
 
 /* License: Ruby's */
 static unsigned
-fileattr_to_unixmode(DWORD attr, const WCHAR *path)
+fileattr_to_unixmode(DWORD attr, const WCHAR *path, unsigned mode)
 {
-    unsigned mode = 0;
-
     if (attr & FILE_ATTRIBUTE_READONLY) {
 	mode |= S_IREAD;
     }
@@ -5613,7 +5618,10 @@ fileattr_to_unixmode(DWORD attr, const WCHAR *path)
 	mode |= S_IREAD | S_IWRITE | S_IWUSR;
     }
 
-    if (attr & FILE_ATTRIBUTE_REPARSE_POINT) {
+    if (mode & S_IFMT) {
+	/* format is already set */
+    }
+    else if (attr & FILE_ATTRIBUTE_REPARSE_POINT) {
 	if (rb_w32_reparse_symlink_p(path))
 	    mode |= S_IFLNK | S_IEXEC;
 	else
@@ -5708,7 +5716,7 @@ stat_by_find(const WCHAR *path, struct stati128 *st)
 	return -1;
     }
     FindClose(h);
-    st->st_mode  = fileattr_to_unixmode(wfd.dwFileAttributes, path);
+    st->st_mode  = fileattr_to_unixmode(wfd.dwFileAttributes, path, 0);
     st->st_atime = filetime_to_unixtime(&wfd.ftLastAccessTime);
     st->st_atimensec = filetime_to_nsec(&wfd.ftLastAccessTime);
     st->st_mtime = filetime_to_unixtime(&wfd.ftLastWriteTime);
@@ -5741,6 +5749,15 @@ winnt_stat(const WCHAR *path, struct stati128 *st, BOOL lstat)
     if (f != INVALID_HANDLE_VALUE) {
 	DWORD attr = stati128_handle(f, st);
 	const DWORD len = get_final_path(f, finalname, numberof(finalname), 0);
+	unsigned mode = 0;
+	switch (GetFileType(f)) {
+	  case FILE_TYPE_CHAR:
+	    mode = S_IFCHR;
+	    break;
+	  case FILE_TYPE_PIPE:
+	    mode = S_IFIFO;
+	    break;
+	}
 	CloseHandle(f);
 	if (attr & FILE_ATTRIBUTE_REPARSE_POINT) {
 	    /* TODO: size in which encoding? */
@@ -5752,7 +5769,7 @@ winnt_stat(const WCHAR *path, struct stati128 *st, BOOL lstat)
 	if (attr & FILE_ATTRIBUTE_DIRECTORY) {
 	    if (check_valid_dir(path)) return -1;
 	}
-	st->st_mode = fileattr_to_unixmode(attr, path);
+	st->st_mode = fileattr_to_unixmode(attr, path, mode);
 	if (len) {
 	    finalname[min(len, numberof(finalname)-1)] = L'\0';
 	    path = finalname;
@@ -7747,6 +7764,7 @@ fchmod(int fd, int mode)
 	return -1;
     }
     if (set_file_info == (set_file_information_by_handle_func)-1) {
+	/* Since Windows Vista and Windows Server 2008 */
 	set_file_info = (set_file_information_by_handle_func)
 	    get_proc_address("kernel32", "SetFileInformationByHandle", NULL);
     }
@@ -8153,6 +8171,7 @@ rb_w32_set_thread_description(HANDLE th, const WCHAR *name)
     static set_thread_description_func set_thread_description =
 	(set_thread_description_func)-1;
     if (set_thread_description == (set_thread_description_func)-1) {
+	/* Since Windows 10, version 1607 and Windows Server 2016 */
 	set_thread_description = (set_thread_description_func)
 	    get_proc_address("kernel32", "SetThreadDescription", NULL);
     }
@@ -8191,3 +8210,71 @@ VALUE (*const rb_f_notimplement_)(int, const VALUE *, VALUE, VALUE) = rb_f_notim
 #if RUBY_MSVCRT_VERSION < 120
 #include "missing/nextafter.c"
 #endif
+
+void *
+rb_w32_mmap(void *addr, size_t len, int prot, int flags, int fd, off_t offset)
+{
+    void *ptr;
+    //DWORD protect = 0;
+    DWORD protect = PAGE_EXECUTE_READWRITE;
+
+    if (fd > 0 || offset) {
+        /* not supported */
+        errno = EINVAL;
+        return MAP_FAILED;
+    }
+
+/*
+    if (prot & PROT_EXEC) {
+        if (prot & PROT_WRITE) protect = PAGE_EXECUTE_READWRITE;
+        else if (prot & PROT_READ) protect = PAGE_EXECUTE_READ;
+        else protect = PAGE_EXECUTE;
+    }
+    else if (prot & PROT_WRITE) protect = PAGE_READWRITE;
+    else if (prot & PROT_READ) protect = PAGE_READONLY;
+*/
+    ptr = VirtualAlloc(addr, len, MEM_RESERVE | MEM_COMMIT, protect);
+    if (!ptr) {
+        errno = rb_w32_map_errno(GetLastError());
+        return MAP_FAILED;
+    }
+
+    return ptr;
+}
+
+int
+rb_w32_munmap(void *addr, size_t len)
+{
+    if (!VirtualFree(addr, 0, MEM_RELEASE)) {
+        errno = rb_w32_map_errno(GetLastError());
+        return -1;
+    }
+
+    return 0;
+}
+
+inline int
+rb_w32_mprotect(void *addr, size_t len, int prot)
+{
+/*
+    DWORD protect = 0;
+    if (prot & PROT_EXEC) {
+        if (prot & PROT_WRITE) protect = PAGE_EXECUTE_READWRITE;
+        else if (prot & PROT_READ) protect = PAGE_EXECUTE_READ;
+        else protect = PAGE_EXECUTE;
+    }
+    else if (prot & PROT_WRITE) protect = PAGE_READWRITE;
+    else if (prot & PROT_READ) protect = PAGE_READONLY;
+    if (!VirtualProtect(addr, len, protect, NULL)) {
+        errno = rb_w32_map_errno(GetLastError());
+        return -1;
+    }
+*/
+    if (prot & PROT_EXEC) {
+        if (!FlushInstructionCache(GetCurrentProcess(), addr, len)) {
+            errno = rb_w32_map_errno(GetLastError());
+            return -1;
+        }
+    }
+    return 0;
+}

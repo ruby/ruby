@@ -89,7 +89,7 @@ class TC_OpenStruct < Test::Unit::TestCase
     a = o.delete_field :a
     assert_not_respond_to(o, :a, bug)
     assert_not_respond_to(o, :a=, bug)
-    assert_equal(a, 'a')
+    assert_equal('a', a)
     s = Object.new
     def s.to_sym
       :foo
@@ -100,6 +100,19 @@ class TC_OpenStruct < Test::Unit::TestCase
     o.delete_field s
     assert_not_respond_to(o, :foo)
     assert_not_respond_to(o, :foo=)
+
+    assert_raise(NameError) { o.delete_field(s) }
+    assert_equal(:bar, o.delete_field(s) { :bar })
+
+    o[s] = :foobar
+    assert_respond_to(o, :foo)
+    assert_respond_to(o, :foo=)
+    assert_equal(:foobar, o.delete_field(s) { :baz })
+
+    assert_equal(42, OpenStruct.new(foo: 42).delete_field(:foo) { :bug })
+
+    o = OpenStruct.new(block_given?: 42)
+    assert_raise(NameError) { o.delete_field(:foo) }
   end
 
   def test_setter
@@ -267,6 +280,7 @@ class TC_OpenStruct < Test::Unit::TestCase
     os = OpenStruct.new(method: :foo, hash: 42)
     assert_equal(os.object_id, os.method!(:object_id).call)
     assert_not_equal(42, os.hash!)
+    refute os.methods.include?(:"!~!")
   end
 
   def test_override_subclass
@@ -355,29 +369,47 @@ class TC_OpenStruct < Test::Unit::TestCase
     RUBY
   end if defined?(Ractor)
 
+  def test_access_methods_from_different_ractor
+    assert_ractor(<<~RUBY, require: 'ostruct')
+      os = OpenStruct.new
+      os.value = 100
+      r = Ractor.new(os) do |x|
+        v = x.value
+        Ractor.yield v
+      end
+      assert 100 == r.take
+    RUBY
+  end if defined?(Ractor)
+
   def test_legacy_yaml
     s = "--- !ruby/object:OpenStruct\ntable:\n  :foo: 42\n"
-    o = YAML.load(s)
+    o = YAML.safe_load(s, permitted_classes: [Symbol, OpenStruct])
     assert_equal(42, o.foo)
 
     o = OpenStruct.new(table: {foo: 42})
-    assert_equal({foo: 42}, YAML.load(YAML.dump(o)).table)
-  end
+    assert_equal({foo: 42}, YAML.safe_load(YAML.dump(o), permitted_classes: [Symbol, OpenStruct]).table)
+  end if RUBY_VERSION >= '2.6'
 
   def test_yaml
     h = {name: "John Smith", age: 70, pension: 300.42}
     yaml = "--- !ruby/object:OpenStruct\nname: John Smith\nage: 70\npension: 300.42\n"
     os1 = OpenStruct.new(h)
-    os2 = YAML.load(os1.to_yaml)
+    os2 = YAML.safe_load(os1.to_yaml, permitted_classes: [Symbol, OpenStruct])
     assert_equal yaml, os1.to_yaml
     assert_equal os1, os2
     assert_equal true, os1.eql?(os2)
     assert_equal 300.42, os2.pension
-  end
+  end if RUBY_VERSION >= '2.6'
 
   def test_marshal
     o = OpenStruct.new(name: "John Smith", age: 70, pension: 300.42)
     o2 = Marshal.load(Marshal.dump(o))
     assert_equal o, o2
+  end
+
+  def test_class
+    os = OpenStruct.new(class: 'my-class', method: 'post')
+    assert_equal('my-class', os.class)
+    assert_equal(OpenStruct, os.class!)
   end
 end

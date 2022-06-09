@@ -35,6 +35,11 @@ VALUE regexp_spec_backref_get(VALUE self) {
   return rb_backref_get();
 }
 
+static VALUE regexp_spec_backref_set(VALUE self, VALUE backref) {
+  rb_backref_set(backref);
+  return Qnil;
+}
+
 VALUE regexp_spec_reg_match_backref_get(VALUE self, VALUE re, VALUE str) {
   rb_reg_match(re, str);
   return rb_backref_get();
@@ -51,6 +56,7 @@ void Init_regexp_spec(void) {
   rb_define_method(cls, "a_re_1st_match", regexp_spec_reg_1st_match, 1);
   rb_define_method(cls, "rb_reg_match", regexp_spec_reg_match, 2);
   rb_define_method(cls, "rb_backref_get", regexp_spec_backref_get, 0);
+  rb_define_method(cls, "rb_backref_set", regexp_spec_backref_set, 1);
   rb_define_method(cls, "rb_reg_match_backref_get", regexp_spec_reg_match_backref_get, 2);
   rb_define_method(cls, "rb_reg_options", regexp_spec_rb_reg_options, 1);
   rb_define_method(cls, "rb_reg_regcomp", regexp_spec_rb_reg_regcomp, 1);

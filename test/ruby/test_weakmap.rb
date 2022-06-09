@@ -59,7 +59,7 @@ class TestWeakMap < Test::Unit::TestCase
       assert_weak_include(m, k)
     end
     GC.start
-    skip('TODO: failure introduced from r60440')
+    pend('TODO: failure introduced from 837fd5e494731d7d44786f29e7d6e8c27029806f')
     assert_not_send([@wm, m, k])
   end
   alias test_member? test_include?
@@ -70,6 +70,15 @@ class TestWeakMap < Test::Unit::TestCase
     k = BasicObject.new
     @wm[k] = x
     assert_match(/\A\#<#{@wm.class.name}:[^:]+:\s\#<BasicObject:[^:]*>\s=>\s\#<Object:[^:]*>>\z/,
+                 @wm.inspect)
+  end
+
+  def test_inspect_garbage
+    1000.times do |i|
+      @wm[i] = Object.new
+      @wm.inspect
+    end
+    assert_match(/\A\#<#{@wm.class.name}:[^:]++:(?:\s\d+\s=>\s\#<(?:Object|collected):[^:<>]*+>(?:,|>\z))+/,
                  @wm.inspect)
   end
 

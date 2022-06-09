@@ -39,43 +39,41 @@ describe "Array#to_h" do
     [[:a, 1], [:b, 2]].to_h[:c].should be_nil
   end
 
-  ruby_version_is "2.6" do
-    context "with block" do
-      it "converts [key, value] pairs returned by the block to a Hash" do
-        [:a, :b].to_h { |k| [k, k.to_s] }.should == { a: 'a', b: 'b' }
-      end
+  context "with block" do
+    it "converts [key, value] pairs returned by the block to a Hash" do
+      [:a, :b].to_h { |k| [k, k.to_s] }.should == { a: 'a', b: 'b' }
+    end
 
-      it "raises ArgumentError if block returns longer or shorter array" do
-        -> do
-          [:a, :b].to_h { |k| [k, k.to_s, 1] }
-        end.should raise_error(ArgumentError, /wrong array length at 0/)
+    it "raises ArgumentError if block returns longer or shorter array" do
+      -> do
+        [:a, :b].to_h { |k| [k, k.to_s, 1] }
+      end.should raise_error(ArgumentError, /wrong array length at 0/)
 
-        -> do
-          [:a, :b].to_h { |k| [k] }
-        end.should raise_error(ArgumentError, /wrong array length at 0/)
-      end
+      -> do
+        [:a, :b].to_h { |k| [k] }
+      end.should raise_error(ArgumentError, /wrong array length at 0/)
+    end
 
-      it "raises TypeError if block returns something other than Array" do
-        -> do
-          [:a, :b].to_h { |k| "not-array" }
-        end.should raise_error(TypeError, /wrong element type String at 0/)
-      end
+    it "raises TypeError if block returns something other than Array" do
+      -> do
+        [:a, :b].to_h { |k| "not-array" }
+      end.should raise_error(TypeError, /wrong element type String at 0/)
+    end
 
-      it "coerces returned pair to Array with #to_ary" do
-        x = mock('x')
-        x.stub!(:to_ary).and_return([:b, 'b'])
+    it "coerces returned pair to Array with #to_ary" do
+      x = mock('x')
+      x.stub!(:to_ary).and_return([:b, 'b'])
 
-        [:a].to_h { |k| x }.should == { :b => 'b' }
-      end
+      [:a].to_h { |k| x }.should == { :b => 'b' }
+    end
 
-      it "does not coerce returned pair to Array with #to_a" do
-        x = mock('x')
-        x.stub!(:to_a).and_return([:b, 'b'])
+    it "does not coerce returned pair to Array with #to_a" do
+      x = mock('x')
+      x.stub!(:to_a).and_return([:b, 'b'])
 
-        -> do
-          [:a].to_h { |k| x }
-        end.should raise_error(TypeError, /wrong element type MockObject at 0/)
-      end
+      -> do
+        [:a].to_h { |k| x }
+      end.should raise_error(TypeError, /wrong element type MockObject at 0/)
     end
   end
 end

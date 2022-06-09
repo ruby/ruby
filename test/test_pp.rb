@@ -3,6 +3,16 @@
 require 'pp'
 require 'delegate'
 require 'test/unit'
+require 'ruby2_keywords'
+
+# Define bind_call for Ruby 2.6 and earlier, to allow testing on JRuby 9.3
+class UnboundMethod
+  unless public_method_defined?(:bind_call)
+    def bind_call(obj, *args, &block)
+      bind(obj).call(*args, &block)
+    end
+  end
+end
 
 module PPTestModule
 
@@ -158,7 +168,7 @@ class PPCycleTest < Test::Unit::TestCase
     a << HasInspect.new(a)
     assert_equal("[<inspect:[...]>]\n", PP.pp(a, ''.dup))
     assert_equal("#{a.inspect}\n", PP.pp(a, ''.dup))
-  end
+  end unless RUBY_VERSION < "2.7" # temporary mask to test on JRuby 9.3 (2.6 equivalent)
 
   def test_share_nil
     begin

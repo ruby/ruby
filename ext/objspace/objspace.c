@@ -61,14 +61,7 @@ total_i(VALUE v, void *ptr)
 {
     struct total_data *data = (struct total_data *)ptr;
 
-    switch (BUILTIN_TYPE(v)) {
-      case T_NONE:
-      case T_IMEMO:
-      case T_ICLASS:
-      case T_NODE:
-      case T_ZOMBIE:
-          return;
-      default:
+    if (!rb_objspace_internal_object_p(v)) {
           if (data->klass == 0 || rb_obj_is_kind_of(v, data->klass)) {
               data->total += rb_obj_memsize_of(v);
           }
@@ -423,7 +416,6 @@ count_nodes(int argc, VALUE *argv, VALUE os)
 		COUNT_NODE(NODE_MASGN);
 		COUNT_NODE(NODE_LASGN);
 		COUNT_NODE(NODE_DASGN);
-		COUNT_NODE(NODE_DASGN_CURR);
 		COUNT_NODE(NODE_GASGN);
 		COUNT_NODE(NODE_IASGN);
 		COUNT_NODE(NODE_CDECL);
@@ -637,20 +629,22 @@ count_imemo_objects(int argc, VALUE *argv, VALUE self)
     VALUE hash = setup_hash(argc, argv);
 
     if (imemo_type_ids[0] == 0) {
-        imemo_type_ids[0] = rb_intern("imemo_env");
-	imemo_type_ids[1] = rb_intern("imemo_cref");
-	imemo_type_ids[2] = rb_intern("imemo_svar");
-	imemo_type_ids[3] = rb_intern("imemo_throw_data");
-	imemo_type_ids[4] = rb_intern("imemo_ifunc");
-	imemo_type_ids[5] = rb_intern("imemo_memo");
-	imemo_type_ids[6] = rb_intern("imemo_ment");
-	imemo_type_ids[7] = rb_intern("imemo_iseq");
-	imemo_type_ids[8] = rb_intern("imemo_tmpbuf");
-        imemo_type_ids[9] = rb_intern("imemo_ast");
-        imemo_type_ids[10] = rb_intern("imemo_parser_strterm");
-        imemo_type_ids[11] = rb_intern("imemo_callinfo");
-        imemo_type_ids[12] = rb_intern("imemo_callcache");
-        imemo_type_ids[13] = rb_intern("imemo_constcache");
+#define INIT_IMEMO_TYPE_ID(n) (imemo_type_ids[n] = rb_intern_const(#n))
+        INIT_IMEMO_TYPE_ID(imemo_env);
+        INIT_IMEMO_TYPE_ID(imemo_cref);
+        INIT_IMEMO_TYPE_ID(imemo_svar);
+        INIT_IMEMO_TYPE_ID(imemo_throw_data);
+        INIT_IMEMO_TYPE_ID(imemo_ifunc);
+        INIT_IMEMO_TYPE_ID(imemo_memo);
+        INIT_IMEMO_TYPE_ID(imemo_ment);
+        INIT_IMEMO_TYPE_ID(imemo_iseq);
+        INIT_IMEMO_TYPE_ID(imemo_tmpbuf);
+        INIT_IMEMO_TYPE_ID(imemo_ast);
+        INIT_IMEMO_TYPE_ID(imemo_parser_strterm);
+        INIT_IMEMO_TYPE_ID(imemo_callinfo);
+        INIT_IMEMO_TYPE_ID(imemo_callcache);
+        INIT_IMEMO_TYPE_ID(imemo_constcache);
+#undef INIT_IMEMO_TYPE_ID
     }
 
     each_object_with_flags(count_imemo_objects_i, (void *)hash);
@@ -713,7 +707,7 @@ iow_internal_object_id(VALUE self)
 
 struct rof_data {
     VALUE refs;
-    VALUE internals;
+    VALUE values;
 };
 
 static void
@@ -724,11 +718,15 @@ reachable_object_from_i(VALUE obj, void *data_ptr)
     VALUE val = obj;
 
     if (rb_objspace_markable_object_p(obj)) {
-	if (rb_objspace_internal_object_p(obj)) {
-	    val = iow_newobj(obj);
-	    rb_ary_push(data->internals, val);
-	}
-	rb_hash_aset(data->refs, key, val);
+        if (NIL_P(rb_hash_lookup(data->refs, key))) {
+            rb_hash_aset(data->refs, key, Qtrue);
+
+            if (rb_objspace_internal_object_p(obj)) {
+                val = iow_newobj(obj);
+            }
+
+            rb_ary_push(data->values, val);
+        }
     }
 }
 
@@ -786,21 +784,21 @@ static VALUE
 reachable_objects_from(VALUE self, VALUE obj)
 {
     if (rb_objspace_markable_object_p(obj)) {
-	struct rof_data data;
+        struct rof_data data;
 
-	if (rb_typeddata_is_kind_of(obj, &iow_data_type)) {
-	    obj = (VALUE)DATA_PTR(obj);
-	}
+        if (rb_typeddata_is_kind_of(obj, &iow_data_type)) {
+            obj = (VALUE)DATA_PTR(obj);
+        }
 
-	data.refs = rb_ident_hash_new();
-	data.internals = rb_ary_new();
+        data.refs = rb_obj_hide(rb_ident_hash_new());
+        data.values = rb_ary_new();
 
-	rb_objspace_reachable_objects_from(obj, reachable_object_from_i, &data);
+        rb_objspace_reachable_objects_from(obj, reachable_object_from_i, &data);
 
-        return rb_funcall(data.refs, rb_intern("values"), 0);
+        return data.values;
     }
     else {
-	return Qnil;
+        return Qnil;
     }
 }
 
@@ -996,6 +994,7 @@ Init_objspace(void)
      * You can use the #type method to check the type of the internal object.
      */
     rb_cInternalObjectWrapper = rb_define_class_under(rb_mObjSpace, "InternalObjectWrapper", rb_cObject);
+    rb_undef_alloc_func(rb_cInternalObjectWrapper);
     rb_define_method(rb_cInternalObjectWrapper, "type", iow_type, 0);
     rb_define_method(rb_cInternalObjectWrapper, "inspect", iow_inspect, 0);
     rb_define_method(rb_cInternalObjectWrapper, "internal_object_id", iow_internal_object_id, 0);

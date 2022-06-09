@@ -21,7 +21,7 @@ module JITSupport
   ]
 
   module_function
-  # Run Ruby script with --jit-wait (Synchronous JIT compilation).
+  # Run Ruby script with --mjit-wait (Synchronous JIT compilation).
   # Returns [stdout, stderr]
   def eval_with_jit(env = nil, script, **opts)
     stdout, stderr = nil, nil
@@ -36,12 +36,13 @@ module JITSupport
 
   def eval_with_jit_without_retry(env = nil, script, verbose: 0, min_calls: 5, save_temps: false, max_cache: 1000, wait: true, timeout: JIT_TIMEOUT)
     args = [
-      '--disable-gems', "--jit-verbose=#{verbose}",
-      "--jit-min-calls=#{min_calls}", "--jit-max-cache=#{max_cache}",
+      '--disable-gems', "--mjit-verbose=#{verbose}",
+      "--mjit-min-calls=#{min_calls}", "--mjit-max-cache=#{max_cache}",
     ]
-    args << '--jit-wait' if wait
-    args << '--jit-save-temps' if save_temps
-    args << '--jit-debug' if defined?(@jit_debug) && @jit_debug
+    args << '--disable-yjit'
+    args << '--mjit-wait' if wait
+    args << '--mjit-save-temps' if save_temps
+    args << '--mjit-debug' if defined?(@mjit_debug) && @mjit_debug
     args << '-e' << script
     base_env = { 'MJIT_SEARCH_BUILD_DIR' => 'true' } # workaround to skip requiring `make install` for `make test-all`
     if preloadenv = RbConfig::CONFIG['PRELOADENV'] and !preloadenv.empty?
@@ -61,6 +62,11 @@ module JITSupport
     end && !appveyor_pdb_corrupted? && !PENDING_RUBYCI_NICKNAMES.include?(ENV['RUBYCI_NICKNAME'])
   end
 
+  def yjit_supported?
+    # e.g. x86_64-linux, x64-mswin64_140, x64-mingw32, x64-mingw-ucrt
+    RUBY_PLATFORM.match?(/^(x86_64|x64)-/)
+  end
+
   # AppVeyor's Visual Studio 2013 / 2015 are known to spuriously generate broken pch / pdb, like:
   # error C2859: c:\projects\ruby\x64-mswin_120\include\ruby-2.8.0\x64-mswin64_120\rb_mjit_header-2.8.0.pdb
   # is not the pdb file that was used when this precompiled header was created, recreate the precompiled header.
@@ -74,7 +80,7 @@ module JITSupport
   end
 
   def remove_mjit_logs(stderr)
-    if defined?(RubyVM::JIT) && RubyVM::JIT.enabled? # utility for -DFORCE_MJIT_ENABLE
+    if defined?(RubyVM::MJIT) && RubyVM::MJIT.enabled? # utility for -DFORCE_MJIT_ENABLE
       stderr.gsub(/^MJIT warning: Skipped to compile unsupported instruction: \w+\n/m, '')
     else
       stderr

@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require "rubygems/remote_fetcher"
+
 RSpec.describe Bundler::Fetcher::Index do
   let(:downloader)  { nil }
   let(:remote)      { nil }

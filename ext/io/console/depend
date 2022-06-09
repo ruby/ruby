@@ -7,7 +7,6 @@ console.o: $(hdrdir)/ruby/backward.h
 console.o: $(hdrdir)/ruby/backward/2/assume.h
 console.o: $(hdrdir)/ruby/backward/2/attributes.h
 console.o: $(hdrdir)/ruby/backward/2/bool.h
-console.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 console.o: $(hdrdir)/ruby/backward/2/inttypes.h
 console.o: $(hdrdir)/ruby/backward/2/limits.h
 console.o: $(hdrdir)/ruby/backward/2/long_long.h
@@ -17,6 +16,7 @@ console.o: $(hdrdir)/ruby/defines.h
 console.o: $(hdrdir)/ruby/encoding.h
 console.o: $(hdrdir)/ruby/fiber/scheduler.h
 console.o: $(hdrdir)/ruby/intern.h
+console.o: $(hdrdir)/ruby/internal/abi.h
 console.o: $(hdrdir)/ruby/internal/anyargs.h
 console.o: $(hdrdir)/ruby/internal/arithmetic.h
 console.o: $(hdrdir)/ruby/internal/arithmetic/char.h
@@ -86,6 +86,15 @@ console.o: $(hdrdir)/ruby/internal/core/rtypeddata.h
 console.o: $(hdrdir)/ruby/internal/ctype.h
 console.o: $(hdrdir)/ruby/internal/dllexport.h
 console.o: $(hdrdir)/ruby/internal/dosish.h
+console.o: $(hdrdir)/ruby/internal/encoding/coderange.h
+console.o: $(hdrdir)/ruby/internal/encoding/ctype.h
+console.o: $(hdrdir)/ruby/internal/encoding/encoding.h
+console.o: $(hdrdir)/ruby/internal/encoding/pathname.h
+console.o: $(hdrdir)/ruby/internal/encoding/re.h
+console.o: $(hdrdir)/ruby/internal/encoding/sprintf.h
+console.o: $(hdrdir)/ruby/internal/encoding/string.h
+console.o: $(hdrdir)/ruby/internal/encoding/symbol.h
+console.o: $(hdrdir)/ruby/internal/encoding/transcode.h
 console.o: $(hdrdir)/ruby/internal/error.h
 console.o: $(hdrdir)/ruby/internal/eval.h
 console.o: $(hdrdir)/ruby/internal/event.h

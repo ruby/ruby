@@ -1,7 +1,6 @@
 #ifndef INTERNAL_COMPLEX_H                               /*-*-C-*-vi:se ft=c:*/
 #define INTERNAL_COMPLEX_H
 /**
- * @file
  * @author     Ruby developers <ruby-core@ruby-lang.org>
  * @copyright  This  file  is   a  part  of  the   programming  language  Ruby.
  *             Permission  is hereby  granted,  to  either redistribute  and/or
@@ -25,5 +24,6 @@ struct RComplex {
 
 /* complex.c */
 VALUE rb_dbl_complex_new_polar_pi(double abs, double ang);
+st_index_t rb_complex_hash(VALUE comp);
 
 #endif /* INTERNAL_COMPLEX_H */

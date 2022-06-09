@@ -1,12 +1,12 @@
 # frozen_string_literal: true
-require 'rubygems'
-require 'rubygems/dependency_list'
-require 'rubygems/package'
-require 'rubygems/installer'
-require 'rubygems/spec_fetcher'
-require 'rubygems/user_interaction'
-require 'rubygems/available_set'
-require 'rubygems/deprecate'
+require_relative '../rubygems'
+require_relative 'dependency_list'
+require_relative 'package'
+require_relative 'installer'
+require_relative 'spec_fetcher'
+require_relative 'user_interaction'
+require_relative 'available_set'
+require_relative 'deprecate'
 
 ##
 # Installs a gem along with all its dependencies from local and remote gems.

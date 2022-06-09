@@ -358,6 +358,8 @@ SOCK_RAW	nil	A raw socket provides low-level access for direct access or impleme
 SOCK_RDM	nil	A reliable datagram socket provides reliable delivery of messages
 SOCK_SEQPACKET	nil	A sequential packet socket provides sequenced, reliable two-way connection for datagrams
 SOCK_PACKET	nil	Device-level packet access
+SOCK_NONBLOCK	nil	Set the O_NONBLOCK file status flag on the open file description (see open(2)) referred to by the new file descriptor.
+SOCK_CLOEXEC	nil	Set the close-on-exec (FD_CLOEXEC) flag on the new file  descriptor.
 
 AF_UNSPEC	nil	Unspecified protocol, any supported address family
 PF_UNSPEC	nil	Unspecified protocol, any supported address family
@@ -397,6 +399,8 @@ AF_SNA	nil	IBM SNA protocol
 PF_SNA	nil	IBM SNA protocol
 AF_DEC	nil	DECnet protocol
 PF_DEC	nil	DECnet protocol
+AF_DECnet	nil	DECnet protocol
+PF_DECnet	nil	DECnet protocol
 AF_DLI	nil	DEC Direct Data Link Interface protocol
 PF_DLI	nil	DEC Direct Data Link Interface protocol
 AF_LAT	nil	Local Area Transport protocol
@@ -438,7 +442,34 @@ AF_E164	nil	CCITT (ITU-T) E.164 recommendation
 PF_XTP	nil	eXpress Transfer Protocol
 PF_RTIP
 PF_PIP
-PF_KEY
+AF_KEY	nil	Key management protocol, originally developed for usage with IPsec
+PF_KEY	nil	Key management protocol, originally developed for usage with IPsec
+AF_NETLINK	nil	Kernel user interface device
+PF_NETLINK	nil	Kernel user interface device
+AF_RDS	nil	Reliable Datagram Sockets (RDS) protocol
+PF_RDS	nil	Reliable Datagram Sockets (RDS) protocol
+AF_PPPOX	nil	Generic PPP transport layer, for setting up L2 tunnels (L2TP and PPPoE)
+PF_PPPOX	nil	Generic PPP transport layer, for setting up L2 tunnels (L2TP and PPPoE)
+AF_LLC	nil	Logical  link control (IEEE 802.2 LLC) protocol
+PF_LLC	nil	Logical  link control (IEEE 802.2 LLC) protocol
+AF_IB	nil	InfiniBand native addressing
+PF_IB	nil	InfiniBand native addressing
+AF_MPLS	nil	Multiprotocol Label Switching
+PF_MPLS	nil	Multiprotocol Label Switching
+AF_CAN	nil	Controller Area Network automotive bus protocol
+PF_CAN	nil	Controller Area Network automotive bus protocol
+AF_TIPC	nil	TIPC, "cluster domain sockets" protocol
+PF_TIPC	nil	TIPC, "cluster domain sockets" protocol
+AF_BLUETOOTH	nil	Bluetooth low-level socket protocol
+PF_BLUETOOTH	nil	Bluetooth low-level socket protocol
+AF_ALG	nil	Interface to kernel crypto API
+PF_ALG	nil	Interface to kernel crypto API
+AF_VSOCK	nil	VSOCK (originally "VMWare VSockets") protocol for hypervisor-guest communication
+PF_VSOCK	nil	VSOCK (originally "VMWare VSockets") protocol for hypervisor-guest communication
+AF_KCM	nil	KCM (kernel connection multiplexor) interface
+PF_KCM	nil	KCM (kernel connection multiplexor) interface
+AF_XDP	nil	XDP (express data path) interface
+PF_XDP	nil	XDP (express data path) interface
 
 MSG_OOB	nil	Process out-of-band data
 MSG_PEEK	nil	Peek at incoming message

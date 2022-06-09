@@ -38,6 +38,7 @@ module Bundler
       namespaced_path = name.tr("-", "/")
       constant_name = name.gsub(/-[_-]*(?![_-]|$)/) { "::" }.gsub(/([_-]+|(::)|^)(.|$)/) { $2.to_s + $3.upcase }
       constant_array = constant_name.split("::")
+      minitest_constant_name = constant_array.clone.tap {|a| a[-1] = "Test#{a[-1]}" }.join("::") # Foo::Bar => Foo::TestBar
 
       use_git = Bundler.git_present? && options[:git]
 
@@ -68,7 +69,8 @@ module Bundler
         :bundler_version  => bundler_dependency_version,
         :git              => use_git,
         :github_username  => github_username.empty? ? "[USERNAME]" : github_username,
-        :required_ruby_version => Gem.ruby_version < Gem::Version.new("2.4.a") ? "2.3.0" : "2.4.0",
+        :required_ruby_version => required_ruby_version,
+        :minitest_constant_name => minitest_constant_name,
       }
       ensure_safe_gem_name(name, constant_array)
 
@@ -76,6 +78,7 @@ module Bundler
         "#{Bundler.preferred_gemfile_name}.tt" => Bundler.preferred_gemfile_name,
         "lib/newgem.rb.tt" => "lib/#{namespaced_path}.rb",
         "lib/newgem/version.rb.tt" => "lib/#{namespaced_path}/version.rb",
+        "sig/newgem.rbs.tt" => "sig/#{namespaced_path}.rbs",
         "newgem.gemspec.tt" => "#{name}.gemspec",
         "Rakefile.tt" => "Rakefile",
         "README.md.tt" => "README.md",
@@ -103,9 +106,17 @@ module Bundler
           )
           config[:test_task] = :spec
         when "minitest"
+          # Generate path for minitest target file (FileList["test/**/test_*.rb"])
+          #   foo     => test/test_foo.rb
+          #   foo-bar => test/foo/test_bar.rb
+          #   foo_bar => test/test_foo_bar.rb
+          paths = namespaced_path.rpartition("/")
+          paths[2] = "test_#{paths[2]}"
+          minitest_namespaced_path = paths.join("")
+
           templates.merge!(
             "test/minitest/test_helper.rb.tt" => "test/test_helper.rb",
-            "test/minitest/test_newgem.rb.tt" => "test/test_#{namespaced_path}.rb"
+            "test/minitest/test_newgem.rb.tt" => "test/#{minitest_namespaced_path}.rb"
           )
           config[:test_task] = :test
         when "test-unit"
@@ -166,11 +177,11 @@ module Bundler
       config[:linter] = ask_and_set_linter
       case config[:linter]
       when "rubocop"
-        config[:linter_version] = Gem.ruby_version < Gem::Version.new("2.4.a") ? "0.81.0" : "1.7"
+        config[:linter_version] = rubocop_version
         Bundler.ui.info "RuboCop enabled in config"
         templates.merge!("rubocop.yml.tt" => ".rubocop.yml")
       when "standard"
-        config[:linter_version] = Gem.ruby_version < Gem::Version.new("2.4.a") ? "0.2.5" : "1.0"
+        config[:linter_version] = standard_version
         Bundler.ui.info "Standard enabled in config"
         templates.merge!("standard.yml.tt" => ".standard.yml")
       end
@@ -185,14 +196,15 @@ module Bundler
         )
       end
 
-      if File.exist?(target) && !File.directory?(target)
+      if target.exist? && !target.directory?
         Bundler.ui.error "Couldn't create a new gem named `#{gem_name}` because there's an existing file named `#{gem_name}`."
         exit Bundler::BundlerError.all_errors[Bundler::GenericSystemCallError]
       end
 
       if use_git
         Bundler.ui.info "Initializing git repo in #{target}"
-        `git init #{target}`
+        require "shellwords"
+        `git init #{target.to_s.shellescape}`
 
         config[:git_default_branch] = File.read("#{target}/.git/HEAD").split("/").last.chomp
       end
@@ -401,6 +413,31 @@ module Bundler
 
     def open_editor(editor, file)
       thor.run(%(#{editor} "#{file}"))
+    end
+
+    def required_ruby_version
+      if Gem.ruby_version < Gem::Version.new("2.4.a") then "2.3.0"
+      elsif Gem.ruby_version < Gem::Version.new("2.5.a") then "2.4.0"
+      elsif Gem.ruby_version < Gem::Version.new("2.6.a") then "2.5.0"
+      else
+        "2.6.0"
+      end
+    end
+
+    def rubocop_version
+      if Gem.ruby_version < Gem::Version.new("2.4.a") then "0.81.0"
+      elsif Gem.ruby_version < Gem::Version.new("2.5.a") then "1.12"
+      else
+        "1.21"
+      end
+    end
+
+    def standard_version
+      if Gem.ruby_version < Gem::Version.new("2.4.a") then "0.2.5"
+      elsif Gem.ruby_version < Gem::Version.new("2.5.a") then "1.0"
+      else
+        "1.3"
+      end
     end
   end
 end

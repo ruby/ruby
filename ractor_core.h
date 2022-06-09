@@ -91,11 +91,11 @@ struct rb_ractor_struct {
 
     // thread management
     struct {
-        struct list_head set;
+        struct ccan_list_head set;
         unsigned int cnt;
         unsigned int blocking_cnt;
         unsigned int sleeper;
-        rb_global_vm_lock_t gvl;
+        struct rb_thread_sched sched;
         rb_execution_context_t *running_ec;
         rb_thread_t *main;
     } threads;
@@ -126,7 +126,7 @@ struct rb_ractor_struct {
         ractor_terminated,
     } status_;
 
-    struct list_node vmlr_node;
+    struct ccan_list_node vmlr_node;
 
     // ractor local data
 
@@ -139,10 +139,7 @@ struct rb_ractor_struct {
     VALUE verbose;
     VALUE debug;
 
-    struct {
-        struct RVALUE *freelist;
-        struct heap_page *using_page;
-    } newobj_cache;
+    rb_ractor_newobj_cache_t newobj_cache;
 
     // gc.c rb_objspace_reachable_objects_from
     struct gc_mark_func_data_struct {
@@ -168,9 +165,9 @@ void rb_ractor_send_parameters(rb_execution_context_t *ec, rb_ractor_t *g, VALUE
 
 VALUE rb_thread_create_ractor(rb_ractor_t *g, VALUE args, VALUE proc); // defined in thread.c
 
-rb_global_vm_lock_t *rb_ractor_gvl(rb_ractor_t *);
 int rb_ractor_living_thread_num(const rb_ractor_t *);
 VALUE rb_ractor_thread_list(rb_ractor_t *r);
+bool rb_ractor_p(VALUE rv);
 
 void rb_ractor_living_threads_init(rb_ractor_t *r);
 void rb_ractor_living_threads_insert(rb_ractor_t *r, rb_thread_t *th);
@@ -240,9 +237,11 @@ rb_ractor_sleeper_thread_num(rb_ractor_t *r)
 static inline void
 rb_ractor_thread_switch(rb_ractor_t *cr, rb_thread_t *th)
 {
-  if (cr->threads.running_ec != th->ec) {
-        if (0) fprintf(stderr, "rb_ractor_thread_switch ec:%p->%p\n",
-                       (void *)cr->threads.running_ec, (void *)th->ec);
+    if (cr->threads.running_ec != th->ec) {
+        if (0) {
+            ruby_debug_printf("rb_ractor_thread_switch ec:%p->%p\n",
+                              (void *)cr->threads.running_ec, (void *)th->ec);
+        }
     }
     else {
         return;
@@ -257,11 +256,13 @@ rb_ractor_thread_switch(rb_ractor_t *cr, rb_thread_t *th)
     VM_ASSERT(cr == GET_RACTOR());
 }
 
+#define rb_ractor_set_current_ec(cr, ec) rb_ractor_set_current_ec_(cr, ec, __FILE__, __LINE__)
+
 static inline void
-rb_ractor_set_current_ec(rb_ractor_t *cr, rb_execution_context_t *ec)
+rb_ractor_set_current_ec_(rb_ractor_t *cr, rb_execution_context_t *ec, const char *file, int line)
 {
 #ifdef RB_THREAD_LOCAL_SPECIFIER
-  #if __APPLE__
+  #ifdef __APPLE__
     rb_current_ec_set(ec);
   #else
     ruby_current_ec = ec;
@@ -269,15 +270,8 @@ rb_ractor_set_current_ec(rb_ractor_t *cr, rb_execution_context_t *ec)
 #else
     native_tls_set(ruby_current_ec_key, ec);
 #endif
-
-    if (cr->threads.running_ec != ec) {
-        if (0) fprintf(stderr, "rb_ractor_set_current_ec ec:%p->%p\n",
-                       (void *)cr->threads.running_ec, (void *)ec);
-    }
-    else {
-        VM_ASSERT(0); // should be different
-    }
-
+    RUBY_DEBUG_LOG2(file, line, "ec:%p->%p", cr->threads.running_ec, ec);
+    VM_ASSERT(cr->threads.running_ec != ec);
     cr->threads.running_ec = ec;
 }
 

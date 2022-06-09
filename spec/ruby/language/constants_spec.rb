@@ -135,18 +135,34 @@ describe "Literal (A::X) constant resolution" do
       ConstantSpecs::ClassB::CS_CONST109.should == :const109_2
     end
 
-    it "evaluates the right hand side before evaluating a constant path" do
-      mod = Module.new
+    ruby_version_is "3.2" do
+      it "evaluates left-to-right" do
+        mod = Module.new
 
-      mod.module_eval <<-EOC
-        ConstantSpecsRHS::B = begin
-          module ConstantSpecsRHS; end
+        mod.module_eval <<-EOC
+          order = []
+          ConstantSpecsRHS = Module.new
+          (order << :lhs; ConstantSpecsRHS)::B = (order << :rhs)
+        EOC
 
-          "hello"
-        end
-      EOC
+        mod::ConstantSpecsRHS::B.should == [:lhs, :rhs]
+      end
+    end
 
-      mod::ConstantSpecsRHS::B.should == 'hello'
+    ruby_version_is ""..."3.2" do
+      it "evaluates the right hand side before evaluating a constant path" do
+        mod = Module.new
+
+        mod.module_eval <<-EOC
+          ConstantSpecsRHS::B = begin
+            module ConstantSpecsRHS; end
+
+            "hello"
+          end
+        EOC
+
+        mod::ConstantSpecsRHS::B.should == 'hello'
+      end
     end
   end
 
@@ -432,17 +448,15 @@ describe "Module#private_constant marked constants" do
     -> {mod::Foo}.should raise_error(NameError)
   end
 
-  ruby_version_is "2.6" do
-    it "sends #const_missing to the original class or module" do
-      mod = Module.new
-      mod.const_set :Foo, true
-      mod.send :private_constant, :Foo
-      def mod.const_missing(name)
-        name == :Foo ? name : super
-      end
-
-      mod::Foo.should == :Foo
+  it "sends #const_missing to the original class or module" do
+    mod = Module.new
+    mod.const_set :Foo, true
+    mod.send :private_constant, :Foo
+    def mod.const_missing(name)
+      name == :Foo ? name : super
     end
+
+    mod::Foo.should == :Foo
   end
 
   describe "in a module" do
@@ -713,20 +727,24 @@ describe 'Allowed characters' do
     end.should raise_error(NameError, /wrong constant name/)
   end
 
-  ruby_version_is ""..."2.6" do
-    it 'does not allow not ASCII upcased characters at the beginning' do
-      -> do
-        Module.new.const_set("ἍBB", 1)
-      end.should raise_error(NameError, /wrong constant name/)
-    end
+  it 'allows not ASCII upcased characters at the beginning' do
+    mod = Module.new
+    mod.const_set("ἍBB", 1)
+
+    eval("mod::ἍBB").should == 1
   end
+end
 
-  ruby_version_is "2.6" do
-    it 'allows not ASCII upcased characters at the beginning' do
-      mod = Module.new
-      mod.const_set("ἍBB", 1)
-
-      eval("mod::ἍBB").should == 1
+describe 'Assignment' do
+  context 'dynamic assignment' do
+    it 'raises SyntaxError' do
+      -> do
+        eval <<-CODE
+          def test
+            B = 1
+          end
+        CODE
+      end.should raise_error(SyntaxError, /dynamic constant assignment/)
     end
   end
 end

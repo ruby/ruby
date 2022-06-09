@@ -827,7 +827,8 @@ VALUE cWIN32OLE_TYPELIB;
 void
 Init_win32ole_typelib(void)
 {
-    cWIN32OLE_TYPELIB = rb_define_class("WIN32OLE_TYPELIB", rb_cObject);
+    cWIN32OLE_TYPELIB = rb_define_class_under(cWIN32OLE, "Typelib", rb_cObject);
+    rb_define_const(rb_cObject, "WIN32OLE_TYPELIB", cWIN32OLE_TYPELIB);
     rb_define_singleton_method(cWIN32OLE_TYPELIB, "typelibs", foletypelib_s_typelibs, 0);
     rb_define_alloc_func(cWIN32OLE_TYPELIB, foletypelib_s_allocate);
     rb_define_method(cWIN32OLE_TYPELIB, "initialize", foletypelib_initialize, -2);

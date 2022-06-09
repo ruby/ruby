@@ -1,5 +1,5 @@
 # frozen_string_literal: true
-require 'rubygems/test_case'
+require_relative 'helper'
 require 'rubygems/config_file'
 
 class TestGemConfigFile < Gem::TestCase
@@ -190,19 +190,19 @@ class TestGemConfigFile < Gem::TestCase
 
     util_config_file
 
-    assert_equal({:rubygems => '701229f217cdf23b1344c7b4b54ca97'},
+    assert_equal({ :rubygems => '701229f217cdf23b1344c7b4b54ca97' },
                  @cfg.api_keys)
   end
 
   def test_check_credentials_permissions
-    skip 'chmod not supported' if win_platform?
+    pend 'chmod not supported' if win_platform?
 
     @cfg.rubygems_api_key = 'x'
 
     File.chmod 0644, @cfg.credentials_path
 
     use_ui @ui do
-      assert_raises Gem::MockGemUi::TermError do
+      assert_raise Gem::MockGemUi::TermError do
         @cfg.load_api_keys
       end
     end
@@ -253,7 +253,7 @@ if you believe they were disclosed to a third party.
 
     args = %w[--debug]
 
-    _, err = capture_io do
+    _, err = capture_output do
       @cfg.handle_arguments args
     end
 
@@ -317,18 +317,18 @@ if you believe they were disclosed to a third party.
 
     util_config_file
 
-    assert_equal({:rubygems => '701229f217cdf23b1344c7b4b54ca97',
-                  :other => 'a5fdbb6ba150cbb83aad2bb2fede64c'}, @cfg.api_keys)
+    assert_equal({ :rubygems => '701229f217cdf23b1344c7b4b54ca97',
+                  :other => 'a5fdbb6ba150cbb83aad2bb2fede64c' }, @cfg.api_keys)
   end
 
   def test_load_api_keys_bad_permission
-    skip 'chmod not supported' if win_platform?
+    pend 'chmod not supported' if win_platform?
 
     @cfg.rubygems_api_key = 'x'
 
     File.chmod 0644, @cfg.credentials_path
 
-    assert_raises Gem::MockGemUi::TermError do
+    assert_raise Gem::MockGemUi::TermError do
       @cfg.load_api_keys
     end
   end
@@ -354,7 +354,7 @@ if you believe they were disclosed to a third party.
       :rubygems_api_key => 'x',
     }
 
-    assert_equal expected, YAML.load_file(@cfg.credentials_path)
+    assert_equal expected, load_yaml_file(@cfg.credentials_path)
 
     unless win_platform?
       stat = File.stat @cfg.credentials_path
@@ -364,13 +364,13 @@ if you believe they were disclosed to a third party.
   end
 
   def test_rubygems_api_key_equals_bad_permission
-    skip 'chmod not supported' if win_platform?
+    pend 'chmod not supported' if win_platform?
 
     @cfg.rubygems_api_key = 'x'
 
     File.chmod 0644, @cfg.credentials_path
 
-    assert_raises Gem::MockGemUi::TermError do
+    assert_raise Gem::MockGemUi::TermError do
       @cfg.rubygems_api_key = 'y'
     end
 
@@ -378,7 +378,7 @@ if you believe they were disclosed to a third party.
       :rubygems_api_key => 'x',
     }
 
-    assert_equal expected, YAML.load_file(@cfg.credentials_path)
+    assert_equal expected, load_yaml_file(@cfg.credentials_path)
 
     stat = File.stat @cfg.credentials_path
 

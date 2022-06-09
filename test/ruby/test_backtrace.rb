@@ -154,6 +154,35 @@ class TestBacktrace < Test::Unit::TestCase
     assert_equal caller(0), caller(0, nil)
   end
 
+  def test_each_backtrace_location
+    i = 0
+    cl = caller_locations(1, 1)[0]; ecl = Thread.each_caller_location{|x| i+=1; break x if i == 1}
+    assert_equal(cl.to_s, ecl.to_s)
+    assert_kind_of(Thread::Backtrace::Location, ecl)
+
+    i = 0
+    ary = []
+    cllr = caller_locations(1, 2); last = Thread.each_caller_location{|x| ary << x; i+=1; break x if i == 2}
+    assert_equal(cllr.map(&:to_s), ary.map(&:to_s))
+    assert_kind_of(Thread::Backtrace::Location, last)
+
+    i = 0
+    ary = []
+    ->{->{
+      cllr = caller_locations(1, 2); last = Thread.each_caller_location{|x| ary << x; i+=1; break x if i == 2}
+    }.()}.()
+    assert_equal(cllr.map(&:to_s), ary.map(&:to_s))
+    assert_kind_of(Thread::Backtrace::Location, last)
+
+    cllr = caller_locations(1, 2); ary = Thread.to_enum(:each_caller_location).to_a[2..3]
+    assert_equal(cllr.map(&:to_s), ary.map(&:to_s))
+
+    ecl = Thread.to_enum(:each_caller_location)
+    assert_raise(StopIteration) {
+      ecl.next
+    }
+  end
+
   def test_caller_locations_first_label
     def self.label
       caller_locations.first.label
@@ -168,6 +197,34 @@ class TestBacktrace < Test::Unit::TestCase
     [1].group_by do
       assert_equal 'label_caller', label_caller
     end
+  end
+
+  def test_caller_limit_cfunc_iseq_no_pc
+    def self.a; [1].group_by { b } end
+    def self.b
+      [
+        caller_locations(2, 1).first.base_label,
+        caller_locations(3, 1).first.base_label
+      ]
+    end
+    assert_equal({["each", "group_by"]=>[1]}, a)
+  end
+
+  def test_caller_location_inspect_cfunc_iseq_no_pc
+    def self.foo
+      @res = caller_locations(2, 1).inspect
+    end
+    @line = __LINE__ + 1
+    1.times.map { 1.times.map { foo } }
+    assert_equal("[\"#{__FILE__}:#{@line}:in `times'\"]", @res)
+  end
+
+  def test_caller_location_path_cfunc_iseq_no_pc
+    def self.foo
+      @res = caller_locations(2, 1)[0].path
+    end
+    1.times.map { 1.times.map { foo } }
+    assert_equal(__FILE__, @res)
   end
 
   def test_caller_locations

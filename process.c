@@ -14,7 +14,6 @@
 #include "ruby/internal/config.h"
 
 #include "ruby/fiber/scheduler.h"
-#include "coroutine/Stack.h"
 
 #include <ctype.h>
 #include <errno.h>
@@ -104,6 +103,7 @@ int initgroups(const char *, rb_gid_t);
 #include "internal/error.h"
 #include "internal/eval.h"
 #include "internal/hash.h"
+#include "internal/numeric.h"
 #include "internal/object.h"
 #include "internal/process.h"
 #include "internal/thread.h"
@@ -177,6 +177,9 @@ int setregid(rb_gid_t rgid, rb_gid_t egid);
 static void check_uid_switch(void);
 static void check_gid_switch(void);
 static int exec_async_signal_safe(const struct rb_execarg *, char *, size_t);
+
+VALUE rb_envtbl(void);
+VALUE rb_env_to_hash(void);
 
 #if 1
 #define p_uid_from_name p_uid_from_name
@@ -316,10 +319,26 @@ static ID id_pgroup;
 #ifdef _WIN32
 static ID id_new_pgroup;
 #endif
-static ID id_unsetenv_others, id_chdir, id_umask, id_close_others, id_ENV;
+static ID id_unsetenv_others, id_chdir, id_umask, id_close_others;
 static ID id_nanosecond, id_microsecond, id_millisecond, id_second;
 static ID id_float_microsecond, id_float_millisecond, id_float_second;
 static ID id_GETTIMEOFDAY_BASED_CLOCK_REALTIME, id_TIME_BASED_CLOCK_REALTIME;
+#ifdef CLOCK_REALTIME
+static ID id_CLOCK_REALTIME;
+# define RUBY_CLOCK_REALTIME ID2SYM(id_CLOCK_REALTIME)
+#endif
+#ifdef CLOCK_MONOTONIC
+static ID id_CLOCK_MONOTONIC;
+# define RUBY_CLOCK_MONOTONIC ID2SYM(id_CLOCK_MONOTONIC)
+#endif
+#ifdef CLOCK_PROCESS_CPUTIME_ID
+static ID id_CLOCK_PROCESS_CPUTIME_ID;
+# define RUBY_CLOCK_PROCESS_CPUTIME_ID ID2SYM(id_CLOCK_PROCESS_CPUTIME_ID)
+#endif
+#ifdef CLOCK_THREAD_CPUTIME_ID
+static ID id_CLOCK_THREAD_CPUTIME_ID;
+# define RUBY_CLOCK_THREAD_CPUTIME_ID ID2SYM(id_CLOCK_THREAD_CPUTIME_ID)
+#endif
 #ifdef HAVE_TIMES
 static ID id_TIMES_BASED_CLOCK_MONOTONIC;
 static ID id_TIMES_BASED_CLOCK_PROCESS_CPUTIME_ID;
@@ -330,6 +349,7 @@ static ID id_GETRUSAGE_BASED_CLOCK_PROCESS_CPUTIME_ID;
 static ID id_CLOCK_BASED_CLOCK_PROCESS_CPUTIME_ID;
 #ifdef __APPLE__
 static ID id_MACH_ABSOLUTE_TIME_BASED_CLOCK_MONOTONIC;
+# define RUBY_MACH_ABSOLUTE_TIME_BASED_CLOCK_MONOTONIC ID2SYM(id_MACH_ABSOLUTE_TIME_BASED_CLOCK_MONOTONIC)
 #endif
 static ID id_hertz;
 
@@ -895,10 +915,7 @@ pst_wifstopped(VALUE st)
 {
     int status = PST2INT(st);
 
-    if (WIFSTOPPED(status))
-	return Qtrue;
-    else
-	return Qfalse;
+    return RBOOL(WIFSTOPPED(status));
 }
 
 
@@ -934,10 +951,7 @@ pst_wifsignaled(VALUE st)
 {
     int status = PST2INT(st);
 
-    if (WIFSIGNALED(status))
-	return Qtrue;
-    else
-	return Qfalse;
+    return RBOOL(WIFSIGNALED(status));
 }
 
 
@@ -975,10 +989,7 @@ pst_wifexited(VALUE st)
 {
     int status = PST2INT(st);
 
-    if (WIFEXITED(status))
-	return Qtrue;
-    else
-	return Qfalse;
+    return RBOOL(WIFEXITED(status));
 }
 
 
@@ -1026,7 +1037,7 @@ pst_success_p(VALUE st)
 
     if (!WIFEXITED(status))
 	return Qnil;
-    return WEXITSTATUS(status) == EXIT_SUCCESS ? Qtrue : Qfalse;
+    return RBOOL(WEXITSTATUS(status) == EXIT_SUCCESS);
 }
 
 
@@ -1044,10 +1055,7 @@ pst_wcoredump(VALUE st)
 #ifdef WCOREDUMP
     int status = PST2INT(st);
 
-    if (WCOREDUMP(status))
-	return Qtrue;
-    else
-	return Qfalse;
+    return RBOOL(WCOREDUMP(status));
 #else
     return Qfalse;
 #endif
@@ -1068,7 +1076,7 @@ do_waitpid(rb_pid_t pid, int *st, int flags)
 #define WAITPID_LOCK_ONLY ((struct waitpid_state *)-1)
 
 struct waitpid_state {
-    struct list_node wnode;
+    struct ccan_list_node wnode;
     rb_execution_context_t *ec;
     rb_nativethread_cond_t *cond;
     rb_pid_t ret;
@@ -1078,10 +1086,6 @@ struct waitpid_state {
     int errnum;
 };
 
-void rb_native_mutex_lock(rb_nativethread_lock_t *);
-void rb_native_mutex_unlock(rb_nativethread_lock_t *);
-void rb_native_cond_signal(rb_nativethread_cond_t *);
-void rb_native_cond_wait(rb_nativethread_cond_t *, rb_nativethread_lock_t *);
 int rb_sigwait_fd_get(const rb_thread_t *);
 void rb_sigwait_sleep(const rb_thread_t *, int fd, const rb_hrtime_t *);
 void rb_sigwait_fd_put(const rb_thread_t *, int fd);
@@ -1103,6 +1107,21 @@ waitpid_signal(struct waitpid_state *w)
     return FALSE;
 }
 
+// Used for VM memsize reporting. Returns the size of a list of waitpid_state
+// structs. Defined here because the struct definition lives here as well.
+size_t
+rb_vm_memsize_waiting_list(struct ccan_list_head *waiting_list)
+{
+    struct waitpid_state *waitpid = 0;
+    size_t size = 0;
+
+    ccan_list_for_each(waiting_list, waitpid, wnode) {
+        size += sizeof(struct waitpid_state);
+    }
+
+    return size;
+}
+
 /*
  * When a thread is done using sigwait_fd and there are other threads
  * sleeping on waitpid, we must kick one of the threads out of
@@ -1113,10 +1132,10 @@ sigwait_fd_migrate_sleeper(rb_vm_t *vm)
 {
     struct waitpid_state *w = 0;
 
-    list_for_each(&vm->waiting_pids, w, wnode) {
+    ccan_list_for_each(&vm->waiting_pids, w, wnode) {
         if (waitpid_signal(w)) return;
     }
-    list_for_each(&vm->waiting_grps, w, wnode) {
+    ccan_list_for_each(&vm->waiting_grps, w, wnode) {
         if (waitpid_signal(w)) return;
     }
 }
@@ -1133,18 +1152,18 @@ rb_sigwait_fd_migrate(rb_vm_t *vm)
 extern volatile unsigned int ruby_nocldwait; /* signal.c */
 /* called by timer thread or thread which acquired sigwait_fd */
 static void
-waitpid_each(struct list_head *head)
+waitpid_each(struct ccan_list_head *head)
 {
     struct waitpid_state *w = 0, *next;
 
-    list_for_each_safe(head, w, next, wnode) {
+    ccan_list_for_each_safe(head, w, next, wnode) {
         rb_pid_t ret = do_waitpid(w->pid, &w->status, w->options | WNOHANG);
 
         if (!ret) continue;
         if (ret == -1) w->errnum = errno;
 
         w->ret = ret;
-        list_del_init(&w->wnode);
+        ccan_list_del_init(&w->wnode);
         waitpid_signal(w);
     }
 }
@@ -1158,11 +1177,11 @@ ruby_waitpid_all(rb_vm_t *vm)
 #if RUBY_SIGCHLD
     rb_native_mutex_lock(&vm->waitpid_lock);
     waitpid_each(&vm->waiting_pids);
-    if (list_empty(&vm->waiting_pids)) {
+    if (ccan_list_empty(&vm->waiting_pids)) {
         waitpid_each(&vm->waiting_grps);
     }
     /* emulate SA_NOCLDWAIT */
-    if (list_empty(&vm->waiting_pids) && list_empty(&vm->waiting_grps)) {
+    if (ccan_list_empty(&vm->waiting_pids) && ccan_list_empty(&vm->waiting_grps)) {
         while (ruby_nocldwait && do_waitpid(-1, 0, WNOHANG) > 0)
             ; /* keep looping */
     }
@@ -1203,7 +1222,7 @@ ruby_waitpid_locked(rb_vm_t *vm, rb_pid_t pid, int *status, int options,
     assert(!ruby_thread_has_gvl_p() && "must not have GVL");
 
     waitpid_state_init(&w, pid, options);
-    if (w.pid > 0 || list_empty(&vm->waiting_pids))
+    if (w.pid > 0 || ccan_list_empty(&vm->waiting_pids))
         w.ret = do_waitpid(w.pid, &w.status, w.options | WNOHANG);
     if (w.ret) {
         if (w.ret == -1) w.errnum = errno;
@@ -1212,7 +1231,7 @@ ruby_waitpid_locked(rb_vm_t *vm, rb_pid_t pid, int *status, int options,
         int sigwait_fd = -1;
 
         w.ec = 0;
-        list_add(w.pid > 0 ? &vm->waiting_pids : &vm->waiting_grps, &w.wnode);
+        ccan_list_add(w.pid > 0 ? &vm->waiting_pids : &vm->waiting_grps, &w.wnode);
         do {
             if (sigwait_fd < 0)
                 sigwait_fd = rb_sigwait_fd_get(0);
@@ -1228,7 +1247,7 @@ ruby_waitpid_locked(rb_vm_t *vm, rb_pid_t pid, int *status, int options,
                 rb_native_cond_wait(w.cond, &vm->waitpid_lock);
             }
         } while (!w.ret);
-        list_del(&w.wnode);
+        ccan_list_del(&w.wnode);
 
         /* we're done, maybe other waitpid callers are not: */
         if (sigwait_fd >= 0) {
@@ -1261,14 +1280,14 @@ waitpid_cleanup(VALUE x)
     struct waitpid_state *w = (struct waitpid_state *)x;
 
     /*
-     * XXX w->ret is sometimes set but list_del is still needed, here,
-     * Not sure why, so we unconditionally do list_del here:
+     * XXX w->ret is sometimes set but ccan_list_del is still needed, here,
+     * Not sure why, so we unconditionally do ccan_list_del here:
      */
     if (TRUE || w->ret == 0) {
         rb_vm_t *vm = rb_ec_vm_ptr(w->ec);
 
         rb_native_mutex_lock(&vm->waitpid_lock);
-        list_del(&w->wnode);
+        ccan_list_del(&w->wnode);
         rb_native_mutex_unlock(&vm->waitpid_lock);
     }
 
@@ -1288,7 +1307,7 @@ waitpid_wait(struct waitpid_state *w)
      */
     rb_native_mutex_lock(&vm->waitpid_lock);
 
-    if (w->pid > 0 || list_empty(&vm->waiting_pids)) {
+    if (w->pid > 0 || ccan_list_empty(&vm->waiting_pids)) {
         w->ret = do_waitpid(w->pid, &w->status, w->options | WNOHANG);
     }
 
@@ -1304,7 +1323,7 @@ waitpid_wait(struct waitpid_state *w)
     if (need_sleep) {
         w->cond = 0;
         /* order matters, favor specified PIDs rather than -1 or 0 */
-        list_add(w->pid > 0 ? &vm->waiting_pids : &vm->waiting_grps, &w->wnode);
+        ccan_list_add(w->pid > 0 ? &vm->waiting_pids : &vm->waiting_grps, &w->wnode);
     }
 
     rb_native_mutex_unlock(&vm->waitpid_lock);
@@ -1350,29 +1369,26 @@ rb_process_status_wait(rb_pid_t pid, int flags)
         if (result != Qundef) return result;
     }
 
-    COROUTINE_STACK_LOCAL(struct waitpid_state, w);
+    struct waitpid_state waitpid_state;
 
-    waitpid_state_init(w, pid, flags);
-    w->ec = GET_EC();
+    waitpid_state_init(&waitpid_state, pid, flags);
+    waitpid_state.ec = GET_EC();
 
     if (WAITPID_USE_SIGCHLD) {
-        waitpid_wait(w);
+        waitpid_wait(&waitpid_state);
     }
     else {
-        waitpid_no_SIGCHLD(w);
+        waitpid_no_SIGCHLD(&waitpid_state);
     }
 
-    rb_pid_t ret = w->ret;
-    int s = w->status, e = w->errnum;
-    COROUTINE_STACK_FREE(w);
+    if (waitpid_state.ret == 0) return Qnil;
 
-    if (ret == 0) return Qnil;
-    if (ret > 0 && ruby_nocldwait) {
-        ret = -1;
-        e = ECHILD;
+    if (waitpid_state.ret > 0 && ruby_nocldwait) {
+        waitpid_state.ret = -1;
+        waitpid_state.errnum = ECHILD;
     }
 
-    return rb_process_status_new(ret, s, e);
+    return rb_process_status_new(waitpid_state.ret, waitpid_state.status, waitpid_state.errnum);
 }
 
 /*
@@ -2986,8 +3002,7 @@ rb_execarg_parent_start1(VALUE execarg_obj)
             envtbl = rb_hash_new();
         }
         else {
-            envtbl = rb_const_get(rb_cObject, id_ENV);
-            envtbl = rb_to_hash_type(envtbl);
+            envtbl = rb_env_to_hash();
         }
         hide_obj(envtbl);
         if (envopts != Qfalse) {
@@ -3150,20 +3165,21 @@ NORETURN(static VALUE f_exec(int c, const VALUE *a, VALUE _));
  *  [<code>exec(cmdname, arg1, ...)</code>]
  *	command name and one or more arguments (no shell)
  *  [<code>exec([cmdname, argv0], arg1, ...)</code>]
- *	command name, argv[0] and zero or more arguments (no shell)
+ *	command name, +argv[0]+ and zero or more arguments (no shell)
  *
  *  In the first form, the string is taken as a command line that is subject to
  *  shell expansion before being executed.
  *
  *  The standard shell always means <code>"/bin/sh"</code> on Unix-like systems,
- *  same as <code>ENV["RUBYSHELL"]</code>
- *  (or <code>ENV["COMSPEC"]</code> on Windows NT series), and similar.
+ *  otherwise, <code>ENV["RUBYSHELL"]</code> or <code>ENV["COMSPEC"]</code> on
+ *  Windows and similar.  The command is passed as an argument to the
+ *  <code>"-c"</code> switch to the shell, except in the case of +COMSPEC+.
  *
  *  If the string from the first form (<code>exec("command")</code>) follows
  *  these simple rules:
  *
  *  * no meta characters
- *  * no shell reserved word and no special built-in
+ *  * not starting with shell reserved word or special built-in
  *  * Ruby invokes the command directly without shell
  *
  *  You can force shell invocation by adding ";" to the string (because ";" is
@@ -3598,7 +3614,7 @@ save_env(struct rb_execarg *sargp)
     if (!sargp)
         return;
     if (sargp->env_modification == Qfalse) {
-        VALUE env = rb_const_get(rb_cObject, id_ENV);
+        VALUE env = rb_envtbl();
         if (RTEST(env)) {
             VALUE ary = hide_obj(rb_ary_new());
             rb_block_call(env, idEach, 0, 0, save_env_i,
@@ -3856,7 +3872,7 @@ rb_thread_sleep_that_takes_VALUE_as_sole_argument(VALUE n)
 }
 
 static int
-handle_fork_error(int err, int *status, int *ep, volatile int *try_gc_p)
+handle_fork_error(int err, struct rb_process_status *status, int *ep, volatile int *try_gc_p)
 {
     int state = 0;
 
@@ -3877,7 +3893,7 @@ handle_fork_error(int err, int *status, int *ep, volatile int *try_gc_p)
         }
         else {
             rb_protect(rb_thread_sleep_that_takes_VALUE_as_sole_argument, INT2FIX(1), &state);
-            if (status) *status = state;
+            if (status) status->status = state;
             if (!state) return 0;
         }
         break;
@@ -4095,10 +4111,10 @@ struct child_handler_disabler_state
 static void
 disable_child_handler_before_fork(struct child_handler_disabler_state *old)
 {
+#ifdef HAVE_PTHREAD_SIGMASK
     int ret;
     sigset_t all;
 
-#ifdef HAVE_PTHREAD_SIGMASK
     ret = sigfillset(&all);
     if (ret == -1)
         rb_sys_fail("sigfillset");
@@ -4115,9 +4131,9 @@ disable_child_handler_before_fork(struct child_handler_disabler_state *old)
 static void
 disable_child_handler_fork_parent(struct child_handler_disabler_state *old)
 {
+#ifdef HAVE_PTHREAD_SIGMASK
     int ret;
 
-#ifdef HAVE_PTHREAD_SIGMASK
     ret = pthread_sigmask(SIG_SETMASK, &old->sigmask, NULL); /* not async-signal-safe */
     if (ret != 0) {
 	rb_syserr_fail(ret, "pthread_sigmask");
@@ -4166,7 +4182,7 @@ disable_child_handler_fork_child(struct child_handler_disabler_state *old, char 
 }
 
 static rb_pid_t
-retry_fork_async_signal_safe(int *status, int *ep,
+retry_fork_async_signal_safe(struct rb_process_status *status, int *ep,
         int (*chfunc)(void*, char *, size_t), void *charg,
         char *errmsg, size_t errmsg_buflen,
         struct waitpid_state *w)
@@ -4208,12 +4224,12 @@ retry_fork_async_signal_safe(int *status, int *ep,
             _exit(127);
 #endif
         }
-	err = errno;
+        err = errno;
         waitpid_lock = waitpid_lock_init;
         if (waitpid_lock) {
             if (pid > 0 && w != WAITPID_LOCK_ONLY) {
                 w->pid = pid;
-                list_add(&GET_VM()->waiting_pids, &w->wnode);
+                ccan_list_add(&GET_VM()->waiting_pids, &w->wnode);
             }
             rb_native_mutex_unlock(waitpid_lock);
         }
@@ -4227,7 +4243,7 @@ retry_fork_async_signal_safe(int *status, int *ep,
 }
 
 static rb_pid_t
-fork_check_err(int *status, int (*chfunc)(void*, char *, size_t), void *charg,
+fork_check_err(struct rb_process_status *status, int (*chfunc)(void*, char *, size_t), void *charg,
         VALUE fds, char *errmsg, size_t errmsg_buflen,
         struct rb_execarg *eargp)
 {
@@ -4235,31 +4251,46 @@ fork_check_err(int *status, int (*chfunc)(void*, char *, size_t), void *charg,
     int err;
     int ep[2];
     int error_occurred;
-    struct waitpid_state *w;
 
-    w = eargp && eargp->waitpid_state ? eargp->waitpid_state : 0;
+    struct waitpid_state *w = eargp && eargp->waitpid_state ? eargp->waitpid_state : 0;
 
-    if (status) *status = 0;
+    if (status) status->status = 0;
 
     if (pipe_nocrash(ep, fds)) return -1;
-    pid = retry_fork_async_signal_safe(status, ep, chfunc, charg,
-                                       errmsg, errmsg_buflen, w);
-    if (pid < 0)
+
+    pid = retry_fork_async_signal_safe(status, ep, chfunc, charg, errmsg, errmsg_buflen, w);
+
+    if (status) status->pid = pid;
+
+    if (pid < 0) {
+        if (status) status->error = errno;
+
         return pid;
+    }
+
     close(ep[1]);
+
     error_occurred = recv_child_error(ep[0], &err, errmsg, errmsg_buflen);
+
     if (error_occurred) {
         if (status) {
+            int state = 0;
+            status->error = err;
+
             VM_ASSERT((w == 0 || w == WAITPID_LOCK_ONLY) &&
                       "only used by extensions");
-            rb_protect(proc_syswait, (VALUE)pid, status);
+            rb_protect(proc_syswait, (VALUE)pid, &state);
+
+            status->status = state;
         }
         else if (!w || w == WAITPID_LOCK_ONLY) {
             rb_syswait(pid);
         }
+
         errno = err;
         return -1;
     }
+
     return pid;
 }
 
@@ -4275,39 +4306,100 @@ rb_fork_async_signal_safe(int *status,
                           int (*chfunc)(void*, char *, size_t), void *charg,
                           VALUE fds, char *errmsg, size_t errmsg_buflen)
 {
-    return fork_check_err(status, chfunc, charg, fds, errmsg, errmsg_buflen, 0);
+    struct rb_process_status process_status;
+
+    rb_pid_t result = fork_check_err(&process_status, chfunc, charg, fds, errmsg, errmsg_buflen, 0);
+
+    if (status) {
+        *status = process_status.status;
+    }
+
+    return result;
 }
 
-rb_pid_t
-rb_fork_ruby(int *status)
+static rb_pid_t
+rb_fork_ruby2(struct rb_process_status *status)
 {
     rb_pid_t pid;
     int try_gc = 1, err;
     struct child_handler_disabler_state old;
 
-    if (status) *status = 0;
+    if (status) status->status = 0;
 
     while (1) {
-	prefork();
+        prefork();
         if (mjit_enabled) mjit_pause(false); // Don't leave locked mutex to child. Note: child_handler must be enabled to pause MJIT.
-	disable_child_handler_before_fork(&old);
-	before_fork_ruby();
-	pid = rb_fork();
-	err = errno;
+        disable_child_handler_before_fork(&old);
+        before_fork_ruby();
+        pid = rb_fork();
+        err = errno;
+        if (status) {
+            status->pid = pid;
+            status->error = err;
+        }
         after_fork_ruby();
-	disable_child_handler_fork_parent(&old); /* yes, bad name */
+        disable_child_handler_fork_parent(&old); /* yes, bad name */
+
         if (mjit_enabled && pid > 0) mjit_resume(); /* child (pid == 0) is cared by rb_thread_atfork */
-	if (pid >= 0) /* fork succeed */
-	    return pid;
-	/* fork failed */
-	if (handle_fork_error(err, status, NULL, &try_gc))
-	    return -1;
+
+        if (pid >= 0) { /* fork succeed */
+            if (pid == 0) rb_thread_atfork();
+            return pid;
+        }
+
+        /* fork failed */
+        if (handle_fork_error(err, status, NULL, &try_gc)) {
+            return -1;
+        }
     }
 }
 
+rb_pid_t
+rb_fork_ruby(int *status)
+{
+    struct rb_process_status process_status = {0};
+
+    rb_pid_t pid = rb_fork_ruby2(&process_status);
+
+    if (status) *status = process_status.status;
+
+    return pid;
+}
+
+rb_pid_t
+rb_call_proc__fork(void)
+{
+    VALUE pid = rb_funcall(rb_mProcess, rb_intern("_fork"), 0);
+
+    return NUM2PIDT(pid);
+}
 #endif
 
 #if defined(HAVE_WORKING_FORK) && !defined(CANNOT_FORK_WITH_PTHREAD)
+/*
+ *  call-seq:
+ *     Process._fork   -> integer
+ *
+ *  An internal API for fork. Do not call this method directly.
+ *  Currently, this is called via Kernel#fork, Process.fork, and
+ *  IO.popen with <tt>"-"</tt>.
+ *
+ *  This method is not for casual code but for application monitoring
+ *  libraries. You can add custom code before and after fork events
+ *  by overriding this method.
+ */
+VALUE
+rb_proc__fork(VALUE _obj)
+{
+    rb_pid_t pid = rb_fork_ruby(NULL);
+
+    if (pid == -1) {
+	rb_sys_fail("fork(2)");
+    }
+
+    return PIDT2NUM(pid);
+}
+
 /*
  *  call-seq:
  *     Kernel.fork  [{ block }]   -> integer or nil
@@ -4338,25 +4430,21 @@ rb_f_fork(VALUE obj)
 {
     rb_pid_t pid;
 
-    switch (pid = rb_fork_ruby(NULL)) {
-      case 0:
-	rb_thread_atfork();
+    pid = rb_call_proc__fork();
+
+    if (pid == 0) {
 	if (rb_block_given_p()) {
 	    int status;
 	    rb_protect(rb_yield, Qundef, &status);
 	    ruby_stop(status);
 	}
 	return Qnil;
-
-      case -1:
-	rb_sys_fail("fork(2)");
-	return Qnil;
-
-      default:
-	return PIDT2NUM(pid);
     }
+
+    return PIDT2NUM(pid);
 }
 #else
+#define rb_proc__fork rb_f_notimplement
 #define rb_f_fork rb_f_notimplement
 #endif
 
@@ -4542,7 +4630,7 @@ rb_syswait(rb_pid_t pid)
     rb_waitpid(pid, &status, 0);
 }
 
-#if !defined HAVE_WORKING_FORK && !defined HAVE_SPAWNV
+#if !defined HAVE_WORKING_FORK && !defined HAVE_SPAWNV && !defined __EMSCRIPTEN__
 char *
 rb_execarg_commandline(const struct rb_execarg *eargp, VALUE *prog)
 {
@@ -4578,7 +4666,7 @@ rb_spawn_process(struct rb_execarg *eargp, char *errmsg, size_t errmsg_buflen)
 #endif
 
 #if defined HAVE_WORKING_FORK && !USE_SPAWNV
-    pid = fork_check_err(0, rb_exec_atfork, eargp, eargp->redirect_fds, errmsg, errmsg_buflen, eargp);
+    pid = fork_check_err(eargp->status, rb_exec_atfork, eargp, eargp->redirect_fds, errmsg, errmsg_buflen, eargp);
 #else
     prog = eargp->use_shell ? eargp->invoke.sh.shell_script : eargp->invoke.cmd.command_name;
 
@@ -4684,6 +4772,9 @@ rb_spawn(int argc, const VALUE *argv)
  *  Executes _command..._ in a subshell.
  *  _command..._ is one of following forms.
  *
+ *  This method has potential security vulnerabilities if called with untrusted input;
+ *  see {Command Injection}[rdoc-ref:command_injection.rdoc].
+ *
  *  [<code>commandline</code>]
  *    command line string which is passed to the standard shell
  *  [<code>cmdname, arg1, ...</code>]
@@ -4731,58 +4822,62 @@ rb_spawn(int argc, const VALUE *argv)
 static VALUE
 rb_f_system(int argc, VALUE *argv, VALUE _)
 {
-    /*
-     * n.b. using alloca for now to simplify future Thread::Light code
-     * when we need to use malloc for non-native Fiber
-     */
-    struct waitpid_state *w = alloca(sizeof(struct waitpid_state));
-    rb_pid_t pid; /* may be different from waitpid_state.pid on exec failure */
-    VALUE execarg_obj;
-    struct rb_execarg *eargp;
-    int exec_errnum;
+    VALUE execarg_obj = rb_execarg_new(argc, argv, TRUE, TRUE);
+    struct rb_execarg *eargp = rb_execarg_get(execarg_obj);
 
-    execarg_obj = rb_execarg_new(argc, argv, TRUE, TRUE);
-    eargp = rb_execarg_get(execarg_obj);
-    w->ec = GET_EC();
-    waitpid_state_init(w, 0, 0);
-    eargp->waitpid_state = w;
-    pid = rb_execarg_spawn(execarg_obj, 0, 0);
-    exec_errnum = pid < 0 ? errno : 0;
+    struct rb_process_status status = {0};
+    eargp->status = &status;
 
-#if defined(HAVE_WORKING_FORK) || defined(HAVE_SPAWNV)
-    if (w->pid > 0) {
-        /* `pid' (not w->pid) may be < 0 here if execve failed in child */
-        if (WAITPID_USE_SIGCHLD) {
-            rb_ensure(waitpid_sleep, (VALUE)w, waitpid_cleanup, (VALUE)w);
+    rb_last_status_clear();
+
+    // This function can set the thread's last status.
+    // May be different from waitpid_state.pid on exec failure.
+    rb_pid_t pid = rb_execarg_spawn(execarg_obj, 0, 0);
+
+    if (pid > 0) {
+        VALUE status = rb_process_status_wait(pid, 0);
+        struct rb_process_status *data = RTYPEDDATA_DATA(status);
+
+        // Set the last status:
+        rb_obj_freeze(status);
+        GET_THREAD()->last_status = status;
+
+        if (data->status == EXIT_SUCCESS) {
+            return Qtrue;
         }
-        else {
-            waitpid_no_SIGCHLD(w);
+
+        if (data->error != 0) {
+            if (eargp->exception) {
+                VALUE command = eargp->invoke.sh.shell_script;
+                RB_GC_GUARD(execarg_obj);
+                rb_syserr_fail_str(data->error, command);
+            }
+            else {
+                return Qnil;
+            }
         }
-        rb_last_status_set(w->status, w->ret);
-    }
-#endif
-    if (w->pid < 0 /* fork failure */ || pid < 0 /* exec failure */) {
-        if (eargp->exception) {
-            int err = exec_errnum ? exec_errnum : w->errnum;
+        else if (eargp->exception) {
             VALUE command = eargp->invoke.sh.shell_script;
+            VALUE str = rb_str_new_cstr("Command failed with");
+            rb_str_cat_cstr(pst_message_status(str, data->status), ": ");
+            rb_str_append(str, command);
             RB_GC_GUARD(execarg_obj);
-            rb_syserr_fail_str(err, command);
+            rb_exc_raise(rb_exc_new_str(rb_eRuntimeError, str));
         }
         else {
-            return Qnil;
+            return Qfalse;
         }
+
+        RB_GC_GUARD(status);
     }
-    if (w->status == EXIT_SUCCESS) return Qtrue;
+
     if (eargp->exception) {
         VALUE command = eargp->invoke.sh.shell_script;
-        VALUE str = rb_str_new_cstr("Command failed with");
-        rb_str_cat_cstr(pst_message_status(str, w->status), ": ");
-        rb_str_append(str, command);
         RB_GC_GUARD(execarg_obj);
-        rb_exc_raise(rb_exc_new_str(rb_eRuntimeError, str));
+        rb_syserr_fail_str(errno, command);
     }
     else {
-        return Qfalse;
+        return Qnil;
     }
 }
 
@@ -6663,12 +6758,7 @@ p_sys_setresgid(VALUE obj, VALUE rid, VALUE eid, VALUE sid)
 static VALUE
 p_sys_issetugid(VALUE obj)
 {
-    if (issetugid()) {
-	return Qtrue;
-    }
-    else {
-	return Qfalse;
-    }
+    return RBOOL(issetugid());
 }
 #else
 #define p_sys_issetugid rb_f_notimplement
@@ -6751,7 +6841,6 @@ proc_setgid(VALUE obj, VALUE id)
  * Darwin (Mac OS X)		   16
  * Sun Solaris 7,8,9,10		   16
  * Sun Solaris 11 / OpenSolaris	 1024
- * HP-UX			   20
  * Windows			 1015
  */
 static int _maxgroups = -1;
@@ -6798,6 +6887,7 @@ maxgroups(void)
  *  - the result is sorted
  *  - the result includes effective GIDs
  *  - the result does not include duplicated GIDs
+ *  - the result size does not exceed the value of Process.maxgroups
  *
  *  You can make sure to get a sorted unique GID list of
  *  the current process by this expression:
@@ -6892,10 +6982,10 @@ proc_setgroups(VALUE obj, VALUE ary)
  *
  *  Initializes the supplemental group access list by reading the
  *  system group database and using all groups of which the given user
- *  is a member. The group with the specified <em>gid</em> is also
- *  added to the list. Returns the resulting Array of the
- *  gids of all the groups in the supplementary group access list. Not
- *  available on all platforms.
+ *  is a member. The group with the specified _gid_ is also added to
+ *  the list. Returns the resulting Array of the GIDs of all the
+ *  groups in the supplementary group access list. Not available on
+ *  all platforms.
  *
  *     Process.groups   #=> [0, 1, 2, 3, 4, 6, 10, 11, 20, 26, 27]
  *     Process.initgroups( "mgranger", 30 )   #=> [30, 6, 10, 11]
@@ -6920,7 +7010,7 @@ proc_initgroups(VALUE obj, VALUE uname, VALUE base_grp)
  *  call-seq:
  *     Process.maxgroups   -> integer
  *
- *  Returns the maximum number of gids allowed in the supplemental
+ *  Returns the maximum number of GIDs allowed in the supplemental
  *  group access list.
  *
  *     Process.maxgroups   #=> 32
@@ -6940,7 +7030,7 @@ proc_getmaxgroups(VALUE obj)
  *  call-seq:
  *     Process.maxgroups= integer   -> integer
  *
- *  Sets the maximum number of gids allowed in the supplemental group
+ *  Sets the maximum number of GIDs allowed in the supplemental group
  *  access list.
  */
 
@@ -7016,7 +7106,7 @@ rb_daemon(int nochdir, int noclose)
 #define fork_daemon() \
     switch (rb_fork_ruby(NULL)) { \
       case -1: return -1; \
-      case 0:  rb_thread_atfork(); break; \
+      case 0:  break; \
       default: _exit(EXIT_SUCCESS); \
     }
 
@@ -8118,6 +8208,13 @@ ruby_real_ms_time(void)
 }
 #endif
 
+#if defined(NUM2CLOCKID)
+# define NUMERIC_CLOCKID 1
+#else
+# define NUMERIC_CLOCKID 0
+# define NUM2CLOCKID(x) 0
+#endif
+
 /*
  *  call-seq:
  *     Process.clock_gettime(clock_id [, unit])   -> number
@@ -8134,8 +8231,8 @@ ruby_real_ms_time(void)
  *  The supported constants depends on OS and version.
  *  Ruby provides following types of +clock_id+ if available.
  *
- *  [CLOCK_REALTIME] SUSv2 to 4, Linux 2.5.63, FreeBSD 3.0, NetBSD 2.0, OpenBSD 2.1, macOS 10.12
- *  [CLOCK_MONOTONIC] SUSv3 to 4, Linux 2.5.63, FreeBSD 3.0, NetBSD 2.0, OpenBSD 3.4, macOS 10.12
+ *  [CLOCK_REALTIME] SUSv2 to 4, Linux 2.5.63, FreeBSD 3.0, NetBSD 2.0, OpenBSD 2.1, macOS 10.12, Windows-8/Server-2012
+ *  [CLOCK_MONOTONIC] SUSv3 to 4, Linux 2.5.63, FreeBSD 3.0, NetBSD 2.0, OpenBSD 3.4, macOS 10.12, Windows-2000
  *  [CLOCK_PROCESS_CPUTIME_ID] SUSv3 to 4, Linux 2.5.63, FreeBSD 9.3, OpenBSD 5.4, macOS 10.12
  *  [CLOCK_THREAD_CPUTIME_ID] SUSv3 to 4, Linux 2.5.63, FreeBSD 7.1, OpenBSD 5.4, macOS 10.12
  *  [CLOCK_VIRTUAL] FreeBSD 3.0, OpenBSD 2.1
@@ -8234,7 +8331,7 @@ ruby_real_ms_time(void)
  *  The underlying function, clock_gettime(), returns a number of nanoseconds.
  *  Float object (IEEE 754 double) is not enough to represent
  *  the return value for CLOCK_REALTIME.
- *  If the exact nanoseconds value is required, use +:nanoseconds+ as the +unit+.
+ *  If the exact nanoseconds value is required, use +:nanosecond+ as the +unit+.
  *
  *  The origin (zero) of the returned value varies.
  *  For example, system start up time, process start up time, the Epoch, etc.
@@ -8258,8 +8355,37 @@ rb_clock_gettime(int argc, VALUE *argv, VALUE _)
 
     VALUE unit = (rb_check_arity(argc, 1, 2) == 2) ? argv[1] : Qnil;
     VALUE clk_id = argv[0];
+    clockid_t c;
 
     if (SYMBOL_P(clk_id)) {
+#ifdef CLOCK_REALTIME
+        if (clk_id == RUBY_CLOCK_REALTIME) {
+            c = CLOCK_REALTIME;
+            goto gettime;
+        }
+#endif
+
+#ifdef CLOCK_MONOTONIC
+        if (clk_id == RUBY_CLOCK_MONOTONIC) {
+            c = CLOCK_MONOTONIC;
+            goto gettime;
+        }
+#endif
+
+#ifdef CLOCK_PROCESS_CPUTIME_ID
+        if (clk_id == RUBY_CLOCK_PROCESS_CPUTIME_ID) {
+            c = CLOCK_PROCESS_CPUTIME_ID;
+            goto gettime;
+        }
+#endif
+
+#ifdef CLOCK_THREAD_CPUTIME_ID
+        if (clk_id == RUBY_CLOCK_THREAD_CPUTIME_ID) {
+            c = CLOCK_THREAD_CPUTIME_ID;
+            goto gettime;
+        }
+#endif
+
         /*
          * Non-clock_gettime clocks are provided by symbol clk_id.
          */
@@ -8370,7 +8496,6 @@ rb_clock_gettime(int argc, VALUE *argv, VALUE _)
         }
 
 #ifdef __APPLE__
-#define RUBY_MACH_ABSOLUTE_TIME_BASED_CLOCK_MONOTONIC ID2SYM(id_MACH_ABSOLUTE_TIME_BASED_CLOCK_MONOTONIC)
         if (clk_id == RUBY_MACH_ABSOLUTE_TIME_BASED_CLOCK_MONOTONIC) {
 	    const mach_timebase_info_data_t *info = get_mach_timebase_info();
             uint64_t t = mach_absolute_time();
@@ -8383,11 +8508,11 @@ rb_clock_gettime(int argc, VALUE *argv, VALUE _)
         }
 #endif
     }
-    else {
+    else if (NUMERIC_CLOCKID) {
 #if defined(HAVE_CLOCK_GETTIME)
         struct timespec ts;
-        clockid_t c;
         c = NUM2CLOCKID(clk_id);
+      gettime:
         ret = clock_gettime(c, &ts);
         if (ret == -1)
             rb_sys_fail("clock_gettime");
@@ -8449,16 +8574,47 @@ rb_clock_gettime(int argc, VALUE *argv, VALUE _)
 static VALUE
 rb_clock_getres(int argc, VALUE *argv, VALUE _)
 {
+    int ret;
+
     struct timetick tt;
     timetick_int_t numerators[2];
     timetick_int_t denominators[2];
     int num_numerators = 0;
     int num_denominators = 0;
+    clockid_t c;
 
     VALUE unit = (rb_check_arity(argc, 1, 2) == 2) ? argv[1] : Qnil;
     VALUE clk_id = argv[0];
 
     if (SYMBOL_P(clk_id)) {
+#ifdef CLOCK_REALTIME
+        if (clk_id == RUBY_CLOCK_REALTIME) {
+            c = CLOCK_REALTIME;
+            goto getres;
+        }
+#endif
+
+#ifdef CLOCK_MONOTONIC
+        if (clk_id == RUBY_CLOCK_MONOTONIC) {
+            c = CLOCK_MONOTONIC;
+            goto getres;
+        }
+#endif
+
+#ifdef CLOCK_PROCESS_CPUTIME_ID
+        if (clk_id == RUBY_CLOCK_PROCESS_CPUTIME_ID) {
+            c = CLOCK_PROCESS_CPUTIME_ID;
+            goto getres;
+        }
+#endif
+
+#ifdef CLOCK_THREAD_CPUTIME_ID
+        if (clk_id == RUBY_CLOCK_THREAD_CPUTIME_ID) {
+            c = CLOCK_THREAD_CPUTIME_ID;
+            goto getres;
+        }
+#endif
+
 #ifdef RUBY_GETTIMEOFDAY_BASED_CLOCK_REALTIME
         if (clk_id == RUBY_GETTIMEOFDAY_BASED_CLOCK_REALTIME) {
             tt.giga_count = 0;
@@ -8525,11 +8681,12 @@ rb_clock_getres(int argc, VALUE *argv, VALUE _)
         }
 #endif
     }
-    else {
+    else if (NUMERIC_CLOCKID) {
 #if defined(HAVE_CLOCK_GETRES)
         struct timespec ts;
-        clockid_t c = NUM2CLOCKID(clk_id);
-        int ret = clock_getres(c, &ts);
+        c = NUM2CLOCKID(clk_id);
+      getres:
+        ret = clock_getres(c, &ts);
         if (ret == -1)
             rb_sys_fail("clock_getres");
         tt.count = (int32_t)ts.tv_nsec;
@@ -8657,6 +8814,7 @@ InitVM_process(void)
     rb_define_singleton_method(rb_mProcess, "exit", f_exit, -1);
     rb_define_singleton_method(rb_mProcess, "abort", f_abort, -1);
     rb_define_singleton_method(rb_mProcess, "last_status", proc_s_last_status, 0);
+    rb_define_singleton_method(rb_mProcess, "_fork", rb_proc__fork, 0);
 
     rb_define_module_function(rb_mProcess, "kill", proc_rb_f_kill, -1);
     rb_define_module_function(rb_mProcess, "wait", proc_m_wait, -1);
@@ -8878,31 +9036,49 @@ InitVM_process(void)
 
     rb_define_module_function(rb_mProcess, "times", rb_proc_times, 0);
 
-#ifdef CLOCK_REALTIME
+#if defined(RUBY_CLOCK_REALTIME)
+#elif defined(RUBY_GETTIMEOFDAY_BASED_CLOCK_REALTIME)
+# define RUBY_CLOCK_REALTIME RUBY_GETTIMEOFDAY_BASED_CLOCK_REALTIME
+#elif defined(RUBY_TIME_BASED_CLOCK_REALTIME)
+# define RUBY_CLOCK_REALTIME RUBY_TIME_BASED_CLOCK_REALTIME
+#endif
+#if defined(CLOCK_REALTIME) && defined(CLOCKID2NUM)
     /* see Process.clock_gettime */
     rb_define_const(rb_mProcess, "CLOCK_REALTIME", CLOCKID2NUM(CLOCK_REALTIME));
-#elif defined(RUBY_GETTIMEOFDAY_BASED_CLOCK_REALTIME)
-    /* see Process.clock_gettime */
-    rb_define_const(rb_mProcess, "CLOCK_REALTIME", RUBY_GETTIMEOFDAY_BASED_CLOCK_REALTIME);
+#elif defined(RUBY_CLOCK_REALTIME)
+    rb_define_const(rb_mProcess, "CLOCK_REALTIME", RUBY_CLOCK_REALTIME);
 #endif
-#ifdef CLOCK_MONOTONIC
+
+#if defined(RUBY_CLOCK_MONOTONIC)
+#elif defined(RUBY_MACH_ABSOLUTE_TIME_BASED_CLOCK_MONOTONIC)
+# define RUBY_CLOCK_MONOTONIC RUBY_MACH_ABSOLUTE_TIME_BASED_CLOCK_MONOTONIC
+#endif
+#if defined(CLOCK_MONOTONIC) && defined(CLOCKID2NUM)
     /* see Process.clock_gettime */
     rb_define_const(rb_mProcess, "CLOCK_MONOTONIC", CLOCKID2NUM(CLOCK_MONOTONIC));
-#elif defined(RUBY_MACH_ABSOLUTE_TIME_BASED_CLOCK_MONOTONIC)
-    /* see Process.clock_gettime */
-    rb_define_const(rb_mProcess, "CLOCK_MONOTONIC", RUBY_MACH_ABSOLUTE_TIME_BASED_CLOCK_MONOTONIC);
+#elif defined(RUBY_CLOCK_MONOTONIC)
+    rb_define_const(rb_mProcess, "CLOCK_MONOTONIC", RUBY_CLOCK_MONOTONIC);
 #endif
-#ifdef CLOCK_PROCESS_CPUTIME_ID
+
+#if defined(RUBY_CLOCK_PROCESS_CPUTIME_ID)
+#elif defined(RUBY_GETRUSAGE_BASED_CLOCK_PROCESS_CPUTIME_ID)
+# define RUBY_CLOCK_PROCESS_CPUTIME_ID RUBY_GETRUSAGE_BASED_CLOCK_PROCESS_CPUTIME_ID
+#endif
+#if defined(CLOCK_PROCESS_CPUTIME_ID) && defined(CLOCKID2NUM)
     /* see Process.clock_gettime */
     rb_define_const(rb_mProcess, "CLOCK_PROCESS_CPUTIME_ID", CLOCKID2NUM(CLOCK_PROCESS_CPUTIME_ID));
-#elif defined(RUBY_GETRUSAGE_BASED_CLOCK_PROCESS_CPUTIME_ID)
-    /* see Process.clock_gettime */
-    rb_define_const(rb_mProcess, "CLOCK_PROCESS_CPUTIME_ID", RUBY_GETRUSAGE_BASED_CLOCK_PROCESS_CPUTIME_ID);
+#elif defined(RUBY_CLOCK_PROCESS_CPUTIME_ID)
+    rb_define_const(rb_mProcess, "CLOCK_PROCESS_CPUTIME_ID", RUBY_CLOCK_PROCESS_CPUTIME_ID);
 #endif
-#ifdef CLOCK_THREAD_CPUTIME_ID
+
+#if defined(CLOCK_THREAD_CPUTIME_ID) && defined(CLOCKID2NUM)
     /* see Process.clock_gettime */
     rb_define_const(rb_mProcess, "CLOCK_THREAD_CPUTIME_ID", CLOCKID2NUM(CLOCK_THREAD_CPUTIME_ID));
+#elif defined(RUBY_CLOCK_THREAD_CPUTIME_ID)
+    rb_define_const(rb_mProcess, "CLOCK_THREAD_CPUTIME_ID", RUBY_CLOCK_THREAD_CPUTIME_ID);
 #endif
+
+#ifdef CLOCKID2NUM
 #ifdef CLOCK_VIRTUAL
     /* see Process.clock_gettime */
     rb_define_const(rb_mProcess, "CLOCK_VIRTUAL", CLOCKID2NUM(CLOCK_VIRTUAL));
@@ -8983,6 +9159,7 @@ InitVM_process(void)
     /* see Process.clock_gettime */
     rb_define_const(rb_mProcess, "CLOCK_TAI", CLOCKID2NUM(CLOCK_TAI));
 #endif
+#endif
     rb_define_module_function(rb_mProcess, "clock_gettime", rb_clock_gettime, -1);
     rb_define_module_function(rb_mProcess, "clock_getres", rb_clock_getres, -1);
 
@@ -9049,46 +9226,58 @@ InitVM_process(void)
 void
 Init_process(void)
 {
-    id_in = rb_intern_const("in");
-    id_out = rb_intern_const("out");
-    id_err = rb_intern_const("err");
-    id_pid = rb_intern_const("pid");
-    id_uid = rb_intern_const("uid");
-    id_gid = rb_intern_const("gid");
-    id_close = rb_intern_const("close");
-    id_child = rb_intern_const("child");
+#define define_id(name) id_##name = rb_intern_const(#name)
+    define_id(in);
+    define_id(out);
+    define_id(err);
+    define_id(pid);
+    define_id(uid);
+    define_id(gid);
+    define_id(close);
+    define_id(child);
 #ifdef HAVE_SETPGID
-    id_pgroup = rb_intern_const("pgroup");
+    define_id(pgroup);
 #endif
 #ifdef _WIN32
-    id_new_pgroup = rb_intern_const("new_pgroup");
+    define_id(new_pgroup);
 #endif
-    id_unsetenv_others = rb_intern_const("unsetenv_others");
-    id_chdir = rb_intern_const("chdir");
-    id_umask = rb_intern_const("umask");
-    id_close_others = rb_intern_const("close_others");
-    id_ENV = rb_intern_const("ENV");
-    id_nanosecond = rb_intern_const("nanosecond");
-    id_microsecond = rb_intern_const("microsecond");
-    id_millisecond = rb_intern_const("millisecond");
-    id_second = rb_intern_const("second");
-    id_float_microsecond = rb_intern_const("float_microsecond");
-    id_float_millisecond = rb_intern_const("float_millisecond");
-    id_float_second = rb_intern_const("float_second");
-    id_GETTIMEOFDAY_BASED_CLOCK_REALTIME = rb_intern_const("GETTIMEOFDAY_BASED_CLOCK_REALTIME");
-    id_TIME_BASED_CLOCK_REALTIME = rb_intern_const("TIME_BASED_CLOCK_REALTIME");
+    define_id(unsetenv_others);
+    define_id(chdir);
+    define_id(umask);
+    define_id(close_others);
+    define_id(nanosecond);
+    define_id(microsecond);
+    define_id(millisecond);
+    define_id(second);
+    define_id(float_microsecond);
+    define_id(float_millisecond);
+    define_id(float_second);
+    define_id(GETTIMEOFDAY_BASED_CLOCK_REALTIME);
+    define_id(TIME_BASED_CLOCK_REALTIME);
+#ifdef CLOCK_REALTIME
+    define_id(CLOCK_REALTIME);
+#endif
+#ifdef CLOCK_MONOTONIC
+    define_id(CLOCK_MONOTONIC);
+#endif
+#ifdef CLOCK_PROCESS_CPUTIME_ID
+    define_id(CLOCK_PROCESS_CPUTIME_ID);
+#endif
+#ifdef CLOCK_THREAD_CPUTIME_ID
+    define_id(CLOCK_THREAD_CPUTIME_ID);
+#endif
 #ifdef HAVE_TIMES
-    id_TIMES_BASED_CLOCK_MONOTONIC = rb_intern_const("TIMES_BASED_CLOCK_MONOTONIC");
-    id_TIMES_BASED_CLOCK_PROCESS_CPUTIME_ID = rb_intern_const("TIMES_BASED_CLOCK_PROCESS_CPUTIME_ID");
+    define_id(TIMES_BASED_CLOCK_MONOTONIC);
+    define_id(TIMES_BASED_CLOCK_PROCESS_CPUTIME_ID);
 #endif
 #ifdef RUSAGE_SELF
-    id_GETRUSAGE_BASED_CLOCK_PROCESS_CPUTIME_ID = rb_intern_const("GETRUSAGE_BASED_CLOCK_PROCESS_CPUTIME_ID");
+    define_id(GETRUSAGE_BASED_CLOCK_PROCESS_CPUTIME_ID);
 #endif
-    id_CLOCK_BASED_CLOCK_PROCESS_CPUTIME_ID = rb_intern_const("CLOCK_BASED_CLOCK_PROCESS_CPUTIME_ID");
+    define_id(CLOCK_BASED_CLOCK_PROCESS_CPUTIME_ID);
 #ifdef __APPLE__
-    id_MACH_ABSOLUTE_TIME_BASED_CLOCK_MONOTONIC = rb_intern_const("MACH_ABSOLUTE_TIME_BASED_CLOCK_MONOTONIC");
+    define_id(MACH_ABSOLUTE_TIME_BASED_CLOCK_MONOTONIC);
 #endif
-    id_hertz = rb_intern_const("hertz");
+    define_id(hertz);
 
     InitVM(process);
 }

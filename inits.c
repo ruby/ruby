@@ -51,6 +51,7 @@ rb_call_inits(void)
     CALL(marshal);
     CALL(Range);
     CALL(IO);
+    CALL(IO_Buffer)
     CALL(Dir);
     CALL(Time);
     CALL(Random);
@@ -97,6 +98,9 @@ rb_call_builtin_inits(void)
     BUILTIN(array);
     BUILTIN(kernel);
     BUILTIN(timev);
+    BUILTIN(yjit);
+    BUILTIN(nilclass);
+    BUILTIN(marshal);
     Init_builtin_prelude();
 }
 #undef CALL

@@ -66,6 +66,7 @@ ripper.o: $(hdrdir)/ruby/backward/2/stdarg.h
 ripper.o: $(hdrdir)/ruby/defines.h
 ripper.o: $(hdrdir)/ruby/encoding.h
 ripper.o: $(hdrdir)/ruby/intern.h
+ripper.o: $(hdrdir)/ruby/internal/abi.h
 ripper.o: $(hdrdir)/ruby/internal/anyargs.h
 ripper.o: $(hdrdir)/ruby/internal/arithmetic.h
 ripper.o: $(hdrdir)/ruby/internal/arithmetic/char.h
@@ -135,6 +136,15 @@ ripper.o: $(hdrdir)/ruby/internal/core/rtypeddata.h
 ripper.o: $(hdrdir)/ruby/internal/ctype.h
 ripper.o: $(hdrdir)/ruby/internal/dllexport.h
 ripper.o: $(hdrdir)/ruby/internal/dosish.h
+ripper.o: $(hdrdir)/ruby/internal/encoding/coderange.h
+ripper.o: $(hdrdir)/ruby/internal/encoding/ctype.h
+ripper.o: $(hdrdir)/ruby/internal/encoding/encoding.h
+ripper.o: $(hdrdir)/ruby/internal/encoding/pathname.h
+ripper.o: $(hdrdir)/ruby/internal/encoding/re.h
+ripper.o: $(hdrdir)/ruby/internal/encoding/sprintf.h
+ripper.o: $(hdrdir)/ruby/internal/encoding/string.h
+ripper.o: $(hdrdir)/ruby/internal/encoding/symbol.h
+ripper.o: $(hdrdir)/ruby/internal/encoding/transcode.h
 ripper.o: $(hdrdir)/ruby/internal/error.h
 ripper.o: $(hdrdir)/ruby/internal/eval.h
 ripper.o: $(hdrdir)/ruby/internal/event.h
@@ -239,7 +249,6 @@ ripper.o: $(top_srcdir)/internal/static_assert.h
 ripper.o: $(top_srcdir)/internal/string.h
 ripper.o: $(top_srcdir)/internal/symbol.h
 ripper.o: $(top_srcdir)/internal/thread.h
-ripper.o: $(top_srcdir)/internal/util.h
 ripper.o: $(top_srcdir)/internal/variable.h
 ripper.o: $(top_srcdir)/internal/vm.h
 ripper.o: $(top_srcdir)/internal/warnings.h

@@ -103,24 +103,11 @@ module Bundler
 
     def self.system
       ruby_engine = RUBY_ENGINE.dup
-      ruby_version = ENV.fetch("BUNDLER_SPEC_RUBY_VERSION") { RUBY_VERSION }.dup
+      ruby_version = RUBY_VERSION.dup
       ruby_engine_version = RUBY_ENGINE_VERSION.dup
       patchlevel = RUBY_PATCHLEVEL.to_s
 
       @ruby_version ||= RubyVersion.new(ruby_version, patchlevel, ruby_engine, ruby_engine_version)
-    end
-
-    def to_gem_version_with_patchlevel
-      @gem_version_with_patch ||= begin
-        Gem::Version.create("#{@gem_version}.#{@patchlevel}")
-      rescue ArgumentError
-        @gem_version
-      end
-    end
-
-    def exact?
-      return @exact if defined?(@exact)
-      @exact = versions.all? {|v| Gem::Requirement.create(v).exact? }
     end
 
     private

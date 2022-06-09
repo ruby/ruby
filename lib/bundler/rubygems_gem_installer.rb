@@ -16,10 +16,12 @@ module Bundler
       spec.loaded_from = spec_file
 
       # Completely remove any previous gem files
-      FileUtils.rm_rf gem_dir
-      FileUtils.rm_rf spec.extension_dir
+      strict_rm_rf gem_dir
+      strict_rm_rf spec.extension_dir
 
-      FileUtils.mkdir_p gem_dir, :mode => 0o755
+      SharedHelpers.filesystem_access(gem_dir, :create) do
+        FileUtils.mkdir_p gem_dir, :mode => 0o755
+      end
 
       extract_files
 
@@ -31,7 +33,10 @@ module Bundler
       generate_plugins
 
       write_spec
-      write_cache_file
+
+      SharedHelpers.filesystem_access("#{gem_home}/cache", :write) do
+        write_cache_file
+      end
 
       say spec.post_install_message unless spec.post_install_message.nil?
 
@@ -61,7 +66,10 @@ module Bundler
 
     def build_extensions
       extension_cache_path = options[:bundler_extension_cache_path]
-      return super unless extension_cache_path && extension_dir = spec.extension_dir
+      unless extension_cache_path && extension_dir = spec.extension_dir
+        require "shellwords" unless Bundler.rubygems.provides?(">= 3.2.25")
+        return super
+      end
 
       extension_dir = Pathname.new(extension_dir)
       build_complete = SharedHelpers.filesystem_access(extension_cache_path.join("gem.build_complete"), :read, &:file?)
@@ -71,6 +79,7 @@ module Bundler
           FileUtils.cp_r extension_cache_path, spec.extension_dir
         end
       else
+        require "shellwords" # compensate missing require in rubygems before version 3.2.25
         super
         if extension_dir.directory? # not made for gems without extensions
           SharedHelpers.filesystem_access(extension_cache_path.parent, &:mkpath)
@@ -82,6 +91,12 @@ module Bundler
     end
 
     private
+
+    def strict_rm_rf(dir)
+      Bundler.rm_rf dir
+    rescue Errno::ENOTEMPTY => e
+      raise DirectoryRemovalError.new(e.cause, "Could not delete previous installation of `#{dir}`")
+    end
 
     def validate_bundler_checksum(checksum)
       return true if Bundler.settings[:disable_checksum_validation]

@@ -42,12 +42,12 @@ describe "Dir.foreach" do
   it "accepts an encoding keyword for the encoding of the entries" do
     dirs = Dir.foreach("#{DirSpecs.mock_dir}/deeply/nested", encoding: "utf-8").to_a.sort
     dirs.each {|dir| dir.encoding.should == Encoding::UTF_8}
-  end
 
-  ruby_version_is ""..."2.7" do
-    it "accepts nil options" do
-      dirs = Dir.foreach("#{DirSpecs.mock_dir}/deeply/nested", nil).to_a.sort
-      dirs.each {|dir| dir.encoding.should == Encoding.find("filesystem")}
+    dirs = Dir.foreach("#{DirSpecs.mock_dir}/deeply/nested", encoding: Encoding::UTF_16LE).to_a.sort
+    dirs.each {|dir| dir.encoding.should == Encoding::UTF_16LE}
+
+    Dir.foreach("#{DirSpecs.mock_dir}/deeply/nested", encoding: Encoding::UTF_16LE) do |f|
+      f.encoding.should == Encoding::UTF_16LE
     end
   end
 

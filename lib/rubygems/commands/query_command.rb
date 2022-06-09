@@ -1,7 +1,7 @@
 # frozen_string_literal: true
-require 'rubygems/command'
-require 'rubygems/query_utils'
-require 'rubygems/deprecate'
+require_relative '../command'
+require_relative '../query_utils'
+require_relative '../deprecate'
 
 class Gem::Commands::QueryCommand < Gem::Command
   extend Gem::Deprecate
@@ -20,7 +20,7 @@ class Gem::Commands::QueryCommand < Gem::Command
   def initialize(name = 'query',
                  summary = 'Query gem information in local or remote repositories')
     super name, summary,
-         :name => //, :domain => :local, :details => false, :versions => true,
+         :domain => :local, :details => false, :versions => true,
          :installed => nil, :version => Gem::Requirement.default
 
     add_option('-n', '--name-matches REGEXP',

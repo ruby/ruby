@@ -14,7 +14,7 @@ ruby_version_is ''...'3.0' do
       e.should.parent?
     end
 
-    # This includes attributes, CDatas and declarations.
+    # This includes attributes, CData and declarations.
     it "returns false for Texts" do
       e = REXML::Text.new("foo")
       e.should_not.parent?

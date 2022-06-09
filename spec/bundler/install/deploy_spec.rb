@@ -53,6 +53,7 @@ RSpec.describe "install in deployment or frozen mode" do
   it "works if you exclude a group with a git gem" do
     build_git "foo"
     gemfile <<-G
+      source "#{file_uri_for(gem_repo1)}"
       group :test do
         gem "foo", :git => "#{lib_path("foo-1.0")}"
       end
@@ -76,6 +77,7 @@ RSpec.describe "install in deployment or frozen mode" do
     build_lib "foo", :path => lib_path("nested/foo")
     build_lib "bar", :path => lib_path("nested/bar")
     gemfile <<-G
+      source "#{file_uri_for(gem_repo1)}"
       gem "foo", "1.0", :path => "#{lib_path("nested")}"
       gem "bar", :path => "#{lib_path("nested")}"
     G
@@ -88,6 +90,7 @@ RSpec.describe "install in deployment or frozen mode" do
   it "works when path gems are specified twice" do
     build_lib "foo", :path => lib_path("nested/foo")
     gemfile <<-G
+      source "#{file_uri_for(gem_repo1)}"
       gem "foo", :path => "#{lib_path("nested/foo")}"
       gem "foo", :path => "#{lib_path("nested/foo")}"
     G
@@ -110,6 +113,7 @@ RSpec.describe "install in deployment or frozen mode" do
 
   it "works with sources given by a block" do
     install_gemfile <<-G
+      source "#{file_uri_for(gem_repo1)}"
       source "#{file_uri_for(gem_repo1)}" do
         gem "rack"
       end
@@ -254,6 +258,17 @@ RSpec.describe "install in deployment or frozen mode" do
       expect(out).to eq("WIN")
     end
 
+    it "works if a gem is missing, but it's on a different platform, and the Gemfile has no global source", :bundler => "< 3" do
+      install_gemfile <<-G
+        source "#{file_uri_for(gem_repo1)}" do
+          gem "rake", platform: :#{not_local_tag}
+        end
+      G
+
+      bundle :install, :env => { "BUNDLE_FROZEN" => "true" }
+      expect(last_command).to be_success
+    end
+
     it "explodes if a path gem is missing" do
       build_lib "path_gem"
       install_gemfile <<-G
@@ -353,11 +368,11 @@ RSpec.describe "install in deployment or frozen mode" do
       bundle "config set --local deployment true"
       bundle :install, :raise_on_error => false
       expect(err).to include("deployment mode")
-      expect(err).to include("You have added to the Gemfile:\n* source: git://hubz.com")
-      expect(err).not_to include("You have changed in the Gemfile")
+      expect(err).not_to include("You have added to the Gemfile")
+      expect(err).to include("You have changed in the Gemfile:\n* rack from `no specified source` to `git://hubz.com`")
     end
 
-    it "explodes if you unpin a source" do
+    it "explodes if you change a source" do
       build_git "rack"
 
       install_gemfile <<-G
@@ -373,12 +388,12 @@ RSpec.describe "install in deployment or frozen mode" do
       bundle "config set --local deployment true"
       bundle :install, :raise_on_error => false
       expect(err).to include("deployment mode")
-      expect(err).to include("You have deleted from the Gemfile:\n* source: #{lib_path("rack-1.0")}")
+      expect(err).not_to include("You have deleted from the Gemfile")
       expect(err).not_to include("You have added to the Gemfile")
-      expect(err).not_to include("You have changed in the Gemfile")
+      expect(err).to include("You have changed in the Gemfile:\n* rack from `#{lib_path("rack-1.0")}` to `no specified source`")
     end
 
-    it "explodes if you unpin a source, leaving it pinned somewhere else" do
+    it "explodes if you change a source" do
       build_lib "foo", :path => lib_path("rack/foo")
       build_git "rack", :path => lib_path("rack")
 
@@ -397,7 +412,7 @@ RSpec.describe "install in deployment or frozen mode" do
       bundle "config set --local deployment true"
       bundle :install, :raise_on_error => false
       expect(err).to include("deployment mode")
-      expect(err).to include("You have changed in the Gemfile:\n* rack from `no specified source` to `#{lib_path("rack")}`")
+      expect(err).to include("You have changed in the Gemfile:\n* rack from `#{lib_path("rack")}` to `no specified source`")
       expect(err).not_to include("You have added to the Gemfile")
       expect(err).not_to include("You have deleted from the Gemfile")
     end
@@ -431,6 +446,7 @@ You have deleted from the Gemfile:
     it "works fine after bundle package and bundle install --local" do
       build_lib "foo", :path => lib_path("foo")
       install_gemfile <<-G
+        source "#{file_uri_for(gem_repo1)}"
         gem "foo", :path => "#{lib_path("foo")}"
       G
 

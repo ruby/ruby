@@ -81,7 +81,7 @@ module Bundler
       def trace(e, newline = nil, force = false)
         return unless debug? || force
         msg = "#{e.class}: #{e.message}\n#{e.backtrace.join("\n  ")}"
-        tell_me(msg, nil, newline)
+        tell_err(msg, nil, newline)
       end
 
       def silence(&blk)

@@ -33,7 +33,11 @@ pass_passed_block_handler(rb_execution_context_t *ec)
 #endif
 
 #include <stdio.h>
-#include <setjmp.h>
+#if defined(__wasm__) && !defined(__EMSCRIPTEN__)
+# include "wasm/setjmp.h"
+#else
+# include <setjmp.h>
+#endif
 
 #ifdef __APPLE__
 # ifdef HAVE_CRT_EXTERNS_H
@@ -91,40 +95,12 @@ extern int select_large_fdset(int, fd_set *, fd_set *, fd_set *, struct timeval 
 
 #include <sys/stat.h>
 
-#ifdef _MSC_VER
-#define SAVE_ROOT_JMPBUF_BEFORE_STMT \
-    __try {
-#define SAVE_ROOT_JMPBUF_AFTER_STMT \
-    } \
-    __except (GetExceptionCode() == EXCEPTION_STACK_OVERFLOW ? \
-	      (rb_ec_raised_set(GET_EC(), RAISED_STACKOVERFLOW), \
-	       raise(SIGSEGV), \
-	       EXCEPTION_EXECUTE_HANDLER) : \
-	      EXCEPTION_CONTINUE_SEARCH) { \
-	/* never reaches here */ \
-    }
-#elif defined(__MINGW32__)
-LONG WINAPI rb_w32_stack_overflow_handler(struct _EXCEPTION_POINTERS *);
-#define SAVE_ROOT_JMPBUF_BEFORE_STMT \
-    do { \
-	PVOID _handler = AddVectoredExceptionHandler(1, rb_w32_stack_overflow_handler);
-
-#define SAVE_ROOT_JMPBUF_AFTER_STMT \
-	RemoveVectoredExceptionHandler(_handler); \
-    } while (0);
-#else
-#define SAVE_ROOT_JMPBUF_BEFORE_STMT
-#define SAVE_ROOT_JMPBUF_AFTER_STMT
-#endif
 
 #define SAVE_ROOT_JMPBUF(th, stmt) do \
-  if (ruby_setjmp((th)->root_jmpbuf) == 0) { \
-      SAVE_ROOT_JMPBUF_BEFORE_STMT \
+  if (true) { \
       stmt; \
-      SAVE_ROOT_JMPBUF_AFTER_STMT \
   } \
-  else { \
-      rb_fiber_start(); \
+  else if (th) { /* suppress unused-variable warning */ \
   } while (0)
 
 #define EC_PUSH_TAG(ec) do { \
@@ -144,7 +120,7 @@ LONG WINAPI rb_w32_stack_overflow_handler(struct _EXCEPTION_POINTERS *);
 
 #define EC_REPUSH_TAG() (void)(_ec->tag = &_tag)
 
-#if defined __GNUC__ && __GNUC__ == 4 && (__GNUC_MINOR__ >= 6 && __GNUC_MINOR__ <= 8) || __clang__
+#if defined __GNUC__ && __GNUC__ == 4 && (__GNUC_MINOR__ >= 6 && __GNUC_MINOR__ <= 8) || defined __clang__
 /* This macro prevents GCC 4.6--4.8 from emitting maybe-uninitialized warnings.
  * This macro also prevents Clang from dumping core in EC_EXEC_TAG().
  * (I confirmed Clang 4.0.1 and 5.0.0.)
@@ -201,11 +177,30 @@ rb_ec_tag_jump(const rb_execution_context_t *ec, enum ruby_tag_type st)
 
 #define CREF_FL_PUSHED_BY_EVAL IMEMO_FL_USER1
 #define CREF_FL_OMOD_SHARED    IMEMO_FL_USER2
+#define CREF_FL_SINGLETON      IMEMO_FL_USER3
+
+static inline int CREF_SINGLETON(const rb_cref_t *cref);
 
 static inline VALUE
 CREF_CLASS(const rb_cref_t *cref)
 {
-    return cref->klass;
+    if (CREF_SINGLETON(cref)) {
+        return CLASS_OF(cref->klass_or_self);
+    }
+    else {
+        return cref->klass_or_self;
+    }
+}
+
+static inline VALUE
+CREF_CLASS_FOR_DEFINITION(const rb_cref_t *cref)
+{
+    if (CREF_SINGLETON(cref)) {
+        return rb_singleton_class(cref->klass_or_self);
+    }
+    else {
+        return cref->klass_or_self;
+    }
 }
 
 static inline rb_cref_t *
@@ -245,6 +240,18 @@ CREF_PUSHED_BY_EVAL_SET(rb_cref_t *cref)
 }
 
 static inline int
+CREF_SINGLETON(const rb_cref_t *cref)
+{
+    return cref->flags & CREF_FL_SINGLETON;
+}
+
+static inline void
+CREF_SINGLETON_SET(rb_cref_t *cref)
+{
+    cref->flags |= CREF_FL_SINGLETON;
+}
+
+static inline int
 CREF_OMOD_SHARED(const rb_cref_t *cref)
 {
     return cref->flags & CREF_FL_OMOD_SHARED;
@@ -280,7 +287,7 @@ VALUE rb_make_exception(int argc, const VALUE *argv);
 
 NORETURN(void rb_method_name_error(VALUE, VALUE));
 
-NORETURN(void rb_fiber_start(void));
+NORETURN(void rb_fiber_start(rb_fiber_t*));
 
 NORETURN(void rb_print_undef(VALUE, ID, rb_method_visibility_t));
 NORETURN(void rb_print_undef_str(VALUE, VALUE));

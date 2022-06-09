@@ -10,3 +10,10 @@ zonetab.h: zonetab.list
 .PHONY: update-zonetab
 update-zonetab:
 	$(RUBY) -C $(srcdir) update-abbr
+
+.PHONY: update-nothing
+update-nothing:
+
+update = nothing
+
+zonetab.list: update-$(update)

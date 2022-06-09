@@ -1,8 +1,8 @@
 # frozen_string_literal: true
-require 'rubygems/command'
-require 'rubygems/package'
-require 'rubygems/installer'
-require 'rubygems/version_option'
+require_relative '../command'
+require_relative '../package'
+require_relative '../installer'
+require_relative '../version_option'
 
 class Gem::Commands::PristineCommand < Gem::Command
   include Gem::VersionOption
@@ -50,6 +50,11 @@ class Gem::Commands::PristineCommand < Gem::Command
       options[:env_shebang] = value
     end
 
+    add_option('-i', '--install-dir DIR',
+               'Gem repository to get binstubs and plugins installed') do |value, options|
+      options[:install_dir] = File.expand_path(value)
+    end
+
     add_option('-n', '--bindir DIR',
                'Directory where executables are',
                'located') do |value, options|
@@ -93,22 +98,22 @@ extensions will be restored.
 
   def execute
     specs = if options[:all]
-              Gem::Specification.map
+      Gem::Specification.map
 
-            # `--extensions` must be explicitly given to pristine only gems
-            # with extensions.
-            elsif options[:extensions_set] and
+    # `--extensions` must be explicitly given to pristine only gems
+    # with extensions.
+    elsif options[:extensions_set] and
                   options[:extensions] and options[:args].empty?
-              Gem::Specification.select do |spec|
-                spec.extensions and not spec.extensions.empty?
-              end
-            else
-              get_all_gem_names.sort.map do |gem_name|
-                Gem::Specification.find_all_by_name(gem_name, options[:version]).reverse
-              end.flatten
-            end
+      Gem::Specification.select do |spec|
+        spec.extensions and not spec.extensions.empty?
+      end
+    else
+      get_all_gem_names.sort.map do |gem_name|
+        Gem::Specification.find_all_by_name(gem_name, options[:version]).reverse
+      end.flatten
+    end
 
-    specs = specs.select{|spec| RUBY_ENGINE == spec.platform || Gem::Platform.local === spec.platform || spec.platform == Gem::Platform::RUBY }
+    specs = specs.select {|spec| RUBY_ENGINE == spec.platform || Gem::Platform.local === spec.platform || spec.platform == Gem::Platform::RUBY }
 
     if specs.to_a.empty?
       raise Gem::Exception,
@@ -138,7 +143,7 @@ extensions will be restored.
       gem = spec.cache_file
 
       unless File.exist? gem or options[:only_executables] or options[:only_plugins]
-        require 'rubygems/remote_fetcher'
+        require_relative '../remote_fetcher'
 
         say "Cached gem for #{spec.full_name} not found, attempting to fetch..."
 
@@ -163,11 +168,12 @@ extensions will be restored.
         end
 
       bin_dir = options[:bin_dir] if options[:bin_dir]
+      install_dir = options[:install_dir] if options[:install_dir]
 
       installer_options = {
         :wrappers => true,
         :force => true,
-        :install_dir => spec.base_dir,
+        :install_dir => install_dir || spec.base_dir,
         :env_shebang => env_shebang,
         :build_args => spec.build_args,
         :bin_dir => bin_dir,
@@ -177,7 +183,7 @@ extensions will be restored.
         installer = Gem::Installer.for_spec(spec, installer_options)
         installer.generate_bin
       elsif options[:only_plugins]
-        installer = Gem::Installer.for_spec(spec)
+        installer = Gem::Installer.for_spec(spec, installer_options)
         installer.generate_plugins
       else
         installer = Gem::Installer.at(gem, installer_options)

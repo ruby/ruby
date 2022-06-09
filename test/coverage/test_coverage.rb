@@ -760,4 +760,164 @@ class TestCoverage < Test::Unit::TestCase
       foo { raise } rescue nil
     end;
   end
+
+  def test_coverage_with_asan
+    result = { :lines => [1, 1, 0, 0, nil, nil, nil] }
+
+    assert_coverage(<<~"end;", { lines: true }, result) # Bug #18001
+      class Foo
+        def bar
+          baz do |x|
+            next unless Integer == x
+          end
+        end
+      end
+    end;
+  end
+
+  def test_coverage_suspendable
+    Dir.mktmpdir {|tmp|
+      Dir.chdir(tmp) {
+        File.open("test.rb", "w") do |f|
+          f.puts <<-EOS
+            def foo
+              :ok
+            end
+
+            def bar
+              :ok
+            end
+
+            def baz
+              :ok
+            end
+          EOS
+        end
+
+        cov1 = "[0, 0, nil, nil, 0, 1, nil, nil, 0, 0, nil]"
+        cov2 = "[0, 0, nil, nil, 0, 1, nil, nil, 0, 1, nil]"
+        assert_in_out_err(%w[-rcoverage], <<-"end;", [cov1, cov2], [])
+          Coverage.setup
+          tmp = Dir.pwd
+          require tmp + "/test.rb"
+          foo
+          Coverage.resume
+          bar
+          Coverage.suspend
+          baz
+          p Coverage.peek_result[tmp + "/test.rb"]
+          Coverage.resume
+          baz
+          p Coverage.result[tmp + "/test.rb"]
+        end;
+
+        cov1 = "{:lines=>[0, 0, nil, nil, 0, 1, nil, nil, 0, 0, nil], :branches=>{}, :methods=>{[Object, :baz, 9, 12, 11, 15]=>0, [Object, :bar, 5, 12, 7, 15]=>1, [Object, :foo, 1, 12, 3, 15]=>0}}"
+        cov2 = "{:lines=>[0, 0, nil, nil, 0, 1, nil, nil, 0, 1, nil], :branches=>{}, :methods=>{[Object, :baz, 9, 12, 11, 15]=>1, [Object, :bar, 5, 12, 7, 15]=>1, [Object, :foo, 1, 12, 3, 15]=>0}}"
+        assert_in_out_err(%w[-rcoverage], <<-"end;", [cov1, cov2], [])
+          Coverage.setup(:all)
+          tmp = Dir.pwd
+          require tmp + "/test.rb"
+          foo
+          Coverage.resume
+          bar
+          Coverage.suspend
+          baz
+          p Coverage.peek_result[tmp + "/test.rb"]
+          Coverage.resume
+          baz
+          p Coverage.result[tmp + "/test.rb"]
+        end;
+
+        cov1 = "{:oneshot_lines=>[6]}"
+        cov2 = "{:oneshot_lines=>[6, 10]}"
+        assert_in_out_err(%w[-rcoverage], <<-"end;", [cov1, cov2], [])
+          Coverage.setup(oneshot_lines: true)
+          tmp = Dir.pwd
+          require tmp + "/test.rb"
+          foo
+          Coverage.resume
+          bar
+          Coverage.suspend
+          baz
+          p Coverage.peek_result[tmp + "/test.rb"]
+          Coverage.resume
+          baz
+          p Coverage.result[tmp + "/test.rb"]
+        end;
+      }
+    }
+  end
+
+  def test_coverage_state
+    assert_in_out_err(%w[-rcoverage], <<-"end;", [":idle", ":running", ":running", ":idle"], [])
+      p Coverage.state
+      Coverage.start
+      p Coverage.state
+      Coverage.peek_result
+      p Coverage.state
+      Coverage.result
+      p Coverage.state
+    end;
+
+    assert_in_out_err(%w[-rcoverage], <<-"end;", [":idle", ":suspended", ":running", ":suspended", ":running", ":suspended", ":idle"], [])
+      p Coverage.state
+      Coverage.setup
+      p Coverage.state
+      Coverage.resume
+      p Coverage.state
+      Coverage.suspend
+      p Coverage.state
+      Coverage.resume
+      p Coverage.state
+      Coverage.suspend
+      p Coverage.state
+      Coverage.result
+      p Coverage.state
+    end;
+  end
+
+  def test_result_without_resume
+    assert_in_out_err(%w[-rcoverage], <<-"end;", ["{}"], [])
+      Coverage.setup
+      p Coverage.result
+    end;
+  end
+
+  def test_result_after_suspend
+    assert_in_out_err(%w[-rcoverage], <<-"end;", ["{}"], [])
+      Coverage.start
+      Coverage.suspend
+      p Coverage.result
+    end;
+  end
+
+  def test_resume_without_setup
+    assert_in_out_err(%w[-rcoverage], <<-"end;", [], /coverage measurement is not set up yet/)
+      Coverage.resume
+      p :NG
+    end;
+  end
+
+  def test_suspend_without_setup
+    assert_in_out_err(%w[-rcoverage], <<-"end;", [], /coverage measurement is not running/)
+      Coverage.suspend
+      p :NG
+    end;
+  end
+
+  def test_double_resume
+    assert_in_out_err(%w[-rcoverage], <<-"end;", [], /coverage measurement is already running/)
+      Coverage.start
+      Coverage.resume
+      p :NG
+    end;
+  end
+
+  def test_double_suspend
+    assert_in_out_err(%w[-rcoverage], <<-"end;", [], /coverage measurement is not running/)
+      Coverage.setup
+      Coverage.suspend
+      p :NG
+    end;
+  end
 end

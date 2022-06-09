@@ -1,5 +1,5 @@
 # frozen_string_literal: true
-require 'rubygems/test_case'
+require_relative 'helper'
 
 class TestGemResolverBestSet < Gem::TestCase
   def setup
@@ -126,7 +126,7 @@ class TestGemResolverBestSet < Gem::TestCase
 
     error = Gem::RemoteFetcher::FetchError.new 'bogus', @gem_repo
 
-    e = assert_raises Gem::RemoteFetcher::FetchError do
+    e = assert_raise Gem::RemoteFetcher::FetchError do
       set.replace_failed_api_set error
     end
 

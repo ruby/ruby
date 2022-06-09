@@ -115,6 +115,23 @@ class C9
   end
 end
 
+class C10
+  class C11
+  end
+
+  def C11
+  end
+end
+
+def C10
+end
+
+class C11
+end
+
+def C11
+end
+
 module M1
   def m
   end

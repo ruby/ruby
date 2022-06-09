@@ -493,7 +493,7 @@ require 'json/common'
 #   json = JSON.generate(ruby0) # {"json_class":"Customer","v":["Dave","123 Main"]}
 #   ruby1 = JSON.parse(json, create_additions: true) # #<struct Customer name="Dave", address="123 Main">
 #   ruby1.class # Customer
-  #
+#
 # \Symbol:
 #   require 'json/add/symbol'
 #   ruby0 = :foo # foo

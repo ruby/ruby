@@ -1,5 +1,5 @@
 # frozen_string_literal: true
-require 'rubygems/test_case'
+require_relative 'helper'
 require 'rubygems/commands/update_command'
 
 class TestGemCommandsUpdateCommand < Gem::TestCase
@@ -95,7 +95,7 @@ class TestGemCommandsUpdateCommand < Gem::TestCase
     @cmd.options[:args]          = []
     @cmd.options[:system]        = true
 
-    assert_raises Gem::MockGemUi::SystemExitException do
+    assert_raise Gem::MockGemUi::SystemExitException do
       use_ui @ui do
         @cmd.execute
       end
@@ -104,6 +104,31 @@ class TestGemCommandsUpdateCommand < Gem::TestCase
     out = @ui.output.split "\n"
     assert_equal "Latest version already installed. Done.", out.shift
     assert_empty out
+  end
+
+  def test_execute_system_when_latest_does_not_support_your_ruby
+    spec_fetcher do |fetcher|
+      fetcher.download 'rubygems-update', 9 do |s|
+        s.files = %w[setup.rb]
+        s.required_ruby_version = '> 9'
+      end
+    end
+
+    @cmd.options[:args]          = []
+    @cmd.options[:system]        = true
+
+    use_ui @ui do
+      @cmd.execute
+    end
+
+    out = @ui.output.split "\n"
+    assert_equal "Updating rubygems-update", out.shift
+    assert_empty out
+
+    err = @ui.error.split "\n"
+    assert_equal "ERROR:  Error installing rubygems-update:", err.shift
+    assert_equal "\trubygems-update-9 requires Ruby version > 9. The current ruby version is #{Gem.ruby_version}.", err.shift
+    assert_empty err
   end
 
   def test_execute_system_multiple
@@ -126,6 +151,71 @@ class TestGemCommandsUpdateCommand < Gem::TestCase
 
     out = @ui.output.split "\n"
     assert_equal "Updating rubygems-update", out.shift
+    assert_equal "Installing RubyGems 9", out.shift
+    assert_equal "RubyGems system software updated", out.shift
+
+    assert_empty out
+  end
+
+  def test_execute_system_update_installed
+    spec_fetcher do |fetcher|
+      fetcher.download 'rubygems-update', 8 do |s|
+        s.files = %w[setup.rb]
+      end
+    end
+
+    @cmd.options[:args]          = []
+    @cmd.options[:system]        = true
+
+    @cmd.execute
+
+    spec_fetcher do |fetcher|
+      fetcher.download 'rubygems-update', 9 do |s|
+        s.files = %w[setup.rb]
+      end
+    end
+
+    @cmd = Gem::Commands::UpdateCommand.new
+    @cmd.options[:args]          = []
+    @cmd.options[:system]        = true
+
+    use_ui @ui do
+      @cmd.execute
+    end
+
+    out = @ui.output.split "\n"
+    assert_equal "Updating rubygems-update", out.shift
+    assert_equal "Installing RubyGems 9", out.shift
+    assert_equal "RubyGems system software updated", out.shift
+
+    assert_empty out
+  end
+
+  def test_execute_system_update_installed_in_non_default_gem_path
+    rubygems_update_spec = quick_gem "rubygems-update", 9 do |s|
+      write_file File.join(@tempdir, 'setup.rb')
+
+      s.files += %w[setup.rb]
+    end
+
+    util_setup_spec_fetcher rubygems_update_spec
+
+    rubygems_update_package = Gem::Package.build rubygems_update_spec
+
+    gemhome2 = "#{@gemhome}2"
+
+    Gem::Installer.at(rubygems_update_package, :install_dir => gemhome2).install
+
+    Gem.use_paths @gemhome, [gemhome2, @gemhome]
+
+    @cmd.options[:args]          = []
+    @cmd.options[:system]        = true
+
+    use_ui @ui do
+      @cmd.execute
+    end
+
+    out = @ui.output.split "\n"
     assert_equal "Installing RubyGems 9", out.shift
     assert_equal "RubyGems system software updated", out.shift
 
@@ -177,7 +267,7 @@ class TestGemCommandsUpdateCommand < Gem::TestCase
 
     @cmd.extend(oldest_version_mod)
 
-    assert_raises Gem::MockGemUi::TermError do
+    assert_raise Gem::MockGemUi::TermError do
       use_ui @ui do
         @cmd.execute
       end
@@ -211,7 +301,7 @@ class TestGemCommandsUpdateCommand < Gem::TestCase
 
     @cmd.execute
 
-    refute_path_exists Gem.plugindir, "Plugins folder not removed when updating rubygems to pre-3.2"
+    assert_path_not_exist Gem.plugindir, "Plugins folder not removed when updating rubygems to pre-3.2"
   end
 
   def test_execute_system_specific_newer_than_or_equal_to_3_2_leaves_plugins_dir_alone
@@ -239,8 +329,8 @@ class TestGemCommandsUpdateCommand < Gem::TestCase
 
     @cmd.execute
 
-    assert_path_exists Gem.plugindir, "Plugin folder removed when updating rubygems to post-3.2"
-    assert_path_exists plugin_file, "Plugin removed when updating rubygems to post-3.2"
+    assert_path_exist Gem.plugindir, "Plugin folder removed when updating rubygems to post-3.2"
+    assert_path_exist plugin_file, "Plugin removed when updating rubygems to post-3.2"
   end
 
   def test_execute_system_specifically_to_latest_version
@@ -273,7 +363,7 @@ class TestGemCommandsUpdateCommand < Gem::TestCase
     @cmd.options[:args]          = %w[gem]
     @cmd.options[:system]        = true
 
-    assert_raises Gem::MockGemUi::TermError do
+    assert_raise Gem::MockGemUi::TermError do
       use_ui @ui do
         @cmd.execute
       end
@@ -291,7 +381,7 @@ class TestGemCommandsUpdateCommand < Gem::TestCase
     @cmd.options[:args] = []
     @cmd.options[:system] = true
 
-    assert_raises Gem::MockGemUi::TermError do
+    assert_raise Gem::MockGemUi::TermError do
       use_ui @ui do
         @cmd.execute
       end
@@ -384,7 +474,7 @@ class TestGemCommandsUpdateCommand < Gem::TestCase
 
     a2 = @specs['a-2']
 
-    assert_path_exists File.join(a2.doc_dir, 'rdoc')
+    assert_path_exist File.join(a2.doc_dir, 'rdoc')
   end
 
   def test_execute_named
@@ -530,7 +620,7 @@ class TestGemCommandsUpdateCommand < Gem::TestCase
   def test_fetch_remote_gems_error
     Gem.sources.replace %w[http://nonexistent.example]
 
-    assert_raises Gem::RemoteFetcher::FetchError do
+    assert_raise Gem::RemoteFetcher::FetchError do
       @cmd.fetch_remote_gems @specs['a-1']
     end
   end
@@ -588,7 +678,7 @@ class TestGemCommandsUpdateCommand < Gem::TestCase
   end
 
   def test_handle_options_system_non_version
-    assert_raises ArgumentError do
+    assert_raise ArgumentError do
       @cmd.handle_options %w[--system non-version]
     end
   end

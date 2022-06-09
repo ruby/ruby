@@ -15,7 +15,7 @@ describe "Math.log2" do
     Math.log2((2**301+45677544234809571)).should == 301.0
   end
 
-  it "raises an Errno::EDOM if the argument is less than 0" do
+  it "raises Math::DomainError if the argument is less than 0" do
     -> { Math.log2(-1e-15) }.should raise_error( Math::DomainError)
   end
 

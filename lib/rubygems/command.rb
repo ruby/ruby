@@ -5,7 +5,7 @@
 # See LICENSE.txt for permissions.
 #++
 
-require 'optparse'
+require_relative 'optparse'
 require_relative 'requirement'
 require_relative 'user_interaction'
 
@@ -19,7 +19,7 @@ require_relative 'user_interaction'
 class Gem::Command
   include Gem::UserInteraction
 
-  OptionParser.accept Symbol do |value|
+  Gem::OptionParser.accept Symbol do |value|
     value.to_sym
   end
 
@@ -344,7 +344,7 @@ class Gem::Command
   ##
   # Add a command-line option and handler to the command.
   #
-  # See OptionParser#make_switch for an explanation of +opts+.
+  # See Gem::OptionParser#make_switch for an explanation of +opts+.
   #
   # +handler+ will be called with two values, the value of the argument and
   # the options hash.
@@ -354,6 +354,8 @@ class Gem::Command
 
   def add_option(*opts, &handler) # :yields: value, options
     group_name = Symbol === opts.first ? opts.shift : :options
+
+    raise "Do not pass an empty string in opts" if opts.include?("")
 
     @option_groups[group_name] << [opts, handler]
   end
@@ -396,10 +398,10 @@ class Gem::Command
         version_to_expire = deprecation["rg_version_to_expire"]
 
         deprecate_option_msg = if version_to_expire
-                                 "The \"#{option}\" option has been deprecated and will be removed in Rubygems #{version_to_expire}."
-                               else
-                                 "The \"#{option}\" option has been deprecated and will be removed in future versions of Rubygems."
-                               end
+          "The \"#{option}\" option has been deprecated and will be removed in Rubygems #{version_to_expire}."
+        else
+          "The \"#{option}\" option has been deprecated and will be removed in future versions of Rubygems."
+        end
 
         extra_msg = deprecation["extra_msg"]
 
@@ -538,7 +540,7 @@ class Gem::Command
   # command.
 
   def create_option_parser
-    @parser = OptionParser.new
+    @parser = Gem::OptionParser.new
 
     add_parser_options
 

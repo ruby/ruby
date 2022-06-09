@@ -1,7 +1,8 @@
 require_relative "nop"
 
-# :stopdoc:
 module IRB
+  # :stopdoc:
+
   module ExtendCommand
     class Measure < Nop
       def initialize(*args)
@@ -9,6 +10,9 @@ module IRB
       end
 
       def execute(type = nil, arg = nil, &block)
+        # Please check IRB.init_config in lib/irb/init.rb that sets
+        # IRB.conf[:MEASURE_PROC] to register default "measure" methods,
+        # "measure :time" (abbreviated as "measure") and "measure :stackprof".
         case type
         when :off
           IRB.conf[:MEASURE] = nil
@@ -36,5 +40,6 @@ module IRB
       end
     end
   end
+
+  # :startdoc:
 end
-# :startdoc:

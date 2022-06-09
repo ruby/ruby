@@ -168,3 +168,27 @@ platform_is :windows do
     end
   end
 end
+
+ruby_version_is "3.0" do
+  describe "IO#write on STDOUT" do
+    # https://bugs.ruby-lang.org/issues/14413
+    platform_is_not :windows do
+      it "raises SignalException SIGPIPE if the stream is closed instead of Errno::EPIPE like other IOs" do
+        stderr_file = tmp("stderr")
+        begin
+          IO.popen([*ruby_exe, "-e", "loop { puts :ok }"], "r", err: stderr_file) do |io|
+            io.gets.should == "ok\n"
+            io.close
+          end
+          status = $?
+          status.should_not.success?
+          status.should.signaled?
+          Signal.signame(status.termsig).should == 'PIPE'
+          File.read(stderr_file).should.empty?
+        ensure
+          rm_r stderr_file
+        end
+      end
+    end
+  end
+end

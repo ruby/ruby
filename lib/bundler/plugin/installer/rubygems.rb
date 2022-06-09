@@ -4,10 +4,6 @@ module Bundler
   module Plugin
     class Installer
       class Rubygems < Bundler::Source::Rubygems
-        def version_message(spec)
-          "#{spec.name} #{spec.version}"
-        end
-
         private
 
         def requires_sudo?

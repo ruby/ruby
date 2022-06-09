@@ -72,6 +72,10 @@ module Bundler
 
         deps.each {|dep| Bundler.ui.confirm "#{SharedHelpers.pretty_dependency(dep, false)} was removed." }
       end
+
+      # Invalidate the cached Bundler.definition.
+      # This prevents e.g. `bundle remove ...` from using outdated information.
+      Bundler.reset_paths!
     end
 
     private
@@ -112,9 +116,12 @@ module Bundler
 
         source = ", :source => \"#{d.source}\"" unless d.source.nil?
         git = ", :git => \"#{d.git}\"" unless d.git.nil?
+        github = ", :github => \"#{d.github}\"" unless d.github.nil?
         branch = ", :branch => \"#{d.branch}\"" unless d.branch.nil?
+        ref = ", :ref => \"#{d.ref}\"" unless d.ref.nil?
+        require_path = ", :require => #{convert_autorequire(d.autorequire)}" unless d.autorequire.nil?
 
-        %(gem #{name}#{requirement}#{group}#{source}#{git}#{branch})
+        %(gem #{name}#{requirement}#{group}#{source}#{git}#{github}#{branch}#{ref}#{require_path})
       end.join("\n")
     end
 
@@ -268,6 +275,12 @@ module Bundler
 
     def show_warning(message)
       Bundler.ui.info Bundler.ui.add_color(message, :yellow)
+    end
+
+    def convert_autorequire(autorequire)
+      autorequire = autorequire.first
+      return autorequire if autorequire == "false"
+      autorequire.inspect
     end
   end
 end

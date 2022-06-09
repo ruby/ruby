@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 require "rubygems"
-require "rubygems/test_case"
+require_relative "helper"
 require "rubygems/commands/help_command"
 require "rubygems/package"
 require "rubygems/command_manager"
@@ -11,7 +11,7 @@ class TestGemCommandsHelpCommand < Gem::TestCase
 
     @cmd = Gem::Commands::HelpCommand.new
 
-    load File.expand_path('../rubygems_plugin.rb', __FILE__) unless Gem::Commands.const_defined? :InterruptCommand
+    load File.expand_path('rubygems_plugin.rb', __dir__) unless Gem::Commands.const_defined? :InterruptCommand
   end
 
   def test_gem_help_bad
@@ -35,6 +35,13 @@ class TestGemCommandsHelpCommand < Gem::TestCase
     end
   end
 
+  def test_gem_help_build
+    util_gem 'build' do |out, err|
+      assert_match(/-C PATH *Run as if gem build was started in <PATH>/, out)
+      assert_equal '', err
+    end
+  end
+
   def test_gem_help_commands
     mgr = Gem::CommandManager.new
 
@@ -48,7 +55,7 @@ class TestGemCommandsHelpCommand < Gem::TestCase
       if Gem::HAVE_OPENSSL
         assert_empty err
 
-        refute_match 'No command found for ', out
+        refute_match %r{No command found for }, out
       end
     end
   end

@@ -851,6 +851,12 @@ anc_inspect_ipv6_pktinfo(int level, int type, VALUE data, VALUE ret)
 }
 #endif
 
+#ifdef HAVE_GMTIME_R
+# define LOCALTIME(time, tm) localtime_r(&(time), &(tm))
+#else
+# define LOCALTIME(time, tm) ((tm) = *localtime(&(time)))
+#endif
+
 #if defined(SCM_TIMESTAMP) /* GNU/Linux, FreeBSD, NetBSD, OpenBSD, MacOS X, Solaris */
 static int
 inspect_timeval_as_abstime(int level, int optname, VALUE data, VALUE ret)
@@ -862,7 +868,7 @@ inspect_timeval_as_abstime(int level, int optname, VALUE data, VALUE ret)
         char buf[32];
         memcpy((char*)&tv, RSTRING_PTR(data), sizeof(tv));
         time = tv.tv_sec;
-        tm = *localtime(&time);
+        LOCALTIME(time, tm);
         strftime(buf, sizeof(buf), "%Y-%m-%d %H:%M:%S", &tm);
         rb_str_catf(ret, " %s.%06ld", buf, (long)tv.tv_usec);
         return 1;
@@ -882,7 +888,7 @@ inspect_timespec_as_abstime(int level, int optname, VALUE data, VALUE ret)
         struct tm tm;
         char buf[32];
         memcpy((char*)&ts, RSTRING_PTR(data), sizeof(ts));
-        tm = *localtime(&ts.tv_sec);
+        LOCALTIME(ts.tv_sec, tm);
         strftime(buf, sizeof(buf), "%Y-%m-%d %H:%M:%S", &tm);
         rb_str_catf(ret, " %s.%09ld", buf, (long)ts.tv_nsec);
         return 1;
@@ -906,7 +912,7 @@ inspect_bintime_as_abstime(int level, int optname, VALUE data, VALUE ret)
 	uint64_t res_h, res_l;
         char buf[32];
         memcpy((char*)&bt, RSTRING_PTR(data), sizeof(bt));
-        tm = *localtime(&bt.sec);
+        LOCALTIME(bt.sec, tm);
         strftime(buf, sizeof(buf), "%Y-%m-%d %H:%M:%S", &tm);
 
 	/* res_h = frac * 10**19 / 2**64 */
@@ -1279,7 +1285,7 @@ bsock_sendmsg_internal(VALUE sock, VALUE data, VALUE vflags,
 
     if (ss == -1) {
 	int e;
-        if (!nonblock && rb_io_wait_writable(fptr->fd)) {
+        if (!nonblock && rb_io_maybe_wait_writable(errno, fptr->self, Qnil)) {
             rb_io_check_closed(fptr);
             goto retry;
         }
@@ -1551,7 +1557,7 @@ bsock_recvmsg_internal(VALUE sock,
 
     if (ss == -1) {
 	int e;
-        if (!nonblock && rb_io_wait_readable(fptr->fd)) {
+        if (!nonblock && rb_io_maybe_wait_readable(errno, fptr->self, Qnil)) {
             rb_io_check_closed(fptr);
             goto retry;
         }

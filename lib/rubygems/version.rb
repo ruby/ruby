@@ -1,4 +1,7 @@
 # frozen_string_literal: true
+
+require_relative "deprecate"
+
 ##
 # The Version class processes string versions into comparable
 # values. A version string should normally be a series of numbers
@@ -150,8 +153,6 @@
 # a zero to give a sensible result.
 
 class Gem::Version
-  autoload :Requirement, File.expand_path('requirement', __dir__)
-
   include Comparable
 
   VERSION_PATTERN = '[0-9]+(?>\.[0-9a-zA-Z]+)*(-[0-9A-Za-z-]+(\.[0-9A-Za-z-]+)*)?'.freeze # :nodoc:
@@ -308,12 +309,12 @@ class Gem::Version
 
   def release
     @@release[self] ||= if prerelease?
-                          segments = self.segments
-                          segments.pop while segments.any? {|s| String === s }
-                          self.class.new segments.join('.')
-                        else
-                          self
-                        end
+      segments = self.segments
+      segments.pop while segments.any? {|s| String === s }
+      self.class.new segments.join('.')
+    else
+      self
+    end
   end
 
   def segments # :nodoc:
@@ -339,9 +340,11 @@ class Gem::Version
   # Compares this version with +other+ returning -1, 0, or 1 if the
   # other version is larger, the same, or smaller than this
   # one. Attempts to compare to something that's not a
-  # <tt>Gem::Version</tt> return +nil+.
+  # <tt>Gem::Version</tt> or a valid version String return +nil+.
 
   def <=>(other)
+    return self <=> self.class.new(other) if (String === other) && self.class.correct?(other)
+
     return unless Gem::Version === other
     return 0 if @version == other._version || canonical_segments == other.canonical_segments
 

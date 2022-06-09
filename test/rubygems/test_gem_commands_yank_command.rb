@@ -1,5 +1,5 @@
 # frozen_string_literal: true
-require 'rubygems/test_case'
+require_relative 'helper'
 require 'rubygems/commands/yank_command'
 
 class TestGemCommandsYankCommand < Gem::TestCase
@@ -35,7 +35,7 @@ class TestGemCommandsYankCommand < Gem::TestCase
 
   def test_handle_options_missing_argument
     %w[-v --version -p --platform].each do |option|
-      assert_raises OptionParser::MissingArgument do
+      assert_raise Gem::OptionParser::MissingArgument do
         @cmd.handle_options %W[a #{option}]
       end
     end
