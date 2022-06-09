@@ -200,7 +200,7 @@ url_unreserved_char(unsigned char c)
 }
 
 static VALUE
-optimized_escape(VALUE str)
+optimized_escape(VALUE str, int plus_escape)
 {
     long i, len, beg = 0;
     VALUE dest = 0;
@@ -220,7 +220,7 @@ optimized_escape(VALUE str)
             rb_str_cat(dest, cstr + beg, i - beg);
             beg = i + 1;
 
-            if (c == ' ') {
+            if (plus_escape && c == ' ') {
                 rb_str_cat_cstr(dest, "+");
             }
             else {
@@ -242,7 +242,7 @@ optimized_escape(VALUE str)
 }
 
 static VALUE
-optimized_unescape(VALUE str, VALUE encoding)
+optimized_unescape(VALUE str, VALUE encoding, int unescape_plus)
 {
     long i, len, beg = 0;
     VALUE dest = 0;
@@ -265,7 +265,7 @@ optimized_unescape(VALUE str, VALUE encoding)
                       | char_to_number(cstr[i+2]));
             clen = 2;
         }
-        else if (c == '+') {
+        else if (unescape_plus && c == '+') {
             buf[0] = ' ';
         }
         else {
@@ -348,7 +348,7 @@ cgiesc_unescape_html(VALUE self, VALUE str)
  *  call-seq:
  *     CGI.escape(string) -> string
  *
- *  Returns URL-escaped string.
+ *  Returns URL-escaped string (+application/x-www-form-urlencoded+).
  *
  */
 static VALUE
@@ -357,7 +357,7 @@ cgiesc_escape(VALUE self, VALUE str)
     StringValue(str);
 
     if (rb_enc_str_asciicompat_p(str)) {
-        return optimized_escape(str);
+        return optimized_escape(str, 1);
     }
     else {
         return rb_call_super(1, &str);
@@ -376,7 +376,7 @@ accept_charset(int argc, VALUE *argv, VALUE self)
  *  call-seq:
  *     CGI.unescape(string, encoding=@@accept_charset) -> string
  *
- *  Returns URL-unescaped string.
+ *  Returns URL-unescaped string (+application/x-www-form-urlencoded+).
  *
  */
 static VALUE
@@ -388,7 +388,50 @@ cgiesc_unescape(int argc, VALUE *argv, VALUE self)
 
     if (rb_enc_str_asciicompat_p(str)) {
         VALUE enc = accept_charset(argc-1, argv+1, self);
-        return optimized_unescape(str, enc);
+        return optimized_unescape(str, enc, 1);
+    }
+    else {
+        return rb_call_super(argc, argv);
+    }
+}
+
+/*
+ *  call-seq:
+ *     CGI.escapeURIComponent(string) -> string
+ *
+ *  Returns URL-escaped string following RFC 3986.
+ *
+ */
+static VALUE
+cgiesc_escape_uri_component(VALUE self, VALUE str)
+{
+    StringValue(str);
+
+    if (rb_enc_str_asciicompat_p(str)) {
+        return optimized_escape(str, 0);
+    }
+    else {
+        return rb_call_super(1, &str);
+    }
+}
+
+/*
+ *  call-seq:
+ *     CGI.unescapeURIComponent(string, encoding=@@accept_charset) -> string
+ *
+ *  Returns URL-unescaped string following RFC 3986.
+ *
+ */
+static VALUE
+cgiesc_unescape_uri_component(int argc, VALUE *argv, VALUE self)
+{
+    VALUE str = (rb_check_arity(argc, 1, 2), argv[0]);
+
+    StringValue(str);
+
+    if (rb_enc_str_asciicompat_p(str)) {
+        VALUE enc = accept_charset(argc-1, argv+1, self);
+        return optimized_unescape(str, enc, 0);
     }
     else {
         return rb_call_super(argc, argv);
@@ -414,6 +457,8 @@ InitVM_escape(void)
     rb_mUtil   = rb_define_module_under(rb_cCGI, "Util");
     rb_define_method(rb_mEscape, "escapeHTML", cgiesc_escape_html, 1);
     rb_define_method(rb_mEscape, "unescapeHTML", cgiesc_unescape_html, 1);
+    rb_define_method(rb_mEscape, "escapeURIComponent", cgiesc_escape_uri_component, 1);
+    rb_define_method(rb_mEscape, "unescapeURIComponent", cgiesc_unescape_uri_component, -1);
     rb_define_method(rb_mEscape, "escape", cgiesc_escape, 1);
     rb_define_method(rb_mEscape, "unescape", cgiesc_unescape, -1);
     rb_prepend_module(rb_mUtil, rb_mEscape);
