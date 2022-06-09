@@ -1,5 +1,4 @@
 # frozen_string_literal: true
-require 'shellwords'
 require 'test/unit'
 require 'tmpdir'
 require_relative '../lib/jit_support'
