@@ -548,6 +548,21 @@ class CSV
     end
     alias_method :to_hash, :to_h
 
+    # :call-seq:
+    #   row.deconstruct_keys -> hash
+    #
+    # Consumes the results of \to_h for use in pattern matching by treating
+    # \Symbol keys as query parameters for \String \CSV headers:
+    #
+    #   source = "Name,Value\nfoo,0\nbar,1\nbaz,2\n"
+    #   table = CSV.parse(source, headers: true)
+    #   table.select { |row| row in Name: /^ba/ }
+    #   # => [#<CSV::Row "Name":"bar" "Value":"1">, #<CSV::Row "Name":"baz" "Value":"2">]
+    def deconstruct_keys(keys)
+      hash = self.to_h.transform_keys(&:to_sym)
+      keys ? hash.slice(*keys) : hash
+    end
+
     alias_method :to_ary, :to_a
 
     # :call-seq:

@@ -351,6 +351,13 @@ class TestCSVRow < Test::Unit::TestCase
                   @row.to_csv(col_sep: "|", row_sep: "\r\n") )
   end
 
+  def test_deconstruct_keys
+    row = CSV::Row.new(%w{A B C}, [1, 2, 3])
+    match_result = row in A: 1..10, B: _, C: 3
+
+    assert_equal(true, match_result)
+  end
+
   def test_array_delegation
     assert_not_empty(@row, "Row was empty.")
 
