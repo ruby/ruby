@@ -1046,7 +1046,10 @@ rb_iseq_new_with_opt(const rb_ast_body_t *ast, VALUE name, VALUE path, VALUE rea
     prepare_iseq_build(iseq, name, path, realpath, first_lineno, node ? &node->nd_loc : NULL, node ? nd_node_id(node) : -1,
                        parent, isolated_depth, type, script_lines, &new_opt);
 
+
+    if (type == ISEQ_TYPE_TOP) rb_iseq_set_top_stack(iseq);
     rb_iseq_compile_node(iseq, node);
+    if (type == ISEQ_TYPE_TOP) rb_iseq_pop_top_stack();
     finish_iseq_build(iseq);
 
     return iseq_translate(iseq);

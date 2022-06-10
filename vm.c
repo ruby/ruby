@@ -2530,6 +2530,21 @@ vm_exec_handle_exception(rb_execution_context_t *ec, enum ruby_tag_type state,
 
 /* misc */
 
+void
+rb_iseq_set_top_stack(const rb_iseq_t *iseq)
+{
+    rb_execution_context_t *ec = GET_EC();
+    vm_set_top_stack(ec, iseq);
+    VM_ASSERT(VM_FRAME_RUBYFRAME_P(ec->cfp));
+}
+
+void
+rb_iseq_pop_top_stack(void)
+{
+    rb_execution_context_t *ec = GET_EC();
+    rb_vm_pop_frame(ec);
+}
+
 VALUE
 rb_iseq_eval(const rb_iseq_t *iseq)
 {

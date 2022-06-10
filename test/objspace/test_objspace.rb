@@ -256,6 +256,28 @@ class TestObjSpace < Test::Unit::TestCase
     GC.enable
   end
 
+  def test_trace_static_object_allocation
+    assert_separately(%w[-robjspace -rtempfile], <<~'RUBY')
+      Tempfile.create(["foo", ".rb"]) do |f|
+        f.write <<~SRC
+          # frozen_string_literal: true
+          $foo = "foo#{rand}"
+          def set_foo
+            $foo = "bar#{rand}"
+          end
+        SRC
+        f.close
+        ObjectSpace.trace_object_allocations do
+          require f.path
+        end
+        assert_equal f.path, ObjectSpace.allocation_sourcefile($foo)
+        set_foo
+        assert_equal f.path, ObjectSpace.allocation_sourcefile($foo)
+        # assert_equal 2, ObjectSpace.allocation_sourceline($foo)
+      end
+    RUBY
+  end
+
   def test_trace_object_allocations_gc_stress
     EnvUtil.under_gc_stress do
       ObjectSpace.trace_object_allocations{
