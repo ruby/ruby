@@ -195,7 +195,7 @@ obj_any_hash(VALUE obj)
     VALUE hval = rb_check_funcall_basic_kw(obj, id_hash, rb_mKernel, 0, 0, 0);
 
     if (hval == Qundef) {
-        hval = rb_exec_recursive_outer(hash_recursive, obj, 0);
+        hval = rb_exec_recursive_outer_mid(hash_recursive, obj, 0, id_hash);
     }
 
     while (!FIXNUM_P(hval)) {
