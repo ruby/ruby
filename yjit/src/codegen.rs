@@ -2448,20 +2448,17 @@ fn gen_equality_specialized(
 
         // Guard that a is a String
         mov(cb, REG0, C_ARG_REGS[0]);
-        unsafe {
-            // Use of rb_cString here requires an unsafe block
-            jit_guard_known_klass(
-                jit,
-                ctx,
-                cb,
-                ocb,
-                rb_cString,
-                StackOpnd(1),
-                comptime_a,
-                SEND_MAX_DEPTH,
-                side_exit,
-            );
-        }
+        jit_guard_known_klass(
+            jit,
+            ctx,
+            cb,
+            ocb,
+            unsafe { rb_cString },
+            StackOpnd(1),
+            comptime_a,
+            SEND_MAX_DEPTH,
+            side_exit,
+        );
 
         let ret = cb.new_label("ret".to_string());
 
@@ -2475,19 +2472,17 @@ fn gen_equality_specialized(
             mov(cb, REG0, C_ARG_REGS[1]);
             // Note: any T_STRING is valid here, but we check for a ::String for simplicity
             // To pass a mutable static variable (rb_cString) requires an unsafe block
-            unsafe {
-                jit_guard_known_klass(
-                    jit,
-                    ctx,
-                    cb,
-                    ocb,
-                    rb_cString,
-                    StackOpnd(0),
-                    comptime_b,
-                    SEND_MAX_DEPTH,
-                    side_exit,
-                );
-            }
+            jit_guard_known_klass(
+                jit,
+                ctx,
+                cb,
+                ocb,
+                unsafe { rb_cString },
+                StackOpnd(0),
+                comptime_b,
+                SEND_MAX_DEPTH,
+                side_exit,
+            );
         }
 
         // Call rb_str_eql_internal(a, b)
@@ -3353,7 +3348,7 @@ fn jit_guard_known_klass(
     sample_instance: VALUE,
     max_chain_depth: i32,
     side_exit: CodePtr,
-) -> bool {
+) {
     let val_type = ctx.get_opnd_type(insn_opnd);
 
     if unsafe { known_klass == rb_cNilClass } {
@@ -3472,8 +3467,6 @@ fn jit_guard_known_klass(
         cmp(cb, klass_opnd, REG1);
         jit_chain_guard(JCC_JNE, jit, ctx, cb, ocb, max_chain_depth, side_exit);
     }
-
-    true
 }
 
 // Generate ancestry guard for protected callee.
@@ -3720,7 +3713,7 @@ fn jit_rb_str_concat(
     // Guard that the argument is of class String at runtime.
     let arg_opnd = ctx.stack_opnd(0);
     mov(cb, REG0, arg_opnd);
-    if !jit_guard_known_klass(
+    jit_guard_known_klass(
         jit,
         ctx,
         cb,
@@ -3730,9 +3723,7 @@ fn jit_rb_str_concat(
         comptime_arg,
         SEND_MAX_DEPTH,
         side_exit,
-    ) {
-        return false;
-    }
+    );
 
     let concat_arg = ctx.stack_pop(1);
     let recv = ctx.stack_pop(1);
@@ -4800,7 +4791,7 @@ fn gen_send_general(
     let recv = ctx.stack_opnd(argc);
     let recv_opnd = StackOpnd(argc.try_into().unwrap());
     mov(cb, REG0, recv);
-    if !jit_guard_known_klass(
+    jit_guard_known_klass(
         jit,
         ctx,
         cb,
@@ -4810,9 +4801,7 @@ fn gen_send_general(
         comptime_recv,
         SEND_MAX_DEPTH,
         side_exit,
-    ) {
-        return CantCompile;
-    }
+    );
 
     // Do method lookup
     let mut cme = unsafe { rb_callable_method_entry(comptime_recv_klass, mid) };
