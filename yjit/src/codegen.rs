@@ -5202,48 +5202,67 @@ fn gen_invokesuper(
         _ => unreachable!(),
     }
 }
+*/
 
 fn gen_leave(
     jit: &mut JITState,
     ctx: &mut Context,
-    cb: &mut CodeBlock,
+    asm: &mut Assembler,
     ocb: &mut OutlinedCb,
 ) -> CodegenStatus {
     // Only the return value should be on the stack
     assert!(ctx.get_stack_size() == 1);
 
-    // Create a side-exit to fall back to the interpreter
-    let side_exit = get_side_exit(jit, ocb, ctx);
 
-    // Load environment pointer EP from CFP
-    mov(cb, REG1, mem_opnd(64, REG_CFP, RUBY_OFFSET_CFP_EP));
+
+
+    // FIXME
+    /*
+    // Create a side-exit to fall back to the interpreter
+    //let side_exit = get_side_exit(jit, ocb, ctx);
 
     // Check for interrupts
-    add_comment(cb, "check for interrupts");
-    gen_check_ints(cb, counted_exit!(ocb, side_exit, leave_se_interrupt));
+    //gen_check_ints(cb, counted_exit!(ocb, side_exit, leave_se_interrupt));
+    */
+
+
+
+    // Load environment pointer EP from CFP
+    let ep_opnd = Opnd::mem(64, CFP, RUBY_OFFSET_CFP_EP);
+
+
+
 
     // Load the return value
-    mov(cb, REG0, ctx.stack_pop(1));
+    let retval_opnd = ctx.stack_pop(1);
 
     // Pop the current frame (ec->cfp++)
     // Note: the return PC is already in the previous CFP
-    add_comment(cb, "pop stack frame");
-    add(cb, REG_CFP, uimm_opnd(RUBY_SIZEOF_CONTROL_FRAME as u64));
-    mov(cb, mem_opnd(64, REG_EC, RUBY_OFFSET_EC_CFP), REG_CFP);
+    asm.comment("pop stack frame");
+    let incr_cfp = asm.add(CFP, RUBY_SIZEOF_CONTROL_FRAME.into());
+    asm.mov(Opnd::mem(64, EC, RUBY_OFFSET_EC_CFP), incr_cfp);
 
     // Reload REG_SP for the caller and write the return value.
     // Top of the stack is REG_SP[0] since the caller has sp_offset=1.
-    mov(cb, REG_SP, mem_opnd(64, REG_CFP, RUBY_OFFSET_CFP_SP));
-    mov(cb, mem_opnd(64, REG_SP, 0), REG0);
+    asm.mov(SP, Opnd::mem(64, CFP, RUBY_OFFSET_CFP_SP));
+    asm.mov(Opnd::mem(64, SP, 0), retval_opnd);
 
     // Jump to the JIT return address on the frame that was just popped
     let offset_to_jit_return =
         -(RUBY_SIZEOF_CONTROL_FRAME as i32) + (RUBY_OFFSET_CFP_JIT_RETURN as i32);
-    jmp_rm(cb, mem_opnd(64, REG_CFP, offset_to_jit_return));
+    asm.jmp_opnd(Opnd::mem(64, CFP, offset_to_jit_return));
+
+
+
+    // TODO: do we need to move the return value into C_RET_OPND for gen_leave_exit() ?
+
+
+
 
     EndBlock
 }
 
+/*
 fn gen_getglobal(
     jit: &mut JITState,
     ctx: &mut Context,
@@ -5937,14 +5956,16 @@ fn get_gen_fn(opcode: VALUE) -> Option<InsnGenFn> {
         YARVINSN_branchunless => Some(gen_branchunless),
         YARVINSN_branchnil => Some(gen_branchnil),
         YARVINSN_jump => Some(gen_jump),
+        */
 
-        YARVINSN_getblockparamproxy => Some(gen_getblockparamproxy),
-        YARVINSN_getblockparam => Some(gen_getblockparam),
-        YARVINSN_opt_send_without_block => Some(gen_opt_send_without_block),
-        YARVINSN_send => Some(gen_send),
-        YARVINSN_invokesuper => Some(gen_invokesuper),
+        //YARVINSN_getblockparamproxy => Some(gen_getblockparamproxy),
+        //YARVINSN_getblockparam => Some(gen_getblockparam),
+        //YARVINSN_opt_send_without_block => Some(gen_opt_send_without_block),
+        //YARVINSN_send => Some(gen_send),
+        //YARVINSN_invokesuper => Some(gen_invokesuper),
         YARVINSN_leave => Some(gen_leave),
 
+        /*
         YARVINSN_getglobal => Some(gen_getglobal),
         YARVINSN_setglobal => Some(gen_setglobal),
         YARVINSN_anytostring => Some(gen_anytostring),

@@ -79,6 +79,9 @@ pub enum Op
     // Compare two operands
     Cmp,
 
+    // Unconditional jump which takes an address operand
+    JmpOpnd,
+
     // Low-level conditional jump instructions
     Jbe,
     Je,
@@ -255,6 +258,12 @@ impl Opnd
     /// Constant pointer operand
     pub fn const_ptr(ptr: *const u8) -> Self {
         Opnd::UImm(ptr as u64)
+    }
+}
+
+impl From<usize> for Opnd {
+    fn from(value: usize) -> Self {
+        Opnd::UImm(value.try_into().unwrap())
     }
 }
 
@@ -739,6 +748,7 @@ macro_rules! def_push_2_opnd_no_out {
     };
 }
 
+def_push_1_opnd_no_out!(jmp_opnd, Op::JmpOpnd);
 def_push_jcc!(je, Op::Je);
 def_push_jcc!(jbe, Op::Jbe);
 def_push_jcc!(jnz, Op::Jnz);

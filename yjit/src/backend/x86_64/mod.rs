@@ -178,17 +178,9 @@ impl Assembler
                 // Test and set flags
                 Op::Test => test(cb, insn.opnds[0].into(), insn.opnds[1].into()),
 
-                Op::Je => {
-                    match insn.target.unwrap() {
-                        Target::Label(idx) => {
+                Op::JmpOpnd => jmp_rm(cb, insn.opnds[0].into()),
 
-                            dbg!(idx);
-                            je_label(cb, idx);
-
-                        },
-                        _ => unimplemented!()
-                    }
-                }
+                Op::Je => je_label(cb, insn.target.unwrap().unwrap_label_idx()),
 
                 _ => panic!("unsupported instruction passed to x86 backend: {:?}", insn.op)
             };
