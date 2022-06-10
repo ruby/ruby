@@ -553,9 +553,9 @@ fn gen_leave_exit(ocb: &mut OutlinedCb) -> CodePtr {
     // We could put the return value in C_RET_REG?
     // Then call asm.ret with C_RET_REG?
 
-    todo!();
 
-    //asm.ret();
+
+    asm.cret(C_RET_OPND);
 
     asm.compile(ocb);
 
@@ -5233,8 +5233,6 @@ fn gen_leave(
 
 
 
-    // Load the return value
-    let retval_opnd = ctx.stack_pop(1);
 
     // Pop the current frame (ec->cfp++)
     // Note: the return PC is already in the previous CFP
@@ -5242,22 +5240,21 @@ fn gen_leave(
     let incr_cfp = asm.add(CFP, RUBY_SIZEOF_CONTROL_FRAME.into());
     asm.mov(Opnd::mem(64, EC, RUBY_OFFSET_EC_CFP), incr_cfp);
 
+    // Load the return value
+    let retval_opnd = ctx.stack_pop(1);
+
+    // Move the return value into the C return register for gen_leave_exit()
+    asm.mov(C_RET_OPND, retval_opnd);
+
     // Reload REG_SP for the caller and write the return value.
     // Top of the stack is REG_SP[0] since the caller has sp_offset=1.
     asm.mov(SP, Opnd::mem(64, CFP, RUBY_OFFSET_CFP_SP));
-    asm.mov(Opnd::mem(64, SP, 0), retval_opnd);
+    asm.mov(Opnd::mem(64, SP, 0), C_RET_OPND);
 
     // Jump to the JIT return address on the frame that was just popped
     let offset_to_jit_return =
         -(RUBY_SIZEOF_CONTROL_FRAME as i32) + (RUBY_OFFSET_CFP_JIT_RETURN as i32);
     asm.jmp_opnd(Opnd::mem(64, CFP, offset_to_jit_return));
-
-
-
-    // TODO: do we need to move the return value into C_RET_OPND for gen_leave_exit() ?
-
-
-
 
     EndBlock
 }
