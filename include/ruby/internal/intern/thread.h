@@ -292,6 +292,7 @@ VALUE rb_exec_recursive_paired(VALUE (*f)(VALUE g, VALUE h, int r), VALUE g, VAL
  * @param[in]      f  The function that possibly recurs.
  * @param[in,out]  g  Passed as-is to `f`.
  * @param[in,out]  h  Passed as-is to `f`.
+ * @param[in]      mid The ID of the method name being called
  * @return         The return value of f.
  *
  * @internal
@@ -299,7 +300,7 @@ VALUE rb_exec_recursive_paired(VALUE (*f)(VALUE g, VALUE h, int r), VALUE g, VAL
  * It seems  nobody uses the "it  calls rb_throw_obj()" part of  this function.
  * @shyouhei doesn't understand the needs.
  */
-VALUE rb_exec_recursive_outer(VALUE (*f)(VALUE g, VALUE h, int r), VALUE g, VALUE h);
+VALUE rb_exec_recursive_outer_mid(VALUE (*f)(VALUE g, VALUE h, int r), VALUE g, VALUE h, ID mid);
 
 /**
  * Identical to  rb_exec_recursive_outer(), except it checks  for the recursion

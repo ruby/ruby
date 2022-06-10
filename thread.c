@@ -5158,9 +5158,9 @@ rb_exec_recursive_paired(VALUE (*func) (VALUE, VALUE, int), VALUE obj, VALUE pai
  */
 
 VALUE
-rb_exec_recursive_outer(VALUE (*func) (VALUE, VALUE, int), VALUE obj, VALUE arg)
+rb_exec_recursive_outer_mid(VALUE (*func) (VALUE, VALUE, int), VALUE obj, VALUE arg, ID mid)
 {
-    return exec_recursive(func, obj, 0, arg, 1, rb_frame_last_func());
+    return exec_recursive(func, obj, 0, arg, 1, mid);
 }
 
 /*
