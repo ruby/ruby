@@ -1579,6 +1579,7 @@ module FileUtils
   #
   #     FileUtils.chmod('u=wrx,go=rx', 'src1.txt')
   #     FileUtils.chmod('u=wrx,go=rx', '/usr/bin/ruby')
+  #
   # Keyword arguments:
   #
   # - <tt>noop: true</tt> - does not change permissions; returns +nil+.
@@ -1606,12 +1607,7 @@ module FileUtils
   end
   module_function :chmod
 
-  #
-  # Changes permission bits on the named files (in +list+)
-  # to the bit pattern represented by +mode+.
-  #
-  #   FileUtils.chmod_R 0700, "/tmp/app.#{$$}"
-  #   FileUtils.chmod_R "u=wrx", "/tmp/app.#{$$}"
+  # Like FileUtils.chmod, but changes permissions recursively.
   #
   def chmod_R(mode, list, noop: nil, verbose: nil, force: nil)
     list = fu_list(list)
@@ -1631,15 +1627,69 @@ module FileUtils
   end
   module_function :chmod_R
 
+  # Changes the owner and group on the entries at the paths given in +list+
+  # to the given +user+ and +group+:
   #
-  # Changes owner and group on the named files (in +list+)
-  # to the user +user+ and the group +group+.  +user+ and +group+
-  # may be an ID (Integer/String) or a name (String).
-  # If +user+ or +group+ is nil, this method does not change
-  # the attribute.
+  # - Modifies each entry that is a regular file using
+  #   {File.chown}[https://docs.ruby-lang.org/en/master/File.html#method-c-chown].
+  # - Modifies each entry that is a symbolic link using
+  #   {File.lchown}[https://docs.ruby-lang.org/en/master/File.html#method-c-lchown].
   #
-  #   FileUtils.chown 'root', 'staff', '/usr/local/bin/ruby'
-  #   FileUtils.chown nil, 'bin', Dir.glob('/usr/bin/*'), verbose: true
+  # Each path may be either a string or a
+  # {Pathname}[https://docs.ruby-lang.org/en/master/Pathname.html].
+  #
+  # User and group:
+  #
+  # - Argument +user+ may be a user name or a user id;
+  #   if +nil+ or +-1+, the user is not changed.
+  # - Argument +group+ may be a group name or a group id;
+  #   if +nil+ or +-1+, the group is not changed.
+  # - The user must be a member of the group.
+  #
+  # Examples:
+  #
+  #   # One string path.
+  #   # User and group as string names.
+  #   File.stat('src0.txt').uid # => 1004
+  #   File.stat('src0.txt').gid # => 1004
+  #   FileUtils.chown('user2', 'group1', 'src0.txt')
+  #   File.stat('src0.txt').uid # => 1006
+  #   File.stat('src0.txt').gid # => 1005
+  #
+  #   # User and group as uid and gid.
+  #   FileUtils.chown(1004, 1004, 'src0.txt')
+  #   File.stat('src0.txt').uid # => 1004
+  #   File.stat('src0.txt').gid # => 1004
+  #
+  #   # Array of string paths.
+  #   FileUtils.chown(1006, 1005, ['src0.txt', 'src0.dat'])
+  #
+  #   # Pathname path.
+  #   require 'pathname'
+  #   path = Pathname.new('src0.txt')
+  #   FileUtils.chown('user2', 'group1', path)
+  #
+  #   # Directory (not recursive).
+  #   FileUtils.chown('user2', 'group1', '.')
+  #
+  # Keyword arguments:
+  #
+  # - <tt>noop: true</tt> - does not change permissions; returns +nil+.
+  # - <tt>verbose: true</tt> - prints an equivalent command:
+  #
+  #     FileUtils.chown('user2', 'group1', 'src0.txt', noop: true, verbose: true)
+  #     FileUtils.chown(1004, 1004, 'src0.txt', noop: true, verbose: true)
+  #     FileUtils.chown(1006, 1005, ['src0.txt', 'src0.dat'], noop: true, verbose: true)
+  #     FileUtils.chown('user2', 'group1', path, noop: true, verbose: true)
+  #     FileUtils.chown('user2', 'group1', '.', noop: true, verbose: true)
+  #
+  #   Output:
+  #
+  #     chown user2:group1 src0.txt
+  #     chown 1004:1004 src0.txt
+  #     chown 1006:1005 src0.txt src0.dat
+  #     chown user2:group1 src0.txt
+  #     chown user2:group1 .
   #
   def chown(user, group, list, noop: nil, verbose: nil)
     list = fu_list(list)
