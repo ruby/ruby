@@ -14,7 +14,7 @@ use mov::Mov;
 use crate::asm::{CodeBlock, imm_num_bits};
 use super::opnd::*;
 
-/// ADD
+/// ADD - add rn and rm, put the result in rd, don't update flags
 pub fn add(cb: &mut CodeBlock, rd: A64Opnd, rn: A64Opnd, rm: A64Opnd) {
     let bytes: [u8; 4] = match (rd, rn, rm) {
         (A64Opnd::Reg(rd), A64Opnd::Reg(rn), A64Opnd::Reg(rm)) => {
@@ -37,7 +37,7 @@ pub fn add(cb: &mut CodeBlock, rd: A64Opnd, rn: A64Opnd, rm: A64Opnd) {
     cb.write_bytes(&bytes);
 }
 
-/// ADDS
+/// ADDS - add rn and rm, put the result in rd, update flags
 pub fn adds(cb: &mut CodeBlock, rd: A64Opnd, rn: A64Opnd, rm: A64Opnd) {
     let bytes: [u8; 4] = match (rd, rn, rm) {
         (A64Opnd::Reg(rd), A64Opnd::Reg(rn), A64Opnd::Reg(rm)) => {
@@ -60,7 +60,17 @@ pub fn adds(cb: &mut CodeBlock, rd: A64Opnd, rn: A64Opnd, rm: A64Opnd) {
     cb.write_bytes(&bytes);
 }
 
-/// LDUR
+/// BR - branch to a register
+pub fn br(cb: &mut CodeBlock, rn: A64Opnd) {
+    let bytes: [u8; 4] = match rn {
+        A64Opnd::Reg(rn) => Branch::br(rn.reg_no).into(),
+        _ => panic!("Invalid operand to br instruction."),
+    };
+
+    cb.write_bytes(&bytes);
+}
+
+/// LDUR - load a memory address into a register
 pub fn ldur(cb: &mut CodeBlock, rt: A64Opnd, rn: A64Opnd) {
     let bytes: [u8; 4] = match (rt, rn) {
         (A64Opnd::Reg(rt), A64Opnd::Mem(rn)) => {
@@ -75,7 +85,7 @@ pub fn ldur(cb: &mut CodeBlock, rt: A64Opnd, rn: A64Opnd) {
     cb.write_bytes(&bytes);
 }
 
-/// MOVK
+/// MOVK - move a 16 bit immediate into a register, keep the other bits in place
 pub fn movk(cb: &mut CodeBlock, rd: A64Opnd, imm16: A64Opnd, shift: u8) {
     let bytes: [u8; 4] = match (rd, imm16) {
         (A64Opnd::Reg(rd), A64Opnd::UImm(imm16)) => {
@@ -89,7 +99,7 @@ pub fn movk(cb: &mut CodeBlock, rd: A64Opnd, imm16: A64Opnd, shift: u8) {
     cb.write_bytes(&bytes);
 }
 
-/// MOVZ
+/// MOVZ - move a 16 bit immediate into a register, zero the other bits
 pub fn movz(cb: &mut CodeBlock, rd: A64Opnd, imm16: A64Opnd, shift: u8) {
     let bytes: [u8; 4] = match (rd, imm16) {
         (A64Opnd::Reg(rd), A64Opnd::UImm(imm16)) => {
@@ -103,7 +113,7 @@ pub fn movz(cb: &mut CodeBlock, rd: A64Opnd, imm16: A64Opnd, shift: u8) {
     cb.write_bytes(&bytes);
 }
 
-/// SUB
+/// SUB - subtract rm from rn, put the result in rd, don't update flags
 pub fn sub(cb: &mut CodeBlock, rd: A64Opnd, rn: A64Opnd, rm: A64Opnd) {
     let bytes: [u8; 4] = match (rd, rn, rm) {
         (A64Opnd::Reg(rd), A64Opnd::Reg(rn), A64Opnd::Reg(rm)) => {
@@ -126,7 +136,7 @@ pub fn sub(cb: &mut CodeBlock, rd: A64Opnd, rn: A64Opnd, rm: A64Opnd) {
     cb.write_bytes(&bytes);
 }
 
-/// SUBS
+/// SUBS - subtract rm from rn, put the result in rd, update flags
 pub fn subs(cb: &mut CodeBlock, rd: A64Opnd, rn: A64Opnd, rm: A64Opnd) {
     let bytes: [u8; 4] = match (rd, rn, rm) {
         (A64Opnd::Reg(rd), A64Opnd::Reg(rn), A64Opnd::Reg(rm)) => {
@@ -149,12 +159,12 @@ pub fn subs(cb: &mut CodeBlock, rd: A64Opnd, rn: A64Opnd, rm: A64Opnd) {
     cb.write_bytes(&bytes);
 }
 
-/// RET
+/// RET - unconditionally return to a location in a register, defaults to X30
 pub fn ret(cb: &mut CodeBlock, rn: A64Opnd) {
     let bytes: [u8; 4] = match rn {
         A64Opnd::None => Branch::ret(30).into(),
         A64Opnd::Reg(reg) => Branch::ret(reg.reg_no).into(),
-        _ => panic!("Invalid operand for RET")
+        _ => panic!("Invalid operand to ret instruction.")
     };
 
     cb.write_bytes(&bytes);
@@ -189,6 +199,11 @@ mod tests {
     #[test]
     fn test_adds_immediate() {
         check_bytes("201c00b1", |cb| adds(cb, X0, X1, A64Opnd::new_uimm(7)));
+    }
+
+    #[test]
+    fn test_br() {
+        check_bytes("80021fd6", |cb| br(cb, X20));
     }
 
     #[test]
