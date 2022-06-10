@@ -322,38 +322,10 @@ filter_type(const char *str, int *skiplen)
 }
 
 static void
-setup_debug_log(void)
+setup_debug_log_filter(void)
 {
-    // check RUBY_DEBUG_LOG
-    const char *log_config = getenv("RUBY_DEBUG_LOG");
-    if (log_config) {
-        fprintf(stderr, "RUBY_DEBUG_LOG=%s\n", log_config);
-
-        if  (strcmp(log_config, "mem") == 0) {
-            debug_log.mem = (char *)malloc(MAX_DEBUG_LOG * MAX_DEBUG_LOG_MESSAGE_LEN);
-            if (debug_log.mem == NULL) {
-                fprintf(stderr, "setup_debug_log failed (can't allocate memory)\n");
-                exit(1);
-            }
-            ruby_debug_log_mode |= ruby_debug_log_memory;
-        }
-        else if (strcmp(log_config, "stderr") == 0) {
-            ruby_debug_log_mode |= ruby_debug_log_stderr;
-        }
-        else {
-            ruby_debug_log_mode |= ruby_debug_log_file;
-            if ((debug_log.output = fopen(log_config, "w")) == NULL) {
-                fprintf(stderr, "can not open %s for RUBY_DEBUG_LOG\n", log_config);
-                exit(1);
-            }
-            setvbuf(debug_log.output, NULL, _IONBF, 0);
-        }
-
-        rb_nativethread_lock_initialize(&debug_log.lock);
-    }
-
-    // check RUBY_DEBUG_LOG_FILTER
     const char *filter_config = getenv("RUBY_DEBUG_LOG_FILTER");
+
     if (filter_config && strlen(filter_config) > 0) {
         unsigned int i;
         for (i=0; i<MAX_DEBUG_LOG_FILTER_NUM && filter_config; i++) {
@@ -401,6 +373,42 @@ setup_debug_log(void)
                     debug_log.filters[i].negative ? "-" : "",
                     dlf_type_names[debug_log.filters[i].type]);
         }
+    }
+}
+
+static void
+setup_debug_log(void)
+{
+    // check RUBY_DEBUG_LOG
+    const char *log_config = getenv("RUBY_DEBUG_LOG");
+    if (log_config && strlen(log_config) > 0) {
+        if (strcmp(log_config, "mem") == 0) {
+            debug_log.mem = (char *)malloc(MAX_DEBUG_LOG * MAX_DEBUG_LOG_MESSAGE_LEN);
+            if (debug_log.mem == NULL) {
+                fprintf(stderr, "setup_debug_log failed (can't allocate memory)\n");
+                exit(1);
+            }
+            ruby_debug_log_mode |= ruby_debug_log_memory;
+        }
+        else if (strcmp(log_config, "stderr") == 0) {
+            ruby_debug_log_mode |= ruby_debug_log_stderr;
+        }
+        else {
+            ruby_debug_log_mode |= ruby_debug_log_file;
+            if ((debug_log.output = fopen(log_config, "w")) == NULL) {
+                fprintf(stderr, "can not open %s for RUBY_DEBUG_LOG\n", log_config);
+                exit(1);
+            }
+            setvbuf(debug_log.output, NULL, _IONBF, 0);
+        }
+
+        fprintf(stderr, "RUBY_DEBUG_LOG=%s %s%s%s\n", log_config,
+                (ruby_debug_log_mode & ruby_debug_log_memory) ? "[mem]" : "",
+                (ruby_debug_log_mode & ruby_debug_log_stderr) ? "[stderr]" : "",
+                (ruby_debug_log_mode & ruby_debug_log_file)   ? "[file]" : "");
+        rb_nativethread_lock_initialize(&debug_log.lock);
+
+        setup_debug_log_filter();
     }
 }
 
