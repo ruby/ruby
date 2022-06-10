@@ -182,6 +182,8 @@ impl Assembler
 
                 Op::Je => je_label(cb, insn.target.unwrap().unwrap_label_idx()),
 
+                Op::Breakpoint => int3(cb),
+
                 _ => panic!("unsupported instruction passed to x86 backend: {:?}", insn.op)
             };
         }
