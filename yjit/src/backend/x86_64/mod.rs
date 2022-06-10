@@ -69,7 +69,7 @@ impl Assembler
         ]
     }
 
-    /// Emit platform-specific machine code
+    /// Split IR instructions for the x86 platform
     fn x86_split(mut self) -> Assembler
     {
         let live_ranges: Vec<usize> = std::mem::take(&mut self.live_ranges);
@@ -87,7 +87,8 @@ impl Assembler
                             }
                         },
 
-                        [Opnd::Mem(_), _] => {
+                        // We have to load memory and register operands to avoid corrupting them
+                        [Opnd::Mem(_) | Opnd::Reg(_), _] => {
                             let opnd0 = asm.load(opnds[0]);
                             asm.push_insn(op, vec![opnd0, opnds[1]], None);
                             return;

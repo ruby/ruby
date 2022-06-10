@@ -201,19 +201,25 @@ fn add_comment(cb: &mut CodeBlock, comment_str: &str) {
 /// Increment a profiling counter with counter_name
 #[cfg(not(feature = "stats"))]
 macro_rules! gen_counter_incr {
-    ($cb:tt, $counter_name:ident) => {};
+    ($asm:tt, $counter_name:ident) => {};
 }
 #[cfg(feature = "stats")]
 macro_rules! gen_counter_incr {
-    ($cb:tt, $counter_name:ident) => {
+    ($asm:tt, $counter_name:ident) => {
         if (get_option!(gen_stats)) {
             // Get a pointer to the counter variable
             let ptr = ptr_to_counter!($counter_name);
 
-            // Use REG1 because there might be return value in REG0
-            mov($cb, REG1, const_ptr_opnd(ptr as *const u8));
-            write_lock_prefix($cb); // for ractors.
-            add($cb, mem_opnd(64, REG1, 0), imm_opnd(1));
+            // Load the pointer into a register
+            let ptr_reg = $asm.load(Opnd::const_ptr(ptr as *const u8));
+            let counter_opnd = Opnd::mem(64, ptr_reg, 0);
+
+            // FIXME: do we want an atomic add, or an atomic store or swap for arm?
+            //write_lock_prefix($cb); // for ractors.
+
+            // Increment and store the updated value
+            let incr_opnd = $asm.add(counter_opnd, 1.into());
+            $asm.store(counter_opnd, incr_opnd);
         }
     };
 }
@@ -441,9 +447,9 @@ fn gen_code_for_exit_from_stub(ocb: &mut OutlinedCb) -> CodePtr {
     /*
     gen_counter_incr!(ocb, exit_from_branch_stub);
 
-    pop(ocb, REG_SP);
-    pop(ocb, REG_EC);
-    pop(ocb, REG_CFP);
+    cpop(ocb, REG_SP);
+    cpop(ocb, REG_EC);
+    cpop(ocb, REG_CFP);
 
     mov(ocb, RAX, uimm_opnd(Qundef.into()));
     ret(ocb);
@@ -779,7 +785,7 @@ pub fn gen_single_block(
             // :count-placement:
             // Count bytecode instructions that execute in generated code.
             // Note that the increment happens even when the output takes side exit.
-            gen_counter_incr!(cb, exec_instruction);
+            gen_counter_incr!(asm, exec_instruction);
 
             // Add a comment for the name of the YARV instruction
             asm.comment(&insn_name(opcode));
@@ -5213,9 +5219,6 @@ fn gen_leave(
     // Only the return value should be on the stack
     assert!(ctx.get_stack_size() == 1);
 
-
-
-
     // FIXME
     /*
     // Create a side-exit to fall back to the interpreter
@@ -5225,19 +5228,11 @@ fn gen_leave(
     //gen_check_ints(cb, counted_exit!(ocb, side_exit, leave_se_interrupt));
     */
 
-
-
-    // Load environment pointer EP from CFP
-    let ep_opnd = Opnd::mem(64, CFP, RUBY_OFFSET_CFP_EP);
-
-
-
-
-
     // Pop the current frame (ec->cfp++)
     // Note: the return PC is already in the previous CFP
     asm.comment("pop stack frame");
     let incr_cfp = asm.add(CFP, RUBY_SIZEOF_CONTROL_FRAME.into());
+    asm.mov(CFP, incr_cfp);
     asm.mov(Opnd::mem(64, EC, RUBY_OFFSET_EC_CFP), incr_cfp);
 
     // Load the return value
@@ -6103,10 +6098,10 @@ impl CodegenGlobals {
 
         let leave_exit_code = gen_leave_exit(&mut ocb);
 
-        let stub_exit_code = gen_code_for_exit_from_stub(&mut ocb);
+        //let stub_exit_code = gen_code_for_exit_from_stub(&mut ocb);
 
         // Generate full exit code for C func
-        let cfunc_exit_code = gen_full_cfunc_return(&mut ocb);
+        //let cfunc_exit_code = gen_full_cfunc_return(&mut ocb);
 
         // Mark all code memory as executable
         cb.mark_all_executable();
@@ -6116,8 +6111,8 @@ impl CodegenGlobals {
             inline_cb: cb,
             outlined_cb: ocb,
             leave_exit_code: leave_exit_code,
-            stub_exit_code: stub_exit_code,
-            outline_full_cfunc_return_pos: cfunc_exit_code,
+            stub_exit_code: /*stub_exit_code*/CodePtr::from(1 as *mut u8),
+            outline_full_cfunc_return_pos: /*cfunc_exit_code*/CodePtr::from(1 as *mut u8),
             global_inval_patches: Vec::new(),
             inline_frozen_bytes: 0,
             method_codegen_table: HashMap::new(),
