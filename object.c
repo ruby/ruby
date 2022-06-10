@@ -285,6 +285,7 @@ rb_obj_copy_ivar(VALUE dest, VALUE obj)
     }
     // extended -> extended
     else {
+        RUBY_ASSERT(!(RBASIC(dest)->flags & ROBJECT_EMBED));
         uint32_t src_len = ROBJECT(obj)->as.heap.numiv;
         uint32_t dst_len = ROBJECT(dest)->as.heap.numiv;
 
