@@ -959,56 +959,26 @@ fn stack_swap(
     ctx.set_opnd_mapping(StackOpnd(offset1), mapping0);
 }
 
-
-
-
-
-
-
-
-
-
-/*
 fn gen_putnil(
     jit: &mut JITState,
     ctx: &mut Context,
-    cb: &mut CodeBlock,
+    asm: &mut Assembler,
     _ocb: &mut OutlinedCb,
 ) -> CodegenStatus {
-    jit_putobject(jit, ctx, cb, Qnil);
+    jit_putobject(jit, ctx, asm, Qnil);
     KeepCompiling
 }
 
-fn jit_putobject(jit: &mut JITState, ctx: &mut Context, cb: &mut CodeBlock, arg: VALUE) {
+fn jit_putobject(jit: &mut JITState, ctx: &mut Context, asm: &mut Assembler, arg: VALUE) {
     let val_type: Type = Type::from(arg);
     let stack_top = ctx.stack_push(val_type);
-
-    if arg.special_const_p() {
-        // Immediates will not move and do not need to be tracked for GC
-        // Thanks to this we can mov directly to memory when possible.
-        let imm = imm_opnd(arg.as_i64());
-
-        // 64-bit immediates can't be directly written to memory
-        if imm.num_bits() <= 32 {
-            mov(cb, stack_top, imm);
-        } else {
-            mov(cb, REG0, imm);
-            mov(cb, stack_top, REG0);
-        }
-    } else {
-        // Load the value to push into REG0
-        // Note that this value may get moved by the GC
-        jit_mov_gc_ptr(jit, cb, REG0, arg);
-
-        // Write argument at SP
-        mov(cb, stack_top, REG0);
-    }
+    asm.mov(stack_top, arg.into());
 }
 
 fn gen_putobject_int2fix(
     jit: &mut JITState,
     ctx: &mut Context,
-    cb: &mut CodeBlock,
+    asm: &mut Assembler,
     _ocb: &mut OutlinedCb,
 ) -> CodegenStatus {
     let opcode = jit.opcode;
@@ -1018,22 +988,23 @@ fn gen_putobject_int2fix(
         1
     };
 
-    jit_putobject(jit, ctx, cb, VALUE::fixnum_from_usize(cst_val));
+    jit_putobject(jit, ctx, asm, VALUE::fixnum_from_usize(cst_val));
     KeepCompiling
 }
 
 fn gen_putobject(
     jit: &mut JITState,
     ctx: &mut Context,
-    cb: &mut CodeBlock,
+    asm: &mut Assembler,
     _ocb: &mut OutlinedCb,
 ) -> CodegenStatus {
     let arg: VALUE = jit_get_arg(jit, 0);
 
-    jit_putobject(jit, ctx, cb, arg);
+    jit_putobject(jit, ctx, asm, arg);
     KeepCompiling
 }
 
+/*
 fn gen_putself(
     _jit: &mut JITState,
     ctx: &mut Context,
@@ -5896,21 +5867,21 @@ fn get_gen_fn(opcode: VALUE) -> Option<InsnGenFn> {
 
     match opcode {
         YARVINSN_nop => Some(gen_nop),
-        //YARVINSN_pop => Some(gen_pop),
+        YARVINSN_pop => Some(gen_pop),
         YARVINSN_dup => Some(gen_dup),
         YARVINSN_dupn => Some(gen_dupn),
         YARVINSN_swap => Some(gen_swap),
-
-        /*
         YARVINSN_putnil => Some(gen_putnil),
         YARVINSN_putobject => Some(gen_putobject),
         YARVINSN_putobject_INT2FIX_0_ => Some(gen_putobject_int2fix),
         YARVINSN_putobject_INT2FIX_1_ => Some(gen_putobject_int2fix),
-        YARVINSN_putself => Some(gen_putself),
-        YARVINSN_putspecialobject => Some(gen_putspecialobject),
-        YARVINSN_setn => Some(gen_setn),
-        YARVINSN_topn => Some(gen_topn),
-        YARVINSN_adjuststack => Some(gen_adjuststack),
+        //YARVINSN_putself => Some(gen_putself),
+        //YARVINSN_putspecialobject => Some(gen_putspecialobject),
+        //YARVINSN_setn => Some(gen_setn),
+        //YARVINSN_topn => Some(gen_topn),
+        //YARVINSN_adjuststack => Some(gen_adjuststack),
+
+        /*
         YARVINSN_getlocal => Some(gen_getlocal),
         YARVINSN_getlocal_WC_0 => Some(gen_getlocal_wc0),
         YARVINSN_getlocal_WC_1 => Some(gen_getlocal_wc1),
