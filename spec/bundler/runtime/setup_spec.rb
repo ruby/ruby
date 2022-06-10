@@ -1,7 +1,6 @@
 # frozen_string_literal: true
 
 require "tmpdir"
-require "tempfile"
 
 RSpec.describe "Bundler.setup" do
   describe "with no arguments" do
@@ -835,19 +834,17 @@ end
 
   context "with bundler is located in symlinked GEM_HOME" do
     let(:gem_home) { Dir.mktmpdir }
-    let(:symlinked_gem_home) { Tempfile.new("gem_home").path }
+    let(:symlinked_gem_home) { tmp("gem_home-symlink").to_s }
     let(:full_name) { "bundler-#{Bundler::VERSION}" }
 
     before do
-      skip "symlink destination exists" if Gem.win_platform?
-
-      FileUtils.ln_sf(gem_home, symlinked_gem_home)
+      File.symlink(gem_home, symlinked_gem_home)
       gems_dir = File.join(gem_home, "gems")
       specifications_dir = File.join(gem_home, "specifications")
       Dir.mkdir(gems_dir)
       Dir.mkdir(specifications_dir)
 
-      FileUtils.ln_s(source_root, File.join(gems_dir, full_name))
+      File.symlink(source_root, File.join(gems_dir, full_name))
 
       gemspec_content = File.binread(gemspec).
                 sub("Bundler::VERSION", %("#{Bundler::VERSION}")).

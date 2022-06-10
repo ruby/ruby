@@ -229,18 +229,7 @@ RDoc includes the +rdoc+ and +ri+ tools for generating and displaying documentat
   s.files << "lib/rdoc/rd/block_parser.rb" << "lib/rdoc/rd/inline_parser.rb" << "lib/rdoc/markdown.rb" << "lib/rdoc/markdown/literals.rb"
 
   s.rdoc_options = ["--main", "README.rdoc"]
-  s.extra_rdoc_files += %w[
-    CVE-2013-0256.rdoc
-    CONTRIBUTING.rdoc
-    ExampleMarkdown.md
-    ExampleRDoc.rdoc
-    History.rdoc
-    LEGAL.rdoc
-    LICENSE.rdoc
-    README.rdoc
-    RI.rdoc
-    TODO.rdoc
-  ]
+  s.extra_rdoc_files += s.files.grep(%r[\A[^\/]+\.(?:rdoc|md)\z])
 
   s.required_ruby_version = Gem::Requirement.new(">= 2.5.0")
   s.required_rubygems_version = Gem::Requirement.new(">= 2.2")

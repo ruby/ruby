@@ -690,14 +690,12 @@ typedef struct rb_size_pool_struct {
     /* Basic statistics */
     size_t total_allocated_pages;
     size_t total_freed_pages;
+    size_t force_major_gc_count;
 
 #if USE_RVARGC
     /* Sweeping statistics */
     size_t freed_slots;
     size_t empty_slots;
-
-    /* Global statistics */
-    size_t force_major_gc_count;
 #endif
 
     rb_heap_t eden_heap;
@@ -2314,23 +2312,66 @@ heap_increment(rb_objspace_t *objspace, rb_size_pool_t *size_pool, rb_heap_t *he
 }
 
 static void
+gc_continue(rb_objspace_t *objspace, rb_size_pool_t *size_pool, rb_heap_t *heap)
+{
+    /* Continue marking if in incremental marking. */
+    if (heap->free_pages == NULL && is_incremental_marking(objspace)) {
+	gc_marks_continue(objspace, size_pool, heap);
+    }
+
+    /* Continue sweeping if in lazy sweeping or the previous incremental
+     * marking finished and did not yield a free page. */
+    if (heap->free_pages == NULL && is_lazy_sweeping(objspace)) {
+        gc_sweep_continue(objspace, size_pool, heap);
+    }
+}
+
+static void
 heap_prepare(rb_objspace_t *objspace, rb_size_pool_t *size_pool, rb_heap_t *heap)
 {
     GC_ASSERT(heap->free_pages == NULL);
 
-    if (is_incremental_marking(objspace)) {
-	gc_marks_continue(objspace, size_pool, heap);
-    }
+    /* Continue incremental marking or lazy sweeping, if in any of those steps. */
+    gc_continue(objspace, size_pool, heap);
 
-    if (heap->free_pages == NULL && is_lazy_sweeping(objspace)) {
-        gc_sweep_continue(objspace, size_pool, heap);
-    }
-
+    /* If we still don't have a free page and not allowed to create a new page,
+     * we should start a new GC cycle. */
     if (heap->free_pages == NULL &&
-        (will_be_incremental_marking(objspace) || heap_increment(objspace, size_pool, heap) == FALSE) &&
-	gc_start(objspace, GPR_FLAG_NEWOBJ) == FALSE) {
-	rb_memerror();
+            (will_be_incremental_marking(objspace) ||
+                (heap_increment(objspace, size_pool, heap) == FALSE))) {
+        if (gc_start(objspace, GPR_FLAG_NEWOBJ) == FALSE) {
+            rb_memerror();
+        }
+        else {
+            /* Do steps of incremental marking or lazy sweeping if the GC run permits. */
+            gc_continue(objspace, size_pool, heap);
+
+            /* If we're not incremental marking (e.g. a minor GC) or finished
+             * sweeping and still don't have a free page, then
+             * gc_sweep_finish_size_pool should allow us to create a new page. */
+            if (heap->free_pages == NULL && !heap_increment(objspace, size_pool, heap)) {
+                if (objspace->rgengc.need_major_gc == GPR_FLAG_NONE) {
+                    rb_bug("cannot create a new page after GC");
+                }
+                else { // Major GC is required, which will allow us to create new page
+                    if (gc_start(objspace, GPR_FLAG_NEWOBJ) == FALSE) {
+                        rb_memerror();
+                    }
+                    else {
+                        /* Do steps of incremental marking or lazy sweeping. */
+                        gc_continue(objspace, size_pool, heap);
+
+                        if (heap->free_pages == NULL &&
+                                !heap_increment(objspace, size_pool, heap)) {
+                            rb_bug("cannot create a new page after major GC");
+                        }
+                    }
+                }
+            }
+        }
     }
+
+    GC_ASSERT(heap->free_pages != NULL);
 }
 
 void
@@ -2530,9 +2571,10 @@ heap_next_free_page(rb_objspace_t *objspace, rb_size_pool_t *size_pool, rb_heap_
 
     struct heap_page *page;
 
-    while (heap->free_pages == NULL) {
+    if (heap->free_pages == NULL) {
         heap_prepare(objspace, size_pool, heap);
     }
+
     page = heap->free_pages;
     heap->free_pages = page->free_next;
 
@@ -5135,10 +5177,12 @@ gc_unprotect_pages(rb_objspace_t *objspace, rb_heap_t *heap)
 static void gc_update_references(rb_objspace_t * objspace);
 static void invalidate_moved_page(rb_objspace_t *objspace, struct heap_page *page);
 
+#ifndef GC_COMPACTION_SUPPORTED
 #if defined(__wasi__) /* WebAssembly doesn't support signals */
 # define GC_COMPACTION_SUPPORTED 0
 #else
 # define GC_COMPACTION_SUPPORTED 1
+#endif
 #endif
 
 #if GC_COMPACTION_SUPPORTED
@@ -5640,9 +5684,11 @@ gc_sweep_finish_size_pool(rb_objspace_t *objspace, rb_size_pool_t *size_pool)
         bool grow_heap = is_full_marking(objspace);
 
         if (!is_full_marking(objspace)) {
-            /* The heap is a growth heap if it freed more slots than had empty slots. */
-            bool is_growth_heap = size_pool->empty_slots == 0 ||
-                                    size_pool->freed_slots > size_pool->empty_slots;
+            /* The heap is a growth heap if it freed more slots than had empty
+             * slots and used up all of its allocatable pages. */
+            bool is_growth_heap = (size_pool->empty_slots == 0 ||
+                                       size_pool->freed_slots > size_pool->empty_slots) &&
+                                   size_pool->allocatable_pages == 0;
 
             if (objspace->profile.count - objspace->rgengc.last_major_gc < RVALUE_OLD_AGE) {
                 grow_heap = TRUE;
@@ -10533,45 +10579,10 @@ gc_compact(VALUE self)
 #endif
 
 #if GC_COMPACTION_SUPPORTED
-/*
- * call-seq:
- *    GC.verify_compaction_references(toward: nil, double_heap: false) -> hash
- *
- * Verify compaction reference consistency.
- *
- * This method is implementation specific.  During compaction, objects that
- * were moved are replaced with T_MOVED objects.  No object should have a
- * reference to a T_MOVED object after compaction.
- *
- * This function doubles the heap to ensure room to move all objects,
- * compacts the heap to make sure everything moves, updates all references,
- * then performs a full GC.  If any object contains a reference to a T_MOVED
- * object, that object should be pushed on the mark stack, and will
- * make a SEGV.
- */
 static VALUE
-gc_verify_compaction_references(int argc, VALUE *argv, VALUE self)
+gc_verify_compaction_references(rb_execution_context_t *ec, VALUE self, VALUE double_heap, VALUE toward_empty)
 {
     rb_objspace_t *objspace = &rb_objspace;
-    VALUE kwargs, double_heap = Qfalse, toward_empty = Qfalse;
-    static ID id_toward, id_double_heap, id_empty;
-
-    if (!id_toward) {
-        id_toward = rb_intern("toward");
-        id_double_heap = rb_intern("double_heap");
-        id_empty = rb_intern("empty");
-    }
-
-    rb_scan_args(argc, argv, ":", &kwargs);
-    if (!NIL_P(kwargs)) {
-        if (rb_hash_has_key(kwargs, ID2SYM(id_toward))) {
-            VALUE toward = rb_hash_aref(kwargs, ID2SYM(id_toward));
-            toward_empty = (toward == ID2SYM(id_empty)) ? Qtrue : Qfalse;
-        }
-        if (rb_hash_has_key(kwargs, ID2SYM(id_double_heap))) {
-            double_heap = rb_hash_aref(kwargs, ID2SYM(id_double_heap));
-        }
-    }
 
     /* Clear the heap. */
     gc_start_internal(NULL, self, Qtrue, Qtrue, Qtrue, Qfalse);
@@ -10602,7 +10613,7 @@ gc_verify_compaction_references(int argc, VALUE *argv, VALUE self)
     return gc_compact_stats(self);
 }
 #else
-#  define gc_verify_compaction_references rb_f_notimplement
+#  define gc_verify_compaction_references (rb_builtin_arity2_function_type)rb_f_notimplement
 #endif
 
 VALUE
@@ -10994,6 +11005,7 @@ enum gc_stat_heap_sym {
     gc_stat_heap_sym_heap_tomb_slots,
     gc_stat_heap_sym_total_allocated_pages,
     gc_stat_heap_sym_total_freed_pages,
+    gc_stat_heap_sym_force_major_gc_count,
     gc_stat_heap_sym_last
 };
 
@@ -11012,6 +11024,7 @@ setup_gc_stat_heap_symbols(void)
         S(heap_tomb_slots);
         S(total_allocated_pages);
         S(total_freed_pages);
+        S(force_major_gc_count);
 #undef S
     }
 }
@@ -11054,6 +11067,7 @@ gc_stat_heap_internal(int size_pool_idx, VALUE hash_or_sym)
     SET(heap_tomb_slots, SIZE_POOL_TOMB_HEAP(size_pool)->total_slots);
     SET(total_allocated_pages, size_pool->total_allocated_pages);
     SET(total_freed_pages, size_pool->total_freed_pages);
+    SET(force_major_gc_count, size_pool->force_major_gc_count);
 #undef SET
 
     if (!NIL_P(key)) { /* matched key should return above */
@@ -13604,13 +13618,11 @@ rb_raw_obj_info(char *buff, const int buff_size, VALUE obj)
 	else if (RBASIC(obj)->klass == 0) {
             APPENDF((BUFF_ARGS, "(temporary internal)"));
 	}
-	else {
-            if (RTEST(RBASIC(obj)->klass)) {
+	else if (RTEST(RBASIC(obj)->klass)) {
             VALUE class_path = rb_class_path_cached(RBASIC(obj)->klass);
 	    if (!NIL_P(class_path)) {
                 APPENDF((BUFF_ARGS, "(%s)", RSTRING_PTR(class_path)));
 	    }
-            }
 	}
 
 #if GC_DEBUG
@@ -14097,7 +14109,9 @@ Init_GC(void)
     rb_define_singleton_method(rb_mGC, "auto_compact", gc_get_auto_compact, 0);
     rb_define_singleton_method(rb_mGC, "auto_compact=", gc_set_auto_compact, 1);
     rb_define_singleton_method(rb_mGC, "latest_compact_info", gc_compact_stats, 0);
-    rb_define_singleton_method(rb_mGC, "verify_compaction_references", gc_verify_compaction_references, -1);
+#if !GC_COMPACTION_SUPPORTED
+    rb_define_singleton_method(rb_mGC, "verify_compaction_references", rb_f_notimplement, -1);
+#endif
 
 #if GC_DEBUG_STRESS_TO_CLASS
     rb_define_singleton_method(rb_mGC, "add_stress_to_class", rb_gcdebug_add_stress_to_class, -1);
@@ -14121,6 +14135,7 @@ Init_GC(void)
 	OPT(MALLOC_ALLOCATED_SIZE);
 	OPT(MALLOC_ALLOCATED_SIZE_CHECK);
 	OPT(GC_PROFILE_DETAIL_MEMORY);
+	OPT(GC_COMPACTION_SUPPORTED);
 #undef OPT
 	OBJ_FREEZE(opts);
     }

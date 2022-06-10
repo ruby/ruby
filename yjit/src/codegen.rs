@@ -424,6 +424,13 @@ fn gen_exit(exit_pc: *mut VALUE, ctx: &Context, cb: &mut CodeBlock) -> CodePtr {
     if get_option!(gen_stats) {
         mov(cb, RDI, const_ptr_opnd(exit_pc as *const u8));
         call_ptr(cb, RSI, rb_yjit_count_side_exit_op as *const u8);
+
+        // If --yjit-trace-exits option is enabled, record the exit stack
+        // while recording the side exits.
+        if get_option!(gen_trace_exits) {
+            mov(cb, C_ARG_REGS[0], const_ptr_opnd(exit_pc as *const u8));
+            call_ptr(cb, REG0, rb_yjit_record_exit_stack as *const u8);
+        }
     }
 
     pop(cb, REG_SP);
@@ -1038,7 +1045,7 @@ fn gen_putspecialobject(
 ) -> CodegenStatus {
     let object_type = jit_get_arg(jit, 0);
 
-    if object_type == VALUE(VM_SPECIAL_OBJECT_VMCORE) {
+    if object_type == VALUE(VM_SPECIAL_OBJECT_VMCORE.as_usize()) {
         let stack_top: X86Opnd = ctx.stack_push(Type::UnknownHeap);
         jit_mov_gc_ptr(jit, cb, REG0, unsafe { rb_mRubyVMFrozenCore });
         mov(cb, stack_top, REG0);
@@ -1956,8 +1963,8 @@ fn gen_get_ivar(
     }
 
     // Compile time self is embedded and the ivar index lands within the object
-    let test_result = unsafe { FL_TEST_RAW(comptime_receiver, VALUE(ROBJECT_EMBED)) != VALUE(0) };
-    if test_result && ivar_index < ROBJECT_EMBED_LEN_MAX {
+    let test_result = unsafe { FL_TEST_RAW(comptime_receiver, VALUE(ROBJECT_EMBED.as_usize())) != VALUE(0) };
+    if test_result && ivar_index < (ROBJECT_EMBED_LEN_MAX.as_usize()) {
         // See ROBJECT_IVPTR() from include/ruby/internal/core/robject.h
 
         // Guard that self is embedded
@@ -2009,7 +2016,7 @@ fn gen_get_ivar(
         );
 
         // Check that the extended table is big enough
-        if ivar_index > ROBJECT_EMBED_LEN_MAX {
+        if ivar_index > (ROBJECT_EMBED_LEN_MAX.as_usize()) {
             // Check that the slot is inside the extended table (num_slots > index)
             let num_slots = mem_opnd(32, REG0, RUBY_OFFSET_ROBJECT_AS_HEAP_NUMIV);
 
@@ -2441,20 +2448,17 @@ fn gen_equality_specialized(
 
         // Guard that a is a String
         mov(cb, REG0, C_ARG_REGS[0]);
-        unsafe {
-            // Use of rb_cString here requires an unsafe block
-            jit_guard_known_klass(
-                jit,
-                ctx,
-                cb,
-                ocb,
-                rb_cString,
-                StackOpnd(1),
-                comptime_a,
-                SEND_MAX_DEPTH,
-                side_exit,
-            );
-        }
+        jit_guard_known_klass(
+            jit,
+            ctx,
+            cb,
+            ocb,
+            unsafe { rb_cString },
+            StackOpnd(1),
+            comptime_a,
+            SEND_MAX_DEPTH,
+            side_exit,
+        );
 
         let ret = cb.new_label("ret".to_string());
 
@@ -2468,19 +2472,17 @@ fn gen_equality_specialized(
             mov(cb, REG0, C_ARG_REGS[1]);
             // Note: any T_STRING is valid here, but we check for a ::String for simplicity
             // To pass a mutable static variable (rb_cString) requires an unsafe block
-            unsafe {
-                jit_guard_known_klass(
-                    jit,
-                    ctx,
-                    cb,
-                    ocb,
-                    rb_cString,
-                    StackOpnd(0),
-                    comptime_b,
-                    SEND_MAX_DEPTH,
-                    side_exit,
-                );
-            }
+            jit_guard_known_klass(
+                jit,
+                ctx,
+                cb,
+                ocb,
+                unsafe { rb_cString },
+                StackOpnd(0),
+                comptime_b,
+                SEND_MAX_DEPTH,
+                side_exit,
+            );
         }
 
         // Call rb_str_eql_internal(a, b)
@@ -3346,7 +3348,7 @@ fn jit_guard_known_klass(
     sample_instance: VALUE,
     max_chain_depth: i32,
     side_exit: CodePtr,
-) -> bool {
+) {
     let val_type = ctx.get_opnd_type(insn_opnd);
 
     if unsafe { known_klass == rb_cNilClass } {
@@ -3421,34 +3423,8 @@ fn jit_guard_known_klass(
             jit_chain_guard(JCC_JNE, jit, ctx, cb, ocb, max_chain_depth, side_exit);
             ctx.upgrade_opnd_type(insn_opnd, Type::Flonum);
         }
-    } else if unsafe { known_klass == rb_cString } && sample_instance.string_p() {
-        assert!(!val_type.is_imm());
-        if val_type != Type::String {
-            assert!(val_type.is_unknown());
-
-            // Need the check for immediate, because trying to look up the klass field of an immediate will segfault
-            if !val_type.is_heap() {
-                add_comment(cb, "guard not immediate (for string)");
-                assert!(Qfalse.as_i32() < Qnil.as_i32());
-                test(cb, REG0, imm_opnd(RUBY_IMMEDIATE_MASK as i64));
-                jit_chain_guard(JCC_JNZ, jit, ctx, cb, ocb, max_chain_depth, side_exit);
-                cmp(cb, REG0, imm_opnd(Qnil.into()));
-                jit_chain_guard(JCC_JBE, jit, ctx, cb, ocb, max_chain_depth, side_exit);
-            }
-
-            add_comment(cb, "guard object is string");
-            let klass_opnd = mem_opnd(64, REG0, RUBY_OFFSET_RBASIC_KLASS);
-            mov(cb, REG1, uimm_opnd(unsafe { rb_cString }.into()));
-            cmp(cb, klass_opnd, REG1);
-            jit_chain_guard(JCC_JNE, jit, ctx, cb, ocb, max_chain_depth, side_exit);
-
-            // Upgrading here causes an error with invalidation writing past end of block
-            ctx.upgrade_opnd_type(insn_opnd, Type::String);
-        } else {
-            add_comment(cb, "skip guard - known to be a string");
-        }
     } else if unsafe {
-        FL_TEST(known_klass, VALUE(RUBY_FL_SINGLETON)) != VALUE(0)
+        FL_TEST(known_klass, VALUE(RUBY_FL_SINGLETON as usize)) != VALUE(0)
             && sample_instance == rb_attr_get(known_klass, id__attached__ as ID)
     } {
         // Singleton classes are attached to one specific object, so we can
@@ -3491,8 +3467,6 @@ fn jit_guard_known_klass(
         cmp(cb, klass_opnd, REG1);
         jit_chain_guard(JCC_JNE, jit, ctx, cb, ocb, max_chain_depth, side_exit);
     }
-
-    true
 }
 
 // Generate ancestry guard for protected callee.
@@ -3625,6 +3599,43 @@ fn jit_rb_obj_equal(
     true
 }
 
+/// If string is frozen, duplicate it to get a non-frozen string. Otherwise, return it.
+fn jit_rb_str_uplus(
+    _jit: &mut JITState,
+    ctx: &mut Context,
+    cb: &mut CodeBlock,
+    _ocb: &mut OutlinedCb,
+    _ci: *const rb_callinfo,
+    _cme: *const rb_callable_method_entry_t,
+    _block: Option<IseqPtr>,
+    _argc: i32,
+    _known_recv_class: *const VALUE,
+) -> bool
+{
+    let recv = ctx.stack_pop(1);
+
+    add_comment(cb, "Unary plus on string");
+    mov(cb, REG0, recv);
+    mov(cb, REG1, mem_opnd(64, REG0, RUBY_OFFSET_RBASIC_FLAGS));
+    test(cb, REG1, imm_opnd(RUBY_FL_FREEZE as i64));
+
+    let ret_label = cb.new_label("stack_ret".to_string());
+    // If the string isn't frozen, we just return it. It's already in REG0.
+    jz_label(cb, ret_label);
+
+    // Str is frozen - duplicate
+    mov(cb, C_ARG_REGS[0], REG0);
+    call_ptr(cb, REG0, rb_str_dup as *const u8);
+    // Return value is in REG0, drop through and return it.
+
+    cb.write_label(ret_label);
+    let stack_ret = ctx.stack_push(Type::String);
+    mov(cb, stack_ret, REG0);
+
+    cb.link_labels();
+    true
+}
+
 fn jit_rb_str_bytesize(
     _jit: &mut JITState,
     ctx: &mut Context,
@@ -3702,7 +3713,7 @@ fn jit_rb_str_concat(
     // Guard that the argument is of class String at runtime.
     let arg_opnd = ctx.stack_opnd(0);
     mov(cb, REG0, arg_opnd);
-    if !jit_guard_known_klass(
+    jit_guard_known_klass(
         jit,
         ctx,
         cb,
@@ -3712,9 +3723,7 @@ fn jit_rb_str_concat(
         comptime_arg,
         SEND_MAX_DEPTH,
         side_exit,
-    ) {
-        return false;
-    }
+    );
 
     let concat_arg = ctx.stack_pop(1);
     let recv = ctx.stack_pop(1);
@@ -4782,7 +4791,7 @@ fn gen_send_general(
     let recv = ctx.stack_opnd(argc);
     let recv_opnd = StackOpnd(argc.try_into().unwrap());
     mov(cb, REG0, recv);
-    if !jit_guard_known_klass(
+    jit_guard_known_klass(
         jit,
         ctx,
         cb,
@@ -4792,9 +4801,7 @@ fn gen_send_general(
         comptime_recv,
         SEND_MAX_DEPTH,
         side_exit,
-    ) {
-        return CantCompile;
-    }
+    );
 
     // Do method lookup
     let mut cme = unsafe { rb_callable_method_entry(comptime_recv_klass, mid) };
@@ -5038,7 +5045,7 @@ fn gen_invokesuper(
     // vm_search_normal_superclass
     let rbasic_ptr: *const RBasic = current_defined_class.as_ptr();
     if current_defined_class.builtin_type() == RUBY_T_ICLASS
-        && unsafe { RB_TYPE_P((*rbasic_ptr).klass, RUBY_T_MODULE) && FL_TEST_RAW((*rbasic_ptr).klass, VALUE(RMODULE_IS_REFINEMENT)) != VALUE(0) }
+        && unsafe { RB_TYPE_P((*rbasic_ptr).klass, RUBY_T_MODULE) && FL_TEST_RAW((*rbasic_ptr).klass, VALUE(RMODULE_IS_REFINEMENT.as_usize())) != VALUE(0) }
     {
         return CantCompile;
     }
@@ -6071,6 +6078,7 @@ impl CodegenGlobals {
             self.yjit_reg_method(rb_cString, "to_str", jit_rb_str_to_s);
             self.yjit_reg_method(rb_cString, "bytesize", jit_rb_str_bytesize);
             self.yjit_reg_method(rb_cString, "<<", jit_rb_str_concat);
+            self.yjit_reg_method(rb_cString, "+@", jit_rb_str_uplus);
 
             // Thread.current
             self.yjit_reg_method(

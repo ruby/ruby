@@ -162,21 +162,17 @@ command to remove old versions.
   def highest_remote_name_tuple(spec) # :nodoc:
     spec_tuples = fetch_remote_gems spec
 
-    matching_gems = spec_tuples.select do |g,_|
-      g.name == spec.name and g.match_platform?
-    end
-
-    highest_remote_gem = matching_gems.max
-
-    highest_remote_gem ||= [Gem::NameTuple.null]
+    highest_remote_gem = spec_tuples.max
+    return unless highest_remote_gem
 
     highest_remote_gem.first
   end
 
-  def install_rubygems(version) # :nodoc:
+  def install_rubygems(spec) # :nodoc:
     args = update_rubygems_arguments
+    version = spec.version
 
-    update_dir = File.join Gem.dir, 'gems', "rubygems-update-#{version}"
+    update_dir = File.join spec.base_dir, 'gems', "rubygems-update-#{version}"
 
     Dir.chdir update_dir do
       say "Installing RubyGems #{version}" unless options[:silent]
@@ -213,30 +209,22 @@ command to remove old versions.
     version = options[:system]
     update_latest = version == true
 
-    if update_latest
-      version     = Gem::Version.new     Gem::VERSION
-      requirement = Gem::Requirement.new ">= #{Gem::VERSION}"
-    else
+    unless update_latest
       version     = Gem::Version.new     version
       requirement = Gem::Requirement.new version
+
+      return version, requirement
     end
+
+    version     = Gem::Version.new     Gem::VERSION
+    requirement = Gem::Requirement.new ">= #{Gem::VERSION}"
 
     rubygems_update         = Gem::Specification.new
     rubygems_update.name    = 'rubygems-update'
     rubygems_update.version = version
 
-    hig = {
-      'rubygems-update' => rubygems_update,
-    }
-
-    gems_to_update = which_to_update hig, options[:args], :system
-    up_ver = gems_to_update.first.version
-
-    target = if update_latest
-      up_ver
-    else
-      version
-    end
+    highest_remote_tup = highest_remote_name_tuple(rubygems_update)
+    target = highest_remote_tup ? highest_remote_tup.version : version
 
     return target, requirement
   end
@@ -290,9 +278,7 @@ command to remove old versions.
     installed_gems = update_gem('rubygems-update', version) if installed_gems.empty? || installed_gems.first.version != version
     return if installed_gems.empty?
 
-    version = installed_gems.first.version
-
-    install_rubygems version
+    install_rubygems installed_gems.first
   end
 
   def update_rubygems_arguments # :nodoc:
@@ -307,7 +293,7 @@ command to remove old versions.
     args
   end
 
-  def which_to_update(highest_installed_gems, gem_names, system = false)
+  def which_to_update(highest_installed_gems, gem_names)
     result = []
 
     highest_installed_gems.each do |l_name, l_spec|
@@ -315,12 +301,9 @@ command to remove old versions.
               gem_names.none? {|name| name == l_spec.name }
 
       highest_remote_tup = highest_remote_name_tuple l_spec
-      highest_remote_ver = highest_remote_tup.version
-      highest_installed_ver = l_spec.version
+      next unless highest_remote_tup
 
-      if system or (highest_installed_ver < highest_remote_ver)
-        result << Gem::NameTuple.new(l_spec.name, [highest_installed_ver, highest_remote_ver].max, highest_remote_tup.platform)
-      end
+      result << highest_remote_tup
     end
 
     result

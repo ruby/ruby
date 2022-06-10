@@ -62,7 +62,7 @@ module Timeout
 
     def initialize(thread, timeout, exception_class, message)
       @thread = thread
-      @deadline = Process.clock_gettime(Process::CLOCK_MONOTONIC) + timeout
+      @deadline = GET_TIME.call(Process::CLOCK_MONOTONIC) + timeout
       @exception_class = exception_class
       @message = message
 
@@ -109,7 +109,7 @@ module Timeout
 
         now = 0.0
         QUEUE_MUTEX.synchronize do
-          while (now = Process.clock_gettime(Process::CLOCK_MONOTONIC)) < closest_deadline and QUEUE.empty?
+          while (now = GET_TIME.call(Process::CLOCK_MONOTONIC)) < closest_deadline and QUEUE.empty?
             CONDVAR.wait(QUEUE_MUTEX, closest_deadline - now)
           end
         end
@@ -134,6 +134,12 @@ module Timeout
       end
     end
   end
+
+  # We keep a private reference so that time mocking libraries won't break
+  # Timeout.
+  GET_TIME = Process.method(:clock_gettime)
+  private_constant :GET_TIME
+
   # :startdoc:
 
   # Perform an operation in a block, raising an error if it takes longer than

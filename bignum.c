@@ -1645,6 +1645,12 @@ rb_big_sq_fast(VALUE x)
     return z;
 }
 
+static inline size_t
+max_size(size_t a, size_t b)
+{
+    return (a > b ? a : b);
+}
+
 /* balancing multiplication by slicing larger argument */
 static void
 bary_mul_balance_with_mulfunc(BDIGIT *const zds, const size_t zn,
@@ -1662,8 +1668,14 @@ bary_mul_balance_with_mulfunc(BDIGIT *const zds, const size_t zn,
     BDIGITS_ZERO(zds, xn);
 
     if (wn < xn) {
-        const size_t r = (yn % xn) ? (yn % xn) : xn;
-        if ((2 * xn + yn + r) > zn) {
+        /* The condition when a new buffer is needed:
+         * 1. (2(xn+r) > zn-(yn-r)) => (2xn+r > zn-yn), at the last
+         *    iteration (or r == 0)
+         * 2. (2(xn+xn) > zn-(yn-r-xn)) => (3xn-r > zn-yn), at the
+         *    previous iteration.
+         */
+        const size_t r = yn % xn;
+        if (2*xn + yn + max_size(xn-r, r) > zn) {
             wn = xn;
             wds = ALLOCV_N(BDIGIT, work, wn);
         }

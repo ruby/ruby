@@ -12,7 +12,10 @@ pub const NIL_REDEFINED_OP_FLAG: u32 = 512;
 pub const TRUE_REDEFINED_OP_FLAG: u32 = 1024;
 pub const FALSE_REDEFINED_OP_FLAG: u32 = 2048;
 pub const PROC_REDEFINED_OP_FLAG: u32 = 4096;
+pub const VM_ENV_DATA_SIZE: u32 = 3;
 pub const VM_ENV_DATA_INDEX_ME_CREF: i32 = -2;
+pub const VM_ENV_DATA_INDEX_SPECVAL: i32 = -1;
+pub const VM_ENV_DATA_INDEX_FLAGS: u32 = 0;
 pub const VM_BLOCK_HANDLER_NONE: u32 = 0;
 pub type ID = ::std::os::raw::c_ulong;
 extern "C" {
@@ -56,11 +59,59 @@ pub const RUBY_T_ZOMBIE: ruby_value_type = 29;
 pub const RUBY_T_MOVED: ruby_value_type = 30;
 pub const RUBY_T_MASK: ruby_value_type = 31;
 pub type ruby_value_type = u32;
+pub const RUBY_FL_USHIFT: ruby_fl_ushift = 12;
+pub type ruby_fl_ushift = u32;
+pub const RUBY_FL_WB_PROTECTED: ruby_fl_type = 32;
+pub const RUBY_FL_PROMOTED0: ruby_fl_type = 32;
+pub const RUBY_FL_PROMOTED1: ruby_fl_type = 64;
+pub const RUBY_FL_PROMOTED: ruby_fl_type = 96;
+pub const RUBY_FL_FINALIZE: ruby_fl_type = 128;
+pub const RUBY_FL_TAINT: ruby_fl_type = 256;
+pub const RUBY_FL_SHAREABLE: ruby_fl_type = 256;
+pub const RUBY_FL_UNTRUSTED: ruby_fl_type = 256;
+pub const RUBY_FL_SEEN_OBJ_ID: ruby_fl_type = 512;
+pub const RUBY_FL_EXIVAR: ruby_fl_type = 1024;
+pub const RUBY_FL_FREEZE: ruby_fl_type = 2048;
+pub const RUBY_FL_USER0: ruby_fl_type = 4096;
+pub const RUBY_FL_USER1: ruby_fl_type = 8192;
+pub const RUBY_FL_USER2: ruby_fl_type = 16384;
+pub const RUBY_FL_USER3: ruby_fl_type = 32768;
+pub const RUBY_FL_USER4: ruby_fl_type = 65536;
+pub const RUBY_FL_USER5: ruby_fl_type = 131072;
+pub const RUBY_FL_USER6: ruby_fl_type = 262144;
+pub const RUBY_FL_USER7: ruby_fl_type = 524288;
+pub const RUBY_FL_USER8: ruby_fl_type = 1048576;
+pub const RUBY_FL_USER9: ruby_fl_type = 2097152;
+pub const RUBY_FL_USER10: ruby_fl_type = 4194304;
+pub const RUBY_FL_USER11: ruby_fl_type = 8388608;
+pub const RUBY_FL_USER12: ruby_fl_type = 16777216;
+pub const RUBY_FL_USER13: ruby_fl_type = 33554432;
+pub const RUBY_FL_USER14: ruby_fl_type = 67108864;
+pub const RUBY_FL_USER15: ruby_fl_type = 134217728;
+pub const RUBY_FL_USER16: ruby_fl_type = 268435456;
+pub const RUBY_FL_USER17: ruby_fl_type = 536870912;
+pub const RUBY_FL_USER18: ruby_fl_type = 1073741824;
+pub const RUBY_FL_USER19: ruby_fl_type = -2147483648;
+pub const RUBY_ELTS_SHARED: ruby_fl_type = 16384;
+pub const RUBY_FL_SINGLETON: ruby_fl_type = 4096;
+pub type ruby_fl_type = i32;
 pub type st_data_t = ::std::os::raw::c_ulong;
 pub type st_index_t = st_data_t;
+pub const RARRAY_EMBED_FLAG: ruby_rarray_flags = 8192;
+pub const RARRAY_EMBED_LEN_MASK: ruby_rarray_flags = 4161536;
+pub const RARRAY_TRANSIENT_FLAG: ruby_rarray_flags = 33554432;
+pub type ruby_rarray_flags = u32;
+pub const RARRAY_EMBED_LEN_SHIFT: ruby_rarray_consts = 15;
+pub type ruby_rarray_consts = u32;
+pub const RMODULE_IS_REFINEMENT: ruby_rmodule_flags = 32768;
+pub type ruby_rmodule_flags = u32;
 extern "C" {
     pub fn rb_class_get_superclass(klass: VALUE) -> VALUE;
 }
+pub const ROBJECT_EMBED: ruby_robject_flags = 8192;
+pub type ruby_robject_flags = u32;
+pub const ROBJECT_EMBED_LEN_MAX: ruby_robject_consts = 3;
+pub type ruby_robject_consts = u32;
 extern "C" {
     pub static mut rb_mKernel: VALUE;
 }
@@ -171,6 +222,9 @@ extern "C" {
         ptr: *const ::std::os::raw::c_char,
         len: ::std::os::raw::c_long,
     ) -> VALUE;
+}
+extern "C" {
+    pub fn rb_str_dup(str_: VALUE) -> VALUE;
 }
 extern "C" {
     pub fn rb_str_append(dst: VALUE, src: VALUE) -> VALUE;
@@ -563,6 +617,10 @@ extern "C" {
 extern "C" {
     pub static mut rb_block_param_proxy: VALUE;
 }
+pub const VM_SPECIAL_OBJECT_VMCORE: vm_special_object_type = 1;
+pub const VM_SPECIAL_OBJECT_CBASE: vm_special_object_type = 2;
+pub const VM_SPECIAL_OBJECT_CONST_BASE: vm_special_object_type = 3;
+pub type vm_special_object_type = u32;
 pub type IC = *mut iseq_inline_constant_cache;
 pub type IVC = *mut iseq_inline_iv_cache_entry;
 pub type ICVARC = *mut iseq_inline_cvar_cache_entry;
@@ -910,10 +968,25 @@ extern "C" {
     pub fn rb_vm_barrier();
 }
 extern "C" {
+    pub fn rb_profile_frames(
+        start: ::std::os::raw::c_int,
+        limit: ::std::os::raw::c_int,
+        buff: *mut VALUE,
+        lines: *mut ::std::os::raw::c_int,
+    ) -> ::std::os::raw::c_int;
+}
+extern "C" {
     pub fn rb_yjit_mark_writable(mem_block: *mut ::std::os::raw::c_void, mem_size: u32);
 }
 extern "C" {
     pub fn rb_yjit_mark_executable(mem_block: *mut ::std::os::raw::c_void, mem_size: u32);
+}
+extern "C" {
+    pub fn rb_yjit_exit_locations_dict(
+        yjit_raw_samples: *mut VALUE,
+        yjit_line_samples: *mut ::std::os::raw::c_int,
+        samples_len: ::std::os::raw::c_int,
+    ) -> VALUE;
 }
 extern "C" {
     pub fn rb_yjit_get_page_size() -> u32;

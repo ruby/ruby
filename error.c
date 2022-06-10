@@ -1280,12 +1280,7 @@ check_highlight_keyword(VALUE opt, int auto_tty_detect)
     }
 
     if (NIL_P(highlight)) {
-        if (auto_tty_detect) {
-            highlight = rb_stderr_tty_p() ? Qtrue : Qfalse;
-        }
-        else {
-            highlight = Qfalse;
-        }
+        highlight = RBOOL(auto_tty_detect && rb_stderr_tty_p());
     }
 
     return highlight;
@@ -2995,7 +2990,7 @@ Init_Exception(void)
 
     rb_eLoadError   = rb_define_class("LoadError", rb_eScriptError);
     /* the path failed to load */
-    rb_attr(rb_eLoadError, rb_intern_const("path"), 1, 0, Qfalse);
+    rb_attr(rb_eLoadError, rb_intern_const("path"), TRUE, FALSE, FALSE);
 
     rb_eNotImpError = rb_define_class("NotImplementedError", rb_eScriptError);
 

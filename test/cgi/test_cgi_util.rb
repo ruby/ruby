@@ -105,6 +105,7 @@ class CGIUtilTest < Test::Unit::TestCase
   end
 
   def test_cgi_escape_html_large
+    return if RUBY_ENGINE == 'jruby'
     ulong_max, size_max = RbConfig::LIMITS.values_at("ULONG_MAX", "SIZE_MAX")
     return unless ulong_max < size_max # Platforms not concerned
 

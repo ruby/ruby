@@ -43,7 +43,7 @@ module Bundler
               f = (b ^ c ^ d)
               k = 0xCA62C1D6
             end
-            t = SHA1_MASK & (SHA1_MASK & rotate(a, 5) + f + e + k + w[i])
+            t = SHA1_MASK & rotate(a, 5) + f + e + k + w[i]
             a, b, c, d, e = t, a, SHA1_MASK & rotate(b, 30), c, d # rubocop:disable Style/ParallelAssignment
           end
           mutated = [a, b, c, d, e]

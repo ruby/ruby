@@ -16,7 +16,7 @@ exec_recursive(VALUE self, VALUE mid)
 static VALUE
 exec_recursive_outer(VALUE self, VALUE mid)
 {
-    return rb_exec_recursive_outer(recursive_i, self, mid);
+    return rb_exec_recursive_outer_mid(recursive_i, self, mid, rb_intern("exec_recursive_outer"));
 }
 
 void

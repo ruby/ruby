@@ -208,7 +208,7 @@ RSpec.describe "bundle clean" do
     G
 
     FileUtils.mkdir_p(bundled_app("real-path"))
-    FileUtils.ln_sf(bundled_app("real-path"), bundled_app("symlink-path"))
+    File.symlink(bundled_app("real-path"), bundled_app("symlink-path"))
 
     bundle "config set path #{bundled_app("symlink-path")}"
     bundle "install"

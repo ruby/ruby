@@ -29,5 +29,15 @@ module DidYouMean
     def assert_correction(expected, array)
       assert_equal Array(expected), array, "Expected #{array.inspect} to only include #{expected.inspect}"
     end
+
+    def get_message(err)
+      if err.respond_to?(:detailed_message)
+        err.detailed_message(highlight: false)
+      else
+        err.to_s
+      end
+    end
+
+    module_function :get_message
   end
 end

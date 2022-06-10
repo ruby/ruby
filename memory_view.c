@@ -784,7 +784,7 @@ lookup_memory_view_entry(VALUE klass)
 {
     VALUE entry_obj = rb_ivar_lookup(klass, id_memory_view, Qnil);
     while (NIL_P(entry_obj)) {
-        klass = rb_class_get_superclass(klass);
+        klass = rb_class_superclass(klass);
 
         if (klass == rb_cBasicObject || klass == rb_cObject)
             return NULL;

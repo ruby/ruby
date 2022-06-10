@@ -97,6 +97,17 @@ module Bundler
       @bundle_path ||= Pathname.new(configured_bundle_path.path).expand_path(root)
     end
 
+    def create_bundle_path
+      SharedHelpers.filesystem_access(bundle_path.to_s) do |p|
+        mkdir_p(p)
+      end unless bundle_path.exist?
+
+      @bundle_path = bundle_path.realpath
+    rescue Errno::EEXIST
+      raise PathError, "Could not install to path `#{bundle_path}` " \
+        "because a file already exists at that path. Either remove or rename the file so the directory can be created."
+    end
+
     def configured_bundle_path
       @configured_bundle_path ||= settings.path.tap(&:validate!)
     end

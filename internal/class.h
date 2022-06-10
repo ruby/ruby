@@ -122,10 +122,10 @@ typedef struct rb_classext_struct rb_classext_t;
 #define RCLASS_SUPERCLASS_DEPTH(c) (RCLASS_EXT(c)->superclass_depth)
 #define RCLASS_SUPERCLASSES(c) (RCLASS_EXT(c)->superclasses)
 
-#define RICLASS_IS_ORIGIN FL_USER5
-#define RCLASS_CLONED     FL_USER6
-#define RCLASS_SUPERCLASSES_INCLUDE_SELF FL_USER7
-#define RICLASS_ORIGIN_SHARED_MTBL FL_USER8
+#define RICLASS_IS_ORIGIN FL_USER0
+#define RCLASS_CLONED     FL_USER1
+#define RCLASS_SUPERCLASSES_INCLUDE_SELF FL_USER2
+#define RICLASS_ORIGIN_SHARED_MTBL FL_USER3
 
 /* class.c */
 void rb_class_subclass_add(VALUE super, VALUE klass);
@@ -149,6 +149,7 @@ VALUE rb_obj_methods(int argc, const VALUE *argv, VALUE obj);
 VALUE rb_obj_protected_methods(int argc, const VALUE *argv, VALUE obj);
 VALUE rb_obj_private_methods(int argc, const VALUE *argv, VALUE obj);
 VALUE rb_obj_public_methods(int argc, const VALUE *argv, VALUE obj);
+VALUE rb_class_undefined_instance_methods(VALUE mod);
 VALUE rb_special_singleton_class(VALUE);
 VALUE rb_singleton_class_clone_and_attach(VALUE obj, VALUE attach);
 VALUE rb_singleton_class_get(VALUE obj);

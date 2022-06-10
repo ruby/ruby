@@ -360,6 +360,11 @@ pub extern "C" fn rb_yjit_constant_state_changed(id: ID) {
 /// See `struct yjijt_root_struct` in C.
 #[no_mangle]
 pub extern "C" fn rb_yjit_root_mark() {
+    // Call rb_gc_mark on exit location's raw_samples to
+    // wrap frames in a GC allocated object. This needs to be called
+    // at the same time as root mark.
+    YjitExitLocations::gc_mark_raw_samples();
+
     // Comment from C YJIT:
     //
     // Why not let the GC move the cme keys in this table?
@@ -463,7 +468,7 @@ pub extern "C" fn rb_yjit_constant_ic_update(iseq: *const rb_iseq_t, ic: IC) {
 
         // This should come from a running iseq, so direct threading translation
         // should have been done
-        assert!(unsafe { FL_TEST(iseq.into(), VALUE(ISEQ_TRANSLATED)) } != VALUE(0));
+        assert!(unsafe { FL_TEST(iseq.into(), VALUE(ISEQ_TRANSLATED as usize)) } != VALUE(0));
         assert!(get_insn_idx < unsafe { get_iseq_encoded_size(iseq) });
 
         // Ensure that the instruction the get_insn_idx is pointing to is in

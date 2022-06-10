@@ -1021,6 +1021,17 @@ rb_vm_bugreport(const void *ctx)
         }
     }
 
+    // Thread unsafe best effort attempt to stop printing the bug report in an
+    // infinite loop. Can happen with corrupt Ruby stack.
+    {
+        static bool crashing = false;
+        if (crashing) {
+            fprintf(stderr, "Crashed while printing bug report\n");
+            return;
+        }
+        crashing = true;
+    }
+
 #ifdef __linux__
 # define PROC_MAPS_NAME "/proc/self/maps"
 #endif
