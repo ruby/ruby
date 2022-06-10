@@ -1,5 +1,3 @@
-use super::family::Family;
-
 /// The size of the operands being operated on.
 enum Size {
     Size32 = 0b10,
@@ -28,7 +26,7 @@ impl From<u8> for Size {
 /// | size.                                imm9..........................         rn.............. rt.............. |
 /// +-------------+-------------+-------------+-------------+-------------+-------------+-------------+-------------+
 ///
-pub struct LoadsAndStores {
+pub struct Load {
     /// The number of the register to load the value into.
     rt: u8,
 
@@ -42,7 +40,7 @@ pub struct LoadsAndStores {
     size: Size
 }
 
-impl LoadsAndStores {
+impl Load {
     /// LDUR (load register, unscaled)
     /// https://developer.arm.com/documentation/ddi0596/2021-12/Base-Instructions/LDUR--Load-Register--unscaled--?lang=en
     pub fn ldur(rt: u8, rn: u8, imm9: i16, num_bits: u8) -> Self {
@@ -55,15 +53,18 @@ impl LoadsAndStores {
     }
 }
 
-impl From<LoadsAndStores> for u32 {
+/// https://developer.arm.com/documentation/ddi0602/2022-03/Index-by-Encoding/Loads-and-Stores?lang=en
+const FAMILY: u32 = 0b0100;
+
+impl From<Load> for u32 {
     /// Convert an instruction into a 32-bit value.
-    fn from(inst: LoadsAndStores) -> Self {
+    fn from(inst: Load) -> Self {
         let imm9 = (inst.imm9 as u32) & ((1 << 9) - 1);
 
         0
         | ((inst.size as u32) << 30)
         | (0b11 << 28)
-        | ((Family::LoadsAndStores as u32) << 25)
+        | (FAMILY << 25)
         | (1 << 22)
         | (imm9 << 12)
         | ((inst.rn as u32) << 5)
@@ -71,9 +72,9 @@ impl From<LoadsAndStores> for u32 {
     }
 }
 
-impl From<LoadsAndStores> for [u8; 4] {
+impl From<Load> for [u8; 4] {
     /// Convert an instruction into a 4 byte array.
-    fn from(inst: LoadsAndStores) -> [u8; 4] {
+    fn from(inst: Load) -> [u8; 4] {
         let result: u32 = inst.into();
         result.to_le_bytes()
     }
@@ -85,14 +86,14 @@ mod tests {
 
     #[test]
     fn test_ldur() {
-        let inst = LoadsAndStores::ldur(0, 1, 0, 64);
+        let inst = Load::ldur(0, 1, 0, 64);
         let result: u32 = inst.into();
         assert_eq!(0xf8400020, result);
     }
 
     #[test]
     fn test_ldur_with_imm() {
-        let inst = LoadsAndStores::ldur(0, 1, 123, 64);
+        let inst = Load::ldur(0, 1, 123, 64);
         let result: u32 = inst.into();
         assert_eq!(0xf847b020, result);
     }

@@ -1,4 +1,4 @@
-use super::{family::Family, sf::Sf};
+use super::sf::Sf;
 
 /// How much to shift the immediate by.
 pub enum Hw {
@@ -29,7 +29,7 @@ impl From<u8> for Hw {
 /// | sf op                          hw... imm16.................................................. rd.............. |
 /// +-------------+-------------+-------------+-------------+-------------+-------------+-------------+-------------+
 ///
-pub struct Movk {
+pub struct Mov {
     /// The register number of the destination register.
     rd: u8,
 
@@ -43,7 +43,7 @@ pub struct Movk {
     sf: Sf
 }
 
-impl Movk {
+impl Mov {
     /// MOVK
     /// https://developer.arm.com/documentation/ddi0602/2022-03/Base-Instructions/MOVK--Move-wide-with-keep-?lang=en
     pub fn movk(rd: u8, imm16: u16, hw: u8, num_bits: u8) -> Self {
@@ -51,13 +51,16 @@ impl Movk {
     }
 }
 
-impl From<Movk> for u32 {
+/// https://developer.arm.com/documentation/ddi0602/2022-03/Index-by-Encoding/Data-Processing----Immediate?lang=en
+const FAMILY: u32 = 0b1000;
+
+impl From<Mov> for u32 {
     /// Convert an instruction into a 32-bit value.
-    fn from(inst: Movk) -> Self {
+    fn from(inst: Mov) -> Self {
         0
         | ((inst.sf as u32) << 31)
         | ((0b11 as u32) << 29)
-        | ((Family::DataProcessingImmediate as u32) << 25)
+        | (FAMILY << 25)
         | (0b101 << 23)
         | ((inst.hw as u32) << 21)
         | ((inst.imm16 as u32) << 5)
@@ -65,9 +68,9 @@ impl From<Movk> for u32 {
     }
 }
 
-impl From<Movk> for [u8; 4] {
+impl From<Mov> for [u8; 4] {
     /// Convert an instruction into a 4 byte array.
-    fn from(inst: Movk) -> [u8; 4] {
+    fn from(inst: Mov) -> [u8; 4] {
         let result: u32 = inst.into();
         result.to_le_bytes()
     }
@@ -79,29 +82,29 @@ mod tests {
 
     #[test]
     fn test_movk_unshifted() {
-        let inst = Movk::movk(0, 123, 0, 64);
+        let inst = Mov::movk(0, 123, 0, 64);
         let result: u32 = inst.into();
-        assert_eq!(0xF2800F60, result);
+        assert_eq!(0xf2800f60, result);
     }
 
     #[test]
     fn test_movk_shifted_16() {
-        let inst = Movk::movk(0, 123, 16, 64);
+        let inst = Mov::movk(0, 123, 16, 64);
         let result: u32 = inst.into();
-        assert_eq!(0xF2A00F60, result);
+        assert_eq!(0xf2A00f60, result);
     }
 
     #[test]
     fn test_movk_shifted_32() {
-        let inst = Movk::movk(0, 123, 32, 64);
+        let inst = Mov::movk(0, 123, 32, 64);
         let result: u32 = inst.into();
-        assert_eq!(0xF2C00F60, result);
+        assert_eq!(0xf2C00f60, result);
     }
 
     #[test]
     fn test_movk_shifted_48() {
-        let inst = Movk::movk(0, 123, 48, 64);
+        let inst = Mov::movk(0, 123, 48, 64);
         let result: u32 = inst.into();
-        assert_eq!(0xF2E00F60, result);
+        assert_eq!(0xf2e00f60, result);
     }
 }
