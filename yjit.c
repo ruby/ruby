@@ -120,7 +120,7 @@ rb_yjit_add_frame(VALUE hash, VALUE frame)
     }
 }
 
-// Parses the YjitExtiLocations raw_samples and line_samples collected by
+// Parses the YjitExitLocations raw_samples and line_samples collected by
 // rb_yjit_record_exit_stack and turns them into 3 hashes (raw, lines, and frames) to
 // be used by RubyVM::YJIT.exit_locations. yjit_raw_samples represents the raw frames information
 // (without name, file, and line), and yjit_line_samples represents the line information
@@ -146,7 +146,7 @@ rb_yjit_exit_locations_dict(VALUE *yjit_raw_samples, int *yjit_line_samples, int
 
         // Loop through the length of samples_len and add data to the
         // frames hash. Also push the current value onto the raw_samples
-        // and line_samples arrary respectively.
+        // and line_samples array respectively.
         for (int o = 0; o < num; o++) {
             rb_yjit_add_frame(frames, yjit_raw_samples[idx]);
             rb_ary_push(raw_samples, SIZET2NUM(yjit_raw_samples[idx]));
