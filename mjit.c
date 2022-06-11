@@ -24,11 +24,11 @@
 #include "internal/file.h"
 #include "internal/hash.h"
 #include "internal/warnings.h"
+#include "builtin.h"
 #include "vm_sync.h"
 
 #include "mjit_worker.c"
-
-extern int rb_thread_create_mjit_thread(void (*worker_func)(void));
+#include "mjit_worker.rbinc"
 
 // Return an unique file name in /tmp with PREFIX and SUFFIX and
 // number ID.  Use getpid if ID == 0.  The return file name exists
@@ -262,10 +262,12 @@ create_unit(const rb_iseq_t *iseq)
 
 // Return true if given ISeq body should be compiled by MJIT
 static inline int
-mjit_target_iseq_p(struct rb_iseq_constant_body *body)
+mjit_target_iseq_p(const rb_iseq_t *iseq)
 {
+    const struct rb_iseq_constant_body *body = ISEQ_BODY(iseq);
     return (body->type == ISEQ_TYPE_METHOD || body->type == ISEQ_TYPE_BLOCK)
-        && !body->builtin_inline_p;
+        && !body->builtin_inline_p
+        && strcmp("<internal:mjit_worker>", RSTRING_PTR(rb_iseq_path(iseq)));
 }
 
 // If recompile_p is true, the call is initiated by mjit_recompile.
@@ -275,7 +277,7 @@ mjit_add_iseq_to_process(const rb_iseq_t *iseq, const struct rb_mjit_compile_inf
 {
     if (!mjit_enabled || pch_status == PCH_FAILED)
         return;
-    if (!mjit_target_iseq_p(ISEQ_BODY(iseq))) {
+    if (!mjit_target_iseq_p(iseq)) {
         ISEQ_BODY(iseq)->jit_func = (mjit_func_t)NOT_COMPILED_JIT_ISEQ_FUNC; // skip mjit_wait
         return;
     }
@@ -637,23 +639,13 @@ system_tmpdir(void)
 #define DEFAULT_MIN_CALLS_TO_ADD 10000
 
 // Start MJIT worker. Return TRUE if worker is successfully started.
-static bool
+static void
 start_worker(void)
 {
     stop_worker_p = false;
+    VALUE rb_cMJITWorker = rb_const_get(rb_cRubyVM, rb_intern("MJITWorker"));
+    rb_funcall(rb_cMJITWorker, rb_intern("start"), 0);
     worker_stopped = false;
-
-    if (!rb_thread_create_mjit_thread(mjit_worker)) {
-        mjit_enabled = false;
-        rb_native_mutex_destroy(&mjit_engine_mutex);
-        rb_native_cond_destroy(&mjit_pch_wakeup);
-        rb_native_cond_destroy(&mjit_client_wakeup);
-        rb_native_cond_destroy(&mjit_worker_wakeup);
-        rb_native_cond_destroy(&mjit_gc_wakeup);
-        verbose(1, "Failure in MJIT thread initialization\n");
-        return false;
-    }
-    return true;
 }
 
 // There's no strndup on Windows
@@ -813,8 +805,15 @@ mjit_init(const struct mjit_options *opts)
     // meaning mjit_cont_new is skipped for the root_fiber. Therefore we need to call
     // rb_fiber_init_mjit_cont again with mjit_enabled=true to set the root_fiber's mjit_cont.
     rb_fiber_init_mjit_cont(GET_EC()->fiber_ptr);
+}
 
-    // Initialize worker thread
+// Initialize MJIT worker. This is separated from mjit_init because mjit_init
+// needs to be executed early for initializing mutex, and mjit_worker_init needs
+// to be called late to use builtin.
+void
+mjit_worker_init(void)
+{
+    // Initialize worker ractor
     start_worker();
 }
 
@@ -873,9 +872,7 @@ mjit_resume(void)
         return Qfalse;
     }
 
-    if (!start_worker()) {
-        rb_raise(rb_eRuntimeError, "Failed to resume MJIT worker");
-    }
+    start_worker();
     return Qtrue;
 }
 
@@ -958,7 +955,7 @@ mjit_finish(bool close_handle_p)
     // threads can produce temp files.  And even if the temp files are
     // removed, the used C compiler still complaint about their
     // absence.  So wait for a clean finish of the threads.
-    while (pch_status == PCH_NOT_READY) {
+    while (pch_status == PCH_NOT_READY && !worker_stopped) {
         verbose(3, "Waiting wakeup from make_pch");
         rb_native_cond_wait(&mjit_pch_wakeup, &mjit_engine_mutex);
     }

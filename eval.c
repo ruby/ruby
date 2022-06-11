@@ -190,6 +190,10 @@ rb_ec_cleanup(rb_execution_context_t *ec, int ex0)
     volatile int step = 0;
     volatile int ex = ex0;
 
+    // This must be called before rb_threadptr_interrupt() and rb_ractor_terminate_all()
+    // because make_pch must not be interrupted to complete mjit_finish().
+    mjit_finish(true);
+
     rb_threadptr_interrupt(th);
     rb_threadptr_check_signal(th);
 
@@ -250,8 +254,6 @@ rb_ec_cleanup(rb_execution_context_t *ec, int ex0)
 	    sysex = EXIT_FAILURE;
 	}
     }
-
-    mjit_finish(true); // We still need ISeqs here.
 
     rb_ec_finalize(ec);
 

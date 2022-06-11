@@ -680,7 +680,7 @@ class TestMJIT < Test::Unit::TestCase
   def test_unload_units_and_compaction
     Dir.mktmpdir("jit_test_unload_units_") do |dir|
       # MIN_CACHE_SIZE is 10
-      out, err = eval_with_jit({"TMPDIR"=>dir}, "#{<<~"begin;"}\n#{<<~'end;'}", verbose: 1, min_calls: 1, max_cache: 10)
+      out, err = eval_with_jit({"TMPDIR"=>dir}, "#{<<~"begin;"}\n#{<<~'end;'}", verbose: 1, min_calls: 1, max_cache: 11) # 11 = 10 + Ractor.new
       begin;
         i = 0
         while i < 11
@@ -702,14 +702,14 @@ class TestMJIT < Test::Unit::TestCase
 
       debug_info = %Q[stdout:\n"""\n#{out}\n"""\n\nstderr:\n"""\n#{err}"""\n]
       assert_equal('012345678910', out, debug_info)
-      compactions, errs = err.lines.partition do |l|
+      compactions, errs = strip_mjit_deps(err).lines.partition do |l|
         l.match?(/\AJIT compaction \(\d+\.\dms\): Compacted \d+ methods /)
       end
       10.times do |i|
         assert_match(/\A#{JIT_SUCCESS_PREFIX}: mjit#{i}@\(eval\):/, errs[i], debug_info)
       end
 
-      assert_equal("No units can be unloaded -- incremented max-cache-size to 11 for --jit-wait\n", errs[10], debug_info)
+      assert_equal("No units can be unloaded -- incremented max-cache-size to 12 for --jit-wait\n", errs[10], debug_info)
       assert_match(/\A#{JIT_SUCCESS_PREFIX}: mjit10@\(eval\):/, errs[11], debug_info)
       # On --jit-wait, when the number of JIT-ed code reaches --jit-max-cache,
       # it should trigger compaction.
@@ -1183,7 +1183,7 @@ class TestMJIT < Test::Unit::TestCase
 
         Process.waitpid(pid)
       end;
-      success_count = err.scan(/^#{JIT_SUCCESS_PREFIX}:/).size
+      success_count = strip_mjit_deps(err).scan(/^#{JIT_SUCCESS_PREFIX}:/).size
       debug_info = "stdout:\n```\n#{out}\n```\n\nstderr:\n```\n#{err}```\n"
       assert_equal(3, success_count, debug_info)
 
@@ -1213,7 +1213,7 @@ class TestMJIT < Test::Unit::TestCase
   # Shorthand for normal test cases
   def assert_eval_with_jit(script, stdout: nil, success_count:, recompile_count: nil, min_calls: 1, max_cache: 1000, insns: [], uplevel: 1, ignorable_patterns: [])
     out, err = eval_with_jit(script, verbose: 1, min_calls: min_calls, max_cache: max_cache)
-    success_actual = err.scan(/^#{JIT_SUCCESS_PREFIX}:/).size
+    success_actual = strip_mjit_deps(err).scan(/^#{JIT_SUCCESS_PREFIX}:/).size
     recompile_actual = err.scan(/^#{JIT_RECOMPILE_PREFIX}:/).size
     # Add --mjit-verbose=2 logs for cl.exe because compiler's error message is suppressed
     # for cl.exe with --mjit-verbose=1. See `start_process` in mjit_worker.c.
@@ -1290,5 +1290,10 @@ class TestMJIT < Test::Unit::TestCase
       end
     end
     insns
+  end
+
+  # Ignore MJIT's own dependencies
+  def strip_mjit_deps(err)
+    err.gsub(/^#{JIT_SUCCESS_PREFIX}: new@<internal:ractor>:\d+ -> [^ ]+\n/, '')
   end
 end

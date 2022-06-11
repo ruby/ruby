@@ -52,4 +52,4 @@ assert_equal 'ok', %q{
     raise "expected #{expected.inspect}, got #{actual.inspect}" unless actual.equal?(expected)
   }
   'ok'
-}
+} unless defined?(RubyVM::MJIT) && RubyVM::MJIT.enabled? # (MJIT's) Ractor breaks _id2ref

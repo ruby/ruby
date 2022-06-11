@@ -2156,40 +2156,6 @@ rb_nativethread_self(void)
     return pthread_self();
 }
 
-#if USE_MJIT
-/* A function that wraps actual worker function, for pthread abstraction. */
-static void *
-mjit_worker(void *arg)
-{
-    void (*worker_func)(void) = (void(*)(void))arg;
-
-#ifdef SET_CURRENT_THREAD_NAME
-    SET_CURRENT_THREAD_NAME("ruby-mjitworker"); /* 16 byte including NUL */
-#endif
-    worker_func();
-    return NULL;
-}
-
-/* Launch MJIT thread. Returns FALSE if it fails to create thread. */
-int
-rb_thread_create_mjit_thread(void (*worker_func)(void))
-{
-    pthread_attr_t attr;
-    pthread_t worker_pid;
-    int ret = FALSE;
-
-    if (pthread_attr_init(&attr) != 0) return ret;
-
-    /* jit_worker thread is not to be joined */
-    if (pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED) == 0
-        && pthread_create(&worker_pid, &attr, mjit_worker, (void *)worker_func) == 0) {
-        ret = TRUE;
-    }
-    pthread_attr_destroy(&attr);
-    return ret;
-}
-#endif
-
 int
 rb_sigwait_fd_get(const rb_thread_t *th)
 {
