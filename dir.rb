@@ -65,7 +65,7 @@
 #
 # - ::each_child: Calls the given block with each entry in the given directory,
 #   but not including <tt>.</tt> or <tt>..</tt>.
-# - ::foreach: Calls the given block with each entryin the given directory,
+# - ::foreach: Calls the given block with each entry in the given directory,
 #   including <tt>.</tt> and <tt>..</tt>.
 # - #each: Calls the given block with each entry in +self+,
 #   including <tt>.</tt> and <tt>..</tt>.
