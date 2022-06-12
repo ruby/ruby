@@ -373,6 +373,9 @@ class TestRubyOptions < Test::Unit::TestCase
     ENV['RUBYOPT'] = '-e "p 1"'
     assert_in_out_err([], "", [], /invalid switch in RUBYOPT: -e \(RuntimeError\)/)
 
+    ENV['RUBYOPT'] = '-Z"'
+    assert_in_out_err([], "", [], /invalid option -Z in RUBYOPT/)
+
     ENV['RUBYOPT'] = '-Eus-ascii -KN'
     assert_in_out_err(%w(-Eutf-8 -KU), "p '\u3042'") do |r, e|
       assert_equal("\"\u3042\"", r.join.force_encoding(Encoding::UTF_8))
