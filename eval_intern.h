@@ -3,6 +3,7 @@
 
 #include "ruby/ruby.h"
 #include "vm_core.h"
+#include "event_profiling.h"
 
 static inline void
 vm_passed_block_handler_set(rb_execution_context_t *ec, VALUE block_handler)
@@ -159,6 +160,7 @@ static inline void
 rb_ec_tag_jump(const rb_execution_context_t *ec, enum ruby_tag_type st)
 {
     ec->tag->state = st;
+    RB_EVENT_PROFILING_EXCEPTION();
     ruby_longjmp(ec->tag->buf, 1);
 }
 

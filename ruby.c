@@ -60,6 +60,7 @@
 #include "ruby/util.h"
 #include "ruby/version.h"
 #include "ruby/internal/error.h"
+#include "event_profiling.h"
 
 #ifndef MAXPATHLEN
 # define MAXPATHLEN 1024
@@ -2677,6 +2678,10 @@ fill_standard_fds(void)
 void
 ruby_sysinit(int *argc, char ***argv)
 {
+    /* Configure event profiling and record the first event */
+    RB_SETUP_EVENT_PROFILING_DEFAULT();
+    RB_SYSTEM_INIT_EVENT_PROFILING();
+
 #if defined(_WIN32)
     rb_w32_sysinit(argc, argv);
 #endif
