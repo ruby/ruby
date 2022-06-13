@@ -3702,12 +3702,12 @@ AS_CASE(["$RDOCTARGET:$CAPITARGET"],[nodoc:nodoc],[INSTALLDOC=nodoc],[INSTALLDOC
 AC_SUBST(INSTALLDOC)
 
 AC_ARG_ENABLE(jit-support,
-        AS_HELP_STRING([--disable-jit-support], [disable JIT features]),
-        [MJIT_SUPPORT=$enableval],
-        # Enable mjit by default except for WASI
-        [AS_IF([test x"$target_os" != "xwasi"],
-		[MJIT_SUPPORT=yes],
-		[MJIT_SUPPORT=no ])])
+    AS_HELP_STRING([--disable-jit-support], [disable JIT features]),
+    [MJIT_SUPPORT=$enableval],
+    [AS_CASE(["$target_os"],
+        [wasi | mingw*], [MJIT_SUPPORT=no],
+        [MJIT_SUPPORT=yes]
+    )])
 
 AS_IF([test x"$MJIT_SUPPORT" = "xyes"],
 	[AC_DEFINE(USE_MJIT, 1)],
@@ -4413,7 +4413,7 @@ config_summary "debugflags"          "$debugflags"
 config_summary "warnflags"           "$warnflags"
 config_summary "strip command"       "$STRIP"
 config_summary "install doc"         "$DOCTARGETS"
-config_summary "JIT support"         "$MJIT_SUPPORT"
+config_summary "MJIT support"        "$MJIT_SUPPORT"
 config_summary "YJIT support"        "$YJIT_SUPPORT"
 config_summary "man page type"       "$MANTYPE"
 config_summary "search path"         "$search_path"

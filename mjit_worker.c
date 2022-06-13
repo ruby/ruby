@@ -242,7 +242,7 @@ static bool stop_worker_p;
 // Set to true if worker is stopped.
 static bool worker_stopped = true;
 
-// Path of "/tmp", which can be changed to $TMP in MinGW.
+// Path of "/tmp", which is different on Windows or macOS. See: system_default_tmpdir()
 static char *tmp_dir;
 
 // Used C compiler path.
@@ -281,7 +281,7 @@ static char *libruby_pathflag;
 # define MJIT_CFLAGS_PIPE 0
 #endif
 
-// Use `-nodefaultlibs -nostdlib` for GCC where possible, which does not work on mingw, cygwin, AIX, and OpenBSD.
+// Use `-nodefaultlibs -nostdlib` for GCC where possible, which does not work on cygwin, AIX, and OpenBSD.
 // This seems to improve MJIT performance on GCC.
 #if defined __GNUC__ && !defined __clang__ && !defined(_WIN32) && !defined(__CYGWIN__) && !defined(_AIX) && !defined(__OpenBSD__)
 # define GCC_NOSTDLIB_FLAGS "-nodefaultlibs", "-nostdlib",
@@ -309,13 +309,10 @@ static const char *const CC_LINKER_ARGS[] = {
 
 static const char *const CC_LIBS[] = {
 #if defined(_WIN32) || defined(__CYGWIN__)
-    MJIT_LIBS // mswin, mingw, cygwin
+    MJIT_LIBS // mswin, cygwin
 #endif
 #if defined __GNUC__ && !defined __clang__
-# if defined(_WIN32)
-    "-lmsvcrt", // mingw
-# endif
-    "-lgcc", // mingw, cygwin, and GCC platforms using `-nodefaultlibs -nostdlib`
+    "-lgcc", // cygwin, and GCC platforms using `-nodefaultlibs -nostdlib`
 #endif
 #if defined __ANDROID__
     "-lm", // to avoid 'cannot locate symbol "modf" referenced by .../_ruby_mjit_XXX.so"'
@@ -907,49 +904,6 @@ make_pch(void)
 }
 
 // Compile .c file to .so file. It returns true if it succeeds. (non-mswin)
-// MinGW compiles it in two steps because otherwise it fails without any error output.
-# ifdef _WIN32 // MinGW
-static bool
-compile_c_to_so(const char *c_file, const char *so_file)
-{
-    char* o_file = alloca(strlen(c_file) + 1);
-    strcpy(o_file, c_file);
-    o_file[strlen(c_file) - 1] = 'o';
-
-    const char *o_args[] = {
-        "-o", o_file, c_file,
-# ifdef __clang__
-        "-include-pch", pch_file,
-# endif
-        "-c", NULL
-    };
-    char **args = form_args(5, cc_common_args, CC_CODEFLAG_ARGS, cc_added_args, o_args, CC_LINKER_ARGS);
-    if (args == NULL) return false;
-    int exit_code = exec_process(cc_path, args);
-    free(args);
-    if (exit_code != 0) {
-        verbose(2, "compile_c_to_so: failed to compile .c to .o: %d", exit_code);
-        return false;
-    }
-
-    const char *so_args[] = {
-        "-o", so_file,
-# ifdef _WIN32
-        libruby_pathflag,
-# endif
-        o_file, NULL
-    };
-    args = form_args(6, CC_LDSHARED_ARGS, CC_CODEFLAG_ARGS, so_args, CC_LIBS, CC_DLDFLAGS_ARGS, CC_LINKER_ARGS);
-    if (args == NULL) return false;
-    exit_code = exec_process(cc_path, args);
-    free(args);
-    if (!mjit_opts.save_temps) remove_file(o_file);
-    if (exit_code != 0) {
-        verbose(2, "compile_c_to_so: failed to link .o to .so: %d", exit_code);
-    }
-    return exit_code == 0;
-}
-# else // _WIN32
 static bool
 compile_c_to_so(const char *c_file, const char *so_file)
 {
@@ -973,7 +927,6 @@ compile_c_to_so(const char *c_file, const char *so_file)
     }
     return exit_code == 0;
 }
-# endif // _WIN32
 #endif // _MSC_VER
 
 #if USE_JIT_COMPACTION
