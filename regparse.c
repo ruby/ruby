@@ -28,6 +28,13 @@
  * SUCH DAMAGE.
  */
 
+// Suppress some false-positive compiler warnings
+#if defined(__GNUC__) && __GNUC__ >= 12
+#pragma GCC diagnostic ignored "-Warray-bounds"
+#pragma GCC diagnostic ignored "-Wstringop-overflow"
+#pragma GCC diagnostic ignored "-Wrestrict"
+#endif
+
 #include "regparse.h"
 #include <stdarg.h>
 
