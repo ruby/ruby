@@ -24,8 +24,7 @@ module Reline::Terminfo
     when /darwin/
       %w[libncursesw.dylib libcursesw.dylib libncurses.dylib libcurses.dylib]
     else
-      %w[libncursesw.so libcursesw.so libncurses.so libcurses.so
-         libncursesw.so.6 libncurses.so.6]
+      %w[libncursesw.so libcursesw.so libncurses.so libcurses.so]
     end
   end
 
