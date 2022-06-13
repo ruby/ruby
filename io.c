@@ -1620,6 +1620,12 @@ io_binwrite_string(VALUE arg)
         // Write as much as possible:
         ssize_t result = io_binwrite_string_internal(p->fptr, ptr, remaining);
 
+        // If only the internal buffer is written, result will be zero [bytes of given data written]. This means we
+        // should try again.
+        if (result == 0) {
+            errno = EWOULDBLOCK;
+        }
+
         if (result > 0) {
             if ((size_t)result == remaining) break;
             ptr += result;
