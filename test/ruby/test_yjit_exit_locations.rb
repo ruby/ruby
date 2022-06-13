@@ -93,9 +93,9 @@ class TestYJITExitLocations < Test::Unit::TestCase
     ]
     args << "-e" << script_shell_encode(script)
     stats_r, stats_w = IO.pipe
-    out, err, status = EnvUtil.invoke_ruby(args,
-                                           '', true, true, timeout: 1000, ios: { 3 => stats_w }
-                                          )
+    _out, _err, _status = EnvUtil.invoke_ruby(args,
+                                              '', true, true, timeout: 1000, ios: { 3 => stats_w }
+                                             )
     stats_w.close
     stats = stats_r.read
     stats = Marshal.load(stats) if !stats.empty?
