@@ -34,7 +34,7 @@ assert_equal '18374962167983112447', %q{
 }
 
 assert_normal_exit %q{
-  # regression test for a leak caught by an asert on --yjit-call-threshold=2
+  # regression test for a leak caught by an assert on --yjit-call-threshold=2
   Foo = 1
 
   eval("def foo = [#{(['Foo,']*256).join}]")
@@ -1414,35 +1414,35 @@ assert_equal 'foo', %q{
 }
 
 # Test that String unary plus returns the same object ID for an unfrozen string.
-assert_equal '', %q{
-  str = "bar"
+assert_equal 'true', %q{
+  def jittable_method
+    str = "bar"
 
-  old_obj_id = str.object_id
-  uplus_str = +str
+    old_obj_id = str.object_id
+    uplus_str = +str
 
-  if uplus_str.object_id != old_obj_id
-    raise "String unary plus on unfrozen should return the string exactly, not a duplicate"
+    uplus_str.object_id == old_obj_id
   end
-
-  ''
+  jittable_method
 }
 
 # Test that String unary plus returns a different unfrozen string when given a frozen string
 assert_equal 'false', %q{
-  frozen_str = "foo".freeze
+  # Logic needs to be inside an ISEQ, such as a method, for YJIT to compile it
+  def jittable_method
+    frozen_str = "foo".freeze
 
-  old_obj_id = frozen_str.object_id
-  uplus_str = +frozen_str
+    old_obj_id = frozen_str.object_id
+    uplus_str = +frozen_str
 
-  if uplus_str.object_id == old_obj_id
-    raise "String unary plus on frozen should return a new duplicated string"
+    uplus_str.object_id == old_obj_id || uplus_str.frozen?
   end
 
-  uplus_str.frozen?
+  jittable_method
 }
 
 # String-subclass objects should behave as expected inside string-interpolation via concatstrings
-assert_equal 'monkeys, yo!', %q{
+assert_equal 'monkeys / monkeys, yo!', %q{
   class MyString < String
     # This is a terrible idea in production code, but we'd like YJIT to match CRuby
     def to_s
@@ -1450,17 +1450,16 @@ assert_equal 'monkeys, yo!', %q{
     end
   end
 
-  m = MyString.new('monkeys')
-  "#{m.to_s}"
+  def jittable_method
+    m = MyString.new('monkeys')
+    "#{m} / #{m.to_s}"
+  end
 
-  raise "String-subclass to_s should not be called for interpolation" if "#{m}" != 'monkeys'
-  raise "String-subclass to_s should be called explicitly during interpolation" if "#{m.to_s}" != 'monkeys, yo!'
-
-  m.to_s
+  jittable_method
 }
 
 # String-subclass objects should behave as expected for string equality
-assert_equal 'a', %q{
+assert_equal 'false', %q{
   class MyString < String
     # This is a terrible idea in production code, but we'd like YJIT to match CRuby
     def ==(b)
@@ -1468,52 +1467,94 @@ assert_equal 'a', %q{
     end
   end
 
-  ma = MyString.new("a")
+  def jittable_method
+    ma = MyString.new("a")
 
-  raise "Not dispatching to string-subclass equality!" if ma == "a" || ma != "a_"
-  raise "Incorrectly dispatching for String equality!" if "a_" == ma || "a" != ma
-  raise "Error in equality between string subclasses!" if ma != MyString.new("a_")
-  # opt_equality has an explicit "string always equals itself" test, but should never be used when == is redefined
-  raise "Error in reflexive equality!" if ma == ma
-
-  ma.to_s
+    # Check equality with string-subclass receiver
+    ma == "a" || ma != "a_" ||
+      # Check equality with string receiver
+      "a_" == ma || "a" != ma ||
+      # Check equality between string subclasses
+      ma != MyString.new("a_") ||
+      # Make sure "string always equals itself" check isn't used with overridden equality
+      ma == ma
+  end
+  jittable_method
 }
 
-assert_equal '', %q{
+# Test to_s duplicates a string subclass object but not a string
+assert_equal 'false', %q{
   class MyString < String; end
 
-  a = "a"
-  ma = MyString.new("a")
-  fma = MyString.new("a").freeze
+  def jittable_method
+    a = "a"
+    ma = MyString.new("a")
 
-  # Test to_s on string subclass
-  raise "to_s should not duplicate a String!" if a.object_id != a.to_s.object_id
-  raise "to_s should duplicate a String subclass!" if ma.object_id == ma.to_s.object_id
+    a.object_id != a.to_s.object_id ||
+      ma.object_id == ma.to_s.object_id
+  end
+  jittable_method
+}
 
-  # Test freeze, uminus and uplus on string subclass
-  raise "Freezing a string subclass should not duplicate it!" if fma.object_id != fma.freeze.object_id
-  raise "Unary minus on frozen string subclass should not duplicate it!" if fma.object_id != (-fma).object_id
-  raise "Unary minus on unfrozen string subclass should duplicate it!" if ma.object_id == (-ma).object_id
-  raise "Unary plus on unfrozen string subclass should not duplicate it!" if ma.object_id != (+ma).object_id
-  raise "Unary plus on frozen string subclass should duplicate it!" if fma.object_id == (+fma).object_id
+# Test freeze on string subclass
+assert_equal 'true', %q{
+  class MyString < String; end
 
-  ''
+  def jittable_method
+    fma = MyString.new("a").freeze
+
+    # Freezing a string subclass should not duplicate it
+    fma.object_id == fma.freeze.object_id
+  end
+  jittable_method
+}
+
+# Test unary minus on string subclass
+assert_equal 'true', %q{
+  class MyString < String; end
+
+  def jittable_method
+    ma = MyString.new("a")
+    fma = MyString.new("a").freeze
+
+    # Unary minus on frozen string subclass should not duplicate it
+    fma.object_id == (-fma).object_id &&
+      # Unary minus on unfrozen string subclass should duplicate it
+      ma.object_id != (-ma).object_id
+  end
+  jittable_method
+}
+
+# Test unary plus on string subclass
+assert_equal 'true', %q{
+  class MyString < String; end
+
+  def jittable_method
+    fma = MyString.new("a").freeze
+
+    # Unary plus on frozen string subclass should not duplicate it
+    fma.object_id != (+fma).object_id
+  end
+  jittable_method
 }
 
 # Test << operator on string subclass
 assert_equal 'abab', %q{
   class MyString < String; end
 
-  a = -"a"
-  mb = MyString.new("b")
+  def jittable_method
+    a = -"a"
+    mb = MyString.new("b")
 
-  buf = String.new
-  mbuf = MyString.new
+    buf = String.new
+    mbuf = MyString.new
 
-  buf << a << mb
-  mbuf << a << mb
+    buf << a << mb
+    mbuf << a << mb
 
-  buf + mbuf
+    buf + mbuf
+  end
+  jittable_method
 }
 
 # test invokebuiltin as used in struct assignment
