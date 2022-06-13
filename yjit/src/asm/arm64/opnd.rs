@@ -1,39 +1,5 @@
 use crate::asm::{imm_num_bits, uimm_num_bits};
 
-/// This operand represents a signed immediate value.
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub struct A64Imm
-{
-    // Size in bits
-    pub num_bits: u8,
-
-    // The value of the immediate
-    pub value: i64
-}
-
-impl A64Imm {
-    pub fn new(value: i64) -> Self {
-        Self { num_bits: imm_num_bits(value), value }
-    }
-}
-
-/// This operand represents an unsigned immediate value.
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub struct A64UImm
-{
-    // Size in bits
-    pub num_bits: u8,
-
-    // The value of the immediate
-    pub value: u64
-}
-
-impl A64UImm {
-    pub fn new(value: u64) -> Self {
-        Self { num_bits: uimm_num_bits(value), value }
-    }
-}
-
 /// This operand represents a register.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct A64Reg
@@ -80,10 +46,10 @@ pub enum A64Opnd
     None,
 
     // Immediate value
-    Imm(A64Imm),
+    Imm(i64),
 
     // Unsigned immediate
-    UImm(A64UImm),
+    UImm(u64),
 
     // Register
     Reg(A64Reg),
@@ -95,12 +61,12 @@ pub enum A64Opnd
 impl A64Opnd {
     /// Create a new immediate value operand.
     pub fn new_imm(value: i64) -> Self {
-        A64Opnd::Imm(A64Imm::new(value))
+        A64Opnd::Imm(value)
     }
 
     /// Create a new unsigned immediate value operand.
     pub fn new_uimm(value: u64) -> Self {
-        A64Opnd::UImm(A64UImm::new(value))
+        A64Opnd::UImm(value)
     }
 
     /// Creates a new memory operand.

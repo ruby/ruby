@@ -1,18 +1,41 @@
+mod atomic;
 mod branch;
+mod call;
 mod data_imm;
 mod data_reg;
 mod load;
 mod mov;
 mod sf;
+mod store;
 
+use core::num;
+
+use atomic::Atomic;
 use branch::Branch;
+use call::Call;
 use data_imm::DataImm;
 use data_reg::DataReg;
 use load::Load;
 use mov::Mov;
+use store::Store;
 
-use crate::asm::{CodeBlock, imm_num_bits};
+use crate::asm::CodeBlock;
 use super::opnd::*;
+
+/// Checks that a signed value fits within the specified number of bits.
+const fn imm_fits_bits(imm: i64, num_bits: u8) -> bool {
+    let minimum = if num_bits == 64 { i64::MIN } else { -2_i64.pow((num_bits as u32) - 1) };
+    let maximum = if num_bits == 64 { i64::MAX } else { 2_i64.pow((num_bits as u32) - 1) - 1 };
+
+    imm >= minimum && imm <= maximum
+}
+
+/// Checks that an unsigned value fits within the specified number of bits.
+const fn uimm_fits_bits(uimm: u64, num_bits: u8) -> bool {
+    let maximum = if num_bits == 64 { u64::MAX } else { 2_u64.pow(num_bits as u32) - 1 };
+
+    uimm <= maximum
+}
 
 /// ADD - add rn and rm, put the result in rd, don't update flags
 pub fn add(cb: &mut CodeBlock, rd: A64Opnd, rn: A64Opnd, rm: A64Opnd) {
@@ -27,9 +50,9 @@ pub fn add(cb: &mut CodeBlock, rd: A64Opnd, rn: A64Opnd, rm: A64Opnd) {
         },
         (A64Opnd::Reg(rd), A64Opnd::Reg(rn), A64Opnd::UImm(imm12)) => {
             assert!(rd.num_bits == rn.num_bits, "rd and rn must be of the same size.");
-            assert!(imm12.num_bits <= 12, "The immediate operand must be 12 bits or less.");
+            assert!(uimm_fits_bits(imm12, 12), "The immediate operand must be 12 bits or less.");
 
-            DataImm::add(rd.reg_no, rn.reg_no, imm12.value as u16, rd.num_bits).into()
+            DataImm::add(rd.reg_no, rn.reg_no, imm12 as u16, rd.num_bits).into()
         },
         _ => panic!("Invalid operand combination to add instruction."),
     };
@@ -50,11 +73,25 @@ pub fn adds(cb: &mut CodeBlock, rd: A64Opnd, rn: A64Opnd, rm: A64Opnd) {
         },
         (A64Opnd::Reg(rd), A64Opnd::Reg(rn), A64Opnd::UImm(imm12)) => {
             assert!(rd.num_bits == rn.num_bits, "rd and rn must be of the same size.");
-            assert!(imm12.num_bits <= 12, "The immediate operand must be 12 bits or less.");
+            assert!(uimm_fits_bits(imm12, 12), "The immediate operand must be 12 bits or less.");
 
-            DataImm::adds(rd.reg_no, rn.reg_no, imm12.value as u16, rd.num_bits).into()
+            DataImm::adds(rd.reg_no, rn.reg_no, imm12 as u16, rd.num_bits).into()
         },
         _ => panic!("Invalid operand combination to adds instruction."),
+    };
+
+    cb.write_bytes(&bytes);
+}
+
+/// BL - branch with link (offset is number of instructions to jump)
+pub fn bl(cb: &mut CodeBlock, imm26: A64Opnd) {
+    let bytes: [u8; 4] = match imm26 {
+        A64Opnd::Imm(imm26) => {
+            assert!(imm_fits_bits(imm26, 26), "The immediate operand must be 26 bits or less.");
+
+            Call::bl(imm26 as i32).into()
+        },
+        _ => panic!("Invalid operand combination to bl instruction.")
     };
 
     cb.write_bytes(&bytes);
@@ -70,14 +107,31 @@ pub fn br(cb: &mut CodeBlock, rn: A64Opnd) {
     cb.write_bytes(&bytes);
 }
 
+/// LDADDAL - atomic add with acquire and release semantics
+pub fn ldaddal(cb: &mut CodeBlock, rs: A64Opnd, rt: A64Opnd, rn: A64Opnd) {
+    let bytes: [u8; 4] = match (rs, rt, rn) {
+        (A64Opnd::Reg(rs), A64Opnd::Reg(rt), A64Opnd::Reg(rn)) => {
+            assert!(
+                rs.num_bits == rt.num_bits && rt.num_bits == rn.num_bits,
+                "All operands must be of the same size."
+            );
+
+            Atomic::ldaddal(rs.reg_no, rt.reg_no, rn.reg_no, rs.num_bits).into()
+        },
+        _ => panic!("Invalid operand combination to ldaddal instruction."),
+    };
+
+    cb.write_bytes(&bytes);
+}
+
 /// LDUR - load a memory address into a register
 pub fn ldur(cb: &mut CodeBlock, rt: A64Opnd, rn: A64Opnd) {
     let bytes: [u8; 4] = match (rt, rn) {
         (A64Opnd::Reg(rt), A64Opnd::Mem(rn)) => {
             assert!(rt.num_bits == rn.num_bits, "Expected registers to be the same size");
-            assert!(imm_num_bits(rn.disp.into()) <= 9, "Expected displacement to be 9 bits or less");
+            assert!(imm_fits_bits(rn.disp.into(), 9), "Expected displacement to be 9 bits or less");
 
-            Load::ldur(rt.reg_no, rn.base_reg_no, rn.disp.try_into().unwrap(), rt.num_bits).into()
+            Load::ldur(rt.reg_no, rn.base_reg_no, rn.disp as i16, rt.num_bits).into()
         },
         _ => panic!("Invalid operands for LDUR")
     };
@@ -89,9 +143,9 @@ pub fn ldur(cb: &mut CodeBlock, rt: A64Opnd, rn: A64Opnd) {
 pub fn movk(cb: &mut CodeBlock, rd: A64Opnd, imm16: A64Opnd, shift: u8) {
     let bytes: [u8; 4] = match (rd, imm16) {
         (A64Opnd::Reg(rd), A64Opnd::UImm(imm16)) => {
-            assert!(imm16.num_bits <= 16, "The immediate operand must be 16 bits or less.");
+            assert!(uimm_fits_bits(imm16, 16), "The immediate operand must be 16 bits or less.");
 
-            Mov::movk(rd.reg_no, imm16.value as u16, shift, rd.num_bits).into()
+            Mov::movk(rd.reg_no, imm16 as u16, shift, rd.num_bits).into()
         },
         _ => panic!("Invalid operand combination to movk instruction.")
     };
@@ -103,11 +157,26 @@ pub fn movk(cb: &mut CodeBlock, rd: A64Opnd, imm16: A64Opnd, shift: u8) {
 pub fn movz(cb: &mut CodeBlock, rd: A64Opnd, imm16: A64Opnd, shift: u8) {
     let bytes: [u8; 4] = match (rd, imm16) {
         (A64Opnd::Reg(rd), A64Opnd::UImm(imm16)) => {
-            assert!(imm16.num_bits <= 16, "The immediate operand must be 16 bits or less.");
+            assert!(uimm_fits_bits(imm16, 16), "The immediate operand must be 16 bits or less.");
 
-            Mov::movz(rd.reg_no, imm16.value as u16, shift, rd.num_bits).into()
+            Mov::movz(rd.reg_no, imm16 as u16, shift, rd.num_bits).into()
         },
         _ => panic!("Invalid operand combination to movz instruction.")
+    };
+
+    cb.write_bytes(&bytes);
+}
+
+/// STUR - store a value in a register at a memory address
+pub fn stur(cb: &mut CodeBlock, rt: A64Opnd, rn: A64Opnd) {
+    let bytes: [u8; 4] = match (rt, rn) {
+        (A64Opnd::Reg(rt), A64Opnd::Mem(rn)) => {
+            assert!(rt.num_bits == rn.num_bits, "Expected registers to be the same size");
+            assert!(imm_fits_bits(rn.disp.into(), 9), "Expected displacement to be 9 bits or less");
+
+            Store::stur(rt.reg_no, rn.base_reg_no, rn.disp as i16, rt.num_bits).into()
+        },
+        _ => panic!("Invalid operand combination to stur instruction.")
     };
 
     cb.write_bytes(&bytes);
@@ -126,9 +195,9 @@ pub fn sub(cb: &mut CodeBlock, rd: A64Opnd, rn: A64Opnd, rm: A64Opnd) {
         },
         (A64Opnd::Reg(rd), A64Opnd::Reg(rn), A64Opnd::UImm(imm12)) => {
             assert!(rd.num_bits == rn.num_bits, "rd and rn must be of the same size.");
-            assert!(imm12.num_bits <= 12, "The immediate operand must be 12 bits or less.");
+            assert!(uimm_fits_bits(imm12, 12), "The immediate operand must be 12 bits or less.");
 
-            DataImm::sub(rd.reg_no, rn.reg_no, imm12.value as u16, rd.num_bits).into()
+            DataImm::sub(rd.reg_no, rn.reg_no, imm12 as u16, rd.num_bits).into()
         },
         _ => panic!("Invalid operand combination to sub instruction."),
     };
@@ -149,9 +218,9 @@ pub fn subs(cb: &mut CodeBlock, rd: A64Opnd, rn: A64Opnd, rm: A64Opnd) {
         },
         (A64Opnd::Reg(rd), A64Opnd::Reg(rn), A64Opnd::UImm(imm12)) => {
             assert!(rd.num_bits == rn.num_bits, "rd and rn must be of the same size.");
-            assert!(imm12.num_bits <= 12, "The immediate operand must be 12 bits or less.");
+            assert!(uimm_fits_bits(imm12, 12), "The immediate operand must be 12 bits or less.");
 
-            DataImm::subs(rd.reg_no, rn.reg_no, imm12.value as u16, rd.num_bits).into()
+            DataImm::subs(rd.reg_no, rn.reg_no, imm12 as u16, rd.num_bits).into()
         },
         _ => panic!("Invalid operand combination to subs instruction."),
     };
@@ -182,6 +251,29 @@ mod tests {
     }
 
     #[test]
+    fn test_imm_fits_bits() {
+        assert!(imm_fits_bits(i8::MAX.into(), 8));
+        assert!(imm_fits_bits(i8::MIN.into(), 8));
+
+        assert!(imm_fits_bits(i16::MAX.into(), 16));
+        assert!(imm_fits_bits(i16::MIN.into(), 16));
+
+        assert!(imm_fits_bits(i32::MAX.into(), 32));
+        assert!(imm_fits_bits(i32::MIN.into(), 32));
+
+        assert!(imm_fits_bits(i64::MAX.into(), 64));
+        assert!(imm_fits_bits(i64::MIN.into(), 64));
+    }
+
+    #[test]
+    fn test_uimm_fits_bits() {
+        assert!(uimm_fits_bits(u8::MAX.into(), 8));
+        assert!(uimm_fits_bits(u16::MAX.into(), 16));
+        assert!(uimm_fits_bits(u32::MAX.into(), 32));
+        assert!(uimm_fits_bits(u64::MAX.into(), 64));
+    }
+
+    #[test]
     fn test_add_register() {
         check_bytes("2000028b", |cb| add(cb, X0, X1, X2));
     }
@@ -202,8 +294,18 @@ mod tests {
     }
 
     #[test]
+    fn test_bl() {
+        check_bytes("00040094", |cb| bl(cb, A64Opnd::new_imm(1024)));
+    }
+
+    #[test]
     fn test_br() {
         check_bytes("80021fd6", |cb| br(cb, X20));
+    }
+
+    #[test]
+    fn test_ldaddal() {
+        check_bytes("8b01eaf8", |cb| ldaddal(cb, X10, X11, X12));
     }
 
     #[test]
@@ -229,6 +331,11 @@ mod tests {
     #[test]
     fn test_ret_register() {
         check_bytes("80025fd6", |cb| ret(cb, X20));
+    }
+
+    #[test]
+    fn test_stur() {
+        check_bytes("6a0108f8", |cb| stur(cb, X10, A64Opnd::new_mem(X11, 128)));
     }
 
     #[test]
