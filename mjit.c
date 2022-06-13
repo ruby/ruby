@@ -879,20 +879,6 @@ mjit_resume(void)
     return Qtrue;
 }
 
-// Skip calling `clean_temp_files` for units which currently exist in the list.
-static void
-skip_cleaning_object_files(struct rb_mjit_unit_list *list)
-{
-    struct rb_mjit_unit *unit = NULL, *next;
-
-    // No mutex for list, assuming MJIT worker does not exist yet since it's immediately after fork.
-    ccan_list_for_each_safe(&list->head, unit, next, unode) {
-#if defined(_WIN32) // mswin doesn't reach here either. This is for MinGW.
-        if (unit->so_file) unit->so_file = NULL;
-#endif
-    }
-}
-
 // This is called after fork initiated by Ruby's method to launch MJIT worker thread
 // for child Ruby process.
 //
@@ -913,10 +899,6 @@ mjit_child_after_fork(void)
 {
     if (!mjit_enabled)
         return;
-
-    /* Let parent process delete the already-compiled object files.
-       This must be done before starting MJIT worker on child process. */
-    skip_cleaning_object_files(&active_units);
 
     /* MJIT worker thread is not inherited on fork. Start it for this child process. */
     start_worker();
