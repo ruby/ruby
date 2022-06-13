@@ -1705,15 +1705,7 @@ module FileUtils
   end
   module_function :chown
 
-  #
-  # Changes owner and group on the named files (in +list+)
-  # to the user +user+ and the group +group+ recursively.
-  # +user+ and +group+ may be an ID (Integer/String) or
-  # a name (String).  If +user+ or +group+ is nil, this
-  # method does not change the attribute.
-  #
-  #   FileUtils.chown_R 'www', 'www', '/var/www/htdocs'
-  #   FileUtils.chown_R 'cvs', 'cvs', '/var/cvs', verbose: true
+  # Like FileUtils.chown, but changes owner and group recursively.
   #
   def chown_R(user, group, list, noop: nil, verbose: nil, force: nil)
     list = fu_list(list)
@@ -1764,12 +1756,44 @@ module FileUtils
   end
   private_module_function :fu_get_gid
 
+  # Updates modification times (mtime) and access times (atime)
+  # of the entries given by the paths in +list+;
+  # by default, creates an empty file for any path to a non-existent entry:
   #
-  # Updates modification time (mtime) and access time (atime) of file(s) in
-  # +list+.  Files are created if they don't exist.
+  #   # Single string path.
+  #   f = File.new('src0.txt') # Existing file.
+  #   f.atime # => 2022-06-10 11:11:21.200277 -0700
+  #   f.mtime # => 2022-06-10 11:11:21.200277 -0700
+  #   FileUtils.touch('src0.txt')
+  #   f = File.new('src0.txt')
+  #   f.atime # => 2022-06-11 08:28:09.8185343 -0700
+  #   f.mtime # => 2022-06-11 08:28:09.8185343 -0700
   #
-  #   FileUtils.touch 'timestamp'
-  #   FileUtils.touch Dir.glob('*.c');  system 'make'
+  #   # Array of string paths.
+  #   FileUtils.touch(['src0.txt', 'src0.dat'])
+  #
+  #   # Pathname.
+  #   require 'pathname'
+  #   path = Pathname.new('src0.txt')
+  #   FileUtils.touch(path)
+  #
+  # Keyword arguments:
+  #
+  # - <tt>mtime: <i>time</i></tt> - sets the entry's mtime to the given time,
+  #   instead of the current time.
+  # - <tt>nocreate: true</tt> - raises an exception if the entry does not exist.
+  # - <tt>noop: true</tt> - does not touch entries; returns +nil+.
+  # - <tt>verbose: true</tt> - prints an equivalent command:
+  #
+  #     FileUtils.touch('src0.txt', noop: true, verbose: true)
+  #     FileUtils.touch(['src0.txt', 'src0.dat'], noop: true, verbose: true)
+  #     FileUtils.touch(path, noop: true, verbose: true)
+  #
+  #   Output:
+  #
+  #     touch src0.txt
+  #     touch src0.txt src0.dat
+  #     touch src0.txt
   #
   def touch(list, noop: nil, verbose: nil, mtime: nil, nocreate: nil)
     list = fu_list(list)
@@ -2272,50 +2296,49 @@ module FileUtils
 
   public
 
+  # Returns an array of the string names of \FileUtils methods
+  # that accept one or more keyword arguments;
   #
-  # Returns an Array of names of high-level methods that accept any keyword
-  # arguments.
-  #
-  #   p FileUtils.commands  #=> ["chmod", "cp", "cp_r", "install", ...]
+  #   FileUtils.commands.sort.take(3) # => ["cd", "chdir", "chmod"]
   #
   def self.commands
     OPT_TABLE.keys
   end
 
+  # Returns an array of the string keyword names:
   #
-  # Returns an Array of option names.
-  #
-  #   p FileUtils.options  #=> ["noop", "force", "verbose", "preserve", "mode"]
+  #   FileUtils.options.take(3) # => ["noop", "verbose", "force"]
   #
   def self.options
     OPT_TABLE.values.flatten.uniq.map {|sym| sym.to_s }
   end
 
+  # Returns +true+ if method +mid+ accepts the given option +opt+, +false+ otherwise;
+  # the arguments may be strings or symbols:
   #
-  # Returns true if the method +mid+ have an option +opt+.
-  #
-  #   p FileUtils.have_option?(:cp, :noop)     #=> true
-  #   p FileUtils.have_option?(:rm, :force)    #=> true
-  #   p FileUtils.have_option?(:rm, :preserve) #=> false
+  #   FileUtils.have_option?(:chmod, :noop) # => true
+  #   FileUtils.have_option?('chmod', 'secure') # => false
   #
   def self.have_option?(mid, opt)
     li = OPT_TABLE[mid.to_s] or raise ArgumentError, "no such method: #{mid}"
     li.include?(opt)
   end
 
+  # Returns an array of the string keyword name for method +mid+;
+  # the argument may be a string or a symbol:
   #
-  # Returns an Array of option names of the method +mid+.
-  #
-  #   p FileUtils.options_of(:rm)  #=> ["noop", "verbose", "force"]
+  #   FileUtils.options_of(:rm) # => ["force", "noop", "verbose"]
+  #   FileUtils.options_of('mv') # => ["force", "noop", "verbose", "secure"]
   #
   def self.options_of(mid)
     OPT_TABLE[mid.to_s].map {|sym| sym.to_s }
   end
 
+  # Returns an array of the string method names of the methods
+  # that accept the given keyword option +opt+;
+  # the argument must be a symbol:
   #
-  # Returns an Array of methods names which have the option +opt+.
-  #
-  #   p FileUtils.collect_method(:preserve) #=> ["cp", "cp_r", "copy", "install"]
+  #   FileUtils.collect_method(:preserve) # => ["cp", "copy", "cp_r", "install"]
   #
   def self.collect_method(opt)
     OPT_TABLE.keys.select {|m| OPT_TABLE[m].include?(opt) }
