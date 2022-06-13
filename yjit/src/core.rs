@@ -38,7 +38,8 @@ pub enum Type {
     #[allow(unused)]
     HeapSymbol,
 
-    String,
+    TString, // An object with the T_STRING flag set, possibly an rb_cString
+    CString, // An un-subclassed string of type rb_cString (can have instance vars in some cases)
 }
 
 // Default initialization
@@ -68,10 +69,16 @@ impl Type {
                 unreachable!()
             }
         } else {
+            // Core.rs can't reference rb_cString because it's linked by Rust-only tests.
+            // But CString vs TString is only an optimisation and shouldn't affect correctness.
+            #[cfg(not(test))]
+            if val.class_of() == unsafe { rb_cString } {
+                return Type::CString;
+            }
             match val.builtin_type() {
                 RUBY_T_ARRAY => Type::Array,
                 RUBY_T_HASH => Type::Hash,
-                RUBY_T_STRING => Type::String,
+                RUBY_T_STRING => Type::TString,
                 _ => Type::UnknownHeap,
             }
         }
@@ -113,7 +120,8 @@ impl Type {
             Type::Array => true,
             Type::Hash => true,
             Type::HeapSymbol => true,
-            Type::String => true,
+            Type::TString => true,
+            Type::CString => true,
             _ => false,
         }
     }
@@ -130,6 +138,11 @@ impl Type {
 
         // Any type can flow into an unknown type
         if dst == Type::Unknown {
+            return 1;
+        }
+
+        // A CString is also a TString.
+        if self == Type::CString && dst == Type::TString {
             return 1;
         }
 
