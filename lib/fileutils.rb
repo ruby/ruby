@@ -817,9 +817,10 @@ module FileUtils
   alias copy cp
   module_function :copy
 
-  # Recursively copies files from +src+ to +dest+.
+  # Recursively copies files.
   #
-  # Arguments +src+ and +dest+
+  # Arguments +src+ (a single path or an array of paths)
+  # and +dest+ (a single path)
   # should be {interpretable as paths}[rdoc-ref:FileUtils@Path+Arguments].
   #
   # If +src+ is the path to a file and +dest+ is not the path to a directory,
@@ -841,31 +842,53 @@ module FileUtils
   # If +src+ is the path to a directory and +dest+ does not exist,
   # recursively copies +src+ to +dest+:
   #
-  #   FileUtils.mkdir_p(['src2/dir0', 'src2/dir1'])
-  #   FileUtils.touch('src2/dir0/src0.txt')
-  #   FileUtils.touch('src2/dir0/src1.txt')
-  #   FileUtils.touch('src2/dir1/src2.txt')
-  #   FileUtils.touch('src2/dir1/src3.txt')
+  #   tree('src2')
+  #   src2
+  #   |-- dir0
+  #   |   |-- src0.txt
+  #   |   `-- src1.txt
+  #   `-- dir1
+  #   |-- src2.txt
+  #   `-- src3.txt
+  #   FileUtils.exist?('dest2') # => false
+  #
   #   FileUtils.cp_r('src2', 'dest2')
-  #   File.exist?('dest2/dir0/src0.txt') # => true
-  #   File.exist?('dest2/dir0/src1.txt') # => true
-  #   File.exist?('dest2/dir1/src2.txt') # => true
-  #   File.exist?('dest2/dir1/src3.txt') # => true
+  #   tree('dest2')
+  #   dest2
+  #   |-- dir0
+  #   |   |-- src0.txt
+  #   |   `-- src1.txt
+  #   `-- dir1
+  #   |-- src2.txt
+  #   `-- src3.txt
   #
   # If +src+ and +dest+ are paths to directories,
   # recursively copies +src+ to <tt>dest/src</tt>:
   #
-  #   FileUtils.mkdir_p(['src3/dir0', 'src3/dir1'])
-  #   FileUtils.touch('src3/dir0/src0.txt')
-  #   FileUtils.touch('src3/dir0/src1.txt')
-  #   FileUtils.touch('src3/dir1/src2.txt')
-  #   FileUtils.touch('src3/dir1/src3.txt')
+  #   tree('src3')
+  #   src3
+  #   |-- dir0
+  #   |   |-- src0.txt
+  #   |   `-- src1.txt
+  #   `-- dir1
+  #   |-- src2.txt
+  #   `-- src3.txt
   #   FileUtils.mkdir('dest3')
+  #
   #   FileUtils.cp_r('src3', 'dest3')
-  #   File.exist?('dest3/src3/dir0/src0.txt') # => true
-  #   File.exist?('dest3/src3/dir0/src1.txt') # => true
-  #   File.exist?('dest3/src3/dir1/src2.txt') # => true
-  #   File.exist?('dest3/src3/dir1/src3.txt') # => true
+  #   tree('dest3')
+  #   dest3
+  #   `-- src3
+  #     |-- dir0
+  #     |   |-- src0.txt
+  #     |   `-- src1.txt
+  #     `-- dir1
+  #         |-- src2.txt
+  #         `-- src3.txt
+  #
+  # If +src+ is an array of paths and +dest+ is a directory,
+  # recursively copies from each path in +src+ to +dest+;
+  # the paths in +src+ may point to files and/or directories.
   #
   # Keyword arguments:
   #
