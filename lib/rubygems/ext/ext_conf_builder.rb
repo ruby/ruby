@@ -28,7 +28,6 @@ class Gem::Ext::ExtConfBuilder < Gem::Ext::Builder
       siteconf.puts "dest_path = #{tmp_dest_relative.dump}"
       %w[sitearchdir sitelibdir].each do |dir|
         siteconf.puts "RbConfig::MAKEFILE_CONFIG['#{dir}'] = dest_path"
-        siteconf.puts "RbConfig::CONFIG['#{dir}'] = dest_path"
       end
 
       siteconf.close
