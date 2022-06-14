@@ -223,12 +223,8 @@ macro_rules! gen_counter_incr {
             let ptr_reg = $asm.load(Opnd::const_ptr(ptr as *const u8));
             let counter_opnd = Opnd::mem(64, ptr_reg, 0);
 
-            // FIXME: do we want an atomic add, or an atomic store or swap for arm?
-            //write_lock_prefix($cb); // for ractors.
-
             // Increment and store the updated value
-            let incr_opnd = $asm.add(counter_opnd, 1.into());
-            $asm.store(counter_opnd, incr_opnd);
+            $asm.incr_counter(counter_opnd, 1.into() );
         }
     };
 }
@@ -408,7 +404,7 @@ fn gen_code_for_exit_from_stub(ocb: &mut OutlinedCb) -> CodePtr {
     todo!();
 
     /*
-    gen_counter_incr!(ocb, exit_from_branch_stub);
+    gen_counter_incr!(asm, exit_from_branch_stub);
 
     cpop(ocb, REG_SP);
     cpop(ocb, REG_EC);
@@ -541,7 +537,7 @@ fn gen_full_cfunc_return(ocb: &mut OutlinedCb) -> CodePtr {
     call_ptr(cb, REG0, rb_full_cfunc_return as *const u8);
 
     // Count the exit
-    gen_counter_incr!(cb, traced_cfunc_return);
+    gen_counter_incr!(asm, traced_cfunc_return);
 
     // Return to the interpreter
     pop(cb, REG_SP);
@@ -562,25 +558,15 @@ fn gen_leave_exit(ocb: &mut OutlinedCb) -> CodePtr {
     let code_ptr = ocb.get_write_ptr();
     let mut asm = Assembler::new();
 
-    // Note, gen_leave() fully reconstructs interpreter state and leaves the
-    // return value in RAX before coming here.
+    // NOTE: gen_leave() fully reconstructs interpreter state and leaves the
+    // return value in C_RET_OPND before coming here.
 
-    // FIXME
     // Every exit to the interpreter should be counted
-    //gen_counter_incr!(ocb, leave_interp_return);
+    gen_counter_incr!(asm, leave_interp_return);
 
     asm.cpop(SP);
     asm.cpop(EC);
     asm.cpop(CFP);
-
-    // FIXME: we're currently assuming that the return value is in RAX,
-    // left there by gen_leave() ...
-    //
-    // What are our options?
-    // We could put the return value in C_RET_REG?
-    // Then call asm.ret with C_RET_REG?
-
-
 
     asm.cret(C_RET_OPND);
 
@@ -604,9 +590,8 @@ fn gen_pc_guard(asm: &mut Assembler, iseq: IseqPtr, insn_idx: u32) {
     let pc_match = asm.new_label("pc_match");
     asm.je(pc_match);
 
-    // FIXME
     // We're not starting at the first PC, so we need to exit.
-    //gen_counter_incr!(cb, leave_start_pc_non_zero);
+    gen_counter_incr!(asm, leave_start_pc_non_zero);
 
     asm.cpop(SP);
     asm.cpop(EC);
