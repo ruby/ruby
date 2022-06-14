@@ -82,7 +82,7 @@ static struct {
     st_table *id2enum, *enum2id;
 } warning_categories;
 
-extern const char ruby_description[];
+extern const char *rb_dynamic_description;
 
 static const char *
 rb_strerrno(int err)
@@ -730,7 +730,7 @@ bug_report_begin_valist(FILE *out, const char *fmt, va_list args)
     fputs("[BUG] ", out);
     vsnprintf(buf, sizeof(buf), fmt, args);
     fputs(buf, out);
-    snprintf(buf, sizeof(buf), "\n%s\n\n", ruby_description);
+    snprintf(buf, sizeof(buf), "\n%s\n\n", rb_dynamic_description);
     fputs(buf, out);
     preface_dump(out);
 }
@@ -866,7 +866,7 @@ rb_async_bug_errno(const char *mesg, int errno_arg)
 	write_or_abort(2, errno_str, strlen(errno_str));
     }
     WRITE_CONST(2, "\n\n");
-    write_or_abort(2, ruby_description, strlen(ruby_description));
+    write_or_abort(2, rb_dynamic_description, strlen(rb_dynamic_description));
     abort();
 }
 
@@ -882,7 +882,7 @@ rb_assert_failure(const char *file, int line, const char *name, const char *expr
     FILE *out = stderr;
     fprintf(out, "Assertion Failed: %s:%d:", file, line);
     if (name) fprintf(out, "%s:", name);
-    fprintf(out, "%s\n%s\n\n", expr, ruby_description);
+    fprintf(out, "%s\n%s\n\n", expr, rb_dynamic_description);
     preface_dump(out);
     rb_vm_bugreport(NULL);
     bug_report_end(out);

@@ -1826,10 +1826,11 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
         rb_yjit_init();
 #endif
     }
-    if (opt->dump & (DUMP_BIT(version) | DUMP_BIT(version_v))) {
 #if USE_MJIT
-        mjit_opts.on = opt->mjit.on; /* used by ruby_show_version(). mjit_init() still can't be called here. */
+    mjit_opts.on = opt->mjit.on; /* used by Init_ruby_description(). mjit_init() still can't be called here. */
 #endif
+    Init_ruby_description();
+    if (opt->dump & (DUMP_BIT(version) | DUMP_BIT(version_v))) {
 	ruby_show_version();
 	if (opt->dump & DUMP_BIT(version)) return Qtrue;
     }
@@ -1888,7 +1889,6 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
         mjit_init(&opt->mjit);
 #endif
 
-    Init_ruby_description();
     Init_enc();
     lenc = rb_locale_encoding();
     rb_enc_associate(rb_progname, lenc);
