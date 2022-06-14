@@ -6820,9 +6820,9 @@ iseq_compile_array_deconstruct(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NO
     // Otherwise, we're going to construct a range object that represents the
     // number of elements that are being matched against.
     ADD_LABEL(ret, deconstruct_arity1);
-    ADD_INSN1(ret, line_node, putobject, INT2FIX(min_argc));
-    ADD_INSN1(ret, line_node, putobject, endless ? Qnil : INT2FIX(min_argc));
-    ADD_INSN1(ret, line_node, newrange, INT2FIX(0));
+    VALUE range_min = INT2FIX(min_argc);
+    VALUE range = rb_range_new(range_min, (endless ? Qnil : range_min), FALSE);
+    ADD_INSN1(ret, line_node, putobject, range);
     ADD_SEND(ret, line_node, rb_intern("deconstruct"), INT2FIX(1));
 
     // Finally, we now have deconstructed depending on the arity.
