@@ -23,62 +23,45 @@ class Gem::Ext::ExtConfBuilder < Gem::Ext::Builder
     # Details: https://github.com/rubygems/rubygems/issues/977#issuecomment-171544940
     tmp_dest_relative = get_relative_path(tmp_dest.clone, extension_dir)
 
-    Tempfile.open %w[siteconf .rb], extension_dir do |siteconf|
-      siteconf.puts "require 'rbconfig'"
-      siteconf.puts "dest_path = #{tmp_dest_relative.dump}"
-      %w[sitearchdir sitelibdir].each do |dir|
-        siteconf.puts "RbConfig::MAKEFILE_CONFIG['#{dir}'] = dest_path"
-      end
+    destdir = ENV["DESTDIR"]
 
-      siteconf.close
+    begin
+      require "shellwords"
+      cmd = Gem.ruby.shellsplit << "-I" << File.expand_path('../..', __dir__) << File.basename(extension)
+      cmd.push(*args)
 
-      destdir = ENV["DESTDIR"]
-
-      begin
-        # workaround for https://github.com/oracle/truffleruby/issues/2115
-        siteconf_path = RUBY_ENGINE == "truffleruby" ? siteconf.path.dup : siteconf.path
-        require "shellwords"
-        cmd = Gem.ruby.shellsplit << "-I" << File.expand_path('../..', __dir__) <<
-              "-r" << get_relative_path(siteconf_path, extension_dir) << File.basename(extension)
-        cmd.push(*args)
-
-        begin
-          run(cmd, results, class_name, extension_dir) do |s, r|
-            mkmf_log = File.join(extension_dir, 'mkmf.log')
-            if File.exist? mkmf_log
-              unless s.success?
-                r << "To see why this extension failed to compile, please check" \
-                  " the mkmf.log which can be found here:\n"
-                r << "  " + File.join(dest_path, 'mkmf.log') + "\n"
-              end
-              FileUtils.mv mkmf_log, dest_path
-            end
+      run(cmd, results, class_name, extension_dir) do |s, r|
+        mkmf_log = File.join(extension_dir, 'mkmf.log')
+        if File.exist? mkmf_log
+          unless s.success?
+            r << "To see why this extension failed to compile, please check" \
+              " the mkmf.log which can be found here:\n"
+            r << "  " + File.join(dest_path, 'mkmf.log') + "\n"
           end
-          siteconf.unlink
+          FileUtils.mv mkmf_log, dest_path
         end
-
-        ENV["DESTDIR"] = nil
-
-        make dest_path, results, extension_dir
-
-        full_tmp_dest = File.join(extension_dir, tmp_dest_relative)
-
-        # TODO remove in RubyGems 3
-        if Gem.install_extension_in_lib and lib_dir
-          FileUtils.mkdir_p lib_dir
-          entries = Dir.entries(full_tmp_dest) - %w[. ..]
-          entries = entries.map {|entry| File.join full_tmp_dest, entry }
-          FileUtils.cp_r entries, lib_dir, :remove_destination => true
-        end
-
-        FileUtils::Entry_.new(full_tmp_dest).traverse do |ent|
-          destent = ent.class.new(dest_path, ent.rel)
-          destent.exist? or FileUtils.mv(ent.path, destent.path)
-        end
-      ensure
-        ENV["DESTDIR"] = destdir
-        siteconf.close!
       end
+
+      ENV["DESTDIR"] = nil
+
+      make dest_path, results, extension_dir, tmp_dest_relative
+
+      full_tmp_dest = File.join(extension_dir, tmp_dest_relative)
+
+      # TODO remove in RubyGems 3
+      if Gem.install_extension_in_lib and lib_dir
+        FileUtils.mkdir_p lib_dir
+        entries = Dir.entries(full_tmp_dest) - %w[. ..]
+        entries = entries.map {|entry| File.join full_tmp_dest, entry }
+        FileUtils.cp_r entries, lib_dir, :remove_destination => true
+      end
+
+      FileUtils::Entry_.new(full_tmp_dest).traverse do |ent|
+        destent = ent.class.new(dest_path, ent.rel)
+        destent.exist? or FileUtils.mv(ent.path, destent.path)
+      end
+    ensure
+      ENV["DESTDIR"] = destdir
     end
 
     results
