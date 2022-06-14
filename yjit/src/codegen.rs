@@ -397,52 +397,6 @@ fn verify_ctx(jit: &JITState, ctx: &Context) {
     }
 }
 
-/// Generate an exit to return to the interpreter
-fn gen_exit(exit_pc: *mut VALUE, ctx: &Context, cb: &mut CodeBlock) -> CodePtr {
-    let code_ptr = cb.get_write_ptr();
-
-    todo!();
-
-    /*
-    add_comment(cb, "exit to interpreter");
-
-    // Generate the code to exit to the interpreters
-    // Write the adjusted SP back into the CFP
-    if ctx.get_sp_offset() != 0 {
-        let stack_pointer = ctx.sp_opnd(0);
-        lea(cb, REG_SP, stack_pointer.into());
-        mov(cb, mem_opnd(64, REG_CFP, RUBY_OFFSET_CFP_SP), REG_SP);
-    }
-
-    // Update CFP->PC
-    mov(cb, RAX, const_ptr_opnd(exit_pc as *const u8));
-    mov(cb, mem_opnd(64, REG_CFP, RUBY_OFFSET_CFP_PC), RAX);
-
-    // Accumulate stats about interpreter exits
-    #[cfg(feature = "stats")]
-    if get_option!(gen_stats) {
-        mov(cb, RDI, const_ptr_opnd(exit_pc as *const u8));
-        call_ptr(cb, RSI, rb_yjit_count_side_exit_op as *const u8);
-
-        // If --yjit-trace-exits option is enabled, record the exit stack
-        // while recording the side exits.
-        if get_option!(gen_trace_exits) {
-            mov(cb, C_ARG_REGS[0], const_ptr_opnd(exit_pc as *const u8));
-            call_ptr(cb, REG0, rb_yjit_record_exit_stack as *const u8);
-        }
-    }
-
-    pop(cb, REG_SP);
-    pop(cb, REG_EC);
-    pop(cb, REG_CFP);
-
-    mov(cb, RAX, uimm_opnd(Qundef.into()));
-    ret(cb);
-
-    return code_ptr;
-    */
-}
-
 // Fill code_for_exit_from_stub. This is used by branch_stub_hit() to exit
 // to the interpreter when it cannot service a stub by generating new code.
 // Before coming here, branch_stub_hit() takes care of fully reconstructing
@@ -467,6 +421,64 @@ fn gen_code_for_exit_from_stub(ocb: &mut OutlinedCb) -> CodePtr {
     */
 }
 
+/// Generate an exit to return to the interpreter
+fn gen_exit(exit_pc: *mut VALUE, ctx: &Context, asm: &mut Assembler) {
+    asm.comment("exit to interpreter");
+
+    // Generate the code to exit to the interpreters
+    // Write the adjusted SP back into the CFP
+    if ctx.get_sp_offset() != 0 {
+        let sp_opnd = asm.lea(ctx.sp_opnd(0));
+        asm.mov(
+            Opnd::mem(64, CFP, RUBY_OFFSET_CFP_SP),
+            sp_opnd
+        );
+    }
+
+    // Update CFP->PC
+    asm.mov(
+        Opnd::mem(64, CFP, RUBY_OFFSET_CFP_PC),
+        Opnd::const_ptr(exit_pc as *const u8)
+    );
+
+    // Accumulate stats about interpreter exits
+    #[cfg(feature = "stats")]
+    if get_option!(gen_stats) {
+        asm.ccall(
+            rb_yjit_count_side_exit_op as *const u8,
+            vec![Opnd::const_ptr(exit_pc as *const u8)]
+        );
+
+        // If --yjit-trace-exits option is enabled, record the exit stack
+        // while recording the side exits.
+        if get_option!(gen_trace_exits) {
+            asm.ccall(
+                rb_yjit_record_exit_stack as *const u8,
+                vec![Opnd::const_ptr(exit_pc as *const u8)]
+            );
+        }
+    }
+
+    asm.cpop(SP);
+    asm.cpop(EC);
+    asm.cpop(CFP);
+
+    asm.cret(Qundef.into());
+}
+
+/// Generate an exit to the interpreter in the outlined code block
+fn gen_outlined_exit(exit_pc: *mut VALUE, ctx: &Context, ocb: &mut OutlinedCb) -> CodePtr {
+    let mut cb = ocb.unwrap();
+    let exit_code = cb.get_write_ptr();
+    let mut asm = Assembler::new();
+
+    gen_exit(exit_pc, ctx, &mut asm);
+
+    asm.compile(&mut cb);
+
+    exit_code
+}
+
 // :side-exit:
 // Get an exit for the current instruction in the outlined block. The code
 // for each instruction often begins with several guards before proceeding
@@ -482,7 +494,7 @@ fn gen_code_for_exit_from_stub(ocb: &mut OutlinedCb) -> CodePtr {
 fn get_side_exit(jit: &mut JITState, ocb: &mut OutlinedCb, ctx: &Context) -> CodePtr {
     match jit.side_exit_for_pc {
         None => {
-            let exit_code = gen_exit(jit.pc, ctx, ocb.unwrap());
+            let exit_code = gen_outlined_exit(jit.pc, ctx, ocb);
             jit.side_exit_for_pc = Some(exit_code);
             exit_code
         }
@@ -502,13 +514,13 @@ pub fn jit_ensure_block_entry_exit(jit: &mut JITState, ocb: &mut OutlinedCb) {
         return;
     }
 
+    // If we're compiling the first instruction in the block.
     if jit.insn_idx == blockid.idx {
-        // We are compiling the first instruction in the block.
         // Generate the exit with the cache in jitstate.
         block.entry_exit = Some(get_side_exit(jit, ocb, &block_ctx));
     } else {
         let pc = unsafe { rb_iseq_pc_at_idx(blockid.iseq, blockid.idx) };
-        block.entry_exit = Some(gen_exit(pc, &block_ctx, ocb.unwrap()));
+        block.entry_exit = Some(gen_outlined_exit(jit.pc, &block_ctx, ocb));
     }
 }
 
@@ -705,10 +717,14 @@ fn jump_to_next_insn(
 
     // We are at the end of the current instruction. Record the boundary.
     if jit.record_boundary_patch_point {
+        todo!();
+
+        /*
         let next_insn = unsafe { jit.pc.offset(insn_len(jit.opcode).try_into().unwrap()) };
         let exit_pos = gen_exit(next_insn, &reset_depth, ocb.unwrap());
         record_global_inval_patch(cb, exit_pos);
         jit.record_boundary_patch_point = false;
+        */
     }
 
     // Generate the jump instruction
@@ -777,10 +793,14 @@ pub fn gen_single_block(
 
         // If previous instruction requested to record the boundary
         if jit.record_boundary_patch_point {
+            todo!("record_boundary_patch_point");
+
+            /*
             // Generate an exit to this instruction and record it
             let exit_pos = gen_exit(jit.pc, &ctx, ocb.unwrap());
             record_global_inval_patch(cb, exit_pos);
             jit.record_boundary_patch_point = false;
+            */
         }
 
         // In debug mode, verify our existing assumption
@@ -817,12 +837,12 @@ pub fn gen_single_block(
             // TODO: if the codegen function makes changes to ctx and then return YJIT_CANT_COMPILE,
             // the exit this generates would be wrong. We could save a copy of the entry context
             // and assert that ctx is the same here.
-            let exit = gen_exit(jit.pc, &ctx, cb);
+            gen_exit(jit.pc, &ctx, &mut asm);
 
             // If this is the first instruction in the block, then we can use
             // the exit for block->entry_exit.
             if insn_idx == block.get_blockid().idx {
-                block.entry_exit = Some(exit);
+                block.entry_exit = block.get_start_addr();
             }
 
             break;
