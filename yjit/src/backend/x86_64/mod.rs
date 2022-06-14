@@ -76,11 +76,11 @@ impl Assembler
 
         self.transform_insns(|asm, index, op, opnds, target| {
             match op {
-                Op::Add | Op::Sub | Op::And => {
-                    match opnds.as_slice() {
+                Op::Add | Op::Sub | Op::And | Op::Not => {
+                    match opnds[0] {
                         // Instruction output whose live range spans beyond this instruction
-                        [Opnd::InsnOut(out_idx), _] => {
-                            if live_ranges[*out_idx] > index {
+                        Opnd::InsnOut(out_idx) => {
+                            if live_ranges[out_idx] > index {
                                 let opnd0 = asm.load(opnds[0]);
                                 asm.push_insn(op, vec![opnd0, opnds[1]], None);
                                 return;
@@ -88,7 +88,7 @@ impl Assembler
                         },
 
                         // We have to load memory and register operands to avoid corrupting them
-                        [Opnd::Mem(_) | Opnd::Reg(_), _] => {
+                        Opnd::Mem(_) | Opnd::Reg(_) => {
                             let opnd0 = asm.load(opnds[0]);
                             asm.push_insn(op, vec![opnd0, opnds[1]], None);
                             return;

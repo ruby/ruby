@@ -681,6 +681,7 @@ def_push_jcc!(jnz, Op::Jnz);
 def_push_2_opnd!(add, Op::Add);
 def_push_2_opnd!(sub, Op::Sub);
 def_push_2_opnd!(and, Op::And);
+def_push_1_opnd!(not, Op::Not);
 def_push_1_opnd_no_out!(cpush, Op::CPush);
 def_push_1_opnd_no_out!(cpop, Op::CPop);
 def_push_1_opnd_no_out!(cret, Op::CRet);
