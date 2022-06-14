@@ -13,14 +13,9 @@ class Gem::Ext::ExtConfBuilder < Gem::Ext::Builder
     tmp_dest = Dir.mktmpdir(".gem.", extension_dir)
 
     # Some versions of `mktmpdir` return absolute paths, which will break make
-    # if the paths contain spaces. However, on Ruby 1.9.x on Windows, relative
-    # paths cause all C extension builds to fail.
+    # if the paths contain spaces.
     #
-    # As such, we convert to a relative path unless we are using Ruby 1.9.x on
-    # Windows. This means that when using Ruby 1.9.x on Windows, paths with
-    # spaces do not work.
-    #
-    # Details: https://github.com/rubygems/rubygems/issues/977#issuecomment-171544940
+    # As such, we convert to a relative path.
     tmp_dest_relative = get_relative_path(tmp_dest.clone, extension_dir)
 
     destdir = ENV["DESTDIR"]
