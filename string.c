@@ -299,7 +299,8 @@ rb_str_make_independent(VALUE str)
 }
 
 void
-rb_str_make_embedded(VALUE str) {
+rb_str_make_embedded(VALUE str)
+{
     RUBY_ASSERT(rb_str_reembeddable_p(str));
     RUBY_ASSERT(!STR_EMBED_P(str));
 
@@ -1806,15 +1807,14 @@ str_duplicate_setup(VALUE klass, VALUE str, VALUE dup)
         }
         assert(!STR_SHARED_P(root));
         assert(RB_OBJ_FROZEN_RAW(root));
-#if USE_RVARGC
-        if (1) {
-#else
-        if (STR_EMBED_P(root)) {
+        if (0) {}
+#if !USE_RVARGC
+        else if (STR_EMBED_P(root)) {
             MEMCPY(RSTRING(dup)->as.embed.ary, RSTRING(root)->as.embed.ary,
                    char, RSTRING_EMBED_LEN_MAX + 1);
         }
-        else {
 #endif
+        else {
             RSTRING(dup)->as.heap.len = RSTRING_LEN(str);
             RSTRING(dup)->as.heap.ptr = RSTRING_PTR(str);
             RB_OBJ_WRITE(dup, &RSTRING(dup)->as.heap.aux.shared, root);
