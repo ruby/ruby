@@ -391,21 +391,19 @@ fn verify_ctx(jit: &JITState, ctx: &Context) {
 fn gen_code_for_exit_from_stub(ocb: &mut OutlinedCb) -> CodePtr {
     let ocb = ocb.unwrap();
     let code_ptr = ocb.get_write_ptr();
+    let mut asm = Assembler::new();
 
-    todo!();
-
-    /*
     gen_counter_incr!(asm, exit_from_branch_stub);
 
-    cpop(ocb, REG_SP);
-    cpop(ocb, REG_EC);
-    cpop(ocb, REG_CFP);
+    asm.cpop(SP);
+    asm.cpop(EC);
+    asm.cpop(CFP);
 
-    mov(ocb, RAX, uimm_opnd(Qundef.into()));
-    ret(ocb);
+    asm.cret(Qundef.into());
 
-    return code_ptr;
-    */
+    asm.compile(ocb);
+
+    code_ptr
 }
 
 /// Generate an exit to return to the interpreter
@@ -6103,7 +6101,7 @@ impl CodegenGlobals {
 
         let leave_exit_code = gen_leave_exit(&mut ocb);
 
-        //let stub_exit_code = gen_code_for_exit_from_stub(&mut ocb);
+        let stub_exit_code = gen_code_for_exit_from_stub(&mut ocb);
 
         // Generate full exit code for C func
         //let cfunc_exit_code = gen_full_cfunc_return(&mut ocb);
