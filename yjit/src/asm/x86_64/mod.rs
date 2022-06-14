@@ -862,7 +862,7 @@ fn write_jcc_ptr(cb: &mut CodeBlock, op0: u8, op1: u8, dst_ptr: CodePtr) {
     let end_ptr = cb.get_ptr(cb.write_pos + 4);
 
     // Compute the jump offset
-    let rel64 = (dst_ptr.0 as i64) - (end_ptr.0 as i64);
+    let rel64 = dst_ptr.into_i64() - end_ptr.into_i64();
 
     if rel64 >= i32::MIN.into() && rel64 <= i32::MAX.into() {
         // Write the relative 32-bit jump offset

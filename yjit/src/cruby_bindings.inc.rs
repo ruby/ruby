@@ -976,7 +976,7 @@ extern "C" {
     ) -> ::std::os::raw::c_int;
 }
 extern "C" {
-    pub fn rb_yjit_mark_writable(mem_block: *mut ::std::os::raw::c_void, mem_size: u32);
+    pub fn rb_yjit_mark_writable(mem_block: *mut ::std::os::raw::c_void, mem_size: u32) -> bool;
 }
 extern "C" {
     pub fn rb_yjit_mark_executable(mem_block: *mut ::std::os::raw::c_void, mem_size: u32);
@@ -990,6 +990,9 @@ extern "C" {
 }
 extern "C" {
     pub fn rb_yjit_get_page_size() -> u32;
+}
+extern "C" {
+    pub fn rb_yjit_reserve_addr_space(mem_size: u32) -> *mut u8;
 }
 extern "C" {
     pub fn rb_c_method_tracing_currently_enabled(ec: *mut rb_execution_context_t) -> bool;
