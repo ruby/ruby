@@ -167,9 +167,7 @@ cmp_le(VALUE x, VALUE y)
 static VALUE
 cmp_between(VALUE x, VALUE min, VALUE max)
 {
-    if (cmpint(x, min) < 0) return Qfalse;
-    if (cmpint(x, max) > 0) return Qfalse;
-    return Qtrue;
+    return RBOOL((cmpint(x, min) >= 0 && cmpint(x, max) <= 0));
 }
 
 /*
