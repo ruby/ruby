@@ -731,10 +731,6 @@ sighandler(int sig)
         if (vm && ACCESS_ONCE(VALUE, vm->trap_list.cmd[sig])) {
             signal_enque(sig);
         }
-
-        if (mjit_enabled) { // TODO: Use a flag that becomes false when no longer waiting for CC
-            RUBY_VM_SET_MJIT_SIGCHLD_INTERRUPT(GET_EC());
-        }
 #endif
     }
     else {

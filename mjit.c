@@ -25,6 +25,7 @@
 #include "internal/hash.h"
 #include "internal/warnings.h"
 #include "vm_sync.h"
+#include "ractor_core.h"
 
 #include "mjit_worker.c"
 
@@ -341,18 +342,14 @@ check_compaction(void)
 #endif
 }
 
+bool mjit_flag = false;
+int mjit_status = 0;
+
 // Check the current CC process if any, and start a next C compiler process as needed.
 void
-mjit_check_process(void)
+mjit_notify_waitpid(int status)
 {
-    // TODO: Use CRITICAL_SECTION?
-    // Ignore SIGCHLD from non-MJIT processes
-    if (current_cc_pid == 0) return;
-
-    // Wait until the process completes
-    int status;
-    pid_t result = waitpid(current_cc_pid, &status, WNOHANG);
-    if (result != current_cc_pid) return; // Skip if it's not stopped yet. TODO: check -1
+    // TODO: check current_cc_pid?
     current_cc_pid = 0;
 
     // Delete .c file
@@ -433,7 +430,8 @@ mjit_target_iseq_p(struct rb_iseq_constant_body *body)
 static void
 mjit_add_iseq_to_process(const rb_iseq_t *iseq, const struct rb_mjit_compile_info *compile_info, bool recompile_p)
 {
-    if (!mjit_enabled || pch_status == PCH_FAILED)
+    // TODO: Support non-main Ractors
+    if (!mjit_enabled || pch_status == PCH_FAILED || !rb_ractor_main_p())
         return;
     if (!mjit_target_iseq_p(ISEQ_BODY(iseq))) {
         ISEQ_BODY(iseq)->jit_func = (mjit_func_t)NOT_COMPILED_JIT_ISEQ_FUNC; // skip mjit_wait
