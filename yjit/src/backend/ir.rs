@@ -152,7 +152,7 @@ impl Opnd
                     disp: disp,
                 })
             },
-            _ => unreachable!()
+            _ => unreachable!("memory operand with non-register base")
         }
     }
 
@@ -168,42 +168,22 @@ impl From<usize> for Opnd {
     }
 }
 
+impl From<u64> for Opnd {
+    fn from(value: u64) -> Self {
+        Opnd::UImm(value.try_into().unwrap())
+    }
+}
+
+impl From<i32> for Opnd {
+    fn from(value: i32) -> Self {
+        Opnd::Imm(value.try_into().unwrap())
+    }
+}
+
 impl From<VALUE> for Opnd {
     fn from(value: VALUE) -> Self {
         let VALUE(uimm) = value;
         Opnd::UImm(uimm as u64)
-    }
-}
-
-/// NOTE: this is useful during the port but can probably be removed once
-/// Context returns ir::Opnd instead of X86Opnd
-///
-/// Method to convert from an X86Opnd to an IR Opnd
-impl From<X86Opnd> for Opnd {
-    fn from(opnd: X86Opnd) -> Self {
-        match opnd {
-            X86Opnd::None => Opnd::None,
-            X86Opnd::UImm(X86UImm{ value, .. }) => Opnd::UImm(value),
-            X86Opnd::Imm(X86Imm{ value, .. }) => Opnd::Imm(value),
-
-            // General-purpose register
-            X86Opnd::Reg(reg) => {
-                Opnd::Reg(reg)
-            }
-
-            // Memory operand with displacement
-            X86Opnd::Mem(X86Mem{ num_bits, base_reg_no, disp, idx_reg_no: None, scale_exp: 0 }) => {
-                let base_reg = Reg { num_bits: 64, reg_no: base_reg_no, reg_type: RegType::GP };
-
-                Opnd::Mem(Mem {
-                    base_reg: base_reg,
-                    disp,
-                    num_bits
-                })
-            }
-
-            _ => panic!("unsupported x86 operand type")
-        }
     }
 }
 
@@ -870,6 +850,16 @@ mod tests {
         let v2 = asm.add(v0, Opnd::UImm(1));
         asm.add(v0, v2);
 
+        asm.compile_with_regs(&mut cb, regs);
+    }
+
+    // 64-bit values can't be written directly to memory,
+    // need to be split into one or more register movs first
+    #[test]
+    fn test_store_u64()
+    {
+        let (mut asm, mut cb, regs) = setup_asm(1);
+        asm.store(Opnd::mem(64, SP, 0), u64::MAX.into());
         asm.compile_with_regs(&mut cb, regs);
     }
 
