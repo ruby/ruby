@@ -290,14 +290,14 @@ end
 def mkmf
   setup("d:h:l:f:v:t:m:c:", "vendor") do |argv, options|
     require 'mkmf'
-    opt = options[:d] and opt.split(/:/).each {|n| dir_config(*n.split(/,/))}
-    opt = options[:h] and opt.split(/:/).each {|n| have_header(*n.split(/,/))}
-    opt = options[:l] and opt.split(/:/).each {|n| have_library(*n.split(/,/))}
-    opt = options[:f] and opt.split(/:/).each {|n| have_func(*n.split(/,/))}
-    opt = options[:v] and opt.split(/:/).each {|n| have_var(*n.split(/,/))}
-    opt = options[:t] and opt.split(/:/).each {|n| have_type(*n.split(/,/))}
-    opt = options[:m] and opt.split(/:/).each {|n| have_macro(*n.split(/,/))}
-    opt = options[:c] and opt.split(/:/).each {|n| have_const(*n.split(/,/))}
+    options[:d]&.split(/:/) {|n| dir_config(*n.split(/,/))}
+    options[:h]&.split(/:/) {|n| have_header(*n.split(/,/))}
+    options[:l]&.split(/:/) {|n| have_library(*n.split(/,/))}
+    options[:f]&.split(/:/) {|n| have_func(*n.split(/,/))}
+    options[:v]&.split(/:/) {|n| have_var(*n.split(/,/))}
+    options[:t]&.split(/:/) {|n| have_type(*n.split(/,/))}
+    options[:m]&.split(/:/) {|n| have_macro(*n.split(/,/))}
+    options[:c]&.split(/:/) {|n| have_const(*n.split(/,/))}
     $configure_args["--vendor"] = true if options[:vendor]
     create_makefile(*argv)
   end
