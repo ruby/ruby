@@ -2856,14 +2856,13 @@ block_arg	: tAMPER arg_value
 		    }
                 | tAMPER
                     {
-                    /*%%%*/
                         if (!local_id(p, ANON_BLOCK_ID)) {
                             compile_error(p, "no anonymous block parameter");
                         }
+                    /*%%%*/
                         $$ = NEW_BLOCK_PASS(NEW_LVAR(ANON_BLOCK_ID, &@1), &@$);
-                    /*%
-                    $$ = Qnil;
-                    %*/
+                    /*% %*/
+                    /*% ripper: Qnil %*/
                     }
 		;
 
@@ -2894,10 +2893,10 @@ args		: arg_value
 		    }
 		| tSTAR
 		    {
-		    /*%%%*/
                         if (!local_id(p, ANON_REST_ID)) {
                             compile_error(p, "no anonymous rest parameter");
                         }
+		    /*%%%*/
 			$$ = NEW_SPLAT(NEW_LVAR(ANON_REST_ID, &@1), &@$);
 		    /*% %*/
 		    /*% ripper: args_add_star!(args_new!, Qnil) %*/
@@ -2918,10 +2917,10 @@ args		: arg_value
 		    }
 		| args ',' tSTAR
 		    {
-		    /*%%%*/
                         if (!local_id(p, ANON_REST_ID)) {
                             compile_error(p, "no anonymous rest parameter");
                         }
+		    /*%%%*/
 			$$ = rest_arg_append(p, $1, NEW_LVAR(ANON_REST_ID, &@3), &@$);
 		    /*% %*/
 		    /*% ripper: args_add_star!($1, Qnil) %*/
@@ -5489,8 +5488,8 @@ f_kwrest	: kwrest_mark tIDENTIFIER
 		    }
 		| kwrest_mark
 		    {
+			arg_var(p, ANON_KEYWORD_REST_ID);
 		    /*%%%*/
-			arg_var(p, shadowing_lvar(p, get_id(ANON_KEYWORD_REST_ID)));
 		    /*% %*/
 		    /*% ripper: kwrest_param!(Qnil) %*/
 		    }
@@ -5564,8 +5563,8 @@ f_rest_arg	: restarg_mark tIDENTIFIER
 		    }
 		| restarg_mark
 		    {
+			arg_var(p, ANON_REST_ID);
 		    /*%%%*/
-                        arg_var(p, shadowing_lvar(p, get_id(ANON_REST_ID)));
 		    /*% %*/
 		    /*% ripper: rest_param!(Qnil) %*/
 		    }
@@ -5585,11 +5584,10 @@ f_block_arg	: blkarg_mark tIDENTIFIER
 		    }
                 | blkarg_mark
                     {
+			arg_var(p, ANON_BLOCK_ID);
                     /*%%%*/
-                        arg_var(p, shadowing_lvar(p, get_id(ANON_BLOCK_ID)));
-                    /*%
-                    $$ = dispatch1(blockarg, Qnil);
-                    %*/
+                    /*% %*/
+		    /*% ripper: blockarg!(Qnil) %*/
                     }
 		;
 
@@ -5721,10 +5719,10 @@ assoc		: arg_value tASSOC arg_value
 		    }
 		| tDSTAR
 		    {
-		    /*%%%*/
                         if (!local_id(p, ANON_KEYWORD_REST_ID)) {
                             compile_error(p, "no anonymous keyword rest parameter");
                         }
+		    /*%%%*/
                         $$ = list_append(p, NEW_LIST(0, &@$),
                                          NEW_LVAR(ANON_KEYWORD_REST_ID, &@$));
 		    /*% %*/
