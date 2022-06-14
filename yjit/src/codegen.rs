@@ -649,27 +649,22 @@ pub fn gen_entry_prologue(cb: &mut CodeBlock, iseq: IseqPtr, insn_idx: u32) -> O
     return Some(code_ptr);
 }
 
-/*
 // Generate code to check for interrupts and take a side-exit.
 // Warning: this function clobbers REG0
-fn gen_check_ints(cb: &mut CodeBlock, side_exit: CodePtr) {
+fn gen_check_ints(asm: &mut Assembler, side_exit: CodePtr) {
     // Check for interrupts
     // see RUBY_VM_CHECK_INTS(ec) macro
-    add_comment(cb, "RUBY_VM_CHECK_INTS(ec)");
-    mov(
-        cb,
-        REG0_32,
-        mem_opnd(32, REG_EC, RUBY_OFFSET_EC_INTERRUPT_MASK),
+    asm.comment("RUBY_VM_CHECK_INTS(ec)");
+
+    let not_mask = asm.not(Opnd::mem(32, EC, RUBY_OFFSET_EC_INTERRUPT_MASK));
+
+    asm.test(
+        Opnd::mem(32, EC, RUBY_OFFSET_EC_INTERRUPT_FLAG),
+        not_mask,
     );
-    not(cb, REG0_32);
-    test(
-        cb,
-        mem_opnd(32, REG_EC, RUBY_OFFSET_EC_INTERRUPT_FLAG),
-        REG0_32,
-    );
-    jnz_ptr(cb, side_exit);
+
+    asm.jnz(Target::CodePtr(side_exit));
 }
-*/
 
 // Generate a stubbed unconditional jump to the next bytecode instruction.
 // Blocks that are part of a guard chain can use this to share the same successor.
