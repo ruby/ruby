@@ -9657,6 +9657,8 @@ mjit.$(OBJEXT): {$(VPATH)}mjit_worker.c
 mjit.$(OBJEXT): {$(VPATH)}node.h
 mjit.$(OBJEXT): {$(VPATH)}onigmo.h
 mjit.$(OBJEXT): {$(VPATH)}oniguruma.h
+mjit.$(OBJEXT): {$(VPATH)}ractor.h
+mjit.$(OBJEXT): {$(VPATH)}ractor_core.h
 mjit.$(OBJEXT): {$(VPATH)}ruby_assert.h
 mjit.$(OBJEXT): {$(VPATH)}ruby_atomic.h
 mjit.$(OBJEXT): {$(VPATH)}st.h

@@ -191,7 +191,7 @@ extern void rb_native_cond_broadcast(rb_nativethread_cond_t *cond);
 extern void rb_native_cond_wait(rb_nativethread_cond_t *cond, rb_nativethread_lock_t *mutex);
 
 // process.c
-extern rb_pid_t ruby_waitpid_locked(rb_vm_t *, rb_pid_t, int *status, int options, rb_nativethread_cond_t *cond);
+extern void mjit_add_waiting_pid(rb_vm_t *vm, rb_pid_t pid);
 
 // A copy of MJIT portion of MRI options since MJIT initialization.  We
 // need them as MJIT threads still can work when the most MRI data were
@@ -911,7 +911,15 @@ start_compiling_c_to_so(const char *c_file, const char *so_file)
                             so_args, CC_LIBS, CC_DLDFLAGS_ARGS, CC_LINKER_ARGS);
     if (args == NULL) return -1;
     // TODO: Do something about vm->waitpid_lock
+
+    rb_vm_t *vm = GET_VM();
+    rb_native_mutex_lock(&vm->waitpid_lock);
+
     pid_t pid = start_process(cc_path, args);
+    mjit_add_waiting_pid(vm, pid);
+
+    rb_native_mutex_unlock(&vm->waitpid_lock);
+
     free(args);
     return pid;
 }

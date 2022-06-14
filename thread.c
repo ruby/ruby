@@ -2248,20 +2248,12 @@ rb_threadptr_execute_interrupts(rb_thread_t *th, int blocking_timing)
 	int pending_interrupt;
 	int trap_interrupt;
         int terminate_interrupt;
-        int mjit_sigchld_interrupt;
 
 	timer_interrupt = interrupt & TIMER_INTERRUPT_MASK;
 	pending_interrupt = interrupt & PENDING_INTERRUPT_MASK;
 	postponed_job_interrupt = interrupt & POSTPONED_JOB_INTERRUPT_MASK;
 	trap_interrupt = interrupt & TRAP_INTERRUPT_MASK;
         terminate_interrupt = interrupt & TERMINATE_INTERRUPT_MASK; // request from other ractors
-        mjit_sigchld_interrupt = interrupt & MJIT_SIGCHLD_INTERRUPT_MASK;
-
-#if USE_MJIT
-        if (mjit_sigchld_interrupt) {
-            mjit_check_process();
-        }
-#endif
 
         if (interrupt & VM_BARRIER_INTERRUPT_MASK) {
             RB_VM_LOCK_ENTER();
@@ -2290,7 +2282,16 @@ rb_threadptr_execute_interrupts(rb_thread_t *th, int blocking_timing)
 	    th->status = prev_status;
 	}
 
-	/* exception from another thread */
+#if USE_MJIT
+        extern bool mjit_flag;
+        extern int mjit_status;
+        if (mjit_flag) {
+            mjit_flag = 0;
+            mjit_notify_waitpid(mjit_status);
+        }
+#endif
+
+        /* exception from another thread */
 	if (pending_interrupt && threadptr_pending_interrupt_active_p(th)) {
 	    VALUE err = rb_threadptr_pending_interrupt_deque(th, blocking_timing ? INTERRUPT_ON_BLOCKING : INTERRUPT_NONE);
             RUBY_DEBUG_LOG("err:%"PRIdVALUE"\n", err);

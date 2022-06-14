@@ -1938,7 +1938,6 @@ enum {
 #define RUBY_VM_SET_TRAP_INTERRUPT(ec)		ATOMIC_OR((ec)->interrupt_flag, TRAP_INTERRUPT_MASK)
 #define RUBY_VM_SET_TERMINATE_INTERRUPT(ec)     ATOMIC_OR((ec)->interrupt_flag, TERMINATE_INTERRUPT_MASK)
 #define RUBY_VM_SET_VM_BARRIER_INTERRUPT(ec)    ATOMIC_OR((ec)->interrupt_flag, VM_BARRIER_INTERRUPT_MASK)
-#define RUBY_VM_SET_MJIT_SIGCHLD_INTERRUPT(ec)  ATOMIC_OR((ec)->interrupt_flag, MJIT_SIGCHLD_INTERRUPT_MASK)
 #define RUBY_VM_INTERRUPTED(ec)			((ec)->interrupt_flag & ~(ec)->interrupt_mask & \
 						 (PENDING_INTERRUPT_MASK|TRAP_INTERRUPT_MASK))
 
