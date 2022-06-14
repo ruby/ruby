@@ -183,6 +183,13 @@ impl Assembler
 
                 Op::Je => je_label(cb, insn.target.unwrap().unwrap_label_idx()),
 
+                // Atomically increment a counter at a given memory location
+                Op::IncrCounter => {
+                    assert!(matches!(insn.opnds[0], Opnd::Mem(_)));
+                    write_lock_prefix(cb);
+                    add(cb, insn.opnds[0].into(), insn.opnds[1].into());
+                },
+
                 Op::Breakpoint => int3(cb),
 
                 _ => panic!("unsupported instruction passed to x86 backend: {:?}", insn.op)

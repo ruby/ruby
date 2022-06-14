@@ -97,6 +97,9 @@ pub enum Op
     // C function return
     CRet,
 
+    // Atomically increment a counter
+    IncrCounter,
+
     // Trigger a debugger breakpoint
     Breakpoint,
 }
@@ -687,6 +690,7 @@ def_push_2_opnd_no_out!(mov, Op::Mov);
 def_push_2_opnd_no_out!(cmp, Op::Cmp);
 def_push_2_opnd_no_out!(test, Op::Test);
 def_push_0_opnd_no_out!(breakpoint, Op::Breakpoint);
+def_push_2_opnd_no_out!(incr_counter, Op::IncrCounter);
 
 // NOTE: these methods are temporary and will likely move
 // to context.rs later
