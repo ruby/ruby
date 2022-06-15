@@ -74,7 +74,7 @@ impl Assembler
     {
         let live_ranges: Vec<usize> = std::mem::take(&mut self.live_ranges);
 
-        self.transform_insns(|asm, index, op, opnds, target| {
+        self.forward_pass(|asm, index, op, opnds, target| {
             match op {
                 Op::Add | Op::Sub | Op::And | Op::Not => {
                     match opnds[0] {

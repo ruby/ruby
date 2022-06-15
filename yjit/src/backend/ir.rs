@@ -328,7 +328,7 @@ impl Assembler
     }
 
     /// Transform input instructions, consumes the input assembler
-    pub(super) fn transform_insns<F>(mut self, mut map_insn: F) -> Assembler
+    pub(super) fn forward_pass<F>(mut self, mut map_insn: F) -> Assembler
         where F: FnMut(&mut Assembler, usize, Op, Vec<Opnd>, Option<Target>)
     {
         let mut asm = Assembler {
@@ -400,7 +400,7 @@ impl Assembler
             opnds.into_iter().map(|opnd| map_opnd(opnd, asm)).collect()
         }
 
-        self.transform_insns(|asm, _, op, opnds, target| {
+        self.forward_pass(|asm, _, op, opnds, target| {
             // Load heap object operands into registers because most
             // instructions can't directly work with 64-bit constants
             let opnds = load_gc_opnds(op, opnds, asm);
@@ -478,7 +478,7 @@ impl Assembler
 
         let live_ranges: Vec<usize> = std::mem::take(&mut self.live_ranges);
 
-        let asm = self.transform_insns(|asm, index, op, opnds, target| {
+        let asm = self.forward_pass(|asm, index, op, opnds, target| {
             // Check if this is the last instruction that uses an operand that
             // spans more than one instruction. In that case, return the
             // allocated register to the pool.
