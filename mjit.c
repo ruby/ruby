@@ -29,8 +29,6 @@
 
 #include "mjit_worker.c"
 
-extern int rb_thread_create_mjit_thread(void (*worker_func)(void));
-
 // Return an unique file name in /tmp with PREFIX and SUFFIX and
 // number ID.  Use getpid if ID == 0.  The return file name exists
 // until the next function call.
