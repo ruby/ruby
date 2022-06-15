@@ -780,6 +780,20 @@ AS_IF([test "$GCC" = yes], [
 	RUBY_APPEND_OPTION(LDFLAGS, $stack_protector)
     ])
 
+    # aarch64 branch protection
+    AS_CASE(["$target_cpu"], [aarch64], [
+        branch_protection=no
+        RUBY_TRY_CFLAGS(-mbranch-protection=pac-ret,[branch_protection=yes])
+        AS_IF([test "x$branch_protection" = xyes], [
+            RUBY_APPEND_OPTION(XCFLAGS, -mbranch-protection=pac-ret)
+        ],
+        [
+            RUBY_TRY_CFLAGS(-msign-return-address=all, [
+                RUBY_APPEND_OPTION(XCFLAGS, -msign-return-address=all)
+            ])
+        ])
+    ])
+
     AS_CASE("${compress_debug_sections:-zlib}",
     [none|no], [], [
     RUBY_TRY_LDFLAGS(${linker_flag}--compress-debug-sections=${compress_debug_sections:-zlib},
