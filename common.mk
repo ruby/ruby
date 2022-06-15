@@ -1054,6 +1054,7 @@ BUILTIN_RB_SRCS = \
 		$(srcdir)/numeric.rb \
 		$(srcdir)/io.rb \
 		$(srcdir)/marshal.rb \
+		$(srcdir)/mjit.rb \
 		$(srcdir)/pack.rb \
 		$(srcdir)/trace_point.rb \
 		$(srcdir)/warning.rb \
@@ -9430,6 +9431,7 @@ miniinit.$(OBJEXT): {$(VPATH)}mini_builtin.c
 miniinit.$(OBJEXT): {$(VPATH)}miniinit.c
 miniinit.$(OBJEXT): {$(VPATH)}miniprelude.c
 miniinit.$(OBJEXT): {$(VPATH)}missing.h
+miniinit.$(OBJEXT): {$(VPATH)}mjit.rb
 miniinit.$(OBJEXT): {$(VPATH)}nilclass.rb
 miniinit.$(OBJEXT): {$(VPATH)}node.h
 miniinit.$(OBJEXT): {$(VPATH)}numeric.rb
@@ -9652,6 +9654,8 @@ mjit.$(OBJEXT): {$(VPATH)}method.h
 mjit.$(OBJEXT): {$(VPATH)}missing.h
 mjit.$(OBJEXT): {$(VPATH)}mjit.c
 mjit.$(OBJEXT): {$(VPATH)}mjit.h
+mjit.$(OBJEXT): {$(VPATH)}mjit.rb
+mjit.$(OBJEXT): {$(VPATH)}mjit.rbinc
 mjit.$(OBJEXT): {$(VPATH)}mjit_config.h
 mjit.$(OBJEXT): {$(VPATH)}mjit_worker.c
 mjit.$(OBJEXT): {$(VPATH)}node.h

@@ -375,10 +375,12 @@ mjit_notify_waitpid(int status)
 
 // Return true if given ISeq body should be compiled by MJIT
 static inline int
-mjit_target_iseq_p(struct rb_iseq_constant_body *body)
+mjit_target_iseq_p(const rb_iseq_t *iseq)
 {
+    struct rb_iseq_constant_body *body = ISEQ_BODY(iseq);
     return (body->type == ISEQ_TYPE_METHOD || body->type == ISEQ_TYPE_BLOCK)
-        && !body->builtin_inline_p;
+        && !body->builtin_inline_p
+        && strcmp("<internal:mjit>", RSTRING_PTR(rb_iseq_path(iseq)));
 }
 
 // If recompile_p is true, the call is initiated by mjit_recompile.
@@ -389,7 +391,7 @@ mjit_add_iseq_to_process(const rb_iseq_t *iseq, const struct rb_mjit_compile_inf
     // TODO: Support non-main Ractors
     if (!mjit_enabled || pch_status == PCH_FAILED || !rb_ractor_main_p())
         return;
-    if (!mjit_target_iseq_p(ISEQ_BODY(iseq))) {
+    if (!mjit_target_iseq_p(iseq)) {
         ISEQ_BODY(iseq)->jit_func = (mjit_func_t)NOT_COMPILED_JIT_ISEQ_FUNC; // skip mjit_wait
         return;
     }
@@ -1103,5 +1105,7 @@ mjit_mark_cc_entries(const struct rb_iseq_constant_body *const body)
         }
     }
 }
+
+#include "mjit.rbinc"
 
 #endif // USE_MJIT

@@ -101,6 +101,9 @@ rb_call_builtin_inits(void)
     BUILTIN(yjit);
     BUILTIN(nilclass);
     BUILTIN(marshal);
+#if USE_MJIT
+    BUILTIN(mjit);
+#endif
     Init_builtin_prelude();
 }
 #undef CALL
