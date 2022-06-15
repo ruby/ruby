@@ -134,6 +134,10 @@ impl Assembler
                     add(cb, insn.opnds[0].into(), insn.opnds[1].into())
                 },
 
+                Op::And => {
+                    and(cb, insn.opnds[0].into(), insn.opnds[1].into())
+                },
+
                 Op::Store => mov(cb, insn.opnds[0].into(), insn.opnds[1].into()),
 
                 // This assumes only load instructions can contain references to GC'd Value operands
