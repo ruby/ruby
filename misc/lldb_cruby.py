@@ -716,6 +716,24 @@ def rb_id2str(debugger, command, result, internal_dict):
         id_str = rb_ary_entry(target, ary, pos, result)
         lldb_inspect(debugger, target, result, id_str)
 
+def rb_rclass_ext(debugger, command, result, internal_dict):
+    if not ('RUBY_Qfalse' in globals()):
+        lldb_init(debugger)
+
+    target = debugger.GetSelectedTarget()
+    process = target.GetProcess()
+    thread = process.GetSelectedThread()
+    frame = thread.GetSelectedFrame()
+
+    uintptr_t = target.FindFirstType("uintptr_t")
+    rclass_t = target.FindFirstType("struct RClass")
+    rclass_ext_t = target.FindFirstType("rb_classext_t")
+
+    rclass_addr = target.EvaluateExpression(command).Cast(uintptr_t)
+    rclass_ext_addr = (rclass_addr.GetValueAsUnsigned() + rclass_t.GetByteSize())
+    debugger.HandleCommand("p *(rb_classext_t *)%0#x" % rclass_ext_addr)
+
+
 def __lldb_init_module(debugger, internal_dict):
     debugger.HandleCommand("command script add -f lldb_cruby.lldb_rp rp")
     debugger.HandleCommand("command script add -f lldb_cruby.count_objects rb_count_objects")
@@ -727,6 +745,7 @@ def __lldb_init_module(debugger, internal_dict):
     debugger.HandleCommand("command script add -f lldb_cruby.dump_page dump_page")
     debugger.HandleCommand("command script add -f lldb_cruby.dump_page_rvalue dump_page_rvalue")
     debugger.HandleCommand("command script add -f lldb_cruby.rb_id2str rb_id2str")
+    debugger.HandleCommand("command script add -f lldb_cruby.rb_rclass_ext rclass_ext")
 
     lldb_init(debugger)
     print("lldb scripts for ruby has been installed.")
