@@ -164,7 +164,7 @@ struct rb_mjit_unit {
 #endif
     // Only used by unload_units. Flag to check this unit is currently on stack or not.
     bool used_code_p;
-    // True if it's a unite for JIT compaction
+    // True if it's a unit for JIT compaction
     bool compact_p;
     // mjit_compile's optimization switches
     struct rb_mjit_compile_info compile_info;
@@ -227,10 +227,6 @@ static rb_nativethread_cond_t mjit_client_wakeup;
 static rb_nativethread_cond_t mjit_worker_wakeup;
 // A thread conditional to wake up workers if at the end of GC.
 static rb_nativethread_cond_t mjit_gc_wakeup;
-// Greater than 0 when GC is working.
-static int in_gc = 0;
-// True when JIT is working.
-static bool in_jit = false;
 // The times when unload_units is requested. unload_units is called after some requests.
 static int unload_requests = 0;
 // The total number of unloaded units.
@@ -497,12 +493,6 @@ real_ms_time(void)
 static struct rb_mjit_unit *
 get_from_list(struct rb_mjit_unit_list *list)
 {
-    while (in_gc) {
-        verbose(3, "Waiting wakeup from GC");
-        rb_native_cond_wait(&mjit_gc_wakeup, &mjit_engine_mutex);
-    }
-    in_jit = true; // Lock GC
-
     // Find iseq with max total_calls
     struct rb_mjit_unit *unit = NULL, *next, *best = NULL;
     ccan_list_for_each_safe(&list->head, unit, next, unode) {
@@ -516,10 +506,6 @@ get_from_list(struct rb_mjit_unit_list *list)
             best = unit;
         }
     }
-
-    in_jit = false; // Unlock GC
-    verbose(3, "Sending wakeup signal to client in a mjit-worker for GC");
-    rb_native_cond_signal(&mjit_client_wakeup);
 
     if (best) {
         remove_from_list(best, list);
@@ -872,16 +858,13 @@ make_pch(void)
     char **args = form_args(4, cc_common_args, CC_CODEFLAG_ARGS, cc_added_args, rest_args);
     if (args == NULL) {
         mjit_warning("making precompiled header failed on forming args");
-        CRITICAL_SECTION_START(3, "in make_pch");
         pch_status = PCH_FAILED;
-        CRITICAL_SECTION_FINISH(3, "in make_pch");
         return;
     }
 
     int exit_code = exec_process(cc_path, args);
     free(args);
 
-    CRITICAL_SECTION_START(3, "in make_pch");
     if (exit_code == 0) {
         pch_status = PCH_SUCCESS;
     }
@@ -889,9 +872,6 @@ make_pch(void)
         mjit_warning("Making precompiled header failed on compilation. Stopping MJIT worker...");
         pch_status = PCH_FAILED;
     }
-    /* wakeup `mjit_finish` */
-    // rb_native_cond_broadcast(&mjit_pch_wakeup);
-    CRITICAL_SECTION_FINISH(3, "in make_pch");
 }
 
 static pid_t
@@ -910,7 +890,6 @@ start_compiling_c_to_so(const char *c_file, const char *so_file)
     char **args = form_args(7, CC_LDSHARED_ARGS, CC_CODEFLAG_ARGS, cc_added_args,
                             so_args, CC_LIBS, CC_DLDFLAGS_ARGS, CC_LINKER_ARGS);
     if (args == NULL) return -1;
-    // TODO: Do something about vm->waitpid_lock
 
     rb_vm_t *vm = GET_VM();
     rb_native_mutex_lock(&vm->waitpid_lock);
@@ -943,32 +922,6 @@ mjit_compact(char* c_file)
 
     compile_prelude(f);
 
-    // wait until mjit_gc_exit_hook is called
-    CRITICAL_SECTION_START(3, "before mjit_compile to wait GC finish");
-    while (in_gc) {
-        verbose(3, "Waiting wakeup from GC");
-        rb_native_cond_wait(&mjit_gc_wakeup, &mjit_engine_mutex);
-    }
-    // We need to check again here because we could've waited on GC above
-    bool iseq_gced = false;
-    struct rb_mjit_unit *child_unit = 0, *next;
-    ccan_list_for_each_safe(&active_units.head, child_unit, next, unode) {
-        if (child_unit->iseq == NULL) { // ISeq is GC-ed
-            iseq_gced = true;
-            verbose(1, "JIT compaction: A method for JIT code u%d is obsoleted. Compaction will be skipped.", child_unit->id);
-            remove_from_list(child_unit, &active_units);
-            free_unit(child_unit); // unload it without waiting for throttled unload_units to retry compaction quickly
-        }
-    }
-    in_jit = !iseq_gced;
-    CRITICAL_SECTION_FINISH(3, "before mjit_compile to wait GC finish");
-    if (!in_jit) {
-        fclose(f);
-        if (!mjit_opts.save_temps)
-            remove_file(c_file);
-        return false;
-    }
-
     // This entire loop lock GC so that we do not need to consider a case that
     // ISeq is GC-ed in a middle of re-compilation. It takes 3~4ms with 100 methods
     // on my machine. It's not too bad compared to compilation time of C (7200~8000ms),
@@ -977,10 +930,9 @@ mjit_compact(char* c_file)
     // TODO: Consider using a more granular lock after we implement inlining across
     // compacted functions (not done yet).
     bool success = true;
+    struct rb_mjit_unit *child_unit = 0;
     ccan_list_for_each(&active_units.head, child_unit, unode) {
-        CRITICAL_SECTION_START(3, "before set_compiling_iseqs");
         success &= set_compiling_iseqs(child_unit->iseq);
-        CRITICAL_SECTION_FINISH(3, "after set_compiling_iseqs");
         if (!success) continue;
 
         char funcname[MAXPATHLEN];
@@ -997,17 +949,8 @@ mjit_compact(char* c_file)
         fprintf(f, "\n/* %s%s%s:%ld */\n", iseq_label, sep, iseq_path, iseq_lineno);
         success &= mjit_compile(f, child_unit->iseq, funcname, child_unit->id);
 
-        CRITICAL_SECTION_START(3, "before compiling_iseqs free");
         free_compiling_iseqs();
-        CRITICAL_SECTION_FINISH(3, "after compiling_iseqs free");
     }
-
-    // release blocking mjit_gc_start_hook
-    CRITICAL_SECTION_START(3, "after mjit_compile to wakeup client for GC");
-    in_jit = false;
-    verbose(3, "Sending wakeup signal to client in a mjit-worker for GC");
-    rb_native_cond_signal(&mjit_client_wakeup);
-    CRITICAL_SECTION_FINISH(3, "in worker to wakeup client for GC");
 
     fclose(f);
     return success;
@@ -1052,7 +995,6 @@ load_compact_funcs_from_so(struct rb_mjit_unit *unit, char *c_file, char *so_fil
     if (!mjit_opts.save_temps)
         remove_so_file(so_file, unit);
 
-    CRITICAL_SECTION_START(3, "in compact_all_jit_code to read list");
     ccan_list_for_each(&active_units.head, cur, unode) {
         void *func;
         char funcname[MAXPATHLEN];
@@ -1068,7 +1010,6 @@ load_compact_funcs_from_so(struct rb_mjit_unit *unit, char *c_file, char *so_fil
             MJIT_ATOMIC_SET(ISEQ_BODY(cur->iseq)->jit_func, (mjit_func_t)func);
         }
     }
-    CRITICAL_SECTION_FINISH(3, "in compact_all_jit_code to read list");
     verbose(1, "JIT compaction (%.1fms): Compacted %d methods %s -> %s", end_time - current_cc_ms, active_units.length, c_file, so_file);
 }
 #endif // USE_JIT_COMPACTION
@@ -1157,8 +1098,7 @@ start_mjit_compile(struct rb_mjit_unit *unit)
     // print #include of MJIT header, etc.
     compile_prelude(f);
 
-    // TODO: handle stuff, e.g. clean up C file
-    // TODO: Or, maybe this is not needed if you are synchronously running this
+    // This is no longer necessary. TODO: Just reference the ISeq directly in the compiler.
     if (!set_compiling_iseqs(unit->iseq)) return -1;
 
     // To make MJIT worker thread-safe against GC.compact, copy ISeq values while `in_jit` is true.
@@ -1175,13 +1115,7 @@ start_mjit_compile(struct rb_mjit_unit *unit)
     fprintf(f, "/* %s@%s:%ld */\n\n", iseq_label, iseq_path, iseq_lineno);
     bool success = mjit_compile(f, unit->iseq, funcname, unit->id);
 
-    // release blocking mjit_gc_start_hook
-    CRITICAL_SECTION_START(3, "after mjit_compile to wakeup client for GC");
     free_compiling_iseqs();
-    in_jit = false;
-    verbose(3, "Sending wakeup signal to client in a mjit-worker for GC");
-    rb_native_cond_signal(&mjit_client_wakeup);
-    CRITICAL_SECTION_FINISH(3, "in worker to wakeup client for GC");
 
     fclose(f);
     if (!success) {
@@ -1191,13 +1125,10 @@ start_mjit_compile(struct rb_mjit_unit *unit)
         return -1;
     }
 
-    // TODO: Keep time with real_ms_time()
-    // TODO: Just finish compilation for mswin here
     return start_compiling_c_to_so(c_file, so_file);
 }
 
 #ifdef _WIN32
-// TODO: Get rid of this
 // Compile ISeq in UNIT and return function pointer of JIT-ed code.
 // It may return NOT_COMPILED_JIT_ISEQ_FUNC if something went wrong.
 static mjit_func_t
@@ -1223,18 +1154,7 @@ convert_unit_to_func(struct rb_mjit_unit *unit)
     // print #include of MJIT header, etc.
     compile_prelude(f);
 
-    // wait until mjit_gc_exit_hook is called
-    CRITICAL_SECTION_START(3, "before mjit_compile to wait GC finish");
-    while (in_gc) {
-        verbose(3, "Waiting wakeup from GC");
-        rb_native_cond_wait(&mjit_gc_wakeup, &mjit_engine_mutex);
-    }
-    // We need to check again here because we could've waited on GC above
-    in_jit = (unit->iseq != NULL);
-    if (in_jit)
-        in_jit &= set_compiling_iseqs(unit->iseq);
-    CRITICAL_SECTION_FINISH(3, "before mjit_compile to wait GC finish");
-    if (!in_jit) {
+    if (!set_compiling_iseqs(unit->iseq)) {
         fclose(f);
         if (!mjit_opts.save_temps)
             remove_file(c_file);
@@ -1256,12 +1176,7 @@ convert_unit_to_func(struct rb_mjit_unit *unit)
     bool success = mjit_compile(f, unit->iseq, funcname, unit->id);
 
     // release blocking mjit_gc_start_hook
-    CRITICAL_SECTION_START(3, "after mjit_compile to wakeup client for GC");
     free_compiling_iseqs();
-    in_jit = false;
-    verbose(3, "Sending wakeup signal to client in a mjit-worker for GC");
-    rb_native_cond_signal(&mjit_client_wakeup);
-    CRITICAL_SECTION_FINISH(3, "in worker to wakeup client for GC");
 
     fclose(f);
     if (!success) {

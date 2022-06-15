@@ -2233,6 +2233,12 @@ threadptr_get_interrupts(rb_thread_t *th)
     return interrupt & (rb_atomic_t)~ec->interrupt_mask;
 }
 
+#if USE_MJIT
+// process.c
+extern bool mjit_waitpid_finished;
+extern int mjit_waitpid_status;
+#endif
+
 MJIT_FUNC_EXPORTED int
 rb_threadptr_execute_interrupts(rb_thread_t *th, int blocking_timing)
 {
@@ -2280,18 +2286,18 @@ rb_threadptr_execute_interrupts(rb_thread_t *th, int blocking_timing)
 		ret |= rb_signal_exec(th, sig);
 	    }
 	    th->status = prev_status;
-	}
 
 #if USE_MJIT
-        extern bool mjit_flag;
-        extern int mjit_status;
-        if (mjit_flag) {
-            mjit_flag = 0;
-            mjit_notify_waitpid(mjit_status);
-        }
+            // Handle waitpid_signal for MJIT issued by ruby_sigchld_handler. This needs to be done
+            // outside ruby_sigchld_handler to avoid recursively relying on the SIGCHLD handler.
+            if (mjit_waitpid_finished) {
+                mjit_waitpid_finished = false;
+                mjit_notify_waitpid(mjit_waitpid_status);
+            }
 #endif
+	}
 
-        /* exception from another thread */
+	/* exception from another thread */
 	if (pending_interrupt && threadptr_pending_interrupt_active_p(th)) {
 	    VALUE err = rb_threadptr_pending_interrupt_deque(th, blocking_timing ? INTERRUPT_ON_BLOCKING : INTERRUPT_NONE);
             RUBY_DEBUG_LOG("err:%"PRIdVALUE"\n", err);

@@ -44,7 +44,6 @@
 #include "ruby_atomic.h"
 #include "vm_core.h"
 #include "ractor_core.h"
-#include "mjit.h"
 
 #ifdef NEED_RUBY_ATOMIC_OPS
 rb_atomic_t
