@@ -35,6 +35,7 @@ int rb_thread_to_be_killed(VALUE thread);
 void rb_mutex_allow_trap(VALUE self, int val);
 VALUE rb_uninterruptible(VALUE (*b_proc)(VALUE), VALUE data);
 VALUE rb_mutex_owned_p(VALUE self);
+VALUE rb_exec_recursive_outer_mid(VALUE (*f)(VALUE g, VALUE h, int r), VALUE g, VALUE h, ID mid);
 
 int rb_thread_wait_for_single_fd(int fd, int events, struct timeval * timeout);
 

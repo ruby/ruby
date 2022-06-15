@@ -35,6 +35,7 @@
 #include "internal/object.h"
 #include "internal/proc.h"
 #include "internal/symbol.h"
+#include "internal/thread.h"
 #include "internal/time.h"
 #include "internal/vm.h"
 #include "probes.h"
