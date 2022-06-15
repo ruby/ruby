@@ -22,7 +22,6 @@ concurrency:
 env:
   default_cc: clang-14
   append_cc: ''
-  crosshost: ''
 
   # -O1 is faster than -O3 in our tests... Majority of time are consumed trying
   # to optimize binaries.  Also GitHub Actions run on relatively modern CPUs
@@ -63,61 +62,62 @@ jobs:
         env:
           - {}
         entry:
-          - { key: default_cc, name: gcc-12,    value: gcc-12,    container: gcc-12 }
-          - { key: default_cc, name: gcc-11,    value: gcc-11,    container: gcc-11 }
-          - { key: default_cc, name: gcc-10,    value: gcc-10,    container: gcc-10 }
-          - { key: default_cc, name: gcc-9,     value: gcc-9,     container: gcc-9 }
-          - { key: default_cc, name: gcc-8,     value: gcc-8,     container: gcc-8 }
-          - { key: default_cc, name: gcc-7,     value: gcc-7,     container: gcc-7 }
-          - { key: default_cc, name: gcc-6,     value: gcc-6,     container: gcc-6 }
-          - { key: default_cc, name: gcc-5,     value: gcc-5,     container: gcc-5 }
-          - { key: default_cc, name: gcc-4.8,   value: gcc-4.8,   container: gcc-4.8 }
-          - key: default_cc
-            name: 'gcc-11 LTO'
-            value: 'gcc-11 -flto=auto -ffat-lto-objects'
-            container: gcc-11
-            configure_append: '--disable-shared optflags=-O2'
-            # check: true
-          - key: default_cc
-            name: 'gcc-11 annocheck'
-            # Minimal flags to pass the check.
-            value: 'gcc-11 -O2 -fcf-protection -Wa,--generate-missing-build-notes=yes'
+          - { name: gcc-12,    env: { default_cc: gcc-12 } }
+          - { name: gcc-11,    env: { default_cc: gcc-11 } }
+          - { name: gcc-10,    env: { default_cc: gcc-10 } }
+          - { name: gcc-9,     env: { default_cc: gcc-9 } }
+          - { name: gcc-8,     env: { default_cc: gcc-8 } }
+          - { name: gcc-7,     env: { default_cc: gcc-7 } }
+          - { name: gcc-6,     env: { default_cc: gcc-6 } }
+          - { name: gcc-5,     env: { default_cc: gcc-5 } }
+          - { name: gcc-4.8,   env: { default_cc: gcc-4.8 } }
+          - name: 'gcc-11 LTO'
             container: gcc-11
             env:
+              default_cc: 'gcc-11 -flto=auto -ffat-lto-objects'
+              optflags: '-O2'
+            shared: disable
+            # check: true
+          - name: 'gcc-11 annocheck'
+            container: gcc-11
+            env:
+              # Minimal flags to pass the check.
+              default_cc: 'gcc-11 -O2 -fcf-protection -Wa,--generate-missing-build-notes=yes'
               append_configure: 'LDFLAGS=-Wl,-z,now'
               # FIXME: Drop skipping options
               # https://bugs.ruby-lang.org/issues/18061
               # https://sourceware.org/annobin/annobin.html/Test-pie.html
               TEST_ANNOCHECK_OPTS: "--skip-pie"
             check: true
-          - { key: default_cc, name: clang-15,  value: clang-15,  container: clang-15 }
-          - { key: default_cc, name: clang-14,  value: clang-14,  container: clang-14 }
-          - { key: default_cc, name: clang-13,  value: clang-13,  container: clang-13 }
-          - { key: default_cc, name: clang-12,  value: clang-12,  container: clang-12 }
-          - { key: default_cc, name: clang-11,  value: clang-11,  container: clang-11 }
-          - { key: default_cc, name: clang-10,  value: clang-10,  container: clang-10 }
-          - { key: default_cc, name: clang-9,   value: clang-9,   container: clang-9 }
-          - { key: default_cc, name: clang-8,   value: clang-8,   container: clang-8 }
-          - { key: default_cc, name: clang-7,   value: clang-7,   container: clang-7 }
-          - { key: default_cc, name: clang-6.0, value: clang-6.0, container: clang-6.0 }
-          - { key: default_cc, name: clang-5.0, value: clang-5.0, container: clang-5.0 }
-          - { key: default_cc, name: clang-4.0, value: clang-4.0, container: clang-4.0 }
-          - { key: default_cc, name: clang-3.9, value: clang-3.9, container: clang-3.9 }
-          - key: default_cc
-            name: 'clang-14 LTO'
-            value: 'clang-14 -flto=auto'
+          - { name: clang-15,  env: { default_cc: clang-15 } }
+          - { name: clang-14,  env: { default_cc: clang-14 } }
+          - { name: clang-13,  env: { default_cc: clang-13 } }
+          - { name: clang-12,  env: { default_cc: clang-12 } }
+          - { name: clang-11,  env: { default_cc: clang-11 } }
+          - { name: clang-10,  env: { default_cc: clang-10 } }
+          - { name: clang-9,   env: { default_cc: clang-9 } }
+          - { name: clang-8,   env: { default_cc: clang-8 } }
+          - { name: clang-7,   env: { default_cc: clang-7 } }
+          - { name: clang-6.0, env: { default_cc: clang-6.0 } }
+          - { name: clang-5.0, env: { default_cc: clang-5.0 } }
+          - { name: clang-4.0, env: { default_cc: clang-4.0 } }
+          - { name: clang-3.9, env: { default_cc: clang-3.9 } }
+          - name: 'clang-14 LTO'
             container: clang-14
-            configure_append: '--disable-shared optflags=-O2'
+            env:
+              default_cc: 'clang-14 -flto=auto'
+              optflags: '-O2'
+            shared: disable
             # check: true
 
-#         - { key: crosshost, name: aarch64-linux-gnu,     value: aarch64-linux-gnu, container: crossbuild-essential-arm64 }
-#         - { key: crosshost, name: arm-linux-gnueabi,     value: arm-linux-gnueabi }
-#         - { key: crosshost, name: arm-linux-gnueabihf,   value: arm-linux-gnueabihf }
-#         - { key: crosshost, name: i686-w64-mingw32,      value: i686-w64-mingw32 }
-#         - { key: crosshost, name: powerpc-linux-gnu,     value: powerpc-linux-gnu }
-#         - { key: crosshost, name: powerpc64le-linux-gnu, value: powerpc64le-linux-gnu, container: crossbuild-essential-ppc64el }
-#         - { key: crosshost, name: s390x-linux-gnu,       value: s390x-linux-gnu, container: crossbuild-essential-s390x }
-#         - { key: crosshost, name: x86_64-w64-mingw32,    value: x86_64-w64-mingw32, container: mingw-w64 }
+#         - { name: aarch64-linux-gnu,     crosshost: aarch64-linux-gnu, container: crossbuild-essential-arm64 }
+#         - { name: arm-linux-gnueabi,     crosshost: arm-linux-gnueabi }
+#         - { name: arm-linux-gnueabihf,   crosshost: arm-linux-gnueabihf }
+#         - { name: i686-w64-mingw32,      crosshost: i686-w64-mingw32 }
+#         - { name: powerpc-linux-gnu,     crosshost: powerpc-linux-gnu }
+#         - { name: powerpc64le-linux-gnu, crosshost: powerpc64le-linux-gnu, container: crossbuild-essential-ppc64el }
+#         - { name: s390x-linux-gnu,       crosshost: s390x-linux-gnu, container: crossbuild-essential-s390x }
+#         - { name: x86_64-w64-mingw32,    crosshost: x86_64-w64-mingw32, container: mingw-w64 }
 
           # -Wno-strict-prototypes is necessary with current clang-15 since
           # older autoconf generate functions without prototype and -pedantic
@@ -125,92 +125,92 @@ jobs:
           # warning generates a lot of noise from use of ANYARGS in
           # rb_define_method() and friends.
           # See: https://github.com/llvm/llvm-project/commit/11da1b53d8cd3507959022cd790d5a7ad4573d94
-          - { key: append_cc, name: c99,   value: '-std=c99   -Werror=pedantic -pedantic-errors -Wno-strict-prototypes' }
-#         - { key: append_cc, name: c11,   value: '-std=c11   -Werror=pedantic -pedantic-errors -Wno-strict-prototypes' }
-#         - { key: append_cc, name: c17,   value: '-std=c17   -Werror=pedantic -pedantic-errors -Wno-strict-prototypes' }
-          - { key: append_cc, name: c2x,   value: '-std=c2x   -Werror=pedantic -pedantic-errors -Wno-strict-prototypes' }
-          - { key: CXXFLAGS,  name: c++98, value: '-std=c++98 -Werror=pedantic -pedantic-errors -Wno-c++11-long-long' }
-#         - { key: CXXFLAGS,  name: c++11, value: '-std=c++11 -Werror=pedantic -pedantic-errors -Wno-c++11-long-long' }
-#         - { key: CXXFLAGS,  name: c++14, value: '-std=c++14 -Werror=pedantic -pedantic-errors -Wno-c++11-long-long' }
-#         - { key: CXXFLAGS,  name: c++17, value: '-std=c++17 -Werror=pedantic -pedantic-errors -Wno-c++11-long-long' }
-          - { key: CXXFLAGS,  name: c++2a, value: '-std=c++2a -Werror=pedantic -pedantic-errors -Wno-c++11-long-long' }
+          - { name: c99,   env: { append_cc: '-std=c99   -Werror=pedantic -pedantic-errors -Wno-strict-prototypes' } }
+#         - { name: c11,   env: { append_cc: '-std=c11   -Werror=pedantic -pedantic-errors -Wno-strict-prototypes' } }
+#         - { name: c17,   env: { append_cc: '-std=c17   -Werror=pedantic -pedantic-errors -Wno-strict-prototypes' } }
+          - { name: c2x,   env: { append_cc: '-std=c2x   -Werror=pedantic -pedantic-errors -Wno-strict-prototypes' } }
+          - { name: c++98, env: { CXXFLAGS: '-std=c++98 -Werror=pedantic -pedantic-errors -Wno-c++11-long-long' } }
+#         - { name: c++11, env: { CXXFLAGS: '-std=c++11 -Werror=pedantic -pedantic-errors -Wno-c++11-long-long' } }
+#         - { name: c++14, env: { CXXFLAGS: '-std=c++14 -Werror=pedantic -pedantic-errors -Wno-c++11-long-long' } }
+#         - { name: c++17, env: { CXXFLAGS: '-std=c++17 -Werror=pedantic -pedantic-errors -Wno-c++11-long-long' } }
+          - { name: c++2a, env: { CXXFLAGS: '-std=c++2a -Werror=pedantic -pedantic-errors -Wno-c++11-long-long' } }
 
-          - { key: optflags, name: '-O0', value: '-O0 -march=x86-64 -mtune=generic' }
-#         - { key: optflags, name: '-O3', value: '-O3 -march=x86-64 -mtune=generic', check: true }
+          - { name: '-O0', env: { optflags: '-O0 -march=x86-64 -mtune=generic' } }
+#         - { name: '-O3', env: { optflags: '-O3 -march=x86-64 -mtune=generic' }, check: true }
 
-          - { key: append_configure, name: gmp,                  value: '--with-gmp' }
-          - { key: append_configure, name: jemalloc,             value: '--with-jemalloc' }
-          - { key: append_configure, name: valgrind,             value: '--with-valgrind' }
-          - { key: append_configure, name: 'coroutine=ucontext', value: '--with-coroutine=ucontext' }
-          - { key: append_configure, name: 'coroutine=pthread',  value: '--with-coroutine=pthread' }
-          - { key: append_configure, name: disable-jit-support,  value: '--disable-jit-support' }
-          - { key: append_configure, name: disable-dln,          value: '--disable-dln' }
-          - { key: append_configure, name: enable-mkmf-verbose,  value: '--enable-mkmf-verbose' }
-          - { key: append_configure, name: disable-rubygems,     value: '--disable-rubygems' }
+          - { name: gmp,                  env: { append_configure: '--with-gmp' } }
+          - { name: jemalloc,             env: { append_configure: '--with-jemalloc' } }
+          - { name: valgrind,             env: { append_configure: '--with-valgrind' } }
+          - { name: 'coroutine=ucontext', env: { append_configure: '--with-coroutine=ucontext' } }
+          - { name: 'coroutine=pthread',  env: { append_configure: '--with-coroutine=pthread' } }
+          - { name: disable-jit-support,  env: { append_configure: '--disable-jit-support' } }
+          - { name: disable-dln,          env: { append_configure: '--disable-dln' } }
+          - { name: enable-mkmf-verbose,  env: { append_configure: '--enable-mkmf-verbose' } }
+          - { name: disable-rubygems,     env: { append_configure: '--disable-rubygems' } }
 
-          - { key: cppflags, name: OPT_THREADED_CODE=1,            value: '-DOPT_THREADED_CODE=1' }
-          - { key: cppflags, name: OPT_THREADED_CODE=2,            value: '-DOPT_THREADED_CODE=2' }
-          - { key: cppflags, name: OPT_THREADED_CODE=3,            value: '-DOPT_THREADED_CODE=3' }
+          - { name: OPT_THREADED_CODE=1,            env: { cppflags: '-DOPT_THREADED_CODE=1' } }
+          - { name: OPT_THREADED_CODE=2,            env: { cppflags: '-DOPT_THREADED_CODE=2' } }
+          - { name: OPT_THREADED_CODE=3,            env: { cppflags: '-DOPT_THREADED_CODE=3' } }
 
-          - { key: cppflags, name: NDEBUG,                         value: '-DNDEBUG' }
-          - { key: cppflags, name: RUBY_DEBUG,                     value: '-DRUBY_DEBUG' }
-#         - { key: cppflags, name: ARRAY_DEBUG,                    value: '-DARRAY_DEBUG' }
-#         - { key: cppflags, name: BIGNUM_DEBUG,                   value: '-DBIGNUM_DEBUG' }
-#         - { key: cppflags, name: CCAN_LIST_DEBUG,                value: '-DCCAN_LIST_DEBUG' }
-#         - { key: cppflags, name: CPDEBUG=-1,                     value: '-DCPDEBUG=-1' }
-#         - { key: cppflags, name: ENC_DEBUG,                      value: '-DENC_DEBUG' }
-#         - { key: cppflags, name: GC_DEBUG,                       value: '-DGC_DEBUG' }
-#         - { key: cppflags, name: HASH_DEBUG,                     value: '-DHASH_DEBUG' }
-#         - { key: cppflags, name: ID_TABLE_DEBUG,                 value: '-DID_TABLE_DEBUG' }
-#         - { key: cppflags, name: RGENGC_DEBUG=-1,                value: '-DRGENGC_DEBUG=-1' }
-#         - { key: cppflags, name: SYMBOL_DEBUG,                   value: '-DSYMBOL_DEBUG' }
+          - { name: NDEBUG,                         env: { cppflags: '-DNDEBUG' } }
+          - { name: RUBY_DEBUG,                     env: { cppflags: '-DRUBY_DEBUG' } }
+#         - { name: ARRAY_DEBUG,                    env: { cppflags: '-DARRAY_DEBUG' } }
+#         - { name: BIGNUM_DEBUG,                   env: { cppflags: '-DBIGNUM_DEBUG' } }
+#         - { name: CCAN_LIST_DEBUG,                env: { cppflags: '-DCCAN_LIST_DEBUG' } }
+#         - { name: CPDEBUG=-1,                     env: { cppflags: '-DCPDEBUG=-1' } }
+#         - { name: ENC_DEBUG,                      env: { cppflags: '-DENC_DEBUG' } }
+#         - { name: GC_DEBUG,                       env: { cppflags: '-DGC_DEBUG' } }
+#         - { name: HASH_DEBUG,                     env: { cppflags: '-DHASH_DEBUG' } }
+#         - { name: ID_TABLE_DEBUG,                 env: { cppflags: '-DID_TABLE_DEBUG' } }
+#         - { name: RGENGC_DEBUG=-1,                env: { cppflags: '-DRGENGC_DEBUG=-1' } }
+#         - { name: SYMBOL_DEBUG,                   env: { cppflags: '-DSYMBOL_DEBUG' } }
 
-#         - { key: cppflags, name: RGENGC_CHECK_MODE,              value: '-DRGENGC_CHECK_MODE' }
-#         - { key: cppflags, name: TRANSIENT_HEAP_CHECK_MODE,      value: '-DTRANSIENT_HEAP_CHECK_MODE' }
-#         - { key: cppflags, name: VM_CHECK_MODE,                  value: '-DVM_CHECK_MODE' }
+#         - { name: RGENGC_CHECK_MODE,              env: { cppflags: '-DRGENGC_CHECK_MODE' } }
+#         - { name: TRANSIENT_HEAP_CHECK_MODE,      env: { cppflags: '-DTRANSIENT_HEAP_CHECK_MODE' } }
+#         - { name: VM_CHECK_MODE,                  env: { cppflags: '-DVM_CHECK_MODE' } }
 
-          - { key: cppflags, name: USE_EMBED_CI=0,                 value: '-DUSE_EMBED_CI=0' }
-          - { key: cppflags, name: USE_FLONUM=0,                   value: '-DUSE_FLONUM=0' }
-#         - { key: cppflags, name: USE_GC_MALLOC_OBJ_INFO_DETAILS, value: '-DUSE_GC_MALLOC_OBJ_INFO_DETAILS' }
-          - { key: cppflags, name: USE_LAZY_LOAD,                  value: '-DUSE_LAZY_LOAD' }
-#         - { key: cppflags, name: USE_RINCGC=0,                   value: '-DUSE_RINCGC=0' }
-#         - { key: cppflags, name: USE_SYMBOL_GC=0,                value: '-DUSE_SYMBOL_GC=0' }
-#         - { key: cppflags, name: USE_THREAD_CACHE=0,             value: '-DUSE_THREAD_CACHE=0' }
-#         - { key: cppflags, name: USE_TRANSIENT_HEAP=0,           value: '-DUSE_TRANSIENT_HEAP=0' }
-#         - { key: cppflags, name: USE_RUBY_DEBUG_LOG=1,           value: '-DUSE_RUBY_DEBUG_LOG=1' }
-          - { key: cppflags, name: USE_RVARGC=0,                   value: '-DUSE_RVARGC=0' }
-#         - { key: cppflags, name: USE_RVARGC=1,                   value: '-DUSE_RVARGC=1' }
+          - { name: USE_EMBED_CI=0,                 env: { cppflags: '-DUSE_EMBED_CI=0' } }
+          - { name: USE_FLONUM=0,                   env: { cppflags: '-DUSE_FLONUM=0' } }
+#         - { name: USE_GC_MALLOC_OBJ_INFO_DETAILS, env: { cppflags: '-DUSE_GC_MALLOC_OBJ_INFO_DETAILS' } }
+          - { name: USE_LAZY_LOAD,                  env: { cppflags: '-DUSE_LAZY_LOAD' } }
+#         - { name: USE_RINCGC=0,                   env: { cppflags: '-DUSE_RINCGC=0' } }
+#         - { name: USE_SYMBOL_GC=0,                env: { cppflags: '-DUSE_SYMBOL_GC=0' } }
+#         - { name: USE_THREAD_CACHE=0,             env: { cppflags: '-DUSE_THREAD_CACHE=0' } }
+#         - { name: USE_TRANSIENT_HEAP=0,           env: { cppflags: '-DUSE_TRANSIENT_HEAP=0' } }
+#         - { name: USE_RUBY_DEBUG_LOG=1,           env: { cppflags: '-DUSE_RUBY_DEBUG_LOG=1' } }
+          - { name: USE_RVARGC=0,                   env: { cppflags: '-DUSE_RVARGC=0' } }
+#         - { name: USE_RVARGC=1,                   env: { cppflags: '-DUSE_RVARGC=1' } }
 
-          - { key: cppflags, name: DEBUG_FIND_TIME_NUMGUESS,       value: '-DDEBUG_FIND_TIME_NUMGUESS' }
-          - { key: cppflags, name: DEBUG_INTEGER_PACK,             value: '-DDEBUG_INTEGER_PACK' }
-#         - { key: cppflags, name: ENABLE_PATH_CHECK,              value: '-DENABLE_PATH_CHECK' }
+          - { name: DEBUG_FIND_TIME_NUMGUESS,       env: { cppflags: '-DDEBUG_FIND_TIME_NUMGUESS' } }
+          - { name: DEBUG_INTEGER_PACK,             env: { cppflags: '-DDEBUG_INTEGER_PACK' } }
+#         - { name: ENABLE_PATH_CHECK,              env: { cppflags: '-DENABLE_PATH_CHECK' } }
 
-          - { key: cppflags, name: GC_DEBUG_STRESS_TO_CLASS,       value: '-DGC_DEBUG_STRESS_TO_CLASS' }
-#         - { key: cppflags, name: GC_ENABLE_LAZY_SWEEP=0,         value: '-DGC_ENABLE_LAZY_SWEEP=0' }
-#         - { key: cppflags, name: GC_PROFILE_DETAIL_MEMOTY,       value: '-DGC_PROFILE_DETAIL_MEMOTY' }
-#         - { key: cppflags, name: GC_PROFILE_MORE_DETAIL,         value: '-DGC_PROFILE_MORE_DETAIL' }
+          - { name: GC_DEBUG_STRESS_TO_CLASS,       env: { cppflags: '-DGC_DEBUG_STRESS_TO_CLASS' } }
+#         - { name: GC_ENABLE_LAZY_SWEEP=0,         env: { cppflags: '-DGC_ENABLE_LAZY_SWEEP=0' } }
+#         - { name: GC_PROFILE_DETAIL_MEMOTY,       env: { cppflags: '-DGC_PROFILE_DETAIL_MEMOTY' } }
+#         - { name: GC_PROFILE_MORE_DETAIL,         env: { cppflags: '-DGC_PROFILE_MORE_DETAIL' } }
 
-#         - { key: cppflags, name: CALC_EXACT_MALLOC_SIZE,         value: '-DCALC_EXACT_MALLOC_SIZE' }
-#         - { key: cppflags, name: MALLOC_ALLOCATED_SIZE_CHECK,    value: '-DMALLOC_ALLOCATED_SIZE_CHECK' }
+#         - { name: CALC_EXACT_MALLOC_SIZE,         env: { cppflags: '-DCALC_EXACT_MALLOC_SIZE' } }
+#         - { name: MALLOC_ALLOCATED_SIZE_CHECK,    env: { cppflags: '-DMALLOC_ALLOCATED_SIZE_CHECK' } }
 
-#         - { key: cppflags, name: IBF_ISEQ_ENABLE_LOCAL_BUFFER,   value: '-DIBF_ISEQ_ENABLE_LOCAL_BUFFER' }
+#         - { name: IBF_ISEQ_ENABLE_LOCAL_BUFFER,   env: { cppflags: '-DIBF_ISEQ_ENABLE_LOCAL_BUFFER' } }
 
-#         - { key: cppflags, name: RGENGC_ESTIMATE_OLDMALLOC,      value: '-DRGENGC_ESTIMATE_OLDMALLOC' }
-#         - { key: cppflags, name: RGENGC_FORCE_MAJOR_GC,          value: '-DRGENGC_FORCE_MAJOR_GC' }
-#         - { key: cppflags, name: RGENGC_OBJ_INFO,                value: '-DRGENGC_OBJ_INFO' }
-#         - { key: cppflags, name: RGENGC_OLD_NEWOBJ_CHECK,        value: '-DRGENGC_OLD_NEWOBJ_CHECK' }
-#         - { key: cppflags, name: RGENGC_PROFILE,                 value: '-DRGENGC_PROFILE' }
+#         - { name: RGENGC_ESTIMATE_OLDMALLOC,      env: { cppflags: '-DRGENGC_ESTIMATE_OLDMALLOC' } }
+#         - { name: RGENGC_FORCE_MAJOR_GC,          env: { cppflags: '-DRGENGC_FORCE_MAJOR_GC' } }
+#         - { name: RGENGC_OBJ_INFO,                env: { cppflags: '-DRGENGC_OBJ_INFO' } }
+#         - { name: RGENGC_OLD_NEWOBJ_CHECK,        env: { cppflags: '-DRGENGC_OLD_NEWOBJ_CHECK' } }
+#         - { name: RGENGC_PROFILE,                 env: { cppflags: '-DRGENGC_PROFILE' } }
 
-#         - { key: cppflags, name: VM_DEBUG_BP_CHECK,              value: '-DVM_DEBUG_BP_CHECK' }
-#         - { key: cppflags, name: VM_DEBUG_VERIFY_METHOD_CACHE,   value: '-DVM_DEBUG_VERIFY_METHOD_CACHE' }
+#         - { name: VM_DEBUG_BP_CHECK,              env: { cppflags: '-DVM_DEBUG_BP_CHECK' } }
+#         - { name: VM_DEBUG_VERIFY_METHOD_CACHE,   env: { cppflags: '-DVM_DEBUG_VERIFY_METHOD_CACHE' } }
 
-          - { key: cppflags, name: MJIT_FORCE_ENABLE,              value: '-DMJIT_FORCE_ENABLE' }
-          - { key: cppflags, name: YJIT_FORCE_ENABLE,              value: '-DYJIT_FORCE_ENABLE' }
+          - { name: MJIT_FORCE_ENABLE,              env: { cppflags: '-DMJIT_FORCE_ENABLE' } }
+          - { name: YJIT_FORCE_ENABLE,              env: { cppflags: '-DYJIT_FORCE_ENABLE' } }
 
     name: ${{ matrix.entry.name }}
     runs-on: ubuntu-latest
     container:
-      image: ghcr.io/ruby/ruby-ci-image:${{ matrix.entry.container || 'clang-14' }}
+      image: ghcr.io/ruby/ruby-ci-image:${{ matrix.entry.container || matrix.entry.env.default_cc || 'clang-14' }}
       options: --user root
     if: ${{ !contains(github.event.head_commit.message, '[DOC]') && !contains(github.event.pull_request.labels.*.name, 'Documentation') }}
     env: ${{ matrix.entry.env || matrix.env }}
@@ -221,7 +221,6 @@ jobs:
         working-directory:
       - name: setenv
         run: |
-          echo "${{ matrix.entry.key }}=${{ matrix.entry.value }}" >> $GITHUB_ENV
           echo "GNUMAKEFLAGS=-sj$((1 + $(nproc --all)))" >> $GITHUB_ENV
       - uses: actions/checkout@v3
         with:
@@ -235,8 +234,12 @@ jobs:
       - name: Run configure
         run: >
           ../src/configure -C ${default_configure} ${append_configure}
-          ${{ matrix.entry.key == 'crosshost' && '--host="${crosshost}"' || '--with-gcc="${default_cc} ${append_cc}"' }}
-          ${{ matrix.entry.configure_append || '--enable-shared' }}
+          --${{
+            matrix.entry.crosshost && 'host' || 'with-gcc'
+          }}=${{
+            matrix.entry.crosshost || '"${default_cc}${append_cc:+ $append_cc}"'
+          }}
+          --${{ matrix.entry.shared || 'enable' }}-shared
       - run: make extract-extlibs
       - run: make incs
       - run: make
