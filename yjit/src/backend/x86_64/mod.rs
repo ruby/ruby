@@ -6,7 +6,7 @@ use crate::asm::{CodeBlock};
 use crate::asm::x86_64::*;
 use crate::codegen::{JITState};
 use crate::cruby::*;
-use crate::backend::ir::{Assembler, Opnd, Target, Op, Mem};
+use crate::backend::ir::{Assembler, Opnd, Target, Op, MemBase, Mem};
 
 // Use the x86 register type for this platform
 pub type Reg = X86Reg;
@@ -49,8 +49,14 @@ impl From<Opnd> for X86Opnd {
             Opnd::Reg(reg) => X86Opnd::Reg(reg),
 
             // Memory operand with displacement
-            Opnd::Mem(Mem{ num_bits, base_reg, disp }) => {
-                mem_opnd(num_bits, X86Opnd::Reg(base_reg), disp)
+            Opnd::Mem(Mem{ base: MemBase::Reg(reg_no), num_bits, disp }) => {
+                let reg = X86Reg {
+                    reg_no,
+                    num_bits: 64,
+                    reg_type: RegType::GP
+                };
+
+                mem_opnd(num_bits, X86Opnd::Reg(reg), disp)
             }
 
             _ => panic!("unsupported x86 operand type")
@@ -186,7 +192,7 @@ impl Assembler
                 // Atomically increment a counter at a given memory location
                 Op::IncrCounter => {
                     assert!(matches!(insn.opnds[0], Opnd::Mem(_)));
-                    assert!(matches!(insn.opnds[0], Opnd::UImm(_)));
+                    assert!(matches!(insn.opnds[1], Opnd::UImm(_) | Opnd::Imm(_) ) );
                     write_lock_prefix(cb);
                     add(cb, insn.opnds[0].into(), insn.opnds[1].into());
                 },
