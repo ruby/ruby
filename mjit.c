@@ -244,7 +244,15 @@ check_unit_queue(void)
     current_cc_ms = real_ms_time();
     current_cc_unit = unit;
     current_cc_pid = start_mjit_compile(unit);
-    // TODO: handle -1
+
+    // JIT failure
+    if (current_cc_pid == -1) {
+        current_cc_pid = 0;
+        current_cc_unit->iseq->body->jit_func = (mjit_func_t)NOT_COMPILED_JIT_ISEQ_FUNC;
+        current_cc_unit = NULL;
+        return;
+    }
+
     if (mjit_opts.wait) {
         mjit_wait(unit->iseq->body);
     }

@@ -1198,6 +1198,18 @@ class TestMJIT < Test::Unit::TestCase
     end
   end if defined?(fork)
 
+  def test_jit_failure
+    _, err = eval_with_jit("#{<<~"begin;"}\n#{<<~"end;"}", min_calls: 1, verbose: 1)
+    begin;
+      1.times do
+        class A
+        end
+      end
+    end;
+    assert_match(/^MJIT warning: .+ unsupported instruction: defineclass/, err)
+    assert_match(/^JIT failure: block in <main>/, err)
+  end
+
   private
 
   # The shortest way to test one proc
