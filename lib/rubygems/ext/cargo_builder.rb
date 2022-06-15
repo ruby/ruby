@@ -260,7 +260,7 @@ class Gem::Ext::CargoBuilder < Gem::Ext::Builder
 
       full_tmp_dest = File.join(extension_dir, tmp_dest_relative)
 
-      # TODO: remove in RubyGems 3
+      # TODO: remove in RubyGems 4
       if Gem.install_extension_in_lib && lib_dir
         FileUtils.mkdir_p lib_dir
         FileUtils.cp_r ext_path, lib_dir, remove_destination: true
