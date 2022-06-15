@@ -7033,6 +7033,7 @@ hash.$(OBJEXT): $(top_srcdir)/internal/serial.h
 hash.$(OBJEXT): $(top_srcdir)/internal/static_assert.h
 hash.$(OBJEXT): $(top_srcdir)/internal/string.h
 hash.$(OBJEXT): $(top_srcdir)/internal/symbol.h
+hash.$(OBJEXT): $(top_srcdir)/internal/thread.h
 hash.$(OBJEXT): $(top_srcdir)/internal/time.h
 hash.$(OBJEXT): $(top_srcdir)/internal/vm.h
 hash.$(OBJEXT): $(top_srcdir)/internal/warnings.h
