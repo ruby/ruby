@@ -187,7 +187,10 @@ impl Assembler
 
                 Op::JmpOpnd => jmp_rm(cb, insn.opnds[0].into()),
 
+                // Conditional jump to a label
                 Op::Je => je_label(cb, insn.target.unwrap().unwrap_label_idx()),
+                Op::Jz => jz_label(cb, insn.target.unwrap().unwrap_label_idx()),
+                Op::Jnz => jnz_label(cb, insn.target.unwrap().unwrap_label_idx()),
 
                 // Atomically increment a counter at a given memory location
                 Op::IncrCounter => {
