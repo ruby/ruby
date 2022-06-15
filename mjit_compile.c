@@ -180,6 +180,8 @@ comment_id(FILE *f, ID id)
 #endif
 }
 
+#include "mjit_compile_attr.inc"
+
 static void compile_insns(FILE *f, const struct rb_iseq_constant_body *body, unsigned int stack_size,
                           unsigned int pos, struct compile_status *status);
 
@@ -195,9 +197,21 @@ compile_insn(FILE *f, const struct rb_iseq_constant_body *body, const int insn, 
 {
     unsigned int next_pos = pos + insn_len(insn);
 
-/*****************/
+    // TODO: initialize the constant in mjit_init and use it
+    int mjit_sp_inc = (int)mjit_call_attribute_sp_inc(insn, operands);
+    VALUE rb_mMJIT = rb_const_get(rb_cRubyVM, rb_intern("MJIT"));
+    VALUE rb_mCompiler = rb_const_get(rb_mMJIT, rb_intern("Compiler"));
+    VALUE result = rb_funcall(rb_mCompiler, rb_intern("compile_insn"), 3,
+                              ID2SYM(rb_intern(insn_name(insn))), INT2NUM(b->stack_size), INT2NUM(mjit_sp_inc));
+    if (NIL_P(result)) {
+/**************************/
  #include "mjit_compile.inc"
-/*****************/
+/**************************/
+    }
+    else {
+        fprintf(f, "%s", RSTRING_PTR(result));
+        b->stack_size += mjit_sp_inc;
+    }
 
     // If next_pos is already compiled and this branch is not finished yet,
     // next instruction won't be compiled in C code next and will need `goto`.
@@ -591,5 +605,8 @@ mjit_compile(FILE *f, const rb_iseq_t *iseq, const char *funcname, int id)
     fprintf(f, "\n} // end of %s\n", funcname);
     return success;
 }
+
+#include "mjit_compiler.rbinc"
+#include "mjit_instruction.rbinc"
 
 #endif // USE_MJIT

@@ -1,0 +1,21 @@
+module RubyVM::MJIT
+  Instruction = Struct.new(
+    :expr,
+    :declarations,
+    :pops,
+    :rets,
+  )
+
+  INSTRUCTIONS = {
+% (RubyVM::BareInstructions.to_a + RubyVM::OperandsUnifications.to_a).each do |insn|
+    <%= insn.name %>: Instruction.new(
+      expr: <<-EXPR,
+<%= insn.expr.expr.dump.sub(/\A"/, '').sub(/"\z/, '').gsub(/\\n/, "\n").gsub(/\\t/, ' ' * 8) %>
+      EXPR
+      declarations: <%= insn.declarations.inspect %>,
+      pops: <%= insn.pops.inspect %>,
+      rets: <%= insn.rets.inspect %>,
+    ),
+% end
+  }
+end
