@@ -11930,7 +11930,7 @@ logop(struct parser_params *p, ID id, NODE *left, NODE *right,
 static void
 no_blockarg(struct parser_params *p, NODE *node)
 {
-    if (node && nd_type_p(node, NODE_BLOCK_PASS)) {
+    if (nd_type_p(node, NODE_BLOCK_PASS)) {
 	compile_error(p, "block argument should not be given");
     }
 }
