@@ -186,6 +186,7 @@ impl Assembler
                 // Atomically increment a counter at a given memory location
                 Op::IncrCounter => {
                     assert!(matches!(insn.opnds[0], Opnd::Mem(_)));
+                    assert!(matches!(insn.opnds[0], Opnd::UImm(_)));
                     write_lock_prefix(cb);
                     add(cb, insn.opnds[0].into(), insn.opnds[1].into());
                 },
