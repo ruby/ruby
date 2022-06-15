@@ -67,7 +67,7 @@ impl From<Opnd> for X86Opnd {
 impl Assembler
 {
     /// Get the list of registers from which we can allocate on this platform
-    pub fn get_scratch_regs() -> Vec<Reg>
+    pub fn get_alloc_regs() -> Vec<Reg>
     {
         vec![
             RAX_REG,

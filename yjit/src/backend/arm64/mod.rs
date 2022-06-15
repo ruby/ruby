@@ -36,7 +36,10 @@ impl Assembler
     /// Get the list of registers from which we can allocate on this platform
     pub fn get_scratch_regs() -> Vec<Reg>
     {
-        vec![X12_REG, X13_REG]
+        vec![
+            X12_REG,
+            X13_REG
+        ]
     }
 
     /// Split platform-specific instructions
