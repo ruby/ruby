@@ -118,7 +118,7 @@ impl X86Opnd {
             X86Opnd::Mem(mem) => {
                 if mem.disp != 0 {
                     // Compute the required displacement size
-                    let num_bits = sig_imm_size(mem.disp.into());
+                    let num_bits = imm_num_bits(mem.disp.into());
                     if num_bits > 32 {
                         panic!("displacement does not fit in 32 bits");
                     }
@@ -250,40 +250,6 @@ pub const C_ARG_REGS: [X86Opnd; 6] = [RDI, RSI, RDX, RCX, R8, R9];
 
 //===========================================================================
 
-/// Compute the number of bits needed to encode a signed value
-pub fn sig_imm_size(imm: i64) -> u8
-{
-    // Compute the smallest size this immediate fits in
-    if imm >= i8::MIN.into() && imm <= i8::MAX.into() {
-        return 8;
-    }
-    if imm >= i16::MIN.into() && imm <= i16::MAX.into() {
-        return 16;
-    }
-    if imm >= i32::MIN.into() && imm <= i32::MAX.into() {
-        return 32;
-    }
-
-    return 64;
-}
-
-/// Compute the number of bits needed to encode an unsigned value
-pub fn unsig_imm_size(imm: u64) -> u8
-{
-    // Compute the smallest size this immediate fits in
-    if imm <= u8::MAX.into() {
-        return 8;
-    }
-    else if imm <= u16::MAX.into() {
-        return 16;
-    }
-    else if imm <= u32::MAX.into() {
-        return 32;
-    }
-
-    return 64;
-}
-
 /// Shorthand for memory operand with base register and displacement
 pub fn mem_opnd(num_bits: u8, base_reg: X86Opnd, disp: i32) -> X86Opnd
 {
@@ -362,12 +328,12 @@ static x86opnd_t resize_opnd(x86opnd_t opnd, uint32_t num_bits)
 
 pub fn imm_opnd(value: i64) -> X86Opnd
 {
-    X86Opnd::Imm(X86Imm { num_bits: sig_imm_size(value), value })
+    X86Opnd::Imm(X86Imm { num_bits: imm_num_bits(value), value })
 }
 
 pub fn uimm_opnd(value: u64) -> X86Opnd
 {
-    X86Opnd::UImm(X86UImm { num_bits: unsig_imm_size(value), value })
+    X86Opnd::UImm(X86UImm { num_bits: uimm_num_bits(value), value })
 }
 
 pub fn const_ptr_opnd(ptr: *const u8) -> X86Opnd
@@ -619,7 +585,7 @@ fn write_rm_multi(cb: &mut CodeBlock, op_mem_reg8: u8, op_mem_reg_pref: u8, op_r
         },
         // R/M + UImm
         (_, X86Opnd::UImm(uimm)) => {
-            let num_bits = sig_imm_size(uimm.value.try_into().unwrap());
+            let num_bits = imm_num_bits(uimm.value.try_into().unwrap());
 
             if num_bits <= 8 {
                 // 8-bit immediate
@@ -1013,7 +979,7 @@ pub fn mov(cb: &mut CodeBlock, dst: X86Opnd, src: X86Opnd) {
             }
 
             let output_num_bits:u32 = if mem.num_bits > 32 { 32 } else { mem.num_bits.into() };
-            assert!(sig_imm_size(imm.value) <= (output_num_bits as u8));
+            assert!(imm_num_bits(imm.value) <= (output_num_bits as u8));
             cb.write_int(imm.value as u64, output_num_bits);
         },
         // M + UImm
@@ -1028,7 +994,7 @@ pub fn mov(cb: &mut CodeBlock, dst: X86Opnd, src: X86Opnd) {
             }
 
             let output_num_bits = if mem.num_bits > 32 { 32 } else { mem.num_bits.into() };
-            assert!(sig_imm_size(uimm.value as i64) <= (output_num_bits as u8));
+            assert!(imm_num_bits(uimm.value as i64) <= (output_num_bits as u8));
             cb.write_int(uimm.value, output_num_bits);
         },
         // * + Imm/UImm
