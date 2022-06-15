@@ -168,7 +168,7 @@ end
 # - FileUtils.rm_rf with keyword argument <tt>secure: true</tt>.
 #
 # Finally, this method for moving entries calls \FileUtils.remove_entry_secure
-# if the source and destination are on different devices
+# if the source and destination are on different file systems
 # (which means that the "move" is really a copy and remove):
 #
 # - FileUtils.mv with keyword argument <tt>secure: true</tt>.
@@ -555,21 +555,6 @@ module FileUtils
   #         "tmp1/tmp3/t2.txt",
   #         "tmp1/tmp3/t3.txt"]
   #
-  # If +src+ is an array of paths to files and +dest+ is the path to a directory,
-  # for each path +filepath+ in +src+, creates a link at <tt>dest/filepath</tt>
-  # pointing to that path:
-  #
-  #   FileUtils.rm_r('tmp1')
-  #   Dir.mkdir('tmp1')
-  #   FileUtils.cp_lr(['tmp0/tmp3/t2.txt', 'tmp0/tmp3/t3.txt'], 'tmp1')
-  #   Dir.glob('**/*.txt')
-  #   # => ["tmp0/tmp2/t0.txt",
-  #        "tmp0/tmp2/t1.txt",
-  #        "tmp0/tmp3/t2.txt",
-  #        "tmp0/tmp3/t3.txt",
-  #        "tmp1/t2.txt",
-  #        "tmp1/t3.txt"]
-  #
   # If +src+ and +dest+ are both paths to directories,
   # creates links <tt>dest/src</tt> and descendents
   # pointing to +src+ and its descendents:
@@ -585,6 +570,21 @@ module FileUtils
   #        "tmp1/tmp0/tmp2/t1.txt",
   #        "tmp1/tmp0/tmp3/t2.txt",
   #        "tmp1/tmp0/tmp3/t3.txt"]
+  #
+  # If +src+ is an array of paths to files and +dest+ is the path to a directory,
+  # for each path +filepath+ in +src+, creates a link at <tt>dest/filepath</tt>
+  # pointing to that path:
+  #
+  #   FileUtils.rm_r('tmp1')
+  #   Dir.mkdir('tmp1')
+  #   FileUtils.cp_lr(['tmp0/tmp3/t2.txt', 'tmp0/tmp3/t3.txt'], 'tmp1')
+  #   Dir.glob('**/*.txt')
+  #   # => ["tmp0/tmp2/t0.txt",
+  #        "tmp0/tmp2/t1.txt",
+  #        "tmp0/tmp3/t2.txt",
+  #        "tmp0/tmp3/t3.txt",
+  #        "tmp1/t2.txt",
+  #        "tmp1/t3.txt"]
   #
   # Keyword arguments:
   #
@@ -621,7 +621,7 @@ module FileUtils
   # and +dest+ (a single path)
   # should be {interpretable as paths}[rdoc-ref:FileUtils@Path+Arguments].
   #
-  # When +src+ is the path to an existing file:
+  # If +src+ is the path to an existing file:
   #
   # - When +dest+ is the path to a non-existent file,
   #   creates a symbolic link at +dest+ pointing to +src+:
@@ -643,7 +643,7 @@ module FileUtils
   #
   #     FileUtils.ln_s('src1.txt', 'dest1.txt') # Raises Errno::EEXIST.
   #
-  # When +dest+ is the path to a directory,
+  # If +dest+ is the path to a directory,
   # creates a symbolic link at <tt>dest/src</tt> pointing to +src+:
   #
   #   FileUtils.touch('src2.txt')
@@ -651,7 +651,7 @@ module FileUtils
   #   FileUtils.ln_s('src2.txt', 'destdir2')
   #   File.symlink?('destdir2/src2.txt') # => true
   #
-  # When +src+ is an array of paths to existing files and +dest+ is a directory,
+  # If +src+ is an array of paths to existing files and +dest+ is a directory,
   # for each child +child+ in +src+ creates a symbolic link <tt>dest/child</tt>
   # pointing to +child+:
   #
@@ -751,7 +751,7 @@ module FileUtils
   end
   module_function :link_entry
 
-  # Copies files from +src+ to +dest+.
+  # Copies files.
   #
   # Arguments +src+ (a single path or an array of paths)
   # and +dest+ (a single path)
@@ -1018,13 +1018,14 @@ module FileUtils
   end
   module_function :copy_stream
 
-  # Moves files from +src+ (a single path or an array of paths)
-  # to +dest+ (a single path).
-  # If +src+ and +dest+ are on different devices,
-  # first copies, then removes +src+.
+  # Moves entries.
   #
-  # Arguments +src+ and +dest+
+  # Arguments +src+ (a single path or an array of paths)
+  # and +dest+ (a single path)
   # should be {interpretable as paths}[rdoc-ref:FileUtils@Path+Arguments].
+  #
+  # If +src+ and +dest+ are on different file systems,
+  # first copies, then removes +src+.
   #
   # May cause a local vulnerability if not called with keyword argument
   # <tt>secure: true</tt>;
@@ -1066,7 +1067,7 @@ module FileUtils
   # Keyword arguments:
   #
   # - <tt>force: true</tt> - if the move includes removing +src+
-  #   (that is, if +src+ and +dest+ are on different devices),
+  #   (that is, if +src+ and +dest+ are on different file systems),
   #   ignores raised exceptions of StandardError and its descendants.
   # - <tt>noop: true</tt> - does not move files.
   # - <tt>secure: true</tt> - removes +src+ securely;
@@ -1457,11 +1458,12 @@ module FileUtils
   end
   module_function :compare_stream
 
-  # Copies the file entry at path +src+ to the entry at path +dest+;
+  # Copies a file entry;
   # see {install(1)}[https://man7.org/linux/man-pages/man1/install.1.html].
   #
-  # Arguments +src+ and +dest+
-  # should be {interpretable as paths}[rdoc-ref:FileUtils@Path+Arguments].
+  # Arguments +src+ (a single path or an array of paths)
+  # and +dest+ (a single path)
+  # should be {interpretable as paths}[rdoc-ref:FileUtils@Path+Arguments];
   #
   # If the entry at +dest+ does not exist, copies from +src+ to +dest+:
   #
@@ -1484,6 +1486,16 @@ module FileUtils
   #   File.read('dest2/src2.txt') # => "bbb\n"
   #   FileUtils.install('src2.txt', 'dest2')
   #   File.read('dest2/src2.txt') # => "aaa\n"
+  #
+  # If +src+ is an array of paths and +dest+ points to a directory,
+  # copies each path +path+ in +src+ to <tt>dest/path</tt>:
+  #
+  #   File.file?('src3.txt') # => true
+  #   File.file?('src3.dat') # => true
+  #   FileUtils.mkdir('dest3')
+  #   FileUtils.install(['src3.txt', 'src3.dat'], 'dest3')
+  #   File.file?('dest3/src3.txt') # => true
+  #   File.file?('dest3/src3.dat') # => true
   #
   # Keyword arguments:
   #
