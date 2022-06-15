@@ -190,10 +190,12 @@ void *rb_nogvl(void *(*func)(void *), void *data1,
  */
 #define RUBY_CALL_WO_GVL_FLAG_SKIP_CHECK_INTS_
 
-#define RUBY_INTERNAL_THREAD_EVENT_READY      0x01 /** acquiring GVL */
-#define RUBY_INTERNAL_THREAD_EVENT_RESUMED    0x02 /** acquired GVL */
-#define RUBY_INTERNAL_THREAD_EVENT_SUSPENDED  0x04 /** released GVL */
-#define RUBY_INTERNAL_THREAD_EVENT_MASK       0x07 /** All Thread events */
+#define RUBY_INTERNAL_THREAD_EVENT_STARTED    1 << 0 /** thread started */
+#define RUBY_INTERNAL_THREAD_EVENT_READY      1 << 1 /** acquiring GVL */
+#define RUBY_INTERNAL_THREAD_EVENT_RESUMED    1 << 2 /** acquired GVL */
+#define RUBY_INTERNAL_THREAD_EVENT_SUSPENDED  1 << 3 /** released GVL */
+#define RUBY_INTERNAL_THREAD_EVENT_EXITED     1 << 4 /** thread terminated */
+#define RUBY_INTERNAL_THREAD_EVENT_MASK       0xff /** All Thread events */
 
 typedef void rb_internal_thread_event_data_t; // for future extension.
 
