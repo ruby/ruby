@@ -1,6 +1,7 @@
 #![cfg(test)]
 
 use crate::asm::x86_64::*;
+<<<<<<< HEAD
 use std::fmt;
 
 /// Produce hex string output from the bytes in a code block
@@ -13,6 +14,8 @@ impl<'a> fmt::LowerHex for super::CodeBlock {
         Ok(())
     }
 }
+=======
+>>>>>>> a459d76279 (Initial setup for aarch64)
 
 /// Check that the bytes for an instruction sequence match a hex string
 fn check_bytes<R>(bytes: &str, run: R) where R: FnOnce(&mut super::CodeBlock) {

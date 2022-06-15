@@ -1,3 +1,4 @@
+use std::fmt;
 use std::mem;
 
 #[cfg(feature = "asm_comments")]
@@ -8,6 +9,8 @@ use crate::virtualmem::{VirtualMem, CodePtr};
 // Lots of manual vertical alignment in there that rustfmt doesn't handle well.
 #[rustfmt::skip]
 pub mod x86_64;
+
+pub mod arm64;
 
 //
 // TODO: need a field_size_of macro, to compute the size of a struct field in bytes
@@ -275,6 +278,17 @@ impl CodeBlock {
         let virt_mem = VirtualMem::new(alloc, 1, mem_start as *mut u8, mem_size);
 
         Self::new(virt_mem)
+    }
+}
+
+/// Produce hex string output from the bytes in a code block
+impl<'a> fmt::LowerHex for CodeBlock {
+    fn fmt(&self, fmtr: &mut fmt::Formatter) -> fmt::Result {
+        for pos in 0..self.write_pos {
+            let byte = unsafe { self.mem_block.add(pos).read() };
+            fmtr.write_fmt(format_args!("{:02x}", byte))?;
+        }
+        Ok(())
     }
 }
 

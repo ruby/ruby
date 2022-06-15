@@ -13,8 +13,8 @@ use crate::codegen::{JITState};
 #[cfg(target_arch = "x86_64")]
 use crate::backend::x86_64::*;
 
-//#[cfg(target_arch = "aarch64")]
-//use crate::backend:aarch64::*
+#[cfg(target_arch = "aarch64")]
+use crate::backend::arm64::*;
 
 pub const EC: Opnd = _EC;
 pub const CFP: Opnd = _CFP;
