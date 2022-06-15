@@ -105,12 +105,20 @@ pub enum Op
     Breakpoint,
 }
 
+// Memory operand base
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+pub enum MemBase
+{
+    Reg(u8),
+    InsnOut(usize),
+}
+
 // Memory location
 #[derive(Copy, Clone, PartialEq, Eq, Debug)]
 pub struct Mem
 {
-    // Base register
-    pub(super) base_reg: Reg,
+    // Base register number or instruction index
+    pub(super) base: MemBase,
 
     // Offset relative to the base pointer
     pub(super) disp: i32,
@@ -148,11 +156,20 @@ impl Opnd
             Opnd::Reg(base_reg) => {
                 assert!(base_reg.num_bits == 64);
                 Opnd::Mem(Mem {
-                    num_bits: num_bits,
-                    base_reg: base_reg,
+                    base: MemBase::Reg(base_reg.reg_no),
                     disp: disp,
+                    num_bits: num_bits,
                 })
             },
+
+            Opnd::InsnOut(idx) => {
+                Opnd::Mem(Mem {
+                    base: MemBase::InsnOut(idx),
+                    disp: disp,
+                    num_bits: num_bits,
+                })
+            },
+
             _ => unreachable!("memory operand with non-register base")
         }
     }
@@ -160,6 +177,13 @@ impl Opnd
     /// Constant pointer operand
     pub fn const_ptr(ptr: *const u8) -> Self {
         Opnd::UImm(ptr as u64)
+    }
+
+    pub fn unwrap_reg(&self) -> Reg {
+        match self {
+            Opnd::Reg(reg) => *reg,
+            _ => unreachable!("trying to unwrap {:?} into reg", self)
+        }
     }
 }
 
@@ -264,8 +288,14 @@ impl Assembler
         // one.
         let insn_idx = self.insns.len();
         for opnd in &opnds {
-            if let Opnd::InsnOut(idx) = opnd {
-                self.live_ranges[*idx] = insn_idx;
+            match opnd {
+                Opnd::InsnOut(idx) => {
+                    self.live_ranges[*idx] = insn_idx;
+                }
+                Opnd::Mem( Mem { base: MemBase::InsnOut(idx), .. }) => {
+                    self.live_ranges[*idx] = insn_idx;
+                }
+                _ => {}
             }
         }
 
@@ -483,22 +513,26 @@ impl Assembler
             // spans more than one instruction. In that case, return the
             // allocated register to the pool.
             for opnd in &opnds {
-                if let Opnd::InsnOut(idx) = opnd {
-                    // Since we have an InsnOut, we know it spans more that one
-                    // instruction.
-                    let start_index = *idx;
-                    assert!(start_index < index);
+                match opnd {
+                    Opnd::InsnOut(idx) | Opnd::Mem( Mem { base: MemBase::InsnOut(idx), .. }) => {
+                        // Since we have an InsnOut, we know it spans more that one
+                        // instruction.
+                        let start_index = *idx;
+                        assert!(start_index < index);
 
-                    // We're going to check if this is the last instruction that
-                    // uses this operand. If it is, we can return the allocated
-                    // register to the pool.
-                    if live_ranges[start_index] == index {
-                        if let Opnd::Reg(reg) = asm.insns[start_index].out {
-                            dealloc_reg(&mut pool, &regs, &reg);
-                        } else {
-                            unreachable!("no register allocated for insn");
+                        // We're going to check if this is the last instruction that
+                        // uses this operand. If it is, we can return the allocated
+                        // register to the pool.
+                        if live_ranges[start_index] == index {
+                            if let Opnd::Reg(reg) = asm.insns[start_index].out {
+                                dealloc_reg(&mut pool, &regs, &reg);
+                            } else {
+                                unreachable!("no register allocated for insn");
+                            }
                         }
                     }
+
+                    _ => {}
                 }
             }
 
@@ -541,7 +575,15 @@ impl Assembler
             // Replace InsnOut operands by their corresponding register
             let reg_opnds = opnds.into_iter().map(|opnd|
                 match opnd {
-                     Opnd::InsnOut(idx) => asm.insns[idx].out,
+                    Opnd::InsnOut(idx) => asm.insns[idx].out,
+                    Opnd::Mem(Mem { base: MemBase::InsnOut(idx), disp, num_bits }) => {
+                        let out_reg = asm.insns[idx].out.unwrap_reg();
+                        Opnd::Mem(Mem {
+                            base: MemBase::Reg(out_reg.reg_no),
+                            disp,
+                            num_bits
+                        })
+                    }
                      _ => opnd,
                 }
             ).collect();
@@ -861,6 +903,22 @@ mod tests {
     {
         let (mut asm, mut cb, regs) = setup_asm(1);
         asm.store(Opnd::mem(64, SP, 0), u64::MAX.into());
+        asm.compile_with_regs(&mut cb, regs);
+    }
+
+    // Use instruction output as base register for memory operand
+    #[test]
+    fn test_base_insn_out()
+    {
+        let (mut asm, mut cb, regs) = setup_asm(1);
+
+        // Load the pointer into a register
+        let ptr_reg = asm.load(Opnd::const_ptr(0 as *const u8));
+        let counter_opnd = Opnd::mem(64, ptr_reg, 0);
+
+        // Increment and store the updated value
+        asm.incr_counter(counter_opnd, 1.into() );
+
         asm.compile_with_regs(&mut cb, regs);
     }
 
