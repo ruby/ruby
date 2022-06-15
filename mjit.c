@@ -248,7 +248,7 @@ check_unit_queue(void)
     // JIT failure
     if (current_cc_pid == -1) {
         current_cc_pid = 0;
-        current_cc_unit->iseq->body->jit_func = (mjit_func_t)NOT_COMPILED_JIT_ISEQ_FUNC;
+        current_cc_unit->iseq->body->jit_func = (mjit_func_t)NOT_COMPILED_JIT_ISEQ_FUNC; // TODO: consider unit->compact_p
         current_cc_unit = NULL;
         return;
     }
@@ -327,8 +327,9 @@ mjit_notify_waitpid(int status)
     }
     if (!success) {
         verbose(2, "Failed to generate so");
-        // TODO: free unit?
-        // TODO: set NOT_COMPILED_JIT_ISEQ_FUNC?
+        current_cc_unit->iseq->body->jit_func = (mjit_func_t)NOT_COMPILED_JIT_ISEQ_FUNC; // TODO: consider unit->compact_p
+        free_unit(current_cc_unit);
+        current_cc_unit = NULL;
         return;
     }
 
@@ -906,7 +907,7 @@ stop_worker(void)
 {
     stop_worker_p = true;
     if (current_cc_unit != NULL) {
-        mjit_wait(current_cc_unit->iseq->body);
+        mjit_wait(current_cc_unit->iseq->body); // TODO: consider unit->compact_p
     }
     worker_stopped = true;
 }
