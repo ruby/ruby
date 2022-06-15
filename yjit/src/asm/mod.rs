@@ -1,4 +1,3 @@
-use std::fmt;
 use std::mem;
 
 #[cfg(feature = "asm_comments")]
@@ -278,17 +277,6 @@ impl CodeBlock {
         let virt_mem = VirtualMem::new(alloc, 1, mem_start as *mut u8, mem_size);
 
         Self::new(virt_mem)
-    }
-}
-
-/// Produce hex string output from the bytes in a code block
-impl<'a> fmt::LowerHex for CodeBlock {
-    fn fmt(&self, fmtr: &mut fmt::Formatter) -> fmt::Result {
-        for pos in 0..self.write_pos {
-            let byte = unsafe { self.mem_block.add(pos).read() };
-            fmtr.write_fmt(format_args!("{:02x}", byte))?;
-        }
-        Ok(())
     }
 }
 
