@@ -44,8 +44,10 @@ class TestThreadInstrumentation < Test::Unit::TestCase
       counters = Marshal.load(read_pipe)
       read_pipe.close
       counters.each do |c|
-        assert_predicate c,:nonzero?, "Call counters: #{counters.inspect}"
+        assert_predicate c, :nonzero?, "Call counters: #{counters.inspect}"
       end
+
+      assert_equal counters.first, counters.last # exited as many times as we entered
     ensure
       Bug::ThreadInstrumentation::unregister_callback
     end
