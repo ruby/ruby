@@ -86,6 +86,7 @@ pub enum Op
     // Low-level conditional jump instructions
     Jbe,
     Je,
+    Jz,
     Jnz,
 
     // Push and pop registers to/from the C stack
@@ -707,6 +708,7 @@ macro_rules! def_push_2_opnd_no_out {
 def_push_1_opnd_no_out!(jmp_opnd, Op::JmpOpnd);
 def_push_jcc!(je, Op::Je);
 def_push_jcc!(jbe, Op::Jbe);
+def_push_jcc!(jz, Op::Jz);
 def_push_jcc!(jnz, Op::Jnz);
 def_push_2_opnd!(add, Op::Add);
 def_push_2_opnd!(sub, Op::Sub);
