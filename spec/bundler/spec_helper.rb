@@ -78,19 +78,10 @@ RSpec.configure do |config|
     ENV["XDG_CONFIG_HOME"] = nil
     ENV["GEMRC"] = nil
 
-    extend(Spec::Helpers)
-
-    # Ruby-core needs RUBYLIB set, leave any "internal" RUBYLIB entries to avoid
-    # resetting that, but reset anything else to avoid external stuff like asdf
-    # hooks from interfering with our specs
-
-    rubylib = ENV["RUBYLIB"]
-    rubylib = rubylib.split(File::PATH_SEPARATOR).select {|p| p.start_with?(git_root.to_s) }.join(File::PATH_SEPARATOR) if rubylib
-    ENV["RUBYLIB"] = rubylib
-
     # Don't wrap output in tests
     ENV["THOR_COLUMNS"] = "10000"
 
+    extend(Spec::Helpers)
     system_gems :bundler, :path => pristine_system_gem_path
   end
 
