@@ -12,10 +12,10 @@ fn gen_dup(
     ctx: &mut Context,
     asm: &mut Assembler,
 ) {
-    let dup_val = ctx.ir_stack_pop(0);
+    let dup_val = ctx.stack_pop(0);
     let (mapping, tmp_type) = ctx.get_opnd_mapping(StackOpnd(0));
 
-    let loc0 = ctx.ir_stack_push_mapping((mapping, tmp_type));
+    let loc0 = ctx.stack_push_mapping((mapping, tmp_type));
     asm.mov(loc0, dup_val);
 }
 

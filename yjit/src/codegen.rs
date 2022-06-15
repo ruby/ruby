@@ -277,7 +277,7 @@ fn jit_save_pc(jit: &JITState, asm: &mut Assembler) {
 ///       which could invalidate memory operands
 fn gen_save_sp(jit: &JITState, asm: &mut Assembler, ctx: &mut Context) {
     if ctx.get_sp_offset() != 0 {
-        let stack_pointer = ctx.ir_sp_opnd(0);
+        let stack_pointer = ctx.sp_opnd(0);
         let sp_addr = asm.lea(stack_pointer);
         asm.mov(SP, sp_addr);
         let cfp_sp_opnd = Opnd::mem(64, CFP, RUBY_OFFSET_CFP_SP);
@@ -897,10 +897,10 @@ fn gen_dup(
     _ocb: &mut OutlinedCb,
 ) -> CodegenStatus {
 
-    let dup_val = ctx.ir_stack_pop(0);
+    let dup_val = ctx.stack_pop(0);
     let (mapping, tmp_type) = ctx.get_opnd_mapping(StackOpnd(0));
 
-    let loc0 = ctx.ir_stack_push_mapping((mapping, tmp_type));
+    let loc0 = ctx.stack_push_mapping((mapping, tmp_type));
     asm.mov(loc0, dup_val);
 
     KeepCompiling
@@ -924,16 +924,16 @@ fn gen_dupn(
         return CantCompile;
     }
 
-    let opnd1: Opnd = ctx.ir_stack_opnd(1);
-    let opnd0: Opnd = ctx.ir_stack_opnd(0);
+    let opnd1: Opnd = ctx.stack_opnd(1);
+    let opnd0: Opnd = ctx.stack_opnd(0);
 
     let mapping1 = ctx.get_opnd_mapping(StackOpnd(1));
     let mapping0 = ctx.get_opnd_mapping(StackOpnd(0));
 
-    let dst1: Opnd = ctx.ir_stack_push_mapping(mapping1);
+    let dst1: Opnd = ctx.stack_push_mapping(mapping1);
     asm.mov(dst1, opnd1);
 
-    let dst0: Opnd = ctx.ir_stack_push_mapping(mapping0);
+    let dst0: Opnd = ctx.stack_push_mapping(mapping0);
     asm.mov(dst0, opnd0);
 
     KeepCompiling
@@ -957,8 +957,8 @@ fn stack_swap(
     offset0: u16,
     offset1: u16,
 ) {
-    let stack0_mem = ctx.ir_stack_opnd(offset0 as i32);
-    let stack1_mem = ctx.ir_stack_opnd(offset1 as i32);
+    let stack0_mem = ctx.stack_opnd(offset0 as i32);
+    let stack1_mem = ctx.stack_opnd(offset1 as i32);
 
     let mapping0 = ctx.get_opnd_mapping(StackOpnd(offset0));
     let mapping1 = ctx.get_opnd_mapping(StackOpnd(offset1));
