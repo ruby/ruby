@@ -1091,7 +1091,14 @@ void rb_sigwait_sleep(const rb_thread_t *, int fd, const rb_hrtime_t *);
 void rb_sigwait_fd_put(const rb_thread_t *, int fd);
 void rb_thread_sleep_interruptible(void);
 
+#if USE_MJIT
 static struct waitpid_state mjit_waitpid_state;
+
+// variables shared with thread.c
+// TODO: implement the same thing with postponed_job and obviate these variables
+bool mjit_waitpid_finished = false;
+int mjit_waitpid_status = 0;
+#endif
 
 static int
 waitpid_signal(struct waitpid_state *w)
@@ -1101,15 +1108,10 @@ waitpid_signal(struct waitpid_state *w)
         return TRUE;
     }
 #if USE_MJIT
-    else { /* mjit_add_waiting_pid */
-        if (w == &mjit_waitpid_state && w->ret) {
-            //mjit_notify_waitpid(w->status);
-            extern bool mjit_flag;
-            extern int mjit_status;
-            mjit_flag = true;
-            mjit_status = w->status;
-            return TRUE;
-        }
+    else if (w == &mjit_waitpid_state && w->ret) { /* mjit_add_waiting_pid */
+        mjit_waitpid_finished = true;
+        mjit_waitpid_status = w->status;
+        return TRUE;
     }
 #endif
     return FALSE;
@@ -1207,17 +1209,18 @@ waitpid_state_init(struct waitpid_state *w, rb_pid_t pid, int options)
     w->status = 0;
 }
 
-// must be called with vm->waitpid_lock held, this is not interruptible
+#if USE_MJIT
+/*
+ * must be called with vm->waitpid_lock held, this is not interruptible
+ */
 void
 mjit_add_waiting_pid(rb_vm_t *vm, rb_pid_t pid)
 {
-    // assert(!ruby_thread_has_gvl_p() && "must not have GVL"); // TODO: ???
-
     waitpid_state_init(&mjit_waitpid_state, pid, 0);
-
-    mjit_waitpid_state.ec = 0; // TODO: should we just interrupt the main ractor?
+    mjit_waitpid_state.ec = 0; // switch the behavior of waitpid_signal
     ccan_list_add(&vm->waiting_pids, &mjit_waitpid_state.wnode);
 }
+#endif
 
 static VALUE
 waitpid_sleep(VALUE x)

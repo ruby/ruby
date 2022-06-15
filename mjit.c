@@ -51,40 +51,6 @@ get_uniq_filename(unsigned long id, const char *prefix, const char *suffix)
     return str;
 }
 
-// Wait until workers don't compile any iseq.  It is called at the
-// start of GC.
-void
-mjit_gc_start_hook(void)
-{
-    if (!mjit_enabled)
-        return;
-    CRITICAL_SECTION_START(4, "mjit_gc_start_hook");
-    while (in_jit) {
-        verbose(4, "Waiting wakeup from a worker for GC");
-        rb_native_cond_wait(&mjit_client_wakeup, &mjit_engine_mutex);
-        verbose(4, "Getting wakeup from a worker for GC");
-    }
-    in_gc++;
-    CRITICAL_SECTION_FINISH(4, "mjit_gc_start_hook");
-}
-
-// Send a signal to workers to continue iseq compilations.  It is
-// called at the end of GC.
-void
-mjit_gc_exit_hook(void)
-{
-    if (!mjit_enabled)
-        return;
-    CRITICAL_SECTION_START(4, "mjit_gc_exit_hook");
-    in_gc--;
-    RUBY_ASSERT_ALWAYS(in_gc >= 0);
-    if (!in_gc) {
-        verbose(4, "Sending wakeup signal to workers after GC");
-        rb_native_cond_broadcast(&mjit_gc_wakeup);
-    }
-    CRITICAL_SECTION_FINISH(4, "mjit_gc_exit_hook");
-}
-
 // Prohibit calling JIT-ed code and let existing JIT-ed frames exit before the next insn.
 void
 mjit_cancel_all(const char *reason)
@@ -134,9 +100,6 @@ mjit_free_iseq(const rb_iseq_t *iseq)
     if (!mjit_enabled)
         return;
 
-    CRITICAL_SECTION_START(4, "mjit_free_iseq");
-    RUBY_ASSERT_ALWAYS(in_gc);
-    RUBY_ASSERT_ALWAYS(!in_jit);
     if (ISEQ_BODY(iseq)->jit_unit) {
         // jit_unit is not freed here because it may be referred by multiple
         // lists of units. `get_from_list` and `mjit_finish` do the job.
@@ -151,7 +114,6 @@ mjit_free_iseq(const rb_iseq_t *iseq)
             unit->iseq = NULL;
         }
     }
-    CRITICAL_SECTION_FINISH(4, "mjit_free_iseq");
 }
 
 // Free unit list. This should be called only when worker is finished
@@ -252,8 +214,6 @@ static void mjit_wait(struct rb_iseq_constant_body *body);
 static void
 check_unit_queue(void)
 {
-    // TODO: Use CRITICAL_SECTION
-    // TODO: Check if a C compiler is already running
     if (worker_stopped) return;
     if (current_cc_pid != 0) return; // still compiling
 
@@ -274,7 +234,6 @@ check_unit_queue(void)
     struct rb_mjit_unit *unit = get_from_list(&unit_queue);
     if (unit == NULL) return;
 
-    // TODO: Use CRITICAL_SECTION
 #ifdef _WIN32
     // Synchronously compile methods on Windows.
     // mswin: No SIGCHLD, MinGW: directly compiling .c to .so doesn't work
@@ -298,7 +257,7 @@ check_unit_queue(void)
 static struct rb_mjit_unit*
 create_unit(const rb_iseq_t *iseq)
 {
-    // To prevent GC, don't use ZALLOC // TODO: just use ZALLOC?
+    // To prevent GC, don't use ZALLOC // TODO: just use ZALLOC
     struct rb_mjit_unit *unit = calloc(1, sizeof(struct rb_mjit_unit));
     if (unit == NULL)
         return NULL;
@@ -336,14 +295,11 @@ check_compaction(void)
             current_cc_ms = real_ms_time();
             current_cc_unit = unit;
             current_cc_pid = start_mjit_compact(unit);
-            // TODO: check pid
+            // TODO: check -1
         }
     }
 #endif
 }
-
-bool mjit_flag = false;
-int mjit_status = 0;
 
 // Check the current CC process if any, and start a next C compiler process as needed.
 void
@@ -365,9 +321,9 @@ mjit_notify_waitpid(int status)
     }
     if (!success) {
         verbose(2, "Failed to generate so");
-        //verbose(1, "JIT compaction failure (%.1fms): Failed to compact methods", end_time - start_time); // TODO: if compact_p
         // TODO: free unit?
-        return; // TODO: set NOT_COMPILED_JIT_ISEQ_FUNC
+        // TODO: set NOT_COMPILED_JIT_ISEQ_FUNC?
+        return;
     }
 
     // Load .so file
@@ -438,16 +394,6 @@ mjit_add_iseq_to_process(const rb_iseq_t *iseq, const struct rb_mjit_compile_inf
         return;
     }
 
-    if (!recompile_p) {
-        CRITICAL_SECTION_START(3, "in add_iseq_to_process");
-
-        // This prevents multiple Ractors from enqueueing the same ISeq twice.
-        if (rb_multi_ractor_p() && (uintptr_t)ISEQ_BODY(iseq)->jit_func != NOT_ADDED_JIT_ISEQ_FUNC) {
-            CRITICAL_SECTION_FINISH(3, "in add_iseq_to_process");
-            return;
-        }
-    }
-
     RB_DEBUG_COUNTER_INC(mjit_add_iseq_to_process);
     ISEQ_BODY(iseq)->jit_func = (mjit_func_t)NOT_READY_JIT_ISEQ_FUNC;
     create_unit(iseq);
@@ -459,12 +405,6 @@ mjit_add_iseq_to_process(const rb_iseq_t *iseq, const struct rb_mjit_compile_inf
     add_to_list(ISEQ_BODY(iseq)->jit_unit, &unit_queue);
     if (active_units.length >= mjit_opts.max_cache_size) {
         unload_requests++;
-    }
-
-    if (!recompile_p) {
-        verbose(3, "Sending wakeup signal to workers in mjit_add_iseq_to_process");
-        rb_native_cond_broadcast(&mjit_worker_wakeup);
-        CRITICAL_SECTION_FINISH(3, "in add_iseq_to_process");
     }
 }
 
@@ -491,11 +431,9 @@ mjit_wait(struct rb_iseq_constant_body *body)
     while (body == NULL ? current_cc_pid == initial_pid : body->jit_func == (mjit_func_t)NOT_READY_JIT_ISEQ_FUNC) { // TODO: refactor this
         tries++;
         if (tries / 1000 > MJIT_WAIT_TIMEOUT_SECONDS || pch_status == PCH_FAILED) {
-            CRITICAL_SECTION_START(3, "in rb_mjit_wait_call to set jit_func");
             if (body != NULL) {
                 body->jit_func = (mjit_func_t) NOT_COMPILED_JIT_ISEQ_FUNC; // JIT worker seems dead. Give up.
             }
-            CRITICAL_SECTION_FINISH(3, "in rb_mjit_wait_call to set jit_func");
             mjit_warning("timed out to wait for JIT finish");
             break;
         }
@@ -536,9 +474,6 @@ mjit_recompile(const rb_iseq_t *iseq)
             RSTRING_PTR(rb_iseq_path(iseq)), FIX2INT(ISEQ_BODY(iseq)->location.first_lineno));
     assert(ISEQ_BODY(iseq)->jit_unit != NULL);
 
-    // TODO: critical section?
-    //remove_from_list(ISEQ_BODY(iseq)->jit_unit, &active_units);
-    //add_to_list(ISEQ_BODY(iseq)->jit_unit, &stale_units);
     mjit_add_iseq_to_process(iseq, &ISEQ_BODY(iseq)->jit_unit->compile_info, true);
     check_unit_queue();
 }
@@ -1064,21 +999,8 @@ mjit_finish(bool close_handle_p)
     if (!mjit_enabled)
         return;
 
-    // Wait for pch finish
-    verbose(2, "Stopping worker thread");
-    //CRITICAL_SECTION_START(3, "in mjit_finish to wakeup from pch");
-    //// As our threads are detached, we could just cancel them.  But it
-    //// is a bad idea because OS processes (C compiler) started by
-    //// threads can produce temp files.  And even if the temp files are
-    //// removed, the used C compiler still complaint about their
-    //// absence.  So wait for a clean finish of the threads.
-    //while (pch_status == PCH_NOT_READY) {
-    //    verbose(3, "Waiting wakeup from make_pch");
-    //    rb_native_cond_wait(&mjit_pch_wakeup, &mjit_engine_mutex);
-    //}
-    //CRITICAL_SECTION_FINISH(3, "in mjit_finish to wakeup from pch");
-
     // Stop worker
+    verbose(2, "Stopping worker thread");
     stop_worker();
 
     rb_native_mutex_destroy(&mjit_engine_mutex);
@@ -1134,7 +1056,6 @@ mjit_mark(void)
     //
     // Because an MJIT worker may modify active_units anytime, we need to convert
     // the linked list to an array to safely loop its ISeqs without keeping a lock.
-    CRITICAL_SECTION_START(4, "mjit_mark");
     int length = 0;
     if (compiling_iseqs != NULL) {
         while (compiling_iseqs[length]) length++;
@@ -1155,7 +1076,6 @@ mjit_mark(void)
         i++;
     }
     assert(i == length);
-    CRITICAL_SECTION_FINISH(4, "mjit_mark");
 
     for (i = 0; i < length; i++) {
         if (iseqs[i] == NULL) // ISeq is GC-ed

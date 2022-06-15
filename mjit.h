@@ -95,8 +95,6 @@ RUBY_SYMBOL_EXPORT_END
 extern void mjit_cancel_all(const char *reason);
 extern bool mjit_compile(FILE *f, const rb_iseq_t *iseq, const char *funcname, int id);
 extern void mjit_init(const struct mjit_options *opts);
-extern void mjit_gc_start_hook(void);
-extern void mjit_gc_exit_hook(void);
 extern void mjit_free_iseq(const rb_iseq_t *iseq);
 extern void mjit_update_references(const rb_iseq_t *iseq);
 extern void mjit_mark(void);
@@ -216,8 +214,6 @@ void mjit_finish(bool close_handle_p);
 static inline void mjit_cancel_all(const char *reason){}
 static inline struct mjit_cont *mjit_cont_new(rb_execution_context_t *ec){return NULL;}
 static inline void mjit_cont_free(struct mjit_cont *cont){}
-static inline void mjit_gc_start_hook(void){}
-static inline void mjit_gc_exit_hook(void){}
 static inline void mjit_free_iseq(const rb_iseq_t *iseq){}
 static inline void mjit_mark(void){}
 static inline VALUE mjit_exec(rb_execution_context_t *ec) { return Qundef; /* unreachable */ }
