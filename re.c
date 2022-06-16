@@ -3632,6 +3632,25 @@ rb_reg_match_p(VALUE re, VALUE str, long pos)
  * Alias for Regexp.new
  */
 
+static int
+str_to_option(VALUE str)
+{
+    int flag = 0;
+    const char *ptr;
+    long len;
+    str = rb_check_string_type(str);
+    if (NIL_P(str)) return -1;
+    RSTRING_GETMEM(str, ptr, len);
+    for (long i = 0; i < len; ++i) {
+	int f = char_to_option(ptr[i]);
+	if (!f) {
+	    rb_raise(rb_eArgError, "unknown regexp option: %"PRIsVALUE, str);
+	}
+	flag |= f;
+    }
+    return flag;
+}
+
 /*
  *  call-seq:
  *    Regexp.new(string, options = 0, n_flag = nil, timeout: nil) -> regexp
@@ -3716,7 +3735,9 @@ rb_reg_initialize_m(int argc, VALUE *argv, VALUE self)
     }
     else {
         if (opts != Qundef) {
+	    int f;
 	    if (FIXNUM_P(opts)) flags = FIX2INT(opts);
+	    else if ((f = str_to_option(opts)) >= 0) flags = f;
 	    else if (!NIL_P(opts) && rb_bool_expected(opts, "ignorecase", FALSE))
 		flags = ONIG_OPTION_IGNORECASE;
 	}
