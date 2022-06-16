@@ -202,8 +202,9 @@ RSpec.shared_examples "bundle install --standalone" do
     it "generates a bundle/bundler/setup.rb with the proper paths" do
       expected_path = bundled_app("bundle/bundler/setup.rb")
       extension_line = File.read(expected_path).each_line.find {|line| line.include? "/extensions/" }.strip
+      platform = Gem::Platform.local
       expect(extension_line).to start_with '$:.unshift File.expand_path("#{__dir__}/../#{RUBY_ENGINE}/#{RbConfig::CONFIG["ruby_version"]}/extensions/'
-      expect(extension_line).to end_with '/very_simple_binary-1.0")'
+      expect(extension_line).to end_with platform.to_s + '/#{RbConfig::CONFIG["ruby_version"]}/very_simple_binary-1.0")'
     end
   end
 
