@@ -88,6 +88,25 @@ pub enum X86Opnd
     IPRel(i32)
 }
 
+impl X86Reg {
+    fn sub_reg(&self, num_bits: u8) -> Self {
+        assert!(
+            num_bits == 8 ||
+            num_bits == 16 ||
+            num_bits == 32 ||
+            num_bits == 64
+        );
+
+        assert!(num_bits <= self.num_bits);
+
+        Self {
+            num_bits,
+            reg_type: self.reg_type,
+            reg_no: self.reg_no
+        }
+    }
+}
+
 impl X86Opnd {
     fn rex_needed(&self) -> bool {
         match self {
