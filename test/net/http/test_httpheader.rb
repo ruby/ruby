@@ -308,6 +308,14 @@ class HTTPHeaderTest < Test::Unit::TestCase
   end
 
   def test_content_range
+    @c['Content-Range'] = "bytes 0-499/1000"
+    assert_equal 0..499, @c.content_range
+    @c['Content-Range'] = "bytes 1-500/1000"
+    assert_equal 1..500, @c.content_range
+    @c['Content-Range'] = "bytes 1-1/1000"
+    assert_equal 1..1, @c.content_range
+    @c['Content-Range'] = "tokens 1-1/1000"
+    assert_equal nil, @c.content_range
   end
 
   def test_range_length
@@ -317,6 +325,8 @@ class HTTPHeaderTest < Test::Unit::TestCase
     assert_equal 500, @c.range_length
     @c['Content-Range'] = "bytes 1-1/1000"
     assert_equal 1, @c.range_length
+    @c['Content-Range'] = "tokens 1-1/1000"
+    assert_equal nil, @c.range_length
   end
 
   def test_chunked?
