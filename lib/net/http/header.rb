@@ -338,9 +338,10 @@ module Net::HTTPHeader
   # fits inside the full entity body, as range of byte offsets.
   def content_range
     return nil unless @header['content-range']
-    m = %r<bytes\s+(\d+)-(\d+)/(\d+|\*)>i.match(self['Content-Range']) or
+    m = %r<\A\s*(\w+)\s+(\d+)-(\d+)/(\d+|\*)>.match(self['Content-Range']) or
         raise Net::HTTPHeaderSyntaxError, 'wrong Content-Range format'
-    m[1].to_i .. m[2].to_i
+    return unless m[1] == 'bytes'
+    m[2].to_i .. m[3].to_i
   end
 
   # The length of the range represented in Content-Range: header.
