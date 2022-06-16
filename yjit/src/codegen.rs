@@ -4825,7 +4825,12 @@ fn gen_send_general(
             }
         }
         METHOD_VISI_PROTECTED => {
-            jit_protected_callee_ancestry_guard(jit, cb, ocb, cme, side_exit);
+            // If the method call is an FCALL, it is always valid
+            if flags & VM_CALL_FCALL == 0 {
+                // otherwise we need an ancestry check to ensure the receiver is vaild to be called
+                // as protected
+                jit_protected_callee_ancestry_guard(jit, cb, ocb, cme, side_exit);
+            }
         }
         _ => {
             panic!("cmes should always have a visibility!");
