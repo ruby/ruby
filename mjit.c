@@ -327,7 +327,9 @@ mjit_notify_waitpid(int status)
     }
     if (!success) {
         verbose(2, "Failed to generate so");
-        current_cc_unit->iseq->body->jit_func = (mjit_func_t)NOT_COMPILED_JIT_ISEQ_FUNC; // TODO: consider unit->compact_p
+        if (!current_cc_unit->compact_p) {
+            current_cc_unit->iseq->body->jit_func = (mjit_func_t)NOT_COMPILED_JIT_ISEQ_FUNC;
+        }
         free_unit(current_cc_unit);
         current_cc_unit = NULL;
         return;
