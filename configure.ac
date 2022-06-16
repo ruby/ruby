@@ -782,14 +782,11 @@ AS_IF([test "$GCC" = yes], [
 
     # aarch64 branch protection
     AS_CASE(["$target_cpu"], [aarch64], [
-        branch_protection=no
-        RUBY_TRY_CFLAGS(-mbranch-protection=pac-ret,[branch_protection=yes])
-        AS_IF([test "x$branch_protection" = xyes], [
-            RUBY_APPEND_OPTION(XCFLAGS, -mbranch-protection=pac-ret)
-        ],
-        [
-            RUBY_TRY_CFLAGS(-msign-return-address=all, [
-                RUBY_APPEND_OPTION(XCFLAGS, -msign-return-address=all)
+	AS_FOR(option, opt, [-mbranch-protection=pac-ret -msign-return-address=all], [
+            RUBY_TRY_CFLAGS(option, [branch_protection=yes], [branch_protection=no])
+            AS_IF([test "x$branch_protection" = xyes], [
+                RUBY_APPEND_OPTION(XCFLAGS, option)
+                break
             ])
         ])
     ])
