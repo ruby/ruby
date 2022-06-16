@@ -1107,9 +1107,6 @@ convert_unit_to_func(struct rb_mjit_unit *unit)
     fprintf(f, "/* %s@%s:%ld */\n\n", iseq_label, iseq_path, iseq_lineno);
     bool success = mjit_compile(f, unit->iseq, funcname, unit->id);
 
-    // release blocking mjit_gc_start_hook
-    free_compiling_iseqs();
-
     fclose(f);
     if (!success) {
         if (!mjit_opts.save_temps)
