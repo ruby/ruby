@@ -556,9 +556,6 @@ RSTRING_LENINT(VALUE str)
     return rb_long2int(RSTRING_LEN(str));
 }
 
-bool
-rb_str_shared_root_p(VALUE str);
-
 /**
  * Convenient macro to obtain the contents and length at once.
  *

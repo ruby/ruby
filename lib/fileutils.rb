@@ -368,6 +368,8 @@ module FileUtils
   #
   # Raises an exception if for any reason a directory cannot be created.
   #
+  # FileUtils.mkpath and FileUtils.makedirs are aliases for FileUtils.mkdir_p.
+  #
   def mkdir_p(list, mode: nil, noop: nil, verbose: nil)
     list = fu_list(list)
     fu_output_message "mkdir -p #{mode ? ('-m %03o ' % mode) : ''}#{list.join ' '}" if verbose
@@ -1161,7 +1163,7 @@ module FileUtils
   #
   #   FileUtils.rm(list, force: true, **kwargs)
   #
-  # Argument +list+ or its elements
+  # Argument +list+ (a single path or an array of paths)
   # should be {interpretable as paths}[rdoc-ref:FileUtils@Path+Arguments].
   #
   # See FileUtils.rm for keyword arguments.
@@ -1422,6 +1424,8 @@ module FileUtils
   # Arguments +a+ and +b+
   # should be {interpretable as a path}[rdoc-ref:FileUtils@Path+Arguments].
   #
+  # FileUtils.identical? and FileUtils.cmp are aliases for FileUtils.compare_file.
+  #
   def compare_file(a, b)
     return false unless File.size(a) == File.size(b)
     File.open(a, 'rb') {|fa|
@@ -1458,8 +1462,8 @@ module FileUtils
   end
   module_function :compare_stream
 
-  # Copies a file entry;
-  # see {install(1)}[https://man7.org/linux/man-pages/man1/install.1.html].
+  # Copies a file entry.
+  # See {install(1)}[https://man7.org/linux/man-pages/man1/install.1.html].
   #
   # Arguments +src+ (a single path or an array of paths)
   # and +dest+ (a single path)
@@ -1638,7 +1642,8 @@ module FileUtils
 
   # Changes permissions on the entries at the paths given in +list+
   # (a single path or an array of paths)
-  # to the permissions given by +mode+:
+  # to the permissions given by +mode+;
+  # returns +list+ if it is an array, <tt>[list]</tt> otherwise:
   #
   # - Modifies each entry that is a regular file using
   #   {File.chmod}[https://docs.ruby-lang.org/en/master/File.html#method-c-chmod].
@@ -1737,7 +1742,8 @@ module FileUtils
 
   # Changes the owner and group on the entries at the paths given in +list+
   # (a single path or an array of paths)
-  # to the given +user+ and +group+:
+  # to the given +user+ and +group+;
+  # returns +list+ if it is an array, <tt>[list]</tt> otherwise:
   #
   # - Modifies each entry that is a regular file using
   #   {File.chown}[https://docs.ruby-lang.org/en/master/File.html#method-c-chown].
@@ -1863,7 +1869,10 @@ module FileUtils
   # Updates modification times (mtime) and access times (atime)
   # of the entries given by the paths in +list+
   # (a single path or an array of paths);
-  # by default, creates an empty file for any path to a non-existent entry.
+  # returns +list+ if it is an array, <tt>[list]</tt> otherwise.
+  #
+  # By default, creates an empty file for any path to a non-existent entry;
+  # use keyword argument +nocreate+ to raise an exception instead.
   #
   # Argument +list+ or its elements
   # should be {interpretable as paths}[rdoc-ref:FileUtils@Path+Arguments].

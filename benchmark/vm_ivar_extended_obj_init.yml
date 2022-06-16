@@ -9,6 +9,6 @@ prelude: |
     end
   end
 benchmark:
-  vm_ivar_init: |
+  vm_ivar_extended_obj_init: |
     C.new
 loop_count: 30000000

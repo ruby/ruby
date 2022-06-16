@@ -5184,15 +5184,23 @@ gc_unprotect_pages(rb_objspace_t *objspace, rb_heap_t *heap)
 static void gc_update_references(rb_objspace_t * objspace);
 static void invalidate_moved_page(rb_objspace_t *objspace, struct heap_page *page);
 
-#ifndef GC_COMPACTION_SUPPORTED
+#ifndef GC_CAN_COMPILE_COMPACTION
 #if defined(__wasi__) /* WebAssembly doesn't support signals */
-# define GC_COMPACTION_SUPPORTED 0
+# define GC_CAN_COMPILE_COMPACTION 0
 #else
-# define GC_COMPACTION_SUPPORTED 1
+# define GC_CAN_COMPILE_COMPACTION 1
 #endif
 #endif
 
-#if GC_COMPACTION_SUPPORTED
+#if defined(__MINGW32__) || defined(_WIN32)
+# define GC_COMPACTION_SUPPORTED 1
+#else
+/* If not MinGW, Windows, or does not have mmap, we cannot use mprotect for
+ * the read barrier, so we must disable compaction. */
+# define GC_COMPACTION_SUPPORTED (GC_CAN_COMPILE_COMPACTION && HEAP_PAGE_ALLOC_USE_MMAP)
+#endif
+
+#if GC_CAN_COMPILE_COMPACTION
 static void
 read_barrier_handler(uintptr_t address)
 {
@@ -5215,7 +5223,7 @@ read_barrier_handler(uintptr_t address)
 }
 #endif
 
-#if !GC_COMPACTION_SUPPORTED
+#if !GC_CAN_COMPILE_COMPACTION
 static void
 uninstall_handlers(void)
 {
@@ -9567,17 +9575,7 @@ gc_start_internal(rb_execution_context_t *ec, VALUE self, VALUE full_mark, VALUE
 
     /* For now, compact implies full mark / sweep, so ignore other flags */
     if (RTEST(compact)) {
-        /* If not MinGW, Windows, or does not have mmap, we cannot use mprotect for
-         * the read barrier, so we must disable compaction. */
-#if !defined(__MINGW32__) && !defined(_WIN32)
-        if (!HEAP_PAGE_ALLOC_USE_MMAP) {
-            rb_raise(rb_eNotImpError, "Compaction isn't available on this platform");
-        }
-#endif
-
-#if !GC_COMPACTION_SUPPORTED
-        rb_raise(rb_eNotImpError, "Compaction isn't available on this platform");
-#endif
+        GC_ASSERT(GC_COMPACTION_SUPPORTED);
 
         reason |= GPR_FLAG_COMPACT;
     }
@@ -9742,7 +9740,6 @@ gc_move(rb_objspace_t *objspace, VALUE scan, VALUE free, size_t src_slot_size, s
     return (VALUE)src;
 }
 
-#if GC_COMPACTION_SUPPORTED
 static int
 compare_free_slots(const void *left, const void *right, void *dummy)
 {
@@ -9791,7 +9788,6 @@ gc_sort_heap_by_empty_slots(rb_objspace_t *objspace)
         free(page_list);
     }
 }
-#endif
 
 static void
 gc_ref_update_array(rb_objspace_t * objspace, VALUE v)
@@ -10491,7 +10487,6 @@ gc_update_references(rb_objspace_t *objspace)
     gc_update_table_refs(objspace, finalizer_table);
 }
 
-#if GC_COMPACTION_SUPPORTED
 /*
  *  call-seq:
  *     GC.latest_compact_info -> {:considered=>{:T_CLASS=>11}, :moved=>{:T_CLASS=>11}}
@@ -10540,11 +10535,7 @@ gc_compact_stats(VALUE self)
 
     return h;
 }
-#else
-#  define gc_compact_stats rb_f_notimplement
-#endif
 
-#if GC_COMPACTION_SUPPORTED
 static void
 root_obj_check_moved_i(const char *category, VALUE obj, void *data)
 {
@@ -10619,11 +10610,7 @@ gc_compact(VALUE self)
 
     return gc_compact_stats(self);
 }
-#else
-#  define gc_compact rb_f_notimplement
-#endif
 
-#if GC_COMPACTION_SUPPORTED
 static VALUE
 gc_verify_compaction_references(rb_execution_context_t *ec, VALUE self, VALUE double_heap, VALUE toward_empty)
 {
@@ -10657,9 +10644,6 @@ gc_verify_compaction_references(rb_execution_context_t *ec, VALUE self, VALUE do
 
     return gc_compact_stats(self);
 }
-#else
-#  define gc_verify_compaction_references (rb_builtin_arity2_function_type)rb_f_notimplement
-#endif
 
 VALUE
 rb_gc_start(void)
@@ -11250,7 +11234,6 @@ gc_disable(rb_execution_context_t *ec, VALUE _)
     return rb_gc_disable();
 }
 
-#if GC_COMPACTION_SUPPORTED
 /*
  *  call-seq:
  *     GC.auto_compact = flag
@@ -11264,22 +11247,12 @@ gc_disable(rb_execution_context_t *ec, VALUE _)
 static VALUE
 gc_set_auto_compact(VALUE _, VALUE v)
 {
-    /* If not MinGW, Windows, or does not have mmap, we cannot use mprotect for
-     * the read barrier, so we must disable automatic compaction. */
-#if !defined(__MINGW32__) && !defined(_WIN32)
-    if (!HEAP_PAGE_ALLOC_USE_MMAP) {
-        rb_raise(rb_eNotImpError, "Automatic compaction isn't available on this platform");
-    }
-#endif
+    GC_ASSERT(GC_COMPACTION_SUPPORTED);
 
     ruby_enable_autocompact = RTEST(v);
     return v;
 }
-#else
-#  define gc_set_auto_compact rb_f_notimplement
-#endif
 
-#if GC_COMPACTION_SUPPORTED
 /*
  *  call-seq:
  *     GC.auto_compact    -> true or false
@@ -11291,9 +11264,6 @@ gc_get_auto_compact(VALUE _)
 {
     return RBOOL(ruby_enable_autocompact);
 }
-#else
-#  define gc_get_auto_compact rb_f_notimplement
-#endif
 
 static int
 get_envparam_size(const char *name, size_t *default_value, size_t lower_bound)
@@ -14150,13 +14120,21 @@ Init_GC(void)
     rb_define_singleton_method(rb_mGC, "malloc_allocated_size", gc_malloc_allocated_size, 0);
     rb_define_singleton_method(rb_mGC, "malloc_allocations", gc_malloc_allocations, 0);
 #endif
-    rb_define_singleton_method(rb_mGC, "compact", gc_compact, 0);
-    rb_define_singleton_method(rb_mGC, "auto_compact", gc_get_auto_compact, 0);
-    rb_define_singleton_method(rb_mGC, "auto_compact=", gc_set_auto_compact, 1);
-    rb_define_singleton_method(rb_mGC, "latest_compact_info", gc_compact_stats, 0);
-#if !GC_COMPACTION_SUPPORTED
-    rb_define_singleton_method(rb_mGC, "verify_compaction_references", rb_f_notimplement, -1);
-#endif
+
+    if (GC_COMPACTION_SUPPORTED) {
+        rb_define_singleton_method(rb_mGC, "compact", gc_compact, 0);
+        rb_define_singleton_method(rb_mGC, "auto_compact", gc_get_auto_compact, 0);
+        rb_define_singleton_method(rb_mGC, "auto_compact=", gc_set_auto_compact, 1);
+        rb_define_singleton_method(rb_mGC, "latest_compact_info", gc_compact_stats, 0);
+    }
+    else {
+        rb_define_singleton_method(rb_mGC, "compact", rb_f_notimplement, 0);
+        rb_define_singleton_method(rb_mGC, "auto_compact", rb_f_notimplement, 0);
+        rb_define_singleton_method(rb_mGC, "auto_compact=", rb_f_notimplement, 1);
+        rb_define_singleton_method(rb_mGC, "latest_compact_info", rb_f_notimplement, 0);
+        /* When !GC_COMPACTION_SUPPORTED, this method is not defined in gc.rb */
+        rb_define_singleton_method(rb_mGC, "verify_compaction_references", rb_f_notimplement, -1);
+    }
 
 #if GC_DEBUG_STRESS_TO_CLASS
     rb_define_singleton_method(rb_mGC, "add_stress_to_class", rb_gcdebug_add_stress_to_class, -1);

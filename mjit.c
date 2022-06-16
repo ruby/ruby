@@ -327,7 +327,9 @@ mjit_notify_waitpid(int status)
     }
     if (!success) {
         verbose(2, "Failed to generate so");
-        current_cc_unit->iseq->body->jit_func = (mjit_func_t)NOT_COMPILED_JIT_ISEQ_FUNC; // TODO: consider unit->compact_p
+        if (!current_cc_unit->compact_p) {
+            current_cc_unit->iseq->body->jit_func = (mjit_func_t)NOT_COMPILED_JIT_ISEQ_FUNC;
+        }
         free_unit(current_cc_unit);
         current_cc_unit = NULL;
         return;
@@ -450,6 +452,17 @@ mjit_wait(struct rb_iseq_constant_body *body)
         }
 
         rb_thread_wait_for(tv);
+    }
+}
+
+static void
+mjit_wait_unit(struct rb_mjit_unit *unit)
+{
+    if (unit->compact_p) {
+        mjit_wait(NULL);
+    }
+    else {
+        mjit_wait(current_cc_unit->iseq->body);
     }
 }
 
@@ -909,7 +922,7 @@ stop_worker(void)
 {
     stop_worker_p = true;
     if (current_cc_unit != NULL) {
-        mjit_wait(current_cc_unit->iseq->body); // TODO: consider unit->compact_p
+        mjit_wait_unit(current_cc_unit);
     }
     worker_stopped = true;
 }
@@ -928,11 +941,7 @@ mjit_pause(bool wait_p)
     // Flush all queued units with no option or `wait: true`
     if (wait_p) {
         while (current_cc_unit != NULL) {
-            if (current_cc_unit->compact_p) {
-                mjit_wait(NULL);
-            } else {
-                mjit_wait(current_cc_unit->iseq->body);
-            }
+            mjit_wait_unit(current_cc_unit);
         }
     }
 
@@ -1050,11 +1059,8 @@ mjit_finish(bool close_handle_p)
 
 // Called by rb_vm_mark().
 //
-// Mark an ISeq being compiled to prevent its CCs from being GC-ed, which
-// an MJIT worker may concurrently see.
-//
-// Also mark active_units so that we do not GC ISeq which may still be
-// referred to by mjit_recompile() or compact_all_jit_code().
+// Mark active_units so that we do not GC ISeq which may still be
+// referenced by mjit_recompile() or mjit_compact().
 void
 mjit_mark(void)
 {
@@ -1062,36 +1068,9 @@ mjit_mark(void)
         return;
     RUBY_MARK_ENTER("mjit");
 
-    // We need to release a lock when calling rb_gc_mark to avoid doubly acquiring
-    // a lock by by mjit_gc_start_hook inside rb_gc_mark.
-    //
-    // Because an MJIT worker may modify active_units anytime, we need to convert
-    // the linked list to an array to safely loop its ISeqs without keeping a lock.
-    int length = 0;
-    if (compiling_iseqs != NULL) {
-        while (compiling_iseqs[length]) length++;
-    }
-    length += active_units.length;
-    const rb_iseq_t **iseqs = ALLOCA_N(const rb_iseq_t *, length);
-
     struct rb_mjit_unit *unit = NULL;
-    int i = 0;
-    if (compiling_iseqs != NULL) {
-        while (compiling_iseqs[i]) {
-            iseqs[i] = compiling_iseqs[i];
-            i++;
-        }
-    }
     ccan_list_for_each(&active_units.head, unit, unode) {
-        iseqs[i] = unit->iseq;
-        i++;
-    }
-    assert(i == length);
-
-    for (i = 0; i < length; i++) {
-        if (iseqs[i] == NULL) // ISeq is GC-ed
-            continue;
-        rb_gc_mark((VALUE)iseqs[i]);
+        rb_gc_mark((VALUE)unit->iseq);
     }
 
     RUBY_MARK_LEAVE("mjit");

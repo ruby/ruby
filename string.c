@@ -233,12 +233,6 @@ rb_str_embed_size(long capa)
     return offsetof(struct RString, as.embed.ary) + capa;
 }
 
-bool
-rb_str_shared_root_p(VALUE str)
-{
-    return FL_TEST_RAW(str, STR_SHARED_ROOT);
-}
-
 size_t
 rb_str_size_as_embedded(VALUE str)
 {
