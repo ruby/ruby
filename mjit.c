@@ -355,16 +355,18 @@ mjit_notify_waitpid(int status)
             remove_file(so_file);
 
         // Set the jit_func if successful
-        if ((uintptr_t)func > (uintptr_t)LAST_JIT_ISEQ_FUNC) {
+        if (current_cc_unit->iseq != NULL) { // mjit_free_iseq could nullify this
             rb_iseq_t *iseq = current_cc_unit->iseq;
-            double end_time = real_ms_time();
-            verbose(1, "JIT success (%.1fms): %s@%s:%ld -> %s",
-                    end_time - current_cc_ms, RSTRING_PTR(ISEQ_BODY(iseq)->location.label),
-                    RSTRING_PTR(rb_iseq_path(iseq)), FIX2LONG(ISEQ_BODY(iseq)->location.first_lineno), c_file);
+            if ((uintptr_t)func > (uintptr_t)LAST_JIT_ISEQ_FUNC) {
+                double end_time = real_ms_time();
+                verbose(1, "JIT success (%.1fms): %s@%s:%ld -> %s",
+                        end_time - current_cc_ms, RSTRING_PTR(ISEQ_BODY(iseq)->location.label),
+                        RSTRING_PTR(rb_iseq_path(iseq)), FIX2LONG(ISEQ_BODY(iseq)->location.first_lineno), c_file);
 
-            add_to_list(current_cc_unit, &active_units);
+                add_to_list(current_cc_unit, &active_units);
+            }
             MJIT_ATOMIC_SET(ISEQ_BODY(iseq)->jit_func, func);
-        }
+        } // TODO: free unit on else?
         current_cc_unit = NULL;
 
         // Run compaction if it should
