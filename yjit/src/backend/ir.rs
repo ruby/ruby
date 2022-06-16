@@ -175,15 +175,25 @@ impl Opnd
         }
     }
 
-    /// Constant pointer operand
+    /// Constructor for constant pointer operand
     pub fn const_ptr(ptr: *const u8) -> Self {
         Opnd::UImm(ptr as u64)
     }
 
+    /// Unwrap a register operand
     pub fn unwrap_reg(&self) -> Reg {
         match self {
             Opnd::Reg(reg) => *reg,
             _ => unreachable!("trying to unwrap {:?} into reg", self)
+        }
+    }
+
+    /// Get the size in bits for register/memory operands
+    pub fn rm_num_bits(&self) -> u8 {
+        match self {
+            Opnd::Reg(reg) => reg.num_bits,
+            Opnd::Mem(mem) => mem.num_bits,
+            _ => unreachable!()
         }
     }
 }
