@@ -223,3 +223,22 @@ fn test_jcc_label()
 
     asm.compile_with_num_regs(&mut cb, 1);
 }
+
+#[test]
+fn test_jcc_ptr()
+{
+    let (mut asm, mut cb) = setup_asm();
+
+    // FIXME
+    /*
+    let side_exit = Target::CodePtr((5 as *mut u8).into());
+    let not_mask = asm.not(Opnd::mem(32, EC, RUBY_OFFSET_EC_INTERRUPT_MASK));
+    asm.test(
+        Opnd::mem(32, EC, RUBY_OFFSET_EC_INTERRUPT_FLAG),
+        not_mask,
+    );
+    asm.jnz(side_exit);
+    */
+
+    asm.compile_with_num_regs(&mut cb, 1);
+}
