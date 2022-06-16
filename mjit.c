@@ -236,9 +236,9 @@ check_unit_queue(void)
     // Synchronously compile methods on Windows.
     // mswin: No SIGCHLD, MinGW: directly compiling .c to .so doesn't work
     mjit_func_t func = convert_unit_to_func(unit);
+    MJIT_ATOMIC_SET(ISEQ_BODY(unit->iseq)->jit_func, func);
     if ((uintptr_t)func > (uintptr_t)LAST_JIT_ISEQ_FUNC) {
         add_to_list(unit, &active_units);
-        MJIT_ATOMIC_SET(ISEQ_BODY(unit->iseq)->jit_func, func);
     }
 #else
     current_cc_ms = real_ms_time();
