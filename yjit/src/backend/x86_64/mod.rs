@@ -88,7 +88,9 @@ impl Assembler
                         Opnd::InsnOut(out_idx) => {
                             if live_ranges[out_idx] > index {
                                 let opnd0 = asm.load(opnds[0]);
-                                asm.push_insn(op, vec![opnd0, opnds[1]], None);
+                                let mut new_opnds = vec![opnd0];
+                                new_opnds.extend_from_slice(&opnds[1..]);
+                                asm.push_insn(op, new_opnds, None);
                                 return;
                             }
                         },
@@ -96,7 +98,9 @@ impl Assembler
                         // We have to load memory and register operands to avoid corrupting them
                         Opnd::Mem(_) | Opnd::Reg(_) => {
                             let opnd0 = asm.load(opnds[0]);
-                            asm.push_insn(op, vec![opnd0, opnds[1]], None);
+                            let mut new_opnds = vec![opnd0];
+                            new_opnds.extend_from_slice(&opnds[1..]);
+                            asm.push_insn(op, new_opnds, None);
                             return;
                         },
 
@@ -113,6 +117,8 @@ impl Assembler
     /// Emit platform-specific machine code
     pub fn x86_emit(&mut self, cb: &mut CodeBlock) -> Vec<u32>
     {
+        //dbg!(&self.insns);
+
         // List of GC offsets
         let mut gc_offsets: Vec<u32> = Vec::new();
 
