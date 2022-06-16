@@ -1,9 +1,11 @@
 mod atomic;
+mod bitmask_imm;
 mod branch;
 mod call;
 mod data_imm;
 mod data_reg;
 mod load;
+mod logical_imm;
 mod mov;
 mod sf;
 mod store;
