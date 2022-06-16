@@ -453,6 +453,17 @@ mjit_wait(struct rb_iseq_constant_body *body)
     }
 }
 
+static void
+mjit_wait_unit(struct rb_mjit_unit *unit)
+{
+    if (unit->compact_p) {
+        mjit_wait(NULL);
+    }
+    else {
+        mjit_wait(current_cc_unit->iseq->body);
+    }
+}
+
 // Wait for JIT compilation finish for --jit-wait, and call the function pointer
 // if the compiled result is not NOT_COMPILED_JIT_ISEQ_FUNC.
 VALUE
@@ -909,7 +920,7 @@ stop_worker(void)
 {
     stop_worker_p = true;
     if (current_cc_unit != NULL) {
-        mjit_wait(current_cc_unit->iseq->body); // TODO: consider unit->compact_p
+        mjit_wait_unit(current_cc_unit);
     }
     worker_stopped = true;
 }
@@ -928,11 +939,7 @@ mjit_pause(bool wait_p)
     // Flush all queued units with no option or `wait: true`
     if (wait_p) {
         while (current_cc_unit != NULL) {
-            if (current_cc_unit->compact_p) {
-                mjit_wait(NULL);
-            } else {
-                mjit_wait(current_cc_unit->iseq->body);
-            }
+            mjit_wait_unit(current_cc_unit);
         }
     }
 
