@@ -9740,6 +9740,7 @@ gc_move(rb_objspace_t *objspace, VALUE scan, VALUE free, size_t src_slot_size, s
     return (VALUE)src;
 }
 
+#if GC_CAN_COMPILE_COMPACTION
 static int
 compare_free_slots(const void *left, const void *right, void *dummy)
 {
@@ -9788,6 +9789,7 @@ gc_sort_heap_by_empty_slots(rb_objspace_t *objspace)
         free(page_list);
     }
 }
+#endif
 
 static void
 gc_ref_update_array(rb_objspace_t * objspace, VALUE v)
@@ -10487,6 +10489,7 @@ gc_update_references(rb_objspace_t *objspace)
     gc_update_table_refs(objspace, finalizer_table);
 }
 
+#if GC_CAN_COMPILE_COMPACTION
 /*
  *  call-seq:
  *     GC.latest_compact_info -> {:considered=>{:T_CLASS=>11}, :moved=>{:T_CLASS=>11}}
@@ -10535,7 +10538,11 @@ gc_compact_stats(VALUE self)
 
     return h;
 }
+#else
+#  define gc_compact_stats rb_f_notimplement
+#endif
 
+#if GC_CAN_COMPILE_COMPACTION
 static void
 root_obj_check_moved_i(const char *category, VALUE obj, void *data)
 {
@@ -10610,7 +10617,11 @@ gc_compact(VALUE self)
 
     return gc_compact_stats(self);
 }
+#else
+#  define gc_compact rb_f_notimplement
+#endif
 
+#if GC_CAN_COMPILE_COMPACTION
 static VALUE
 gc_verify_compaction_references(rb_execution_context_t *ec, VALUE self, VALUE double_heap, VALUE toward_empty)
 {
@@ -10644,6 +10655,9 @@ gc_verify_compaction_references(rb_execution_context_t *ec, VALUE self, VALUE do
 
     return gc_compact_stats(self);
 }
+#else
+#  define gc_verify_compaction_references (rb_builtin_arity2_function_type)rb_f_notimplement
+#endif
 
 VALUE
 rb_gc_start(void)
@@ -11234,6 +11248,7 @@ gc_disable(rb_execution_context_t *ec, VALUE _)
     return rb_gc_disable();
 }
 
+#if GC_CAN_COMPILE_COMPACTION
 /*
  *  call-seq:
  *     GC.auto_compact = flag
@@ -11252,7 +11267,11 @@ gc_set_auto_compact(VALUE _, VALUE v)
     ruby_enable_autocompact = RTEST(v);
     return v;
 }
+#else
+#  define gc_set_auto_compact rb_f_notimplement
+#endif
 
+#if GC_CAN_COMPILE_COMPACTION
 /*
  *  call-seq:
  *     GC.auto_compact    -> true or false
@@ -11264,6 +11283,9 @@ gc_get_auto_compact(VALUE _)
 {
     return RBOOL(ruby_enable_autocompact);
 }
+#else
+#  define gc_get_auto_compact rb_f_notimplement
+#endif
 
 static int
 get_envparam_size(const char *name, size_t *default_value, size_t lower_bound)
