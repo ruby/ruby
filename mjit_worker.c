@@ -694,59 +694,6 @@ sprint_funcname(char *funcname, const struct rb_mjit_unit *unit)
     }
 }
 
-static const rb_iseq_t **compiling_iseqs = NULL;
-
-static bool
-set_compiling_iseqs(const rb_iseq_t *iseq)
-{
-    compiling_iseqs = calloc(ISEQ_BODY(iseq)->iseq_size + 2, sizeof(rb_iseq_t *)); // 2: 1 (unit->iseq) + 1 (NULL end)
-    if (compiling_iseqs == NULL)
-        return false;
-
-    compiling_iseqs[0] = iseq;
-    int i = 1;
-
-    unsigned int pos = 0;
-    while (pos < ISEQ_BODY(iseq)->iseq_size) {
-        int insn = rb_vm_insn_decode(ISEQ_BODY(iseq)->iseq_encoded[pos]);
-        if (insn == BIN(opt_send_without_block) || insn == BIN(opt_size)) {
-            CALL_DATA cd = (CALL_DATA)ISEQ_BODY(iseq)->iseq_encoded[pos + 1];
-            extern const rb_iseq_t *rb_mjit_inlinable_iseq(const struct rb_callinfo *ci, const struct rb_callcache *cc);
-            const rb_iseq_t *iseq = rb_mjit_inlinable_iseq(cd->ci, cd->cc);
-            if (iseq != NULL) {
-                compiling_iseqs[i] = iseq;
-                i++;
-            }
-        }
-        pos += insn_len(insn);
-    }
-    return true;
-}
-
-static void
-free_compiling_iseqs(void)
-{
-    RBIMPL_WARNING_PUSH();
-#ifdef _MSC_VER
-    RBIMPL_WARNING_IGNORED(4090); /* suppress false warning by MSVC */
-#endif
-    free(compiling_iseqs);
-    RBIMPL_WARNING_POP();
-    compiling_iseqs = NULL;
-}
-
-bool
-rb_mjit_compiling_iseq_p(const rb_iseq_t *iseq)
-{
-    assert(compiling_iseqs != NULL);
-    int i = 0;
-    while (compiling_iseqs[i]) {
-        if (compiling_iseqs[i] == iseq) return true;
-        i++;
-    }
-    return false;
-}
-
 static const int c_file_access_mode =
 #ifdef O_BINARY
     O_BINARY|
@@ -932,7 +879,6 @@ mjit_compact(char* c_file)
     bool success = true;
     struct rb_mjit_unit *child_unit = 0;
     ccan_list_for_each(&active_units.head, child_unit, unode) {
-        success &= set_compiling_iseqs(child_unit->iseq);
         if (!success) continue;
 
         char funcname[MAXPATHLEN];
@@ -948,8 +894,6 @@ mjit_compact(char* c_file)
         if (!iseq_label) iseq_label = sep = "";
         fprintf(f, "\n/* %s%s%s:%ld */\n", iseq_label, sep, iseq_path, iseq_lineno);
         success &= mjit_compile(f, child_unit->iseq, funcname, child_unit->id);
-
-        free_compiling_iseqs();
     }
 
     fclose(f);
@@ -1098,9 +1042,6 @@ start_mjit_compile(struct rb_mjit_unit *unit)
     // print #include of MJIT header, etc.
     compile_prelude(f);
 
-    // This is no longer necessary. TODO: Just reference the ISeq directly in the compiler.
-    if (!set_compiling_iseqs(unit->iseq)) return -1;
-
     // To make MJIT worker thread-safe against GC.compact, copy ISeq values while `in_jit` is true.
     long iseq_lineno = 0;
     if (FIXNUM_P(ISEQ_BODY(unit->iseq)->location.first_lineno))
@@ -1114,8 +1055,6 @@ start_mjit_compile(struct rb_mjit_unit *unit)
     verbose(2, "start compilation: %s@%s:%ld -> %s", iseq_label, iseq_path, iseq_lineno, c_file);
     fprintf(f, "/* %s@%s:%ld */\n\n", iseq_label, iseq_path, iseq_lineno);
     bool success = mjit_compile(f, unit->iseq, funcname, unit->id);
-
-    free_compiling_iseqs();
 
     fclose(f);
     if (!success) {
@@ -1153,13 +1092,6 @@ convert_unit_to_func(struct rb_mjit_unit *unit)
 
     // print #include of MJIT header, etc.
     compile_prelude(f);
-
-    if (!set_compiling_iseqs(unit->iseq)) {
-        fclose(f);
-        if (!mjit_opts.save_temps)
-            remove_file(c_file);
-        return (mjit_func_t)NOT_COMPILED_JIT_ISEQ_FUNC;
-    }
 
     // To make MJIT worker thread-safe against GC.compact, copy ISeq values while `in_jit` is true.
     long iseq_lineno = 0;

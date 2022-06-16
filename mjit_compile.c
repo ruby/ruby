@@ -548,9 +548,8 @@ precompile_inlinable_iseqs(FILE *f, const rb_iseq_t *iseq, struct compile_status
             const struct rb_callinfo *ci = cd->ci;
             const struct rb_callcache *cc = captured_cc_entries(status)[call_data_index(cd, body)]; // use copy to avoid race condition
 
-            extern bool rb_mjit_compiling_iseq_p(const rb_iseq_t *iseq);
             const rb_iseq_t *child_iseq;
-            if ((child_iseq = rb_mjit_inlinable_iseq(ci, cc)) != NULL && rb_mjit_compiling_iseq_p(child_iseq)) {
+            if ((child_iseq = rb_mjit_inlinable_iseq(ci, cc)) != NULL) {
                 status->inlined_iseqs[pos] = ISEQ_BODY(child_iseq);
 
                 if (mjit_opts.verbose >= 1) // print beforehand because ISeq may be GCed during copy job.
