@@ -86,6 +86,12 @@ impl DataReg {
         }
     }
 
+    /// CMP (shifted register)
+    /// https://developer.arm.com/documentation/ddi0596/2021-12/Base-Instructions/CMP--shifted-register---Compare--shifted-register---an-alias-of-SUBS--shifted-register--?lang=en
+    pub fn cmp(rn: u8, rm: u8, num_bits: u8) -> Self {
+        Self::subs(31, rn, rm, num_bits)
+    }
+
     /// SUB (shifted register)
     /// https://developer.arm.com/documentation/ddi0596/2021-12/Base-Instructions/SUB--shifted-register---Subtract--shifted-register--?lang=en
     pub fn sub(rd: u8, rn: u8, rm: u8, num_bits: u8) -> Self {
@@ -163,6 +169,13 @@ mod tests {
         let inst = DataReg::adds(0, 1, 2, 64);
         let result: u32 = inst.into();
         assert_eq!(0xab020020, result);
+    }
+
+    #[test]
+    fn test_cmp() {
+        let inst = DataReg::cmp(0, 1, 64);
+        let result: u32 = inst.into();
+        assert_eq!(0xeb01001f, result);
     }
 
     #[test]

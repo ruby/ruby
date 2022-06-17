@@ -80,6 +80,12 @@ impl DataImm {
         }
     }
 
+    /// CMP (immediate)
+    /// https://developer.arm.com/documentation/ddi0596/2021-12/Base-Instructions/CMP--immediate---Compare--immediate---an-alias-of-SUBS--immediate--?lang=en
+    pub fn cmp(rn: u8, imm12: u16, num_bits: u8) -> Self {
+        Self::subs(31, rn, imm12, num_bits)
+    }
+
     /// SUB (immediate)
     /// https://developer.arm.com/documentation/ddi0596/2021-12/Base-Instructions/SUB--immediate---Subtract--immediate--?lang=en
     pub fn sub(rd: u8, rn: u8, imm12: u16, num_bits: u8) -> Self {
@@ -154,6 +160,13 @@ mod tests {
         let inst = DataImm::adds(0, 1, 7, 64);
         let result: u32 = inst.into();
         assert_eq!(0xb1001c20, result);
+    }
+
+    #[test]
+    fn test_cmp() {
+        let inst = DataImm::cmp(0, 7, 64);
+        let result: u32 = inst.into();
+        assert_eq!(0xf1001c1f, result);
     }
 
     #[test]
