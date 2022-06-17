@@ -642,7 +642,7 @@ AS_CASE(["$GCC:${warnflags+set}:${extra_warnflags:+set}:"],
     AS_IF([test $gcc_major -ge 4], [
 	extra_warnflags="$extra_warnflags -Werror=extra-tokens"
     ])
-    AS_IF([test $gcc_major -ge 5 -a $gcc_major -le 6], [
+    AS_IF([test $gcc_major -ge 4 -a $gcc_major -le 6], [
 	extra_warnflags="$extra_warnflags -Wno-maybe-uninitialized"
     ])
     # ICC doesn't support -Werror=
