@@ -2,30 +2,82 @@
 #include "ruby/atomic.h"
 #include "ruby/thread.h"
 
+static rb_internal_thread_store_key_t thread_store_key;
+
+typedef struct thread_counter {
+    unsigned int started_count;
+    unsigned int ready_count;
+    unsigned int resumed_count;
+    unsigned int suspended_count;
+    unsigned int exited_count;
+} thread_counter_t;
+
 static rb_atomic_t started_count = 0;
 static rb_atomic_t ready_count = 0;
 static rb_atomic_t resumed_count = 0;
 static rb_atomic_t suspended_count = 0;
 static rb_atomic_t exited_count = 0;
+static rb_atomic_t freed_count = 0;
+
+thread_counter_t *thread_local_store(const rb_internal_thread_event_data_t *event_data) {
+    thread_counter_t *local_store = rb_internal_thread_store_get(event_data, thread_store_key);
+
+    if (!local_store) {
+        local_store = ZALLOC(thread_counter_t);
+        if (!rb_internal_thread_store_set(event_data, thread_store_key, local_store)) {
+            xfree(local_store);
+            local_store = NULL;
+        }
+    }
+    return local_store;
+}
+
+thread_counter_t *thread_local_store_with_gvl(void) {
+    thread_counter_t *local_store = rb_internal_thread_store_get_with_gvl(thread_store_key);
+
+    if (!local_store) {
+        local_store = ZALLOC(thread_counter_t);
+        if (!rb_internal_thread_store_set_with_gvl(thread_store_key, local_store)) {
+            xfree(local_store);
+            local_store = NULL;
+        }
+    }
+    return local_store;
+}
+
+void thread_local_store_free(void *ptr) {
+    RUBY_ATOMIC_INC(freed_count);
+    thread_counter_t *local_store = ptr;
+    xfree(local_store);
+}
 
 void
 ex_callback(rb_event_flag_t event, const rb_internal_thread_event_data_t *event_data, void *user_data)
 {
+    thread_counter_t *local_store = thread_local_store(event_data);
+    if (!local_store) {
+        return; // In a thread spawned before `rb_internal_thread_store_create_key()`.
+    }
     switch (event) {
       case RUBY_INTERNAL_THREAD_EVENT_STARTED:
         RUBY_ATOMIC_INC(started_count);
+        local_store->started_count++;
         break;
       case RUBY_INTERNAL_THREAD_EVENT_READY:
         RUBY_ATOMIC_INC(ready_count);
+        local_store->ready_count++;
         break;
       case RUBY_INTERNAL_THREAD_EVENT_RESUMED:
         RUBY_ATOMIC_INC(resumed_count);
+        local_store->resumed_count++;
         break;
       case RUBY_INTERNAL_THREAD_EVENT_SUSPENDED:
         RUBY_ATOMIC_INC(suspended_count);
+        local_store->suspended_count++;
         break;
       case RUBY_INTERNAL_THREAD_EVENT_EXITED:
         RUBY_ATOMIC_INC(exited_count);
+        local_store->exited_count++;
         break;
     }
 }
@@ -35,12 +87,26 @@ static rb_internal_thread_event_hook_t * single_hook = NULL;
 static VALUE
 thread_counters(VALUE thread)
 {
-    VALUE array = rb_ary_new2(5);
+    VALUE array = rb_ary_new2(6);
     rb_ary_push(array, UINT2NUM(started_count));
     rb_ary_push(array, UINT2NUM(ready_count));
     rb_ary_push(array, UINT2NUM(resumed_count));
     rb_ary_push(array, UINT2NUM(suspended_count));
     rb_ary_push(array, UINT2NUM(exited_count));
+    rb_ary_push(array, UINT2NUM(freed_count));
+    return array;
+}
+
+static VALUE
+thread_local_counters(VALUE thread)
+{
+    thread_counter_t *counter = thread_local_store_with_gvl();
+    VALUE array = rb_ary_new2(5);
+    rb_ary_push(array, UINT2NUM(counter->started_count));
+    rb_ary_push(array, UINT2NUM(counter->ready_count));
+    rb_ary_push(array, UINT2NUM(counter->resumed_count));
+    rb_ary_push(array, UINT2NUM(counter->suspended_count));
+    rb_ary_push(array, UINT2NUM(counter->exited_count));
     return array;
 }
 
@@ -52,6 +118,12 @@ thread_reset_counters(VALUE thread)
     RUBY_ATOMIC_SET(resumed_count, 0);
     RUBY_ATOMIC_SET(suspended_count, 0);
     RUBY_ATOMIC_SET(exited_count, 0);
+    RUBY_ATOMIC_SET(freed_count, 0);
+    thread_counter_t *counters = rb_internal_thread_store_get_with_gvl(thread_store_key);
+    if (counters) {
+        xfree(counters);
+    }
+    rb_internal_thread_store_set_with_gvl(thread_store_key, NULL);
     return Qtrue;
 }
 
@@ -101,9 +173,14 @@ thread_register_and_unregister_callback(VALUE thread)
 void
 Init_instrumentation(void)
 {
+    if (!rb_internal_thread_store_create_key(&thread_store_key, thread_local_store_free)) {
+        rb_bug("No internal thread slots left");
+    }
+
     VALUE mBug = rb_define_module("Bug");
     VALUE klass = rb_define_module_under(mBug, "ThreadInstrumentation");
     rb_define_singleton_method(klass, "counters", thread_counters, 0);
+    rb_define_singleton_method(klass, "local_counters", thread_local_counters, 0);
     rb_define_singleton_method(klass, "reset_counters", thread_reset_counters, 0);
     rb_define_singleton_method(klass, "register_callback", thread_register_callback, 0);
     rb_define_singleton_method(klass, "unregister_callback", thread_unregister_callback, 0);

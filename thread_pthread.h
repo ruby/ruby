@@ -115,6 +115,8 @@ native_tls_set(native_tls_key_t key, void *ptr)
 }
 #endif
 
+unsigned int rb_internal_thread_store_slots_count(void);
+
 RUBY_SYMBOL_EXPORT_BEGIN
 #ifdef RB_THREAD_LOCAL_SPECIFIER
   #ifdef __APPLE__

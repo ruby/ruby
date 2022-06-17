@@ -17,4 +17,6 @@ struct rb_thread_sched {};
 
 RUBY_EXTERN struct rb_execution_context_struct *ruby_current_ec;
 
+unsigned int rb_internal_thread_store_slots_count(void);
+
 #endif /* RUBY_THREAD_NONE_H */

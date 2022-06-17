@@ -197,7 +197,7 @@ void *rb_nogvl(void *(*func)(void *), void *data1,
 #define RUBY_INTERNAL_THREAD_EVENT_EXITED     1 << 4 /** thread terminated */
 #define RUBY_INTERNAL_THREAD_EVENT_MASK       0xff /** All Thread events */
 
-typedef void rb_internal_thread_event_data_t; // for future extension.
+typedef struct rb_internal_thread_event_data rb_internal_thread_event_data_t;
 
 typedef void (*rb_internal_thread_event_callback)(rb_event_flag_t event,
               const rb_internal_thread_event_data_t *event_data,
@@ -229,6 +229,50 @@ rb_internal_thread_event_hook_t *rb_internal_thread_add_event_hook(
 */
 bool rb_internal_thread_remove_event_hook(
         rb_internal_thread_event_hook_t * hook);
+
+
+typedef unsigned int rb_internal_thread_store_key_t; // TODO: make opaque? how?
+
+typedef void (*rb_internal_thread_store_destructor)(void *data);
+
+/**
+ * Registers a thread local storage for event hooks data.
+ *
+ * @param[out]  key   The slot key.
+ * @param[in]   func  A destructor callback or `NULL`.
+ * @return      `TRUE` if the slot was allocated. `FALSE` if there was no
+ *.             storage slots left.
+ * @note        This functionality is a noop on Windows.
+ * @note        This function should be called as part of an extension's
+ *              `init` function.
+ * @warning     Only the current thread and future threads will get their
+ *              storage slots. If multiple threads existed when this function
+ *.             `rb_internal_thread_store_get` and
+ *              `rb_internal_thread_store_set` may return `NULL`.
+ */
+bool rb_internal_thread_store_create_key(rb_internal_thread_store_key_t *key, rb_internal_thread_store_destructor func);
+
+/**
+ * Access a thread local storage slot.
+ *
+ * @param[in]  key  The slot to read.
+ * @return     The slot content.
+ * @note       This functionality is a noop on Windows.
+ * @note       The slot is initialized to `NULL`.
+ */
+void *rb_internal_thread_store_get(const rb_internal_thread_event_data_t *hook_data, rb_internal_thread_store_key_t key);
+void *rb_internal_thread_store_get_with_gvl(rb_internal_thread_store_key_t key);
+
+/**
+ * Access a thread local storage slot.
+ *
+ * @param[in]  key   The slot to write.
+ * @param[in]  data  The content to write.
+ * @note        This functionality is a noop on Windows.
+ * @return     `FALSE` if the key was invalid, `TRUE` otherwise.
+ */
+bool rb_internal_thread_store_set(const rb_internal_thread_event_data_t *hook_data, rb_internal_thread_store_key_t key, void *data);
+bool rb_internal_thread_store_set_with_gvl(rb_internal_thread_store_key_t key, void *data);
 
 RBIMPL_SYMBOL_EXPORT_END()
 

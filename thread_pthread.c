@@ -106,10 +106,14 @@ struct rb_internal_thread_event_hook {
     struct rb_internal_thread_event_hook *next;
 };
 
+struct rb_internal_thread_event_data {
+    rb_thread_t *thread;
+};
+
 static rb_internal_thread_event_hook_t *rb_internal_thread_event_hooks = NULL;
 static pthread_rwlock_t rb_internal_thread_event_hooks_rw_lock = PTHREAD_RWLOCK_INITIALIZER;
 
-#define RB_INTERNAL_THREAD_HOOK(event) if (rb_internal_thread_event_hooks) { rb_thread_execute_hooks(event); }
+#define RB_INTERNAL_THREAD_HOOK(th, event) if (rb_internal_thread_event_hooks) { rb_thread_execute_hooks(th, event); }
 
 rb_internal_thread_event_hook_t *
 rb_internal_thread_add_event_hook(rb_internal_thread_event_callback callback, rb_event_flag_t internal_event, void *user_data)
@@ -169,7 +173,7 @@ rb_internal_thread_remove_event_hook(rb_internal_thread_event_hook_t * hook)
 }
 
 static void
-rb_thread_execute_hooks(rb_event_flag_t event)
+rb_thread_execute_hooks(rb_thread_t *th, rb_event_flag_t event)
 {
     int r;
     if ((r = pthread_rwlock_rdlock(&rb_internal_thread_event_hooks_rw_lock))) {
@@ -178,15 +182,133 @@ rb_thread_execute_hooks(rb_event_flag_t event)
 
     if (rb_internal_thread_event_hooks) {
         rb_internal_thread_event_hook_t *h = rb_internal_thread_event_hooks;
+        rb_internal_thread_event_data_t hook_data = { .thread = th };
         do {
             if (h->event & event) {
-                (*h->callback)(event, NULL, h->user_data);
+                (*h->callback)(event, &hook_data, h->user_data);
             }
         } while((h = h->next));
     }
     if ((r = pthread_rwlock_unlock(&rb_internal_thread_event_hooks_rw_lock))) {
         rb_bug_errno("pthread_rwlock_unlock", r);
     }
+}
+
+static rb_internal_thread_store_destructor *rb_internal_thread_store_destructors = NULL;
+static rb_atomic_t rb_internal_thread_store_slots = 0;
+
+unsigned int
+rb_internal_thread_store_slots_count(void)
+{
+    return rb_internal_thread_store_slots;
+}
+
+bool
+rb_internal_thread_store_create_key(rb_internal_thread_store_key_t *key, rb_internal_thread_store_destructor func)
+{
+    int r;
+    if ((r = pthread_rwlock_wrlock(&rb_internal_thread_event_hooks_rw_lock))) {
+        rb_bug_errno("pthread_rwlock_wrlock", r);
+    }
+
+    rb_internal_thread_store_key_t new_key = (rb_internal_thread_store_key_t)rb_internal_thread_store_slots;
+    rb_internal_thread_store_destructor *old_destructors = rb_internal_thread_store_destructors;
+    rb_internal_thread_store_destructor *destructors = ALLOC_N(rb_internal_thread_store_destructor, rb_internal_thread_store_slots + 1);
+    if (old_destructors) {
+        MEMCPY(destructors, old_destructors, rb_internal_thread_store_destructor, rb_internal_thread_store_slots);
+    }
+    destructors[new_key] = func;
+
+    rb_internal_thread_store_destructors = destructors;
+    ATOMIC_INC(rb_internal_thread_store_slots);
+
+    if (old_destructors) {
+        xfree(old_destructors);
+    }
+
+    // TODO: Would be good to iterate over all the existing threads in the current ractor. But that's tricky.
+    rb_thread_t *th = GET_THREAD();
+    void **thread_store = ZALLOC_N(void *, rb_internal_thread_store_slots);
+    if (th->store) {
+        MEMCPY(thread_store, th->store, void *, th->store_size);
+        xfree(th->store);
+    }
+    th->store = thread_store;
+    th->store_size = rb_internal_thread_store_slots;
+
+    if ((r = pthread_rwlock_unlock(&rb_internal_thread_event_hooks_rw_lock))) {
+        rb_bug_errno("pthread_rwlock_unlock", r);
+    }
+
+    return true;
+}
+
+static void
+rb_internal_thread_store_clear(rb_thread_t *th)
+{
+    if (!th->store_size) {
+        return;
+    }
+
+    int r;
+    if ((r = pthread_rwlock_rdlock(&rb_internal_thread_event_hooks_rw_lock))) {
+        rb_bug_errno("pthread_rwlock_rdlock", r);
+    }
+
+    for (unsigned int index = 0; index < th->store_size; index++) {
+        if (rb_internal_thread_store_destructors[index] && th->store[index]) {
+            rb_internal_thread_store_destructors[index](th->store[index]);
+        }
+    }
+
+    if ((r = pthread_rwlock_unlock(&rb_internal_thread_event_hooks_rw_lock))) {
+        rb_bug_errno("pthread_rwlock_unlock", r);
+    }
+
+    MEMZERO(th->store, void *, th->store_size);
+}
+
+static void *
+internal_thread_store_get(rb_thread_t *th, rb_internal_thread_store_key_t key)
+{
+    if (key >= th->store_size) {
+        return NULL;
+    }
+    return th->store[key];
+}
+
+void *
+rb_internal_thread_store_get_with_gvl(rb_internal_thread_store_key_t key)
+{
+    return internal_thread_store_get(GET_THREAD(), key);
+}
+
+void *
+rb_internal_thread_store_get(const rb_internal_thread_event_data_t *hook_data, rb_internal_thread_store_key_t key)
+{
+    return internal_thread_store_get(hook_data->thread, key);
+}
+
+static bool
+internal_thread_store_set(rb_thread_t *th, rb_internal_thread_store_key_t key, void *data)
+{
+    if (key >= th->store_size) {
+        return false;
+    }
+    th->store[key] = data;
+    return true;
+}
+
+bool
+rb_internal_thread_store_set(const rb_internal_thread_event_data_t *hook_data, rb_internal_thread_store_key_t key, void *data)
+{
+    return internal_thread_store_set(GET_THREAD(), key, data);
+}
+
+bool
+rb_internal_thread_store_set_with_gvl(rb_internal_thread_store_key_t key, void *data)
+{
+    return internal_thread_store_set(GET_THREAD(), key, data);
 }
 
 enum rtimer_state {
@@ -379,7 +501,7 @@ thread_sched_to_ready_common(struct rb_thread_sched *sched, rb_thread_t *th)
 static void
 thread_sched_to_running_common(struct rb_thread_sched *sched, rb_thread_t *th)
 {
-    RB_INTERNAL_THREAD_HOOK(RUBY_INTERNAL_THREAD_EVENT_READY);
+    RB_INTERNAL_THREAD_HOOK(th, RUBY_INTERNAL_THREAD_EVENT_READY);
     if (sched->running) {
         VM_ASSERT(th->unblock.func == 0 &&
                   "we must not be in ubf_list and GVL readyq at the same time");
@@ -411,7 +533,7 @@ thread_sched_to_running_common(struct rb_thread_sched *sched, rb_thread_t *th)
     // ready -> running
     sched->running = th;
 
-    RB_INTERNAL_THREAD_HOOK(RUBY_INTERNAL_THREAD_EVENT_RESUMED);
+    RB_INTERNAL_THREAD_HOOK(th, RUBY_INTERNAL_THREAD_EVENT_RESUMED);
 
     if (!sched->timer) {
         if (!designate_timer_thread(sched) && !ubf_threads_empty()) {
@@ -440,20 +562,15 @@ thread_sched_to_waiting_common(struct rb_thread_sched *sched)
 }
 
 static void
-thread_sched_to_waiting(struct rb_thread_sched *sched)
+thread_sched_to_waiting(struct rb_thread_sched *sched, rb_thread_t *th)
 {
-    RB_INTERNAL_THREAD_HOOK(RUBY_INTERNAL_THREAD_EVENT_SUSPENDED);
+    RB_INTERNAL_THREAD_HOOK(th, RUBY_INTERNAL_THREAD_EVENT_SUSPENDED);
     rb_native_mutex_lock(&sched->lock);
     thread_sched_to_waiting_common(sched);
     rb_native_mutex_unlock(&sched->lock);
 }
 
-static void
-thread_sched_to_dead(struct rb_thread_sched *sched)
-{
-    thread_sched_to_waiting(sched);
-    RB_INTERNAL_THREAD_HOOK(RUBY_INTERNAL_THREAD_EVENT_EXITED);
-}
+#define thread_sched_to_dead thread_sched_to_waiting
 
 static void
 thread_sched_yield(struct rb_thread_sched *sched, rb_thread_t *th)
@@ -1173,8 +1290,6 @@ thread_start_func_1(void *th_ptr)
 #endif
 
         native_thread_init(th->nt);
-
-        RB_INTERNAL_THREAD_HOOK(RUBY_INTERNAL_THREAD_EVENT_STARTED);
 
         /* run */
 #if defined USE_NATIVE_THREAD_INIT

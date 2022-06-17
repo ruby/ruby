@@ -56,6 +56,8 @@ native_tls_set(native_tls_key_t key, void *ptr)
     }
 }
 
+unsigned int rb_internal_thread_store_slots_count(void);
+
 RUBY_SYMBOL_EXPORT_BEGIN
 RUBY_EXTERN native_tls_key_t ruby_current_ec_key;
 RUBY_SYMBOL_EXPORT_END

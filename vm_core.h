@@ -1072,6 +1072,8 @@ typedef struct rb_thread_struct {
     VALUE name;
 
     struct rb_ext_config ext_config;
+    unsigned int store_size;
+    void **store;
 } rb_thread_t;
 
 static inline unsigned int

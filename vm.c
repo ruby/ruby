@@ -3170,7 +3170,10 @@ thread_free(void *ptr)
     }
     else {
         ruby_xfree(th->nt); // TODO
-	ruby_xfree(th);
+        if (th->store) {
+            ruby_xfree(th->store);
+        }
+        ruby_xfree(th);
     }
 
     RUBY_FREE_LEAVE("thread");
@@ -3213,7 +3216,11 @@ static VALUE
 thread_alloc(VALUE klass)
 {
     rb_thread_t *th;
-    return TypedData_Make_Struct(klass, rb_thread_t, &thread_data_type, th);
+    VALUE thread = TypedData_Make_Struct(klass, rb_thread_t, &thread_data_type, th);
+    if ((th->store_size = rb_internal_thread_store_slots_count())) {
+        th->store = ZALLOC_N(void *, th->store_size);
+    }
+    return thread;
 }
 
 inline void

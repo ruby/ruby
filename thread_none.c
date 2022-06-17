@@ -19,6 +19,61 @@
 #define TIME_QUANTUM_USEC (TIME_QUANTUM_MSEC * 1000)
 #define TIME_QUANTUM_NSEC (TIME_QUANTUM_USEC * 1000)
 
+#define RB_INTERNAL_THREAD_HOOK(th, event) // noop
+
+rb_internal_thread_event_hook_t *
+rb_internal_thread_add_event_hook(rb_internal_thread_event_callback callback, rb_event_flag_t internal_event, void *user_data)
+{
+    return NULL; // not implemented
+}
+
+bool
+rb_internal_thread_remove_event_hook(rb_internal_thread_event_hook_t * hook)
+{
+    return false; // not implemented
+}
+
+unsigned int
+rb_internal_thread_store_slots_count(void)
+{
+    return 0; // not implemented
+}
+
+bool
+rb_internal_thread_store_create_key(rb_internal_thread_store_key_t *key, rb_internal_thread_store_destructor func)
+{
+    return false; // not implemented
+}
+
+static void
+rb_internal_thread_store_clear(rb_thread_t *th) {
+     // not implemented
+}
+
+void *
+rb_internal_thread_store_get(const rb_internal_thread_event_data_t *hook_data, rb_internal_thread_store_key_t key)
+{
+    return NULL; // not implemented
+}
+
+bool
+rb_internal_thread_store_set(const rb_internal_thread_event_data_t *hook_data, rb_internal_thread_store_key_t key, void *data)
+{
+    return false;  // not implemented
+}
+
+void *
+rb_internal_thread_store_get_with_gvl(rb_internal_thread_store_key_t key)
+{
+    return NULL; // not implemented
+}
+
+bool
+rb_internal_thread_store_set_with_gvl(rb_internal_thread_store_key_t key, void *data)
+{
+    return false;  // not implemented
+}
+
 // Do nothing for GVL
 static void
 thread_sched_to_running(struct rb_thread_sched *sched, rb_thread_t *th)
@@ -26,7 +81,7 @@ thread_sched_to_running(struct rb_thread_sched *sched, rb_thread_t *th)
 }
 
 static void
-thread_sched_to_waiting(struct rb_thread_sched *sched)
+thread_sched_to_waiting(struct rb_thread_sched *sched, rb_thread_t *th)
 {
 }
 
