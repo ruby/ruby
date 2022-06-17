@@ -2,8 +2,13 @@ module RubyVM::MJIT
   Instruction = Struct.new(
     :expr,
     :declarations,
+    :preamble,
+    :opes,
     :pops,
     :rets,
+    :always_leaf?,
+    :leaf_without_check_ints?,
+    :handles_sp?,
   )
 
   INSTRUCTIONS = {
@@ -13,9 +18,14 @@ module RubyVM::MJIT
 <%= insn.expr.expr.dump.sub(/\A"/, '').sub(/"\z/, '').gsub(/\\n/, "\n").gsub(/\\t/, ' ' * 8) %>
       EXPR
       declarations: <%= insn.declarations.inspect %>,
+      preamble: <%= insn.preamble.map(&:expr).inspect %>,
+      opes: <%= insn.opes.inspect %>,
       pops: <%= insn.pops.inspect %>,
       rets: <%= insn.rets.inspect %>,
+      always_leaf?: <%= insn.always_leaf? %>,
+      leaf_without_check_ints?: <%= insn.leaf_without_check_ints? %>,
+      handles_sp?: <%= insn.handles_sp? %>,
     ),
 % end
   }
-end
+end if RubyVM::MJIT.enabled?

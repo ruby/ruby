@@ -198,18 +198,31 @@ compile_insn(FILE *f, const struct rb_iseq_constant_body *body, const int insn, 
     unsigned int next_pos = pos + insn_len(insn);
 
     // TODO: initialize the constant in mjit_init and use it
-    int mjit_sp_inc = (int)mjit_call_attribute_sp_inc(insn, operands);
+    rb_snum_t mjit_sp_inc = mjit_call_attribute_sp_inc(insn, operands);
     VALUE rb_mMJIT = rb_const_get(rb_cRubyVM, rb_intern("MJIT"));
     VALUE rb_mCompiler = rb_const_get(rb_mMJIT, rb_intern("Compiler"));
-    VALUE result = rb_funcall(rb_mCompiler, rb_intern("compile_insn"), 3,
-                              ID2SYM(rb_intern(insn_name(insn))), INT2NUM(b->stack_size), INT2NUM(mjit_sp_inc));
+    VALUE result = rb_funcall(rb_mCompiler, rb_intern("compile"), 8,
+                              ID2SYM(rb_intern(insn_name(insn))),
+                              UINT2NUM(b->stack_size),
+                              LONG2NUM(mjit_sp_inc),
+                              RBOOL(status->local_stack_p),
+                              UINT2NUM(pos),
+                              UINT2NUM(next_pos),
+                              status->inlined_iseqs == NULL,
+                              mjit_operands(insn, operands)
+                              );
     if (NIL_P(result)) {
 /**************************/
  #include "mjit_compile.inc"
 /**************************/
     }
     else {
-        fprintf(f, "%s", RSTRING_PTR(result));
+        VALUE src = RARRAY_AREF(result, 0);
+        VALUE finish_p = RARRAY_AREF(result, 1);
+        fprintf(f, "%s", RSTRING_PTR(src));
+        if (RTEST(finish_p)) {
+            b->finish_p = true;
+        }
         b->stack_size += mjit_sp_inc;
     }
 
@@ -585,16 +598,22 @@ precompile_inlinable_iseqs(FILE *f, const rb_iseq_t *iseq, struct compile_status
 bool
 mjit_compile(FILE *f, const rb_iseq_t *iseq, const char *funcname, int id)
 {
+    bool original_call_p = mjit_call_p;
+    mjit_call_p = false; // Avoid impacting JIT metrics by itself
+
     struct compile_status status = { .compiled_iseq = ISEQ_BODY(iseq), .compiled_id = id };
     INIT_COMPILE_STATUS(status, ISEQ_BODY(iseq), true);
     if (ISEQ_BODY(iseq)->ci_size > 0 && status.cc_entries_index == -1) {
+        mjit_call_p = original_call_p;
         return false;
     }
     init_ivar_compile_status(ISEQ_BODY(iseq), &status);
 
     if (!status.compile_info->disable_send_cache && !status.compile_info->disable_inlining) {
-        if (!precompile_inlinable_iseqs(f, iseq, &status))
+        if (!precompile_inlinable_iseqs(f, iseq, &status)) {
+            mjit_call_p = original_call_p;
             return false;
+        }
     }
 
 #ifdef _WIN32
@@ -603,6 +622,8 @@ mjit_compile(FILE *f, const rb_iseq_t *iseq, const char *funcname, int id)
     fprintf(f, "VALUE\n%s(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp)\n{\n", funcname);
     bool success = mjit_compile_body(f, iseq, &status);
     fprintf(f, "\n} // end of %s\n", funcname);
+
+    mjit_call_p = original_call_p;
     return success;
 }
 
