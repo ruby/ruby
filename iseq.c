@@ -193,6 +193,7 @@ rb_iseq_free(const rb_iseq_t *iseq)
 	}
 	ruby_xfree((void *)body->catch_table);
 	ruby_xfree((void *)body->param.opt_table);
+	ruby_xfree((void *)body->mark_offset_bits);
 
 	if (body->param.keyword != NULL) {
 	    ruby_xfree((void *)body->param.keyword->default_values);
@@ -317,19 +318,69 @@ rb_iseq_each_value(const rb_iseq_t *iseq, iseq_value_itr_t * func, void *data)
 {
     unsigned int size;
     VALUE *code;
-    size_t n;
-    rb_vm_insns_translator_t *const translator =
-#if OPT_DIRECT_THREADED_CODE || OPT_CALL_THREADED_CODE
-        (FL_TEST((VALUE)iseq, ISEQ_TRANSLATED)) ? rb_vm_insn_addr2insn2 :
-#endif
-        rb_vm_insn_null_translator;
     const struct rb_iseq_constant_body *const body = ISEQ_BODY(iseq);
 
     size = body->iseq_size;
     code = body->iseq_encoded;
 
-    for (n = 0; n < size;) {
-	n += iseq_extract_values(code, n, func, data, translator);
+    union iseq_inline_storage_entry *is_entries = body->is_entries;
+
+    // IVC and ICVARC entries
+    for (unsigned int i = 0; i < body->ivc_size; i++, is_entries++) {
+        IVC ivc = (IVC)is_entries;
+        if (ivc->entry) {
+            if (RB_TYPE_P(ivc->entry->class_value, T_NONE)) {
+                rb_bug("!! %u", ivc->entry->index);
+            }
+
+            VALUE nv = func(data, ivc->entry->class_value);
+            if (ivc->entry->class_value != nv) {
+                ivc->entry->class_value = nv;
+            }
+        }
+    }
+
+    // ISE entries
+    for (unsigned int i = 0; i < body->ise_size; i++, is_entries++) {
+        union iseq_inline_storage_entry *const is = (union iseq_inline_storage_entry *)is_entries;
+        if (is->once.value) {
+            VALUE nv = func(data, is->once.value);
+            if (is->once.value != nv) {
+                is->once.value = nv;
+            }
+        }
+    }
+
+    // IC Entries
+    for (unsigned int i = 0; i < body->ic_size; i++, is_entries++) {
+        IC ic = (IC)is_entries;
+        if (ic->entry) {
+            VALUE nv = func(data, (VALUE)ic->entry);
+            if ((VALUE)ic->entry != nv) {
+                ic->entry = (void *)nv;
+            }
+        }
+    }
+
+    // Embedded VALUEs
+    for (unsigned int i = 0; i < ISEQ_MBITS_BUFLEN(size); i++) {
+        iseq_bits_t bits = body->mark_offset_bits[i];
+        if (bits) {
+            unsigned int count = 0;
+
+            while(bits) {
+                if (bits & 0x1) {
+                    unsigned int index = (i * ISEQ_MBITS_BITLENGTH) + count;
+                    VALUE op = code[index];
+                    VALUE newop = func(data, op);
+                    if (newop != op) {
+                        code[index] = newop;
+                    }
+                }
+                bits >>= 1;
+                count++;
+            }
+        }
     }
 }
 
@@ -588,6 +639,7 @@ rb_iseq_memsize(const rb_iseq_t *iseq)
         size += body->iseq_size * sizeof(VALUE);
         size += body->insns_info.size * (sizeof(struct iseq_insn_info_entry) + sizeof(unsigned int));
         size += body->local_table_size * sizeof(ID);
+        size += ISEQ_MBITS_BUFLEN(body->iseq_size) * ISEQ_MBITS_SIZE;
         if (body->catch_table) {
             size += iseq_catch_table_bytes(body->catch_table->size);
         }
@@ -595,7 +647,7 @@ rb_iseq_memsize(const rb_iseq_t *iseq)
         size += param_keyword_size(body->param.keyword);
 
         /* body->is_entries */
-        size += body->is_size * sizeof(union iseq_inline_storage_entry);
+        size += ISEQ_IS_SIZE(body) * sizeof(union iseq_inline_storage_entry);
 
         /* body->call_data */
         size += body->ci_size * sizeof(struct rb_call_data);

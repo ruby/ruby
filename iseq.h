@@ -17,6 +17,12 @@ RUBY_EXTERN const int ruby_api_version[];
 #define ISEQ_MAJOR_VERSION ((unsigned int)ruby_api_version[0])
 #define ISEQ_MINOR_VERSION ((unsigned int)ruby_api_version[1])
 
+#define ISEQ_MBITS_SIZE sizeof(iseq_bits_t)
+#define ISEQ_MBITS_BITLENGTH (ISEQ_MBITS_SIZE * CHAR_BIT)
+#define ISEQ_MBITS_SET(buf, i) (buf[(i) / ISEQ_MBITS_BITLENGTH] |= ((iseq_bits_t)1 << ((i) % ISEQ_MBITS_BITLENGTH)))
+#define ISEQ_MBITS_SET_P(buf, i) ((buf[(i) / ISEQ_MBITS_BITLENGTH] >> ((i) % ISEQ_MBITS_BITLENGTH)) & 0x1)
+#define ISEQ_MBITS_BUFLEN(size) (((size + (ISEQ_MBITS_BITLENGTH - 1)) & -ISEQ_MBITS_BITLENGTH) / ISEQ_MBITS_BITLENGTH)
+
 #ifndef USE_ISEQ_NODE_ID
 #define USE_ISEQ_NODE_ID 1
 #endif
