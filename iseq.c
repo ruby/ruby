@@ -2140,6 +2140,16 @@ rb_insn_operand_intern(const rb_iseq_t *iseq,
 	ret = rb_inspect(ID2SYM(op));
 	break;
 
+      case TS_IDLIST:		/* IDLIST */
+        {
+            IDLIST ids = (IDLIST)op;
+            ret = rb_str_new2(rb_id2name(ids[0]));
+            for (int i = 1; ids[i]; i++) {
+                rb_str_catf(ret, "::%s", rb_id2name(ids[i]));
+            }
+            break;
+        }
+
       case TS_VALUE:		/* VALUE */
 	op = obj_resurrect(op);
 	if (insn == BIN(defined) && op_no == 1 && FIXNUM_P(op)) {
@@ -3051,6 +3061,17 @@ iseq_data_to_ary(const rb_iseq_t *iseq)
 		break;
 	      case TS_ID:
 		rb_ary_push(ary, ID2SYM(*seq));
+		break;
+	      case TS_IDLIST:
+                {
+                    VALUE list = rb_ary_new();
+                    IDLIST ids = (IDLIST)*seq;
+                    for (int i = 0; ids[i]; i++) {
+                        rb_ary_push(list, ID2SYM(ids[i]));
+                    }
+                    rb_ary_push(ary, list);
+                    break;
+                }
 		break;
 	      case TS_CDHASH:
 		{

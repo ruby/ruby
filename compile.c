@@ -2235,6 +2235,30 @@ add_adjust_info(struct iseq_insn_info_entry *insns_info, unsigned int *positions
     return FALSE;
 }
 
+static ID *array_to_idlist(VALUE arr) {
+    RUBY_ASSERT(RB_TYPE_P(arr, T_ARRAY));
+    int size = RARRAY_LEN(arr);
+    ID *ids = (ID *)ALLOC_N(ID, size + 1);
+    for (int i = 0; i < size; i++) {
+        VALUE sym = RARRAY_AREF(arr, i);
+        if (NIL_P(sym)) {
+            ids[i] = idNULL;
+        } else {
+            ids[i] = SYM2ID(sym);
+        }
+    }
+    ids[size] = 0;
+    return ids;
+}
+
+static VALUE idlist_to_array(IDLIST ids) {
+    VALUE arr = rb_ary_new();
+    while (*ids) {
+        rb_ary_push(arr, ID2SYM(*ids++));
+    }
+    return arr;
+}
+
 /**
   ruby insn object list -> raw instruction sequence
  */
@@ -2430,6 +2454,9 @@ iseq_set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *const anchor)
                         }
 		      case TS_ID: /* ID */
 			generated_iseq[code_index + 1 + j] = SYM2ID(operands[j]);
+			break;
+		      case TS_IDLIST: /* IDLIST */
+			generated_iseq[code_index + 1 + j] = operands[j];
 			break;
 		      case TS_FUNCPTR:
 			generated_iseq[code_index + 1 + j] = operands[j];
@@ -9900,6 +9927,16 @@ insn_data_to_s_detail(INSN *iobj)
 	      case TS_ID:	/* ID */
 		rb_str_concat(str, opobj_inspect(OPERAND_AT(iobj, j)));
 		break;
+	      case TS_IDLIST:	/* ID */
+                {
+                    IDLIST segments = (IDLIST)OPERAND_AT(iobj, j);
+                    for (int i = 0; segments[i]; i++) {
+                        ID id = segments[i];
+                        if (i != 0) rb_str_cat2(str, "::");
+                        rb_str_cat2(str, rb_id2name(id));
+                    }
+                }
+		break;
 	      case TS_IC:	/* inline cache */
 	      case TS_IVC:	/* inline ivar cache */
 	      case TS_ICVARC:   /* inline cvar cache */
@@ -10308,6 +10345,9 @@ iseq_build_from_ary_body(rb_iseq_t *iseq, LINK_ANCHOR *const anchor,
 			break;
 		      case TS_ID:
 			argv[j] = rb_to_symbol_type(op);
+			break;
+		      case TS_IDLIST:
+                        argv[j] = (VALUE)array_to_idlist(op);
 			break;
 		      case TS_CDHASH:
 			{
@@ -11130,6 +11170,9 @@ ibf_dump_code(struct ibf_dump *dump, const rb_iseq_t *iseq)
               case TS_ID:
                 wv = ibf_dump_id(dump, (ID)op);
                 break;
+              case TS_IDLIST:
+                wv = ibf_dump_object(dump, idlist_to_array((IDLIST)op));
+                break;
               case TS_FUNCPTR:
                 rb_raise(rb_eRuntimeError, "TS_FUNCPTR is not supported");
                 goto skip_wv;
@@ -11240,6 +11283,13 @@ ibf_load_code(const struct ibf_load *load, rb_iseq_t *iseq, ibf_offset_t bytecod
                 {
                     VALUE op = ibf_load_small_value(load, &reading_pos);
                     code[code_index] = ibf_load_id(load, (ID)(VALUE)op);
+                }
+                break;
+              case TS_IDLIST:
+                {
+                    VALUE op = ibf_load_small_value(load, &reading_pos);
+                    VALUE v = ibf_load_object(load, op);
+                    code[code_index] = (VALUE)array_to_idlist(v);
                 }
                 break;
               case TS_FUNCPTR:

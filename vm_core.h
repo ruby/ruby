@@ -1205,6 +1205,7 @@ typedef const struct rb_callcache *CALL_CACHE;
 typedef struct rb_call_data *CALL_DATA;
 
 typedef VALUE CDHASH;
+typedef ID *IDLIST;
 
 #ifndef FUNC_FASTCALL
 #define FUNC_FASTCALL(x) x

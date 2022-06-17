@@ -18,6 +18,7 @@ RubyVM::Typemap = {
   "IVC"            => %w[A TS_IVC],
   "ICVARC"         => %w[J TS_ICVARC],
   "ID"             => %w[I TS_ID],
+  "IDLIST"         => %w[D TS_IDLIST],
   "ISE"            => %w[T TS_ISE],
   "ISEQ"           => %w[S TS_ISEQ],
   "OFFSET"         => %w[O TS_OFFSET],
