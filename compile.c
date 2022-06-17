@@ -10702,8 +10702,6 @@ struct ibf_dump {
     struct ibf_dump_buffer *current_buffer;
 };
 
-rb_iseq_t * iseq_alloc(void);
-
 struct ibf_load_buffer {
     const char *buff;
     ibf_offset_t size;
