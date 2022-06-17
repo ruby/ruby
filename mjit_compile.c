@@ -327,7 +327,7 @@ mjit_capture_is_entries(const struct rb_iseq_constant_body *body, union iseq_inl
 {
     if (is_entries == NULL)
         return;
-    memcpy(is_entries, body->is_entries, sizeof(union iseq_inline_storage_entry) * body->is_size);
+    memcpy(is_entries, body->is_entries, sizeof(union iseq_inline_storage_entry) * ISEQ_IS_SIZE(body));
 }
 
 static bool
@@ -492,8 +492,8 @@ init_ivar_compile_status(const struct rb_iseq_constant_body *body, struct compil
         .stack_size_for_pos = (int *)alloca(sizeof(int) * body->iseq_size), \
         .inlined_iseqs = compile_root_p ? \
             alloca(sizeof(const struct rb_iseq_constant_body *) * body->iseq_size) : NULL, \
-        .is_entries = (body->is_size > 0) ? \
-            alloca(sizeof(union iseq_inline_storage_entry) * body->is_size) : NULL, \
+        .is_entries = (ISEQ_IS_SIZE(body) > 0) ? \
+            alloca(sizeof(union iseq_inline_storage_entry) * ISEQ_IS_SIZE(body)) : NULL, \
         .cc_entries_index = (body->ci_size > 0) ? \
             mjit_capture_cc_entries(status.compiled_iseq, body) : -1, \
         .compiled_id = status.compiled_id, \
