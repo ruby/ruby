@@ -354,6 +354,24 @@ rb_char_to_option_kcode(int c, int *option, int *kcode)
 }
 
 static void
+rb_str_to_options_enc(const char *flags, int *options, rb_encoding **encp)
+{
+    int kcode, option;
+    const char *f = flags;
+
+    while (*f) {
+	if (!rb_char_to_option_kcode(*f, &option, &kcode)) {
+	    rb_raise(rb_eArgError, "invalid Regexp flag `%s'", f);
+	}
+	if (kcode != -1) {
+	    *encp = rb_enc_from_index(kcode);
+	}
+	*options |= option;
+	*f++;
+    }
+}
+
+static void
 rb_reg_check(VALUE re)
 {
     if (!RREGEXP_PTR(re) || !RREGEXP_SRC(re) || !RREGEXP_SRC_PTR(re)) {
@@ -3699,7 +3717,14 @@ rb_reg_initialize_m(int argc, VALUE *argv, VALUE self)
     else {
         if (opts != Qundef) {
 	    if (FIXNUM_P(opts)) flags = FIX2INT(opts);
-	    else if (RTEST(opts)) flags = ONIG_OPTION_IGNORECASE;
+	    else if (opts == Qtrue) flags = ONIG_OPTION_IGNORECASE;
+	    else if (opts != Qfalse && !NIL_P(opts)) {
+		const char *p;
+
+		SafeStringValue(opts);
+		p = StringValueCStr(opts);
+		rb_str_to_options_enc(p, &flags, &enc);
+	    }
 	}
         if (n_flag != Qundef && !NIL_P(n_flag)) {
 	    char *kcode = StringValuePtr(n_flag);

@@ -88,13 +88,80 @@ describe :regexp_new_string, shared: true do
     (r.options & Regexp::EXTENDED).should_not == 0
   end
 
-  it "treats any non-Integer, non-nil, non-false second argument as IGNORECASE" do
-    r = Regexp.send(@method, 'Hi', Object.new)
+  it 'accepts true as the second argument, treating it as IGNORECASE' do
+    r = Regexp.send(@method, 'Hi', true)
     (r.options & Regexp::IGNORECASE).should_not == 0
     (r.options & Regexp::MULTILINE).should == 0
     not_supported_on :opal do
       (r.options & Regexp::EXTENDED).should == 0
     end
+  end
+
+  it "accepts a String of supported flags as the second argument" do
+    r = Regexp.send(@method, 'Hi', 'i')
+    (r.options & Regexp::IGNORECASE).should_not == 0
+    (r.options & Regexp::MULTILINE).should == 0
+    not_supported_on :opal do
+      (r.options & Regexp::EXTENDED).should == 0
+    end
+
+    r = Regexp.send(@method, 'Hi', 'imx')
+    (r.options & Regexp::IGNORECASE).should_not == 0
+    (r.options & Regexp::MULTILINE).should_not == 0
+    not_supported_on :opal do
+      (r.options & Regexp::EXTENDED).should_not == 0
+    end
+
+    r = Regexp.send(@method, 'Hi', 'mimi')
+    (r.options & Regexp::IGNORECASE).should_not == 0
+    (r.options & Regexp::MULTILINE).should_not == 0
+    not_supported_on :opal do
+      (r.options & Regexp::EXTENDED).should == 0
+    end
+
+    r = Regexp.send(@method, 'Hi', '')
+    (r.options & Regexp::IGNORECASE).should == 0
+    (r.options & Regexp::MULTILINE).should == 0
+    not_supported_on :opal do
+      (r.options & Regexp::EXTENDED).should == 0
+    end
+  end
+
+  it "sets the Regexp encoding from the second argument if it is a String" do
+    Regexp.send(@method, 'Hi', 'e').encoding.should == Encoding::EUC_JP
+    Regexp.send(@method, 'Hi', 'n').encoding.should == Encoding::US_ASCII
+    Regexp.send(@method, 'Hi', 's').encoding.should == Encoding::Windows_31J
+    Regexp.send(@method, 'Hi', 'u').encoding.should == Encoding::UTF_8
+    Regexp.send(@method, 'Hi', 'einsum').encoding.should == Encoding::UTF_8
+  end
+
+  it "raises an Argument error if the second argument contains unsupported chars" do
+    -> { Regexp.send(@method, 'Hi', 'j') }.should raise_error(ArgumentError)
+    -> { Regexp.send(@method, 'Hi', 'mjx') }.should raise_error(ArgumentError)
+  end
+
+  it 'ignores the second argument if it is false' do
+    r = Regexp.send(@method, 'Hi', false)
+    (r.options & Regexp::IGNORECASE).should == 0
+    (r.options & Regexp::MULTILINE).should == 0
+    not_supported_on :opal do
+      (r.options & Regexp::EXTENDED).should == 0
+    end
+  end
+
+  it 'ignores the second argument if it is nil' do
+    r = Regexp.send(@method, 'Hi', nil)
+    (r.options & Regexp::IGNORECASE).should == 0
+    (r.options & Regexp::MULTILINE).should == 0
+    not_supported_on :opal do
+      (r.options & Regexp::EXTENDED).should == 0
+    end
+  end
+
+  it "raises a TypeError for any second argument that is not Integer/String/nil/boolean" do
+    -> { Regexp.send(@method, 'Hi', :i) }.should raise_error(TypeError)
+    -> { Regexp.send(@method, 'Hi', 0.0) }.should raise_error(TypeError)
+    -> { Regexp.send(@method, 'Hi', Object.new) }.should raise_error(TypeError)
   end
 
   it "ignores the third argument if it is 'e' or 'euc' (case-insensitive)" do
