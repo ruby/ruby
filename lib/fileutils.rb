@@ -6,17 +6,90 @@ rescue LoadError
   # for make mjit-headers
 end
 
+# Namespace for file utility methods for copying, moving, removing, etc.
 #
-# = fileutils.rb
+# == What's Here
 #
-# Copyright (c) 2000-2007 Minero Aoki
+# First, what’s elsewhere. \Module \FileUtils:
 #
-# This program is free software.
-# You can distribute/modify this program under the same terms of ruby.
+# - Inherits from {class Object}[https://docs.ruby-lang.org/en/master/Object.html].
+# - Supplements {class File}[https://docs.ruby-lang.org/en/master/File.html]
+#   (but is not included or extended there).
 #
-# == module FileUtils
+# Here, module \FileUtils provides methods that are useful for:
 #
-# Namespace for several file utility methods for copying, moving, removing, etc.
+# - {Creating}[rdoc-ref:FileUtils@Creating].
+# - {Deleting}[rdoc-ref:FileUtils@Deleting].
+# - {Querying}[rdoc-ref:FileUtils@Querying].
+# - {Setting}[rdoc-ref:FileUtils@Setting].
+# - {Comparing}[rdoc-ref:FileUtils@Comparing].
+# - {Copying}[rdoc-ref:FileUtils@Copying].
+# - {Moving}[rdoc-ref:FileUtils@Copying].
+# - {Options}[rdoc-ref:FileUtils@Options].
+#
+# === Creating
+#
+# - ::mkdir: Creates directories.
+# - ::mkdir_p, ::makedirs, ::mkpath: Creates directories,
+#   also creating ancestor directories as needed.
+# - ::link_entry: Creates a hard link.
+# - ::ln, ::link: Creates hard links.
+# - ::ln_s, ::symlink: Creates symbolic links.
+# - ::ln_sf: Creates symbolic links, overwriting if necessary.
+#
+# === Deleting
+#
+# - ::remove_dir: Removes a directory and its descendants.
+# - ::remove_entry: Removes an entry, including its descendants if it is a directory.
+# - ::remove_entry_secure: Like ::remove_entry, but removes securely.
+# - ::remove_file: Removes a file entry.
+# - ::rm, ::remove: Removes entries.
+# - ::rm_f, ::safe_unlink: Like ::rm, but removes forcibly.
+# - ::rm_r: Removes entries and their descendants.
+# - ::rm_rf, ::rmtree: Like ::rm_r, but removes forcibly.
+# - ::rmdir: Removes directories.
+#
+# === Querying
+#
+# - ::pwd, ::getwd: Returns the path to the working directory.
+# - ::uptodate?: Returns whether a given entry is newer than given other entries.
+#
+# === Setting
+#
+# - ::cd, ::chdir: Sets the working directory.
+# - ::chmod: Sets permissions for an entry.
+# - ::chmod_R: Sets permissions for an entry and its descendants.
+# - ::chown: Sets the owner and group for entries.
+# - ::chown_R: Sets the owner and group for entries and their descendants.
+# - ::touch: Sets modification and access times for entries,
+#   creating if necessary.
+#
+# === Comparing
+#
+# - ::compare_file, ::cmp, ::identical?: Returns whether two entries are identical.
+# - ::compare_stream: Returns whether two streams are identical.
+#
+# === Copying
+#
+# - ::copy_entry: Recursively copies an entry.
+# - ::copy_file: Copies an entry.
+# - ::copy_stream: Copies a stream.
+# - ::cp, ::copy: Copies files.
+# - ::cp_lr: Recursively creates hard links.
+# - ::cp_r: Recursively copies files.
+# - ::install: Recursively copies files (with options different from ::cp_r).
+#
+# === Moving
+#
+# - ::mv, ::move: Moves entries.
+#
+# === Options
+#
+# - ::collect_method: Returns the names of methods that accept a given option.
+# - ::commands: Returns the names of methods that accept options.
+# - ::have_option?: Returns whether a given method accepts a given option.
+# - ::options: Returns all option names.
+# - ::options_of: Returns the names of the options for a given method.
 #
 # == Path Arguments
 #
@@ -58,89 +131,6 @@ end
 #       |-- envutil.rb
 #       |-- find_executable.rb
 #       `-- helper.rb
-#
-# === Module Functions
-#
-#   require 'fileutils'
-#
-#   FileUtils.cd(dir, **options)
-#   FileUtils.cd(dir, **options) {|dir| block }
-#   FileUtils.pwd()
-#   FileUtils.mkdir(dir, **options)
-#   FileUtils.mkdir(list, **options)
-#   FileUtils.mkdir_p(dir, **options)
-#   FileUtils.mkdir_p(list, **options)
-#   FileUtils.rmdir(dir, **options)
-#   FileUtils.rmdir(list, **options)
-#   FileUtils.ln(target, link, **options)
-#   FileUtils.ln(targets, dir, **options)
-#   FileUtils.ln_s(target, link, **options)
-#   FileUtils.ln_s(targets, dir, **options)
-#   FileUtils.ln_sf(target, link, **options)
-#   FileUtils.cp(src, dest, **options)
-#   FileUtils.cp(list, dir, **options)
-#   FileUtils.cp_r(src, dest, **options)
-#   FileUtils.cp_r(list, dir, **options)
-#   FileUtils.mv(src, dest, **options)
-#   FileUtils.mv(list, dir, **options)
-#   FileUtils.rm(list, **options)
-#   FileUtils.rm_r(list, **options)
-#   FileUtils.rm_rf(list, **options)
-#   FileUtils.install(src, dest, **options)
-#   FileUtils.chmod(mode, list, **options)
-#   FileUtils.chmod_R(mode, list, **options)
-#   FileUtils.chown(user, group, list, **options)
-#   FileUtils.chown_R(user, group, list, **options)
-#   FileUtils.touch(list, **options)
-#
-# Possible <tt>options</tt> are:
-#
-# <tt>:force</tt> :: forced operation (rewrite files if exist, remove
-#                    directories if not empty, etc.);
-# <tt>:verbose</tt> :: print command to be run, in bash syntax, before
-#                      performing it;
-# <tt>:preserve</tt> :: preserve object's group, user and modification
-#                       time on copying;
-# <tt>:noop</tt> :: no changes are made (usable in combination with
-#                   <tt>:verbose</tt> which will print the command to run)
-#
-# Each method documents the options that it honours. See also ::commands,
-# ::options and ::options_of methods to introspect which command have which
-# options.
-#
-# All methods that have the concept of a "source" file or directory can take
-# either one file or a list of files in that argument.  See the method
-# documentation for examples.
-#
-# There are some `low level' methods, which do not accept keyword arguments:
-#
-#   FileUtils.copy_entry(src, dest, preserve = false, dereference_root = false, remove_destination = false)
-#   FileUtils.copy_file(src, dest, preserve = false, dereference = true)
-#   FileUtils.copy_stream(srcstream, deststream)
-#   FileUtils.remove_entry(path, force = false)
-#   FileUtils.remove_entry_secure(path, force = false)
-#   FileUtils.remove_file(path, force = false)
-#   FileUtils.compare_file(path_a, path_b)
-#   FileUtils.compare_stream(stream_a, stream_b)
-#   FileUtils.uptodate?(file, cmp_list)
-#
-# == module FileUtils::Verbose
-#
-# This module has all methods of FileUtils module, but it outputs messages
-# before acting.  This equates to passing the <tt>:verbose</tt> flag to methods
-# in FileUtils.
-#
-# == module FileUtils::NoWrite
-#
-# This module has all methods of FileUtils module, but never changes
-# files/directories.  This equates to passing the <tt>:noop</tt> flag to methods
-# in FileUtils.
-#
-# == module FileUtils::DryRun
-#
-# This module has all methods of FileUtils module, but never changes
-# files/directories.  This equates to passing the <tt>:noop</tt> and
-# <tt>:verbose</tt> flags to methods in FileUtils.
 #
 # == Avoiding the TOCTTOU Vulnerability
 #
@@ -2411,7 +2401,7 @@ module FileUtils
   public
 
   # Returns an array of the string names of \FileUtils methods
-  # that accept one or more keyword arguments;
+  # that accept one or more keyword arguments:
   #
   #   FileUtils.commands.sort.take(3) # => ["cd", "chdir", "chmod"]
   #
