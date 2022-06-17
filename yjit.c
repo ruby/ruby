@@ -56,13 +56,8 @@ STATIC_ASSERT(pointer_tagging_scheme, USE_FLONUM);
 // types in C such as int, long, etc. and use `std::os::raw::c_long` and friends on
 // the Rust side.
 //
-// What's up with the long prefix? The "rb_" part is to appease `make leaked-globals`
-// which runs on upstream CI. The rationale for the check is unclear to Alan as
-// we build with `-fvisibility=hidden` so only explicitly marked functions end
-// up as public symbols in libruby.so. Perhaps the check is for the static
-// libruby and or general namspacing hygiene? Alan admits his bias towards ELF
-// platforms and newer compilers.
-//
+// What's up with the long prefix? Even though we build with `-fvisibility=hidden`
+// we are sometimes a static library where the option doesn't prevent name collision.
 // The "_yjit_" part is for trying to be informative. We might want different
 // suffixes for symbols meant for Rust and symbols meant for broader CRuby.
 
