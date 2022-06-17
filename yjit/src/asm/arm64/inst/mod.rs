@@ -6,6 +6,7 @@ mod data_imm;
 mod data_reg;
 mod load;
 mod logical_imm;
+mod logical_reg;
 mod mov;
 mod sf;
 mod store;
@@ -18,6 +19,8 @@ use call::Call;
 use data_imm::DataImm;
 use data_reg::DataReg;
 use load::Load;
+use logical_imm::LogicalImm;
+use logical_reg::LogicalReg;
 use mov::Mov;
 use store::Store;
 
@@ -85,6 +88,50 @@ pub fn adds(cb: &mut CodeBlock, rd: A64Opnd, rn: A64Opnd, rm: A64Opnd) {
     cb.write_bytes(&bytes);
 }
 
+/// AND - and rn and rm, put the result in rd, don't update flags
+pub fn and(cb: &mut CodeBlock, rd: A64Opnd, rn: A64Opnd, rm: A64Opnd) {
+    let bytes: [u8; 4] = match (rd, rn, rm) {
+        (A64Opnd::Reg(rd), A64Opnd::Reg(rn), A64Opnd::Reg(rm)) => {
+            assert!(
+                rd.num_bits == rn.num_bits && rn.num_bits == rm.num_bits,
+                "All operands must be of the same size."
+            );
+
+            LogicalReg::and(rd.reg_no, rn.reg_no, rm.reg_no, rd.num_bits).into()
+        },
+        (A64Opnd::Reg(rd), A64Opnd::Reg(rn), A64Opnd::UImm(imm)) => {
+            assert!(rd.num_bits == rn.num_bits, "rd and rn must be of the same size.");
+
+            LogicalImm::and(rd.reg_no, rn.reg_no, imm.try_into().unwrap(), rd.num_bits).into()
+        },
+        _ => panic!("Invalid operand combination to and instruction."),
+    };
+
+    cb.write_bytes(&bytes);
+}
+
+/// ANDS - and rn and rm, put the result in rd, update flags
+pub fn ands(cb: &mut CodeBlock, rd: A64Opnd, rn: A64Opnd, rm: A64Opnd) {
+    let bytes: [u8; 4] = match (rd, rn, rm) {
+        (A64Opnd::Reg(rd), A64Opnd::Reg(rn), A64Opnd::Reg(rm)) => {
+            assert!(
+                rd.num_bits == rn.num_bits && rn.num_bits == rm.num_bits,
+                "All operands must be of the same size."
+            );
+
+            LogicalReg::ands(rd.reg_no, rn.reg_no, rm.reg_no, rd.num_bits).into()
+        },
+        (A64Opnd::Reg(rd), A64Opnd::Reg(rn), A64Opnd::UImm(imm)) => {
+            assert!(rd.num_bits == rn.num_bits, "rd and rn must be of the same size.");
+
+            LogicalImm::ands(rd.reg_no, rn.reg_no, imm.try_into().unwrap(), rd.num_bits).into()
+        },
+        _ => panic!("Invalid operand combination to ands instruction."),
+    };
+
+    cb.write_bytes(&bytes);
+}
+
 /// BL - branch with link (offset is number of instructions to jump)
 pub fn bl(cb: &mut CodeBlock, imm26: A64Opnd) {
     let bytes: [u8; 4] = match imm26 {
@@ -104,6 +151,28 @@ pub fn br(cb: &mut CodeBlock, rn: A64Opnd) {
     let bytes: [u8; 4] = match rn {
         A64Opnd::Reg(rn) => Branch::br(rn.reg_no).into(),
         _ => panic!("Invalid operand to br instruction."),
+    };
+
+    cb.write_bytes(&bytes);
+}
+
+/// CMP - compare rn and rm, update flags
+pub fn cmp(cb: &mut CodeBlock, rn: A64Opnd, rm: A64Opnd) {
+    let bytes: [u8; 4] = match (rn, rm) {
+        (A64Opnd::Reg(rn), A64Opnd::Reg(rm)) => {
+            assert!(
+                rn.num_bits == rm.num_bits,
+                "All operands must be of the same size."
+            );
+
+            DataReg::cmp(rn.reg_no, rm.reg_no, rn.num_bits).into()
+        },
+        (A64Opnd::Reg(rn), A64Opnd::UImm(imm12)) => {
+            assert!(uimm_fits_bits(imm12, 12), "The immediate operand must be 12 bits or less.");
+
+            DataImm::cmp(rn.reg_no, imm12 as u16, rn.num_bits).into()
+        },
+        _ => panic!("Invalid operand combination to cmp instruction."),
     };
 
     cb.write_bytes(&bytes);
@@ -241,6 +310,23 @@ pub fn ret(cb: &mut CodeBlock, rn: A64Opnd) {
     cb.write_bytes(&bytes);
 }
 
+/// TST - test the bits of a register against a mask, then update flags
+pub fn tst(cb: &mut CodeBlock, rn: A64Opnd, rm: A64Opnd) {
+    let bytes: [u8; 4] = match (rn, rm) {
+        (A64Opnd::Reg(rn), A64Opnd::Reg(rm)) => {
+            assert!(rn.num_bits == rm.num_bits, "All operands must be of the same size.");
+
+            LogicalReg::tst(rn.reg_no, rm.reg_no, rn.num_bits).into()
+        },
+        (A64Opnd::Reg(rn), A64Opnd::UImm(imm)) => {
+            LogicalImm::tst(rn.reg_no, imm.try_into().unwrap(), rn.num_bits).into()
+        },
+        _ => panic!("Invalid operand combination to tst instruction."),
+    };
+
+    cb.write_bytes(&bytes);
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -296,6 +382,26 @@ mod tests {
     }
 
     #[test]
+    fn test_and_register() {
+        check_bytes("2000028a", |cb| and(cb, X0, X1, X2));
+    }
+
+    #[test]
+    fn test_and_immediate() {
+        check_bytes("20084092", |cb| and(cb, X0, X1, A64Opnd::new_uimm(7)));
+    }
+
+    #[test]
+    fn test_ands_register() {
+        check_bytes("200002ea", |cb| ands(cb, X0, X1, X2));
+    }
+
+    #[test]
+    fn test_ands_immediate() {
+        check_bytes("200840f2", |cb| ands(cb, X0, X1, A64Opnd::new_uimm(7)));
+    }
+
+    #[test]
     fn test_bl() {
         check_bytes("00040094", |cb| bl(cb, A64Opnd::new_imm(1024)));
     }
@@ -303,6 +409,16 @@ mod tests {
     #[test]
     fn test_br() {
         check_bytes("80021fd6", |cb| br(cb, X20));
+    }
+
+    #[test]
+    fn test_cmp_register() {
+        check_bytes("5f010beb", |cb| cmp(cb, X10, X11));
+    }
+
+    #[test]
+    fn test_cmp_immediate() {
+        check_bytes("5f3900f1", |cb| cmp(cb, X10, A64Opnd::new_uimm(14)));
     }
 
     #[test]
@@ -358,5 +474,15 @@ mod tests {
     #[test]
     fn test_subs_immediate() {
         check_bytes("201c00f1", |cb| subs(cb, X0, X1, A64Opnd::new_uimm(7)));
+    }
+
+    #[test]
+    fn test_tst_register() {
+        check_bytes("1f0001ea", |cb| tst(cb, X0, X1));
+    }
+
+    #[test]
+    fn test_tst_immediate() {
+        check_bytes("3f0840f2", |cb| tst(cb, X1, A64Opnd::new_uimm(7)));
     }
 }

@@ -49,6 +49,12 @@ impl LogicalImm {
     pub fn ands(rd: u8, rn: u8, imm: BitmaskImmediate, num_bits: u8) -> Self {
         Self { rd, rn, imm, opc: Opc::Ands, sf: num_bits.into() }
     }
+
+    /// TST (immediate)
+    /// https://developer.arm.com/documentation/ddi0596/2021-12/Base-Instructions/TST--immediate---Test-bits--immediate---an-alias-of-ANDS--immediate--?lang=en
+    pub fn tst(rn: u8, imm: BitmaskImmediate, num_bits: u8) -> Self {
+        Self::ands(31, rn, imm, num_bits)
+    }
 }
 
 /// https://developer.arm.com/documentation/ddi0602/2022-03/Index-by-Encoding/Data-Processing----Immediate?lang=en#log_imm
@@ -93,5 +99,12 @@ mod tests {
         let inst = LogicalImm::ands(0, 1, 7.try_into().unwrap(), 64);
         let result: u32 = inst.into();
         assert_eq!(0xf2400820, result);
+    }
+
+    #[test]
+    fn test_tst() {
+        let inst = LogicalImm::tst(1, 7.try_into().unwrap(), 64);
+        let result: u32 = inst.into();
+        assert_eq!(0xf240083f, result);
     }
 }
