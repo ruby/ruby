@@ -120,7 +120,7 @@ module RubyVM::YJIT
       raise ArgumentError, "--yjit-trace-exits must be enabled to use dump_exit_locations."
     end
 
-    File.write(filename, Marshal.dump(RubyVM::YJIT.exit_locations))
+    File.binwrite(filename, Marshal.dump(RubyVM::YJIT.exit_locations))
   end
 
   # Return a hash for statistics generated for the --yjit-stats command line option.
