@@ -4,17 +4,23 @@ class TestThreadInstrumentation < Test::Unit::TestCase
     pend("TODO: No windows support yet") if /mswin|mingw|bccwin/ =~ RUBY_PLATFORM
   end
 
+  THREADS_COUNT = 3
+
   def test_thread_instrumentation
     require '-test-/thread/instrumentation'
     Bug::ThreadInstrumentation.reset_counters
     Bug::ThreadInstrumentation::register_callback
 
     begin
-      threaded_cpu_work
+      threads = threaded_cpu_work
+      assert_equal [false] * THREADS_COUNT, threads.map(&:status)
       counters = Bug::ThreadInstrumentation.counters
       counters.each do |c|
         assert_predicate c,:nonzero?, "Call counters: #{counters.inspect}"
       end
+
+      sleep 0.01 # Give more time to the native threads to execute their EXIT hook
+      assert_equal counters.first, counters.last # exited as many times as we entered
     ensure
       Bug::ThreadInstrumentation::unregister_callback
     end
@@ -31,8 +37,9 @@ class TestThreadInstrumentation < Test::Unit::TestCase
     begin
       pid = fork do
         Bug::ThreadInstrumentation.reset_counters
-        threaded_cpu_work
-
+        threads = threaded_cpu_work
+        write_pipe.write(Marshal.dump(threads.map(&:status)))
+        sleep 0.01 # Give more time to the native threads to execute their EXIT hook
         write_pipe.write(Marshal.dump(Bug::ThreadInstrumentation.counters))
         write_pipe.close
         exit!(0)
@@ -40,6 +47,9 @@ class TestThreadInstrumentation < Test::Unit::TestCase
       write_pipe.close
       _, status = Process.wait2(pid)
       assert_predicate status, :success?
+
+      thread_statuses = Marshal.load(read_pipe)
+      assert_equal [false] * THREADS_COUNT, thread_statuses
 
       counters = Marshal.load(read_pipe)
       read_pipe.close
@@ -61,6 +71,6 @@ class TestThreadInstrumentation < Test::Unit::TestCase
   private
 
   def threaded_cpu_work
-    5.times.map { Thread.new { 100.times { |i| i + i } } }.each(&:join)
+    THREADS_COUNT.times.map { Thread.new { 100.times { |i| i + i } } }.each(&:join)
   end
 end
