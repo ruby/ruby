@@ -12063,6 +12063,7 @@ new_args_tail(struct parser_params *p, NODE *kw_args, ID kw_rest_arg, ID block, 
 	struct vtable *vtargs = p->lvtbl->args;
 	NODE *kwn = kw_args;
 
+        if (block) block = vtargs->tbl[vtargs->pos-1];
 	vtable_pop(vtargs, !!block + !!kw_rest_arg);
 	required_kw_vars = kw_vars = &vtargs->tbl[vtargs->pos];
 	while (kwn) {
