@@ -59,7 +59,7 @@ class TestIOWait < Test::Unit::TestCase
   def test_wait_buffered
     @w.syswrite ".\n!"
     assert_equal ".\n", @r.gets
-    assert_equal true, @r.wait(0)
+    assert @r.wait(0)
   end
 
   def test_wait_forever
