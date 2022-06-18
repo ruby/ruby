@@ -2133,6 +2133,7 @@ rb_alias(VALUE klass, ID alias_name, ID original_name)
 	visi = METHOD_ENTRY_VISI(orig_me);
 	goto again;
       case VM_METHOD_TYPE_ALIAS:
+        visi = METHOD_ENTRY_VISI(orig_me);
         orig_me = orig_me->def->body.alias.original_me;
         VM_ASSERT(orig_me->def->type != VM_METHOD_TYPE_ALIAS);
         break;
