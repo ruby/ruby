@@ -371,7 +371,7 @@ AS_IF([test "$GCC" = yes], [
     test -n "$icc_version" || icc_version=0
     # RUBY_APPEND_OPTIONS(XCFLAGS, ["-include ruby/config.h" "-include ruby/missing.h"])
 
-    AS_IF([test "$gcc_major" -lt 3], [
+    AS_IF([test "$gcc_major" -lt 4], [
         AC_MSG_ERROR([too old GCC: $gcc_major.$gcc_minor])
     ])
 ], [
@@ -639,10 +639,7 @@ AC_ARG_ENABLE(werror,
 rb_cv_warnflags="$warnflags"
 AS_CASE(["$GCC:${warnflags+set}:${extra_warnflags:+set}:"],
 [yes::*|yes:*:set:], [# GCC && (!warnflags || extra_warnflags)
-    AS_IF([test $gcc_major -ge 4], [
-	extra_warnflags="$extra_warnflags -Werror=extra-tokens"
-    ])
-    AS_IF([test $gcc_major -ge 4 -a $gcc_major -le 6], [
+    AS_IF([test $gcc_major -le 6], [
 	extra_warnflags="$extra_warnflags -Wno-maybe-uninitialized"
     ])
     # ICC doesn't support -Werror=
@@ -650,6 +647,7 @@ AS_CASE(["$GCC:${warnflags+set}:${extra_warnflags:+set}:"],
 	particular_werror_flags=no
     ])
     for wflag in \
+		 -Werror=extra-tokens \
 		 -Werror=deprecated-declarations \
 		 -Werror=division-by-zero -Werror=div-by-zero \
 		 -Werror=duplicated-cond \
@@ -880,9 +878,7 @@ AS_IF([test "$GCC" = ""], [
     AS_CASE(["$target_os"],[aix*],[warnflags="$warnflags -qinfo=por" rb_cv_warnflags="$rb_cv_warnflags -qinfo=por"])
 ])
 AS_IF([test "$GCC" = yes], [
-    AS_IF([test "$gcc_major" -ge 4], [
-	RUBY_TRY_CFLAGS(-fvisibility=hidden, [visibility_option=yes], [visibility_option=no])
-    ])
+    RUBY_TRY_CFLAGS(-fvisibility=hidden, [visibility_option=yes], [visibility_option=no])
     AC_SUBST(WERRORFLAG, "-Werror")
     AS_IF([test "$visibility_option" = yes], [
 	RUBY_APPEND_OPTION(XCFLAGS, -fvisibility=hidden)
@@ -1008,7 +1004,7 @@ AS_CASE(["$target_os"],
 		ac_cv_lib_crypt_crypt=no
 		ac_cv_func_fdatasync=no # Mac OS X wrongly reports it has fdatasync()
 		ac_cv_func_vfork=no
-		AS_IF([test $gcc_major -lt 4 -o \( $gcc_major -eq 4 -a $gcc_minor -lt 3 \)], [
+		AS_IF([test $gcc_major -eq 4 -a $gcc_minor -lt 3], [
 		    ac_cv_func___builtin_setjmp=no
 		])
 		with_setjmp_type=sigsetjmp # to hijack SIGCHLD handler
