@@ -5569,10 +5569,8 @@ filetime_to_nsec(const FILETIME *ft)
 
 /* License: Ruby's */
 static unsigned
-fileattr_to_unixmode(DWORD attr, const WCHAR *path)
+fileattr_to_unixmode(DWORD attr, const WCHAR *path, unsigned mode)
 {
-    unsigned mode = 0;
-
     if (attr & FILE_ATTRIBUTE_READONLY) {
 	mode |= S_IREAD;
     }
@@ -5580,7 +5578,10 @@ fileattr_to_unixmode(DWORD attr, const WCHAR *path)
 	mode |= S_IREAD | S_IWRITE | S_IWUSR;
     }
 
-    if (attr & FILE_ATTRIBUTE_REPARSE_POINT) {
+    if (mode & S_IFMT) {
+	/* format is already set */
+    }
+    else if (attr & FILE_ATTRIBUTE_REPARSE_POINT) {
 	if (rb_w32_reparse_symlink_p(path))
 	    mode |= S_IFLNK | S_IEXEC;
 	else
@@ -5675,7 +5676,7 @@ stat_by_find(const WCHAR *path, struct stati128 *st)
 	return -1;
     }
     FindClose(h);
-    st->st_mode  = fileattr_to_unixmode(wfd.dwFileAttributes, path);
+    st->st_mode  = fileattr_to_unixmode(wfd.dwFileAttributes, path, 0);
     st->st_atime = filetime_to_unixtime(&wfd.ftLastAccessTime);
     st->st_atimensec = filetime_to_nsec(&wfd.ftLastAccessTime);
     st->st_mtime = filetime_to_unixtime(&wfd.ftLastWriteTime);
@@ -5710,6 +5711,15 @@ winnt_stat(const WCHAR *path, struct stati128 *st, BOOL lstat)
     if (f != INVALID_HANDLE_VALUE) {
 	DWORD attr = stati128_handle(f, st);
 	const DWORD len = get_final_path(f, finalname, numberof(finalname), 0);
+	unsigned mode = 0;
+	switch (GetFileType(f)) {
+	  case FILE_TYPE_CHAR:
+	    mode = S_IFCHR;
+	    break;
+	  case FILE_TYPE_PIPE:
+	    mode = S_IFIFO;
+	    break;
+	}
 	CloseHandle(f);
 	if (attr & FILE_ATTRIBUTE_REPARSE_POINT) {
 	    /* TODO: size in which encoding? */
@@ -5721,7 +5731,7 @@ winnt_stat(const WCHAR *path, struct stati128 *st, BOOL lstat)
 	if (attr & FILE_ATTRIBUTE_DIRECTORY) {
 	    if (check_valid_dir(path)) return -1;
 	}
-	st->st_mode = fileattr_to_unixmode(attr, path);
+	st->st_mode = fileattr_to_unixmode(attr, path, mode);
 	if (len) {
 	    finalname[min(len, numberof(finalname)-1)] = L'\0';
 	    path = finalname;
