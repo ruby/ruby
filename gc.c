@@ -5100,16 +5100,24 @@ gc_setup_mark_bits(struct heap_page *page)
 static int gc_is_moveable_obj(rb_objspace_t *objspace, VALUE obj);
 static VALUE gc_move(rb_objspace_t *objspace, VALUE scan, VALUE free, size_t src_slot_size, size_t slot_size);
 
+#if defined(_WIN32)
+enum {HEAP_PAGE_LOCK = PAGE_NOACCESS, HEAP_PAGE_UNLOCK = PAGE_READWRITE};
+
+static BOOL
+protect_page_body(struct heap_page_body *body, DWORD protect)
+{
+    DWORD old_protect;
+    return VirtualProtect(body, HEAP_PAGE_SIZE, protect, &old_protect) != 0;
+}
+#else
+enum {HEAP_PAGE_LOCK = PROT_NONE, HEAP_PAGE_UNLOCK = PROT_READ | PROT_WRITE};
+#define protect_page_body(body, protect) !mprotect((body), HEAP_PAGE_SIZE, (protect))
+#endif
+
 static void
 lock_page_body(rb_objspace_t *objspace, struct heap_page_body *body)
 {
-#if defined(_WIN32)
-    DWORD old_protect;
-
-    if (!VirtualProtect(body, HEAP_PAGE_SIZE, PAGE_NOACCESS, &old_protect)) {
-#else
-    if (mprotect(body, HEAP_PAGE_SIZE, PROT_NONE)) {
-#endif
+    if (!protect_page_body(body, HEAP_PAGE_LOCK)) {
         rb_bug("Couldn't protect page %p, errno: %s", (void *)body, strerror(errno));
     }
     else {
@@ -5120,13 +5128,7 @@ lock_page_body(rb_objspace_t *objspace, struct heap_page_body *body)
 static void
 unlock_page_body(rb_objspace_t *objspace, struct heap_page_body *body)
 {
-#if defined(_WIN32)
-    DWORD old_protect;
-
-    if (!VirtualProtect(body, HEAP_PAGE_SIZE, PAGE_READWRITE, &old_protect)) {
-#else
-    if (mprotect(body, HEAP_PAGE_SIZE, PROT_READ | PROT_WRITE)) {
-#endif
+    if (!protect_page_body(body, HEAP_PAGE_UNLOCK)) {
         rb_bug("Couldn't unprotect page %p, errno: %s", (void *)body, strerror(errno));
     }
     else {
