@@ -1490,7 +1490,7 @@ class TestFileExhaustive < Test::Unit::TestCase
       assert_equal(stat.file?, File.file?(f), f)
       assert_equal(stat.setgid?, File.setgid?(f), f)
       assert_equal(stat.grpowned?, File.grpowned?(f), f)
-      assert_equal(stat.sticky?, File.sticky?(f), f) if stickyfile
+      assert_equal(stat.sticky?, File.sticky?(f), f)
       assert_equal(File.lstat(f).symlink?, File.symlink?(f), f)
       assert_equal(stat.owned?, File.owned?(f), f)
       assert_equal(stat.pipe?, File.pipe?(f), f)
