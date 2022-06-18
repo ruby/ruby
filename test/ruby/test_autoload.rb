@@ -479,6 +479,7 @@ p Foo::Bar
       File.write(autoload_path, '')
 
       assert_separately(%W[-I #{tmpdir}], <<-RUBY)
+        $VERBOSE = nil
         path = #{File.realpath(autoload_path).inspect}
         autoload :X, path
         assert_equal(path, Object.autoload?(:X))
@@ -553,6 +554,22 @@ p Foo::Bar
           Object.send(:remove_const, :Bar)
 
           $LOADED_FEATURES.delete(autoload_path)
+        end
+      RUBY
+    end
+  end
+
+  def test_autoload_parent_namespace
+    Dir.mktmpdir('autoload') do |tmpdir|
+      autoload_path = File.join(tmpdir, "some_const.rb")
+      File.write(autoload_path, 'class SomeConst; end')
+
+      assert_separately(%W[-I #{tmpdir}], <<-RUBY)
+        module SomeNamespace
+          autoload :SomeConst, #{File.realpath(autoload_path).inspect}
+          assert_warning(%r{/some_const\.rb to define SomeNamespace::SomeConst but it didn't}) do
+            assert_not_nil SomeConst
+          end
         end
       RUBY
     end
