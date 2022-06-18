@@ -370,12 +370,12 @@ AS_IF([test "$GCC" = yes], [
     icc_version=`echo =__ICC | $CC -E -xc - | sed '/^=/!d;s///;/^__ICC/d'`
     test -n "$icc_version" || icc_version=0
     # RUBY_APPEND_OPTIONS(XCFLAGS, ["-include ruby/config.h" "-include ruby/missing.h"])
+
+    AS_IF([test "$gcc_major" -lt 3], [
+        AC_MSG_ERROR([too old GCC: $gcc_major.$gcc_minor])
+    ])
 ], [
     linker_flag=
-])
-
-AS_IF([test "$GCC" = yes -a "$gcc_major" -lt 3 ], [
-    AC_MSG_ERROR([too old GCC])
 ])
 
 RUBY_PROG_GNU_LD
