@@ -2672,6 +2672,22 @@ autoload_try_load(VALUE _arguments)
         result = Qfalse;
 
         rb_const_remove(arguments->module, arguments->name);
+
+        if (arguments->module == rb_cObject) {
+            rb_warning(
+                "Expected %"PRIsVALUE" to define %"PRIsVALUE" but it didn't",
+                arguments->autoload_data->feature,
+                ID2SYM(arguments->name)
+            );
+        }
+        else {
+            rb_warning(
+                "Expected %"PRIsVALUE" to define %"PRIsVALUE"::%"PRIsVALUE" but it didn't",
+                arguments->autoload_data->feature,
+                arguments->module,
+                ID2SYM(arguments->name)
+            );
+        }
     }
     else {
         // Otherwise, it was loaded, copy the flags from the autoload constant:
