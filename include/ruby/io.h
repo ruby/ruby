@@ -55,6 +55,9 @@
 #include "ruby/internal/value.h"
 #include "ruby/backward/2/attributes.h" /* PACKED_STRUCT_UNALIGNED */
 
+// IO#wait, IO#wait_readable, IO#wait_writable, IO#wait_priority are defined by this implementation.
+#define RUBY_IO_WAIT_METHODS
+
 RBIMPL_SYMBOL_EXPORT_BEGIN()
 
 struct stat;
