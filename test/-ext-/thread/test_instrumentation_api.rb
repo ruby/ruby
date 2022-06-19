@@ -1,10 +1,14 @@
 # frozen_string_literal: false
+require 'envutil'
+
 class TestThreadInstrumentation < Test::Unit::TestCase
   def setup
     pend("TODO: No windows support yet") if /mswin|mingw|bccwin/ =~ RUBY_PLATFORM
   end
 
   THREADS_COUNT = 3
+
+  Give_more_time_to_the_native_threads_to_execute_their_EXIT_hook = EnvUtil.apply_timeout_scale(0.01)
 
   def test_thread_instrumentation
     require '-test-/thread/instrumentation'
@@ -19,7 +23,7 @@ class TestThreadInstrumentation < Test::Unit::TestCase
         assert_predicate c,:nonzero?, "Call counters: #{counters.inspect}"
       end
 
-      sleep 0.01 # Give more time to the native threads to execute their EXIT hook
+      sleep(Give_more_time_to_the_native_threads_to_execute_their_EXIT_hook)
       assert_equal counters.first, counters.last # exited as many times as we entered
     ensure
       Bug::ThreadInstrumentation::unregister_callback
@@ -39,7 +43,7 @@ class TestThreadInstrumentation < Test::Unit::TestCase
         Bug::ThreadInstrumentation.reset_counters
         threads = threaded_cpu_work
         write_pipe.write(Marshal.dump(threads.map(&:status)))
-        sleep 0.01 # Give more time to the native threads to execute their EXIT hook
+        sleep(Give_more_time_to_the_native_threads_to_execute_their_EXIT_hook)
         write_pipe.write(Marshal.dump(Bug::ThreadInstrumentation.counters))
         write_pipe.close
         exit!(0)
