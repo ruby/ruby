@@ -1096,9 +1096,9 @@ Init_etc(void)
 {
     VALUE mEtc;
 
-    #ifdef HAVE_RB_EXT_RACTOR_SAFE
-	RB_EXT_RACTOR_SAFE(true);
-    #endif
+#ifdef HAVE_RB_EXT_RACTOR_SAFE
+    RB_EXT_RACTOR_SAFE(true);
+#endif
     mEtc = rb_define_module("Etc");
     rb_define_const(mEtc, "VERSION", rb_str_new_cstr(RUBY_ETC_VERSION));
     init_constants(mEtc);
@@ -1159,7 +1159,9 @@ Init_etc(void)
 				      NULL);
 #if 0
     /*
-     * Passwd is a Struct that contains the following members:
+     * Passwd is a placeholder Struct for user database on Unix systems.
+     *
+     * === The struct contains the following members
      *
      * name::
      *	    contains the short login name of the user as a String.
@@ -1176,25 +1178,24 @@ Init_etc(void)
      * shell::
      *	    contains the path to the login shell of the user as a String.
      *
-     * === The following members below are optional, and must be compiled with special flags:
+     * === The following members below are system-dependent
      *
      * gecos::
      *     contains a longer String description of the user, such as
      *	   a full name. Some Unix systems provide structured information in the
      *     gecos field, but this is system-dependent.
-     *     must be compiled with +HAVE_STRUCT_PASSWD_PW_GECOS+
      * change::
-     *     password change time(integer) must be compiled with +HAVE_STRUCT_PASSWD_PW_CHANGE+
+     *     password change time(integer).
      * quota::
-     *     quota value(integer) must be compiled with +HAVE_STRUCT_PASSWD_PW_QUOTA+
+     *     quota value(integer).
      * age::
-     *     password age(integer) must be compiled with +HAVE_STRUCT_PASSWD_PW_AGE+
+     *     password age(integer).
      * class::
-     *     user access class(string) must be compiled with +HAVE_STRUCT_PASSWD_PW_CLASS+
+     *     user access class(string).
      * comment::
-     *     comment(string) must be compiled with +HAVE_STRUCT_PASSWD_PW_COMMENT+
+     *     comment(string).
      * expire::
-     *	    account expiration time(integer) must be compiled with +HAVE_STRUCT_PASSWD_PW_EXPIRE+
+     *	    account expiration time(integer).
      */
     sPasswd = rb_define_class_under(mEtc, "Passwd", rb_cStruct);
 #endif
@@ -1210,9 +1211,9 @@ Init_etc(void)
 
 #if 0
     /*
-     * Group is a Struct that is only available when compiled with +HAVE_GETGRENT+.
+     * Group is a placeholder Struct for user group database on Unix systems.
      *
-     * The struct contains the following members:
+     * === The struct contains the following members
      *
      * name::
      *	    contains the name of the group as a String.
@@ -1221,7 +1222,7 @@ Init_etc(void)
      *	    returned if password access to the group is not available; an empty
      *	    string is returned if no password is needed to obtain membership of
      *	    the group.
-     *	    Must be compiled with +HAVE_STRUCT_GROUP_GR_PASSWD+.
+     *	    This is system-dependent.
      * gid::
      *	    contains the group's numeric ID as an integer.
      * mem::
