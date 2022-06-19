@@ -1167,8 +1167,9 @@ Init_etc(void)
      *	    contains the short login name of the user as a String.
      * passwd::
      *	    contains the encrypted password of the user as a String.
-     *	    an 'x' is returned if shadow passwords are in use. An '*' is returned
-     *      if the user cannot log in using a password.
+     *	    an <code>'x'</code> is returned if shadow passwords are in
+     *	    use. An <code>'*'</code> is returned if the user cannot
+     *	    log in using a password.
      * uid::
      *	    contains the integer user ID (uid) of the user.
      * gid::
