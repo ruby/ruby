@@ -336,7 +336,7 @@ etc_passwd(VALUE obj)
  *
  * The code block is passed an Passwd struct.
  *
- * See ::getpwent above for details.
+ * See Etc.getpwent above for details.
  *
  * Example:
  *
