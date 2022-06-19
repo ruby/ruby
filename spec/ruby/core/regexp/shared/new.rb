@@ -58,6 +58,15 @@ describe :regexp_new_string, shared: true do
     end
   end
 
+  it "sets options from second argument if it is true" do
+    r = Regexp.send(@method, 'Hi', true)
+    (r.options & Regexp::IGNORECASE).should_not == 0
+    (r.options & Regexp::MULTILINE).should == 0
+    not_supported_on :opal do
+      (r.options & Regexp::EXTENDED).should == 0
+    end
+  end
+
   it "sets options from second argument if it is one of the Integer option constants" do
     r = Regexp.send(@method, 'Hi', Regexp::IGNORECASE)
     (r.options & Regexp::IGNORECASE).should_not == 0
@@ -88,12 +97,28 @@ describe :regexp_new_string, shared: true do
     (r.options & Regexp::EXTENDED).should_not == 0
   end
 
-  it "treats any non-Integer, non-nil, non-false second argument as IGNORECASE" do
-    r = Regexp.send(@method, 'Hi', Object.new)
-    (r.options & Regexp::IGNORECASE).should_not == 0
-    (r.options & Regexp::MULTILINE).should == 0
-    not_supported_on :opal do
-      (r.options & Regexp::EXTENDED).should == 0
+  ruby_version_is ""..."3.2" do
+    it "treats any non-Integer, non-nil, non-false second argument as IGNORECASE" do
+      r = Regexp.send(@method, 'Hi', Object.new)
+      (r.options & Regexp::IGNORECASE).should_not == 0
+      (r.options & Regexp::MULTILINE).should == 0
+      not_supported_on :opal do
+        (r.options & Regexp::EXTENDED).should == 0
+      end
+    end
+  end
+
+  ruby_version_is "3.2" do
+    it "warns any non-Integer, non-nil, non-false second argument" do
+      r = nil
+      -> {
+        r = Regexp.send(@method, 'Hi', Object.new)
+      }.should complain(/expected true or false as ignorecase/, {verbose: true})
+      (r.options & Regexp::IGNORECASE).should_not == 0
+      (r.options & Regexp::MULTILINE).should == 0
+      not_supported_on :opal do
+        (r.options & Regexp::EXTENDED).should == 0
+      end
     end
   end
 
