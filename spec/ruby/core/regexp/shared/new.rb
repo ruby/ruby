@@ -120,6 +120,45 @@ describe :regexp_new_string, shared: true do
         (r.options & Regexp::EXTENDED).should == 0
       end
     end
+
+    it "accepts a String of supported flags as the second argument" do
+      r = Regexp.send(@method, 'Hi', 'i')
+      (r.options & Regexp::IGNORECASE).should_not == 0
+      (r.options & Regexp::MULTILINE).should == 0
+      not_supported_on :opal do
+        (r.options & Regexp::EXTENDED).should == 0
+      end
+
+      r = Regexp.send(@method, 'Hi', 'imx')
+      (r.options & Regexp::IGNORECASE).should_not == 0
+      (r.options & Regexp::MULTILINE).should_not == 0
+      not_supported_on :opal do
+        (r.options & Regexp::EXTENDED).should_not == 0
+      end
+
+      r = Regexp.send(@method, 'Hi', 'mimi')
+      (r.options & Regexp::IGNORECASE).should_not == 0
+      (r.options & Regexp::MULTILINE).should_not == 0
+      not_supported_on :opal do
+        (r.options & Regexp::EXTENDED).should == 0
+      end
+
+      r = Regexp.send(@method, 'Hi', '')
+      (r.options & Regexp::IGNORECASE).should == 0
+      (r.options & Regexp::MULTILINE).should == 0
+      not_supported_on :opal do
+        (r.options & Regexp::EXTENDED).should == 0
+      end
+    end
+
+    it "raises an Argument error if the second argument contains unsupported chars" do
+      -> { Regexp.send(@method, 'Hi', 'e') }.should raise_error(ArgumentError)
+      -> { Regexp.send(@method, 'Hi', 'n') }.should raise_error(ArgumentError)
+      -> { Regexp.send(@method, 'Hi', 's') }.should raise_error(ArgumentError)
+      -> { Regexp.send(@method, 'Hi', 'u') }.should raise_error(ArgumentError)
+      -> { Regexp.send(@method, 'Hi', 'j') }.should raise_error(ArgumentError)
+      -> { Regexp.send(@method, 'Hi', 'mjx') }.should raise_error(ArgumentError)
+    end
   end
 
   it "ignores the third argument if it is 'e' or 'euc' (case-insensitive)" do
