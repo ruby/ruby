@@ -3633,8 +3633,8 @@ rb_reg_match_p(VALUE re, VALUE str, long pos)
 
 /*
  *  call-seq:
- *    Regexp.new(string, options = 0, timeout: nil) -> regexp
- *    Regexp.new(regexp) -> regexp
+ *    Regexp.new(string, options = 0, encoding = nil, timeout: nil) -> regexp
+ *    Regexp.new(regexp, timeout: nil) -> regexp
  *
  *  With argument +string+ given, returns a new regexp with the given string
  *  and options:
@@ -3655,6 +3655,10 @@ rb_reg_match_p(VALUE re, VALUE str, long pos)
  *      Regexp.new('foo', flags)              # => /foo/mix
  *
  *  - +nil+ or +false+, which is ignored.
+ *
+ *  If optional argument +encoding+ is a string starts with
+ *  <code>'n'</code>, the encoding of +string+ is ignored and the new
+ *  regexp encoding is fixed to +ASCII_8BIT+.
  *
  *  If optional keyword argument +timeout+ is given,
  *  its integer value overrides the timeout interval for the class,
