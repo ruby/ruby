@@ -190,7 +190,8 @@ setup_passwd(struct passwd *pwd)
 /* call-seq:
  *	getpwuid(uid)	->  Passwd
  *
- * Returns the /etc/passwd information for the user with the given integer +uid+.
+ * Returns the <tt>/etc/passwd</tt> information for the user with the given
+ * integer +uid+.
  *
  * The information is returned as a Passwd struct.
  *
@@ -229,8 +230,8 @@ etc_getpwuid(int argc, VALUE *argv, VALUE obj)
 /* call-seq:
  *	getpwnam(name)	->  Passwd
  *
- * Returns the /etc/passwd information for the user with specified login
- * +name+.
+ * Returns the <tt>/etc/passwd</tt> information for the user with specified
+ * login +name+.
  *
  * The information is returned as a Passwd struct.
  *
@@ -295,7 +296,7 @@ each_passwd(void)
  *	Etc.passwd			->  Passwd
  *
  * Provides a convenient Ruby iterator which executes a block for each entry
- * in the /etc/passwd file.
+ * in the <tt>/etc/passwd</tt> file.
  *
  * The code block is passed an Passwd struct.
  *
@@ -330,7 +331,8 @@ etc_passwd(VALUE obj)
  *	Etc::Passwd.each { |struct| block }	->  Passwd
  *	Etc::Passwd.each			->  Enumerator
  *
- * Iterates for each entry in the /etc/passwd file if a block is given.
+ * Iterates for each entry in the <tt>/etc/passwd</tt> file if a block is
+ * given.
  *
  * If no block is given, returns the Enumerator.
  *
@@ -360,8 +362,8 @@ etc_each_passwd(VALUE obj)
     return obj;
 }
 
-/* Resets the process of reading the /etc/passwd file, so that the next call
- * to ::getpwent will return the first entry again.
+/* Resets the process of reading the <tt>/etc/passwd</tt> file, so that the
+ * next call to ::getpwent will return the first entry again.
  */
 static VALUE
 etc_setpwent(VALUE obj)
@@ -372,8 +374,8 @@ etc_setpwent(VALUE obj)
     return Qnil;
 }
 
-/* Ends the process of scanning through the /etc/passwd file begun with
- * ::getpwent, and closes the file.
+/* Ends the process of scanning through the <tt>/etc/passwd</tt> file begun
+ * with ::getpwent, and closes the file.
  */
 static VALUE
 etc_endpwent(VALUE obj)
@@ -384,7 +386,7 @@ etc_endpwent(VALUE obj)
     return Qnil;
 }
 
-/* Returns an entry from the /etc/passwd file.
+/* Returns an entry from the <tt>/etc/passwd</tt> file.
  *
  * The first time it is called it opens the file and returns the first entry;
  * each successive call returns the next entry, or +nil+ if the end of the file
@@ -435,7 +437,7 @@ setup_group(struct group *grp)
  *	getgrgid(group_id)  ->	Group
  *
  * Returns information about the group with specified integer +group_id+,
- * as found in /etc/group.
+ * as found in <tt>/etc/group</tt>.
  *
  * The information is returned as a Group struct.
  *
@@ -473,7 +475,7 @@ etc_getgrgid(int argc, VALUE *argv, VALUE obj)
  *	getgrnam(name)	->  Group
  *
  * Returns information about the group with specified +name+, as found in
- * /etc/group.
+ * <tt>/etc/group</tt>.
  *
  * The information is returned as a Group struct.
  *
@@ -536,7 +538,7 @@ each_group(void)
 #endif
 
 /* Provides a convenient Ruby iterator which executes a block for each entry
- * in the /etc/group file.
+ * in the <tt>/etc/group</tt> file.
  *
  * The code block is passed an Group struct.
  *
@@ -572,7 +574,8 @@ etc_group(VALUE obj)
  *	Etc::Group.each { |group| block }   ->	obj
  *	Etc::Group.each			    ->	Enumerator
  *
- * Iterates for each entry in the /etc/group file if a block is given.
+ * Iterates for each entry in the <tt>/etc/group</tt> file if a block is
+ * given.
  *
  * If no block is given, returns the Enumerator.
  *
@@ -599,8 +602,8 @@ etc_each_group(VALUE obj)
 }
 #endif
 
-/* Resets the process of reading the /etc/group file, so that the next call
- * to ::getgrent will return the first entry again.
+/* Resets the process of reading the <tt>/etc/group</tt> file, so that the
+ * next call to ::getgrent will return the first entry again.
  */
 static VALUE
 etc_setgrent(VALUE obj)
@@ -611,8 +614,8 @@ etc_setgrent(VALUE obj)
     return Qnil;
 }
 
-/* Ends the process of scanning through the /etc/group file begun by
- * ::getgrent, and closes the file.
+/* Ends the process of scanning through the <tt>/etc/group</tt> file begun
+ * by ::getgrent, and closes the file.
  */
 static VALUE
 etc_endgrent(VALUE obj)
@@ -623,7 +626,7 @@ etc_endgrent(VALUE obj)
     return Qnil;
 }
 
-/* Returns an entry from the /etc/group file.
+/* Returns an entry from the <tt>/etc/group</tt> file.
  *
  * The first time it is called it opens the file and returns the first entry;
  * each successive call returns the next entry, or +nil+ if the end of the file
@@ -657,9 +660,11 @@ VALUE rb_w32_conv_from_wchar(const WCHAR *wstr, rb_encoding *enc);
 /*
  * Returns system configuration directory.
  *
- * This is typically "/etc", but is modified by the prefix used when Ruby was
- * compiled. For example, if Ruby is built and installed in /usr/local,
- * returns "/usr/local/etc" on other platforms than Windows.
+ * This is typically <code>"/etc"</code>, but is modified by the prefix used
+ * when Ruby was compiled. For example, if Ruby is built and installed in
+ * <tt>/usr/local</tt>, returns <code>"/usr/local/etc"</code> on other
+ * platforms than Windows.
+ *
  * On Windows, this always returns the directory provided by the system.
  */
 static VALUE
@@ -1067,11 +1072,12 @@ etc_nprocessors(VALUE obj)
 
 /*
  * The Etc module provides access to information typically stored in
- * files in the /etc directory on Unix systems.
+ * files in the <tt>/etc</tt> directory on Unix systems.
  *
  * The information accessible consists of the information found in the
- * /etc/passwd and /etc/group files, plus information about the system's
- * temporary directory (/tmp) and configuration directory (/etc).
+ * <tt>/etc/passwd</tt> and <tt>/etc/group</tt> files, plus information
+ * about the system's temporary directory (<tt>/tmp</tt>) and configuration
+ * directory (<tt>/etc</tt>).
  *
  * The Etc module provides a more reliable way to access information about
  * the logged in user than environment variables such as +$USER+.
