@@ -11,7 +11,7 @@ static rb_atomic_t exited_count = 0;
 void
 ex_callback(rb_event_flag_t event, const rb_internal_thread_event_data_t *event_data, void *user_data)
 {
-    switch(event) {
+    switch (event) {
       case RUBY_INTERNAL_THREAD_EVENT_STARTED:
         RUBY_ATOMIC_INC(started_count);
         break;
@@ -59,7 +59,7 @@ static VALUE
 thread_register_callback(VALUE thread)
 {
     single_hook = rb_internal_thread_add_event_hook(
-        *ex_callback,
+        ex_callback,
         RUBY_INTERNAL_THREAD_EVENT_STARTED |
         RUBY_INTERNAL_THREAD_EVENT_READY |
         RUBY_INTERNAL_THREAD_EVENT_RESUMED |
@@ -87,7 +87,7 @@ thread_register_and_unregister_callback(VALUE thread)
 {
     rb_internal_thread_event_hook_t * hooks[5];
     for (int i = 0; i < 5; i++) {
-        hooks[i] = rb_internal_thread_add_event_hook(*ex_callback, RUBY_INTERNAL_THREAD_EVENT_READY, NULL);
+        hooks[i] = rb_internal_thread_add_event_hook(ex_callback, RUBY_INTERNAL_THREAD_EVENT_READY, NULL);
     }
 
     if (!rb_internal_thread_remove_event_hook(hooks[4])) return Qfalse;
