@@ -202,8 +202,18 @@ impl Assembler
                 Op::JmpOpnd => jmp_rm(cb, insn.opnds[0].into()),
 
                 // Conditional jump to a label
+                Op::Jmp => {
+                    match insn.target.unwrap() {
+                        Target::CodePtr(code_ptr) => jmp_ptr(cb, code_ptr),
+                        Target::Label(label_idx) => jmp_label(cb, label_idx),
+                        _ => unreachable!()
+                    }
+                }
+
                 Op::Je => je_label(cb, insn.target.unwrap().unwrap_label_idx()),
+
                 Op::Jz => jz_label(cb, insn.target.unwrap().unwrap_label_idx()),
+
                 Op::Jnz => {
                     match insn.target.unwrap() {
                         Target::CodePtr(code_ptr) => jnz_ptr(cb, code_ptr),
