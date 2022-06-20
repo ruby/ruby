@@ -509,33 +509,32 @@ pub fn jit_ensure_block_entry_exit(jit: &mut JITState, ocb: &mut OutlinedCb) {
 
 // Landing code for when c_return tracing is enabled. See full_cfunc_return().
 fn gen_full_cfunc_return(ocb: &mut OutlinedCb) -> CodePtr {
-    let cb = ocb.unwrap();
-    let code_ptr = cb.get_write_ptr();
+    let ocb = ocb.unwrap();
+    let code_ptr = ocb.get_write_ptr();
+    let mut asm = Assembler::new();
 
-    todo!();
-
-    /*
     // This chunk of code expect REG_EC to be filled properly and
     // RAX to contain the return value of the C method.
 
     // Call full_cfunc_return()
-    mov(cb, C_ARG_REGS[0], REG_EC);
-    mov(cb, C_ARG_REGS[1], RAX);
-    call_ptr(cb, REG0, rb_full_cfunc_return as *const u8);
+    asm.ccall(
+        rb_full_cfunc_return as *const u8,
+        vec![EC, C_RET_OPND]
+    );
 
     // Count the exit
     gen_counter_incr!(asm, traced_cfunc_return);
 
     // Return to the interpreter
-    pop(cb, REG_SP);
-    pop(cb, REG_EC);
-    pop(cb, REG_CFP);
+    asm.cpop(SP);
+    asm.cpop(EC);
+    asm.cpop(CFP);
 
-    mov(cb, RAX, uimm_opnd(Qundef.into()));
-    ret(cb);
+    asm.cret(Qundef.into());
+
+    asm.compile(ocb);
 
     return code_ptr;
-    */
 }
 
 /// Generate a continuation for leave that exits to the interpreter at REG_CFP->pc.
@@ -6179,7 +6178,7 @@ impl CodegenGlobals {
         let stub_exit_code = gen_code_for_exit_from_stub(&mut ocb);
 
         // Generate full exit code for C func
-        //let cfunc_exit_code = gen_full_cfunc_return(&mut ocb);
+        let cfunc_exit_code = gen_full_cfunc_return(&mut ocb);
 
         // Mark all code memory as executable
         cb.mark_all_executable();
@@ -6190,7 +6189,7 @@ impl CodegenGlobals {
             outlined_cb: ocb,
             leave_exit_code: leave_exit_code,
             stub_exit_code: stub_exit_code,
-            outline_full_cfunc_return_pos: /*cfunc_exit_code*/CodePtr::from(1 as *mut u8),
+            outline_full_cfunc_return_pos: cfunc_exit_code,
             global_inval_patches: Vec::new(),
             inline_frozen_bytes: 0,
             method_codegen_table: HashMap::new(),
