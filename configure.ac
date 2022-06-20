@@ -2652,7 +2652,7 @@ AC_SUBST(X_COROUTINE_SRC, [$COROUTINE_SRC])
 
 AC_CACHE_CHECK(for x86 control-flow protection, rb_cv_control_flow_protection, [AC_RUN_IFELSE([AC_LANG_SOURCE([[
 int main(void) {
-    void *shadow_stack_pointer = NULL;
+    void *shadow_stack_pointer = 0;
     asm("rdsspq %0\n" : "=r" (shadow_stack_pointer));
     return 0;
 }
