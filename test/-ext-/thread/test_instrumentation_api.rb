@@ -8,8 +8,6 @@ class TestThreadInstrumentation < Test::Unit::TestCase
 
   THREADS_COUNT = 3
 
-  Give_more_time_to_the_native_threads_to_execute_their_EXIT_hook = EnvUtil.apply_timeout_scale(0.01)
-
   def test_thread_instrumentation
     require '-test-/thread/instrumentation'
     Bug::ThreadInstrumentation.reset_counters
@@ -20,11 +18,11 @@ class TestThreadInstrumentation < Test::Unit::TestCase
       assert_equal [false] * THREADS_COUNT, threads.map(&:status)
       counters = Bug::ThreadInstrumentation.counters
       counters.each do |c|
-        assert_predicate c,:nonzero?, "Call counters: #{counters.inspect}"
+        assert_predicate c, :nonzero?, "Call counters: #{counters.inspect}"
       end
 
-      sleep(Give_more_time_to_the_native_threads_to_execute_their_EXIT_hook)
-      assert_equal counters.first, counters.last # exited as many times as we entered
+      assert_equal THREADS_COUNT, counters.first
+      assert_in_delta THREADS_COUNT, counters.last, 1 # It's possible that a thread didn't execute its EXIT hook yet.
     ensure
       Bug::ThreadInstrumentation::unregister_callback
     end
@@ -43,7 +41,6 @@ class TestThreadInstrumentation < Test::Unit::TestCase
         Bug::ThreadInstrumentation.reset_counters
         threads = threaded_cpu_work
         write_pipe.write(Marshal.dump(threads.map(&:status)))
-        sleep(Give_more_time_to_the_native_threads_to_execute_their_EXIT_hook)
         write_pipe.write(Marshal.dump(Bug::ThreadInstrumentation.counters))
         write_pipe.close
         exit!(0)
@@ -61,7 +58,8 @@ class TestThreadInstrumentation < Test::Unit::TestCase
         assert_predicate c, :nonzero?, "Call counters: #{counters.inspect}"
       end
 
-      assert_equal counters.first, counters.last # exited as many times as we entered
+      assert_equal THREADS_COUNT, counters.first
+      assert_in_delta THREADS_COUNT, counters.last, 1 # It's possible that a thread didn't execute its EXIT hook yet.
     ensure
       Bug::ThreadInstrumentation::unregister_callback
     end
