@@ -3633,7 +3633,7 @@ rb_reg_match_p(VALUE re, VALUE str, long pos)
 
 /*
  *  call-seq:
- *    Regexp.new(string, options = 0, encoding = nil, timeout: nil) -> regexp
+ *    Regexp.new(string, options = 0, n_flag = nil, timeout: nil) -> regexp
  *    Regexp.new(regexp, timeout: nil) -> regexp
  *
  *  With argument +string+ given, returns a new regexp with the given string
@@ -3656,16 +3656,29 @@ rb_reg_match_p(VALUE re, VALUE str, long pos)
  *
  *  - +nil+ or +false+, which is ignored.
  *
- *  If optional argument +encoding+ is a string starts with
- *  <code>'n'</code>, the encoding of +string+ is ignored and the new
- *  regexp encoding is fixed to +ASCII_8BIT+.
+ *  If optional argument +n_flag+ if it is a string starts with
+ *  <code>'n'</code> or <code>'N'</code>, the encoding of +string+ is
+ *  ignored and the new regexp encoding is fixed to +ASCII-8BIT+ or
+ *  +US-ASCII+, by its content.
+ *
+ *      Regexp.new('foo', nil, 'n')     # => /foo/n
+ *      Regexp.new("\u3042", nil, 'n')  # => /\xE3\x81\x82/n
  *
  *  If optional keyword argument +timeout+ is given,
  *  its float value overrides the timeout interval for the class,
  *  Regexp.timeout.
  *
- *  With argument +regexp+ given, returns a new regexp
- *  source, options, and timeout are the same as +self+.
+ *  With argument +regexp+ given, returns a new regexp. The source,
+ *  options, timeout are the same as +regexp+. +options+ and +n_flag+
+ *  arguments are ineffective.  The timeout can be overridden by
+ *  +timeout+ keyword.
+ *
+ *      options = Regexp::MULTILINE
+ *      r = Regexp.new('foo', optinos, timeout: 1.1) # => /foo/m
+ *      r2 = Regexp.new(r)                           # => /foo/m
+ *      r2.timeout                                   # => 1.1
+ *      r3 = Regexp.new(r, timeout: 3.14)            # => /foo/m
+ *      r3.timeout                                   # => 3.14
  *
  *  Regexp.compile is an alias for Regexp.new.
  *
