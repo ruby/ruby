@@ -2650,16 +2650,13 @@ AC_DEFINE_UNQUOTED(COROUTINE_H, ["$COROUTINE_H"])
 AC_SUBST(X_COROUTINE_H, [$COROUTINE_H])
 AC_SUBST(X_COROUTINE_SRC, [$COROUTINE_SRC])
 
-AC_CACHE_CHECK(for x86 control-flow protection, rb_cv_control_flow_protection, [AC_RUN_IFELSE([AC_LANG_SOURCE([[
-int main(void) {
+AC_CACHE_CHECK(for x86 control-flow protection, rb_cv_control_flow_protection,
+[AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]], [[
     void *shadow_stack_pointer = 0;
     asm("rdsspq %0\n" : "=r" (shadow_stack_pointer));
-    return 0;
-}
     ]])],
     rb_cv_control_flow_protection=yes,
-    rb_cv_control_flow_protection=no,
-    rb_cv_control_flow_protection=yes
+    rb_cv_control_flow_protection=no
 )])
 
 AS_IF([test "$rb_cv_control_flow_protection" = yes], [
