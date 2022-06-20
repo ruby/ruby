@@ -1466,11 +1466,12 @@ fn gen_expandarray(
 
     KeepCompiling
 }
+*/
 
 fn gen_getlocal_wc0(
     jit: &mut JITState,
     ctx: &mut Context,
-    cb: &mut CodeBlock,
+    asm: &mut Assembler,
     _ocb: &mut OutlinedCb,
 ) -> CodegenStatus {
     // Compute the offset from BP to the local
@@ -1479,14 +1480,14 @@ fn gen_getlocal_wc0(
     let local_idx = slot_to_local_idx(jit.get_iseq(), slot_idx);
 
     // Load environment pointer EP (level 0) from CFP
-    gen_get_ep(cb, REG0, 0);
+    let ep_opnd = gen_get_ep(asm, 0);
 
     // Load the local from the EP
-    mov(cb, REG0, mem_opnd(64, REG0, offs));
+    let local_opnd = Opnd::mem(64, ep_opnd, offs);
 
     // Write the local at SP
     let stack_top = ctx.stack_push_local(local_idx.as_usize());
-    mov(cb, stack_top, REG0);
+    asm.mov(stack_top, local_opnd);
 
     KeepCompiling
 }
@@ -1518,21 +1519,24 @@ fn slot_to_local_idx(iseq: IseqPtr, slot_idx: i32) -> u32 {
 }
 
 // Get EP at level from CFP
-fn gen_get_ep(cb: &mut CodeBlock, reg: X86Opnd, level: u32) {
-    // Load environment pointer EP from CFP
-    let ep_opnd = mem_opnd(64, REG_CFP, RUBY_OFFSET_CFP_EP);
-    mov(cb, reg, ep_opnd);
+fn gen_get_ep(asm: &mut Assembler, level: u32) -> Opnd {
+    // Load environment pointer EP from CFP into a register
+    let ep_opnd = Opnd::mem(64, CFP, RUBY_OFFSET_CFP_EP);
+    let mut ep_opnd = asm.load(ep_opnd);
 
     for _ in (0..level).rev() {
         // Get the previous EP from the current EP
         // See GET_PREV_EP(ep) macro
         // VALUE *prev_ep = ((VALUE *)((ep)[VM_ENV_DATA_INDEX_SPECVAL] & ~0x03))
         let offs = (SIZEOF_VALUE as i32) * (VM_ENV_DATA_INDEX_SPECVAL as i32);
-        mov(cb, reg, mem_opnd(64, reg, offs));
-        and(cb, reg, imm_opnd(!0x03));
+        ep_opnd = asm.load(Opnd::mem(64, ep_opnd, offs));
+        ep_opnd = asm.and(ep_opnd, Opnd::Imm(!0x03));
     }
+
+    ep_opnd
 }
 
+/*
 fn gen_getlocal_generic(
     ctx: &mut Context,
     cb: &mut CodeBlock,
@@ -5966,10 +5970,10 @@ fn get_gen_fn(opcode: VALUE) -> Option<InsnGenFn> {
         //YARVINSN_topn => Some(gen_topn),
         //YARVINSN_adjuststack => Some(gen_adjuststack),
 
-        /*
-        YARVINSN_getlocal => Some(gen_getlocal),
+        //YARVINSN_getlocal => Some(gen_getlocal),
         YARVINSN_getlocal_WC_0 => Some(gen_getlocal_wc0),
-        YARVINSN_getlocal_WC_1 => Some(gen_getlocal_wc1),
+        //YARVINSN_getlocal_WC_1 => Some(gen_getlocal_wc1),
+        /*
         YARVINSN_setlocal => Some(gen_setlocal),
         YARVINSN_setlocal_WC_0 => Some(gen_setlocal_wc0),
         YARVINSN_setlocal_WC_1 => Some(gen_setlocal_wc1),
