@@ -133,20 +133,6 @@ iseq_clear_ic_references_i(VALUE *code, VALUE insn, size_t index, void *data)
     struct iseq_clear_ic_references_data *ic_data = (struct iseq_clear_ic_references_data *) data;
 
     switch (insn) {
-      case BIN(opt_getinlinecache): {
-        RUBY_ASSERT_ALWAYS(ic_data->ic == NULL);
-
-        ic_data->ic = (IC) code[index + 2];
-        return true;
-      }
-      case BIN(getconstant): {
-        if (ic_data->ic != NULL) {
-            ID id = (ID) code[index + 1];
-            remove_from_constant_cache(id, (st_data_t)ic_data->ic);
-        }
-
-        return true;
-      }
       case BIN(opt_getconst): {
         IDLIST segments = (IDLIST)code[index + 1];
         st_data_t ic = code[index + 2];
@@ -155,12 +141,6 @@ iseq_clear_ic_references_i(VALUE *code, VALUE insn, size_t index, void *data)
             if (id == idNULL) continue;
             remove_from_constant_cache(id, ic);
         }
-        return true;
-      }
-      case BIN(opt_setinlinecache): {
-        RUBY_ASSERT_ALWAYS(ic_data->ic != NULL);
-
-        ic_data->ic = NULL;
         return true;
       }
       default:

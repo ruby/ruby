@@ -4975,28 +4975,6 @@ vm_track_constant_cache(ID id, void *ic)
     st_insert(ics, (st_data_t) ic, (st_data_t) Qtrue);
 }
 
-// This is the iterator used by vm_ic_compile for rb_iseq_each. It is used as a
-// callback for each instruction within the ISEQ, and is meant to return a
-// boolean indicating whether or not to keep iterating.
-//
-// This is used to walk through the ISEQ and find all getconstant instructions
-// between the starting opt_getinlinecache and the ending opt_setinlinecache and
-// associating the inline cache with the constant name components on the VM.
-static bool
-vm_ic_compile_i(VALUE *code, VALUE insn, size_t index, void *ic)
-{
-    if (insn == BIN(opt_setinlinecache)) {
-        return false;
-    }
-
-    if (insn == BIN(getconstant)) {
-        ID id = code[index + 1];
-        vm_track_constant_cache(id, ic);
-    }
-
-    return true;
-}
-
 static void
 vm_ic_track_const_chain(rb_control_frame_t *cfp, IC ic, IDLIST segments)
 {
@@ -5009,22 +4987,6 @@ vm_ic_track_const_chain(rb_control_frame_t *cfp, IC ic, IDLIST segments)
         vm_track_constant_cache(id, ic);
     }
 
-    RB_VM_LOCK_LEAVE();
-}
-
-// Loop through the instruction sequences starting at the opt_getinlinecache
-// call and gather up every getconstant's ID. Associate that with the VM's
-// constant cache so that whenever one of the constants changes the inline cache
-// will get busted.
-static void
-vm_ic_compile(rb_control_frame_t *cfp, IC ic)
-{
-    const rb_iseq_t *iseq = cfp->iseq;
-
-    RB_VM_LOCK_ENTER();
-    {
-        rb_iseq_each(iseq, cfp->pc - ISEQ_BODY(iseq)->iseq_encoded, vm_ic_compile_i, (void *) ic);
-    }
     RB_VM_LOCK_LEAVE();
 }
 

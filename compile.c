@@ -2435,11 +2435,6 @@ iseq_set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *const anchor)
 			    generated_iseq[code_index + 1 + j] = (VALUE)ic;
                             FL_SET(iseqv, ISEQ_MARKABLE_ISEQ);
 
-                            if (insn == BIN(opt_getinlinecache) && type == TS_IC) {
-                                // Store the instruction index for opt_getinlinecache on the IC for
-                                // YJIT to invalidate code when opt_setinlinecache runs.
-                                ic->get_insn_idx = (unsigned int)code_index;
-                            }
 			    break;
 			}
                         case TS_CALLDATA:
@@ -11271,12 +11266,6 @@ ibf_load_code(const struct ibf_load *load, rb_iseq_t *iseq, ibf_offset_t bytecod
                 {
                     VALUE op = ibf_load_small_value(load, &reading_pos);
                     code[code_index] = (VALUE)&is_entries[op];
-
-                    if (insn == BIN(opt_getinlinecache) && operand_type == TS_IC) {
-                        // Store the instruction index for opt_getinlinecache on the IC for
-                        // YJIT to invalidate code when opt_setinlinecache runs.
-                        is_entries[op].ic_cache.get_insn_idx = insn_index;
-                    }
                 }
                 FL_SET(iseqv, ISEQ_MARKABLE_ISEQ);
                 break;
