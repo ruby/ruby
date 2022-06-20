@@ -100,6 +100,8 @@ pub enum Op
     CRet,
 
     // Atomically increment a counter
+    // Input: memory operand, increment value
+    // Produces no output
     IncrCounter,
 
     // Trigger a debugger breakpoint
@@ -134,19 +136,17 @@ pub enum Opnd
 {
     None,               // For insns with no output
 
-    // NOTE: for now Context directly returns memory operands,
-    // but eventually we'd like to have Stack and Local operand types
-    //Stack(u16),         // Value on the temp stack (idx)
-    //Local(u16),         // Local variable (idx, do we need depth too?)
+    // Immediate Ruby value, may be GC'd, movable
+    Value(VALUE),
 
-    Value(VALUE),       // Immediate Ruby value, may be GC'd, movable
-    InsnOut(usize),     // Output of a preceding instruction in this block
+    // Output of a preceding instruction in this block
+    InsnOut{ idx: usize, num_bits: u8 },
 
     // Low-level operands, for lowering
     Imm(i64),           // Raw signed immediate
     UImm(u64),          // Raw unsigned immediate
-    Mem(Mem),           // Memory location (num_bits, base_ptr, const_offset)
-    Reg(Reg),           // Machine register (num_bits, idx)
+    Mem(Mem),           // Memory location
+    Reg(Reg),           // Machine register
 }
 
 impl Opnd
@@ -163,7 +163,8 @@ impl Opnd
                 })
             },
 
-            Opnd::InsnOut(idx) => {
+            Opnd::InsnOut{idx, num_bits } => {
+                assert!(num_bits == 64);
                 Opnd::Mem(Mem {
                     base: MemBase::InsnOut(idx),
                     disp: disp,
@@ -180,6 +181,13 @@ impl Opnd
         Opnd::UImm(ptr as u64)
     }
 
+    pub fn is_some(&self) -> bool {
+        match *self {
+            Opnd::None => false,
+            _ => true,
+        }
+    }
+
     /// Unwrap a register operand
     pub fn unwrap_reg(&self) -> Reg {
         match self {
@@ -190,9 +198,10 @@ impl Opnd
 
     /// Get the size in bits for register/memory operands
     pub fn rm_num_bits(&self) -> u8 {
-        match self {
+        match *self {
             Opnd::Reg(reg) => reg.num_bits,
             Opnd::Mem(mem) => mem.num_bits,
+            Opnd::InsnOut{ num_bits, .. } => num_bits,
             _ => unreachable!()
         }
     }
@@ -294,13 +303,15 @@ impl Assembler
     /// Append an instruction to the list
     pub(super) fn push_insn(&mut self, op: Op, opnds: Vec<Opnd>, target: Option<Target>) -> Opnd
     {
+        // Index of this instruction
+        let insn_idx = self.insns.len();
+
         // If we find any InsnOut from previous instructions, we're going to
         // update the live range of the previous instruction to point to this
         // one.
-        let insn_idx = self.insns.len();
         for opnd in &opnds {
             match opnd {
-                Opnd::InsnOut(idx) => {
+                Opnd::InsnOut{ idx, .. } => {
                     self.live_ranges[*idx] = insn_idx;
                 }
                 Opnd::Mem( Mem { base: MemBase::InsnOut(idx), .. }) => {
@@ -310,11 +321,36 @@ impl Assembler
             }
         }
 
+        let mut out_num_bits: u8 = 0;
+
+        for opnd in &opnds {
+            match *opnd {
+                Opnd::InsnOut{ num_bits, .. } |
+                Opnd::Mem(Mem { num_bits, .. }) |
+                Opnd::Reg(Reg { num_bits, .. }) => {
+                    if out_num_bits == 0 {
+                        out_num_bits = num_bits
+                    }
+                    else if out_num_bits != num_bits {
+                        panic!("operands of incompatible sizes");
+                    }
+                }
+                _ => {}
+            }
+        }
+
+        if out_num_bits == 0 {
+            out_num_bits = 64;
+        }
+
+        // Operand for the output of this instruction
+        let out_opnd = Opnd::InsnOut{ idx: insn_idx, num_bits: out_num_bits };
+
         let insn = Insn {
             op: op,
             text: None,
             opnds: opnds,
-            out: Opnd::None,
+            out: out_opnd,
             target: target,
             pos: None
         };
@@ -323,7 +359,7 @@ impl Assembler
         self.live_ranges.push(insn_idx);
 
         // Return an operand for the output of this instruction
-        Opnd::InsnOut(insn_idx)
+        out_opnd
     }
 
     /// Add a comment at the current position
@@ -385,8 +421,8 @@ impl Assembler
         // Map an operand to the next set of instructions by correcting previous
         // InsnOut indices.
         fn map_opnd(opnd: Opnd, indices: &mut Vec<usize>) -> Opnd {
-            if let Opnd::InsnOut(index) = opnd {
-                Opnd::InsnOut(indices[index])
+            if let Opnd::InsnOut{ idx, num_bits } = opnd {
+                Opnd::InsnOut{ idx: indices[idx], num_bits }
             } else {
                 opnd
             }
@@ -503,7 +539,7 @@ impl Assembler
 
         // Allocate a specific register
         fn take_reg(pool: &mut u32, regs: &Vec<Reg>, reg: &Reg) -> Reg {
-            let reg_index = regs.iter().position(|elem| elem == reg).unwrap();
+            let reg_index = regs.iter().position(|elem| elem.reg_no == reg.reg_no).unwrap();
             assert_eq!(*pool & (1 << reg_index), 0);
             *pool |= 1 << reg_index;
             return regs[reg_index];
@@ -513,7 +549,7 @@ impl Assembler
         // returned as it is no longer used by the instruction that previously
         // held it.
         fn dealloc_reg(pool: &mut u32, regs: &Vec<Reg>, reg: &Reg) {
-            let reg_index = regs.iter().position(|elem| elem == reg).unwrap();
+            let reg_index = regs.iter().position(|elem| elem.reg_no == reg.reg_no).unwrap();
             *pool &= !(1 << reg_index);
         }
 
@@ -525,7 +561,8 @@ impl Assembler
             // allocated register to the pool.
             for opnd in &opnds {
                 match opnd {
-                    Opnd::InsnOut(idx) | Opnd::Mem( Mem { base: MemBase::InsnOut(idx), .. }) => {
+                    Opnd::InsnOut{idx, .. } |
+                    Opnd::Mem( Mem { base: MemBase::InsnOut(idx), .. }) => {
                         // Since we have an InsnOut, we know it spans more that one
                         // instruction.
                         let start_index = *idx;
@@ -568,7 +605,7 @@ impl Assembler
                 // e.g. out  = add(reg0, reg1)
                 //      reg0 = add(reg0, reg1)
                 if opnds.len() > 0 {
-                    if let Opnd::InsnOut(idx) = opnds[0] {
+                    if let Opnd::InsnOut{idx, ..} = opnds[0] {
                         if live_ranges[idx] == index {
                             if let Opnd::Reg(reg) = asm.insns[idx].out {
                                 out_reg = Opnd::Reg(take_reg(&mut pool, &regs, &reg))
@@ -584,9 +621,9 @@ impl Assembler
             }
 
             // Replace InsnOut operands by their corresponding register
-            let reg_opnds = opnds.into_iter().map(|opnd|
+            let reg_opnds: Vec<Opnd> = opnds.into_iter().map(|opnd|
                 match opnd {
-                    Opnd::InsnOut(idx) => asm.insns[idx].out,
+                    Opnd::InsnOut{idx, ..} => asm.insns[idx].out,
                     Opnd::Mem(Mem { base: MemBase::InsnOut(idx), disp, num_bits }) => {
                         let out_reg = asm.insns[idx].out.unwrap_reg();
                         Opnd::Mem(Mem {
@@ -603,7 +640,12 @@ impl Assembler
 
             // Set the output register for this instruction
             let num_insns = asm.insns.len();
-            asm.insns[num_insns - 1].out = out_reg;
+            let mut new_insn = &mut asm.insns[num_insns - 1];
+            if let Opnd::Reg(reg) = out_reg {
+                let num_out_bits = new_insn.out.rm_num_bits();
+                out_reg = Opnd::Reg(reg.sub_reg(num_out_bits))
+            }
+            new_insn.out = out_reg;
         });
 
         assert_eq!(pool, 0, "Expected all registers to be returned to the pool");

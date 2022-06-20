@@ -229,8 +229,6 @@ fn test_jcc_ptr()
 {
     let (mut asm, mut cb) = setup_asm();
 
-    // FIXME
-    /*
     let side_exit = Target::CodePtr((5 as *mut u8).into());
     let not_mask = asm.not(Opnd::mem(32, EC, RUBY_OFFSET_EC_INTERRUPT_MASK));
     asm.test(
@@ -238,7 +236,6 @@ fn test_jcc_ptr()
         not_mask,
     );
     asm.jnz(side_exit);
-    */
 
     asm.compile_with_num_regs(&mut cb, 1);
 }

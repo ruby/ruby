@@ -38,7 +38,7 @@ impl From<Opnd> for X86Opnd {
             //Value(VALUE),       // Immediate Ruby value, may be GC'd, movable
             //InsnOut(usize),     // Output of a preceding instruction in this block
 
-            Opnd::InsnOut(idx) => panic!("InsnOut operand made it past register allocation"),
+            Opnd::InsnOut{..} => panic!("InsnOut operand made it past register allocation"),
 
             Opnd::None => X86Opnd::None,
 
@@ -85,8 +85,8 @@ impl Assembler
                 Op::Add | Op::Sub | Op::And | Op::Not => {
                     match opnds[0] {
                         // Instruction output whose live range spans beyond this instruction
-                        Opnd::InsnOut(out_idx) => {
-                            if live_ranges[out_idx] > index {
+                        Opnd::InsnOut{idx, ..} => {
+                            if live_ranges[idx] > index {
                                 let opnd0 = asm.load(opnds[0]);
                                 let mut new_opnds = vec![opnd0];
                                 new_opnds.extend_from_slice(&opnds[1..]);
@@ -142,6 +142,10 @@ impl Assembler
 
                 Op::And => {
                     and(cb, insn.opnds[0].into(), insn.opnds[1].into())
+                },
+
+                Op::Not => {
+                    not(cb, insn.opnds[0].into())
                 },
 
                 Op::Store => mov(cb, insn.opnds[0].into(), insn.opnds[1].into()),
@@ -200,7 +204,13 @@ impl Assembler
                 // Conditional jump to a label
                 Op::Je => je_label(cb, insn.target.unwrap().unwrap_label_idx()),
                 Op::Jz => jz_label(cb, insn.target.unwrap().unwrap_label_idx()),
-                Op::Jnz => jnz_label(cb, insn.target.unwrap().unwrap_label_idx()),
+                Op::Jnz => {
+                    match insn.target.unwrap() {
+                        Target::CodePtr(code_ptr) => jnz_ptr(cb, code_ptr),
+                        Target::Label(label_idx) => jnz_label(cb, label_idx),
+                        _ => unreachable!()
+                    }
+                }
 
                 // Atomically increment a counter at a given memory location
                 Op::IncrCounter => {
