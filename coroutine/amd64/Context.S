@@ -22,11 +22,27 @@ PREFIXED_SYMBOL(SYMBOL_PREFIX,coroutine_transfer):
 	pushq %r14
 	pushq %r15
 
+#if defined(COROUTINE_CONTROL_FLOW_PROTECTION)
+	# Read the current shadow stack into the rbp (scratch) register:
+	rdsspq %rbp
+	# Save the source shadow stack pointer:
+	pushq %rbp
+#endif
+
 	# Save caller stack pointer
 	movq %rsp, (%rdi)
 
 	# Restore callee stack pointer
 	movq (%rsi), %rsp
+
+#if defined(COROUTINE_CONTROL_FLOW_PROTECTION)
+	# Restore the destination shadow stack pointer:
+	popq %rbp
+	rstorssp -8(%rbp)
+
+	# Save the source shadown stack pointer token:
+	saveprevssp
+#endif
 
 	# Restore callee state
 	popq %r15
