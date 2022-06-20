@@ -80,16 +80,14 @@ jobs:
           - key: default_cc
             name: 'gcc-11 annocheck'
             # Minimal flags to pass the check.
-            value: 'gcc-11 -O2 -fcf-protection'
+            value: 'gcc-11 -O2 -fcf-protection -Wa,--generate-missing-build-notes=yes'
             container: gcc-11
             env:
               append_configure: 'LDFLAGS=-Wl,-z,now'
               # FIXME: Drop skipping options
               # https://bugs.ruby-lang.org/issues/18061
               # https://sourceware.org/annobin/annobin.html/Test-pie.html
-              # https://sourceware.org/annobin/annobin.html/Test-notes.html
-              # https://sourceware.org/annobin/annobin.html/Test-gaps.html
-              TEST_ANNOCHECK_OPTS: "--skip-pie --skip-notes --skip-gaps"
+              TEST_ANNOCHECK_OPTS: "--skip-pie"
             check: true
           - { key: default_cc, name: clang-15,  value: clang-15,  container: clang-15 }
           - { key: default_cc, name: clang-14,  value: clang-14,  container: clang-14 }
