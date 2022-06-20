@@ -620,6 +620,11 @@ Options may also be used with <tt>Regexp.new</tt>:
     Regexp.new("abc # Comment", Regexp::EXTENDED)             #=> /abc # Comment/x
     Regexp.new("abc", Regexp::IGNORECASE | Regexp::MULTILINE) #=> /abc/mi
 
+    Regexp.new("abc", "i")           #=> /abc/i
+    Regexp.new("abc", "m")           #=> /abc/m
+    Regexp.new("abc # Comment", "x") #=> /abc # Comment/x
+    Regexp.new("abc", "im")          #=> /abc/mi
+
 == Free-Spacing Mode and Comments
 
 As mentioned above, the <tt>x</tt> option enables <i>free-spacing</i>
