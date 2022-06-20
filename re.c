@@ -3665,6 +3665,11 @@ str_to_option(VALUE str)
  *
  *  Optional argument +options+ is one of the following:
  *
+ *  - A String of options:
+ *
+ *      Regexp.new('foo', 'i')  # => /foo/i
+ *      Regexp.new('foo', 'im') # => /foo/im
+ *
  *  - The logical OR of one or more of the constants
  *    Regexp::EXTENDED, Regexp::IGNORECASE, and Regexp::MULTILINE:
  *
