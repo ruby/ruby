@@ -136,7 +136,7 @@ static inline void coroutine_initialize(
 
 #if defined(COROUTINE_CONTROL_FLOW_PROTECTION)
     // Set up the shadow stack pointer.
-    *--context->stack_pointer =(char*)context->shadow_stack + context->shadow_stack_size;
+    *--context->stack_pointer = (char*)context->shadow_stack + context->shadow_stack_size;
 #endif
 }
 
