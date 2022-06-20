@@ -3661,7 +3661,7 @@ rb_reg_match_p(VALUE re, VALUE str, long pos)
  *  regexp encoding is fixed to +ASCII_8BIT+.
  *
  *  If optional keyword argument +timeout+ is given,
- *  its integer value overrides the timeout interval for the class,
+ *  its float value overrides the timeout interval for the class,
  *  Regexp.timeout.
  *
  *  With argument +regexp+ given, returns a new regexp
@@ -4323,7 +4323,7 @@ rb_reg_check_timeout(regex_t *reg, void *end_time_)
 
 /*
  *  call-seq:
- *     Regexp.timeout  -> int or float or nil
+ *     Regexp.timeout  -> float or nil
  *
  *  It returns the current default timeout interval for Regexp matching in second.
  *  +nil+ means no default timeout configuration.
@@ -4339,7 +4339,7 @@ rb_reg_s_timeout_get(VALUE dummy)
 
 /*
  *  call-seq:
- *     Regexp.timeout = int or float or nil
+ *     Regexp.timeout = float or nil
  *
  *  It sets the default timeout interval for Regexp matching in second.
  *  +nil+ means no default timeout configuration.
