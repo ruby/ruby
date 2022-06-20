@@ -1086,7 +1086,6 @@ fn gen_adjuststack(
 ) -> CodegenStatus {
     let nval: VALUE = jit_get_arg(jit, 0);
     let VALUE(n) = nval;
-
     ctx.stack_pop(n);
     KeepCompiling
 }

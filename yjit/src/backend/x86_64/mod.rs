@@ -140,6 +140,10 @@ impl Assembler
                     add(cb, insn.opnds[0].into(), insn.opnds[1].into())
                 },
 
+                Op::Sub => {
+                    sub(cb, insn.opnds[0].into(), insn.opnds[1].into())
+                },
+
                 Op::And => {
                     and(cb, insn.opnds[0].into(), insn.opnds[1].into())
                 },
@@ -210,14 +214,34 @@ impl Assembler
                     }
                 }
 
-                Op::Je => je_label(cb, insn.target.unwrap().unwrap_label_idx()),
+                Op::Je => {
+                    match insn.target.unwrap() {
+                        Target::CodePtr(code_ptr) => je_ptr(cb, code_ptr),
+                        Target::Label(label_idx) => je_label(cb, label_idx),
+                        _ => unreachable!()
+                    }
+                }
 
-                Op::Jz => jz_label(cb, insn.target.unwrap().unwrap_label_idx()),
+                Op::Jz => {
+                    match insn.target.unwrap() {
+                        Target::CodePtr(code_ptr) => jz_ptr(cb, code_ptr),
+                        Target::Label(label_idx) => jz_label(cb, label_idx),
+                        _ => unreachable!()
+                    }
+                }
 
                 Op::Jnz => {
                     match insn.target.unwrap() {
                         Target::CodePtr(code_ptr) => jnz_ptr(cb, code_ptr),
                         Target::Label(label_idx) => jnz_label(cb, label_idx),
+                        _ => unreachable!()
+                    }
+                }
+
+                Op::Jo => {
+                    match insn.target.unwrap() {
+                        Target::CodePtr(code_ptr) => jo_ptr(cb, code_ptr),
+                        Target::Label(label_idx) => jo_label(cb, label_idx),
                         _ => unreachable!()
                     }
                 }
