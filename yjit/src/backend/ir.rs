@@ -91,6 +91,7 @@ pub enum Op
     Je,
     Jz,
     Jnz,
+    Jo,
 
     // Push and pop registers to/from the C stack
     CPush,
@@ -772,6 +773,7 @@ def_push_jcc!(je, Op::Je);
 def_push_jcc!(jbe, Op::Jbe);
 def_push_jcc!(jz, Op::Jz);
 def_push_jcc!(jnz, Op::Jnz);
+def_push_jcc!(jo, Op::Jo);
 def_push_2_opnd!(add, Op::Add);
 def_push_2_opnd!(sub, Op::Sub);
 def_push_2_opnd!(and, Op::And);

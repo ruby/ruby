@@ -239,3 +239,22 @@ fn test_jcc_ptr()
 
     asm.compile_with_num_regs(&mut cb, 1);
 }
+
+#[test]
+fn test_jo()
+{
+    let (mut asm, mut cb) = setup_asm();
+
+    let side_exit = Target::CodePtr((5 as *mut u8).into());
+
+    let arg1 = Opnd::mem(64, SP, 0);
+    let arg0 = Opnd::mem(64, SP, 8);
+
+    let arg0_untag = asm.sub(arg0, Opnd::Imm(1));
+    let out_val = asm.add(arg0_untag, arg1);
+    asm.jo(side_exit);
+
+    asm.mov(Opnd::mem(64, SP, 0), out_val);
+
+    asm.compile_with_num_regs(&mut cb, 1);
+}
