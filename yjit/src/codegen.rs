@@ -1037,28 +1037,27 @@ fn gen_putspecialobject(
     }
 }
 
-/*
 // set Nth stack entry to stack top
 fn gen_setn(
     jit: &mut JITState,
     ctx: &mut Context,
-    cb: &mut CodeBlock,
+    asm: &mut Assembler,
     _ocb: &mut OutlinedCb,
 ) -> CodegenStatus {
-    let nval: VALUE = jit_get_arg(jit, 0);
-    let VALUE(n) = nval;
+    let n: VALUE = jit_get_arg(jit, 0);
 
-    let top_val: X86Opnd = ctx.stack_pop(0);
-    let dst_opnd: X86Opnd = ctx.stack_opnd(n.try_into().unwrap());
-    mov(cb, REG0, top_val);
-    mov(cb, dst_opnd, REG0);
+    let top_val = ctx.stack_pop(0);
+    let dst_opnd = ctx.stack_opnd(n.into());
+    asm.mov(
+        dst_opnd,
+        top_val
+    );
 
     let mapping = ctx.get_opnd_mapping(StackOpnd(0));
-    ctx.set_opnd_mapping(StackOpnd(n.try_into().unwrap()), mapping);
+    ctx.set_opnd_mapping(StackOpnd(n.into()), mapping);
 
     KeepCompiling
 }
-*/
 
 // get nth stack value, then push it
 fn gen_topn(
@@ -5884,7 +5883,7 @@ fn get_gen_fn(opcode: VALUE) -> Option<InsnGenFn> {
         YARVINSN_putobject_INT2FIX_1_ => Some(gen_putobject_int2fix),
         YARVINSN_putself => Some(gen_putself),
         YARVINSN_putspecialobject => Some(gen_putspecialobject),
-        //YARVINSN_setn => Some(gen_setn),
+        YARVINSN_setn => Some(gen_setn),
         YARVINSN_topn => Some(gen_topn),
         YARVINSN_adjuststack => Some(gen_adjuststack),
 
