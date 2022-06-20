@@ -44,7 +44,7 @@ static inline void* coroutine_current_shadow_stack(void)
 {
     uint64_t shadow_stack_pointer = 0;
     asm("rdsspq %0\n" : "=r" (shadow_stack_pointer));
-    return shadow_stack_pointer;
+    return (void *)shadow_stack_pointer;
 }
 
 static inline void* coroutine_allocate_shadow_stack(size_t size)
