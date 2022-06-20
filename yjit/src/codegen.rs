@@ -1018,19 +1018,18 @@ fn gen_putself(
     KeepCompiling
 }
 
-/*
 fn gen_putspecialobject(
     jit: &mut JITState,
     ctx: &mut Context,
-    cb: &mut CodeBlock,
+    asm: &mut Assembler,
     _ocb: &mut OutlinedCb,
 ) -> CodegenStatus {
     let object_type = jit_get_arg(jit, 0);
 
     if object_type == VALUE(VM_SPECIAL_OBJECT_VMCORE.as_usize()) {
-        let stack_top: X86Opnd = ctx.stack_push(Type::UnknownHeap);
-        jit_mov_gc_ptr(jit, cb, REG0, unsafe { rb_mRubyVMFrozenCore });
-        mov(cb, stack_top, REG0);
+        let stack_top = ctx.stack_push(Type::UnknownHeap);
+        let frozen_core = unsafe { rb_mRubyVMFrozenCore };
+        asm.mov(stack_top, frozen_core.into());
         KeepCompiling
     } else {
         // TODO: implement for VM_SPECIAL_OBJECT_CBASE and
@@ -1039,6 +1038,7 @@ fn gen_putspecialobject(
     }
 }
 
+/*
 // set Nth stack entry to stack top
 fn gen_setn(
     jit: &mut JITState,
@@ -5878,7 +5878,7 @@ fn get_gen_fn(opcode: VALUE) -> Option<InsnGenFn> {
         YARVINSN_putobject_INT2FIX_0_ => Some(gen_putobject_int2fix),
         YARVINSN_putobject_INT2FIX_1_ => Some(gen_putobject_int2fix),
         YARVINSN_putself => Some(gen_putself),
-        //YARVINSN_putspecialobject => Some(gen_putspecialobject),
+        YARVINSN_putspecialobject => Some(gen_putspecialobject),
         //YARVINSN_setn => Some(gen_setn),
         //YARVINSN_topn => Some(gen_topn),
         //YARVINSN_adjuststack => Some(gen_adjuststack),
