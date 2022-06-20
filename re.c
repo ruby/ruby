@@ -487,9 +487,13 @@ rb_reg_desc(const char *s, long len, VALUE re)
  *
  *    /ab+c/ix.source # => "ab+c"
  *
- *  Note that escape sequences are retained as is:
+ *  Regexp escape sequences are retained:
  *
  *    /\x20\+/.source  # => "\\x20\\+"
+ *
+ *  Lexer escape characters are not retained:
+ *
+ *    /\//.source  # => "/"
  *
  */
 
