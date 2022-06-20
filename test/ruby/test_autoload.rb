@@ -150,6 +150,7 @@ p Foo::Bar
   end
 
   def test_nameerror_when_autoload_did_not_define_the_constant
+    verbose_bak, $VERBOSE = $VERBOSE, nil
     Tempfile.create(['autoload', '.rb']) {|file|
       file.puts ''
       file.close
@@ -162,6 +163,8 @@ p Foo::Bar
         remove_autoload_constant
       end
     }
+  ensure
+    $VERBOSE = verbose_bak
   end
 
   def test_override_autoload
