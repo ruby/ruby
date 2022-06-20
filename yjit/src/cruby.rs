@@ -596,7 +596,14 @@ impl From<VALUE> for i32 {
     fn from(value: VALUE) -> Self {
         let VALUE(uimm) = value;
         assert!(uimm <= (i32::MAX as usize));
-        uimm as i32
+        uimm.try_into().unwrap()
+    }
+}
+
+impl From<VALUE> for u16 {
+    fn from(value: VALUE) -> Self {
+        let VALUE(uimm) = value;
+        uimm.try_into().unwrap()
     }
 }
 
