@@ -1058,23 +1058,21 @@ fn gen_setn(
 
     KeepCompiling
 }
+*/
 
 // get nth stack value, then push it
 fn gen_topn(
     jit: &mut JITState,
     ctx: &mut Context,
-    cb: &mut CodeBlock,
+    asm: &mut Assembler,
     _ocb: &mut OutlinedCb,
 ) -> CodegenStatus {
-    let nval: VALUE = jit_get_arg(jit, 0);
-    let VALUE(n) = nval;
+    let nval = jit_get_arg(jit, 0);
 
-    let top_n_val = ctx.stack_opnd(n.try_into().unwrap());
-    let mapping = ctx.get_opnd_mapping(StackOpnd(n.try_into().unwrap()));
-
+    let top_n_val = ctx.stack_opnd(nval.into());
+    let mapping = ctx.get_opnd_mapping(StackOpnd(nval.into()));
     let loc0 = ctx.stack_push_mapping(mapping);
-    mov(cb, REG0, top_n_val);
-    mov(cb, loc0, REG0);
+    asm.mov(loc0, top_n_val);
 
     KeepCompiling
 }
@@ -1083,7 +1081,7 @@ fn gen_topn(
 fn gen_adjuststack(
     jit: &mut JITState,
     ctx: &mut Context,
-    _cb: &mut CodeBlock,
+    _cb: &mut Assembler,
     _ocb: &mut OutlinedCb,
 ) -> CodegenStatus {
     let nval: VALUE = jit_get_arg(jit, 0);
@@ -1093,10 +1091,11 @@ fn gen_adjuststack(
     KeepCompiling
 }
 
+/*
 fn gen_opt_plus(
     jit: &mut JITState,
     ctx: &mut Context,
-    cb: &mut CodeBlock,
+    asm: &mut Assembler,
     ocb: &mut OutlinedCb,
 ) -> CodegenStatus {
     if !jit_at_current_insn(jit) {
@@ -1117,28 +1116,30 @@ fn gen_opt_plus(
         }
 
         // Check that both operands are fixnums
-        guard_two_fixnums(ctx, cb, side_exit);
+        guard_two_fixnums(ctx, asm, side_exit);
 
         // Get the operands and destination from the stack
         let arg1 = ctx.stack_pop(1);
         let arg0 = ctx.stack_pop(1);
 
         // Add arg0 + arg1 and test for overflow
-        mov(cb, REG0, arg0);
-        sub(cb, REG0, imm_opnd(1));
-        add(cb, REG0, arg1);
-        jo_ptr(cb, side_exit);
+        let arg0_untag = asm.sub(arg0, Opnd::Imm(1));
+        let out_val = asm.add(arg0_untag, arg1);
+        asm.jo(side_exit);
 
         // Push the output on the stack
         let dst = ctx.stack_push(Type::Fixnum);
-        mov(cb, dst, REG0);
+        asm.mov(dst, out_val);
 
         KeepCompiling
     } else {
-        gen_opt_send_without_block(jit, ctx, cb, ocb)
+        todo!();
+        //gen_opt_send_without_block(jit, ctx, cb, ocb)
     }
 }
+*/
 
+/*
 // new array initialized from top N values
 fn gen_newarray(
     jit: &mut JITState,
@@ -5885,17 +5886,17 @@ fn get_gen_fn(opcode: VALUE) -> Option<InsnGenFn> {
         YARVINSN_putself => Some(gen_putself),
         YARVINSN_putspecialobject => Some(gen_putspecialobject),
         //YARVINSN_setn => Some(gen_setn),
-        //YARVINSN_topn => Some(gen_topn),
-        //YARVINSN_adjuststack => Some(gen_adjuststack),
+        YARVINSN_topn => Some(gen_topn),
+        YARVINSN_adjuststack => Some(gen_adjuststack),
 
         //YARVINSN_getlocal => Some(gen_getlocal),
         YARVINSN_getlocal_WC_0 => Some(gen_getlocal_wc0),
         //YARVINSN_getlocal_WC_1 => Some(gen_getlocal_wc1),
+        //YARVINSN_setlocal => Some(gen_setlocal),
+        //YARVINSN_setlocal_WC_0 => Some(gen_setlocal_wc0),
+        //YARVINSN_setlocal_WC_1 => Some(gen_setlocal_wc1),
+        //YARVINSN_opt_plus => Some(gen_opt_plus),
         /*
-        YARVINSN_setlocal => Some(gen_setlocal),
-        YARVINSN_setlocal_WC_0 => Some(gen_setlocal_wc0),
-        YARVINSN_setlocal_WC_1 => Some(gen_setlocal_wc1),
-        YARVINSN_opt_plus => Some(gen_opt_plus),
         YARVINSN_opt_minus => Some(gen_opt_minus),
         YARVINSN_opt_and => Some(gen_opt_and),
         YARVINSN_opt_or => Some(gen_opt_or),
