@@ -105,9 +105,9 @@ require_relative "irb/easter-egg"
 # IRB reads a personal initialization file when it's invoked.
 # IRB searches a file in the following order and loads the first one found.
 #
-# * +$IRBRC+ (if +$IRBRC+ is set)
-# * +$XDG_CONFIG_HOME/irb/irbrc+ (if +$XDG_CONFIG_HOME+ is set)
-# * +~/.irbrc+
+# * <tt>$IRBRC</tt> (if <tt>$IRBRC</tt> is set)
+# * <tt>$XDG_CONFIG_HOME/irb/irbrc</tt> (if <tt>$XDG_CONFIG_HOME</tt> is set)
+# * <tt>~/.irbrc</tt>
 # * +.config/irb/irbrc+
 # * +.irbrc+
 # * +irb.rc+
