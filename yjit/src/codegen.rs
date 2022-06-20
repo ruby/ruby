@@ -24,17 +24,6 @@ use std::slice;
 
 pub use crate::virtualmem::CodePtr;
 
-// Callee-saved registers
-//pub const REG_CFP: X86Opnd = R13;
-//pub const REG_EC: X86Opnd = R12;
-//pub const REG_SP: X86Opnd = RBX;
-
-// Scratch registers used by YJIT
-//pub const REG0: X86Opnd = RAX;
-//pub const REG0_32: X86Opnd = EAX;
-//pub const REG0_8: X86Opnd = AL;
-//pub const REG1: X86Opnd = RCX;
-
 // A block that can be invalidated needs space to write a jump.
 // We'll reserve a minimum size for any block that could
 // be invalidated. In this case the JMP takes 5 bytes, but
@@ -801,6 +790,10 @@ pub fn gen_single_block(
         // If we can't compile this instruction
         // exit to the interpreter and stop compiling
         if status == CantCompile {
+            if get_option!(dump_insns) {
+                println!("can't compile {}", insn_name(opcode));
+            }
+
             let mut block = jit.block.borrow_mut();
 
             // TODO: if the codegen function makes changes to ctx and then return YJIT_CANT_COMPILE,
@@ -1008,24 +1001,24 @@ fn gen_putobject(
     KeepCompiling
 }
 
-/*
 fn gen_putself(
     _jit: &mut JITState,
     ctx: &mut Context,
-    cb: &mut CodeBlock,
+    asm: &mut Assembler,
     _ocb: &mut OutlinedCb,
 ) -> CodegenStatus {
-    // Load self from CFP
-    let cf_opnd = mem_opnd((8 * SIZEOF_VALUE) as u8, REG_CFP, RUBY_OFFSET_CFP_SELF);
-    mov(cb, REG0, cf_opnd);
 
     // Write it on the stack
-    let stack_top: X86Opnd = ctx.stack_push_self();
-    mov(cb, stack_top, REG0);
+    let stack_top = ctx.stack_push_self();
+    asm.mov(
+        stack_top,
+        Opnd::mem((8 * SIZEOF_VALUE) as u8, CFP, RUBY_OFFSET_CFP_SELF)
+    );
 
     KeepCompiling
 }
 
+/*
 fn gen_putspecialobject(
     jit: &mut JITState,
     ctx: &mut Context,
@@ -5884,7 +5877,7 @@ fn get_gen_fn(opcode: VALUE) -> Option<InsnGenFn> {
         YARVINSN_putobject => Some(gen_putobject),
         YARVINSN_putobject_INT2FIX_0_ => Some(gen_putobject_int2fix),
         YARVINSN_putobject_INT2FIX_1_ => Some(gen_putobject_int2fix),
-        //YARVINSN_putself => Some(gen_putself),
+        YARVINSN_putself => Some(gen_putself),
         //YARVINSN_putspecialobject => Some(gen_putspecialobject),
         //YARVINSN_setn => Some(gen_setn),
         //YARVINSN_topn => Some(gen_topn),
@@ -6109,7 +6102,7 @@ impl CodegenGlobals {
             inline_cb: cb,
             outlined_cb: ocb,
             leave_exit_code: leave_exit_code,
-            stub_exit_code: /*stub_exit_code*/CodePtr::from(1 as *mut u8),
+            stub_exit_code: stub_exit_code,
             outline_full_cfunc_return_pos: /*cfunc_exit_code*/CodePtr::from(1 as *mut u8),
             global_inval_patches: Vec::new(),
             inline_frozen_bytes: 0,
