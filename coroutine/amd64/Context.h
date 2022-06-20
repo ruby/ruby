@@ -127,11 +127,8 @@ static inline void coroutine_initialize(
     char * top = (char*)stack + size;
     context->stack_pointer = (void**)((uintptr_t)top & ~0xF);
 
-#if !defined(COROUTINE_CONTROL_FLOW_PROTECTION)
     // Preserve alignment with optionally added shadow stack value:
-    *--context->stack_pointer = 0;
-#endif
-
+    *--context->stack_pointer = NULL;
     *--context->stack_pointer = (void*)start;
 
     context->stack_pointer -= COROUTINE_REGISTERS;
