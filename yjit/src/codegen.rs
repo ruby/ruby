@@ -2265,27 +2265,28 @@ fn gen_concatstrings(
 
     KeepCompiling
 }
+*/
 
-fn guard_two_fixnums(ctx: &mut Context, cb: &mut CodeBlock, side_exit: CodePtr) {
+fn guard_two_fixnums(ctx: &mut Context, asm: &mut Assembler, side_exit: CodePtr) {
     // Get the stack operand types
     let arg1_type = ctx.get_opnd_type(StackOpnd(0));
     let arg0_type = ctx.get_opnd_type(StackOpnd(1));
 
     if arg0_type.is_heap() || arg1_type.is_heap() {
-        add_comment(cb, "arg is heap object");
-        jmp_ptr(cb, side_exit);
+        asm.comment("arg is heap object");
+        asm.jmp(side_exit.into());
         return;
     }
 
     if arg0_type != Type::Fixnum && arg0_type.is_specific() {
-        add_comment(cb, "arg0 not fixnum");
-        jmp_ptr(cb, side_exit);
+        asm.comment("arg0 not fixnum");
+        asm.jmp(side_exit.into());
         return;
     }
 
     if arg1_type != Type::Fixnum && arg1_type.is_specific() {
-        add_comment(cb, "arg1 not fixnum");
-        jmp_ptr(cb, side_exit);
+        asm.comment("arg1 not fixnum");
+        asm.jmp(side_exit.into());
         return;
     }
 
@@ -2300,14 +2301,14 @@ fn guard_two_fixnums(ctx: &mut Context, cb: &mut CodeBlock, side_exit: CodePtr) 
 
     // If not fixnums, fall back
     if arg0_type != Type::Fixnum {
-        add_comment(cb, "guard arg0 fixnum");
-        test(cb, arg0, uimm_opnd(RUBY_FIXNUM_FLAG as u64));
-        jz_ptr(cb, side_exit);
+        asm.comment("guard arg0 fixnum");
+        asm.test(arg0, Opnd::UImm(RUBY_FIXNUM_FLAG as u64));
+        asm.jz(side_exit.into());
     }
     if arg1_type != Type::Fixnum {
-        add_comment(cb, "guard arg1 fixnum");
-        test(cb, arg1, uimm_opnd(RUBY_FIXNUM_FLAG as u64));
-        jz_ptr(cb, side_exit);
+        asm.comment("guard arg1 fixnum");
+        asm.test(arg1, Opnd::UImm(RUBY_FIXNUM_FLAG as u64));
+        asm.jz(side_exit.into());
     }
 
     // Set stack types in context
@@ -2315,6 +2316,7 @@ fn guard_two_fixnums(ctx: &mut Context, cb: &mut CodeBlock, side_exit: CodePtr) 
     ctx.upgrade_opnd_type(StackOpnd(1), Type::Fixnum);
 }
 
+/*
 // Conditional move operation used by comparison operators
 type CmovFn = fn(cb: &mut CodeBlock, opnd0: X86Opnd, opnd1: X86Opnd) -> ();
 

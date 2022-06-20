@@ -80,7 +80,10 @@ pub enum Op
     // Compare two operands
     Cmp,
 
-    // Unconditional jump which takes an address operand
+    // Unconditional jump to a branch target
+    Jmp,
+
+    // Unconditional jump which takes a reg/mem address operand
     JmpOpnd,
 
     // Low-level conditional jump instructions
@@ -249,6 +252,12 @@ impl Target
             Target::Label(idx) => *idx,
             _ => unreachable!()
         }
+    }
+}
+
+impl From<CodePtr> for Target {
+    fn from(code_ptr: CodePtr) -> Self {
+        Target::CodePtr(code_ptr)
     }
 }
 
@@ -758,6 +767,7 @@ macro_rules! def_push_2_opnd_no_out {
 }
 
 def_push_1_opnd_no_out!(jmp_opnd, Op::JmpOpnd);
+def_push_jcc!(jmp, Op::Jmp);
 def_push_jcc!(je, Op::Je);
 def_push_jcc!(jbe, Op::Jbe);
 def_push_jcc!(jz, Op::Jz);
