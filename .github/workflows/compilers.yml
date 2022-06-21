@@ -63,6 +63,7 @@ jobs:
         env:
           - {}
         entry:
+          - { key: default_cc, name: gcc-12,    value: gcc-12,    container: gcc-12 }
           - { key: default_cc, name: gcc-11,    value: gcc-11,    container: gcc-11 }
           - { key: default_cc, name: gcc-10,    value: gcc-10,    container: gcc-10 }
           - { key: default_cc, name: gcc-9,     value: gcc-9,     container: gcc-9 }
