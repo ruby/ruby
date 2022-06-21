@@ -504,7 +504,7 @@ fn gen_full_cfunc_return(ocb: &mut OutlinedCb) -> CodePtr {
     let code_ptr = ocb.get_write_ptr();
     let mut asm = Assembler::new();
 
-    // This chunk of code expect REG_EC to be filled properly and
+    // This chunk of code expects REG_EC to be filled properly and
     // RAX to contain the return value of the C method.
 
     // Call full_cfunc_return()
@@ -750,14 +750,16 @@ pub fn gen_single_block(
 
         // If previous instruction requested to record the boundary
         if jit.record_boundary_patch_point {
-            todo!("record_boundary_patch_point");
 
-            /*
+            // FIXME: is this sound with the new assembler?
+
             // Generate an exit to this instruction and record it
-            let exit_pos = gen_exit(jit.pc, &ctx, ocb.unwrap());
+            let exit_pos = gen_outlined_exit(jit.pc, &ctx, ocb);
             record_global_inval_patch(cb, exit_pos);
             jit.record_boundary_patch_point = false;
-            */
+
+
+
         }
 
         // In debug mode, verify our existing assumption
@@ -1137,36 +1139,40 @@ fn gen_opt_plus(
 }
 */
 
-/*
 // new array initialized from top N values
 fn gen_newarray(
     jit: &mut JITState,
     ctx: &mut Context,
-    cb: &mut CodeBlock,
+    asm: &mut Assembler,
     _ocb: &mut OutlinedCb,
 ) -> CodegenStatus {
     let n = jit_get_arg(jit, 0).as_u32();
 
     // Save the PC and SP because we are allocating
-    jit_prepare_routine_call(jit, ctx, cb, REG0);
+    jit_prepare_routine_call(jit, ctx, asm);
 
     let offset_magnitude = SIZEOF_VALUE as u32 * n;
-    let values_ptr = ctx.sp_opnd(-(offset_magnitude as isize));
+    let values_opnd = ctx.sp_opnd(-(offset_magnitude as isize));
+    let values_ptr = asm.lea(values_opnd);
 
     // call rb_ec_ary_new_from_values(struct rb_execution_context_struct *ec, long n, const VALUE *elts);
-    mov(cb, C_ARG_REGS[0], REG_EC);
-    mov(cb, C_ARG_REGS[1], imm_opnd(n.into()));
-    lea(cb, C_ARG_REGS[2], values_ptr);
-    call_ptr(cb, REG0, rb_ec_ary_new_from_values as *const u8);
+    let new_ary = asm.ccall(
+        rb_ec_ary_new_from_values as *const u8,
+        vec![
+            EC,
+            Opnd::UImm(n.into()),
+            values_ptr
+        ]
+    );
 
     ctx.stack_pop(n.as_usize());
     let stack_ret = ctx.stack_push(Type::Array);
-    mov(cb, stack_ret, RAX);
+    asm.mov(stack_ret, new_ary);
 
     KeepCompiling
 }
 
-
+/*
 // dup array
 fn gen_duparray(
     jit: &mut JITState,
@@ -1188,46 +1194,30 @@ fn gen_duparray(
 
     KeepCompiling
 }
-
-
-
-
-/*
-let mut asm = Assembler::new();
-
-//asm.ccall(rb_ary_resurrect as *const u8, vec![ary]);
-
-asm.compile(cb);
 */
-
-
-
-
-
-
 
 // dup hash
 fn gen_duphash(
     jit: &mut JITState,
     ctx: &mut Context,
-    cb: &mut CodeBlock,
+    asm: &mut Assembler,
     _ocb: &mut OutlinedCb,
 ) -> CodegenStatus {
     let hash = jit_get_arg(jit, 0);
 
     // Save the PC and SP because we are allocating
-    jit_prepare_routine_call(jit, ctx, cb, REG0);
+    jit_prepare_routine_call(jit, ctx, asm);
 
     // call rb_hash_resurrect(VALUE hash);
-    jit_mov_gc_ptr(jit, cb, C_ARG_REGS[0], hash);
-    call_ptr(cb, REG0, rb_hash_resurrect as *const u8);
+    let hash = asm.ccall(rb_hash_resurrect as *const u8, vec![hash.into()]);
 
     let stack_ret = ctx.stack_push(Type::Hash);
-    mov(cb, stack_ret, RAX);
+    asm.mov(stack_ret, hash);
 
     KeepCompiling
 }
 
+/*
 // call to_a on the array on the stack
 fn gen_splatarray(
     jit: &mut JITState,
@@ -5899,8 +5889,10 @@ fn get_gen_fn(opcode: VALUE) -> Option<InsnGenFn> {
         YARVINSN_opt_and => Some(gen_opt_and),
         YARVINSN_opt_or => Some(gen_opt_or),
         YARVINSN_newhash => Some(gen_newhash),
+        */
         YARVINSN_duphash => Some(gen_duphash),
         YARVINSN_newarray => Some(gen_newarray),
+        /*
         YARVINSN_duparray => Some(gen_duparray),
         YARVINSN_checktype => Some(gen_checktype),
         YARVINSN_opt_lt => Some(gen_opt_lt),
