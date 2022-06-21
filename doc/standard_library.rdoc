@@ -53,6 +53,7 @@ OpenURI:: An easy-to-use wrapper for Net::HTTP, Net::HTTPS and Net::FTP
 PP:: Provides a PrettyPrinter for Ruby objects
 PrettyPrinter:: Implements a pretty printing algorithm for readable structure
 PStore:: Implements a file based persistence mechanism based on a Hash
+Reline:: GNU Readline and Editline by pure Ruby implementation.
 Resolv::  Thread-aware DNS resolver library in Ruby
 resolv-replace.rb:: Replace Socket DNS with Resolv
 RDoc:: Produces HTML and command-line documentation for Ruby
