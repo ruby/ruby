@@ -24,7 +24,7 @@ end
 # - {Setting}[rdoc-ref:FileUtils@Setting].
 # - {Comparing}[rdoc-ref:FileUtils@Comparing].
 # - {Copying}[rdoc-ref:FileUtils@Copying].
-# - {Moving}[rdoc-ref:FileUtils@Copying].
+# - {Moving}[rdoc-ref:FileUtils@Moving].
 # - {Options}[rdoc-ref:FileUtils@Options].
 #
 # === Creating
@@ -76,8 +76,9 @@ end
 # - ::copy_stream: Copies a stream.
 # - ::cp, ::copy: Copies files.
 # - ::cp_lr: Recursively creates hard links.
-# - ::cp_r: Recursively copies files.
-# - ::install: Recursively copies files (with options different from ::cp_r).
+# - ::cp_r: Recursively copies files, retaining mode, owner, and group.
+# - ::install: Recursively copies files, optionally setting mode,
+#   owner, and group.
 #
 # === Moving
 #
@@ -832,6 +833,9 @@ module FileUtils
   # Arguments +src+ (a single path or an array of paths)
   # and +dest+ (a single path)
   # should be {interpretable as paths}[rdoc-ref:FileUtils@Path+Arguments].
+  #
+  # The mode, owner, and group are retained in the copy;
+  # to change those, use FileUtils.install instead.
   #
   # If +src+ is the path to a file and +dest+ is not the path to a directory,
   # copies +src+ to +dest+:
