@@ -173,12 +173,19 @@ fn test_base_insn_out()
 {
     let (mut asm, mut cb) = setup_asm();
 
+    // Forced register to be reused
+    // This also causes the insn sequence to change length
+    asm.mov(
+        Opnd::mem(64, SP, 8),
+        Opnd::mem(64, SP, 0)
+    );
+
     // Load the pointer into a register
-    let ptr_reg = asm.load(Opnd::const_ptr(0 as *const u8));
+    let ptr_reg = asm.load(Opnd::const_ptr(4351776248 as *const u8));
     let counter_opnd = Opnd::mem(64, ptr_reg, 0);
 
     // Increment and store the updated value
-    asm.incr_counter(counter_opnd, 1.into() );
+    asm.incr_counter(counter_opnd, 1.into());
 
     asm.compile_with_num_regs(&mut cb, 1);
 }

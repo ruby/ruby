@@ -324,7 +324,7 @@ impl Assembler
                 Opnd::InsnOut{ idx, .. } => {
                     self.live_ranges[*idx] = insn_idx;
                 }
-                Opnd::Mem( Mem { base: MemBase::InsnOut(idx), .. }) => {
+                Opnd::Mem(Mem { base: MemBase::InsnOut(idx), .. }) => {
                     self.live_ranges[*idx] = insn_idx;
                 }
                 _ => {}
@@ -424,17 +424,21 @@ impl Assembler
             label_names: self.label_names,
         };
 
-        // indices maps from the old instruction index to the new instruction
+        // Indices maps from the old instruction index to the new instruction
         // index.
         let mut indices: Vec<usize> = Vec::default();
 
         // Map an operand to the next set of instructions by correcting previous
         // InsnOut indices.
         fn map_opnd(opnd: Opnd, indices: &mut Vec<usize>) -> Opnd {
-            if let Opnd::InsnOut{ idx, num_bits } = opnd {
-                Opnd::InsnOut{ idx: indices[idx], num_bits }
-            } else {
-                opnd
+            match opnd {
+                Opnd::InsnOut{ idx, num_bits } => {
+                    Opnd::InsnOut{ idx: indices[idx], num_bits }
+                }
+                Opnd::Mem(Mem{ base: MemBase::InsnOut(idx), disp, num_bits,  }) => {
+                    Opnd::Mem(Mem{ base:MemBase::InsnOut(indices[idx]), disp, num_bits })
+                }
+                _ => opnd
             }
         }
 
@@ -531,6 +535,8 @@ impl Assembler
     /// instruction. This is our implementation of the linear scan algorithm.
     pub(super) fn alloc_regs(mut self, regs: Vec<Reg>) -> Assembler
     {
+        //dbg!(&self);
+
         // First, create the pool of registers.
         let mut pool: u32 = 0;
 
@@ -585,7 +591,7 @@ impl Assembler
                             if let Opnd::Reg(reg) = asm.insns[start_index].out {
                                 dealloc_reg(&mut pool, &regs, &reg);
                             } else {
-                                unreachable!("no register allocated for insn");
+                                unreachable!("no register allocated for insn {:?}", op);
                             }
                         }
                     }
