@@ -121,7 +121,7 @@ pub enum MemBase
 }
 
 // Memory location
-#[derive(Copy, Clone, PartialEq, Eq, Debug)]
+#[derive(Copy, Clone, PartialEq, Eq)]
 pub struct Mem
 {
     // Base register number or instruction index
@@ -134,8 +134,20 @@ pub struct Mem
     pub(super) num_bits: u8,
 }
 
+impl fmt::Debug for Mem {
+    fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
+        write!(fmt, "Mem{}[{:?}", self.num_bits, self.base)?;
+        if self.disp != 0 {
+            let sign = if self.disp > 0 { '+' } else { '-' };
+            write!(fmt, " {sign} {}", self.disp)?;
+        }
+
+        write!(fmt, "]")
+    }
+}
+
 /// Operand to an IR instruction
-#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+#[derive(Clone, Copy, PartialEq, Eq)]
 pub enum Opnd
 {
     None,               // For insns with no output
@@ -151,6 +163,22 @@ pub enum Opnd
     UImm(u64),          // Raw unsigned immediate
     Mem(Mem),           // Memory location
     Reg(Reg),           // Machine register
+}
+
+impl fmt::Debug for Opnd {
+    fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
+        use Opnd::*;
+        match self {
+            Self::None => write!(fmt, "None"),
+            Value(val) => write!(fmt, "Value({val:?})"),
+            InsnOut { idx, num_bits } => write!(fmt, "Out{num_bits}({idx})"),
+            Imm(signed) => write!(fmt, "{signed:x}_i64"),
+            UImm(unsigned) => write!(fmt, "{unsigned:x}_u64"),
+            // Say Mem and Reg only once
+            Mem(mem) => write!(fmt, "{mem:?}"),
+            Reg(reg) => write!(fmt, "{reg:?}"),
+        }
+    }
 }
 
 impl Opnd
@@ -263,7 +291,7 @@ impl From<CodePtr> for Target {
 }
 
 /// YJIT IR instruction
-#[derive(Clone, Debug)]
+#[derive(Clone)]
 pub struct Insn
 {
     // Opcode for the instruction
@@ -284,6 +312,35 @@ pub struct Insn
     // Position in the generated machine code
     // Useful for comments and for patching jumps
     pub(super) pos: Option<CodePtr>,
+}
+
+impl fmt::Debug for Insn {
+    fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
+        write!(fmt, "{:?}(", self.op)?;
+
+        // Print list of operands
+        let mut opnd_iter = self.opnds.iter();
+        if let Some(first_opnd) = opnd_iter.next() {
+            write!(fmt, "{first_opnd:?}")?;
+        }
+        for opnd in opnd_iter {
+            write!(fmt, ", {opnd:?}")?;
+        }
+        write!(fmt, ")")?;
+
+        // Print text, target, and pos if they are present
+        if let Some(text) = &self.text {
+            write!(fmt, " {text:?}")?
+        }
+        if let Some(target) = self.target {
+            write!(fmt, " target={target:?}")?;
+        }
+        if let Some(pos) = self.pos {
+            write!(fmt, " pos={pos:?}")?;
+        }
+
+        write!(fmt, " -> {:?}", self.out)
+    }
 }
 
 /// Object into which we assemble instructions to be
@@ -687,7 +744,13 @@ impl Assembler
 
 impl fmt::Debug for Assembler {
     fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
-        fmt.debug_list().entries(self.insns.iter()).finish()
+        write!(fmt, "Assembler\n")?;
+
+        for (idx, insn) in self.insns.iter().enumerate() {
+            write!(fmt, "    {idx:03} {insn:?}\n")?;
+        }
+
+        Ok(())
     }
 }
 
