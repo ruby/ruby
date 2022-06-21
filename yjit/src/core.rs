@@ -1698,29 +1698,29 @@ fn get_branch_target(
     // This means the branch stub owns its own reference to the branch
     let branch_ptr: *const RefCell<Branch> = BranchRef::into_raw(branchref.clone());
 
+    let mut asm = Assembler::new();
 
-
-
-
-    todo!("stub codegen with new assembler");
-
-    /*
     // Call branch_stub_hit(branch_idx, target_idx, ec)
-    mov(ocb, C_ARG_REGS[2], REG_EC);
-    mov(ocb, C_ARG_REGS[1], uimm_opnd(target_idx as u64));
-    mov(ocb, C_ARG_REGS[0], const_ptr_opnd(branch_ptr as *const u8));
-    call_ptr(ocb, REG0, branch_stub_hit as *mut u8);
+    let jump_addr = asm.ccall(
+        branch_stub_hit as *mut u8,
+        vec![
+            EC,
+            Opnd::UImm(target_idx as u64),
+            Opnd::const_ptr(branch_ptr as *const u8)
+        ]
+    );
 
     // Jump to the address returned by the
     // branch_stub_hit call
-    jmp_rm(ocb, RAX);
+    asm.jmp_opnd(jump_addr);
+
+    asm.compile(ocb);
 
     if ocb.has_dropped_bytes() {
         None // No space
     } else {
         Some(stub_addr)
     }
-    */
 }
 
 pub fn gen_branch(

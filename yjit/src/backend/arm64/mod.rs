@@ -34,7 +34,7 @@ impl From<Opnd> for A64Opnd {
 impl Assembler
 {
     /// Get the list of registers from which we can allocate on this platform
-    pub fn get_scratch_regs() -> Vec<Reg>
+    pub fn get_alloc_regs() -> Vec<Reg>
     {
         vec![
             X12_REG,
@@ -45,6 +45,11 @@ impl Assembler
     /// Split platform-specific instructions
     fn arm64_split(mut self) -> Assembler
     {
+        // The transformations done here are meant to make our lives simpler in later
+        // stages of the compilation pipeline.
+        // Here we may want to make sure that all instructions (except load and store)
+        // have no memory operands.
+
         todo!();
     }
 
@@ -52,6 +57,15 @@ impl Assembler
     /// Returns a list of GC offsets
     pub fn arm64_emit(&mut self, cb: &mut CodeBlock) -> Vec<u32>
     {
+        // NOTE: dear Kevin,
+        // for arm, you may want to reserve 1 or 2 caller-save registers
+        // to use as scracth registers (during the last phase of the codegen)
+        // These registers will not be allocated to anything by the register
+        // allocator, they're just useful because arm is slightly trickier
+        // than x86 to generate code for.
+        // For example, if you want to jump far away, you may want to store
+        // the jump target address in a register first.
+
         todo!();
     }
 
