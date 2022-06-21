@@ -166,9 +166,9 @@ end
 # \Method \FileUtils.remove_entry_secure removes securely
 # by applying a special pre-process:
 #
-# - If the target path points to a directory, this method uses
-#   {chown(2)}[https://man7.org/linux/man-pages/man2/chown.2.html]
-#   and {chmod(2)}[https://man7.org/linux/man-pages/man2/chmod.2.html]
+# - If the target path points to a directory, this method uses methods
+#   {File#chown}[https://docs.ruby-lang.org/en/master/File.html#method-i-chown]
+#   and {File#chmod}[https://docs.ruby-lang.org/en/master/File.html#method-i-chmod]
 #   in removing directories.
 # - The owner of the target directory should be either the current process
 #   or the super user (root).
