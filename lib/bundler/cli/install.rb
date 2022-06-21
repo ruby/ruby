@@ -161,6 +161,8 @@ module Bundler
 
       Bundler.settings.set_command_option_if_given :no_prune, options["no-prune"]
 
+      Bundler.settings.set_command_option_if_given :no_install, options["no-install"]
+
       Bundler.settings.set_command_option_if_given :clean, options["clean"]
 
       normalize_groups if options[:without] || options[:with]
