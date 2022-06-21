@@ -1225,6 +1225,11 @@ class TestMJIT < Test::Unit::TestCase
   # Shorthand for normal test cases
   def assert_eval_with_jit(script, stdout: nil, success_count:, recompile_count: nil, min_calls: 1, max_cache: 1000, insns: [], uplevel: 1, ignorable_patterns: [])
     out, err = eval_with_jit(script, verbose: 1, min_calls: min_calls, max_cache: max_cache)
+    puts "\n[stderr]==============\n#{err}======================\n"
+    err.scan(/^#{JIT_SUCCESS_PREFIX}:.*$/).each do |line|
+      file = line.split(" ").last
+      puts "\n[#{file}]=====================\n#{File.read(file)}=======================\n\n"
+    end
     success_actual = err.scan(/^#{JIT_SUCCESS_PREFIX}:/).size
     recompile_actual = err.scan(/^#{JIT_RECOMPILE_PREFIX}:/).size
     # Add --mjit-verbose=2 logs for cl.exe because compiler's error message is suppressed
