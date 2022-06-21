@@ -391,7 +391,6 @@ impl Assembler
     pub fn new_label(&mut self, name: &str) -> Target
     {
         let label_idx = self.label_names.len();
-        dbg!(label_idx);
 
         self.label_names.push(name.to_string());
         Target::Label(label_idx)
