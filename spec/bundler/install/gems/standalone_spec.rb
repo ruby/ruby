@@ -205,7 +205,7 @@ RSpec.shared_examples "bundle install --standalone" do
     end
   end
 
-  describe "with gems with native extension", :ruby_repo do
+  describe "with gems with native extension" do
     before do
       bundle "config set --local path #{bundled_app("bundle")}"
       install_gemfile <<-G, :standalone => true, :dir => cwd
