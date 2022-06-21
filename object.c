@@ -234,6 +234,23 @@ rb_class_real(VALUE cl)
     return cl;
 }
 
+/*
+ *
+ *  call-seq:
+ *     obj.class    -> class
+ *
+ *  Returns the class of <i>obj</i>. This method must always be called
+ *  with an explicit receiver, as #class is also a reserved word in
+ *  Ruby.
+ *
+ *     1.class      #=> Integer
+ *     self.class   #=> Object
+ *--
+ * Equivalent to \c Object\#class in Ruby.
+ *
+ * Returns the class of \c obj, skipping singleton classes or module inclusions.
+ *++
+ */
 VALUE
 rb_obj_class(VALUE obj)
 {
@@ -4319,6 +4336,7 @@ InitVM_Object(void)
     rb_define_method(rb_mKernel, "eql?", rb_obj_equal, 1);
     rb_define_method(rb_mKernel, "hash", rb_obj_hash, 0); /* in hash.c */
     rb_define_method(rb_mKernel, "<=>", rb_obj_cmp, 1);
+    rb_define_method(rb_mKernel, "class", rb_obj_class, 0);
 
     rb_define_method(rb_mKernel, "singleton_class", rb_obj_singleton_class, 0);
     rb_define_method(rb_mKernel, "dup", rb_obj_dup, 0);

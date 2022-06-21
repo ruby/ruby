@@ -826,6 +826,20 @@ opt_nil_p
     }
 }
 
+/* optimized class */
+DEFINE_INSN
+opt_class
+(CALL_DATA cd)
+(VALUE recv)
+(VALUE val)
+{
+    val = vm_opt_class(GET_ISEQ(), cd, recv);
+
+    if (val == Qundef) {
+        CALL_SIMPLE_METHOD();
+    }
+}
+
 DEFINE_INSN
 opt_str_uminus
 (VALUE str, CALL_DATA cd)
