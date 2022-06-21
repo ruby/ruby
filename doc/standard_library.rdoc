@@ -36,6 +36,7 @@ DidYouMean:: "Did you mean?" experience in Ruby
 DRb:: Distributed object system for Ruby
 English:: Provides references to special global variables with less cryptic names
 ERB:: An easy to use but powerful templating system for Ruby
+ErrorHighlight:: Highlight error location in your code
 FileUtils:: Several file utility methods for copying, moving, removing, etc
 Find:: This module supports top-down traversal of a set of file paths
 Forwardable:: Provides delegation of specified methods to a designated object

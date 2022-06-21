@@ -119,6 +119,10 @@ Yukihiro Matsumoto (matz)
   Masatoshi SEKI (seki), Takashi Kokubun (k0kubun)
   https://github.com/ruby/erb
   https://rubygems.org/gems/erb
+[lib/error_highlight.rb, lib/error_highlight/*]
+  Yusuke Endoh (mame)
+  https://github.com/ruby/error_highlight
+  https://rubygems.org/gems/error_highlight
 [lib/fileutils.rb]
   _unmaintained_
   https://github.com/ruby/fileutils
