@@ -272,7 +272,6 @@ impl Assembler
 
         // Create label instances in the code block
         for (idx, name) in asm.label_names.iter().enumerate() {
-            dbg!("creating label, idx={}", idx);
             let label_idx = cb.new_label(name.to_string());
             assert!(label_idx == idx);
         }
