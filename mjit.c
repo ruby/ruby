@@ -213,7 +213,8 @@ static void
 check_unit_queue(void)
 {
     if (worker_stopped) return;
-    if (current_cc_pid != 0) return; // still compiling
+    // Do not call mjit_compile in the middle of another mjit_compile
+    if (current_cc_unit != NULL) return; // still compiling
 
     // Run unload_units after it's requested `max_cache_size / 10` (default: 10) times.
     // This throttles the call to mitigate locking in unload_units. It also throttles JIT compaction.
@@ -389,9 +390,10 @@ static inline int
 mjit_target_iseq_p(const rb_iseq_t *iseq)
 {
     struct rb_iseq_constant_body *body = ISEQ_BODY(iseq);
+    const char *mjit_prefix = "<internal:mjit";
     return (body->type == ISEQ_TYPE_METHOD || body->type == ISEQ_TYPE_BLOCK)
         && !body->builtin_inline_p
-        && strcmp("<internal:mjit>", RSTRING_PTR(rb_iseq_path(iseq))) != 0;
+        && strncmp(mjit_prefix, RSTRING_PTR(rb_iseq_path(iseq)), strlen(mjit_prefix));
 }
 
 // If recompile_p is true, the call is initiated by mjit_recompile.
@@ -471,8 +473,9 @@ mjit_wait_unit(struct rb_mjit_unit *unit)
 VALUE
 rb_mjit_wait_call(rb_execution_context_t *ec, struct rb_iseq_constant_body *body)
 {
-    if (worker_stopped)
-        return Qundef;
+    if (worker_stopped) return Qundef;
+    // Do not call mjit_wait in the middle of another mjit_compile
+    if (current_cc_unit != NULL && current_cc_pid == 0) return Qundef;
 
     mjit_wait(body);
     if ((uintptr_t)body->jit_func <= (uintptr_t)LAST_JIT_ISEQ_FUNC) {

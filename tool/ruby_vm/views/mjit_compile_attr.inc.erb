@@ -9,27 +9,10 @@ mjit_call_attribute_sp_inc(const int insn, const VALUE *operands)
         MAYBE_UNUSED(<%= ope.fetch(:decl) %>) = (<%= ope.fetch(:type) %>)operands[<%= i %>];
 % end
         return <%= insn.call_attribute('sp_inc') %>;
+        break;
       }
 % end
       default:
         rb_bug("unexpected insn in mjit_call_attribute_sp_inc");
-    }
-}
-
-static VALUE
-mjit_operands(const int insn, const VALUE *operands)
-{
-    switch (insn) {
-% (RubyVM::BareInstructions.to_a + RubyVM::OperandsUnifications.to_a).each do |insn|
-      case BIN(<%= insn.name %>): {
-        VALUE array = rb_ary_new_capa(<%= insn.opes.size %>);
-% insn.opes.each_with_index do |_, i|
-        rb_ary_push(array, ULONG2NUM((unsigned long)operands[<%= i %>]));
-% end
-        return array;
-      }
-% end
-      default:
-        rb_bug("unexpected insn in mjit_operands");
     }
 }
