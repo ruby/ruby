@@ -192,12 +192,15 @@ fn test_c_call()
 
     let (mut asm, mut cb) = setup_asm();
 
-    asm.ccall(
+    let ret_val = asm.ccall(
         dummy_c_fun as *const u8,
         vec![Opnd::mem(64, SP, 0), Opnd::UImm(1)]
     );
 
-    asm.compile_with_num_regs(&mut cb, 2);
+    // Make sure that the call's return value is usable
+    asm.mov(Opnd::mem(64, SP, 0), ret_val);
+
+    asm.compile_with_num_regs(&mut cb, 1);
 }
 
 #[test]
