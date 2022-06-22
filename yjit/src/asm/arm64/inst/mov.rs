@@ -1,4 +1,4 @@
-use super::sf::Sf;
+use super::super::arg::Sf;
 
 /// Which operation is being performed.
 enum Op {

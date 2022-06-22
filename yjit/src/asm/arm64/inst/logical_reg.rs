@@ -1,4 +1,4 @@
-use super::sf::Sf;
+use super::super::arg::Sf;
 
 /// The type of shift to perform on the second operand register.
 enum Shift {

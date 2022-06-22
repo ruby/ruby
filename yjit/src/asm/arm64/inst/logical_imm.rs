@@ -1,5 +1,4 @@
-use super::bitmask_imm::BitmaskImmediate;
-use super::sf::Sf;
+use super::super::arg::{BitmaskImmediate, Sf};
 
 // Which operation to perform.
 enum Opc {
