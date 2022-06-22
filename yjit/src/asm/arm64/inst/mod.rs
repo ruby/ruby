@@ -1,7 +1,9 @@
 mod atomic;
 mod bitmask_imm;
 mod branch;
+mod branch_cond;
 mod call;
+mod condition;
 mod data_imm;
 mod data_reg;
 mod load;
@@ -12,10 +14,9 @@ mod sf;
 mod shift_imm;
 mod store;
 
-use core::num;
-
 use atomic::Atomic;
 use branch::Branch;
+use branch_cond::BranchCond;
 use call::Call;
 use data_imm::DataImm;
 use data_reg::DataReg;
@@ -28,6 +29,10 @@ use store::Store;
 
 use crate::asm::CodeBlock;
 use super::opnd::*;
+
+/// Some instructions require conditions to be encoded, which means we need to
+/// expose this enum outside of this module.
+pub use condition::Condition;
 
 /// Checks that a signed value fits within the specified number of bits.
 const fn imm_fits_bits(imm: i64, num_bits: u8) -> bool {
@@ -129,6 +134,21 @@ pub fn ands(cb: &mut CodeBlock, rd: A64Opnd, rn: A64Opnd, rm: A64Opnd) {
             LogicalImm::ands(rd.reg_no, rn.reg_no, imm.try_into().unwrap(), rd.num_bits).into()
         },
         _ => panic!("Invalid operand combination to ands instruction."),
+    };
+
+    cb.write_bytes(&bytes);
+}
+
+/// B.cond - branch to target if condition is true
+pub fn bcond(cb: &mut CodeBlock, cond: Condition, offset: A64Opnd) {
+    let bytes: [u8; 4] = match offset {
+        A64Opnd::Imm(imm) => {
+            assert!(imm_fits_bits(imm, 21), "The immediate operand must be 21 bits or less.");
+            assert!(imm & 0b11 == 0, "The immediate operand must be aligned to a 2-bit boundary.");
+
+            BranchCond::bcond(cond, imm as i32).into()
+        },
+        _ => panic!("Invalid operand combination to bcond instruction."),
     };
 
     cb.write_bytes(&bytes);
@@ -431,6 +451,11 @@ mod tests {
     #[test]
     fn test_ands_immediate() {
         check_bytes("200840f2", |cb| ands(cb, X0, X1, A64Opnd::new_uimm(7)));
+    }
+
+    #[test]
+    fn test_bcond() {
+        check_bytes("01200054", |cb| bcond(cb, Condition::NE, A64Opnd::new_imm(0x400)));
     }
 
     #[test]
