@@ -9,6 +9,7 @@ mod logical_imm;
 mod logical_reg;
 mod mov;
 mod sf;
+mod shift_imm;
 mod store;
 
 use core::num;
@@ -22,6 +23,7 @@ use load::Load;
 use logical_imm::LogicalImm;
 use logical_reg::LogicalReg;
 use mov::Mov;
+use shift_imm::ShiftImm;
 use store::Store;
 
 use crate::asm::CodeBlock;
@@ -205,6 +207,36 @@ pub fn ldur(cb: &mut CodeBlock, rt: A64Opnd, rn: A64Opnd) {
             Load::ldur(rt.reg_no, rn.base_reg_no, rn.disp as i16, rt.num_bits).into()
         },
         _ => panic!("Invalid operands for LDUR")
+    };
+
+    cb.write_bytes(&bytes);
+}
+
+/// LSL - logical shift left a register by an immediate
+pub fn lsl(cb: &mut CodeBlock, rd: A64Opnd, rn: A64Opnd, shift: A64Opnd) {
+    let bytes: [u8; 4] = match (rd, rn, shift) {
+        (A64Opnd::Reg(rd), A64Opnd::Reg(rn), A64Opnd::UImm(uimm)) => {
+            assert!(rd.num_bits == rn.num_bits, "Expected registers to be the same size");
+            assert!(uimm_fits_bits(uimm, 6), "Expected shift to be 6 bits or less");
+
+            ShiftImm::lsl(rd.reg_no, rn.reg_no, uimm as u8, rd.num_bits).into()
+        },
+        _ => panic!("Invalid operands combination to lsl instruction")
+    };
+
+    cb.write_bytes(&bytes);
+}
+
+/// LSR - logical shift right a register by an immediate
+pub fn lsr(cb: &mut CodeBlock, rd: A64Opnd, rn: A64Opnd, shift: A64Opnd) {
+    let bytes: [u8; 4] = match (rd, rn, shift) {
+        (A64Opnd::Reg(rd), A64Opnd::Reg(rn), A64Opnd::UImm(uimm)) => {
+            assert!(rd.num_bits == rn.num_bits, "Expected registers to be the same size");
+            assert!(uimm_fits_bits(uimm, 6), "Expected shift to be 6 bits or less");
+
+            ShiftImm::lsr(rd.reg_no, rn.reg_no, uimm as u8, rd.num_bits).into()
+        },
+        _ => panic!("Invalid operands combination to lsr instruction")
     };
 
     cb.write_bytes(&bytes);
@@ -429,6 +461,16 @@ mod tests {
     #[test]
     fn test_ldur() {
         check_bytes("20b047f8", |cb| ldur(cb, X0, A64Opnd::new_mem(X1, 123)));
+    }
+
+    #[test]
+    fn test_lsl() {
+        check_bytes("6ac572d3", |cb| lsl(cb, X10, X11, A64Opnd::new_uimm(14)));
+    }
+
+    #[test]
+    fn test_lsr() {
+        check_bytes("6afd4ed3", |cb| lsr(cb, X10, X11, A64Opnd::new_uimm(14)));
     }
 
     #[test]
