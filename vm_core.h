@@ -460,7 +460,7 @@ struct rb_iseq_constant_body {
     } variable;
 
     unsigned int local_table_size;
-    unsigned int ic_size;  // Number if IC caches
+    unsigned int ic_size;  // Number of IC caches
     unsigned int ise_size; // Number of ISE caches
     unsigned int ivc_size; // Number of IVC and ICVARC caches
     unsigned int ci_size;
