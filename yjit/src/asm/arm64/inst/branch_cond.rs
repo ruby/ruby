@@ -1,4 +1,4 @@
-use super::condition::Condition;
+use super::super::arg::Condition;
 
 /// The struct that represents an A64 conditional branch instruction that can be
 /// encoded.

@@ -1,4 +1,4 @@
-use super::sf::Sf;
+use super::super::arg::Sf;
 
 /// The operation to perform for this instruction.
 enum Opc {
