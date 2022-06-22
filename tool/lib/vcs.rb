@@ -132,7 +132,7 @@ class VCS
     end
     last, changed, modified, *rest = (
       begin
-        if NullDevice
+        if NullDevice and !debug?
           save_stderr = STDERR.dup
           STDERR.reopen NullDevice, 'w'
         end
