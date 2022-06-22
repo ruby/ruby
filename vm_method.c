@@ -405,7 +405,9 @@ rb_method_definition_release(rb_method_definition_t *def, int complemented)
 	if (alias_count + complemented_count == 0) {
             if (METHOD_DEBUG) fprintf(stderr, "-%p-%s:%d,%d (remove)\n", (void *)def,
                                       rb_id2name(def->original_id), alias_count, complemented_count);
-            VM_ASSERT(def->type == VM_METHOD_TYPE_BMETHOD ? def->body.bmethod.hooks == NULL : TRUE);
+            if (def->type == VM_METHOD_TYPE_BMETHOD && def->body.bmethod.hooks) {
+                xfree(def->body.bmethod.hooks);
+            }
 	    xfree(def);
 	}
 	else {

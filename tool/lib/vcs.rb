@@ -132,7 +132,7 @@ class VCS
     end
     last, changed, modified, *rest = (
       begin
-        if NullDevice
+        if NullDevice and !debug?
           save_stderr = STDERR.dup
           STDERR.reopen NullDevice, 'w'
         end
@@ -460,10 +460,13 @@ class VCS
     end
 
     def without_gitconfig
-      home = ENV.delete('HOME')
+      envs = %w'HOME XDG_CONFIG_HOME GIT_SYSTEM_CONFIG GIT_CONFIG_SYSTEM'.each_with_object({}) do |v, h|
+        h[v] = ENV.delete(v)
+        ENV[v] = NullDevice if v.start_with?('GIT_')
+      end
       yield
     ensure
-      ENV['HOME'] = home if home
+      ENV.update(envs)
     end
 
     def initialize(*)
@@ -581,7 +584,7 @@ class VCS
       env = {'TZ' => 'JST-9', 'LANG' => 'C', 'LC_ALL' => 'C'}
       cmd = %W"#{COMMAND} log --format=fuller --notes=commits --notes=log-fix --topo-order --no-merges"
       date = "--date=iso-local"
-      unless system(env, *cmd, date, chdir: @srcdir, out: NullDevice, exception: false)
+      unless system(env, *cmd, date, "-1", chdir: @srcdir, out: NullDevice, exception: false)
         date = "--date=iso"
       end
       cmd << date

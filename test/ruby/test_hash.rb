@@ -2166,6 +2166,27 @@ class TestHash < Test::Unit::TestCase
     end
   end
 
+  # Previously this test would fail because rb_hash inside opt_aref would look
+  # at the current method name
+  def test_hash_recursion_independent_of_mid
+    o = Class.new do
+      def hash(h, k)
+        h[k]
+      end
+
+      def any_other_name(h, k)
+        h[k]
+      end
+    end.new
+
+    rec = []; rec << rec
+
+    h = @cls[]
+    h[rec] = 1
+    assert o.hash(h, rec)
+    assert o.any_other_name(h, rec)
+  end
+
   def test_any_hash_fixable
     20.times do
       assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")

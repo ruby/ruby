@@ -13,3 +13,4 @@ mod options;
 mod stats;
 mod utils;
 mod yjit;
+mod virtualmem;

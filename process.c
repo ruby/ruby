@@ -1091,6 +1091,15 @@ void rb_sigwait_sleep(const rb_thread_t *, int fd, const rb_hrtime_t *);
 void rb_sigwait_fd_put(const rb_thread_t *, int fd);
 void rb_thread_sleep_interruptible(void);
 
+#if USE_MJIT
+static struct waitpid_state mjit_waitpid_state;
+
+// variables shared with thread.c
+// TODO: implement the same thing with postponed_job and obviate these variables
+bool mjit_waitpid_finished = false;
+int mjit_waitpid_status = 0;
+#endif
+
 static int
 waitpid_signal(struct waitpid_state *w)
 {
@@ -1098,12 +1107,13 @@ waitpid_signal(struct waitpid_state *w)
         rb_threadptr_interrupt(rb_ec_thread_ptr(w->ec));
         return TRUE;
     }
-    else { /* ruby_waitpid_locked */
-        if (w->cond) {
-            rb_native_cond_signal(w->cond);
-            return TRUE;
-        }
+#if USE_MJIT
+    else if (w == &mjit_waitpid_state && w->ret) { /* mjit_add_waiting_pid */
+        mjit_waitpid_finished = true;
+        mjit_waitpid_status = w->status;
+        return TRUE;
     }
+#endif
     return FALSE;
 }
 
@@ -1199,68 +1209,18 @@ waitpid_state_init(struct waitpid_state *w, rb_pid_t pid, int options)
     w->status = 0;
 }
 
-static const rb_hrtime_t *
-sigwait_sleep_time(void)
-{
-    if (SIGCHLD_LOSSY) {
-        static const rb_hrtime_t busy_wait = 100 * RB_HRTIME_PER_MSEC;
-
-        return &busy_wait;
-    }
-    return 0;
-}
-
+#if USE_MJIT
 /*
  * must be called with vm->waitpid_lock held, this is not interruptible
  */
-rb_pid_t
-ruby_waitpid_locked(rb_vm_t *vm, rb_pid_t pid, int *status, int options,
-                    rb_nativethread_cond_t *cond)
+void
+mjit_add_waiting_pid(rb_vm_t *vm, rb_pid_t pid)
 {
-    struct waitpid_state w;
-
-    assert(!ruby_thread_has_gvl_p() && "must not have GVL");
-
-    waitpid_state_init(&w, pid, options);
-    if (w.pid > 0 || ccan_list_empty(&vm->waiting_pids))
-        w.ret = do_waitpid(w.pid, &w.status, w.options | WNOHANG);
-    if (w.ret) {
-        if (w.ret == -1) w.errnum = errno;
-    }
-    else {
-        int sigwait_fd = -1;
-
-        w.ec = 0;
-        ccan_list_add(w.pid > 0 ? &vm->waiting_pids : &vm->waiting_grps, &w.wnode);
-        do {
-            if (sigwait_fd < 0)
-                sigwait_fd = rb_sigwait_fd_get(0);
-
-            if (sigwait_fd >= 0) {
-                w.cond = 0;
-                rb_native_mutex_unlock(&vm->waitpid_lock);
-                rb_sigwait_sleep(0, sigwait_fd, sigwait_sleep_time());
-                rb_native_mutex_lock(&vm->waitpid_lock);
-            }
-            else {
-                w.cond = cond;
-                rb_native_cond_wait(w.cond, &vm->waitpid_lock);
-            }
-        } while (!w.ret);
-        ccan_list_del(&w.wnode);
-
-        /* we're done, maybe other waitpid callers are not: */
-        if (sigwait_fd >= 0) {
-            rb_sigwait_fd_put(0, sigwait_fd);
-            sigwait_fd_migrate_sleeper(vm);
-        }
-    }
-    if (status) {
-        *status = w.status;
-    }
-    if (w.ret == -1) errno = w.errnum;
-    return w.ret;
+    waitpid_state_init(&mjit_waitpid_state, pid, 0);
+    mjit_waitpid_state.ec = 0; // switch the behavior of waitpid_signal
+    ccan_list_add(&vm->waiting_pids, &mjit_waitpid_state.wnode);
 }
+#endif
 
 static VALUE
 waitpid_sleep(VALUE x)
@@ -2250,7 +2210,7 @@ rb_execarg_addopt_rlimit(struct rb_execarg *eargp, int rtype, VALUE val)
 }
 #endif
 
-#define TO_BOOL(val, name) NIL_P(val) ? 0 : rb_bool_expected((val), name)
+#define TO_BOOL(val, name) (NIL_P(val) ? 0 : rb_bool_expected((val), name, TRUE))
 int
 rb_execarg_addopt(VALUE execarg_obj, VALUE key, VALUE val)
 {

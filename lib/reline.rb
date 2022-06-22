@@ -466,7 +466,7 @@ module Reline
     end
 
     private def may_req_ambiguous_char_width
-      @ambiguous_width = 2 if Reline::IOGate == Reline::GeneralIO or STDOUT.is_a?(File)
+      @ambiguous_width = 2 if Reline::IOGate == Reline::GeneralIO or !STDOUT.tty?
       return if defined? @ambiguous_width
       Reline::IOGate.move_cursor_column(0)
       begin

@@ -21,6 +21,8 @@ use std::os::raw::c_uint;
 use std::ptr;
 use std::slice;
 
+pub use crate::virtualmem::CodePtr;
+
 // Callee-saved registers
 pub const REG_CFP: X86Opnd = R13;
 pub const REG_EC: X86Opnd = R12;
@@ -424,6 +426,13 @@ fn gen_exit(exit_pc: *mut VALUE, ctx: &Context, cb: &mut CodeBlock) -> CodePtr {
     if get_option!(gen_stats) {
         mov(cb, RDI, const_ptr_opnd(exit_pc as *const u8));
         call_ptr(cb, RSI, rb_yjit_count_side_exit_op as *const u8);
+
+        // If --yjit-trace-exits option is enabled, record the exit stack
+        // while recording the side exits.
+        if get_option!(gen_trace_exits) {
+            mov(cb, C_ARG_REGS[0], const_ptr_opnd(exit_pc as *const u8));
+            call_ptr(cb, REG0, rb_yjit_record_exit_stack as *const u8);
+        }
     }
 
     pop(cb, REG_SP);
@@ -2441,20 +2450,17 @@ fn gen_equality_specialized(
 
         // Guard that a is a String
         mov(cb, REG0, C_ARG_REGS[0]);
-        unsafe {
-            // Use of rb_cString here requires an unsafe block
-            jit_guard_known_klass(
-                jit,
-                ctx,
-                cb,
-                ocb,
-                rb_cString,
-                StackOpnd(1),
-                comptime_a,
-                SEND_MAX_DEPTH,
-                side_exit,
-            );
-        }
+        jit_guard_known_klass(
+            jit,
+            ctx,
+            cb,
+            ocb,
+            unsafe { rb_cString },
+            StackOpnd(1),
+            comptime_a,
+            SEND_MAX_DEPTH,
+            side_exit,
+        );
 
         let ret = cb.new_label("ret".to_string());
 
@@ -2468,19 +2474,17 @@ fn gen_equality_specialized(
             mov(cb, REG0, C_ARG_REGS[1]);
             // Note: any T_STRING is valid here, but we check for a ::String for simplicity
             // To pass a mutable static variable (rb_cString) requires an unsafe block
-            unsafe {
-                jit_guard_known_klass(
-                    jit,
-                    ctx,
-                    cb,
-                    ocb,
-                    rb_cString,
-                    StackOpnd(0),
-                    comptime_b,
-                    SEND_MAX_DEPTH,
-                    side_exit,
-                );
-            }
+            jit_guard_known_klass(
+                jit,
+                ctx,
+                cb,
+                ocb,
+                unsafe { rb_cString },
+                StackOpnd(0),
+                comptime_b,
+                SEND_MAX_DEPTH,
+                side_exit,
+            );
         }
 
         // Call rb_str_eql_internal(a, b)
@@ -3346,7 +3350,7 @@ fn jit_guard_known_klass(
     sample_instance: VALUE,
     max_chain_depth: i32,
     side_exit: CodePtr,
-) -> bool {
+) {
     let val_type = ctx.get_opnd_type(insn_opnd);
 
     if unsafe { known_klass == rb_cNilClass } {
@@ -3465,8 +3469,6 @@ fn jit_guard_known_klass(
         cmp(cb, klass_opnd, REG1);
         jit_chain_guard(JCC_JNE, jit, ctx, cb, ocb, max_chain_depth, side_exit);
     }
-
-    true
 }
 
 // Generate ancestry guard for protected callee.
@@ -3599,6 +3601,43 @@ fn jit_rb_obj_equal(
     true
 }
 
+/// If string is frozen, duplicate it to get a non-frozen string. Otherwise, return it.
+fn jit_rb_str_uplus(
+    _jit: &mut JITState,
+    ctx: &mut Context,
+    cb: &mut CodeBlock,
+    _ocb: &mut OutlinedCb,
+    _ci: *const rb_callinfo,
+    _cme: *const rb_callable_method_entry_t,
+    _block: Option<IseqPtr>,
+    _argc: i32,
+    _known_recv_class: *const VALUE,
+) -> bool
+{
+    let recv = ctx.stack_pop(1);
+
+    add_comment(cb, "Unary plus on string");
+    mov(cb, REG0, recv);
+    mov(cb, REG1, mem_opnd(64, REG0, RUBY_OFFSET_RBASIC_FLAGS));
+    test(cb, REG1, imm_opnd(RUBY_FL_FREEZE as i64));
+
+    let ret_label = cb.new_label("stack_ret".to_string());
+    // If the string isn't frozen, we just return it. It's already in REG0.
+    jz_label(cb, ret_label);
+
+    // Str is frozen - duplicate
+    mov(cb, C_ARG_REGS[0], REG0);
+    call_ptr(cb, REG0, rb_str_dup as *const u8);
+    // Return value is in REG0, drop through and return it.
+
+    cb.write_label(ret_label);
+    let stack_ret = ctx.stack_push(Type::String);
+    mov(cb, stack_ret, REG0);
+
+    cb.link_labels();
+    true
+}
+
 fn jit_rb_str_bytesize(
     _jit: &mut JITState,
     ctx: &mut Context,
@@ -3676,7 +3715,7 @@ fn jit_rb_str_concat(
     // Guard that the argument is of class String at runtime.
     let arg_opnd = ctx.stack_opnd(0);
     mov(cb, REG0, arg_opnd);
-    if !jit_guard_known_klass(
+    jit_guard_known_klass(
         jit,
         ctx,
         cb,
@@ -3686,9 +3725,7 @@ fn jit_rb_str_concat(
         comptime_arg,
         SEND_MAX_DEPTH,
         side_exit,
-    ) {
-        return false;
-    }
+    );
 
     let concat_arg = ctx.stack_pop(1);
     let recv = ctx.stack_pop(1);
@@ -4756,7 +4793,7 @@ fn gen_send_general(
     let recv = ctx.stack_opnd(argc);
     let recv_opnd = StackOpnd(argc.try_into().unwrap());
     mov(cb, REG0, recv);
-    if !jit_guard_known_klass(
+    jit_guard_known_klass(
         jit,
         ctx,
         cb,
@@ -4766,9 +4803,7 @@ fn gen_send_general(
         comptime_recv,
         SEND_MAX_DEPTH,
         side_exit,
-    ) {
-        return CantCompile;
-    }
+    );
 
     // Do method lookup
     let mut cme = unsafe { rb_callable_method_entry(comptime_recv_klass, mid) };
@@ -4790,7 +4825,12 @@ fn gen_send_general(
             }
         }
         METHOD_VISI_PROTECTED => {
-            jit_protected_callee_ancestry_guard(jit, cb, ocb, cme, side_exit);
+            // If the method call is an FCALL, it is always valid
+            if flags & VM_CALL_FCALL == 0 {
+                // otherwise we need an ancestry check to ensure the receiver is vaild to be called
+                // as protected
+                jit_protected_callee_ancestry_guard(jit, cb, ocb, cme, side_exit);
+            }
         }
         _ => {
             panic!("cmes should always have a visibility!");
@@ -5949,14 +5989,53 @@ impl CodegenGlobals {
 
         #[cfg(not(test))]
         let (mut cb, mut ocb) = {
-            let page_size = unsafe { rb_yjit_get_page_size() }.as_usize();
-            let mem_block: *mut u8 = unsafe { alloc_exec_mem(mem_size.try_into().unwrap()) };
-            let cb = CodeBlock::new(mem_block, mem_size / 2, page_size);
-            let ocb = OutlinedCb::wrap(CodeBlock::new(
-                unsafe { mem_block.add(mem_size / 2) },
-                mem_size / 2,
+            // TODO(alan): we can error more gracefully when the user gives
+            //   --yjit-exec-mem=absurdly-large-number
+            //
+            // 2 GiB. It's likely a bug if we generate this much code.
+            const MAX_BUFFER_SIZE: usize = 2 * 1024 * 1024 * 1024;
+            assert!(mem_size <= MAX_BUFFER_SIZE);
+            let mem_size_u32 = mem_size as u32;
+            let half_size = mem_size / 2;
+
+            let page_size = unsafe { rb_yjit_get_page_size() };
+            let assert_page_aligned = |ptr| assert_eq!(
+                0,
+                ptr as usize % page_size.as_usize(),
+                "Start of virtual address block should be page-aligned",
+            );
+
+            let virt_block: *mut u8 = unsafe { rb_yjit_reserve_addr_space(mem_size_u32) };
+            let second_half = virt_block.wrapping_add(half_size);
+
+            // Memory protection syscalls need page-aligned addresses, so check it here. Assuming
+            // `virt_block` is page-aligned, `second_half` should be page-aligned as long as the
+            // page size in bytes is a power of two 2¹⁹ or smaller. This is because the user
+            // requested size is half of mem_option × 2²⁰ as it's in MiB.
+            //
+            // Basically, we don't support x86-64 2MiB and 1GiB pages. ARMv8 can do up to 64KiB
+            // (2¹⁶ bytes) pages, which should be fine. 4KiB pages seem to be the most popular though.
+            assert_page_aligned(virt_block);
+            assert_page_aligned(second_half);
+
+            use crate::virtualmem::*;
+
+            let first_half = VirtualMem::new(
+                SystemAllocator {},
                 page_size,
-            ));
+                virt_block,
+                half_size
+            );
+            let second_half = VirtualMem::new(
+                SystemAllocator {},
+                page_size,
+                second_half,
+                half_size
+            );
+
+            let cb = CodeBlock::new(first_half);
+            let ocb = OutlinedCb::wrap(CodeBlock::new(second_half));
+
             (cb, ocb)
         };
 
@@ -6045,6 +6124,7 @@ impl CodegenGlobals {
             self.yjit_reg_method(rb_cString, "to_str", jit_rb_str_to_s);
             self.yjit_reg_method(rb_cString, "bytesize", jit_rb_str_bytesize);
             self.yjit_reg_method(rb_cString, "<<", jit_rb_str_concat);
+            self.yjit_reg_method(rb_cString, "+@", jit_rb_str_uplus);
 
             // Thread.current
             self.yjit_reg_method(

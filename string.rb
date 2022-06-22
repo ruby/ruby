@@ -143,7 +143,7 @@
 #  consisting of any mixture of the following:
 #
 #  - NL (null): <tt>"\x00"</tt>, <tt>"\u0000"</tt>.
-#  - HT (horizontal tab): <tt>"\x09"</tt>, "<tt>\t"</tt>.
+#  - HT (horizontal tab): <tt>"\x09"</tt>, <tt>"\t"</tt>.
 #  - LF (line feed): <tt>"\x0a"</tt>, <tt>"\n"</tt>.
 #  - VT (vertical tab): <tt>"\x0b"</tt>, <tt>"\v"</tt>.
 #  - FF (form feed): <tt>"\x0c"</tt>, <tt>"\f"</tt>.
@@ -452,9 +452,9 @@
 #
 #  _Substitution_
 #
-#  - #dump: Returns a copy of +self with all non-printing characters replaced by \xHH notation
+#  - #dump: Returns a copy of +self+ with all non-printing characters replaced by \xHH notation
 #    and all special characters escaped.
-#  - #undump: Returns a copy of +self with all <tt>\xNN</tt> notation replace by <tt>\uNNNN</tt> notation
+#  - #undump: Returns a copy of +self+ with all <tt>\xNN</tt> notation replace by <tt>\uNNNN</tt> notation
 #    and all escaped characters unescaped.
 #  - #sub: Returns a copy of +self+ with the first substring matching a given pattern
 #    replaced with a given replacement string;.

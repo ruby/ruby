@@ -119,6 +119,10 @@ Yukihiro Matsumoto (matz)
   Masatoshi SEKI (seki), Takashi Kokubun (k0kubun)
   https://github.com/ruby/erb
   https://rubygems.org/gems/erb
+[lib/error_highlight.rb, lib/error_highlight/*]
+  Yusuke Endoh (mame)
+  https://github.com/ruby/error_highlight
+  https://rubygems.org/gems/error_highlight
 [lib/fileutils.rb]
   _unmaintained_
   https://github.com/ruby/fileutils
@@ -209,6 +213,10 @@ Yukihiro Matsumoto (matz)
   Eric Hodel (drbrain), Hiroshi SHIBATA (hsbt)
   https://github.com/ruby/rdoc
   https://rubygems.org/gems/rdoc
+[lib/readline.rb]
+  aycabta
+  https://github.com/ruby/readline
+  https://rubygems.org/gems/readline
 [lib/reline.rb, lib/reline/*]
   aycabta
   https://github.com/ruby/reline

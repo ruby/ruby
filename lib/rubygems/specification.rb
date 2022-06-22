@@ -1081,6 +1081,7 @@ class Gem::Specification < Gem::BasicSpecification
 
     spec.specification_version ||= NONEXISTENT_SPECIFICATION_VERSION
     spec.reset_nil_attributes_to_default
+    spec.flatten_require_paths
 
     spec
   end
@@ -1240,8 +1241,7 @@ class Gem::Specification < Gem::BasicSpecification
     clear_load_cache
     unresolved = unresolved_deps
     unless unresolved.empty?
-      w = "W" + "ARN"
-      warn "#{w}: Unresolved or ambiguous specs during Gem::Specification.reset:"
+      warn "WARN: Unresolved or ambiguous specs during Gem::Specification.reset:"
       unresolved.values.each do |dep|
         warn "      #{dep}"
 
@@ -1251,7 +1251,7 @@ class Gem::Specification < Gem::BasicSpecification
           versions.each {|s| warn "      - #{s.version}" }
         end
       end
-      warn "#{w}: Clearing out unresolved specs. Try 'gem cleanup <gem>'"
+      warn "WARN: Clearing out unresolved specs. Try 'gem cleanup <gem>'"
       warn "Please report a bug if this causes problems."
       unresolved.clear
     end
@@ -2673,6 +2673,13 @@ class Gem::Specification < Gem::BasicSpecification
     end
 
     @installed_by_version ||= nil
+  end
+
+  def flatten_require_paths # :nodoc:
+    return unless raw_require_paths.first.is_a?(Array)
+
+    warn "#{name} #{version} includes a gemspec with `require_paths` set to an array of arrays. Newer versions of this gem might've already fixed this"
+    raw_require_paths.flatten!
   end
 
   def raw_require_paths # :nodoc:

@@ -2226,8 +2226,7 @@ static int
 add_adjust_info(struct iseq_insn_info_entry *insns_info, unsigned int *positions,
                 int insns_info_index, int code_index, const ADJUST *adjust)
 {
-    if (insns_info_index > 0 ||
-        insns_info[insns_info_index-1].line_no != adjust->line_no) {
+    if (insns_info[insns_info_index-1].line_no != adjust->line_no) {
         insns_info[insns_info_index].line_no    = adjust->line_no;
         insns_info[insns_info_index].events     = 0;
         positions[insns_info_index]             = code_index;
@@ -2474,6 +2473,10 @@ iseq_set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *const anchor)
 		if (adjust->line_no != -1) {
 		    const int diff = orig_sp - sp;
 		    if (diff > 0) {
+                        if (insns_info_index == 0) {
+                            COMPILE_ERROR(iseq, adjust->line_no,
+                                          "iseq_set_sequence: adjust bug (ISEQ_ELEMENT_ADJUST must not be the first in iseq)");
+                        }
 			if (add_adjust_info(insns_info, positions, insns_info_index, code_index, adjust)) insns_info_index++;
 		    }
 		    if (diff > 1) {
@@ -10698,8 +10701,6 @@ struct ibf_dump {
     struct ibf_dump_buffer global_buffer;
     struct ibf_dump_buffer *current_buffer;
 };
-
-rb_iseq_t * iseq_alloc(void);
 
 struct ibf_load_buffer {
     const char *buff;

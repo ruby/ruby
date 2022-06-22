@@ -24,6 +24,9 @@ pub struct Options {
     // Capture and print out stats
     pub gen_stats: bool,
 
+    // Trace locations of exits
+    pub gen_trace_exits: bool,
+
     /// Dump compiled and executed instructions for debugging
     pub dump_insns: bool,
 
@@ -45,6 +48,7 @@ pub static mut OPTIONS: Options = Options {
     no_type_prop: false,
     max_versions: 4,
     gen_stats: false,
+    gen_trace_exits: false,
     dump_insns: false,
     verify_ctx: false,
     global_constant_state: false,
@@ -104,6 +108,7 @@ pub fn parse_option(str_ptr: *const std::os::raw::c_char) -> Option<()> {
         ("greedy-versioning", "") => unsafe { OPTIONS.greedy_versioning = true },
         ("no-type-prop", "") => unsafe { OPTIONS.no_type_prop = true },
         ("stats", "") => unsafe { OPTIONS.gen_stats = true },
+        ("trace-exits", "") => unsafe { OPTIONS.gen_trace_exits = true; OPTIONS.gen_stats = true },
         ("dump-insns", "") => unsafe { OPTIONS.dump_insns = true },
         ("verify-ctx", "") => unsafe { OPTIONS.verify_ctx = true },
         ("global-constant-state", "") => unsafe { OPTIONS.global_constant_state = true },

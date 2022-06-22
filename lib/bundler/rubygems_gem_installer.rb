@@ -90,6 +90,14 @@ module Bundler
       end
     end
 
+    def spec
+      if Bundler.rubygems.provides?("< 3.3.12") # RubyGems implementation rescues and re-raises errors before 3.3.12 and we don't want that
+        @package.spec
+      else
+        super
+      end
+    end
+
     private
 
     def strict_rm_rf(dir)

@@ -12,6 +12,105 @@ use crate::yjit::yjit_enabled_p;
 const VM_INSTRUCTION_SIZE_USIZE:usize = VM_INSTRUCTION_SIZE as usize;
 static mut EXIT_OP_COUNT: [u64; VM_INSTRUCTION_SIZE_USIZE] = [0; VM_INSTRUCTION_SIZE_USIZE];
 
+/// Global state needed for collecting backtraces of exits
+pub struct YjitExitLocations {
+    /// Vec to hold raw_samples which represent the control frames
+    /// of method entries.
+    raw_samples: Vec<VALUE>,
+    /// Vec to hold line_samples which represent line numbers of
+    /// the iseq caller.
+    line_samples: Vec<i32>
+}
+
+/// Private singleton instance of yjit exit locations
+static mut YJIT_EXIT_LOCATIONS: Option<YjitExitLocations> = None;
+
+impl YjitExitLocations {
+    /// Initialize the yjit exit locations
+    pub fn init() {
+        // Return if the stats feature is disabled
+        if !cfg!(feature = "stats") {
+            return;
+        }
+
+        // Return if --yjit-trace-exits isn't enabled
+        if !get_option!(gen_trace_exits) {
+            return;
+        }
+
+        let yjit_exit_locations = YjitExitLocations {
+            raw_samples: Vec::new(),
+            line_samples: Vec::new()
+        };
+
+        // Initialize the yjit exit locations instance
+        unsafe {
+            YJIT_EXIT_LOCATIONS = Some(yjit_exit_locations);
+        }
+    }
+
+    /// Get a mutable reference to the yjit exit locations globals instance
+    pub fn get_instance() -> &'static mut YjitExitLocations {
+        unsafe { YJIT_EXIT_LOCATIONS.as_mut().unwrap() }
+    }
+
+    /// Get a mutable reference to the yjit raw samples Vec
+    pub fn get_raw_samples() -> &'static mut Vec<VALUE> {
+        &mut YjitExitLocations::get_instance().raw_samples
+    }
+
+    /// Get a mutable reference to yjit the line samples Vec.
+    pub fn get_line_samples() -> &'static mut Vec<i32> {
+        &mut YjitExitLocations::get_instance().line_samples
+    }
+
+    /// Mark the data stored in YjitExitLocations::get_raw_samples that needs to be used by
+    /// rb_yjit_add_frame. YjitExitLocations::get_raw_samples are an array of
+    /// VALUE pointers, exit instruction, and number of times we've seen this stack row
+    /// as collected by rb_yjit_record_exit_stack.
+    ///
+    /// These need to have rb_gc_mark called so they can be used by rb_yjit_add_frame.
+    pub fn gc_mark_raw_samples() {
+        // Return if YJIT is not enabled
+        if !yjit_enabled_p() {
+            return;
+        }
+
+        // Return if the stats feature is disabled
+        if !cfg!(feature = "stats") {
+            return;
+        }
+
+        // Return if --yjit-trace-exits isn't enabled
+        if !get_option!(gen_trace_exits) {
+            return;
+        }
+
+        let mut idx: size_t = 0;
+        let yjit_raw_samples = YjitExitLocations::get_raw_samples();
+
+        while idx < yjit_raw_samples.len() as size_t {
+            let num = yjit_raw_samples[idx as usize];
+            let mut i = 0;
+            idx += 1;
+
+            // Mark the yjit_raw_samples at the given index. These represent
+            // the data that needs to be GC'd which are the current frames.
+            while i < i32::from(num) {
+                unsafe { rb_gc_mark(yjit_raw_samples[idx as usize]); }
+                i += 1;
+                idx += 1;
+            }
+
+            // Increase index for exit instruction.
+            idx += 1;
+            // Increase index for bookeeping value (number of times we've seen this
+            // row in a stack).
+            idx += 1;
+        }
+    }
+}
+
 // Macro to declare the stat counters
 macro_rules! make_counters {
     ($($counter_name:ident,)+) => {
@@ -42,7 +141,7 @@ macro_rules! incr_counter {
     ($counter_name:ident) => {
         #[allow(unused_unsafe)]
         {
-            unsafe { COUNTERS.$counter_name += 1 }
+            unsafe { $crate::stats::COUNTERS.$counter_name += 1 }
         }
     };
 }
@@ -145,6 +244,10 @@ make_counters! {
 
     gbpp_block_param_modified,
     gbpp_block_handler_not_iseq,
+
+    // Currently, it's out of the ordinary (might be impossible) for YJIT to leave gaps in
+    // executable memory, so this should be 0.
+    exec_mem_non_bump_alloc,
 }
 
 //===========================================================================
@@ -166,6 +269,57 @@ pub extern "C" fn rb_yjit_stats_enabled_p(_ec: EcPtr, _ruby_self: VALUE) -> VALU
 #[no_mangle]
 pub extern "C" fn rb_yjit_get_stats(_ec: EcPtr, _ruby_self: VALUE) -> VALUE {
     with_vm_lock(src_loc!(), || rb_yjit_gen_stats_dict())
+}
+
+/// Primitive called in yjit.rb
+///
+/// Check if trace_exits generation is enabled. Requires the stats feature
+/// to be enabled.
+#[no_mangle]
+pub extern "C" fn rb_yjit_trace_exit_locations_enabled_p(_ec: EcPtr, _ruby_self: VALUE) -> VALUE {
+    #[cfg(feature = "stats")]
+    if get_option!(gen_trace_exits) {
+        return Qtrue;
+    }
+
+    return Qfalse;
+}
+
+/// Call the C function to parse the raw_samples and line_samples
+/// into raw, lines, and frames hash for RubyVM::YJIT.exit_locations.
+#[no_mangle]
+pub extern "C" fn rb_yjit_get_exit_locations(_ec: EcPtr, _ruby_self: VALUE) -> VALUE {
+    // Return if YJIT is not enabled
+    if !yjit_enabled_p() {
+        return Qnil;
+    }
+
+    // Return if the stats feature is disabled
+    if !cfg!(feature = "stats") {
+        return Qnil;
+    }
+
+    // Return if --yjit-trace-exits isn't enabled
+    if !get_option!(gen_trace_exits) {
+        return Qnil;
+    }
+
+    // If the stats feature is enabled, pass yjit_raw_samples and yjit_line_samples
+    // to the C function called rb_yjit_exit_locations_dict for parsing.
+    let yjit_raw_samples = YjitExitLocations::get_raw_samples();
+    let yjit_line_samples = YjitExitLocations::get_line_samples();
+
+    // Assert that the two Vec's are the same length. If they aren't
+    // equal something went wrong.
+    assert_eq!(yjit_raw_samples.len(), yjit_line_samples.len());
+
+    // yjit_raw_samples and yjit_line_samples are the same length so
+    // pass only one of the lengths in the C function.
+    let samples_len = yjit_raw_samples.len() as i32;
+
+    unsafe {
+        rb_yjit_exit_locations_dict(yjit_raw_samples.as_mut_ptr(), yjit_line_samples.as_mut_ptr(), samples_len)
+    }
 }
 
 /// Export all YJIT statistics as a Ruby hash.
@@ -229,6 +383,83 @@ fn rb_yjit_gen_stats_dict() -> VALUE {
     }
 
     hash
+}
+
+/// Record the backtrace when a YJIT exit occurs. This functionality requires
+/// that the stats feature is enabled as well as the --yjit-trace-exits option.
+///
+/// This function will fill two Vec's in YjitExitLocations to record the raw samples
+/// and line samples. Their length should be the same, however the data stored in
+/// them is different.
+#[no_mangle]
+pub extern "C" fn rb_yjit_record_exit_stack(exit_pc: *const VALUE)
+{
+    // Return if YJIT is not enabled
+    if !yjit_enabled_p() {
+        return;
+    }
+
+    // Return if the stats feature is disabled
+    if !cfg!(feature = "stats") {
+        return;
+    }
+
+    // Return if --yjit-trace-exits isn't enabled
+    if !get_option!(gen_trace_exits) {
+        return;
+    }
+
+    // rb_vm_insn_addr2opcode won't work in cargo test --all-features
+    // because it's a C function. Without insn call, this function is useless
+    // so wrap the whole thing in a not test check.
+    if cfg!(not(test)) {
+        // Get the opcode from the encoded insn handler at this PC
+        let insn = unsafe { rb_vm_insn_addr2opcode((*exit_pc).as_ptr()) };
+
+        // Use the same buffer size as Stackprof.
+        const BUFF_LEN: usize = 2048;
+
+        // Create 2 array buffers to be used to collect frames and lines.
+        let mut frames_buffer = [VALUE(0 as usize); BUFF_LEN];
+        let mut lines_buffer = [0; BUFF_LEN];
+
+        // Records call frame and line information for each method entry into two
+        // temporary buffers. Returns the number of times we added to the buffer (ie
+        // the length of the stack).
+        //
+        // Call frame info is stored in the frames_buffer, line number information
+        // in the lines_buffer. The first argument is the start point and the second
+        // argument is the buffer limit, set at 2048.
+        let num = unsafe { rb_profile_frames(0, BUFF_LEN as i32, frames_buffer.as_mut_ptr(), lines_buffer.as_mut_ptr()) };
+
+        let mut i = num - 1;
+        let yjit_raw_samples = YjitExitLocations::get_raw_samples();
+        let yjit_line_samples = YjitExitLocations::get_line_samples();
+
+        yjit_raw_samples.push(VALUE(num as usize));
+        yjit_line_samples.push(num);
+
+        while i >= 0 {
+            let frame = frames_buffer[i as usize];
+            let line = lines_buffer[i as usize];
+
+            yjit_raw_samples.push(frame);
+            yjit_line_samples.push(line);
+
+            i -= 1;
+        }
+
+        // Push the insn value into the yjit_raw_samples Vec.
+        yjit_raw_samples.push(VALUE(insn as usize));
+
+        // Push the current line onto the yjit_line_samples Vec. This
+        // points to the line in insns.def.
+        let line = yjit_line_samples.len() - 1;
+        yjit_line_samples.push(line as i32);
+
+        yjit_raw_samples.push(VALUE(1 as usize));
+        yjit_line_samples.push(1);
+    }
 }
 
 /// Primitive called in yjit.rb. Zero out all the counters.

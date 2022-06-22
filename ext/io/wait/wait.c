@@ -41,11 +41,6 @@
 #endif
 
 #ifndef HAVE_RB_IO_WAIT
-static VALUE io_ready_p _((VALUE io));
-static VALUE io_wait_readable _((int argc, VALUE *argv, VALUE io));
-static VALUE io_wait_writable _((int argc, VALUE *argv, VALUE io));
-void Init_wait _((void));
-
 static struct timeval *
 get_timeout(int argc, VALUE *argv, struct timeval *timerec)
 {

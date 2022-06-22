@@ -135,6 +135,8 @@ thread_sched_to_waiting(struct rb_thread_sched *sched)
     ReleaseMutex(sched->lock);
 }
 
+#define thread_sched_to_dead thread_sched_to_waiting
+
 static void
 thread_sched_yield(struct rb_thread_sched *sched, rb_thread_t *th)
 {
@@ -878,30 +880,5 @@ native_thread_native_thread_id(rb_thread_t *th)
     return ULONG2NUM(tid);
 }
 #define USE_NATIVE_THREAD_NATIVE_THREAD_ID 1
-
-#if USE_MJIT
-static unsigned long __stdcall
-mjit_worker(void *arg)
-{
-    void (*worker_func)(void) = arg;
-    rb_w32_set_thread_description(GetCurrentThread(), L"ruby-mjitworker");
-    worker_func();
-    return 0;
-}
-
-/* Launch MJIT thread. Returns FALSE if it fails to create thread. */
-int
-rb_thread_create_mjit_thread(void (*worker_func)(void))
-{
-    size_t stack_size = 4 * 1024; /* 4KB is the minimum commit size */
-    HANDLE thread_id = w32_create_thread(stack_size, mjit_worker, worker_func);
-    if (thread_id == 0) {
-        return FALSE;
-    }
-
-    w32_resume_thread(thread_id);
-    return TRUE;
-}
-#endif
 
 #endif /* THREAD_SYSTEM_DEPENDENT_IMPLEMENTATION */

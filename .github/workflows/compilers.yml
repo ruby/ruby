@@ -63,6 +63,7 @@ jobs:
         env:
           - {}
         entry:
+          - { key: default_cc, name: gcc-12,    value: gcc-12,    container: gcc-12 }
           - { key: default_cc, name: gcc-11,    value: gcc-11,    container: gcc-11 }
           - { key: default_cc, name: gcc-10,    value: gcc-10,    container: gcc-10 }
           - { key: default_cc, name: gcc-9,     value: gcc-9,     container: gcc-9 }
@@ -80,15 +81,14 @@ jobs:
           - key: default_cc
             name: 'gcc-11 annocheck'
             # Minimal flags to pass the check.
-            value: 'gcc-11 -O2 -fcf-protection'
+            value: 'gcc-11 -O2 -fcf-protection -Wa,--generate-missing-build-notes=yes'
             container: gcc-11
             env:
               append_configure: 'LDFLAGS=-Wl,-z,now'
               # FIXME: Drop skipping options
               # https://bugs.ruby-lang.org/issues/18061
               # https://sourceware.org/annobin/annobin.html/Test-pie.html
-              # https://sourceware.org/annobin/annobin.html/Test-notes.html
-              TEST_ANNOCHECK_OPTS: "--skip-pie --skip-notes"
+              TEST_ANNOCHECK_OPTS: "--skip-pie"
             check: true
           - { key: default_cc, name: clang-15,  value: clang-15,  container: clang-15 }
           - { key: default_cc, name: clang-14,  value: clang-14,  container: clang-14 }
@@ -212,7 +212,7 @@ jobs:
     container:
       image: ghcr.io/ruby/ruby-ci-image:${{ matrix.entry.container || 'clang-14' }}
       options: --user root
-    if: ${{ !startsWith(github.event.head_commit.message, '[DOC]') && !contains(github.event.pull_request.labels.*.name, 'Documentation') }}
+    if: ${{ !contains(github.event.head_commit.message, '[DOC]') && !contains(github.event.pull_request.labels.*.name, 'Documentation') }}
     env: ${{ matrix.entry.env || matrix.env }}
     steps:
       - run: id

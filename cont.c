@@ -1486,6 +1486,10 @@ cont_restore_0(rb_context_t *cont, VALUE *addr_in_prev_frame)
             if (&space[0] > end) {
 # ifdef HAVE_ALLOCA
                 volatile VALUE *sp = ALLOCA_N(VALUE, &space[0] - end);
+                // We need to make sure that the stack pointer is moved,
+                // but some compilers may remove the allocation by optimization.
+                // We hope that the following read/write will prevent such an optimization.
+                *sp = Qfalse;
                 space[0] = *sp;
 # else
                 cont_restore_0(cont, &space[0]);

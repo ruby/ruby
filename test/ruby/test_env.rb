@@ -494,12 +494,20 @@ class TestEnv < Test::Unit::TestCase
     ENV["baz"] = "qux"
     ENV.update({"baz"=>"quux","a"=>"b"})
     check(ENV.to_hash.to_a, [%w(foo bar), %w(baz quux), %w(a b)])
+    ENV.update
+    check(ENV.to_hash.to_a, [%w(foo bar), %w(baz quux), %w(a b)])
+    ENV.update({"foo"=>"zot"}, {"c"=>"d"})
+    check(ENV.to_hash.to_a, [%w(foo zot), %w(baz quux), %w(a b), %w(c d)])
 
     ENV.clear
     ENV["foo"] = "bar"
     ENV["baz"] = "qux"
     ENV.update({"baz"=>"quux","a"=>"b"}) {|k, v1, v2| k + "_" + v1 + "_" + v2 }
     check(ENV.to_hash.to_a, [%w(foo bar), %w(baz baz_qux_quux), %w(a b)])
+    ENV.update {|k, v1, v2| k + "_" + v1 + "_" + v2 }
+    check(ENV.to_hash.to_a, [%w(foo bar), %w(baz baz_qux_quux), %w(a b)])
+    ENV.update({"foo"=>"zot"}, {"c"=>"d"}) {|k, v1, v2| k + "_" + v1 + "_" + v2 }
+    check(ENV.to_hash.to_a, [%w(foo foo_bar_zot), %w(baz baz_qux_quux), %w(a b), %w(c d)])
   end
 
   def test_huge_value

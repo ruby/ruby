@@ -208,4 +208,43 @@ class TestGCCompact < Test::Unit::TestCase
 
     assert_equal([:call, :line], results)
   end
+
+  def test_moving_strings_between_size_pools
+    assert_separately([], "#{<<~"begin;"}\n#{<<~"end;"}", timeout: 10, signal: :SEGV)
+    begin;
+      moveables = []
+      small_slots = []
+      large_slots = []
+
+      # Ensure fragmentation in the large heap
+      base_slot_size = GC.stat_heap[0].fetch(:slot_size)
+      500.times {
+        String.new(+"a" * base_slot_size).downcase
+        large_slots << String.new(+"a" * base_slot_size).downcase
+      }
+
+      # Ensure fragmentation in the smaller heap
+      500.times {
+        small_slots << Object.new
+        Object.new
+      }
+
+      500.times {
+        # strings are created as shared strings when initialized from literals
+        # use downcase to force the creation of an embedded string (it calls
+        # rb_str_new internally)
+        moveables << String.new(+"a" * base_slot_size).downcase
+
+        moveables << String.new("a").downcase
+      }
+      moveables.map { |s| s << ("bc" * base_slot_size) }
+      moveables.map { |s| s.squeeze! }
+      stats = GC.compact
+
+      moved_strings = (stats.dig(:moved_up, :T_STRING) || 0) +
+        (stats.dig(:moved_down, :T_STRING) || 0)
+
+      assert_operator(moved_strings, :>, 0)
+    end;
+  end
 end

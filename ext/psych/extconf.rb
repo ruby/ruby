@@ -19,15 +19,17 @@ if yaml_source == true
   # search the latest libyaml source under $srcdir
   yaml_source = Dir.glob("#{$srcdir}/yaml{,-*}/").max_by {|n| File.basename(n).scan(/\d+/).map(&:to_i)}
   unless yaml_source
-    download_failure = "failed to download libyaml source"
+    download_failure = "failed to download libyaml source. Try manually installing libyaml?"
     begin
       require_relative '../../tool/extlibs.rb'
-      extlibs = ExtLibs.new(cache_dir: File.expand_path("../../tmp/download_cache", $srcdir))
-      unless extlibs.process_under($srcdir)
-        raise download_failure
-      end
-    rescue
-      # Implicitly captures Exception#cause. Newer rubies show it in the backtrace.
+    rescue LoadError
+      # When running in ruby/ruby, we use miniruby and don't have stdlib.
+      # Avoid LoadError because it aborts the whole build. Usually when
+      # stdlib extension fail to configure we skip it and continue.
+      raise download_failure
+    end
+    extlibs = ExtLibs.new(cache_dir: File.expand_path("../../tmp/download_cache", $srcdir))
+    unless extlibs.process_under($srcdir)
       raise download_failure
     end
     yaml_source, = Dir.glob("#{$srcdir}/yaml-*/")

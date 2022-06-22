@@ -28,13 +28,13 @@ In Symbol:
 
 By default, all of these methods use full Unicode case mapping,
 which is suitable for most languages.
-See {Unicode Latin Case Chart}[https://www.unicode.org/charts/case].
+See {Section 3.13 (Default Case Algorithms) of the Unicode standard}[https://www.unicode.org/versions/latest/ch03.pdf].
 
 Non-ASCII case mapping and folding are supported for UTF-8,
 UTF-16BE/LE, UTF-32BE/LE, and ISO-8859-1~16 Strings/Symbols.
 
 Context-dependent case mapping as described in
-{Table 3-17 of the Unicode standard}[https://www.unicode.org/versions/Unicode13.0.0/ch03.pdf]
+{Table 3-17 (Context Specification for Casing) of the Unicode standard}[https://www.unicode.org/versions/latest/ch03.pdf]
 is currently not supported.
 
 In most cases, case conversions of a string have the same number of characters.

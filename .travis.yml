@@ -13,7 +13,7 @@ language: c
 
 os: linux
 
-if: commit_message !~ /^\[DOC\]/
+if: commit_message !~ /\[DOC\]/
 
 dist: focal
 

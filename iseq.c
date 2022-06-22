@@ -1215,6 +1215,7 @@ rb_iseq_compile_with_option(VALUE src, VALUE file, VALUE realpath, VALUE line, V
     rb_ast_t *(*parse)(VALUE vparser, VALUE fname, VALUE file, int start);
     int ln;
     rb_ast_t *INITIALIZED ast;
+    VALUE name = rb_fstring_lit("<compiled>");
 
     /* safe results first */
     make_compile_option(&option, opt);
@@ -1229,7 +1230,6 @@ rb_iseq_compile_with_option(VALUE src, VALUE file, VALUE realpath, VALUE line, V
     }
     {
 	const VALUE parser = rb_parser_new();
-        VALUE name = rb_fstring_lit("<compiled>");
         const rb_iseq_t *outer_scope = rb_iseq_new(NULL, name, name, Qnil, 0, ISEQ_TYPE_TOP);
         VALUE outer_scope_v = (VALUE)outer_scope;
         rb_parser_set_context(parser, outer_scope, FALSE);
@@ -1242,8 +1242,7 @@ rb_iseq_compile_with_option(VALUE src, VALUE file, VALUE realpath, VALUE line, V
 	rb_exc_raise(GET_EC()->errinfo);
     }
     else {
-	INITIALIZED VALUE label = rb_fstring_lit("<compiled>");
-	iseq = rb_iseq_new_with_opt(&ast->body, label, file, realpath, line,
+	iseq = rb_iseq_new_with_opt(&ast->body, name, file, realpath, line,
 				    NULL, 0, ISEQ_TYPE_TOP, &option);
 	rb_ast_dispose(ast);
     }

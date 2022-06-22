@@ -2364,6 +2364,28 @@ CODE
     assert_equal [:tp1, 1, 2, :tp2, 3], events
   end
 
+  def test_multiple_tracepoints_same_bmethod
+    events = []
+    tp1 = TracePoint.new(:return) do |tp|
+      events << :tp1
+    end
+    tp2 = TracePoint.new(:return) do |tp|
+      events << :tp2
+    end
+
+    obj = Object.new
+    obj.define_singleton_method(:foo) {}
+    bmethod = obj.method(:foo)
+
+    tp1.enable(target: bmethod) do
+      tp2.enable(target: bmethod) do
+        obj.foo
+      end
+    end
+
+    assert_equal([:tp2, :tp1], events, '[Bug #18031]')
+  end
+
   def test_script_compiled
     events = []
     tp = TracePoint.new(:script_compiled){|tp|

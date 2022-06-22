@@ -628,6 +628,29 @@ class TestRegexp < Test::Unit::TestCase
     assert_raise(RegexpError) { Regexp.new("((?<v>))\\g<0>") }
   end
 
+  def test_initialize_bool_warning
+    assert_warning(/expected true or false as ignorecase/) do
+      Regexp.new("foo", :i)
+    end
+  end
+
+  def test_initialize_option
+    assert_equal(//i, Regexp.new("", "i"))
+    assert_equal(//m, Regexp.new("", "m"))
+    assert_equal(//x, Regexp.new("", "x"))
+    assert_equal(//imx, Regexp.new("", "imx"))
+    assert_equal(//, Regexp.new("", ""))
+    assert_equal(//imx, Regexp.new("", "mimix"))
+
+    assert_raise(ArgumentError) { Regexp.new("", "e") }
+    assert_raise(ArgumentError) { Regexp.new("", "n") }
+    assert_raise(ArgumentError) { Regexp.new("", "s") }
+    assert_raise(ArgumentError) { Regexp.new("", "u") }
+    assert_raise(ArgumentError) { Regexp.new("", "o") }
+    assert_raise(ArgumentError) { Regexp.new("", "j") }
+    assert_raise(ArgumentError) { Regexp.new("", "xmen") }
+  end
+
   def test_match_control_meta_escape
     assert_equal(0, /\c\xFF/ =~ "\c\xFF")
     assert_equal(0, /\c\M-\xFF/ =~ "\c\M-\xFF")

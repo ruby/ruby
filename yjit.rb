@@ -18,9 +18,109 @@ module RubyVM::YJIT
     Primitive.rb_yjit_stats_enabled_p
   end
 
+  # Check if rb_yjit_trace_exit_locations_enabled_p is enabled.
+  def self.trace_exit_locations_enabled?
+    Primitive.rb_yjit_trace_exit_locations_enabled_p
+  end
+
   # Discard statistics collected for --yjit-stats.
   def self.reset_stats!
     Primitive.rb_yjit_reset_stats_bang
+  end
+
+  # If --yjit-trace-exits is enabled parse the hashes from
+  # Primitive.rb_yjit_get_exit_locations into a format readable
+  # by Stackprof. This will allow us to find the exact location of a
+  # side exit in YJIT based on the instruction that is exiting.
+  def self.exit_locations
+    return unless trace_exit_locations_enabled?
+
+    results = Primitive.rb_yjit_get_exit_locations
+    raw_samples = results[:raw].dup
+    line_samples = results[:lines].dup
+    frames = results[:frames].dup
+    samples_count = 0
+
+    frames.each do |frame_id, frame|
+      frame[:samples] = 0
+      frame[:edges] = {}
+    end
+
+    # Loop through the instructions and set the frame hash with the data.
+    # We use nonexistent.def for the file name, otherwise insns.def will be displayed
+    # and that information isn't useful in this context.
+    RubyVM::INSTRUCTION_NAMES.each_with_index do |name, frame_id|
+      frame_hash = { samples: 0, total_samples: 0, edges: {}, name: name, file: "nonexistent.def", line: nil }
+      results[:frames][frame_id] = frame_hash
+      frames[frame_id] = frame_hash
+    end
+
+    # Loop through the raw_samples and build the hashes for StackProf.
+    # The loop is based off an example in the StackProf documentation and therefore
+    # this functionality can only work with that library.
+    while raw_samples.length > 0
+      stack_trace = raw_samples.shift(raw_samples.shift + 1)
+      lines = line_samples.shift(line_samples.shift + 1)
+      prev_frame_id = nil
+
+      stack_trace.each_with_index do |frame_id, idx|
+        if prev_frame_id
+          prev_frame = frames[prev_frame_id]
+          prev_frame[:edges][frame_id] ||= 0
+          prev_frame[:edges][frame_id] += 1
+        end
+
+        frame_info = frames[frame_id]
+        frame_info[:total_samples] ||= 0
+        frame_info[:total_samples] += 1
+
+        frame_info[:lines] ||= {}
+        frame_info[:lines][lines[idx]] ||= [0, 0]
+        frame_info[:lines][lines[idx]][0] += 1
+
+        prev_frame_id = frame_id
+      end
+
+      top_frame_id = stack_trace.last
+      top_frame_line = 1
+
+      frames[top_frame_id][:samples] += 1
+      frames[top_frame_id][:lines] ||= {}
+      frames[top_frame_id][:lines][top_frame_line] ||= [0, 0]
+      frames[top_frame_id][:lines][top_frame_line][1] += 1
+
+      samples_count += raw_samples.shift
+      line_samples.shift
+    end
+
+    results[:samples] = samples_count
+    # Set missed_samples and gc_samples to 0 as their values
+    # don't matter to us in this context.
+    results[:missed_samples] = 0
+    results[:gc_samples] = 0
+    results
+  end
+
+  # Marshal dumps exit locations to the given filename.
+  #
+  # Usage:
+  #
+  # In a script call:
+  #
+  #   RubyVM::YJIT.dump_exit_locations("my_file.dump")
+  #
+  # Then run the file with the following options:
+  #
+  #   ruby --yjit --yjit-stats --yjit-trace-exits test.rb
+  #
+  # Once the code is done running, use Stackprof to read the dump file.
+  # See Stackprof documentation for options.
+  def self.dump_exit_locations(filename)
+    unless trace_exit_locations_enabled?
+      raise ArgumentError, "--yjit-trace-exits must be enabled to use dump_exit_locations."
+    end
+
+    File.binwrite(filename, Marshal.dump(RubyVM::YJIT.exit_locations))
   end
 
   # Return a hash for statistics generated for the --yjit-stats command line option.

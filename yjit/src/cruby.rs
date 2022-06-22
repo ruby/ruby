@@ -111,9 +111,6 @@ pub use autogened::*;
 // and textually included in this file
 #[cfg_attr(test, allow(unused))] // We don't link against C code when testing
 extern "C" {
-    #[link_name = "rb_yjit_alloc_exec_mem"] // we can rename functions with this attribute
-    pub fn alloc_exec_mem(mem_size: u32) -> *mut u8;
-
     #[link_name = "rb_insn_name"]
     pub fn raw_insn_name(insn: VALUE) -> *const c_char;
 
@@ -459,11 +456,6 @@ impl VALUE {
     /// Returns true or false depending on whether the value is nil
     pub fn nil_p(self) -> bool {
         self == Qnil
-    }
-
-    /// Returns true or false depending whether the value is a string
-    pub fn string_p(self) -> bool {
-        unsafe { CLASS_OF(self) == rb_cString }
     }
 
     /// Read the flags bits from the RBasic object, then return a Ruby type enum (e.g. RUBY_T_ARRAY)

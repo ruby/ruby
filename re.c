@@ -20,6 +20,7 @@
 #include "internal/imemo.h"
 #include "internal/re.h"
 #include "internal/string.h"
+#include "internal/object.h"
 #include "internal/ractor.h"
 #include "internal/variable.h"
 #include "regint.h"
@@ -486,9 +487,13 @@ rb_reg_desc(const char *s, long len, VALUE re)
  *
  *    /ab+c/ix.source # => "ab+c"
  *
- *  Note that escape sequences are retained as is:
+ *  Regexp escape sequences are retained:
  *
  *    /\x20\+/.source  # => "\\x20\\+"
+ *
+ *  Lexer escape characters are not retained:
+ *
+ *    /\//.source  # => "/"
  *
  */
 
@@ -3631,10 +3636,29 @@ rb_reg_match_p(VALUE re, VALUE str, long pos)
  * Alias for Regexp.new
  */
 
+static int
+str_to_option(VALUE str)
+{
+    int flag = 0;
+    const char *ptr;
+    long len;
+    str = rb_check_string_type(str);
+    if (NIL_P(str)) return -1;
+    RSTRING_GETMEM(str, ptr, len);
+    for (long i = 0; i < len; ++i) {
+	int f = char_to_option(ptr[i]);
+	if (!f) {
+	    rb_raise(rb_eArgError, "unknown regexp option: %"PRIsVALUE, str);
+	}
+	flag |= f;
+    }
+    return flag;
+}
+
 /*
  *  call-seq:
- *    Regexp.new(string, options = 0, timeout: nil) -> regexp
- *    Regexp.new(regexp) -> regexp
+ *    Regexp.new(string, options = 0, n_flag = nil, timeout: nil) -> regexp
+ *    Regexp.new(regexp, timeout: nil) -> regexp
  *
  *  With argument +string+ given, returns a new regexp with the given string
  *  and options:
@@ -3644,6 +3668,11 @@ rb_reg_match_p(VALUE re, VALUE str, long pos)
  *    r.options             # => 0
  *
  *  Optional argument +options+ is one of the following:
+ *
+ *  - A String of options:
+ *
+ *      Regexp.new('foo', 'i')  # => /foo/i
+ *      Regexp.new('foo', 'im') # => /foo/im
  *
  *  - The logical OR of one or more of the constants
  *    Regexp::EXTENDED, Regexp::IGNORECASE, and Regexp::MULTILINE:
@@ -3656,12 +3685,29 @@ rb_reg_match_p(VALUE re, VALUE str, long pos)
  *
  *  - +nil+ or +false+, which is ignored.
  *
+ *  If optional argument +n_flag+ if it is a string starts with
+ *  <code>'n'</code> or <code>'N'</code>, the encoding of +string+ is
+ *  ignored and the new regexp encoding is fixed to +ASCII-8BIT+ or
+ *  +US-ASCII+, by its content.
+ *
+ *      Regexp.new('foo', nil, 'n')     # => /foo/n
+ *      Regexp.new("\u3042", nil, 'n')  # => /\xE3\x81\x82/n
+ *
  *  If optional keyword argument +timeout+ is given,
- *  its integer value overrides the timeout interval for the class,
+ *  its float value overrides the timeout interval for the class,
  *  Regexp.timeout.
  *
- *  With argument +regexp+ given, returns a new regexp
- *  source, options, and timeout are the same as +self+.
+ *  With argument +regexp+ given, returns a new regexp. The source,
+ *  options, timeout are the same as +regexp+. +options+ and +n_flag+
+ *  arguments are ineffective.  The timeout can be overridden by
+ *  +timeout+ keyword.
+ *
+ *      options = Regexp::MULTILINE
+ *      r = Regexp.new('foo', optinos, timeout: 1.1) # => /foo/m
+ *      r2 = Regexp.new(r)                           # => /foo/m
+ *      r2.timeout                                   # => 1.1
+ *      r3 = Regexp.new(r, timeout: 3.14)            # => /foo/m
+ *      r3.timeout                                   # => 3.14
  *
  *  Regexp.compile is an alias for Regexp.new.
  *
@@ -3698,8 +3744,11 @@ rb_reg_initialize_m(int argc, VALUE *argv, VALUE self)
     }
     else {
         if (opts != Qundef) {
+	    int f;
 	    if (FIXNUM_P(opts)) flags = FIX2INT(opts);
-	    else if (RTEST(opts)) flags = ONIG_OPTION_IGNORECASE;
+	    else if ((f = str_to_option(opts)) >= 0) flags = f;
+	    else if (!NIL_P(opts) && rb_bool_expected(opts, "ignorecase", FALSE))
+		flags = ONIG_OPTION_IGNORECASE;
 	}
         if (n_flag != Qundef && !NIL_P(n_flag)) {
 	    char *kcode = StringValuePtr(n_flag);
@@ -4319,7 +4368,7 @@ rb_reg_check_timeout(regex_t *reg, void *end_time_)
 
 /*
  *  call-seq:
- *     Regexp.timeout  -> int or float or nil
+ *     Regexp.timeout  -> float or nil
  *
  *  It returns the current default timeout interval for Regexp matching in second.
  *  +nil+ means no default timeout configuration.
@@ -4335,7 +4384,7 @@ rb_reg_s_timeout_get(VALUE dummy)
 
 /*
  *  call-seq:
- *     Regexp.timeout = int or float or nil
+ *     Regexp.timeout = float or nil
  *
  *  It sets the default timeout interval for Regexp matching in second.
  *  +nil+ means no default timeout configuration.

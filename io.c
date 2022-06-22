@@ -1620,6 +1620,12 @@ io_binwrite_string(VALUE arg)
         // Write as much as possible:
         ssize_t result = io_binwrite_string_internal(p->fptr, ptr, remaining);
 
+        // If only the internal buffer is written, result will be zero [bytes of given data written]. This means we
+        // should try again.
+        if (result == 0) {
+            errno = EWOULDBLOCK;
+        }
+
         if (result > 0) {
             if ((size_t)result == remaining) break;
             ptr += result;
@@ -3379,7 +3385,7 @@ io_read_nonblock(rb_execution_context_t *ec, VALUE io, VALUE length, VALUE str, 
     }
 
     shrinkable = io_setstrbuf(&str, len);
-    rb_bool_expected(ex, "exception");
+    rb_bool_expected(ex, "exception", TRUE);
 
     GetOpenFile(io, fptr);
     rb_io_check_byte_readable(fptr);
@@ -3427,7 +3433,7 @@ io_write_nonblock(rb_execution_context_t *ec, VALUE io, VALUE str, VALUE ex)
 
     if (!RB_TYPE_P(str, T_STRING))
 	str = rb_obj_as_string(str);
-    rb_bool_expected(ex, "exception");
+    rb_bool_expected(ex, "exception", TRUE);
 
     io = GetWriteIO(io);
     GetOpenFile(io, fptr);
@@ -3830,7 +3836,7 @@ check_getline_args(VALUE *rsp, long *limit, VALUE io)
 	enc_rs = rb_enc_get(rs);
 	enc_io = io_read_encoding(fptr);
 	if (enc_io != enc_rs &&
-	    (rb_enc_str_coderange(rs) != ENC_CODERANGE_7BIT ||
+	    (!is_ascii_string(rs) ||
 	     (RSTRING_LEN(rs) > 0 && !rb_enc_asciicompat(enc_io)))) {
             if (rs == rb_default_rs) {
                 rs = rb_enc_str_new(0, 0, enc_io);
@@ -11400,7 +11406,7 @@ rb_io_s_foreach(int argc, VALUE *argv, VALUE self)
     struct foreach_arg arg;
     struct getline_arg garg;
 
-    argc = rb_scan_args(argc, argv, "13:", NULL, NULL, NULL, NULL, &opt);
+    argc = rb_scan_args(argc, argv, "12:", NULL, NULL, NULL, &opt);
     RETURN_ENUMERATOR(self, orig_argc, argv);
     extract_getline_args(argc-1, argv+1, &garg);
     open_key_args(self, argc, argv, opt, &arg);
@@ -11495,7 +11501,7 @@ rb_io_s_readlines(int argc, VALUE *argv, VALUE io)
     struct foreach_arg arg;
     struct getline_arg garg;
 
-    argc = rb_scan_args(argc, argv, "13:", NULL, NULL, NULL, NULL, &opt);
+    argc = rb_scan_args(argc, argv, "12:", NULL, NULL, NULL, &opt);
     extract_getline_args(argc-1, argv+1, &garg);
     open_key_args(io, argc, argv, opt, &arg);
     if (NIL_P(arg.io)) return Qnil;

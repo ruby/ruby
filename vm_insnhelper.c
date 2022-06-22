@@ -2534,12 +2534,12 @@ vm_callee_setup_arg(rb_execution_context_t *ec, struct rb_calling_info *calling,
             if (LIKELY(!(vm_ci_flag(ci) & VM_CALL_TAILCALL))) {
                 CC_SET_FASTPATH(cc, vm_call_iseq_setup_normal_opt_start,
                                 !IS_ARGS_SPLAT(ci) && !IS_ARGS_KEYWORD(ci) &&
-                                cacheable_ci && METHOD_ENTRY_CACHEABLE(vm_cc_cme(cc)));
+                                cacheable_ci && vm_call_cacheable(ci, cc));
             }
             else {
                 CC_SET_FASTPATH(cc, vm_call_iseq_setup_tailcall_opt_start,
                                 !IS_ARGS_SPLAT(ci) && !IS_ARGS_KEYWORD(ci) &&
-                                cacheable_ci && METHOD_ENTRY_CACHEABLE(vm_cc_cme(cc)));
+                                cacheable_ci && vm_call_cacheable(ci, cc));
             }
 
             /* initialize opt vars for self-references */
@@ -2567,7 +2567,7 @@ vm_callee_setup_arg(rb_execution_context_t *ec, struct rb_calling_info *calling,
                     args_setup_kw_parameters(ec, iseq, ci_kws, ci_kw_len, ci_keywords, klocals);
 
                     CC_SET_FASTPATH(cc, vm_call_iseq_setup_kwparm_kwarg,
-                                    cacheable_ci && METHOD_ENTRY_CACHEABLE(vm_cc_cme(cc)));
+                                    cacheable_ci && vm_call_cacheable(ci, cc));
 
                     return 0;
                 }
@@ -2580,7 +2580,7 @@ vm_callee_setup_arg(rb_execution_context_t *ec, struct rb_calling_info *calling,
                 if (klocals[kw_param->num] == INT2FIX(0)) {
                     /* copy from default_values */
                     CC_SET_FASTPATH(cc, vm_call_iseq_setup_kwparm_nokwarg,
-                                    cacheable_ci && METHOD_ENTRY_CACHEABLE(vm_cc_cme(cc)));
+                                    cacheable_ci && vm_call_cacheable(ci, cc));
                 }
 
                 return 0;
@@ -3711,6 +3711,19 @@ vm_call_method_nome(rb_execution_context_t *ec, rb_control_frame_t *cfp, struct 
     }
 }
 
+/* Protected method calls and super invocations need to check that the receiver
+ * (self for super) inherits the module on which the method is defined.
+ * In the case of refinements, it should consider the original class not the
+ * refinement.
+ */
+static VALUE
+vm_defined_class_for_protected_call(const rb_callable_method_entry_t *me)
+{
+    VALUE defined_class = me->defined_class;
+    VALUE refined_class = RCLASS_REFINED_CLASS(defined_class);
+    return NIL_P(refined_class) ? defined_class : refined_class;
+}
+
 static inline VALUE
 vm_call_method(rb_execution_context_t *ec, rb_control_frame_t *cfp, struct rb_calling_info *calling)
 {
@@ -3736,8 +3749,9 @@ vm_call_method(rb_execution_context_t *ec, rb_control_frame_t *cfp, struct rb_ca
             return vm_call_method_each_type(ec, cfp, calling);
 
 	  case METHOD_VISI_PROTECTED:
-	    if (!(vm_ci_flag(ci) & VM_CALL_OPT_SEND)) {
-		if (!rb_obj_is_kind_of(cfp->self, vm_cc_cme(cc)->defined_class)) {
+	    if (!(vm_ci_flag(ci) & (VM_CALL_OPT_SEND | VM_CALL_FCALL))) {
+                VALUE defined_class = vm_defined_class_for_protected_call(vm_cc_cme(cc));
+                if (!rb_obj_is_kind_of(cfp->self, defined_class)) {
                     vm_cc_method_missing_reason_set(cc, MISSING_PROTECTED);
                     return vm_call_method_missing(ec, cfp, calling);
 		}
@@ -3834,11 +3848,7 @@ vm_search_super_method(const rb_control_frame_t *reg_cfp, struct rb_call_data *c
 	vm_super_outside();
     }
 
-    current_defined_class = me->defined_class;
-
-    if (!NIL_P(RCLASS_REFINED_CLASS(current_defined_class))) {
-	current_defined_class = RCLASS_REFINED_CLASS(current_defined_class);
-    }
+    current_defined_class = vm_defined_class_for_protected_call(me);
 
     if (BUILTIN_TYPE(current_defined_class) != T_MODULE &&
         reg_cfp->iseq != method_entry_iseqptr(me) &&

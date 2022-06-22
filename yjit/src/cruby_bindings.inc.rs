@@ -224,6 +224,9 @@ extern "C" {
     ) -> VALUE;
 }
 extern "C" {
+    pub fn rb_str_dup(str_: VALUE) -> VALUE;
+}
+extern "C" {
     pub fn rb_str_append(dst: VALUE, src: VALUE) -> VALUE;
 }
 extern "C" {
@@ -965,13 +968,31 @@ extern "C" {
     pub fn rb_vm_barrier();
 }
 extern "C" {
-    pub fn rb_yjit_mark_writable(mem_block: *mut ::std::os::raw::c_void, mem_size: u32);
+    pub fn rb_profile_frames(
+        start: ::std::os::raw::c_int,
+        limit: ::std::os::raw::c_int,
+        buff: *mut VALUE,
+        lines: *mut ::std::os::raw::c_int,
+    ) -> ::std::os::raw::c_int;
+}
+extern "C" {
+    pub fn rb_yjit_mark_writable(mem_block: *mut ::std::os::raw::c_void, mem_size: u32) -> bool;
 }
 extern "C" {
     pub fn rb_yjit_mark_executable(mem_block: *mut ::std::os::raw::c_void, mem_size: u32);
 }
 extern "C" {
+    pub fn rb_yjit_exit_locations_dict(
+        yjit_raw_samples: *mut VALUE,
+        yjit_line_samples: *mut ::std::os::raw::c_int,
+        samples_len: ::std::os::raw::c_int,
+    ) -> VALUE;
+}
+extern "C" {
     pub fn rb_yjit_get_page_size() -> u32;
+}
+extern "C" {
+    pub fn rb_yjit_reserve_addr_space(mem_size: u32) -> *mut u8;
 }
 extern "C" {
     pub fn rb_c_method_tracing_currently_enabled(ec: *mut rb_execution_context_t) -> bool;

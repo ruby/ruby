@@ -30,7 +30,7 @@ module IRB
         puts
         puts "#{bold("From")}: #{source.file}:#{source.first_line}"
         puts
-        code = IRB::Color.colorize_code(File.read(source.file))
+        code = IRB::Color.colorize_code(File.read(source.file), colorable: colorable)
         puts code.lines[(source.first_line - 1)...source.last_line].join
         puts
       end
@@ -78,7 +78,7 @@ module IRB
       end
 
       def bold(str)
-        Color.colorize(str, [:BOLD])
+        Color.colorize(str, [:BOLD], colorable: colorable)
       end
 
       Source = Struct.new(

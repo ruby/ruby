@@ -62,6 +62,7 @@ fn main() {
         // From include/ruby/internal/intern/string.h
         .allowlist_function("rb_utf8_str_new")
         .allowlist_function("rb_str_append")
+        .allowlist_function("rb_str_dup")
 
         // This struct is public to Ruby C extensions
         // From include/ruby/internal/core/rbasic.h
@@ -238,6 +239,7 @@ fn main() {
         .allowlist_function("rb_iseq_(get|set)_yjit_payload")
         .allowlist_function("rb_iseq_pc_at_idx")
         .allowlist_function("rb_iseq_opcode_at_pc")
+        .allowlist_function("rb_yjit_reserve_addr_space")
         .allowlist_function("rb_yjit_mark_writable")
         .allowlist_function("rb_yjit_mark_executable")
         .allowlist_function("rb_yjit_get_page_size")
@@ -258,6 +260,7 @@ fn main() {
         .allowlist_function("rb_yjit_obj_written")
         .allowlist_function("rb_yjit_str_simple_append")
         .allowlist_function("rb_ENCODING_GET")
+        .allowlist_function("rb_yjit_exit_locations_dict")
 
         // from vm_sync.h
         .allowlist_function("rb_vm_barrier")
@@ -291,6 +294,9 @@ fn main() {
         // From gc.h and internal/gc.h
         .allowlist_function("rb_class_allocate_instance")
         .allowlist_function("rb_obj_info")
+
+        // From include/ruby/debug.h
+        .allowlist_function("rb_profile_frames")
 
         // We define VALUE manually, don't import it
         .blocklist_type("VALUE")

@@ -118,6 +118,12 @@ Note: We're only listing outstanding class updates.
     * Proc#dup returns an instance of subclass. [[Bug #17545]]
     * Proc#parameters now accepts lambda keyword. [[Feature #15357]]
 
+* Regexp
+    * Regexp.new now supports passing the regexp flags not only as an Integer,
+      but also as a String Unknown flags raise errors.  Otherwise, anything
+      other than `true`, `false`, `nil` or Integer will be warned.
+      [[Feature #18788]]
+
 * Refinement
     * Refinement#refined_class has been added. [[Feature #12737]]
 
@@ -165,8 +171,9 @@ Note: We're only listing outstanding class updates.
     * stringio 3.0.3
     * timeout 0.3.0
 *   The following bundled gems are updated.
+    * minitest 5.16.1
     * net-imap 0.2.3
-    * rbs 2.5.0
+    * rbs 2.5.1
     * typeprof 0.21.2
     * debug 1.5.0
 *   The following default gems are now bundled gems.
@@ -262,3 +269,4 @@ The following deprecated APIs are removed.
 [Bug #18625]:     https://bugs.ruby-lang.org/issues/18625
 [Bug #18633]:     https://bugs.ruby-lang.org/issues/18633
 [Bug #18782]:     https://bugs.ruby-lang.org/issues/18782
+[Feature #18788]: https://bugs.ruby-lang.org/issues/18788

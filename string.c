@@ -225,17 +225,45 @@ str_embed_capa(VALUE str)
 #endif
 }
 
+bool
+rb_str_reembeddable_p(VALUE str)
+{
+    return !FL_TEST(str, STR_NOFREE|STR_SHARED_ROOT|STR_SHARED);
+}
+
 static inline size_t
-str_embed_size(long capa)
+rb_str_embed_size(long capa)
 {
     return offsetof(struct RString, as.embed.ary) + capa;
+}
+
+size_t
+rb_str_size_as_embedded(VALUE str)
+{
+    size_t real_size;
+#if USE_RVARGC
+    if (STR_EMBED_P(str)) {
+        real_size = rb_str_embed_size(RSTRING(str)->as.embed.len) + TERM_LEN(str);
+    }
+    /* if the string is not currently embedded, but it can be embedded, how
+     * much space would it require */
+    else if (rb_str_reembeddable_p(str)) {
+        real_size = rb_str_embed_size(RSTRING(str)->as.heap.len) + TERM_LEN(str);
+    }
+    else {
+#endif
+        real_size = sizeof(struct RString);
+#if USE_RVARGC
+    }
+#endif
+    return real_size;
 }
 
 static inline bool
 STR_EMBEDDABLE_P(long len, long termlen)
 {
 #if USE_RVARGC
-    return rb_gc_size_allocatable_p(str_embed_size(len + termlen));
+    return rb_gc_size_allocatable_p(rb_str_embed_size(len + termlen));
 #else
     return len <= RSTRING_EMBED_LEN_MAX + 1 - termlen;
 #endif
@@ -266,6 +294,42 @@ rb_str_make_independent(VALUE str)
     if (str_dependent_p(str)) {
         str_make_independent(str);
     }
+}
+
+void
+rb_str_make_embedded(VALUE str)
+{
+    RUBY_ASSERT(rb_str_reembeddable_p(str));
+    RUBY_ASSERT(!STR_EMBED_P(str));
+
+    char *buf = RSTRING_PTR(str);
+    long len = RSTRING_LEN(str);
+
+    STR_SET_EMBED(str);
+    STR_SET_EMBED_LEN(str, len);
+
+    memmove(RSTRING_PTR(str), buf, len);
+    ruby_xfree(buf);
+}
+
+void
+rb_str_update_shared_ary(VALUE str, VALUE old_root, VALUE new_root)
+{
+    // if the root location hasn't changed, we don't need to update
+    if (new_root == old_root) {
+        return;
+    }
+
+    // if the root string isn't embedded, we don't need to touch the ponter.
+    // it already points to the shame shared buffer
+    if (!STR_EMBED_P(new_root)) {
+        return;
+    }
+
+    size_t offset = (size_t)((uintptr_t)RSTRING(str)->as.heap.ptr - (uintptr_t)RSTRING(old_root)->as.embed.ary);
+
+    RUBY_ASSERT(RSTRING(str)->as.heap.ptr >= RSTRING(old_root)->as.embed.ary);
+    RSTRING(str)->as.heap.ptr = RSTRING(new_root)->as.embed.ary + offset;
 }
 
 void
@@ -800,7 +864,7 @@ rb_enc_str_asciionly_p(VALUE str)
 
     if (!rb_enc_asciicompat(enc))
         return FALSE;
-    else if (rb_enc_str_coderange(str) == ENC_CODERANGE_7BIT)
+    else if (is_ascii_string(str))
         return TRUE;
     return FALSE;
 }
@@ -857,7 +921,7 @@ str_alloc(VALUE klass, size_t size)
 static inline VALUE
 str_alloc_embed(VALUE klass, size_t capa)
 {
-    size_t size = str_embed_size(capa);
+    size_t size = rb_str_embed_size(capa);
     assert(rb_gc_size_allocatable_p(size));
 #if !USE_RVARGC
     assert(size <= sizeof(struct RString));
@@ -1220,7 +1284,7 @@ rb_external_str_with_enc(VALUE str, rb_encoding *eenc)
 {
     int eidx = rb_enc_to_index(eenc);
     if (eidx == rb_usascii_encindex() &&
-	rb_enc_str_coderange(str) != ENC_CODERANGE_7BIT) {
+	!is_ascii_string(str)) {
 	rb_enc_associate_index(str, rb_ascii8bit_encindex());
 	return str;
     }
@@ -1701,7 +1765,7 @@ ec_str_alloc(struct rb_execution_context_struct *ec, VALUE klass, size_t size)
 static inline VALUE
 ec_str_alloc_embed(struct rb_execution_context_struct *ec, VALUE klass, size_t capa)
 {
-    size_t size = str_embed_size(capa);
+    size_t size = rb_str_embed_size(capa);
     assert(rb_gc_size_allocatable_p(size));
 #if !USE_RVARGC
     assert(size <= sizeof(struct RString));
@@ -1745,15 +1809,14 @@ str_duplicate_setup(VALUE klass, VALUE str, VALUE dup)
         }
         assert(!STR_SHARED_P(root));
         assert(RB_OBJ_FROZEN_RAW(root));
-#if USE_RVARGC
-        if (1) {
-#else
-        if (STR_EMBED_P(root)) {
+        if (0) {}
+#if !USE_RVARGC
+        else if (STR_EMBED_P(root)) {
             MEMCPY(RSTRING(dup)->as.embed.ary, RSTRING(root)->as.embed.ary,
                    char, RSTRING_EMBED_LEN_MAX + 1);
         }
-        else {
 #endif
+        else {
             RSTRING(dup)->as.heap.len = RSTRING_LEN(str);
             RSTRING(dup)->as.heap.ptr = RSTRING_PTR(str);
             RB_OBJ_WRITE(dup, &RSTRING(dup)->as.heap.aux.shared, root);
@@ -3466,7 +3529,7 @@ st_index_t
 rb_str_hash(VALUE str)
 {
     int e = ENCODING_GET(str);
-    if (e && rb_enc_str_coderange(str) == ENC_CODERANGE_7BIT) {
+    if (e && is_ascii_string(str)) {
 	e = 0;
     }
     return rb_memhash((const void *)RSTRING_PTR(str), RSTRING_LEN(str)) ^ e;
@@ -8006,7 +8069,7 @@ rb_str_tr_bang(VALUE str, VALUE src, VALUE repl)
  *
  *  - Each occurrence of the first character specified by +selector+
  *    is translated to the first character in +replacements+.
- *  - Each occurrence of the second character specified by selector+
+ *  - Each occurrence of the second character specified by +selector+
  *    is translated to the second character in +replacements+.
  *  - And so on.
  *

@@ -20,7 +20,7 @@ jobs:
   rubyspec:
     name: Rubyspec
     runs-on: ubuntu-20.04
-    if: ${{ !startsWith(github.event.head_commit.message, '[DOC]') && !contains(github.event.pull_request.labels.*.name, 'Documentation') }}
+    if: ${{ !contains(github.event.head_commit.message, '[DOC]') && !contains(github.event.pull_request.labels.*.name, 'Documentation') }}
     strategy:
       matrix:
         # Specs from ruby/spec should still run on all supported Ruby versions.

@@ -285,6 +285,7 @@ rb_obj_copy_ivar(VALUE dest, VALUE obj)
     }
     // extended -> extended
     else {
+        RUBY_ASSERT(!(RBASIC(dest)->flags & ROBJECT_EMBED));
         uint32_t src_len = ROBJECT(obj)->as.heap.numiv;
         uint32_t dst_len = ROBJECT(dest)->as.heap.numiv;
 
@@ -3157,16 +3158,22 @@ rb_check_integer_type(VALUE val)
 }
 
 int
-rb_bool_expected(VALUE obj, const char *flagname)
+rb_bool_expected(VALUE obj, const char *flagname, int raise)
 {
     switch (obj) {
-      case Qtrue: case Qfalse:
-        break;
-      default:
-        rb_raise(rb_eArgError, "expected true or false as %s: %+"PRIsVALUE,
-                 flagname, obj);
+      case Qtrue:
+        return TRUE;
+      case Qfalse:
+        return FALSE;
+      default: {
+        static const char message[] = "expected true or false as %s: %+"PRIsVALUE;
+        if (raise) {
+            rb_raise(rb_eArgError, message, flagname, obj);
+        }
+        rb_warning(message, flagname, obj);
+        return !NIL_P(obj);
+      }
     }
-    return obj != Qfalse;
 }
 
 int
@@ -3175,7 +3182,7 @@ rb_opts_exception_p(VALUE opts, int default_value)
     static const ID kwds[1] = {idException};
     VALUE exception;
     if (rb_get_kwargs(opts, kwds, 0, 1, &exception))
-        return rb_bool_expected(exception, "exception");
+        return rb_bool_expected(exception, "exception", TRUE);
     return default_value;
 }
 
@@ -3561,7 +3568,7 @@ rb_f_float1(rb_execution_context_t *ec, VALUE obj, VALUE arg)
 static VALUE
 rb_f_float(rb_execution_context_t *ec, VALUE obj, VALUE arg, VALUE opts)
 {
-    int exception = rb_bool_expected(opts, "exception");
+    int exception = rb_bool_expected(opts, "exception", TRUE);
     return rb_convert_to_float(arg, exception);
 }
 
