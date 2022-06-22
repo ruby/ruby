@@ -83,7 +83,7 @@ jobs:
             env:
               # Minimal flags to pass the check.
               default_cc: 'gcc-11 -O2 -fcf-protection -Wa,--generate-missing-build-notes=yes'
-              append_configure: 'LDFLAGS=-Wl,-z,now'
+              LDFLAGS: '-Wl,-z,now'
               # FIXME: Drop skipping options
               # https://bugs.ruby-lang.org/issues/18061
               # https://sourceware.org/annobin/annobin.html/Test-pie.html
