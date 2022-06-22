@@ -25,6 +25,8 @@ class TestGemCommandsEnvironmentCommand < Gem::TestCase
     assert_match %r{RUBY VERSION: \d+\.\d+\.\d+ \(.*\) \[.*\]}, @ui.output
     assert_match %r{INSTALLATION DIRECTORY: #{Regexp.escape @gemhome}},
                  @ui.output
+    assert_match %r{USER INSTALLATION DIRECTORY: #{Regexp.escape Gem.user_dir}},
+                 @ui.output
     assert_match %r{RUBYGEMS PREFIX: }, @ui.output
     assert_match %r{RUBY EXECUTABLE:.*#{RbConfig::CONFIG['ruby_install_name']}},
                  @ui.output
