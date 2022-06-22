@@ -581,7 +581,7 @@ class VCS
       env = {'TZ' => 'JST-9', 'LANG' => 'C', 'LC_ALL' => 'C'}
       cmd = %W"#{COMMAND} log --format=fuller --notes=commits --notes=log-fix --topo-order --no-merges"
       date = "--date=iso-local"
-      unless system(env, *cmd, date, chdir: @srcdir, out: NullDevice, exception: false)
+      unless system(env, *cmd, date, "-1", chdir: @srcdir, out: NullDevice, exception: false)
         date = "--date=iso"
       end
       cmd << date
