@@ -468,7 +468,9 @@ setup_parameters_complex(rb_execution_context_t * const ec, const rb_iseq_t * co
     VALUE * const orig_sp = ec->cfp->sp;
     unsigned int i;
     VALUE flag_keyword_hash = 0;
+    VALUE splat_flagged_keyword_hash = 0;
     VALUE converted_keyword_hash = 0;
+    VALUE rest_last = 0;
 
     vm_check_canary(ec, orig_sp);
     /*
@@ -519,7 +521,6 @@ setup_parameters_complex(rb_execution_context_t * const ec, const rb_iseq_t * co
     }
 
     if (vm_ci_flag(ci) & VM_CALL_ARGS_SPLAT) {
-        VALUE rest_last = 0;
         int len;
 	args->rest = locals[--args->argc];
 	args->rest_index = 0;
@@ -530,6 +531,7 @@ setup_parameters_complex(rb_execution_context_t * const ec, const rb_iseq_t * co
         if (!kw_flag && len > 0) {
             if (RB_TYPE_P(rest_last, T_HASH) &&
                 (((struct RHash *)rest_last)->basic.flags & RHASH_PASS_AS_KEYWORDS)) {
+                splat_flagged_keyword_hash = rest_last;
                 rest_last = rb_hash_dup(rest_last);
                 kw_flag |= VM_CALL_KW_SPLAT | VM_CALL_KW_SPLAT_MUT;
             }
@@ -658,6 +660,16 @@ setup_parameters_complex(rb_execution_context_t * const ec, const rb_iseq_t * co
 
     if (ISEQ_BODY(iseq)->param.flags.has_rest) {
         args_setup_rest_parameter(args, locals + ISEQ_BODY(iseq)->param.rest_start);
+        VALUE ary = *(locals + ISEQ_BODY(iseq)->param.rest_start);
+        VALUE index = RARRAY_LEN(ary) - 1;
+        if (splat_flagged_keyword_hash &&
+            !ISEQ_BODY(iseq)->param.flags.ruby2_keywords &&
+            !ISEQ_BODY(iseq)->param.flags.has_kw &&
+            !ISEQ_BODY(iseq)->param.flags.has_kwrest &&
+            RARRAY_AREF(ary, index) == splat_flagged_keyword_hash) {
+            ((struct RHash *)rest_last)->basic.flags &= ~RHASH_PASS_AS_KEYWORDS;
+            RARRAY_ASET(ary, index, rest_last);
+        }
     }
 
     if (ISEQ_BODY(iseq)->param.flags.has_kw) {

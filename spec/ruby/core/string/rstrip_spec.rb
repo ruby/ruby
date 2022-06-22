@@ -16,14 +16,6 @@ describe "String#rstrip" do
   it "returns a copy of self with all trailing whitespace and NULL bytes removed" do
     "\x00 \x00hello\x00 \x00".rstrip.should == "\x00 \x00hello"
   end
-
-  ruby_version_is ''...'2.7' do
-    it "taints the result when self is tainted" do
-      "".taint.rstrip.should.tainted?
-      "ok".taint.rstrip.should.tainted?
-      "ok    ".taint.rstrip.should.tainted?
-    end
-  end
 end
 
 describe "String#rstrip!" do

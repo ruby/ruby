@@ -285,6 +285,7 @@ rb_obj_copy_ivar(VALUE dest, VALUE obj)
     }
     // extended -> extended
     else {
+        RUBY_ASSERT(!(RBASIC(dest)->flags & ROBJECT_EMBED));
         uint32_t src_len = ROBJECT(obj)->as.heap.numiv;
         uint32_t dst_len = ROBJECT(dest)->as.heap.numiv;
 
@@ -1672,7 +1673,9 @@ rb_class_inherited_p(VALUE mod, VALUE arg)
  *   mod < other   ->  true, false, or nil
  *
  * Returns true if <i>mod</i> is a subclass of <i>other</i>. Returns
- * <code>nil</code> if there's no relationship between the two.
+ * <code>false</code> if <i>mod</i> is the same as <i>other</i>
+ * or <i>mod</i> is an ancestor of <i>other</i>.
+ * Returns <code>nil</code> if there's no relationship between the two.
  * (Think of the relationship in terms of the class definition:
  * "class A < B" implies "A < B".)
  *
@@ -1713,7 +1716,9 @@ rb_mod_ge(VALUE mod, VALUE arg)
  *   mod > other   ->  true, false, or nil
  *
  * Returns true if <i>mod</i> is an ancestor of <i>other</i>. Returns
- * <code>nil</code> if there's no relationship between the two.
+ * <code>false</code> if <i>mod</i> is the same as <i>other</i>
+ * or <i>mod</i> is a descendant of <i>other</i>.
+ * Returns <code>nil</code> if there's no relationship between the two.
  * (Think of the relationship in terms of the class definition:
  * "class A < B" implies "B > A".)
  *
@@ -2034,19 +2039,18 @@ rb_class_new_instance(int argc, const VALUE *argv, VALUE klass)
 VALUE
 rb_class_superclass(VALUE klass)
 {
+    RUBY_ASSERT(RB_TYPE_P(klass, T_CLASS));
+
     VALUE super = RCLASS_SUPER(klass);
 
     if (!super) {
 	if (klass == rb_cBasicObject) return Qnil;
 	rb_raise(rb_eTypeError, "uninitialized class");
+    } else {
+        super = RCLASS_SUPERCLASSES(klass)[RCLASS_SUPERCLASS_DEPTH(klass) - 1];
+        RUBY_ASSERT(RB_TYPE_P(klass, T_CLASS));
+        return super;
     }
-    while (RB_TYPE_P(super, T_ICLASS)) {
-	super = RCLASS_SUPER(super);
-    }
-    if (!super) {
-	return Qnil;
-    }
-    return super;
 }
 
 VALUE
@@ -3154,16 +3158,22 @@ rb_check_integer_type(VALUE val)
 }
 
 int
-rb_bool_expected(VALUE obj, const char *flagname)
+rb_bool_expected(VALUE obj, const char *flagname, int raise)
 {
     switch (obj) {
-      case Qtrue: case Qfalse:
-        break;
-      default:
-        rb_raise(rb_eArgError, "expected true or false as %s: %+"PRIsVALUE,
-                 flagname, obj);
+      case Qtrue:
+        return TRUE;
+      case Qfalse:
+        return FALSE;
+      default: {
+        static const char message[] = "expected true or false as %s: %+"PRIsVALUE;
+        if (raise) {
+            rb_raise(rb_eArgError, message, flagname, obj);
+        }
+        rb_warning(message, flagname, obj);
+        return !NIL_P(obj);
+      }
     }
-    return obj != Qfalse;
 }
 
 int
@@ -3172,7 +3182,7 @@ rb_opts_exception_p(VALUE opts, int default_value)
     static const ID kwds[1] = {idException};
     VALUE exception;
     if (rb_get_kwargs(opts, kwds, 0, 1, &exception))
-        return rb_bool_expected(exception, "exception");
+        return rb_bool_expected(exception, "exception", TRUE);
     return default_value;
 }
 
@@ -3180,35 +3190,66 @@ rb_opts_exception_p(VALUE opts, int default_value)
 
 /*
  *  call-seq:
- *     Integer(arg, base=0, exception: true)    -> integer or nil
+ *    Integer(object, base = 0, exception: true) -> integer or nil
  *
- *  Converts <i>arg</i> to an Integer.
- *  Numeric types are converted directly (with floating point numbers
- *  being truncated).  <i>base</i> (0, or between 2 and 36) is a base for
- *  integer string representation.  If <i>arg</i> is a String,
- *  when <i>base</i> is omitted or equals zero, radix indicators
- *  (<code>0</code>, <code>0b</code>, and <code>0x</code>) are honored.
- *  In any case, strings should consist only of one or more digits, except
- *  for that a sign, one underscore between two digits, and leading/trailing
- *  spaces are optional.  This behavior is different from that of
- *  String#to_i.  Non string values will be converted by first
- *  trying <code>to_int</code>, then <code>to_i</code>.
+ *  Returns an integer converted from +object+.
  *
- *  Passing <code>nil</code> raises a TypeError, while passing a String that
- *  does not conform with numeric representation raises an ArgumentError.
- *  This behavior can be altered by passing <code>exception: false</code>,
- *  in this case a not convertible value will return <code>nil</code>.
+ *  Tries to convert +object+ to an integer
+ *  using +to_int+ first and +to_i+ second;
+ *  see below for exceptions.
  *
- *     Integer(123.999)    #=> 123
- *     Integer("0x1a")     #=> 26
- *     Integer(Time.new)   #=> 1204973019
- *     Integer("0930", 10) #=> 930
- *     Integer("111", 2)   #=> 7
- *     Integer(" +1_0 ")   #=> 10
- *     Integer(nil)        #=> TypeError: can't convert nil into Integer
- *     Integer("x")        #=> ArgumentError: invalid value for Integer(): "x"
+ *  With integer argument +object+ given, returns +object+:
  *
- *     Integer("x", exception: false)        #=> nil
+ *    Integer(1)                # => 1
+ *    Integer(-1)               # => -1
+ *
+ *  With floating-point argument +object+ given,
+ *  returns +object+ truncated to an intger:
+ *
+ *    Integer(1.9)              # => 1  # Rounds toward zero.
+ *    Integer(-1.9)             # => -1 # Rounds toward zero.
+ *
+ *  With string argument +object+ and zero +base+ given,
+ *  returns +object+ converted to an integer in base 10:
+ *
+ *    Integer('100')    # => 100
+ *    Integer('-100')   # => -100
+ *
+ *  With +base+ zero, string +object+ may contain leading characters
+ *  to specify the actual base:
+ *
+ *    Integer('0100')  # => 64  # Leading '0' specifies base 8.
+ *    Integer('0b100') # => 4   # Leading '0b', specifies base 2.
+ *    Integer('0x100') # => 256 # Leading '0x' specifies base 16.
+ *
+ *  With a non-zero +base+ (in range 2..36) given
+ *  (in which case +object+ must be a string),
+ *  returns +object+ converted to an integer in the given base:
+ *
+ *    Integer('100', 2)   # => 4
+ *    Integer('100', 8)   # => 64
+ *    Integer('-100', 16) # => -256
+ *
+ *  When converting strings, surrounding whitespace and embedded underscores
+ *  are allowed and ignored:
+ *
+ *    Integer(' 100 ')      # => 100
+ *    Integer('-1_0_0', 16) # => -256
+ *
+ *  Examples with +object+ of various other classes:
+ *
+ *    Integer(Rational(9, 10)) # => 0  # Rounds toward zero.
+ *    Integer(Complex(2, 0))   # => 2  # Imaginary part must be zero.
+ *    Integer(Time.now)        # => 1650974042
+ *
+ *  With optional keyword argument +exception+ given as +true+ (the default):
+ *
+ *  - Raises TypeError if +object+ does not respond to +to_int+ or +to_i+.
+ *  - Raises TypeError if +object+ is +nil+.
+ *  - Raise ArgumentError if +object+ is an invalid string.
+ *
+ *  With +exception+ given as +false+, an exception of any kind is suppressed
+ *  and +nil+ is returned.
  *
  */
 
@@ -3527,7 +3568,7 @@ rb_f_float1(rb_execution_context_t *ec, VALUE obj, VALUE arg)
 static VALUE
 rb_f_float(rb_execution_context_t *ec, VALUE obj, VALUE arg, VALUE opts)
 {
-    int exception = rb_bool_expected(opts, "exception");
+    int exception = rb_bool_expected(opts, "exception", TRUE);
     return rb_convert_to_float(arg, exception);
 }
 
@@ -3647,15 +3688,18 @@ rb_String(VALUE val)
 
 /*
  *  call-seq:
- *     String(arg)   -> string
+ *    String(object) -> object or new_string
  *
- *  Returns <i>arg</i> as a String.
+ *  Returns a string converted from +object+.
  *
- *  First tries to call its <code>to_str</code> method, then its <code>to_s</code> method.
+ *  Tries to convert +object+ to a string
+ *  using +to_str+ first and +to_s+ second:
  *
- *     String(self)        #=> "main"
- *     String(self.class)  #=> "Object"
- *     String(123456)      #=> "123456"
+ *    String([0, 1, 2])        # => "[0, 1, 2]"
+ *    String(0..5)             # => "0..5"
+ *    String({foo: 0, bar: 1}) # => "{:foo=>0, :bar=>1}"
+ *
+ *  Raises +TypeError+ if +object+ cannot be converted to a string.
  */
 
 static VALUE
@@ -3680,22 +3724,22 @@ rb_Array(VALUE val)
 
 /*
  *  call-seq:
- *     Array(arg)    -> array
+ *    Array(object) -> object or new_array
  *
- *  Returns +arg+ as an Array.
+ *  Returns an array converted from +object+.
  *
- *  First tries to call <code>to_ary</code> on +arg+, then <code>to_a</code>.
- *  If +arg+ does not respond to <code>to_ary</code> or <code>to_a</code>,
- *  returns an Array of length 1 containing +arg+.
+ *  Tries to convert +object+ to an array
+ *  using +to_ary+ first and +to_a+ second:
  *
- *  If <code>to_ary</code> or <code>to_a</code> returns something other than
- *  an Array, raises a TypeError.
+ *    Array([0, 1, 2])        # => [0, 1, 2]
+ *    Array({foo: 0, bar: 1}) # => [[:foo, 0], [:bar, 1]]
+ *    Array(0..4)             # => [0, 1, 2, 3, 4]
  *
- *     Array(["a", "b"])  #=> ["a", "b"]
- *     Array(1..5)        #=> [1, 2, 3, 4, 5]
- *     Array(key: :value) #=> [[:key, :value]]
- *     Array(nil)         #=> []
- *     Array(1)           #=> [1]
+ *  Returns +object+ in an array, <tt>[object]</tt>,
+ *  if +object+ cannot be converted:
+ *
+ *    Array(:foo)             # => [:foo]
+ *
  */
 
 static VALUE
@@ -3724,16 +3768,24 @@ rb_Hash(VALUE val)
 
 /*
  *  call-seq:
- *     Hash(arg)    -> hash
+ *    Hash(object) -> object or new_hash
  *
- *  Converts <i>arg</i> to a Hash by calling
- *  <i>arg</i><code>.to_hash</code>. Returns an empty Hash when
- *  <i>arg</i> is <tt>nil</tt> or <tt>[]</tt>.
+ *  Returns a hash converted from +object+.
  *
- *     Hash([])          #=> {}
- *     Hash(nil)         #=> {}
- *     Hash(key: :value) #=> {:key => :value}
- *     Hash([1, 2, 3])   #=> TypeError
+ *  - If +object+ is:
+ *
+ *    - A hash, returns +object+.
+ *    - An empty array or +nil+, returns an empty hash.
+ *
+ *  - Otherwise, if <tt>object.to_hash</tt> returns a hash, returns that hash.
+ *  - Otherwise, returns TypeError.
+ *
+ *  Examples:
+ *
+ *    Hash({foo: 0, bar: 1}) # => {:foo=>0, :bar=>1}
+ *    Hash(nil)              # => {}
+ *    Hash([])               # => {}
+ *
  */
 
 static VALUE
@@ -3811,263 +3863,16 @@ rb_obj_dig(int argc, VALUE *argv, VALUE obj, VALUE notfound)
 
 /*
  *  call-seq:
- *     format(format_string [, arguments...] )   -> string
- *     sprintf(format_string [, arguments...] )  -> string
+ *     sprintf(format_string *objects)  -> string
  *
- *  Returns the string resulting from applying <i>format_string</i> to
- *  any additional arguments.  Within the format string, any characters
- *  other than format sequences are copied to the result.
+ *  Returns the string resulting from formatting +objects+
+ *  into +format_string+.
  *
- *  The syntax of a format sequence is as follows.
+ *  For details on +format_string+, see
+ *  {Format Specifications}[rdoc-ref:format_specifications.rdoc].
  *
- *    %[flags][width][.precision]type
+ *  Kernel#format is an alias for Kernel#sprintf.
  *
- *  A format
- *  sequence consists of a percent sign, followed by optional flags,
- *  width, and precision indicators, then terminated with a field type
- *  character.  The field type controls how the corresponding
- *  <code>sprintf</code> argument is to be interpreted, while the flags
- *  modify that interpretation.
- *
- *  The field type characters are:
- *
- *      Field |  Integer Format
- *      ------+--------------------------------------------------------------
- *        b   | Convert argument as a binary number.
- *            | Negative numbers will be displayed as a two's complement
- *            | prefixed with `..1'.
- *        B   | Equivalent to `b', but uses an uppercase 0B for prefix
- *            | in the alternative format by #.
- *        d   | Convert argument as a decimal number.
- *        i   | Identical to `d'.
- *        o   | Convert argument as an octal number.
- *            | Negative numbers will be displayed as a two's complement
- *            | prefixed with `..7'.
- *        u   | Identical to `d'.
- *        x   | Convert argument as a hexadecimal number.
- *            | Negative numbers will be displayed as a two's complement
- *            | prefixed with `..f' (representing an infinite string of
- *            | leading 'ff's).
- *        X   | Equivalent to `x', but uses uppercase letters.
- *
- *      Field |  Float Format
- *      ------+--------------------------------------------------------------
- *        e   | Convert floating point argument into exponential notation
- *            | with one digit before the decimal point as [-]d.dddddde[+-]dd.
- *            | The precision specifies the number of digits after the decimal
- *            | point (defaulting to six).
- *        E   | Equivalent to `e', but uses an uppercase E to indicate
- *            | the exponent.
- *        f   | Convert floating point argument as [-]ddd.dddddd,
- *            | where the precision specifies the number of digits after
- *            | the decimal point.
- *        g   | Convert a floating point number using exponential form
- *            | if the exponent is less than -4 or greater than or
- *            | equal to the precision, or in dd.dddd form otherwise.
- *            | The precision specifies the number of significant digits.
- *        G   | Equivalent to `g', but use an uppercase `E' in exponent form.
- *        a   | Convert floating point argument as [-]0xh.hhhhp[+-]dd,
- *            | which is consisted from optional sign, "0x", fraction part
- *            | as hexadecimal, "p", and exponential part as decimal.
- *        A   | Equivalent to `a', but use uppercase `X' and `P'.
- *
- *      Field |  Other Format
- *      ------+--------------------------------------------------------------
- *        c   | Argument is the numeric code for a single character or
- *            | a single character string itself.
- *        p   | The valuing of argument.inspect.
- *        s   | Argument is a string to be substituted.  If the format
- *            | sequence contains a precision, at most that many characters
- *            | will be copied.
- *        %   | A percent sign itself will be displayed.  No argument taken.
- *
- *  The flags modifies the behavior of the formats.
- *  The flag characters are:
- *
- *    Flag     | Applies to    | Meaning
- *    ---------+---------------+-----------------------------------------
- *    space    | bBdiouxX      | Leave a space at the start of
- *             | aAeEfgG       | non-negative numbers.
- *             | (numeric fmt) | For `o', `x', `X', `b' and `B', use
- *             |               | a minus sign with absolute value for
- *             |               | negative values.
- *    ---------+---------------+-----------------------------------------
- *    (digit)$ | all           | Specifies the absolute argument number
- *             |               | for this field.  Absolute and relative
- *             |               | argument numbers cannot be mixed in a
- *             |               | sprintf string.
- *    ---------+---------------+-----------------------------------------
- *     #       | bBoxX         | Use an alternative format.
- *             | aAeEfgG       | For the conversions `o', increase the precision
- *             |               | until the first digit will be `0' if
- *             |               | it is not formatted as complements.
- *             |               | For the conversions `x', `X', `b' and `B'
- *             |               | on non-zero, prefix the result with ``0x'',
- *             |               | ``0X'', ``0b'' and ``0B'', respectively.
- *             |               | For `a', `A', `e', `E', `f', `g', and 'G',
- *             |               | force a decimal point to be added,
- *             |               | even if no digits follow.
- *             |               | For `g' and 'G', do not remove trailing zeros.
- *    ---------+---------------+-----------------------------------------
- *    +        | bBdiouxX      | Add a leading plus sign to non-negative
- *             | aAeEfgG       | numbers.
- *             | (numeric fmt) | For `o', `x', `X', `b' and `B', use
- *             |               | a minus sign with absolute value for
- *             |               | negative values.
- *    ---------+---------------+-----------------------------------------
- *    -        | all           | Left-justify the result of this conversion.
- *    ---------+---------------+-----------------------------------------
- *    0 (zero) | bBdiouxX      | Pad with zeros, not spaces.
- *             | aAeEfgG       | For `o', `x', `X', `b' and `B', radix-1
- *             | (numeric fmt) | is used for negative numbers formatted as
- *             |               | complements.
- *    ---------+---------------+-----------------------------------------
- *    *        | all           | Use the next argument as the field width.
- *             |               | If negative, left-justify the result. If the
- *             |               | asterisk is followed by a number and a dollar
- *             |               | sign, use the indicated argument as the width.
- *
- *  Examples of flags:
- *
- *   # `+' and space flag specifies the sign of non-negative numbers.
- *   sprintf("%d", 123)  #=> "123"
- *   sprintf("%+d", 123) #=> "+123"
- *   sprintf("% d", 123) #=> " 123"
- *
- *   # `#' flag for `o' increases number of digits to show `0'.
- *   # `+' and space flag changes format of negative numbers.
- *   sprintf("%o", 123)   #=> "173"
- *   sprintf("%#o", 123)  #=> "0173"
- *   sprintf("%+o", -123) #=> "-173"
- *   sprintf("%o", -123)  #=> "..7605"
- *   sprintf("%#o", -123) #=> "..7605"
- *
- *   # `#' flag for `x' add a prefix `0x' for non-zero numbers.
- *   # `+' and space flag disables complements for negative numbers.
- *   sprintf("%x", 123)   #=> "7b"
- *   sprintf("%#x", 123)  #=> "0x7b"
- *   sprintf("%+x", -123) #=> "-7b"
- *   sprintf("%x", -123)  #=> "..f85"
- *   sprintf("%#x", -123) #=> "0x..f85"
- *   sprintf("%#x", 0)    #=> "0"
- *
- *   # `#' for `X' uses the prefix `0X'.
- *   sprintf("%X", 123)  #=> "7B"
- *   sprintf("%#X", 123) #=> "0X7B"
- *
- *   # `#' flag for `b' add a prefix `0b' for non-zero numbers.
- *   # `+' and space flag disables complements for negative numbers.
- *   sprintf("%b", 123)   #=> "1111011"
- *   sprintf("%#b", 123)  #=> "0b1111011"
- *   sprintf("%+b", -123) #=> "-1111011"
- *   sprintf("%b", -123)  #=> "..10000101"
- *   sprintf("%#b", -123) #=> "0b..10000101"
- *   sprintf("%#b", 0)    #=> "0"
- *
- *   # `#' for `B' uses the prefix `0B'.
- *   sprintf("%B", 123)  #=> "1111011"
- *   sprintf("%#B", 123) #=> "0B1111011"
- *
- *   # `#' for `e' forces to show the decimal point.
- *   sprintf("%.0e", 1)  #=> "1e+00"
- *   sprintf("%#.0e", 1) #=> "1.e+00"
- *
- *   # `#' for `f' forces to show the decimal point.
- *   sprintf("%.0f", 1234)  #=> "1234"
- *   sprintf("%#.0f", 1234) #=> "1234."
- *
- *   # `#' for `g' forces to show the decimal point.
- *   # It also disables stripping lowest zeros.
- *   sprintf("%g", 123.4)   #=> "123.4"
- *   sprintf("%#g", 123.4)  #=> "123.400"
- *   sprintf("%g", 123456)  #=> "123456"
- *   sprintf("%#g", 123456) #=> "123456."
- *
- *  The field width is an optional integer, followed optionally by a
- *  period and a precision.  The width specifies the minimum number of
- *  characters that will be written to the result for this field.
- *
- *  Examples of width:
- *
- *   # padding is done by spaces,       width=20
- *   # 0 or radix-1.             <------------------>
- *   sprintf("%20d", 123)   #=> "                 123"
- *   sprintf("%+20d", 123)  #=> "                +123"
- *   sprintf("%020d", 123)  #=> "00000000000000000123"
- *   sprintf("%+020d", 123) #=> "+0000000000000000123"
- *   sprintf("% 020d", 123) #=> " 0000000000000000123"
- *   sprintf("%-20d", 123)  #=> "123                 "
- *   sprintf("%-+20d", 123) #=> "+123                "
- *   sprintf("%- 20d", 123) #=> " 123                "
- *   sprintf("%020x", -123) #=> "..ffffffffffffffff85"
- *
- *  For
- *  numeric fields, the precision controls the number of decimal places
- *  displayed.  For string fields, the precision determines the maximum
- *  number of characters to be copied from the string.  (Thus, the format
- *  sequence <code>%10.10s</code> will always contribute exactly ten
- *  characters to the result.)
- *
- *  Examples of precisions:
- *
- *   # precision for `d', 'o', 'x' and 'b' is
- *   # minimum number of digits               <------>
- *   sprintf("%20.8d", 123)  #=> "            00000123"
- *   sprintf("%20.8o", 123)  #=> "            00000173"
- *   sprintf("%20.8x", 123)  #=> "            0000007b"
- *   sprintf("%20.8b", 123)  #=> "            01111011"
- *   sprintf("%20.8d", -123) #=> "           -00000123"
- *   sprintf("%20.8o", -123) #=> "            ..777605"
- *   sprintf("%20.8x", -123) #=> "            ..ffff85"
- *   sprintf("%20.8b", -11)  #=> "            ..110101"
- *
- *   # "0x" and "0b" for `#x' and `#b' is not counted for
- *   # precision but "0" for `#o' is counted.  <------>
- *   sprintf("%#20.8d", 123)  #=> "            00000123"
- *   sprintf("%#20.8o", 123)  #=> "            00000173"
- *   sprintf("%#20.8x", 123)  #=> "          0x0000007b"
- *   sprintf("%#20.8b", 123)  #=> "          0b01111011"
- *   sprintf("%#20.8d", -123) #=> "           -00000123"
- *   sprintf("%#20.8o", -123) #=> "            ..777605"
- *   sprintf("%#20.8x", -123) #=> "          0x..ffff85"
- *   sprintf("%#20.8b", -11)  #=> "          0b..110101"
- *
- *   # precision for `e' is number of
- *   # digits after the decimal point           <------>
- *   sprintf("%20.8e", 1234.56789) #=> "      1.23456789e+03"
- *
- *   # precision for `f' is number of
- *   # digits after the decimal point               <------>
- *   sprintf("%20.8f", 1234.56789) #=> "       1234.56789000"
- *
- *   # precision for `g' is number of
- *   # significant digits                          <------->
- *   sprintf("%20.8g", 1234.56789) #=> "           1234.5679"
- *
- *   #                                         <------->
- *   sprintf("%20.8g", 123456789)  #=> "       1.2345679e+08"
- *
- *   # precision for `s' is
- *   # maximum number of characters                    <------>
- *   sprintf("%20.8s", "string test") #=> "            string t"
- *
- *  Examples:
- *
- *     sprintf("%d %04x", 123, 123)               #=> "123 007b"
- *     sprintf("%08b '%4s'", 123, 123)            #=> "01111011 ' 123'"
- *     sprintf("%1$*2$s %2$d %1$s", "hello", 8)   #=> "   hello 8 hello"
- *     sprintf("%1$*2$s %2$d", "hello", -8)       #=> "hello    -8"
- *     sprintf("%+g:% g:%-g", 1.23, 1.23, 1.23)   #=> "+1.23: 1.23:1.23"
- *     sprintf("%u", -123)                        #=> "-123"
- *
- *  For more complex formatting, Ruby supports a reference by name.
- *  %<name>s style uses format style, but %{name} style doesn't.
- *
- *  Examples:
- *    sprintf("%<foo>d : %<bar>f", { :foo => 1, :bar => 2 })
- *      #=> 1 : 2.000000
- *    sprintf("%{foo}f", { :foo => 1 })
- *      # => "1f"
  */
 
 static VALUE
@@ -4198,8 +4003,8 @@ f_sprintf(int c, const VALUE *v, VALUE _)
  *  - #!: Returns the boolean negation of +self+: +true+ or +false+.
  *  - #!=: Returns whether +self+ and the given object are _not_ equal.
  *  - #==: Returns whether +self+ and the given object are equivalent.
- *  - {__id__}[#method-i-__id__]: Returns the integer object identifier for +self+.
- *  - {__send__}[#method-i-__send__]: Calls the method identified by the given symbol.
+ *  - #__id__: Returns the integer object identifier for +self+.
+ *  - #__send__: Calls the method identified by the given symbol.
  *  - #equal?: Returns whether +self+ and the given object are the same object.
  *  - #instance_eval: Evaluates the given string or block in the context of +self+.
  *  - #instance_exec: Executes the given block in the context of +self+,
@@ -4395,12 +4200,10 @@ InitVM_Object(void)
      *
      * === Querying
      *
-     * - {#__callee__}[#method-i-__callee__]: Returns the called name
-     *   of the current method as a symbol.
-     * - {#__dir__}[#method-i-__dir__]: Returns the path to the directory
-     *   from which the current method is called.
-     * - {#__method__}[#method-i-__method__]: Returns the name
-     *   of the current method as a symbol.
+     * - #__callee__: Returns the called name of the current method as a symbol.
+     * - #__dir__: Returns the path to the directory from which the current
+     *   method is called.
+     * - #__method__: Returns the name of the current method as a symbol.
      * - #autoload?: Returns the file to be loaded when the given module is referenced.
      * - #binding: Returns a Binding for the context at the point of call.
      * - #block_given?: Returns +true+ if a block was passed to the calling method.
@@ -4458,7 +4261,8 @@ InitVM_Object(void)
      *
      * === Subprocesses
      *
-     * - {`command`}[#method-i-60]: Returns the standard output of running +command+ in a subshell.
+     * - {\`command`}[rdoc-ref:Kernel#`]: Returns the standard output of running
+     *   +command+ in a subshell.
      * - #exec: Replaces current process with a new process.
      * - #fork: Forks the current process into two processes.
      * - #spawn: Executes the given command and returns its pid without waiting
@@ -4601,6 +4405,8 @@ InitVM_Object(void)
 		     rb_class_protected_instance_methods, -1); /* in class.c */
     rb_define_method(rb_cModule, "private_instance_methods",
 		     rb_class_private_instance_methods, -1);   /* in class.c */
+    rb_define_method(rb_cModule, "undefined_instance_methods",
+                     rb_class_undefined_instance_methods, 0); /* in class.c */
 
     rb_define_method(rb_cModule, "constants", rb_mod_constants, -1); /* in variable.c */
     rb_define_method(rb_cModule, "const_get", rb_mod_const_get, -1);

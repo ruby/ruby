@@ -58,6 +58,15 @@ describe :regexp_new_string, shared: true do
     end
   end
 
+  it "sets options from second argument if it is true" do
+    r = Regexp.send(@method, 'Hi', true)
+    (r.options & Regexp::IGNORECASE).should_not == 0
+    (r.options & Regexp::MULTILINE).should == 0
+    not_supported_on :opal do
+      (r.options & Regexp::EXTENDED).should == 0
+    end
+  end
+
   it "sets options from second argument if it is one of the Integer option constants" do
     r = Regexp.send(@method, 'Hi', Regexp::IGNORECASE)
     (r.options & Regexp::IGNORECASE).should_not == 0
@@ -88,12 +97,67 @@ describe :regexp_new_string, shared: true do
     (r.options & Regexp::EXTENDED).should_not == 0
   end
 
-  it "treats any non-Integer, non-nil, non-false second argument as IGNORECASE" do
-    r = Regexp.send(@method, 'Hi', Object.new)
-    (r.options & Regexp::IGNORECASE).should_not == 0
-    (r.options & Regexp::MULTILINE).should == 0
-    not_supported_on :opal do
-      (r.options & Regexp::EXTENDED).should == 0
+  ruby_version_is ""..."3.2" do
+    it "treats any non-Integer, non-nil, non-false second argument as IGNORECASE" do
+      r = Regexp.send(@method, 'Hi', Object.new)
+      (r.options & Regexp::IGNORECASE).should_not == 0
+      (r.options & Regexp::MULTILINE).should == 0
+      not_supported_on :opal do
+        (r.options & Regexp::EXTENDED).should == 0
+      end
+    end
+  end
+
+  ruby_version_is "3.2" do
+    it "warns any non-Integer, non-nil, non-false second argument" do
+      r = nil
+      -> {
+        r = Regexp.send(@method, 'Hi', Object.new)
+      }.should complain(/expected true or false as ignorecase/, {verbose: true})
+      (r.options & Regexp::IGNORECASE).should_not == 0
+      (r.options & Regexp::MULTILINE).should == 0
+      not_supported_on :opal do
+        (r.options & Regexp::EXTENDED).should == 0
+      end
+    end
+
+    it "accepts a String of supported flags as the second argument" do
+      r = Regexp.send(@method, 'Hi', 'i')
+      (r.options & Regexp::IGNORECASE).should_not == 0
+      (r.options & Regexp::MULTILINE).should == 0
+      not_supported_on :opal do
+        (r.options & Regexp::EXTENDED).should == 0
+      end
+
+      r = Regexp.send(@method, 'Hi', 'imx')
+      (r.options & Regexp::IGNORECASE).should_not == 0
+      (r.options & Regexp::MULTILINE).should_not == 0
+      not_supported_on :opal do
+        (r.options & Regexp::EXTENDED).should_not == 0
+      end
+
+      r = Regexp.send(@method, 'Hi', 'mimi')
+      (r.options & Regexp::IGNORECASE).should_not == 0
+      (r.options & Regexp::MULTILINE).should_not == 0
+      not_supported_on :opal do
+        (r.options & Regexp::EXTENDED).should == 0
+      end
+
+      r = Regexp.send(@method, 'Hi', '')
+      (r.options & Regexp::IGNORECASE).should == 0
+      (r.options & Regexp::MULTILINE).should == 0
+      not_supported_on :opal do
+        (r.options & Regexp::EXTENDED).should == 0
+      end
+    end
+
+    it "raises an Argument error if the second argument contains unsupported chars" do
+      -> { Regexp.send(@method, 'Hi', 'e') }.should raise_error(ArgumentError)
+      -> { Regexp.send(@method, 'Hi', 'n') }.should raise_error(ArgumentError)
+      -> { Regexp.send(@method, 'Hi', 's') }.should raise_error(ArgumentError)
+      -> { Regexp.send(@method, 'Hi', 'u') }.should raise_error(ArgumentError)
+      -> { Regexp.send(@method, 'Hi', 'j') }.should raise_error(ArgumentError)
+      -> { Regexp.send(@method, 'Hi', 'mjx') }.should raise_error(ArgumentError)
     end
   end
 

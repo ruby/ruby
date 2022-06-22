@@ -13,7 +13,7 @@ module Bundler
       Installer.ambiguous_gems = []
     end
 
-    attr_reader :post_install_messages
+    attr_reader :post_install_messages, :definition
 
     # Begins the installation process for Bundler.
     # For more information see the #run method on this class.
@@ -66,7 +66,7 @@ module Bundler
     # require paths and save them in a `setup.rb` file. See `bundle standalone --help` for more
     # information.
     def run(options)
-      create_bundle_path
+      Bundler.create_bundle_path
 
       ProcessLock.lock do
         if Bundler.frozen_bundle?
@@ -119,7 +119,7 @@ module Bundler
       relative_gemfile_path = relative_gemfile_path
       ruby_command = Thor::Util.ruby_command
       ruby_command = ruby_command
-      template_path = File.expand_path("../templates/Executable", __FILE__)
+      template_path = File.expand_path("templates/Executable", __dir__)
       if spec.name == "bundler"
         template_path += ".bundler"
         spec.executables = %(bundle)
@@ -172,7 +172,7 @@ module Bundler
       end
       standalone_path = Bundler.root.join(path).relative_path_from(bin_path)
       standalone_path = standalone_path
-      template = File.read(File.expand_path("../templates/Executable.standalone", __FILE__))
+      template = File.read(File.expand_path("templates/Executable.standalone", __dir__))
       ruby_command = Thor::Util.ruby_command
       ruby_command = ruby_command
 
@@ -260,15 +260,6 @@ module Bundler
       spec_installations.each do |installation|
         post_install_messages[installation.name] = installation.post_install_message if installation.has_post_install_message?
       end
-    end
-
-    def create_bundle_path
-      SharedHelpers.filesystem_access(Bundler.bundle_path.to_s) do |p|
-        Bundler.mkdir_p(p)
-      end unless Bundler.bundle_path.exist?
-    rescue Errno::EEXIST
-      raise PathError, "Could not install to path `#{Bundler.bundle_path}` " \
-        "because a file already exists at that path. Either remove or rename the file so the directory can be created."
     end
 
     # returns whether or not a re-resolve was needed

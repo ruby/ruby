@@ -1,6 +1,6 @@
 Gem::Specification.new do |spec|
   spec.name          = "io-nonblock"
-  spec.version       = "0.1.0"
+  spec.version       = "0.1.1"
   spec.authors       = ["Nobu Nakada"]
   spec.email         = ["nobu@ruby-lang.org"]
 
@@ -13,13 +13,13 @@ Gem::Specification.new do |spec|
   spec.metadata["homepage_uri"] = spec.homepage
   spec.metadata["source_code_uri"] = spec.homepage
 
-  spec.files         = Dir.chdir(File.expand_path('..', __FILE__)) do
-    %x[git ls-files -z].split("\x0").reject do |f|
-      f.match(%r{\A(?:test|spec|features)/|\A\.(?:git|travis)})
-    end
-  end
+  spec.files         = %w[
+    COPYING
+    README.md
+    ext/io/nonblock/depend
+    ext/io/nonblock/extconf.rb
+    ext/io/nonblock/nonblock.c
+  ]
   spec.extensions    = %w[ext/io/nonblock/extconf.rb]
-  spec.bindir        = "exe"
-  spec.executables   = spec.files.grep(%r{^exe/}) { |f| File.basename(f) }
   spec.require_paths = ["lib"]
 end

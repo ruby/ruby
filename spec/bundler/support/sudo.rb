@@ -6,6 +6,10 @@ module Spec
       @which_sudo ||= Bundler.which("sudo")
     end
 
+    def self.write_safe_config
+      File.write(Spec::Path.tmp("gitconfig"), "[safe]\n\tdirectory = #{Spec::Path.git_root}")
+    end
+
     def sudo(cmd)
       raise "sudo not present" unless Sudo.present?
       sys_exec("sudo #{cmd}")

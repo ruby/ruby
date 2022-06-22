@@ -1545,7 +1545,7 @@ rb_ractor_atfork(rb_vm_t *vm, rb_thread_t *th)
 }
 #endif
 
-void rb_gvl_init(rb_global_vm_lock_t *gvl);
+void rb_thread_sched_init(struct rb_thread_sched *);
 
 void
 rb_ractor_living_threads_init(rb_ractor_t *r)
@@ -1564,7 +1564,7 @@ ractor_init(rb_ractor_t *r, VALUE name, VALUE loc)
     rb_native_cond_initialize(&r->barrier_wait_cond);
 
     // thread management
-    rb_gvl_init(&r->threads.gvl);
+    rb_thread_sched_init(&r->threads.sched);
     rb_ractor_living_threads_init(r);
 
     // naming
@@ -1715,12 +1715,6 @@ rb_obj_is_main_ractor(VALUE gv)
     if (!rb_ractor_p(gv)) return false;
     rb_ractor_t *r = DATA_PTR(gv);
     return r == GET_VM()->ractor.main_ractor;
-}
-
-rb_global_vm_lock_t *
-rb_ractor_gvl(rb_ractor_t *r)
-{
-    return &r->threads.gvl;
 }
 
 int
@@ -2706,7 +2700,7 @@ obj_refer_only_shareables_p(VALUE obj)
 static int
 obj_traverse_replace_i(VALUE obj, struct obj_traverse_replace_data *data)
 {
-    VALUE replacement;
+    st_data_t replacement;
 
     if (RB_SPECIAL_CONST_P(obj)) {
         data->replacement = obj;
@@ -2719,14 +2713,14 @@ obj_traverse_replace_i(VALUE obj, struct obj_traverse_replace_data *data)
       case traverse_stop: return 1; // stop search
     }
 
-    replacement = data->replacement;
+    replacement = (st_data_t)data->replacement;
 
-    if (UNLIKELY(st_lookup(obj_traverse_replace_rec(data), (st_data_t)obj, (st_data_t *)&replacement))) {
-        data->replacement = replacement;
+    if (UNLIKELY(st_lookup(obj_traverse_replace_rec(data), (st_data_t)obj, &replacement))) {
+        data->replacement = (VALUE)replacement;
         return 0;
     }
     else {
-        st_insert(obj_traverse_replace_rec(data), (st_data_t)obj, (st_data_t)replacement);
+        st_insert(obj_traverse_replace_rec(data), (st_data_t)obj, replacement);
     }
 
     if (!data->move) {
@@ -2872,7 +2866,7 @@ obj_traverse_replace_i(VALUE obj, struct obj_traverse_replace_data *data)
         rb_bug("unreachable");
     }
 
-    data->replacement = replacement;
+    data->replacement = (VALUE)replacement;
 
     if (data->leave_func(obj, data) == traverse_stop) {
         return 1;
@@ -3052,9 +3046,9 @@ ractor_local_storage_mark(rb_ractor_t *r)
 
         for (int i=0; i<freed_ractor_local_keys.cnt; i++) {
             rb_ractor_local_key_t key = freed_ractor_local_keys.keys[i];
-            st_data_t val;
-            if (st_delete(r->local_storage, (st_data_t *)&key, &val) &&
-                key->type->free) {
+            st_data_t val, k = (st_data_t)key;
+            if (st_delete(r->local_storage, &k, &val) &&
+                (key = (rb_ractor_local_key_t)k)->type->free) {
                 (*key->type->free)((void *)val);
             }
         }
@@ -3179,9 +3173,9 @@ ractor_local_set(rb_ractor_local_key_t key, void *ptr)
 VALUE
 rb_ractor_local_storage_value(rb_ractor_local_key_t key)
 {
-    VALUE val;
-    if (ractor_local_ref(key, (void **)&val)) {
-        return val;
+    void *val;
+    if (ractor_local_ref(key, &val)) {
+        return (VALUE)val;
     }
     else {
         return Qnil;

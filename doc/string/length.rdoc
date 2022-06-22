@@ -1,0 +1,13 @@
+Returns the count of characters (not bytes) in +self+:
+
+  'foo'.length        # => 3
+  'тест'.length       # => 4
+  'こんにちは'.length   # => 5
+
+Contrast with String#bytesize:
+
+  'foo'.bytesize        # => 3
+  'тест'.bytesize       # => 8
+  'こんにちは'.bytesize   # => 15
+
+String#size is an alias for String#length.

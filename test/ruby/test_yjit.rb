@@ -1,4 +1,8 @@
 # frozen_string_literal: true
+#
+# This set of tests can be run with:
+# make test-all TESTS='test/ruby/test_yjit.rb' RUN_OPTS="--yjit-call-threshold=1"
+
 require 'test/unit'
 require 'envutil'
 require 'tmpdir'
@@ -7,12 +11,13 @@ require_relative '../lib/jit_support'
 return unless defined?(RubyVM::YJIT) && RubyVM::YJIT.enabled?
 
 # Tests for YJIT with assertions on compilation and side exits
-# insipired by the MJIT tests in test/ruby/test_jit.rb
+# insipired by the MJIT tests in test/ruby/test_mjit.rb
 class TestYJIT < Test::Unit::TestCase
   def test_yjit_in_ruby_description
     assert_includes(RUBY_DESCRIPTION, '+YJIT')
   end
 
+  # Check that YJIT is in the version string
   def test_yjit_in_version
     [
       %w(--version --yjit),
@@ -42,9 +47,8 @@ class TestYJIT < Test::Unit::TestCase
   def test_command_line_switches
     assert_in_out_err('--yjit-', '', [], /invalid option --yjit-/)
     assert_in_out_err('--yjithello', '', [], /invalid option --yjithello/)
-    assert_in_out_err('--yjit-call-threshold', '', [], /--yjit-call-threshold needs an argument/)
-    assert_in_out_err('--yjit-call-threshold=', '', [], /--yjit-call-threshold needs an argument/)
-    assert_in_out_err('--yjit-greedy-versioning=1', '', [], /warning: argument to --yjit-greedy-versioning is ignored/)
+    #assert_in_out_err('--yjit-call-threshold', '', [], /--yjit-call-threshold needs an argument/)
+    #assert_in_out_err('--yjit-call-threshold=', '', [], /--yjit-call-threshold needs an argument/)
   end
 
   def test_yjit_stats_and_v_no_error
@@ -80,6 +84,10 @@ class TestYJIT < Test::Unit::TestCase
     assert_compiles('true', insns: %i[putobject], result: true)
     assert_compiles('123', insns: %i[putobject], result: 123)
     assert_compiles(':foo', insns: %i[putobject], result: :foo)
+  end
+
+  def test_compile_opt_succ
+    assert_compiles('1.succ', insns: %i[opt_succ], result: 2)
   end
 
   def test_compile_opt_not
@@ -312,6 +320,32 @@ class TestYJIT < Test::Unit::TestCase
     RUBY
   end
 
+  def test_string_concat_utf8
+    assert_compiles(<<~RUBY, frozen_string_literal: true, result: true)
+      def str_cat_utf8
+        s = String.new
+        10.times { s << "✅" }
+        s
+      end
+
+      str_cat_utf8 == "✅" * 10
+    RUBY
+  end
+
+  def test_string_concat_ascii
+    # Constant-get for classes (e.g. String, Encoding) can cause a side-exit in getinlinecache. For now, ignore exits.
+    assert_compiles(<<~RUBY, exits: :any)
+      str_arg = "b".encode(Encoding::ASCII)
+      def str_cat_ascii(arg)
+        s = String.new(encoding: Encoding::ASCII)
+        10.times { s << arg }
+        s
+      end
+
+      str_cat_ascii(str_arg) == str_arg * 10
+    RUBY
+  end
+
   def test_opt_length_in_method
     assert_compiles(<<~RUBY, insns: %i[opt_length], result: 5)
       def foo(str)
@@ -356,7 +390,7 @@ class TestYJIT < Test::Unit::TestCase
   end
 
   def test_compile_opt_getinlinecache
-    assert_compiles(<<~RUBY, insns: %i[opt_getinlinecache], result: 123, min_calls: 2)
+    assert_compiles(<<~RUBY, insns: %i[opt_getinlinecache], result: 123, call_threshold: 2)
       def get_foo
         FOO
       end
@@ -369,7 +403,7 @@ class TestYJIT < Test::Unit::TestCase
   end
 
   def test_opt_getinlinecache_slowpath
-    assert_compiles(<<~RUBY, exits: { opt_getinlinecache: 1 }, result: [42, 42, 1, 1], min_calls: 2)
+    assert_compiles(<<~RUBY, exits: { opt_getinlinecache: 1 }, result: [42, 42, 1, 1], call_threshold: 2)
       class A
         FOO = 42
         class << self
@@ -397,7 +431,7 @@ class TestYJIT < Test::Unit::TestCase
   end
 
   def test_string_interpolation
-    assert_compiles(<<~'RUBY', insns: %i[objtostring anytostring concatstrings], result: "foobar", min_calls: 2)
+    assert_compiles(<<~'RUBY', insns: %i[objtostring anytostring concatstrings], result: "foobar", call_threshold: 2)
       def make_str(foo, bar)
         "#{foo}#{bar}"
       end
@@ -453,6 +487,53 @@ class TestYJIT < Test::Unit::TestCase
     RUBY
   end
 
+  def test_getblockparam
+    assert_compiles(<<~'RUBY', insns: [:getblockparam])
+      def foo &blk
+        2.times do
+          blk
+        end
+      end
+
+      foo {}
+      foo {}
+    RUBY
+  end
+
+  def test_getblockparamproxy
+    # Currently two side exits as OPTIMIZED_METHOD_TYPE_CALL is unimplemented
+    assert_compiles(<<~'RUBY', insns: [:getblockparamproxy], exits: { opt_send_without_block: 2 })
+      def foo &blk
+        p blk.call
+        p blk.call
+      end
+
+      foo { 1 }
+      foo { 2 }
+    RUBY
+  end
+
+  def test_getivar_opt_plus
+    assert_no_exits(<<~RUBY)
+      class TheClass
+        def initialize
+            @levar = 1
+        end
+
+        def get_sum
+            sum = 0
+            # The type of levar is unknown,
+            # but this still should not exit
+            sum += @levar
+            sum
+        end
+      end
+
+      obj = TheClass.new
+      obj.get_sum
+    RUBY
+  end
+
   def test_super_iseq
     assert_compiles(<<~'RUBY', insns: %i[invokesuper opt_plus opt_mult], result: 15)
       class A
@@ -489,7 +570,7 @@ class TestYJIT < Test::Unit::TestCase
 
   # Tests calling a variadic cfunc with many args
   def test_build_large_struct
-    assert_compiles(<<~RUBY, insns: %i[opt_send_without_block], min_calls: 2)
+    assert_compiles(<<~RUBY, insns: %i[opt_send_without_block], call_threshold: 2)
       ::Foo = Struct.new(:a, :b, :c, :d, :e, :f, :g, :h)
 
       def build_foo
@@ -530,8 +611,8 @@ class TestYJIT < Test::Unit::TestCase
     assert_no_exits('{}.merge(foo: 123, bar: 456, baz: 789)')
   end
 
+  # regression test simplified from URI::Generic#hostname=
   def test_ctx_different_mappings
-    # regression test simplified from URI::Generic#hostname=
     assert_compiles(<<~'RUBY', frozen_string_literal: true)
       def foo(v)
         !(v&.start_with?('[')) && v&.index(':')
@@ -572,7 +653,7 @@ class TestYJIT < Test::Unit::TestCase
   end
 
   ANY = Object.new
-  def assert_compiles(test_script, insns: [], min_calls: 1, stdout: nil, exits: {}, result: ANY, frozen_string_literal: nil)
+  def assert_compiles(test_script, insns: [], call_threshold: 1, stdout: nil, exits: {}, result: ANY, frozen_string_literal: nil)
     reset_stats = <<~RUBY
       RubyVM::YJIT.runtime_stats
       RubyVM::YJIT.reset_stats!
@@ -581,29 +662,17 @@ class TestYJIT < Test::Unit::TestCase
     write_results = <<~RUBY
       stats = RubyVM::YJIT.runtime_stats
 
-      def collect_blocks(blocks)
-        blocks.sort_by(&:address).map { |b| [b.iseq_start_index, b.iseq_end_index] }
-      end
-
-      def collect_iseqs(iseq)
-        iseq_array = iseq.to_a
-        insns = iseq_array.last.grep(Array)
-        blocks = RubyVM::YJIT.blocks_for(iseq)
-        h = {
-          name: iseq_array[5],
-          insns: insns,
-          blocks: collect_blocks(blocks),
-        }
-        arr = [h]
-        iseq.each_child { |c| arr.concat collect_iseqs(c) }
-        arr
+      def collect_insns(iseq)
+        insns = RubyVM::YJIT.insns_compiled(iseq)
+        iseq.each_child { |c| insns.concat collect_insns(c) }
+        insns
       end
 
       iseq = RubyVM::InstructionSequence.of(_test_proc)
       IO.open(3).write Marshal.dump({
         result: #{result == ANY ? "nil" : "result"},
         stats: stats,
-        iseqs: collect_iseqs(iseq),
+        insns: collect_insns(iseq),
         disasm: iseq.disasm
       })
     RUBY
@@ -618,7 +687,7 @@ class TestYJIT < Test::Unit::TestCase
       #{write_results}
     RUBY
 
-    status, out, err, stats = eval_with_jit(script, min_calls: min_calls)
+    status, out, err, stats = eval_with_jit(script, call_threshold: call_threshold)
 
     assert status.success?, "exited with status #{status.to_i}, stderr:\n#{err}"
 
@@ -629,10 +698,11 @@ class TestYJIT < Test::Unit::TestCase
     end
 
     runtime_stats = stats[:stats]
-    iseqs = stats[:iseqs]
+    insns_compiled = stats[:insns]
     disasm = stats[:disasm]
 
-    # Only available when RUBY_DEBUG enabled
+    # Check that exit counts are as expected
+    # Full stats are only available when --enable-yjit=dev
     if runtime_stats[:all_stats]
       recorded_exits = runtime_stats.select { |k, v| k.to_s.start_with?("exit_") }
       recorded_exits = recorded_exits.reject { |k, v| v == 0 }
@@ -644,44 +714,35 @@ class TestYJIT < Test::Unit::TestCase
       end
     end
 
-    # Only available when RUBY_DEBUG enabled
+    # Only available when --enable-yjit=dev
     if runtime_stats[:all_stats]
       missed_insns = insns.dup
-      all_compiled_blocks = {}
-      iseqs.each do |iseq|
-        compiled_blocks = iseq[:blocks].map { |from, to| (from...to) }
-        all_compiled_blocks[iseq[:name]] = compiled_blocks
-        compiled_insns = iseq[:insns]
-        next_idx = 0
-        compiled_insns.map! do |insn|
-          # TODO: not sure this is accurate for determining insn size
-          idx = next_idx
-          next_idx += insn.length
-          [idx, *insn]
-        end
 
-        compiled_insns.each do |idx, op, *arguments|
-          next unless missed_insns.include?(op)
-          next unless compiled_blocks.any? { |block| block === idx }
-
+      insns_compiled.each do |op|
+        if missed_insns.include?(op)
           # This instruction was compiled
           missed_insns.delete(op)
         end
       end
 
       unless missed_insns.empty?
-        flunk "Expected to compile instructions #{missed_insns.join(", ")} but didn't.\nCompiled ranges: #{all_compiled_blocks.inspect}\niseq:\n#{disasm}"
+        flunk "Expected to compile instructions #{missed_insns.join(", ")} but didn't.\niseq:\n#{disasm}"
       end
     end
   end
 
-  def eval_with_jit(script, min_calls: 1, timeout: 1000)
+  def script_shell_encode(s)
+    # We can't pass utf-8-encoded characters directly in a shell arg. But we can use Ruby \u constants.
+    s.chars.map { |c| c.ascii_only? ? c : "\\u%x" % c.codepoints[0] }.join
+  end
+
+  def eval_with_jit(script, call_threshold: 1, timeout: 1000)
     args = [
       "--disable-gems",
-      "--yjit-call-threshold=#{min_calls}",
+      "--yjit-call-threshold=#{call_threshold}",
       "--yjit-stats"
     ]
-    args << "-e" << script
+    args << "-e" << script_shell_encode(script)
     stats_r, stats_w = IO.pipe
     out, err, status = EnvUtil.invoke_ruby(args,
       '', true, true, timeout: timeout, ios: {3 => stats_w}

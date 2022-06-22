@@ -47,7 +47,7 @@ module Bundler
     def print_gem_path(spec)
       name = spec.name
       if name == "bundler"
-        path = File.expand_path("../../../..", __FILE__)
+        path = File.expand_path("../../..", __dir__)
       else
         path = spec.full_gem_path
         if spec.deleted_gem?

@@ -2,20 +2,13 @@ require_relative "formatter"
 
 module ErrorHighlight
   module CoreExt
-    # This is a marker to let `DidYouMean::Correctable#original_message` skip
-    # the following method definition of `to_s`.
-    # See https://github.com/ruby/did_you_mean/pull/152
-    SKIP_TO_S_FOR_SUPER_LOOKUP = true
-    private_constant :SKIP_TO_S_FOR_SUPER_LOOKUP
-
-    def to_s
-      msg = super.dup
-
+    private def generate_snippet
       locs = backtrace_locations
-      return msg unless locs
+      return "" unless locs
 
       loc = locs.first
-      return msg unless loc
+      return "" unless loc
+
       begin
         node = RubyVM::AbstractSyntaxTree.of(loc, keep_script_lines: true)
         opts = {}
@@ -36,11 +29,37 @@ module ErrorHighlight
       end
 
       if spot
-        points = ErrorHighlight.formatter.message_for(spot)
-        msg << points if !msg.include?(points)
+        return ErrorHighlight.formatter.message_for(spot)
       end
 
-      msg
+      ""
+    end
+
+    if Exception.method_defined?(:detailed_message)
+      def detailed_message(highlight: false, error_highlight: true, **)
+        return super unless error_highlight
+        snippet = generate_snippet
+        if highlight
+          snippet = snippet.gsub(/.+/) { "\e[1m" + $& + "\e[m" }
+        end
+        super + snippet
+      end
+    else
+      # This is a marker to let `DidYouMean::Correctable#original_message` skip
+      # the following method definition of `to_s`.
+      # See https://github.com/ruby/did_you_mean/pull/152
+      SKIP_TO_S_FOR_SUPER_LOOKUP = true
+      private_constant :SKIP_TO_S_FOR_SUPER_LOOKUP
+
+      def to_s
+        msg = super
+        snippet = generate_snippet
+        if snippet != "" && !msg.include?(snippet)
+          msg + snippet
+        else
+          msg
+        end
+      end
     end
   end
 

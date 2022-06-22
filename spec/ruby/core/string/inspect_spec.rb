@@ -3,18 +3,6 @@ require_relative '../../spec_helper'
 require_relative 'fixtures/classes'
 
 describe "String#inspect" do
-  ruby_version_is ''...'2.7' do
-    it "taints the result if self is tainted" do
-      "foo".taint.inspect.should.tainted?
-      "foo\n".taint.inspect.should.tainted?
-    end
-
-    it "untrusts the result if self is untrusted" do
-      "foo".untrust.inspect.should.untrusted?
-      "foo\n".untrust.inspect.should.untrusted?
-    end
-  end
-
   it "does not return a subclass instance" do
     StringSpecs::MyString.new.inspect.should be_an_instance_of(String)
   end

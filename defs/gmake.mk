@@ -295,7 +295,7 @@ extract-gems: | $(patsubst %,.bundle/gems/%,$(bundled-gems))
 	$(ECHO) Extracting bundle gem $*...
 	$(Q) $(BASERUBY) -C "$(srcdir)" \
 	    -Itool -rgem-unpack \
-	    -e 'Gem.unpack("gems/$(@F).gem", ".bundle/gems")'
+	    -e 'Gem.unpack("gems/$(@F).gem", ".bundle/gems", ".bundle/specifications")'
 	$(RMALL) "$(srcdir)/$(@:.gem=)/".git*
 
 $(srcdir)/.bundle/gems:
@@ -356,6 +356,8 @@ ifneq ($(REVISION_IN_HEADER),$(REVISION_LATEST))
 # updated but it is not updated, while others may not.
 $(srcdir)/revision.h: $(REVISION_H)
 endif
+
+include $(top_srcdir)/yjit/yjit.mk
 
 # Query on the generated rdoc
 #

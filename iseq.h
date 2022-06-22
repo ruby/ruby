@@ -182,6 +182,9 @@ void rb_iseq_build_from_ary(rb_iseq_t *iseq, VALUE misc,
 void rb_iseq_mark_insn_storage(struct iseq_compile_data_storage *arena);
 
 /* iseq.c */
+typedef bool rb_iseq_each_i(VALUE *code, VALUE insn, size_t index, void *data);
+void rb_iseq_each(const rb_iseq_t *iseq, size_t start_index, rb_iseq_each_i iterator, void *data);
+
 VALUE rb_iseq_load(VALUE data, VALUE parent, VALUE opt);
 VALUE rb_iseq_parameters(const rb_iseq_t *iseq, int is_proc);
 unsigned int rb_iseq_line_no(const rb_iseq_t *iseq, size_t pos);

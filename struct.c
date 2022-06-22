@@ -43,13 +43,14 @@ struct_ivar_get(VALUE c, ID id)
 	return ivar;
 
     for (;;) {
-	c = RCLASS_SUPER(c);
-	if (c == 0 || c == rb_cStruct)
-	    return Qnil;
-	ivar = rb_attr_get(c, id);
-	if (!NIL_P(ivar)) {
-	    return rb_ivar_set(orig, id, ivar);
-	}
+        c = rb_class_superclass(c);
+        if (c == 0 || c == rb_cStruct)
+            return Qnil;
+        RUBY_ASSERT(RB_TYPE_P(c, T_CLASS));
+        ivar = rb_attr_get(c, id);
+        if (!NIL_P(ivar)) {
+            return rb_ivar_set(orig, id, ivar);
+        }
     }
 }
 
@@ -1433,12 +1434,12 @@ recursive_eql(VALUE s, VALUE s2, int recur)
  *  - <tt>other.class == self.class</tt>.
  *  - For each member name +name+, <tt>other.name.eql?(self.name)</tt>.
  *
- *    Customer = Struct.new(:name, :address, :zip)
- *    joe    = Customer.new("Joe Smith", "123 Maple, Anytown NC", 12345)
- *    joe_jr = Customer.new("Joe Smith", "123 Maple, Anytown NC", 12345)
- *    joe_jr.eql?(joe) # => true
- *    joe_jr[:name] = 'Joe Smith, Jr.'
- *    joe_jr.eql?(joe) # => false
+ *     Customer = Struct.new(:name, :address, :zip)
+ *     joe    = Customer.new("Joe Smith", "123 Maple, Anytown NC", 12345)
+ *     joe_jr = Customer.new("Joe Smith", "123 Maple, Anytown NC", 12345)
+ *     joe_jr.eql?(joe) # => true
+ *     joe_jr[:name] = 'Joe Smith, Jr.'
+ *     joe_jr.eql?(joe) # => false
  *
  *  Related: Object#==.
  */

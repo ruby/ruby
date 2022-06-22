@@ -26,24 +26,26 @@ struct rb_thread_cond_struct {
     struct cond_event_entry *prev;
 };
 
-typedef struct native_thread_data_struct {
+struct rb_native_thread {
+    HANDLE thread_id;
     HANDLE interrupt_event;
-} native_thread_data_t;
+};
 
-typedef struct rb_global_vm_lock_struct {
+struct rb_thread_sched_item {
+    char dmy;
+};
+
+struct rb_thread_sched {
     HANDLE lock;
-} rb_global_vm_lock_t;
+};
 
 typedef DWORD native_tls_key_t; // TLS index
 
 static inline void *
 native_tls_get(native_tls_key_t key)
 {
-    void *ptr = TlsGetValue(key);
-    if (UNLIKELY(ptr == NULL)) {
-        rb_bug("TlsGetValue() returns NULL");
-    }
-    return ptr;
+    // return value should be checked by caller.
+    return TlsGetValue(key);
 }
 
 static inline void

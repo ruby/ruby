@@ -102,15 +102,82 @@ compile_data_free(struct iseq_compile_data *compile_data)
     }
 }
 
+struct iseq_clear_ic_references_data {
+    IC ic;
+};
+
+// This iterator is used to walk through the instructions and clean any
+// references to ICs that are contained within this ISEQ out of the VM's
+// constant cache table. It passes around a struct that holds the current IC
+// we're looking for, which can be NULL (if we haven't hit an opt_getinlinecache
+// instruction yet) or set to an IC (if we've hit an opt_getinlinecache and
+// haven't yet hit the associated opt_setinlinecache).
+static bool
+iseq_clear_ic_references_i(VALUE *code, VALUE insn, size_t index, void *data)
+{
+    struct iseq_clear_ic_references_data *ic_data = (struct iseq_clear_ic_references_data *) data;
+
+    switch (insn) {
+      case BIN(opt_getinlinecache): {
+        RUBY_ASSERT_ALWAYS(ic_data->ic == NULL);
+
+        ic_data->ic = (IC) code[index + 2];
+        return true;
+      }
+      case BIN(getconstant): {
+        if (ic_data->ic != NULL) {
+            ID id = (ID) code[index + 1];
+            rb_vm_t *vm = GET_VM();
+            VALUE lookup_result;
+
+            if (rb_id_table_lookup(vm->constant_cache, id, &lookup_result)) {
+                st_table *ics = (st_table *)lookup_result;
+                st_data_t ic = (st_data_t)ic_data->ic;
+                st_delete(ics, &ic, NULL);
+
+                if (ics->num_entries == 0) {
+                    rb_id_table_delete(vm->constant_cache, id);
+                    st_free_table(ics);
+                }
+            }
+        }
+
+        return true;
+      }
+      case BIN(opt_setinlinecache): {
+        RUBY_ASSERT_ALWAYS(ic_data->ic != NULL);
+
+        ic_data->ic = NULL;
+        return true;
+      }
+      default:
+        return true;
+    }
+}
+
+// When an ISEQ is being freed, all of its associated ICs are going to go away
+// as well. Because of this, we need to walk through the ISEQ, find any
+// opt_getinlinecache calls, and clear out the VM's constant cache of associated
+// ICs.
+static void
+iseq_clear_ic_references(const rb_iseq_t *iseq)
+{
+    struct iseq_clear_ic_references_data data = { .ic = NULL };
+    rb_iseq_each(iseq, 0, iseq_clear_ic_references_i, (void *) &data);
+}
+
 void
 rb_iseq_free(const rb_iseq_t *iseq)
 {
     RUBY_FREE_ENTER("iseq");
 
     if (iseq && ISEQ_BODY(iseq)) {
+        iseq_clear_ic_references(iseq);
         struct rb_iseq_constant_body *const body = ISEQ_BODY(iseq);
 	mjit_free_iseq(iseq); /* Notify MJIT */
-        rb_yjit_iseq_free(body);
+#if YJIT_BUILD
+        rb_yjit_iseq_free(body->yjit_payload);
+#endif
 	ruby_xfree((void *)body->iseq_encoded);
 	ruby_xfree((void *)body->insns_info.body);
 	if (body->insns_info.positions) ruby_xfree((void *)body->insns_info.positions);
@@ -155,6 +222,22 @@ static VALUE
 rb_vm_insn_null_translator(const void *addr)
 {
     return (VALUE)addr;
+}
+
+// The translator for OPT_DIRECT_THREADED_CODE and OPT_CALL_THREADED_CODE does
+// some normalization to always return the non-trace version of instructions. To
+// mirror that behavior in token-threaded environments, we normalize in this
+// translator by also returning non-trace opcodes.
+static VALUE
+rb_vm_insn_normalizing_translator(const void *addr)
+{
+    VALUE opcode = (VALUE)addr;
+    VALUE trace_opcode_threshold = (VM_INSTRUCTION_SIZE / 2);
+
+    if (opcode >= trace_opcode_threshold) {
+        return opcode - trace_opcode_threshold;
+    }
+    return opcode;
 }
 
 typedef VALUE iseq_value_itr_t(void *ctx, VALUE obj);
@@ -250,6 +333,39 @@ rb_iseq_each_value(const rb_iseq_t *iseq, iseq_value_itr_t * func, void *data)
     }
 }
 
+// Similar to rb_iseq_each_value, except that this walks through each
+// instruction instead of the associated VALUEs. The provided iterator should
+// return a boolean that indicates whether or not to continue iterating.
+void
+rb_iseq_each(const rb_iseq_t *iseq, size_t start_index, rb_iseq_each_i iterator, void *data)
+{
+    unsigned int size;
+    VALUE *code;
+    size_t index;
+
+    rb_vm_insns_translator_t *const translator =
+#if OPT_DIRECT_THREADED_CODE || OPT_CALL_THREADED_CODE
+        (FL_TEST((VALUE)iseq, ISEQ_TRANSLATED)) ? rb_vm_insn_addr2insn2 :
+#endif
+        rb_vm_insn_normalizing_translator; // Always pass non-trace opcodes.
+
+    const struct rb_iseq_constant_body *const body = ISEQ_BODY(iseq);
+
+    size = body->iseq_size;
+    code = body->iseq_encoded;
+
+    for (index = start_index; index < size;) {
+        void *addr = (void *) code[index];
+        VALUE insn = translator(addr);
+
+        if (!iterator(code, insn, index, data)) {
+            break;
+        }
+
+        index += insn_len(insn);
+    }
+}
+
 static VALUE
 update_each_insn_value(void *ctx, VALUE obj)
 {
@@ -325,7 +441,9 @@ rb_iseq_update_references(rb_iseq_t *iseq)
 #if USE_MJIT
         mjit_update_references(iseq);
 #endif
-        rb_yjit_iseq_update_references(body);
+#if YJIT_BUILD
+        rb_yjit_iseq_update_references(body->yjit_payload);
+#endif
     }
 }
 
@@ -413,7 +531,9 @@ rb_iseq_mark(const rb_iseq_t *iseq)
 #if USE_MJIT
         mjit_mark_cc_entries(body);
 #endif
-        rb_yjit_iseq_mark(body);
+#if YJIT_BUILD
+        rb_yjit_iseq_mark(body->yjit_payload);
+#endif
     }
 
     if (FL_TEST_RAW((VALUE)iseq, ISEQ_NOT_LOADED_YET)) {
@@ -1095,6 +1215,7 @@ rb_iseq_compile_with_option(VALUE src, VALUE file, VALUE realpath, VALUE line, V
     rb_ast_t *(*parse)(VALUE vparser, VALUE fname, VALUE file, int start);
     int ln;
     rb_ast_t *INITIALIZED ast;
+    VALUE name = rb_fstring_lit("<compiled>");
 
     /* safe results first */
     make_compile_option(&option, opt);
@@ -1109,7 +1230,6 @@ rb_iseq_compile_with_option(VALUE src, VALUE file, VALUE realpath, VALUE line, V
     }
     {
 	const VALUE parser = rb_parser_new();
-        VALUE name = rb_fstring_lit("<compiled>");
         const rb_iseq_t *outer_scope = rb_iseq_new(NULL, name, name, Qnil, 0, ISEQ_TYPE_TOP);
         VALUE outer_scope_v = (VALUE)outer_scope;
         rb_parser_set_context(parser, outer_scope, FALSE);
@@ -1122,8 +1242,7 @@ rb_iseq_compile_with_option(VALUE src, VALUE file, VALUE realpath, VALUE line, V
 	rb_exc_raise(GET_EC()->errinfo);
     }
     else {
-	INITIALIZED VALUE label = rb_fstring_lit("<compiled>");
-	iseq = rb_iseq_new_with_opt(&ast->body, label, file, realpath, line,
+	iseq = rb_iseq_new_with_opt(&ast->body, name, file, realpath, line,
 				    NULL, 0, ISEQ_TYPE_TOP, &option);
 	rb_ast_dispose(ast);
     }

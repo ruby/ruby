@@ -274,7 +274,7 @@ rb_nkf_guess(VALUE obj, VALUE src)
  *
  *  {de/en}crypt ROT13/47
  *
- *  === -h[123] --hiragana --katakana --katakana-hiragana
+ *  === \-h[123] --hiragana --katakana --katakana-hiragana
  *
  *  [-h1 --hiragana] Katakana to Hiragana conversion.
  *
@@ -299,7 +299,7 @@ rb_nkf_guess(VALUE obj, VALUE src)
  *
  *  New line preserving line folding.
  *
- *  === -Z[0-3]
+ *  === \-Z[0-3]
  *
  *  Convert X0208 alphabet (Fullwidth Alphabets) to ASCII.
  *
@@ -318,7 +318,7 @@ rb_nkf_guess(VALUE obj, VALUE src)
  *  With <b>-x</b>, try to preserve X0208 kana and do not convert X0201 kana to X0208.
  *  In JIS output, ESC-(-I is used. In EUC output, SSO is used.
  *
- *  === -B[0-2]
+ *  === \-B[0-2]
  *
  *  Assume broken JIS-Kanji input, which lost ESC.
  *  Useful when your site is using old B-News Nihongo patch.
@@ -336,7 +336,7 @@ rb_nkf_guess(VALUE obj, VALUE src)
  *
  *  Delete \r in line feed, Add \r in line feed.
  *
- *  === -m[BQN0]
+ *  === \-m[BQN0]
  *
  *  MIME ISO-2022-JP/ISO8859-1 decode. (DEFAULT)
  *  To see ISO8859-1 (Latin-1) -l is necessary.
@@ -365,7 +365,7 @@ rb_nkf_guess(VALUE obj, VALUE src)
  *  Input and output code is ISO8859-1 (Latin-1) and ISO-2022-JP.
  *  <b>-s</b>, <b>-e</b> and <b>-x</b> are not compatible with this option.
  *
- *  === -L[uwm]
+ *  === \-L[uwm]
  *
  *  new line mode
  *  Without this option, nkf doesn't convert line breaks.

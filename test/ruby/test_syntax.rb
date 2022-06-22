@@ -66,6 +66,15 @@ class TestSyntax < Test::Unit::TestCase
     f&.close!
   end
 
+  def test_script_lines_encoding
+    require 'tmpdir'
+    Dir.mktmpdir do |dir|
+      File.write(File.join(dir, "script_lines.rb"), "SCRIPT_LINES__ = {}\n")
+      assert_in_out_err(%w"-r./script_lines -w -Ke", "puts __ENCODING__.name",
+                        %w"EUC-JP", /-K is specified/, chdir: dir)
+    end
+  end
+
   def test_anonymous_block_forwarding
     assert_syntax_error("def b; c(&); end", /no anonymous block parameter/)
     assert_separately([], "#{<<-"begin;"}\n#{<<-'end;'}")
@@ -75,6 +84,60 @@ class TestSyntax < Test::Unit::TestCase
         a = nil
         b{|c| a = c}
         assert_equal(1, a)
+
+        def inner
+          yield
+        end
+
+        def block_only(&)
+          inner(&)
+        end
+        assert_equal(1, block_only{1})
+
+        def pos(arg1, &)
+          inner(&)
+        end
+        assert_equal(2, pos(nil){2})
+
+        def pos_kwrest(arg1, **kw, &)
+          inner(&)
+        end
+        assert_equal(3, pos_kwrest(nil){3})
+
+        def no_kw(arg1, **nil, &)
+          inner(&)
+        end
+        assert_equal(4, no_kw(nil){4})
+
+        def rest_kw(*a, kwarg: 1, &)
+          inner(&)
+        end
+        assert_equal(5, rest_kw{5})
+
+        def kw(kwarg:1, &)
+          inner(&)
+        end
+        assert_equal(6, kw{6})
+
+        def pos_kw_kwrest(arg1, kwarg:1, **kw, &)
+          inner(&)
+        end
+        assert_equal(7, pos_kw_kwrest(nil){7})
+
+        def pos_rkw(arg1, kwarg1:, &)
+          inner(&)
+        end
+        assert_equal(8, pos_rkw(nil, kwarg1: nil){8})
+
+        def all(arg1, arg2, *rest, post1, post2, kw1: 1, kw2: 2, okw1:, okw2:, &)
+          inner(&)
+        end
+        assert_equal(9, all(nil, nil, nil, nil, okw1: nil, okw2: nil){9})
+
+        def all_kwrest(arg1, arg2, *rest, post1, post2, kw1: 1, kw2: 2, okw1:, okw2:, **kw, &)
+          inner(&)
+        end
+        assert_equal(10, all_kwrest(nil, nil, nil, nil, okw1: nil, okw2: nil){10})
     end;
   end
 

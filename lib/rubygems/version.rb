@@ -153,8 +153,6 @@ require_relative "deprecate"
 # a zero to give a sensible result.
 
 class Gem::Version
-  autoload :Requirement, File.expand_path('requirement', __dir__)
-
   include Comparable
 
   VERSION_PATTERN = '[0-9]+(?>\.[0-9a-zA-Z]+)*(-[0-9A-Za-z-]+(\.[0-9A-Za-z-]+)*)?'.freeze # :nodoc:

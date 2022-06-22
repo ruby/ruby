@@ -462,9 +462,17 @@ static VALUE json_string_unescape(char *string, char *stringEnd, int intern, int
     char buf[4];
 
     if (bufferSize > MAX_STACK_BUFFER_SIZE) {
+# ifdef HAVE_RB_ENC_INTERNED_STR
+      bufferStart = buffer = ALLOC_N(char, bufferSize ? bufferSize : 1);
+# else
       bufferStart = buffer = ALLOC_N(char, bufferSize);
+# endif
     } else {
+# ifdef HAVE_RB_ENC_INTERNED_STR
+      bufferStart = buffer = ALLOCA_N(char, bufferSize ? bufferSize : 1);
+# else
       bufferStart = buffer = ALLOCA_N(char, bufferSize);
+# endif
     }
 
     while (pe < stringEnd) {
@@ -839,6 +847,7 @@ static VALUE cParser_initialize(int argc, VALUE *argv, VALUE self)
  *
  *  Parses the current JSON text _source_ and returns the complete data
  *  structure as a result.
+ *  It raises JSON::ParseError if fail to parse.
  */
 static VALUE cParser_parse(VALUE self)
 {

@@ -539,16 +539,23 @@ pty_detach_process(VALUE v)
 
 /*
  * call-seq:
- *   PTY.spawn(command_line)  { |r, w, pid| ... }
- *   PTY.spawn(command_line)  => [r, w, pid]
- *   PTY.spawn(command, arguments, ...)  { |r, w, pid| ... }
- *   PTY.spawn(command, arguments, ...)  => [r, w, pid]
+ *   PTY.spawn([env,] command_line)  { |r, w, pid| ... }
+ *   PTY.spawn([env,] command_line)  => [r, w, pid]
+ *   PTY.spawn([env,] command, arguments, ...)  { |r, w, pid| ... }
+ *   PTY.spawn([env,] command, arguments, ...)  => [r, w, pid]
  *
  * Spawns the specified command on a newly allocated pty. You can also use the
  * alias ::getpty.
  *
  * The command's controlling tty is set to the slave device of the pty
  * and its standard input/output/error is redirected to the slave device.
+ *
+ * +env+ is an optional hash that provides additional environment variables to the spawned pty.
+ *
+ *   # sets FOO to "bar"
+ *   PTY.spawn({"FOO"=>"bar"}, "printenv", "FOO") { |r,w,pid| p r.read } #=> "bar\r\n"
+ *   # unsets FOO
+ *   PTY.spawn({"FOO"=>nil}, "printenv", "FOO") { |r,w,pid| p r.read } #=> ""
  *
  * +command+ and +command_line+ are the full commands to run, given a String.
  * Any additional +arguments+ will be passed to the command.

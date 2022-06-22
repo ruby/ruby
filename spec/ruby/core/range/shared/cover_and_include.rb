@@ -24,11 +24,9 @@ describe :range_cover_and_include, shared: true do
     eval("(0.5...)").send(@method, 2.4).should == true
   end
 
-  ruby_version_is "2.7" do
-    it "returns true if other is an element of self for beginless ranges" do
-      eval("(..10)").send(@method, 2.4).should == true
-      eval("(...10.5)").send(@method, 2.4).should == true
-    end
+  it "returns true if other is an element of self for beginless ranges" do
+    (..10).send(@method, 2.4).should == true
+    (...10.5).send(@method, 2.4).should == true
   end
 
   it "compares values using <=>" do

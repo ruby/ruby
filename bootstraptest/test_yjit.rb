@@ -1337,6 +1337,46 @@ assert_equal 'foo123', %q{
   make_str("foo", 123)
 }
 
+# test that invalidation of String#to_s doesn't crash
+assert_equal 'meh', %q{
+  def inval_method
+    "".to_s
+  end
+
+  inval_method
+
+  class String
+    def to_s
+      "meh"
+    end
+  end
+
+  inval_method
+}
+
+# test that overriding to_s on a String subclass works consistently
+assert_equal 'meh', %q{
+  class MyString < String
+    def to_s
+      "meh"
+    end
+  end
+
+  def test_to_s(obj)
+    obj.to_s
+  end
+
+  OBJ = MyString.new
+
+  # Should return '' both times
+  test_to_s("")
+  test_to_s("")
+
+  # Can return '' if YJIT optimises String#to_s too aggressively
+  test_to_s(OBJ)
+  test_to_s(OBJ)
+}
+
 # test string interpolation with overridden to_s
 assert_equal 'foo', %q{
   class String
@@ -1353,6 +1393,108 @@ assert_equal 'foo', %q{
   make_str("foo")
 }
 
+# Test that String unary plus returns the same object ID for an unfrozen string.
+assert_equal '', %q{
+  str = "bar"
+
+  old_obj_id = str.object_id
+  uplus_str = +str
+
+  if uplus_str.object_id != old_obj_id
+    raise "String unary plus on unfrozen should return the string exactly, not a duplicate"
+  end
+
+  ''
+}
+
+# Test that String unary plus returns a different unfrozen string when given a frozen string
+assert_equal 'false', %q{
+  frozen_str = "foo".freeze
+
+  old_obj_id = frozen_str.object_id
+  uplus_str = +frozen_str
+
+  if uplus_str.object_id == old_obj_id
+    raise "String unary plus on frozen should return a new duplicated string"
+  end
+
+  uplus_str.frozen?
+}
+
+# String-subclass objects should behave as expected inside string-interpolation via concatstrings
+assert_equal 'monkeys, yo!', %q{
+  class MyString < String
+    # This is a terrible idea in production code, but we'd like YJIT to match CRuby
+    def to_s
+      super + ", yo!"
+    end
+  end
+
+  m = MyString.new('monkeys')
+  "#{m.to_s}"
+
+  raise "String-subclass to_s should not be called for interpolation" if "#{m}" != 'monkeys'
+  raise "String-subclass to_s should be called explicitly during interpolation" if "#{m.to_s}" != 'monkeys, yo!'
+
+  m.to_s
+}
+
+# String-subclass objects should behave as expected for string equality
+assert_equal 'a', %q{
+  class MyString < String
+    # This is a terrible idea in production code, but we'd like YJIT to match CRuby
+    def ==(b)
+      "#{self}_" == b
+    end
+  end
+
+  ma = MyString.new("a")
+
+  raise "Not dispatching to string-subclass equality!" if ma == "a" || ma != "a_"
+  raise "Incorrectly dispatching for String equality!" if "a_" == ma || "a" != ma
+  raise "Error in equality between string subclasses!" if ma != MyString.new("a_")
+  # opt_equality has an explicit "string always equals itself" test, but should never be used when == is redefined
+  raise "Error in reflexive equality!" if ma == ma
+
+  ma.to_s
+}
+
+assert_equal '', %q{
+  class MyString < String; end
+
+  a = "a"
+  ma = MyString.new("a")
+  fma = MyString.new("a").freeze
+
+  # Test to_s on string subclass
+  raise "to_s should not duplicate a String!" if a.object_id != a.to_s.object_id
+  raise "to_s should duplicate a String subclass!" if ma.object_id == ma.to_s.object_id
+
+  # Test freeze, uminus and uplus on string subclass
+  raise "Freezing a string subclass should not duplicate it!" if fma.object_id != fma.freeze.object_id
+  raise "Unary minus on frozen string subclass should not duplicate it!" if fma.object_id != (-fma).object_id
+  raise "Unary minus on unfrozen string subclass should duplicate it!" if ma.object_id == (-ma).object_id
+  raise "Unary plus on unfrozen string subclass should not duplicate it!" if ma.object_id != (+ma).object_id
+  raise "Unary plus on frozen string subclass should duplicate it!" if fma.object_id == (+fma).object_id
+
+  ''
+}
+
+# Test << operator on string subclass
+assert_equal 'abab', %q{
+  class MyString < String; end
+
+  a = -"a"
+  mb = MyString.new("b")
+
+  buf = String.new
+  mbuf = MyString.new
+
+  buf << a << mb
+  mbuf << a << mb
+
+  buf + mbuf
+}
 
 # test invokebuiltin as used in struct assignment
 assert_equal '123', %q{
@@ -2056,7 +2198,6 @@ assert_equal '[:itself]', %q{
   def traced_method
     itself
   end
-
 
   tracing_ractor = Ractor.new do
     # 1: start tracing
@@ -2805,4 +2946,49 @@ assert_equal '', %q{
 
   foo
   foo
+}
+
+# Make sure we're correctly reading RStruct's as.ary union for embedded RStructs
+assert_equal '3,12', %q{
+  pt_struct = Struct.new(:x, :y)
+  p = pt_struct.new(3, 12)
+  def pt_inspect(pt)
+    "#{pt.x},#{pt.y}"
+  end
+
+  # Make sure pt_inspect is JITted
+  10.times { pt_inspect(p) }
+
+  # Make sure it's returning '3,12' instead of e.g. '3,false'
+  pt_inspect(p)
+}
+
+# Regression test for deadlock between branch_stub_hit and ractor_receive_if
+assert_equal '10', %q{
+  r = Ractor.new Ractor.current do |main|
+    main << 1
+    main << 2
+    main << 3
+    main << 4
+    main << 5
+    main << 6
+    main << 7
+    main << 8
+    main << 9
+    main << 10
+  end
+
+  a = []
+  a << Ractor.receive_if{|msg| msg == 10}
+  a << Ractor.receive_if{|msg| msg == 9}
+  a << Ractor.receive_if{|msg| msg == 8}
+  a << Ractor.receive_if{|msg| msg == 7}
+  a << Ractor.receive_if{|msg| msg == 6}
+  a << Ractor.receive_if{|msg| msg == 5}
+  a << Ractor.receive_if{|msg| msg == 4}
+  a << Ractor.receive_if{|msg| msg == 3}
+  a << Ractor.receive_if{|msg| msg == 2}
+  a << Ractor.receive_if{|msg| msg == 1}
+
+  a.length
 }

@@ -19,10 +19,18 @@ if yaml_source == true
   # search the latest libyaml source under $srcdir
   yaml_source = Dir.glob("#{$srcdir}/yaml{,-*}/").max_by {|n| File.basename(n).scan(/\d+/).map(&:to_i)}
   unless yaml_source
-    require_relative '../../tool/extlibs.rb'
+    download_failure = "failed to download libyaml source. Try manually installing libyaml?"
+    begin
+      require_relative '../../tool/extlibs.rb'
+    rescue LoadError
+      # When running in ruby/ruby, we use miniruby and don't have stdlib.
+      # Avoid LoadError because it aborts the whole build. Usually when
+      # stdlib extension fail to configure we skip it and continue.
+      raise download_failure
+    end
     extlibs = ExtLibs.new(cache_dir: File.expand_path("../../tmp/download_cache", $srcdir))
     unless extlibs.process_under($srcdir)
-      raise "failed to download libyaml source"
+      raise download_failure
     end
     yaml_source, = Dir.glob("#{$srcdir}/yaml-*/")
     raise "libyaml not found" unless yaml_source
@@ -31,6 +39,7 @@ elsif yaml_source
   yaml_source = yaml_source.gsub(/\$\((\w+)\)|\$\{(\w+)\}/) {ENV[$1||$2]}
 end
 if yaml_source
+  yaml_source = yaml_source.chomp("/")
   yaml_configure = "#{File.expand_path(yaml_source)}/configure"
   unless File.exist?(yaml_configure)
     raise "Configure script not found in #{yaml_source.quote}"
@@ -40,17 +49,20 @@ if yaml_source
   yaml = "libyaml"
   Dir.mkdir(yaml) unless File.directory?(yaml)
   shared = $enable_shared || !$static
-  unless system(yaml_configure, "-q",
-                "--enable-#{shared ? 'shared' : 'static'}",
-                "--host=#{RbConfig::CONFIG['host'].sub(/-unknown-/, '-')}",
-                *(["CFLAGS=-w"] if RbConfig::CONFIG["GCC"] == "yes"),
-                chdir: yaml)
+  args = [
+    yaml_configure,
+    "--enable-#{shared ? 'shared' : 'static'}",
+    "--host=#{RbConfig::CONFIG['host'].sub(/-unknown-/, '-')}",
+    "CC=#{RbConfig::CONFIG['CC']}",
+    *(["CFLAGS=-w"] if RbConfig::CONFIG["GCC"] == "yes"),
+  ]
+  puts(args.quote.join(' '))
+  unless system(*args, chdir: yaml)
     raise "failed to configure libyaml"
   end
-  Logging.message("libyaml configured\n")
   inc = yaml_source.start_with?("#$srcdir/") ? "$(srcdir)#{yaml_source[$srcdir.size..-1]}" : yaml_source
   $INCFLAGS << " -I#{yaml}/include -I#{inc}/include"
-  Logging.message("INCLFAG=#$INCLFAG\n")
+  puts("INCFLAGS=#$INCFLAGS")
   libyaml = "libyaml.#$LIBEXT"
   $cleanfiles << libyaml
   $LOCAL_LIBS.prepend("$(LIBYAML) ")

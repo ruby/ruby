@@ -34,12 +34,10 @@ describe 'Kernel#caller_locations' do
     locations2.map(&:to_s).should == locations1[2..-1].map(&:to_s)
   end
 
-  ruby_version_is "2.7" do
-    it "works with beginless ranges" do
-      locations1 = caller_locations(0)
-      locations2 = caller_locations(eval("(...5)"))
-      locations2.map(&:to_s)[eval("(2..)")].should == locations1[eval("(...5)")].map(&:to_s)[eval("(2..)")]
-    end
+  it "works with beginless ranges" do
+    locations1 = caller_locations(0)
+    locations2 = caller_locations((...5))
+    locations2.map(&:to_s)[eval("(2..)")].should == locations1[(...5)].map(&:to_s)[eval("(2..)")]
   end
 
   it "can be called with a range whose end is negative" do

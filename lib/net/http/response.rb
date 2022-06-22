@@ -84,6 +84,8 @@ class Net::HTTPResponse
     @read = false
     @uri  = nil
     @decode_content = false
+    @body_encoding = false
+    @ignore_eof = true
   end
 
   # The HTTP version supported by the server.
@@ -105,6 +107,22 @@ class Net::HTTPResponse
   # Set to true automatically when the request did not contain an
   # Accept-Encoding header from the user.
   attr_accessor :decode_content
+
+  # The encoding to use for the response body. If Encoding, use that encoding.
+  # If other true value, attempt to detect the appropriate encoding, and use
+  # that.
+  attr_reader :body_encoding
+
+  # Set the encoding to use for the response body.  If given a String, find
+  # the related Encoding.
+  def body_encoding=(value)
+    value = Encoding.find(value) if value.is_a?(String)
+    @body_encoding = value
+  end
+
+  # Whether to ignore EOF when reading bodies with a specified Content-Length
+  # header.
+  attr_accessor :ignore_eof
 
   def inspect
     "#<#{self.class} #{@code} #{@message} readbody=#{@read}>"
@@ -214,6 +232,17 @@ class Net::HTTPResponse
     end
     @read = true
 
+    case enc = @body_encoding
+    when Encoding, false, nil
+      # Encoding: force given encoding
+      # false/nil: do not force encoding
+    else
+      # other value: detect encoding from body
+      enc = detect_encoding(@body)
+    end
+
+    @body.force_encoding(enc) if enc
+
     @body
   end
 
@@ -245,6 +274,141 @@ class Net::HTTPResponse
 
   private
 
+  # :nodoc:
+  def detect_encoding(str, encoding=nil)
+    if encoding
+    elsif encoding = type_params['charset']
+    elsif encoding = check_bom(str)
+    else
+      encoding = case content_type&.downcase
+      when %r{text/x(?:ht)?ml|application/(?:[^+]+\+)?xml}
+        /\A<xml[ \t\r\n]+
+          version[ \t\r\n]*=[ \t\r\n]*(?:"[0-9.]+"|'[0-9.]*')[ \t\r\n]+
+          encoding[ \t\r\n]*=[ \t\r\n]*
+          (?:"([A-Za-z][\-A-Za-z0-9._]*)"|'([A-Za-z][\-A-Za-z0-9._]*)')/x =~ str
+        encoding = $1 || $2 || Encoding::UTF_8
+      when %r{text/html.*}
+        sniff_encoding(str)
+      end
+    end
+    return encoding
+  end
+
+  # :nodoc:
+  def sniff_encoding(str, encoding=nil)
+    # the encoding sniffing algorithm
+    # http://www.w3.org/TR/html5/parsing.html#determining-the-character-encoding
+    if enc = scanning_meta(str)
+      enc
+    # 6. last visited page or something
+    # 7. frequency
+    elsif str.ascii_only?
+      Encoding::US_ASCII
+    elsif str.dup.force_encoding(Encoding::UTF_8).valid_encoding?
+      Encoding::UTF_8
+    end
+    # 8. implementation-defined or user-specified
+  end
+
+  # :nodoc:
+  def check_bom(str)
+    case str.byteslice(0, 2)
+    when "\xFE\xFF"
+      return Encoding::UTF_16BE
+    when "\xFF\xFE"
+      return Encoding::UTF_16LE
+    end
+    if "\xEF\xBB\xBF" == str.byteslice(0, 3)
+      return Encoding::UTF_8
+    end
+    nil
+  end
+
+  # :nodoc:
+  def scanning_meta(str)
+    require 'strscan'
+    ss = StringScanner.new(str)
+    if ss.scan_until(/<meta[\t\n\f\r ]*/)
+      attrs = {} # attribute_list
+      got_pragma = false
+      need_pragma = nil
+      charset = nil
+
+      # step: Attributes
+      while attr = get_attribute(ss)
+        name, value = *attr
+        next if attrs[name]
+        attrs[name] = true
+        case name
+        when 'http-equiv'
+          got_pragma = true if value == 'content-type'
+        when 'content'
+          encoding = extracting_encodings_from_meta_elements(value)
+          unless charset
+            charset = encoding
+          end
+          need_pragma = true
+        when 'charset'
+          need_pragma = false
+          charset = value
+        end
+      end
+
+      # step: Processing
+      return if need_pragma.nil?
+      return if need_pragma && !got_pragma
+
+      charset = Encoding.find(charset) rescue nil
+      return unless charset
+      charset = Encoding::UTF_8 if charset == Encoding::UTF_16
+      return charset # tentative
+    end
+    nil
+  end
+
+  def get_attribute(ss)
+    ss.scan(/[\t\n\f\r \/]*/)
+    if ss.peek(1) == '>'
+      ss.getch
+      return nil
+    end
+    name = ss.scan(/[^=\t\n\f\r \/>]*/)
+    name.downcase!
+    raise if name.empty?
+    ss.skip(/[\t\n\f\r ]*/)
+    if ss.getch != '='
+      value = ''
+      return [name, value]
+    end
+    ss.skip(/[\t\n\f\r ]*/)
+    case ss.peek(1)
+    when '"'
+      ss.getch
+      value = ss.scan(/[^"]+/)
+      value.downcase!
+      ss.getch
+    when "'"
+      ss.getch
+      value = ss.scan(/[^']+/)
+      value.downcase!
+      ss.getch
+    when '>'
+      value = ''
+    else
+      value = ss.scan(/[^\t\n\f\r >]+/)
+      value.downcase!
+    end
+    [name, value]
+  end
+
+  def extracting_encodings_from_meta_elements(value)
+    # http://dev.w3.org/html5/spec/fetching-resources.html#algorithm-for-extracting-an-encoding-from-a-meta-element
+    if /charset[\t\n\f\r ]*=(?:"([^"]*)"|'([^']*)'|["']|\z|([^\t\n\f\r ;]+))/i =~ value
+      return $1 || $2 || $3
+    end
+    return nil
+  end
+
   ##
   # Checks for a supported Content-Encoding header and yields an Inflate
   # wrapper for this response's socket when zlib is present.  If the
@@ -272,6 +436,9 @@ class Net::HTTPResponse
       ensure
         begin
           inflate_body_io.finish
+          if self['content-length']
+            self['content-length'] = inflate_body_io.bytes_inflated.to_s
+          end
         rescue => err
           # Ignore #finish's error if there is an exception from yield
           raise err if success
@@ -297,7 +464,7 @@ class Net::HTTPResponse
 
       clen = content_length()
       if clen
-        @socket.read clen, dest, true   # ignore EOF
+        @socket.read clen, dest, @ignore_eof
         return
       end
       clen = range_length()
@@ -371,6 +538,14 @@ class Net::HTTPResponse
     def finish
       return if @inflate.total_in == 0
       @inflate.finish
+    end
+
+    ##
+    # The number of bytes inflated, used to update the Content-Length of
+    # the response.
+
+    def bytes_inflated
+      @inflate.total_out
     end
 
     ##

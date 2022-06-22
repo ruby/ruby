@@ -629,20 +629,22 @@ count_imemo_objects(int argc, VALUE *argv, VALUE self)
     VALUE hash = setup_hash(argc, argv);
 
     if (imemo_type_ids[0] == 0) {
-        imemo_type_ids[0] = rb_intern("imemo_env");
-	imemo_type_ids[1] = rb_intern("imemo_cref");
-	imemo_type_ids[2] = rb_intern("imemo_svar");
-	imemo_type_ids[3] = rb_intern("imemo_throw_data");
-	imemo_type_ids[4] = rb_intern("imemo_ifunc");
-	imemo_type_ids[5] = rb_intern("imemo_memo");
-	imemo_type_ids[6] = rb_intern("imemo_ment");
-	imemo_type_ids[7] = rb_intern("imemo_iseq");
-	imemo_type_ids[8] = rb_intern("imemo_tmpbuf");
-        imemo_type_ids[9] = rb_intern("imemo_ast");
-        imemo_type_ids[10] = rb_intern("imemo_parser_strterm");
-        imemo_type_ids[11] = rb_intern("imemo_callinfo");
-        imemo_type_ids[12] = rb_intern("imemo_callcache");
-        imemo_type_ids[13] = rb_intern("imemo_constcache");
+#define INIT_IMEMO_TYPE_ID(n) (imemo_type_ids[n] = rb_intern_const(#n))
+        INIT_IMEMO_TYPE_ID(imemo_env);
+        INIT_IMEMO_TYPE_ID(imemo_cref);
+        INIT_IMEMO_TYPE_ID(imemo_svar);
+        INIT_IMEMO_TYPE_ID(imemo_throw_data);
+        INIT_IMEMO_TYPE_ID(imemo_ifunc);
+        INIT_IMEMO_TYPE_ID(imemo_memo);
+        INIT_IMEMO_TYPE_ID(imemo_ment);
+        INIT_IMEMO_TYPE_ID(imemo_iseq);
+        INIT_IMEMO_TYPE_ID(imemo_tmpbuf);
+        INIT_IMEMO_TYPE_ID(imemo_ast);
+        INIT_IMEMO_TYPE_ID(imemo_parser_strterm);
+        INIT_IMEMO_TYPE_ID(imemo_callinfo);
+        INIT_IMEMO_TYPE_ID(imemo_callcache);
+        INIT_IMEMO_TYPE_ID(imemo_constcache);
+#undef INIT_IMEMO_TYPE_ID
     }
 
     each_object_with_flags(count_imemo_objects_i, (void *)hash);

@@ -23,9 +23,16 @@ class ErrorHighlightTest < Test::Unit::TestCase
     end
   end
 
-  def assert_error_message(klass, expected_msg, &blk)
-    err = assert_raise(klass, &blk)
-    assert_equal(expected_msg.chomp, err.message)
+  if Exception.method_defined?(:detailed_message)
+    def assert_error_message(klass, expected_msg, &blk)
+      err = assert_raise(klass, &blk)
+      assert_equal(expected_msg.chomp, err.detailed_message(highlight: false).sub(/ \((?:NoMethod|Name)Error\)/, ""))
+    end
+  else
+    def assert_error_message(klass, expected_msg, &blk)
+      err = assert_raise(klass, &blk)
+      assert_equal(expected_msg.chomp, err.message)
+    end
   end
 
   def test_CALL_noarg_1

@@ -518,115 +518,55 @@ describe "Module#refine" do
       result.should == "hello from refinement"
     end
 
-    ruby_version_is "" ... "2.7" do
-      it "is not honored by Kernel#method" do
-        klass = Class.new
-        refinement = Module.new do
-          refine klass do
-            def foo; end
-          end
+    it "is honored by Kernel#method" do
+      klass = Class.new
+      refinement = Module.new do
+        refine klass do
+          def foo; end
         end
-
-        -> {
-          Module.new do
-            using refinement
-            klass.new.method(:foo)
-          end
-        }.should raise_error(NameError, /undefined method `foo'/)
       end
+
+      result = nil
+      Module.new do
+        using refinement
+        result = klass.new.method(:foo).class
+      end
+
+      result.should == Method
     end
 
-    ruby_version_is "2.7" do
-      it "is honored by Kernel#method" do
-        klass = Class.new
-        refinement = Module.new do
-          refine klass do
-            def foo; end
-          end
+    it "is honored by Kernel#public_method" do
+      klass = Class.new
+      refinement = Module.new do
+        refine klass do
+          def foo; end
         end
-
-        result = nil
-        Module.new do
-          using refinement
-          result = klass.new.method(:foo).class
-        end
-
-        result.should == Method
       end
+
+      result = nil
+      Module.new do
+        using refinement
+        result = klass.new.public_method(:foo).class
+      end
+
+      result.should == Method
     end
 
-    ruby_version_is "" ... "2.7" do
-      it "is not honored by Kernel#public_method" do
-        klass = Class.new
-        refinement = Module.new do
-          refine klass do
-            def foo; end
-          end
+    it "is honored by Kernel#instance_method" do
+      klass = Class.new
+      refinement = Module.new do
+        refine klass do
+          def foo; end
         end
-
-        -> {
-          Module.new do
-            using refinement
-            klass.new.public_method(:foo)
-          end
-        }.should raise_error(NameError, /undefined method `foo'/)
       end
-    end
 
-    ruby_version_is "2.7" do
-      it "is honored by Kernel#public_method" do
-        klass = Class.new
-        refinement = Module.new do
-          refine klass do
-            def foo; end
-          end
-        end
-
-        result = nil
-        Module.new do
-          using refinement
-          result = klass.new.public_method(:foo).class
-        end
-
-        result.should == Method
+      result = nil
+      Module.new do
+        using refinement
+        result = klass.instance_method(:foo).class
       end
-    end
 
-    ruby_version_is "" ... "2.7" do
-      it "is not honored by Kernel#instance_method" do
-        klass = Class.new
-        refinement = Module.new do
-          refine klass do
-            def foo; end
-          end
-        end
-
-        -> {
-          Module.new do
-            using refinement
-            klass.instance_method(:foo)
-          end
-        }.should raise_error(NameError, /undefined method `foo'/)
-      end
-    end
-
-    ruby_version_is "2.7" do
-      it "is honored by Kernel#instance_method" do
-        klass = Class.new
-        refinement = Module.new do
-          refine klass do
-            def foo; end
-          end
-        end
-
-        result = nil
-        Module.new do
-          using refinement
-          result = klass.instance_method(:foo).class
-        end
-
-        result.should == UnboundMethod
-      end
+      result.should == UnboundMethod
     end
 
     it "is honored by Kernel#respond_to?" do

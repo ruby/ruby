@@ -227,7 +227,7 @@ class ExtLibs
       begin
         extracted = do_command(mode, dest, url, cache_dir, chksums)
       rescue => e
-        warn e.full_message
+        warn defined?(e.full_message) ? e.full_message : e.message
         success = false
       end
       url = chksums = nil

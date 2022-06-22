@@ -481,7 +481,7 @@ w_symbol(VALUE sym, struct dump_arg *arg)
 	}
 	encname = encoding_name(sym, arg);
 	if (NIL_P(encname) ||
-	    rb_enc_str_coderange(sym) == ENC_CODERANGE_7BIT) {
+	    is_ascii_string(sym)) {
 	    encname = Qnil;
 	}
 	else {

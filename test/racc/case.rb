@@ -90,8 +90,7 @@ module Racc
       actual   = File.read("#{@TAB_DIR}/#{file}")
       result   = (strip_version(expected) == strip_version(actual))
 
-      assert(result, "Output of test/assets/#{file}.y differed from " \
-        "expectation. Try compiling it and diff with test/regress/#{file}.")
+      assert(result, proc {`diff -u #{REGRESS_DIR}/#{file} #{@TAB_DIR}/#{file}`})
     end
 
     def racc(*arg, **opt)

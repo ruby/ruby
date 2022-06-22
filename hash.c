@@ -35,6 +35,7 @@
 #include "internal/object.h"
 #include "internal/proc.h"
 #include "internal/symbol.h"
+#include "internal/thread.h"
 #include "internal/time.h"
 #include "internal/vm.h"
 #include "probes.h"
@@ -195,7 +196,7 @@ obj_any_hash(VALUE obj)
     VALUE hval = rb_check_funcall_basic_kw(obj, id_hash, rb_mKernel, 0, 0, 0);
 
     if (hval == Qundef) {
-        hval = rb_exec_recursive_outer(hash_recursive, obj, 0);
+        hval = rb_exec_recursive_outer_mid(hash_recursive, obj, 0, id_hash);
     }
 
     while (!FIXNUM_P(hval)) {
@@ -303,6 +304,19 @@ objid_hash(VALUE obj)
  *
  * Certain core classes such as Integer use built-in hash calculations and
  * do not call the #hash method when used as a hash key.
+ *
+ * When implementing your own #hash based on multiple values, the best
+ * practice is to combine the class and any values using the hash code of an
+ * array:
+ *
+ * For example:
+ *
+ *   def hash
+ *     [self.class, a, b, c].hash
+ *   end
+ *
+ * The reason for this is that the Array#hash method already has logic for
+ * safely and efficiently combining multiple hash values.
  *--
  * \private
  *++
@@ -1573,6 +1587,12 @@ rb_hash_new_with_size(st_index_t size)
         RHASH_ST_TABLE_SET(ret, st_init_table_with_size(&objhash, size));
     }
     return ret;
+}
+
+VALUE
+rb_hash_new_capa(long capa)
+{
+    return rb_hash_new_with_size((st_index_t)capa);
 }
 
 static VALUE
@@ -6569,10 +6589,12 @@ env_update_block_i(VALUE key, VALUE val, VALUE _)
 
 /*
  * call-seq:
- *   ENV.update(hash)                                     -> ENV
- *   ENV.update(hash) { |name, env_val, hash_val| block } -> ENV
- *   ENV.merge!(hash)                                     -> ENV
- *   ENV.merge!(hash) { |name, env_val, hash_val| block } -> ENV
+ *   ENV.update                                              -> ENV
+ *   ENV.update(*hashes)                                     -> ENV
+ *   ENV.update(*hashes) { |name, env_val, hash_val| block } -> ENV
+ *   ENV.merge!                                              -> ENV
+ *   ENV.merge!(*hashes)                                     -> ENV
+ *   ENV.merge!(*hashes) { |name, env_val, hash_val| block } -> ENV
  *
  * ENV.update is an alias for ENV.merge!.
  *
@@ -6604,13 +6626,16 @@ env_update_block_i(VALUE key, VALUE val, VALUE _)
  * those following are ignored.
  */
 static VALUE
-env_update(VALUE env, VALUE hash)
+env_update(int argc, VALUE *argv, VALUE env)
 {
-    if (env == hash) return env;
-    hash = to_hash(hash);
     rb_foreach_func *func = rb_block_given_p() ?
         env_update_block_i : env_update_i;
-    rb_hash_foreach(hash, func, 0);
+    for (int i = 0; i < argc; ++i) {
+        VALUE hash = argv[i];
+        if (env == hash) continue;
+        hash = to_hash(hash);
+        rb_hash_foreach(hash, func, 0);
+    }
     return env;
 }
 
@@ -7438,8 +7463,8 @@ Init_Hash(void)
     rb_define_singleton_method(envtbl, "freeze", env_freeze, 0);
     rb_define_singleton_method(envtbl, "invert", env_invert, 0);
     rb_define_singleton_method(envtbl, "replace", env_replace, 1);
-    rb_define_singleton_method(envtbl, "update", env_update, 1);
-    rb_define_singleton_method(envtbl, "merge!", env_update, 1);
+    rb_define_singleton_method(envtbl, "update", env_update, -1);
+    rb_define_singleton_method(envtbl, "merge!", env_update, -1);
     rb_define_singleton_method(envtbl, "inspect", env_inspect, 0);
     rb_define_singleton_method(envtbl, "rehash", env_none, 0);
     rb_define_singleton_method(envtbl, "to_a", env_to_a, 0);

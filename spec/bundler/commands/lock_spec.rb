@@ -493,27 +493,25 @@ RSpec.describe "bundle lock" do
   end
 
   it "does not conflict on ruby requirements when adding new platforms" do
-    next_minor = Gem.ruby_version.segments[0..1].map.with_index {|s, i| i == 1 ? s + 1 : s }.join(".")
-
     build_repo4 do
       build_gem "raygun-apm", "1.0.78" do |s|
         s.platform = "x86_64-linux"
-        s.required_ruby_version = "< #{next_minor}.dev"
+        s.required_ruby_version = "< #{next_ruby_minor}.dev"
       end
 
       build_gem "raygun-apm", "1.0.78" do |s|
         s.platform = "universal-darwin"
-        s.required_ruby_version = "< #{next_minor}.dev"
+        s.required_ruby_version = "< #{next_ruby_minor}.dev"
       end
 
       build_gem "raygun-apm", "1.0.78" do |s|
         s.platform = "x64-mingw32"
-        s.required_ruby_version = "< #{next_minor}.dev"
+        s.required_ruby_version = "< #{next_ruby_minor}.dev"
       end
 
       build_gem "raygun-apm", "1.0.78" do |s|
         s.platform = "x64-mingw-ucrt"
-        s.required_ruby_version = "< #{next_minor}.dev"
+        s.required_ruby_version = "< #{next_ruby_minor}.dev"
       end
     end
 
@@ -540,6 +538,40 @@ RSpec.describe "bundle lock" do
     L
 
     bundle "lock --add-platform x86_64-linux", :artifice => "compact_index", :env => { "BUNDLER_SPEC_GEM_REPO" => gem_repo4.to_s }
+  end
+
+  it "respects lower bound ruby requirements" do
+    skip "this spec does not work with prereleases because their version is actually lower than their reported `RUBY_VERSION`" if RUBY_PATCHLEVEL == -1
+
+    build_repo4 do
+      build_gem "our_private_gem", "0.1.0" do |s|
+        s.required_ruby_version = ">= #{RUBY_VERSION}"
+      end
+    end
+
+    gemfile <<-G
+      source "https://localgemserver.test"
+
+      gem "our_private_gem"
+    G
+
+    lockfile <<-L
+      GEM
+        remote: https://localgemserver.test/
+        specs:
+          our_private_gem (0.1.0)
+
+      PLATFORMS
+        #{lockfile_platforms}
+
+      DEPENDENCIES
+        our_private_gem
+
+      BUNDLED WITH
+         #{Bundler::VERSION}
+    L
+
+    bundle "install", :artifice => "compact_index", :env => { "BUNDLER_SPEC_GEM_REPO" => gem_repo4.to_s }
   end
 
   context "when an update is available" do

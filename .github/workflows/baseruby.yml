@@ -20,7 +20,7 @@ jobs:
   baseruby:
     name: BASERUBY
     runs-on: ubuntu-20.04
-    if: ${{ !startsWith(github.event.head_commit.message, '[DOC]') && !contains(github.event.pull_request.labels.*.name, 'Documentation') }}
+    if: ${{ !contains(github.event.head_commit.message, '[DOC]') && !contains(github.event.pull_request.labels.*.name, 'Documentation') }}
     strategy:
       matrix:
         ruby:

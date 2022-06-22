@@ -17,29 +17,13 @@ describe "Range#inspect" do
     eval("(0.1...)").inspect.should ==  "0.1..."
   end
 
-  ruby_version_is '2.7' do
-    it "works for beginless ranges" do
-      eval("(..1)").inspect.should ==  "..1"
-      eval("(...0.1)").inspect.should ==  "...0.1"
-    end
-
-    it "works for nil ... nil ranges" do
-      eval("(..nil)").inspect.should ==  "nil..nil"
-      eval("(nil...)").inspect.should ==  "nil...nil"
-    end
+  it "works for beginless ranges" do
+    (..1).inspect.should ==  "..1"
+    (...0.1).inspect.should ==  "...0.1"
   end
 
-  ruby_version_is ''...'2.7' do
-    it "returns a tainted string if either end is tainted" do
-      (("a".taint)..."c").inspect.tainted?.should be_true
-      ("a"...("c".taint)).inspect.tainted?.should be_true
-      ("a"..."c").taint.inspect.tainted?.should be_true
-    end
-
-    it "returns a untrusted string if either end is untrusted" do
-      (("a".untrust)..."c").inspect.untrusted?.should be_true
-      ("a"...("c".untrust)).inspect.untrusted?.should be_true
-      ("a"..."c").untrust.inspect.untrusted?.should be_true
-    end
+  it "works for nil ... nil ranges" do
+    (..nil).inspect.should ==  "nil..nil"
+    eval("(nil...)").inspect.should ==  "nil...nil"
   end
 end

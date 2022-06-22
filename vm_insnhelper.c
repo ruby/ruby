@@ -2534,12 +2534,12 @@ vm_callee_setup_arg(rb_execution_context_t *ec, struct rb_calling_info *calling,
             if (LIKELY(!(vm_ci_flag(ci) & VM_CALL_TAILCALL))) {
                 CC_SET_FASTPATH(cc, vm_call_iseq_setup_normal_opt_start,
                                 !IS_ARGS_SPLAT(ci) && !IS_ARGS_KEYWORD(ci) &&
-                                cacheable_ci && METHOD_ENTRY_CACHEABLE(vm_cc_cme(cc)));
+                                cacheable_ci && vm_call_cacheable(ci, cc));
             }
             else {
                 CC_SET_FASTPATH(cc, vm_call_iseq_setup_tailcall_opt_start,
                                 !IS_ARGS_SPLAT(ci) && !IS_ARGS_KEYWORD(ci) &&
-                                cacheable_ci && METHOD_ENTRY_CACHEABLE(vm_cc_cme(cc)));
+                                cacheable_ci && vm_call_cacheable(ci, cc));
             }
 
             /* initialize opt vars for self-references */
@@ -2567,7 +2567,7 @@ vm_callee_setup_arg(rb_execution_context_t *ec, struct rb_calling_info *calling,
                     args_setup_kw_parameters(ec, iseq, ci_kws, ci_kw_len, ci_keywords, klocals);
 
                     CC_SET_FASTPATH(cc, vm_call_iseq_setup_kwparm_kwarg,
-                                    cacheable_ci && METHOD_ENTRY_CACHEABLE(vm_cc_cme(cc)));
+                                    cacheable_ci && vm_call_cacheable(ci, cc));
 
                     return 0;
                 }
@@ -2580,7 +2580,7 @@ vm_callee_setup_arg(rb_execution_context_t *ec, struct rb_calling_info *calling,
                 if (klocals[kw_param->num] == INT2FIX(0)) {
                     /* copy from default_values */
                     CC_SET_FASTPATH(cc, vm_call_iseq_setup_kwparm_nokwarg,
-                                    cacheable_ci && METHOD_ENTRY_CACHEABLE(vm_cc_cme(cc)));
+                                    cacheable_ci && vm_call_cacheable(ci, cc));
                 }
 
                 return 0;
@@ -3711,6 +3711,19 @@ vm_call_method_nome(rb_execution_context_t *ec, rb_control_frame_t *cfp, struct 
     }
 }
 
+/* Protected method calls and super invocations need to check that the receiver
+ * (self for super) inherits the module on which the method is defined.
+ * In the case of refinements, it should consider the original class not the
+ * refinement.
+ */
+static VALUE
+vm_defined_class_for_protected_call(const rb_callable_method_entry_t *me)
+{
+    VALUE defined_class = me->defined_class;
+    VALUE refined_class = RCLASS_REFINED_CLASS(defined_class);
+    return NIL_P(refined_class) ? defined_class : refined_class;
+}
+
 static inline VALUE
 vm_call_method(rb_execution_context_t *ec, rb_control_frame_t *cfp, struct rb_calling_info *calling)
 {
@@ -3736,8 +3749,9 @@ vm_call_method(rb_execution_context_t *ec, rb_control_frame_t *cfp, struct rb_ca
             return vm_call_method_each_type(ec, cfp, calling);
 
 	  case METHOD_VISI_PROTECTED:
-	    if (!(vm_ci_flag(ci) & VM_CALL_OPT_SEND)) {
-		if (!rb_obj_is_kind_of(cfp->self, vm_cc_cme(cc)->defined_class)) {
+	    if (!(vm_ci_flag(ci) & (VM_CALL_OPT_SEND | VM_CALL_FCALL))) {
+                VALUE defined_class = vm_defined_class_for_protected_call(vm_cc_cme(cc));
+                if (!rb_obj_is_kind_of(cfp->self, defined_class)) {
                     vm_cc_method_missing_reason_set(cc, MISSING_PROTECTED);
                     return vm_call_method_missing(ec, cfp, calling);
 		}
@@ -3798,6 +3812,7 @@ static inline VALUE
 vm_search_normal_superclass(VALUE klass)
 {
     if (BUILTIN_TYPE(klass) == T_ICLASS &&
+            RB_TYPE_P(RBASIC(klass)->klass, T_MODULE) &&
 	FL_TEST_RAW(RBASIC(klass)->klass, RMODULE_IS_REFINEMENT)) {
 	klass = RBASIC(klass)->klass;
     }
@@ -3833,14 +3848,9 @@ vm_search_super_method(const rb_control_frame_t *reg_cfp, struct rb_call_data *c
 	vm_super_outside();
     }
 
-    current_defined_class = me->defined_class;
-
-    if (!NIL_P(RCLASS_REFINED_CLASS(current_defined_class))) {
-	current_defined_class = RCLASS_REFINED_CLASS(current_defined_class);
-    }
+    current_defined_class = vm_defined_class_for_protected_call(me);
 
     if (BUILTIN_TYPE(current_defined_class) != T_MODULE &&
-	!FL_TEST_RAW(current_defined_class, RMODULE_INCLUDED_INTO_REFINEMENT) &&
         reg_cfp->iseq != method_entry_iseqptr(me) &&
         !rb_obj_is_kind_of(recv, current_defined_class)) {
 	VALUE m = RB_TYPE_P(current_defined_class, T_ICLASS) ?
@@ -4926,13 +4936,61 @@ vm_opt_newarray_min(rb_execution_context_t *ec, rb_num_t num, const VALUE *ptr)
 
 #define IMEMO_CONST_CACHE_SHAREABLE IMEMO_FL_USER0
 
+// This is the iterator used by vm_ic_compile for rb_iseq_each. It is used as a
+// callback for each instruction within the ISEQ, and is meant to return a
+// boolean indicating whether or not to keep iterating.
+//
+// This is used to walk through the ISEQ and find all getconstant instructions
+// between the starting opt_getinlinecache and the ending opt_setinlinecache and
+// associating the inline cache with the constant name components on the VM.
+static bool
+vm_ic_compile_i(VALUE *code, VALUE insn, size_t index, void *ic)
+{
+    if (insn == BIN(opt_setinlinecache)) {
+        return false;
+    }
+
+    if (insn == BIN(getconstant)) {
+        ID id = code[index + 1];
+        struct rb_id_table *const_cache = GET_VM()->constant_cache;
+        VALUE lookup_result;
+        st_table *ics;
+
+        if (rb_id_table_lookup(const_cache, id, &lookup_result)) {
+            ics = (st_table *)lookup_result;
+        }
+        else {
+            ics = st_init_numtable();
+            rb_id_table_insert(const_cache, id, (VALUE)ics);
+        }
+
+        st_insert(ics, (st_data_t) ic, (st_data_t) Qtrue);
+    }
+
+    return true;
+}
+
+// Loop through the instruction sequences starting at the opt_getinlinecache
+// call and gather up every getconstant's ID. Associate that with the VM's
+// constant cache so that whenever one of the constants changes the inline cache
+// will get busted.
+static void
+vm_ic_compile(rb_control_frame_t *cfp, IC ic)
+{
+    const rb_iseq_t *iseq = cfp->iseq;
+
+    RB_VM_LOCK_ENTER();
+    {
+        rb_iseq_each(iseq, cfp->pc - ISEQ_BODY(iseq)->iseq_encoded, vm_ic_compile_i, (void *) ic);
+    }
+    RB_VM_LOCK_LEAVE();
+}
+
 // For MJIT inlining
 static inline bool
-vm_inlined_ic_hit_p(VALUE flags, VALUE value, const rb_cref_t *ic_cref, rb_serial_t ic_serial, const VALUE *reg_ep)
+vm_inlined_ic_hit_p(VALUE flags, VALUE value, const rb_cref_t *ic_cref, const VALUE *reg_ep)
 {
-    if (ic_serial == GET_GLOBAL_CONSTANT_STATE() &&
-        ((flags & IMEMO_CONST_CACHE_SHAREABLE) || rb_ractor_main_p())) {
-
+    if ((flags & IMEMO_CONST_CACHE_SHAREABLE) || rb_ractor_main_p()) {
         VM_ASSERT((flags & IMEMO_CONST_CACHE_SHAREABLE) ? rb_ractor_shareable_p(value) : true);
 
         return (ic_cref == NULL || // no need to check CREF
@@ -4945,7 +5003,7 @@ static bool
 vm_ic_hit_p(const struct iseq_inline_constant_cache_entry *ice, const VALUE *reg_ep)
 {
     VM_ASSERT(IMEMO_TYPE_P(ice, imemo_constcache));
-    return vm_inlined_ic_hit_p(ice->flags, ice->value, ice->ic_cref, GET_IC_SERIAL(ice), reg_ep);
+    return vm_inlined_ic_hit_p(ice->flags, ice->value, ice->ic_cref, reg_ep);
 }
 
 // YJIT needs this function to never allocate and never raise
@@ -4958,13 +5016,16 @@ rb_vm_ic_hit_p(IC ic, const VALUE *reg_ep)
 static void
 vm_ic_update(const rb_iseq_t *iseq, IC ic, VALUE val, const VALUE *reg_ep)
 {
+    if (ruby_vm_const_missing_count > 0) {
+        ruby_vm_const_missing_count = 0;
+        ic->entry = NULL;
+        return;
+    }
 
     struct iseq_inline_constant_cache_entry *ice = (struct iseq_inline_constant_cache_entry *)rb_imemo_new(imemo_constcache, 0, 0, 0, 0);
     RB_OBJ_WRITE(ice, &ice->value, val);
     ice->ic_cref = vm_get_const_key_cref(reg_ep);
-    SET_IC_SERIAL(ice, GET_GLOBAL_CONSTANT_STATE() - ruby_vm_const_missing_count);
     if (rb_ractor_shareable_p(val)) ice->flags |= IMEMO_CONST_CACHE_SHAREABLE;
-    ruby_vm_const_missing_count = 0;
     RB_OBJ_WRITE(iseq, &ic->entry, ice);
 #ifndef MJIT_HEADER
     // MJIT and YJIT can't be on at the same time, so there is no need to
@@ -5578,7 +5639,7 @@ NOINLINE(static void vm_trace(rb_execution_context_t *ec, rb_control_frame_t *re
 static inline void
 vm_trace_hook(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, const VALUE *pc,
               rb_event_flag_t pc_events, rb_event_flag_t target_event,
-              rb_hook_list_t *global_hooks, rb_hook_list_t *local_hooks, VALUE val)
+              rb_hook_list_t *global_hooks, rb_hook_list_t *const *local_hooks_ptr, VALUE val)
 {
     rb_event_flag_t event = pc_events & target_event;
     VALUE self = GET_SELF();
@@ -5593,6 +5654,8 @@ vm_trace_hook(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, const VAL
         reg_cfp->pc--;
     }
 
+    // Load here since global hook above can add and free local hooks
+    rb_hook_list_t *local_hooks = *local_hooks_ptr;
     if (local_hooks != NULL) {
         if (event & local_hooks->events) {
             /* increment PC because source line is calculated with PC-1 */
@@ -5621,7 +5684,7 @@ rb_vm_opt_cfunc_p(CALL_CACHE cc, int insn)
 
 #define VM_TRACE_HOOK(target_event, val) do { \
     if ((pc_events & (target_event)) & enabled_flags) { \
-        vm_trace_hook(ec, reg_cfp, pc, pc_events, (target_event), global_hooks, local_hooks, (val)); \
+        vm_trace_hook(ec, reg_cfp, pc, pc_events, (target_event), global_hooks, local_hooks_ptr, (val)); \
     } \
 } while (0)
 
@@ -5637,13 +5700,16 @@ vm_trace(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp)
     }
     else {
 	const rb_iseq_t *iseq = reg_cfp->iseq;
+        VALUE iseq_val = (VALUE)iseq;
         size_t pos = pc - ISEQ_BODY(iseq)->iseq_encoded;
         rb_event_flag_t pc_events = rb_iseq_event_flags(iseq, pos);
         rb_hook_list_t *local_hooks = iseq->aux.exec.local_hooks;
+        rb_hook_list_t *const *local_hooks_ptr = &iseq->aux.exec.local_hooks;
         rb_event_flag_t iseq_local_events = local_hooks != NULL ? local_hooks->events : 0;
         rb_hook_list_t *bmethod_local_hooks = NULL;
+        rb_hook_list_t **bmethod_local_hooks_ptr = NULL;
         rb_event_flag_t bmethod_local_events = 0;
-        bool bmethod_frame = VM_FRAME_BMETHOD_P(reg_cfp);
+        const bool bmethod_frame = VM_FRAME_BMETHOD_P(reg_cfp);
         enabled_flags |= iseq_local_events;
 
         VM_ASSERT((iseq_local_events & ~ISEQ_TRACE_EVENTS) == 0);
@@ -5652,6 +5718,7 @@ vm_trace(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp)
             const rb_callable_method_entry_t *me = rb_vm_frame_method_entry(reg_cfp);
             VM_ASSERT(me->def->type == VM_METHOD_TYPE_BMETHOD);
             bmethod_local_hooks = me->def->body.bmethod.hooks;
+            bmethod_local_hooks_ptr = &me->def->body.bmethod.hooks;
             if (bmethod_local_hooks) {
                 bmethod_local_events = bmethod_local_hooks->events;
             }
@@ -5694,7 +5761,7 @@ vm_trace(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp)
             /* check traces */
             if ((pc_events & RUBY_EVENT_B_CALL) && bmethod_frame && (bmethod_events & RUBY_EVENT_CALL)) {
                 /* b_call instruction running as a method. Fire call event. */
-                vm_trace_hook(ec, reg_cfp, pc, RUBY_EVENT_CALL, RUBY_EVENT_CALL, global_hooks, bmethod_local_hooks, Qundef);
+                vm_trace_hook(ec, reg_cfp, pc, RUBY_EVENT_CALL, RUBY_EVENT_CALL, global_hooks, bmethod_local_hooks_ptr, Qundef);
             }
             VM_TRACE_HOOK(RUBY_EVENT_CLASS | RUBY_EVENT_CALL | RUBY_EVENT_B_CALL,   Qundef);
             VM_TRACE_HOOK(RUBY_EVENT_LINE,                                          Qundef);
@@ -5703,8 +5770,15 @@ vm_trace(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp)
             VM_TRACE_HOOK(RUBY_EVENT_END | RUBY_EVENT_RETURN | RUBY_EVENT_B_RETURN, TOPN(0));
             if ((pc_events & RUBY_EVENT_B_RETURN) && bmethod_frame && (bmethod_events & RUBY_EVENT_RETURN)) {
                 /* b_return instruction running as a method. Fire return event. */
-                vm_trace_hook(ec, reg_cfp, pc, RUBY_EVENT_RETURN, RUBY_EVENT_RETURN, global_hooks, bmethod_local_hooks, TOPN(0));
+                vm_trace_hook(ec, reg_cfp, pc, RUBY_EVENT_RETURN, RUBY_EVENT_RETURN, global_hooks, bmethod_local_hooks_ptr, TOPN(0));
             }
+
+            // Pin the iseq since `local_hooks_ptr` points inside the iseq's slot on the GC heap.
+            // We need the pointer to stay valid in case compaction happens in a trace hook.
+            //
+            // Similar treatment is unnecessary for `bmethod_local_hooks_ptr` since
+            // storage for `rb_method_definition_t` is not on the GC heap.
+            RB_GC_GUARD(iseq_val);
         }
     }
 }

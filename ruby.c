@@ -1028,36 +1028,23 @@ set_option_encoding_once(const char *type, VALUE *name, const char *e, long elen
 #define yjit_opt_match_arg(s, l, name) \
     opt_match(s, l, name) && (*(s) && *(s+1) ? 1 : (rb_raise(rb_eRuntimeError, "--yjit-" name " needs an argument"), 0))
 
-#if YJIT_SUPPORTED_P
-static void
-setup_yjit_options(const char *s, struct rb_yjit_options *yjit_opt)
+#if YJIT_BUILD
+static bool
+setup_yjit_options(const char *s)
 {
-    const size_t l = strlen(s);
-    if (l == 0) {
-        return;
+    // The option parsing is done in yjit/src/options.rs
+    bool rb_yjit_parse_option(const char* s);
+    bool success = rb_yjit_parse_option(s);
+
+    if (success) {
+        return true;
     }
-    else if (yjit_opt_match_arg(s, l, "exec-mem-size")) {
-        yjit_opt->exec_mem_size = atoi(s + 1);
-    }
-    else if (yjit_opt_match_arg(s, l, "call-threshold")) {
-        yjit_opt->call_threshold = atoi(s + 1);
-    }
-    else if (yjit_opt_match_arg(s, l, "max-versions")) {
-        yjit_opt->max_versions = atoi(s + 1);
-    }
-    else if (yjit_opt_match_noarg(s, l, "greedy-versioning")) {
-        yjit_opt->greedy_versioning = true;
-    }
-    else if (yjit_opt_match_noarg(s, l, "no-type-prop")) {
-        yjit_opt->no_type_prop = true;
-    }
-    else if (yjit_opt_match_noarg(s, l, "stats")) {
-        yjit_opt->gen_stats = true;
-    }
-    else {
-        rb_raise(rb_eRuntimeError,
-                 "invalid yjit option `%s' (--help will show valid yjit options)", s);
-    }
+
+    rb_raise(
+        rb_eRuntimeError,
+        "invalid YJIT option `%s' (--help will show valid yjit options)",
+        s
+    );
 }
 #endif
 
@@ -1446,11 +1433,11 @@ proc_options(long argc, char **argv, ruby_cmdline_options_t *opt, int envopt)
 #endif
             }
             else if (is_option_with_optarg("yjit", '-', true, false, false)) {
-#if YJIT_SUPPORTED_P
+#if YJIT_BUILD
                 FEATURE_SET(opt->features, FEATURE_BIT(yjit));
-                setup_yjit_options(s, &opt->yjit);
+                setup_yjit_options(s);
 #else
-                rb_warn("Ruby was built without JIT support");
+                rb_warn("Ruby was built without YJIT support");
 #endif
             }
 	    else if (strcmp("yydebug", s) == 0) {
@@ -1835,14 +1822,15 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
             exit(1);
         }
 #endif
-#if YJIT_SUPPORTED_P
-        rb_yjit_init(&opt->yjit);
+#if YJIT_BUILD
+        rb_yjit_init();
 #endif
     }
-    if (opt->dump & (DUMP_BIT(version) | DUMP_BIT(version_v))) {
 #if USE_MJIT
-        mjit_opts.on = opt->mjit.on; /* used by ruby_show_version(). mjit_init() still can't be called here. */
+    mjit_opts.on = opt->mjit.on; /* used by Init_ruby_description(). mjit_init() still can't be called here. */
 #endif
+    Init_ruby_description();
+    if (opt->dump & (DUMP_BIT(version) | DUMP_BIT(version_v))) {
 	ruby_show_version();
 	if (opt->dump & DUMP_BIT(version)) return Qtrue;
     }
@@ -1901,7 +1889,6 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
         mjit_init(&opt->mjit);
 #endif
 
-    Init_ruby_description();
     Init_enc();
     lenc = rb_locale_encoding();
     rb_enc_associate(rb_progname, lenc);

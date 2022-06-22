@@ -16,14 +16,6 @@ describe "String#strip" do
       " \x00 goodbye \x00 ".strip.should == "goodbye"
     end
   end
-
-  ruby_version_is ''...'2.7' do
-    it "taints the result when self is tainted" do
-      "".taint.strip.should.tainted?
-      "ok".taint.strip.should.tainted?
-      "  ok  ".taint.strip.should.tainted?
-    end
-  end
 end
 
 describe "String#strip!" do

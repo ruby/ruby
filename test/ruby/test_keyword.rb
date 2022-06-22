@@ -190,6 +190,53 @@ class TestKeywordArguments < Test::Unit::TestCase
     assert_equal(["bar", 111111], f[str: "bar", num: 111111])
   end
 
+  def test_unset_hash_flag
+    bug18625 = "[ruby-core: 107847]"
+    singleton_class.class_eval do
+      ruby2_keywords def foo(*args)
+        args
+      end
+
+      def single(arg)
+        arg
+      end
+
+      def splat(*args)
+        args.last
+      end
+
+      def kwargs(**kw)
+        kw
+      end
+    end
+
+    h = { a: 1 }
+    args = foo(**h)
+    marked = args.last
+    assert_equal(true, Hash.ruby2_keywords_hash?(marked))
+
+    after_usage = single(*args)
+    assert_equal(h, after_usage)
+    assert_same(marked, args.last)
+    assert_not_same(marked, after_usage)
+    assert_equal(false, Hash.ruby2_keywords_hash?(after_usage))
+
+    after_usage = splat(*args)
+    assert_equal(h, after_usage)
+    assert_same(marked, args.last)
+    assert_not_same(marked, after_usage, bug18625)
+    assert_equal(false, Hash.ruby2_keywords_hash?(after_usage), bug18625)
+
+    after_usage = kwargs(*args)
+    assert_equal(h, after_usage)
+    assert_same(marked, args.last)
+    assert_not_same(marked, after_usage, bug18625)
+    assert_not_same(marked, after_usage)
+    assert_equal(false, Hash.ruby2_keywords_hash?(after_usage))
+
+    assert_equal(true, Hash.ruby2_keywords_hash?(marked))
+  end
+
   def test_keyword_splat_new
     kw = {}
     h = {a: 1}

@@ -22,7 +22,7 @@ jobs:
         os: [ubuntu-20.04]
       fail-fast: true
     runs-on: ${{ matrix.os }}
-    if: ${{ !startsWith(github.event.head_commit.message, '[DOC]') && !contains(github.event.pull_request.labels.*.name, 'Documentation') }}
+    if: ${{ !contains(github.event.head_commit.message, '[DOC]') && !contains(github.event.pull_request.labels.*.name, 'Documentation') }}
     steps:
       - name: Install libraries
         run: |

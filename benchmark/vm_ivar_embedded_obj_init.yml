@@ -1,0 +1,12 @@
+prelude: |
+  class C
+    def initialize
+      @a = nil
+      @b = nil
+      @c = nil
+    end
+  end
+benchmark:
+  vm_ivar_embedded_obj_init: |
+    C.new
+loop_count: 30000000

@@ -9,155 +9,158 @@
 # for which CRuby is built. There is also no API stability guarantee as to in
 # what situations this module is defined.
 module RubyVM::YJIT
-  if defined?(Disasm)
-    def self.disasm(iseq, tty: $stdout && $stdout.tty?)
-      iseq = RubyVM::InstructionSequence.of(iseq)
+  # Check if YJIT is enabled
+  def self.enabled?
+    Primitive.cexpr! 'RBOOL(rb_yjit_enabled_p())'
+  end
 
-      blocks = blocks_for(iseq)
-      return if blocks.empty?
+  def self.stats_enabled?
+    Primitive.rb_yjit_stats_enabled_p
+  end
 
-      str = String.new
-      str << iseq.disasm
-      str << "\n"
+  # Check if rb_yjit_trace_exit_locations_enabled_p is enabled.
+  def self.trace_exit_locations_enabled?
+    Primitive.rb_yjit_trace_exit_locations_enabled_p
+  end
 
-      # Sort the blocks by increasing addresses
-      sorted_blocks = blocks.sort_by(&:address)
+  # Discard statistics collected for --yjit-stats.
+  def self.reset_stats!
+    Primitive.rb_yjit_reset_stats_bang
+  end
 
-      highlight = ->(str) {
-        if tty
-          "\x1b[1m#{str}\x1b[0m"
-        else
-          str
-        end
-      }
+  # If --yjit-trace-exits is enabled parse the hashes from
+  # Primitive.rb_yjit_get_exit_locations into a format readable
+  # by Stackprof. This will allow us to find the exact location of a
+  # side exit in YJIT based on the instruction that is exiting.
+  def self.exit_locations
+    return unless trace_exit_locations_enabled?
 
-      cs = Disasm.new
-      sorted_blocks.each_with_index do |block, i|
-        str << "== BLOCK #{i+1}/#{blocks.length}: #{block.code.length} BYTES, ISEQ RANGE [#{block.iseq_start_index},#{block.iseq_end_index}) ".ljust(80, "=")
-        str << "\n"
+    results = Primitive.rb_yjit_get_exit_locations
+    raw_samples = results[:raw].dup
+    line_samples = results[:lines].dup
+    frames = results[:frames].dup
+    samples_count = 0
 
-        comments = comments_for(block.address, block.address + block.code.length)
-        comment_idx = 0
-        cs.disasm(block.code, block.address).each do |i|
-          while (comment = comments[comment_idx]) && comment.address <= i.address
-            str << "  ; #{highlight.call(comment.comment)}\n"
-            comment_idx += 1
-          end
-
-          str << sprintf(
-            "  %<address>08x:  %<instruction>s\t%<details>s\n",
-            address: i.address,
-            instruction: i.mnemonic,
-            details: i.op_str
-          )
-        end
-      end
-
-      block_sizes = blocks.map { |block| block.code.length }
-      total_bytes = block_sizes.sum
-      str << "\n"
-      str << "Total code size: #{total_bytes} bytes"
-      str << "\n"
-
-      str
+    frames.each do |frame_id, frame|
+      frame[:samples] = 0
+      frame[:edges] = {}
     end
 
-    def self.comments_for(start_address, end_address)
-      Primitive.comments_for(start_address, end_address)
+    # Loop through the instructions and set the frame hash with the data.
+    # We use nonexistent.def for the file name, otherwise insns.def will be displayed
+    # and that information isn't useful in this context.
+    RubyVM::INSTRUCTION_NAMES.each_with_index do |name, frame_id|
+      frame_hash = { samples: 0, total_samples: 0, edges: {}, name: name, file: "nonexistent.def", line: nil }
+      results[:frames][frame_id] = frame_hash
+      frames[frame_id] = frame_hash
     end
 
-    def self.graphviz_for(iseq)
-      iseq = RubyVM::InstructionSequence.of(iseq)
-      cs = Disasm.new
+    # Loop through the raw_samples and build the hashes for StackProf.
+    # The loop is based off an example in the StackProf documentation and therefore
+    # this functionality can only work with that library.
+    while raw_samples.length > 0
+      stack_trace = raw_samples.shift(raw_samples.shift + 1)
+      lines = line_samples.shift(line_samples.shift + 1)
+      prev_frame_id = nil
 
-      highlight = ->(comment) { "<b>#{comment}</b>" }
-      linebreak = "<br align=\"left\"/>\n"
-
-      buff = +''
-      blocks = blocks_for(iseq).sort_by(&:id)
-      buff << "digraph g {\n"
-
-      # Write the iseq info as a legend
-      buff << "  legend [shape=record fontsize=\"30\" fillcolor=\"lightgrey\" style=\"filled\"];\n"
-      buff << "  legend [label=\"{ Instruction Disassembly For: | {#{iseq.base_label}@#{iseq.absolute_path}:#{iseq.first_lineno}}}\"];\n"
-
-      # Subgraph contains disassembly
-      buff << "  subgraph disasm {\n"
-      buff << "  node [shape=record fontname=\"courier\"];\n"
-      buff << "  edge [fontname=\"courier\" penwidth=3];\n"
-      blocks.each do |block|
-        disasm = disasm_block(cs, block, highlight)
-
-        # convert newlines to breaks that graphviz understands
-        disasm.gsub!(/\n/, linebreak)
-
-        # strip leading whitespace
-        disasm.gsub!(/^\s+/, '')
-
-        buff << "b#{block.id} [label=<#{disasm}>];\n"
-        buff << block.outgoing_ids.map { |id|
-          next_block = blocks.bsearch { |nb| id <=> nb.id }
-          if next_block.address == (block.address + block.code.length)
-            "b#{block.id} -> b#{id}[label=\"Fall\"];"
-          else
-            "b#{block.id} -> b#{id}[label=\"Jump\" style=dashed];"
-          end
-        }.join("\n")
-        buff << "\n"
-      end
-      buff << "  }"
-      buff << "}"
-      buff
-    end
-
-    def self.disasm_block(cs, block, highlight)
-      comments = comments_for(block.address, block.address + block.code.length)
-      comment_idx = 0
-      str = +''
-      cs.disasm(block.code, block.address).each do |i|
-        while (comment = comments[comment_idx]) && comment.address <= i.address
-          str << "  ; #{highlight.call(comment.comment)}\n"
-          comment_idx += 1
+      stack_trace.each_with_index do |frame_id, idx|
+        if prev_frame_id
+          prev_frame = frames[prev_frame_id]
+          prev_frame[:edges][frame_id] ||= 0
+          prev_frame[:edges][frame_id] += 1
         end
 
-        str << sprintf(
-          "  %<address>08x:  %<instruction>s\t%<details>s\n",
-          address: i.address,
-          instruction: i.mnemonic,
-          details: i.op_str
-        )
+        frame_info = frames[frame_id]
+        frame_info[:total_samples] ||= 0
+        frame_info[:total_samples] += 1
+
+        frame_info[:lines] ||= {}
+        frame_info[:lines][lines[idx]] ||= [0, 0]
+        frame_info[:lines][lines[idx]][0] += 1
+
+        prev_frame_id = frame_id
       end
-      str
+
+      top_frame_id = stack_trace.last
+      top_frame_line = 1
+
+      frames[top_frame_id][:samples] += 1
+      frames[top_frame_id][:lines] ||= {}
+      frames[top_frame_id][:lines][top_frame_line] ||= [0, 0]
+      frames[top_frame_id][:lines][top_frame_line][1] += 1
+
+      samples_count += raw_samples.shift
+      line_samples.shift
     end
+
+    results[:samples] = samples_count
+    # Set missed_samples and gc_samples to 0 as their values
+    # don't matter to us in this context.
+    results[:missed_samples] = 0
+    results[:gc_samples] = 0
+    results
+  end
+
+  # Marshal dumps exit locations to the given filename.
+  #
+  # Usage:
+  #
+  # In a script call:
+  #
+  #   RubyVM::YJIT.dump_exit_locations("my_file.dump")
+  #
+  # Then run the file with the following options:
+  #
+  #   ruby --yjit --yjit-stats --yjit-trace-exits test.rb
+  #
+  # Once the code is done running, use Stackprof to read the dump file.
+  # See Stackprof documentation for options.
+  def self.dump_exit_locations(filename)
+    unless trace_exit_locations_enabled?
+      raise ArgumentError, "--yjit-trace-exits must be enabled to use dump_exit_locations."
+    end
+
+    File.binwrite(filename, Marshal.dump(RubyVM::YJIT.exit_locations))
   end
 
   # Return a hash for statistics generated for the --yjit-stats command line option.
   # Return nil when option is not passed or unavailable.
   def self.runtime_stats
-    # defined in yjit_iface.c
-    Primitive.get_yjit_stats
+    Primitive.rb_yjit_get_stats
   end
 
-  # Discard statistics collected for --yjit-stats.
-  def self.reset_stats!
-    # defined in yjit_iface.c
-    Primitive.reset_stats_bang
+  # Produce disassembly for an iseq
+  def self.disasm(iseq)
+    # If a method or proc is passed in, get its iseq
+    iseq = RubyVM::InstructionSequence.of(iseq)
+
+    if self.enabled?
+      # Produce the disassembly string
+      # Include the YARV iseq disasm in the string for additional context
+      iseq.disasm + "\n" + Primitive.rb_yjit_disasm_iseq(iseq)
+    else
+      iseq.disasm
+    end
   end
 
-  def self.stats_enabled?
-    Primitive.yjit_stats_enabled_p
-  end
+  # Produce a list of instructions compiled by YJIT for an iseq
+  def self.insns_compiled(iseq)
+    # If a method or proc is passed in, get its iseq
+    iseq = RubyVM::InstructionSequence.of(iseq)
 
-  def self.enabled?
-    Primitive.cexpr! 'RBOOL(rb_yjit_enabled_p())'
+    if self.enabled?
+      Primitive.rb_yjit_insns_compiled(iseq)
+    else
+      Qnil
+    end
   end
 
   def self.simulate_oom!
-    Primitive.simulate_oom_bang
+    Primitive.rb_yjit_simulate_oom_bang
   end
 
   # Avoid calling a method here to not interfere with compilation tests
-  if Primitive.yjit_stats_enabled_p
+  if Primitive.rb_yjit_stats_enabled_p
     at_exit { _print_stats }
   end
 

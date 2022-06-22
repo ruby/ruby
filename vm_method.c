@@ -123,14 +123,32 @@ vm_cme_invalidate(rb_callable_method_entry_t *cme)
     METHOD_ENTRY_INVALIDATED_SET(cme);
     RB_DEBUG_COUNTER_INC(cc_cme_invalidate);
 
-    rb_yjit_cme_invalidate((VALUE)cme);
+    rb_yjit_cme_invalidate(cme);
 }
 
-void
-rb_clear_constant_cache(void)
+static int
+rb_clear_constant_cache_for_id_i(st_data_t ic, st_data_t idx, st_data_t arg)
 {
-    rb_yjit_constant_state_changed();
-    INC_GLOBAL_CONSTANT_STATE();
+    ((IC) ic)->entry = NULL;
+    return ST_CONTINUE;
+}
+
+// Here for backward compat.
+void rb_clear_constant_cache(void) {}
+
+void
+rb_clear_constant_cache_for_id(ID id)
+{
+    VALUE lookup_result;
+    rb_vm_t *vm = GET_VM();
+
+    if (rb_id_table_lookup(vm->constant_cache, id, &lookup_result)) {
+        st_table *ics = (st_table *)lookup_result;
+        st_foreach(ics, rb_clear_constant_cache_for_id_i, (st_data_t) NULL);
+        ruby_vm_constant_cache_invalidations += ics->num_entries;
+    }
+
+    rb_yjit_constant_state_changed(id);
 }
 
 static void
@@ -387,7 +405,9 @@ rb_method_definition_release(rb_method_definition_t *def, int complemented)
 	if (alias_count + complemented_count == 0) {
             if (METHOD_DEBUG) fprintf(stderr, "-%p-%s:%d,%d (remove)\n", (void *)def,
                                       rb_id2name(def->original_id), alias_count, complemented_count);
-            VM_ASSERT(def->type == VM_METHOD_TYPE_BMETHOD ? def->body.bmethod.hooks == NULL : TRUE);
+            if (def->type == VM_METHOD_TYPE_BMETHOD && def->body.bmethod.hooks) {
+                xfree(def->body.bmethod.hooks);
+            }
 	    xfree(def);
 	}
 	else {
@@ -840,7 +860,7 @@ rb_method_entry_make(VALUE klass, ID mid, VALUE defined_class, rb_method_visibil
        rb_class_modify_check(klass);
     }
 
-    if (FL_TEST(klass, RMODULE_IS_REFINEMENT)) {
+    if (RB_TYPE_P(klass, T_MODULE) && FL_TEST(klass, RMODULE_IS_REFINEMENT)) {
 	VALUE refined_class = rb_refinement_module_get_refined_class(klass);
 	rb_add_refined_method_entry(refined_class, mid);
     }
@@ -1004,8 +1024,9 @@ rb_vm_lookup_overloaded_cme(const rb_callable_method_entry_t *cme)
 static void
 delete_overloaded_cme(const rb_callable_method_entry_t *cme)
 {
+    st_data_t cme_data = (st_data_t)cme;
     ASSERT_vm_locking();
-    st_delete(overloaded_cme_table(), (st_data_t *)&cme, NULL);
+    st_delete(overloaded_cme_table(), &cme_data, NULL);
 }
 
 static const rb_callable_method_entry_t *

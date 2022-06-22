@@ -18,16 +18,14 @@ describe "Module#autoload?" do
     ModuleSpecs::Autoload::Child.autoload?(:AnotherAutoload).should == "another_autoload.rb"
   end
 
-  ruby_version_is "2.7" do
-    it "returns nil if an ancestor defined that autoload but recursion is disabled" do
-      ModuleSpecs::Autoload::Parent.autoload :InheritedAutoload, "inherited_autoload.rb"
-      ModuleSpecs::Autoload::Child.autoload?(:InheritedAutoload, false).should be_nil
-    end
+  it "returns nil if an ancestor defined that autoload but recursion is disabled" do
+    ModuleSpecs::Autoload::Parent.autoload :InheritedAutoload, "inherited_autoload.rb"
+    ModuleSpecs::Autoload::Child.autoload?(:InheritedAutoload, false).should be_nil
+  end
 
-    it "returns the name of the file that will be loaded if recursion is disabled but the autoload is defined on the class itself" do
-      ModuleSpecs::Autoload::Child.autoload :ChildAutoload, "child_autoload.rb"
-      ModuleSpecs::Autoload::Child.autoload?(:ChildAutoload, false).should == "child_autoload.rb"
-    end
+  it "returns the name of the file that will be loaded if recursion is disabled but the autoload is defined on the class itself" do
+    ModuleSpecs::Autoload::Child.autoload :ChildAutoload, "child_autoload.rb"
+    ModuleSpecs::Autoload::Child.autoload?(:ChildAutoload, false).should == "child_autoload.rb"
   end
 end
 
@@ -514,9 +512,7 @@ describe "Module#autoload" do
   it "does not load the file when accessing the constants table of the module" do
     ModuleSpecs::Autoload.autoload :P, @non_existent
     ModuleSpecs::Autoload.const_defined?(:P).should be_true
-    ruby_bug "[Bug #15780]", ""..."2.7" do
-      ModuleSpecs::Autoload.const_defined?("P").should be_true
-    end
+    ModuleSpecs::Autoload.const_defined?("P").should be_true
   end
 
   it "loads the file when opening a module that is the autoloaded constant" do
@@ -578,6 +574,36 @@ describe "Module#autoload" do
         -> { DeclaredInParentDefinedInCurrent }.should raise_error(NameError)
 
         ModuleSpecs::Autoload::LexicalScope.send(:remove_const, :DeclaredInParentDefinedInCurrent)
+      end
+    end
+
+    ruby_version_is "3.2" do
+      it "warns once in verbose mode if the constant was defined in a parent scope" do
+        ScratchPad.record -> {
+          ModuleSpecs::DeclaredInCurrentDefinedInParent = :declared_in_current_defined_in_parent
+        }
+
+        module ModuleSpecs
+          module Autoload
+            autoload :DeclaredInCurrentDefinedInParent, fixture(__FILE__, "autoload_callback.rb")
+            self.autoload?(:DeclaredInCurrentDefinedInParent).should == fixture(__FILE__, "autoload_callback.rb")
+            const_defined?(:DeclaredInCurrentDefinedInParent).should == true
+
+            -> {
+              DeclaredInCurrentDefinedInParent
+            }.should complain(
+              /Expected .*autoload_callback.rb to define ModuleSpecs::Autoload::DeclaredInCurrentDefinedInParent but it didn't/,
+              verbose: true,
+            )
+
+            -> {
+              DeclaredInCurrentDefinedInParent
+            }.should_not complain(/.*/, verbose: true)
+            self.autoload?(:DeclaredInCurrentDefinedInParent).should == nil
+            const_defined?(:DeclaredInCurrentDefinedInParent).should == false
+            ModuleSpecs.const_defined?(:DeclaredInCurrentDefinedInParent).should == true
+          end
+        end
       end
     end
 

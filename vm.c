@@ -48,6 +48,10 @@
 #endif
 #include "probes_helper.h"
 
+#ifdef RUBY_ASSERT_CRITICAL_SECTION
+int ruby_assert_critical_section_entered = 0;
+#endif
+
 VALUE rb_str_concat_literals(size_t, const VALUE*);
 
 /* :FIXME: This #ifdef is because we build pch in case of mswin and
@@ -428,7 +432,8 @@ rb_event_flag_t ruby_vm_event_flags;
 rb_event_flag_t ruby_vm_event_enabled_global_flags;
 unsigned int    ruby_vm_event_local_num;
 
-rb_serial_t ruby_vm_global_constant_state = 1;
+rb_serial_t ruby_vm_constant_cache_invalidations = 0;
+rb_serial_t ruby_vm_constant_cache_misses = 0;
 rb_serial_t ruby_vm_class_serial = 1;
 rb_serial_t ruby_vm_global_cvar_state = 1;
 
@@ -504,11 +509,13 @@ rb_dtrace_setup(rb_execution_context_t *ec, VALUE klass, ID id,
  *
  *  Returns a Hash containing implementation-dependent counters inside the VM.
  *
- *  This hash includes information about method/constant cache serials:
+ *  This hash includes information about method/constant caches:
  *
  *    {
- *      :global_constant_state=>481,
- *      :class_serial=>9029
+ *      :constant_cache_invalidations=>2,
+ *      :constant_cache_misses=>14,
+ *      :class_serial=>546,
+ *      :global_cvar_state=>27
  *    }
  *
  *  The contents of the hash are implementation specific and may be changed in
@@ -516,11 +523,10 @@ rb_dtrace_setup(rb_execution_context_t *ec, VALUE klass, ID id,
  *
  *  This method is only expected to work on C Ruby.
  */
-
 static VALUE
 vm_stat(int argc, VALUE *argv, VALUE self)
 {
-    static VALUE sym_global_constant_state, sym_class_serial, sym_global_cvar_state;
+    static VALUE sym_constant_cache_invalidations, sym_constant_cache_misses, sym_class_serial, sym_global_cvar_state;
     VALUE arg = Qnil;
     VALUE hash = Qnil, key = Qnil;
 
@@ -537,13 +543,12 @@ vm_stat(int argc, VALUE *argv, VALUE self)
 	hash = rb_hash_new();
     }
 
-    if (sym_global_constant_state == 0) {
 #define S(s) sym_##s = ID2SYM(rb_intern_const(#s))
-	S(global_constant_state);
+    S(constant_cache_invalidations);
+    S(constant_cache_misses);
 	S(class_serial);
 	S(global_cvar_state);
 #undef S
-    }
 
 #define SET(name, attr) \
     if (key == sym_##name) \
@@ -551,7 +556,8 @@ vm_stat(int argc, VALUE *argv, VALUE self)
     else if (hash != Qnil) \
 	rb_hash_aset(hash, sym_##name, SERIALT2NUM(attr));
 
-    SET(global_constant_state, ruby_vm_global_constant_state);
+    SET(constant_cache_invalidations, ruby_vm_constant_cache_invalidations);
+    SET(constant_cache_misses, ruby_vm_constant_cache_misses);
     SET(class_serial, ruby_vm_class_serial);
     SET(global_cvar_state, ruby_vm_global_cvar_state);
 #undef SET
@@ -1804,11 +1810,9 @@ vm_iter_break(rb_execution_context_t *ec, VALUE val)
     const VALUE *ep = VM_CF_PREV_EP(cfp);
     const rb_control_frame_t *target_cfp = rb_vm_search_cf_from_ep(ec, cfp, ep);
 
-#if 0				/* raise LocalJumpError */
     if (!target_cfp) {
 	rb_vm_localjump_error("unexpected break", val, TAG_BREAK);
     }
-#endif
 
     ec->errinfo = (VALUE)THROW_DATA_NEW(val, target_cfp, TAG_BREAK);
     EC_JUMP_TAG(ec, TAG_BREAK);
@@ -1890,7 +1894,7 @@ rb_vm_check_redefinition_opt_method(const rb_method_entry_t *me, VALUE klass)
         if (st_lookup(vm_opt_method_def_table, (st_data_t)me->def, &bop)) {
             int flag = vm_redefinition_check_flag(klass);
             if (flag != 0) {
-                rb_yjit_bop_redefined(klass, me, (enum ruby_basic_operators)bop);
+                rb_yjit_bop_redefined(flag, (enum ruby_basic_operators)bop);
                 ruby_vm_redefined_flag[bop] |= flag;
             }
         }
@@ -2064,10 +2068,10 @@ hook_before_rewind(rb_execution_context_t *ec, const rb_control_frame_t *cfp,
                 }
 
 
-                EXEC_EVENT_HOOK(ec, RUBY_EVENT_B_RETURN, ec->cfp->self, 0, 0, 0, bmethod_return_value);
+                EXEC_EVENT_HOOK_AND_POP_FRAME(ec, RUBY_EVENT_B_RETURN, ec->cfp->self, 0, 0, 0, bmethod_return_value);
                 if (UNLIKELY(local_hooks && local_hooks->events & RUBY_EVENT_B_RETURN)) {
                     rb_exec_event_hook_orig(ec, local_hooks, RUBY_EVENT_B_RETURN,
-                                            ec->cfp->self, 0, 0, 0, bmethod_return_value, FALSE);
+                                            ec->cfp->self, 0, 0, 0, bmethod_return_value, TRUE);
                 }
 
                 const rb_callable_method_entry_t *me = rb_vm_frame_method_entry(ec->cfp);
@@ -2815,6 +2819,26 @@ size_t rb_vm_memsize_workqueue(struct ccan_list_head *workqueue); // vm_trace.c
 
 // Used for VM memsize reporting. Returns the size of the at_exit list by
 // looping through the linked list and adding up the size of the structs.
+static enum rb_id_table_iterator_result
+vm_memsize_constant_cache_i(ID id, VALUE ics, void *size)
+{
+    *((size_t *) size) += rb_st_memsize((st_table *) ics);
+    return ID_TABLE_CONTINUE;
+}
+
+// Returns a size_t representing the memory footprint of the VM's constant
+// cache, which is the memsize of the table as well as the memsize of all of the
+// nested tables.
+static size_t
+vm_memsize_constant_cache(void)
+{
+    rb_vm_t *vm = GET_VM();
+    size_t size = rb_id_table_memsize(vm->constant_cache);
+
+    rb_id_table_foreach(vm->constant_cache, vm_memsize_constant_cache_i, &size);
+    return size;
+}
+
 static size_t
 vm_memsize_at_exit_list(rb_at_exit_list *at_exit)
 {
@@ -2858,7 +2882,8 @@ vm_memsize(const void *ptr)
         rb_st_memsize(vm->frozen_strings) +
         vm_memsize_builtin_function_table(vm->builtin_function_table) +
         rb_id_table_memsize(vm->negative_cme_table) +
-        rb_st_memsize(vm->overloaded_cme_table)
+        rb_st_memsize(vm->overloaded_cme_table) +
+        vm_memsize_constant_cache()
     );
 
     // TODO
@@ -3144,7 +3169,8 @@ thread_free(void *ptr)
 	RUBY_GC_INFO("MRI main thread\n");
     }
     else {
-	ruby_xfree(ptr);
+        ruby_xfree(th->nt); // TODO
+	ruby_xfree(th);
     }
 
     RUBY_FREE_LEAVE("thread");
@@ -3186,11 +3212,8 @@ rb_obj_is_thread(VALUE obj)
 static VALUE
 thread_alloc(VALUE klass)
 {
-    VALUE obj;
     rb_thread_t *th;
-    obj = TypedData_Make_Struct(klass, rb_thread_t, &thread_data_type, th);
-
-    return obj;
+    return TypedData_Make_Struct(klass, rb_thread_t, &thread_data_type, th);
 }
 
 inline void
@@ -3226,9 +3249,10 @@ rb_ec_clear_vm_stack(rb_execution_context_t *ec)
 }
 
 static void
-th_init(rb_thread_t *th, VALUE self)
+th_init(rb_thread_t *th, VALUE self, rb_vm_t *vm)
 {
     th->self = self;
+
     rb_threadptr_root_fiber_setup(th);
 
     /* All threads are blocking until a non-blocking fiber is scheduled */
@@ -3236,7 +3260,7 @@ th_init(rb_thread_t *th, VALUE self)
     th->scheduler = Qnil;
 
     if (self == 0) {
-        size_t size = th->vm->default_params.thread_vm_stack_size / sizeof(VALUE);
+        size_t size = vm->default_params.thread_vm_stack_size / sizeof(VALUE);
         rb_ec_initialize_vm_stack(th->ec, ALLOC_N(VALUE, size), size);
     }
     else {
@@ -3247,47 +3271,35 @@ th_init(rb_thread_t *th, VALUE self)
 
     th->status = THREAD_RUNNABLE;
     th->last_status = Qnil;
+    th->top_wrapper = 0;
+    th->top_self = vm->top_self; // 0 while self == 0
+    th->value = Qundef;
+
     th->ec->errinfo = Qnil;
     th->ec->root_svar = Qfalse;
     th->ec->local_storage_recursive_hash = Qnil;
     th->ec->local_storage_recursive_hash_for_trace = Qnil;
-#ifdef NON_SCALAR_THREAD_ID
-    th->thread_id_string[0] = '\0';
-#endif
-
-    th->value = Qundef;
 
 #if OPT_CALL_THREADED_CODE
     th->retval = Qundef;
 #endif
     th->name = Qnil;
-    th->report_on_exception = th->vm->thread_report_on_exception;
+    th->report_on_exception = vm->thread_report_on_exception;
     th->ext_config.ractor_safe = true;
-}
 
-static VALUE
-ruby_thread_init(VALUE self)
-{
-    rb_thread_t *th = GET_THREAD();
-    rb_thread_t *target_th = rb_thread_ptr(self);
-    rb_vm_t *vm = th->vm;
-
-    target_th->vm = vm;
-    th_init(target_th, self);
-
-    target_th->top_wrapper = 0;
-    target_th->top_self = rb_vm_top_self();
-    target_th->ec->root_svar = Qfalse;
-    target_th->ractor = th->ractor;
-
-    return self;
+#if USE_RUBY_DEBUG_LOG
+    static rb_atomic_t thread_serial = 0;
+    th->serial = RUBY_ATOMIC_FETCH_ADD(thread_serial, 1);
+#endif
 }
 
 VALUE
 rb_thread_alloc(VALUE klass)
 {
     VALUE self = thread_alloc(klass);
-    ruby_thread_init(self);
+    rb_thread_t *target_th = rb_thread_ptr(self);
+    target_th->ractor = GET_RACTOR();
+    th_init(target_th, self, target_th->vm = GET_VM());
     return self;
 }
 
@@ -3394,36 +3406,6 @@ core_hash_merge_kwd(VALUE hash, VALUE kw)
 {
     rb_hash_foreach(rb_to_hash_type(kw), kwmerge_i, hash);
     return hash;
-}
-
-/* Returns true if JIT is enabled */
-static VALUE
-mjit_enabled_p(VALUE _)
-{
-    return RBOOL(mjit_enabled);
-}
-
-static VALUE
-mjit_pause_m(int argc, VALUE *argv, RB_UNUSED_VAR(VALUE self))
-{
-    VALUE options = Qnil;
-    VALUE wait = Qtrue;
-    rb_scan_args(argc, argv, "0:", &options);
-
-    if (!NIL_P(options)) {
-        static ID keyword_ids[1];
-        if (!keyword_ids[0])
-            keyword_ids[0] = rb_intern("wait");
-        rb_get_kwargs(options, keyword_ids, 0, 1, &wait);
-    }
-
-    return mjit_pause(RTEST(wait));
-}
-
-static VALUE
-mjit_resume_m(VALUE _)
-{
-    return mjit_resume();
 }
 
 extern VALUE *rb_gc_stack_start;
@@ -3605,15 +3587,6 @@ Init_VM(void)
     rb_obj_freeze(klass);
     rb_gc_register_mark_object(fcore);
     rb_mRubyVMFrozenCore = fcore;
-
-    /* ::RubyVM::MJIT
-     * Provides access to the Method JIT compiler of MRI.
-     * Of course, this module is MRI specific.
-     */
-    VALUE mjit = rb_define_module_under(rb_cRubyVM, "MJIT");
-    rb_define_singleton_method(mjit, "enabled?", mjit_enabled_p, 0);
-    rb_define_singleton_method(mjit, "pause", mjit_pause_m, -1);
-    rb_define_singleton_method(mjit, "resume", mjit_resume_m, 0);
 
     /*
      * Document-class: Thread
@@ -3925,6 +3898,8 @@ Init_BareVM(void)
 	fputs("[FATAL] failed to allocate memory\n", stderr);
 	exit(EXIT_FAILURE);
     }
+
+    // setup the VM
     MEMZERO(th, rb_thread_t, 1);
     vm_init2(vm);
 
@@ -3932,14 +3907,19 @@ Init_BareVM(void)
     ruby_current_vm_ptr = vm;
     vm->negative_cme_table = rb_id_table_create(16);
     vm->overloaded_cme_table = st_init_numtable();
+    vm->constant_cache = rb_id_table_create(0);
 
-    Init_native_thread(th);
+    // setup main thread
+    th->nt = ZALLOC(struct rb_native_thread);
     th->vm = vm;
-    th_init(th, 0);
-    vm->ractor.main_ractor = th->ractor = rb_ractor_main_alloc();
+    th->ractor = vm->ractor.main_ractor = rb_ractor_main_alloc();
+    Init_native_thread(th);
+    th_init(th, 0, vm);
+
     rb_ractor_set_current_ec(th->ractor, th->ec);
     ruby_thread_init_stack(th);
 
+    // setup ractor system
     rb_native_mutex_initialize(&vm->ractor.sync.lock);
     rb_native_cond_initialize(&vm->ractor.sync.barrier_cond);
     rb_native_cond_initialize(&vm->ractor.sync.terminate_cond);
@@ -3957,6 +3937,11 @@ Init_vm_objects(void)
     vm->loading_table = st_init_strtable();
     vm->frozen_strings = st_init_table_with_size(&rb_fstring_hash_type, 10000);
 }
+
+/* Stub for builtin function when not building YJIT units*/
+#if !YJIT_BUILD
+void Init_builtin_yjit(void) {}
+#endif
 
 /* top self */
 

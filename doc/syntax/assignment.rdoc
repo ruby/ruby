@@ -8,6 +8,9 @@ example assigns the number five to the local variable +v+:
 Assignment creates a local variable if the variable was not previously
 referenced.
 
+An assignment expression result is always the assigned value, including
+{assignment methods}[rdoc-ref:syntax/assignment.rdoc@Assignment+Methods].
+
 == Local Variable Names
 
 A local variable name must start with a lowercase US-ASCII letter or a
@@ -341,6 +344,9 @@ This prints:
 
   local_variables:
   @value: 42
+
+Note that the value returned by an assignment method is ignored whatever,
+since an assignment expression result is always the assignment value.
 
 == Abbreviated Assignment
 

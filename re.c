@@ -20,6 +20,7 @@
 #include "internal/imemo.h"
 #include "internal/re.h"
 #include "internal/string.h"
+#include "internal/object.h"
 #include "internal/ractor.h"
 #include "internal/variable.h"
 #include "regint.h"
@@ -480,15 +481,19 @@ rb_reg_desc(const char *s, long len, VALUE re)
 
 /*
  *  call-seq:
- *      rxp.source   -> str
+ *    source -> string
  *
- *  Returns the original string of the pattern.
+ *  Returns the original string of +self+:
  *
- *      /ab+c/ix.source #=> "ab+c"
+ *    /ab+c/ix.source # => "ab+c"
  *
- *  Note that escape sequences are retained as is.
+ *  Regexp escape sequences are retained:
  *
- *     /\x20\+/.source  #=> "\\x20\\+"
+ *    /\x20\+/.source  # => "\\x20\\+"
+ *
+ *  Lexer escape characters are not retained:
+ *
+ *    /\//.source  # => "/"
  *
  */
 
@@ -503,15 +508,14 @@ rb_reg_source(VALUE re)
 }
 
 /*
- * call-seq:
- *    rxp.inspect   -> string
+ *  call-seq:
+ *    inspect -> string
  *
- * Produce a nicely formatted string-version of _rxp_. Perhaps surprisingly,
- * <code>#inspect</code> actually produces the more natural version of
- * the string than <code>#to_s</code>.
+ *  Returns a nicely-formatted string representation of +self+:
  *
- *      /ab+c/ix.inspect        #=> "/ab+c/ix"
+ *    /ab+c/ix.inspect # => "/ab+c/ix"
  *
+ *  Related: Regexp#to_s.
  */
 
 static VALUE
@@ -527,22 +531,29 @@ static VALUE rb_reg_str_with_term(VALUE re, int term);
 
 /*
  *  call-seq:
- *     rxp.to_s   -> str
+ *    to_s -> string
  *
- *  Returns a string containing the regular expression and its options (using the
- *  <code>(?opts:source)</code> notation. This string can be fed back in to
- *  Regexp::new to a regular expression with the same semantics as the
- *  original. (However, <code>Regexp#==</code> may not return true
- *  when comparing the two, as the source of the regular expression
- *  itself may differ, as the example shows).  Regexp#inspect produces
- *  a generally more readable version of <i>rxp</i>.
+ *  Returns a string showing the options and string of +self+:
  *
- *      r1 = /ab+c/ix           #=> /ab+c/ix
- *      s1 = r1.to_s            #=> "(?ix-m:ab+c)"
- *      r2 = Regexp.new(s1)     #=> /(?ix-m:ab+c)/
- *      r1 == r2                #=> false
- *      r1.source               #=> "ab+c"
- *      r2.source               #=> "(?ix-m:ab+c)"
+ *    r0 = /ab+c/ix
+ *    s0 = r0.to_s # => "(?ix-m:ab+c)"
+ *
+ *  The returned string may be used as an argument to Regexp.new,
+ *  or as interpolated text for a
+ *  {Regexp literal}[rdoc-ref:regexp.rdoc@Regexp+Literal]:
+ *
+ *    r1 = Regexp.new(s0) # => /(?ix-m:ab+c)/
+ *    r2 = /#{s0}/        # => /(?ix-m:ab+c)/
+ *
+ *  Note that +r1+ and +r2+ are not equal to +r0+
+ *  because their original strings are different:
+ *
+ *    r0 == r1  # => false
+ *    r0.source # => "ab+c"
+ *    r1.source # => "(?ix-m:ab+c)"
+ *
+ *  Related: Regexp#inspect.
+ *
  */
 
 static VALUE
@@ -713,13 +724,15 @@ rb_reg_raise_str(VALUE str, int options, const char *err)
 
 /*
  *  call-seq:
- *     rxp.casefold?   -> true or false
+ *    casefold?-> true or false
  *
- *  Returns the value of the case-insensitive flag.
+ *  Returns +true+ if the case-insensitivity flag in +self+ is set,
+ *  +false+ otherwise:
  *
- *      /a/.casefold?           #=> false
- *      /a/i.casefold?          #=> true
- *      /(?i:a)/.casefold?      #=> false
+ *    /a/.casefold?           # => false
+ *    /a/i.casefold?          # => true
+ *    /(?i:a)/.casefold?      # => false
+ *
  */
 
 static VALUE
@@ -732,25 +745,39 @@ rb_reg_casefold_p(VALUE re)
 
 /*
  *  call-seq:
- *     rxp.options   -> integer
+ *    options -> integer
+ *
+ *  Returns an integer whose bits show the options set in +self+.
+ *
+ *  The option bits are:
+ *
+ *    Regexp::IGNORECASE # => 1
+ *    Regexp::EXTENDED   # => 2
+ *    Regexp::MULTILINE  # => 4
+ *
+ *  Examples:
+ *
+ *    /foo/.options    # => 0
+ *    /foo/i.options   # => 1
+ *    /foo/x.options   # => 2
+ *    /foo/m.options   # => 4
+ *    /foo/mix.options # => 7
+ *
+ *  Note that additional bits may be set in the returned integer;
+ *  these are maintained internally internally in +self+,
+ *  are ignored if passed to Regexp.new, and may be ignored by the caller:
  *
  *  Returns the set of bits corresponding to the options used when
- *  creating this Regexp (see Regexp::new for details. Note that
+ *  creating this regexp (see Regexp::new for details). Note that
  *  additional bits may be set in the returned options: these are used
  *  internally by the regular expression code. These extra bits are
- *  ignored if the options are passed to Regexp::new.
+ *  ignored if the options are passed to Regexp::new:
  *
- *     Regexp::IGNORECASE                  #=> 1
- *     Regexp::EXTENDED                    #=> 2
- *     Regexp::MULTILINE                   #=> 4
+ *    r = /\xa1\xa2/e                 # => /\xa1\xa2/
+ *    r.source                        # => "\\xa1\\xa2"
+ *    r.options                       # => 16
+ *    Regexp.new(r.source, r.options) # => /\xa1\xa2/
  *
- *     /cat/.options                       #=> 0
- *     /cat/ix.options                     #=> 3
- *     Regexp.new('cat', true).options     #=> 1
- *     /\xa1\xa2/e.options                 #=> 16
- *
- *     r = /cat/ix
- *     Regexp.new(r.source, r.options)     #=> /cat/ix
  */
 
 static VALUE
@@ -770,19 +797,16 @@ reg_names_iter(const OnigUChar *name, const OnigUChar *name_end,
 }
 
 /*
- * call-seq:
- *    rxp.names   -> [name1, name2, ...]
+ *  call-seq:
+ *   names -> array_of_names
  *
- * Returns a list of names of captures as an array of strings.
+ *  Returns an array of names of captures
+ *  (see {Named Captures}[rdoc-ref:Regexp@Named+Captures]):
  *
- *     /(?<foo>.)(?<bar>.)(?<baz>.)/.names
- *     #=> ["foo", "bar", "baz"]
+ *    /(?<foo>.)(?<bar>.)(?<baz>.)/.names # => ["foo", "bar", "baz"]
+ *    /(?<foo>.)(?<foo>.)/.names          # => ["foo"]
+ *    /(.)(.)/.names                      # => []
  *
- *     /(?<foo>.)(?<foo>.)/.names
- *     #=> ["foo"]
- *
- *     /(.)(.)/.names
- *     #=> []
  */
 
 static VALUE
@@ -812,25 +836,21 @@ reg_named_captures_iter(const OnigUChar *name, const OnigUChar *name_end,
 }
 
 /*
- * call-seq:
- *    rxp.named_captures  -> hash
+ *  call-seq:
+ *    named_captures  -> hash
  *
- * Returns a hash representing information about named captures of <i>rxp</i>.
+ *  Returns a hash representing named captures of +self+
+ *  (see {Named Captures}[rdoc-ref:Regexp@Named+Captures]):
  *
- * A key of the hash is a name of the named captures.
- * A value of the hash is an array which is list of indexes of corresponding
- * named captures.
+ *  - Each key is the name of a named capture.
+ *  - Each value is an array of integer indexes for that named capture.
  *
- *    /(?<foo>.)(?<bar>.)/.named_captures
- *    #=> {"foo"=>[1], "bar"=>[2]}
+ *  Examples:
  *
- *    /(?<foo>.)(?<foo>.)/.named_captures
- *    #=> {"foo"=>[1, 2]}
+ *    /(?<foo>.)(?<bar>.)/.named_captures # => {"foo"=>[1], "bar"=>[2]}
+ *    /(?<foo>.)(?<foo>.)/.named_captures # => {"foo"=>[1, 2]}
+ *    /(.)(.)/.named_captures             # => {}
  *
- * If there are no named captures, an empty hash is returned.
- *
- *    /(.)(.)/.named_captures
- *    #=> {}
  */
 
 static VALUE
@@ -1086,13 +1106,14 @@ match_init_copy(VALUE obj, VALUE orig)
 
 
 /*
- * call-seq:
- *    mtch.regexp   -> regexp
+ *  call-seq:
+ *    regexp -> regexp
  *
- * Returns the regexp.
+ *  Returns the regexp that produced the match:
  *
- *     m = /a.*b/.match("abc")
- *     m.regexp #=> /a.*b/
+ *    m = /a.*b/.match("abc") # => #<MatchData "ab">
+ *    m.regexp                # => /a.*b/
+ *
  */
 
 static VALUE
@@ -1110,17 +1131,24 @@ match_regexp(VALUE match)
 }
 
 /*
- * call-seq:
- *    mtch.names   -> [name1, name2, ...]
+ *  call-seq:
+ *    names -> array_of_names
  *
- * Returns a list of names of captures as an array of strings.
- * This is the same as mtch.regexp.names.
+ *  Returns an array of the capture names
+ *  (see {Named Captures}[rdoc-ref:Regexp@Named+Captures]):
  *
- *     /(?<foo>.)(?<bar>.)(?<baz>.)/.match("hoge").names
- *     #=> ["foo", "bar", "baz"]
+ *    m = /(?<foo>.)(?<bar>.)(?<baz>.)/.match("hoge")
+ *    # => #<MatchData "hog" foo:"h" bar:"o" baz:"g">
+ *    m.names # => ["foo", "bar", "baz"]
  *
- *     m = /(?<x>.)(?<y>.)?/.match("a") #=> #<MatchData "a" x:"a" y:nil>
- *     m.names                          #=> ["x", "y"]
+ *    m = /foo/.match('foo') # => #<MatchData "foo">
+ *    m.names # => [] # No named captures.
+ *
+ *  Equivalent to:
+ *
+ *    m = /(?<foo>.)(?<bar>.)(?<baz>.)/.match("hoge")
+ *    m.regexp.names # => ["foo", "bar", "baz"]
+ *
  */
 
 static VALUE
@@ -1134,14 +1162,16 @@ match_names(VALUE match)
 
 /*
  *  call-seq:
- *     mtch.length   -> integer
- *     mtch.size     -> integer
+ *    size -> integer
  *
- *  Returns the number of elements in the match array.
+ *  Returns size of the match array:
  *
- *     m = /(.)(.)(\d+)(\d)/.match("THX1138.")
- *     m.length   #=> 5
- *     m.size     #=> 5
+ *    m = /(.)(.)(\d+)(\d)/.match("THX1138.")
+ *    # => #<MatchData "HX1138" 1:"H" 2:"X" 3:"113" 4:"8">
+ *    m.size # => 5
+ *
+ *  MatchData#length is an alias for MatchData.size.
+ *
  */
 
 static VALUE
@@ -1203,19 +1233,10 @@ rb_reg_backref_number(VALUE match, VALUE backref)
 
 /*
  *  call-seq:
- *     mtch.offset(n)   -> array
+ *    offset(n) -> [start_offset, end_offset]
+ *    offset(name) -> [start_offset, end_offset]
  *
- *  Returns a two-element array containing the beginning and ending offsets of
- *  the <em>n</em>th match.
- *  <em>n</em> can be a string or symbol to reference a named capture.
- *
- *     m = /(.)(.)(\d+)(\d)/.match("THX1138.")
- *     m.offset(0)      #=> [1, 7]
- *     m.offset(4)      #=> [6, 7]
- *
- *     m = /(?<foo>.)(.)(?<bar>.)/.match("hoge")
- *     p m.offset(:foo) #=> [0, 1]
- *     p m.offset(:bar) #=> [2, 3]
+ *  :include: doc/matchdata/offset.rdoc
  *
  */
 
@@ -1271,19 +1292,11 @@ match_byteoffset(VALUE match, VALUE n)
 
 /*
  *  call-seq:
- *     mtch.begin(n)   -> integer
+ *    begin(n) -> integer
+ *    begin(name) -> integer
  *
- *  Returns the offset of the start of the <em>n</em>th element of the match
- *  array in the string.
- *  <em>n</em> can be a string or symbol to reference a named capture.
+ *  :include: doc/matchdata/begin.rdoc
  *
- *     m = /(.)(.)(\d+)(\d)/.match("THX1138.")
- *     m.begin(0)       #=> 1
- *     m.begin(2)       #=> 2
- *
- *     m = /(?<foo>.)(.)(?<bar>.)/.match("hoge")
- *     p m.begin(:foo)  #=> 0
- *     p m.begin(:bar)  #=> 2
  */
 
 static VALUE
@@ -1305,19 +1318,11 @@ match_begin(VALUE match, VALUE n)
 
 /*
  *  call-seq:
- *     mtch.end(n)   -> integer
+ *    end(n) -> integer
+ *    end(name) -> integer
  *
- *  Returns the offset of the character immediately following the end of the
- *  <em>n</em>th element of the match array in the string.
- *  <em>n</em> can be a string or symbol to reference a named capture.
+ *  :include: doc/matchdata/end.rdoc
  *
- *     m = /(.)(.)(\d+)(\d)/.match("THX1138.")
- *     m.end(0)         #=> 7
- *     m.end(2)         #=> 3
- *
- *     m = /(?<foo>.)(.)(?<bar>.)/.match("hoge")
- *     p m.end(:foo)    #=> 1
- *     p m.end(:bar)    #=> 3
  */
 
 static VALUE
@@ -1338,19 +1343,27 @@ match_end(VALUE match, VALUE n)
 
 /*
  *  call-seq:
- *     mtch.match(n)   -> string or nil
+ *    match(n) -> string or nil
+ *    match(name) -> string or nil
  *
- *  Returns the captured substring corresponding to the argument.
- *  <em>n</em> can be a string or symbol to reference a named capture.
+ *  Returns the matched substring corresponding to the given argument.
  *
- *     m = /(.)(.)(\d+)(\d)(\w)?/.match("THX1138.")
- *     m.match(0)       #=> "HX1138"
- *     m.match(4)       #=> "8"
- *     m.match(5)       #=> nil
+ *  When non-negative argument +n+ is given,
+ *  returns the matched substring for the <tt>n</tt>th match:
  *
- *     m = /(?<foo>.)(.)(?<bar>.+)/.match("hoge")
- *     m.match(:foo)    #=> "h"
- *     m.match(:bar)    #=> "ge"
+ *    m = /(.)(.)(\d+)(\d)(\w)?/.match("THX1138.")
+ *    # => #<MatchData "HX1138" 1:"H" 2:"X" 3:"113" 4:"8" 5:nil>
+ *    m.match(0) # => "HX1138"
+ *    m.match(4) # => "8"
+ *    m.match(5) # => nil
+ *
+ *  When string or symbol argument +name+ is given,
+ *  returns the matched substring for the given name:
+ *
+ *    m = /(?<foo>.)(.)(?<bar>.+)/.match("hoge")
+ *    # => #<MatchData "hoge" foo:"h" bar:"ge">
+ *    m.match('foo') # => "h"
+ *    m.match(:bar)  # => "ge"
  *
  */
 
@@ -1371,19 +1384,30 @@ match_nth(VALUE match, VALUE n)
 
 /*
  *  call-seq:
- *     mtch.match_length(n)   -> array
+ *    match_length(n) -> integer or nil
+ *    match_length(name) -> integer or nil
  *
- *  Returns the length of the captured substring corresponding to the argument.
- *  <em>n</em> can be a string or symbol to reference a named capture.
+ *  Returns the length (in characters) of the matched substring
+ *  corresponding to the given argument.
  *
- *     m = /(.)(.)(\d+)(\d)(\w)?/.match("THX1138.")
- *     m.match_length(0)       #=> 6
- *     m.match_length(4)       #=> 1
- *     m.match_length(5)       #=> nil
+ *  When non-negative argument +n+ is given,
+ *  returns the length of the matched substring
+ *  for the <tt>n</tt>th match:
  *
- *     m = /(?<foo>.)(.)(?<bar>.+)/.match("hoge")
- *     m.match_length(:foo)    #=> 1
- *     m.match_length(:bar)    #=> 2
+ *    m = /(.)(.)(\d+)(\d)(\w)?/.match("THX1138.")
+ *    # => #<MatchData "HX1138" 1:"H" 2:"X" 3:"113" 4:"8" 5:nil>
+ *    m.match_length(0) # => 6
+ *    m.match_length(4) # => 1
+ *    m.match_length(5) # => nil
+ *
+ *  When string or symbol argument +name+ is given,
+ *  returns the length of the matched substring
+ *  for the named match:
+ *
+ *    m = /(?<foo>.)(.)(?<bar>.+)/.match("hoge")
+ *    # => #<MatchData "hoge" foo:"h" bar:"ge">
+ *    m.match_length('foo') # => 1
+ *    m.match_length(:bar)  # => 2
  *
  */
 
@@ -1473,31 +1497,31 @@ rb_backref_set_string(VALUE string, long pos, long len)
 
 /*
  *  call-seq:
- *     rxp.fixed_encoding?   -> true or false
+ *    fixed_encoding?   -> true or false
  *
- *  Returns false if rxp is applicable to
- *  a string with any ASCII compatible encoding.
- *  Returns true otherwise.
+ *  Returns +false+ if +self+ is applicable to
+ *  a string with any ASCII-compatible encoding;
+ *  otherwise returns +true+:
  *
- *      r = /a/
- *      r.fixed_encoding?                               #=> false
- *      r =~ "\u{6666} a"                               #=> 2
- *      r =~ "\xa1\xa2 a".force_encoding("euc-jp")      #=> 2
- *      r =~ "abc".force_encoding("euc-jp")             #=> 0
+ *    r = /a/                                          # => /a/
+ *    r.fixed_encoding?                               # => false
+ *    r.match?("\u{6666} a")                          # => true
+ *    r.match?("\xa1\xa2 a".force_encoding("euc-jp")) # => true
+ *    r.match?("abc".force_encoding("euc-jp"))        # => true
  *
- *      r = /a/u
- *      r.fixed_encoding?                               #=> true
- *      r.encoding                                      #=> #<Encoding:UTF-8>
- *      r =~ "\u{6666} a"                               #=> 2
- *      r =~ "\xa1\xa2".force_encoding("euc-jp")        #=> Encoding::CompatibilityError
- *      r =~ "abc".force_encoding("euc-jp")             #=> 0
+ *    r = /a/u                                        # => /a/
+ *    r.fixed_encoding?                               # => true
+ *    r.match?("\u{6666} a")                          # => true
+ *    r.match?("\xa1\xa2".force_encoding("euc-jp"))   # Raises exception.
+ *    r.match?("abc".force_encoding("euc-jp"))        # => true
  *
- *      r = /\u{6666}/
- *      r.fixed_encoding?                               #=> true
- *      r.encoding                                      #=> #<Encoding:UTF-8>
- *      r =~ "\u{6666} a"                               #=> 0
- *      r =~ "\xa1\xa2".force_encoding("euc-jp")        #=> Encoding::CompatibilityError
- *      r =~ "abc".force_encoding("euc-jp")             #=> nil
+ *    r = /\u{6666}/                                  # => /\u{6666}/
+ *    r.fixed_encoding?                               # => true
+ *    r.encoding                                      # => #<Encoding:UTF-8>
+ *    r.match?("\u{6666} a")                          # => true
+ *    r.match?("\xa1\xa2".force_encoding("euc-jp"))   # Raises exception.
+ *    r.match?("abc".force_encoding("euc-jp"))        # => false
+ *
  */
 
 static VALUE
@@ -1508,7 +1532,7 @@ rb_reg_fixed_encoding_p(VALUE re)
 
 static VALUE
 rb_reg_preprocess(const char *p, const char *end, rb_encoding *enc,
-        rb_encoding **fixed_enc, onig_errmsg_buffer err);
+        rb_encoding **fixed_enc, onig_errmsg_buffer err, int options);
 
 NORETURN(static void reg_enc_error(VALUE re, VALUE str));
 
@@ -1589,7 +1613,7 @@ rb_reg_prepare_re0(VALUE re, VALUE str, onig_errmsg_buffer err)
 
     unescaped = rb_reg_preprocess(
 	pattern, pattern + RREGEXP_SRC_LEN(re), enc,
-	&fixed_enc, err);
+        &fixed_enc, err, 0);
 
     if (NIL_P(unescaped)) {
 	rb_raise(rb_eArgError, "regexp preprocess failed: %s", err);
@@ -1862,13 +1886,19 @@ rb_reg_last_match(VALUE match)
 
 /*
  *  call-seq:
- *     mtch.pre_match   -> str
+ *    pre_match -> string
  *
- *  Returns the portion of the original string before the current match.
- *  Equivalent to the special variable <code>$`</code>.
+ *  Returns the substring of the target string from its beginning
+ *  up to the first match in +self+ (that is, <tt>self[0]</tt>);
+ *  equivalent to regexp global variable <tt>$`</tt>:
  *
- *     m = /(.)(.)(\d+)(\d)/.match("THX1138.")
- *     m.pre_match   #=> "T"
+ *    m = /(.)(.)(\d+)(\d)/.match("THX1138.")
+ *    # => #<MatchData "HX1138" 1:"H" 2:"X" 3:"113" 4:"8">
+ *    m[0]        # => "HX1138"
+ *    m.pre_match # => "T"
+ *
+ *  Related: MatchData#post_match.
+ *
  */
 
 VALUE
@@ -1888,13 +1918,20 @@ rb_reg_match_pre(VALUE match)
 
 /*
  *  call-seq:
- *     mtch.post_match   -> str
+ *    post_match   -> str
  *
- *  Returns the portion of the original string after the current match.
- *  Equivalent to the special variable <code>$'</code>.
+ *  Returns the substring of the target string from
+ *  the end of the first match in +self+ (that is, <tt>self[0]</tt>)
+ *  to the end of the string;
+ *  equivalent to regexp global variable <tt>$'</tt>:
  *
- *     m = /(.)(.)(\d+)(\d)/.match("THX1138: The Movie")
- *     m.post_match   #=> ": The Movie"
+ *    m = /(.)(.)(\d+)(\d)/.match("THX1138: The Movie")
+ *    # => #<MatchData "HX1138" 1:"H" 2:"X" 3:"113" 4:"8">
+ *    m[0]         # => "HX1138"
+ *    m.post_match # => ": The Movie"\
+ *
+ *  Related: MatchData.pre_match.
+ *
  */
 
 VALUE
@@ -1983,24 +2020,16 @@ match_array(VALUE match, int start)
 
 /*
  *  call-seq:
- *     mtch.to_a   -> anArray
+ *    to_a -> array
  *
- *  Returns the array of matches.
+ *  Returns the array of matches:
  *
- *     m = /(.)(.)(\d+)(\d)/.match("THX1138.")
- *     m.to_a   #=> ["HX1138", "H", "X", "113", "8"]
+ *    m = /(.)(.)(\d+)(\d)/.match("THX1138.")
+ *    # => #<MatchData "HX1138" 1:"H" 2:"X" 3:"113" 4:"8">
+ *    m.to_a # => ["HX1138", "H", "X", "113", "8"]
  *
- *  Because <code>to_a</code> is called when expanding
- *  <code>*</code><em>variable</em>, there's a useful assignment
- *  shortcut for extracting matched fields. This is slightly slower than
- *  accessing the fields directly (as an intermediate array is
- *  generated).
+ *  Related: MatchData#captures.
  *
- *     all,f1,f2,f3 = * /(.)(.)(\d+)(\d)/.match("THX1138.")
- *     all   #=> "HX1138"
- *     f1    #=> "H"
- *     f2    #=> "X"
- *     f3    #=> "113"
  */
 
 static VALUE
@@ -2012,15 +2041,18 @@ match_to_a(VALUE match)
 
 /*
  *  call-seq:
- *     mtch.captures   -> array
+ *    captures -> array
  *
- *  Returns the array of captures; equivalent to <code>mtch.to_a[1..-1]</code>.
+ *  Returns the array of captures,
+ *  which are all matches except <tt>m[0]</tt>:
  *
- *     f1,f2,f3,f4 = /(.)(.)(\d+)(\d)/.match("THX1138.").captures
- *     f1    #=> "H"
- *     f2    #=> "X"
- *     f3    #=> "113"
- *     f4    #=> "8"
+ *    m = /(.)(.)(\d+)(\d)/.match("THX1138.")
+ *    # => #<MatchData "HX1138" 1:"H" 2:"X" 3:"113" 4:"8">
+ *    m[0]       # => "HX1138"
+ *    m.captures # => ["H", "X", "113", "8"]
+ *
+ *  Related: MatchData.to_a.
+ *
  */
 static VALUE
 match_captures(VALUE match)
@@ -2098,29 +2130,29 @@ match_ary_aref(VALUE match, VALUE idx, VALUE result)
 
 /*
  *  call-seq:
- *     mtch[i]               -> str or nil
- *     mtch[start, length]   -> array
- *     mtch[range]           -> array
- *     mtch[name]            -> str or nil
+ *    matchdata[index] -> string or nil
+ *    matchdata[start, length] -> array
+ *    matchdata[range] -> array
+ *    matchdata[name] -> string or nil
  *
- *  Match Reference -- MatchData acts as an array, and may be accessed
- *  using the normal array indexing techniques.  <code>mtch[0]</code>
- *  is equivalent to the special variable <code>$&</code>, and returns
- *  the entire matched string.  <code>mtch[1]</code>,
- *  <code>mtch[2]</code>, and so on return the values of the matched
- *  backreferences (portions of the pattern between parentheses).
+ *  When arguments +index+, +start and +length+, or +range+ are given,
+ *  returns match and captures in the style of Array#[]:
  *
- *     m = /(.)(.)(\d+)(\d)/.match("THX1138.")
- *     m          #=> #<MatchData "HX1138" 1:"H" 2:"X" 3:"113" 4:"8">
- *     m[0]       #=> "HX1138"
- *     m[1, 2]    #=> ["H", "X"]
- *     m[1..3]    #=> ["H", "X", "113"]
- *     m[-3, 2]   #=> ["X", "113"]
+ *    m = /(.)(.)(\d+)(\d)/.match("THX1138.")
+ *    # => #<MatchData "HX1138" 1:"H" 2:"X" 3:"113" 4:"8">
+ *    m[0] # => "HX1138"
+ *    m[1, 2]  # => ["H", "X"]
+ *    m[1..3]  # => ["H", "X", "113"]
+ *    m[-3, 2] # => ["X", "113"]
  *
- *     m = /(?<foo>a+)b/.match("ccaaab")
- *     m          #=> #<MatchData "aaab" foo:"aaa">
- *     m["foo"]   #=> "aaa"
- *     m[:foo]    #=> "aaa"
+ *  When string or symbol argument +name+ is given,
+ *  returns the matched substring for the given name:
+ *
+ *    m = /(?<foo>.)(.)(?<bar>.+)/.match("hoge")
+ *    # => #<MatchData "hoge" foo:"h" bar:"ge">
+ *    m['foo'] # => "h"
+ *    m[:bar]  # => "ge"
+ *
  */
 
 static VALUE
@@ -2168,20 +2200,28 @@ match_aref(int argc, VALUE *argv, VALUE match)
 
 /*
  *  call-seq:
+ *    values_at(*indexes) -> array
  *
- *     mtch.values_at(index, ...)   -> array
+ *  Returns match and captures at the given +indexes+,
+ *  which may include any mixture of:
  *
- *  Uses each <i>index</i> to access the matching values, returning an array of
- *  the corresponding matches.
+ *  - Integers.
+ *  - Ranges.
+ *  - Names (strings and symbols).
  *
- *     m = /(.)(.)(\d+)(\d)/.match("THX1138: The Movie")
- *     m.to_a               #=> ["HX1138", "H", "X", "113", "8"]
- *     m.values_at(0, 2, -2)   #=> ["HX1138", "X", "113"]
- *     m.values_at(1..2, -1)   #=> ["H", "X", "8"]
  *
- *     m = /(?<a>\d+) *(?<op>[+\-*\/]) *(?<b>\d+)/.match("1 + 2")
- *     m.to_a               #=> ["1 + 2", "1", "+", "2"]
- *     m.values_at(:a, :b, :op) #=> ["1", "2", "+"]
+ *  Examples:
+ *
+ *    m = /(.)(.)(\d+)(\d)/.match("THX1138: The Movie")
+ *    # => #<MatchData "HX1138" 1:"H" 2:"X" 3:"113" 4:"8">
+ *    m.values_at(0, 2, -2) # => ["HX1138", "X", "113"]
+ *    m.values_at(1..2, -1) # => ["H", "X", "8"]
+ *
+ *    m = /(?<a>\d+) *(?<op>[+\-*\/]) *(?<b>\d+)/.match("1 + 2")
+ *    # => #<MatchData "1 + 2" a:"1" op:"+" b:"2">
+ *    m.values_at(0, 1..2, :a, :b, :op)
+ *    # => ["1 + 2", "1", "+", "1", "2", "+"]
+ *
  */
 
 static VALUE
@@ -2213,12 +2253,20 @@ match_values_at(int argc, VALUE *argv, VALUE match)
 
 /*
  *  call-seq:
- *     mtch.to_s   -> str
+ *    to_s -> string
  *
- *  Returns the entire matched string.
+ *  Returns the matched string:
  *
- *     m = /(.)(.)(\d+)(\d)/.match("THX1138.")
- *     m.to_s   #=> "HX1138"
+ *    m = /(.)(.)(\d+)(\d)/.match("THX1138.")
+ *    # => #<MatchData "HX1138" 1:"H" 2:"X" 3:"113" 4:"8">
+ *    m.to_s # => "HX1138"
+ *
+ *    m = /(?<foo>.)(.)(?<bar>.+)/.match("hoge")
+ *    # => #<MatchData "hoge" foo:"h" bar:"ge">
+ *    m.to_s # => "hoge"
+ *
+ *  Related: MatchData.inspect.
+ *
  */
 
 static VALUE
@@ -2261,25 +2309,27 @@ match_named_captures_iter(const OnigUChar *name, const OnigUChar *name_end,
 
 /*
  *  call-seq:
- *     mtch.named_captures -> hash
+ *    named_captures -> hash
  *
- *  Returns a Hash using named capture.
+ *  Returns a hash of the named captures;
+ *  each key is a capture name; each value is its captured string or +nil+:
  *
- *  A key of the hash is a name of the named captures.
- *  A value of the hash is a string of last successful capture of corresponding
- *  group.
+ *    m = /(?<foo>.)(.)(?<bar>.+)/.match("hoge")
+ *    # => #<MatchData "hoge" foo:"h" bar:"ge">
+ *    m.named_captures # => {"foo"=>"h", "bar"=>"ge"}
  *
- *     m = /(?<a>.)(?<b>.)/.match("01")
- *     m.named_captures #=> {"a" => "0", "b" => "1"}
+ *    m = /(?<a>.)(?<b>.)/.match("01")
+ *    # => #<MatchData "01" a:"0" b:"1">
+ *    m.named_captures #=> {"a" => "0", "b" => "1"}
  *
- *     m = /(?<a>.)(?<b>.)?/.match("0")
- *     m.named_captures #=> {"a" => "0", "b" => nil}
+ *    m = /(?<a>.)(?<b>.)?/.match("0")
+ *    # => #<MatchData "0" a:"0" b:nil>
+ *    m.named_captures #=> {"a" => "0", "b" => nil}
  *
- *     m = /(?<a>.)(?<a>.)/.match("01")
- *     m.named_captures #=> {"a" => "1"}
+ *    m = /(?<a>.)(?<a>.)/.match("01")
+ *    # => #<MatchData "01" a:"0" a:"1">
+ *    m.named_captures #=> {"a" => "1"}
  *
- *     m = /(?<a>x)|(?<a>y)/.match("x")
- *     m.named_captures #=> {"a" => "x"}
  */
 
 static VALUE
@@ -2302,12 +2352,15 @@ match_named_captures(VALUE match)
 
 /*
  *  call-seq:
- *     mtch.string   -> str
+ *    string -> string
  *
- *  Returns a frozen copy of the string passed in to <code>match</code>.
+ *  Returns the target string if it was frozen;
+ *  otherwise, returns a frozen copy of the target string:
  *
- *     m = /(.)(.)(\d+)(\d)/.match("THX1138.")
- *     m.string   #=> "THX1138."
+ *    m = /(.)(.)(\d+)(\d)/.match("THX1138.")
+ *    # => #<MatchData "HX1138" 1:"H" 2:"X" 3:"113" 4:"8">
+ *    m.string # => "THX1138."
+ *
  */
 
 static VALUE
@@ -2338,21 +2391,23 @@ match_inspect_name_iter(const OnigUChar *name, const OnigUChar *name_end,
 
 /*
  * call-seq:
- *    mtch.inspect   -> str
+ *   inspect -> string
  *
- * Returns a printable version of <i>mtch</i>.
+ * Returns a string representation of +self+:
  *
- *     puts /.$/.match("foo").inspect
- *     #=> #<MatchData "o">
+ *    m = /.$/.match("foo")
+ *    # => #<MatchData "o">
+ *    m.inspect # => "#<MatchData \"o\">"
  *
- *     puts /(.)(.)(.)/.match("foo").inspect
- *     #=> #<MatchData "foo" 1:"f" 2:"o" 3:"o">
+ *    m = /(.)(.)(.)/.match("foo")
+ *    # => #<MatchData "foo" 1:"f" 2:"o" 3:"o">
+ *    m.inspect # => "#<MatchData \"foo\" 1:\"f\" 2:\"o\
  *
- *     puts /(.)(.)?(.)/.match("fo").inspect
- *     #=> #<MatchData "fo" 1:"f" 2:nil 3:"o">
+ *    m = /(.)(.)?(.)/.match("fo")
+ *    # => #<MatchData "fo" 1:"f" 2:nil 3:"o">
+ *    m.inspect # => "#<MatchData \"fo\" 1:\"f\" 2:nil 3:\"o\">"
  *
- *     puts /(?<foo>.)(?<bar>.)(?<baz>.)/.match("hoge").inspect
- *     #=> #<MatchData "hog" foo:"h" bar:"o" baz:"g">
+ *  Related: MatchData#to_s.
  *
  */
 
@@ -2668,10 +2723,11 @@ unescape_unicode_bmp(const char **pp, const char *end,
 static int
 unescape_nonascii(const char *p, const char *end, rb_encoding *enc,
         VALUE buf, rb_encoding **encp, int *has_property,
-        onig_errmsg_buffer err)
+        onig_errmsg_buffer err, int options)
 {
     unsigned char c;
     char smallbuf[2];
+    int in_char_class = 0;
 
     while (p < end) {
         int chlen = rb_enc_precise_mbclen(p, end, enc);
@@ -2783,6 +2839,60 @@ escape_asis:
             }
             break;
 
+          case '#':
+            if ((options & ONIG_OPTION_EXTEND) && !in_char_class) {
+                /* consume and ignore comment in extended regexp */
+                while ((p < end) && ((c = *p++) != '\n'));
+                break;
+            }
+            rb_str_buf_cat(buf, (char *)&c, 1);
+            break;
+          case '[':
+            in_char_class++;
+            rb_str_buf_cat(buf, (char *)&c, 1);
+            break;
+          case ']':
+            if (in_char_class) {
+                in_char_class--;
+            }
+            rb_str_buf_cat(buf, (char *)&c, 1);
+            break;
+          case '(':
+            if (!in_char_class && p + 1 < end && *p == '?' && *(p+1) == '#') {
+                /* (?# is comment inside any regexp, and content inside should be ignored */
+                const char *orig_p = p;
+                int cont = 1;
+
+                while (cont && (p < end)) {
+                    switch (c = *p++) {
+		      default:
+                        if (!(c & 0x80)) break;
+			--p;
+			/* fallthrough */
+                      case '\\':
+                        chlen = rb_enc_precise_mbclen(p, end, enc);
+                        if (!MBCLEN_CHARFOUND_P(chlen)) {
+                            goto invalid_multibyte;
+                        }
+                        p += MBCLEN_CHARFOUND_LEN(chlen);
+                        break;
+                      case ')':
+                        cont = 0;
+                        break;
+                    }
+                }
+
+                if (cont) {
+                    /* unterminated (?#, rewind so it is syntax error */
+                    p = orig_p;
+                    c = '(';
+                    rb_str_buf_cat(buf, (char *)&c, 1);
+                }
+            }
+            else {
+                rb_str_buf_cat(buf, (char *)&c, 1);
+            }
+            break;
           default:
             rb_str_buf_cat(buf, (char *)&c, 1);
             break;
@@ -2794,7 +2904,7 @@ escape_asis:
 
 static VALUE
 rb_reg_preprocess(const char *p, const char *end, rb_encoding *enc,
-        rb_encoding **fixed_enc, onig_errmsg_buffer err)
+        rb_encoding **fixed_enc, onig_errmsg_buffer err, int options)
 {
     VALUE buf;
     int has_property = 0;
@@ -2808,7 +2918,7 @@ rb_reg_preprocess(const char *p, const char *end, rb_encoding *enc,
         rb_enc_associate(buf, enc);
     }
 
-    if (unescape_nonascii(p, end, enc, buf, fixed_enc, &has_property, err) != 0)
+    if (unescape_nonascii(p, end, enc, buf, fixed_enc, &has_property, err, options) != 0)
         return Qnil;
 
     if (has_property && !*fixed_enc) {
@@ -2836,7 +2946,7 @@ rb_reg_check_preprocess(VALUE str)
     end = p + RSTRING_LEN(str);
     enc = rb_enc_get(str);
 
-    buf = rb_reg_preprocess(p, end, enc, &fixed_enc, err);
+    buf = rb_reg_preprocess(p, end, enc, &fixed_enc, err, 0);
     RB_GC_GUARD(str);
 
     if (NIL_P(buf)) {
@@ -2878,7 +2988,7 @@ rb_reg_preprocess_dregexp(VALUE ary, int options)
         p = RSTRING_PTR(str);
         end = p + RSTRING_LEN(str);
 
-        buf = rb_reg_preprocess(p, end, src_enc, &fixed_enc, err);
+        buf = rb_reg_preprocess(p, end, src_enc, &fixed_enc, err, options);
 
         if (NIL_P(buf))
             rb_raise(rb_eArgError, "%s", err);
@@ -2925,7 +3035,7 @@ rb_reg_initialize(VALUE obj, const char *s, long len, rb_encoding *enc,
 	return -1;
     }
 
-    unescaped = rb_reg_preprocess(s, s+len, enc, &fixed_enc, err);
+    unescaped = rb_reg_preprocess(s, s+len, enc, &fixed_enc, err, options);
     if (NIL_P(unescaped))
         return -1;
 
@@ -3101,12 +3211,13 @@ rb_reg_regcomp(VALUE str)
 
 static st_index_t reg_hash(VALUE re);
 /*
- * call-seq:
- *   rxp.hash   -> integer
+ *  call-seq:
+ *    hash -> integer
  *
- * Produce a hash based on the text and options of this regular expression.
+ *  Returns the integer hash value for +self+.
  *
- * See also Object#hash.
+ *  Related: Object#hash.
+ *
  */
 
 VALUE
@@ -3130,17 +3241,18 @@ reg_hash(VALUE re)
 
 /*
  *  call-seq:
- *     rxp == other_rxp      -> true or false
- *     rxp.eql?(other_rxp)   -> true or false
+ *    regexp == object -> true or false
  *
- *  Equality---Two regexps are equal if their patterns are identical, they have
- *  the same character set code, and their <code>casefold?</code> values are the
- *  same.
+ *  Returns +true+ if +object+ is another \Regexp whose pattern,
+ *  flags, and encoding are the same as +self+, +false+ otherwise:
  *
- *     /abc/  == /abc/x   #=> false
- *     /abc/  == /abc/i   #=> false
- *     /abc/  == /abc/u   #=> false
- *     /abc/u == /abc/n   #=> false
+ *    /foo/ == Regexp.new('foo')                          # => true
+ *    /foo/ == /foo/i                                     # => false
+ *    /foo/ == Regexp.new('food')                         # => false
+ *    /foo/ == Regexp.new("abc".force_encoding("euc-jp")) # => false
+ *
+ *  Regexp#eql? is an alias for Regexp#==.
+ *
  */
 
 VALUE
@@ -3157,13 +3269,14 @@ rb_reg_equal(VALUE re1, VALUE re2)
 }
 
 /*
- * call-seq:
- *    mtch.hash   -> integer
+ *  call-seq:
+ *    hash -> integer
  *
- * Produce a hash based on the target string, regexp and matched
- * positions of this matchdata.
+ *  Returns the integer hash value for +self+,
+ *  based on the target string, regexp, match, and captures.
  *
- * See also Object#hash.
+ *  See also Object#hash.
+ *
  */
 
 static VALUE
@@ -3184,12 +3297,15 @@ match_hash(VALUE match)
 }
 
 /*
- * call-seq:
- *    mtch == mtch2   -> true or false
- *    mtch.eql?(mtch2)   -> true or false
+ *  call-seq:
+ *    matchdata == object -> true or false
  *
- *  Equality---Two matchdata are equal if their target strings,
- *  patterns, and matched positions are identical.
+ *  Returns +true+ if +object+ is another \MatchData object
+ *  whose target string, regexp, match, and captures
+ *  are the same as +self+, +false+ otherwise.
+ *
+ *  MatchData#eql? is an alias for MatchData#==.
+ *
  */
 
 static VALUE
@@ -3249,49 +3365,57 @@ reg_match_pos(VALUE re, VALUE *strp, long pos, VALUE* set_match)
 
 /*
  *  call-seq:
- *     rxp =~ str    -> integer or nil
+ *    regexp =~ string -> integer or nil
  *
- *  Match---Matches <i>rxp</i> against <i>str</i>.
+ *  Returns the integer index (in characters) of the first match
+ *  for +self+ and +string+, or +nil+ if none;
+ *  also sets the
+ *  {rdoc-ref:Regexp Global Variables}[rdoc-ref:Regexp@Regexp+Global+Variables]:
  *
- *     /at/ =~ "input data"   #=> 7
- *     /ax/ =~ "input data"   #=> nil
+ *    /at/ =~ 'input data' # => 7
+ *    $~                   # => #<MatchData "at">
+ *    /ax/ =~ 'input data' # => nil
+ *    $~                   # => nil
  *
- *  If <code>=~</code> is used with a regexp literal with named captures,
- *  captured strings (or nil) is assigned to local variables named by
- *  the capture names.
+ *  Assigns named captures to local variables of the same names
+ *  if and only if +self+:
  *
- *     /(?<lhs>\w+)\s*=\s*(?<rhs>\w+)/ =~ "  x = y  "
- *     p lhs    #=> "x"
- *     p rhs    #=> "y"
+ *  - Is a regexp literal;
+ *    see {Regexp Literals}[rdoc-ref:literals.rdoc@Regexp+Literals].
+ *  - Does not contain interpolations;
+ *    see {Regexp Interpolation}[rdoc-ref:Regexp@Regexp+Interpolation].
+ *  - Is at the left of the expression.
  *
- *  If it is not matched, nil is assigned for the variables.
+ *  Example:
  *
- *     /(?<lhs>\w+)\s*=\s*(?<rhs>\w+)/ =~ "  x = "
- *     p lhs    #=> nil
- *     p rhs    #=> nil
+ *    /(?<lhs>\w+)\s*=\s*(?<rhs>\w+)/ =~ '  x = y  '
+ *    p lhs # => "x"
+ *    p rhs # => "y"
  *
- *  This assignment is implemented in the Ruby parser.
- *  The parser detects 'regexp-literal =~ expression' for the assignment.
- *  The regexp must be a literal without interpolation and placed at left hand side.
+ *  Assigns +nil+ if not matched:
  *
- *  The assignment does not occur if the regexp is not a literal.
+ *    /(?<lhs>\w+)\s*=\s*(?<rhs>\w+)/ =~ '  x = '
+ *    p lhs # => nil
+ *    p rhs # => nil
  *
- *     re = /(?<lhs>\w+)\s*=\s*(?<rhs>\w+)/
- *     re =~ "  x = y  "
- *     p lhs    # undefined local variable
- *     p rhs    # undefined local variable
+ *  Does not make local variable assignments if +self+ is not a regexp literal:
  *
- *  A regexp interpolation, <code>#{}</code>, also disables
- *  the assignment.
+ *    r = /(?<foo>\w+)\s*=\s*(?<foo>\w+)/
+ *    r =~ '  x = y  '
+ *    p foo # Undefined local variable
+ *    p bar # Undefined local variable
  *
- *     rhs_pat = /(?<rhs>\w+)/
- *     /(?<lhs>\w+)\s*=\s*#{rhs_pat}/ =~ "x = y"
- *     p lhs    # undefined local variable
+ *  The assignment does not occur if the regexp is not at the left:
  *
- *  The assignment does not occur if the regexp is placed at the right hand side.
+ *    '  x = y  ' =~ /(?<foo>\w+)\s*=\s*(?<foo>\w+)/
+ *    p foo, foo # Undefined local variables
  *
- *    "  x = y  " =~ /(?<lhs>\w+)\s*=\s*(?<rhs>\w+)/
- *    p lhs, rhs # undefined local variable
+ *  A regexp interpolation, <tt>#{}</tt>, also disables
+ *  the assignment:
+ *
+ *    r = /(?<foo>\w+)/
+ *    /(?<foo>\w+)\s*=\s*#{r}/ =~ 'x = y'
+ *    p foo # Undefined local variable
  *
  */
 
@@ -3306,23 +3430,22 @@ rb_reg_match(VALUE re, VALUE str)
 
 /*
  *  call-seq:
- *     rxp === str   -> true or false
+ *    regexp === string -> true or false
  *
- *  Case Equality---Used in case statements.
+ *  Returns +true+ if +self+ finds a match in +string+:
  *
- *     a = "HELLO"
- *     case a
- *     when /\A[a-z]*\z/; print "Lower case\n"
- *     when /\A[A-Z]*\z/; print "Upper case\n"
- *     else;              print "Mixed case\n"
- *     end
- *     #=> "Upper case"
+ *    /^[a-z]*$/ === 'HELLO' # => false
+ *    /^[A-Z]*$/ === 'HELLO' # => true
  *
- *  Following a regular expression literal with the #=== operator allows you to
- *  compare against a String.
+ *  This method is called in case statements:
  *
- *	/^[a-z]*$/ === "HELLO" #=> false
- *	/^[A-Z]*$/ === "HELLO" #=> true
+ *    s = 'HELLO'
+ *    case s
+ *    when /\A[a-z]*\z/; print "Lower case\n"
+ *    when /\A[A-Z]*\z/; print "Upper case\n"
+ *    else               print "Mixed case\n"
+ *    end # => "Upper case"
+ *
  */
 
 static VALUE
@@ -3342,13 +3465,13 @@ rb_reg_eqq(VALUE re, VALUE str)
 
 /*
  *  call-seq:
- *     ~ rxp   -> integer or nil
+ *    ~ rxp -> integer or nil
  *
- *  Match---Matches <i>rxp</i> against the contents of <code>$_</code>.
- *  Equivalent to <code><i>rxp</i> =~ $_</code>.
+ *  Equivalent to <tt><i>rxp</i> =~ $_</tt>:
  *
- *     $_ = "input data"
- *     ~ /at/   #=> 7
+ *    $_ = "input data"
+ *    ~ /at/ # => 7
+ *
  */
 
 VALUE
@@ -3373,34 +3496,38 @@ rb_reg_match2(VALUE re)
 
 /*
  *  call-seq:
- *     rxp.match(str, pos=0)                   -> matchdata or nil
- *     rxp.match(str, pos=0) {|match| block }  -> obj
+ *    match(string, offset = 0) -> matchdata or nil
+ *    match(string, offset = 0) {|matchdata| ... } -> object
  *
- *  Returns a MatchData object describing the match, or
- *  <code>nil</code> if there was no match. This is equivalent to
- *  retrieving the value of the special variable <code>$~</code>
- *  following a normal match.  If the second parameter is present, it
- *  specifies the position in the string to begin the search.
+ *  With no block given, returns the MatchData object
+ *  that describes the match, if any, or +nil+ if none;
+ *  the search begins at the given byte +offset+ in +self+:
  *
- *     /(.)(.)(.)/.match("abc")[2]   #=> "b"
- *     /(.)(.)/.match("abc", 1)[2]   #=> "c"
+ *    /abra/.match('abracadabra')      # => #<MatchData "abra">
+ *    /abra/.match('abracadabra', 4)   # => #<MatchData "abra">
+ *    /abra/.match('abracadabra', 8)   # => nil
+ *    /abra/.match('abracadabra', 800) # => nil
  *
- *  If a block is given, invoke the block with MatchData if match succeed, so
- *  that you can write
+ *  With a block given, calls the block if and only if a match is found;
+ *  returns the block's value:
  *
- *     /M(.*)/.match("Matz") do |m|
- *       puts m[0]
- *       puts m[1]
- *     end
+ *    /abra/.match('abracadabra') {|matchdata| p matchdata }
+ *    # => #<MatchData "abra">
+ *    /abra/.match('abracadabra', 4) {|matchdata| p matchdata }
+ *    # => #<MatchData "abra">
+ *    /abra/.match('abracadabra', 8) {|matchdata| p matchdata }
+ *    # => nil
+ *    /abra/.match('abracadabra', 8) {|marchdata| fail 'Cannot happen' }
+ *    # => nil
  *
- *  instead of
+ *  Output (from the first two blocks above):
  *
- *     if m = /M(.*)/.match("Matz")
- *       puts m[0]
- *       puts m[1]
- *     end
+ *    #<MatchData "abra">
+ *    #<MatchData "abra">
  *
- *  The return value is a value from block execution in this case.
+ *     /(.)(.)(.)/.match("abc")[2] # => "b"
+ *     /(.)(.)/.match("abc", 1)[2] # => "c"
+ *
  */
 
 static VALUE
@@ -3430,18 +3557,18 @@ rb_reg_match_m(int argc, VALUE *argv, VALUE re)
 
 /*
  *  call-seq:
- *     rxp.match?(str)          -> true or false
- *     rxp.match?(str, pos=0)   -> true or false
+ *    match?(string) -> true or false
+ *    match?(string, offset = 0) -> true or false
  *
  *  Returns <code>true</code> or <code>false</code> to indicate whether the
  *  regexp is matched or not without updating $~ and other related variables.
  *  If the second parameter is present, it specifies the position in the string
  *  to begin the search.
  *
- *     /R.../.match?("Ruby")    #=> true
- *     /R.../.match?("Ruby", 1) #=> false
- *     /P.../.match?("Ruby")    #=> false
- *     $&                       #=> nil
+ *     /R.../.match?("Ruby")    # => true
+ *     /R.../.match?("Ruby", 1) # => false
+ *     /P.../.match?("Ruby")    # => false
+ *     $&                       # => nil
  */
 
 static VALUE
@@ -3509,30 +3636,81 @@ rb_reg_match_p(VALUE re, VALUE str, long pos)
  * Alias for Regexp.new
  */
 
+static int
+str_to_option(VALUE str)
+{
+    int flag = 0;
+    const char *ptr;
+    long len;
+    str = rb_check_string_type(str);
+    if (NIL_P(str)) return -1;
+    RSTRING_GETMEM(str, ptr, len);
+    for (long i = 0; i < len; ++i) {
+	int f = char_to_option(ptr[i]);
+	if (!f) {
+	    rb_raise(rb_eArgError, "unknown regexp option: %"PRIsVALUE, str);
+	}
+	flag |= f;
+    }
+    return flag;
+}
+
 /*
  *  call-seq:
- *     Regexp.new(string, [options], timeout: nil)       -> regexp
- *     Regexp.new(regexp)                                -> regexp
- *     Regexp.compile(string, [options], timeout: nil)   -> regexp
- *     Regexp.compile(regexp)                            -> regexp
+ *    Regexp.new(string, options = 0, n_flag = nil, timeout: nil) -> regexp
+ *    Regexp.new(regexp, timeout: nil) -> regexp
  *
- *  Constructs a new regular expression from +pattern+, which can be either a
- *  String or a Regexp (in which case that regexp's options are propagated),
- *  and new options may not be specified (a change as of Ruby 1.8).
+ *  With argument +string+ given, returns a new regexp with the given string
+ *  and options:
  *
- *  If +options+ is an Integer, it should be one or more of the constants
- *  Regexp::EXTENDED, Regexp::IGNORECASE, and Regexp::MULTILINE,
- *  <em>or</em>-ed together.  Otherwise, if +options+ is not
- *  +nil+ or +false+, the regexp will be case insensitive.
+ *    r = Regexp.new('foo') # => /foo/
+ *    r.source              # => "foo"
+ *    r.options             # => 0
  *
- *    r1 = Regexp.new('^a-z+:\\s+\w+') #=> /^a-z+:\s+\w+/
- *    r2 = Regexp.new('cat', true)     #=> /cat/i
- *    r3 = Regexp.new(r2)              #=> /cat/i
- *    r4 = Regexp.new('dog', Regexp::EXTENDED | Regexp::IGNORECASE) #=> /dog/ix
+ *  Optional argument +options+ is one of the following:
  *
- *  +timeout+ keyword sets per-object timeout configuration.
- *  If this is not set, the global timeout configuration set by Regexp.timeout=
- *  is used.
+ *  - A String of options:
+ *
+ *      Regexp.new('foo', 'i')  # => /foo/i
+ *      Regexp.new('foo', 'im') # => /foo/im
+ *
+ *  - The logical OR of one or more of the constants
+ *    Regexp::EXTENDED, Regexp::IGNORECASE, and Regexp::MULTILINE:
+ *
+ *      Regexp.new('foo', Regexp::IGNORECASE) # => /foo/i
+ *      Regexp.new('foo', Regexp::EXTENDED)   # => /foo/x
+ *      Regexp.new('foo', Regexp::MULTILINE)  # => /foo/m
+ *      flags = Regexp::IGNORECASE | Regexp::EXTENDED |  Regexp::MULTILINE
+ *      Regexp.new('foo', flags)              # => /foo/mix
+ *
+ *  - +nil+ or +false+, which is ignored.
+ *
+ *  If optional argument +n_flag+ if it is a string starts with
+ *  <code>'n'</code> or <code>'N'</code>, the encoding of +string+ is
+ *  ignored and the new regexp encoding is fixed to +ASCII-8BIT+ or
+ *  +US-ASCII+, by its content.
+ *
+ *      Regexp.new('foo', nil, 'n')     # => /foo/n
+ *      Regexp.new("\u3042", nil, 'n')  # => /\xE3\x81\x82/n
+ *
+ *  If optional keyword argument +timeout+ is given,
+ *  its float value overrides the timeout interval for the class,
+ *  Regexp.timeout.
+ *
+ *  With argument +regexp+ given, returns a new regexp. The source,
+ *  options, timeout are the same as +regexp+. +options+ and +n_flag+
+ *  arguments are ineffective.  The timeout can be overridden by
+ *  +timeout+ keyword.
+ *
+ *      options = Regexp::MULTILINE
+ *      r = Regexp.new('foo', optinos, timeout: 1.1) # => /foo/m
+ *      r2 = Regexp.new(r)                           # => /foo/m
+ *      r2.timeout                                   # => 1.1
+ *      r3 = Regexp.new(r, timeout: 3.14)            # => /foo/m
+ *      r3.timeout                                   # => 3.14
+ *
+ *  Regexp.compile is an alias for Regexp.new.
+ *
  */
 
 static VALUE
@@ -3566,8 +3744,11 @@ rb_reg_initialize_m(int argc, VALUE *argv, VALUE self)
     }
     else {
         if (opts != Qundef) {
+	    int f;
 	    if (FIXNUM_P(opts)) flags = FIX2INT(opts);
-	    else if (RTEST(opts)) flags = ONIG_OPTION_IGNORECASE;
+	    else if ((f = str_to_option(opts)) >= 0) flags = f;
+	    else if (!NIL_P(opts) && rb_bool_expected(opts, "ignorecase", FALSE))
+		flags = ONIG_OPTION_IGNORECASE;
 	}
         if (n_flag != Qundef && !NIL_P(n_flag)) {
 	    char *kcode = StringValuePtr(n_flag);
@@ -3697,15 +3878,19 @@ rb_reg_quote(VALUE str)
 
 /*
  *  call-seq:
- *     Regexp.escape(str)   -> string
- *     Regexp.quote(str)    -> string
+ *    Regexp.escape(string) -> new_string
  *
- *  Escapes any characters that would have special meaning in a regular
- *  expression. Returns a new escaped string with the same or compatible
- *  encoding. For any string,
- *  <code>Regexp.new(Regexp.escape(<i>str</i>))=~<i>str</i></code> will be true.
+ *  Returns a new string that escapes any characters
+ *  that have special meaning in a regular expression:
  *
- *     Regexp.escape('\*?{}.')   #=> \\\*\?\{\}\.
+ *    s = Regexp.escape('\*?{}.')      # => "\\\\\\*\\?\\{\\}\\."
+ *
+ *  For any string +s+, this call returns a MatchData object:
+ *
+ *    r = Regexp.new(Regexp.escape(s)) # => /\\\\\\\*\\\?\\\{\\\}\\\./
+ *    r.match(s)                       # => #<MatchData "\\\\\\*\\?\\{\\}\\.">
+ *
+ *  Regexp.quote is an alias for Regexp.escape.
  *
  */
 
@@ -3735,19 +3920,20 @@ rb_check_regexp_type(VALUE re)
 
 /*
  *  call-seq:
- *     Regexp.try_convert(obj) -> re or nil
+ *    Regexp.try_convert(object) -> regexp or nil
  *
- *  Try to convert <i>obj</i> into a Regexp, using to_regexp method.
- *  Returns converted regexp or nil if <i>obj</i> cannot be converted
- *  for any reason.
+ *  Returns +object+ if it is a regexp:
  *
- *     Regexp.try_convert(/re/)         #=> /re/
- *     Regexp.try_convert("re")         #=> nil
+ *    Regexp.try_convert(/re/) # => /re/
  *
- *     o = Object.new
- *     Regexp.try_convert(o)            #=> nil
- *     def o.to_regexp() /foo/ end
- *     Regexp.try_convert(o)            #=> /foo/
+ *  Otherwise if +object+ responds to <tt>:to_regexp</tt>,
+ *  calls <tt>object.to_regexp</tt> and returns the result.
+ *
+ *  Returns +nil+ if +object+ does not respond to <tt>:to_regexp</tt>.
+ *
+ *    Regexp.try_convert('re') # => nil
+ *
+ *  Raises an exception unless <tt>object.to_regexp</tt> returns a regexp.
  *
  */
 static VALUE
@@ -3872,25 +4058,37 @@ rb_reg_s_union(VALUE self, VALUE args0)
 
 /*
  *  call-seq:
- *     Regexp.union(pat1, pat2, ...)            -> new_regexp
- *     Regexp.union(pats_ary)                   -> new_regexp
+ *    Regexp.union(*patterns) -> regexp
+ *    Regexp.union(array_of_patterns) -> regexp
  *
- *  Return a Regexp object that is the union of the given
- *  <em>pattern</em>s, i.e., will match any of its parts. The
- *  <em>pattern</em>s can be Regexp objects, in which case their
- *  options will be preserved, or Strings. If no patterns are given,
- *  returns <code>/(?!)/</code>.  The behavior is unspecified if any
- *  given <em>pattern</em> contains capture.
+ *  Returns a new regexp that is the union of the given patterns:
  *
- *     Regexp.union                         #=> /(?!)/
- *     Regexp.union("penzance")             #=> /penzance/
- *     Regexp.union("a+b*c")                #=> /a\+b\*c/
- *     Regexp.union("skiing", "sledding")   #=> /skiing|sledding/
- *     Regexp.union(["skiing", "sledding"]) #=> /skiing|sledding/
- *     Regexp.union(/dogs/, /cats/i)        #=> /(?-mix:dogs)|(?i-mx:cats)/
+ *    r = Regexp.union(%w[cat dog])      # => /cat|dog/
+ *    r.match('cat')      # => #<MatchData "cat">
+ *    r.match('dog')      # => #<MatchData "dog">
+ *    r.match('cog')      # => nil
  *
- *  Note: the arguments for ::union will try to be converted into a regular
- *  expression literal via #to_regexp.
+ *  For each pattern that is a string, <tt>Regexp.new(pattern)</tt> is used:
+ *
+ *    Regexp.union('penzance')             # => /penzance/
+ *    Regexp.union('a+b*c')                # => /a\+b\*c/
+ *    Regexp.union('skiing', 'sledding')   # => /skiing|sledding/
+ *    Regexp.union(['skiing', 'sledding']) # => /skiing|sledding/
+ *
+ *  For each pattern that is a regexp, it is used as is,
+ *  including its flags:
+ *
+ *    Regexp.union(/foo/i, /bar/m, /baz/x)
+ *    # => /(?i-mx:foo)|(?m-ix:bar)|(?x-mi:baz)/
+ *    Regexp.union([/foo/i, /bar/m, /baz/x])
+ *    # => /(?i-mx:foo)|(?m-ix:bar)|(?x-mi:baz)/
+ *
+ *  With no arguments, returns <tt>/(?!)/</tt>:
+ *
+ *    Regexp.union # => /(?!)/
+ *
+ *  If any regexp pattern contains captures, the behavior is unspecified.
+ *
  */
 static VALUE
 rb_reg_s_union_m(VALUE self, VALUE args)
@@ -4077,30 +4275,40 @@ match_setter(VALUE val, ID _x, VALUE *_y)
 
 /*
  *  call-seq:
- *     Regexp.last_match           -> matchdata
- *     Regexp.last_match(n)        -> str
+ *    Regexp.last_match -> matchdata or nil
+ *    Regexp.last_match(n) -> string or nil
+ *    Regexp.last_match(name) -> string or nil
  *
- *  The first form returns the MatchData object generated by the
- *  last successful pattern match.  Equivalent to reading the special global
- *  variable <code>$~</code> (see Special global variables in Regexp for
- *  details).
+ *  With no argument, returns the value of <tt>$!</tt>,
+ *  which is the result of the most recent pattern match
+ *  (see {Regexp Global Variables}[rdoc-ref:Regexp@Regexp+Global+Variables]):
  *
- *  The second form returns the <i>n</i>th field in this MatchData object.
- *  _n_ can be a string or symbol to reference a named capture.
+ *    /c(.)t/ =~ 'cat'  # => 0
+ *    Regexp.last_match # => #<MatchData "cat" 1:"a">
+ *    /a/ =~ 'foo'      # => nil
+ *    Regexp.last_match # => nil
  *
- *  Note that the last_match is local to the thread and method scope of the
- *  method that did the pattern match.
+ *  With non-negative integer argument +n+, returns the _n_th field in the
+ *  matchdata, if any, or nil if none:
  *
- *     /c(.)t/ =~ 'cat'        #=> 0
- *     Regexp.last_match       #=> #<MatchData "cat" 1:"a">
- *     Regexp.last_match(0)    #=> "cat"
- *     Regexp.last_match(1)    #=> "a"
- *     Regexp.last_match(2)    #=> nil
+ *    /c(.)t/ =~ 'cat'     # => 0
+ *    Regexp.last_match(0) # => "cat"
+ *    Regexp.last_match(1) # => "a"
+ *    Regexp.last_match(2) # => nil
  *
- *     /(?<lhs>\w+)\s*=\s*(?<rhs>\w+)/ =~ "var = val"
- *     Regexp.last_match       #=> #<MatchData "var = val" lhs:"var" rhs:"val">
- *     Regexp.last_match(:lhs) #=> "var"
- *     Regexp.last_match(:rhs) #=> "val"
+ *  With negative integer argument +n+, counts backwards from the last field:
+ *
+ *    Regexp.last_match(-1)       # => "a"
+ *
+ *  With string or symbol argument +name+,
+ *  returns the string value for the named capture, if any:
+ *
+ *    /(?<lhs>\w+)\s*=\s*(?<rhs>\w+)/ =~ 'var = val'
+ *    Regexp.last_match        # => #<MatchData "var = val" lhs:"var"rhs:"val">
+ *    Regexp.last_match(:lhs)  # => "var"
+ *    Regexp.last_match('rhs') # => "val"
+ *    Regexp.last_match('foo') # Raises IndexError.
+ *
  */
 
 static VALUE
@@ -4160,7 +4368,7 @@ rb_reg_check_timeout(regex_t *reg, void *end_time_)
 
 /*
  *  call-seq:
- *     Regexp.timeout  -> int or float or nil
+ *     Regexp.timeout  -> float or nil
  *
  *  It returns the current default timeout interval for Regexp matching in second.
  *  +nil+ means no default timeout configuration.
@@ -4176,7 +4384,7 @@ rb_reg_s_timeout_get(VALUE dummy)
 
 /*
  *  call-seq:
- *     Regexp.timeout = int or float or nil
+ *     Regexp.timeout = float or nil
  *
  *  It sets the default timeout interval for Regexp matching in second.
  *  +nil+ means no default timeout configuration.
@@ -4238,15 +4446,6 @@ rb_reg_timeout_get(VALUE re)
 
 /*
  *  Document-class: Regexp
- *
- *  A Regexp holds a regular expression, used to match a pattern
- *  against strings. Regexps are created using the <code>/.../</code>
- *  and <code>%r{...}</code> literals, and by the Regexp::new
- *  constructor.
- *
- *  You can create a \Regexp object explicitly with:
- *
- *  - A {regexp literal}[rdoc-ref:syntax/literals.rdoc@Regexp+Literals].
  *
  *  :include: doc/regexp.rdoc
  */

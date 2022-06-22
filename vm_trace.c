@@ -390,6 +390,7 @@ exec_hooks_protected(rb_execution_context_t *ec, rb_hook_list_t *list, const rb_
     return state;
 }
 
+// pop_p: Whether to pop the frame for the TracePoint when it throws.
 MJIT_FUNC_EXPORTED void
 rb_exec_event_hooks(rb_trace_arg_t *trace_arg, rb_hook_list_t *hooks, int pop_p)
 {
@@ -725,8 +726,7 @@ call_trace_func(rb_event_flag_t event, VALUE proc, VALUE self, ID id, VALUE klas
     if (self && (filename != Qnil) &&
         event != RUBY_EVENT_C_CALL &&
         event != RUBY_EVENT_C_RETURN &&
-        (VM_FRAME_RUBYFRAME_P(ec->cfp) ||
-         VM_FRAME_RUBYFRAME_P(RUBY_VM_PREVIOUS_CONTROL_FRAME(ec->cfp)))) {
+        (VM_FRAME_RUBYFRAME_P(ec->cfp) && imemo_type_p((VALUE)ec->cfp->iseq, imemo_iseq))) {
         argv[4] = rb_binding_new();
     }
     argv[5] = klass ? klass : Qnil;
@@ -959,7 +959,7 @@ rb_tracearg_binding(rb_trace_arg_t *trace_arg)
     rb_control_frame_t *cfp;
     cfp = rb_vm_get_binding_creatable_next_cfp(trace_arg->ec, trace_arg->cfp);
 
-    if (cfp) {
+    if (cfp && imemo_type_p((VALUE)cfp->iseq, imemo_iseq)) {
 	return rb_vm_make_binding(trace_arg->ec, cfp);
     }
     else {
@@ -1227,7 +1227,9 @@ rb_tracepoint_enable_for_target(VALUE tpval, VALUE target, VALUE target_line)
         rb_method_definition_t *def = (rb_method_definition_t *)rb_method_def(target);
         if (def->type == VM_METHOD_TYPE_BMETHOD &&
             (tp->events & (RUBY_EVENT_CALL | RUBY_EVENT_RETURN))) {
-            def->body.bmethod.hooks = ZALLOC(rb_hook_list_t);
+            if (def->body.bmethod.hooks == NULL) {
+                def->body.bmethod.hooks = ZALLOC(rb_hook_list_t);
+            }
             rb_hook_list_connect_tracepoint(target, def->body.bmethod.hooks, tpval, 0);
             rb_hash_aset(tp->local_target_set, target, Qfalse);
             target_bmethod = true;

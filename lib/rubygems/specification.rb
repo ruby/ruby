@@ -10,7 +10,6 @@ require_relative 'deprecate'
 require_relative 'basic_specification'
 require_relative 'stub_specification'
 require_relative 'platform'
-require_relative 'requirement'
 require_relative 'util/list'
 
 ##
@@ -157,7 +156,7 @@ class Gem::Specification < Gem::BasicSpecification
   }.freeze
 
   # rubocop:disable Style/MutableConstant
-  INITIALIZE_CODE_FOR_DEFAULTS = { } # :nodoc:
+  INITIALIZE_CODE_FOR_DEFAULTS = {} # :nodoc:
   # rubocop:enable Style/MutableConstant
 
   @@default_value.each do |k,v|
@@ -657,6 +656,8 @@ class Gem::Specification < Gem::BasicSpecification
     @rdoc_options ||= []
   end
 
+  LATEST_RUBY_WITHOUT_PATCH_VERSIONS = Gem::Version.new("2.1")
+
   ##
   # The version of Ruby required by this gem.  The ruby version can be
   # specified to the patch-level:
@@ -683,6 +684,14 @@ class Gem::Specification < Gem::BasicSpecification
 
   def required_ruby_version=(req)
     @required_ruby_version = Gem::Requirement.create req
+
+    @required_ruby_version.requirements.map! do |op, v|
+      if v >= LATEST_RUBY_WITHOUT_PATCH_VERSIONS && v.release.segments.size == 4
+        [op == "~>" ? "=" : op, Gem::Version.new(v.segments.tap {|s| s.delete_at(3) }.join("."))]
+      else
+        [op, v]
+      end
+    end
   end
 
   ##
@@ -1072,6 +1081,7 @@ class Gem::Specification < Gem::BasicSpecification
 
     spec.specification_version ||= NONEXISTENT_SPECIFICATION_VERSION
     spec.reset_nil_attributes_to_default
+    spec.flatten_require_paths
 
     spec
   end
@@ -1100,7 +1110,7 @@ class Gem::Specification < Gem::BasicSpecification
       result[spec.name] = spec
     end
 
-    result.map(&:last).flatten.sort_by{|tup| tup.name }
+    result.map(&:last).flatten.sort_by {|tup| tup.name }
   end
 
   ##
@@ -1231,8 +1241,7 @@ class Gem::Specification < Gem::BasicSpecification
     clear_load_cache
     unresolved = unresolved_deps
     unless unresolved.empty?
-      w = "W" + "ARN"
-      warn "#{w}: Unresolved or ambiguous specs during Gem::Specification.reset:"
+      warn "WARN: Unresolved or ambiguous specs during Gem::Specification.reset:"
       unresolved.values.each do |dep|
         warn "      #{dep}"
 
@@ -1242,7 +1251,7 @@ class Gem::Specification < Gem::BasicSpecification
           versions.each {|s| warn "      - #{s.version}" }
         end
       end
-      warn "#{w}: Clearing out unresolved specs. Try 'gem cleanup <gem>'"
+      warn "WARN: Clearing out unresolved specs. Try 'gem cleanup <gem>'"
       warn "Please report a bug if this causes problems."
       unresolved.clear
     end
@@ -1260,7 +1269,14 @@ class Gem::Specification < Gem::BasicSpecification
   def self._load(str)
     Gem.load_yaml
 
-    array = Marshal.load str
+    array = begin
+      Marshal.load str
+    rescue ArgumentError => e
+      raise unless e.message.include?("YAML")
+
+      Object.const_set "YAML", Psych
+      Marshal.load str
+    end
 
     spec = Gem::Specification.new
     spec.instance_variable_set :@specification_version, array[1]
@@ -1278,11 +1294,6 @@ class Gem::Specification < Gem::BasicSpecification
     if array.size < field_count
       raise TypeError, "invalid Gem::Specification format #{array.inspect}"
     end
-
-    # Cleanup any Psych::PrivateType. They only show up for an old bug
-    # where nil => null, so just convert them to nil based on the type.
-
-    array.map! {|e| e.kind_of?(Psych::PrivateType) ? nil : e }
 
     spec.instance_variable_set :@rubygems_version,          array[0]
     # spec version
@@ -2662,6 +2673,13 @@ class Gem::Specification < Gem::BasicSpecification
     end
 
     @installed_by_version ||= nil
+  end
+
+  def flatten_require_paths # :nodoc:
+    return unless raw_require_paths.first.is_a?(Array)
+
+    warn "#{name} #{version} includes a gemspec with `require_paths` set to an array of arrays. Newer versions of this gem might've already fixed this"
+    raw_require_paths.flatten!
   end
 
   def raw_require_paths # :nodoc:

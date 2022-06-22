@@ -13,12 +13,14 @@ Spec are grouped in 5 separate top-level groups:
 * `optional/capi`: for functions available to the Ruby C-extension API
 
 The exact file for methods is decided by the `#owner` of a method, for instance for `#group_by`:
+
 ```ruby
 > [].method(:group_by)
 => #<Method: Array(Enumerable)#group_by>
 > [].method(:group_by).owner
 => Enumerable
 ```
+
 Which should therefore be specified in `core/enumerable/group_by_spec.rb`.
 
 ### MkSpec - a tool to generate the spec structure
@@ -178,7 +180,7 @@ First, file a bug at https://bugs.ruby-lang.org/.
 It is better to use a `ruby_version_is` guard if there was a release with the fix.
 
 ```ruby
-ruby_bug '#13669', ''...'2.7' do
+ruby_bug '#13669', ''...'3.2' do
   it "works like this" do
     # Specify the expected behavior here, not the bug
   end
@@ -220,7 +222,7 @@ If an implementation does not support some feature, simply tag the related specs
 ### Shared Specs
 
 Often throughout Ruby, identical functionality is used by different methods and modules. In order
-to avoid duplication of specs, we have shared specs that are re-used in other specs.  The use is a
+to avoid duplication of specs, we have shared specs that are re-used in other specs. The use is a
 bit tricky however, so let's go over it.
 
 Commonly, if a shared spec is only reused within its own module, the shared spec will live within a
@@ -232,7 +234,7 @@ An example of this is the `shared/file/socket.rb` which is used by `core/file/so
 `core/filetest/socket_spec.rb`, and `core/file/state/socket_spec.rb` and so it lives in the root `shared/`.
 
 Defining a shared spec involves adding a `shared: true` option to the top-level `describe` block. This
-will signal not to run the specs directly by the runner.  Shared specs have access to two instance
+will signal not to run the specs directly by the runner. Shared specs have access to two instance
 variables from the implementor spec: `@method` and `@object`, which the implementor spec will pass in.
 
 Here's an example of a snippet of a shared spec and two specs which integrates it:
@@ -257,12 +259,12 @@ end
 ```
 
 In the example, the first `describe` defines the shared spec `:hash_key_p`, which defines a spec that
-calls the `@method` method with an expectation.  In the implementor spec, we use `it_behaves_like` to
-integrate the shared spec.  `it_behaves_like` takes 3 parameters: the key of the shared spec, a method,
-and an object.  These last two parameters are accessible via `@method` and `@object` in the shared spec.
+calls the `@method` method with an expectation. In the implementor spec, we use `it_behaves_like` to
+integrate the shared spec. `it_behaves_like` takes 3 parameters: the key of the shared spec, a method,
+and an object. These last two parameters are accessible via `@method` and `@object` in the shared spec.
 
 Sometimes, shared specs require more context from the implementor class than a simple object. We can address
-this by passing a lambda as the method, which will have the scope of the implementor.  Here's an example of
+this by passing a lambda as the method, which will have the scope of the implementor. Here's an example of
 how this is used currently:
 
 ```ruby

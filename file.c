@@ -444,21 +444,21 @@ apply2files(int (*func)(const char *, void *), int argc, VALUE *argv, void *arg)
 
 /*
  *  call-seq:
- *     file.path  ->  filename
- *     file.to_path  ->  filename
+ *    path -> filepath
  *
- *  Returns the pathname used to create <i>file</i> as a string. Does
- *  not normalize the name.
+ *  Returns the string filepath used to create +self+:
  *
- *  The pathname may not point to the file corresponding to <i>file</i>.
- *  For instance, the pathname becomes void when the file has been
- *  moved or deleted.
+ *    f = File.new('t.txt') # => #<File:t.txt>
+      f.path                # => "t.txt"
  *
- *  This method raises IOError for a <i>file</i> created using
- *  File::Constants::TMPFILE because they don't have a pathname.
+ *  Does not normalize the returned filepath:
  *
- *     File.new("testfile").path               #=> "testfile"
- *     File.new("/tmp/../tmp/xxx", "w").path   #=> "/tmp/../tmp/xxx"
+ *    f = File.new('../files/t.txt') # => #<File:../files/t.txt>
+      f.path                         # => "../files/t.txt"
+ *
+ *  Raises IOError for a file created using File::Constants::TMPFILE, because it has no filename.
+ *
+ *  File#to_path is an alias for File#path.
  *
  */
 
@@ -978,7 +978,7 @@ rb_stat_atime(VALUE self)
 
 /*
  *  call-seq:
- *     stat.mtime  ->  aTime
+ *     stat.mtime  ->  time
  *
  *  Returns the modification time of <i>stat</i>.
  *
@@ -994,7 +994,7 @@ rb_stat_mtime(VALUE self)
 
 /*
  *  call-seq:
- *     stat.ctime  ->  aTime
+ *     stat.ctime  ->  time
  *
  *  Returns the change time for <i>stat</i> (that is, the time
  *  directory information about the file was changed, not the file
@@ -1015,7 +1015,7 @@ rb_stat_ctime(VALUE self)
 #if defined(HAVE_STAT_BIRTHTIME)
 /*
  *  call-seq:
- *     stat.birthtime  ->  aTime
+ *     stat.birthtime  ->  time
  *
  *  Returns the birth time for <i>stat</i>.
  *
@@ -1309,11 +1309,11 @@ rb_stat(VALUE file, struct stat *st)
 
 /*
  *  call-seq:
- *     File.stat(file_name)   ->  stat
+ *    File.stat(filepath) ->  stat
  *
- *  Returns a File::Stat object for the named file (see File::Stat).
+ *  Returns a File::Stat object for the file at +filepath+ (see File::Stat):
  *
- *     File.stat("testfile").mtime   #=> Tue Apr 08 12:58:04 CDT 2003
+ *    File.stat('t.txt').class # => File::Stat
  *
  */
 
@@ -1381,15 +1381,14 @@ lstat_without_gvl(const char *path, struct stat *st)
 
 /*
  *  call-seq:
- *     File.lstat(file_name)   -> stat
+ *    File.lstat(filepath) -> stat
  *
- *  Same as File::stat, but does not follow the last symbolic link.
- *  Instead, reports on the link itself.
+ *  Like File::stat, but does not follow the last symbolic link;
+ *  instead, returns a File::Stat object for the link itself.
  *
- *     File.symlink("testfile", "link2test")   #=> 0
- *     File.stat("testfile").size              #=> 66
- *     File.lstat("link2test").size            #=> 8
- *     File.stat("link2test").size             #=> 66
+ *    File.symlink('t.txt', 'symlink')
+ *    File.stat('symlink').size  # => 47
+ *    File.lstat('symlink').size # => 5
  *
  */
 
@@ -1412,16 +1411,16 @@ rb_file_s_lstat(VALUE klass, VALUE fname)
 
 /*
  *  call-seq:
- *     file.lstat   ->  stat
+ *    lstat -> stat
  *
- *  Same as IO#stat, but does not follow the last symbolic link.
- *  Instead, reports on the link itself.
+ *  Like File#stat, but does not follow the last symbolic link;
+ *  instead, returns a File::Stat object for the link itself:
  *
- *     File.symlink("testfile", "link2test")   #=> 0
- *     File.stat("testfile").size              #=> 66
- *     f = File.new("link2test")
- *     f.lstat.size                            #=> 8
- *     f.stat.size                             #=> 66
+ *    File.symlink('t.txt', 'symlink')
+ *    f = File.new('symlink')
+ *    f.stat.size  # => 47
+ *    f.lstat.size # => 11
+ *
  */
 
 static VALUE
@@ -1590,15 +1589,20 @@ rb_access(VALUE fname, int mode)
  * Document-method: directory?
  *
  * call-seq:
- *   File.directory?(file_name)   ->  true or false
+ *   File.directory?(path) -> true or false
  *
- * Returns <code>true</code> if the named file is a directory,
- * or a symlink that points at a directory, and <code>false</code>
- * otherwise.
+ * With string +object+ given, returns +true+ if +path+ is a string path
+ * leading to a directory, or to a symbolic link to a directory; +false+ otherwise:
  *
- * _file_name_ can be an IO object.
+ *   File.directory?('.')              # => true
+ *   File.directory?('foo')            # => false
+ *   File.symlink('.', 'dirlink')      # => 0
+ *   File.directory?('dirlink')        # => true
+ *   File.symlink('t,txt', 'filelink') # => 0
+ *   File.directory?('filelink')       # => false
  *
- *    File.directory?(".")
+ * Argument +path+ can be an IO object.
+ *
  */
 
 VALUE
@@ -1617,11 +1621,14 @@ rb_file_directory_p(VALUE obj, VALUE fname)
 
 /*
  * call-seq:
- *   File.pipe?(file_name)   ->  true or false
+ *   File.pipe?(filepath) -> true or false
  *
- * Returns <code>true</code> if the named file is a pipe.
+ * Returns +true+ if +filepath+ points to a pipe, +false+ otherwise:
  *
- * _file_name_ can be an IO object.
+ *   File.mkfifo('tmp/fifo')
+ *   File.pipe?('tmp/fifo') # => true
+ *   File.pipe?('t.txt')    # => false
+ *
  */
 
 static VALUE
@@ -1643,9 +1650,14 @@ rb_file_pipe_p(VALUE obj, VALUE fname)
 
 /*
  * call-seq:
- *   File.symlink?(file_name)   ->  true or false
+ *   File.symlink?(filepath) -> true or false
  *
- * Returns <code>true</code> if the named file is a symbolic link.
+ * Returns +true+ if +filepath+ points to a symbolic link, +false+ otherwise:
+ *
+ *   symlink = File.symlink('t.txt', 'symlink')
+ *   File.symlink?('symlink') # => true
+ *   File.symlink?('t.txt')   # => false
+ *
  */
 
 static VALUE
@@ -1679,11 +1691,14 @@ rb_file_symlink_p(VALUE obj, VALUE fname)
 
 /*
  * call-seq:
- *   File.socket?(file_name)   ->  true or false
+ *   File.socket?(filepath)   ->  true or false
  *
- * Returns <code>true</code> if the named file is a socket.
+ * Returns +true+ if +filepath+ points to a socket, +false+ otherwise:
  *
- * _file_name_ can be an IO object.
+ *   require 'socket'
+ *   File.socket?(Socket.new(:INET, :STREAM)) # => true
+ *   File.socket?(File.new('t.txt'))          # => false
+ *
  */
 
 static VALUE
@@ -1715,11 +1730,13 @@ rb_file_socket_p(VALUE obj, VALUE fname)
 
 /*
  * call-seq:
- *   File.blockdev?(file_name)   ->  true or false
+ *   File.blockdev?(filepath) -> true or false
  *
- * Returns <code>true</code> if the named file is a block device.
+ * Returns +true+ if +filepath+ points to a block device, +false+ otherwise:
  *
- * _file_name_ can be an IO object.
+ *   File.blockdev?('/dev/sda1')       # => true
+ *   File.blockdev?(File.new('t.tmp')) # => false
+ *
  */
 
 static VALUE
@@ -1745,11 +1762,13 @@ rb_file_blockdev_p(VALUE obj, VALUE fname)
 
 /*
  * call-seq:
- *   File.chardev?(file_name)   ->  true or false
+ *   File.chardev?(filepath) -> true or false
  *
- * Returns <code>true</code> if the named file is a character device.
+ * Returns +true+ if +filepath+ points to a character device, +false+ otherwise.
  *
- * _file_name_ can be an IO object.
+  *  File.chardev?($stdin)     # => true
+ *   File.chardev?('t.txt')     # => false
+ *
  */
 static VALUE
 rb_file_chardev_p(VALUE obj, VALUE fname)
@@ -2144,7 +2163,7 @@ rb_file_sticky_p(VALUE obj, VALUE fname)
 #ifdef S_ISVTX
     return check3rdbyte(fname, S_ISVTX);
 #else
-    return Qnil;
+    return Qfalse;
 #endif
 }
 
@@ -3982,7 +4001,7 @@ rb_file_expand_path_internal(VALUE fname, VALUE dname, int abs_mode, int long_na
 	rb_str_set_len(result, p - buf + strlen(p));
 	encidx = ENCODING_GET(result);
 	tmp = result;
-	if (encidx != ENCINDEX_UTF_8 && rb_enc_str_coderange(result) != ENC_CODERANGE_7BIT) {
+	if (encidx != ENCINDEX_UTF_8 && !is_ascii_string(result)) {
 	    tmp = rb_str_encode_ospath(result);
 	}
 	len = MultiByteToWideChar(CP_UTF8, 0, RSTRING_PTR(tmp), -1, NULL, 0);
@@ -4035,7 +4054,7 @@ rb_file_expand_path_internal(VALUE fname, VALUE dname, int abs_mode, int long_na
 }
 #endif /* _WIN32 */
 
-#define EXPAND_PATH_BUFFER() rb_usascii_str_new(0, MAXPATHLEN + 2)
+#define EXPAND_PATH_BUFFER() rb_usascii_str_new(0, 1)
 
 static VALUE
 str_shrink(VALUE str)
@@ -6572,6 +6591,34 @@ const char ruby_null_device[] =
  *  Various constants for use in \File and \IO methods
  *  may be found in module File::Constants;
  *  an array of their names is returned by <tt>File::Constants.constants</tt>.
+ *
+ *  == Example Files
+ *
+ *  Many examples here use these filenames and their corresponding files:
+ *
+ *  - <tt>t.txt</tt>: A text-only file that is assumed to exist via:
+ *
+ *      text = <<~EOT
+ *        First line
+ *        Second line
+ *
+ *        Fourth line
+ *        Fifth line
+ *      EOT
+ *      File.write('t.txt', text)
+ *
+ *  - <tt>t.dat</tt>: A data file that is assumed to exist via:
+ *
+ *      data = "\u9990\u9991\u9992\u9993\u9994"
+ *      f = File.open('t.dat', 'wb:UTF-16')
+ *      f.write(data)
+ *      f.close
+ *
+ *  - <tt>t.rus</tt>: A Russian-language text file that is assumed to exist via:
+ *
+ *      File.write('t.rus', "\u{442 435 441 442}")
+ *
+ *  - <tt>t.tmp</tt>: A file that is assumed _not_ to exist.
  *
  *  == What's Here
  *

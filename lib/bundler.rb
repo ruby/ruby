@@ -19,7 +19,7 @@ require_relative "bundler/build_metadata"
 #
 # Since Ruby 2.6, Bundler is a part of Ruby's standard library.
 #
-# Bunder is used by creating _gemfiles_ listing all the project dependencies
+# Bundler is used by creating _gemfiles_ listing all the project dependencies
 # and (optionally) their versions and then using
 #
 #   require 'bundler/setup'
@@ -95,6 +95,17 @@ module Bundler
     # Returns absolute path of where gems are installed on the filesystem.
     def bundle_path
       @bundle_path ||= Pathname.new(configured_bundle_path.path).expand_path(root)
+    end
+
+    def create_bundle_path
+      SharedHelpers.filesystem_access(bundle_path.to_s) do |p|
+        mkdir_p(p)
+      end unless bundle_path.exist?
+
+      @bundle_path = bundle_path.realpath
+    rescue Errno::EEXIST
+      raise PathError, "Could not install to path `#{bundle_path}` " \
+        "because a file already exists at that path. Either remove or rename the file so the directory can be created."
     end
 
     def configured_bundle_path
@@ -370,7 +381,7 @@ EOF
 
       if env.key?("RUBYLIB")
         rubylib = env["RUBYLIB"].split(File::PATH_SEPARATOR)
-        rubylib.delete(File.expand_path("..", __FILE__))
+        rubylib.delete(__dir__)
         env["RUBYLIB"] = rubylib.join(File::PATH_SEPARATOR)
       end
 

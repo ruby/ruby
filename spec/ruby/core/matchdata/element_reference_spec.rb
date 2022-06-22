@@ -16,6 +16,12 @@ describe "MatchData#[]" do
   it "supports accessors [start, length]" do
     /(.)(.)(\d+)(\d)/.match("THX1138.")[1, 2].should == %w|H X|
     /(.)(.)(\d+)(\d)/.match("THX1138.")[-3, 2].should == %w|X 113|
+
+    # negative index is larger than the number of match values
+    /(.)(.)(\d+)(\d)/.match("THX1138.")[-30, 2].should == nil
+
+    # length argument larger than number of match values is capped to match value length
+    /(.)(.)(\d+)(\d)/.match("THX1138.")[3, 10].should == %w|113 8|
   end
 
   it "supports ranges [start..end]" do

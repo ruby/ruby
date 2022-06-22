@@ -2257,8 +2257,11 @@ print_line0(line_info_t *line, void *address)
     else if (!line->path) {
         kprintf("[0x%"PRIxPTR"]\n", addr);
     }
-    else if (!line->saddr || !line->sname) {
+    else if (!line->sname) {
         kprintf("%s(0x%"PRIxPTR") [0x%"PRIxPTR"]\n", line->path, addr-line->base_addr, addr);
+    }
+    else if (!line->saddr) {
+        kprintf("%s(%s) [0x%"PRIxPTR"]\n", line->path, line->sname, addr);
     }
     else if (line->line <= 0) {
         kprintf("%s(%s+0x%"PRIxPTR") [0x%"PRIxPTR"]\n", line->path, line->sname,
@@ -2326,8 +2329,8 @@ rb_dump_backtrace_with_lines(int num_traces, void **traces)
 	    /* if the binary is strip-ed, this may effect */
 	    for (p=dladdr_fbases; *p; p++) {
 		if (*p == info.dli_fbase) {
-		    lines[i].path = info.dli_fname;
-		    lines[i].sname = info.dli_sname;
+		    if (info.dli_fname) lines[i].path = info.dli_fname;
+		    if (info.dli_sname) lines[i].sname = info.dli_sname;
 		    goto next_line;
 		}
 	    }
@@ -2337,9 +2340,11 @@ rb_dump_backtrace_with_lines(int num_traces, void **traces)
 	    obj->base_addr = (uintptr_t)info.dli_fbase;
 	    path = info.dli_fname;
 	    obj->path = path;
-	    lines[i].path = path;
-            lines[i].sname = info.dli_sname;
-            lines[i].saddr = (uintptr_t)info.dli_saddr;
+	    if (path) lines[i].path = path;
+            if (info.dli_sname) {
+                lines[i].sname = info.dli_sname;
+                lines[i].saddr = (uintptr_t)info.dli_saddr;
+            }
 	    strlcpy(binary_filename, path, PATH_MAX);
 	    if (fill_lines(num_traces, traces, 1, &obj, lines, i) == (uintptr_t)-1)
 		break;

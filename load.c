@@ -14,6 +14,7 @@
 #include "internal/variable.h"
 #include "iseq.h"
 #include "probes.h"
+#include "darray.h"
 #include "ruby/encoding.h"
 #include "ruby/util.h"
 
@@ -225,7 +226,7 @@ features_index_add_single_callback(st_data_t *key, st_data_t *value, st_data_t r
             VALUE this_feature_path = RARRAY_AREF(loaded_features, FIX2LONG(this_feature_index));
 
             feature_indexes_t feature_indexes;
-            rb_darray_make_with_gc(&feature_indexes, 2);
+            rb_darray_make(&feature_indexes, 2);
             int top = (rb && !is_rbext_path(this_feature_path)) ? 1 : 0;
             rb_darray_set(feature_indexes, top^0, FIX2LONG(this_feature_index));
             rb_darray_set(feature_indexes, top^1, FIX2LONG(offset));
@@ -253,7 +254,7 @@ features_index_add_single_callback(st_data_t *key, st_data_t *value, st_data_t r
                 }
             }
 
-            rb_darray_append_with_gc(&feature_indexes, FIX2LONG(offset));
+            rb_darray_append(&feature_indexes, FIX2LONG(offset));
             /* darray may realloc which will change the pointer */
             *value = (st_data_t)feature_indexes;
 
@@ -343,7 +344,7 @@ loaded_features_index_clear_i(st_data_t key, st_data_t val, st_data_t arg)
 {
     VALUE obj = (VALUE)val;
     if (!SPECIAL_CONST_P(obj)) {
-        rb_darray_free_with_gc((void *)obj);
+        rb_darray_free((void *)obj);
     }
     return ST_DELETE;
 }
@@ -944,9 +945,10 @@ rb_f_require(VALUE obj, VALUE fname)
  * call-seq:
  *   require_relative(string) -> true or false
  *
- * Ruby tries to load the library named _string_ relative to the requiring
- * file's path.  If the file's path cannot be determined a LoadError is raised.
- * If a file is loaded +true+ is returned and false otherwise.
+ * Ruby tries to load the library named _string_ relative to the directory
+ * containing the requiring file.  If the file does not exist a LoadError is
+ * raised. Returns +true+ if the file was loaded and +false+ if the file was
+ * already loaded before.
  */
 VALUE
 rb_f_require_relative(VALUE obj, VALUE fname)
@@ -1302,16 +1304,20 @@ ruby_init_ext(const char *name, void (*init)(void))
 
 /*
  *  call-seq:
- *     mod.autoload(module, filename)   -> nil
+ *     mod.autoload(const, filename)   -> nil
  *
  *  Registers _filename_ to be loaded (using Kernel::require)
- *  the first time that _module_ (which may be a String or
+ *  the first time that _const_ (which may be a String or
  *  a symbol) is accessed in the namespace of _mod_.
  *
  *     module A
  *     end
  *     A.autoload(:B, "b")
  *     A::B.doit            # autoloads "b"
+ *
+ * If _const_ in _mod_ is defined as autoload, the file name to be
+ * loaded is replaced with _filename_.  If _const_ is defined but not
+ * as autoload, does nothing.
  */
 
 static VALUE
@@ -1365,13 +1371,17 @@ rb_mod_autoload_p(int argc, VALUE *argv, VALUE mod)
 
 /*
  *  call-seq:
- *     autoload(module, filename)   -> nil
+ *     autoload(const, filename)   -> nil
  *
  *  Registers _filename_ to be loaded (using Kernel::require)
- *  the first time that _module_ (which may be a String or
+ *  the first time that _const_ (which may be a String or
  *  a symbol) is accessed.
  *
  *     autoload(:MyModule, "/usr/local/lib/modules/my_module.rb")
+ *
+ * If _const_ is defined as autoload, the file name to be loaded is
+ * replaced with _filename_.  If _const_ is defined but not as
+ * autoload, does nothing.
  */
 
 static VALUE

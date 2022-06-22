@@ -567,6 +567,8 @@ rb_mod_init_copy(VALUE clone, VALUE orig)
         else {
             rb_bug("no origin for class that has origin");
         }
+
+        rb_class_update_superclasses(clone);
     }
 
     return clone;
@@ -1169,11 +1171,20 @@ module_in_super_chain(const VALUE klass, VALUE module)
     return false;
 }
 
+// For each ID key in the class constant table, we're going to clear the VM's
+// inline constant caches associated with it.
+static enum rb_id_table_iterator_result
+clear_constant_cache_i(ID id, VALUE value, void *data)
+{
+    rb_clear_constant_cache_for_id(id);
+    return ID_TABLE_CONTINUE;
+}
+
 static int
 do_include_modules_at(const VALUE klass, VALUE c, VALUE module, int search_super, bool check_cyclic)
 {
     VALUE p, iclass, origin_stack = 0;
-    int method_changed = 0, constant_changed = 0, add_subclass;
+    int method_changed = 0, add_subclass;
     long origin_len;
     VALUE klass_origin = RCLASS_ORIGIN(klass);
     VALUE original_klass = klass;
@@ -1257,21 +1268,20 @@ do_include_modules_at(const VALUE klass, VALUE c, VALUE module, int search_super
             rb_module_add_to_subclasses_list(m, iclass);
 	}
 
-	if (FL_TEST(klass, RMODULE_IS_REFINEMENT)) {
+	if (BUILTIN_TYPE(klass) == T_MODULE && FL_TEST(klass, RMODULE_IS_REFINEMENT)) {
 	    VALUE refined_class =
 		rb_refinement_module_get_refined_class(klass);
 
             rb_id_table_foreach(RCLASS_M_TBL(module), add_refined_method_entry_i, (void *)refined_class);
-	    FL_SET(c, RMODULE_INCLUDED_INTO_REFINEMENT);
+            RUBY_ASSERT(BUILTIN_TYPE(c) == T_MODULE);
 	}
 
         tbl = RCLASS_CONST_TBL(module);
-	if (tbl && rb_id_table_size(tbl)) constant_changed = 1;
+	if (tbl && rb_id_table_size(tbl))
+	    rb_id_table_foreach(tbl, clear_constant_cache_i, NULL);
       skip:
 	module = RCLASS_SUPER(module);
     }
-
-    if (constant_changed) rb_clear_constant_cache();
 
     return method_changed;
 }
@@ -1373,17 +1383,18 @@ rb_prepend_module(VALUE klass, VALUE module)
             /* During lazy sweeping, iclass->klass could be a dead object that
              * has not yet been swept. */
             if (!rb_objspace_garbage_object_p(iclass->klass)) {
-                if (klass_had_no_origin && klass_origin_m_tbl == RCLASS_M_TBL(iclass->klass)) {
+                const VALUE subclass = iclass->klass;
+                if (klass_had_no_origin && klass_origin_m_tbl == RCLASS_M_TBL(subclass)) {
                     // backfill an origin iclass to handle refinements and future prepends
-                    rb_id_table_foreach(RCLASS_M_TBL(iclass->klass), clear_module_cache_i, (void *)iclass->klass);
-                    RCLASS_M_TBL(iclass->klass) = klass_m_tbl;
-                    VALUE origin = rb_include_class_new(klass_origin, RCLASS_SUPER(iclass->klass));
-                    RCLASS_SET_SUPER(iclass->klass, origin);
-                    RCLASS_SET_INCLUDER(origin, RCLASS_INCLUDER(iclass->klass));
-                    RCLASS_SET_ORIGIN(iclass->klass, origin);
+                    rb_id_table_foreach(RCLASS_M_TBL(subclass), clear_module_cache_i, (void *)subclass);
+                    RCLASS_M_TBL(subclass) = klass_m_tbl;
+                    VALUE origin = rb_include_class_new(klass_origin, RCLASS_SUPER(subclass));
+                    RCLASS_SET_SUPER(subclass, origin);
+                    RCLASS_SET_INCLUDER(origin, RCLASS_INCLUDER(subclass));
+                    RCLASS_SET_ORIGIN(subclass, origin);
                     RICLASS_SET_ORIGIN_SHARED_MTBL(origin);
                 }
-                include_modules_at(iclass->klass, iclass->klass, module, FALSE);
+                include_modules_at(subclass, subclass, module, FALSE);
             }
 
             iclass = iclass->next;
@@ -1486,7 +1497,7 @@ rb_mod_ancestors(VALUE mod)
 {
     VALUE p, ary = rb_ary_new();
     VALUE refined_class = Qnil;
-    if (FL_TEST(mod, RMODULE_IS_REFINEMENT)) {
+    if (BUILTIN_TYPE(mod) == T_MODULE && FL_TEST(mod, RMODULE_IS_REFINEMENT)) {
         refined_class = rb_refinement_module_get_refined_class(mod);
     }
 
@@ -1625,6 +1636,15 @@ static int
 ins_methods_pub_i(st_data_t name, st_data_t type, st_data_t ary)
 {
     return ins_methods_type_i(name, type, ary, METHOD_VISI_PUBLIC);
+}
+
+static int
+ins_methods_undef_i(st_data_t name, st_data_t type, st_data_t ary)
+{
+    if ((rb_method_visibility_t)type == METHOD_VISI_UNDEF) {
+	ins_methods_push(name, ary);
+    }
+    return ST_CONTINUE;
 }
 
 struct method_entry_arg {
@@ -1794,6 +1814,21 @@ VALUE
 rb_class_public_instance_methods(int argc, const VALUE *argv, VALUE mod)
 {
     return class_instance_method_list(argc, argv, mod, 0, ins_methods_pub_i);
+}
+
+/*
+ *  call-seq:
+ *     mod.undefined_instance_methods   -> array
+ *
+ *  Returns a list of the undefined instance methods defined in <i>mod</i>.
+ *  The undefined methods of any ancestors are not included.
+ */
+
+VALUE
+rb_class_undefined_instance_methods(VALUE mod)
+{
+    VALUE include_super = Qfalse;
+    return class_instance_method_list(1, &include_super, mod, 0, ins_methods_undef_i);
 }
 
 /*

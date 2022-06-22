@@ -1338,6 +1338,61 @@ q.pop
     t.join
   end
 
+  def test_yield_across_thread_through_enum
+    bug18649 = '[ruby-core:107980] [Bug #18649]'
+    @log = []
+
+    def self.p(arg)
+      @log << arg
+    end
+
+    def self.synchronize
+      yield
+    end
+
+    def self.execute(task)
+      success = true
+      value = reason = nil
+      end_sync = false
+
+      synchronize do
+        begin
+          p :before
+          value = task.call
+          p :never_reached
+          success = true
+        rescue StandardError => ex
+          ex = ex.class
+          p [:rescue, ex]
+          reason = ex
+          success = false
+        end
+
+        end_sync = true
+        p :end_sync
+      end
+
+      p :should_not_reach_here! unless end_sync
+      [success, value, reason]
+    end
+
+    def self.foo
+      Thread.new do
+        result = execute(-> { yield 42 })
+        p [:result, result]
+      end.join
+    end
+
+    value = to_enum(:foo).first
+    expected = [:before,
+      [:rescue, LocalJumpError],
+      :end_sync,
+      [:result, [false, nil, LocalJumpError]]]
+
+    assert_equal(expected, @log, bug18649)
+    assert_equal(42, value, bug18649)
+  end
+
   def test_thread_setname_in_initialize
     bug12290 = '[ruby-core:74963] [Bug #12290]'
     c = Class.new(Thread) {def initialize() self.name = "foo"; super; end}
@@ -1387,6 +1442,11 @@ q.pop
       omit "can't trap a signal from another process on Windows"
       # opt = {new_pgroup: true}
     end
+
+    if /freebsd/ =~ RUBY_PLATFORM
+      omit "[Bug #18613]"
+    end
+
     assert_separately([], "#{<<~"{#"}\n#{<<~'};'}", timeout: 120)
     {#
       n = 1000

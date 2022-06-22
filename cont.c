@@ -274,7 +274,6 @@ static ID fiber_initialize_keywords[2] = {0};
 #define ERRNOMSG strerror(errno)
 
 // Locates the stack vacancy details for the given stack.
-// Requires that fiber_pool_vacancy fits within one page.
 inline static struct fiber_pool_vacancy *
 fiber_pool_vacancy_pointer(void * base, size_t size)
 {
@@ -284,6 +283,24 @@ fiber_pool_vacancy_pointer(void * base, size_t size)
         (char*)base + STACK_DIR_UPPER(0, size - RB_PAGE_SIZE)
     );
 }
+
+#if defined(COROUTINE_SANITIZE_ADDRESS)
+// Compute the base pointer for a vacant stack, for the area which can be poisoned.
+inline static void *
+fiber_pool_stack_poison_base(struct fiber_pool_stack * stack)
+{
+    STACK_GROW_DIR_DETECTION;
+
+    return (char*)stack->base + STACK_DIR_UPPER(RB_PAGE_SIZE, 0);
+}
+
+// Compute the size of the vacant stack, for the area that can be poisoned.
+inline static size_t
+fiber_pool_stack_poison_size(struct fiber_pool_stack * stack)
+{
+    return stack->size - RB_PAGE_SIZE;
+}
+#endif
 
 // Reset the current stack pointer and available size of the given stack.
 inline static void
@@ -634,6 +651,10 @@ fiber_pool_stack_acquire(struct fiber_pool * fiber_pool)
     VM_ASSERT(vacancy);
     VM_ASSERT(vacancy->stack.base);
 
+#if defined(COROUTINE_SANITIZE_ADDRESS)
+    __asan_unpoison_memory_region(fiber_pool_stack_poison_base(&vacancy->stack), fiber_pool_stack_poison_size(&vacancy->stack));
+#endif
+
     // Take the top item from the free list:
     fiber_pool->used += 1;
 
@@ -679,6 +700,10 @@ fiber_pool_stack_free(struct fiber_pool_stack * stack)
     // Not available in all versions of Windows.
     //DiscardVirtualMemory(base, size);
 #endif
+
+#if defined(COROUTINE_SANITIZE_ADDRESS)
+    __asan_poison_memory_region(fiber_pool_stack_poison_base(stack), fiber_pool_stack_poison_size(stack));
+#endif
 }
 
 // Release and return a stack to the vacancy list.
@@ -698,7 +723,7 @@ fiber_pool_stack_release(struct fiber_pool_stack * stack)
     fiber_pool_vacancy_reset(vacancy);
 
     // Push the vacancy into the vancancies list:
-    pool->vacancies = fiber_pool_vacancy_push(vacancy, stack->pool->vacancies);
+    pool->vacancies = fiber_pool_vacancy_push(vacancy, pool->vacancies);
     pool->used -= 1;
 
 #ifdef FIBER_POOL_ALLOCATION_FREE
@@ -714,7 +739,8 @@ fiber_pool_stack_release(struct fiber_pool_stack * stack)
         fiber_pool_stack_free(&vacancy->stack);
     }
 #else
-    // This is entirely optional, but clears the dirty flag from the stack memory, so it won't get swapped to disk when there is memory pressure:
+    // This is entirely optional, but clears the dirty flag from the stack
+    // memory, so it won't get swapped to disk when there is memory pressure:
     if (stack->pool->free_stacks) {
         fiber_pool_stack_free(&vacancy->stack);
     }
@@ -751,6 +777,20 @@ static COROUTINE
 fiber_entry(struct coroutine_context * from, struct coroutine_context * to)
 {
     rb_fiber_t *fiber = to->argument;
+
+#if defined(COROUTINE_SANITIZE_ADDRESS)
+    // Address sanitizer will copy the previous stack base and stack size into
+    // the "from" fiber. `coroutine_initialize_main` doesn't generally know the
+    // stack bounds (base + size). Therefore, the main fiber `stack_base` and
+    // `stack_size` will be NULL/0. It's specifically important in that case to
+    // get the (base+size) of the previous fiber and save it, so that later when
+    // we return to the main coroutine, we don't supply (NULL, 0) to
+    // __sanitizer_start_switch_fiber which royally messes up the internal state
+    // of ASAN and causes (sometimes) the following message:
+    // "WARNING: ASan is ignoring requested __asan_handle_no_return"
+    __sanitizer_finish_switch_fiber(to->fake_stack, (const void**)&from->stack_base, &from->stack_size);
+#endif
+
     rb_thread_t *thread = fiber->cont.saved_ec.thread_ptr;
 
 #ifdef COROUTINE_PTHREAD_CONTEXT
@@ -791,7 +831,8 @@ fiber_initialize_coroutine(rb_fiber_t *fiber, size_t * vm_stack_size)
     return vm_stack;
 }
 
-// Release the stack from the fiber, it's execution context, and return it to the fiber pool.
+// Release the stack from the fiber, it's execution context, and return it to
+// the fiber pool.
 static void
 fiber_stack_release(rb_fiber_t * fiber)
 {
@@ -1225,10 +1266,7 @@ show_vm_pcs(const rb_control_frame_t *cfp,
     }
 }
 #endif
-COMPILER_WARNING_PUSH
-#ifdef __clang__
-COMPILER_WARNING_IGNORED(-Wduplicate-decl-specifier)
-#endif
+
 static VALUE
 cont_capture(volatile int *volatile stat)
 {
@@ -1293,7 +1331,6 @@ cont_capture(volatile int *volatile stat)
         return contval;
     }
 }
-COMPILER_WARNING_POP
 
 static inline void
 cont_restore_thread(rb_context_t *cont)
@@ -1379,8 +1416,16 @@ fiber_setcontext(rb_fiber_t *new_fiber, rb_fiber_t *old_fiber)
 
     // if (DEBUG) fprintf(stderr, "fiber_setcontext: %p[%p] -> %p[%p]\n", (void*)old_fiber, old_fiber->stack.base, (void*)new_fiber, new_fiber->stack.base);
 
+#if defined(COROUTINE_SANITIZE_ADDRESS)
+    __sanitizer_start_switch_fiber(FIBER_TERMINATED_P(old_fiber) ? NULL : &old_fiber->context.fake_stack, new_fiber->context.stack_base, new_fiber->context.stack_size);
+#endif
+
     /* swap machine context */
     struct coroutine_context * from = coroutine_transfer(&old_fiber->context, &new_fiber->context);
+
+#if defined(COROUTINE_SANITIZE_ADDRESS)
+    __sanitizer_finish_switch_fiber(old_fiber->context.fake_stack, NULL, NULL);
+#endif
 
     if (from == NULL) {
         rb_syserr_fail(errno, "coroutine_transfer");
@@ -1441,6 +1486,10 @@ cont_restore_0(rb_context_t *cont, VALUE *addr_in_prev_frame)
             if (&space[0] > end) {
 # ifdef HAVE_ALLOCA
                 volatile VALUE *sp = ALLOCA_N(VALUE, &space[0] - end);
+                // We need to make sure that the stack pointer is moved,
+                // but some compilers may remove the allocation by optimization.
+                // We hope that the following read/write will prevent such an optimization.
+                *sp = Qfalse;
                 space[0] = *sp;
 # else
                 cont_restore_0(cont, &space[0]);
@@ -2439,9 +2488,7 @@ fiber_resume_kw(rb_fiber_t *fiber, int argc, const VALUE *argv, int kw_splat)
         rb_raise(rb_eFiberError, "attempt to resume a transferring fiber");
     }
 
-    VALUE result = fiber_switch(fiber, argc, argv, kw_splat, fiber, false);
-
-    return result;
+    return fiber_switch(fiber, argc, argv, kw_splat, fiber, false);
 }
 
 VALUE

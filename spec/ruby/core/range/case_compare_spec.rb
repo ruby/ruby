@@ -8,8 +8,6 @@ describe "Range#===" do
     (range === RangeSpecs::WithoutSucc.new(2)).should == true
   end
 
-  ruby_version_is "2.7" do
-    it_behaves_like :range_cover_and_include, :===
-    it_behaves_like :range_cover, :===
-  end
+  it_behaves_like :range_cover_and_include, :===
+  it_behaves_like :range_cover, :===
 end

@@ -474,7 +474,7 @@ rb_vmdebug_thread_dump_state(VALUE self)
 # ifdef HAVE_LIBUNWIND
 #  undef backtrace
 #  define backtrace unw_backtrace
-# elif defined(__APPLE__) && defined(__x86_64__) && defined(HAVE_LIBUNWIND_H)
+# elif defined(__APPLE__) && defined(HAVE_LIBUNWIND_H)
 #  define UNW_LOCAL_ONLY
 #  include <libunwind.h>
 #  include <sys/mman.h>
@@ -503,12 +503,13 @@ backtrace(void **trace, int size)
 darwin_sigtramp:
     /* darwin's bundled libunwind doesn't support signal trampoline */
     {
+#if defined(__x86_64__)
 	ucontext_t *uctx;
 	char vec[1];
 	int r;
 	/* get previous frame information from %rbx at _sigtramp and set values to cursor
-	 * http://www.opensource.apple.com/source/Libc/Libc-825.25/i386/sys/_sigtramp.s
-	 * http://www.opensource.apple.com/source/libunwind/libunwind-35.1/src/unw_getcontext.s
+	 * https://www.opensource.apple.com/source/Libc/Libc-825.25/i386/sys/_sigtramp.s
+	 * https://www.opensource.apple.com/source/libunwind/libunwind-35.1/src/unw_getcontext.s
 	 */
 	unw_get_reg(&cursor, UNW_X86_64_RBX, &ip);
 	uctx = (ucontext_t *)ip;
@@ -563,6 +564,8 @@ darwin_sigtramp:
 	    trace[n++] = (void *)ip;
 	    ip = *(unw_word_t*)uctx->uc_mcontext->MCTX_SS_REG(rsp);
 	}
+#endif
+
 	trace[n++] = (void *)ip;
 	unw_set_reg(&cursor, UNW_REG_IP, ip);
     }
@@ -1018,6 +1021,17 @@ rb_vm_bugreport(const void *ctx)
         }
     }
 
+    // Thread unsafe best effort attempt to stop printing the bug report in an
+    // infinite loop. Can happen with corrupt Ruby stack.
+    {
+        static bool crashing = false;
+        if (crashing) {
+            fprintf(stderr, "Crashed while printing bug report\n");
+            return;
+        }
+        crashing = true;
+    }
+
 #ifdef __linux__
 # define PROC_MAPS_NAME "/proc/self/maps"
 #endif
@@ -1177,10 +1191,6 @@ rb_vm_bugreport(const void *ctx)
     }
 }
 
-#ifdef NON_SCALAR_THREAD_ID
-const char *ruby_fill_thread_id_string(rb_nativethread_id_t thid, rb_thread_id_string_t buf);
-#endif
-
 void
 rb_vmdebug_stack_dump_all_threads(void)
 {
@@ -1190,11 +1200,9 @@ rb_vmdebug_stack_dump_all_threads(void)
     // TODO: now it only shows current ractor
     ccan_list_for_each(&r->threads.set, th, lt_node) {
 #ifdef NON_SCALAR_THREAD_ID
-        rb_thread_id_string_t buf;
-	ruby_fill_thread_id_string(th->thread_id, buf);
-	fprintf(stderr, "th: %p, native_id: %s\n", th, buf);
+	fprintf(stderr, "th: %p, native_id: N/A\n", th);
 #else
-        fprintf(stderr, "th: %p, native_id: %p\n", (void *)th, (void *)(uintptr_t)th->thread_id);
+        fprintf(stderr, "th: %p, native_id: %p\n", (void *)th, (void *)(uintptr_t)th->nt->thread_id);
 #endif
 	rb_vmdebug_stack_dump_raw(th->ec, th->ec->cfp);
     }

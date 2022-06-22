@@ -645,7 +645,7 @@ num_fdiv(VALUE x, VALUE y)
  *  (\Numeric itself does not define method +/+.)
  *
  *  Of the Core and Standard Library classes,
- *  Float, Rational, and Complex use this implementation.
+ *  Only Float and Rational use this implementation.
  *
  */
 
@@ -667,9 +667,9 @@ num_div(VALUE x, VALUE y)
  *
  *  For \Rational +r+ and real number +n+, these expressions are equivalent:
  *
- *    c % n
- *    c-n*(c/n).floor
- *    c.divmod(n)[1]
+ *    r % n
+ *    r-n*(r/n).floor
+ *    r.divmod(n)[1]
  *
  *  See Numeric#divmod.
  *
@@ -2003,7 +2003,7 @@ rb_flo_is_infinite_p(VALUE num)
  *  call-seq:
  *    finite? -> true or false
  *
- *  Returns +true+ if +self+ is not +Infinity+, +-Infinity+, or +Nan+,
+ *  Returns +true+ if +self+ is not +Infinity+, +-Infinity+, or +NaN+,
  *  +false+ otherwise:
  *
  *    f = 2.0      # => 2.0

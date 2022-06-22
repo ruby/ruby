@@ -604,30 +604,4 @@ describe "Marshal.dump" do
     m = Mutex.new
     -> { Marshal.dump(m) }.should raise_error(TypeError)
   end
-
-  ruby_version_is ''...'2.7' do
-    it "returns an untainted string if object is untainted" do
-      Marshal.dump(Object.new).tainted?.should be_false
-    end
-
-    it "returns a tainted string if object is tainted" do
-      Marshal.dump(Object.new.taint).tainted?.should be_true
-    end
-
-    it "returns a tainted string if nested object is tainted" do
-      Marshal.dump([[Object.new.taint]]).tainted?.should be_true
-    end
-
-    it "returns a trusted string if object is trusted" do
-      Marshal.dump(Object.new).untrusted?.should be_false
-    end
-
-    it "returns an untrusted string if object is untrusted" do
-      Marshal.dump(Object.new.untrust).untrusted?.should be_true
-    end
-
-    it "returns an untrusted string if nested object is untrusted" do
-      Marshal.dump([[Object.new.untrust]]).untrusted?.should be_true
-    end
-  end
 end

@@ -1,7 +1,6 @@
 # frozen_string_literal: true
 
 require "tmpdir"
-require "tempfile"
 
 RSpec.describe "Bundler.setup" do
   describe "with no arguments" do
@@ -341,19 +340,6 @@ RSpec.describe "Bundler.setup" do
         expect(out).to eq("WIN")
       end
 
-      it "version_requirement is now deprecated in rubygems 1.4.0+ when gem is missing" do
-        run <<-R
-          begin
-            gem "activesupport"
-            puts "FAIL"
-          rescue LoadError
-            puts "WIN"
-          end
-        R
-
-        expect(err).to be_empty
-      end
-
       it "replaces #gem but raises when the version is wrong" do
         run <<-R
           begin
@@ -365,19 +351,6 @@ RSpec.describe "Bundler.setup" do
         R
 
         expect(out).to eq("WIN")
-      end
-
-      it "version_requirement is now deprecated in rubygems 1.4.0+ when the version is wrong" do
-        run <<-R
-          begin
-            gem "rack", "1.0.0"
-            puts "FAIL"
-          rescue LoadError
-            puts "WIN"
-          end
-        R
-
-        expect(err).to be_empty
       end
     end
 
@@ -800,7 +773,7 @@ end
       run <<~RUBY
         puts ENV['MANPATH']
         require "open3"
-        puts Open3.capture2e("man", "ls")[0]
+        puts Open3.capture2e({ "LC_ALL" => "C" }, "man", "ls")[0]
       RUBY
 
       lines = out.split("\n")
@@ -861,19 +834,17 @@ end
 
   context "with bundler is located in symlinked GEM_HOME" do
     let(:gem_home) { Dir.mktmpdir }
-    let(:symlinked_gem_home) { Tempfile.new("gem_home").path }
+    let(:symlinked_gem_home) { tmp("gem_home-symlink").to_s }
     let(:full_name) { "bundler-#{Bundler::VERSION}" }
 
     before do
-      skip "symlink destination exists" if Gem.win_platform?
-
-      FileUtils.ln_sf(gem_home, symlinked_gem_home)
+      File.symlink(gem_home, symlinked_gem_home)
       gems_dir = File.join(gem_home, "gems")
       specifications_dir = File.join(gem_home, "specifications")
       Dir.mkdir(gems_dir)
       Dir.mkdir(specifications_dir)
 
-      FileUtils.ln_s(source_root, File.join(gems_dir, full_name))
+      File.symlink(source_root, File.join(gems_dir, full_name))
 
       gemspec_content = File.binread(gemspec).
                 sub("Bundler::VERSION", %("#{Bundler::VERSION}")).

@@ -191,7 +191,7 @@ class TestGemResolver < Gem::TestCase
 
     # With the following gems already installed:
     # a-1, b-1, c-1, e-1
-    res.skip_gems = {'a' => [a1_spec], 'b' => [b1_spec], 'c' => [c1_spec], 'e' => [e1_spec]}
+    res.skip_gems = { 'a' => [a1_spec], 'b' => [b1_spec], 'c' => [c1_spec], 'e' => [e1_spec] }
 
     # Make sure the following gems end up getting used/installed/upgraded:
     # a-2 (upgraded)

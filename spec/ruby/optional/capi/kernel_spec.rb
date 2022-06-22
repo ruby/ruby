@@ -412,12 +412,10 @@ describe "C-API Kernel function" do
       }.should raise_error(Exception, 'custom error')
     end
 
-    ruby_bug "#17305", ""..."2.7" do
-      it "raises TypeError if one of the passed exceptions is not a Module" do
-        -> {
-          @s.rb_rescue2(-> *_ { raise RuntimeError, "foo" }, :no_exc, -> x { x }, :exc, Object.new, 42)
-        }.should raise_error(TypeError, /class or module required/)
-      end
+    it "raises TypeError if one of the passed exceptions is not a Module" do
+      -> {
+        @s.rb_rescue2(-> *_ { raise RuntimeError, "foo" }, :no_exc, -> x { x }, :exc, Object.new, 42)
+      }.should raise_error(TypeError, /class or module required/)
     end
   end
 

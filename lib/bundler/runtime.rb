@@ -301,11 +301,7 @@ module Bundler
       e = Gem::LoadError.new "You have already activated #{activated_spec.name} #{activated_spec.version}, " \
                              "but your Gemfile requires #{spec.name} #{spec.version}. #{suggestion}"
       e.name = spec.name
-      if e.respond_to?(:requirement=)
-        e.requirement = Gem::Requirement.new(spec.version.to_s)
-      else
-        e.version_requirement = Gem::Requirement.new(spec.version.to_s)
-      end
+      e.requirement = Gem::Requirement.new(spec.version.to_s)
       raise e
     end
   end

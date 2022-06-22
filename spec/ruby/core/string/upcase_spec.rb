@@ -65,14 +65,6 @@ describe "String#upcase" do
     -> { "abc".upcase(:invalid_option) }.should raise_error(ArgumentError)
   end
 
-  ruby_version_is ''...'2.7' do
-    it "taints result when self is tainted" do
-      "".taint.upcase.should.tainted?
-      "X".taint.upcase.should.tainted?
-      "x".taint.upcase.should.tainted?
-    end
-  end
-
   ruby_version_is ''...'3.0' do
     it "returns a subclass instance for subclasses" do
       StringSpecs::MyString.new("fooBAR").upcase.should be_an_instance_of(StringSpecs::MyString)

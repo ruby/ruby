@@ -19,13 +19,15 @@ module Bundler
     #   collection of gemspecs is returned. Otherwise, nil is returned.
     def self.resolve(requirements, source_requirements = {}, base = [], gem_version_promoter = GemVersionPromoter.new, additional_base_requirements = [], platforms = nil)
       base = SpecSet.new(base) unless base.is_a?(SpecSet)
-      resolver = new(source_requirements, base, gem_version_promoter, additional_base_requirements, platforms)
+      metadata_requirements, regular_requirements = requirements.partition {|dep| dep.name.end_with?("\0") }
+      resolver = new(source_requirements, base, gem_version_promoter, additional_base_requirements, platforms, metadata_requirements)
       result = resolver.start(requirements)
-      SpecSet.new(SpecSet.new(result).for(requirements.reject{|dep| dep.name.end_with?("\0") }))
+      SpecSet.new(SpecSet.new(result).for(regular_requirements))
     end
 
-    def initialize(source_requirements, base, gem_version_promoter, additional_base_requirements, platforms)
+    def initialize(source_requirements, base, gem_version_promoter, additional_base_requirements, platforms, metadata_requirements)
       @source_requirements = source_requirements
+      @metadata_requirements = metadata_requirements
       @base = base
       @resolver = Molinillo::Resolver.new(self, self)
       @search_for = {}
@@ -312,29 +314,63 @@ module Bundler
 
       e = Molinillo::VersionConflict.new(conflicts, e.specification_provider) unless conflicts.empty?
 
-      solver_name = "Bundler"
-      possibility_type = "gem"
       e.message_with_trees(
-        :solver_name => solver_name,
-        :possibility_type => possibility_type,
-        :reduce_trees => lambda do |trees|
+        :full_message_for_conflict => lambda do |name, conflict|
+          o = if name.end_with?("\0")
+            String.new("Bundler found conflicting requirements for the #{name} version:")
+          else
+            String.new("Bundler could not find compatible versions for gem \"#{name}\":")
+          end
+          o << %(\n)
+          if conflict.locked_requirement
+            o << %(  In snapshot (#{name_for_locking_dependency_source}):\n)
+            o << %(    #{SharedHelpers.pretty_dependency(conflict.locked_requirement)}\n)
+            o << %(\n)
+          end
+          o << %(  In #{name_for_explicit_dependency_source}:\n)
+          trees = conflict.requirement_trees
+
           # called first, because we want to reduce the amount of work required to find maximal empty sets
           trees = trees.uniq {|t| t.flatten.map {|dep| [dep.name, dep.requirement] } }
 
           # bail out if tree size is too big for Array#combination to make any sense
-          return trees if trees.size > 15
-          maximal = 1.upto(trees.size).map do |size|
-            trees.map(&:last).flatten(1).combination(size).to_a
-          end.flatten(1).select do |deps|
-            Bundler::VersionRanges.empty?(*Bundler::VersionRanges.for_many(deps.map(&:requirement)))
-          end.min_by(&:size)
+          if trees.size <= 15
+            maximal = 1.upto(trees.size).map do |size|
+              trees.map(&:last).flatten(1).combination(size).to_a
+            end.flatten(1).select do |deps|
+              Bundler::VersionRanges.empty?(*Bundler::VersionRanges.for_many(deps.map(&:requirement)))
+            end.min_by(&:size)
 
-          trees.reject! {|t| !maximal.include?(t.last) } if maximal
+            trees.reject! {|t| !maximal.include?(t.last) } if maximal
 
-          trees.sort_by {|t| t.reverse.map(&:name) }
-        end,
-        :printable_requirement => lambda {|req| SharedHelpers.pretty_dependency(req) },
-        :additional_message_for_conflict => lambda do |o, name, conflict|
+            trees.sort_by! {|t| t.reverse.map(&:name) }
+          end
+
+          o << trees.map do |tree|
+            t = "".dup
+            depth = 2
+
+            base_tree = tree.first
+            base_tree_name = base_tree.name
+
+            if base_tree_name.end_with?("\0")
+              t = nil
+            else
+              tree.each do |req|
+                t << "  " * depth << SharedHelpers.pretty_dependency(req)
+                unless tree.last == req
+                  if spec = conflict.activated_by_name[req.name]
+                    t << %( was resolved to #{spec.version}, which)
+                  end
+                  t << %( depends on)
+                end
+                t << %(\n)
+                depth += 1
+              end
+            end
+            t
+          end.compact.join("\n")
+
           if name == "bundler"
             o << %(\n  Current Bundler version:\n    bundler (#{Bundler::VERSION}))
 
@@ -355,11 +391,13 @@ module Bundler
                 o << "Your bundle requires a different version of Bundler than the one you're running, and that version could not be found.\n"
               end
             end
+          elsif name.end_with?("\0")
+            o << %(\n  Current #{name} version:\n    #{SharedHelpers.pretty_dependency(@metadata_requirements.find {|req| req.name == name })}\n\n)
           elsif conflict.locked_requirement
             o << "\n"
-            o << %(Running `bundle update` will rebuild your snapshot from scratch, using only\n)
+            o << %(Deleting your #{name_for_locking_dependency_source} file and running `bundle install` will rebuild your snapshot from scratch, using only\n)
             o << %(the gems in your Gemfile, which may resolve the conflict.\n)
-          elsif !conflict.existing && !name.end_with?("\0")
+          elsif !conflict.existing
             o << "\n"
 
             relevant_source = conflict.requirement.source || source_for(name)
@@ -372,14 +410,8 @@ module Bundler
 
             o << gem_not_found_message(name, conflict.requirement, relevant_source, extra_message)
           end
-        end,
-        :version_for_spec => lambda {|spec| spec.version },
-        :incompatible_version_message_for_conflict => lambda do |name, _conflict|
-          if name.end_with?("\0")
-            %(#{solver_name} found conflicting requirements for the #{name} version:)
-          else
-            %(#{solver_name} could not find compatible versions for #{possibility_type} "#{name}":)
-          end
+
+          o
         end
       )
     end

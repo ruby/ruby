@@ -206,11 +206,4 @@ describe "Kernel#clone" do
 
     cloned.bar.should == ['a']
   end
-
-  ruby_version_is ''...'2.7' do
-    it 'copies tainted?' do
-      o = ''.taint.clone
-      o.tainted?.should be_true
-    end
-  end
 end

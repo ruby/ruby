@@ -36,11 +36,22 @@ describe :stringio_each_separator, shared: true do
     seen.should == ["2 1 2 1 2"]
   end
 
-  it "yields each paragraph when passed an empty String as separator" do
-    seen = []
-    io = StringIO.new("para1\n\npara2\n\n\npara3")
-    io.send(@method, "") {|s| seen << s}
-    seen.should == ["para1\n\n", "para2\n\n", "para3"]
+  ruby_version_is ''..."3.2" do
+    it "yields each paragraph with two separation characters when passed an empty String as separator" do
+      seen = []
+      io = StringIO.new("para1\n\npara2\n\n\npara3")
+      io.send(@method, "") {|s| seen << s}
+      seen.should == ["para1\n\n", "para2\n\n", "para3"]
+    end
+  end
+
+  ruby_version_is "3.2" do
+    it "yields each paragraph with all separation characters when passed an empty String as separator" do
+      seen = []
+      io = StringIO.new("para1\n\npara2\n\n\npara3")
+      io.send(@method, "") {|s| seen << s}
+      seen.should == ["para1\n\n", "para2\n\n\n", "para3"]
+    end
   end
 end
 

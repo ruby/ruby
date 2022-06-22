@@ -268,14 +268,31 @@ ruby_set_debug_option(const char *str)
 
 #define MAX_DEBUG_LOG             0x1000
 #define MAX_DEBUG_LOG_MESSAGE_LEN 0x0200
-#define MAX_DEBUG_LOG_FILTER      0x0010
+#define MAX_DEBUG_LOG_FILTER_LEN  0x0020
+#define MAX_DEBUG_LOG_FILTER_NUM  0x0010
 
 enum ruby_debug_log_mode ruby_debug_log_mode;
+
+struct debug_log_filter {
+    enum debug_log_filter_type {
+        dlf_all,
+        dlf_file, // "file:..."
+        dlf_func, // "func:..."
+    } type;
+    bool negative;
+    char str[MAX_DEBUG_LOG_FILTER_LEN];
+};
+
+static const char *dlf_type_names[] = {
+    "all",
+    "file",
+    "func",
+};
 
 static struct {
     char *mem;
     unsigned int cnt;
-    char filters[MAX_DEBUG_LOG_FILTER][MAX_DEBUG_LOG_FILTER];
+    struct debug_log_filter filters[MAX_DEBUG_LOG_FILTER_NUM];
     unsigned int filters_num;
     rb_nativethread_lock_t lock;
     FILE *output;
@@ -287,15 +304,85 @@ RUBY_DEBUG_LOG_MEM_ENTRY(unsigned int index)
     return &debug_log.mem[MAX_DEBUG_LOG_MESSAGE_LEN * index];
 }
 
+static enum debug_log_filter_type
+filter_type(const char *str, int *skiplen)
+{
+    if (strncmp(str, "file:", 5) == 0) {
+        *skiplen = 5;
+        return dlf_file;
+    }
+    else if(strncmp(str, "func:", 5) == 0) {
+        *skiplen = 5;
+        return dlf_func;
+    }
+    else {
+        *skiplen = 0;
+        return dlf_all;
+    }
+}
+
+static void
+setup_debug_log_filter(void)
+{
+    const char *filter_config = getenv("RUBY_DEBUG_LOG_FILTER");
+
+    if (filter_config && strlen(filter_config) > 0) {
+        unsigned int i;
+        for (i=0; i<MAX_DEBUG_LOG_FILTER_NUM && filter_config; i++) {
+            size_t len;
+            const char *str = filter_config;
+            const char *p;
+
+            if ((p = strchr(str, ',')) == NULL) {
+                len = strlen(str);
+                filter_config = NULL;
+            }
+            else {
+                len = p - str - 1; // 1 is ','
+                filter_config = p + 1;
+            }
+
+            // positive/negative
+            if (*str == '-') {
+                debug_log.filters[i].negative = true;
+                str++;
+            } else if (*str == '+') {
+                // negative is false on default.
+                str++;
+            }
+
+            // type
+            int skiplen;
+            debug_log.filters[i].type = filter_type(str, &skiplen);
+            len -= skiplen;
+
+            if (len >= MAX_DEBUG_LOG_FILTER_LEN) {
+                fprintf(stderr, "too long: %s (max:%d)\n", str, MAX_DEBUG_LOG_FILTER_LEN - 1);
+                exit(1);
+            }
+
+            // body
+            strncpy(debug_log.filters[i].str, str + skiplen, len);
+            debug_log.filters[i].str[len] = 0;
+        }
+        debug_log.filters_num = i;
+
+        for (i=0; i<debug_log.filters_num; i++) {
+            fprintf(stderr, "RUBY_DEBUG_LOG_FILTER[%d]=%s (%s%s)\n", i,
+                    debug_log.filters[i].str,
+                    debug_log.filters[i].negative ? "-" : "",
+                    dlf_type_names[debug_log.filters[i].type]);
+        }
+    }
+}
+
 static void
 setup_debug_log(void)
 {
     // check RUBY_DEBUG_LOG
     const char *log_config = getenv("RUBY_DEBUG_LOG");
-    if (log_config) {
-        fprintf(stderr, "RUBY_DEBUG_LOG=%s\n", log_config);
-
-        if  (strcmp(log_config, "mem") == 0) {
+    if (log_config && strlen(log_config) > 0) {
+        if (strcmp(log_config, "mem") == 0) {
             debug_log.mem = (char *)malloc(MAX_DEBUG_LOG * MAX_DEBUG_LOG_MESSAGE_LEN);
             if (debug_log.mem == NULL) {
                 fprintf(stderr, "setup_debug_log failed (can't allocate memory)\n");
@@ -315,51 +402,83 @@ setup_debug_log(void)
             setvbuf(debug_log.output, NULL, _IONBF, 0);
         }
 
+        fprintf(stderr, "RUBY_DEBUG_LOG=%s %s%s%s\n", log_config,
+                (ruby_debug_log_mode & ruby_debug_log_memory) ? "[mem]" : "",
+                (ruby_debug_log_mode & ruby_debug_log_stderr) ? "[stderr]" : "",
+                (ruby_debug_log_mode & ruby_debug_log_file)   ? "[file]" : "");
         rb_nativethread_lock_initialize(&debug_log.lock);
-    }
 
-    // check RUBY_DEBUG_LOG_FILTER
-    const char *filter_config = getenv("RUBY_DEBUG_LOG_FILTER");
-    if (filter_config && strlen(filter_config) > 0) {
-        unsigned int i;
-        for (i=0; i<MAX_DEBUG_LOG_FILTER; i++) {
-            const char *p;
-            if ((p = strchr(filter_config, ',')) == NULL) {
-                if (strlen(filter_config) >= MAX_DEBUG_LOG_FILTER) {
-                    fprintf(stderr, "too long: %s (max:%d)\n", filter_config, MAX_DEBUG_LOG_FILTER);
-                    exit(1);
-                }
-                strncpy(debug_log.filters[i], filter_config, MAX_DEBUG_LOG_FILTER - 1);
-                i++;
-                break;
-            }
-            else {
-                size_t n = p - filter_config;
-                if (n >= MAX_DEBUG_LOG_FILTER) {
-                    fprintf(stderr, "too long: %s (max:%d)\n", filter_config, MAX_DEBUG_LOG_FILTER);
-                    exit(1);
-                }
-                strncpy(debug_log.filters[i], filter_config, n);
-                filter_config = p+1;
-            }
+        setup_debug_log_filter();
+    }
+}
+
+static bool
+check_filter(const char *str, const struct debug_log_filter *filter, bool *state)
+{
+    if (filter->negative) {
+        if (strstr(str, filter->str) == NULL) {
+            *state = true;
+            return false;
         }
-        debug_log.filters_num = i;
-        for (i=0; i<debug_log.filters_num; i++) {
-            fprintf(stderr, "RUBY_DEBUG_LOG_FILTER[%d]=%s\n", i, debug_log.filters[i]);
+        else {
+            *state = false;
+            return true;
+        }
+    }
+    else {
+        if (strstr(str, filter->str) != NULL) {
+            *state = true;
+            return true;
+        }
+        else {
+            *state = false;
+            return false;
         }
     }
 }
 
+//
+// RUBY_DEBUG_LOG_FILTER=-foo,-bar,baz,boo
+// returns true if
+//   (func_name or file_name) doesn't contain foo
+// and
+//   (func_name or file_name) doesn't contain bar
+// and
+//   (func_name or file_name) contains baz or boo
+//
+// RUBY_DEBUG_LOG_FILTER=foo,bar,-baz,-boo
+// retunrs true if
+//   (func_name or file_name) contains foo or bar
+// or
+//   (func_name or file_name) doesn't contain baz and
+//   (func_name or file_name) doesn't contain boo and
+//
+// You can specify "file:" (ex file:foo) or "func:" (ex  func:foo)
+// prefixes to specify the filter for.
+//
 bool
-ruby_debug_log_filter(const char *func_name)
+ruby_debug_log_filter(const char *func_name, const char *file_name)
 {
     if (debug_log.filters_num > 0) {
+        bool state = false;
+
         for (unsigned int i = 0; i<debug_log.filters_num; i++) {
-            if (strstr(func_name, debug_log.filters[i]) != NULL) {
-                return true;
+            const struct debug_log_filter *filter = &debug_log.filters[i];
+
+            switch (filter->type) {
+              case dlf_all:
+                if (check_filter(func_name, filter, &state)) return state;
+                if (check_filter(file_name, filter, &state)) return state;
+                break;
+              case dlf_func:
+                if (check_filter(func_name, filter, &state)) return state;
+                break;
+              case dlf_file:
+                if (check_filter(file_name, filter, &state)) return state;
+                break;
             }
         }
-        return false;
+        return state;
     }
     else {
         return true;
@@ -410,36 +529,36 @@ ruby_debug_log(const char *file, int line, const char *func_name, const char *fm
         len += r;
     }
 
-    // Ruby location
-    int ruby_line;
-    const char *ruby_file = rb_source_location_cstr(&ruby_line);
-    if (len < MAX_DEBUG_LOG_MESSAGE_LEN) {
-        if (ruby_file) {
-            r = snprintf(buff + len, MAX_DEBUG_LOG_MESSAGE_LEN - len, "\t%s:%d", pretty_filename(ruby_file), ruby_line);
-        }
-        else {
-            r = snprintf(buff + len, MAX_DEBUG_LOG_MESSAGE_LEN - len, "\t");
-        }
-        if (r < 0) rb_bug("ruby_debug_log returns %d\n", r);
-        len += r;
-    }
-
-    // ractor information
-    if (ruby_single_main_ractor == NULL) {
-        rb_ractor_t *cr = GET_RACTOR();
-        if (r && len < MAX_DEBUG_LOG_MESSAGE_LEN) {
-            r = snprintf(buff + len, MAX_DEBUG_LOG_MESSAGE_LEN - len, "\tr:#%u/%u",
-                         (unsigned int)rb_ractor_id(cr), GET_VM()->ractor.cnt);
+    if (rb_current_execution_context(false)) {
+        // Ruby location
+        int ruby_line;
+        const char *ruby_file = rb_source_location_cstr(&ruby_line);
+        if (len < MAX_DEBUG_LOG_MESSAGE_LEN) {
+            if (ruby_file) {
+                r = snprintf(buff + len, MAX_DEBUG_LOG_MESSAGE_LEN - len, "\t%s:%d", pretty_filename(ruby_file), ruby_line);
+            }
+            else {
+                r = snprintf(buff + len, MAX_DEBUG_LOG_MESSAGE_LEN - len, "\t");
+            }
             if (r < 0) rb_bug("ruby_debug_log returns %d\n", r);
             len += r;
         }
-    }
 
-    // thread information
-    if (!rb_thread_alone()) {
+        // ractor information
+        if (ruby_single_main_ractor == NULL) {
+            rb_ractor_t *cr = GET_RACTOR();
+            if (r && len < MAX_DEBUG_LOG_MESSAGE_LEN) {
+                r = snprintf(buff + len, MAX_DEBUG_LOG_MESSAGE_LEN - len, "\tr:#%u/%u",
+                             (unsigned int)rb_ractor_id(cr), GET_VM()->ractor.cnt);
+                if (r < 0) rb_bug("ruby_debug_log returns %d\n", r);
+                len += r;
+            }
+        }
+
+        // thread information
         const rb_thread_t *th = GET_THREAD();
         if (r && len < MAX_DEBUG_LOG_MESSAGE_LEN) {
-            r = snprintf(buff + len, MAX_DEBUG_LOG_MESSAGE_LEN - len, "\tth:%p", (void *)th);
+            r = snprintf(buff + len, MAX_DEBUG_LOG_MESSAGE_LEN - len, "\tth:%u", rb_th_serial(th));
             if (r < 0) rb_bug("ruby_debug_log returns %d\n", r);
             len += r;
         }

@@ -7,7 +7,7 @@ RSpec.describe "bundle install with install-time dependencies" do
         s.extensions << "Rakefile"
         s.write "Rakefile", <<-RUBY
           task :default do
-            path = File.expand_path("../lib", __FILE__)
+            path = File.expand_path("lib", __dir__)
             FileUtils.mkdir_p(path)
             File.open("\#{path}/implicit_rake_dep.rb", "w") do |f|
               f.puts "IMPLICIT_RAKE_DEP = 'YES'"
@@ -20,7 +20,7 @@ RSpec.describe "bundle install with install-time dependencies" do
         s.extensions << "Rakefile"
         s.write "Rakefile", <<-RUBY
           task :default do
-            path = File.expand_path("../lib", __FILE__)
+            path = File.expand_path("lib", __dir__)
             FileUtils.mkdir_p(path)
             File.open("\#{path}/another_implicit_rake_dep.rb", "w") do |f|
               f.puts "ANOTHER_IMPLICIT_RAKE_DEP = 'YES'"
@@ -42,7 +42,7 @@ RSpec.describe "bundle install with install-time dependencies" do
         s.extensions << "Rakefile"
         s.write "Rakefile", <<-RUBY
           task :default do
-            path = File.expand_path("../lib", __FILE__)
+            path = File.expand_path("lib", __dir__)
             FileUtils.mkdir_p(path)
             File.open("\#{path}/net_build_extensions.rb", "w") do |f|
               f.puts "NET_BUILD_EXTENSIONS = 'YES'"
@@ -245,6 +245,64 @@ RSpec.describe "bundle install with install-time dependencies" do
         expect(the_bundle).to include_gems("rack 1.2")
       end
 
+      it "gives a meaningful error if there's a lockfile using the newer incompatible version" do
+        build_repo2 do
+          build_gem "parallel_tests", "3.7.0" do |s|
+            s.required_ruby_version = ">= #{current_ruby_minor}"
+          end
+
+          build_gem "parallel_tests", "3.8.0" do |s|
+            s.required_ruby_version = ">= #{next_ruby_minor}"
+          end
+        end
+
+        gemfile <<-G
+          source "http://localgemserver.test/"
+          gem 'parallel_tests'
+        G
+
+        lockfile <<~L
+          GEM
+            remote: http://localgemserver.test/
+            specs:
+              parallel_tests (3.8.0)
+
+          PLATFORMS
+            #{lockfile_platforms}
+
+          DEPENDENCIES
+            parallel_tests
+
+          BUNDLED WITH
+             #{Bundler::VERSION}
+        L
+
+        bundle "install --verbose", :artifice => "compact_index", :env => { "BUNDLER_SPEC_GEM_REPO" => gem_repo2.to_s }, :raise_on_error => false
+        expect(err).to include("parallel_tests-3.8.0 requires ruby version >= #{next_ruby_minor}")
+        expect(err).not_to include("That means the author of parallel_tests (3.8.0) has removed it.")
+      end
+
+      it "gives a meaningful error on ruby version mismatches between dependencies" do
+        build_repo4 do
+          build_gem "requires-old-ruby" do |s|
+            s.required_ruby_version = "< #{RUBY_VERSION}"
+          end
+        end
+
+        build_lib("foo", :path => bundled_app) do |s|
+          s.required_ruby_version = ">= #{RUBY_VERSION}"
+
+          s.add_dependency "requires-old-ruby"
+        end
+
+        install_gemfile <<-G, :raise_on_error => false
+          source "#{file_uri_for(gem_repo4)}"
+          gemspec
+        G
+
+        expect(err).to include("Bundler found conflicting requirements for the Ruby\0 version:")
+      end
+
       it "installs the older version under rate limiting conditions" do
         build_repo4 do
           build_gem "rack", "9001.0.0" do |s|
@@ -301,7 +359,28 @@ RSpec.describe "bundle install with install-time dependencies" do
       end
 
       let(:ruby_requirement) { %("#{RUBY_VERSION}") }
-      let(:error_message_requirement) { "~> #{RUBY_VERSION}.0" }
+      let(:error_message_requirement) { "= #{RUBY_VERSION}" }
+
+      it "raises a proper error that mentions the current Ruby version during resolution" do
+        install_gemfile <<-G, :artifice => "compact_index", :env => { "BUNDLER_SPEC_GEM_REPO" => gem_repo2.to_s }, :raise_on_error => false
+          source "http://localgemserver.test/"
+          gem 'require_ruby'
+        G
+
+        expect(out).to_not include("Gem::InstallError: require_ruby requires Ruby version > 9000")
+
+        nice_error = strip_whitespace(<<-E).strip
+          Bundler found conflicting requirements for the Ruby\0 version:
+            In Gemfile:
+              require_ruby was resolved to 1.0, which depends on
+                Ruby\0 (> 9000)
+
+            Current Ruby\0 version:
+              Ruby\0 (#{error_message_requirement})
+
+        E
+        expect(err).to end_with(nice_error)
+      end
 
       shared_examples_for "ruby version conflicts" do
         it "raises an error during resolution" do
@@ -316,10 +395,12 @@ RSpec.describe "bundle install with install-time dependencies" do
           nice_error = strip_whitespace(<<-E).strip
             Bundler found conflicting requirements for the Ruby\0 version:
               In Gemfile:
-                Ruby\0 (#{error_message_requirement})
-
                 require_ruby was resolved to 1.0, which depends on
                   Ruby\0 (> 9000)
+
+              Current Ruby\0 version:
+                Ruby\0 (#{error_message_requirement})
+
           E
           expect(err).to end_with(nice_error)
         end
@@ -329,7 +410,6 @@ RSpec.describe "bundle install with install-time dependencies" do
 
       describe "with a < requirement" do
         let(:ruby_requirement) { %("< 5000") }
-        let(:error_message_requirement) { "< 5000" }
 
         it_behaves_like "ruby version conflicts"
       end
@@ -337,7 +417,6 @@ RSpec.describe "bundle install with install-time dependencies" do
       describe "with a compound requirement" do
         let(:reqs) { ["> 0.1", "< 5000"] }
         let(:ruby_requirement) { reqs.map(&:dump).join(", ") }
-        let(:error_message_requirement) { Gem::Requirement.new(reqs).to_s }
 
         it_behaves_like "ruby version conflicts"
       end
@@ -361,10 +440,12 @@ RSpec.describe "bundle install with install-time dependencies" do
       nice_error = strip_whitespace(<<-E).strip
         Bundler found conflicting requirements for the RubyGems\0 version:
           In Gemfile:
-            RubyGems\0 (= #{Gem::VERSION})
-
             require_rubygems was resolved to 1.0, which depends on
               RubyGems\0 (> 9000)
+
+          Current RubyGems\0 version:
+            RubyGems\0 (= #{Gem::VERSION})
+
       E
       expect(err).to end_with(nice_error)
     end

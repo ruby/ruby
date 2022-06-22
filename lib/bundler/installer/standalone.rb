@@ -29,7 +29,9 @@ module Bundler
       @specs.map do |spec|
         next if spec.name == "bundler"
         Array(spec.require_paths).map do |path|
-          gem_path(path, spec).sub(version_dir, '#{RUBY_ENGINE}/#{RbConfig::CONFIG["ruby_version"]}')
+          gem_path(path, spec).
+            sub(version_dir, '#{RUBY_ENGINE}/#{RbConfig::CONFIG["ruby_version"]}').
+            sub(extensions_dir, 'extensions/\k<platform>/#{RbConfig::CONFIG["ruby_version"]}')
           # This is a static string intentionally. It's interpolated at a later time.
         end
       end.flatten.compact
@@ -37,6 +39,10 @@ module Bundler
 
     def version_dir
       "#{RUBY_ENGINE}/#{RbConfig::CONFIG["ruby_version"]}"
+    end
+
+    def extensions_dir
+      %r{extensions/(?<platform>[^/]+)/#{RbConfig::CONFIG["ruby_version"]}}
     end
 
     def bundler_path

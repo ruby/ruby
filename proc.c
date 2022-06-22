@@ -1208,21 +1208,16 @@ rb_block_arity(void)
     }
 
     block_setup(&block, block_handler);
-    min = rb_vm_block_min_max_arity(&block, &max);
 
     switch (vm_block_type(&block)) {
       case block_handler_type_symbol:
 	return -1;
 
       case block_handler_type_proc:
-	{
-	    VALUE procval = block_handler;
-	    rb_proc_t *proc;
-	    GetProcPtr(procval, proc);
-	    return (proc->is_lambda ? min == max : max != UNLIMITED_ARGUMENTS) ? min : -min-1;
-	}
+        return rb_proc_arity(block_handler);
 
       default:
+        min = rb_vm_block_min_max_arity(&block, &max);
 	return max != UNLIMITED_ARGUMENTS ? min : -min-1;
     }
 }
@@ -1428,7 +1423,7 @@ rb_unnamed_parameters(int arity)
  *    prc = proc{|x, y=42, *other|}
  *    prc.parameters(lambda: true)  #=> [[:req, :x], [:opt, :y], [:rest, :other]]
  *    prc = lambda{|x, y=42, *other|}
- *    prc.parameters(lamdba: false) #=> [[:opt, :x], [:opt, :y], [:rest, :other]]
+ *    prc.parameters(lambda: false) #=> [[:opt, :x], [:opt, :y], [:rest, :other]]
  */
 
 static VALUE
@@ -1470,6 +1465,21 @@ rb_hash_proc(st_index_t hash, VALUE prc)
     hash = rb_hash_uint(hash, (st_index_t)proc->block.as.captured.self);
     return rb_hash_uint(hash, (st_index_t)proc->block.as.captured.ep);
 }
+
+
+/*
+ *  call-seq:
+ *    to_proc
+ *
+ *  Returns a Proc object which calls the method with name of +self+
+ *  on the first parameter and passes the remaining parameters to the method.
+ *
+ *    proc = :to_s.to_proc   # => #<Proc:0x000001afe0e48680(&:to_s) (lambda)>
+ *    proc.call(1000)        # => "1000"
+ *    proc.call(1000, 16)    # => "3e8"
+ *    (1..3).collect(&:to_s) # => ["1", "2", "3"]
+ *
+ */
 
 MJIT_FUNC_EXPORTED VALUE
 rb_sym_to_proc(VALUE sym)

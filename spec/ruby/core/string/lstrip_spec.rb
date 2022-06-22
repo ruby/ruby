@@ -18,14 +18,6 @@ describe "String#lstrip" do
      "\000 \000hello\000 \000".lstrip.should == "hello\000 \000"
     end
   end
-
-  ruby_version_is ''...'2.7' do
-    it "taints the result when self is tainted" do
-      "".taint.lstrip.should.tainted?
-      "ok".taint.lstrip.should.tainted?
-      "   ok".taint.lstrip.should.tainted?
-    end
-  end
 end
 
 describe "String#lstrip!" do

@@ -5,6 +5,7 @@ spec/bundler is rspec examples for bundler library (`lib/bundler.rb`, `lib/bundl
 ## Running spec/bundler
 
 To run rspec for bundler:
+
 ```bash
 make test-bundler
 ```
@@ -37,6 +38,7 @@ which change behavior or are removed. This is necessary for other Ruby implement
 to still be able to run the specs and contribute new specs.
 
 For example, change:
+
 ```ruby
 describe "Some spec" do
   it "some example" do
@@ -44,7 +46,9 @@ describe "Some spec" do
   end
 end
 ```
+
 to:
+
 ```ruby
 describe "Some spec" do
   ruby_version_is ""..."2.7" do
@@ -64,7 +68,8 @@ end
 See `spec/ruby/CONTRIBUTING.md` for more documentation about guards.
 
 To verify specs are compatible with older Ruby versions:
-```
+
+```bash
 cd spec/ruby
 $RUBY_MANAGER use 2.4.9
 ../mspec/bin/mspec -j
@@ -73,28 +78,33 @@ $RUBY_MANAGER use 2.4.9
 ## Running ruby/spec
 
 To run all specs:
+
 ```bash
 make test-spec
 ```
 
 Extra arguments can be added via `MSPECOPT`.
 For instance, to show the help:
+
 ```bash
 make test-spec MSPECOPT=-h
 ```
 
 You can also run the specs in parallel, which is currently experimental.
 It takes around 10s instead of 60s on a quad-core laptop.
+
 ```bash
 make test-spec MSPECOPT=-j
 ```
 
 To run a specific test, add its path to the command:
+
 ```bash
 make test-spec MSPECOPT=spec/ruby/language/for_spec.rb
 ```
 
 If ruby trunk is your current `ruby` in `$PATH`, you can also run `mspec` directly:
+
 ```bash
 # change ruby to trunk
 ruby -v # => trunk

@@ -40,10 +40,8 @@ describe "Encoding.list" do
     Encoding.list.should.include?(Encoding::UTF_8)
   end
 
-  ruby_version_is "2.7" do
-    it 'includes CESU-8 encoding' do
-      Encoding.list.should.include?(Encoding::CESU_8)
-    end
+  it 'includes CESU-8 encoding' do
+    Encoding.list.should.include?(Encoding::CESU_8)
   end
 
   # TODO: Find example that illustrates this

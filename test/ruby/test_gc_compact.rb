@@ -9,32 +9,25 @@ if RUBY_PLATFORM =~ /s390x/
 end
 
 class TestGCCompact < Test::Unit::TestCase
-  module SupportsCompact
+  module CompactionSupportInspector
+    def supports_auto_compact?
+      GC::OPTS.include?("GC_COMPACTION_SUPPORTED")
+    end
+  end
+
+  module OmitUnlessCompactSupported
+    include CompactionSupportInspector
+
     def setup
       omit "autocompact not supported on this platform" unless supports_auto_compact?
       super
     end
-
-    private
-
-    def supports_auto_compact?
-      return false if /wasm/ =~ RUBY_PLATFORM
-      return true unless defined?(Etc::SC_PAGE_SIZE)
-
-      begin
-        return GC::INTERNAL_CONSTANTS[:HEAP_PAGE_SIZE] % Etc.sysconf(Etc::SC_PAGE_SIZE) == 0
-      rescue NotImplementedError
-      rescue ArgumentError
-      end
-
-      true
-    end
   end
 
-  include SupportsCompact
+  include OmitUnlessCompactSupported
 
   class AutoCompact < Test::Unit::TestCase
-    include SupportsCompact
+    include OmitUnlessCompactSupported
 
     def test_enable_autocompact
       before = GC.auto_compact
@@ -88,13 +81,39 @@ class TestGCCompact < Test::Unit::TestCase
     end
   end
 
-  def os_page_size
-    return true unless defined?(Etc::SC_PAGE_SIZE)
+  class CompactMethodsNotImplemented < Test::Unit::TestCase
+    include CompactionSupportInspector
+
+    def assert_not_implemented(method, *args)
+      omit "autocompact is supported on this platform" if supports_auto_compact?
+
+      assert_raise(NotImplementedError) { GC.send(method, *args) }
+      refute(GC.respond_to?(method), "GC.#{method} should be defined as rb_f_notimplement")
+    end
+
+    def test_gc_compact_not_implemented
+      assert_not_implemented(:compact)
+    end
+
+    def test_gc_auto_compact_get_not_implemented
+      assert_not_implemented(:auto_compact)
+    end
+
+    def test_gc_auto_compact_set_not_implemented
+      assert_not_implemented(:auto_compact=, true)
+    end
+
+    def test_gc_latest_compact_info_not_implemented
+      assert_not_implemented(:latest_compact_info)
+    end
+
+    def test_gc_verify_compaction_references_not_implemented
+      assert_not_implemented(:verify_compaction_references)
+    end
   end
 
-  def setup
-    omit "autocompact not supported on this platform" unless supports_auto_compact?
-    super
+  def os_page_size
+    return true unless defined?(Etc::SC_PAGE_SIZE)
   end
 
   def test_gc_compact_stats
@@ -171,5 +190,61 @@ class TestGCCompact < Test::Unit::TestCase
     count = GC.stat(:compact_count)
     GC.compact
     assert_equal count + 1, GC.stat(:compact_count)
+  end
+
+  def test_compacting_from_trace_point
+    obj = Object.new
+    def obj.tracee
+      :ret # expected to emit both line and call event from one instruction
+    end
+
+    results = []
+    TracePoint.new(:call, :line) do |tp|
+      results << tp.event
+      GC.verify_compaction_references
+    end.enable(target: obj.method(:tracee)) do
+      obj.tracee
+    end
+
+    assert_equal([:call, :line], results)
+  end
+
+  def test_moving_strings_between_size_pools
+    assert_separately([], "#{<<~"begin;"}\n#{<<~"end;"}", timeout: 10, signal: :SEGV)
+    begin;
+      moveables = []
+      small_slots = []
+      large_slots = []
+
+      # Ensure fragmentation in the large heap
+      base_slot_size = GC.stat_heap[0].fetch(:slot_size)
+      500.times {
+        String.new(+"a" * base_slot_size).downcase
+        large_slots << String.new(+"a" * base_slot_size).downcase
+      }
+
+      # Ensure fragmentation in the smaller heap
+      500.times {
+        small_slots << Object.new
+        Object.new
+      }
+
+      500.times {
+        # strings are created as shared strings when initialized from literals
+        # use downcase to force the creation of an embedded string (it calls
+        # rb_str_new internally)
+        moveables << String.new(+"a" * base_slot_size).downcase
+
+        moveables << String.new("a").downcase
+      }
+      moveables.map { |s| s << ("bc" * base_slot_size) }
+      moveables.map { |s| s.squeeze! }
+      stats = GC.compact
+
+      moved_strings = (stats.dig(:moved_up, :T_STRING) || 0) +
+        (stats.dig(:moved_down, :T_STRING) || 0)
+
+      assert_operator(moved_strings, :>, 0)
+    end;
   end
 end

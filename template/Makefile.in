@@ -27,6 +27,8 @@ CC_WRAPPER = @XCC_WRAPPER@
 CC = @CC@
 CPP = @CPP@
 LD = @LD@
+RUSTC = @RUSTC@
+CARGO = @CARGO@
 YACC = bison
 PURIFY =
 AUTOCONF = autoconf
@@ -47,6 +49,7 @@ libdir = @libdir@
 libexecdir = @libexecdir@
 datarootdir = @datarootdir@
 datadir = @datadir@
+target_os = @target_os@
 arch = @arch@
 sitearch = @sitearch@
 sitedir = @sitedir@
@@ -106,6 +109,11 @@ MJIT_MIN_HEADER_NAME = rb_mjit_min_header-$(RUBY_PROGRAM_VERSION).h
 MJIT_MIN_HEADER = $(MJIT_HEADER_BUILD_DIR)/$(MJIT_MIN_HEADER_NAME)
 MJIT_HEADER_BUILD_DIR = $(EXTOUT)/include/$(arch)
 MJIT_TABS=@MJIT_TABS@
+YJIT_SUPPORT=@YJIT_SUPPORT@
+YJIT_LIBS=@YJIT_LIBS@
+YJIT_OBJ=@YJIT_OBJ@
+CARGO_TARGET_DIR=@abs_top_builddir@/yjit/target
+CARGO_BUILD_ARGS=@CARGO_BUILD_ARGS@
 LDFLAGS = @STATIC@ $(CFLAGS) @LDFLAGS@
 EXE_LDFLAGS = $(LDFLAGS)
 EXTLDFLAGS = @EXTLDFLAGS@
@@ -120,7 +128,7 @@ XDLDFLAGS = @DLDFLAGS@
 DLDFLAGS = @LIBRUBY_DLDFLAGS@ $(XLDFLAGS) $(ARCH_FLAG)
 SOLIBS = @SOLIBS@
 ENABLE_DEBUG_ENV = @ENABLE_DEBUG_ENV@
-MAINLIBS = @MAINLIBS@
+MAINLIBS = $(YJIT_LIBS) @MAINLIBS@
 ARCHMINIOBJS = @MINIOBJS@
 DLNOBJ = @DLNOBJ@
 ENCOBJS = @ENCOBJS@
@@ -147,8 +155,7 @@ RUNRUBY = @RUNRUBY@ $(RUN_OPTS)
 # RUNRUBY_DEBUGGER:: debugging option for runruby.rb
 RUNRUBY_DEBUGGER = --debugger='gdb -x run.gdb --quiet --args'
 XRUBY = @XRUBY@
-BTESTRUBY = @BTESTRUBY@\
-	$(MINIRUBYOPT)
+BTESTRUBY = @BTESTRUBY@ -r./$(arch)-fake
 INSTALL = @INSTALL@
 INSTALL_DATA = @INSTALL_DATA@
 INSTALL_SCRIPT = @INSTALL_SCRIPT@
@@ -159,7 +166,7 @@ XRUBY_RUBYHDRDIR = @XRUBY_RUBYHDRDIR@
 BOOTSTRAPRUBY = @BOOTSTRAPRUBY@
 
 COROUTINE_H = @X_COROUTINE_H@
-COROUTINE_OBJ = $(COROUTINE_H:.h=.@OBJEXT@)
+COROUTINE_OBJ = $(COROUTINE_H:.h=.$(OBJEXT))
 COROUTINE_SRC = @X_COROUTINE_SRC@
 
 #### End of system configuration section. ####
@@ -193,7 +200,8 @@ DTRACE_DEPENDENT_OBJS = array.$(OBJEXT) \
 			parse.$(OBJEXT) \
 			string.$(OBJEXT) \
 			symbol.$(OBJEXT) \
-			vm.$(OBJEXT)
+			vm.$(OBJEXT) \
+			$(YJIT_OBJ)
 
 THREAD_MODEL  = @THREAD_MODEL@
 
@@ -246,7 +254,7 @@ MINIPRELUDE_C = miniprelude.c
 GOLF_PRELUDE_C= golf_prelude.c
 RBCONFIG      = .rbconfig.time
 
-MAINSRC = $(MAINOBJ:.@OBJEXT@=.c)
+MAINSRC = $(MAINOBJ:.$(OBJEXT)=.c)
 
 SRC_FILE      = $<
 OS_SRC_FILE   = $<
@@ -296,11 +304,23 @@ PRE_LIBRUBY_UPDATE = [ -n "$(LIBRUBY_SO_UPDATE)" ] || $(gnumake:yes=exec) $(RM) 
 # We must `rm' the library each time this rule is invoked because "updating" a
 # MAB library on Apple/NeXT (see --enable-fat-binary in configure) is not
 # supported.
+#
+# In YJIT builds, merge libyjit.a with libruby_static.a
 $(LIBRUBY_A):
 		@$(RM) $@
 		@-[ -z "$(EXTSTATIC)" ] || $(PRE_LIBRUBY_UPDATE)
 		$(ECHO) linking static-library $@
 		$(Q) $(AR) $(ARFLAGS) $@ $(LIBRUBY_A_OBJS) $(INITOBJS)
+		$(Q) if [ 'no' != '$(YJIT_SUPPORT)' ]; then \
+		  set -eu$(V0:1=x) && \
+		  $(ECHO0) 'merging $(YJIT_LIBS) into $@' && \
+		  $(RMALL)    libyjit/ && \
+		  $(MAKEDIRS) libyjit/ && \
+		  trap "$(RMALL) libyjit/" 0 && \
+		  (cd libyjit/ && $(AR) -x ../$(YJIT_LIBS)) && \
+		  :  "$(AR) $(ARFLAGS) $@ libyjit/*.$(OBJEXT)" && \
+		  find libyjit/ -name '*.$(OBJEXT)' -exec $(AR) $(ARFLAGS) $@ '{}' '+' ; \
+		fi
 		@-$(RANLIB) $@ 2> /dev/null || true
 
 verify-static-library: $(LIBRUBY_A)
@@ -431,11 +451,11 @@ $(srcdir)/enc/jis/props.h: enc/jis/props.kwd
 	  $(CP) $@ $(?:.kwd=.h.blt); \
 	fi
 
-.c.@OBJEXT@:
+.c.$(OBJEXT):
 	@$(ECHO) compiling $<
 	$(Q) $(CC) $(CFLAGS) $(XCFLAGS) $(CPPFLAGS) $(COUTFLAG)$@ -c $<
 
-.$(ASMEXT).@OBJEXT@:
+.$(ASMEXT).$(OBJEXT):
 	@$(ECHO) assembling $<
 	$(Q) $(CC) $(ASFLAGS) -DSYMBOL_PREFIX=$(SYMBOL_PREFIX) -o $@ -c $<
 
@@ -494,6 +514,7 @@ clean-local::
 	  enc/encinit.c enc/encinit.$(OBJEXT) $(pkgconfig_DATA) \
 	  ruby-runner.$(OBJEXT) ruby-runner.h \
 	|| $(NULLCMD)
+	$(Q)find . -name '*.bc' -o -name '*.[is]' -delete
 	-$(Q)$(RMALL) exe/ *.dSYM
 
 distclean-local::

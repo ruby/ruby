@@ -27,6 +27,52 @@ class TestClone < Test::Unit::TestCase
     assert_equal([M003, M002, M001], M003.ancestors)
   end
 
+  def test_frozen_properties_retained_on_clone
+    obj = Object.new.freeze
+    cloned_obj = obj.clone
+
+    assert_predicate(obj, :frozen?)
+    assert_predicate(cloned_obj, :frozen?)
+  end
+
+  def test_ivar_retained_on_clone
+    obj = Object.new
+    obj.instance_variable_set(:@a, 1)
+    cloned_obj = obj.clone
+
+    assert_equal(obj.instance_variable_get(:@a), 1)
+    assert_equal(cloned_obj.instance_variable_get(:@a), 1)
+  end
+
+  def test_ivars_retained_on_extended_obj_clone
+    ivars = { :@a => 1, :@b => 2, :@c => 3, :@d => 4 }
+    obj = Object.new
+    ivars.each do |ivar_name, val|
+      obj.instance_variable_set(ivar_name, val)
+    end
+
+    cloned_obj = obj.clone
+
+    ivars.each do |ivar_name, val|
+      assert_equal(obj.instance_variable_get(ivar_name), val)
+      assert_equal(cloned_obj.instance_variable_get(ivar_name), val)
+    end
+  end
+
+  def test_frozen_properties_and_ivars_retained_on_clone_with_ivar
+    obj = Object.new
+    obj.instance_variable_set(:@a, 1)
+    obj.freeze
+
+    cloned_obj = obj.clone
+
+    assert_predicate(obj, :frozen?)
+    assert_equal(obj.instance_variable_get(:@a), 1)
+
+    assert_predicate(cloned_obj, :frozen?)
+    assert_equal(cloned_obj.instance_variable_get(:@a), 1)
+  end
+
   def test_user_flags
     assert_separately([], <<-EOS)
       #

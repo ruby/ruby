@@ -10,7 +10,7 @@ require 'rbconfig'
 class TestGem < Gem::TestCase
   PLUGINS_LOADED = [] # rubocop:disable Style/MutableConstant
 
-  PROJECT_DIR = File.expand_path('../../..', __FILE__).tap(&Gem::UNTAINT)
+  PROJECT_DIR = File.expand_path('../..', __dir__).tap(&Gem::UNTAINT)
 
   def setup
     super
@@ -1061,7 +1061,7 @@ class TestGem < Gem::TestCase
 
     Gem.refresh
 
-    Gem::Specification.each{|spec| assert spec.activated? if spec == s }
+    Gem::Specification.each {|spec| assert spec.activated? if spec == s }
 
     Gem.loaded_specs.delete(s)
     Gem.refresh
@@ -1104,22 +1104,6 @@ class TestGem < Gem::TestCase
     assert_equal Gem::Requirement.create('1.2.3'), Gem.env_requirement('bAr')
     assert_raise(Gem::Requirement::BadRequirementError) { Gem.env_requirement('baz') }
     assert_equal Gem::Requirement.default, Gem.env_requirement('qux')
-  end
-
-  def test_self_ruby_version_with_patchlevel_less_ancient_rubies
-    util_set_RUBY_VERSION '1.8.5'
-
-    assert_equal Gem::Version.new('1.8.5'), Gem.ruby_version
-  ensure
-    util_restore_RUBY_VERSION
-  end
-
-  def test_self_ruby_version_with_release
-    util_set_RUBY_VERSION '1.8.6', 287
-
-    assert_equal Gem::Version.new('1.8.6.287'), Gem.ruby_version
-  ensure
-    util_restore_RUBY_VERSION
   end
 
   def test_self_ruby_version_with_non_mri_implementations
@@ -1446,7 +1430,7 @@ class TestGem < Gem::TestCase
     a = util_spec "a", "1"
     b = util_spec "b", "1", "c" => nil
     c = util_spec "c", "2"
-    d = util_spec "d", "1", {'e' => '= 1'}, "lib/d#{$$}.rb"
+    d = util_spec "d", "1", { 'e' => '= 1' }, "lib/d#{$$}.rb"
     e = util_spec "e", "1"
 
     install_specs a, c, b, e, d

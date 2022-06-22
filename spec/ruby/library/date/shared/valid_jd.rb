@@ -10,23 +10,11 @@ describe :date_valid_jd?, shared: true do
     Date.send(@method, nil).should be_false
   end
 
-  ruby_version_is ''...'2.7' do
-    it "returns true if passed symbol" do
-      Date.send(@method, :number).should be_true
-    end
-
-    it "returns true if passed false" do
-      Date.send(@method, false).should be_true
-    end
+  it "returns false if passed symbol" do
+    Date.send(@method, :number).should be_false
   end
 
-  ruby_version_is '2.7' do
-    it "returns false if passed symbol" do
-      Date.send(@method, :number).should be_false
-    end
-
-    it "returns false if passed false" do
-      Date.send(@method, false).should be_false
-    end
+  it "returns false if passed false" do
+    Date.send(@method, false).should be_false
   end
 end
