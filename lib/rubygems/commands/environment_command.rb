@@ -8,8 +8,8 @@ class Gem::Commands::EnvironmentCommand < Gem::Command
 
   def arguments # :nodoc:
     args = <<-EOF
-          gemdir          display the path where gems are installed
-          gempath         display path used to search for gems
+          home            display the path where gems are installed
+          path            display path used to search for gems
           version         display the gem format version
           remotesources   display the remote gem servers
           platform        display the supported gem platforms
