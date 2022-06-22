@@ -460,10 +460,13 @@ class VCS
     end
 
     def without_gitconfig
-      home = ENV.delete('HOME')
+      envs = %w'HOME XDG_CONFIG_HOME GIT_SYSTEM_CONFIG GIT_CONFIG_SYSTEM'.each_with_object({}) do |v, h|
+        h[v] = ENV.delete(v)
+        ENV[v] = NullDevice if v.start_with?('GIT_')
+      end
       yield
     ensure
-      ENV['HOME'] = home if home
+      ENV.update(envs)
     end
 
     def initialize(*)
