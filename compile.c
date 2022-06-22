@@ -2333,7 +2333,7 @@ iseq_set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *const anchor)
 
     // Calculate the bitmask buffer size.
     // Round the generated_iseq size up to the nearest multiple
-    // of the number if bits in an unsigned long.
+    // of the number of bits in an unsigned long.
 
     // Allocate enough room for the bitmask list
     iseq_bits_t * mark_offset_bits = ZALLOC_N(iseq_bits_t, ISEQ_MBITS_BUFLEN(code_index));
