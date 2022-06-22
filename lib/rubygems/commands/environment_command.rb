@@ -8,8 +8,8 @@ class Gem::Commands::EnvironmentCommand < Gem::Command
 
   def arguments # :nodoc:
     args = <<-EOF
-          home            display the path where gems are installed
-          path            display path used to search for gems
+          home            display the path where gems are installed. Aliases: gemhome, gemdir, GEM_HOME
+          path            display path used to search for gems. Aliases: gempath, GEM_PATH
           version         display the gem format version
           remotesources   display the remote gem servers
           platform        display the supported gem platforms
