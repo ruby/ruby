@@ -193,7 +193,7 @@ rb_iseq_free(const rb_iseq_t *iseq)
 	}
 	ruby_xfree((void *)body->catch_table);
 	ruby_xfree((void *)body->param.opt_table);
-        if (ISEQ_MBITS_BUFLEN(body->iseq_size) > 1) {
+        if (ISEQ_MBITS_BUFLEN(body->iseq_size) > 1 && body->mark_bits.list) {
             ruby_xfree((void *)body->mark_bits.list);
         }
 
@@ -388,9 +388,11 @@ rb_iseq_each_value(const rb_iseq_t *iseq, iseq_value_itr_t * func, void *data)
         iseq_scan_bits(0, body->mark_bits.single, code, func, data);
     }
     else {
-        for (unsigned int i = 0; i < ISEQ_MBITS_BUFLEN(size); i++) {
-            iseq_bits_t bits = body->mark_bits.list[i];
-            iseq_scan_bits(i, bits, code, func, data);
+        if (body->mark_bits.list) {
+            for (unsigned int i = 0; i < ISEQ_MBITS_BUFLEN(size); i++) {
+                iseq_bits_t bits = body->mark_bits.list[i];
+                iseq_scan_bits(i, bits, code, func, data);
+            }
         }
     }
 }
