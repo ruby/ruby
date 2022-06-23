@@ -2336,7 +2336,17 @@ iseq_set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *const anchor)
     // of the number of bits in an unsigned long.
 
     // Allocate enough room for the bitmask list
-    iseq_bits_t * mark_offset_bits = ZALLOC_N(iseq_bits_t, ISEQ_MBITS_BUFLEN(code_index));
+    iseq_bits_t * mark_offset_bits;
+    int code_size = code_index;
+
+    iseq_bits_t tmp[1] = {0};
+
+    if (ISEQ_MBITS_BUFLEN(code_index) == 1) {
+        mark_offset_bits = tmp;
+    }
+    else {
+        mark_offset_bits = ZALLOC_N(iseq_bits_t, ISEQ_MBITS_BUFLEN(code_index));
+    }
 
     list = FIRST_ELEMENT(anchor);
     insns_info_index = code_index = sp = 0;
@@ -2505,7 +2515,9 @@ iseq_set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *const anchor)
 			xfree(generated_iseq);
 			xfree(insns_info);
 			xfree(positions);
-			xfree(mark_offset_bits);
+                        if (ISEQ_MBITS_BUFLEN(code_size) > 1) {
+                            xfree(mark_offset_bits);
+                        }
 			debug_list(anchor, list);
 			COMPILE_ERROR(iseq, adjust->line_no,
 				      "iseq_set_sequence: adjust bug to %d %d < %d",
@@ -2525,7 +2537,13 @@ iseq_set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *const anchor)
     body->iseq_encoded = (void *)generated_iseq;
     body->iseq_size = code_index;
     body->stack_max = stack_max;
-    body->mark_offset_bits = mark_offset_bits;
+
+    if (ISEQ_MBITS_BUFLEN(body->iseq_size) == 1) {
+        body->mark_bits.single = mark_offset_bits[0];
+    }
+    else {
+        body->mark_bits.list = mark_offset_bits;
+    }
 
     /* get rid of memory leak when REALLOC failed */
     body->insns_info.body = insns_info;
@@ -11189,8 +11207,16 @@ ibf_load_code(const struct ibf_load *load, rb_iseq_t *iseq, ibf_offset_t bytecod
     struct rb_call_data *cd_entries = load_body->call_data;
     union iseq_inline_storage_entry *is_entries = load_body->is_entries;
 
-    iseq_bits_t * mark_offset_bits = ZALLOC_N(iseq_bits_t, ISEQ_MBITS_BUFLEN(iseq_size));
-    load_body->mark_offset_bits = mark_offset_bits;
+    iseq_bits_t * mark_offset_bits;
+
+    iseq_bits_t tmp[1] = {0};
+
+    if (ISEQ_MBITS_BUFLEN(iseq_size) == 1) {
+        mark_offset_bits = tmp;
+    }
+    else {
+        mark_offset_bits = ZALLOC_N(iseq_bits_t, ISEQ_MBITS_BUFLEN(iseq_size));
+    }
 
     unsigned int min_ic_index, min_ise_index, min_ivc_index;
     min_ic_index = min_ise_index = min_ivc_index = UINT_MAX;
@@ -11328,6 +11354,13 @@ ibf_load_code(const struct ibf_load *load, rb_iseq_t *iseq, ibf_offset_t bytecod
 
     load_body->iseq_encoded = code;
     load_body->iseq_size = code_index;
+
+    if (ISEQ_MBITS_BUFLEN(load_body->iseq_size) == 1) {
+        load_body->mark_bits.single = mark_offset_bits[0];
+    }
+    else {
+        load_body->mark_bits.list = mark_offset_bits;
+    }
 
     assert(code_index == iseq_size);
     assert(reading_pos == bytecode_offset + bytecode_size);
