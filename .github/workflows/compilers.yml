@@ -242,6 +242,7 @@ jobs:
           --${{ matrix.entry.shared || 'enable' }}-shared
       - run: make extract-extlibs
       - run: make incs
+      - run: make showflags
       - run: make
       - run: make leaked-globals
       - run: make test
