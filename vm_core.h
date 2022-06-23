@@ -946,6 +946,10 @@ struct rb_execution_context_struct {
 
     /* trace information */
     struct rb_trace_arg_struct *trace_arg;
+    struct {
+        VALUE path;
+        int lineno;
+    } trace_override;
 
     /* temporary places */
     VALUE errinfo;

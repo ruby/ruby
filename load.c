@@ -675,8 +675,8 @@ rb_provide(const char *feature)
 
 NORETURN(static void load_failed(VALUE));
 
-static inline void
-load_iseq_eval(rb_execution_context_t *ec, VALUE fname)
+static VALUE
+load_iseq_eval_internal(VALUE fname)
 {
     const rb_iseq_t *iseq = rb_iseq_load_iseq(fname);
 
@@ -689,6 +689,14 @@ load_iseq_eval(rb_execution_context_t *ec, VALUE fname)
                                fname, rb_realpath_internal(Qnil, fname, 1), NULL);
         rb_ast_dispose(ast);
     }
+    return (VALUE)iseq;
+}
+
+static inline void
+load_iseq_eval(rb_execution_context_t *ec, VALUE fname)
+{
+    const rb_iseq_t *iseq = (const rb_iseq_t *)rb_tracepoint_override_path(fname, load_iseq_eval_internal, fname);
+
     rb_exec_event_hook_script_compiled(ec, iseq, Qnil);
     rb_iseq_eval(iseq);
 }

@@ -97,6 +97,10 @@ MJIT_SYMBOL_EXPORT_END
 
 void rb_clear_constant_cache(void);
 
+/* vm_trace.c */
+void *rb_tracepoint_override_path(VALUE path, VALUE (*func)(VALUE), VALUE argument);
+void rb_tracepoint_override_line(int lineno);
+
 /* vm_dump.c */
 void rb_print_backtrace(void);
 

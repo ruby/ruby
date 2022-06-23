@@ -9160,6 +9160,7 @@ static int
 iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, int popped)
 {
     const int line = (int)nd_line(node);
+    rb_tracepoint_override_line(line);
     const enum node_type type = nd_type(node);
     struct rb_iseq_constant_body *const body = ISEQ_BODY(iseq);
 
@@ -11920,6 +11921,7 @@ ibf_load_iseq_each(struct ibf_load *load, rb_iseq_t *iseq, ibf_offset_t offset)
     const VALUE location_base_label_index = ibf_load_small_value(load, &reading_pos);
     const VALUE location_label_index = ibf_load_small_value(load, &reading_pos);
     const VALUE location_first_lineno = ibf_load_small_value(load, &reading_pos);
+    rb_tracepoint_override_line(NUM2INT(location_first_lineno) + 1);
     const int location_node_id = (int)ibf_load_small_value(load, &reading_pos);
     const int location_code_location_beg_pos_lineno = (int)ibf_load_small_value(load, &reading_pos);
     const int location_code_location_beg_pos_column = (int)ibf_load_small_value(load, &reading_pos);

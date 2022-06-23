@@ -256,6 +256,103 @@ class TestObjSpace < Test::Unit::TestCase
     GC.enable
   end
 
+  def test_trace_static_object_allocation
+    Tempfile.create(["foo", ".rb"]) do |f|
+      f.write <<~SRC
+        # frozen_string_literal: true
+        $foo = "foo#{rand}" # 2
+        def set_foo
+          $foo = "bar#{rand}" # 4
+        end
+      SRC
+      f.close
+      assert_separately(%w[-robjspace -rtempfile], <<~RUBY)
+        ObjectSpace.trace_object_allocations do
+          require '#{f.path}'
+        end
+        assert_equal '#{f.path}', ObjectSpace.allocation_sourcefile($foo)
+        assert_equal 'Kernel', ObjectSpace.allocation_class_path($foo)
+        assert_equal 2, ObjectSpace.allocation_sourceline($foo)
+        assert_equal :require, ObjectSpace.allocation_method_id($foo)
+        set_foo
+        assert_equal '#{f.path}', ObjectSpace.allocation_sourcefile($foo)
+        assert_equal 4, ObjectSpace.allocation_sourceline($foo)
+      RUBY
+    end
+  end
+
+  def test_trace_static_object_allocation_load_iseq
+    Tempfile.create(["foo", ".rb"]) do |f|
+      f.write <<~SRC
+        # frozen_string_literal: true
+        $foo = "foo#{rand}" # 2
+        def set_foo
+          $foo = "bar#{rand}" # 4
+        end
+      SRC
+      f.close
+      Tempfile.create(["foo", ".iseq"], binmode: true) do |iseq_file|
+        iseq_file.write(RubyVM::InstructionSequence.compile_file(f.path).to_binary)
+        iseq_file.close
+        assert_separately(%w[-robjspace -rtempfile], <<~RUBY)
+          class RubyVM::InstructionSequence
+            def self.load_iseq(_path)
+              RubyVM::InstructionSequence.load_from_binary(File.binread('#{iseq_file.path}'))
+            end
+          end
+
+          ObjectSpace.trace_object_allocations do
+            require '#{f.path}'
+          end
+          assert_equal '#{f.path}', ObjectSpace.allocation_sourcefile($foo)
+          assert_equal 2, ObjectSpace.allocation_sourceline($foo)
+          assert_nil ObjectSpace.allocation_class_path($foo)
+          assert_equal :load_from_binary, ObjectSpace.allocation_method_id($foo)
+          set_foo
+          assert_equal '#{f.path}', ObjectSpace.allocation_sourcefile($foo)
+          assert_equal 4, ObjectSpace.allocation_sourceline($foo)
+        RUBY
+      end
+    end
+  end
+
+  def test_trace_static_object_allocation_load_iseq_2
+    if defined?(JSON)
+      Tempfile.create(["foo", ".rb"]) do |f|
+        f.write <<~SRC
+          # frozen_string_literal: true
+          def get_foo
+            { "bar#{rand}" => 1 } # 3
+          end
+        SRC
+        f.close
+        Tempfile.create(["foo", ".iseq"], binmode: true) do |iseq_file|
+          iseq_file.write(RubyVM::InstructionSequence.compile_file(f.path).to_binary)
+          iseq_file.close
+          assert_separately(%w[-robjspace -rtempfile -rjson], <<~RUBY)
+            class RubyVM::InstructionSequence
+              def self.load_iseq(_path)
+                RubyVM::InstructionSequence.load_from_binary(File.binread('#{iseq_file.path}'))
+              end
+            end
+
+            GC.start
+            generation = GC.count
+            ObjectSpace.trace_object_allocations do
+              require '#{f.path}'
+            end
+
+            dump = ObjectSpace.dump_all(output: :string, since: generation).lines.map { |o| JSON.parse(o) }
+            candidates = dump.select { |o| o["type"] == "HASH" && o["file"] == '#{f.path}' && o["references"]&.size == 1 && o["class"].nil? }
+            assert_equal 1, candidates.size
+            hidden_hash = candidates.first
+            assert_equal '#{f.path}', hidden_hash["file"]
+            assert_equal 3, hidden_hash["line"]
+          RUBY
+        end
+      end
+    end
+  end
   def test_trace_object_allocations_gc_stress
     EnvUtil.under_gc_stress do
       ObjectSpace.trace_object_allocations{

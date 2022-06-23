@@ -673,6 +673,12 @@ get_event_id(rb_event_flag_t event)
 static void
 get_path_and_lineno(const rb_execution_context_t *ec, const rb_control_frame_t *cfp, rb_event_flag_t event, VALUE *pathp, int *linep)
 {
+    if (RTEST(ec->trace_override.path)) {
+        *pathp = ec->trace_override.path;
+        *linep = ec->trace_override.lineno;
+        return;
+    }
+
     cfp = rb_vm_get_ruby_level_next_cfp(ec, cfp);
 
     if (cfp) {
@@ -1794,4 +1800,44 @@ rb_postponed_job_flush(rb_vm_t *vm)
 
         RUBY_VM_SET_POSTPONED_JOB_INTERRUPT(GET_EC());
     }
+}
+
+typedef struct trace_override_data {
+    rb_execution_context_t *ec;
+    VALUE path;
+    int lineno;
+} trace_override_data_t;
+
+static VALUE
+tracepoint_override_restore(VALUE data) {
+    trace_override_data_t *previous_state = (trace_override_data_t *)data;
+    rb_execution_context_t *ec = previous_state->ec;
+    ec->trace_override.path = previous_state->path;
+    ec->trace_override.lineno = previous_state->lineno;
+    return Qnil;
+}
+
+void *
+rb_tracepoint_override_path(VALUE path, VALUE (*func)(VALUE), VALUE argument)
+{
+    rb_execution_context_t *ec = GET_EC();
+    trace_override_data_t previous_state = {
+        .ec = ec,
+        .path = ec->trace_override.path,
+        .lineno = ec->trace_override.lineno
+    };
+    ec->trace_override.path = path;
+    ec->trace_override.lineno = 0;
+
+    return (void *)rb_ensure(
+        func, argument,
+        tracepoint_override_restore, (VALUE)&previous_state
+    );
+}
+
+void
+rb_tracepoint_override_line(int lineno)
+{
+    rb_execution_context_t *ec = GET_EC();
+    ec->trace_override.lineno = lineno;
 }

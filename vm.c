@@ -3081,6 +3081,7 @@ rb_execution_context_mark(const rb_execution_context_t *ec)
 			     sizeof(ec->machine.regs) / (sizeof(VALUE)));
     }
 
+    RUBY_MARK_UNLESS_NULL(ec->trace_override.path);
     RUBY_MARK_UNLESS_NULL(ec->errinfo);
     RUBY_MARK_UNLESS_NULL(ec->root_svar);
     if (ec->local_storage) {
