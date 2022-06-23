@@ -188,7 +188,6 @@ Added '/CN=alternate/DC=example'
     @build_ui = Gem::MockGemUi.new "#{passphrase}\n#{passphrase}"
 
     use_ui @build_ui do
-
       e = assert_raise Gem::CommandLineError do
         @cmd.execute
       end
@@ -266,7 +265,6 @@ Added '/CN=alternate/DC=example'
 
       assert_equal "Passphrase and passphrase confirmation don't match",
                    e.message
-
     end
 
     assert_path_not_exist File.join(@tempdir, 'gem-private_key.pem')

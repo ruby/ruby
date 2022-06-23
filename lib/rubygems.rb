@@ -607,7 +607,6 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
     return if @yaml_loaded
 
     require 'psych'
-    require_relative 'rubygems/psych_additions'
     require_relative 'rubygems/psych_tree'
 
     require_relative 'rubygems/safe_yaml'
@@ -1018,7 +1017,6 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
 
   def self.load_plugin_files(plugins) # :nodoc:
     plugins.each do |plugin|
-
       # Skip older versions of the GemCutter plugin: Its commands are in
       # RubyGems proper now.
 

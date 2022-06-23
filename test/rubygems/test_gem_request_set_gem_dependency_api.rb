@@ -758,13 +758,11 @@ end
     with_engine_version 'jruby', '1.7.6' do
       assert @gda.ruby RUBY_VERSION,
                :engine => 'jruby', :engine_version => '1.7.6'
-
     end
 
     with_engine_version 'truffleruby', '1.0.0-rc11' do
       assert @gda.ruby RUBY_VERSION,
                :engine => 'truffleruby', :engine_version => '1.0.0-rc11'
-
     end
   end
 

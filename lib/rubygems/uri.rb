@@ -5,6 +5,44 @@
 #
 
 class Gem::Uri
+  ##
+  # Parses and redacts uri
+
+  def self.redact(uri)
+    new(uri).redacted
+  end
+
+  ##
+  # Parses uri, raising if it's invalid
+
+  def self.parse!(uri)
+    require "uri"
+
+    raise URI::InvalidURIError unless uri
+
+    return uri unless uri.is_a?(String)
+
+    # Always escape URI's to deal with potential spaces and such
+    # It should also be considered that source_uri may already be
+    # a valid URI with escaped characters. e.g. "{DESede}" is encoded
+    # as "%7BDESede%7D". If this is escaped again the percentage
+    # symbols will be escaped.
+    begin
+      URI.parse(uri)
+    rescue URI::InvalidURIError
+      URI.parse(URI::DEFAULT_PARSER.escape(uri))
+    end
+  end
+
+  ##
+  # Parses uri, returning the original uri if it's invalid
+
+  def self.parse(uri)
+    parse!(uri)
+  rescue URI::InvalidURIError
+    uri
+  end
+
   def initialize(source_uri)
     @parsed_uri = parse(source_uri)
   end
@@ -26,7 +64,7 @@ class Gem::Uri
   end
 
   def redact_credentials_from(text)
-    return text unless valid_uri? && password?
+    return text unless valid_uri? && password? && text.include?(to_s)
 
     text.sub(password, 'REDACTED')
   end
@@ -50,35 +88,12 @@ class Gem::Uri
 
   private
 
-  ##
-  # Parses the #uri, raising if it's invalid
-
   def parse!(uri)
-    require "uri"
-
-    raise URI::InvalidURIError unless uri
-
-    # Always escape URI's to deal with potential spaces and such
-    # It should also be considered that source_uri may already be
-    # a valid URI with escaped characters. e.g. "{DESede}" is encoded
-    # as "%7BDESede%7D". If this is escaped again the percentage
-    # symbols will be escaped.
-    begin
-      URI.parse(uri)
-    rescue URI::InvalidURIError
-      URI.parse(URI::DEFAULT_PARSER.escape(uri))
-    end
+    self.class.parse!(uri)
   end
 
-  ##
-  # Parses the #uri, returning the original uri if it's invalid
-
   def parse(uri)
-    return uri unless uri.is_a?(String)
-
-    parse!(uri)
-  rescue URI::InvalidURIError
-    uri
+    self.class.parse(uri)
   end
 
   def with_redacted_user

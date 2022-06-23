@@ -444,7 +444,7 @@ class TestGemRequire < Gem::TestCase
   end
 
   def test_realworld_default_gem
-    omit "this test can't work under ruby-core setup" if testing_ruby_repo?
+    omit "this test can't work under ruby-core setup" if ruby_repo?
 
     cmd = <<-RUBY
       $stderr = $stdout
@@ -457,7 +457,7 @@ class TestGemRequire < Gem::TestCase
   end
 
   def test_realworld_upgraded_default_gem
-    omit "this test can't work under ruby-core setup" if testing_ruby_repo?
+    omit "this test can't work under ruby-core setup" if ruby_repo?
 
     newer_json = util_spec("json", "999.99.9", nil, ["lib/json.rb"])
     install_gem newer_json

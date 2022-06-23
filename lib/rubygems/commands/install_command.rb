@@ -261,7 +261,7 @@ You can use `i` command instead of `install`.
       return unless Gem::SourceFetchProblem === x
 
       require_relative "../uri"
-      msg = "Unable to pull data from '#{Gem::Uri.new(x.source.uri).redacted}': #{x.error.message}"
+      msg = "Unable to pull data from '#{Gem::Uri.redact(x.source.uri)}': #{x.error.message}"
 
       alert_warning msg
     end

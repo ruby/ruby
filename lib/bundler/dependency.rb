@@ -9,6 +9,7 @@ module Bundler
     attr_reader :autorequire
     attr_reader :groups, :platforms, :gemfile, :git, :github, :branch, :ref
 
+    # rubocop:disable Naming/VariableNumber
     PLATFORM_MAP = {
       :ruby     => Gem::Platform::RUBY,
       :ruby_18  => Gem::Platform::RUBY,
@@ -91,6 +92,7 @@ module Bundler
       :x64_mingw_30 => Gem::Platform::X64_MINGW,
       :x64_mingw_31 => Gem::Platform::X64_MINGW,
     }.freeze
+    # rubocop:enable Naming/VariableNumber
 
     def initialize(name, version, options = {}, &blk)
       type = options["type"] || :runtime

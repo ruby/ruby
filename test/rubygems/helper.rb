@@ -1191,7 +1191,7 @@ Also, a list:
   # Is this test being run on a ruby/ruby repository?
   #
 
-  def testing_ruby_repo?
+  def ruby_repo?
     !ENV["GEM_COMMAND"].nil?
   end
 

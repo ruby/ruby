@@ -219,13 +219,11 @@ module Bundler
       # across different projects, this cache will be shared.
       # When using local git repos, this is set to the local repo.
       def cache_path
-        @cache_path ||= begin
-          if Bundler.requires_sudo? || Bundler.feature_flag.global_gem_cache?
-            Bundler.user_cache
-          else
-            Bundler.bundle_path.join("cache", "bundler")
-          end.join("git", git_scope)
-        end
+        @cache_path ||= if Bundler.requires_sudo? || Bundler.feature_flag.global_gem_cache?
+          Bundler.user_cache
+        else
+          Bundler.bundle_path.join("cache", "bundler")
+        end.join("git", git_scope)
       end
 
       def app_cache_dirname
