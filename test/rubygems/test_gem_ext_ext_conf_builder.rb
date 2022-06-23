@@ -50,7 +50,6 @@ class TestGemExtExtConfBuilder < Gem::TestCase
     end
 
     configure_args do
-
       File.open File.join(@ext, 'extconf.rb'), 'w' do |extconf|
         extconf.puts "require 'mkmf'\ncreate_makefile 'foo'"
       end

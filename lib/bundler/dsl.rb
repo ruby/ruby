@@ -511,9 +511,7 @@ module Bundler
       #         be raised.
       #
       def contents
-        @contents ||= begin
-          dsl_path && File.exist?(dsl_path) && File.read(dsl_path)
-        end
+        @contents ||= dsl_path && File.exist?(dsl_path) && File.read(dsl_path)
       end
 
       # The message of the exception reports the content of podspec for the
