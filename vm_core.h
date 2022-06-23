@@ -465,7 +465,10 @@ struct rb_iseq_constant_body {
     unsigned int ivc_size; // Number of IVC and ICVARC caches
     unsigned int ci_size;
     unsigned int stack_max; /* for stack overflow check */
-    iseq_bits_t * mark_offset_bits; /* Find references for GC */
+    union {
+        iseq_bits_t * list; /* Find references for GC */
+        iseq_bits_t single;
+    } mark_bits;
 
     char catch_except_p; /* If a frame of this ISeq may catch exception, set TRUE */
     // If true, this ISeq is leaf *and* backtraces are not used, for example,

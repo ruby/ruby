@@ -193,7 +193,9 @@ rb_iseq_free(const rb_iseq_t *iseq)
 	}
 	ruby_xfree((void *)body->catch_table);
 	ruby_xfree((void *)body->param.opt_table);
-	ruby_xfree((void *)body->mark_offset_bits);
+        if (ISEQ_MBITS_BUFLEN(body->iseq_size) > 1) {
+            ruby_xfree((void *)body->mark_bits.list);
+        }
 
 	if (body->param.keyword != NULL) {
 	    ruby_xfree((void *)body->param.keyword->default_values);
@@ -313,6 +315,25 @@ iseq_extract_values(VALUE *code, size_t pos, iseq_value_itr_t * func, void *data
     return len;
 }
 
+static inline void
+iseq_scan_bits(unsigned int i, iseq_bits_t bits, VALUE *code, iseq_value_itr_t *func, void *data)
+{
+    unsigned int count = 0;
+
+    while(bits) {
+        if (bits & 0x1) {
+            unsigned int index = (i * ISEQ_MBITS_BITLENGTH) + count;
+            VALUE op = code[index];
+            VALUE newop = func(data, op);
+            if (newop != op) {
+                code[index] = newop;
+            }
+        }
+        bits >>= 1;
+        count++;
+    }
+}
+
 static void
 rb_iseq_each_value(const rb_iseq_t *iseq, iseq_value_itr_t * func, void *data)
 {
@@ -363,23 +384,13 @@ rb_iseq_each_value(const rb_iseq_t *iseq, iseq_value_itr_t * func, void *data)
     }
 
     // Embedded VALUEs
-    for (unsigned int i = 0; i < ISEQ_MBITS_BUFLEN(size); i++) {
-        iseq_bits_t bits = body->mark_offset_bits[i];
-        if (bits) {
-            unsigned int count = 0;
-
-            while(bits) {
-                if (bits & 0x1) {
-                    unsigned int index = (i * ISEQ_MBITS_BITLENGTH) + count;
-                    VALUE op = code[index];
-                    VALUE newop = func(data, op);
-                    if (newop != op) {
-                        code[index] = newop;
-                    }
-                }
-                bits >>= 1;
-                count++;
-            }
+    if (ISEQ_MBITS_BUFLEN(size) == 1) {
+        iseq_scan_bits(0, body->mark_bits.single, code, func, data);
+    }
+    else {
+        for (unsigned int i = 0; i < ISEQ_MBITS_BUFLEN(size); i++) {
+            iseq_bits_t bits = body->mark_bits.list[i];
+            iseq_scan_bits(i, bits, code, func, data);
         }
     }
 }
