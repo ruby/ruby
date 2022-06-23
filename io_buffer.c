@@ -680,10 +680,10 @@ io_buffer_hexdump(VALUE string, size_t width, char *base, size_t size, int first
     for (size_t offset = 0; offset < size; offset += width) {
         memset(text, '\0', width);
         if (first) {
-            rb_str_catf(string, "0x%08zx ", offset);
+            rb_str_catf(string, "0x%08" PRIxSIZE " ", offset);
             first = 0;
         } else {
-            rb_str_catf(string, "\n0x%08zx ", offset);
+            rb_str_catf(string, "\n0x%08" PRIxSIZE " ", offset);
         }
 
         for (size_t i = 0; i < width; i += 1) {

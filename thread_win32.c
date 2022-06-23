@@ -213,7 +213,7 @@ w32_wait_events(HANDLE *events, int count, DWORD timeout, rb_thread_t *th)
     DWORD ret;
 
     w32_event_debug("events:%p, count:%d, timeout:%ld, th:%u\n",
-                    events, count, timeout, th ? rb_th_serial(th) : -1);
+                    events, count, timeout, th ? rb_th_serial(th) : UINT_MAX);
 
     if (th && (intr = th->nt->interrupt_event)) {
 	if (ResetEvent(intr) && (!RUBY_VM_INTERRUPTED(th->ec) || SetEvent(intr))) {
@@ -347,6 +347,7 @@ native_sleep(rb_thread_t *th, rb_hrtime_t *rel)
 	    RUBY_DEBUG_LOG("start msec:%lu", msec);
 	    ret = w32_wait_events(0, 0, msec, th);
 	    RUBY_DEBUG_LOG("done ret:%lu", ret);
+	    (void)ret;
 	}
 
         rb_native_mutex_lock(&th->interrupt_lock);

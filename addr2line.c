@@ -1292,7 +1292,7 @@ hexdump0(const unsigned char *p, size_t n)
     for (i=0; i < n; i++){
         switch (i & 15) {
           case 0:
-            fprintf(stderr, "%02zd: %02X ", i/16, p[i]);
+            fprintf(stderr, "%02" PRIdSIZE ": %02X ", i/16, p[i]);
             break;
           case 15:
             fprintf(stderr, "%02X\n", p[i]);
@@ -1313,16 +1313,16 @@ div_inspect(DebugInfoValue *v)
 {
     switch (v->type) {
       case VAL_uint:
-        fprintf(stderr,"%d: type:%d size:%zx v:%"PRIx64"\n",__LINE__,v->type,v->size,v->as.uint64);
+        fprintf(stderr,"%d: type:%d size:%" PRIxSIZE " v:%"PRIx64"\n",__LINE__,v->type,v->size,v->as.uint64);
         break;
       case VAL_int:
-        fprintf(stderr,"%d: type:%d size:%zx v:%"PRId64"\n",__LINE__,v->type,v->size,(int64_t)v->as.uint64);
+        fprintf(stderr,"%d: type:%d size:%" PRIxSIZE " v:%"PRId64"\n",__LINE__,v->type,v->size,(int64_t)v->as.uint64);
         break;
       case VAL_cstr:
-        fprintf(stderr,"%d: type:%d size:%zx v:'%s'\n",__LINE__,v->type,v->size,v->as.ptr);
+        fprintf(stderr,"%d: type:%d size:%" PRIxSIZE " v:'%s'\n",__LINE__,v->type,v->size,v->as.ptr);
         break;
       case VAL_data:
-        fprintf(stderr,"%d: type:%d size:%zx v:\n",__LINE__,v->type,v->size);
+        fprintf(stderr,"%d: type:%d size:%" PRIxSIZE " v:\n",__LINE__,v->type,v->size);
         hexdump(v->as.ptr, 16);
         break;
     }
