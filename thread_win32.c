@@ -33,12 +33,14 @@ rb_internal_thread_event_hook_t *
 rb_internal_thread_add_event_hook(rb_internal_thread_event_callback callback, rb_event_flag_t internal_event, void *user_data)
 {
     // not implemented
+    return NULL;
 }
 
 bool
 rb_internal_thread_remove_event_hook(rb_internal_thread_event_hook_t * hook)
 {
     // not implemented
+    return false;
 }
 
 RBIMPL_ATTR_NORETURN()
