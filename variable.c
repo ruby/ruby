@@ -2620,7 +2620,7 @@ autoload_apply_constants(VALUE _arguments)
 
     struct autoload_load_arguments *arguments = (struct autoload_load_arguments*)_arguments;
 
-    struct autoload_const *autoload_const;
+    struct autoload_const *autoload_const = 0; // for ccan_container_off_var()
     struct autoload_const *next;
 
     // We use safe iteration here because `autoload_const_set` will eventually invoke
