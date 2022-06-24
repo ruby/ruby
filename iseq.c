@@ -221,12 +221,6 @@ rb_vm_insn_addr2insn2(const void *addr)
 }
 #endif
 
-static VALUE
-rb_vm_insn_null_translator(const void *addr)
-{
-    return (VALUE)addr;
-}
-
 // The translator for OPT_DIRECT_THREADED_CODE and OPT_CALL_THREADED_CODE does
 // some normalization to always return the non-trace version of instructions. To
 // mirror that behavior in token-threaded environments, we normalize in this
@@ -246,85 +240,22 @@ rb_vm_insn_normalizing_translator(const void *addr)
 typedef VALUE iseq_value_itr_t(void *ctx, VALUE obj);
 typedef VALUE rb_vm_insns_translator_t(const void *addr);
 
-static int
-iseq_extract_values(VALUE *code, size_t pos, iseq_value_itr_t * func, void *data, rb_vm_insns_translator_t * translator)
-{
-    VALUE insn = translator((void *)code[pos]);
-    int len = insn_len(insn);
-    int op_no;
-    const char *types = insn_op_types(insn);
-
-    for (op_no = 0; types[op_no]; op_no++) {
-	char type = types[op_no];
-	switch (type) {
-          case TS_CDHASH:
-          case TS_ISEQ:
-          case TS_VALUE:
-            {
-              VALUE op = code[pos + op_no + 1];
-              if (!SPECIAL_CONST_P(op)) {
-                  VALUE newop = func(data, op);
-                  if (newop != op) {
-                      code[pos + op_no + 1] = newop;
-                  }
-              }
-            }
-            break;
-          case TS_IC:
-            {
-                IC ic = (IC)code[pos + op_no + 1];
-                if (ic->entry) {
-                    VALUE nv = func(data, (VALUE)ic->entry);
-                    if ((VALUE)ic->entry != nv) {
-                        ic->entry = (void *)nv;
-                    }
-                }
-            }
-            break;
-          case TS_IVC:
-          case TS_ICVARC:
-            {
-                IVC ivc = (IVC)code[pos + op_no + 1];
-                if (ivc->entry) {
-                    if (RB_TYPE_P(ivc->entry->class_value, T_NONE)) {
-                        rb_bug("!! %u", ivc->entry->index);
-                    }
-                    VALUE nv = func(data, ivc->entry->class_value);
-                    if (ivc->entry->class_value != nv) {
-                        ivc->entry->class_value = nv;
-                    }
-                }
-            }
-            break;
-          case TS_ISE:
-            {
-              union iseq_inline_storage_entry *const is = (union iseq_inline_storage_entry *)code[pos + op_no + 1];
-              if (is->once.value) {
-                  VALUE nv = func(data, is->once.value);
-                  if (is->once.value != nv) {
-                      is->once.value = nv;
-                  }
-              }
-            }
-            break;
-          default:
-            break;
-	}
-    }
-
-    return len;
-}
-
 static inline void
-iseq_scan_bits(iseq_bits_t bits, VALUE *code, iseq_value_itr_t *func, void *data)
+iseq_scan_bits(unsigned int page, iseq_bits_t bits, VALUE *code, iseq_value_itr_t *func, void *data)
 {
     unsigned int offset;
+    unsigned int page_offset = (page * ISEQ_MBITS_BITLENGTH);
+
     while (bits) {
         offset = ntz_intptr(bits);
-        VALUE op = code[offset];
+        VALUE op = code[page_offset + offset];
         VALUE newop = func(data, op);
         if (newop != op) {
-            code[offset] = newop;
+            code[page_offset + offset] = newop;
+            if (data) {
+                VALUE *original_iseq = (VALUE *)data;
+                original_iseq[page_offset + offset] = newop;
+            }
         }
         bits ^= bits & -bits; // Reset Lowest Set Bit (BLSR)
     }
@@ -381,13 +312,13 @@ rb_iseq_each_value(const rb_iseq_t *iseq, iseq_value_itr_t * func, void *data)
 
     // Embedded VALUEs
     if (ISEQ_MBITS_BUFLEN(size) == 1) {
-        iseq_scan_bits(body->mark_bits.single, code, func, data);
+        iseq_scan_bits(0, body->mark_bits.single, code, func, data);
     }
     else {
         if (body->mark_bits.list) {
             for (unsigned int i = 0; i < ISEQ_MBITS_BUFLEN(size); i++) {
                 iseq_bits_t bits = body->mark_bits.list[i];
-                iseq_scan_bits(bits, &code[i * ISEQ_MBITS_BITLENGTH], func, data);
+                iseq_scan_bits(i, bits, code, func, data);
             }
         }
     }
@@ -463,15 +394,8 @@ rb_iseq_update_references(rb_iseq_t *iseq)
             }
         }
         if (FL_TEST((VALUE)iseq, ISEQ_MARKABLE_ISEQ)) {
-            rb_iseq_each_value(iseq, update_each_insn_value, NULL);
             VALUE *original_iseq = ISEQ_ORIGINAL_ISEQ(iseq);
-            if (original_iseq) {
-                size_t n = 0;
-                const unsigned int size = body->iseq_size;
-                while (n < size) {
-                    n += iseq_extract_values(original_iseq, n, update_each_insn_value, NULL, rb_vm_insn_null_translator);
-                }
-            }
+            rb_iseq_each_value(iseq, update_each_insn_value, (void *)original_iseq);
         }
 
         if (body->param.flags.has_kw && ISEQ_COMPILE_DATA(iseq) == NULL) {
