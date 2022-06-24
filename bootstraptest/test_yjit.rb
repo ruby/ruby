@@ -1,3 +1,23 @@
+assert_equal 'true', %q{
+  # regression test for tracking type of locals for too long
+  def local_setting_cmp(five)
+    victim = 5
+    five.define_singleton_method(:respond_to?) do |_, _|
+      victim = nil
+    end
+
+    # +1 makes YJIT track that victim is a number and
+    # defined? calls respond_to? from above indirectly
+    unless (victim + 1) && defined?(five.something)
+      # Would return wrong result if we still think `five` is a number
+      victim.nil?
+    end
+  end
+
+  local_setting_cmp(Object.new)
+  local_setting_cmp(Object.new)
+}
+
 assert_equal '18374962167983112447', %q{
   # regression test for incorrectly discarding 32 bits of a pointer when it
   # comes to default values.
