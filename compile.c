@@ -2353,8 +2353,6 @@ iseq_set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *const anchor)
     insns_info_index = code_index = sp = 0;
 
     while (list) {
-        unsigned int ic_index = 0;
-
 	switch (list->type) {
 	  case ISEQ_ELEMENT_INSN:
 	    {
@@ -2373,7 +2371,9 @@ iseq_set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *const anchor)
 		len = insn_len(insn);
 
 		for (j = 0; types[j]; j++) {
+                    unsigned int ic_index = 0;
 		    char type = types[j];
+
 		    /* printf("--> [%c - (%d-%d)]\n", type, k, j); */
 		    switch (type) {
 		      case TS_OFFSET:
@@ -10727,7 +10727,7 @@ typedef unsigned int ibf_offset_t;
 
 #define IBF_MAJOR_VERSION ISEQ_MAJOR_VERSION
 #if RUBY_DEVEL
-#define IBF_DEVEL_VERSION 3
+#define IBF_DEVEL_VERSION 4
 #define IBF_MINOR_VERSION (ISEQ_MINOR_VERSION * 10000 + IBF_DEVEL_VERSION)
 #else
 #define IBF_MINOR_VERSION ISEQ_MINOR_VERSION
@@ -11205,7 +11205,7 @@ ibf_dump_code(struct ibf_dump *dump, const rb_iseq_t *iseq)
 }
 
 static VALUE *
-ibf_load_code(const struct ibf_load *load, rb_iseq_t *iseq, ibf_offset_t bytecode_offset, ibf_offset_t bytecode_size, unsigned int iseq_size, const unsigned int is_size)
+ibf_load_code(const struct ibf_load *load, rb_iseq_t *iseq, ibf_offset_t bytecode_offset, ibf_offset_t bytecode_size, unsigned int iseq_size)
 {
     VALUE iseqv = (VALUE)iseq;
     unsigned int code_index;
@@ -11227,9 +11227,6 @@ ibf_load_code(const struct ibf_load *load, rb_iseq_t *iseq, ibf_offset_t bytecod
         mark_offset_bits = ZALLOC_N(iseq_bits_t, ISEQ_MBITS_BUFLEN(iseq_size));
     }
     bool needs_bitmap = false;
-
-    unsigned int min_ic_index, min_ise_index, min_ivc_index;
-    min_ic_index = min_ise_index = min_ivc_index = UINT_MAX;
 
     for (code_index=0; code_index<iseq_size;) {
         /* opcode */
@@ -11298,24 +11295,6 @@ ibf_load_code(const struct ibf_load *load, rb_iseq_t *iseq, ibf_offset_t bytecod
                 {
                     unsigned int op = (unsigned int)ibf_load_small_value(load, &reading_pos);
 
-                    switch(operand_type)
-                    {
-                        case TS_IC:
-                          if (op < min_ic_index) {
-                              min_ic_index = op;
-                          }
-                          break;
-                        case TS_ISE:
-                          if (op < min_ise_index) {
-                              min_ise_index = op;
-                          }
-                          break;
-                        default:
-                          if (op < min_ivc_index) {
-                              min_ivc_index = op;
-                          }
-                    }
-
                     code[code_index] = (VALUE)&is_entries[op];
 
                     if (insn == BIN(opt_getinlinecache) && operand_type == TS_IC) {
@@ -11351,18 +11330,6 @@ ibf_load_code(const struct ibf_load *load, rb_iseq_t *iseq, ibf_offset_t bytecod
         if (insn_len(insn) != op_index+1) {
             rb_raise(rb_eRuntimeError, "operand size mismatch");
         }
-    }
-
-    if (min_ic_index != UINT_MAX) {
-        load_body->ic_size = is_size - min_ic_index;
-    }
-
-    if (min_ise_index != UINT_MAX) {
-        load_body->ise_size = (is_size - load_body->ic_size) - min_ise_index;
-    }
-
-    if (min_ivc_index != UINT_MAX) {
-        load_body->ivc_size = (is_size - load_body->ic_size - load_body->ise_size) - min_ivc_index;
     }
 
     load_body->iseq_encoded = code;
@@ -11861,7 +11828,9 @@ ibf_dump_iseq_each(struct ibf_dump *dump, const rb_iseq_t *iseq)
     ibf_dump_write_small_value(dump, IBF_BODY_OFFSET(outer_variables_offset));
     ibf_dump_write_small_value(dump, body->variable.flip_count);
     ibf_dump_write_small_value(dump, body->local_table_size);
-    ibf_dump_write_small_value(dump, ISEQ_IS_SIZE(body));
+    ibf_dump_write_small_value(dump, body->ivc_size);
+    ibf_dump_write_small_value(dump, body->ise_size);
+    ibf_dump_write_small_value(dump, body->ic_size);
     ibf_dump_write_small_value(dump, body->ci_size);
     ibf_dump_write_small_value(dump, body->stack_max);
     ibf_dump_write_small_value(dump, body->catch_except_p);
@@ -11969,7 +11938,11 @@ ibf_load_iseq_each(struct ibf_load *load, rb_iseq_t *iseq, ibf_offset_t offset)
     const ibf_offset_t outer_variables_offset = (ibf_offset_t)IBF_BODY_OFFSET(ibf_load_small_value(load, &reading_pos));
     const rb_snum_t variable_flip_count = (rb_snum_t)ibf_load_small_value(load, &reading_pos);
     const unsigned int local_table_size = (unsigned int)ibf_load_small_value(load, &reading_pos);
-    const unsigned int is_size = (unsigned int)ibf_load_small_value(load, &reading_pos);
+
+    const unsigned int ivc_size = (unsigned int)ibf_load_small_value(load, &reading_pos);
+    const unsigned int ise_size = (unsigned int)ibf_load_small_value(load, &reading_pos);
+    const unsigned int ic_size = (unsigned int)ibf_load_small_value(load, &reading_pos);
+
     const unsigned int ci_size = (unsigned int)ibf_load_small_value(load, &reading_pos);
     const unsigned int stack_max = (unsigned int)ibf_load_small_value(load, &reading_pos);
     const char catch_except_p = (char)ibf_load_small_value(load, &reading_pos);
@@ -12014,7 +11987,10 @@ ibf_load_iseq_each(struct ibf_load *load, rb_iseq_t *iseq, ibf_offset_t offset)
     load_body->catch_except_p = catch_except_p;
     load_body->builtin_inline_p = builtin_inline_p;
 
-    load_body->is_entries           = ZALLOC_N(union iseq_inline_storage_entry, is_size);
+    load_body->ivc_size             = ivc_size;
+    load_body->ise_size             = ise_size;
+    load_body->ic_size              = ic_size;
+    load_body->is_entries           = ZALLOC_N(union iseq_inline_storage_entry, ISEQ_IS_SIZE(load_body));
                                       ibf_load_ci_entries(load, ci_entries_offset, ci_size, &load_body->call_data);
     load_body->outer_variables      = ibf_load_outer_variables(load, outer_variables_offset);
     load_body->param.opt_table      = ibf_load_param_opt_table(load, param_opt_table_offset, param_opt_num);
@@ -12028,7 +12004,7 @@ ibf_load_iseq_each(struct ibf_load *load, rb_iseq_t *iseq, ibf_offset_t offset)
     load_body->local_iseq           = ibf_load_iseq(load, (const rb_iseq_t *)(VALUE)local_iseq_index);
     load_body->mandatory_only_iseq  = ibf_load_iseq(load, (const rb_iseq_t *)(VALUE)mandatory_only_iseq_index);
 
-    ibf_load_code(load, iseq, bytecode_offset, bytecode_size, iseq_size, is_size);
+    ibf_load_code(load, iseq, bytecode_offset, bytecode_size, iseq_size);
 #if VM_INSN_INFO_TABLE_IMPL == 2
     rb_iseq_insns_info_encode_positions(iseq);
 #endif
