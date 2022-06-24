@@ -13,15 +13,15 @@ pub struct BranchCond {
     /// The kind of condition to check before branching.
     cond: Condition,
 
-    /// The offset from the branch of this instruction to branch to.
+    /// The instruction offset from this instruction to branch to.
     imm19: i32
 }
 
 impl BranchCond {
     /// B.cond
     /// https://developer.arm.com/documentation/ddi0596/2020-12/Base-Instructions/B-cond--Branch-conditionally-
-    pub fn bcond(cond: Condition, offset: i32) -> Self {
-        Self { cond, imm19: offset >> 2 }
+    pub fn bcond(cond: Condition, byte_offset: i32) -> Self {
+        Self { cond, imm19: byte_offset >> 2 }
     }
 }
 
