@@ -119,6 +119,12 @@ class Gem::TestCase < Test::Unit::TestCase
     assert File.directory?(path), msg
   end
 
+  def refute_directory_exists(path, msg = nil)
+    msg = build_message(msg, "Expected path '#{path}' not to be a directory")
+    assert_path_not_exist path
+    refute File.directory?(path), msg
+  end
+
   # https://github.com/seattlerb/minitest/blob/21d9e804b63c619f602f3f4ece6c71b48974707a/lib/minitest/assertions.rb#L188
   def _synchronize
     yield
