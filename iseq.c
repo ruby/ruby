@@ -316,21 +316,17 @@ iseq_extract_values(VALUE *code, size_t pos, iseq_value_itr_t * func, void *data
 }
 
 static inline void
-iseq_scan_bits(unsigned int i, iseq_bits_t bits, VALUE *code, iseq_value_itr_t *func, void *data)
+iseq_scan_bits(iseq_bits_t bits, VALUE *code, iseq_value_itr_t *func, void *data)
 {
-    unsigned int count = 0;
-
-    while(bits) {
-        if (bits & 0x1) {
-            unsigned int index = (i * ISEQ_MBITS_BITLENGTH) + count;
-            VALUE op = code[index];
-            VALUE newop = func(data, op);
-            if (newop != op) {
-                code[index] = newop;
-            }
+    unsigned int offset;
+    while (bits) {
+        offset = ntz_intptr(bits);
+        VALUE op = code[offset];
+        VALUE newop = func(data, op);
+        if (newop != op) {
+            code[offset] = newop;
         }
-        bits >>= 1;
-        count++;
+        bits ^= bits & -bits; // Reset Lowest Set Bit (BLSR)
     }
 }
 
@@ -385,13 +381,13 @@ rb_iseq_each_value(const rb_iseq_t *iseq, iseq_value_itr_t * func, void *data)
 
     // Embedded VALUEs
     if (ISEQ_MBITS_BUFLEN(size) == 1) {
-        iseq_scan_bits(0, body->mark_bits.single, code, func, data);
+        iseq_scan_bits(body->mark_bits.single, code, func, data);
     }
     else {
         if (body->mark_bits.list) {
             for (unsigned int i = 0; i < ISEQ_MBITS_BUFLEN(size); i++) {
                 iseq_bits_t bits = body->mark_bits.list[i];
-                iseq_scan_bits(i, bits, code, func, data);
+                iseq_scan_bits(bits, &code[i * ISEQ_MBITS_BITLENGTH], func, data);
             }
         }
     }
