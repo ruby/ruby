@@ -177,14 +177,14 @@ class TestIOWait < Test::Unit::TestCase
 
   def test_wait_mask_zero
     omit("Missing IO::WRITABLE!") unless IO.const_defined?(:WRITABLE)
-    assert_raises(ArgumentError) do
+    assert_raise(ArgumentError) do
       @w.wait(0, 0)
     end
   end
 
   def test_wait_mask_negative
     omit("Missing IO::WRITABLE!") unless IO.const_defined?(:WRITABLE)
-    assert_raises(ArgumentError) do
+    assert_raise(ArgumentError) do
       @w.wait(-6, 0)
     end
   end
