@@ -58,6 +58,9 @@
 // IO#wait, IO#wait_readable, IO#wait_writable, IO#wait_priority are defined by this implementation.
 #define RUBY_IO_WAIT_METHODS
 
+// IO#nonblock?, IO#nonblock= are defined by this implementation.
+#define RUBY_IO_NONBLOCK_METHODS
+
 RBIMPL_SYMBOL_EXPORT_BEGIN()
 
 struct stat;

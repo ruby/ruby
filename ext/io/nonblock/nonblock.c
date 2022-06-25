@@ -179,7 +179,10 @@ rb_io_nonblock_block(int argc, VALUE *argv, VALUE io)
 void
 Init_nonblock(void)
 {
+#ifndef RUBY_IO_NONBLOCK_METHODS
     rb_define_method(rb_cIO, "nonblock?", rb_io_nonblock_p, 0);
     rb_define_method(rb_cIO, "nonblock=", rb_io_nonblock_set, 1);
+#endif
+
     rb_define_method(rb_cIO, "nonblock", rb_io_nonblock_block, -1);
 }

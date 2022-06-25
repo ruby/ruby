@@ -393,21 +393,157 @@ rb_cloexec_dup2(int oldfd, int newfd)
 }
 
 static int
-rb_fd_set_nonblock(int fd)
+rb_fd_set_nonblock(int fd, int value)
 {
 #ifdef _WIN32
-    return rb_w32_set_nonblock(fd);
+    return rb_w32_set_nonblock2(fd, value);
 #elif defined(F_GETFL)
     int oflags = fcntl(fd, F_GETFL);
 
     if (oflags == -1)
         return -1;
+
     if (oflags & O_NONBLOCK)
         return 0;
+
     oflags |= O_NONBLOCK;
+
     return fcntl(fd, F_SETFL, oflags);
 #endif
     return 0;
+}
+
+static int
+rb_fd_get_nonblock(int fd)
+{
+#ifdef _WIN32
+    return rb_w32_is_nonblock(fd);
+#elif defined(F_GETFL)
+    int oflags = fcntl(fd, F_GETFL);
+
+    if (oflags == -1)
+        return -1;
+
+    return oflags & O_NONBLOCK;
+#else
+    return 0;
+#endif
+}
+
+static int
+rb_ioptr_get_nonblock(const rb_io_t *fptr)
+{
+    if (fptr->fd < 0)
+        return -1;
+
+    return rb_fd_get_nonblock(fptr->fd);
+}
+
+static int
+rb_ioptr_set_nonblock(rb_io_t *fptr, int nonblock)
+{
+    int result;
+
+    if (fptr->fd < 0)
+        return -1;
+
+    result = rb_fd_set_nonblock(fptr->fd, nonblock);
+
+    if (result < 0)
+        return result;
+
+    return nonblock;
+}
+
+/*
+ * call-seq:
+ *   io.nonblock? -> boolean
+ *
+ * Returns +true+ if an IO object is in non-blocking mode.
+ */
+
+static VALUE
+io_nonblock_p(VALUE io)
+{
+    rb_io_t *fptr;
+    RB_IO_POINTER(io, fptr);
+
+    int result = rb_ioptr_get_nonblock(fptr);
+
+    if (result < 0)
+        rb_sys_fail_path(fptr->pathv);
+
+    return RBOOL(result);
+}
+
+void
+rb_io_set_nonblock(rb_io_t *fptr)
+{
+    if (rb_ioptr_set_nonblock(fptr, 1) < 0)
+        rb_sys_fail_path(fptr->pathv);
+}
+
+/*
+ * call-seq:
+ *   io.nonblock = boolean -> boolean
+ *
+ * Enables non-blocking mode on a stream when set to
+ * +true+, and blocking mode when set to +false+.
+ *
+ * This method set or clear O_NONBLOCK flag for the file descriptor
+ * in <em>ios</em>.
+ *
+ * The behavior of most IO methods is not affected by this flag
+ * because they retry system calls to complete their task
+ * after EAGAIN and partial read/write.
+ * (An exception is IO#syswrite which doesn't retry.)
+ *
+ * This method can be used to clear non-blocking mode of standard I/O.
+ * Since nonblocking methods (read_nonblock, etc.) set non-blocking mode but
+ * they doesn't clear it, this method is usable as follows.
+ *
+ *   END { STDOUT.nonblock = false }
+ *   STDOUT.write_nonblock("foo")
+ *
+ * Since the flag is shared across processes and
+ * many non-Ruby commands doesn't expect standard I/O with non-blocking mode,
+ * it would be safe to clear the flag before Ruby program exits.
+ *
+ * For example following Ruby program leaves STDIN/STDOUT/STDER non-blocking mode.
+ * (STDIN, STDOUT and STDERR are connected to a terminal.
+ * So making one of them nonblocking-mode effects other two.)
+ * Thus cat command try to read from standard input and
+ * it causes "Resource temporarily unavailable" error (EAGAIN).
+ *
+ *   % ruby -e '
+ *   STDOUT.write_nonblock("foo\n")'; cat
+ *   foo
+ *   cat: -: Resource temporarily unavailable
+ *
+ * Clearing the flag makes the behavior of cat command normal.
+ * (cat command waits input from standard input.)
+ *
+ *   % ruby -rio/nonblock -e '
+ *   END { STDOUT.nonblock = false }
+ *   STDOUT.write_nonblock("foo")
+ *   '; cat
+ *   foo
+ *
+ */
+
+static VALUE
+io_nonblock_set(VALUE io, VALUE value)
+{
+    int nonblock = RTEST(value);
+    rb_io_t *fptr;
+    RB_IO_POINTER(io, fptr);
+
+    int result = rb_ioptr_set_nonblock(fptr, nonblock);
+
+    if (result < 0)
+        rb_sys_fail_path(fptr->pathv);
+
+    return RBOOL(result);
 }
 
 int
@@ -436,8 +572,8 @@ rb_cloexec_pipe(int descriptors[2])
     rb_maygvl_fd_fix_cloexec(descriptors[1]);
 
 #ifndef _WIN32
-    rb_fd_set_nonblock(descriptors[0]);
-    rb_fd_set_nonblock(descriptors[1]);
+    rb_fd_set_nonblock(descriptors[0], 1);
+    rb_fd_set_nonblock(descriptors[1], 1);
 #endif
 #endif
 
@@ -3161,14 +3297,6 @@ read_all(rb_io_t *fptr, long siz, VALUE str)
     str = io_enc_str(str, fptr);
     ENC_CODERANGE_SET(str, cr);
     return str;
-}
-
-void
-rb_io_set_nonblock(rb_io_t *fptr)
-{
-    if (rb_fd_set_nonblock(fptr->fd) != 0) {
-	rb_sys_fail_path(fptr->pathv);
-    }
 }
 
 static VALUE
@@ -15109,6 +15237,9 @@ Init_IO(void)
     rb_define_method(rb_cIO, "wait_readable", io_wait_readable, -1);
     rb_define_method(rb_cIO, "wait_writable", io_wait_writable, -1);
     rb_define_method(rb_cIO, "wait_priority", io_wait_priority, -1);
+
+    rb_define_method(rb_cIO, "nonblock?", io_nonblock_p, 0);
+    rb_define_method(rb_cIO, "nonblock=", io_nonblock_set, 1);
 
     rb_define_virtual_variable("$stdin",  stdin_getter,  stdin_setter);
     rb_define_virtual_variable("$stdout", stdout_getter, stdout_setter);
