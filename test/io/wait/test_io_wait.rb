@@ -161,6 +161,34 @@ class TestIOWait < Test::Unit::TestCase
     assert_equal @w, @w.wait(0.01, :read_write)
   end
 
+  def test_wait_mask_writable
+    omit("Missing IO::WRITABLE!") unless IO.const_defined?(:WRITABLE)
+    assert_equal IO::WRITABLE, @w.wait(IO::WRITABLE, 0)
+  end
+  
+  def test_wait_mask_readable
+    omit("Missing IO::READABLE!") unless IO.const_defined?(:READABLE)
+    @w.write("Hello World\n" * 3)
+    assert_equal IO::READABLE, @r.wait(IO::READABLE, 0)
+    
+    @r.gets
+    assert_equal IO::READABLE, @r.wait(IO::READABLE, 0)
+  end
+
+  def test_wait_mask_zero
+    omit("Missing IO::WRITABLE!") unless IO.const_defined?(:WRITABLE)
+    assert_raises(ArgumentError) do
+      @w.wait(0, 0)
+    end
+  end
+
+  def test_wait_mask_negative
+    omit("Missing IO::WRITABLE!") unless IO.const_defined?(:WRITABLE)
+    assert_raises(ArgumentError) do
+      @w.wait(-6, 0)
+    end
+  end
+
 private
 
   def fill_pipe
