@@ -146,7 +146,7 @@ io_ready_p(VALUE io)
 #endif
 }
 
-// Ruby 3.2+ can define these methods. This macro indicates that case.
+/* Ruby 3.2+ can define these methods. This macro indicates that case. */
 #ifndef RUBY_IO_WAIT_METHODS
 
 /*
@@ -351,18 +351,18 @@ io_wait(int argc, VALUE *argv, VALUE io)
 #else
     VALUE timeout = Qundef;
     rb_io_event_t events = 0;
-    int return_io = 0;
+    int i, return_io = 0;
 
-    // The documented signature for this method is actually incorrect.
-    // A single timeout is allowed in any position, and multiple symbols can be given.
-    // Whether this is intentional or not, I don't know, and as such I consider this to
-    // be a legacy/slow path.
+    /* The documented signature for this method is actually incorrect.
+     * A single timeout is allowed in any position, and multiple symbols can be given.
+     * Whether this is intentional or not, I don't know, and as such I consider this to
+     * be a legacy/slow path. */
     if (argc != 2 || (RB_SYMBOL_P(argv[0]) || RB_SYMBOL_P(argv[1]))) {
-        // We'd prefer to return the actual mask, but this form would return the io itself:
+        /* We'd prefer to return the actual mask, but this form would return the io itself: */
         return_io = 1;
 
-        // Slow/messy path:
-        for (int i = 0; i < argc; i += 1) {
+        /* Slow/messy path: */
+        for (i = 0; i < argc; i += 1) {
             if (RB_SYMBOL_P(argv[i])) {
                 events |= wait_mode_sym(argv[i]);
             }
@@ -381,7 +381,7 @@ io_wait(int argc, VALUE *argv, VALUE io)
         }
     }
     else /* argc == 2 and neither are symbols */ {
-        // This is the fast path:
+        /* This is the fast path: */
         events = io_event_from_value(argv[0]);
         timeout = argv[1];
     }
@@ -391,9 +391,9 @@ io_wait(int argc, VALUE *argv, VALUE io)
         RB_IO_POINTER(io, fptr);
 
         if (rb_io_read_pending(fptr)) {
-            // This was the original behaviour:
+            /* This was the original behaviour: */
             if (return_io) return Qtrue;
-            // New behaviour always returns an event mask:
+            /* New behaviour always returns an event mask: */
             else return RB_INT2NUM(RUBY_IO_READABLE);
         }
     }
