@@ -3834,19 +3834,27 @@ rb_str_casecmp_p(VALUE str1, VALUE str2)
 static VALUE
 str_casecmp_p(VALUE str1, VALUE str2)
 {
-    rb_encoding *enc;
-    VALUE folded_str1, folded_str2;
-    VALUE fold_opt = sym_fold;
+    if (rb_enc_str_asciionly_p(str1)) {
+        VALUE ret = str_casecmp(str1, str2);
+        if (NIL_P(ret)) return Qnil;
 
-    enc = rb_enc_compatible(str1, str2);
-    if (!enc) {
-	return Qnil;
+        return FIXNUM_ZERO_P(ret) ? Qtrue : Qfalse;
     }
+    else {
+        rb_encoding *enc;
+        VALUE folded_str1, folded_str2;
+        VALUE fold_opt = sym_fold;
 
-    folded_str1 = rb_str_downcase(1, &fold_opt, str1);
-    folded_str2 = rb_str_downcase(1, &fold_opt, str2);
+        enc = rb_enc_compatible(str1, str2);
+        if (!enc) {
+            return Qnil;
+        }
 
-    return rb_str_eql(folded_str1, folded_str2);
+        folded_str1 = rb_str_downcase(1, &fold_opt, str1);
+        folded_str2 = rb_str_downcase(1, &fold_opt, str2);
+
+        return rb_str_eql(folded_str1, folded_str2);
+    }
 }
 
 static long
