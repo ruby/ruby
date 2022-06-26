@@ -11949,11 +11949,18 @@ objspace_malloc_fixup(rb_objspace_t *objspace, void *mem, size_t size)
     return mem;
 }
 
-#if defined(__GNUC__) && RUBY_DEBUG
-#define RB_BUG_INSTEAD_OF_RB_MEMERROR
+int ruby_nomem_fatal;
+#if RUBY_DEVEL && 0
+# define NO_MEM (ruby_nomem_fatal ? rb_bug : no_mem)
+NORETURN(static void no_mem(const char *mesg, ...));
+static void
+no_mem(const char *mesg, ...)
+{
+    ruby_memerror();
+}
+#else
+# define NO_MEM(...) ruby_memerror()
 #endif
-
-#ifdef RB_BUG_INSTEAD_OF_RB_MEMERROR
 #define TRY_WITH_GC(siz, expr) do {                          \
         const gc_profile_record_flag gpr =                   \
             GPR_FLAG_FULL_MARK           |                   \
@@ -11967,29 +11974,17 @@ objspace_malloc_fixup(rb_objspace_t *objspace, void *mem, size_t size)
         }                                                    \
         else if (!garbage_collect_with_gvl(objspace, gpr)) { \
             /* @shyouhei thinks this doesn't happen */       \
-            rb_bug("TRY_WITH_GC: could not GC");             \
+            NO_MEM("TRY_WITH_GC: could not GC");             \
         }                                                    \
         else if ((expr)) {                                   \
             /* Success on 2nd try */                         \
         }                                                    \
         else {                                               \
-            rb_bug("TRY_WITH_GC: could not allocate:"        \
+            NO_MEM("TRY_WITH_GC: could not allocate:"        \
                    "%"PRIdSIZE" bytes for %s",               \
                    siz, # expr);                             \
         }                                                    \
     } while (0)
-#else
-#define TRY_WITH_GC(siz, alloc) do { \
-        objspace_malloc_gc_stress(objspace); \
-	if (!(alloc) && \
-            (!garbage_collect_with_gvl(objspace, GPR_FLAG_FULL_MARK | \
-                GPR_FLAG_IMMEDIATE_MARK | GPR_FLAG_IMMEDIATE_SWEEP | \
-                GPR_FLAG_MALLOC) || \
-	     !(alloc))) { \
-	    ruby_memerror(); \
-	} \
-    } while (0)
-#endif
 
 /* these shouldn't be called directly.
  * objspace_* functions do not check allocation size.
