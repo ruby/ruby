@@ -3703,7 +3703,7 @@ str_to_option(VALUE str)
  *  +timeout+ keyword.
  *
  *      options = Regexp::MULTILINE
- *      r = Regexp.new('foo', optinos, timeout: 1.1) # => /foo/m
+ *      r = Regexp.new('foo', options, timeout: 1.1) # => /foo/m
  *      r2 = Regexp.new(r)                           # => /foo/m
  *      r2.timeout                                   # => 1.1
  *      r3 = Regexp.new(r, timeout: 3.14)            # => /foo/m
