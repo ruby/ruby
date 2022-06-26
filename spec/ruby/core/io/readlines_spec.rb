@@ -101,6 +101,28 @@ describe "IO#readlines" do
       @io.readlines(obj).should == IOSpecs.lines_r_separator
     end
   end
+
+  describe "when passed limit" do
+    it "raises ArgumentError when passed 0 as a limit" do
+      -> { @io.readlines(0) }.should raise_error(ArgumentError)
+    end
+  end
+
+  describe "when passed chomp" do
+    it "returns the first line without a trailing newline character" do
+      @io.readlines(chomp: true).should == IOSpecs.lines_without_newline_characters
+    end
+
+    ruby_version_is "3.0" do
+      it "raises exception when options passed as Hash" do
+        -> { @io.readlines({ chomp: true }) }.should raise_error(TypeError)
+
+        -> {
+          @io.readlines("\n", 1, { chomp: true })
+        }.should raise_error(ArgumentError, "wrong number of arguments (given 3, expected 0..2)")
+      end
+    end
+  end
 end
 
 describe "IO#readlines" do

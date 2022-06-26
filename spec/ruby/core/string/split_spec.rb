@@ -3,12 +3,17 @@ require_relative '../../spec_helper'
 require_relative 'fixtures/classes'
 
 describe "String#split with String" do
+  it "throws an ArgumentError if the string  is not a valid" do
+    s = "\xDF".force_encoding(Encoding::UTF_8)
+
+    -> { s.split }.should raise_error(ArgumentError)
+    -> { s.split(':') }.should raise_error(ArgumentError)
+  end
+
   it "throws an ArgumentError if the pattern is not a valid string" do
     str = 'проверка'
-    broken_str = 'проверка'
-    broken_str.force_encoding('binary')
-    broken_str.chop!
-    broken_str.force_encoding('utf-8')
+    broken_str = "\xDF".force_encoding(Encoding::UTF_8)
+
     -> { str.split(broken_str) }.should raise_error(ArgumentError)
   end
 
@@ -218,6 +223,12 @@ describe "String#split with String" do
 end
 
 describe "String#split with Regexp" do
+  it "throws an ArgumentError if the string  is not a valid" do
+    s = "\xDF".force_encoding(Encoding::UTF_8)
+
+    -> { s.split(/./) }.should raise_error(ArgumentError)
+  end
+
   it "divides self on regexp matches" do
     " now's  the time".split(/ /).should == ["", "now's", "", "the", "time"]
     " x\ny ".split(/ /).should == ["", "x\ny"]

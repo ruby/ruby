@@ -275,7 +275,9 @@ static VALUE encoding_spec_rb_enc_str_asciionly_p(VALUE self, VALUE str) {
 }
 
 static VALUE encoding_spec_rb_uv_to_utf8(VALUE self, VALUE buf, VALUE num) {
-  return INT2NUM(rb_uv_to_utf8(RSTRING_PTR(buf), NUM2INT(num)));
+  int len = rb_uv_to_utf8(RSTRING_PTR(buf), NUM2INT(num));
+  RB_ENC_CODERANGE_CLEAR(buf);
+  return INT2NUM(len);
 }
 
 static VALUE encoding_spec_ONIGENC_MBC_CASE_FOLD(VALUE self, VALUE str) {

@@ -352,6 +352,10 @@ module ModuleSpecs
     end
   end
 
+  class SubCVars < CVars
+    @@sub = :sub
+  end
+
   module MVars
     @@mvar = :mvar
   end

@@ -123,4 +123,41 @@ describe :stringio_each_chomp, shared: true do
     io.send(@method, chomp: true) {|s| seen << s }
     seen.should == ["a b \rc d e", "1 2 3 4 5", "the end"]
   end
+
+  it "returns each line with removed newline characters when called without block" do
+    seen = []
+    io = StringIO.new("a b \rc d e\n1 2 3 4 5\r\nthe end")
+    enum = io.send(@method, chomp: true)
+    enum.each {|s| seen << s }
+    seen.should == ["a b \rc d e", "1 2 3 4 5", "the end"]
+  end
+end
+
+describe :stringio_each_separator_and_chomp, shared: true do
+  it "yields each line with removed separator to the passed block" do
+    seen = []
+    io = StringIO.new("a b \nc d e|1 2 3 4 5\n|the end")
+    io.send(@method, "|", chomp: true) {|s| seen << s }
+    seen.should == ["a b \nc d e", "1 2 3 4 5\n", "the end"]
+  end
+
+  it "returns each line with removed separator when called without block" do
+    seen = []
+    io = StringIO.new("a b \nc d e|1 2 3 4 5\n|the end")
+    enum = io.send(@method, "|", chomp: true)
+    enum.each {|s| seen << s }
+    seen.should == ["a b \nc d e", "1 2 3 4 5\n", "the end"]
+  end
+end
+
+describe :stringio_each_limit, shared: true do
+  before :each do
+    @io = StringIO.new("a b c d e\n1 2 3 4 5")
+  end
+
+  it "returns the data read until the limit is met" do
+    seen = []
+    @io.send(@method, 4) { |s| seen << s }
+    seen.should == ["a b ", "c d ", "e\n", "1 2 ", "3 4 ", "5"]
+  end
 end

@@ -109,4 +109,20 @@ describe "C-API Regexp function" do
       thr.join
     end
   end
+
+  describe "rb_memicmp" do
+    it "returns 0 for identical strings" do
+      @p.rb_memcicmp('Hello', 'Hello').should == 0
+    end
+
+    it "returns 0 for strings which only differ in case" do
+      @p.rb_memcicmp('Hello', 'HELLO').should == 0
+      @p.rb_memcicmp('HELLO', 'Hello').should == 0
+    end
+
+    it "returns the difference between the first non matching characters" do
+      @p.rb_memcicmp('Hello', 'HELLP').should == -1
+      @p.rb_memcicmp('HELLp', 'Hello').should == 1
+    end
+  end
 end

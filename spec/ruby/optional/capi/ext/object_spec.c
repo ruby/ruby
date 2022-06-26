@@ -301,6 +301,13 @@ static VALUE so_is_rb_type_p_data(VALUE self, VALUE obj) {
   return Qfalse;
 }
 
+static VALUE so_is_rb_type_p_file(VALUE self, VALUE obj) {
+  if(rb_type_p(obj, T_FILE)) {
+    return Qtrue;
+  }
+  return Qfalse;
+}
+
 static VALUE so_is_builtin_type_object(VALUE self, VALUE obj) {
   if(BUILTIN_TYPE(obj) == T_OBJECT) {
     return Qtrue;
@@ -478,6 +485,7 @@ void Init_object_spec(void) {
   rb_define_method(cls, "rb_is_rb_type_p_module", so_is_rb_type_p_module, 1);
   rb_define_method(cls, "rb_is_rb_type_p_class", so_is_rb_type_p_class, 1);
   rb_define_method(cls, "rb_is_rb_type_p_data", so_is_rb_type_p_data, 1);
+  rb_define_method(cls, "rb_is_rb_type_p_file", so_is_rb_type_p_file, 1);
   rb_define_method(cls, "rb_is_builtin_type_object", so_is_builtin_type_object, 1);
   rb_define_method(cls, "rb_is_builtin_type_array", so_is_builtin_type_array, 1);
   rb_define_method(cls, "rb_is_builtin_type_module", so_is_builtin_type_module, 1);

@@ -14,8 +14,7 @@ else
   end
 end
 
-# Running directly with ruby some_spec.rb
-unless ENV['MSPEC_RUNNER']
+unless ENV['MSPEC_RUNNER'] # Running directly with ruby some_spec.rb
   mspec_lib = File.expand_path("../../mspec/lib", __FILE__)
   $LOAD_PATH << mspec_lib if File.directory?(mspec_lib)
 
@@ -26,7 +25,13 @@ unless ENV['MSPEC_RUNNER']
     puts "Please add -Ipath/to/mspec/lib or clone mspec as a sibling to run the specs."
     exit 1
   end
+end
 
+ruby_version_is ""..."2.7" do
+  abort "This version of ruby/spec requires Ruby 2.7+"
+end
+
+unless ENV['MSPEC_RUNNER'] # Running directly with ruby some_spec.rb
   ARGV.unshift $0
   MSpecRun.main
 end

@@ -52,7 +52,7 @@ describe "Process.clock_gettime" do
     end
 
     # These specs need macOS 10.12+ / darwin 16+
-    guard_not -> { platform_is_not(:darwin) or RUBY_PLATFORM[/darwin\d+/].to_i >= 16 } do
+    guard -> { platform_is_not(:darwin) or kernel_version_is '16' } do
       platform_is :linux, :openbsd, :darwin do
         it "CLOCK_PROCESS_CPUTIME_ID" do
           Process.clock_gettime(Process::CLOCK_PROCESS_CPUTIME_ID).should be_an_instance_of(Float)
@@ -62,20 +62,6 @@ describe "Process.clock_gettime" do
       platform_is :linux, :freebsd, :openbsd, :darwin do
         it "CLOCK_THREAD_CPUTIME_ID" do
           Process.clock_gettime(Process::CLOCK_THREAD_CPUTIME_ID).should be_an_instance_of(Float)
-        end
-      end
-
-      platform_is :freebsd, :openbsd do
-        it "CLOCK_VIRTUAL" do
-          Process.clock_gettime(Process::CLOCK_VIRTUAL).should be_an_instance_of(Float)
-        end
-
-        it "CLOCK_PROF" do
-          Process.clock_gettime(Process::CLOCK_PROF).should be_an_instance_of(Float)
-        end
-
-        it "CLOCK_UPTIME" do
-          Process.clock_gettime(Process::CLOCK_UPTIME).should be_an_instance_of(Float)
         end
       end
 
@@ -95,42 +81,69 @@ describe "Process.clock_gettime" do
           Process.clock_gettime(Process::CLOCK_UPTIME_RAW_APPROX).should be_an_instance_of(Float)
         end
       end
+    end
 
-      platform_is :freebsd do
-        it "CLOCK_REALTIME_FAST and CLOCK_REALTIME_PRECISE" do
-          Process.clock_gettime(Process::CLOCK_REALTIME_FAST).should be_an_instance_of(Float)
-          Process.clock_gettime(Process::CLOCK_REALTIME_PRECISE).should be_an_instance_of(Float)
-        end
-
-        it "CLOCK_MONOTONIC_FAST and CLOCK_MONOTONIC_PRECISE" do
-          Process.clock_gettime(Process::CLOCK_MONOTONIC_FAST).should be_an_instance_of(Float)
-          Process.clock_gettime(Process::CLOCK_MONOTONIC_PRECISE).should be_an_instance_of(Float)
-        end
-
-        it "CLOCK_UPTIME_FAST and CLOCK_UPTIME_PRECISE" do
-          Process.clock_gettime(Process::CLOCK_UPTIME_FAST).should be_an_instance_of(Float)
-          Process.clock_gettime(Process::CLOCK_UPTIME_PRECISE).should be_an_instance_of(Float)
-        end
-
-        it "CLOCK_SECOND" do
-          Process.clock_gettime(Process::CLOCK_SECOND).should be_an_instance_of(Float)
-        end
+    platform_is :freebsd, :openbsd do
+      it "CLOCK_VIRTUAL" do
+        Process.clock_gettime(Process::CLOCK_VIRTUAL).should be_an_instance_of(Float)
       end
 
-      platform_is :linux do
-        it "CLOCK_REALTIME_COARSE and CLOCK_REALTIME_ALARM" do
-          Process.clock_gettime(Process::CLOCK_REALTIME_COARSE).should be_an_instance_of(Float)
-          Process.clock_gettime(Process::CLOCK_REALTIME_ALARM).should be_an_instance_of(Float)
-        end
+      it "CLOCK_PROF" do
+        Process.clock_gettime(Process::CLOCK_PROF).should be_an_instance_of(Float)
+      end
 
-        it "CLOCK_MONOTONIC_COARSE" do
-          Process.clock_gettime(Process::CLOCK_MONOTONIC_COARSE).should be_an_instance_of(Float)
-        end
+      it "CLOCK_UPTIME" do
+        Process.clock_gettime(Process::CLOCK_UPTIME).should be_an_instance_of(Float)
+      end
+    end
 
-        it "CLOCK_BOOTTIME and CLOCK_BOOTTIME_ALARM" do
-          Process.clock_gettime(Process::CLOCK_BOOTTIME).should be_an_instance_of(Float)
-          Process.clock_gettime(Process::CLOCK_BOOTTIME_ALARM).should be_an_instance_of(Float)
-        end
+    platform_is :freebsd do
+      it "CLOCK_REALTIME_FAST and CLOCK_REALTIME_PRECISE" do
+        Process.clock_gettime(Process::CLOCK_REALTIME_FAST).should be_an_instance_of(Float)
+        Process.clock_gettime(Process::CLOCK_REALTIME_PRECISE).should be_an_instance_of(Float)
+      end
+
+      it "CLOCK_MONOTONIC_FAST and CLOCK_MONOTONIC_PRECISE" do
+        Process.clock_gettime(Process::CLOCK_MONOTONIC_FAST).should be_an_instance_of(Float)
+        Process.clock_gettime(Process::CLOCK_MONOTONIC_PRECISE).should be_an_instance_of(Float)
+      end
+
+      it "CLOCK_UPTIME_FAST and CLOCK_UPTIME_PRECISE" do
+        Process.clock_gettime(Process::CLOCK_UPTIME_FAST).should be_an_instance_of(Float)
+        Process.clock_gettime(Process::CLOCK_UPTIME_PRECISE).should be_an_instance_of(Float)
+      end
+
+      it "CLOCK_SECOND" do
+        Process.clock_gettime(Process::CLOCK_SECOND).should be_an_instance_of(Float)
+      end
+    end
+
+    guard -> { platform_is :linux and kernel_version_is '2.6.32' } do
+      it "CLOCK_REALTIME_COARSE" do
+        Process.clock_gettime(Process::CLOCK_REALTIME_COARSE).should be_an_instance_of(Float)
+      end
+
+      it "CLOCK_MONOTONIC_COARSE" do
+        Process.clock_gettime(Process::CLOCK_MONOTONIC_COARSE).should be_an_instance_of(Float)
+      end
+    end
+
+    guard -> { platform_is :linux and kernel_version_is '2.6.39' } do
+      it "CLOCK_BOOTTIME" do
+        skip "No Process::CLOCK_BOOTTIME" unless defined?(Process::CLOCK_BOOTTIME)
+        Process.clock_gettime(Process::CLOCK_BOOTTIME).should be_an_instance_of(Float)
+      end
+    end
+
+    guard -> { platform_is "x86_64-linux" and kernel_version_is '3.0' } do
+      it "CLOCK_REALTIME_ALARM" do
+        skip "No Process::CLOCK_REALTIME_ALARM" unless defined?(Process::CLOCK_REALTIME_ALARM)
+        Process.clock_gettime(Process::CLOCK_REALTIME_ALARM).should be_an_instance_of(Float)
+      end
+
+      it "CLOCK_BOOTTIME_ALARM" do
+        skip "No Process::CLOCK_BOOTTIME_ALARM" unless defined?(Process::CLOCK_BOOTTIME_ALARM)
+        Process.clock_gettime(Process::CLOCK_BOOTTIME_ALARM).should be_an_instance_of(Float)
       end
     end
   end

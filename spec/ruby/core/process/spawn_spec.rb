@@ -349,7 +349,7 @@ describe "Process.spawn" do
       pgid = Process.getpgid(Process.pid)
       # The process group is not available on all platforms.
       # See "man proc" - /proc/[pid]/stat - (5) pgrp
-      # In Travis arm64 environment, the value is 0.
+      # In Travis aarch64 environment, the value is 0.
       #
       # $ cat /proc/[pid]/stat
       # 19179 (ruby) S 19160 0 0 ...

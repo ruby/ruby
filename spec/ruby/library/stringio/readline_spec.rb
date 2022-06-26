@@ -128,3 +128,23 @@ describe "StringIO#readline when passed [chomp]" do
     io.readline(chomp: true).should == "this>is>an>example"
   end
 end
+
+describe "StringIO#readline when passed [limit]" do
+  before :each do
+    @io = StringIO.new("this>is>an>example")
+  end
+
+  it "returns the data read until the limit is met" do
+    io = StringIO.new("this>is>an>example\n")
+    io.readline(3).should == "thi"
+  end
+
+  it "returns a blank string when passed a limit of 0" do
+    @io.readline(0).should == ""
+  end
+
+  it "ignores it when the limit is negative" do
+    seen = []
+    @io.readline(-4).should == "this>is>an>example"
+  end
+end

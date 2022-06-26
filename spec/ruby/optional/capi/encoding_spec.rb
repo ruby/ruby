@@ -613,15 +613,15 @@ describe "C-API Encoding function" do
     it 'converts a Unicode codepoint to a UTF-8 C string' do
       str = ' ' * 6
       {
-        0  => "\x01",
-        0x7f => "\xC2\x80",
-        0x7ff => "\xE0\xA0\x80",
-        0xffff => "\xF0\x90\x80\x80",
-        0x1fffff => "\xF8\x88\x80\x80\x80",
-        0x3ffffff => "\xFC\x84\x80\x80\x80\x80",
+        1  => "\x01",
+        0x80 => "\xC2\x80",
+        0x800 => "\xE0\xA0\x80",
+        0x10000 => "\xF0\x90\x80\x80",
+        0x200000 => "\xF8\x88\x80\x80\x80",
+        0x4000000 => "\xFC\x84\x80\x80\x80\x80",
       }.each do |num, result|
-        len = @s.rb_uv_to_utf8(str, num + 1)
-        str[0..len-1].should == result
+        len = @s.rb_uv_to_utf8(str, num)
+        str.byteslice(0, len).should == result
       end
     end
   end
