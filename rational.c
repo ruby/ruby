@@ -291,42 +291,36 @@ rb_gcd_gmp(VALUE x, VALUE y)
 inline static long
 i_gcd(long x, long y)
 {
-    unsigned long u, v, t;
-    int shift;
+    unsigned long u, v, uz, vz, shift;
+    long diff;
 
     if (x < 0)
-	x = -x;
+        x = -x;
     if (y < 0)
-	y = -y;
-
+        y = -y;
     if (x == 0)
-	return y;
-    if (y == 0)
-	return x;
+        return y;
+    if (y == 0 || x == y)
+        return x;
 
     u = (unsigned long)x;
     v = (unsigned long)y;
-    for (shift = 0; ((u | v) & 1) == 0; ++shift) {
-	u >>= 1;
-	v >>= 1;
-    }
-
-    while ((u & 1) == 0)
-	u >>= 1;
-
+    uz = ntz_intptr(u);
+    vz = ntz_intptr(v);
+    shift = uz > vz ? vz : uz;
+    u >>= uz;
     do {
-	while ((v & 1) == 0)
-	    v >>= 1;
+        v >>= vz;
+        diff = v - u;
+        if (diff == 0)
+            break;
+        vz = ntz_intptr(diff);
+        if (v < u)
+            u = v;
+        v = diff < 0 ? -diff : diff;
+    } while(true);
 
-	if (u > v) {
-	    t = v;
-	    v = u;
-	    u = t;
-	}
-	v = v - u;
-    } while (v != 0);
-
-    return (long)(u << shift);
+    return u << shift;
 }
 
 inline static VALUE
