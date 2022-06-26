@@ -132,6 +132,7 @@ module TestIRB
     end
 
     def test_output_to_pipe
+      require 'stringio'
       input = TestInputMethod.new(["n=1"])
       input.instance_variable_set(:@stdout, StringIO.new)
       irb = IRB::Irb.new(IRB::WorkSpace.new(Object.new), input)
