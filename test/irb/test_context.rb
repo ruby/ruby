@@ -137,6 +137,7 @@ module TestIRB
       input.instance_variable_set(:@stdout, StringIO.new)
       irb = IRB::Irb.new(IRB::WorkSpace.new(Object.new), input)
       irb.context.echo_on_assignment = :truncate
+      irb.context.prompt_mode = :DEFAULT
       out, err = capture_output do
         irb.eval_input
       end
