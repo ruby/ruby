@@ -5260,8 +5260,7 @@ fn gen_anytostring(
     cb: &mut CodeBlock,
     _ocb: &mut OutlinedCb,
 ) -> CodegenStatus {
-    // Save the PC and SP because we might make a Ruby call for
-    // Kernel#set_trace_var
+    // Save the PC and SP since we might call #to_s
     jit_prepare_routine_call(jit, ctx, cb, REG0);
 
     let str = ctx.stack_pop(1);
