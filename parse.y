@@ -2673,11 +2673,7 @@ rel_expr	: arg relop arg   %prec '>'
 		    }
 		;
 
-lex_ctxt	: tSP
-		    {
-			$$ = p->ctxt;
-		    }
-		| none
+lex_ctxt	: none
 		    {
 			$$ = p->ctxt;
 		    }
