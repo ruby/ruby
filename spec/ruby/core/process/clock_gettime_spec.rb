@@ -83,7 +83,7 @@ describe "Process.clock_gettime" do
       end
     end
 
-    platform_is :freebsd, :openbsd do
+    platform_is :freebsd do
       it "CLOCK_VIRTUAL" do
         Process.clock_gettime(Process::CLOCK_VIRTUAL).should be_an_instance_of(Float)
       end
@@ -91,7 +91,9 @@ describe "Process.clock_gettime" do
       it "CLOCK_PROF" do
         Process.clock_gettime(Process::CLOCK_PROF).should be_an_instance_of(Float)
       end
+    end
 
+    platform_is :freebsd, :openbsd do
       it "CLOCK_UPTIME" do
         Process.clock_gettime(Process::CLOCK_UPTIME).should be_an_instance_of(Float)
       end
