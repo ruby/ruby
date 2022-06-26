@@ -29,6 +29,8 @@
 # define YJIT_BUILD 0
 #endif
 
+#undef YJIT_SUPPORTED_P
+
 #if YJIT_BUILD
 
 // Expose these as declarations since we are building YJIT.
