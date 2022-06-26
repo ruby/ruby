@@ -3007,11 +3007,10 @@ cv_i_update(st_data_t *k, st_data_t *v, st_data_t a, int existing)
 static enum rb_id_table_iterator_result
 sv_i(ID key, VALUE v, void *a)
 {
-    rb_const_entry_t *ce = (rb_const_entry_t *)v;
-    st_table *tbl = a;
+    struct rb_id_table *tbl = a;
 
     if (rb_is_const_id(key)) {
-	st_update(tbl, (st_data_t)key, cv_i_update, (st_data_t)ce);
+	rb_id_table_insert(tbl, key, v);
     }
     return ID_TABLE_CONTINUE;
 }
@@ -3046,9 +3045,9 @@ rb_local_constants(VALUE mod)
 void*
 rb_mod_const_at(VALUE mod, void *data)
 {
-    st_table *tbl = data;
+    struct rb_id_table *tbl = data;
     if (!tbl) {
-	tbl = st_init_numtable();
+	tbl = rb_id_table_create(0);
     }
     if (RCLASS_CONST_TBL(mod)) {
         RB_VM_LOCK_ENTER();
@@ -3073,25 +3072,25 @@ rb_mod_const_of(VALUE mod, void *data)
     return data;
 }
 
-static int
-list_i(st_data_t key, st_data_t value, VALUE ary)
+static enum rb_id_table_iterator_result
+list_i(ID key, VALUE value, void *data)
 {
-    ID sym = (ID)key;
+    VALUE ary = (VALUE)data;
     rb_const_entry_t *ce = (rb_const_entry_t *)value;
-    if (RB_CONST_PUBLIC_P(ce)) rb_ary_push(ary, ID2SYM(sym));
-    return ST_CONTINUE;
+    if (RB_CONST_PUBLIC_P(ce)) rb_ary_push(ary, ID2SYM(key));
+    return ID_TABLE_CONTINUE;
 }
 
 VALUE
 rb_const_list(void *data)
 {
-    st_table *tbl = data;
+    struct rb_id_table *tbl = data;
     VALUE ary;
 
     if (!tbl) return rb_ary_new2(0);
-    ary = rb_ary_new2(tbl->num_entries);
-    st_foreach_safe(tbl, list_i, ary);
-    st_free_table(tbl);
+    ary = rb_ary_new2(rb_id_table_size(tbl));
+    rb_id_table_foreach(tbl, list_i, (void *)ary);
+    rb_id_table_free(tbl);
 
     return ary;
 }
