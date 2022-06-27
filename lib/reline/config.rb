@@ -45,6 +45,14 @@ class Reline::Config
     attr_accessor v
   end
 
+  attr_accessor(
+    :autocompletion,
+    :dialog_default_bg_color,
+    :dialog_default_fg_color,
+    :dialog_pointer_bg_color,
+    :dialog_pointer_fg_color,
+  )
+
   def initialize
     @additional_key_bindings = {} # from inputrc
     @additional_key_bindings[:emacs] = {}
@@ -69,6 +77,10 @@ class Reline::Config
     @test_mode = false
     @autocompletion = false
     @convert_meta = true if seven_bit_encoding?(Reline::IOGate.encoding)
+    @dialog_default_bg_color = nil
+    @dialog_pointer_bg_color = nil
+    @dialog_default_fg_color = nil
+    @dialog_pointer_fg_color = nil
   end
 
   def reset
@@ -92,14 +104,6 @@ class Reline::Config
 
   def editing_mode_is?(*val)
     (val.respond_to?(:any?) ? val : [val]).any?(@editing_mode_label)
-  end
-
-  def autocompletion=(val)
-    @autocompletion = val
-  end
-
-  def autocompletion
-    @autocompletion
   end
 
   def keymap
@@ -334,6 +338,14 @@ class Reline::Config
       @vi_ins_mode_string = retrieve_string(value)
     when 'emacs-mode-string'
       @emacs_mode_string = retrieve_string(value)
+    when 'dialog-default-bg-color'
+      @dialog_default_bg_color = value.to_i
+    when 'dialog-pointer-bg-color'
+      @dialog_pointer_bg_color = value.to_i
+    when 'dialog-default-fg-color'
+      @dialog_default_fg_color = value.to_i
+    when 'dialog-pointer-fg-color'
+      @dialog_pointer_fg_color = value.to_i
     when *VARIABLE_NAMES then
       variable_name = :"@#{name.tr(?-, ?_)}"
       instance_variable_set(variable_name, value.nil? || value == '1' || value == 'on')

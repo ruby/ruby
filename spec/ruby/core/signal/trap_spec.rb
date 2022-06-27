@@ -254,12 +254,10 @@ describe "Signal.trap" do
         r.close
         loop { w.write("a"*1024) }
       RUBY
-      out = ruby_exe(code, exit_status: nil)
+      out = ruby_exe(code, exit_status: :SIGPIPE)
       status = $?
       out.should == "nil\n"
       status.should.signaled?
-      status.termsig.should be_kind_of(Integer)
-      Signal.signame(status.termsig).should == "PIPE"
     end
   end
 

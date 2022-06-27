@@ -401,6 +401,8 @@ class Gem::Indexer
 
       File.utime newest_mtime, newest_mtime, dst_name
     end
+  ensure
+    FileUtils.rm_rf @directory
   end
 
   ##

@@ -33,7 +33,18 @@ module Reline
     alias_method :==, :match?
   end
   CursorPos = Struct.new(:x, :y)
-  DialogRenderInfo = Struct.new(:pos, :contents, :bg_color, :width, :height, :scrollbar, keyword_init: true)
+  DialogRenderInfo = Struct.new(
+    :pos,
+    :contents,
+    :bg_color,
+    :pointer_bg_color,
+    :fg_color,
+    :pointer_fg_color,
+    :width,
+    :height,
+    :scrollbar,
+    keyword_init: true
+  )
 
   class Core
     ATTR_READER_NAMES = %i(
@@ -57,6 +68,19 @@ module Reline
     attr_accessor :line_editor
     attr_accessor :last_incremental_search
     attr_reader :output
+
+    extend Forwardable
+    def_delegators :config,
+      :autocompletion,
+      :autocompletion=,
+      :dialog_default_bg_color,
+      :dialog_default_bg_color=,
+      :dialog_default_fg_color,
+      :dialog_default_fg_color=,
+      :dialog_pointer_bg_color,
+      :dialog_pointer_bg_color=,
+      :dialog_pointer_fg_color,
+      :dialog_pointer_fg_color=
 
     def initialize
       self.output = STDOUT
@@ -121,14 +145,6 @@ module Reline
     def completion_proc=(p)
       raise ArgumentError unless p.respond_to?(:call) or p.nil?
       @completion_proc = p
-    end
-
-    def autocompletion
-      @config.autocompletion
-    end
-
-    def autocompletion=(val)
-      @config.autocompletion = val
     end
 
     def output_modifier_proc=(p)
@@ -243,7 +259,16 @@ module Reline
         context.push(cursor_pos_to_render, result, pointer, dialog)
       end
       dialog.pointer = pointer
-      DialogRenderInfo.new(pos: cursor_pos_to_render, contents: result, scrollbar: true, height: 15)
+      DialogRenderInfo.new(
+        pos: cursor_pos_to_render,
+        contents: result,
+        scrollbar: true,
+        height: 15,
+        bg_color: config.dialog_default_bg_color,
+        pointer_bg_color: config.dialog_pointer_bg_color,
+        fg_color: config.dialog_default_fg_color,
+        pointer_fg_color: config.dialog_pointer_fg_color
+      )
     }
     Reline::DEFAULT_DIALOG_CONTEXT = Array.new
 
@@ -528,6 +553,10 @@ module Reline
   def_single_delegators :core, :add_dialog_proc
   def_single_delegators :core, :dialog_proc
   def_single_delegators :core, :autocompletion, :autocompletion=
+  def_single_delegators :core, :dialog_default_bg_color, :dialog_default_bg_color=
+  def_single_delegators :core, :dialog_pointer_bg_color, :dialog_pointer_bg_color=
+  def_single_delegators :core, :dialog_default_fg_color, :dialog_default_fg_color=
+  def_single_delegators :core, :dialog_pointer_fg_color, :dialog_pointer_fg_color=
 
   def_single_delegators :core, :readmultiline
   def_instance_delegators self, :readmultiline
@@ -550,6 +579,10 @@ module Reline
       core.filename_quote_characters = ""
       core.special_prefixes = ""
       core.add_dialog_proc(:autocomplete, Reline::DEFAULT_DIALOG_PROC_AUTOCOMPLETE, Reline::DEFAULT_DIALOG_CONTEXT)
+      core.dialog_default_bg_color = 46 # Cyan
+      core.dialog_default_fg_color = 37 # White
+      core.dialog_pointer_bg_color = 45 # Magenta
+      core.dialog_pointer_fg_color = 37 # White
     }
   end
 

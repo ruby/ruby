@@ -78,6 +78,14 @@ describe :io_readlines_options_19, shared: true do
         result = IO.send(@method, @name, -2, &@object)
         (result ? result : ScratchPad.recorded).should == IOSpecs.lines
       end
+
+      ruby_bug "#18767", ""..."3.3" do
+        describe "when passed limit" do
+          it "raises ArgumentError when passed 0 as a limit" do
+            -> { IO.send(@method, @name, 0, &@object) }.should raise_error(ArgumentError)
+          end
+        end
+      end
     end
 
     describe "when the object is a String" do
@@ -92,31 +100,35 @@ describe :io_readlines_options_19, shared: true do
       end
     end
 
-    describe "when the object is a Hash" do
-      it "uses the value as the options hash" do
-        result = IO.send(@method, @name, mode: "r", &@object)
-        (result ? result : ScratchPad.recorded).should == IOSpecs.lines
+    describe "when the object is an options Hash" do
+      ruby_version_is "3.0" do
+        it "raises TypeError exception" do
+          -> {
+            IO.send(@method, @name, { chomp: true }, &@object)
+          }.should raise_error(TypeError)
+        end
+      end
+    end
+
+    describe "when the object is neither Integer nor String" do
+      it "raises TypeError exception" do
+        obj = mock("not io readlines limit")
+
+        -> {
+          IO.send(@method, @name, obj, &@object)
+        }.should raise_error(TypeError)
       end
     end
   end
 
-  describe "when passed name, object, object" do
-    describe "when the first object is an Integer" do
-      it "uses the second object as an options Hash" do
-        -> do
-          IO.send(@method, @filename, 10, mode: "w", &@object)
-        end.should raise_error(IOError)
-      end
-
-      it "calls #to_hash to convert the second object to a Hash" do
-        options = mock("io readlines options Hash")
-        options.should_receive(:to_hash).and_return({ mode: "w" })
-        -> do
-          IO.send(@method, @filename, 10, **options, &@object)
-        end.should raise_error(IOError)
-      end
+  describe "when passed name, keyword arguments" do
+    it "uses the keyword arguments as options" do
+      result = IO.send(@method, @name, mode: "r", &@object)
+      (result ? result : ScratchPad.recorded).should == IOSpecs.lines
     end
+  end
 
+  describe "when passed name, object, object" do
     describe "when the first object is a String" do
       it "uses the second object as a limit if it is an Integer" do
         result = IO.send(@method, @name, " ", 10, &@object)
@@ -129,32 +141,18 @@ describe :io_readlines_options_19, shared: true do
         result = IO.send(@method, @name, " ", limit, &@object)
         (result ? result : ScratchPad.recorded).should == IOSpecs.lines_space_separator_limit
       end
-
-      it "uses the second object as an options Hash" do
-        -> do
-          IO.send(@method, @filename, " ", mode: "w", &@object)
-        end.should raise_error(IOError)
-      end
-
-      it "calls #to_hash to convert the second object to a Hash" do
-        options = mock("io readlines options Hash")
-        options.should_receive(:to_hash).and_return({ mode: "w" })
-        -> do
-          IO.send(@method, @filename, " ", **options, &@object)
-        end.should raise_error(IOError)
-      end
     end
 
     describe "when the first object is not a String or Integer" do
       it "calls #to_str to convert the object to a String" do
         sep = mock("io readlines separator")
         sep.should_receive(:to_str).at_least(1).and_return(" ")
-        result = IO.send(@method, @name, sep, 10, mode: "r", &@object)
+        result = IO.send(@method, @name, sep, 10, &@object)
         (result ? result : ScratchPad.recorded).should == IOSpecs.lines_space_separator_limit
       end
 
       it "uses the second object as a limit if it is an Integer" do
-        result = IO.send(@method, @name, " ", 10, mode: "r", &@object)
+        result = IO.send(@method, @name, " ", 10, &@object)
         (result ? result : ScratchPad.recorded).should == IOSpecs.lines_space_separator_limit
       end
 
@@ -164,24 +162,59 @@ describe :io_readlines_options_19, shared: true do
         result = IO.send(@method, @name, " ", limit, &@object)
         (result ? result : ScratchPad.recorded).should == IOSpecs.lines_space_separator_limit
       end
+    end
 
-      it "uses the second object as an options Hash" do
+    describe "when the second object is neither Integer nor String" do
+      it "raises TypeError exception" do
+        obj = mock("not io readlines limit")
+
+        -> {
+          IO.send(@method, @name, " ", obj, &@object)
+        }.should raise_error(TypeError)
+      end
+    end
+
+    describe "when the second object is an options Hash" do
+      ruby_version_is "3.0" do
+        it "raises TypeError exception" do
+          -> {
+            IO.send(@method, @name, "", { chomp: true }, &@object)
+          }.should raise_error(TypeError)
+        end
+      end
+    end
+  end
+
+  describe "when passed name, object, keyword arguments" do
+    describe "when the first object is an Integer" do
+      it "uses the keyword arguments as options" do
+        -> do
+          IO.send(@method, @filename, 10, mode: "w", &@object)
+        end.should raise_error(IOError)
+      end
+    end
+
+    describe "when the first object is a String" do
+      it "uses the keyword arguments as options" do
         -> do
           IO.send(@method, @filename, " ", mode: "w", &@object)
         end.should raise_error(IOError)
       end
+    end
 
-      it "calls #to_hash to convert the second object to a Hash" do
-        options = mock("io readlines options Hash")
-        options.should_receive(:to_hash).and_return({ mode: "w" })
+    describe "when the first object is not a String or Integer" do
+      it "uses the keyword arguments as options" do
+        sep = mock("io readlines separator")
+        sep.should_receive(:to_str).at_least(1).and_return(" ")
+
         -> do
-          IO.send(@method, @filename, " ", **options, &@object)
+          IO.send(@method, @filename, sep, mode: "w", &@object)
         end.should raise_error(IOError)
       end
     end
   end
 
-  describe "when passed name, separator, limit, options" do
+  describe "when passed name, separator, limit, keyword arguments" do
     it "calls #to_path to convert the name object" do
       name = mock("io name to_path")
       name.should_receive(:to_path).and_return(@name)
@@ -203,12 +236,24 @@ describe :io_readlines_options_19, shared: true do
       (result ? result : ScratchPad.recorded).should == IOSpecs.lines_space_separator_limit
     end
 
-    it "calls #to_hash to convert the options object" do
-      options = mock("io readlines options Hash")
-      options.should_receive(:to_hash).and_return({ mode: "w" })
+    it "uses the keyword arguments as options" do
       -> do
-        IO.send(@method, @filename, " ", 10, **options, &@object)
+        IO.send(@method, @filename, " ", 10, mode: "w", &@object)
       end.should raise_error(IOError)
+    end
+
+    describe "when passed chomp, nil as a separator, and a limit" do
+      it "yields each line of limit size without truncating trailing new line character" do
+        # 43 - is a size of the 1st paragraph in the file
+        result = IO.send(@method, @name, nil, 43, chomp: true, &@object)
+
+        (result ? result : ScratchPad.recorded).should == [
+          "Voici la ligne une.\nQui è la linea due.\n\n\n",
+          "Aquí está la línea tres.\n" + "Hier ist Zeile ",
+          "vier.\n\nEstá aqui a linha cinco.\nHere is li",
+          "ne six.\n"
+        ]
+      end
     end
   end
 end

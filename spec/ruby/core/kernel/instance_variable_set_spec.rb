@@ -95,5 +95,11 @@ describe "Kernel#instance_variable_set" do
       o.instance_variable_set(:@💙, 42)
       o.instance_variable_get(:@💙).should == 42
     end
+
+    it "raises for frozen objects" do
+      -> { nil.instance_variable_set(:@foo, 42) }.should raise_error(FrozenError)
+      -> { nil.instance_variable_set(:foo, 42) }.should raise_error(NameError)
+      -> { :foo.instance_variable_set(:@foo, 42) }.should raise_error(FrozenError)
+    end
   end
 end

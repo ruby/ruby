@@ -223,26 +223,25 @@ describe "Integer#chr with an encoding argument" do
 
   # #5864
   it "raises RangeError if self is invalid as a codepoint in the specified encoding" do
-    [ [0x80,   "US-ASCII"],
-      [0x0100, "BINARY"],
-      [0x0100, "EUC-JP"],
-      [0xA1A0, "EUC-JP"],
-      [0xA1,   "EUC-JP"],
-      [0x80,   "SHIFT_JIS"],
-      [0xE0,   "SHIFT_JIS"],
-      [0x0100, "ISO-8859-9"],
-      [620,    "TIS-620"],
-      [0xD800, "UTF-8"],
-      [0xDBFF, "UTF-8"],
-      [0xDC00, "UTF-8"],
-      [0xDFFF, "UTF-8"],
-      [0xD800, "UTF-16"],
-      [0xDBFF, "UTF-16"],
-      [0xDC00, "UTF-16"],
-      [0xDFFF, "UTF-16"],
-    ].each do |integer, encoding_name|
-      -> { integer.chr(encoding_name) }.should raise_error(RangeError)
-    end
+    -> { 0x80.chr("US-ASCII") }.should raise_error(RangeError)
+    -> { 0x0100.chr("BINARY") }.should raise_error(RangeError)
+    -> { 0x0100.chr("EUC-JP") }.should raise_error(RangeError)
+    -> { 0xA1A0.chr("EUC-JP") }.should raise_error(RangeError)
+    -> { 0xA1.chr("EUC-JP") }.should raise_error(RangeError)
+    -> { 0x80.chr("SHIFT_JIS") }.should raise_error(RangeError)
+    -> { 0xE0.chr("SHIFT_JIS") }.should raise_error(RangeError)
+    -> { 0x0100.chr("ISO-8859-9") }.should raise_error(RangeError)
+    -> { 620.chr("TIS-620") }.should raise_error(RangeError)
+    # UTF-16 surrogate range
+    -> { 0xD800.chr("UTF-8") }.should raise_error(RangeError)
+    -> { 0xDBFF.chr("UTF-8") }.should raise_error(RangeError)
+    -> { 0xDC00.chr("UTF-8") }.should raise_error(RangeError)
+    -> { 0xDFFF.chr("UTF-8") }.should raise_error(RangeError)
+    # UTF-16 surrogate range
+    -> { 0xD800.chr("UTF-16") }.should raise_error(RangeError)
+    -> { 0xDBFF.chr("UTF-16") }.should raise_error(RangeError)
+    -> { 0xDC00.chr("UTF-16") }.should raise_error(RangeError)
+    -> { 0xDFFF.chr("UTF-16") }.should raise_error(RangeError)
   end
 
   it 'returns a String encoding self interpreted as a codepoint in the CESU-8 encoding' do

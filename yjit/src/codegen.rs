@@ -1716,7 +1716,7 @@ fn gen_putstring(
     jit_mov_gc_ptr(jit, cb, C_ARG_REGS[1], put_val);
     call_ptr(cb, REG0, rb_ec_str_resurrect as *const u8);
 
-    let stack_top = ctx.stack_push(Type::String);
+    let stack_top = ctx.stack_push(Type::CString);
     mov(cb, stack_top, RAX);
 
     KeepCompiling
@@ -2189,7 +2189,8 @@ fn gen_checktype(
 
         // Check if we know from type information
         match (type_val, val_type) {
-            (RUBY_T_STRING, Type::String)
+            (RUBY_T_STRING, Type::TString)
+            | (RUBY_T_STRING, Type::CString)
             | (RUBY_T_ARRAY, Type::Array)
             | (RUBY_T_HASH, Type::Hash) => {
                 // guaranteed type match
@@ -2258,7 +2259,7 @@ fn gen_concatstrings(
     call_ptr(cb, REG0, rb_str_concat_literals as *const u8);
 
     ctx.stack_pop(n.as_usize());
-    let stack_ret = ctx.stack_push(Type::String);
+    let stack_ret = ctx.stack_push(Type::CString);
     mov(cb, stack_ret, RAX);
 
     KeepCompiling
@@ -2470,7 +2471,8 @@ fn gen_equality_specialized(
         je_label(cb, ret);
 
         // Otherwise guard that b is a T_STRING (from type info) or String (from runtime guard)
-        if ctx.get_opnd_type(StackOpnd(0)) != Type::String {
+        let btype = ctx.get_opnd_type(StackOpnd(0));
+        if btype != Type::TString && btype != Type::CString {
             mov(cb, REG0, C_ARG_REGS[1]);
             // Note: any T_STRING is valid here, but we check for a ::String for simplicity
             // To pass a mutable static variable (rb_cString) requires an unsafe block
@@ -3029,7 +3031,7 @@ fn gen_opt_str_freeze(
     jit_mov_gc_ptr(jit, cb, REG0, str);
 
     // Push the return value onto the stack
-    let stack_ret = ctx.stack_push(Type::String);
+    let stack_ret = ctx.stack_push(Type::CString);
     mov(cb, stack_ret, REG0);
 
     KeepCompiling
@@ -3049,7 +3051,7 @@ fn gen_opt_str_uminus(
     jit_mov_gc_ptr(jit, cb, REG0, str);
 
     // Push the return value onto the stack
-    let stack_ret = ctx.stack_push(Type::String);
+    let stack_ret = ctx.stack_push(Type::CString);
     mov(cb, stack_ret, REG0);
 
     KeepCompiling
@@ -3444,6 +3446,11 @@ fn jit_guard_known_klass(
         jit_mov_gc_ptr(jit, cb, REG1, sample_instance);
         cmp(cb, REG0, REG1);
         jit_chain_guard(JCC_JNE, jit, ctx, cb, ocb, max_chain_depth, side_exit);
+    } else if val_type == Type::CString && unsafe { known_klass == rb_cString } {
+        // guard elided because the context says we've already checked
+        unsafe {
+            assert_eq!(sample_instance.class_of(), rb_cString, "context says class is exactly ::String")
+        };
     } else {
         assert!(!val_type.is_imm());
 
@@ -3468,6 +3475,10 @@ fn jit_guard_known_klass(
         jit_mov_gc_ptr(jit, cb, REG1, known_klass);
         cmp(cb, klass_opnd, REG1);
         jit_chain_guard(JCC_JNE, jit, ctx, cb, ocb, max_chain_depth, side_exit);
+
+        if known_klass == unsafe { rb_cString } {
+            ctx.upgrade_opnd_type(insn_opnd, Type::CString);
+        }
     }
 }
 
@@ -3631,7 +3642,8 @@ fn jit_rb_str_uplus(
     // Return value is in REG0, drop through and return it.
 
     cb.write_label(ret_label);
-    let stack_ret = ctx.stack_push(Type::String);
+    // We guard for an exact-class match on the receiver of rb_cString
+    let stack_ret = ctx.stack_push(Type::CString);
     mov(cb, stack_ret, REG0);
 
     cb.link_labels();
@@ -3705,7 +3717,8 @@ fn jit_rb_str_concat(
     // String#<< can take an integer codepoint as an argument, but we don't optimise that.
     // Also, a non-string argument would have to call .to_str on itself before being treated
     // as a string, and that would require saving pc/sp, which we don't do here.
-    if comptime_arg_type != Type::String {
+    // TODO: figure out how we should optimise a string-subtype argument here
+    if comptime_arg_type != Type::CString && comptime_arg.class_of() != unsafe { rb_cString } {
         return false;
     }
 
@@ -3761,7 +3774,7 @@ fn jit_rb_str_concat(
     // Drop through to return
 
     cb.write_label(ret_label);
-    let stack_ret = ctx.stack_push(Type::String);
+    let stack_ret = ctx.stack_push(Type::CString);
     mov(cb, stack_ret, RAX);
 
     cb.link_labels();
@@ -5260,8 +5273,7 @@ fn gen_anytostring(
     cb: &mut CodeBlock,
     _ocb: &mut OutlinedCb,
 ) -> CodegenStatus {
-    // Save the PC and SP because we might make a Ruby call for
-    // Kernel#set_trace_var
+    // Save the PC and SP since we might call #to_s
     jit_prepare_routine_call(jit, ctx, cb, REG0);
 
     let str = ctx.stack_pop(1);
@@ -5273,7 +5285,7 @@ fn gen_anytostring(
     call_ptr(cb, REG0, rb_obj_as_string_result as *const u8);
 
     // Push the return value
-    let stack_ret = ctx.stack_push(Type::String);
+    let stack_ret = ctx.stack_push(Type::TString);
     mov(cb, stack_ret, RAX);
 
     KeepCompiling
@@ -6393,7 +6405,7 @@ mod tests {
         let (mut jit, mut context, mut cb, mut ocb) = setup_codegen();
         context.stack_push(Type::Fixnum);
         context.stack_push(Type::Flonum);
-        context.stack_push(Type::String);
+        context.stack_push(Type::CString);
 
         let mut value_array: [u64; 2] = [0, 2];
         let pc: *mut VALUE = &mut value_array as *mut u64 as *mut VALUE;
@@ -6403,9 +6415,9 @@ mod tests {
 
         assert_eq!(status, KeepCompiling);
 
-        assert_eq!(Type::String, context.get_opnd_type(StackOpnd(2)));
+        assert_eq!(Type::CString, context.get_opnd_type(StackOpnd(2)));
         assert_eq!(Type::Flonum, context.get_opnd_type(StackOpnd(1)));
-        assert_eq!(Type::String, context.get_opnd_type(StackOpnd(0)));
+        assert_eq!(Type::CString, context.get_opnd_type(StackOpnd(0)));
 
         assert!(cb.get_write_pos() > 0);
     }
@@ -6414,7 +6426,7 @@ mod tests {
     fn test_gen_topn() {
         let (mut jit, mut context, mut cb, mut ocb) = setup_codegen();
         context.stack_push(Type::Flonum);
-        context.stack_push(Type::String);
+        context.stack_push(Type::CString);
 
         let mut value_array: [u64; 2] = [0, 1];
         let pc: *mut VALUE = &mut value_array as *mut u64 as *mut VALUE;
@@ -6425,7 +6437,7 @@ mod tests {
         assert_eq!(status, KeepCompiling);
 
         assert_eq!(Type::Flonum, context.get_opnd_type(StackOpnd(2)));
-        assert_eq!(Type::String, context.get_opnd_type(StackOpnd(1)));
+        assert_eq!(Type::CString, context.get_opnd_type(StackOpnd(1)));
         assert_eq!(Type::Flonum, context.get_opnd_type(StackOpnd(0)));
 
         assert!(cb.get_write_pos() > 0); // Write some movs
@@ -6435,7 +6447,7 @@ mod tests {
     fn test_gen_adjuststack() {
         let (mut jit, mut context, mut cb, mut ocb) = setup_codegen();
         context.stack_push(Type::Flonum);
-        context.stack_push(Type::String);
+        context.stack_push(Type::CString);
         context.stack_push(Type::Fixnum);
 
         let mut value_array: [u64; 3] = [0, 2, 0];

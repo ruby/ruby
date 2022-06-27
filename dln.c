@@ -294,8 +294,21 @@ dln_incompatible_library_p(void *handle, const char **libname)
 COMPILER_WARNING_POP
 #endif
 
-#if defined(MAC_OS_X_VERSION_MIN_REQUIRED) && \
-    (MAC_OS_X_VERSION_MIN_REQUIRED < MAC_OS_X_VERSION_10_11)
+#if !defined(MAC_OS_X_VERSION_MIN_REQUIRED)
+/* assume others than old Mac OS X have no problem */
+# define dln_disable_dlclose() false
+
+#elif MAC_OS_X_VERSION_MIN_REQUIRED >= MAC_OS_X_VERSION_10_11
+/* targeting newer versions only */
+# define dln_disable_dlclose() false
+
+#elif !defined(MAC_OS_X_VERSION_10_11) || \
+    (MAC_OS_X_VERSION_MAX_ALLOWED < MAC_OS_X_VERSION_10_11)
+/* targeting older versions only */
+# define dln_disable_dlclose() true
+
+#else
+/* support both versions, and check at runtime */
 # include <sys/sysctl.h>
 
 static bool
@@ -308,8 +321,6 @@ dln_disable_dlclose(void)
     if (rev < MAC_OS_X_VERSION_10_11) return true;
     return false;
 }
-#else
-# define dln_disable_dlclose() false
 #endif
 
 #if defined(_WIN32) || defined(USE_DLN_DLOPEN)

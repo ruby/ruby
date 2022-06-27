@@ -743,17 +743,15 @@ class Reline::LineEditor
     Reline::IOGate.move_cursor_column(dialog.column)
     dialog.contents.each_with_index do |item, i|
       if i == pointer
-        bg_color = '45'
+        fg_color = dialog_render_info.pointer_fg_color
+        bg_color = dialog_render_info.pointer_bg_color
       else
-        if dialog_render_info.bg_color
-          bg_color = dialog_render_info.bg_color
-        else
-          bg_color = '46'
-        end
+        fg_color = dialog_render_info.fg_color
+        bg_color = dialog_render_info.bg_color
       end
       str_width = dialog.width - (dialog.scrollbar_pos.nil? ? 0 : @block_elem_width)
       str = padding_space_with_escape_sequences(Reline::Unicode.take_range(item, 0, str_width), str_width)
-      @output.write "\e[#{bg_color}m#{str}"
+      @output.write "\e[#{bg_color}m\e[#{fg_color}m#{str}"
       if dialog.scrollbar_pos and (dialog.scrollbar_pos != old_dialog.scrollbar_pos or dialog.column != old_dialog.column)
         @output.write "\e[37m"
         if dialog.scrollbar_pos <= (i * 2) and (i * 2 + 1) < (dialog.scrollbar_pos + bar_height)

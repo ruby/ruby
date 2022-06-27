@@ -3,6 +3,10 @@
 module Test
   module Unit
     module Assertions
+      def assert_raises(*exp, &b)
+        raise NoMethodError, "use assert_raise", caller
+      end
+
       def _assertions= n # :nodoc:
         @_assertions = n
       end

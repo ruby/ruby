@@ -3808,13 +3808,26 @@ AS_CASE(["$target_os"],
 	],
     [darwin*], [
 	RUBY_APPEND_OPTION(CFLAGS, -pipe)
+        AC_MSG_CHECKING([whether Security framework is needed])
 	AC_COMPILE_IFELSE([
-	    AC_LANG_BOOL_COMPILE_TRY([@%:@include <AvailabilityMacros.h>],
-		[MAC_OS_X_VERSION_MIN_REQUIRED >= MAC_OS_X_VERSION_10_7 &&
-		 MAC_OS_X_VERSION_MIN_REQUIRED < MAC_OS_X_VERSION_10_10])],
+	    AC_LANG_BOOL_COMPILE_TRY([
+@%:@include <AvailabilityMacros.h>
+enum {
+    least = MAC_OS_X_VERSION_10_7, /* just fail if undefined */
+    required = MAC_OS_X_VERSION_MIN_REQUIRED,
+    upper /* bigger than MIN_REQUIRED, or */
+@%:@ifdef MAC_OS_X_VERSION_10_10
+        = MAC_OS_X_VERSION_10_10
+@%:@endif
+};],
+	    [required >= least && required < upper])],
 	    [dnl
+		AC_MSG_RESULT(yes)
 		RUBY_APPEND_OPTION(XLDFLAGS, [-framework Security])
 		RUBY_APPEND_OPTION(LIBRUBYARG_STATIC, [-framework Security])
+	    ],dnl
+	    [dnl
+		AC_MSG_RESULT(no)
 	    ]dnl
 	)
 	RUBY_APPEND_OPTION(XLDFLAGS, [-framework CoreFoundation])

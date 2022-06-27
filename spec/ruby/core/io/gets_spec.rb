@@ -119,6 +119,16 @@ describe "IO#gets" do
     it "returns the first line without a trailing newline character" do
       @io.gets(chomp: true).should == IOSpecs.lines_without_newline_characters[0]
     end
+
+    ruby_version_is "3.0" do
+      it "raises exception when options passed as Hash" do
+        -> { @io.gets({ chomp: true }) }.should raise_error(TypeError)
+
+        -> {
+          @io.gets("\n", 1, { chomp: true })
+        }.should raise_error(ArgumentError, "wrong number of arguments (given 3, expected 0..2)")
+      end
+    end
   end
 end
 
@@ -199,6 +209,10 @@ describe "IO#gets" do
 
   it "reads all bytes when pass a separator and reading more than all bytes" do
     @io.gets("\t", 100).should == "one\n\ntwo\n\nthree\nfour\n"
+  end
+
+  it "returns empty string when 0 passed as a limit" do
+    @io.gets(0).should == ""
   end
 end
 

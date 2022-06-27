@@ -408,4 +408,19 @@ class Reline::Config::Test < Reline::TestCase
     ENV['XDG_CONFIG_HOME'] = xdg_config_home_backup
     ENV['HOME'] = home_backup
   end
+
+  def test_dialog_configurations
+    @config.read_lines(<<~LINES.lines)
+      set dialog-default-bg-color 1
+      set dialog-pointer-bg-color 2
+      set dialog-default-fg-color 3
+      set dialog-pointer-fg-color 4
+    LINES
+
+    assert_equal 1, @config.dialog_default_bg_color
+    assert_equal 2, @config.dialog_pointer_bg_color
+    assert_equal 3, @config.dialog_default_fg_color
+    assert_equal 4, @config.dialog_pointer_fg_color
+  end
 end
+

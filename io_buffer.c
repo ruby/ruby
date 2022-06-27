@@ -1752,7 +1752,7 @@ rb_io_buffer_initialize_copy(VALUE self, VALUE source)
  *
  *    string= "data:    "
  *    # => "data:    "
- *    buffer = IO::Buffer.for(str)
+ *    buffer = IO::Buffer.for(string)
  *    buffer.copy(IO::Buffer.for("test"), 5)
  *    # => 4
  *    string
@@ -2552,7 +2552,7 @@ io_buffer_not_inplace(VALUE self)
  *  \Buffer from string:
  *
  *    string = 'data'
- *    buffer = IO::Buffer.for(str)
+ *    buffer = IO::Buffer.for(string)
  *    #  =>
  *    # #<IO::Buffer 0x00007f3f02be9b18+4 SLICE>
  *    # ...

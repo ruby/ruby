@@ -7,7 +7,7 @@ describe "Process::Status#to_i" do
   end
 
   it "returns an integer when the child is signaled" do
-    ruby_exe('raise SignalException, "TERM"', exit_status: platform_is(:windows) ? 3 : nil)
+    ruby_exe('raise SignalException, "TERM"', exit_status: platform_is(:windows) ? 3 : :SIGTERM)
     $?.to_i.should be_an_instance_of(Integer)
   end
 end
