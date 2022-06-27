@@ -2371,7 +2371,6 @@ iseq_set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *const anchor)
 		len = insn_len(insn);
 
 		for (j = 0; types[j]; j++) {
-                    unsigned int ic_index = 0;
 		    char type = types[j];
 
 		    /* printf("--> [%c - (%d-%d)]\n", type, k, j); */
@@ -2421,14 +2420,12 @@ iseq_set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *const anchor)
 			}
                       /* [ TS_(ICVARC|IVC) ... | TS_ISE | TS_IC ] */
                       case TS_IC: /* inline cache: constants */
-                        ic_index += body->ise_size;
                       case TS_ISE: /* inline storage entry: `once` insn */
-                        ic_index += body->ivc_size;
                       case TS_ICVARC: /* inline cvar cache */
 		      case TS_IVC: /* inline ivar cache */
 			{
-			    ic_index += FIX2UINT(operands[j]);
-			    IC ic = (IC)&body->is_entries[ic_index];
+			    unsigned int ic_index = FIX2UINT(operands[j]);
+                            IC ic = &ISEQ_IS_ENTRY_START(body, type)[ic_index].ic_cache;
 			    if (UNLIKELY(ic_index >= ISEQ_IS_SIZE(body))) {
                                 BADINSN_DUMP(anchor, &iobj->link, 0);
                                 COMPILE_ERROR(iseq, iobj->insn_info.line_no,
@@ -11169,13 +11166,8 @@ ibf_dump_code(struct ibf_dump *dump, const rb_iseq_t *iseq)
               case TS_IVC:
               case TS_ICVARC:
                 {
-                    unsigned int i;
-                    for (i=0; i<ISEQ_IS_SIZE(body); i++) {
-                        if (op == (VALUE)&body->is_entries[i]) {
-                            break;
-                        }
-                    }
-                    wv = (VALUE)i;
+		    union iseq_inline_storage_entry *is = (union iseq_inline_storage_entry *)op;
+                    wv = is - ISEQ_IS_ENTRY_START(body, types[op_index]);
                 }
                 break;
               case TS_CALLDATA:
@@ -11214,7 +11206,6 @@ ibf_load_code(const struct ibf_load *load, rb_iseq_t *iseq, ibf_offset_t bytecod
 
     struct rb_iseq_constant_body *load_body = ISEQ_BODY(iseq);
     struct rb_call_data *cd_entries = load_body->call_data;
-    union iseq_inline_storage_entry *is_entries = load_body->is_entries;
 
     iseq_bits_t * mark_offset_bits;
 
@@ -11295,12 +11286,13 @@ ibf_load_code(const struct ibf_load *load, rb_iseq_t *iseq, ibf_offset_t bytecod
                 {
                     unsigned int op = (unsigned int)ibf_load_small_value(load, &reading_pos);
 
-                    code[code_index] = (VALUE)&is_entries[op];
+                    ISE ic = ISEQ_IS_ENTRY_START(load_body, operand_type) + op;
+                    code[code_index] = (VALUE)ic;
 
                     if (insn == BIN(opt_getinlinecache) && operand_type == TS_IC) {
                         // Store the instruction index for opt_getinlinecache on the IC for
                         // YJIT to invalidate code when opt_setinlinecache runs.
-                        is_entries[op].ic_cache.get_insn_idx = insn_index;
+                        ic->ic_cache.get_insn_idx = insn_index;
                     }
                 }
                 FL_SET(iseqv, ISEQ_MARKABLE_ISEQ);
