@@ -5380,6 +5380,7 @@ rb_ary_includes_by_eql(VALUE ary, VALUE item)
 static VALUE
 recursive_cmp(VALUE ary1, VALUE ary2, int recur)
 {
+    struct cmp_opt_data cmp_opt = { 0, 0 };
     long i, len;
 
     if (recur) return Qundef;	/* Subtle! */
@@ -5389,7 +5390,18 @@ recursive_cmp(VALUE ary1, VALUE ary2, int recur)
     }
     for (i=0; i<len; i++) {
 	VALUE e1 = rb_ary_elt(ary1, i), e2 = rb_ary_elt(ary2, i);
-	VALUE v = rb_funcallv(e1, id_cmp, 1, &e2);
+	VALUE v = INT2FIX(0);
+	if (FIXNUM_P(e1) && FIXNUM_P(e2) && CMP_OPTIMIZABLE(cmp_opt, Fixnum)) {
+	    if ((long)e1 > (long)e2) v = INT2FIX(1);
+	    if ((long)e1 < (long)e2) v = INT2FIX(-1);
+	}
+	else if (STRING_P(e1) && STRING_P(e2) && CMP_OPTIMIZABLE(cmp_opt, String)) {
+	    v = INT2FIX(rb_str_cmp(e1, e2));
+	}
+	else {
+	    v = rb_funcallv(e1, id_cmp, 1, &e2);
+	}
+
 	if (v != INT2FIX(0)) {
 	    return v;
 	}
