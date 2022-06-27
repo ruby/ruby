@@ -611,11 +611,54 @@ class TestRipper::ParserEvents < Test::Unit::TestCase
     tree = parse("*, c = 1, 2", :on_mlhs_add_post) {thru_mlhs_add_post = true}
     assert_equal true, thru_mlhs_add_post
     assert_include(tree, "massign([*,var_field(c)],")
+
+    thru_mlhs_add_post = false
+    tree = parse("a, *b, = 1, 2", :on_mlhs_add_post) {thru_mlhs_add_post = true}
+    assert_equal true, thru_mlhs_add_post
+    assert_include(tree, "massign([var_field(a),*var_field(b)],")
+    thru_mlhs_add_post = false
+    tree = parse("a, *b, c, = 1, 2", :on_mlhs_add_post) {thru_mlhs_add_post = true}
+    # assert_equal true, thru_mlhs_add_post
+    assert_include(tree, "massign([var_field(a),*var_field(b),var_field(c)],")
+    thru_mlhs_add_post = false
+    tree = parse("a, *, c, = 1, 2", :on_mlhs_add_post) {thru_mlhs_add_post = true}
+    assert_equal true, thru_mlhs_add_post
+    assert_include(tree, "massign([var_field(a),*,var_field(c)],")
+    thru_mlhs_add_post = false
+    tree = parse("*b, c, = 1, 2", :on_mlhs_add_post) {thru_mlhs_add_post = true}
+    assert_equal true, thru_mlhs_add_post
+    assert_include(tree, "massign([*var_field(b),var_field(c)],")
+    thru_mlhs_add_post = false
+    tree = parse("*, c, = 1, 2", :on_mlhs_add_post) {thru_mlhs_add_post = true}
+    assert_equal true, thru_mlhs_add_post
+    assert_include(tree, "massign([*,var_field(c)],")
   end
 
   def test_mlhs_new
     thru_mlhs_new = false
     parse("a, b = 1, 2", :on_mlhs_new) {thru_mlhs_new = true}
+    assert_equal true, thru_mlhs_new
+    thru_mlhs_new = false
+    parse("*a = 1, 2", :on_mlhs_new) {thru_mlhs_new = true}
+    assert_equal true, thru_mlhs_new
+    thru_mlhs_new = false
+    parse("*a, b = 1, 2", :on_mlhs_new) {thru_mlhs_new = true}
+    assert_equal true, thru_mlhs_new
+    thru_mlhs_new = false
+    parse("a, *b = 1, 2", :on_mlhs_new) {thru_mlhs_new = true}
+    assert_equal true, thru_mlhs_new
+
+    thru_mlhs_new = false
+    parse("a, = 1, 2", :on_mlhs_new) {thru_mlhs_new = true}
+    assert_equal true, thru_mlhs_new
+    thru_mlhs_new = false
+    parse("*a, = 1, 2", :on_mlhs_new) {thru_mlhs_new = true}
+    assert_equal true, thru_mlhs_new
+    thru_mlhs_new = false
+    parse("*a, b, = 1, 2", :on_mlhs_new) {thru_mlhs_new = true}
+    assert_equal true, thru_mlhs_new
+    thru_mlhs_new = false
+    parse("a, *b, = 1, 2", :on_mlhs_new) {thru_mlhs_new = true}
     assert_equal true, thru_mlhs_new
   end
 

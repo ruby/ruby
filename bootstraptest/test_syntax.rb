@@ -538,7 +538,7 @@ assert_syntax_error "`@0' is not allowed as an instance variable name", %q{@0..0
 assert_syntax_error "identifier $00 is not valid to get", %q{$00..0}, '[ruby-dev:31100]'
 assert_syntax_error "identifier $00 is not valid to set", %q{0..$00=1}
 assert_equal %q{0}, %q{[*0];0}, '[ruby-dev:31102]'
-assert_syntax_error "syntax error, unexpected ')'", %q{v0,(*,v1,) = 0}, '[ruby-dev:31104]'
+assert_equal %q{0}, %q{v0,(*,v1,) = 0}, '[ruby-dev:31104]'
 assert_equal %q{1}, %q{
   class << (ary=[]); def []; 0; end; def []=(x); super(0,x);end;end; ary[]+=1
 }, '[ruby-dev:31110]'
