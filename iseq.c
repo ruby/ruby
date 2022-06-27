@@ -2943,26 +2943,6 @@ iseq_type_id(enum iseq_type type)
     rb_bug("unsupported iseq type: %d", (int)type);
 }
 
-union iseq_inline_storage_entry *
-ISEQ_IS_ENTRY_START(const struct rb_iseq_constant_body *body, char op_type)
-{
-    unsigned int relative_ic_offset = 0;
-
-    switch(op_type) {
-      case TS_IC:
-          relative_ic_offset += body->ise_size;
-      case TS_ISE:
-          relative_ic_offset += body->ivc_size;
-      case TS_IVC:
-      case TS_ICVARC:
-          break;
-      default:
-          rb_bug("Wrong op type");
-    }
-
-    return &body->is_entries[relative_ic_offset];
-}
-
 static VALUE
 iseq_data_to_ary(const rb_iseq_t *iseq)
 {
