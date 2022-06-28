@@ -46,6 +46,21 @@ module Reline
     keyword_init: true
   )
 
+  DIALOG_COLOR_APIS = [
+    :dialog_default_bg_color,
+    :dialog_default_bg_color_sequence,
+    :dialog_default_bg_color=,
+    :dialog_default_fg_color,
+    :dialog_default_fg_color_sequence,
+    :dialog_default_fg_color=,
+    :dialog_pointer_bg_color,
+    :dialog_pointer_bg_color_sequence,
+    :dialog_pointer_bg_color=,
+    :dialog_pointer_fg_color,
+    :dialog_pointer_fg_color_sequence,
+    :dialog_pointer_fg_color=
+  ]
+
   class Core
     ATTR_READER_NAMES = %i(
       completion_append_character
@@ -73,14 +88,7 @@ module Reline
     def_delegators :config,
       :autocompletion,
       :autocompletion=,
-      :dialog_default_bg_color,
-      :dialog_default_bg_color=,
-      :dialog_default_fg_color,
-      :dialog_default_fg_color=,
-      :dialog_pointer_bg_color,
-      :dialog_pointer_bg_color=,
-      :dialog_pointer_fg_color,
-      :dialog_pointer_fg_color=
+      *DIALOG_COLOR_APIS
 
     def initialize
       self.output = STDOUT
@@ -264,10 +272,10 @@ module Reline
         contents: result,
         scrollbar: true,
         height: 15,
-        bg_color: config.dialog_default_bg_color,
-        pointer_bg_color: config.dialog_pointer_bg_color,
-        fg_color: config.dialog_default_fg_color,
-        pointer_fg_color: config.dialog_pointer_fg_color
+        bg_color: config.dialog_default_bg_color_sequence,
+        pointer_bg_color: config.dialog_pointer_bg_color_sequence,
+        fg_color: config.dialog_default_fg_color_sequence,
+        pointer_fg_color: config.dialog_pointer_fg_color_sequence
       )
     }
     Reline::DEFAULT_DIALOG_CONTEXT = Array.new
@@ -553,10 +561,7 @@ module Reline
   def_single_delegators :core, :add_dialog_proc
   def_single_delegators :core, :dialog_proc
   def_single_delegators :core, :autocompletion, :autocompletion=
-  def_single_delegators :core, :dialog_default_bg_color, :dialog_default_bg_color=
-  def_single_delegators :core, :dialog_pointer_bg_color, :dialog_pointer_bg_color=
-  def_single_delegators :core, :dialog_default_fg_color, :dialog_default_fg_color=
-  def_single_delegators :core, :dialog_pointer_fg_color, :dialog_pointer_fg_color=
+  def_single_delegators :core, *DIALOG_COLOR_APIS
 
   def_single_delegators :core, :readmultiline
   def_instance_delegators self, :readmultiline
@@ -579,10 +584,10 @@ module Reline
       core.filename_quote_characters = ""
       core.special_prefixes = ""
       core.add_dialog_proc(:autocomplete, Reline::DEFAULT_DIALOG_PROC_AUTOCOMPLETE, Reline::DEFAULT_DIALOG_CONTEXT)
-      core.dialog_default_bg_color = 46 # Cyan
-      core.dialog_default_fg_color = 37 # White
-      core.dialog_pointer_bg_color = 45 # Magenta
-      core.dialog_pointer_fg_color = 37 # White
+      core.dialog_default_bg_color = :cyan
+      core.dialog_default_fg_color = :white
+      core.dialog_pointer_bg_color = :magenta
+      core.dialog_pointer_fg_color = :white
     }
   end
 
