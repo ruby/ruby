@@ -124,6 +124,12 @@ int initgroups(const char *, rb_gid_t);
 #endif
 
 #if defined(HAVE_TIMES) || defined(_WIN32)
+/*********************************************************************
+ *
+ * Document-class: Process::Tms
+ *
+ * Placeholder for rusage
+ */
 static VALUE rb_cProcessTms;
 #endif
 
@@ -9124,8 +9130,17 @@ InitVM_process(void)
     rb_define_module_function(rb_mProcess, "clock_getres", rb_clock_getres, -1);
 
 #if defined(HAVE_TIMES) || defined(_WIN32)
-    /* Placeholder for rusage */
     rb_cProcessTms = rb_struct_define_under(rb_mProcess, "Tms", "utime", "stime", "cutime", "cstime", NULL);
+#if 0 /* for RDoc */
+    /* user time used in this process */
+    rb_define_attr(rb_cProcessTms, "utime", TRUE, TRUE);
+    /* system time used in this process */
+    rb_define_attr(rb_cProcessTms, "stime", TRUE, TRUE);
+    /* user time used in the child processes */
+    rb_define_attr(rb_cProcessTms, "cutime", TRUE, TRUE);
+    /* system time used in the child processes */
+    rb_define_attr(rb_cProcessTms, "cstime", TRUE, TRUE);
+#endif
 #endif
 
     SAVED_USER_ID = geteuid();
