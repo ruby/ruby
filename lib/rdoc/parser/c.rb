@@ -372,12 +372,20 @@ class RDoc::Parser::C < RDoc::Parser
         next
       end
 
+      var_name = $~[:var_name]
       type = $~[:module] ? :module : :class
       class_name = $~[:class_name]
       parent_name = $~[:parent_name] || $~[:path]
       under = $~[:under]
+      attributes = $~[:attributes]
 
-      handle_class_module($~[:var_name], type, class_name, parent_name, under)
+      handle_class_module(var_name, type, class_name, parent_name, under)
+      if attributes and !parent_name # rb_struct_define *not* without_accessor
+        true_flag = 'Qtrue'
+        attributes.scan(/"\K\w+(?=")/) do |attr_name|
+          handle_attr var_name, attr_name, true_flag, true_flag
+        end
+      end
     end
   end
 
