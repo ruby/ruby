@@ -857,6 +857,23 @@ Init_Foo(void) {
     assert_equal "a comment for class Foo", klass.comment.text
   end
 
+
+  def test_find_class_comment_initvm
+    content = <<-EOF
+/*
+ * a comment for class Foo
+ */
+void
+InitVM_Foo(void) {
+  VALUE foo = rb_define_class("Foo", rb_cObject);
+}
+    EOF
+
+    klass = util_get_class content, 'foo'
+
+    assert_equal "a comment for class Foo", klass.comment.text
+  end
+
   def test_find_class_comment_define_class
     content = <<-EOF
 /*

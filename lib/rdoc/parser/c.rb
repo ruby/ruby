@@ -720,7 +720,7 @@ class RDoc::Parser::C < RDoc::Parser
         ((?>/\*.*?\*/\s+))
         (static\s+)?
         void\s+
-        Init_#{class_name}\s*(?:_\(\s*)?\(\s*(?:void\s*)?\)%xmi then
+        Init(?:VM)?_(?i:#{class_name})\s*(?:_\(\s*)?\(\s*(?:void\s*)?\)%xm then
       comment = $1.sub(%r%Document-(?:class|module):\s+#{class_name}%, '')
     elsif @content =~ %r%Document-(?:class|module):\s+#{class_name}\s*?
                          (?:<\s+[:,\w]+)?\n((?>.*?\*/))%xm then
