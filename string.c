@@ -3834,19 +3834,36 @@ rb_str_casecmp_p(VALUE str1, VALUE str2)
 static VALUE
 str_casecmp_p(VALUE str1, VALUE str2)
 {
-    rb_encoding *enc;
-    VALUE folded_str1, folded_str2;
-    VALUE fold_opt = sym_fold;
-
-    enc = rb_enc_compatible(str1, str2);
-    if (!enc) {
-	return Qnil;
+    if (str1 == str2) return Qtrue;
+    if (!rb_enc_compatible(str1, str2)) {
+        return Qnil;
     }
 
-    folded_str1 = rb_str_downcase(1, &fold_opt, str1);
-    folded_str2 = rb_str_downcase(1, &fold_opt, str2);
+    if (ENC_CODERANGE(str1) == ENC_CODERANGE_7BIT && ENC_CODERANGE(str2) == ENC_CODERANGE_7BIT) {
+        long len1, len2;
+        const char *ptr1, *ptr2;
 
-    return rb_str_eql(folded_str1, folded_str2);
+        RSTRING_GETMEM(str1, ptr1, len1);
+        RSTRING_GETMEM(str2, ptr2, len2);
+
+        if (len1 != len2) {
+            return Qfalse;
+        }
+
+        for (long index = 0; index < len1; index++) {
+            if (TOLOWER(ptr1[index]) != TOLOWER(ptr2[index])) {
+                return Qfalse;
+            }
+        }
+
+        return Qtrue;
+    } else {
+        VALUE fold_opt = sym_fold;
+        VALUE folded_str1 = rb_str_downcase(1, &fold_opt, str1);
+        VALUE folded_str2 = rb_str_downcase(1, &fold_opt, str2);
+
+        return rb_str_eql(folded_str1, folded_str2);
+    }
 }
 
 static long
