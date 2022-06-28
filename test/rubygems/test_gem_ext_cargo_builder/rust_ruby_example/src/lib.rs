@@ -1,4 +1,3 @@
-#[macro_use]
 extern crate rb_sys;
 
 use rb_sys::{
@@ -6,8 +5,6 @@ use rb_sys::{
 };
 use std::ffi::{CStr, CString};
 use std::os::raw::{c_char, c_long};
-
-ruby_extension!();
 
 #[inline]
 unsafe fn cstr_to_string(str: *const c_char) -> String {

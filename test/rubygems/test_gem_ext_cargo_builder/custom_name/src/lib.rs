@@ -1,10 +1,7 @@
-#[macro_use]
 extern crate rb_sys;
 
 use rb_sys::{rb_define_module, rb_define_module_function, rb_utf8_str_new, VALUE};
 use std::ffi::CString;
-
-ruby_extension!();
 
 #[no_mangle]
 unsafe extern "C" fn say_hello(_klass: VALUE) -> VALUE {
