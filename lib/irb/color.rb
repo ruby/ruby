@@ -77,7 +77,7 @@ module IRB # :nodoc:
 
     class << self
       def colorable?
-        $stdout.tty? && (/mswin|mingw/ =~ RUBY_PLATFORM || (ENV.key?('TERM') && ENV['TERM'] != 'dumb'))
+        $stdout.tty? && (/mswin|mingw/ =~ RUBY_PLATFORM || (ENV.key?('TERM') && ENV['TERM'] != 'dumb')) && IRB.conf.fetch(:USE_COLORIZE, true)
       end
 
       def inspect_colorable?(obj, seen: {}.compare_by_identity)

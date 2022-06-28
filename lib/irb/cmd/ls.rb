@@ -10,7 +10,7 @@ module IRB
   module ExtendCommand
     class Ls < Nop
       def execute(*arg, grep: nil)
-        o = Output.new(grep: grep, colorable: colorable)
+        o = Output.new(grep: grep)
 
         obj    = arg.empty? ? irb_context.workspace.main : arg.first
         locals = arg.empty? ? irb_context.workspace.binding.local_variables : []
@@ -45,8 +45,7 @@ module IRB
       class Output
         MARGIN = "  "
 
-        def initialize(grep: nil, colorable: true)
-          @colorable = colorable
+        def initialize(grep: nil)
           @grep = grep
           @line_width = screen_width - MARGIN.length # right padding
         end
@@ -57,7 +56,7 @@ module IRB
           return if strs.empty?
 
           # Attempt a single line
-          print "#{Color.colorize(name, [:BOLD, :BLUE], colorable: @colorable)}: "
+          print "#{Color.colorize(name, [:BOLD, :BLUE])}: "
           if fits_on_line?(strs, cols: strs.size, offset: "#{name}: ".length)
             puts strs.join(MARGIN)
             return

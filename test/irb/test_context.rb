@@ -145,30 +145,40 @@ module TestIRB
       assert_equal "=> 1\n", out
     end
 
-    def test_eval_object_without_inspect_method
-      verbose, $VERBOSE = $VERBOSE, nil
-      all_assertions do |all|
-        IRB::Inspector::INSPECTORS.invert.each_value do |mode|
-          all.for(mode) do
-            input = TestInputMethod.new([
-                "[BasicObject.new, Class.new]\n",
-              ])
-            irb = IRB::Irb.new(IRB::WorkSpace.new(Object.new), input)
-            irb.context.inspect_mode = mode
-            out, err = capture_output do
-              irb.eval_input
-            end
-            assert_empty err
-            assert_match(/\(Object doesn't support #inspect\)\n(=> )?\n/, out)
+    {
+      successful: [
+        [false, "class Foo < Struct.new(:bar); end; Foo.new(123)\n", /#<struct bar=123>/],
+        [:p, "class Foo < Struct.new(:bar); end; Foo.new(123)\n", /#<struct bar=123>/],
+        [true, "class Foo < Struct.new(:bar); end; Foo.new(123)\n", /#<struct #<Class:.*>::Foo bar=123>/],
+        [:yaml, "123", /--- 123\n/],
+        [:marshal, "123", Marshal.dump(123)],
+      ],
+      failed: [
+        [false, "BasicObject.new", /\(Object doesn't support #inspect\)\n(=> )?\n/],
+        [:p, "class Foo; undef inspect ;end; Foo.new", /\(Object doesn't support #inspect\)\n(=> )?\n/],
+        [true, "BasicObject.new", /\(Object doesn't support #inspect\)\n(=> )?\n/],
+        [:yaml, "BasicObject.new", /\(Object doesn't support #inspect\)\n(=> )?\n/],
+        [:marshal, "[Object.new, Class.new]", /\(Object doesn't support #inspect\)\n(=> )?\n/]
+      ]
+    }.each do |scenario, cases|
+      cases.each do |inspect_mode, input, expected|
+        define_method "test_#{inspect_mode}_inspect_mode_#{scenario}" do
+          pend if RUBY_ENGINE == 'truffleruby'
+          verbose, $VERBOSE = $VERBOSE, nil
+          irb = IRB::Irb.new(IRB::WorkSpace.new(Object.new), TestInputMethod.new([input]))
+          irb.context.inspect_mode = inspect_mode
+          out, err = capture_output do
+            irb.eval_input
           end
+          assert_empty err
+          assert_match(expected, out)
+        ensure
+          $VERBOSE = verbose
         end
       end
-    ensure
-      $VERBOSE = verbose
     end
 
     def test_default_config
-      assert_equal(true, @context.use_colorize?)
       assert_equal(true, @context.use_autocomplete?)
     end
 
