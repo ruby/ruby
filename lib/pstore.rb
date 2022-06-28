@@ -10,14 +10,27 @@
 
 require "digest"
 
-# An instance of class \PStore can store and retrieve Ruby objects --
-# not just strings or raw data, but objects of many kinds.
+# \PStore implements a file based persistence mechanism based on a Hash.
+# User code can store hierarchies of Ruby objects (values)
+# into the data store by name (keys).
+# An object hierarchy may be just a single object.
+# User code may later read values back from the data store
+# or even update data, as needed.
+#
+# The transactional behavior ensures that any changes succeed or fail together.
+# This can be used to ensure that the data store is not left in a transitory state,
+# where some values were updated but others were not.
+#
+# Behind the scenes, Ruby objects are stored to the data store file with Marshal.
+# That carries the usual limitations. Proc objects cannot be marshalled,
+# for example.
+#
 # There are three key terms here (details at the links):
 #
 # - {Store}[rdoc-ref:PStore@The+Store]: a store is an instance of \PStore.
 # - {Roots}[rdoc-ref:PStore@Roots]: the store is hash-like;
 #   each root is a key for a stored object.
-# - {Transactions}[rdoc-ref:PStore@Transactions]: each transaction is a ollection
+# - {Transactions}[rdoc-ref:PStore@Transactions]: each transaction is a collection
 #   of prospective changes to the store;
 #   a transaction is defined in the block given with a call
 #   to PStore#transaction.
@@ -37,7 +50,7 @@ require "digest"
 #   end
 #
 # To avoid modifying the example store, some examples first execute
-# <tt>temp = store.dup</tt>, then apply changes to +temp+
+# <tt>temp = store.dup</tt>, then apply changes to +temp+.
 #
 # == The Store
 #
@@ -59,22 +72,26 @@ require "digest"
 # Each root has a key and a value, just as in a hash:
 #
 # - Key: as in a hash, the key can be (almost) any object;
-#   see {Hash}[https://docs.ruby-lang.org/en/master/Hash.html].
+#   see {Hash Keys}[https://docs.ruby-lang.org/en/master/Hash.html#class-Hash-label-Hash+Keys].
 #   You may find it convenient to keep it simple by using only
 #   symbols or strings as keys.
-# - Value: the value truly may be any object, and in fact can be a collection
+# - Value: the value may be any object that can be serialized by \Marshal
+#   (see {Marshal::dump}[https://docs.ruby-lang.org/en/master/Marshal.html#method-c-dump])
+#   and in fact may be a collection
 #   (e.g., an array, a hash, a set, a range, etc).
-#   That collection may in turn contain nested collections, to any depth.
+#   That collection may in turn contain nested objects,
+#   including collections, to any depth;
+#   those objects must also be Marshal-serializable.
 #   See {Deep Root Values}[rdoc-ref:PStore@Deep+Root+Values].
 #
 # == Transactions
 #
 # A call to PStore#transaction must have a block.
 #
-# A transaction consists of just those \PStore method calls in the block
-# that would modify the store; those methods are #[]= and #delete.
-# Note that the block may contain any code whatsoever
+# The block may contain any code whatsoever
 # except a nested call to #transaction.
+# The transaction itself consists of the \PStore method calls in the block
+# that would modify the store: calls to #[]= and #delete.
 #
 # An instance method in \PStore may be called only from within a transaction
 # (with the exception the #path may be called from anywhere).
@@ -416,7 +433,7 @@ class PStore
   # :call-seq:
   #   delete(key)
   #
-  # Removes and returns the root for +key+ if it exists:
+  # Removes and returns the value at +key+ if it exists:
   #
   #   store = PStore.new('t.store')
   #   store.transaction do
@@ -467,8 +484,8 @@ class PStore
     @filename
   end
 
-  # Exits the current transaction block after committing any changes
-  # specified in that block.
+  # Exits the current transaction block, committing any changes
+  # specified in the transaction block.
   # See {Committing or Aborting}[rdoc-ref:PStore@Committing+or+Aborting].
   #
   # Raises an exception if called outside a transaction block.
@@ -478,8 +495,8 @@ class PStore
     throw :pstore_abort_transaction
   end
 
-  # Exits the current transaction block, ignoring any changes
-  # specified in that block.
+  # Exits the current transaction block, discarding any changes
+  # specified in the transaction block.
   # See {Committing or Aborting}[rdoc-ref:PStore@Committing+or+Aborting].
   #
   # Raises an exception if called outside a transaction block.
@@ -489,11 +506,11 @@ class PStore
     throw :pstore_abort_transaction
   end
 
-  # Defines a transaction block for the store.
+  # Opens a transaction block for the store.
   # See {Transactions}[rdoc-ref:PStore@Transactions].
   #
-  # With argument +read_only+ as +false+, the block may contain any Ruby code,
-  # including calls to \PStore methods other #transaction.
+  # With argument +read_only+ as +false+, the block may both read from
+  # and write to the store.
   #
   # With argument +read_only+ as +true+, the block may not include calls
   # to #transaction, #[]=, or #delete.
