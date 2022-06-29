@@ -13612,7 +13612,7 @@ ripper_validate_object(VALUE self, VALUE x)
 {
     if (x == Qfalse) return x;
     if (x == Qtrue) return x;
-    if (x == Qnil) return x;
+    if (NIL_P(x)) return x;
     if (x == Qundef)
 	rb_raise(rb_eArgError, "Qundef given");
     if (FIXNUM_P(x)) return x;
