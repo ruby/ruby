@@ -3535,18 +3535,28 @@ vm_call_opt_struct_aref0(rb_execution_context_t *ec, struct rb_calling_info *cal
     return internal_RSTRUCT_GET(recv, off);
 }
 
+inline static int
+rb_tracing_enabled(int mask)
+{
+    return UNLIKELY((ruby_vm_event_flags & mask));
+}
+
 static VALUE
 vm_call_opt_struct_aref(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, struct rb_calling_info *calling)
 {
     RB_DEBUG_COUNTER_INC(ccf_opt_struct_aref);
 
-    if (UNLIKELY(ruby_vm_event_flags & RUBY_EVENT_C_CALL))
+    VALUE ret;
+
+    if (!rb_tracing_enabled(RUBY_EVENT_C_CALL | RUBY_EVENT_C_RETURN)) {
+        ret = vm_call_opt_struct_aref0(ec, calling);
+    } else {
         EXEC_EVENT_HOOK(ec, RUBY_EVENT_C_CALL, calling->recv, vm_cc_cme(calling->cc)->def->original_id, vm_ci_mid(calling->ci), vm_cc_cme(calling->cc)->owner, Qundef);
 
-    VALUE ret = vm_call_opt_struct_aref0(ec, calling);
+        ret = vm_call_opt_struct_aref0(ec, calling);
 
-    if (UNLIKELY(ruby_vm_event_flags & RUBY_EVENT_C_RETURN))
         EXEC_EVENT_HOOK(ec, RUBY_EVENT_C_RETURN, calling->recv, vm_cc_cme(calling->cc)->def->original_id, vm_ci_mid(calling->ci), vm_cc_cme(calling->cc)->owner, ret);
+    }
 
     reg_cfp->sp -= 1;
     return ret;
@@ -3574,13 +3584,17 @@ vm_call_opt_struct_aset(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp,
 {
     RB_DEBUG_COUNTER_INC(ccf_opt_struct_aset);
 
-    if (UNLIKELY(ruby_vm_event_flags & RUBY_EVENT_C_CALL))
+    VALUE ret;
+
+    if (!rb_tracing_enabled(RUBY_EVENT_C_CALL | RUBY_EVENT_C_RETURN)) {
+        ret = vm_call_opt_struct_aset0(ec, calling, *(reg_cfp->sp - 1));
+    } else {
         EXEC_EVENT_HOOK(ec, RUBY_EVENT_C_CALL, calling->recv, vm_cc_cme(calling->cc)->def->original_id, vm_ci_mid(calling->ci), vm_cc_cme(calling->cc)->owner, Qundef);
 
-    VALUE ret = vm_call_opt_struct_aset0(ec, calling, *(reg_cfp->sp - 1));
+        ret = vm_call_opt_struct_aset0(ec, calling, *(reg_cfp->sp - 1));
 
-    if (UNLIKELY(ruby_vm_event_flags & RUBY_EVENT_C_RETURN))
         EXEC_EVENT_HOOK(ec, RUBY_EVENT_C_RETURN, calling->recv, vm_cc_cme(calling->cc)->def->original_id, vm_ci_mid(calling->ci), vm_cc_cme(calling->cc)->owner, ret);
+    }
 
     reg_cfp->sp -= 2;
     return ret;
