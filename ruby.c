@@ -116,10 +116,14 @@ enum feature_flag_bits {
 #else
     DEFINE_FEATURE(jit) = feature_yjit,
 #endif
+    feature_jit_mask = FEATURE_BIT(mjit) | FEATURE_BIT(yjit),
+
     feature_debug_flag_begin = feature_debug_flag_first - 1,
     EACH_DEBUG_FEATURES(DEFINE_DEBUG_FEATURE, COMMA),
     feature_flag_count
 };
+
+#define MULTI_BITS_P(bits) ((bits) & ((bits) - 1))
 
 #define DEBUG_BIT(bit) (1U << feature_debug_##bit)
 
@@ -166,6 +170,8 @@ rb_feature_set_to(ruby_features_t *feat, unsigned int bit_mask, unsigned int bit
 #define FEATURE_SET(feat, bits) FEATURE_SET_TO(feat, bits, bits)
 #define FEATURE_SET_RESTORE(feat, save) FEATURE_SET_TO(feat, (save).mask, (save).set & (save).mask)
 #define FEATURE_SET_P(feat, bits) ((feat).set & FEATURE_BIT(bits))
+#define FEATURE_USED_P(feat, bits) ((feat).mask & FEATURE_BIT(bits))
+#define FEATURE_SET_BITS(feat) ((feat).set & (feat).mask)
 
 static void init_ids(ruby_cmdline_options_t *);
 
@@ -183,8 +189,7 @@ enum {
 	& ~FEATURE_BIT(gems)
 #endif
 	& ~FEATURE_BIT(frozen_string_literal)
-        & ~FEATURE_BIT(mjit)
-        & ~FEATURE_BIT(yjit)
+        & ~feature_jit_mask
 	)
 };
 
@@ -202,10 +207,6 @@ cmdline_options_init(ruby_cmdline_options_t *opt)
 #elif defined(YJIT_FORCE_ENABLE)
     opt->features.set |= FEATURE_BIT(yjit);
 #endif
-
-    if (getenv("RUBY_YJIT_ENABLE")) {
-        opt->features.set |= FEATURE_BIT(yjit);
-    }
 
     return opt;
 }
@@ -927,7 +928,7 @@ feature_option(const char *str, int len, void *arg, const unsigned int enable)
     }
     if (NAME_MATCH_P("all", str, len)) {
         // YJIT and MJIT cannot be enabled at the same time. We enable only one for --enable=all.
-        mask &= ~(FEATURE_BIT(yjit) | FEATURE_BIT(mjit)) | FEATURE_BIT(jit);
+        mask &= ~feature_jit_mask | FEATURE_BIT(jit);
         goto found;
     }
 #if AMBIGUOUS_FEATURE_NAMES
@@ -1810,22 +1811,28 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
          */
         rb_warning("-K is specified; it is for 1.8 compatibility and may cause odd behavior");
 
+    if (MULTI_BITS_P(FEATURE_SET_BITS(opt->features) & feature_jit_mask)) {
+        rb_warn("MJIT and YJIT cannot both be enabled at the same time. Exiting");
+        return Qfalse;
+    }
+
+    if (!(FEATURE_SET_BITS(opt->features) & feature_jit_mask)) {
+#if YJIT_BUILD
+        if (!FEATURE_USED_P(opt->features, yjit) && getenv("RUBY_YJIT_ENABLE")) {
+            FEATURE_SET(opt->features, FEATURE_BIT(yjit));
+        }
+#endif
+    }
 #if USE_MJIT
     if (FEATURE_SET_P(opt->features, mjit)) {
         opt->mjit.on = TRUE; /* set mjit.on for ruby_show_version() API and check to call mjit_init() */
     }
 #endif
-    if (FEATURE_SET_P(opt->features, yjit)) {
-#if USE_MJIT
-        if (opt->mjit.on) {
-            rb_warn("MJIT and YJIT cannot both be enabled at the same time. Exiting");
-            return Qfalse;
-        }
-#endif
 #if YJIT_BUILD
+    if (FEATURE_SET_P(opt->features, yjit)) {
         rb_yjit_init();
-#endif
     }
+#endif
 #if USE_MJIT
     mjit_opts.on = opt->mjit.on; /* used by Init_ruby_description(). mjit_init() still can't be called here. */
 #endif
