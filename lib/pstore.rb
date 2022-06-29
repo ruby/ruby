@@ -105,7 +105,7 @@ require "digest"
 #   end
 #
 # Instance methods in \PStore may be called only from within a transaction
-# ()exception: #path may be called from anywhere).
+# (exception: #path may be called from anywhere).
 # This assures that the call is executed only when the store is secure and stable.
 #
 # As seen above, changes in a transaction are made automatically
@@ -367,9 +367,6 @@ class PStore
   end
   private :in_transaction, :in_transaction_wr
 
-  # :call-seq:
-  #   pstore[key]
-  #
   # Returns the object for the given +key+ if the key exists.
   # +nil+ otherwise;
   # if not +nil+, the returned value is an object or a hierarchy of objects:
@@ -384,14 +381,11 @@ class PStore
   # See also {Deep Root Values}[rdoc-ref:PStore@Deep+Root+Values].
   #
   # Raises an exception if called outside a transaction block.
-  def [](name)
+  def [](key)
     in_transaction
-    @table[name]
+    @table[key]
   end
 
-  # :call-seq:
-  #   fetch(key)
-  #
   # Like #[], except that it accepts a default value for the store.
   # If the root for the given +key+ does not exist:
   #
@@ -404,21 +398,18 @@ class PStore
   #     end
   #
   # Raises an exception if called outside a transaction block.
-  def fetch(name, default=PStore::Error)
+  def fetch(key, default=PStore::Error)
     in_transaction
-    unless @table.key? name
+    unless @table.key? key
       if default == PStore::Error
-        raise PStore::Error, format("undefined root name `%s'", name)
+        raise PStore::Error, format("undefined root key `%s'", key)
       else
         return default
       end
     end
-    @table[name]
+    @table[key]
   end
 
-  # :call-seq:
-  #   pstore[key] = value
-  #
   # Creates or replaces an object or hierarchy of objects
   # at the root for +key+:
   #
@@ -430,14 +421,11 @@ class PStore
   # See also {Deep Root Values}[rdoc-ref:PStore@Deep+Root+Values].
   #
   # Raises an exception if called outside a transaction block.
-  def []=(name, value)
+  def []=(key, value)
     in_transaction_wr
-    @table[name] = value
+    @table[key] = value
   end
 
-  # :call-seq:
-  #   delete(key)
-  #
   # Removes and returns the value at +key+ if it exists:
   #
   #   store = PStore.new('t.store')
@@ -449,9 +437,9 @@ class PStore
   # Returns +nil+ if there is no such root.
   #
   # Raises an exception if called outside a transaction block.
-  def delete(name)
+  def delete(key)
     in_transaction_wr
-    @table.delete name
+    @table.delete key
   end
 
   # Returns an array of the keys of the existing roots:
@@ -466,9 +454,6 @@ class PStore
     @table.keys
   end
 
-  # :call-seq:
-  #   root?(key)
-  #
   # Returns +true+ if there is a root for +key+, +false+ otherwise:
   #
   #   store.transaction do
@@ -476,9 +461,9 @@ class PStore
   #   end
   #
   # Raises an exception if called outside a transaction block.
-  def root?(name)
+  def root?(key)
     in_transaction
-    @table.key? name
+    @table.key? key
   end
 
   # Returns the string file path used to create the store:
