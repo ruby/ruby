@@ -486,6 +486,16 @@ class TestObjSpace < Test::Unit::TestCase
     end
   end
 
+  def test_dump_string_coderange
+    assert_includes ObjectSpace.dump("TEST STRING"), '"coderange":"7bit"'
+    unknown = "TEST STRING".dup.force_encoding(Encoding::BINARY)
+    2.times do # ensure that dumping the string doesn't mutate it
+      assert_includes ObjectSpace.dump(unknown), '"coderange":"unknown"'
+    end
+    assert_includes ObjectSpace.dump("Fée"), '"coderange":"valid"'
+    assert_includes ObjectSpace.dump("\xFF"), '"coderange":"broken"'
+  end
+
   def test_dump_escapes_method_name
     method_name = "foo\"bar"
     klass = Class.new do
