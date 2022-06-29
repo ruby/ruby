@@ -29,9 +29,6 @@ It consists of:
 - An optional _width_ _specifier_ (an integer).
 - A _conversion_ _specifier_ (a character).
 
-Note that the +E+ and +O+ modifiers seen in some implementations
-are not supported here and should not be used.
-
 Except for the leading percent character,
 the only required part is the conversion specifier, so we begin with that.
 
@@ -42,21 +39,21 @@ the only required part is the conversion specifier, so we begin with that.
 - <tt>%Y</tt> - Year including century, zero-padded:
 
     Time.now.strftime('%Y')          # => "2022"
-    Time.new('-1000').strftime('%Y') # => "-1000" # Before common era.
-    Time.new('10000').strftime('%Y') # => "10000" # Far future.
-    Time.new('10').strftime('%Y')    # => "0010"  # Zero-padded by default.
+    Time.new(-1000).strftime('%Y') # => "-1000" # Before common era.
+    Time.new(10000).strftime('%Y') # => "10000" # Far future.
+    Time.new(10).strftime('%Y')    # => "0010"  # Zero-padded by default.
 
-- <tt>%y</tt> - Year without century, range (0.99), zero-padded:
+- <tt>%y</tt> - Year without century, in range (0.99), zero-padded:
 
     Time.now.strftime('%y')      # => "22"
-    Time.new('1').strftime('%y') # => "01" # Zero-padded by default.
+    Time.new(1).strftime('%y') # => "01" # Zero-padded by default.
 
 - <tt>%C</tt> - Century, zero-padded:
 
     Time.now.strftime('%C')          # => "20"
-    Time.new('-1000').strftime('%C') # => "-10" # Before common era.
-    Time.new('10000').strftime('%C') # => "100" # Far future.
-    Time.new('100').strftime('%C')   # => "01"  # Zero-padded by default.
+    Time.new(-1000).strftime('%C') # => "-10" # Before common era.
+    Time.new(10000).strftime('%C') # => "100" # Far future.
+    Time.new(100).strftime('%C')   # => "01"  # Zero-padded by default.
 
 - <tt>%m</tt> - Month of the year, in range (1..12), zero-padded:
 
@@ -299,7 +296,7 @@ longhand specifier.
 
 Examples in this section assume:
 
-  t = Time.now# => 2022-06-28 17:21:43.8555777 -0500
+  t = Time.now # => 2022-06-28 17:21:43.8555777 -0500
 
 - Calendar date:
 
@@ -367,35 +364,36 @@ order does not matter.
 
 - <tt>0</tt> - Pad with zeroes:
 
-    Time.new('10').strftime('%0Y') # => "0010"
+    Time.new(10).strftime('%0Y') # => "0010"
 
 - <tt>_</tt> - Pad with blanks:
 
-    Time.new('10').strftime('%_Y') # => "  10"
+    Time.new(10).strftime('%_Y') # => "  10"
 
 - <tt>-</tt> - Don't pad:
 
-    Time.new('10').strftime('%-Y') # => "10"
+    Time.new(10).strftime('%-Y') # => "10"
 
 ==== Casing Flags
 
 - <tt>^</tt> - Upcase result:
 
     Time.new(2022, 1).strftime('%B')  # => "January" # No casing flag.
-    Time.new(2022, 1).strftime('%#B') # => "JANUARY"
+    Time.new(2022, 1).strftime('%^B') # => "JANUARY"
 
 - <tt>#</tt> - Swapcase result:
 
-    Time.new(2022, 1).strftime('%B')  # => "January" # No casing flag.
-    Time.new(2022, 1).strftime('%#B') # => "JANUARY"
+    Time.now.strftime('%p') # => "AM"
+    Time.now.strftime('%^p') # => "AM"
+    Time.now.strftime('%#p') # => "am"
 
 ==== Timezone Flags
 
-- <tt>:</tt> - Put colon in timezone:
+- <tt>:</tt> - Put timezone as colon-separated hours and minutes:
 
     Time.now.strftime('%:z')  # => "-05:00"
 
-- <tt>::</tt> - Put colons in timezone:
+- <tt>::</tt> - Put timezone as colon-separated hours, minutes, and seconds:
 
     Time.now.strftime('%::z') # => "-05:00:00"
 
