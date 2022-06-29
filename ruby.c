@@ -199,13 +199,15 @@ cmdline_options_init(ruby_cmdline_options_t *opt)
     opt->features.set = DEFAULT_FEATURES;
 #ifdef MJIT_FORCE_ENABLE /* to use with: ./configure cppflags="-DMJIT_FORCE_ENABLE" */
     opt->features.set |= FEATURE_BIT(mjit);
-#elif defined(YJIT_FORCE_ENABLE)
+#elif YJIT_BUILD && defined(YJIT_FORCE_ENABLE)
     opt->features.set |= FEATURE_BIT(yjit);
 #endif
 
+#if YJIT_BUILD
     if (getenv("RUBY_YJIT_ENABLE")) {
         opt->features.set |= FEATURE_BIT(yjit);
     }
+#endif
 
     return opt;
 }
