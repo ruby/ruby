@@ -4841,7 +4841,7 @@ vm_objtostring(const rb_iseq_t *iseq, VALUE recv, CALL_DATA cd)
             // going to use this string for interpolation, it's fine to use the
             // frozen string.
             VALUE val = rb_mod_name(recv);
-            if (val == Qnil) {
+            if (NIL_P(val)) {
                 val = rb_mod_to_s(recv);
             }
             return val;
