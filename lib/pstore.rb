@@ -55,14 +55,8 @@ require "digest"
 # == The Store
 #
 # The contents of the store are maintained in a file whose path is specified
-# when the store is created (see PStore.new):
-#
-# - Ruby objects put into the store are serialized as string data
-#   and written to the file;
-# - Data retrieved from the store is read from the file and deserialized
-#   to form Ruby objects.
-#
-# The objects are serialized and deserialized using
+# when the store is created (see PStore.new).
+# The objects are stored and retrieved using
 # module Marshal, which means that certain objects cannot be added to the store;
 # see {Marshal::dump}[https://docs.ruby-lang.org/en/master/Marshal.html#method-c-dump].
 #
@@ -75,35 +69,47 @@ require "digest"
 #   see {Hash Keys}[https://docs.ruby-lang.org/en/master/Hash.html#class-Hash-label-Hash+Keys].
 #   You may find it convenient to keep it simple by using only
 #   symbols or strings as keys.
-# - Value: the value may be any object that can be serialized by \Marshal
+# - Value: the value may be any object that can be marshalled by \Marshal
 #   (see {Marshal::dump}[https://docs.ruby-lang.org/en/master/Marshal.html#method-c-dump])
 #   and in fact may be a collection
 #   (e.g., an array, a hash, a set, a range, etc).
 #   That collection may in turn contain nested objects,
 #   including collections, to any depth;
-#   those objects must also be Marshal-serializable.
+#   those objects must also be \Marshal-able.
 #   See {Deep Root Values}[rdoc-ref:PStore@Deep+Root+Values].
 #
 # == Transactions
 #
-# A call to PStore#transaction must have a block.
+# A _transaction_ consists of calls to store-modifying methods (#[]= and #delete)
+# that appear in the block given with a call to method #transaction:
 #
-# The block may contain any code whatsoever
-# except a nested call to #transaction.
-# The transaction itself consists of the \PStore method calls in the block
-# that would modify the store: calls to #[]= and #delete.
+#   temp = store.dup
+#   temp.transaction do
+#     temp[:foo] = 4
+#     temp.delete(:bar)
+#   end
 #
-# An instance method in \PStore may be called only from within a transaction
-# (with the exception the #path may be called from anywhere).
+# When the block exits, the specified changes are made _atomically_;
+# that is, either all changes are posted, or none are.
+# This maintains the integrity of the store.
+#
+# The block may not contain a nested call to #transaction,
+# but otherwise may contain any code, including calls to other \PStore methods:
+#
+#   temp = store.dup
+#   temp.transaction do
+#     p "Changing #{:foo} from #{temp[:foo]} to 4."
+#     temp[:foo] = 4
+#     p "Deleting #{:bar}."
+#     temp.delete(:bar)
+#   end
+#
+# Instance methods in \PStore may be called only from within a transaction
+# ()exception: #path may be called from anywhere).
 # This assures that the call is executed only when the store is secure and stable.
 #
-# When the transaction block exits,
-# the specified changes are made automatically.
-# (and atomically; that is, either all changes are posted, or none are).
-#
-# Exactly how the changes are posted
-# depends on the value of attribute #ultra_safe (details at the link).
-#
+# As seen above, changes in a transaction are made automatically
+# when the block exits.
 # The block may be exited early by calling method #commit or #abort.
 #
 # - Method #commit triggers the update to the store and exits the block:
@@ -214,20 +220,19 @@ require "digest"
 # Use method #root? to determine whether a given root exists:
 #
 #   store.transaction do
-#     store.root?(:foo) # => true.
+#     store.root?(:foo) # => true
 #   end
 #
 # Use method #roots to retrieve root keys:
 #
 #   store.transaction do
-#     store.roots # => [:foo, :bar, :baz].
+#     store.roots # => [:foo, :bar, :baz]
 #   end
 #
-# Use method #path to retrieve the path to the store's underlying file:
+# Use method #path to retrieve the path to the store's underlying file;
+# this method may be called from outside a transaction block:
 #
-#   store.transaction do
-#     store.path # => "flat.store"
-#   end
+#   store.path # => "flat.store"
 #
 # == Transaction Safety
 #
@@ -321,7 +326,7 @@ class PStore
   # Returns a new \PStore object.
   #
   # Argument +file+ is the path to the file in which objects are to be stored;
-  # if the file exists, it must be in a Marshal-compatible format:
+  # if the file exists, it should be one that was written by \PStore.
   #
   #   path = 't.store'
   #   store = PStore.new(path)
@@ -365,7 +370,7 @@ class PStore
   # :call-seq:
   #   pstore[key]
   #
-  # Returns the deserialized value of the root for the given +key+ if it exists.
+  # Returns the object for the given +key+ if the key exists.
   # +nil+ otherwise;
   # if not +nil+, the returned value is an object or a hierarchy of objects:
   #
@@ -417,9 +422,9 @@ class PStore
   # Creates or replaces an object or hierarchy of objects
   # at the root for +key+:
   #
-  #   store = PStore.new('t.store')
-  #   store.transaction do
-  #     store[:bat] = 3
+  #   temp = store.dup
+  #   temp.transaction do
+  #     temp[:bat] = 3
   #   end
   #
   # See also {Deep Root Values}[rdoc-ref:PStore@Deep+Root+Values].
