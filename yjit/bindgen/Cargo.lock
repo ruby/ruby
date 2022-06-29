@@ -342,4 +342,5 @@ name = "yjit-bindgen"
 version = "0.1.0"
 dependencies = [
  "bindgen",
+ "env_logger",
 ]

@@ -29,10 +29,9 @@ module IRB
 
       def initialize(conf)
         @irb_context = conf
-        @colorable = Color.colorable? && conf.use_colorize
       end
 
-      attr_reader :irb_context, :colorable
+      attr_reader :irb_context
 
       def irb
         @irb_context.irb

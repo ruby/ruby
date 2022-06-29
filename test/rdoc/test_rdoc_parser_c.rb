@@ -311,6 +311,12 @@ VALUE cFoo = rb_struct_define(
 
     klass = util_get_class content, 'cFoo'
     assert_equal "this is the Foo class", klass.comment.text
+
+    attributes = klass.attributes
+    assert_equal 3, attributes.size, -> {attributes}
+    ["some", "various", "fields"].zip(attributes) do |name, attr|
+      assert_equal RDoc::Attr.new("", name, "RW", ""), attr
+    end
   end
 
   def test_do_classes_struct_under
@@ -326,6 +332,12 @@ VALUE cFoo = rb_struct_define_under(
     klass = util_get_class content, 'cFoo'
     assert_equal 'Kernel::Foo', klass.full_name
     assert_equal "this is the Foo class under Kernel", klass.comment.text
+
+    attributes = klass.attributes
+    assert_equal 3, attributes.size, -> {attributes}
+    ["some", "various", "fields"].zip(attributes) do |name, attr|
+      assert_equal RDoc::Attr.new("", name, "RW", ""), attr
+    end
   end
 
   def test_do_classes_struct_without_accessor
@@ -340,6 +352,7 @@ VALUE cFoo = rb_struct_define_without_accessor(
 
     klass = util_get_class content, 'cFoo'
     assert_equal "this is the Foo class", klass.comment.text
+    assert_empty klass.attributes
   end
 
   def test_do_classes_struct_without_accessor_under
@@ -355,6 +368,7 @@ VALUE cFoo = rb_struct_define_without_accessor_under(
     klass = util_get_class content, 'cFoo'
     assert_equal 'Kernel::Foo', klass.full_name
     assert_equal "this is the Foo class under Kernel", klass.comment.text
+    assert_empty klass.attributes
   end
 
   def test_do_classes_class_under
@@ -848,6 +862,23 @@ bar = rb_define_class("MyClassName2", rb_cObject);
  */
 void
 Init_Foo(void) {
+  VALUE foo = rb_define_class("Foo", rb_cObject);
+}
+    EOF
+
+    klass = util_get_class content, 'foo'
+
+    assert_equal "a comment for class Foo", klass.comment.text
+  end
+
+
+  def test_find_class_comment_initvm
+    content = <<-EOF
+/*
+ * a comment for class Foo
+ */
+void
+InitVM_Foo(void) {
   VALUE foo = rb_define_class("Foo", rb_cObject);
 }
     EOF
