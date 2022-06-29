@@ -3539,8 +3539,17 @@ static VALUE
 vm_call_opt_struct_aref(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, struct rb_calling_info *calling)
 {
     RB_DEBUG_COUNTER_INC(ccf_opt_struct_aref);
+    const struct rb_callinfo *ci = calling->ci;
+    const struct rb_callcache *cc = calling->cc;
+
+    if (UNLIKELY(ruby_vm_event_flags & RUBY_EVENT_C_CALL))
+        EXEC_EVENT_HOOK(ec, RUBY_EVENT_C_CALL, calling->recv, vm_cc_cme(cc)->def->original_id, vm_ci_mid(ci), vm_cc_cme(cc)->owner, Qundef);
 
     VALUE ret = vm_call_opt_struct_aref0(ec, calling);
+
+    if (UNLIKELY(ruby_vm_event_flags & RUBY_EVENT_C_RETURN))
+        EXEC_EVENT_HOOK(ec, RUBY_EVENT_C_RETURN, calling->recv, vm_cc_cme(cc)->def->original_id, vm_ci_mid(ci), vm_cc_cme(cc)->owner, ret);
+
     reg_cfp->sp -= 1;
     return ret;
 }
@@ -3566,8 +3575,17 @@ static VALUE
 vm_call_opt_struct_aset(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, struct rb_calling_info *calling)
 {
     RB_DEBUG_COUNTER_INC(ccf_opt_struct_aset);
+    const struct rb_callinfo *ci = calling->ci;
+    const struct rb_callcache *cc = calling->cc;
+
+    if (UNLIKELY(ruby_vm_event_flags & RUBY_EVENT_C_CALL))
+        EXEC_EVENT_HOOK(ec, RUBY_EVENT_C_CALL, calling->recv, vm_cc_cme(cc)->def->original_id, vm_ci_mid(ci), vm_cc_cme(cc)->owner, Qundef);
 
     VALUE ret = vm_call_opt_struct_aset0(ec, calling, *(reg_cfp->sp - 1));
+
+    if (UNLIKELY(ruby_vm_event_flags & RUBY_EVENT_C_RETURN))
+        EXEC_EVENT_HOOK(ec, RUBY_EVENT_C_RETURN, calling->recv, vm_cc_cme(cc)->def->original_id, vm_ci_mid(ci), vm_cc_cme(cc)->owner, ret);
+
     reg_cfp->sp -= 2;
     return ret;
 }
