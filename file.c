@@ -2900,9 +2900,6 @@ utime_internal(const char *path, void *arg)
 # endif
             return result;
     }
-# ifdef TRY_UTIMENSAT
-no_utimensat:
-# endif
 #endif
 
     if (tsp) {
