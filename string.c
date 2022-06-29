@@ -3303,12 +3303,28 @@ rb_str_buf_cat_ascii(VALUE str, const char *ptr)
     }
 }
 
+static inline bool
+str_enc_fastpath(VALUE str)
+{
+    // The overwhelming majority of strings are in one of these 3 encodings.
+    switch (ENCODING_GET_INLINED(str)) {
+      case ENCINDEX_ASCII_8BIT:
+      case ENCINDEX_UTF_8:
+      case ENCINDEX_US_ASCII:
+        return true;
+      default:
+        return false;
+    }
+}
+
 VALUE
 rb_str_buf_append(VALUE str, VALUE str2)
 {
-    int str2_cr;
-
-    str2_cr = ENC_CODERANGE(str2);
+    int str2_cr = rb_enc_str_coderange(str2);
+    if (str2_cr == ENC_CODERANGE_7BIT && str_enc_fastpath(str)) {
+        str_buf_cat(str, RSTRING_PTR(str2), RSTRING_LEN(str2));
+        return str;
+    }
 
     rb_enc_cr_str_buf_cat(str, RSTRING_PTR(str2), RSTRING_LEN(str2),
         ENCODING_GET(str2), str2_cr, &str2_cr);
