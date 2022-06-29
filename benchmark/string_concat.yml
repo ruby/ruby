@@ -1,8 +1,29 @@
 prelude: |
   CHUNK = "a" * 64
+  BCHUNK = "a".b * 64
 benchmark:
-  string_concat: |
-    buffer = String.new(capacity: 4096)
+  binary_concat_utf8: |
+    buffer = String.new(capacity: 4096, encoding: Encoding::BINARY)
+    buffer << CHUNK << CHUNK << CHUNK << CHUNK << CHUNK << CHUNK << CHUNK << CHUNK
+    buffer << CHUNK << CHUNK << CHUNK << CHUNK << CHUNK << CHUNK << CHUNK << CHUNK
+    buffer << CHUNK << CHUNK << CHUNK << CHUNK << CHUNK << CHUNK << CHUNK << CHUNK
+    buffer << CHUNK << CHUNK << CHUNK << CHUNK << CHUNK << CHUNK << CHUNK << CHUNK
+    buffer << CHUNK << CHUNK << CHUNK << CHUNK << CHUNK << CHUNK << CHUNK << CHUNK
+    buffer << CHUNK << CHUNK << CHUNK << CHUNK << CHUNK << CHUNK << CHUNK << CHUNK
+    buffer << CHUNK << CHUNK << CHUNK << CHUNK << CHUNK << CHUNK << CHUNK << CHUNK
+    buffer << CHUNK << CHUNK << CHUNK << CHUNK << CHUNK << CHUNK << CHUNK << CHUNK
+  binary_concat_binary: |
+    buffer = String.new(capacity: 4096, encoding: Encoding::BINARY)
+    buffer << BCHUNK << BCHUNK << BCHUNK << BCHUNK << BCHUNK << BCHUNK << BCHUNK << BCHUNK
+    buffer << BCHUNK << BCHUNK << BCHUNK << BCHUNK << BCHUNK << BCHUNK << BCHUNK << BCHUNK
+    buffer << BCHUNK << BCHUNK << BCHUNK << BCHUNK << BCHUNK << BCHUNK << BCHUNK << BCHUNK
+    buffer << BCHUNK << BCHUNK << BCHUNK << BCHUNK << BCHUNK << BCHUNK << BCHUNK << BCHUNK
+    buffer << BCHUNK << BCHUNK << BCHUNK << BCHUNK << BCHUNK << BCHUNK << BCHUNK << BCHUNK
+    buffer << BCHUNK << BCHUNK << BCHUNK << BCHUNK << BCHUNK << BCHUNK << BCHUNK << BCHUNK
+    buffer << BCHUNK << BCHUNK << BCHUNK << BCHUNK << BCHUNK << BCHUNK << BCHUNK << BCHUNK
+    buffer << BCHUNK << BCHUNK << BCHUNK << BCHUNK << BCHUNK << BCHUNK << BCHUNK << BCHUNK
+  utf8_concat_utf8: |
+    buffer = String.new(capacity: 4096, encoding: Encoding::UTF_8)
     buffer << CHUNK << CHUNK << CHUNK << CHUNK << CHUNK << CHUNK << CHUNK << CHUNK
     buffer << CHUNK << CHUNK << CHUNK << CHUNK << CHUNK << CHUNK << CHUNK << CHUNK
     buffer << CHUNK << CHUNK << CHUNK << CHUNK << CHUNK << CHUNK << CHUNK << CHUNK
