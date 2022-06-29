@@ -5253,12 +5253,6 @@ vm_opt_mod(VALUE recv, VALUE obj)
     }
 }
 
-VALUE
-rb_vm_opt_mod(VALUE recv, VALUE obj)
-{
-    return vm_opt_mod(recv, obj);
-}
-
 static VALUE
 vm_opt_neq(const rb_iseq_t *iseq, CALL_DATA cd, CALL_DATA cd_eq, VALUE recv, VALUE obj)
 {
