@@ -5378,18 +5378,20 @@ static VALUE
 vm_opt_ltlt(VALUE recv, VALUE obj)
 {
     if (SPECIAL_CONST_P(recv)) {
-	return Qundef;
+        return Qundef;
     }
-    else if (RBASIC_CLASS(recv) == rb_cString &&
-	     BASIC_OP_UNREDEFINED_P(BOP_LTLT, STRING_REDEFINED_OP_FLAG)) {
-	return rb_str_concat(recv, obj);
+    else if (RBASIC_CLASS(recv) == rb_cString && BASIC_OP_UNREDEFINED_P(BOP_LTLT, STRING_REDEFINED_OP_FLAG)) {
+        if (LIKELY(!SPECIAL_CONST_P(obj) && RBASIC_CLASS(obj) == rb_cString)) {
+            return rb_str_buf_append(recv, obj);
+        } else {
+            return rb_str_concat(recv, obj);
+        }
     }
-    else if (RBASIC_CLASS(recv) == rb_cArray &&
-	     BASIC_OP_UNREDEFINED_P(BOP_LTLT, ARRAY_REDEFINED_OP_FLAG)) {
-	return rb_ary_push(recv, obj);
+    else if (RBASIC_CLASS(recv) == rb_cArray && BASIC_OP_UNREDEFINED_P(BOP_LTLT, ARRAY_REDEFINED_OP_FLAG)) {
+        return rb_ary_push(recv, obj);
     }
     else {
-	return Qundef;
+        return Qundef;
     }
 }
 

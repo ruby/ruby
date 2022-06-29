@@ -1,0 +1,35 @@
+prelude: |
+  CHUNK = "a" * 64
+  raise "Expected encoding to be UTF-8, got: #{CHUNK.encoding}" unless CHUNK.encoding == Encoding::UTF_8
+  BCHUNK = "a".b * 64
+benchmark:
+  binary_buffer_mixed_append: |
+    buffer = String.new(capacity: 4096, encoding: Encoding::BINARY)
+    buffer << CHUNK << CHUNK << CHUNK << CHUNK << CHUNK << CHUNK << CHUNK << CHUNK
+    buffer << CHUNK << CHUNK << CHUNK << CHUNK << CHUNK << CHUNK << CHUNK << CHUNK
+    buffer << CHUNK << CHUNK << CHUNK << CHUNK << CHUNK << CHUNK << CHUNK << CHUNK
+    buffer << CHUNK << CHUNK << CHUNK << CHUNK << CHUNK << CHUNK << CHUNK << CHUNK
+    buffer << CHUNK << CHUNK << CHUNK << CHUNK << CHUNK << CHUNK << CHUNK << CHUNK
+    buffer << CHUNK << CHUNK << CHUNK << CHUNK << CHUNK << CHUNK << CHUNK << CHUNK
+    buffer << CHUNK << CHUNK << CHUNK << CHUNK << CHUNK << CHUNK << CHUNK << CHUNK
+    buffer << CHUNK << CHUNK << CHUNK << CHUNK << CHUNK << CHUNK << CHUNK << CHUNK
+  binary_buffer_append: |
+    buffer = String.new(capacity: 4096, encoding: Encoding::BINARY)
+    buffer << BCHUNK << BCHUNK << BCHUNK << BCHUNK << BCHUNK << BCHUNK << BCHUNK << BCHUNK
+    buffer << BCHUNK << BCHUNK << BCHUNK << BCHUNK << BCHUNK << BCHUNK << BCHUNK << BCHUNK
+    buffer << BCHUNK << BCHUNK << BCHUNK << BCHUNK << BCHUNK << BCHUNK << BCHUNK << BCHUNK
+    buffer << BCHUNK << BCHUNK << BCHUNK << BCHUNK << BCHUNK << BCHUNK << BCHUNK << BCHUNK
+    buffer << BCHUNK << BCHUNK << BCHUNK << BCHUNK << BCHUNK << BCHUNK << BCHUNK << BCHUNK
+    buffer << BCHUNK << BCHUNK << BCHUNK << BCHUNK << BCHUNK << BCHUNK << BCHUNK << BCHUNK
+    buffer << BCHUNK << BCHUNK << BCHUNK << BCHUNK << BCHUNK << BCHUNK << BCHUNK << BCHUNK
+    buffer << BCHUNK << BCHUNK << BCHUNK << BCHUNK << BCHUNK << BCHUNK << BCHUNK << BCHUNK
+  utf8_buffer_append: |
+    buffer = String.new(capacity: 4096, encoding: Encoding::UTF_8)
+    buffer << CHUNK << CHUNK << CHUNK << CHUNK << CHUNK << CHUNK << CHUNK << CHUNK
+    buffer << CHUNK << CHUNK << CHUNK << CHUNK << CHUNK << CHUNK << CHUNK << CHUNK
+    buffer << CHUNK << CHUNK << CHUNK << CHUNK << CHUNK << CHUNK << CHUNK << CHUNK
+    buffer << CHUNK << CHUNK << CHUNK << CHUNK << CHUNK << CHUNK << CHUNK << CHUNK
+    buffer << CHUNK << CHUNK << CHUNK << CHUNK << CHUNK << CHUNK << CHUNK << CHUNK
+    buffer << CHUNK << CHUNK << CHUNK << CHUNK << CHUNK << CHUNK << CHUNK << CHUNK
+    buffer << CHUNK << CHUNK << CHUNK << CHUNK << CHUNK << CHUNK << CHUNK << CHUNK
+    buffer << CHUNK << CHUNK << CHUNK << CHUNK << CHUNK << CHUNK << CHUNK << CHUNK

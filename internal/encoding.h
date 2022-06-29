@@ -10,6 +10,7 @@
  */
 #include "ruby/ruby.h"          /* for ID */
 #include "ruby/encoding.h"      /* for rb_encoding */
+#include "encindex.h"
 
 #define rb_enc_autoload_p(enc) (!rb_enc_mbmaxlen(enc))
 
@@ -25,6 +26,44 @@ void rb_encdb_declare(const char *name);
 void rb_enc_set_base(const char *name, const char *orig);
 int rb_enc_set_dummy(int index);
 void rb_encdb_set_unicode(int index);
+
+static inline bool
+rb_enc_asciicompat_from_index(int index)
+{
+    switch (index) {
+      case ENCINDEX_ASCII:
+      case ENCINDEX_UTF_8:
+      case ENCINDEX_US_ASCII:
+        return true;
+      default:
+        return rb_enc_asciicompat(rb_enc_from_index(index));
+    }
+}
+
 PUREFUNC(int rb_data_is_encoding(VALUE obj));
+
+static inline int
+enc_get_index_str(VALUE str)
+{
+    int i = ENCODING_GET_INLINED(str);
+    if (i == ENCODING_INLINE_MAX) {
+	VALUE iv;
+
+#if 0
+	iv = rb_ivar_get(str, rb_id_encoding());
+	i = NUM2INT(iv);
+#else
+        /*
+         * Tentatively, assume ASCII-8BIT, if encoding index instance
+         * variable is not found.  This can happen when freeing after
+         * all instance variables are removed in `obj_free`.
+         */
+        iv = rb_attr_get(str, rb_id_encoding());
+        i = NIL_P(iv) ? rb_ascii8bit_encindex() : NUM2INT(iv);
+#endif
+    }
+    return i;
+}
+
 
 #endif /* INTERNAL_ENCODING_H */

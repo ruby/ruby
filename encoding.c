@@ -952,29 +952,6 @@ rb_id_encoding(void)
     return id_encoding;
 }
 
-static int
-enc_get_index_str(VALUE str)
-{
-    int i = ENCODING_GET_INLINED(str);
-    if (i == ENCODING_INLINE_MAX) {
-	VALUE iv;
-
-#if 0
-	iv = rb_ivar_get(str, rb_id_encoding());
-	i = NUM2INT(iv);
-#else
-        /*
-         * Tentatively, assume ASCII-8BIT, if encoding index instance
-         * variable is not found.  This can happen when freeing after
-         * all instance variables are removed in `obj_free`.
-         */
-        iv = rb_attr_get(str, rb_id_encoding());
-        i = NIL_P(iv) ? ENCINDEX_ASCII : NUM2INT(iv);
-#endif
-    }
-    return i;
-}
-
 int
 rb_enc_get_index(VALUE obj)
 {

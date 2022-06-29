@@ -150,7 +150,7 @@ VALUE rb_cSymbol;
     }\
 } while (0)
 
-#define TERM_LEN(str) rb_enc_mbminlen(rb_enc_get(str))
+#define TERM_LEN(str) rb_enc_mbminlen(rb_enc_from_index(ENCODING_GET(str)))
 #define TERM_FILL(ptr, termlen) do {\
     char *const term_fill_ptr = (ptr);\
     const int term_fill_len = (termlen);\
@@ -3114,7 +3114,7 @@ str_buf_cat(VALUE str, const char *ptr, long len)
 {
     long capa, total, olen, off = -1;
     char *sptr;
-    const int termlen = TERM_LEN(str);
+    const int termlen = LIKELY(rb_enc_asciicompat_from_index(ENCODING_GET(str))) ? 1 : TERM_LEN(str);
 #if !USE_RVARGC
     assert(termlen < RSTRING_EMBED_LEN_MAX + 1); /* < (LONG_MAX/2) */
 #endif
@@ -3306,9 +3306,12 @@ rb_str_buf_cat_ascii(VALUE str, const char *ptr)
 VALUE
 rb_str_buf_append(VALUE str, VALUE str2)
 {
-    int str2_cr;
+    int str2_cr = rb_enc_str_coderange(str2);
 
-    str2_cr = ENC_CODERANGE(str2);
+    if (rb_enc_asciicompat_from_index(ENCODING_GET_INLINED(str)) && str2_cr == ENC_CODERANGE_7BIT) {
+        str_buf_cat(str, RSTRING_PTR(str2), RSTRING_LEN(str2));
+        return str;
+    }
 
     rb_enc_cr_str_buf_cat(str, RSTRING_PTR(str2), RSTRING_LEN(str2),
         ENCODING_GET(str2), str2_cr, &str2_cr);

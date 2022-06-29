@@ -1272,7 +1272,7 @@ OPTS =
 # See benchmark/README.md for details.
 benchmark: miniruby$(EXEEXT) update-benchmark-driver PHONY
 	$(BASERUBY) -rrubygems -I$(srcdir)/benchmark/lib $(srcdir)/benchmark/benchmark-driver/exe/benchmark-driver \
-	            --executables="compare-ruby::$(COMPARE_RUBY) -I$(EXTOUT)/common --disable-gem" \
+	            --executables="compare-ruby::$(COMPARE_RUBY) -I$(EXTOUT)/common -I$(EXTOUT)/$(arch) -Ilib --disable-gem" \
 	            --executables="built-ruby::$(BENCH_RUBY) --disable-gem" \
 	            $(BENCH_OPTS) $(ARGS) $(OPTS)
 
