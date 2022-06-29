@@ -2972,7 +2972,9 @@ iseq_data_to_ary(const rb_iseq_t *iseq)
 
         rb_ary_push(ary, ID2SYM(insn_syms[insn%numberof(insn_syms)]));
 	for (j=0; j<len-1; j++, seq++) {
-	    switch (insn_op_type(insn, j)) {
+	    enum ruby_insn_type_chars op_type = insn_op_type(insn, j);
+
+	    switch (op_type) {
 	      case TS_OFFSET: {
 		unsigned long idx = nseq - iseq_original + *seq;
 		rb_ary_push(ary, register_label(labels_table, idx));
@@ -3003,7 +3005,7 @@ iseq_data_to_ary(const rb_iseq_t *iseq)
 	      case TS_ISE:
 		{
 		    union iseq_inline_storage_entry *is = (union iseq_inline_storage_entry *)*seq;
-		    rb_ary_push(ary, INT2FIX(is - iseq_body->is_entries));
+		    rb_ary_push(ary, INT2FIX(is - ISEQ_IS_ENTRY_START(ISEQ_BODY(iseq), op_type)));
 		}
 		break;
               case TS_CALLDATA:

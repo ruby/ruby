@@ -116,22 +116,16 @@ end
 #     system(command)
 #   end
 #
-# To illustrate, here's the tree for the test directory for \FileUtils:
-#   tree('test')
-#   test
-#   |-- fileutils
-#   |   |-- clobber.rb
-#   |   |-- fileasserts.rb
-#   |   |-- test_dryrun.rb
-#   |   |-- test_fileutils.rb
-#   |   |-- test_nowrite.rb
-#   |   |-- test_verbose.rb
-#   |   `-- visibility_tests.rb
-#   `-- lib
-#       |-- core_assertions.rb
-#       |-- envutil.rb
-#       |-- find_executable.rb
-#       `-- helper.rb
+# To illustrate:
+#
+#   tree('src0')
+#   # => src0
+#   #    |-- sub0
+#   #    |   |-- src0.txt
+#   #    |   `-- src1.txt
+#   #    `-- sub1
+#   #        |-- src2.txt
+#   #        `-- src3.txt
 #
 # == Avoiding the TOCTTOU Vulnerability
 #
@@ -544,52 +538,71 @@ module FileUtils
   # If +src+ is the path to a directory and +dest+ does not exist,
   # creates links +dest+ and descendents pointing to +src+ and its descendents:
   #
-  #   Dir.glob('**/*.txt')
-  #   # => ["tmp0/tmp2/t0.txt",
-  #         "tmp0/tmp2/t1.txt",
-  #         "tmp0/tmp3/t2.txt",
-  #         "tmp0/tmp3/t3.txt"]
-  #   FileUtils.cp_lr('tmp0', 'tmp1')
-  #   Dir.glob('**/*.txt')
-  #   # => ["tmp0/tmp2/t0.txt",
-  #         "tmp0/tmp2/t1.txt",
-  #         "tmp0/tmp3/t2.txt",
-  #         "tmp0/tmp3/t3.txt",
-  #         "tmp1/tmp2/t0.txt",
-  #         "tmp1/tmp2/t1.txt",
-  #         "tmp1/tmp3/t2.txt",
-  #         "tmp1/tmp3/t3.txt"]
+  #   tree('src0')
+  #   # => src0
+  #   #    |-- sub0
+  #   #    |   |-- src0.txt
+  #   #    |   `-- src1.txt
+  #   #    `-- sub1
+  #   #        |-- src2.txt
+  #   #        `-- src3.txt
+  #   File.exist?('dest0') # => false
+  #   FileUtils.cp_lr('src0', 'dest0')
+  #   tree('dest0')
+  #   # => dest0
+  #   #    |-- sub0
+  #   #    |   |-- src0.txt
+  #   #    |   `-- src1.txt
+  #   #    `-- sub1
+  #   #        |-- src2.txt
+  #   #        `-- src3.txt
   #
   # If +src+ and +dest+ are both paths to directories,
   # creates links <tt>dest/src</tt> and descendents
   # pointing to +src+ and its descendents:
   #
-  #   FileUtils.rm_r('tmp1')
-  #   Dir.mkdir('tmp1')
-  #   FileUtils.cp_lr('tmp0', 'tmp1')
-  #   # => ["tmp0/tmp2/t0.txt",
-  #        "tmp0/tmp2/t1.txt",
-  #        "tmp0/tmp3/t2.txt",
-  #        "tmp0/tmp3/t3.txt",
-  #        "tmp1/tmp0/tmp2/t0.txt",
-  #        "tmp1/tmp0/tmp2/t1.txt",
-  #        "tmp1/tmp0/tmp3/t2.txt",
-  #        "tmp1/tmp0/tmp3/t3.txt"]
+  #   tree('src1')
+  #   # => src1
+  #   #    |-- sub0
+  #   #    |   |-- src0.txt
+  #   #    |   `-- src1.txt
+  #   #    `-- sub1
+  #   #        |-- src2.txt
+  #   #        `-- src3.txt
+  #   FileUtils.mkdir('dest1')
+  #   FileUtils.cp_lr('src1', 'dest1')
+  #   tree('dest1')
+  #   # => dest1
+  #   #    `-- src1
+  #   #        |-- sub0
+  #   #        |   |-- src0.txt
+  #   #        |   `-- src1.txt
+  #   #        `-- sub1
+  #   #            |-- src2.txt
+  #   #            `-- src3.txt
   #
-  # If +src+ is an array of paths to files and +dest+ is the path to a directory,
+  # If +src+ is an array of paths to entries and +dest+ is the path to a directory,
   # for each path +filepath+ in +src+, creates a link at <tt>dest/filepath</tt>
   # pointing to that path:
   #
-  #   FileUtils.rm_r('tmp1')
-  #   Dir.mkdir('tmp1')
-  #   FileUtils.cp_lr(['tmp0/tmp3/t2.txt', 'tmp0/tmp3/t3.txt'], 'tmp1')
-  #   Dir.glob('**/*.txt')
-  #   # => ["tmp0/tmp2/t0.txt",
-  #        "tmp0/tmp2/t1.txt",
-  #        "tmp0/tmp3/t2.txt",
-  #        "tmp0/tmp3/t3.txt",
-  #        "tmp1/t2.txt",
-  #        "tmp1/t3.txt"]
+  #   tree('src2')
+  #   # => src2
+  #   #    |-- sub0
+  #   #    |   |-- src0.txt
+  #   #    |   `-- src1.txt
+  #   #    `-- sub1
+  #   #        |-- src2.txt
+  #   #        `-- src3.txt
+  #   FileUtils.mkdir('dest2')
+  #   FileUtils.cp_lr(['src2/sub0', 'src2/sub1'], 'dest2')
+  #   tree('dest2')
+  #   # => dest2
+  #   #    |-- sub0
+  #   #    |   |-- src0.txt
+  #   #    |   `-- src1.txt
+  #   #    `-- sub1
+  #   #        |-- src2.txt
+  #   #        `-- src3.txt
   #
   # Keyword arguments:
   #
@@ -599,13 +612,15 @@ module FileUtils
   # - <tt>remove_destination: true</tt> - removes +dest+ before creating links.
   # - <tt>verbose: true</tt> - prints an equivalent command:
   #
-  #     FileUtils.cp_lr('tmp0', 'tmp1', verbose: true, noop: true)
-  #     FileUtils.cp_lr(['tmp0/tmp3/t2.txt', 'tmp0/tmp3/t3.txt'], 'tmp1', verbose: true, noop: true)
+  #     FileUtils.cp_lr('src0', 'dest0', noop: true, verbose: true)
+  #     FileUtils.cp_lr('src1', 'dest1', noop: true, verbose: true)
+  #     FileUtils.cp_lr(['src2/sub0', 'src2/sub1'], 'dest2', noop: true, verbose: true)
   #
   #   Output:
   #
-  #     cp -lr tmp0 tmp1
-  #     cp -lr tmp0/tmp3/t2.txt tmp0/tmp3/t3.txt tmp1
+  #     cp -lr src0 dest0
+  #     cp -lr src1 dest1
+  #     cp -lr src2/sub0 src2/sub1 dest2
   #
   # Raises an exception if +dest+ is the path to an existing file or directory
   # and keyword argument <tt>remove_destination: true</tt> is not given.
@@ -721,9 +736,9 @@ module FileUtils
   # creates a hard link at +dest+ pointing to +src+:
   #
   #   FileUtils.touch('src0.txt')
-  #   File.exist?('dest0.txt')   # => false
+  #   File.exist?('dest0.txt') # => false
   #   FileUtils.link_entry('src0.txt', 'dest0.txt')
-  #   File.exist?('dest0.txt') # => true
+  #   File.file?('dest0.txt')  # => true
   #
   # If +src+ is the path to a directory and +dest+ does not exist,
   # recursively creates hard links at +dest+ pointing to paths in +src+:
@@ -736,12 +751,12 @@ module FileUtils
   #     'src1/dir1/t3.txt',
   #     ]
   #   FileUtils.touch(src_file_paths)
-  #   File.exist?('dest1')             # => true
+  #   File.directory?('dest1')        # => true
   #   FileUtils.link_entry('src1', 'dest1')
-  #   File.exist?('dest1/dir0/t0.txt') # => true
-  #   File.exist?('dest1/dir0/t1.txt') # => true
-  #   File.exist?('dest1/dir1/t2.txt') # => true
-  #   File.exist?('dest1/dir1/t3.txt') # => true
+  #   File.file?('dest1/dir0/t0.txt') # => true
+  #   File.file?('dest1/dir0/t1.txt') # => true
+  #   File.file?('dest1/dir1/t2.txt') # => true
+  #   File.file?('dest1/dir1/t3.txt') # => true
   #
   # Keyword arguments:
   #
@@ -774,7 +789,7 @@ module FileUtils
   #   FileUtils.touch('src0.txt')
   #   File.exist?('dest0.txt') # => false
   #   FileUtils.cp('src0.txt', 'dest0.txt')
-  #   File.exist?('dest0.txt') # => true
+  #   File.file?('dest0.txt')  # => true
   #
   # If +src+ is the path to a file and +dest+ is the path to a directory,
   # copies +src+ to <tt>dest/src</tt>:
@@ -782,7 +797,7 @@ module FileUtils
   #   FileUtils.touch('src1.txt')
   #   FileUtils.mkdir('dest1')
   #   FileUtils.cp('src1.txt', 'dest1')
-  #   File.exist?('dest1/src1.txt') # => true
+  #   File.file?('dest1/src1.txt') # => true
   #
   # If +src+ is an array of paths to files and +dest+ is the path to a directory,
   # copies from each +src+ to +dest+:
@@ -791,8 +806,8 @@ module FileUtils
   #   FileUtils.touch(src_file_paths)
   #   FileUtils.mkdir('dest2')
   #   FileUtils.cp(src_file_paths, 'dest2')
-  #   File.exist?('dest2/src2.txt') # => true
-  #   File.exist?('dest2/src2.dat') # => true
+  #   File.file?('dest2/src2.txt') # => true
+  #   File.file?('dest2/src2.dat') # => true
   #
   # Keyword arguments:
   #
@@ -843,7 +858,7 @@ module FileUtils
   #   FileUtils.touch('src0.txt')
   #   File.exist?('dest0.txt') # => false
   #   FileUtils.cp_r('src0.txt', 'dest0.txt')
-  #   File.exist?('dest0.txt') # => true
+  #   File.file?('dest0.txt')  # => true
   #
   # If +src+ is the path to a file and +dest+ is the path to a directory,
   # copies +src+ to <tt>dest/src</tt>:
@@ -851,54 +866,52 @@ module FileUtils
   #   FileUtils.touch('src1.txt')
   #   FileUtils.mkdir('dest1')
   #   FileUtils.cp_r('src1.txt', 'dest1')
-  #   File.exist?('dest1/src1.txt') # => true
+  #   File.file?('dest1/src1.txt') # => true
   #
   # If +src+ is the path to a directory and +dest+ does not exist,
   # recursively copies +src+ to +dest+:
   #
   #   tree('src2')
-  #   src2
-  #   |-- dir0
-  #   |   |-- src0.txt
-  #   |   `-- src1.txt
-  #   `-- dir1
-  #   |-- src2.txt
-  #   `-- src3.txt
+  #   # => src2
+  #   #    |-- dir0
+  #   #    |   |-- src0.txt
+  #   #    |   `-- src1.txt
+  #   #    `-- dir1
+  #   #    |-- src2.txt
+  #   #    `-- src3.txt
   #   FileUtils.exist?('dest2') # => false
-  #
   #   FileUtils.cp_r('src2', 'dest2')
   #   tree('dest2')
-  #   dest2
-  #   |-- dir0
-  #   |   |-- src0.txt
-  #   |   `-- src1.txt
-  #   `-- dir1
-  #   |-- src2.txt
-  #   `-- src3.txt
+  #   # => dest2
+  #   #    |-- dir0
+  #   #    |   |-- src0.txt
+  #   #    |   `-- src1.txt
+  #   #    `-- dir1
+  #   #    |-- src2.txt
+  #   #    `-- src3.txt
   #
   # If +src+ and +dest+ are paths to directories,
   # recursively copies +src+ to <tt>dest/src</tt>:
   #
   #   tree('src3')
-  #   src3
-  #   |-- dir0
-  #   |   |-- src0.txt
-  #   |   `-- src1.txt
-  #   `-- dir1
-  #   |-- src2.txt
-  #   `-- src3.txt
+  #   # => src3
+  #   #    |-- dir0
+  #   #    |   |-- src0.txt
+  #   #    |   `-- src1.txt
+  #   #    `-- dir1
+  #   #    |-- src2.txt
+  #   #    `-- src3.txt
   #   FileUtils.mkdir('dest3')
-  #
   #   FileUtils.cp_r('src3', 'dest3')
   #   tree('dest3')
-  #   dest3
-  #   `-- src3
-  #     |-- dir0
-  #     |   |-- src0.txt
-  #     |   `-- src1.txt
-  #     `-- dir1
-  #         |-- src2.txt
-  #         `-- src3.txt
+  #   # => dest3
+  #   #    `-- src3
+  #   #      |-- dir0
+  #   #      |   |-- src0.txt
+  #   #      |   `-- src1.txt
+  #   #      `-- dir1
+  #   #          |-- src2.txt
+  #   #          `-- src3.txt
   #
   # If +src+ is an array of paths and +dest+ is a directory,
   # recursively copies from each path in +src+ to +dest+;
@@ -955,22 +968,22 @@ module FileUtils
   # If +src+ is a directory, recursively copies +src+ to +dest+:
   #
   #   tree('src1')
-  #   src1
-  #   |-- dir0
-  #   |   |-- src0.txt
-  #   |   `-- src1.txt
-  #   `-- dir1
-  #       |-- src2.txt
-  #       `-- src3.txt
+  #   # => src1
+  #   #    |-- dir0
+  #   #    |   |-- src0.txt
+  #   #    |   `-- src1.txt
+  #   #    `-- dir1
+  #   #        |-- src2.txt
+  #   #        `-- src3.txt
   #   FileUtils.copy_entry('src1', 'dest1')
   #   tree('dest1')
-  #   dest1
-  #   |-- dir0
-  #   |   |-- src0.txt
-  #   |   `-- src1.txt
-  #   `-- dir1
-  #       |-- src2.txt
-  #       `-- src3.txt
+  #   # => dest1
+  #   #    |-- dir0
+  #   #    |   |-- src0.txt
+  #   #    |   `-- src1.txt
+  #   #    `-- dir1
+  #   #        |-- src2.txt
+  #   #        `-- src3.txt
   #
   # The recursive copying preserves file types for regular files,
   # directories, and symbolic links;
@@ -1055,16 +1068,16 @@ module FileUtils
   # moves +src+ to +dest+:
   #
   #   tree('src0')
-  #   src0
-  #   |-- src0.txt
-  #   `-- src1.txt
+  #   # => src0
+  #   #    |-- src0.txt
+  #   #    `-- src1.txt
   #   File.exist?('dest0') # => false
   #   FileUtils.mv('src0', 'dest0')
   #   File.exist?('src0')  # => false
   #   tree('dest0')
-  #   dest0
-  #   |-- src0.txt
-  #   `-- src1.txt
+  #   # => dest0
+  #   #    |-- src0.txt
+  #   #    `-- src1.txt
   #
   # If +src+ is an array of paths to files and directories
   # and +dest+ is the path to a directory,
@@ -1072,17 +1085,17 @@ module FileUtils
   #
   #   File.file?('src1.txt') # => true
   #   tree('src1')
-  #   src1
-  #   |-- src.dat
-  #   `-- src.txt
-  #   Dir.empty?('dest1') # => true
+  #   # => src1
+  #   #    |-- src.dat
+  #   #    `-- src.txt
+  #   Dir.empty?('dest1')    # => true
   #   FileUtils.mv(['src1.txt', 'src1'], 'dest1')
   #   tree('dest1')
-  #   dest1
-  #   |-- src1
-  #   |   |-- src.dat
-  #   |   `-- src.txt
-  #   `-- src1.txt
+  #   # => dest1
+  #   #    |-- src1
+  #   #    |   |-- src.dat
+  #   #    |   `-- src.txt
+  #   #    `-- src1.txt
   #
   # Keyword arguments:
   #
@@ -1221,13 +1234,13 @@ module FileUtils
   # For each directory path, recursively removes files and directories:
   #
   #   tree('src1')
-  #   src1
-  #   |-- dir0
-  #   |   |-- src0.txt
-  #   |   `-- src1.txt
-  #   `-- dir1
-  #       |-- src2.txt
-  #       `-- src3.txt
+  #   # => src1
+  #   #    |-- dir0
+  #   #    |   |-- src0.txt
+  #   #    |   `-- src1.txt
+  #   #    `-- dir1
+  #   #        |-- src2.txt
+  #   #        `-- src3.txt
   #   FileUtils.rm_r('src1')
   #   File.exist?('src1') # => false
   #

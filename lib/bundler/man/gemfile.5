@@ -1,7 +1,7 @@
 .\" generated with Ronn/v0.7.3
 .\" http://github.com/rtomayko/ronn/tree/0.7.3
 .
-.TH "GEMFILE" "5" "May 2022" "" ""
+.TH "GEMFILE" "5" "June 2022" "" ""
 .
 .SH "NAME"
 \fBGemfile\fR \- A format for describing gem dependencies for Ruby programs
@@ -100,7 +100,7 @@ Each application \fImay\fR specify a Ruby engine version\. If an engine version 
 .
 .nf
 
-ruby "1\.8\.7", :engine => "jruby", :engine_version => "1\.6\.7"
+ruby "1\.8\.7", engine:  "jruby", engine_version:  "1\.6\.7"
 .
 .fi
 .
@@ -113,7 +113,7 @@ Each application \fImay\fR specify a Ruby patchlevel\.
 .
 .nf
 
-ruby "2\.0\.0", :patchlevel => "247"
+ruby "2\.0\.0", patchlevel:  "247"
 .
 .fi
 .
@@ -156,9 +156,9 @@ Each \fIgem\fR \fBMAY\fR specify files that should be used when autorequiring vi
 .
 .nf
 
-gem "redis", :require => ["redis/connection/hiredis", "redis"]
-gem "webmock", :require => false
-gem "byebug", :require => true
+gem "redis", require:  ["redis/connection/hiredis", "redis"]
+gem "webmock", require:  false
+gem "byebug", require:  true
 .
 .fi
 .
@@ -172,8 +172,8 @@ The argument defaults to the name of the gem\. For example, these are identical:
 .nf
 
 gem "nokogiri"
-gem "nokogiri", :require => "nokogiri"
-gem "nokogiri", :require => true
+gem "nokogiri", require:  "nokogiri"
+gem "nokogiri", require:  true
 .
 .fi
 .
@@ -186,8 +186,8 @@ Each \fIgem\fR \fBMAY\fR specify membership in one or more groups\. Any \fIgem\f
 .
 .nf
 
-gem "rspec", :group => :test
-gem "wirble", :groups => [:development, :test]
+gem "rspec", group:  :test
+gem "wirble", groups:  [:development, :test]
 .
 .fi
 .
@@ -320,9 +320,9 @@ As with groups, you can specify one or more platforms:
 .
 .nf
 
-gem "weakling",   :platforms => :jruby
-gem "ruby\-debug", :platforms => :mri_18
-gem "nokogiri",   :platforms => [:mri_18, :jruby]
+gem "weakling",   platforms:  :jruby
+gem "ruby\-debug", platforms:  :mri_18
+gem "nokogiri",   platforms:  [:mri_18, :jruby]
 .
 .fi
 .
@@ -338,7 +338,7 @@ You can select an alternate Rubygems repository for a gem using the \':source\' 
 .
 .nf
 
-gem "some_internal_gem", :source => "https://gems\.example\.com"
+gem "some_internal_gem", source:  "https://gems\.example\.com"
 .
 .fi
 .
@@ -361,15 +361,15 @@ If necessary, you can specify that a gem is located at a particular git reposito
 .
 .TP
 \fBHTTP(S)\fR
-gem "rails", :git => "https://github\.com/rails/rails\.git"
+gem "rails", git: "https://github\.com/rails/rails\.git"
 .
 .TP
 \fBSSH\fR
-gem "rails", :git => "git@github\.com:rails/rails\.git"
+gem "rails", git: "git@github\.com:rails/rails\.git"
 .
 .TP
 \fBgit\fR
-gem "rails", :git => "git://github\.com/rails/rails\.git"
+gem "rails", git: "git://github\.com/rails/rails\.git"
 .
 .P
 If using SSH, the user that you use to run \fBbundle install\fR \fBMUST\fR have the appropriate keys available in their \fB$HOME/\.ssh\fR\.
@@ -393,7 +393,7 @@ If a git repository does have a \fB\.gemspec\fR for the gem you attached it to, 
 .
 .nf
 
-gem "rails", "2\.3\.8", :git => "https://github\.com/rails/rails\.git"
+gem "rails", "2\.3\.8", git:  "https://github\.com/rails/rails\.git"
 # bundle install will fail, because the \.gemspec in the rails
 # repository\'s master branch specifies version 3\.0\.0
 .
@@ -409,20 +409,20 @@ Git repositories support a number of additional options\.
 .
 .TP
 \fBbranch\fR, \fBtag\fR, and \fBref\fR
-You \fBMUST\fR only specify at most one of these options\. The default is \fB:branch => "master"\fR\. For example:
+You \fBMUST\fR only specify at most one of these options\. The default is \fBbranch: "master"\fR\. For example:
 .
 .IP
-gem "rails", :git => "https://github\.com/rails/rails\.git", :branch => "5\-0\-stable"
+gem "rails", git: "https://github\.com/rails/rails\.git", branch: "5\-0\-stable"
 .
 .IP
-gem "rails", :git => "https://github\.com/rails/rails\.git", :tag => "v5\.0\.0"
+gem "rails", git: "https://github\.com/rails/rails\.git", tag: "v5\.0\.0"
 .
 .IP
-gem "rails", :git => "https://github\.com/rails/rails\.git", :ref => "4aded"
+gem "rails", git: "https://github\.com/rails/rails\.git", ref: "4aded"
 .
 .TP
 \fBsubmodules\fR
-For reference, a git submodule \fIhttps://git\-scm\.com/book/en/v2/Git\-Tools\-Submodules\fR lets you have another git repository within a subfolder of your repository\. Specify \fB:submodules => true\fR to cause bundler to expand any submodules included in the git repository
+For reference, a git submodule \fIhttps://git\-scm\.com/book/en/v2/Git\-Tools\-Submodules\fR lets you have another git repository within a subfolder of your repository\. Specify \fBsubmodules: true\fR to cause bundler to expand any submodules included in the git repository
 .
 .P
 If a git repository contains multiple \fB\.gemspecs\fR, each \fB\.gemspec\fR represents a gem located at the same place in the file system as the \fB\.gemspec\fR\.
@@ -454,7 +454,7 @@ A custom git source can be defined via the \fBgit_source\fR method\. Provide the
 .nf
 
 git_source(:stash){ |repo_name| "https://stash\.corp\.acme\.pl/#{repo_name}\.git" }
-gem \'rails\', :stash => \'forks/rails\'
+gem \'rails\', stash:  \'forks/rails\'
 .
 .fi
 .
@@ -467,7 +467,7 @@ In addition, if you wish to choose a specific branch:
 .
 .nf
 
-gem "rails", :stash => "forks/rails", :branch => "branch_name"
+gem "rails", stash:  "forks/rails", branch:  "branch_name"
 .
 .fi
 .
@@ -483,8 +483,8 @@ If the git repository you want to use is hosted on GitHub and is public, you can
 .
 .nf
 
-gem "rails", :github => "rails/rails"
-gem "rails", :github => "rails"
+gem "rails", github:  "rails/rails"
+gem "rails", github:  "rails"
 .
 .fi
 .
@@ -497,7 +497,7 @@ Are both equivalent to
 .
 .nf
 
-gem "rails", :git => "git://github\.com/rails/rails\.git"
+gem "rails", git:  "git://github\.com/rails/rails\.git"
 .
 .fi
 .
@@ -513,7 +513,7 @@ You can also directly pass a pull request URL:
 .
 .nf
 
-gem "rails", :github => "https://github\.com/rails/rails/pull/43753"
+gem "rails", github:  "https://github\.com/rails/rails/pull/43753"
 .
 .fi
 .
@@ -526,7 +526,7 @@ Which is equivalent to:
 .
 .nf
 
-gem "rails", :github => "rails/rails", branch: "refs/pull/43753/head"
+gem "rails", github:  "rails/rails", branch: "refs/pull/43753/head"
 .
 .fi
 .
@@ -539,7 +539,7 @@ If the git repository you want to use is hosted as a GitHub Gist and is public, 
 .
 .nf
 
-gem "the_hatch", :gist => "4815162342"
+gem "the_hatch", gist:  "4815162342"
 .
 .fi
 .
@@ -552,7 +552,7 @@ Is equivalent to:
 .
 .nf
 
-gem "the_hatch", :git => "https://gist\.github\.com/4815162342\.git"
+gem "the_hatch", git:  "https://gist\.github\.com/4815162342\.git"
 .
 .fi
 .
@@ -568,8 +568,8 @@ If the git repository you want to use is hosted on Bitbucket and is public, you 
 .
 .nf
 
-gem "rails", :bitbucket => "rails/rails"
-gem "rails", :bitbucket => "rails"
+gem "rails", bitbucket:  "rails/rails"
+gem "rails", bitbucket:  "rails"
 .
 .fi
 .
@@ -582,7 +582,7 @@ Are both equivalent to
 .
 .nf
 
-gem "rails", :git => "https://rails@bitbucket\.org/rails/rails\.git"
+gem "rails", git:  "https://rails@bitbucket\.org/rails/rails\.git"
 .
 .fi
 .
@@ -604,7 +604,7 @@ Unlike \fB:git\fR, bundler does not compile C extensions for gems specified as p
 .
 .nf
 
-gem "rails", :path => "vendor/rails"
+gem "rails", path:  "vendor/rails"
 .
 .fi
 .
@@ -648,7 +648,7 @@ platforms :ruby do
   gem "sqlite3"
 end
 
-group :development, :optional => true do
+group :development, optional:  true do
   gem "wirble"
   gem "faker"
 end

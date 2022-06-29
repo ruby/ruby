@@ -158,27 +158,20 @@ EOF
         end
       end
 
-      # NOT using #use_colorize? of IRB.conf[:MAIN_CONTEXT] because this method may be called before IRB::Irb#run
-      use_colorize = IRB.conf.fetch(:USE_COLORIZE, true)
-      if use_colorize
-        lines = Color.colorize_code(code).lines
-      else
-        lines = code.lines
-      end
+      lines = Color.colorize_code(code).lines
       pos -= 1
 
       start_pos = [pos - 5, 0].max
       end_pos   = [pos + 5, lines.size - 1].min
 
-      if use_colorize
-        fmt = " %2s #{Color.colorize("%#{end_pos.to_s.length}d", [:BLUE, :BOLD])}: %s"
-      else
-        fmt = " %2s %#{end_pos.to_s.length}d: %s"
-      end
+      line_number_fmt = Color.colorize("%#{end_pos.to_s.length}d", [:BLUE, :BOLD])
+      fmt = " %2s #{line_number_fmt}: %s"
+
       body = (start_pos..end_pos).map do |current_pos|
         sprintf(fmt, pos == current_pos ? '=>' : '', current_pos + 1, lines[current_pos])
       end.join("")
-      "\nFrom: #{file} @ line #{pos + 1} :\n\n#{body}#{Color.clear if use_colorize}\n"
+
+      "\nFrom: #{file} @ line #{pos + 1} :\n\n#{body}#{Color.clear}\n"
     end
 
     def IRB.delete_caller

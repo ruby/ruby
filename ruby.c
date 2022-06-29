@@ -1819,7 +1819,7 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
 #if USE_MJIT
         if (opt->mjit.on) {
             rb_warn("MJIT and YJIT cannot both be enabled at the same time. Exiting");
-            exit(1);
+            return Qfalse;
         }
 #endif
 #if YJIT_BUILD

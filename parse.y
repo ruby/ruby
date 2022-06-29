@@ -9235,7 +9235,7 @@ parse_ident(struct parser_params *p, int c, int cmd_state)
 		    return keyword_do_block;
 		return keyword_do;
 	    }
-	    if (IS_lex_state_for(state, (EXPR_BEG | EXPR_LABELED)))
+	    if (IS_lex_state_for(state, (EXPR_BEG | EXPR_LABELED | EXPR_CLASS)))
 		return kw->id[0];
 	    else {
 		if (kw->id[0] != kw->id[1])
