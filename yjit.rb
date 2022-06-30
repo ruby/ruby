@@ -233,19 +233,23 @@ module RubyVM::YJIT
       exits = exits.sort_by { |name, count| -count }[0...how_many]
       total_exits = total_exit_count(stats)
 
-      top_n_total = exits.map { |name, count| count }.sum
-      top_n_exit_pct = 100.0 * top_n_total / total_exits
+      if total_exits > 0
+        top_n_total = exits.map { |name, count| count }.sum
+        top_n_exit_pct = 100.0 * top_n_total / total_exits
 
-      $stderr.puts "Top-#{how_many} most frequent exit ops (#{"%.1f" % top_n_exit_pct}% of exits):"
+        $stderr.puts "Top-#{how_many} most frequent exit ops (#{"%.1f" % top_n_exit_pct}% of exits):"
 
-      longest_insn_name_len = exits.map { |name, count| name.length }.max
-      exits.each do |name, count|
-        padding = longest_insn_name_len + left_pad
-        padded_name = "%#{padding}s" % name
-        padded_count = "%10d" % count
-        percent = 100.0 * count / total_exits
-        formatted_percent = "%.1f" % percent
-        $stderr.puts("#{padded_name}: #{padded_count} (#{formatted_percent}%)" )
+        longest_insn_name_len = exits.map { |name, count| name.length }.max
+        exits.each do |name, count|
+          padding = longest_insn_name_len + left_pad
+          padded_name = "%#{padding}s" % name
+          padded_count = "%10d" % count
+          percent = 100.0 * count / total_exits
+          formatted_percent = "%.1f" % percent
+          $stderr.puts("#{padded_name}: #{padded_count} (#{formatted_percent}%)" )
+        end
+      else
+        $stderr.puts "total_exits:           " + ("%10d" % total_exits)
       end
     end
 
