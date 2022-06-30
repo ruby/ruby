@@ -39,11 +39,11 @@ class TestStringIO < Test::Unit::TestCase
   def test_truncate
     io = StringIO.new("")
     io.puts "abc"
-    io.truncate(0)
+    assert_equal(0, io.truncate(0))
     io.puts "def"
     assert_equal("\0\0\0\0def\n", io.string, "[ruby-dev:24190]")
     assert_raise(Errno::EINVAL) { io.truncate(-1) }
-    io.truncate(10)
+    assert_equal(0, io.truncate(10))
     assert_equal("\0\0\0\0def\n\0\0", io.string)
   end
 

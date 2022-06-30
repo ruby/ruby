@@ -1668,7 +1668,7 @@ strio_truncate(VALUE self, VALUE len)
     if (plen < l) {
 	MEMZERO(RSTRING_PTR(string) + plen, char, l - plen);
     }
-    return len;
+    return INT2FIX(0);
 }
 
 /*
