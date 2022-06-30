@@ -44,25 +44,26 @@ require "digest"
 #     # Example code using store goes here.
 #   end
 #
-# The implementation of +example_store+
-# (which is profoundly unimportant here):
+# All we really need to know about +example_store+
+# is that it yields a fresh store with a known population of roots;
+# its implementation:
 #
 #   require 'pstore'
 #   require 'tempfile'
 #   # Yield a pristine store for use in examples.
 #   def example_store
-#   # Create the store in a temporary file.
-#   Tempfile.create do |file|
-#     store = PStore.new(file)
-#     # Populate the store.
-#     store.transaction do
-#       store[:foo] = 0
-#       store[:bar] = 1
-#       store[:baz] = 2
+#     # Create the store in a temporary file.
+#     Tempfile.create do |file|
+#       store = PStore.new(file)
+#       # Populate the store.
+#       store.transaction do
+#         store[:foo] = 0
+#         store[:bar] = 1
+#         store[:baz] = 2
+#       end
+#       yield store
 #     end
-#     yield store
 #   end
-# end
 #
 # == The Store
 #
