@@ -22,10 +22,11 @@ class TestStringIO < Test::Unit::TestCase
     assert_kind_of StringIO, StringIO.new
     assert_kind_of StringIO, StringIO.new('str')
     assert_kind_of StringIO, StringIO.new('str', 'r+')
+    assert_kind_of StringIO, StringIO.new(nil)
     assert_raise(ArgumentError) { StringIO.new('', 'x') }
     assert_raise(ArgumentError) { StringIO.new('', 'rx') }
     assert_raise(ArgumentError) { StringIO.new('', 'rbt') }
-    assert_raise(TypeError) { StringIO.new(nil) }
+    assert_raise(TypeError) { StringIO.new(Object) }
 
     o = Object.new
     def o.to_str
@@ -38,6 +39,13 @@ class TestStringIO < Test::Unit::TestCase
       'str'
     end
     assert_kind_of StringIO, StringIO.new(o)
+  end
+
+  def test_null
+    io = StringIO.new(nil)
+    assert_nil io.gets
+    io.puts "abc"
+    assert_nil io.string
   end
 
   def test_truncate
