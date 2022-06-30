@@ -789,14 +789,9 @@ native_thread_init(struct rb_native_thread *nt)
 void
 Init_native_thread(rb_thread_t *main_th)
 {
-    int r;
-    if ((r = pthread_rwlock_init(&rb_internal_thread_event_hooks_rw_lock, NULL))) {
-        rb_bug_errno("pthread_rwlock_init", r);
-    }
-
 #if defined(HAVE_PTHREAD_CONDATTR_SETCLOCK)
     if (condattr_monotonic) {
-        r = pthread_condattr_init(condattr_monotonic);
+        int r = pthread_condattr_init(condattr_monotonic);
         if (r == 0) {
             r = pthread_condattr_setclock(condattr_monotonic, CLOCK_MONOTONIC);
         }
