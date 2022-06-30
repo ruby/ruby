@@ -165,7 +165,7 @@ rb_feature_set_to(ruby_features_t *feat, unsigned int bit_mask, unsigned int bit
     rb_feature_set_to(&(feat), bit_mask, bit_set)
 #define FEATURE_SET(feat, bits) FEATURE_SET_TO(feat, bits, bits)
 #define FEATURE_SET_RESTORE(feat, save) FEATURE_SET_TO(feat, (save).mask, (save).set & (save).mask)
-#define FEATURE_SET_P(feat, bits) ((feat).set & (bits))
+#define FEATURE_SET_P(feat, bits) ((feat).set & FEATURE_BIT(bits))
 
 static void init_ids(ruby_cmdline_options_t *);
 
@@ -1525,7 +1525,7 @@ ruby_opt_init(ruby_cmdline_options_t *opt)
 {
     if (opt->dump & dump_exit_bits) return;
 
-    if (opt->features.set & FEATURE_BIT(gems)) {
+    if (FEATURE_SET_P(opt->features, gems)) {
         rb_define_module("Gem");
         if (opt->features.set & FEATURE_BIT(error_highlight)) {
             rb_define_module("ErrorHighlight");
@@ -1785,7 +1785,7 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
     argc -= i;
     argv += i;
 
-    if ((opt->features.set & FEATURE_BIT(rubyopt)) && (s = getenv("RUBYOPT"))) {
+    if ((FEATURE_SET_P(opt->features, rubyopt)) && (s = getenv("RUBYOPT"))) {
 	VALUE src_enc_name = opt->src.enc.name;
 	VALUE ext_enc_name = opt->ext.enc.name;
 	VALUE int_enc_name = opt->intern.enc.name;
@@ -1811,11 +1811,11 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
         rb_warning("-K is specified; it is for 1.8 compatibility and may cause odd behavior");
 
 #if USE_MJIT
-    if (opt->features.set & FEATURE_BIT(mjit)) {
+    if (FEATURE_SET_P(opt->features, mjit)) {
         opt->mjit.on = TRUE; /* set mjit.on for ruby_show_version() API and check to call mjit_init() */
     }
 #endif
-    if (opt->features.set & FEATURE_BIT(yjit)) {
+    if (FEATURE_SET_P(opt->features, yjit)) {
 #if USE_MJIT
         if (opt->mjit.on) {
             rb_warn("MJIT and YJIT cannot both be enabled at the same time. Exiting");
@@ -1979,8 +1979,8 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
     if (opt->features.mask & COMPILATION_FEATURES) {
 	VALUE option = rb_hash_new();
 #define SET_COMPILE_OPTION(h, o, name) \
-	rb_hash_aset((h), ID2SYM(rb_intern_const(#name)),		\
-                     RBOOL(FEATURE_SET_P(o->features, FEATURE_BIT(name))));
+	rb_hash_aset((h), ID2SYM(rb_intern_const(#name)), \
+                     RBOOL(FEATURE_SET_P(o->features, name)))
 	SET_COMPILE_OPTION(option, opt, frozen_string_literal);
 	SET_COMPILE_OPTION(option, opt, debug_frozen_string_literal);
 	rb_funcallv(rb_cISeq, rb_intern_const("compile_option="), 1, &option);
