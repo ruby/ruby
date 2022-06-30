@@ -15,7 +15,7 @@ describe "OpenSSL::X509::Name.verify" do
     cert.sign key, OpenSSL::Digest.new('SHA1')
     store = OpenSSL::X509::Store.new
     store.add_cert(cert)
-    store.verify(cert).should == true
+    [store.verify(cert), store.error, store.error_string].should == [true, 0, "ok"]
   end
 
   it "returns false for an expired certificate" do
