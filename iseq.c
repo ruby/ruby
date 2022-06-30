@@ -273,52 +273,56 @@ rb_iseq_each_value(const rb_iseq_t *iseq, iseq_value_itr_t * func, void *data)
 
     union iseq_inline_storage_entry *is_entries = body->is_entries;
 
-    // IVC and ICVARC entries
-    for (unsigned int i = 0; i < body->ivc_size; i++, is_entries++) {
-        IVC ivc = (IVC)is_entries;
-        if (ivc->entry) {
-            if (RB_TYPE_P(ivc->entry->class_value, T_NONE)) {
-                rb_bug("!! %u", ivc->entry->index);
-            }
+    if (body->is_entries) {
+        // IVC and ICVARC entries
+        for (unsigned int i = 0; i < body->ivc_size; i++, is_entries++) {
+            IVC ivc = (IVC)is_entries;
+            if (ivc->entry) {
+                if (RB_TYPE_P(ivc->entry->class_value, T_NONE)) {
+                    rb_bug("!! %u", ivc->entry->index);
+                }
 
-            VALUE nv = func(data, ivc->entry->class_value);
-            if (ivc->entry->class_value != nv) {
-                ivc->entry->class_value = nv;
-            }
-        }
-    }
-
-    // ISE entries
-    for (unsigned int i = 0; i < body->ise_size; i++, is_entries++) {
-        union iseq_inline_storage_entry *const is = (union iseq_inline_storage_entry *)is_entries;
-        if (is->once.value) {
-            VALUE nv = func(data, is->once.value);
-            if (is->once.value != nv) {
-                is->once.value = nv;
+                VALUE nv = func(data, ivc->entry->class_value);
+                if (ivc->entry->class_value != nv) {
+                    ivc->entry->class_value = nv;
+                }
             }
         }
-    }
 
-    // IC Entries
-    for (unsigned int i = 0; i < body->ic_size; i++, is_entries++) {
-        IC ic = (IC)is_entries;
-        if (ic->entry) {
-            VALUE nv = func(data, (VALUE)ic->entry);
-            if ((VALUE)ic->entry != nv) {
-                ic->entry = (void *)nv;
+        // ISE entries
+        for (unsigned int i = 0; i < body->ise_size; i++, is_entries++) {
+            union iseq_inline_storage_entry *const is = (union iseq_inline_storage_entry *)is_entries;
+            if (is->once.value) {
+                VALUE nv = func(data, is->once.value);
+                if (is->once.value != nv) {
+                    is->once.value = nv;
+                }
+            }
+        }
+
+        // IC Entries
+        for (unsigned int i = 0; i < body->ic_size; i++, is_entries++) {
+            IC ic = (IC)is_entries;
+            if (ic->entry) {
+                VALUE nv = func(data, (VALUE)ic->entry);
+                if ((VALUE)ic->entry != nv) {
+                    ic->entry = (void *)nv;
+                }
             }
         }
     }
 
     // Embedded VALUEs
-    if (ISEQ_MBITS_BUFLEN(size) == 1) {
-        iseq_scan_bits(0, body->mark_bits.single, code, func, data);
-    }
-    else {
-        if (body->mark_bits.list) {
-            for (unsigned int i = 0; i < ISEQ_MBITS_BUFLEN(size); i++) {
-                iseq_bits_t bits = body->mark_bits.list[i];
-                iseq_scan_bits(i, bits, code, func, data);
+    if (body->mark_bits.list) {
+        if (ISEQ_MBITS_BUFLEN(size) == 1) {
+            iseq_scan_bits(0, body->mark_bits.single, code, func, data);
+        }
+        else {
+            if (body->mark_bits.list) {
+                for (unsigned int i = 0; i < ISEQ_MBITS_BUFLEN(size); i++) {
+                    iseq_bits_t bits = body->mark_bits.list[i];
+                    iseq_scan_bits(i, bits, code, func, data);
+                }
             }
         }
     }
@@ -393,10 +397,8 @@ rb_iseq_update_references(rb_iseq_t *iseq)
                 cds[i].cc = (struct rb_callcache *)rb_gc_location((VALUE)cds[i].cc);
             }
         }
-        if (FL_TEST((VALUE)iseq, ISEQ_MARKABLE_ISEQ)) {
-            VALUE *original_iseq = ISEQ_ORIGINAL_ISEQ(iseq);
-            rb_iseq_each_value(iseq, update_each_insn_value, (void *)original_iseq);
-        }
+        VALUE *original_iseq = ISEQ_ORIGINAL_ISEQ(iseq);
+        rb_iseq_each_value(iseq, update_each_insn_value, (void *)original_iseq);
 
         if (body->param.flags.has_kw && ISEQ_COMPILE_DATA(iseq) == NULL) {
             int i, j;
@@ -448,9 +450,7 @@ rb_iseq_mark(const rb_iseq_t *iseq)
     if (ISEQ_BODY(iseq)) {
         const struct rb_iseq_constant_body *const body = ISEQ_BODY(iseq);
 
-        if (FL_TEST((VALUE)iseq, ISEQ_MARKABLE_ISEQ)) {
-	    rb_iseq_each_value(iseq, each_insn_value, NULL);
-	}
+        rb_iseq_each_value(iseq, each_insn_value, NULL);
 
         rb_gc_mark_movable(body->variable.coverage);
         rb_gc_mark_movable(body->variable.pc2branchindex);
