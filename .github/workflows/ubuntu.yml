@@ -26,7 +26,8 @@ jobs:
         configure: ["", "cppflags=-DRUBY_DEBUG"]
         include:
           - test_task: "check"
-            configure: "--host=i686-$OSTYPE"
+            configure: ""
+            arch: i686
           - test_task: "check"
             configure: "--enable-shared --enable-load-relative"
             skipped_tests: "TestGem#test_.*_from_binstubs.*"
@@ -36,6 +37,7 @@ jobs:
     env:
       GITPULLOPTIONS: --no-tags origin ${{github.ref}}
       RUBY_DEBUG: ci
+      SETARCH: ${{ matrix.arch && format('setarch {0}', matrix.arch) }}
     runs-on: ${{ matrix.os || 'ubuntu-20.04' }}
     if: ${{ !contains(github.event.head_commit.message, '[DOC]') && !contains(github.event.pull_request.labels.*.name, 'Documentation') }}
     steps:
@@ -46,12 +48,11 @@ jobs:
           configure: ${{matrix.configure}}
         run: |
           echo "GNUMAKEFLAGS=-j$((1 + $(nproc --all)))" >> $GITHUB_ENV
-          arch=`echo " $configure" | sed '/.* --host=/!d;s///;s/[- ].*//'`
-          echo "SETARCH=${arch:+setarch $arch}" >> $GITHUB_ENV
       - name: Install libraries
+        env:
+          arch: ${{matrix.arch}}
         run: |
           set -x
-          arch="${SETARCH##* }"
           arch=${arch:+:${arch/i[3-6]86/i386}}
           ${arch:+sudo dpkg --add-architecture ${arch#:}}
           sudo apt-get update -q || :
@@ -84,7 +85,7 @@ jobs:
           arch: ${{matrix.arch}}
         run: >-
           $SETARCH ../src/configure -C --disable-install-doc ${{ matrix.configure }}
-          ${arch:+--target=$arch-$OSTYPE}
+          ${arch:+--target=$arch-$OSTYPE --host=$arch-$OSTYPE}
       - run: $SETARCH make incs
       - run: $SETARCH make
       - run: $SETARCH make leaked-globals
