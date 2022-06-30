@@ -116,7 +116,7 @@ require "digest"
 # This maintains the integrity of the store.
 #
 # Other code in the block (including even calls to #path and PStore.new)
-# is executed as it is read.
+# is executed immediately, not deferred.
 #
 # The transaction block:
 #
