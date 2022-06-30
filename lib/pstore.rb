@@ -51,9 +51,9 @@ require "digest"
 #   require 'tempfile'
 #   # Yield a pristine store for use in examples.
 #   def example_store
-#     # Create the store in a temporary file.
-#     path = Tempfile.create
-#     store = PStore.new(path)
+#   # Create the store in a temporary file.
+#   Tempfile.create do |file|
+#     store = PStore.new(file)
 #     # Populate the store.
 #     store.transaction do
 #       store[:foo] = 0
@@ -62,6 +62,7 @@ require "digest"
 #     end
 #     yield store
 #   end
+# end
 #
 # == The Store
 #
