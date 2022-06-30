@@ -153,12 +153,10 @@ module Bundler
           # Check for this spec from other sources
           uris = [spec.remote, *remotes_for_spec(spec)].map(&:anonymized_uri).uniq
           Installer.ambiguous_gems << [spec.name, *uris] if uris.length > 1
-
-          path = fetch_gem(spec, options[:previous_spec])
-        else
-          path = cached_gem(spec)
-          raise GemNotFound, "Could not find #{spec.file_name} for installation" unless path
         end
+
+        path = fetch_gem_if_possible(spec, options[:previous_spec])
+        raise GemNotFound, "Could not find #{spec.file_name} for installation" unless path
 
         return if Bundler.settings[:no_install]
 
@@ -242,7 +240,7 @@ module Bundler
       end
 
       def cache(spec, custom_path = nil)
-        cached_path = Bundler.settings[:cache_all_platforms] ? fetch_gem(spec) : cached_gem(spec)
+        cached_path = Bundler.settings[:cache_all_platforms] ? fetch_gem_if_possible(spec) : cached_gem(spec)
         raise GemNotFound, "Missing gem file '#{spec.file_name}'." unless cached_path
         return if File.dirname(cached_path) == Bundler.app_cache.to_s
         Bundler.ui.info "  * #{File.basename(cached_path)}"
@@ -459,6 +457,14 @@ module Bundler
             Bundler.ui.info "Fetching source index from #{URICredentialsFilter.credential_filtered_uri(f.uri)}"
             index.use f.specs_with_retry(nil, self), override_dupes
           end
+        end
+      end
+
+      def fetch_gem_if_possible(spec, previous_spec = nil)
+        if spec.remote
+          fetch_gem(spec, previous_spec)
+        else
+          cached_gem(spec)
         end
       end
 
