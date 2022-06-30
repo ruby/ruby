@@ -37,20 +37,30 @@ require "digest"
 #
 # == About the Examples
 #
-# All examples on this page assume that the following code has been executed:
+# Examples on this page need a store that has known properties.
+# Therefore examples may assume the existence of this helper method:
 #
 #   require 'pstore'
-#   # Create a store with file +flat.store+.
-#   store = PStore.new('flat.store')
-#   # Store some objects.
-#   store.transaction do
-#     store[:foo] = 0
-#     store[:bar] = 1
-#     store[:baz] = 2
+#   require 'tempfile'
+#   # Yield a pristine store for use in examples.
+#   def example_store
+#     # Create the store in a temporary file.
+#     path = Tempfile.create
+#     store = PStore.new(path)
+#     # Populate the store.
+#     store.transaction do
+#       store[:foo] = 0
+#       store[:bar] = 1
+#       store[:baz] = 2
+#     end
+#     yield store
 #   end
 #
-# To avoid modifying the example store, some examples first execute
-# <tt>temp = store.dup</tt>, then apply changes to +temp+.
+# This means that example code can look like this:
+#
+#   example_store do |store|
+#     # Example code using store goes here.
+#   end
 #
 # == The Store
 #
@@ -80,33 +90,36 @@ require "digest"
 #
 # == Transactions
 #
-# A _transaction_ consists of calls to store-modifying methods (#[]= and #delete)
-# that appear in the block given with a call to method #transaction:
+# === The Transaction Block
 #
-#   temp = store.dup
-#   temp.transaction do
-#     temp[:foo] = 4
-#     temp.delete(:bar)
+# The block given with a call to method #transaction#
+# contains a _transaction_,
+# which consists of calls to \PStore methods that
+# read from or write to the store
+# (that is, all \PStore methods except #transaction itself,
+# #path, and Pstore.new):
+#
+#   example_store do |store|
+#     store.transaction do
+#       store.roots # => [:foo, :bar, :baz]
+#       store[:bat] = 3
+#       store.roots # => [:foo, :bar, :baz, :bat]
+#     end
 #   end
 #
-# When the block exits, the specified changes are made _atomically_;
-# that is, either all changes are posted, or none are.
+# Execution of the transaction is deferred until the block exits,
+# and is executed _atomically_ (all-or-nothing):
+# either all transaction calls are executed, or none are.
 # This maintains the integrity of the store.
 #
-# The block may not contain a nested call to #transaction,
-# but otherwise may contain any code, including calls to other \PStore methods:
+# Other code in the block (including even calls to #path and PStore.new)
+# is executed as it is read.
 #
-#   temp = store.dup
-#   temp.transaction do
-#     p "Changing #{:foo} from #{temp[:foo]} to 4."
-#     temp[:foo] = 4
-#     p "Deleting #{:bar}."
-#     temp.delete(:bar)
-#   end
+# The transaction block:
 #
-# Instance methods in \PStore may be called only from within a transaction
-# (exception: #path may be called from anywhere).
-# This assures that the call is executed only when the store is secure and stable.
+# - May not contain a nested call to #transaction.
+# - Is the only context where methods that read from or write to
+#   the store are allowed.
 #
 # As seen above, changes in a transaction are made automatically
 # when the block exits.
@@ -114,45 +127,51 @@ require "digest"
 #
 # - Method #commit triggers the update to the store and exits the block:
 #
-#     temp = store.dup
-#     temp.transaction do
-#       temp.roots # => [:foo, :bar, :baz]
-#       temp[:bat] = 3
-#       temp.commit
-#       fail 'Cannot get here'
-#     end
-#     temp.transaction do
-#       # Update was completed.
-#       store.roots # => [:foo, :bar, :baz, :bat]
+#     example_store do |store|
+#       store.transaction do
+#         store.roots # => [:foo, :bar, :baz]
+#         store[:bat] = 3
+#         store.commit
+#         fail 'Cannot get here'
+#       end
+#       store.transaction do
+#         # Update was completed.
+#         store.roots # => [:foo, :bar, :baz, :bat]
+#       end
 #     end
 #
 # - Method #abort discards the update to the store and exits the block:
 #
-#     store.transaction do
-#       store[:bam] = 4
-#       store.abort
-#       fail 'Cannot get here'
-#     end
-#     store.transaction do
-#       # Update was not completed.
-#       store[:bam] # => nil
-#     end
-#
-# Each transaction is either:
-#
-# - Read-write (the default):
-#
-#     store.transaction do
-#       # Read-write transaction.
-#       # Any code except a call to #transaction is allowed here.
+#     example_store do |store|
+#       store.transaction do
+#         store.roots # => [:foo, :bar, :baz]
+#         store[:bat] = 3
+#         store.abort
+#         fail 'Cannot get here'
+#       end
+#       store.transaction do
+#         # Update was not completed.
+#         store.roots # => [:foo, :bar, :baz]
+#       end
 #     end
 #
-# - Read-only (optional argument +read_only+ set to +true+):
+# === Read-Only Transactions
 #
-#     store.transaction(true) do
-#       # Read-only transaction:
-#       # Calls to #transaction, #[]=, and #delete are not allowed here.
-#     end
+# By default, a transaction allows both reading from and writing to
+# the store:
+#
+#   store.transaction do
+#     # Read-write transaction.
+#     # Any code except a call to #transaction is allowed here.
+#   end
+#
+# If argument +read_only+ is passed as +true+,
+# only reading is allowed:
+#
+#   store.transaction(true) do
+#     # Read-only transaction:
+#     # Calls to #transaction, #[]=, and #delete are not allowed here.
+#   end
 #
 # == Deep Root Values
 #
@@ -188,18 +207,20 @@ require "digest"
 #
 # Use method #[]= to update or create a root:
 #
-#   temp = store.dup
-#   temp.transaction do
-#     temp[:foo] = 1 # Update.
-#     temp[:bam] = 1 # Create.
+#   example_store do |store|
+#     store.transaction do
+#       store[:foo] = 1 # Update.
+#       store[:bam] = 1 # Create.
+#     end
 #   end
 #
 # Use method #delete to remove a root:
 #
-#   temp = store.dup
-#   temp.transaction do
-#     temp.delete(:foo)
-#     temp[:foo] # => nil
+#   example_store do |store|
+#     store.transaction do
+#       store.delete(:foo)
+#       store[:foo] # => nil
+#     end
 #   end
 #
 # === Retrieving Stored Objects
@@ -207,32 +228,39 @@ require "digest"
 # Use method #fetch (allows default) or #[] (defaults to +nil+)
 # to retrieve a root:
 #
-#   store.transaction do
-#     store[:foo]             # => 0
-#     store[:nope]            # => nil
-#     store.fetch(:baz)       # => 2
-#     store.fetch(:nope, nil) # => nil
-#     store.fetch(:nope)      # Raises exception.
+#   example_store do |store|
+#     store.transaction do
+#       store[:foo]             # => 0
+#       store[:nope]            # => nil
+#       store.fetch(:baz)       # => 2
+#       store.fetch(:nope, nil) # => nil
+#       store.fetch(:nope)      # Raises exception.
+#     end
 #   end
 #
 # === Querying the Store
 #
 # Use method #root? to determine whether a given root exists:
 #
-#   store.transaction do
-#     store.root?(:foo) # => true
+#   example_store do |store|
+#     store.transaction do
+#       store.root?(:foo) # => true
+#     end
 #   end
 #
 # Use method #roots to retrieve root keys:
 #
-#   store.transaction do
-#     store.roots # => [:foo, :bar, :baz]
+#   example_store do |store|
+#     store.transaction do
+#       store.roots # => [:foo, :bar, :baz]
+#     end
 #   end
 #
 # Use method #path to retrieve the path to the store's underlying file;
 # this method may be called from outside a transaction block:
 #
-#   store.path # => "flat.store"
+#   store = PStore.new('t.store')
+#   store.path # => "t.store"
 #
 # == Transaction Safety
 #
@@ -332,8 +360,8 @@ class PStore
   #   store = PStore.new(path)
   #
   # A \PStore object is
-  # {reentrant}[https://en.wikipedia.org/wiki/Reentrancy_(computing)];
-  # if argument +thread_safe+ is given as +true+,
+  # {reentrant}[https://en.wikipedia.org/wiki/Reentrancy_(computing)].
+  # If argument +thread_safe+ is given as +true+,
   # the object is also thread-safe (at the cost of a small performance penalty):
   #
   #   store = PStore.new(path, true)
@@ -371,9 +399,11 @@ class PStore
   # +nil+ otherwise;
   # if not +nil+, the returned value is an object or a hierarchy of objects:
   #
-  #   store.transaction do
-  #     store[:foo]  # => 0
-  #     store[:nope] # => nil
+  #   example_store do |store|
+  #     store.transaction do
+  #       store[:foo]  # => 0
+  #       store[:nope] # => nil
+  #     end
   #   end
   #
   # Returns +nil+ if there is no such root.
@@ -392,9 +422,11 @@ class PStore
   # - Raises an exception if +default+ is +PStore::Error+.
   # - Returns the value of +default+ otherwise:
   #
-  #     store.transaction do
-  #       store.fetch(:nope, nil) # => nil
-  #       store.fetch(:nope)      # Raises an exception.
+  #     example_store do |store|
+  #       store.transaction do
+  #         store.fetch(:nope, nil) # => nil
+  #         store.fetch(:nope)      # Raises an exception.
+  #       end
   #     end
   #
   # Raises an exception if called outside a transaction block.
@@ -413,9 +445,10 @@ class PStore
   # Creates or replaces an object or hierarchy of objects
   # at the root for +key+:
   #
-  #   temp = store.dup
-  #   temp.transaction do
-  #     temp[:bat] = 3
+  #   example_store do |store|
+  #     temp.transaction do
+  #       temp[:bat] = 3
+  #     end
   #   end
   #
   # See also {Deep Root Values}[rdoc-ref:PStore@Deep+Root+Values].
@@ -428,10 +461,11 @@ class PStore
 
   # Removes and returns the value at +key+ if it exists:
   #
-  #   store = PStore.new('t.store')
-  #   store.transaction do
-  #     store[:bat] = 3
-  #     store.delete(:bat)
+  #   example_store do |store|
+  #     store.transaction do
+  #       store[:bat] = 3
+  #       store.delete(:bat)
+  #     end
   #   end
   #
   # Returns +nil+ if there is no such root.
@@ -444,8 +478,10 @@ class PStore
 
   # Returns an array of the keys of the existing roots:
   #
-  #   store.transaction do
-  #     store.roots # => [:foo, :bar, :baz]
+  #   example_store do |store|
+  #     store.transaction do
+  #       store.roots # => [:foo, :bar, :baz]
+  #     end
   #   end
   #
   # Raises an exception if called outside a transaction block.
@@ -456,8 +492,10 @@ class PStore
 
   # Returns +true+ if there is a root for +key+, +false+ otherwise:
   #
-  #   store.transaction do
-  #     store.root?(:foo) # => true
+  #   example_store do |store|
+  #     store.transaction do
+  #       store.root?(:foo) # => true
+  #     end
   #   end
   #
   # Raises an exception if called outside a transaction block.
