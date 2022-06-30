@@ -1359,6 +1359,13 @@ x = __ENCODING__
     end;
   end
 
+  def test_if_after_class
+    assert_valid_syntax('module if true; Object end::Kernel; end')
+    assert_valid_syntax('module while true; break Object end::Kernel; end')
+    assert_valid_syntax('class if true; Object end::Kernel; end')
+    assert_valid_syntax('class while true; break Object end::Kernel; end')
+  end
+
 =begin
   def test_past_scope_variable
     assert_warning(/past scope/) {catch {|tag| eval("BEGIN{throw tag}; tap {a = 1}; a")}}

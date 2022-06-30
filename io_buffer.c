@@ -680,10 +680,10 @@ io_buffer_hexdump(VALUE string, size_t width, char *base, size_t size, int first
     for (size_t offset = 0; offset < size; offset += width) {
         memset(text, '\0', width);
         if (first) {
-            rb_str_catf(string, "0x%08zx ", offset);
+            rb_str_catf(string, "0x%08" PRIxSIZE " ", offset);
             first = 0;
         } else {
-            rb_str_catf(string, "\n0x%08zx ", offset);
+            rb_str_catf(string, "\n0x%08" PRIxSIZE " ", offset);
         }
 
         for (size_t i = 0; i < width; i += 1) {
@@ -1752,7 +1752,7 @@ rb_io_buffer_initialize_copy(VALUE self, VALUE source)
  *
  *    string= "data:    "
  *    # => "data:    "
- *    buffer = IO::Buffer.for(str)
+ *    buffer = IO::Buffer.for(string)
  *    buffer.copy(IO::Buffer.for("test"), 5)
  *    # => 4
  *    string
@@ -2552,7 +2552,7 @@ io_buffer_not_inplace(VALUE self)
  *  \Buffer from string:
  *
  *    string = 'data'
- *    buffer = IO::Buffer.for(str)
+ *    buffer = IO::Buffer.for(string)
  *    #  =>
  *    # #<IO::Buffer 0x00007f3f02be9b18+4 SLICE>
  *    # ...

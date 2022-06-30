@@ -213,3 +213,13 @@ describe "Using yield in a singleton class literal" do
     end
   end
 end
+
+describe "Using yield in non-lambda block" do
+  it 'raises a SyntaxError' do
+    code = <<~RUBY
+        1.times { yield }
+      RUBY
+
+    -> { eval(code) }.should raise_error(SyntaxError, /Invalid yield/)
+  end
+end

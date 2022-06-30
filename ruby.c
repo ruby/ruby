@@ -111,7 +111,7 @@ void rb_warning_category_update(unsigned int mask, unsigned int bits);
 enum feature_flag_bits {
     EACH_FEATURES(DEFINE_FEATURE, COMMA),
     feature_debug_flag_first,
-#if defined(MJIT_FORCE_ENABLE) || !YJIT_SUPPORTED_P
+#if defined(MJIT_FORCE_ENABLE) || !YJIT_BUILD
     DEFINE_FEATURE(jit) = feature_mjit,
 #else
     DEFINE_FEATURE(jit) = feature_yjit,
@@ -247,7 +247,7 @@ usage(const char *name, int help, int highlight, int columns)
 
 #define M(shortopt, longopt, desc) RUBY_OPT_MESSAGE(shortopt, longopt, desc)
 
-#if YJIT_SUPPORTED_P
+#if YJIT_BUILD
 # define PLATFORM_JIT_OPTION "--yjit"
 #else
 # define PLATFORM_JIT_OPTION "--mjit"
@@ -277,7 +277,7 @@ usage(const char *name, int help, int highlight, int columns)
 #if USE_MJIT
         M("--mjit",        "",                     "enable C compiler-based JIT compiler (experimental)"),
 #endif
-#if YJIT_SUPPORTED_P
+#if YJIT_BUILD
         M("--yjit",        "",                     "enable in-process JIT compiler (experimental)"),
 #endif
 	M("-h",		   "",			   "show this message, --help for more info"),
@@ -311,7 +311,7 @@ usage(const char *name, int help, int highlight, int columns)
 #if USE_MJIT
         M("mjit", "",           "C compiler-based JIT compiler (default: disabled)"),
 #endif
-#if YJIT_SUPPORTED_P
+#if YJIT_BUILD
         M("yjit", "",           "in-process JIT compiler (default: disabled)"),
 #endif
     };
@@ -322,7 +322,7 @@ usage(const char *name, int help, int highlight, int columns)
 #if USE_MJIT
     extern const struct ruby_opt_message mjit_option_messages[];
 #endif
-#if YJIT_SUPPORTED_P
+#if YJIT_BUILD
     static const struct ruby_opt_message yjit_options[] = {
 #if YJIT_STATS
         M("--yjit-stats",              "", "Enable collecting YJIT statistics"),
@@ -364,7 +364,7 @@ usage(const char *name, int help, int highlight, int columns)
     for (i = 0; mjit_option_messages[i].str; ++i)
 	SHOW(mjit_option_messages[i]);
 #endif
-#if YJIT_SUPPORTED_P
+#if YJIT_BUILD
     printf("%s""YJIT options (experimental):%s\n", sb, se);
     for (i = 0; i < numberof(yjit_options); ++i)
         SHOW(yjit_options[i]);
@@ -1819,7 +1819,7 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
 #if USE_MJIT
         if (opt->mjit.on) {
             rb_warn("MJIT and YJIT cannot both be enabled at the same time. Exiting");
-            exit(1);
+            return Qfalse;
         }
 #endif
 #if YJIT_BUILD

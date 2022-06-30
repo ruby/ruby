@@ -2656,4 +2656,31 @@ CODE
       TracePoint.allow_reentry{}
     end
   end
+
+  def test_raising_from_b_return_tp_tracing_bmethod
+    assert_normal_exit(<<~RUBY, '[Bug #18060]', timeout: 3)
+      class Foo
+        define_singleton_method(:foo) { return } # a bmethod
+      end
+
+      TracePoint.trace(:b_return) do |tp|
+        raise
+      end
+
+      Foo.foo
+    RUBY
+
+    # Same thing but with a target
+    assert_normal_exit(<<~RUBY, '[Bug #18060]', timeout: 3)
+      class Foo
+        define_singleton_method(:foo) { return } # a bmethod
+      end
+
+      TracePoint.new(:b_return) do |tp|
+        raise
+      end.enable(target: Foo.method(:foo))
+
+      Foo.foo
+    RUBY
+  end
 end

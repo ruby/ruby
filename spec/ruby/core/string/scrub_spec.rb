@@ -14,6 +14,11 @@ describe "String#scrub with a default replacement" do
     "abc\u3042#{x81}".scrub.should == "abc\u3042\uFFFD"
   end
 
+  it "replaces invalid byte sequences in lazy substrings" do
+    x81 = [0x81].pack('C').force_encoding('utf-8')
+    "abc\u3042#{x81}def"[1...-1].scrub.should == "bc\u3042\uFFFDde"
+  end
+
   it "returns a copy of self when the input encoding is BINARY" do
     input = "foo".encode('BINARY')
 

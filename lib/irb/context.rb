@@ -53,7 +53,6 @@ module IRB
       else
         @use_multiline = nil
       end
-      @use_colorize = IRB.conf[:USE_COLORIZE]
       @use_autocomplete = IRB.conf[:USE_AUTOCOMPLETE]
       @verbose = IRB.conf[:VERBOSE]
       @io = nil
@@ -186,8 +185,6 @@ module IRB
     attr_reader :use_singleline
     # Whether colorization is enabled or not.
     #
-    # A copy of the default <code>IRB.conf[:USE_COLORIZE]</code>
-    attr_reader :use_colorize
     # A copy of the default <code>IRB.conf[:USE_AUTOCOMPLETE]</code>
     attr_reader :use_autocomplete
     # A copy of the default <code>IRB.conf[:INSPECT_MODE]</code>
@@ -332,8 +329,6 @@ module IRB
     alias use_readline use_singleline
     # backward compatibility
     alias use_readline? use_singleline
-    # Alias for #use_colorize
-    alias use_colorize? use_colorize
     # Alias for #use_autocomplete
     alias use_autocomplete? use_autocomplete
     # Alias for #rc

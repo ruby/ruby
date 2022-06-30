@@ -143,8 +143,17 @@ def ruby_exe(code = :not_given, opts = {})
     platform_is_not :opal do
       command = ruby_cmd(code, opts)
       output = `#{command}`
+      status = Process.last_status
 
-      exit_status = Process.last_status.exitstatus
+      exit_status = if status.exited?
+                      status.exitstatus
+                    elsif status.signaled?
+                      signame = Signal.signame status.termsig
+                      raise "No signal name?" unless signame
+                      :"SIG#{signame}"
+                    else
+                      raise SpecExpectationNotMetError, "#{exit_status.inspect} is neither exited? nor signaled?"
+                    end
       if exit_status != expected_status
         formatted_output = output.lines.map { |line| "  #{line}" }.join
         raise SpecExpectationNotMetError,

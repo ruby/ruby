@@ -209,42 +209,36 @@ class TestGCCompact < Test::Unit::TestCase
     assert_equal([:call, :line], results)
   end
 
-  def test_moving_strings_between_size_pools
+  def test_moving_strings_up_size_pools
     assert_separately([], "#{<<~"begin;"}\n#{<<~"end;"}", timeout: 10, signal: :SEGV)
     begin;
-      moveables = []
-      small_slots = []
-      large_slots = []
+      STR_COUNT = 500
 
-      # Ensure fragmentation in the large heap
-      base_slot_size = GC.stat_heap[0].fetch(:slot_size)
-      500.times {
-        String.new(+"a" * base_slot_size).downcase
-        large_slots << String.new(+"a" * base_slot_size).downcase
-      }
+      GC.verify_compaction_references(double_heap: true, toward: :empty)
 
-      # Ensure fragmentation in the smaller heap
-      500.times {
-        small_slots << Object.new
-        Object.new
-      }
+      str = "a" * GC::INTERNAL_CONSTANTS[:BASE_SLOT_SIZE]
+      ary = STR_COUNT.times.map { "" << str }
 
-      500.times {
-        # strings are created as shared strings when initialized from literals
-        # use downcase to force the creation of an embedded string (it calls
-        # rb_str_new internally)
-        moveables << String.new(+"a" * base_slot_size).downcase
+      stats = GC.verify_compaction_references(double_heap: true, toward: :empty)
 
-        moveables << String.new("a").downcase
-      }
-      moveables.map { |s| s << ("bc" * base_slot_size) }
-      moveables.map { |s| s.squeeze! }
-      stats = GC.compact
+      assert_operator(stats[:moved_up][:T_STRING], :>=, STR_COUNT)
+      assert(ary) # warning: assigned but unused variable - ary
+    end;
+  end
 
-      moved_strings = (stats.dig(:moved_up, :T_STRING) || 0) +
-        (stats.dig(:moved_down, :T_STRING) || 0)
+  def test_moving_strings_down_size_pools
+    assert_separately([], "#{<<~"begin;"}\n#{<<~"end;"}", timeout: 10, signal: :SEGV)
+    begin;
+      STR_COUNT = 500
 
-      assert_operator(moved_strings, :>, 0)
+      GC.verify_compaction_references(double_heap: true, toward: :empty)
+
+      ary = STR_COUNT.times.map { ("a" * GC::INTERNAL_CONSTANTS[:BASE_SLOT_SIZE]).squeeze! }
+
+      stats = GC.verify_compaction_references(double_heap: true, toward: :empty)
+
+      assert_operator(stats[:moved_down][:T_STRING], :>=, STR_COUNT)
+      assert(ary) # warning: assigned but unused variable - ary
     end;
   end
 end

@@ -255,20 +255,18 @@ module Bundler
     #
     # @return [SpecSet] resolved dependencies
     def resolve
-      @resolve ||= begin
-        if Bundler.frozen_bundle?
-          Bundler.ui.debug "Frozen, using resolution from the lockfile"
-          @locked_specs
-        elsif !unlocking? && nothing_changed?
-          Bundler.ui.debug("Found no changes, using resolution from the lockfile")
-          SpecSet.new(filter_specs(@locked_specs, @dependencies.select {|dep| @locked_specs[dep].any? }))
-        else
-          last_resolve = converge_locked_specs
-          # Run a resolve against the locally available gems
-          Bundler.ui.debug("Found changes from the lockfile, re-resolving dependencies because #{change_reason}")
-          expanded_dependencies = expand_dependencies(dependencies + metadata_dependencies, true)
-          Resolver.resolve(expanded_dependencies, source_requirements, last_resolve, gem_version_promoter, additional_base_requirements_for_resolve, platforms)
-        end
+      @resolve ||= if Bundler.frozen_bundle?
+        Bundler.ui.debug "Frozen, using resolution from the lockfile"
+        @locked_specs
+      elsif !unlocking? && nothing_changed?
+        Bundler.ui.debug("Found no changes, using resolution from the lockfile")
+        SpecSet.new(filter_specs(@locked_specs, @dependencies.select {|dep| @locked_specs[dep].any? }))
+      else
+        last_resolve = converge_locked_specs
+        # Run a resolve against the locally available gems
+        Bundler.ui.debug("Found changes from the lockfile, re-resolving dependencies because #{change_reason}")
+        expanded_dependencies = expand_dependencies(dependencies + metadata_dependencies, true)
+        Resolver.resolve(expanded_dependencies, source_requirements, last_resolve, gem_version_promoter, additional_base_requirements_for_resolve, platforms)
       end
     end
 
@@ -735,12 +733,10 @@ module Bundler
     end
 
     def metadata_dependencies
-      @metadata_dependencies ||= begin
-        [
-          Dependency.new("Ruby\0", RubyVersion.system.gem_version),
-          Dependency.new("RubyGems\0", Gem::VERSION),
-        ]
-      end
+      @metadata_dependencies ||= [
+        Dependency.new("Ruby\0", RubyVersion.system.gem_version),
+        Dependency.new("RubyGems\0", Gem::VERSION),
+      ]
     end
 
     def expand_dependencies(dependencies, remote = false)

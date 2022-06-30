@@ -69,4 +69,13 @@ describe "String#insert with index, other" do
       "あれ".insert 0, pat
     end.should raise_error(Encoding::CompatibilityError)
   end
+
+  it "should not call subclassed string methods" do
+    cls = Class.new(String) do
+      def replace(arg)
+        raise "should not call replace"
+      end
+    end
+    cls.new("abcd").insert(0, 'X').should == "Xabcd"
+  end
 end

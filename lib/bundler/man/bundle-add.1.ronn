@@ -27,7 +27,7 @@ bundle add rails --group "development, test"
 * `--group`, `-g`:
   Specify the group(s) for the added gem. Multiple groups should be separated by commas.
 
-* `--source`, , `-s`:
+* `--source`, `-s`:
   Specify the source for the added gem.
 
 * `--require`, `-r`:

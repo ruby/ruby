@@ -607,7 +607,6 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
     return if @yaml_loaded
 
     require 'psych'
-    require_relative 'rubygems/psych_additions'
     require_relative 'rubygems/psych_tree'
 
     require_relative 'rubygems/safe_yaml'
@@ -1018,7 +1017,6 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
 
   def self.load_plugin_files(plugins) # :nodoc:
     plugins.each do |plugin|
-
       # Skip older versions of the GemCutter plugin: Its commands are in
       # RubyGems proper now.
 
@@ -1325,8 +1323,9 @@ begin
 rescue LoadError
   # Ignored
 rescue StandardError => e
+  path = e.backtrace_locations.reverse.find {|l| l.path.end_with?("rubygems/defaults/operating_system.rb") }.path
   msg = "#{e.message}\n" \
-    "Loading the rubygems/defaults/operating_system.rb file caused an error. " \
+    "Loading the #{path} file caused an error. " \
     "This file is owned by your OS, not by rubygems upstream. " \
     "Please find out which OS package this file belongs to and follow the guidelines from your OS to report " \
     "the problem and ask for help."

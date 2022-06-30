@@ -494,6 +494,14 @@ describe "File.open" do
     File.open(@file, "w") { |f| f.puts "testing" }
     File.size(@file).should > 0
     File.open(@file, "rb+") do |f|
+      f.binmode?.should == true
+      f.external_encoding.should == Encoding::ASCII_8BIT
+      f.pos.should == 0
+      f.should_not.eof?
+    end
+    File.open(@file, "r+b") do |f|
+      f.binmode?.should == true
+      f.external_encoding.should == Encoding::ASCII_8BIT
       f.pos.should == 0
       f.should_not.eof?
     end

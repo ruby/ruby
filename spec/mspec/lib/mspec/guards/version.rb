@@ -33,6 +33,30 @@ class VersionGuard < SpecGuard
       @version >= @requirement
     end
   end
+
+  @kernel_version = nil
+  def self.kernel_version
+    if @kernel_version
+      @kernel_version
+    else
+      if v = RUBY_PLATFORM[/darwin(\d+)/, 1] # build time version
+        uname = v
+      else
+        begin
+          require 'etc'
+          etc = true
+        rescue LoadError
+          etc = false
+        end
+        if etc and Etc.respond_to?(:uname)
+          uname = Etc.uname.fetch(:release)
+        else
+          uname = `uname -r`.chomp
+        end
+      end
+      @kernel_version = uname
+    end
+  end
 end
 
 def version_is(base_version, requirement, &block)
@@ -41,4 +65,8 @@ end
 
 def ruby_version_is(requirement, &block)
   VersionGuard.new(VersionGuard::FULL_RUBY_VERSION, requirement).run_if(:ruby_version_is, &block)
+end
+
+def kernel_version_is(requirement, &block)
+  VersionGuard.new(VersionGuard.kernel_version, requirement).run_if(:kernel_version_is, &block)
 end

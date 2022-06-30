@@ -294,17 +294,27 @@ RSpec.describe "bundle install with specific platforms" do
       gem "sorbet-static", "0.5.6433"
     G
 
-    simulate_platform "arm64-darwin-21" do
-      bundle "install", :raise_on_error => false
-    end
-
-    expect(err).to include <<~ERROR.rstrip
+    error_message = <<~ERROR.strip
       Could not find gem 'sorbet-static (= 0.5.6433) arm64-darwin-21' in rubygems repository #{file_uri_for(gem_repo2)}/ or installed locally.
 
       The source contains the following gems matching 'sorbet-static (= 0.5.6433)':
         * sorbet-static-0.5.6433-universal-darwin-20
         * sorbet-static-0.5.6433-x86_64-linux
     ERROR
+
+    simulate_platform "arm64-darwin-21" do
+      bundle "install", :raise_on_error => false
+    end
+
+    expect(err).to include(error_message).once
+
+    # Make sure it doesn't print error twice in verbose mode
+
+    simulate_platform "arm64-darwin-21" do
+      bundle "install --verbose", :raise_on_error => false
+    end
+
+    expect(err).to include(error_message).once
   end
 
   it "does not resolve if the current platform does not match any of available platform specific variants for a transitive dependency" do
@@ -320,17 +330,27 @@ RSpec.describe "bundle install with specific platforms" do
       gem "sorbet", "0.5.6433"
     G
 
-    simulate_platform "arm64-darwin-21" do
-      bundle "install", :raise_on_error => false
-    end
-
-    expect(err).to include <<~ERROR.rstrip
+    error_message = <<~ERROR.strip
       Could not find gem 'sorbet-static (= 0.5.6433) arm64-darwin-21', which is required by gem 'sorbet (= 0.5.6433)', in rubygems repository #{file_uri_for(gem_repo2)}/ or installed locally.
 
       The source contains the following gems matching 'sorbet-static (= 0.5.6433)':
         * sorbet-static-0.5.6433-universal-darwin-20
         * sorbet-static-0.5.6433-x86_64-linux
     ERROR
+
+    simulate_platform "arm64-darwin-21" do
+      bundle "install", :raise_on_error => false
+    end
+
+    expect(err).to include(error_message).once
+
+    # Make sure it doesn't print error twice in verbose mode
+
+    simulate_platform "arm64-darwin-21" do
+      bundle "install --verbose", :raise_on_error => false
+    end
+
+    expect(err).to include(error_message).once
   end
 
   private

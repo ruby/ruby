@@ -41,13 +41,13 @@ describe "Dir.foreach" do
 
   it "accepts an encoding keyword for the encoding of the entries" do
     dirs = Dir.foreach("#{DirSpecs.mock_dir}/deeply/nested", encoding: "utf-8").to_a.sort
-    dirs.each {|dir| dir.encoding.should == Encoding::UTF_8}
+    dirs.each { |dir| dir.encoding.should == Encoding::UTF_8 }
 
-    dirs = Dir.foreach("#{DirSpecs.mock_dir}/deeply/nested", encoding: Encoding::UTF_16LE).to_a.sort
-    dirs.each {|dir| dir.encoding.should == Encoding::UTF_16LE}
+    dirs = Dir.foreach("#{DirSpecs.mock_dir}/deeply/nested", encoding: Encoding::ISO_8859_1).to_a.sort
+    dirs.each { |dir| dir.encoding.should == Encoding::ISO_8859_1 }
 
-    Dir.foreach("#{DirSpecs.mock_dir}/deeply/nested", encoding: Encoding::UTF_16LE) do |f|
-      f.encoding.should == Encoding::UTF_16LE
+    Dir.foreach("#{DirSpecs.mock_dir}/deeply/nested", encoding: Encoding::ISO_8859_1) do |f|
+      f.encoding.should == Encoding::ISO_8859_1
     end
   end
 

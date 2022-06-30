@@ -70,6 +70,16 @@ struct lex_context {
     BITFIELD(enum shareability, shareable_constant_value, 2);
 };
 
+#ifdef __GNUC__
+// Suppress "parameter passing for argument of type 'struct
+// lex_context' changed" notes.  `struct lex_context` is file scope,
+// and has no ABI compatibility issue.
+RBIMPL_WARNING_PUSH()
+RBIMPL_WARNING_IGNORED(-Wpsabi)
+RBIMPL_WARNING_POP()
+// Not sure why effective even after popped.
+#endif
+
 #include "parse.h"
 
 #define NO_LEX_CTXT (struct lex_context){0}
@@ -9225,7 +9235,7 @@ parse_ident(struct parser_params *p, int c, int cmd_state)
 		    return keyword_do_block;
 		return keyword_do;
 	    }
-	    if (IS_lex_state_for(state, (EXPR_BEG | EXPR_LABELED)))
+	    if (IS_lex_state_for(state, (EXPR_BEG | EXPR_LABELED | EXPR_CLASS)))
 		return kw->id[0];
 	    else {
 		if (kw->id[0] != kw->id[1])

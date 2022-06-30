@@ -50,4 +50,10 @@ describe "String#lstrip!" do
     -> { "hello".freeze.lstrip! }.should raise_error(FrozenError)
     -> { "".freeze.lstrip!      }.should raise_error(FrozenError)
   end
+
+  it "raises an ArgumentError if the first codepoint is invalid" do
+    s = "\xDFabc".force_encoding(Encoding::UTF_8)
+    s.valid_encoding?.should be_false
+    -> { s.lstrip! }.should raise_error(ArgumentError)
+  end
 end

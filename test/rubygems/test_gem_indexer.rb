@@ -103,6 +103,8 @@ class TestGemIndexer < Gem::TestCase
 
     assert_indexed @indexerdir, "latest_specs.#{@marshal_version}"
     assert_indexed @indexerdir, "latest_specs.#{@marshal_version}.gz"
+
+    refute_directory_exists @indexer.directory
   end
 
   def test_generate_index_modern
@@ -342,6 +344,8 @@ class TestGemIndexer < Gem::TestCase
 
       assert_includes pre_specs_index, @d2_1_a_tuple
       refute_includes pre_specs_index, @d2_1_tuple
+
+      refute_directory_exists @indexer.directory
     end
   end
 

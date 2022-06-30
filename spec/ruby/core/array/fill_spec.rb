@@ -205,6 +205,12 @@ describe "Array#fill with (filler, index, length)" do
     -> { [].fill('a', obj) }.should raise_error(TypeError)
   end
 
+  it "raises a TypeError when the length is not numeric" do
+    -> { [1, 2, 3].fill("x", 1, "foo") }.should raise_error(TypeError, /no implicit conversion of String into Integer/)
+    -> { [1, 2, 3].fill("x", 1, :"foo") }.should raise_error(TypeError, /no implicit conversion of Symbol into Integer/)
+    -> { [1, 2, 3].fill("x", 1, Object.new) }.should raise_error(TypeError, /no implicit conversion of Object into Integer/)
+  end
+
   not_supported_on :opal do
     it "raises an ArgumentError or RangeError for too-large sizes" do
       error_types = [RangeError, ArgumentError]

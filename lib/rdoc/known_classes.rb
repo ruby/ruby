@@ -25,6 +25,7 @@ module RDoc
     "rb_cObject"           => "Object",
     "rb_cProc"             => "Proc",
     "rb_cRange"            => "Range",
+    "rb_cRefinement"       => "Refinement",
     "rb_cRegexp"           => "Regexp",
     "rb_cRubyVM"           => "RubyVM",
     "rb_cSocket"           => "Socket",

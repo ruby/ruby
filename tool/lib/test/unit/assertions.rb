@@ -563,10 +563,6 @@ module Test
         assert yield, *msgs
       end
 
-      def assert_raises(*exp, &b)
-        raise NoMethodError, "use assert_raise", caller
-      end
-
       # :call-seq:
       #   assert_nothing_thrown( failure_message = nil, &block )
       #

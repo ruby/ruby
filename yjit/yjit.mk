@@ -46,11 +46,14 @@ miniruby$(EXEEXT): $(YJIT_LIBS)
 # Generate Rust bindings. See source for details.
 # Needs `./configure --enable-yjit=dev` and Clang.
 ifneq ($(strip $(CARGO)),) # if configure found Cargo
-.PHONY: yjit-bindgen
+.PHONY: yjit-bindgen yjit-bindgen-show-unused
 yjit-bindgen: yjit.$(OBJEXT)
 	YJIT_SRC_ROOT_PATH='$(top_srcdir)' $(CARGO) run --manifest-path '$(top_srcdir)/yjit/bindgen/Cargo.toml' -- $(CFLAGS) $(XCFLAGS) $(CPPFLAGS)
 
+check-yjit-bindgen-unused: yjit.$(OBJEXT)
+	RUST_LOG=warn YJIT_SRC_ROOT_PATH='$(top_srcdir)' $(CARGO) run --manifest-path '$(top_srcdir)/yjit/bindgen/Cargo.toml' -- $(CFLAGS) $(XCFLAGS) $(CPPFLAGS) 2>&1 | (! grep "unused option: --allow")
+
 # For CI, check whether YJIT's FFI bindings are up-to-date.
-check-yjit-bindings: yjit-bindgen
+check-yjit-bindings: check-yjit-bindgen-unused
 	git -C "$(top_srcdir)" diff --exit-code yjit/src/cruby_bindings.inc.rs
 endif

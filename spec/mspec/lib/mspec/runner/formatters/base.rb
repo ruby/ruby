@@ -113,6 +113,14 @@ class BaseFormatter
   # evaluating the examples.
   def finish
     print "\n"
+
+    if MSpecOptions.latest && MSpecOptions.latest.config[:print_skips]
+      print "\nSkips:\n" unless MSpec.skips.empty?
+      MSpec.skips.each do |skip, block|
+        print "#{skip.message} in #{(block.source_location || ['?']).join(':')}\n"
+      end
+    end
+
     count = 0
     @exceptions.each do |exc|
       count += 1

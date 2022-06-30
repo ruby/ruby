@@ -375,10 +375,20 @@ describe :string_slice_regexp_index, shared: true do
     "hello there".send(@method, /(what?)/, 1).should == nil
   end
 
+  it "returns nil if the index is larger than the number of captures" do
+    "hello there".send(@method, /hello (.)/, 2).should == nil
+    # You can't refer to 0 using negative indices
+    "hello there".send(@method, /hello (.)/, -2).should == nil
+  end
+
   it "returns nil if there is no capture for the given index" do
     "hello there".send(@method, /[aeiou](.)\1/, 2).should == nil
-    # You can't refer to 0 using negative indices
-    "hello there".send(@method, /[aeiou](.)\1/, -2).should == nil
+  end
+
+  it "returns nil if the given capture group was not matched but still sets $~" do
+    "test".send(@method, /te(z)?/, 1).should == nil
+    $~[0].should == "te"
+    $~[1].should == nil
   end
 
   it "calls to_int on the given index" do

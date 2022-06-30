@@ -35,6 +35,10 @@ describe "String#capitalize" do
     it "does not capitalize non-ASCII characters" do
       "ßet".capitalize(:ascii).should == "ßet"
     end
+
+    it "handles non-ASCII substrings properly" do
+      "garçon"[1..-1].capitalize(:ascii).should == "Arçon"
+    end
   end
 
   describe "full Unicode case mapping adapted for Turkic languages" do

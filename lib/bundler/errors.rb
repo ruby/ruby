@@ -41,12 +41,14 @@ module Bundler
   class GemspecError < BundlerError; status_code(14); end
   class InvalidOption < BundlerError; status_code(15); end
   class ProductionError < BundlerError; status_code(16); end
+
   class HTTPError < BundlerError
     status_code(17)
     def filter_uri(uri)
       URICredentialsFilter.credential_filtered_uri(uri)
     end
   end
+
   class RubyVersionMismatch < BundlerError; status_code(18); end
   class SecurityError < BundlerError; status_code(19); end
   class LockfileError < BundlerError; status_code(20); end

@@ -128,4 +128,22 @@ describe "ObjectSpace.trace_object_allocations" do
       ObjectSpace.trace_object_allocations_stop
     end
   end
+
+  it "returns nil for class_path, generation, method_id, sourcefile, and sourceline for immutable objects" do
+    ObjectSpace.trace_object_allocations_start
+    begin
+      one = nil
+      two = 42
+      three = :foo
+      [one, two, three].each do |i|
+        ObjectSpace.allocation_class_path(i).should == nil
+        ObjectSpace.allocation_generation(i).should == nil
+        ObjectSpace.allocation_method_id(i).should == nil
+        ObjectSpace.allocation_sourcefile(i).should == nil
+        ObjectSpace.allocation_sourceline(i).should == nil
+      end
+    ensure
+      ObjectSpace.trace_object_allocations_stop
+    end
+  end
 end

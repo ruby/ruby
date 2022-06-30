@@ -496,6 +496,10 @@ class TupleSpaceProxyTest < Test::Unit::TestCase
   include TupleSpaceTestModule
 
   def setup
+    if RUBY_PLATFORM.match?(/mingw/)
+      @omitted = true
+      omit 'This test seems to randomly hang on GitHub Actions MinGW UCRT64'
+    end
     super
     ThreadGroup.new.add(Thread.current)
     @ts_base = Rinda::TupleSpace.new(1)
@@ -503,6 +507,9 @@ class TupleSpaceProxyTest < Test::Unit::TestCase
     @server = DRb.start_service("druby://localhost:0")
   end
   def teardown
+    return if @omitted
+    @omitted = false
+
     # implementation-dependent
     @ts_base.instance_eval{
       if th = @keeper
