@@ -13,6 +13,7 @@
 #include "internal/variable.h"
 #include "internal/compile.h"
 #include "internal/class.h"
+#include "internal/fixnum.h"
 #include "gc.h"
 #include "vm_core.h"
 #include "vm_callinfo.h"
@@ -712,6 +713,12 @@ VALUE
 rb_yarv_ary_entry_internal(VALUE ary, long offset)
 {
     return rb_ary_entry_internal(ary, offset);
+}
+
+VALUE
+rb_yarv_fix_mod_fix(VALUE recv, VALUE obj)
+{
+    return rb_fix_mod_fix(recv, obj);
 }
 
 // Print the Ruby source location of some ISEQ for debugging purposes
