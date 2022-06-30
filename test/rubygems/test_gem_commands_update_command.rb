@@ -535,6 +535,7 @@ class TestGemCommandsUpdateCommand < Gem::TestCase
     out = @ui.output.split "\n"
     assert_equal "Updating installed gems", out.shift
     assert_equal "Nothing to update", out.shift
+    assert_equal "Gems already up-to-date: a", out.shift
 
     assert_empty out
   end

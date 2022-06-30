@@ -118,15 +118,18 @@ command to remove old versions.
 
     updated = update_gems gems_to_update
 
+    installed_names = highest_installed_gems.keys
     updated_names = updated.map {|spec| spec.name }
     not_updated_names = options[:args].uniq - updated_names
+    not_installed_names = not_updated_names - installed_names
+    up_to_date_names = not_updated_names - not_installed_names
 
     if updated.empty?
       say "Nothing to update"
     else
       say "Gems updated: #{updated_names.join(' ')}"
-      say "Gems already up-to-date: #{not_updated_names.join(' ')}" unless not_updated_names.empty?
     end
+    say "Gems already up-to-date: #{up_to_date_names.join(' ')}" unless up_to_date_names.empty?
   end
 
   def fetch_remote_gems(spec) # :nodoc:
