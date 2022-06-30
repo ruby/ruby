@@ -242,7 +242,7 @@ module Bundler
       end
 
       def cache(spec, custom_path = nil)
-        cached_path = cached_gem(spec)
+        cached_path = Bundler.settings[:cache_all_platforms] ? fetch_gem(spec) : cached_gem(spec)
         raise GemNotFound, "Missing gem file '#{spec.file_name}'." unless cached_path
         return if File.dirname(cached_path) == Bundler.app_cache.to_s
         Bundler.ui.info "  * #{File.basename(cached_path)}"
