@@ -38,7 +38,14 @@ require "digest"
 # == About the Examples
 #
 # Examples on this page need a store that has known properties.
-# Therefore examples may assume the existence of this helper method:
+# They can get a new (and populated) store by calling thus:
+#
+#   example_store do |store|
+#     # Example code using store goes here.
+#   end
+#
+# The implementation of +example_store+
+# (which is profoundly unimportant here):
 #
 #   require 'pstore'
 #   require 'tempfile'
@@ -54,12 +61,6 @@ require "digest"
 #       store[:baz] = 2
 #     end
 #     yield store
-#   end
-#
-# This means that example code can look like this:
-#
-#   example_store do |store|
-#     # Example code using store goes here.
 #   end
 #
 # == The Store
