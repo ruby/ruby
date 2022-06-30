@@ -812,4 +812,24 @@ class TestGemCommandsUpdateCommand < Gem::TestCase
     assert_equal "  a-2", out.shift
     assert_empty out
   end
+
+  def test_execute_named_not_installed_and_no_update
+    spec_fetcher do |fetcher|
+      fetcher.spec 'a', 2
+    end
+
+    @cmd.options[:args] = %w[a b]
+
+    use_ui @ui do
+      @cmd.execute
+    end
+
+    out = @ui.output.split "\n"
+    assert_equal "Updating installed gems", out.shift
+    assert_equal "Nothing to update", out.shift
+    assert_equal "Gems already up-to-date: a", out.shift
+    assert_equal "Gems not currently installed: b", out.shift
+
+    assert_empty out
+  end
 end
