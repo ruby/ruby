@@ -212,12 +212,12 @@ See {ISO 8601 week dates}[https://en.wikipedia.org/wiki/ISO_8601#Week_dates].
     t0.strftime('%G') # => "2022"
     t1.strftime('%G') # => "2024"
 
-- <tt>%g</tt> - Week-based year without century, range (0..99), zero-padded:
+- <tt>%g</tt> - Week-based year without century, in range (0..99), zero-padded:
 
     t0.strftime('%g') # => "22"
     t1.strftime('%g') # => "24"
 
-- <tt>%V</tt> - Week number of the week-based year, range (1..53),
+- <tt>%V</tt> - Week number of the week-based year, in range (1..53),
   zero-padded:
 
     t0.strftime('%V') # => "52"
