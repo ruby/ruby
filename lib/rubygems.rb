@@ -774,6 +774,10 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
     open_file(path, "wb") do |io|
       io.write data
     end
+  rescue Errno::ENOSPC
+    # If we ran out of space but the file exists, it's *guaranteed* to be corrupted.
+    File.delete(path) if File.exist?(path)
+    raise
   end
 
   ##
