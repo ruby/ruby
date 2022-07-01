@@ -39,6 +39,7 @@ fn main() {
         .header("encindex.h")
         .header("internal.h")
         .header("internal/re.h")
+        .header("internal/enum.h")
         .header("include/ruby/ruby.h")
         .header("vm_core.h")
         .header("vm_callinfo.h")
@@ -176,6 +177,9 @@ fn main() {
 
         // From include/ruby/internal/intern/parse.h
         .allowlist_function("rb_backref_get")
+
+        // From internal/enum.h
+        .allowlist_function("rb_f_send")
 
         // From include/ruby/internal/intern/re.h
         .allowlist_function("rb_reg_last_match")

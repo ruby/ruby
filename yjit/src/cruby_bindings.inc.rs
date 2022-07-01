@@ -249,6 +249,9 @@ extern "C" {
 extern "C" {
     pub fn rb_reg_new_ary(ary: VALUE, options: ::std::os::raw::c_int) -> VALUE;
 }
+extern "C" {
+    pub fn rb_f_send(argc: ::std::os::raw::c_int, argv: *mut VALUE, recv: VALUE) -> VALUE;
+}
 pub const idDot2: ruby_method_ids = 128;
 pub const idDot3: ruby_method_ids = 129;
 pub const idUPlus: ruby_method_ids = 132;

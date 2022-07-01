@@ -4124,6 +4124,99 @@ fn gen_send_cfunc(
     EndBlock
 }
 
+// We implement this with rb_f_send, CRuby's old endpoint from when "send"
+// was a normal cfunc and pushed an extra stack frame. Send is now a
+// special optimised method type that does *not* push an additional
+// stack frame. But since rb_f_send expects a full cfunc stack frame of its own,
+// keywords and blocks don't work automatically without one.
+// By using internal vm.c endpoints, or creating a new endpoint, we could
+// clean this up and support keyword arguments and blocks.
+//
+// Blocks seem like they should be possible via rb_f_send, but I couldn't
+// get it working via ec->passed_block or cfp->block_code. Altering the
+// stack frame seems fragile.
+fn gen_send_send(
+    jit: &mut JITState,
+    ctx: &mut Context,
+    cb: &mut CodeBlock,
+    ocb: &mut OutlinedCb,
+    ci: *const rb_callinfo,
+    argc: i32,
+    block: Option<IseqPtr>,
+) -> CodegenStatus {
+    // If we expected the first string/symbol arg
+    // to be the same every time, we could do a compile-time lookup
+    // like with alias. But that's only likely if there's no
+    // reason to be using send in the first place. So we
+    // conservatively assume that send's symbol argument will change.
+
+    let kw_arg = unsafe { vm_ci_kwarg(ci) };
+    let kw_arg_num = if kw_arg.is_null() {
+        0
+    } else {
+        unsafe { get_cikw_keyword_len(kw_arg) }
+    };
+    if kw_arg_num != 0 {
+        gen_counter_incr!(cb, send_optimized_method_send_with_kwargs);
+        return CantCompile;
+    }
+
+    if c_method_tracing_currently_enabled(jit) {
+        // Don't JIT if tracing c_call or c_return
+        gen_counter_incr!(cb, send_cfunc_tracing);
+        return CantCompile;
+    }
+
+    if let Some(_block_val) = block {
+        gen_counter_incr!(cb, send_optimized_method_send_with_block);
+        return CantCompile;
+    }
+
+    // The call will check for interrupts if it's a cfunc or ISEQ call - skip the check here
+
+    jit_prepare_routine_call(jit, ctx, cb, REG0);
+
+    // Copy SP into RAX because REG_SP will get overwritten
+    lea(cb, RAX, ctx.sp_opnd(0));
+
+    // The method gets a pointer to the first argument
+    // rb_f_send(int argc, VALUE *argv, VALUE recv)
+    mov(cb, C_ARG_REGS[0], imm_opnd(argc.into()));
+    lea(
+        cb,
+        C_ARG_REGS[1],
+        mem_opnd(64, RAX, -(argc) * SIZEOF_VALUE_I32),
+    );
+    mov(
+        cb,
+        C_ARG_REGS[2],
+        mem_opnd(64, RAX, -(argc + 1) * SIZEOF_VALUE_I32),
+    );
+
+    // Call the C function
+    // VALUE ret = (cfunc->func)(recv, argv[0], argv[1]);
+    add_comment(cb, "call send");
+    call_ptr(cb, REG0, rb_f_send as *const u8);
+
+    // Record code position for TracePoint patching. See full_cfunc_return(). Needed?
+    record_global_inval_patch(cb, CodegenGlobals::get_outline_full_cfunc_return_pos());
+
+    // Pop the C function arguments from the stack (in the caller)
+    ctx.stack_pop((argc + 1).try_into().unwrap());
+
+    // Push the return value on the Ruby stack
+    let stack_ret = ctx.stack_push(Type::Unknown);
+    mov(cb, stack_ret, RAX);
+
+    // Note: the return block of gen_send_iseq() has ctx->sp_offset == 1
+    // which allows for sharing the same successor.
+
+    // Jump (fall through) to the call continuation block
+    // We do this to end the current block after the call
+    jump_to_next_insn(jit, ctx, cb, ocb);
+    EndBlock
+}
+
 fn gen_return_branch(
     cb: &mut CodeBlock,
     target0: CodePtr,
@@ -4529,7 +4622,7 @@ fn gen_send_iseq(
 
     if let Some(block_val) = block {
         // Change cfp->block_code in the current frame. See vm_caller_setup_arg_block().
-        // VM_CFP_TO_CAPTURED_BLCOK does &cfp->self, rb_captured_block->code.iseq aliases
+        // VM_CFP_TO_CAPTURED_BLOCK does &cfp->self, rb_captured_block->code.iseq aliases
         // with cfp->block_code.
         let gc_ptr = VALUE(block_val as usize);
         jit_mov_gc_ptr(jit, cb, REG0, gc_ptr);
@@ -4862,7 +4955,7 @@ fn gen_send_general(
         METHOD_VISI_PROTECTED => {
             // If the method call is an FCALL, it is always valid
             if flags & VM_CALL_FCALL == 0 {
-                // otherwise we need an ancestry check to ensure the receiver is vaild to be called
+                // otherwise we need an ancestry check to ensure the receiver is valid to be called
                 // as protected
                 jit_protected_callee_ancestry_guard(jit, cb, ocb, cme, side_exit);
             }
@@ -4976,8 +5069,7 @@ fn gen_send_general(
                 let opt_type = unsafe { get_cme_def_body_optimized_type(cme) };
                 match opt_type {
                     OPTIMIZED_METHOD_TYPE_SEND => {
-                        gen_counter_incr!(cb, send_optimized_method_send);
-                        return CantCompile;
+                        return gen_send_send(jit, ctx, cb, ocb, ci, argc, block);
                     }
                     OPTIMIZED_METHOD_TYPE_CALL => {
                         gen_counter_incr!(cb, send_optimized_method_call);
