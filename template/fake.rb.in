@@ -17,8 +17,8 @@ if inc = arg['i']
     scan(/rb_define_global_const\("(RUBY_\w+)",[^;]*?\bMK(?:INT|STR)\(([^()]*)\)/m) do |n, v|
     version[n] = src.value(v)
   end
-  arg['RUBY_DESCRIPTION_WITH_MJIT'] = src.value('description_with_mjit')
-  arg['RUBY_DESCRIPTION_WITH_YJIT'] = src.value('description_with_yjit')
+  arg['RUBY_DESCRIPTION_PRE'] = src.value('description_pre')
+  arg['RUBY_DESCRIPTION_POST'] = src.value('description_post')
 end
 %>baseruby="<%=arg['BASERUBY']%>"
 _\
@@ -35,15 +35,15 @@ class Object
   CROSS_COMPILING = RUBY_PLATFORM
   constants.grep(/^RUBY_/) {|n| remove_const n}
 % arg['versions'].each {|n, v|
-  <%=n%> = <%if n=='RUBY_DESCRIPTION' %>case
-    when RubyVM.const_defined?(:MJIT) && RubyVM::MJIT.enabled?
-      <%=arg['RUBY_DESCRIPTION_WITH_MJIT'].inspect%>
-    when RubyVM.const_defined?(:YJIT) && RubyVM::YJIT.enabled?
-      <%=arg['RUBY_DESCRIPTION_WITH_YJIT'].inspect%>
-    else
-      <%=v.inspect%>
-    end<%else%><%=v.inspect%><%end%>
+  <%=n%> = <%=v.inspect%>
 % }
+  options = []
+  if RubyVM.const_defined?(:MJIT) && RubyVM::MJIT.enabled?
+    options << ' +MJIT'
+  elsif RubyVM.const_defined?(:YJIT) && RubyVM::YJIT.enabled?
+    options << ' +YJIT'
+  end
+  RUBY_DESCRIPTION = (<%=arg['RUBY_DESCRIPTION_PRE'].inspect%> + options.join('') + <%=arg['RUBY_DESCRIPTION_POST'].inspect%>).freeze
 end
 builddir = File.dirname(File.expand_path(__FILE__))
 srcdir = "<%=arg['srcdir']%>"

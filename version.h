@@ -76,12 +76,13 @@
 # define RUBY_RELEASE_DATETIME RUBY_RELEASE_DATE
 #endif
 
-# define RUBY_DESCRIPTION_WITH(opt) \
-    "ruby "RUBY_VERSION		    \
-    RUBY_PATCHLEVEL_STR		    \
-    " ("RUBY_RELEASE_DATETIME	    \
-    RUBY_REVISION_STR")"opt" "	    \
-    "["RUBY_PLATFORM"]"
+# define RUBY_DESCRIPTION_PRE \
+    "ruby "RUBY_VERSION             \
+    RUBY_PATCHLEVEL_STR             \
+    " ("RUBY_RELEASE_DATETIME       \
+    RUBY_REVISION_STR")"
+# define RUBY_DESCRIPTION_POST \
+    " ["RUBY_PLATFORM"]"
 # define RUBY_COPYRIGHT		    \
     "ruby - Copyright (C) "	    \
     RUBY_BIRTH_YEAR_STR"-"   \

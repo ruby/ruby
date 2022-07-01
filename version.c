@@ -41,11 +41,14 @@ const char ruby_revision[] = RUBY_FULL_REVISION;
 const char ruby_release_date[] = RUBY_RELEASE_DATE;
 const char ruby_platform[] = RUBY_PLATFORM;
 const int ruby_patchlevel = RUBY_PATCHLEVEL;
-const char ruby_description[] = RUBY_DESCRIPTION_WITH("");
-static const char ruby_description_with_mjit[] = RUBY_DESCRIPTION_WITH(" +MJIT");
-static const char ruby_description_with_yjit[] = RUBY_DESCRIPTION_WITH(" +YJIT");
+const char ruby_description[] = RUBY_DESCRIPTION_PRE RUBY_DESCRIPTION_POST;
+const char ruby_description_pre[] = RUBY_DESCRIPTION_PRE;
+const char ruby_description_post[] = RUBY_DESCRIPTION_POST;
 const char ruby_copyright[] = RUBY_COPYRIGHT;
 const char ruby_engine[] = "ruby";
+
+// Enough space for any combination of option flags
+static char ruby_dynamic_description_buffer[sizeof(ruby_description) + sizeof("+MJIT +YJIT") - 1];
 
 // Might change after initialization
 const char *rb_dynamic_description = ruby_description;
@@ -104,24 +107,19 @@ Init_version(void)
 void
 Init_ruby_description(void)
 {
-    VALUE description;
-
-    if (MJIT_OPTS_ON) {
-        rb_dynamic_description = ruby_description_with_mjit;
-        description = MKSTR(description_with_mjit);
+    if (snprintf(ruby_dynamic_description_buffer, sizeof(ruby_dynamic_description_buffer), "%s%s%s%s",
+            ruby_description_pre,
+            MJIT_OPTS_ON ? " +MJIT" : "",
+            rb_yjit_enabled_p() ? " +YJIT" : "",
+            ruby_description_post) < 0) {
+        rb_bug("could not format dynamic description string");
     }
-    else if (rb_yjit_enabled_p()) {
-        rb_dynamic_description = ruby_description_with_yjit;
-        description = MKSTR(description_with_yjit);
-    }
-    else {
-        description = MKSTR(description);
-    }
+    rb_dynamic_description = ruby_dynamic_description_buffer;
 
     /*
      * The full ruby version string, like <tt>ruby -v</tt> prints
      */
-    rb_define_global_const("RUBY_DESCRIPTION", /* MKSTR(description) */ description);
+    rb_define_global_const("RUBY_DESCRIPTION", rb_obj_freeze(rb_str_new2(rb_dynamic_description)));
 }
 
 void
