@@ -37,10 +37,10 @@ jobs:
         include:
           - msystem: "MINGW64"
             base_ruby: 2.6
-            test_task: "check" # to make job names consistent
+            test_task: "check"
           - msystem: "UCRT64"
             base_ruby: head
-            test_task: "check" # to make job names consistent
+            test_task: "check"
       fail-fast: false
     if: ${{ !contains(github.event.head_commit.message, '[DOC]') && !contains(github.event.pull_request.labels.*.name, 'Documentation') }}
     steps:
@@ -126,21 +126,24 @@ jobs:
         timeout-minutes: 5
         run: |
           make test
+        if: ${{matrix.test_task == 'check' || matrix.test_task == 'test'}}
 
       - name: test-all
         timeout-minutes: 45
         run: |
           # Actions uses UTF8, causes test failures, similar to normal OS setup
           chcp.com 437
-          make test-all
+          make ${{ StartsWith(matrix.test_task, 'test/') && matrix.test_task || 'test-all' }}
         env:
           RUBY_TESTOPTS: -j${{env.TEST_JOBS}} --retry --job-status=normal --show-skip --timeout-scale=1.5
           BUNDLER_VERSION:
+        if: ${{matrix.test_task == 'check' || matrix.test_task == 'test-all' || StartsWith(matrix.test_task, 'test/')}}
 
       - name: test-spec
         timeout-minutes: 10
         run: |
-          make test-spec
+          make ${{ StartsWith(matrix.test_task, 'spec/') && matrix.test_task || 'test-spec' }}
+        if: ${{matrix.test_task == 'check' || matrix.test_task == 'test-spec' || StartsWith(matrix.test_task, 'spec/')}}
 
       - uses: k0kubun/action-slack@v2.0.0
         with:
