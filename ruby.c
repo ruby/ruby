@@ -1785,7 +1785,7 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
     argc -= i;
     argv += i;
 
-    if ((FEATURE_SET_P(opt->features, rubyopt)) && (s = getenv("RUBYOPT"))) {
+    if (FEATURE_SET_P(opt->features, rubyopt) && (s = getenv("RUBYOPT"))) {
 	VALUE src_enc_name = opt->src.enc.name;
 	VALUE ext_enc_name = opt->ext.enc.name;
 	VALUE int_enc_name = opt->intern.enc.name;
