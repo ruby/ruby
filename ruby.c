@@ -2151,6 +2151,8 @@ warn_cr_in_shebang(const char *str, long len)
 #define warn_cr_in_shebang(str, len) (void)0
 #endif
 
+void rb_reset_argf_lineno(long n);
+
 struct load_file_arg {
     VALUE parser;
     VALUE fname;
@@ -2247,6 +2249,7 @@ load_file_internal(VALUE argp_v)
         if (NIL_P(c)) {
 	    argp->f = f = Qnil;
 	}
+        rb_reset_argf_lineno(0);
         ruby_opt_init(opt);
     }
     if (opt->src.enc.index >= 0) {
