@@ -17,7 +17,9 @@
 #if USE_DEBUG_COUNTER
 
 static const char *const debug_counter_names[] = {
-    ""
+#define DEBUG_COUNTER_NAME_EMPTY "" /* Suppress -Wstring-concatenation */
+    DEBUG_COUNTER_NAME_EMPTY
+#undef DEBUG_COUNTER_NAME_EMPTY
 #define RB_DEBUG_COUNTER(name) #name,
 #include "debug_counter.h"
 #undef RB_DEBUG_COUNTER
