@@ -10,7 +10,7 @@ describe "OpenSSL::X509::Name.verify" do
     cert.subject = OpenSSL::X509::Name.parse "/DC=org/DC=truffleruby/CN=TruffleRuby CA"
     cert.issuer = cert.subject
     cert.public_key = key.public_key
-    cert.not_before = Time.now
+    cert.not_before = Time.now - 10
     cert.not_after = cert.not_before + 365 * 24 * 60 * 60
     cert.sign key, OpenSSL::Digest.new('SHA1')
     store = OpenSSL::X509::Store.new
