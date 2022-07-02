@@ -30,7 +30,7 @@ size_t rb_debug_counter[numberof(debug_counter_names)];
 void rb_debug_counter_add_atomic(enum rb_debug_counter_type type, int add);
 MJIT_SYMBOL_EXPORT_END
 
-rb_nativethread_lock_t debug_counter_lock;
+static rb_nativethread_lock_t debug_counter_lock;
 
 __attribute__((constructor))
 static void
@@ -49,7 +49,7 @@ rb_debug_counter_add_atomic(enum rb_debug_counter_type type, int add)
     rb_nativethread_lock_unlock(&debug_counter_lock);
 }
 
-int debug_counter_disable_show_at_exit = 0;
+static int debug_counter_disable_show_at_exit = 0;
 
 // note that this operation is not atomic.
 void
