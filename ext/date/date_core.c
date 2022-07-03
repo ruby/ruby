@@ -2944,7 +2944,7 @@ date_s_julian_leap_p(VALUE klass, VALUE y)
 
 /*
  * call-seq:
- *   Date.leap?(year)            ->  bool
+ *   Date.gregorian_leap?(year) -> true or false
  *
  * Returns +true+ if the given year is a leap year
  * in the {proleptic Gregorian calendar}[https://en.wikipedia.org/wiki/Proleptic_Gregorian_calendar], +false+ otherwise:
