@@ -2468,7 +2468,8 @@ date_s__valid_jd_p(int argc, VALUE *argv, VALUE klass)
  * call-seq:
  *   Date.valid_jd?(jd, start = Date::ITALY) -> true
  *
- * Returns +true+; implemented for compatibility.
+ * Implemented for compatibility;
+ * returns +true+ unless +jd+ is invalid (i.e., non a Numeric).
  *
  *   Date.valid_jd?(2451944) # => true
  *
@@ -7420,19 +7421,6 @@ datetime_s_ordinal(int argc, VALUE *argv, VALUE klass)
     return ret;
 }
 
-/*
- * call-seq:
- *    DateTime.civil([year=-4712[, month=1[, mday=1[, hour=0[, minute=0[, second=0[, offset=0[, start=Date::ITALY]]]]]]]])  ->  datetime
- *    DateTime.new([year=-4712[, month=1[, mday=1[, hour=0[, minute=0[, second=0[, offset=0[, start=Date::ITALY]]]]]]]])    ->  datetime
- *
- * Creates a DateTime object denoting the given calendar date.
- *
- *    DateTime.new(2001,2,3)	#=> #<DateTime: 2001-02-03T00:00:00+00:00 ...>
- *    DateTime.new(2001,2,3,4,5,6,'+7')
- *				#=> #<DateTime: 2001-02-03T04:05:06+07:00 ...>
- *    DateTime.new(2001,-11,-26,-20,-55,-54,'+7')
- *				#=> #<DateTime: 2001-02-03T04:05:06+07:00 ...>
- */
 static VALUE
 datetime_s_civil(int argc, VALUE *argv, VALUE klass)
 {
