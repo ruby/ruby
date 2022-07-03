@@ -481,6 +481,12 @@ get_id_entry(ID id, const enum id_entry_type t)
     return get_id_serial_entry(rb_id_to_serial(id), id, t);
 }
 
+int
+rb_static_id_valid_p(ID id)
+{
+    return STATIC_ID2SYM(id) == get_id_entry(id, ID_ENTRY_SYM);
+}
+
 static inline ID
 rb_id_serial_to_id(rb_id_serial_t num)
 {

@@ -4652,7 +4652,7 @@ id2ref(VALUE objid)
         if ((ptr % sizeof(RVALUE)) == (4 << 2)) {
             ID symid = ptr / sizeof(RVALUE);
             p0 = (void *)ptr;
-            if (rb_id2str(symid) == 0)
+            if (!rb_static_id_valid_p(symid))
                 rb_raise(rb_eRangeError, "%p is not symbol id value", p0);
             return ID2SYM(symid);
         }
