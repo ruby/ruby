@@ -2568,7 +2568,7 @@ date_s__valid_civil_p(int argc, VALUE *argv, VALUE klass)
  *
  * Date.valid_date? is an alias for Date.valid_civil?.
  *
- * Related: Date.jd, Date.civil.
+ * Related: Date.jd, Date.new.
  */
 static VALUE
 date_s_valid_civil_p(int argc, VALUE *argv, VALUE klass)
@@ -3417,6 +3417,9 @@ date_s_ordinal(int argc, VALUE *argv, VALUE klass)
     return ret;
 }
 
+/*
+ * Same as Date.new.
+ */
 static VALUE
 date_s_civil(int argc, VALUE *argv, VALUE klass)
 {
