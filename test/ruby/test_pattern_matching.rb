@@ -1155,6 +1155,21 @@ END
       end
     end
 
+    [{a: 42}, {b: 42}].each do |i|
+      assert_block('newline should be insignificant after pattern label') do
+        case i
+        in a:
+          0
+          true
+        in "b":
+          0
+          true
+        else
+          false
+        end
+      end
+    end
+
     assert_syntax_error(%q{
       case _
       in a:, a:
