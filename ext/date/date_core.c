@@ -6978,7 +6978,7 @@ date_strftime_internal(int argc, VALUE *argv, VALUE self,
  *   Date.today.strftime # => "2022-07-01"
  *
  * For other formats, see
- * {Formats for Dates and Times}[doc/strftime_formatting.rdoc].
+ * {Formats for Dates and Times}[https://docs.ruby-lang.org/en/master/strftime_formatting_rdoc.html].
  *
  */
 static VALUE
