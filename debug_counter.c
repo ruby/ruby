@@ -16,7 +16,7 @@
 
 #if USE_DEBUG_COUNTER
 
-static const char *const debug_counter_names[] = {
+const char *const debug_counter_names[] = {
 #define DEBUG_COUNTER_NAME_EMPTY "" /* Suppress -Wstring-concatenation */
     DEBUG_COUNTER_NAME_EMPTY
 #undef DEBUG_COUNTER_NAME_EMPTY

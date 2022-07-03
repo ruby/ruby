@@ -65,6 +65,8 @@ MJIT_FUNC_EXPORTED
 #endif
 VALUE vm_exec(rb_execution_context_t *, bool);
 
+extern const char *const debug_counter_names[];
+
 PUREFUNC(static inline const VALUE *VM_EP_LEP(const VALUE *));
 static inline const VALUE *
 VM_EP_LEP(const VALUE *ep)
@@ -518,6 +520,8 @@ rb_dtrace_setup(rb_execution_context_t *ec, VALUE klass, ID id,
  *      :global_cvar_state=>27
  *    }
  *
+ *  If <tt>USE_DEBUG_COUNTER</tt> is enabled, debug counters will be included.
+ *
  *  The contents of the hash are implementation specific and may be changed in
  *  the future.
  *
@@ -561,6 +565,29 @@ vm_stat(int argc, VALUE *argv, VALUE self)
     SET(class_serial, ruby_vm_class_serial);
     SET(global_cvar_state, ruby_vm_global_cvar_state);
 #undef SET
+
+#if USE_DEBUG_COUNTER
+    ruby_debug_counter_show_at_exit(FALSE);
+    for (size_t i = 0; i < RB_DEBUG_COUNTER_MAX; i++) {
+        VALUE name = rb_sym_intern_ascii_cstr(debug_counter_names[i]);
+
+        const size_t value = rb_debug_counter[i];
+        VALUE boxed_value;
+#if SIZEOF_SIZE_T == SIZEOF_INT
+        boxed_value = UINT2NUM((unsigned int) value);
+#elif SIZEOF_SIZE_T == SIZEOF_LONG
+        boxed_value = ULONG2NUM((unsigned long) value);
+#else
+#error don't know how to convert a size_t to a VALUE
+#endif
+
+        if (key == name) {
+            return boxed_value;
+        } else if (hash != Qnil) {
+            rb_hash_aset(hash, name, boxed_value);
+        }
+    }
+#endif
 
     if (!NIL_P(key)) { /* matched key should return above */
         rb_raise(rb_eArgError, "unknown key: %"PRIsVALUE, rb_sym2str(key));
