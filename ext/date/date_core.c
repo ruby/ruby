@@ -9212,7 +9212,7 @@ Init_date_core(void)
      * this is set by argument +start+ when the object is created:
      *
      * - Dates before the changeover are considered to be Julian.
-     * - Dates after the changeover are considered to be Gregorian:
+     * - Dates after the changeover are considered to be Gregorian.
      *
      * The value of the +start+ argument may be:
      *
