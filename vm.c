@@ -569,21 +569,13 @@ vm_stat(int argc, VALUE *argv, VALUE self)
 #if USE_DEBUG_COUNTER
     ruby_debug_counter_show_at_exit(FALSE);
     for (size_t i = 0; i < RB_DEBUG_COUNTER_MAX; i++) {
-        VALUE name = rb_sym_intern_ascii_cstr(debug_counter_names[i]);
-
-        const size_t value = rb_debug_counter[i];
-        VALUE boxed_value;
-#if SIZEOF_SIZE_T == SIZEOF_INT
-        boxed_value = UINT2NUM((unsigned int) value);
-#elif SIZEOF_SIZE_T == SIZEOF_LONG
-        boxed_value = ULONG2NUM((unsigned long) value);
-#else
-#error don't know how to convert a size_t to a VALUE
-#endif
+        const VALUE name = rb_sym_intern_ascii_cstr(debug_counter_names[i]);
+        const VALUE boxed_value = SIZET2NUM(rb_debug_counter[i]);
 
         if (key == name) {
             return boxed_value;
-        } else if (hash != Qnil) {
+        }
+        else if (hash != Qnil) {
             rb_hash_aset(hash, name, boxed_value);
         }
     }
