@@ -2732,7 +2732,7 @@ date_s__valid_commercial_p(int argc, VALUE *argv, VALUE klass)
 
 /*
  * call-seq:
- *    Date.valid_commercial?(year, week, day, start = Date::ITALY) -> true or false
+ *    Date.valid_commercial?(cwyear, cweek, cwday, start = Date::ITALY) -> true or false
  *
  * Returns +true+ if the arguments define a valid commercial date,
  * +false+ otherwise:
