@@ -171,7 +171,7 @@ Note: We're only listing outstanding class updates.
     * stringio 3.0.3
     * timeout 0.3.0
 *   The following bundled gems are updated.
-    * minitest 5.16.1
+    * minitest 5.16.2
     * net-imap 0.2.3
     * rbs 2.6.0
     * typeprof 0.21.2
