@@ -484,7 +484,7 @@ module Bundler
     end
 
     def filter_specs(specs, deps)
-      SpecSet.new(specs).for(expand_dependencies(deps, true), false, platforms)
+      SpecSet.new(specs).for(deps, false, platforms)
     end
 
     def materialize(dependencies)
