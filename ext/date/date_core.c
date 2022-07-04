@@ -3303,6 +3303,18 @@ static VALUE d_lite_plus(VALUE, VALUE);
  *   Date.jd(2451945).to_s # => "2001-02-04"
  *   Date.jd(0).to_s       # => "-4712-01-01"
  *
+ * The returned date is:
+ *
+ * - Gregorian, if the argument is greater than or equal to +start+:
+ *
+ *     Date::ITALY                         # => 2299161
+ *     Date.jd(Date::ITALY).gregorian?     # => true
+ *     Date.jd(Date::ITALY + 1).gregorian? # => true
+ *
+ * - Julian, otherwise
+ *
+ *     Date.jd(Date::ITALY - 1).julian?    # => true
+ *
  * See {Argument start}[rdoc-ref:Date@Argument+start].
  *
  * Related: Date.new.
