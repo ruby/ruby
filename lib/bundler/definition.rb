@@ -793,14 +793,9 @@ module Bundler
 
     def expand_dependencies(dependencies)
       dependencies.flat_map do |dep|
-        target_platforms = dep.gem_platforms(@platforms)
-        expand_dependency_with_platforms(dep, target_platforms)
-      end
-    end
-
-    def expand_dependency_with_platforms(dep, platforms)
-      platforms.map do |p|
-        DepProxy.get_proxy(dep, p)
+        dep.gem_platforms(@platforms).map do |p|
+          DepProxy.get_proxy(dep, p)
+        end
       end
     end
 
