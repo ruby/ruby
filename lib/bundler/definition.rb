@@ -792,12 +792,10 @@ module Bundler
     end
 
     def expand_dependencies(dependencies)
-      deps = []
-      dependencies.each do |dep|
+      dependencies.flat_map do |dep|
         target_platforms = dep.gem_platforms(@platforms)
-        deps += expand_dependency_with_platforms(dep, target_platforms)
+        expand_dependency_with_platforms(dep, target_platforms)
       end
-      deps
     end
 
     def expand_dependency_with_platforms(dep, platforms)
