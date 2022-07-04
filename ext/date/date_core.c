@@ -2469,7 +2469,7 @@ date_s__valid_jd_p(int argc, VALUE *argv, VALUE klass)
  *   Date.valid_jd?(jd, start = Date::ITALY) -> true
  *
  * Implemented for compatibility;
- * returns +true+ unless +jd+ is invalid (i.e., non a Numeric).
+ * returns +true+ unless +jd+ is invalid (i.e., not a Numeric).
  *
  *   Date.valid_jd?(2451944) # => true
  *
