@@ -15,7 +15,7 @@ ifneq ($(filter darwin%,$(target_os)),)
 # Remove debug option not to generate thousands of .dSYM
 MJIT_DEBUGFLAGS := $(filter-out -g%,$(MJIT_DEBUGFLAGS))
 
-INSTRUBY_ENV += SDKROOT=/
+INSTRUBY_ENV += SDKROOT=
 endif
 INSTRUBY_ARGS += --gnumake
 
