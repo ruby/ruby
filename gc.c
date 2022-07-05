@@ -13650,7 +13650,7 @@ rb_method_type_name(rb_method_type_t type)
      FL_TEST((ary), RARRAY_EMBED_FLAG)!=0)
 
 static void
-rb_raw_iseq_info(char *buff, const int buff_size, const rb_iseq_t *iseq)
+rb_raw_iseq_info(char *const buff, const size_t buff_size, const rb_iseq_t *iseq)
 {
     if (buff_size > 0 && ISEQ_BODY(iseq) && ISEQ_BODY(iseq)->location.label && !RB_TYPE_P(ISEQ_BODY(iseq)->location.pathobj, T_MOVED)) {
 	VALUE path = rb_iseq_path(iseq);
@@ -13672,9 +13672,9 @@ str_len_no_raise(VALUE str)
 }
 
 const char *
-rb_raw_obj_info(char *buff, const int buff_size, VALUE obj)
+rb_raw_obj_info(char *const buff, const size_t buff_size, VALUE obj)
 {
-    int pos = 0;
+    size_t pos = 0;
     void *poisoned = asan_unpoison_object_temporary(obj);
 
 #define BUFF_ARGS buff + pos, buff_size - pos
