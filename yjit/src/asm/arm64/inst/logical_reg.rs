@@ -1,5 +1,14 @@
 use super::super::arg::Sf;
 
+/// Whether or not this is a NOT instruction.
+enum N {
+    /// This is not a NOT instruction.
+    No = 0,
+
+    /// This is a NOT instruction.
+    Yes = 1
+}
+
 /// The type of shift to perform on the second operand register.
 enum Shift {
     LSL = 0b00, // logical shift left (unsigned)
@@ -13,6 +22,9 @@ enum Opc {
     /// The AND operation.
     And = 0b00,
 
+    /// The ORR operation.
+    Orr = 0b01,
+
     /// The ANDS operation.
     Ands = 0b11
 }
@@ -20,11 +32,11 @@ enum Opc {
 /// The struct that represents an A64 logical register instruction that can be
 /// encoded.
 ///
-/// AND/ANDS (shifted register)
+/// AND/ORR/ANDS (shifted register)
 /// +-------------+-------------+-------------+-------------+-------------+-------------+-------------+-------------+
 /// | 31 30 29 28 | 27 26 25 24 | 23 22 21 20 | 19 18 17 16 | 15 14 13 12 | 11 10 09 08 | 07 06 05 04 | 03 02 01 00 |
-/// |           0    1  0  1  0          0                                                                          |
-/// | sf opc..                    shift    rm..............   imm6............... rn.............. rd.............. |
+/// |           0    1  0  1  0                                                                                     |
+/// | sf opc..                    shift N  rm..............   imm6............... rn.............. rd.............. |
 /// +-------------+-------------+-------------+-------------+-------------+-------------+-------------+-------------+
 ///
 pub struct LogicalReg {
@@ -40,6 +52,9 @@ pub struct LogicalReg {
     /// The register number of the second operand register.
     rm: u8,
 
+    /// Whether or not this is a NOT instruction.
+    n: N,
+
     /// The type of shift to perform on the second operand register.
     shift: Shift,
 
@@ -54,19 +69,43 @@ impl LogicalReg {
     /// AND (shifted register)
     /// https://developer.arm.com/documentation/ddi0596/2021-12/Base-Instructions/AND--shifted-register---Bitwise-AND--shifted-register--?lang=en
     pub fn and(rd: u8, rn: u8, rm: u8, num_bits: u8) -> Self {
-        Self { rd, rn, imm6: 0, rm, shift: Shift::LSL, opc: Opc::And, sf: num_bits.into() }
+        Self { rd, rn, imm6: 0, rm, n: N::No, shift: Shift::LSL, opc: Opc::And, sf: num_bits.into() }
     }
 
     /// ANDS (shifted register)
     /// https://developer.arm.com/documentation/ddi0596/2021-12/Base-Instructions/ANDS--shifted-register---Bitwise-AND--shifted-register---setting-flags-?lang=en
     pub fn ands(rd: u8, rn: u8, rm: u8, num_bits: u8) -> Self {
-        Self { rd, rn, imm6: 0, rm, shift: Shift::LSL, opc: Opc::Ands, sf: num_bits.into() }
+        Self { rd, rn, imm6: 0, rm, n: N::No, shift: Shift::LSL, opc: Opc::Ands, sf: num_bits.into() }
+    }
+
+    /// MOV (register)
+    /// https://developer.arm.com/documentation/ddi0596/2020-12/Base-Instructions/MOV--register---Move--register---an-alias-of-ORR--shifted-register--?lang=en
+    pub fn mov(rd: u8, rm: u8, num_bits: u8) -> Self {
+        Self { rd, rn: 0b11111, imm6: 0, rm, n: N::No, shift: Shift::LSL, opc: Opc::Orr, sf: num_bits.into() }
+    }
+
+    /// MVN (shifted register)
+    /// https://developer.arm.com/documentation/ddi0596/2020-12/Base-Instructions/MVN--Bitwise-NOT--an-alias-of-ORN--shifted-register--?lang=en
+    pub fn mvn(rd: u8, rm: u8, num_bits: u8) -> Self {
+        Self { rd, rn: 0b11111, imm6: 0, rm, n: N::Yes, shift: Shift::LSL, opc: Opc::Orr, sf: num_bits.into() }
+    }
+
+    /// ORN (shifted register)
+    /// https://developer.arm.com/documentation/ddi0596/2020-12/Base-Instructions/ORN--shifted-register---Bitwise-OR-NOT--shifted-register--
+    pub fn orn(rd: u8, rn: u8, rm: u8, num_bits: u8) -> Self {
+        Self { rd, rn, imm6: 0, rm, n: N::Yes, shift: Shift::LSL, opc: Opc::Orr, sf: num_bits.into() }
+    }
+
+    /// ORR (shifted register)
+    /// https://developer.arm.com/documentation/ddi0596/2020-12/Base-Instructions/ORR--shifted-register---Bitwise-OR--shifted-register--
+    pub fn orr(rd: u8, rn: u8, rm: u8, num_bits: u8) -> Self {
+        Self { rd, rn, imm6: 0, rm, n: N::No, shift: Shift::LSL, opc: Opc::Orr, sf: num_bits.into() }
     }
 
     /// TST (shifted register)
     /// https://developer.arm.com/documentation/ddi0596/2021-12/Base-Instructions/TST--shifted-register---Test--shifted-register---an-alias-of-ANDS--shifted-register--?lang=en
     pub fn tst(rn: u8, rm: u8, num_bits: u8) -> Self {
-        Self { rd: 31, rn, imm6: 0, rm, shift: Shift::LSL, opc: Opc::Ands, sf: num_bits.into() }
+        Self { rd: 31, rn, imm6: 0, rm, n: N::No, shift: Shift::LSL, opc: Opc::Ands, sf: num_bits.into() }
     }
 }
 
@@ -83,6 +122,7 @@ impl From<LogicalReg> for u32 {
         | ((inst.opc as u32) << 29)
         | (FAMILY << 25)
         | ((inst.shift as u32) << 22)
+        | ((inst.n as u32) << 21)
         | ((inst.rm as u32) << 16)
         | (imm6 << 10)
         | ((inst.rn as u32) << 5)
@@ -114,6 +154,34 @@ mod tests {
         let inst = LogicalReg::ands(0, 1, 2, 64);
         let result: u32 = inst.into();
         assert_eq!(0xea020020, result);
+    }
+
+    #[test]
+    fn test_mov() {
+        let inst = LogicalReg::mov(0, 1, 64);
+        let result: u32 = inst.into();
+        assert_eq!(0xaa0103e0, result);
+    }
+
+    #[test]
+    fn test_mvn() {
+        let inst = LogicalReg::mvn(0, 1, 64);
+        let result: u32 = inst.into();
+        assert_eq!(0xaa2103e0, result);
+    }
+
+    #[test]
+    fn test_orn() {
+        let inst = LogicalReg::orn(0, 1, 2, 64);
+        let result: u32 = inst.into();
+        assert_eq!(0xaa220020, result);
+    }
+
+    #[test]
+    fn test_orr() {
+        let inst = LogicalReg::orr(0, 1, 2, 64);
+        let result: u32 = inst.into();
+        assert_eq!(0xaa020020, result);
     }
 
     #[test]

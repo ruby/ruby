@@ -276,6 +276,13 @@ pub enum Target
 
 impl Target
 {
+    pub fn unwrap_fun_ptr(&self) -> *const u8 {
+        match self {
+            Target::FunPtr(ptr) => *ptr,
+            _ => unreachable!("trying to unwrap {:?} into fun ptr", self)
+        }
+    }
+
     pub fn unwrap_label_idx(&self) -> usize {
         match self {
             Target::Label(idx) => *idx,

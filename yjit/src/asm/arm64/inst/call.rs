@@ -1,22 +1,41 @@
-/// The struct that represents an A64 branch with link instruction that can be
-/// encoded.
+/// The operation to perform for this instruction.
+enum Op {
+    /// Branch directly, with a hint that this is not a subroutine call or
+    /// return.
+    Branch = 0,
+
+    /// Branch directly, with a hint that this is a subroutine call or return.
+    BranchWithLink = 1
+}
+
+/// The struct that represents an A64 branch with our without link instruction
+/// that can be encoded.
 ///
 /// +-------------+-------------+-------------+-------------+-------------+-------------+-------------+-------------+
 /// | 31 30 29 28 | 27 26 25 24 | 23 22 21 20 | 19 18 17 16 | 15 14 13 12 | 11 10 09 08 | 07 06 05 04 | 03 02 01 00 |
-/// |  1  0  0  1    0  1                                                                                           |
-/// |                     imm26.................................................................................... |
+/// |     0  0  1    0  1                                                                                           |
+/// | op                  imm26.................................................................................... |
 /// +-------------+-------------+-------------+-------------+-------------+-------------+-------------+-------------+
 ///
 pub struct Call {
     /// The PC-relative offset to jump to (which will be multiplied by 4).
-    imm26: i32
+    imm26: i32,
+
+    /// The operation to perform for this instruction.
+    op: Op
 }
 
 impl Call {
+    /// B
+    /// https://developer.arm.com/documentation/ddi0596/2021-12/Base-Instructions/B--Branch-
+    pub fn b(imm26: i32) -> Self {
+        Self { imm26, op: Op::Branch }
+    }
+
     /// BL
     /// https://developer.arm.com/documentation/ddi0596/2021-12/Base-Instructions/BL--Branch-with-Link-?lang=en
     pub fn bl(imm26: i32) -> Self {
-        Self { imm26 }
+        Self { imm26, op: Op::BranchWithLink }
     }
 }
 
@@ -29,7 +48,7 @@ impl From<Call> for u32 {
         let imm26 = (inst.imm26 as u32) & ((1 << 26) - 1);
 
         0
-        | (1 << 31)
+        | ((inst.op as u32) << 31)
         | (FAMILY << 26)
         | imm26
     }
@@ -63,5 +82,23 @@ mod tests {
     fn test_bl_negative() {
         let result: u32 = Call::bl(-256).into();
         assert_eq!(0x97ffff00, result);
+    }
+
+    #[test]
+    fn test_b() {
+        let result: u32 = Call::b(0).into();
+        assert_eq!(0x14000000, result);
+    }
+
+    #[test]
+    fn test_b_positive() {
+        let result: u32 = Call::b(256).into();
+        assert_eq!(0x14000100, result);
+    }
+
+    #[test]
+    fn test_b_negative() {
+        let result: u32 = Call::b(-256).into();
+        assert_eq!(0x17ffff00, result);
     }
 }

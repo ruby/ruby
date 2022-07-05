@@ -703,14 +703,10 @@ pub fn call_ptr(cb: &mut CodeBlock, scratch_opnd: X86Opnd, dst_ptr: *const u8) {
 
 /// call - Call to label with 32-bit offset
 pub fn call_label(cb: &mut CodeBlock, label_idx: usize) {
-    // Write the opcode
-    cb.write_byte(0xE8);
-
-    // Add a reference to the label
-    cb.label_ref(label_idx);
-
-    // Relative 32-bit offset to be patched
-    cb.write_int(0, 32);
+    cb.label_ref(label_idx, 5, |cb, src_addr, dst_addr| {
+        cb.write_byte(0xE8);
+        cb.write_int((dst_addr - src_addr) as u64, 32);
+    });
 }
 
 /// call - Indirect call with an R/M operand
@@ -801,55 +797,54 @@ pub fn int3(cb: &mut CodeBlock) {
     cb.write_byte(0xcc);
 }
 
-// Encode a relative jump to a label (direct or conditional)
+// Encode a conditional relative jump to a label
 // Note: this always encodes a 32-bit offset
-fn write_jcc(cb: &mut CodeBlock, op0: u8, op1: u8, label_idx: usize) {
-    // Write the opcode
-    if op0 != 0xff {
-        cb.write_byte(op0);
-    }
-
-    cb.write_byte(op1);
-
-    // Add a reference to the label
-    cb.label_ref(label_idx);
-
-    // Relative 32-bit offset to be patched
-    cb.write_int( 0, 32);
+fn write_jcc(cb: &mut CodeBlock, op: u8, label_idx: usize) {
+    cb.label_ref(label_idx, 6, move |cb, src_addr, dst_addr| {
+        cb.write_byte(0x0F);
+        cb.write_byte(op);
+        cb.write_int((dst_addr - src_addr) as u64, 32);
+    });
 }
 
 /// jcc - relative jumps to a label
-pub fn ja_label  (cb: &mut CodeBlock, label_idx: usize) { write_jcc(cb, 0x0F, 0x87, label_idx); }
-pub fn jae_label (cb: &mut CodeBlock, label_idx: usize) { write_jcc(cb, 0x0F, 0x83, label_idx); }
-pub fn jb_label  (cb: &mut CodeBlock, label_idx: usize) { write_jcc(cb, 0x0F, 0x82, label_idx); }
-pub fn jbe_label (cb: &mut CodeBlock, label_idx: usize) { write_jcc(cb, 0x0F, 0x86, label_idx); }
-pub fn jc_label  (cb: &mut CodeBlock, label_idx: usize) { write_jcc(cb, 0x0F, 0x82, label_idx); }
-pub fn je_label  (cb: &mut CodeBlock, label_idx: usize) { write_jcc(cb, 0x0F, 0x84, label_idx); }
-pub fn jg_label  (cb: &mut CodeBlock, label_idx: usize) { write_jcc(cb, 0x0F, 0x8F, label_idx); }
-pub fn jge_label (cb: &mut CodeBlock, label_idx: usize) { write_jcc(cb, 0x0F, 0x8D, label_idx); }
-pub fn jl_label  (cb: &mut CodeBlock, label_idx: usize) { write_jcc(cb, 0x0F, 0x8C, label_idx); }
-pub fn jle_label (cb: &mut CodeBlock, label_idx: usize) { write_jcc(cb, 0x0F, 0x8E, label_idx); }
-pub fn jna_label (cb: &mut CodeBlock, label_idx: usize) { write_jcc(cb, 0x0F, 0x86, label_idx); }
-pub fn jnae_label(cb: &mut CodeBlock, label_idx: usize) { write_jcc(cb, 0x0F, 0x82, label_idx); }
-pub fn jnb_label (cb: &mut CodeBlock, label_idx: usize) { write_jcc(cb, 0x0F, 0x83, label_idx); }
-pub fn jnbe_label(cb: &mut CodeBlock, label_idx: usize) { write_jcc(cb, 0x0F, 0x87, label_idx); }
-pub fn jnc_label (cb: &mut CodeBlock, label_idx: usize) { write_jcc(cb, 0x0F, 0x83, label_idx); }
-pub fn jne_label (cb: &mut CodeBlock, label_idx: usize) { write_jcc(cb, 0x0F, 0x85, label_idx); }
-pub fn jng_label (cb: &mut CodeBlock, label_idx: usize) { write_jcc(cb, 0x0F, 0x8E, label_idx); }
-pub fn jnge_label(cb: &mut CodeBlock, label_idx: usize) { write_jcc(cb, 0x0F, 0x8C, label_idx); }
-pub fn jnl_label (cb: &mut CodeBlock, label_idx: usize) { write_jcc(cb, 0x0F, 0x8D, label_idx); }
-pub fn jnle_label(cb: &mut CodeBlock, label_idx: usize) { write_jcc(cb, 0x0F, 0x8F, label_idx); }
-pub fn jno_label (cb: &mut CodeBlock, label_idx: usize) { write_jcc(cb, 0x0F, 0x81, label_idx); }
-pub fn jnp_label (cb: &mut CodeBlock, label_idx: usize) { write_jcc(cb, 0x0F, 0x8b, label_idx); }
-pub fn jns_label (cb: &mut CodeBlock, label_idx: usize) { write_jcc(cb, 0x0F, 0x89, label_idx); }
-pub fn jnz_label (cb: &mut CodeBlock, label_idx: usize) { write_jcc(cb, 0x0F, 0x85, label_idx); }
-pub fn jo_label  (cb: &mut CodeBlock, label_idx: usize) { write_jcc(cb, 0x0F, 0x80, label_idx); }
-pub fn jp_label  (cb: &mut CodeBlock, label_idx: usize) { write_jcc(cb, 0x0F, 0x8A, label_idx); }
-pub fn jpe_label (cb: &mut CodeBlock, label_idx: usize) { write_jcc(cb, 0x0F, 0x8A, label_idx); }
-pub fn jpo_label (cb: &mut CodeBlock, label_idx: usize) { write_jcc(cb, 0x0F, 0x8B, label_idx); }
-pub fn js_label  (cb: &mut CodeBlock, label_idx: usize) { write_jcc(cb, 0x0F, 0x88, label_idx); }
-pub fn jz_label  (cb: &mut CodeBlock, label_idx: usize) { write_jcc(cb, 0x0F, 0x84, label_idx); }
-pub fn jmp_label (cb: &mut CodeBlock, label_idx: usize) { write_jcc(cb, 0xFF, 0xE9, label_idx); }
+pub fn ja_label  (cb: &mut CodeBlock, label_idx: usize) { write_jcc(cb, 0x87, label_idx); }
+pub fn jae_label (cb: &mut CodeBlock, label_idx: usize) { write_jcc(cb, 0x83, label_idx); }
+pub fn jb_label  (cb: &mut CodeBlock, label_idx: usize) { write_jcc(cb, 0x82, label_idx); }
+pub fn jbe_label (cb: &mut CodeBlock, label_idx: usize) { write_jcc(cb, 0x86, label_idx); }
+pub fn jc_label  (cb: &mut CodeBlock, label_idx: usize) { write_jcc(cb, 0x82, label_idx); }
+pub fn je_label  (cb: &mut CodeBlock, label_idx: usize) { write_jcc(cb, 0x84, label_idx); }
+pub fn jg_label  (cb: &mut CodeBlock, label_idx: usize) { write_jcc(cb, 0x8F, label_idx); }
+pub fn jge_label (cb: &mut CodeBlock, label_idx: usize) { write_jcc(cb, 0x8D, label_idx); }
+pub fn jl_label  (cb: &mut CodeBlock, label_idx: usize) { write_jcc(cb, 0x8C, label_idx); }
+pub fn jle_label (cb: &mut CodeBlock, label_idx: usize) { write_jcc(cb, 0x8E, label_idx); }
+pub fn jna_label (cb: &mut CodeBlock, label_idx: usize) { write_jcc(cb, 0x86, label_idx); }
+pub fn jnae_label(cb: &mut CodeBlock, label_idx: usize) { write_jcc(cb, 0x82, label_idx); }
+pub fn jnb_label (cb: &mut CodeBlock, label_idx: usize) { write_jcc(cb, 0x83, label_idx); }
+pub fn jnbe_label(cb: &mut CodeBlock, label_idx: usize) { write_jcc(cb, 0x87, label_idx); }
+pub fn jnc_label (cb: &mut CodeBlock, label_idx: usize) { write_jcc(cb, 0x83, label_idx); }
+pub fn jne_label (cb: &mut CodeBlock, label_idx: usize) { write_jcc(cb, 0x85, label_idx); }
+pub fn jng_label (cb: &mut CodeBlock, label_idx: usize) { write_jcc(cb, 0x8E, label_idx); }
+pub fn jnge_label(cb: &mut CodeBlock, label_idx: usize) { write_jcc(cb, 0x8C, label_idx); }
+pub fn jnl_label (cb: &mut CodeBlock, label_idx: usize) { write_jcc(cb, 0x8D, label_idx); }
+pub fn jnle_label(cb: &mut CodeBlock, label_idx: usize) { write_jcc(cb, 0x8F, label_idx); }
+pub fn jno_label (cb: &mut CodeBlock, label_idx: usize) { write_jcc(cb, 0x81, label_idx); }
+pub fn jnp_label (cb: &mut CodeBlock, label_idx: usize) { write_jcc(cb, 0x8b, label_idx); }
+pub fn jns_label (cb: &mut CodeBlock, label_idx: usize) { write_jcc(cb, 0x89, label_idx); }
+pub fn jnz_label (cb: &mut CodeBlock, label_idx: usize) { write_jcc(cb, 0x85, label_idx); }
+pub fn jo_label  (cb: &mut CodeBlock, label_idx: usize) { write_jcc(cb, 0x80, label_idx); }
+pub fn jp_label  (cb: &mut CodeBlock, label_idx: usize) { write_jcc(cb, 0x8A, label_idx); }
+pub fn jpe_label (cb: &mut CodeBlock, label_idx: usize) { write_jcc(cb, 0x8A, label_idx); }
+pub fn jpo_label (cb: &mut CodeBlock, label_idx: usize) { write_jcc(cb, 0x8B, label_idx); }
+pub fn js_label  (cb: &mut CodeBlock, label_idx: usize) { write_jcc(cb, 0x88, label_idx); }
+pub fn jz_label  (cb: &mut CodeBlock, label_idx: usize) { write_jcc(cb, 0x84, label_idx); }
+
+pub fn jmp_label(cb: &mut CodeBlock, label_idx: usize) {
+    cb.label_ref(label_idx, 5, |cb, src_addr, dst_addr| {
+        cb.write_byte(0xE9);
+        cb.write_int((dst_addr - src_addr) as u64, 32);
+    });
+}
 
 /// Encode a relative jump to a pointer at a 32-bit offset (direct or conditional)
 fn write_jcc_ptr(cb: &mut CodeBlock, op0: u8, op1: u8, dst_ptr: CodePtr) {
