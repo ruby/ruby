@@ -5163,7 +5163,8 @@ try_move(rb_objspace_t *objspace, rb_heap_t *heap, struct heap_page *free_page, 
 
         if (src_page->slot_size > free_page->slot_size) {
             objspace->rcompactor.moved_down_count_table[BUILTIN_TYPE(src)]++;
-        } else if (free_page->slot_size > src_page->slot_size) {
+        }
+        else if (free_page->slot_size > src_page->slot_size) {
             objspace->rcompactor.moved_up_count_table[BUILTIN_TYPE(src)]++;
         }
         objspace->rcompactor.moved_count_table[BUILTIN_TYPE(src)]++;
@@ -13754,26 +13755,26 @@ rb_raw_obj_info(char *buff, const int buff_size, VALUE obj)
 	    break;
 	  }
           case T_SYMBOL: {
-              VALUE fstr = RSYMBOL(obj)->fstr;
-              ID id = RSYMBOL(obj)->id;
-              if (RB_TYPE_P(fstr, T_STRING)) {
-                  APPENDF((BUFF_ARGS, ":%s id:%d", RSTRING_PTR(fstr), (unsigned int)id));
-              }
-              else {
-                  APPENDF((BUFF_ARGS, "(%p) id:%d", (void *)fstr, (unsigned int)id));
-              }
-              break;
+            VALUE fstr = RSYMBOL(obj)->fstr;
+            ID id = RSYMBOL(obj)->id;
+            if (RB_TYPE_P(fstr, T_STRING)) {
+                APPENDF((BUFF_ARGS, ":%s id:%d", RSTRING_PTR(fstr), (unsigned int)id));
+            }
+            else {
+                APPENDF((BUFF_ARGS, "(%p) id:%d", (void *)fstr, (unsigned int)id));
+            }
+            break;
           }
           case T_MOVED: {
             APPENDF((BUFF_ARGS, "-> %p", (void*)rb_gc_location(obj)));
             break;
           }
           case T_HASH: {
-              APPENDF((BUFF_ARGS, "[%c%c] %"PRIdSIZE,
-                       RHASH_AR_TABLE_P(obj) ? 'A' : 'S',
-                       RHASH_TRANSIENT_P(obj) ? 'T' : ' ',
-                       RHASH_SIZE(obj)));
-              break;
+            APPENDF((BUFF_ARGS, "[%c%c] %"PRIdSIZE,
+                     RHASH_AR_TABLE_P(obj) ? 'A' : 'S',
+                     RHASH_TRANSIENT_P(obj) ? 'T' : ' ',
+                     RHASH_SIZE(obj)));
+            break;
           }
           case T_CLASS:
           case T_MODULE:
