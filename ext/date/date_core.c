@@ -2466,13 +2466,14 @@ date_s__valid_jd_p(int argc, VALUE *argv, VALUE klass)
 
 /*
  * call-seq:
- *    Date.valid_jd?(jd[, start=Date::ITALY])  ->  bool
+ *   Date.valid_jd?(jd, start = Date::ITALY) -> true
  *
- * Just returns true.  It's nonsense, but is for symmetry.
+ * Implemented for compatibility;
+ * returns +true+ unless +jd+ is invalid (i.e., not a Numeric).
  *
- *    Date.valid_jd?(2451944)		#=> true
+ *   Date.valid_jd?(2451944) # => true
  *
- * See also ::jd.
+ * Related: Date.jd.
  */
 static VALUE
 date_s_valid_jd_p(int argc, VALUE *argv, VALUE klass)
@@ -2554,18 +2555,20 @@ date_s__valid_civil_p(int argc, VALUE *argv, VALUE klass)
 
 /*
  * call-seq:
- *    Date.valid_civil?(year, month, mday[, start=Date::ITALY])  ->  bool
- *    Date.valid_date?(year, month, mday[, start=Date::ITALY])   ->  bool
+ *   Date.valid_civil?(year, month, mday, start = Date::ITALY) -> true or false
  *
- * Returns true if the given calendar date is valid, and false if not.
- * Valid in this context is whether the arguments passed to this
- * method would be accepted by ::new.
+ * Returns +true+ if the arguments define a valid ordinal date,
+ * +false+ otherwise:
  *
- *    Date.valid_date?(2001,2,3)	#=> true
- *    Date.valid_date?(2001,2,29)	#=> false
- *    Date.valid_date?(2001,2,-1)	#=> true
+ *   Date.valid_date?(2001, 2, 3)  # => true
+ *   Date.valid_date?(2001, 2, 29) # => false
+ *   Date.valid_date?(2001, 2, -1) # => true
  *
- * See also ::jd and ::civil.
+ * See {Argument start}[rdoc-ref:Date@Argument+start].
+ *
+ * Date.valid_date? is an alias for Date.valid_civil?.
+ *
+ * Related: Date.jd, Date.new.
  */
 static VALUE
 date_s_valid_civil_p(int argc, VALUE *argv, VALUE klass)
@@ -2642,14 +2645,17 @@ date_s__valid_ordinal_p(int argc, VALUE *argv, VALUE klass)
 
 /*
  * call-seq:
- *    Date.valid_ordinal?(year, yday[, start=Date::ITALY])  ->  bool
+ *   Date.valid_ordinal?(year, yday, start = Date::ITALY) -> true or false
  *
- * Returns true if the given ordinal date is valid, and false if not.
+ * Returns +true+ if the arguments define a valid ordinal date,
+ * +false+ otherwise:
  *
- *    Date.valid_ordinal?(2001,34)	#=> true
- *    Date.valid_ordinal?(2001,366)	#=> false
+ *   Date.valid_ordinal?(2001, 34)  # => true
+ *   Date.valid_ordinal?(2001, 366) # => false
  *
- * See also ::jd and ::ordinal.
+ * See {Argument start}[rdoc-ref:Date@Argument+start].
+ *
+ * Related: Date.jd, Date.ordinal.
  */
 static VALUE
 date_s_valid_ordinal_p(int argc, VALUE *argv, VALUE klass)
@@ -2726,14 +2732,17 @@ date_s__valid_commercial_p(int argc, VALUE *argv, VALUE klass)
 
 /*
  * call-seq:
- *    Date.valid_commercial?(cwyear, cweek, cwday[, start=Date::ITALY])  ->  bool
+ *    Date.valid_commercial?(cwyear, cweek, cwday, start = Date::ITALY) -> true or false
  *
- * Returns true if the given week date is valid, and false if not.
+ * Returns +true+ if the arguments define a valid commercial date,
+ * +false+ otherwise:
  *
- *    Date.valid_commercial?(2001,5,6)	#=> true
- *    Date.valid_commercial?(2001,5,8)	#=> false
+ *   Date.valid_commercial?(2001, 5, 6) # => true
+ *   Date.valid_commercial?(2001, 5, 8) # => false
  *
- * See also ::jd and ::commercial.
+ * See {Argument start}[rdoc-ref:Date@Argument+start].
+ *
+ * Related: Date.jd, Date.commercial.
  */
 static VALUE
 date_s_valid_commercial_p(int argc, VALUE *argv, VALUE klass)
@@ -2913,13 +2922,15 @@ date_s_zone_to_diff(VALUE klass, VALUE str)
 
 /*
  * call-seq:
- *    Date.julian_leap?(year)  ->  bool
+ *   Date.julian_leap?(year) -> true or false
  *
- * Returns true if the given year is a leap year of the proleptic
- * Julian calendar.
+ * Returns +true+ if the given year is a leap year
+ * in the {proleptic Julian calendar}[https://en.wikipedia.org/wiki/Proleptic_Julian_calendar], +false+ otherwise:
  *
- *    Date.julian_leap?(1900)		#=> true
- *    Date.julian_leap?(1901)		#=> false
+ *   Date.julian_leap?(1900) # => true
+ *   Date.julian_leap?(1901) # => false
+ *
+ * Related: Date.gregorian_leap?.
  */
 static VALUE
 date_s_julian_leap_p(VALUE klass, VALUE y)
@@ -2934,14 +2945,17 @@ date_s_julian_leap_p(VALUE klass, VALUE y)
 
 /*
  * call-seq:
- *    Date.gregorian_leap?(year)  ->  bool
- *    Date.leap?(year)            ->  bool
+ *   Date.gregorian_leap?(year) -> true or false
  *
- * Returns true if the given year is a leap year of the proleptic
- * Gregorian calendar.
+ * Returns +true+ if the given year is a leap year
+ * in the {proleptic Gregorian calendar}[https://en.wikipedia.org/wiki/Proleptic_Gregorian_calendar], +false+ otherwise:
  *
- *    Date.gregorian_leap?(1900)	#=> false
- *    Date.gregorian_leap?(2000)	#=> true
+ *   Date.gregorian_leap?(2000) # => true
+ *   Date.gregorian_leap?(2001) # => false
+ *
+ * Date.leap? is an alias for Date.gregorian_leap?.
+ *
+ * Related: Date.julian_leap?.
  */
 static VALUE
 date_s_gregorian_leap_p(VALUE klass, VALUE y)
@@ -3281,16 +3295,29 @@ static VALUE d_lite_plus(VALUE, VALUE);
 
 /*
  * call-seq:
- *    Date.jd([jd=0[, start=Date::ITALY]])  ->  date
+ *   Date.jd(jd = 0, start = Date::ITALY) -> date
  *
- * Creates a date object denoting the given chronological Julian day
- * number.
+ * Returns a new \Date object formed from the arguments:
  *
- *    Date.jd(2451944)		#=> #<Date: 2001-02-03 ...>
- *    Date.jd(2451945)		#=> #<Date: 2001-02-04 ...>
- *    Date.jd(0)		#=> #<Date: -4712-01-01 ...>
+ *   Date.jd(2451944).to_s # => "2001-02-03"
+ *   Date.jd(2451945).to_s # => "2001-02-04"
+ *   Date.jd(0).to_s       # => "-4712-01-01"
  *
- * See also ::new.
+ * The returned date is:
+ *
+ * - Gregorian, if the argument is greater than or equal to +start+:
+ *
+ *     Date::ITALY                         # => 2299161
+ *     Date.jd(Date::ITALY).gregorian?     # => true
+ *     Date.jd(Date::ITALY + 1).gregorian? # => true
+ *
+ * - Julian, otherwise
+ *
+ *     Date.jd(Date::ITALY - 1).julian?    # => true
+ *
+ * See {Argument start}[rdoc-ref:Date@Argument+start].
+ *
+ * Related: Date.new.
  */
 static VALUE
 date_s_jd(int argc, VALUE *argv, VALUE klass)
@@ -3329,19 +3356,33 @@ date_s_jd(int argc, VALUE *argv, VALUE klass)
 
 /*
  * call-seq:
- *    Date.ordinal([year=-4712[, yday=1[, start=Date::ITALY]]])  ->  date
+ *    Date.ordinal(year = -4712, yday = 1, start = Date::ITALY) -> date
  *
- * Creates a date object denoting the given ordinal date.
+ * Returns a new \Date object formed fom the arguments.
  *
- * The day of year should be a negative or a positive number (as a
- * relative day from the end of year when negative).  It should not be
- * zero.
+ * With no arguments, returns the date for January 1, -4712:
  *
- *    Date.ordinal(2001)	#=> #<Date: 2001-01-01 ...>
- *    Date.ordinal(2001,34)	#=> #<Date: 2001-02-03 ...>
- *    Date.ordinal(2001,-1)	#=> #<Date: 2001-12-31 ...>
+ *   Date.ordinal.to_s # => "-4712-01-01"
  *
- * See also ::jd and ::new.
+ * With argument +year+, returns the date for January 1 of that year:
+ *
+ *   Date.ordinal(2001).to_s  # => "2001-01-01"
+ *   Date.ordinal(-2001).to_s # => "-2001-01-01"
+ *
+ * With positive argument +yday+ == +n+,
+ * returns the date for the +nth+ day of the given year:
+ *
+ *   Date.ordinal(2001, 14).to_s # => "2001-01-14"
+ *
+ * With negative argument +yday+, counts backward from the end of the year:
+ *
+ *   Date.ordinal(2001, -14).to_s # => "2001-12-18"
+ *
+ * Raises an exception if +yday+ is zero or out of range.
+ *
+ * See {Argument start}[rdoc-ref:Date@Argument+start].
+ *
+ * Related: Date.jd, Date.new.
  */
 static VALUE
 date_s_ordinal(int argc, VALUE *argv, VALUE klass)
@@ -3389,29 +3430,7 @@ date_s_ordinal(int argc, VALUE *argv, VALUE klass)
 }
 
 /*
- * call-seq:
- *    Date.civil([year=-4712[, month=1[, mday=1[, start=Date::ITALY]]]])  ->  date
- *    Date.new([year=-4712[, month=1[, mday=1[, start=Date::ITALY]]]])    ->  date
- *
- * Creates a date object denoting the given calendar date.
- *
- * In this class, BCE years are counted astronomically.  Thus, the
- * year before the year 1 is the year zero, and the year preceding the
- * year zero is the year -1.  The month and the day of month should be
- * a negative or a positive number (as a relative month/day from the
- * end of year/month when negative).  They should not be zero.
- *
- * The last argument should be a Julian day number which denotes the
- * day of calendar reform.  Date::ITALY (2299161=1582-10-15),
- * Date::ENGLAND (2361222=1752-09-14), Date::GREGORIAN (the proleptic
- * Gregorian calendar) and Date::JULIAN (the proleptic Julian
- * calendar) can be specified as a day of calendar reform.
- *
- *    Date.new(2001)		#=> #<Date: 2001-01-01 ...>
- *    Date.new(2001,2,3)	#=> #<Date: 2001-02-03 ...>
- *    Date.new(2001,2,-1)	#=> #<Date: 2001-02-28 ...>
- *
- * See also ::jd.
+ * Same as Date.new.
  */
 static VALUE
 date_s_civil(int argc, VALUE *argv, VALUE klass)
@@ -3419,6 +3438,31 @@ date_s_civil(int argc, VALUE *argv, VALUE klass)
     return date_initialize(argc, argv, d_lite_s_alloc_simple(klass));
 }
 
+/*
+ * call-seq:
+ *   Date.new(year = -4712, month = 1, mday = 1, start = Date::ITALY) -> date
+ *
+ * Returns a new \Date object constructed from the given arguments:
+ *
+ *   Date.new(2022).to_s        # => "2022-01-01"
+ *   Date.new(2022, 2).to_s     # => "2022-02-01"
+ *   Date.new(2022, 2, 4).to_s  # => "2022-02-04"
+ *
+ * Argument +month+ should be in range (1..12) or range (-12..-1);
+ * when the argument is negative, counts backward from the end of the year:
+ *
+ *   Date.new(2022, -11, 4).to_s # => "2022-02-04"
+ *
+ * Argument +mday+ should be in range (1..n) or range (-n..-1)
+ * where +n+ is the number of days in the month;
+ * when the argument is negative, counts backward from the end of the month.
+ *
+ * See {Argument start}[rdoc-ref:Date@Argument+start].
+ *
+ * Date.civil is an alias for Date.new.
+ *
+ * Related: Date.jd.
+ */
 static VALUE
 date_initialize(int argc, VALUE *argv, VALUE self)
 {
@@ -6941,180 +6985,16 @@ date_strftime_internal(int argc, VALUE *argv, VALUE self,
 
 /*
  * call-seq:
- *    d.strftime([format='%F'])  ->  string
+ *    strftime(format = '%F') -> string
  *
- * Formats date according to the directives in the given format
- * string.
- * The directives begin with a percent (%) character.
- * Any text not listed as a directive will be passed through to the
- * output string.
+ * Returns a string representation of +self+,
+ * formatted according the given +format+:
  *
- * A directive consists of a percent (%) character,
- * zero or more flags, an optional minimum field width,
- * an optional modifier, and a conversion specifier
- * as follows.
+ *   Date.today.strftime # => "2022-07-01"
  *
- *    %<flags><width><modifier><conversion>
+ * For other formats, see
+ * {Formats for Dates and Times}[https://docs.ruby-lang.org/en/master/strftime_formatting_rdoc.html].
  *
- * Flags:
- *    -  don't pad a numerical output.
- *    _  use spaces for padding.
- *    0  use zeros for padding.
- *    ^  upcase the result string.
- *    #  change case.
- *
- * The minimum field width specifies the minimum width.
- *
- * The modifiers are "E", "O", ":", "::" and ":::".
- * "E" and "O" are ignored.  No effect to result currently.
- *
- * Format directives:
- *
- *    Date (Year, Month, Day):
- *      %Y - Year with century (can be negative, 4 digits at least)
- *              -0001, 0000, 1995, 2009, 14292, etc.
- *      %C - year / 100 (round down.  20 in 2009)
- *      %y - year % 100 (00..99)
- *
- *      %m - Month of the year, zero-padded (01..12)
- *              %_m  blank-padded ( 1..12)
- *              %-m  no-padded (1..12)
- *      %B - The full month name (``January'')
- *              %^B  uppercased (``JANUARY'')
- *      %b - The abbreviated month name (``Jan'')
- *              %^b  uppercased (``JAN'')
- *      %h - Equivalent to %b
- *
- *      %d - Day of the month, zero-padded (01..31)
- *              %-d  no-padded (1..31)
- *      %e - Day of the month, blank-padded ( 1..31)
- *
- *      %j - Day of the year (001..366)
- *
- *    Time (Hour, Minute, Second, Subsecond):
- *      %H - Hour of the day, 24-hour clock, zero-padded (00..23)
- *      %k - Hour of the day, 24-hour clock, blank-padded ( 0..23)
- *      %I - Hour of the day, 12-hour clock, zero-padded (01..12)
- *      %l - Hour of the day, 12-hour clock, blank-padded ( 1..12)
- *      %P - Meridian indicator, lowercase (``am'' or ``pm'')
- *      %p - Meridian indicator, uppercase (``AM'' or ``PM'')
- *
- *      %M - Minute of the hour (00..59)
- *
- *      %S - Second of the minute (00..60)
- *
- *      %L - Millisecond of the second (000..999)
- *      %N - Fractional seconds digits, default is 9 digits (nanosecond)
- *              %3N  millisecond (3 digits)   %15N femtosecond (15 digits)
- *              %6N  microsecond (6 digits)   %18N attosecond  (18 digits)
- *              %9N  nanosecond  (9 digits)   %21N zeptosecond (21 digits)
- *              %12N picosecond (12 digits)   %24N yoctosecond (24 digits)
- *
- *    Time zone:
- *      %z - Time zone as hour and minute offset from UTC (e.g. +0900)
- *              %:z - hour and minute offset from UTC with a colon (e.g. +09:00)
- *              %::z - hour, minute and second offset from UTC (e.g. +09:00:00)
- *              %:::z - hour, minute and second offset from UTC
- *                                                (e.g. +09, +09:30, +09:30:30)
- *      %Z - Equivalent to %:z (e.g. +09:00)
- *
- *    Weekday:
- *      %A - The full weekday name (``Sunday'')
- *              %^A  uppercased (``SUNDAY'')
- *      %a - The abbreviated name (``Sun'')
- *              %^a  uppercased (``SUN'')
- *      %u - Day of the week (Monday is 1, 1..7)
- *      %w - Day of the week (Sunday is 0, 0..6)
- *
- *    ISO 8601 week-based year and week number:
- *    The week 1 of YYYY starts with a Monday and includes YYYY-01-04.
- *    The days in the year before the first week are in the last week of
- *    the previous year.
- *      %G - The week-based year
- *      %g - The last 2 digits of the week-based year (00..99)
- *      %V - Week number of the week-based year (01..53)
- *
- *    Week number:
- *    The week 1 of YYYY starts with a Sunday or Monday (according to %U
- *    or %W).  The days in the year before the first week are in week 0.
- *      %U - Week number of the year.  The week starts with Sunday.  (00..53)
- *      %W - Week number of the year.  The week starts with Monday.  (00..53)
- *
- *    Seconds since the Unix Epoch:
- *      %s - Number of seconds since 1970-01-01 00:00:00 UTC.
- *      %Q - Number of milliseconds since 1970-01-01 00:00:00 UTC.
- *
- *    Literal string:
- *      %n - Newline character (\n)
- *      %t - Tab character (\t)
- *      %% - Literal ``%'' character
- *
- *    Combination:
- *      %c - date and time (%a %b %e %T %Y)
- *      %D - Date (%m/%d/%y)
- *      %F - The ISO 8601 date format (%Y-%m-%d)
- *      %v - VMS date (%e-%^b-%Y)
- *      %x - Same as %D
- *      %X - Same as %T
- *      %r - 12-hour time (%I:%M:%S %p)
- *      %R - 24-hour time (%H:%M)
- *      %T - 24-hour time (%H:%M:%S)
- *      %+ - date(1) (%a %b %e %H:%M:%S %Z %Y)
- *
- * This method is similar to the strftime() function defined in ISO C
- * and POSIX.
- * Several directives (%a, %A, %b, %B, %c, %p, %r, %x, %X, %E*, %O* and %Z)
- * are locale dependent in the function.
- * However, this method is locale independent.
- * So, the result may differ even if the same format string is used in other
- * systems such as C.
- * It is good practice to avoid %x and %X because there are corresponding
- * locale independent representations, %D and %T.
- *
- * Examples:
- *
- *    d = DateTime.new(2007,11,19,8,37,48,"-06:00")
- *				#=> #<DateTime: 2007-11-19T08:37:48-0600 ...>
- *    d.strftime("Printed on %m/%d/%Y")   #=> "Printed on 11/19/2007"
- *    d.strftime("at %I:%M%p")            #=> "at 08:37AM"
- *
- * Various ISO 8601 formats:
- *    %Y%m%d           => 20071119                  Calendar date (basic)
- *    %F               => 2007-11-19                Calendar date (extended)
- *    %Y-%m            => 2007-11                   Calendar date, reduced accuracy, specific month
- *    %Y               => 2007                      Calendar date, reduced accuracy, specific year
- *    %C               => 20                        Calendar date, reduced accuracy, specific century
- *    %Y%j             => 2007323                   Ordinal date (basic)
- *    %Y-%j            => 2007-323                  Ordinal date (extended)
- *    %GW%V%u          => 2007W471                  Week date (basic)
- *    %G-W%V-%u        => 2007-W47-1                Week date (extended)
- *    %GW%V            => 2007W47                   Week date, reduced accuracy, specific week (basic)
- *    %G-W%V           => 2007-W47                  Week date, reduced accuracy, specific week (extended)
- *    %H%M%S           => 083748                    Local time (basic)
- *    %T               => 08:37:48                  Local time (extended)
- *    %H%M             => 0837                      Local time, reduced accuracy, specific minute (basic)
- *    %H:%M            => 08:37                     Local time, reduced accuracy, specific minute (extended)
- *    %H               => 08                        Local time, reduced accuracy, specific hour
- *    %H%M%S,%L        => 083748,000                Local time with decimal fraction, comma as decimal sign (basic)
- *    %T,%L            => 08:37:48,000              Local time with decimal fraction, comma as decimal sign (extended)
- *    %H%M%S.%L        => 083748.000                Local time with decimal fraction, full stop as decimal sign (basic)
- *    %T.%L            => 08:37:48.000              Local time with decimal fraction, full stop as decimal sign (extended)
- *    %H%M%S%z         => 083748-0600               Local time and the difference from UTC (basic)
- *    %T%:z            => 08:37:48-06:00            Local time and the difference from UTC (extended)
- *    %Y%m%dT%H%M%S%z  => 20071119T083748-0600      Date and time of day for calendar date (basic)
- *    %FT%T%:z         => 2007-11-19T08:37:48-06:00 Date and time of day for calendar date (extended)
- *    %Y%jT%H%M%S%z    => 2007323T083748-0600       Date and time of day for ordinal date (basic)
- *    %Y-%jT%T%:z      => 2007-323T08:37:48-06:00   Date and time of day for ordinal date (extended)
- *    %GW%V%uT%H%M%S%z => 2007W471T083748-0600      Date and time of day for week date (basic)
- *    %G-W%V-%uT%T%:z  => 2007-W47-1T08:37:48-06:00 Date and time of day for week date (extended)
- *    %Y%m%dT%H%M      => 20071119T0837             Calendar date and local time (basic)
- *    %FT%R            => 2007-11-19T08:37          Calendar date and local time (extended)
- *    %Y%jT%H%MZ       => 2007323T0837Z             Ordinal date and UTC of day (basic)
- *    %Y-%jT%RZ        => 2007-323T08:37Z           Ordinal date and UTC of day (extended)
- *    %GW%V%uT%H%M%z   => 2007W471T0837-0600        Week date and local time and difference from UTC (basic)
- *    %G-W%V-%uT%R%:z  => 2007-W47-1T08:37-06:00    Week date and local time and difference from UTC (extended)
- *
- * See also strftime(3) and ::strptime.
  */
 static VALUE
 d_lite_strftime(int argc, VALUE *argv, VALUE self)
@@ -7556,19 +7436,6 @@ datetime_s_ordinal(int argc, VALUE *argv, VALUE klass)
     return ret;
 }
 
-/*
- * call-seq:
- *    DateTime.civil([year=-4712[, month=1[, mday=1[, hour=0[, minute=0[, second=0[, offset=0[, start=Date::ITALY]]]]]]]])  ->  datetime
- *    DateTime.new([year=-4712[, month=1[, mday=1[, hour=0[, minute=0[, second=0[, offset=0[, start=Date::ITALY]]]]]]]])    ->  datetime
- *
- * Creates a DateTime object denoting the given calendar date.
- *
- *    DateTime.new(2001,2,3)	#=> #<DateTime: 2001-02-03T00:00:00+00:00 ...>
- *    DateTime.new(2001,2,3,4,5,6,'+7')
- *				#=> #<DateTime: 2001-02-03T04:05:06+07:00 ...>
- *    DateTime.new(2001,-11,-26,-20,-55,-54,'+7')
- *				#=> #<DateTime: 2001-02-03T04:05:06+07:00 ...>
- */
 static VALUE
 datetime_s_civil(int argc, VALUE *argv, VALUE klass)
 {
@@ -8487,181 +8354,16 @@ dt_lite_to_s(VALUE self)
 
 /*
  * call-seq:
- *    dt.strftime([format='%FT%T%:z'])  ->  string
+ *   strftime(format = '%FT%T%:z') -> string
  *
- * Formats date according to the directives in the given format
- * string.
- * The directives begin with a percent (%) character.
- * Any text not listed as a directive will be passed through to the
- * output string.
+ * Returns a string representation of +self+,
+ * formatted according the given +format:
  *
- * A directive consists of a percent (%) character,
- * zero or more flags, an optional minimum field width,
- * an optional modifier, and a conversion specifier
- * as follows.
+ *   DateTime.now.strftime # => "2022-07-01T11:03:19-05:00"
  *
- *    %<flags><width><modifier><conversion>
+ * For other formats, see
+ * {Formats for Dates and Times}[doc/strftime_formatting.rdoc].
  *
- * Flags:
- *    -  don't pad a numerical output.
- *    _  use spaces for padding.
- *    0  use zeros for padding.
- *    ^  upcase the result string.
- *    #  change case.
- *    :  use colons for %z.
- *
- * The minimum field width specifies the minimum width.
- *
- * The modifiers are "E" and "O".
- * They are ignored.
- *
- * Format directives:
- *
- *    Date (Year, Month, Day):
- *      %Y - Year with century (can be negative, 4 digits at least)
- *              -0001, 0000, 1995, 2009, 14292, etc.
- *      %C - year / 100 (round down.  20 in 2009)
- *      %y - year % 100 (00..99)
- *
- *      %m - Month of the year, zero-padded (01..12)
- *              %_m  blank-padded ( 1..12)
- *              %-m  no-padded (1..12)
- *      %B - The full month name (``January'')
- *              %^B  uppercased (``JANUARY'')
- *      %b - The abbreviated month name (``Jan'')
- *              %^b  uppercased (``JAN'')
- *      %h - Equivalent to %b
- *
- *      %d - Day of the month, zero-padded (01..31)
- *              %-d  no-padded (1..31)
- *      %e - Day of the month, blank-padded ( 1..31)
- *
- *      %j - Day of the year (001..366)
- *
- *    Time (Hour, Minute, Second, Subsecond):
- *      %H - Hour of the day, 24-hour clock, zero-padded (00..23)
- *      %k - Hour of the day, 24-hour clock, blank-padded ( 0..23)
- *      %I - Hour of the day, 12-hour clock, zero-padded (01..12)
- *      %l - Hour of the day, 12-hour clock, blank-padded ( 1..12)
- *      %P - Meridian indicator, lowercase (``am'' or ``pm'')
- *      %p - Meridian indicator, uppercase (``AM'' or ``PM'')
- *
- *      %M - Minute of the hour (00..59)
- *
- *      %S - Second of the minute (00..60)
- *
- *      %L - Millisecond of the second (000..999)
- *      %N - Fractional seconds digits, default is 9 digits (nanosecond)
- *              %3N  millisecond (3 digits)   %15N femtosecond (15 digits)
- *              %6N  microsecond (6 digits)   %18N attosecond  (18 digits)
- *              %9N  nanosecond  (9 digits)   %21N zeptosecond (21 digits)
- *              %12N picosecond (12 digits)   %24N yoctosecond (24 digits)
- *
- *    Time zone:
- *      %z - Time zone as hour and minute offset from UTC (e.g. +0900)
- *              %:z - hour and minute offset from UTC with a colon (e.g. +09:00)
- *              %::z - hour, minute and second offset from UTC (e.g. +09:00:00)
- *              %:::z - hour, minute and second offset from UTC
- *                                                (e.g. +09, +09:30, +09:30:30)
- *      %Z - Equivalent to %:z (e.g. +09:00)
- *
- *    Weekday:
- *      %A - The full weekday name (``Sunday'')
- *              %^A  uppercased (``SUNDAY'')
- *      %a - The abbreviated name (``Sun'')
- *              %^a  uppercased (``SUN'')
- *      %u - Day of the week (Monday is 1, 1..7)
- *      %w - Day of the week (Sunday is 0, 0..6)
- *
- *    ISO 8601 week-based year and week number:
- *    The week 1 of YYYY starts with a Monday and includes YYYY-01-04.
- *    The days in the year before the first week are in the last week of
- *    the previous year.
- *      %G - The week-based year
- *      %g - The last 2 digits of the week-based year (00..99)
- *      %V - Week number of the week-based year (01..53)
- *
- *    Week number:
- *    The week 1 of YYYY starts with a Sunday or Monday (according to %U
- *    or %W).  The days in the year before the first week are in week 0.
- *      %U - Week number of the year.  The week starts with Sunday.  (00..53)
- *      %W - Week number of the year.  The week starts with Monday.  (00..53)
- *
- *    Seconds since the Unix Epoch:
- *      %s - Number of seconds since 1970-01-01 00:00:00 UTC.
- *      %Q - Number of milliseconds since 1970-01-01 00:00:00 UTC.
- *
- *    Literal string:
- *      %n - Newline character (\n)
- *      %t - Tab character (\t)
- *      %% - Literal ``%'' character
- *
- *    Combination:
- *      %c - date and time (%a %b %e %T %Y)
- *      %D - Date (%m/%d/%y)
- *      %F - The ISO 8601 date format (%Y-%m-%d)
- *      %v - VMS date (%e-%^b-%Y)
- *      %x - Same as %D
- *      %X - Same as %T
- *      %r - 12-hour time (%I:%M:%S %p)
- *      %R - 24-hour time (%H:%M)
- *      %T - 24-hour time (%H:%M:%S)
- *      %+ - date(1) (%a %b %e %H:%M:%S %Z %Y)
- *
- * This method is similar to the strftime() function defined in ISO C
- * and POSIX.
- * Several directives (%a, %A, %b, %B, %c, %p, %r, %x, %X, %E*, %O* and %Z)
- * are locale dependent in the function.
- * However, this method is locale independent.
- * So, the result may differ even if the same format string is used in other
- * systems such as C.
- * It is good practice to avoid %x and %X because there are corresponding
- * locale independent representations, %D and %T.
- *
- * Examples:
- *
- *    d = DateTime.new(2007,11,19,8,37,48,"-06:00")
- *				#=> #<DateTime: 2007-11-19T08:37:48-0600 ...>
- *    d.strftime("Printed on %m/%d/%Y")   #=> "Printed on 11/19/2007"
- *    d.strftime("at %I:%M%p")            #=> "at 08:37AM"
- *
- * Various ISO 8601 formats:
- *    %Y%m%d           => 20071119                  Calendar date (basic)
- *    %F               => 2007-11-19                Calendar date (extended)
- *    %Y-%m            => 2007-11                   Calendar date, reduced accuracy, specific month
- *    %Y               => 2007                      Calendar date, reduced accuracy, specific year
- *    %C               => 20                        Calendar date, reduced accuracy, specific century
- *    %Y%j             => 2007323                   Ordinal date (basic)
- *    %Y-%j            => 2007-323                  Ordinal date (extended)
- *    %GW%V%u          => 2007W471                  Week date (basic)
- *    %G-W%V-%u        => 2007-W47-1                Week date (extended)
- *    %GW%V            => 2007W47                   Week date, reduced accuracy, specific week (basic)
- *    %G-W%V           => 2007-W47                  Week date, reduced accuracy, specific week (extended)
- *    %H%M%S           => 083748                    Local time (basic)
- *    %T               => 08:37:48                  Local time (extended)
- *    %H%M             => 0837                      Local time, reduced accuracy, specific minute (basic)
- *    %H:%M            => 08:37                     Local time, reduced accuracy, specific minute (extended)
- *    %H               => 08                        Local time, reduced accuracy, specific hour
- *    %H%M%S,%L        => 083748,000                Local time with decimal fraction, comma as decimal sign (basic)
- *    %T,%L            => 08:37:48,000              Local time with decimal fraction, comma as decimal sign (extended)
- *    %H%M%S.%L        => 083748.000                Local time with decimal fraction, full stop as decimal sign (basic)
- *    %T.%L            => 08:37:48.000              Local time with decimal fraction, full stop as decimal sign (extended)
- *    %H%M%S%z         => 083748-0600               Local time and the difference from UTC (basic)
- *    %T%:z            => 08:37:48-06:00            Local time and the difference from UTC (extended)
- *    %Y%m%dT%H%M%S%z  => 20071119T083748-0600      Date and time of day for calendar date (basic)
- *    %FT%T%:z         => 2007-11-19T08:37:48-06:00 Date and time of day for calendar date (extended)
- *    %Y%jT%H%M%S%z    => 2007323T083748-0600       Date and time of day for ordinal date (basic)
- *    %Y-%jT%T%:z      => 2007-323T08:37:48-06:00   Date and time of day for ordinal date (extended)
- *    %GW%V%uT%H%M%S%z => 2007W471T083748-0600      Date and time of day for week date (basic)
- *    %G-W%V-%uT%T%:z  => 2007-W47-1T08:37:48-06:00 Date and time of day for week date (extended)
- *    %Y%m%dT%H%M      => 20071119T0837             Calendar date and local time (basic)
- *    %FT%R            => 2007-11-19T08:37          Calendar date and local time (extended)
- *    %Y%jT%H%MZ       => 2007323T0837Z             Ordinal date and UTC of day (basic)
- *    %Y-%jT%RZ        => 2007-323T08:37Z           Ordinal date and UTC of day (extended)
- *    %GW%V%uT%H%M%z   => 2007W471T0837-0600        Week date and local time and difference from UTC (basic)
- *    %G-W%V-%uT%R%:z  => 2007-W47-1T08:37-06:00    Week date and local time and difference from UTC (extended)
- *
- * See also strftime(3) and ::strptime.
  */
 static VALUE
 dt_lite_strftime(int argc, VALUE *argv, VALUE self)
@@ -9513,6 +9215,54 @@ Init_date_core(void)
      *     d.wday			#=> 6
      *     d += 1			#=> #<Date: 2001-02-04 ...>
      *     d.strftime('%a %d %b %Y')	#=> "Sun 04 Feb 2001"
+     *
+     * === Argument +start+
+     *
+     * Certain calculations and comparisons for a \Date object
+     * are affected by what the object considers to have been
+     * the changeover date from the
+     * {Julian}[https://en.wikipedia.org/wiki/Julian_calendar] to the
+     * {Gregorian}[https://en.wikipedia.org/wiki/Gregorian_calendar]
+     * calendar;
+     * this is set by argument +start+ when the object is created:
+     *
+     * - Dates before the changeover are considered to be Julian.
+     * - Dates after the changeover are considered to be Gregorian.
+     *
+     * The value of the +start+ argument may be:
+     *
+     * - Date::ITALY (the default) - the changeover date is October 10, 1582:
+     *
+     *     Date::ITALY               # => 2299161
+     *     Date.jd(Date::ITALY).to_s # => "1582-10-15"
+     *
+     *     # Julian base date, Julian result date.
+     *     (Date.new(1581, 1, 1, Date::ITALY) + 365).to_s # => "1582-01-01"
+     *     # Gregorian base date, Gregorian result date.
+     *     (Date.new(1583, 1, 1, Date::ITALY) + 365).to_s # => "1584-01-01"
+     *
+     *     # Julian base date, Gregorian result date.
+     *     (Date.new(1582, 1, 1, Date::ITALY) + 365).to_s # => "1583-01-11"
+     *     # Gregorian base date, Julian result date.
+     *     (Date.new(1583, 1, 1, Date::ITALY) - 365).to_s # => "1581-12-22"
+     *
+     * - Date::ENGLAND - the changeover date is September 9, 1752:
+     *
+     *     Date::ENGLAND               # => 2361222
+     *     Date.jd(Date::ENGLAND).to_s # => "1752-09-14"
+     *
+     *     # Julian base date, Julian result date.
+     *     (Date.new(1751, 1, 1, Date::ENGLAND) + 365).to_s # => "1752-01-01"
+     *     # Gregorian base date, Gregorian result date.
+     *     (Date.new(1753, 1, 1, Date::ENGLAND) + 365).to_s # => "1754-01-01"
+     *
+     *     # Julian base date, Gregorian result date.
+     *     (Date.new(1752, 1, 1, Date::ENGLAND) + 365).to_s # => "1753-01-11"
+     *     # Gregorian base date, Julian result date.
+     *     (Date.new(1753, 1, 1, Date::ENGLAND) - 365).to_s # => "1751-12-22"
+     *
+     * - Date::JULIAN - no changeover date; all dates are Julian.
+     * - Date::GREGORIAN - no changeover date; all dates are Gregorian.
      *
      */
     cDate = rb_define_class("Date", rb_cObject);

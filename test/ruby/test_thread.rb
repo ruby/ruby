@@ -29,13 +29,18 @@ class TestThread < Test::Unit::TestCase
   end
 
   def test_inspect
+    m = Thread::Mutex.new
+    m.lock
     line = __LINE__+1
-    th = Module.new {break module_eval("class C\u{30b9 30ec 30c3 30c9} < Thread; self; end")}.start{}
+    th = Module.new {break module_eval("class C\u{30b9 30ec 30c3 30c9} < Thread; self; end")}.start do
+      m.synchronize {}
+    end
     s = th.inspect
     assert_include(s, "::C\u{30b9 30ec 30c3 30c9}:")
     assert_include(s, " #{__FILE__}:#{line} ")
     assert_equal(s, th.to_s)
   ensure
+    m.unlock
     th.join
   end
 

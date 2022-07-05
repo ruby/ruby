@@ -313,6 +313,17 @@ reachable_object_i(VALUE ref, void *data)
     dc->cur_obj_references++;
 }
 
+static bool
+dump_string_ascii_only(const char *str, long size)
+{
+    for (long i = 0; i < size; i++) {
+        if (str[i] & 0x80) {
+            return false;
+        }
+    }
+    return true;
+}
+
 static void
 dump_append_string_content(struct dump_config *dc, VALUE obj)
 {
@@ -323,9 +334,17 @@ dump_append_string_content(struct dump_config *dc, VALUE obj)
         dump_append_sizet(dc, rb_str_capacity(obj));
     }
 
-    if (is_ascii_string(obj)) {
-        dump_append(dc, ", \"value\":");
-        dump_append_string_value(dc, obj);
+    if (RSTRING_LEN(obj) && rb_enc_asciicompat(rb_enc_from_index(ENCODING_GET(obj)))) {
+        int cr = ENC_CODERANGE(obj);
+        if (cr == RUBY_ENC_CODERANGE_UNKNOWN) {
+            if (dump_string_ascii_only(RSTRING_PTR(obj), RSTRING_LEN(obj))) {
+                cr = RUBY_ENC_CODERANGE_7BIT;
+            }
+        }
+        if (cr == RUBY_ENC_CODERANGE_7BIT) {
+            dump_append(dc, ", \"value\":");
+            dump_append_string_value(dc, obj);
+        }
     }
 }
 
@@ -389,8 +408,6 @@ dump_object(VALUE obj, struct dump_config *dc)
       case T_STRING:
         if (STR_EMBED_P(obj))
             dump_append(dc, ", \"embedded\":true");
-        if (is_broken_string(obj))
-            dump_append(dc, ", \"broken\":true");
         if (FL_TEST(obj, RSTRING_FSTR))
             dump_append(dc, ", \"fstring\":true");
         if (STR_SHARED_P(obj))
@@ -403,6 +420,27 @@ dump_object(VALUE obj, struct dump_config *dc)
             dump_append(dc, rb_enc_name(rb_enc_from_index(ENCODING_GET(obj))));
             dump_append(dc, "\"");
         }
+
+        dump_append(dc, ", \"coderange\":\"");
+        switch (RB_ENC_CODERANGE(obj)) {
+          case RUBY_ENC_CODERANGE_UNKNOWN:
+            dump_append(dc, "unknown");
+            break;
+          case RUBY_ENC_CODERANGE_7BIT:
+            dump_append(dc, "7bit");
+            break;
+          case RUBY_ENC_CODERANGE_VALID:
+            dump_append(dc, "valid");
+            break;
+          case RUBY_ENC_CODERANGE_BROKEN:
+            dump_append(dc, "broken");
+            break;
+        }
+        dump_append(dc, "\"");
+
+        if (RB_ENC_CODERANGE(obj) == RUBY_ENC_CODERANGE_BROKEN)
+            dump_append(dc, ", \"broken\":true");
+
         break;
 
       case T_HASH:

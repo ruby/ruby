@@ -38,9 +38,11 @@ jobs:
           - msystem: "MINGW64"
             base_ruby: 2.6
             test_task: "check"
+            test-all-opts: "--name=!/TestObjSpace#test_reachable_objects_during_iteration/"
           - msystem: "UCRT64"
             base_ruby: head
             test_task: "check"
+            test-all-opts: "--name=!/TestObjSpace#test_reachable_objects_during_iteration/"
       fail-fast: false
     if: ${{ !contains(github.event.head_commit.message, '[DOC]') && !contains(github.event.pull_request.labels.*.name, 'Documentation') }}
     steps:
@@ -135,7 +137,9 @@ jobs:
           chcp.com 437
           make ${{ StartsWith(matrix.test_task, 'test/') && matrix.test_task || 'test-all' }}
         env:
-          RUBY_TESTOPTS: -j${{env.TEST_JOBS}} --retry --job-status=normal --show-skip --timeout-scale=1.5
+          RUBY_TESTOPTS: >-
+            -j${{env.TEST_JOBS}} --retry --job-status=normal --show-skip --timeout-scale=1.5
+            ${{ matrix.test-all-opts }}
           BUNDLER_VERSION:
         if: ${{matrix.test_task == 'check' || matrix.test_task == 'test-all' || StartsWith(matrix.test_task, 'test/')}}
 
