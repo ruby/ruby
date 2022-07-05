@@ -13671,12 +13671,6 @@ str_len_no_raise(VALUE str)
     return (int)len;
 }
 
-const char *
-rb_raw_obj_info(char *const buff, const size_t buff_size, VALUE obj)
-{
-    size_t pos = 0;
-    void *poisoned = asan_unpoison_object_temporary(obj);
-
 #define BUFF_ARGS buff + pos, buff_size - pos
 #define APPEND_F(...) if ((pos += snprintf(BUFF_ARGS, "" __VA_ARGS__)) >= buff_size) goto end
 #define APPEND_S(s) do { \
@@ -13687,6 +13681,13 @@ rb_raw_obj_info(char *const buff, const size_t buff_size, VALUE obj)
             memcpy(buff + pos, (s), rb_strlen_lit(s) + 1); \
         } \
     } while (0)
+#define TF(c) ((c) != 0 ? "true" : "false")
+#define C(c, s) ((c) != 0 ? (s) : " ")
+
+static size_t
+rb_raw_obj_info_common(char *const buff, const size_t buff_size, const VALUE obj)
+{
+    size_t pos = 0;
 
     if (SPECIAL_CONST_P(obj)) {
         APPEND_F("%s", obj_type_name(obj));
@@ -13699,9 +13700,6 @@ rb_raw_obj_info(char *const buff, const size_t buff_size, VALUE obj)
         }
     }
     else {
-#define TF(c) ((c) != 0 ? "true" : "false")
-#define C(c, s) ((c) != 0 ? (s) : " ")
-	const int type = BUILTIN_TYPE(obj);
 	const int age = RVALUE_FLAGS_AGE(RBASIC(obj)->flags);
 
         if (is_pointer_to_heap(&rb_objspace, (void *)obj)) {
@@ -13738,6 +13736,17 @@ rb_raw_obj_info(char *const buff, const size_t buff_size, VALUE obj)
 #if GC_DEBUG
         APPEND_F("@%s:%d", RANY(obj)->file, RANY(obj)->line);
 #endif
+    }
+  end:
+
+    return pos;
+}
+
+static size_t
+rb_raw_obj_info_buitin_type(char *const buff, const size_t buff_size, const VALUE obj, size_t pos)
+{
+    if (LIKELY(pos < buff_size) && !SPECIAL_CONST_P(obj)) {
+	const enum ruby_value_type type = BUILTIN_TYPE(obj);
 
 	switch (type) {
 	  case T_NODE:
@@ -13924,20 +13933,34 @@ rb_raw_obj_info(char *const buff, const size_t buff_size, VALUE obj)
 	  default:
 	    break;
 	}
-#undef TF
-#undef C
     }
   end:
+
+    return pos;
+}
+
+#undef TF
+#undef C
+
+const char *
+rb_raw_obj_info(char *const buff, const size_t buff_size, VALUE obj)
+{
+    void *poisoned = asan_unpoison_object_temporary(obj);
+
+    size_t pos = rb_raw_obj_info_common(buff, buff_size, obj);
+    pos = rb_raw_obj_info_buitin_type(buff, buff_size, obj, pos);
+    if (pos >= buff_size) {} // truncated
+
     if (poisoned) {
         asan_poison_object(obj);
     }
 
     return buff;
+}
 
 #undef APPEND_S
 #undef APPEND_F
 #undef BUFF_ARGS
-}
 
 #if RGENGC_OBJ_INFO
 #define OBJ_INFO_BUFFERS_NUM  10
