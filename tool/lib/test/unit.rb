@@ -1182,15 +1182,20 @@ module Test
       def setup_options(parser, options)
         super
         parser.separator "output options:"
+
+        options[:failed_output] = $stdout
         parser.on '--stderr-on-failure', 'Use stderr to print failure messages' do
-          options[:stderr_on_failure] = true
+          options[:failed_output] = $stderr
+        end
+        parser.on '--stdout-on-failure', 'Use stdout to print failure messages', '(default)' do
+          options[:failed_output] = $stdout
         end
       end
 
       def process_args(args = [])
         return @options if @options
         options = super
-        @failed_output = options[:stderr_on_failure] ? $stderr : $stdout
+        @failed_output = options[:failed_output]
         options
       end
     end
