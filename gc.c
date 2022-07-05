@@ -13678,15 +13678,15 @@ rb_raw_obj_info(char *const buff, const size_t buff_size, VALUE obj)
     void *poisoned = asan_unpoison_object_temporary(obj);
 
 #define BUFF_ARGS buff + pos, buff_size - pos
-#define APPENDF(f) if ((pos += snprintf f) >= buff_size) goto end
+#define APPEND_F(...) if ((pos += snprintf(BUFF_ARGS, "" __VA_ARGS__)) >= buff_size) goto end
     if (SPECIAL_CONST_P(obj)) {
-        APPENDF((BUFF_ARGS, "%s", obj_type_name(obj)));
+        APPEND_F("%s", obj_type_name(obj));
 
         if (FIXNUM_P(obj)) {
-            APPENDF((BUFF_ARGS, " %ld", FIX2LONG(obj)));
+            APPEND_F(" %ld", FIX2LONG(obj));
         }
         else if (SYMBOL_P(obj)) {
-            APPENDF((BUFF_ARGS, " %s", rb_id2name(SYM2ID(obj))));
+            APPEND_F(" %s", rb_id2name(SYM2ID(obj)));
         }
     }
     else {
@@ -13696,7 +13696,7 @@ rb_raw_obj_info(char *const buff, const size_t buff_size, VALUE obj)
 	const int age = RVALUE_FLAGS_AGE(RBASIC(obj)->flags);
 
         if (is_pointer_to_heap(&rb_objspace, (void *)obj)) {
-            APPENDF((BUFF_ARGS, "%p [%d%s%s%s%s%s%s] %s ",
+            APPEND_F("%p [%d%s%s%s%s%s%s] %s ",
                      (void *)obj, age,
                      C(RVALUE_UNCOLLECTIBLE_BITMAP(obj),  "L"),
                      C(RVALUE_MARK_BITMAP(obj),           "M"),
@@ -13704,30 +13704,30 @@ rb_raw_obj_info(char *const buff, const size_t buff_size, VALUE obj)
                      C(RVALUE_MARKING_BITMAP(obj),        "R"),
                      C(RVALUE_WB_UNPROTECTED_BITMAP(obj), "U"),
                      C(rb_objspace_garbage_object_p(obj), "G"),
-                     obj_type_name(obj)));
+                     obj_type_name(obj));
         }
         else {
             /* fake */
-            APPENDF((BUFF_ARGS, "%p [%dXXXX] %s",
+            APPEND_F("%p [%dXXXX] %s",
                      (void *)obj, age,
-                     obj_type_name(obj)));
+                     obj_type_name(obj));
         }
 
 	if (internal_object_p(obj)) {
 	    /* ignore */
 	}
 	else if (RBASIC(obj)->klass == 0) {
-            APPENDF((BUFF_ARGS, "(temporary internal)"));
+            APPEND_F("(temporary internal)");
 	}
 	else if (RTEST(RBASIC(obj)->klass)) {
             VALUE class_path = rb_class_path_cached(RBASIC(obj)->klass);
 	    if (!NIL_P(class_path)) {
-                APPENDF((BUFF_ARGS, "(%s)", RSTRING_PTR(class_path)));
+                APPEND_F("(%s)", RSTRING_PTR(class_path));
 	    }
 	}
 
 #if GC_DEBUG
-        APPENDF((BUFF_ARGS, "@%s:%d", RANY(obj)->file, RANY(obj)->line));
+        APPEND_F("@%s:%d", RANY(obj)->file, RANY(obj)->line);
 #endif
 
 	switch (type) {
@@ -13736,57 +13736,57 @@ rb_raw_obj_info(char *const buff, const size_t buff_size, VALUE obj)
 	    break;
 	  case T_ARRAY:
             if (FL_TEST(obj, ELTS_SHARED)) {
-                APPENDF((BUFF_ARGS, "shared -> "));
+                APPEND_F("shared -> ");
                 rb_raw_obj_info(BUFF_ARGS, RARRAY(obj)->as.heap.aux.shared_root);
             }
             else if (FL_TEST(obj, RARRAY_EMBED_FLAG)) {
-                APPENDF((BUFF_ARGS, "[%s%s] len: %ld (embed)",
+                APPEND_F("[%s%s] len: %ld (embed)",
                          C(ARY_EMBED_P(obj),  "E"),
                          C(ARY_SHARED_P(obj), "S"),
-                         RARRAY_LEN(obj)));
+                         RARRAY_LEN(obj));
             }
             else {
-                APPENDF((BUFF_ARGS, "[%s%s%s] len: %ld, capa:%ld ptr:%p",
+                APPEND_F("[%s%s%s] len: %ld, capa:%ld ptr:%p",
                          C(ARY_EMBED_P(obj),  "E"),
                          C(ARY_SHARED_P(obj), "S"),
                          C(RARRAY_TRANSIENT_P(obj), "T"),
                          RARRAY_LEN(obj),
                          ARY_EMBED_P(obj) ? -1L : RARRAY(obj)->as.heap.aux.capa,
-                         (void *)RARRAY_CONST_PTR_TRANSIENT(obj)));
+                         (void *)RARRAY_CONST_PTR_TRANSIENT(obj));
             }
 	    break;
 	  case T_STRING: {
             if (STR_SHARED_P(obj)) {
-                APPENDF((BUFF_ARGS, " [shared] len: %ld", RSTRING_LEN(obj)));
+                APPEND_F(" [shared] len: %ld", RSTRING_LEN(obj));
             }
             else {
-                if (STR_EMBED_P(obj)) APPENDF((BUFF_ARGS, " [embed]"));
+                if (STR_EMBED_P(obj)) APPEND_F(" [embed]");
 
-                APPENDF((BUFF_ARGS, " len: %ld, capa: %" PRIdSIZE, RSTRING_LEN(obj), rb_str_capacity(obj)));
+                APPEND_F(" len: %ld, capa: %" PRIdSIZE, RSTRING_LEN(obj), rb_str_capacity(obj));
             }
-            APPENDF((BUFF_ARGS, " \"%.*s\"", str_len_no_raise(obj), RSTRING_PTR(obj)));
+            APPEND_F(" \"%.*s\"", str_len_no_raise(obj), RSTRING_PTR(obj));
 	    break;
 	  }
           case T_SYMBOL: {
             VALUE fstr = RSYMBOL(obj)->fstr;
             ID id = RSYMBOL(obj)->id;
             if (RB_TYPE_P(fstr, T_STRING)) {
-                APPENDF((BUFF_ARGS, ":%s id:%d", RSTRING_PTR(fstr), (unsigned int)id));
+                APPEND_F(":%s id:%d", RSTRING_PTR(fstr), (unsigned int)id);
             }
             else {
-                APPENDF((BUFF_ARGS, "(%p) id:%d", (void *)fstr, (unsigned int)id));
+                APPEND_F("(%p) id:%d", (void *)fstr, (unsigned int)id);
             }
             break;
           }
           case T_MOVED: {
-            APPENDF((BUFF_ARGS, "-> %p", (void*)rb_gc_location(obj)));
+            APPEND_F("-> %p", (void*)rb_gc_location(obj));
             break;
           }
           case T_HASH: {
-            APPENDF((BUFF_ARGS, "[%c%c] %"PRIdSIZE,
+            APPEND_F("[%c%c] %"PRIdSIZE,
                      RHASH_AR_TABLE_P(obj) ? 'A' : 'S',
                      RHASH_TRANSIENT_P(obj) ? 'T' : ' ',
-                     RHASH_SIZE(obj)));
+                     RHASH_SIZE(obj));
             break;
           }
           case T_CLASS:
@@ -13794,10 +13794,10 @@ rb_raw_obj_info(char *const buff, const size_t buff_size, VALUE obj)
             {
                 VALUE class_path = rb_class_path_cached(obj);
                 if (!NIL_P(class_path)) {
-                    APPENDF((BUFF_ARGS, "%s", RSTRING_PTR(class_path)));
+                    APPEND_F("%s", RSTRING_PTR(class_path));
                 }
                 else {
-                    APPENDF((BUFF_ARGS, "(annon)"));
+                    APPEND_F("(annon)");
                 }
                 break;
             }
@@ -13805,7 +13805,7 @@ rb_raw_obj_info(char *const buff, const size_t buff_size, VALUE obj)
             {
                 VALUE class_path = rb_class_path_cached(RBASIC_CLASS(obj));
                 if (!NIL_P(class_path)) {
-                    APPENDF((BUFF_ARGS, "src:%s", RSTRING_PTR(class_path)));
+                    APPEND_F("src:%s", RSTRING_PTR(class_path));
                 }
                 break;
             }
@@ -13814,11 +13814,11 @@ rb_raw_obj_info(char *const buff, const size_t buff_size, VALUE obj)
                 uint32_t len = ROBJECT_NUMIV(obj);
 
                 if (RANY(obj)->as.basic.flags & ROBJECT_EMBED) {
-                    APPENDF((BUFF_ARGS, "(embed) len:%d", len));
+                    APPEND_F("(embed) len:%d", len);
                 }
                 else {
                     VALUE *ptr = ROBJECT_IVPTR(obj);
-                    APPENDF((BUFF_ARGS, "len:%d ptr:%p", len, (void *)ptr));
+                    APPEND_F("len:%d ptr:%p", len, (void *)ptr);
                 }
             }
             break;
@@ -13834,26 +13834,26 @@ rb_raw_obj_info(char *const buff, const size_t buff_size, VALUE obj)
             else if (rb_ractor_p(obj)) {
                 rb_ractor_t *r = (void *)DATA_PTR(obj);
                 if (r) {
-                    APPENDF((BUFF_ARGS, "r:%d", r->pub.id));
+                    APPEND_F("r:%d", r->pub.id);
                 }
             }
 	    else {
 		const char * const type_name = rb_objspace_data_type_name(obj);
 		if (type_name) {
-                    APPENDF((BUFF_ARGS, "%s", type_name));
+                    APPEND_F("%s", type_name);
 		}
 	    }
 	    break;
 	  }
 	  case T_IMEMO: {
-            APPENDF((BUFF_ARGS, "<%s> ", rb_imemo_name(imemo_type(obj))));
+            APPEND_F("<%s> ", rb_imemo_name(imemo_type(obj)));
 
 	    switch (imemo_type(obj)) {
 	      case imemo_ment:
                 {
                     const rb_method_entry_t *me = &RANY(obj)->as.imemo.ment;
 
-                    APPENDF((BUFF_ARGS, ":%s (%s%s%s%s) type:%s alias:%d owner:%p defined_class:%p",
+                    APPEND_F(":%s (%s%s%s%s) type:%s alias:%d owner:%p defined_class:%p",
                              rb_id2name(me->called_id),
                              METHOD_ENTRY_VISI(me) == METHOD_VISI_PUBLIC ?  "pub" :
                              METHOD_ENTRY_VISI(me) == METHOD_VISI_PRIVATE ? "pri" : "pro",
@@ -13863,14 +13863,14 @@ rb_raw_obj_info(char *const buff, const size_t buff_size, VALUE obj)
                              me->def ? rb_method_type_name(me->def->type) : "NULL",
                              me->def ? me->def->alias_count : -1,
                              (void *)me->owner, // obj_info(me->owner),
-                             (void *)me->defined_class)); //obj_info(me->defined_class)));
+                             (void *)me->defined_class); //obj_info(me->defined_class)));
 
                     if (me->def) {
                         switch (me->def->type) {
                           case VM_METHOD_TYPE_ISEQ:
-                            APPENDF((BUFF_ARGS, " (iseq:"));
+                            APPEND_F(" (iseq:");
                             rb_raw_obj_info(BUFF_ARGS, (VALUE)me->def->body.iseq.iseqptr);
-                            APPENDF((BUFF_ARGS, ")"));
+                            APPEND_F(")");
                             break;
                           default:
                             break;
@@ -13887,11 +13887,11 @@ rb_raw_obj_info(char *const buff, const size_t buff_size, VALUE obj)
               case imemo_callinfo:
                 {
                     const struct rb_callinfo *ci = (const struct rb_callinfo *)obj;
-                    APPENDF((BUFF_ARGS, "(mid:%s, flag:%x argc:%d, kwarg:%s)",
+                    APPEND_F("(mid:%s, flag:%x argc:%d, kwarg:%s)",
                              rb_id2name(vm_ci_mid(ci)),
                              vm_ci_flag(ci),
                              vm_ci_argc(ci),
-                             vm_ci_kwarg(ci) ? "available" : "NULL"));
+                             vm_ci_kwarg(ci) ? "available" : "NULL");
                     break;
                 }
               case imemo_callcache:
@@ -13900,12 +13900,12 @@ rb_raw_obj_info(char *const buff, const size_t buff_size, VALUE obj)
                     VALUE class_path = cc->klass ? rb_class_path_cached(cc->klass) : Qnil;
                     const rb_callable_method_entry_t *cme = vm_cc_cme(cc);
 
-                    APPENDF((BUFF_ARGS, "(klass:%s cme:%s%s (%p) call:%p",
+                    APPEND_F("(klass:%s cme:%s%s (%p) call:%p",
                              NIL_P(class_path) ? (cc->klass ? "??" : "<NULL>") : RSTRING_PTR(class_path),
                              cme ? rb_id2name(cme->called_id) : "<NULL>",
                              cme ? (METHOD_ENTRY_INVALIDATED(cme) ? " [inv]" : "") : "",
                              (void *)cme,
-                             (void *)vm_cc_call(cc)));
+                             (void *)vm_cc_call(cc));
                     break;
                 }
 	      default:
@@ -13924,7 +13924,7 @@ rb_raw_obj_info(char *const buff, const size_t buff_size, VALUE obj)
     }
 
     return buff;
-#undef APPENDF
+#undef APPEND_F
 #undef BUFF_ARGS
 }
 
