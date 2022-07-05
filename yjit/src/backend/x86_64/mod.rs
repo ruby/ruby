@@ -186,6 +186,9 @@ impl Assembler
                     for (idx, opnd) in insn.opnds.iter().enumerate() {
                         mov(cb, C_ARG_REGS[idx], insn.opnds[idx].into());
                     }
+
+                    let ptr = insn.target.unwrap().unwrap_fun_ptr();
+                    call_ptr(cb, RAX, ptr);
                 },
 
                 Op::CRet => {

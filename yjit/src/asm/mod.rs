@@ -23,6 +23,14 @@ struct LabelRef {
 
     // Label which this refers to
     label_idx: usize,
+
+    /// The number of bytes that this label reference takes up in the memory.
+    /// It's necessary to know this ahead of time so that when we come back to
+    /// patch it it takes the same amount of space.
+    num_bytes: usize,
+
+    /// The object that knows how to encode the branch instruction.
+    encode: Box<dyn FnOnce(&mut CodeBlock, i64, i64)>
 }
 
 /// Block of memory into which instructions can be assembled
@@ -154,7 +162,7 @@ impl CodeBlock {
         self.get_ptr(self.write_pos)
     }
 
-    // Write a single byte at the current position
+    /// Write a single byte at the current position.
     pub fn write_byte(&mut self, byte: u8) {
         let write_ptr = self.get_write_ptr();
 
@@ -165,15 +173,15 @@ impl CodeBlock {
         }
     }
 
-    // Write multiple bytes starting from the current position
-    pub fn write_bytes(&mut self, bytes: &[u8]) {
+    /// Write multiple bytes starting from the current position.
+    fn write_bytes(&mut self, bytes: &[u8]) {
         for byte in bytes {
             self.write_byte(*byte);
         }
     }
 
-    // Write a signed integer over a given number of bits at the current position
-    pub fn write_int(&mut self, val: u64, num_bits: u32) {
+    /// Write an integer over the given number of bits at the current position.
+    fn write_int(&mut self, val: u64, num_bits: u32) {
         assert!(num_bits > 0);
         assert!(num_bits % 8 == 0);
 
@@ -219,14 +227,14 @@ impl CodeBlock {
     }
 
     // Add a label reference at the current write position
-    pub fn label_ref(&mut self, label_idx: usize) {
+    pub fn label_ref<E: 'static>(&mut self, label_idx: usize, num_bytes: usize, encode: E) where E: FnOnce(&mut CodeBlock, i64, i64) {
         assert!(label_idx < self.label_addrs.len());
 
         // Keep track of the reference
-        self.label_refs.push(LabelRef {
-            pos: self.write_pos,
-            label_idx,
-        });
+        self.label_refs.push(LabelRef { pos: self.write_pos, label_idx, num_bytes, encode: Box::new(encode) });
+
+        // Move past however many bytes the instruction takes up
+        self.write_pos += num_bytes;
     }
 
     // Link internal label references
@@ -242,11 +250,8 @@ impl CodeBlock {
             let label_addr = self.label_addrs[label_idx];
             assert!(label_addr < self.mem_size);
 
-            // Compute the offset from the reference's end to the label
-            let offset = (label_addr as i64) - ((ref_pos + 4) as i64);
-
             self.set_pos(ref_pos);
-            self.write_int(offset as u64, 32);
+            (label_ref.encode)(self, (ref_pos + label_ref.num_bytes) as i64, label_addr as i64);
         }
 
         self.write_pos = orig_pos;
