@@ -218,6 +218,14 @@ make_counters! {
 
     opt_getinlinecache_miss,
 
+    expandarray_splat,
+    expandarray_postarg,
+    expandarray_not_array,
+    expandarray_rhs_too_small,
+
+    gbpp_block_param_modified,
+    gbpp_block_handler_not_iseq,
+
     binding_allocations,
     binding_set,
 
@@ -237,17 +245,11 @@ make_counters! {
 
     constant_state_bumps,
 
-    expandarray_splat,
-    expandarray_postarg,
-    expandarray_not_array,
-    expandarray_rhs_too_small,
-
-    gbpp_block_param_modified,
-    gbpp_block_handler_not_iseq,
-
     // Currently, it's out of the ordinary (might be impossible) for YJIT to leave gaps in
     // executable memory, so this should be 0.
     exec_mem_non_bump_alloc,
+
+    num_gc_obj_refs,
 }
 
 //===========================================================================
