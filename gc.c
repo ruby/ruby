@@ -13679,6 +13679,15 @@ rb_raw_obj_info(char *const buff, const size_t buff_size, VALUE obj)
 
 #define BUFF_ARGS buff + pos, buff_size - pos
 #define APPEND_F(...) if ((pos += snprintf(BUFF_ARGS, "" __VA_ARGS__)) >= buff_size) goto end
+#define APPEND_S(s) do { \
+        if ((pos + (int)rb_strlen_lit(s)) >= buff_size) { \
+            goto end; \
+        } \
+        else { \
+            memcpy(buff + pos, (s), rb_strlen_lit(s) + 1); \
+        } \
+    } while (0)
+
     if (SPECIAL_CONST_P(obj)) {
         APPEND_F("%s", obj_type_name(obj));
 
@@ -13717,7 +13726,7 @@ rb_raw_obj_info(char *const buff, const size_t buff_size, VALUE obj)
 	    /* ignore */
 	}
 	else if (RBASIC(obj)->klass == 0) {
-            APPEND_F("(temporary internal)");
+            APPEND_S("(temporary internal)");
 	}
 	else if (RTEST(RBASIC(obj)->klass)) {
             VALUE class_path = rb_class_path_cached(RBASIC(obj)->klass);
@@ -13736,7 +13745,7 @@ rb_raw_obj_info(char *const buff, const size_t buff_size, VALUE obj)
 	    break;
 	  case T_ARRAY:
             if (FL_TEST(obj, ELTS_SHARED)) {
-                APPEND_F("shared -> ");
+                APPEND_S("shared -> ");
                 rb_raw_obj_info(BUFF_ARGS, RARRAY(obj)->as.heap.aux.shared_root);
             }
             else if (FL_TEST(obj, RARRAY_EMBED_FLAG)) {
@@ -13760,7 +13769,7 @@ rb_raw_obj_info(char *const buff, const size_t buff_size, VALUE obj)
                 APPEND_F(" [shared] len: %ld", RSTRING_LEN(obj));
             }
             else {
-                if (STR_EMBED_P(obj)) APPEND_F(" [embed]");
+                if (STR_EMBED_P(obj)) APPEND_S(" [embed]");
 
                 APPEND_F(" len: %ld, capa: %" PRIdSIZE, RSTRING_LEN(obj), rb_str_capacity(obj));
             }
@@ -13797,7 +13806,7 @@ rb_raw_obj_info(char *const buff, const size_t buff_size, VALUE obj)
                     APPEND_F("%s", RSTRING_PTR(class_path));
                 }
                 else {
-                    APPEND_F("(annon)");
+                    APPEND_S("(annon)");
                 }
                 break;
             }
@@ -13868,9 +13877,9 @@ rb_raw_obj_info(char *const buff, const size_t buff_size, VALUE obj)
                     if (me->def) {
                         switch (me->def->type) {
                           case VM_METHOD_TYPE_ISEQ:
-                            APPEND_F(" (iseq:");
+                            APPEND_S(" (iseq:");
                             rb_raw_obj_info(BUFF_ARGS, (VALUE)me->def->body.iseq.iseqptr);
-                            APPEND_F(")");
+                            APPEND_S(")");
                             break;
                           default:
                             break;
@@ -13924,6 +13933,8 @@ rb_raw_obj_info(char *const buff, const size_t buff_size, VALUE obj)
     }
 
     return buff;
+
+#undef APPEND_S
 #undef APPEND_F
 #undef BUFF_ARGS
 }
