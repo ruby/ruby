@@ -254,6 +254,7 @@ static rb_pid_t pch_owner_pid;
 static enum {PCH_NOT_READY, PCH_FAILED, PCH_SUCCESS} pch_status;
 
 // The start timestamp of current compilation
+static double current_jit_ms = 0.0; // TODO: make this part of unit?
 static double current_cc_ms = 0.0; // TODO: make this part of unit?
 // Currently compiling MJIT unit
 static struct rb_mjit_unit *current_cc_unit = NULL;
@@ -954,7 +955,7 @@ load_compact_funcs_from_so(struct rb_mjit_unit *unit, char *c_file, char *so_fil
             MJIT_ATOMIC_SET(ISEQ_BODY(cur->iseq)->jit_func, (mjit_func_t)func);
         }
     }
-    verbose(1, "JIT compaction (%.1fms): Compacted %d methods %s -> %s", end_time - current_cc_ms, active_units.length, c_file, so_file);
+    verbose(1, "JIT compaction (%.1fms -> %.1fms): Compacted %d methods %s -> %s", current_jit_ms, end_time - current_cc_ms, active_units.length, c_file, so_file);
 }
 #endif // USE_JIT_COMPACTION
 

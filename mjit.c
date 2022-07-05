@@ -241,9 +241,11 @@ check_unit_queue(void)
         add_to_list(unit, &active_units);
     }
 #else
-    current_cc_ms = real_ms_time();
     current_cc_unit = unit;
+    double before_jit = real_ms_time();
     current_cc_pid = start_mjit_compile(unit);
+    current_jit_ms = real_ms_time() - before_jit;
+    current_cc_ms = real_ms_time();
 
     // JIT failure
     if (current_cc_pid == -1) {
@@ -298,9 +300,11 @@ check_compaction(void)
         struct rb_mjit_unit *unit = create_unit(NULL);
         if (unit != NULL) {
             // TODO: assert unit is null
-            current_cc_ms = real_ms_time();
             current_cc_unit = unit;
+            double before_jit = real_ms_time();
             current_cc_pid = start_mjit_compact(unit);
+            current_jit_ms = real_ms_time() - before_jit;
+            current_cc_ms = real_ms_time();
             // TODO: check -1
         }
     }
@@ -361,8 +365,8 @@ mjit_notify_waitpid(int status)
             rb_iseq_t *iseq = current_cc_unit->iseq;
             if ((uintptr_t)func > (uintptr_t)LAST_JIT_ISEQ_FUNC) {
                 double end_time = real_ms_time();
-                verbose(1, "JIT success (%.1fms): %s@%s:%ld -> %s",
-                        end_time - current_cc_ms, RSTRING_PTR(ISEQ_BODY(iseq)->location.label),
+                verbose(1, "JIT success (%.1fms -> %.1fms): %s@%s:%ld -> %s",
+                        current_jit_ms, end_time - current_cc_ms, RSTRING_PTR(ISEQ_BODY(iseq)->location.label),
                         RSTRING_PTR(rb_iseq_path(iseq)), FIX2LONG(ISEQ_BODY(iseq)->location.first_lineno), c_file);
 
                 add_to_list(current_cc_unit, &active_units);
