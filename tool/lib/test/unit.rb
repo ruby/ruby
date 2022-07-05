@@ -200,8 +200,6 @@ module Test
           "  " + (s =~ /[\s|&<>$()]/ ? s.inspect : s)
         }.join("\n")
 
-        @failed_output = options[:stderr_on_failure] ? $stderr : $stdout
-
         @options = options
       end
 
@@ -1121,9 +1119,6 @@ module Test
         parser.on '-x', '--exclude REGEXP', 'Exclude test files on pattern.' do |pattern|
           (options[:reject] ||= []) << pattern
         end
-        parser.on '--stderr-on-failure', 'Use stderr to print failure messages' do
-          options[:stderr_on_failure] = true
-        end
       end
 
       def complement_test_name f, orig_f
@@ -1180,6 +1175,23 @@ module Test
         }
         files.flatten!
         super(files, options)
+      end
+    end
+
+    module OutputOption # :nodoc: all
+      def setup_options(parser, options)
+        super
+        parser.separator "output options:"
+        parser.on '--stderr-on-failure', 'Use stderr to print failure messages' do
+          options[:stderr_on_failure] = true
+        end
+      end
+
+      def process_args(args = [])
+        return @options if @options
+        options = super
+        @failed_output = options[:stderr_on_failure] ? $stderr : $stdout
+        options
       end
     end
 
@@ -1668,6 +1680,7 @@ module Test
       prepend Test::Unit::Statistics
       prepend Test::Unit::Skipping
       prepend Test::Unit::GlobOption
+      prepend Test::Unit::OutputOption
       prepend Test::Unit::RepeatOption
       prepend Test::Unit::LoadPathOption
       prepend Test::Unit::GCOption
