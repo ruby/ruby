@@ -3493,12 +3493,12 @@ rb_convert_to_BigDecimal(VALUE val, size_t digs, int raise_exception)
  *    BigDecimal(value, exception: true) -> bigdecimal
  *    BigDecimal(value, ndigits, exception: true) -> bigdecimal
  *
- *   Returns the \BigDecimal converted from +value+
- *   with a precision of +ndigits+ decimal digits.
+ *  Returns the \BigDecimal converted from +value+
+ *  with a precision of +ndigits+ decimal digits.
  *
- *   When +ndigits+ is less than the number of significant digits
- *   in the value, the result is rounded to that number of digits,
- *   according to the current rounding mode; see BigDecimal.mode.
+ *  When +ndigits+ is less than the number of significant digits
+ *  in the value, the result is rounded to that number of digits,
+ *  according to the current rounding mode; see BigDecimal.mode.
  *
  *  Returns +value+ converted to a \BigDecimal, depending on the type of +value+:
  *

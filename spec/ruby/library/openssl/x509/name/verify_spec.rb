@@ -10,12 +10,12 @@ describe "OpenSSL::X509::Name.verify" do
     cert.subject = OpenSSL::X509::Name.parse "/DC=org/DC=truffleruby/CN=TruffleRuby CA"
     cert.issuer = cert.subject
     cert.public_key = key.public_key
-    cert.not_before = Time.now
+    cert.not_before = Time.now - 10
     cert.not_after = cert.not_before + 365 * 24 * 60 * 60
     cert.sign key, OpenSSL::Digest.new('SHA1')
     store = OpenSSL::X509::Store.new
     store.add_cert(cert)
-    store.verify(cert).should == true
+    [store.verify(cert), store.error, store.error_string].should == [true, 0, "ok"]
   end
 
   it "returns false for an expired certificate" do

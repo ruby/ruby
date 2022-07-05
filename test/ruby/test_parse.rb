@@ -1366,6 +1366,10 @@ x = __ENCODING__
     assert_valid_syntax('class while true; break Object end::Kernel; end')
   end
 
+  def test_escaped_space
+    assert_syntax_error('x = \ 42', /escaped space/)
+  end
+
 =begin
   def test_past_scope_variable
     assert_warning(/past scope/) {catch {|tag| eval("BEGIN{throw tag}; tap {a = 1}; a")}}

@@ -1912,7 +1912,7 @@ vm_search_method_slowpath0(VALUE cd_owner, struct rb_call_data *cd, VALUE klass)
     if (cd_owner && cc != empty_cc) RB_OBJ_WRITTEN(cd_owner, Qundef, cc);
 
 #if USE_DEBUG_COUNTER
-    if (old_cc == &empty_cc) {
+    if (old_cc == empty_cc) {
         // empty
         RB_DEBUG_COUNTER_INC(mc_inline_miss_empty);
     }
@@ -5251,12 +5251,6 @@ vm_opt_mod(VALUE recv, VALUE obj)
     else {
 	return Qundef;
     }
-}
-
-VALUE
-rb_vm_opt_mod(VALUE recv, VALUE obj)
-{
-    return vm_opt_mod(recv, obj);
 }
 
 static VALUE

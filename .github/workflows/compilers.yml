@@ -180,6 +180,7 @@ jobs:
 #         - { name: USE_RUBY_DEBUG_LOG=1,           env: { cppflags: '-DUSE_RUBY_DEBUG_LOG=1' } }
           - { name: USE_RVARGC=0,                   env: { cppflags: '-DUSE_RVARGC=0' } }
 #         - { name: USE_RVARGC=1,                   env: { cppflags: '-DUSE_RVARGC=1' } }
+#         - { name: USE_DEBUG_COUNTER,              env: { cppflags: '-DUSE_DEBUG_COUNTER=1', RUBY_DEBUG_COUNTER_DISABLE: '1' } }
 
           - { name: DEBUG_FIND_TIME_NUMGUESS,       env: { cppflags: '-DDEBUG_FIND_TIME_NUMGUESS' } }
           - { name: DEBUG_INTEGER_PACK,             env: { cppflags: '-DDEBUG_INTEGER_PACK' } }
