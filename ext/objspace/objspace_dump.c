@@ -313,8 +313,9 @@ reachable_object_i(VALUE ref, void *data)
     dc->cur_obj_references++;
 }
 
-bool
-dump_string_ascii_only(const char *str, long size) {
+static bool
+dump_string_ascii_only(const char *str, long size)
+{
     for (long i = 0; i < size; i++) {
         if (str[i] & 0x80) {
             return false;
