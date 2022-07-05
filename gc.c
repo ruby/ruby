@@ -13748,8 +13748,8 @@ rb_raw_obj_info(char *buff, const int buff_size, VALUE obj)
 	    break;
 	  case T_ARRAY:
             if (FL_TEST(obj, ELTS_SHARED)) {
-                APPENDF((BUFF_ARGS, "shared -> %s",
-                         rb_obj_info(RARRAY(obj)->as.heap.aux.shared_root)));
+                APPENDF((BUFF_ARGS, "shared -> "));
+                rb_raw_obj_info(BUFF_ARGS, RARRAY(obj)->as.heap.aux.shared_root);
             }
             else if (FL_TEST(obj, RARRAY_EMBED_FLAG)) {
                 APPENDF((BUFF_ARGS, "[%s%s] len: %ld (embed)",
@@ -13880,7 +13880,9 @@ rb_raw_obj_info(char *buff, const int buff_size, VALUE obj)
                     if (me->def) {
                         switch (me->def->type) {
                           case VM_METHOD_TYPE_ISEQ:
-                            APPENDF((BUFF_ARGS, " (iseq:%s)", obj_info((VALUE)me->def->body.iseq.iseqptr)));
+                            APPENDF((BUFF_ARGS, " (iseq:"));
+                            rb_raw_obj_info(BUFF_ARGS, (VALUE)me->def->body.iseq.iseqptr);
+                            APPENDF((BUFF_ARGS, ")"));
                             break;
                           default:
                             break;
