@@ -1151,7 +1151,7 @@ EOT
         w.puts("zot")
         begin
           assert_equal("zot\n", r.gets)
-        rescue encoding::ConverterNotFoundError => e
+        rescue Encoding::ConverterNotFoundError => e
           assert_match(/\((\S+) to \1\)/, e.message)
         end
       end
