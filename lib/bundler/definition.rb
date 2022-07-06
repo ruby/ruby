@@ -224,7 +224,7 @@ module Bundler
 
     def current_dependencies
       dependencies.select do |d|
-        d.should_include? && !d.gem_platforms(@platforms).empty?
+        d.should_include? && !d.gem_platforms([generic_local_platform]).empty?
       end
     end
 
@@ -248,10 +248,9 @@ module Bundler
 
     def dependencies_for(groups)
       groups.map!(&:to_sym)
-      deps = current_dependencies.reject do |d|
+      current_dependencies.reject do |d|
         (d.groups & groups).empty?
       end
-      expand_dependencies(deps)
     end
 
     # Resolve all the dependencies specified in Gemfile. It ensures that
