@@ -5521,6 +5521,7 @@ static inline void
 gc_sweep_page(rb_objspace_t *objspace, rb_heap_t *heap, struct gc_sweep_context *ctx)
 {
     struct heap_page *sweep_page = ctx->page;
+    GC_ASSERT(SIZE_POOL_EDEN_HEAP(sweep_page->size_pool) == heap);
 
     uintptr_t p;
     bits_t *bits, bitset;
@@ -8321,6 +8322,7 @@ gc_compact_move(rb_objspace_t *objspace, rb_heap_t *heap, rb_size_pool_t *size_p
     if (gc_compact_heap_cursors_met_p(dheap)) {
         return dheap != heap;
     }
+
     while (!try_move(objspace, dheap, dheap->free_pages, src)) {
         struct gc_sweep_context ctx = {
             .page = dheap->sweeping_page,
@@ -8328,7 +8330,9 @@ gc_compact_move(rb_objspace_t *objspace, rb_heap_t *heap, rb_size_pool_t *size_p
             .freed_slots = 0,
             .empty_slots = 0,
         };
-        gc_sweep_page(objspace, heap, &ctx);
+
+        gc_sweep_page(objspace, dheap, &ctx);
+
         if (dheap->sweeping_page->free_slots > 0) {
             heap_add_freepage(dheap, dheap->sweeping_page);
         };
