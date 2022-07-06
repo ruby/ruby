@@ -14870,10 +14870,12 @@ struct rb_mmtk_address_buffer {
     size_t capa;
 };
 
+// Thread-local data for each GC worker.
+// Must match struct GCThreadTLS in Rust.
 typedef struct rb_mmtk_gc_thread_tls {
     int kind;                      // Controller or worker
     void *gc_context;              // Point to MMTk's GCController or GCWorker
-    struct rb_mmtk_address_buffer mark_buffer;
+    struct ObjectClosure mark_closure;
 } rb_mmtk_gc_thread_tls_t;
 
 #ifdef RB_THREAD_LOCAL_SPECIFIER
@@ -14898,28 +14900,6 @@ rb_mmtk_use_mmtk_global(void (*func)(void *), void* arg)
 	abort();
     }
 }
-static void
-rb_mmtk_flush_mark_buffer(void)
-{
-    mmtk_flush_mark_buffer(rb_mmtk_gc_thread_tls);
-    RUBY_ASSERT(rb_mmtk_gc_thread_tls->mark_buffer.len == 0);
-}
-
-static void
-rb_mmtk_add_to_mark_buffer(void* obj)
-{
-    RUBY_ASSERT(obj != NULL);
-    struct rb_mmtk_address_buffer *mark_buffer = &rb_mmtk_gc_thread_tls->mark_buffer;
-
-    RUBY_ASSERT(mark_buffer->len < mark_buffer->capa);
-
-    mark_buffer->slots[mark_buffer->len] = obj;
-    mark_buffer->len += 1;
-
-    if (mark_buffer->len == mark_buffer->capa) {
-	rb_mmtk_flush_mark_buffer();
-    }
-}
 
 void
 rb_gc_init_collection(void)
@@ -14927,6 +14907,13 @@ rb_gc_init_collection(void)
     rb_thread_t *cur_thread = GET_THREAD();
     mmtk_initialize_collection((void*)cur_thread);
     cur_thread->mutator = mmtk_bind_mutator((MMTk_VMMutatorThread)cur_thread);
+}
+
+static inline void*
+rb_mmtk_call_object_closure(void* object) {
+    return rb_mmtk_gc_thread_tls->mark_closure.c_function(rb_mmtk_gc_thread_tls->mark_closure.rust_closure,
+                                                          rb_mmtk_gc_thread_tls->gc_context,
+                                                          object);
 }
 
 static void
@@ -15159,7 +15146,7 @@ rb_mmtk_mark(VALUE obj, bool pin)
 	(void*)obj);
 
     if (!RB_SPECIAL_CONST_P(obj)) {
-	rb_mmtk_add_to_mark_buffer((void*)obj);
+	rb_mmtk_call_object_closure((void*)obj);
     }
 }
 
