@@ -3770,7 +3770,7 @@ fn jit_rb_str_concat(
 
     // If encodings are different, use a slower encoding-aware concatenate
     cb.write_label(enc_mismatch);
-    call_ptr(cb, REG0, rb_str_append as *const u8);
+    call_ptr(cb, REG0, rb_str_buf_append as *const u8);
     // Drop through to return
 
     cb.write_label(ret_label);
