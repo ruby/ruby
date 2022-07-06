@@ -2914,6 +2914,8 @@ io_enc_str(VALUE str, rb_io_t *fptr)
     return str;
 }
 
+static rb_encoding *io_read_encoding(rb_io_t *fptr);
+
 static void
 make_readconv(rb_io_t *fptr, int size)
 {
@@ -2925,7 +2927,7 @@ make_readconv(rb_io_t *fptr, int size)
         ecopts = fptr->encs.ecopts;
         if (fptr->encs.enc2) {
             sname = rb_enc_name(fptr->encs.enc2);
-            dname = rb_enc_name(fptr->encs.enc);
+            dname = rb_enc_name(io_read_encoding(fptr));
         }
         else {
             sname = dname = "";
