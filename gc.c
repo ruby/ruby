@@ -13942,19 +13942,26 @@ rb_raw_obj_info(char *const buff, const size_t buff_size, VALUE obj)
 #if RGENGC_OBJ_INFO
 #define OBJ_INFO_BUFFERS_NUM  10
 #define OBJ_INFO_BUFFERS_SIZE 0x100
-static int obj_info_buffers_index = 0;
+static rb_atomic_t obj_info_buffers_index = 0;
 static char obj_info_buffers[OBJ_INFO_BUFFERS_NUM][OBJ_INFO_BUFFERS_SIZE];
+
+static char *
+obj_info_next_buffer(void)
+{
+    const rb_atomic_t index = RUBY_ATOMIC_FETCH_ADD(obj_info_buffers_index, 1);
+
+    rb_atomic_t next_index = (index + 1);
+    if (UNLIKELY(next_index >= OBJ_INFO_BUFFERS_NUM)) {
+        rb_atomic_t reset_index = next_index % OBJ_INFO_BUFFERS_NUM;
+        RUBY_ATOMIC_CAS(obj_info_buffers_index, next_index, reset_index);
+    }
+    return obj_info_buffers[index % OBJ_INFO_BUFFERS_NUM];
+}
 
 static const char *
 obj_info(VALUE obj)
 {
-    const int index = obj_info_buffers_index++;
-    char *const buff = &obj_info_buffers[index][0];
-
-    if (obj_info_buffers_index >= OBJ_INFO_BUFFERS_NUM) {
-	obj_info_buffers_index = 0;
-    }
-
+    char *const buff = obj_info_next_buffer();
     return rb_raw_obj_info(buff, OBJ_INFO_BUFFERS_SIZE, obj);
 }
 #else
