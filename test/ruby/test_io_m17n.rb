@@ -1149,7 +1149,11 @@ EOT
         assert_equal("bar\n", r.gets)
         assert_warning(/Unsupported/, bug5567) {r.set_encoding("us-ascii", "fffffffffffxx")}
         w.puts("zot")
-        assert_equal("zot\n", r.gets)
+        begin
+          assert_equal("zot\n", r.gets)
+        rescue encoding::ConverterNotFoundError => e
+          assert_match(/\((\S+) to \1\)/, e.message)
+        end
       end
     end
   end
