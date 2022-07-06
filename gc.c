@@ -1409,6 +1409,21 @@ asan_unpoison_object_temporary(VALUE obj)
     return ptr;
 }
 
+static inline void *
+asan_poison_object_restore(VALUE obj, void *ptr)
+{
+    if (ptr) {
+        asan_poison_object(obj);
+    }
+    return NULL;
+}
+
+#define asan_unpoisoning_object(obj) \
+    for (void *poisoned = asan_unpoison_object_temporary(obj), \
+              *unpoisoning = &poisoned; /* flag to loop just once */ \
+         unpoisoning; \
+         unpoisoning = asan_poison_object_restore(obj, poisoned))
+
 #define FL_CHECK2(name, x, pred) \
     ((RGENGC_CHECK_MODE && SPECIAL_CONST_P(x)) ? \
      (rb_bug(name": SPECIAL_CONST (%p)", (void *)(x)), 0) : (pred))
@@ -13945,14 +13960,10 @@ rb_raw_obj_info_buitin_type(char *const buff, const size_t buff_size, const VALU
 const char *
 rb_raw_obj_info(char *const buff, const size_t buff_size, VALUE obj)
 {
-    void *poisoned = asan_unpoison_object_temporary(obj);
-
-    size_t pos = rb_raw_obj_info_common(buff, buff_size, obj);
-    pos = rb_raw_obj_info_buitin_type(buff, buff_size, obj, pos);
-    if (pos >= buff_size) {} // truncated
-
-    if (poisoned) {
-        asan_poison_object(obj);
+    asan_unpoisoning_object(obj) {
+        size_t pos = rb_raw_obj_info_common(buff, buff_size, obj);
+        pos = rb_raw_obj_info_buitin_type(buff, buff_size, obj, pos);
+        if (pos >= buff_size) {} // truncated
     }
 
     return buff;
