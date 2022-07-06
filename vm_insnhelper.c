@@ -5382,7 +5382,11 @@ vm_opt_ltlt(VALUE recv, VALUE obj)
     }
     else if (RBASIC_CLASS(recv) == rb_cString &&
 	     BASIC_OP_UNREDEFINED_P(BOP_LTLT, STRING_REDEFINED_OP_FLAG)) {
-	return rb_str_concat(recv, obj);
+	if (LIKELY(RB_TYPE_P(obj, T_STRING))) {
+	    return rb_str_buf_append(recv, obj);
+	} else {
+	    return rb_str_concat(recv, obj);
+	}
     }
     else if (RBASIC_CLASS(recv) == rb_cArray &&
 	     BASIC_OP_UNREDEFINED_P(BOP_LTLT, ARRAY_REDEFINED_OP_FLAG)) {
