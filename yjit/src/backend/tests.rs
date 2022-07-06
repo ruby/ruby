@@ -250,6 +250,18 @@ fn test_jcc_ptr()
     asm.compile_with_num_regs(&mut cb, 1);
 }
 
+/// Direct jump to a stub e.g. for deferred compilation
+#[test]
+fn test_jmp_ptr()
+{
+    let (mut asm, mut cb) = setup_asm();
+
+    let stub = Target::CodePtr((5 as *mut u8).into());
+    asm.jmp(stub);
+
+    asm.compile_with_num_regs(&mut cb, 0);
+}
+
 #[test]
 fn test_jo()
 {
