@@ -8331,7 +8331,12 @@ gc_compact_move(rb_objspace_t *objspace, rb_heap_t *heap, rb_size_pool_t *size_p
             .empty_slots = 0,
         };
 
+        /* The page of src could be partially compacted, so it may contain
+         * T_MOVED. Sweeping a page may read objects on this page, so we
+         * need to lock the page. */
+        lock_page_body(objspace, GET_PAGE_BODY(src));
         gc_sweep_page(objspace, dheap, &ctx);
+        unlock_page_body(objspace, GET_PAGE_BODY(src));
 
         if (dheap->sweeping_page->free_slots > 0) {
             heap_add_freepage(dheap, dheap->sweeping_page);
