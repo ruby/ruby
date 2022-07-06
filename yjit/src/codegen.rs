@@ -1100,6 +1100,7 @@ fn gen_adjuststack(
     KeepCompiling
 }
 
+
 /*
 fn gen_opt_plus(
     jit: &mut JITState,
@@ -1134,7 +1135,7 @@ fn gen_opt_plus(
         // Add arg0 + arg1 and test for overflow
         let arg0_untag = asm.sub(arg0, Opnd::Imm(1));
         let out_val = asm.add(arg0_untag, arg1);
-        asm.jo(side_exit);
+        asm.jo(side_exit.into());
 
         // Push the output on the stack
         let dst = ctx.stack_push(Type::Fixnum);
@@ -1142,11 +1143,13 @@ fn gen_opt_plus(
 
         KeepCompiling
     } else {
-        todo!();
+        todo!("opt_plus send path");
         //gen_opt_send_without_block(jit, ctx, cb, ocb)
     }
 }
 */
+
+
 
 // new array initialized from top N values
 fn gen_newarray(
