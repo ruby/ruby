@@ -139,7 +139,7 @@ module Bundler
       if @unlock[:conservative]
         @unlock[:gems] ||= @dependencies.map(&:name)
       else
-        eager_unlock = expand_dependencies(@unlock[:gems] || [], true)
+        eager_unlock = (@unlock[:gems] || []).map {|name| Dependency.new(name, ">= 0") }
         @unlock[:gems] = @locked_specs.for(eager_unlock, false, platforms).map(&:name).uniq
       end
 
@@ -795,7 +795,6 @@ module Bundler
     def expand_dependencies(dependencies, remote = false)
       deps = []
       dependencies.each do |dep|
-        dep = Dependency.new(dep, ">= 0") unless dep.respond_to?(:name)
         next unless remote || dep.current_platform?
         target_platforms = dep.gem_platforms(remote ? @platforms : [generic_local_platform])
         deps += expand_dependency_with_platforms(dep, target_platforms)
