@@ -170,8 +170,10 @@ def lldb_init(debugger):
     g = globals()
 
     imemo_types = target.FindFirstType('enum imemo_type')
+    enum_members = imemo_types.GetEnumMembers()
 
-    for member in imemo_types.GetEnumMembers():
+    for i in range(enum_members.GetSize()):
+        member = enum_members.GetTypeEnumMemberAtIndex(i)
         g[member.GetName()] = member.GetValueAsUnsigned()
 
     for enum in target.FindFirstGlobalVariable('ruby_dummy_gdb_enums'):

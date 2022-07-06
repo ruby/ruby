@@ -211,6 +211,7 @@ module RubyVM::YJIT
       $stderr.puts "constant_state_bumps:  " + ("%10d" % stats[:constant_state_bumps])
       $stderr.puts "inline_code_size:      " + ("%10d" % stats[:inline_code_size])
       $stderr.puts "outlined_code_size:    " + ("%10d" % stats[:outlined_code_size])
+      $stderr.puts "num_gc_obj_refs:       " + ("%10d" % stats[:num_gc_obj_refs])
 
       $stderr.puts "total_exit_count:      " + ("%10d" % total_exits)
       $stderr.puts "total_insns_count:     " + ("%10d" % total_insns_count)

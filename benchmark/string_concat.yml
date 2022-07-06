@@ -1,0 +1,13 @@
+prelude: |
+  CHUNK = "a" * 64
+benchmark:
+  string_concat: |
+    buffer = String.new(capacity: 4096)
+    buffer << CHUNK << CHUNK << CHUNK << CHUNK << CHUNK << CHUNK << CHUNK << CHUNK
+    buffer << CHUNK << CHUNK << CHUNK << CHUNK << CHUNK << CHUNK << CHUNK << CHUNK
+    buffer << CHUNK << CHUNK << CHUNK << CHUNK << CHUNK << CHUNK << CHUNK << CHUNK
+    buffer << CHUNK << CHUNK << CHUNK << CHUNK << CHUNK << CHUNK << CHUNK << CHUNK
+    buffer << CHUNK << CHUNK << CHUNK << CHUNK << CHUNK << CHUNK << CHUNK << CHUNK
+    buffer << CHUNK << CHUNK << CHUNK << CHUNK << CHUNK << CHUNK << CHUNK << CHUNK
+    buffer << CHUNK << CHUNK << CHUNK << CHUNK << CHUNK << CHUNK << CHUNK << CHUNK
+    buffer << CHUNK << CHUNK << CHUNK << CHUNK << CHUNK << CHUNK << CHUNK << CHUNK

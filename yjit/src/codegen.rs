@@ -121,6 +121,8 @@ impl JITState {
     pub fn add_gc_object_offset(self: &mut JITState, ptr_offset: u32) {
         let mut gc_obj_vec: RefMut<_> = self.block.borrow_mut();
         gc_obj_vec.add_gc_object_offset(ptr_offset);
+
+        incr_counter!(num_gc_obj_refs);
     }
 
     pub fn get_pc(self: &JITState) -> *mut VALUE {
@@ -3790,7 +3792,7 @@ fn jit_rb_str_concat(
 
     // If encodings are different, use a slower encoding-aware concatenate
     cb.write_label(enc_mismatch);
-    call_ptr(cb, REG0, rb_str_append as *const u8);
+    call_ptr(cb, REG0, rb_str_buf_append as *const u8);
     // Drop through to return
 
     cb.write_label(ret_label);
