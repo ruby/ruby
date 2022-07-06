@@ -7,8 +7,7 @@
 - Ruby (the same version as the building target version) (baseruby)
 - GNU make
 - [WASI SDK](https://github.com/WebAssembly/wasi-sdk) 14.0 or later
-- [Binaryen](https://github.com/WebAssembly/binaryen) **version 91**
-  - See also: https://github.com/WebAssembly/binaryen/issues/4401
+- [Binaryen](https://github.com/WebAssembly/binaryen) version 106 or later
 - Linux or macOS build machine
 
 ### Steps
