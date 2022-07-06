@@ -121,6 +121,8 @@ impl JITState {
     pub fn add_gc_object_offset(self: &mut JITState, ptr_offset: u32) {
         let mut gc_obj_vec: RefMut<_> = self.block.borrow_mut();
         gc_obj_vec.add_gc_object_offset(ptr_offset);
+
+        incr_counter!(num_gc_obj_refs);
     }
 
     pub fn get_pc(self: &JITState) -> *mut VALUE {
