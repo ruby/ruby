@@ -479,7 +479,7 @@ module Bundler
     end
 
     def expanded_dependencies
-      @expanded_dependencies ||= expand_dependencies(dependencies + metadata_dependencies, true)
+      @expanded_dependencies ||= expand_dependencies(dependencies + metadata_dependencies)
     end
 
     def filter_specs(specs, deps)
@@ -791,11 +791,10 @@ module Bundler
       ]
     end
 
-    def expand_dependencies(dependencies, remote = false)
+    def expand_dependencies(dependencies)
       deps = []
       dependencies.each do |dep|
-        next unless remote || dep.current_platform?
-        target_platforms = dep.gem_platforms(remote ? @platforms : [generic_local_platform])
+        target_platforms = dep.gem_platforms(@platforms)
         deps += expand_dependency_with_platforms(dep, target_platforms)
       end
       deps
