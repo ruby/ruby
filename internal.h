@@ -107,6 +107,7 @@ RUBY_SYMBOL_EXPORT_END
 #define RB_BIGNUM_TYPE_P(x) RB_TYPE_P((x), T_BIGNUM)
 
 #ifndef __MINGW32__
+#undef memcpy
 #define memcpy ruby_nonempty_memcpy
 #endif
 #endif /* RUBY_INTERNAL_H */
