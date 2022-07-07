@@ -10703,22 +10703,35 @@ gc_compact(VALUE self)
 
 #if GC_CAN_COMPILE_COMPACTION
 static VALUE
-gc_verify_compaction_references(rb_execution_context_t *ec, VALUE self, VALUE double_heap, VALUE toward_empty)
+gc_verify_compaction_references(rb_execution_context_t *ec, VALUE self, VALUE double_heap, VALUE expand_heap, VALUE toward_empty)
 {
     rb_objspace_t *objspace = &rb_objspace;
 
     /* Clear the heap. */
     gc_start_internal(NULL, self, Qtrue, Qtrue, Qtrue, Qfalse);
+    size_t growth_slots = gc_params.heap_init_slots;
+
+    if (RTEST(double_heap)) {
+        rb_warn("double_heap is deprecated, please use expand_heap instead");
+    }
 
     RB_VM_LOCK_ENTER();
     {
         gc_rest(objspace);
 
-        if (RTEST(double_heap)) {
+        /* if both double_heap and expand_heap are set, expand_heap takes precedence */
+        if (RTEST(double_heap) || RTEST(expand_heap)) {
             for (int i = 0; i < SIZE_POOL_COUNT; i++) {
                 rb_size_pool_t *size_pool = &size_pools[i];
                 rb_heap_t *heap = SIZE_POOL_EDEN_HEAP(size_pool);
-                heap_add_pages(objspace, size_pool, heap, heap->total_pages);
+
+                if (RTEST(expand_heap)) {
+                    size_t required_pages = growth_slots / size_pool->slot_size;
+                    heap_add_pages(objspace, size_pool, heap, MAX(required_pages, heap->total_pages));
+                }
+                else {
+                    heap_add_pages(objspace, size_pool, heap, heap->total_pages);
+                }
             }
         }
 
@@ -10736,7 +10749,7 @@ gc_verify_compaction_references(rb_execution_context_t *ec, VALUE self, VALUE do
     return gc_compact_stats(self);
 }
 #else
-#  define gc_verify_compaction_references (rb_builtin_arity2_function_type)rb_f_notimplement
+#  define gc_verify_compaction_references (rb_builtin_arity3_function_type)rb_f_notimplement
 #endif
 
 VALUE
