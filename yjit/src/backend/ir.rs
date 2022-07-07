@@ -251,6 +251,12 @@ impl From<u64> for Opnd {
     }
 }
 
+impl From<i64> for Opnd {
+    fn from(value: i64) -> Self {
+        Opnd::Imm(value.try_into().unwrap())
+    }
+}
+
 impl From<i32> for Opnd {
     fn from(value: i32) -> Self {
         Opnd::Imm(value.try_into().unwrap())

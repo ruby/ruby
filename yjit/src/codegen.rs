@@ -3256,19 +3256,20 @@ fn gen_branchif(
 
     EndBlock
 }
+*/
 
 fn gen_branchunless_branch(
-    cb: &mut CodeBlock,
+    asm: &mut Assembler,
     target0: CodePtr,
     target1: Option<CodePtr>,
     shape: BranchShape,
 ) {
     match shape {
-        BranchShape::Next0 => jnz_ptr(cb, target1.unwrap()),
-        BranchShape::Next1 => jz_ptr(cb, target0),
+        BranchShape::Next0 => asm.jnz(target1.unwrap().into()),
+        BranchShape::Next1 => asm.jz(target0.into()),
         BranchShape::Default => {
-            jz_ptr(cb, target0);
-            jmp_ptr(cb, target1.unwrap());
+            asm.jz(target0.into());
+            asm.jmp(target1.unwrap().into());
         }
     }
 }
@@ -3276,7 +3277,7 @@ fn gen_branchunless_branch(
 fn gen_branchunless(
     jit: &mut JITState,
     ctx: &mut Context,
-    cb: &mut CodeBlock,
+    asm: &mut Assembler,
     ocb: &mut OutlinedCb,
 ) -> CodegenStatus {
     let jump_offset = jit_get_arg(jit, 0).as_i32();
@@ -3284,14 +3285,15 @@ fn gen_branchunless(
     // Check for interrupts, but only on backward branches that may create loops
     if jump_offset < 0 {
         let side_exit = get_side_exit(jit, ocb, ctx);
-        gen_check_ints(cb, side_exit);
+        gen_check_ints(asm, side_exit);
     }
 
     // Test if any bit (outside of the Qnil bit) is on
     // RUBY_Qfalse  /* ...0000 0000 */
     // RUBY_Qnil    /* ...0000 1000 */
     let val_opnd = ctx.stack_pop(1);
-    test(cb, val_opnd, imm_opnd(!Qnil.as_i64()));
+    let not_qnil = !Qnil.as_i64();
+    asm.test(val_opnd, not_qnil.into());
 
     // Get the branch target instruction offsets
     let next_idx = jit_next_insn_idx(jit) as i32;
@@ -3305,6 +3307,13 @@ fn gen_branchunless(
         idx: jump_idx.try_into().unwrap(),
     };
 
+
+
+
+    // TODO: port gen_branch logic
+    todo!("complete branchunless implementation");
+
+    /*
     // Generate the branch instructions
     gen_branch(
         jit,
@@ -3319,8 +3328,12 @@ fn gen_branchunless(
     );
 
     EndBlock
+    */
+
+
 }
 
+/*
 fn gen_branchnil_branch(
     cb: &mut CodeBlock,
     target0: CodePtr,
