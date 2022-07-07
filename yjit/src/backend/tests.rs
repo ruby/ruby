@@ -138,6 +138,21 @@ fn test_load_reg()
     asm.compile_with_num_regs(&mut cb, 1);
 }
 
+// Test load of a GC'd value
+#[test]
+fn test_load_value()
+{
+    let (mut asm, mut cb) = setup_asm();
+
+    let gcd_value = VALUE(0xFFFFFFFFFFFF00);
+    assert!(!gcd_value.special_const_p());
+
+    let out = asm.load(Opnd::Value(gcd_value));
+    asm.mov(Opnd::mem(64, SP, 0), out);
+
+    asm.compile_with_num_regs(&mut cb, 1);
+}
+
 // Multiple registers needed and register reuse
 #[test]
 fn test_reuse_reg()
