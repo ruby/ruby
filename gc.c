@@ -886,26 +886,46 @@ enum {
 # define INCREMENTAL_MARK_STEP_ALLOCATIONS 500
 #endif
 
-#ifdef HAVE_MMAP
+#undef INIT_HEAP_PAGE_ALLOC_USE_MMAP
+/* Must define either HEAP_PAGE_ALLOC_USE_MMAP or
+ * INIT_HEAP_PAGE_ALLOC_USE_MMAP. */
+
+#ifndef HAVE_MMAP
+/* We can't use mmap of course, if it is not available. */
+static const bool HEAP_PAGE_ALLOC_USE_MMAP = false;
+
+#elif defined(__wasm__)
 /* wasmtime does not have proper support for mmap.
  * See https://github.com/bytecodealliance/wasmtime/blob/main/docs/WASI-rationale.md#why-no-mmap-and-friends
  */
-# if defined(__wasm__)
 static const bool HEAP_PAGE_ALLOC_USE_MMAP = false;
-# elif HAVE_CONST_PAGE_SIZE
-/* If we have the HEAP_PAGE and it is a constant, then we can directly use it. */
+
+#elif HAVE_CONST_PAGE_SIZE
+/* If we have the PAGE_SIZE and it is a constant, then we can directly use it. */
 static const bool HEAP_PAGE_ALLOC_USE_MMAP = (PAGE_SIZE <= HEAP_PAGE_SIZE);
-# elif defined(PAGE_MAX_SIZE) && (PAGE_MAX_SIZE <= HEAP_PAGE_SIZE)
-/* PAGE_SIZE <= HEAP_PAGE_SIZE */
+
+#elif defined(PAGE_MAX_SIZE) && (PAGE_MAX_SIZE <= HEAP_PAGE_SIZE)
+/* If we can use the maximum page size. */
 static const bool HEAP_PAGE_ALLOC_USE_MMAP = true;
-# else
-/* Otherwise, fall back to determining if we can use mmap during runtime. */
-#  define HEAP_PAGE_ALLOC_USE_MMAP (heap_page_alloc_use_mmap != false)
+
+#elif defined(PAGE_SIZE)
+/* If the PAGE_SIZE macro can be used dynamically. */
+# define INIT_HEAP_PAGE_ALLOC_USE_MMAP (PAGE_SIZE <= HEAP_PAGE_SIZE)
+
+#elif defined(HAVE_SYSCONF) && defined(_SC_PAGE_SIZE)
+/* If we can use sysconf to determine the page size. */
+# define INIT_HEAP_PAGE_ALLOC_USE_MMAP (sysconf(_SC_PAGE_SIZE) <= HEAP_PAGE_SIZE)
+
+#else
+/* Otherwise we can't determine the system page size, so don't use mmap. */
+static const bool HEAP_PAGE_ALLOC_USE_MMAP = false;
+#endif
+
+#ifdef INIT_HEAP_PAGE_ALLOC_USE_MMAP
+/* We can determine the system page size at runtime. */
+# define HEAP_PAGE_ALLOC_USE_MMAP (heap_page_alloc_use_mmap != false)
 
 static bool heap_page_alloc_use_mmap;
-# endif
-#elif !defined(__MINGW32__) && !defined(_WIN32)
-static const bool HEAP_PAGE_ALLOC_USE_MMAP = false;
 #endif
 
 struct heap_page {
@@ -1970,19 +1990,17 @@ heap_page_body_free(struct heap_page_body *page_body)
 {
     GC_ASSERT((uintptr_t)page_body % HEAP_PAGE_ALIGN == 0);
 
-#ifdef HAVE_MMAP
     if (HEAP_PAGE_ALLOC_USE_MMAP) {
+#ifdef HAVE_MMAP
         GC_ASSERT(HEAP_PAGE_SIZE % sysconf(_SC_PAGE_SIZE) == 0);
         if (munmap(page_body, HEAP_PAGE_SIZE)) {
             rb_bug("heap_page_body_free: munmap failed");
         }
+#endif
     }
     else {
         rb_aligned_free(page_body, HEAP_PAGE_SIZE);
     }
-#else
-    rb_aligned_free(page_body, HEAP_PAGE_SIZE);
-#endif
 }
 
 static void
@@ -2037,8 +2055,8 @@ heap_page_body_allocate(void)
 {
     struct heap_page_body *page_body;
 
-#ifdef HAVE_MMAP
     if (HEAP_PAGE_ALLOC_USE_MMAP) {
+#ifdef HAVE_MMAP
         GC_ASSERT(HEAP_PAGE_ALIGN % sysconf(_SC_PAGE_SIZE) == 0);
 
         char *ptr = mmap(NULL, HEAP_PAGE_ALIGN + HEAP_PAGE_SIZE,
@@ -2069,13 +2087,11 @@ heap_page_body_allocate(void)
         }
 
         page_body = (struct heap_page_body *)aligned;
+#endif
     }
     else {
         page_body = rb_aligned_malloc(HEAP_PAGE_ALIGN, HEAP_PAGE_SIZE);
     }
-#else
-    page_body = rb_aligned_malloc(HEAP_PAGE_ALIGN, HEAP_PAGE_SIZE);
-#endif
 
     GC_ASSERT((uintptr_t)page_body % HEAP_PAGE_ALIGN == 0);
 
@@ -3696,18 +3712,9 @@ Init_heap(void)
 {
     rb_objspace_t *objspace = &rb_objspace;
 
-#if defined(HAVE_MMAP) && !defined(__wasm__) && !HAVE_CONST_PAGE_SIZE && !defined(PAGE_MAX_SIZE)
+#if defined(INIT_HEAP_PAGE_ALLOC_USE_MMAP)
     /* Need to determine if we can use mmap at runtime. */
-# ifdef PAGE_SIZE
-    /* If the PAGE_SIZE macro can be used. */
-    heap_page_alloc_use_mmap = PAGE_SIZE <= HEAP_PAGE_SIZE;
-# elif defined(HAVE_SYSCONF) && defined(_SC_PAGE_SIZE)
-    /* If we can use sysconf to determine the page size. */
-    heap_page_alloc_use_mmap = sysconf(_SC_PAGE_SIZE) <= HEAP_PAGE_SIZE;
-# else
-    /* Otherwise we can't determine the system page size, so don't use mmap. */
-    heap_page_alloc_use_mmap = FALSE;
-# endif
+    heap_page_alloc_use_mmap = INIT_HEAP_PAGE_ALLOC_USE_MMAP;
 #endif
 
     objspace->next_object_id = INT2FIX(OBJ_ID_INITIAL);
@@ -5210,18 +5217,27 @@ static void invalidate_moved_page(rb_objspace_t *objspace, struct heap_page *pag
 
 #if GC_CAN_COMPILE_COMPACTION
 static void
-read_barrier_handler(uintptr_t address)
+read_barrier_handler(uintptr_t original_address)
 {
     VALUE obj;
     rb_objspace_t * objspace = &rb_objspace;
 
-    address -= address % BASE_SLOT_SIZE;
+    /* Calculate address aligned to slots. */
+    uintptr_t address = original_address - (original_address % BASE_SLOT_SIZE);
 
     obj = (VALUE)address;
 
+    struct heap_page_body *page_body = GET_PAGE_BODY(obj);
+
+    /* If the page_body is NULL, then mprotect cannot handle it and will crash
+     * with "Cannot allocate memory". */
+    if (page_body == NULL) {
+        rb_bug("read_barrier_handler: segmentation fault at 0x%lx", original_address);
+    }
+
     RB_VM_LOCK_ENTER();
     {
-        unlock_page_body(objspace, GET_PAGE_BODY(obj));
+        unlock_page_body(objspace, page_body);
 
         objspace->profile.read_barrier_faults++;
 
@@ -5521,6 +5537,7 @@ static inline void
 gc_sweep_page(rb_objspace_t *objspace, rb_heap_t *heap, struct gc_sweep_context *ctx)
 {
     struct heap_page *sweep_page = ctx->page;
+    GC_ASSERT(SIZE_POOL_EDEN_HEAP(sweep_page->size_pool) == heap);
 
     uintptr_t p;
     bits_t *bits, bitset;
@@ -8321,6 +8338,7 @@ gc_compact_move(rb_objspace_t *objspace, rb_heap_t *heap, rb_size_pool_t *size_p
     if (gc_compact_heap_cursors_met_p(dheap)) {
         return dheap != heap;
     }
+
     while (!try_move(objspace, dheap, dheap->free_pages, src)) {
         struct gc_sweep_context ctx = {
             .page = dheap->sweeping_page,
@@ -8328,7 +8346,14 @@ gc_compact_move(rb_objspace_t *objspace, rb_heap_t *heap, rb_size_pool_t *size_p
             .freed_slots = 0,
             .empty_slots = 0,
         };
-        gc_sweep_page(objspace, heap, &ctx);
+
+        /* The page of src could be partially compacted, so it may contain
+         * T_MOVED. Sweeping a page may read objects on this page, so we
+         * need to lock the page. */
+        lock_page_body(objspace, GET_PAGE_BODY(src));
+        gc_sweep_page(objspace, dheap, &ctx);
+        unlock_page_body(objspace, GET_PAGE_BODY(src));
+
         if (dheap->sweeping_page->free_slots > 0) {
             heap_add_freepage(dheap, dheap->sweeping_page);
         };

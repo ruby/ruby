@@ -9866,6 +9866,12 @@ argf_lineno_setter(VALUE val, ID id, VALUE *var)
     ARGF.last_lineno = ARGF.lineno = n;
 }
 
+void
+rb_reset_argf_lineno(long n)
+{
+    ARGF.last_lineno = ARGF.lineno = n;
+}
+
 static VALUE argf_gets(int, VALUE *, VALUE);
 
 /*
