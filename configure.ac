@@ -3736,7 +3736,7 @@ CARGO=
 CARGO_BUILD_ARGS=
 YJIT_LIBS=
 AS_CASE(["${YJIT_SUPPORT}"],
-[yes|dev], [
+[yes|dev|stats], [
     AS_IF([test x"$enable_jit_support" = "xno"],
         AC_MSG_ERROR([--disable-jit-support but --enable-yjit. YJIT requires JIT support])
     )
@@ -3744,16 +3744,27 @@ AS_CASE(["${YJIT_SUPPORT}"],
     AS_IF([test x"$RUSTC" = "xno"],
         AC_MSG_ERROR([rustc is required. Installation instructions available at https://www.rust-lang.org/tools/install])
     )
-    AS_IF([test x"$YJIT_SUPPORT" = "xyes"],
-            [rb_rust_target_subdir=release
-             CARGO_BUILD_ARGS='--release'],
-            [rb_rust_target_subdir=debug
-             CARGO_BUILD_ARGS='--features stats,disasm,asm_comments'
+
+    AS_CASE(["${YJIT_SUPPORT}"],
+    [yes], [
+	rb_rust_target_subdir=release
+    ],
+    [dev], [
+	rb_rust_target_subdir=debug
+	CARGO_BUILD_ARGS='--features stats,disasm,asm_comments'
+	AC_DEFINE(RUBY_DEBUG, 1)
+    ],
+    [stats], [
+	rb_rust_target_subdir=stats
+	CARGO_BUILD_ARGS='--profile stats --features stats,disasm,asm_comments'
+    ])
+
+    AS_IF([test -n "${CARGO_BUILD_ARGS}"], [
              AC_CHECK_TOOL(CARGO, [cargo], [no])
              AS_IF([test x"$CARGO" = "xno"],
                 AC_MSG_ERROR([cargo is required. Installation instructions available at https://www.rust-lang.org/tools/install])
-             )
-             AC_DEFINE(RUBY_DEBUG, 1)])
+             ]))
+
     YJIT_LIBS="yjit/target/${rb_rust_target_subdir}/libyjit.a"
     YJIT_OBJ='yjit.$(OBJEXT)'
     AC_DEFINE(USE_YJIT, 1)
