@@ -2473,6 +2473,8 @@ date_s__valid_jd_p(int argc, VALUE *argv, VALUE klass)
  *
  *   Date.valid_jd?(2451944) # => true
  *
+ * See argument {start}[rdoc-ref:Date@Argument+start].
+ *
  * Related: Date.jd.
  */
 static VALUE
@@ -2564,7 +2566,7 @@ date_s__valid_civil_p(int argc, VALUE *argv, VALUE klass)
  *   Date.valid_date?(2001, 2, 29) # => false
  *   Date.valid_date?(2001, 2, -1) # => true
  *
- * See {Argument start}[rdoc-ref:Date@Argument+start].
+ * See argument {start}[rdoc-ref:Date@Argument+start].
  *
  * Date.valid_date? is an alias for Date.valid_civil?.
  *
@@ -2653,7 +2655,7 @@ date_s__valid_ordinal_p(int argc, VALUE *argv, VALUE klass)
  *   Date.valid_ordinal?(2001, 34)  # => true
  *   Date.valid_ordinal?(2001, 366) # => false
  *
- * See {Argument start}[rdoc-ref:Date@Argument+start].
+ * See argument {start}[rdoc-ref:Date@Argument+start].
  *
  * Related: Date.jd, Date.ordinal.
  */
@@ -2742,7 +2744,7 @@ date_s__valid_commercial_p(int argc, VALUE *argv, VALUE klass)
  *
  * See Date.commercial.
  *
- * See {Argument start}[rdoc-ref:Date@Argument+start].
+ * See argument {start}[rdoc-ref:Date@Argument+start].
  *
  * Related: Date.jd, Date.commercial.
  */
@@ -3317,7 +3319,7 @@ static VALUE d_lite_plus(VALUE, VALUE);
  *
  *     Date.jd(Date::ITALY - 1).julian?    # => true
  *
- * See {Argument start}[rdoc-ref:Date@Argument+start].
+ * See argument {start}[rdoc-ref:Date@Argument+start].
  *
  * Related: Date.new.
  */
@@ -3358,7 +3360,7 @@ date_s_jd(int argc, VALUE *argv, VALUE klass)
 
 /*
  * call-seq:
- *    Date.ordinal(year = -4712, yday = 1, start = Date::ITALY) -> date
+ *   Date.ordinal(year = -4712, yday = 1, start = Date::ITALY) -> date
  *
  * Returns a new \Date object formed fom the arguments.
  *
@@ -3382,7 +3384,7 @@ date_s_jd(int argc, VALUE *argv, VALUE klass)
  *
  * Raises an exception if +yday+ is zero or out of range.
  *
- * See {Argument start}[rdoc-ref:Date@Argument+start].
+ * See argument {start}[rdoc-ref:Date@Argument+start].
  *
  * Related: Date.jd, Date.new.
  */
@@ -3459,7 +3461,7 @@ date_s_civil(int argc, VALUE *argv, VALUE klass)
  * where +n+ is the number of days in the month;
  * when the argument is negative, counts backward from the end of the month.
  *
- * See {Argument start}[rdoc-ref:Date@Argument+start].
+ * See argument {start}[rdoc-ref:Date@Argument+start].
  *
  * Date.civil is an alias for Date.new.
  *
@@ -3529,7 +3531,7 @@ date_initialize(int argc, VALUE *argv, VALUE self)
 
 /*
  * call-seq:
- *   Date.commercial(cwyear=-4712, cweek=1, cwday=1, start=Date::ITALY) -> date
+ *   Date.commercial(cwyear = -4712, cweek = 1, cwday = 1, start = Date::ITALY) -> date
  *
  * Returns a new \Date object constructed from the arguments.
  *
@@ -3567,7 +3569,7 @@ date_initialize(int argc, VALUE *argv, VALUE self)
  *     Date.commercial(2020, 1, 1).to_s # => "2019-12-30"
        Date.commercial(2020, 1, 7).to_s # => "2020-01-05"
  *
- * See {Argument start}[rdoc-ref:Date@Argument+start].
+ * See argument {start}[rdoc-ref:Date@Argument+start].
  *
  * Related: Date.jd, Date.new, Date.ordinal.
  */
@@ -3744,11 +3746,14 @@ static void set_sg(union DateData *, double);
 
 /*
  * call-seq:
- *    Date.today([start=Date::ITALY])  ->  date
+ *   Date.today(start = Date::ITALY) -> date
  *
- * Creates a date object denoting the present day.
+ * Returns a new \Date object constructed from the present date:
  *
- *    Date.today   #=> #<Date: 2011-06-11 ...>
+ *   Date.today.to_s # => "2022-07-06"
+ *
+ * See argument {start}[rdoc-ref:Date@Argument+start].
+ *
  */
 static VALUE
 date_s_today(int argc, VALUE *argv, VALUE klass)
@@ -4339,7 +4344,7 @@ date_s__strptime_internal(int argc, VALUE *argv, VALUE klass,
 
 /*
  * call-seq:
- *    Date._strptime(string[, format='%F'])  ->  hash
+ *   Date._strptime(string, format = '%F') -> hash
  *
  * Parses the given representation of date and time with the given
  * template, and returns a hash of parsed elements.  _strptime does
@@ -4358,7 +4363,7 @@ date_s__strptime(int argc, VALUE *argv, VALUE klass)
 
 /*
  * call-seq:
- *    Date.strptime([string='-4712-01-01'[, format='%F'[, start=Date::ITALY]]])  ->  date
+ *   Date.strptime(string = '-4712-01-01', format = '%F', start = Date::ITALY) -> date
  *
  * Parses the given representation of date and time with the given
  * template, and creates a date object.  strptime does not support
@@ -4371,6 +4376,8 @@ date_s__strptime(int argc, VALUE *argv, VALUE klass)
  *    Date.strptime('2001 04 6', '%Y %U %w')	#=> #<Date: 2001-02-03 ...>
  *    Date.strptime('2001 05 6', '%Y %W %u')	#=> #<Date: 2001-02-03 ...>
  *    Date.strptime('sat3feb01', '%a%d%b%y')	#=> #<Date: 2001-02-03 ...>
+ *
+ * See argument {start}[rdoc-ref:Date@Argument+start].
  *
  * See also strptime(3) and #strftime.
  */
@@ -4459,7 +4466,7 @@ date_s__parse_internal(int argc, VALUE *argv, VALUE klass)
 
 /*
  * call-seq:
- *    Date._parse(string[, comp=true], limit: 128)  ->  hash
+ *   Date._parse(string, comp = true, limit: 128) -> hash
  *
  * Parses the given representation of date and time, and returns a
  * hash of parsed elements.
@@ -4487,7 +4494,7 @@ date_s__parse(int argc, VALUE *argv, VALUE klass)
 
 /*
  * call-seq:
- *    Date.parse(string='-4712-01-01'[, comp=true[, start=Date::ITALY]], limit: 128)  ->  date
+ *   Date.parse(string = '-4712-01-01', comp = true, start = Date::ITALY, limit: 128) -> date
  *
  * Parses the given representation of date and time, and creates a
  * date object.
@@ -4508,6 +4515,8 @@ date_s__parse(int argc, VALUE *argv, VALUE klass)
  * Raise an ArgumentError when the string length is longer than _limit_.
  * You can stop this check by passing `limit: nil`, but note that
  * it may take a long time to parse.
+ ^
+ * See argument {start}[rdoc-ref:Date@Argument+start].
  */
 static VALUE
 date_s_parse(int argc, VALUE *argv, VALUE klass)
@@ -4546,7 +4555,7 @@ VALUE date__jisx0301(VALUE);
 
 /*
  * call-seq:
- *    Date._iso8601(string, limit: 128)  ->  hash
+ *   Date._iso8601(string, limit: 128) -> hash
  *
  * Returns a hash of parsed elements.
  *
@@ -4567,7 +4576,7 @@ date_s__iso8601(int argc, VALUE *argv, VALUE klass)
 
 /*
  * call-seq:
- *    Date.iso8601(string='-4712-01-01'[, start=Date::ITALY], limit: 128)  ->  date
+ *   Date.iso8601(string = '-4712-01-01', start = Date::ITALY, limit: 128) -> date
  *
  * Creates a new Date object by parsing from a string according to
  * some typical ISO 8601 formats.
@@ -4579,6 +4588,8 @@ date_s__iso8601(int argc, VALUE *argv, VALUE klass)
  * Raise an ArgumentError when the string length is longer than _limit_.
  * You can stop this check by passing `limit: nil`, but note that
  * it may take a long time to parse.
+ *
+ * See argument {start}[rdoc-ref:Date@Argument+start].
  */
 static VALUE
 date_s_iso8601(int argc, VALUE *argv, VALUE klass)
@@ -4607,7 +4618,7 @@ date_s_iso8601(int argc, VALUE *argv, VALUE klass)
 
 /*
  * call-seq:
- *    Date._rfc3339(string, limit: 128)  ->  hash
+ *   Date._rfc3339(string, limit: 128) -> hash
  *
  * Returns a hash of parsed elements.
  *
@@ -4628,7 +4639,7 @@ date_s__rfc3339(int argc, VALUE *argv, VALUE klass)
 
 /*
  * call-seq:
- *    Date.rfc3339(string='-4712-01-01T00:00:00+00:00'[, start=Date::ITALY], limit: 128)  ->  date
+ *   Date.rfc3339(string = '-4712-01-01T00:00:00+00:00', start = Date::ITALY, limit: 128) -> date
  *
  * Creates a new Date object by parsing from a string according to
  * some typical RFC 3339 formats.
@@ -4638,6 +4649,8 @@ date_s__rfc3339(int argc, VALUE *argv, VALUE klass)
  * Raise an ArgumentError when the string length is longer than _limit_.
  * You can stop this check by passing `limit: nil`, but note that
  * it may take a long time to parse.
+ *
+ * See argument {start}[rdoc-ref:Date@Argument+start].
  */
 static VALUE
 date_s_rfc3339(int argc, VALUE *argv, VALUE klass)
@@ -4666,7 +4679,7 @@ date_s_rfc3339(int argc, VALUE *argv, VALUE klass)
 
 /*
  * call-seq:
- *    Date._xmlschema(string, limit: 128)  ->  hash
+ *   Date._xmlschema(string, limit: 128) -> hash
  *
  * Returns a hash of parsed elements.
  *
@@ -4687,7 +4700,7 @@ date_s__xmlschema(int argc, VALUE *argv, VALUE klass)
 
 /*
  * call-seq:
- *    Date.xmlschema(string='-4712-01-01'[, start=Date::ITALY], limit: 128)  ->  date
+ *   Date.xmlschema(string = '-4712-01-01', start = Date::ITALY, limit: 128)  ->  date
  *
  * Creates a new Date object by parsing from a string according to
  * some typical XML Schema formats.
@@ -4697,6 +4710,9 @@ date_s__xmlschema(int argc, VALUE *argv, VALUE klass)
  * Raise an ArgumentError when the string length is longer than _limit_.
  * You can stop this check by passing `limit: nil`, but note that
  * it may take a long time to parse.
+ *
+ * See argument {start}[rdoc-ref:Date@Argument+start].
+ *
  */
 static VALUE
 date_s_xmlschema(int argc, VALUE *argv, VALUE klass)
@@ -4725,14 +4741,15 @@ date_s_xmlschema(int argc, VALUE *argv, VALUE klass)
 
 /*
  * call-seq:
- *    Date._rfc2822(string, limit: 128)  ->  hash
- *    Date._rfc822(string, limit: 128)   ->  hash
+ *   Date._rfc2822(string, limit: 128) -> hash
  *
  * Returns a hash of parsed elements.
  *
  * Raise an ArgumentError when the string length is longer than _limit_.
  * You can stop this check by passing `limit: nil`, but note that
  * it may take a long time to parse.
+ *
+ * Date._rfc822 is an alias for Date._rfc2822.
  */
 static VALUE
 date_s__rfc2822(int argc, VALUE *argv, VALUE klass)
@@ -4747,8 +4764,7 @@ date_s__rfc2822(int argc, VALUE *argv, VALUE klass)
 
 /*
  * call-seq:
- *    Date.rfc2822(string='Mon, 1 Jan -4712 00:00:00 +0000'[, start=Date::ITALY], limit: 128)  ->  date
- *    Date.rfc822(string='Mon, 1 Jan -4712 00:00:00 +0000'[, start=Date::ITALY], limit: 128)   ->  date
+ *   Date.rfc2822(string = 'Mon, 1 Jan -4712 00:00:00 +0000', start = Date::ITALY, limit: 128) -> date
  *
  * Creates a new Date object by parsing from a string according to
  * some typical RFC 2822 formats.
@@ -4759,6 +4775,10 @@ date_s__rfc2822(int argc, VALUE *argv, VALUE klass)
  * Raise an ArgumentError when the string length is longer than _limit_.
  * You can stop this check by passing `limit: nil`, but note that
  * it may take a long time to parse.
+ *
+ * See argument {start}[rdoc-ref:Date@Argument+start].
+ *
+ * Date.rfc822 is an alias for Date.rfc2822.
  */
 static VALUE
 date_s_rfc2822(int argc, VALUE *argv, VALUE klass)
@@ -4786,7 +4806,7 @@ date_s_rfc2822(int argc, VALUE *argv, VALUE klass)
 
 /*
  * call-seq:
- *    Date._httpdate(string, limit: 128)  ->  hash
+ *   Date._httpdate(string, limit: 128) -> hash
  *
  * Returns a hash of parsed elements.
  *
@@ -4807,7 +4827,7 @@ date_s__httpdate(int argc, VALUE *argv, VALUE klass)
 
 /*
  * call-seq:
- *    Date.httpdate(string='Mon, 01 Jan -4712 00:00:00 GMT'[, start=Date::ITALY], limit: 128)  ->  date
+ *   Date.httpdate(string = 'Mon, 01 Jan -4712 00:00:00 GMT', start = Date::ITALY, limit: 128) -> date
  *
  * Creates a new Date object by parsing from a string according to
  * some RFC 2616 format.
@@ -4818,6 +4838,9 @@ date_s__httpdate(int argc, VALUE *argv, VALUE klass)
  * Raise an ArgumentError when the string length is longer than _limit_.
  * You can stop this check by passing `limit: nil`, but note that
  * it may take a long time to parse.
+ *
+ * See argument {start}[rdoc-ref:Date@Argument+start].
+ *
  */
 static VALUE
 date_s_httpdate(int argc, VALUE *argv, VALUE klass)
@@ -4845,7 +4868,7 @@ date_s_httpdate(int argc, VALUE *argv, VALUE klass)
 
 /*
  * call-seq:
- *    Date._jisx0301(string, limit: 128)  ->  hash
+ *   Date._jisx0301(string, limit: 128) -> hash
  *
  * Returns a hash of parsed elements.
  *
@@ -4866,7 +4889,7 @@ date_s__jisx0301(int argc, VALUE *argv, VALUE klass)
 
 /*
  * call-seq:
- *    Date.jisx0301(string='-4712-01-01'[, start=Date::ITALY], limit: 128)  ->  date
+ *   Date.jisx0301(string = '-4712-01-01', start = Date::ITALY, limit: 128) -> date
  *
  * Creates a new Date object by parsing from a string according to
  * some typical JIS X 0301 formats.
@@ -4880,6 +4903,9 @@ date_s__jisx0301(int argc, VALUE *argv, VALUE klass)
  * Raise an ArgumentError when the string length is longer than _limit_.
  * You can stop this check by passing `limit: nil`, but note that
  * it may take a long time to parse.
+ *
+ * See argument {start}[rdoc-ref:Date@Argument+start].
+ *
  */
 static VALUE
 date_s_jisx0301(int argc, VALUE *argv, VALUE klass)
