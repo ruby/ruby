@@ -2337,6 +2337,8 @@ native_sleep(rb_thread_t *th, rb_hrtime_t *rel)
     int sigwait_fd = rb_sigwait_fd_get(th);
     rb_ractor_blocking_threads_inc(th->ractor, __FILE__, __LINE__);
 
+    RB_INTERNAL_THREAD_HOOK(RUBY_INTERNAL_THREAD_EVENT_SUSPENDED);
+
     if (sigwait_fd >= 0) {
         rb_native_mutex_lock(&th->interrupt_lock);
         th->unblock.func = ubf_sigwait;
