@@ -804,6 +804,7 @@ macro_rules! def_push_1_opnd {
     ($op_name:ident, $opcode:expr) => {
         impl Assembler
         {
+            #[must_use]
             pub fn $op_name(&mut self, opnd0: Opnd) -> Opnd
             {
                 self.push_insn($opcode, vec![opnd0], None)
@@ -828,6 +829,7 @@ macro_rules! def_push_2_opnd {
     ($op_name:ident, $opcode:expr) => {
         impl Assembler
         {
+            #[must_use]
             pub fn $op_name(&mut self, opnd0: Opnd, opnd1: Opnd) -> Opnd
             {
                 self.push_insn($opcode, vec![opnd0, opnd1], None)
