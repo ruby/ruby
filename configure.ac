@@ -32,6 +32,7 @@ m4_include([tool/m4/ruby_func_attribute.m4])dnl
 m4_include([tool/m4/ruby_mingw32.m4])dnl
 m4_include([tool/m4/ruby_prepend_option.m4])dnl
 m4_include([tool/m4/ruby_prog_gnu_ld.m4])dnl
+m4_include([tool/m4/ruby_prog_makedirs.m4])dnl
 m4_include([tool/m4/ruby_replace_funcs.m4])dnl
 m4_include([tool/m4/ruby_replace_type.m4])dnl
 m4_include([tool/m4/ruby_require_funcs.m4])dnl
@@ -491,17 +492,7 @@ AS_CASE(["$target_os"],
 AC_PROG_LN_S
 AC_PROG_MAKE_SET
 AC_PROG_INSTALL
-AC_PROG_MKDIR_P
-AS_IF([test "x$MKDIR_P" = "x -d"], [
-  AS_IF([test x"$as_mkdir_p" != xfalse], [
-    MKDIR_P='mkdir -p'
-    echo "use 'mkdir -p' as MKDIR_P"
-  ], [
-    AC_MSG_ERROR([mkdir -p is required])
-  ])
-])
-MAKEDIRS="$MKDIR_P"
-AC_SUBST(MAKEDIRS)
+RUBY_PROG_MAKEDIRS
 
 AC_CHECK_PROG([DTRACE], [${ac_tool_prefix}dtrace], [${ac_tool_prefix}dtrace])
 AS_IF([test "$cross_compiling:$ac_cv_prog_DTRACE" = no: -a -n "$ac_tool_prefix"], [
