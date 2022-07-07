@@ -255,7 +255,7 @@ pub enum InsnOpnd {
 /// Code generation context
 /// Contains information we can use to specialize/optimize code
 /// There are a lot of context objects so we try to keep the size small.
-#[derive(Copy, Clone, Default, Debug)]
+#[derive(Copy, Clone, Default, PartialEq, Debug)]
 pub struct Context {
     // Number of values currently on the temporary stack
     stack_size: u16,
@@ -301,7 +301,7 @@ pub enum BranchShape {
 
 // Branch code generation function signature
 type BranchGenFn =
-    fn(cb: &mut CodeBlock, target0: CodePtr, target1: Option<CodePtr>, shape: BranchShape) -> ();
+    fn(cb: &mut Assembler, target0: CodePtr, target1: Option<CodePtr>, shape: BranchShape) -> ();
 
 /// Store info about an outgoing branch in a code segment
 /// Note: care must be taken to minimize the size of branch objects
@@ -1511,12 +1511,18 @@ fn regenerate_branch(cb: &mut CodeBlock, branch: &mut Branch) {
     // Rewrite the branch
     assert!(branch.dst_addrs[0].is_some());
     cb.set_write_ptr(branch.start_addr.unwrap());
+
+    let mut asm = Assembler::new();
+
     (branch.gen_fn)(
-        cb,
+        &mut asm,
         branch.dst_addrs[0].unwrap(),
         branch.dst_addrs[1],
         branch.shape,
     );
+
+    asm.compile(cb);
+
     branch.end_addr = Some(cb.get_write_ptr());
 
     // The block may have shrunk after the branch is rewritten
@@ -1542,7 +1548,7 @@ fn regenerate_branch(cb: &mut CodeBlock, branch: &mut Branch) {
 }
 
 /// Create a new outgoing branch entry for a block
-fn make_branch_entry(block: BlockRef, src_ctx: &Context, gen_fn: BranchGenFn) -> BranchRef {
+fn make_branch_entry(block: &BlockRef, src_ctx: &Context, gen_fn: BranchGenFn) -> BranchRef {
     let branch = Branch {
         // Block this is attached to
         block: block.clone(),
@@ -1591,6 +1597,10 @@ extern "sysv64" fn branch_stub_hit(
 /// Called by the generated code when a branch stub is executed
 /// Triggers compilation of branches and code patching
 fn branch_stub_hit_body(branch_ptr: *const c_void, target_idx: u32, ec: EcPtr) -> *const u8 {
+    if get_option!(dump_insns) {
+        println!("branch_stub_hit");
+    }
+
     assert!(!branch_ptr.is_null());
 
     //branch_ptr is actually:
@@ -1770,13 +1780,13 @@ fn get_branch_target(
 
     let mut asm = Assembler::new();
 
-    // Call branch_stub_hit(branch_idx, target_idx, ec)
+    // Call branch_stub_hit(branch_ptr, target_idx, ec)
     let jump_addr = asm.ccall(
         branch_stub_hit as *mut u8,
         vec![
-            EC,
+            Opnd::const_ptr(branch_ptr as *const u8),
             Opnd::UImm(target_idx as u64),
-            Opnd::const_ptr(branch_ptr as *const u8)
+            EC,
         ]
     );
 
@@ -1804,7 +1814,7 @@ pub fn gen_branch(
     ctx1: Option<&Context>,
     gen_fn: BranchGenFn,
 ) {
-    let branchref = make_branch_entry(jit.get_block(), src_ctx, gen_fn);
+    let branchref = make_branch_entry(&jit.get_block(), src_ctx, gen_fn);
 
     // Get the branch targets or stubs
     let dst_addr0 = get_branch_target(target0, ctx0, &branchref, 0, ocb);
@@ -1835,7 +1845,7 @@ pub fn gen_branch(
 }
 
 fn gen_jump_branch(
-    cb: &mut CodeBlock,
+    asm: &mut Assembler,
     target0: CodePtr,
     _target1: Option<CodePtr>,
     shape: BranchShape,
@@ -1845,13 +1855,12 @@ fn gen_jump_branch(
     }
 
     if shape == BranchShape::Default {
-        //jmp_ptr(cb, target0);
-        todo!("jmp_ptr with new assembler");
+        asm.jmp(target0.into());
     }
 }
 
 pub fn gen_direct_jump(jit: &JITState, ctx: &Context, target0: BlockId, cb: &mut CodeBlock) {
-    let branchref = make_branch_entry(jit.get_block(), ctx, gen_jump_branch);
+    let branchref = make_branch_entry(&jit.get_block(), ctx, gen_jump_branch);
     let mut branch = branchref.borrow_mut();
 
     branch.targets[0] = Some(target0);
@@ -1869,10 +1878,25 @@ pub fn gen_direct_jump(jit: &JITState, ctx: &Context, target0: BlockId, cb: &mut
         branch.blocks[0] = Some(blockref.clone());
         branch.shape = BranchShape::Default;
 
+
+
+        todo!("convert gen_direct_jump to using new asm");
+
+
+        // TODO: could we use regenerate_branch logic here?
+
+        /*
         // Call the branch generation function
         branch.start_addr = Some(cb.get_write_ptr());
         gen_jump_branch(cb, branch.dst_addrs[0].unwrap(), None, BranchShape::Default);
         branch.end_addr = Some(cb.get_write_ptr());
+        */
+
+
+
+
+
+
     } else {
         // This None target address signals gen_block_series() to compile the
         // target block right after this one (fallthrough).
@@ -1885,7 +1909,8 @@ pub fn gen_direct_jump(jit: &JITState, ctx: &Context, target0: BlockId, cb: &mut
 
 /// Create a stub to force the code up to this point to be executed
 pub fn defer_compilation(
-    jit: &JITState,
+    block: &BlockRef,
+    insn_idx: u32,
     cur_ctx: &Context,
     cb: &mut CodeBlock,
     ocb: &mut OutlinedCb,
@@ -1901,14 +1926,12 @@ pub fn defer_compilation(
     }
     next_ctx.chain_depth += 1;
 
-    let block_rc = jit.get_block();
-    let branch_rc = make_branch_entry(jit.get_block(), cur_ctx, gen_jump_branch);
+    let branch_rc = make_branch_entry(block, cur_ctx, gen_jump_branch);
     let mut branch = branch_rc.borrow_mut();
-    let block = block_rc.borrow();
 
     let blockid = BlockId {
-        iseq: block.blockid.iseq,
-        idx: jit.get_insn_idx(),
+        iseq: block.borrow().blockid.iseq,
+        idx: insn_idx,
     };
     branch.target_ctxs[0] = next_ctx;
     branch.targets[0] = Some(blockid);
@@ -1916,7 +1939,9 @@ pub fn defer_compilation(
 
     // Call the branch generation function
     branch.start_addr = Some(cb.get_write_ptr());
-    gen_jump_branch(cb, branch.dst_addrs[0].unwrap(), None, BranchShape::Default);
+    let mut asm = Assembler::new();
+    gen_jump_branch(&mut asm, branch.dst_addrs[0].unwrap(), None, BranchShape::Default);
+    asm.compile(cb);
     branch.end_addr = Some(cb.get_write_ptr());
 }
 

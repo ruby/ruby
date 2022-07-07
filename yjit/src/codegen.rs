@@ -34,9 +34,10 @@ pub use crate::virtualmem::CodePtr;
 /// Status returned by code generation functions
 #[derive(PartialEq, Debug)]
 enum CodegenStatus {
-    EndBlock,
     KeepCompiling,
     CantCompile,
+    EndBlock,
+    DeferCompilation,
 }
 
 /// Code generation function signature
@@ -734,6 +735,9 @@ pub fn gen_single_block(
     // Create a backend assembler instance
     let mut asm = Assembler::new();
 
+    // Codegen status for the last instruction compiled
+    let mut status = CantCompile;
+
     // For each instruction to compile
     // NOTE: could rewrite this loop with a std::iter::Iterator
     while insn_idx < iseq_size {
@@ -759,16 +763,12 @@ pub fn gen_single_block(
 
         // If previous instruction requested to record the boundary
         if jit.record_boundary_patch_point {
-
             // FIXME: is this sound with the new assembler?
 
             // Generate an exit to this instruction and record it
             let exit_pos = gen_outlined_exit(jit.pc, &ctx, ocb);
             record_global_inval_patch(cb, exit_pos);
             jit.record_boundary_patch_point = false;
-
-
-
         }
 
         // In debug mode, verify our existing assumption
@@ -777,7 +777,7 @@ pub fn gen_single_block(
         }
 
         // Lookup the codegen function for this instruction
-        let mut status = CantCompile;
+        status = CantCompile;
         if let Some(gen_fn) = get_gen_fn(VALUE(opcode)) {
             // :count-placement:
             // Count bytecode instructions that execute in generated code.
@@ -820,6 +820,11 @@ pub fn gen_single_block(
             break;
         }
 
+        // If we are deferring compilation for this instruction
+        if status == DeferCompilation {
+            break;
+        }
+
         // For now, reset the chain depth after each instruction as only the
         // first instruction in the block can concern itself with the depth.
         ctx.reset_chain_depth();
@@ -850,9 +855,24 @@ pub fn gen_single_block(
         block.set_end_idx(insn_idx);
     }
 
+    // If we are deferring compilation for the current instruction
+    if status == DeferCompilation {
+        defer_compilation(&jit.block, insn_idx, &ctx, cb, ocb);
+
+        // Mark the end position of the block
+        let mut block = jit.block.borrow_mut();
+        block.set_end_addr(cb.get_write_ptr());
+    }
+
+
+
     // We currently can't handle cases where the request is for a block that
     // doesn't go to the next instruction.
     //assert!(!jit.record_boundary_patch_point);
+
+
+
+
 
     // If code for the block doesn't fit, fail
     if cb.has_dropped_bytes() || ocb.unwrap().has_dropped_bytes() {
@@ -1100,8 +1120,6 @@ fn gen_adjuststack(
     KeepCompiling
 }
 
-
-/*
 fn gen_opt_plus(
     jit: &mut JITState,
     ctx: &mut Context,
@@ -1109,8 +1127,7 @@ fn gen_opt_plus(
     ocb: &mut OutlinedCb,
 ) -> CodegenStatus {
     if !jit_at_current_insn(jit) {
-        defer_compilation(jit, ctx, cb, ocb);
-        return EndBlock;
+        return DeferCompilation;
     }
 
     let comptime_a = jit_peek_at_stack(jit, ctx, 1);
@@ -1147,9 +1164,6 @@ fn gen_opt_plus(
         //gen_opt_send_without_block(jit, ctx, cb, ocb)
     }
 }
-*/
-
-
 
 // new array initialized from top N values
 fn gen_newarray(
@@ -5969,7 +5983,7 @@ fn get_gen_fn(opcode: VALUE) -> Option<InsnGenFn> {
         //YARVINSN_setlocal => Some(gen_setlocal),
         //YARVINSN_setlocal_WC_0 => Some(gen_setlocal_wc0),
         //YARVINSN_setlocal_WC_1 => Some(gen_setlocal_wc1),
-        //YARVINSN_opt_plus => Some(gen_opt_plus),
+        YARVINSN_opt_plus => Some(gen_opt_plus),
         /*
         YARVINSN_opt_minus => Some(gen_opt_minus),
         YARVINSN_opt_and => Some(gen_opt_and),
