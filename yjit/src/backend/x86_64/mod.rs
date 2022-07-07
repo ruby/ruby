@@ -44,6 +44,7 @@ impl From<Opnd> for X86Opnd {
 
             Opnd::UImm(val) => uimm_opnd(val),
             Opnd::Imm(val) => imm_opnd(val),
+            Opnd::Value(VALUE(uimm)) => uimm_opnd(uimm as u64),
 
             // General-purpose register
             Opnd::Reg(reg) => X86Opnd::Reg(reg),
