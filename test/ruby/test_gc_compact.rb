@@ -250,6 +250,7 @@ class TestGCCompact < Test::Unit::TestCase
   end
 
   def test_moving_strings_up_size_pools
+    omit if !GC.using_rvargc?
     assert_separately([], "#{<<~"begin;"}\n#{<<~"end;"}", timeout: 10, signal: :SEGV)
     begin;
       STR_COUNT = 500
@@ -267,6 +268,7 @@ class TestGCCompact < Test::Unit::TestCase
   end
 
   def test_moving_strings_down_size_pools
+    omit if !GC.using_rvargc?
     assert_separately([], "#{<<~"begin;"}\n#{<<~"end;"}", timeout: 10, signal: :SEGV)
     begin;
       STR_COUNT = 500
