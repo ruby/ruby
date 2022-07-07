@@ -166,7 +166,7 @@ class TestGCCompact < Test::Unit::TestCase
     hash = list_of_objects.hash
     GC.verify_compaction_references(toward: :empty)
     assert_equal hash, list_of_objects.hash
-    GC.verify_compaction_references(double_heap: false)
+    GC.verify_compaction_references(expand_heap: false)
     assert_equal hash, list_of_objects.hash
   end
 
@@ -214,12 +214,12 @@ class TestGCCompact < Test::Unit::TestCase
     begin;
       STR_COUNT = 500
 
-      GC.verify_compaction_references(double_heap: true, toward: :empty)
+      GC.verify_compaction_references(expand_heap: true, toward: :empty)
 
       str = "a" * GC::INTERNAL_CONSTANTS[:BASE_SLOT_SIZE]
       ary = STR_COUNT.times.map { "" << str }
 
-      stats = GC.verify_compaction_references(double_heap: true, toward: :empty)
+      stats = GC.verify_compaction_references(expand_heap: true, toward: :empty)
 
       assert_operator(stats[:moved_up][:T_STRING], :>=, STR_COUNT)
       assert(ary) # warning: assigned but unused variable - ary
@@ -231,11 +231,11 @@ class TestGCCompact < Test::Unit::TestCase
     begin;
       STR_COUNT = 500
 
-      GC.verify_compaction_references(double_heap: true, toward: :empty)
+      GC.verify_compaction_references(expand_heap: true, toward: :empty)
 
       ary = STR_COUNT.times.map { ("a" * GC::INTERNAL_CONSTANTS[:BASE_SLOT_SIZE]).squeeze! }
 
-      stats = GC.verify_compaction_references(double_heap: true, toward: :empty)
+      stats = GC.verify_compaction_references(expand_heap: true, toward: :empty)
 
       assert_operator(stats[:moved_down][:T_STRING], :>=, STR_COUNT)
       assert(ary) # warning: assigned but unused variable - ary
