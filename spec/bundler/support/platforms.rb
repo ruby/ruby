@@ -52,10 +52,6 @@ module Spec
       [rb, java, linux, windows_platforms].flatten
     end
 
-    def local
-      generic_local_platform
-    end
-
     def specific_local_platform
       Bundler.local_platform
     end
