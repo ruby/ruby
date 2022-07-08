@@ -1394,6 +1394,7 @@ x = __ENCODING__
                 1
     end;
     assert_equal(expected, eval(code))
+    assert_equal(expected, obj.arg)
 
     assert_valid_syntax(code = "#{<<~"do;"}\n#{<<~'end;'}")
     do;
@@ -1401,6 +1402,7 @@ x = __ENCODING__
                   1
     end;
     assert_equal(expected, eval(code))
+    assert_equal(expected, obj.arg)
   end
 
 =begin

@@ -1155,18 +1155,25 @@ END
       end
     end
 
-    [{a: 42}, {b: 42}].each do |i|
-      assert_block('newline should be insignificant after pattern label') do
+    bug18890 = assert_warning(/(?:.*:[47]: warning: unused literal ignored\n){2}/) do
+      eval("#{<<~';;;'}")
+      proc do |i|
         case i
         in a:
-          0
-          true
+          0 # line 4
+          a
         in "b":
-          0
-          true
+          0 # line 7
+          b
         else
           false
         end
+      end
+      ;;;
+    end
+    [{a: 42}, {b: 42}].each do |i|
+      assert_block('newline should be significant after pattern label') do
+        bug18890.call(i)
       end
     end
 
