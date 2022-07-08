@@ -21,7 +21,7 @@ static RB_THREAD_LOCAL_SPECIFIER unsigned int local_ready_count = 0;
 static RB_THREAD_LOCAL_SPECIFIER unsigned int local_resumed_count = 0;
 static RB_THREAD_LOCAL_SPECIFIER unsigned int local_suspended_count = 0;
 
-void
+static void
 ex_callback(rb_event_flag_t event, const rb_internal_thread_event_data_t *event_data, void *user_data)
 {
     switch (event) {
