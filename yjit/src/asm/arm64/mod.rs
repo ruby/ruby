@@ -39,11 +39,21 @@ pub fn add(cb: &mut CodeBlock, rd: A64Opnd, rn: A64Opnd, rm: A64Opnd) {
 
             DataReg::add(rd.reg_no, rn.reg_no, rm.reg_no, rd.num_bits).into()
         },
-        (A64Opnd::Reg(rd), A64Opnd::Reg(rn), A64Opnd::UImm(imm12)) => {
+        (A64Opnd::Reg(rd), A64Opnd::Reg(rn), A64Opnd::UImm(uimm12)) => {
             assert!(rd.num_bits == rn.num_bits, "rd and rn must be of the same size.");
-            assert!(uimm_fits_bits(imm12, 12), "The immediate operand must be 12 bits or less.");
+            assert!(uimm_fits_bits(uimm12, 12), "The immediate operand must be 12 bits or less.");
 
-            DataImm::add(rd.reg_no, rn.reg_no, imm12 as u16, rd.num_bits).into()
+            DataImm::add(rd.reg_no, rn.reg_no, uimm12 as u16, rd.num_bits).into()
+        },
+        (A64Opnd::Reg(rd), A64Opnd::Reg(rn), A64Opnd::Imm(imm12)) => {
+            assert!(rd.num_bits == rn.num_bits, "rd and rn must be of the same size.");
+            assert!(imm_fits_bits(imm12, 12), "The immediate operand must be 12 bits or less.");
+
+            if imm12 < 0 {
+                DataImm::sub(rd.reg_no, rn.reg_no, -imm12 as u16, rd.num_bits).into()
+            } else {
+                DataImm::add(rd.reg_no, rn.reg_no, imm12 as u16, rd.num_bits).into()
+            }
         },
         _ => panic!("Invalid operand combination to add instruction."),
     };
@@ -67,6 +77,16 @@ pub fn adds(cb: &mut CodeBlock, rd: A64Opnd, rn: A64Opnd, rm: A64Opnd) {
             assert!(uimm_fits_bits(imm12, 12), "The immediate operand must be 12 bits or less.");
 
             DataImm::adds(rd.reg_no, rn.reg_no, imm12 as u16, rd.num_bits).into()
+        },
+        (A64Opnd::Reg(rd), A64Opnd::Reg(rn), A64Opnd::Imm(imm12)) => {
+            assert!(rd.num_bits == rn.num_bits, "rd and rn must be of the same size.");
+            assert!(imm_fits_bits(imm12, 12), "The immediate operand must be 12 bits or less.");
+
+            if imm12 < 0 {
+                DataImm::subs(rd.reg_no, rn.reg_no, -imm12 as u16, rd.num_bits).into()
+            } else {
+                DataImm::adds(rd.reg_no, rn.reg_no, imm12 as u16, rd.num_bits).into()
+            }
         },
         _ => panic!("Invalid operand combination to adds instruction."),
     };
@@ -232,6 +252,18 @@ pub fn ldaddal(cb: &mut CodeBlock, rs: A64Opnd, rt: A64Opnd, rn: A64Opnd) {
             Atomic::ldaddal(rs.reg_no, rt.reg_no, rn.reg_no, rs.num_bits).into()
         },
         _ => panic!("Invalid operand combination to ldaddal instruction."),
+    };
+
+    cb.write_bytes(&bytes);
+}
+
+/// LDR - load a PC-relative memory address into a register
+pub fn ldr(cb: &mut CodeBlock, rt: A64Opnd, rn: i32) {
+    let bytes: [u8; 4] = match rt {
+        A64Opnd::Reg(rt) => {
+            LoadLiteral::ldr(rt.reg_no, rn, rt.num_bits).into()
+        },
+        _ => panic!("Invalid operand combination to ldr instruction."),
     };
 
     cb.write_bytes(&bytes);
@@ -415,11 +447,21 @@ pub fn sub(cb: &mut CodeBlock, rd: A64Opnd, rn: A64Opnd, rm: A64Opnd) {
 
             DataReg::sub(rd.reg_no, rn.reg_no, rm.reg_no, rd.num_bits).into()
         },
-        (A64Opnd::Reg(rd), A64Opnd::Reg(rn), A64Opnd::UImm(imm12)) => {
+        (A64Opnd::Reg(rd), A64Opnd::Reg(rn), A64Opnd::UImm(uimm12)) => {
             assert!(rd.num_bits == rn.num_bits, "rd and rn must be of the same size.");
-            assert!(uimm_fits_bits(imm12, 12), "The immediate operand must be 12 bits or less.");
+            assert!(uimm_fits_bits(uimm12, 12), "The immediate operand must be 12 bits or less.");
 
-            DataImm::sub(rd.reg_no, rn.reg_no, imm12 as u16, rd.num_bits).into()
+            DataImm::sub(rd.reg_no, rn.reg_no, uimm12 as u16, rd.num_bits).into()
+        },
+        (A64Opnd::Reg(rd), A64Opnd::Reg(rn), A64Opnd::Imm(imm12)) => {
+            assert!(rd.num_bits == rn.num_bits, "rd and rn must be of the same size.");
+            assert!(imm_fits_bits(imm12, 12), "The immediate operand must be 12 bits or less.");
+
+            if imm12 < 0 {
+                DataImm::add(rd.reg_no, rn.reg_no, -imm12 as u16, rd.num_bits).into()
+            } else {
+                DataImm::sub(rd.reg_no, rn.reg_no, imm12 as u16, rd.num_bits).into()
+            }
         },
         _ => panic!("Invalid operand combination to sub instruction."),
     };
@@ -438,11 +480,21 @@ pub fn subs(cb: &mut CodeBlock, rd: A64Opnd, rn: A64Opnd, rm: A64Opnd) {
 
             DataReg::subs(rd.reg_no, rn.reg_no, rm.reg_no, rd.num_bits).into()
         },
-        (A64Opnd::Reg(rd), A64Opnd::Reg(rn), A64Opnd::UImm(imm12)) => {
+        (A64Opnd::Reg(rd), A64Opnd::Reg(rn), A64Opnd::UImm(uimm12)) => {
             assert!(rd.num_bits == rn.num_bits, "rd and rn must be of the same size.");
-            assert!(uimm_fits_bits(imm12, 12), "The immediate operand must be 12 bits or less.");
+            assert!(uimm_fits_bits(uimm12, 12), "The immediate operand must be 12 bits or less.");
 
-            DataImm::subs(rd.reg_no, rn.reg_no, imm12 as u16, rd.num_bits).into()
+            DataImm::subs(rd.reg_no, rn.reg_no, uimm12 as u16, rd.num_bits).into()
+        },
+        (A64Opnd::Reg(rd), A64Opnd::Reg(rn), A64Opnd::Imm(imm12)) => {
+            assert!(rd.num_bits == rn.num_bits, "rd and rn must be of the same size.");
+            assert!(imm_fits_bits(imm12, 12), "The immediate operand must be 12 bits or less.");
+
+            if imm12 < 0 {
+                DataImm::adds(rd.reg_no, rn.reg_no, -imm12 as u16, rd.num_bits).into()
+            } else {
+                DataImm::subs(rd.reg_no, rn.reg_no, imm12 as u16, rd.num_bits).into()
+            }
         },
         _ => panic!("Invalid operand combination to subs instruction."),
     };
@@ -513,23 +565,43 @@ mod tests {
     }
 
     #[test]
-    fn test_add_register() {
+    fn test_add_reg() {
         check_bytes("2000028b", |cb| add(cb, X0, X1, X2));
     }
 
     #[test]
-    fn test_add_immediate() {
+    fn test_add_uimm() {
         check_bytes("201c0091", |cb| add(cb, X0, X1, A64Opnd::new_uimm(7)));
     }
 
     #[test]
-    fn test_adds_register() {
+    fn test_add_imm_positive() {
+        check_bytes("201c0091", |cb| add(cb, X0, X1, A64Opnd::new_imm(7)));
+    }
+
+    #[test]
+    fn test_add_imm_negative() {
+        check_bytes("201c00d1", |cb| add(cb, X0, X1, A64Opnd::new_imm(-7)));
+    }
+
+    #[test]
+    fn test_adds_reg() {
         check_bytes("200002ab", |cb| adds(cb, X0, X1, X2));
     }
 
     #[test]
-    fn test_adds_immediate() {
+    fn test_adds_uimm() {
         check_bytes("201c00b1", |cb| adds(cb, X0, X1, A64Opnd::new_uimm(7)));
+    }
+
+    #[test]
+    fn test_adds_imm_positive() {
+        check_bytes("201c00b1", |cb| adds(cb, X0, X1, A64Opnd::new_imm(7)));
+    }
+
+    #[test]
+    fn test_adds_imm_negatve() {
+        check_bytes("201c00f1", |cb| adds(cb, X0, X1, A64Opnd::new_imm(-7)));
     }
 
     #[test]
@@ -595,6 +667,11 @@ mod tests {
     #[test]
     fn test_ldaddal() {
         check_bytes("8b01eaf8", |cb| ldaddal(cb, X10, X11, X12));
+    }
+
+    #[test]
+    fn test_ldr() {
+        check_bytes("40010058", |cb| ldr(cb, X0, 10));
     }
 
     #[test]
@@ -678,22 +755,42 @@ mod tests {
     }
 
     #[test]
-    fn test_sub_register() {
+    fn test_sub_reg() {
         check_bytes("200002cb", |cb| sub(cb, X0, X1, X2));
     }
 
     #[test]
-    fn test_sub_immediate() {
+    fn test_sub_uimm() {
         check_bytes("201c00d1", |cb| sub(cb, X0, X1, A64Opnd::new_uimm(7)));
     }
 
     #[test]
-    fn test_subs_register() {
+    fn test_sub_imm_positive() {
+        check_bytes("201c00d1", |cb| sub(cb, X0, X1, A64Opnd::new_imm(7)));
+    }
+
+    #[test]
+    fn test_sub_imm_negative() {
+        check_bytes("201c0091", |cb| sub(cb, X0, X1, A64Opnd::new_imm(-7)));
+    }
+
+    #[test]
+    fn test_subs_reg() {
         check_bytes("200002eb", |cb| subs(cb, X0, X1, X2));
     }
 
     #[test]
-    fn test_subs_immediate() {
+    fn test_subs_imm_positive() {
+        check_bytes("201c00f1", |cb| subs(cb, X0, X1, A64Opnd::new_imm(7)));
+    }
+
+    #[test]
+    fn test_subs_imm_negative() {
+        check_bytes("201c00b1", |cb| subs(cb, X0, X1, A64Opnd::new_imm(-7)));
+    }
+
+    #[test]
+    fn test_subs_uimm() {
         check_bytes("201c00f1", |cb| subs(cb, X0, X1, A64Opnd::new_uimm(7)));
     }
 

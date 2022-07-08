@@ -175,3 +175,4 @@ pub const W31: A64Reg = A64Reg { num_bits: 32, reg_no: 31 };
 
 // C argument registers
 pub const C_ARG_REGS: [A64Opnd; 4] = [X0, X1, X2, X3];
+pub const C_ARG_REGREGS: [A64Reg; 4] = [X0_REG, X1_REG, X2_REG, X3_REG];

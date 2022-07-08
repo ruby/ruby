@@ -61,10 +61,7 @@ impl Assembler
     /// Get the list of registers from which we can allocate on this platform
     pub fn get_alloc_regs() -> Vec<Reg>
     {
-        vec![
-            X12_REG,
-            X13_REG
-        ]
+        vec![C_RET_REG, X12_REG]
     }
 
     /// Split platform-specific instructions
@@ -75,8 +72,21 @@ impl Assembler
     fn arm64_split(mut self) -> Assembler
     {
         self.forward_pass(|asm, index, op, opnds, target| {
+            // Load all Value operands into registers that aren't already a part
+            // of Load instructions.
+            let opnds = match op {
+                Op::Load => opnds,
+                _ => opnds.into_iter().map(|opnd| {
+                    if let Opnd::Value(_) = opnd {
+                        asm.load(opnd)
+                    } else {
+                        opnd
+                    }
+                }).collect()
+            };
+
             match op {
-                Op::Add | Op::Sub => {
+                Op::Add | Op::And | Op::Sub => {
                     // Check if one of the operands is a register. If it is,
                     // then we'll make that the first operand.
                     match (opnds[0], opnds[1]) {
@@ -94,6 +104,28 @@ impl Assembler
                             asm.push_insn(op, opnds, target);
                         }
                     }
+                },
+                Op::CCall => {
+                    assert!(opnds.len() < C_ARG_REGS.len());
+
+                    // For each of the operands we're going to first load them
+                    // into a register and then move them into the correct
+                    // argument register.
+                    for (idx, opnd) in opnds.into_iter().enumerate() {
+                        let value = asm.load(opnd);
+                        asm.mov(Opnd::Reg(C_ARG_REGREGS[idx]), value);
+                    }
+
+                    // Now we push the CCall without any arguments so that it
+                    // just performs the call.
+                    asm.ccall(target.unwrap().unwrap_fun_ptr(), vec![]);
+                },
+                Op::CRet => {
+                    if opnds[0] != Opnd::Reg(C_RET_REG) {
+                        let value = asm.load(opnds[0]);
+                        asm.mov(C_RET_OPND, value);
+                    }
+                    asm.cret(C_RET_OPND);
                 },
                 Op::IncrCounter => {
                     // Every operand to the IncrCounter instruction need to be a
@@ -154,6 +186,16 @@ impl Assembler
 
                     asm.store(opnds[0], opnd1);
                 },
+                Op::Test => {
+                    // The value being tested must be in a register, so if it's
+                    // not already one we'll load it first.
+                    let opnd0 = match opnds[0] {
+                        Opnd::Reg(_) | Opnd::InsnOut { .. } => opnds[0],
+                        _ => asm.load(opnds[0])
+                    };
+
+                    asm.test(opnd0, opnds[1]);
+                },
                 _ => {
                     asm.push_insn(op, opnds, target);
                 }
@@ -165,6 +207,45 @@ impl Assembler
     /// Returns a list of GC offsets
     pub fn arm64_emit(&mut self, cb: &mut CodeBlock) -> Vec<u32>
     {
+        /// Emit the required instructions to load the given value into the
+        /// given register. Our goal here is to use as few instructions as
+        /// possible to get this value into the register.
+        fn emit_load_value(cb: &mut CodeBlock, rd: A64Opnd, value: u64) {
+            let mut current = value;
+
+            if current <= 0xffff {
+                // If the value fits into a single movz
+                // instruction, then we'll use that.
+                movz(cb, rd, A64Opnd::new_uimm(current), 0);
+            } else if BitmaskImmediate::try_from(current).is_ok() {
+                // Otherwise, if the immediate can be encoded
+                // with the special bitmask immediate encoding,
+                // we'll use that.
+                mov(cb, rd, A64Opnd::new_uimm(current));
+            } else {
+                // Finally we'll fall back to encoding the value
+                // using movz for the first 16 bits and movk for
+                // each subsequent set of 16 bits as long we
+                // they are necessary.
+                movz(cb, rd, A64Opnd::new_uimm(current & 0xffff), 0);
+
+                // (We're sure this is necessary since we
+                // checked if it only fit into movz above).
+                current >>= 16;
+                movk(cb, rd, A64Opnd::new_uimm(current & 0xffff), 16);
+
+                if current > 0xffff {
+                    current >>= 16;
+                    movk(cb, rd, A64Opnd::new_uimm(current & 0xffff), 32);
+                }
+
+                if current > 0xffff {
+                    current >>= 16;
+                    movk(cb, rd, A64Opnd::new_uimm(current & 0xffff), 48);
+                }
+            }
+        }
+
         /// Emit a conditional jump instruction to a specific target. This is
         /// called when lowering any of the conditional jump instructions.
         fn emit_conditional_jump(cb: &mut CodeBlock, condition: Condition, target: Target) {
@@ -203,7 +284,7 @@ impl Assembler
                             // wasn't met, in which case we'll jump past the
                             // next instruction that perform the direct jump.
                             b(cb, A64Opnd::new_imm(8));
-                            mov(cb, X29, A64Opnd::new_uimm(dst_addr as u64));
+                            emit_load_value(cb, X29, dst_addr as u64);
                             br(cb, X29);
                         }
                     }
@@ -257,25 +338,57 @@ impl Assembler
                     stur(cb, insn.opnds[1].into(), insn.opnds[0].into());
                 },
                 Op::Load => {
-                    mov(cb, insn.out.into(), insn.opnds[0].into());
+                    match insn.opnds[0] {
+                        Opnd::Reg(_) | Opnd::InsnOut { .. } => {
+                            mov(cb, insn.out.into(), insn.opnds[0].into());
+                        },
+                        Opnd::UImm(uimm) => {
+                            emit_load_value(cb, insn.out.into(), uimm);
+                        },
+                        Opnd::Imm(imm) => {
+                            emit_load_value(cb, insn.out.into(), imm as u64);
+                        },
+                        Opnd::Mem(_) => {
+                            ldur(cb, insn.out.into(), insn.opnds[0].into());
+                        },
+                        Opnd::Value(value) => {
+                            // This assumes only load instructions can contain
+                            // references to GC'd Value operands. If the value
+                            // being loaded is a heap object, we'll report that
+                            // back out to the gc_offsets list.
+                            ldr(cb, insn.out.into(), 1);
+                            b(cb, A64Opnd::new_uimm((SIZEOF_VALUE as u64) / 4));
+                            cb.write_bytes(&value.as_u64().to_le_bytes());
 
-                    // This assumes only load instructions can contain
-                    // references to GC'd Value operands. If the value being
-                    // loaded is a heap object, we'll report that back out to
-                    // the gc_offsets list.
-                    if let Opnd::Value(val) = insn.opnds[0] {
-                        if !val.special_const_p() {
-                            // The pointer immediate is encoded as the last part of the mov written out
-                            let ptr_offset: u32 = (cb.get_write_pos() as u32) - (SIZEOF_VALUE as u32);
-                            gc_offsets.push(ptr_offset);
+                            if !value.special_const_p() {
+                                let ptr_offset: u32 = (cb.get_write_pos() as u32) - (SIZEOF_VALUE as u32);
+                                gc_offsets.push(ptr_offset);
+                            }
+                        },
+                        Opnd::None => {
+                            unreachable!("Attempted to load from None operand");
                         }
-                    }
+                    };
                 },
                 Op::Mov => {
                     mov(cb, insn.opnds[0].into(), insn.opnds[1].into());
                 },
                 Op::Lea => {
-                    ldur(cb, insn.out.into(), insn.opnds[0].into());
+                    let opnd: A64Opnd = insn.opnds[0].into();
+
+                    match opnd {
+                        A64Opnd::Mem(mem) => {
+                            add(
+                                cb,
+                                insn.out.into(),
+                                A64Opnd::Reg(A64Reg { reg_no: mem.base_reg_no, num_bits: 64 }),
+                                A64Opnd::new_imm(mem.disp.into())
+                            );
+                        },
+                        _ => {
+                            panic!("Op::Lea only accepts Opnd::Mem operands.");
+                        }
+                    };
                 },
                 Op::CPush => {
                     add(cb, C_SP_REG, C_SP_REG, C_SP_STEP);
@@ -286,14 +399,6 @@ impl Assembler
                     sub(cb, C_SP_REG, C_SP_REG, C_SP_STEP);
                 },
                 Op::CCall => {
-                    // Temporary
-                    assert!(insn.opnds.len() < C_ARG_REGS.len());
-
-                    // For each operand
-                    for (idx, opnd) in insn.opnds.iter().enumerate() {
-                        mov(cb, C_ARG_REGS[idx], insn.opnds[idx].into());
-                    }
-
                     let src_addr = cb.get_write_ptr().into_i64() + 4;
                     let dst_addr = insn.target.unwrap().unwrap_fun_ptr() as i64;
 
@@ -310,17 +415,12 @@ impl Assembler
                     if b_offset_fits_bits(offset) {
                         bl(cb, A64Opnd::new_imm(offset / 4));
                     } else {
-                        mov(cb, X30, A64Opnd::new_uimm(src_addr as u64));
-                        mov(cb, X29, A64Opnd::new_uimm(dst_addr as u64));
+                        emit_load_value(cb, X30, src_addr as u64);
+                        emit_load_value(cb, X29, dst_addr as u64);
                         br(cb, X29);
                     }
                 },
                 Op::CRet => {
-                    // TODO: bias allocation towards return register
-                    if insn.opnds[0] != Opnd::Reg(C_RET_REG) {
-                        mov(cb, C_RET_OPND.into(), insn.opnds[0].into());
-                    }
-
                     ret(cb, A64Opnd::None);
                 },
                 Op::Cmp => {
@@ -351,7 +451,7 @@ impl Assembler
                             if b_offset_fits_bits(offset) {
                                 b(cb, A64Opnd::new_imm(offset / 4));
                             } else {
-                                mov(cb, X29, A64Opnd::new_uimm(dst_addr as u64));
+                                emit_load_value(cb, X29, dst_addr as u64);
                                 br(cb, X29);
                             }
                         },
@@ -398,7 +498,7 @@ impl Assembler
     /// Optimize and compile the stored instructions
     pub fn compile_with_regs(self, cb: &mut CodeBlock, regs: Vec<Reg>) -> Vec<u32>
     {
-        let mut asm = self.arm64_split().split_loads().alloc_regs(regs);
+        let mut asm = self.arm64_split().alloc_regs(regs);
 
         // Create label instances in the code block
         for (idx, name) in asm.label_names.iter().enumerate() {
