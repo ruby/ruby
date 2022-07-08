@@ -257,7 +257,7 @@ iseq_scan_bits(unsigned int page, iseq_bits_t bits, VALUE *code, iseq_value_itr_
                 original_iseq[page_offset + offset] = newop;
             }
         }
-        bits ^= bits & -bits; // Reset Lowest Set Bit (BLSR)
+        bits &= bits - 1; // Reset Lowest Set Bit (BLSR)
     }
 }
 
