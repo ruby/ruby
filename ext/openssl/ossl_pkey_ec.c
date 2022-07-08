@@ -227,7 +227,7 @@ ossl_ec_key_initialize_copy(VALUE self, VALUE other)
 static VALUE
 ossl_ec_key_get_group(VALUE self)
 {
-    EC_KEY *ec;
+    OSSL_3_const EC_KEY *ec;
     const EC_GROUP *group;
 
     GetEC(self, ec);
@@ -272,7 +272,7 @@ ossl_ec_key_set_group(VALUE self, VALUE group_v)
  */
 static VALUE ossl_ec_key_get_private_key(VALUE self)
 {
-    EC_KEY *ec;
+    OSSL_3_const EC_KEY *ec;
     const BIGNUM *bn;
 
     GetEC(self, ec);
@@ -323,7 +323,7 @@ static VALUE ossl_ec_key_set_private_key(VALUE self, VALUE private_key)
  */
 static VALUE ossl_ec_key_get_public_key(VALUE self)
 {
-    EC_KEY *ec;
+    OSSL_3_const EC_KEY *ec;
     const EC_POINT *point;
 
     GetEC(self, ec);
@@ -375,7 +375,7 @@ static VALUE ossl_ec_key_set_public_key(VALUE self, VALUE public_key)
  */
 static VALUE ossl_ec_key_is_public(VALUE self)
 {
-    EC_KEY *ec;
+    OSSL_3_const EC_KEY *ec;
 
     GetEC(self, ec);
 
@@ -391,7 +391,7 @@ static VALUE ossl_ec_key_is_public(VALUE self)
  */
 static VALUE ossl_ec_key_is_private(VALUE self)
 {
-    EC_KEY *ec;
+    OSSL_3_const EC_KEY *ec;
 
     GetEC(self, ec);
 
@@ -411,7 +411,7 @@ static VALUE ossl_ec_key_is_private(VALUE self)
 static VALUE
 ossl_ec_key_export(int argc, VALUE *argv, VALUE self)
 {
-    EC_KEY *ec;
+    OSSL_3_const EC_KEY *ec;
 
     GetEC(self, ec);
     if (EC_KEY_get0_public_key(ec) == NULL)
@@ -431,7 +431,7 @@ ossl_ec_key_export(int argc, VALUE *argv, VALUE self)
 static VALUE
 ossl_ec_key_to_der(VALUE self)
 {
-    EC_KEY *ec;
+    OSSL_3_const EC_KEY *ec;
 
     GetEC(self, ec);
     if (EC_KEY_get0_public_key(ec) == NULL)

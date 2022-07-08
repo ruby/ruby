@@ -291,7 +291,7 @@ ossl_tmp_dh_callback(SSL *ssl, int is_export, int keylength)
     if (!pkey)
 	return NULL;
 
-    return EVP_PKEY_get0_DH(pkey);
+    return (DH *)EVP_PKEY_get0_DH(pkey);
 }
 #endif /* OPENSSL_NO_DH */
 
