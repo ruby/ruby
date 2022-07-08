@@ -4515,7 +4515,7 @@ date_s__parse(int argc, VALUE *argv, VALUE klass)
  * Raise an ArgumentError when the string length is longer than _limit_.
  * You can stop this check by passing `limit: nil`, but note that
  * it may take a long time to parse.
- ^
+ *
  * See argument {start}[rdoc-ref:Date@Argument+start].
  */
 static VALUE
@@ -5186,12 +5186,15 @@ d_lite_mjd(VALUE self)
 
 /*
  * call-seq:
- *    d.ld  ->  integer
+ *   ld -> integer
  *
- * Returns the Lilian day number.  This is a whole number, which is
- * adjusted by the offset as the local time.
+ * Returns the
+ * {Lilian day number}[https://en.wikipedia.org/wiki/Lilian_date],
+ * which is the number of days since the beginning of the Gregorian
+ * calendar, October 15, 1582.
  *
- *     Date.new(2001,2,3).ld		#=> 152784
+ *   Date.new(2001, 2, 3).ld # => 152784
+ *
  */
 static VALUE
 d_lite_ld(VALUE self)
@@ -5202,12 +5205,13 @@ d_lite_ld(VALUE self)
 
 /*
  * call-seq:
- *    d.year  ->  integer
+ *   year -> integer
  *
- * Returns the year.
+ * Returns the year:
  *
- *    Date.new(2001,2,3).year		#=> 2001
- *    (Date.new(1,1,1) - 1).year	#=> 0
+ *   Date.new(2001, 2, 3).year    # => 2001
+ *   (Date.new(1, 1, 1) - 1).year # => 0
+ *
  */
 static VALUE
 d_lite_year(VALUE self)
@@ -5218,11 +5222,12 @@ d_lite_year(VALUE self)
 
 /*
  * call-seq:
- *    d.yday  ->  fixnum
+ *   yday -> integer
  *
- * Returns the day of the year (1-366).
+ * Returns the day of the year, in range (1..366):
  *
- *    Date.new(2001,2,3).yday		#=> 34
+ *   Date.new(2001, 2, 3).yday # => 34
+ *
  */
 static VALUE
 d_lite_yday(VALUE self)
@@ -5233,12 +5238,13 @@ d_lite_yday(VALUE self)
 
 /*
  * call-seq:
- *    d.mon    ->  fixnum
- *    d.month  ->  fixnum
+ *   mon -> integer
  *
- * Returns the month (1-12).
+ * Returns the month in range (1..12):
  *
- *    Date.new(2001,2,3).mon		#=> 2
+ *   Date.new(2001, 2, 3).mon # => 2
+ *
+ * Date#month is an alias for Date#mon.
  */
 static VALUE
 d_lite_mon(VALUE self)
@@ -5249,12 +5255,13 @@ d_lite_mon(VALUE self)
 
 /*
  * call-seq:
- *    d.mday  ->  fixnum
- *    d.day   ->  fixnum
+ *   mday -> integer
  *
- * Returns the day of the month (1-31).
+ * Returns the day of the month in range (1..31):
  *
- *    Date.new(2001,2,3).mday		#=> 3
+ *   Date.new(2001, 2, 3).mday # => 3
+ *
+ * Date#day is an alias for Date#mday.
  */
 static VALUE
 d_lite_mday(VALUE self)
@@ -5265,11 +5272,12 @@ d_lite_mday(VALUE self)
 
 /*
  * call-seq:
- *    d.day_fraction  ->  rational
+ *   day_fraction -> rational
  *
- * Returns the fractional part of the day.
+ * Returns the fractional part of the day in range (Rational(0, 1)...Rational(1, 1)):
  *
- *    DateTime.new(2001,2,3,12).day_fraction	#=> (1/2)
+ *   DateTime.new(2001,2,3,12).day_fraction # => (1/2)
+ *
  */
 static VALUE
 d_lite_day_fraction(VALUE self)
@@ -5351,11 +5359,12 @@ d_lite_wnum1(VALUE self)
 
 /*
  * call-seq:
- *    d.wday  ->  fixnum
+ *   wday -> integer
  *
- * Returns the day of week (0-6, Sunday is zero).
+ * Returns the day of week in range (0..6); Sunday is 0:
  *
- *    Date.new(2001,2,3).wday		#=> 6
+ *   Date.new(2001, 2, 3).wday # => 6
+ *
  */
 static VALUE
 d_lite_wday(VALUE self)
@@ -5366,9 +5375,9 @@ d_lite_wday(VALUE self)
 
 /*
  * call-seq:
- *    d.sunday?  ->  bool
+ *   sunday? -> true or false
  *
- * Returns true if the date is Sunday.
+ * Returns +true+ if +self+ is a Sunday, +false+ otherwise.
  */
 static VALUE
 d_lite_sunday_p(VALUE self)
@@ -5379,9 +5388,9 @@ d_lite_sunday_p(VALUE self)
 
 /*
  * call-seq:
- *    d.monday?  ->  bool
+ *   monday? -> true or false
  *
- * Returns true if the date is Monday.
+ * Returns +true+ if +self+ is a Monday, +false+ otherwise.
  */
 static VALUE
 d_lite_monday_p(VALUE self)
@@ -5392,9 +5401,9 @@ d_lite_monday_p(VALUE self)
 
 /*
  * call-seq:
- *    d.tuesday?  ->  bool
+ *   tuesday? -> true or false
  *
- * Returns true if the date is Tuesday.
+ * Returns +true+ if +self+ is a Tuesday, +false+ otherwise.
  */
 static VALUE
 d_lite_tuesday_p(VALUE self)
@@ -5405,9 +5414,9 @@ d_lite_tuesday_p(VALUE self)
 
 /*
  * call-seq:
- *    d.wednesday?  ->  bool
+ *   wednesday? -> true or false
  *
- * Returns true if the date is Wednesday.
+ * Returns +true+ if +self+ is a Wednesday, +false+ otherwise.
  */
 static VALUE
 d_lite_wednesday_p(VALUE self)
@@ -5418,9 +5427,9 @@ d_lite_wednesday_p(VALUE self)
 
 /*
  * call-seq:
- *    d.thursday?  ->  bool
+ *   thursday? -> true or false
  *
- * Returns true if the date is Thursday.
+ * Returns +true+ if +self+ is a Thursday, +false+ otherwise.
  */
 static VALUE
 d_lite_thursday_p(VALUE self)
@@ -5431,9 +5440,9 @@ d_lite_thursday_p(VALUE self)
 
 /*
  * call-seq:
- *    d.friday?  ->  bool
+ *   friday? -> true or false
  *
- * Returns true if the date is Friday.
+ * Returns +true+ if +self+ is a Friday, +false+ otherwise.
  */
 static VALUE
 d_lite_friday_p(VALUE self)
@@ -5444,9 +5453,9 @@ d_lite_friday_p(VALUE self)
 
 /*
  * call-seq:
- *    d.saturday?  ->  bool
+ *   saturday? -> true or false
  *
- * Returns true if the date is Saturday.
+ * Returns +true+ if +self+ is a Saturday, +false+ otherwise.
  */
 static VALUE
 d_lite_saturday_p(VALUE self)
@@ -5477,11 +5486,12 @@ d_lite_nth_kday_p(VALUE self, VALUE n, VALUE k)
 
 /*
  * call-seq:
- *    d.hour  ->  fixnum
+ *   hour -> integer
  *
- * Returns the hour (0-23).
+ * Returns the hour in range (0..23):
  *
- *    DateTime.new(2001,2,3,4,5,6).hour		#=> 4
+ *   DateTime.new(2001, 2, 3, 4, 5, 6).hour # => 4
+ *
  */
 static VALUE
 d_lite_hour(VALUE self)
@@ -5492,12 +5502,13 @@ d_lite_hour(VALUE self)
 
 /*
  * call-seq:
- *    d.min     ->  fixnum
- *    d.minute  ->  fixnum
+ *   min -> integer
  *
- * Returns the minute (0-59).
+ * Returns the minute in range (0..59):
  *
- *    DateTime.new(2001,2,3,4,5,6).min		#=> 5
+ *   DateTime.new(2001, 2, 3, 4, 5, 6).min # => 5
+ *
+ * Date#minute is an alias for Date#min.
  */
 static VALUE
 d_lite_min(VALUE self)
@@ -5508,12 +5519,13 @@ d_lite_min(VALUE self)
 
 /*
  * call-seq:
- *    d.sec     ->  fixnum
- *    d.second  ->  fixnum
+ *   sec -> integer
  *
- * Returns the second (0-59).
+ * Returns the second in range (0..59):
  *
- *    DateTime.new(2001,2,3,4,5,6).sec		#=> 6
+ *   DateTime.new(2001, 2, 3, 4, 5, 6).sec # => 6
+ *
+ * Date#second is an alias for Date#sec.
  */
 static VALUE
 d_lite_sec(VALUE self)
@@ -5524,12 +5536,14 @@ d_lite_sec(VALUE self)
 
 /*
  * call-seq:
- *    d.sec_fraction     ->  rational
- *    d.second_fraction  ->  rational
+ *   sec_fraction -> rational
  *
- * Returns the fractional part of the second.
+ * Returns the fractional part of the second in range
+ * (Rational(0, 1)...Rational(1, 1)):
  *
- *    DateTime.new(2001,2,3,4,5,6.5).sec_fraction	#=> (1/2)
+ *   DateTime.new(2001, 2, 3, 4, 5, 6.5).sec_fraction # => (1/2)
+ *
+ * Date.second_fraction is an alias for Date#sec_fraction.
  */
 static VALUE
 d_lite_sec_fraction(VALUE self)
