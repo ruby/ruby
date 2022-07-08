@@ -114,16 +114,6 @@ module Bundler
       @specs.select {|s| s.is_a?(LazySpecification) }
     end
 
-    def merge(set)
-      arr = sorted.dup
-      set.each do |set_spec|
-        full_name = set_spec.full_name
-        next if arr.any? {|spec| spec.full_name == full_name }
-        arr << set_spec
-      end
-      SpecSet.new(arr)
-    end
-
     def -(other)
       SpecSet.new(to_a - other.to_a)
     end
