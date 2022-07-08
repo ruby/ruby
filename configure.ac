@@ -492,6 +492,11 @@ AS_CASE(["$target_os"],
 AC_PROG_LN_S
 AC_PROG_MAKE_SET
 AC_PROG_INSTALL
+
+AS_CASE(["$target_os"],[openbsd*],[
+    ac_cv_path_mkdir="mkdir"
+])
+
 RUBY_PROG_MAKEDIRS
 
 AC_CHECK_PROG([DTRACE], [${ac_tool_prefix}dtrace], [${ac_tool_prefix}dtrace])
