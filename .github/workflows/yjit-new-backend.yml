@@ -1,0 +1,54 @@
+name: YJIT New Backend Temp Checks
+on:
+  push:
+    paths-ignore:
+      - 'doc/**'
+      - '**.md'
+      - '**.rdoc'
+  pull_request:
+    paths-ignore:
+      - 'doc/**'
+      - '**.md'
+      - '**.rdoc'
+
+concurrency:
+  group: ${{ github.workflow }} / ${{ startsWith(github.event_name, 'pull') && github.ref_name || github.sha }}
+  cancel-in-progress: ${{ startsWith(github.event_name, 'pull') }}
+
+jobs:
+  cargo:
+    name: Rust cargo test
+    # GitHub Action's image seems to already contain a Rust 1.58.0.
+    runs-on: ubuntu-20.04
+    steps:
+      - uses: actions/checkout@v2
+      - run: RUST_BACKTRACE=1 cargo test
+        working-directory: yjit
+      # Also compile and test with all features enabled
+      - run: RUST_BACKTRACE=1 cargo test --all-features
+        working-directory: yjit
+  make:
+    runs-on: ubuntu-20.04
+    steps:
+      - name: Install libraries
+        run: |
+          set -x
+          sudo apt-get update -q || :
+          sudo apt-get install --no-install-recommends -q -y build-essential libssl-dev libyaml-dev libreadline6-dev zlib1g-dev libncurses5-dev libffi-dev bison autoconf ruby
+      - uses: actions/checkout@v2
+      - run: ./autogen.sh
+      - run: CC=clang ./configure --enable-yjit=dev
+      - run: make -j miniruby
+      - run: make -j yjit-bindgen
+
+      # Try booting miniruby
+      - run: RUST_BACKTRACE=1 ./miniruby --yjit-call-threshold=1 -e0
+
+      # Try outputting stats (should be available in dev config)
+      #- run: RUST_BACKTRACE=1 ./miniruby --yjit-call-threshold=1 --yjit-stats -e0
+
+      # Run bootstrap tests with --verify-ctx enabled
+      - run: RUST_BACKTRACE=1 ruby --disable=gems bootstraptest/runner.rb --ruby="./miniruby -I./lib -I. -I.ext/common --disable-gems --yjit-call-threshold=1 --yjit-verify-ctx" bootstraptest/test_yjit_new_backend.rb
+
+      # Check that we can do a full build
+      #- run: make -j
