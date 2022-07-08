@@ -172,7 +172,7 @@ RSpec.describe "bundle check" do
           rack (1.0.0)
 
       PLATFORMS
-        #{local}
+        #{generic_local_platform}
         #{not_local}
 
       DEPENDENCIES
@@ -203,7 +203,7 @@ RSpec.describe "bundle check" do
           rack (1.0.0)
 
       PLATFORMS
-        #{local}
+        #{generic_local_platform}
         #{not_local}
 
       DEPENDENCIES
