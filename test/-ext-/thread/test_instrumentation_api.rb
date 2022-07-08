@@ -33,7 +33,9 @@ class TestThreadInstrumentation < Test::Unit::TestCase
     thr = Thread.new { fib(30) }
     Bug::ThreadInstrumentation.reset_counters
     thr.join
-    assert_equal [1, 1, 1], Bug::ThreadInstrumentation.local_counters
+    Bug::ThreadInstrumentation.local_counters.each_with_index do |counter, index|
+      assert_operator counter, :>, 0, "counter[#{index}]"
+    end
   end
 
   def test_thread_instrumentation_fork_safe
