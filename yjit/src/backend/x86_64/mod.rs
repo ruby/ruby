@@ -2,7 +2,7 @@
 #![allow(unused_variables)]
 #![allow(unused_imports)]
 
-use crate::asm::{CodeBlock};
+use crate::asm::{uimm_num_bits, CodeBlock};
 use crate::asm::x86_64::*;
 use crate::codegen::{JITState};
 use crate::cruby::*;
@@ -82,36 +82,97 @@ impl Assembler
         let live_ranges: Vec<usize> = std::mem::take(&mut self.live_ranges);
 
         self.forward_pass(|asm, index, op, opnds, target| {
-            match op {
-                Op::Add | Op::Sub | Op::And | Op::Not => {
-                    match opnds[0] {
-                        // Instruction output whose live range spans beyond this instruction
-                        Opnd::InsnOut{idx, ..} => {
-                            if live_ranges[idx] > index {
-                                let opnd0 = asm.load(opnds[0]);
-                                let mut new_opnds = vec![opnd0];
-                                new_opnds.extend_from_slice(&opnds[1..]);
-                                asm.push_insn(op, new_opnds, None);
-                                return;
-                            }
-                        },
-
-                        // We have to load memory and register operands to avoid corrupting them
-                        Opnd::Mem(_) | Opnd::Reg(_) => {
-                            let opnd0 = asm.load(opnds[0]);
-                            let mut new_opnds = vec![opnd0];
-                            new_opnds.extend_from_slice(&opnds[1..]);
-                            asm.push_insn(op, new_opnds, None);
-                            return;
-                        },
-
-                        _ => {}
+            // Load heap object operands into registers because most
+            // instructions can't directly work with 64-bit constants
+            let opnds = match op {
+                Op::Load | Op::Mov => opnds,
+                _ => opnds.into_iter().map(|opnd| {
+                    if let Opnd::Value(value) = opnd {
+                        if !value.special_const_p() {
+                            asm.load(opnd)
+                        } else {
+                            opnd
+                        }
+                    } else {
+                        opnd
                     }
-                },
-                _ => {}
+                }).collect()
             };
 
-            asm.push_insn(op, opnds, target);
+            match op {
+                Op::Add | Op::Sub | Op::And => {
+                    let (opnd0, opnd1) = match (opnds[0], opnds[1]) {
+                        (Opnd::Mem(_), Opnd::Mem(_)) => {
+                            (asm.load(opnds[0]), asm.load(opnds[1]))
+                        },
+                        (Opnd::Mem(_), Opnd::UImm(value)) => {
+                            if uimm_num_bits(value) > 32 {
+                                (asm.load(opnds[0]), asm.load(opnds[1]))
+                            } else {
+                                (asm.load(opnds[0]), opnds[1])
+                            }
+                        },
+                        // Instruction output whose live range spans beyond this instruction
+                        (Opnd::InsnOut { idx, .. }, _) => {
+                            if live_ranges[idx] > index {
+                                (asm.load(opnds[0]), opnds[1])
+                            } else {
+                                (opnds[0], opnds[1])
+                            }
+                        },
+                        // We have to load memory and register operands to avoid corrupting them
+                        (Opnd::Mem(_) | Opnd::Reg(_), _) => {
+                            (asm.load(opnds[0]), opnds[1])
+                        },
+                        _ => (opnds[0], opnds[1])
+                    };
+
+                    asm.push_insn(op, vec![opnd0, opnd1], target);
+                },
+                Op::Mov => {
+                    match (opnds[0], opnds[1]) {
+                        (Opnd::Mem(_), Opnd::Mem(_)) => {
+                            // We load opnd1 because for mov, opnd0 is the output
+                            let opnd1 = asm.load(opnds[1]);
+                            asm.mov(opnds[0], opnd1);
+                        },
+                        (Opnd::Mem(_), Opnd::UImm(value)) => {
+                            if uimm_num_bits(value) > 32 {
+                                let opnd1 = asm.load(opnds[1]);
+                                asm.mov(opnds[0], opnd1);
+                            } else {
+                                asm.mov(opnds[0], opnds[1]);
+                            }
+                        },
+                        _ => {
+                            asm.mov(opnds[0], opnds[1]);
+                        }
+                    }
+                },
+                Op::Not => {
+                    let opnd0 = match opnds[0] {
+                        // If we have an instruction output whose live range
+                        // spans beyond this instruction, we have to load it.
+                        Opnd::InsnOut { idx, .. } => {
+                            if live_ranges[idx] > index {
+                                asm.load(opnds[0])
+                            } else {
+                                opnds[0]
+                            }
+                        },
+                        // We have to load memory and register operands to avoid
+                        // corrupting them.
+                        Opnd::Mem(_) | Opnd::Reg(_) => asm.load(opnds[0]),
+                        // Otherwise we can just reuse the existing operand.
+                        _ => opnds[0]
+                    };
+
+                    asm.not(opnd0);
+                },
+                _ => {
+                    asm.push_insn(op, opnds, target);
+                }
+            };
         })
     }
 
@@ -270,9 +331,7 @@ impl Assembler
     /// Optimize and compile the stored instructions
     pub fn compile_with_regs(self, cb: &mut CodeBlock, regs: Vec<Reg>) -> Vec<u32>
     {
-        let mut asm = self.x86_split();
-        let mut asm = asm.split_loads();
-        let mut asm = asm.alloc_regs(regs);
+        let mut asm = self.x86_split().alloc_regs(regs);
 
         // Create label instances in the code block
         for (idx, name) in asm.label_names.iter().enumerate() {

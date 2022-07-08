@@ -174,7 +174,7 @@ impl CodeBlock {
     }
 
     /// Write multiple bytes starting from the current position.
-    fn write_bytes(&mut self, bytes: &[u8]) {
+    pub fn write_bytes(&mut self, bytes: &[u8]) {
         for byte in bytes {
             self.write_byte(*byte);
         }

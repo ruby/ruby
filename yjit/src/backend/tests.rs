@@ -44,22 +44,6 @@ fn test_add() {
 }
 
 #[test]
-fn test_split_loads() {
-    let mut asm = Assembler::new();
-
-    let regs = Assembler::get_alloc_regs();
-
-    asm.add(
-        Opnd::mem(64, Opnd::Reg(regs[0]), 0),
-        Opnd::mem(64, Opnd::Reg(regs[1]), 0)
-    );
-
-    let result = asm.split_loads();
-    assert_eq!(result.insns.len(), 2);
-    assert_eq!(result.insns[0].op, Op::Load);
-}
-
-#[test]
 fn test_alloc_regs() {
     let mut asm = Assembler::new();
 
@@ -109,7 +93,8 @@ fn test_compile()
     let regs = Assembler::get_alloc_regs();
 
     let out = asm.add(Opnd::Reg(regs[0]), Opnd::UImm(2));
-    asm.add(out, Opnd::UImm(2));
+    let out2 = asm.add(out, Opnd::UImm(2));
+    asm.store(Opnd::mem(64, SP, 0), out2);
 
     asm.compile_with_num_regs(&mut cb, 1);
 }
@@ -162,7 +147,7 @@ fn test_reuse_reg()
     let v0 = asm.add(Opnd::mem(64, SP, 0), Opnd::UImm(1));
     let v1 = asm.add(Opnd::mem(64, SP, 8), Opnd::UImm(1));
 
-    let v2 = asm.add(v0, Opnd::UImm(1)); // Reuse v1 register
+    let v2 = asm.add(v1, Opnd::UImm(1)); // Reuse v1 register
     let v3 = asm.add(v0, v2);
 
     asm.store(Opnd::mem(64, SP, 0), v2);
@@ -202,7 +187,7 @@ fn test_base_insn_out()
     // Increment and store the updated value
     asm.incr_counter(counter_opnd, 1.into());
 
-    asm.compile_with_num_regs(&mut cb, 1);
+    asm.compile_with_num_regs(&mut cb, 2);
 }
 
 #[test]
@@ -262,7 +247,7 @@ fn test_jcc_ptr()
     );
     asm.jnz(side_exit);
 
-    asm.compile_with_num_regs(&mut cb, 1);
+    asm.compile_with_num_regs(&mut cb, 2);
 }
 
 /// Direct jump to a stub e.g. for deferred compilation
@@ -293,5 +278,5 @@ fn test_jo()
 
     asm.mov(Opnd::mem(64, SP, 0), out_val);
 
-    asm.compile_with_num_regs(&mut cb, 1);
+    asm.compile_with_num_regs(&mut cb, 2);
 }
