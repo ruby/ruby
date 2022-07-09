@@ -25,6 +25,7 @@ Logging::message "=== OpenSSL for Ruby configurator ===\n"
 if with_config("debug") or enable_config("debug")
   $defs.push("-DOSSL_DEBUG")
 end
+$defs.push("-D""OPENSSL_SUPPRESS_DEPRECATED")
 
 have_func("rb_io_maybe_wait(0, Qnil, Qnil, Qnil)", "ruby/io.h") # Ruby 3.1
 
