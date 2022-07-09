@@ -982,7 +982,7 @@ RSpec.describe "the lockfile format" do
           rack (1.0.0)
 
       PLATFORMS
-        #{lockfile_platforms_for("java", specific_local_platform)}
+        #{lockfile_platforms("java")}
 
       DEPENDENCIES
         rack

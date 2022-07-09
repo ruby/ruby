@@ -99,12 +99,8 @@ module Spec
       9999
     end
 
-    def lockfile_platforms
-      lockfile_platforms_for(specific_local_platform)
-    end
-
-    def lockfile_platforms_for(*platforms)
-      platforms.map(&:to_s).sort.join("\n  ")
+    def lockfile_platforms(*extra)
+      [specific_local_platform, *extra].map(&:to_s).sort.join("\n  ")
     end
   end
 end
