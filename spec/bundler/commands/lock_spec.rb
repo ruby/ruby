@@ -1,10 +1,6 @@
 # frozen_string_literal: true
 
 RSpec.describe "bundle lock" do
-  def read_lockfile(file = "Gemfile.lock")
-    bundled_app(file).read
-  end
-
   let(:repo) { gem_repo1 }
 
   before :each do

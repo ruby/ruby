@@ -244,7 +244,7 @@ module Spec
       contents = args.pop
 
       if contents.nil?
-        File.open(bundled_app_gemfile, "r", &:read)
+        read_gemfile
       else
         create_file(args.pop || "Gemfile", contents)
       end
@@ -254,10 +254,22 @@ module Spec
       contents = args.pop
 
       if contents.nil?
-        File.open(bundled_app_lock, "r", &:read)
+        read_lockfile
       else
         create_file(args.pop || "Gemfile.lock", contents)
       end
+    end
+
+    def read_gemfile(file = "Gemfile")
+      read_bundled_app_file(file)
+    end
+
+    def read_lockfile(file = "Gemfile.lock")
+      read_bundled_app_file(file)
+    end
+
+    def read_bundled_app_file(file)
+      bundled_app(file).read
     end
 
     def strip_whitespace(str)
