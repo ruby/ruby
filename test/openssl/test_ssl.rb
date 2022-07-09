@@ -1654,6 +1654,10 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
   end
 
   def test_ciphers_method_bogus_csuite
+    omit "Old #{OpenSSL::OPENSSL_LIBRARY_VERSION}" if
+      year = OpenSSL::OPENSSL_LIBRARY_VERSION[/\A OpenSSL\s+[01]\..*\s\K\d+\z/x] and
+      year.to_i <= 2018
+
     ssl_ctx = OpenSSL::SSL::SSLContext.new
 
     assert_raise_with_message(
