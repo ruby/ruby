@@ -674,7 +674,7 @@ RSpec.describe "bundle install from an existing gemspec" do
             railties (6.1.4)
 
         PLATFORMS
-          #{lockfile_platforms_for("java", specific_local_platform)}
+          #{lockfile_platforms("java")}
 
         DEPENDENCIES
           activeadmin!

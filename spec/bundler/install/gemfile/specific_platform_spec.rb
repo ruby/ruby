@@ -514,7 +514,7 @@ RSpec.describe "bundle install with specific platforms" do
             sorbet-runtime (= 0.5.10160)
 
       PLATFORMS
-        #{lockfile_platforms_for([specific_local_platform, "ruby"])}
+        #{lockfile_platforms("ruby")}
 
       DEPENDENCIES
         sorbet-static-and-runtime
@@ -769,7 +769,7 @@ RSpec.describe "bundle install with specific platforms" do
           nokogiri (1.13.8-#{Gem::Platform.local})
 
       PLATFORMS
-        #{lockfile_platforms_for([specific_local_platform, "ruby"])}
+        #{lockfile_platforms("ruby")}
 
       DEPENDENCIES
         nokogiri
