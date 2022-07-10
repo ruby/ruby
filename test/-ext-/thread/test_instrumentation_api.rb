@@ -41,25 +41,21 @@ class TestThreadInstrumentation < Test::Unit::TestCase
   def test_thread_instrumentation_fork_safe
     skip "No fork()" unless Process.respond_to?(:fork)
 
-    read_pipe, write_pipe = IO.pipe
-
-    pid = fork do
-      Bug::ThreadInstrumentation.reset_counters
-      threads = threaded_cpu_work
-      write_pipe.write(Marshal.dump(threads.map(&:status)))
-      write_pipe.write(Marshal.dump(Bug::ThreadInstrumentation.counters))
-      write_pipe.close
-      exit!(0)
+    thread_statuses = counters = nil
+    IO.popen("-") do |read_pipe|
+      if read_pipe
+        thread_statuses = Marshal.load(read_pipe)
+        counters = Marshal.load(read_pipe)
+      else
+        Bug::ThreadInstrumentation.reset_counters
+        threads = threaded_cpu_work
+        Marshal.dump(threads.map(&:status), STDOUT)
+        Marshal.dump(Bug::ThreadInstrumentation.counters, STDOUT)
+      end
     end
-    write_pipe.close
-    _, status = Process.wait2(pid)
-    assert_predicate status, :success?
+    assert_predicate $?, :success?
 
-    thread_statuses = Marshal.load(read_pipe)
     assert_equal [false] * THREADS_COUNT, thread_statuses
-
-    counters = Marshal.load(read_pipe)
-    read_pipe.close
     counters.each do |c|
       assert_predicate c, :nonzero?, "Call counters: #{counters.inspect}"
     end
