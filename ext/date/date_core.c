@@ -9112,6 +9112,7 @@ mk_ary_of_str(long len, const char *a[])
     return o;
 }
 
+/* :nodoc: */
 static VALUE
 d_lite_zero(VALUE x)
 {
