@@ -13979,23 +13979,25 @@ rb_raw_obj_info(char *const buff, const size_t buff_size, VALUE obj)
 static rb_atomic_t obj_info_buffers_index = 0;
 static char obj_info_buffers[OBJ_INFO_BUFFERS_NUM][OBJ_INFO_BUFFERS_SIZE];
 
-static char *
-obj_info_next_buffer(void)
+/* Increments *var atomically and resets *var to 0 when maxval is
+ * reached. Returns the wraparound old *var value (0...maxval). */
+static rb_atomic_t
+atomic_inc_wraparound(rb_atomic_t *var, const rb_atomic_t maxval)
 {
-    const rb_atomic_t index = RUBY_ATOMIC_FETCH_ADD(obj_info_buffers_index, 1);
-
-    rb_atomic_t next_index = (index + 1);
-    if (UNLIKELY(next_index >= OBJ_INFO_BUFFERS_NUM)) {
-        rb_atomic_t reset_index = next_index % OBJ_INFO_BUFFERS_NUM;
-        RUBY_ATOMIC_CAS(obj_info_buffers_index, next_index, reset_index);
+    rb_atomic_t oldval = RUBY_ATOMIC_FETCH_ADD(*var, 1);
+    if (UNLIKELY(oldval >= maxval - 1)) { // wraparound *var
+        const rb_atomic_t newval = oldval + 1;
+        RUBY_ATOMIC_CAS(*var, newval, newval % maxval);
+        oldval %= maxval;
     }
-    return obj_info_buffers[index % OBJ_INFO_BUFFERS_NUM];
+    return oldval;
 }
 
 static const char *
 obj_info(VALUE obj)
 {
-    char *const buff = obj_info_next_buffer();
+    rb_atomic_t index = atomic_inc_wraparound(&obj_info_buffers_index, OBJ_INFO_BUFFERS_NUM);
+    char *const buff = obj_info_buffers[index];
     return rb_raw_obj_info(buff, OBJ_INFO_BUFFERS_SIZE, obj);
 }
 #else
