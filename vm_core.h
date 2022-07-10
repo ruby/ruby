@@ -495,7 +495,6 @@ struct rb_iseq_constant_body {
 
 #if USE_YJIT
     // YJIT stores some data on each iseq.
-    // Note: Cannot use YJIT_BUILD here since yjit.h includes this header.
     void *yjit_payload;
 #endif
 };

@@ -15,23 +15,19 @@
 # define YJIT_STATS RUBY_DEBUG
 #endif
 
+#if USE_YJIT
+
 // We generate x86 assembly
 #if (defined(__x86_64__) && !defined(_WIN32)) || (defined(_WIN32) && defined(_M_AMD64)) // x64 platforms without mingw/msys
-# define YJIT_SUPPORTED_P 1
+// YJIT-supported platforms
 #else
-# define YJIT_SUPPORTED_P 0
+// Unsupported platforms
+# undef USE_YJIT
+# define USE_YJIT 0
+#endif
 #endif
 
-// Is the output binary going to include YJIT?
-#if USE_MJIT && USE_YJIT && YJIT_SUPPORTED_P
-# define YJIT_BUILD 1
-#else
-# define YJIT_BUILD 0
-#endif
-
-#undef YJIT_SUPPORTED_P
-
-#if YJIT_BUILD
+#if USE_YJIT
 
 // Expose these as declarations since we are building YJIT.
 bool rb_yjit_enabled_p(void);
@@ -54,7 +50,7 @@ void rb_yjit_constant_ic_update(const rb_iseq_t *const iseq, IC ic);
 void rb_yjit_tracing_invalidate_all(void);
 
 #else
-// !YJIT_BUILD
+// !USE_YJIT
 // In these builds, YJIT could never be turned on. Provide dummy implementations.
 
 static inline bool rb_yjit_enabled_p(void) { return false; }
@@ -76,6 +72,6 @@ static inline void rb_yjit_before_ractor_spawn(void) {}
 static inline void rb_yjit_constant_ic_update(const rb_iseq_t *const iseq, IC ic) {}
 static inline void rb_yjit_tracing_invalidate_all(void) {}
 
-#endif // #if YJIT_BUILD
+#endif // #if USE_YJIT
 
 #endif // #ifndef YJIT_H
