@@ -143,7 +143,7 @@ jobs:
           - { name: valgrind,             env: { append_configure: '--with-valgrind' } }
           - { name: 'coroutine=ucontext', env: { append_configure: '--with-coroutine=ucontext' } }
           - { name: 'coroutine=pthread',  env: { append_configure: '--with-coroutine=pthread' } }
-          - { name: disable-jit-support,  env: { append_configure: '--disable-jit-support' } }
+          - { name: disable-mjit,         env: { append_configure: '--disable-mjit' } }
           - { name: disable-dln,          env: { append_configure: '--disable-dln' } }
           - { name: enable-mkmf-verbose,  env: { append_configure: '--enable-mkmf-verbose' } }
           - { name: disable-rubygems,     env: { append_configure: '--disable-rubygems' } }

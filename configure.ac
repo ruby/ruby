@@ -3731,11 +3731,33 @@ AC_SUBST(INSTALLDOC)
 
 AC_ARG_ENABLE(jit-support,
     AS_HELP_STRING([--disable-jit-support], [disable JIT features]),
-    [MJIT_SUPPORT=$enableval],
-    [AS_CASE(["$target_os"],
-        [wasi | mingw*], [MJIT_SUPPORT=no],
-        [MJIT_SUPPORT=yes]
-    )])
+    [
+        AS_CASE([$enableval], [yes], [enableval=enable], [enableval=disable])
+        AC_MSG_ERROR([--$enableval-jit-support option is deprecated])
+    ])
+
+AS_CASE(["$target_os"],
+[wasi | mingw*], [
+    MJIT_SUPPORT=no
+], [
+    MJIT_SUPPORT=yes
+])
+
+AC_ARG_ENABLE(mjit,
+    AS_HELP_STRING([--disable-mjit], [disable MJIT feature]),
+    [
+        AS_CASE(["$enableval:$MJIT_SUPPORT"],
+        [yes:yes], [
+            # MJIT_SUPPORT=yes
+        ],
+        [yes:no], [
+            AC_MSG_ERROR([MJIT not supported on this platform])
+        ],
+        [no:*], [
+            MJIT_SUPPORT=no
+        ],
+        [])
+    ])
 
 AS_IF([test x"$MJIT_SUPPORT" = "xyes"],
 	[AC_DEFINE(USE_MJIT, 1)],
@@ -3753,9 +3775,6 @@ CARGO_BUILD_ARGS=
 YJIT_LIBS=
 AS_CASE(["${YJIT_SUPPORT}"],
 [yes|dev|stats|dev_nodebug], [
-    AS_IF([test x"$enable_jit_support" = "xno"],
-        AC_MSG_ERROR([--disable-jit-support but --enable-yjit. YJIT requires JIT support])
-    )
     AC_CHECK_TOOL(RUSTC, [rustc], [no])
     AS_IF([test x"$RUSTC" = "xno"],
         AC_MSG_ERROR([rustc is required. Installation instructions available at https://www.rust-lang.org/tools/install])

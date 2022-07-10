@@ -40,6 +40,8 @@ if "%1" == "--enable-rubygems" goto :enable-rubygems
 if "%1" == "--disable-rubygems" goto :disable-rubygems
 if "%1" == "--enable-mjit-support" goto :enable-mjit-support
 if "%1" == "--disable-mjit-support" goto :disable-mjit-support
+if "%1" == "--enable-mjit" goto :enable-mjit
+if "%1" == "--disable-mjit" goto :disable-mjit
 if "%1" == "--extout" goto :extout
 if "%1" == "--path" goto :path
 if "%1" == "--with-baseruby" goto :baseruby
@@ -166,11 +168,15 @@ goto :loop ;
   shift
 goto :loop ;
 :enable-mjit-support
+  echo Use --enable-mjit instead of --enable-mjit-support
+:enable-mjit
   echo>> ~tmp~.mak 	"MJIT_SUPPORT=yes" \
   echo>>confargs.tmp  %1 \
   shift
 goto :loop ;
 :disable-mjit-support
+  echo Use --disable-mjit instead of --disable-mjit-support
+:disable-mjit
   echo>> ~tmp~.mak 	"MJIT_SUPPORT=no" \
   echo>>confargs.tmp  %1 \
   shift
