@@ -21,21 +21,15 @@ class TestThreadInstrumentation < Test::Unit::TestCase
     threads = threaded_cpu_work
     assert_equal [false] * THREADS_COUNT, threads.map(&:status)
     counters = Bug::ThreadInstrumentation.counters
-    counters.each do |c|
-      assert_predicate c, :nonzero?, "Call counters: #{counters.inspect}"
-    end
-
-    assert_equal THREADS_COUNT, counters.first
-    assert_in_delta THREADS_COUNT, counters.last, 1 # It's possible that a thread didn't execute its EXIT hook yet.
+    assert_join_counters(counters)
+    assert_global_join_counters(counters)
   end
 
   def test_join_counters # Bug #18900
     thr = Thread.new { fib(30) }
     Bug::ThreadInstrumentation.reset_counters
     thr.join
-    Bug::ThreadInstrumentation.local_counters.each_with_index do |counter, index|
-      assert_operator counter, :>, 0, "counter[#{index}]"
-    end
+    assert_join_counters(Bug::ThreadInstrumentation.local_counters)
   end
 
   def test_thread_instrumentation_fork_safe
@@ -56,12 +50,8 @@ class TestThreadInstrumentation < Test::Unit::TestCase
     assert_predicate $?, :success?
 
     assert_equal [false] * THREADS_COUNT, thread_statuses
-    counters.each do |c|
-      assert_predicate c, :nonzero?, "Call counters: #{counters.inspect}"
-    end
-
-    assert_equal THREADS_COUNT, counters.first
-    assert_in_delta THREADS_COUNT, counters.last, 1 # It's possible that a thread didn't execute its EXIT hook yet.
+    assert_join_counters(counters)
+    assert_global_join_counters(counters)
   end
 
   def test_thread_instrumentation_unregister
@@ -78,5 +68,16 @@ class TestThreadInstrumentation < Test::Unit::TestCase
 
   def threaded_cpu_work(size = 20)
     THREADS_COUNT.times.map { Thread.new { fib(size) } }.each(&:join)
+  end
+
+  def assert_join_counters(counters)
+    counters.each_with_index do |c, i|
+      assert_operator c, :>, 0, "Call counters[#{i}]: #{counters.inspect}"
+    end
+  end
+
+  def assert_global_join_counters(counters)
+    assert_equal THREADS_COUNT, counters.first
+    assert_include 0..THREADS_COUNT, counters.last # It's possible that a thread didn't execute its EXIT hook yet.
   end
 end
