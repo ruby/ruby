@@ -167,7 +167,7 @@ pub const fn bcond_offset_fits_bits(offset: i64) -> bool {
 }
 
 /// B.cond - branch to target if condition is true
-pub fn bcond(cb: &mut CodeBlock, cond: Condition, byte_offset: A64Opnd) {
+pub fn bcond(cb: &mut CodeBlock, cond: u8, byte_offset: A64Opnd) {
     let bytes: [u8; 4] = match byte_offset {
         A64Opnd::Imm(imm) => {
             assert!(bcond_offset_fits_bits(imm), "The immediate operand must be 21 bits or less and be aligned to a 2-bit boundary.");

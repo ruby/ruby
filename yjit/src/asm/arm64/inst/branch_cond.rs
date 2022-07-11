@@ -11,7 +11,7 @@ use super::super::arg::Condition;
 ///
 pub struct BranchCond {
     /// The kind of condition to check before branching.
-    cond: Condition,
+    cond: u8,
 
     /// The instruction offset from this instruction to branch to.
     imm19: i32
@@ -20,7 +20,7 @@ pub struct BranchCond {
 impl BranchCond {
     /// B.cond
     /// https://developer.arm.com/documentation/ddi0596/2020-12/Base-Instructions/B-cond--Branch-conditionally-
-    pub fn bcond(cond: Condition, byte_offset: i32) -> Self {
+    pub fn bcond(cond: u8, byte_offset: i32) -> Self {
         Self { cond, imm19: byte_offset >> 2 }
     }
 }

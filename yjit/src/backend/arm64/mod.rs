@@ -284,7 +284,7 @@ impl Assembler
 
         /// Emit a conditional jump instruction to a specific target. This is
         /// called when lowering any of the conditional jump instructions.
-        fn emit_conditional_jump(cb: &mut CodeBlock, condition: Condition, target: Target) {
+        fn emit_conditional_jump<const CONDITION: u8>(cb: &mut CodeBlock, target: Target) {
             match target {
                 Target::CodePtr(dst_ptr) => {
                     let src_addr = cb.get_write_ptr().into_i64() + 4;
@@ -297,12 +297,12 @@ impl Assembler
                     // to load the address into a register and use the branch
                     // register instruction.
                     if bcond_offset_fits_bits(offset) {
-                        bcond(cb, condition, A64Opnd::new_imm(dst_addr - src_addr));
+                        bcond(cb, CONDITION, A64Opnd::new_imm(dst_addr - src_addr));
                     } else {
                         // If the condition is met, then we'll skip past the
                         // next instruction, put the address in a register, and
                         // jump to it.
-                        bcond(cb, condition, A64Opnd::new_imm(4));
+                        bcond(cb, CONDITION, A64Opnd::new_imm(4));
 
                         // If the offset fits into a direct jump, then we'll use
                         // that and the number of instructions will be shorter.
@@ -333,7 +333,7 @@ impl Assembler
                     // offset. We're going to assume we can fit into a single
                     // b.cond instruction. It will panic otherwise.
                     cb.label_ref(label_idx, 4, |cb, src_addr, dst_addr| {
-                        bcond(cb, condition, A64Opnd::new_imm(dst_addr - src_addr));
+                        bcond(cb, CONDITION, A64Opnd::new_imm(dst_addr - src_addr));
                     });
                 },
                 Target::FunPtr(_) => unreachable!()
@@ -395,7 +395,7 @@ impl Assembler
                             // being loaded is a heap object, we'll report that
                             // back out to the gc_offsets list.
                             ldr(cb, insn.out.into(), 1);
-                            b(cb, A64Opnd::new_uimm((SIZEOF_VALUE as u64) / 4));
+                            b(cb, A64Opnd::new_imm((SIZEOF_VALUE as i64) / 4));
                             cb.write_bytes(&value.as_u64().to_le_bytes());
 
                             if !value.special_const_p() {
@@ -507,19 +507,19 @@ impl Assembler
                     };
                 },
                 Op::Je => {
-                    emit_conditional_jump(cb, Condition::EQ, insn.target.unwrap());
+                    emit_conditional_jump::<{Condition::EQ}>(cb, insn.target.unwrap());
                 },
                 Op::Jbe => {
-                    emit_conditional_jump(cb, Condition::LS, insn.target.unwrap());
+                    emit_conditional_jump::<{Condition::LS}>(cb, insn.target.unwrap());
                 },
                 Op::Jz => {
-                    emit_conditional_jump(cb, Condition::EQ, insn.target.unwrap());
+                    emit_conditional_jump::<{Condition::EQ}>(cb, insn.target.unwrap());
                 },
                 Op::Jnz => {
-                    emit_conditional_jump(cb, Condition::NE, insn.target.unwrap());
+                    emit_conditional_jump::<{Condition::NE}>(cb, insn.target.unwrap());
                 },
                 Op::Jo => {
-                    emit_conditional_jump(cb, Condition::VS, insn.target.unwrap());
+                    emit_conditional_jump::<{Condition::VS}>(cb, insn.target.unwrap());
                 },
                 Op::IncrCounter => {
                     ldaddal(cb, insn.opnds[0].into(), insn.opnds[0].into(), insn.opnds[1].into());

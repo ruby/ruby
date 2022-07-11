@@ -30,7 +30,7 @@ struct LabelRef {
     num_bytes: usize,
 
     /// The object that knows how to encode the branch instruction.
-    encode: Box<dyn FnOnce(&mut CodeBlock, i64, i64)>
+    encode: fn(&mut CodeBlock, i64, i64)
 }
 
 /// Block of memory into which instructions can be assembled
@@ -227,11 +227,11 @@ impl CodeBlock {
     }
 
     // Add a label reference at the current write position
-    pub fn label_ref<E: 'static>(&mut self, label_idx: usize, num_bytes: usize, encode: E) where E: FnOnce(&mut CodeBlock, i64, i64) {
+    pub fn label_ref(&mut self, label_idx: usize, num_bytes: usize, encode: fn(&mut CodeBlock, i64, i64)) {
         assert!(label_idx < self.label_addrs.len());
 
         // Keep track of the reference
-        self.label_refs.push(LabelRef { pos: self.write_pos, label_idx, num_bytes, encode: Box::new(encode) });
+        self.label_refs.push(LabelRef { pos: self.write_pos, label_idx, num_bytes, encode });
 
         // Move past however many bytes the instruction takes up
         self.write_pos += num_bytes;
