@@ -1,14 +1,3 @@
-# -*- coding: utf-8 -*-
-#
-#   irb/lc/help-message.rb -
-#   	$Release Version: 0.9.6$
-#   	$Revision$
-#   	by Keiju ISHITSUKA(keiju@ruby-lang.org)
-#
-# --
-#
-#
-#
 Usage:  irb.rb [options] [programfile] [arguments]
   -f                Don't initialize from configuration file.
   -d                Set $DEBUG and $VERBOSE to true (same as 'ruby -d').
@@ -58,5 +47,3 @@ Usage:  irb.rb [options] [programfile] [arguments]
   -v, --version     Print the version of irb.
   -h, --help        Print help.
   --                Separate options of irb from the list of command-line args.
-
-# vim:fileencoding=utf-8
