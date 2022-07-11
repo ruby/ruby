@@ -4342,7 +4342,11 @@ select_single_cleanup(VALUE ptr)
 {
     struct select_args *args = (struct select_args *)ptr;
 
-    ccan_list_del(&args->wfd.wfd_node);
+    RB_VM_LOCK_ENTER();
+    {
+        ccan_list_del(&args->wfd.wfd_node);
+    }
+    RB_VM_LOCK_LEAVE();
     if (args->read) rb_fd_term(args->read);
     if (args->write) rb_fd_term(args->write);
     if (args->except) rb_fd_term(args->except);
