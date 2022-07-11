@@ -14464,6 +14464,9 @@ Init_GC(void)
 #undef rb_intern
     VALUE rb_mObjSpace;
     VALUE rb_mProfiler;
+#ifdef USE_THIRD_PARTY_HEAP
+    VALUE rb_mMMTk;
+#endif
     VALUE gc_constants;
 
     rb_mGC = rb_define_module("GC");
@@ -14553,6 +14556,10 @@ Init_GC(void)
 #if GC_DEBUG_STRESS_TO_CLASS
     rb_define_singleton_method(rb_mGC, "add_stress_to_class", rb_gcdebug_add_stress_to_class, -1);
     rb_define_singleton_method(rb_mGC, "remove_stress_to_class", rb_gcdebug_remove_stress_to_class, -1);
+#endif
+
+#ifdef USE_THIRD_PARTY_HEAP
+    rb_mMMTk = rb_define_module_under(rb_mGC, "MMTk");
 #endif
 
     {
