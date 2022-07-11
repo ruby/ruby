@@ -5543,7 +5543,7 @@ d_lite_sec(VALUE self)
  *
  *   DateTime.new(2001, 2, 3, 4, 5, 6.5).sec_fraction # => (1/2)
  *
- * Date.second_fraction is an alias for Date#sec_fraction.
+ * Date#second_fraction is an alias for Date#sec_fraction.
  */
 static VALUE
 d_lite_sec_fraction(VALUE self)
@@ -5584,12 +5584,14 @@ d_lite_zone(VALUE self)
 
 /*
  * call-seq:
- *    d.julian?  ->  bool
+ *   d.julian? -> true or false
  *
- * Returns true if the date is before the day of calendar reform.
+ * Returns +true+ if the date is before the date of calendar reform,
+ * +false+ otherwise:
  *
- *     Date.new(1582,10,15).julian?		#=> false
- *     (Date.new(1582,10,15) - 1).julian?	#=> true
+ *   (Date.new(1582, 10, 15) - 1).julian? # => true
+ *   Date.new(1582, 10, 15).julian?       # => false
+ *
  */
 static VALUE
 d_lite_julian_p(VALUE self)
@@ -5600,12 +5602,14 @@ d_lite_julian_p(VALUE self)
 
 /*
  * call-seq:
- *    d.gregorian?  ->  bool
+ *   gregorian? -> true or false
  *
- * Returns true if the date is on or after the day of calendar reform.
+ * Returns +true+ if the date is on or after
+ * the date of calendar reform, +false+ otherwise:
  *
- *     Date.new(1582,10,15).gregorian?		#=> true
- *     (Date.new(1582,10,15) - 1).gregorian?	#=> false
+ *   Date.new(1582, 10, 15).gregorian?       # => true
+ *   (Date.new(1582, 10, 15) - 1).gregorian? # => false
+ *
  */
 static VALUE
 d_lite_gregorian_p(VALUE self)
@@ -5616,12 +5620,13 @@ d_lite_gregorian_p(VALUE self)
 
 /*
  * call-seq:
- *    d.leap?  ->  bool
+ *   leap? -> true or false
  *
- * Returns true if the year is a leap year.
+ * Returns +true+ if the year is a leap year, +false+ otherwise:
  *
- *    Date.new(2000).leap?	#=> true
- *    Date.new(2001).leap?	#=> false
+ *   Date.new(2000).leap? # => true
+ *   Date.new(2001).leap? # => false
+ *
  */
 static VALUE
 d_lite_leap_p(VALUE self)
@@ -5640,12 +5645,25 @@ d_lite_leap_p(VALUE self)
 
 /*
  * call-seq:
- *    d.start  ->  float
+ *   start -> float
  *
- * Returns the Julian day number denoting the day of calendar reform.
+ * Returns the Julian start date for calendar reform;
+ * if not an infinity, the returned value is suitable
+ * for passing to Date#jd:
  *
- *    Date.new(2001,2,3).start			#=> 2299161.0
- *    Date.new(2001,2,3,Date::GREGORIAN).start	#=> -Infinity
+ *   d = Date.new(2001, 2, 3, Date::ITALY)
+ *   s = d.start     # => 2299161.0
+ *   Date.jd(s).to_s # => "1582-10-15"
+ *
+ *   d = Date.new(2001, 2, 3, Date::ENGLAND)
+ *   s = d.start     # => 2361222.0
+ *   Date.jd(s).to_s # => "1752-09-14"
+ *
+ *   Date.new(2001, 2, 3, Date::GREGORIAN).start # => -Infinity
+ *   Date.new(2001, 2, 3, Date::JULIAN).start    # => Infinity
+ *
+ * See argument {start}[rdoc-ref:Date@Argument+start].
+ *
  */
 static VALUE
 d_lite_start(VALUE self)
@@ -5710,12 +5728,17 @@ dup_obj_with_new_start(VALUE obj, double sg)
 
 /*
  * call-seq:
- *    d.new_start([start=Date::ITALY])  ->  date
+ *   new_start(start = Date::ITALY]) -> new_date
  *
- * Duplicates self and resets its day of calendar reform.
+ * Returns a copy of +self+ with the given +start+ value:
  *
- *    d = Date.new(1582,10,15)
- *    d.new_start(Date::JULIAN)		#=> #<Date: 1582-10-05 ...>
+ *   d0 = Date.new(2000, 2, 3)
+ *   d0.julian? # => false
+ *   d1 = d0.new_start(Date::JULIAN)
+ *   d1.julian? # => true
+ *
+ * See argument {start}[rdoc-ref:Date@Argument+start].
+ *
  */
 static VALUE
 d_lite_new_start(int argc, VALUE *argv, VALUE self)
@@ -5734,9 +5757,10 @@ d_lite_new_start(int argc, VALUE *argv, VALUE self)
 
 /*
  * call-seq:
- *    d.italy  ->  date
+ *   italy -> new_date
  *
- * This method is equivalent to new_start(Date::ITALY).
+ * Equivalent to Date#new_start with argument Date::ITALY.
+ *
  */
 static VALUE
 d_lite_italy(VALUE self)
@@ -5746,9 +5770,9 @@ d_lite_italy(VALUE self)
 
 /*
  * call-seq:
- *    d.england  ->  date
+ *   england -> new_date
  *
- * This method is equivalent to new_start(Date::ENGLAND).
+ * Equivalent to Date#new_start with argument Date::ENGLAND.
  */
 static VALUE
 d_lite_england(VALUE self)
@@ -5758,9 +5782,9 @@ d_lite_england(VALUE self)
 
 /*
  * call-seq:
- *    d.julian  ->  date
+ *   julian -> new_date
  *
- * This method is equivalent to new_start(Date::JULIAN).
+ * Equivalent to Date#new_start with argument Date::JULIAN.
  */
 static VALUE
 d_lite_julian(VALUE self)
@@ -5770,9 +5794,9 @@ d_lite_julian(VALUE self)
 
 /*
  * call-seq:
- *    d.gregorian  ->  date
+ *   gregorian -> new_date
  *
- * This method is equivalent to new_start(Date::GREGORIAN).
+ * Equivalent to Date#new_start with argument Date::GREGORIAN.
  */
 static VALUE
 d_lite_gregorian(VALUE self)
@@ -6253,9 +6277,9 @@ d_lite_minus(VALUE self, VALUE other)
 
 /*
  * call-seq:
- *    d.next_day([n=1])  ->  date
+ *   next_day(n = 1) -> new_date
  *
- * This method is equivalent to d + n.
+ * Equivalent to Date#+ with argument +n+.
  */
 static VALUE
 d_lite_next_day(int argc, VALUE *argv, VALUE self)
@@ -6270,9 +6294,9 @@ d_lite_next_day(int argc, VALUE *argv, VALUE self)
 
 /*
  * call-seq:
- *    d.prev_day([n=1])  ->  date
+ *   prev_day(n = 1) -> new_date
  *
- * This method is equivalent to d - n.
+ * Equivalent to Date#- with argument +n+.
  */
 static VALUE
 d_lite_prev_day(int argc, VALUE *argv, VALUE self)
