@@ -2267,15 +2267,9 @@ Gem::Specification.new do |s|
   s.rubygems_version = "#{Gem::VERSION}".freeze
   s.summary = "this is a summary".freeze
 
-  if s.respond_to? :specification_version then
-    s.specification_version = #{Gem::Specification::CURRENT_SPECIFICATION_VERSION}
-  end
+  s.specification_version = #{Gem::Specification::CURRENT_SPECIFICATION_VERSION}
 
-  if s.respond_to? :add_runtime_dependency then
-    s.add_runtime_dependency(%q<b>.freeze, [\"= 1\"])
-  else
-    s.add_dependency(%q<b>.freeze, [\"= 1\"])
-  end
+  s.add_runtime_dependency(%q<b>.freeze, [\"= 1\"])
 end
     SPEC
 
@@ -2347,15 +2341,9 @@ Gem::Specification.new do |s|
 
   s.installed_by_version = "#{Gem::VERSION}" if s.respond_to? :installed_by_version
 
-  if s.respond_to? :specification_version then
-    s.specification_version = #{Gem::Specification::CURRENT_SPECIFICATION_VERSION}
-  end
+  s.specification_version = #{Gem::Specification::CURRENT_SPECIFICATION_VERSION}
 
-  if s.respond_to? :add_runtime_dependency then
-    s.add_runtime_dependency(%q<b>.freeze, [\"= 1\"])
-  else
-    s.add_dependency(%q<b>.freeze, [\"= 1\"])
-  end
+  s.add_runtime_dependency(%q<b>.freeze, [\"= 1\"])
 end
     SPEC
 
@@ -2406,19 +2394,11 @@ Gem::Specification.new do |s|
   s.summary = "this is a summary".freeze
   s.test_files = ["test/suite.rb".freeze]
 
-  if s.respond_to? :specification_version then
-    s.specification_version = 4
-  end
+  s.specification_version = 4
 
-  if s.respond_to? :add_runtime_dependency then
-    s.add_runtime_dependency(%q<rake>.freeze, [\"> 0.4\"])
-    s.add_runtime_dependency(%q<jabber4r>.freeze, [\"> 0.0.0\"])
-    s.add_runtime_dependency(%q<pqa>.freeze, [\"> 0.4\", \"<= 0.6\"])
-  else
-    s.add_dependency(%q<rake>.freeze, [\"> 0.4\"])
-    s.add_dependency(%q<jabber4r>.freeze, [\"> 0.0.0\"])
-    s.add_dependency(%q<pqa>.freeze, [\"> 0.4\", \"<= 0.6\"])
-  end
+  s.add_runtime_dependency(%q<rake>.freeze, [\"> 0.4\"])
+  s.add_runtime_dependency(%q<jabber4r>.freeze, [\"> 0.0.0\"])
+  s.add_runtime_dependency(%q<pqa>.freeze, [\"> 0.4\", \"<= 0.6\"])
 end
     SPEC
 
