@@ -14,6 +14,10 @@ module Gem
     @default_specifications_dir = nil
   end
 
+  if ENV["BUNDLER_SPEC_WINDOWS"]
+    @@win_platform = true # rubocop:disable Sryle/ClassVars
+  end
+
   if ENV["BUNDLER_SPEC_PLATFORM"]
     class Platform
       @local = new(ENV["BUNDLER_SPEC_PLATFORM"])

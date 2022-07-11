@@ -25,7 +25,7 @@ File.foreach("#{gem_dir}/bundled_gems") do |line|
   if gem == "typeprof"
     rbs_build_dir = 'ext/-test-/gems/rbs'
     raise "need to run rbs test suite before typeprof" unless File.readable?("#{rbs_build_dir}/rbs_extension.#{RbConfig::CONFIG['DLEXT']}")
-    ENV["RUBYLIB"] = ["#{gem_dir}/src/rbs/lib", ENV.fetch("RUBYLIB", nil)].compact.join(":")
+    ENV["RUBYLIB"] = ["#{gem_dir}/src/rbs/lib", ENV.fetch("RUBYLIB", nil)].compact.join(File::PATH_SEPARATOR)
   end
 
   if gem == "rbs"
@@ -39,7 +39,7 @@ File.foreach("#{gem_dir}/bundled_gems") do |line|
     extconf_path = File.expand_path('../../gems/src/rbs/ext/rbs_extension/extconf.rb', __FILE__)
     system("#{ruby} -C #{build_dir} #{extconf_path}") or raise
     system("cd #{build_dir} && make extout=../../../../.ext libdir=../../../..") or raise
-    ENV["RUBYLIB"] = [File.expand_path(dummy_rake_compiler_dir), File.expand_path(build_dir), ENV.fetch("RUBYLIB", nil)].compact.join(":")
+    ENV["RUBYLIB"] = [File.expand_path(dummy_rake_compiler_dir), File.expand_path(build_dir), ENV.fetch("RUBYLIB", nil)].compact.join(File::PATH_SEPARATOR)
   end
 
   if gem == "minitest"
@@ -54,7 +54,7 @@ File.foreach("#{gem_dir}/bundled_gems") do |line|
     extconf_path = File.expand_path('../../gems/src/debug/ext/debug/extconf.rb', __FILE__)
     system("#{ruby} -C #{build_dir} #{extconf_path}") or raise
     system("cd #{build_dir} && make extout=../../../../.ext libdir=../../../..") or raise
-    ENV["RUBYLIB"] = [File.expand_path(build_dir + "/.."), ENV.fetch("RUBYLIB", nil)].compact.join(":")
+    ENV["RUBYLIB"] = [File.expand_path(build_dir + "/.."), ENV.fetch("RUBYLIB", nil)].compact.join(File::PATH_SEPARATOR)
   end
 
   print "[command]" if github_actions

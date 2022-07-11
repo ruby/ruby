@@ -224,10 +224,10 @@ extern "C" {
     ) -> VALUE;
 }
 extern "C" {
-    pub fn rb_str_dup(str_: VALUE) -> VALUE;
+    pub fn rb_str_buf_append(dst: VALUE, src: VALUE) -> VALUE;
 }
 extern "C" {
-    pub fn rb_str_append(dst: VALUE, src: VALUE) -> VALUE;
+    pub fn rb_str_dup(str_: VALUE) -> VALUE;
 }
 extern "C" {
     pub fn rb_str_intern(str_: VALUE) -> VALUE;

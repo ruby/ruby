@@ -7,12 +7,13 @@ require 'tempfile'
 require_relative '../lib/jit_support'
 
 class TestRubyOptions < Test::Unit::TestCase
+  def self.mjit_enabled? = defined?(RubyVM::MJIT) && RubyVM::MJIT.enabled?
   def self.yjit_enabled? = defined?(RubyVM::YJIT.enabled?) && RubyVM::YJIT.enabled?
 
   NO_JIT_DESCRIPTION =
-    if defined?(RubyVM::MJIT) && RubyVM::MJIT.enabled? # checking -DMJIT_FORCE_ENABLE
+    if mjit_enabled?
       RUBY_DESCRIPTION.sub(/\+MJIT /, '')
-    elsif yjit_enabled? # checking -DYJIT_FORCE_ENABLE
+    elsif yjit_enabled?
       RUBY_DESCRIPTION.sub(/\+YJIT /, '')
     else
       RUBY_DESCRIPTION
@@ -148,7 +149,7 @@ class TestRubyOptions < Test::Unit::TestCase
   def test_verbose
     assert_in_out_err([{'RUBY_YJIT_ENABLE' => nil}, "-vve", ""]) do |r, e|
       assert_match(VERSION_PATTERN, r[0])
-      if defined?(RubyVM::MJIT) && RubyVM::MJIT.enabled? && !mjit_force_enabled? # checking -DMJIT_FORCE_ENABLE
+      if self.class.mjit_enabled? && !JITSupport.mjit_force_enabled?
         assert_equal(NO_JIT_DESCRIPTION, r[0])
       elsif self.class.yjit_enabled? && !yjit_force_enabled? # checking -DYJIT_FORCE_ENABLE
         assert_equal(NO_JIT_DESCRIPTION, r[0])
@@ -216,7 +217,7 @@ class TestRubyOptions < Test::Unit::TestCase
       assert_match(VERSION_PATTERN, r[0])
       if ENV['RUBY_YJIT_ENABLE'] == '1'
         assert_equal(NO_JIT_DESCRIPTION, r[0])
-      elsif defined?(RubyVM::MJIT) && RubyVM::MJIT.enabled? || self.class.yjit_enabled? # checking -D(M|Y)JIT_FORCE_ENABLE
+      elsif self.class.mjit_enabled? || self.class.yjit_enabled? # checking -D(M|Y)JIT_FORCE_ENABLE
         assert_equal(EnvUtil.invoke_ruby(['-e', 'print RUBY_DESCRIPTION'], '', true).first, r[0])
       else
         assert_equal(RUBY_DESCRIPTION, r[0])
@@ -257,7 +258,7 @@ class TestRubyOptions < Test::Unit::TestCase
       ].each do |args|
         assert_in_out_err([env] + args) do |r, e|
           assert_match(VERSION_PATTERN_WITH_JIT, r[0])
-          if defined?(RubyVM::MJIT) && RubyVM::MJIT.enabled? # checking -DMJIT_FORCE_ENABLE
+          if JITSupport.mjit_force_enabled?
             assert_equal(RUBY_DESCRIPTION, r[0])
           else
             assert_equal(EnvUtil.invoke_ruby([env, '--mjit', '-e', 'print RUBY_DESCRIPTION'], '', true).first, r[0])
@@ -740,7 +741,7 @@ class TestRubyOptions < Test::Unit::TestCase
         -e:(?:1:)?\s\[BUG\]\sSegmentation\sfault.*\n
       )x,
       %r(
-        #{ Regexp.quote(RUBY_DESCRIPTION) }\n\n
+        #{ Regexp.quote((TestRubyOptions.mjit_enabled? && !JITSupport.mjit_force_enabled?) ? NO_JIT_DESCRIPTION : RUBY_DESCRIPTION) }\n\n
       )x,
       %r(
         (?:--\s(?:.+\n)*\n)?
@@ -1131,10 +1132,6 @@ class TestRubyOptions < Test::Unit::TestCase
   end
 
   private
-
-  def mjit_force_enabled?
-    "#{RbConfig::CONFIG['CFLAGS']} #{RbConfig::CONFIG['CPPFLAGS']}".match?(/(\A|\s)-D ?MJIT_FORCE_ENABLE\b/)
-  end
 
   def yjit_force_enabled?
     "#{RbConfig::CONFIG['CFLAGS']} #{RbConfig::CONFIG['CPPFLAGS']}".match?(/(\A|\s)-D ?YJIT_FORCE_ENABLE\b/)

@@ -89,6 +89,7 @@ MSYS2_ARG_CONV_EXCL_PARAM = --exclude=;--name=
 yes-test-ruby:	 export MSYS2_ARG_CONV_EXCL=$(MSYS2_ARG_CONV_EXCL_PARAM)
 yes-test-all:	 export MSYS2_ARG_CONV_EXCL=$(MSYS2_ARG_CONV_EXCL_PARAM)
 yes-test-almost: export MSYS2_ARG_CONV_EXCL=$(MSYS2_ARG_CONV_EXCL_PARAM)
+test/% spec/%/ spec/%_spec.rb: export MSYS2_ARG_CONV_EXCL=$(MSYS2_ARG_CONV_EXCL_PARAM)
 
 endif
 

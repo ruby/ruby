@@ -1370,6 +1370,41 @@ x = __ENCODING__
     assert_syntax_error('x = \ 42', /escaped space/)
   end
 
+  def test_label
+    expected = {:foo => 1}
+
+    code = '{"foo": 1}'
+    assert_valid_syntax(code)
+    assert_equal(expected, eval(code))
+
+    code = '{foo: 1}'
+    assert_valid_syntax(code)
+    assert_equal(expected, eval(code))
+
+    class << (obj = Object.new)
+      attr_reader :arg
+      def set(arg)
+        @arg = arg
+      end
+    end
+
+    assert_valid_syntax(code = "#{<<~"do;"}\n#{<<~'end;'}")
+    do;
+      obj.set foo:
+                1
+    end;
+    assert_equal(expected, eval(code))
+    assert_equal(expected, obj.arg)
+
+    assert_valid_syntax(code = "#{<<~"do;"}\n#{<<~'end;'}")
+    do;
+      obj.set "foo":
+                  1
+    end;
+    assert_equal(expected, eval(code))
+    assert_equal(expected, obj.arg)
+  end
+
 =begin
   def test_past_scope_variable
     assert_warning(/past scope/) {catch {|tag| eval("BEGIN{throw tag}; tap {a = 1}; a")}}

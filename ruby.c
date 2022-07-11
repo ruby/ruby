@@ -1811,11 +1811,6 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
          */
         rb_warning("-K is specified; it is for 1.8 compatibility and may cause odd behavior");
 
-    if (MULTI_BITS_P(FEATURE_SET_BITS(opt->features) & feature_jit_mask)) {
-        rb_warn("MJIT and YJIT cannot both be enabled at the same time. Exiting");
-        return Qfalse;
-    }
-
     if (!(FEATURE_SET_BITS(opt->features) & feature_jit_mask)) {
 #if YJIT_BUILD
         if (!FEATURE_USED_P(opt->features, yjit) && getenv("RUBY_YJIT_ENABLE")) {
@@ -1823,6 +1818,11 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
         }
 #endif
     }
+    if (MULTI_BITS_P(FEATURE_SET_BITS(opt->features) & feature_jit_mask)) {
+        rb_warn("MJIT and YJIT cannot both be enabled at the same time. Exiting");
+        return Qfalse;
+    }
+
 #if USE_MJIT
     if (FEATURE_SET_P(opt->features, mjit)) {
         opt->mjit.on = TRUE; /* set mjit.on for ruby_show_version() API and check to call mjit_init() */
@@ -2151,6 +2151,8 @@ warn_cr_in_shebang(const char *str, long len)
 #define warn_cr_in_shebang(str, len) (void)0
 #endif
 
+void rb_reset_argf_lineno(long n);
+
 struct load_file_arg {
     VALUE parser;
     VALUE fname;
@@ -2247,6 +2249,7 @@ load_file_internal(VALUE argp_v)
         if (NIL_P(c)) {
 	    argp->f = f = Qnil;
 	}
+        rb_reset_argf_lineno(0);
         ruby_opt_init(opt);
     }
     if (opt->src.enc.index >= 0) {

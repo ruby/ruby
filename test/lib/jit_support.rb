@@ -97,4 +97,8 @@ module JITSupport
     RbConfig::CONFIG['CC'].start_with?('gcc') &&
       stderr.include?("error trying to exec 'cc1': execvp: No such file or directory")
   end
+
+  def mjit_force_enabled?
+    "#{RbConfig::CONFIG['CFLAGS']} #{RbConfig::CONFIG['CPPFLAGS']}".match?(/(\A|\s)-D ?MJIT_FORCE_ENABLE\b/)
+  end
 end

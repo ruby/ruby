@@ -789,14 +789,9 @@ native_thread_init(struct rb_native_thread *nt)
 void
 Init_native_thread(rb_thread_t *main_th)
 {
-    int r;
-    if ((r = pthread_rwlock_init(&rb_internal_thread_event_hooks_rw_lock, NULL))) {
-        rb_bug_errno("pthread_rwlock_init", r);
-    }
-
 #if defined(HAVE_PTHREAD_CONDATTR_SETCLOCK)
     if (condattr_monotonic) {
-        r = pthread_condattr_init(condattr_monotonic);
+        int r = pthread_condattr_init(condattr_monotonic);
         if (r == 0) {
             r = pthread_condattr_setclock(condattr_monotonic, CLOCK_MONOTONIC);
         }
@@ -2341,6 +2336,8 @@ native_sleep(rb_thread_t *th, rb_hrtime_t *rel)
 {
     int sigwait_fd = rb_sigwait_fd_get(th);
     rb_ractor_blocking_threads_inc(th->ractor, __FILE__, __LINE__);
+
+    RB_INTERNAL_THREAD_HOOK(RUBY_INTERNAL_THREAD_EVENT_SUSPENDED);
 
     if (sigwait_fd >= 0) {
         rb_native_mutex_lock(&th->interrupt_lock);

@@ -36,7 +36,7 @@ module RDoc
     "rb_cTime"             => "Time",
     "rb_cTrueClass"        => "TrueClass",
 
-    "rb_eArgError"         => "ArgError",
+    "rb_eArgError"         => "ArgumentError",
     "rb_eEOFError"         => "EOFError",
     "rb_eException"        => "Exception",
     "rb_eFatal"            => "fatal",
@@ -46,8 +46,8 @@ module RDoc
     "rb_eInterrupt"        => "Interrupt",
     "rb_eLoadError"        => "LoadError",
     "rb_eNameError"        => "NameError",
-    "rb_eNoMemError"       => "NoMemError",
-    "rb_eNotImpError"      => "NotImpError",
+    "rb_eNoMemError"       => "NoMemoryError",
+    "rb_eNotImpError"      => "NotImplementedError",
     "rb_eRangeError"       => "RangeError",
     "rb_eRuntimeError"     => "RuntimeError",
     "rb_eScriptError"      => "ScriptError",
@@ -58,7 +58,7 @@ module RDoc
     "rb_eSystemCallError"  => "SystemCallError",
     "rb_eSystemExit"       => "SystemExit",
     "rb_eTypeError"        => "TypeError",
-    "rb_eZeroDivError"     => "ZeroDivError",
+    "rb_eZeroDivError"     => "ZeroDivisionError",
 
     "rb_mComparable"       => "Comparable",
     "rb_mEnumerable"       => "Enumerable",

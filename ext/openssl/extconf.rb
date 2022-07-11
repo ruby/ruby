@@ -13,7 +13,7 @@
 
 require "mkmf"
 
-dir_config("openssl")
+dir_config_given = dir_config("openssl").any?
 dir_config("kerberos")
 
 Logging::message "=== OpenSSL for Ruby configurator ===\n"
@@ -92,7 +92,7 @@ def find_openssl_library
 end
 
 Logging::message "=== Checking for required stuff... ===\n"
-pkg_config_found = pkg_config("openssl") && have_header("openssl/ssl.h")
+pkg_config_found = !dir_config_given && pkg_config("openssl") && have_header("openssl/ssl.h")
 
 if !pkg_config_found && !find_openssl_library
   Logging::message "=== Checking for required stuff failed. ===\n"
@@ -169,6 +169,7 @@ have_func("SSL_CTX_set_post_handshake_auth")
 
 # added in 1.1.1
 have_func("EVP_PKEY_check")
+have_func("SSL_CTX_set_ciphersuites")
 
 # added in 3.0.0
 openssl_3 =
@@ -185,7 +186,7 @@ have_func("EVP_PKEY_dup")
 Logging::message "=== Checking done. ===\n"
 
 if openssl_3
-  if $warnflags.sub!(/-W\K(?=deprecated-declarations)/, 'no-')
+  if $warnflags&.sub!(/-W\K(?=deprecated-declarations)/, 'no-')
     $warnflags << " -Wno-incompatible-pointer-types-discards-qualifiers"
   end
 end

@@ -1522,7 +1522,7 @@ Init_ossl_asn1(void)
      *
      * An Array that stores the name of a given tag number. These names are
      * the same as the name of the tag constant that is additionally defined,
-     * e.g. +UNIVERSAL_TAG_NAME[2] = "INTEGER"+ and +OpenSSL::ASN1::INTEGER = 2+.
+     * e.g. <tt>UNIVERSAL_TAG_NAME[2] = "INTEGER"</tt> and <tt>OpenSSL::ASN1::INTEGER = 2</tt>.
      *
      * == Example usage
      *

@@ -2473,6 +2473,8 @@ date_s__valid_jd_p(int argc, VALUE *argv, VALUE klass)
  *
  *   Date.valid_jd?(2451944) # => true
  *
+ * See argument {start}[rdoc-ref:Date@Argument+start].
+ *
  * Related: Date.jd.
  */
 static VALUE
@@ -2564,7 +2566,7 @@ date_s__valid_civil_p(int argc, VALUE *argv, VALUE klass)
  *   Date.valid_date?(2001, 2, 29) # => false
  *   Date.valid_date?(2001, 2, -1) # => true
  *
- * See {Argument start}[rdoc-ref:Date@Argument+start].
+ * See argument {start}[rdoc-ref:Date@Argument+start].
  *
  * Date.valid_date? is an alias for Date.valid_civil?.
  *
@@ -2653,7 +2655,7 @@ date_s__valid_ordinal_p(int argc, VALUE *argv, VALUE klass)
  *   Date.valid_ordinal?(2001, 34)  # => true
  *   Date.valid_ordinal?(2001, 366) # => false
  *
- * See {Argument start}[rdoc-ref:Date@Argument+start].
+ * See argument {start}[rdoc-ref:Date@Argument+start].
  *
  * Related: Date.jd, Date.ordinal.
  */
@@ -2732,7 +2734,7 @@ date_s__valid_commercial_p(int argc, VALUE *argv, VALUE klass)
 
 /*
  * call-seq:
- *    Date.valid_commercial?(cwyear, cweek, cwday, start = Date::ITALY) -> true or false
+ *   Date.valid_commercial?(cwyear, cweek, cwday, start = Date::ITALY) -> true or false
  *
  * Returns +true+ if the arguments define a valid commercial date,
  * +false+ otherwise:
@@ -2740,7 +2742,9 @@ date_s__valid_commercial_p(int argc, VALUE *argv, VALUE klass)
  *   Date.valid_commercial?(2001, 5, 6) # => true
  *   Date.valid_commercial?(2001, 5, 8) # => false
  *
- * See {Argument start}[rdoc-ref:Date@Argument+start].
+ * See Date.commercial.
+ *
+ * See argument {start}[rdoc-ref:Date@Argument+start].
  *
  * Related: Date.jd, Date.commercial.
  */
@@ -3315,7 +3319,7 @@ static VALUE d_lite_plus(VALUE, VALUE);
  *
  *     Date.jd(Date::ITALY - 1).julian?    # => true
  *
- * See {Argument start}[rdoc-ref:Date@Argument+start].
+ * See argument {start}[rdoc-ref:Date@Argument+start].
  *
  * Related: Date.new.
  */
@@ -3356,7 +3360,7 @@ date_s_jd(int argc, VALUE *argv, VALUE klass)
 
 /*
  * call-seq:
- *    Date.ordinal(year = -4712, yday = 1, start = Date::ITALY) -> date
+ *   Date.ordinal(year = -4712, yday = 1, start = Date::ITALY) -> date
  *
  * Returns a new \Date object formed fom the arguments.
  *
@@ -3380,7 +3384,7 @@ date_s_jd(int argc, VALUE *argv, VALUE klass)
  *
  * Raises an exception if +yday+ is zero or out of range.
  *
- * See {Argument start}[rdoc-ref:Date@Argument+start].
+ * See argument {start}[rdoc-ref:Date@Argument+start].
  *
  * Related: Date.jd, Date.new.
  */
@@ -3457,7 +3461,7 @@ date_s_civil(int argc, VALUE *argv, VALUE klass)
  * where +n+ is the number of days in the month;
  * when the argument is negative, counts backward from the end of the month.
  *
- * See {Argument start}[rdoc-ref:Date@Argument+start].
+ * See argument {start}[rdoc-ref:Date@Argument+start].
  *
  * Date.civil is an alias for Date.new.
  *
@@ -3527,19 +3531,47 @@ date_initialize(int argc, VALUE *argv, VALUE self)
 
 /*
  * call-seq:
- *    Date.commercial([cwyear=-4712[, cweek=1[, cwday=1[, start=Date::ITALY]]]])  ->  date
+ *   Date.commercial(cwyear = -4712, cweek = 1, cwday = 1, start = Date::ITALY) -> date
  *
- * Creates a date object denoting the given week date.
+ * Returns a new \Date object constructed from the arguments.
  *
- * The week and the day of week should be a negative or a positive
- * number (as a relative week/day from the end of year/week when
- * negative).  They should not be zero.
+ * Argument +cwyear+ gives the year, and should be an integer.
  *
- *    Date.commercial(2001)	#=> #<Date: 2001-01-01 ...>
- *    Date.commercial(2002)	#=> #<Date: 2001-12-31 ...>
- *    Date.commercial(2001,5,6)	#=> #<Date: 2001-02-03 ...>
+ * Argument +cweek+ gives the index of the week within the year,
+ * and should be in range (1..53) or (-53..-1);
+ * in some years, 53 or -53 will be out-of-range;
+ * if negative, counts backward from the end of the year:
  *
- * See also ::jd and ::new.
+ *   Date.commercial(2022, 1, 1).to_s  # => "2022-01-03"
+ *   Date.commercial(2022, 52, 1).to_s # => "2022-12-26"
+ *
+ * Argument +cwday+ gives the indes of the weekday within the week,
+ * and should be in range (1..7) or (-7..-1);
+ * 1 or -7 is Monday;
+ * if negative, counts backward from the end of the week:
+ *
+ *   Date.commercial(2022, 1, 1).to_s  # => "2022-01-03"
+ *   Date.commercial(2022, 1, -7).to_s # => "2022-01-03"
+ *
+ * When +cweek+ is 1:
+ *
+ * - If January 1 is a Friday, Saturday, or Sunday,
+ *   the first week begins in the week after:
+ *
+ *     Date::ABBR_DAYNAMES[Date.new(2023, 1, 1).wday] # => "Sun"
+ *     Date.commercial(2023, 1, 1).to_s # => "2023-01-02"
+       Date.commercial(2023, 1, 7).to_s # => "2023-01-08"
+ *
+ * - Otherwise, the first week is the week of January 1,
+ *   which may mean some of the days fall on the year before:
+ *
+ *     Date::ABBR_DAYNAMES[Date.new(2020, 1, 1).wday] # => "Wed"
+ *     Date.commercial(2020, 1, 1).to_s # => "2019-12-30"
+       Date.commercial(2020, 1, 7).to_s # => "2020-01-05"
+ *
+ * See argument {start}[rdoc-ref:Date@Argument+start].
+ *
+ * Related: Date.jd, Date.new, Date.ordinal.
  */
 static VALUE
 date_s_commercial(int argc, VALUE *argv, VALUE klass)
@@ -3714,11 +3746,14 @@ static void set_sg(union DateData *, double);
 
 /*
  * call-seq:
- *    Date.today([start=Date::ITALY])  ->  date
+ *   Date.today(start = Date::ITALY) -> date
  *
- * Creates a date object denoting the present day.
+ * Returns a new \Date object constructed from the present date:
  *
- *    Date.today   #=> #<Date: 2011-06-11 ...>
+ *   Date.today.to_s # => "2022-07-06"
+ *
+ * See argument {start}[rdoc-ref:Date@Argument+start].
+ *
  */
 static VALUE
 date_s_today(int argc, VALUE *argv, VALUE klass)
@@ -4309,7 +4344,7 @@ date_s__strptime_internal(int argc, VALUE *argv, VALUE klass,
 
 /*
  * call-seq:
- *    Date._strptime(string[, format='%F'])  ->  hash
+ *   Date._strptime(string, format = '%F') -> hash
  *
  * Parses the given representation of date and time with the given
  * template, and returns a hash of parsed elements.  _strptime does
@@ -4328,7 +4363,7 @@ date_s__strptime(int argc, VALUE *argv, VALUE klass)
 
 /*
  * call-seq:
- *    Date.strptime([string='-4712-01-01'[, format='%F'[, start=Date::ITALY]]])  ->  date
+ *   Date.strptime(string = '-4712-01-01', format = '%F', start = Date::ITALY) -> date
  *
  * Parses the given representation of date and time with the given
  * template, and creates a date object.  strptime does not support
@@ -4341,6 +4376,8 @@ date_s__strptime(int argc, VALUE *argv, VALUE klass)
  *    Date.strptime('2001 04 6', '%Y %U %w')	#=> #<Date: 2001-02-03 ...>
  *    Date.strptime('2001 05 6', '%Y %W %u')	#=> #<Date: 2001-02-03 ...>
  *    Date.strptime('sat3feb01', '%a%d%b%y')	#=> #<Date: 2001-02-03 ...>
+ *
+ * See argument {start}[rdoc-ref:Date@Argument+start].
  *
  * See also strptime(3) and #strftime.
  */
@@ -4429,7 +4466,7 @@ date_s__parse_internal(int argc, VALUE *argv, VALUE klass)
 
 /*
  * call-seq:
- *    Date._parse(string[, comp=true], limit: 128)  ->  hash
+ *   Date._parse(string, comp = true, limit: 128) -> hash
  *
  * Parses the given representation of date and time, and returns a
  * hash of parsed elements.
@@ -4457,7 +4494,7 @@ date_s__parse(int argc, VALUE *argv, VALUE klass)
 
 /*
  * call-seq:
- *    Date.parse(string='-4712-01-01'[, comp=true[, start=Date::ITALY]], limit: 128)  ->  date
+ *   Date.parse(string = '-4712-01-01', comp = true, start = Date::ITALY, limit: 128) -> date
  *
  * Parses the given representation of date and time, and creates a
  * date object.
@@ -4478,6 +4515,8 @@ date_s__parse(int argc, VALUE *argv, VALUE klass)
  * Raise an ArgumentError when the string length is longer than _limit_.
  * You can stop this check by passing `limit: nil`, but note that
  * it may take a long time to parse.
+ *
+ * See argument {start}[rdoc-ref:Date@Argument+start].
  */
 static VALUE
 date_s_parse(int argc, VALUE *argv, VALUE klass)
@@ -4516,7 +4555,7 @@ VALUE date__jisx0301(VALUE);
 
 /*
  * call-seq:
- *    Date._iso8601(string, limit: 128)  ->  hash
+ *   Date._iso8601(string, limit: 128) -> hash
  *
  * Returns a hash of parsed elements.
  *
@@ -4537,7 +4576,7 @@ date_s__iso8601(int argc, VALUE *argv, VALUE klass)
 
 /*
  * call-seq:
- *    Date.iso8601(string='-4712-01-01'[, start=Date::ITALY], limit: 128)  ->  date
+ *   Date.iso8601(string = '-4712-01-01', start = Date::ITALY, limit: 128) -> date
  *
  * Creates a new Date object by parsing from a string according to
  * some typical ISO 8601 formats.
@@ -4549,6 +4588,8 @@ date_s__iso8601(int argc, VALUE *argv, VALUE klass)
  * Raise an ArgumentError when the string length is longer than _limit_.
  * You can stop this check by passing `limit: nil`, but note that
  * it may take a long time to parse.
+ *
+ * See argument {start}[rdoc-ref:Date@Argument+start].
  */
 static VALUE
 date_s_iso8601(int argc, VALUE *argv, VALUE klass)
@@ -4577,7 +4618,7 @@ date_s_iso8601(int argc, VALUE *argv, VALUE klass)
 
 /*
  * call-seq:
- *    Date._rfc3339(string, limit: 128)  ->  hash
+ *   Date._rfc3339(string, limit: 128) -> hash
  *
  * Returns a hash of parsed elements.
  *
@@ -4598,7 +4639,7 @@ date_s__rfc3339(int argc, VALUE *argv, VALUE klass)
 
 /*
  * call-seq:
- *    Date.rfc3339(string='-4712-01-01T00:00:00+00:00'[, start=Date::ITALY], limit: 128)  ->  date
+ *   Date.rfc3339(string = '-4712-01-01T00:00:00+00:00', start = Date::ITALY, limit: 128) -> date
  *
  * Creates a new Date object by parsing from a string according to
  * some typical RFC 3339 formats.
@@ -4608,6 +4649,8 @@ date_s__rfc3339(int argc, VALUE *argv, VALUE klass)
  * Raise an ArgumentError when the string length is longer than _limit_.
  * You can stop this check by passing `limit: nil`, but note that
  * it may take a long time to parse.
+ *
+ * See argument {start}[rdoc-ref:Date@Argument+start].
  */
 static VALUE
 date_s_rfc3339(int argc, VALUE *argv, VALUE klass)
@@ -4636,7 +4679,7 @@ date_s_rfc3339(int argc, VALUE *argv, VALUE klass)
 
 /*
  * call-seq:
- *    Date._xmlschema(string, limit: 128)  ->  hash
+ *   Date._xmlschema(string, limit: 128) -> hash
  *
  * Returns a hash of parsed elements.
  *
@@ -4657,7 +4700,7 @@ date_s__xmlschema(int argc, VALUE *argv, VALUE klass)
 
 /*
  * call-seq:
- *    Date.xmlschema(string='-4712-01-01'[, start=Date::ITALY], limit: 128)  ->  date
+ *   Date.xmlschema(string = '-4712-01-01', start = Date::ITALY, limit: 128)  ->  date
  *
  * Creates a new Date object by parsing from a string according to
  * some typical XML Schema formats.
@@ -4667,6 +4710,9 @@ date_s__xmlschema(int argc, VALUE *argv, VALUE klass)
  * Raise an ArgumentError when the string length is longer than _limit_.
  * You can stop this check by passing `limit: nil`, but note that
  * it may take a long time to parse.
+ *
+ * See argument {start}[rdoc-ref:Date@Argument+start].
+ *
  */
 static VALUE
 date_s_xmlschema(int argc, VALUE *argv, VALUE klass)
@@ -4695,14 +4741,15 @@ date_s_xmlschema(int argc, VALUE *argv, VALUE klass)
 
 /*
  * call-seq:
- *    Date._rfc2822(string, limit: 128)  ->  hash
- *    Date._rfc822(string, limit: 128)   ->  hash
+ *   Date._rfc2822(string, limit: 128) -> hash
  *
  * Returns a hash of parsed elements.
  *
  * Raise an ArgumentError when the string length is longer than _limit_.
  * You can stop this check by passing `limit: nil`, but note that
  * it may take a long time to parse.
+ *
+ * Date._rfc822 is an alias for Date._rfc2822.
  */
 static VALUE
 date_s__rfc2822(int argc, VALUE *argv, VALUE klass)
@@ -4717,8 +4764,7 @@ date_s__rfc2822(int argc, VALUE *argv, VALUE klass)
 
 /*
  * call-seq:
- *    Date.rfc2822(string='Mon, 1 Jan -4712 00:00:00 +0000'[, start=Date::ITALY], limit: 128)  ->  date
- *    Date.rfc822(string='Mon, 1 Jan -4712 00:00:00 +0000'[, start=Date::ITALY], limit: 128)   ->  date
+ *   Date.rfc2822(string = 'Mon, 1 Jan -4712 00:00:00 +0000', start = Date::ITALY, limit: 128) -> date
  *
  * Creates a new Date object by parsing from a string according to
  * some typical RFC 2822 formats.
@@ -4729,6 +4775,10 @@ date_s__rfc2822(int argc, VALUE *argv, VALUE klass)
  * Raise an ArgumentError when the string length is longer than _limit_.
  * You can stop this check by passing `limit: nil`, but note that
  * it may take a long time to parse.
+ *
+ * See argument {start}[rdoc-ref:Date@Argument+start].
+ *
+ * Date.rfc822 is an alias for Date.rfc2822.
  */
 static VALUE
 date_s_rfc2822(int argc, VALUE *argv, VALUE klass)
@@ -4756,7 +4806,7 @@ date_s_rfc2822(int argc, VALUE *argv, VALUE klass)
 
 /*
  * call-seq:
- *    Date._httpdate(string, limit: 128)  ->  hash
+ *   Date._httpdate(string, limit: 128) -> hash
  *
  * Returns a hash of parsed elements.
  *
@@ -4777,7 +4827,7 @@ date_s__httpdate(int argc, VALUE *argv, VALUE klass)
 
 /*
  * call-seq:
- *    Date.httpdate(string='Mon, 01 Jan -4712 00:00:00 GMT'[, start=Date::ITALY], limit: 128)  ->  date
+ *   Date.httpdate(string = 'Mon, 01 Jan -4712 00:00:00 GMT', start = Date::ITALY, limit: 128) -> date
  *
  * Creates a new Date object by parsing from a string according to
  * some RFC 2616 format.
@@ -4788,6 +4838,9 @@ date_s__httpdate(int argc, VALUE *argv, VALUE klass)
  * Raise an ArgumentError when the string length is longer than _limit_.
  * You can stop this check by passing `limit: nil`, but note that
  * it may take a long time to parse.
+ *
+ * See argument {start}[rdoc-ref:Date@Argument+start].
+ *
  */
 static VALUE
 date_s_httpdate(int argc, VALUE *argv, VALUE klass)
@@ -4815,7 +4868,7 @@ date_s_httpdate(int argc, VALUE *argv, VALUE klass)
 
 /*
  * call-seq:
- *    Date._jisx0301(string, limit: 128)  ->  hash
+ *   Date._jisx0301(string, limit: 128) -> hash
  *
  * Returns a hash of parsed elements.
  *
@@ -4836,7 +4889,7 @@ date_s__jisx0301(int argc, VALUE *argv, VALUE klass)
 
 /*
  * call-seq:
- *    Date.jisx0301(string='-4712-01-01'[, start=Date::ITALY], limit: 128)  ->  date
+ *   Date.jisx0301(string = '-4712-01-01', start = Date::ITALY, limit: 128) -> date
  *
  * Creates a new Date object by parsing from a string according to
  * some typical JIS X 0301 formats.
@@ -4850,6 +4903,9 @@ date_s__jisx0301(int argc, VALUE *argv, VALUE klass)
  * Raise an ArgumentError when the string length is longer than _limit_.
  * You can stop this check by passing `limit: nil`, but note that
  * it may take a long time to parse.
+ *
+ * See argument {start}[rdoc-ref:Date@Argument+start].
+ *
  */
 static VALUE
 date_s_jisx0301(int argc, VALUE *argv, VALUE klass)
@@ -5130,12 +5186,15 @@ d_lite_mjd(VALUE self)
 
 /*
  * call-seq:
- *    d.ld  ->  integer
+ *   ld -> integer
  *
- * Returns the Lilian day number.  This is a whole number, which is
- * adjusted by the offset as the local time.
+ * Returns the
+ * {Lilian day number}[https://en.wikipedia.org/wiki/Lilian_date],
+ * which is the number of days since the beginning of the Gregorian
+ * calendar, October 15, 1582.
  *
- *     Date.new(2001,2,3).ld		#=> 152784
+ *   Date.new(2001, 2, 3).ld # => 152784
+ *
  */
 static VALUE
 d_lite_ld(VALUE self)
@@ -5146,12 +5205,13 @@ d_lite_ld(VALUE self)
 
 /*
  * call-seq:
- *    d.year  ->  integer
+ *   year -> integer
  *
- * Returns the year.
+ * Returns the year:
  *
- *    Date.new(2001,2,3).year		#=> 2001
- *    (Date.new(1,1,1) - 1).year	#=> 0
+ *   Date.new(2001, 2, 3).year    # => 2001
+ *   (Date.new(1, 1, 1) - 1).year # => 0
+ *
  */
 static VALUE
 d_lite_year(VALUE self)
@@ -5162,11 +5222,12 @@ d_lite_year(VALUE self)
 
 /*
  * call-seq:
- *    d.yday  ->  fixnum
+ *   yday -> integer
  *
- * Returns the day of the year (1-366).
+ * Returns the day of the year, in range (1..366):
  *
- *    Date.new(2001,2,3).yday		#=> 34
+ *   Date.new(2001, 2, 3).yday # => 34
+ *
  */
 static VALUE
 d_lite_yday(VALUE self)
@@ -5177,12 +5238,13 @@ d_lite_yday(VALUE self)
 
 /*
  * call-seq:
- *    d.mon    ->  fixnum
- *    d.month  ->  fixnum
+ *   mon -> integer
  *
- * Returns the month (1-12).
+ * Returns the month in range (1..12):
  *
- *    Date.new(2001,2,3).mon		#=> 2
+ *   Date.new(2001, 2, 3).mon # => 2
+ *
+ * Date#month is an alias for Date#mon.
  */
 static VALUE
 d_lite_mon(VALUE self)
@@ -5193,12 +5255,13 @@ d_lite_mon(VALUE self)
 
 /*
  * call-seq:
- *    d.mday  ->  fixnum
- *    d.day   ->  fixnum
+ *   mday -> integer
  *
- * Returns the day of the month (1-31).
+ * Returns the day of the month in range (1..31):
  *
- *    Date.new(2001,2,3).mday		#=> 3
+ *   Date.new(2001, 2, 3).mday # => 3
+ *
+ * Date#day is an alias for Date#mday.
  */
 static VALUE
 d_lite_mday(VALUE self)
@@ -5209,11 +5272,12 @@ d_lite_mday(VALUE self)
 
 /*
  * call-seq:
- *    d.day_fraction  ->  rational
+ *   day_fraction -> rational
  *
- * Returns the fractional part of the day.
+ * Returns the fractional part of the day in range (Rational(0, 1)...Rational(1, 1)):
  *
- *    DateTime.new(2001,2,3,12).day_fraction	#=> (1/2)
+ *   DateTime.new(2001,2,3,12).day_fraction # => (1/2)
+ *
  */
 static VALUE
 d_lite_day_fraction(VALUE self)
@@ -5226,12 +5290,14 @@ d_lite_day_fraction(VALUE self)
 
 /*
  * call-seq:
- *    d.cwyear  ->  integer
+ *   cwyear -> integer
  *
- * Returns the calendar week based year.
+ * Returns commercial-date year for +self+
+ * (see Date.commercial):
  *
- *    Date.new(2001,2,3).cwyear		#=> 2001
- *    Date.new(2000,1,1).cwyear		#=> 1999
+ *   Date.new(2001, 2, 3).cwyear # => 2001
+ *   Date.new(2000, 1, 1).cwyear # => 1999
+ *
  */
 static VALUE
 d_lite_cwyear(VALUE self)
@@ -5242,11 +5308,13 @@ d_lite_cwyear(VALUE self)
 
 /*
  * call-seq:
- *    d.cweek  ->  fixnum
+ *   cweek -> integer
  *
- * Returns the calendar week number (1-53).
+ * Returns commercial-date week index for +self+
+ * (see Date.commercial):
  *
- *    Date.new(2001,2,3).cweek		#=> 5
+ *   Date.new(2001, 2, 3).cweek # => 5
+ *
  */
 static VALUE
 d_lite_cweek(VALUE self)
@@ -5257,11 +5325,14 @@ d_lite_cweek(VALUE self)
 
 /*
  * call-seq:
- *    d.cwday  ->  fixnum
+ *   cwday -> integer
  *
- * Returns the day of calendar week (1-7, Monday is 1).
+ * Returns the commercial-date weekday index for +self+
+ * (see Date.commercial);
+ * 1 is Monday:
  *
- *    Date.new(2001,2,3).cwday		#=> 6
+ *   Date.new(2001, 2, 3).cwday # => 6
+ *
  */
 static VALUE
 d_lite_cwday(VALUE self)
@@ -5288,11 +5359,12 @@ d_lite_wnum1(VALUE self)
 
 /*
  * call-seq:
- *    d.wday  ->  fixnum
+ *   wday -> integer
  *
- * Returns the day of week (0-6, Sunday is zero).
+ * Returns the day of week in range (0..6); Sunday is 0:
  *
- *    Date.new(2001,2,3).wday		#=> 6
+ *   Date.new(2001, 2, 3).wday # => 6
+ *
  */
 static VALUE
 d_lite_wday(VALUE self)
@@ -5303,9 +5375,9 @@ d_lite_wday(VALUE self)
 
 /*
  * call-seq:
- *    d.sunday?  ->  bool
+ *   sunday? -> true or false
  *
- * Returns true if the date is Sunday.
+ * Returns +true+ if +self+ is a Sunday, +false+ otherwise.
  */
 static VALUE
 d_lite_sunday_p(VALUE self)
@@ -5316,9 +5388,9 @@ d_lite_sunday_p(VALUE self)
 
 /*
  * call-seq:
- *    d.monday?  ->  bool
+ *   monday? -> true or false
  *
- * Returns true if the date is Monday.
+ * Returns +true+ if +self+ is a Monday, +false+ otherwise.
  */
 static VALUE
 d_lite_monday_p(VALUE self)
@@ -5329,9 +5401,9 @@ d_lite_monday_p(VALUE self)
 
 /*
  * call-seq:
- *    d.tuesday?  ->  bool
+ *   tuesday? -> true or false
  *
- * Returns true if the date is Tuesday.
+ * Returns +true+ if +self+ is a Tuesday, +false+ otherwise.
  */
 static VALUE
 d_lite_tuesday_p(VALUE self)
@@ -5342,9 +5414,9 @@ d_lite_tuesday_p(VALUE self)
 
 /*
  * call-seq:
- *    d.wednesday?  ->  bool
+ *   wednesday? -> true or false
  *
- * Returns true if the date is Wednesday.
+ * Returns +true+ if +self+ is a Wednesday, +false+ otherwise.
  */
 static VALUE
 d_lite_wednesday_p(VALUE self)
@@ -5355,9 +5427,9 @@ d_lite_wednesday_p(VALUE self)
 
 /*
  * call-seq:
- *    d.thursday?  ->  bool
+ *   thursday? -> true or false
  *
- * Returns true if the date is Thursday.
+ * Returns +true+ if +self+ is a Thursday, +false+ otherwise.
  */
 static VALUE
 d_lite_thursday_p(VALUE self)
@@ -5368,9 +5440,9 @@ d_lite_thursday_p(VALUE self)
 
 /*
  * call-seq:
- *    d.friday?  ->  bool
+ *   friday? -> true or false
  *
- * Returns true if the date is Friday.
+ * Returns +true+ if +self+ is a Friday, +false+ otherwise.
  */
 static VALUE
 d_lite_friday_p(VALUE self)
@@ -5381,9 +5453,9 @@ d_lite_friday_p(VALUE self)
 
 /*
  * call-seq:
- *    d.saturday?  ->  bool
+ *   saturday? -> true or false
  *
- * Returns true if the date is Saturday.
+ * Returns +true+ if +self+ is a Saturday, +false+ otherwise.
  */
 static VALUE
 d_lite_saturday_p(VALUE self)
@@ -5414,11 +5486,12 @@ d_lite_nth_kday_p(VALUE self, VALUE n, VALUE k)
 
 /*
  * call-seq:
- *    d.hour  ->  fixnum
+ *   hour -> integer
  *
- * Returns the hour (0-23).
+ * Returns the hour in range (0..23):
  *
- *    DateTime.new(2001,2,3,4,5,6).hour		#=> 4
+ *   DateTime.new(2001, 2, 3, 4, 5, 6).hour # => 4
+ *
  */
 static VALUE
 d_lite_hour(VALUE self)
@@ -5429,12 +5502,13 @@ d_lite_hour(VALUE self)
 
 /*
  * call-seq:
- *    d.min     ->  fixnum
- *    d.minute  ->  fixnum
+ *   min -> integer
  *
- * Returns the minute (0-59).
+ * Returns the minute in range (0..59):
  *
- *    DateTime.new(2001,2,3,4,5,6).min		#=> 5
+ *   DateTime.new(2001, 2, 3, 4, 5, 6).min # => 5
+ *
+ * Date#minute is an alias for Date#min.
  */
 static VALUE
 d_lite_min(VALUE self)
@@ -5445,12 +5519,13 @@ d_lite_min(VALUE self)
 
 /*
  * call-seq:
- *    d.sec     ->  fixnum
- *    d.second  ->  fixnum
+ *   sec -> integer
  *
- * Returns the second (0-59).
+ * Returns the second in range (0..59):
  *
- *    DateTime.new(2001,2,3,4,5,6).sec		#=> 6
+ *   DateTime.new(2001, 2, 3, 4, 5, 6).sec # => 6
+ *
+ * Date#second is an alias for Date#sec.
  */
 static VALUE
 d_lite_sec(VALUE self)
@@ -5461,12 +5536,14 @@ d_lite_sec(VALUE self)
 
 /*
  * call-seq:
- *    d.sec_fraction     ->  rational
- *    d.second_fraction  ->  rational
+ *   sec_fraction -> rational
  *
- * Returns the fractional part of the second.
+ * Returns the fractional part of the second in range
+ * (Rational(0, 1)...Rational(1, 1)):
  *
- *    DateTime.new(2001,2,3,4,5,6.5).sec_fraction	#=> (1/2)
+ *   DateTime.new(2001, 2, 3, 4, 5, 6.5).sec_fraction # => (1/2)
+ *
+ * Date.second_fraction is an alias for Date#sec_fraction.
  */
 static VALUE
 d_lite_sec_fraction(VALUE self)
@@ -9035,6 +9112,7 @@ mk_ary_of_str(long len, const char *a[])
     return o;
 }
 
+/* :nodoc: */
 static VALUE
 d_lite_zero(VALUE x)
 {

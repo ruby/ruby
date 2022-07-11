@@ -25,11 +25,11 @@ require "digest"
 # That carries the usual limitations. Proc objects cannot be marshalled,
 # for example.
 #
-# There are three key terms here (details at the links):
+# There are three important concepts here (details at the links):
 #
 # - {Store}[rdoc-ref:PStore@The+Store]: a store is an instance of \PStore.
-# - {Roots}[rdoc-ref:PStore@Roots]: the store is hash-like;
-#   each root is a key for a stored object.
+# - {Entries}[rdoc-ref:PStore@Entries]: the store is hash-like;
+#   each entry is the key for a stored object.
 # - {Transactions}[rdoc-ref:PStore@Transactions]: each transaction is a collection
 #   of prospective changes to the store;
 #   a transaction is defined in the block given with a call
@@ -45,7 +45,7 @@ require "digest"
 #   end
 #
 # All we really need to know about +example_store+
-# is that it yields a fresh store with a known population of roots;
+# is that it yields a fresh store with a known population of entries;
 # its implementation:
 #
 #   require 'pstore'
@@ -73,10 +73,10 @@ require "digest"
 # module Marshal, which means that certain objects cannot be added to the store;
 # see {Marshal::dump}[https://docs.ruby-lang.org/en/master/Marshal.html#method-c-dump].
 #
-# == Roots
+# == Entries
 #
-# A store may have any number of entries, called _roots_.
-# Each root has a key and a value, just as in a hash:
+# A store may have any number of entries.
+# Each entry has a key and a value, just as in a hash:
 #
 # - Key: as in a hash, the key can be (almost) any object;
 #   see {Hash Keys}[https://docs.ruby-lang.org/en/master/Hash.html#class-Hash-label-Hash+Keys].
@@ -89,7 +89,7 @@ require "digest"
 #   That collection may in turn contain nested objects,
 #   including collections, to any depth;
 #   those objects must also be \Marshal-able.
-#   See {Deep Root Values}[rdoc-ref:PStore@Deep+Root+Values].
+#   See {Hierarchical Values}[rdoc-ref:PStore@Hierarchical+Values].
 #
 # == Transactions
 #
@@ -104,9 +104,9 @@ require "digest"
 #
 #   example_store do |store|
 #     store.transaction do
-#       store.roots # => [:foo, :bar, :baz]
+#       store.keys # => [:foo, :bar, :baz]
 #       store[:bat] = 3
-#       store.roots # => [:foo, :bar, :baz, :bat]
+#       store.keys # => [:foo, :bar, :baz, :bat]
 #     end
 #   end
 #
@@ -132,14 +132,14 @@ require "digest"
 #
 #     example_store do |store|
 #       store.transaction do
-#         store.roots # => [:foo, :bar, :baz]
+#         store.keys # => [:foo, :bar, :baz]
 #         store[:bat] = 3
 #         store.commit
 #         fail 'Cannot get here'
 #       end
 #       store.transaction do
 #         # Update was completed.
-#         store.roots # => [:foo, :bar, :baz, :bat]
+#         store.keys # => [:foo, :bar, :baz, :bat]
 #       end
 #     end
 #
@@ -147,14 +147,14 @@ require "digest"
 #
 #     example_store do |store|
 #       store.transaction do
-#         store.roots # => [:foo, :bar, :baz]
+#         store.keys # => [:foo, :bar, :baz]
 #         store[:bat] = 3
 #         store.abort
 #         fail 'Cannot get here'
 #       end
 #       store.transaction do
 #         # Update was not completed.
-#         store.roots # => [:foo, :bar, :baz]
+#         store.keys # => [:foo, :bar, :baz]
 #       end
 #     end
 #
@@ -176,9 +176,9 @@ require "digest"
 #     # Calls to #transaction, #[]=, and #delete are not allowed here.
 #   end
 #
-# == Deep Root Values
+# == Hierarchical Values
 #
-# The value for a root may be a simple object (as seen above).
+# The value for an entry may be a simple object (as seen above).
 # It may also be a hierarchy of objects nested to any depth:
 #
 #   deep_store = PStore.new('deep.store')
@@ -208,7 +208,7 @@ require "digest"
 #
 # === Modifying the Store
 #
-# Use method #[]= to update or create a root:
+# Use method #[]= to update or create an entry:
 #
 #   example_store do |store|
 #     store.transaction do
@@ -217,7 +217,7 @@ require "digest"
 #     end
 #   end
 #
-# Use method #delete to remove a root:
+# Use method #delete to remove an entry:
 #
 #   example_store do |store|
 #     store.transaction do
@@ -226,10 +226,10 @@ require "digest"
 #     end
 #   end
 #
-# === Retrieving Stored Objects
+# === Retrieving Values
 #
 # Use method #fetch (allows default) or #[] (defaults to +nil+)
-# to retrieve a root:
+# to retrieve an entry:
 #
 #   example_store do |store|
 #     store.transaction do
@@ -243,19 +243,19 @@ require "digest"
 #
 # === Querying the Store
 #
-# Use method #root? to determine whether a given root exists:
+# Use method #key? to determine whether a given key exists:
 #
 #   example_store do |store|
 #     store.transaction do
-#       store.root?(:foo) # => true
+#       store.key?(:foo) # => true
 #     end
 #   end
 #
-# Use method #roots to retrieve root keys:
+# Use method #keys to retrieve keys:
 #
 #   example_store do |store|
 #     store.transaction do
-#       store.roots # => [:foo, :bar, :baz]
+#       store.keys # => [:foo, :bar, :baz]
 #     end
 #   end
 #
@@ -319,9 +319,9 @@ require "digest"
 #
 #  # Read wiki data, setting argument read_only to true.
 #  wiki.transaction(true) do
-#    wiki.roots.each do |root|
-#      puts root
-#      puts wiki[root]
+#    wiki.keys.each do |key|
+#      puts key
+#      puts wiki[key]
 #    end
 #  end
 #
@@ -398,7 +398,7 @@ class PStore
   end
   private :in_transaction, :in_transaction_wr
 
-  # Returns the object for the given +key+ if the key exists.
+  # Returns the value for the given +key+ if the key exists.
   # +nil+ otherwise;
   # if not +nil+, the returned value is an object or a hierarchy of objects:
   #
@@ -409,9 +409,9 @@ class PStore
   #     end
   #   end
   #
-  # Returns +nil+ if there is no such root.
+  # Returns +nil+ if there is no such key.
   #
-  # See also {Deep Root Values}[rdoc-ref:PStore@Deep+Root+Values].
+  # See also {Hierarchical Values}[rdoc-ref:PStore@Hierarchical+Values].
   #
   # Raises an exception if called outside a transaction block.
   def [](key)
@@ -420,7 +420,7 @@ class PStore
   end
 
   # Like #[], except that it accepts a default value for the store.
-  # If the root for the given +key+ does not exist:
+  # If the +key+ does not exist:
   #
   # - Raises an exception if +default+ is +PStore::Error+.
   # - Returns the value of +default+ otherwise:
@@ -437,7 +437,7 @@ class PStore
     in_transaction
     unless @table.key? key
       if default == PStore::Error
-        raise PStore::Error, format("undefined root key `%s'", key)
+        raise PStore::Error, format("undefined key `%s'", key)
       else
         return default
       end
@@ -445,8 +445,7 @@ class PStore
     @table[key]
   end
 
-  # Creates or replaces an object or hierarchy of objects
-  # at the root for +key+:
+  # Creates or replaces the value for the given +key+:
   #
   #   example_store do |store|
   #     temp.transaction do
@@ -454,7 +453,7 @@ class PStore
   #     end
   #   end
   #
-  # See also {Deep Root Values}[rdoc-ref:PStore@Deep+Root+Values].
+  # See also {Hierarchical Values}[rdoc-ref:PStore@Hierarchical+Values].
   #
   # Raises an exception if called outside a transaction block.
   def []=(key, value)
@@ -471,7 +470,7 @@ class PStore
   #     end
   #   end
   #
-  # Returns +nil+ if there is no such root.
+  # Returns +nil+ if there is no such key.
   #
   # Raises an exception if called outside a transaction block.
   def delete(key)
@@ -479,33 +478,39 @@ class PStore
     @table.delete key
   end
 
-  # Returns an array of the keys of the existing roots:
+  # Returns an array of the existing keys:
   #
   #   example_store do |store|
   #     store.transaction do
-  #       store.roots # => [:foo, :bar, :baz]
+  #       store.keys # => [:foo, :bar, :baz]
   #     end
   #   end
   #
   # Raises an exception if called outside a transaction block.
-  def roots
+  #
+  # PStore#roots is an alias for PStore#keys.
+  def keys
     in_transaction
     @table.keys
   end
+  alias roots keys
 
-  # Returns +true+ if there is a root for +key+, +false+ otherwise:
+  # Returns +true+ if +key+ exists, +false+ otherwise:
   #
   #   example_store do |store|
   #     store.transaction do
-  #       store.root?(:foo) # => true
+  #       store.key?(:foo) # => true
   #     end
   #   end
   #
   # Raises an exception if called outside a transaction block.
-  def root?(key)
+  #
+  # PStore#root? is an alias for PStore#key?.
+  def key?(key)
     in_transaction
     @table.key? key
   end
+  alias root? key?
 
   # Returns the string file path used to create the store:
   #

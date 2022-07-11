@@ -174,7 +174,7 @@ Note: We're only listing outstanding class updates.
     * minitest 5.16.2
     * net-imap 0.2.3
     * rbs 2.6.0
-    * typeprof 0.21.2
+    * typeprof 0.21.3
     * debug 1.5.0
 *   The following default gems are now bundled gems.
 

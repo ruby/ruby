@@ -101,6 +101,31 @@ class TestRDocParserC < RDoc::TestCase
     end
   end
 
+  def test_known_classes
+    RDoc::KNOWN_CLASSES.each do |var, name|
+      case name
+      when "Refinement"
+        next unless defined?(Refinement)
+      when "RubyVM"
+        next unless defined?(RubyVM)
+      when "Bignum", "Fixnum", "Data", "Socket", /\A(?![A-Z])/
+        next
+      end
+      obj = Object.const_get(name)
+      assert_equal obj.name, name
+      case var
+      when /\Arb_c/
+        assert_kind_of Class, obj
+      when /\Arb_m/
+        assert_kind_of Module, obj
+      when /\Arb_e/
+        assert_operator obj, :<=, Exception
+      else
+        raise "unknown prefix: #{var} => #{name}"
+      end
+    end
+  end
+
   def test_initialize
     some_ext        = @top_level.add_class RDoc::NormalClass, 'SomeExt'
                       @top_level.add_class RDoc::SingleClass, 'SomeExtSingle'
