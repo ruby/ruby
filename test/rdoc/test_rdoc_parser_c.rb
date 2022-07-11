@@ -106,6 +106,8 @@ class TestRDocParserC < RDoc::TestCase
       case name
       when "Refinement"
         next unless defined?(Refinement)
+      when "RubyVM"
+        next unless defined?(RubyVM)
       when "Bignum", "Fixnum", "Data", "Socket", /\A(?![A-Z])/
         next
       end
