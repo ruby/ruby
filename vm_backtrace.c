@@ -1551,6 +1551,9 @@ rb_profile_frames(int start, int limit, VALUE *buff, int *lines)
     const rb_control_frame_t *cfp = ec->cfp, *end_cfp = RUBY_VM_END_CONTROL_FRAME(ec);
     const rb_callable_method_entry_t *cme;
 
+    // Skip dummy frame; see `rb_ec_partial_backtrace_object` for details
+    end_cfp = RUBY_VM_NEXT_CONTROL_FRAME(end_cfp);
+
     for (i=0; i<limit && cfp != end_cfp;) {
         if (VM_FRAME_RUBYFRAME_P(cfp)) {
             if (start > 0) {
