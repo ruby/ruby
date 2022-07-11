@@ -1966,9 +1966,17 @@ fn gen_get_ivar(
         ctx.stack_pop(1);
     }
 
+    if USE_RVARGC != 0 {
+        // Check that the ivar table is big enough
+        // Check that the slot is inside the ivar table (num_slots > index)
+        let num_slots = mem_opnd(32, REG0, ROBJECT_OFFSET_NUMIV);
+        cmp(cb, num_slots, uimm_opnd(ivar_index as u64));
+        jle_ptr(cb, counted_exit!(ocb, side_exit, getivar_idx_out_of_range));
+    }
+
     // Compile time self is embedded and the ivar index lands within the object
     let test_result = unsafe { FL_TEST_RAW(comptime_receiver, VALUE(ROBJECT_EMBED.as_usize())) != VALUE(0) };
-    if test_result && ivar_index < (ROBJECT_EMBED_LEN_MAX.as_usize()) {
+    if test_result {
         // See ROBJECT_IVPTR() from include/ruby/internal/core/robject.h
 
         // Guard that self is embedded
@@ -1988,7 +1996,7 @@ fn gen_get_ivar(
         );
 
         // Load the variable
-        let offs = RUBY_OFFSET_ROBJECT_AS_ARY + (ivar_index * SIZEOF_VALUE) as i32;
+        let offs = ROBJECT_OFFSET_AS_ARY + (ivar_index * SIZEOF_VALUE) as i32;
         let ivar_opnd = mem_opnd(64, REG0, offs);
         mov(cb, REG1, ivar_opnd);
 
@@ -2019,17 +2027,16 @@ fn gen_get_ivar(
             side_exit,
         );
 
-        // Check that the extended table is big enough
-        if ivar_index > (ROBJECT_EMBED_LEN_MAX.as_usize()) {
+        if USE_RVARGC == 0 {
+            // Check that the extended table is big enough
             // Check that the slot is inside the extended table (num_slots > index)
-            let num_slots = mem_opnd(32, REG0, RUBY_OFFSET_ROBJECT_AS_HEAP_NUMIV);
-
+            let num_slots = mem_opnd(32, REG0, ROBJECT_OFFSET_NUMIV);
             cmp(cb, num_slots, uimm_opnd(ivar_index as u64));
             jle_ptr(cb, counted_exit!(ocb, side_exit, getivar_idx_out_of_range));
         }
 
         // Get a pointer to the extended table
-        let tbl_opnd = mem_opnd(64, REG0, RUBY_OFFSET_ROBJECT_AS_HEAP_IVPTR);
+        let tbl_opnd = mem_opnd(64, REG0, ROBJECT_OFFSET_AS_HEAP_IVPTR);
         mov(cb, REG0, tbl_opnd);
 
         // Read the ivar from the extended table

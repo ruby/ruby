@@ -1467,6 +1467,8 @@ void
 rb_obj_transient_heap_evacuate(VALUE obj, int promote)
 {
     if (ROBJ_TRANSIENT_P(obj)) {
+        assert(!RB_FL_TEST_RAW(obj, ROBJECT_EMBED));
+
         uint32_t len = ROBJECT_NUMIV(obj);
         const VALUE *old_ptr = ROBJECT_IVPTR(obj);
         VALUE *new_ptr;
@@ -1493,7 +1495,7 @@ init_iv_list(VALUE obj, uint32_t len, uint32_t newsize, st_table *index_tbl)
     if (RBASIC(obj)->flags & ROBJECT_EMBED) {
         newptr = obj_ivar_heap_alloc(obj, newsize);
         MEMCPY(newptr, ptr, VALUE, len);
-        RBASIC(obj)->flags &= ~ROBJECT_EMBED;
+        RB_FL_UNSET_RAW(obj, ROBJECT_EMBED);
         ROBJECT(obj)->as.heap.ivptr = newptr;
     }
     else {
@@ -1503,7 +1505,11 @@ init_iv_list(VALUE obj, uint32_t len, uint32_t newsize, st_table *index_tbl)
     for (; len < newsize; len++) {
         newptr[len] = Qundef;
     }
+#if USE_RVARGC
+    ROBJECT(obj)->numiv = newsize;
+#else
     ROBJECT(obj)->as.heap.numiv = newsize;
+#endif
     ROBJECT(obj)->as.heap.iv_index_tbl = index_tbl;
 }
 

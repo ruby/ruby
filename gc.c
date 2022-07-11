@@ -2865,18 +2865,65 @@ rb_newobj(void)
     return newobj_of(0, T_NONE, 0, 0, 0, FALSE, sizeof(RVALUE));
 }
 
+static size_t
+rb_obj_embedded_size(uint32_t numiv)
+{
+    return offsetof(struct RObject, as.ary) + (sizeof(VALUE) * numiv);
+}
+
+static VALUE
+rb_class_instance_allocate_internal(VALUE klass, VALUE flags, bool wb_protected)
+{
+    GC_ASSERT((flags & RUBY_T_MASK) == T_OBJECT);
+    GC_ASSERT(flags & ROBJECT_EMBED);
+
+    st_table *index_tbl = RCLASS_IV_INDEX_TBL(klass);
+    uint32_t index_tbl_num_entries = index_tbl == NULL ? 0 : (uint32_t)index_tbl->num_entries;
+
+    size_t size;
+    bool embed = true;
+#if USE_RVARGC
+    size = rb_obj_embedded_size(index_tbl_num_entries);
+    if (!rb_gc_size_allocatable_p(size)) {
+        size = sizeof(struct RObject);
+        embed = false;
+    }
+#else
+    size = sizeof(struct RObject);
+    if (index_tbl_num_entries > ROBJECT_EMBED_LEN_MAX) {
+        embed = false;
+    }
+#endif
+
+#if USE_RVARGC
+    VALUE obj = newobj_of(klass, flags, 0, 0, 0, wb_protected, size);
+#else
+    VALUE obj = newobj_of(klass, flags, Qundef, Qundef, Qundef, wb_protected, size);
+#endif
+
+    if (embed) {
+#if USE_RVARGC
+        uint32_t capa = (uint32_t)((rb_gc_obj_slot_size(obj) - offsetof(struct RObject, as.ary)) / sizeof(VALUE));
+        GC_ASSERT(capa >= index_tbl_num_entries);
+
+        ROBJECT(obj)->numiv = capa;
+        for (size_t i = 0; i < capa; i++) {
+            ROBJECT(obj)->as.ary[i] = Qundef;
+        }
+#endif
+    }
+    else {
+        rb_init_iv_list(obj);
+    }
+
+    return obj;
+}
+
 VALUE
 rb_newobj_of(VALUE klass, VALUE flags)
 {
     if ((flags & RUBY_T_MASK) == T_OBJECT) {
-        st_table *index_tbl = RCLASS_IV_INDEX_TBL(klass);
-
-        VALUE obj = newobj_of(klass, (flags | ROBJECT_EMBED) & ~FL_WB_PROTECTED , Qundef, Qundef, Qundef, flags & FL_WB_PROTECTED, sizeof(RVALUE));
-
-        if (index_tbl && index_tbl->num_entries > ROBJECT_EMBED_LEN_MAX) {
-            rb_init_iv_list(obj);
-        }
-        return obj;
+        return rb_class_instance_allocate_internal(klass, (flags | ROBJECT_EMBED) & ~FL_WB_PROTECTED, flags & FL_WB_PROTECTED);
     }
     else {
         return newobj_of(klass, flags & ~FL_WB_PROTECTED, 0, 0, 0, flags & FL_WB_PROTECTED, sizeof(RVALUE));
@@ -2989,17 +3036,7 @@ rb_imemo_new_debug(enum imemo_type type, VALUE v1, VALUE v2, VALUE v3, VALUE v0,
 VALUE
 rb_class_allocate_instance(VALUE klass)
 {
-    st_table *index_tbl = RCLASS_IV_INDEX_TBL(klass);
-
-    VALUE flags = T_OBJECT | ROBJECT_EMBED;
-
-    VALUE obj = newobj_of(klass, flags, Qundef, Qundef, Qundef, RGENGC_WB_PROTECTED_OBJECT, sizeof(RVALUE));
-
-    if (index_tbl && index_tbl->num_entries > ROBJECT_EMBED_LEN_MAX) {
-        rb_init_iv_list(obj);
-    }
-
-    return obj;
+    return rb_class_instance_allocate_internal(klass, T_OBJECT | ROBJECT_EMBED, RGENGC_WB_PROTECTED_OBJECT);
 }
 
 static inline void
@@ -8322,17 +8359,23 @@ gc_compact_destination_pool(rb_objspace_t *objspace, rb_size_pool_t *src_pool, V
     size_t obj_size;
 
     switch (BUILTIN_TYPE(src)) {
-        case T_STRING:
-            obj_size = rb_str_size_as_embedded(src);
-            break;
         case T_ARRAY:
             obj_size = rb_ary_size_as_embedded(src);
             break;
+
+        case T_OBJECT:
+            obj_size = rb_obj_embedded_size(ROBJECT_NUMIV(src));
+            break;
+
+        case T_STRING:
+            obj_size = rb_str_size_as_embedded(src);
+            break;
+
         default:
             return src_pool;
     }
 
-    if (rb_gc_size_allocatable_p(obj_size)) {
+    if (rb_gc_size_allocatable_p(obj_size)){
         return &size_pools[size_pool_idx_for_size(obj_size)];
     }
     else {
@@ -9896,12 +9939,37 @@ gc_ref_update_array(rb_objspace_t * objspace, VALUE v)
 }
 
 static void
-gc_ref_update_object(rb_objspace_t * objspace, VALUE v)
+gc_ref_update_object(rb_objspace_t *objspace, VALUE v)
 {
     VALUE *ptr = ROBJECT_IVPTR(v);
+    uint32_t numiv = ROBJECT_NUMIV(v);
 
-    uint32_t i, len = ROBJECT_NUMIV(v);
-    for (i = 0; i < len; i++) {
+#if USE_RVARGC
+    size_t slot_size = rb_gc_obj_slot_size(v);
+    size_t embed_size = rb_obj_embedded_size(numiv);
+    if (slot_size >= embed_size && !RB_FL_TEST_RAW(v, ROBJECT_EMBED)) {
+        // Object can be re-embedded
+        memcpy(ROBJECT(v)->as.ary, ptr, sizeof(VALUE) * numiv);
+        RB_FL_SET_RAW(v, ROBJECT_EMBED);
+        if (ROBJ_TRANSIENT_P(v)) {
+            ROBJ_TRANSIENT_UNSET(v);
+        }
+        else {
+            xfree(ptr);
+        }
+        ptr = ROBJECT(v)->as.ary;
+
+        uint32_t capa = (uint32_t)((slot_size - offsetof(struct RObject, as.ary)) / sizeof(VALUE));
+        ROBJECT(v)->numiv = capa;
+
+        // Fill end with Qundef
+        for (uint32_t i = numiv; i < capa; i++) {
+            ptr[i] = Qundef;
+        }
+    }
+#endif
+
+    for (uint32_t i = 0; i < numiv; i++) {
         UPDATE_IF_MOVED(objspace, ptr[i]);
     }
 }
