@@ -1478,6 +1478,10 @@ static int rgengc_remember(rb_objspace_t *objspace, VALUE obj);
 static void rgengc_mark_and_rememberset_clear(rb_objspace_t *objspace, rb_heap_t *heap);
 static void rgengc_rememberset_mark(rb_objspace_t *objspace, rb_heap_t *heap);
 
+#ifdef USE_THIRD_PARTY_HEAP
+static size_t rb_mmtk_heap_limit(void);
+#endif
+
 static inline int
 RVALUE_FLAGS_AGE(VALUE flags)
 {
@@ -1859,18 +1863,10 @@ rb_objspace_alloc(void)
     dont_gc_on();
 
 #ifdef USE_THIRD_PARTY_HEAP
-    const char *envval;
-    long heap_size;
-    if ((envval = getenv("THIRD_PARTY_HEAP_LIMIT")) != 0) {
-	    heap_size = atol(envval);
-    } else {
-        heap_size = gc_params.heap_init_slots * sizeof(RVALUE);
-    }
-
-    // Note: this limit is currently broken for NoGC, but we still attempt to
+    // Note: the limit is currently broken for NoGC, but we still attempt to
     // initialise it properly regardless.
     // See https://github.com/mmtk/mmtk-core/issues/214
-    mmtk_init_binding(heap_size, &ruby_upcalls);
+    mmtk_init_binding(rb_mmtk_heap_limit(), &ruby_upcalls);
 #endif
 
     return objspace;
@@ -15014,5 +15010,44 @@ RubyUpcalls ruby_upcalls = {
     rb_mmtk_scan_thread_root,
     rb_mmtk_scan_object_ruby_style,
 };
+
+// Use up to 80% of memory for the heap
+static const int rb_mmtk_heap_limit_percentage = 80;
+
+static size_t rb_mmtk_system_physical_memory(void)
+{
+#ifdef __linux__
+    const long physical_pages = sysconf(_SC_PHYS_PAGES);
+    const long page_size = sysconf(_SC_PAGE_SIZE);
+    if (physical_pages == -1 || page_size == -1)
+    {
+        rb_bug("failed to get system physical memory size");
+    }
+    return (size_t) physical_pages * (size_t) page_size;
+#else
+#error no implementation of rb_mmtk_system_physical_memory on this platform
+#endif
+}
+
+static size_t rb_mmtk_available_system_memory(void)
+{
+    /*
+     * If we're in a container, we should use the maximum container memory,
+     * otherwise each container will try to use all system memory. There's
+     * example logic for this in the JVM and SVM (see CgroupV1Subsystem
+     * and CgroupV2Subsystem).
+     */
+
+    return rb_mmtk_system_physical_memory();
+}
+
+size_t rb_mmtk_heap_limit(void) {
+    const char *envval;
+    if ((envval = getenv("THIRD_PARTY_HEAP_LIMIT")) != 0) {
+        return atol(envval);
+    } else {
+        return rb_mmtk_available_system_memory() / rb_mmtk_heap_limit_percentage * 100;
+    }
+}
 
 #endif
