@@ -115,6 +115,8 @@ class TestRDocParserC < RDoc::TestCase
 
     parser = RDoc::Parser::C.new @top_level, @fn, '', @options, @stats
 
+    assert_equal "ArgumentError", parser.known_classes["rb_eArgError"]
+
     expected = { 'cSomeExt' => some_ext }
     assert_equal expected, parser.classes
 

@@ -36,7 +36,7 @@ module RDoc
     "rb_cTime"             => "Time",
     "rb_cTrueClass"        => "TrueClass",
 
-    "rb_eArgError"         => "ArgError",
+    "rb_eArgError"         => "ArgumentError",
     "rb_eEOFError"         => "EOFError",
     "rb_eException"        => "Exception",
     "rb_eFatal"            => "fatal",
