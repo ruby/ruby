@@ -3334,7 +3334,7 @@ tmcmp(struct tm *a, struct tm *b)
 
 /*
  * call-seq:
- *   Time.utc(year, month=1, day=1, hour=0, min=0, sec_i=0, usec=0) -> new_time
+ *   Time.utc(year, month = 1, day = 1, hour = 0, min = 0, sec_i = 0, usec = 0) -> new_time
  *   Time.utc(sec_i, min, hour, day, month, year, dummy, dummy, dummy, dummy) -> new_time
  *
  * Returns a new \Time object based the on given arguments;
@@ -3351,9 +3351,9 @@ tmcmp(struct tm *a, struct tm *b)
  * such as is returned by #to_a.
  *
  *   array = Time.now.to_a
- *   p array # => [57, 26, 13, 24, 4, 2021, 6, 114, true, "Central Daylight Time"]
+ *   # => [55, 14, 10, 7, 7, 2022, 4, 188, true, "Central Daylight Time"]
  *   array[5] = 2000
- *   Time.utc(*array) # => 2000-04-24 13:26:57 UTC
+ *   Time.utc(*array) # => 2000-07-07 10:14:55 UTC
  *
  * Parameters:
  * :include: doc/time/year.rdoc
@@ -3361,8 +3361,8 @@ tmcmp(struct tm *a, struct tm *b)
  * :include: doc/time/sec_i.rdoc
  * :include: doc/time/usec.rdoc
  *
- * Alias: Time.gm.
-
+ * Time.gm is an alias for Time.utc.
+ *
  * Related: Time.local.
  *
  */
@@ -3377,7 +3377,7 @@ time_s_mkutc(int argc, VALUE *argv, VALUE klass)
 
 /*
  * call-seq:
- *   Time.local(year, month=1, day=1, hour=0, min=0, sec_i=0, usec=0) -> new_time
+ *   Time.local(year, month = 1, day = 1, hour = 0, min = 0, sec_i = 0, usec = 0) -> new_time
  *   Time.local(sec, min, hour, day, month, year, dummy, dummy, dummy, dummy) -> new_time
  *
  * Returns a new \Time object based the on given arguments;
@@ -3394,9 +3394,9 @@ time_s_mkutc(int argc, VALUE *argv, VALUE klass)
  * such as those returned by #to_a.
  *
  *   array = Time.now.to_a
- *   p array # => [57, 26, 13, 24, 4, 2021, 6, 114, true, "Central Daylight Time"]
+ *   # => [57, 18, 10, 7, 7, 2022, 4, 188, true, "Central Daylight Time"]
  *   array[5] = 2000
- *   Time.local(*array)  # => 2000-04-24 13:26:57 -0500
+ *   Time.local(*array) # => 2000-07-07 10:18:57 -0500
  *
  * Parameters:
  * :include: doc/time/year.rdoc
@@ -3404,7 +3404,7 @@ time_s_mkutc(int argc, VALUE *argv, VALUE klass)
  * :include: doc/time/sec_i.rdoc
  * :include: doc/time/usec.rdoc
  *
- * Alias: Time.mktime.
+ * Time.mktime is an alias for Time.local.
  *
  * Related: Time.utc.
  */
@@ -3420,16 +3420,17 @@ time_s_mktime(int argc, VALUE *argv, VALUE klass)
 
 /*
  *  call-seq:
- *     time.to_i   -> int
- *     time.tv_sec -> int
+ *    to_i -> integer
  *
- *  Returns the value of _time_ as an integer number of seconds
- *  since the Epoch.
+ *  Returns the number of seconds since the Epoch
+ *  for the time represented in +self+:
+ *
+ *    Time.utc(1970, 1, 1).to_i # => 0
+ *    t = Time.now.to_i         # => 1595263289
  *
  *  If _time_ contains subsecond, they are truncated.
  *
- *     t = Time.now        #=> 2020-07-21 01:41:29.746012609 +0900
- *     t.to_i              #=> 1595263289
+ *  Time#tv_sec is an alias for Time#to_i.
  */
 
 static VALUE
@@ -3443,26 +3444,18 @@ time_to_i(VALUE time)
 
 /*
  *  call-seq:
- *     time.to_f -> float
+ *    to_f -> float
  *
- *  Returns the value of _time_ as a floating point number of
- *  seconds since the Epoch.
- *  The return value approximate the exact value in the Time object
- *  because floating point numbers cannot represent all rational numbers
- *  exactly.
+ *  Returns the value of +self+ as a Float number of seconds
+ *  since the Epoch.
+ *  The stored value of +self+ is a
+ *  {Rational}[rdoc-ref:Rational@#method-i-to_f],
+ *  which means that the returned value may be approximate:
  *
- *     t = Time.now        #=> 2020-07-20 22:00:29.38740268 +0900
- *     t.to_f              #=> 1595250029.3874028
- *     t.to_i              #=> 1595250029
+ *    t = Time.now # => 2022-07-07 11:23:18.0784889 -0500
+ *    t.to_f       # => 1657210998.0784888
+ *    t.to_i       # => 1657210998
  *
- *  Note that IEEE 754 double is not accurate enough to represent
- *  the exact number of nanoseconds since the Epoch.
- *  (IEEE 754 double has 53bit mantissa.
- *  So it can represent exact number of nanoseconds only in
- *  <tt>2 ** 53 / 1_000_000_000 / 60 / 60 / 24 = 104.2</tt> days.)
- *  When Ruby uses a nanosecond-resolution clock function,
- *  such as +clock_gettime+ of POSIX, to obtain the current time,
- *  Time#to_f can lose information of a Time object created with +Time.now+.
  */
 
 static VALUE
@@ -3472,20 +3465,17 @@ time_to_f(VALUE time)
 
     GetTimeval(time, tobj);
     return rb_Float(rb_time_unmagnify_to_float(tobj->timew));
-}
+    }
 
 /*
  *  call-seq:
- *     time.to_r -> a_rational
+ *    time.to_r -> rational
  *
- *  Returns the value of _time_ as a rational number of seconds
- *  since the Epoch.
+ *  Returns the value of +self+ as a Rational number of seconds
+ *  since the Epoch, which is exact:
  *
- *     t = Time.now      #=> 2020-07-20 22:03:45.212167333 +0900
- *     t.to_r            #=> (1595250225212167333/1000000000)
+ *    Time.now.to_r # => (16571402750320203/10000000)
  *
- *  This method is intended to be used to get an accurate value
- *  representing the seconds (including subsecond) since the Epoch.
  */
 
 static VALUE
@@ -3504,22 +3494,18 @@ time_to_r(VALUE time)
 
 /*
  *  call-seq:
- *     time.usec    -> int
- *     time.tv_usec -> int
+ *    usec -> integer
  *
- *  Returns the number of microseconds for the subsecond part of _time_.
- *  The result is a non-negative integer less than 10**6.
+ *  Returns the number of microseconds in the subsecond part of +self+
+ *  in the range (0..999999);
+ *  lower-order digits are truncated, not rounded:
  *
- *     t = Time.now        #=> 2020-07-20 22:05:58.459785953 +0900
- *     t.usec              #=> 459785
+ *    t = Time.now # => 2022-07-11 14:59:47.5484697 -0500
+ *    t.usec       # => 548469
  *
- *  If _time_ has fraction of microsecond (such as nanoseconds),
- *  it is truncated.
+ *  Related: Time#subsec (returns exact subsecond).
  *
- *     t = Time.new(2000,1,1,0,0,0.666_777_888_999r)
- *     t.usec              #=> 666777
- *
- *  Time#subsec can be used to obtain the subsecond part exactly.
+ *  Time#tv_usec is an alias for Time#usec.
  */
 
 static VALUE
@@ -3537,22 +3523,18 @@ time_usec(VALUE time)
 
 /*
  *  call-seq:
- *     time.nsec    -> int
- *     time.tv_nsec -> int
+ *    time.nsec -> integer
  *
- *  Returns the number of nanoseconds for the subsecond part of _time_.
- *  The result is a non-negative integer less than 10**9.
+ *  Returns the number of nanoseconds in the subsecond part of +self+
+ *  in the range (0..999999999);
+ *  lower-order digits are truncated, not rounded:
  *
- *     t = Time.now        #=> 2020-07-20 22:07:10.963933942 +0900
- *     t.nsec              #=> 963933942
+ *    t = Time.now # => 2022-07-11 15:04:53.3219637 -0500
+ *    t.nsec       # => 321963700
  *
- *  If _time_ has fraction of nanosecond (such as picoseconds),
- *  it is truncated.
+ *  Related: Time#subsec (returns exact subsecond).
  *
- *     t = Time.new(2000,1,1,0,0,0.666_777_888_999r)
- *     t.nsec              #=> 666777888
- *
- *  Time#subsec can be used to obtain the subsecond part exactly.
+ *  Time#tv_nsec is an alias for Time#usec.
  */
 
 static VALUE
@@ -3566,22 +3548,18 @@ time_nsec(VALUE time)
 
 /*
  *  call-seq:
- *     time.subsec    -> number
+ *    subsec -> numeric
  *
- *  Returns the subsecond for _time_.
+ *  Returns the exact subsecond for +self as a Numeric
+ *  (commonly a Rational):
  *
- *  The return value can be a rational number.
+ *    t = Time.now # => 2022-07-11 15:11:36.8490302 -0500
+ *    t.subsec     # => (4245151/5000000)
  *
- *     t = Time.now        #=> 2020-07-20 15:40:26.867462289 +0900
- *     t.subsec            #=> (867462289/1000000000)
+ *  If the subsecond is zero, returns integer zero:
  *
- *     t = Time.now        #=> 2020-07-20 15:40:50.313828595 +0900
- *     t.subsec            #=> (62765719/200000000)
- *
- *     t = Time.new(2000,1,1,2,3,4) #=> 2000-01-01 02:03:04 +0900
- *     t.subsec                     #=> 0
- *
- *     Time.new(2000,1,1,0,0,1/3r,"UTC").subsec #=> (1/3)
+ *    t = Time.new(2000, 1, 1, 2, 3, 4) # => 2000-01-01 02:03:04 -0600
+ *    t.subsec                          # => 0
  *
  */
 
@@ -3596,27 +3574,30 @@ time_subsec(VALUE time)
 
 /*
  *  call-seq:
- *     time <=> other_time -> -1, 0, +1, or nil
+ *    time <=> other_time -> -1, 0, +1, or nil
  *
- *  Compares +time+ with +other_time+.
+ *  Returns:
  *
- *  -1, 0, +1 or nil depending on whether +time+ is less than, equal to, or
- *  greater than +other_time+.
+ *  - -1, if +self+ is less than +other_time+.
+ *  - 0, if +self+ is equal to +other_time+.
+ *  - 1, if +self+ is greater then +other_time+.
+ *  - nil, if +self+ and +other_time+ are incomparable.
  *
- *  +nil+ is returned if the two values are incomparable.
+ *  Examples:
  *
- *     t = Time.now       #=> 2007-11-19 08:12:12 -0600
- *     t2 = t + 2592000   #=> 2007-12-19 08:12:12 -0600
- *     t <=> t2           #=> -1
- *     t2 <=> t           #=> 1
+ *     t = Time.now     # => 2007-11-19 08:12:12 -0600
+ *     t2 = t + 2592000 # => 2007-12-19 08:12:12 -0600
+ *     t <=> t2         # => -1
+ *     t2 <=> t         # => 1
  *
- *     t = Time.now       #=> 2007-11-19 08:13:38 -0600
- *     t2 = t + 0.1       #=> 2007-11-19 08:13:38 -0600
- *     t.nsec             #=> 98222999
- *     t2.nsec            #=> 198222999
- *     t <=> t2           #=> -1
- *     t2 <=> t           #=> 1
- *     t <=> t            #=> 0
+ *     t = Time.now     # => 2007-11-19 08:13:38 -0600
+ *     t2 = t + 0.1     # => 2007-11-19 08:13:38 -0600
+ *     t.nsec           # => 98222999
+ *     t2.nsec          # => 198222999
+ *     t <=> t2         # => -1
+ *     t2 <=> t         # => 1
+ *     t <=> t          # => 0
+ *
  */
 
 static VALUE
@@ -3640,10 +3621,10 @@ time_cmp(VALUE time1, VALUE time2)
 
 /*
  * call-seq:
- *  time.eql?(other_time)
+ *   eql?(other_time)
  *
- * Returns +true+ if _time_ and +other_time+ are
- * both Time objects with the same seconds (including subsecond) from the Epoch.
+ * Returns +true+ if +self+ and +other_time+ are
+ * both \Time objects with the exact same time value.
  */
 
 static VALUE
