@@ -353,12 +353,16 @@ mjit_compile_body(FILE *f, const rb_iseq_t *iseq, struct compile_status *status)
     // Generate merged ivar guards first if needed
     if (!status->compile_info->disable_ivar_cache && status->merge_ivar_guards_p) {
         fprintf(f, "    if (UNLIKELY(!(RB_TYPE_P(GET_SELF(), T_OBJECT) && (rb_serial_t)%"PRI_SERIALT_PREFIX"u == RCLASS_SERIAL(RBASIC(GET_SELF())->klass) &&", status->ivar_serial);
+#if USE_RVARGC
+        fprintf(f, "%"PRIuSIZE" < ROBJECT_NUMIV(GET_SELF())", status->max_ivar_index); // index < ROBJECT_NUMIV(obj)
+#else
         if (status->max_ivar_index >= ROBJECT_EMBED_LEN_MAX) {
             fprintf(f, "%"PRIuSIZE" < ROBJECT_NUMIV(GET_SELF())", status->max_ivar_index); // index < ROBJECT_NUMIV(obj) && !RB_FL_ANY_RAW(obj, ROBJECT_EMBED)
         }
         else {
             fprintf(f, "ROBJECT_EMBED_LEN_MAX == ROBJECT_NUMIV(GET_SELF())"); // index < ROBJECT_NUMIV(obj) && RB_FL_ANY_RAW(obj, ROBJECT_EMBED)
         }
+#endif
         fprintf(f, "))) {\n");
         fprintf(f, "        goto ivar_cancel;\n");
         fprintf(f, "    }\n");

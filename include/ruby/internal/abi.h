@@ -22,7 +22,7 @@
  * In released versions of Ruby, this number should not be changed since teeny
  * versions of Ruby should guarantee ABI compatibility.
  */
-#define RUBY_ABI_VERSION 1
+#define RUBY_ABI_VERSION 2
 
 /* Windows does not support weak symbols so ruby_abi_version will not exist
  * in the shared library. */

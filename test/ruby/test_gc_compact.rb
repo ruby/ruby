@@ -249,6 +249,30 @@ class TestGCCompact < Test::Unit::TestCase
     end;
   end
 
+  def test_moving_objects_between_size_pools
+    assert_separately([], "#{<<~"begin;"}\n#{<<~"end;"}", timeout: 10, signal: :SEGV)
+    begin;
+      class Foo
+        def add_ivars
+          10.times do |i|
+            instance_variable_set("@foo" + i.to_s, 0)
+          end
+        end
+      end
+
+      OBJ_COUNT = 500
+
+      GC.verify_compaction_references(expand_heap: true, toward: :empty)
+
+      ary = OBJ_COUNT.times.map { Foo.new }
+      ary.each(&:add_ivars)
+
+      stats = GC.verify_compaction_references(expand_heap: true, toward: :empty)
+
+      assert_operator(stats[:moved_up][:T_OBJECT], :>=, OBJ_COUNT)
+    end;
+  end
+
   def test_moving_strings_up_size_pools
     omit if !GC.using_rvargc?
     assert_separately([], "#{<<~"begin;"}\n#{<<~"end;"}", timeout: 10, signal: :SEGV)
