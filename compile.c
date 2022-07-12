@@ -10713,7 +10713,7 @@ typedef unsigned int ibf_offset_t;
 #define IBF_OFFSET(ptr) ((ibf_offset_t)(VALUE)(ptr))
 
 #define IBF_MAJOR_VERSION ISEQ_MAJOR_VERSION
-#if RUBY_DEVEL
+#ifdef RUBY_DEVEL
 #define IBF_DEVEL_VERSION 4
 #define IBF_MINOR_VERSION (ISEQ_MINOR_VERSION * 10000 + IBF_DEVEL_VERSION)
 #else
