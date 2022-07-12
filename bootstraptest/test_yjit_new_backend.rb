@@ -15,6 +15,7 @@ assert_equal '14', %q{
     foo(7)
 }
 
+# newarray
 assert_equal '[7]', %q{
     def foo(n)
       [n]
@@ -22,9 +23,19 @@ assert_equal '[7]', %q{
     foo(7)
 }
 
+# newarray, opt_plus
 assert_equal '[8]', %q{
     def foo(n)
       [n+1]
+    end
+    foo(7)
+}
+
+# setlocal, getlocal, opt_plus
+assert_equal '10', %q{
+    def foo(n)
+        m = 3
+        n + m
     end
     foo(7)
 }
