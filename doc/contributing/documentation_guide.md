@@ -215,7 +215,7 @@ For methods written in Ruby, \RDoc documents the calling sequence automatically.
 
 For methods written in C, \RDoc cannot determine what arguments
 the method accepts, so those need to be documented using \RDoc directive
-[`:call-seq:`](rdoc-ref:RDoc::Markup@Method+arguments).
+[`call-seq:`](rdoc-ref:RDoc::Markup@Method+arguments).
 
 For a singleton method, use the form:
 
@@ -226,7 +226,7 @@ class_name.method_name(method_args) {|block_args| ... } -> return_type
 Example:
 
 ```
-*  :call-seq:
+*  call-seq:
 *    Hash.new(default_value = nil) -> new_hash
 *    Hash.new {|hash, key| ... } -> new_hash
 ```
@@ -240,14 +240,14 @@ method_name(method_args) {|block_args| ... } -> return_type
 For example, in Array, use:
 
 ```
-*  :call-seq:
+*  call-seq:
 *    count -> integer
 *    count(obj) -> integer
 *    count {|element| ... } -> integer
 ```
 
 ```
-* :call-seq:
+* call-seq:
 *    <=> other -> -1, 0, 1, or nil
 ```
 
