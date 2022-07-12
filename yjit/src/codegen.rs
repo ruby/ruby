@@ -1541,23 +1541,24 @@ fn gen_get_ep(asm: &mut Assembler, level: u32) -> Opnd {
     ep_opnd
 }
 
-/*
 fn gen_getlocal_generic(
     ctx: &mut Context,
-    cb: &mut CodeBlock,
+    asm: &mut Assembler,
     local_idx: u32,
     level: u32,
 ) -> CodegenStatus {
-    gen_get_ep(cb, REG0, level);
+    // Load environment pointer EP (level 0) from CFP
+    let ep_opnd = gen_get_ep(asm, level);
 
     // Load the local from the block
     // val = *(vm_get_ep(GET_EP(), level) - idx);
     let offs = -(SIZEOF_VALUE as i32 * local_idx as i32);
-    mov(cb, REG0, mem_opnd(64, REG0, offs));
+    let local_opnd = Opnd::mem(64, ep_opnd, offs);
 
     // Write the local at SP
     let stack_top = ctx.stack_push(Type::Unknown);
-    mov(cb, stack_top, REG0);
+
+    asm.mov(stack_top, local_opnd);
 
     KeepCompiling
 }
@@ -1565,24 +1566,25 @@ fn gen_getlocal_generic(
 fn gen_getlocal(
     jit: &mut JITState,
     ctx: &mut Context,
-    cb: &mut CodeBlock,
+    asm: &mut Assembler,
     _ocb: &mut OutlinedCb,
 ) -> CodegenStatus {
     let idx = jit_get_arg(jit, 0);
     let level = jit_get_arg(jit, 1);
-    gen_getlocal_generic(ctx, cb, idx.as_u32(), level.as_u32())
+    gen_getlocal_generic(ctx, asm, idx.as_u32(), level.as_u32())
 }
 
 fn gen_getlocal_wc1(
     jit: &mut JITState,
     ctx: &mut Context,
-    cb: &mut CodeBlock,
+    asm: &mut Assembler,
     _ocb: &mut OutlinedCb,
 ) -> CodegenStatus {
     let idx = jit_get_arg(jit, 0);
-    gen_getlocal_generic(ctx, cb, idx.as_u32(), 1)
+    gen_getlocal_generic(ctx, asm, idx.as_u32(), 1)
 }
 
+/*
 fn gen_setlocal_wc0(
     jit: &mut JITState,
     ctx: &mut Context,
