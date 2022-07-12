@@ -148,7 +148,10 @@ PLATFORM_DIR = win32
 arch = $(ARCH)-$(PLATFORM)
 sitearch = $(ARCH)-$(RT)
 !if !defined(ruby_version)
-ruby_version = $(MAJOR).$(MINOR).0+$(ABI_VERSION)
+ruby_version = $(MAJOR).$(MINOR).0
+!endif
+!if defined(ABI_VERSION)
+ruby_version = $(ruby_version)+$(ABI_VERSION)
 !endif
 !if !defined(RUBY_VERSION_NAME)
 RUBY_VERSION_NAME = $(RUBY_BASE_NAME)-$(ruby_version)
@@ -624,6 +627,9 @@ $(CONFIG_H): $(MKFILES) $(srcdir)/win32/Makefile.sub $(win_srcdir)/Makefile.sub
 #endif
 !endif
 #define RUBY_MSVCRT_VERSION $(RT_VER)
+!if defined(ABI_VERSION)
+#define RUBY_ABI_VERSION $(ABI_VERSION)
+!endif
 #define STDC_HEADERS 1
 #define HAVE_SYS_TYPES_H 1
 #define HAVE_SYS_STAT_H 1
