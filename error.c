@@ -1385,6 +1385,28 @@ exc_message(VALUE exc)
  *
  * This method is overridden by did_you_mean and error_highlight to add
  * their information.
+ *
+ * A user-defined exception class can also define their own
+ * +detailed_message+ method to add supplemental information.
+ * When +highlight+ is true, it can return a string containing escape
+ * sequences, but use widely-supported ones. It is recommended to limit
+ * the following codes:
+ *
+ * - Reset (+\e[0m+)
+ * - Bold (+\e[1m+)
+ * - Underline (+\e[4m+)
+ * - Foreground color except white and black
+ *   - Red (+\e[31m+)
+ *   - Green (+\e[32m+)
+ *   - Yellow (+\e[33m+)
+ *   - Blue (+\e[34m+)
+ *   - Magenta (+\e[35m+)
+ *   - Cyan (+\e[36m+)
+ *
+ * Use escape sequeunces carefully even if +highlight+ is true.
+ * Do not use escape sequences to express essential information;
+ * the message should be readable even if all escape sequences are
+ * ignored.
  */
 
 static VALUE
