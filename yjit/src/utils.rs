@@ -151,6 +151,19 @@ yjit_print_iseq(const rb_iseq_t *iseq)
 }
 */
 
+#[cfg(target_arch = "aarch64")]
+macro_rules! c_callable {
+    (fn $f:ident $args:tt -> $ret:ty $body:block) => { fn $f $args -> $ret $body };
+    (fn $f:ident $args:tt $body:block) => { fn $f $args $body };
+}
+
+#[cfg(target_arch = "x86_64")]
+macro_rules! c_callable {
+    (fn $f:ident $args:tt -> $ret:ty $body:block) => { extern "sysv64" fn $f $args -> $ret $body };
+    (fn $f:ident $args:tt $body:block) => { extern "sysv64" fn $f $args $body };
+}
+pub(crate) use c_callable;
+
 // Save caller-save registers on the stack before a C call
 fn push_regs(cb: &mut CodeBlock) {
     push(cb, RAX);
@@ -180,8 +193,10 @@ fn pop_regs(cb: &mut CodeBlock) {
 }
 
 pub fn print_int(cb: &mut CodeBlock, opnd: X86Opnd) {
-    extern "sysv64" fn print_int_fn(val: i64) {
-        println!("{}", val);
+    c_callable!{
+        fn print_int_fn(val: i64) {
+            println!("{}", val);
+        }
     }
 
     push_regs(cb);
@@ -208,8 +223,10 @@ pub fn print_int(cb: &mut CodeBlock, opnd: X86Opnd) {
 
 /// Generate code to print a pointer
 pub fn print_ptr(cb: &mut CodeBlock, opnd: X86Opnd) {
-    extern "sysv64" fn print_ptr_fn(ptr: *const u8) {
-        println!("{:p}", ptr);
+    c_callable!{
+        fn print_ptr_fn(ptr: *const u8) {
+            println!("{:p}", ptr);
+        }
     }
 
     assert!(opnd.num_bits() == 64);
@@ -223,8 +240,10 @@ pub fn print_ptr(cb: &mut CodeBlock, opnd: X86Opnd) {
 
 /// Generate code to print a value
 pub fn print_value(cb: &mut CodeBlock, opnd: X86Opnd) {
-    extern "sysv64" fn print_value_fn(val: VALUE) {
-        unsafe { rb_obj_info_dump(val) }
+    c_callable!{
+        fn print_value_fn(val: VALUE) {
+            unsafe { rb_obj_info_dump(val) }
+        }
     }
 
     assert!(opnd.num_bits() == 64);
@@ -240,11 +259,13 @@ pub fn print_value(cb: &mut CodeBlock, opnd: X86Opnd) {
 
 /// Generate code to print constant string to stdout
 pub fn print_str(cb: &mut CodeBlock, str: &str) {
-    extern "sysv64" fn print_str_cfun(ptr: *const u8, num_bytes: usize) {
-        unsafe {
-            let slice = slice::from_raw_parts(ptr, num_bytes);
-            let str = std::str::from_utf8(slice).unwrap();
-            println!("{}", str);
+    c_callable!{
+        fn print_str_cfun(ptr: *const u8, num_bytes: usize) {
+            unsafe {
+                let slice = slice::from_raw_parts(ptr, num_bytes);
+                let str = std::str::from_utf8(slice).unwrap();
+                println!("{}", str);
+            }
         }
     }
 

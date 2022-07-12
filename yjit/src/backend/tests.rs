@@ -5,6 +5,7 @@ use crate::virtualmem::{CodePtr};
 use crate::backend::ir::*;
 use crate::cruby::*;
 use crate::core::*;
+use crate::utils::c_callable;
 use InsnOpnd::*;
 
 // Test that this function type checks
@@ -193,8 +194,10 @@ fn test_base_insn_out()
 #[test]
 fn test_c_call()
 {
-    extern "sysv64" fn dummy_c_fun(v0: usize, v1: usize)
-    {
+    c_callable! {
+        fn dummy_c_fun(v0: usize, v1: usize)
+        {
+        }
     }
 
     let (mut asm, mut cb) = setup_asm();
