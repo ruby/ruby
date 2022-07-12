@@ -92,7 +92,7 @@ involving new files `doc/*.rdoc`:
 
     Example:
 
-    ```c
+    ```
     /*
      *  call-seq:
      *    each_byte {|byte| ... } -> self
@@ -219,16 +219,16 @@ the method accepts, so those need to be documented using \RDoc directive
 
 For a singleton method, use the form:
 
-```c
+```
 class_name.method_name(method_args) {|block_args| ... } -> return_type
 ```
 
 Example:
 
-```c
+```
 *  :call-seq:
-*    Hash.new(default_value = nil) → new_hash
-*    Hash.new {|hash, key| ... } → new_hash
+*    Hash.new(default_value = nil) -> new_hash
+*    Hash.new {|hash, key| ... } -> new_hash
 ```
 
 For an instance method, use the form
@@ -239,16 +239,16 @@ method_name(method_args) {|block_args| ... } -> return_type
 ```
 Examples:
 
-```c
+```
 *  :call-seq:
 *    count -> integer
 *    count(obj) -> integer
 *    count {|element| ... } -> integer
 ```
 
-```c
+```
 * :call-seq:
-*    <=> other -< -1, 0, 1, or nil
+*    <=> other -> -1, 0, 1, or nil
 ```
 
 Arguments:
@@ -271,8 +271,8 @@ Arguments:
       For example, use:
 
         ```
-        default → object
-        default(key) → object
+        default -> object
+        default(key) -> object
         ```
 
 Block:
@@ -367,7 +367,7 @@ that is a common case, such as `Hash#fetch` raising a `KeyError`.
 
 Mention aliases in the form
 
-```c
+```
 // Array#find_index is an alias for Array#index.
 ```
 
