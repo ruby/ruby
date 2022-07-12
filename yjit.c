@@ -107,6 +107,10 @@ rb_yjit_add_frame(VALUE hash, VALUE frame)
 
         rb_hash_aset(frame_info, ID2SYM(rb_intern("name")), name);
         rb_hash_aset(frame_info, ID2SYM(rb_intern("file")), file);
+        rb_hash_aset(frame_info, ID2SYM(rb_intern("samples")), INT2NUM(0));
+        rb_hash_aset(frame_info, ID2SYM(rb_intern("total_samples")), INT2NUM(0));
+        rb_hash_aset(frame_info, ID2SYM(rb_intern("edges")), rb_hash_new());
+        rb_hash_aset(frame_info, ID2SYM(rb_intern("lines")), rb_hash_new());
 
         if (line != INT2FIX(0)) {
             rb_hash_aset(frame_info, ID2SYM(rb_intern("line")), line);
