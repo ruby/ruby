@@ -237,7 +237,7 @@ For an instance method, use the form
 ```
 method_name(method_args) {|block_args| ... } -> return_type
 ```
-Examples:
+For example, in Array, use:
 
 ```
 *  :call-seq:
@@ -268,11 +268,11 @@ Arguments:
 
     - If the behavior is different with an omitted or an explicit argument,
       use a `call-seq` with separate lines.
-      For example, use:
+      For example, in Enumerable, use:
 
         ```
-        default -> object
-        default(key) -> object
+        *    max    -> element
+        *    max(n) -> array
         ```
 
 Block:
