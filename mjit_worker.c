@@ -1155,6 +1155,10 @@ mjit_iseq_cc_entries(const struct rb_iseq_constant_body *const body)
 int
 mjit_capture_cc_entries(const struct rb_iseq_constant_body *compiled_iseq, const struct rb_iseq_constant_body *captured_iseq)
 {
+    VM_ASSERT(compiled_iseq != NULL);
+    VM_ASSERT(compiled_iseq->jit_unit != NULL);
+    VM_ASSERT(captured_iseq != NULL);
+
     struct rb_mjit_unit *unit = compiled_iseq->jit_unit;
     unsigned int new_entries_size = unit->cc_entries_size + captured_iseq->ci_size;
     VM_ASSERT(captured_iseq->ci_size > 0);
