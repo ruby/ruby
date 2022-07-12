@@ -1514,14 +1514,16 @@ fn make_branch_entry(block: &BlockRef, src_ctx: &Context, gen_fn: BranchGenFn) -
 
 /// Generated code calls this function with the SysV calling convention.
 /// See [get_branch_target].
-extern "sysv64" fn branch_stub_hit(
-    branch_ptr: *const c_void,
-    target_idx: u32,
-    ec: EcPtr,
-) -> *const u8 {
-    with_vm_lock(src_loc!(), || {
-        branch_stub_hit_body(branch_ptr, target_idx, ec)
-    })
+c_callable! {
+    fn branch_stub_hit(
+        branch_ptr: *const c_void,
+        target_idx: u32,
+        ec: EcPtr,
+    ) -> *const u8 {
+        with_vm_lock(src_loc!(), || {
+            branch_stub_hit_body(branch_ptr, target_idx, ec)
+        })
+    }
 }
 
 /// Called by the generated code when a branch stub is executed
