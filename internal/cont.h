@@ -12,6 +12,7 @@
 
 struct rb_thread_struct;        /* in vm_core.h */
 struct rb_fiber_struct;         /* in cont.c */
+struct rb_execution_context_struct; /* in vm_core.c */
 
 /* cont.c */
 void rb_fiber_reset_root_local_storage(struct rb_thread_struct *);
@@ -20,5 +21,6 @@ void rb_fiber_init_mjit_cont(struct rb_fiber_struct *fiber);
 
 VALUE rb_fiberptr_self(struct rb_fiber_struct *fiber);
 unsigned int rb_fiberptr_blocking(struct rb_fiber_struct *fiber);
+struct rb_execution_context_struct * rb_fiberptr_get_ec(struct rb_fiber_struct *fiber);
 
 #endif /* INTERNAL_CONT_H */
