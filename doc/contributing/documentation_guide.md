@@ -217,57 +217,83 @@ For methods written in C, \RDoc cannot determine what arguments
 the method accepts, so those need to be documented using \RDoc directive
 [`:call-seq:`](rdoc-ref:RDoc::Markup@Method+arguments).
 
+For a singleton method, use the form:
+
+```c
+class_name.method_name(method_args) {|block_args| ... } -> return_type
+```
+
 Example:
 
 ```c
-*  call-seq:
-*    array.count -> integer
-*    array.count(obj) -> integer
-*    array.count {|element| ... } -> integer
+*  :call-seq:
+*    Hash.new(default_value = nil) → new_hash
+*    Hash.new {|hash, key| ... } → new_hash
 ```
 
-When creating the `call-seq`, use the form
+For an instance method, use the form
+(omitting any prefix, just as RDoc does for a Ruby-coded method):
 
 ```
-receiver_type.method_name(arguments) {|block_arguments|} -> return_type
+method_name(method_args) {|block_args| ... } -> return_type
+```
+Examples:
+
+```c
+*  :call-seq:
+*    count -> integer
+*    count(obj) -> integer
+*    count {|element| ... } -> integer
 ```
 
-Omit the parentheses for cases where the method does not accept arguments,
-and omit the block for cases where a block is not accepted.
-
-In the cases where method can return multiple different types, separate the
-types with "or".  If the method can return any type, use "object".  If the
-method returns the receiver, use "self".
-
-In cases where the method accepts optional arguments, use a `call-seq` with
-an optional argument if the method has the same behavior when an argument is
-omitted as when the argument is passed with the default value.  For example,
-use:
-
-```
-obj.respond_to?(symbol, include_all=false) -> true or false
+```c
+* :call-seq:
+*    <=> other -< -1, 0, 1, or nil
 ```
 
-Instead of:
+Arguments:
 
-```
-obj.respond_to?(symbol) -> true or false
-obj.respond_to?(symbol, include_all) -> true or false
-```
+- If the method does not accept arguments, omit the parentheses.
+- If the method accepts optional arguments:
 
-However, as shown above for `Array#count`, use separate lines if the
-behavior is different if the argument is omitted.
+    - Separate each argument name and its default value with ` = `
+      (equal-sign with surrounding spaces).
+    - If the method has the same behavior with either an omitted
+      or an explicit argument, use a `call-seq` with optional arguments.
+      For example, use:
 
-Omit aliases from the `call-seq`, but mention them near the end (see below).
+        ```
+        respond_to?(symbol, include_all = false) -> true or false
+        ```
 
+    - If the behavior is different with an omitted or an explicit argument,
+      use a `call-seq` with separate lines.
+      For example, use:
 
-A `call-seq` block should have `{|x| ... }`, not `{|x| block }` or `{|x| code }`.
+        ```
+        default → object
+        default(key) → object
+        ```
 
-A `call-seq` output should:
+Block:
 
-- Have `self`, not `receiver` or `array`.
-- Begin with `new_` if and only if the output object is a new instance
-  of the receiver's class, to emphasize that the output object is not `self`.
+- If the method does not accept a block, omit the block.
+- If the method accepts a block, the `call-seq` should have `{|args| ... }`,
+  not `{|args| block }` or `{|args| code }`.
+
+Return types:
+
+- If the method can return multiple different types,
+  separate the types with "or" and, if necessary, commas.
+- If the method can return multiple types, use +object+.
+- If the method returns the receiver, use +self+.
+- If the method returns an object of the same class,
+  prefix `new_` if an only if the object is not  +self+;
+  example: `new_array`.
+
+Aliases:
+
+- Omit aliases from the `call-seq`, but mention them near the end (see below).
 
 ### Synopsis
 
