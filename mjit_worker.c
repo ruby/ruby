@@ -1235,7 +1235,7 @@ unload_units(void)
 
     // Detect units which are in use and can't be unloaded.
     ccan_list_for_each(&active_units.head, unit, unode) {
-        assert(unit->iseq != NULL && unit->handle != NULL);
+        VM_ASSERT(unit->iseq != NULL && unit->handle != NULL);
         unit->used_code_p = false;
     }
     // All threads have a root_fiber which has a mjit_cont. Other normal fibers also
@@ -1267,7 +1267,7 @@ unload_units(void)
             if (max_queue_calls > ISEQ_BODY(unit->iseq)->total_calls) {
                 verbose(2, "Unloading unit %d (calls=%lu, threshold=%lu)",
                         unit->id, ISEQ_BODY(unit->iseq)->total_calls, max_queue_calls);
-                assert(unit->handle != NULL);
+                VM_ASSERT(unit->handle != NULL);
                 remove_from_list(unit, &active_units);
                 free_unit(unit);
                 unloaded_p = true;
