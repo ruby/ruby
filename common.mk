@@ -12898,10 +12898,14 @@ regexec.$(OBJEXT): {$(VPATH)}st.h
 regexec.$(OBJEXT): {$(VPATH)}subst.h
 regparse.$(OBJEXT): $(hdrdir)/ruby.h
 regparse.$(OBJEXT): $(hdrdir)/ruby/ruby.h
+regparse.$(OBJEXT): $(top_srcdir)/internal/compilers.h
+regparse.$(OBJEXT): $(top_srcdir)/internal/sanitizers.h
+regparse.$(OBJEXT): $(top_srcdir)/internal/warnings.h
 regparse.$(OBJEXT): {$(VPATH)}assert.h
 regparse.$(OBJEXT): {$(VPATH)}backward/2/assume.h
 regparse.$(OBJEXT): {$(VPATH)}backward/2/attributes.h
 regparse.$(OBJEXT): {$(VPATH)}backward/2/bool.h
+regparse.$(OBJEXT): {$(VPATH)}backward/2/gcc_version_since.h
 regparse.$(OBJEXT): {$(VPATH)}backward/2/inttypes.h
 regparse.$(OBJEXT): {$(VPATH)}backward/2/limits.h
 regparse.$(OBJEXT): {$(VPATH)}backward/2/long_long.h
