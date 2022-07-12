@@ -1403,7 +1403,7 @@ exc_message(VALUE exc)
  *   - Magenta (+\e[35m+)
  *   - Cyan (+\e[36m+)
  *
- * Use escape sequeunces carefully even if +highlight+ is true.
+ * Use escape sequences carefully even if +highlight+ is true.
  * Do not use escape sequences to express essential information;
  * the message should be readable even if all escape sequences are
  * ignored.
