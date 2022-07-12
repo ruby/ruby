@@ -3577,7 +3577,7 @@ time_subsec(VALUE time)
 
 /*
  *  call-seq:
- *    time <=> other_time -> -1, 0, +1, or nil
+ *    self <=> other_time -> -1, 0, +1, or nil
  *
  *  Compares +self+ with +other_time+; returns:
  *
