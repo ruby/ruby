@@ -1708,28 +1708,31 @@ fn gen_newhash(
 
     KeepCompiling
 }
+*/
 
 fn gen_putstring(
     jit: &mut JITState,
     ctx: &mut Context,
-    cb: &mut CodeBlock,
+    asm: &mut Assembler,
     _ocb: &mut OutlinedCb,
 ) -> CodegenStatus {
     let put_val = jit_get_arg(jit, 0);
 
     // Save the PC and SP because the callee will allocate
-    jit_prepare_routine_call(jit, ctx, cb, REG0);
+    jit_prepare_routine_call(jit, ctx, asm);
 
-    mov(cb, C_ARG_REGS[0], REG_EC);
-    jit_mov_gc_ptr(jit, cb, C_ARG_REGS[1], put_val);
-    call_ptr(cb, REG0, rb_ec_str_resurrect as *const u8);
+    let str_opnd = asm.ccall(
+        rb_ec_str_resurrect as *const u8,
+        vec![EC, put_val.into()]
+    );
 
     let stack_top = ctx.stack_push(Type::CString);
-    mov(cb, stack_top, RAX);
+    asm.mov(stack_top, str_opnd);
 
     KeepCompiling
 }
 
+/*
 // Push Qtrue or Qfalse depending on whether the given keyword was supplied by
 // the caller
 fn gen_checkkeyword(
@@ -5935,7 +5938,9 @@ fn get_gen_fn(opcode: VALUE) -> Option<InsnGenFn> {
         YARVINSN_opt_str_uminus => Some(gen_opt_str_uminus),
         YARVINSN_splatarray => Some(gen_splatarray),
         YARVINSN_newrange => Some(gen_newrange),
+        */
         YARVINSN_putstring => Some(gen_putstring),
+        /*
         YARVINSN_expandarray => Some(gen_expandarray),
         YARVINSN_defined => Some(gen_defined),
         YARVINSN_checkkeyword => Some(gen_checkkeyword),

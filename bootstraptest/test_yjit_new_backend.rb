@@ -40,6 +40,14 @@ assert_equal '10', %q{
     foo(7)
 }
 
+# putstring
+assert_equal 'foo', %q{
+    def foo(n)
+        "foo"
+    end
+    foo(7)
+}
+
 # TODO: progress towards getting branches and calls working
 =begin
 def foo(n)
