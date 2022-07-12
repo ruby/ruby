@@ -62,3 +62,62 @@ task:
   make_test-tool_script: make test-tool
   make_test-all_script: make test-all
   make_test-spec_script: make test-spec
+
+
+# The following is to test YJIT on ARM64 CPUs available on Cirrus CI
+yjit_task:
+  name: Arm64 Graviton2 / $CC YJIT New Backend Temp Checks
+  auto_cancellation: $CIRRUS_BRANCH != 'master'
+  skip: "changesIncludeOnly('doc/**', '**.{md,rdoc}')"
+  arm_container:
+    # We use the arm64 images at https://github.com/ruby/ruby-ci-image/pkgs/container/ruby-ci-image .
+    image: ghcr.io/ruby/ruby-ci-image:$CC
+    # Define the used cpu core in each matrix task. We can use total 16 cpu
+    # cores in entire matrix. [cpu] = [total cpu: 16] / [number of tasks]
+    cpu: 8
+    # We can request maximum 4 GB per cpu.
+    # [memory per task] = [memory per cpu: 4 GB] * [cpu]
+    memory: 32G
+  env:
+    CIRRUS_CLONE_DEPTH: 50
+    optflags: '-O1'
+    debugflags: '-ggdb3'
+    RUBY_PREFIX: /tmp/ruby-prefix
+    RUBY_DEBUG: ci rgengc
+    RUBY_TESTOPTS: >-
+      -q
+      --color=always
+      --tty=no
+    matrix:
+      CC: clang-12
+      CC: gcc-11
+  id_script: id
+  set_env_script:
+    # Set `GNUMAKEFLAGS`, because the flags are GNU make specific. Note using
+    # the `make` environment variable used in compilers.yml causes some rubygems
+    # tests to fail.
+    # https://github.com/rubygems/rubygems/issues/4921
+    - echo "GNUMAKEFLAGS=-s -j$((1 + $CIRRUS_CPU))" >> $CIRRUS_ENV
+  print_env_script:
+    - echo "GNUMAKEFLAGS=$GNUMAKEFLAGS"
+  # Arm containers are executed in AWS's EKS, and it's not yet supporting IPv6
+  # See https://github.com/aws/containers-roadmap/issues/835
+  disable_ipv6_script: sudo ./tool/disable_ipv6.sh
+  install_rust_script:
+    - sudo apt-get update -y
+    - sudo apt-get install -y curl
+    - "curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y"
+  autogen_script: ./autogen.sh
+  configure_script: >-
+    source $HOME/.cargo/env && ./configure -C
+    --enable-debug-env
+    --disable-install-doc
+    --with-ext=-test-/cxxanyargs,+
+    --prefix="$RUBY_PREFIX"
+    --enable-yjit=dev
+  make_miniruby_script: source $HOME/.cargo/env && make -j miniruby
+  make_bindgen_script: source $HOME/.cargo/env && make -j yjit-bindgen
+  boot_miniruby_script: RUST_BACKTRACE=1 ./miniruby --yjit-call-threshold=1 -e0
+  # output_stats_script: RUST_BACKTRACE=1 ./miniruby --yjit-call-threshold=1 --yjit-stats -e0
+  bootstrap_tests_script: RUST_BACKTRACE=1 ruby --disable=gems bootstraptest/runner.rb --ruby="./miniruby -I./lib -I. -I.ext/common --disable-gems --yjit-call-threshold=1 --yjit-verify-ctx" bootstraptest/test_yjit_new_backend.rb
+  # full_build_script: make -j
