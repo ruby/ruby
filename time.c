@@ -3428,7 +3428,10 @@ time_s_mktime(int argc, VALUE *argv, VALUE klass)
  *    Time.utc(1970, 1, 1).to_i # => 0
  *    t = Time.now.to_i         # => 1595263289
  *
- *  If _time_ contains subsecond, they are truncated.
+ *  Subseconds are omitted:
+ *
+ *    t = Time.now # => 2022-07-12 09:13:48.5075976 -0500
+ *    t.to_i       # => 1657635228
  *
  *  Time#tv_sec is an alias for Time#to_i.
  */
@@ -3465,7 +3468,7 @@ time_to_f(VALUE time)
 
     GetTimeval(time, tobj);
     return rb_Float(rb_time_unmagnify_to_float(tobj->timew));
-    }
+}
 
 /*
  *  call-seq:
@@ -3496,14 +3499,14 @@ time_to_r(VALUE time)
  *  call-seq:
  *    usec -> integer
  *
- *  Returns the number of microseconds in the subsecond part of +self+
- *  in the range (0..999999);
+ *  Returns the number of microseconds in the subseconds part of +self+
+ *  in the range (0..999_999);
  *  lower-order digits are truncated, not rounded:
  *
  *    t = Time.now # => 2022-07-11 14:59:47.5484697 -0500
  *    t.usec       # => 548469
  *
- *  Related: Time#subsec (returns exact subsecond).
+ *  Related: Time#subsec (returns exact subseconds).
  *
  *  Time#tv_usec is an alias for Time#usec.
  */
@@ -3525,14 +3528,14 @@ time_usec(VALUE time)
  *  call-seq:
  *    time.nsec -> integer
  *
- *  Returns the number of nanoseconds in the subsecond part of +self+
- *  in the range (0..999999999);
+ *  Returns the number of nanoseconds in the subseconds part of +self+
+ *  in the range (0..999_999_999);
  *  lower-order digits are truncated, not rounded:
  *
  *    t = Time.now # => 2022-07-11 15:04:53.3219637 -0500
  *    t.nsec       # => 321963700
  *
- *  Related: Time#subsec (returns exact subsecond).
+ *  Related: Time#subsec (returns exact subseconds).
  *
  *  Time#tv_nsec is an alias for Time#usec.
  */
@@ -3550,13 +3553,13 @@ time_nsec(VALUE time)
  *  call-seq:
  *    subsec -> numeric
  *
- *  Returns the exact subsecond for +self as a Numeric
- *  (commonly a Rational):
+ *  Returns the exact subseconds for +self+ as a Numeric
+ *  (Integer or Rational):
  *
  *    t = Time.now # => 2022-07-11 15:11:36.8490302 -0500
  *    t.subsec     # => (4245151/5000000)
  *
- *  If the subsecond is zero, returns integer zero:
+ *  If the subseconds is zero, returns integer zero:
  *
  *    t = Time.new(2000, 1, 1, 2, 3, 4) # => 2000-01-01 02:03:04 -0600
  *    t.subsec                          # => 0
@@ -3576,12 +3579,12 @@ time_subsec(VALUE time)
  *  call-seq:
  *    time <=> other_time -> -1, 0, +1, or nil
  *
- *  Returns:
+ *  Compares +self+ with +other_time+; returns:
  *
- *  - -1, if +self+ is less than +other_time+.
- *  - 0, if +self+ is equal to +other_time+.
- *  - 1, if +self+ is greater then +other_time+.
- *  - nil, if +self+ and +other_time+ are incomparable.
+ *  - +-1+, if +self+ is less than +other_time+.
+ *  - +0+, if +self+ is equal to +other_time+.
+ *  - +1+, if +self+ is greater then +other_time+.
+ *  - +nil+, if +self+ and +other_time+ are incomparable.
  *
  *  Examples:
  *
