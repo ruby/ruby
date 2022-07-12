@@ -6311,10 +6311,15 @@ d_lite_prev_day(int argc, VALUE *argv, VALUE self)
 
 /*
  * call-seq:
- *    d.succ  ->  date
- *    d.next  ->  date
+ *   d.next -> new_date
  *
- * Returns a date object denoting the following day.
+ * Returns a new \Date object representing the following day:
+ *
+ *   d = Date.today
+ *   d.to_s      # => "2022-07-11"
+ *   d.next.to_s # => "2022-07-12"
+ *
+ * Date#succ is an alias for Date#next.
  */
 static VALUE
 d_lite_next(VALUE self)
@@ -6324,26 +6329,30 @@ d_lite_next(VALUE self)
 
 /*
  * call-seq:
- *    d >> n  ->  date
+ *   d >> n -> new_date
  *
- * Returns a date object pointing +n+ months after self.
- * The argument +n+ should be a numeric value.
+ * Returns a new \Date object representing the date
+ * +n+ months later; +n+ should be a numeric:
  *
- *    Date.new(2001,2,3)  >>  1   #=> #<Date: 2001-03-03 ...>
- *    Date.new(2001,2,3)  >> -2   #=> #<Date: 2000-12-03 ...>
+ *   (Date.new(2001, 2, 3) >> 1).to_s  # => "2001-03-03"
+ *   (Date.new(2001, 2, 3) >> -2).to_s # => "2000-12-03"
  *
- * When the same day does not exist for the corresponding month,
- * the last day of the month is used instead:
+ * When the same day does not exist for the new month,
+ * the last day of that month is used instead:
  *
- *    Date.new(2001,1,28) >> 1   #=> #<Date: 2001-02-28 ...>
- *    Date.new(2001,1,31) >> 1   #=> #<Date: 2001-02-28 ...>
+ *   (Date.new(2001, 1, 31) >> 1).to_s  # => "2001-02-28"
+ *   (Date.new(2001, 1, 31) >> -4).to_s # => "2000-09-30"
  *
- * This also results in the following, possibly unexpected, behavior:
+ * This results in the following, possibly unexpected, behaviors:
  *
- *    Date.new(2001,1,31) >> 2         #=> #<Date: 2001-03-31 ...>
- *    Date.new(2001,1,31) >> 1 >> 1    #=> #<Date: 2001-03-28 ...>
+ *   d0 = Date.new(2001, 1, 31)
+ *   d1 = d0 >> 1 # => #<Date: 2001-02-28>
+ *   d2 = d1 >> 1 # => #<Date: 2001-03-28>
  *
- *    Date.new(2001,1,31) >> 1 >> -1   #=> #<Date: 2001-01-28 ...>
+ *   d0 = Date.new(2001, 1, 31)
+ *   d1 = d0 >> 1  # => #<Date: 2001-02-28>
+ *   d2 = d1 >> -1 # => #<Date: 2001-01-28>
+ *
  */
 static VALUE
 d_lite_rshift(VALUE self, VALUE other)
@@ -6388,24 +6397,28 @@ d_lite_rshift(VALUE self, VALUE other)
  * call-seq:
  *    d << n  ->  date
  *
- * Returns a date object pointing +n+ months before self.
- * The argument +n+ should be a numeric value.
+ * Returns a new \Date object representing the date
+ * +n+ months earlier; +n+ should be a numeric:
  *
- *    Date.new(2001,2,3)  <<  1   #=> #<Date: 2001-01-03 ...>
- *    Date.new(2001,2,3)  << -2   #=> #<Date: 2001-04-03 ...>
+ *   (Date.new(2001, 2, 3) << 1).to_s  # => "2001-01-03"
+ *   (Date.new(2001, 2, 3) << -2).to_s # => "2001-04-03"
  *
- * When the same day does not exist for the corresponding month,
- * the last day of the month is used instead:
+ * When the same day does not exist for the new month,
+ * the last day of that month is used instead:
  *
- *    Date.new(2001,3,28) << 1   #=> #<Date: 2001-02-28 ...>
- *    Date.new(2001,3,31) << 1   #=> #<Date: 2001-02-28 ...>
+ *   (Date.new(2001, 3, 31) << 1).to_s  # => "2001-02-28"
+ *   (Date.new(2001, 3, 31) << -6).to_s # => "2001-09-30"
  *
- * This also results in the following, possibly unexpected, behavior:
+ * This results in the following, possibly unexpected, behaviors:
  *
- *    Date.new(2001,3,31) << 2         #=> #<Date: 2001-01-31 ...>
- *    Date.new(2001,3,31) << 1 << 1    #=> #<Date: 2001-01-28 ...>
+ *   d0 = Date.new(2001, 3, 31)
+ *   d0 << 2      # => #<Date: 2001-01-31>
+ *   d0 << 1 << 1 # => #<Date: 2001-01-28>
  *
- *    Date.new(2001,3,31) << 1 << -1   #=> #<Date: 2001-03-28 ...>
+ *   d0 = Date.new(2001, 3, 31)
+ *   d1 = d0 << 1  # => #<Date: 2001-02-28>
+ *   d2 = d1 << -1 # => #<Date: 2001-03-28>
+ *
  */
 static VALUE
 d_lite_lshift(VALUE self, VALUE other)
@@ -6416,11 +6429,9 @@ d_lite_lshift(VALUE self, VALUE other)
 
 /*
  * call-seq:
- *    d.next_month([n=1])  ->  date
+ *   next_month(n = 1) -> new_date
  *
- * This method is equivalent to d >> n.
- *
- * See Date#>> for examples.
+ * Equivalent to #>> with argument +n+.
  */
 static VALUE
 d_lite_next_month(int argc, VALUE *argv, VALUE self)
@@ -6435,11 +6446,9 @@ d_lite_next_month(int argc, VALUE *argv, VALUE self)
 
 /*
  * call-seq:
- *    d.prev_month([n=1])  ->  date
+ *   prev_month(n = 1) -> new_date
  *
- * This method is equivalent to d << n.
- *
- * See Date#<< for examples.
+ * Equivalent to #<< with argument +n+.
  */
 static VALUE
 d_lite_prev_month(int argc, VALUE *argv, VALUE self)
@@ -6454,15 +6463,9 @@ d_lite_prev_month(int argc, VALUE *argv, VALUE self)
 
 /*
  * call-seq:
- *    d.next_year([n=1])  ->  date
+ *   next_year(n = 1) -> new_date
  *
- * This method is equivalent to d >> (n * 12).
- *
- *    Date.new(2001,2,3).next_year      #=> #<Date: 2002-02-03 ...>
- *    Date.new(2008,2,29).next_year     #=> #<Date: 2009-02-28 ...>
- *    Date.new(2008,2,29).next_year(4)  #=> #<Date: 2012-02-29 ...>
- *
- * See also Date#>>.
+ * Equivalent to #>> with argument <tt>n * 12</tt>.
  */
 static VALUE
 d_lite_next_year(int argc, VALUE *argv, VALUE self)
@@ -6477,15 +6480,9 @@ d_lite_next_year(int argc, VALUE *argv, VALUE self)
 
 /*
  * call-seq:
- *    d.prev_year([n=1])  ->  date
+ *   prev_year(n = 1) -> new_date
  *
- * This method is equivalent to d << (n * 12).
- *
- *    Date.new(2001,2,3).prev_year      #=> #<Date: 2000-02-03 ...>
- *    Date.new(2008,2,29).prev_year     #=> #<Date: 2007-02-28 ...>
- *    Date.new(2008,2,29).prev_year(4)  #=> #<Date: 2004-02-29 ...>
- *
- * See also Date#<<.
+ * Equivalent to #<< with argument <tt>n * 12</tt>.
  */
 static VALUE
 d_lite_prev_year(int argc, VALUE *argv, VALUE self)
@@ -6502,14 +6499,33 @@ static VALUE d_lite_cmp(VALUE, VALUE);
 
 /*
  * call-seq:
- *    d.step(limit[, step=1])              ->  enumerator
- *    d.step(limit[, step=1]){|date| ...}  ->  self
+ *   step(limit, step = 1){|date| ... } -> self
  *
- * Iterates evaluation of the given block, which takes a date object.
- * The limit should be a date object.
+ * Calls the block with specified dates;
+ * returns +self+.
  *
- *    Date.new(2001).step(Date.new(2001,-1,-1)).select{|d| d.sunday?}.size
- *				#=> 52
+ * - The first +date+ is +self+.
+ * - Each successive +date+ is <tt>date + step</tt>,
+ *   where +step+ is the numeric step size in days.
+ * - The last date is the last one that is before or equal to +limit+,
+ *   which should be a \Date object.
+ *
+ * Example:
+ *
+ *   limit = Date.new(2001, 12, 31)
+ *   Date.new(2001).step(limit){|date| p date.to_s if date.mday == 31 }
+ *
+ * Output:
+ *
+ *   "2001-01-31"
+ *   "2001-03-31"
+ *   "2001-05-31"
+ *   "2001-07-31"
+ *   "2001-08-31"
+ *   "2001-10-31"
+ *   "2001-12-31"
+ *
+ * Returns an Enumerator if no block is given.
  */
 static VALUE
 d_lite_step(int argc, VALUE *argv, VALUE self)
@@ -6552,10 +6568,9 @@ d_lite_step(int argc, VALUE *argv, VALUE self)
 
 /*
  * call-seq:
- *    d.upto(max)              ->  enumerator
- *    d.upto(max){|date| ...}  ->  self
+ *   upto(max){|date| ... } -> self
  *
- * This method is equivalent to step(max, 1){|date| ...}.
+ * Equivalent to #step with arguments +max+ and +1+.
  */
 static VALUE
 d_lite_upto(VALUE self, VALUE max)
@@ -6574,10 +6589,9 @@ d_lite_upto(VALUE self, VALUE max)
 
 /*
  * call-seq:
- *    d.downto(min)              ->  enumerator
- *    d.downto(min){|date| ...}  ->  self
+ *   downto(min){|date| ... } -> self
  *
- * This method is equivalent to step(min, -1){|date| ...}.
+ * Equivalent to #step with arguments +min+ and <tt>-1</tt>.
  */
 static VALUE
 d_lite_downto(VALUE self, VALUE min)
