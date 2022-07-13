@@ -192,11 +192,7 @@ module Bundler
         specs += base if base
         found = specs.select do |spec|
           next true if spec.source.is_a?(Source::Gemspec)
-          if base # allow all platforms when searching from a lockfile
-            dependency.matches_spec?(spec)
-          else
-            dependency.matches_spec?(spec) && Gem::Platform.match_spec?(spec)
-          end
+          dependency.matches_spec?(spec)
         end
 
         found

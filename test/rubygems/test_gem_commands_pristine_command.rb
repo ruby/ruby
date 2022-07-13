@@ -412,6 +412,7 @@ class TestGemCommandsPristineCommand < Gem::TestCase
 
     install_gem specs["b-1"]
     FileUtils.rm File.join(gemhome2, 'cache', 'b-1.gem')
+    Gem::Specification.reset
 
     @cmd.options[:args] = %w[a b]
 

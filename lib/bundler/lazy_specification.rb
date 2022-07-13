@@ -1,12 +1,15 @@
 # frozen_string_literal: true
 
+require_relative "force_platform"
 require_relative "match_platform"
 
 module Bundler
   class LazySpecification
+    include ForcePlatform
     include MatchPlatform
 
     attr_reader :name, :version, :dependencies, :platform
+    attr_writer :force_ruby_platform
     attr_accessor :source, :remote
 
     def initialize(name, version, platform, source = nil)
@@ -16,6 +19,7 @@ module Bundler
       @platform      = platform || Gem::Platform::RUBY
       @source        = source
       @specification = nil
+      @force_ruby_platform = nil
     end
 
     def full_name
@@ -24,6 +28,12 @@ module Bundler
       else
         "#{@name}-#{@version}-#{platform}"
       end
+    end
+
+    def force_ruby_platform
+      return @force_ruby_platform unless @force_ruby_platform.nil?
+
+      default_force_ruby_platform
     end
 
     def ==(other)
@@ -84,7 +94,7 @@ module Bundler
         else
           ruby_platform_materializes_to_ruby_platform? ? self : Dependency.new(name, version)
         end
-        platform_object = Gem::Platform.new(platform)
+        platform_object = ruby_platform_materializes_to_ruby_platform? ? Gem::Platform.new(platform) : Gem::Platform.local
         candidates = source.specs.search(search_object)
         same_platform_candidates = candidates.select do |spec|
           MatchPlatform.platforms_match?(spec.platform, platform_object)
@@ -152,7 +162,7 @@ module Bundler
     # explicitly add a more specific platform.
     #
     def ruby_platform_materializes_to_ruby_platform?
-      !Bundler.most_specific_locked_platform?(Gem::Platform::RUBY) || Bundler.settings[:force_ruby_platform]
+      !Bundler.most_specific_locked_platform?(generic_local_platform) || force_ruby_platform || Bundler.settings[:force_ruby_platform]
     end
   end
 end

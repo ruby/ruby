@@ -231,6 +231,20 @@ All operations involving groups ([`bundle install`](bundle-install.1.html), `Bun
 `Bundler.require`) behave exactly the same as if any groups not
 matching the current platform were explicitly excluded.
 
+### FORCE_RUBY_PLATFORM
+
+If you always want the pure ruby variant of a gem to be chosen over platform
+specific variants, you can use the `force_ruby_platform` option:
+
+    gem "ffi", force_ruby_platform: true
+
+This can be handy (assuming the pure ruby variant works fine) when:
+
+* You're having issues with the platform specific variant.
+* The platform specific variant does not yet support a newer ruby (and thus has
+  a `required_ruby_version` upper bound), but you still want your Gemfile{.lock}
+  files to resolve under that ruby.
+
 ### SOURCE
 
 You can select an alternate Rubygems repository for a gem using the ':source'
@@ -495,8 +509,8 @@ the `.gemspec` file.
 
 The `gemspec` method adds any runtime dependencies as gem requirements in the
 default group. It also adds development dependencies as gem requirements in the
-`development` group. Finally, it adds a gem requirement on your project (`:path
-=> '.'`). In conjunction with `Bundler.setup`, this allows you to require project
+`development` group. Finally, it adds a gem requirement on your project (`path:
+'.'`). In conjunction with `Bundler.setup`, this allows you to require project
 files in your test code as you would if the project were installed as a gem; you
 need not manipulate the load path manually or require project files via relative
 paths.

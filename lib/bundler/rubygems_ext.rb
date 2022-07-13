@@ -216,32 +216,15 @@ module Gem
   require "rubygems/platform"
 
   class Platform
-    JAVA  = Gem::Platform.new("java") unless defined?(JAVA)
-    MSWIN = Gem::Platform.new("mswin32") unless defined?(MSWIN)
-    MSWIN64 = Gem::Platform.new("mswin64") unless defined?(MSWIN64)
-    MINGW = Gem::Platform.new("x86-mingw32") unless defined?(MINGW)
-    X64_MINGW = Gem::Platform.new("x64-mingw32") unless defined?(X64_MINGW)
-  end
+    JAVA  = Gem::Platform.new("java")
+    MSWIN = Gem::Platform.new("mswin32")
+    MSWIN64 = Gem::Platform.new("mswin64")
+    MINGW = Gem::Platform.new("x86-mingw32")
+    X64_MINGW = [Gem::Platform.new("x64-mingw32"),
+                 Gem::Platform.new("x64-mingw-ucrt")].freeze
 
-  Platform.singleton_class.module_eval do
-    unless Platform.singleton_methods.include?(:match_spec?)
-      def match_spec?(spec)
-        match_gem?(spec.platform, spec.name)
-      end
-
-      def match_gem?(platform, gem_name)
-        match_platforms?(platform, Gem.platforms)
-      end
-
-      private
-
-      def match_platforms?(platform, platforms)
-        platforms.any? do |local_platform|
-          platform.nil? ||
-            local_platform == platform ||
-            (local_platform != Gem::Platform::RUBY && local_platform =~ platform)
-        end
-      end
+    if RUBY_ENGINE == "truffleruby" && !defined?(REUSE_AS_BINARY_ON_TRUFFLERUBY)
+      REUSE_AS_BINARY_ON_TRUFFLERUBY = %w[libv8 sorbet-static].freeze
     end
   end
 

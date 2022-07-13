@@ -217,7 +217,7 @@ RSpec.describe "bundle lock" do
 
     allow(Bundler::SharedHelpers).to receive(:find_gemfile).and_return(bundled_app_gemfile)
     lockfile = Bundler::LockfileParser.new(read_lockfile)
-    expect(lockfile.platforms).to match_array(local_platforms.unshift(java, mingw).uniq)
+    expect(lockfile.platforms).to match_array([java, mingw, specific_local_platform].uniq)
   end
 
   it "supports adding new platforms with force_ruby_platform = true" do
@@ -249,7 +249,7 @@ RSpec.describe "bundle lock" do
 
     allow(Bundler::SharedHelpers).to receive(:find_gemfile).and_return(bundled_app_gemfile)
     lockfile = Bundler::LockfileParser.new(read_lockfile)
-    expect(lockfile.platforms).to match_array(local_platforms.unshift("ruby").uniq)
+    expect(lockfile.platforms).to match_array(["ruby", specific_local_platform].uniq)
   end
 
   it "warns when adding an unknown platform" do
@@ -262,16 +262,16 @@ RSpec.describe "bundle lock" do
 
     allow(Bundler::SharedHelpers).to receive(:find_gemfile).and_return(bundled_app_gemfile)
     lockfile = Bundler::LockfileParser.new(read_lockfile)
-    expect(lockfile.platforms).to match_array(local_platforms.unshift(java, mingw).uniq)
+    expect(lockfile.platforms).to match_array([java, mingw, specific_local_platform].uniq)
 
     bundle "lock --remove-platform java"
 
     lockfile = Bundler::LockfileParser.new(read_lockfile)
-    expect(lockfile.platforms).to match_array(local_platforms.unshift(mingw).uniq)
+    expect(lockfile.platforms).to match_array([mingw, specific_local_platform].uniq)
   end
 
   it "errors when removing all platforms" do
-    bundle "lock --remove-platform #{local_platforms.join(" ")}", :raise_on_error => false
+    bundle "lock --remove-platform #{specific_local_platform}", :raise_on_error => false
     expect(err).to include("Removing all platforms from the bundle is not allowed")
   end
 
