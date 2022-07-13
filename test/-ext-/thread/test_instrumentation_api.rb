@@ -87,6 +87,5 @@ class TestThreadInstrumentation < Test::Unit::TestCase
 
   def assert_global_join_counters(counters)
     assert_equal THREADS_COUNT, counters.first
-    assert_include 0..THREADS_COUNT, counters.last # It's possible that a thread didn't execute its EXIT hook yet.
   end
 end
