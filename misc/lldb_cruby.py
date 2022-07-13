@@ -469,19 +469,6 @@ def check_bits(page, bitmap_name, bitmap_index, bitmap_bit, v):
     else:
         return ' '
 
-def heap_page(debugger, command, ctx, result, internal_dict):
-    target = debugger.GetSelectedTarget()
-    process = target.GetProcess()
-    thread = process.GetSelectedThread()
-    frame = thread.GetSelectedFrame()
-
-    val = frame.EvaluateExpression(command)
-    page = get_page(lldb, target, val)
-    page_type = target.FindFirstType("struct heap_page").GetPointerType()
-    page.Cast(page_type)
-    append_command_output(debugger, "p (struct heap_page *) %0#x" % page.GetValueAsUnsigned(), result)
-    append_command_output(debugger, "p *(struct heap_page *) %0#x" % page.GetValueAsUnsigned(), result)
-
 def heap_page_body(debugger, command, ctx, result, internal_dict):
     target = debugger.GetSelectedTarget()
     process = target.GetProcess()
@@ -766,7 +753,6 @@ def __lldb_init_module(debugger, internal_dict):
     debugger.HandleCommand("command script add -f lldb_cruby.count_objects rb_count_objects")
     debugger.HandleCommand("command script add -f lldb_cruby.stack_dump_raw SDR")
     debugger.HandleCommand("command script add -f lldb_cruby.dump_node dump_node")
-    debugger.HandleCommand("command script add -f lldb_cruby.heap_page heap_page")
     debugger.HandleCommand("command script add -f lldb_cruby.heap_page_body heap_page_body")
     debugger.HandleCommand("command script add -f lldb_cruby.rb_backtrace rbbt")
     debugger.HandleCommand("command script add -f lldb_cruby.dump_page dump_page")
