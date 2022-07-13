@@ -250,10 +250,11 @@ RSpec.describe "bundle install with specific platforms" do
     end
   end
 
-  it "installs sorbet-static, which does not provide a pure ruby variant, just fine on truffleruby", :truffleruby do
+  it "installs sorbet-static, which does not provide a pure ruby variant, just fine", :truffleruby do
+    skip "does not apply to Windows" if Gem.win_platform?
+
     build_repo2 do
-      build_gem("sorbet-static", "0.5.6403") {|s| s.platform = "x86_64-linux" }
-      build_gem("sorbet-static", "0.5.6403") {|s| s.platform = "universal-darwin-20" }
+      build_gem("sorbet-static", "0.5.6403") {|s| s.platform = Bundler.local_platform }
     end
 
     gemfile <<~G
@@ -266,8 +267,7 @@ RSpec.describe "bundle install with specific platforms" do
       GEM
         remote: #{file_uri_for(gem_repo2)}/
         specs:
-          sorbet-static (0.5.6403-universal-darwin-20)
-          sorbet-static (0.5.6403-x86_64-linux)
+          sorbet-static (0.5.6403-#{Bundler.local_platform})
 
       PLATFORMS
         ruby
@@ -283,53 +283,94 @@ RSpec.describe "bundle install with specific platforms" do
   end
 
   it "does not resolve if the current platform does not match any of available platform specific variants for a top level dependency" do
-    build_repo2 do
+    build_repo4 do
       build_gem("sorbet-static", "0.5.6433") {|s| s.platform = "x86_64-linux" }
       build_gem("sorbet-static", "0.5.6433") {|s| s.platform = "universal-darwin-20" }
     end
 
     gemfile <<~G
-      source "#{file_uri_for(gem_repo2)}"
+      source "#{file_uri_for(gem_repo4)}"
 
       gem "sorbet-static", "0.5.6433"
     G
 
-    simulate_platform "arm64-darwin-21" do
-      bundle "install", :raise_on_error => false
-    end
-
-    expect(err).to include <<~ERROR.rstrip
-      Could not find gem 'sorbet-static (= 0.5.6433) arm64-darwin-21' in rubygems repository #{file_uri_for(gem_repo2)}/ or installed locally.
+    error_message = <<~ERROR.strip
+      Could not find gem 'sorbet-static (= 0.5.6433)' with platform 'arm64-darwin-21' in rubygems repository #{file_uri_for(gem_repo4)}/ or installed locally.
 
       The source contains the following gems matching 'sorbet-static (= 0.5.6433)':
         * sorbet-static-0.5.6433-universal-darwin-20
         * sorbet-static-0.5.6433-x86_64-linux
     ERROR
+
+    simulate_platform "arm64-darwin-21" do
+      bundle "lock", :raise_on_error => false
+    end
+
+    expect(err).to include(error_message).once
+
+    # Make sure it doesn't print error twice in verbose mode
+
+    simulate_platform "arm64-darwin-21" do
+      bundle "lock --verbose", :raise_on_error => false
+    end
+
+    expect(err).to include(error_message).once
   end
 
   it "does not resolve if the current platform does not match any of available platform specific variants for a transitive dependency" do
-    build_repo2 do
+    build_repo4 do
       build_gem("sorbet", "0.5.6433") {|s| s.add_dependency "sorbet-static", "= 0.5.6433" }
       build_gem("sorbet-static", "0.5.6433") {|s| s.platform = "x86_64-linux" }
       build_gem("sorbet-static", "0.5.6433") {|s| s.platform = "universal-darwin-20" }
     end
 
     gemfile <<~G
-      source "#{file_uri_for(gem_repo2)}"
+      source "#{file_uri_for(gem_repo4)}"
 
       gem "sorbet", "0.5.6433"
     G
 
-    simulate_platform "arm64-darwin-21" do
-      bundle "install", :raise_on_error => false
-    end
-
-    expect(err).to include <<~ERROR.rstrip
-      Could not find gem 'sorbet-static (= 0.5.6433) arm64-darwin-21', which is required by gem 'sorbet (= 0.5.6433)', in rubygems repository #{file_uri_for(gem_repo2)}/ or installed locally.
+    error_message = <<~ERROR.strip
+      Could not find gem 'sorbet-static (= 0.5.6433)' with platform 'arm64-darwin-21', which is required by gem 'sorbet (= 0.5.6433)', in rubygems repository #{file_uri_for(gem_repo4)}/ or installed locally.
 
       The source contains the following gems matching 'sorbet-static (= 0.5.6433)':
         * sorbet-static-0.5.6433-universal-darwin-20
         * sorbet-static-0.5.6433-x86_64-linux
+    ERROR
+
+    simulate_platform "arm64-darwin-21" do
+      bundle "lock", :raise_on_error => false
+    end
+
+    expect(err).to include(error_message).once
+
+    # Make sure it doesn't print error twice in verbose mode
+
+    simulate_platform "arm64-darwin-21" do
+      bundle "lock --verbose", :raise_on_error => false
+    end
+
+    expect(err).to include(error_message).once
+  end
+
+  it "does not generate a lockfile if RUBY platform is forced and some gem has no RUBY variant available" do
+    build_repo4 do
+      build_gem("sorbet-static", "0.5.9889") {|s| s.platform = Gem::Platform.local }
+    end
+
+    gemfile <<~G
+      source "#{file_uri_for(gem_repo4)}"
+
+      gem "sorbet-static", "0.5.9889"
+    G
+
+    bundle "lock", :raise_on_error => false, :env => { "BUNDLE_FORCE_RUBY_PLATFORM" => "true" }
+
+    expect(err).to include <<~ERROR.rstrip
+      Could not find gem 'sorbet-static (= 0.5.9889)' with platform 'ruby' in rubygems repository #{file_uri_for(gem_repo4)}/ or installed locally.
+
+      The source contains the following gems matching 'sorbet-static (= 0.5.9889)':
+        * sorbet-static-0.5.9889-#{Gem::Platform.local}
     ERROR
   end
 

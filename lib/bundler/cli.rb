@@ -251,7 +251,9 @@ module Bundler
       remembered_negative_flag_deprecation("no-deployment")
 
       require_relative "cli/install"
-      Install.new(options.dup).run
+      Bundler.settings.temporary(:no_install => false) do
+        Install.new(options.dup).run
+      end
     end
 
     map aliases_for("install")
@@ -297,7 +299,9 @@ module Bundler
     def update(*gems)
       SharedHelpers.major_deprecation(2, "The `--force` option has been renamed to `--redownload`") if ARGV.include?("--force")
       require_relative "cli/update"
-      Update.new(options, gems).run
+      Bundler.settings.temporary(:no_install => false) do
+        Update.new(options, gems).run
+      end
     end
 
     desc "show GEM [OPTIONS]", "Shows all gems that are part of the bundle, or the path to a given gem"

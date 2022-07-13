@@ -16,7 +16,7 @@ class GemTest < Gem::TestCase
     output = Gem::Util.popen(*ruby_with_rubygems_and_fake_operating_system_in_load_path(path), '-e', "'require \"rubygems\"'", { :err => [:child, :out] }).strip
     assert !$?.success?
     assert_includes output, "undefined local variable or method `intentionally_not_implemented_method'"
-    assert_includes output, "Loading the rubygems/defaults/operating_system.rb file caused an error. " \
+    assert_includes output, "Loading the #{operating_system_rb_at(path)} file caused an error. " \
     "This file is owned by your OS, not by rubygems upstream. " \
     "Please find out which OS package this file belongs to and follow the guidelines from your OS to report " \
     "the problem and ask for help."
@@ -53,16 +53,19 @@ class GemTest < Gem::TestCase
 
   def util_install_operating_system_rb(content)
     dir_lib = Dir.mktmpdir("test_operating_system_lib", @tempdir)
-    dir_lib_arg = File.join dir_lib
+    dir_lib_arg = File.join dir_lib, "lib"
 
-    dir_lib_rubygems_defaults_arg = File.join dir_lib_arg, "lib", "rubygems", "defaults"
-    FileUtils.mkdir_p dir_lib_rubygems_defaults_arg
+    operating_system_rb = operating_system_rb_at(dir_lib_arg)
 
-    operating_system_rb = File.join dir_lib_rubygems_defaults_arg, "operating_system.rb"
+    FileUtils.mkdir_p File.dirname(operating_system_rb)
 
     File.open(operating_system_rb, 'w') {|f| f.write content }
 
-    File.join dir_lib_arg, "lib"
+    dir_lib_arg
+  end
+
+  def operating_system_rb_at(dir)
+    File.join dir, "rubygems", "defaults", "operating_system.rb"
   end
 
   def ruby_with_rubygems_and_fake_operating_system_in_load_path(operating_system_path)

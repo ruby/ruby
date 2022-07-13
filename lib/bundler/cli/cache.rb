@@ -14,7 +14,7 @@ module Bundler
       Bundler.settings.set_command_option_if_given :cache_path, options["cache-path"]
 
       setup_cache_all
-      install unless Bundler.settings[:no_install]
+      install
 
       # TODO: move cache contents here now that all bundles are locked
       custom_path = Bundler.settings[:path] if options[:path]

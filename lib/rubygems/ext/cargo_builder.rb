@@ -268,29 +268,22 @@ class Gem::Ext::CargoBuilder < Gem::Ext::Builder
       tmp_dest = Dir.mktmpdir(".gem.", extension_dir)
 
       # Some versions of `mktmpdir` return absolute paths, which will break make
-      # if the paths contain spaces. However, on Ruby 1.9.x on Windows, relative
-      # paths cause all C extension builds to fail.
+      # if the paths contain spaces.
       #
-      # As such, we convert to a relative path unless we are using Ruby 1.9.x on
-      # Windows. This means that when using Ruby 1.9.x on Windows, paths with
-      # spaces do not work.
-      #
-      # Details: https://github.com/rubygems/rubygems/issues/977#issuecomment-171544940
+      # As such, we convert to a relative path.
       tmp_dest_relative = get_relative_path(tmp_dest.clone, extension_dir)
 
-      if tmp_dest_relative
-        full_tmp_dest = File.join(extension_dir, tmp_dest_relative)
+      full_tmp_dest = File.join(extension_dir, tmp_dest_relative)
 
-        # TODO: remove in RubyGems 3
-        if Gem.install_extension_in_lib && lib_dir
-          FileUtils.mkdir_p lib_dir
-          FileUtils.cp_r ext_path, lib_dir, remove_destination: true
-        end
+      # TODO: remove in RubyGems 4
+      if Gem.install_extension_in_lib && lib_dir
+        FileUtils.mkdir_p lib_dir
+        FileUtils.cp_r ext_path, lib_dir, remove_destination: true
+      end
 
-        FileUtils::Entry_.new(full_tmp_dest).traverse do |ent|
-          destent = ent.class.new(dest_path, ent.rel)
-          destent.exist? || FileUtils.mv(ent.path, destent.path)
-        end
+      FileUtils::Entry_.new(full_tmp_dest).traverse do |ent|
+        destent = ent.class.new(dest_path, ent.rel)
+        destent.exist? || FileUtils.mv(ent.path, destent.path)
       end
     ensure
       FileUtils.rm_rf tmp_dest if tmp_dest

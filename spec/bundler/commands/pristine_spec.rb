@@ -2,7 +2,7 @@
 
 require "bundler/vendored_fileutils"
 
-RSpec.describe "bundle pristine", :ruby_repo do
+RSpec.describe "bundle pristine" do
   before :each do
     build_lib "baz", :path => bundled_app do |s|
       s.version = "1.0.0"

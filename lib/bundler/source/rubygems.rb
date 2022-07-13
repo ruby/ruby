@@ -160,6 +160,8 @@ module Bundler
           raise GemNotFound, "Could not find #{spec.file_name} for installation" unless path
         end
 
+        return if Bundler.settings[:no_install]
+
         if requires_sudo?
           install_path = Bundler.tmp(spec.full_name)
           bin_path     = install_path.join("bin")
