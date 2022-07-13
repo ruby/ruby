@@ -364,6 +364,30 @@ pub fn movz(cb: &mut CodeBlock, rd: A64Opnd, imm16: A64Opnd, shift: u8) {
     cb.write_bytes(&bytes);
 }
 
+/// MRS - move a system register into a general-purpose register
+pub fn mrs(cb: &mut CodeBlock, rt: A64Opnd, systemregister: SystemRegister) {
+    let bytes: [u8; 4] = match rt {
+        A64Opnd::Reg(rt) => {
+            SysReg::mrs(rt.reg_no, systemregister).into()
+        },
+        _ => panic!("Invalid operand combination to mrs instruction")
+    };
+
+    cb.write_bytes(&bytes);
+}
+
+/// MSR - move a general-purpose register into a system register
+pub fn msr(cb: &mut CodeBlock, systemregister: SystemRegister, rt: A64Opnd) {
+    let bytes: [u8; 4] = match rt {
+        A64Opnd::Reg(rt) => {
+            SysReg::msr(systemregister, rt.reg_no).into()
+        },
+        _ => panic!("Invalid operand combination to msr instruction")
+    };
+
+    cb.write_bytes(&bytes);
+}
+
 /// MVN - move a value in a register to another register, negating it
 pub fn mvn(cb: &mut CodeBlock, rd: A64Opnd, rm: A64Opnd) {
     let bytes: [u8; 4] = match (rd, rm) {
@@ -712,6 +736,16 @@ mod tests {
     #[test]
     fn test_movz() {
         check_bytes("600fa0d2", |cb| movz(cb, X0, A64Opnd::new_uimm(123), 16));
+    }
+
+    #[test]
+    fn test_mrs() {
+        check_bytes("0a423bd5", |cb| mrs(cb, X10, SystemRegister::NZCV));
+    }
+
+    #[test]
+    fn test_msr() {
+        check_bytes("0a421bd5", |cb| msr(cb, SystemRegister::NZCV, X10));
     }
 
     #[test]
