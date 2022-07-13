@@ -8613,7 +8613,7 @@ literal_split_pattern(VALUE spat, split_type_t default_type)
 }
 
 /*
- *  :call-seq:
+ *  call-seq:
  *    split(field_sep = $;, limit = nil) -> array
  *    split(field_sep = $;, limit = nil) {|substring| ... } -> self
  *
