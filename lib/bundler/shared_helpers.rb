@@ -13,13 +13,13 @@ module Bundler
     def root
       gemfile = find_gemfile
       raise GemfileNotFound, "Could not locate Gemfile" unless gemfile
-      Pathname.new(gemfile).tap{|x| x.untaint if RUBY_VERSION < "2.7" }.expand_path.parent
+      Pathname.new(gemfile).tap {|x| x.untaint if RUBY_VERSION < "2.7" }.expand_path.parent
     end
 
     def default_gemfile
       gemfile = find_gemfile
       raise GemfileNotFound, "Could not locate Gemfile" unless gemfile
-      Pathname.new(gemfile).tap{|x| x.untaint if RUBY_VERSION < "2.7" }.expand_path
+      Pathname.new(gemfile).tap {|x| x.untaint if RUBY_VERSION < "2.7" }.expand_path
     end
 
     def default_lockfile
@@ -28,7 +28,7 @@ module Bundler
       case gemfile.basename.to_s
       when "gems.rb" then Pathname.new(gemfile.sub(/.rb$/, ".locked"))
       else Pathname.new("#{gemfile}.lock")
-      end.tap{|x| x.untaint if RUBY_VERSION < "2.7" }
+      end.tap {|x| x.untaint if RUBY_VERSION < "2.7" }
     end
 
     def default_bundle_dir
@@ -100,7 +100,7 @@ module Bundler
     #
     # @see {Bundler::PermissionError}
     def filesystem_access(path, action = :write, &block)
-      yield(path.dup.tap{|x| x.untaint if RUBY_VERSION < "2.7" })
+      yield(path.dup.tap {|x| x.untaint if RUBY_VERSION < "2.7" })
     rescue Errno::EACCES
       raise PermissionError.new(path, action)
     rescue Errno::EAGAIN
@@ -236,7 +236,7 @@ module Bundler
 
     def search_up(*names)
       previous = nil
-      current  = File.expand_path(SharedHelpers.pwd).tap{|x| x.untaint if RUBY_VERSION < "2.7" }
+      current  = File.expand_path(SharedHelpers.pwd).tap {|x| x.untaint if RUBY_VERSION < "2.7" }
 
       until !File.directory?(current) || current == previous
         if ENV["BUNDLER_SPEC_RUN"]

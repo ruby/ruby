@@ -94,7 +94,7 @@ module Bundler
             (spec.required_ruby_version.satisfied_by?(Gem.ruby_version) &&
               spec.required_rubygems_version.satisfied_by?(Gem.rubygems_version))
         end
-        search = installable_candidates.last
+        search = installable_candidates.last || same_platform_candidates.last
         search.dependencies = dependencies if search && (search.is_a?(RemoteSpecification) || search.is_a?(EndpointSpecification))
         search
       end

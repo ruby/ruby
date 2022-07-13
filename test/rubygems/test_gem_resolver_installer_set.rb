@@ -210,7 +210,7 @@ class TestGemResolverInstallerSet < Gem::TestCase
     def (set.remote_set).prefetch(_)
       raise "called"
     end
-    assert_raise(RuntimeError){ set.prefetch(nil) }
+    assert_raise(RuntimeError) { set.prefetch(nil) }
 
     set = Gem::Resolver::InstallerSet.new :local
     def (set.remote_set).prefetch(_)

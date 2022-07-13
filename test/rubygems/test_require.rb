@@ -152,8 +152,8 @@ class TestGemRequire < Gem::TestCase
 
     install_specs a1, b1
 
-    t1 = create_sync_thread{ assert_require "a#{$$}" }
-    t2 = create_sync_thread{ assert_require "b#{$$}" }
+    t1 = create_sync_thread { assert_require "a#{$$}" }
+    t2 = create_sync_thread { assert_require "b#{$$}" }
 
     # wait until both files are waiting on the exit latch
     FILE_ENTERED_LATCH.await

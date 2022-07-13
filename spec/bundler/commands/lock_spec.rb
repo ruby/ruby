@@ -493,27 +493,25 @@ RSpec.describe "bundle lock" do
   end
 
   it "does not conflict on ruby requirements when adding new platforms" do
-    next_minor = Gem.ruby_version.segments[0..1].map.with_index {|s, i| i == 1 ? s + 1 : s }.join(".")
-
     build_repo4 do
       build_gem "raygun-apm", "1.0.78" do |s|
         s.platform = "x86_64-linux"
-        s.required_ruby_version = "< #{next_minor}.dev"
+        s.required_ruby_version = "< #{next_ruby_minor}.dev"
       end
 
       build_gem "raygun-apm", "1.0.78" do |s|
         s.platform = "universal-darwin"
-        s.required_ruby_version = "< #{next_minor}.dev"
+        s.required_ruby_version = "< #{next_ruby_minor}.dev"
       end
 
       build_gem "raygun-apm", "1.0.78" do |s|
         s.platform = "x64-mingw32"
-        s.required_ruby_version = "< #{next_minor}.dev"
+        s.required_ruby_version = "< #{next_ruby_minor}.dev"
       end
 
       build_gem "raygun-apm", "1.0.78" do |s|
         s.platform = "x64-mingw-ucrt"
-        s.required_ruby_version = "< #{next_minor}.dev"
+        s.required_ruby_version = "< #{next_ruby_minor}.dev"
       end
     end
 

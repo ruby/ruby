@@ -13,7 +13,7 @@ module Bundler
       Installer.ambiguous_gems = []
     end
 
-    attr_reader :post_install_messages
+    attr_reader :post_install_messages, :definition
 
     # Begins the installation process for Bundler.
     # For more information see the #run method on this class.
