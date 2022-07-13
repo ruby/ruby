@@ -173,10 +173,11 @@ command to remove old versions.
     highest_remote_gem.first
   end
 
-  def install_rubygems(version) # :nodoc:
+  def install_rubygems(spec) # :nodoc:
     args = update_rubygems_arguments
+    version = spec.version
 
-    update_dir = File.join Gem.dir, 'gems', "rubygems-update-#{version}"
+    update_dir = File.join spec.base_dir, 'gems', "rubygems-update-#{version}"
 
     Dir.chdir update_dir do
       say "Installing RubyGems #{version}" unless options[:silent]
@@ -290,9 +291,7 @@ command to remove old versions.
     installed_gems = update_gem('rubygems-update', version) if installed_gems.empty? || installed_gems.first.version != version
     return if installed_gems.empty?
 
-    version = installed_gems.first.version
-
-    install_rubygems version
+    install_rubygems installed_gems.first
   end
 
   def update_rubygems_arguments # :nodoc:

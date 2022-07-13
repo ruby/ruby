@@ -1270,7 +1270,14 @@ class Gem::Specification < Gem::BasicSpecification
   def self._load(str)
     Gem.load_yaml
 
-    array = Marshal.load str
+    array = begin
+      Marshal.load str
+    rescue ArgumentError => e
+      raise unless e.message.include?("YAML")
+
+      Object.const_set "YAML", Psych
+      Marshal.load str
+    end
 
     spec = Gem::Specification.new
     spec.instance_variable_set :@specification_version, array[1]
@@ -1288,11 +1295,6 @@ class Gem::Specification < Gem::BasicSpecification
     if array.size < field_count
       raise TypeError, "invalid Gem::Specification format #{array.inspect}"
     end
-
-    # Cleanup any Psych::PrivateType. They only show up for an old bug
-    # where nil => null, so just convert them to nil based on the type.
-
-    array.map! {|e| e.kind_of?(Psych::PrivateType) ? nil : e }
 
     spec.instance_variable_set :@rubygems_version,          array[0]
     # spec version

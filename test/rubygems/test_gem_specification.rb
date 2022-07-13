@@ -1072,7 +1072,7 @@ dependencies: []
 
     data = Marshal.load Gem::Util.inflate(Gem.read_binary(path))
 
-    assert_nil data.signing_key
+    assert_instance_of Gem::Specification, data
   end
 
   def test_initialize

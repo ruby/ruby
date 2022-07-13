@@ -65,8 +65,7 @@ module Bundler
         --- ERROR REPORT TEMPLATE -------------------------------------------------------
 
         ```
-        #{e.class}: #{e.message}
-          #{e.backtrace && e.backtrace.join("\n          ").chomp}
+        #{exception_message(e)}
         ```
 
         #{Bundler::Env.report}
@@ -82,6 +81,21 @@ module Bundler
         #{issues_url(e)}
 
         If there aren't any reports for this error yet, please fill in the new issue form located at #{new_issue_url}, and copy and paste the report template above in there.
+      EOS
+    end
+
+    def exception_message(error)
+      message = serialized_exception_for(error)
+      cause = error.cause
+      return message unless cause
+
+      message + serialized_exception_for(cause)
+    end
+
+    def serialized_exception_for(e)
+      <<-EOS.gsub(/^ {8}/, "")
+        #{e.class}: #{e.message}
+          #{e.backtrace && e.backtrace.join("\n          ").chomp}
       EOS
     end
 

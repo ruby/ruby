@@ -80,7 +80,13 @@ class TestGemCommandManager < Gem::TestCase
       message << "\nDid you mean?  \"push\""
     end
 
-    assert_equal message, e.message
+    if e.respond_to?(:detailed_message)
+      actual_message = e.detailed_message(highlight: false).sub(/\A(.*?)(?: \(.+?\))/) { $1 }
+    else
+      actual_message = e.message
+    end
+
+    assert_equal message, actual_message
   end
 
   def test_run_interrupt
