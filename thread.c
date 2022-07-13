@@ -631,6 +631,7 @@ thread_do_start(rb_thread_t *th)
 }
 
 void rb_ec_clear_current_thread_trace_func(const rb_execution_context_t *ec);
+#define thread_sched_to_dead thread_sched_to_waiting
 
 static int
 thread_start_func_2(rb_thread_t *th, VALUE *stack_start)

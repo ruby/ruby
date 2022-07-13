@@ -449,13 +449,6 @@ thread_sched_to_waiting(struct rb_thread_sched *sched)
 }
 
 static void
-thread_sched_to_dead(struct rb_thread_sched *sched)
-{
-    thread_sched_to_waiting(sched);
-    RB_INTERNAL_THREAD_HOOK(RUBY_INTERNAL_THREAD_EVENT_EXITED);
-}
-
-static void
 thread_sched_yield(struct rb_thread_sched *sched, rb_thread_t *th)
 {
     rb_thread_t *next;
@@ -1177,6 +1170,8 @@ thread_start_func_1(void *th_ptr)
 #else
         thread_start_func_2(th, &stack_start);
 #endif
+
+        RB_INTERNAL_THREAD_HOOK(RUBY_INTERNAL_THREAD_EVENT_EXITED);
     }
 #if USE_THREAD_CACHE
     /* cache thread */
