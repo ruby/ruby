@@ -416,7 +416,7 @@ rb_enc_from_index(int index)
     rb_encoding *enc;
 
     switch (index) {
-      case ENCINDEX_ASCII:    return global_enc_ascii;
+      case ENCINDEX_ASCII_8BIT:    return global_enc_ascii;
       case ENCINDEX_UTF_8:    return global_enc_utf_8;
       case ENCINDEX_US_ASCII: return global_enc_us_ascii;
       default:
@@ -771,14 +771,16 @@ rb_enc_init(struct enc_table *enc_table)
     if (!enc_table->names) {
 	enc_table->names = st_init_strcasetable();
     }
+#define OnigEncodingASCII_8BIT OnigEncodingASCII
 #define ENC_REGISTER(enc) enc_register_at(enc_table, ENCINDEX_##enc, rb_enc_name(&OnigEncoding##enc), &OnigEncoding##enc)
-    ENC_REGISTER(ASCII);
+    ENC_REGISTER(ASCII_8BIT);
     ENC_REGISTER(UTF_8);
     ENC_REGISTER(US_ASCII);
-    global_enc_ascii = enc_table->list[ENCINDEX_ASCII].enc;
+    global_enc_ascii = enc_table->list[ENCINDEX_ASCII_8BIT].enc;
     global_enc_utf_8 = enc_table->list[ENCINDEX_UTF_8].enc;
     global_enc_us_ascii = enc_table->list[ENCINDEX_US_ASCII].enc;
 #undef ENC_REGISTER
+#undef OnigEncodingASCII_8BIT
 #define ENCDB_REGISTER(name, enc) enc_register_at(enc_table, ENCINDEX_##enc, name, NULL)
     ENCDB_REGISTER("UTF-16BE", UTF_16BE);
     ENCDB_REGISTER("UTF-16LE", UTF_16LE);
@@ -969,7 +971,7 @@ enc_get_index_str(VALUE str)
          * all instance variables are removed in `obj_free`.
          */
         iv = rb_attr_get(str, rb_id_encoding());
-        i = NIL_P(iv) ? ENCINDEX_ASCII : NUM2INT(iv);
+        i = NIL_P(iv) ? ENCINDEX_ASCII_8BIT : NUM2INT(iv);
 #endif
     }
     return i;
@@ -1520,7 +1522,7 @@ rb_ascii8bit_encoding(void)
 int
 rb_ascii8bit_encindex(void)
 {
-    return ENCINDEX_ASCII;
+    return ENCINDEX_ASCII_8BIT;
 }
 
 rb_encoding *
@@ -1584,7 +1586,7 @@ rb_filesystem_encindex(void)
                           idx = enc_registered(enc_table, "filesystem"));
 
     if (idx < 0)
-	idx = ENCINDEX_ASCII;
+	idx = ENCINDEX_ASCII_8BIT;
     return idx;
 }
 

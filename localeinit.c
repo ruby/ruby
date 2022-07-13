@@ -128,7 +128,7 @@ Init_enc_set_filesystem_encoding(void)
     /* for debugging */
     CP_FORMAT(cp, codepage);
     idx = rb_enc_find_index(cp);
-    if (idx < 0) idx = ENCINDEX_ASCII;
+    if (idx < 0) idx = ENCINDEX_ASCII_8BIT;
 #elif defined __CYGWIN__
     idx = ENCINDEX_UTF_8;
 #else

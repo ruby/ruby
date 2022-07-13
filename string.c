@@ -3441,7 +3441,7 @@ rb_str_concat(VALUE str1, VALUE str2)
     }
 
     encidx = rb_enc_to_index(enc);
-    if (encidx == ENCINDEX_ASCII || encidx == ENCINDEX_US_ASCII) {
+    if (encidx == ENCINDEX_ASCII_8BIT || encidx == ENCINDEX_US_ASCII) {
 	/* US-ASCII automatically extended to ASCII-8BIT */
 	char buf[1];
 	buf[0] = (char)code;
@@ -3450,7 +3450,7 @@ rb_str_concat(VALUE str1, VALUE str2)
 	}
 	rb_str_cat(str1, buf, 1);
 	if (encidx == ENCINDEX_US_ASCII && code > 127) {
-	    rb_enc_associate_index(str1, ENCINDEX_ASCII);
+	    rb_enc_associate_index(str1, ENCINDEX_ASCII_8BIT);
 	    ENC_CODERANGE_SET(str1, ENC_CODERANGE_VALID);
 	}
     }
