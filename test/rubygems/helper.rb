@@ -618,7 +618,7 @@ class Gem::TestCase < Test::Unit::TestCase
       gem = File.join(@tempdir, File.basename(gem)).tap(&Gem::UNTAINT)
     end
 
-    Gem::Installer.at(gem, options.merge({:wrappers => true})).install
+    Gem::Installer.at(gem, options.merge({ :wrappers => true })).install
   end
 
   ##
@@ -1191,7 +1191,7 @@ Also, a list:
   # Is this test being run on a ruby/ruby repository?
   #
 
-  def testing_ruby_repo?
+  def ruby_repo?
     !ENV["GEM_COMMAND"].nil?
   end
 

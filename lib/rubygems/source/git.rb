@@ -49,8 +49,8 @@ class Gem::Source::Git < Gem::Source
   # will be checked out when the gem is installed.
 
   def initialize(name, repository, reference, submodules = false)
-    super repository
-
+    require_relative "../uri"
+    @uri = Gem::Uri.parse(repository)
     @name            = name
     @repository      = repository
     @reference       = reference

@@ -158,7 +158,7 @@ end
         util_spec "pkg#{pkgi}", pkg_version.to_s, deps
       end
     end
-    base = util_spec "pkg_base", "1", {"pkg0" => ">= 0"}
+    base = util_spec "pkg_base", "1", { "pkg0" => ">= 0" }
 
     Gem::Specification.reset
     install_specs(*packages.flatten.reverse)
@@ -305,10 +305,10 @@ end
 
   def test_require_should_not_conflict
     base = util_spec "0", "1", "A" => ">= 1"
-    a1 = util_spec "A", "1", {"c" => ">= 2", "b" => "> 0"}, "lib/a.rb"
-    a2 = util_spec "A", "2", {"c" => ">= 2", "b" => "> 0"}, "lib/a.rb"
-    b1 = util_spec "b", "1", {"c" => "= 1"}, "lib/d#{$$}.rb"
-    b2 = util_spec "b", "2", {"c" => "= 2"}, "lib/d#{$$}.rb"
+    a1 = util_spec "A", "1", { "c" => ">= 2", "b" => "> 0" }, "lib/a.rb"
+    a2 = util_spec "A", "2", { "c" => ">= 2", "b" => "> 0" }, "lib/a.rb"
+    b1 = util_spec "b", "1", { "c" => "= 1" }, "lib/d#{$$}.rb"
+    b2 = util_spec "b", "2", { "c" => "= 2" }, "lib/d#{$$}.rb"
     c1 = util_spec "c", "1", {}, "lib/c.rb"
     c2 = util_spec "c", "2", {}, "lib/c.rb"
     c3 = util_spec "c", "3", {}, "lib/c.rb"
@@ -1068,7 +1068,15 @@ dependencies: []
   end
 
   def test_handles_private_null_type
-    path = File.expand_path 'data/null-type.gemspec.rz', __dir__
+    path = File.expand_path 'data/pry-0.4.7.gemspec.rz', __dir__
+
+    data = Marshal.load Gem::Util.inflate(Gem.read_binary(path))
+
+    assert_instance_of Gem::Specification, data
+  end
+
+  def test_handles_dependencies_with_syck_requirements_bug
+    path = File.expand_path 'data/excon-0.7.7.gemspec.rz', __dir__
 
     data = Marshal.load Gem::Util.inflate(Gem.read_binary(path))
 

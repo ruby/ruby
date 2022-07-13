@@ -254,7 +254,7 @@ class TestGemGemcutterUtilities < Gem::TestCase
   end
 
   def test_verify_api_key
-    keys = {:other => 'a5fdbb6ba150cbb83aad2bb2fede64cf040453903'}
+    keys = { :other => 'a5fdbb6ba150cbb83aad2bb2fede64cf040453903' }
     File.open Gem.configuration.credentials_path, 'w' do |f|
       f.write keys.to_yaml
     end

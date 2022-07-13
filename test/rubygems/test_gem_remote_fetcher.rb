@@ -705,7 +705,7 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
   def test_fetch_http_with_additional_headers
     ENV["http_proxy"] = @proxy_uri
     ENV["no_proxy"] = URI::parse(@server_uri).host
-    fetcher = Gem::RemoteFetcher.new nil, nil, {"X-Captain" => "murphy"}
+    fetcher = Gem::RemoteFetcher.new nil, nil, { "X-Captain" => "murphy" }
     @fetcher = fetcher
     assert_equal "murphy", fetcher.fetch_path(@server_uri)
   end
@@ -745,7 +745,7 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
 
   def test_fetch_s3_config_creds
     Gem.configuration[:s3_source] = {
-      'my-bucket' => {:id => 'testuser', :secret => 'testpass'},
+      'my-bucket' => { :id => 'testuser', :secret => 'testpass' },
     }
     url = 's3://my-bucket/gems/specs.4.8.gz'
     Time.stub :now, Time.at(1561353581) do
@@ -757,7 +757,7 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
 
   def test_fetch_s3_config_creds_with_region
     Gem.configuration[:s3_source] = {
-      'my-bucket' => {:id => 'testuser', :secret => 'testpass', :region => 'us-west-2'},
+      'my-bucket' => { :id => 'testuser', :secret => 'testpass', :region => 'us-west-2' },
     }
     url = 's3://my-bucket/gems/specs.4.8.gz'
     Time.stub :now, Time.at(1561353581) do
@@ -769,7 +769,7 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
 
   def test_fetch_s3_config_creds_with_token
     Gem.configuration[:s3_source] = {
-      'my-bucket' => {:id => 'testuser', :secret => 'testpass', :security_token => 'testtoken'},
+      'my-bucket' => { :id => 'testuser', :secret => 'testpass', :security_token => 'testtoken' },
     }
     url = 's3://my-bucket/gems/specs.4.8.gz'
     Time.stub :now, Time.at(1561353581) do
@@ -784,7 +784,7 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
     ENV['AWS_SECRET_ACCESS_KEY'] = 'testpass'
     ENV['AWS_SESSION_TOKEN'] = nil
     Gem.configuration[:s3_source] = {
-      'my-bucket' => {:provider => 'env'},
+      'my-bucket' => { :provider => 'env' },
     }
     url = 's3://my-bucket/gems/specs.4.8.gz'
     Time.stub :now, Time.at(1561353581) do
@@ -800,7 +800,7 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
     ENV['AWS_SECRET_ACCESS_KEY'] = 'testpass'
     ENV['AWS_SESSION_TOKEN'] = nil
     Gem.configuration[:s3_source] = {
-      'my-bucket' => {:provider => 'env', :region => 'us-west-2'},
+      'my-bucket' => { :provider => 'env', :region => 'us-west-2' },
     }
     url = 's3://my-bucket/gems/specs.4.8.gz'
     Time.stub :now, Time.at(1561353581) do
@@ -816,7 +816,7 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
     ENV['AWS_SECRET_ACCESS_KEY'] = 'testpass'
     ENV['AWS_SESSION_TOKEN'] = 'testtoken'
     Gem.configuration[:s3_source] = {
-      'my-bucket' => {:provider => 'env'},
+      'my-bucket' => { :provider => 'env' },
     }
     url = 's3://my-bucket/gems/specs.4.8.gz'
     Time.stub :now, Time.at(1561353581) do
@@ -836,7 +836,7 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
 
   def test_fetch_s3_instance_profile_creds
     Gem.configuration[:s3_source] = {
-      'my-bucket' => {:provider => 'instance_profile'},
+      'my-bucket' => { :provider => 'instance_profile' },
     }
 
     url = 's3://my-bucket/gems/specs.4.8.gz'
@@ -850,7 +850,7 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
 
   def test_fetch_s3_instance_profile_creds_with_region
     Gem.configuration[:s3_source] = {
-      'my-bucket' => {:provider => 'instance_profile', :region => 'us-west-2'},
+      'my-bucket' => { :provider => 'instance_profile', :region => 'us-west-2' },
     }
 
     url = 's3://my-bucket/gems/specs.4.8.gz'
@@ -864,7 +864,7 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
 
   def test_fetch_s3_instance_profile_creds_with_token
     Gem.configuration[:s3_source] = {
-      'my-bucket' => {:provider => 'instance_profile'},
+      'my-bucket' => { :provider => 'instance_profile' },
     }
 
     url = 's3://my-bucket/gems/specs.4.8.gz'
@@ -894,7 +894,7 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
 
   def test_fetch_s3_no_host
     Gem.configuration[:s3_source] = {
-      'my-bucket' => {:id => 'testuser', :secret => 'testpass'},
+      'my-bucket' => { :id => 'testuser', :secret => 'testpass' },
     }
 
     url = 's3://other-bucket/gems/specs.4.8.gz'
@@ -904,7 +904,7 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
   end
 
   def test_fetch_s3_no_id
-    Gem.configuration[:s3_source] = { 'my-bucket' => {:secret => 'testpass'} }
+    Gem.configuration[:s3_source] = { 'my-bucket' => { :secret => 'testpass' } }
 
     url = 's3://my-bucket/gems/specs.4.8.gz'
     refute_fetch_s3 url, 's3_source for my-bucket missing id or secret'
@@ -913,7 +913,7 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
   end
 
   def test_fetch_s3_no_secret
-    Gem.configuration[:s3_source] = { 'my-bucket' => {:id => 'testuser'} }
+    Gem.configuration[:s3_source] = { 'my-bucket' => { :id => 'testuser' } }
 
     url = 's3://my-bucket/gems/specs.4.8.gz'
     refute_fetch_s3 url, 's3_source for my-bucket missing id or secret'
@@ -973,7 +973,7 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
   def test_ssl_client_cert_auth_connection
     ssl_server = start_ssl_server({
       :SSLVerifyClient =>
-        OpenSSL::SSL::VERIFY_PEER | OpenSSL::SSL::VERIFY_FAIL_IF_NO_PEER_CERT})
+        OpenSSL::SSL::VERIFY_PEER | OpenSSL::SSL::VERIFY_FAIL_IF_NO_PEER_CERT })
 
     temp_ca_cert = File.join(__dir__, 'ca_cert.pem')
     temp_client_cert = File.join(__dir__, 'client.pem')
@@ -988,7 +988,7 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
   def test_do_not_allow_invalid_client_cert_auth_connection
     ssl_server = start_ssl_server({
       :SSLVerifyClient =>
-        OpenSSL::SSL::VERIFY_PEER | OpenSSL::SSL::VERIFY_FAIL_IF_NO_PEER_CERT})
+        OpenSSL::SSL::VERIFY_PEER | OpenSSL::SSL::VERIFY_FAIL_IF_NO_PEER_CERT })
 
     temp_ca_cert = File.join(__dir__, 'ca_cert.pem')
     temp_client_cert = File.join(__dir__, 'invalid_client.pem')

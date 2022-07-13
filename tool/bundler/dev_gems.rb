@@ -6,11 +6,6 @@ gem "rdoc", "6.2.0" # 6.2.1 is required > Ruby 2.3
 gem "test-unit", "~> 3.0"
 gem "rake", "~> 13.0"
 
-group :lint do
-  gem "rubocop", "~> 0.80.1"
-  gem "rubocop-performance", "~> 1.5.2"
-end
-
 gem "webrick", "~> 1.6"
 gem "parallel_tests", "~> 2.29"
 gem "parallel", "1.19.2" # 1.20+ is required > Ruby 2.3

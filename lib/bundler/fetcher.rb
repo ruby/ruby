@@ -20,6 +20,7 @@ module Bundler
     class TooManyRequestsError < HTTPError; end
     # This error is raised if the API returns a 413 (only printed in verbose)
     class FallbackError < HTTPError; end
+
     # This is the error raised if OpenSSL fails the cert verification
     class CertificateFailureError < HTTPError
       def initialize(remote_uri)
@@ -33,6 +34,7 @@ module Bundler
           " sources and change 'https' to 'http'."
       end
     end
+
     # This is the error raised when a source is HTTPS and OpenSSL didn't load
     class SSLError < HTTPError
       def initialize(msg = nil)
@@ -42,6 +44,7 @@ module Bundler
             "using RVM are available at rvm.io/packages/openssl."
       end
     end
+
     # This error is raised if HTTP authentication is required, but not provided.
     class AuthenticationRequiredError < HTTPError
       def initialize(remote_uri)
@@ -52,6 +55,7 @@ module Bundler
           "or by storing the credentials in the `#{Settings.key_for(remote_uri)}` environment variable"
       end
     end
+
     # This error is raised if HTTP authentication is provided, but incorrect.
     class BadAuthenticationError < HTTPError
       def initialize(remote_uri)

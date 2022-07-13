@@ -233,19 +233,17 @@ module Bundler
     # before dependencies that are unconstrained
     def amount_constrained(dependency)
       @amount_constrained ||= {}
-      @amount_constrained[dependency.name] ||= begin
-        if (base = @base[dependency.name]) && !base.empty?
-          dependency.requirement.satisfied_by?(base.first.version) ? 0 : 1
-        else
-          all = index_for(dependency).search(dependency.name).size
+      @amount_constrained[dependency.name] ||= if (base = @base[dependency.name]) && !base.empty?
+        dependency.requirement.satisfied_by?(base.first.version) ? 0 : 1
+      else
+        all = index_for(dependency).search(dependency.name).size
 
-          if all <= 1
-            all - 1_000_000
-          else
-            search = search_for(dependency)
-            search = @prerelease_specified[dependency.name] ? search.count : search.count {|s| !s.version.prerelease? }
-            search - all
-          end
+        if all <= 1
+          all - 1_000_000
+        else
+          search = search_for(dependency)
+          search = @prerelease_specified[dependency.name] ? search.count : search.count {|s| !s.version.prerelease? }
+          search - all
         end
       end
     end
