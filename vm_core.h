@@ -1232,10 +1232,10 @@ typedef rb_control_frame_t *
 
 enum vm_frame_env_flags {
     /* Frame/Environment flag bits:
-     *   MMMM MMMM MMMM MMMM ____ _FFF FFFF EEEX (LSB)
+     *   MMMM MMMM MMMM MMMM ____ FFFF FFFE EEEX (LSB)
      *
      * X   : tag for GC marking (It seems as Fixnum)
-     * EEE : 3 bits Env flags
+     * EEE : 4 bits Env flags
      * FF..: 7 bits Frame flags
      * MM..: 15 bits frame magic (to check frame corruption)
      */
