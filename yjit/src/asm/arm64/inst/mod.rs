@@ -16,6 +16,7 @@ mod mov;
 mod nop;
 mod shift_imm;
 mod store;
+mod sys_reg;
 
 pub use atomic::Atomic;
 pub use branch::Branch;
@@ -32,3 +33,4 @@ pub use mov::Mov;
 pub use nop::Nop;
 pub use shift_imm::ShiftImm;
 pub use store::Store;
+pub use sys_reg::SysReg;
