@@ -32,6 +32,21 @@ RSpec.shared_examples "bundle install --standalone" do
       expect(out).to eq(expected_gems.values.join("\n"))
     end
 
+    it "makes the gems available without bundler nor rubygems" do
+      testrb = String.new <<-RUBY
+        $:.unshift File.expand_path("bundle")
+        require "bundler/setup"
+
+      RUBY
+      expected_gems.each do |k, _|
+        testrb << "\nrequire \"#{k}\""
+        testrb << "\nputs #{k.upcase}"
+      end
+      sys_exec %(#{Gem.ruby} --disable-gems -w -e #{testrb.shellescape})
+
+      expect(out).to eq(expected_gems.values.join("\n"))
+    end
+
     it "makes the gems available without bundler via Kernel.require" do
       testrb = String.new <<-RUBY
         $:.unshift File.expand_path("bundle")
@@ -154,8 +169,8 @@ RSpec.shared_examples "bundle install --standalone" do
       load_path_lines = bundled_app("bundle/bundler/setup.rb").read.split("\n").select {|line| line.start_with?("$:.unshift") }
 
       expect(load_path_lines).to eq [
-        '$:.unshift File.expand_path("#{__dir__}/../#{RUBY_ENGINE}/#{RbConfig::CONFIG["ruby_version"]}/gems/bar-1.0.0/lib")',
-        '$:.unshift File.expand_path("#{__dir__}/../#{RUBY_ENGINE}/#{RbConfig::CONFIG["ruby_version"]}/gems/foo-1.0.0/lib")',
+        '$:.unshift File.expand_path("#{__dir__}/../#{RUBY_ENGINE}/#{Gem.ruby_api_version}/gems/bar-1.0.0/lib")',
+        '$:.unshift File.expand_path("#{__dir__}/../#{RUBY_ENGINE}/#{Gem.ruby_api_version}/gems/foo-1.0.0/lib")',
       ]
     end
   end
@@ -190,7 +205,7 @@ RSpec.shared_examples "bundle install --standalone" do
     end
   end
 
-  describe "with gems with native extension", :ruby_repo do
+  describe "with gems with native extension" do
     before do
       bundle "config set --local path #{bundled_app("bundle")}"
       install_gemfile <<-G, :standalone => true, :dir => cwd
@@ -201,9 +216,13 @@ RSpec.shared_examples "bundle install --standalone" do
 
     it "generates a bundle/bundler/setup.rb with the proper paths" do
       expected_path = bundled_app("bundle/bundler/setup.rb")
-      extension_line = File.read(expected_path).each_line.find {|line| line.include? "/extensions/" }.strip
-      expect(extension_line).to start_with '$:.unshift File.expand_path("#{__dir__}/../#{RUBY_ENGINE}/#{RbConfig::CONFIG["ruby_version"]}/extensions/'
-      expect(extension_line).to end_with '/very_simple_binary-1.0")'
+      script_content = File.read(expected_path)
+      expect(script_content).to include("def self.ruby_api_version")
+      expect(script_content).to include("def self.extension_api_version")
+      extension_line = script_content.each_line.find {|line| line.include? "/extensions/" }.strip
+      platform = Gem::Platform.local
+      expect(extension_line).to start_with '$:.unshift File.expand_path("#{__dir__}/../#{RUBY_ENGINE}/#{Gem.ruby_api_version}/extensions/'
+      expect(extension_line).to end_with platform.to_s + '/#{Gem.extension_api_version}/very_simple_binary-1.0")'
     end
   end
 

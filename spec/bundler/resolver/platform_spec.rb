@@ -291,7 +291,7 @@ RSpec.describe "Resolving platform craziness" do
   describe "with mingw32" do
     before :each do
       @index = build_index do
-        platforms "mingw32 mswin32 x64-mingw32" do |platform|
+        platforms "mingw32 mswin32 x64-mingw32 x64-mingw-ucrt" do |platform|
           gem "thin", "1.2.7", platform
         end
         gem "win32-api", "1.5.1", "universal-mingw32"
@@ -312,7 +312,7 @@ RSpec.describe "Resolving platform craziness" do
       should_resolve_as %w[thin-1.2.7-mingw32]
     end
 
-    it "finds x64-mingw gems" do
+    it "finds x64-mingw32 gems" do
       platforms "x64-mingw32"
       dep "thin"
       should_resolve_as %w[thin-1.2.7-x64-mingw32]
@@ -328,6 +328,14 @@ RSpec.describe "Resolving platform craziness" do
       platform "x64-mingw32"
       dep "win32-api"
       should_resolve_as %w[win32-api-1.5.1-universal-mingw32]
+    end
+
+    if Gem.rubygems_version >= Gem::Version.new("3.2.28")
+      it "finds x64-mingw-ucrt gems" do
+        platforms "x64-mingw-ucrt"
+        dep "thin"
+        should_resolve_as %w[thin-1.2.7-x64-mingw-ucrt]
+      end
     end
   end
 

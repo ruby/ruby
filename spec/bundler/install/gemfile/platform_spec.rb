@@ -50,7 +50,7 @@ RSpec.describe "bundle install across platforms" do
     expect(the_bundle).to include_gems "platform_specific 1.0 JAVA"
   end
 
-  it "pulls the pure ruby version on jruby if the java platform is not present in the lockfile and bundler is run in frozen mode", :jruby do
+  it "pulls the pure ruby version on jruby if the java platform is not present in the lockfile and bundler is run in frozen mode", :jruby_only do
     lockfile <<-G
       GEM
         remote: #{file_uri_for(gem_repo1)}
@@ -332,8 +332,6 @@ end
 
 RSpec.describe "bundle install with platform conditionals" do
   it "installs gems tagged w/ the current platforms" do
-    skip "platform issues" if Gem.win_platform?
-
     install_gemfile <<-G
       source "#{file_uri_for(gem_repo1)}"
 
@@ -402,8 +400,6 @@ RSpec.describe "bundle install with platform conditionals" do
   end
 
   it "installs gems tagged w/ the current platforms inline" do
-    skip "platform issues" if Gem.win_platform?
-
     install_gemfile <<-G
       source "#{file_uri_for(gem_repo1)}"
       gem "nokogiri", :platforms => :#{local_tag}
@@ -422,8 +418,6 @@ RSpec.describe "bundle install with platform conditionals" do
   end
 
   it "installs gems tagged w/ the current platform inline" do
-    skip "platform issues" if Gem.win_platform?
-
     install_gemfile <<-G
       source "#{file_uri_for(gem_repo1)}"
       gem "nokogiri", :platform => :#{local_tag}

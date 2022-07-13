@@ -8,8 +8,9 @@ class Gem::Commands::EnvironmentCommand < Gem::Command
 
   def arguments # :nodoc:
     args = <<-EOF
-          gemdir          display the path where gems are installed
-          gempath         display path used to search for gems
+          home            display the path where gems are installed. Aliases: gemhome, gemdir, GEM_HOME
+          path            display path used to search for gems. Aliases: gempath, GEM_PATH
+          user_gemhome    display the path where gems are installed when `--user-install` is given. Aliases: user_gemdir
           version         display the gem format version
           remotesources   display the remote gem servers
           platform        display the supported gem platforms
@@ -80,6 +81,8 @@ lib/rubygems/defaults/operating_system.rb
         Gem.dir
       when /^gempath/, /^path/, /^GEM_PATH/ then
         Gem.path.join(File::PATH_SEPARATOR)
+      when /^user_gemdir/, /^user_gemhome/ then
+        Gem.user_dir
       when /^remotesources/ then
         Gem.sources.to_a.join("\n")
       when /^platform/ then

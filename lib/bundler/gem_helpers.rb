@@ -10,6 +10,7 @@ module Bundler
       [Gem::Platform.new("universal-mingw32"), Gem::Platform.new("universal-mingw32")],
       [Gem::Platform.new("x64-mingw32"), Gem::Platform.new("x64-mingw32")],
       [Gem::Platform.new("x86_64-mingw32"), Gem::Platform.new("x64-mingw32")],
+      [Gem::Platform.new("x64-mingw-ucrt"), Gem::Platform.new("x64-mingw-ucrt")],
       [Gem::Platform.new("mingw32"), Gem::Platform.new("x86-mingw32")],
     ].freeze
 

@@ -12,6 +12,7 @@ module Bundler
       end
       File.open File.join(bundler_path, "setup.rb"), "w" do |file|
         file.puts "require 'rbconfig'"
+        file.puts define_path_helpers
         file.puts reverse_rubygems_kernel_mixin
         paths.each do |path|
           if Pathname.new(path).absolute?
@@ -29,14 +30,20 @@ module Bundler
       @specs.map do |spec|
         next if spec.name == "bundler"
         Array(spec.require_paths).map do |path|
-          gem_path(path, spec).sub(version_dir, '#{RUBY_ENGINE}/#{RbConfig::CONFIG["ruby_version"]}')
+          gem_path(path, spec).
+            sub(version_dir, '#{RUBY_ENGINE}/#{Gem.ruby_api_version}').
+            sub(extensions_dir, 'extensions/\k<platform>/#{Gem.extension_api_version}')
           # This is a static string intentionally. It's interpolated at a later time.
         end
       end.flatten.compact
     end
 
     def version_dir
-      "#{RUBY_ENGINE}/#{RbConfig::CONFIG["ruby_version"]}"
+      "#{RUBY_ENGINE}/#{Gem.ruby_api_version}"
+    end
+
+    def extensions_dir
+      %r{extensions/(?<platform>[^/]+)/#{Regexp.escape(Gem.extension_api_version)}}
     end
 
     def bundler_path
@@ -53,6 +60,26 @@ module Bundler
     rescue TypeError
       error_message = "#{spec.name} #{spec.version} has an invalid gemspec"
       raise Gem::InvalidSpecificationException.new(error_message)
+    end
+
+    def define_path_helpers
+      <<~'END'
+        unless defined?(Gem)
+          module Gem
+            def self.ruby_api_version
+              RbConfig::CONFIG["ruby_version"]
+            end
+
+            def self.extension_api_version
+              if 'no' == RbConfig::CONFIG['ENABLE_SHARED']
+                "#{ruby_api_version}-static"
+              else
+                ruby_api_version
+              end
+            end
+          end
+        end
+      END
     end
 
     def reverse_rubygems_kernel_mixin

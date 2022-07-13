@@ -104,7 +104,6 @@ RSpec.describe Bundler, "friendly errors" do
         expect(Bundler.ui).to receive(:error).with(error.message, :wrap => true)
         Bundler::FriendlyErrors.log_error(error)
       end
-      it_behaves_like "Bundler.ui receive trace", Bundler::BundlerError.new
     end
 
     context "Thor::Error" do

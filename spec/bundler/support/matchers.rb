@@ -178,7 +178,7 @@ module Spec
 
             begin
               require '#{name}'
-              name_constant = '#{Spec::Builders.constantize(name)}'
+              name_constant = #{Spec::Builders.constantize(name)}
               if #{version.nil?} || name_constant == '#{version}'
                 exit 64
               else

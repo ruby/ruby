@@ -737,9 +737,7 @@ class TestGemPackage < Gem::Package::TarTestCase
     file = 'foo//file.rb'.dup
     file.taint if RUBY_VERSION < '2.7'
 
-    destination = @destination.sub '/', '//'
-
-    destination = package.install_location file, destination
+    destination = package.install_location file, @destination
 
     assert_equal File.join(@destination, 'foo', 'file.rb'), destination
     refute destination.tainted? if RUBY_VERSION < '2.7'

@@ -12,17 +12,19 @@ module Bundler
     end
 
     def for(dependencies, check = false, match_current_platform = false)
-      handled = []
+      # dep.name => [list, of, deps]
+      handled = Hash.new {|h, k| h[k] = [] }
       deps = dependencies.dup
       specs = []
 
       loop do
         break unless dep = deps.shift
-        next if handled.any? {|d| d.name == dep.name && (match_current_platform || d.__platform == dep.__platform) } || dep.name == "bundler"
+        next if handled[dep.name].any? {|d| match_current_platform || d.__platform == dep.__platform } || dep.name == "bundler"
 
-        handled << dep
+        # use a hash here to ensure constant lookup time in the `any?` call above
+        handled[dep.name] << dep
 
-        specs_for_dep = spec_for_dependency(dep, match_current_platform)
+        specs_for_dep = specs_for_dependency(dep, match_current_platform)
         if specs_for_dep.any?
           specs.concat(specs_for_dep)
 
@@ -171,12 +173,13 @@ module Bundler
       @specs.sort_by(&:name).each {|s| yield s }
     end
 
-    def spec_for_dependency(dep, match_current_platform)
-      specs_for_platforms = lookup[dep.name]
+    def specs_for_dependency(dep, match_current_platform)
+      specs_for_name = lookup[dep.name]
       if match_current_platform
-        GemHelpers.select_best_platform_match(specs_for_platforms.select {|s| Gem::Platform.match_spec?(s) }, Bundler.local_platform)
+        GemHelpers.select_best_platform_match(specs_for_name.select {|s| Gem::Platform.match_spec?(s) }, Bundler.local_platform)
       else
-        GemHelpers.select_best_platform_match(specs_for_platforms, dep.__platform)
+        specs_for_name_and_platform = GemHelpers.select_best_platform_match(specs_for_name, dep.__platform)
+        specs_for_name_and_platform.any? ? specs_for_name_and_platform : specs_for_name
       end
     end
 

@@ -176,7 +176,7 @@ RSpec.describe "bundle install" do
       expect(the_bundle).to include_gems "rack 1.0.0"
     end
 
-    it "re-installs gems whose extensions have been deleted", :ruby_repo do
+    it "re-installs gems whose extensions have been deleted" do
       build_lib "very_simple_binary", "1.0.0", :to_system => true do |s|
         s.write "lib/very_simple_binary.rb", "raise 'FAIL'"
       end

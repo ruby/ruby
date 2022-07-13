@@ -827,7 +827,7 @@ end
     expect(out).to eq("yay")
   end
 
-  it "should clean $LOAD_PATH properly", :ruby_repo do
+  it "should clean $LOAD_PATH properly" do
     gem_name = "very_simple_binary"
     full_gem_name = gem_name + "-1.0"
     ext_dir = File.join(tmp("extensions", full_gem_name))

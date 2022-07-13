@@ -284,7 +284,7 @@ module Bundler
       if specs_matching_requirement.any?
         specs = specs_matching_requirement
         matching_part = requirement_label
-        requirement_label = "#{requirement_label} #{requirement.__platform}"
+        requirement_label = "#{requirement_label}' with platform '#{requirement.__platform}"
       end
 
       message = String.new("Could not find gem '#{requirement_label}'#{extra_message} in #{source}#{cache_message}.\n")
