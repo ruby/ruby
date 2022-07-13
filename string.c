@@ -2222,7 +2222,7 @@ rb_str_empty(VALUE str)
 
 /*
  *  call-seq:
- *    string + other_string -> new_string
+ *    +(other_string) -> new_string
  *
  *  Returns a new \String containing +other_string+ concatenated to +self+:
  *
@@ -2293,7 +2293,7 @@ rb_str_opt_plus(VALUE str1, VALUE str2)
 
 /*
  *  call-seq:
- *    string * integer -> new_string
+ *    *(integer) -> new_string
  *
  *  Returns a new \String containing +integer+ copies of +self+:
  *
@@ -2363,7 +2363,7 @@ rb_str_times(VALUE str, VALUE times)
 
 /*
  *  call-seq:
- *    string % object -> new_string
+ *    %(object) -> new_string
  *
  *  Returns the result of formatting +object+ into the format specification +self+
  *  (see Kernel#sprintf for formatting details):
@@ -3403,7 +3403,7 @@ rb_str_concat_multi(int argc, VALUE *argv, VALUE str)
 
 /*
  *  call-seq:
- *    string << object -> string
+ *    <<(object) -> string
  *
  *  Concatenates +object+ to +self+ and returns +self+:
  *
@@ -3611,8 +3611,7 @@ rb_str_cmp(VALUE str1, VALUE str2)
 
 /*
  *  call-seq:
- *    string == object -> true or false
- *    string === object -> true or false
+ *    ==(object) -> true or false
  *
  *  Returns +true+ if +object+ has the same length and content;
  *  as +self+; +false+ otherwise:
@@ -3627,6 +3626,8 @@ rb_str_cmp(VALUE str1, VALUE str2)
  *
  *  If +object+ is not an instance of \String but responds to +to_str+, then the
  *  two strings are compared using <code>object.==</code>.
+ *
+ *  String#=== is an alias for String#==.
  */
 
 VALUE
@@ -3670,7 +3671,7 @@ rb_str_eql(VALUE str1, VALUE str2)
 
 /*
  *  call-seq:
- *    string <=> other_string -> -1, 0, 1, or nil
+ *    <=>(other_string) -> -1, 0, 1, or nil
  *
  *  Compares +self+ and +other_string+, returning:
  *
@@ -4401,8 +4402,8 @@ rb_str_byterindex_m(int argc, VALUE *argv, VALUE str)
 
 /*
  *  call-seq:
- *    string =~ regexp -> integer or nil
- *    string =~ object -> integer or nil
+ *    =~(regexp) -> integer or nil
+ *    =~(object) -> integer or nil
  *
  *  Returns the \Integer index of the first substring that matches
  *  the given +regexp+, or +nil+ if no match found:
@@ -5174,11 +5175,11 @@ rb_str_aref(VALUE str, VALUE indx)
 
 /*
  *  call-seq:
- *    string[index] -> new_string or nil
- *    string[start, length] -> new_string or nil
- *    string[range] -> new_string or nil
- *    string[regexp, capture = 0] -> new_string or nil
- *    string[substring] -> new_string or nil
+ *    [](index) -> new_string or nil
+ *    [](start, length) -> new_string or nil
+ *    [](range) -> new_string or nil
+ *    [](regexp, capture = 0) -> new_string or nil
+ *    [](substring) -> new_string or nil
  *
  *  Returns the substring of +self+ specified by the arguments.
  *  See examples at {String Slices}[rdoc-ref:String@String+Slices].
@@ -5393,11 +5394,11 @@ rb_str_aset(VALUE str, VALUE indx, VALUE val)
 
 /*
  *  call-seq:
- *    string[index] = new_string
- *    string[start, length] = new_string
- *    string[range] = new_string
- *    string[regexp, capture = 0) = new_string
- *    string[substring] = new_string
+ *    []=(index) -> new_string
+ *    []=(start, length) -> new_string
+ *    []=(range) -> new_string
+ *    []=(regexp, capture = 0) -> new_string
+ *    []=(substring) -> new_string
  *
  *  Replaces all, some, or none of the contents of +self+; returns +new_string+.
  *  See {String Slices}[rdoc-ref:String@String+Slices].
