@@ -261,7 +261,7 @@ module Bundler
           @locked_specs
         elsif !unlocking? && nothing_changed?
           Bundler.ui.debug("Found no changes, using resolution from the lockfile")
-          SpecSet.new(filter_specs(@locked_specs, @dependencies.select{|dep| @locked_specs[dep].any? }))
+          SpecSet.new(filter_specs(@locked_specs, @dependencies.select {|dep| @locked_specs[dep].any? }))
         else
           last_resolve = converge_locked_specs
           # Run a resolve against the locally available gems
@@ -731,7 +731,7 @@ module Bundler
         end
       end
 
-      SpecSet.new(filter_specs(converged, deps).reject{|s| @unlock[:gems].include?(s.name) })
+      SpecSet.new(filter_specs(converged, deps).reject {|s| @unlock[:gems].include?(s.name) })
     end
 
     def metadata_dependencies

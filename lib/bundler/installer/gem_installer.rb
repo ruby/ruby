@@ -51,7 +51,20 @@ module Bundler
     end
 
     def install
-      spec.source.install(spec, :force => force, :ensure_builtin_gems_cached => standalone, :build_args => Array(spec_settings))
+      spec.source.install(
+        spec,
+        :force => force,
+        :ensure_builtin_gems_cached => standalone,
+        :build_args => Array(spec_settings),
+        :previous_spec => previous_spec,
+      )
+    end
+
+    def previous_spec
+      locked_gems = installer.definition.locked_gems
+      return unless locked_gems
+
+      locked_gems.specs.find {|s| s.name == spec.name }
     end
 
     def out_of_space_message

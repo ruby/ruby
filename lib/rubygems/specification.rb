@@ -1110,7 +1110,7 @@ class Gem::Specification < Gem::BasicSpecification
       result[spec.name] = spec
     end
 
-    result.map(&:last).flatten.sort_by{|tup| tup.name }
+    result.map(&:last).flatten.sort_by {|tup| tup.name }
   end
 
   ##

@@ -21,7 +21,7 @@ module Bundler
       base = SpecSet.new(base) unless base.is_a?(SpecSet)
       resolver = new(source_requirements, base, gem_version_promoter, additional_base_requirements, platforms)
       result = resolver.start(requirements)
-      SpecSet.new(SpecSet.new(result).for(requirements.reject{|dep| dep.name.end_with?("\0") }))
+      SpecSet.new(SpecSet.new(result).for(requirements.reject {|dep| dep.name.end_with?("\0") }))
     end
 
     def initialize(source_requirements, base, gem_version_promoter, additional_base_requirements, platforms)

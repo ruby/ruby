@@ -1061,7 +1061,7 @@ class TestGem < Gem::TestCase
 
     Gem.refresh
 
-    Gem::Specification.each{|spec| assert spec.activated? if spec == s }
+    Gem::Specification.each {|spec| assert spec.activated? if spec == s }
 
     Gem.loaded_specs.delete(s)
     Gem.refresh

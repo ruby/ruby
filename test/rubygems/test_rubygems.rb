@@ -66,6 +66,6 @@ class GemTest < Gem::TestCase
   end
 
   def ruby_with_rubygems_and_fake_operating_system_in_load_path(operating_system_path)
-    [Gem.ruby, "-I", operating_system_path, "-I" , $LOAD_PATH.find{|p| p == File.dirname($LOADED_FEATURES.find{|f| f.end_with?("/rubygems.rb") }) }]
+    [Gem.ruby, "-I", operating_system_path, "-I" , $LOAD_PATH.find {|p| p == File.dirname($LOADED_FEATURES.find {|f| f.end_with?("/rubygems.rb") }) }]
   end
 end

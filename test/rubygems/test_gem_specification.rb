@@ -992,8 +992,8 @@ dependencies: []
 
     dir_standard_specs = File.join Gem.dir, 'specifications'
 
-    save_gemspec('a-1', '1', dir_standard_specs){|s| s.name = 'a' }
-    save_gemspec('b-1', '1', dir_standard_specs){|s| s.name = 'b' }
+    save_gemspec('a-1', '1', dir_standard_specs) {|s| s.name = 'a' }
+    save_gemspec('b-1', '1', dir_standard_specs) {|s| s.name = 'b' }
 
     assert_equal ['a-1'], Gem::Specification.stubs_for('a').map {|s| s.full_name }
     assert_equal 1, Gem::Specification.class_variable_get(:@@stubs_by_name).length
@@ -1013,7 +1013,7 @@ dependencies: []
   def test_self_stubs_for_no_lazy_loading_after_all_specs_setup
     Gem::Specification.all = [util_spec('a', '1')]
 
-    save_gemspec('b-1', '1', File.join(Gem.dir, 'specifications')){|s| s.name = 'b' }
+    save_gemspec('b-1', '1', File.join(Gem.dir, 'specifications')) {|s| s.name = 'b' }
 
     assert_equal [], Gem::Specification.stubs_for('b').map {|s| s.full_name }
   end
@@ -1060,9 +1060,9 @@ dependencies: []
   def test_self_stubs_returns_only_specified_named_specs
     dir_standard_specs = File.join Gem.dir, 'specifications'
 
-    save_gemspec('a-1', '1', dir_standard_specs){|s| s.name = 'a' }
-    save_gemspec('a-2', '2', dir_standard_specs){|s| s.name = 'a' }
-    save_gemspec('a-a', '3', dir_standard_specs){|s| s.name = 'a-a' }
+    save_gemspec('a-1', '1', dir_standard_specs) {|s| s.name = 'a' }
+    save_gemspec('a-2', '2', dir_standard_specs) {|s| s.name = 'a' }
+    save_gemspec('a-a', '3', dir_standard_specs) {|s| s.name = 'a-a' }
 
     assert_equal ['a-1', 'a-2'], Gem::Specification.stubs_for('a').map(&:full_name).sort
   end

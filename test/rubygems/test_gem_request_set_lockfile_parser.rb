@@ -248,7 +248,7 @@ DEPENDENCIES
     assert_equal %w[a-2], lockfile_set.specs.map {|s| s.full_name }
 
     assert_equal %w[https://gems.example/ https://other.example/],
-                 lockfile_set.specs.flat_map {|s| s.sources.map{|src| src.uri.to_s } }
+                 lockfile_set.specs.flat_map {|s| s.sources.map {|src| src.uri.to_s } }
   end
 
   def test_parse_GIT
