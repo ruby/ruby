@@ -709,7 +709,7 @@ static int
 fundamental_encoding_p(rb_encoding *enc)
 {
     switch (rb_enc_to_index(enc)) {
-      case ENCINDEX_ASCII:
+      case ENCINDEX_ASCII_8BIT:
       case ENCINDEX_US_ASCII:
       case ENCINDEX_UTF_8:
 	return TRUE;
@@ -1131,8 +1131,8 @@ rb_dir_getwd(void)
 
     switch (fsenc) {
       case ENCINDEX_US_ASCII:
-	fsenc = ENCINDEX_ASCII;
-      case ENCINDEX_ASCII:
+	fsenc = ENCINDEX_ASCII_8BIT;
+      case ENCINDEX_ASCII_8BIT:
 	break;
 #if defined _WIN32 || defined __APPLE__
       default:

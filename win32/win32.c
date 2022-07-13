@@ -2310,7 +2310,7 @@ rb_w32_conv_from_wchar(const WCHAR *wstr, rb_encoding *enc)
 	WideCharToMultiByte(CP_UTF8, 0, wstr, clen, RSTRING_PTR(src), len, NULL, NULL);
     }
     switch (encindex) {
-      case ENCINDEX_ASCII:
+      case ENCINDEX_ASCII_8BIT:
       case ENCINDEX_US_ASCII:
 	/* assume UTF-8 */
       case ENCINDEX_UTF_8:
@@ -2402,7 +2402,7 @@ struct direct  *
 rb_w32_readdir(DIR *dirp, rb_encoding *enc)
 {
     int idx = rb_enc_to_index(enc);
-    if (idx == ENCINDEX_ASCII) {
+    if (idx == ENCINDEX_ASCII_8BIT) {
 	const UINT cp = filecp();
 	return readdir_internal(dirp, win32_direct_conv, &cp);
     }
@@ -7355,7 +7355,7 @@ rb_w32_write_console(uintptr_t strarg, int fd)
 				   ECONV_INVALID_REPLACE|ECONV_UNDEF_REPLACE, Qnil);
 	/* fall through */
       case ENCINDEX_US_ASCII:
-      case ENCINDEX_ASCII:
+      case ENCINDEX_ASCII_8BIT:
 	/* assume UTF-8 */
       case ENCINDEX_UTF_8:
 	ptr = wbuffer = mbstr_to_wstr(CP_UTF8, RSTRING_PTR(str), RSTRING_LEN(str), &len);

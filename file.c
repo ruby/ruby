@@ -182,7 +182,7 @@ file_path_convert(VALUE name)
     int fname_encidx = ENCODING_GET(name);
     int fs_encidx;
     if (ENCINDEX_US_ASCII != fname_encidx &&
-	ENCINDEX_ASCII != fname_encidx &&
+	ENCINDEX_ASCII_8BIT != fname_encidx &&
 	(fs_encidx = rb_filesystem_encindex()) != fname_encidx &&
 	rb_default_internal_encoding() &&
 	!rb_enc_str_asciionly_p(name)) {
@@ -253,11 +253,11 @@ rb_str_encode_ospath(VALUE path)
 #if USE_OSPATH
     int encidx = ENCODING_GET(path);
 #if 0 && defined _WIN32
-    if (encidx == ENCINDEX_ASCII) {
+    if (encidx == ENCINDEX_ASCII_8BIT) {
 	encidx = rb_filesystem_encindex();
     }
 #endif
-    if (encidx != ENCINDEX_ASCII && encidx != ENCINDEX_UTF_8) {
+    if (encidx != ENCINDEX_ASCII_8BIT && encidx != ENCINDEX_UTF_8) {
 	rb_encoding *enc = rb_enc_from_index(encidx);
 	rb_encoding *utf8 = rb_utf8_encoding();
 	path = rb_str_conv_enc(path, enc, utf8);
@@ -4396,7 +4396,7 @@ rb_check_realpath_emulate(VALUE basedir, VALUE path, rb_encoding *origenc, enum 
 #endif
 
     switch (rb_enc_to_index(enc)) {
-      case ENCINDEX_ASCII:
+      case ENCINDEX_ASCII_8BIT:
       case ENCINDEX_US_ASCII:
 	rb_enc_associate_index(resolved, rb_filesystem_encindex());
     }
@@ -6425,7 +6425,7 @@ static VALUE
 copy_path_class(VALUE path, VALUE orig)
 {
     int encidx = rb_enc_get_index(orig);
-    if (encidx == ENCINDEX_ASCII || encidx == ENCINDEX_US_ASCII)
+    if (encidx == ENCINDEX_ASCII_8BIT || encidx == ENCINDEX_US_ASCII)
         encidx = rb_filesystem_encindex();
     rb_enc_associate_index(path, encidx);
     str_shrink(path);
