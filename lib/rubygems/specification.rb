@@ -898,6 +898,15 @@ class Gem::Specification < Gem::BasicSpecification
   end
 
   ##
+  # Removes +spec+ from the known specs.
+
+  def self.remove_spec(spec)
+    _all.delete spec.to_spec
+    stubs.delete spec
+    (@@stubs_by_name[spec.name] || []).delete spec
+  end
+
+  ##
   # Returns all specifications. This method is discouraged from use.
   # You probably want to use one of the Enumerable methods instead.
 
