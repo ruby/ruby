@@ -9,15 +9,16 @@
 from __future__ import print_function
 import lldb
 import os
+import inspect
+import sys
 import shlex
 import platform
+import glob
 
-HEAP_PAGE_ALIGN_LOG = 16
+from constants import *
 
-HEAP_PAGE_ALIGN_MASK = (~(~0 << HEAP_PAGE_ALIGN_LOG))
-HEAP_PAGE_ALIGN = (1 << HEAP_PAGE_ALIGN_LOG)
-HEAP_PAGE_SIZE = HEAP_PAGE_ALIGN
-
+# BEGIN FUNCTION STYLE DECLS
+# This will be refactored to use class style decls in the misc/commands dir
 class BackTrace:
     VM_FRAME_MAGIC_METHOD = 0x11110001
     VM_FRAME_MAGIC_BLOCK = 0x22220001
@@ -740,9 +741,27 @@ def rb_rclass_ext(debugger, command, result, internal_dict):
     rclass_addr = target.EvaluateExpression(command).Cast(uintptr_t)
     rclass_ext_addr = (rclass_addr.GetValueAsUnsigned() + rclass_t.GetByteSize())
     debugger.HandleCommand("p *(rb_classext_t *)%0#x" % rclass_ext_addr)
+# END FUNCTION STYLE DECLS
 
+
+load_dir, _ = os.path.split(os.path.realpath(__file__))
+
+for fname in glob.glob(f"{load_dir}/commands/*_command.py"):
+    _, basename = os.path.split(fname)
+    mname, _ = os.path.splitext(basename)
+
+    exec(f"import commands.{mname}")
 
 def __lldb_init_module(debugger, internal_dict):
+    # Register all classes that subclass RbBaseCommand
+
+    for memname, mem in inspect.getmembers(sys.modules["lldb_rb.rb_base_command"]):
+        if inspect.isclass(mem):
+            for sclass in mem.__subclasses__():
+                sclass.register_lldb_command(debugger, f"{__name__}.{sclass.__module__}")
+
+
+    ## FUNCTION INITS - These should be removed when converted to class commands
     debugger.HandleCommand("command script add -f lldb_cruby.lldb_rp rp")
     debugger.HandleCommand("command script add -f lldb_cruby.count_objects rb_count_objects")
     debugger.HandleCommand("command script add -f lldb_cruby.stack_dump_raw SDR")

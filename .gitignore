@@ -219,6 +219,9 @@ lcov*.info
 /lib/ruby/[1-9]*.*
 /lib/ruby/vendor_ruby
 
+# /misc/
+/misc/**/__pycache__
+
 # /spec/bundler
 /.rspec_status
 
