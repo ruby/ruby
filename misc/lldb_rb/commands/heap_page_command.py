@@ -1,7 +1,7 @@
 import lldb
 
-from constants import *
-from rb_base_command import RbBaseCommand
+from lldb_rb.constants import *
+from lldb_rb.rb_base_command import RbBaseCommand
 
 class HeapPageCommand(RbBaseCommand):
     program = "heap_page"

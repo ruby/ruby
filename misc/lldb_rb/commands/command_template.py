@@ -6,6 +6,11 @@
 #   4. Ensure you are inheriting from RbBaseCommand or another command that 
 #      implements the same interfact
 
+import lldb
+
+from lldb_rb.constants import *
+from lldb_rb.rb_base_command import RbBaseCommand
+
 # This test command inherits from RbBaseCommand which provides access to Ruby
 # globals and utility helpers
 class TestCommand(RbBaseCommand):
