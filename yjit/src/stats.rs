@@ -432,23 +432,67 @@ pub extern "C" fn rb_yjit_record_exit_stack(exit_pc: *const VALUE)
         // Call frame info is stored in the frames_buffer, line number information
         // in the lines_buffer. The first argument is the start point and the second
         // argument is the buffer limit, set at 2048.
-        let num = unsafe { rb_profile_frames(0, BUFF_LEN as i32, frames_buffer.as_mut_ptr(), lines_buffer.as_mut_ptr()) };
+        let stack_length = unsafe { rb_profile_frames(0, BUFF_LEN as i32, frames_buffer.as_mut_ptr(), lines_buffer.as_mut_ptr()) };
+        let samples_length = (stack_length as usize) + 3;
 
-        let mut i = num - 1;
         let yjit_raw_samples = YjitExitLocations::get_raw_samples();
         let yjit_line_samples = YjitExitLocations::get_line_samples();
 
-        yjit_raw_samples.push(VALUE(num as usize));
-        yjit_line_samples.push(num);
+        // If yjit_raw_samples is less than or equal to the current length of the samples
+        // we might have seen this stack trace previously.
+        if yjit_raw_samples.len() >= samples_length {
+            let prev_stack_len_index = yjit_raw_samples.len() - samples_length;
+            let prev_stack_len = i64::from(yjit_raw_samples[prev_stack_len_index]);
+            let mut idx = stack_length - 1;
+            let mut prev_frame_idx = 0;
+            let mut seen_already = true;
 
-        while i >= 0 {
-            let frame = frames_buffer[i as usize];
-            let line = lines_buffer[i as usize];
+            // If the previous stack lenght and current stack length are equal,
+            // loop and compare the current frame to the previous frame. If they are
+            // not equal, set seen_already to false and break out of the loop.
+            if prev_stack_len == stack_length as i64 {
+                while idx >= 0 {
+                    let current_frame = frames_buffer[idx as usize];
+                    let prev_frame = yjit_raw_samples[prev_stack_len_index + prev_frame_idx + 1];
+
+                    // If the current frame and previous frame are not equal, set
+                    // seen_already to false and break out of the loop.
+                    if current_frame != prev_frame {
+                        seen_already = false;
+                        break;
+                    }
+
+                    idx -= 1;
+                    prev_frame_idx += 1;
+                }
+
+                // If we know we've seen this stack before, increment the counter by 1.
+                if seen_already {
+                    let prev_idx = yjit_raw_samples.len() - 1;
+                    let prev_count = i64::from(yjit_raw_samples[prev_idx]);
+                    let new_count = prev_count + 1;
+
+                    yjit_raw_samples[prev_idx] = VALUE(new_count as usize);
+                    yjit_line_samples[prev_idx] = new_count as i32;
+
+                    return;
+                }
+            }
+        }
+
+        yjit_raw_samples.push(VALUE(stack_length as usize));
+        yjit_line_samples.push(stack_length);
+
+        let mut idx = stack_length - 1;
+
+        while idx >= 0 {
+            let frame = frames_buffer[idx as usize];
+            let line = lines_buffer[idx as usize];
 
             yjit_raw_samples.push(frame);
             yjit_line_samples.push(line);
 
-            i -= 1;
+            idx -= 1;
         }
 
         // Push the insn value into the yjit_raw_samples Vec.
@@ -459,6 +503,8 @@ pub extern "C" fn rb_yjit_record_exit_stack(exit_pc: *const VALUE)
         let line = yjit_line_samples.len() - 1;
         yjit_line_samples.push(line as i32);
 
+        // Push number of times seen onto the stack, which is 1
+        // because it's the first time we've seen it.
         yjit_raw_samples.push(VALUE(1 as usize));
         yjit_line_samples.push(1);
     }

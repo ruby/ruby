@@ -1155,6 +1155,10 @@ mjit_iseq_cc_entries(const struct rb_iseq_constant_body *const body)
 int
 mjit_capture_cc_entries(const struct rb_iseq_constant_body *compiled_iseq, const struct rb_iseq_constant_body *captured_iseq)
 {
+    VM_ASSERT(compiled_iseq != NULL);
+    VM_ASSERT(compiled_iseq->jit_unit != NULL);
+    VM_ASSERT(captured_iseq != NULL);
+
     struct rb_mjit_unit *unit = compiled_iseq->jit_unit;
     unsigned int new_entries_size = unit->cc_entries_size + captured_iseq->ci_size;
     VM_ASSERT(captured_iseq->ci_size > 0);
@@ -1235,7 +1239,7 @@ unload_units(void)
 
     // Detect units which are in use and can't be unloaded.
     ccan_list_for_each(&active_units.head, unit, unode) {
-        assert(unit->iseq != NULL && unit->handle != NULL);
+        VM_ASSERT(unit->iseq != NULL && unit->handle != NULL);
         unit->used_code_p = false;
     }
     // All threads have a root_fiber which has a mjit_cont. Other normal fibers also
@@ -1267,7 +1271,7 @@ unload_units(void)
             if (max_queue_calls > ISEQ_BODY(unit->iseq)->total_calls) {
                 verbose(2, "Unloading unit %d (calls=%lu, threshold=%lu)",
                         unit->id, ISEQ_BODY(unit->iseq)->total_calls, max_queue_calls);
-                assert(unit->handle != NULL);
+                VM_ASSERT(unit->handle != NULL);
                 remove_from_list(unit, &active_units);
                 free_unit(unit);
                 unloaded_p = true;

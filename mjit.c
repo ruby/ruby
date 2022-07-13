@@ -484,7 +484,7 @@ rb_mjit_wait_call(rb_execution_context_t *ec, struct rb_iseq_constant_body *body
 struct rb_mjit_compile_info*
 rb_mjit_iseq_compile_info(const struct rb_iseq_constant_body *body)
 {
-    assert(body->jit_unit != NULL);
+    VM_ASSERT(body->jit_unit != NULL);
     return &body->jit_unit->compile_info;
 }
 
@@ -496,7 +496,7 @@ mjit_recompile(const rb_iseq_t *iseq)
 
     verbose(1, "JIT recompile: %s@%s:%d", RSTRING_PTR(ISEQ_BODY(iseq)->location.label),
             RSTRING_PTR(rb_iseq_path(iseq)), FIX2INT(ISEQ_BODY(iseq)->location.first_lineno));
-    assert(ISEQ_BODY(iseq)->jit_unit != NULL);
+    VM_ASSERT(ISEQ_BODY(iseq)->jit_unit != NULL);
 
     mjit_add_iseq_to_process(iseq, &ISEQ_BODY(iseq)->jit_unit->compile_info, true);
     check_unit_queue();

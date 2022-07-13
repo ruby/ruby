@@ -537,8 +537,11 @@ extend Module.new {
     return super unless @gemname
     super(*args) do |conf|
       conf.find do |s|
+        s.sub!(/^(TIMESTAMP_DIR *= *)\$\(extout\)/) {
+          "TARGET_TOPDIR = $(topdir)/.bundle\n" "#{$1}$(TARGET_TOPDIR)"
+        }
         s.sub!(/^(TARGET_SO_DIR *= *)\$\(RUBYARCHDIR\)/) {
-          "TARGET_GEM_DIR = $(topdir)/.bundle/extensions/$(gem_platform)/$(ruby_version)/#{@gemname}\n"\
+          "TARGET_GEM_DIR = $(TARGET_TOPDIR)/extensions/$(gem_platform)/$(ruby_version)/#{@gemname}\n"\
           "#{$1}$(TARGET_GEM_DIR)$(target_prefix)"
         }
       end
