@@ -48,7 +48,7 @@ class Gem::Ext::Builder
     end
   end
 
-  def self.run(command, results, command_name = nil, dir = Dir.pwd)
+  def self.run(command, results, command_name = nil, dir = Dir.pwd, env = {})
     verbose = Gem.configuration.really_verbose
 
     begin
@@ -63,9 +63,9 @@ class Gem::Ext::Builder
 
       require "open3"
       # Set $SOURCE_DATE_EPOCH for the subprocess.
-      env = {'SOURCE_DATE_EPOCH' => Gem.source_date_epoch_string}
+      build_env = { 'SOURCE_DATE_EPOCH' => Gem.source_date_epoch_string }.merge(env)
       output, status = begin
-                         Open3.capture2e(env, *command, :chdir => dir)
+                         Open3.capture2e(build_env, *command, :chdir => dir)
                        rescue => error
                          raise Gem::InstallError, "#{command_name || class_name} failed#{error.message}"
                        end

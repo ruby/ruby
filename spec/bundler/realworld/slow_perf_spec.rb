@@ -17,6 +17,6 @@ RSpec.describe "bundle install with complex dependencies", :realworld => true do
 
     duration = Time.now - start_time
 
-    expect(duration.to_f).to be < 12 # seconds
+    expect(duration.to_f).to be < 18 # seconds
   end
 end

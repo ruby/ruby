@@ -1,23 +1,16 @@
 GEM
   remote: https://rubygems.org/
   specs:
-    ast (2.4.2)
     diff-lcs (1.5.0)
     hpricot (0.8.6)
-    jaro_winkler (1.5.4)
-    jaro_winkler (1.5.4-java)
     mustache (1.1.1)
     parallel (1.19.2)
     parallel_tests (2.32.0)
       parallel
-    parser (3.1.0.0)
-      ast (~> 2.4.1)
     power_assert (2.0.1)
-    rainbow (3.1.1)
     rake (13.0.6)
     rdiscount (2.2.0.2)
     rdoc (6.2.0)
-    rexml (3.2.5)
     ronn (0.7.3)
       hpricot (>= 0.8.2)
       mustache (>= 0.7.0)
@@ -31,20 +24,8 @@ GEM
       diff-lcs (>= 1.2.0, < 2.0)
       rspec-support (~> 3.11.0)
     rspec-support (3.11.0)
-    rubocop (0.80.1)
-      jaro_winkler (~> 1.5.1)
-      parallel (~> 1.10)
-      parser (>= 2.7.0.1)
-      rainbow (>= 2.2.2, < 4.0)
-      rexml
-      ruby-progressbar (~> 1.7)
-      unicode-display_width (>= 1.4.0, < 1.7)
-    rubocop-performance (1.5.2)
-      rubocop (>= 0.71.0)
-    ruby-progressbar (1.11.0)
     test-unit (3.5.3)
       power_assert
-    unicode-display_width (1.6.1)
     uri (0.10.1)
     webrick (1.7.0)
 
@@ -65,11 +46,9 @@ DEPENDENCIES
   rspec-core (~> 3.8)
   rspec-expectations (~> 3.8)
   rspec-mocks (~> 3.11.1)
-  rubocop (~> 0.80.1)
-  rubocop-performance (~> 1.5.2)
   test-unit (~> 3.0)
   uri (~> 0.10.1)
   webrick (~> 1.6)
 
 BUNDLED WITH
-   2.3.15
+   2.3.16

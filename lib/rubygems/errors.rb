@@ -168,7 +168,7 @@ module Gem
     # An English description of the error.
 
     def wordy
-      "Unable to download data from #{Gem::Uri.new(@source.uri).redacted} - #{@error.message}"
+      "Unable to download data from #{Gem::Uri.redact(@source.uri)} - #{@error.message}"
     end
 
     ##

@@ -190,7 +190,7 @@ class TestGemConfigFile < Gem::TestCase
 
     util_config_file
 
-    assert_equal({:rubygems => '701229f217cdf23b1344c7b4b54ca97'},
+    assert_equal({ :rubygems => '701229f217cdf23b1344c7b4b54ca97' },
                  @cfg.api_keys)
   end
 
@@ -317,8 +317,8 @@ if you believe they were disclosed to a third party.
 
     util_config_file
 
-    assert_equal({:rubygems => '701229f217cdf23b1344c7b4b54ca97',
-                  :other => 'a5fdbb6ba150cbb83aad2bb2fede64c'}, @cfg.api_keys)
+    assert_equal({ :rubygems => '701229f217cdf23b1344c7b4b54ca97',
+                  :other => 'a5fdbb6ba150cbb83aad2bb2fede64c' }, @cfg.api_keys)
   end
 
   def test_load_api_keys_bad_permission
