@@ -18,5 +18,9 @@ def Gem.unpack(file, dir = nil, spec_dir = nil)
   end
   FileUtils.mkdir_p(spec_dir)
   File.binwrite(File.join(spec_dir, "#{spec.name}-#{spec.version}.gemspec"), spec.to_ruby)
+  unless spec.extensions.empty? or spec.dependencies.empty?
+    spec.dependencies.clear
+  end
+  File.binwrite(File.join(spec_dir, ".bundled.#{spec.name}-#{spec.version}.gemspec"), spec.to_ruby)
   puts "Unpacked #{file}"
 end
