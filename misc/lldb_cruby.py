@@ -15,7 +15,7 @@ import shlex
 import platform
 import glob
 
-from constants import *
+from lldb_rb.constants import *
 
 # BEGIN FUNCTION STYLE DECLS
 # This will be refactored to use class style decls in the misc/commands dir
@@ -716,11 +716,11 @@ def rb_id2str(debugger, command, result, internal_dict):
 
 load_dir, _ = os.path.split(os.path.realpath(__file__))
 
-for fname in glob.glob(f"{load_dir}/commands/*_command.py"):
+for fname in glob.glob(f"{load_dir}/lldb_rb/commands/*_command.py"):
     _, basename = os.path.split(fname)
     mname, _ = os.path.splitext(basename)
 
-    exec(f"import commands.{mname}")
+    exec(f"import lldb_rb.commands.{mname}")
 
 def __lldb_init_module(debugger, internal_dict):
     # Register all classes that subclass RbBaseCommand

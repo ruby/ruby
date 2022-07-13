@@ -1,4 +1,4 @@
-from rb_base_command import RbBaseCommand
+from lldb_rb.rb_base_command import RbBaseCommand
 
 class RclassExtCommand(RbBaseCommand):
     program = "rclass_ext"
