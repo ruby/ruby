@@ -47,6 +47,8 @@ PLATFORMS
   arm64-darwin-20
   arm64-darwin-21
   universal-java-11
+  universal-java-18
+  x64-mingw-ucrt
   x86_64-darwin-19
   x86_64-darwin-20
   x86_64-linux

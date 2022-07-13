@@ -637,6 +637,22 @@ RSpec.describe "Bundler.setup" do
       expect(err).to be_empty
     end
 
+    it "doesn't re-resolve when deleting dependencies" do
+      install_gemfile <<-G
+        source "#{file_uri_for(gem_repo1)}"
+        gem "rack"
+        gem "actionpack"
+      G
+
+      install_gemfile <<-G, :verbose => true
+        source "#{file_uri_for(gem_repo1)}"
+        gem "rack"
+      G
+
+      expect(out).to include("Some dependencies were deleted, using a subset of the resolution from the lockfile")
+      expect(err).to be_empty
+    end
+
     it "remembers --without and does not include groups passed to Bundler.setup" do
       bundle "config set --local without rails"
       install_gemfile <<-G

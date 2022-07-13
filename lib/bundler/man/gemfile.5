@@ -331,6 +331,30 @@ gem "nokogiri",   platforms: [:mri_18, :jruby]
 .P
 All operations involving groups (\fBbundle install\fR \fIbundle\-install\.1\.html\fR, \fBBundler\.setup\fR, \fBBundler\.require\fR) behave exactly the same as if any groups not matching the current platform were explicitly excluded\.
 .
+.SS "FORCE_RUBY_PLATFORM"
+If you always want the pure ruby variant of a gem to be chosen over platform specific variants, you can use the \fBforce_ruby_platform\fR option:
+.
+.IP "" 4
+.
+.nf
+
+gem "ffi", force_ruby_platform: true
+.
+.fi
+.
+.IP "" 0
+.
+.P
+This can be handy (assuming the pure ruby variant works fine) when:
+.
+.IP "\(bu" 4
+You\'re having issues with the platform specific variant\.
+.
+.IP "\(bu" 4
+The platform specific variant does not yet support a newer ruby (and thus has a \fBrequired_ruby_version\fR upper bound), but you still want your Gemfile{\.lock} files to resolve under that ruby\.
+.
+.IP "" 0
+.
 .SS "SOURCE"
 You can select an alternate Rubygems repository for a gem using the \':source\' option\.
 .
@@ -688,7 +712,7 @@ The \fB\.gemspec\fR \fIhttp://guides\.rubygems\.org/specification\-reference/\fR
 If you wish to use Bundler to help install dependencies for a gem while it is being developed, use the \fBgemspec\fR method to pull in the dependencies listed in the \fB\.gemspec\fR file\.
 .
 .P
-The \fBgemspec\fR method adds any runtime dependencies as gem requirements in the default group\. It also adds development dependencies as gem requirements in the \fBdevelopment\fR group\. Finally, it adds a gem requirement on your project (\fB:path => \'\.\'\fR)\. In conjunction with \fBBundler\.setup\fR, this allows you to require project files in your test code as you would if the project were installed as a gem; you need not manipulate the load path manually or require project files via relative paths\.
+The \fBgemspec\fR method adds any runtime dependencies as gem requirements in the default group\. It also adds development dependencies as gem requirements in the \fBdevelopment\fR group\. Finally, it adds a gem requirement on your project (\fBpath: \'\.\'\fR)\. In conjunction with \fBBundler\.setup\fR, this allows you to require project files in your test code as you would if the project were installed as a gem; you need not manipulate the load path manually or require project files via relative paths\.
 .
 .P
 The \fBgemspec\fR method supports optional \fB:path\fR, \fB:glob\fR, \fB:name\fR, and \fB:development_group\fR options, which control where bundler looks for the \fB\.gemspec\fR, the glob it uses to look for the gemspec (defaults to: "{,\fI,\fR/*}\.gemspec"), what named \fB\.gemspec\fR it uses (if more than one is present), and which group development dependencies are included in\.

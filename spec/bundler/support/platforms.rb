@@ -55,13 +55,15 @@ module Spec
     def local_tag
       if RUBY_PLATFORM == "java"
         :jruby
+      elsif ["x64-mingw32", "x64-mingw-ucrt"].include?(RUBY_PLATFORM)
+        :x64_mingw
       else
         :ruby
       end
     end
 
     def not_local_tag
-      [:ruby, :jruby].find {|tag| tag != local_tag }
+      [:jruby, :x64_mingw, :ruby].find {|tag| tag != local_tag }
     end
 
     def local_ruby_engine
@@ -74,7 +76,7 @@ module Spec
 
     def not_local_engine_version
       case not_local_tag
-      when :ruby
+      when :ruby, :x64_mingw
         not_local_ruby_version
       when :jruby
         "1.6.1"
@@ -90,15 +92,11 @@ module Spec
     end
 
     def lockfile_platforms
-      lockfile_platforms_for(local_platforms)
+      lockfile_platforms_for([specific_local_platform])
     end
 
     def lockfile_platforms_for(platforms)
       platforms.map(&:to_s).sort.join("\n  ")
-    end
-
-    def local_platforms
-      [specific_local_platform]
     end
   end
 end

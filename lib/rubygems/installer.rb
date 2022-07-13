@@ -340,7 +340,7 @@ class Gem::Installer
 
     say spec.post_install_message if options[:post_install_message] && !spec.post_install_message.nil?
 
-    Gem::Specification.reset
+    Gem::Specification.add_spec(spec)
 
     run_post_install_hooks
 
