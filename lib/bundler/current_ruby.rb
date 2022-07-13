@@ -78,7 +78,7 @@ module Bundler
     end
 
     def x64_mingw?
-      Gem.win_platform? && Bundler.local_platform != Gem::Platform::RUBY && Bundler.local_platform.os == "mingw32" && Bundler.local_platform.cpu == "x64"
+      Gem.win_platform? && Bundler.local_platform != Gem::Platform::RUBY && Bundler.local_platform.os.start_with?("mingw") && Bundler.local_platform.cpu == "x64"
     end
 
     (KNOWN_MINOR_VERSIONS + KNOWN_MAJOR_VERSIONS).each do |version|

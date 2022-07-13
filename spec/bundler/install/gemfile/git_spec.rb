@@ -92,7 +92,7 @@ RSpec.describe "bundle install with git sources" do
       expect(err).to include("The source contains the following gems matching 'foo':\n  * foo-1.0")
     end
 
-    it "complains with version and platform if pinned specs don't exist in the git repo", :jruby do
+    it "complains with version and platform if pinned specs don't exist in the git repo", :jruby_only do
       build_git "only_java" do |s|
         s.platform = "java"
       end
@@ -107,7 +107,7 @@ RSpec.describe "bundle install with git sources" do
       expect(err).to include("The source contains the following gems matching 'only_java':\n  * only_java-1.0-java")
     end
 
-    it "complains with multiple versions and platforms if pinned specs don't exist in the git repo", :jruby do
+    it "complains with multiple versions and platforms if pinned specs don't exist in the git repo", :jruby_only do
       build_git "only_java", "1.0" do |s|
         s.platform = "java"
       end

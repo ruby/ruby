@@ -6,6 +6,15 @@ class TestThreadInstrumentation < Test::Unit::TestCase
     pend("No windows support") if /mswin|mingw|bccwin/ =~ RUBY_PLATFORM
 
     require '-test-/thread/instrumentation'
+
+    Thread.list.each do |thread|
+      if thread != Thread.current
+        thread.kill
+        thread.join rescue nil
+      end
+    end
+    assert_equal [Thread.current], Thread.list
+
     Bug::ThreadInstrumentation.reset_counters
     Bug::ThreadInstrumentation::register_callback
   end
