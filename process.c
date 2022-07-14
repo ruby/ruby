@@ -4328,12 +4328,30 @@ rb_fork_ruby(int *status)
     return pid;
 }
 
+static rb_pid_t
+proc_fork_pid(void)
+{
+    rb_pid_t pid = rb_fork_ruby(NULL);
+
+    if (pid == -1) {
+        rb_sys_fail("fork(2)");
+    }
+
+    return pid;
+}
+
 rb_pid_t
 rb_call_proc__fork(void)
 {
-    VALUE pid = rb_funcall(rb_mProcess, rb_intern("_fork"), 0);
-
-    return NUM2PIDT(pid);
+    ID id__fork;
+    CONST_ID(id__fork, "_fork");
+    if (rb_method_basic_definition_p(CLASS_OF(rb_mProcess), id__fork)) {
+        return proc_fork_pid();
+    }
+    else {
+        VALUE pid = rb_funcall(rb_mProcess, id__fork, 0);
+        return NUM2PIDT(pid);
+    }
 }
 #endif
 
@@ -4360,12 +4378,7 @@ rb_call_proc__fork(void)
 VALUE
 rb_proc__fork(VALUE _obj)
 {
-    rb_pid_t pid = rb_fork_ruby(NULL);
-
-    if (pid == -1) {
-        rb_sys_fail("fork(2)");
-    }
-
+    rb_pid_t pid = proc_fork_pid();
     return PIDT2NUM(pid);
 }
 
