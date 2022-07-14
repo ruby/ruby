@@ -4207,7 +4207,7 @@ static VALUE io_readlines(const struct getline_arg *arg, VALUE io);
  *
  *  With only integer argument +limit+ given,
  *  limits the number of bytes in each line;
- *  see {Line Limit}}[rdoc-ref:IO@Line+Limit]:
+ *  see {Line Limit}[rdoc-ref:IO@Line+Limit]:
  *
  *    f = File.new('t.txt')
  *    f.readlines(8)
