@@ -1476,7 +1476,7 @@ rb_f_loop_size(VALUE self, VALUE args, VALUE eobj)
  *       # ...
  *     end
  *
- *  StopIteration raised in the block breaks the loop.  In this case,
+ *  StopIteration raised if the block breaks the loop.  In this case,
  *  loop returns the "result" value stored in the exception.
  *
  *     enum = Enumerator.new { |y|
