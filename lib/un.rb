@@ -79,13 +79,15 @@ end
 #
 #   -p          preserve file attributes if possible
 #   -r          copy recursively
+#   -l          make hard link instead of copying (implies -r)
 #   -v          verbose
 #
 
 def cp
-  setup("pr") do |argv, options|
+  setup("prl") do |argv, options|
     cmd = "cp"
     cmd += "_r" if options.delete :r
+    cmd = "cp_lr" if options.delete :l
     options[:preserve] = true if options.delete :p
     dest = argv.pop
     argv = argv[0] if argv.size == 1
