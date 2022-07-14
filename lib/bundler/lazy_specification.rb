@@ -76,6 +76,8 @@ module Bundler
     end
 
     def materialize_for_installation
+      source.local!
+
       __materialize__(ruby_platform_materializes_to_ruby_platform? ? platform : Bundler.local_platform)
     end
 
