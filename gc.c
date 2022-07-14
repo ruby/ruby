@@ -15046,7 +15046,7 @@ size_t rb_mmtk_heap_limit(void) {
     if ((envval = getenv("THIRD_PARTY_HEAP_LIMIT")) != 0) {
         return atol(envval);
     } else {
-        return rb_mmtk_available_system_memory() / rb_mmtk_heap_limit_percentage * 100;
+        return rb_mmtk_available_system_memory() / 100 * rb_mmtk_heap_limit_percentage;
     }
 }
 
