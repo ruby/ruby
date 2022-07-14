@@ -570,18 +570,26 @@ impl Assembler
 
         // Allocate a specific register
         fn take_reg(pool: &mut u32, regs: &Vec<Reg>, reg: &Reg) -> Reg {
-            let reg_index = regs.iter().position(|elem| elem.reg_no == reg.reg_no).unwrap();
-            assert_eq!(*pool & (1 << reg_index), 0);
-            *pool |= 1 << reg_index;
-            return regs[reg_index];
+            let reg_index = regs.iter().position(|elem| elem.reg_no == reg.reg_no);
+
+            if let Some(reg_index) = reg_index {
+                assert_eq!(*pool & (1 << reg_index), 0);
+                *pool |= 1 << reg_index;
+                //return regs[reg_index];
+            }
+
+            return *reg;
         }
 
         // Mutate the pool bitmap to indicate that the given register is being
         // returned as it is no longer used by the instruction that previously
         // held it.
         fn dealloc_reg(pool: &mut u32, regs: &Vec<Reg>, reg: &Reg) {
-            let reg_index = regs.iter().position(|elem| elem.reg_no == reg.reg_no).unwrap();
-            *pool &= !(1 << reg_index);
+            let reg_index = regs.iter().position(|elem| elem.reg_no == reg.reg_no);
+
+            if let Some(reg_index) = reg_index {
+                *pool &= !(1 << reg_index);
+            }
         }
 
         let live_ranges: Vec<usize> = std::mem::take(&mut self.live_ranges);

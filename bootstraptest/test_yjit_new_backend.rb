@@ -1,6 +1,13 @@
 # Run can run this test file directly with:
 # make -j miniruby && RUST_BACKTRACE=1 ruby --disable=gems bootstraptest/runner.rb --ruby="./miniruby -I./lib -I. -I.ext/common --disable-gems --yjit-call-threshold=1 --yjit-verify-ctx" bootstraptest/test_yjit_new_backend.rb
 
+assert_equal '1', %q{
+    def foo()
+      1
+    end
+    foo()
+}
+
 assert_equal '3', %q{
     def foo(n)
       n

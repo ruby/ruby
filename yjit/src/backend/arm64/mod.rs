@@ -58,12 +58,15 @@ impl From<Opnd> for A64Opnd {
 
 impl Assembler
 {
-    /// Get the list of registers from which we can allocate on this platform
+    /// Get the list of registers from which we will allocate on this platform
+    /// These are caller-saved registers
+    /// Note: we intentionally exclude C_RET_REG (X0) from this list
+    /// because of the way it's used in gen_leave() and gen_leave_exit()
     pub fn get_alloc_regs() -> Vec<Reg> {
-        vec![C_RET_REG, X12_REG]
+        vec![X11_REG, X12_REG]
     }
 
-    /// Get a list of all of the caller-save registers
+    /// Get a list of all of the caller-saved registers
     pub fn get_caller_save_regs() -> Vec<Reg> {
         vec![X9_REG, X10_REG, X11_REG, X12_REG, X13_REG, X14_REG, X15_REG]
     }
