@@ -880,6 +880,7 @@ mjit_compact(char* c_file)
     struct rb_mjit_unit *child_unit = 0;
     ccan_list_for_each(&active_units.head, child_unit, unode) {
         if (!success) continue;
+        if (ISEQ_BODY(child_unit->iseq)->jit_unit == NULL) continue; // Sometimes such units are created. TODO: Investigate why
 
         char funcname[MAXPATHLEN];
         sprint_funcname(funcname, child_unit);
