@@ -88,6 +88,7 @@ impl A64Opnd {
     }
 }
 
+// argument registers
 pub const X0_REG: A64Reg = A64Reg { num_bits: 64, reg_no: 0 };
 pub const X1_REG: A64Reg = A64Reg { num_bits: 64, reg_no: 1 };
 pub const X2_REG: A64Reg = A64Reg { num_bits: 64, reg_no: 2 };
@@ -95,15 +96,20 @@ pub const X3_REG: A64Reg = A64Reg { num_bits: 64, reg_no: 3 };
 pub const X4_REG: A64Reg = A64Reg { num_bits: 64, reg_no: 4 };
 pub const X5_REG: A64Reg = A64Reg { num_bits: 64, reg_no: 5 };
 
+// caller-save registers
 pub const X9_REG: A64Reg = A64Reg { num_bits: 64, reg_no: 9 };
 pub const X10_REG: A64Reg = A64Reg { num_bits: 64, reg_no: 10 };
 pub const X11_REG: A64Reg = A64Reg { num_bits: 64, reg_no: 11 };
 pub const X12_REG: A64Reg = A64Reg { num_bits: 64, reg_no: 12 };
 pub const X13_REG: A64Reg = A64Reg { num_bits: 64, reg_no: 13 };
+pub const X14_REG: A64Reg = A64Reg { num_bits: 64, reg_no: 14 };
+pub const X15_REG: A64Reg = A64Reg { num_bits: 64, reg_no: 15 };
 
-pub const X24_REG: A64Reg = A64Reg { num_bits: 64, reg_no: 24 };
-pub const X25_REG: A64Reg = A64Reg { num_bits: 64, reg_no: 25 };
-pub const X26_REG: A64Reg = A64Reg { num_bits: 64, reg_no: 26 };
+// callee-save registers
+pub const X19_REG: A64Reg = A64Reg { num_bits: 64, reg_no: 19 };
+pub const X20_REG: A64Reg = A64Reg { num_bits: 64, reg_no: 20 };
+pub const X21_REG: A64Reg = A64Reg { num_bits: 64, reg_no: 21 };
+pub const X22_REG: A64Reg = A64Reg { num_bits: 64, reg_no: 22 };
 
 // 64-bit registers
 pub const X0: A64Opnd = A64Opnd::Reg(X0_REG);
@@ -120,19 +126,19 @@ pub const X10: A64Opnd = A64Opnd::Reg(X10_REG);
 pub const X11: A64Opnd = A64Opnd::Reg(X11_REG);
 pub const X12: A64Opnd = A64Opnd::Reg(X12_REG);
 pub const X13: A64Opnd = A64Opnd::Reg(X13_REG);
-pub const X14: A64Opnd = A64Opnd::Reg(A64Reg { num_bits: 64, reg_no: 14 });
-pub const X15: A64Opnd = A64Opnd::Reg(A64Reg { num_bits: 64, reg_no: 15 });
+pub const X14: A64Opnd = A64Opnd::Reg(X14_REG);
+pub const X15: A64Opnd = A64Opnd::Reg(X15_REG);
 pub const X16: A64Opnd = A64Opnd::Reg(A64Reg { num_bits: 64, reg_no: 16 });
 pub const X17: A64Opnd = A64Opnd::Reg(A64Reg { num_bits: 64, reg_no: 17 });
 pub const X18: A64Opnd = A64Opnd::Reg(A64Reg { num_bits: 64, reg_no: 18 });
-pub const X19: A64Opnd = A64Opnd::Reg(A64Reg { num_bits: 64, reg_no: 19 });
-pub const X20: A64Opnd = A64Opnd::Reg(A64Reg { num_bits: 64, reg_no: 20 });
-pub const X21: A64Opnd = A64Opnd::Reg(A64Reg { num_bits: 64, reg_no: 21 });
-pub const X22: A64Opnd = A64Opnd::Reg(A64Reg { num_bits: 64, reg_no: 22 });
+pub const X19: A64Opnd = A64Opnd::Reg(X19_REG);
+pub const X20: A64Opnd = A64Opnd::Reg(X20_REG);
+pub const X21: A64Opnd = A64Opnd::Reg(X21_REG);
+pub const X22: A64Opnd = A64Opnd::Reg(X22_REG);
 pub const X23: A64Opnd = A64Opnd::Reg(A64Reg { num_bits: 64, reg_no: 23 });
-pub const X24: A64Opnd = A64Opnd::Reg(X24_REG);
-pub const X25: A64Opnd = A64Opnd::Reg(X25_REG);
-pub const X26: A64Opnd = A64Opnd::Reg(X26_REG);
+pub const X24: A64Opnd = A64Opnd::Reg(A64Reg { num_bits: 64, reg_no: 24 });
+pub const X25: A64Opnd = A64Opnd::Reg(A64Reg { num_bits: 64, reg_no: 25 });
+pub const X26: A64Opnd = A64Opnd::Reg(A64Reg { num_bits: 64, reg_no: 26 });
 pub const X27: A64Opnd = A64Opnd::Reg(A64Reg { num_bits: 64, reg_no: 27 });
 pub const X28: A64Opnd = A64Opnd::Reg(A64Reg { num_bits: 64, reg_no: 28 });
 pub const X29: A64Opnd = A64Opnd::Reg(A64Reg { num_bits: 64, reg_no: 29 });
