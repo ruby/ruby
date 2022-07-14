@@ -80,6 +80,7 @@ extern void mmtk_flush_mark_buffer(MMTk_VMMutatorThread tls);
 extern bool mmtk_will_never_move(void* object);
 extern bool mmtk_process(char* name, char* value);
 extern void mmtk_handle_user_collection_request(MMTk_VMMutatorThread tls);
+extern const char* mmtk_plan_name();
 
 /**
  * VM Accounting
