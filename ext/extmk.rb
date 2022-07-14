@@ -37,6 +37,7 @@ require 'rbconfig'
 
 $topdir = "."
 $top_srcdir = srcdir
+inplace = File.identical?($top_srcdir, $topdir)
 
 $" << "mkmf.rb"
 load File.expand_path("lib/mkmf.rb", srcdir)
@@ -521,7 +522,10 @@ cond = proc {|ext, *|
 end
 ext_prefix = ext_prefix[$top_srcdir.size+1..-2]
 
+@ext_prefix = ext_prefix
+@inplace = inplace
 extend Module.new {
+
   def timestamp_file(name, target_prefix = nil)
     if @gemname and name == '$(TARGET_SO_DIR)'
       name = "$(arch)/gems/#{@gemname}#{target_prefix}"
@@ -537,6 +541,9 @@ extend Module.new {
     return super unless @gemname
     super(*args) do |conf|
       conf.find do |s|
+        s.sub!(%r(^(srcdir *= *)\$\(top_srcdir\)/\.bundle/gems/[^/]+(?=/))) {
+          "gem_#{$&}\n" "#{$1}$(gem_srcdir)"
+        }
         s.sub!(/^(TIMESTAMP_DIR *= *)\$\(extout\)/) {
           "TARGET_TOPDIR = $(topdir)/.bundle\n" "#{$1}$(TARGET_TOPDIR)"
         }
@@ -545,36 +552,64 @@ extend Module.new {
           "#{$1}$(TARGET_GEM_DIR)$(target_prefix)"
         }
       end
-      conf.any? {|s| /^TARGET *= *\S/ =~ s} and conf << %{
+
+      gemlib = File.directory?("#{$top_srcdir}/#{@ext_prefix}/#{@gemname}/lib")
+      if conf.any? {|s| /^TARGET *= *\S/ =~ s}
+        conf << %{
 gem_platform = #{Gem::Platform.local}
 
 # default target
 all:
 
+gem = #{@gemname}
+
 build_complete = $(TARGET_GEM_DIR)/gem.build_complete
 install-so: build_complete
+clean-so:: clean-build_complete
+
 build_complete: $(build_complete)
 $(build_complete): $(TARGET_SO)
 	$(Q) $(TOUCH) $@
 
-clean-so::
+clean-build_complete:
 	-$(Q)$(RM) $(build_complete)
+
+install: gemspec
+clean: clean-gemspec
+
+gemspec = $(TARGET_TOPDIR)/specifications/$(gem).gemspec
+$(gemspec): $(gem_srcdir)/.bundled.$(gem).gemspec
+	$(Q) $(MAKEDIRS) $(@D)
+	$(Q) $(COPY) $(gem_srcdir)/.bundled.$(gem).gemspec $@
+
+gemspec: $(gemspec)
+
+clean-gemspec:
+	-$(Q)$(RM) $(gemspec)
 }
+
+        if gemlib
+          conf << %{
+install-rb: gemlib
+clean-rb:: clean-gemlib
+
+LN_S = #{config_string('LN_S')}
+CP_R = #{config_string('CP')} -r
+
+gemlib = $(TARGET_TOPDIR)/gems/$(gem)/lib
+gemlib:#{%{ $(gemlib)\n$(gemlib): $(gem_srcdir)/lib} if $nmake}
+	$(Q) $(RUBY) $(top_srcdir)/tool/ln_sr.rb -f $(gem_srcdir)/lib $(gemlib)
+
+clean-gemlib:
+	$(Q) $(#{@inplace ? 'NULLCMD' : 'RM_RF'}) $(gemlib)
+}
+        end
+      end
+
       conf
     end
   end
 }
-
-if @gemname
-  gemdir = File.join($top_srcdir, ext_prefix, @gemname)
-  if File.exist?(spec_file = File.join(gemdir, ".bundled.#{@gemname}.gemspec")) or
-    File.exist?(spec_file = File.join(gemdir, "#{@gemname}.gemspec"))
-    dest = "#{File.dirname(ext_prefix)}/specifications"
-    FileUtils.mkdir_p(dest)
-    File.copy_stream(spec_file, "#{dest}/#{@gemname}.gemspec")
-    puts "copied #{@gemname}.gemspec"
-  end
-end
 
 dir = Dir.pwd
 FileUtils::makedirs(ext_prefix)
@@ -591,26 +626,6 @@ exts.each do |d|
     result = extmake(d, ext_prefix, !@gemname) or abort
     extso |= $extso
     fails << [d, result] unless result == true
-  end
-end
-
-if @gemname
-  src_gemlib = File.join($top_srcdir, ext_prefix, @gemname, "lib")
-  src_gemlib = relative_from(src_gemlib, ([".."]*ext_prefix.count("/")).join("/"))
-  gemlib = "#{@gemname}/lib"
-  if File.directory?(src_gemlib)
-    if File.exist?(gemlib)
-      puts "using #{gemlib}"
-    else
-      begin
-        FileUtils.mkdir_p(File.dirname(gemlib))
-        File.symlink(relative_from(src_gemlib, ".."), gemlib)
-        puts "linked #{gemlib}"
-      rescue NotImplementedError, Errno::EPERM
-        FileUtils.cp_r(src_gemlib, gemlib)
-        puts "copied #{gemlib}"
-      end
-    end
   end
 end
 
