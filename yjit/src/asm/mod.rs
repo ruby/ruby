@@ -252,6 +252,10 @@ impl CodeBlock {
 
             self.set_pos(ref_pos);
             (label_ref.encode)(self, (ref_pos + label_ref.num_bytes) as i64, label_addr as i64);
+
+            // Assert that we've written the same number of bytes that we
+            // expected to have written.
+            assert!(self.write_pos == ref_pos + label_ref.num_bytes);
         }
 
         self.write_pos = orig_pos;
