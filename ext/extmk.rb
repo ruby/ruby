@@ -603,6 +603,7 @@ if @gemname
       puts "using #{gemlib}"
     else
       begin
+        FileUtils.mkdir_p(File.dirname(gemlib))
         File.symlink(relative_from(src_gemlib, ".."), gemlib)
         puts "linked #{gemlib}"
       rescue NotImplementedError, Errno::EPERM
