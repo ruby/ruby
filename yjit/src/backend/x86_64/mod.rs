@@ -243,9 +243,10 @@ impl Assembler
                 // Load effective address
                 Op::Lea => lea(cb, insn.out.into(), insn.opnds[0].into()),
 
-                // Push and pop to the C stack
+                // Push and pop to/from the C stack
                 Op::CPush => push(cb, insn.opnds[0].into()),
-                Op::CPop => pop(cb, insn.opnds[0].into()),
+                Op::CPop => pop(cb, insn.out.into()),
+                Op::CPopInto => pop(cb, insn.opnds[0].into()),
 
                 // Push and pop to the C stack all caller-save registers and the
                 // flags
