@@ -471,8 +471,9 @@ impl Assembler
     /// Create a new label instance that we can jump to
     pub fn new_label(&mut self, name: &str) -> Target
     {
-        let label_idx = self.label_names.len();
+        assert!(!name.contains(" "), "use underscores in label names, not spaces");
 
+        let label_idx = self.label_names.len();
         self.label_names.push(name.to_string());
         Target::Label(label_idx)
     }
