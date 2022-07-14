@@ -13,9 +13,9 @@ use crate::virtualmem::CodePtr;
 pub type Reg = A64Reg;
 
 // Callee-saved registers
-pub const _CFP: Opnd = Opnd::Reg(X24_REG);
-pub const _EC: Opnd = Opnd::Reg(X25_REG);
-pub const _SP: Opnd = Opnd::Reg(X26_REG);
+pub const _CFP: Opnd = Opnd::Reg(X19_REG);
+pub const _EC: Opnd = Opnd::Reg(X20_REG);
+pub const _SP: Opnd = Opnd::Reg(X21_REG);
 
 // C argument registers on this platform
 pub const _C_ARG_OPNDS: [Opnd; 6] = [
@@ -59,9 +59,13 @@ impl From<Opnd> for A64Opnd {
 impl Assembler
 {
     /// Get the list of registers from which we can allocate on this platform
-    pub fn get_alloc_regs() -> Vec<Reg>
-    {
+    pub fn get_alloc_regs() -> Vec<Reg> {
         vec![C_RET_REG, X12_REG]
+    }
+
+    /// Get a list of all of the caller-save registers
+    pub fn get_caller_save_regs() -> Vec<Reg> {
+        vec![X9_REG, X10_REG, X11_REG, X12_REG, X13_REG, X14_REG, X15_REG]
     }
 
     /// Split platform-specific instructions
@@ -340,10 +344,27 @@ impl Assembler
             };
         }
 
+        /// Emit a push instruction for the given operand by adding to the stack
+        /// pointer and then storing the given value.
+        fn emit_push(cb: &mut CodeBlock, opnd: A64Opnd) {
+            add(cb, C_SP_REG, C_SP_REG, C_SP_STEP);
+            stur(cb, opnd, A64Opnd::new_mem(64, C_SP_REG, 0));
+        }
+
+        /// Emit a pop instruction into the given operand by loading the value
+        /// and then subtracting from the stack pointer.
+        fn emit_pop(cb: &mut CodeBlock, opnd: A64Opnd) {
+            ldur(cb, opnd, A64Opnd::new_mem(64, C_SP_REG, 0));
+            sub(cb, C_SP_REG, C_SP_REG, C_SP_STEP);
+        }
+
         // dbg!(&self.insns);
 
         // List of GC offsets
         let mut gc_offsets: Vec<u32> = Vec::new();
+
+        // A special scratch register for loading/storing system registers.
+        let mut sys_scratch = A64Opnd::Reg(X22_REG);
 
         // For each instruction
         for insn in &self.insns {
@@ -429,12 +450,30 @@ impl Assembler
                     };
                 },
                 Op::CPush => {
-                    add(cb, C_SP_REG, C_SP_REG, C_SP_STEP);
-                    stur(cb, insn.opnds[0].into(), A64Opnd::new_mem(64, C_SP_REG, 0));
+                    emit_push(cb, insn.opnds[0].into());
+                },
+                Op::CPushAll => {
+                    let regs = Assembler::get_caller_save_regs();
+
+                    for reg in regs {
+                        emit_push(cb, A64Opnd::Reg(reg));
+                    }
+
+                    mrs(cb, sys_scratch, SystemRegister::NZCV);
+                    emit_push(cb, sys_scratch);
                 },
                 Op::CPop => {
-                    ldur(cb, insn.opnds[0].into(), A64Opnd::new_mem(64, C_SP_REG, 0));
-                    sub(cb, C_SP_REG, C_SP_REG, C_SP_STEP);
+                    emit_pop(cb, insn.opnds[0].into());
+                },
+                Op::CPopAll => {
+                    let regs = Assembler::get_caller_save_regs();
+
+                    msr(cb, SystemRegister::NZCV, sys_scratch);
+                    emit_pop(cb, sys_scratch);
+
+                    for reg in regs.into_iter().rev() {
+                        emit_pop(cb, A64Opnd::Reg(reg));
+                    }
                 },
                 Op::CCall => {
                     let src_addr = cb.get_write_ptr().into_i64() + 4;
@@ -569,5 +608,21 @@ mod tests {
 
         let insns = cb.get_ptr(0).raw_ptr() as *const u32;
         assert_eq!(0x8b010003, unsafe { *insns });
+    }
+
+    #[test]
+    fn test_emit_cpush_all() {
+        let (mut asm, mut cb) = setup_asm();
+
+        asm.cpush_all();
+        asm.compile_with_num_regs(&mut cb, 0);
+    }
+
+    #[test]
+    fn test_emit_cpop_all() {
+        let (mut asm, mut cb) = setup_asm();
+
+        asm.cpop_all();
+        asm.compile_with_num_regs(&mut cb, 0);
     }
 }

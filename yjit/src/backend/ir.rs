@@ -97,6 +97,11 @@ pub enum Op
     CPush,
     CPop,
 
+    // Push and pop all of the caller-save registers and the flags to/from the C
+    // stack
+    CPushAll,
+    CPopAll,
+
     // C function call with N arguments (variadic)
     CCall,
 
@@ -804,6 +809,8 @@ def_push_2_opnd!(and, Op::And);
 def_push_1_opnd!(not, Op::Not);
 def_push_1_opnd_no_out!(cpush, Op::CPush);
 def_push_1_opnd_no_out!(cpop, Op::CPop);
+def_push_0_opnd_no_out!(cpush_all, Op::CPushAll);
+def_push_0_opnd_no_out!(cpop_all, Op::CPopAll);
 def_push_1_opnd_no_out!(cret, Op::CRet);
 def_push_1_opnd!(load, Op::Load);
 def_push_1_opnd!(lea, Op::Lea);

@@ -76,6 +76,14 @@ impl Assembler
         ]
     }
 
+    /// Get a list of all of the caller-save registers
+    pub fn get_caller_save_regs() -> Vec<Reg> {
+        vec![RAX_REG, RCX_REG, RDX_REG, RSI_REG, RDI_REG, R8_REG, R9_REG, R10_REG, R11_REG]
+
+        // Technically these are also caller-save: R12_REG, R13_REG, R14_REG,
+        // and R15_REG, but we don't use them so we don't include them here.
+    }
+
     /// Split IR instructions for the x86 platform
     fn x86_split(mut self) -> Assembler
     {
@@ -238,6 +246,25 @@ impl Assembler
                 // Push and pop to the C stack
                 Op::CPush => push(cb, insn.opnds[0].into()),
                 Op::CPop => pop(cb, insn.opnds[0].into()),
+
+                // Push and pop to the C stack all caller-save registers and the
+                // flags
+                Op::CPushAll => {
+                    let regs = Assembler::get_caller_save_regs();
+
+                    for reg in regs {
+                        push(cb, X86Opnd::Reg(reg));
+                    }
+                    pushfq(cb);
+                },
+                Op::CPopAll => {
+                    let regs = Assembler::get_caller_save_regs();
+
+                    popfq(cb);
+                    for reg in regs.into_iter().rev() {
+                        pop(cb, X86Opnd::Reg(reg));
+                    }
+                },
 
                 // C function call
                 Op::CCall => {
