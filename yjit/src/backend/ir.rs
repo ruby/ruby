@@ -96,6 +96,7 @@ pub enum Op
     // Push and pop registers to/from the C stack
     CPush,
     CPop,
+    CPopInto,
 
     // Push and pop all of the caller-save registers and the flags to/from the C
     // stack
@@ -743,6 +744,19 @@ macro_rules! def_push_jcc {
     };
 }
 
+macro_rules! def_push_0_opnd {
+    ($op_name:ident, $opcode:expr) => {
+        impl Assembler
+        {
+            #[must_use]
+            pub fn $op_name(&mut self) -> Opnd
+            {
+                self.push_insn($opcode, vec![], None)
+            }
+        }
+    };
+}
+
 macro_rules! def_push_0_opnd_no_out {
     ($op_name:ident, $opcode:expr) => {
         impl Assembler
@@ -817,7 +831,8 @@ def_push_2_opnd!(sub, Op::Sub);
 def_push_2_opnd!(and, Op::And);
 def_push_1_opnd!(not, Op::Not);
 def_push_1_opnd_no_out!(cpush, Op::CPush);
-def_push_1_opnd_no_out!(cpop, Op::CPop);
+def_push_0_opnd!(cpop, Op::CPop);
+def_push_1_opnd_no_out!(cpop_into, Op::CPopInto);
 def_push_0_opnd_no_out!(cpush_all, Op::CPushAll);
 def_push_0_opnd_no_out!(cpop_all, Op::CPopAll);
 def_push_1_opnd_no_out!(cret, Op::CRet);

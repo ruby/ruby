@@ -55,6 +55,22 @@ assert_equal 'foo', %q{
     foo(7)
 }
 
+# duphash
+assert_equal '{:a=>888}', %q{
+    def foo()
+        { a: 888 }
+    end
+    foo()
+}
+
+# putobject, getlocal, newhash
+assert_equal '{:a=>777}', %q{
+    def foo(n)
+        { a: n }
+    end
+    foo(777)
+}
+
 # TODO: progress towards getting branches and calls working
 =begin
 def foo(n)

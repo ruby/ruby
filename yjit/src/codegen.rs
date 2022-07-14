@@ -385,9 +385,9 @@ fn gen_code_for_exit_from_stub(ocb: &mut OutlinedCb) -> CodePtr {
 
     gen_counter_incr!(asm, exit_from_branch_stub);
 
-    asm.cpop(SP);
-    asm.cpop(EC);
-    asm.cpop(CFP);
+    asm.cpop_into(SP);
+    asm.cpop_into(EC);
+    asm.cpop_into(CFP);
 
     asm.cret(Qundef.into());
 
@@ -434,9 +434,9 @@ fn gen_exit(exit_pc: *mut VALUE, ctx: &Context, asm: &mut Assembler) {
         }
     }
 
-    asm.cpop(SP);
-    asm.cpop(EC);
-    asm.cpop(CFP);
+    asm.cpop_into(SP);
+    asm.cpop_into(EC);
+    asm.cpop_into(CFP);
 
     asm.cret(Qundef.into());
 }
@@ -518,9 +518,9 @@ fn gen_full_cfunc_return(ocb: &mut OutlinedCb) -> CodePtr {
     gen_counter_incr!(asm, traced_cfunc_return);
 
     // Return to the interpreter
-    asm.cpop(SP);
-    asm.cpop(EC);
-    asm.cpop(CFP);
+    asm.cpop_into(SP);
+    asm.cpop_into(EC);
+    asm.cpop_into(CFP);
 
     asm.cret(Qundef.into());
 
@@ -542,9 +542,9 @@ fn gen_leave_exit(ocb: &mut OutlinedCb) -> CodePtr {
     // Every exit to the interpreter should be counted
     gen_counter_incr!(asm, leave_interp_return);
 
-    asm.cpop(SP);
-    asm.cpop(EC);
-    asm.cpop(CFP);
+    asm.cpop_into(SP);
+    asm.cpop_into(EC);
+    asm.cpop_into(CFP);
 
     asm.cret(C_RET_OPND);
 
@@ -571,9 +571,9 @@ fn gen_pc_guard(asm: &mut Assembler, iseq: IseqPtr, insn_idx: u32) {
     // We're not starting at the first PC, so we need to exit.
     gen_counter_incr!(asm, leave_start_pc_non_zero);
 
-    asm.cpop(SP);
-    asm.cpop(EC);
-    asm.cpop(CFP);
+    asm.cpop_into(SP);
+    asm.cpop_into(EC);
+    asm.cpop_into(CFP);
 
     asm.cret(Qundef.into());
 
@@ -1660,55 +1660,59 @@ fn gen_setlocal_wc1(
     let idx = jit_get_arg(jit, 0).as_i32();
     gen_setlocal_generic(jit, ctx, cb, ocb, idx, 1)
 }
+*/
 
 // new hash initialized from top N values
 fn gen_newhash(
     jit: &mut JITState,
     ctx: &mut Context,
-    cb: &mut CodeBlock,
+    asm: &mut Assembler,
     _ocb: &mut OutlinedCb,
 ) -> CodegenStatus {
-    let num: i64 = jit_get_arg(jit, 0).as_i64();
+    let num: u64 = jit_get_arg(jit, 0).as_u64();
 
     // Save the PC and SP because we are allocating
-    jit_prepare_routine_call(jit, ctx, cb, REG0);
+    jit_prepare_routine_call(jit, ctx, asm);
 
     if num != 0 {
         // val = rb_hash_new_with_size(num / 2);
-        mov(cb, C_ARG_REGS[0], imm_opnd(num / 2));
-        call_ptr(cb, REG0, rb_hash_new_with_size as *const u8);
+        let new_hash = asm.ccall(
+            rb_hash_new_with_size as *const u8,
+            vec![Opnd::UImm(num / 2)]
+        );
 
-        // save the allocated hash as we want to push it after insertion
-        push(cb, RAX);
-        push(cb, RAX); // alignment
+        // Save the allocated hash as we want to push it after insertion
+        asm.cpush(new_hash);
+        asm.cpush(new_hash); // x86 alignment
+
+        // Get a pointer to the values to insert into the hash
+        let stack_addr_from_top = asm.lea(ctx.stack_opnd((num - 1) as i32));
 
         // rb_hash_bulk_insert(num, STACK_ADDR_FROM_TOP(num), val);
-        mov(cb, C_ARG_REGS[0], imm_opnd(num));
-        lea(
-            cb,
-            C_ARG_REGS[1],
-            ctx.stack_opnd((num - 1).try_into().unwrap()),
+        asm.ccall(
+            rb_hash_bulk_insert as *const u8,
+            vec![
+                Opnd::UImm(num),
+                stack_addr_from_top,
+                new_hash
+            ]
         );
-        mov(cb, C_ARG_REGS[2], RAX);
-        call_ptr(cb, REG0, rb_hash_bulk_insert as *const u8);
 
-        pop(cb, RAX); // alignment
-        pop(cb, RAX);
+        let new_hash = asm.cpop();
+        asm.cpop_into(new_hash); // x86 alignment
 
         ctx.stack_pop(num.try_into().unwrap());
         let stack_ret = ctx.stack_push(Type::Hash);
-        mov(cb, stack_ret, RAX);
+        asm.mov(stack_ret, new_hash);
     } else {
         // val = rb_hash_new();
-        call_ptr(cb, REG0, rb_hash_new as *const u8);
-
+        let new_hash = asm.ccall(rb_hash_new as *const u8, vec![]);
         let stack_ret = ctx.stack_push(Type::Hash);
-        mov(cb, stack_ret, RAX);
+        asm.mov(stack_ret, new_hash);
     }
 
     KeepCompiling
 }
-*/
 
 fn gen_putstring(
     jit: &mut JITState,
@@ -5922,8 +5926,8 @@ fn get_gen_fn(opcode: VALUE) -> Option<InsnGenFn> {
         YARVINSN_opt_minus => Some(gen_opt_minus),
         YARVINSN_opt_and => Some(gen_opt_and),
         YARVINSN_opt_or => Some(gen_opt_or),
-        YARVINSN_newhash => Some(gen_newhash),
         */
+        YARVINSN_newhash => Some(gen_newhash),
         YARVINSN_duphash => Some(gen_duphash),
         YARVINSN_newarray => Some(gen_newarray),
         /*

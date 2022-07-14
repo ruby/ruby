@@ -466,6 +466,9 @@ impl Assembler
                     emit_push(cb, sys_scratch);
                 },
                 Op::CPop => {
+                    emit_pop(cb, insn.out.into());
+                },
+                Op::CPopInto => {
                     emit_pop(cb, insn.opnds[0].into());
                 },
                 Op::CPopAll => {
