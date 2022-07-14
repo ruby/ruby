@@ -14486,6 +14486,15 @@ rb_gcdebug_remove_stress_to_class(int argc, VALUE *argv, VALUE self)
 
 #include "gc.rbinc"
 
+#ifdef USE_THIRD_PARTY_HEAP
+VALUE
+rb_mmtk_plan_name(VALUE _)
+{
+    const char* plan_name = mmtk_plan_name();
+    return rb_str_new(plan_name, strlen(plan_name));
+}
+#endif
+
 void
 Init_GC(void)
 {
@@ -14588,6 +14597,7 @@ Init_GC(void)
 
 #ifdef USE_THIRD_PARTY_HEAP
     rb_mMMTk = rb_define_module_under(rb_mGC, "MMTk");
+    rb_define_singleton_method(rb_mMMTk, "plan_name", rb_mmtk_plan_name, 0);
 #endif
 
     {
