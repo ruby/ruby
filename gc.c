@@ -11217,6 +11217,13 @@ enum gc_stat_sym {
     gc_stat_sym_total_remembered_normal_object_count,
     gc_stat_sym_total_remembered_shady_object_count,
 #endif
+#ifdef USE_THIRD_PARTY_HEAP
+    gc_stat_sym_mmtk_free_bytes,
+    gc_stat_sym_mmtk_total_bytes,
+    gc_stat_sym_mmtk_used_bytes,
+    gc_stat_sym_mmtk_starting_heap_address,
+    gc_stat_sym_mmtk_last_heap_address,
+#endif
     gc_stat_sym_last
 };
 
@@ -11266,6 +11273,13 @@ setup_gc_stat_symbols(void)
 	S(total_remembered_normal_object_count);
 	S(total_remembered_shady_object_count);
 #endif /* RGENGC_PROFILE */
+#ifdef USE_THIRD_PARTY_HEAP
+	S(mmtk_free_bytes);
+	S(mmtk_total_bytes);
+	S(mmtk_used_bytes);
+	S(mmtk_starting_heap_address);
+	S(mmtk_last_heap_address);
+#endif
 #undef S
     }
 }
@@ -11294,10 +11308,13 @@ gc_stat_internal(VALUE hash_or_sym)
     else if (hash != Qnil) \
 	rb_hash_aset(hash, gc_stat_symbols[gc_stat_sym_##name], SIZET2NUM(attr));
 
+#ifndef USE_THIRD_PARTY_HEAP
     SET(count, objspace->profile.count);
     SET(time, (size_t) (objspace->profile.total_time_ns / (1000 * 1000) /* ns -> ms */)); // TODO: UINT64T2NUM
+#endif
 
     /* implementation dependent counters */
+#ifndef USE_THIRD_PARTY_HEAP
     SET(heap_allocated_pages, heap_allocated_pages);
     SET(heap_sorted_length, heap_pages_sorted_length);
     SET(heap_allocatable_pages, heap_allocatable_pages(objspace));
@@ -11310,10 +11327,14 @@ gc_stat_internal(VALUE hash_or_sym)
     SET(heap_tomb_pages, heap_tomb_total_pages(objspace));
     SET(total_allocated_pages, total_allocated_pages(objspace));
     SET(total_freed_pages, total_freed_pages(objspace));
+#endif
     SET(total_allocated_objects, objspace->total_allocated_objects);
+#ifndef USE_THIRD_PARTY_HEAP
     SET(total_freed_objects, objspace->profile.total_freed_objects);
+#endif
     SET(malloc_increase_bytes, malloc_increase);
     SET(malloc_increase_bytes_limit, malloc_limit);
+#ifndef USE_THIRD_PARTY_HEAP
     SET(minor_gc_count, objspace->profile.minor_gc_count);
     SET(major_gc_count, objspace->profile.major_gc_count);
     SET(compact_count, objspace->profile.compact_count);
@@ -11323,11 +11344,13 @@ gc_stat_internal(VALUE hash_or_sym)
     SET(remembered_wb_unprotected_objects_limit, objspace->rgengc.uncollectible_wb_unprotected_objects_limit);
     SET(old_objects, objspace->rgengc.old_objects);
     SET(old_objects_limit, objspace->rgengc.old_objects_limit);
+#endif
 #if RGENGC_ESTIMATE_OLDMALLOC
     SET(oldmalloc_increase_bytes, objspace->rgengc.oldmalloc_increase);
     SET(oldmalloc_increase_bytes_limit, objspace->rgengc.oldmalloc_increase_limit);
 #endif
 
+#ifndef USE_THIRD_PARTY_HEAP
 #if RGENGC_PROFILE
     SET(total_generated_normal_object_count, objspace->profile.total_generated_normal_object_count);
     SET(total_generated_shady_object_count, objspace->profile.total_generated_shady_object_count);
@@ -11336,6 +11359,15 @@ gc_stat_internal(VALUE hash_or_sym)
     SET(total_remembered_normal_object_count, objspace->profile.total_remembered_normal_object_count);
     SET(total_remembered_shady_object_count, objspace->profile.total_remembered_shady_object_count);
 #endif /* RGENGC_PROFILE */
+#endif
+
+#ifdef USE_THIRD_PARTY_HEAP
+    SET(mmtk_free_bytes, mmtk_free_bytes());
+    SET(mmtk_total_bytes, mmtk_total_bytes());
+    SET(mmtk_used_bytes, mmtk_used_bytes());
+    SET(mmtk_starting_heap_address, (size_t) mmtk_starting_heap_address());
+    SET(mmtk_last_heap_address, (size_t) mmtk_last_heap_address());
+#endif
 #undef SET
 
     if (!NIL_P(key)) { /* matched key should return above */
