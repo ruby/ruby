@@ -321,6 +321,21 @@ pub fn ldur(cb: &mut CodeBlock, rt: A64Opnd, rn: A64Opnd) {
     cb.write_bytes(&bytes);
 }
 
+/// LDURSW - load a 32-bit memory address into a register and sign-extend it
+pub fn ldursw(cb: &mut CodeBlock, rt: A64Opnd, rn: A64Opnd) {
+    let bytes: [u8; 4] = match (rt, rn) {
+        (A64Opnd::Reg(rt), A64Opnd::Mem(rn)) => {
+            assert!(rt.num_bits == rn.num_bits, "Expected registers to be the same size");
+            assert!(imm_fits_bits(rn.disp.into(), 9), "Expected displacement to be 9 bits or less");
+
+            Load::ldursw(rt.reg_no, rn.base_reg_no, rn.disp as i16).into()
+        },
+        _ => panic!("Invalid operand combination to ldursw instruction.")
+    };
+
+    cb.write_bytes(&bytes);
+}
+
 /// LSL - logical shift left a register by an immediate
 pub fn lsl(cb: &mut CodeBlock, rd: A64Opnd, rn: A64Opnd, shift: A64Opnd) {
     let bytes: [u8; 4] = match (rd, rn, shift) {
@@ -558,6 +573,21 @@ pub fn subs(cb: &mut CodeBlock, rd: A64Opnd, rn: A64Opnd, rm: A64Opnd) {
     cb.write_bytes(&bytes);
 }
 
+/// SXTW - sign extend a 32-bit register into a 64-bit register
+pub fn sxtw(cb: &mut CodeBlock, rd: A64Opnd, rn: A64Opnd) {
+    let bytes: [u8; 4] = match (rd, rn) {
+        (A64Opnd::Reg(rd), A64Opnd::Reg(rn)) => {
+            assert_eq!(rd.num_bits, 64, "rd must be 64-bits wide.");
+            assert_eq!(rn.num_bits, 32, "rn must be 32-bits wide.");
+
+            SBFM::sxtw(rd.reg_no, rn.reg_no).into()
+        },
+        _ => panic!("Invalid operand combination to sxtw instruction."),
+    };
+
+    cb.write_bytes(&bytes);
+}
+
 /// RET - unconditionally return to a location in a register, defaults to X30
 pub fn ret(cb: &mut CodeBlock, rn: A64Opnd) {
     let bytes: [u8; 4] = match rn {
@@ -751,6 +781,11 @@ mod tests {
     }
 
     #[test]
+    fn test_ldursw() {
+        check_bytes("6ab187b8", |cb| ldursw(cb, X10, A64Opnd::new_mem(64, X11, 123)));
+    }
+
+    #[test]
     fn test_lsl() {
         check_bytes("6ac572d3", |cb| lsl(cb, X10, X11, A64Opnd::new_uimm(14)));
     }
@@ -868,6 +903,11 @@ mod tests {
     #[test]
     fn test_subs_uimm() {
         check_bytes("201c00f1", |cb| subs(cb, X0, X1, A64Opnd::new_uimm(7)));
+    }
+
+    #[test]
+    fn test_sxtw() {
+        check_bytes("6a7d4093", |cb| sxtw(cb, X10, W11));
     }
 
     #[test]

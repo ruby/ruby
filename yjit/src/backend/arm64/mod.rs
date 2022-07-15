@@ -158,6 +158,22 @@ impl Assembler
                         asm.jmp_opnd(opnds[0]);
                     }
                 },
+                Op::LoadSExt => {
+                    match opnds[0] {
+                        // We only want to sign extend if the operand is a
+                        // register, instruction output, or memory address that
+                        // is 32 bits. Otherwise we'll just load the value
+                        // directly since there's no need to sign extend.
+                        Opnd::Reg(Reg { num_bits: 32, .. }) |
+                        Opnd::InsnOut { num_bits: 32, .. } |
+                        Opnd::Mem(Mem { num_bits: 32, .. }) => {
+                            asm.load_sext(opnds[0]);
+                        },
+                        _ => {
+                            asm.load(opnds[0]);
+                        }
+                    };
+                },
                 Op::Mov => {
                     // The value that is being moved must be either a register
                     // or an immediate that can be encoded as a bitmask
@@ -446,6 +462,18 @@ impl Assembler
                         Opnd::None => {
                             unreachable!("Attempted to load from None operand");
                         }
+                    };
+                },
+                Op::LoadSExt => {
+                    match insn.opnds[0] {
+                        Opnd::Reg(Reg { num_bits: 32, .. }) |
+                        Opnd::InsnOut { num_bits: 32, .. } => {
+                            sxtw(cb, insn.out.into(), insn.opnds[0].into());
+                        },
+                        Opnd::Mem(Mem { num_bits: 32, .. }) => {
+                            ldursw(cb, insn.out.into(), insn.opnds[0].into());
+                        },
+                        _ => unreachable!()
                     };
                 },
                 Op::Mov => {

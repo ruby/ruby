@@ -253,6 +253,10 @@ impl Assembler
                     }
                 },
 
+                Op::LoadSExt => {
+                    movsx(cb, insn.out.into(), insn.opnds[0].into())
+                },
+
                 Op::Mov => mov(cb, insn.opnds[0].into(), insn.opnds[1].into()),
 
                 // Load effective address
