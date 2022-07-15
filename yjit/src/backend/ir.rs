@@ -104,6 +104,16 @@ pub enum Op
     Jnz,
     Jo,
 
+    // Conditional select instructions
+    CSelZ,
+    CSelNZ,
+    CSelE,
+    CSelNE,
+    CSelL,
+    CSelLE,
+    CSelG,
+    CSelGE,
+
     // Push and pop registers to/from the C stack
     CPush,
     CPop,
@@ -877,3 +887,11 @@ def_push_2_opnd_no_out!(cmp, Op::Cmp);
 def_push_2_opnd_no_out!(test, Op::Test);
 def_push_0_opnd_no_out!(breakpoint, Op::Breakpoint);
 def_push_2_opnd_no_out!(incr_counter, Op::IncrCounter);
+def_push_2_opnd!(csel_z, Op::CSelZ);
+def_push_2_opnd!(csel_nz, Op::CSelNZ);
+def_push_2_opnd!(csel_e, Op::CSelE);
+def_push_2_opnd!(csel_ne, Op::CSelNE);
+def_push_2_opnd!(csel_l, Op::CSelL);
+def_push_2_opnd!(csel_le, Op::CSelLE);
+def_push_2_opnd!(csel_g, Op::CSelG);
+def_push_2_opnd!(csel_ge, Op::CSelGE);
