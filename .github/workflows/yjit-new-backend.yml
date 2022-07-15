@@ -44,6 +44,9 @@ jobs:
       # Try booting miniruby
       - run: RUST_BACKTRACE=1 ./miniruby --yjit-call-threshold=1 -e0
 
+      # Check that --yjit-dump-insns works correctly
+      - run: RUST_BACKTRACE=1 ./miniruby --yjit-call-threshold=1 --yjit-dump-insns -e0
+
       # Try outputting stats (should be available in dev config)
       #- run: RUST_BACKTRACE=1 ./miniruby --yjit-call-threshold=1 --yjit-stats -e0
 
