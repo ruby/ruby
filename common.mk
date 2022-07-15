@@ -9658,6 +9658,7 @@ mjit.$(OBJEXT): {$(VPATH)}mjit.h
 mjit.$(OBJEXT): {$(VPATH)}mjit.rb
 mjit.$(OBJEXT): {$(VPATH)}mjit.rbinc
 mjit.$(OBJEXT): {$(VPATH)}mjit_config.h
+mjit.$(OBJEXT): {$(VPATH)}mjit_unit.h
 mjit.$(OBJEXT): {$(VPATH)}node.h
 mjit.$(OBJEXT): {$(VPATH)}onigmo.h
 mjit.$(OBJEXT): {$(VPATH)}oniguruma.h
@@ -9865,6 +9866,7 @@ mjit_compile.$(OBJEXT): {$(VPATH)}missing.h
 mjit_compile.$(OBJEXT): {$(VPATH)}mjit.h
 mjit_compile.$(OBJEXT): {$(VPATH)}mjit_compile.c
 mjit_compile.$(OBJEXT): {$(VPATH)}mjit_compile.inc
+mjit_compile.$(OBJEXT): {$(VPATH)}mjit_unit.h
 mjit_compile.$(OBJEXT): {$(VPATH)}node.h
 mjit_compile.$(OBJEXT): {$(VPATH)}ruby_assert.h
 mjit_compile.$(OBJEXT): {$(VPATH)}ruby_atomic.h

@@ -20,6 +20,7 @@
 #include "internal/object.h"
 #include "internal/variable.h"
 #include "mjit.h"
+#include "mjit_unit.h"
 #include "vm_core.h"
 #include "vm_callinfo.h"
 #include "vm_exec.h"
@@ -87,8 +88,6 @@ call_data_index(CALL_DATA cd, const struct rb_iseq_constant_body *body)
     return cd - body->call_data;
 }
 
-const struct rb_callcache ** mjit_iseq_cc_entries(const struct rb_iseq_constant_body *const body);
-
 // Using this function to refer to cc_entries allocated by `mjit_capture_cc_entries`
 // instead of storing cc_entries in status directly so that we always refer to a new address
 // returned by `realloc` inside it.
@@ -96,7 +95,7 @@ static const struct rb_callcache **
 captured_cc_entries(const struct compile_status *status)
 {
     VM_ASSERT(status->cc_entries_index != -1);
-    return mjit_iseq_cc_entries(status->compiled_iseq) + status->cc_entries_index;
+    return status->compiled_iseq->jit_unit->cc_entries + status->cc_entries_index;
 }
 
 // Returns true if call cache is still not obsoleted and vm_cc_cme(cc)->def->type is available.

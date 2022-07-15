@@ -87,6 +87,7 @@
 #include "vm_core.h"
 #include "vm_callinfo.h"
 #include "mjit.h"
+#include "mjit_unit.h"
 #include "gc.h"
 #include "ruby_assert.h"
 #include "ruby/debug.h"
@@ -148,29 +149,6 @@ typedef intptr_t pid_t;
 #else
 # define USE_JIT_COMPACTION 1
 #endif
-
-// The unit structure that holds metadata of ISeq for MJIT.
-struct rb_mjit_unit {
-    struct ccan_list_node unode;
-    // Unique order number of unit.
-    int id;
-    // Dlopen handle of the loaded object file.
-    void *handle;
-    rb_iseq_t *iseq;
-#if defined(_WIN32)
-    // DLL cannot be removed while loaded on Windows. If this is set, it'll be lazily deleted.
-    char *so_file;
-#endif
-    // Only used by unload_units. Flag to check this unit is currently on stack or not.
-    bool used_code_p;
-    // True if it's a unit for JIT compaction
-    bool compact_p;
-    // mjit_compile's optimization switches
-    struct rb_mjit_compile_info compile_info;
-    // captured CC values, they should be marked with iseq.
-    const struct rb_callcache **cc_entries;
-    unsigned int cc_entries_size; // ISEQ_BODY(iseq)->ci_size + ones of inlined iseqs
-};
 
 // Linked list of struct rb_mjit_unit.
 struct rb_mjit_unit_list {
@@ -1137,13 +1115,6 @@ convert_unit_to_func(struct rb_mjit_unit *unit)
     return (mjit_func_t)func;
 }
 #endif
-
-// To see cc_entries using index returned by `mjit_capture_cc_entries` in mjit_compile.c
-const struct rb_callcache **
-mjit_iseq_cc_entries(const struct rb_iseq_constant_body *const body)
-{
-    return body->jit_unit->cc_entries;
-}
 
 // Capture cc entries of `captured_iseq` and append them to `compiled_iseq->jit_unit->cc_entries`.
 // This is needed when `captured_iseq` is inlined by `compiled_iseq` and GC needs to mark inlined cc.
