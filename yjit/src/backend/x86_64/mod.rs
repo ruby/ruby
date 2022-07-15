@@ -67,6 +67,11 @@ impl From<Opnd> for X86Opnd {
 
 impl Assembler
 {
+    // A special scratch register for intermediate processing.
+    // Note: right now this is only used by LeaLabel because label_ref accepts
+    // a closure and we don't want it to have to capture anything.
+    const SCRATCH0: X86Opnd = X86Opnd::Reg(R11_REG);
+
     /// Get the list of registers from which we can allocate on this platform
     pub fn get_alloc_regs() -> Vec<Reg>
     {
@@ -79,17 +84,17 @@ impl Assembler
     /// Get a list of all of the caller-save registers
     pub fn get_caller_save_regs() -> Vec<Reg> {
         vec![RAX_REG, RCX_REG, RDX_REG, RSI_REG, RDI_REG, R8_REG, R9_REG, R10_REG, R11_REG]
-
-        // Technically these are also caller-save: R12_REG, R13_REG, R14_REG,
-        // and R15_REG, but we don't use them so we don't include them here.
     }
+
+    // These are the callee-saved registers in the x86-64 SysV ABI
+    // RBX, RSP, RBP, and R12–R15
 
     /// Split IR instructions for the x86 platform
     fn x86_split(mut self) -> Assembler
     {
         let live_ranges: Vec<usize> = std::mem::take(&mut self.live_ranges);
 
-        self.forward_pass(|asm, index, op, opnds, target| {
+        self.forward_pass(|asm, index, op, opnds, target, text| {
             // Load heap object operands into registers because most
             // instructions can't directly work with 64-bit constants
             let opnds = match op {
@@ -135,7 +140,7 @@ impl Assembler
                         _ => (opnds[0], opnds[1])
                     };
 
-                    asm.push_insn(op, vec![opnd0, opnd1], target);
+                    asm.push_insn(op, vec![opnd0, opnd1], target, text);
                 },
                 Op::Mov => {
                     match (opnds[0], opnds[1]) {
@@ -178,7 +183,7 @@ impl Assembler
                     asm.not(opnd0);
                 },
                 _ => {
-                    asm.push_insn(op, opnds, target);
+                    asm.push_insn(op, opnds, target, text);
                 }
             };
         })
@@ -204,6 +209,16 @@ impl Assembler
                 // Write the label at the current position
                 Op::Label => {
                     cb.write_label(insn.target.unwrap().unwrap_label_idx());
+                },
+
+                Op::BakeString => {
+                    for byte in insn.text.as_ref().unwrap().as_bytes() {
+                        cb.write_byte(*byte);
+                    }
+
+                    // Add a null-terminator byte for safety (in case we pass
+                    // this to C code)
+                    cb.write_byte(0);
                 },
 
                 Op::Add => {
@@ -243,7 +258,19 @@ impl Assembler
                 // Load effective address
                 Op::Lea => lea(cb, insn.out.into(), insn.opnds[0].into()),
 
-                // Push and pop to/from the C stack
+                // Load relative address
+                Op::LeaLabel => {
+                    let label_idx = insn.target.unwrap().unwrap_label_idx();
+
+                    cb.label_ref(label_idx, 4, |cb, src_addr, dst_addr| {
+                        let disp = dst_addr - src_addr;
+                        lea(cb, Self::SCRATCH0, mem_opnd(8, RIP, disp.try_into().unwrap()));
+                    });
+
+                    mov(cb, insn.out.into(), Self::SCRATCH0);
+                },
+
+                // Push and pop to the C stack
                 Op::CPush => push(cb, insn.opnds[0].into()),
                 Op::CPop => pop(cb, insn.out.into()),
                 Op::CPopInto => pop(cb, insn.opnds[0].into()),
@@ -315,6 +342,14 @@ impl Assembler
                     }
                 }
 
+                Op::Jbe => {
+                    match insn.target.unwrap() {
+                        Target::CodePtr(code_ptr) => jbe_ptr(cb, code_ptr),
+                        Target::Label(label_idx) => jbe_label(cb, label_idx),
+                        _ => unreachable!()
+                    }
+                },
+
                 Op::Jz => {
                     match insn.target.unwrap() {
                         Target::CodePtr(code_ptr) => jz_ptr(cb, code_ptr),
@@ -349,6 +384,10 @@ impl Assembler
 
                 Op::Breakpoint => int3(cb),
 
+                // We want to keep the panic here because some instructions that
+                // we feed to the backend could get lowered into other
+                // instructions. So it's possible that some of our backend
+                // instructions can never make it to the emit stage.
                 _ => panic!("unsupported instruction passed to x86 backend: {:?}", insn.op)
             };
         }

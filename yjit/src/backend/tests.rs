@@ -283,3 +283,11 @@ fn test_jo()
 
     asm.compile_with_num_regs(&mut cb, 2);
 }
+
+#[test]
+fn test_bake_string() {
+    let (mut asm, mut cb) = setup_asm();
+
+    asm.bake_string("Hello, world!");
+    asm.compile_with_num_regs(&mut cb, 0);
+}

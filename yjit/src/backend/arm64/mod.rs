@@ -58,6 +58,9 @@ impl From<Opnd> for A64Opnd {
 
 impl Assembler
 {
+    // A special scratch register for intermediate processing.
+    const SCRATCH0: A64Opnd = A64Opnd::Reg(X22_REG);
+
     /// Get the list of registers from which we will allocate on this platform
     /// These are caller-saved registers
     /// Note: we intentionally exclude C_RET_REG (X0) from this list
@@ -78,7 +81,7 @@ impl Assembler
     /// have no memory operands.
     fn arm64_split(mut self) -> Assembler
     {
-        self.forward_pass(|asm, index, op, opnds, target| {
+        self.forward_pass(|asm, index, op, opnds, target, text| {
             // Load all Value operands into registers that aren't already a part
             // of Load instructions.
             let opnds = match op {
@@ -100,15 +103,15 @@ impl Assembler
                         (Opnd::Mem(_), Opnd::Mem(_)) => {
                             let opnd0 = asm.load(opnds[0]);
                             let opnd1 = asm.load(opnds[1]);
-                            asm.push_insn(op, vec![opnd0, opnd1], target);
+                            asm.push_insn(op, vec![opnd0, opnd1], target, text);
                         },
                         (mem_opnd @ Opnd::Mem(_), other_opnd) |
                         (other_opnd, mem_opnd @ Opnd::Mem(_)) => {
                             let opnd0 = asm.load(mem_opnd);
-                            asm.push_insn(op, vec![opnd0, other_opnd], target);
+                            asm.push_insn(op, vec![opnd0, other_opnd], target, text);
                         },
                         _ => {
-                            asm.push_insn(op, opnds, target);
+                            asm.push_insn(op, opnds, target, text);
                         }
                     }
                 },
@@ -220,7 +223,7 @@ impl Assembler
                     asm.test(opnd0, opnds[1]);
                 },
                 _ => {
-                    asm.push_insn(op, opnds, target);
+                    asm.push_insn(op, opnds, target, text);
                 }
             };
         })
@@ -366,9 +369,6 @@ impl Assembler
         // List of GC offsets
         let mut gc_offsets: Vec<u32> = Vec::new();
 
-        // A special scratch register for loading/storing system registers.
-        let mut sys_scratch = A64Opnd::Reg(X22_REG);
-
         // For each instruction
         for insn in &self.insns {
             match insn.op {
@@ -379,6 +379,22 @@ impl Assembler
                 },
                 Op::Label => {
                     cb.write_label(insn.target.unwrap().unwrap_label_idx());
+                },
+                Op::BakeString => {
+                    let str = insn.text.as_ref().unwrap();
+                    for byte in str.as_bytes() {
+                        cb.write_byte(*byte);
+                    }
+
+                    // Add a null-terminator byte for safety (in case we pass
+                    // this to C code)
+                    cb.write_byte(0);
+
+                    // Pad out the string to the next 4-byte boundary so that
+                    // it's easy to jump past.
+                    for _ in 0..(4 - ((str.len() + 1) % 4)) {
+                        cb.write_byte(0);
+                    }
                 },
                 Op::Add => {
                     add(cb, insn.out.into(), insn.opnds[0].into(), insn.opnds[1].into());
@@ -452,6 +468,15 @@ impl Assembler
                         }
                     };
                 },
+                Op::LeaLabel => {
+                    let label_idx = insn.target.unwrap().unwrap_label_idx();
+
+                    cb.label_ref(label_idx, 4, |cb, src_addr, dst_addr| {
+                        adr(cb, Self::SCRATCH0, A64Opnd::new_imm(dst_addr - src_addr));
+                    });
+
+                    mov(cb, insn.out.into(), Self::SCRATCH0);
+                },
                 Op::CPush => {
                     emit_push(cb, insn.opnds[0].into());
                 },
@@ -462,8 +487,8 @@ impl Assembler
                         emit_push(cb, A64Opnd::Reg(reg));
                     }
 
-                    mrs(cb, sys_scratch, SystemRegister::NZCV);
-                    emit_push(cb, sys_scratch);
+                    mrs(cb, Self::SCRATCH0, SystemRegister::NZCV);
+                    emit_push(cb, Self::SCRATCH0);
                 },
                 Op::CPop => {
                     emit_pop(cb, insn.out.into());
@@ -474,8 +499,8 @@ impl Assembler
                 Op::CPopAll => {
                     let regs = Assembler::get_caller_save_regs();
 
-                    msr(cb, SystemRegister::NZCV, sys_scratch);
-                    emit_pop(cb, sys_scratch);
+                    msr(cb, SystemRegister::NZCV, Self::SCRATCH0);
+                    emit_pop(cb, Self::SCRATCH0);
 
                     for reg in regs.into_iter().rev() {
                         emit_pop(cb, A64Opnd::Reg(reg));
@@ -617,6 +642,18 @@ mod tests {
     }
 
     #[test]
+    fn test_emit_bake_string() {
+        let (mut asm, mut cb) = setup_asm();
+
+        asm.bake_string("Hello, world!");
+        asm.compile_with_num_regs(&mut cb, 0);
+
+        // Testing that we pad the string to the nearest 4-byte boundary to make
+        // it easier to jump over.
+        assert_eq!(16, cb.get_write_pos());
+    }
+
+    #[test]
     fn test_emit_cpush_all() {
         let (mut asm, mut cb) = setup_asm();
 
@@ -630,5 +667,19 @@ mod tests {
 
         asm.cpop_all();
         asm.compile_with_num_regs(&mut cb, 0);
+    }
+
+    #[test]
+    fn test_emit_lea_label() {
+        let (mut asm, mut cb) = setup_asm();
+
+        let label = asm.new_label("label");
+        let opnd = asm.lea_label(label);
+
+        asm.write_label(label);
+        asm.bake_string("Hello, world!");
+        asm.store(Opnd::mem(64, SP, 0), opnd);
+
+        asm.compile_with_num_regs(&mut cb, 1);
     }
 }
