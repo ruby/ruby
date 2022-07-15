@@ -66,8 +66,9 @@ module Bundler
 
     def build_extensions
       extension_cache_path = options[:bundler_extension_cache_path]
-      unless extension_cache_path && extension_dir = spec.extension_dir
-        prepare_extension_build
+      extension_dir = spec.extension_dir
+      unless extension_cache_path && extension_dir
+        prepare_extension_build(extension_dir)
         return super
       end
 
@@ -76,10 +77,10 @@ module Bundler
       if build_complete && !options[:force]
         SharedHelpers.filesystem_access(extension_dir.parent, &:mkpath)
         SharedHelpers.filesystem_access(extension_cache_path) do
-          FileUtils.cp_r extension_cache_path, spec.extension_dir
+          FileUtils.cp_r extension_cache_path, extension_dir
         end
       else
-        prepare_extension_build
+        prepare_extension_build(extension_dir)
         super
         SharedHelpers.filesystem_access(extension_cache_path.parent, &:mkpath)
         SharedHelpers.filesystem_access(extension_cache_path) do
@@ -98,7 +99,10 @@ module Bundler
 
     private
 
-    def prepare_extension_build
+    def prepare_extension_build(extension_dir)
+      SharedHelpers.filesystem_access(extension_dir, :create) do
+        FileUtils.mkdir_p extension_dir
+      end
       require "shellwords" unless Bundler.rubygems.provides?(">= 3.2.25")
     end
 
