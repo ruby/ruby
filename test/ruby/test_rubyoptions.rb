@@ -778,6 +778,10 @@ class TestRubyOptions < Test::Unit::TestCase
   def assert_segv(args, message=nil)
     omit if ENV['RUBY_ON_BUG']
 
+    # We want YJIT to be enabled in the subprocess if it's enabled for us
+    # so that the Ruby description matches.
+    args.unshift("--yjit") if defined?(RubyVM::YJIT.enabled?) && RubyVM::YJIT.enabled?
+
     test_stdin = ""
     opt = SEGVTest::ExecOptions.dup
     list = SEGVTest::ExpectedStderrList
