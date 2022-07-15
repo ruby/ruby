@@ -1816,7 +1816,7 @@ fn gen_jbe_to_target0(
 }
 
 // Generate a jump to a stub that recompiles the current YARV instruction on failure.
-// When depth_limitk is exceeded, generate a jump to a side exit.
+// When depth_limit is exceeded, generate a jump to a side exit.
 fn jit_chain_guard(
     jcc: JCCKinds,
     jit: &JITState,
