@@ -35,6 +35,9 @@ pub enum Op
     // Add a label into the IR at the point that this instruction is added.
     Label,
 
+    // Bake a string directly into the instruction stream.
+    BakeString,
+
     // Add two operands together, and return the result as a new operand. This
     // operand can then be used as the operand on another instruction. It
     // accepts two operands, which can be of any type
@@ -70,6 +73,10 @@ pub enum Op
 
     // Load effective address
     Lea,
+
+    // Load effective address relative to the current instruction pointer. It
+    // accepts a single signed immediate operand.
+    LeaLabel,
 
     // A low-level mov instruction. It accepts two operands.
     Mov,
@@ -393,7 +400,7 @@ impl Assembler
     }
 
     /// Append an instruction to the list
-    pub(super) fn push_insn(&mut self, op: Op, opnds: Vec<Opnd>, target: Option<Target>) -> Opnd
+    pub(super) fn push_insn(&mut self, op: Op, opnds: Vec<Opnd>, target: Option<Target>, text: Option<String>) -> Opnd
     {
         // Index of this instruction
         let insn_idx = self.insns.len();
@@ -439,11 +446,11 @@ impl Assembler
         let out_opnd = Opnd::InsnOut{ idx: insn_idx, num_bits: out_num_bits };
 
         let insn = Insn {
-            op: op,
-            text: None,
-            opnds: opnds,
+            op,
+            text,
+            opnds,
             out: out_opnd,
-            target: target,
+            target,
             pos: None
         };
 
@@ -467,6 +474,27 @@ impl Assembler
         };
         self.insns.push(insn);
         self.live_ranges.push(self.insns.len());
+    }
+
+    /// Bake a string at the current position
+    pub fn bake_string(&mut self, text: &str)
+    {
+        let insn = Insn {
+            op: Op::BakeString,
+            text: Some(text.to_owned()),
+            opnds: vec![],
+            out: Opnd::None,
+            target: None,
+            pos: None
+        };
+        self.insns.push(insn);
+        self.live_ranges.push(self.insns.len());
+    }
+
+    /// Load an address relative to the given label.
+    #[must_use]
+    pub fn lea_label(&mut self, target: Target) -> Opnd {
+        self.push_insn(Op::LeaLabel, vec![], Some(target), None)
     }
 
     /// Create a new label instance that we can jump to
@@ -498,7 +526,7 @@ impl Assembler
 
     /// Transform input instructions, consumes the input assembler
     pub(super) fn forward_pass<F>(mut self, mut map_insn: F) -> Assembler
-        where F: FnMut(&mut Assembler, usize, Op, Vec<Opnd>, Option<Target>)
+        where F: FnMut(&mut Assembler, usize, Op, Vec<Opnd>, Option<Target>, Option<String>)
     {
         let mut asm = Assembler {
             insns: Vec::default(),
@@ -534,7 +562,7 @@ impl Assembler
                     asm.comment(insn.text.unwrap().as_str());
                 },
                 _ => {
-                    map_insn(&mut asm, index, insn.op, opnds, insn.target);
+                    map_insn(&mut asm, index, insn.op, opnds, insn.target, insn.text);
                 }
             };
 
@@ -596,7 +624,7 @@ impl Assembler
 
         let live_ranges: Vec<usize> = std::mem::take(&mut self.live_ranges);
 
-        let asm = self.forward_pass(|asm, index, op, opnds, target| {
+        let asm = self.forward_pass(|asm, index, op, opnds, target, text| {
             // Check if this is the last instruction that uses an operand that
             // spans more than one instruction. In that case, return the
             // allocated register to the pool.
@@ -677,7 +705,7 @@ impl Assembler
                 }
             ).collect();
 
-            asm.push_insn(op, reg_opnds, target);
+            asm.push_insn(op, reg_opnds, target, text);
 
             // Set the output register for this instruction
             let num_insns = asm.insns.len();
@@ -728,7 +756,7 @@ impl Assembler
     pub fn ccall(&mut self, fptr: *const u8, opnds: Vec<Opnd>) -> Opnd
     {
         let target = Target::FunPtr(fptr);
-        self.push_insn(Op::CCall, opnds, Some(target))
+        self.push_insn(Op::CCall, opnds, Some(target), None)
     }
 }
 
@@ -738,7 +766,7 @@ macro_rules! def_push_jcc {
         {
             pub fn $op_name(&mut self, target: Target)
             {
-                self.push_insn($opcode, vec![], Some(target));
+                self.push_insn($opcode, vec![], Some(target), None);
             }
         }
     };
@@ -751,7 +779,7 @@ macro_rules! def_push_0_opnd {
             #[must_use]
             pub fn $op_name(&mut self) -> Opnd
             {
-                self.push_insn($opcode, vec![], None)
+                self.push_insn($opcode, vec![], None, None)
             }
         }
     };
@@ -763,7 +791,7 @@ macro_rules! def_push_0_opnd_no_out {
         {
             pub fn $op_name(&mut self)
             {
-                self.push_insn($opcode, vec![], None);
+                self.push_insn($opcode, vec![], None, None);
             }
         }
     };
@@ -776,7 +804,7 @@ macro_rules! def_push_1_opnd {
             #[must_use]
             pub fn $op_name(&mut self, opnd0: Opnd) -> Opnd
             {
-                self.push_insn($opcode, vec![opnd0], None)
+                self.push_insn($opcode, vec![opnd0], None, None)
             }
         }
     };
@@ -788,7 +816,7 @@ macro_rules! def_push_1_opnd_no_out {
         {
             pub fn $op_name(&mut self, opnd0: Opnd)
             {
-                self.push_insn($opcode, vec![opnd0], None);
+                self.push_insn($opcode, vec![opnd0], None, None);
             }
         }
     };
@@ -801,7 +829,7 @@ macro_rules! def_push_2_opnd {
             #[must_use]
             pub fn $op_name(&mut self, opnd0: Opnd, opnd1: Opnd) -> Opnd
             {
-                self.push_insn($opcode, vec![opnd0, opnd1], None)
+                self.push_insn($opcode, vec![opnd0, opnd1], None, None)
             }
         }
     };
@@ -813,7 +841,7 @@ macro_rules! def_push_2_opnd_no_out {
         {
             pub fn $op_name(&mut self, opnd0: Opnd, opnd1: Opnd)
             {
-                self.push_insn($opcode, vec![opnd0, opnd1], None);
+                self.push_insn($opcode, vec![opnd0, opnd1], None, None);
             }
         }
     };

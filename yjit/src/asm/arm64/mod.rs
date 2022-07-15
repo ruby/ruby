@@ -94,6 +94,38 @@ pub fn adds(cb: &mut CodeBlock, rd: A64Opnd, rn: A64Opnd, rm: A64Opnd) {
     cb.write_bytes(&bytes);
 }
 
+/// ADR - form a PC-relative address and load it into a register
+pub fn adr(cb: &mut CodeBlock, rd: A64Opnd, imm: A64Opnd) {
+    let bytes: [u8; 4] = match (rd, imm) {
+        (A64Opnd::Reg(rd), A64Opnd::Imm(imm)) => {
+            assert!(rd.num_bits == 64, "The destination register must be 64 bits.");
+            assert!(imm_fits_bits(imm, 21), "The immediate operand must be 21 bits or less.");
+
+            PCRelative::adr(rd.reg_no, imm as i32).into()
+        },
+        _ => panic!("Invalid operand combination to adr instruction."),
+    };
+
+    cb.write_bytes(&bytes);
+}
+
+/// ADRP - form a PC-relative address to a 4KB page and load it into a register.
+/// This is effectively the same as ADR except that the immediate must be a
+/// multiple of 4KB.
+pub fn adrp(cb: &mut CodeBlock, rd: A64Opnd, imm: A64Opnd) {
+    let bytes: [u8; 4] = match (rd, imm) {
+        (A64Opnd::Reg(rd), A64Opnd::Imm(imm)) => {
+            assert!(rd.num_bits == 64, "The destination register must be 64 bits.");
+            assert!(imm_fits_bits(imm, 32), "The immediate operand must be 32 bits or less.");
+
+            PCRelative::adrp(rd.reg_no, imm as i32).into()
+        },
+        _ => panic!("Invalid operand combination to adr instruction."),
+    };
+
+    cb.write_bytes(&bytes);
+}
+
 /// AND - and rn and rm, put the result in rd, don't update flags
 pub fn and(cb: &mut CodeBlock, rd: A64Opnd, rn: A64Opnd, rm: A64Opnd) {
     let bytes: [u8; 4] = match (rd, rn, rm) {
@@ -626,6 +658,16 @@ mod tests {
     #[test]
     fn test_adds_imm_negatve() {
         check_bytes("201c00f1", |cb| adds(cb, X0, X1, A64Opnd::new_imm(-7)));
+    }
+
+    #[test]
+    fn test_adr() {
+        check_bytes("aa000010", |cb| adr(cb, X10, A64Opnd::new_imm(20)));
+    }
+
+    #[test]
+    fn test_adrp() {
+        check_bytes("4a000090", |cb| adrp(cb, X10, A64Opnd::new_imm(0x8000)));
     }
 
     #[test]
