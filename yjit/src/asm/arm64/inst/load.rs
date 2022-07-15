@@ -4,6 +4,12 @@ enum Size {
     Size64 = 0b11,
 }
 
+/// The operation to perform for this instruction.
+enum Opc {
+    LDUR = 0b01,
+    LDURSW = 0b10
+}
+
 /// A convenience function so that we can convert the number of bits of an
 /// register operand directly into an Sf enum variant.
 impl From<u8> for Size {
@@ -22,8 +28,8 @@ impl From<u8> for Size {
 /// LDUR
 /// +-------------+-------------+-------------+-------------+-------------+-------------+-------------+-------------+
 /// | 31 30 29 28 | 27 26 25 24 | 23 22 21 20 | 19 18 17 16 | 15 14 13 12 | 11 10 09 08 | 07 06 05 04 | 03 02 01 00 |
-/// |        1  1    1  0  0  0    0  1  0                                   0  0                                   |
-/// | size.                                imm9..........................         rn.............. rt.............. |
+/// |        1  1    1  0  0  0          0                                   0  0                                   |
+/// | size.                       opc..       imm9..........................         rn.............. rt.............. |
 /// +-------------+-------------+-------------+-------------+-------------+-------------+-------------+-------------+
 ///
 pub struct Load {
@@ -36,6 +42,9 @@ pub struct Load {
     /// The optional signed immediate byte offset from the base register.
     imm9: i16,
 
+    /// The operation to perform for this instruction.
+    opc: Opc,
+
     /// The size of the operands being operated on.
     size: Size
 }
@@ -44,12 +53,13 @@ impl Load {
     /// LDUR (load register, unscaled)
     /// https://developer.arm.com/documentation/ddi0596/2021-12/Base-Instructions/LDUR--Load-Register--unscaled--?lang=en
     pub fn ldur(rt: u8, rn: u8, imm9: i16, num_bits: u8) -> Self {
-        Self {
-            rt,
-            rn,
-            imm9,
-            size: num_bits.into()
-        }
+        Self { rt, rn, imm9, opc: Opc::LDUR, size: num_bits.into() }
+    }
+
+    /// LDURSW (load register, unscaled, signed)
+    /// https://developer.arm.com/documentation/ddi0596/2021-12/Base-Instructions/LDURSW--Load-Register-Signed-Word--unscaled--?lang=en
+    pub fn ldursw(rt: u8, rn: u8, imm9: i16) -> Self {
+        Self { rt, rn, imm9, opc: Opc::LDURSW, size: Size::Size32 }
     }
 }
 
@@ -65,7 +75,7 @@ impl From<Load> for u32 {
         | ((inst.size as u32) << 30)
         | (0b11 << 28)
         | (FAMILY << 25)
-        | (1 << 22)
+        | ((inst.opc as u32) << 22)
         | (imm9 << 12)
         | ((inst.rn as u32) << 5)
         | (inst.rt as u32)
@@ -96,5 +106,19 @@ mod tests {
         let inst = Load::ldur(0, 1, 123, 64);
         let result: u32 = inst.into();
         assert_eq!(0xf847b020, result);
+    }
+
+    #[test]
+    fn test_ldursw() {
+        let inst = Load::ldursw(0, 1, 0);
+        let result: u32 = inst.into();
+        assert_eq!(0xb8800020, result);
+    }
+
+    #[test]
+    fn test_ldursw_with_imm() {
+        let inst = Load::ldursw(0, 1, 123);
+        let result: u32 = inst.into();
+        assert_eq!(0xb887b020, result);
     }
 }

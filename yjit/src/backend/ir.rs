@@ -68,6 +68,10 @@ pub enum Op
     // A low-level instruction that loads a value into a register.
     Load,
 
+    // A low-level instruction that loads a value into a register and
+    // sign-extends it to a 64-bit value.
+    LoadSExt,
+
     // Low-level instruction to store a value to memory.
     Store,
 
@@ -865,6 +869,7 @@ def_push_0_opnd_no_out!(cpush_all, Op::CPushAll);
 def_push_0_opnd_no_out!(cpop_all, Op::CPopAll);
 def_push_1_opnd_no_out!(cret, Op::CRet);
 def_push_1_opnd!(load, Op::Load);
+def_push_1_opnd!(load_sext, Op::LoadSExt);
 def_push_1_opnd!(lea, Op::Lea);
 def_push_2_opnd_no_out!(store, Op::Store);
 def_push_2_opnd_no_out!(mov, Op::Mov);
