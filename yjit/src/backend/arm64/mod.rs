@@ -137,6 +137,17 @@ impl Assembler
                     }
                     asm.cret(C_RET_OPND);
                 },
+                Op::CSelZ | Op::CSelNZ | Op::CSelE | Op::CSelNE |
+                Op::CSelL | Op::CSelLE | Op::CSelG | Op::CSelGE => {
+                    let new_opnds = opnds.into_iter().map(|opnd| {
+                        match opnd {
+                            Opnd::Reg(_) | Opnd::InsnOut { .. } => opnd,
+                            _ => asm.load(opnd)
+                        }
+                    }).collect();
+
+                    asm.push_insn(op, new_opnds, target, text);
+                },
                 Op::IncrCounter => {
                     // Every operand to the IncrCounter instruction need to be a
                     // register once it gets there. So here we're going to load
@@ -624,6 +635,24 @@ impl Assembler
                 },
                 Op::Breakpoint => {
                     brk(cb, A64Opnd::None);
+                },
+                Op::CSelZ | Op::CSelE => {
+                    csel(cb, insn.out.into(), insn.opnds[0].into(), insn.opnds[1].into(), Condition::EQ);
+                },
+                Op::CSelNZ | Op::CSelNE => {
+                    csel(cb, insn.out.into(), insn.opnds[0].into(), insn.opnds[1].into(), Condition::NE);
+                },
+                Op::CSelL => {
+                    csel(cb, insn.out.into(), insn.opnds[0].into(), insn.opnds[1].into(), Condition::LT);
+                },
+                Op::CSelLE => {
+                    csel(cb, insn.out.into(), insn.opnds[0].into(), insn.opnds[1].into(), Condition::LE);
+                },
+                Op::CSelG => {
+                    csel(cb, insn.out.into(), insn.opnds[0].into(), insn.opnds[1].into(), Condition::GT);
+                },
+                Op::CSelGE => {
+                    csel(cb, insn.out.into(), insn.opnds[0].into(), insn.opnds[1].into(), Condition::GE);
                 }
             };
         }

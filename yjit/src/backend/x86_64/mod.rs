@@ -142,6 +142,17 @@ impl Assembler
 
                     asm.push_insn(op, vec![opnd0, opnd1], target, text);
                 },
+                Op::CSelZ | Op::CSelNZ | Op::CSelE | Op::CSelNE |
+                Op::CSelL | Op::CSelLE | Op::CSelG | Op::CSelGE => {
+                    let new_opnds = opnds.into_iter().map(|opnd| {
+                        match opnd {
+                            Opnd::Reg(_) | Opnd::InsnOut { .. } => opnd,
+                            _ => asm.load(opnd)
+                        }
+                    }).collect();
+
+                    asm.push_insn(op, new_opnds, target, text);
+                },
                 Op::Mov => {
                     match (opnds[0], opnds[1]) {
                         (Opnd::Mem(_), Opnd::Mem(_)) => {
@@ -387,6 +398,39 @@ impl Assembler
                 },
 
                 Op::Breakpoint => int3(cb),
+
+                Op::CSelZ => {
+                    mov(cb, insn.out.into(), insn.opnds[1].into());
+                    cmovz(cb, insn.out.into(), insn.opnds[0].into());
+                },
+                Op::CSelNZ => {
+                    mov(cb, insn.out.into(), insn.opnds[1].into());
+                    cmovnz(cb, insn.out.into(), insn.opnds[0].into());
+                },
+                Op::CSelE => {
+                    mov(cb, insn.out.into(), insn.opnds[1].into());
+                    cmove(cb, insn.out.into(), insn.opnds[0].into());
+                },
+                Op::CSelNE => {
+                    mov(cb, insn.out.into(), insn.opnds[1].into());
+                    cmovne(cb, insn.out.into(), insn.opnds[0].into());
+                },
+                Op::CSelL => {
+                    mov(cb, insn.out.into(), insn.opnds[1].into());
+                    cmovl(cb, insn.out.into(), insn.opnds[0].into());
+                },
+                Op::CSelLE => {
+                    mov(cb, insn.out.into(), insn.opnds[1].into());
+                    cmovle(cb, insn.out.into(), insn.opnds[0].into());
+                },
+                Op::CSelG => {
+                    mov(cb, insn.out.into(), insn.opnds[1].into());
+                    cmovg(cb, insn.out.into(), insn.opnds[0].into());
+                },
+                Op::CSelGE => {
+                    mov(cb, insn.out.into(), insn.opnds[1].into());
+                    cmovge(cb, insn.out.into(), insn.opnds[0].into());
+                },
 
                 // We want to keep the panic here because some instructions that
                 // we feed to the backend could get lowered into other

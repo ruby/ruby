@@ -272,6 +272,23 @@ pub fn cmp(cb: &mut CodeBlock, rn: A64Opnd, rm: A64Opnd) {
     cb.write_bytes(&bytes);
 }
 
+/// CSEL - conditionally select between two registers
+pub fn csel(cb: &mut CodeBlock, rd: A64Opnd, rn: A64Opnd, rm: A64Opnd, cond: u8) {
+    let bytes: [u8; 4] = match (rd, rn, rm) {
+        (A64Opnd::Reg(rd), A64Opnd::Reg(rn), A64Opnd::Reg(rm)) => {
+            assert!(
+                rd.num_bits == rn.num_bits && rn.num_bits == rm.num_bits,
+                "All operands must be of the same size."
+            );
+
+            Conditional::csel(rd.reg_no, rn.reg_no, rm.reg_no, cond, rd.num_bits).into()
+        },
+        _ => panic!("Invalid operand combination to csel instruction."),
+    };
+
+    cb.write_bytes(&bytes);
+}
+
 /// LDADDAL - atomic add with acquire and release semantics
 pub fn ldaddal(cb: &mut CodeBlock, rs: A64Opnd, rt: A64Opnd, rn: A64Opnd) {
     let bytes: [u8; 4] = match (rs, rt, rn) {
@@ -758,6 +775,11 @@ mod tests {
     #[test]
     fn test_cmp_immediate() {
         check_bytes("5f3900f1", |cb| cmp(cb, X10, A64Opnd::new_uimm(14)));
+    }
+
+    #[test]
+    fn test_csel() {
+        check_bytes("6a018c9a", |cb| csel(cb, X10, X11, X12, Condition::EQ));
     }
 
     #[test]
