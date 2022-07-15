@@ -25,7 +25,7 @@ module Bundler
 
       extract_files
 
-      build_extensions
+      build_extensions if spec.extensions.any?
       write_build_info_file
       run_post_build_hooks
 
@@ -81,11 +81,9 @@ module Bundler
       else
         require "shellwords" # compensate missing require in rubygems before version 3.2.25
         super
-        if extension_dir.directory? # not made for gems without extensions
-          SharedHelpers.filesystem_access(extension_cache_path.parent, &:mkpath)
-          SharedHelpers.filesystem_access(extension_cache_path) do
-            FileUtils.cp_r extension_dir, extension_cache_path
-          end
+        SharedHelpers.filesystem_access(extension_cache_path.parent, &:mkpath)
+        SharedHelpers.filesystem_access(extension_cache_path) do
+          FileUtils.cp_r extension_dir, extension_cache_path
         end
       end
     end
