@@ -30,23 +30,28 @@ unless respond_to?(:ln_sr)
   def ln_sr(src, dest, target_directory: true, force: nil, noop: nil, verbose: nil)
     options = "#{force ? 'f' : ''}#{target_directory ? '' : 'T'}"
     dest = File.path(dest)
-    srcs = Array.try_convert(src) || [src]
+    srcs = Array(src)
     link = proc do |s, target_dir_p = true|
       s = File.path(s)
+      if target_dir_p
+        d = File.join(destdirs = dest, File.basename(s))
+      else
+        destdirs = File.dirname(d = dest)
+      end
+      destdirs = fu_split_path(File.realpath(destdirs))
       if fu_starting_path?(s)
         srcdirs = fu_split_path((File.realdirpath(s) rescue File.expand_path(s)))
+        base = fu_relative_components_from(srcdirs, destdirs)
+        s = File.join(*base)
       else
         srcdirs = fu_clean_components(*fu_split_path(s))
+        base = fu_relative_components_from(fu_split_path(Dir.pwd), destdirs)
+        while srcdirs.first&. == ".." and base.last&.!=("..") and !fu_starting_path?(base.last)
+          srcdirs.shift
+          base.pop
+        end
+        s = File.join(*base, *srcdirs)
       end
-      destdirs = fu_split_path(File.realdirpath(dest))
-      destdirs.pop unless target_dir_p
-      base = fu_relative_components_from(fu_split_path(Dir.pwd), destdirs)
-      while srcdirs.first&. == ".." and base.last and !fu_starting_path?(base.last)
-        srcdirs.shift
-        base.pop
-      end
-      s = File.join(*base, *srcdirs)
-      d = target_dir_p ? File.join(dest, File.basename(s)) : dest
       fu_output_message "ln -s#{options} #{s} #{d}" if verbose
       next if noop
       remove_file d, true if force
