@@ -211,11 +211,9 @@ class TestGemCommandsSetupCommand < Gem::TestCase
       assert_path_exist File.join bin_dir, e
     end
 
-    default_dir = Gem.default_specifications_dir
-
     # expect to remove other versions of bundler gemspecs on default specification directory.
-    assert_path_not_exist File.join(default_dir, "bundler-1.15.4.gemspec")
-    assert_path_exist File.join(default_dir, "bundler-#{BUNDLER_VERS}.gemspec")
+    assert_path_not_exist previous_bundler_specification_path
+    assert_path_exist new_bundler_specification_path
 
     # expect to not remove bundler-* gemspecs.
     assert_path_exist File.join(Gem.dir, "specifications", "bundler-audit-1.0.0.gemspec")
@@ -239,11 +237,9 @@ class TestGemCommandsSetupCommand < Gem::TestCase
 
     @cmd.install_default_bundler_gem bin_dir
 
-    default_dir = Gem.default_specifications_dir
-
     # expect to remove other versions of bundler gemspecs on default specification directory.
-    assert_path_not_exist File.join(default_dir, "bundler-1.15.4.gemspec")
-    assert_path_exist File.join(default_dir, "bundler-#{BUNDLER_VERS}.gemspec")
+    assert_path_not_exist previous_bundler_specification_path
+    assert_path_exist new_bundler_specification_path
   end
 
   def test_install_default_bundler_gem_with_force_flag
@@ -461,5 +457,13 @@ class TestGemCommandsSetupCommand < Gem::TestCase
 
   def default_bundler_bin_path
     File.join RbConfig::CONFIG['bindir'], 'bundler'
+  end
+
+  def previous_bundler_specification_path
+    File.join(Gem.default_specifications_dir, "bundler-1.15.4.gemspec")
+  end
+
+  def new_bundler_specification_path
+    File.join(Gem.default_specifications_dir, "bundler-#{BUNDLER_VERS}.gemspec")
   end
 end unless Gem.java_platform?
