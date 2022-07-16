@@ -360,33 +360,23 @@ By default, this RubyGems will install gem as:
   end
 
   def install_default_bundler_gem(bin_dir)
-    specs_dir = File.join(default_dir, "specifications", "default")
+    current_default_spec = Gem::Specification.default_stubs.find {|s| s.name == "bundler" }
+    specs_dir = if current_default_spec
+      Gem::Specification.remove_spec current_default_spec
+      loaded_from = current_default_spec.loaded_from
+      File.delete(loaded_from)
+      File.dirname(loaded_from)
+    else
+      File.join(default_dir, "specifications", "default")
+    end
+
     mkdir_p specs_dir, :mode => 0755
 
     bundler_spec = Dir.chdir("bundler") { Gem::Specification.load("bundler.gemspec") }
-
-    current_default_spec = Gem::Specification.default_stubs.find {|s| s.name == "bundler" }
-    if current_default_spec
-      File.delete(current_default_spec.loaded_from)
-      Gem::Specification.remove_spec current_default_spec
-    end
-
     default_spec_path = File.join(specs_dir, "#{bundler_spec.full_name}.gemspec")
     Gem.write_binary(default_spec_path, bundler_spec.to_ruby)
 
     bundler_spec = Gem::Specification.load(default_spec_path)
-
-    # The base_dir value for a specification is inferred by walking up from the
-    # folder where the spec was `loaded_from`. In the case of default gems, we
-    # walk up two levels, because they live at `specifications/default/`, whereas
-    # in the case of regular gems we walk up just one level because they live at
-    # `specifications/`. However, in this case, the gem we are installing is
-    # misdetected as a regular gem, when it's a default gem in reality. This is
-    # because when there's a `:destdir`, the `loaded_from` path has changed and
-    # doesn't match `Gem.default_specifications_dir` which is the criteria to
-    # tag a gem as a default gem. So, in that case, write the correct
-    # `@base_dir` directly.
-    bundler_spec.instance_variable_set(:@base_dir, File.dirname(File.dirname(specs_dir)))
 
     # Remove gemspec that was same version of vendored bundler.
     normal_gemspec = File.join(default_dir, "specifications", "bundler-#{bundler_spec.version}.gemspec")

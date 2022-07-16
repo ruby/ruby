@@ -228,6 +228,24 @@ class TestGemCommandsSetupCommand < Gem::TestCase
     assert_path_exist "#{Gem.dir}/gems/bundler-audit-1.0.0"
   end
 
+  def test_install_default_bundler_gem_with_default_gems_not_installed_at_default_dir
+    @cmd.extend FileUtils
+
+    gemhome2 = File.join(@tempdir, 'gemhome2')
+    Gem.instance_variable_set(:@default_dir, gemhome2)
+
+    FileUtils.mkdir_p gemhome2
+    bin_dir = File.join(gemhome2, 'bin')
+
+    @cmd.install_default_bundler_gem bin_dir
+
+    default_dir = Gem.default_specifications_dir
+
+    # expect to remove other versions of bundler gemspecs on default specification directory.
+    assert_path_not_exist File.join(default_dir, "bundler-1.15.4.gemspec")
+    assert_path_exist File.join(default_dir, "bundler-#{BUNDLER_VERS}.gemspec")
+  end
+
   def test_install_default_bundler_gem_with_force_flag
     @cmd.extend FileUtils
 
