@@ -1,11 +1,17 @@
 #!/usr/bin/ruby
 
+target_directory = true
+noop = false
+force = false
+
 until ARGV.empty?
   case ARGV[0]
   when '-n'
     noop = true
   when '-f'
     force = true
+  when '-T'
+    target_directory = false
   else
     break
   end
@@ -21,10 +27,11 @@ require 'fileutils'
 
 include FileUtils
 unless respond_to?(:ln_sr)
-  def ln_sr(src, dest, force: nil, noop: nil, verbose: nil)
+  def ln_sr(src, dest, target_directory: true, force: nil, noop: nil, verbose: nil)
+    options = "#{force ? 'f' : ''}#{target_directory ? '' : 'T'}"
     dest = File.path(dest)
     srcs = Array.try_convert(src) || [src]
-    link = proc do |s, target_directory = true|
+    link = proc do |s, target_dir_p = true|
       s = File.path(s)
       if fu_starting_path?(s)
         srcdirs = fu_split_path((File.realdirpath(s) rescue File.expand_path(s)))
@@ -32,15 +39,15 @@ unless respond_to?(:ln_sr)
         srcdirs = fu_clean_components(*fu_split_path(s))
       end
       destdirs = fu_split_path(File.realdirpath(dest))
-      destdirs.pop unless target_directory
+      destdirs.pop unless target_dir_p
       base = fu_relative_components_from(fu_split_path(Dir.pwd), destdirs)
       while srcdirs.first&. == ".." and base.last and !fu_starting_path?(base.last)
         srcdirs.shift
         base.pop
       end
       s = File.join(*base, *srcdirs)
-      d = target_directory ? File.join(dest, File.basename(s)) : dest
-      fu_output_message "ln -s#{force ? 'f' : ''} #{s} #{d}" if verbose
+      d = target_dir_p ? File.join(dest, File.basename(s)) : dest
+      fu_output_message "ln -s#{options} #{s} #{d}" if verbose
       next if noop
       remove_file d, true if force
       File.symlink s, d
@@ -48,7 +55,7 @@ unless respond_to?(:ln_sr)
     case srcs.size
     when 0
     when 1
-      link[srcs[0], File.directory?(dest)]
+      link[srcs[0], target_directory && File.directory?(dest)]
     else
       srcs.each(&link)
     end
@@ -103,7 +110,7 @@ end
 
 if File.respond_to?(:symlink)
   begin
-    ln_sr(src, dest, verbose: true, force: force, noop: noop)
+    ln_sr(src, dest, verbose: true, target_directory: target_directory, force: force, noop: noop)
   rescue NotImplementedError, Errno::EPERM
   else
     exit

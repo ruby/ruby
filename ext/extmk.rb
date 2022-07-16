@@ -598,7 +598,7 @@ CP_R = #{config_string('CP')} -r
 
 gemlib = $(TARGET_TOPDIR)/gems/$(gem)/lib
 gemlib:#{%{ $(gemlib)\n$(gemlib): $(gem_srcdir)/lib} if $nmake}
-	$(Q) $(RUBY) $(top_srcdir)/tool/ln_sr.rb -f $(gem_srcdir)/lib $(gemlib)
+	$(Q) #{@inplace ? '$(NULLCMD) ' : ''}$(RUBY) $(top_srcdir)/tool/ln_sr.rb -f -T $(gem_srcdir)/lib $(gemlib)
 
 clean-gemlib:
 	$(Q) $(#{@inplace ? 'NULLCMD' : 'RM_RF'}) $(gemlib)
