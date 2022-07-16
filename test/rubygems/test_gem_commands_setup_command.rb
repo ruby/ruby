@@ -279,6 +279,14 @@ class TestGemCommandsSetupCommand < Gem::TestCase
 
     @cmd.install_default_bundler_gem bin_dir
 
+    # leaves other versions of bundler gemspecs on default specification directory.
+    assert_path_exist previous_bundler_specification_path
+    assert_path_not_exist new_bundler_specification_path
+
+    # installs the updated bundler gemspec to destdir
+    assert_path_not_exist prepend_destdir(destdir, previous_bundler_specification_path)
+    assert_path_exist prepend_destdir(destdir, new_bundler_specification_path)
+
     bundler_spec.executables.each do |e|
       assert_path_exist prepend_destdir(destdir, File.join(@gemhome, 'gems', bundler_spec.full_name, bundler_spec.bindir, e))
     end
