@@ -456,7 +456,7 @@ dln_load(const char *file)
     unsigned long long (*abi_version_fct)(void) = (unsigned long long(*)(void))dln_sym(handle, "ruby_abi_version");
     unsigned long long binary_abi_version = (*abi_version_fct)();
     if (binary_abi_version != ruby_abi_version() && abi_check_enabled_p()) {
-        dln_loaderror("ABI version of binary is incompatible with this Ruby. Try rebuilding this binary.");
+        dln_loaderror("incompatible ABI version of binary - %s", file);
     }
 #endif
 
