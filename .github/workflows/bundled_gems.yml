@@ -101,6 +101,11 @@ jobs:
           make
         if: ${{ steps.diff.outcome == 'failure' }}
 
+      - name: Prepare bundled gems
+        run: |
+          make -s prepare-gems
+        if: ${{ steps.diff.outcome == 'failure' }}
+
       - name: Test bundled gems
         run: |
           make -s test-bundled-gems
