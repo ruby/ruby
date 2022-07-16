@@ -616,18 +616,11 @@ class Gem::SilentUI < Gem::StreamUI
   # The SilentUI has no arguments as it does not use any stream.
 
   def initialize
-    reader, writer = nil, nil
-
-    reader = File.open(IO::NULL, 'r')
-    writer = File.open(IO::NULL, 'w')
-
-    super reader, writer, writer, false
+    io = NullIO.new
+    super io, io, io, false
   end
 
   def close
-    super
-    @ins.close
-    @outs.close
   end
 
   def download_reporter(*args) # :nodoc:
@@ -636,5 +629,26 @@ class Gem::SilentUI < Gem::StreamUI
 
   def progress_reporter(*args) # :nodoc:
     SilentProgressReporter.new(@outs, *args)
+  end
+
+  ##
+  # An absolutely silent IO.
+
+  class NullIO
+    def puts(*args)
+    end
+
+    def print(*args)
+    end
+
+    def flush
+    end
+
+    def gets(*args)
+    end
+
+    def tty?
+      false
+    end
   end
 end
