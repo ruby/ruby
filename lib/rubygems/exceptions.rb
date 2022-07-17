@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
-require_relative 'deprecate'
-require_relative 'unknown_command_spell_checker'
+require_relative "deprecate"
+require_relative "unknown_command_spell_checker"
 
 ##
 # Base exception class for RubyGems.  All exception raised by RubyGems are a
@@ -27,7 +27,7 @@ class Gem::UnknownCommandError < Gem::Exception
       if DidYouMean.respond_to?(:correct_error)
         DidYouMean.correct_error(Gem::UnknownCommandError, Gem::UnknownCommandSpellChecker)
       else
-        DidYouMean::SPELL_CHECKERS['Gem::UnknownCommandError'] =
+        DidYouMean::SPELL_CHECKERS["Gem::UnknownCommandError"] =
           Gem::UnknownCommandSpellChecker
 
         prepend DidYouMean::Correctable
@@ -154,7 +154,7 @@ class Gem::ImpossibleDependenciesError < Gem::Exception
 
   def build_message # :nodoc:
     requester  = @request.requester
-    requester  = requester ? requester.spec.full_name : 'The user'
+    requester  = requester ? requester.spec.full_name : "The user"
     dependency = @request.dependency
 
     message = "#{requester} requires #{dependency} but it conflicted:\n".dup

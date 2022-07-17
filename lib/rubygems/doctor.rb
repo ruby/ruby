@@ -1,6 +1,6 @@
 # frozen_string_literal: true
-require_relative '../rubygems'
-require_relative 'user_interaction'
+require_relative "../rubygems"
+require_relative "user_interaction"
 
 ##
 # Cleans up after a partially-failed uninstall or for an invalid
@@ -19,13 +19,13 @@ class Gem::Doctor
   # subdirectory.
 
   REPOSITORY_EXTENSION_MAP = [ # :nodoc:
-    ['specifications', '.gemspec'],
-    ['build_info',     '.info'],
-    ['cache',          '.gem'],
-    ['doc',            ''],
-    ['extensions',     ''],
-    ['gems',           ''],
-    ['plugins',        ''],
+    ["specifications", ".gemspec"],
+    ["build_info",     ".info"],
+    ["cache",          ".gem"],
+    ["doc",            ""],
+    ["extensions",     ""],
+    ["gems",           ""],
+    ["plugins",        ""],
   ].freeze
 
   missing =
@@ -74,8 +74,8 @@ class Gem::Doctor
     Gem.use_paths @gem_repository.to_s
 
     unless gem_repository?
-      say 'This directory does not appear to be a RubyGems repository, ' +
-          'skipping'
+      say "This directory does not appear to be a RubyGems repository, " +
+          "skipping"
       say
       return
     end
@@ -111,16 +111,16 @@ class Gem::Doctor
       basename = File.basename(child, extension)
       next if installed_specs.include? basename
       next if /^rubygems-\d/ =~ basename
-      next if 'specifications' == sub_directory and 'default' == basename
-      next if 'plugins' == sub_directory and Gem.plugin_suffix_regexp =~ basename
+      next if "specifications" == sub_directory and "default" == basename
+      next if "plugins" == sub_directory and Gem.plugin_suffix_regexp =~ basename
 
-      type = File.directory?(child) ? 'directory' : 'file'
+      type = File.directory?(child) ? "directory" : "file"
 
       action = if @dry_run
-        'Extra'
+        "Extra"
       else
         FileUtils.rm_r(child)
-        'Removed'
+        "Removed"
       end
 
       say "#{action} #{type} #{sub_directory}/#{File.basename(child)}"

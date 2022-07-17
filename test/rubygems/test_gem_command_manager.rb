@@ -1,9 +1,9 @@
 # frozen_string_literal: true
-require_relative 'helper'
-require 'rubygems/command_manager'
+require_relative "helper"
+require "rubygems/command_manager"
 
 class TestGemCommandManager < Gem::TestCase
-  PROJECT_DIR = File.expand_path('../..', __dir__).tap(&Gem::UNTAINT)
+  PROJECT_DIR = File.expand_path("../..", __dir__).tap(&Gem::UNTAINT)
 
   def setup
     super
@@ -12,38 +12,38 @@ class TestGemCommandManager < Gem::TestCase
   end
 
   def test_find_command
-    command = @command_manager.find_command 'install'
+    command = @command_manager.find_command "install"
 
     assert_kind_of Gem::Commands::InstallCommand, command
 
-    command = @command_manager.find_command 'ins'
+    command = @command_manager.find_command "ins"
 
     assert_kind_of Gem::Commands::InstallCommand, command
   end
 
   def test_find_command_ambiguous
     e = assert_raise Gem::CommandLineError do
-      @command_manager.find_command 'u'
+      @command_manager.find_command "u"
     end
 
-    assert_equal 'Ambiguous command u matches [uninstall, unpack, update]',
+    assert_equal "Ambiguous command u matches [uninstall, unpack, update]",
                  e.message
   end
 
   def test_find_alias_command
-    command = @command_manager.find_command 'i'
+    command = @command_manager.find_command "i"
 
     assert_kind_of Gem::Commands::InstallCommand, command
   end
 
   def test_find_login_alias_command
-    command = @command_manager.find_command 'login'
+    command = @command_manager.find_command "login"
 
     assert_kind_of Gem::Commands::SigninCommand, command
   end
 
   def test_find_logout_alias_comamnd
-    command = @command_manager.find_command 'logout'
+    command = @command_manager.find_command "logout"
 
     assert_kind_of Gem::Commands::SignoutCommand, command
   end
@@ -54,7 +54,7 @@ class TestGemCommandManager < Gem::TestCase
 
     @command_manager.register_command :ins
 
-    command = @command_manager.find_command 'ins'
+    command = @command_manager.find_command "ins"
 
     assert_kind_of ins_command, command
   ensure
@@ -63,18 +63,18 @@ class TestGemCommandManager < Gem::TestCase
 
   def test_find_command_unknown
     e = assert_raise Gem::UnknownCommandError do
-      @command_manager.find_command 'xyz'
+      @command_manager.find_command "xyz"
     end
 
-    assert_equal 'Unknown command xyz', e.message
+    assert_equal "Unknown command xyz", e.message
   end
 
   def test_find_command_unknown_suggestions
     e = assert_raise Gem::UnknownCommandError do
-      @command_manager.find_command 'pish'
+      @command_manager.find_command "pish"
     end
 
-    message = 'Unknown command pish'.dup
+    message = "Unknown command pish".dup
 
     if RUBY_VERSION >= "2.4" && defined?(DidYouMean::SPELL_CHECKERS) && defined?(DidYouMean::Correctable)
       message << "\nDid you mean?  \"push\""
@@ -100,7 +100,7 @@ class TestGemCommandManager < Gem::TestCase
       assert_raise Gem::MockGemUi::TermError do
         @command_manager.run %w[interrupt]
       end
-      assert_equal '', ui.output
+      assert_equal "", ui.output
       assert_equal "ERROR:  Interrupted\n", ui.error
     end
   ensure
@@ -117,7 +117,7 @@ class TestGemCommandManager < Gem::TestCase
       assert_raise Gem::MockGemUi::TermError do
         @command_manager.run %w[crash]
       end
-      assert_equal '', ui.output
+      assert_equal "", ui.output
       err = ui.error.split("\n").first
       assert_equal "ERROR:  Loading command: crash (RuntimeError)", err
     end
@@ -141,7 +141,7 @@ class TestGemCommandManager < Gem::TestCase
     #capture all install options
     use_ui @ui do
       check_options = nil
-      @command_manager['install'].when_invoked do |options|
+      @command_manager["install"].when_invoked do |options|
         check_options = options
         true
       end
@@ -166,7 +166,7 @@ class TestGemCommandManager < Gem::TestCase
       assert_equal true, check_options[:force]
       assert_equal :local, check_options[:domain]
       assert_equal false, check_options[:wrappers]
-      assert_equal Gem::Requirement.new('3.0'), check_options[:version]
+      assert_equal Gem::Requirement.new("3.0"), check_options[:version]
       assert_equal Dir.pwd, check_options[:install_dir]
       assert_equal Dir.pwd, check_options[:bin_dir]
 
@@ -191,7 +191,7 @@ class TestGemCommandManager < Gem::TestCase
   def test_process_args_uninstall
     #capture all uninstall options
     check_options = nil
-    @command_manager['uninstall'].when_invoked do |options|
+    @command_manager["uninstall"].when_invoked do |options|
       check_options = options
       true
     end
@@ -204,14 +204,14 @@ class TestGemCommandManager < Gem::TestCase
     check_options = nil
     @command_manager.process_args %w[uninstall foobar --version 3.0]
     assert_equal "foobar", check_options[:args].first
-    assert_equal Gem::Requirement.new('3.0'), check_options[:version]
+    assert_equal Gem::Requirement.new("3.0"), check_options[:version]
   end
 
   # HACK move to check command test
   def test_process_args_check
     #capture all check options
     check_options = nil
-    @command_manager['check'].when_invoked do |options|
+    @command_manager["check"].when_invoked do |options|
       check_options = options
       true
     end
@@ -230,7 +230,7 @@ class TestGemCommandManager < Gem::TestCase
   def test_process_args_build
     #capture all build options
     check_options = nil
-    @command_manager['build'].when_invoked do |options|
+    @command_manager["build"].when_invoked do |options|
       check_options = options
       true
     end
@@ -242,14 +242,14 @@ class TestGemCommandManager < Gem::TestCase
     #check settings
     check_options = nil
     @command_manager.process_args %w[build foobar.rb]
-    assert_equal 'foobar.rb', check_options[:args].first
+    assert_equal "foobar.rb", check_options[:args].first
   end
 
   # HACK move to query command test
   def test_process_args_query
     #capture all query options
     check_options = nil
-    @command_manager['query'].when_invoked do |options|
+    @command_manager["query"].when_invoked do |options|
       check_options = options
       true
     end
@@ -290,25 +290,25 @@ class TestGemCommandManager < Gem::TestCase
   def test_process_args_update
     #capture all update options
     check_options = nil
-    @command_manager['update'].when_invoked do |options|
+    @command_manager["update"].when_invoked do |options|
       check_options = options
       true
     end
 
     #check defaults
     @command_manager.process_args %w[update]
-    assert_includes check_options[:document], 'ri'
+    assert_includes check_options[:document], "ri"
 
     #check settings
     check_options = nil
     @command_manager.process_args %w[update --force --document=ri --install-dir .]
-    assert_includes check_options[:document], 'ri'
+    assert_includes check_options[:document], "ri"
     assert_equal true, check_options[:force]
     assert_equal Dir.pwd, check_options[:install_dir]
   end
 
   def test_deprecated_command
-    require 'rubygems/command'
+    require "rubygems/command"
     foo_command = Class.new(Gem::Command) do
       extend Gem::Deprecate
 

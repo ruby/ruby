@@ -1,19 +1,19 @@
-require_relative 'helper'
+require_relative "helper"
 
 class GemTest < Gem::TestCase
   def test_rubygems_normal_behaviour
-    _ = Gem::Util.popen(*ruby_with_rubygems_in_load_path, '-e', "'require \"rubygems\"'", { :err => [:child, :out] }).strip
+    _ = Gem::Util.popen(*ruby_with_rubygems_in_load_path, "-e", "'require \"rubygems\"'", { :err => [:child, :out] }).strip
     assert $?.success?
   end
 
   def test_operating_system_other_exceptions
-    pend "does not apply to truffleruby" if RUBY_ENGINE == 'truffleruby'
+    pend "does not apply to truffleruby" if RUBY_ENGINE == "truffleruby"
 
     path = util_install_operating_system_rb <<-RUBY
       intentionally_not_implemented_method
     RUBY
 
-    output = Gem::Util.popen(*ruby_with_rubygems_and_fake_operating_system_in_load_path(path), '-e', "'require \"rubygems\"'", { :err => [:child, :out] }).strip
+    output = Gem::Util.popen(*ruby_with_rubygems_and_fake_operating_system_in_load_path(path), "-e", "'require \"rubygems\"'", { :err => [:child, :out] }).strip
     assert !$?.success?
     assert_includes output, "undefined local variable or method `intentionally_not_implemented_method'"
     assert_includes output, "Loading the #{operating_system_rb_at(path)} file caused an error. " \
@@ -23,8 +23,8 @@ class GemTest < Gem::TestCase
   end
 
   def test_operating_system_customizing_default_dir
-    pend "does not apply to truffleruby" if RUBY_ENGINE == 'truffleruby'
-    pend "loads a custom defaults/jruby file that gets in the middle" if RUBY_ENGINE == 'jruby'
+    pend "does not apply to truffleruby" if RUBY_ENGINE == "truffleruby"
+    pend "loads a custom defaults/jruby file that gets in the middle" if RUBY_ENGINE == "jruby"
 
     # On a non existing default dir, there should be no gems
 
@@ -38,7 +38,7 @@ class GemTest < Gem::TestCase
 
     output = Gem::Util.popen(
       *ruby_with_rubygems_and_fake_operating_system_in_load_path(path),
-      '-e',
+      "-e",
       "require \"rubygems\"; puts Gem::Specification.stubs.map(&:full_name)",
       { :err => [:child, :out] }
     ).strip
@@ -59,7 +59,7 @@ class GemTest < Gem::TestCase
 
     FileUtils.mkdir_p File.dirname(operating_system_rb)
 
-    File.open(operating_system_rb, 'w') {|f| f.write content }
+    File.open(operating_system_rb, "w") {|f| f.write content }
 
     dir_lib_arg
   end

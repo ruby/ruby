@@ -1,6 +1,6 @@
 # frozen_string_literal: true
-require_relative 'remote_fetcher'
-require_relative 'text'
+require_relative "remote_fetcher"
+require_relative "text"
 
 ##
 # Utility methods for using the RubyGems API.
@@ -19,8 +19,8 @@ module Gem::GemcutterUtilities
   # Add the --key option
 
   def add_key_option
-    add_option('-k', '--key KEYNAME', Symbol,
-               'Use the given API key',
+    add_option("-k", "--key KEYNAME", Symbol,
+               "Use the given API key",
                "from #{Gem.configuration.credentials_path}") do |value,options|
       options[:key] = value
     end
@@ -30,9 +30,9 @@ module Gem::GemcutterUtilities
   # Add the --otp option
 
   def add_otp_option
-    add_option('--otp CODE',
-               'Digit code for multifactor authentication',
-               'You can also use the environment variable GEM_HOST_OTP_CODE') do |value, options|
+    add_option("--otp CODE",
+               "Digit code for multifactor authentication",
+               "You can also use the environment variable GEM_HOST_OTP_CODE") do |value, options|
       options[:otp] = value
     end
   end
@@ -69,7 +69,7 @@ module Gem::GemcutterUtilities
 
     @host ||=
       begin
-        env_rubygems_host = ENV['RUBYGEMS_HOST']
+        env_rubygems_host = ENV["RUBYGEMS_HOST"]
         env_rubygems_host = nil if
           env_rubygems_host and env_rubygems_host.empty?
 
@@ -83,7 +83,7 @@ module Gem::GemcutterUtilities
   # If +allowed_push_host+ metadata is present, then it will only allow that host.
 
   def rubygems_api_request(method, path, host = nil, allowed_push_host = nil, scope: nil, &block)
-    require 'net/http'
+    require "net/http"
 
     self.host = host if host
     unless self.host
@@ -118,7 +118,7 @@ module Gem::GemcutterUtilities
   end
 
   def mfa_unauthorized?(response)
-    response.kind_of?(Net::HTTPUnauthorized) && response.body.start_with?('You have enabled multifactor authentication')
+    response.kind_of?(Net::HTTPUnauthorized) && response.body.start_with?("You have enabled multifactor authentication")
   end
 
   def update_scope(scope)
@@ -240,13 +240,13 @@ module Gem::GemcutterUtilities
   end
 
   def ask_otp
-    say 'You have enabled multi-factor authentication. Please enter OTP code.'
-    options[:otp] = ask 'Code: '
+    say "You have enabled multi-factor authentication. Please enter OTP code."
+    options[:otp] = ask "Code: "
   end
 
   def pretty_host(host)
     if default_host?
-      'RubyGems.org'
+      "RubyGems.org"
     else
       host
     end

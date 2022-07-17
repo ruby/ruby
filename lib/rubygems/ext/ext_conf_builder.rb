@@ -7,8 +7,8 @@
 
 class Gem::Ext::ExtConfBuilder < Gem::Ext::Builder
   def self.build(extension, dest_path, results, args=[], lib_dir=nil, extension_dir=Dir.pwd)
-    require 'fileutils'
-    require 'tempfile'
+    require "fileutils"
+    require "tempfile"
 
     tmp_dest = Dir.mktmpdir(".gem.", extension_dir)
 
@@ -22,16 +22,16 @@ class Gem::Ext::ExtConfBuilder < Gem::Ext::Builder
 
     begin
       require "shellwords"
-      cmd = Gem.ruby.shellsplit << "-I" << File.expand_path('../..', __dir__) << File.basename(extension)
+      cmd = Gem.ruby.shellsplit << "-I" << File.expand_path("../..", __dir__) << File.basename(extension)
       cmd.push(*args)
 
       run(cmd, results, class_name, extension_dir) do |s, r|
-        mkmf_log = File.join(extension_dir, 'mkmf.log')
+        mkmf_log = File.join(extension_dir, "mkmf.log")
         if File.exist? mkmf_log
           unless s.success?
             r << "To see why this extension failed to compile, please check" \
               " the mkmf.log which can be found here:\n"
-            r << "  " + File.join(dest_path, 'mkmf.log') + "\n"
+            r << "  " + File.join(dest_path, "mkmf.log") + "\n"
           end
           FileUtils.mv mkmf_log, dest_path
         end
@@ -67,7 +67,7 @@ class Gem::Ext::ExtConfBuilder < Gem::Ext::Builder
   private
 
   def self.get_relative_path(path, base)
-    path[0..base.length - 1] = '.' if path.start_with?(base)
+    path[0..base.length - 1] = "." if path.start_with?(base)
     path
   end
 end

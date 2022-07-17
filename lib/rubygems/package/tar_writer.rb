@@ -166,7 +166,7 @@ class Gem::Package::TarWriter
   def add_file_signed(name, mode, signer)
     digest_algorithms = [
       signer.digest_algorithm,
-      Gem::Security.create_digest('SHA512'),
+      Gem::Security.create_digest("SHA512"),
     ].compact.uniq
 
     digests = add_file_digest name, mode, digest_algorithms do |io|
@@ -304,14 +304,14 @@ class Gem::Package::TarWriter
       raise Gem::Package::TooLongFileName.new("File \"#{name}\" has a too long path (should be 256 or less)")
     end
 
-    prefix = ''
+    prefix = ""
     if name.bytesize > 100
-      parts = name.split('/', -1) # parts are never empty here
+      parts = name.split("/", -1) # parts are never empty here
       name = parts.pop            # initially empty for names with a trailing slash ("foo/.../bar/")
-      prefix = parts.join('/')    # if empty, then it's impossible to split (parts is empty too)
+      prefix = parts.join("/")    # if empty, then it's impossible to split (parts is empty too)
       while !parts.empty? && (prefix.bytesize > 155 || name.empty?)
-        name = parts.pop + '/' + name
-        prefix = parts.join('/')
+        name = parts.pop + "/" + name
+        prefix = parts.join("/")
       end
 
       if name.bytesize > 100 or prefix.empty?

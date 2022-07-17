@@ -1,7 +1,7 @@
 # frozen_string_literal: true
-require_relative 'helper'
-require 'rubygems/commands/signin_command'
-require 'rubygems/installer'
+require_relative "helper"
+require "rubygems/commands/signin_command"
+require "rubygems/installer"
 
 class TestGemCommandsSigninCommand < Gem::TestCase
   def setup
@@ -34,7 +34,7 @@ class TestGemCommandsSigninCommand < Gem::TestCase
   end
 
   def test_execute_when_already_signed_in_with_same_host
-    host = 'http://some-gemcutter-compatible-host.org'
+    host = "http://some-gemcutter-compatible-host.org"
 
     util_capture(nil, host) { @cmd.execute }
     old_credentials = load_yaml_file Gem.configuration.credentials_path
@@ -46,10 +46,10 @@ class TestGemCommandsSigninCommand < Gem::TestCase
   end
 
   def test_execute_when_already_signed_in_with_different_host
-    api_key = 'a5fdbb6ba150cbb83aad2bb2fede64cf04045xxxx'
+    api_key = "a5fdbb6ba150cbb83aad2bb2fede64cf04045xxxx"
 
     util_capture(nil, nil, api_key) { @cmd.execute }
-    host = 'http://some-gemcutter-compatible-host.org'
+    host = "http://some-gemcutter-compatible-host.org"
 
     util_capture(nil, host, api_key) { @cmd.execute }
     credentials = load_yaml_file Gem.configuration.credentials_path
@@ -60,13 +60,13 @@ class TestGemCommandsSigninCommand < Gem::TestCase
   end
 
   def test_execute_with_host_supplied
-    host = 'http://some-gemcutter-compatible-host.org'
+    host = "http://some-gemcutter-compatible-host.org"
 
     sign_in_ui = util_capture(nil, host) { @cmd.execute }
     assert_match %r{Enter your #{host} credentials.}, sign_in_ui.output
     assert_match %r{Signed in.}, sign_in_ui.output
 
-    api_key     = 'a5fdbb6ba150cbb83aad2bb2fede64cf040453903'
+    api_key     = "a5fdbb6ba150cbb83aad2bb2fede64cf040453903"
     credentials = load_yaml_file Gem.configuration.credentials_path
     assert_equal api_key, credentials[host]
   end
@@ -74,16 +74,16 @@ class TestGemCommandsSigninCommand < Gem::TestCase
   def test_execute_with_valid_creds_set_for_default_host
     util_capture { @cmd.execute }
 
-    api_key     = 'a5fdbb6ba150cbb83aad2bb2fede64cf040453903'
+    api_key     = "a5fdbb6ba150cbb83aad2bb2fede64cf040453903"
     credentials = load_yaml_file Gem.configuration.credentials_path
 
     assert_equal api_key, credentials[:rubygems_api_key]
   end
 
   def test_execute_with_key_name_and_scope
-    email     = 'you@example.com'
-    password  = 'secret'
-    api_key   = '1234'
+    email     = "you@example.com"
+    password  = "secret"
+    api_key   = "1234"
     fetcher   = Gem::RemoteFetcher.fetcher
 
     key_name_ui = Gem::MockGemUi.new "#{email}\n#{password}\ntest-key\n\ny\n\n\n\n\n\n"
@@ -106,9 +106,9 @@ class TestGemCommandsSigninCommand < Gem::TestCase
   end
 
   def test_execute_with_key_name_scope_and_mfa_level_of_ui_only
-    email     = 'you@example.com'
-    password  = 'secret'
-    api_key   = '1234'
+    email     = "you@example.com"
+    password  = "secret"
+    api_key   = "1234"
     fetcher   = Gem::RemoteFetcher.fetcher
     mfa_level = "ui_only"
 
@@ -133,9 +133,9 @@ class TestGemCommandsSigninCommand < Gem::TestCase
   end
 
   def test_execute_with_key_name_scope_and_mfa_level_of_gem_signin
-    email     = 'you@example.com'
-    password  = 'secret'
-    api_key   = '1234'
+    email     = "you@example.com"
+    password  = "secret"
+    api_key   = "1234"
     fetcher   = Gem::RemoteFetcher.fetcher
     mfa_level = "ui_and_gem_signin"
 
@@ -160,19 +160,19 @@ class TestGemCommandsSigninCommand < Gem::TestCase
   end
 
   def test_execute_on_gemserver_without_profile_me_endpoint
-    host = 'http://some-gemcutter-compatible-host.org'
+    host = "http://some-gemcutter-compatible-host.org"
 
-    email     = 'you@example.com'
-    password  = 'secret'
-    api_key   = '1234'
+    email     = "you@example.com"
+    password  = "secret"
+    api_key   = "1234"
     fetcher   = Gem::RemoteFetcher.fetcher
 
     key_name_ui = Gem::MockGemUi.new "#{email}\n#{password}\ntest-key\n\ny\n\n\n\n\n\ny"
 
     # Set the expected response for the Web-API supplied
-    ENV['RUBYGEMS_HOST']       = host
+    ENV["RUBYGEMS_HOST"]       = host
     data_key                   = "#{ENV['RUBYGEMS_HOST']}/api/v1/api_key"
-    fetcher.data[data_key]     = [api_key, 200, 'OK']
+    fetcher.data[data_key]     = [api_key, 200, "OK"]
 
     use_ui key_name_ui do
       @cmd.execute
@@ -194,14 +194,14 @@ class TestGemCommandsSigninCommand < Gem::TestCase
   # Utility method to capture IO/UI within the block passed
 
   def util_capture(ui_stub = nil, host = nil, api_key = nil, fetcher = Gem::FakeFetcher.new, mfa_level = "disabled")
-    api_key        ||= 'a5fdbb6ba150cbb83aad2bb2fede64cf040453903'
-    response         = [api_key, 200, 'OK']
-    profile_response = [ "mfa: #{mfa_level}\n" , 200, 'OK']
-    email            = 'you@example.com'
-    password         = 'secret'
+    api_key        ||= "a5fdbb6ba150cbb83aad2bb2fede64cf040453903"
+    response         = [api_key, 200, "OK"]
+    profile_response = [ "mfa: #{mfa_level}\n" , 200, "OK"]
+    email            = "you@example.com"
+    password         = "secret"
 
     # Set the expected response for the Web-API supplied
-    ENV['RUBYGEMS_HOST']       = host || Gem::DEFAULT_HOST
+    ENV["RUBYGEMS_HOST"]       = host || Gem::DEFAULT_HOST
     data_key                   = "#{ENV['RUBYGEMS_HOST']}/api/v1/api_key"
     fetcher.data[data_key]     = response
     profile                    = "#{ENV['RUBYGEMS_HOST']}/api/v1/profile/me.yaml"

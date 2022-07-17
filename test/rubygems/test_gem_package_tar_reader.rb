@@ -1,6 +1,6 @@
 # frozen_string_literal: true
-require_relative 'package/tar_test_case'
-require 'rubygems/package'
+require_relative "package/tar_test_case"
+require "rubygems/package"
 
 class TestGemPackageTarReader < Gem::Package::TarTestCase
   def test_each_entry
@@ -25,7 +25,7 @@ class TestGemPackageTarReader < Gem::Package::TarTestCase
   end
 
   def test_rewind
-    content = ('a'..'z').to_a.join(" ")
+    content = ("a".."z").to_a.join(" ")
 
     str =
       tar_file_header("lib/foo", "", 010644, content.size, Time.now) +
@@ -56,10 +56,10 @@ class TestGemPackageTarReader < Gem::Package::TarTestCase
     io = TempIO.new tar
 
     Gem::Package::TarReader.new io do |tar_reader|
-      tar_reader.seek 'baz/bar' do |entry|
+      tar_reader.seek "baz/bar" do |entry|
         assert_kind_of Gem::Package::TarReader::Entry, entry
 
-        assert_equal 'baz/bar', entry.full_name
+        assert_equal "baz/bar", entry.full_name
       end
 
       assert_equal 0, io.pos
@@ -75,8 +75,8 @@ class TestGemPackageTarReader < Gem::Package::TarTestCase
     io = TempIO.new tar
 
     Gem::Package::TarReader.new io do |tar_reader|
-      tar_reader.seek 'nonexistent' do |entry|
-        flunk 'entry missing but entry-found block was run'
+      tar_reader.seek "nonexistent" do |entry|
+        flunk "entry missing but entry-found block was run"
       end
 
       assert_equal 0, io.pos

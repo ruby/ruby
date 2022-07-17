@@ -1,5 +1,5 @@
 # frozen_string_literal: true
-require_relative 'helper'
+require_relative "helper"
 
 class TestGemResolverAPISet < Gem::TestCase
   def setup
@@ -12,17 +12,17 @@ class TestGemResolverAPISet < Gem::TestCase
   def test_initialize
     set = @DR::APISet.new
 
-    assert_equal URI('https://index.rubygems.org/info/'),            set.dep_uri
-    assert_equal URI('https://index.rubygems.org/'),                 set.uri
-    assert_equal Gem::Source.new(URI('https://index.rubygems.org')), set.source
+    assert_equal URI("https://index.rubygems.org/info/"),            set.dep_uri
+    assert_equal URI("https://index.rubygems.org/"),                 set.uri
+    assert_equal Gem::Source.new(URI("https://index.rubygems.org")), set.source
   end
 
   def test_initialize_deeper_uri
-    set = @DR::APISet.new 'https://rubygemsserver.com/mygems/info'
+    set = @DR::APISet.new "https://rubygemsserver.com/mygems/info"
 
-    assert_equal URI('https://rubygemsserver.com/mygems/info'),       set.dep_uri
-    assert_equal URI('https://rubygemsserver.com/'),                  set.uri
-    assert_equal Gem::Source.new(URI('https://rubygemsserver.com/')), set.source
+    assert_equal URI("https://rubygemsserver.com/mygems/info"),       set.dep_uri
+    assert_equal URI("https://rubygemsserver.com/"),                  set.uri
+    assert_equal Gem::Source.new(URI("https://rubygemsserver.com/")), set.source
   end
 
   def test_initialize_uri
@@ -36,9 +36,9 @@ class TestGemResolverAPISet < Gem::TestCase
     spec_fetcher
 
     data = [
-      { :name         => 'a',
-        :number       => '1',
-        :platform     => 'ruby',
+      { :name         => "a",
+        :number       => "1",
+        :platform     => "ruby",
         :dependencies => [] },
     ]
 
@@ -46,7 +46,7 @@ class TestGemResolverAPISet < Gem::TestCase
 
     set = @DR::APISet.new @dep_uri
 
-    a_dep = @DR::DependencyRequest.new dep('a'), nil
+    a_dep = @DR::DependencyRequest.new dep("a"), nil
 
     expected = [
       @DR::APISpecification.new(set, data.first),
@@ -59,13 +59,13 @@ class TestGemResolverAPISet < Gem::TestCase
     spec_fetcher
 
     data = [
-      { :name         => 'a',
-        :number       => '1',
-        :platform     => 'ruby',
+      { :name         => "a",
+        :number       => "1",
+        :platform     => "ruby",
         :dependencies => [] },
-      { :name         => 'a',
-        :number       => '2.a',
-        :platform     => 'ruby',
+      { :name         => "a",
+        :number       => "2.a",
+        :platform     => "ruby",
         :dependencies => [] },
     ]
 
@@ -74,7 +74,7 @@ class TestGemResolverAPISet < Gem::TestCase
     set = @DR::APISet.new @dep_uri
     set.prerelease = true
 
-    a_dep = @DR::DependencyRequest.new dep('a'), nil
+    a_dep = @DR::DependencyRequest.new dep("a"), nil
 
     expected = [
       @DR::APISpecification.new(set, data.first),
@@ -88,9 +88,9 @@ class TestGemResolverAPISet < Gem::TestCase
     spec_fetcher
 
     data = [
-      { :name         => 'a',
-        :number       => '1',
-        :platform     => 'ruby',
+      { :name         => "a",
+        :number       => "1",
+        :platform     => "ruby",
         :dependencies => [] },
     ]
 
@@ -98,7 +98,7 @@ class TestGemResolverAPISet < Gem::TestCase
 
     set = @DR::APISet.new @dep_uri
 
-    a_dep = @DR::DependencyRequest.new dep('a'), nil
+    a_dep = @DR::DependencyRequest.new dep("a"), nil
 
     set.prefetch [a_dep]
 
@@ -115,7 +115,7 @@ class TestGemResolverAPISet < Gem::TestCase
     set = @DR::APISet.new @dep_uri
     set.remote = false
 
-    a_dep = @DR::DependencyRequest.new dep('a'), nil
+    a_dep = @DR::DependencyRequest.new dep("a"), nil
 
     assert_empty set.find_all(a_dep)
   end
@@ -127,7 +127,7 @@ class TestGemResolverAPISet < Gem::TestCase
 
     set = @DR::APISet.new @dep_uri
 
-    a_dep = @DR::DependencyRequest.new dep('a'), nil
+    a_dep = @DR::DependencyRequest.new dep("a"), nil
 
     assert_empty set.find_all(a_dep)
 
@@ -144,8 +144,8 @@ class TestGemResolverAPISet < Gem::TestCase
 
     set = @DR::APISet.new @dep_uri
 
-    a_dep = @DR::DependencyRequest.new dep('a'), nil
-    b_dep = @DR::DependencyRequest.new dep('b'), nil
+    a_dep = @DR::DependencyRequest.new dep("a"), nil
+    b_dep = @DR::DependencyRequest.new dep("b"), nil
 
     set.prefetch [a_dep, b_dep]
 
@@ -160,8 +160,8 @@ class TestGemResolverAPISet < Gem::TestCase
 
     set = @DR::APISet.new @dep_uri
 
-    a_dep = @DR::DependencyRequest.new dep('a'), nil
-    b_dep = @DR::DependencyRequest.new dep('b'), nil
+    a_dep = @DR::DependencyRequest.new dep("a"), nil
+    b_dep = @DR::DependencyRequest.new dep("b"), nil
 
     set.prefetch [a_dep]
 
@@ -179,8 +179,8 @@ class TestGemResolverAPISet < Gem::TestCase
 
     set = @DR::APISet.new @dep_uri
 
-    a_dep = @DR::DependencyRequest.new dep('a'), nil
-    b_dep = @DR::DependencyRequest.new dep('b'), nil
+    a_dep = @DR::DependencyRequest.new dep("a"), nil
+    b_dep = @DR::DependencyRequest.new dep("b"), nil
 
     set.prefetch [a_dep, b_dep]
 
@@ -199,8 +199,8 @@ class TestGemResolverAPISet < Gem::TestCase
     set = @DR::APISet.new @dep_uri
     set.remote = false
 
-    a_dep = @DR::DependencyRequest.new dep('a'), nil
-    b_dep = @DR::DependencyRequest.new dep('b'), nil
+    a_dep = @DR::DependencyRequest.new dep("a"), nil
+    b_dep = @DR::DependencyRequest.new dep("b"), nil
 
     set.prefetch [a_dep, b_dep]
 

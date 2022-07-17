@@ -5,8 +5,8 @@
 # See LICENSE.txt for permissions.
 #++
 
-require_relative 'deprecate'
-require_relative 'text'
+require_relative "deprecate"
+require_relative "text"
 
 ##
 # Module that defines the default UserInteraction.  Any class including this
@@ -148,7 +148,7 @@ module Gem::UserInteraction
   ##
   # Displays the given +statement+ on the standard output (or equivalent).
 
-  def say(statement = '')
+  def say(statement = "")
     ui.say statement
   end
 
@@ -259,11 +259,11 @@ class Gem::StreamUI
 
     default_answer = case default
     when nil
-      'yn'
+      "yn"
     when true
-      'Yn'
+      "Yn"
     else
-      'yN'
+      "yN"
     end
 
     result = nil
@@ -312,7 +312,7 @@ class Gem::StreamUI
   def require_io_console
     @require_io_console ||= begin
       begin
-        require 'io/console'
+        require "io/console"
       rescue LoadError
       end
       true
@@ -472,7 +472,7 @@ class Gem::StreamUI
     # and the +terminal_message+ when it is complete.
 
     def initialize(out_stream, size, initial_message,
-                   terminal_message = 'complete')
+                   terminal_message = "complete")
       @out = out_stream
       @total = size
       @count = 0

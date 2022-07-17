@@ -5,8 +5,8 @@
 # See LICENSE.txt for permissions.
 #++
 
-require 'rubygems'
-require 'rubygems/gem_runner'
+require "rubygems"
+require "rubygems/gem_runner"
 
 args = ARGV.clone
 

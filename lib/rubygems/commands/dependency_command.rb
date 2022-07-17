@@ -1,28 +1,28 @@
 # frozen_string_literal: true
-require_relative '../command'
-require_relative '../local_remote_options'
-require_relative '../version_option'
+require_relative "../command"
+require_relative "../local_remote_options"
+require_relative "../version_option"
 
 class Gem::Commands::DependencyCommand < Gem::Command
   include Gem::LocalRemoteOptions
   include Gem::VersionOption
 
   def initialize
-    super 'dependency',
-          'Show the dependencies of an installed gem',
+    super "dependency",
+          "Show the dependencies of an installed gem",
           :version => Gem::Requirement.default, :domain => :local
 
     add_version_option
     add_platform_option
     add_prerelease_option
 
-    add_option('-R', '--[no-]reverse-dependencies',
-               'Include reverse dependencies in the output') do
+    add_option("-R", "--[no-]reverse-dependencies",
+               "Include reverse dependencies in the output") do
       |value, options|
       options[:reverse_dependencies] = value
     end
 
-    add_option('-p', '--pipe',
+    add_option("-p", "--pipe",
                "Pipe Format (name --version ver)") do |value, options|
       options[:pipe_format] = value
     end
@@ -134,7 +134,7 @@ use with other commands.
 
   def ensure_local_only_reverse_dependencies # :nodoc:
     if options[:reverse_dependencies] and remote? and not local?
-      alert_error 'Only reverse dependencies for local gems are supported.'
+      alert_error "Only reverse dependencies for local gems are supported."
       terminate_interaction 1
     end
   end
@@ -142,7 +142,7 @@ use with other commands.
   def ensure_specs(specs) # :nodoc:
     return unless specs.empty?
 
-    patterns = options[:args].join ','
+    patterns = options[:args].join ","
     say "No gems found matching #{patterns} (#{options[:version]})" if
       Gem.configuration.verbose
 
@@ -151,10 +151,10 @@ use with other commands.
 
   def print_dependencies(spec, level = 0) # :nodoc:
     response = String.new
-    response << '  ' * level + "Gem #{spec.full_name}\n"
+    response << "  " * level + "Gem #{spec.full_name}\n"
     unless spec.dependencies.empty?
       spec.dependencies.sort_by {|dep| dep.name }.each do |dep|
-        response << '  ' * level + "  #{dep}\n"
+        response << "  " * level + "  #{dep}\n"
       end
     end
     response

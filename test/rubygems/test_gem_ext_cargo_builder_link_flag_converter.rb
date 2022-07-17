@@ -1,7 +1,7 @@
 # frozen_string_literal: true
-require_relative 'helper'
-require 'rubygems/ext'
-require 'rubygems/ext/cargo_builder/link_flag_converter'
+require_relative "helper"
+require "rubygems/ext"
+require "rubygems/ext/cargo_builder/link_flag_converter"
 
 class TestGemExtCargoBuilderLinkFlagConverter < Gem::TestCase
   CASES = {

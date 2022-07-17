@@ -48,7 +48,7 @@ class Gem::NameTuple
 
   def full_name
     case @platform
-    when nil, 'ruby', ''
+    when nil, "ruby", ""
       "#{@name}-#{@version}"
     else
       "#{@name}-#{@version}-#{@platform}"

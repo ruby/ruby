@@ -1,15 +1,15 @@
 # frozen_string_literal: true
-require_relative 'helper'
-require 'rubygems/request_set'
-require 'rubygems/request_set/lockfile'
-require 'rubygems/request_set/lockfile/tokenizer'
-require 'rubygems/request_set/lockfile/parser'
+require_relative "helper"
+require "rubygems/request_set"
+require "rubygems/request_set/lockfile"
+require "rubygems/request_set/lockfile/tokenizer"
+require "rubygems/request_set/lockfile/parser"
 
 class TestGemRequestSetLockfileTokenizer < Gem::TestCase
   def setup
     super
 
-    @gem_deps_file = 'gem.deps.rb'
+    @gem_deps_file = "gem.deps.rb"
     @lock_file = File.expand_path "#{@gem_deps_file}.lock"
   end
 
@@ -34,10 +34,10 @@ class TestGemRequestSetLockfileTokenizer < Gem::TestCase
   end
 
   def test_token_pos
-    tokenizer = Gem::RequestSet::Lockfile::Tokenizer.new ''
+    tokenizer = Gem::RequestSet::Lockfile::Tokenizer.new ""
     assert_equal [5, 0], tokenizer.token_pos(5)
 
-    tokenizer = Gem::RequestSet::Lockfile::Tokenizer.new '', nil, 1, 2
+    tokenizer = Gem::RequestSet::Lockfile::Tokenizer.new "", nil, 1, 2
     assert_equal [3, 1], tokenizer.token_pos(5)
   end
 
@@ -63,74 +63,74 @@ DEPENDENCIES
     LOCKFILE
 
     expected = [
-      [:section,     'GEM',               0,  0],
+      [:section,     "GEM",               0,  0],
       [:newline,     nil,                 3,  0],
 
-      [:entry,       'remote',            2,  1],
+      [:entry,       "remote",            2,  1],
       [:text,        @gem_repo,           10, 1],
       [:newline,     nil,                 34, 1],
 
-      [:entry,       'specs',             2,  2],
+      [:entry,       "specs",             2,  2],
       [:newline,     nil,                 8,  2],
 
-      [:text,        'a',                 4,  3],
+      [:text,        "a",                 4,  3],
       [:l_paren,     nil,                 6,  3],
-      [:text,        '2',                 7,  3],
+      [:text,        "2",                 7,  3],
       [:r_paren,     nil,                 8,  3],
       [:newline,     nil,                 9,  3],
 
-      [:text,        'b',                 6,  4],
+      [:text,        "b",                 6,  4],
       [:l_paren,     nil,                 8,  4],
-      [:requirement, '=',                 9,  4],
-      [:text,        '2',                 11, 4],
+      [:requirement, "=",                 9,  4],
+      [:text,        "2",                 11, 4],
       [:r_paren,     nil,                 12, 4],
       [:newline,     nil,                 13, 4],
 
-      [:text,        'c',                 6,  5],
+      [:text,        "c",                 6,  5],
       [:l_paren,     nil,                 8,  5],
-      [:requirement, '!=',                9,  5],
-      [:text,        '3',                 12, 5],
+      [:requirement, "!=",                9,  5],
+      [:text,        "3",                 12, 5],
       [:r_paren,     nil,                 13, 5],
       [:newline,     nil,                 14, 5],
 
-      [:text,        'd',                 6,  6],
+      [:text,        "d",                 6,  6],
       [:l_paren,     nil,                 8,  6],
-      [:requirement, '>',                 9,  6],
-      [:text,        '4',                 11, 6],
+      [:requirement, ">",                 9,  6],
+      [:text,        "4",                 11, 6],
       [:r_paren,     nil,                 12, 6],
       [:newline,     nil,                 13, 6],
 
-      [:text,        'e',                 6,  7],
+      [:text,        "e",                 6,  7],
       [:l_paren,     nil,                 8,  7],
-      [:requirement, '<',                 9,  7],
-      [:text,        '5',                 11, 7],
+      [:requirement, "<",                 9,  7],
+      [:text,        "5",                 11, 7],
       [:r_paren,     nil,                 12, 7],
       [:newline,     nil,                 13, 7],
 
-      [:text,        'f',                 6,  8],
+      [:text,        "f",                 6,  8],
       [:l_paren,     nil,                 8,  8],
-      [:requirement, '>=',                9,  8],
-      [:text,        '6',                 12, 8],
+      [:requirement, ">=",                9,  8],
+      [:text,        "6",                 12, 8],
       [:r_paren,     nil,                 13, 8],
       [:newline,     nil,                 14, 8],
 
-      [:text,        'g',                 6,  9],
+      [:text,        "g",                 6,  9],
       [:l_paren,     nil,                 8,  9],
-      [:requirement, '<=',                9,  9],
-      [:text,        '7',                 12, 9],
+      [:requirement, "<=",                9,  9],
+      [:text,        "7",                 12, 9],
       [:r_paren,     nil,                 13, 9],
       [:newline,     nil,                 14, 9],
 
-      [:text,        'h',                 6,  10],
+      [:text,        "h",                 6,  10],
       [:l_paren,     nil,                 8,  10],
-      [:requirement, '~>',                9,  10],
-      [:text,        '8',                 12, 10],
+      [:requirement, "~>",                9,  10],
+      [:text,        "8",                 12, 10],
       [:r_paren,     nil,                 13, 10],
       [:newline,     nil,                 14, 10],
 
       [:newline,     nil,                 0,  11],
 
-      [:section,     'PLATFORMS',         0,  12],
+      [:section,     "PLATFORMS",         0,  12],
       [:newline,     nil,                 9,  12],
 
       [:text,        Gem::Platform::RUBY, 2,  13],
@@ -138,10 +138,10 @@ DEPENDENCIES
 
       [:newline,     nil,                 0,  14],
 
-      [:section,     'DEPENDENCIES',      0,  15],
+      [:section,     "DEPENDENCIES",      0,  15],
       [:newline,     nil,                 12, 15],
 
-      [:text,        'a',                 2,  16],
+      [:text,        "a",                 2,  16],
       [:newline,     nil,                 3,  16],
     ]
 
@@ -163,27 +163,27 @@ DEPENDENCIES
     LOCKFILE
 
     expected = [
-      [:section, 'GEM',               0,  0],
+      [:section, "GEM",               0,  0],
       [:newline, nil,                 3,  0],
-      [:entry,   'remote',            2,  1],
+      [:entry,   "remote",            2,  1],
       [:text,    @gem_repo,           10, 1],
       [:newline, nil,                 34, 1],
-      [:entry,   'specs',             2,  2],
+      [:entry,   "specs",             2,  2],
       [:newline, nil,                 8,  2],
-      [:text,    'Ab',                4,  3],
+      [:text,    "Ab",                4,  3],
       [:l_paren, nil,                 7,  3],
-      [:text,    '2',                 8,  3],
+      [:text,    "2",                 8,  3],
       [:r_paren, nil,                 9,  3],
       [:newline, nil,                 10, 3],
       [:newline, nil,                 0,  4],
-      [:section, 'PLATFORMS',         0,  5],
+      [:section, "PLATFORMS",         0,  5],
       [:newline, nil,                 9,  5],
       [:text,    Gem::Platform::RUBY, 2,  6],
       [:newline, nil,                 6,  6],
       [:newline, nil,                 0,  7],
-      [:section, 'DEPENDENCIES',      0,  8],
+      [:section, "DEPENDENCIES",      0,  8],
       [:newline, nil,                 12, 8],
-      [:text,    'Ab',                2,  9],
+      [:text,    "Ab",                2,  9],
       [:newline, nil,                 4,  9],
     ]
 
@@ -191,7 +191,7 @@ DEPENDENCIES
   end
 
   def test_tokenize_conflict_markers
-    write_lockfile '<<<<<<<'
+    write_lockfile "<<<<<<<"
 
     e = assert_raise Gem::RequestSet::Lockfile::ParseError do
       tokenize_lockfile
@@ -200,7 +200,7 @@ DEPENDENCIES
     assert_equal "your #{@lock_file} contains merge conflict markers (at line 0 column 0)",
                  e.message
 
-    write_lockfile '|||||||'
+    write_lockfile "|||||||"
 
     e = assert_raise Gem::RequestSet::Lockfile::ParseError do
       tokenize_lockfile
@@ -209,7 +209,7 @@ DEPENDENCIES
     assert_equal "your #{@lock_file} contains merge conflict markers (at line 0 column 0)",
                  e.message
 
-    write_lockfile '======='
+    write_lockfile "======="
 
     e = assert_raise Gem::RequestSet::Lockfile::ParseError do
       tokenize_lockfile
@@ -218,7 +218,7 @@ DEPENDENCIES
     assert_equal "your #{@lock_file} contains merge conflict markers (at line 0 column 0)",
                  e.message
 
-    write_lockfile '>>>>>>>'
+    write_lockfile ">>>>>>>"
 
     e = assert_raise Gem::RequestSet::Lockfile::ParseError do
       tokenize_lockfile
@@ -235,10 +235,10 @@ DEPENDENCIES
     LOCKFILE
 
     expected = [
-      [:section, 'DEPENDENCIES', 0,  0],
+      [:section, "DEPENDENCIES", 0,  0],
       [:newline, nil,            12, 0],
 
-      [:text,    'a',            2,  1],
+      [:text,    "a",            2,  1],
       [:bang,    nil,            3,  1],
       [:newline, nil,            4,  1],
     ]
@@ -256,29 +256,29 @@ GEM
     LOCKFILE
 
     expected = [
-      [:section,     'GEM',     0,  0],
+      [:section,     "GEM",     0,  0],
       [:newline,     nil,       3,  0],
 
-      [:entry,       'remote',  2,  1],
+      [:entry,       "remote",  2,  1],
       [:text,        @gem_repo, 10, 1],
       [:newline,     nil,       34, 1],
 
-      [:entry,       'specs',   2,  2],
+      [:entry,       "specs",   2,  2],
       [:newline,     nil,       8,  2],
 
-      [:text,        'a',       4,  3],
+      [:text,        "a",       4,  3],
       [:l_paren,     nil,       6,  3],
-      [:text,        '2',       7,  3],
+      [:text,        "2",       7,  3],
       [:r_paren,     nil,       8,  3],
       [:newline,     nil,       9,  3],
 
-      [:text,        'b',       6,  4],
+      [:text,        "b",       6,  4],
       [:l_paren,     nil,       8,  4],
-      [:requirement, '~>',      9,  4],
-      [:text,        '3.0',     12, 4],
+      [:requirement, "~>",      9,  4],
+      [:text,        "3.0",     12, 4],
       [:comma,       nil,       15, 4],
-      [:requirement, '>=',      17, 4],
-      [:text,        '3.0.1',   20, 4],
+      [:requirement, ">=",      17, 4],
+      [:text,        "3.0.1",   20, 4],
       [:r_paren,     nil,       25, 4],
       [:newline,     nil,       26, 4],
     ]
@@ -295,7 +295,7 @@ GEM
   end
 
   def write_lockfile(lockfile)
-    File.open @lock_file, 'w' do |io|
+    File.open @lock_file, "w" do |io|
       io.write lockfile
     end
   end
