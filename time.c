@@ -654,6 +654,7 @@ static uint32_t month_arg(VALUE arg);
 static VALUE validate_utc_offset(VALUE utc_offset);
 static VALUE validate_zone_name(VALUE zone_name);
 static void validate_vtm(struct vtm *vtm);
+static void vtm_add_day(struct vtm *vtm, int day);
 static uint32_t obj2subsecx(VALUE obj, VALUE *subsecx);
 
 static VALUE time_gmtime(VALUE);
@@ -1953,8 +1954,6 @@ time_set_utc_offset(VALUE time, VALUE off)
 
     return time;
 }
-
-static void vtm_add_day(struct vtm *vtm, int day);
 
 static void
 vtm_add_offset(struct vtm *vtm, VALUE off, int sign)
