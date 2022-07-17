@@ -15,8 +15,8 @@ Place the \fBGemfile\fR in the root of the directory containing the associated c
 .SH "SYNTAX"
 A \fBGemfile\fR is evaluated as Ruby code, in a context which makes available a number of methods used to describe the gem requirements\.
 .
-.SH "GLOBAL SOURCES"
-At the top of the \fBGemfile\fR, add a line for the \fBRubygems\fR source that contains the gems listed in the \fBGemfile\fR\.
+.SH "GLOBAL SOURCE"
+At the top of the \fBGemfile\fR, add a single line for the \fBRubyGems\fR source that contains the gems listed in the \fBGemfile\fR\.
 .
 .IP "" 4
 .
@@ -29,10 +29,16 @@ source "https://rubygems\.org"
 .IP "" 0
 .
 .P
-It is possible, but not recommended as of Bundler 1\.7, to add multiple global \fBsource\fR lines\. Each of these \fBsource\fRs \fBMUST\fR be a valid Rubygems repository\.
+You can add only one global source\. In Bundler 1\.13, adding multiple global sources was deprecated\. The \fBsource\fR \fBMUST\fR be a valid RubyGems repository\.
 .
 .P
-Sources are checked for gems following the heuristics described in \fISOURCE PRIORITY\fR\. If a gem is found in more than one global source, Bundler will print a warning after installing the gem indicating which source was used, and listing the other sources where the gem is available\. A specific source can be selected for gems that need to use a non\-standard repository, suppressing this warning, by using the \fI\fB:source\fR option\fR or a \fI\fBsource\fR block\fR\.
+To use more than one source of RubyGems, you should use \fI\fBsource\fR block\fR\.
+.
+.P
+A source is checked for gems following the heuristics described in \fISOURCE PRIORITY\fR\.
+.
+.P
+\fBNote about a behavior of the feature deprecated in Bundler 1\.13\fR: If a gem is found in more than one global source, Bundler will print a warning after installing the gem indicating which source was used, and listing the other sources where the gem is available\. A specific source can be selected for gems that need to use a non\-standard repository, suppressing this warning, by using the \fI\fB:source\fR option\fR or \fBsource\fR block\.
 .
 .SS "CREDENTIALS"
 Some gem sources require a username and password\. Use bundle config(1) \fIbundle\-config\.1\.html\fR to set the username and password for any of the sources that need it\. The command must be run once on each computer that will install the Gemfile, but this keeps the credentials from being stored in plain text in version control\.
@@ -356,7 +362,7 @@ The platform specific variant does not yet support a newer ruby (and thus has a 
 .IP "" 0
 .
 .SS "SOURCE"
-You can select an alternate Rubygems repository for a gem using the \':source\' option\.
+You can select an alternate RubyGems repository for a gem using the \':source\' option\.
 .
 .IP "" 4
 .
@@ -369,13 +375,13 @@ gem "some_internal_gem", source: "https://gems\.example\.com"
 .IP "" 0
 .
 .P
-This forces the gem to be loaded from this source and ignores any global sources declared at the top level of the file\. If the gem does not exist in this source, it will not be installed\.
+This forces the gem to be loaded from this source and ignores the global source declared at the top level of the file\. If the gem does not exist in this source, it will not be installed\.
 .
 .P
-Bundler will search for child dependencies of this gem by first looking in the source selected for the parent, but if they are not found there, it will fall back on global sources using the ordering described in \fISOURCE PRIORITY\fR\.
+Bundler will search for child dependencies of this gem by first looking in the source selected for the parent, but if they are not found there, it will fall back on the global source\.
 .
 .P
-Selecting a specific source repository this way also suppresses the ambiguous gem warning described above in \fIGLOBAL SOURCES (#source)\fR\.
+\fBNote about a behavior of the feature deprecated in Bundler 1\.13\fR: Selecting a specific source repository this way also suppresses the ambiguous gem warning described above in \fIGLOBAL SOURCE\fR\.
 .
 .P
 Using the \fB:source\fR option for an individual gem will also make that source available as a possible global source for any other gems which do not specify explicit sources\. Thus, when adding gems with explicit sources, it is recommended that you also ensure all other gems in the Gemfile are using explicit sources\.
@@ -730,7 +736,7 @@ The source explicitly attached to the gem (using \fB:source\fR, \fB:path\fR, or 
 For implicit gems (dependencies of explicit gems), any source, git, or path repository declared on the parent\. This results in bundler prioritizing the ActiveSupport gem from the Rails git repository over ones from \fBrubygems\.org\fR
 .
 .IP "3." 4
-The sources specified via global \fBsource\fR lines, searching each source in your \fBGemfile\fR from last added to first added\.
+If neither of the above conditions are met, the global source will be used\. If multiple global sources are specified, they will be prioritized from last to first, but this is deprecated since Bundler 1\.13, so Bundler prints a warning and will abort with an error in the future\.
 .
 .IP "" 0
 
