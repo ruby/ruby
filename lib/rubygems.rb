@@ -442,8 +442,6 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
     old_umask = File.umask
     File.umask old_umask | 002
 
-    require 'fileutils'
-
     options = {}
 
     options[:mode] = mode if mode
@@ -451,6 +449,9 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
     subdirs.each do |name|
       subdir = File.join dir, name
       next if File.exist? subdir
+
+      require 'fileutils'
+
       begin
         FileUtils.mkdir_p subdir, **options
       rescue SystemCallError
