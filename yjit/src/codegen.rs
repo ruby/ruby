@@ -1338,6 +1338,31 @@ fn guard_object_is_array(
     jne_ptr(cb, side_exit);
 }
 
+fn guard_object_is_string(
+    cb: &mut CodeBlock,
+    object_reg: X86Opnd,
+    flags_reg: X86Opnd,
+    side_exit: CodePtr,
+) {
+    add_comment(cb, "guard object is string");
+
+    // Pull out the type mask
+    mov(
+        cb,
+        flags_reg,
+        mem_opnd(
+            8 * SIZEOF_VALUE as u8,
+            object_reg,
+            RUBY_OFFSET_RBASIC_FLAGS,
+        ),
+    );
+    and(cb, flags_reg, uimm_opnd(RUBY_T_MASK as u64));
+
+    // Compare the result with T_STRING
+    cmp(cb, flags_reg, uimm_opnd(RUBY_T_STRING as u64));
+    jne_ptr(cb, side_exit);
+}
+
 // push enough nils onto the stack to fill out an array
 fn gen_expandarray(
     jit: &mut JITState,
@@ -3747,7 +3772,7 @@ fn jit_rb_str_to_s(
     false
 }
 
-// Codegen for rb_str_concat()
+// Codegen for rb_str_concat() -- *not* String#concat
 // Frequently strings are concatenated using "out_str << next_str".
 // This is common in Erb and similar templating languages.
 fn jit_rb_str_concat(
@@ -3761,14 +3786,12 @@ fn jit_rb_str_concat(
     _argc: i32,
     _known_recv_class: *const VALUE,
 ) -> bool {
+    // The << operator can accept integer codepoints for characters
+    // as the argument. We only specially optimise string arguments.
+    // If the peeked-at compile time argument is something other than
+    // a string, assume it won't be a string later either.
     let comptime_arg = jit_peek_at_stack(jit, ctx, 0);
-    let comptime_arg_type = ctx.get_opnd_type(StackOpnd(0));
-
-    // String#<< can take an integer codepoint as an argument, but we don't optimise that.
-    // Also, a non-string argument would have to call .to_str on itself before being treated
-    // as a string, and that would require saving pc/sp, which we don't do here.
-    // TODO: figure out how we should optimise a string-subtype argument here
-    if comptime_arg_type != Type::CString && comptime_arg.class_of() != unsafe { rb_cString } {
+    if ! unsafe { RB_TYPE_P(comptime_arg, RUBY_T_STRING) } {
         return false;
     }
 
@@ -3776,19 +3799,25 @@ fn jit_rb_str_concat(
     let side_exit = get_side_exit(jit, ocb, ctx);
 
     // Guard that the argument is of class String at runtime.
+    let insn_opnd = StackOpnd(0);
     let arg_opnd = ctx.stack_opnd(0);
     mov(cb, REG0, arg_opnd);
-    jit_guard_known_klass(
-        jit,
-        ctx,
-        cb,
-        ocb,
-        unsafe { rb_cString },
-        StackOpnd(0),
-        comptime_arg,
-        SEND_MAX_DEPTH,
-        side_exit,
-    );
+    let arg_type = ctx.get_opnd_type(insn_opnd);
+
+    if arg_type != Type::CString && arg_type != Type::TString {
+        if !arg_type.is_heap() {
+            add_comment(cb, "guard arg not immediate");
+            test(cb, REG0, imm_opnd(RUBY_IMMEDIATE_MASK as i64));
+            jnz_ptr(cb, side_exit);
+            cmp(cb, REG0, imm_opnd(Qnil.into()));
+            jbe_ptr(cb, side_exit);
+
+            ctx.upgrade_opnd_type(insn_opnd, Type::UnknownHeap);
+        }
+        guard_object_is_string(cb, REG0, REG1, side_exit);
+        // We know this has type T_STRING, but not necessarily that it's a ::String
+        ctx.upgrade_opnd_type(insn_opnd, Type::TString);
+    }
 
     let concat_arg = ctx.stack_pop(1);
     let recv = ctx.stack_pop(1);
@@ -3811,7 +3840,7 @@ fn jit_rb_str_concat(
     test(cb, REG0, uimm_opnd(RUBY_ENCODING_MASK as u64));
 
     let enc_mismatch = cb.new_label("enc_mismatch".to_string());
-    jne_label(cb, enc_mismatch);
+    jnz_label(cb, enc_mismatch);
 
     // If encodings match, call the simple append function and jump to return
     call_ptr(cb, REG0, rb_yjit_str_simple_append as *const u8);
