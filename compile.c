@@ -2074,6 +2074,25 @@ get_ivar_ic_value(rb_iseq_t *iseq,ID id)
     return val;
 }
 
+static inline VALUE
+get_cvar_ic_value(rb_iseq_t *iseq,ID id)
+{
+    VALUE val;
+    struct rb_id_table *tbl = ISEQ_COMPILE_DATA(iseq)->ivar_cache_table;
+    if (tbl) {
+	if (rb_id_table_lookup(tbl,id,&val)) {
+	    return val;
+	}
+    }
+    else {
+	tbl = rb_id_table_create(1);
+	ISEQ_COMPILE_DATA(iseq)->ivar_cache_table = tbl;
+    }
+    val = INT2FIX(ISEQ_BODY(iseq)->icvarc_size++);
+    rb_id_table_insert(tbl,id,val);
+    return val;
+}
+
 #define BADINSN_DUMP(anchor, list, dest) \
     dump_disasm_list_with_cursor(FIRST_ELEMENT(anchor), list, dest)
 
@@ -2412,7 +2431,7 @@ iseq_set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *const anchor)
 			    }
 			    break;
 			}
-                      /* [ TS_(ICVARC|IVC) ... | TS_ISE | TS_IC ] */
+                      /* [ TS_IVC | TS_ICVARC | TS_ISE | TS_IC ] */
                       case TS_IC: /* inline cache: constants */
                       case TS_ISE: /* inline storage entry: `once` insn */
                       case TS_ICVARC: /* inline cvar cache */
@@ -9336,7 +9355,7 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const no
 	}
         ADD_INSN2(ret, node, setclassvariable,
                   ID2SYM(node->nd_vid),
-                  get_ivar_ic_value(iseq,node->nd_vid));
+                  get_cvar_ic_value(iseq,node->nd_vid));
 	break;
       }
       case NODE_OP_ASGN1:
@@ -9463,7 +9482,7 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const no
 	if (!popped) {
 	    ADD_INSN2(ret, node, getclassvariable,
 		      ID2SYM(node->nd_vid),
-		      get_ivar_ic_value(iseq,node->nd_vid));
+		      get_cvar_ic_value(iseq,node->nd_vid));
 	}
 	break;
       }
@@ -10339,10 +10358,15 @@ iseq_build_from_ary_body(rb_iseq_t *iseq, LINK_ANCHOR *const anchor,
                         }
                         break;
                       case TS_IVC:  /* inline ivar cache */
-                      case TS_ICVARC:  /* inline cvar cache */
 			argv[j] = op;
                         if (NUM2UINT(op) >= ISEQ_BODY(iseq)->ivc_size) {
                             ISEQ_BODY(iseq)->ivc_size = NUM2INT(op) + 1;
+                        }
+			break;
+                      case TS_ICVARC:  /* inline cvar cache */
+			argv[j] = op;
+                        if (NUM2UINT(op) >= ISEQ_BODY(iseq)->icvarc_size) {
+                            ISEQ_BODY(iseq)->icvarc_size = NUM2INT(op) + 1;
                         }
 			break;
                       case TS_CALLDATA:
@@ -11807,6 +11831,7 @@ ibf_dump_iseq_each(struct ibf_dump *dump, const rb_iseq_t *iseq)
     ibf_dump_write_small_value(dump, body->variable.flip_count);
     ibf_dump_write_small_value(dump, body->local_table_size);
     ibf_dump_write_small_value(dump, body->ivc_size);
+    ibf_dump_write_small_value(dump, body->icvarc_size);
     ibf_dump_write_small_value(dump, body->ise_size);
     ibf_dump_write_small_value(dump, body->ic_size);
     ibf_dump_write_small_value(dump, body->ci_size);
@@ -11918,6 +11943,7 @@ ibf_load_iseq_each(struct ibf_load *load, rb_iseq_t *iseq, ibf_offset_t offset)
     const unsigned int local_table_size = (unsigned int)ibf_load_small_value(load, &reading_pos);
 
     const unsigned int ivc_size = (unsigned int)ibf_load_small_value(load, &reading_pos);
+    const unsigned int icvarc_size = (unsigned int)ibf_load_small_value(load, &reading_pos);
     const unsigned int ise_size = (unsigned int)ibf_load_small_value(load, &reading_pos);
     const unsigned int ic_size = (unsigned int)ibf_load_small_value(load, &reading_pos);
 
@@ -11966,6 +11992,7 @@ ibf_load_iseq_each(struct ibf_load *load, rb_iseq_t *iseq, ibf_offset_t offset)
     load_body->builtin_inline_p = builtin_inline_p;
 
     load_body->ivc_size             = ivc_size;
+    load_body->icvarc_size          = icvarc_size;
     load_body->ise_size             = ise_size;
     load_body->ic_size              = ic_size;
     load_body->is_entries           = ZALLOC_N(union iseq_inline_storage_entry, ISEQ_IS_SIZE(load_body));
