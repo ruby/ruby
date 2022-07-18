@@ -510,14 +510,20 @@ impl Assembler
                 Op::LeaLabel => {
                     let label_idx = insn.target.unwrap().unwrap_label_idx();
 
-                    cb.label_ref(label_idx, 4, |cb, src_addr, dst_addr| {
-                        adr(cb, Self::SCRATCH0, A64Opnd::new_imm(dst_addr - src_addr));
+                    cb.label_ref(label_idx, 4, |cb, end_addr, dst_addr| {
+                        adr(cb, Self::SCRATCH0, A64Opnd::new_imm(dst_addr - (end_addr - 4)));
                     });
 
                     mov(cb, insn.out.into(), Self::SCRATCH0);
                 },
                 Op::CPush => {
                     emit_push(cb, insn.opnds[0].into());
+                },
+                Op::CPop => {
+                    emit_pop(cb, insn.out.into());
+                },
+                Op::CPopInto => {
+                    emit_pop(cb, insn.opnds[0].into());
                 },
                 Op::CPushAll => {
                     let regs = Assembler::get_caller_save_regs();
@@ -526,18 +532,14 @@ impl Assembler
                         emit_push(cb, A64Opnd::Reg(reg));
                     }
 
+                    // Push the flags/state register
                     mrs(cb, Self::SCRATCH0, SystemRegister::NZCV);
                     emit_push(cb, Self::SCRATCH0);
-                },
-                Op::CPop => {
-                    emit_pop(cb, insn.out.into());
-                },
-                Op::CPopInto => {
-                    emit_pop(cb, insn.opnds[0].into());
                 },
                 Op::CPopAll => {
                     let regs = Assembler::get_caller_save_regs();
 
+                    // Pop the state/flags register
                     msr(cb, SystemRegister::NZCV, Self::SCRATCH0);
                     emit_pop(cb, Self::SCRATCH0);
 
@@ -546,13 +548,12 @@ impl Assembler
                     }
                 },
                 Op::CCall => {
-                    let src_addr = cb.get_write_ptr().into_i64() + 4;
-                    let dst_addr = insn.target.unwrap().unwrap_fun_ptr() as i64;
-
                     // The offset between the two instructions in bytes. Note
                     // that when we encode this into a bl instruction, we'll
                     // divide by 4 because it accepts the number of instructions
                     // to jump over.
+                    let src_addr = cb.get_write_ptr().into_i64() + 4;
+                    let dst_addr = insn.target.unwrap().unwrap_fun_ptr() as i64;
                     let offset = dst_addr - src_addr;
 
                     // If the offset is short enough, then we'll use the branch
@@ -562,9 +563,9 @@ impl Assembler
                     if b_offset_fits_bits(offset) {
                         bl(cb, A64Opnd::new_imm(offset / 4));
                     } else {
-                        emit_load_value(cb, X30, src_addr as u64);
-                        emit_load_value(cb, X29, dst_addr as u64);
-                        br(cb, X29);
+                        emit_load_value(cb, Self::SCRATCH0, dst_addr as u64);
+                        adr(cb, X30, A64Opnd::Imm(8));
+                        br(cb, Self::SCRATCH0);
                     }
                 },
                 Op::CRet => {

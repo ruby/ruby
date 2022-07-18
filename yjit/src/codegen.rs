@@ -602,6 +602,21 @@ pub fn gen_entry_prologue(cb: &mut CodeBlock, iseq: IseqPtr, insn_idx: u32) -> O
 
     let mut asm = Assembler::new();
 
+
+
+    // FIXME: need to handle this properly
+    // Maybe add an asm.entry_prologue() insn that compiles to nothing on x86
+    // stp     x29, x30, [sp, -16]!
+    // mov     x29, sp
+
+
+    // NOTE: we also need a matching asm.exit_epilogue()
+    // mov     sp, x29
+    // ldp     x29, x30, [sp], 16
+
+
+
+
     // Save the CFP, EC, SP registers to the C stack
     asm.cpush(CFP);
     asm.cpush(EC);
