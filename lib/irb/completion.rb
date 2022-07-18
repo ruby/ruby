@@ -373,7 +373,7 @@ module IRB
         if doc_namespace
           "String.#{candidates.find{ |i| i == message }}"
         else
-          select_message(receiver, message, candidates)
+          select_message(receiver, message, candidates.sort)
         end
 
       else
@@ -390,7 +390,7 @@ module IRB
         else
           candidates = (bind.eval_methods | bind.eval_private_methods | bind.local_variables | bind.eval_instance_variables | bind.eval_class_constants).collect{|m| m.to_s}
           candidates |= ReservedWords
-          candidates.grep(/^#{Regexp.quote(input)}/)
+          candidates.grep(/^#{Regexp.quote(input)}/).sort
         end
       end
     end

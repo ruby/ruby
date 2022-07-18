@@ -208,5 +208,16 @@ module TestIRB
       assert_include(IRB::InputCompletor.retrieve_completion_data("String.new", bind: binding), "String.new")
       assert_equal(IRB::InputCompletor.retrieve_completion_data("String.new", bind: binding, doc_namespace: true), "String.new")
     end
+
+    def test_complete_sort_variables
+      xzy, xzy_1, xzy2 = '', '', ''
+
+      xzy.clear
+      xzy_1.clear
+      xzy2.clear
+
+      candidates = IRB::InputCompletor.retrieve_completion_data("xz", bind: binding, doc_namespace: false)
+      assert_equal(candidates, %w[xzy xzy2 xzy_1])
+    end
   end
 end
