@@ -165,7 +165,7 @@ class TestGemCommandsSetupCommand < Gem::TestCase
     @cmd.execute
 
     bundler_spec.executables.each do |e|
-      assert_path_exist File.join destdir, @gemhome.gsub(/^[a-zA-Z]:/, ''), 'gems', bundler_spec.full_name, bundler_spec.bindir, e
+      assert_path_exist prepend_destdir(destdir, File.join(@gemhome, 'gems', bundler_spec.full_name, bundler_spec.bindir, e))
     end
   end
 
@@ -280,7 +280,7 @@ class TestGemCommandsSetupCommand < Gem::TestCase
     @cmd.install_default_bundler_gem bin_dir
 
     bundler_spec.executables.each do |e|
-      assert_path_exist File.join destdir, @gemhome.gsub(/^[a-zA-Z]:/, ''), 'gems', bundler_spec.full_name, bundler_spec.bindir, e
+      assert_path_exist prepend_destdir(destdir, File.join(@gemhome, 'gems', bundler_spec.full_name, bundler_spec.bindir, e))
     end
   ensure
     FileUtils.chmod "+w", @gemhome
@@ -465,5 +465,9 @@ class TestGemCommandsSetupCommand < Gem::TestCase
 
   def bundler_version
     bundler_spec.version
+  end
+
+  def prepend_destdir(destdir, path)
+    File.join(destdir, path.gsub(/^[a-zA-Z]:/, ''))
   end
 end unless Gem.java_platform?
