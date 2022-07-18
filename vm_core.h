@@ -337,7 +337,7 @@ struct rb_mjit_unit;
 
 typedef uintptr_t iseq_bits_t;
 
-#define ISEQ_IS_SIZE(body) (body->ic_size + body->ivc_size + body->ise_size)
+#define ISEQ_IS_SIZE(body) (body->ic_size + body->ivc_size + body->ise_size + body->icvarc_size)
 
 struct rb_iseq_constant_body {
     enum iseq_type {
@@ -448,7 +448,7 @@ struct rb_iseq_constant_body {
     const struct rb_iseq_struct *parent_iseq;
     struct rb_iseq_struct *local_iseq; /* local_iseq->flip_cnt can be modified */
 
-    union iseq_inline_storage_entry *is_entries; /* [ TS_(ICVARC|IVC) ... | TS_ISE | TS_IC ] */
+    union iseq_inline_storage_entry *is_entries; /* [ TS_IVC | TS_ICVARC | TS_ISE | TS_IC ] */
     struct rb_call_data *call_data; //struct rb_call_data calls[ci_size];
 
     struct {
@@ -460,9 +460,10 @@ struct rb_iseq_constant_body {
     } variable;
 
     unsigned int local_table_size;
-    unsigned int ic_size;  // Number of IC caches
-    unsigned int ise_size; // Number of ISE caches
-    unsigned int ivc_size; // Number of IVC and ICVARC caches
+    unsigned int ic_size;     // Number of IC caches
+    unsigned int ise_size;    // Number of ISE caches
+    unsigned int ivc_size;    // Number of IVC caches
+    unsigned int icvarc_size; // Number of ICVARC caches
     unsigned int ci_size;
     unsigned int stack_max; /* for stack overflow check */
     union {
