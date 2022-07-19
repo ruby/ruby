@@ -1,10 +1,13 @@
 /// Which operation to perform.
 enum Op {
     /// Perform a BR instruction.
-    Br = 0b00,
+    BR = 0b00,
+
+    /// Perform a BLR instruction.
+    BLR = 0b01,
 
     /// Perform a RET instruction.
-    Ret = 0b10
+    RET = 0b10
 }
 
 /// The struct that represents an A64 branch instruction that can be encoded.
@@ -27,13 +30,19 @@ impl Branch {
     /// BR
     /// https://developer.arm.com/documentation/ddi0602/2022-03/Base-Instructions/BR--Branch-to-Register-?lang=en
     pub fn br(rn: u8) -> Self {
-        Self { rn, op: Op::Br }
+        Self { rn, op: Op::BR }
+    }
+
+    /// BLR
+    /// https://developer.arm.com/documentation/ddi0602/2022-03/Base-Instructions/BLR--Branch-with-Link-to-Register-?lang=en
+    pub fn blr(rn: u8) -> Self {
+        Self { rn, op: Op::BLR }
     }
 
     /// RET
     /// https://developer.arm.com/documentation/ddi0596/2021-12/Base-Instructions/RET--Return-from-subroutine-?lang=en
     pub fn ret(rn: u8) -> Self {
-        Self { rn, op: Op::Ret }
+        Self { rn, op: Op::RET }
     }
 }
 
@@ -69,6 +78,12 @@ mod tests {
     fn test_br() {
         let result: u32 = Branch::br(0).into();
         assert_eq!(0xd61f0000, result);
+    }
+
+    #[test]
+    fn test_blr() {
+        let result: u32 = Branch::blr(0).into();
+        assert_eq!(0xd63f0000, result);
     }
 
     #[test]

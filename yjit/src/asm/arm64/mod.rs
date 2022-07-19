@@ -226,6 +226,16 @@ pub fn bl(cb: &mut CodeBlock, imm26: A64Opnd) {
     cb.write_bytes(&bytes);
 }
 
+/// BLR - branch with link to a register
+pub fn blr(cb: &mut CodeBlock, rn: A64Opnd) {
+    let bytes: [u8; 4] = match rn {
+        A64Opnd::Reg(rn) => Branch::blr(rn.reg_no).into(),
+        _ => panic!("Invalid operand to blr instruction."),
+    };
+
+    cb.write_bytes(&bytes);
+}
+
 /// BR - branch to a register
 pub fn br(cb: &mut CodeBlock, rn: A64Opnd) {
     let bytes: [u8; 4] = match rn {
@@ -840,6 +850,11 @@ mod tests {
     #[test]
     fn test_bl() {
         check_bytes("00040094", |cb| bl(cb, A64Opnd::new_imm(1024)));
+    }
+
+    #[test]
+    fn test_blr() {
+        check_bytes("80023fd6", |cb| blr(cb, X20));
     }
 
     #[test]
