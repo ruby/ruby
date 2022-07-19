@@ -6232,7 +6232,7 @@ impl CodegenGlobals {
         let mut codegen_globals = CodegenGlobals {
             inline_cb: cb,
             outlined_cb: ocb,
-            leave_exit_code: leave_exit_code,
+            leave_exit_code,
             stub_exit_code: stub_exit_code,
             outline_full_cfunc_return_pos: cfunc_exit_code,
             global_inval_patches: Vec::new(),
