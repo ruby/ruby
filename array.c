@@ -153,15 +153,17 @@ should_not_be_shared_and_embedded(VALUE ary)
     const VALUE _value_ = (value); \
     assert(!ARY_EMBED_P(_ary_)); \
     assert(ARY_SHARED_P(_ary_)); \
-    assert(ARY_SHARED_ROOT_P(_value_)); \
+    assert(!ARY_LITERAL_P(_ary_)); \
+    assert(ARY_SHARED_ROOT_P(_value_) || ARY_LITERAL_P(_value_)); \
     RB_OBJ_WRITE(_ary_, &RARRAY(_ary_)->as.heap.aux.shared_root, _value_); \
 } while (0)
+
 #define RARRAY_SHARED_ROOT_FLAG FL_USER12
 #define ARY_SHARED_ROOT_P(ary) (assert(should_be_T_ARRAY((VALUE)(ary))), \
                                 FL_TEST_RAW((ary), RARRAY_SHARED_ROOT_FLAG))
 #define ARY_SHARED_ROOT_REFCNT(ary) \
     (assert(ARY_SHARED_ROOT_P(ary)), RARRAY(ary)->as.heap.aux.capa)
-#define ARY_SHARED_ROOT_OCCUPIED(ary) (ARY_SHARED_ROOT_REFCNT(ary) == 1)
+#define ARY_SHARED_ROOT_OCCUPIED(ary) (!ARY_LITERAL_P(ary) && ARY_SHARED_ROOT_REFCNT(ary) == 1)
 #define ARY_SET_SHARED_ROOT_REFCNT(ary, value) do { \
     assert(ARY_SHARED_ROOT_P(ary)); \
     assert((value) >= 0); \
@@ -172,6 +174,11 @@ should_not_be_shared_and_embedded(VALUE ary)
     assert(!RARRAY_TRANSIENT_P(ary)); \
     FL_SET((ary), RARRAY_SHARED_ROOT_FLAG); \
 } while (0)
+
+#define RARRAY_LITERAL_FLAG FL_USER15
+#define ARY_LITERAL_P(ary) \
+    (assert(should_be_T_ARRAY((VALUE)(ary))), \
+     FL_TEST_RAW((ary), RARRAY_LITERAL_FLAG))
 
 static inline void
 ARY_SET(VALUE a, long i, VALUE v)
@@ -249,7 +256,7 @@ ary_verify_(VALUE ary, const char *file, int line)
         const VALUE *ptr = ARY_HEAP_PTR(ary);
         const VALUE *root_ptr = RARRAY_CONST_PTR_TRANSIENT(root);
         long len = ARY_HEAP_LEN(ary), root_len = RARRAY_LEN(root);
-        assert(FL_TEST(root, RARRAY_SHARED_ROOT_FLAG));
+        assert(ARY_SHARED_ROOT_P(root) || ARY_LITERAL_P(root));
         assert(root_ptr <= ptr && ptr + len <= root_ptr + root_len);
         ary_verify(root);
     }
@@ -581,8 +588,10 @@ ary_double_capa(VALUE ary, long min)
 static void
 rb_ary_decrement_share(VALUE shared_root)
 {
-    long num = ARY_SHARED_ROOT_REFCNT(shared_root);
-    ARY_SET_SHARED_ROOT_REFCNT(shared_root, num - 1);
+    if (!ARY_LITERAL_P(shared_root)) {
+        long num = ARY_SHARED_ROOT_REFCNT(shared_root);
+        ARY_SET_SHARED_ROOT_REFCNT(shared_root, num - 1);
+    }
 }
 
 static void
@@ -610,9 +619,11 @@ rb_ary_reset(VALUE ary)
 static VALUE
 rb_ary_increment_share(VALUE shared_root)
 {
-    long num = ARY_SHARED_ROOT_REFCNT(shared_root);
-    assert(num >= 0);
-    ARY_SET_SHARED_ROOT_REFCNT(shared_root, num + 1);
+    if (!ARY_LITERAL_P(shared_root)) {
+        long num = ARY_SHARED_ROOT_REFCNT(shared_root);
+        assert(num >= 0);
+        ARY_SET_SHARED_ROOT_REFCNT(shared_root, num + 1);
+    }
     return shared_root;
 }
 
@@ -971,6 +982,15 @@ rb_ary_tmp_new_fill(long capa)
     return ary;
 }
 
+VALUE
+rb_ary_literal_new(long capa)
+{
+    VALUE ary = ary_new(0, capa);
+    rb_ary_transient_heap_evacuate(ary, TRUE);
+    FL_SET(ary, RARRAY_LITERAL_FLAG);
+    return ary;
+}
+
 void
 rb_ary_free(VALUE ary)
 {
@@ -1024,6 +1044,7 @@ static VALUE
 ary_make_shared(VALUE ary)
 {
     assert(!ARY_EMBED_P(ary));
+    assert(!ARY_LITERAL_P(ary));
     ary_verify(ary);
 
     if (ARY_SHARED_P(ary)) {
@@ -1034,8 +1055,8 @@ ary_make_shared(VALUE ary)
     }
     else if (OBJ_FROZEN(ary)) {
         rb_ary_transient_heap_evacuate(ary, TRUE);
-	ary_shrink_capa(ary);
-	FL_SET_SHARED_ROOT(ary);
+        ary_shrink_capa(ary);
+        FL_SET_SHARED_ROOT(ary);
         ARY_SET_SHARED_ROOT_REFCNT(ary, 1);
 	return ary;
     }
@@ -1324,10 +1345,11 @@ ary_make_partial(VALUE ary, VALUE klass, long offset, long len)
         return result;
     }
     else {
-        VALUE shared, result = ary_alloc_heap(klass);
+        VALUE result = ary_alloc_heap(klass);
         assert(!ARY_EMBED_P(result));
 
-        shared = ary_make_shared(ary);
+        VALUE shared = ARY_LITERAL_P(ary) ? ary : ary_make_shared(ary);
+
         ARY_SET_PTR(result, RARRAY_CONST_PTR_TRANSIENT(ary));
         ARY_SET_LEN(result, RARRAY_LEN(ary));
         rb_ary_set_shared(result, shared);
