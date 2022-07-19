@@ -34,7 +34,7 @@ pub const _C_RET_OPND: Opnd = Opnd::Reg(X0_REG);
 // These constants define the way we work with Arm64's stack pointer. The stack
 // pointer always needs to be aligned to a 16-byte boundary.
 pub const C_SP_REG: A64Opnd = X31;
-pub const C_SP_STEP: A64Opnd = A64Opnd::UImm(16);
+pub const C_SP_STEP: i32 = 16;
 
 /// Map Opnd to A64Opnd
 impl From<Opnd> for A64Opnd {
@@ -380,15 +380,13 @@ impl Assembler
         /// Emit a push instruction for the given operand by adding to the stack
         /// pointer and then storing the given value.
         fn emit_push(cb: &mut CodeBlock, opnd: A64Opnd) {
-            sub(cb, C_SP_REG, C_SP_REG, C_SP_STEP);
-            stur(cb, opnd, A64Opnd::new_mem(64, C_SP_REG, 0));
+            str_pre(cb, opnd, A64Opnd::new_mem(64, C_SP_REG, -C_SP_STEP));
         }
 
         /// Emit a pop instruction into the given operand by loading the value
         /// and then subtracting from the stack pointer.
         fn emit_pop(cb: &mut CodeBlock, opnd: A64Opnd) {
-            ldur(cb, opnd, A64Opnd::new_mem(64, C_SP_REG, 0));
-            add(cb, C_SP_REG, C_SP_REG, C_SP_STEP);
+            ldr_post(cb, opnd, A64Opnd::new_mem(64, C_SP_REG, C_SP_STEP));
         }
 
         // dbg!(&self.insns);
@@ -430,11 +428,11 @@ impl Assembler
                     stp_pre(cb, X29, X30, A64Opnd::new_mem(128, C_SP_REG, -16));
 
                     // X29 (frame_pointer) = SP
-                    add(cb, X29, C_SP_REG, A64Opnd::new_uimm(0));
+                    mov(cb, X29, C_SP_REG);
                 },
                 Op::FrameTeardown => {
                     // SP = X29 (frame pointer)
-                    add(cb, C_SP_REG, X29, A64Opnd::new_uimm(0));
+                    mov(cb, C_SP_REG, X29);
 
                     ldp_post(cb, X29, X30, A64Opnd::new_mem(128, C_SP_REG, 16));
                 },
