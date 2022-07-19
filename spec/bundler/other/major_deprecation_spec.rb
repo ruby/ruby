@@ -414,7 +414,7 @@ RSpec.describe "major deprecations" do
 
     it "shows a deprecation", :bundler => "< 3" do
       expect(deprecations).to include(
-        "Your Gemfile contains multiple primary sources. " \
+        "Your Gemfile contains multiple global sources. " \
         "Using `source` more than once without a block is a security risk, and " \
         "may result in installing unexpected gems. To resolve this warning, use " \
         "a block to indicate which gems should come from the secondary source."
@@ -425,7 +425,7 @@ RSpec.describe "major deprecations" do
       bundle "install"
 
       expect(deprecations).to include(
-        "Your Gemfile contains multiple primary sources. " \
+        "Your Gemfile contains multiple global sources. " \
         "Using `source` more than once without a block is a security risk, and " \
         "may result in installing unexpected gems. To resolve this warning, use " \
         "a block to indicate which gems should come from the secondary source."
@@ -438,7 +438,7 @@ RSpec.describe "major deprecations" do
       bundle "install"
 
       expect(deprecations).to include(
-        "Your Gemfile contains multiple primary sources. " \
+        "Your Gemfile contains multiple global sources. " \
         "Using `source` more than once without a block is a security risk, and " \
         "may result in installing unexpected gems. To resolve this warning, use " \
         "a block to indicate which gems should come from the secondary source."
