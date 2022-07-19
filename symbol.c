@@ -378,7 +378,7 @@ rb_enc_symname_type(const char *name, long len, rb_encoding *enc, unsigned int a
         if (m >= e || (*m != '_' && !ISALPHA(*m) && ISASCII(*m))) {
             if (len > 1 && *(e-1) == '=') {
                 type = rb_enc_symname_type(name, len-1, enc, allowed_attrset);
-                if (type != ID_ATTRSET) return ID_ATTRSET;
+                if (allowed_attrset & (1U << type)) return ID_ATTRSET;
             }
             return -1;
         }
