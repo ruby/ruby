@@ -322,6 +322,7 @@ pub fn ldp(cb: &mut CodeBlock, rt1: A64Opnd, rt2: A64Opnd, rn: A64Opnd) {
         (A64Opnd::Reg(rt1), A64Opnd::Reg(rt2), A64Opnd::Mem(rn)) => {
             assert!(rt1.num_bits == rt2.num_bits, "Expected source registers to be the same size");
             assert!(imm_fits_bits(rn.disp.into(), 10), "The displacement must be 10 bits or less.");
+            assert_ne!(rt1.reg_no, rt2.reg_no, "Behavior is unpredictable with pairs of the same register");
 
             RegisterPair::ldp(rt1.reg_no, rt2.reg_no, rn.base_reg_no, rn.disp as i16, rt1.num_bits).into()
         },
@@ -337,6 +338,7 @@ pub fn ldp_pre(cb: &mut CodeBlock, rt1: A64Opnd, rt2: A64Opnd, rn: A64Opnd) {
         (A64Opnd::Reg(rt1), A64Opnd::Reg(rt2), A64Opnd::Mem(rn)) => {
             assert!(rt1.num_bits == rt2.num_bits, "Expected source registers to be the same size");
             assert!(imm_fits_bits(rn.disp.into(), 10), "The displacement must be 10 bits or less.");
+            assert_ne!(rt1.reg_no, rt2.reg_no, "Behavior is unpredictable with pairs of the same register");
 
             RegisterPair::ldp_pre(rt1.reg_no, rt2.reg_no, rn.base_reg_no, rn.disp as i16, rt1.num_bits).into()
         },
@@ -352,6 +354,7 @@ pub fn ldp_post(cb: &mut CodeBlock, rt1: A64Opnd, rt2: A64Opnd, rn: A64Opnd) {
         (A64Opnd::Reg(rt1), A64Opnd::Reg(rt2), A64Opnd::Mem(rn)) => {
             assert!(rt1.num_bits == rt2.num_bits, "Expected source registers to be the same size");
             assert!(imm_fits_bits(rn.disp.into(), 10), "The displacement must be 10 bits or less.");
+            assert_ne!(rt1.reg_no, rt2.reg_no, "Behavior is unpredictable with pairs of the same register");
 
             RegisterPair::ldp_post(rt1.reg_no, rt2.reg_no, rn.base_reg_no, rn.disp as i16, rt1.num_bits).into()
         },
@@ -570,6 +573,7 @@ pub fn stp(cb: &mut CodeBlock, rt1: A64Opnd, rt2: A64Opnd, rn: A64Opnd) {
         (A64Opnd::Reg(rt1), A64Opnd::Reg(rt2), A64Opnd::Mem(rn)) => {
             assert!(rt1.num_bits == rt2.num_bits, "Expected source registers to be the same size");
             assert!(imm_fits_bits(rn.disp.into(), 10), "The displacement must be 10 bits or less.");
+            assert_ne!(rt1.reg_no, rt2.reg_no, "Behavior is unpredictable with pairs of the same register");
 
             RegisterPair::stp(rt1.reg_no, rt2.reg_no, rn.base_reg_no, rn.disp as i16, rt1.num_bits).into()
         },
@@ -585,6 +589,7 @@ pub fn stp_pre(cb: &mut CodeBlock, rt1: A64Opnd, rt2: A64Opnd, rn: A64Opnd) {
         (A64Opnd::Reg(rt1), A64Opnd::Reg(rt2), A64Opnd::Mem(rn)) => {
             assert!(rt1.num_bits == rt2.num_bits, "Expected source registers to be the same size");
             assert!(imm_fits_bits(rn.disp.into(), 10), "The displacement must be 10 bits or less.");
+            assert_ne!(rt1.reg_no, rt2.reg_no, "Behavior is unpredictable with pairs of the same register");
 
             RegisterPair::stp_pre(rt1.reg_no, rt2.reg_no, rn.base_reg_no, rn.disp as i16, rt1.num_bits).into()
         },
@@ -600,6 +605,7 @@ pub fn stp_post(cb: &mut CodeBlock, rt1: A64Opnd, rt2: A64Opnd, rn: A64Opnd) {
         (A64Opnd::Reg(rt1), A64Opnd::Reg(rt2), A64Opnd::Mem(rn)) => {
             assert!(rt1.num_bits == rt2.num_bits, "Expected source registers to be the same size");
             assert!(imm_fits_bits(rn.disp.into(), 10), "The displacement must be 10 bits or less.");
+            assert_ne!(rt1.reg_no, rt2.reg_no, "Behavior is unpredictable with pairs of the same register");
 
             RegisterPair::stp_post(rt1.reg_no, rt2.reg_no, rn.base_reg_no, rn.disp as i16, rt1.num_bits).into()
         },
