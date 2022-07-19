@@ -426,6 +426,14 @@ impl Assembler
                 Op::Add => {
                     add(cb, insn.out.into(), insn.opnds[0].into(), insn.opnds[1].into());
                 },
+                Op::FrameSetup => {
+                    stp_pre(cb, X29, X30, A64Opnd::new_mem(128, C_SP_REG, -16));
+                    mov(cb, X29, C_SP_REG);
+                },
+                Op::FrameTeardown => {
+                    mov(cb, C_SP_REG, X29);
+                    ldp_post(cb, X29, X30, A64Opnd::new_mem(128, C_SP_REG, 16));
+                },
                 Op::Sub => {
                     sub(cb, insn.out.into(), insn.opnds[0].into(), insn.opnds[1].into());
                 },
@@ -724,6 +732,15 @@ mod tests {
         let (mut asm, mut cb) = setup_asm();
 
         asm.cpop_all();
+        asm.compile_with_num_regs(&mut cb, 0);
+    }
+
+    #[test]
+    fn test_emit_frame() {
+        let (mut asm, mut cb) = setup_asm();
+
+        asm.frame_setup();
+        asm.frame_teardown();
         asm.compile_with_num_regs(&mut cb, 0);
     }
 

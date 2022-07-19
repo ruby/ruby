@@ -137,6 +137,12 @@ pub enum Op
 
     // Trigger a debugger breakpoint
     Breakpoint,
+
+    /// Set up the frame stack as necessary per the architecture.
+    FrameSetup,
+
+    /// Tear down the frame stack as necessary per the architecture.
+    FrameTeardown
 }
 
 // Memory operand base
@@ -895,3 +901,5 @@ def_push_2_opnd!(csel_l, Op::CSelL);
 def_push_2_opnd!(csel_le, Op::CSelLE);
 def_push_2_opnd!(csel_g, Op::CSelG);
 def_push_2_opnd!(csel_ge, Op::CSelGE);
+def_push_0_opnd_no_out!(frame_setup, Op::FrameSetup);
+def_push_0_opnd_no_out!(frame_teardown, Op::FrameTeardown);
