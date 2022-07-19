@@ -380,7 +380,7 @@ impl Assembler
         /// Emit a push instruction for the given operand by adding to the stack
         /// pointer and then storing the given value.
         fn emit_push(cb: &mut CodeBlock, opnd: A64Opnd) {
-            add(cb, C_SP_REG, C_SP_REG, C_SP_STEP);
+            sub(cb, C_SP_REG, C_SP_REG, C_SP_STEP);
             stur(cb, opnd, A64Opnd::new_mem(64, C_SP_REG, 0));
         }
 
@@ -388,7 +388,7 @@ impl Assembler
         /// and then subtracting from the stack pointer.
         fn emit_pop(cb: &mut CodeBlock, opnd: A64Opnd) {
             ldur(cb, opnd, A64Opnd::new_mem(64, C_SP_REG, 0));
-            sub(cb, C_SP_REG, C_SP_REG, C_SP_STEP);
+            add(cb, C_SP_REG, C_SP_REG, C_SP_STEP);
         }
 
         // dbg!(&self.insns);
@@ -428,10 +428,14 @@ impl Assembler
                 },
                 Op::FrameSetup => {
                     stp_pre(cb, X29, X30, A64Opnd::new_mem(128, C_SP_REG, -16));
-                    mov(cb, X29, C_SP_REG);
+
+                    // X29 (frame_pointer) = SP
+                    add(cb, X29, C_SP_REG, A64Opnd::new_uimm(0));
                 },
                 Op::FrameTeardown => {
-                    mov(cb, C_SP_REG, X29);
+                    // SP = X29 (frame pointer)
+                    add(cb, C_SP_REG, X29, A64Opnd::new_uimm(0));
+
                     ldp_post(cb, X29, X30, A64Opnd::new_mem(128, C_SP_REG, 16));
                 },
                 Op::Sub => {
