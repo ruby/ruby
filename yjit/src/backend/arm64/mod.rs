@@ -359,8 +359,8 @@ impl Assembler
                             let value = dst_addr as u64;
 
                             b(cb, A64Opnd::new_imm(emit_load_size(value).into()));
-                            emit_load_value(cb, X29, value);
-                            br(cb, X29);
+                            emit_load_value(cb, Assembler::SCRATCH0, value);
+                            br(cb, Assembler::SCRATCH0);
                         }
                     }
                 },
@@ -572,8 +572,7 @@ impl Assembler
                         bl(cb, A64Opnd::new_imm(offset / 4));
                     } else {
                         emit_load_value(cb, Self::SCRATCH0, dst_addr as u64);
-                        adr(cb, X30, A64Opnd::Imm(8));
-                        br(cb, Self::SCRATCH0);
+                        blr(cb, Self::SCRATCH0);
                     }
                 },
                 Op::CRet => {
