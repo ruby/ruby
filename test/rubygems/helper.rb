@@ -171,9 +171,9 @@ class Gem::TestCase < Test::Unit::TestCase
     yield
   ensure
     if enable_shared
-      RbConfig::CONFIG['enable_shared'] = enable_shared
+      RbConfig::CONFIG['ENABLE_SHARED'] = enable_shared
     else
-      RbConfig::CONFIG.delete 'enable_shared'
+      RbConfig::CONFIG.delete 'ENABLE_SHARED'
     end
   end
 
