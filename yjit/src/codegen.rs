@@ -389,6 +389,8 @@ fn gen_code_for_exit_from_stub(ocb: &mut OutlinedCb) -> CodePtr {
     asm.cpop_into(EC);
     asm.cpop_into(CFP);
 
+    asm.frame_teardown();
+
     asm.cret(Qundef.into());
 
     asm.compile(ocb);
@@ -437,6 +439,8 @@ fn gen_exit(exit_pc: *mut VALUE, ctx: &Context, asm: &mut Assembler) {
     asm.cpop_into(SP);
     asm.cpop_into(EC);
     asm.cpop_into(CFP);
+
+    asm.frame_teardown();
 
     asm.cret(Qundef.into());
 }
@@ -522,6 +526,8 @@ fn gen_full_cfunc_return(ocb: &mut OutlinedCb) -> CodePtr {
     asm.cpop_into(EC);
     asm.cpop_into(CFP);
 
+    asm.frame_teardown();
+
     asm.cret(Qundef.into());
 
     asm.compile(ocb);
@@ -545,6 +551,8 @@ fn gen_leave_exit(ocb: &mut OutlinedCb) -> CodePtr {
     asm.cpop_into(SP);
     asm.cpop_into(EC);
     asm.cpop_into(CFP);
+
+    asm.frame_teardown();
 
     asm.cret(C_RET_OPND);
 
@@ -575,6 +583,8 @@ fn gen_pc_guard(asm: &mut Assembler, iseq: IseqPtr, insn_idx: u32) {
     asm.cpop_into(EC);
     asm.cpop_into(CFP);
 
+    asm.frame_teardown();
+
     asm.cret(Qundef.into());
 
     // PC should match the expected insn_idx
@@ -602,20 +612,7 @@ pub fn gen_entry_prologue(cb: &mut CodeBlock, iseq: IseqPtr, insn_idx: u32) -> O
 
     let mut asm = Assembler::new();
 
-
-
-    // FIXME: need to handle this properly
-    // Maybe add an asm.entry_prologue() insn that compiles to nothing on x86
-    // stp     x29, x30, [sp, -16]!
-    // mov     x29, sp
-
-
-    // NOTE: we also need a matching asm.exit_epilogue()
-    // mov     sp, x29
-    // ldp     x29, x30, [sp], 16
-
-
-
+    asm.frame_setup();
 
     // Save the CFP, EC, SP registers to the C stack
     asm.cpush(CFP);
