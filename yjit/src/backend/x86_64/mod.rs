@@ -236,6 +236,9 @@ impl Assembler
                     add(cb, insn.opnds[0].into(), insn.opnds[1].into())
                 },
 
+                Op::FrameSetup => {},
+                Op::FrameTeardown => {},
+
                 Op::Sub => {
                     sub(cb, insn.opnds[0].into(), insn.opnds[1].into())
                 },

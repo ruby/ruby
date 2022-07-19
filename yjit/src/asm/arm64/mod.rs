@@ -306,6 +306,51 @@ pub fn ldaddal(cb: &mut CodeBlock, rs: A64Opnd, rt: A64Opnd, rn: A64Opnd) {
     cb.write_bytes(&bytes);
 }
 
+/// LDP (signed offset) - load a pair of registers from memory
+pub fn ldp(cb: &mut CodeBlock, rt1: A64Opnd, rt2: A64Opnd, rn: A64Opnd) {
+    let bytes: [u8; 4] = match (rt1, rt2, rn) {
+        (A64Opnd::Reg(rt1), A64Opnd::Reg(rt2), A64Opnd::Mem(rn)) => {
+            assert!(rt1.num_bits == rt2.num_bits, "Expected source registers to be the same size");
+            assert!(imm_fits_bits(rn.disp.into(), 10), "The displacement must be 10 bits or less.");
+
+            RegisterPair::ldp(rt1.reg_no, rt2.reg_no, rn.base_reg_no, rn.disp as i16, rt1.num_bits).into()
+        },
+        _ => panic!("Invalid operand combination to ldp instruction.")
+    };
+
+    cb.write_bytes(&bytes);
+}
+
+/// LDP (pre-index) - load a pair of registers from memory, update the base pointer before loading it
+pub fn ldp_pre(cb: &mut CodeBlock, rt1: A64Opnd, rt2: A64Opnd, rn: A64Opnd) {
+    let bytes: [u8; 4] = match (rt1, rt2, rn) {
+        (A64Opnd::Reg(rt1), A64Opnd::Reg(rt2), A64Opnd::Mem(rn)) => {
+            assert!(rt1.num_bits == rt2.num_bits, "Expected source registers to be the same size");
+            assert!(imm_fits_bits(rn.disp.into(), 10), "The displacement must be 10 bits or less.");
+
+            RegisterPair::ldp_pre(rt1.reg_no, rt2.reg_no, rn.base_reg_no, rn.disp as i16, rt1.num_bits).into()
+        },
+        _ => panic!("Invalid operand combination to ldp instruction.")
+    };
+
+    cb.write_bytes(&bytes);
+}
+
+/// LDP (post-index) - load a pair of registers from memory, update the base pointer after loading it
+pub fn ldp_post(cb: &mut CodeBlock, rt1: A64Opnd, rt2: A64Opnd, rn: A64Opnd) {
+    let bytes: [u8; 4] = match (rt1, rt2, rn) {
+        (A64Opnd::Reg(rt1), A64Opnd::Reg(rt2), A64Opnd::Mem(rn)) => {
+            assert!(rt1.num_bits == rt2.num_bits, "Expected source registers to be the same size");
+            assert!(imm_fits_bits(rn.disp.into(), 10), "The displacement must be 10 bits or less.");
+
+            RegisterPair::ldp_post(rt1.reg_no, rt2.reg_no, rn.base_reg_no, rn.disp as i16, rt1.num_bits).into()
+        },
+        _ => panic!("Invalid operand combination to ldp instruction.")
+    };
+
+    cb.write_bytes(&bytes);
+}
+
 /// LDR - load a PC-relative memory address into a register
 pub fn ldr(cb: &mut CodeBlock, rt: A64Opnd, rn: i32) {
     let bytes: [u8; 4] = match rt {
@@ -504,6 +549,51 @@ pub fn orr(cb: &mut CodeBlock, rd: A64Opnd, rn: A64Opnd, rm: A64Opnd) {
             LogicalImm::orr(rd.reg_no, rn.reg_no, imm.try_into().unwrap(), rd.num_bits).into()
         },
         _ => panic!("Invalid operand combination to orr instruction."),
+    };
+
+    cb.write_bytes(&bytes);
+}
+
+/// STP (signed offset) - store a pair of registers to memory
+pub fn stp(cb: &mut CodeBlock, rt1: A64Opnd, rt2: A64Opnd, rn: A64Opnd) {
+    let bytes: [u8; 4] = match (rt1, rt2, rn) {
+        (A64Opnd::Reg(rt1), A64Opnd::Reg(rt2), A64Opnd::Mem(rn)) => {
+            assert!(rt1.num_bits == rt2.num_bits, "Expected source registers to be the same size");
+            assert!(imm_fits_bits(rn.disp.into(), 10), "The displacement must be 10 bits or less.");
+
+            RegisterPair::stp(rt1.reg_no, rt2.reg_no, rn.base_reg_no, rn.disp as i16, rt1.num_bits).into()
+        },
+        _ => panic!("Invalid operand combination to stp instruction.")
+    };
+
+    cb.write_bytes(&bytes);
+}
+
+/// STP (pre-index) - store a pair of registers to memory, update the base pointer before loading it
+pub fn stp_pre(cb: &mut CodeBlock, rt1: A64Opnd, rt2: A64Opnd, rn: A64Opnd) {
+    let bytes: [u8; 4] = match (rt1, rt2, rn) {
+        (A64Opnd::Reg(rt1), A64Opnd::Reg(rt2), A64Opnd::Mem(rn)) => {
+            assert!(rt1.num_bits == rt2.num_bits, "Expected source registers to be the same size");
+            assert!(imm_fits_bits(rn.disp.into(), 10), "The displacement must be 10 bits or less.");
+
+            RegisterPair::stp_pre(rt1.reg_no, rt2.reg_no, rn.base_reg_no, rn.disp as i16, rt1.num_bits).into()
+        },
+        _ => panic!("Invalid operand combination to stp instruction.")
+    };
+
+    cb.write_bytes(&bytes);
+}
+
+/// STP (post-index) - store a pair of registers to memory, update the base pointer after loading it
+pub fn stp_post(cb: &mut CodeBlock, rt1: A64Opnd, rt2: A64Opnd, rn: A64Opnd) {
+    let bytes: [u8; 4] = match (rt1, rt2, rn) {
+        (A64Opnd::Reg(rt1), A64Opnd::Reg(rt2), A64Opnd::Mem(rn)) => {
+            assert!(rt1.num_bits == rt2.num_bits, "Expected source registers to be the same size");
+            assert!(imm_fits_bits(rn.disp.into(), 10), "The displacement must be 10 bits or less.");
+
+            RegisterPair::stp_post(rt1.reg_no, rt2.reg_no, rn.base_reg_no, rn.disp as i16, rt1.num_bits).into()
+        },
+        _ => panic!("Invalid operand combination to stp instruction.")
     };
 
     cb.write_bytes(&bytes);
@@ -788,6 +878,21 @@ mod tests {
     }
 
     #[test]
+    fn test_ldp() {
+        check_bytes("8a2d4da9", |cb| ldp(cb, X10, X11, A64Opnd::new_mem(64, X12, 208)));
+    }
+
+    #[test]
+    fn test_ldp_pre() {
+        check_bytes("8a2dcda9", |cb| ldp_pre(cb, X10, X11, A64Opnd::new_mem(64, X12, 208)));
+    }
+
+    #[test]
+    fn test_ldp_post() {
+        check_bytes("8a2dcda8", |cb| ldp_post(cb, X10, X11, A64Opnd::new_mem(64, X12, 208)));
+    }
+
+    #[test]
     fn test_ldr() {
         check_bytes("40010058", |cb| ldr(cb, X0, 10));
     }
@@ -880,6 +985,21 @@ mod tests {
     #[test]
     fn test_ret_register() {
         check_bytes("80025fd6", |cb| ret(cb, X20));
+    }
+
+    #[test]
+    fn test_stp() {
+        check_bytes("8a2d0da9", |cb| stp(cb, X10, X11, A64Opnd::new_mem(64, X12, 208)));
+    }
+
+    #[test]
+    fn test_stp_pre() {
+        check_bytes("8a2d8da9", |cb| stp_pre(cb, X10, X11, A64Opnd::new_mem(64, X12, 208)));
+    }
+
+    #[test]
+    fn test_stp_post() {
+        check_bytes("8a2d8da8", |cb| stp_post(cb, X10, X11, A64Opnd::new_mem(64, X12, 208)));
     }
 
     #[test]
