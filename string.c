@@ -3110,8 +3110,16 @@ rb_str_resize(VALUE str, long len)
 }
 
 static VALUE
-str_buf_cat(VALUE str, const char *ptr, long len)
+str_buf_cat4(VALUE str, const char *ptr, long len, bool keep_cr)
 {
+    if (keep_cr) {
+        str_modify_keep_cr(str);
+    }
+    else {
+        rb_str_modify(str);
+    }
+    if (len == 0) return 0;
+
     long capa, total, olen, off = -1;
     char *sptr;
     const int termlen = TERM_LEN(str);
@@ -3123,12 +3131,11 @@ str_buf_cat(VALUE str, const char *ptr, long len)
     if (ptr >= sptr && ptr <= sptr + olen) {
         off = ptr - sptr;
     }
-    rb_str_modify(str);
-    if (len == 0) return 0;
+
     if (STR_EMBED_P(str)) {
         capa = str_embed_capa(str) - termlen;
         sptr = RSTRING(str)->as.embed.ary;
-	olen = RSTRING_EMBED_LEN(str);
+        olen = RSTRING_EMBED_LEN(str);
     }
     else {
 	capa = RSTRING(str)->as.heap.aux.capa;
@@ -3159,7 +3166,8 @@ str_buf_cat(VALUE str, const char *ptr, long len)
     return str;
 }
 
-#define str_buf_cat2(str, ptr) str_buf_cat((str), (ptr), rb_strlen_lit(ptr))
+#define str_buf_cat(str, ptr, len) str_buf_cat4((str), (ptr), len, false)
+#define str_buf_cat2(str, ptr) str_buf_cat4((str), (ptr), rb_strlen_lit(ptr), false)
 
 VALUE
 rb_str_cat(VALUE str, const char *ptr, long len)
@@ -3322,7 +3330,7 @@ rb_str_buf_append(VALUE str, VALUE str2)
 {
     int str2_cr = rb_enc_str_coderange(str2);
     if (str2_cr == ENC_CODERANGE_7BIT && str_enc_fastpath(str)) {
-        str_buf_cat(str, RSTRING_PTR(str2), RSTRING_LEN(str2));
+        str_buf_cat4(str, RSTRING_PTR(str2), RSTRING_LEN(str2), true);
         return str;
     }
 
