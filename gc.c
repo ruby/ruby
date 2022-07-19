@@ -12705,20 +12705,21 @@ static int
 wmap_live_p(rb_objspace_t *objspace, VALUE obj)
 {
     if (SPECIAL_CONST_P(obj)) return TRUE;
-    if (is_pointer_to_heap(objspace, (void *)obj)) {
-        void *poisoned = asan_unpoison_object_temporary(obj);
+    /* If is_pointer_to_heap returns false, the page could be in the tomb heap
+     * or have already been freed. */
+    if (!is_pointer_to_heap(objspace, (void *)obj)) return FALSE;
 
-        enum ruby_value_type t = BUILTIN_TYPE(obj);
-        int ret = (!(t == T_NONE || t >= T_FIXNUM || t == T_ICLASS) &&
-                   is_live_object(objspace, obj));
+    void *poisoned = asan_unpoison_object_temporary(obj);
 
-        if (poisoned) {
-            asan_poison_object(obj);
-        }
+    enum ruby_value_type t = BUILTIN_TYPE(obj);
+    int ret = (!(t == T_NONE || t >= T_FIXNUM || t == T_ICLASS) &&
+                is_live_object(objspace, obj));
 
-        return ret;
+    if (poisoned) {
+        asan_poison_object(obj);
     }
-    return TRUE;
+
+    return ret;
 }
 
 static int
