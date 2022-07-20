@@ -6313,7 +6313,6 @@ mod tests {
         assert!(ocb.unwrap().get_write_pos() > 0);
     }
 
-    /*
     #[test]
     fn test_gen_exit() {
         let (_, ctx, mut asm, mut cb, _) = setup_codegen();
@@ -6328,7 +6327,6 @@ mod tests {
          get_side_exit(&mut jit, &mut ocb, &ctx);
         assert!(ocb.unwrap().get_write_pos() > 0);
     }
-    */
 
     #[test]
     fn test_gen_check_ints() {
