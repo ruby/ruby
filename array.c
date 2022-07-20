@@ -39,6 +39,37 @@
 
 VALUE rb_cArray;
 
+/* Flags of RArray
+ *
+ * 1:   RARRAY_EMBED_FLAG
+ *          The array is embedded (its contents follow the header, rather than
+ *          being on a separately allocated buffer).
+ * 2:   RARRAY_SHARED_FLAG (equal to ELTS_SHARED)
+ *          The array is shared. The buffer this array points to is owned by
+ *          another array (the shared root).
+ * if USE_RVARGC
+ * 3-9: RARRAY_EMBED_LEN
+ *          The length of the array when RARRAY_EMBED_FLAG is set.
+ * else
+ * 3-4: RARRAY_EMBED_LEN
+ *          The length of the array when RARRAY_EMBED_FLAG is set.
+ * endif
+ * 12:  RARRAY_SHARED_ROOT_FLAG
+ *          The array is a shared root. The buffer this array points to is
+ *          owned by this array but may be pointed to by other arrays.
+ * 13:  RARRAY_TRANSIENT_FLAG
+ *          The buffer of the array is allocated on the transient heap.
+ * 14:  RARRAY_PTR_IN_USE_FLAG
+ *          The buffer of the array is in use. This is only used during
+ *          debugging.
+ * 15:  RARRAY_LITERAL_FLAG
+ *          The array is a shared root for array literals. This differs from
+ *          RARRAY_SHARED_ROOT_FLAG in that this does not keep track of the
+ *          reference count (it assumes that the reference count is infinity).
+ *          This is used to improve copy-on-write performance since updating
+ *          reference counts could cause system page invalidation.
+ */
+
 /* for OPTIMIZED_CMP: */
 #define id_cmp idCmp
 
