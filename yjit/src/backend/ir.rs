@@ -7,7 +7,6 @@ use std::convert::From;
 use crate::cruby::{VALUE};
 use crate::virtualmem::{CodePtr};
 use crate::asm::{CodeBlock, uimm_num_bits, imm_num_bits};
-use crate::asm::x86_64::{X86Opnd, X86Imm, X86UImm, X86Reg, X86Mem, RegType};
 use crate::core::{Context, Type, TempMapping};
 use crate::codegen::{JITState};
 
