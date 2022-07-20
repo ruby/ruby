@@ -5,3 +5,6 @@
 
 # Expand tabs
 5b21e94bebed90180d8ff63dad03b8b948361089
+
+# Enable Style/StringLiterals cop for RubyGems/Bundler
+d7ffd3fea402239b16833cc434404a7af82d44f3
