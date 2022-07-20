@@ -122,7 +122,7 @@ struct rb_thread_struct;
 #define MMTK_DEFAULT_PLAN "MarkSweep"
 void rb_gc_init_collection();
 void rb_mmtk_pre_process_opts(int argc, char **argv);
-void rb_mmtk_post_process_opts(char *arg);
+void rb_mmtk_post_process_opts(const char *arg);
 void rb_mmtk_post_process_opts_finish(void);
 #endif // USE_THIRD_PARTY_HEAP
 

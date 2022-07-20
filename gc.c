@@ -158,10 +158,10 @@ RubyUpcalls ruby_upcalls;
 #endif
 
 #ifdef USE_THIRD_PARTY_HEAP
-static char *mmtk_env_plan = NULL;
-static char *mmtk_pre_arg_plan = NULL;
-static char *mmtk_post_arg_plan = NULL;
-static char *mmtk_chosen_plan = NULL;
+static const char *mmtk_env_plan = NULL;
+static const char *mmtk_pre_arg_plan = NULL;
+static const char *mmtk_post_arg_plan = NULL;
+static const char *mmtk_chosen_plan = NULL;
 #endif
 
 static inline struct rbimpl_size_mul_overflow_tag
@@ -1212,7 +1212,6 @@ NORETURN(static void *gc_vraise(void *ptr));
 NORETURN(static void gc_raise(VALUE exc, const char *fmt, ...));
 NORETURN(static void negative_size_allocation_error(const char *));
 
-static void init_mark_stack(mark_stack_t *stack);
 
 static int ready_to_gc(rb_objspace_t *objspace);
 
@@ -1252,7 +1251,10 @@ static void gc_sweep_continue(rb_objspace_t *objspace, rb_size_pool_t *size_pool
 static inline void gc_mark(rb_objspace_t *objspace, VALUE ptr);
 static inline void gc_pin(rb_objspace_t *objspace, VALUE ptr);
 static inline void gc_mark_and_pin(rb_objspace_t *objspace, VALUE ptr);
+#ifndef USE_THIRD_PARTY_HEAP
+static void init_mark_stack(mark_stack_t *stack);
 static void gc_mark_ptr(rb_objspace_t *objspace, VALUE ptr);
+#endif
 NO_SANITIZE("memory", static void gc_mark_maybe(rb_objspace_t *objspace, VALUE ptr));
 static void gc_mark_children(rb_objspace_t *objspace, VALUE ptr);
 
@@ -1528,7 +1530,9 @@ check_rvalue_consistency_force(const VALUE obj, int terminate)
             bp();
             fprintf(stderr, "check_rvalue_consistency: %p is not a Ruby object.\n", (void *)obj);
             err++;
+#ifndef USE_THIRD_PARTY_HEAP
           skip:
+#endif
             ;
         }
         else {
@@ -4581,6 +4585,7 @@ struct force_finalize_list {
     struct force_finalize_list *next;
 };
 
+#ifndef USE_THIRD_PARTY_HEAP
 static int
 force_chain_object(st_data_t key, st_data_t val, st_data_t arg)
 {
@@ -4592,6 +4597,7 @@ force_chain_object(st_data_t key, st_data_t val, st_data_t arg)
     *prev = curr;
     return ST_CONTINUE;
 }
+#endif
 
 bool rb_obj_is_main_ractor(VALUE gv);
 
@@ -4691,7 +4697,6 @@ rb_objspace_call_finalizer(rb_objspace_t *objspace)
     while ((resurrected = mmtk_poll_finalizable(true)) != NULL) {
 	VALUE obj = (VALUE)resurrected;
 	if (USE_RUBY_DEBUG_LOG) {
-	    VALUE klass = CLASS_OF(obj);
 	    RUBY_DEBUG_LOG("Resurrected for obj_free: %p: %s %s",
 		    resurrected,
 		    rb_type_str(RB_BUILTIN_TYPE(obj)),
@@ -5312,6 +5317,7 @@ count_objects(int argc, VALUE *argv, VALUE os)
 
 /* Sweeping */
 
+#ifndef USE_THIRD_PARTY_HEAP
 static size_t
 objspace_available_slots(rb_objspace_t *objspace)
 {
@@ -5329,12 +5335,6 @@ objspace_available_slots(rb_objspace_t *objspace)
 }
 
 static size_t
-objspace_live_slots(rb_objspace_t *objspace)
-{
-    return (objspace->total_allocated_objects - objspace->profile.total_freed_objects) - heap_pages_final_slots;
-}
-
-static size_t
 objspace_free_slots(rb_objspace_t *objspace)
 {
 #ifdef USE_THIRD_PARTY_HEAP
@@ -5343,6 +5343,14 @@ objspace_free_slots(rb_objspace_t *objspace)
     return objspace_available_slots(objspace) - objspace_live_slots(objspace) - heap_pages_final_slots;
 #endif
 }
+#endif //USE_THIRD_PARTY_HEAP
+
+static size_t
+objspace_live_slots(rb_objspace_t *objspace)
+{
+    return (objspace->total_allocated_objects - objspace->profile.total_freed_objects) - heap_pages_final_slots;
+}
+
 
 static void
 gc_setup_mark_bits(struct heap_page *page)
@@ -6533,6 +6541,7 @@ pop_mark_stack(mark_stack_t *stack, VALUE *data)
     return TRUE;
 }
 
+#ifndef USE_THIRD_PARTY_HEAP
 static void
 init_mark_stack(mark_stack_t *stack)
 {
@@ -6546,6 +6555,7 @@ init_mark_stack(mark_stack_t *stack)
     }
     stack->unused_cache_size = stack->cache_size;
 }
+#endif
 
 /* Marking */
 
@@ -6953,6 +6963,7 @@ mark_current_machine_context(rb_objspace_t *objspace, rb_execution_context_t *ec
 
 #else // !defined(__wasm__)
 
+#ifndef USE_THIRD_PARTY_HEAP
 static void
 mark_current_machine_context(rb_objspace_t *objspace, rb_execution_context_t *ec)
 {
@@ -6977,6 +6988,7 @@ mark_current_machine_context(rb_objspace_t *objspace, rb_execution_context_t *ec
 
     each_stack_location(objspace, ec, stack_start, stack_end, gc_mark_maybe);
 }
+#endif // USE_THIRD_PARTY_HEAP
 #endif
 
 static void
@@ -7162,6 +7174,8 @@ gc_aging(rb_objspace_t *objspace, VALUE obj)
     objspace->marked_slots++;
 }
 
+
+#ifndef USE_THIRD_PARTY_HEAP
 NOINLINE(static void gc_mark_ptr(rb_objspace_t *objspace, VALUE obj));
 static void reachable_objects_from_callback(VALUE obj);
 
@@ -7194,6 +7208,7 @@ gc_mark_ptr(rb_objspace_t *objspace, VALUE obj)
         reachable_objects_from_callback(obj);
     }
 }
+#endif
 
 static inline void
 gc_pin(rb_objspace_t *objspace, VALUE obj)
@@ -11890,12 +11905,14 @@ ruby_gc_set_params(void)
 #endif
 }
 
+#ifndef USE_THIRD_PARTY_HEAP
 static void
 reachable_objects_from_callback(VALUE obj)
 {
     rb_ractor_t *cr = GET_RACTOR();
     cr->mfd->mark_func(obj, cr->mfd->data);
 }
+#endif
 
 void
 rb_objspace_reachable_objects_from(VALUE obj, void (func)(VALUE, void *), void *data)
@@ -15013,7 +15030,7 @@ rb_mmtk_scan_thread_root(MMTk_VMMutatorThread mutator, MMTk_VMWorkerThread worke
 
     RUBY_DEBUG_LOG("[Worker: %p] We will scan thread root for thread: %p, ec: %p", worker, thread, ec);
 
-    rb_execution_context_mark(thread->ec);
+    rb_execution_context_mark(ec);
 
     RUBY_DEBUG_LOG("[Worker: %p] Finished scanning thread for thread: %p, ec: %p", worker, thread, ec);
 }
@@ -15179,7 +15196,7 @@ void rb_mmtk_pre_process_opts(int argc, char **argv) {
 #define opt_match_arg(s, l, name) \
     opt_match(s, l, name) && (*(s) ? 1 : (rb_raise(rb_eRuntimeError, "--mmtk-" name " needs an argument"), 0))
 
-void rb_mmtk_post_process_opts(char *s) {
+void rb_mmtk_post_process_opts(const char *s) {
     const size_t l = strlen(s);
     if (l == 0) {
         return;
