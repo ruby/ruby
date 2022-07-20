@@ -3335,16 +3335,20 @@ iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list, const int do_tailcal
     if (IS_INSN_ID(iobj, newarray)) {
         LINK_ELEMENT *next = iobj->link.next;
         if (IS_INSN(next) && IS_INSN_ID(next, expandarray) &&
-            OPERAND_AT(iobj, 0) == OPERAND_AT(next, 0) &&
             OPERAND_AT(next, 1) == INT2FIX(0)) {
-                ELEM_REMOVE(next);
+            VALUE op1, op2;
+            op1 = OPERAND_AT(iobj, 0);
+            op2 = OPERAND_AT(next, 0);
+            ELEM_REMOVE(next);
+
+            if (op1 == op2) {
                 /*
                  *  newarray 2
                  *  expandarray 2, 0
                  * =>
                  *  swap
                  */
-                if (OPERAND_AT(iobj, 0) == INT2FIX(2)) {
+                if (op1 == INT2FIX(2)) {
                     INSN_OF(iobj) = BIN(swap);
                     iobj->operand_size = 0;
                 }
@@ -3357,6 +3361,38 @@ iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list, const int do_tailcal
                 else {
                     INSN_OF(iobj) = BIN(opt_reverse);
                 }
+            }
+            else {
+                NODE dummy_line_node = generate_dummy_line_node(iobj->insn_info.line_no, iobj->insn_info.node_id);
+                long diff = FIX2LONG(op1) - FIX2LONG(op2);
+                INSN_OF(iobj) = BIN(opt_reverse);
+                OPERAND_AT(iobj, 0) = OPERAND_AT(next, 0);
+
+                if (op1 > op2) {
+                    /* X > Y
+                     *  newarray X
+                     *  expandarray Y, 0
+                     * =>
+                     *  pop * (Y-X)
+                     *  opt_reverse Y
+                     */
+                    for (; diff > 0; diff--) {
+                        INSERT_BEFORE_INSN(iobj, &dummy_line_node, pop);
+                    }
+                }
+                else { /* (op1 < op2) */
+                    /* X < Y
+                     *  newarray X
+                     *  expandarray Y, 0
+                     * =>
+                     *  putnil * (Y-X)
+                     *  opt_reverse Y
+                     */
+                    for (; diff < 0; diff++) {
+                        INSERT_BEFORE_INSN(iobj, &dummy_line_node, putnil);
+                    }
+                }
+            }
         }
     }
 
