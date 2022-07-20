@@ -1124,6 +1124,7 @@ heap_allocatable_slots(rb_objspace_t *objspace)
     return count;
 }
 
+#ifndef USE_THIRD_PARTY_HEAP
 static inline size_t
 total_allocated_pages(rb_objspace_t *objspace)
 {
@@ -1145,6 +1146,7 @@ total_freed_pages(rb_objspace_t *objspace)
     }
     return count;
 }
+#endif
 
 #define gc_mode(objspace)                gc_mode_verify((enum gc_mode)(objspace)->flags.mode)
 #define gc_mode_set(objspace, mode)      ((objspace)->flags.mode = (unsigned int)gc_mode_verify(mode))
@@ -1816,6 +1818,7 @@ RVALUE_AGE_RESET_RAW(VALUE obj)
     RBASIC(obj)->flags = RVALUE_FLAGS_AGE_SET(RBASIC(obj)->flags, 0);
 }
 
+#ifndef USE_THIRD_PARTY_HEAP
 static inline void
 RVALUE_AGE_RESET(VALUE obj)
 {
@@ -1825,6 +1828,7 @@ RVALUE_AGE_RESET(VALUE obj)
     RVALUE_AGE_RESET_RAW(obj);
     check_rvalue_consistency(obj);
 }
+#endif
 
 static inline int
 RVALUE_BLACK_P(VALUE obj)
@@ -3205,6 +3209,7 @@ rb_objspace_data_type_name(VALUE obj)
     }
 }
 
+#ifndef USE_THIRD_PARTY_HEAP
 static int
 ptr_in_page_body_p(const void *ptr, const void *memb)
 {
@@ -3241,6 +3246,7 @@ heap_page_for_ptr(rb_objspace_t *objspace, uintptr_t ptr)
         return NULL;
     }
 }
+#endif
 
 PUREFUNC(static inline int is_pointer_to_heap(rb_objspace_t *objspace, void *ptr);)
 static inline int
@@ -5333,7 +5339,15 @@ objspace_available_slots(rb_objspace_t *objspace)
     return total_slots;
 #endif
 }
+#endif
 
+static size_t
+objspace_live_slots(rb_objspace_t *objspace)
+{
+    return (objspace->total_allocated_objects - objspace->profile.total_freed_objects) - heap_pages_final_slots;
+}
+
+#ifndef USE_THIRD_PARTY_HEAP
 static size_t
 objspace_free_slots(rb_objspace_t *objspace)
 {
@@ -5344,13 +5358,6 @@ objspace_free_slots(rb_objspace_t *objspace)
 #endif
 }
 #endif //USE_THIRD_PARTY_HEAP
-
-static size_t
-objspace_live_slots(rb_objspace_t *objspace)
-{
-    return (objspace->total_allocated_objects - objspace->profile.total_freed_objects) - heap_pages_final_slots;
-}
-
 
 static void
 gc_setup_mark_bits(struct heap_page *page)
@@ -7221,11 +7228,13 @@ gc_pin(rb_objspace_t *objspace, VALUE obj)
     }
 }
 
+#ifdef USE_THIRD_PARTY_HEAP
 static inline void
 rb_mmtk_mark_movable(VALUE obj);
 
 static inline void
 rb_mmtk_mark_pin(VALUE obj);
+#endif
 
 static inline void
 gc_mark_and_pin(rb_objspace_t *objspace, VALUE obj)
@@ -7643,8 +7652,10 @@ show_mark_ticks(void)
 
 #endif /* PRINT_ROOT_TICKS */
 
+#ifdef USE_THIRD_PARTY_HEAP
 static void
 rb_mmtk_assert_mmtk_worker();
+#endif
 
 static void
 gc_mark_roots(rb_objspace_t *objspace, const char **categoryp)
@@ -9947,6 +9958,9 @@ static VALUE
 gc_start_internal(rb_execution_context_t *ec, VALUE self, VALUE full_mark, VALUE immediate_mark, VALUE immediate_sweep, VALUE compact)
 {
     rb_objspace_t *objspace = &rb_objspace;
+#ifdef USE_THIRD_PARTY_HEAP
+    mmtk_handle_user_collection_request(GET_THREAD());
+#else
     unsigned int reason = (GPR_FLAG_FULL_MARK |
                            GPR_FLAG_IMMEDIATE_MARK |
                            GPR_FLAG_IMMEDIATE_SWEEP |
@@ -9964,9 +9978,6 @@ gc_start_internal(rb_execution_context_t *ec, VALUE self, VALUE full_mark, VALUE
         if (!RTEST(immediate_sweep)) reason &= ~GPR_FLAG_IMMEDIATE_SWEEP;
     }
 
-#ifdef USE_THIRD_PARTY_HEAP
-    mmtk_handle_user_collection_request(GET_THREAD());
-#else
     garbage_collect(objspace, reason);
 #endif // USE_THIRD_PARTY_HEAP
 
@@ -15014,6 +15025,7 @@ rb_mmtk_scan_vm_specific_roots(void)
     gc_mark_roots(vm->objspace, &phase);
 }
 
+RBIMPL_ATTR_NORETURN()
 static void
 rb_mmtk_scan_thread_roots(void)
 {
