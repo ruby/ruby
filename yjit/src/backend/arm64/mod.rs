@@ -324,10 +324,24 @@ impl Assembler
         fn emit_conditional_jump<const CONDITION: u8>(cb: &mut CodeBlock, target: Target) {
             match target {
                 Target::CodePtr(dst_ptr) => {
-                    let src_addr = cb.get_write_ptr().into_i64() + 4;
-                    let dst_addr = dst_ptr.into_i64();
-                    let offset = dst_addr - src_addr;
+                    let dst_addr = dst_ptr.into_u64();
+                    //let src_addr = cb.get_write_ptr().into_i64() + 4;
+                    //let offset = dst_addr - src_addr;
 
+                    // If the condition is met, then we'll skip past the
+                    // next instruction, put the address in a register, and
+                    // jump to it.
+                    bcond(cb, CONDITION, A64Opnd::new_imm(8));
+
+                    // If we get to this instruction, then the condition
+                    // wasn't met, in which case we'll jump past the
+                    // next instruction that perform the direct jump.
+
+                    b(cb, A64Opnd::new_imm(2i64 + emit_load_size(dst_addr) as i64));
+                    emit_load_value(cb, Assembler::SCRATCH0, dst_addr);
+                    br(cb, Assembler::SCRATCH0);
+
+                    /*
                     // If the jump offset fits into the conditional jump as an
                     // immediate value and it's properly aligned, then we can
                     // use the b.cond instruction directly. Otherwise, we need
@@ -339,7 +353,7 @@ impl Assembler
                         // If the condition is met, then we'll skip past the
                         // next instruction, put the address in a register, and
                         // jump to it.
-                        bcond(cb, CONDITION, A64Opnd::new_imm(4));
+                        bcond(cb, CONDITION, A64Opnd::new_imm(8));
 
                         // If the offset fits into a direct jump, then we'll use
                         // that and the number of instructions will be shorter.
@@ -351,6 +365,7 @@ impl Assembler
                             b(cb, A64Opnd::new_imm(1));
 
                             // Here we'll perform the direct jump to the target.
+                            let offset = dst_addr - cb.get_write_ptr().into_i64() + 4;
                             b(cb, A64Opnd::new_imm(offset / 4));
                         } else {
                             // If we get to this instruction, then the condition
@@ -363,6 +378,7 @@ impl Assembler
                             br(cb, Assembler::SCRATCH0);
                         }
                     }
+                    */
                 },
                 Target::Label(label_idx) => {
                     // Here we're going to save enough space for ourselves and

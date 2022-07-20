@@ -192,6 +192,11 @@ impl CodePtr {
         ptr as i64
     }
 
+    pub fn into_u64(self) -> u64 {
+        let CodePtr(ptr) = self;
+        ptr as u64
+    }
+
     pub fn into_usize(self) -> usize {
         let CodePtr(ptr) = self;
         ptr as usize
