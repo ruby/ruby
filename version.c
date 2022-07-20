@@ -16,6 +16,10 @@
 #include "yjit.h"
 #include <stdio.h>
 
+#ifdef USE_THIRD_PARTY_HEAP
+#include "mmtk.h"
+#endif
+
 #ifndef EXIT_SUCCESS
 #define EXIT_SUCCESS 0
 #endif
@@ -48,7 +52,7 @@ const char ruby_copyright[] = RUBY_COPYRIGHT;
 const char ruby_engine[] = "ruby";
 
 // Enough space for any combination of option flags
-static char ruby_dynamic_description_buffer[sizeof(ruby_description) + sizeof("+MJIT +YJIT +MMTk") - 1];
+static char ruby_dynamic_description_buffer[sizeof(ruby_description) + sizeof("+MJIT +YJIT +MMTk(XXXXXXXXXXXXXXXX)") - 1];
 
 // Might change after initialization
 const char *rb_dynamic_description = ruby_description;
@@ -107,14 +111,16 @@ Init_version(void)
 void
 Init_ruby_description(void)
 {
-    if (snprintf(ruby_dynamic_description_buffer, sizeof(ruby_dynamic_description_buffer), "%s%s%s%s%s",
+    if (snprintf(ruby_dynamic_description_buffer, sizeof(ruby_dynamic_description_buffer), "%s%s%s%s%s%s%s",
             ruby_description_pre,
             MJIT_OPTS_ON ? " +MJIT" : "",
             rb_yjit_enabled_p() ? " +YJIT" : "",
 #ifdef USE_THIRD_PARTY_HEAP
-            " +MMTk",
+            " +MMTk(",
+            mmtk_plan_name(),
+            ")",
 #else
-            "",
+            "", "", "",
 #endif
             ruby_description_post) < 0) {
         rb_bug("could not format dynamic description string");

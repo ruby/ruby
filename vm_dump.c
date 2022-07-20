@@ -1196,6 +1196,7 @@ rb_vm_bugreport(const void *ctx)
 
 #ifdef USE_THIRD_PARTY_HEAP
     fprintf(stderr, "* MMTk:\n\n");
+    fprintf(stderr, "                mmtk_plan_name: %s\n", mmtk_plan_name());
     fprintf(stderr, "               mmtk_free_bytes: %zu\n", mmtk_free_bytes());
     fprintf(stderr, "              mmtk_total_bytes: %zu\n", mmtk_total_bytes());
     fprintf(stderr, "               mmtk_used_bytes: %zu\n", mmtk_used_bytes());

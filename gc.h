@@ -119,7 +119,11 @@ VALUE rb_gc_disable_no_rest(void);
 struct rb_thread_struct;
 
 #ifdef USE_THIRD_PARTY_HEAP
+#define MMTK_DEFAULT_PLAN "MarkSweep"
 void rb_gc_init_collection();
+void rb_mmtk_pre_process_opts(int argc, char **argv);
+void rb_mmtk_post_process_opts(char *arg);
+void rb_mmtk_post_process_opts_finish(void);
 #endif // USE_THIRD_PARTY_HEAP
 
 RUBY_SYMBOL_EXPORT_BEGIN

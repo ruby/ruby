@@ -42,6 +42,7 @@
 #error MMTk does not use transient heap.
 #endif // USE_TRANSIENT_HEAP
 #include "mmtk.h"
+#include "internal/cmdlineopt.h"
 
 RubyUpcalls ruby_upcalls;
 #endif
@@ -154,6 +155,13 @@ RubyUpcalls ruby_upcalls;
 
 #if !defined(MAP_ANONYMOUS) && defined(MAP_ANON)
 #define MAP_ANONYMOUS MAP_ANON
+#endif
+
+#ifdef USE_THIRD_PARTY_HEAP
+static char *mmtk_env_plan = NULL;
+static char *mmtk_pre_arg_plan = NULL;
+static char *mmtk_post_arg_plan = NULL;
+static char *mmtk_chosen_plan = NULL;
 #endif
 
 static inline struct rbimpl_size_mul_overflow_tag
@@ -1442,7 +1450,7 @@ asan_poison_object_restore(VALUE obj, void *ptr)
 #define FL_SET2(x,f)   FL_CHECK2("FL_SET2",   x, RBASIC(x)->flags |= (f))
 #define FL_UNSET2(x,f) FL_CHECK2("FL_UNSET2", x, RBASIC(x)->flags &= ~(f))
 
-// Comment for easy location 
+// Comment for easy location
 #ifdef USE_THIRD_PARTY_HEAP
 #define RVALUE_MARK_BITMAP(obj)           0
 #define RVALUE_PIN_BITMAP(obj)            0
@@ -1863,10 +1871,20 @@ rb_objspace_alloc(void)
     dont_gc_on();
 
 #ifdef USE_THIRD_PARTY_HEAP
+    if (!mmtk_env_plan && setenv("MMTK_PLAN", mmtk_chosen_plan, 0) != 0) {
+        fputs("[FATAL] could not set MMTK_PLAN\n", stderr);
+	    exit(EXIT_FAILURE);
+    }
+
     // Note: the limit is currently broken for NoGC, but we still attempt to
     // initialise it properly regardless.
     // See https://github.com/mmtk/mmtk-core/issues/214
     mmtk_init_binding(rb_mmtk_heap_limit(), &ruby_upcalls);
+
+    if (!mmtk_env_plan && unsetenv("MMTK_PLAN") != 0) {
+        fputs("[FATAL] could not unset MMTK_PLAN\n", stderr);
+	    exit(EXIT_FAILURE);
+    }
 #endif
 
     return objspace;
@@ -15089,6 +15107,95 @@ size_t rb_mmtk_heap_limit(void) {
         return atol(envval);
     } else {
         return rb_mmtk_available_system_memory() / 100 * rb_mmtk_heap_limit_percentage;
+    }
+}
+
+void rb_mmtk_pre_process_opts(int argc, char **argv) {
+    bool enable_rubyopt = true;
+
+    mmtk_env_plan = getenv("MMTK_PLAN");
+
+    for (int n = 1; n < argc; n++) {
+        if (strcmp(argv[n], "--") == 0) {
+            break;
+        }
+        else if (strcmp(argv[n], "--enable-rubyopt") == 0
+                || strcmp(argv[n], "--enable=rubyopt") == 0) {
+            enable_rubyopt = true;
+        }
+        else if (strcmp(argv[n], "--disable-rubyopt") == 0
+                || strcmp(argv[n], "--disable=rubyopt") == 0) {
+            enable_rubyopt = false;
+        }
+        else if (strncmp(argv[n], "--mmtk-plan=", strlen("--mmtk-plan=")) == 0) {
+            mmtk_pre_arg_plan = argv[n] + strlen("--mmtk-plan=");
+        }
+    }
+
+    if (enable_rubyopt) {
+        char *env_args = getenv("RUBYOPT");
+        if (env_args != NULL) {
+            while (*env_args != '\0') {
+                if (ISSPACE(*env_args)) {
+                    env_args++;
+                }
+                else {
+                    size_t length = 0;
+                    while (env_args[length] != '\0' && !ISSPACE(env_args[length])) {
+                        length++;
+                    }
+
+                    if (strncmp(env_args, "--mmtk-plan=", strlen("--mmtk-plan=")) == 0) {
+                        mmtk_pre_arg_plan = strndup(env_args + strlen("--mmtk-plan="), length - strlen("--mmtk-plan="));
+                        if (mmtk_pre_arg_plan == NULL) {
+                            rb_bug("could not allocate space for argument");
+                        }
+                    }
+
+                    env_args += length;
+                }
+            }
+        }
+    }
+
+    if (enable_rubyopt && mmtk_env_plan && mmtk_pre_arg_plan && strcmp(mmtk_env_plan, mmtk_pre_arg_plan) != 0) {
+        fputs("[FATAL] MMTK_PLAN and --mmtk-plan do not agree\n", stderr);
+	    exit(EXIT_FAILURE);
+    }
+
+    if (enable_rubyopt && mmtk_env_plan) {
+        mmtk_chosen_plan = mmtk_env_plan;
+    }
+    else if (mmtk_pre_arg_plan) {
+        mmtk_chosen_plan = mmtk_pre_arg_plan;
+    }
+    else {
+        mmtk_chosen_plan = MMTK_DEFAULT_PLAN;
+    }
+}
+
+#define opt_match_noarg(s, l, name) \
+    opt_match(s, l, name) && (*(s) ? (rb_warn("argument to --mmtk-" name " is ignored"), 1) : 1)
+#define opt_match_arg(s, l, name) \
+    opt_match(s, l, name) && (*(s) ? 1 : (rb_raise(rb_eRuntimeError, "--mmtk-" name " needs an argument"), 0))
+
+void rb_mmtk_post_process_opts(char *s) {
+    const size_t l = strlen(s);
+    if (l == 0) {
+        return;
+    }
+    if (opt_match_arg(s, l, "plan")) {
+        mmtk_post_arg_plan = s + 1;
+    }
+    else {
+        rb_raise(rb_eRuntimeError,
+                 "invalid MMTk option `%s' (--help will show valid MMTk options)", s);
+    }
+}
+
+void rb_mmtk_post_process_opts_finish(void) {
+    if (strcmp(mmtk_pre_arg_plan ? mmtk_pre_arg_plan : "", mmtk_post_arg_plan ? mmtk_post_arg_plan : "") != 0) {
+        rb_raise(rb_eRuntimeError, "--mmtk-plan values disagree");
     }
 }
 

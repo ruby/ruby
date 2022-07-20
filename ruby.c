@@ -61,6 +61,10 @@
 #include "ruby/version.h"
 #include "ruby/internal/error.h"
 
+#ifdef USE_THIRD_PARTY_HEAP
+#include "gc.h"
+#endif
+
 #ifndef MAXPATHLEN
 # define MAXPATHLEN 1024
 #endif
@@ -334,6 +338,11 @@ usage(const char *name, int help, int highlight, int columns)
         M("--yjit-greedy-versioning",  "", "Greedy versioning mode (default: disabled)"),
     };
 #endif
+#ifdef USE_THIRD_PARTY_HEAP
+    static const struct ruby_opt_message mmtk_options[] = {
+        M("--mmtk-plan=name",          "", "MMTk garbage collection plan to use (default: " MMTK_DEFAULT_PLAN ")"),
+    };
+#endif
     int i;
     const char *sb = highlight ? esc_standout+1 : esc_none;
     const char *se = highlight ? esc_reset : esc_none;
@@ -369,6 +378,11 @@ usage(const char *name, int help, int highlight, int columns)
     printf("%s""YJIT options (experimental):%s\n", sb, se);
     for (i = 0; i < numberof(yjit_options); ++i)
         SHOW(yjit_options[i]);
+#endif
+#ifdef USE_THIRD_PARTY_HEAP
+    printf("%s""MMTk options (experimental):%s\n", sb, se);
+    for (i = 0; i < numberof(mmtk_options); ++i)
+        SHOW(mmtk_options[i]);
 #endif
 }
 
@@ -1441,6 +1455,15 @@ proc_options(long argc, char **argv, ruby_cmdline_options_t *opt, int envopt)
                 rb_warn("Ruby was built without YJIT support");
 #endif
             }
+            else if (is_option_with_optarg("mmtk", '-', true, false, false)) {
+#ifdef USE_THIRD_PARTY_HEAP
+                rb_mmtk_post_process_opts(s);
+#undef opt_match_noarg
+#undef opt_match_arg
+#else
+                rb_warn("Ruby was built without MMTk support");
+#endif
+            }
 	    else if (strcmp("yydebug", s) == 0) {
 		if (envopt) goto noenvopt_long;
 		opt->dump |= DUMP_BIT(yydebug);
@@ -1804,6 +1827,10 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
         FEATURE_SET_RESTORE(opt->features, feat);
         FEATURE_SET_RESTORE(opt->warn, warn);
     }
+
+#ifdef USE_THIRD_PARTY_HEAP
+    rb_mmtk_post_process_opts_finish();
+#endif
 
     if (opt->src.enc.name)
         /* cannot set deprecated category, as enabling deprecation warnings based on flags
