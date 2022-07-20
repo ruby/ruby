@@ -102,6 +102,7 @@ pub enum Op
     // Low-level conditional jump instructions
     Jbe,
     Je,
+    Jne,
     Jz,
     Jnz,
     Jo,
@@ -883,6 +884,7 @@ macro_rules! def_push_2_opnd_no_out {
 def_push_1_opnd_no_out!(jmp_opnd, Op::JmpOpnd);
 def_push_jcc!(jmp, Op::Jmp);
 def_push_jcc!(je, Op::Je);
+def_push_jcc!(jne, Op::Jne);
 def_push_jcc!(jbe, Op::Jbe);
 def_push_jcc!(jz, Op::Jz);
 def_push_jcc!(jnz, Op::Jnz);

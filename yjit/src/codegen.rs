@@ -37,7 +37,6 @@ enum CodegenStatus {
     KeepCompiling,
     CantCompile,
     EndBlock,
-    DeferCompilation,
 }
 
 /// Code generation function signature
@@ -698,17 +697,10 @@ fn jump_to_next_insn(
 
     // We are at the end of the current instruction. Record the boundary.
     if jit.record_boundary_patch_point {
-        todo!();
-
-        /*
-        let next_insn = unsafe { jit.pc.offset(insn_len(jit.opcode).try_into().unwrap()) };
-        let exit_pos = gen_exit(next_insn, &reset_depth, ocb.unwrap());
-        record_global_inval_patch(cb, exit_pos);
+        let exit_pc = unsafe { jit.pc.offset(insn_len(jit.opcode).try_into().unwrap()) };
+        let exit_pos = gen_outlined_exit(exit_pc, &reset_depth, ocb);
+        record_global_inval_patch(asm, exit_pos);
         jit.record_boundary_patch_point = false;
-        */
-
-
-
     }
 
     // Generate the jump instruction
@@ -752,9 +744,6 @@ pub fn gen_single_block(
     // Create a backend assembler instance
     let mut asm = Assembler::new();
 
-    // Codegen status for the last instruction compiled
-    let mut status = CantCompile;
-
     // For each instruction to compile
     // NOTE: could rewrite this loop with a std::iter::Iterator
     while insn_idx < iseq_size {
@@ -792,7 +781,7 @@ pub fn gen_single_block(
         }
 
         // Lookup the codegen function for this instruction
-        status = CantCompile;
+        let mut status = CantCompile;
         if let Some(gen_fn) = get_gen_fn(VALUE(opcode)) {
             // :count-placement:
             // Count bytecode instructions that execute in generated code.
@@ -835,11 +824,6 @@ pub fn gen_single_block(
             break;
         }
 
-        // If we are deferring compilation for this instruction
-        if status == DeferCompilation {
-            break;
-        }
-
         // For now, reset the chain depth after each instruction as only the
         // first instruction in the block can concern itself with the depth.
         ctx.reset_chain_depth();
@@ -870,24 +854,9 @@ pub fn gen_single_block(
         block.set_end_idx(insn_idx);
     }
 
-    // If we are deferring compilation for the current instruction
-    if status == DeferCompilation {
-        defer_compilation(&jit.block, insn_idx, &ctx, cb, ocb);
-
-        // Mark the end position of the block
-        let mut block = jit.block.borrow_mut();
-        block.set_end_addr(cb.get_write_ptr());
-    }
-
-
-
     // We currently can't handle cases where the request is for a block that
     // doesn't go to the next instruction.
-    //assert!(!jit.record_boundary_patch_point);
-
-
-
-
+    assert!(!jit.record_boundary_patch_point);
 
     // If code for the block doesn't fit, fail
     if cb.has_dropped_bytes() || ocb.unwrap().has_dropped_bytes() {
@@ -1140,7 +1109,8 @@ fn gen_opt_plus(
     ocb: &mut OutlinedCb,
 ) -> CodegenStatus {
     if !jit_at_current_insn(jit) {
-        return DeferCompilation;
+        defer_compilation(jit, ctx, asm, ocb);
+        return EndBlock;
     }
 
     let comptime_a = jit_peek_at_stack(jit, ctx, 1);
@@ -3208,9 +3178,10 @@ fn gen_opt_case_dispatch(
 
     KeepCompiling // continue with the next instruction
 }
+*/
 
 fn gen_branchif_branch(
-    cb: &mut CodeBlock,
+    asm: &mut Assembler,
     target0: CodePtr,
     target1: Option<CodePtr>,
     shape: BranchShape,
@@ -3218,14 +3189,14 @@ fn gen_branchif_branch(
     assert!(target1 != None);
     match shape {
         BranchShape::Next0 => {
-            jz_ptr(cb, target1.unwrap());
+            asm.jz(target1.unwrap().into());
         }
         BranchShape::Next1 => {
-            jnz_ptr(cb, target0);
+            asm.jnz(target0.into());
         }
         BranchShape::Default => {
-            jnz_ptr(cb, target0);
-            jmp_ptr(cb, target1.unwrap());
+            asm.jnz(target0.into());
+            asm.jmp(target1.unwrap().into());
         }
     }
 }
@@ -3233,7 +3204,7 @@ fn gen_branchif_branch(
 fn gen_branchif(
     jit: &mut JITState,
     ctx: &mut Context,
-    cb: &mut CodeBlock,
+    asm: &mut Assembler,
     ocb: &mut OutlinedCb,
 ) -> CodegenStatus {
     let jump_offset = jit_get_arg(jit, 0).as_i32();
@@ -3241,14 +3212,14 @@ fn gen_branchif(
     // Check for interrupts, but only on backward branches that may create loops
     if jump_offset < 0 {
         let side_exit = get_side_exit(jit, ocb, ctx);
-        gen_check_ints(cb, side_exit);
+        gen_check_ints(asm, side_exit);
     }
 
     // Test if any bit (outside of the Qnil bit) is on
     // RUBY_Qfalse  /* ...0000 0000 */
     // RUBY_Qnil    /* ...0000 1000 */
     let val_opnd = ctx.stack_pop(1);
-    test(cb, val_opnd, imm_opnd(!Qnil.as_i64()));
+    asm.test(val_opnd, Opnd::Imm(!Qnil.as_i64()));
 
     // Get the branch target instruction offsets
     let next_idx = jit_next_insn_idx(jit);
@@ -3266,7 +3237,7 @@ fn gen_branchif(
     gen_branch(
         jit,
         ctx,
-        cb,
+        asm,
         ocb,
         jump_block,
         ctx,
@@ -3277,7 +3248,6 @@ fn gen_branchif(
 
     EndBlock
 }
-*/
 
 fn gen_branchunless_branch(
     asm: &mut Assembler,
@@ -3328,18 +3298,11 @@ fn gen_branchunless(
         idx: jump_idx.try_into().unwrap(),
     };
 
-
-
-
-    // TODO: port gen_branch logic
-    todo!("complete branchunless implementation");
-
-    /*
     // Generate the branch instructions
     gen_branch(
         jit,
         ctx,
-        cb,
+        asm,
         ocb,
         jump_block,
         ctx,
@@ -3349,24 +3312,20 @@ fn gen_branchunless(
     );
 
     EndBlock
-    */
-
-
 }
 
-/*
 fn gen_branchnil_branch(
-    cb: &mut CodeBlock,
+    asm: &mut Assembler,
     target0: CodePtr,
     target1: Option<CodePtr>,
     shape: BranchShape,
 ) {
     match shape {
-        BranchShape::Next0 => jne_ptr(cb, target1.unwrap()),
-        BranchShape::Next1 => je_ptr(cb, target0),
+        BranchShape::Next0 => asm.jne(target1.unwrap().into()),
+        BranchShape::Next1 => asm.je(target0.into()),
         BranchShape::Default => {
-            je_ptr(cb, target0);
-            jmp_ptr(cb, target1.unwrap());
+            asm.je(target0.into());
+            asm.jmp(target1.unwrap().into());
         }
     }
 }
@@ -3374,7 +3333,7 @@ fn gen_branchnil_branch(
 fn gen_branchnil(
     jit: &mut JITState,
     ctx: &mut Context,
-    cb: &mut CodeBlock,
+    asm: &mut Assembler,
     ocb: &mut OutlinedCb,
 ) -> CodegenStatus {
     let jump_offset = jit_get_arg(jit, 0).as_i32();
@@ -3382,13 +3341,13 @@ fn gen_branchnil(
     // Check for interrupts, but only on backward branches that may create loops
     if jump_offset < 0 {
         let side_exit = get_side_exit(jit, ocb, ctx);
-        gen_check_ints(cb, side_exit);
+        gen_check_ints(asm, side_exit);
     }
 
     // Test if the value is Qnil
     // RUBY_Qnil    /* ...0000 1000 */
     let val_opnd = ctx.stack_pop(1);
-    cmp(cb, val_opnd, uimm_opnd(Qnil.into()));
+    asm.cmp(val_opnd, Opnd::UImm(Qnil.into()));
 
     // Get the branch target instruction offsets
     let next_idx = jit_next_insn_idx(jit) as i32;
@@ -3406,7 +3365,7 @@ fn gen_branchnil(
     gen_branch(
         jit,
         ctx,
-        cb,
+        asm,
         ocb,
         jump_block,
         ctx,
@@ -3421,7 +3380,7 @@ fn gen_branchnil(
 fn gen_jump(
     jit: &mut JITState,
     ctx: &mut Context,
-    cb: &mut CodeBlock,
+    asm: &mut Assembler,
     ocb: &mut OutlinedCb,
 ) -> CodegenStatus {
     let jump_offset = jit_get_arg(jit, 0).as_i32();
@@ -3429,7 +3388,7 @@ fn gen_jump(
     // Check for interrupts, but only on backward branches that may create loops
     if jump_offset < 0 {
         let side_exit = get_side_exit(jit, ocb, ctx);
-        gen_check_ints(cb, side_exit);
+        gen_check_ints(asm, side_exit);
     }
 
     // Get the branch target instruction offsets
@@ -3440,11 +3399,12 @@ fn gen_jump(
     };
 
     // Generate the jump instruction
-    gen_direct_jump(jit, ctx, jump_block, cb);
+    gen_direct_jump(jit, ctx, jump_block, asm);
 
     EndBlock
 }
 
+/*
 /// Guard that self or a stack operand has the same class as `known_klass`, using
 /// `sample_instance` to speculate about the shape of the runtime value.
 /// FIXNUM and on-heap integers are treated as if they have distinct classes, and
@@ -6067,11 +6027,11 @@ fn get_gen_fn(opcode: VALUE) -> Option<InsnGenFn> {
         YARVINSN_opt_invokebuiltin_delegate => Some(gen_opt_invokebuiltin_delegate),
         YARVINSN_opt_invokebuiltin_delegate_leave => Some(gen_opt_invokebuiltin_delegate),
         YARVINSN_opt_case_dispatch => Some(gen_opt_case_dispatch),
+        */
         YARVINSN_branchif => Some(gen_branchif),
         YARVINSN_branchunless => Some(gen_branchunless),
         YARVINSN_branchnil => Some(gen_branchnil),
         YARVINSN_jump => Some(gen_jump),
-        */
 
         //YARVINSN_getblockparamproxy => Some(gen_getblockparamproxy),
         //YARVINSN_getblockparam => Some(gen_getblockparam),
