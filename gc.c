@@ -5810,6 +5810,19 @@ gc_sweep_finish_size_pool(rb_objspace_t *objspace, rb_size_pool_t *size_pool)
         min_free_slots = gc_params.heap_init_slots;
     }
 
+    /* If we don't have enough slots and we have pages on the tomb heap, move
+     * pages from the tomb heap to the eden heap. This may prevent page
+     * creation thrashing (frequently allocating and deallocting pages) and
+     * GC thrashing (running GC more frequently than required). */
+    struct heap_page *resurrected_page;
+    while (swept_slots < min_free_slots &&
+            (resurrected_page = heap_page_resurrect(objspace, size_pool))) {
+        swept_slots += resurrected_page->free_slots;
+
+        heap_add_page(objspace, size_pool, heap, resurrected_page);
+        heap_add_freepage(heap, resurrected_page);
+    }
+
     if (swept_slots < min_free_slots) {
         bool grow_heap = is_full_marking(objspace);
 
