@@ -1625,11 +1625,10 @@ fn gen_setlocal_wc0(
     KeepCompiling
 }
 
-/*
 fn gen_setlocal_generic(
     jit: &mut JITState,
     ctx: &mut Context,
-    cb: &mut CodeBlock,
+    asm: &mut Assembler,
     ocb: &mut OutlinedCb,
     local_idx: i32,
     level: u32,
@@ -1637,34 +1636,33 @@ fn gen_setlocal_generic(
     let value_type = ctx.get_opnd_type(StackOpnd(0));
 
     // Load environment pointer EP at level
-    gen_get_ep(cb, REG0, level);
+    let ep_opnd = gen_get_ep(asm, level);
 
     // Write barriers may be required when VM_ENV_FLAG_WB_REQUIRED is set, however write barriers
     // only affect heap objects being written. If we know an immediate value is being written we
     // can skip this check.
     if !value_type.is_imm() {
         // flags & VM_ENV_FLAG_WB_REQUIRED
-        let flags_opnd = mem_opnd(
+        let flags_opnd = Opnd::mem(
             64,
-            REG0,
+            ep_opnd,
             SIZEOF_VALUE as i32 * VM_ENV_DATA_INDEX_FLAGS as i32,
         );
-        test(cb, flags_opnd, uimm_opnd(VM_ENV_FLAG_WB_REQUIRED.into()));
+        asm.test(flags_opnd, VM_ENV_FLAG_WB_REQUIRED.into());
 
         // Create a side-exit to fall back to the interpreter
         let side_exit = get_side_exit(jit, ocb, ctx);
 
         // if (flags & VM_ENV_FLAG_WB_REQUIRED) != 0
-        jnz_ptr(cb, side_exit);
+        asm.jnz(side_exit.into());
     }
 
     // Pop the value to write from the stack
     let stack_top = ctx.stack_pop(1);
-    mov(cb, REG1, stack_top);
 
     // Write the value at the environment pointer
     let offs = -(SIZEOF_VALUE as i32 * local_idx);
-    mov(cb, mem_opnd(64, REG0, offs), REG1);
+    asm.mov(Opnd::mem(64, ep_opnd, offs), stack_top);
 
     KeepCompiling
 }
@@ -1672,24 +1670,23 @@ fn gen_setlocal_generic(
 fn gen_setlocal(
     jit: &mut JITState,
     ctx: &mut Context,
-    cb: &mut CodeBlock,
+    asm: &mut Assembler,
     ocb: &mut OutlinedCb,
 ) -> CodegenStatus {
     let idx = jit_get_arg(jit, 0).as_i32();
     let level = jit_get_arg(jit, 1).as_u32();
-    gen_setlocal_generic(jit, ctx, cb, ocb, idx, level)
+    gen_setlocal_generic(jit, ctx, asm, ocb, idx, level)
 }
 
 fn gen_setlocal_wc1(
     jit: &mut JITState,
     ctx: &mut Context,
-    cb: &mut CodeBlock,
+    asm: &mut Assembler,
     ocb: &mut OutlinedCb,
 ) -> CodegenStatus {
     let idx = jit_get_arg(jit, 0).as_i32();
-    gen_setlocal_generic(jit, ctx, cb, ocb, idx, 1)
+    gen_setlocal_generic(jit, ctx, asm, ocb, idx, 1)
 }
-*/
 
 // new hash initialized from top N values
 fn gen_newhash(
@@ -5290,28 +5287,29 @@ fn gen_leave(
     EndBlock
 }
 
-/*
 fn gen_getglobal(
     jit: &mut JITState,
     ctx: &mut Context,
-    cb: &mut CodeBlock,
+    asm: &mut Assembler,
     _ocb: &mut OutlinedCb,
 ) -> CodegenStatus {
     let gid = jit_get_arg(jit, 0);
 
     // Save the PC and SP because we might make a Ruby call for warning
-    jit_prepare_routine_call(jit, ctx, cb, REG0);
+    jit_prepare_routine_call(jit, ctx, asm);
 
-    mov(cb, C_ARG_REGS[0], imm_opnd(gid.as_i64()));
-
-    call_ptr(cb, REG0, rb_gvar_get as *const u8);
+    let val_opnd = asm.ccall(
+        rb_gvar_get as *const u8,
+        vec![ gid.into() ]
+    );
 
     let top = ctx.stack_push(Type::Unknown);
-    mov(cb, top, RAX);
+    asm.mov(top, val_opnd);
 
     KeepCompiling
 }
 
+/*
 fn gen_setglobal(
     jit: &mut JITState,
     ctx: &mut Context,
@@ -5974,9 +5972,9 @@ fn get_gen_fn(opcode: VALUE) -> Option<InsnGenFn> {
         YARVINSN_getlocal => Some(gen_getlocal),
         YARVINSN_getlocal_WC_0 => Some(gen_getlocal_wc0),
         YARVINSN_getlocal_WC_1 => Some(gen_getlocal_wc1),
-        //YARVINSN_setlocal => Some(gen_setlocal),
+        YARVINSN_setlocal => Some(gen_setlocal),
         YARVINSN_setlocal_WC_0 => Some(gen_setlocal_wc0),
-        //YARVINSN_setlocal_WC_1 => Some(gen_setlocal_wc1),
+        YARVINSN_setlocal_WC_1 => Some(gen_setlocal_wc1),
         YARVINSN_opt_plus => Some(gen_opt_plus),
         /*
         YARVINSN_opt_minus => Some(gen_opt_minus),
@@ -6040,8 +6038,8 @@ fn get_gen_fn(opcode: VALUE) -> Option<InsnGenFn> {
         //YARVINSN_invokesuper => Some(gen_invokesuper),
         YARVINSN_leave => Some(gen_leave),
 
-        /*
         YARVINSN_getglobal => Some(gen_getglobal),
+        /*
         YARVINSN_setglobal => Some(gen_setglobal),
         YARVINSN_anytostring => Some(gen_anytostring),
         YARVINSN_objtostring => Some(gen_objtostring),
