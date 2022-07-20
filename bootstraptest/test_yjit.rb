@@ -1224,6 +1224,19 @@ assert_equal '[1, 2, 42]', %q{
   [foo {1}, foo {2}, foo {42}]
 }
 
+# test calling without block param
+assert_equal '[1, false, 2, false]', %q{
+  def bar
+    block_given? && yield
+  end
+
+  def foo(&block)
+    bar(&block)
+  end
+
+  [foo { 1 }, foo, foo { 2 }, foo]
+}
+
 # test calling block param failing
 assert_equal '42', %q{
   def foo(&block)

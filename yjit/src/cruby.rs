@@ -135,6 +135,9 @@ extern "C" {
     #[link_name = "rb_get_cfp_ep"]
     pub fn get_cfp_ep(cfp: CfpPtr) -> *mut VALUE;
 
+    #[link_name = "rb_get_cfp_ep_level"]
+    pub fn get_cfp_ep_level(cfp: CfpPtr, lv: u32) -> *const VALUE;
+
     #[link_name = "rb_get_cme_def_type"]
     pub fn get_cme_def_type(cme: *const rb_callable_method_entry_t) -> rb_method_type_t;
 

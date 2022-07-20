@@ -214,6 +214,15 @@ fn jit_peek_at_local(jit: &JITState, n: i32) -> VALUE {
     }
 }
 
+fn jit_peek_at_block_handler(jit: &JITState, level: u32) -> VALUE {
+    assert!(jit_at_current_insn(jit));
+
+    unsafe {
+        let ep = get_cfp_ep_level(get_ec_cfp(jit.ec.unwrap()), level);
+        *ep.offset(VM_ENV_DATA_INDEX_SPECVAL as isize)
+    }
+}
+
 // Add a comment at the current position in the code block
 fn add_comment(cb: &mut CodeBlock, comment_str: &str) {
     if cfg!(feature = "asm_comments") {
@@ -5634,12 +5643,28 @@ fn gen_getblockparamproxy(
     cb: &mut CodeBlock,
     ocb: &mut OutlinedCb,
 ) -> CodegenStatus {
+    if !jit_at_current_insn(jit) {
+        defer_compilation(jit, ctx, cb, ocb);
+        return EndBlock;
+    }
+
+    let starting_context = *ctx; // make a copy for use with jit_chain_guard
+
     // A mirror of the interpreter code. Checking for the case
     // where it's pushing rb_block_param_proxy.
     let side_exit = get_side_exit(jit, ocb, ctx);
 
     // EP level
     let level = jit_get_arg(jit, 1).as_u32();
+
+    // Peek at the block handler so we can check whether it's nil
+    let comptime_handler = jit_peek_at_block_handler(jit, level);
+
+    // When a block handler is present, it should always be a GC-guarded
+    // pointer (VM_BH_ISEQ_BLOCK_P)
+    if comptime_handler.as_u64() != 0 && comptime_handler.as_u64() & 0x3 != 0x1 {
+        return CantCompile;
+    }
 
     // Load environment pointer EP from CFP
     gen_get_ep(cb, REG0, level);
@@ -5669,27 +5694,54 @@ fn gen_getblockparamproxy(
         ),
     );
 
-    // Block handler is a tagged pointer. Look at the tag. 0x03 is from VM_BH_ISEQ_BLOCK_P().
-    and(cb, REG0_8, imm_opnd(0x3));
+    // Specialize compilation for the case where no block handler is present
+    if comptime_handler.as_u64() == 0 {
+        // Bail if there is a block handler
+        cmp(cb, REG0, uimm_opnd(0));
 
-    // Bail unless VM_BH_ISEQ_BLOCK_P(bh). This also checks for null.
-    cmp(cb, REG0_8, imm_opnd(0x1));
-    jnz_ptr(
-        cb,
-        counted_exit!(ocb, side_exit, gbpp_block_handler_not_iseq),
-    );
+        jit_chain_guard(
+            JCC_JNZ,
+            jit,
+            &starting_context,
+            cb,
+            ocb,
+            SEND_MAX_DEPTH,
+            side_exit,
+        );
 
-    // Push rb_block_param_proxy. It's a root, so no need to use jit_mov_gc_ptr.
-    mov(
-        cb,
-        REG0,
-        const_ptr_opnd(unsafe { rb_block_param_proxy }.as_ptr()),
-    );
-    assert!(!unsafe { rb_block_param_proxy }.special_const_p());
-    let top = ctx.stack_push(Type::UnknownHeap);
-    mov(cb, top, REG0);
+        jit_putobject(jit, ctx, cb, Qnil);
+    } else {
+        // Block handler is a tagged pointer. Look at the tag. 0x03 is from VM_BH_ISEQ_BLOCK_P().
+        and(cb, REG0_8, imm_opnd(0x3));
 
-    KeepCompiling
+        // Bail unless VM_BH_ISEQ_BLOCK_P(bh). This also checks for null.
+        cmp(cb, REG0_8, imm_opnd(0x1));
+
+        jit_chain_guard(
+            JCC_JNZ,
+            jit,
+            &starting_context,
+            cb,
+            ocb,
+            SEND_MAX_DEPTH,
+            side_exit,
+        );
+
+        // Push rb_block_param_proxy. It's a root, so no need to use jit_mov_gc_ptr.
+        mov(
+            cb,
+            REG0,
+            const_ptr_opnd(unsafe { rb_block_param_proxy }.as_ptr()),
+        );
+        assert!(!unsafe { rb_block_param_proxy }.special_const_p());
+
+        let top = ctx.stack_push(Type::Unknown);
+        mov(cb, top, REG0);
+    }
+
+    jump_to_next_insn(jit, ctx, cb, ocb);
+
+    EndBlock
 }
 
 fn gen_getblockparam(
