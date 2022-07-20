@@ -1253,32 +1253,38 @@ fn gen_splatarray(
 
     KeepCompiling
 }
+*/
 
 // new range initialized from top 2 values
 fn gen_newrange(
     jit: &mut JITState,
     ctx: &mut Context,
-    cb: &mut CodeBlock,
+    asm: &mut Assembler,
     _ocb: &mut OutlinedCb,
 ) -> CodegenStatus {
     let flag = jit_get_arg(jit, 0);
 
     // rb_range_new() allocates and can raise
-    jit_prepare_routine_call(jit, ctx, cb, REG0);
+    jit_prepare_routine_call(jit, ctx, asm);
 
     // val = rb_range_new(low, high, (int)flag);
-    mov(cb, C_ARG_REGS[0], ctx.stack_opnd(1));
-    mov(cb, C_ARG_REGS[1], ctx.stack_opnd(0));
-    mov(cb, C_ARG_REGS[2], uimm_opnd(flag.into()));
-    call_ptr(cb, REG0, rb_range_new as *const u8);
+    let range_opnd = asm.ccall(
+        rb_range_new as *const u8,
+        vec![
+            ctx.stack_opnd(1),
+            ctx.stack_opnd(0),
+            flag.into()
+        ]
+    );
 
     ctx.stack_pop(2);
     let stack_ret = ctx.stack_push(Type::UnknownHeap);
-    mov(cb, stack_ret, RAX);
+    asm.mov(stack_ret, range_opnd);
 
     KeepCompiling
 }
 
+/*
 fn guard_object_is_heap(
     cb: &mut CodeBlock,
     object_opnd: X86Opnd,
@@ -5995,8 +6001,8 @@ fn get_gen_fn(opcode: VALUE) -> Option<InsnGenFn> {
         YARVINSN_opt_str_freeze => Some(gen_opt_str_freeze),
         YARVINSN_opt_str_uminus => Some(gen_opt_str_uminus),
         YARVINSN_splatarray => Some(gen_splatarray),
-        YARVINSN_newrange => Some(gen_newrange),
         */
+        YARVINSN_newrange => Some(gen_newrange),
         YARVINSN_putstring => Some(gen_putstring),
         /*
         YARVINSN_expandarray => Some(gen_expandarray),
