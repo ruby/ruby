@@ -7866,9 +7866,10 @@ gc_verify_heap_page(rb_objspace_t *objspace, struct heap_page *page, VALUE obj)
     for (uintptr_t ptr = start; ptr < end; ptr += slot_size) {
         VALUE val = (VALUE)ptr;
         void *poisoned = asan_unpoison_object_temporary(val);
+        enum ruby_value_type type = BUILTIN_TYPE(val);
 
-	if (RBASIC(val) == 0) free_objects++;
-	if (BUILTIN_TYPE(val) == T_ZOMBIE) zombie_objects++;
+	if (type == T_NONE) free_objects++;
+	if (type == T_ZOMBIE) zombie_objects++;
 	if (RVALUE_PAGE_UNCOLLECTIBLE(page, val) && RVALUE_PAGE_WB_UNPROTECTED(page, val)) {
 	    has_remembered_shady = TRUE;
 	}
