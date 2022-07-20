@@ -3332,6 +3332,25 @@ iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list, const int do_tailcal
 	}
     }
 
+    if (IS_INSN_ID(iobj, newarray)) {
+        LINK_ELEMENT *next = iobj->link.next;
+        if (IS_INSN(next) && IS_INSN_ID(next, expandarray) &&
+            OPERAND_AT(iobj, 0) == OPERAND_AT(next, 0) &&
+            OPERAND_AT(next, 1) == INT2FIX(0)) {
+                /*
+                 *  newarray 2
+                 *  expandarray 2, 0
+                 * =>
+                 *  swap
+                 */
+                if (OPERAND_AT(iobj, 0) == INT2FIX(2)) {
+                    ELEM_REMOVE(next);
+                    INSN_OF(iobj) = BIN(swap);
+                    iobj->operand_size = 0;
+                }
+        }
+    }
+
     if (IS_INSN_ID(iobj, anytostring)) {
 	LINK_ELEMENT *next = iobj->link.next;
 	/*
