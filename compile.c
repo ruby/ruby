@@ -3396,6 +3396,20 @@ iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list, const int do_tailcal
         }
     }
 
+    if (IS_INSN_ID(iobj, duparray)) {
+        LINK_ELEMENT *next = iobj->link.next;
+        /*
+         *  duparray obj
+         *  expandarray X, 0
+         * =>
+         *  putobject obj
+         *  expandarray X, 0
+         */
+        if (IS_INSN(next) && IS_INSN_ID(next, expandarray)) {
+            INSN_OF(iobj) = BIN(putobject);
+        }
+    }
+
     if (IS_INSN_ID(iobj, anytostring)) {
         LINK_ELEMENT *next = iobj->link.next;
         /*
