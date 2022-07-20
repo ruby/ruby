@@ -767,4 +767,28 @@ mod tests {
 
         asm.compile_with_num_regs(&mut cb, 1);
     }
+
+    #[test]
+    #[cfg(feature = "disasm")]
+    fn test_simple_disasm() -> std::result::Result<(), capstone::Error> {
+        // Test drive Capstone with simple input
+        use capstone::prelude::*;
+
+        let cs = Capstone::new()
+            .arm64()
+            .mode(arch::arm64::ArchMode::Arm)
+            .build()?;
+
+        let insns = cs.disasm_all(&[0x60, 0x0f, 0x80, 0xF2], 0x1000)?;
+
+        match insns.as_ref() {
+            [insn] => {
+                assert_eq!(Some("movk"), insn.mnemonic());
+                Ok(())
+            }
+            _ => Err(capstone::Error::CustomError(
+                "expected to disassemble to movk",
+            )),
+        }
+    }
 }
