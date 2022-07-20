@@ -599,7 +599,7 @@ swap
 
 /* reverse stack top N order. */
 DEFINE_INSN
-reverse
+opt_reverse
 (rb_num_t n)
 (...)
 (...)

@@ -3337,6 +3337,7 @@ iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list, const int do_tailcal
         if (IS_INSN(next) && IS_INSN_ID(next, expandarray) &&
             OPERAND_AT(iobj, 0) == OPERAND_AT(next, 0) &&
             OPERAND_AT(next, 1) == INT2FIX(0)) {
+                ELEM_REMOVE(next);
                 /*
                  *  newarray 2
                  *  expandarray 2, 0
@@ -3344,9 +3345,17 @@ iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list, const int do_tailcal
                  *  swap
                  */
                 if (OPERAND_AT(iobj, 0) == INT2FIX(2)) {
-                    ELEM_REMOVE(next);
                     INSN_OF(iobj) = BIN(swap);
                     iobj->operand_size = 0;
+                }
+                /*
+                 *  newarray X
+                 *  expandarray X, 0
+                 * =>
+                 *  opt_reverse X
+                 */
+                else {
+                    INSN_OF(iobj) = BIN(opt_reverse);
                 }
         }
     }
