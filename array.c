@@ -53,23 +53,6 @@ should_be_T_ARRAY(VALUE ary)
     return RB_TYPE_P(ary, T_ARRAY);
 }
 
-RBIMPL_ATTR_MAYBE_UNUSED()
-static int
-should_not_be_shared_and_embedded(VALUE ary)
-{
-    return !FL_TEST((ary), ELTS_SHARED) || !FL_TEST((ary), RARRAY_EMBED_FLAG);
-}
-
-#define ARY_SHARED_P(ary) \
-  (assert(should_be_T_ARRAY((VALUE)(ary))), \
-   assert(should_not_be_shared_and_embedded((VALUE)ary)), \
-   FL_TEST_RAW((ary),ELTS_SHARED)!=0)
-
-#define ARY_EMBED_P(ary) \
-  (assert(should_be_T_ARRAY((VALUE)(ary))), \
-   assert(should_not_be_shared_and_embedded((VALUE)ary)), \
-   FL_TEST_RAW((ary), RARRAY_EMBED_FLAG) != 0)
-
 #define ARY_HEAP_PTR(a) (assert(!ARY_EMBED_P(a)), RARRAY(a)->as.heap.ptr)
 #define ARY_HEAP_LEN(a) (assert(!ARY_EMBED_P(a)), RARRAY(a)->as.heap.len)
 #define ARY_HEAP_CAPA(a) (assert(!ARY_EMBED_P(a)), assert(!ARY_SHARED_ROOT_P(a)), \
@@ -147,7 +130,6 @@ should_not_be_shared_and_embedded(VALUE ary)
     RARRAY(ary)->as.heap.aux.capa = (n); \
 } while (0)
 
-#define ARY_SHARED_ROOT(ary) (assert(ARY_SHARED_P(ary)), RARRAY(ary)->as.heap.aux.shared_root)
 #define ARY_SET_SHARED(ary, value) do { \
     const VALUE _ary_ = (ary); \
     const VALUE _value_ = (value); \
@@ -158,11 +140,6 @@ should_not_be_shared_and_embedded(VALUE ary)
     RB_OBJ_WRITE(_ary_, &RARRAY(_ary_)->as.heap.aux.shared_root, _value_); \
 } while (0)
 
-#define RARRAY_SHARED_ROOT_FLAG FL_USER12
-#define ARY_SHARED_ROOT_P(ary) (assert(should_be_T_ARRAY((VALUE)(ary))), \
-                                FL_TEST_RAW((ary), RARRAY_SHARED_ROOT_FLAG))
-#define ARY_SHARED_ROOT_REFCNT(ary) \
-    (assert(ARY_SHARED_ROOT_P(ary)), RARRAY(ary)->as.heap.aux.capa)
 #define ARY_SHARED_ROOT_OCCUPIED(ary) (!ARY_LITERAL_P(ary) && ARY_SHARED_ROOT_REFCNT(ary) == 1)
 #define ARY_SET_SHARED_ROOT_REFCNT(ary, value) do { \
     assert(ARY_SHARED_ROOT_P(ary)); \
@@ -174,11 +151,6 @@ should_not_be_shared_and_embedded(VALUE ary)
     assert(!RARRAY_TRANSIENT_P(ary)); \
     FL_SET((ary), RARRAY_SHARED_ROOT_FLAG); \
 } while (0)
-
-#define RARRAY_LITERAL_FLAG FL_USER15
-#define ARY_LITERAL_P(ary) \
-    (assert(should_be_T_ARRAY((VALUE)(ary))), \
-     FL_TEST_RAW((ary), RARRAY_LITERAL_FLAG))
 
 static inline void
 ARY_SET(VALUE a, long i, VALUE v)
@@ -251,8 +223,8 @@ ary_verify_(VALUE ary, const char *file, int line)
 {
     assert(RB_TYPE_P(ary, T_ARRAY));
 
-    if (FL_TEST(ary, ELTS_SHARED)) {
-        VALUE root = RARRAY(ary)->as.heap.aux.shared_root;
+    if (ARY_SHARED_P(ary)) {
+        VALUE root = ARY_SHARED_ROOT(ary);
         const VALUE *ptr = ARY_HEAP_PTR(ary);
         const VALUE *root_ptr = RARRAY_CONST_PTR_TRANSIENT(root);
         long len = ARY_HEAP_LEN(ary), root_len = RARRAY_LEN(root);
@@ -597,7 +569,7 @@ rb_ary_decrement_share(VALUE shared_root)
 static void
 rb_ary_unshare(VALUE ary)
 {
-    VALUE shared_root = RARRAY(ary)->as.heap.aux.shared_root;
+    VALUE shared_root = ARY_SHARED_ROOT(ary);
     rb_ary_decrement_share(shared_root);
     FL_UNSET_SHARED(ary);
 }
@@ -770,10 +742,10 @@ VALUE
 rb_ary_shared_with_p(VALUE ary1, VALUE ary2)
 {
     if (!ARY_EMBED_P(ary1) && ARY_SHARED_P(ary1) &&
-	!ARY_EMBED_P(ary2) && ARY_SHARED_P(ary2) &&
-        RARRAY(ary1)->as.heap.aux.shared_root == RARRAY(ary2)->as.heap.aux.shared_root &&
-	RARRAY(ary1)->as.heap.len == RARRAY(ary2)->as.heap.len) {
-	return Qtrue;
+            !ARY_EMBED_P(ary2) && ARY_SHARED_P(ary2) &&
+            ARY_SHARED_ROOT(ary1) == ARY_SHARED_ROOT(ary2) &&
+            ARY_HEAP_LEN(ary1) == ARY_HEAP_LEN(ary2)) {
+        return Qtrue;
     }
     return Qfalse;
 }

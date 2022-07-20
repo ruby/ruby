@@ -7205,10 +7205,10 @@ gc_mark_children(rb_objspace_t *objspace, VALUE obj)
 	break;
 
       case T_ARRAY:
-        if (FL_TEST(obj, ELTS_SHARED)) {
-            VALUE root = any->as.array.as.heap.aux.shared_root;
+        if (ARY_SHARED_P(obj)) {
+            VALUE root = ARY_SHARED_ROOT(obj);
             gc_mark(objspace, root);
-	}
+        }
 	else {
 	    long i, len = RARRAY_LEN(obj);
             const VALUE *ptr = RARRAY_CONST_PTR_TRANSIENT(obj);
@@ -7217,8 +7217,7 @@ gc_mark_children(rb_objspace_t *objspace, VALUE obj)
 	    }
 
             if (LIKELY(during_gc)) {
-                if (!FL_TEST_RAW(obj, RARRAY_EMBED_FLAG) &&
-                    RARRAY_TRANSIENT_P(obj)) {
+                if (!ARY_EMBED_P(obj) && RARRAY_TRANSIENT_P(obj)) {
                     rb_transient_heap_mark(obj, ptr);
                 }
             }
@@ -9927,8 +9926,7 @@ gc_ref_update_array(rb_objspace_t * objspace, VALUE v)
 {
     long i, len;
 
-    if (FL_TEST(v, ELTS_SHARED))
-        return;
+    if (ARY_SHARED_P(v)) return;
 
     len = RARRAY_LEN(v);
     if (len > 0) {
@@ -10435,7 +10433,7 @@ gc_update_object_references(rb_objspace_t *objspace, VALUE obj)
         return;
 
       case T_ARRAY:
-        if (FL_TEST(obj, ELTS_SHARED)) {
+        if (ARY_SHARED_P(obj)) {
             UPDATE_IF_MOVED(objspace, any->as.array.as.heap.aux.shared_root);
         }
         else {
@@ -13750,14 +13748,6 @@ rb_method_type_name(rb_method_type_t type)
     rb_bug("rb_method_type_name: unreachable (type: %d)", type);
 }
 
-/* from array.c */
-# define ARY_SHARED_P(ary) \
-    (GC_ASSERT(!FL_TEST((ary), ELTS_SHARED) || !FL_TEST((ary), RARRAY_EMBED_FLAG)), \
-     FL_TEST((ary),ELTS_SHARED)!=0)
-# define ARY_EMBED_P(ary) \
-    (GC_ASSERT(!FL_TEST((ary), ELTS_SHARED) || !FL_TEST((ary), RARRAY_EMBED_FLAG)), \
-     FL_TEST((ary), RARRAY_EMBED_FLAG)!=0)
-
 static void
 rb_raw_iseq_info(char *const buff, const size_t buff_size, const rb_iseq_t *iseq)
 {
@@ -13862,11 +13852,11 @@ rb_raw_obj_info_buitin_type(char *const buff, const size_t buff_size, const VALU
 	    UNEXPECTED_NODE(rb_raw_obj_info);
 	    break;
 	  case T_ARRAY:
-            if (FL_TEST(obj, ELTS_SHARED)) {
+            if (ARY_SHARED_P(obj)) {
                 APPEND_S("shared -> ");
-                rb_raw_obj_info(BUFF_ARGS, RARRAY(obj)->as.heap.aux.shared_root);
+                rb_raw_obj_info(BUFF_ARGS, ARY_SHARED_ROOT(obj));
             }
-            else if (FL_TEST(obj, RARRAY_EMBED_FLAG)) {
+            else if (ARY_EMBED_P(obj)) {
                 APPEND_F("[%s%s] len: %ld (embed)",
                          C(ARY_EMBED_P(obj),  "E"),
                          C(ARY_SHARED_P(obj), "S"),
