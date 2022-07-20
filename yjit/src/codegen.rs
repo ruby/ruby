@@ -297,8 +297,10 @@ fn jit_prepare_routine_call(
 
 /// Record the current codeblock write position for rewriting into a jump into
 /// the outlined block later. Used to implement global code invalidation.
-fn record_global_inval_patch(cb: &mut CodeBlock, outline_block_target_pos: CodePtr) {
-    CodegenGlobals::push_global_inval_patch(cb.get_write_ptr(), outline_block_target_pos);
+fn record_global_inval_patch(asm: &mut Assembler, outline_block_target_pos: CodePtr) {
+    asm.pos_marker(Box::new(move |code_ptr| {
+        CodegenGlobals::push_global_inval_patch(code_ptr, outline_block_target_pos);
+    }));
 }
 
 /// Verify the ctx's types and mappings against the compile-time stack, self,
@@ -681,7 +683,7 @@ fn gen_check_ints(asm: &mut Assembler, side_exit: CodePtr) {
 fn jump_to_next_insn(
     jit: &mut JITState,
     current_context: &Context,
-    cb: &mut CodeBlock,
+    asm: &mut Assembler,
     ocb: &mut OutlinedCb,
 ) {
     // Reset the depth since in current usages we only ever jump to to
@@ -704,10 +706,13 @@ fn jump_to_next_insn(
         record_global_inval_patch(cb, exit_pos);
         jit.record_boundary_patch_point = false;
         */
+
+
+
     }
 
     // Generate the jump instruction
-    gen_direct_jump(jit, &reset_depth, jump_block, cb);
+    gen_direct_jump(jit, &reset_depth, jump_block, asm);
 }
 
 // Compile a sequence of bytecode instructions for a given basic block version.
@@ -763,7 +768,7 @@ pub fn gen_single_block(
         // opt_getinlinecache wants to be in a block all on its own. Cut the block short
         // if we run into it. See gen_opt_getinlinecache() for details.
         if opcode == YARVINSN_opt_getinlinecache.as_usize() && insn_idx > starting_insn_idx {
-            jump_to_next_insn(&mut jit, &ctx, cb, ocb);
+            jump_to_next_insn(&mut jit, &ctx, &mut asm, ocb);
             break;
         }
 
@@ -775,11 +780,9 @@ pub fn gen_single_block(
 
         // If previous instruction requested to record the boundary
         if jit.record_boundary_patch_point {
-            // FIXME: is this sound with the new assembler?
-
             // Generate an exit to this instruction and record it
             let exit_pos = gen_outlined_exit(jit.pc, &ctx, ocb);
-            record_global_inval_patch(cb, exit_pos);
+            record_global_inval_patch(&mut asm, exit_pos);
             jit.record_boundary_patch_point = false;
         }
 

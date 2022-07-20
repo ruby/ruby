@@ -116,7 +116,12 @@ yjit_task:
     --prefix="$RUBY_PREFIX"
     --enable-yjit=dev
   make_miniruby_script: source $HOME/.cargo/env && make -j miniruby
-  make_bindgen_script: source $HOME/.cargo/env && make -j yjit-bindgen
+  make_bindgen_script: |
+    if [[ "$CC" = "clang-12" ]]; then
+      source $HOME/.cargo/env && make -j yjit-bindgen
+    else
+      echo "only running bindgen on clang image"
+    fi
   boot_miniruby_script: RUST_BACKTRACE=1 ./miniruby --yjit-call-threshold=1 -e0
   test_dump_insns_script: RUST_BACKTRACE=1 ./miniruby --yjit-call-threshold=1 --yjit-dump-insns -e0
   # output_stats_script: RUST_BACKTRACE=1 ./miniruby --yjit-call-threshold=1 --yjit-stats -e0

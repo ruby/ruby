@@ -81,7 +81,7 @@ impl Assembler
     /// have no memory operands.
     fn arm64_split(mut self) -> Assembler
     {
-        self.forward_pass(|asm, index, op, opnds, target, text| {
+        self.forward_pass(|asm, index, op, opnds, target, text, pos_marker| {
             // Load all Value operands into registers that aren't already a part
             // of Load instructions.
             let opnds = match op {
@@ -103,15 +103,15 @@ impl Assembler
                         (Opnd::Mem(_), Opnd::Mem(_)) => {
                             let opnd0 = asm.load(opnds[0]);
                             let opnd1 = asm.load(opnds[1]);
-                            asm.push_insn(op, vec![opnd0, opnd1], target, text);
+                            asm.push_insn(op, vec![opnd0, opnd1], target, text, pos_marker);
                         },
                         (mem_opnd @ Opnd::Mem(_), other_opnd) |
                         (other_opnd, mem_opnd @ Opnd::Mem(_)) => {
                             let opnd0 = asm.load(mem_opnd);
-                            asm.push_insn(op, vec![opnd0, other_opnd], target, text);
+                            asm.push_insn(op, vec![opnd0, other_opnd], target, text, pos_marker);
                         },
                         _ => {
-                            asm.push_insn(op, opnds, target, text);
+                            asm.push_insn(op, opnds, target, text, pos_marker);
                         }
                     }
                 },
@@ -146,7 +146,7 @@ impl Assembler
                         }
                     }).collect();
 
-                    asm.push_insn(op, new_opnds, target, text);
+                    asm.push_insn(op, new_opnds, target, text, pos_marker);
                 },
                 Op::IncrCounter => {
                     // Every operand to the IncrCounter instruction need to be a
@@ -250,7 +250,7 @@ impl Assembler
                     asm.test(opnd0, opnds[1]);
                 },
                 _ => {
-                    asm.push_insn(op, opnds, target, text);
+                    asm.push_insn(op, opnds, target, text, pos_marker);
                 }
             };
         })
@@ -402,9 +402,18 @@ impl Assembler
                         cb.add_comment(&insn.text.as_ref().unwrap());
                     }
                 },
+
                 Op::Label => {
                     cb.write_label(insn.target.unwrap().unwrap_label_idx());
                 },
+
+                // Report back the current position in the generated code
+                Op::PosMarker => {
+                    let pos = cb.get_write_ptr();
+                    let pos_marker_fn = insn.pos_marker.as_ref().unwrap();
+                    pos_marker_fn(pos);
+                }
+
                 Op::BakeString => {
                     let str = insn.text.as_ref().unwrap();
                     for byte in str.as_bytes() {

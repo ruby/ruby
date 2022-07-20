@@ -1861,7 +1861,7 @@ fn gen_jump_branch(
     }
 }
 
-pub fn gen_direct_jump(jit: &JITState, ctx: &Context, target0: BlockId, cb: &mut CodeBlock) {
+pub fn gen_direct_jump(jit: &JITState, ctx: &Context, target0: BlockId, asm: &mut Assembler) {
     let branchref = make_branch_entry(&jit.get_block(), ctx, gen_jump_branch);
     let mut branch = branchref.borrow_mut();
 
@@ -1897,6 +1897,17 @@ pub fn gen_direct_jump(jit: &JITState, ctx: &Context, target0: BlockId, cb: &mut
 
 
 
+        asm.pos_marker(Box::new(move |code_ptr| {
+            let mut branch = branchref.borrow_mut();
+            branch.start_addr = Some(code_ptr);
+        }));
+
+
+
+
+
+
+
 
 
     } else {
@@ -1904,8 +1915,11 @@ pub fn gen_direct_jump(jit: &JITState, ctx: &Context, target0: BlockId, cb: &mut
         // target block right after this one (fallthrough).
         branch.dst_addrs[0] = None;
         branch.shape = BranchShape::Next0;
-        branch.start_addr = Some(cb.get_write_ptr());
-        branch.end_addr = Some(cb.get_write_ptr());
+
+        todo!();
+
+        //branch.start_addr = Some(cb.get_write_ptr());
+        //branch.end_addr = Some(cb.get_write_ptr());
     }
 }
 

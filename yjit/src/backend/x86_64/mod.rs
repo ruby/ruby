@@ -94,7 +94,7 @@ impl Assembler
     {
         let live_ranges: Vec<usize> = std::mem::take(&mut self.live_ranges);
 
-        self.forward_pass(|asm, index, op, opnds, target, text| {
+        self.forward_pass(|asm, index, op, opnds, target, text, pos_marker| {
             // Load heap object operands into registers because most
             // instructions can't directly work with 64-bit constants
             let opnds = match op {
@@ -140,7 +140,7 @@ impl Assembler
                         _ => (opnds[0], opnds[1])
                     };
 
-                    asm.push_insn(op, vec![opnd0, opnd1], target, text);
+                    asm.push_insn(op, vec![opnd0, opnd1], target, text, pos_marker);
                 },
                 Op::CSelZ | Op::CSelNZ | Op::CSelE | Op::CSelNE |
                 Op::CSelL | Op::CSelLE | Op::CSelG | Op::CSelGE => {
@@ -151,7 +151,7 @@ impl Assembler
                         }
                     }).collect();
 
-                    asm.push_insn(op, new_opnds, target, text);
+                    asm.push_insn(op, new_opnds, target, text, pos_marker);
                 },
                 Op::Mov => {
                     match (opnds[0], opnds[1]) {
@@ -194,7 +194,7 @@ impl Assembler
                     asm.not(opnd0);
                 },
                 _ => {
-                    asm.push_insn(op, opnds, target, text);
+                    asm.push_insn(op, opnds, target, text, pos_marker);
                 }
             };
         })
@@ -221,6 +221,13 @@ impl Assembler
                 Op::Label => {
                     cb.write_label(insn.target.unwrap().unwrap_label_idx());
                 },
+
+                // Report back the current position in the generated code
+                Op::PosMarker => {
+                    let pos = cb.get_write_ptr();
+                    let pos_marker_fn = insn.pos_marker.as_ref().unwrap();
+                    pos_marker_fn(pos);
+                }
 
                 Op::BakeString => {
                     for byte in insn.text.as_ref().unwrap().as_bytes() {
