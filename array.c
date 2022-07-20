@@ -66,7 +66,7 @@ should_be_T_ARRAY(VALUE ary)
 #define ARY_HEAP_SIZE(a) (assert(!ARY_EMBED_P(a)), assert(ARY_OWNS_HEAP_P(a)), ARY_CAPA(a) * sizeof(VALUE))
 
 #define ARY_OWNS_HEAP_P(a) (assert(should_be_T_ARRAY((VALUE)(a))), \
-                            !FL_TEST_RAW((a), ELTS_SHARED|RARRAY_EMBED_FLAG))
+                            !FL_TEST_RAW((a), RARRAY_SHARED_FLAG|RARRAY_EMBED_FLAG))
 
 #define FL_SET_EMBED(a) do { \
     assert(!ARY_SHARED_P(a)); \
@@ -78,9 +78,9 @@ should_be_T_ARRAY(VALUE ary)
 #define FL_UNSET_EMBED(ary) FL_UNSET((ary), RARRAY_EMBED_FLAG|RARRAY_EMBED_LEN_MASK)
 #define FL_SET_SHARED(ary) do { \
     assert(!ARY_EMBED_P(ary)); \
-    FL_SET((ary), ELTS_SHARED); \
+    FL_SET((ary), RARRAY_SHARED_FLAG); \
 } while (0)
-#define FL_UNSET_SHARED(ary) FL_UNSET((ary), ELTS_SHARED)
+#define FL_UNSET_SHARED(ary) FL_UNSET((ary), RARRAY_SHARED_FLAG)
 
 #define ARY_SET_PTR(ary, p) do { \
     assert(!ARY_EMBED_P(ary)); \

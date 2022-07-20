@@ -18,6 +18,7 @@
 # define ARRAY_DEBUG (0+RUBY_DEBUG)
 #endif
 
+#define RARRAY_SHARED_FLAG      ELTS_SHARED
 #define RARRAY_SHARED_ROOT_FLAG FL_USER12
 #define RARRAY_PTR_IN_USE_FLAG  FL_USER14
 #define RARRAY_LITERAL_FLAG     FL_USER15
@@ -79,7 +80,7 @@ RBIMPL_ATTR_MAYBE_UNUSED()
 static inline int
 ary_should_not_be_shared_and_embedded(VALUE ary)
 {
-    return !FL_ALL_RAW(ary, ELTS_SHARED|RARRAY_EMBED_FLAG);
+    return !FL_ALL_RAW(ary, RARRAY_SHARED_FLAG|RARRAY_EMBED_FLAG);
 }
 
 static inline bool
@@ -87,7 +88,7 @@ ARY_SHARED_P(VALUE ary)
 {
     assert(RB_TYPE_P(ary, T_ARRAY));
     assert(ary_should_not_be_shared_and_embedded(ary));
-    return FL_TEST_RAW(ary, ELTS_SHARED);
+    return FL_TEST_RAW(ary, RARRAY_SHARED_FLAG);
 }
 
 static inline bool
