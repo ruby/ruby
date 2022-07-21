@@ -28,10 +28,12 @@ RBIMPL_SYMBOL_EXPORT_BEGIN()
 
 RBIMPL_ATTR_NONNULL(())
 /**
- * Evaluates the given string in an isolated binding.
+ * Evaluates the given string.
  *
- * Here  "isolated"  means  that  the   binding  does  not  inherit  any  other
- * bindings.  This behaves same as the binding for required libraries.
+ * In case  it is called  from within a  C-backended method, the  evaluation is
+ * done under  the current binding.  However  there can be no  method.  On such
+ * situation this  function evaluates  in an  isolated binding,  like `require`
+ * runs in a separate one.
  *
  * `__FILE__`  will  be  `"(eval)"`,  and  `__LINE__`  starts  from  1  in  the
  * evaluation.
@@ -39,6 +41,31 @@ RBIMPL_ATTR_NONNULL(())
  * @param[in]  str            Ruby code to evaluate.
  * @exception  rb_eException  Raises an exception on error.
  * @return     The evaluated result.
+ *
+ * @internal
+ *
+ * @shyouhei's old tale about the birth and growth of this function:
+ *
+ * At  the beginning,  there  was no  rb_eval_string().   @shyouhei heard  that
+ * @shugo, author of  Apache httpd's mod_ruby module, requested  @matz for this
+ * API.  He wanted a way so that mod_ruby can evaluate ruby scripts one by one,
+ * separately, in each different contexts.  So  this function was made.  It was
+ * designed to be a global interpreter entry point like ruby_run_node().
+ *
+ * The  way it  is implemented  however  allows extension  libraries (not  just
+ * programs like  Apache httpd) to call  this function.  Because its  name says
+ * nothing  about the  initial design,  people  started to  think of  it as  an
+ * orthodox  way  to  call  ruby  level  `eval`  method  from  their  extension
+ * libraries.  Even our `extension.rdoc` has had a description of this function
+ * basically according to this understanding.
+ *
+ * The old  (mod_ruby like) usage still  works.  But over time,  usages of this
+ * function from extension libraries got  popular, while mod_ruby faded out; is
+ * no  longer maintained  now.  Devs  decided to  actively support  both.  This
+ * function  now auto-detects  how  it is  called, and  switches  how it  works
+ * depending on it.
+ *
+ * @see https://bugs.ruby-lang.org/issues/18780
  */
 VALUE rb_eval_string(const char *str);
 
