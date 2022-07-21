@@ -150,7 +150,21 @@ VALUE rb_cSymbol;
     }\
 } while (0)
 
-#define TERM_LEN(str) rb_enc_mbminlen(rb_enc_get(str))
+static inline bool
+str_enc_fastpath(VALUE str)
+{
+    // The overwhelming majority of strings are in one of these 3 encodings.
+    switch (ENCODING_GET_INLINED(str)) {
+      case ENCINDEX_ASCII_8BIT:
+      case ENCINDEX_UTF_8:
+      case ENCINDEX_US_ASCII:
+        return true;
+      default:
+        return false;
+    }
+}
+
+#define TERM_LEN(str) (str_enc_fastpath(str) ? 1 : rb_enc_mbminlen(rb_enc_from_index(ENCODING_GET(str))))
 #define TERM_FILL(ptr, termlen) do {\
     char *const term_fill_ptr = (ptr);\
     const int term_fill_len = (termlen);\
@@ -3308,20 +3322,6 @@ rb_str_buf_cat_ascii(VALUE str, const char *ptr)
             ptr++;
         }
         return str;
-    }
-}
-
-static inline bool
-str_enc_fastpath(VALUE str)
-{
-    // The overwhelming majority of strings are in one of these 3 encodings.
-    switch (ENCODING_GET_INLINED(str)) {
-      case ENCINDEX_ASCII_8BIT:
-      case ENCINDEX_UTF_8:
-      case ENCINDEX_US_ASCII:
-        return true;
-      default:
-        return false;
     }
 }
 
