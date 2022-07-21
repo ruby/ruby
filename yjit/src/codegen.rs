@@ -2363,20 +2363,19 @@ fn guard_two_fixnums(ctx: &mut Context, asm: &mut Assembler, side_exit: CodePtr)
     ctx.upgrade_opnd_type(StackOpnd(1), Type::Fixnum);
 }
 
-/*
 // Conditional move operation used by comparison operators
-type CmovFn = fn(cb: &mut CodeBlock, opnd0: X86Opnd, opnd1: X86Opnd) -> ();
+type CmovFn = fn(cb: &mut Assembler, opnd0: Opnd, opnd1: Opnd) -> Opnd;
 
 fn gen_fixnum_cmp(
     jit: &mut JITState,
     ctx: &mut Context,
-    cb: &mut CodeBlock,
+    asm: &mut Assembler,
     ocb: &mut OutlinedCb,
     cmov_op: CmovFn,
 ) -> CodegenStatus {
     // Defer compilation so we can specialize base on a runtime receiver
     if !jit_at_current_insn(jit) {
-        defer_compilation(jit, ctx, cb, ocb);
+        defer_compilation(jit, ctx, asm, ocb);
         return EndBlock;
     }
 
@@ -2393,38 +2392,37 @@ fn gen_fixnum_cmp(
         }
 
         // Check that both operands are fixnums
-        guard_two_fixnums(ctx, cb, side_exit);
+        guard_two_fixnums(ctx, asm, side_exit);
 
         // Get the operands from the stack
         let arg1 = ctx.stack_pop(1);
         let arg0 = ctx.stack_pop(1);
 
         // Compare the arguments
-        xor(cb, REG0_32, REG0_32); // REG0 = Qfalse
-        mov(cb, REG1, arg0);
-        cmp(cb, REG1, arg1);
-        mov(cb, REG1, uimm_opnd(Qtrue.into()));
-        cmov_op(cb, REG0, REG1);
+        asm.cmp(arg0, arg1);
+        let bool_opnd = cmov_op(asm, Qtrue.into(), Qfalse.into());
 
         // Push the output on the stack
         let dst = ctx.stack_push(Type::Unknown);
-        mov(cb, dst, REG0);
+        asm.mov(dst, bool_opnd);
 
         KeepCompiling
     } else {
-        gen_opt_send_without_block(jit, ctx, cb, ocb)
+        todo!("compare send path not yet implemented");
+        //gen_opt_send_without_block(jit, ctx, cb, ocb)
     }
 }
 
 fn gen_opt_lt(
     jit: &mut JITState,
     ctx: &mut Context,
-    cb: &mut CodeBlock,
+    asm: &mut Assembler,
     ocb: &mut OutlinedCb,
 ) -> CodegenStatus {
-    gen_fixnum_cmp(jit, ctx, cb, ocb, cmovl)
+    gen_fixnum_cmp(jit, ctx, asm, ocb, Assembler::csel_l)
 }
 
+/*
 fn gen_opt_le(
     jit: &mut JITState,
     ctx: &mut Context,
@@ -5990,10 +5988,10 @@ fn get_gen_fn(opcode: VALUE) -> Option<InsnGenFn> {
         YARVINSN_newhash => Some(gen_newhash),
         YARVINSN_duphash => Some(gen_duphash),
         YARVINSN_newarray => Some(gen_newarray),
+        //YARVINSN_duparray => Some(gen_duparray),
+        //YARVINSN_checktype => Some(gen_checktype),
+        //YARVINSN_opt_lt => Some(gen_opt_lt),
         /*
-        YARVINSN_duparray => Some(gen_duparray),
-        YARVINSN_checktype => Some(gen_checktype),
-        YARVINSN_opt_lt => Some(gen_opt_lt),
         YARVINSN_opt_le => Some(gen_opt_le),
         YARVINSN_opt_gt => Some(gen_opt_gt),
         YARVINSN_opt_ge => Some(gen_opt_ge),

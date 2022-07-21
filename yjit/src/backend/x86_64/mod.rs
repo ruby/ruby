@@ -113,7 +113,7 @@ impl Assembler
             };
 
             match op {
-                Op::Add | Op::Sub | Op::And => {
+                Op::Add | Op::Sub | Op::And | Op::Cmp => {
                     let (opnd0, opnd1) = match (opnds[0], opnds[1]) {
                         (Opnd::Mem(_), Opnd::Mem(_)) => {
                             (asm.load(opnds[0]), asm.load(opnds[1]))
@@ -133,7 +133,7 @@ impl Assembler
                                 (opnds[0], opnds[1])
                             }
                         },
-                        // We have to load memory and register operands to avoid corrupting them
+                        // We have to load memory operands to avoid corrupting them
                         (Opnd::Mem(_) | Opnd::Reg(_), _) => {
                             (asm.load(opnds[0]), opnds[1])
                         },
@@ -343,7 +343,7 @@ impl Assembler
                 }
 
                 // Compare
-                Op::Cmp => test(cb, insn.opnds[0].into(), insn.opnds[1].into()),
+                Op::Cmp => cmp(cb, insn.opnds[0].into(), insn.opnds[1].into()),
 
                 // Test and set flags
                 Op::Test => test(cb, insn.opnds[0].into(), insn.opnds[1].into()),
