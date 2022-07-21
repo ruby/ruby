@@ -462,7 +462,7 @@ fstr_update_callback(st_data_t *key, st_data_t *value, st_data_t data, int exist
 	RBASIC(str)->flags |= RSTRING_FSTR;
 
 #ifdef USE_THIRD_PARTY_HEAP
-        mmtk_register_finalizable(str);
+        mmtk_register_finalizable((void *)str);
 #endif // USE_THIRD_PARTY_HEAP
 
 	*key = *value = arg->fstr = str;

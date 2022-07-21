@@ -63,7 +63,7 @@ extern void* mmtk_alloc_slow(MMTk_Mutator mutator, size_t size,
     size_t align, ssize_t offset, int semantics);
 
 extern void mmtk_post_alloc(MMTk_Mutator mutator, void* refer,
-    int bytes, int semantics);
+    size_t bytes, int semantics);
 
 /**
  * Tracing
