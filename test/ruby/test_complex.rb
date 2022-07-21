@@ -915,7 +915,6 @@ class Complex_Test < Test::Unit::TestCase
     assert_not_respond_to(c, :%)
     assert_not_respond_to(c, :div)
     assert_not_respond_to(c, :divmod)
-    assert_not_respond_to(c, :ceildiv)
     assert_not_respond_to(c, :floor)
     assert_not_respond_to(c, :ceil)
     assert_not_respond_to(c, :modulo)

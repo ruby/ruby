@@ -658,31 +658,6 @@ num_div(VALUE x, VALUE y)
 
 /*
  *  call-seq:
- *    ceildiv(other) -> integer
- *
- *  Returns the quotient <tt>self/other</tt> as an integer, rounding up to the nearest integer.
- *  This method uses method +/+ in the derived class of +self+.
- *  (\Numeric itself does not define method +/+.)
- *
- *  Of the Core and Standard Library classes,
- *  Float and Rational use this implementation.
- *
- *    3.0.ceildiv(3.0) # => 1
- *    4.0.ceildiv(3.0) # => 2
- *
- *    4.0.ceildiv(-3.0) # => -1
- *    -4.0.ceildiv(3.0) # => -1
- *    -4.0.ceildiv(-3.0) # => 2
- */
-static VALUE
-num_ceildiv(VALUE x, VALUE y)
-{
-    VALUE tmp = num_div(x, num_uminus(y));
-    return num_uminus(tmp);
-}
-
-/*
- *  call-seq:
  *    self % other -> real_numeric
  *
  *  Returns +self+ modulo +other+ as a real number.
@@ -6247,7 +6222,6 @@ Init_Numeric(void)
     rb_define_method(rb_cNumeric, "<=>", num_cmp, 1);
     rb_define_method(rb_cNumeric, "eql?", num_eql, 1);
     rb_define_method(rb_cNumeric, "fdiv", num_fdiv, 1);
-    rb_define_method(rb_cNumeric, "ceildiv", num_ceildiv, 1);
     rb_define_method(rb_cNumeric, "div", num_div, 1);
     rb_define_method(rb_cNumeric, "divmod", num_divmod, 1);
     rb_define_method(rb_cNumeric, "%", num_modulo, 1);
