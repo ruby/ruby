@@ -121,7 +121,9 @@ impl Assembler
                     // For each of the operands we're going to first load them
                     // into a register and then move them into the correct
                     // argument register.
-                    for (idx, opnd) in opnds.into_iter().enumerate() {
+                    // Note: the iteration order is reversed to avoid corrupting x0,
+                    // which is both the return value and first argument register
+                    for (idx, opnd) in opnds.into_iter().enumerate().rev() {
                         let value = asm.load(opnd);
                         asm.mov(Opnd::Reg(C_ARG_REGREGS[idx]), value);
                     }
