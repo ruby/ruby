@@ -81,6 +81,30 @@ impl Assembler
     /// have no memory operands.
     fn arm64_split(mut self) -> Assembler
     {
+        fn load_bitmask_immediate(asm: &mut Assembler, opnd: Opnd) -> Opnd {
+            match opnd {
+                Opnd::Reg(_) | Opnd::InsnOut { .. } => opnd,
+                Opnd::Mem(_) => asm.load(opnd),
+                Opnd::Imm(imm) => {
+                    if imm <= 0 {
+                        asm.load(opnd)
+                    } else if BitmaskImmediate::try_from(imm as u64).is_ok() {
+                        Opnd::UImm(imm as u64)
+                    } else {
+                        asm.load(opnd)
+                    }
+                },
+                Opnd::UImm(uimm) => {
+                    if BitmaskImmediate::try_from(uimm).is_ok() {
+                        opnd
+                    } else {
+                        asm.load(opnd)
+                    }
+                },
+                Opnd::None | Opnd::Value(_) => unreachable!()
+            }
+        }
+
         self.forward_pass(|asm, index, op, opnds, target, text, pos_marker| {
             // Load all Value operands into registers that aren't already a part
             // of Load instructions.
@@ -96,7 +120,7 @@ impl Assembler
             };
 
             match op {
-                Op::Add | Op::And | Op::Sub => {
+                Op::Add | Op::Sub => {
                     // Check if one of the operands is a register. If it is,
                     // then we'll make that the first operand.
                     match (opnds[0], opnds[1]) {
@@ -112,6 +136,23 @@ impl Assembler
                         },
                         _ => {
                             asm.push_insn(op, opnds, target, text, pos_marker);
+                        }
+                    }
+                },
+                Op::And => {
+                    match (opnds[0], opnds[1]) {
+                        (Opnd::Reg(_), Opnd::Reg(_)) => {
+                            asm.and(opnds[0], opnds[1]);
+                        },
+                        (reg_opnd @ Opnd::Reg(_), other_opnd) |
+                        (other_opnd, reg_opnd @ Opnd::Reg(_)) => {
+                            let opnd1 = load_bitmask_immediate(asm, other_opnd);
+                            asm.and(reg_opnd, opnd1);
+                        },
+                        _ => {
+                            let opnd0 = asm.load(opnds[0]);
+                            let opnd1 = load_bitmask_immediate(asm, opnds[1]);
+                            asm.and(opnd0, opnd1);
                         }
                     }
                 },
@@ -188,29 +229,16 @@ impl Assembler
                     };
                 },
                 Op::Mov => {
-                    // The value that is being moved must be either a register
-                    // or an immediate that can be encoded as a bitmask
-                    // immediate. Otherwise, we'll need to split the move into
-                    // multiple instructions.
-                    let value = match opnds[1] {
-                        Opnd::Reg(_) | Opnd::InsnOut { .. } => opnds[1],
-                        Opnd::Mem(_) | Opnd::Imm(_) => asm.load(opnds[1]),
-                        Opnd::UImm(uimm) => {
-                            if let Ok(encoded) = BitmaskImmediate::try_from(uimm) {
-                                if let Opnd::Mem(_) = opnds[0] {
-                                    // If the first operand is a memory operand,
-                                    // we're going to transform this into a
-                                    // store instruction, so we'll need to load
-                                    // this anyway.
-                                    asm.load(opnds[1])
-                                } else {
-                                    opnds[1]
-                                }
-                            } else {
-                                asm.load(opnds[1])
-                            }
-                        },
-                        _ => unreachable!()
+                    let value = match (opnds[0], opnds[1]) {
+                        // If the first operand is a memory operand, we're going
+                        // to transform this into a store instruction, so we'll
+                        // need to load this anyway.
+                        (Opnd::Mem(_), Opnd::UImm(_)) => asm.load(opnds[1]),
+                        // The value that is being moved must be either a
+                        // register or an immediate that can be encoded as a
+                        // bitmask immediate. Otherwise, we'll need to split the
+                        // move into multiple instructions.
+                        _ => load_bitmask_immediate(asm, opnds[1])
                     };
 
                     // If we're attempting to load into a memory operand, then
@@ -253,27 +281,7 @@ impl Assembler
                     // unsigned immediate that can be encoded as a bitmask
                     // immediate. If it's not one of those, we'll need to load
                     // it first.
-                    let opnd1 = match opnds[1] {
-                        Opnd::Reg(_) | Opnd::InsnOut { .. } => opnds[1],
-                        Opnd::Mem(_) => asm.load(opnds[1]),
-                        Opnd::Imm(imm) => {
-                            if imm <= 0 {
-                                asm.load(opnds[1])
-                            } else if BitmaskImmediate::try_from(imm as u64).is_ok() {
-                                Opnd::UImm(imm as u64)
-                            } else {
-                                asm.load(opnds[1])
-                            }
-                        },
-                        Opnd::UImm(uimm) => {
-                            if BitmaskImmediate::try_from(uimm).is_ok() {
-                                opnds[1]
-                            } else {
-                                asm.load(opnds[1])
-                            }
-                        },
-                        Opnd::None | Opnd::Value(_) => unreachable!()
-                    };
+                    let opnd1 = load_bitmask_immediate(asm, opnds[1]);
 
                     asm.test(opnd0, opnd1);
                 },

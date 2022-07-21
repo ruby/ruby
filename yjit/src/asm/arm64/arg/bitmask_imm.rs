@@ -136,7 +136,7 @@ impl From<BitmaskImmediate> for u32 {
     fn from(bitmask: BitmaskImmediate) -> Self {
         0
         | (((bitmask.n as u32) & 1) << 12)
-        | (bitmask.immr << 6) as u32
+        | ((bitmask.immr as u32) << 6)
         | bitmask.imms as u32
     }
 }
@@ -150,6 +150,13 @@ mod tests {
         vec![5, 9, 10, 11, 13, 17, 18, 19].iter().for_each(|&imm| {
             assert!(BitmaskImmediate::try_from(imm).is_err());
         });
+    }
+
+    #[test]
+    fn test_negative() {
+        let bitmask: BitmaskImmediate = (-9_i64 as u64).try_into().unwrap();
+        let encoded: u32 = bitmask.into();
+        assert_eq!(7998, encoded);
     }
 
     #[test]
