@@ -633,8 +633,8 @@ impl Assembler
                             if b_offset_fits_bits(offset) {
                                 b(cb, A64Opnd::new_imm(offset / 4));
                             } else {
-                                emit_load_value(cb, X29, dst_addr as u64);
-                                br(cb, X29);
+                                emit_load_value(cb, Self::SCRATCH0, dst_addr as u64);
+                                br(cb, Self::SCRATCH0);
                             }
                         },
                         Target::Label(label_idx) => {
