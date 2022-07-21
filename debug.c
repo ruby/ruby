@@ -64,23 +64,23 @@ const union {
     enum ruby_rarray_flags      rarray_flags;
     enum ruby_rarray_consts     rarray_consts;
     enum {
-	RUBY_FMODE_READABLE		= FMODE_READABLE,
-	RUBY_FMODE_WRITABLE		= FMODE_WRITABLE,
-	RUBY_FMODE_READWRITE		= FMODE_READWRITE,
-	RUBY_FMODE_BINMODE		= FMODE_BINMODE,
-	RUBY_FMODE_SYNC 		= FMODE_SYNC,
-	RUBY_FMODE_TTY			= FMODE_TTY,
-	RUBY_FMODE_DUPLEX		= FMODE_DUPLEX,
-	RUBY_FMODE_APPEND		= FMODE_APPEND,
-	RUBY_FMODE_CREATE		= FMODE_CREATE,
-	RUBY_FMODE_NOREVLOOKUP		= 0x00000100,
-	RUBY_FMODE_TRUNC		= FMODE_TRUNC,
-	RUBY_FMODE_TEXTMODE		= FMODE_TEXTMODE,
-	RUBY_FMODE_PREP 		= 0x00010000,
-	RUBY_FMODE_SETENC_BY_BOM	= FMODE_SETENC_BY_BOM,
-	RUBY_FMODE_UNIX 		= 0x00200000,
-	RUBY_FMODE_INET 		= 0x00400000,
-	RUBY_FMODE_INET6		= 0x00800000,
+        RUBY_FMODE_READABLE		= FMODE_READABLE,
+        RUBY_FMODE_WRITABLE		= FMODE_WRITABLE,
+        RUBY_FMODE_READWRITE		= FMODE_READWRITE,
+        RUBY_FMODE_BINMODE		= FMODE_BINMODE,
+        RUBY_FMODE_SYNC 		= FMODE_SYNC,
+        RUBY_FMODE_TTY			= FMODE_TTY,
+        RUBY_FMODE_DUPLEX		= FMODE_DUPLEX,
+        RUBY_FMODE_APPEND		= FMODE_APPEND,
+        RUBY_FMODE_CREATE		= FMODE_CREATE,
+        RUBY_FMODE_NOREVLOOKUP		= 0x00000100,
+        RUBY_FMODE_TRUNC		= FMODE_TRUNC,
+        RUBY_FMODE_TEXTMODE		= FMODE_TEXTMODE,
+        RUBY_FMODE_PREP 		= 0x00010000,
+        RUBY_FMODE_SETENC_BY_BOM	= FMODE_SETENC_BY_BOM,
+        RUBY_FMODE_UNIX 		= 0x00200000,
+        RUBY_FMODE_INET 		= 0x00400000,
+        RUBY_FMODE_INET6		= 0x00800000,
 
         RUBY_NODE_TYPESHIFT = NODE_TYPESHIFT,
         RUBY_NODE_TYPEMASK  = NODE_TYPEMASK,
@@ -88,9 +88,9 @@ const union {
         RUBY_NODE_FL_NEWLINE   = NODE_FL_NEWLINE
     } various;
     union {
-	enum imemo_type                     types;
-	enum {RUBY_IMEMO_MASK = IMEMO_MASK} mask;
-	struct RIMemo                      *ptr;
+        enum imemo_type                     types;
+        enum {RUBY_IMEMO_MASK = IMEMO_MASK} mask;
+        struct RIMemo                      *ptr;
     } imemo;
     struct RSymbol *symbol_ptr;
     enum vm_call_flag_bits vm_call_flags;
@@ -102,9 +102,9 @@ int
 ruby_debug_print_indent(int level, int debug_level, int indent_level)
 {
     if (level < debug_level) {
-	fprintf(stderr, "%*s", indent_level, "");
-	fflush(stderr);
-	return TRUE;
+        fprintf(stderr, "%*s", indent_level, "");
+        fflush(stderr);
+        return TRUE;
     }
     return FALSE;
 }
@@ -124,11 +124,11 @@ VALUE
 ruby_debug_print_value(int level, int debug_level, const char *header, VALUE obj)
 {
     if (level < debug_level) {
-	char buff[0x100];
-	rb_raw_obj_info(buff, 0x100, obj);
+        char buff[0x100];
+        rb_raw_obj_info(buff, 0x100, obj);
 
-	fprintf(stderr, "DBG> %s: %s\n", header, buff);
-	fflush(stderr);
+        fprintf(stderr, "DBG> %s: %s\n", header, buff);
+        fflush(stderr);
     }
     return obj;
 }
@@ -143,8 +143,8 @@ ID
 ruby_debug_print_id(int level, int debug_level, const char *header, ID id)
 {
     if (level < debug_level) {
-	fprintf(stderr, "DBG> %s: %s\n", header, rb_id2name(id));
-	fflush(stderr);
+        fprintf(stderr, "DBG> %s: %s\n", header, rb_id2name(id));
+        fflush(stderr);
     }
     return id;
 }
@@ -153,8 +153,8 @@ NODE *
 ruby_debug_print_node(int level, int debug_level, const char *header, const NODE *node)
 {
     if (level < debug_level) {
-	fprintf(stderr, "DBG> %s: %s (%u)\n", header,
-		ruby_node_name(nd_type(node)), nd_line(node));
+        fprintf(stderr, "DBG> %s: %s (%u)\n", header,
+                ruby_node_name(nd_type(node)), nd_line(node));
     }
     return (NODE *)node;
 }
@@ -184,11 +184,11 @@ ruby_env_debug_option(const char *str, int len, void *arg)
     size_t retlen;
     unsigned long n;
 #define SET_WHEN(name, var, val) do {	    \
-	if (len == sizeof(name) - 1 &&	    \
-	    strncmp(str, (name), len) == 0) { \
-	    (var) = (val);		    \
-	    return 1;			    \
-	}				    \
+        if (len == sizeof(name) - 1 &&	    \
+            strncmp(str, (name), len) == 0) { \
+            (var) = (val);		    \
+            return 1;			    \
+        }				    \
     } while (0)
 #define NAME_MATCH_VALUE(name)				\
     ((size_t)len >= sizeof(name)-1 &&			\
@@ -197,24 +197,24 @@ ruby_env_debug_option(const char *str, int len, void *arg)
       (str[sizeof(name)-1] == '=' &&			\
        (str += sizeof(name), len -= sizeof(name), 1))))
 #define SET_UINT(val) do { \
-	n = ruby_scan_digits(str, len, 10, &retlen, &ov); \
-	if (!ov && retlen) { \
-	    val = (unsigned int)n; \
-	} \
-	str += retlen; \
-	len -= retlen; \
+        n = ruby_scan_digits(str, len, 10, &retlen, &ov); \
+        if (!ov && retlen) { \
+            val = (unsigned int)n; \
+        } \
+        str += retlen; \
+        len -= retlen; \
     } while (0)
 #define SET_UINT_LIST(name, vals, num) do { \
-	int i; \
-	for (i = 0; i < (num); ++i) { \
-	    SET_UINT((vals)[i]); \
-	    if (!len || *str != ':') break; \
-	    ++str; \
-	    --len; \
-	} \
-	if (len > 0) { \
-	    fprintf(stderr, "ignored "name" option: `%.*s'\n", len, str); \
-	} \
+        int i; \
+        for (i = 0; i < (num); ++i) { \
+            SET_UINT((vals)[i]); \
+            if (!len || *str != ':') break; \
+            ++str; \
+            --len; \
+        } \
+        if (len > 0) { \
+            fprintf(stderr, "ignored "name" option: `%.*s'\n", len, str); \
+        } \
     } while (0)
 #define SET_WHEN_UINT(name, vals, num, req) \
     if (NAME_MATCH_VALUE(name)) SET_UINT_LIST(name, vals, num);
@@ -223,9 +223,9 @@ ruby_env_debug_option(const char *str, int len, void *arg)
     SET_WHEN("core", ruby_enable_coredump, 1);
     SET_WHEN("ci", ruby_on_ci, 1);
     if (NAME_MATCH_VALUE("rgengc")) {
-	if (!len) ruby_rgengc_debug = 1;
-	else SET_UINT_LIST("rgengc", &ruby_rgengc_debug, 1);
-	return 1;
+        if (!len) ruby_rgengc_debug = 1;
+        else SET_UINT_LIST("rgengc", &ruby_rgengc_debug, 1);
+        return 1;
     }
 #if defined _WIN32
 # if RUBY_MSVCRT_VERSION >= 80
@@ -234,9 +234,9 @@ ruby_env_debug_option(const char *str, int len, void *arg)
 #endif
 #if defined _WIN32 || defined __CYGWIN__
     if (NAME_MATCH_VALUE("codepage")) {
-	if (!len) fprintf(stderr, "missing codepage argument");
-	else SET_UINT_LIST("codepage", ruby_w32_codepage, numberof(ruby_w32_codepage));
-	return 1;
+        if (!len) fprintf(stderr, "missing codepage argument");
+        else SET_UINT_LIST("codepage", ruby_w32_codepage, numberof(ruby_w32_codepage));
+        return 1;
     }
 #endif
     return 0;
@@ -246,7 +246,7 @@ static void
 set_debug_option(const char *str, int len, void *arg)
 {
     if (!ruby_env_debug_option(str, len, arg)) {
-	fprintf(stderr, "unexpected debug option: %.*s\n", len, str);
+        fprintf(stderr, "unexpected debug option: %.*s\n", len, str);
     }
 }
 

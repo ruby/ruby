@@ -55,12 +55,12 @@ rb_insn_unified_local_var_level(VALUE insn)
     /* optimize rule */
     switch (insn) {
       default:
-	return -1; /* do nothing */;
+        return -1; /* do nothing */;
 % RubyVM::OperandsUnifications.each_group do |orig, unifs|
 %   unifs.each do|insn|
       case <%= insn.bin %>:
 %     insn.spec.map{|(var,val)|val}.reject{|i| i == '*' }.each do |val|
-	return <%= val %>;
+        return <%= val %>;
 %       break
 %     end
 %   end

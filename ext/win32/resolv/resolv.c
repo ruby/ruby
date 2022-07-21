@@ -29,19 +29,19 @@ get_dns_server_list(VALUE self)
 
     ret = GetNetworkParams(NULL, &buflen);
     if (ret != NO_ERROR && ret != ERROR_BUFFER_OVERFLOW) {
-	w32error_raise(ret);
+        w32error_raise(ret);
     }
     fixedinfo = ALLOCV(buf, buflen);
     ret = GetNetworkParams(fixedinfo, &buflen);
     if (ret == NO_ERROR) {
-	const IP_ADDR_STRING *ipaddr = &fixedinfo->DnsServerList;
-	nameservers = rb_ary_new();
-	do {
-	    const char *s = ipaddr->IpAddress.String;
-	    if (!*s) continue;
-	    if (strcmp(s, "0.0.0.0") == 0) continue;
-	    rb_ary_push(nameservers, rb_str_new_cstr(s));
-	} while ((ipaddr = ipaddr->Next) != NULL);
+        const IP_ADDR_STRING *ipaddr = &fixedinfo->DnsServerList;
+        nameservers = rb_ary_new();
+        do {
+            const char *s = ipaddr->IpAddress.String;
+            if (!*s) continue;
+            if (strcmp(s, "0.0.0.0") == 0) continue;
+            rb_ary_push(nameservers, rb_str_new_cstr(s));
+        } while ((ipaddr = ipaddr->Next) != NULL);
     }
     ALLOCV_END(buf);
     if (ret != NO_ERROR) w32error_raise(ret);
