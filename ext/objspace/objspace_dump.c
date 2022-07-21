@@ -547,8 +547,10 @@ dump_object(VALUE obj, struct dump_config *dc)
         }
         if (RTEST(ainfo->mid)) {
             VALUE m = rb_sym2str(ainfo->mid);
-            dump_append(dc, ", \"method\":");
-            dump_append_string_value(dc, m);
+            if (dump_string_ascii_only(RSTRING_PTR(m), RSTRING_LEN(m))) {
+                dump_append(dc, ", \"method\":");
+                dump_append_string_value(dc, m);
+            }
         }
         dump_append(dc, ", \"generation\":");
         dump_append_sizet(dc, ainfo->generation);
