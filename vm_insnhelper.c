@@ -4568,6 +4568,10 @@ vm_define_class(ID id, rb_num_t flags, VALUE cbase, VALUE super)
     if ((klass = vm_const_get_under(id, flags, cbase)) != 0) {
         if (!vm_check_if_class(id, flags, super, klass))
             unmatched_redefinition("class", cbase, id, klass);
+
+        rb_execution_context_t *ec = GET_EC();
+        EXEC_EVENT_HOOK(ec, RUBY_EVENT_CONSTANT_ACCESS, ec->cfp->self, 0, 0, 0, klass);
+
         return klass;
     }
     else {
@@ -4584,6 +4588,10 @@ vm_define_module(ID id, rb_num_t flags, VALUE cbase)
     if ((mod = vm_const_get_under(id, flags, cbase)) != 0) {
         if (!vm_check_if_module(id, mod))
             unmatched_redefinition("module", cbase, id, mod);
+
+        rb_execution_context_t *ec = GET_EC();
+        EXEC_EVENT_HOOK(ec, RUBY_EVENT_CONSTANT_ACCESS, ec->cfp->self, 0, 0, 0, mod);
+
         return mod;
     }
     else {
@@ -5019,8 +5027,11 @@ vm_ic_update(const rb_iseq_t *iseq, IC ic, VALUE val, const VALUE *reg_ep)
         return;
     }
 
+    rb_execution_context_t *ec = GET_EC();
+    rb_control_frame_t *cfp = ec->cfp;
     struct iseq_inline_constant_cache_entry *ice = (struct iseq_inline_constant_cache_entry *)rb_imemo_new(imemo_constcache, 0, 0, 0, 0);
     RB_OBJ_WRITE(ice, &ice->value, val);
+    EXEC_EVENT_HOOK(ec, RUBY_EVENT_CONSTANT_ACCESS, cfp->self, 0, 0, 0, val);
     ice->ic_cref = vm_get_const_key_cref(reg_ep);
     if (rb_ractor_shareable_p(val)) ice->flags |= IMEMO_CONST_CACHE_SHAREABLE;
     RB_OBJ_WRITE(iseq, &ic->entry, ice);
@@ -5760,6 +5771,7 @@ vm_trace(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp)
             }
             VM_TRACE_HOOK(RUBY_EVENT_CLASS | RUBY_EVENT_CALL | RUBY_EVENT_B_CALL,   Qundef);
             VM_TRACE_HOOK(RUBY_EVENT_LINE,                                          Qundef);
+            VM_TRACE_HOOK(RUBY_EVENT_CONSTANT_ACCESS,                               Qundef);
             VM_TRACE_HOOK(RUBY_EVENT_COVERAGE_LINE,                                 Qundef);
             VM_TRACE_HOOK(RUBY_EVENT_COVERAGE_BRANCH,                               Qundef);
             VM_TRACE_HOOK(RUBY_EVENT_END | RUBY_EVENT_RETURN | RUBY_EVENT_B_RETURN, TOPN(0));

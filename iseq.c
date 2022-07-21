@@ -2635,6 +2635,7 @@ push_event_info(const rb_iseq_t *iseq, rb_event_flag_t events, int line, VALUE a
     C(RUBY_EVENT_CLASS,    "class",    rb_iseq_first_lineno(iseq));
     C(RUBY_EVENT_CALL,     "call",     rb_iseq_first_lineno(iseq));
     C(RUBY_EVENT_B_CALL,   "b_call",   rb_iseq_first_lineno(iseq));
+    C(RUBY_EVENT_CONSTANT_ACCESS,   "constant_access",   rb_iseq_first_lineno(iseq));
     C(RUBY_EVENT_LINE,     "line",     INT2FIX(line));
     C(RUBY_EVENT_END,      "end",      INT2FIX(line));
     C(RUBY_EVENT_RETURN,   "return",   INT2FIX(line));

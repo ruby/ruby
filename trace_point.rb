@@ -350,6 +350,10 @@ class TracePoint
     Primitive.tracepoint_attr_return_value
   end
 
+  def constant_value
+    Primitive.tracepoint_attr_constant_value
+  end
+
   # Value from exception raised on the +:raise+ event
   def raised_exception
     Primitive.tracepoint_attr_raised_exception

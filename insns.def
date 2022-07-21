@@ -1041,6 +1041,9 @@ opt_getinlinecache
 
     if (ice && vm_ic_hit_p(ice, GET_EP())) {
         val = ice->value;
+        rb_execution_context_t *ec = GET_EC();
+        rb_control_frame_t *cfp = ec->cfp;
+        EXEC_EVENT_HOOK(ec, RUBY_EVENT_CONSTANT_ACCESS, cfp->self, 0, 0, 0, val);
         JUMP(dst);
     }
     else {
