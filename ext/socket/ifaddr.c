@@ -104,7 +104,7 @@ rsock_getifaddrs(void)
         rb_sys_fail("getifaddrs");
 
     if (!ifaddrs) {
-	return rb_ary_new();
+        return rb_ary_new();
     }
 
     numifaddrs = 0;
@@ -128,9 +128,9 @@ rsock_getifaddrs(void)
     result = rb_ary_new2(numifaddrs);
     rb_ary_push(result, addr);
     for (i = 1; i < numifaddrs; i++) {
-	addr = TypedData_Wrap_Struct(rb_cSockIfaddr, &ifaddr_type, &root->ary[i]);
-	root->refcount++;
-	rb_ary_push(result, addr);
+        addr = TypedData_Wrap_Struct(rb_cSockIfaddr, &ifaddr_type, &root->ary[i]);
+        root->refcount++;
+        rb_ary_push(result, addr);
     }
 
     return result;

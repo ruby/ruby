@@ -235,32 +235,32 @@ obj_type(VALUE obj)
 {
     switch (BUILTIN_TYPE(obj)) {
 #define CASE_TYPE(type) case T_##type: return #type
-	CASE_TYPE(NONE);
-	CASE_TYPE(NIL);
-	CASE_TYPE(OBJECT);
-	CASE_TYPE(CLASS);
-	CASE_TYPE(ICLASS);
-	CASE_TYPE(MODULE);
-	CASE_TYPE(FLOAT);
-	CASE_TYPE(STRING);
-	CASE_TYPE(REGEXP);
-	CASE_TYPE(ARRAY);
-	CASE_TYPE(HASH);
-	CASE_TYPE(STRUCT);
-	CASE_TYPE(BIGNUM);
-	CASE_TYPE(FILE);
-	CASE_TYPE(FIXNUM);
-	CASE_TYPE(TRUE);
-	CASE_TYPE(FALSE);
-	CASE_TYPE(DATA);
-	CASE_TYPE(MATCH);
-	CASE_TYPE(SYMBOL);
-	CASE_TYPE(RATIONAL);
-	CASE_TYPE(COMPLEX);
-	CASE_TYPE(IMEMO);
-	CASE_TYPE(UNDEF);
-	CASE_TYPE(NODE);
-	CASE_TYPE(ZOMBIE);
+        CASE_TYPE(NONE);
+        CASE_TYPE(NIL);
+        CASE_TYPE(OBJECT);
+        CASE_TYPE(CLASS);
+        CASE_TYPE(ICLASS);
+        CASE_TYPE(MODULE);
+        CASE_TYPE(FLOAT);
+        CASE_TYPE(STRING);
+        CASE_TYPE(REGEXP);
+        CASE_TYPE(ARRAY);
+        CASE_TYPE(HASH);
+        CASE_TYPE(STRUCT);
+        CASE_TYPE(BIGNUM);
+        CASE_TYPE(FILE);
+        CASE_TYPE(FIXNUM);
+        CASE_TYPE(TRUE);
+        CASE_TYPE(FALSE);
+        CASE_TYPE(DATA);
+        CASE_TYPE(MATCH);
+        CASE_TYPE(SYMBOL);
+        CASE_TYPE(RATIONAL);
+        CASE_TYPE(COMPLEX);
+        CASE_TYPE(IMEMO);
+        CASE_TYPE(UNDEF);
+        CASE_TYPE(NODE);
+        CASE_TYPE(ZOMBIE);
 #undef CASE_TYPE
       default: break;
     }
@@ -583,8 +583,8 @@ heap_i(void *vstart, void *vend, size_t stride, void *data)
         asan_unpoison_object(v, false);
         dc->cur_page_slot_size = stride;
 
-	if (dc->full_heap || RBASIC(v)->flags)
-	    dump_object(v, dc);
+        if (dc->full_heap || RBASIC(v)->flags)
+            dump_object(v, dc);
 
         if (ptr) {
             asan_poison_object(v);

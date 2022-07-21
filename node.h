@@ -155,25 +155,25 @@ typedef struct rb_ast_id_table {
 typedef struct RNode {
     VALUE flags;
     union {
-	struct RNode *node;
-	ID id;
-	VALUE value;
-	rb_ast_id_table_t *tbl;
+        struct RNode *node;
+        ID id;
+        VALUE value;
+        rb_ast_id_table_t *tbl;
     } u1;
     union {
-	struct RNode *node;
-	ID id;
-	long argc;
-	VALUE value;
+        struct RNode *node;
+        ID id;
+        long argc;
+        VALUE value;
     } u2;
     union {
-	struct RNode *node;
-	ID id;
-	long state;
-	struct rb_args_info *args;
-	struct rb_ary_pattern_info *apinfo;
-	struct rb_fnd_pattern_info *fpinfo;
-	VALUE value;
+        struct RNode *node;
+        ID id;
+        long state;
+        struct rb_args_info *args;
+        struct rb_ary_pattern_info *apinfo;
+        struct rb_fnd_pattern_info *fpinfo;
+        VALUE value;
     } u3;
     rb_code_location_t nd_loc;
     int node_id;

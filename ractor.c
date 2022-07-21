@@ -263,7 +263,7 @@ static const rb_data_type_t ractor_data_type = {
     "ractor",
     {
         ractor_mark,
-	ractor_free,
+        ractor_free,
         ractor_memsize,
         NULL, // update
     },
@@ -1514,7 +1514,7 @@ rb_ractor_main_alloc(void)
 {
     rb_ractor_t *r = ruby_mimmalloc(sizeof(rb_ractor_t));
     if (r == NULL) {
-	fprintf(stderr, "[FATAL] failed to allocate memory for main ractor\n");
+        fprintf(stderr, "[FATAL] failed to allocate memory for main ractor\n");
         exit(EXIT_FAILURE);
     }
     MEMZERO(r, rb_ractor_t, 1);

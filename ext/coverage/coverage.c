@@ -44,27 +44,27 @@ rb_coverage_setup(int argc, VALUE *argv, VALUE klass)
     int mode;
 
     if (current_state != IDLE) {
-	rb_raise(rb_eRuntimeError, "coverage measurement is already setup");
+        rb_raise(rb_eRuntimeError, "coverage measurement is already setup");
     }
 
     rb_scan_args(argc, argv, "01", &opt);
 
     if (argc == 0) {
-	mode = 0; /* compatible mode */
+        mode = 0; /* compatible mode */
     }
     else if (opt == ID2SYM(rb_intern("all"))) {
-	mode = COVERAGE_TARGET_LINES | COVERAGE_TARGET_BRANCHES | COVERAGE_TARGET_METHODS;
+        mode = COVERAGE_TARGET_LINES | COVERAGE_TARGET_BRANCHES | COVERAGE_TARGET_METHODS;
     }
     else {
-	mode = 0;
-	opt = rb_convert_type(opt, T_HASH, "Hash", "to_hash");
+        mode = 0;
+        opt = rb_convert_type(opt, T_HASH, "Hash", "to_hash");
 
-	if (RTEST(rb_hash_lookup(opt, ID2SYM(rb_intern("lines")))))
-	    mode |= COVERAGE_TARGET_LINES;
-	if (RTEST(rb_hash_lookup(opt, ID2SYM(rb_intern("branches")))))
-	    mode |= COVERAGE_TARGET_BRANCHES;
-	if (RTEST(rb_hash_lookup(opt, ID2SYM(rb_intern("methods")))))
-	    mode |= COVERAGE_TARGET_METHODS;
+        if (RTEST(rb_hash_lookup(opt, ID2SYM(rb_intern("lines")))))
+            mode |= COVERAGE_TARGET_LINES;
+        if (RTEST(rb_hash_lookup(opt, ID2SYM(rb_intern("branches")))))
+            mode |= COVERAGE_TARGET_BRANCHES;
+        if (RTEST(rb_hash_lookup(opt, ID2SYM(rb_intern("methods")))))
+            mode |= COVERAGE_TARGET_METHODS;
         if (RTEST(rb_hash_lookup(opt, ID2SYM(rb_intern("oneshot_lines"))))) {
             if (mode & COVERAGE_TARGET_LINES)
                 rb_raise(rb_eRuntimeError, "cannot enable lines and oneshot_lines simultaneously");
@@ -77,20 +77,20 @@ rb_coverage_setup(int argc, VALUE *argv, VALUE klass)
         me2counter = rb_ident_hash_new();
     }
     else {
-	me2counter = Qnil;
+        me2counter = Qnil;
     }
 
     coverages = rb_get_coverages();
     if (!RTEST(coverages)) {
-	coverages = rb_hash_new();
-	rb_obj_hide(coverages);
-	current_mode = mode;
-	if (mode == 0) mode = COVERAGE_TARGET_LINES;
-	rb_set_coverages(coverages, mode, me2counter);
+        coverages = rb_hash_new();
+        rb_obj_hide(coverages);
+        current_mode = mode;
+        if (mode == 0) mode = COVERAGE_TARGET_LINES;
+        rb_set_coverages(coverages, mode, me2counter);
         current_state = SUSPENDED;
     }
     else if (current_mode != mode) {
-	rb_raise(rb_eRuntimeError, "cannot change the measuring target during coverage measurement");
+        rb_raise(rb_eRuntimeError, "cannot change the measuring target during coverage measurement");
     }
 
 
@@ -112,10 +112,10 @@ VALUE
 rb_coverage_resume(VALUE klass)
 {
     if (current_state == IDLE) {
-	rb_raise(rb_eRuntimeError, "coverage measurement is not set up yet");
+        rb_raise(rb_eRuntimeError, "coverage measurement is not set up yet");
     }
     if (current_state == RUNNING) {
-	rb_raise(rb_eRuntimeError, "coverage measurement is already running");
+        rb_raise(rb_eRuntimeError, "coverage measurement is already running");
     }
     rb_resume_coverages();
     current_state = RUNNING;
@@ -218,45 +218,45 @@ method_coverage_i(void *vstart, void *vend, size_t stride, void *data)
         void *poisoned = asan_poisoned_object_p(v);
         asan_unpoison_object(v, false);
 
-	if (RB_TYPE_P(v, T_IMEMO) && imemo_type(v) == imemo_ment) {
-	    const rb_method_entry_t *me = (rb_method_entry_t *) v;
-	    VALUE path, first_lineno, first_column, last_lineno, last_column;
-	    VALUE data[5], ncoverage, methods;
-	    VALUE methods_id = ID2SYM(rb_intern("methods"));
-	    VALUE klass;
-	    const rb_method_entry_t *me2 = rb_resolve_me_location(me, data);
-	    if (me != me2) continue;
-	    klass = me->owner;
-	    if (RB_TYPE_P(klass, T_ICLASS)) {
-		rb_bug("T_ICLASS");
-	    }
-	    path = data[0];
-	    first_lineno = data[1];
-	    first_column = data[2];
-	    last_lineno = data[3];
-	    last_column = data[4];
-	    if (FIX2LONG(first_lineno) <= 0) continue;
-	    ncoverage = rb_hash_aref(ncoverages, path);
-	    if (NIL_P(ncoverage)) continue;
-	    methods = rb_hash_aref(ncoverage, methods_id);
+        if (RB_TYPE_P(v, T_IMEMO) && imemo_type(v) == imemo_ment) {
+            const rb_method_entry_t *me = (rb_method_entry_t *) v;
+            VALUE path, first_lineno, first_column, last_lineno, last_column;
+            VALUE data[5], ncoverage, methods;
+            VALUE methods_id = ID2SYM(rb_intern("methods"));
+            VALUE klass;
+            const rb_method_entry_t *me2 = rb_resolve_me_location(me, data);
+            if (me != me2) continue;
+            klass = me->owner;
+            if (RB_TYPE_P(klass, T_ICLASS)) {
+                rb_bug("T_ICLASS");
+            }
+            path = data[0];
+            first_lineno = data[1];
+            first_column = data[2];
+            last_lineno = data[3];
+            last_column = data[4];
+            if (FIX2LONG(first_lineno) <= 0) continue;
+            ncoverage = rb_hash_aref(ncoverages, path);
+            if (NIL_P(ncoverage)) continue;
+            methods = rb_hash_aref(ncoverage, methods_id);
 
-	    {
-		VALUE method_id = ID2SYM(me->def->original_id);
-		VALUE rcount = rb_hash_aref(me2counter, (VALUE) me);
-		VALUE key = rb_ary_new_from_args(6, klass, method_id, first_lineno, first_column, last_lineno, last_column);
-		VALUE rcount2 = rb_hash_aref(methods, key);
+            {
+                VALUE method_id = ID2SYM(me->def->original_id);
+                VALUE rcount = rb_hash_aref(me2counter, (VALUE) me);
+                VALUE key = rb_ary_new_from_args(6, klass, method_id, first_lineno, first_column, last_lineno, last_column);
+                VALUE rcount2 = rb_hash_aref(methods, key);
 
-		if (NIL_P(rcount)) rcount = LONG2FIX(0);
-		if (NIL_P(rcount2)) rcount2 = LONG2FIX(0);
-		if (!POSFIXABLE(FIX2LONG(rcount) + FIX2LONG(rcount2))) {
-		    rcount = LONG2FIX(FIXNUM_MAX);
-		}
-		else {
-		    rcount = LONG2FIX(FIX2LONG(rcount) + FIX2LONG(rcount2));
-		}
-		rb_hash_aset(methods, key, rcount);
-	    }
-	}
+                if (NIL_P(rcount)) rcount = LONG2FIX(0);
+                if (NIL_P(rcount2)) rcount2 = LONG2FIX(0);
+                if (!POSFIXABLE(FIX2LONG(rcount) + FIX2LONG(rcount2))) {
+                    rcount = LONG2FIX(FIXNUM_MAX);
+                }
+                else {
+                    rcount = LONG2FIX(FIX2LONG(rcount) + FIX2LONG(rcount2));
+                }
+                rb_hash_aset(methods, key, rcount);
+            }
+        }
 
         if (poisoned) {
             asan_poison_object(v);
@@ -272,32 +272,32 @@ coverage_peek_result_i(st_data_t key, st_data_t val, st_data_t h)
     VALUE coverage = (VALUE)val;
     VALUE coverages = (VALUE)h;
     if (current_mode == 0) {
-	/* compatible mode */
-	VALUE lines = rb_ary_dup(RARRAY_AREF(coverage, COVERAGE_INDEX_LINES));
-	rb_ary_freeze(lines);
-	coverage = lines;
+        /* compatible mode */
+        VALUE lines = rb_ary_dup(RARRAY_AREF(coverage, COVERAGE_INDEX_LINES));
+        rb_ary_freeze(lines);
+        coverage = lines;
     }
     else {
-	VALUE h = rb_hash_new();
+        VALUE h = rb_hash_new();
 
-	if (current_mode & COVERAGE_TARGET_LINES) {
-	    VALUE lines = RARRAY_AREF(coverage, COVERAGE_INDEX_LINES);
+        if (current_mode & COVERAGE_TARGET_LINES) {
+            VALUE lines = RARRAY_AREF(coverage, COVERAGE_INDEX_LINES);
             const char *kw = (current_mode & COVERAGE_TARGET_ONESHOT_LINES) ? "oneshot_lines" : "lines";
-	    lines = rb_ary_dup(lines);
-	    rb_ary_freeze(lines);
+            lines = rb_ary_dup(lines);
+            rb_ary_freeze(lines);
             rb_hash_aset(h, ID2SYM(rb_intern(kw)), lines);
-	}
+        }
 
-	if (current_mode & COVERAGE_TARGET_BRANCHES) {
-	    VALUE branches = RARRAY_AREF(coverage, COVERAGE_INDEX_BRANCHES);
-	    rb_hash_aset(h, ID2SYM(rb_intern("branches")), branch_coverage(branches));
-	}
+        if (current_mode & COVERAGE_TARGET_BRANCHES) {
+            VALUE branches = RARRAY_AREF(coverage, COVERAGE_INDEX_BRANCHES);
+            rb_hash_aset(h, ID2SYM(rb_intern("branches")), branch_coverage(branches));
+        }
 
-	if (current_mode & COVERAGE_TARGET_METHODS) {
-	    rb_hash_aset(h, ID2SYM(rb_intern("methods")), rb_hash_new());
-	}
+        if (current_mode & COVERAGE_TARGET_METHODS) {
+            rb_hash_aset(h, ID2SYM(rb_intern("methods")), rb_hash_new());
+        }
 
-	coverage = h;
+        coverage = h;
     }
 
     rb_hash_aset(coverages, path, coverage);
@@ -322,13 +322,13 @@ rb_coverage_peek_result(VALUE klass)
     VALUE coverages = rb_get_coverages();
     VALUE ncoverages = rb_hash_new();
     if (!RTEST(coverages)) {
-	rb_raise(rb_eRuntimeError, "coverage measurement is not enabled");
+        rb_raise(rb_eRuntimeError, "coverage measurement is not enabled");
     }
     OBJ_WB_UNPROTECT(coverages);
     st_foreach(RHASH_TBL_RAW(coverages), coverage_peek_result_i, ncoverages);
 
     if (current_mode & COVERAGE_TARGET_METHODS) {
-	rb_objspace_each_objects(method_coverage_i, &ncoverages);
+        rb_objspace_each_objects(method_coverage_i, &ncoverages);
     }
 
     rb_hash_freeze(ncoverages);
@@ -354,7 +354,7 @@ VALUE
 rb_coverage_suspend(VALUE klass)
 {
     if (current_state != RUNNING) {
-	rb_raise(rb_eRuntimeError, "coverage measurement is not running");
+        rb_raise(rb_eRuntimeError, "coverage measurement is not running");
     }
     rb_suspend_coverages();
     current_state = SUSPENDED;
@@ -377,7 +377,7 @@ rb_coverage_result(int argc, VALUE *argv, VALUE klass)
     int stop = 1, clear = 1;
 
     if (current_state == IDLE) {
-	rb_raise(rb_eRuntimeError, "coverage measurement is not enabled");
+        rb_raise(rb_eRuntimeError, "coverage measurement is not enabled");
     }
 
     rb_scan_args(argc, argv, "01", &opt);

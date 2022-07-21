@@ -241,8 +241,8 @@ static inline void
 THROW_DATA_CONSUMED_SET(struct vm_throw_data *obj)
 {
     if (THROW_DATA_P(obj) &&
-	THROW_DATA_STATE(obj) == TAG_BREAK) {
-	obj->flags |= THROW_DATA_CONSUMED;
+        THROW_DATA_STATE(obj) == TAG_BREAK) {
+        obj->flags |= THROW_DATA_CONSUMED;
     }
 }
 

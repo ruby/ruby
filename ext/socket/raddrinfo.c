@@ -24,28 +24,28 @@ static const int lookup_order_table[] = {
 
 static int
 ruby_getaddrinfo(const char *nodename, const char *servname,
-		 const struct addrinfo *hints, struct addrinfo **res)
+                 const struct addrinfo *hints, struct addrinfo **res)
 {
     struct addrinfo tmp_hints;
     int i, af, error;
 
     if (hints->ai_family != PF_UNSPEC) {
-	return getaddrinfo(nodename, servname, hints, res);
+        return getaddrinfo(nodename, servname, hints, res);
     }
 
     for (i = 0; i < LOOKUP_ORDERS; i++) {
-	af = lookup_order_table[i];
-	MEMCPY(&tmp_hints, hints, struct addrinfo, 1);
-	tmp_hints.ai_family = af;
-	error = getaddrinfo(nodename, servname, &tmp_hints, res);
-	if (error) {
-	    if (tmp_hints.ai_family == PF_UNSPEC) {
-		break;
-	    }
-	}
-	else {
-	    break;
-	}
+        af = lookup_order_table[i];
+        MEMCPY(&tmp_hints, hints, struct addrinfo, 1);
+        tmp_hints.ai_family = af;
+        error = getaddrinfo(nodename, servname, &tmp_hints, res);
+        if (error) {
+            if (tmp_hints.ai_family == PF_UNSPEC) {
+                break;
+            }
+        }
+        else {
+            break;
+        }
     }
 
     return error;
@@ -56,17 +56,17 @@ ruby_getaddrinfo(const char *nodename, const char *servname,
 #if defined(_AIX)
 static int
 ruby_getaddrinfo__aix(const char *nodename, const char *servname,
-		      const struct addrinfo *hints, struct addrinfo **res)
+                      const struct addrinfo *hints, struct addrinfo **res)
 {
     int error = getaddrinfo(nodename, servname, hints, res);
     struct addrinfo *r;
     if (error)
-	return error;
+        return error;
     for (r = *res; r != NULL; r = r->ai_next) {
-	if (r->ai_addr->sa_family == 0)
-	    r->ai_addr->sa_family = r->ai_family;
-	if (r->ai_addr->sa_len == 0)
-	    r->ai_addr->sa_len = r->ai_addrlen;
+        if (r->ai_addr->sa_family == 0)
+            r->ai_addr->sa_family = r->ai_family;
+        if (r->ai_addr->sa_len == 0)
+            r->ai_addr->sa_len = r->ai_addrlen;
     }
     return 0;
 }
@@ -74,21 +74,21 @@ ruby_getaddrinfo__aix(const char *nodename, const char *servname,
 #define getaddrinfo(node,serv,hints,res) ruby_getaddrinfo__aix((node),(serv),(hints),(res))
 static int
 ruby_getnameinfo__aix(const struct sockaddr *sa, size_t salen,
-		      char *host, size_t hostlen,
-		      char *serv, size_t servlen, int flags)
+                      char *host, size_t hostlen,
+                      char *serv, size_t servlen, int flags)
 {
     struct sockaddr_in6 *sa6;
     u_int32_t *a6;
 
     if (sa->sa_family == AF_INET6) {
-	sa6 = (struct sockaddr_in6 *)sa;
-	a6 = sa6->sin6_addr.u6_addr.u6_addr32;
+        sa6 = (struct sockaddr_in6 *)sa;
+        a6 = sa6->sin6_addr.u6_addr.u6_addr32;
 
-	if (a6[0] == 0 && a6[1] == 0 && a6[2] == 0 && a6[3] == 0) {
-	    strncpy(host, "::", hostlen);
-	    snprintf(serv, servlen, "%d", sa6->sin6_port);
-	    return 0;
-	}
+        if (a6[0] == 0 && a6[1] == 0 && a6[2] == 0 && a6[3] == 0) {
+            strncpy(host, "::", hostlen);
+            snprintf(serv, servlen, "%d", sa6->sin6_port);
+            return 0;
+        }
     }
     return getnameinfo(sa, salen, host, hostlen, serv, servlen, flags);
 }
@@ -102,7 +102,7 @@ static int str_is_number(const char *);
 #if defined(__APPLE__)
 static int
 ruby_getaddrinfo__darwin(const char *nodename, const char *servname,
-			 const struct addrinfo *hints, struct addrinfo **res)
+                         const struct addrinfo *hints, struct addrinfo **res)
 {
     /* fix [ruby-core:29427] */
     const char *tmp_servname;
@@ -112,12 +112,12 @@ ruby_getaddrinfo__darwin(const char *nodename, const char *servname,
     tmp_servname = servname;
     MEMCPY(&tmp_hints, hints, struct addrinfo, 1);
     if (nodename && servname) {
-	if (str_is_number(tmp_servname) && atoi(servname) == 0) {
-	    tmp_servname = NULL;
+        if (str_is_number(tmp_servname) && atoi(servname) == 0) {
+            tmp_servname = NULL;
 #ifdef AI_NUMERICSERV
-	    if (tmp_hints.ai_flags) tmp_hints.ai_flags &= ~AI_NUMERICSERV;
+            if (tmp_hints.ai_flags) tmp_hints.ai_flags &= ~AI_NUMERICSERV;
 #endif
-	}
+        }
     }
 
     error = getaddrinfo(nodename, tmp_servname, &tmp_hints, res);
@@ -193,7 +193,7 @@ nogvl_getaddrinfo(void *arg)
      * it cause getaddrinfo to return EAI_SYSTEM/ENOENT. [ruby-list:49420]
      */
     if (ret == EAI_SYSTEM && errno == ENOENT)
-	ret = EAI_NONAME;
+        ret = EAI_NONAME;
 #endif
     return (void *)(VALUE)ret;
 }
@@ -212,15 +212,15 @@ numeric_getaddrinfo(const char *node, const char *service,
     int port;
 
     if (node && parse_numeric_port(service, &port)) {
-	static const struct {
-	    int socktype;
-	    int protocol;
-	} list[] = {
-	    { SOCK_STREAM, IPPROTO_TCP },
-	    { SOCK_DGRAM, IPPROTO_UDP },
-	    { SOCK_RAW, 0 }
-	};
-	struct addrinfo *ai = NULL;
+        static const struct {
+            int socktype;
+            int protocol;
+        } list[] = {
+            { SOCK_STREAM, IPPROTO_TCP },
+            { SOCK_DGRAM, IPPROTO_UDP },
+            { SOCK_RAW, 0 }
+        };
+        struct addrinfo *ai = NULL;
         int hint_family = hints ? hints->ai_family : PF_UNSPEC;
         int hint_socktype = hints ? hints->ai_socktype : 0;
         int hint_protocol = hints ? hints->ai_protocol : 0;
@@ -319,9 +319,9 @@ nogvl_getnameinfo(void *arg)
 {
     struct getnameinfo_arg *ptr = arg;
     return (void *)(VALUE)getnameinfo(ptr->sa, ptr->salen,
-				      ptr->host, (socklen_t)ptr->hostlen,
-				      ptr->serv, (socklen_t)ptr->servlen,
-				      ptr->flags);
+                                      ptr->host, (socklen_t)ptr->hostlen,
+                                      ptr->serv, (socklen_t)ptr->servlen,
+                                      ptr->flags);
 }
 #endif
 
@@ -587,7 +587,7 @@ rsock_fd_family(int fd)
 
     if (fd < 0 || getsockname(fd, &sa, &sa_len) != 0 ||
         (size_t)sa_len < offsetof(struct sockaddr, sa_family) + sizeof(sa.sa_family)) {
-	return AF_UNSPEC;
+        return AF_UNSPEC;
     }
     return sa.sa_family;
 }
@@ -677,19 +677,19 @@ rsock_unix_sockaddr_len(VALUE path)
 {
 #ifdef __linux__
     if (RSTRING_LEN(path) == 0) {
-	/* autobind; see unix(7) for details. */
-	return (socklen_t) sizeof(sa_family_t);
+        /* autobind; see unix(7) for details. */
+        return (socklen_t) sizeof(sa_family_t);
     }
     else if (RSTRING_PTR(path)[0] == '\0') {
-	/* abstract namespace; see unix(7) for details. */
+        /* abstract namespace; see unix(7) for details. */
         if (SOCKLEN_MAX - offsetof(struct sockaddr_un, sun_path) < (size_t)RSTRING_LEN(path))
             rb_raise(rb_eArgError, "Linux abstract socket too long");
-	return (socklen_t) offsetof(struct sockaddr_un, sun_path) +
-	    RSTRING_SOCKLEN(path);
+        return (socklen_t) offsetof(struct sockaddr_un, sun_path) +
+            RSTRING_SOCKLEN(path);
     }
     else {
 #endif
-	return (socklen_t) sizeof(struct sockaddr_un);
+        return (socklen_t) sizeof(struct sockaddr_un);
 #ifdef __linux__
     }
 #endif
@@ -727,7 +727,7 @@ make_hostent_internal(VALUE v)
     rb_ary_push(ary, rb_str_new2(hostp));
 
     if (addr->ai_canonname && strlen(addr->ai_canonname) < NI_MAXHOST &&
-	(h = gethostbyname(addr->ai_canonname))) {
+        (h = gethostbyname(addr->ai_canonname))) {
         names = rb_ary_new();
         if (h->h_aliases != NULL) {
             for (pch = h->h_aliases; *pch; pch++) {
@@ -875,19 +875,19 @@ call_getaddrinfo(VALUE node, VALUE service,
     hints.ai_family = NIL_P(family) ? PF_UNSPEC : rsock_family_arg(family);
 
     if (!NIL_P(socktype)) {
-	hints.ai_socktype = rsock_socktype_arg(socktype);
+        hints.ai_socktype = rsock_socktype_arg(socktype);
     }
     if (!NIL_P(protocol)) {
-	hints.ai_protocol = NUM2INT(protocol);
+        hints.ai_protocol = NUM2INT(protocol);
     }
     if (!NIL_P(flags)) {
-	hints.ai_flags = NUM2INT(flags);
+        hints.ai_flags = NUM2INT(flags);
     }
 
     res = rsock_getaddrinfo(node, service, &hints, socktype_hack);
 
     if (res == NULL)
-	rb_raise(rb_eSocket, "host not found");
+        rb_raise(rb_eSocket, "host not found");
     return res;
 }
 
@@ -1037,7 +1037,7 @@ init_unix_addrinfo(rb_addrinfo_t *rai, VALUE path, int socktype)
 
     len = rsock_unix_sockaddr_len(path);
     init_addrinfo(rai, (struct sockaddr *)&un, len,
-		  PF_UNIX, socktype, 0, Qnil, Qnil);
+                  PF_UNIX, socktype, 0, Qnil, Qnil);
 }
 
 static long
@@ -1119,7 +1119,7 @@ addrinfo_initialize(int argc, VALUE *argv, VALUE self)
         int af;
         StringValue(afamily);
         if (rsock_family_to_int(RSTRING_PTR(afamily), RSTRING_LEN(afamily), &af) == -1)
-	    rb_raise(rb_eSocket, "unknown address family: %s", StringValueCStr(afamily));
+            rb_raise(rb_eSocket, "unknown address family: %s", StringValueCStr(afamily));
         switch (af) {
           case AF_INET: /* ["AF_INET", 46102, "localhost.localdomain", "127.0.0.1"] */
 #ifdef INET6
@@ -1209,45 +1209,45 @@ rsock_inspect_sockaddr(struct sockaddr *sockaddr_arg, socklen_t socklen, VALUE r
     else {
         switch (sockaddr->addr.sa_family) {
           case AF_UNSPEC:
-	  {
-	    rb_str_cat2(ret, "UNSPEC");
+          {
+            rb_str_cat2(ret, "UNSPEC");
             break;
-	  }
+          }
 
           case AF_INET:
           {
             struct sockaddr_in *addr;
             int port;
-	    addr = &sockaddr->in;
-	    if ((socklen_t)(((char*)&addr->sin_addr)-(char*)addr+0+1) <= socklen)
-		rb_str_catf(ret, "%d", ((unsigned char*)&addr->sin_addr)[0]);
-	    else
-		rb_str_cat2(ret, "?");
-	    if ((socklen_t)(((char*)&addr->sin_addr)-(char*)addr+1+1) <= socklen)
-		rb_str_catf(ret, ".%d", ((unsigned char*)&addr->sin_addr)[1]);
-	    else
-		rb_str_cat2(ret, ".?");
-	    if ((socklen_t)(((char*)&addr->sin_addr)-(char*)addr+2+1) <= socklen)
-		rb_str_catf(ret, ".%d", ((unsigned char*)&addr->sin_addr)[2]);
-	    else
-		rb_str_cat2(ret, ".?");
-	    if ((socklen_t)(((char*)&addr->sin_addr)-(char*)addr+3+1) <= socklen)
-		rb_str_catf(ret, ".%d", ((unsigned char*)&addr->sin_addr)[3]);
-	    else
-		rb_str_cat2(ret, ".?");
+            addr = &sockaddr->in;
+            if ((socklen_t)(((char*)&addr->sin_addr)-(char*)addr+0+1) <= socklen)
+                rb_str_catf(ret, "%d", ((unsigned char*)&addr->sin_addr)[0]);
+            else
+                rb_str_cat2(ret, "?");
+            if ((socklen_t)(((char*)&addr->sin_addr)-(char*)addr+1+1) <= socklen)
+                rb_str_catf(ret, ".%d", ((unsigned char*)&addr->sin_addr)[1]);
+            else
+                rb_str_cat2(ret, ".?");
+            if ((socklen_t)(((char*)&addr->sin_addr)-(char*)addr+2+1) <= socklen)
+                rb_str_catf(ret, ".%d", ((unsigned char*)&addr->sin_addr)[2]);
+            else
+                rb_str_cat2(ret, ".?");
+            if ((socklen_t)(((char*)&addr->sin_addr)-(char*)addr+3+1) <= socklen)
+                rb_str_catf(ret, ".%d", ((unsigned char*)&addr->sin_addr)[3]);
+            else
+                rb_str_cat2(ret, ".?");
 
-	    if ((socklen_t)(((char*)&addr->sin_port)-(char*)addr+(int)sizeof(addr->sin_port)) < socklen) {
-		port = ntohs(addr->sin_port);
-		if (port)
-		    rb_str_catf(ret, ":%d", port);
-	    }
-	    else {
-		rb_str_cat2(ret, ":?");
-	    }
-	    if ((socklen_t)sizeof(struct sockaddr_in) != socklen)
-		rb_str_catf(ret, " (%d bytes for %d bytes sockaddr_in)",
-		  (int)socklen,
-		  (int)sizeof(struct sockaddr_in));
+            if ((socklen_t)(((char*)&addr->sin_port)-(char*)addr+(int)sizeof(addr->sin_port)) < socklen) {
+                port = ntohs(addr->sin_port);
+                if (port)
+                    rb_str_catf(ret, ":%d", port);
+            }
+            else {
+                rb_str_cat2(ret, ":?");
+            }
+            if ((socklen_t)sizeof(struct sockaddr_in) != socklen)
+                rb_str_catf(ret, " (%d bytes for %d bytes sockaddr_in)",
+                  (int)socklen,
+                  (int)sizeof(struct sockaddr_in));
             break;
           }
 
@@ -1398,20 +1398,20 @@ rsock_inspect_sockaddr(struct sockaddr *sockaddr_arg, socklen_t socklen, VALUE r
 #endif
 
 #if defined(AF_LINK) && defined(HAVE_TYPE_STRUCT_SOCKADDR_DL)
-	  /* AF_LINK is defined in 4.4BSD derivations since Net2.
-	     link_ntoa is also defined at Net2.
+          /* AF_LINK is defined in 4.4BSD derivations since Net2.
+             link_ntoa is also defined at Net2.
              However Debian GNU/kFreeBSD defines AF_LINK but
              don't have link_ntoa.  */
           case AF_LINK:
-	  {
-	    /*
-	     * Simple implementation using link_ntoa():
-	     * This doesn't work on Debian GNU/kFreeBSD 6.0.7 (squeeze).
+          {
+            /*
+             * Simple implementation using link_ntoa():
+             * This doesn't work on Debian GNU/kFreeBSD 6.0.7 (squeeze).
              * Also, the format is bit different.
-	     *
-	     * rb_str_catf(ret, "LINK %s", link_ntoa(&sockaddr->dl));
-	     * break;
-	     */
+             *
+             * rb_str_catf(ret, "LINK %s", link_ntoa(&sockaddr->dl));
+             * break;
+             */
             struct sockaddr_dl *addr = &sockaddr->dl;
             char *np = NULL, *ap = NULL, *endp;
             int nlen = 0, alen = 0;
@@ -1438,14 +1438,14 @@ rsock_inspect_sockaddr(struct sockaddr *sockaddr_arg, socklen_t socklen, VALUE r
                     alen = (int)(endp - ap);
             }
 
-	    CATSEP;
+            CATSEP;
             if (np)
                 rb_str_catf(ret, "%.*s", nlen, np);
             else
                 rb_str_cat2(ret, "?");
 
             if (ap && 0 < alen) {
-		CATSEP;
+                CATSEP;
                 for (i = 0; i < alen; i++)
                     rb_str_catf(ret, "%s%02x", i == 0 ? "" : ":", (unsigned char)ap[i]);
             }
@@ -1456,10 +1456,10 @@ rsock_inspect_sockaddr(struct sockaddr *sockaddr_arg, socklen_t socklen, VALUE r
                 /* longer length is possible behavior because struct sockaddr_dl has "minimum work area, can be larger" as the last field.
                  * cf. Net2:/usr/src/sys/net/if_dl.h. */
                 socklen < (socklen_t)(offsetof(struct sockaddr_dl, sdl_data) + addr->sdl_nlen + addr->sdl_alen + addr->sdl_slen)) {
-		CATSEP;
+                CATSEP;
                 rb_str_catf(ret, "(%d bytes for %d bytes sockaddr_dl)",
                     (int)socklen, (int)sizeof(struct sockaddr_dl));
-	    }
+            }
 
             rb_str_cat2(ret, "]");
 #undef CATSEP
@@ -2009,7 +2009,7 @@ addrinfo_ip_unpack(VALUE self)
     VALUE ret, portstr;
 
     if (!IS_IP_FAMILY(family))
-	rb_raise(rb_eSocket, "need IPv4 or IPv6 address");
+        rb_raise(rb_eSocket, "need IPv4 or IPv6 address");
 
     vflags = INT2NUM(NI_NUMERICHOST|NI_NUMERICSERV);
     ret = addrinfo_getnameinfo(1, &vflags, self);
@@ -2036,7 +2036,7 @@ addrinfo_ip_address(VALUE self)
     VALUE ret;
 
     if (!IS_IP_FAMILY(family))
-	rb_raise(rb_eSocket, "need IPv4 or IPv6 address");
+        rb_raise(rb_eSocket, "need IPv4 or IPv6 address");
 
     vflags = INT2NUM(NI_NUMERICHOST|NI_NUMERICSERV);
     ret = addrinfo_getnameinfo(1, &vflags, self);
@@ -2062,9 +2062,9 @@ addrinfo_ip_port(VALUE self)
     if (!IS_IP_FAMILY(family)) {
       bad_family:
 #ifdef AF_INET6
-	rb_raise(rb_eSocket, "need IPv4 or IPv6 address");
+        rb_raise(rb_eSocket, "need IPv4 or IPv6 address");
 #else
-	rb_raise(rb_eSocket, "need IPv4 address");
+        rb_raise(rb_eSocket, "need IPv4 address");
 #endif
     }
 
@@ -2084,7 +2084,7 @@ addrinfo_ip_port(VALUE self)
 #endif
 
       default:
-	goto bad_family;
+        goto bad_family;
     }
 
     return INT2NUM(port);
@@ -2362,7 +2362,7 @@ addrinfo_unix_path(VALUE self)
     long n;
 
     if (family != AF_UNIX)
-	rb_raise(rb_eSocket, "need AF_UNIX address");
+        rb_raise(rb_eSocket, "need AF_UNIX address");
 
     addr = &rai->addr.un;
 
@@ -2429,10 +2429,10 @@ addrinfo_s_getaddrinfo(int argc, VALUE *argv, VALUE self)
     VALUE node, service, family, socktype, protocol, flags, opts, timeout;
 
     rb_scan_args(argc, argv, "24:", &node, &service, &family, &socktype,
-		 &protocol, &flags, &opts);
+                 &protocol, &flags, &opts);
     rb_get_kwargs(opts, &id_timeout, 0, 1, &timeout);
     if (timeout == Qundef) {
-	timeout = Qnil;
+        timeout = Qnil;
     }
 
     return addrinfo_list_new(node, service, family, socktype, protocol, flags, timeout);

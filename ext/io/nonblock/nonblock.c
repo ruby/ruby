@@ -42,7 +42,7 @@ rb_io_nonblock_p(VALUE io)
     rb_io_t *fptr;
     GetOpenFile(io, fptr);
     if (get_fcntl_flags(fptr->fd) & O_NONBLOCK)
-	return Qtrue;
+        return Qtrue;
     return Qfalse;
 }
 #else
@@ -54,21 +54,21 @@ static void
 set_fcntl_flags(int fd, int f)
 {
     if (fcntl(fd, F_SETFL, f) == -1)
-	rb_sys_fail(0);
+        rb_sys_fail(0);
 }
 
 static int
 io_nonblock_set(int fd, int f, int nb)
 {
     if (nb) {
-	if ((f & O_NONBLOCK) != 0)
-	    return 0;
-	f |= O_NONBLOCK;
+        if ((f & O_NONBLOCK) != 0)
+            return 0;
+        f |= O_NONBLOCK;
     }
     else {
-	if ((f & O_NONBLOCK) == 0)
-	    return 0;
-	f &= ~O_NONBLOCK;
+        if ((f & O_NONBLOCK) == 0)
+            return 0;
+        f &= ~O_NONBLOCK;
     }
     set_fcntl_flags(fd, f);
     return 1;
@@ -127,9 +127,9 @@ rb_io_nonblock_set(VALUE io, VALUE nb)
     rb_io_t *fptr;
     GetOpenFile(io, fptr);
     if (RTEST(nb))
-	rb_io_set_nonblock(fptr);
+        rb_io_set_nonblock(fptr);
     else
-	io_nonblock_set(fptr->fd, get_fcntl_flags(fptr->fd), RTEST(nb));
+        io_nonblock_set(fptr->fd, get_fcntl_flags(fptr->fd), RTEST(nb));
     return io;
 }
 
@@ -160,15 +160,15 @@ rb_io_nonblock_block(int argc, VALUE *argv, VALUE io)
 
     GetOpenFile(io, fptr);
     if (argc > 0) {
-	VALUE v;
-	rb_scan_args(argc, argv, "01", &v);
-	nb = RTEST(v);
+        VALUE v;
+        rb_scan_args(argc, argv, "01", &v);
+        nb = RTEST(v);
     }
     f = get_fcntl_flags(fptr->fd);
     restore[0] = fptr->fd;
     restore[1] = f;
     if (!io_nonblock_set(fptr->fd, f, nb))
-	return rb_yield(io);
+        return rb_yield(io);
     return rb_ensure(rb_yield, io, io_nonblock_restore, (VALUE)restore);
 }
 #else

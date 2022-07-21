@@ -285,7 +285,7 @@ oletypelib_get_libattr(ITypeLib *pTypeLib, TLIBATTR **ppTLibAttr)
     hr = pTypeLib->lpVtbl->GetLibAttr(pTypeLib, ppTLibAttr);
     if (FAILED(hr)) {
         ole_raise(hr, eWIN32OLERuntimeError,
-		  "failed to get library attribute(TLIBATTR) from ITypeLib");
+                  "failed to get library attribute(TLIBATTR) from ITypeLib");
     }
 }
 
@@ -588,13 +588,13 @@ foletypelib_path(VALUE self)
     pTypeLib = itypelib(self);
     oletypelib_get_libattr(pTypeLib, &pTLibAttr);
     hr = QueryPathOfRegTypeLib(&pTLibAttr->guid,
-	                       pTLibAttr->wMajorVerNum,
-			       pTLibAttr->wMinorVerNum,
-			       lcid,
-			       &bstr);
+                               pTLibAttr->wMajorVerNum,
+                               pTLibAttr->wMinorVerNum,
+                               lcid,
+                               &bstr);
     if (FAILED(hr)) {
-	pTypeLib->lpVtbl->ReleaseTLibAttr(pTypeLib, pTLibAttr);
-	ole_raise(hr, eWIN32OLERuntimeError, "failed to QueryPathOfRegTypeTypeLib");
+        pTypeLib->lpVtbl->ReleaseTLibAttr(pTypeLib, pTLibAttr);
+        ole_raise(hr, eWIN32OLERuntimeError, "failed to QueryPathOfRegTypeTypeLib");
     }
 
     pTypeLib->lpVtbl->ReleaseTLibAttr(pTypeLib, pTLibAttr);
@@ -722,7 +722,7 @@ typelib_file_from_typelib(VALUE ole)
             if (ver == Qnil)
                 break;
             err = reg_open_vkey(hclsid, ver, &hversion);
-			if (err != ERROR_SUCCESS || fver > atof(StringValuePtr(ver)))
+                        if (err != ERROR_SUCCESS || fver > atof(StringValuePtr(ver)))
                 continue;
             fver = atof(StringValuePtr(ver));
             typelib = reg_get_val(hversion, NULL);

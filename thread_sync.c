@@ -96,7 +96,7 @@ rb_mutex_num_waiting(rb_mutex_t *mutex)
     size_t n = 0;
 
     ccan_list_for_each(&mutex->waitq, w, node) {
-	n++;
+        n++;
     }
 
     return n;
@@ -109,9 +109,9 @@ mutex_free(void *ptr)
 {
     rb_mutex_t *mutex = ptr;
     if (mutex->fiber) {
-	/* rb_warn("free locked mutex"); */
-	const char *err = rb_mutex_unlock_th(mutex, rb_fiber_threadptr(mutex->fiber), mutex->fiber);
-	if (err) rb_bug("%s", err);
+        /* rb_warn("free locked mutex"); */
+        const char *err = rb_mutex_unlock_th(mutex, rb_fiber_threadptr(mutex->fiber), mutex->fiber);
+        if (err) rb_bug("%s", err);
     }
     ruby_xfree(ptr);
 }
@@ -235,12 +235,12 @@ rb_mutex_trylock(VALUE self)
     rb_mutex_t *mutex = mutex_ptr(self);
 
     if (mutex->fiber == 0) {
-	rb_fiber_t *fiber = GET_EC()->fiber_ptr;
-	rb_thread_t *th = GET_THREAD();
-	mutex->fiber = fiber;
+        rb_fiber_t *fiber = GET_EC()->fiber_ptr;
+        rb_thread_t *th = GET_THREAD();
+        mutex->fiber = fiber;
 
-	mutex_locked(th, self);
-	return Qtrue;
+        mutex_locked(th, self);
+        return Qtrue;
     }
 
     return Qfalse;
@@ -284,8 +284,8 @@ do_mutex_lock(VALUE self, int interruptible_p)
 
     /* When running trap handler */
     if (!FL_TEST_RAW(self, MUTEX_ALLOW_TRAP) &&
-	th->ec->interrupt_mask & TRAP_INTERRUPT_MASK) {
-	rb_raise(rb_eThreadError, "can't be called from trap context");
+        th->ec->interrupt_mask & TRAP_INTERRUPT_MASK) {
+        rb_raise(rb_eThreadError, "can't be called from trap context");
     }
 
     if (rb_mutex_trylock(self) == Qfalse) {
@@ -502,11 +502,11 @@ rb_mutex_abandon_all(rb_mutex_t *mutexes)
     rb_mutex_t *mutex;
 
     while (mutexes) {
-	mutex = mutexes;
-	mutexes = mutex->next_mutex;
-	mutex->fiber = 0;
-	mutex->next_mutex = 0;
-	ccan_list_head_init(&mutex->waitq);
+        mutex = mutexes;
+        mutexes = mutex->next_mutex;
+        mutex->fiber = 0;
+        mutex->next_mutex = 0;
+        ccan_list_head_init(&mutex->waitq);
     }
 }
 #endif
@@ -611,7 +611,7 @@ static VALUE
 rb_mutex_synchronize_m(VALUE self)
 {
     if (!rb_block_given_p()) {
-	rb_raise(rb_eThreadError, "must be called with a block");
+        rb_raise(rb_eThreadError, "must be called with a block");
     }
 
     return rb_mutex_synchronize(self, rb_yield, Qundef);
@@ -622,9 +622,9 @@ void rb_mutex_allow_trap(VALUE self, int val)
     Check_TypedStruct(self, &mutex_data_type);
 
     if (val)
-	FL_SET_RAW(self, MUTEX_ALLOW_TRAP);
+        FL_SET_RAW(self, MUTEX_ALLOW_TRAP);
     else
-	FL_UNSET_RAW(self, MUTEX_ALLOW_TRAP);
+        FL_UNSET_RAW(self, MUTEX_ALLOW_TRAP);
 }
 
 /* Queue */
@@ -731,7 +731,7 @@ szqueue_alloc(VALUE klass)
 {
     struct rb_szqueue *sq;
     VALUE obj = TypedData_Make_Struct(klass, struct rb_szqueue,
-					&szqueue_data_type, sq);
+                                        &szqueue_data_type, sq);
     ccan_list_head_init(szqueue_waitq(sq));
     ccan_list_head_init(szqueue_pushq(sq));
     return obj;
@@ -761,7 +761,7 @@ static VALUE
 check_array(VALUE obj, VALUE ary)
 {
     if (!RB_TYPE_P(ary, T_ARRAY)) {
-	rb_raise(rb_eTypeError, "%+"PRIsVALUE" not initialized", obj);
+        rb_raise(rb_eTypeError, "%+"PRIsVALUE" not initialized", obj);
     }
     return ary;
 }
@@ -880,7 +880,7 @@ static VALUE
 queue_do_push(VALUE self, struct rb_queue *q, VALUE obj)
 {
     if (queue_closed_p(self)) {
-	raise_closed_queue_error(self);
+        raise_closed_queue_error(self);
     }
     rb_ary_push(check_array(self, q->que), obj);
     wakeup_one(queue_waitq(q));
@@ -926,9 +926,9 @@ rb_queue_close(VALUE self)
     struct rb_queue *q = queue_ptr(self);
 
     if (!queue_closed_p(self)) {
-	FL_SET(self, QUEUE_CLOSED);
+        FL_SET(self, QUEUE_CLOSED);
 
-	wakeup_all(queue_waitq(q));
+        wakeup_all(queue_waitq(q));
     }
 
     return self;
@@ -973,8 +973,8 @@ queue_sleep(VALUE self)
 struct queue_waiter {
     struct sync_waiter w;
     union {
-	struct rb_queue *q;
-	struct rb_szqueue *sq;
+        struct rb_queue *q;
+        struct rb_szqueue *sq;
     } as;
 };
 
@@ -1041,7 +1041,7 @@ queue_pop_should_block(int argc, const VALUE *argv)
     int should_block = 1;
     rb_check_arity(argc, 0, 1);
     if (argc > 0) {
-	should_block = !RTEST(argv[0]);
+        should_block = !RTEST(argv[0]);
     }
     return should_block;
 }
@@ -1148,7 +1148,7 @@ rb_szqueue_initialize(VALUE self, VALUE vmax)
 
     max = NUM2LONG(vmax);
     if (max <= 0) {
-	rb_raise(rb_eArgError, "queue size must be positive");
+        rb_raise(rb_eArgError, "queue size must be positive");
     }
 
     RB_OBJ_WRITE(self, &sq->q.que, ary_buf_new());
@@ -1175,11 +1175,11 @@ static VALUE
 rb_szqueue_close(VALUE self)
 {
     if (!queue_closed_p(self)) {
-	struct rb_szqueue *sq = szqueue_ptr(self);
+        struct rb_szqueue *sq = szqueue_ptr(self);
 
-	FL_SET(self, QUEUE_CLOSED);
-	wakeup_all(szqueue_waitq(sq));
-	wakeup_all(szqueue_pushq(sq));
+        FL_SET(self, QUEUE_CLOSED);
+        wakeup_all(szqueue_waitq(sq));
+        wakeup_all(szqueue_pushq(sq));
     }
     return self;
 }
@@ -1211,10 +1211,10 @@ rb_szqueue_max_set(VALUE self, VALUE vmax)
     struct rb_szqueue *sq = szqueue_ptr(self);
 
     if (max <= 0) {
-	rb_raise(rb_eArgError, "queue size must be positive");
+        rb_raise(rb_eArgError, "queue size must be positive");
     }
     if (max > sq->max) {
-	diff = max - sq->max;
+        diff = max - sq->max;
     }
     sq->max = max;
     sync_wakeup(szqueue_pushq(sq), diff);
@@ -1227,7 +1227,7 @@ szqueue_push_should_block(int argc, const VALUE *argv)
     int should_block = 1;
     rb_check_arity(argc, 1, 2);
     if (argc > 1) {
-	should_block = !RTEST(argv[1]);
+        should_block = !RTEST(argv[1]);
     }
     return should_block;
 }
@@ -1289,7 +1289,7 @@ szqueue_do_pop(VALUE self, int should_block)
     VALUE retval = queue_do_pop(self, &sq->q, should_block);
 
     if (queue_length(self, &sq->q) < sq->max) {
-	wakeup_one(szqueue_pushq(sq));
+        wakeup_one(szqueue_pushq(sq));
     }
 
     return retval;

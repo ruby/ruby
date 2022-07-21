@@ -128,7 +128,7 @@ RBIMPL_ATTR_NONNULL((1))
  *                 your code to see if it is actually worth releasing the GVL.
  */
 void *rb_thread_call_without_gvl(void *(*func)(void *), void *data1,
-				 rb_unblock_function_t *ubf, void *data2);
+                                 rb_unblock_function_t *ubf, void *data2);
 
 RBIMPL_ATTR_NONNULL((1))
 /**
@@ -152,7 +152,7 @@ RBIMPL_ATTR_NONNULL((1))
  * @return         What `func` returned, or 0 in case `func` did not return.
  */
 void *rb_thread_call_without_gvl2(void *(*func)(void *), void *data1,
-				  rb_unblock_function_t *ubf, void *data2);
+                                  rb_unblock_function_t *ubf, void *data2);
 
 /*
  * XXX: unstable/unapproved - out-of-tree code should NOT not depend
