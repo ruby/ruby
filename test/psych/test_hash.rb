@@ -125,7 +125,7 @@ eoyml
       h = { }
       h["recursive_reference"] = h
 
-      assert_raise(BadAlias) do
+      assert_raise(AliasesNotEnabled) do
         Psych.load(Psych.dump(h), aliases: false)
       end
     end

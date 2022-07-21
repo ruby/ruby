@@ -427,7 +427,7 @@ module Psych
 
     class NoAliasRuby < ToRuby
       def visit_Psych_Nodes_Alias o
-        raise BadAlias, "Unknown alias: #{o.anchor}"
+        raise AliasesNotEnabled
       end
     end
   end

@@ -28,7 +28,7 @@ module Psych
         b: *ABC
       YAML
 
-      assert_raise(Psych::BadAlias) do
+      assert_raise(Psych::AliasesNotEnabled) do
         Psych.safe_load(yaml_with_aliases)
       end
     end

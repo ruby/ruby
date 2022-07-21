@@ -46,7 +46,7 @@ module Psych
       foo = Foo.new(nil)
       foo.parent = foo
 
-      assert_raise(BadAlias) do
+      assert_raise(AliasesNotEnabled) do
         Psych.load(Psych.dump(foo), permitted_classes: [Foo], aliases: false)
       end
     end

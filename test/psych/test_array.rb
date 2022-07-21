@@ -68,7 +68,7 @@ module Psych
     def test_recursive_array_uses_alias
       @list << @list
 
-      assert_raise(BadAlias) do
+      assert_raise(AliasesNotEnabled) do
         Psych.load(Psych.dump(@list), aliases: false)
       end
     end
