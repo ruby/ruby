@@ -412,15 +412,15 @@ class Reline::Config::Test < Reline::TestCase
   def test_dialog_configurations
     @config.read_lines(<<~LINES.lines)
       set dialog-default-bg-color white
-      set dialog-pointer-bg-color black
+      set dialog-highlight-bg-color black
       set dialog-default-fg-color cyan
-      set dialog-pointer-fg-color magenta
+      set dialog-highlight-fg-color magenta
     LINES
 
     assert_equal :white, @config.dialog_default_bg_color
-    assert_equal :black, @config.dialog_pointer_bg_color
+    assert_equal :black, @config.dialog_highlight_bg_color
     assert_equal :cyan, @config.dialog_default_fg_color
-    assert_equal :magenta, @config.dialog_pointer_fg_color
+    assert_equal :magenta, @config.dialog_highlight_fg_color
   end
 end
 

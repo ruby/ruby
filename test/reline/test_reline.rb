@@ -50,8 +50,8 @@ class Reline::Test < Reline::TestCase
     # defaults
     assert_equal(:cyan, Reline.dialog_default_bg_color)
     assert_equal(:white, Reline.dialog_default_fg_color)
-    assert_equal(:magenta, Reline.dialog_pointer_bg_color)
-    assert_equal(:white, Reline.dialog_pointer_fg_color)
+    assert_equal(:magenta, Reline.dialog_highlight_bg_color)
+    assert_equal(:white, Reline.dialog_highlight_fg_color)
 
     Reline.dialog_default_bg_color = :black
     assert_equal(:black, Reline.dialog_default_bg_color)
@@ -61,17 +61,17 @@ class Reline::Test < Reline::TestCase
     assert_equal(:white, Reline.dialog_default_fg_color)
     assert_equal(37, Reline.dialog_default_fg_color_sequence)
 
-    Reline.dialog_pointer_bg_color = :white
-    assert_equal(:white, Reline.dialog_pointer_bg_color)
-    assert_equal(47, Reline.dialog_pointer_bg_color_sequence)
+    Reline.dialog_highlight_bg_color = :white
+    assert_equal(:white, Reline.dialog_highlight_bg_color)
+    assert_equal(47, Reline.dialog_highlight_bg_color_sequence)
 
-    Reline.dialog_pointer_fg_color = :black
-    assert_equal(:black, Reline.dialog_pointer_fg_color)
-    assert_equal(30, Reline.dialog_pointer_fg_color_sequence)
+    Reline.dialog_highlight_fg_color = :black
+    assert_equal(:black, Reline.dialog_highlight_fg_color)
+    assert_equal(30, Reline.dialog_highlight_fg_color_sequence)
 
     # test value validation
     assert_raise(ArgumentError) do
-      Reline.dialog_pointer_fg_color = :foo
+      Reline.dialog_highlight_fg_color = :foo
     end
   end
 
