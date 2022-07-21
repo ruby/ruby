@@ -457,7 +457,6 @@ rb_ary_transient_heap_evacuate_(VALUE ary, int transient, int promote)
         VALUE *new_ptr;
         const VALUE *old_ptr = ARY_HEAP_PTR(ary);
         long capa = ARY_HEAP_CAPA(ary);
-        long len  = ARY_HEAP_LEN(ary);
 
         assert(ARY_OWNS_HEAP_P(ary));
         assert(RARRAY_TRANSIENT_P(ary));
