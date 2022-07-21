@@ -1323,6 +1323,7 @@ up::
 yes::
 no::
 
+after-update:: common-srcs
 after-update:: $(REVISION_H)
 after-update:: extract-extlibs
 after-update:: extract-gems
