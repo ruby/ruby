@@ -21,7 +21,6 @@ jobs:
       matrix:
         test_task: ["check"] # "test-bundler-parallel", "test-bundled-gems"
         os:
-          - macos-10.15
           - macos-11
           - macos-12
       fail-fast: false
