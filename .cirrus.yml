@@ -125,5 +125,25 @@ yjit_task:
   boot_miniruby_script: RUST_BACKTRACE=1 ./miniruby --yjit-call-threshold=1 -e0
   test_dump_insns_script: RUST_BACKTRACE=1 ./miniruby --yjit-call-threshold=1 --yjit-dump-insns -e0
   # output_stats_script: RUST_BACKTRACE=1 ./miniruby --yjit-call-threshold=1 --yjit-stats -e0
-  bootstrap_tests_script: RUST_BACKTRACE=1 ruby --disable=gems bootstraptest/runner.rb --ruby="./miniruby -I./lib -I. -I.ext/common --disable-gems --yjit-call-threshold=1 --yjit-verify-ctx" bootstraptest/test_yjit_new_backend.rb
+  bootstrap_tests_script: |
+    RUST_BACKTRACE=1 ruby --disable=gems bootstraptest/runner.rb --ruby="./miniruby -I./lib -I. -I.ext/common --disable-gems --yjit-call-threshold=1 --yjit-verify-ctx" \
+    bootstraptest/test_attr.rb \
+    bootstraptest/test_autoload.rb \
+    bootstraptest/test_class.rb \
+    bootstraptest/test_constant_cache.rb \
+    bootstraptest/test_env.rb \
+    bootstraptest/test_eval.rb \
+    bootstraptest/test_exception.rb \
+    bootstraptest/test_fiber.rb \
+    bootstraptest/test_finalizer.rb \
+    bootstraptest/test_flip.rb \
+    bootstraptest/test_flow.rb \
+    bootstraptest/test_fork.rb \
+    bootstraptest/test_gc.rb \
+    bootstraptest/test_jump.rb \
+    bootstraptest/test_literal_suffix.rb \
+    bootstraptest/test_load.rb \
+    bootstraptest/test_massign.rb \
+    bootstraptest/test_string.rb \
+    bootstraptest/test_yjit_new_backend.rb
   # full_build_script: make -j
