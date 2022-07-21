@@ -41,13 +41,19 @@ impl TryFrom<u64> for BitmaskImmediate {
 
     /// Attempt to convert a u64 into a BitmaskImm.
     fn try_from(value: u64) -> Result<Self, Self::Error> {
+        // 0 is not encodable as a bitmask immediate. Immediately return here so
+        // that we don't have any issues with underflow.
+        if value == 0 {
+            return Err(());
+        }
+
         /// Is this number's binary representation all 1s?
         fn is_mask(imm: u64) -> bool {
             if imm == u64::MAX { true } else { ((imm + 1) & imm) == 0 }
         }
 
-        /// Is this number's binary representation one or more 1s followed by one or
-        /// more 0s?
+        /// Is this number's binary representation one or more 1s followed by
+        /// one or more 0s?
         fn is_shifted_mask(imm: u64) -> bool {
             is_mask((imm - 1) | imm)
         }

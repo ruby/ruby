@@ -249,7 +249,33 @@ impl Assembler
                         _ => asm.load(opnds[0])
                     };
 
-                    asm.test(opnd0, opnds[1]);
+                    // The second value must be either a register or an
+                    // unsigned immediate that can be encoded as a bitmask
+                    // immediate. If it's not one of those, we'll need to load
+                    // it first.
+                    let opnd1 = match opnds[1] {
+                        Opnd::Reg(_) | Opnd::InsnOut { .. } => opnds[1],
+                        Opnd::Mem(_) => asm.load(opnds[1]),
+                        Opnd::Imm(imm) => {
+                            if imm <= 0 {
+                                asm.load(opnds[1])
+                            } else if BitmaskImmediate::try_from(imm as u64).is_ok() {
+                                Opnd::UImm(imm as u64)
+                            } else {
+                                asm.load(opnds[1])
+                            }
+                        },
+                        Opnd::UImm(uimm) => {
+                            if BitmaskImmediate::try_from(uimm).is_ok() {
+                                opnds[1]
+                            } else {
+                                asm.load(opnds[1])
+                            }
+                        },
+                        Opnd::None | Opnd::Value(_) => unreachable!()
+                    };
+
+                    asm.test(opnd0, opnd1);
                 },
                 _ => {
                     asm.push_insn(op, opnds, target, text, pos_marker);
@@ -787,6 +813,72 @@ mod tests {
         asm.store(Opnd::mem(64, SP, 0), opnd);
 
         asm.compile_with_num_regs(&mut cb, 1);
+    }
+
+    #[test]
+    fn test_emit_test() {
+        let (mut asm, mut cb) = setup_asm();
+
+        asm.test(Opnd::Reg(X0_REG), Opnd::Reg(X1_REG));
+        asm.compile_with_num_regs(&mut cb, 0);
+
+        // Assert that only one instruction was written.
+        assert_eq!(4, cb.get_write_pos());
+    }
+
+    #[test]
+    fn test_emit_test_with_encodable_unsigned_immediate() {
+        let (mut asm, mut cb) = setup_asm();
+
+        asm.test(Opnd::Reg(X0_REG), Opnd::UImm(7));
+        asm.compile_with_num_regs(&mut cb, 0);
+
+        // Assert that only one instruction was written.
+        assert_eq!(4, cb.get_write_pos());
+    }
+
+    #[test]
+    fn test_emit_test_with_unencodable_unsigned_immediate() {
+        let (mut asm, mut cb) = setup_asm();
+
+        asm.test(Opnd::Reg(X0_REG), Opnd::UImm(5));
+        asm.compile_with_num_regs(&mut cb, 1);
+
+        // Assert that a load and a test instruction were written.
+        assert_eq!(8, cb.get_write_pos());
+    }
+
+    #[test]
+    fn test_emit_test_with_encodable_signed_immediate() {
+        let (mut asm, mut cb) = setup_asm();
+
+        asm.test(Opnd::Reg(X0_REG), Opnd::Imm(7));
+        asm.compile_with_num_regs(&mut cb, 0);
+
+        // Assert that only one instruction was written.
+        assert_eq!(4, cb.get_write_pos());
+    }
+
+    #[test]
+    fn test_emit_test_with_unencodable_signed_immediate() {
+        let (mut asm, mut cb) = setup_asm();
+
+        asm.test(Opnd::Reg(X0_REG), Opnd::Imm(5));
+        asm.compile_with_num_regs(&mut cb, 1);
+
+        // Assert that a load and a test instruction were written.
+        assert_eq!(8, cb.get_write_pos());
+    }
+
+    #[test]
+    fn test_emit_test_with_negative_signed_immediate() {
+        let (mut asm, mut cb) = setup_asm();
+
+        asm.test(Opnd::Reg(X0_REG), Opnd::Imm(-7));
+        asm.compile_with_num_regs(&mut cb, 1);
+
+        // Assert that a load and a test instruction were written.
+        assert_eq!(8, cb.get_write_pos());
     }
 
     #[test]
