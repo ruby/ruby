@@ -123,6 +123,17 @@ eoyml
       assert_same(hash.fetch("foo"), hash.fetch("bar"))
     end
 
+    def test_raises_if_anchor_not_defined
+      assert_raise(Psych::BadAlias) do
+        Psych.unsafe_load(<<~eoyml)
+          ---
+          foo: &foo
+            hello: world
+          bar: *not_foo
+        eoyml
+      end
+    end
+
     def test_recursive_hash
       h = { }
       h["recursive_reference"] = h
