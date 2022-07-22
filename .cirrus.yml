@@ -143,7 +143,11 @@ yjit_task:
     bootstraptest/test_jump.rb \
     bootstraptest/test_literal_suffix.rb \
     bootstraptest/test_load.rb \
+    bootstraptest/test_marshal.rb \
     bootstraptest/test_massign.rb \
+    bootstraptest/test_method.rb \
+    bootstraptest/test_objectspace.rb \
     bootstraptest/test_string.rb \
+    bootstraptest/test_struct.rb \
     bootstraptest/test_yjit_new_backend.rb
   # full_build_script: make -j
