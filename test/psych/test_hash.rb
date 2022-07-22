@@ -124,7 +124,7 @@ module Psych
     end
 
     def test_raises_if_anchor_not_defined
-      assert_raise(Psych::BadAlias) do
+      assert_raise(Psych::AnchorNotDefined) do
         Psych.unsafe_load(<<~eoyml)
           ---
           foo: &foo

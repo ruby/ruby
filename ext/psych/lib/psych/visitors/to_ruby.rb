@@ -323,7 +323,7 @@ module Psych
       end
 
       def visit_Psych_Nodes_Alias o
-        @st.fetch(o.anchor) { raise BadAlias, "Unknown alias: #{o.anchor}" }
+        @st.fetch(o.anchor) { raise AnchorNotDefined, o.anchor }
       end
 
       private
