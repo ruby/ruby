@@ -227,6 +227,23 @@ class Integer
     Primitive.attr! 'inline'
     Primitive.cexpr! 'rb_int_zero_p(self)'
   end
+
+  #  call-seq:
+  #    ceildiv(other) -> integer
+  #
+  #  Returns the result of division +self+ by +other+. The result is rounded up to the nearest integer.
+  #
+  #    3.ceildiv(3) # => 1
+  #    4.ceildiv(3) # => 2
+  #
+  #    4.ceildiv(-3) # => -1
+  #    -4.ceildiv(3) # => -1
+  #    -4.ceildiv(-3) # => 2
+  #
+  #    3.ceildiv(1.2) # => 3
+  def ceildiv(other)
+    -div(-other)
+  end
 end
 
 #  call-seq:
