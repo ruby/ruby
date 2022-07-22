@@ -2435,7 +2435,7 @@ vm_exec_handle_exception(rb_execution_context_t *ec, enum ruby_tag_type state,
         else if ((state == TAG_BREAK && !escape_cfp) ||
                  (state == TAG_REDO) ||
                  (state == TAG_NEXT)) {
-            type = (const enum catch_type[TAG_MASK]) {
+            type = (const enum rb_catch_type[TAG_MASK]) {
                 [TAG_BREAK]  = CATCH_TYPE_BREAK,
                 [TAG_NEXT]   = CATCH_TYPE_NEXT,
                 [TAG_REDO]   = CATCH_TYPE_REDO,

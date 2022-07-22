@@ -340,7 +340,7 @@ typedef uintptr_t iseq_bits_t;
 #define ISEQ_IS_SIZE(body) (body->ic_size + body->ivc_size + body->ise_size + body->icvarc_size)
 
 /* instruction sequence type */
-enum iseq_type {
+enum rb_iseq_type {
     ISEQ_TYPE_TOP,
     ISEQ_TYPE_METHOD,
     ISEQ_TYPE_BLOCK,
@@ -353,7 +353,7 @@ enum iseq_type {
 };
 
 struct rb_iseq_constant_body {
-    enum iseq_type type;
+    enum rb_iseq_type type;
 
     unsigned int iseq_size;
     VALUE *iseq_encoded; /* encoded iseq (insn addr and operands) */
@@ -1113,12 +1113,12 @@ typedef enum {
 RUBY_SYMBOL_EXPORT_BEGIN
 
 /* node -> iseq */
-rb_iseq_t *rb_iseq_new         (const rb_ast_body_t *ast, VALUE name, VALUE path, VALUE realpath,                     const rb_iseq_t *parent, enum iseq_type);
+rb_iseq_t *rb_iseq_new         (const rb_ast_body_t *ast, VALUE name, VALUE path, VALUE realpath,                     const rb_iseq_t *parent, enum rb_iseq_type);
 rb_iseq_t *rb_iseq_new_top     (const rb_ast_body_t *ast, VALUE name, VALUE path, VALUE realpath,                     const rb_iseq_t *parent);
 rb_iseq_t *rb_iseq_new_main    (const rb_ast_body_t *ast,             VALUE path, VALUE realpath,                     const rb_iseq_t *parent, int opt);
 rb_iseq_t *rb_iseq_new_eval    (const rb_ast_body_t *ast, VALUE name, VALUE path, VALUE realpath, VALUE first_lineno, const rb_iseq_t *parent, int isolated_depth);
 rb_iseq_t *rb_iseq_new_with_opt(const rb_ast_body_t *ast, VALUE name, VALUE path, VALUE realpath, VALUE first_lineno, const rb_iseq_t *parent, int isolated_depth,
-                                enum iseq_type, const rb_compile_option_t*);
+                                enum rb_iseq_type, const rb_compile_option_t*);
 
 struct iseq_link_anchor;
 struct rb_iseq_new_with_callback_callback_func {
@@ -1136,7 +1136,7 @@ rb_iseq_new_with_callback_new_callback(
 }
 rb_iseq_t *rb_iseq_new_with_callback(const struct rb_iseq_new_with_callback_callback_func * ifunc,
     VALUE name, VALUE path, VALUE realpath, VALUE first_lineno,
-    const rb_iseq_t *parent, enum iseq_type, const rb_compile_option_t*);
+    const rb_iseq_t *parent, enum rb_iseq_type, const rb_compile_option_t*);
 
 VALUE rb_iseq_disasm(const rb_iseq_t *iseq);
 int rb_iseq_disasm_insn(VALUE str, const VALUE *iseqval, size_t pos, const rb_iseq_t *iseq, VALUE child);
