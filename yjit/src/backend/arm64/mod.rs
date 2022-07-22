@@ -238,17 +238,17 @@ impl Assembler
                     asm.push_insn(op, new_opnds, target, text, pos_marker);
                 },
                 Op::IncrCounter => {
-                    // Every operand to the IncrCounter instruction need to be a
-                    // register once it gets there. So here we're going to load
-                    // anything that isn't a register first.
-                    let new_opnds: Vec<Opnd> = opnds.into_iter().map(|opnd| {
-                        match opnd {
-                            Opnd::Mem(_) | Opnd::Imm(_) | Opnd::UImm(_) => asm.load(opnd),
-                            _ => opnd,
-                        }
-                    }).collect();
+                    // We'll use LDADD later which only works with registers
+                    // ... Load pointer into register
+                    let counter_addr = asm.lea(opnds[0]);
 
-                    asm.incr_counter(new_opnds[0], new_opnds[1]);
+                    // Load immediates into a register
+                    let addend = match opnds[1] {
+                        opnd @ Opnd::Imm(_) | opnd @ Opnd::UImm(_) => asm.load(opnd),
+                        opnd => opnd,
+                    };
+
+                    asm.incr_counter(counter_addr, addend);
                 },
                 Op::JmpOpnd => {
                     if let Opnd::Mem(_) = opnds[0] {
@@ -769,7 +769,7 @@ impl Assembler
                     emit_conditional_jump::<{Condition::VS}>(cb, insn.target.unwrap());
                 },
                 Op::IncrCounter => {
-                    ldaddal(cb, insn.opnds[0].into(), insn.opnds[0].into(), insn.opnds[1].into());
+                    ldaddal(cb, insn.opnds[1].into(), insn.opnds[1].into(), insn.opnds[0].into());
                 },
                 Op::Breakpoint => {
                     brk(cb, A64Opnd::None);
