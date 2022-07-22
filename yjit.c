@@ -81,7 +81,9 @@ rb_yjit_mark_executable(void *mem_block, uint32_t mem_size)
 
     // Clear/invalidate the instruction cache. Compiles to nothing on x86_64
     // but required on ARM. On Darwin it's the same as calling sys_icache_invalidate().
+#ifdef __GNUC__
     __builtin___clear_cache(mem_block, (char *)mem_block + mem_size);
+#endif
 }
 
 # define PTR2NUM(x)   (rb_int2inum((intptr_t)(void *)(x)))
