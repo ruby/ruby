@@ -112,6 +112,17 @@ eoyml
       assert_equal({"foo"=>{"hello"=>"world"}, "bar"=>{"hello"=>"world"}}, hash)
     end
 
+    def test_anchor_reuse
+      hash = Psych.unsafe_load(<<~eoyml)
+        ---
+        foo: &foo
+          hello: world
+        bar: *foo
+      eoyml
+      assert_equal({"foo"=>{"hello"=>"world"}, "bar"=>{"hello"=>"world"}}, hash)
+      assert_same(hash.fetch("foo"), hash.fetch("bar"))
+    end
+
     def test_recursive_hash
       h = { }
       h["recursive_reference"] = h
