@@ -221,14 +221,12 @@ class Gem::SystemExitException < SystemExit
   ##
   # The exit code for the process
 
-  attr_accessor :exit_code
+  alias exit_code status
 
   ##
   # Creates a new SystemExitException with the given +exit_code+
 
   def initialize(exit_code)
-    @exit_code = exit_code
-
     super exit_code, "Exiting RubyGems with exit_code #{exit_code}"
   end
 end
