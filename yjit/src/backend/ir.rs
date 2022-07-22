@@ -145,7 +145,10 @@ pub enum Op
     FrameSetup,
 
     /// Tear down the frame stack as necessary per the architecture.
-    FrameTeardown
+    FrameTeardown,
+
+    /// Take a specific register. Signal the register allocator to not use it.
+    LiveReg,
 }
 
 // Memory operand base
@@ -633,7 +636,6 @@ impl Assembler
             if let Some(reg_index) = reg_index {
                 assert_eq!(*pool & (1 << reg_index), 0);
                 *pool |= 1 << reg_index;
-                //return regs[reg_index];
             }
 
             return *reg;
@@ -713,7 +715,13 @@ impl Assembler
 
                 // Allocate a new register for this instruction
                 if out_reg == Opnd::None {
-                    out_reg = Opnd::Reg(alloc_reg(&mut pool, &regs))
+                    out_reg = if op == Op::LiveReg {
+                        // Allocate a specific register
+                        let reg = opnds[0].unwrap_reg();
+                        Opnd::Reg(take_reg(&mut pool, &regs, &reg))
+                    } else {
+                        Opnd::Reg(alloc_reg(&mut pool, &regs))
+                    }
                 }
             }
 
@@ -902,6 +910,7 @@ def_push_1_opnd_no_out!(cret, Op::CRet);
 def_push_1_opnd!(load, Op::Load);
 def_push_1_opnd!(load_sext, Op::LoadSExt);
 def_push_1_opnd!(lea, Op::Lea);
+def_push_1_opnd!(live_reg_opnd, Op::LiveReg);
 def_push_2_opnd_no_out!(store, Op::Store);
 def_push_2_opnd_no_out!(mov, Op::Mov);
 def_push_2_opnd_no_out!(cmp, Op::Cmp);

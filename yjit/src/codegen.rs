@@ -213,7 +213,7 @@ macro_rules! gen_counter_incr {
             let counter_opnd = Opnd::mem(64, ptr_reg, 0);
 
             // Increment and store the updated value
-            $asm.incr_counter(counter_opnd, 1.into() );
+            $asm.incr_counter(counter_opnd, 1.into());
         }
     };
 }
@@ -552,8 +552,9 @@ fn gen_leave_exit(ocb: &mut OutlinedCb) -> CodePtr {
     let code_ptr = ocb.get_write_ptr();
     let mut asm = Assembler::new();
 
-    // NOTE: gen_leave() fully reconstructs interpreter state and leaves the
+    // gen_leave() fully reconstructs interpreter state and leaves the
     // return value in C_RET_OPND before coming here.
+    let ret_opnd = asm.live_reg_opnd(C_RET_OPND);
 
     // Every exit to the interpreter should be counted
     gen_counter_incr!(asm, leave_interp_return);
@@ -564,7 +565,7 @@ fn gen_leave_exit(ocb: &mut OutlinedCb) -> CodePtr {
 
     asm.frame_teardown();
 
-    asm.cret(C_RET_OPND);
+    asm.cret(ret_opnd);
 
     asm.compile(ocb);
 

@@ -448,7 +448,8 @@ impl Assembler
                 Op::CSelGE => {
                     mov(cb, insn.out.into(), insn.opnds[0].into());
                     cmovl(cb, insn.out.into(), insn.opnds[1].into());
-                },
+                }
+                Op::LiveReg => (), // just a reg alloc signal, no code
 
                 // We want to keep the panic here because some instructions that
                 // we feed to the backend could get lowered into other
