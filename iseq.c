@@ -723,7 +723,7 @@ new_arena(void)
 static VALUE
 prepare_iseq_build(rb_iseq_t *iseq,
                    VALUE name, VALUE path, VALUE realpath, VALUE first_lineno, const rb_code_location_t *code_location, const int node_id,
-                   const rb_iseq_t *parent, int isolated_depth, enum iseq_type type,
+                   const rb_iseq_t *parent, int isolated_depth, enum rb_iseq_type type,
                    VALUE script_lines, const rb_compile_option_t *option)
 {
     VALUE coverage = Qfalse;
@@ -947,7 +947,7 @@ make_compile_option_value(rb_compile_option_t *option)
 
 rb_iseq_t *
 rb_iseq_new(const rb_ast_body_t *ast, VALUE name, VALUE path, VALUE realpath,
-            const rb_iseq_t *parent, enum iseq_type type)
+            const rb_iseq_t *parent, enum rb_iseq_type type)
 {
     return rb_iseq_new_with_opt(ast, name, path, realpath, INT2FIX(0), parent,
                                 0, type, &COMPILE_OPTION_DEFAULT);
@@ -1015,7 +1015,7 @@ iseq_translate(rb_iseq_t *iseq)
 rb_iseq_t *
 rb_iseq_new_with_opt(const rb_ast_body_t *ast, VALUE name, VALUE path, VALUE realpath,
                      VALUE first_lineno, const rb_iseq_t *parent, int isolated_depth,
-                     enum iseq_type type, const rb_compile_option_t *option)
+                     enum rb_iseq_type type, const rb_compile_option_t *option)
 {
     const NODE *node = ast ? ast->root : 0;
     /* TODO: argument check */
@@ -1053,7 +1053,7 @@ rb_iseq_new_with_callback(
     const struct rb_iseq_new_with_callback_callback_func * ifunc,
     VALUE name, VALUE path, VALUE realpath,
     VALUE first_lineno, const rb_iseq_t *parent,
-    enum iseq_type type, const rb_compile_option_t *option)
+    enum rb_iseq_type type, const rb_compile_option_t *option)
 {
     /* TODO: argument check */
     rb_iseq_t *iseq = iseq_alloc();
@@ -1085,7 +1085,7 @@ rb_iseq_load_iseq(VALUE fname)
 #define CHECK_SYMBOL(v)  rb_to_symbol_type(v)
 static inline VALUE CHECK_INTEGER(VALUE v) {(void)NUM2LONG(v); return v;}
 
-static enum iseq_type
+static enum rb_iseq_type
 iseq_type_from_sym(VALUE type)
 {
     const ID id_top = rb_intern("top");
@@ -1109,7 +1109,7 @@ iseq_type_from_sym(VALUE type)
     if (typeid == id_eval) return ISEQ_TYPE_EVAL;
     if (typeid == id_main) return ISEQ_TYPE_MAIN;
     if (typeid == id_plain) return ISEQ_TYPE_PLAIN;
-    return (enum iseq_type)-1;
+    return (enum rb_iseq_type)-1;
 }
 
 static VALUE
@@ -1155,7 +1155,7 @@ iseq_load(VALUE data, const rb_iseq_t *parent, VALUE opt)
     ISEQ_BODY(iseq)->local_iseq = iseq;
 
     iseq_type = iseq_type_from_sym(type);
-    if (iseq_type == (enum iseq_type)-1) {
+    if (iseq_type == (enum rb_iseq_type)-1) {
         rb_raise(rb_eTypeError, "unsupported type: :%"PRIsVALUE, rb_sym2str(type));
     }
 
@@ -1172,7 +1172,7 @@ iseq_load(VALUE data, const rb_iseq_t *parent, VALUE opt)
     make_compile_option(&option, opt);
     option.peephole_optimization = FALSE; /* because peephole optimization can modify original iseq */
     prepare_iseq_build(iseq, name, path, realpath, first_lineno, &tmp_loc, NUM2INT(node_id),
-                       parent, 0, (enum iseq_type)iseq_type, Qnil, &option);
+                       parent, 0, (enum rb_iseq_type)iseq_type, Qnil, &option);
 
     rb_iseq_build_from_ary(iseq, misc, locals, params, exception, body);
 
@@ -1311,7 +1311,7 @@ rb_iseq_code_location(const rb_iseq_t *iseq, int *beg_pos_lineno, int *beg_pos_c
     if (end_pos_column) *end_pos_column = loc->end_pos.column;
 }
 
-static ID iseq_type_id(enum iseq_type type);
+static ID iseq_type_id(enum rb_iseq_type type);
 
 VALUE
 rb_iseq_type(const rb_iseq_t *iseq)
@@ -2839,7 +2839,7 @@ static const rb_data_type_t label_wrapper = {
   id_##name = rb_intern(#name)
 
 static VALUE
-iseq_type_id(enum iseq_type type)
+iseq_type_id(enum rb_iseq_type type)
 {
     DECL_ID(top);
     DECL_ID(method);

@@ -493,13 +493,13 @@ ractor_try_receive(rb_execution_context_t *ec, rb_ractor_t *r)
 }
 
 static bool
-ractor_sleeping_by(const rb_ractor_t *r, enum ractor_wait_status wait_status)
+ractor_sleeping_by(const rb_ractor_t *r, enum rb_ractor_wait_status wait_status)
 {
     return (r->sync.wait.status & wait_status) && r->sync.wait.wakeup_status == wakeup_none;
 }
 
 static bool
-ractor_wakeup(rb_ractor_t *r, enum ractor_wait_status wait_status, enum ractor_wakeup_status wakeup_status)
+ractor_wakeup(rb_ractor_t *r, enum rb_ractor_wait_status wait_status, enum rb_ractor_wakeup_status wakeup_status)
 {
     ASSERT_ractor_locking(r);
 
@@ -547,7 +547,7 @@ ractor_sleep_interrupt(void *ptr)
 
 #if USE_RUBY_DEBUG_LOG
 static const char *
-wait_status_str(enum ractor_wait_status wait_status)
+wait_status_str(enum rb_ractor_wait_status wait_status)
 {
     switch ((int)wait_status) {
       case wait_none: return "none";
@@ -563,7 +563,7 @@ wait_status_str(enum ractor_wait_status wait_status)
 }
 
 static const char *
-wakeup_status_str(enum ractor_wakeup_status wakeup_status)
+wakeup_status_str(enum rb_ractor_wakeup_status wakeup_status)
 {
     switch (wakeup_status) {
       case wakeup_none: return "none";
@@ -1035,7 +1035,7 @@ ractor_try_yield(rb_execution_context_t *ec, rb_ractor_t *cr, struct rb_ractor_b
                 VM_ASSERT(r->sync.wait.taken_basket.type == basket_type_none);
 
                 if (basket->type == basket_type_move) {
-                    enum ractor_wait_status prev_wait_status = r->sync.wait.status;
+                    enum rb_ractor_wait_status prev_wait_status = r->sync.wait.status;
                     r->sync.wait.status = wait_moving;
 
                     RACTOR_UNLOCK(r);
@@ -1090,7 +1090,7 @@ ractor_select(rb_execution_context_t *ec, const VALUE *rs, const int rs_len, VAL
     VALUE ret = Qundef;
     int i;
     bool interrupted = false;
-    enum ractor_wait_status wait_status = 0;
+    enum rb_ractor_wait_status wait_status = 0;
     bool yield_p = (yielded_value != Qundef) ? true : false;
     const int alen = rs_len + (yield_p ? 1 : 0);
 
@@ -1264,7 +1264,7 @@ ractor_select(rb_execution_context_t *ec, const VALUE *rs, const int rs_len, VAL
         }
 
         // check results
-        enum ractor_wakeup_status wakeup_status = cr->sync.wait.wakeup_status;
+        enum rb_ractor_wakeup_status wakeup_status = cr->sync.wait.wakeup_status;
         cr->sync.wait.wakeup_status = wakeup_none;
 
         switch (wakeup_status) {

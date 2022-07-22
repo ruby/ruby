@@ -40,7 +40,7 @@ struct rb_ractor_waiting_list {
     rb_ractor_t **ractors;
 };
 
-enum ractor_wait_status {
+enum rb_ractor_wait_status {
     wait_none      = 0x00,
     wait_receiving = 0x01,
     wait_taking    = 0x02,
@@ -48,7 +48,7 @@ enum ractor_wait_status {
     wait_moving    = 0x08,
 };
 
-enum ractor_wakeup_status {
+enum rb_ractor_wakeup_status {
     wakeup_none,
     wakeup_by_send,
     wakeup_by_yield,
@@ -74,8 +74,8 @@ struct rb_ractor_sync {
     bool outgoing_port_closed;
 
     struct ractor_wait {
-        enum ractor_wait_status status;
-        enum ractor_wakeup_status wakeup_status;
+        enum rb_ractor_wait_status status;
+        enum rb_ractor_wakeup_status wakeup_status;
         struct rb_ractor_basket yielded_basket;
         struct rb_ractor_basket taken_basket;
     } wait;

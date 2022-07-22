@@ -1320,7 +1320,7 @@ new_insn_send(rb_iseq_t *iseq, const NODE *const line_node, ID id, VALUE argc, c
 
 static rb_iseq_t *
 new_child_iseq(rb_iseq_t *iseq, const NODE *const node,
-               VALUE name, const rb_iseq_t *parent, enum iseq_type type, int line_no)
+               VALUE name, const rb_iseq_t *parent, enum rb_iseq_type type, int line_no)
 {
     rb_iseq_t *ret_iseq;
     rb_ast_body_t ast;
@@ -1342,7 +1342,7 @@ new_child_iseq(rb_iseq_t *iseq, const NODE *const node,
 
 static rb_iseq_t *
 new_child_iseq_with_callback(rb_iseq_t *iseq, const struct rb_iseq_new_with_callback_callback_func *ifunc,
-                     VALUE name, const rb_iseq_t *parent, enum iseq_type type, int line_no)
+                     VALUE name, const rb_iseq_t *parent, enum rb_iseq_type type, int line_no)
 {
     rb_iseq_t *ret_iseq;
 
@@ -1418,7 +1418,7 @@ iseq_insert_nop_between_end_and_cont(rb_iseq_t *iseq)
         LINK_ELEMENT *cont = (LINK_ELEMENT *)(ptr[4] & ~1);
         LINK_ELEMENT *e;
 
-        enum catch_type ct = (enum catch_type)(ptr[0] & 0xffff);
+        enum rb_catch_type ct = (enum rb_catch_type)(ptr[0] & 0xffff);
 
         if (ct != CATCH_TYPE_BREAK
             && ct != CATCH_TYPE_NEXT
@@ -2607,7 +2607,7 @@ iseq_set_exception_table(rb_iseq_t *iseq)
         for (i = 0; i < table->size; i++) {
             ptr = RARRAY_CONST_PTR_TRANSIENT(tptr[i]);
             entry = UNALIGNED_MEMBER_PTR(table, entries[i]);
-            entry->type = (enum catch_type)(ptr[0] & 0xffff);
+            entry->type = (enum rb_catch_type)(ptr[0] & 0xffff);
             entry->start = label_get_position((LABEL *)(ptr[1] & ~1));
             entry->end = label_get_position((LABEL *)(ptr[2] & ~1));
             entry->iseq = (rb_iseq_t *)ptr[3];
@@ -7692,9 +7692,9 @@ compile_return(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, 
     const NODE *line_node = node;
 
     if (iseq) {
-        enum iseq_type type = ISEQ_BODY(iseq)->type;
+        enum rb_iseq_type type = ISEQ_BODY(iseq)->type;
         const rb_iseq_t *is = iseq;
-        enum iseq_type t = type;
+        enum rb_iseq_type t = type;
         const NODE *retval = node->nd_stts;
         LABEL *splabel = 0;
 
@@ -11575,7 +11575,7 @@ ibf_load_catch_table(const struct ibf_load *load, ibf_offset_t catch_table_offse
         unsigned int i;
         for (i=0; i<table->size; i++) {
             int iseq_index = (int)ibf_load_small_value(load, &reading_pos);
-            table->entries[i].type = (enum catch_type)ibf_load_small_value(load, &reading_pos);
+            table->entries[i].type = (enum rb_catch_type)ibf_load_small_value(load, &reading_pos);
             table->entries[i].start = (unsigned int)ibf_load_small_value(load, &reading_pos);
             table->entries[i].end = (unsigned int)ibf_load_small_value(load, &reading_pos);
             table->entries[i].cont = (unsigned int)ibf_load_small_value(load, &reading_pos);

@@ -253,7 +253,7 @@ struct iseq_insn_info_entry {
  *   CATCH_TYPE_REDO, CATCH_TYPE_NEXT:
  *     NULL.
  */
-enum catch_type {
+enum rb_catch_type {
     CATCH_TYPE_RESCUE = INT2FIX(1),
     CATCH_TYPE_ENSURE = INT2FIX(2),
     CATCH_TYPE_RETRY  = INT2FIX(3),
@@ -263,7 +263,7 @@ enum catch_type {
 };
 
 struct iseq_catch_table_entry {
-    enum catch_type type;
+    enum rb_catch_type type;
     rb_iseq_t *iseq;
 
     unsigned int start;
