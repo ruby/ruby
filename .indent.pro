@@ -2,12 +2,15 @@
 -nbbb
 -nbc
 -br
+-brs
 -nbs
 -ncdb
--ce
--cli0.5
+-nce
+-cdw
+-cli2
+-cbi2
 -ndj
--ei
+-ncs
 -nfc1
 -i4
 -l120
@@ -16,7 +19,14 @@
 -psl
 -sc
 -sob
+-sbi4
 -nut
+-par
 
 -TID
 -TVALUE
+-Tst_data_t
+-Tst_index_t
+-Tst_table
+-Trb_data_type_t
+-TFILE
