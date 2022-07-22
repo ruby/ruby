@@ -158,6 +158,7 @@ RubyUpcalls ruby_upcalls;
 #endif
 
 #ifdef USE_THIRD_PARTY_HEAP
+static bool mmtk_enable = false;
 static const char *mmtk_env_plan = NULL;
 static const char *mmtk_pre_arg_plan = NULL;
 static const char *mmtk_post_arg_plan = NULL;
@@ -15143,6 +15144,9 @@ void rb_mmtk_pre_process_opts(int argc, char **argv) {
     bool enable_rubyopt = true;
 
     mmtk_env_plan = getenv("MMTK_PLAN");
+    if (mmtk_env_plan) {
+        mmtk_enable = true;
+    }
 
     for (int n = 1; n < argc; n++) {
         if (strcmp(argv[n], "--") == 0) {
@@ -15222,9 +15226,13 @@ void rb_mmtk_post_process_opts(const char *s) {
     }
 }
 
-void rb_mmtk_post_process_opts_finish(void) {
+void rb_mmtk_post_process_opts_finish(bool enable) {
+    mmtk_enable |= enable;
     if (strcmp(mmtk_pre_arg_plan ? mmtk_pre_arg_plan : "", mmtk_post_arg_plan ? mmtk_post_arg_plan : "") != 0) {
         rb_raise(rb_eRuntimeError, "--mmtk-plan values disagree");
+    }
+    if (!mmtk_enable) {
+        rb_bug("must enable MMTk");
     }
 }
 
