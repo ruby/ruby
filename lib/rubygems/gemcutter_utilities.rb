@@ -163,8 +163,12 @@ module Gem::GemcutterUtilities
 
     key_name     = get_key_name(scope)
     scope_params = get_scope_params(scope)
-    mfa_params   = get_mfa_params(email, password)
+    profile      = get_user_profile(email, password)
+    mfa_params   = get_mfa_params(profile)
     all_params   = scope_params.merge(mfa_params)
+    warning      = profile["warning"]
+
+    say "#{warning}\n" if warning
 
     response = rubygems_api_request(:post, "api/v1/api_key",
                                     sign_in_host, scope: scope) do |request|
@@ -273,27 +277,26 @@ module Gem::GemcutterUtilities
     self.host == Gem::DEFAULT_HOST
   end
 
-  def get_mfa_params(email, password)
+  def get_user_profile(email, password)
     return {} unless default_host?
 
-    mfa_level = get_user_mfa_level(email, password)
+    response = rubygems_api_request(:get, "api/v1/profile/me.yaml") do |request|
+      request.basic_auth email, password
+    end
+
+    with_response response do |resp|
+      Gem::SafeYAML.load clean_text(resp.body)
+    end
+  end
+
+  def get_mfa_params(profile)
+    mfa_level = profile["mfa"]
     params = {}
     if mfa_level == "ui_only" || mfa_level == "ui_and_gem_signin"
       selected = ask_yes_no("Would you like to enable MFA for this key? (strongly recommended)")
       params["mfa"] = true if selected
     end
     params
-  end
-
-  def get_user_mfa_level(email, password)
-    response = rubygems_api_request(:get, "api/v1/profile/me.yaml") do |request|
-      request.basic_auth email, password
-    end
-
-    with_response response do |resp|
-      body = Gem::SafeYAML.load clean_text(resp.body)
-      body["mfa"]
-    end
   end
 
   def get_key_name(scope)

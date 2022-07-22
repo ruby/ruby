@@ -159,6 +159,20 @@ class TestGemCommandsSigninCommand < Gem::TestCase
     assert_equal api_key, credentials[:rubygems_api_key]
   end
 
+  def test_execute_with_warnings
+    email     = "you@example.com"
+    password  = "secret"
+    api_key   = "1234"
+    fetcher   = Gem::RemoteFetcher.fetcher
+    mfa_level = "disabled"
+    warning   = "/[WARNING/] For protection of your account and gems"
+
+    key_name_ui = Gem::MockGemUi.new "#{email}\n#{password}\ntest-key\n\ny\n\n\n\n\n\ny"
+    util_capture(key_name_ui, nil, api_key, fetcher, mfa_level, warning) { @cmd.execute }
+
+    assert_match warning, key_name_ui.output
+  end
+
   def test_execute_on_gemserver_without_profile_me_endpoint
     host = "http://some-gemcutter-compatible-host.org"
 
@@ -193,10 +207,10 @@ class TestGemCommandsSigninCommand < Gem::TestCase
 
   # Utility method to capture IO/UI within the block passed
 
-  def util_capture(ui_stub = nil, host = nil, api_key = nil, fetcher = Gem::FakeFetcher.new, mfa_level = "disabled")
+  def util_capture(ui_stub = nil, host = nil, api_key = nil, fetcher = Gem::FakeFetcher.new, mfa_level = "disabled", warning = nil)
     api_key        ||= "a5fdbb6ba150cbb83aad2bb2fede64cf040453903"
     response         = [api_key, 200, "OK"]
-    profile_response = [ "mfa: #{mfa_level}\n" , 200, "OK"]
+    profile_response = [ "mfa: #{mfa_level}\nwarning: #{warning}" , 200, "OK"]
     email            = "you@example.com"
     password         = "secret"
 
