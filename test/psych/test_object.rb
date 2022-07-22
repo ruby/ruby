@@ -41,5 +41,17 @@ module Psych
       assert_instance_of(Foo, loaded)
       assert_equal loaded, loaded.parent
     end
+
+    def test_cyclic_reference_uses_alias
+      foo = Foo.new(nil)
+      foo.parent = foo
+
+      expected = <<~eoyaml
+        --- &1 !ruby/object:Psych::Foo
+        parent: *1
+      eoyaml
+
+      assert_equal expected, Psych.dump(foo)
+    end
   end
 end
