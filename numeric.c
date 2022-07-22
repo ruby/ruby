@@ -4269,28 +4269,6 @@ rb_int_idiv(VALUE x, VALUE y)
     return num_div(x, y);
 }
 
-/*
- *  call-seq:
- *    ceildiv(other) -> integer
- *
- *  Returns the result of division +self+ by +other+. The result is rounded up to the nearest integer.
- *
- *    3.ceildiv(3) # => 1
- *    4.ceildiv(3) # => 2
- *
- *    4.ceildiv(-3) # => -1
- *    -4.ceildiv(3) # => -1
- *    -4.ceildiv(-3) # => 2
- *
- *    3.ceildiv(1.2) # => 3
- */
-VALUE
-rb_int_ceildiv(VALUE x, VALUE y)
-{
-    VALUE tmp = rb_int_idiv(x, num_uminus(y));
-    return num_uminus(tmp);
-}
-
 static VALUE
 fix_mod(VALUE x, VALUE y)
 {
@@ -6277,7 +6255,6 @@ Init_Numeric(void)
     rb_define_method(rb_cInteger, "remainder", int_remainder, 1);
     rb_define_method(rb_cInteger, "divmod", rb_int_divmod, 1);
     rb_define_method(rb_cInteger, "fdiv", rb_int_fdiv, 1);
-    rb_define_method(rb_cInteger, "ceildiv", rb_int_ceildiv, 1);
     rb_define_method(rb_cInteger, "**", rb_int_pow, 1);
 
     rb_define_method(rb_cInteger, "pow", rb_int_powm, -1); /* in bignum.c */
