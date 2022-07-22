@@ -604,4 +604,19 @@ class TestObjSpace < Test::Unit::TestCase
     assert_not_include ObjectSpace.dump(Class.new), '"name"'
     assert_not_include ObjectSpace.dump(Module.new), '"name"'
   end
+
+  def test_utf8_method_names
+    name = "utf8_❨╯°□°❩╯︵┻━┻"
+    obj = ObjectSpace.trace_object_allocations do
+      __send__(name)
+    end
+    dump = ObjectSpace.dump(obj)
+    assert_equal name, JSON.parse(dump)["method"], dump
+  end
+
+  private
+
+  def utf8_❨╯°□°❩╯︵┻━┻
+    "1#{2}"
+  end
 end
