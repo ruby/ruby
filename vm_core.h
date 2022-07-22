@@ -339,18 +339,21 @@ typedef uintptr_t iseq_bits_t;
 
 #define ISEQ_IS_SIZE(body) (body->ic_size + body->ivc_size + body->ise_size + body->icvarc_size)
 
+/* instruction sequence type */
+enum iseq_type {
+    ISEQ_TYPE_TOP,
+    ISEQ_TYPE_METHOD,
+    ISEQ_TYPE_BLOCK,
+    ISEQ_TYPE_CLASS,
+    ISEQ_TYPE_RESCUE,
+    ISEQ_TYPE_ENSURE,
+    ISEQ_TYPE_EVAL,
+    ISEQ_TYPE_MAIN,
+    ISEQ_TYPE_PLAIN
+};
+
 struct rb_iseq_constant_body {
-    enum iseq_type {
-        ISEQ_TYPE_TOP,
-        ISEQ_TYPE_METHOD,
-        ISEQ_TYPE_BLOCK,
-        ISEQ_TYPE_CLASS,
-        ISEQ_TYPE_RESCUE,
-        ISEQ_TYPE_ENSURE,
-        ISEQ_TYPE_EVAL,
-        ISEQ_TYPE_MAIN,
-        ISEQ_TYPE_PLAIN
-    } type;              /* instruction sequence type */
+    enum iseq_type type;
 
     unsigned int iseq_size;
     VALUE *iseq_encoded; /* encoded iseq (insn addr and operands) */

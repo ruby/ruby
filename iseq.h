@@ -241,28 +241,29 @@ struct iseq_insn_info_entry {
     rb_event_flag_t events;
 };
 
-struct iseq_catch_table_entry {
-    enum catch_type {
-        CATCH_TYPE_RESCUE = INT2FIX(1),
-        CATCH_TYPE_ENSURE = INT2FIX(2),
-        CATCH_TYPE_RETRY  = INT2FIX(3),
-        CATCH_TYPE_BREAK  = INT2FIX(4),
-        CATCH_TYPE_REDO   = INT2FIX(5),
-        CATCH_TYPE_NEXT   = INT2FIX(6)
-    } type;
+/*
+ * iseq type:
+ *   CATCH_TYPE_RESCUE, CATCH_TYPE_ENSURE:
+ *     use iseq as continuation.
+ *
+ *   CATCH_TYPE_BREAK (iter):
+ *     use iseq as key.
+ *
+ *   CATCH_TYPE_BREAK (while), CATCH_TYPE_RETRY,
+ *   CATCH_TYPE_REDO, CATCH_TYPE_NEXT:
+ *     NULL.
+ */
+enum catch_type {
+    CATCH_TYPE_RESCUE = INT2FIX(1),
+    CATCH_TYPE_ENSURE = INT2FIX(2),
+    CATCH_TYPE_RETRY  = INT2FIX(3),
+    CATCH_TYPE_BREAK  = INT2FIX(4),
+    CATCH_TYPE_REDO   = INT2FIX(5),
+    CATCH_TYPE_NEXT   = INT2FIX(6)
+};
 
-    /*
-     * iseq type:
-     *   CATCH_TYPE_RESCUE, CATCH_TYPE_ENSURE:
-     *     use iseq as continuation.
-     *
-     *   CATCH_TYPE_BREAK (iter):
-     *     use iseq as key.
-     *
-     *   CATCH_TYPE_BREAK (while), CATCH_TYPE_RETRY,
-     *   CATCH_TYPE_REDO, CATCH_TYPE_NEXT:
-     *     NULL.
-     */
+struct iseq_catch_table_entry {
+    enum catch_type type;
     rb_iseq_t *iseq;
 
     unsigned int start;
