@@ -41,18 +41,16 @@ pub fn add(cb: &mut CodeBlock, rd: A64Opnd, rn: A64Opnd, rm: A64Opnd) {
         },
         (A64Opnd::Reg(rd), A64Opnd::Reg(rn), A64Opnd::UImm(uimm12)) => {
             assert!(rd.num_bits == rn.num_bits, "rd and rn must be of the same size.");
-            assert!(uimm_fits_bits(uimm12, 12), "The immediate operand must be 12 bits or less.");
 
-            DataImm::add(rd.reg_no, rn.reg_no, uimm12 as u16, rd.num_bits).into()
+            DataImm::add(rd.reg_no, rn.reg_no, uimm12.try_into().unwrap(), rd.num_bits).into()
         },
         (A64Opnd::Reg(rd), A64Opnd::Reg(rn), A64Opnd::Imm(imm12)) => {
             assert!(rd.num_bits == rn.num_bits, "rd and rn must be of the same size.");
-            assert!(imm_fits_bits(imm12, 12), "The immediate operand must be 12 bits or less.");
 
             if imm12 < 0 {
-                DataImm::sub(rd.reg_no, rn.reg_no, -imm12 as u16, rd.num_bits).into()
+                DataImm::sub(rd.reg_no, rn.reg_no, (-imm12 as u64).try_into().unwrap(), rd.num_bits).into()
             } else {
-                DataImm::add(rd.reg_no, rn.reg_no, imm12 as u16, rd.num_bits).into()
+                DataImm::add(rd.reg_no, rn.reg_no, (imm12 as u64).try_into().unwrap(), rd.num_bits).into()
             }
         },
         _ => panic!("Invalid operand combination to add instruction."),
@@ -74,18 +72,16 @@ pub fn adds(cb: &mut CodeBlock, rd: A64Opnd, rn: A64Opnd, rm: A64Opnd) {
         },
         (A64Opnd::Reg(rd), A64Opnd::Reg(rn), A64Opnd::UImm(imm12)) => {
             assert!(rd.num_bits == rn.num_bits, "rd and rn must be of the same size.");
-            assert!(uimm_fits_bits(imm12, 12), "The immediate operand must be 12 bits or less.");
 
-            DataImm::adds(rd.reg_no, rn.reg_no, imm12 as u16, rd.num_bits).into()
+            DataImm::adds(rd.reg_no, rn.reg_no, imm12.try_into().unwrap(), rd.num_bits).into()
         },
         (A64Opnd::Reg(rd), A64Opnd::Reg(rn), A64Opnd::Imm(imm12)) => {
             assert!(rd.num_bits == rn.num_bits, "rd and rn must be of the same size.");
-            assert!(imm_fits_bits(imm12, 12), "The immediate operand must be 12 bits or less.");
 
             if imm12 < 0 {
-                DataImm::subs(rd.reg_no, rn.reg_no, -imm12 as u16, rd.num_bits).into()
+                DataImm::subs(rd.reg_no, rn.reg_no, (-imm12 as u64).try_into().unwrap(), rd.num_bits).into()
             } else {
-                DataImm::adds(rd.reg_no, rn.reg_no, imm12 as u16, rd.num_bits).into()
+                DataImm::adds(rd.reg_no, rn.reg_no, (imm12 as u64).try_into().unwrap(), rd.num_bits).into()
             }
         },
         _ => panic!("Invalid operand combination to adds instruction."),
@@ -272,9 +268,7 @@ pub fn cmp(cb: &mut CodeBlock, rn: A64Opnd, rm: A64Opnd) {
             DataReg::cmp(rn.reg_no, rm.reg_no, rn.num_bits).into()
         },
         (A64Opnd::Reg(rn), A64Opnd::UImm(imm12)) => {
-            assert!(uimm_fits_bits(imm12, 12), "The immediate operand must be 12 bits or less.");
-
-            DataImm::cmp(rn.reg_no, imm12 as u16, rn.num_bits).into()
+            DataImm::cmp(rn.reg_no, imm12.try_into().unwrap(), rn.num_bits).into()
         },
         _ => panic!("Invalid operand combination to cmp instruction."),
     };
@@ -477,12 +471,12 @@ pub fn mov(cb: &mut CodeBlock, rd: A64Opnd, rm: A64Opnd) {
         (A64Opnd::Reg(A64Reg { reg_no: 31, num_bits: 64 }), A64Opnd::Reg(rm)) => {
             assert!(rm.num_bits == 64, "Expected rm to be 64 bits");
 
-            DataImm::add(31, rm.reg_no, 0, 64).into()
+            DataImm::add(31, rm.reg_no, 0.try_into().unwrap(), 64).into()
         },
         (A64Opnd::Reg(rd), A64Opnd::Reg(A64Reg { reg_no: 31, num_bits: 64 })) => {
             assert!(rd.num_bits == 64, "Expected rd to be 64 bits");
 
-            DataImm::add(rd.reg_no, 31, 0, 64).into()
+            DataImm::add(rd.reg_no, 31, 0.try_into().unwrap(), 64).into()
         },
         (A64Opnd::Reg(rd), A64Opnd::Reg(rm)) => {
             assert!(rd.num_bits == rm.num_bits, "Expected registers to be the same size");
@@ -713,18 +707,16 @@ pub fn sub(cb: &mut CodeBlock, rd: A64Opnd, rn: A64Opnd, rm: A64Opnd) {
         },
         (A64Opnd::Reg(rd), A64Opnd::Reg(rn), A64Opnd::UImm(uimm12)) => {
             assert!(rd.num_bits == rn.num_bits, "rd and rn must be of the same size.");
-            assert!(uimm_fits_bits(uimm12, 12), "The immediate operand must be 12 bits or less.");
 
-            DataImm::sub(rd.reg_no, rn.reg_no, uimm12 as u16, rd.num_bits).into()
+            DataImm::sub(rd.reg_no, rn.reg_no, uimm12.try_into().unwrap(), rd.num_bits).into()
         },
         (A64Opnd::Reg(rd), A64Opnd::Reg(rn), A64Opnd::Imm(imm12)) => {
             assert!(rd.num_bits == rn.num_bits, "rd and rn must be of the same size.");
-            assert!(imm_fits_bits(imm12, 12), "The immediate operand must be 12 bits or less.");
 
             if imm12 < 0 {
-                DataImm::add(rd.reg_no, rn.reg_no, -imm12 as u16, rd.num_bits).into()
+                DataImm::add(rd.reg_no, rn.reg_no, (-imm12 as u64).try_into().unwrap(), rd.num_bits).into()
             } else {
-                DataImm::sub(rd.reg_no, rn.reg_no, imm12 as u16, rd.num_bits).into()
+                DataImm::sub(rd.reg_no, rn.reg_no, (imm12 as u64).try_into().unwrap(), rd.num_bits).into()
             }
         },
         _ => panic!("Invalid operand combination to sub instruction."),
@@ -746,18 +738,16 @@ pub fn subs(cb: &mut CodeBlock, rd: A64Opnd, rn: A64Opnd, rm: A64Opnd) {
         },
         (A64Opnd::Reg(rd), A64Opnd::Reg(rn), A64Opnd::UImm(uimm12)) => {
             assert!(rd.num_bits == rn.num_bits, "rd and rn must be of the same size.");
-            assert!(uimm_fits_bits(uimm12, 12), "The immediate operand must be 12 bits or less.");
 
-            DataImm::subs(rd.reg_no, rn.reg_no, uimm12 as u16, rd.num_bits).into()
+            DataImm::subs(rd.reg_no, rn.reg_no, uimm12.try_into().unwrap(), rd.num_bits).into()
         },
         (A64Opnd::Reg(rd), A64Opnd::Reg(rn), A64Opnd::Imm(imm12)) => {
             assert!(rd.num_bits == rn.num_bits, "rd and rn must be of the same size.");
-            assert!(imm_fits_bits(imm12, 12), "The immediate operand must be 12 bits or less.");
 
             if imm12 < 0 {
-                DataImm::adds(rd.reg_no, rn.reg_no, -imm12 as u16, rd.num_bits).into()
+                DataImm::adds(rd.reg_no, rn.reg_no, (-imm12 as u64).try_into().unwrap(), rd.num_bits).into()
             } else {
-                DataImm::subs(rd.reg_no, rn.reg_no, imm12 as u16, rd.num_bits).into()
+                DataImm::subs(rd.reg_no, rn.reg_no, (imm12 as u64).try_into().unwrap(), rd.num_bits).into()
             }
         },
         _ => panic!("Invalid operand combination to subs instruction."),

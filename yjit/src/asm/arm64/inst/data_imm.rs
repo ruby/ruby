@@ -1,4 +1,4 @@
-use super::super::arg::Sf;
+use super::super::arg::{Sf, ShiftedImmediate};
 
 /// The operation being performed by this instruction.
 enum Op {
@@ -10,12 +10,6 @@ enum Op {
 enum S {
     LeaveFlags = 0b0,
     UpdateFlags = 0b1
-}
-
-/// How much to shift the immediate by.
-enum Shift {
-    LSL0 = 0b0, // no shift
-    LSL12 = 0b1 // logical shift left by 12 bits
 }
 
 /// The struct that represents an A64 data processing -- immediate instruction
@@ -35,11 +29,8 @@ pub struct DataImm {
     /// The register number of the first operand register.
     rn: u8,
 
-    /// The value of the immediate.
-    imm12: u16,
-
     /// How much to shift the immediate by.
-    shift: Shift,
+    imm: ShiftedImmediate,
 
     /// Whether or not to update the flags when this instruction is performed.
     s: S,
@@ -54,64 +45,32 @@ pub struct DataImm {
 impl DataImm {
     /// ADD (immediate)
     /// https://developer.arm.com/documentation/ddi0596/2021-12/Base-Instructions/ADD--immediate---Add--immediate--?lang=en
-    pub fn add(rd: u8, rn: u8, imm12: u16, num_bits: u8) -> Self {
-        Self {
-            rd,
-            rn,
-            imm12,
-            shift: Shift::LSL0,
-            s: S::LeaveFlags,
-            op: Op::Add,
-            sf: num_bits.into()
-        }
+    pub fn add(rd: u8, rn: u8, imm: ShiftedImmediate, num_bits: u8) -> Self {
+        Self { rd, rn, imm, s: S::LeaveFlags, op: Op::Add, sf: num_bits.into() }
     }
 
     /// ADDS (immediate, set flags)
     /// https://developer.arm.com/documentation/ddi0596/2021-12/Base-Instructions/ADDS--immediate---Add--immediate---setting-flags-?lang=en
-    pub fn adds(rd: u8, rn: u8, imm12: u16, num_bits: u8) -> Self {
-        Self {
-            rd,
-            rn,
-            imm12,
-            shift: Shift::LSL0,
-            s: S::UpdateFlags,
-            op: Op::Add,
-            sf: num_bits.into()
-        }
+    pub fn adds(rd: u8, rn: u8, imm: ShiftedImmediate, num_bits: u8) -> Self {
+        Self { rd, rn, imm, s: S::UpdateFlags, op: Op::Add, sf: num_bits.into() }
     }
 
     /// CMP (immediate)
     /// https://developer.arm.com/documentation/ddi0596/2021-12/Base-Instructions/CMP--immediate---Compare--immediate---an-alias-of-SUBS--immediate--?lang=en
-    pub fn cmp(rn: u8, imm12: u16, num_bits: u8) -> Self {
-        Self::subs(31, rn, imm12, num_bits)
+    pub fn cmp(rn: u8, imm: ShiftedImmediate, num_bits: u8) -> Self {
+        Self::subs(31, rn, imm, num_bits)
     }
 
     /// SUB (immediate)
     /// https://developer.arm.com/documentation/ddi0596/2021-12/Base-Instructions/SUB--immediate---Subtract--immediate--?lang=en
-    pub fn sub(rd: u8, rn: u8, imm12: u16, num_bits: u8) -> Self {
-        Self {
-            rd,
-            rn,
-            imm12,
-            shift: Shift::LSL0,
-            s: S::LeaveFlags,
-            op: Op::Sub,
-            sf: num_bits.into()
-        }
+    pub fn sub(rd: u8, rn: u8, imm: ShiftedImmediate, num_bits: u8) -> Self {
+        Self { rd, rn, imm, s: S::LeaveFlags, op: Op::Sub, sf: num_bits.into() }
     }
 
     /// SUBS (immediate, set flags)
     /// https://developer.arm.com/documentation/ddi0596/2021-12/Base-Instructions/SUBS--immediate---Subtract--immediate---setting-flags-?lang=en
-    pub fn subs(rd: u8, rn: u8, imm12: u16, num_bits: u8) -> Self {
-        Self {
-            rd,
-            rn,
-            imm12,
-            shift: Shift::LSL0,
-            s: S::UpdateFlags,
-            op: Op::Sub,
-            sf: num_bits.into()
-        }
+    pub fn subs(rd: u8, rn: u8, imm: ShiftedImmediate, num_bits: u8) -> Self {
+        Self { rd, rn, imm, s: S::UpdateFlags, op: Op::Sub, sf: num_bits.into() }
     }
 }
 
@@ -121,7 +80,7 @@ const FAMILY: u32 = 0b1000;
 impl From<DataImm> for u32 {
     /// Convert an instruction into a 32-bit value.
     fn from(inst: DataImm) -> Self {
-        let imm12 = (inst.imm12 as u32) & ((1 << 12) - 1);
+        let imm: u32 = inst.imm.into();
 
         0
         | ((inst.sf as u32) << 31)
@@ -129,8 +88,7 @@ impl From<DataImm> for u32 {
         | ((inst.s as u32) << 29)
         | (FAMILY << 25)
         | (1 << 24)
-        | ((inst.shift as u32) << 22)
-        | (imm12 << 10)
+        | (imm << 10)
         | ((inst.rn as u32) << 5)
         | inst.rd as u32
     }
@@ -150,35 +108,35 @@ mod tests {
 
     #[test]
     fn test_add() {
-        let inst = DataImm::add(0, 1, 7, 64);
+        let inst = DataImm::add(0, 1, 7.try_into().unwrap(), 64);
         let result: u32 = inst.into();
         assert_eq!(0x91001c20, result);
     }
 
     #[test]
     fn test_adds() {
-        let inst = DataImm::adds(0, 1, 7, 64);
+        let inst = DataImm::adds(0, 1, 7.try_into().unwrap(), 64);
         let result: u32 = inst.into();
         assert_eq!(0xb1001c20, result);
     }
 
     #[test]
     fn test_cmp() {
-        let inst = DataImm::cmp(0, 7, 64);
+        let inst = DataImm::cmp(0, 7.try_into().unwrap(), 64);
         let result: u32 = inst.into();
         assert_eq!(0xf1001c1f, result);
     }
 
     #[test]
     fn test_sub() {
-        let inst = DataImm::sub(0, 1, 7, 64);
+        let inst = DataImm::sub(0, 1, 7.try_into().unwrap(), 64);
         let result: u32 = inst.into();
         assert_eq!(0xd1001c20, result);
     }
 
     #[test]
     fn test_subs() {
-        let inst = DataImm::subs(0, 1, 7, 64);
+        let inst = DataImm::subs(0, 1, 7.try_into().unwrap(), 64);
         let result: u32 = inst.into();
         assert_eq!(0xf1001c20, result);
     }

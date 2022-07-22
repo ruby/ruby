@@ -140,6 +140,7 @@ yjit_task:
     bootstraptest/test_flow.rb \
     bootstraptest/test_fork.rb \
     bootstraptest/test_gc.rb \
+    bootstraptest/test_io.rb \
     bootstraptest/test_jump.rb \
     bootstraptest/test_literal_suffix.rb \
     bootstraptest/test_load.rb \
@@ -147,7 +148,9 @@ yjit_task:
     bootstraptest/test_massign.rb \
     bootstraptest/test_method.rb \
     bootstraptest/test_objectspace.rb \
+    bootstraptest/test_proc.rb \
     bootstraptest/test_string.rb \
     bootstraptest/test_struct.rb \
     bootstraptest/test_yjit_new_backend.rb
+    bootstraptest/test_yjit_rust_port.rb
   # full_build_script: make -j
