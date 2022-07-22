@@ -43,7 +43,7 @@ impl TryFrom<u64> for BitmaskImmediate {
     fn try_from(value: u64) -> Result<Self, Self::Error> {
         // 0 is not encodable as a bitmask immediate. Immediately return here so
         // that we don't have any issues with underflow.
-        if value == 0 {
+        if value == 0 || value == u64::MAX {
             return Err(());
         }
 
@@ -137,7 +137,7 @@ impl From<BitmaskImmediate> for u32 {
         0
         | (((bitmask.n as u32) & 1) << 12)
         | ((bitmask.immr as u32) << 6)
-        | bitmask.imms as u32
+        | (bitmask.imms as u32)
     }
 }
 
@@ -259,5 +259,11 @@ mod tests {
     fn test_size_64_maximum() {
         let bitmask = BitmaskImmediate::try_from(0xfffffffffffffffe);
         assert!(matches!(bitmask, Ok(BitmaskImmediate { n: 1, immr: 0b111111, imms: 0b111110 })));
+    }
+
+    #[test]
+    fn test_size_64_invalid() {
+        let bitmask = BitmaskImmediate::try_from(u64::MAX);
+        assert!(matches!(bitmask, Err(())));
     }
 }
