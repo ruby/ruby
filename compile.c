@@ -12349,7 +12349,7 @@ ibf_load_object_array(const struct ibf_load *load, const struct ibf_object_heade
 
     const long len = (long)ibf_load_small_value(load, &reading_pos);
 
-    VALUE ary = header->frozen ? rb_ary_tmp_new(len) : rb_ary_new_capa(len);
+    VALUE ary = header->internal ? rb_ary_tmp_new(len) : rb_ary_new_capa(len);
     int i;
 
     for (i=0; i<len; i++) {
