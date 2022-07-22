@@ -8,6 +8,4 @@
 require "rubygems"
 require "rubygems/gem_runner"
 
-args = ARGV.clone
-
-Gem::GemRunner.new.run args
+Gem::GemRunner.new.run ARGV.clone
