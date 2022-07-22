@@ -5990,7 +5990,7 @@ fn get_gen_fn(opcode: VALUE) -> Option<InsnGenFn> {
         YARVINSN_newarray => Some(gen_newarray),
         //YARVINSN_duparray => Some(gen_duparray),
         //YARVINSN_checktype => Some(gen_checktype),
-        //YARVINSN_opt_lt => Some(gen_opt_lt),
+        YARVINSN_opt_lt => Some(gen_opt_lt),
         /*
         YARVINSN_opt_le => Some(gen_opt_le),
         YARVINSN_opt_gt => Some(gen_opt_gt),

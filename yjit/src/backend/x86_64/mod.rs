@@ -418,36 +418,36 @@ impl Assembler
                 Op::Breakpoint => int3(cb),
 
                 Op::CSelZ => {
-                    mov(cb, insn.out.into(), insn.opnds[1].into());
-                    cmovz(cb, insn.out.into(), insn.opnds[0].into());
+                    mov(cb, insn.out.into(), insn.opnds[0].into());
+                    cmovnz(cb, insn.out.into(), insn.opnds[1].into());
                 },
                 Op::CSelNZ => {
-                    mov(cb, insn.out.into(), insn.opnds[1].into());
-                    cmovnz(cb, insn.out.into(), insn.opnds[0].into());
+                    mov(cb, insn.out.into(), insn.opnds[0].into());
+                    cmovz(cb, insn.out.into(), insn.opnds[1].into());
                 },
                 Op::CSelE => {
-                    mov(cb, insn.out.into(), insn.opnds[1].into());
-                    cmove(cb, insn.out.into(), insn.opnds[0].into());
+                    mov(cb, insn.out.into(), insn.opnds[0].into());
+                    cmovne(cb, insn.out.into(), insn.opnds[1].into());
                 },
                 Op::CSelNE => {
-                    mov(cb, insn.out.into(), insn.opnds[1].into());
-                    cmovne(cb, insn.out.into(), insn.opnds[0].into());
+                    mov(cb, insn.out.into(), insn.opnds[0].into());
+                    cmove(cb, insn.out.into(), insn.opnds[1].into());
                 },
                 Op::CSelL => {
-                    mov(cb, insn.out.into(), insn.opnds[1].into());
-                    cmovl(cb, insn.out.into(), insn.opnds[0].into());
+                    mov(cb, insn.out.into(), insn.opnds[0].into());
+                    cmovge(cb, insn.out.into(), insn.opnds[1].into());
                 },
                 Op::CSelLE => {
-                    mov(cb, insn.out.into(), insn.opnds[1].into());
-                    cmovle(cb, insn.out.into(), insn.opnds[0].into());
+                    mov(cb, insn.out.into(), insn.opnds[0].into());
+                    cmovg(cb, insn.out.into(), insn.opnds[1].into());
                 },
                 Op::CSelG => {
-                    mov(cb, insn.out.into(), insn.opnds[1].into());
-                    cmovg(cb, insn.out.into(), insn.opnds[0].into());
+                    mov(cb, insn.out.into(), insn.opnds[0].into());
+                    cmovle(cb, insn.out.into(), insn.opnds[1].into());
                 },
                 Op::CSelGE => {
-                    mov(cb, insn.out.into(), insn.opnds[1].into());
-                    cmovge(cb, insn.out.into(), insn.opnds[0].into());
+                    mov(cb, insn.out.into(), insn.opnds[0].into());
+                    cmovl(cb, insn.out.into(), insn.opnds[1].into());
                 },
 
                 // We want to keep the panic here because some instructions that
