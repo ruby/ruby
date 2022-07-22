@@ -76,7 +76,8 @@ buffer_ensure_capa(struct dump_config *dc, unsigned long requested)
     }
 }
 
-static void buffer_append(struct dump_config *dc, const char *cstr, unsigned long len)
+static void
+buffer_append(struct dump_config *dc, const char *cstr, unsigned long len)
 {
     if (LIKELY(len > 0)) {
         buffer_ensure_capa(dc, len);
@@ -525,8 +526,8 @@ dump_object(VALUE obj, struct dump_config *dc)
         break;
 
       case T_ZOMBIE:
-          dump_append(dc, "}\n");
-          return;
+        dump_append(dc, "}\n");
+        return;
 
       default:
         break;

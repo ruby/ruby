@@ -62,9 +62,9 @@ total_i(VALUE v, void *ptr)
     struct total_data *data = (struct total_data *)ptr;
 
     if (!rb_objspace_internal_object_p(v)) {
-          if (data->klass == 0 || rb_obj_is_kind_of(v, data->klass)) {
-              data->total += rb_obj_memsize_of(v);
-          }
+        if (data->klass == 0 || rb_obj_is_kind_of(v, data->klass)) {
+            data->total += rb_obj_memsize_of(v);
+        }
     }
 }
 
