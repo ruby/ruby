@@ -632,4 +632,19 @@ class TestObjSpace < Test::Unit::TestCase
       assert_equal '42', out[2]
     end
   end
+
+  def test_utf8_method_names
+    name = "utf8_❨╯°□°❩╯︵┻━┻"
+    obj = ObjectSpace.trace_object_allocations do
+      __send__(name)
+    end
+    dump = ObjectSpace.dump(obj)
+    assert_equal name, JSON.parse(dump)["method"], dump
+  end
+
+  private
+
+  def utf8_❨╯°□°❩╯︵┻━┻
+    "1#{2}"
+  end
 end
