@@ -151,6 +151,6 @@ yjit_task:
     bootstraptest/test_proc.rb \
     bootstraptest/test_string.rb \
     bootstraptest/test_struct.rb \
-    bootstraptest/test_yjit_new_backend.rb
+    bootstraptest/test_yjit_new_backend.rb \
     bootstraptest/test_yjit_rust_port.rb
   # full_build_script: make -j
