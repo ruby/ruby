@@ -4369,7 +4369,7 @@ compile_array(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, int pop
 
             if ((first_chunk && stack_len == 0 && !node_tmp) || count >= min_tmp_ary_len) {
                 /* The literal contains only optimizable elements, or the subarray is long enough */
-                VALUE ary = rb_ary_literal_new(count);
+                VALUE ary = rb_ary_tmp_new(count);
 
                 /* Create a hidden array */
                 for (; count; count--, node = node->nd_next)
@@ -12349,7 +12349,7 @@ ibf_load_object_array(const struct ibf_load *load, const struct ibf_object_heade
 
     const long len = (long)ibf_load_small_value(load, &reading_pos);
 
-    VALUE ary = header->internal ? rb_ary_literal_new(len) : rb_ary_new_capa(len);
+    VALUE ary = header->frozen ? rb_ary_tmp_new(len) : rb_ary_new_capa(len);
     int i;
 
     for (i=0; i<len; i++) {

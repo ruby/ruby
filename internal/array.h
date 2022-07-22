@@ -21,7 +21,6 @@
 #define RARRAY_SHARED_FLAG      ELTS_SHARED
 #define RARRAY_SHARED_ROOT_FLAG FL_USER12
 #define RARRAY_PTR_IN_USE_FLAG  FL_USER14
-#define RARRAY_LITERAL_FLAG     FL_USER15
 
 /* array.c */
 VALUE rb_ary_last(int, const VALUE *, VALUE);
@@ -36,7 +35,6 @@ void rb_ary_cancel_sharing(VALUE ary);
 size_t rb_ary_size_as_embedded(VALUE ary);
 void rb_ary_make_embedded(VALUE ary);
 bool rb_ary_embeddable_p(VALUE ary);
-VALUE rb_ary_literal_new(long capa);
 
 static inline VALUE rb_ary_entry_internal(VALUE ary, long offset);
 static inline bool ARY_PTR_USING_P(VALUE ary);
@@ -118,13 +116,6 @@ ARY_SHARED_ROOT_REFCNT(VALUE ary)
 {
     assert(ARY_SHARED_ROOT_P(ary));
     return RARRAY(ary)->as.heap.aux.capa;
-}
-
-static inline bool
-ARY_LITERAL_P(VALUE ary)
-{
-    assert(RB_TYPE_P(ary, T_ARRAY));
-    return FL_TEST_RAW(ary, RARRAY_LITERAL_FLAG);
 }
 
 static inline void

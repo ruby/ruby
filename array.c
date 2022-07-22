@@ -55,19 +55,19 @@ VALUE rb_cArray;
  *          The length of the array when RARRAY_EMBED_FLAG is set.
  * endif
  * 12:  RARRAY_SHARED_ROOT_FLAG
- *          The array is a shared root. The buffer this array points to is
- *          owned by this array but may be pointed to by other arrays.
+ *          The array is a shared root that does reference counting. The buffer
+ *          this array points to is owned by this array but may be pointed to
+ *          by other arrays.
+ *          Note: Frozen arrays may be a shared root without this flag being
+ *                set. Frozen arrays do not have reference counting because
+ *                they cannot be modified. Not updating the reference count
+ *                improves copy-on-write performance. Their reference count is
+ *                assumed to be infinity.
  * 13:  RARRAY_TRANSIENT_FLAG
  *          The buffer of the array is allocated on the transient heap.
  * 14:  RARRAY_PTR_IN_USE_FLAG
  *          The buffer of the array is in use. This is only used during
  *          debugging.
- * 15:  RARRAY_LITERAL_FLAG
- *          The array is a shared root for array literals. This differs from
- *          RARRAY_SHARED_ROOT_FLAG in that this does not keep track of the
- *          reference count (it assumes that the reference count is infinity).
- *          This is used to improve copy-on-write performance since updating
- *          reference counts could cause system page invalidation.
  */
 
 /* for OPTIMIZED_CMP: */
@@ -166,18 +166,20 @@ should_be_T_ARRAY(VALUE ary)
     const VALUE _value_ = (value); \
     assert(!ARY_EMBED_P(_ary_)); \
     assert(ARY_SHARED_P(_ary_)); \
-    assert(!ARY_LITERAL_P(_ary_)); \
-    assert(ARY_SHARED_ROOT_P(_value_) || ARY_LITERAL_P(_value_)); \
+    assert(!OBJ_FROZEN(_ary_)); \
+    assert(ARY_SHARED_ROOT_P(_value_) || OBJ_FROZEN(_value_)); \
     RB_OBJ_WRITE(_ary_, &RARRAY(_ary_)->as.heap.aux.shared_root, _value_); \
 } while (0)
 
-#define ARY_SHARED_ROOT_OCCUPIED(ary) (!ARY_LITERAL_P(ary) && ARY_SHARED_ROOT_REFCNT(ary) == 1)
+#define ARY_SHARED_ROOT_OCCUPIED(ary) (!OBJ_FROZEN(ary) && ARY_SHARED_ROOT_REFCNT(ary) == 1)
 #define ARY_SET_SHARED_ROOT_REFCNT(ary, value) do { \
     assert(ARY_SHARED_ROOT_P(ary)); \
+    assert(!OBJ_FROZEN(ary)); \
     assert((value) >= 0); \
     RARRAY(ary)->as.heap.aux.capa = (value); \
 } while (0)
 #define FL_SET_SHARED_ROOT(ary) do { \
+    assert(!OBJ_FROZEN(ary)); \
     assert(!ARY_EMBED_P(ary)); \
     assert(!RARRAY_TRANSIENT_P(ary)); \
     FL_SET((ary), RARRAY_SHARED_ROOT_FLAG); \
@@ -259,7 +261,7 @@ ary_verify_(VALUE ary, const char *file, int line)
         const VALUE *ptr = ARY_HEAP_PTR(ary);
         const VALUE *root_ptr = RARRAY_CONST_PTR_TRANSIENT(root);
         long len = ARY_HEAP_LEN(ary), root_len = RARRAY_LEN(root);
-        assert(ARY_SHARED_ROOT_P(root) || ARY_LITERAL_P(root));
+        assert(ARY_SHARED_ROOT_P(root) || OBJ_FROZEN(root));
         assert(root_ptr <= ptr && ptr + len <= root_ptr + root_len);
         ary_verify(root);
     }
@@ -588,7 +590,7 @@ ary_double_capa(VALUE ary, long min)
 static void
 rb_ary_decrement_share(VALUE shared_root)
 {
-    if (!ARY_LITERAL_P(shared_root)) {
+    if (!OBJ_FROZEN(shared_root)) {
         long num = ARY_SHARED_ROOT_REFCNT(shared_root);
         ARY_SET_SHARED_ROOT_REFCNT(shared_root, num - 1);
     }
@@ -619,7 +621,7 @@ rb_ary_reset(VALUE ary)
 static VALUE
 rb_ary_increment_share(VALUE shared_root)
 {
-    if (!ARY_LITERAL_P(shared_root)) {
+    if (!OBJ_FROZEN(shared_root)) {
         long num = ARY_SHARED_ROOT_REFCNT(shared_root);
         assert(num >= 0);
         ARY_SET_SHARED_ROOT_REFCNT(shared_root, num + 1);
@@ -982,15 +984,6 @@ rb_ary_tmp_new_fill(long capa)
     return ary;
 }
 
-VALUE
-rb_ary_literal_new(long capa)
-{
-    VALUE ary = ary_new(0, capa);
-    rb_ary_transient_heap_evacuate(ary, TRUE);
-    FL_SET(ary, RARRAY_LITERAL_FLAG);
-    return ary;
-}
-
 void
 rb_ary_free(VALUE ary)
 {
@@ -1044,7 +1037,6 @@ static VALUE
 ary_make_shared(VALUE ary)
 {
     assert(!ARY_EMBED_P(ary));
-    assert(!ARY_LITERAL_P(ary));
     ary_verify(ary);
 
     if (ARY_SHARED_P(ary)) {
@@ -1056,8 +1048,6 @@ ary_make_shared(VALUE ary)
     else if (OBJ_FROZEN(ary)) {
         rb_ary_transient_heap_evacuate(ary, TRUE);
         ary_shrink_capa(ary);
-        FL_SET_SHARED_ROOT(ary);
-        ARY_SET_SHARED_ROOT_REFCNT(ary, 1);
         return ary;
     }
     else {
@@ -1077,7 +1067,6 @@ ary_make_shared(VALUE ary)
         FL_SET_SHARED(ary);
         RB_DEBUG_COUNTER_INC(obj_ary_shared_create);
         ARY_SET_SHARED(ary, shared);
-        OBJ_FREEZE(shared);
 
         ary_verify(shared);
         ary_verify(ary);
@@ -1348,7 +1337,7 @@ ary_make_partial(VALUE ary, VALUE klass, long offset, long len)
         VALUE result = ary_alloc_heap(klass);
         assert(!ARY_EMBED_P(result));
 
-        VALUE shared = ARY_LITERAL_P(ary) ? ary : ary_make_shared(ary);
+        VALUE shared = ary_make_shared(ary);
 
         ARY_SET_PTR(result, RARRAY_CONST_PTR_TRANSIENT(ary));
         ARY_SET_LEN(result, RARRAY_LEN(ary));
