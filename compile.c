@@ -12357,8 +12357,7 @@ ibf_load_object_array(const struct ibf_load *load, const struct ibf_object_heade
         rb_ary_push(ary, ibf_load_object(load, index));
     }
 
-    if (header->internal) rb_obj_hide(ary);
-    if (header->frozen)   rb_obj_freeze(ary);
+    if (header->frozen) rb_obj_freeze(ary);
 
     return ary;
 }
