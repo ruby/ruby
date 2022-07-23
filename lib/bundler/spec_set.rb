@@ -13,14 +13,16 @@ module Bundler
 
     def for(dependencies, check = false, platforms = [nil])
       handled = ["bundler"].product(platforms).map {|k| [k, true] }.to_h
-      deps = dependencies.product(platforms).map {|dep, platform| [dep.name, platform && dep.force_ruby_platform ? Gem::Platform::RUBY : platform] }
+      deps = dependencies.product(platforms)
       specs = []
 
       loop do
         break unless dep = deps.shift
-        next if handled.key?(dep)
 
-        handled[dep] = true
+        key = [dep[0].name, dep[1]]
+        next if handled.key?(key)
+
+        handled[key] = true
 
         specs_for_dep = specs_for_dependency(*dep)
         if specs_for_dep.any?
@@ -28,10 +30,10 @@ module Bundler
 
           specs_for_dep.first.dependencies.each do |d|
             next if d.type == :development
-            deps << [d.name, dep[1]]
+            deps << [d, dep[1]]
           end
         elsif check
-          specs << IncompleteSpecification.new(*dep)
+          specs << IncompleteSpecification.new(*key)
         end
       end
 
@@ -175,13 +177,12 @@ module Bundler
       @specs.sort_by(&:name).each {|s| yield s }
     end
 
-    def specs_for_dependency(name, platform)
-      specs_for_name = lookup[name]
+    def specs_for_dependency(dep, platform)
+      specs_for_name = lookup[dep.name]
       if platform.nil?
         GemHelpers.select_best_platform_match(specs_for_name.select {|s| Gem::Platform.match_spec?(s) }, Bundler.local_platform)
       else
-        specs_for_name_and_platform = GemHelpers.select_best_platform_match(specs_for_name, platform)
-        specs_for_name_and_platform.any? ? specs_for_name_and_platform : specs_for_name
+        GemHelpers.select_best_platform_match(specs_for_name, dep.force_ruby_platform ? Gem::Platform::RUBY : platform)
       end
     end
 

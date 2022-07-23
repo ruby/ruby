@@ -155,6 +155,10 @@ module Gem
 
     alias_method :eql?, :==
 
+    def force_ruby_platform
+      false
+    end
+
     def encode_with(coder)
       to_yaml_properties.each do |ivar|
         coder[ivar.to_s.sub(/^@/, "")] = instance_variable_get(ivar)
