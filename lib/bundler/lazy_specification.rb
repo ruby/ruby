@@ -91,10 +91,10 @@ module Bundler
       @specification = if source.is_a?(Source::Gemspec) && source.gemspec.name == name
         source.gemspec.tap {|s| s.source = source }
       else
-        search_object = if source.is_a?(Source::Path)
+        search_object = if source.is_a?(Source::Path) || !ruby_platform_materializes_to_ruby_platform?
           Dependency.new(name, version)
         else
-          ruby_platform_materializes_to_ruby_platform? ? self : Dependency.new(name, version)
+          self
         end
         candidates = source.specs.search(search_object)
         same_platform_candidates = candidates.select do |spec|
