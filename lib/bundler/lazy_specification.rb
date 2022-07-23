@@ -88,6 +88,8 @@ module Bundler
         source.specs.search(self)
       end
 
+      return self if candidates.empty?
+
       __materialize__(candidates)
     end
 
@@ -105,8 +107,8 @@ module Bundler
           spec.is_a?(StubSpecification) ||
             (spec.required_ruby_version.satisfied_by?(Gem.ruby_version) &&
               spec.required_rubygems_version.satisfied_by?(Gem.rubygems_version))
-        end || candidates.last
-        search.dependencies = dependencies if search && (search.is_a?(RemoteSpecification) || search.is_a?(EndpointSpecification))
+        end
+        search.dependencies = dependencies if search && search.full_name == full_name && (search.is_a?(RemoteSpecification) || search.is_a?(EndpointSpecification))
         search
       end
     end

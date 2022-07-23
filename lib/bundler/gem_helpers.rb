@@ -44,6 +44,12 @@ module Bundler
 
     def select_best_platform_match(specs, platform)
       matching = specs.select {|spec| spec.match_platform(platform) }
+
+      sort_best_platform_match(matching, platform)
+    end
+    module_function :select_best_platform_match
+
+    def sort_best_platform_match(matching, platform)
       exact = matching.select {|spec| spec.platform == platform }
       return exact if exact.any?
 
@@ -52,7 +58,7 @@ module Bundler
 
       sorted_matching.take_while {|spec| same_specificity(platform, spec, exemplary_spec) && same_deps(spec, exemplary_spec) }
     end
-    module_function :select_best_platform_match
+    module_function :sort_best_platform_match
 
     class PlatformMatch
       def self.specificity_score(spec_platform, user_platform)

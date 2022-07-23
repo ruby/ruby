@@ -374,6 +374,41 @@ RSpec.describe "bundle install with specific platforms" do
     ERROR
   end
 
+  it "can fallback to a source gem when platform gems are incompatible with current ruby version" do
+    setup_multiplatform_gem_with_source_gem
+
+    source = file_uri_for(gem_repo2)
+
+    gemfile <<~G
+      source "#{source}"
+
+      gem "my-precompiled-gem"
+    G
+
+    # simulate lockfile which includes both a precompiled gem with:
+    # - Gem the current platform (with imcompatible ruby version)
+    # - A source gem with compatible ruby version
+    lockfile <<-L
+      GEM
+        remote: #{source}/
+        specs:
+          my-precompiled-gem (3.0.0)
+          my-precompiled-gem (3.0.0-#{Bundler.local_platform})
+
+      PLATFORMS
+        ruby
+        #{Bundler.local_platform}
+
+      DEPENDENCIES
+        my-precompiled-gem
+
+      BUNDLED WITH
+         #{Bundler::VERSION}
+    L
+
+    bundle :install
+  end
+
   private
 
   def setup_multiplatform_gem
@@ -402,6 +437,18 @@ RSpec.describe "bundle install with specific platforms" do
         s.add_runtime_dependency "CFPropertyList"
       end
       build_gem("CFPropertyList")
+    end
+  end
+
+  def setup_multiplatform_gem_with_source_gem
+    build_repo2 do
+      build_gem("my-precompiled-gem", "3.0.0")
+      build_gem("my-precompiled-gem", "3.0.0") do |s|
+        s.platform = Bundler.local_platform
+
+        # purposely unresolvable
+        s.required_ruby_version = ">= 1000.0.0"
+      end
     end
   end
 end
