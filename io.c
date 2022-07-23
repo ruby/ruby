@@ -2484,7 +2484,7 @@ io_fillbuf(rb_io_t *fptr)
  *  IO#sysread may not behave as you intend with IO#eof?, unless you
  *  call IO#rewind first (which is not available for some streams).
  *
- *  I#eof? is an alias for IO#eof.
+ *  IO#eof? is an alias for IO#eof.
  *
  */
 
