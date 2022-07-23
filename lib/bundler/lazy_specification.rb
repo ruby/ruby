@@ -89,21 +89,19 @@ module Bundler
 
     def __materialize__(platform)
       @specification = begin
-        search_object = if source.is_a?(Source::Path) || !ruby_platform_materializes_to_ruby_platform?
-          Dependency.new(name, version)
+        candidates = if source.is_a?(Source::Path) || !ruby_platform_materializes_to_ruby_platform?
+          source.specs.search(Dependency.new(name, version)).select do |spec|
+            MatchPlatform.platforms_match?(spec.platform, platform)
+          end
         else
-          self
+          source.specs.search(self)
         end
-        candidates = source.specs.search(search_object)
-        same_platform_candidates = candidates.select do |spec|
-          MatchPlatform.platforms_match?(spec.platform, platform)
-        end
-        installable_candidates = same_platform_candidates.select do |spec|
+        installable_candidates = candidates.select do |spec|
           spec.is_a?(StubSpecification) ||
             (spec.required_ruby_version.satisfied_by?(Gem.ruby_version) &&
               spec.required_rubygems_version.satisfied_by?(Gem.rubygems_version))
         end
-        search = installable_candidates.last || same_platform_candidates.last
+        search = installable_candidates.last || candidates.last
         search.dependencies = dependencies if search && (search.is_a?(RemoteSpecification) || search.is_a?(EndpointSpecification))
         search
       end
