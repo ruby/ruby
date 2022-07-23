@@ -524,10 +524,8 @@ module Bundler
         end
       end
 
-      unless specs["bundler"].any?
-        bundler = sources.metadata_source.specs.search(Gem::Dependency.new("bundler", VERSION)).last
-        specs["bundler"] = bundler
-      end
+      bundler = sources.metadata_source.specs.search(Gem::Dependency.new("bundler", VERSION)).last
+      specs["bundler"] = bundler
 
       specs
     end

@@ -35,10 +35,6 @@ module Bundler
         end
       end
 
-      if spec = lookup["bundler"].first
-        specs << spec
-      end
-
       specs
     end
 
