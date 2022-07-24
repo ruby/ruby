@@ -548,7 +548,8 @@ extend Module.new {
           "TARGET_TOPDIR = $(topdir)/.bundle\n" "#{$1}$(TARGET_TOPDIR)"
         }
         s.sub!(/^(TARGET_SO_DIR *= *)\$\(RUBYARCHDIR\)/) {
-          "TARGET_GEM_DIR = $(TARGET_TOPDIR)/extensions/$(gem_platform)/$(ruby_version)/#{@gemname}\n"\
+          "TARGET_GEM_DIR = $(TARGET_TOPDIR)/extensions/$(gem_platform)"\
+          "/$(ruby_version)#{$enable_shared ? '' : '-static'}/#{@gemname}\n"\
           "#{$1}$(TARGET_GEM_DIR)$(target_prefix)"
         }
       end
