@@ -71,15 +71,23 @@ File.foreach("#{gem_dir}/bundled_gems") do |line|
       break Timeout.timeout(sec) {Process.wait(pid)}
     rescue Timeout::Error
     end
+  rescue Interrupt
+    exit_code = Signal.list["INT"]
+    Process.kill("-KILL", pid)
+    Process.wait(pid)
+    break
   end
 
   unless $?.success?
-    puts "Tests failed with exit code #{$?.exitstatus}"
+
+    puts "Tests failed " +
+         ($?.signaled? ? "by SIG#{Signal.signame($?.termsig)}" :
+            "with exit code #{$?.exitstatus}")
     if allowed_failures.include?(gem)
       puts "Ignoring test failures for #{gem} due to \$TEST_BUNDLED_GEMS_ALLOW_FAILURES"
     else
       failed << gem
-      exit_code = $?.exitstatus
+      exit_code = $?.exitstatus if $?.exitstatus
     end
   end
   print "##[endgroup]\n" if github_actions
