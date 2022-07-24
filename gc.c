@@ -5279,7 +5279,7 @@ read_barrier_handler(uintptr_t original_address)
     /* If the page_body is NULL, then mprotect cannot handle it and will crash
      * with "Cannot allocate memory". */
     if (page_body == NULL) {
-        rb_bug("read_barrier_handler: segmentation fault at 0x%lx", original_address);
+        rb_bug("read_barrier_handler: segmentation fault at %p", (void *)original_address);
     }
 
     RB_VM_LOCK_ENTER();
