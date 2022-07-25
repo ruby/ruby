@@ -91,7 +91,7 @@ Init_sym(void)
     rb_obj_hide(dsym_fstrs);
 
     symbols->str_sym = st_init_table_with_size(&symhash, 1000);
-    symbols->ids = rb_ary_tmp_new(0);
+    symbols->ids = rb_ary_hidden_new(0);
     rb_gc_register_mark_object(symbols->ids);
 
     Init_op_tbl();
@@ -426,7 +426,7 @@ set_id_entry(rb_symbols_t *symbols, rb_id_serial_t num, VALUE str, VALUE sym)
 
     VALUE ary, ids = symbols->ids;
     if (idx >= (size_t)RARRAY_LEN(ids) || NIL_P(ary = rb_ary_entry(ids, (long)idx))) {
-        ary = rb_ary_tmp_new(ID_ENTRY_UNIT * ID_ENTRY_SIZE);
+        ary = rb_ary_hidden_new(ID_ENTRY_UNIT * ID_ENTRY_SIZE);
         rb_ary_store(ids, (long)idx, ary);
     }
     idx = (num % ID_ENTRY_UNIT) * ID_ENTRY_SIZE;

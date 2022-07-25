@@ -9135,7 +9135,7 @@ rb_gc_register_mark_object(VALUE obj)
         VALUE ary = rb_ary_last(0, 0, ary_ary);
 
         if (NIL_P(ary) || RARRAY_LEN(ary) >= MARK_OBJECT_ARY_BUCKET_SIZE) {
-            ary = rb_ary_tmp_new(MARK_OBJECT_ARY_BUCKET_SIZE);
+            ary = rb_ary_hidden_new(MARK_OBJECT_ARY_BUCKET_SIZE);
             rb_ary_push(ary_ary, ary);
         }
 
@@ -14193,7 +14193,7 @@ rb_gcdebug_add_stress_to_class(int argc, VALUE *argv, VALUE self)
     rb_objspace_t *objspace = &rb_objspace;
 
     if (!stress_to_class) {
-        stress_to_class = rb_ary_tmp_new(argc);
+        stress_to_class = rb_ary_hidden_new(argc);
     }
     rb_ary_cat(stress_to_class, argv, argc);
     return self;

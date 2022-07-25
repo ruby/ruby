@@ -1316,7 +1316,7 @@ cont_capture(volatile int *volatile stat)
         entry = cont->ensure_array = ALLOC_N(rb_ensure_entry_t,size+1);
         for (p=th->ec->ensure_list; p; p=p->next) {
             if (!p->entry.marker)
-                p->entry.marker = rb_ary_tmp_new(0); /* dummy object */
+                p->entry.marker = rb_ary_hidden_new(0); /* dummy object */
             *entry++ = p->entry;
         }
         entry->marker = 0;

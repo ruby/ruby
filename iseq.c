@@ -773,7 +773,7 @@ prepare_iseq_build(rb_iseq_t *iseq,
     }
     ISEQ_COVERAGE_SET(iseq, coverage);
     if (coverage && ISEQ_BRANCH_COVERAGE(iseq))
-        ISEQ_PC2BRANCHINDEX_SET(iseq, rb_ary_tmp_new(0));
+        ISEQ_PC2BRANCHINDEX_SET(iseq, rb_ary_hidden_new(0));
 
     return Qtrue;
 }
@@ -2391,7 +2391,7 @@ rb_iseq_disasm_recursive(const rb_iseq_t *iseq, VALUE indent)
     const struct rb_iseq_constant_body *const body = ISEQ_BODY(iseq);
     VALUE *code;
     VALUE str = rb_str_new(0, 0);
-    VALUE child = rb_ary_tmp_new(3);
+    VALUE child = rb_ary_hidden_new(3);
     unsigned int size;
     unsigned int i;
     long l;

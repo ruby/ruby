@@ -507,7 +507,7 @@ rb_mod_init_copy(VALUE clone, VALUE orig)
         VALUE p = RCLASS_SUPER(orig);
         VALUE orig_origin = RCLASS_ORIGIN(orig);
         VALUE prev_clone_p = clone;
-        VALUE origin_stack = rb_ary_tmp_new(2);
+        VALUE origin_stack = rb_ary_hidden_new(2);
         VALUE origin[2];
         VALUE clone_p = 0;
         long origin_len;
@@ -1250,7 +1250,7 @@ do_include_modules_at(const VALUE klass, VALUE c, VALUE module, int search_super
         RCLASS_SET_INCLUDER(iclass, klass);
         add_subclass = TRUE;
         if (module != RCLASS_ORIGIN(module)) {
-            if (!origin_stack) origin_stack = rb_ary_tmp_new(2);
+            if (!origin_stack) origin_stack = rb_ary_hidden_new(2);
             VALUE origin[2] = {iclass, RCLASS_ORIGIN(module)};
             rb_ary_cat(origin_stack, origin, 2);
         }
@@ -2310,7 +2310,7 @@ rb_get_kwargs(VALUE keyword_hash, const ID *table, int required, int optional, V
                     continue;
                 }
             }
-            if (NIL_P(missing)) missing = rb_ary_tmp_new(1);
+            if (NIL_P(missing)) missing = rb_ary_hidden_new(1);
             rb_ary_push(missing, keyword);
         }
         if (!NIL_P(missing)) {
