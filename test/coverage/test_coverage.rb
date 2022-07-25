@@ -181,6 +181,27 @@ class TestCoverage < Test::Unit::TestCase
     end;
   end
 
+  def test_coverage_ensure_if_return
+    result = {
+      :branches => {
+        [:if, 0, 3, 1, 6, 4] => {
+          [:then, 1, 3, 6, 3, 6] => 0,
+          [:else, 2, 5, 3, 5, 9] => 1,
+	},
+      },
+    }
+    assert_coverage(<<~"end;", { branches: true }, result)
+      def flush
+      ensure
+	if $!
+	else
+	  return
+	end
+      end
+      flush
+    end;
+  end
+
   def assert_coverage(code, opt, stdout)
     stdout = [stdout] unless stdout.is_a?(Array)
     stdout = stdout.map {|s| s.to_s }

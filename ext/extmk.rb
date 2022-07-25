@@ -37,6 +37,7 @@ require 'rbconfig'
 
 $topdir = "."
 $top_srcdir = srcdir
+inplace = File.identical?($top_srcdir, $topdir)
 
 $" << "mkmf.rb"
 load File.expand_path("lib/mkmf.rb", srcdir)
@@ -521,7 +522,10 @@ cond = proc {|ext, *|
 end
 ext_prefix = ext_prefix[$top_srcdir.size+1..-2]
 
+@ext_prefix = ext_prefix
+@inplace = inplace
 extend Module.new {
+
   def timestamp_file(name, target_prefix = nil)
     if @gemname and name == '$(TARGET_SO_DIR)'
       name = "$(arch)/gems/#{@gemname}#{target_prefix}"
@@ -537,26 +541,72 @@ extend Module.new {
     return super unless @gemname
     super(*args) do |conf|
       conf.find do |s|
+        s.sub!(%r(^(srcdir *= *)\$\(top_srcdir\)/\.bundle/gems/[^/]+(?=/))) {
+          "gem_#{$&}\n" "#{$1}$(gem_srcdir)"
+        }
+        s.sub!(/^(TIMESTAMP_DIR *= *)\$\(extout\)/) {
+          "TARGET_TOPDIR = $(topdir)/.bundle\n" "#{$1}$(TARGET_TOPDIR)"
+        }
         s.sub!(/^(TARGET_SO_DIR *= *)\$\(RUBYARCHDIR\)/) {
-          "TARGET_GEM_DIR = $(topdir)/.bundle/extensions/$(gem_platform)/$(ruby_version)/#{@gemname}\n"\
+          "TARGET_GEM_DIR = $(TARGET_TOPDIR)/extensions/$(gem_platform)"\
+          "/$(ruby_version)#{$enable_shared ? '' : '-static'}/#{@gemname}\n"\
           "#{$1}$(TARGET_GEM_DIR)$(target_prefix)"
         }
       end
-      conf.any? {|s| /^TARGET *= *\S/ =~ s} and conf << %{
+
+      gemlib = File.directory?("#{$top_srcdir}/#{@ext_prefix}/#{@gemname}/lib")
+      if conf.any? {|s| /^TARGET *= *\S/ =~ s}
+        conf << %{
 gem_platform = #{Gem::Platform.local}
 
 # default target
 all:
 
+gem = #{@gemname}
+
 build_complete = $(TARGET_GEM_DIR)/gem.build_complete
 install-so: build_complete
+clean-so:: clean-build_complete
+
 build_complete: $(build_complete)
 $(build_complete): $(TARGET_SO)
 	$(Q) $(TOUCH) $@
 
-clean-so::
+clean-build_complete:
 	-$(Q)$(RM) $(build_complete)
+
+install: gemspec
+clean: clean-gemspec
+
+gemspec = $(TARGET_TOPDIR)/specifications/$(gem).gemspec
+$(gemspec): $(gem_srcdir)/.bundled.$(gem).gemspec
+	$(Q) $(MAKEDIRS) $(@D)
+	$(Q) $(COPY) $(gem_srcdir)/.bundled.$(gem).gemspec $@
+
+gemspec: $(gemspec)
+
+clean-gemspec:
+	-$(Q)$(RM) $(gemspec)
 }
+
+        if gemlib
+          conf << %{
+install-rb: gemlib
+clean-rb:: clean-gemlib
+
+LN_S = #{config_string('LN_S')}
+CP_R = #{config_string('CP')} -r
+
+gemlib = $(TARGET_TOPDIR)/gems/$(gem)/lib
+gemlib:#{%{ $(gemlib)\n$(gemlib): $(gem_srcdir)/lib} if $nmake}
+	$(Q) #{@inplace ? '$(NULLCMD) ' : ''}$(RUBY) $(top_srcdir)/tool/ln_sr.rb -f -T $(gem_srcdir)/lib $(gemlib)
+
+clean-gemlib:
+	$(Q) $(#{@inplace ? 'NULLCMD' : 'RM_RF'}) $(gemlib)
+}
+        end
+      end
+
       conf
     end
   end

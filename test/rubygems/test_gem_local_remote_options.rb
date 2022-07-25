@@ -1,13 +1,13 @@
 # frozen_string_literal: true
-require_relative 'helper'
-require 'rubygems/local_remote_options'
-require 'rubygems/command'
+require_relative "helper"
+require "rubygems/local_remote_options"
+require "rubygems/command"
 
 class TestGemLocalRemoteOptions < Gem::TestCase
   def setup
     super
 
-    @cmd = Gem::Command.new 'dummy', 'dummy'
+    @cmd = Gem::Command.new "dummy", "dummy"
     @cmd.extend Gem::LocalRemoteOptions
   end
 
@@ -75,10 +75,10 @@ class TestGemLocalRemoteOptions < Gem::TestCase
   def test_source_option
     @cmd.add_source_option
 
-    s1 = URI.parse 'http://more-gems.example.com/'
-    s2 = URI.parse 'http://even-more-gems.example.com/'
-    s3 = URI.parse 'http://other-gems.example.com/some_subdir'
-    s4 = URI.parse 'http://more-gems.example.com/' # Intentional duplicate
+    s1 = URI.parse "http://more-gems.example.com/"
+    s2 = URI.parse "http://even-more-gems.example.com/"
+    s3 = URI.parse "http://other-gems.example.com/some_subdir"
+    s4 = URI.parse "http://more-gems.example.com/" # Intentional duplicate
 
     original_sources = Gem.sources.dup
 
@@ -96,7 +96,7 @@ class TestGemLocalRemoteOptions < Gem::TestCase
 
     original_sources = Gem.sources.dup
 
-    source = URI.parse 'http://more-gems.example.com/'
+    source = URI.parse "http://more-gems.example.com/"
     @cmd.handle_options %W[-s #{source}]
 
     original_sources << source
@@ -121,7 +121,7 @@ class TestGemLocalRemoteOptions < Gem::TestCase
   def test_source_option_bad
     @cmd.add_source_option
 
-    s1 = 'htp://more-gems.example.com'
+    s1 = "htp://more-gems.example.com"
 
     assert_raise ArgumentError do
       @cmd.handle_options %W[--source #{s1}]

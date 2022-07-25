@@ -15,7 +15,7 @@ module Gem
   end
 
   if ENV["BUNDLER_SPEC_WINDOWS"]
-    @@win_platform = true # rubocop:disable Sryle/ClassVars
+    @@win_platform = true # rubocop:disable Style/ClassVars
   end
 
   if ENV["BUNDLER_SPEC_PLATFORM"]

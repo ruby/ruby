@@ -1,13 +1,16 @@
 # frozen_string_literal: true
 
 require "rubygems/dependency"
+require_relative "force_platform"
 require_relative "shared_helpers"
 require_relative "rubygems_ext"
 
 module Bundler
   class Dependency < Gem::Dependency
+    include ForcePlatform
+
     attr_reader :autorequire
-    attr_reader :groups, :platforms, :gemfile, :git, :github, :branch, :ref
+    attr_reader :groups, :platforms, :gemfile, :git, :github, :branch, :ref, :force_ruby_platform
 
     # rubocop:disable Naming/VariableNumber
     PLATFORM_MAP = {
@@ -109,6 +112,7 @@ module Bundler
       @env            = options["env"]
       @should_include = options.fetch("should_include", true)
       @gemfile        = options["gemfile"]
+      @force_ruby_platform = options.fetch("force_ruby_platform", default_force_ruby_platform)
 
       @autorequire = Array(options["require"] || []) if options.key?("require")
     end
@@ -122,7 +126,7 @@ module Bundler
     end
 
     def expanded_platforms
-      @expanded_platforms ||= @platforms.map {|pl| PLATFORM_MAP[pl] }.compact.uniq
+      @expanded_platforms ||= @platforms.map {|pl| PLATFORM_MAP[pl] }.compact.flatten.uniq
     end
 
     def should_include?

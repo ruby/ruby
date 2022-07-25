@@ -329,9 +329,9 @@ static inline void
 translit_char(char *p, int from, int to)
 {
     while (*p) {
-	if ((unsigned char)*p == from)
-	    *p = to;
-	p = CharNext(p);
+        if ((unsigned char)*p == from)
+            *p = to;
+        p = CharNext(p);
     }
 }
 #endif

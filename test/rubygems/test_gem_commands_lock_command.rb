@@ -1,18 +1,18 @@
 # frozen_string_literal: true
-require_relative 'helper'
-require 'rubygems/commands/lock_command'
+require_relative "helper"
+require "rubygems/commands/lock_command"
 
 class TestGemCommandsLockCommand < Gem::TestCase
   def setup
     super
 
-    @a1 = quick_gem 'a', '1'
-    @b1 = quick_gem 'b', '1' do |s|
-      s.add_runtime_dependency 'a'
+    @a1 = quick_gem "a", "1"
+    @b1 = quick_gem "b", "1" do |s|
+      s.add_runtime_dependency "a"
     end
 
-    @d1 = quick_gem 'd', '1' do |s|
-      s.add_runtime_dependency 'z'
+    @d1 = quick_gem "d", "1" do |s|
+      s.add_runtime_dependency "z"
     end
 
     @cmd = Gem::Commands::LockCommand.new
@@ -32,7 +32,7 @@ gem 'a', '= 1'
     EXPECTED
 
     assert_equal expected, @ui.output
-    assert_equal '', @ui.error
+    assert_equal "", @ui.error
   end
 
   def test_execute_missing_dependency
@@ -49,7 +49,7 @@ gem 'd', '= 1'
     EXPECTED
 
     assert_equal expected, @ui.output
-    assert_equal '', @ui.error
+    assert_equal "", @ui.error
   end
 
   def test_execute_strict
@@ -61,6 +61,6 @@ gem 'd', '= 1'
       end
     end
 
-    assert_equal 'Could not find gem c-1, try using the full name', e.message
+    assert_equal "Could not find gem c-1, try using the full name", e.message
   end
 end

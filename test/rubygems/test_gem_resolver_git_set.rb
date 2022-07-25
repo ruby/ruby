@@ -1,5 +1,5 @@
 # frozen_string_literal: true
-require_relative 'helper'
+require_relative "helper"
 
 class TestGemResolverGitSet < Gem::TestCase
   def setup
@@ -13,9 +13,9 @@ class TestGemResolverGitSet < Gem::TestCase
   def test_add_git_gem
     name, version, repository, = git_gem
 
-    @set.add_git_gem name, repository, 'master', false
+    @set.add_git_gem name, repository, "master", false
 
-    dependency = dep 'a'
+    dependency = dep "a"
 
     specs = @set.find_all dependency
 
@@ -27,9 +27,9 @@ class TestGemResolverGitSet < Gem::TestCase
   def test_add_git_gem_submodules
     name, _, repository, = git_gem
 
-    @set.add_git_gem name, repository, 'master', true
+    @set.add_git_gem name, repository, "master", true
 
-    dependency = dep 'a'
+    dependency = dep "a"
 
     refute_empty @set.find_all dependency
 
@@ -41,7 +41,7 @@ class TestGemResolverGitSet < Gem::TestCase
 
     @set.add_git_spec name, version, repository, revision, true
 
-    dependency = dep 'a'
+    dependency = dep "a"
 
     specs = @set.find_all dependency
 
@@ -57,9 +57,9 @@ class TestGemResolverGitSet < Gem::TestCase
   def test_find_all
     name, _, repository, = git_gem
 
-    @set.add_git_gem name, repository, 'master', false
+    @set.add_git_gem name, repository, "master", false
 
-    dependency = dep 'a', '~> 1.0'
+    dependency = dep "a", "~> 1.0"
     req = Gem::Resolver::DependencyRequest.new dependency, nil
     @reqs.add req
 
@@ -67,16 +67,16 @@ class TestGemResolverGitSet < Gem::TestCase
 
     found = @set.find_all dependency
 
-    assert_equal [@set.specs['a']], found
+    assert_equal [@set.specs["a"]], found
   end
 
   def test_find_all_local
     name, _, repository, = git_gem
 
-    @set.add_git_gem name, repository, 'master', false
+    @set.add_git_gem name, repository, "master", false
     @set.remote = false
 
-    dependency = dep 'a', '~> 1.0'
+    dependency = dep "a", "~> 1.0"
     req = Gem::Resolver::DependencyRequest.new dependency, nil
     @reqs.add req
 
@@ -86,11 +86,11 @@ class TestGemResolverGitSet < Gem::TestCase
   end
 
   def test_find_all_prerelease
-    name, _, repository, = git_gem 'a', '1.a'
+    name, _, repository, = git_gem "a", "1.a"
 
-    @set.add_git_gem name, repository, 'master', false
+    @set.add_git_gem name, repository, "master", false
 
-    dependency = dep 'a', '>= 0'
+    dependency = dep "a", ">= 0"
     req = Gem::Resolver::DependencyRequest.new dependency, nil
     @reqs.add req
 
@@ -100,7 +100,7 @@ class TestGemResolverGitSet < Gem::TestCase
 
     assert_empty found
 
-    dependency = dep 'a', '>= 0.a'
+    dependency = dep "a", ">= 0.a"
     req = Gem::Resolver::DependencyRequest.new dependency, nil
     @reqs.add req
 
@@ -122,7 +122,7 @@ class TestGemResolverGitSet < Gem::TestCase
   def test_prefetch
     name, _, repository, = git_gem
 
-    @set.add_git_gem name, repository, 'master', false
+    @set.add_git_gem name, repository, "master", false
 
     dependency = dep name
     req = Gem::Resolver::DependencyRequest.new dependency, nil
@@ -136,7 +136,7 @@ class TestGemResolverGitSet < Gem::TestCase
   def test_prefetch_cache
     name, _, repository, = git_gem
 
-    @set.add_git_gem name, repository, 'master', false
+    @set.add_git_gem name, repository, "master", false
 
     dependency = dep name
     req = Gem::Resolver::DependencyRequest.new dependency, nil
@@ -154,21 +154,21 @@ class TestGemResolverGitSet < Gem::TestCase
   def test_prefetch_filter
     name, _, repository, = git_gem
 
-    @set.add_git_gem name, repository, 'master', false
+    @set.add_git_gem name, repository, "master", false
 
-    dependency = dep 'b'
+    dependency = dep "b"
     req = Gem::Resolver::DependencyRequest.new dependency, nil
     @reqs.add req
 
     @set.prefetch @reqs
 
-    refute_empty @set.specs, 'the git source does not filter'
+    refute_empty @set.specs, "the git source does not filter"
   end
 
   def test_prefetch_root_dir
     name, _, repository, = git_gem
 
-    @set.add_git_gem name, repository, 'master', false
+    @set.add_git_gem name, repository, "master", false
 
     dependency = dep name
     req = Gem::Resolver::DependencyRequest.new dependency, nil

@@ -50,6 +50,7 @@ jobs:
 
       - name: Maintain updated gems list in NEWS
         run: |
+          #!ruby
           require 'json'
           news = File.read("NEWS.md")
           prev = news[/since the \*+(\d+\.\d+\.\d+)\*+/, 1]
@@ -98,6 +99,11 @@ jobs:
           ./autogen.sh
           ./configure -C --disable-install-doc
           make
+        if: ${{ steps.diff.outcome == 'failure' }}
+
+      - name: Prepare bundled gems
+        run: |
+          make -s prepare-gems
         if: ${{ steps.diff.outcome == 'failure' }}
 
       - name: Test bundled gems

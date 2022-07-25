@@ -969,23 +969,24 @@ class TestMJIT < Test::Unit::TestCase
   end
 
   def test_heap_promotion_of_ivar_in_the_middle_of_jit
+    omit if GC.using_rvargc?
+
     assert_eval_with_jit("#{<<~"begin;"}\n#{<<~"end;"}", stdout: "true\ntrue\n", success_count: 2, min_calls: 2)
     begin;
       class A
         def initialize
           @iv0 = nil
           @iv1 = []
-          @iv2 = nil
         end
 
         def test(add)
           @iv0.nil?
-          @iv2.nil?
           add_ivar if add
           @iv1.empty?
         end
 
         def add_ivar
+          @iv2 = nil
           @iv3 = nil
         end
       end
@@ -1228,7 +1229,7 @@ class TestMJIT < Test::Unit::TestCase
     success_actual = err.scan(/^#{JIT_SUCCESS_PREFIX}:/).size
     recompile_actual = err.scan(/^#{JIT_RECOMPILE_PREFIX}:/).size
     # Add --mjit-verbose=2 logs for cl.exe because compiler's error message is suppressed
-    # for cl.exe with --mjit-verbose=1. See `start_process` in mjit_worker.c.
+    # for cl.exe with --mjit-verbose=1. See `start_process` in mjit.c.
     if RUBY_PLATFORM.match?(/mswin/) && success_count != success_actual
       out2, err2 = eval_with_jit(script, verbose: 2, min_calls: min_calls, max_cache: max_cache)
     end

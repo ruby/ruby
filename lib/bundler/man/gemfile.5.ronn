@@ -15,23 +15,28 @@ directory as the `Rakefile`.
 A `Gemfile` is evaluated as Ruby code, in a context which makes available
 a number of methods used to describe the gem requirements.
 
-## GLOBAL SOURCES
+## GLOBAL SOURCE
 
-At the top of the `Gemfile`, add a line for the `Rubygems` source that contains
-the gems listed in the `Gemfile`.
+At the top of the `Gemfile`, add a single line for the `RubyGems` source that
+contains the gems listed in the `Gemfile`.
 
     source "https://rubygems.org"
 
-It is possible, but not recommended as of Bundler 1.7, to add multiple global
-`source` lines. Each of these `source`s `MUST` be a valid Rubygems repository.
+You can add only one global source. In Bundler 1.13, adding multiple global
+sources was deprecated. The `source` `MUST` be a valid RubyGems repository.
 
-Sources are checked for gems following the heuristics described in
-[SOURCE PRIORITY][]. If a gem is found in more than one global source, Bundler
+To use more than one source of RubyGems, you should use [`source` block
+](#BLOCK-FORM-OF-SOURCE-GIT-PATH-GROUP-and-PLATFORMS).
+
+A source is checked for gems following the heuristics described in
+[SOURCE PRIORITY][].
+
+**Note about a behavior of the feature deprecated in Bundler 1.13**:
+If a gem is found in more than one global source, Bundler
 will print a warning after installing the gem indicating which source was used,
 and listing the other sources where the gem is available. A specific source can
 be selected for gems that need to use a non-standard repository, suppressing
-this warning, by using the [`:source` option](#SOURCE) or a
-[`source` block](#BLOCK-FORM-OF-SOURCE-GIT-PATH-GROUP-and-PLATFORMS).
+this warning, by using the [`:source` option](#SOURCE) or `source` block.
 
 ### CREDENTIALS
 
@@ -231,24 +236,38 @@ All operations involving groups ([`bundle install`](bundle-install.1.html), `Bun
 `Bundler.require`) behave exactly the same as if any groups not
 matching the current platform were explicitly excluded.
 
+### FORCE_RUBY_PLATFORM
+
+If you always want the pure ruby variant of a gem to be chosen over platform
+specific variants, you can use the `force_ruby_platform` option:
+
+    gem "ffi", force_ruby_platform: true
+
+This can be handy (assuming the pure ruby variant works fine) when:
+
+* You're having issues with the platform specific variant.
+* The platform specific variant does not yet support a newer ruby (and thus has
+  a `required_ruby_version` upper bound), but you still want your Gemfile{.lock}
+  files to resolve under that ruby.
+
 ### SOURCE
 
-You can select an alternate Rubygems repository for a gem using the ':source'
+You can select an alternate RubyGems repository for a gem using the ':source'
 option.
 
     gem "some_internal_gem", source: "https://gems.example.com"
 
-This forces the gem to be loaded from this source and ignores any global sources
+This forces the gem to be loaded from this source and ignores the global source
 declared at the top level of the file. If the gem does not exist in this source,
 it will not be installed.
 
 Bundler will search for child dependencies of this gem by first looking in the
 source selected for the parent, but if they are not found there, it will fall
-back on global sources using the ordering described in [SOURCE PRIORITY][].
+back on the global source.
 
+**Note about a behavior of the feature deprecated in Bundler 1.13**:
 Selecting a specific source repository this way also suppresses the ambiguous
-gem warning described above in
-[GLOBAL SOURCES (#source)](#GLOBAL-SOURCES).
+gem warning described above in [GLOBAL SOURCE](#GLOBAL-SOURCE).
 
 Using the `:source` option for an individual gem will also make that source
 available as a possible global source for any other gems which do not specify
@@ -495,8 +514,8 @@ the `.gemspec` file.
 
 The `gemspec` method adds any runtime dependencies as gem requirements in the
 default group. It also adds development dependencies as gem requirements in the
-`development` group. Finally, it adds a gem requirement on your project (`:path
-=> '.'`). In conjunction with `Bundler.setup`, this allows you to require project
+`development` group. Finally, it adds a gem requirement on your project (`path:
+'.'`). In conjunction with `Bundler.setup`, this allows you to require project
 files in your test code as you would if the project were installed as a gem; you
 need not manipulate the load path manually or require project files via relative
 paths.
@@ -521,5 +540,7 @@ bundler uses the following priority order:
      repository declared on the parent. This results in bundler prioritizing the
      ActiveSupport gem from the Rails git repository over ones from
      `rubygems.org`
-  3. The sources specified via global `source` lines, searching each source in
-     your `Gemfile` from last added to first added.
+  3. If neither of the above conditions are met, the global source will be used.
+     If multiple global sources are specified, they will be prioritized from
+     last to first, but this is deprecated since Bundler 1.13, so Bundler prints
+     a warning and will abort with an error in the future.

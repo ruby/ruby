@@ -1,7 +1,7 @@
 # frozen_string_literal: true
-require_relative '../rubygems'
-require_relative 'package'
-require 'tmpdir'
+require_relative "../rubygems"
+require_relative "package"
+require "tmpdir"
 
 ##
 # Top level class for building the gem repository index.
@@ -43,28 +43,28 @@ class Gem::Indexer
   # Create an indexer that will index the gems in +directory+.
 
   def initialize(directory, options = {})
-    require 'fileutils'
-    require 'tmpdir'
-    require 'zlib'
+    require "fileutils"
+    require "tmpdir"
+    require "zlib"
 
     options = { :build_modern => true }.merge options
 
     @build_modern = options[:build_modern]
 
     @dest_directory = directory
-    @directory = Dir.mktmpdir 'gem_generate_index'
+    @directory = Dir.mktmpdir "gem_generate_index"
 
     marshal_name = "Marshal.#{Gem.marshal_version}"
 
-    @master_index = File.join @directory, 'yaml'
+    @master_index = File.join @directory, "yaml"
     @marshal_index = File.join @directory, marshal_name
 
-    @quick_dir = File.join @directory, 'quick'
+    @quick_dir = File.join @directory, "quick"
     @quick_marshal_dir = File.join @quick_dir, marshal_name
     @quick_marshal_dir_base = File.join "quick", marshal_name # FIX: UGH
 
-    @quick_index = File.join @quick_dir, 'index'
-    @latest_index = File.join @quick_dir, 'latest_index'
+    @quick_index = File.join @quick_dir, "index"
+    @latest_index = File.join @quick_dir, "latest_index"
 
     @specs_index = File.join @directory, "specs.#{Gem.marshal_version}"
     @latest_specs_index =
@@ -104,7 +104,7 @@ class Gem::Indexer
 
     files = []
 
-    Gem.time 'Generated Marshal quick index gemspecs' do
+    Gem.time "Generated Marshal quick index gemspecs" do
       specs.each do |spec|
         next if spec.default_gem?
         spec_file_name = "#{spec.original_name}.gemspec.rz"
@@ -112,7 +112,7 @@ class Gem::Indexer
 
         marshal_zipped = Gem.deflate Marshal.dump(spec)
 
-        File.open marshal_name, 'wb' do |io|
+        File.open marshal_name, "wb" do |io|
           io.write marshal_zipped
         end
 
@@ -136,7 +136,7 @@ class Gem::Indexer
     say "Generating #{name} index"
 
     Gem.time "Generated #{name} index" do
-      File.open(file, 'wb') do |io|
+      File.open(file, "wb") do |io|
         specs = index.map do |*spec|
           # We have to splat here because latest_specs is an array, while the
           # others are hashes.
@@ -169,10 +169,10 @@ class Gem::Indexer
     latest_specs =
       Gem::Specification._latest_specs specs
 
-    build_modern_index(released.sort, @specs_index, 'specs')
-    build_modern_index(latest_specs.sort, @latest_specs_index, 'latest specs')
+    build_modern_index(released.sort, @specs_index, "specs")
+    build_modern_index(latest_specs.sort, @latest_specs_index, "latest specs")
     build_modern_index(prerelease.sort, @prerelease_specs_index,
-                       'prerelease specs')
+                       "prerelease specs")
 
     @files += [@specs_index,
                "#{@specs_index}.gz",
@@ -217,7 +217,7 @@ class Gem::Indexer
   def compress_indices
     say "Compressing indices"
 
-    Gem.time 'Compressed indices' do
+    Gem.time "Compressed indices" do
       if @build_modern
         gzip @specs_index
         gzip @latest_specs_index
@@ -252,7 +252,7 @@ class Gem::Indexer
 
     zipped = Gem.deflate data
 
-    File.open "#{filename}.#{extension}", 'wb' do |io|
+    File.open "#{filename}.#{extension}", "wb" do |io|
       io.write zipped
     end
   end
@@ -308,7 +308,7 @@ class Gem::Indexer
     end
 
     files = files.map do |path|
-      path.sub(/^#{Regexp.escape @directory}\/?/, '') # HACK?
+      path.sub(/^#{Regexp.escape @directory}\/?/, "") # HACK?
     end
 
     files.each do |file|
@@ -358,7 +358,7 @@ class Gem::Indexer
     end
 
     if updated_gems.empty?
-      say 'No new gems'
+      say "No new gems"
       terminate_interaction 0
     end
 
@@ -367,7 +367,7 @@ class Gem::Indexer
 
     files = build_marshal_gemspecs specs
 
-    Gem.time 'Updated indexes' do
+    Gem.time "Updated indexes" do
       update_specs_index released, @dest_specs_index, @specs_index
       update_specs_index released, @dest_latest_specs_index, @latest_specs_index
       update_specs_index(prerelease,
@@ -389,7 +389,7 @@ class Gem::Indexer
     files << "#{@prerelease_specs_index}.gz"
 
     files = files.map do |path|
-      path.sub(/^#{Regexp.escape @directory}\/?/, '') # HACK?
+      path.sub(/^#{Regexp.escape @directory}\/?/, "") # HACK?
     end
 
     files.each do |file|
@@ -420,7 +420,7 @@ class Gem::Indexer
 
     specs_index = compact_specs specs_index.uniq.sort
 
-    File.open dest, 'wb' do |io|
+    File.open dest, "wb" do |io|
       Marshal.dump specs_index, io
     end
   end

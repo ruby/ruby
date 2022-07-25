@@ -5,7 +5,7 @@ module Gem::Security
   # No security policy: all package signature checks are disabled.
 
   NoSecurity = Policy.new(
-    'No Security',
+    "No Security",
     :verify_data      => false,
     :verify_signer    => false,
     :verify_chain     => false,
@@ -23,7 +23,7 @@ module Gem::Security
   # easily spoofed, and is not recommended.
 
   AlmostNoSecurity = Policy.new(
-    'Almost No Security',
+    "Almost No Security",
     :verify_data      => true,
     :verify_signer    => false,
     :verify_chain     => false,
@@ -40,7 +40,7 @@ module Gem::Security
   # is not recommended.
 
   LowSecurity = Policy.new(
-    'Low Security',
+    "Low Security",
     :verify_data      => true,
     :verify_signer    => true,
     :verify_chain     => false,
@@ -59,7 +59,7 @@ module Gem::Security
   # gem off as unsigned.
 
   MediumSecurity = Policy.new(
-    'Medium Security',
+    "Medium Security",
     :verify_data      => true,
     :verify_signer    => true,
     :verify_chain     => true,
@@ -78,7 +78,7 @@ module Gem::Security
   # a reasonable guarantee that the contents of the gem have not been altered.
 
   HighSecurity = Policy.new(
-    'High Security',
+    "High Security",
     :verify_data      => true,
     :verify_signer    => true,
     :verify_chain     => true,
@@ -91,7 +91,7 @@ module Gem::Security
   # Policy used to verify a certificate and key when signing a gem
 
   SigningPolicy = Policy.new(
-    'Signing Policy',
+    "Signing Policy",
     :verify_data      => false,
     :verify_signer    => true,
     :verify_chain     => true,
@@ -104,11 +104,11 @@ module Gem::Security
   # Hash of configured security policies
 
   Policies = {
-    'NoSecurity'       => NoSecurity,
-    'AlmostNoSecurity' => AlmostNoSecurity,
-    'LowSecurity'      => LowSecurity,
-    'MediumSecurity'   => MediumSecurity,
-    'HighSecurity'     => HighSecurity,
+    "NoSecurity"       => NoSecurity,
+    "AlmostNoSecurity" => AlmostNoSecurity,
+    "LowSecurity"      => LowSecurity,
+    "MediumSecurity"   => MediumSecurity,
+    "HighSecurity"     => HighSecurity,
     # SigningPolicy is not intended for use by `gem -P` so do not list it
   }.freeze
 

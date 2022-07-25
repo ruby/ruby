@@ -66,7 +66,7 @@ class Gem::Uri
   def redact_credentials_from(text)
     return text unless valid_uri? && password? && text.include?(to_s)
 
-    text.sub(password, 'REDACTED')
+    text.sub(password, "REDACTED")
   end
 
   def method_missing(method_name, *args, &blk)
@@ -97,11 +97,11 @@ class Gem::Uri
   end
 
   def with_redacted_user
-    clone.tap {|uri| uri.user = 'REDACTED' }
+    clone.tap {|uri| uri.user = "REDACTED" }
   end
 
   def with_redacted_password
-    clone.tap {|uri| uri.password = 'REDACTED' }
+    clone.tap {|uri| uri.password = "REDACTED" }
   end
 
   def valid_uri?
@@ -113,7 +113,7 @@ class Gem::Uri
   end
 
   def oauth_basic?
-    password == 'x-oauth-basic'
+    password == "x-oauth-basic"
   end
 
   def token?

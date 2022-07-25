@@ -5,9 +5,9 @@
 # See LICENSE.txt for permissions.
 #++
 
-require_relative 'optparse'
-require_relative 'requirement'
-require_relative 'user_interaction'
+require_relative "optparse"
+require_relative "requirement"
+require_relative "user_interaction"
 
 ##
 # Base class for all Gem commands.  When creating a new gem command, define
@@ -76,7 +76,7 @@ class Gem::Command
     when Array
       @extra_args = value
     when String
-      @extra_args = value.split(' ')
+      @extra_args = value.split(" ")
     end
   end
 
@@ -556,7 +556,7 @@ class Gem::Command
   def configure_options(header, option_list)
     return if option_list.nil? or option_list.empty?
 
-    header = header.to_s.empty? ? '' : "#{header} "
+    header = header.to_s.empty? ? "" : "#{header} "
     @parser.separator "  #{header}Options:"
 
     option_list.each do |args, handler|
@@ -565,7 +565,7 @@ class Gem::Command
       end
     end
 
-    @parser.separator ''
+    @parser.separator ""
   end
 
   ##
@@ -578,13 +578,13 @@ class Gem::Command
   # ----------------------------------------------------------------
   # Add the options common to all commands.
 
-  add_common_option('-h', '--help',
-                    'Get help on this command') do |value, options|
+  add_common_option("-h", "--help",
+                    "Get help on this command") do |value, options|
     options[:help] = true
   end
 
-  add_common_option('-V', '--[no-]verbose',
-                    'Set the verbose level of output') do |value, options|
+  add_common_option("-V", "--[no-]verbose",
+                    "Set the verbose level of output") do |value, options|
     # Set us to "really verbose" so the progress meter works
     if Gem.configuration.verbose and value
       Gem.configuration.verbose = 1
@@ -593,7 +593,7 @@ class Gem::Command
     end
   end
 
-  add_common_option('-q', '--quiet', 'Silence command progress meter') do |value, options|
+  add_common_option("-q", "--quiet", "Silence command progress meter") do |value, options|
     Gem.configuration.verbose = false
   end
 
@@ -606,20 +606,20 @@ class Gem::Command
   # commands.  Both options are actually handled before the other
   # options get parsed.
 
-  add_common_option('--config-file FILE',
-                    'Use this config file instead of default') do
+  add_common_option("--config-file FILE",
+                    "Use this config file instead of default") do
   end
 
-  add_common_option('--backtrace',
-                    'Show stack backtrace on errors') do
+  add_common_option("--backtrace",
+                    "Show stack backtrace on errors") do
   end
 
-  add_common_option('--debug',
-                    'Turn on Ruby debugging') do
+  add_common_option("--debug",
+                    "Turn on Ruby debugging") do
   end
 
-  add_common_option('--norc',
-                    'Avoid loading any .gemrc file') do
+  add_common_option("--norc",
+                    "Avoid loading any .gemrc file") do
   end
 
   # :stopdoc:

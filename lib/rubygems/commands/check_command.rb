@@ -1,44 +1,44 @@
 # frozen_string_literal: true
-require_relative '../command'
-require_relative '../version_option'
-require_relative '../validator'
-require_relative '../doctor'
+require_relative "../command"
+require_relative "../version_option"
+require_relative "../validator"
+require_relative "../doctor"
 
 class Gem::Commands::CheckCommand < Gem::Command
   include Gem::VersionOption
 
   def initialize
-    super 'check', 'Check a gem repository for added or missing files',
+    super "check", "Check a gem repository for added or missing files",
           :alien => true, :doctor => false, :dry_run => false, :gems => true
 
-    add_option('-a', '--[no-]alien',
+    add_option("-a", "--[no-]alien",
                'Report "unmanaged" or rogue files in the',
-               'gem repository') do |value, options|
+               "gem repository") do |value, options|
       options[:alien] = value
     end
 
-    add_option('--[no-]doctor',
-               'Clean up uninstalled gems and broken',
-               'specifications') do |value, options|
+    add_option("--[no-]doctor",
+               "Clean up uninstalled gems and broken",
+               "specifications") do |value, options|
       options[:doctor] = value
     end
 
-    add_option('--[no-]dry-run',
-               'Do not remove files, only report what',
-               'would be removed') do |value, options|
+    add_option("--[no-]dry-run",
+               "Do not remove files, only report what",
+               "would be removed") do |value, options|
       options[:dry_run] = value
     end
 
-    add_option('--[no-]gems',
-               'Check installed gems for problems') do |value, options|
+    add_option("--[no-]gems",
+               "Check installed gems for problems") do |value, options|
       options[:gems] = value
     end
 
-    add_version_option 'check'
+    add_version_option "check"
   end
 
   def check_gems
-    say 'Checking gems...'
+    say "Checking gems..."
     say
     gems = get_all_gem_names rescue []
 
@@ -57,7 +57,7 @@ class Gem::Commands::CheckCommand < Gem::Command
   end
 
   def doctor
-    say 'Checking for files from uninstalled gems...'
+    say "Checking for files from uninstalled gems..."
     say
 
     Gem.path.each do |gem_repo|
@@ -72,11 +72,11 @@ class Gem::Commands::CheckCommand < Gem::Command
   end
 
   def arguments # :nodoc:
-    'GEMNAME       name of gem to check'
+    "GEMNAME       name of gem to check"
   end
 
   def defaults_str # :nodoc:
-    '--gems --alien'
+    "--gems --alien"
   end
 
   def description # :nodoc:

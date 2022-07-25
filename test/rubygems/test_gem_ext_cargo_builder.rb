@@ -1,21 +1,21 @@
 # frozen_string_literal: true
 
-require_relative 'helper'
-require 'rubygems/ext'
+require_relative "helper"
+require "rubygems/ext"
 
 class TestGemExtCargoBuilder < Gem::TestCase
   def setup
     super
 
     @rust_envs = {
-      'CARGO_HOME' => ENV.fetch('CARGO_HOME', File.join(@orig_env['HOME'], '.cargo')),
-      'RUSTUP_HOME' => ENV.fetch('RUSTUP_HOME', File.join(@orig_env['HOME'], '.rustup')),
+      "CARGO_HOME" => ENV.fetch("CARGO_HOME", File.join(@orig_env["HOME"], ".cargo")),
+      "RUSTUP_HOME" => ENV.fetch("RUSTUP_HOME", File.join(@orig_env["HOME"], ".rustup")),
     }
   end
 
   def setup_rust_gem(name)
-    @ext = File.join(@tempdir, 'ext')
-    @dest_path = File.join(@tempdir, 'prefix')
+    @ext = File.join(@tempdir, "ext")
+    @dest_path = File.join(@tempdir, "prefix")
     @fixture_dir = Pathname.new(File.expand_path("test_gem_ext_cargo_builder/#{name}/", __dir__))
 
     FileUtils.mkdir_p @dest_path
@@ -26,14 +26,14 @@ class TestGemExtCargoBuilder < Gem::TestCase
     skip_unsupported_platforms!
     setup_rust_gem "rust_ruby_example"
 
-    content = @fixture_dir.join('Cargo.toml').read.gsub("cdylib", "staticlib")
-    File.write(File.join(@ext, 'Cargo.toml'), content)
+    content = @fixture_dir.join("Cargo.toml").read.gsub("cdylib", "staticlib")
+    File.write(File.join(@ext, "Cargo.toml"), content)
 
     output = []
 
     Dir.chdir @ext do
       ENV.update(@rust_envs)
-      spec = Gem::Specification.new 'rust_ruby_example', '0.1.0'
+      spec = Gem::Specification.new "rust_ruby_example", "0.1.0"
       builder = Gem::Ext::CargoBuilder.new(spec)
       assert_raise(Gem::Ext::CargoBuilder::DylibNotFoundError) do
         builder.build nil, @dest_path, output
@@ -49,7 +49,7 @@ class TestGemExtCargoBuilder < Gem::TestCase
 
     Dir.chdir @ext do
       ENV.update(@rust_envs)
-      spec = Gem::Specification.new 'rust_ruby_example', '0.1.0'
+      spec = Gem::Specification.new "rust_ruby_example", "0.1.0"
       builder = Gem::Ext::CargoBuilder.new(spec)
       builder.build nil, @dest_path, output
     end
@@ -58,7 +58,7 @@ class TestGemExtCargoBuilder < Gem::TestCase
     bundle = File.join(@dest_path, "release/rust_ruby_example.#{RbConfig::CONFIG['DLEXT']}")
 
     assert_match "Finished release [optimized] target(s)", output
-    assert_ffi_handle bundle, 'Init_rust_ruby_example'
+    assert_ffi_handle bundle, "Init_rust_ruby_example"
   rescue Exception => e
     pp output if output
 
@@ -73,7 +73,7 @@ class TestGemExtCargoBuilder < Gem::TestCase
 
     Dir.chdir @ext do
       ENV.update(@rust_envs)
-      spec = Gem::Specification.new 'rust_ruby_example', '0.1.0'
+      spec = Gem::Specification.new "rust_ruby_example", "0.1.0"
       builder = Gem::Ext::CargoBuilder.new(spec)
       builder.profile = :dev
       builder.build nil, @dest_path, output
@@ -83,7 +83,7 @@ class TestGemExtCargoBuilder < Gem::TestCase
     bundle = File.join(@dest_path, "debug/rust_ruby_example.#{RbConfig::CONFIG['DLEXT']}")
 
     assert_match "Finished dev [unoptimized + debuginfo] target(s)", output
-    assert_ffi_handle bundle, 'Init_rust_ruby_example'
+    assert_ffi_handle bundle, "Init_rust_ruby_example"
   rescue Exception => e
     pp output if output
 
@@ -96,12 +96,12 @@ class TestGemExtCargoBuilder < Gem::TestCase
 
     output = []
 
-    FileUtils.rm(File.join(@ext, 'src/lib.rs'))
+    FileUtils.rm(File.join(@ext, "src/lib.rs"))
 
     error = assert_raise(Gem::InstallError) do
       Dir.chdir @ext do
         ENV.update(@rust_envs)
-        spec = Gem::Specification.new 'rust_ruby_example', '0.1.0'
+        spec = Gem::Specification.new "rust_ruby_example", "0.1.0"
         builder = Gem::Ext::CargoBuilder.new(spec)
         builder.build nil, @dest_path, output
       end
@@ -109,20 +109,20 @@ class TestGemExtCargoBuilder < Gem::TestCase
 
     output = output.join "\n"
 
-    assert_match 'cargo failed', error.message
+    assert_match "cargo failed", error.message
   end
 
   def test_full_integration
     skip_unsupported_platforms!
     setup_rust_gem "rust_ruby_example"
 
-    require 'open3'
+    require "open3"
 
     Dir.chdir @ext do
-      require 'tmpdir'
+      require "tmpdir"
 
       env_for_subprocess = @rust_envs.merge("GEM_HOME" => Gem.paths.home)
-      gem = [env_for_subprocess, *ruby_with_rubygems_in_load_path, File.expand_path('../../bin/gem', __dir__)]
+      gem = [env_for_subprocess, *ruby_with_rubygems_in_load_path, File.expand_path("../../bin/gem", __dir__)]
 
       Dir.mktmpdir("rust_ruby_example") do |dir|
         built_gem = File.expand_path(File.join(dir, "rust_ruby_example.gem"))
@@ -141,10 +141,10 @@ class TestGemExtCargoBuilder < Gem::TestCase
     setup_rust_gem "custom_name"
 
     Dir.chdir @ext do
-      require 'tmpdir'
+      require "tmpdir"
 
       env_for_subprocess = @rust_envs.merge("GEM_HOME" => Gem.paths.home)
-      gem = [env_for_subprocess, *ruby_with_rubygems_in_load_path, File.expand_path('../../bin/gem', __dir__)]
+      gem = [env_for_subprocess, *ruby_with_rubygems_in_load_path, File.expand_path("../../bin/gem", __dir__)]
 
       Dir.mktmpdir("custom_name") do |dir|
         built_gem = File.expand_path(File.join(dir, "custom_name.gem"))
@@ -163,15 +163,15 @@ class TestGemExtCargoBuilder < Gem::TestCase
 
   def skip_unsupported_platforms!
     pend "jruby not supported" if java_platform?
-    pend "truffleruby not supported (yet)" if RUBY_ENGINE == 'truffleruby'
-    pend "mswin not supported (yet)" if /mswin/ =~ RUBY_PLATFORM && ENV.key?('GITHUB_ACTIONS')
-    system(@rust_envs, 'cargo', '-V', out: IO::NULL, err: [:child, :out])
-    pend 'cargo not present' unless $?.success?
+    pend "truffleruby not supported (yet)" if RUBY_ENGINE == "truffleruby"
+    pend "mswin not supported (yet)" if /mswin/ =~ RUBY_PLATFORM && ENV.key?("GITHUB_ACTIONS")
+    system(@rust_envs, "cargo", "-V", out: IO::NULL, err: [:child, :out])
+    pend "cargo not present" unless $?.success?
     pend "ruby.h is not provided by ruby repo" if ruby_repo?
   end
 
   def assert_ffi_handle(bundle, name)
-    require 'fiddle'
+    require "fiddle"
     dylib_handle = Fiddle.dlopen bundle
     assert_nothing_raised { dylib_handle[name] }
   end

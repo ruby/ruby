@@ -1565,27 +1565,32 @@ fn gen_setlocal_wc0(
 
     let slot_idx = jit_get_arg(jit, 0).as_i32();
     let local_idx = slot_to_local_idx(jit.get_iseq(), slot_idx).as_usize();
+    let value_type = ctx.get_opnd_type(StackOpnd(0));
 
     // Load environment pointer EP (level 0) from CFP
     gen_get_ep(cb, REG0, 0);
 
-    // flags & VM_ENV_FLAG_WB_REQUIRED
-    let flags_opnd = mem_opnd(
-        64,
-        REG0,
-        SIZEOF_VALUE as i32 * VM_ENV_DATA_INDEX_FLAGS as i32,
-    );
-    test(cb, flags_opnd, imm_opnd(VM_ENV_FLAG_WB_REQUIRED as i64));
+    // Write barriers may be required when VM_ENV_FLAG_WB_REQUIRED is set, however write barriers
+    // only affect heap objects being written. If we know an immediate value is being written we
+    // can skip this check.
+    if !value_type.is_imm() {
+        // flags & VM_ENV_FLAG_WB_REQUIRED
+        let flags_opnd = mem_opnd(
+            64,
+            REG0,
+            SIZEOF_VALUE as i32 * VM_ENV_DATA_INDEX_FLAGS as i32,
+        );
+        test(cb, flags_opnd, imm_opnd(VM_ENV_FLAG_WB_REQUIRED as i64));
 
-    // Create a side-exit to fall back to the interpreter
-    let side_exit = get_side_exit(jit, ocb, ctx);
+        // Create a side-exit to fall back to the interpreter
+        let side_exit = get_side_exit(jit, ocb, ctx);
 
-    // if (flags & VM_ENV_FLAG_WB_REQUIRED) != 0
-    jnz_ptr(cb, side_exit);
+        // if (flags & VM_ENV_FLAG_WB_REQUIRED) != 0
+        jnz_ptr(cb, side_exit);
+    }
 
     // Set the type of the local variable in the context
-    let temp_type = ctx.get_opnd_type(StackOpnd(0));
-    ctx.set_local_type(local_idx, temp_type);
+    ctx.set_local_type(local_idx, value_type);
 
     // Pop the value to write from the stack
     let stack_top = ctx.stack_pop(1);
@@ -1606,22 +1611,29 @@ fn gen_setlocal_generic(
     local_idx: i32,
     level: u32,
 ) -> CodegenStatus {
+    let value_type = ctx.get_opnd_type(StackOpnd(0));
+
     // Load environment pointer EP at level
     gen_get_ep(cb, REG0, level);
 
-    // flags & VM_ENV_FLAG_WB_REQUIRED
-    let flags_opnd = mem_opnd(
-        64,
-        REG0,
-        SIZEOF_VALUE as i32 * VM_ENV_DATA_INDEX_FLAGS as i32,
-    );
-    test(cb, flags_opnd, uimm_opnd(VM_ENV_FLAG_WB_REQUIRED.into()));
+    // Write barriers may be required when VM_ENV_FLAG_WB_REQUIRED is set, however write barriers
+    // only affect heap objects being written. If we know an immediate value is being written we
+    // can skip this check.
+    if !value_type.is_imm() {
+        // flags & VM_ENV_FLAG_WB_REQUIRED
+        let flags_opnd = mem_opnd(
+            64,
+            REG0,
+            SIZEOF_VALUE as i32 * VM_ENV_DATA_INDEX_FLAGS as i32,
+        );
+        test(cb, flags_opnd, uimm_opnd(VM_ENV_FLAG_WB_REQUIRED.into()));
 
-    // Create a side-exit to fall back to the interpreter
-    let side_exit = get_side_exit(jit, ocb, ctx);
+        // Create a side-exit to fall back to the interpreter
+        let side_exit = get_side_exit(jit, ocb, ctx);
 
-    // if (flags & VM_ENV_FLAG_WB_REQUIRED) != 0
-    jnz_ptr(cb, side_exit);
+        // if (flags & VM_ENV_FLAG_WB_REQUIRED) != 0
+        jnz_ptr(cb, side_exit);
+    }
 
     // Pop the value to write from the stack
     let stack_top = ctx.stack_pop(1);
@@ -1966,9 +1978,17 @@ fn gen_get_ivar(
         ctx.stack_pop(1);
     }
 
+    if USE_RVARGC != 0 {
+        // Check that the ivar table is big enough
+        // Check that the slot is inside the ivar table (num_slots > index)
+        let num_slots = mem_opnd(32, REG0, ROBJECT_OFFSET_NUMIV);
+        cmp(cb, num_slots, uimm_opnd(ivar_index as u64));
+        jle_ptr(cb, counted_exit!(ocb, side_exit, getivar_idx_out_of_range));
+    }
+
     // Compile time self is embedded and the ivar index lands within the object
     let test_result = unsafe { FL_TEST_RAW(comptime_receiver, VALUE(ROBJECT_EMBED.as_usize())) != VALUE(0) };
-    if test_result && ivar_index < (ROBJECT_EMBED_LEN_MAX.as_usize()) {
+    if test_result {
         // See ROBJECT_IVPTR() from include/ruby/internal/core/robject.h
 
         // Guard that self is embedded
@@ -1988,7 +2008,7 @@ fn gen_get_ivar(
         );
 
         // Load the variable
-        let offs = RUBY_OFFSET_ROBJECT_AS_ARY + (ivar_index * SIZEOF_VALUE) as i32;
+        let offs = ROBJECT_OFFSET_AS_ARY + (ivar_index * SIZEOF_VALUE) as i32;
         let ivar_opnd = mem_opnd(64, REG0, offs);
         mov(cb, REG1, ivar_opnd);
 
@@ -2019,17 +2039,16 @@ fn gen_get_ivar(
             side_exit,
         );
 
-        // Check that the extended table is big enough
-        if ivar_index > (ROBJECT_EMBED_LEN_MAX.as_usize()) {
+        if USE_RVARGC == 0 {
+            // Check that the extended table is big enough
             // Check that the slot is inside the extended table (num_slots > index)
-            let num_slots = mem_opnd(32, REG0, RUBY_OFFSET_ROBJECT_AS_HEAP_NUMIV);
-
+            let num_slots = mem_opnd(32, REG0, ROBJECT_OFFSET_NUMIV);
             cmp(cb, num_slots, uimm_opnd(ivar_index as u64));
             jle_ptr(cb, counted_exit!(ocb, side_exit, getivar_idx_out_of_range));
         }
 
         // Get a pointer to the extended table
-        let tbl_opnd = mem_opnd(64, REG0, RUBY_OFFSET_ROBJECT_AS_HEAP_IVPTR);
+        let tbl_opnd = mem_opnd(64, REG0, ROBJECT_OFFSET_AS_HEAP_IVPTR);
         mov(cb, REG0, tbl_opnd);
 
         // Read the ivar from the extended table

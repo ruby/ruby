@@ -190,10 +190,20 @@ describe :io_each, shared: true do
   end
 
   describe "when passed chomp and nil as a separator" do
-    it "yields self's content without trailing new line character" do
-      @io.pos = 100
-      @io.send(@method, nil, chomp: true) { |s| ScratchPad << s }
-      ScratchPad.recorded.should == ["qui a linha cinco.\nHere is line six."]
+    ruby_version_is "3.2" do
+      it "yields self's content" do
+        @io.pos = 100
+        @io.send(@method, nil, chomp: true) { |s| ScratchPad << s }
+        ScratchPad.recorded.should == ["qui a linha cinco.\nHere is line six.\n"]
+      end
+    end
+
+    ruby_version_is ""..."3.2" do
+      it "yields self's content without trailing new line character" do
+        @io.pos = 100
+        @io.send(@method, nil, chomp: true) { |s| ScratchPad << s }
+        ScratchPad.recorded.should == ["qui a linha cinco.\nHere is line six."]
+      end
     end
   end
 

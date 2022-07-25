@@ -31,9 +31,8 @@ module Bundler
 
           # first try to fetch any new bytes on the existing file
           if retrying.nil? && local_path.file?
-            SharedHelpers.filesystem_access(local_temp_path) do
-              FileUtils.cp local_path, local_temp_path
-            end
+            copy_file local_path, local_temp_path
+
             headers["If-None-Match"] = etag_for(local_temp_path)
             headers["Range"] =
               if local_temp_path.size.nonzero?
@@ -96,6 +95,20 @@ module Bundler
         # the checksum
         SharedHelpers.filesystem_access(path, :read) do
           SharedHelpers.digest(:MD5).hexdigest(File.read(path))
+        end
+      end
+
+      private
+
+      def copy_file(source, dest)
+        SharedHelpers.filesystem_access(source, :read) do
+          File.open(source, "r") do |s|
+            SharedHelpers.filesystem_access(dest, :write) do
+              File.open(dest, "wb", s.stat.mode) do |f|
+                IO.copy_stream(s, f)
+              end
+            end
+          end
         end
       end
     end

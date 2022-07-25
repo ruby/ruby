@@ -1,12 +1,12 @@
 # frozen_string_literal: true
-require_relative '../command'
+require_relative "../command"
 
 unless defined? Gem::Commands::ServerCommand
   class Gem::Commands::ServerCommand < Gem::Command
     def initialize
-      super('server', 'Starts up a web server that hosts the RDoc (requires rubygems-server)')
+      super("server", "Starts up a web server that hosts the RDoc (requires rubygems-server)")
       begin
-        Gem::Specification.find_by_name('rubygems-server').activate
+        Gem::Specification.find_by_name("rubygems-server").activate
       rescue Gem::LoadError
         # no-op
       end

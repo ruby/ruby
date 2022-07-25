@@ -129,7 +129,7 @@ vm_exec_core(rb_execution_context_t *ec, VALUE initial)
 #if OPT_TOKEN_THREADED_CODE || OPT_DIRECT_THREADED_CODE
 #include "vmtc.inc"
     if (UNLIKELY(ec == 0)) {
-	return (VALUE)insns_address_table;
+        return (VALUE)insns_address_table;
     }
 #endif
     reg_cfp = ec->cfp;
@@ -176,22 +176,22 @@ vm_exec_core(rb_execution_context_t *ec, VALUE initial)
     rb_thread_t *th;
 
     while (1) {
-	reg_cfp = ((rb_insn_func_t) (*GET_PC()))(ec, reg_cfp);
+        reg_cfp = ((rb_insn_func_t) (*GET_PC()))(ec, reg_cfp);
 
-	if (UNLIKELY(reg_cfp == 0)) {
-	    break;
-	}
+        if (UNLIKELY(reg_cfp == 0)) {
+            break;
+        }
     }
 
     if ((th = rb_ec_thread_ptr(ec))->retval != Qundef) {
-	VALUE ret = th->retval;
-	th->retval = Qundef;
-	return ret;
+        VALUE ret = th->retval;
+        th->retval = Qundef;
+        return ret;
     }
     else {
-	VALUE err = ec->errinfo;
-	ec->errinfo = Qnil;
-	return err;
+        VALUE err = ec->errinfo;
+        ec->errinfo = Qnil;
+        return err;
     }
 }
 #endif

@@ -1,5 +1,5 @@
 # frozen_string_literal: true
-require_relative 'helper'
+require_relative "helper"
 
 class TestGemResolverInstalledSpecification < Gem::TestCase
   def setup
@@ -9,17 +9,17 @@ class TestGemResolverInstalledSpecification < Gem::TestCase
   end
 
   def test_initialize
-    source_spec = util_spec 'a'
+    source_spec = util_spec "a"
 
     spec = Gem::Resolver::InstalledSpecification.new @set, source_spec
 
-    assert_equal 'a',                 spec.name
+    assert_equal "a",                 spec.name
     assert_equal Gem::Version.new(2), spec.version
     assert_equal Gem::Platform::RUBY, spec.platform
   end
 
   def test_install
-    a = util_spec 'a'
+    a = util_spec "a"
 
     spec = Gem::Resolver::InstalledSpecification.new @set, a
 
@@ -33,7 +33,7 @@ class TestGemResolverInstalledSpecification < Gem::TestCase
   end
 
   def test_installable_platform_eh
-    b, b_gem = util_gem 'a', 1 do |s|
+    b, b_gem = util_gem "a", 1 do |s|
       s.platform = Gem::Platform.new %w[cpu other_platform 1]
     end
 

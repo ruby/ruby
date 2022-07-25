@@ -229,8 +229,8 @@ rb_register_transcoder(const rb_transcoder *tr)
 
     entry = make_transcoder_entry(sname, dname);
     if (entry->transcoder) {
-	rb_raise(rb_eArgError, "transcoder from %s to %s has been already registered",
-		 sname, dname);
+        rb_raise(rb_eArgError, "transcoder from %s to %s has been already registered",
+                 sname, dname);
     }
 
     entry->transcoder = tr;
@@ -251,7 +251,7 @@ void
 rb_declare_transcoder(const char *enc1, const char *enc2, const char *lib)
 {
     if (!lib) {
-	rb_raise(rb_eArgError, "invalid library name - (null)");
+        rb_raise(rb_eArgError, "invalid library name - (null)");
     }
     declare_transcoder(enc1, enc2, lib);
 }
@@ -535,7 +535,7 @@ transcode_restartable0(const unsigned char **in_pos, unsigned char **out_pos,
     while (1) {
         inchar_start = in_p;
         tc->recognized_len = 0;
-	next_table = tr->conv_tree_start;
+        next_table = tr->conv_tree_start;
 
         SUSPEND_AFTER_OUTPUT(24);
 
@@ -555,7 +555,7 @@ transcode_restartable0(const unsigned char **in_pos, unsigned char **out_pos,
 #define BL_OFFSET(byte) (BL_BASE[2+(byte)-BL_MIN_BYTE])
 #define BL_ACTION(byte) (BL_INFO[BL_OFFSET((byte))])
 
-	next_byte = (unsigned char)*in_p++;
+        next_byte = (unsigned char)*in_p++;
       follow_byte:
         if (next_byte < BL_MIN_BYTE || BL_MAX_BYTE < next_byte)
             next_info = INVALID;
@@ -563,8 +563,8 @@ transcode_restartable0(const unsigned char **in_pos, unsigned char **out_pos,
             next_info = (VALUE)BL_ACTION(next_byte);
         }
       follow_info:
-	switch (next_info & 0x1F) {
-	  case NOMAP:
+        switch (next_info & 0x1F) {
+          case NOMAP:
             {
                 const unsigned char *p = inchar_start;
                 writebuf_off = 0;
@@ -579,43 +579,43 @@ transcode_restartable0(const unsigned char **in_pos, unsigned char **out_pos,
                 }
             }
             continue;
-	  case 0x00: case 0x04: case 0x08: case 0x0C:
-	  case 0x10: case 0x14: case 0x18: case 0x1C:
+          case 0x00: case 0x04: case 0x08: case 0x0C:
+          case 0x10: case 0x14: case 0x18: case 0x1C:
             SUSPEND_AFTER_OUTPUT(25);
-	    while (in_p >= in_stop) {
+            while (in_p >= in_stop) {
                 if (!(opt & ECONV_PARTIAL_INPUT))
                     goto incomplete;
                 SUSPEND(econv_source_buffer_empty, 5);
-	    }
-	    next_byte = (unsigned char)*in_p++;
-	    next_table = (unsigned int)next_info;
-	    goto follow_byte;
-	  case ZERObt: /* drop input */
-	    continue;
-	  case ONEbt:
+            }
+            next_byte = (unsigned char)*in_p++;
+            next_table = (unsigned int)next_info;
+            goto follow_byte;
+          case ZERObt: /* drop input */
+            continue;
+          case ONEbt:
             SUSPEND_OBUF(9); *out_p++ = getBT1(next_info);
-	    continue;
-	  case TWObt:
+            continue;
+          case TWObt:
             SUSPEND_OBUF(10); *out_p++ = getBT1(next_info);
             SUSPEND_OBUF(21); *out_p++ = getBT2(next_info);
-	    continue;
-	  case THREEbt:
+            continue;
+          case THREEbt:
             SUSPEND_OBUF(11); *out_p++ = getBT1(next_info);
             SUSPEND_OBUF(15); *out_p++ = getBT2(next_info);
             SUSPEND_OBUF(16); *out_p++ = getBT3(next_info);
-	    continue;
-	  case FOURbt:
+            continue;
+          case FOURbt:
             SUSPEND_OBUF(12); *out_p++ = getBT0(next_info);
             SUSPEND_OBUF(17); *out_p++ = getBT1(next_info);
             SUSPEND_OBUF(18); *out_p++ = getBT2(next_info);
             SUSPEND_OBUF(19); *out_p++ = getBT3(next_info);
-	    continue;
-	  case GB4bt:
+            continue;
+          case GB4bt:
             SUSPEND_OBUF(29); *out_p++ = getGB4bt0(next_info);
             SUSPEND_OBUF(30); *out_p++ = getGB4bt1(next_info);
             SUSPEND_OBUF(31); *out_p++ = getGB4bt2(next_info);
             SUSPEND_OBUF(32); *out_p++ = getGB4bt3(next_info);
-	    continue;
+            continue;
           case STR1:
             tc->output_index = 0;
             while (tc->output_index < STR1_LENGTH(BYTE_ADDR(STR1_BYTEINDEX(next_info)))) {
@@ -623,10 +623,10 @@ transcode_restartable0(const unsigned char **in_pos, unsigned char **out_pos,
                 tc->output_index++;
             }
             continue;
-	  case FUNii:
-	    next_info = (VALUE)(*tr->func_ii)(TRANSCODING_STATE(tc), next_info);
-	    goto follow_info;
-	  case FUNsi:
+          case FUNii:
+            next_info = (VALUE)(*tr->func_ii)(TRANSCODING_STATE(tc), next_info);
+            goto follow_info;
+          case FUNsi:
             {
                 const unsigned char *char_start;
                 size_t char_len;
@@ -634,7 +634,7 @@ transcode_restartable0(const unsigned char **in_pos, unsigned char **out_pos,
                 next_info = (VALUE)(*tr->func_si)(TRANSCODING_STATE(tc), char_start, (size_t)char_len);
                 goto follow_info;
             }
-	  case FUNio:
+          case FUNio:
             SUSPEND_OBUF(13);
             if (tr->max_output <= out_stop - out_p)
                 out_p += tr->func_io(TRANSCODING_STATE(tc),
@@ -649,8 +649,8 @@ transcode_restartable0(const unsigned char **in_pos, unsigned char **out_pos,
                     *out_p++ = TRANSCODING_WRITEBUF(tc)[writebuf_off++];
                 }
             }
-	    break;
-	  case FUNso:
+            break;
+          case FUNso:
             {
                 const unsigned char *char_start;
                 size_t char_len;
@@ -698,7 +698,7 @@ transcode_restartable0(const unsigned char **in_pos, unsigned char **out_pos,
                 }
                 break;
             }
-	  case INVALID:
+          case INVALID:
             if (tc->recognized_len + (in_p - inchar_start) <= unitlen) {
                 if (tc->recognized_len + (in_p - inchar_start) < unitlen)
                     SUSPEND_AFTER_OUTPUT(26);
@@ -721,12 +721,12 @@ transcode_restartable0(const unsigned char **in_pos, unsigned char **out_pos,
                 readagain_len = invalid_len - discard_len;
             }
             goto invalid;
-	  case UNDEF:
-	    goto undef;
-	  default:
-	    rb_raise(rb_eRuntimeError, "unknown transcoding instruction");
-	}
-	continue;
+          case UNDEF:
+            goto undef;
+          default:
+            rb_raise(rb_eRuntimeError, "unknown transcoding instruction");
+        }
+        continue;
 
       invalid:
         SUSPEND(econv_invalid_byte_sequence, 1);
@@ -856,13 +856,13 @@ rb_transcoding_memsize(rb_transcoding *tc)
     const rb_transcoder *tr = tc->transcoder;
 
     if (TRANSCODING_STATE_EMBED_MAX < tr->state_size) {
-	size += tr->state_size;
+        size += tr->state_size;
     }
     if ((int)sizeof(tc->readbuf.ary) < tr->max_input) {
-	size += tr->max_input;
+        size += tr->max_input;
     }
     if ((int)sizeof(tc->writebuf.ary) < tr->max_output) {
-	size += tr->max_output;
+        size += tr->max_output;
     }
     return size;
 }
@@ -1002,7 +1002,7 @@ rb_econv_open0(const char *sname, const char *dname, int ecflags)
     if (*sname == '\0' && *dname == '\0') {
         num_trans = 0;
         entries = NULL;
-	sname = dname = "";
+        sname = dname = "";
     }
     else {
         struct trans_open_t toarg;
@@ -1040,7 +1040,7 @@ decorator_names(int ecflags, const char **decorators_ret)
       case ECONV_CRLF_NEWLINE_DECORATOR:
       case ECONV_CR_NEWLINE_DECORATOR:
       case 0:
-	break;
+        break;
       default:
         return -1;
     }
@@ -1473,22 +1473,22 @@ rb_econv_convert(rb_econv_t *ec,
 
     if (ret == econv_invalid_byte_sequence ||
         ret == econv_incomplete_input) {
-	/* deal with invalid byte sequence */
-	/* todo: add more alternative behaviors */
+        /* deal with invalid byte sequence */
+        /* todo: add more alternative behaviors */
         switch (ec->flags & ECONV_INVALID_MASK) {
           case ECONV_INVALID_REPLACE:
-	    if (output_replacement_character(ec) == 0)
+            if (output_replacement_character(ec) == 0)
                 goto resume;
-	}
+        }
     }
 
     if (ret == econv_undefined_conversion) {
-	/* valid character in source encoding
-	 * but no related character(s) in destination encoding */
-	/* todo: add more alternative behaviors */
+        /* valid character in source encoding
+         * but no related character(s) in destination encoding */
+        /* todo: add more alternative behaviors */
         switch (ec->flags & ECONV_UNDEF_MASK) {
           case ECONV_UNDEF_REPLACE:
-	    if (output_replacement_character(ec) == 0)
+            if (output_replacement_character(ec) == 0)
                 goto resume;
             break;
 
@@ -1726,14 +1726,14 @@ rb_econv_memsize(rb_econv_t *ec)
     int i;
 
     if (ec->replacement_allocated) {
-	size += ec->replacement_len;
+        size += ec->replacement_len;
     }
     for (i = 0; i < ec->num_trans; i++) {
-	size += rb_transcoding_memsize(ec->elems[i].tc);
+        size += rb_transcoding_memsize(ec->elems[i].tc);
 
-	if (ec->elems[i].out_buf_start) {
+        if (ec->elems[i].out_buf_start) {
             size += ec->elems[i].out_buf_end - ec->elems[i].out_buf_start;
-	}
+        }
     }
     size += ec->in_buf_end - ec->in_buf_start;
     size += sizeof(rb_econv_elem_t) * ec->num_allocated;
@@ -1948,30 +1948,30 @@ rb_econv_binmode(rb_econv_t *ec)
 
     switch (ec->flags & ECONV_NEWLINE_DECORATOR_MASK) {
       case ECONV_UNIVERSAL_NEWLINE_DECORATOR:
-	dname = "universal_newline";
-	break;
+        dname = "universal_newline";
+        break;
       case ECONV_CRLF_NEWLINE_DECORATOR:
-	dname = "crlf_newline";
-	break;
+        dname = "crlf_newline";
+        break;
       case ECONV_CR_NEWLINE_DECORATOR:
-	dname = "cr_newline";
-	break;
+        dname = "cr_newline";
+        break;
     }
 
     if (dname) {
         const rb_transcoder *transcoder = get_transcoder_entry("", dname)->transcoder;
         int num_trans = ec->num_trans;
-	int i, j = 0;
+        int i, j = 0;
 
-	for (i=0; i < num_trans; i++) {
-	    if (transcoder == ec->elems[i].tc->transcoder) {
-		rb_transcoding_close(ec->elems[i].tc);
-		xfree(ec->elems[i].out_buf_start);
-		ec->num_trans--;
-	    }
-	    else
-		ec->elems[j++] = ec->elems[i];
-	}
+        for (i=0; i < num_trans; i++) {
+            if (transcoder == ec->elems[i].tc->transcoder) {
+                rb_transcoding_close(ec->elems[i].tc);
+                xfree(ec->elems[i].out_buf_start);
+                ec->num_trans--;
+            }
+            else
+                ec->elems[j++] = ec->elems[i];
+        }
     }
 
     ec->flags &= ~ECONV_NEWLINE_DECORATOR_MASK;
@@ -2267,7 +2267,7 @@ aref_fallback(VALUE fallback, VALUE c)
 
 static void
 transcode_loop(const unsigned char **in_pos, unsigned char **out_pos,
-	       const unsigned char *in_stop, unsigned char *out_stop,
+               const unsigned char *in_stop, unsigned char *out_stop,
                VALUE destination,
                unsigned char *(*resize_destination)(VALUE, size_t, size_t),
                const char *src_encoding,
@@ -2289,19 +2289,19 @@ transcode_loop(const unsigned char **in_pos, unsigned char **out_pos,
         rb_exc_raise(rb_econv_open_exc(src_encoding, dst_encoding, ecflags));
 
     if (!NIL_P(ecopts) && RB_TYPE_P(ecopts, T_HASH)) {
-	fallback = rb_hash_aref(ecopts, sym_fallback);
-	if (RB_TYPE_P(fallback, T_HASH)) {
-	    fallback_func = hash_fallback;
-	}
-	else if (rb_obj_is_proc(fallback)) {
-	    fallback_func = proc_fallback;
-	}
-	else if (rb_obj_is_method(fallback)) {
-	    fallback_func = method_fallback;
-	}
-	else {
-	    fallback_func = aref_fallback;
-	}
+        fallback = rb_hash_aref(ecopts, sym_fallback);
+        if (RB_TYPE_P(fallback, T_HASH)) {
+            fallback_func = hash_fallback;
+        }
+        else if (rb_obj_is_proc(fallback)) {
+            fallback_func = proc_fallback;
+        }
+        else if (rb_obj_is_method(fallback)) {
+            fallback_func = method_fallback;
+        }
+        else {
+            fallback_func = aref_fallback;
+        }
     }
     last_tc = ec->last_tc;
     max_output = last_tc ? last_tc->transcoder->max_output : 1;
@@ -2310,20 +2310,20 @@ transcode_loop(const unsigned char **in_pos, unsigned char **out_pos,
     ret = rb_econv_convert(ec, in_pos, in_stop, out_pos, out_stop, 0);
 
     if (!NIL_P(fallback) && ret == econv_undefined_conversion) {
-	VALUE rep = rb_enc_str_new(
-		(const char *)ec->last_error.error_bytes_start,
-		ec->last_error.error_bytes_len,
-		rb_enc_find(ec->last_error.source_encoding));
-	rep = (*fallback_func)(fallback, rep);
-	if (rep != Qundef && !NIL_P(rep)) {
-	    StringValue(rep);
-	    ret = rb_econv_insert_output(ec, (const unsigned char *)RSTRING_PTR(rep),
-		    RSTRING_LEN(rep), rb_enc_name(rb_enc_get(rep)));
-	    if ((int)ret == -1) {
-		rb_raise(rb_eArgError, "too big fallback string");
-	    }
-	    goto resume;
-	}
+        VALUE rep = rb_enc_str_new(
+                (const char *)ec->last_error.error_bytes_start,
+                ec->last_error.error_bytes_len,
+                rb_enc_find(ec->last_error.source_encoding));
+        rep = (*fallback_func)(fallback, rep);
+        if (rep != Qundef && !NIL_P(rep)) {
+            StringValue(rep);
+            ret = rb_econv_insert_output(ec, (const unsigned char *)RSTRING_PTR(rep),
+                    RSTRING_LEN(rep), rb_enc_name(rb_enc_get(rep)));
+            if ((int)ret == -1) {
+                rb_raise(rb_eArgError, "too big fallback string");
+            }
+            goto resume;
+        }
     }
 
     if (ret == econv_invalid_byte_sequence ||
@@ -2331,7 +2331,7 @@ transcode_loop(const unsigned char **in_pos, unsigned char **out_pos,
         ret == econv_undefined_conversion) {
         exc = make_econv_exception(ec);
         rb_econv_close(ec);
-	rb_exc_raise(exc);
+        rb_exc_raise(exc);
     }
 
     if (ret == econv_destination_buffer_full) {
@@ -2346,7 +2346,7 @@ transcode_loop(const unsigned char **in_pos, unsigned char **out_pos,
 /* sample transcode_loop implementation in byte-by-byte stream style */
 static void
 transcode_loop(const unsigned char **in_pos, unsigned char **out_pos,
-	       const unsigned char *in_stop, unsigned char *out_stop,
+               const unsigned char *in_stop, unsigned char *out_stop,
                VALUE destination,
                unsigned char *(*resize_destination)(VALUE, size_t, size_t),
                const char *src_encoding,
@@ -2478,56 +2478,56 @@ econv_opts(VALUE opt, int ecflags)
     v = rb_hash_aref(opt, sym_newline);
     if (!NIL_P(v)) {
         newlineflag = 2;
-	ecflags &= ~ECONV_NEWLINE_DECORATOR_MASK;
-	if (v == sym_universal) {
-	    ecflags |= ECONV_UNIVERSAL_NEWLINE_DECORATOR;
-	}
-	else if (v == sym_crlf) {
-	    ecflags |= ECONV_CRLF_NEWLINE_DECORATOR;
-	}
-	else if (v == sym_cr) {
-	    ecflags |= ECONV_CR_NEWLINE_DECORATOR;
-	}
-	else if (v == sym_lf) {
-	    /* ecflags |= ECONV_LF_NEWLINE_DECORATOR; */
-	}
-	else if (SYMBOL_P(v)) {
-	    rb_raise(rb_eArgError, "unexpected value for newline option: %"PRIsVALUE,
-		     rb_sym2str(v));
-	}
-	else {
-	    rb_raise(rb_eArgError, "unexpected value for newline option");
-	}
+        ecflags &= ~ECONV_NEWLINE_DECORATOR_MASK;
+        if (v == sym_universal) {
+            ecflags |= ECONV_UNIVERSAL_NEWLINE_DECORATOR;
+        }
+        else if (v == sym_crlf) {
+            ecflags |= ECONV_CRLF_NEWLINE_DECORATOR;
+        }
+        else if (v == sym_cr) {
+            ecflags |= ECONV_CR_NEWLINE_DECORATOR;
+        }
+        else if (v == sym_lf) {
+            /* ecflags |= ECONV_LF_NEWLINE_DECORATOR; */
+        }
+        else if (SYMBOL_P(v)) {
+            rb_raise(rb_eArgError, "unexpected value for newline option: %"PRIsVALUE,
+                     rb_sym2str(v));
+        }
+        else {
+            rb_raise(rb_eArgError, "unexpected value for newline option");
+        }
     }
 #endif
     {
         int setflags = 0;
 
-	v = rb_hash_aref(opt, sym_universal_newline);
-	if (RTEST(v))
-	    setflags |= ECONV_UNIVERSAL_NEWLINE_DECORATOR;
-	newlineflag |= !NIL_P(v);
+        v = rb_hash_aref(opt, sym_universal_newline);
+        if (RTEST(v))
+            setflags |= ECONV_UNIVERSAL_NEWLINE_DECORATOR;
+        newlineflag |= !NIL_P(v);
 
-	v = rb_hash_aref(opt, sym_crlf_newline);
-	if (RTEST(v))
-	    setflags |= ECONV_CRLF_NEWLINE_DECORATOR;
-	newlineflag |= !NIL_P(v);
+        v = rb_hash_aref(opt, sym_crlf_newline);
+        if (RTEST(v))
+            setflags |= ECONV_CRLF_NEWLINE_DECORATOR;
+        newlineflag |= !NIL_P(v);
 
-	v = rb_hash_aref(opt, sym_cr_newline);
-	if (RTEST(v))
-	    setflags |= ECONV_CR_NEWLINE_DECORATOR;
-	newlineflag |= !NIL_P(v);
+        v = rb_hash_aref(opt, sym_cr_newline);
+        if (RTEST(v))
+            setflags |= ECONV_CR_NEWLINE_DECORATOR;
+        newlineflag |= !NIL_P(v);
 
         switch (newlineflag) {
           case 1:
-	    ecflags &= ~ECONV_NEWLINE_DECORATOR_MASK;
-	    ecflags |= setflags;
+            ecflags &= ~ECONV_NEWLINE_DECORATOR_MASK;
+            ecflags |= setflags;
             break;
 
           case 3:
             rb_warning(":newline option precedes other newline options");
             break;
-	}
+        }
     }
 
     return ecflags;
@@ -2547,28 +2547,28 @@ rb_econv_prepare_options(VALUE opthash, VALUE *opts, int ecflags)
 
     v = rb_hash_aref(opthash, sym_replace);
     if (!NIL_P(v)) {
-	StringValue(v);
-	if (rb_enc_str_coderange(v) == ENC_CODERANGE_BROKEN) {
-	    VALUE dumped = rb_str_dump(v);
-	    rb_raise(rb_eArgError, "replacement string is broken: %s as %s",
-		     StringValueCStr(dumped),
-		     rb_enc_name(rb_enc_get(v)));
-	}
-	v = rb_str_new_frozen(v);
-	newhash = rb_hash_new();
-	rb_hash_aset(newhash, sym_replace, v);
+        StringValue(v);
+        if (rb_enc_str_coderange(v) == ENC_CODERANGE_BROKEN) {
+            VALUE dumped = rb_str_dump(v);
+            rb_raise(rb_eArgError, "replacement string is broken: %s as %s",
+                     StringValueCStr(dumped),
+                     rb_enc_name(rb_enc_get(v)));
+        }
+        v = rb_str_new_frozen(v);
+        newhash = rb_hash_new();
+        rb_hash_aset(newhash, sym_replace, v);
     }
 
     v = rb_hash_aref(opthash, sym_fallback);
     if (!NIL_P(v)) {
-	VALUE h = rb_check_hash_type(v);
-	if (NIL_P(h)
-	    ? (rb_obj_is_proc(v) || rb_obj_is_method(v) || rb_respond_to(v, idAREF))
-	    : (v = h, 1)) {
-	    if (NIL_P(newhash))
-		newhash = rb_hash_new();
-	    rb_hash_aset(newhash, sym_fallback, v);
-	}
+        VALUE h = rb_check_hash_type(v);
+        if (NIL_P(h)
+            ? (rb_obj_is_proc(v) || rb_obj_is_method(v) || rb_respond_to(v, idAREF))
+            : (v = h, 1)) {
+            if (NIL_P(newhash))
+                newhash = rb_hash_new();
+            rb_hash_aset(newhash, sym_fallback, v);
+        }
     }
 
     if (!NIL_P(newhash))
@@ -2628,13 +2628,13 @@ enc_arg(VALUE *arg, const char **name_p, rb_encoding **enc_p)
     VALUE encval;
 
     if (((encidx = rb_to_encoding_index(encval = *arg)) < 0) ||
-	!(enc = rb_enc_from_index(encidx))) {
-	enc = NULL;
-	encidx = 0;
-	n = StringValueCStr(*arg);
+        !(enc = rb_enc_from_index(encidx))) {
+        enc = NULL;
+        encidx = 0;
+        n = StringValueCStr(*arg);
     }
     else {
-	n = rb_enc_name(enc);
+        n = rb_enc_name(enc);
     }
 
     *name_p = n;
@@ -2655,9 +2655,9 @@ str_transcode_enc_args(VALUE str, VALUE *arg1, VALUE *arg2,
     dencidx = enc_arg(arg1, &dname, &denc);
 
     if (NIL_P(*arg2)) {
-	sencidx = rb_enc_get_index(str);
-	senc = rb_enc_from_index(sencidx);
-	sname = rb_enc_name(senc);
+        sencidx = rb_enc_get_index(str);
+        senc = rb_enc_from_index(sencidx);
+        sname = rb_enc_name(senc);
     }
     else {
         sencidx = enc_arg(arg2, &sname, &senc);
@@ -2687,18 +2687,18 @@ str_transcode0(int argc, VALUE *argv, VALUE *self, int ecflags, VALUE ecopts)
     rb_check_arity(argc, 0, 2);
 
     if (argc == 0) {
-	arg1 = rb_enc_default_internal();
-	if (NIL_P(arg1)) {
-	    if (!ecflags) return -1;
-	    arg1 = rb_obj_encoding(str);
-	}
-	if (!(ecflags & ECONV_INVALID_MASK)) {
-	    explicitly_invalid_replace = FALSE;
-	}
-	ecflags |= ECONV_INVALID_REPLACE | ECONV_UNDEF_REPLACE;
+        arg1 = rb_enc_default_internal();
+        if (NIL_P(arg1)) {
+            if (!ecflags) return -1;
+            arg1 = rb_obj_encoding(str);
+        }
+        if (!(ecflags & ECONV_INVALID_MASK)) {
+            explicitly_invalid_replace = FALSE;
+        }
+        ecflags |= ECONV_INVALID_REPLACE | ECONV_UNDEF_REPLACE;
     }
     else {
-	arg1 = argv[0];
+        arg1 = argv[0];
     }
     arg2 = argc<=1 ? Qnil : argv[1];
     dencidx = str_transcode_enc_args(str, &arg1, &arg2, &sname, &senc, &dname, &denc);
@@ -2708,16 +2708,16 @@ str_transcode0(int argc, VALUE *argv, VALUE *self, int ecflags, VALUE ecopts)
                     ECONV_XML_ATTR_CONTENT_DECORATOR|
                     ECONV_XML_ATTR_QUOTE_DECORATOR)) == 0) {
         if (senc && senc == denc) {
-	    if ((ecflags & ECONV_INVALID_MASK) && explicitly_invalid_replace) {
-		VALUE rep = Qnil;
-		if (!NIL_P(ecopts)) {
-		    rep = rb_hash_aref(ecopts, sym_replace);
-		}
-		dest = rb_enc_str_scrub(senc, str, rep);
-		if (NIL_P(dest)) dest = str;
-		*self = dest;
-		return dencidx;
-	    }
+            if ((ecflags & ECONV_INVALID_MASK) && explicitly_invalid_replace) {
+                VALUE rep = Qnil;
+                if (!NIL_P(ecopts)) {
+                    rep = rb_hash_aref(ecopts, sym_replace);
+                }
+                dest = rb_enc_str_scrub(senc, str, rep);
+                if (NIL_P(dest)) dest = str;
+                *self = dest;
+                return dencidx;
+            }
             return NIL_P(arg2) ? -1 : dencidx;
         }
         if (senc && denc && rb_enc_asciicompat(senc) && rb_enc_asciicompat(denc)) {
@@ -2758,9 +2758,9 @@ str_transcode0(int argc, VALUE *argv, VALUE *self, int ecflags, VALUE ecopts)
 
     /* set encoding */
     if (!denc) {
-	dencidx = rb_define_dummy_encoding(dname);
-	RB_GC_GUARD(arg1);
-	RB_GC_GUARD(arg2);
+        dencidx = rb_define_dummy_encoding(dname);
+        RB_GC_GUARD(arg1);
+        RB_GC_GUARD(arg2);
     }
     *self = dest;
 
@@ -2776,7 +2776,7 @@ str_transcode(int argc, VALUE *argv, VALUE *self)
 
     argc = rb_scan_args(argc, argv, "02:", NULL, NULL, &opt);
     if (!NIL_P(opt)) {
-	ecflags = rb_econv_prepare_opts(opt, &ecopts);
+        ecflags = rb_econv_prepare_opts(opt, &ecopts);
     }
     return str_transcode0(argc, argv, self, ecflags, ecopts);
 }
@@ -2790,10 +2790,10 @@ str_encode_associate(VALUE str, int encidx)
 
     /* transcoded string never be broken. */
     if (rb_enc_asciicompat(rb_enc_from_index(encidx))) {
-	rb_str_coderange_scan_restartable(RSTRING_PTR(str), RSTRING_END(str), 0, &cr);
+        rb_str_coderange_scan_restartable(RSTRING_PTR(str), RSTRING_END(str), 0, &cr);
     }
     else {
-	cr = ENC_CODERANGE_VALID;
+        cr = ENC_CODERANGE_VALID;
     }
     ENC_CODERANGE_SET(str, cr);
     return str;
@@ -2821,8 +2821,8 @@ str_encode_bang(int argc, VALUE *argv, VALUE str)
 
     if (encidx < 0) return str;
     if (newstr == str) {
-	rb_enc_associate_index(str, encidx);
-	return str;
+        rb_enc_associate_index(str, encidx);
+        return str;
     }
     rb_str_shared_replace(str, newstr);
     return str_encode_associate(str, encidx);
@@ -2853,12 +2853,12 @@ encoded_dup(VALUE newstr, VALUE str, int encidx)
 {
     if (encidx < 0) return rb_str_dup(str);
     if (newstr == str) {
-	newstr = rb_str_dup(str);
-	rb_enc_associate_index(newstr, encidx);
-	return newstr;
+        newstr = rb_str_dup(str);
+        rb_enc_associate_index(newstr, encidx);
+        return newstr;
     }
     else {
-	RBASIC_SET_CLASS(newstr, rb_obj_class(str));
+        RBASIC_SET_CLASS(newstr, rb_obj_class(str));
     }
     return str_encode_associate(newstr, encidx);
 }
@@ -2972,9 +2972,9 @@ econv_args(int argc, VALUE *argv,
     argc = rb_scan_args(argc, argv, "21:", snamev_p, dnamev_p, &flags_v, &opt);
 
     if (!NIL_P(flags_v)) {
-	if (!NIL_P(opt)) {
-	    rb_error_arity(argc + 1, 2, 3);
-	}
+        if (!NIL_P(opt)) {
+            rb_error_arity(argc + 1, 2, 3);
+        }
         ecflags = NUM2INT(rb_to_int(flags_v));
         ecopts = Qnil;
     }
@@ -3030,22 +3030,22 @@ decorate_convpath(VALUE convpath, int ecflags)
     len = n = RARRAY_LENINT(convpath);
     if (n != 0) {
         VALUE pair = RARRAY_AREF(convpath, n-1);
-	if (RB_TYPE_P(pair, T_ARRAY)) {
-	    const char *sname = rb_enc_name(rb_to_encoding(RARRAY_AREF(pair, 0)));
-	    const char *dname = rb_enc_name(rb_to_encoding(RARRAY_AREF(pair, 1)));
-	    transcoder_entry_t *entry = get_transcoder_entry(sname, dname);
-	    const rb_transcoder *tr = load_transcoder_entry(entry);
-	    if (!tr)
-		return -1;
-	    if (!DECORATOR_P(tr->src_encoding, tr->dst_encoding) &&
-		    tr->asciicompat_type == asciicompat_encoder) {
-		n--;
-		rb_ary_store(convpath, len + num_decorators - 1, pair);
-	    }
-	}
-	else {
-	    rb_ary_store(convpath, len + num_decorators - 1, pair);
-	}
+        if (RB_TYPE_P(pair, T_ARRAY)) {
+            const char *sname = rb_enc_name(rb_to_encoding(RARRAY_AREF(pair, 0)));
+            const char *dname = rb_enc_name(rb_to_encoding(RARRAY_AREF(pair, 1)));
+            transcoder_entry_t *entry = get_transcoder_entry(sname, dname);
+            const rb_transcoder *tr = load_transcoder_entry(entry);
+            if (!tr)
+                return -1;
+            if (!DECORATOR_P(tr->src_encoding, tr->dst_encoding) &&
+                    tr->asciicompat_type == asciicompat_encoder) {
+                n--;
+                rb_ary_store(convpath, len + num_decorators - 1, pair);
+            }
+        }
+        else {
+            rb_ary_store(convpath, len + num_decorators - 1, pair);
+        }
     }
 
     for (i = 0; i < num_decorators; i++)
@@ -3121,10 +3121,10 @@ econv_s_search_convpath(int argc, VALUE *argv, VALUE klass)
     }
 
     if (decorate_convpath(convpath, ecflags) == -1) {
-	VALUE exc = rb_econv_open_exc(sname, dname, ecflags);
-	RB_GC_GUARD(snamev);
-	RB_GC_GUARD(dnamev);
-	rb_exc_raise(exc);
+        VALUE exc = rb_econv_open_exc(sname, dname, ecflags);
+        RB_GC_GUARD(snamev);
+        RB_GC_GUARD(dnamev);
+        rb_exc_raise(exc);
     }
 
     return convpath;
@@ -3140,7 +3140,7 @@ rb_econv_has_convpath_p(const char* from_encoding, const char* to_encoding)
 {
     VALUE convpath = Qnil;
     transcode_search_path(from_encoding, to_encoding, search_convpath_i,
-			  &convpath);
+                          &convpath);
     return RTEST(convpath);
 }
 
@@ -3198,12 +3198,12 @@ rb_econv_init_by_convpath(VALUE self, VALUE convpath,
         }
         if (DECORATOR_P(sname, dname)) {
             ret = rb_econv_add_converter(ec, sname, dname, ec->num_trans);
-	    if (ret == -1) {
-		VALUE msg = rb_sprintf("decoration failed: %s", dname);
-		RB_GC_GUARD(snamev);
-		RB_GC_GUARD(dnamev);
-		rb_exc_raise(rb_exc_new_str(rb_eArgError, msg));
-	    }
+            if (ret == -1) {
+                VALUE msg = rb_sprintf("decoration failed: %s", dname);
+                RB_GC_GUARD(snamev);
+                RB_GC_GUARD(dnamev);
+                rb_exc_raise(rb_exc_new_str(rb_eArgError, msg));
+            }
         }
         else {
             int j = ec->num_trans;
@@ -3212,12 +3212,12 @@ rb_econv_init_by_convpath(VALUE self, VALUE convpath,
             arg.index = ec->num_trans;
             arg.ret = 0;
             ret = transcode_search_path(sname, dname, rb_econv_init_by_convpath_i, &arg);
-	    if (ret == -1 || arg.ret == -1) {
-		VALUE msg = rb_sprintf("adding conversion failed: %s to %s", sname, dname);
-		RB_GC_GUARD(snamev);
-		RB_GC_GUARD(dnamev);
+            if (ret == -1 || arg.ret == -1) {
+                VALUE msg = rb_sprintf("adding conversion failed: %s to %s", sname, dname);
+                RB_GC_GUARD(snamev);
+                RB_GC_GUARD(dnamev);
                 rb_exc_raise(rb_exc_new_str(rb_eArgError, msg));
-	    }
+            }
             if (first) {
                 first = 0;
                 *senc_p = senc;
@@ -3229,10 +3229,10 @@ rb_econv_init_by_convpath(VALUE self, VALUE convpath,
     }
 
     if (first) {
-	*senc_p = NULL;
-	*denc_p = NULL;
-	*sname_p = "";
-	*dname_p = "";
+        *senc_p = NULL;
+        *denc_p = NULL;
+        *sname_p = "";
+        *dname_p = "";
     }
 
     ec->source_encoding_name = *sname_p;
@@ -3373,10 +3373,10 @@ econv_init(int argc, VALUE *argv, VALUE self)
     }
 
     if (!ec) {
-	VALUE exc = rb_econv_open_exc(sname, dname, ecflags);
-	RB_GC_GUARD(snamev);
-	RB_GC_GUARD(dnamev);
-	rb_exc_raise(exc);
+        VALUE exc = rb_econv_open_exc(sname, dname, ecflags);
+        RB_GC_GUARD(snamev);
+        RB_GC_GUARD(dnamev);
+        rb_exc_raise(exc);
     }
 
     if (!DECORATOR_P(sname, dname)) {
@@ -3384,8 +3384,8 @@ econv_init(int argc, VALUE *argv, VALUE self)
             senc = make_dummy_encoding(sname);
         if (!denc)
             denc = make_dummy_encoding(dname);
-	RB_GC_GUARD(snamev);
-	RB_GC_GUARD(dnamev);
+        RB_GC_GUARD(snamev);
+        RB_GC_GUARD(dnamev);
     }
 
     ec->source_encoding = senc;
@@ -3526,29 +3526,29 @@ econv_equal(VALUE self, VALUE other)
     int i;
 
     if (!rb_typeddata_is_kind_of(other, &econv_data_type)) {
-	return Qnil;
+        return Qnil;
     }
     ec2 = DATA_PTR(other);
     if (!ec2) return Qfalse;
     if (ec1->source_encoding_name != ec2->source_encoding_name &&
-	strcmp(ec1->source_encoding_name, ec2->source_encoding_name))
-	return Qfalse;
+        strcmp(ec1->source_encoding_name, ec2->source_encoding_name))
+        return Qfalse;
     if (ec1->destination_encoding_name != ec2->destination_encoding_name &&
-	strcmp(ec1->destination_encoding_name, ec2->destination_encoding_name))
-	return Qfalse;
+        strcmp(ec1->destination_encoding_name, ec2->destination_encoding_name))
+        return Qfalse;
     if (ec1->flags != ec2->flags) return Qfalse;
     if (ec1->replacement_enc != ec2->replacement_enc &&
-	strcmp(ec1->replacement_enc, ec2->replacement_enc))
-	return Qfalse;
+        strcmp(ec1->replacement_enc, ec2->replacement_enc))
+        return Qfalse;
     if (ec1->replacement_len != ec2->replacement_len) return Qfalse;
     if (ec1->replacement_str != ec2->replacement_str &&
-	memcmp(ec1->replacement_str, ec2->replacement_str, ec2->replacement_len))
-	return Qfalse;
+        memcmp(ec1->replacement_str, ec2->replacement_str, ec2->replacement_len))
+        return Qfalse;
 
     if (ec1->num_trans != ec2->num_trans) return Qfalse;
     for (i = 0; i < ec1->num_trans; i++) {
         if (ec1->elems[i].tc->transcoder != ec2->elems[i].tc->transcoder)
-	    return Qfalse;
+            return Qfalse;
     }
     return Qtrue;
 }
@@ -3687,10 +3687,10 @@ econv_primitive_convert(int argc, VALUE *argv, VALUE self)
         output_bytesize = NUM2LONG(output_bytesize_v);
 
     if (!NIL_P(flags_v)) {
-	if (!NIL_P(opt)) {
-	    rb_error_arity(argc + 1, 2, 5);
-	}
-	flags = NUM2INT(rb_to_int(flags_v));
+        if (!NIL_P(opt)) {
+            rb_error_arity(argc + 1, 2, 5);
+        }
+        flags = NUM2INT(rb_to_int(flags_v));
     }
     else if (!NIL_P(opt)) {
         VALUE v;
@@ -4042,7 +4042,7 @@ econv_insert_output(VALUE self, VALUE string)
 
     ret = rb_econv_insert_output(ec, (const unsigned char *)RSTRING_PTR(string), RSTRING_LEN(string), insert_enc);
     if (ret == -1) {
-	rb_raise(rb_eArgError, "too big string");
+        rb_raise(rb_eArgError, "too big string");
     }
 
     return Qnil;

@@ -1,6 +1,6 @@
 # frozen_string_literal: true
-require_relative 'helper'
-require 'rubygems/commands/search_command'
+require_relative "helper"
+require "rubygems/commands/search_command"
 
 class TestGemCommandsSearchCommand < Gem::TestCase
   def setup

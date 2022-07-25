@@ -39,6 +39,7 @@ jobs:
 
       - name: Make default gems list
         run: |
+          #!ruby
           require 'rubygems'
           $:.unshift "lib"
           rgver = File.foreach("lib/rubygems.rb") do |line|
@@ -56,6 +57,7 @@ jobs:
 
       - name: Maintain updated gems list in NEWS
         run: |
+          #!ruby
           require 'json'
           news = File.read("NEWS.md")
           prev = news[/since the \*+(\d+\.\d+\.\d+)\*+/, 1]

@@ -41,16 +41,11 @@ module RubyVM::YJIT
     frames = results[:frames].dup
     samples_count = 0
 
-    frames.each do |frame_id, frame|
-      frame[:samples] = 0
-      frame[:edges] = {}
-    end
-
     # Loop through the instructions and set the frame hash with the data.
     # We use nonexistent.def for the file name, otherwise insns.def will be displayed
     # and that information isn't useful in this context.
     RubyVM::INSTRUCTION_NAMES.each_with_index do |name, frame_id|
-      frame_hash = { samples: 0, total_samples: 0, edges: {}, name: name, file: "nonexistent.def", line: nil }
+      frame_hash = { samples: 0, total_samples: 0, edges: {}, name: name, file: "nonexistent.def", line: nil, lines: {} }
       results[:frames][frame_id] = frame_hash
       frames[frame_id] = frame_hash
     end
@@ -58,12 +53,22 @@ module RubyVM::YJIT
     # Loop through the raw_samples and build the hashes for StackProf.
     # The loop is based off an example in the StackProf documentation and therefore
     # this functionality can only work with that library.
-    while raw_samples.length > 0
-      stack_trace = raw_samples.shift(raw_samples.shift + 1)
-      lines = line_samples.shift(line_samples.shift + 1)
-      prev_frame_id = nil
+    #
+    # Raw Samples:
+    # [ length, frame1, frame2, frameN, ..., instruction, count
+    #
+    # Line Samples
+    # [ length, line_1, line_2, line_n, ..., dummy value, count
+    i = 0
+    while i < raw_samples.length
+      stack_length = raw_samples[i] + 1
+      i += 1 # consume the stack length
 
-      stack_trace.each_with_index do |frame_id, idx|
+      prev_frame_id = nil
+      stack_length.times do |idx|
+        idx += i
+        frame_id = raw_samples[idx]
+
         if prev_frame_id
           prev_frame = frames[prev_frame_id]
           prev_frame[:edges][frame_id] ||= 0
@@ -71,26 +76,28 @@ module RubyVM::YJIT
         end
 
         frame_info = frames[frame_id]
-        frame_info[:total_samples] ||= 0
         frame_info[:total_samples] += 1
 
-        frame_info[:lines] ||= {}
-        frame_info[:lines][lines[idx]] ||= [0, 0]
-        frame_info[:lines][lines[idx]][0] += 1
+        frame_info[:lines][line_samples[idx]] ||= [0, 0]
+        frame_info[:lines][line_samples[idx]][0] += 1
 
         prev_frame_id = frame_id
       end
 
-      top_frame_id = stack_trace.last
+      i += stack_length # consume the stack
+
+      top_frame_id = prev_frame_id
       top_frame_line = 1
 
-      frames[top_frame_id][:samples] += 1
+      sample_count = raw_samples[i]
+
+      frames[top_frame_id][:samples] += sample_count
       frames[top_frame_id][:lines] ||= {}
       frames[top_frame_id][:lines][top_frame_line] ||= [0, 0]
-      frames[top_frame_id][:lines][top_frame_line][1] += 1
+      frames[top_frame_id][:lines][top_frame_line][1] += sample_count
 
-      samples_count += raw_samples.shift
-      line_samples.shift
+      samples_count += sample_count
+      i += 1
     end
 
     results[:samples] = samples_count

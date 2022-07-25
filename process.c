@@ -760,31 +760,31 @@ static VALUE
 pst_message_status(VALUE str, int status)
 {
     if (WIFSTOPPED(status)) {
-	int stopsig = WSTOPSIG(status);
-	const char *signame = ruby_signal_name(stopsig);
-	if (signame) {
-	    rb_str_catf(str, " stopped SIG%s (signal %d)", signame, stopsig);
-	}
-	else {
-	    rb_str_catf(str, " stopped signal %d", stopsig);
-	}
+        int stopsig = WSTOPSIG(status);
+        const char *signame = ruby_signal_name(stopsig);
+        if (signame) {
+            rb_str_catf(str, " stopped SIG%s (signal %d)", signame, stopsig);
+        }
+        else {
+            rb_str_catf(str, " stopped signal %d", stopsig);
+        }
     }
     if (WIFSIGNALED(status)) {
-	int termsig = WTERMSIG(status);
-	const char *signame = ruby_signal_name(termsig);
-	if (signame) {
-	    rb_str_catf(str, " SIG%s (signal %d)", signame, termsig);
-	}
-	else {
-	    rb_str_catf(str, " signal %d", termsig);
-	}
+        int termsig = WTERMSIG(status);
+        const char *signame = ruby_signal_name(termsig);
+        if (signame) {
+            rb_str_catf(str, " SIG%s (signal %d)", signame, termsig);
+        }
+        else {
+            rb_str_catf(str, " signal %d", termsig);
+        }
     }
     if (WIFEXITED(status)) {
-	rb_str_catf(str, " exit %d", WEXITSTATUS(status));
+        rb_str_catf(str, " exit %d", WEXITSTATUS(status));
     }
 #ifdef WCOREDUMP
     if (WCOREDUMP(status)) {
-	rb_str_cat2(str, " (core dumped)");
+        rb_str_cat2(str, " (core dumped)");
     }
 #endif
     return str;
@@ -939,7 +939,7 @@ pst_wstopsig(VALUE st)
     int status = PST2INT(st);
 
     if (WIFSTOPPED(status))
-	return INT2NUM(WSTOPSIG(status));
+        return INT2NUM(WSTOPSIG(status));
     return Qnil;
 }
 
@@ -976,7 +976,7 @@ pst_wtermsig(VALUE st)
     int status = PST2INT(st);
 
     if (WIFSIGNALED(status))
-	return INT2NUM(WTERMSIG(status));
+        return INT2NUM(WTERMSIG(status));
     return Qnil;
 }
 
@@ -1023,7 +1023,7 @@ pst_wexitstatus(VALUE st)
     int status = PST2INT(st);
 
     if (WIFEXITED(status))
-	return INT2NUM(WEXITSTATUS(status));
+        return INT2NUM(WEXITSTATUS(status));
     return Qnil;
 }
 
@@ -1042,7 +1042,7 @@ pst_success_p(VALUE st)
     int status = PST2INT(st);
 
     if (!WIFEXITED(status))
-	return Qnil;
+        return Qnil;
     return RBOOL(WEXITSTATUS(status) == EXIT_SUCCESS);
 }
 
@@ -1591,14 +1591,14 @@ proc_waitall(VALUE _)
     rb_last_status_clear();
 
     for (pid = -1;;) {
-	pid = rb_waitpid(-1, &status, 0);
-	if (pid == -1) {
-	    int e = errno;
-	    if (e == ECHILD)
-		break;
-	    rb_syserr_fail(e, 0);
-	}
-	rb_ary_push(result, rb_assoc_new(PIDT2NUM(pid), rb_last_status_get()));
+        pid = rb_waitpid(-1, &status, 0);
+        if (pid == -1) {
+            int e = errno;
+            if (e == ECHILD)
+                break;
+            rb_syserr_fail(e, 0);
+        }
+        rb_ary_push(result, rb_assoc_new(PIDT2NUM(pid), rb_last_status_get()));
     }
     return result;
 }
@@ -1618,7 +1618,7 @@ detach_process_watcher(void *arg)
     int status;
 
     while ((cpid = rb_waitpid(pid, &status, 0)) == 0) {
-	/* wait while alive */
+        /* wait while alive */
     }
     return rb_last_status_get();
 }
@@ -1813,7 +1813,7 @@ proc_exec_cmd(const char *prog, VALUE argv_str, VALUE envp_str)
     argv = ARGVSTR2ARGV(argv_str);
 
     if (!prog) {
-	return ENOENT;
+        return ENOENT;
     }
 
 #ifdef _WIN32
@@ -1839,7 +1839,7 @@ proc_exec_sh(const char *str, VALUE envp_str)
 
     s = str;
     while (*s == ' ' || *s == '\t' || *s == '\n')
-	s++;
+        s++;
 
     if (!*s) {
         return ENOENT;
@@ -1955,19 +1955,19 @@ proc_spawn_cmd_internal(char **argv, char *prog)
     rb_pid_t status;
 
     if (!prog)
-	prog = argv[0];
+        prog = argv[0];
     prog = dln_find_exe_r(prog, 0, fbuf, sizeof(fbuf));
     if (!prog)
-	return -1;
+        return -1;
 
     before_exec();
     status = spawnv(P_NOWAIT, prog, (const char **)argv);
     if (status == -1 && errno == ENOEXEC) {
-	*argv = (char *)prog;
-	*--argv = (char *)"sh";
-	status = spawnv(P_NOWAIT, "/bin/sh", (const char **)argv);
-	after_exec();
-	if (status == -1) errno = ENOEXEC;
+        *argv = (char *)prog;
+        *--argv = (char *)"sh";
+        status = spawnv(P_NOWAIT, "/bin/sh", (const char **)argv);
+        after_exec();
+        if (status == -1) errno = ENOEXEC;
     }
     return status;
 }
@@ -1980,13 +1980,13 @@ proc_spawn_cmd(char **argv, VALUE prog, struct rb_execarg *eargp)
 
     if (argv[0]) {
 #if defined(_WIN32)
-	DWORD flags = 0;
-	if (eargp->new_pgroup_given && eargp->new_pgroup_flag) {
-	    flags = CREATE_NEW_PROCESS_GROUP;
-	}
-	pid = rb_w32_uaspawn_flags(P_NOWAIT, prog ? RSTRING_PTR(prog) : 0, argv, flags);
+        DWORD flags = 0;
+        if (eargp->new_pgroup_given && eargp->new_pgroup_flag) {
+            flags = CREATE_NEW_PROCESS_GROUP;
+        }
+        pid = rb_w32_uaspawn_flags(P_NOWAIT, prog ? RSTRING_PTR(prog) : 0, argv, flags);
 #else
-	pid = proc_spawn_cmd_internal(argv, prog ? RSTRING_PTR(prog) : 0);
+        pid = proc_spawn_cmd_internal(argv, prog ? RSTRING_PTR(prog) : 0);
 #endif
     }
     return pid;
@@ -2156,18 +2156,18 @@ check_exec_redirect(VALUE key, VALUE val, struct rb_execarg *eargp)
         if (FIXNUM_P(key) && (FIX2INT(key) == 1 || FIX2INT(key) == 2))
             flags = INT2NUM(O_WRONLY|O_CREAT|O_TRUNC);
         else if (RB_TYPE_P(key, T_ARRAY)) {
-	    int i;
-	    for (i = 0; i < RARRAY_LEN(key); i++) {
+            int i;
+            for (i = 0; i < RARRAY_LEN(key); i++) {
                 VALUE v = RARRAY_AREF(key, i);
-		VALUE fd = check_exec_redirect_fd(v, 1);
-		if (FIX2INT(fd) != 1 && FIX2INT(fd) != 2) break;
-	    }
-	    if (i == RARRAY_LEN(key))
-		flags = INT2NUM(O_WRONLY|O_CREAT|O_TRUNC);
-	    else
-		flags = INT2NUM(O_RDONLY);
-	}
-	else
+                VALUE fd = check_exec_redirect_fd(v, 1);
+                if (FIX2INT(fd) != 1 && FIX2INT(fd) != 2) break;
+            }
+            if (i == RARRAY_LEN(key))
+                flags = INT2NUM(O_WRONLY|O_CREAT|O_TRUNC);
+            else
+                flags = INT2NUM(O_RDONLY);
+        }
+        else
             flags = INT2NUM(O_RDONLY);
         perm = INT2FIX(0644);
         param = hide_obj(rb_ary_new3(4, hide_obj(EXPORT_DUP(path)),
@@ -2176,9 +2176,9 @@ check_exec_redirect(VALUE key, VALUE val, struct rb_execarg *eargp)
         break;
 
       default:
-	tmp = val;
-	val = rb_io_check_io(tmp);
-	if (!NIL_P(val)) goto io;
+        tmp = val;
+        val = rb_io_check_io(tmp);
+        if (!NIL_P(val)) goto io;
         rb_raise(rb_eArgError, "wrong exec redirect action");
     }
 
@@ -2193,23 +2193,23 @@ rb_execarg_addopt_rlimit(struct rb_execarg *eargp, int rtype, VALUE val)
     VALUE ary = eargp->rlimit_limits;
     VALUE tmp, softlim, hardlim;
     if (eargp->rlimit_limits == Qfalse)
-	ary = eargp->rlimit_limits = hide_obj(rb_ary_new());
+        ary = eargp->rlimit_limits = hide_obj(rb_ary_new());
     else
-	ary = eargp->rlimit_limits;
+        ary = eargp->rlimit_limits;
     tmp = rb_check_array_type(val);
     if (!NIL_P(tmp)) {
-	if (RARRAY_LEN(tmp) == 1)
-	    softlim = hardlim = rb_to_int(rb_ary_entry(tmp, 0));
-	else if (RARRAY_LEN(tmp) == 2) {
-	    softlim = rb_to_int(rb_ary_entry(tmp, 0));
-	    hardlim = rb_to_int(rb_ary_entry(tmp, 1));
-	}
-	else {
-	    rb_raise(rb_eArgError, "wrong exec rlimit option");
-	}
+        if (RARRAY_LEN(tmp) == 1)
+            softlim = hardlim = rb_to_int(rb_ary_entry(tmp, 0));
+        else if (RARRAY_LEN(tmp) == 2) {
+            softlim = rb_to_int(rb_ary_entry(tmp, 0));
+            hardlim = rb_to_int(rb_ary_entry(tmp, 1));
+        }
+        else {
+            rb_raise(rb_eArgError, "wrong exec rlimit option");
+        }
     }
     else {
-	softlim = hardlim = rb_to_int(val);
+        softlim = hardlim = rb_to_int(val);
     }
     tmp = hide_obj(rb_ary_new3(3, INT2NUM(rtype), softlim, hardlim));
     rb_ary_push(ary, tmp);
@@ -2280,12 +2280,12 @@ rb_execarg_addopt(VALUE execarg_obj, VALUE key, VALUE val)
                 rb_raise(rb_eArgError, "chdir option specified twice");
             }
             FilePathValue(val);
-	    val = rb_str_encode_ospath(val);
+            val = rb_str_encode_ospath(val);
             eargp->chdir_given = 1;
             eargp->chdir_dir = hide_obj(EXPORT_DUP(val));
         }
         else if (id == id_umask) {
-	    mode_t cmask = NUM2MODET(val);
+            mode_t cmask = NUM2MODET(val);
             if (eargp->umask_given) {
                 rb_raise(rb_eArgError, "umask option specified twice");
             }
@@ -2311,36 +2311,36 @@ rb_execarg_addopt(VALUE execarg_obj, VALUE key, VALUE val)
             key = INT2FIX(2);
             goto redirect;
         }
-	else if (id == id_uid) {
+        else if (id == id_uid) {
 #ifdef HAVE_SETUID
-	    if (eargp->uid_given) {
-		rb_raise(rb_eArgError, "uid option specified twice");
-	    }
-	    check_uid_switch();
-	    {
-		eargp->uid = OBJ2UID(val);
-		eargp->uid_given = 1;
-	    }
+            if (eargp->uid_given) {
+                rb_raise(rb_eArgError, "uid option specified twice");
+            }
+            check_uid_switch();
+            {
+                eargp->uid = OBJ2UID(val);
+                eargp->uid_given = 1;
+            }
 #else
-	    rb_raise(rb_eNotImpError,
-		     "uid option is unimplemented on this machine");
+            rb_raise(rb_eNotImpError,
+                     "uid option is unimplemented on this machine");
 #endif
-	}
-	else if (id == id_gid) {
+        }
+        else if (id == id_gid) {
 #ifdef HAVE_SETGID
-	    if (eargp->gid_given) {
-		rb_raise(rb_eArgError, "gid option specified twice");
-	    }
-	    check_gid_switch();
-	    {
-		eargp->gid = OBJ2GID(val);
-		eargp->gid_given = 1;
-	    }
+            if (eargp->gid_given) {
+                rb_raise(rb_eArgError, "gid option specified twice");
+            }
+            check_gid_switch();
+            {
+                eargp->gid = OBJ2GID(val);
+                eargp->gid_given = 1;
+            }
 #else
-	    rb_raise(rb_eNotImpError,
-		     "gid option is unimplemented on this machine");
+            rb_raise(rb_eNotImpError,
+                     "gid option is unimplemented on this machine");
 #endif
-	}
+        }
         else if (id == id_exception) {
             if (eargp->exception_given) {
                 rb_raise(rb_eArgError, "exception option specified twice");
@@ -2349,7 +2349,7 @@ rb_execarg_addopt(VALUE execarg_obj, VALUE key, VALUE val)
             eargp->exception = TO_BOOL(val, "exception");
         }
         else {
-	    return ST_STOP;
+            return ST_STOP;
         }
         break;
 
@@ -2361,7 +2361,7 @@ redirect:
         break;
 
       default:
-	return ST_STOP;
+        return ST_STOP;
     }
 
     RB_GC_GUARD(execarg_obj);
@@ -2375,10 +2375,10 @@ check_exec_options_i(st_data_t st_key, st_data_t st_val, st_data_t arg)
     VALUE val = (VALUE)st_val;
     VALUE execarg_obj = (VALUE)arg;
     if (rb_execarg_addopt(execarg_obj, key, val) != ST_CONTINUE) {
-	if (SYMBOL_P(key))
-	    rb_raise(rb_eArgError, "wrong exec option symbol: % "PRIsVALUE,
-		     key);
-	rb_raise(rb_eArgError, "wrong exec option");
+        if (SYMBOL_P(key))
+            rb_raise(rb_eArgError, "wrong exec option symbol: % "PRIsVALUE,
+                     key);
+        rb_raise(rb_eArgError, "wrong exec option");
     }
     return ST_CONTINUE;
 }
@@ -2391,9 +2391,9 @@ check_exec_options_i_extract(st_data_t st_key, st_data_t st_val, st_data_t arg)
     VALUE *args = (VALUE *)arg;
     VALUE execarg_obj = args[0];
     if (rb_execarg_addopt(execarg_obj, key, val) != ST_CONTINUE) {
-	VALUE nonopts = args[1];
-	if (NIL_P(nonopts)) args[1] = nonopts = rb_hash_new();
-	rb_hash_aset(nonopts, key, val);
+        VALUE nonopts = args[1];
+        if (NIL_P(nonopts)) args[1] = nonopts = rb_hash_new();
+        rb_hash_aset(nonopts, key, val);
     }
     return ST_CONTINUE;
 }
@@ -2521,7 +2521,7 @@ check_exec_env_i(st_data_t st_key, st_data_t st_val, st_data_t arg)
     if (!NIL_P(val)) val = EXPORT_STR(val);
 
     if (ENVMATCH(k, PATH_ENV)) {
-	*path = val;
+        *path = val;
     }
     rb_ary_push(env, hide_obj(rb_assoc_new(key, val)));
 
@@ -2552,19 +2552,19 @@ rb_check_argv(int argc, VALUE *argv)
     prog = 0;
     tmp = rb_check_array_type(argv[0]);
     if (!NIL_P(tmp)) {
-	if (RARRAY_LEN(tmp) != 2) {
-	    rb_raise(rb_eArgError, "wrong first argument");
-	}
-	prog = RARRAY_AREF(tmp, 0);
-	argv[0] = RARRAY_AREF(tmp, 1);
-	SafeStringValue(prog);
-	StringValueCStr(prog);
-	prog = rb_str_new_frozen(prog);
+        if (RARRAY_LEN(tmp) != 2) {
+            rb_raise(rb_eArgError, "wrong first argument");
+        }
+        prog = RARRAY_AREF(tmp, 0);
+        argv[0] = RARRAY_AREF(tmp, 1);
+        SafeStringValue(prog);
+        StringValueCStr(prog);
+        prog = rb_str_new_frozen(prog);
     }
     for (i = 0; i < argc; i++) {
-	SafeStringValue(argv[i]);
-	argv[i] = rb_str_new_frozen(argv[i]);
-	StringValueCStr(argv[i]);
+        SafeStringValue(argv[i]);
+        argv[i] = rb_str_new_frozen(argv[i]);
+        StringValueCStr(argv[i]);
     }
     return prog;
 }
@@ -2576,7 +2576,7 @@ check_hash(VALUE obj)
     switch (RB_BUILTIN_TYPE(obj)) {
       case T_STRING:
       case T_ARRAY:
-	return Qnil;
+        return Qnil;
       default:
         break;
     }
@@ -2656,39 +2656,39 @@ rb_exec_fillarg(VALUE prog, int argc, VALUE *argv, VALUE env, VALUE opthash, VAL
 
 #ifndef _WIN32
     if (eargp->use_shell) {
-	static const char posix_sh_cmds[][9] = {
-	    "!",		/* reserved */
-	    ".",		/* special built-in */
-	    ":",		/* special built-in */
-	    "break",		/* special built-in */
-	    "case",		/* reserved */
-	    "continue",		/* special built-in */
-	    "do",		/* reserved */
-	    "done",		/* reserved */
-	    "elif",		/* reserved */
-	    "else",		/* reserved */
-	    "esac",		/* reserved */
-	    "eval",		/* special built-in */
-	    "exec",		/* special built-in */
-	    "exit",		/* special built-in */
-	    "export",		/* special built-in */
-	    "fi",		/* reserved */
-	    "for",		/* reserved */
-	    "if",		/* reserved */
-	    "in",		/* reserved */
-	    "readonly",		/* special built-in */
-	    "return",		/* special built-in */
-	    "set",		/* special built-in */
-	    "shift",		/* special built-in */
-	    "then",		/* reserved */
-	    "times",		/* special built-in */
-	    "trap",		/* special built-in */
-	    "unset",		/* special built-in */
-	    "until",		/* reserved */
-	    "while",		/* reserved */
-	};
-	const char *p;
-	struct string_part first = {0, 0};
+        static const char posix_sh_cmds[][9] = {
+            "!",		/* reserved */
+            ".",		/* special built-in */
+            ":",		/* special built-in */
+            "break",		/* special built-in */
+            "case",		/* reserved */
+            "continue",		/* special built-in */
+            "do",		/* reserved */
+            "done",		/* reserved */
+            "elif",		/* reserved */
+            "else",		/* reserved */
+            "esac",		/* reserved */
+            "eval",		/* special built-in */
+            "exec",		/* special built-in */
+            "exit",		/* special built-in */
+            "export",		/* special built-in */
+            "fi",		/* reserved */
+            "for",		/* reserved */
+            "if",		/* reserved */
+            "in",		/* reserved */
+            "readonly",		/* special built-in */
+            "return",		/* special built-in */
+            "set",		/* special built-in */
+            "shift",		/* special built-in */
+            "then",		/* reserved */
+            "times",		/* special built-in */
+            "trap",		/* special built-in */
+            "unset",		/* special built-in */
+            "until",		/* reserved */
+            "while",		/* reserved */
+        };
+        const char *p;
+        struct string_part first = {0, 0};
         int has_meta = 0;
         /*
          * meta characters:
@@ -2715,32 +2715,32 @@ rb_exec_fillarg(VALUE prog, int argc, VALUE *argv, VALUE env, VALUE opthash, VAL
          * %    (used in Parameter Expansion)
          */
         for (p = RSTRING_PTR(prog); *p; p++) {
-	    if (*p == ' ' || *p == '\t') {
-		if (first.ptr && !first.len) first.len = p - first.ptr;
-	    }
-	    else {
-		if (!first.ptr) first.ptr = p;
-	    }
+            if (*p == ' ' || *p == '\t') {
+                if (first.ptr && !first.len) first.len = p - first.ptr;
+            }
+            else {
+                if (!first.ptr) first.ptr = p;
+            }
             if (!has_meta && strchr("*?{}[]<>()~&|\\$;'`\"\n#", *p))
                 has_meta = 1;
-	    if (!first.len) {
-		if (*p == '=') {
-		    has_meta = 1;
-		}
-		else if (*p == '/') {
-		    first.len = 0x100; /* longer than any posix_sh_cmds */
-		}
-	    }
-	    if (has_meta)
+            if (!first.len) {
+                if (*p == '=') {
+                    has_meta = 1;
+                }
+                else if (*p == '/') {
+                    first.len = 0x100; /* longer than any posix_sh_cmds */
+                }
+            }
+            if (has_meta)
                 break;
         }
-	if (!has_meta && first.ptr) {
-	    if (!first.len) first.len = p - first.ptr;
-	    if (first.len > 0 && first.len <= sizeof(posix_sh_cmds[0]) &&
-		bsearch(&first, posix_sh_cmds, numberof(posix_sh_cmds), sizeof(posix_sh_cmds[0]), compare_posix_sh))
-		has_meta = 1;
-	}
-	if (!has_meta) {
+        if (!has_meta && first.ptr) {
+            if (!first.len) first.len = p - first.ptr;
+            if (first.len > 0 && first.len <= sizeof(posix_sh_cmds[0]) &&
+                bsearch(&first, posix_sh_cmds, numberof(posix_sh_cmds), sizeof(posix_sh_cmds[0]), compare_posix_sh))
+                has_meta = 1;
+        }
+        if (!has_meta) {
             /* avoid shell since no shell meta character found. */
             eargp->use_shell = 0;
         }
@@ -2752,7 +2752,7 @@ rb_exec_fillarg(VALUE prog, int argc, VALUE *argv, VALUE env, VALUE opthash, VAL
                 while (*p == ' ' || *p == '\t')
                     p++;
                 if (*p) {
-		    const char *w = p;
+                    const char *w = p;
                     while (*p && *p != ' ' && *p != '\t')
                         p++;
                     rb_str_buf_cat(argv_buf, w, p-w);
@@ -2768,15 +2768,15 @@ rb_exec_fillarg(VALUE prog, int argc, VALUE *argv, VALUE env, VALUE opthash, VAL
 #endif
 
     if (!eargp->use_shell) {
-	const char *abspath;
-	const char *path_env = 0;
-	if (RTEST(eargp->path_env)) path_env = RSTRING_PTR(eargp->path_env);
-	abspath = dln_find_exe_r(RSTRING_PTR(eargp->invoke.cmd.command_name),
-				 path_env, fbuf, sizeof(fbuf));
-	if (abspath)
-	    eargp->invoke.cmd.command_abspath = rb_str_new_cstr(abspath);
-	else
-	    eargp->invoke.cmd.command_abspath = Qnil;
+        const char *abspath;
+        const char *path_env = 0;
+        if (RTEST(eargp->path_env)) path_env = RSTRING_PTR(eargp->path_env);
+        abspath = dln_find_exe_r(RSTRING_PTR(eargp->invoke.cmd.command_name),
+                                 path_env, fbuf, sizeof(fbuf));
+        if (abspath)
+            eargp->invoke.cmd.command_abspath = rb_str_new_cstr(abspath);
+        else
+            eargp->invoke.cmd.command_abspath = Qnil;
     }
 
     if (!eargp->use_shell && !eargp->invoke.cmd.argv_buf) {
@@ -2785,13 +2785,13 @@ rb_exec_fillarg(VALUE prog, int argc, VALUE *argv, VALUE env, VALUE opthash, VAL
         argv_buf = rb_str_buf_new(0);
         hide_obj(argv_buf);
         for (i = 0; i < argc; i++) {
-	    VALUE arg = argv[i];
-	    const char *s = StringValueCStr(arg);
+            VALUE arg = argv[i];
+            const char *s = StringValueCStr(arg);
 #ifdef DEFAULT_PROCESS_ENCODING
-	    arg = EXPORT_STR(arg);
-	    s = RSTRING_PTR(arg);
+            arg = EXPORT_STR(arg);
+            s = RSTRING_PTR(arg);
 #endif
-	    rb_str_buf_cat(argv_buf, s, RSTRING_LEN(arg) + 1); /* include '\0' */
+            rb_str_buf_cat(argv_buf, s, RSTRING_LEN(arg) + 1); /* include '\0' */
         }
         eargp->invoke.cmd.argv_buf = argv_buf;
     }
@@ -2972,20 +2972,20 @@ rb_execarg_parent_start1(VALUE execarg_obj)
         }
         hide_obj(envtbl);
         if (envopts != Qfalse) {
-	    st_table *stenv = RHASH_TBL_RAW(envtbl);
+            st_table *stenv = RHASH_TBL_RAW(envtbl);
             long i;
             for (i = 0; i < RARRAY_LEN(envopts); i++) {
                 VALUE pair = RARRAY_AREF(envopts, i);
                 VALUE key = RARRAY_AREF(pair, 0);
                 VALUE val = RARRAY_AREF(pair, 1);
                 if (NIL_P(val)) {
-		    st_data_t stkey = (st_data_t)key;
-		    st_delete(stenv, &stkey, NULL);
+                    st_data_t stkey = (st_data_t)key;
+                    st_delete(stenv, &stkey, NULL);
                 }
                 else {
-		    st_insert(stenv, (st_data_t)key, (st_data_t)val);
-		    RB_OBJ_WRITTEN(envtbl, Qundef, key);
-		    RB_OBJ_WRITTEN(envtbl, Qundef, val);
+                    st_insert(stenv, (st_data_t)key, (st_data_t)val);
+                    RB_OBJ_WRITTEN(envtbl, Qundef, key);
+                    RB_OBJ_WRITTEN(envtbl, Qundef, val);
                 }
             }
         }
@@ -3070,7 +3070,7 @@ rb_exec_fail(struct rb_execarg *eargp, int err, const char *errmsg)
 {
     if (!errmsg || !*errmsg) return;
     if (strcmp(errmsg, "chdir") == 0) {
-	rb_sys_fail_str(eargp->chdir_dir);
+        rb_sys_fail_str(eargp->chdir_dir);
     }
     rb_sys_fail(errmsg);
 }
@@ -3226,10 +3226,10 @@ save_redirect_fd(int fd, struct rb_execarg *sargp, char *errmsg, size_t errmsg_b
             newary = hide_obj(rb_ary_new());
             sargp->fd_dup2 = newary;
         }
-	cloexec = fd_get_cloexec(fd, errmsg, errmsg_buflen);
-	redirection = hide_obj(rb_assoc_new(INT2FIX(fd), INT2FIX(save_fd)));
-	if (cloexec) rb_ary_push(redirection, Qtrue);
-	rb_ary_push(newary, redirection);
+        cloexec = fd_get_cloexec(fd, errmsg, errmsg_buflen);
+        redirection = hide_obj(rb_assoc_new(INT2FIX(fd), INT2FIX(save_fd)));
+        if (cloexec) rb_ary_push(redirection, Qtrue);
+        rb_ary_push(newary, redirection);
 
         newary = sargp->fd_close;
         if (newary == Qfalse) {
@@ -3386,10 +3386,10 @@ run_exec_dup2(VALUE ary, VALUE tmpbuf, struct rb_execarg *sargp, char *errmsg, s
                 ERRMSG("dup2");
                 goto fail;
             }
-	    if (pairs[j].cloexec &&
-		fd_set_cloexec(pairs[j].newfd, errmsg, errmsg_buflen)) {
-		goto fail;
-	    }
+            if (pairs[j].cloexec &&
+                fd_set_cloexec(pairs[j].newfd, errmsg, errmsg_buflen)) {
+                goto fail;
+            }
             rb_update_max_fd(pairs[j].newfd); /* async-signal-safe but don't need to call it in a child process. */
             pairs[j].oldfd = -1;
             j = pairs[j].older_index;
@@ -3697,18 +3697,18 @@ rb_execarg_run_options(const struct rb_execarg *eargp, struct rb_execarg *sargp,
 
 #ifdef HAVE_SETGID
     if (eargp->gid_given) {
-	if (setgid(eargp->gid) < 0) {
-	    ERRMSG("setgid");
-	    return -1;
-	}
+        if (setgid(eargp->gid) < 0) {
+            ERRMSG("setgid");
+            return -1;
+        }
     }
 #endif
 #ifdef HAVE_SETUID
     if (eargp->uid_given) {
-	if (setuid(eargp->uid) < 0) {
-	    ERRMSG("setuid");
-	    return -1;
-	}
+        if (setuid(eargp->uid) < 0) {
+            ERRMSG("setuid");
+            return -1;
+        }
     }
 #endif
 
@@ -3746,17 +3746,17 @@ exec_async_signal_safe(const struct rb_execarg *eargp, char *errmsg, size_t errm
     int err;
 
     if (rb_execarg_run_options(eargp, sargp, errmsg, errmsg_buflen) < 0) { /* hopefully async-signal-safe */
-	return errno;
+        return errno;
     }
 
     if (eargp->use_shell) {
-	err = proc_exec_sh(RSTRING_PTR(eargp->invoke.sh.shell_script), eargp->envp_str); /* async-signal-safe */
+        err = proc_exec_sh(RSTRING_PTR(eargp->invoke.sh.shell_script), eargp->envp_str); /* async-signal-safe */
     }
     else {
-	char *abspath = NULL;
-	if (!NIL_P(eargp->invoke.cmd.command_abspath))
-	    abspath = RSTRING_PTR(eargp->invoke.cmd.command_abspath);
-	err = proc_exec_cmd(abspath, eargp->invoke.cmd.argv_str, eargp->envp_str); /* async-signal-safe */
+        char *abspath = NULL;
+        if (!NIL_P(eargp->invoke.cmd.command_abspath))
+            abspath = RSTRING_PTR(eargp->invoke.cmd.command_abspath);
+        err = proc_exec_cmd(abspath, eargp->invoke.cmd.argv_str, eargp->envp_str); /* async-signal-safe */
     }
 #if !defined(HAVE_WORKING_FORK)
     rb_execarg_run_options(sargp, NULL, errmsg, errmsg_buflen);
@@ -3865,18 +3865,18 @@ handle_fork_error(int err, struct rb_process_status *status, int *ep, volatile i
         break;
     }
     if (ep) {
-	close(ep[0]);
-	close(ep[1]);
-	errno = err;
+        close(ep[0]);
+        close(ep[1]);
+        errno = err;
     }
     if (state && !status) rb_jump_tag(state);
     return -1;
 }
 
 #define prefork() (		\
-	rb_io_flush(rb_stdout), \
-	rb_io_flush(rb_stderr)	\
-	)
+        rb_io_flush(rb_stdout), \
+        rb_io_flush(rb_stderr)	\
+        )
 
 /*
  * Forks child process, and returns the process ID in the parent
@@ -3910,7 +3910,7 @@ write_retry(int fd, const void *buf, size_t len)
     ssize_t w;
 
     do {
-	w = write(fd, buf, len);
+        w = write(fd, buf, len);
     } while (w < 0 && errno == EINTR);
 
     return w;
@@ -3928,7 +3928,7 @@ read_retry(int fd, void *buf, size_t len)
     }
 
     do {
-	r = read(fd, buf, len);
+        r = read(fd, buf, len);
     } while (r < 0 && errno == EINTR);
 
     return r;
@@ -3981,7 +3981,7 @@ getresuid(rb_uid_t *ruid, rb_uid_t *euid, rb_uid_t *suid)
     *euid = geteuid();
     ret = getuidx(ID_SAVED);
     if (ret == (rb_uid_t)-1)
-	return -1;
+        return -1;
     *suid = ret;
     return 0;
 }
@@ -3999,7 +3999,7 @@ getresgid(rb_gid_t *rgid, rb_gid_t *egid, rb_gid_t *sgid)
     *egid = getegid();
     ret = getgidx(ID_SAVED);
     if (ret == (rb_gid_t)-1)
-	return -1;
+        return -1;
     *sgid = ret;
     return 0;
 }
@@ -4026,7 +4026,7 @@ has_privilege(void)
 
 #if defined HAVE_ISSETUGID
     if (issetugid())
-	return 1;
+        return 1;
 #endif
 
 #ifdef HAVE_GETRESUID
@@ -4087,7 +4087,7 @@ disable_child_handler_before_fork(struct child_handler_disabler_state *old)
 
     ret = pthread_sigmask(SIG_SETMASK, &all, &old->sigmask); /* not async-signal-safe */
     if (ret != 0) {
-	rb_syserr_fail(ret, "pthread_sigmask");
+        rb_syserr_fail(ret, "pthread_sigmask");
     }
 #else
 # pragma GCC warning "pthread_sigmask on fork is not available. potentially dangerous"
@@ -4102,7 +4102,7 @@ disable_child_handler_fork_parent(struct child_handler_disabler_state *old)
 
     ret = pthread_sigmask(SIG_SETMASK, &old->sigmask, NULL); /* not async-signal-safe */
     if (ret != 0) {
-	rb_syserr_fail(ret, "pthread_sigmask");
+        rb_syserr_fail(ret, "pthread_sigmask");
     }
 #else
 # pragma GCC warning "pthread_sigmask on fork is not available. potentially dangerous"
@@ -4117,24 +4117,24 @@ disable_child_handler_fork_child(struct child_handler_disabler_state *old, char 
     int ret;
 
     for (sig = 1; sig < NSIG; sig++) {
-	sig_t handler = signal(sig, SIG_DFL);
+        sig_t handler = signal(sig, SIG_DFL);
 
-	if (handler == SIG_ERR && errno == EINVAL) {
-	    continue; /* Ignore invalid signal number */
-	}
-	if (handler == SIG_ERR) {
-	    ERRMSG("signal to obtain old action");
-	    return -1;
-	}
+        if (handler == SIG_ERR && errno == EINVAL) {
+            continue; /* Ignore invalid signal number */
+        }
+        if (handler == SIG_ERR) {
+            ERRMSG("signal to obtain old action");
+            return -1;
+        }
 #ifdef SIGPIPE
-	if (sig == SIGPIPE) {
-	    continue;
-	}
+        if (sig == SIGPIPE) {
+            continue;
+        }
 #endif
-	/* it will be reset to SIG_DFL at execve time, instead */
-	if (handler == SIG_IGN) {
-	    signal(sig, SIG_IGN);
-	}
+        /* it will be reset to SIG_DFL at execve time, instead */
+        if (handler == SIG_IGN) {
+            signal(sig, SIG_IGN);
+        }
     }
 
     /* non-Ruby child process, ensure cmake can see SIGCHLD */
@@ -4199,11 +4199,11 @@ retry_fork_async_signal_safe(struct rb_process_status *status, int *ep,
             }
             rb_native_mutex_unlock(waitpid_lock);
         }
-	disable_child_handler_fork_parent(&old);
+        disable_child_handler_fork_parent(&old);
         if (0 < pid) /* fork succeed, parent process */
             return pid;
         /* fork failed */
-	if (handle_fork_error(err, status, ep, &try_gc))
+        if (handle_fork_error(err, status, ep, &try_gc))
             return -1;
     }
 }
@@ -4360,7 +4360,7 @@ rb_proc__fork(VALUE _obj)
     rb_pid_t pid = rb_fork_ruby(NULL);
 
     if (pid == -1) {
-	rb_sys_fail("fork(2)");
+        rb_sys_fail("fork(2)");
     }
 
     return PIDT2NUM(pid);
@@ -4399,12 +4399,12 @@ rb_f_fork(VALUE obj)
     pid = rb_call_proc__fork();
 
     if (pid == 0) {
-	if (rb_block_given_p()) {
-	    int status;
-	    rb_protect(rb_yield, Qundef, &status);
-	    ruby_stop(status);
-	}
-	return Qnil;
+        if (rb_block_given_p()) {
+            int status;
+            rb_protect(rb_yield, Qundef, &status);
+            ruby_stop(status);
+        }
+        return Qnil;
     }
 
     return PIDT2NUM(pid);
@@ -4421,18 +4421,18 @@ exit_status_code(VALUE status)
 
     switch (status) {
       case Qtrue:
-	istatus = EXIT_SUCCESS;
-	break;
+        istatus = EXIT_SUCCESS;
+        break;
       case Qfalse:
-	istatus = EXIT_FAILURE;
-	break;
+        istatus = EXIT_FAILURE;
+        break;
       default:
-	istatus = NUM2INT(status);
+        istatus = NUM2INT(status);
 #if EXIT_SUCCESS != 0
-	if (istatus == 0)
-	    istatus = EXIT_SUCCESS;
+        if (istatus == 0)
+            istatus = EXIT_SUCCESS;
 #endif
-	break;
+        break;
     }
     return istatus;
 }
@@ -4455,10 +4455,10 @@ rb_f_exit_bang(int argc, VALUE *argv, VALUE obj)
     int istatus;
 
     if (rb_check_arity(argc, 0, 1) == 1) {
-	istatus = exit_status_code(argv[0]);
+        istatus = exit_status_code(argv[0]);
     }
     else {
-	istatus = EXIT_FAILURE;
+        istatus = EXIT_FAILURE;
     }
     _exit(istatus);
 
@@ -4469,11 +4469,11 @@ void
 rb_exit(int status)
 {
     if (GET_EC()->tag) {
-	VALUE args[2];
+        VALUE args[2];
 
-	args[0] = INT2NUM(status);
-	args[1] = rb_str_new2("exit");
-	rb_exc_raise(rb_class_new_instance(2, args, rb_eSystemExit));
+        args[0] = INT2NUM(status);
+        args[1] = rb_str_new2("exit");
+        rb_exc_raise(rb_class_new_instance(2, args, rb_eSystemExit));
     }
     ruby_stop(status);
 }
@@ -4548,21 +4548,21 @@ rb_f_abort(int argc, const VALUE *argv)
 {
     rb_check_arity(argc, 0, 1);
     if (argc == 0) {
-	rb_execution_context_t *ec = GET_EC();
+        rb_execution_context_t *ec = GET_EC();
         VALUE errinfo = rb_ec_get_errinfo(ec);
-	if (!NIL_P(errinfo)) {
-	    rb_ec_error_print(ec, errinfo);
-	}
-	rb_exit(EXIT_FAILURE);
+        if (!NIL_P(errinfo)) {
+            rb_ec_error_print(ec, errinfo);
+        }
+        rb_exit(EXIT_FAILURE);
     }
     else {
-	VALUE args[2];
+        VALUE args[2];
 
-	args[1] = args[0] = argv[0];
-	StringValue(args[0]);
-	rb_io_puts(1, args, rb_ractor_stderr());
-	args[0] = INT2NUM(EXIT_FAILURE);
-	rb_exc_raise(rb_class_new_instance(2, args, rb_eSystemExit));
+        args[1] = args[0] = argv[0];
+        StringValue(args[0]);
+        rb_io_puts(1, args, rb_ractor_stderr());
+        args[0] = INT2NUM(EXIT_FAILURE);
+        rb_exc_raise(rb_class_new_instance(2, args, rb_eSystemExit));
     }
 
     UNREACHABLE_RETURN(Qnil);
@@ -4602,18 +4602,18 @@ rb_execarg_commandline(const struct rb_execarg *eargp, VALUE *prog)
 {
     VALUE cmd = *prog;
     if (eargp && !eargp->use_shell) {
-	VALUE str = eargp->invoke.cmd.argv_str;
-	VALUE buf = eargp->invoke.cmd.argv_buf;
-	char *p, **argv = ARGVSTR2ARGV(str);
-	long i, argc = ARGVSTR2ARGC(str);
-	const char *start = RSTRING_PTR(buf);
-	cmd = rb_str_new(start, RSTRING_LEN(buf));
-	p = RSTRING_PTR(cmd);
-	for (i = 1; i < argc; ++i) {
-	    p[argv[i] - start - 1] = ' ';
-	}
-	*prog = cmd;
-	return p;
+        VALUE str = eargp->invoke.cmd.argv_str;
+        VALUE buf = eargp->invoke.cmd.argv_buf;
+        char *p, **argv = ARGVSTR2ARGV(str);
+        long i, argc = ARGVSTR2ARGC(str);
+        const char *start = RSTRING_PTR(buf);
+        cmd = rb_str_new(start, RSTRING_LEN(buf));
+        p = RSTRING_PTR(cmd);
+        for (i = 1; i < argc; ++i) {
+            p[argv[i] - start - 1] = ' ';
+        }
+        *prog = cmd;
+        return p;
     }
     return StringValueCStr(*prog);
 }
@@ -4686,7 +4686,7 @@ do_spawn_process(VALUE arg)
     struct spawn_args *argp = (struct spawn_args *)arg;
     rb_execarg_parent_start1(argp->execarg);
     return (VALUE)rb_spawn_process(DATA_PTR(argp->execarg),
-				   argp->errmsg.ptr, argp->errmsg.buflen);
+                                   argp->errmsg.ptr, argp->errmsg.buflen);
 }
 
 static rb_pid_t
@@ -4707,7 +4707,7 @@ rb_execarg_spawn(VALUE execarg_obj, char *errmsg, size_t errmsg_buflen)
     args.errmsg.ptr = errmsg;
     args.errmsg.buflen = errmsg_buflen;
     return (rb_pid_t)rb_ensure(do_spawn_process, (VALUE)&args,
-			       execarg_parent_end, execarg_obj);
+                               execarg_parent_end, execarg_obj);
 }
 
 static rb_pid_t
@@ -5131,10 +5131,10 @@ rb_f_spawn(int argc, VALUE *argv, VALUE _)
     pid = rb_execarg_spawn(execarg_obj, errmsg, sizeof(errmsg));
 
     if (pid == -1) {
-	int err = errno;
-	rb_exec_fail(eargp, err, errmsg);
-	RB_GC_GUARD(execarg_obj);
-	rb_syserr_fail_str(err, fail_str);
+        int err = errno;
+        rb_exec_fail(eargp, err, errmsg);
+        RB_GC_GUARD(execarg_obj);
+        rb_syserr_fail_str(err, fail_str);
     }
 #if defined(HAVE_WORKING_FORK) || defined(HAVE_SPAWNV)
     return PIDT2NUM(pid);
@@ -5315,7 +5315,7 @@ proc_getsid(int argc, VALUE *argv, VALUE _)
     rb_pid_t pid = 0;
 
     if (rb_check_arity(argc, 0, 1) == 1 && !NIL_P(argv[0]))
-	pid = NUM2PIDT(argv[0]);
+        pid = NUM2PIDT(argv[0]);
 
     sid = getsid(pid);
     if (sid < 0) rb_sys_fail(0);
@@ -5373,8 +5373,8 @@ ruby_setsid(void)
 
     if ((fd = rb_cloexec_open("/dev/tty", O_RDWR, 0)) >= 0) {
         rb_update_max_fd(fd);
-	ioctl(fd, TIOCNOTTY, NULL);
-	close(fd);
+        ioctl(fd, TIOCNOTTY, NULL);
+        close(fd);
     }
     return pid;
 }
@@ -5443,7 +5443,7 @@ proc_setpriority(VALUE obj, VALUE which, VALUE who, VALUE prio)
     iprio  = NUM2INT(prio);
 
     if (setpriority(iwhich, iwho, iprio) < 0)
-	rb_sys_fail(0);
+        rb_sys_fail(0);
     return INT2FIX(0);
 }
 #else
@@ -5583,7 +5583,7 @@ rlimit_type_by_sym(VALUE key)
     enum {prefix_len = sizeof(prefix)-1};
 
     if (len > prefix_len && strncmp(prefix, rname, prefix_len) == 0) {
-	rtype = rlimit_type_by_lname(rname + prefix_len, len - prefix_len);
+        rtype = rlimit_type_by_lname(rname + prefix_len, len - prefix_len);
     }
 
     RB_GC_GUARD(key);
@@ -5600,9 +5600,9 @@ rlimit_resource_type(VALUE rtype)
 
     switch (TYPE(rtype)) {
       case T_SYMBOL:
-	v = rb_sym2str(rtype);
-	name = RSTRING_PTR(v);
-	len = RSTRING_LEN(v);
+        v = rb_sym2str(rtype);
+        name = RSTRING_PTR(v);
+        len = RSTRING_LEN(v);
         break;
 
       default:
@@ -5611,7 +5611,7 @@ rlimit_resource_type(VALUE rtype)
             rtype = v;
       case T_STRING:
             name = StringValueCStr(rtype);
-	    len = RSTRING_LEN(rtype);
+            len = RSTRING_LEN(rtype);
             break;
         }
         /* fall through */
@@ -5638,8 +5638,8 @@ rlimit_resource_value(VALUE rval)
 
     switch (TYPE(rval)) {
       case T_SYMBOL:
-	v = rb_sym2str(rval);
-	name = RSTRING_PTR(v);
+        v = rb_sym2str(rval);
+        name = RSTRING_PTR(v);
         break;
 
       default:
@@ -5699,7 +5699,7 @@ proc_getrlimit(VALUE obj, VALUE resource)
     struct rlimit rlim;
 
     if (getrlimit(rlimit_resource_type(resource), &rlim) < 0) {
-	rb_sys_fail("getrlimit");
+        rb_sys_fail("getrlimit");
     }
     return rb_assoc_new(RLIM2NUM(rlim.rlim_cur), RLIM2NUM(rlim.rlim_max));
 }
@@ -5775,7 +5775,7 @@ proc_setrlimit(int argc, VALUE *argv, VALUE obj)
     rlim.rlim_max = rlimit_resource_value(rlim_max);
 
     if (setrlimit(rlimit_resource_type(resource), &rlim) < 0) {
-	rb_sys_fail("setrlimit");
+        rb_sys_fail("setrlimit");
     }
     return Qnil;
 }
@@ -5788,7 +5788,7 @@ static void
 check_uid_switch(void)
 {
     if (under_uid_switch) {
-	rb_raise(rb_eRuntimeError, "can't handle UID while evaluating block given to Process::UID.switch method");
+        rb_raise(rb_eRuntimeError, "can't handle UID while evaluating block given to Process::UID.switch method");
     }
 }
 
@@ -5797,7 +5797,7 @@ static void
 check_gid_switch(void)
 {
     if (under_gid_switch) {
-	rb_raise(rb_eRuntimeError, "can't handle GID while evaluating block given to Process::UID.switch method");
+        rb_raise(rb_eRuntimeError, "can't handle GID while evaluating block given to Process::UID.switch method");
     }
 }
 
@@ -6056,7 +6056,7 @@ rb_getpwdiruid(void)
 static rb_uid_t
 obj2uid(VALUE id
 # ifdef USE_GETPWNAM_R
-	, VALUE *getpw_tmp
+        , VALUE *getpw_tmp
 # endif
     )
 {
@@ -6064,46 +6064,46 @@ obj2uid(VALUE id
     VALUE tmp;
 
     if (FIXNUM_P(id) || NIL_P(tmp = rb_check_string_type(id))) {
-	uid = NUM2UIDT(id);
+        uid = NUM2UIDT(id);
     }
     else {
-	const char *usrname = StringValueCStr(id);
-	struct passwd *pwptr;
+        const char *usrname = StringValueCStr(id);
+        struct passwd *pwptr;
 #ifdef USE_GETPWNAM_R
-	struct passwd pwbuf;
-	char *getpw_buf;
-	long getpw_buf_len;
-	int e;
-	if (!*getpw_tmp) {
-	    getpw_buf_len = GETPW_R_SIZE_INIT;
-	    if (getpw_buf_len < 0) getpw_buf_len = GETPW_R_SIZE_DEFAULT;
-	    *getpw_tmp = rb_str_tmp_new(getpw_buf_len);
-	}
-	getpw_buf = RSTRING_PTR(*getpw_tmp);
-	getpw_buf_len = rb_str_capacity(*getpw_tmp);
-	rb_str_set_len(*getpw_tmp, getpw_buf_len);
-	errno = 0;
-	while ((e = getpwnam_r(usrname, &pwbuf, getpw_buf, getpw_buf_len, &pwptr)) != 0) {
-	    if (e != ERANGE || getpw_buf_len >= GETPW_R_SIZE_LIMIT) {
-		rb_str_resize(*getpw_tmp, 0);
-		rb_syserr_fail(e, "getpwnam_r");
-	    }
-	    rb_str_modify_expand(*getpw_tmp, getpw_buf_len);
-	    getpw_buf = RSTRING_PTR(*getpw_tmp);
-	    getpw_buf_len = rb_str_capacity(*getpw_tmp);
-	}
+        struct passwd pwbuf;
+        char *getpw_buf;
+        long getpw_buf_len;
+        int e;
+        if (!*getpw_tmp) {
+            getpw_buf_len = GETPW_R_SIZE_INIT;
+            if (getpw_buf_len < 0) getpw_buf_len = GETPW_R_SIZE_DEFAULT;
+            *getpw_tmp = rb_str_tmp_new(getpw_buf_len);
+        }
+        getpw_buf = RSTRING_PTR(*getpw_tmp);
+        getpw_buf_len = rb_str_capacity(*getpw_tmp);
+        rb_str_set_len(*getpw_tmp, getpw_buf_len);
+        errno = 0;
+        while ((e = getpwnam_r(usrname, &pwbuf, getpw_buf, getpw_buf_len, &pwptr)) != 0) {
+            if (e != ERANGE || getpw_buf_len >= GETPW_R_SIZE_LIMIT) {
+                rb_str_resize(*getpw_tmp, 0);
+                rb_syserr_fail(e, "getpwnam_r");
+            }
+            rb_str_modify_expand(*getpw_tmp, getpw_buf_len);
+            getpw_buf = RSTRING_PTR(*getpw_tmp);
+            getpw_buf_len = rb_str_capacity(*getpw_tmp);
+        }
 #else
-	pwptr = getpwnam(usrname);
+        pwptr = getpwnam(usrname);
 #endif
-	if (!pwptr) {
+        if (!pwptr) {
 #ifndef USE_GETPWNAM_R
-	    endpwent();
+            endpwent();
 #endif
             rb_raise(rb_eArgError, "can't find user for %"PRIsVALUE, id);
-	}
-	uid = pwptr->pw_uid;
+        }
+        uid = pwptr->pw_uid;
 #ifndef USE_GETPWNAM_R
-	endpwent();
+        endpwent();
 #endif
     }
     return uid;
@@ -6133,7 +6133,7 @@ p_uid_from_name(VALUE self, VALUE id)
 static rb_gid_t
 obj2gid(VALUE id
 # ifdef USE_GETGRNAM_R
-	, VALUE *getgr_tmp
+        , VALUE *getgr_tmp
 # endif
     )
 {
@@ -6141,48 +6141,48 @@ obj2gid(VALUE id
     VALUE tmp;
 
     if (FIXNUM_P(id) || NIL_P(tmp = rb_check_string_type(id))) {
-	gid = NUM2GIDT(id);
+        gid = NUM2GIDT(id);
     }
     else {
-	const char *grpname = StringValueCStr(id);
-	struct group *grptr;
+        const char *grpname = StringValueCStr(id);
+        struct group *grptr;
 #ifdef USE_GETGRNAM_R
-	struct group grbuf;
-	char *getgr_buf;
-	long getgr_buf_len;
-	int e;
-	if (!*getgr_tmp) {
-	    getgr_buf_len = GETGR_R_SIZE_INIT;
-	    if (getgr_buf_len < 0) getgr_buf_len = GETGR_R_SIZE_DEFAULT;
-	    *getgr_tmp = rb_str_tmp_new(getgr_buf_len);
-	}
-	getgr_buf = RSTRING_PTR(*getgr_tmp);
-	getgr_buf_len = rb_str_capacity(*getgr_tmp);
-	rb_str_set_len(*getgr_tmp, getgr_buf_len);
-	errno = 0;
-	while ((e = getgrnam_r(grpname, &grbuf, getgr_buf, getgr_buf_len, &grptr)) != 0) {
-	    if (e != ERANGE || getgr_buf_len >= GETGR_R_SIZE_LIMIT) {
-		rb_str_resize(*getgr_tmp, 0);
-		rb_syserr_fail(e, "getgrnam_r");
-	    }
-	    rb_str_modify_expand(*getgr_tmp, getgr_buf_len);
-	    getgr_buf = RSTRING_PTR(*getgr_tmp);
-	    getgr_buf_len = rb_str_capacity(*getgr_tmp);
-	}
+        struct group grbuf;
+        char *getgr_buf;
+        long getgr_buf_len;
+        int e;
+        if (!*getgr_tmp) {
+            getgr_buf_len = GETGR_R_SIZE_INIT;
+            if (getgr_buf_len < 0) getgr_buf_len = GETGR_R_SIZE_DEFAULT;
+            *getgr_tmp = rb_str_tmp_new(getgr_buf_len);
+        }
+        getgr_buf = RSTRING_PTR(*getgr_tmp);
+        getgr_buf_len = rb_str_capacity(*getgr_tmp);
+        rb_str_set_len(*getgr_tmp, getgr_buf_len);
+        errno = 0;
+        while ((e = getgrnam_r(grpname, &grbuf, getgr_buf, getgr_buf_len, &grptr)) != 0) {
+            if (e != ERANGE || getgr_buf_len >= GETGR_R_SIZE_LIMIT) {
+                rb_str_resize(*getgr_tmp, 0);
+                rb_syserr_fail(e, "getgrnam_r");
+            }
+            rb_str_modify_expand(*getgr_tmp, getgr_buf_len);
+            getgr_buf = RSTRING_PTR(*getgr_tmp);
+            getgr_buf_len = rb_str_capacity(*getgr_tmp);
+        }
 #elif defined(HAVE_GETGRNAM)
-	grptr = getgrnam(grpname);
+        grptr = getgrnam(grpname);
 #else
-	grptr = NULL;
+        grptr = NULL;
 #endif
-	if (!grptr) {
+        if (!grptr) {
 #if !defined(USE_GETGRNAM_R) && defined(HAVE_ENDGRENT)
-	    endgrent();
+            endgrent();
 #endif
             rb_raise(rb_eArgError, "can't find group for %"PRIsVALUE, id);
-	}
-	gid = grptr->gr_gid;
+        }
+        gid = grptr->gr_gid;
 #if !defined(USE_GETGRNAM_R) && defined(HAVE_ENDGRENT)
-	endgrent();
+        endgrent();
 #endif
     }
     return gid;
@@ -6377,12 +6377,12 @@ proc_setuid(VALUE obj, VALUE id)
     if (setruid(uid) < 0) rb_sys_fail(0);
 #elif defined HAVE_SETUID
     {
-	if (geteuid() == uid) {
-	    if (setuid(uid) < 0) rb_sys_fail(0);
-	}
-	else {
-	    rb_notimplement();
-	}
+        if (geteuid() == uid) {
+            if (setuid(uid) < 0) rb_sys_fail(0);
+        }
+        else {
+            rb_notimplement();
+        }
     }
 #endif
     return id;
@@ -6409,11 +6409,11 @@ int
 setreuid(rb_uid_t ruid, rb_uid_t euid)
 {
     if (ruid != (rb_uid_t)-1 && ruid != getuid()) {
-	if (euid == (rb_uid_t)-1) euid = geteuid();
-	if (setuid(ruid) < 0) return -1;
+        if (euid == (rb_uid_t)-1) euid = geteuid();
+        if (setuid(ruid) < 0) return -1;
     }
     if (euid != (rb_uid_t)-1 && euid != geteuid()) {
-	if (seteuid(euid) < 0) return -1;
+        if (seteuid(euid) < 0) return -1;
     }
     return 0;
 }
@@ -6443,144 +6443,144 @@ p_uid_change_privilege(VALUE obj, VALUE id)
 
     if (geteuid() == 0) { /* root-user */
 #if defined(HAVE_SETRESUID)
-	if (setresuid(uid, uid, uid) < 0) rb_sys_fail(0);
-	SAVED_USER_ID = uid;
+        if (setresuid(uid, uid, uid) < 0) rb_sys_fail(0);
+        SAVED_USER_ID = uid;
 #elif defined(HAVE_SETUID)
-	if (setuid(uid) < 0) rb_sys_fail(0);
-	SAVED_USER_ID = uid;
+        if (setuid(uid) < 0) rb_sys_fail(0);
+        SAVED_USER_ID = uid;
 #elif defined(HAVE_SETREUID) && !defined(OBSOLETE_SETREUID)
-	if (getuid() == uid) {
-	    if (SAVED_USER_ID == uid) {
-		if (setreuid(-1, uid) < 0) rb_sys_fail(0);
-	    }
-	    else {
-		if (uid == 0) { /* (r,e,s) == (root, root, x) */
-		    if (setreuid(-1, SAVED_USER_ID) < 0) rb_sys_fail(0);
-		    if (setreuid(SAVED_USER_ID, 0) < 0) rb_sys_fail(0);
-		    SAVED_USER_ID = 0; /* (r,e,s) == (x, root, root) */
-		    if (setreuid(uid, uid) < 0) rb_sys_fail(0);
-		    SAVED_USER_ID = uid;
-		}
-		else {
-		    if (setreuid(0, -1) < 0) rb_sys_fail(0);
-		    SAVED_USER_ID = 0;
-		    if (setreuid(uid, uid) < 0) rb_sys_fail(0);
-		    SAVED_USER_ID = uid;
-		}
-	    }
-	}
-	else {
-	    if (setreuid(uid, uid) < 0) rb_sys_fail(0);
-	    SAVED_USER_ID = uid;
-	}
+        if (getuid() == uid) {
+            if (SAVED_USER_ID == uid) {
+                if (setreuid(-1, uid) < 0) rb_sys_fail(0);
+            }
+            else {
+                if (uid == 0) { /* (r,e,s) == (root, root, x) */
+                    if (setreuid(-1, SAVED_USER_ID) < 0) rb_sys_fail(0);
+                    if (setreuid(SAVED_USER_ID, 0) < 0) rb_sys_fail(0);
+                    SAVED_USER_ID = 0; /* (r,e,s) == (x, root, root) */
+                    if (setreuid(uid, uid) < 0) rb_sys_fail(0);
+                    SAVED_USER_ID = uid;
+                }
+                else {
+                    if (setreuid(0, -1) < 0) rb_sys_fail(0);
+                    SAVED_USER_ID = 0;
+                    if (setreuid(uid, uid) < 0) rb_sys_fail(0);
+                    SAVED_USER_ID = uid;
+                }
+            }
+        }
+        else {
+            if (setreuid(uid, uid) < 0) rb_sys_fail(0);
+            SAVED_USER_ID = uid;
+        }
 #elif defined(HAVE_SETRUID) && defined(HAVE_SETEUID)
-	if (getuid() == uid) {
-	    if (SAVED_USER_ID == uid) {
-		if (seteuid(uid) < 0) rb_sys_fail(0);
-	    }
-	    else {
-		if (uid == 0) {
-		    if (setruid(SAVED_USER_ID) < 0) rb_sys_fail(0);
-		    SAVED_USER_ID = 0;
-		    if (setruid(0) < 0) rb_sys_fail(0);
-		}
-		else {
-		    if (setruid(0) < 0) rb_sys_fail(0);
-		    SAVED_USER_ID = 0;
-		    if (seteuid(uid) < 0) rb_sys_fail(0);
-		    if (setruid(uid) < 0) rb_sys_fail(0);
-		    SAVED_USER_ID = uid;
-		}
-	    }
-	}
-	else {
-	    if (seteuid(uid) < 0) rb_sys_fail(0);
-	    if (setruid(uid) < 0) rb_sys_fail(0);
-	    SAVED_USER_ID = uid;
-	}
+        if (getuid() == uid) {
+            if (SAVED_USER_ID == uid) {
+                if (seteuid(uid) < 0) rb_sys_fail(0);
+            }
+            else {
+                if (uid == 0) {
+                    if (setruid(SAVED_USER_ID) < 0) rb_sys_fail(0);
+                    SAVED_USER_ID = 0;
+                    if (setruid(0) < 0) rb_sys_fail(0);
+                }
+                else {
+                    if (setruid(0) < 0) rb_sys_fail(0);
+                    SAVED_USER_ID = 0;
+                    if (seteuid(uid) < 0) rb_sys_fail(0);
+                    if (setruid(uid) < 0) rb_sys_fail(0);
+                    SAVED_USER_ID = uid;
+                }
+            }
+        }
+        else {
+            if (seteuid(uid) < 0) rb_sys_fail(0);
+            if (setruid(uid) < 0) rb_sys_fail(0);
+            SAVED_USER_ID = uid;
+        }
 #else
-	(void)uid;
-	rb_notimplement();
+        (void)uid;
+        rb_notimplement();
 #endif
     }
     else { /* unprivileged user */
 #if defined(HAVE_SETRESUID)
-	if (setresuid((getuid() == uid)? (rb_uid_t)-1: uid,
-		      (geteuid() == uid)? (rb_uid_t)-1: uid,
-		      (SAVED_USER_ID == uid)? (rb_uid_t)-1: uid) < 0) rb_sys_fail(0);
-	SAVED_USER_ID = uid;
+        if (setresuid((getuid() == uid)? (rb_uid_t)-1: uid,
+                      (geteuid() == uid)? (rb_uid_t)-1: uid,
+                      (SAVED_USER_ID == uid)? (rb_uid_t)-1: uid) < 0) rb_sys_fail(0);
+        SAVED_USER_ID = uid;
 #elif defined(HAVE_SETREUID) && !defined(OBSOLETE_SETREUID)
-	if (SAVED_USER_ID == uid) {
-	    if (setreuid((getuid() == uid)? (rb_uid_t)-1: uid,
-			 (geteuid() == uid)? (rb_uid_t)-1: uid) < 0)
-		rb_sys_fail(0);
-	}
-	else if (getuid() != uid) {
-	    if (setreuid(uid, (geteuid() == uid)? (rb_uid_t)-1: uid) < 0)
-		rb_sys_fail(0);
-	    SAVED_USER_ID = uid;
-	}
-	else if (/* getuid() == uid && */ geteuid() != uid) {
-	    if (setreuid(geteuid(), uid) < 0) rb_sys_fail(0);
-	    SAVED_USER_ID = uid;
-	    if (setreuid(uid, -1) < 0) rb_sys_fail(0);
-	}
-	else { /* getuid() == uid && geteuid() == uid */
-	    if (setreuid(-1, SAVED_USER_ID) < 0) rb_sys_fail(0);
-	    if (setreuid(SAVED_USER_ID, uid) < 0) rb_sys_fail(0);
-	    SAVED_USER_ID = uid;
-	    if (setreuid(uid, -1) < 0) rb_sys_fail(0);
-	}
+        if (SAVED_USER_ID == uid) {
+            if (setreuid((getuid() == uid)? (rb_uid_t)-1: uid,
+                         (geteuid() == uid)? (rb_uid_t)-1: uid) < 0)
+                rb_sys_fail(0);
+        }
+        else if (getuid() != uid) {
+            if (setreuid(uid, (geteuid() == uid)? (rb_uid_t)-1: uid) < 0)
+                rb_sys_fail(0);
+            SAVED_USER_ID = uid;
+        }
+        else if (/* getuid() == uid && */ geteuid() != uid) {
+            if (setreuid(geteuid(), uid) < 0) rb_sys_fail(0);
+            SAVED_USER_ID = uid;
+            if (setreuid(uid, -1) < 0) rb_sys_fail(0);
+        }
+        else { /* getuid() == uid && geteuid() == uid */
+            if (setreuid(-1, SAVED_USER_ID) < 0) rb_sys_fail(0);
+            if (setreuid(SAVED_USER_ID, uid) < 0) rb_sys_fail(0);
+            SAVED_USER_ID = uid;
+            if (setreuid(uid, -1) < 0) rb_sys_fail(0);
+        }
 #elif defined(HAVE_SETRUID) && defined(HAVE_SETEUID)
-	if (SAVED_USER_ID == uid) {
-	    if (geteuid() != uid && seteuid(uid) < 0) rb_sys_fail(0);
-	    if (getuid() != uid && setruid(uid) < 0) rb_sys_fail(0);
-	}
-	else if (/* SAVED_USER_ID != uid && */ geteuid() == uid) {
-	    if (getuid() != uid) {
-		if (setruid(uid) < 0) rb_sys_fail(0);
-		SAVED_USER_ID = uid;
-	    }
-	    else {
-		if (setruid(SAVED_USER_ID) < 0) rb_sys_fail(0);
-		SAVED_USER_ID = uid;
-		if (setruid(uid) < 0) rb_sys_fail(0);
-	    }
-	}
-	else if (/* geteuid() != uid && */ getuid() == uid) {
-	    if (seteuid(uid) < 0) rb_sys_fail(0);
-	    if (setruid(SAVED_USER_ID) < 0) rb_sys_fail(0);
-	    SAVED_USER_ID = uid;
-	    if (setruid(uid) < 0) rb_sys_fail(0);
-	}
-	else {
-	    rb_syserr_fail(EPERM, 0);
-	}
+        if (SAVED_USER_ID == uid) {
+            if (geteuid() != uid && seteuid(uid) < 0) rb_sys_fail(0);
+            if (getuid() != uid && setruid(uid) < 0) rb_sys_fail(0);
+        }
+        else if (/* SAVED_USER_ID != uid && */ geteuid() == uid) {
+            if (getuid() != uid) {
+                if (setruid(uid) < 0) rb_sys_fail(0);
+                SAVED_USER_ID = uid;
+            }
+            else {
+                if (setruid(SAVED_USER_ID) < 0) rb_sys_fail(0);
+                SAVED_USER_ID = uid;
+                if (setruid(uid) < 0) rb_sys_fail(0);
+            }
+        }
+        else if (/* geteuid() != uid && */ getuid() == uid) {
+            if (seteuid(uid) < 0) rb_sys_fail(0);
+            if (setruid(SAVED_USER_ID) < 0) rb_sys_fail(0);
+            SAVED_USER_ID = uid;
+            if (setruid(uid) < 0) rb_sys_fail(0);
+        }
+        else {
+            rb_syserr_fail(EPERM, 0);
+        }
 #elif defined HAVE_44BSD_SETUID
-	if (getuid() == uid) {
-	    /* (r,e,s)==(uid,?,?) ==> (uid,uid,uid) */
-	    if (setuid(uid) < 0) rb_sys_fail(0);
-	    SAVED_USER_ID = uid;
-	}
-	else {
-	    rb_syserr_fail(EPERM, 0);
-	}
+        if (getuid() == uid) {
+            /* (r,e,s)==(uid,?,?) ==> (uid,uid,uid) */
+            if (setuid(uid) < 0) rb_sys_fail(0);
+            SAVED_USER_ID = uid;
+        }
+        else {
+            rb_syserr_fail(EPERM, 0);
+        }
 #elif defined HAVE_SETEUID
-	if (getuid() == uid && SAVED_USER_ID == uid) {
-	    if (seteuid(uid) < 0) rb_sys_fail(0);
-	}
-	else {
-	    rb_syserr_fail(EPERM, 0);
-	}
+        if (getuid() == uid && SAVED_USER_ID == uid) {
+            if (seteuid(uid) < 0) rb_sys_fail(0);
+        }
+        else {
+            rb_syserr_fail(EPERM, 0);
+        }
 #elif defined HAVE_SETUID
-	if (getuid() == uid && SAVED_USER_ID == uid) {
-	    if (setuid(uid) < 0) rb_sys_fail(0);
-	}
-	else {
-	    rb_syserr_fail(EPERM, 0);
-	}
+        if (getuid() == uid && SAVED_USER_ID == uid) {
+            if (setuid(uid) < 0) rb_sys_fail(0);
+        }
+        else {
+            rb_syserr_fail(EPERM, 0);
+        }
 #else
-	rb_notimplement();
+        rb_notimplement();
 #endif
     }
     return id;
@@ -6774,12 +6774,12 @@ proc_setgid(VALUE obj, VALUE id)
     if (setrgid(gid) < 0) rb_sys_fail(0);
 #elif defined HAVE_SETGID
     {
-	if (getegid() == gid) {
-	    if (setgid(gid) < 0) rb_sys_fail(0);
-	}
-	else {
-	    rb_notimplement();
-	}
+        if (getegid() == gid) {
+            if (setgid(gid) < 0) rb_sys_fail(0);
+        }
+        else {
+            rb_notimplement();
+        }
     }
 #endif
     return GIDT2NUM(gid);
@@ -6825,9 +6825,9 @@ static int
 maxgroups(void)
 {
     if (_maxgroups < 0) {
-	_maxgroups = get_sc_ngroups_max();
-	if (_maxgroups < 0)
-	    _maxgroups = RB_MAX_GROUPS;
+        _maxgroups = get_sc_ngroups_max();
+        if (_maxgroups < 0)
+            _maxgroups = RB_MAX_GROUPS;
     }
 
     return _maxgroups;
@@ -6871,17 +6871,17 @@ proc_getgroups(VALUE obj)
 
     ngroups = getgroups(0, NULL);
     if (ngroups == -1)
-	rb_sys_fail(0);
+        rb_sys_fail(0);
 
     groups = ALLOCV_N(rb_gid_t, tmp, ngroups);
 
     ngroups = getgroups(ngroups, groups);
     if (ngroups == -1)
-	rb_sys_fail(0);
+        rb_sys_fail(0);
 
     ary = rb_ary_new();
     for (i = 0; i < ngroups; i++)
-	rb_ary_push(ary, GIDT2NUM(groups[i]));
+        rb_ary_push(ary, GIDT2NUM(groups[i]));
 
     ALLOCV_END(tmp);
 
@@ -6918,19 +6918,19 @@ proc_setgroups(VALUE obj, VALUE ary)
 
     ngroups = RARRAY_LENINT(ary);
     if (ngroups > maxgroups())
-	rb_raise(rb_eArgError, "too many groups, %d max", maxgroups());
+        rb_raise(rb_eArgError, "too many groups, %d max", maxgroups());
 
     groups = ALLOCV_N(rb_gid_t, tmp, ngroups);
 
     for (i = 0; i < ngroups; i++) {
-	VALUE g = RARRAY_AREF(ary, i);
+        VALUE g = RARRAY_AREF(ary, i);
 
-	groups[i] = OBJ2GID1(g);
+        groups[i] = OBJ2GID1(g);
     }
     FINISH_GETGRNAM;
 
     if (setgroups(ngroups, groups) == -1) /* ngroups <= maxgroups */
-	rb_sys_fail(0);
+        rb_sys_fail(0);
 
     ALLOCV_END(tmp);
 
@@ -6963,7 +6963,7 @@ static VALUE
 proc_initgroups(VALUE obj, VALUE uname, VALUE base_grp)
 {
     if (initgroups(StringValueCStr(uname), OBJ2GID(base_grp)) != 0) {
-	rb_sys_fail(0);
+        rb_sys_fail(0);
     }
     return proc_getgroups(obj);
 }
@@ -7007,13 +7007,13 @@ proc_setmaxgroups(VALUE obj, VALUE val)
     int ngroups_max = get_sc_ngroups_max();
 
     if (ngroups <= 0)
-	rb_raise(rb_eArgError, "maxgroups %d should be positive", ngroups);
+        rb_raise(rb_eArgError, "maxgroups %d should be positive", ngroups);
 
     if (ngroups > RB_MAX_GROUPS)
-	ngroups = RB_MAX_GROUPS;
+        ngroups = RB_MAX_GROUPS;
 
     if (ngroups_max > 0 && ngroups > ngroups_max)
-	ngroups = ngroups_max;
+        ngroups = ngroups_max;
 
     _maxgroups = ngroups;
 
@@ -7084,15 +7084,15 @@ rb_daemon(int nochdir, int noclose)
     fork_daemon();
 
     if (!nochdir)
-	err = chdir("/");
+        err = chdir("/");
 
     if (!noclose && (n = rb_cloexec_open("/dev/null", O_RDWR, 0)) != -1) {
         rb_update_max_fd(n);
-	(void)dup2(n, 0);
-	(void)dup2(n, 1);
-	(void)dup2(n, 2);
-	if (n > 2)
-	    (void)close (n);
+        (void)dup2(n, 0);
+        (void)dup2(n, 1);
+        (void)dup2(n, 2);
+        if (n > 2)
+            (void)close (n);
     }
 #endif
     return err;
@@ -7118,11 +7118,11 @@ int
 setregid(rb_gid_t rgid, rb_gid_t egid)
 {
     if (rgid != (rb_gid_t)-1 && rgid != getgid()) {
-	if (egid == (rb_gid_t)-1) egid = getegid();
-	if (setgid(rgid) < 0) return -1;
+        if (egid == (rb_gid_t)-1) egid = getegid();
+        if (setgid(rgid) < 0) return -1;
     }
     if (egid != (rb_gid_t)-1 && egid != getegid()) {
-	if (setegid(egid) < 0) return -1;
+        if (setegid(egid) < 0) return -1;
     }
     return 0;
 }
@@ -7152,145 +7152,145 @@ p_gid_change_privilege(VALUE obj, VALUE id)
 
     if (geteuid() == 0) { /* root-user */
 #if defined(HAVE_SETRESGID)
-	if (setresgid(gid, gid, gid) < 0) rb_sys_fail(0);
-	SAVED_GROUP_ID = gid;
+        if (setresgid(gid, gid, gid) < 0) rb_sys_fail(0);
+        SAVED_GROUP_ID = gid;
 #elif defined HAVE_SETGID
-	if (setgid(gid) < 0) rb_sys_fail(0);
-	SAVED_GROUP_ID = gid;
+        if (setgid(gid) < 0) rb_sys_fail(0);
+        SAVED_GROUP_ID = gid;
 #elif defined(HAVE_SETREGID) && !defined(OBSOLETE_SETREGID)
-	if (getgid() == gid) {
-	    if (SAVED_GROUP_ID == gid) {
-		if (setregid(-1, gid) < 0) rb_sys_fail(0);
-	    }
-	    else {
-		if (gid == 0) { /* (r,e,s) == (root, y, x) */
-		    if (setregid(-1, SAVED_GROUP_ID) < 0) rb_sys_fail(0);
-		    if (setregid(SAVED_GROUP_ID, 0) < 0) rb_sys_fail(0);
-		    SAVED_GROUP_ID = 0; /* (r,e,s) == (x, root, root) */
-		    if (setregid(gid, gid) < 0) rb_sys_fail(0);
-		    SAVED_GROUP_ID = gid;
-		}
-		else { /* (r,e,s) == (z, y, x) */
-		    if (setregid(0, 0) < 0) rb_sys_fail(0);
-		    SAVED_GROUP_ID = 0;
-		    if (setregid(gid, gid) < 0) rb_sys_fail(0);
-		    SAVED_GROUP_ID = gid;
-		}
-	    }
-	}
-	else {
-	    if (setregid(gid, gid) < 0) rb_sys_fail(0);
-	    SAVED_GROUP_ID = gid;
-	}
+        if (getgid() == gid) {
+            if (SAVED_GROUP_ID == gid) {
+                if (setregid(-1, gid) < 0) rb_sys_fail(0);
+            }
+            else {
+                if (gid == 0) { /* (r,e,s) == (root, y, x) */
+                    if (setregid(-1, SAVED_GROUP_ID) < 0) rb_sys_fail(0);
+                    if (setregid(SAVED_GROUP_ID, 0) < 0) rb_sys_fail(0);
+                    SAVED_GROUP_ID = 0; /* (r,e,s) == (x, root, root) */
+                    if (setregid(gid, gid) < 0) rb_sys_fail(0);
+                    SAVED_GROUP_ID = gid;
+                }
+                else { /* (r,e,s) == (z, y, x) */
+                    if (setregid(0, 0) < 0) rb_sys_fail(0);
+                    SAVED_GROUP_ID = 0;
+                    if (setregid(gid, gid) < 0) rb_sys_fail(0);
+                    SAVED_GROUP_ID = gid;
+                }
+            }
+        }
+        else {
+            if (setregid(gid, gid) < 0) rb_sys_fail(0);
+            SAVED_GROUP_ID = gid;
+        }
 #elif defined(HAVE_SETRGID) && defined (HAVE_SETEGID)
-	if (getgid() == gid) {
-	    if (SAVED_GROUP_ID == gid) {
-		if (setegid(gid) < 0) rb_sys_fail(0);
-	    }
-	    else {
-		if (gid == 0) {
-		    if (setegid(gid) < 0) rb_sys_fail(0);
-		    if (setrgid(SAVED_GROUP_ID) < 0) rb_sys_fail(0);
-		    SAVED_GROUP_ID = 0;
-		    if (setrgid(0) < 0) rb_sys_fail(0);
-		}
-		else {
-		    if (setrgid(0) < 0) rb_sys_fail(0);
-		    SAVED_GROUP_ID = 0;
-		    if (setegid(gid) < 0) rb_sys_fail(0);
-		    if (setrgid(gid) < 0) rb_sys_fail(0);
-		    SAVED_GROUP_ID = gid;
-		}
-	    }
-	}
-	else {
-	    if (setegid(gid) < 0) rb_sys_fail(0);
-	    if (setrgid(gid) < 0) rb_sys_fail(0);
-	    SAVED_GROUP_ID = gid;
-	}
+        if (getgid() == gid) {
+            if (SAVED_GROUP_ID == gid) {
+                if (setegid(gid) < 0) rb_sys_fail(0);
+            }
+            else {
+                if (gid == 0) {
+                    if (setegid(gid) < 0) rb_sys_fail(0);
+                    if (setrgid(SAVED_GROUP_ID) < 0) rb_sys_fail(0);
+                    SAVED_GROUP_ID = 0;
+                    if (setrgid(0) < 0) rb_sys_fail(0);
+                }
+                else {
+                    if (setrgid(0) < 0) rb_sys_fail(0);
+                    SAVED_GROUP_ID = 0;
+                    if (setegid(gid) < 0) rb_sys_fail(0);
+                    if (setrgid(gid) < 0) rb_sys_fail(0);
+                    SAVED_GROUP_ID = gid;
+                }
+            }
+        }
+        else {
+            if (setegid(gid) < 0) rb_sys_fail(0);
+            if (setrgid(gid) < 0) rb_sys_fail(0);
+            SAVED_GROUP_ID = gid;
+        }
 #else
-	rb_notimplement();
+        rb_notimplement();
 #endif
     }
     else { /* unprivileged user */
 #if defined(HAVE_SETRESGID)
-	if (setresgid((getgid() == gid)? (rb_gid_t)-1: gid,
-		      (getegid() == gid)? (rb_gid_t)-1: gid,
-		      (SAVED_GROUP_ID == gid)? (rb_gid_t)-1: gid) < 0) rb_sys_fail(0);
-	SAVED_GROUP_ID = gid;
+        if (setresgid((getgid() == gid)? (rb_gid_t)-1: gid,
+                      (getegid() == gid)? (rb_gid_t)-1: gid,
+                      (SAVED_GROUP_ID == gid)? (rb_gid_t)-1: gid) < 0) rb_sys_fail(0);
+        SAVED_GROUP_ID = gid;
 #elif defined(HAVE_SETREGID) && !defined(OBSOLETE_SETREGID)
-	if (SAVED_GROUP_ID == gid) {
-	    if (setregid((getgid() == gid)? (rb_uid_t)-1: gid,
-			 (getegid() == gid)? (rb_uid_t)-1: gid) < 0)
-		rb_sys_fail(0);
-	}
-	else if (getgid() != gid) {
-	    if (setregid(gid, (getegid() == gid)? (rb_uid_t)-1: gid) < 0)
-		rb_sys_fail(0);
-	    SAVED_GROUP_ID = gid;
-	}
-	else if (/* getgid() == gid && */ getegid() != gid) {
-	    if (setregid(getegid(), gid) < 0) rb_sys_fail(0);
-	    SAVED_GROUP_ID = gid;
-	    if (setregid(gid, -1) < 0) rb_sys_fail(0);
-	}
-	else { /* getgid() == gid && getegid() == gid */
-	    if (setregid(-1, SAVED_GROUP_ID) < 0) rb_sys_fail(0);
-	    if (setregid(SAVED_GROUP_ID, gid) < 0) rb_sys_fail(0);
-	    SAVED_GROUP_ID = gid;
-	    if (setregid(gid, -1) < 0) rb_sys_fail(0);
-	}
+        if (SAVED_GROUP_ID == gid) {
+            if (setregid((getgid() == gid)? (rb_uid_t)-1: gid,
+                         (getegid() == gid)? (rb_uid_t)-1: gid) < 0)
+                rb_sys_fail(0);
+        }
+        else if (getgid() != gid) {
+            if (setregid(gid, (getegid() == gid)? (rb_uid_t)-1: gid) < 0)
+                rb_sys_fail(0);
+            SAVED_GROUP_ID = gid;
+        }
+        else if (/* getgid() == gid && */ getegid() != gid) {
+            if (setregid(getegid(), gid) < 0) rb_sys_fail(0);
+            SAVED_GROUP_ID = gid;
+            if (setregid(gid, -1) < 0) rb_sys_fail(0);
+        }
+        else { /* getgid() == gid && getegid() == gid */
+            if (setregid(-1, SAVED_GROUP_ID) < 0) rb_sys_fail(0);
+            if (setregid(SAVED_GROUP_ID, gid) < 0) rb_sys_fail(0);
+            SAVED_GROUP_ID = gid;
+            if (setregid(gid, -1) < 0) rb_sys_fail(0);
+        }
 #elif defined(HAVE_SETRGID) && defined(HAVE_SETEGID)
-	if (SAVED_GROUP_ID == gid) {
-	    if (getegid() != gid && setegid(gid) < 0) rb_sys_fail(0);
-	    if (getgid() != gid && setrgid(gid) < 0) rb_sys_fail(0);
-	}
-	else if (/* SAVED_GROUP_ID != gid && */ getegid() == gid) {
-	    if (getgid() != gid) {
-		if (setrgid(gid) < 0) rb_sys_fail(0);
-		SAVED_GROUP_ID = gid;
-	    }
-	    else {
-		if (setrgid(SAVED_GROUP_ID) < 0) rb_sys_fail(0);
-		SAVED_GROUP_ID = gid;
-		if (setrgid(gid) < 0) rb_sys_fail(0);
-	    }
-	}
-	else if (/* getegid() != gid && */ getgid() == gid) {
-	    if (setegid(gid) < 0) rb_sys_fail(0);
-	    if (setrgid(SAVED_GROUP_ID) < 0) rb_sys_fail(0);
-	    SAVED_GROUP_ID = gid;
-	    if (setrgid(gid) < 0) rb_sys_fail(0);
-	}
-	else {
-	    rb_syserr_fail(EPERM, 0);
-	}
+        if (SAVED_GROUP_ID == gid) {
+            if (getegid() != gid && setegid(gid) < 0) rb_sys_fail(0);
+            if (getgid() != gid && setrgid(gid) < 0) rb_sys_fail(0);
+        }
+        else if (/* SAVED_GROUP_ID != gid && */ getegid() == gid) {
+            if (getgid() != gid) {
+                if (setrgid(gid) < 0) rb_sys_fail(0);
+                SAVED_GROUP_ID = gid;
+            }
+            else {
+                if (setrgid(SAVED_GROUP_ID) < 0) rb_sys_fail(0);
+                SAVED_GROUP_ID = gid;
+                if (setrgid(gid) < 0) rb_sys_fail(0);
+            }
+        }
+        else if (/* getegid() != gid && */ getgid() == gid) {
+            if (setegid(gid) < 0) rb_sys_fail(0);
+            if (setrgid(SAVED_GROUP_ID) < 0) rb_sys_fail(0);
+            SAVED_GROUP_ID = gid;
+            if (setrgid(gid) < 0) rb_sys_fail(0);
+        }
+        else {
+            rb_syserr_fail(EPERM, 0);
+        }
 #elif defined HAVE_44BSD_SETGID
-	if (getgid() == gid) {
-	    /* (r,e,s)==(gid,?,?) ==> (gid,gid,gid) */
-	    if (setgid(gid) < 0) rb_sys_fail(0);
-	    SAVED_GROUP_ID = gid;
-	}
-	else {
-	    rb_syserr_fail(EPERM, 0);
-	}
+        if (getgid() == gid) {
+            /* (r,e,s)==(gid,?,?) ==> (gid,gid,gid) */
+            if (setgid(gid) < 0) rb_sys_fail(0);
+            SAVED_GROUP_ID = gid;
+        }
+        else {
+            rb_syserr_fail(EPERM, 0);
+        }
 #elif defined HAVE_SETEGID
-	if (getgid() == gid && SAVED_GROUP_ID == gid) {
-	    if (setegid(gid) < 0) rb_sys_fail(0);
-	}
-	else {
-	    rb_syserr_fail(EPERM, 0);
-	}
+        if (getgid() == gid && SAVED_GROUP_ID == gid) {
+            if (setegid(gid) < 0) rb_sys_fail(0);
+        }
+        else {
+            rb_syserr_fail(EPERM, 0);
+        }
 #elif defined HAVE_SETGID
-	if (getgid() == gid && SAVED_GROUP_ID == gid) {
-	    if (setgid(gid) < 0) rb_sys_fail(0);
-	}
-	else {
-	    rb_syserr_fail(EPERM, 0);
-	}
+        if (getgid() == gid && SAVED_GROUP_ID == gid) {
+            if (setgid(gid) < 0) rb_sys_fail(0);
+        }
+        else {
+            rb_syserr_fail(EPERM, 0);
+        }
 #else
-	(void)gid;
-	rb_notimplement();
+        (void)gid;
+        rb_notimplement();
 #endif
     }
     return id;
@@ -7327,10 +7327,10 @@ proc_seteuid(rb_uid_t uid)
     if (seteuid(uid) < 0) rb_sys_fail(0);
 #elif defined HAVE_SETUID
     if (uid == getuid()) {
-	if (setuid(uid) < 0) rb_sys_fail(0);
+        if (setuid(uid) < 0) rb_sys_fail(0);
     }
     else {
-	rb_notimplement();
+        rb_notimplement();
     }
 #else
     rb_notimplement();
@@ -7373,18 +7373,18 @@ rb_seteuid_core(rb_uid_t euid)
 
 #if defined(HAVE_SETRESUID)
     if (uid != euid) {
-	if (setresuid(-1,euid,euid) < 0) rb_sys_fail(0);
-	SAVED_USER_ID = euid;
+        if (setresuid(-1,euid,euid) < 0) rb_sys_fail(0);
+        SAVED_USER_ID = euid;
     }
     else {
-	if (setresuid(-1,euid,-1) < 0) rb_sys_fail(0);
+        if (setresuid(-1,euid,-1) < 0) rb_sys_fail(0);
     }
 #elif defined(HAVE_SETREUID) && !defined(OBSOLETE_SETREUID)
     if (setreuid(-1, euid) < 0) rb_sys_fail(0);
     if (uid != euid) {
-	if (setreuid(euid,uid) < 0) rb_sys_fail(0);
-	if (setreuid(uid,euid) < 0) rb_sys_fail(0);
-	SAVED_USER_ID = euid;
+        if (setreuid(euid,uid) < 0) rb_sys_fail(0);
+        if (setreuid(uid,euid) < 0) rb_sys_fail(0);
+        SAVED_USER_ID = euid;
     }
 #elif defined HAVE_SETEUID
     if (seteuid(euid) < 0) rb_sys_fail(0);
@@ -7470,10 +7470,10 @@ proc_setegid(VALUE obj, VALUE egid)
     if (setegid(gid) < 0) rb_sys_fail(0);
 #elif defined HAVE_SETGID
     if (gid == getgid()) {
-	if (setgid(gid) < 0) rb_sys_fail(0);
+        if (setgid(gid) < 0) rb_sys_fail(0);
     }
     else {
-	rb_notimplement();
+        rb_notimplement();
     }
 #else
     rb_notimplement();
@@ -7503,18 +7503,18 @@ rb_setegid_core(rb_gid_t egid)
 
 #if defined(HAVE_SETRESGID)
     if (gid != egid) {
-	if (setresgid(-1,egid,egid) < 0) rb_sys_fail(0);
-	SAVED_GROUP_ID = egid;
+        if (setresgid(-1,egid,egid) < 0) rb_sys_fail(0);
+        SAVED_GROUP_ID = egid;
     }
     else {
-	if (setresgid(-1,egid,-1) < 0) rb_sys_fail(0);
+        if (setresgid(-1,egid,-1) < 0) rb_sys_fail(0);
     }
 #elif defined(HAVE_SETREGID) && !defined(OBSOLETE_SETREGID)
     if (setregid(-1, egid) < 0) rb_sys_fail(0);
     if (gid != egid) {
-	if (setregid(egid,gid) < 0) rb_sys_fail(0);
-	if (setregid(gid,egid) < 0) rb_sys_fail(0);
-	SAVED_GROUP_ID = egid;
+        if (setregid(egid,gid) < 0) rb_sys_fail(0);
+        if (setregid(gid,egid) < 0) rb_sys_fail(0);
+        SAVED_GROUP_ID = egid;
     }
 #elif defined HAVE_SETEGID
     if (setegid(egid) < 0) rb_sys_fail(0);
@@ -7730,27 +7730,27 @@ p_uid_switch(VALUE obj)
     euid = geteuid();
 
     if (uid != euid) {
-	proc_seteuid(uid);
-	if (rb_block_given_p()) {
-	    under_uid_switch = 1;
-	    return rb_ensure(rb_yield, Qnil, p_uid_sw_ensure, SAVED_USER_ID);
-	}
-	else {
-	    return UIDT2NUM(euid);
-	}
+        proc_seteuid(uid);
+        if (rb_block_given_p()) {
+            under_uid_switch = 1;
+            return rb_ensure(rb_yield, Qnil, p_uid_sw_ensure, SAVED_USER_ID);
+        }
+        else {
+            return UIDT2NUM(euid);
+        }
     }
     else if (euid != SAVED_USER_ID) {
-	proc_seteuid(SAVED_USER_ID);
-	if (rb_block_given_p()) {
-	    under_uid_switch = 1;
-	    return rb_ensure(rb_yield, Qnil, p_uid_sw_ensure, euid);
-	}
-	else {
-	    return UIDT2NUM(uid);
-	}
+        proc_seteuid(SAVED_USER_ID);
+        if (rb_block_given_p()) {
+            under_uid_switch = 1;
+            return rb_ensure(rb_yield, Qnil, p_uid_sw_ensure, euid);
+        }
+        else {
+            return UIDT2NUM(uid);
+        }
     }
     else {
-	rb_syserr_fail(EPERM, 0);
+        rb_syserr_fail(EPERM, 0);
     }
 
     UNREACHABLE_RETURN(Qnil);
@@ -7774,15 +7774,15 @@ p_uid_switch(VALUE obj)
     euid = geteuid();
 
     if (uid == euid) {
-	rb_syserr_fail(EPERM, 0);
+        rb_syserr_fail(EPERM, 0);
     }
     p_uid_exchange(obj);
     if (rb_block_given_p()) {
-	under_uid_switch = 1;
-	return rb_ensure(rb_yield, Qnil, p_uid_sw_ensure, obj);
+        under_uid_switch = 1;
+        return rb_ensure(rb_yield, Qnil, p_uid_sw_ensure, obj);
     }
     else {
-	return UIDT2NUM(euid);
+        return UIDT2NUM(euid);
     }
 }
 #endif
@@ -7844,27 +7844,27 @@ p_gid_switch(VALUE obj)
     egid = getegid();
 
     if (gid != egid) {
-	proc_setegid(obj, GIDT2NUM(gid));
-	if (rb_block_given_p()) {
-	    under_gid_switch = 1;
-	    return rb_ensure(rb_yield, Qnil, p_gid_sw_ensure, SAVED_GROUP_ID);
-	}
-	else {
-	    return GIDT2NUM(egid);
-	}
+        proc_setegid(obj, GIDT2NUM(gid));
+        if (rb_block_given_p()) {
+            under_gid_switch = 1;
+            return rb_ensure(rb_yield, Qnil, p_gid_sw_ensure, SAVED_GROUP_ID);
+        }
+        else {
+            return GIDT2NUM(egid);
+        }
     }
     else if (egid != SAVED_GROUP_ID) {
-	proc_setegid(obj, GIDT2NUM(SAVED_GROUP_ID));
-	if (rb_block_given_p()) {
-	    under_gid_switch = 1;
-	    return rb_ensure(rb_yield, Qnil, p_gid_sw_ensure, egid);
-	}
-	else {
-	    return GIDT2NUM(gid);
-	}
+        proc_setegid(obj, GIDT2NUM(SAVED_GROUP_ID));
+        if (rb_block_given_p()) {
+            under_gid_switch = 1;
+            return rb_ensure(rb_yield, Qnil, p_gid_sw_ensure, egid);
+        }
+        else {
+            return GIDT2NUM(gid);
+        }
     }
     else {
-	rb_syserr_fail(EPERM, 0);
+        rb_syserr_fail(EPERM, 0);
     }
 
     UNREACHABLE_RETURN(Qnil);
@@ -7888,15 +7888,15 @@ p_gid_switch(VALUE obj)
     egid = getegid();
 
     if (gid == egid) {
-	rb_syserr_fail(EPERM, 0);
+        rb_syserr_fail(EPERM, 0);
     }
     p_gid_exchange(obj);
     if (rb_block_given_p()) {
-	under_gid_switch = 1;
-	return rb_ensure(rb_yield, Qnil, p_gid_sw_ensure, obj);
+        under_gid_switch = 1;
+        return rb_ensure(rb_yield, Qnil, p_gid_sw_ensure, obj);
     }
     else {
-	return GIDT2NUM(egid);
+        return GIDT2NUM(egid);
     }
 }
 #endif
@@ -7937,7 +7937,7 @@ rb_proc_times(VALUE obj)
     struct rusage usage_s, usage_c;
 
     if (getrusage(RUSAGE_SELF, &usage_s) != 0 || getrusage(RUSAGE_CHILDREN, &usage_c) != 0)
-	rb_sys_fail("getrusage");
+        rb_sys_fail("getrusage");
     utime = DBL2NUM((double)usage_s.ru_utime.tv_sec + (double)usage_s.ru_utime.tv_usec/1e6);
     stime = DBL2NUM((double)usage_s.ru_stime.tv_sec + (double)usage_s.ru_stime.tv_usec/1e6);
     cutime = DBL2NUM((double)usage_c.ru_utime.tv_sec + (double)usage_c.ru_utime.tv_usec/1e6);
@@ -8463,7 +8463,7 @@ rb_clock_gettime(int argc, VALUE *argv, VALUE _)
 
 #ifdef __APPLE__
         if (clk_id == RUBY_MACH_ABSOLUTE_TIME_BASED_CLOCK_MONOTONIC) {
-	    const mach_timebase_info_data_t *info = get_mach_timebase_info();
+            const mach_timebase_info_data_t *info = get_mach_timebase_info();
             uint64_t t = mach_absolute_time();
             tt.count = (int32_t)(t % 1000000000);
             tt.giga_count = t / 1000000000;
@@ -8637,7 +8637,7 @@ rb_clock_getres(int argc, VALUE *argv, VALUE _)
 
 #ifdef RUBY_MACH_ABSOLUTE_TIME_BASED_CLOCK_MONOTONIC
         if (clk_id == RUBY_MACH_ABSOLUTE_TIME_BASED_CLOCK_MONOTONIC) {
-	    const mach_timebase_info_data_t *info = get_mach_timebase_info();
+            const mach_timebase_info_data_t *info = get_mach_timebase_info();
             tt.count = 1;
             tt.giga_count = 0;
             numerators[num_numerators++] = info->numer;
@@ -8851,20 +8851,20 @@ InitVM_process(void)
     {
         VALUE inf = RLIM2NUM(RLIM_INFINITY);
 #ifdef RLIM_SAVED_MAX
-	{
-	    VALUE v = RLIM_INFINITY == RLIM_SAVED_MAX ? inf : RLIM2NUM(RLIM_SAVED_MAX);
-	    /* see Process.setrlimit */
-	    rb_define_const(rb_mProcess, "RLIM_SAVED_MAX", v);
-	}
+        {
+            VALUE v = RLIM_INFINITY == RLIM_SAVED_MAX ? inf : RLIM2NUM(RLIM_SAVED_MAX);
+            /* see Process.setrlimit */
+            rb_define_const(rb_mProcess, "RLIM_SAVED_MAX", v);
+        }
 #endif
-	/* see Process.setrlimit */
+        /* see Process.setrlimit */
         rb_define_const(rb_mProcess, "RLIM_INFINITY", inf);
 #ifdef RLIM_SAVED_CUR
-	{
-	    VALUE v = RLIM_INFINITY == RLIM_SAVED_CUR ? inf : RLIM2NUM(RLIM_SAVED_CUR);
-	    /* see Process.setrlimit */
-	    rb_define_const(rb_mProcess, "RLIM_SAVED_CUR", v);
-	}
+        {
+            VALUE v = RLIM_INFINITY == RLIM_SAVED_CUR ? inf : RLIM2NUM(RLIM_SAVED_CUR);
+            /* see Process.setrlimit */
+            rb_define_const(rb_mProcess, "RLIM_SAVED_CUR", v);
+        }
 #endif
     }
 #ifdef RLIMIT_AS

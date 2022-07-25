@@ -1,7 +1,7 @@
 # frozen_string_literal: true
-require_relative 'helper'
-require 'rubygems'
-require 'shellwords'
+require_relative "helper"
+require "rubygems"
+require "shellwords"
 
 class TestConfig < Gem::TestCase
   def test_datadir

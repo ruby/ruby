@@ -136,8 +136,8 @@ module Gem
       "Found %s (%s), but was for platform%s %s" %
         [@name,
          @version,
-         @platforms.size == 1 ? '' : 's',
-         @platforms.join(' ,')]
+         @platforms.size == 1 ? "" : "s",
+         @platforms.join(" ,")]
     end
   end
 

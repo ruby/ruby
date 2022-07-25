@@ -20,9 +20,9 @@ NOINLINE(void rb_gc_set_stack_end(VALUE **stack_end_p));
 
 #define RB_GC_SAVE_MACHINE_CONTEXT(th)				\
     do {							\
-	FLUSH_REGISTER_WINDOWS;					\
-	setjmp((th)->ec->machine.regs);				\
-	SET_MACHINE_STACK_END(&(th)->ec->machine.stack_end);	\
+        FLUSH_REGISTER_WINDOWS;					\
+        setjmp((th)->ec->machine.regs);				\
+        SET_MACHINE_STACK_END(&(th)->ec->machine.stack_end);	\
     } while (0)
 
 /* for GC debug */
@@ -44,13 +44,13 @@ static inline void
 rb_gc_debug_body(const char *mode, const char *msg, int st, void *ptr)
 {
     if (st == 0) {
-	ruby_gc_debug_indent--;
+        ruby_gc_debug_indent--;
     }
     rb_gc_debug_indent();
     ruby_debug_printf("%s: %s %s (%p)\n", mode, st ? "->" : "<-", msg, ptr);
 
     if (st) {
-	ruby_gc_debug_indent++;
+        ruby_gc_debug_indent++;
     }
 
     fflush(stdout);
@@ -88,9 +88,9 @@ rb_gc_debug_body(const char *mode, const char *msg, int st, void *ptr)
 RUBY_EXTERN int ruby_stack_grow_direction;
 int ruby_get_stack_grow_direction(volatile VALUE *addr);
 # define stack_growup_p(x) (			\
-	(ruby_stack_grow_direction ?		\
-	 ruby_stack_grow_direction :		\
-	 ruby_get_stack_grow_direction(x)) > 0)
+        (ruby_stack_grow_direction ?		\
+         ruby_stack_grow_direction :		\
+         ruby_get_stack_grow_direction(x)) > 0)
 # define STACK_UPPER(x, a, b) (stack_growup_p(x) ? (a) : (b))
 #endif
 

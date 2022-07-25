@@ -1,6 +1,6 @@
 # frozen_string_literal: true
-require 'net/http'
-require_relative 'user_interaction'
+require "net/http"
+require_relative "user_interaction"
 
 class Gem::Request
   extend Gem::UserInteraction
@@ -44,7 +44,7 @@ class Gem::Request
   end
 
   def self.configure_connection_for_https(connection, cert_files)
-    raise Gem::Exception.new('OpenSSL is not available. Install OpenSSL and rebuild Ruby (preferred) or use non-HTTPS sources') unless Gem::HAVE_OPENSSL
+    raise Gem::Exception.new("OpenSSL is not available. Install OpenSSL and rebuild Ruby (preferred) or use non-HTTPS sources") unless Gem::HAVE_OPENSSL
 
     connection.use_ssl = true
     connection.verify_mode =
@@ -96,10 +96,10 @@ class Gem::Request
     return unless cert
     case error_number
     when OpenSSL::X509::V_ERR_CERT_HAS_EXPIRED then
-      require 'time'
+      require "time"
       "Certificate #{cert.subject} expired at #{cert.not_after.iso8601}"
     when OpenSSL::X509::V_ERR_CERT_NOT_YET_VALID then
-      require 'time'
+      require "time"
       "Certificate #{cert.subject} not valid until #{cert.not_before.iso8601}"
     when OpenSSL::X509::V_ERR_CERT_REJECTED then
       "Certificate #{cert.subject} is rejected"
@@ -140,13 +140,13 @@ class Gem::Request
                          Gem::UriFormatter.new(@uri.password).unescape
     end
 
-    request.add_field 'User-Agent', @user_agent
-    request.add_field 'Connection', 'keep-alive'
-    request.add_field 'Keep-Alive', '30'
+    request.add_field "User-Agent", @user_agent
+    request.add_field "Connection", "keep-alive"
+    request.add_field "Keep-Alive", "30"
 
     if @last_modified
-      require 'time'
-      request.add_field 'If-Modified-Since', @last_modified.httpdate
+      require "time"
+      request.add_field "If-Modified-Since", @last_modified.httpdate
     end
 
     yield request if block_given?
@@ -158,7 +158,7 @@ class Gem::Request
   # Returns a proxy URI for the given +scheme+ if one is set in the
   # environment variables.
 
-  def self.get_proxy_from_env(scheme = 'http')
+  def self.get_proxy_from_env(scheme = "http")
     _scheme = scheme.downcase
     _SCHEME = scheme.upcase
     env_proxy = ENV["#{_scheme}_proxy"] || ENV["#{_SCHEME}_PROXY"]
@@ -166,8 +166,8 @@ class Gem::Request
     no_env_proxy = env_proxy.nil? || env_proxy.empty?
 
     if no_env_proxy
-      return (_scheme == 'https' || _scheme == 'http') ?
-        :no_proxy : get_proxy_from_env('http')
+      return (_scheme == "https" || _scheme == "http") ?
+        :no_proxy : get_proxy_from_env("http")
     end
 
     require "uri"
@@ -229,14 +229,14 @@ class Gem::Request
 
       reset connection
 
-      raise Gem::RemoteFetcher::FetchError.new('too many bad responses', @uri) if bad_response
+      raise Gem::RemoteFetcher::FetchError.new("too many bad responses", @uri) if bad_response
 
       bad_response = true
       retry
     rescue Net::HTTPFatalError
       verbose "fatal error"
 
-      raise Gem::RemoteFetcher::FetchError.new('fatal error', @uri)
+      raise Gem::RemoteFetcher::FetchError.new("fatal error", @uri)
     # HACK work around EOFError bug in Net::HTTP
     # NOTE Errno::ECONNABORTED raised a lot on Windows, and make impossible
     # to install gems.
@@ -246,7 +246,7 @@ class Gem::Request
       requests = @requests[connection.object_id]
       verbose "connection reset after #{requests} requests, retrying"
 
-      raise Gem::RemoteFetcher::FetchError.new('too many connection resets', @uri) if retried
+      raise Gem::RemoteFetcher::FetchError.new("too many connection resets", @uri) if retried
 
       reset connection
 
@@ -273,7 +273,7 @@ class Gem::Request
     ua = "RubyGems/#{Gem::VERSION} #{Gem::Platform.local}".dup
 
     ruby_version = RUBY_VERSION
-    ruby_version += 'dev' if RUBY_PATCHLEVEL == -1
+    ruby_version += "dev" if RUBY_PATCHLEVEL == -1
 
     ua << " Ruby/#{ruby_version} (#{RUBY_RELEASE_DATE}"
     if RUBY_PATCHLEVEL >= 0
@@ -283,12 +283,12 @@ class Gem::Request
     end
     ua << ")"
 
-    ua << " #{RUBY_ENGINE}" if RUBY_ENGINE != 'ruby'
+    ua << " #{RUBY_ENGINE}" if RUBY_ENGINE != "ruby"
 
     ua
   end
 end
 
-require_relative 'request/http_pool'
-require_relative 'request/https_pool'
-require_relative 'request/connection_pools'
+require_relative "request/http_pool"
+require_relative "request/https_pool"
+require_relative "request/connection_pools"

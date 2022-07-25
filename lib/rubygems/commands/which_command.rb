@@ -1,17 +1,17 @@
 # frozen_string_literal: true
-require_relative '../command'
+require_relative "../command"
 
 class Gem::Commands::WhichCommand < Gem::Command
   def initialize
-    super 'which', 'Find the location of a library file you can require',
+    super "which", "Find the location of a library file you can require",
           :search_gems_first => false, :show_all => false
 
-    add_option '-a', '--[no-]all', 'show all matching files' do |show_all, options|
+    add_option "-a", "--[no-]all", "show all matching files" do |show_all, options|
       options[:show_all] = show_all
     end
 
-    add_option '-g', '--[no-]gems-first',
-               'search gems before non-gems' do |gems_first, options|
+    add_option "-g", "--[no-]gems-first",
+               "search gems before non-gems" do |gems_first, options|
       options[:search_gems_first] = gems_first
     end
   end
@@ -39,7 +39,7 @@ requiring to see why it does not behave as you expect.
     found = true
 
     options[:args].each do |arg|
-      arg = arg.sub(/#{Regexp.union(*Gem.suffixes)}$/, '')
+      arg = arg.sub(/#{Regexp.union(*Gem.suffixes)}$/, "")
       dirs = $LOAD_PATH
 
       spec = Gem::Specification.find_by_path arg

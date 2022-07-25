@@ -9,6 +9,7 @@
  */
 
 #include "debug_counter.h"
+#include "internal/class.h"
 
 enum vm_call_flag_bits {
     VM_CALL_ARGS_SPLAT_bit,     /* m(*args) */
@@ -363,6 +364,18 @@ vm_cc_attr_index_p(const struct rb_callcache *cc)
     return cc->aux_.attr_index > 0;
 }
 
+static inline uint32_t
+vm_ic_entry_index(const struct iseq_inline_iv_cache_entry *ic)
+{
+    return ic->entry->index;
+}
+
+static inline bool
+vm_ic_entry_p(const struct iseq_inline_iv_cache_entry *ic)
+{
+    return ic->entry;
+}
+
 static inline unsigned int
 vm_cc_cmethod_missing_reason(const struct rb_callcache *cc)
 {
@@ -414,6 +427,13 @@ vm_cc_attr_index_set(const struct rb_callcache *cc, int index)
     VM_ASSERT(IMEMO_TYPE_P(cc, imemo_callcache));
     VM_ASSERT(cc != vm_cc_empty());
     *(int *)&cc->aux_.attr_index = index + 1;
+}
+
+static inline void
+vm_ic_entry_set(struct iseq_inline_iv_cache_entry *ic, struct rb_iv_index_tbl_entry *entry, const rb_iseq_t *iseq)
+{
+    ic->entry = entry;
+    RB_OBJ_WRITTEN(iseq, Qundef, entry->class_value);
 }
 
 static inline void

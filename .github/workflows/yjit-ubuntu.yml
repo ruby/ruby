@@ -98,10 +98,10 @@ jobs:
       - name: Run configure
         run: ../src/configure -C --disable-install-doc ${{ matrix.configure }}
       - run: make incs
+      - run: make prepare-gems
+        if: ${{ matrix.test_task == 'test-bundled-gems' }}
       - run: make -j
       - run: make leaked-globals
-        if: ${{ matrix.test_task == 'check' }}
-      - run: make prepare-gems
         if: ${{ matrix.test_task == 'check' }}
       - name: Create dummy files in build dir
         run: |

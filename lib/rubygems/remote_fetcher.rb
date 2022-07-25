@@ -1,11 +1,11 @@
 # frozen_string_literal: true
-require_relative '../rubygems'
-require_relative 'request'
-require_relative 'request/connection_pools'
-require_relative 's3_uri_signer'
-require_relative 'uri_formatter'
-require_relative 'uri'
-require_relative 'user_interaction'
+require_relative "../rubygems"
+require_relative "request"
+require_relative "request/connection_pools"
+require_relative "s3_uri_signer"
+require_relative "uri_formatter"
+require_relative "uri"
+require_relative "user_interaction"
 
 ##
 # RemoteFetcher handles the details of fetching gems and gem information from
@@ -72,10 +72,10 @@ class Gem::RemoteFetcher
   #            fetching the gem.
 
   def initialize(proxy=nil, dns=nil, headers={})
-    require_relative 'core_ext/tcpsocket_init' if Gem.configuration.ipv4_fallback_enabled
-    require 'net/http'
-    require 'stringio'
-    require 'uri'
+    require_relative "core_ext/tcpsocket_init" if Gem.configuration.ipv4_fallback_enabled
+    require "net/http"
+    require "stringio"
+    require "uri"
 
     Socket.do_not_reverse_lookup = true
 
@@ -136,7 +136,7 @@ class Gem::RemoteFetcher
     # REFACTOR: split this up and dispatch on scheme (eg download_http)
     # REFACTOR: be sure to clean up fake fetcher when you do this... cleaner
     case scheme
-    when 'http', 'https', 's3' then
+    when "http", "https", "s3" then
       unless File.exist? local_gem_path
         begin
           verbose "Downloading gem #{gem_file_name}"
@@ -156,12 +156,12 @@ class Gem::RemoteFetcher
           self.cache_update_path remote_gem_path, local_gem_path
         end
       end
-    when 'file' then
+    when "file" then
       begin
         path = source_uri.path
-        path = File.dirname(path) if File.extname(path) == '.gem'
+        path = File.dirname(path) if File.extname(path) == ".gem"
 
-        remote_gem_path = Gem::Util.correct_for_windows_path(File.join(path, 'gems', gem_file_name))
+        remote_gem_path = Gem::Util.correct_for_windows_path(File.join(path, "gems", gem_file_name))
 
         FileUtils.cp(remote_gem_path, local_gem_path)
       rescue Errno::EACCES
@@ -171,7 +171,7 @@ class Gem::RemoteFetcher
       verbose "Using local gem #{local_gem_path}"
     when nil then # TODO test for local overriding cache
       source_path = if Gem.win_platform? && source_uri.scheme &&
-                       !source_uri.path.include?(':')
+                       !source_uri.path.include?(":")
         "#{source_uri.scheme}:#{source_uri.path}"
       else
         source_uri.path
@@ -216,9 +216,9 @@ class Gem::RemoteFetcher
       head ? response : response.body
     when Net::HTTPMovedPermanently, Net::HTTPFound, Net::HTTPSeeOther,
          Net::HTTPTemporaryRedirect then
-      raise FetchError.new('too many redirects', uri) if depth > 10
+      raise FetchError.new("too many redirects", uri) if depth > 10
 
-      unless location = response['Location']
+      unless location = response["Location"]
         raise FetchError.new("redirecting but no redirect location was given", uri)
       end
       location = Gem::Uri.new location
@@ -312,7 +312,7 @@ class Gem::RemoteFetcher
   end
 
   def https?(uri)
-    uri.scheme.downcase == 'https'
+    uri.scheme.downcase == "https"
   end
 
   def close_all

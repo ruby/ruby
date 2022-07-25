@@ -1,6 +1,6 @@
 # frozen_string_literal: true
-require_relative 'helper'
-require 'rubygems/commands/server_command'
+require_relative "helper"
+require "rubygems/commands/server_command"
 
 class TestGemCommandsServerCommand < Gem::TestCase
   def setup
