@@ -977,10 +977,9 @@ rb_ary_hidden_new(long capa)
 VALUE
 rb_ary_hidden_new_fill(long capa)
 {
-    VALUE ary = ary_new(0, capa);
+    VALUE ary = rb_ary_hidden_new(capa);
     ary_memfill(ary, 0, capa, Qnil);
     ARY_SET_LEN(ary, capa);
-    rb_ary_transient_heap_evacuate(ary, TRUE);
     return ary;
 }
 
