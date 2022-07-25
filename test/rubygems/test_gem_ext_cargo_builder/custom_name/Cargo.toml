@@ -7,4 +7,4 @@ edition = "2021"
 crate-type = ["cdylib"]
 
 [dependencies]
-rb-sys = { version = "0.9.20", features = ["gem"] }
+rb-sys = { version = "0.9.26", features = ["gem"] }
