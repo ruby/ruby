@@ -21,6 +21,7 @@ class LeakChecker
     leaks = [
       check_fd_leak(test_name),
       check_thread_leak(test_name),
+      check_tracepoint_leak(test_name),
       check_tempfile_leak(test_name),
       check_env(test_name),
       check_encodings(test_name),
@@ -208,6 +209,16 @@ class LeakChecker
     end
     @thread_info = live2
     return leaked
+  end
+
+  def check_tracepoint_leak(test_name)
+    leaked_trace_points = ObjectSpace.each_object(TracePoint).select(&:enabled?)
+    return false if leaked_trace_points.empty?
+
+    leaked_trace_points.each do |tp|
+      puts "Leaked tracepoint: #{test_name}: #{tp}"
+    end
+    true
   end
 
   e = ENV["_Ruby_Env_Ignorecase_"], ENV["_RUBY_ENV_IGNORECASE_"]
