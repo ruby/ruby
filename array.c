@@ -1025,14 +1025,6 @@ rb_ary_memsize(VALUE ary)
     }
 }
 
-static inline void
-ary_discard(VALUE ary)
-{
-    rb_ary_free(ary);
-    RBASIC(ary)->flags |= RARRAY_EMBED_FLAG;
-    RBASIC(ary)->flags &= ~(RARRAY_EMBED_LEN_MASK | RARRAY_TRANSIENT_FLAG);
-}
-
 static VALUE
 ary_make_shared(VALUE ary)
 {
@@ -6938,7 +6930,6 @@ rb_ary_cycle(int argc, VALUE *argv, VALUE ary)
 }
 
 #define tmpary(n) rb_ary_tmp_new(n)
-#define tmpary_discard(a) (ary_discard(a), RBASIC_SET_CLASS_RAW(a, rb_cArray))
 
 /*
  * Build a ruby array of the corresponding values and yield it to the
@@ -7711,8 +7702,8 @@ rb_ary_product(int argc, VALUE *argv, VALUE ary)
             counters[m]++;
         }
     }
+
 done:
-    tmpary_discard(t0);
     ALLOCV_END(t1);
 
     return NIL_P(result) ? ary : result;
