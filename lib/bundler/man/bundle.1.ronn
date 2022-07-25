@@ -76,7 +76,7 @@ We divide `bundle` subcommands into primary commands and utilities:
 * [`bundle lock(1)`](bundle-lock.1.html):
   Generate a lockfile for your dependencies
 
-* [`bundle viz(1)`](bundle-viz.1.html):
+* [`bundle viz(1)`](bundle-viz.1.html) (deprecated):
   Generate a visual representation of your dependencies
 
 * [`bundle init(1)`](bundle-init.1.html):
