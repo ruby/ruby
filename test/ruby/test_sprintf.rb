@@ -507,6 +507,16 @@ class TestSprintf < Test::Unit::TestCase
     end
   end
 
+  def test_coderange
+    format_str = "wrong constant name %s"
+    interpolated_str = "\u3042"
+    assert_predicate format_str, :ascii_only?
+    refute_predicate interpolated_str, :ascii_only?
+
+    str = format_str % interpolated_str
+    refute_predicate str, :ascii_only?
+  end
+
   def test_named_default
     h = Hash.new('world')
     assert_equal("hello world", "hello %{location}" % h)

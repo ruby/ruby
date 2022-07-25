@@ -937,6 +937,8 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
         if (RTEST(ruby_verbose)) rb_warn("%s", mesg);
     }
     rb_str_resize(result, blen);
+    // rb_str_format mutates the string without updating coderange
+    ENC_CODERANGE_CLEAR(result);
 
     return result;
 }
@@ -1163,6 +1165,8 @@ ruby_vsprintf0(VALUE result, char *p, const char *fmt, va_list ap)
     buffer.value = 0;
     BSD_vfprintf(&f, fmt, ap);
     RBASIC_SET_CLASS_RAW(result, klass);
+    // vfprintf mutates the string without updating coderange
+    ENC_CODERANGE_CLEAR(result);
     rb_str_resize(result, (char *)f._p - RSTRING_PTR(result));
 #undef f
 }
@@ -1183,7 +1187,6 @@ rb_enc_vsprintf(rb_encoding *enc, const char *fmt, va_list ap)
         rb_enc_associate(result, enc);
     }
     ruby_vsprintf0(result, RSTRING_PTR(result), fmt, ap);
-
     return result;
 }
 
