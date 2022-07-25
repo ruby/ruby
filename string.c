@@ -2498,7 +2498,6 @@ rb_str_modify_expand(VALUE str, long expand)
     else if (expand > 0) {
         RESIZE_CAPA_TERM(str, len + expand, termlen);
     }
-    ENC_CODERANGE_CLEAR(str);
 }
 
 /* As rb_str_modify(), but don't clear coderange */
@@ -3073,16 +3072,16 @@ rb_str_set_len(VALUE str, long len)
 VALUE
 rb_str_resize(VALUE str, long len)
 {
-    long slen;
-    int independent;
-
     if (len < 0) {
         rb_raise(rb_eArgError, "negative string size (or size too big)");
     }
 
-    independent = str_independent(str);
-    ENC_CODERANGE_CLEAR(str);
-    slen = RSTRING_LEN(str);
+    int independent = str_independent(str);
+    long slen = RSTRING_LEN(str);
+
+    if (slen > len && ENC_CODERANGE(str) != ENC_CODERANGE_7BIT) {
+        ENC_CODERANGE_CLEAR(str);
+    }
 
     {
         long capa;

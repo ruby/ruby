@@ -4090,6 +4090,9 @@ static VALUE
 str_shrink(VALUE str)
 {
     rb_str_resize(str, RSTRING_LEN(str));
+    // expand_path on Windows can sometimes mutate the string
+    // without clearing its coderange
+    ENC_CODERANGE_CLEAR(str);
     return str;
 }
 
