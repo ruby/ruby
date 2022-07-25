@@ -5,12 +5,12 @@
 # See LICENSE.txt for permissions.
 #++
 
-require_relative 'installer_uninstaller_utils'
-require_relative 'exceptions'
-require_relative 'deprecate'
-require_relative 'package'
-require_relative 'ext'
-require_relative 'user_interaction'
+require_relative "installer_uninstaller_utils"
+require_relative "exceptions"
+require_relative "deprecate"
+require_relative "package"
+require_relative "ext"
+require_relative "user_interaction"
 
 ##
 # The installer installs the files contained in the .gem into the Gem.home.
@@ -125,14 +125,14 @@ class Gem::Installer
       @spec = spec
     end
 
-    def extract_files(destination_dir, pattern = '*')
+    def extract_files(destination_dir, pattern = "*")
       FileUtils.mkdir_p destination_dir
 
       spec.files.each do |file|
         file = File.join destination_dir, file
         next if File.exist? file
         FileUtils.mkdir_p File.dirname(file)
-        File.open file, 'w' do |fp|
+        File.open file, "w" do |fp|
           fp.puts "# #{file}"
         end
       end
@@ -177,7 +177,7 @@ class Gem::Installer
   # :post_install_message:: Print gem post install message if true
 
   def initialize(package, options={})
-    require 'fileutils'
+    require "fileutils"
 
     @options = options
     @package = package
@@ -219,7 +219,7 @@ class Gem::Installer
     ruby_executable = false
     existing = nil
 
-    File.open generated_bin, 'rb' do |io|
+    File.open generated_bin, "rb" do |io|
       line = io.gets
       shebang = /^#!.*ruby/
 
@@ -256,7 +256,7 @@ class Gem::Installer
     question = "#{spec.name}'s executable \"#{filename}\" conflicts with ".dup
 
     if ruby_executable
-      question << (existing || 'an unknown executable')
+      question << (existing || "an unknown executable")
 
       return if ask_yes_no "#{question}\nOverwrite the executable?", false
 
@@ -474,7 +474,7 @@ class Gem::Installer
     if Gem.win_platform?
       script_name = formatted_program_filename(filename) + ".bat"
       script_path = File.join bindir, File.basename(script_name)
-      File.open script_path, 'w' do |file|
+      File.open script_path, "w" do |file|
         file.puts windows_stub_script(bindir, filename)
       end
 
@@ -504,7 +504,7 @@ class Gem::Installer
       dir_mode = options[:prog_mode] || (mode | 0111)
 
       unless dir_mode == mode
-        require 'fileutils'
+        require "fileutils"
         FileUtils.chmod dir_mode, bin_path
       end
 
@@ -541,10 +541,10 @@ class Gem::Installer
   def generate_bin_script(filename, bindir)
     bin_script_path = File.join bindir, formatted_program_filename(filename)
 
-    require 'fileutils'
+    require "fileutils"
     FileUtils.rm_f bin_script_path # prior install may have been --no-wrappers
 
-    File.open bin_script_path, 'wb', 0755 do |file|
+    File.open bin_script_path, "wb", 0755 do |file|
       file.print app_script_text(filename)
       file.chmod(options[:prog_mode] || 0755)
     end
@@ -565,7 +565,7 @@ class Gem::Installer
     if File.exist? dst
       if File.symlink? dst
         link = File.readlink(dst).split File::SEPARATOR
-        cur_version = Gem::Version.create(link[-3].sub(/^.*-/, ''))
+        cur_version = Gem::Version.create(link[-3].sub(/^.*-/, ""))
         return if spec.version < cur_version
       end
       File.unlink dst
@@ -684,9 +684,9 @@ class Gem::Installer
     @build_args = options[:build_args]
 
     unless @build_root.nil?
-      @bin_dir = File.join(@build_root, @bin_dir.gsub(/^[a-zA-Z]:/, ''))
-      @gem_home = File.join(@build_root, @gem_home.gsub(/^[a-zA-Z]:/, ''))
-      @plugins_dir = File.join(@build_root, @plugins_dir.gsub(/^[a-zA-Z]:/, ''))
+      @bin_dir = File.join(@build_root, @bin_dir.gsub(/^[a-zA-Z]:/, ""))
+      @gem_home = File.join(@build_root, @gem_home.gsub(/^[a-zA-Z]:/, ""))
+      @plugins_dir = File.join(@build_root, @plugins_dir.gsub(/^[a-zA-Z]:/, ""))
       alert_warning "You build with buildroot.\n  Build root: #{@build_root}\n  Bin dir: #{@bin_dir}\n  Gem home: #{@gem_home}\n  Plugins dir: #{@plugins_dir}"
     end
   end
@@ -697,7 +697,7 @@ class Gem::Installer
     user_bin_dir = @bin_dir || Gem.bindir(gem_home)
     user_bin_dir = user_bin_dir.tr(File::ALT_SEPARATOR, File::SEPARATOR) if File::ALT_SEPARATOR
 
-    path = ENV['PATH']
+    path = ENV["PATH"]
     path = path.tr(File::ALT_SEPARATOR, File::SEPARATOR) if File::ALT_SEPARATOR
 
     if Gem.win_platform?
@@ -708,7 +708,7 @@ class Gem::Installer
     path = path.split(File::PATH_SEPARATOR)
 
     unless path.include? user_bin_dir
-      unless !Gem.win_platform? && (path.include? user_bin_dir.sub(ENV['HOME'], '~'))
+      unless !Gem.win_platform? && (path.include? user_bin_dir.sub(ENV["HOME"], "~"))
         alert_warning "You don't have #{user_bin_dir} in your PATH,\n\t  gem executables will not run."
         self.class.path_warning = true
       end
@@ -788,7 +788,7 @@ TEXT
   end
 
   def gemdeps_load(name)
-    return '' if name == "bundler"
+    return "" if name == "bundler"
 
     <<-TEXT
 
@@ -824,7 +824,7 @@ TEXT
       TEXT
     elsif bindir.downcase.start_with? rb_topdir.downcase
       # stub within ruby folder, but not standard bin.  Portable
-      require 'pathname'
+      require "pathname"
       from = Pathname.new bindir
       to   = Pathname.new "#{rb_topdir}/bin"
       rel  = to.relative_path_from from
@@ -935,14 +935,14 @@ TEXT
   def write_build_info_file
     return if build_args.empty?
 
-    build_info_dir = File.join gem_home, 'build_info'
+    build_info_dir = File.join gem_home, "build_info"
 
     dir_mode = options[:dir_mode]
     FileUtils.mkdir_p build_info_dir, :mode => dir_mode && 0755
 
     build_info_file = File.join build_info_dir, "#{spec.full_name}.info"
 
-    File.open build_info_file, 'w' do |io|
+    File.open build_info_file, "w" do |io|
       build_args.each do |arg|
         io.puts arg
       end
@@ -955,7 +955,7 @@ TEXT
   # Writes the .gem file to the cache directory
 
   def write_cache_file
-    cache_file = File.join gem_home, 'cache', spec.file_name
+    cache_file = File.join gem_home, "cache", spec.file_name
     @package.copy_to cache_file
   end
 
@@ -987,7 +987,7 @@ TEXT
   end
 
   def load_relative_enabled?
-    rb_config["LIBRUBY_RELATIVE"] == 'yes'
+    rb_config["LIBRUBY_RELATIVE"] == "yes"
   end
 
   def bash_prolog_script

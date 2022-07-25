@@ -1226,7 +1226,7 @@ path_entries(VALUE self)
     ary = rb_funcall(rb_cDir, id_entries, 1, str);
     ary = rb_convert_type(ary, T_ARRAY, "Array", "to_ary");
     for (i = 0; i < RARRAY_LEN(ary); i++) {
-	VALUE elt = RARRAY_AREF(ary, i);
+        VALUE elt = RARRAY_AREF(ary, i);
         elt = rb_class_new_instance(1, &elt, klass);
         rb_ary_store(ary, i, elt);
     }

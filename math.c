@@ -65,23 +65,23 @@ math_atan2(VALUE unused_obj, VALUE y, VALUE x)
     dx = Get_Double(x);
     dy = Get_Double(y);
     if (dx == 0.0 && dy == 0.0) {
-	if (!signbit(dx))
-	    return DBL2NUM(dy);
+        if (!signbit(dx))
+            return DBL2NUM(dy);
         if (!signbit(dy))
-	    return DBL2NUM(M_PI);
-	return DBL2NUM(-M_PI);
+            return DBL2NUM(M_PI);
+        return DBL2NUM(-M_PI);
     }
 #ifndef ATAN2_INF_C99
     if (isinf(dx) && isinf(dy)) {
-	/* optimization for FLONUM */
-	if (dx < 0.0) {
-	    const double dz = (3.0 * M_PI / 4.0);
-	    return (dy < 0.0) ? DBL2NUM(-dz) : DBL2NUM(dz);
-	}
-	else {
-	    const double dz = (M_PI / 4.0);
-	    return (dy < 0.0) ? DBL2NUM(-dz) : DBL2NUM(dz);
-	}
+        /* optimization for FLONUM */
+        if (dx < 0.0) {
+            const double dz = (3.0 * M_PI / 4.0);
+            return (dy < 0.0) ? DBL2NUM(-dz) : DBL2NUM(dz);
+        }
+        else {
+            const double dz = (M_PI / 4.0);
+            return (dy < 0.0) ? DBL2NUM(-dz) : DBL2NUM(dz);
+        }
     }
 #endif
     return DBL2NUM(atan2(dy, dx));
@@ -520,7 +520,7 @@ rb_math_log(int argc, const VALUE *argv)
     rb_scan_args(argc, argv, "11", &x, &base);
     d = math_log1(x);
     if (argc == 2) {
-	d /= math_log1(base);
+        d /= math_log1(base);
     }
     return DBL2NUM(d);
 }
@@ -536,7 +536,7 @@ get_double_rshift(VALUE x, size_t *pnumbits)
         x = rb_big_rshift(x, SIZET2NUM(numbits));
     }
     else {
-	numbits = 0;
+        numbits = 0;
     }
     *pnumbits = numbits;
     return Get_Double(x);
@@ -681,13 +681,13 @@ rb_math_sqrt(VALUE x)
     double d;
 
     if (RB_TYPE_P(x, T_COMPLEX)) {
-	VALUE neg = f_signbit(RCOMPLEX(x)->imag);
-	double re = Get_Double(RCOMPLEX(x)->real), im;
-	d = Get_Double(rb_complex_abs(x));
-	im = sqrt((d - re) / 2.0);
-	re = sqrt((d + re) / 2.0);
-	if (neg) im = -im;
-	return rb_complex_new(DBL2NUM(re), DBL2NUM(im));
+        VALUE neg = f_signbit(RCOMPLEX(x)->imag);
+        double re = Get_Double(RCOMPLEX(x)->real), im;
+        d = Get_Double(rb_complex_abs(x));
+        im = sqrt((d - re) / 2.0);
+        re = sqrt((d + re) / 2.0);
+        if (neg) im = -im;
+        return rb_complex_new(DBL2NUM(re), DBL2NUM(im));
     }
     d = Get_Double(x);
     domain_check_min(d, 0.0, "sqrt");
@@ -727,7 +727,7 @@ math_cbrt(VALUE unused_obj, VALUE x)
     double r = cbrt(f);
 #if defined __GLIBC__
     if (isfinite(r) && !(f == 0.0 && r == 0.0)) {
-	r = (2.0 * r + (f / r / r)) / 3.0;
+        r = (2.0 * r + (f / r / r)) / 3.0;
     }
 #endif
     return DBL2NUM(r);
@@ -945,17 +945,17 @@ math_gamma(VALUE unused_obj, VALUE x)
     d = Get_Double(x);
     /* check for domain error */
     if (isinf(d)) {
-	if (signbit(d)) domain_error("gamma");
-	return DBL2NUM(HUGE_VAL);
+        if (signbit(d)) domain_error("gamma");
+        return DBL2NUM(HUGE_VAL);
     }
     if (d == 0.0) {
-	return signbit(d) ? DBL2NUM(-HUGE_VAL) : DBL2NUM(HUGE_VAL);
+        return signbit(d) ? DBL2NUM(-HUGE_VAL) : DBL2NUM(HUGE_VAL);
     }
     if (d == floor(d)) {
-	domain_check_min(d, 0.0, "gamma");
-	if (1.0 <= d && d <= (double)NFACT_TABLE) {
-	    return DBL2NUM(fact_table[(int)d - 1]);
-	}
+        domain_check_min(d, 0.0, "gamma");
+        if (1.0 <= d && d <= (double)NFACT_TABLE) {
+            return DBL2NUM(fact_table[(int)d - 1]);
+        }
     }
     return DBL2NUM(tgamma(d));
 }
@@ -1007,12 +1007,12 @@ math_lgamma(VALUE unused_obj, VALUE x)
     d = Get_Double(x);
     /* check for domain error */
     if (isinf(d)) {
-	if (signbit(d)) domain_error("lgamma");
-	return rb_assoc_new(DBL2NUM(HUGE_VAL), INT2FIX(1));
+        if (signbit(d)) domain_error("lgamma");
+        return rb_assoc_new(DBL2NUM(HUGE_VAL), INT2FIX(1));
     }
     if (d == 0.0) {
-	VALUE vsign = signbit(d) ? INT2FIX(-1) : INT2FIX(+1);
-	return rb_assoc_new(DBL2NUM(HUGE_VAL), vsign);
+        VALUE vsign = signbit(d) ? INT2FIX(-1) : INT2FIX(+1);
+        return rb_assoc_new(DBL2NUM(HUGE_VAL), vsign);
     }
     v = DBL2NUM(lgamma_r(d, &sign));
     return rb_assoc_new(v, INT2FIX(sign));

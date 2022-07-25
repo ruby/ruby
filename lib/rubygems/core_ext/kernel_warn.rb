@@ -39,7 +39,7 @@ if RUBY_VERSION >= "2.5" && !Gem::KERNEL_WARN_IGNORES_INTERNAL_ENTRIES
           start += 1
 
           if path = loc.path
-            unless path.start_with?(rubygems_path) or path.start_with?('<internal:')
+            unless path.start_with?(rubygems_path) or path.start_with?("<internal:")
               # Non-rubygems frames
               uplevel -= 1
             end

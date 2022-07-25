@@ -38,7 +38,7 @@ rb_digest_##name##_update(void *ctx, unsigned char *ptr, size_t size) \
     const unsigned int stride = 16384; \
  \
     for (; size > stride; size -= stride, ptr += stride) { \
-	name##_Update(ctx, ptr, stride); \
+        name##_Update(ctx, ptr, stride); \
     } \
     if (size > 0) name##_Update(ctx, ptr, size); \
 }

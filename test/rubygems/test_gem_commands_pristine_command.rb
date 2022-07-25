@@ -1,6 +1,6 @@
 # frozen_string_literal: true
-require_relative 'helper'
-require 'rubygems/commands/pristine_command'
+require_relative "helper"
+require "rubygems/commands/pristine_command"
 
 class TestGemCommandsPristineCommand < Gem::TestCase
   def setup
@@ -11,29 +11,29 @@ class TestGemCommandsPristineCommand < Gem::TestCase
   end
 
   def test_execute
-    a = util_spec 'a' do |s|
+    a = util_spec "a" do |s|
       s.executables = %w[foo]
       s.files = %w[bin/foo lib/a.rb]
     end
 
-    write_file File.join(@tempdir, 'lib', 'a.rb') do |fp|
+    write_file File.join(@tempdir, "lib", "a.rb") do |fp|
       fp.puts "puts __FILE__"
     end
-    write_file File.join(@tempdir, 'bin', 'foo') do |fp|
+    write_file File.join(@tempdir, "bin", "foo") do |fp|
       fp.puts "#!/usr/bin/ruby"
     end
 
     install_gem a
 
-    foo_path  = File.join @gemhome, 'gems', a.full_name, 'bin', 'foo'
-    a_rb_path = File.join @gemhome, 'gems', a.full_name, 'lib', 'a.rb'
+    foo_path  = File.join @gemhome, "gems", a.full_name, "bin", "foo"
+    a_rb_path = File.join @gemhome, "gems", a.full_name, "lib", "a.rb"
 
     write_file foo_path do |io|
-      io.puts 'I changed it!'
+      io.puts "I changed it!"
     end
 
     write_file a_rb_path do |io|
-      io.puts 'I changed it!'
+      io.puts "I changed it!"
     end
 
     @cmd.options[:args] = %w[a]
@@ -102,18 +102,18 @@ class TestGemCommandsPristineCommand < Gem::TestCase
   end
 
   def test_execute_all
-    a = util_spec 'a' do |s|
+    a = util_spec "a" do |s|
       s.executables = %w[foo]
     end
 
-    write_file File.join(@tempdir, 'bin', 'foo') do |fp|
+    write_file File.join(@tempdir, "bin", "foo") do |fp|
       fp.puts "#!/usr/bin/ruby"
     end
 
     install_gem a
 
-    gem_bin  = File.join @gemhome, 'gems', a.full_name, 'bin', 'foo'
-    gem_stub = File.join @gemhome, 'bin', 'foo'
+    gem_bin  = File.join @gemhome, "gems", a.full_name, "bin", "foo"
+    gem_stub = File.join @gemhome, "bin", "foo"
 
     FileUtils.rm gem_bin
     FileUtils.rm gem_stub
@@ -135,17 +135,17 @@ class TestGemCommandsPristineCommand < Gem::TestCase
   end
 
   def test_execute_env_shebang
-    a = util_spec 'a' do |s|
+    a = util_spec "a" do |s|
       s.executables = %w[foo]
       s.files = %w[bin/foo]
     end
-    write_file File.join(@tempdir, 'bin', 'foo') do |fp|
+    write_file File.join(@tempdir, "bin", "foo") do |fp|
       fp.puts "#!/usr/bin/ruby"
     end
 
     install_gem a
 
-    gem_exec = File.join @gemhome, 'bin', 'foo'
+    gem_exec = File.join @gemhome, "bin", "foo"
 
     FileUtils.rm gem_exec
 
@@ -157,7 +157,7 @@ class TestGemCommandsPristineCommand < Gem::TestCase
 
     assert_path_exist gem_exec
 
-    ruby_exec = sprintf Gem.default_exec_format, 'ruby'
+    ruby_exec = sprintf Gem.default_exec_format, "ruby"
 
     bin_env = win_platform? ? "" : %w[/usr/bin/env /bin/env].find {|f| File.executable?(f) } + " "
 
@@ -165,11 +165,11 @@ class TestGemCommandsPristineCommand < Gem::TestCase
   end
 
   def test_execute_extensions_explicit
-    a = util_spec 'a' do |s|
-      s.extensions << 'ext/a/extconf.rb'
+    a = util_spec "a" do |s|
+      s.extensions << "ext/a/extconf.rb"
     end
 
-    ext_path = File.join @tempdir, 'ext', 'a', 'extconf.rb'
+    ext_path = File.join @tempdir, "ext", "a", "extconf.rb"
     write_file ext_path do |io|
       io.write <<-'RUBY'
       File.open "Makefile", "w" do |f|
@@ -180,7 +180,7 @@ class TestGemCommandsPristineCommand < Gem::TestCase
       RUBY
     end
 
-    b = util_spec 'b'
+    b = util_spec "b"
 
     install_gem a
     install_gem b
@@ -195,19 +195,19 @@ class TestGemCommandsPristineCommand < Gem::TestCase
 
     out = @ui.output.split "\n"
 
-    assert_equal 'Restoring gems to pristine condition...', out.shift
-    assert_equal 'Building native extensions. This could take a while...',
+    assert_equal "Restoring gems to pristine condition...", out.shift
+    assert_equal "Building native extensions. This could take a while...",
                  out.shift
     assert_equal "Restored #{a.full_name}", out.shift
     assert_empty out, out.inspect
   end
 
   def test_execute_no_extension
-    a = util_spec 'a' do |s|
-      s.extensions << 'ext/a/extconf.rb'
+    a = util_spec "a" do |s|
+      s.extensions << "ext/a/extconf.rb"
     end
 
-    ext_path = File.join @tempdir, 'ext', 'a', 'extconf.rb'
+    ext_path = File.join @tempdir, "ext", "a", "extconf.rb"
     write_file ext_path do |io|
       io.write "# extconf.rb\nrequire 'mkmf'; create_makefile 'a'"
     end
@@ -223,18 +223,18 @@ class TestGemCommandsPristineCommand < Gem::TestCase
 
     out = @ui.output.split "\n"
 
-    assert_equal 'Restoring gems to pristine condition...', out.shift
+    assert_equal "Restoring gems to pristine condition...", out.shift
     assert_equal "Skipped #{a.full_name}, it needs to compile an extension",
                  out.shift
     assert_empty out, out.inspect
   end
 
   def test_execute_with_extension_with_build_args
-    a = util_spec 'a' do |s|
-      s.extensions << 'ext/a/extconf.rb'
+    a = util_spec "a" do |s|
+      s.extensions << "ext/a/extconf.rb"
     end
 
-    ext_path = File.join @tempdir, 'ext', 'a', 'extconf.rb'
+    ext_path = File.join @tempdir, "ext", "a", "extconf.rb"
     write_file ext_path do |io|
       io.write <<-'RUBY'
       File.open "Makefile", "w" do |f|
@@ -257,7 +257,7 @@ class TestGemCommandsPristineCommand < Gem::TestCase
 
     out = @ui.output.split "\n"
 
-    assert_equal 'Restoring gems to pristine condition...', out.shift
+    assert_equal "Restoring gems to pristine condition...", out.shift
     assert_equal "Building native extensions with: '--with-awesome=true --sweet'", out.shift
     assert_equal "This could take a while...", out.shift
     assert_equal "Restored #{a.full_name}", out.shift
@@ -265,8 +265,8 @@ class TestGemCommandsPristineCommand < Gem::TestCase
   end
 
   def test_execute_many
-    a = util_spec 'a'
-    b = util_spec 'b'
+    a = util_spec "a"
+    b = util_spec "b"
 
     install_gem a
     install_gem b
@@ -286,14 +286,14 @@ class TestGemCommandsPristineCommand < Gem::TestCase
   end
 
   def test_skip
-    a = util_spec 'a'
-    b = util_spec 'b'
+    a = util_spec "a"
+    b = util_spec "b"
 
     install_gem a
     install_gem b
 
     @cmd.options[:args] = %w[a b]
-    @cmd.options[:skip] = 'a'
+    @cmd.options[:skip] = "a"
 
     use_ui @ui do
       @cmd.execute
@@ -308,16 +308,16 @@ class TestGemCommandsPristineCommand < Gem::TestCase
   end
 
   def test_skip_many_gems
-    a = util_spec 'a'
-    b = util_spec 'b'
-    c = util_spec 'c'
+    a = util_spec "a"
+    b = util_spec "b"
+    c = util_spec "c"
 
     install_gem a
     install_gem b
     install_gem c
 
     @cmd.options[:args] = %w[a b c]
-    @cmd.options[:skip] = ['a', 'c']
+    @cmd.options[:skip] = ["a", "c"]
 
     use_ui @ui do
       @cmd.execute
@@ -333,14 +333,14 @@ class TestGemCommandsPristineCommand < Gem::TestCase
   end
 
   def test_execute_many_multi_repo
-    a = util_spec 'a'
+    a = util_spec "a"
     install_gem a
 
     Gem.clear_paths
-    gemhome2 = File.join @tempdir, 'gemhome2'
+    gemhome2 = File.join @tempdir, "gemhome2"
     Gem.use_paths gemhome2, [gemhome2, @gemhome]
 
-    b = util_spec 'b'
+    b = util_spec "b"
     install_gem b
 
     @cmd.options[:args] = %w[a b]
@@ -356,21 +356,21 @@ class TestGemCommandsPristineCommand < Gem::TestCase
     assert_equal "Restored #{b.full_name}", out.shift
     assert_empty out, out.inspect
 
-    assert_path_exist File.join(@gemhome, "gems", 'a-2')
-    assert_path_not_exist File.join(gemhome2, "gems", 'a-2')
-    assert_path_exist File.join(gemhome2, "gems", 'b-2')
-    assert_path_not_exist File.join(@gemhome, "gems", 'b-2')
+    assert_path_exist File.join(@gemhome, "gems", "a-2")
+    assert_path_not_exist File.join(gemhome2, "gems", "a-2")
+    assert_path_exist File.join(gemhome2, "gems", "b-2")
+    assert_path_not_exist File.join(@gemhome, "gems", "b-2")
   end
 
   def test_execute_missing_cache_gem
     specs = spec_fetcher do |fetcher|
-      fetcher.gem 'a', 1
-      fetcher.gem 'a', 2
-      fetcher.gem 'a', 3
-      fetcher.gem 'a', '3.a'
+      fetcher.gem "a", 1
+      fetcher.gem "a", 2
+      fetcher.gem "a", 3
+      fetcher.gem "a", "3.a"
     end
 
-    FileUtils.rm specs['a-2'].cache_file
+    FileUtils.rm specs["a-2"].cache_file
 
     @cmd.options[:args] = %w[a]
 
@@ -396,22 +396,22 @@ class TestGemCommandsPristineCommand < Gem::TestCase
 
   def test_execute_missing_cache_gem_when_multi_repo
     specs = spec_fetcher do |fetcher|
-      fetcher.gem 'a', 1
-      fetcher.gem 'b', 1
+      fetcher.gem "a", 1
+      fetcher.gem "b", 1
     end
 
-    FileUtils.rm_rf File.join(@gemhome, 'gems', 'a-1')
-    FileUtils.rm_rf File.join(@gemhome, 'gems', 'b-1')
+    FileUtils.rm_rf File.join(@gemhome, "gems", "a-1")
+    FileUtils.rm_rf File.join(@gemhome, "gems", "b-1")
 
     install_gem specs["a-1"]
-    FileUtils.rm File.join(@gemhome, 'cache', 'a-1.gem')
+    FileUtils.rm File.join(@gemhome, "cache", "a-1.gem")
 
     Gem.clear_paths
-    gemhome2 = File.join(@tempdir, 'gemhome2')
+    gemhome2 = File.join(@tempdir, "gemhome2")
     Gem.use_paths gemhome2, [gemhome2, @gemhome]
 
     install_gem specs["b-1"]
-    FileUtils.rm File.join(gemhome2, 'cache', 'b-1.gem')
+    FileUtils.rm File.join(gemhome2, "cache", "b-1.gem")
     Gem::Specification.reset
 
     @cmd.options[:args] = %w[a b]
@@ -435,15 +435,15 @@ class TestGemCommandsPristineCommand < Gem::TestCase
     assert_empty out, out.inspect
     assert_empty @ui.error
 
-    assert_path_exist File.join(@gemhome, "cache", 'a-1.gem')
-    assert_path_not_exist File.join(gemhome2, "cache", 'a-2.gem')
-    assert_path_exist File.join(@gemhome, "gems", 'a-1')
-    assert_path_not_exist File.join(gemhome2, "gems", 'a-1')
+    assert_path_exist File.join(@gemhome, "cache", "a-1.gem")
+    assert_path_not_exist File.join(gemhome2, "cache", "a-2.gem")
+    assert_path_exist File.join(@gemhome, "gems", "a-1")
+    assert_path_not_exist File.join(gemhome2, "gems", "a-1")
 
-    assert_path_exist File.join(gemhome2, "cache", 'b-1.gem')
-    assert_path_not_exist File.join(@gemhome, "cache", 'b-2.gem')
-    assert_path_exist File.join(gemhome2, "gems", 'b-1')
-    assert_path_not_exist File.join(@gemhome, "gems", 'b-1')
+    assert_path_exist File.join(gemhome2, "cache", "b-1.gem")
+    assert_path_not_exist File.join(@gemhome, "cache", "b-2.gem")
+    assert_path_exist File.join(gemhome2, "gems", "b-1")
+    assert_path_not_exist File.join(@gemhome, "gems", "b-1")
   end
 
   def test_execute_no_gem
@@ -459,21 +459,21 @@ class TestGemCommandsPristineCommand < Gem::TestCase
   end
 
   def test_execute_only_executables
-    a = util_spec 'a' do |s|
+    a = util_spec "a" do |s|
       s.executables = %w[foo]
       s.files = %w[bin/foo lib/a.rb]
     end
-    write_file File.join(@tempdir, 'lib', 'a.rb') do |fp|
+    write_file File.join(@tempdir, "lib", "a.rb") do |fp|
       fp.puts "puts __FILE__"
     end
-    write_file File.join(@tempdir, 'bin', 'foo') do |fp|
+    write_file File.join(@tempdir, "bin", "foo") do |fp|
       fp.puts "#!/usr/bin/ruby"
     end
 
     install_gem a
 
-    gem_lib  = File.join @gemhome, 'gems', a.full_name, 'lib', 'a.rb'
-    gem_exec = File.join @gemhome, 'bin', 'foo'
+    gem_lib  = File.join @gemhome, "gems", a.full_name, "lib", "a.rb"
+    gem_exec = File.join @gemhome, "bin", "foo"
 
     FileUtils.rm gem_exec
     FileUtils.rm gem_lib
@@ -489,25 +489,25 @@ class TestGemCommandsPristineCommand < Gem::TestCase
   end
 
   def test_execute_only_plugins
-    a = util_spec 'a' do |s|
+    a = util_spec "a" do |s|
       s.executables = %w[foo]
       s.files = %w[bin/foo lib/a.rb lib/rubygems_plugin.rb]
     end
-    write_file File.join(@tempdir, 'lib', 'a.rb') do |fp|
+    write_file File.join(@tempdir, "lib", "a.rb") do |fp|
       fp.puts "puts __FILE__"
     end
-    write_file File.join(@tempdir, 'lib', 'rubygems_plugin.rb') do |fp|
+    write_file File.join(@tempdir, "lib", "rubygems_plugin.rb") do |fp|
       fp.puts "puts __FILE__"
     end
-    write_file File.join(@tempdir, 'bin', 'foo') do |fp|
+    write_file File.join(@tempdir, "bin", "foo") do |fp|
       fp.puts "#!/usr/bin/ruby"
     end
 
     install_gem a
 
-    gem_lib = File.join @gemhome, 'gems', a.full_name, 'lib', 'a.rb'
-    gem_plugin = File.join @gemhome, 'plugins', 'a_plugin.rb'
-    gem_exec = File.join @gemhome, 'bin', 'foo'
+    gem_lib = File.join @gemhome, "gems", a.full_name, "lib", "a.rb"
+    gem_plugin = File.join @gemhome, "plugins", "a_plugin.rb"
+    gem_exec = File.join @gemhome, "bin", "foo"
 
     FileUtils.rm gem_exec
     FileUtils.rm gem_plugin
@@ -525,24 +525,24 @@ class TestGemCommandsPristineCommand < Gem::TestCase
   end
 
   def test_execute_bindir
-    a = util_spec 'a' do |s|
+    a = util_spec "a" do |s|
       s.name = "test_gem"
       s.executables = %w[foo]
       s.files = %w[bin/foo]
     end
 
-    write_file File.join(@tempdir, 'bin', 'foo') do |fp|
+    write_file File.join(@tempdir, "bin", "foo") do |fp|
       fp.puts "#!/usr/bin/ruby"
     end
 
-    write_file File.join(@tempdir, 'test_bin', 'foo') do |fp|
+    write_file File.join(@tempdir, "test_bin", "foo") do |fp|
       fp.puts "#!/usr/bin/ruby"
     end
 
     install_gem a
 
-    gem_exec = File.join @gemhome, 'bin', 'foo'
-    gem_bindir = File.join @tempdir, 'test_bin', 'foo'
+    gem_exec = File.join @gemhome, "bin", "foo"
+    gem_bindir = File.join @tempdir, "test_bin", "foo"
 
     FileUtils.rm gem_exec
     FileUtils.rm gem_bindir
@@ -558,7 +558,7 @@ class TestGemCommandsPristineCommand < Gem::TestCase
   end
 
   def test_execute_unknown_gem_at_remote_source
-    install_specs util_spec 'a'
+    install_specs util_spec "a"
 
     @cmd.options[:args] = %w[a]
 
@@ -597,16 +597,16 @@ class TestGemCommandsPristineCommand < Gem::TestCase
   end
 
   def test_execute_multi_platform
-    a = util_spec 'a' do |s|
-      s.extensions << 'ext/a/extconf.rb'
+    a = util_spec "a" do |s|
+      s.extensions << "ext/a/extconf.rb"
     end
 
-    b = util_spec 'b' do |s|
-      s.extensions << 'ext/a/extconf.rb'
+    b = util_spec "b" do |s|
+      s.extensions << "ext/a/extconf.rb"
       s.platform = Gem::Platform.new("java")
     end
 
-    ext_path = File.join @tempdir, 'ext', 'a', 'extconf.rb'
+    ext_path = File.join @tempdir, "ext", "a", "extconf.rb"
     write_file ext_path do |io|
       io.write <<-'RUBY'
       File.open "Makefile", "w" do |f|
@@ -632,8 +632,8 @@ class TestGemCommandsPristineCommand < Gem::TestCase
 
     out = @ui.output.split "\n"
 
-    assert_equal 'Restoring gems to pristine condition...', out.shift
-    assert_equal 'Building native extensions. This could take a while...',
+    assert_equal "Restoring gems to pristine condition...", out.shift
+    assert_equal "Building native extensions. This could take a while...",
                  out.shift
     assert_equal "Restored #{a.full_name}", out.shift
     assert_empty out, out.inspect

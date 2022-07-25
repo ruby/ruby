@@ -1,6 +1,6 @@
 # frozen_string_literal: true
-require_relative 'helper'
-require 'rubygems/name_tuple'
+require_relative "helper"
+require "rubygems/name_tuple"
 
 class TestGemNameTuple < Gem::TestCase
   def test_full_name
@@ -34,8 +34,8 @@ class TestGemNameTuple < Gem::TestCase
   end
 
   def test_spaceship
-    a   = Gem::NameTuple.new 'a', Gem::Version.new(0), Gem::Platform::RUBY
-    a_p = Gem::NameTuple.new 'a', Gem::Version.new(0), Gem::Platform.local
+    a   = Gem::NameTuple.new "a", Gem::Version.new(0), Gem::Platform::RUBY
+    a_p = Gem::NameTuple.new "a", Gem::Version.new(0), Gem::Platform.local
 
     assert_equal 1, a_p.<=>(a)
   end

@@ -1,6 +1,6 @@
 # frozen_string_literal: true
-require_relative 'helper'
-require 'rubygems/available_set'
+require_relative "helper"
+require "rubygems/available_set"
 
 class TestGemResolverLocalSpecification < Gem::TestCase
   def setup
@@ -11,12 +11,12 @@ class TestGemResolverLocalSpecification < Gem::TestCase
 
   def test_install
     specs = spec_fetcher do |fetcher|
-      fetcher.gem 'a', 2
+      fetcher.gem "a", 2
     end
 
-    source = Gem::Source::SpecificFile.new 'gems/a-2.gem'
+    source = Gem::Source::SpecificFile.new "gems/a-2.gem"
 
-    spec = Gem::Resolver::LocalSpecification.new @set, specs['a-2'], source
+    spec = Gem::Resolver::LocalSpecification.new @set, specs["a-2"], source
 
     called = false
 
@@ -24,13 +24,13 @@ class TestGemResolverLocalSpecification < Gem::TestCase
       called = installer
     end
 
-    assert_path_exist File.join @gemhome, 'specifications', 'a-2.gemspec'
+    assert_path_exist File.join @gemhome, "specifications", "a-2.gemspec"
 
     assert_kind_of Gem::Installer, called
   end
 
   def test_installable_platform_eh
-    b, b_gem = util_gem 'a', 1 do |s|
+    b, b_gem = util_gem "a", 1 do |s|
       s.platform = Gem::Platform.new %w[cpu other_platform 1]
     end
 

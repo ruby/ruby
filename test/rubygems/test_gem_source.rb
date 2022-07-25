@@ -1,7 +1,7 @@
 # frozen_string_literal: true
-require_relative 'helper'
-require 'rubygems/source'
-require 'rubygems/indexer'
+require_relative "helper"
+require "rubygems/source"
+require "rubygems/indexer"
 
 class TestGemSource < Gem::TestCase
   def tuple(*args)
@@ -12,10 +12,10 @@ class TestGemSource < Gem::TestCase
     super
 
     @specs = spec_fetcher do |fetcher|
-      fetcher.spec 'a', '1.a'
-      fetcher.gem  'a', 1
-      fetcher.spec 'a', 2
-      fetcher.spec 'b', 2
+      fetcher.spec "a", "1.a"
+      fetcher.gem  "a", 1
+      fetcher.spec "a", 2
+      fetcher.spec "b", 2
     end
 
     @source = Gem::Source.new(@gem_repo)
@@ -23,14 +23,14 @@ class TestGemSource < Gem::TestCase
 
   def test_initialize_invalid_uri
     assert_raise URI::InvalidURIError do
-      Gem::Source.new 'git@example:a.git'
+      Gem::Source.new "git@example:a.git"
     end
   end
 
   def test_initialize_git
-    repository = 'git@example:a.git'
+    repository = "git@example:a.git"
 
-    source = Gem::Source::Git.new 'a', repository, 'master', false
+    source = Gem::Source::Git.new "a", repository, "master", false
 
     assert_equal repository, source.uri
   end
@@ -38,13 +38,13 @@ class TestGemSource < Gem::TestCase
   def test_cache_dir_escapes_windows_paths
     uri = URI.parse("file:///C:/WINDOWS/Temp/gem_repo")
     root = Gem.spec_cache_dir
-    cache_dir = @source.cache_dir(uri).gsub(root, '')
+    cache_dir = @source.cache_dir(uri).gsub(root, "")
     assert cache_dir !~ /:/, "#{cache_dir} should not contain a :"
   end
 
   def test_dependency_resolver_set_bundler_api
-    response = Net::HTTPResponse.new '1.1', 200, 'OK'
-    response.uri = URI('http://example')
+    response = Net::HTTPResponse.new "1.1", 200, "OK"
+    response.uri = URI("http://example")
 
     @fetcher.data[@gem_repo] = response
 
@@ -70,11 +70,11 @@ class TestGemSource < Gem::TestCase
   end
 
   def test_fetch_spec
-    a1 = @specs['a-1']
+    a1 = @specs["a-1"]
 
     spec_uri = "#{@gem_repo}#{Gem::MARSHAL_SPEC_DIR}#{a1.spec_name}"
 
-    spec = @source.fetch_spec tuple('a', Gem::Version.new(1), 'ruby')
+    spec = @source.fetch_spec tuple("a", Gem::Version.new(1), "ruby")
     assert_equal a1.full_name, spec.full_name
 
     cache_dir = @source.cache_dir URI.parse(spec_uri)
@@ -85,7 +85,7 @@ class TestGemSource < Gem::TestCase
   end
 
   def test_fetch_spec_cached
-    a1 = @specs['a-1']
+    a1 = @specs["a-1"]
 
     spec_uri = "#{@gem_repo}/#{Gem::MARSHAL_SPEC_DIR}#{a1.spec_name}"
     @fetcher.data["#{spec_uri}.rz"] = nil
@@ -95,11 +95,11 @@ class TestGemSource < Gem::TestCase
 
     cache_file = File.join cache_dir, a1.spec_name
 
-    File.open cache_file, 'wb' do |io|
+    File.open cache_file, "wb" do |io|
       Marshal.dump a1, io
     end
 
-    spec = @source.fetch_spec tuple('a', Gem::Version.new(1), 'ruby')
+    spec = @source.fetch_spec tuple("a", Gem::Version.new(1), "ruby")
     assert_equal a1.full_name, spec.full_name
   end
 
@@ -108,24 +108,24 @@ class TestGemSource < Gem::TestCase
       fetcher.legacy_platform
     end
 
-    spec = @source.fetch_spec tuple('pl', Gem::Version.new(1), 'i386-linux')
+    spec = @source.fetch_spec tuple("pl", Gem::Version.new(1), "i386-linux")
 
-    assert_equal specs['pl-1-x86-linux'].full_name, spec.full_name
+    assert_equal specs["pl-1-x86-linux"].full_name, spec.full_name
   end
 
   def test_fetch_spec_platform_ruby
-    spec = @source.fetch_spec tuple('a', Gem::Version.new(1), nil)
-    assert_equal @specs['a-1'].full_name, spec.full_name
+    spec = @source.fetch_spec tuple("a", Gem::Version.new(1), nil)
+    assert_equal @specs["a-1"].full_name, spec.full_name
 
-    spec = @source.fetch_spec tuple('a', Gem::Version.new(1), '')
-    assert_equal @specs['a-1'].full_name, spec.full_name
+    spec = @source.fetch_spec tuple("a", Gem::Version.new(1), "")
+    assert_equal @specs["a-1"].full_name, spec.full_name
   end
 
   def test_load_specs
     released = @source.load_specs(:released).map {|spec| spec.full_name }
     assert_equal %W[a-2 a-1 b-2], released
 
-    cache_dir = File.join Gem.spec_cache_dir, 'gems.example.com%80'
+    cache_dir = File.join Gem.spec_cache_dir, "gems.example.com%80"
     assert File.exist?(cache_dir), "#{cache_dir} does not exist"
 
     cache_file = File.join cache_dir, "specs.#{Gem.marshal_version}"
@@ -136,19 +136,19 @@ class TestGemSource < Gem::TestCase
     latest_specs = @source.load_specs :latest
 
     # Make sure the cached version is actually different:
-    latest_specs << Gem::NameTuple.new('cached', Gem::Version.new('1.0.0'), 'ruby')
+    latest_specs << Gem::NameTuple.new("cached", Gem::Version.new("1.0.0"), "ruby")
 
     @fetcher.data["#{@gem_repo}latest_specs.#{Gem.marshal_version}.gz"] = nil
     @fetcher.data["#{@gem_repo}latest_specs.#{Gem.marshal_version}"] =
-      ' ' * Marshal.dump(latest_specs).length
+      " " * Marshal.dump(latest_specs).length
 
-    cache_dir = File.join Gem.spec_cache_dir, 'gems.example.com%80'
+    cache_dir = File.join Gem.spec_cache_dir, "gems.example.com%80"
 
     FileUtils.mkdir_p cache_dir
 
     cache_file = File.join cache_dir, "latest_specs.#{Gem.marshal_version}"
 
-    File.open cache_file, 'wb' do |io|
+    File.open cache_file, "wb" do |io|
       Marshal.dump latest_specs, io
     end
 
@@ -161,18 +161,18 @@ class TestGemSource < Gem::TestCase
     latest_specs = @source.load_specs :latest
 
     # Make sure the cached version is actually different:
-    latest_specs << Gem::NameTuple.new('fixed', Gem::Version.new('1.0.0'), 'ruby')
+    latest_specs << Gem::NameTuple.new("fixed", Gem::Version.new("1.0.0"), "ruby")
     # Setup valid data on the 'remote'
     @fetcher.data["#{@gem_repo}latest_specs.#{Gem.marshal_version}.gz"] =
           util_gzip(Marshal.dump(latest_specs))
 
-    cache_dir = File.join Gem.spec_cache_dir, 'gems.example.com%80'
+    cache_dir = File.join Gem.spec_cache_dir, "gems.example.com%80"
 
     FileUtils.mkdir_p cache_dir
 
     cache_file = File.join cache_dir, "latest_specs.#{Gem.marshal_version}"
 
-    File.open cache_file, 'wb' do |io|
+    File.open cache_file, "wb" do |io|
       # Setup invalid data in the cache:
       io.write Marshal.dump(latest_specs)[0, 10]
     end
@@ -192,34 +192,34 @@ class TestGemSource < Gem::TestCase
 
   def test_spaceship
     remote    = @source
-    specific  = Gem::Source::SpecificFile.new @specs['a-1'].cache_file
+    specific  = Gem::Source::SpecificFile.new @specs["a-1"].cache_file
     installed = Gem::Source::Installed.new
     local     = Gem::Source::Local.new
 
-    assert_equal(0, remote.<=>(remote), 'remote <=> remote')
+    assert_equal(0, remote.<=>(remote), "remote <=> remote")
 
-    assert_equal(-1, remote.<=>(specific), 'remote <=> specific')
-    assert_equal(1, specific.<=>(remote), 'specific <=> remote')
+    assert_equal(-1, remote.<=>(specific), "remote <=> specific")
+    assert_equal(1, specific.<=>(remote), "specific <=> remote")
 
-    assert_equal(-1, remote.<=>(local), 'remote <=> local')
-    assert_equal(1, local.<=>(remote), 'local <=> remote')
+    assert_equal(-1, remote.<=>(local), "remote <=> local")
+    assert_equal(1, local.<=>(remote), "local <=> remote")
 
-    assert_equal(-1, remote.<=>(installed), 'remote <=> installed')
-    assert_equal(1, installed.<=>(remote), 'installed <=> remote')
+    assert_equal(-1, remote.<=>(installed), "remote <=> installed")
+    assert_equal(1, installed.<=>(remote), "installed <=> remote")
 
     no_uri = @source.dup
     no_uri.instance_variable_set :@uri, nil
 
-    assert_equal(-1, remote.<=>(no_uri), 'remote <=> no_uri')
+    assert_equal(-1, remote.<=>(no_uri), "remote <=> no_uri")
   end
 
   def test_spaceship_order_is_preserved_when_uri_differs
     sourceA = Gem::Source.new "http://example.com/a"
     sourceB = Gem::Source.new "http://example.com/b"
 
-    assert_equal(0, sourceA.<=>(sourceA), 'sourceA <=> sourceA')
-    assert_equal(1, sourceA.<=>(sourceB), 'sourceA <=> sourceB')
-    assert_equal(1, sourceB.<=>(sourceA), 'sourceB <=> sourceA')
+    assert_equal(0, sourceA.<=>(sourceA), "sourceA <=> sourceA")
+    assert_equal(1, sourceA.<=>(sourceB), "sourceA <=> sourceB")
+    assert_equal(1, sourceB.<=>(sourceA), "sourceB <=> sourceA")
   end
 
   def test_update_cache_eh

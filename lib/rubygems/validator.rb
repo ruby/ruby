@@ -5,8 +5,8 @@
 # See LICENSE.txt for permissions.
 #++
 
-require_relative 'package'
-require_relative 'installer'
+require_relative "package"
+require_relative "installer"
 
 ##
 # Validator performs various gem file and gem database validation
@@ -15,7 +15,7 @@ class Gem::Validator
   include Gem::UserInteraction
 
   def initialize # :nodoc:
-    require 'find'
+    require "find"
   end
 
   private
@@ -110,11 +110,11 @@ class Gem::Validator
             begin
               next unless data # HACK `gem check -a mkrf`
 
-              source = File.join gem_directory, entry['path']
+              source = File.join gem_directory, entry["path"]
 
               File.open source, Gem.binary_mode do |f|
                 unless f.read == data
-                  errors[gem_name][entry['path']] = "Modified from original"
+                  errors[gem_name][entry["path"]] = "Modified from original"
                 end
               end
             end

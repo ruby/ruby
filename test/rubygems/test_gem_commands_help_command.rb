@@ -11,41 +11,41 @@ class TestGemCommandsHelpCommand < Gem::TestCase
 
     @cmd = Gem::Commands::HelpCommand.new
 
-    load File.expand_path('rubygems_plugin.rb', __dir__) unless Gem::Commands.const_defined? :InterruptCommand
+    load File.expand_path("rubygems_plugin.rb", __dir__) unless Gem::Commands.const_defined? :InterruptCommand
   end
 
   def test_gem_help_bad
-    util_gem 'bad' do |out, err|
-      assert_equal('', out)
+    util_gem "bad" do |out, err|
+      assert_equal("", out)
       assert_match "Unknown command bad", err
     end
   end
 
   def test_gem_help_gem_dependencies
-    util_gem 'gem_dependencies' do |out, err|
-      assert_match 'gem.deps.rb', out
-      assert_equal '', err
+    util_gem "gem_dependencies" do |out, err|
+      assert_match "gem.deps.rb", out
+      assert_equal "", err
     end
   end
 
   def test_gem_help_platforms
-    util_gem 'platforms' do |out, err|
+    util_gem "platforms" do |out, err|
       assert_match(/x86-freebsd/, out)
-      assert_equal '', err
+      assert_equal "", err
     end
   end
 
   def test_gem_help_build
-    util_gem 'build' do |out, err|
+    util_gem "build" do |out, err|
       assert_match(/-C PATH *Run as if gem build was started in <PATH>/, out)
-      assert_equal '', err
+      assert_equal "", err
     end
   end
 
   def test_gem_help_commands
     mgr = Gem::CommandManager.new
 
-    util_gem 'commands' do |out, err|
+    util_gem "commands" do |out, err|
       mgr.command_names.each do |cmd|
         unless mgr[cmd].deprecated?
           assert_match(/\s+#{cmd}\s+\S+/, out)
@@ -63,7 +63,7 @@ class TestGemCommandsHelpCommand < Gem::TestCase
   def test_gem_help_commands_omits_deprecated_commands
     mgr = Gem::CommandManager.new
 
-    util_gem 'commands' do |out, err|
+    util_gem "commands" do |out, err|
       deprecated_commands = mgr.command_names.select {|cmd| mgr[cmd].deprecated? }
       deprecated_commands.each do |cmd|
         refute_match(/\A\s+#{cmd}\s+\S+\z/, out)
@@ -75,7 +75,7 @@ class TestGemCommandsHelpCommand < Gem::TestCase
     util_gem do |out, err|
       assert_match(/Usage:/, out)
       assert_match(/gem install/, out)
-      assert_equal '', err
+      assert_equal "", err
     end
   end
 

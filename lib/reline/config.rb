@@ -48,8 +48,8 @@ class Reline::Config
   attr_accessor :autocompletion
   attr_reader :dialog_default_bg_color_sequence,
     :dialog_default_fg_color_sequence,
-    :dialog_pointer_bg_color_sequence,
-    :dialog_pointer_fg_color_sequence
+    :dialog_highlight_bg_color_sequence,
+    :dialog_highlight_fg_color_sequence
 
   def initialize
     @additional_key_bindings = {} # from inputrc
@@ -76,9 +76,9 @@ class Reline::Config
     @autocompletion = false
     @convert_meta = true if seven_bit_encoding?(Reline::IOGate.encoding)
     @dialog_default_bg_color_sequence = nil
-    @dialog_pointer_bg_color_sequence = nil
+    @dialog_highlight_bg_color_sequence = nil
     @dialog_default_fg_color_sequence = nil
-    @dialog_pointer_fg_color_sequence = nil
+    @dialog_highlight_fg_color_sequence = nil
   end
 
   def reset
@@ -112,12 +112,12 @@ class Reline::Config
     @dialog_default_fg_color_sequence = dialog_color_to_code(:fg, color)
   end
 
-  def dialog_pointer_bg_color=(color)
-    @dialog_pointer_bg_color_sequence = dialog_color_to_code(:bg, color)
+  def dialog_highlight_bg_color=(color)
+    @dialog_highlight_bg_color_sequence = dialog_color_to_code(:bg, color)
   end
 
-  def dialog_pointer_fg_color=(color)
-    @dialog_pointer_fg_color_sequence = dialog_color_to_code(:fg, color)
+  def dialog_highlight_fg_color=(color)
+    @dialog_highlight_fg_color_sequence = dialog_color_to_code(:fg, color)
   end
 
   def dialog_default_bg_color
@@ -128,12 +128,12 @@ class Reline::Config
     dialog_code_to_color(:fg, @dialog_default_fg_color_sequence)
   end
 
-  def dialog_pointer_bg_color
-    dialog_code_to_color(:bg, @dialog_pointer_bg_color_sequence)
+  def dialog_highlight_bg_color
+    dialog_code_to_color(:bg, @dialog_highlight_bg_color_sequence)
   end
 
-  def dialog_pointer_fg_color
-    dialog_code_to_color(:fg, @dialog_pointer_fg_color_sequence)
+  def dialog_highlight_fg_color
+    dialog_code_to_color(:fg, @dialog_highlight_fg_color_sequence)
   end
 
   COLORS = [
@@ -399,10 +399,10 @@ class Reline::Config
       self.dialog_default_bg_color = value
     when 'dialog-default-fg-color'
       self.dialog_default_fg_color = value
-    when 'dialog-pointer-bg-color'
-      self.dialog_pointer_bg_color = value
-    when 'dialog-pointer-fg-color'
-      self.dialog_pointer_fg_color = value
+    when 'dialog-highlight-bg-color'
+      self.dialog_highlight_bg_color = value
+    when 'dialog-highlight-fg-color'
+      self.dialog_highlight_fg_color = value
     when *VARIABLE_NAMES then
       variable_name = :"@#{name.tr(?-, ?_)}"
       instance_variable_set(variable_name, value.nil? || value == '1' || value == 'on')

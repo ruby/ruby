@@ -1,5 +1,5 @@
 # frozen_string_literal: true
-require_relative 'deprecate'
+require_relative "deprecate"
 
 ##
 # This module contains various utility methods as module methods.
@@ -10,9 +10,9 @@ module Gem::Util
   # Zlib::GzipReader wrapper that unzips +data+.
 
   def self.gunzip(data)
-    require 'zlib'
-    require 'stringio'
-    data = StringIO.new(data, 'r')
+    require "zlib"
+    require "stringio"
+    data = StringIO.new(data, "r")
 
     gzip_reader = begin
                     Zlib::GzipReader.new(data)
@@ -29,9 +29,9 @@ module Gem::Util
   # Zlib::GzipWriter wrapper that zips +data+.
 
   def self.gzip(data)
-    require 'zlib'
-    require 'stringio'
-    zipped = StringIO.new(String.new, 'w')
+    require "zlib"
+    require "stringio"
+    zipped = StringIO.new(String.new, "w")
     zipped.set_encoding Encoding::BINARY
 
     Zlib::GzipWriter.wrap zipped do |io|
@@ -45,7 +45,7 @@ module Gem::Util
   # A Zlib::Inflate#inflate wrapper
 
   def self.inflate(data)
-    require 'zlib'
+    require "zlib"
     Zlib::Inflate.inflate data
   end
 
@@ -86,7 +86,7 @@ module Gem::Util
     loop do
       Dir.chdir here, &block rescue Errno::EACCES
 
-      new_here = File.expand_path('..', here)
+      new_here = File.expand_path("..", here)
       return if new_here == here # toplevel
       here = new_here
     end
@@ -109,7 +109,7 @@ module Gem::Util
   # comes with a leading slash.
 
   def self.correct_for_windows_path(path)
-    if path[0].chr == '/' && path[1].chr =~ /[a-z]/i && path[2].chr == ':'
+    if path[0].chr == "/" && path[1].chr =~ /[a-z]/i && path[2].chr == ":"
       path[1..-1]
     else
       path

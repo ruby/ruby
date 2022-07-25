@@ -1121,14 +1121,19 @@ CODE
     assert_equal(S("world"), res[1])
 
     res = []
-    S("hello\n\n\nworld").each_line(S(''), chomp: true) {|x| res << x}
-    assert_equal(S("hello\n"), res[0])
-    assert_equal(S("world"),   res[1])
+    S("hello\n\n\nworld\n").each_line(S(''), chomp: true) {|x| res << x}
+    assert_equal(S("hello"), res[0])
+    assert_equal(S("world\n"), res[1])
 
     res = []
-    S("hello\r\n\r\nworld").each_line(S(''), chomp: true) {|x| res << x}
-    assert_equal(S("hello\r\n"), res[0])
-    assert_equal(S("world"),     res[1])
+    S("hello\r\n\r\nworld\r\n").each_line(S(''), chomp: true) {|x| res << x}
+    assert_equal(S("hello"), res[0])
+    assert_equal(S("world\r\n"), res[1])
+
+    res = []
+    S("hello\r\n\n\nworld").each_line(S(''), chomp: true) {|x| res << x}
+    assert_equal(S("hello"), res[0])
+    assert_equal(S("world"), res[1])
 
     res = []
     S("hello!world").each_line(S('!'), chomp: true) {|x| res << x}

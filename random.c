@@ -144,7 +144,7 @@ static rb_random_mt_t *
 rand_mt_start(rb_random_mt_t *r)
 {
     if (!genrand_initialized(&r->mt)) {
-	r->base.seed = rand_init(&random_mt_if, &r->base, random_seed(Qundef));
+        r->base.seed = rand_init(&random_mt_if, &r->base, random_seed(Qundef));
     }
     return r;
 }
@@ -216,7 +216,7 @@ int_pair_to_real_inclusive(uint32_t a, uint32_t b)
     r = (double)(uint64_t)((x * m) >> 64);
 #elif defined HAVE_UINT64_T && !MSC_VERSION_BEFORE(1300)
     uint64_t x = ((uint64_t)a << dig_u) +
-	(((uint64_t)b + (a >> dig_u)) >> dig_r64);
+        (((uint64_t)b + (a >> dig_u)) >> dig_r64);
     r = (double)x;
 #else
     /* shift then add to get rid of overflow */
@@ -252,9 +252,9 @@ random_memsize(const void *ptr)
 const rb_data_type_t rb_random_data_type = {
     "random",
     {
-	random_mark,
-	random_free,
-	random_memsize,
+        random_mark,
+        random_free,
+        random_memsize,
     },
     0, 0, RUBY_TYPED_FREE_IMMEDIATELY
 };
@@ -271,9 +271,9 @@ random_mt_memsize(const void *ptr)
 static const rb_data_type_t random_mt_type = {
     "random/MT",
     {
-	random_mt_mark,
-	random_mt_free,
-	random_mt_memsize,
+        random_mt_mark,
+        random_mt_free,
+        random_mt_memsize,
     },
     &rb_random_data_type,
     (void *)&random_mt_if,
@@ -302,7 +302,7 @@ static rb_random_t *
 try_get_rnd(VALUE obj)
 {
     if (obj == rb_cRandom) {
-	return rand_start(default_rand());
+        return rand_start(default_rand());
     }
     if (!rb_typeddata_is_kind_of(obj, &rb_random_data_type)) return NULL;
     if (RTYPEDDATA_TYPE(obj) == &random_mt_type)
@@ -319,7 +319,7 @@ static const rb_random_interface_t *
 try_rand_if(VALUE obj, rb_random_t *rnd)
 {
     if (rnd == &default_rand()->base) {
-	return &random_mt_if;
+        return &random_mt_if;
     }
     return rb_rand_if(obj);
 }
@@ -426,12 +426,12 @@ fill_random_bytes_urandom(void *seed, size_t size)
 {
      unsigned char *p = (unsigned char *)seed;
      while (size) {
-	size_t len = size < MAX_SEED_LEN_PER_READ ? size : MAX_SEED_LEN_PER_READ;
-	if (getentropy(p, len) != 0) {
+        size_t len = size < MAX_SEED_LEN_PER_READ ? size : MAX_SEED_LEN_PER_READ;
+        if (getentropy(p, len) != 0) {
             return -1;
-	}
-	p += len;
-	size -= len;
+        }
+        p += len;
+        size -= len;
      }
      return 0;
 }
@@ -446,12 +446,12 @@ fill_random_bytes_urandom(void *seed, size_t size)
     */
     int fd = rb_cloexec_open("/dev/urandom",
 # ifdef O_NONBLOCK
-			     O_NONBLOCK|
+                             O_NONBLOCK|
 # endif
 # ifdef O_NOCTTY
-			     O_NOCTTY|
+                             O_NOCTTY|
 # endif
-			     O_RDONLY, 0);
+                             O_RDONLY, 0);
     struct stat statbuf;
     ssize_t ret = 0;
     size_t offset = 0;
@@ -459,14 +459,14 @@ fill_random_bytes_urandom(void *seed, size_t size)
     if (fd < 0) return -1;
     rb_update_max_fd(fd);
     if (fstat(fd, &statbuf) == 0 && S_ISCHR(statbuf.st_mode)) {
-	do {
-	    ret = read(fd, ((char*)seed) + offset, size - offset);
-	    if (ret < 0) {
-		close(fd);
-		return -1;
-	    }
-	    offset += (size_t)ret;
-	} while (offset < size);
+        do {
+            ret = read(fd, ((char*)seed) + offset, size - offset);
+            if (ret < 0) {
+                close(fd);
+                return -1;
+            }
+            offset += (size_t)ret;
+        } while (offset < size);
     }
     close(fd);
     return 0;
@@ -553,7 +553,7 @@ release_crypt(void *p)
     HCRYPTPROV *ptr = p;
     HCRYPTPROV prov = (HCRYPTPROV)ATOMIC_SIZE_EXCHANGE(*ptr, INVALID_HCRYPTPROV);
     if (prov && prov != INVALID_HCRYPTPROV) {
-	CryptReleaseContext(prov, 0);
+        CryptReleaseContext(prov, 0);
     }
 }
 
@@ -563,23 +563,23 @@ fill_random_bytes_crypt(void *seed, size_t size)
     static HCRYPTPROV perm_prov;
     HCRYPTPROV prov = perm_prov, old_prov;
     if (!prov) {
-	if (!CryptAcquireContext(&prov, NULL, NULL, PROV_RSA_FULL, CRYPT_VERIFYCONTEXT)) {
-	    prov = INVALID_HCRYPTPROV;
-	}
-	old_prov = (HCRYPTPROV)ATOMIC_SIZE_CAS(perm_prov, 0, prov);
-	if (LIKELY(!old_prov)) { /* no other threads acquired */
-	    if (prov != INVALID_HCRYPTPROV) {
+        if (!CryptAcquireContext(&prov, NULL, NULL, PROV_RSA_FULL, CRYPT_VERIFYCONTEXT)) {
+            prov = INVALID_HCRYPTPROV;
+        }
+        old_prov = (HCRYPTPROV)ATOMIC_SIZE_CAS(perm_prov, 0, prov);
+        if (LIKELY(!old_prov)) { /* no other threads acquired */
+            if (prov != INVALID_HCRYPTPROV) {
 #undef RUBY_UNTYPED_DATA_WARNING
 #define RUBY_UNTYPED_DATA_WARNING 0
-		rb_gc_register_mark_object(Data_Wrap_Struct(0, 0, release_crypt, &perm_prov));
-	    }
-	}
-	else {			/* another thread acquired */
-	    if (prov != INVALID_HCRYPTPROV) {
-		CryptReleaseContext(prov, 0);
-	    }
-	    prov = old_prov;
-	}
+                rb_gc_register_mark_object(Data_Wrap_Struct(0, 0, release_crypt, &perm_prov));
+            }
+        }
+        else {			/* another thread acquired */
+            if (prov != INVALID_HCRYPTPROV) {
+                CryptReleaseContext(prov, 0);
+            }
+            prov = old_prov;
+        }
     }
     if (prov == INVALID_HCRYPTPROV) return -1;
     while (size > 0) {
@@ -619,20 +619,20 @@ fill_random_bytes_syscall(void *seed, size_t size, int need_secure)
 {
     static rb_atomic_t try_syscall = 1;
     if (try_syscall) {
-	size_t offset = 0;
-	int flags = 0;
-	if (!need_secure)
-	    flags = GRND_NONBLOCK;
-	do {
-	    errno = 0;
+        size_t offset = 0;
+        int flags = 0;
+        if (!need_secure)
+            flags = GRND_NONBLOCK;
+        do {
+            errno = 0;
             ssize_t ret = getrandom(((char*)seed) + offset, size - offset, flags);
-	    if (ret == -1) {
-		ATOMIC_SET(try_syscall, 0);
-		return -1;
-	    }
-	    offset += (size_t)ret;
-	} while (offset < size);
-	return 0;
+            if (ret == -1) {
+                ATOMIC_SET(try_syscall, 0);
+                return -1;
+            }
+            offset += (size_t)ret;
+        } while (offset < size);
+        return 0;
     }
     return -1;
 }
@@ -745,7 +745,7 @@ random_raw_seed(VALUE self, VALUE size)
     VALUE buf = rb_str_new(0, n);
     if (n == 0) return buf;
     if (fill_random_bytes(RSTRING_PTR(buf), n, TRUE))
-	rb_raise(rb_eRuntimeError, "failed to get urandom");
+        rb_raise(rb_eRuntimeError, "failed to get urandom");
     return buf;
 }
 
@@ -857,16 +857,16 @@ rand_mt_load(VALUE obj, VALUE dump)
         left = RARRAY_AREF(dump, 1);
       case 1:
         state = RARRAY_AREF(dump, 0);
-	break;
+        break;
       default:
-	rb_raise(rb_eArgError, "wrong dump data");
+        rb_raise(rb_eArgError, "wrong dump data");
     }
     rb_integer_pack(state, mt->state, numberof(mt->state),
         sizeof(*mt->state), 0,
         INTEGER_PACK_LSWORD_FIRST|INTEGER_PACK_NATIVE_BYTE_ORDER);
     x = NUM2ULONG(left);
     if (x > numberof(mt->state)) {
-	rb_raise(rb_eArgError, "wrong value");
+        rb_raise(rb_eArgError, "wrong value");
     }
     mt->left = (unsigned int)x;
     mt->next = mt->state + numberof(mt->state) - x + 1;
@@ -933,7 +933,7 @@ rb_f_srand(int argc, VALUE *argv, VALUE obj)
         seed = random_seed(obj);
     }
     else {
-	seed = rb_to_int(argv[0]);
+        seed = rb_to_int(argv[0]);
     }
     old = r->base.seed;
     rand_init(&random_mt_if, &r->base, seed);
@@ -1056,9 +1056,9 @@ obj_random_bytes(VALUE obj, void *p, long n)
     Check_Type(v, T_STRING);
     l = RSTRING_LEN(v);
     if (l < n)
-	rb_raise(rb_eRangeError, "random data too short %ld", l);
+        rb_raise(rb_eRangeError, "random data too short %ld", l);
     else if (l > n)
-	rb_raise(rb_eRangeError, "random data too long %ld", l);
+        rb_raise(rb_eRangeError, "random data too long %ld", l);
     if (p) memcpy(p, RSTRING_PTR(v), n);
     return v;
 }
@@ -1074,9 +1074,9 @@ rb_random_int32(VALUE obj)
 {
     rb_random_t *rnd = try_get_rnd(obj);
     if (!rnd) {
-	uint32_t x;
-	obj_random_bytes(obj, &x, sizeof(x));
-	return (unsigned int)x;
+        uint32_t x;
+        obj_random_bytes(obj, &x, sizeof(x));
+        return (unsigned int)x;
     }
     return random_int32(try_rand_if(obj, rnd), rnd);
 }
@@ -1087,10 +1087,10 @@ random_real(VALUE obj, rb_random_t *rnd, int excl)
     uint32_t a, b;
 
     if (!rnd) {
-	uint32_t x[2] = {0, 0};
-	obj_random_bytes(obj, x, sizeof(x));
-	a = x[0];
-	b = x[1];
+        uint32_t x[2] = {0, 0};
+        obj_random_bytes(obj, x, sizeof(x));
+        a = x[0];
+        b = x[1];
     }
     else {
         const rb_random_interface_t *rng = try_rand_if(obj, rnd);
@@ -1105,10 +1105,10 @@ double
 rb_int_pair_to_real(uint32_t a, uint32_t b, int excl)
 {
     if (excl) {
-	return int_pair_to_real_exclusive(a, b);
+        return int_pair_to_real_exclusive(a, b);
     }
     else {
-	return int_pair_to_real_inclusive(a, b);
+        return int_pair_to_real_inclusive(a, b);
     }
 }
 
@@ -1117,15 +1117,15 @@ rb_random_real(VALUE obj)
 {
     rb_random_t *rnd = try_get_rnd(obj);
     if (!rnd) {
-	VALUE v = rb_funcallv(obj, id_rand, 0, 0);
-	double d = NUM2DBL(v);
-	if (d < 0.0) {
-	    rb_raise(rb_eRangeError, "random number too small %g", d);
-	}
-	else if (d >= 1.0) {
-	    rb_raise(rb_eRangeError, "random number too big %g", d);
-	}
-	return d;
+        VALUE v = rb_funcallv(obj, id_rand, 0, 0);
+        double d = NUM2DBL(v);
+        if (d < 0.0) {
+            rb_raise(rb_eRangeError, "random number too small %g", d);
+        }
+        else if (d >= 1.0) {
+            rb_raise(rb_eRangeError, "random number too big %g", d);
+        }
+        return d;
     }
     return random_real(obj, rnd, TRUE);
 }
@@ -1137,7 +1137,7 @@ ulong_to_num_plus_1(unsigned long n)
     return ULL2NUM((LONG_LONG)n+1);
 #else
     if (n >= ULONG_MAX) {
-	return rb_big_plus(ULONG2NUM(n), INT2FIX(1));
+        return rb_big_plus(ULONG2NUM(n), INT2FIX(1));
     }
     return ULONG2NUM(n+1);
 #endif
@@ -1148,26 +1148,26 @@ random_ulong_limited(VALUE obj, rb_random_t *rnd, unsigned long limit)
 {
     if (!limit) return 0;
     if (!rnd) {
-	const int w = sizeof(limit) * CHAR_BIT - nlz_long(limit);
-	const int n = w > 32 ? sizeof(unsigned long) : sizeof(uint32_t);
-	const unsigned long mask = ~(~0UL << w);
-	const unsigned long full =
-	    (size_t)n >= sizeof(unsigned long) ? ~0UL :
-	    ~(~0UL << n * CHAR_BIT);
-	unsigned long val, bits = 0, rest = 0;
-	do {
-	    if (mask & ~rest) {
-		union {uint32_t u32; unsigned long ul;} buf;
-		obj_random_bytes(obj, &buf, n);
-		rest = full;
-		bits = (n == sizeof(uint32_t)) ? buf.u32 : buf.ul;
-	    }
-	    val = bits;
-	    bits >>= w;
-	    rest >>= w;
-	    val &= mask;
-	} while (limit < val);
-	return val;
+        const int w = sizeof(limit) * CHAR_BIT - nlz_long(limit);
+        const int n = w > 32 ? sizeof(unsigned long) : sizeof(uint32_t);
+        const unsigned long mask = ~(~0UL << w);
+        const unsigned long full =
+            (size_t)n >= sizeof(unsigned long) ? ~0UL :
+            ~(~0UL << n * CHAR_BIT);
+        unsigned long val, bits = 0, rest = 0;
+        do {
+            if (mask & ~rest) {
+                union {uint32_t u32; unsigned long ul;} buf;
+                obj_random_bytes(obj, &buf, n);
+                rest = full;
+                bits = (n == sizeof(uint32_t)) ? buf.u32 : buf.ul;
+            }
+            val = bits;
+            bits >>= w;
+            rest >>= w;
+            val &= mask;
+        } while (limit < val);
+        return val;
     }
     return limited_rand(try_rand_if(obj, rnd), rnd, limit);
 }
@@ -1177,16 +1177,16 @@ rb_random_ulong_limited(VALUE obj, unsigned long limit)
 {
     rb_random_t *rnd = try_get_rnd(obj);
     if (!rnd) {
-	VALUE lim = ulong_to_num_plus_1(limit);
-	VALUE v = rb_to_int(rb_funcallv_public(obj, id_rand, 1, &lim));
-	unsigned long r = NUM2ULONG(v);
-	if (rb_num_negative_p(v)) {
-	    rb_raise(rb_eRangeError, "random number too small %ld", r);
-	}
-	if (r > limit) {
-	    rb_raise(rb_eRangeError, "random number too big %ld", r);
-	}
-	return r;
+        VALUE lim = ulong_to_num_plus_1(limit);
+        VALUE v = rb_to_int(rb_funcallv_public(obj, id_rand, 1, &lim));
+        unsigned long r = NUM2ULONG(v);
+        if (rb_num_negative_p(v)) {
+            rb_raise(rb_eRangeError, "random number too small %ld", r);
+        }
+        if (r > limit) {
+            rb_raise(rb_eRangeError, "random number too big %ld", r);
+        }
+        return r;
     }
     return limited_rand(try_rand_if(obj, rnd), rnd, limit);
 }
@@ -1195,27 +1195,27 @@ static VALUE
 random_ulong_limited_big(VALUE obj, rb_random_t *rnd, VALUE vmax)
 {
     if (!rnd) {
-	VALUE v, vtmp;
-	size_t i, nlz, len = rb_absint_numwords(vmax, 32, &nlz);
-	uint32_t *tmp = ALLOCV_N(uint32_t, vtmp, len * 2);
-	uint32_t mask = (uint32_t)~0 >> nlz;
-	uint32_t *lim_array = tmp;
-	uint32_t *rnd_array = tmp + len;
-	int flag = INTEGER_PACK_MSWORD_FIRST|INTEGER_PACK_NATIVE_BYTE_ORDER;
-	rb_integer_pack(vmax, lim_array, len, sizeof(uint32_t), 0, flag);
+        VALUE v, vtmp;
+        size_t i, nlz, len = rb_absint_numwords(vmax, 32, &nlz);
+        uint32_t *tmp = ALLOCV_N(uint32_t, vtmp, len * 2);
+        uint32_t mask = (uint32_t)~0 >> nlz;
+        uint32_t *lim_array = tmp;
+        uint32_t *rnd_array = tmp + len;
+        int flag = INTEGER_PACK_MSWORD_FIRST|INTEGER_PACK_NATIVE_BYTE_ORDER;
+        rb_integer_pack(vmax, lim_array, len, sizeof(uint32_t), 0, flag);
 
       retry:
-	obj_random_bytes(obj, rnd_array, len * sizeof(uint32_t));
-	rnd_array[0] &= mask;
-	for (i = 0; i < len; ++i) {
-	    if (lim_array[i] < rnd_array[i])
-		goto retry;
-	    if (rnd_array[i] < lim_array[i])
-		break;
-	}
-	v = rb_integer_unpack(rnd_array, len, sizeof(uint32_t), 0, flag);
-	ALLOCV_END(vtmp);
-	return v;
+        obj_random_bytes(obj, rnd_array, len * sizeof(uint32_t));
+        rnd_array[0] &= mask;
+        for (i = 0; i < len; ++i) {
+            if (lim_array[i] < rnd_array[i])
+                goto retry;
+            if (rnd_array[i] < lim_array[i])
+                break;
+        }
+        v = rb_integer_unpack(rnd_array, len, sizeof(uint32_t), 0, flag);
+        ALLOCV_END(vtmp);
+        return v;
     }
     return limited_big_rand(try_rand_if(obj, rnd), rnd, vmax);
 }
@@ -1255,18 +1255,18 @@ rb_rand_bytes_int32(rb_random_get_int32_func *get_int32,
     unsigned int r, i;
     for (; n >= SIZEOF_INT32; n -= SIZEOF_INT32) {
         r = get_int32(rnd);
-	i = SIZEOF_INT32;
-	do {
-	    *ptr++ = (char)r;
-	    r >>= CHAR_BIT;
+        i = SIZEOF_INT32;
+        do {
+            *ptr++ = (char)r;
+            r >>= CHAR_BIT;
         } while (--i);
     }
     if (n > 0) {
         r = get_int32(rnd);
-	do {
-	    *ptr++ = (char)r;
-	    r >>= CHAR_BIT;
-	} while (--n);
+        do {
+            *ptr++ = (char)r;
+            r >>= CHAR_BIT;
+        } while (--n);
     }
 }
 
@@ -1275,7 +1275,7 @@ rb_random_bytes(VALUE obj, long n)
 {
     rb_random_t *rnd = try_get_rnd(obj);
     if (!rnd) {
-	return obj_random_bytes(obj, NULL, n);
+        return obj_random_bytes(obj, NULL, n);
     }
     return rand_bytes(try_rand_if(obj, rnd), rnd, n);
 }
@@ -1335,32 +1335,32 @@ rand_int(VALUE obj, rb_random_t *rnd, VALUE vmax, int restrictive)
     unsigned long r;
 
     if (FIXNUM_P(vmax)) {
-	long max = FIX2LONG(vmax);
-	if (!max) return Qnil;
-	if (max < 0) {
-	    if (restrictive) return Qnil;
-	    max = -max;
-	}
-	r = random_ulong_limited(obj, rnd, (unsigned long)max - 1);
-	return ULONG2NUM(r);
+        long max = FIX2LONG(vmax);
+        if (!max) return Qnil;
+        if (max < 0) {
+            if (restrictive) return Qnil;
+            max = -max;
+        }
+        r = random_ulong_limited(obj, rnd, (unsigned long)max - 1);
+        return ULONG2NUM(r);
     }
     else {
-	VALUE ret;
-	if (rb_bigzero_p(vmax)) return Qnil;
-	if (!BIGNUM_SIGN(vmax)) {
-	    if (restrictive) return Qnil;
+        VALUE ret;
+        if (rb_bigzero_p(vmax)) return Qnil;
+        if (!BIGNUM_SIGN(vmax)) {
+            if (restrictive) return Qnil;
             vmax = rb_big_uminus(vmax);
-	}
-	vmax = rb_big_minus(vmax, INT2FIX(1));
-	if (FIXNUM_P(vmax)) {
-	    long max = FIX2LONG(vmax);
-	    if (max == -1) return Qnil;
-	    r = random_ulong_limited(obj, rnd, max);
-	    return LONG2NUM(r);
-	}
-	ret = random_ulong_limited_big(obj, rnd, vmax);
-	RB_GC_GUARD(vmax);
-	return ret;
+        }
+        vmax = rb_big_minus(vmax, INT2FIX(1));
+        if (FIXNUM_P(vmax)) {
+            long max = FIX2LONG(vmax);
+            if (max == -1) return Qnil;
+            r = random_ulong_limited(obj, rnd, max);
+            return LONG2NUM(r);
+        }
+        ret = random_ulong_limited_big(obj, rnd, vmax);
+        RB_GC_GUARD(vmax);
+        return ret;
     }
 }
 
@@ -1383,10 +1383,10 @@ check_random_number(VALUE v, const VALUE *argv)
 {
     switch (v) {
       case Qfalse:
-	(void)NUM2LONG(argv[0]);
-	break;
+        (void)NUM2LONG(argv[0]);
+        break;
       case Qnil:
-	invalid_argument(argv[0]);
+        invalid_argument(argv[0]);
     }
     return v;
 }
@@ -1396,7 +1396,7 @@ float_value(VALUE v)
 {
     double x = RFLOAT_VALUE(v);
     if (!isfinite(x)) {
-	domain_error();
+        domain_error();
     }
     return x;
 }
@@ -1408,71 +1408,71 @@ rand_range(VALUE obj, rb_random_t* rnd, VALUE range)
     int excl = 0;
 
     if ((v = vmax = range_values(range, &beg, &end, &excl)) == Qfalse)
-	return Qfalse;
+        return Qfalse;
     if (NIL_P(v)) domain_error();
     if (!RB_FLOAT_TYPE_P(vmax) && (v = rb_check_to_int(vmax), !NIL_P(v))) {
-	long max;
-	vmax = v;
-	v = Qnil;
+        long max;
+        vmax = v;
+        v = Qnil;
       fixnum:
-	if (FIXNUM_P(vmax)) {
-	    if ((max = FIX2LONG(vmax) - excl) >= 0) {
-		unsigned long r = random_ulong_limited(obj, rnd, (unsigned long)max);
-		v = ULONG2NUM(r);
-	    }
-	}
-	else if (BUILTIN_TYPE(vmax) == T_BIGNUM && BIGNUM_SIGN(vmax) && !rb_bigzero_p(vmax)) {
-	    vmax = excl ? rb_big_minus(vmax, INT2FIX(1)) : rb_big_norm(vmax);
-	    if (FIXNUM_P(vmax)) {
-		excl = 0;
-		goto fixnum;
-	    }
-	    v = random_ulong_limited_big(obj, rnd, vmax);
-	}
+        if (FIXNUM_P(vmax)) {
+            if ((max = FIX2LONG(vmax) - excl) >= 0) {
+                unsigned long r = random_ulong_limited(obj, rnd, (unsigned long)max);
+                v = ULONG2NUM(r);
+            }
+        }
+        else if (BUILTIN_TYPE(vmax) == T_BIGNUM && BIGNUM_SIGN(vmax) && !rb_bigzero_p(vmax)) {
+            vmax = excl ? rb_big_minus(vmax, INT2FIX(1)) : rb_big_norm(vmax);
+            if (FIXNUM_P(vmax)) {
+                excl = 0;
+                goto fixnum;
+            }
+            v = random_ulong_limited_big(obj, rnd, vmax);
+        }
     }
     else if (v = rb_check_to_float(vmax), !NIL_P(v)) {
-	int scale = 1;
-	double max = RFLOAT_VALUE(v), mid = 0.5, r;
-	if (isinf(max)) {
-	    double min = float_value(rb_to_float(beg)) / 2.0;
-	    max = float_value(rb_to_float(end)) / 2.0;
-	    scale = 2;
-	    mid = max + min;
-	    max -= min;
-	}
-	else if (isnan(max)) {
-	    domain_error();
-	}
-	v = Qnil;
-	if (max > 0.0) {
-	    r = random_real(obj, rnd, excl);
-	    if (scale > 1) {
-		return rb_float_new(+(+(+(r - 0.5) * max) * scale) + mid);
-	    }
-	    v = rb_float_new(r * max);
-	}
-	else if (max == 0.0 && !excl) {
-	    v = rb_float_new(0.0);
-	}
+        int scale = 1;
+        double max = RFLOAT_VALUE(v), mid = 0.5, r;
+        if (isinf(max)) {
+            double min = float_value(rb_to_float(beg)) / 2.0;
+            max = float_value(rb_to_float(end)) / 2.0;
+            scale = 2;
+            mid = max + min;
+            max -= min;
+        }
+        else if (isnan(max)) {
+            domain_error();
+        }
+        v = Qnil;
+        if (max > 0.0) {
+            r = random_real(obj, rnd, excl);
+            if (scale > 1) {
+                return rb_float_new(+(+(+(r - 0.5) * max) * scale) + mid);
+            }
+            v = rb_float_new(r * max);
+        }
+        else if (max == 0.0 && !excl) {
+            v = rb_float_new(0.0);
+        }
     }
 
     if (FIXNUM_P(beg) && FIXNUM_P(v)) {
-	long x = FIX2LONG(beg) + FIX2LONG(v);
-	return LONG2NUM(x);
+        long x = FIX2LONG(beg) + FIX2LONG(v);
+        return LONG2NUM(x);
     }
     switch (TYPE(v)) {
       case T_NIL:
-	break;
+        break;
       case T_BIGNUM:
-	return rb_big_plus(v, beg);
+        return rb_big_plus(v, beg);
       case T_FLOAT: {
-	VALUE f = rb_check_to_float(beg);
-	if (!NIL_P(f)) {
-	    return DBL2NUM(RFLOAT_VALUE(v) + RFLOAT_VALUE(f));
-	}
+        VALUE f = rb_check_to_float(beg);
+        if (!NIL_P(f)) {
+            return DBL2NUM(RFLOAT_VALUE(v) + RFLOAT_VALUE(f));
+        }
       }
       default:
-	return rb_funcallv(beg, id_plus, 1, &v);
+        return rb_funcallv(beg, id_plus, 1, &v);
     }
 
     return v;
@@ -1524,25 +1524,25 @@ rand_random(int argc, VALUE *argv, VALUE obj, rb_random_t *rnd)
     VALUE vmax, v;
 
     if (rb_check_arity(argc, 0, 1) == 0) {
-	return rb_float_new(random_real(obj, rnd, TRUE));
+        return rb_float_new(random_real(obj, rnd, TRUE));
     }
     vmax = argv[0];
     if (NIL_P(vmax)) return Qnil;
     if (!RB_FLOAT_TYPE_P(vmax)) {
-	v = rb_check_to_int(vmax);
-	if (!NIL_P(v)) return rand_int(obj, rnd, v, 1);
+        v = rb_check_to_int(vmax);
+        if (!NIL_P(v)) return rand_int(obj, rnd, v, 1);
     }
     v = rb_check_to_float(vmax);
     if (!NIL_P(v)) {
-	const double max = float_value(v);
-	if (max < 0.0) {
-	    return Qnil;
-	}
-	else {
-	    double r = random_real(obj, rnd, TRUE);
-	    if (max > 0.0) r *= max;
-	    return rb_float_new(r);
-	}
+        const double max = float_value(v);
+        if (max < 0.0) {
+            return Qnil;
+        }
+        else {
+            double r = random_real(obj, rnd, TRUE);
+            if (max > 0.0) r *= max;
+            return rb_float_new(r);
+        }
     }
     return rand_range(obj, rnd, vmax);
 }
@@ -1645,12 +1645,12 @@ rb_f_rand(int argc, VALUE *argv, VALUE obj)
 
     if (rb_check_arity(argc, 0, 1) && !NIL_P(vmax = argv[0])) {
         VALUE v = rand_range(obj, rnd, vmax);
-	if (v != Qfalse) return v;
-	vmax = rb_to_int(vmax);
-	if (vmax != INT2FIX(0)) {
+        if (v != Qfalse) return v;
+        vmax = rb_to_int(vmax);
+        if (vmax != INT2FIX(0)) {
             v = rand_int(obj, rnd, vmax, 0);
-	    if (!NIL_P(v)) return v;
-	}
+            if (!NIL_P(v)) return v;
+        }
     }
     return DBL2NUM(random_real(obj, rnd, TRUE));
 }
@@ -1706,7 +1706,7 @@ init_hash_salt(struct MT *mt)
     int i;
 
     for (i = 0; i < numberof(hash_salt.u32); ++i)
-	hash_salt.u32[i] = genrand_int32(mt);
+        hash_salt.u32[i] = genrand_int32(mt);
 }
 
 NO_SANITIZE("unsigned-integer-overflow", extern st_index_t rb_hash_start(st_index_t h));
@@ -1826,7 +1826,7 @@ InitVM_Random(void)
     rb_define_private_method(CLASS_OF(rb_cRandom), "left", random_s_left, 0);
 
     {
-	/*
+        /*
          * Generate a random number in the given range as Random does
          *
          *   prng.random_number       #=> 0.5816771641321361
@@ -1836,11 +1836,11 @@ InitVM_Random(void)
          *   prng.rand(1000)          #=> 485
          *   prng.rand(1..6)          #=> 3
          */
-	VALUE m = rb_define_module_under(rb_cRandom, "Formatter");
-	rb_include_module(base, m);
-	rb_extend_object(base, m);
-	rb_define_method(m, "random_number", rand_random_number, -1);
-	rb_define_method(m, "rand", rand_random_number, -1);
+        VALUE m = rb_define_module_under(rb_cRandom, "Formatter");
+        rb_include_module(base, m);
+        rb_extend_object(base, m);
+        rb_define_method(m, "random_number", rand_random_number, -1);
+        rb_define_method(m, "rand", rand_random_number, -1);
     }
 
     default_rand_key = rb_ractor_local_storage_ptr_newkey(&default_rand_key_storage_type);

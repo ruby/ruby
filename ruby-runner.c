@@ -24,29 +24,29 @@ insert_env_path(const char *envname, const char *paths, size_t size, int prepend
     size_t n = 0;
 
     if (env) {
-	while ((c = *env) == PATH_SEP) ++env;
-	n = strlen(env);
-	while (n > 0 && env[n-1] == PATH_SEP) --n;
+        while ((c = *env) == PATH_SEP) ++env;
+        n = strlen(env);
+        while (n > 0 && env[n-1] == PATH_SEP) --n;
     }
     if (c) {
-	char *e = malloc(size+n+1);
-	size_t pos = 0;
-	if (prepend) {
-	    memcpy(e, paths, pos = size-1);
-	    e[pos++] = PATH_SEP;
-	}
-	memcpy(e+pos, env, n);
-	pos += n;
-	if (!prepend) {
-	    e[pos++] = PATH_SEP;
-	    memcpy(e+pos, paths, size-1);
-	    pos += size-1;
-	}
-	e[pos] = '\0';
-	env = e;
+        char *e = malloc(size+n+1);
+        size_t pos = 0;
+        if (prepend) {
+            memcpy(e, paths, pos = size-1);
+            e[pos++] = PATH_SEP;
+        }
+        memcpy(e+pos, env, n);
+        pos += n;
+        if (!prepend) {
+            e[pos++] = PATH_SEP;
+            memcpy(e+pos, paths, size-1);
+            pos += size-1;
+        }
+        e[pos] = '\0';
+        env = e;
     }
     else {
-	env = paths;
+        env = paths;
     }
     setenv(envname, env, 1);
 }
@@ -58,12 +58,12 @@ main(int argc, char **argv)
     static const char builddir[] = BUILDDIR;
     static const char rubypath[] = BUILDDIR"/"STRINGIZE(RUBY_INSTALL_NAME);
     static const char rubylib[] =
-	ABS_SRCDIR"/lib"
-	PATH_SEPARATOR
-	EXTOUT_DIR"/common"
-	PATH_SEPARATOR
-	EXTOUT_DIR"/"ARCH
-	;
+        ABS_SRCDIR"/lib"
+        PATH_SEPARATOR
+        EXTOUT_DIR"/common"
+        PATH_SEPARATOR
+        EXTOUT_DIR"/"ARCH
+        ;
 #ifndef LOAD_RELATIVE
     static const char mjit_build_dir[] = BUILDDIR"/mjit_build_dir."SOEXT;
     struct stat stbuf;
@@ -84,9 +84,9 @@ main(int argc, char **argv)
 
     if (!(p = strrchr(arg0, '/'))) p = arg0; else p++;
     if (strlen(p) < namesize - 1) {
-	argv[0] = malloc(p - arg0 + namesize);
-	memcpy(argv[0], arg0, p - arg0);
-	p = argv[0] + (p - arg0);
+        argv[0] = malloc(p - arg0 + namesize);
+        memcpy(argv[0], arg0, p - arg0);
+        p = argv[0] + (p - arg0);
     }
     memcpy(p, rubyname, namesize);
 

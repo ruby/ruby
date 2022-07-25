@@ -1,17 +1,17 @@
 # frozen_string_literal: true
-require_relative 'helper'
+require_relative "helper"
 
 unless Gem::HAVE_OPENSSL
-  warn 'Skipping Gem::Security::TrustDir tests.  openssl not found.'
+  warn "Skipping Gem::Security::TrustDir tests.  openssl not found."
 end
 
 class TestGemSecurityTrustDir < Gem::TestCase
-  CHILD_CERT = load_cert 'child'
+  CHILD_CERT = load_cert "child"
 
   def setup
     super
 
-    @dest_dir = File.join @tempdir, 'trust'
+    @dest_dir = File.join @tempdir, "trust"
 
     @trust_dir = Gem::Security::TrustDir.new @dest_dir
   end

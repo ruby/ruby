@@ -1,20 +1,20 @@
 # frozen_string_literal: true
-require_relative 'helper'
-require 'rubygems/request'
-require 'ostruct'
-require 'base64'
+require_relative "helper"
+require "rubygems/request"
+require "ostruct"
+require "base64"
 
 unless Gem::HAVE_OPENSSL
-  warn 'Skipping Gem::Request tests.  openssl not found.'
+  warn "Skipping Gem::Request tests.  openssl not found."
 end
 
 class TestGemRequest < Gem::TestCase
-  CA_CERT_FILE     = cert_path 'ca'
-  CHILD_CERT       = load_cert 'child'
-  EXPIRED_CERT     = load_cert 'expired'
-  PUBLIC_CERT      = load_cert 'public'
-  PUBLIC_CERT_FILE = cert_path 'public'
-  SSL_CERT         = load_cert 'ssl'
+  CA_CERT_FILE     = cert_path "ca"
+  CHILD_CERT       = load_cert "child"
+  EXPIRED_CERT     = load_cert "expired"
+  PUBLIC_CERT      = load_cert "public"
+  PUBLIC_CERT_FILE = cert_path "public"
+  SSL_CERT         = load_cert "ssl"
 
   def make_request(uri, request_class, last_modified, proxy)
     Gem::Request.create_with_proxy uri, request_class, last_modified, proxy
@@ -28,7 +28,7 @@ class TestGemRequest < Gem::TestCase
     super
 
     @proxy_uri = "http://localhost:1234"
-    @uri = URI('http://example')
+    @uri = URI("http://example")
 
     @request = make_request @uri, nil, nil, nil
   end
@@ -40,7 +40,7 @@ class TestGemRequest < Gem::TestCase
   end
 
   def test_initialize_proxy
-    proxy_uri = 'http://proxy.example.com'
+    proxy_uri = "http://proxy.example.com"
 
     request = make_request @uri, nil, nil, proxy_uri
 
@@ -48,7 +48,7 @@ class TestGemRequest < Gem::TestCase
   end
 
   def test_initialize_proxy_URI
-    proxy_uri = 'http://proxy.example.com'
+    proxy_uri = "http://proxy.example.com"
 
     request = make_request @uri, nil, nil, URI(proxy_uri)
 
@@ -56,22 +56,22 @@ class TestGemRequest < Gem::TestCase
   end
 
   def test_initialize_proxy_ENV
-    ENV['http_proxy'] = @proxy_uri
-    ENV['http_proxy_user'] = 'foo'
-    ENV['http_proxy_pass'] = 'bar'
+    ENV["http_proxy"] = @proxy_uri
+    ENV["http_proxy_user"] = "foo"
+    ENV["http_proxy_pass"] = "bar"
 
     request = make_request @uri, nil, nil, nil
 
     proxy = request.proxy_uri
 
-    assert_equal 'foo', proxy.user
-    assert_equal 'bar', proxy.password
+    assert_equal "foo", proxy.user
+    assert_equal "bar", proxy.password
   end
 
   def test_initialize_proxy_ENV_https
-    ENV['https_proxy'] = @proxy_uri
+    ENV["https_proxy"] = @proxy_uri
 
-    request = make_request URI('https://example'), nil, nil, nil
+    request = make_request URI("https://example"), nil, nil, nil
 
     proxy = request.proxy_uri
 
@@ -79,10 +79,10 @@ class TestGemRequest < Gem::TestCase
   end
 
   def test_proxy_ENV
-    ENV['http_proxy'] = "http://proxy"
-    ENV['https_proxy'] = ""
+    ENV["http_proxy"] = "http://proxy"
+    ENV["https_proxy"] = ""
 
-    request = make_request URI('https://example'), nil, nil, nil
+    request = make_request URI("https://example"), nil, nil, nil
 
     proxy = request.proxy_uri
 
@@ -90,13 +90,13 @@ class TestGemRequest < Gem::TestCase
   end
 
   def test_configure_connection_for_https
-    connection = Net::HTTP.new 'localhost', 443
+    connection = Net::HTTP.new "localhost", 443
 
     request = Class.new(Gem::Request) do
       def self.get_cert_files
         [TestGemRequest::PUBLIC_CERT_FILE]
       end
-    end.create_with_proxy URI('https://example'), nil, nil, nil
+    end.create_with_proxy URI("https://example"), nil, nil, nil
 
     Gem::Request.configure_connection_for_https connection, request.cert_files
 
@@ -109,13 +109,13 @@ class TestGemRequest < Gem::TestCase
     ssl_ca_cert, Gem.configuration.ssl_ca_cert =
       Gem.configuration.ssl_ca_cert, CA_CERT_FILE
 
-    connection = Net::HTTP.new 'localhost', 443
+    connection = Net::HTTP.new "localhost", 443
 
     request = Class.new(Gem::Request) do
       def self.get_cert_files
         [TestGemRequest::PUBLIC_CERT_FILE]
       end
-    end.create_with_proxy URI('https://example'), nil, nil, nil
+    end.create_with_proxy URI("https://example"), nil, nil, nil
 
     Gem::Request.configure_connection_for_https connection, request.cert_files
 
@@ -128,7 +128,7 @@ class TestGemRequest < Gem::TestCase
   end
 
   def test_get_proxy_from_env_fallback
-    ENV['http_proxy'] = @proxy_uri
+    ENV["http_proxy"] = @proxy_uri
     request = make_request @uri, nil, nil, nil
     proxy = request.proxy_uri
 
@@ -136,8 +136,8 @@ class TestGemRequest < Gem::TestCase
   end
 
   def test_get_proxy_from_env_https
-    ENV['https_proxy'] = @proxy_uri
-    uri = URI('https://example')
+    ENV["https_proxy"] = @proxy_uri
+    uri = URI("https://example")
     request = make_request uri, nil, nil, nil
 
     proxy = request.proxy_uri
@@ -146,39 +146,39 @@ class TestGemRequest < Gem::TestCase
   end
 
   def test_get_proxy_from_env_domain
-    ENV['http_proxy'] = @proxy_uri
-    ENV['http_proxy_user'] = 'foo\user'
-    ENV['http_proxy_pass'] = 'my bar'
+    ENV["http_proxy"] = @proxy_uri
+    ENV["http_proxy_user"] = 'foo\user'
+    ENV["http_proxy_pass"] = "my bar"
     request = make_request @uri, nil, nil, nil
 
     proxy = request.proxy_uri
 
     assert_equal 'foo\user', Gem::UriFormatter.new(proxy.user).unescape
-    assert_equal 'my bar', Gem::UriFormatter.new(proxy.password).unescape
+    assert_equal "my bar", Gem::UriFormatter.new(proxy.password).unescape
   end
 
   def test_get_proxy_from_env_escape
-    ENV['http_proxy'] = @proxy_uri
-    ENV['http_proxy_user'] = 'foo@user'
-    ENV['http_proxy_pass'] = 'my@bar'
+    ENV["http_proxy"] = @proxy_uri
+    ENV["http_proxy_user"] = "foo@user"
+    ENV["http_proxy_pass"] = "my@bar"
     request = make_request @uri, nil, nil, nil
 
     proxy = request.proxy_uri
 
-    assert_equal 'foo%40user', proxy.user
-    assert_equal 'my%40bar',   proxy.password
+    assert_equal "foo%40user", proxy.user
+    assert_equal "my%40bar",   proxy.password
   end
 
   def test_get_proxy_from_env_normalize
-    ENV['HTTP_PROXY'] = 'fakeurl:12345'
+    ENV["HTTP_PROXY"] = "fakeurl:12345"
     request = make_request @uri, nil, nil, nil
 
-    assert_equal 'http://fakeurl:12345', request.proxy_uri.to_s
+    assert_equal "http://fakeurl:12345", request.proxy_uri.to_s
   end
 
   def test_get_proxy_from_env_empty
-    ENV['HTTP_PROXY'] = ''
-    ENV.delete 'http_proxy'
+    ENV["HTTP_PROXY"] = ""
+    ENV.delete "http_proxy"
     request = make_request @uri, nil, nil, nil
 
     assert_nil request.proxy_uri
@@ -207,7 +207,7 @@ class TestGemRequest < Gem::TestCase
       c
     end
 
-    auth_header = conn.payload['Authorization']
+    auth_header = conn.payload["Authorization"]
     assert_equal "Basic #{Base64.encode64('user:pass')}".strip, auth_header
     assert_includes @ui.output, "GET https://user:REDACTED@example.rubygems/specs.#{Gem.marshal_version}"
   end
@@ -224,7 +224,7 @@ class TestGemRequest < Gem::TestCase
       c
     end
 
-    auth_header = conn.payload['Authorization']
+    auth_header = conn.payload["Authorization"]
     assert_equal "Basic #{Base64.encode64('user:{DEScede}pass')}".strip, auth_header
     assert_includes @ui.output, "GET https://user:REDACTED@example.rubygems/specs.#{Gem.marshal_version}"
   end
@@ -241,36 +241,36 @@ class TestGemRequest < Gem::TestCase
       c
     end
 
-    auth_header = conn.payload['Authorization']
+    auth_header = conn.payload["Authorization"]
     assert_equal "Basic #{Base64.encode64('{DEScede}pass:x-oauth-basic')}".strip, auth_header
     assert_includes @ui.output, "GET https://REDACTED:x-oauth-basic@example.rubygems/specs.#{Gem.marshal_version}"
   end
 
   def test_fetch_head
     uri = Gem::Uri.new(URI.parse "#{@gem_repo}/specs.#{Gem.marshal_version}")
-    response = util_stub_net_http(:body => '', :code => 200) do |conn|
+    response = util_stub_net_http(:body => "", :code => 200) do |conn|
       @request = make_request(uri, Net::HTTP::Get, nil, nil)
       @request.fetch
     end
 
     assert_equal 200, response.code
-    assert_equal '', response.body
+    assert_equal "", response.body
   end
 
   def test_fetch_unmodified
     uri = Gem::Uri.new(URI.parse "#{@gem_repo}/specs.#{Gem.marshal_version}")
     t = Time.utc(2013, 1, 2, 3, 4, 5)
-    conn, response = util_stub_net_http(:body => '', :code => 304) do |c|
+    conn, response = util_stub_net_http(:body => "", :code => 304) do |c|
       @request = make_request(uri, Net::HTTP::Get, t, nil)
       [c, @request.fetch]
     end
 
     assert_equal 304, response.code
-    assert_equal '', response.body
+    assert_equal "", response.body
 
-    modified_header = conn.payload['if-modified-since']
+    modified_header = conn.payload["if-modified-since"]
 
-    assert_equal 'Wed, 02 Jan 2013 03:04:05 GMT', modified_header
+    assert_equal "Wed, 02 Jan 2013 03:04:05 GMT", modified_header
   end
 
   def test_user_agent
@@ -287,7 +287,7 @@ class TestGemRequest < Gem::TestCase
     util_save_version
 
     Object.send :remove_const, :RUBY_ENGINE
-    Object.send :const_set,    :RUBY_ENGINE, 'vroom'
+    Object.send :const_set,    :RUBY_ENGINE, "vroom"
 
     ua = make_request(@uri, nil, nil, nil).user_agent
 
@@ -300,7 +300,7 @@ class TestGemRequest < Gem::TestCase
     util_save_version
 
     Object.send :remove_const, :RUBY_ENGINE
-    Object.send :const_set,    :RUBY_ENGINE, 'ruby'
+    Object.send :const_set,    :RUBY_ENGINE, "ruby"
 
     ua = make_request(@uri, nil, nil, nil).user_agent
 

@@ -18,7 +18,9 @@
 # define ARRAY_DEBUG (0+RUBY_DEBUG)
 #endif
 
-#define RARRAY_PTR_IN_USE_FLAG FL_USER14
+#define RARRAY_SHARED_FLAG      ELTS_SHARED
+#define RARRAY_SHARED_ROOT_FLAG FL_USER12
+#define RARRAY_PTR_IN_USE_FLAG  FL_USER14
 
 /* array.c */
 VALUE rb_ary_last(int, const VALUE *, VALUE);
@@ -70,6 +72,50 @@ static inline bool
 ARY_PTR_USING_P(VALUE ary)
 {
     return FL_TEST_RAW(ary, RARRAY_PTR_IN_USE_FLAG);
+}
+
+RBIMPL_ATTR_MAYBE_UNUSED()
+static inline int
+ary_should_not_be_shared_and_embedded(VALUE ary)
+{
+    return !FL_ALL_RAW(ary, RARRAY_SHARED_FLAG|RARRAY_EMBED_FLAG);
+}
+
+static inline bool
+ARY_SHARED_P(VALUE ary)
+{
+    assert(RB_TYPE_P(ary, T_ARRAY));
+    assert(ary_should_not_be_shared_and_embedded(ary));
+    return FL_TEST_RAW(ary, RARRAY_SHARED_FLAG);
+}
+
+static inline bool
+ARY_EMBED_P(VALUE ary)
+{
+    assert(RB_TYPE_P(ary, T_ARRAY));
+    assert(ary_should_not_be_shared_and_embedded(ary));
+    return FL_TEST_RAW(ary, RARRAY_EMBED_FLAG);
+}
+
+static inline VALUE
+ARY_SHARED_ROOT(VALUE ary)
+{
+    assert(ARY_SHARED_P(ary));
+    return RARRAY(ary)->as.heap.aux.shared_root;
+}
+
+static inline bool
+ARY_SHARED_ROOT_P(VALUE ary)
+{
+    assert(RB_TYPE_P(ary, T_ARRAY));
+    return FL_TEST_RAW(ary, RARRAY_SHARED_ROOT_FLAG);
+}
+
+static inline long
+ARY_SHARED_ROOT_REFCNT(VALUE ary)
+{
+    assert(ARY_SHARED_ROOT_P(ary));
+    return RARRAY(ary)->as.heap.aux.capa;
 }
 
 static inline void

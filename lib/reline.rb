@@ -53,12 +53,12 @@ module Reline
     :dialog_default_fg_color,
     :dialog_default_fg_color_sequence,
     :dialog_default_fg_color=,
-    :dialog_pointer_bg_color,
-    :dialog_pointer_bg_color_sequence,
-    :dialog_pointer_bg_color=,
-    :dialog_pointer_fg_color,
-    :dialog_pointer_fg_color_sequence,
-    :dialog_pointer_fg_color=
+    :dialog_highlight_bg_color,
+    :dialog_highlight_bg_color_sequence,
+    :dialog_highlight_bg_color=,
+    :dialog_highlight_fg_color,
+    :dialog_highlight_fg_color_sequence,
+    :dialog_highlight_fg_color=
   ]
 
   class Core
@@ -273,9 +273,9 @@ module Reline
         scrollbar: true,
         height: 15,
         bg_color: config.dialog_default_bg_color_sequence,
-        pointer_bg_color: config.dialog_pointer_bg_color_sequence,
+        pointer_bg_color: config.dialog_highlight_bg_color_sequence,
         fg_color: config.dialog_default_fg_color_sequence,
-        pointer_fg_color: config.dialog_pointer_fg_color_sequence
+        pointer_fg_color: config.dialog_highlight_fg_color_sequence
       )
     }
     Reline::DEFAULT_DIALOG_CONTEXT = Array.new
@@ -586,8 +586,8 @@ module Reline
       core.add_dialog_proc(:autocomplete, Reline::DEFAULT_DIALOG_PROC_AUTOCOMPLETE, Reline::DEFAULT_DIALOG_CONTEXT)
       core.dialog_default_bg_color = :cyan
       core.dialog_default_fg_color = :white
-      core.dialog_pointer_bg_color = :magenta
-      core.dialog_pointer_fg_color = :white
+      core.dialog_highlight_bg_color = :magenta
+      core.dialog_highlight_fg_color = :white
     }
   end
 

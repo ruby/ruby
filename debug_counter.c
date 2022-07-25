@@ -103,13 +103,13 @@ rb_debug_counter_show_results(const char *msg)
     setlocale(LC_NUMERIC, "");
 
     if (env == NULL || strcmp("1", env) != 0) {
-	int i;
+        int i;
         fprintf(stderr, "[RUBY_DEBUG_COUNTER]\t%d %s\n", getpid(), msg);
-	for (i=0; i<RB_DEBUG_COUNTER_MAX; i++) {
+        for (i=0; i<RB_DEBUG_COUNTER_MAX; i++) {
             fprintf(stderr, "[RUBY_DEBUG_COUNTER]\t%-30s\t%'14"PRIuSIZE"\n",
-		    debug_counter_names[i],
-		    rb_debug_counter[i]);
-	}
+                    debug_counter_names[i],
+                    rb_debug_counter[i]);
+        }
     }
 }
 

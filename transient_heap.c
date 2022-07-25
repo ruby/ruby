@@ -9,6 +9,7 @@
 #include "debug_counter.h"
 #include "gc.h"
 #include "internal.h"
+#include "internal/array.h"
 #include "internal/gc.h"
 #include "internal/hash.h"
 #include "internal/sanitizers.h"
@@ -592,7 +593,7 @@ transient_heap_ptr(VALUE obj, int error)
     switch (BUILTIN_TYPE(obj)) {
       case T_ARRAY:
         if (RARRAY_TRANSIENT_P(obj)) {
-            TH_ASSERT(!FL_TEST_RAW(obj, RARRAY_EMBED_FLAG));
+            TH_ASSERT(!ARY_EMBED_P(obj));
             ptr = RARRAY(obj)->as.heap.ptr;
         }
         break;

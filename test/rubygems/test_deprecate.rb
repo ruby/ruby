@@ -1,6 +1,6 @@
 # frozen_string_literal: true
-require_relative 'helper'
-require 'rubygems/deprecate'
+require_relative "helper"
+require "rubygems/deprecate"
 
 class TestDeprecate < Gem::TestCase
   def setup
@@ -123,7 +123,7 @@ class TestDeprecate < Gem::TestCase
   end
 
   def test_rubygems_deprecate_command
-    require 'rubygems/command'
+    require "rubygems/command"
     foo_command = Class.new(Gem::Command) do
       extend Gem::Deprecate
 

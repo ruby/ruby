@@ -368,23 +368,23 @@ enum sock_recv_type {
 };
 
 VALUE rsock_s_recvfrom_nonblock(VALUE sock, VALUE len, VALUE flg, VALUE str,
-			        VALUE ex, enum sock_recv_type from);
+                                VALUE ex, enum sock_recv_type from);
 VALUE rsock_s_recvfrom(VALUE sock, int argc, VALUE *argv, enum sock_recv_type from);
 
 int rsock_connect(int fd, const struct sockaddr *sockaddr, int len, int socks, struct timeval *timeout);
 
 VALUE rsock_s_accept(VALUE klass, VALUE io, struct sockaddr *sockaddr, socklen_t *len);
 VALUE rsock_s_accept_nonblock(VALUE klass, VALUE ex, rb_io_t *fptr,
-			      struct sockaddr *sockaddr, socklen_t *len);
+                              struct sockaddr *sockaddr, socklen_t *len);
 VALUE rsock_sock_listen(VALUE sock, VALUE log);
 
 VALUE rsock_sockopt_new(int family, int level, int optname, VALUE data);
 
 #if defined(HAVE_SENDMSG)
 VALUE rsock_bsock_sendmsg(VALUE sock, VALUE data, VALUE flags,
-			  VALUE dest_sockaddr, VALUE controls);
+                          VALUE dest_sockaddr, VALUE controls);
 VALUE rsock_bsock_sendmsg_nonblock(VALUE sock, VALUE data, VALUE flags,
-			     VALUE dest_sockaddr, VALUE controls, VALUE ex);
+                             VALUE dest_sockaddr, VALUE controls, VALUE ex);
 #else
 #define rsock_bsock_sendmsg rb_f_notimplement
 #define rsock_bsock_sendmsg_nonblock rb_f_notimplement
@@ -392,9 +392,9 @@ VALUE rsock_bsock_sendmsg_nonblock(VALUE sock, VALUE data, VALUE flags,
 
 #if defined(HAVE_RECVMSG)
 VALUE rsock_bsock_recvmsg(VALUE sock, VALUE dlen, VALUE clen, VALUE flags,
-			  VALUE scm_rights);
+                          VALUE scm_rights);
 VALUE rsock_bsock_recvmsg_nonblock(VALUE sock, VALUE dlen, VALUE clen,
-				   VALUE flags, VALUE scm_rights, VALUE ex);
+                                   VALUE flags, VALUE scm_rights, VALUE ex);
 ssize_t rsock_recvmsg(int socket, struct msghdr *message, int flags);
 #else
 #define rsock_bsock_recvmsg rb_f_notimplement

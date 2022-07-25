@@ -98,6 +98,34 @@ PACKED_STRUCT_UNALIGNED(struct rb_io_buffer_t {
 /** @alias{rb_io_buffer_t} */
 typedef struct rb_io_buffer_t rb_io_buffer_t;
 
+/** Decomposed encoding flags (e.g. `"enc:enc2""`). */
+/*
+ * enc  enc2 read action                      write action
+ * NULL NULL force_encoding(default_external) write the byte sequence of str
+ * e1   NULL force_encoding(e1)               convert str.encoding to e1
+ * e1   e2   convert from e2 to e1            convert str.encoding to e2
+ */
+struct rb_io_enc_t {
+    /** Internal encoding. */
+    rb_encoding *enc;
+    /** External encoding. */
+    rb_encoding *enc2;
+    /**
+     * Flags.
+     *
+     * @see enum ::ruby_econv_flag_type
+     */
+    int ecflags;
+    /**
+     * Flags as Ruby hash.
+     *
+     * @internal
+     *
+     * This is set.  But used from nowhere maybe?
+     */
+    VALUE ecopts;
+};
+
 /** Ruby's IO, metadata and buffers. */
 typedef struct rb_io_t {
 
@@ -141,36 +169,7 @@ typedef struct rb_io_t {
      */
     VALUE tied_io_for_writing;
 
-    /** Decomposed encoding flags (e.g. `"enc:enc2""`). */
-    /*
-     * enc  enc2 read action                      write action
-     * NULL NULL force_encoding(default_external) write the byte sequence of str
-     * e1   NULL force_encoding(e1)               convert str.encoding to e1
-     * e1   e2   convert from e2 to e1            convert str.encoding to e2
-     */
-    struct rb_io_enc_t {
-        /** Internal encoding. */
-        rb_encoding *enc;
-
-        /** External encoding. */
-        rb_encoding *enc2;
-
-        /**
-         * Flags.
-         *
-         * @see enum ::ruby_econv_flag_type
-         */
-        int ecflags;
-
-        /**
-         * Flags as Ruby hash.
-         *
-         * @internal
-         *
-         * This is set.  But used from nowhere maybe?
-         */
-        VALUE ecopts;
-    } encs; /**< Decomposed encoding flags. */
+    struct rb_io_enc_t encs; /**< Decomposed encoding flags. */
 
     /** Encoding converter used when reading from this IO. */
     rb_econv_t *readconv;

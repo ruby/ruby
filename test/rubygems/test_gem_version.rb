@@ -1,5 +1,5 @@
 # frozen_string_literal: true
-require_relative 'helper'
+require_relative "helper"
 require "rubygems/version"
 
 class TestGemVersion < Gem::TestCase
@@ -36,8 +36,8 @@ class TestGemVersion < Gem::TestCase
     assert_nil   Gem::Version.create(nil)
     assert_equal v("5.1"), Gem::Version.create("5.1")
 
-    ver = '1.1'.freeze
-    assert_equal v('1.1'), Gem::Version.create(ver)
+    ver = "1.1".freeze
+    assert_equal v("1.1"), Gem::Version.create(ver)
   end
 
   def test_class_correct
@@ -53,8 +53,8 @@ class TestGemVersion < Gem::TestCase
   end
 
   def test_class_new_subclass
-    v1 = Gem::Version.new '1'
-    v2 = V.new '1'
+    v1 = Gem::Version.new "1"
+    v2 = V.new "1"
 
     refute_same v1, v2
   end
@@ -120,10 +120,10 @@ class TestGemVersion < Gem::TestCase
     assert_prerelease "22.1.50.0.d"
     assert_prerelease "1.2.d.42"
 
-    assert_prerelease '1.A'
+    assert_prerelease "1.A"
 
-    assert_prerelease '1-1'
-    assert_prerelease '1-a'
+    assert_prerelease "1-1"
+    assert_prerelease "1-a"
 
     refute_prerelease "1.2.0"
     refute_prerelease "2.9"
@@ -199,7 +199,7 @@ class TestGemVersion < Gem::TestCase
 
   # modifying the segments of a version should not affect the segments of the cached version object
   def test_segments
-    v('9.8.7').segments[2] += 1
+    v("9.8.7").segments[2] += 1
 
     refute_version_equal "9.8.8", "9.8.7"
     assert_equal         [9,8,7], v("9.8.7").segments
@@ -212,10 +212,10 @@ class TestGemVersion < Gem::TestCase
   end
 
   def test_frozen_version
-    v = v('1.freeze.test').freeze
-    assert_less_than v, v('1')
-    assert_version_equal v('1'), v.release
-    assert_version_equal v('2'), v.bump
+    v = v("1.freeze.test").freeze
+    assert_less_than v, v("1")
+    assert_version_equal v("1"), v.release
+    assert_version_equal v("2"), v.bump
   end
 
   # Asserts that +version+ is a prerelease.

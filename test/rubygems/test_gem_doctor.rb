@@ -1,6 +1,6 @@
 # frozen_string_literal: true
-require_relative 'helper'
-require 'rubygems/doctor'
+require_relative "helper"
+require "rubygems/doctor"
 
 class TestGemDoctor < Gem::TestCase
   def gem(name)
@@ -15,20 +15,20 @@ class TestGemDoctor < Gem::TestCase
   end
 
   def test_doctor
-    a = gem 'a'
-    b = gem 'b'
-    c = gem 'c'
+    a = gem "a"
+    b = gem "b"
+    c = gem "c"
 
     Gem.use_paths @userhome, @gemhome
 
     FileUtils.rm b.spec_file
 
-    File.open c.spec_file, 'w' do |io|
-      io.write 'this will raise an exception when evaluated.'
+    File.open c.spec_file, "w" do |io|
+      io.write "this will raise an exception when evaluated."
     end
 
-    assert_path_exist File.join(a.gem_dir, 'Rakefile')
-    assert_path_exist File.join(a.gem_dir, 'lib', 'a.rb')
+    assert_path_exist File.join(a.gem_dir, "Rakefile")
+    assert_path_exist File.join(a.gem_dir, "lib", "a.rb")
 
     assert_path_exist b.gem_dir
     assert_path_not_exist b.spec_file
@@ -44,8 +44,8 @@ class TestGemDoctor < Gem::TestCase
       end
     end
 
-    assert_path_exist File.join(a.gem_dir, 'Rakefile')
-    assert_path_exist File.join(a.gem_dir, 'lib', 'a.rb')
+    assert_path_exist File.join(a.gem_dir, "Rakefile")
+    assert_path_exist File.join(a.gem_dir, "lib", "a.rb")
 
     assert_path_not_exist b.gem_dir
     assert_path_not_exist b.spec_file
@@ -68,20 +68,20 @@ Removed directory gems/c-2
   end
 
   def test_doctor_dry_run
-    a = gem 'a'
-    b = gem 'b'
-    c = gem 'c'
+    a = gem "a"
+    b = gem "b"
+    c = gem "c"
 
     Gem.use_paths @userhome, @gemhome
 
     FileUtils.rm b.spec_file
 
-    File.open c.spec_file, 'w' do |io|
-      io.write 'this will raise an exception when evaluated.'
+    File.open c.spec_file, "w" do |io|
+      io.write "this will raise an exception when evaluated."
     end
 
-    assert_path_exist File.join(a.gem_dir, 'Rakefile')
-    assert_path_exist File.join(a.gem_dir, 'lib', 'a.rb')
+    assert_path_exist File.join(a.gem_dir, "Rakefile")
+    assert_path_exist File.join(a.gem_dir, "lib", "a.rb")
 
     assert_path_exist b.gem_dir
     assert_path_not_exist b.spec_file
@@ -97,8 +97,8 @@ Removed directory gems/c-2
       end
     end
 
-    assert_path_exist File.join(a.gem_dir, 'Rakefile')
-    assert_path_exist File.join(a.gem_dir, 'lib', 'a.rb')
+    assert_path_exist File.join(a.gem_dir, "Rakefile")
+    assert_path_exist File.join(a.gem_dir, "lib", "a.rb")
 
     assert_path_exist b.gem_dir
     assert_path_not_exist b.spec_file
@@ -121,7 +121,7 @@ Extra directory gems/c-2
   end
 
   def test_doctor_non_gem_home
-    other_dir = File.join @tempdir, 'other', 'dir'
+    other_dir = File.join @tempdir, "other", "dir"
 
     FileUtils.mkdir_p other_dir
 
@@ -147,13 +147,13 @@ This directory does not appear to be a RubyGems repository, skipping
   def test_doctor_child_missing
     doctor = Gem::Doctor.new @gemhome
 
-    doctor.doctor_child 'missing', ''
+    doctor.doctor_child "missing", ""
 
     assert true # count
   end
 
   def test_doctor_badly_named_plugins
-    gem 'a'
+    gem "a"
 
     Gem.use_paths @gemhome.to_s
 
@@ -183,12 +183,12 @@ Removed file plugins/a_badly_named_file.rb
   def test_gem_repository_eh
     doctor = Gem::Doctor.new @gemhome
 
-    refute doctor.gem_repository?, 'no gems installed'
+    refute doctor.gem_repository?, "no gems installed"
 
-    install_specs util_spec 'a'
+    install_specs util_spec "a"
 
     doctor = Gem::Doctor.new @gemhome
 
-    assert doctor.gem_repository?, 'gems installed'
+    assert doctor.gem_repository?, "gems installed"
   end
 end

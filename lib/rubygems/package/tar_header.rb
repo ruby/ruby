@@ -53,42 +53,42 @@ class Gem::Package::TarHeader
   ##
   # Pack format for a tar header
 
-  PACK_FORMAT = 'a100' + # name
-                'a8'   + # mode
-                'a8'   + # uid
-                'a8'   + # gid
-                'a12'  + # size
-                'a12'  + # mtime
-                'a7a'  + # chksum
-                'a'    + # typeflag
-                'a100' + # linkname
-                'a6'   + # magic
-                'a2'   + # version
-                'a32'  + # uname
-                'a32'  + # gname
-                'a8'   + # devmajor
-                'a8'   + # devminor
-                'a155'   # prefix
+  PACK_FORMAT = "a100" + # name
+                "a8"   + # mode
+                "a8"   + # uid
+                "a8"   + # gid
+                "a12"  + # size
+                "a12"  + # mtime
+                "a7a"  + # chksum
+                "a"    + # typeflag
+                "a100" + # linkname
+                "a6"   + # magic
+                "a2"   + # version
+                "a32"  + # uname
+                "a32"  + # gname
+                "a8"   + # devmajor
+                "a8"   + # devminor
+                "a155"   # prefix
 
   ##
   # Unpack format for a tar header
 
-  UNPACK_FORMAT = 'A100' + # name
-                  'A8'   + # mode
-                  'A8'   + # uid
-                  'A8'   + # gid
-                  'A12'  + # size
-                  'A12'  + # mtime
-                  'A8'   + # checksum
-                  'A'    + # typeflag
-                  'A100' + # linkname
-                  'A6'   + # magic
-                  'A2'   + # version
-                  'A32'  + # uname
-                  'A32'  + # gname
-                  'A8'   + # devmajor
-                  'A8'   + # devminor
-                  'A155'   # prefix
+  UNPACK_FORMAT = "A100" + # name
+                  "A8"   + # mode
+                  "A8"   + # uid
+                  "A8"   + # gid
+                  "A12"  + # size
+                  "A12"  + # mtime
+                  "A8"   + # checksum
+                  "A"    + # typeflag
+                  "A100" + # linkname
+                  "A6"   + # magic
+                  "A2"   + # version
+                  "A32"  + # uname
+                  "A32"  + # gname
+                  "A8"   + # devmajor
+                  "A8"   + # devminor
+                  "A155"   # prefix
 
   attr_reader(*FIELDS)
 
@@ -134,7 +134,7 @@ class Gem::Package::TarHeader
     # \ff flags a negative 256-based number
     # In case we have a match, parse it as a signed binary value
     # in big-endian order, except that the high-order bit is ignored.
-    return str.unpack('N2').last if str =~ /\A[\x80\xff]/n
+    return str.unpack("N2").last if str =~ /\A[\x80\xff]/n
     strict_oct(str)
   end
 

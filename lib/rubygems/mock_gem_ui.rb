@@ -1,5 +1,5 @@
 # frozen_string_literal: true
-require_relative 'user_interaction'
+require_relative "user_interaction"
 
 ##
 # This Gem::StreamUI subclass records input and output to StringIO for
@@ -40,7 +40,7 @@ class Gem::MockGemUi < Gem::StreamUI
   end
 
   def initialize(input = "")
-    require 'stringio'
+    require "stringio"
     ins = StringIO.new input
     outs = StringIO.new
     errs = StringIO.new

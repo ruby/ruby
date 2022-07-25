@@ -1565,27 +1565,32 @@ fn gen_setlocal_wc0(
 
     let slot_idx = jit_get_arg(jit, 0).as_i32();
     let local_idx = slot_to_local_idx(jit.get_iseq(), slot_idx).as_usize();
+    let value_type = ctx.get_opnd_type(StackOpnd(0));
 
     // Load environment pointer EP (level 0) from CFP
     gen_get_ep(cb, REG0, 0);
 
-    // flags & VM_ENV_FLAG_WB_REQUIRED
-    let flags_opnd = mem_opnd(
-        64,
-        REG0,
-        SIZEOF_VALUE as i32 * VM_ENV_DATA_INDEX_FLAGS as i32,
-    );
-    test(cb, flags_opnd, imm_opnd(VM_ENV_FLAG_WB_REQUIRED as i64));
+    // Write barriers may be required when VM_ENV_FLAG_WB_REQUIRED is set, however write barriers
+    // only affect heap objects being written. If we know an immediate value is being written we
+    // can skip this check.
+    if !value_type.is_imm() {
+        // flags & VM_ENV_FLAG_WB_REQUIRED
+        let flags_opnd = mem_opnd(
+            64,
+            REG0,
+            SIZEOF_VALUE as i32 * VM_ENV_DATA_INDEX_FLAGS as i32,
+        );
+        test(cb, flags_opnd, imm_opnd(VM_ENV_FLAG_WB_REQUIRED as i64));
 
-    // Create a side-exit to fall back to the interpreter
-    let side_exit = get_side_exit(jit, ocb, ctx);
+        // Create a side-exit to fall back to the interpreter
+        let side_exit = get_side_exit(jit, ocb, ctx);
 
-    // if (flags & VM_ENV_FLAG_WB_REQUIRED) != 0
-    jnz_ptr(cb, side_exit);
+        // if (flags & VM_ENV_FLAG_WB_REQUIRED) != 0
+        jnz_ptr(cb, side_exit);
+    }
 
     // Set the type of the local variable in the context
-    let temp_type = ctx.get_opnd_type(StackOpnd(0));
-    ctx.set_local_type(local_idx, temp_type);
+    ctx.set_local_type(local_idx, value_type);
 
     // Pop the value to write from the stack
     let stack_top = ctx.stack_pop(1);
@@ -1606,22 +1611,29 @@ fn gen_setlocal_generic(
     local_idx: i32,
     level: u32,
 ) -> CodegenStatus {
+    let value_type = ctx.get_opnd_type(StackOpnd(0));
+
     // Load environment pointer EP at level
     gen_get_ep(cb, REG0, level);
 
-    // flags & VM_ENV_FLAG_WB_REQUIRED
-    let flags_opnd = mem_opnd(
-        64,
-        REG0,
-        SIZEOF_VALUE as i32 * VM_ENV_DATA_INDEX_FLAGS as i32,
-    );
-    test(cb, flags_opnd, uimm_opnd(VM_ENV_FLAG_WB_REQUIRED.into()));
+    // Write barriers may be required when VM_ENV_FLAG_WB_REQUIRED is set, however write barriers
+    // only affect heap objects being written. If we know an immediate value is being written we
+    // can skip this check.
+    if !value_type.is_imm() {
+        // flags & VM_ENV_FLAG_WB_REQUIRED
+        let flags_opnd = mem_opnd(
+            64,
+            REG0,
+            SIZEOF_VALUE as i32 * VM_ENV_DATA_INDEX_FLAGS as i32,
+        );
+        test(cb, flags_opnd, uimm_opnd(VM_ENV_FLAG_WB_REQUIRED.into()));
 
-    // Create a side-exit to fall back to the interpreter
-    let side_exit = get_side_exit(jit, ocb, ctx);
+        // Create a side-exit to fall back to the interpreter
+        let side_exit = get_side_exit(jit, ocb, ctx);
 
-    // if (flags & VM_ENV_FLAG_WB_REQUIRED) != 0
-    jnz_ptr(cb, side_exit);
+        // if (flags & VM_ENV_FLAG_WB_REQUIRED) != 0
+        jnz_ptr(cb, side_exit);
+    }
 
     // Pop the value to write from the stack
     let stack_top = ctx.stack_pop(1);

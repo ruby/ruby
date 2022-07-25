@@ -495,7 +495,11 @@ module Bundler
                              "removed in order to install."
         end
 
-        raise GemNotFound, "Could not find #{missing_specs.map(&:full_name).join(", ")} in any of the sources"
+        missing_specs_list = missing_specs.group_by(&:source).map do |source, missing_specs_for_source|
+          "#{missing_specs_for_source.map(&:full_name).join(", ")} in #{source}"
+        end
+
+        raise GemNotFound, "Could not find #{missing_specs_list.join(" nor ")}"
       end
 
       unless specs["bundler"].any?

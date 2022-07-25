@@ -1,7 +1,7 @@
 # frozen_string_literal: true
-require_relative 'helper'
-require 'rubygems/indexer'
-require 'rubygems/commands/generate_index_command'
+require_relative "helper"
+require "rubygems/indexer"
+require "rubygems/commands/generate_index_command"
 
 class TestGemCommandsGenerateIndexCommand < Gem::TestCase
   def setup
@@ -35,21 +35,21 @@ class TestGemCommandsGenerateIndexCommand < Gem::TestCase
 
   def test_handle_options_directory
     return if win_platform?
-    refute_equal '/nonexistent', @cmd.options[:directory]
+    refute_equal "/nonexistent", @cmd.options[:directory]
 
     @cmd.handle_options %w[--directory /nonexistent]
 
-    assert_equal '/nonexistent', @cmd.options[:directory]
+    assert_equal "/nonexistent", @cmd.options[:directory]
   end
 
   def test_handle_options_directory_windows
     return unless win_platform?
 
-    refute_equal '/nonexistent', @cmd.options[:directory]
+    refute_equal "/nonexistent", @cmd.options[:directory]
 
     @cmd.handle_options %w[--directory C:/nonexistent]
 
-    assert_equal 'C:/nonexistent', @cmd.options[:directory]
+    assert_equal "C:/nonexistent", @cmd.options[:directory]
   end
 
   def test_handle_options_update

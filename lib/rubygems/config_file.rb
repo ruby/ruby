@@ -5,8 +5,8 @@
 # See LICENSE.txt for permissions.
 #++
 
-require_relative 'user_interaction'
-require 'rbconfig'
+require_relative "user_interaction"
+require "rbconfig"
 
 ##
 # Gem::ConfigFile RubyGems options and gem command options from gemrc.
@@ -71,7 +71,7 @@ class Gem::ConfigFile
 
   # :startdoc:
 
-  SYSTEM_WIDE_CONFIG_FILE = File.join SYSTEM_CONFIG_PATH, 'gemrc'
+  SYSTEM_WIDE_CONFIG_FILE = File.join SYSTEM_CONFIG_PATH, "gemrc"
 
   ##
   # List of arguments supplied to the config file object.
@@ -182,20 +182,20 @@ class Gem::ConfigFile
     @update_sources = DEFAULT_UPDATE_SOURCES
     @concurrent_downloads = DEFAULT_CONCURRENT_DOWNLOADS
     @cert_expiration_length_days = DEFAULT_CERT_EXPIRATION_LENGTH_DAYS
-    @ipv4_fallback_enabled = ENV['IPV4_FALLBACK_ENABLED'] == 'true' || DEFAULT_IPV4_FALLBACK_ENABLED
+    @ipv4_fallback_enabled = ENV["IPV4_FALLBACK_ENABLED"] == "true" || DEFAULT_IPV4_FALLBACK_ENABLED
 
     operating_system_config = Marshal.load Marshal.dump(OPERATING_SYSTEM_DEFAULTS)
     platform_config = Marshal.load Marshal.dump(PLATFORM_DEFAULTS)
     system_config = load_file SYSTEM_WIDE_CONFIG_FILE
     user_config = load_file config_file_name.dup.tap(&Gem::UNTAINT)
 
-    environment_config = (ENV['GEMRC'] || '')
+    environment_config = (ENV["GEMRC"] || "")
       .split(File::PATH_SEPARATOR).inject({}) do |result, file|
         result.merge load_file file
       end
 
     @hash = operating_system_config.merge platform_config
-    unless args.index '--norc'
+    unless args.index "--norc"
       @hash = @hash.merge system_config
       @hash = @hash.merge user_config
       @hash = @hash.merge environment_config
@@ -269,7 +269,7 @@ if you believe they were disclosed to a third party.
   # Location of RubyGems.org credentials
 
   def credentials_path
-    credentials = File.join Gem.user_home, '.gem', 'credentials'
+    credentials = File.join Gem.user_home, ".gem", "credentials"
     if File.exist? credentials
       credentials
     else
@@ -320,13 +320,13 @@ if you believe they were disclosed to a third party.
     config = load_file(credentials_path).merge(host => api_key)
 
     dirname = File.dirname credentials_path
-    require 'fileutils'
+    require "fileutils"
     FileUtils.mkdir_p(dirname)
 
     Gem.load_yaml
 
     permissions = 0600 & (~File.umask)
-    File.open(credentials_path, 'w', permissions) do |f|
+    File.open(credentials_path, "w", permissions) do |f|
       f.write config.to_yaml
     end
 
@@ -389,7 +389,7 @@ if you believe they were disclosed to a third party.
     yield :backtrace, @backtrace
     yield :bulk_threshold, @bulk_threshold
 
-    yield 'config_file_name', @config_file_name if @config_file_name
+    yield "config_file_name", @config_file_name if @config_file_name
 
     hash.each(&block)
   end
@@ -405,7 +405,7 @@ if you believe they were disclosed to a third party.
       when /^--debug$/ then
         $DEBUG = true
 
-        warn 'NOTE:  Debugging mode prints all exceptions even when rescued'
+        warn "NOTE:  Debugging mode prints all exceptions even when rescued"
       else
         @args << arg
       end
@@ -444,7 +444,7 @@ if you believe they were disclosed to a third party.
       @hash[:ssl_client_cert] if @hash.key? :ssl_client_cert
 
     keys = yaml_hash.keys.map {|key| key.to_s }
-    keys << 'debug'
+    keys << "debug"
     re = Regexp.union(*keys)
 
     @hash.each do |key, value|
@@ -458,10 +458,10 @@ if you believe they were disclosed to a third party.
 
   # Writes out this config file, replacing its source.
   def write
-    require 'fileutils'
+    require "fileutils"
     FileUtils.mkdir_p File.dirname(config_file_name)
 
-    File.open config_file_name, 'w' do |io|
+    File.open config_file_name, "w" do |io|
       io.write to_yaml
     end
   end
