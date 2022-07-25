@@ -4354,8 +4354,8 @@ rb_call_proc__fork(void)
  *  libraries. You can add custom code before and after fork events
  *  by overriding this method.
  *
- *  Note: Process.daemon may be implemented using fork(2) in Linux and
- *  macOS (and possibly others) BUT does not go through this method.
+ *  Note: Process.daemon may be implemented using fork(2) in glibc (Linux),
+ *  libSystem (macOS), and possibly others BUT does not go through this method.
  *  Thus, depending on your reason to hook into this method, you
  *  may also want to hook into that one.
  *  See {this issue}[https://bugs.ruby-lang.org/issues/18911] for a
