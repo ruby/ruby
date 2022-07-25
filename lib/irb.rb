@@ -598,11 +598,7 @@ module IRB
 
       if exc.backtrace
         order = nil
-        if '2.5.0' == RUBY_VERSION
-          # Exception#full_message doesn't have keyword arguments.
-          message = exc.full_message # the same of (highlight: true, order: bottom)
-          order = :bottom
-        elsif '2.5.1' <= RUBY_VERSION && RUBY_VERSION < '3.0.0'
+        if RUBY_VERSION < '3.0.0'
           if STDOUT.tty?
             message = exc.full_message(order: :bottom)
             order = :bottom
