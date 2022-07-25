@@ -128,6 +128,7 @@ def sync_default_gems(gem)
   when "rdoc"
     rm_rf(%w[lib/rdoc lib/rdoc.rb test/rdoc libexec/rdoc libexec/ri])
     cp_r(Dir.glob("#{upstream}/lib/rdoc*"), "lib")
+    cp_r("#{upstream}/doc/rdoc", "doc")
     cp_r("#{upstream}/test/rdoc", "test")
     cp_r("#{upstream}/rdoc.gemspec", "lib/rdoc")
     cp_r("#{upstream}/Gemfile", "lib/rdoc")
