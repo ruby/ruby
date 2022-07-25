@@ -65,7 +65,7 @@ class Gem::Resolver::Conflict
 
       matching = matching % [
         dependency,
-        alternates.join(', '),
+        alternates.join(", "),
       ]
     end
 
@@ -97,21 +97,21 @@ class Gem::Resolver::Conflict
   end
 
   def pretty_print(q) # :nodoc:
-    q.group 2, '[Dependency conflict: ', ']' do
+    q.group 2, "[Dependency conflict: ", "]" do
       q.breakable
 
-      q.text 'activated '
+      q.text "activated "
       q.pp @activated
 
       q.breakable
-      q.text ' dependency '
+      q.text " dependency "
       q.pp @dependency
 
       q.breakable
       if @dependency == @failed_dep
-        q.text ' failed'
+        q.text " failed"
       else
-        q.text ' failed dependency '
+        q.text " failed dependency "
         q.pp @failed_dep
       end
     end
@@ -139,7 +139,7 @@ class Gem::Resolver::Conflict
       end
     end
 
-    path = ['user request (gem command or Gemfile)'] if path.empty?
+    path = ["user request (gem command or Gemfile)"] if path.empty?
 
     path
   end

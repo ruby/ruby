@@ -62,7 +62,7 @@ class Gem::Resolver::APISpecification < Gem::Resolver::Specification
   end
 
   def pretty_print(q) # :nodoc:
-    q.group 2, '[APISpecification', ']' do
+    q.group 2, "[APISpecification", "]" do
       q.breakable
       q.text "name: #{name}"
 
@@ -73,7 +73,7 @@ class Gem::Resolver::APISpecification < Gem::Resolver::Specification
       q.text "platform: #{platform}"
 
       q.breakable
-      q.text 'dependencies:'
+      q.text "dependencies:"
       q.breakable
       q.pp @dependencies
 

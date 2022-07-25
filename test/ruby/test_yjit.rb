@@ -513,6 +513,167 @@ class TestYJIT < Test::Unit::TestCase
     RUBY
   end
 
+  def test_send_splat
+    assert_compiles(<<~'RUBY', result: "3#1,2,3/P", exits: {})
+      def internal_method(*args)
+        "#{args.size}##{args.join(",")}"
+      end
+
+      def jit_method
+        send(:internal_method, *[1, 2, 3]) + "/P"
+      end
+
+      jit_method
+    RUBY
+  end
+
+  def test_send_multiarg
+    assert_compiles(<<~'RUBY', result: "3#1,2,3/Q")
+      def internal_method(*args)
+        "#{args.size}##{args.join(",")}"
+      end
+
+      def jit_method
+        send(:internal_method, 1, 2, 3) + "/Q"
+      end
+
+      jit_method
+    RUBY
+  end
+
+  def test_send_kwargs
+    # For now, this side-exits when calls include keyword args
+    assert_compiles(<<~'RUBY', result: "2#a:1,b:2/A", exits: {opt_send_without_block: 1})
+      def internal_method(**kw)
+        "#{kw.size}##{kw.keys.map { |k| "#{k}:#{kw[k]}" }.join(",")}"
+      end
+
+      def jit_method
+        send(:internal_method, a: 1, b: 2) + "/A"
+      end
+      jit_method
+    RUBY
+  end
+
+  def test_send_kwargs_in_receiver_only
+    assert_compiles(<<~'RUBY', result: "0/RK", exits: {})
+      def internal_method(**kw)
+        "#{kw.size}"
+      end
+
+      def jit_method
+        send(:internal_method) + "/RK"
+      end
+      jit_method
+    RUBY
+  end
+
+  def test_send_with_underscores
+    assert_compiles(<<~'RUBY', result: "0/RK", exits: {})
+      def internal_method(**kw)
+        "#{kw.size}"
+      end
+
+      def jit_method
+        __send__(:internal_method) + "/RK"
+      end
+      jit_method
+    RUBY
+  end
+
+  def test_send_kwargs_splat
+    # For now, this side-exits when calling with a splat
+    assert_compiles(<<~'RUBY', result: "2#a:1,b:2/B", exits: {opt_send_without_block: 1})
+      def internal_method(**kw)
+        "#{kw.size}##{kw.keys.map { |k| "#{k}:#{kw[k]}" }.join(",")}"
+      end
+
+      def jit_method
+        send(:internal_method, **{ a: 1, b: 2 }) + "/B"
+      end
+      jit_method
+    RUBY
+  end
+
+  def test_send_block
+    # Setlocal_wc_0 sometimes side-exits on write barrier
+    assert_compiles(<<~'RUBY', result: "b:n/b:y/b:y/b:n", exits: { :setlocal_WC_0 => 0..1 })
+      def internal_method(&b)
+        "b:#{block_given? ? "y" : "n"}"
+      end
+
+      def jit_method
+        b7 = proc { 7 }
+        [
+          send(:internal_method),
+          send(:internal_method, &b7),
+          send(:internal_method) { 7 },
+          send(:internal_method, &nil),
+        ].join("/")
+      end
+      jit_method
+    RUBY
+  end
+
+  def test_send_block_calling
+    assert_compiles(<<~'RUBY', result: "1a2", exits: {})
+      def internal_method
+        out = yield
+        "1" + out + "2"
+      end
+
+      def jit_method
+        __send__(:internal_method) { "a" }
+      end
+      jit_method
+    RUBY
+  end
+
+  def test_send_block_only_receiver
+    assert_compiles(<<~'RUBY', result: "b:n", exits: {})
+      def internal_method(&b)
+        "b:#{block_given? ? "y" : "n"}"
+      end
+
+      def jit_method
+        send(:internal_method)
+      end
+      jit_method
+    RUBY
+  end
+
+  def test_send_block_only_sender
+    assert_compiles(<<~'RUBY', result: "Y/Y/Y/Y", exits: {})
+      def internal_method
+        "Y"
+      end
+
+      def jit_method
+        b7 = proc { 7 }
+        [
+          send(:internal_method),
+          send(:internal_method, &b7),
+          send(:internal_method) { 7 },
+          send(:internal_method, &nil),
+        ].join("/")
+      end
+      jit_method
+    RUBY
+  end
+
+  def test_multisend
+    assert_compiles(<<~'RUBY', result: "77")
+      def internal_method
+        "7"
+      end
+
+      def jit_method
+        send(:send, :internal_method) + send(:send, :send, :internal_method)
+      end
+      jit_method
+    RUBY
+  end
+
   def test_getivar_opt_plus
     assert_no_exits(<<~RUBY)
       class TheClass
@@ -708,7 +869,12 @@ class TestYJIT < Test::Unit::TestCase
       recorded_exits = recorded_exits.reject { |k, v| v == 0 }
 
       recorded_exits.transform_keys! { |k| k.to_s.gsub("exit_", "").to_sym }
-      if exits != :any && exits != recorded_exits
+      # Exits can be specified as a hash of stat-name symbol to integer for exact exits.
+      # or stat-name symbol to range if the number of side exits might vary (e.g. write
+      # barriers, cache misses.)
+      if exits != :any &&
+        exits != recorded_exits &&
+        !exits.all? { |k, v| v === recorded_exits[k] } # triple-equal checks range membership or integer equality
         flunk "Expected #{exits.empty? ? "no" : exits.inspect} exits" \
           ", but got\n#{recorded_exits.inspect}"
       end

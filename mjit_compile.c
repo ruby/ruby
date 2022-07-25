@@ -20,6 +20,7 @@
 #include "internal/object.h"
 #include "internal/variable.h"
 #include "mjit.h"
+#include "mjit_unit.h"
 #include "vm_core.h"
 #include "vm_callinfo.h"
 #include "vm_exec.h"
@@ -87,8 +88,6 @@ call_data_index(CALL_DATA cd, const struct rb_iseq_constant_body *body)
     return cd - body->call_data;
 }
 
-const struct rb_callcache ** mjit_iseq_cc_entries(const struct rb_iseq_constant_body *const body);
-
 // Using this function to refer to cc_entries allocated by `mjit_capture_cc_entries`
 // instead of storing cc_entries in status directly so that we always refer to a new address
 // returned by `realloc` inside it.
@@ -96,7 +95,7 @@ static const struct rb_callcache **
 captured_cc_entries(const struct compile_status *status)
 {
     VM_ASSERT(status->cc_entries_index != -1);
-    return mjit_iseq_cc_entries(status->compiled_iseq) + status->cc_entries_index;
+    return status->compiled_iseq->jit_unit->cc_entries + status->cc_entries_index;
 }
 
 // Returns true if call cache is still not obsoleted and vm_cc_cme(cc)->def->type is available.
@@ -354,12 +353,16 @@ mjit_compile_body(FILE *f, const rb_iseq_t *iseq, struct compile_status *status)
     // Generate merged ivar guards first if needed
     if (!status->compile_info->disable_ivar_cache && status->merge_ivar_guards_p) {
         fprintf(f, "    if (UNLIKELY(!(RB_TYPE_P(GET_SELF(), T_OBJECT) && (rb_serial_t)%"PRI_SERIALT_PREFIX"u == RCLASS_SERIAL(RBASIC(GET_SELF())->klass) &&", status->ivar_serial);
+#if USE_RVARGC
+        fprintf(f, "%"PRIuSIZE" < ROBJECT_NUMIV(GET_SELF())", status->max_ivar_index); // index < ROBJECT_NUMIV(obj)
+#else
         if (status->max_ivar_index >= ROBJECT_EMBED_LEN_MAX) {
             fprintf(f, "%"PRIuSIZE" < ROBJECT_NUMIV(GET_SELF())", status->max_ivar_index); // index < ROBJECT_NUMIV(obj) && !RB_FL_ANY_RAW(obj, ROBJECT_EMBED)
         }
         else {
             fprintf(f, "ROBJECT_EMBED_LEN_MAX == ROBJECT_NUMIV(GET_SELF())"); // index < ROBJECT_NUMIV(obj) && RB_FL_ANY_RAW(obj, ROBJECT_EMBED)
         }
+#endif
         fprintf(f, "))) {\n");
         fprintf(f, "        goto ivar_cancel;\n");
         fprintf(f, "    }\n");

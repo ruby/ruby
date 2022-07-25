@@ -841,7 +841,7 @@ end
 
 class TC_Set_Builtin < Test::Unit::TestCase
   private def should_omit?
-    Gem::Version.new(RUBY_VERSION) < Gem::Version.new('3.2.0') ||
+    (RUBY_VERSION.scan(/\d+/).map(&:to_i) <=> [3, 2]) < 0 ||
       !File.exist?(File.expand_path('../prelude.rb', __dir__))
   end
 

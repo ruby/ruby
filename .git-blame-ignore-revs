@@ -1,0 +1,10 @@
+# This is a file used by GitHub to ignore the following commits on `git blame`.
+#
+# You can also do the same thing in your local repository with:
+# $ git config --local blame.ignoreRevsFile .git-blame-ignore-revs
+
+# Expand tabs
+5b21e94bebed90180d8ff63dad03b8b948361089
+
+# Enable Style/StringLiterals cop for RubyGems/Bundler
+d7ffd3fea402239b16833cc434404a7af82d44f3

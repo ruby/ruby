@@ -1,0 +1,17 @@
+prelude: |
+  class C < Array
+    attr_reader :a, :b, :c
+    def initialize
+      @a = nil
+      @b = nil
+      @c = nil
+    end
+  end
+
+  c = C.new
+benchmark:
+  vm_ivar_generic_get: |
+    c.a
+    c.b
+    c.c
+loop_count: 30000000

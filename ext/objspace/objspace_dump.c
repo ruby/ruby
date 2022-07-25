@@ -76,7 +76,8 @@ buffer_ensure_capa(struct dump_config *dc, unsigned long requested)
     }
 }
 
-static void buffer_append(struct dump_config *dc, const char *cstr, unsigned long len)
+static void
+buffer_append(struct dump_config *dc, const char *cstr, unsigned long len)
 {
     if (LIKELY(len > 0)) {
         buffer_ensure_capa(dc, len);
@@ -142,10 +143,10 @@ dump_append_sizet(struct dump_config *dc, const size_t number)
 }
 
 static void
-dump_append_c(struct dump_config *dc, char c)
+dump_append_c(struct dump_config *dc, unsigned char c)
 {
     if (c <= 0x1f) {
-        const unsigned int width = (sizeof(c) * CHAR_BIT / 4) + 5;
+        const unsigned int width = rb_strlen_lit("\\u0000") + 1;
         buffer_ensure_capa(dc, width);
         unsigned long required = snprintf(dc->buffer + dc->buffer_len, width, "\\u00%02x", c);
         RUBY_ASSERT(required <= width);
@@ -163,7 +164,7 @@ dump_append_ref(struct dump_config *dc, VALUE ref)
 {
     RUBY_ASSERT(ref > 0);
 
-    char buffer[((sizeof(VALUE) * CHAR_BIT + 3) / 4) + 4];
+    char buffer[roomof(sizeof(VALUE) * CHAR_BIT, 4) + rb_strlen_lit("\"0x\"")];
     char *buffer_start, *buffer_end;
 
     buffer_start = buffer_end = &buffer[sizeof(buffer)];
@@ -235,32 +236,32 @@ obj_type(VALUE obj)
 {
     switch (BUILTIN_TYPE(obj)) {
 #define CASE_TYPE(type) case T_##type: return #type
-	CASE_TYPE(NONE);
-	CASE_TYPE(NIL);
-	CASE_TYPE(OBJECT);
-	CASE_TYPE(CLASS);
-	CASE_TYPE(ICLASS);
-	CASE_TYPE(MODULE);
-	CASE_TYPE(FLOAT);
-	CASE_TYPE(STRING);
-	CASE_TYPE(REGEXP);
-	CASE_TYPE(ARRAY);
-	CASE_TYPE(HASH);
-	CASE_TYPE(STRUCT);
-	CASE_TYPE(BIGNUM);
-	CASE_TYPE(FILE);
-	CASE_TYPE(FIXNUM);
-	CASE_TYPE(TRUE);
-	CASE_TYPE(FALSE);
-	CASE_TYPE(DATA);
-	CASE_TYPE(MATCH);
-	CASE_TYPE(SYMBOL);
-	CASE_TYPE(RATIONAL);
-	CASE_TYPE(COMPLEX);
-	CASE_TYPE(IMEMO);
-	CASE_TYPE(UNDEF);
-	CASE_TYPE(NODE);
-	CASE_TYPE(ZOMBIE);
+        CASE_TYPE(NONE);
+        CASE_TYPE(NIL);
+        CASE_TYPE(OBJECT);
+        CASE_TYPE(CLASS);
+        CASE_TYPE(ICLASS);
+        CASE_TYPE(MODULE);
+        CASE_TYPE(FLOAT);
+        CASE_TYPE(STRING);
+        CASE_TYPE(REGEXP);
+        CASE_TYPE(ARRAY);
+        CASE_TYPE(HASH);
+        CASE_TYPE(STRUCT);
+        CASE_TYPE(BIGNUM);
+        CASE_TYPE(FILE);
+        CASE_TYPE(FIXNUM);
+        CASE_TYPE(TRUE);
+        CASE_TYPE(FALSE);
+        CASE_TYPE(DATA);
+        CASE_TYPE(MATCH);
+        CASE_TYPE(SYMBOL);
+        CASE_TYPE(RATIONAL);
+        CASE_TYPE(COMPLEX);
+        CASE_TYPE(IMEMO);
+        CASE_TYPE(UNDEF);
+        CASE_TYPE(NODE);
+        CASE_TYPE(ZOMBIE);
 #undef CASE_TYPE
       default: break;
     }
@@ -481,7 +482,8 @@ dump_object(VALUE obj, struct dump_config *dc)
                 dump_append(dc, ", \"name\":\"");
                 dump_append(dc, RSTRING_PTR(mod_name));
                 dump_append(dc, "\"");
-            } else {
+            }
+            else {
                 VALUE real_mod_name = rb_mod_name(rb_class_real(obj));
                 if (RTEST(real_mod_name)) {
                     dump_append(dc, ", \"real_class_name\":\"");
@@ -524,8 +526,8 @@ dump_object(VALUE obj, struct dump_config *dc)
         break;
 
       case T_ZOMBIE:
-          dump_append(dc, "}\n");
-          return;
+        dump_append(dc, "}\n");
+        return;
 
       default:
         break;
@@ -583,8 +585,8 @@ heap_i(void *vstart, void *vend, size_t stride, void *data)
         asan_unpoison_object(v, false);
         dc->cur_page_slot_size = stride;
 
-	if (dc->full_heap || RBASIC(v)->flags)
-	    dump_object(v, dc);
+        if (dc->full_heap || RBASIC(v)->flags)
+            dump_object(v, dc);
 
         if (ptr) {
             asan_poison_object(v);
@@ -625,7 +627,8 @@ dump_output(struct dump_config *dc, VALUE output, VALUE full, VALUE since)
     if (TYPE(output) == T_STRING) {
         dc->stream = Qfalse;
         dc->string = output;
-    } else {
+    }
+    else {
         dc->stream = output;
         dc->string = Qfalse;
     }
@@ -637,7 +640,8 @@ dump_output(struct dump_config *dc, VALUE output, VALUE full, VALUE since)
     if (RTEST(since)) {
         dc->partial_dump = 1;
         dc->since = NUM2SIZET(since);
-    } else {
+    }
+    else {
         dc->partial_dump = 0;
     }
 }
@@ -649,7 +653,8 @@ dump_result(struct dump_config *dc)
 
     if (dc->string) {
         return dc->string;
-    } else {
+    }
+    else {
         rb_io_flush(dc->stream);
         return dc->stream;
     }

@@ -87,10 +87,10 @@ jobs:
           $SETARCH ../src/configure -C --disable-install-doc ${{ matrix.configure }}
           ${arch:+--target=$arch-$OSTYPE --host=$arch-$OSTYPE}
       - run: $SETARCH make incs
+      - run: $SETARCH make prepare-gems
+        if: ${{ matrix.test_task == 'test-bundled-gems' }}
       - run: $SETARCH make
       - run: $SETARCH make leaked-globals
-        if: ${{ matrix.test_task == 'check' }}
-      - run: $SETARCH make prepare-gems
         if: ${{ matrix.test_task == 'check' }}
       - name: Create dummy files in build dir
         run: |

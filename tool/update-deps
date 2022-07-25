@@ -301,6 +301,7 @@ def read_make_deps(cwd)
       deps = deps.scan(%r{[/0-9a-zA-Z._-]+})
       deps.delete_if {|dep| /\.time\z/ =~ dep} # skip timestamp
       next if /\.o\z/ !~ target.to_s
+      next if /\.bundle\// =~ target.to_s
       next if /\A\./ =~ target.to_s # skip rules such as ".c.o"
       #p [curdir, target, deps]
       dir = curdir || dirstack.last

@@ -124,7 +124,7 @@ unsigned long ruby_scan_hex(const char *str, size_t len, size_t *ret);
 # define ruby_qsort qsort_r
 #else
 void ruby_qsort(void *, const size_t, const size_t,
-		int (*)(const void *, const void *, void *), void *);
+                int (*)(const void *, const void *, void *), void *);
 #endif
 
 RBIMPL_ATTR_NONNULL((1))

@@ -12,21 +12,21 @@ typedef struct {
     USHORT ReparseDataLength;
     USHORT Reserved;
     union {
-	struct {
-	    USHORT SubstituteNameOffset;
-	    USHORT SubstituteNameLength;
-	    USHORT PrintNameOffset;
-	    USHORT PrintNameLength;
-	    ULONG  Flags;
-	    WCHAR  PathBuffer[4];
-	} SymbolicLinkReparseBuffer;
-	struct {
-	    USHORT SubstituteNameOffset;
-	    USHORT SubstituteNameLength;
-	    USHORT PrintNameOffset;
-	    USHORT PrintNameLength;
-	    WCHAR  PathBuffer[4];
-	} MountPointReparseBuffer;
+        struct {
+            USHORT SubstituteNameOffset;
+            USHORT SubstituteNameLength;
+            USHORT PrintNameOffset;
+            USHORT PrintNameLength;
+            ULONG  Flags;
+            WCHAR  PathBuffer[4];
+        } SymbolicLinkReparseBuffer;
+        struct {
+            USHORT SubstituteNameOffset;
+            USHORT SubstituteNameLength;
+            USHORT PrintNameOffset;
+            USHORT PrintNameLength;
+            WCHAR  PathBuffer[4];
+        } MountPointReparseBuffer;
     };
 } rb_w32_reparse_buffer_t;
 
@@ -35,7 +35,7 @@ typedef struct {
      sizeof(WCHAR)*((n)-MINIMUM_REPARSE_BUFFER_PATH_LEN))
 
 int rb_w32_read_reparse_point(const WCHAR *path, rb_w32_reparse_buffer_t *rp,
-			      size_t bufsize, WCHAR **result, DWORD *len);
+                              size_t bufsize, WCHAR **result, DWORD *len);
 
 int lchown(const char *path, int owner, int group);
 int rb_w32_ulchown(const char *path, int owner, int group);

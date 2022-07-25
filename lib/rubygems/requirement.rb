@@ -61,7 +61,7 @@ class Gem::Requirement
       input
     when Gem::Version, Array then
       new input
-    when '!' then
+    when "!" then
       source_set
     else
       if input.respond_to? :to_str
@@ -73,11 +73,11 @@ class Gem::Requirement
   end
 
   def self.default
-    new '>= 0'
+    new ">= 0"
   end
 
   def self.default_prerelease
-    new '>= 0.a'
+    new ">= 0.a"
   end
 
   ###
@@ -218,7 +218,7 @@ class Gem::Requirement
   end
 
   def encode_with(coder) # :nodoc:
-    coder.add 'requirements', @requirements
+    coder.add "requirements", @requirements
   end
 
   ##
@@ -230,7 +230,7 @@ class Gem::Requirement
   end
 
   def pretty_print(q) # :nodoc:
-    q.group 1, 'Gem::Requirement.new(', ')' do
+    q.group 1, "Gem::Requirement.new(", ")" do
       q.pp as_list
     end
   end

@@ -1,6 +1,6 @@
 # frozen_string_literal: true
-require_relative 'helper'
-require 'rubygems/spec_fetcher'
+require_relative "helper"
+require "rubygems/spec_fetcher"
 
 class TestGemSpecFetcher < Gem::TestCase
   def tuple(*args)
@@ -23,7 +23,7 @@ class TestGemSpecFetcher < Gem::TestCase
   end
 
   def test_initialize_source
-    alternate = 'http://alternate.example'
+    alternate = "http://alternate.example"
     fetcher = Gem::SpecFetcher.new alternate
 
     refute_same Gem.sources, fetcher.sources
@@ -38,7 +38,7 @@ class TestGemSpecFetcher < Gem::TestCase
   end
 
   def test_initialize_unwritable_home_dir
-    pend 'chmod not supported' if Gem.win_platform?
+    pend "chmod not supported" if Gem.win_platform?
 
     FileUtils.chmod 0000, Gem.user_home
 
@@ -51,13 +51,13 @@ class TestGemSpecFetcher < Gem::TestCase
 
   def test_spec_for_dependency_all
     spec_fetcher do |fetcher|
-      fetcher.spec 'a', 1
-      fetcher.spec 'a', '2.a'
-      fetcher.spec 'a', 2
-      fetcher.spec 'a', '3.a'
+      fetcher.spec "a", 1
+      fetcher.spec "a", "2.a"
+      fetcher.spec "a", 2
+      fetcher.spec "a", "3.a"
     end
 
-    dep = Gem::Dependency.new 'a', ">= 1"
+    dep = Gem::Dependency.new "a", ">= 1"
 
     specs_and_sources, _ = @sf.spec_for_dependency dep
 
@@ -65,7 +65,7 @@ class TestGemSpecFetcher < Gem::TestCase
       [spec.full_name, source_uri]
     end
 
-    expected = [['a-1', @source], ['a-2', @source]]
+    expected = [["a-1", @source], ["a-2", @source]]
 
     assert_equal expected, spec_names
 
@@ -74,63 +74,63 @@ class TestGemSpecFetcher < Gem::TestCase
 
   def test_spec_for_dependency_latest
     spec_fetcher do |fetcher|
-      fetcher.spec 'a', 1
-      fetcher.spec 'a', 2
-      fetcher.spec 'a', '3.a'
+      fetcher.spec "a", 1
+      fetcher.spec "a", 2
+      fetcher.spec "a", "3.a"
     end
 
-    dep = Gem::Dependency.new 'a'
+    dep = Gem::Dependency.new "a"
     specs_and_sources, _ = @sf.spec_for_dependency dep
 
     spec_names = specs_and_sources.map do |spec, source_uri|
       [spec.full_name, source_uri]
     end
 
-    assert_equal [['a-2', Gem::Source.new(@gem_repo)]],
+    assert_equal [["a-2", Gem::Source.new(@gem_repo)]],
                  spec_names
   end
 
   def test_spec_for_dependency_prerelease
     spec_fetcher do |fetcher|
-      fetcher.spec 'a', '1.a'
-      fetcher.spec 'a', 1
+      fetcher.spec "a", "1.a"
+      fetcher.spec "a", 1
     end
 
-    specs_and_sources, _ = @sf.spec_for_dependency dep('a', '1.a')
+    specs_and_sources, _ = @sf.spec_for_dependency dep("a", "1.a")
 
     spec_names = specs_and_sources.map do |spec, source_uri|
       [spec.full_name, source_uri]
     end
 
-    assert_equal [['a-1.a', Gem::Source.new(@gem_repo)]], spec_names
+    assert_equal [["a-1.a", Gem::Source.new(@gem_repo)]], spec_names
   end
 
   def test_spec_for_dependency_platform
-    util_set_arch 'i386-linux'
+    util_set_arch "i386-linux"
 
     spec_fetcher do |fetcher|
       fetcher.legacy_platform
     end
 
-    dep = Gem::Dependency.new 'pl', 1
+    dep = Gem::Dependency.new "pl", 1
     specs_and_sources, _ = @sf.spec_for_dependency dep
 
     spec_names = specs_and_sources.map do |spec, source_uri|
       [spec.full_name, source_uri]
     end
 
-    assert_equal [['pl-1-x86-linux', Gem::Source.new(@gem_repo)]],
+    assert_equal [["pl-1-x86-linux", Gem::Source.new(@gem_repo)]],
                  spec_names
   end
 
   def test_spec_for_dependency_mismatched_platform
-    util_set_arch 'hrpa-989'
+    util_set_arch "hrpa-989"
 
     spec_fetcher do |fetcher|
       fetcher.legacy_platform
     end
 
-    dep = Gem::Dependency.new 'pl', 1
+    dep = Gem::Dependency.new "pl", 1
     specs_and_sources, errors = @sf.spec_for_dependency dep
 
     assert_equal 0, specs_and_sources.size
@@ -150,13 +150,13 @@ class TestGemSpecFetcher < Gem::TestCase
     Gem.sources.replace [src]
 
     spec_fetcher do |fetcher|
-      fetcher.spec 'a', 1
-      fetcher.spec 'a', '2.a'
-      fetcher.spec 'a', 2
-      fetcher.spec 'a', '3.a'
+      fetcher.spec "a", 1
+      fetcher.spec "a", "2.a"
+      fetcher.spec "a", 2
+      fetcher.spec "a", "3.a"
     end
 
-    dep = Gem::Dependency.new 'a', ">= 1"
+    dep = Gem::Dependency.new "a", ">= 1"
 
     specs_and_sources, errors = @sf.spec_for_dependency dep
 
@@ -170,38 +170,38 @@ class TestGemSpecFetcher < Gem::TestCase
 
   def test_suggest_gems_from_name_latest
     spec_fetcher do|fetcher|
-      fetcher.spec 'example', 1
-      fetcher.spec 'other-example', 1
-      fetcher.spec 'examp', 1
+      fetcher.spec "example", 1
+      fetcher.spec "other-example", 1
+      fetcher.spec "examp", 1
     end
 
-    suggestions = @sf.suggest_gems_from_name('examplw', :latest, 1)
-    assert_equal ['example'], suggestions
+    suggestions = @sf.suggest_gems_from_name("examplw", :latest, 1)
+    assert_equal ["example"], suggestions
 
-    suggestions = @sf.suggest_gems_from_name('other')
-    assert_equal ['other-example'], suggestions
+    suggestions = @sf.suggest_gems_from_name("other")
+    assert_equal ["other-example"], suggestions
 
-    suggestions = @sf.suggest_gems_from_name('exam')
-    assert suggestions.any? { ['examp'] }
-    assert suggestions.any? { ['example'] }
-    assert suggestions.any? { ['other-example'] }
+    suggestions = @sf.suggest_gems_from_name("exam")
+    assert suggestions.any? { ["examp"] }
+    assert suggestions.any? { ["example"] }
+    assert suggestions.any? { ["other-example"] }
   end
 
   def test_suggest_gems_from_name_prerelease
     spec_fetcher do|fetcher|
-      fetcher.spec 'example', '1.a'
-      fetcher.spec 'other-example', 1
+      fetcher.spec "example", "1.a"
+      fetcher.spec "other-example", 1
     end
 
-    suggestions = @sf.suggest_gems_from_name('examplw')
-    assert_equal ['example'], suggestions
+    suggestions = @sf.suggest_gems_from_name("examplw")
+    assert_equal ["example"], suggestions
   end
 
   def test_available_specs_latest
     spec_fetcher do |fetcher|
-      fetcher.spec 'a', 1
-      fetcher.spec 'a', 2
-      fetcher.spec 'a', '3.a'
+      fetcher.spec "a", 1
+      fetcher.spec "a", 2
+      fetcher.spec "a", "3.a"
       fetcher.legacy_platform
     end
 
@@ -210,15 +210,15 @@ class TestGemSpecFetcher < Gem::TestCase
     assert_equal [@source], specs.keys
 
     expected = Gem::NameTuple.from_list \
-      [['a',      v(2),     Gem::Platform::RUBY],
-       ['pl',     v(1),     'i386-linux']]
+      [["a",      v(2),     Gem::Platform::RUBY],
+       ["pl",     v(1),     "i386-linux"]]
 
     assert_equal expected, specs[@source]
   end
 
   def test_available_specs_released
     spec_fetcher do |fetcher|
-      fetcher.spec 'a', 1
+      fetcher.spec "a", 1
       fetcher.legacy_platform
     end
 
@@ -227,17 +227,17 @@ class TestGemSpecFetcher < Gem::TestCase
     assert_equal [@source], specs.keys
 
     expected = Gem::NameTuple.from_list \
-      [['a',      v(1),     Gem::Platform::RUBY],
-       ['pl',     v(1),     'i386-linux']]
+      [["a",      v(1),     Gem::Platform::RUBY],
+       ["pl",     v(1),     "i386-linux"]]
 
     assert_equal expected, specs[@source]
   end
 
   def test_available_specs_complete
     spec_fetcher do |fetcher|
-      fetcher.spec 'a', 1
-      fetcher.spec 'a', '2.a'
-      fetcher.spec 'b', 2
+      fetcher.spec "a", 1
+      fetcher.spec "a", "2.a"
+      fetcher.spec "b", 2
       fetcher.legacy_platform
     end
 
@@ -246,19 +246,19 @@ class TestGemSpecFetcher < Gem::TestCase
     assert_equal [@source], specs.keys
 
     expected = Gem::NameTuple.from_list \
-      [['a',      v(1),     Gem::Platform::RUBY],
-       ['a',      v('2.a'), Gem::Platform::RUBY],
-       ['b',      v(2),     Gem::Platform::RUBY],
-       ['pl',     v(1),     'i386-linux']]
+      [["a",      v(1),     Gem::Platform::RUBY],
+       ["a",      v("2.a"), Gem::Platform::RUBY],
+       ["b",      v(2),     Gem::Platform::RUBY],
+       ["pl",     v(1),     "i386-linux"]]
 
     assert_equal expected, specs[@source]
   end
 
   def test_available_specs_complete_handles_no_prerelease
     spec_fetcher do |fetcher|
-      fetcher.spec 'a', 1
-      fetcher.spec 'a', '2.a'
-      fetcher.spec 'b', 2
+      fetcher.spec "a", 1
+      fetcher.spec "a", "2.a"
+      fetcher.spec "b", 2
       fetcher.legacy_platform
     end
 
@@ -270,16 +270,16 @@ class TestGemSpecFetcher < Gem::TestCase
     assert_equal [@source], specs.keys
 
     expected = Gem::NameTuple.from_list \
-      [['a',      v(1), Gem::Platform::RUBY],
-       ['b',      v(2), Gem::Platform::RUBY],
-       ['pl',     v(1), 'i386-linux']]
+      [["a",      v(1), Gem::Platform::RUBY],
+       ["b",      v(2), Gem::Platform::RUBY],
+       ["pl",     v(1), "i386-linux"]]
 
     assert_equal expected, specs[@source]
   end
 
   def test_available_specs_cache
     spec_fetcher do |fetcher|
-      fetcher.spec 'a', 1
+      fetcher.spec "a", 1
     end
 
     specs, _ = @sf.available_specs(:latest)
@@ -295,9 +295,9 @@ class TestGemSpecFetcher < Gem::TestCase
 
   def test_available_specs_cache_released
     spec_fetcher do |fetcher|
-      fetcher.spec 'a', 1
-      fetcher.spec 'a', '2.a'
-      fetcher.spec 'b', 2
+      fetcher.spec "a", 1
+      fetcher.spec "a", "2.a"
+      fetcher.spec "b", 2
       fetcher.legacy_platform
     end
 
@@ -314,14 +314,14 @@ class TestGemSpecFetcher < Gem::TestCase
 
   def test_available_specs_prerelease
     spec_fetcher do |fetcher|
-      fetcher.spec 'a', 1
-      fetcher.spec 'a', '2.a'
+      fetcher.spec "a", 1
+      fetcher.spec "a", "2.a"
     end
 
     specs, _ = @sf.available_specs(:prerelease)
 
     expected = Gem::NameTuple.from_list \
-      [['a', v('2.a'), Gem::Platform::RUBY]]
+      [["a", v("2.a"), Gem::Platform::RUBY]]
 
     assert_equal expected, specs[@source]
   end

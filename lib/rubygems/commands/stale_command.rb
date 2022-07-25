@@ -1,9 +1,9 @@
 # frozen_string_literal: true
-require_relative '../command'
+require_relative "../command"
 
 class Gem::Commands::StaleCommand < Gem::Command
   def initialize
-    super('stale', 'List gems along with access times')
+    super("stale", "List gems along with access times")
   end
 
   def description # :nodoc:

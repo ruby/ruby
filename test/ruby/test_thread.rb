@@ -35,6 +35,7 @@ class TestThread < Test::Unit::TestCase
     th = Module.new {break module_eval("class C\u{30b9 30ec 30c3 30c9} < Thread; self; end")}.start do
       m.synchronize {}
     end
+    Thread.pass until th.stop?
     s = th.inspect
     assert_include(s, "::C\u{30b9 30ec 30c3 30c9}:")
     assert_include(s, " #{__FILE__}:#{line} ")

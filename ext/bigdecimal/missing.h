@@ -126,7 +126,7 @@ char *BigDecimal_dtoa(double d_, int mode, int ndigits, int *decpt, int *sign, c
 static inline VALUE
 rb_rational_num(VALUE rat)
 {
-#ifdef HAVE_TYPE_STRUCT_RRATIONAL
+#ifdef RRATIONAL
     return RRATIONAL(rat)->num;
 #else
     return rb_funcall(rat, rb_intern("numerator"), 0);
@@ -138,7 +138,7 @@ rb_rational_num(VALUE rat)
 static inline VALUE
 rb_rational_den(VALUE rat)
 {
-#ifdef HAVE_TYPE_STRUCT_RRATIONAL
+#ifdef RRATIONAL
     return RRATIONAL(rat)->den;
 #else
     return rb_funcall(rat, rb_intern("denominator"), 0);
@@ -152,7 +152,7 @@ rb_rational_den(VALUE rat)
 static inline VALUE
 rb_complex_real(VALUE cmp)
 {
-#ifdef HAVE_TYPE_STRUCT_RCOMPLEX
+#ifdef RCOMPLEX
   return RCOMPLEX(cmp)->real;
 #else
   return rb_funcall(cmp, rb_intern("real"), 0);
@@ -164,7 +164,7 @@ rb_complex_real(VALUE cmp)
 static inline VALUE
 rb_complex_imag(VALUE cmp)
 {
-# ifdef HAVE_TYPE_STRUCT_RCOMPLEX
+# ifdef RCOMPLEX
   return RCOMPLEX(cmp)->imag;
 # else
   return rb_funcall(cmp, rb_intern("imag"), 0);

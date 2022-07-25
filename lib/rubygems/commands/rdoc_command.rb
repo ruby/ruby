@@ -1,35 +1,35 @@
 # frozen_string_literal: true
-require_relative '../command'
-require_relative '../version_option'
-require_relative '../rdoc'
-require 'fileutils'
+require_relative "../command"
+require_relative "../version_option"
+require_relative "../rdoc"
+require "fileutils"
 
 class Gem::Commands::RdocCommand < Gem::Command
   include Gem::VersionOption
 
   def initialize
-    super 'rdoc', 'Generates RDoc for pre-installed gems',
+    super "rdoc", "Generates RDoc for pre-installed gems",
           :version => Gem::Requirement.default,
           :include_rdoc => false, :include_ri => true, :overwrite => false
 
-    add_option('--all',
-               'Generate RDoc/RI documentation for all',
-               'installed gems') do |value, options|
+    add_option("--all",
+               "Generate RDoc/RI documentation for all",
+               "installed gems") do |value, options|
       options[:all] = value
     end
 
-    add_option('--[no-]rdoc',
-               'Generate RDoc HTML') do |value, options|
+    add_option("--[no-]rdoc",
+               "Generate RDoc HTML") do |value, options|
       options[:include_rdoc] = value
     end
 
-    add_option('--[no-]ri',
-               'Generate RI data') do |value, options|
+    add_option("--[no-]ri",
+               "Generate RI data") do |value, options|
       options[:include_ri] = value
     end
 
-    add_option('--[no-]overwrite',
-               'Overwrite installed documents') do |value, options|
+    add_option("--[no-]overwrite",
+               "Overwrite installed documents") do |value, options|
       options[:overwrite] = value
     end
 
@@ -69,7 +69,7 @@ Use --overwrite to force rebuilding of documentation.
     end
 
     if specs.empty?
-      alert_error 'No matching gems found'
+      alert_error "No matching gems found"
       terminate_interaction 1
     end
 
@@ -79,8 +79,8 @@ Use --overwrite to force rebuilding of documentation.
       doc.force = options[:overwrite]
 
       if options[:overwrite]
-        FileUtils.rm_rf File.join(spec.doc_dir, 'ri')
-        FileUtils.rm_rf File.join(spec.doc_dir, 'rdoc')
+        FileUtils.rm_rf File.join(spec.doc_dir, "ri")
+        FileUtils.rm_rf File.join(spec.doc_dir, "rdoc")
       end
 
       begin

@@ -1,7 +1,7 @@
 # frozen_string_literal: true
-require_relative 'helper'
-require 'rubygems/available_set'
-require 'rubygems/security'
+require_relative "helper"
+require "rubygems/available_set"
+require "rubygems/security"
 
 class TestGemAvailableSet < Gem::TestCase
   def setup
@@ -11,7 +11,7 @@ class TestGemAvailableSet < Gem::TestCase
   end
 
   def test_add_and_empty
-    a1, _ = util_gem 'a', '1'
+    a1, _ = util_gem "a", "1"
 
     set = Gem::AvailableSet.new
     assert set.empty?
@@ -24,8 +24,8 @@ class TestGemAvailableSet < Gem::TestCase
   end
 
   def test_find_all
-    a1,  a1_gem  = util_gem 'a', 1
-    a1a, a1a_gem = util_gem 'a', '1.a'
+    a1,  a1_gem  = util_gem "a", 1
+    a1a, a1a_gem = util_gem "a", "1.a"
 
     a1_source  = Gem::Source::SpecificFile.new a1_gem
     a1a_source = Gem::Source::SpecificFile.new a1a_gem
@@ -34,26 +34,26 @@ class TestGemAvailableSet < Gem::TestCase
     set.add a1,  a1_source
     set.add a1a, a1a_source
 
-    dep = Gem::Resolver::DependencyRequest.new dep('a'), nil
+    dep = Gem::Resolver::DependencyRequest.new dep("a"), nil
 
     assert_equal %w[a-1], set.find_all(dep).map {|spec| spec.full_name }
 
-    dep = Gem::Resolver::DependencyRequest.new dep('a', '>= 0.a'), nil
+    dep = Gem::Resolver::DependencyRequest.new dep("a", ">= 0.a"), nil
 
     assert_equal %w[a-1 a-1.a],
                  set.find_all(dep).map {|spec| spec.full_name }.sort
   end
 
   def test_match_platform
-    a1, _ = util_gem 'a', '1' do |g|
+    a1, _ = util_gem "a", "1" do |g|
       g.platform = "something-weird-yep"
     end
 
-    a1c, _ = util_gem 'a', '2' do |g|
+    a1c, _ = util_gem "a", "2" do |g|
       g.platform = Gem::Platform.local
     end
 
-    a2, _ = util_gem 'a', '2'
+    a2, _ = util_gem "a", "2"
 
     set = Gem::AvailableSet.new
     set.add a1, @source
@@ -66,8 +66,8 @@ class TestGemAvailableSet < Gem::TestCase
   end
 
   def test_best
-    a1, _ = util_gem 'a', '1'
-    a2, _ = util_gem 'a', '2'
+    a1, _ = util_gem "a", "1"
+    a2, _ = util_gem "a", "2"
 
     set = Gem::AvailableSet.new
     set.add a1, @source
@@ -79,7 +79,7 @@ class TestGemAvailableSet < Gem::TestCase
   end
 
   def test_remove_installed_bang
-    a1, _ = util_spec 'a', '1'
+    a1, _ = util_spec "a", "1"
     install_specs a1
 
     a1.activate
@@ -95,8 +95,8 @@ class TestGemAvailableSet < Gem::TestCase
   end
 
   def test_sorted_normal_versions
-    a1, _ = util_gem 'a', '1'
-    a2, _ = util_gem 'a', '2'
+    a1, _ = util_gem "a", "1"
+    a2, _ = util_gem "a", "2"
 
     set = Gem::AvailableSet.new
     set.add a1, @source
@@ -109,11 +109,11 @@ class TestGemAvailableSet < Gem::TestCase
   end
 
   def test_sorted_respect_pre
-    a1a, _ = util_gem 'a', '1.a'
-    a1,  _ = util_gem 'a', '1'
-    a2a, _ = util_gem 'a', '2.a'
-    a2,  _ = util_gem 'a', '2'
-    a3a, _ = util_gem 'a', '3.a'
+    a1a, _ = util_gem "a", "1.a"
+    a1,  _ = util_gem "a", "1"
+    a2a, _ = util_gem "a", "2.a"
+    a2,  _ = util_gem "a", "2"
+    a3a, _ = util_gem "a", "3.a"
 
     set = Gem::AvailableSet.new
     set.add a1, @source

@@ -1,9 +1,9 @@
 # frozen_string_literal: true
-require_relative '../command'
+require_relative "../command"
 
 class Gem::Commands::EnvironmentCommand < Gem::Command
   def initialize
-    super 'environment', 'Display information about the RubyGems environment'
+    super "environment", "Display information about the RubyGems environment"
   end
 
   def arguments # :nodoc:
@@ -16,7 +16,7 @@ class Gem::Commands::EnvironmentCommand < Gem::Command
           platform        display the supported gem platforms
           <omitted>       display everything
     EOF
-    return args.gsub(/^\s+/, '')
+    return args.gsub(/^\s+/, "")
   end
 
   def description # :nodoc:
@@ -141,7 +141,7 @@ lib/rubygems/defaults/operating_system.rb
 
     out << "  - GEM CONFIGURATION:\n"
     Gem.configuration.each do |name, value|
-      value = value.gsub(/./, '*') if name == 'gemcutter_key'
+      value = value.gsub(/./, "*") if name == "gemcutter_key"
       out << "     - #{name.inspect} => #{value.inspect}\n"
     end
 
@@ -152,7 +152,7 @@ lib/rubygems/defaults/operating_system.rb
 
     out << "  - SHELL PATH:\n"
 
-    shell_path = ENV['PATH'].split(File::PATH_SEPARATOR)
+    shell_path = ENV["PATH"].split(File::PATH_SEPARATOR)
     add_path out, shell_path
 
     out

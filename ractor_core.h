@@ -40,6 +40,24 @@ struct rb_ractor_waiting_list {
     rb_ractor_t **ractors;
 };
 
+enum rb_ractor_wait_status {
+    wait_none      = 0x00,
+    wait_receiving = 0x01,
+    wait_taking    = 0x02,
+    wait_yielding  = 0x04,
+    wait_moving    = 0x08,
+};
+
+enum rb_ractor_wakeup_status {
+    wakeup_none,
+    wakeup_by_send,
+    wakeup_by_yield,
+    wakeup_by_take,
+    wakeup_by_close,
+    wakeup_by_interrupt,
+    wakeup_by_retry,
+};
+
 struct rb_ractor_sync {
     // ractor lock
     rb_nativethread_lock_t lock;
@@ -56,27 +74,32 @@ struct rb_ractor_sync {
     bool outgoing_port_closed;
 
     struct ractor_wait {
-        enum ractor_wait_status {
-            wait_none      = 0x00,
-            wait_receiving = 0x01,
-            wait_taking    = 0x02,
-            wait_yielding  = 0x04,
-            wait_moving    = 0x08,
-        } status;
-
-        enum ractor_wakeup_status {
-            wakeup_none,
-            wakeup_by_send,
-            wakeup_by_yield,
-            wakeup_by_take,
-            wakeup_by_close,
-            wakeup_by_interrupt,
-            wakeup_by_retry,
-        } wakeup_status;
-
+        enum rb_ractor_wait_status status;
+        enum rb_ractor_wakeup_status wakeup_status;
         struct rb_ractor_basket yielded_basket;
         struct rb_ractor_basket taken_basket;
     } wait;
+};
+
+// created
+//   | ready to run
+// ====================== inserted to vm->ractor
+//   v
+// blocking <---+ all threads are blocking
+//   |          |
+//   v          |
+// running -----+
+//   | all threads are terminated.
+// ====================== removed from vm->ractor
+//   v
+// terminated
+//
+// status is protected by VM lock (global state)
+enum ractor_status {
+    ractor_created,
+    ractor_running,
+    ractor_blocking,
+    ractor_terminated,
 };
 
 struct rb_ractor_struct {
@@ -104,27 +127,7 @@ struct rb_ractor_struct {
     VALUE name;
     VALUE loc;
 
-    // created
-    //   | ready to run
-    // ====================== inserted to vm->ractor
-    //   v
-    // blocking <---+ all threads are blocking
-    //   |          |
-    //   v          |
-    // running -----+
-    //   | all threads are terminated.
-    // ====================== removed from vm->ractor
-    //   v
-    // terminated
-    //
-    // status is protected by VM lock (global state)
-
-    enum ractor_status {
-        ractor_created,
-        ractor_running,
-        ractor_blocking,
-        ractor_terminated,
-    } status_;
+    enum ractor_status status_;
 
     struct ccan_list_node vmlr_node;
 

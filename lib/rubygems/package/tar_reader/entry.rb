@@ -68,9 +68,9 @@ class Gem::Package::TarReader::Entry
       @header.name
     end
   rescue ArgumentError => e
-    raise unless e.message == 'string contains null byte'
+    raise unless e.message == "string contains null byte"
     raise Gem::Package::TarInvalidError,
-          'tar is corrupt, name contains null byte'
+          "tar is corrupt, name contains null byte"
   end
 
   ##

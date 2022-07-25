@@ -47,7 +47,7 @@ class Gem::BasicSpecification
   # directory.
 
   def gem_build_complete_path # :nodoc:
-    File.join extension_dir, 'gem.build_complete'
+    File.join extension_dir, "gem.build_complete"
   end
 
   ##
@@ -103,7 +103,7 @@ class Gem::BasicSpecification
 
   def extensions_dir
     Gem.default_ext_dir_for(base_dir) ||
-      File.join(base_dir, 'extensions', Gem::Platform.local.to_s,
+      File.join(base_dir, "extensions", Gem::Platform.local.to_s,
                 Gem.extension_api_version)
   end
 

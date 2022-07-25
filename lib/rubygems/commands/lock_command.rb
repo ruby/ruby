@@ -1,13 +1,13 @@
 # frozen_string_literal: true
-require_relative '../command'
+require_relative "../command"
 
 class Gem::Commands::LockCommand < Gem::Command
   def initialize
-    super 'lock', 'Generate a lockdown list of gems',
+    super "lock", "Generate a lockdown list of gems",
           :strict => false
 
-    add_option '-s', '--[no-]strict',
-               'fail if unable to satisfy a dependency' do |strict, options|
+    add_option "-s", "--[no-]strict",
+               "fail if unable to satisfy a dependency" do |strict, options|
       options[:strict] = strict
     end
   end

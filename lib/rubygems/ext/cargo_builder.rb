@@ -29,14 +29,14 @@ class Gem::Ext::CargoBuilder < Gem::Ext::Builder
   def build_crate(dest_path, results, args, cargo_dir)
     env = build_env
     cmd = cargo_command(cargo_dir, dest_path, args)
-    runner.call cmd, results, 'cargo', cargo_dir, env
+    runner.call cmd, results, "cargo", cargo_dir, env
 
     results
   end
 
   def build_env
     build_env = rb_config_env
-    build_env["RUBY_STATIC"] = "true" if ruby_static? && ENV.key?('RUBY_STATIC')
+    build_env["RUBY_STATIC"] = "true" if ruby_static? && ENV.key?("RUBY_STATIC")
     build_env
   end
 
@@ -46,7 +46,7 @@ class Gem::Ext::CargoBuilder < Gem::Ext::Builder
 
     cmd = []
     cmd += [cargo, "rustc"]
-    cmd += ["--target", ENV['CARGO_BUILD_TARGET']] if ENV['CARGO_BUILD_TARGET']
+    cmd += ["--target", ENV["CARGO_BUILD_TARGET"]] if ENV["CARGO_BUILD_TARGET"]
     cmd += ["--target-dir", dest_path]
     cmd += ["--manifest-path", manifest]
     cmd += ["--lib"]
@@ -144,13 +144,13 @@ class Gem::Ext::CargoBuilder < Gem::Ext::Builder
   def cargo_dylib_path(dest_path)
     prefix = so_ext == "dll" ? "" : "lib"
     path_parts = [dest_path]
-    path_parts << ENV['CARGO_BUILD_TARGET'] if ENV['CARGO_BUILD_TARGET']
+    path_parts << ENV["CARGO_BUILD_TARGET"] if ENV["CARGO_BUILD_TARGET"]
     path_parts += [profile_target_directory, "#{prefix}#{cargo_crate_name}.#{so_ext}"]
     File.join(*path_parts)
   end
 
   def cargo_crate_name
-    spec.metadata.fetch('cargo_crate_name', spec.name).tr('-', '_')
+    spec.metadata.fetch("cargo_crate_name", spec.name).tr("-", "_")
   end
 
   def rustc_dynamic_linker_flags(dest_dir)
@@ -297,8 +297,8 @@ class Gem::Ext::CargoBuilder < Gem::Ext::Builder
 
   def profile_target_directory
     case profile
-    when :release then 'release'
-    when :dev     then 'debug'
+    when :release then "release"
+    when :dev     then "debug"
     else          raise "unknown target directory for profile: #{profile}"
     end
   end

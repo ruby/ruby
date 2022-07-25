@@ -1,5 +1,5 @@
 # frozen_string_literal: true
-require_relative 'helper'
+require_relative "helper"
 
 class TestGemResolver < Gem::TestCase
   def setup
@@ -80,7 +80,7 @@ class TestGemResolver < Gem::TestCase
       @DR.compose_sets nil
     end
 
-    assert_equal 'one set in the composition must be non-nil', e.message
+    assert_equal "one set in the composition must be non-nil", e.message
   end
 
   def test_self_compose_sets_single
@@ -92,9 +92,9 @@ class TestGemResolver < Gem::TestCase
   end
 
   def test_requests
-    a1 = util_spec 'a', 1, 'b' => 2
+    a1 = util_spec "a", 1, "b" => 2
 
-    r1 = Gem::Resolver::DependencyRequest.new dep('a', '= 1'), nil
+    r1 = Gem::Resolver::DependencyRequest.new dep("a", "= 1"), nil
 
     act = Gem::Resolver::ActivationRequest.new a1, r1
 
@@ -104,18 +104,18 @@ class TestGemResolver < Gem::TestCase
 
     res.requests a1, act, reqs
 
-    assert_equal ['b (= 2)'], reqs.map {|req| req.to_s }
+    assert_equal ["b (= 2)"], reqs.map {|req| req.to_s }
   end
 
   def test_requests_development
-    a1 = util_spec 'a', 1, 'b' => 2
+    a1 = util_spec "a", 1, "b" => 2
 
     spec = Gem::Resolver::SpecSpecification.new nil, a1
     def spec.fetch_development_dependencies
       @called = true
     end
 
-    r1 = Gem::Resolver::DependencyRequest.new dep('a', '= 1'), nil
+    r1 = Gem::Resolver::DependencyRequest.new dep("a", "= 1"), nil
 
     act = Gem::Resolver::ActivationRequest.new spec, r1
 
@@ -126,15 +126,15 @@ class TestGemResolver < Gem::TestCase
 
     res.requests spec, act, reqs
 
-    assert_equal ['b (= 2)'], reqs.map {|req| req.to_s }
+    assert_equal ["b (= 2)"], reqs.map {|req| req.to_s }
 
     assert spec.instance_variable_defined? :@called
   end
 
   def test_requests_ignore_dependencies
-    a1 = util_spec 'a', 1, 'b' => 2
+    a1 = util_spec "a", 1, "b" => 2
 
-    r1 = Gem::Resolver::DependencyRequest.new dep('a', '= 1'), nil
+    r1 = Gem::Resolver::DependencyRequest.new dep("a", "= 1"), nil
 
     act = Gem::Resolver::ActivationRequest.new a1, r1
 
@@ -149,37 +149,37 @@ class TestGemResolver < Gem::TestCase
   end
 
   def test_resolve_conservative
-    a1_spec = util_spec 'a', 1
+    a1_spec = util_spec "a", 1
 
-    a2_spec = util_spec 'a', 2 do |s|
-      s.add_dependency 'b', 2
-      s.add_dependency 'c'
+    a2_spec = util_spec "a", 2 do |s|
+      s.add_dependency "b", 2
+      s.add_dependency "c"
     end
 
-    b1_spec = util_spec 'b', 1
-    b2_spec = util_spec 'b', 2
+    b1_spec = util_spec "b", 1
+    b2_spec = util_spec "b", 2
 
-    c1_spec = util_spec 'c', 1 do |s|
-      s.add_dependency 'd', 2
+    c1_spec = util_spec "c", 1 do |s|
+      s.add_dependency "d", 2
     end
 
-    c2_spec = util_spec 'c', 2 do |s|
-      s.add_dependency 'd', 2
+    c2_spec = util_spec "c", 2 do |s|
+      s.add_dependency "d", 2
     end
 
-    d1_spec = util_spec 'd', 1 do |s|
-      s.add_dependency 'e'
+    d1_spec = util_spec "d", 1 do |s|
+      s.add_dependency "e"
     end
 
-    d2_spec = util_spec 'd', 2 do |s|
-      s.add_dependency 'e'
+    d2_spec = util_spec "d", 2 do |s|
+      s.add_dependency "e"
     end
 
-    e1_spec = util_spec 'e', 1
-    e2_spec = util_spec 'e', 2
+    e1_spec = util_spec "e", 1
+    e2_spec = util_spec "e", 2
 
-    a_dep = make_dep 'a', '= 2'
-    e_dep = make_dep 'e'
+    a_dep = make_dep "a", "= 2"
+    e_dep = make_dep "e"
 
     # When requesting to install:
     # a-2, e
@@ -191,7 +191,7 @@ class TestGemResolver < Gem::TestCase
 
     # With the following gems already installed:
     # a-1, b-1, c-1, e-1
-    res.skip_gems = { 'a' => [a1_spec], 'b' => [b1_spec], 'c' => [c1_spec], 'e' => [e1_spec] }
+    res.skip_gems = { "a" => [a1_spec], "b" => [b1_spec], "c" => [c1_spec], "e" => [e1_spec] }
 
     # Make sure the following gems end up getting used/installed/upgraded:
     # a-2 (upgraded)
@@ -203,17 +203,17 @@ class TestGemResolver < Gem::TestCase
   end
 
   def test_resolve_development
-    a_spec = util_spec 'a', 1 do |s|
-      s.add_development_dependency 'b'
+    a_spec = util_spec "a", 1 do |s|
+      s.add_development_dependency "b"
     end
 
-    b_spec = util_spec 'b', 1 do
-      |s| s.add_development_dependency 'c'
+    b_spec = util_spec "b", 1 do
+      |s| s.add_development_dependency "c"
     end
 
-    c_spec = util_spec 'c', 1
+    c_spec = util_spec "c", 1
 
-    a_dep = make_dep 'a', '= 1'
+    a_dep = make_dep "a", "= 1"
 
     deps = [a_dep]
 
@@ -227,24 +227,24 @@ class TestGemResolver < Gem::TestCase
   end
 
   def test_resolve_development_shallow
-    a_spec = util_spec 'a', 1 do |s|
-      s.add_development_dependency 'b'
-      s.add_runtime_dependency 'd'
+    a_spec = util_spec "a", 1 do |s|
+      s.add_development_dependency "b"
+      s.add_runtime_dependency "d"
     end
 
-    b_spec = util_spec 'b', 1 do |s|
-      s.add_development_dependency 'c'
+    b_spec = util_spec "b", 1 do |s|
+      s.add_development_dependency "c"
     end
 
-    c_spec = util_spec 'c', 1
+    c_spec = util_spec "c", 1
 
-    d_spec = util_spec 'd', 1 do |s|
-      s.add_development_dependency 'e'
+    d_spec = util_spec "d", 1 do |s|
+      s.add_development_dependency "e"
     end
 
-    e_spec = util_spec 'e', 1
+    e_spec = util_spec "e", 1
 
-    a_dep = make_dep 'a', '= 1'
+    a_dep = make_dep "a", "= 1"
 
     deps = [a_dep]
 
@@ -262,7 +262,7 @@ class TestGemResolver < Gem::TestCase
     @fetcher = Gem::FakeFetcher.new
     Gem::RemoteFetcher.fetcher = @fetcher
 
-    a_dep = make_dep 'a', '= 1'
+    a_dep = make_dep "a", "= 1"
 
     res = Gem::Resolver.new [a_dep], Gem::Resolver::IndexSet.new
 
@@ -274,7 +274,7 @@ class TestGemResolver < Gem::TestCase
   end
 
   def test_no_overlap_specifically
-    a = util_spec "a", '1'
+    a = util_spec "a", "1"
     b = util_spec "b", "1"
 
     ad = make_dep "a", "= 1"
@@ -290,7 +290,7 @@ class TestGemResolver < Gem::TestCase
   end
 
   def test_pulls_in_dependencies
-    a = util_spec "a", '1'
+    a = util_spec "a", "1"
     b = util_spec "b", "1", "c" => "= 1"
     c = util_spec "c", "1"
 
@@ -307,8 +307,8 @@ class TestGemResolver < Gem::TestCase
   end
 
   def test_picks_highest_version
-    a1 = util_spec "a", '1'
-    a2 = util_spec "a", '2'
+    a1 = util_spec "a", "1"
+    a2 = util_spec "a", "2"
 
     s = set(a1, a2)
 
@@ -321,17 +321,17 @@ class TestGemResolver < Gem::TestCase
 
   def test_picks_best_platform
     is      = Gem::Resolver::IndexSpecification
-    unknown = Gem::Platform.new 'unknown'
+    unknown = Gem::Platform.new "unknown"
     a2_p1   = a3_p2 = nil
 
     spec_fetcher do |fetcher|
-      fetcher.spec 'a', 2
+      fetcher.spec "a", 2
 
-      a2_p1 = fetcher.spec 'a', 2 do |s|
+      a2_p1 = fetcher.spec "a", 2 do |s|
         s.platform = Gem::Platform.local
       end
 
-      a3_p2 = fetcher.spec 'a', 3 do |s|
+      a3_p2 = fetcher.spec "a", 3 do |s|
         s.platform = unknown
       end
     end
@@ -342,9 +342,9 @@ class TestGemResolver < Gem::TestCase
 
     s = set
 
-    a2    = is.new s, 'a', v2, source, Gem::Platform::RUBY
-    a2_p1 = is.new s, 'a', v2, source, Gem::Platform.local.to_s
-    a3_p2 = is.new s, 'a', v3, source, unknown
+    a2    = is.new s, "a", v2, source, Gem::Platform::RUBY
+    a2_p1 = is.new s, "a", v2, source, Gem::Platform.local.to_s
+    a3_p2 = is.new s, "a", v3, source, unknown
 
     s.add a3_p2
     s.add a2_p1
@@ -509,7 +509,7 @@ class TestGemResolver < Gem::TestCase
 
   def test_raises_and_reports_an_implicit_request_properly
     a1 = util_spec "a", "1" do |s|
-      s.add_runtime_dependency 'b', '= 2'
+      s.add_runtime_dependency "b", "= 2"
     end
 
     ad = make_dep "a", "= 1"
@@ -546,14 +546,14 @@ class TestGemResolver < Gem::TestCase
     dependency = e.conflict.dependency
 
     assert_includes %w[a b], dependency.name
-    assert_equal req('>= 0'), dependency.requirement
+    assert_equal req(">= 0"), dependency.requirement
 
     activated = e.conflict.activated
-    assert_equal 'c-1', activated.full_name
+    assert_equal "c-1", activated.full_name
 
-    assert_equal dep('c', '= 1'), activated.request.dependency
+    assert_equal dep("c", "= 1"), activated.request.dependency
 
-    assert_equal [dep('c', '>= 2'), dep('c', '= 1')],
+    assert_equal [dep("c", ">= 2"), dep("c", "= 1")],
                  e.conflict.conflicting_dependencies
   end
 
@@ -617,15 +617,15 @@ class TestGemResolver < Gem::TestCase
   end
 
   def test_resolve_conflict
-    a1 = util_spec 'a', 1
-    a2 = util_spec 'a', 2
+    a1 = util_spec "a", 1
+    a2 = util_spec "a", 2
 
-    b2 = util_spec 'b', 2, 'a' => '~> 2.0'
+    b2 = util_spec "b", 2, "a" => "~> 2.0"
 
     s = set a1, a2, b2
 
-    a_dep = dep 'a', '~> 1.0'
-    b_dep = dep 'b'
+    a_dep = dep "a", "~> 1.0"
+    b_dep = dep "b"
 
     r = Gem::Resolver.new [a_dep, b_dep], s
 
@@ -635,18 +635,18 @@ class TestGemResolver < Gem::TestCase
   end
 
   def test_resolve_bug_699
-    a1 = util_spec 'a', '1', 'b' => '= 2',
-                             'c' => '~> 1.0.3'
+    a1 = util_spec "a", "1", "b" => "= 2",
+                             "c" => "~> 1.0.3"
 
-    b1 = util_spec 'b', '2', 'c' => '~> 1.0'
+    b1 = util_spec "b", "2", "c" => "~> 1.0"
 
-    c1 = util_spec 'c', '1.0.9'
-    c2 = util_spec 'c', '1.1.0'
-    c3 = util_spec 'c', '1.2.0'
+    c1 = util_spec "c", "1.0.9"
+    c2 = util_spec "c", "1.1.0"
+    c3 = util_spec "c", "1.2.0"
 
     s = set a1, b1, c1, c2, c3
 
-    a_dep = dep 'a', '= 1'
+    a_dep = dep "a", "= 1"
 
     r = Gem::Resolver.new [a_dep], s
 
@@ -654,16 +654,16 @@ class TestGemResolver < Gem::TestCase
   end
 
   def test_resolve_rollback
-    a1 = util_spec 'a', 1
-    a2 = util_spec 'a', 2
+    a1 = util_spec "a", 1
+    a2 = util_spec "a", 2
 
-    b1 = util_spec 'b', 1, 'a' => '~> 1.0'
-    b2 = util_spec 'b', 2, 'a' => '~> 2.0'
+    b1 = util_spec "b", 1, "a" => "~> 1.0"
+    b2 = util_spec "b", 2, "a" => "~> 2.0"
 
     s = set a1, a2, b1, b2
 
-    a_dep = dep 'a', '~> 1.0'
-    b_dep = dep 'b'
+    a_dep = dep "a", "~> 1.0"
+    b_dep = dep "b"
 
     r = Gem::Resolver.new [a_dep, b_dep], s
 
@@ -711,15 +711,15 @@ class TestGemResolver < Gem::TestCase
   end
 
   def test_sorts_by_source_then_version
-    sourceA = Gem::Source.new 'http://example.com/a'
-    sourceB = Gem::Source.new 'http://example.com/b'
-    sourceC = Gem::Source.new 'http://example.com/c'
+    sourceA = Gem::Source.new "http://example.com/a"
+    sourceB = Gem::Source.new "http://example.com/b"
+    sourceC = Gem::Source.new "http://example.com/c"
 
-    spec_A_1 = util_spec 'some-dep', '0.0.1'
-    spec_A_2 = util_spec 'some-dep', '1.0.0'
-    spec_B_1 = util_spec 'some-dep', '0.0.1'
-    spec_B_2 = util_spec 'some-dep', '0.0.2'
-    spec_C_1 = util_spec 'some-dep', '0.1.0'
+    spec_A_1 = util_spec "some-dep", "0.0.1"
+    spec_A_2 = util_spec "some-dep", "1.0.0"
+    spec_B_1 = util_spec "some-dep", "0.0.1"
+    spec_B_2 = util_spec "some-dep", "0.0.2"
+    spec_C_1 = util_spec "some-dep", "0.1.0"
 
     set = StaticSet.new [
       Gem::Resolver::SpecSpecification.new(nil, spec_B_1, sourceB),
@@ -729,7 +729,7 @@ class TestGemResolver < Gem::TestCase
       Gem::Resolver::SpecSpecification.new(nil, spec_A_1, sourceA),
     ]
 
-    dependency = make_dep 'some-dep', '> 0'
+    dependency = make_dep "some-dep", "> 0"
 
     resolver = Gem::Resolver.new [dependency], set
 
@@ -739,14 +739,14 @@ class TestGemResolver < Gem::TestCase
   def test_select_local_platforms
     r = Gem::Resolver.new nil, nil
 
-    a1 = util_spec 'a', 1
+    a1 = util_spec "a", 1
 
-    a1_p1 = util_spec 'a', 1 do |s|
+    a1_p1 = util_spec "a", 1 do |s|
       s.platform = Gem::Platform.local
     end
 
-    a1_p2 = util_spec 'a', 1 do |s|
-      s.platform = 'unknown'
+    a1_p2 = util_spec "a", 1 do |s|
+      s.platform = "unknown"
     end
 
     selected = r.select_local_platforms [a1, a1_p1, a1_p2]
@@ -755,18 +755,18 @@ class TestGemResolver < Gem::TestCase
   end
 
   def test_search_for_local_platform_partial_string_match
-    a1 = util_spec 'a', 1
+    a1 = util_spec "a", 1
 
-    a1_p1 = util_spec 'a', 1 do |s|
+    a1_p1 = util_spec "a", 1 do |s|
       s.platform = Gem::Platform.local.os
     end
 
-    a1_p2 = util_spec 'a', 1 do |s|
-      s.platform = 'unknown'
+    a1_p2 = util_spec "a", 1 do |s|
+      s.platform = "unknown"
     end
 
     s = set(a1_p1, a1_p2, a1)
-    d = [make_dep('a')]
+    d = [make_dep("a")]
     r = Gem::Resolver.new(d, s)
 
     assert_resolves_to [a1_p1], r

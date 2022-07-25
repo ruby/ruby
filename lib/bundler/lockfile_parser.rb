@@ -93,6 +93,10 @@ module Bundler
         "and then `bundle install` to generate a new lockfile."
     end
 
+    def may_include_redundant_platform_specific_gems?
+      bundler_version.nil? || bundler_version < Gem::Version.new("1.16.2")
+    end
+
     private
 
     TYPES = {

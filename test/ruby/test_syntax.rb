@@ -1907,6 +1907,21 @@ eom
     assert_equal 0...1, exp.call(a: 0)
   end
 
+  def test_class_module_Object_ancestors
+    assert_separately([], <<-RUBY)
+      m = Module.new
+      m::Bug18832 = 1
+      include m
+      class Bug18832; end
+    RUBY
+    assert_separately([], <<-RUBY)
+      m = Module.new
+      m::Bug18832 = 1
+      include m
+      module Bug18832; end
+    RUBY
+  end
+
   def test_cdhash
     assert_separately([], <<-RUBY)
       n = case 1 when 2r then false else true end

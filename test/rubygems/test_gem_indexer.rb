@@ -1,6 +1,6 @@
 # frozen_string_literal: true
-require_relative 'helper'
-require 'rubygems/indexer'
+require_relative "helper"
+require "rubygems/indexer"
 
 class TestGemIndexer < Gem::TestCase
   def setup
@@ -8,25 +8,25 @@ class TestGemIndexer < Gem::TestCase
 
     util_make_gems
 
-    @d2_0 = util_spec 'd', '2.0' do |s|
+    @d2_0 = util_spec "d", "2.0" do |s|
       s.date = Gem::Specification::TODAY - 86400 * 3
     end
     util_build_gem @d2_0
 
-    @d2_0_a = util_spec 'd', '2.0.a'
+    @d2_0_a = util_spec "d", "2.0.a"
     util_build_gem @d2_0_a
 
-    @d2_0_b = util_spec 'd', '2.0.b'
+    @d2_0_b = util_spec "d", "2.0.b"
     util_build_gem @d2_0_b
 
-    @default = new_default_spec 'default', 2
+    @default = new_default_spec "default", 2
     install_default_gems @default
 
-    @indexerdir = File.join(@tempdir, 'indexer')
+    @indexerdir = File.join(@tempdir, "indexer")
 
-    gems = File.join(@indexerdir, 'gems')
+    gems = File.join(@indexerdir, "gems")
     FileUtils.mkdir_p gems
-    FileUtils.mv Dir[File.join(@gemhome, "cache", '*.gem')], gems
+    FileUtils.mv Dir[File.join(@gemhome, "cache", "*.gem")], gems
 
     @indexer = Gem::Indexer.new(@indexerdir)
   end
@@ -79,7 +79,7 @@ class TestGemIndexer < Gem::TestCase
                 ["pl",     Gem::Version.new("1"),   "i386-linux"],
                 ["x",      Gem::Version.new("1"),   "ruby"]]
 
-    assert_equal expected, latest_specs, 'latest_specs'
+    assert_equal expected, latest_specs, "latest_specs"
   end
 
   def test_generate_index
@@ -87,7 +87,7 @@ class TestGemIndexer < Gem::TestCase
       @indexer.generate_index
     end
 
-    quickdir = File.join @indexerdir, 'quick'
+    quickdir = File.join @indexerdir, "quick"
     marshal_quickdir = File.join quickdir, "Marshal.#{@marshal_version}"
 
     assert_directory_exists quickdir
@@ -114,15 +114,15 @@ class TestGemIndexer < Gem::TestCase
       @indexer.generate_index
     end
 
-    refute_indexed @indexerdir, 'yaml'
-    refute_indexed @indexerdir, 'yaml.Z'
+    refute_indexed @indexerdir, "yaml"
+    refute_indexed @indexerdir, "yaml.Z"
     refute_indexed @indexerdir, "Marshal.#{@marshal_version}"
     refute_indexed @indexerdir, "Marshal.#{@marshal_version}.Z"
 
-    quickdir = File.join @indexerdir, 'quick'
+    quickdir = File.join @indexerdir, "quick"
     marshal_quickdir = File.join quickdir, "Marshal.#{@marshal_version}"
 
-    assert_directory_exists quickdir, 'quickdir should be directory'
+    assert_directory_exists quickdir, "quickdir should be directory"
     assert_directory_exists marshal_quickdir
 
     refute_indexed quickdir, "index"
@@ -165,7 +165,7 @@ class TestGemIndexer < Gem::TestCase
     use_ui @ui do
       @indexer.generate_index
     end
-    quickdir = File.join @indexerdir, 'quick'
+    quickdir = File.join @indexerdir, "quick"
     marshal_quickdir = File.join quickdir, "Marshal.#{@marshal_version}"
 
     assert_directory_exists quickdir
@@ -196,7 +196,7 @@ class TestGemIndexer < Gem::TestCase
     assert_match %r{^Complete$}, @ui.output
     assert_match %r{^Compressing indices$}, @ui.output
 
-    assert_equal '', @ui.error
+    assert_equal "", @ui.error
   end
 
   def test_generate_index_specs
@@ -210,30 +210,30 @@ class TestGemIndexer < Gem::TestCase
     specs = Marshal.load specs_dump
 
     expected = [
-      ['a',      Gem::Version.new(1),     'ruby'],
-      ['a',      Gem::Version.new(2),     'ruby'],
-      ['a_evil', Gem::Version.new(9),     'ruby'],
-      ['b',      Gem::Version.new(2),     'ruby'],
-      ['c',      Gem::Version.new('1.2'), 'ruby'],
-      ['d',      Gem::Version.new('2.0'), 'ruby'],
-      ['dep_x',  Gem::Version.new(1),     'ruby'],
-      ['pl',     Gem::Version.new(1),     'i386-linux'],
-      ['x',      Gem::Version.new(1),     'ruby'],
+      ["a",      Gem::Version.new(1),     "ruby"],
+      ["a",      Gem::Version.new(2),     "ruby"],
+      ["a_evil", Gem::Version.new(9),     "ruby"],
+      ["b",      Gem::Version.new(2),     "ruby"],
+      ["c",      Gem::Version.new("1.2"), "ruby"],
+      ["d",      Gem::Version.new("2.0"), "ruby"],
+      ["dep_x",  Gem::Version.new(1),     "ruby"],
+      ["pl",     Gem::Version.new(1),     "i386-linux"],
+      ["x",      Gem::Version.new(1),     "ruby"],
     ]
 
     assert_equal expected, specs
 
     assert_same specs[0].first, specs[1].first,
-                'identical names not identical'
+                "identical names not identical"
 
     assert_same specs[0][1],    specs[-1][1],
-                'identical versions not identical'
+                "identical versions not identical"
 
     assert_same specs[0].last, specs[1].last,
-                'identical platforms not identical'
+                "identical platforms not identical"
 
     refute_same specs[1][1], specs[5][1],
-                'different versions not different'
+                "different versions not different"
   end
 
   def test_generate_index_latest_specs
@@ -247,23 +247,23 @@ class TestGemIndexer < Gem::TestCase
     latest_specs = Marshal.load latest_specs_dump
 
     expected = [
-      ['a',      Gem::Version.new(2),     'ruby'],
-      ['a_evil', Gem::Version.new(9),     'ruby'],
-      ['b',      Gem::Version.new(2),     'ruby'],
-      ['c',      Gem::Version.new('1.2'), 'ruby'],
-      ['d',      Gem::Version.new('2.0'), 'ruby'],
-      ['dep_x',  Gem::Version.new(1),     'ruby'],
-      ['pl',     Gem::Version.new(1),     'i386-linux'],
-      ['x',      Gem::Version.new(1),     'ruby'],
+      ["a",      Gem::Version.new(2),     "ruby"],
+      ["a_evil", Gem::Version.new(9),     "ruby"],
+      ["b",      Gem::Version.new(2),     "ruby"],
+      ["c",      Gem::Version.new("1.2"), "ruby"],
+      ["d",      Gem::Version.new("2.0"), "ruby"],
+      ["dep_x",  Gem::Version.new(1),     "ruby"],
+      ["pl",     Gem::Version.new(1),     "i386-linux"],
+      ["x",      Gem::Version.new(1),     "ruby"],
     ]
 
     assert_equal expected, latest_specs
 
     assert_same latest_specs[0][1],   latest_specs[2][1],
-                'identical versions not identical'
+                "identical versions not identical"
 
     assert_same latest_specs[0].last, latest_specs[1].last,
-                'identical platforms not identical'
+                "identical platforms not identical"
   end
 
   def test_generate_index_prerelease_specs
@@ -276,9 +276,9 @@ class TestGemIndexer < Gem::TestCase
     prerelease_specs_dump = Gem.read_binary prerelease_specs_path
     prerelease_specs = Marshal.load prerelease_specs_dump
 
-    assert_equal [['a', Gem::Version.new('3.a'),   'ruby'],
-                  ['d', Gem::Version.new('2.0.a'), 'ruby'],
-                  ['d', Gem::Version.new('2.0.b'), 'ruby']],
+    assert_equal [["a", Gem::Version.new("3.a"),   "ruby"],
+                  ["d", Gem::Version.new("2.0.a"), "ruby"],
+                  ["d", Gem::Version.new("2.0.b"), "ruby"]],
                  prerelease_specs
   end
 
@@ -288,7 +288,7 @@ class TestGemIndexer < Gem::TestCase
   def with_system_gems
     Gem::Specification.reset
 
-    sys_gem = util_spec 'systemgem', '1.0'
+    sys_gem = util_spec "systemgem", "1.0"
     util_build_gem sys_gem
     install_default_gems sys_gem
     yield
@@ -300,21 +300,21 @@ class TestGemIndexer < Gem::TestCase
       @indexer.generate_index
     end
 
-    quickdir = File.join @indexerdir, 'quick'
+    quickdir = File.join @indexerdir, "quick"
     marshal_quickdir = File.join quickdir, "Marshal.#{@marshal_version}"
 
     assert_directory_exists quickdir
     assert_directory_exists marshal_quickdir
 
-    @d2_1 = util_spec 'd', '2.1'
+    @d2_1 = util_spec "d", "2.1"
     util_build_gem @d2_1
     @d2_1_tuple = [@d2_1.name, @d2_1.version, @d2_1.original_platform]
 
-    @d2_1_a = util_spec 'd', '2.2.a'
+    @d2_1_a = util_spec "d", "2.2.a"
     util_build_gem @d2_1_a
     @d2_1_a_tuple = [@d2_1_a.name, @d2_1_a.version, @d2_1_a.original_platform]
 
-    gems = File.join @indexerdir, 'gems'
+    gems = File.join @indexerdir, "gems"
 
     FileUtils.mv @d2_1.cache_file, gems
     FileUtils.mv @d2_1_a.cache_file, gems

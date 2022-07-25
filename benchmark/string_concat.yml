@@ -1,8 +1,10 @@
 prelude: |
   CHUNK = "a" * 64
+  UCHUNK = "é" * 32
+  GC.disable # GC causes a lot of variance
 benchmark:
-  string_concat: |
-    buffer = String.new(capacity: 4096)
+  binary_concat_7bit: |
+    buffer = String.new(capacity: 4096, encoding: Encoding::BINARY)
     buffer << CHUNK << CHUNK << CHUNK << CHUNK << CHUNK << CHUNK << CHUNK << CHUNK
     buffer << CHUNK << CHUNK << CHUNK << CHUNK << CHUNK << CHUNK << CHUNK << CHUNK
     buffer << CHUNK << CHUNK << CHUNK << CHUNK << CHUNK << CHUNK << CHUNK << CHUNK
@@ -10,4 +12,24 @@ benchmark:
     buffer << CHUNK << CHUNK << CHUNK << CHUNK << CHUNK << CHUNK << CHUNK << CHUNK
     buffer << CHUNK << CHUNK << CHUNK << CHUNK << CHUNK << CHUNK << CHUNK << CHUNK
     buffer << CHUNK << CHUNK << CHUNK << CHUNK << CHUNK << CHUNK << CHUNK << CHUNK
+    buffer << CHUNK << CHUNK << CHUNK << CHUNK << CHUNK << CHUNK << CHUNK
+  utf8_concat_7bit: |
+    buffer = String.new(capacity: 4096, encoding: Encoding::UTF_8)
     buffer << CHUNK << CHUNK << CHUNK << CHUNK << CHUNK << CHUNK << CHUNK << CHUNK
+    buffer << CHUNK << CHUNK << CHUNK << CHUNK << CHUNK << CHUNK << CHUNK << CHUNK
+    buffer << CHUNK << CHUNK << CHUNK << CHUNK << CHUNK << CHUNK << CHUNK << CHUNK
+    buffer << CHUNK << CHUNK << CHUNK << CHUNK << CHUNK << CHUNK << CHUNK << CHUNK
+    buffer << CHUNK << CHUNK << CHUNK << CHUNK << CHUNK << CHUNK << CHUNK << CHUNK
+    buffer << CHUNK << CHUNK << CHUNK << CHUNK << CHUNK << CHUNK << CHUNK << CHUNK
+    buffer << CHUNK << CHUNK << CHUNK << CHUNK << CHUNK << CHUNK << CHUNK << CHUNK
+    buffer << CHUNK << CHUNK << CHUNK << CHUNK << CHUNK << CHUNK << CHUNK
+  utf8_concat_UTF8: |
+    buffer = String.new(capacity: 4096, encoding: Encoding::UTF_8)
+    buffer << UCHUNK << UCHUNK << UCHUNK << UCHUNK << UCHUNK << UCHUNK << UCHUNK << UCHUNK
+    buffer << UCHUNK << UCHUNK << UCHUNK << UCHUNK << UCHUNK << UCHUNK << UCHUNK << UCHUNK
+    buffer << UCHUNK << UCHUNK << UCHUNK << UCHUNK << UCHUNK << UCHUNK << UCHUNK << UCHUNK
+    buffer << UCHUNK << UCHUNK << UCHUNK << UCHUNK << UCHUNK << UCHUNK << UCHUNK << UCHUNK
+    buffer << UCHUNK << UCHUNK << UCHUNK << UCHUNK << UCHUNK << UCHUNK << UCHUNK << UCHUNK
+    buffer << UCHUNK << UCHUNK << UCHUNK << UCHUNK << UCHUNK << UCHUNK << UCHUNK << UCHUNK
+    buffer << UCHUNK << UCHUNK << UCHUNK << UCHUNK << UCHUNK << UCHUNK << UCHUNK << UCHUNK
+    buffer << UCHUNK << UCHUNK << UCHUNK << UCHUNK << UCHUNK << UCHUNK << UCHUNK

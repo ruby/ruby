@@ -1323,6 +1323,7 @@ up::
 yes::
 no::
 
+after-update:: common-srcs
 after-update:: $(REVISION_H)
 after-update:: extract-extlibs
 after-update:: extract-gems
@@ -1360,13 +1361,11 @@ extract-gems$(gnumake:yes=-nongnumake): PHONY
 	$(ECHO) Extracting bundled gem files...
 	$(Q) $(RUNRUBY) -C "$(srcdir)" \
 	    -Itool -rfileutils -rgem-unpack -answ \
-	    -e 'BEGIN {FileUtils.mkdir_p(d = ".bundle/gems")}' \
-	    -e 'BEGIN {FileUtils.mkdir_p(s = ".bundle/specifications")}' \
+	    -e 'BEGIN {d = ".bundle/gems"}' \
 	    -e 'gem, ver = *$$F' \
 	    -e 'next if !ver or /^#/=~gem' \
 	    -e 'g = "#{gem}-#{ver}"' \
-	    -e 'File.directory?("#{d}/#{g}") or Gem.unpack("gems/#{g}.gem", d, s)' \
-	    -e 'FileUtils.rm_rf("#{d}/#{g}/.github")' \
+	    -e 'File.directory?("#{d}/#{g}") or Gem.unpack("gems/#{g}.gem", ".bundle")' \
 	    gems/bundled_gems
 
 update-bundled_gems: PHONY
@@ -1408,7 +1407,7 @@ no-test-bundled-gems:
 
 BUNDLED_GEMS =
 test-bundled-gems-run: $(PREPARE_BUNDLED_GEMS)
-	$(Q) $(XRUBY) $(tooldir)/test-bundled-gems.rb $(BUNDLED_GEMS)
+	$(gnumake_recursive)$(Q) $(XRUBY) $(tooldir)/test-bundled-gems.rb $(BUNDLED_GEMS)
 
 test-bundler-precheck: $(TEST_RUNNABLE)-test-bundler-precheck
 no-test-bundler-precheck:
@@ -3501,6 +3500,7 @@ debug.$(OBJEXT): $(CCAN_DIR)/list/list.h
 debug.$(OBJEXT): $(CCAN_DIR)/str/str.h
 debug.$(OBJEXT): $(hdrdir)/ruby/ruby.h
 debug.$(OBJEXT): $(top_srcdir)/internal/array.h
+debug.$(OBJEXT): $(top_srcdir)/internal/class.h
 debug.$(OBJEXT): $(top_srcdir)/internal/compilers.h
 debug.$(OBJEXT): $(top_srcdir)/internal/gc.h
 debug.$(OBJEXT): $(top_srcdir)/internal/imemo.h
@@ -9658,7 +9658,7 @@ mjit.$(OBJEXT): {$(VPATH)}mjit.h
 mjit.$(OBJEXT): {$(VPATH)}mjit.rb
 mjit.$(OBJEXT): {$(VPATH)}mjit.rbinc
 mjit.$(OBJEXT): {$(VPATH)}mjit_config.h
-mjit.$(OBJEXT): {$(VPATH)}mjit_worker.c
+mjit.$(OBJEXT): {$(VPATH)}mjit_unit.h
 mjit.$(OBJEXT): {$(VPATH)}node.h
 mjit.$(OBJEXT): {$(VPATH)}onigmo.h
 mjit.$(OBJEXT): {$(VPATH)}oniguruma.h
@@ -9866,6 +9866,7 @@ mjit_compile.$(OBJEXT): {$(VPATH)}missing.h
 mjit_compile.$(OBJEXT): {$(VPATH)}mjit.h
 mjit_compile.$(OBJEXT): {$(VPATH)}mjit_compile.c
 mjit_compile.$(OBJEXT): {$(VPATH)}mjit_compile.inc
+mjit_compile.$(OBJEXT): {$(VPATH)}mjit_unit.h
 mjit_compile.$(OBJEXT): {$(VPATH)}node.h
 mjit_compile.$(OBJEXT): {$(VPATH)}ruby_assert.h
 mjit_compile.$(OBJEXT): {$(VPATH)}ruby_atomic.h
@@ -12898,10 +12899,14 @@ regexec.$(OBJEXT): {$(VPATH)}st.h
 regexec.$(OBJEXT): {$(VPATH)}subst.h
 regparse.$(OBJEXT): $(hdrdir)/ruby.h
 regparse.$(OBJEXT): $(hdrdir)/ruby/ruby.h
+regparse.$(OBJEXT): $(top_srcdir)/internal/compilers.h
+regparse.$(OBJEXT): $(top_srcdir)/internal/sanitizers.h
+regparse.$(OBJEXT): $(top_srcdir)/internal/warnings.h
 regparse.$(OBJEXT): {$(VPATH)}assert.h
 regparse.$(OBJEXT): {$(VPATH)}backward/2/assume.h
 regparse.$(OBJEXT): {$(VPATH)}backward/2/attributes.h
 regparse.$(OBJEXT): {$(VPATH)}backward/2/bool.h
+regparse.$(OBJEXT): {$(VPATH)}backward/2/gcc_version_since.h
 regparse.$(OBJEXT): {$(VPATH)}backward/2/inttypes.h
 regparse.$(OBJEXT): {$(VPATH)}backward/2/limits.h
 regparse.$(OBJEXT): {$(VPATH)}backward/2/long_long.h
@@ -15793,6 +15798,7 @@ transcode.$(OBJEXT): {$(VPATH)}subst.h
 transcode.$(OBJEXT): {$(VPATH)}transcode.c
 transcode.$(OBJEXT): {$(VPATH)}transcode_data.h
 transient_heap.$(OBJEXT): $(hdrdir)/ruby/ruby.h
+transient_heap.$(OBJEXT): $(top_srcdir)/internal/array.h
 transient_heap.$(OBJEXT): $(top_srcdir)/internal/compilers.h
 transient_heap.$(OBJEXT): $(top_srcdir)/internal/gc.h
 transient_heap.$(OBJEXT): $(top_srcdir)/internal/hash.h

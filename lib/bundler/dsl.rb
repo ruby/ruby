@@ -16,7 +16,7 @@ module Bundler
     VALID_PLATFORMS = Bundler::Dependency::PLATFORM_MAP.keys.freeze
 
     VALID_KEYS = %w[group groups git path glob name branch ref tag require submodules
-                    platform platforms type source install_if gemfile].freeze
+                    platform platforms type source install_if gemfile force_ruby_platform].freeze
 
     GITHUB_PULL_REQUEST_URL = %r{\Ahttps://github\.com/([A-Za-z0-9_\-\.]+/[A-Za-z0-9_\-\.]+)/pull/(\d+)\z}.freeze
 
@@ -465,12 +465,12 @@ module Bundler
 
     def multiple_global_source_warning
       if Bundler.feature_flag.bundler_3_mode?
-        msg = "This Gemfile contains multiple primary sources. " \
+        msg = "This Gemfile contains multiple global sources. " \
           "Each source after the first must include a block to indicate which gems " \
           "should come from that source"
         raise GemfileEvalError, msg
       else
-        Bundler::SharedHelpers.major_deprecation 2, "Your Gemfile contains multiple primary sources. " \
+        Bundler::SharedHelpers.major_deprecation 2, "Your Gemfile contains multiple global sources. " \
           "Using `source` more than once without a block is a security risk, and " \
           "may result in installing unexpected gems. To resolve this warning, use " \
           "a block to indicate which gems should come from the secondary source."

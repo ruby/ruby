@@ -190,7 +190,7 @@ class Gem::Resolver::InstallerSet < Gem::Resolver::Set
   def inspect # :nodoc:
     always_install = @always_install.map {|s| s.full_name }
 
-    '#<%s domain: %s specs: %p always install: %p>' % [
+    "#<%s domain: %s specs: %p always install: %p>" % [
       self.class, @domain, @specs.keys, always_install
     ]
   end
@@ -219,16 +219,16 @@ class Gem::Resolver::InstallerSet < Gem::Resolver::Set
   end
 
   def pretty_print(q) # :nodoc:
-    q.group 2, '[InstallerSet', ']' do
+    q.group 2, "[InstallerSet", "]" do
       q.breakable
       q.text "domain: #{@domain}"
 
       q.breakable
-      q.text 'specs: '
+      q.text "specs: "
       q.pp @specs.keys
 
       q.breakable
-      q.text 'always install: '
+      q.text "always install: "
       q.pp @always_install
     end
   end

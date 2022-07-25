@@ -5,9 +5,9 @@
 # See LICENSE.txt for permissions.
 #++
 
-require_relative 'command'
-require_relative 'user_interaction'
-require_relative 'text'
+require_relative "command"
+require_relative "user_interaction"
+require_relative "text"
 
 ##
 # The command manager registers and installs all the individual sub-commands
@@ -73,9 +73,9 @@ class Gem::CommandManager
   ].freeze
 
   ALIAS_COMMANDS = {
-    'i'      => 'install',
-    'login'  => 'signin',
-    'logout' => 'signout',
+    "i"      => "install",
+    "login"  => "signin",
+    "logout" => "signout",
   }.freeze
 
   ##
@@ -104,7 +104,7 @@ class Gem::CommandManager
   # Register all the subcommands supported by the gem command.
 
   def initialize
-    require 'timeout'
+    require "timeout"
     @commands = {}
 
     BUILTIN_COMMANDS.each do |name|
@@ -169,10 +169,10 @@ class Gem::CommandManager
     end
 
     case args.first
-    when '-h', '--help' then
+    when "-h", "--help" then
       say Gem::Command::HELP
       terminate_interaction 0
-    when '-v', '--version' then
+    when "-v", "--version" then
       say Gem::VERSION
       terminate_interaction 0
     when /^-/ then

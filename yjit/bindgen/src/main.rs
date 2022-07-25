@@ -62,6 +62,9 @@ fn main() {
         // Import YARV bytecode instruction constants
         .allowlist_type("ruby_vminsn_type")
 
+        // From include/ruby/internal/config.h
+        .allowlist_var("USE_RVARGC")
+
         // From include/ruby/internal/intern/string.h
         .allowlist_function("rb_utf8_str_new")
         .allowlist_function("rb_str_buf_append")
@@ -135,7 +138,8 @@ fn main() {
 
         // From include/ruby/internal/core/robject.h
         .allowlist_type("ruby_robject_flags")
-        .allowlist_type("ruby_robject_consts")
+        // .allowlist_type("ruby_robject_consts") // Removed when USE_RVARGC
+        .allowlist_var("ROBJECT_OFFSET_.*")
 
         // From include/ruby/internal/core/rarray.h
         .allowlist_type("ruby_rarray_flags")

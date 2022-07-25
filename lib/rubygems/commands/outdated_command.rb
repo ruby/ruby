@@ -1,15 +1,15 @@
 # frozen_string_literal: true
-require_relative '../command'
-require_relative '../local_remote_options'
-require_relative '../spec_fetcher'
-require_relative '../version_option'
+require_relative "../command"
+require_relative "../local_remote_options"
+require_relative "../spec_fetcher"
+require_relative "../version_option"
 
 class Gem::Commands::OutdatedCommand < Gem::Command
   include Gem::LocalRemoteOptions
   include Gem::VersionOption
 
   def initialize
-    super 'outdated', 'Display all gems that need updates'
+    super "outdated", "Display all gems that need updates"
 
     add_local_remote_options
     add_platform_option

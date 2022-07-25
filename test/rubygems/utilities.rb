@@ -1,7 +1,7 @@
 # frozen_string_literal: true
-require 'tempfile'
-require 'rubygems'
-require 'rubygems/remote_fetcher'
+require "tempfile"
+require "rubygems"
+require "rubygems/remote_fetcher"
 
 ##
 # A fake Gem::RemoteFetcher for use in tests or to avoid real live HTTP
@@ -39,7 +39,7 @@ class Gem::FakeFetcher
   end
 
   def find_data(path)
-    return Gem.read_binary path.path if URI === path and 'file' == path.scheme
+    return Gem.read_binary path.path if URI === path and "file" == path.scheme
 
     if URI === path and "URI::#{path.scheme.upcase}" != path.class.name
       raise ArgumentError,
@@ -48,7 +48,7 @@ class Gem::FakeFetcher
 
     path = path.to_s
     @paths << path
-    raise ArgumentError, 'need full URI' unless path.start_with?("https://", "http://")
+    raise ArgumentError, "need full URI" unless path.start_with?("https://", "http://")
 
     unless @data.key? path
       raise Gem::RemoteFetcher::FetchError.new("no data for #{path}", path)
@@ -76,7 +76,7 @@ class Gem::FakeFetcher
 
   def cache_update_path(uri, path = nil, update = true)
     if data = fetch_path(uri)
-      File.open(path, 'wb') {|io| io.write data } if path and update
+      File.open(path, "wb") {|io| io.write data } if path and update
       data
     else
       Gem.read_binary(path) if path
@@ -108,9 +108,9 @@ class Gem::FakeFetcher
   end
 
   def pretty_print(q) # :nodoc:
-    q.group 2, '[FakeFetcher', ']' do
+    q.group 2, "[FakeFetcher", "]" do
       q.breakable
-      q.text 'URIs:'
+      q.text "URIs:"
 
       q.breakable
       q.pp @data.keys
@@ -121,7 +121,7 @@ class Gem::FakeFetcher
     path = path.to_s
     @paths << path
 
-    raise ArgumentError, 'need full URI' unless path =~ %r{^http://}
+    raise ArgumentError, "need full URI" unless path =~ %r{^http://}
 
     unless @data.key? path
       raise Gem::RemoteFetcher::FetchError.new("no data for #{path}", path)
@@ -288,16 +288,16 @@ class Gem::TestCase::SpecFetcherSetup
   # Creates a legacy platform spec with the name 'pl' and version 1
 
   def legacy_platform
-    spec 'pl', 1 do |s|
-      s.platform = Gem::Platform.new 'i386-linux'
-      s.instance_variable_set :@original_platform, 'i386-linux'
+    spec "pl", 1 do |s|
+      s.platform = Gem::Platform.new "i386-linux"
+      s.instance_variable_set :@original_platform, "i386-linux"
     end
   end
 
   def setup_fetcher # :nodoc:
-    require 'zlib'
-    require 'socket'
-    require 'rubygems/remote_fetcher'
+    require "zlib"
+    require "socket"
+    require "rubygems/remote_fetcher"
 
     unless @test.fetcher
       @test.fetcher = Gem::FakeFetcher.new
@@ -338,7 +338,7 @@ class Gem::TestCase::SpecFetcherSetup
   end
 
   def write_spec(spec) # :nodoc:
-    File.open spec.spec_file, 'w' do |io|
+    File.open spec.spec_file, "w" do |io|
       io.write spec.to_ruby_for_cache
     end
   end
@@ -354,7 +354,7 @@ class TempIO < Tempfile
   ##
   # Creates a new TempIO that will be initialized to contain +string+.
 
-  def initialize(string = '')
+  def initialize(string = "")
     super "TempIO"
     binmode
     write string

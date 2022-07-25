@@ -1,35 +1,35 @@
 # frozen_string_literal: true
-require_relative '../command'
-require_relative '../dependency_list'
-require_relative '../uninstaller'
+require_relative "../command"
+require_relative "../dependency_list"
+require_relative "../uninstaller"
 
 class Gem::Commands::CleanupCommand < Gem::Command
   def initialize
-    super 'cleanup',
-          'Clean up old versions of installed gems',
+    super "cleanup",
+          "Clean up old versions of installed gems",
           :force => false, :install_dir => Gem.dir,
           :check_dev => true
 
-    add_option('-n', '-d', '--dry-run',
-               'Do not uninstall gems') do |value, options|
+    add_option("-n", "-d", "--dry-run",
+               "Do not uninstall gems") do |value, options|
       options[:dryrun] = true
     end
 
-    add_option(:Deprecated, '--dryrun',
-               'Do not uninstall gems') do |value, options|
+    add_option(:Deprecated, "--dryrun",
+               "Do not uninstall gems") do |value, options|
       options[:dryrun] = true
     end
-    deprecate_option('--dryrun', extra_msg: 'Use --dry-run instead')
+    deprecate_option("--dryrun", extra_msg: "Use --dry-run instead")
 
-    add_option('-D', '--[no-]check-development',
-               'Check development dependencies while uninstalling',
-               '(default: true)') do |value, options|
+    add_option("-D", "--[no-]check-development",
+               "Check development dependencies while uninstalling",
+               "(default: true)") do |value, options|
       options[:check_dev] = value
     end
 
-    add_option('--[no-]user-install',
-               'Cleanup in user\'s home directory instead',
-               'of GEM_HOME.') do |value, options|
+    add_option("--[no-]user-install",
+               "Cleanup in user's home directory instead",
+               "of GEM_HOME.") do |value, options|
       options[:user_install] = value
     end
 

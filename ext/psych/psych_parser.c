@@ -79,21 +79,25 @@ static VALUE allocate(VALUE klass)
 
 static VALUE make_exception(yaml_parser_t * parser, VALUE path)
 {
-    size_t line, column;
-    VALUE ePsychSyntaxError;
+    if (parser->error == YAML_MEMORY_ERROR) {
+	return rb_eNoMemError;
+    } else {
+	size_t line, column;
+	VALUE ePsychSyntaxError;
 
-    line = parser->context_mark.line + 1;
-    column = parser->context_mark.column + 1;
+	line = parser->context_mark.line + 1;
+	column = parser->context_mark.column + 1;
 
-    ePsychSyntaxError = rb_const_get(mPsych, rb_intern("SyntaxError"));
+	ePsychSyntaxError = rb_const_get(mPsych, rb_intern("SyntaxError"));
 
-    return rb_funcall(ePsychSyntaxError, rb_intern("new"), 6,
-	    path,
-	    SIZET2NUM(line),
-	    SIZET2NUM(column),
-	    SIZET2NUM(parser->problem_offset),
-	    parser->problem ? rb_usascii_str_new2(parser->problem) : Qnil,
-	    parser->context ? rb_usascii_str_new2(parser->context) : Qnil);
+	return rb_funcall(ePsychSyntaxError, rb_intern("new"), 6,
+		path,
+		SIZET2NUM(line),
+		SIZET2NUM(column),
+		SIZET2NUM(parser->problem_offset),
+		parser->problem ? rb_usascii_str_new2(parser->problem) : Qnil,
+		parser->context ? rb_usascii_str_new2(parser->context) : Qnil);
+    }
 }
 
 static VALUE transcode_string(VALUE src, int * parser_encoding)
@@ -293,7 +297,7 @@ static VALUE parse(int argc, VALUE *argv, VALUE self)
 	VALUE event_args[5];
 	VALUE start_line, start_column, end_line, end_column;
 
-	if(!yaml_parser_parse(parser, &event)) {
+	if(parser->error || !yaml_parser_parse(parser, &event)) {
 	    VALUE exception;
 
 	    exception = make_exception(parser, path);

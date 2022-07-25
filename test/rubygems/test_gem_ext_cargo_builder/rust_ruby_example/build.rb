@@ -1,17 +1,17 @@
-if ENV['RUBYOPT'] or defined? Gem
-  ENV.delete 'RUBYOPT'
+if ENV["RUBYOPT"] or defined? Gem
+  ENV.delete "RUBYOPT"
 
-  require 'rbconfig'
-  cmd = [RbConfig.ruby, '--disable-gems', 'build.rb', *ARGV]
+  require "rbconfig"
+  cmd = [RbConfig.ruby, "--disable-gems", "build.rb", *ARGV]
 
   exec(*cmd)
 end
 
-require 'tmpdir'
+require "tmpdir"
 
-lp = File.expand_path('../../../../lib', __dir__)
-gem = ["ruby", "-I#{lp}", File.expand_path('../../../../bin/gem', __dir__)]
-gemspec = File.expand_path('rust_ruby_example.gemspec', __dir__)
+lp = File.expand_path("../../../../lib", __dir__)
+gem = ["ruby", "-I#{lp}", File.expand_path("../../../../bin/gem", __dir__)]
+gemspec = File.expand_path("rust_ruby_example.gemspec", __dir__)
 
 Dir.mktmpdir("rust_ruby_example") do |dir|
   built_gem = File.expand_path(File.join(dir, "rust_ruby_example.gem"))

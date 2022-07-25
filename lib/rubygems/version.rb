@@ -276,7 +276,7 @@ class Gem::Version
   end
 
   def yaml_initialize(tag, map) # :nodoc:
-    @version = map['version']
+    @version = map["version"]
     @segments = nil
     @hash = nil
   end
@@ -286,7 +286,7 @@ class Gem::Version
   end
 
   def encode_with(coder) # :nodoc:
-    coder.add 'version', @version
+    coder.add "version", @version
   end
 
   ##
@@ -311,7 +311,7 @@ class Gem::Version
     @@release[self] ||= if prerelease?
       segments = self.segments
       segments.pop while segments.any? {|s| String === s }
-      self.class.new segments.join('.')
+      self.class.new segments.join(".")
     else
       self
     end

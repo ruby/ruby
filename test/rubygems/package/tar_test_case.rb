@@ -1,6 +1,6 @@
 # frozen_string_literal: true
-require_relative '../helper'
-require 'rubygems/package'
+require_relative "../helper"
+require "rubygems/package"
 
 ##
 # A test case for Gem::Package::Tar* classes

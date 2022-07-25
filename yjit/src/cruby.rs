@@ -739,10 +739,6 @@ mod manual_defs {
     pub const RUBY_OFFSET_RSTRUCT_AS_HEAP_PTR: i32 = 24; // struct RStruct, subfield "as.heap.ptr"
     pub const RUBY_OFFSET_RSTRUCT_AS_ARY: i32 = 16; // struct RStruct, subfield "as.ary"
 
-    pub const RUBY_OFFSET_ROBJECT_AS_ARY: i32 = 16; // struct RObject, subfield "as.ary"
-    pub const RUBY_OFFSET_ROBJECT_AS_HEAP_NUMIV: i32 = 16; // struct RObject, subfield "as.heap.numiv"
-    pub const RUBY_OFFSET_ROBJECT_AS_HEAP_IVPTR: i32 = 24; // struct RObject, subfield "as.heap.ivptr"
-
     // Constants from rb_control_frame_t vm_core.h
     pub const RUBY_OFFSET_CFP_PC: i32 = 0;
     pub const RUBY_OFFSET_CFP_SP: i32 = 8;
