@@ -178,6 +178,7 @@ str_enc_fastpath(VALUE str)
     RESIZE_CAPA_TERM(str,capacity,termlen);\
 } while (0)
 #ifdef HAVE_MALLOC_USABLE_SIZE
+#include <malloc.h>
 #define REAL_CAPA(ptr, capa, termlen) malloc_usable_size(ptr) - termlen
 #else
 #define REAL_CAPA(ptr, capa, termlen) capa
