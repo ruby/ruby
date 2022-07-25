@@ -2,7 +2,7 @@
 #![allow(unused_variables)]
 #![allow(unused_imports)]
 
-use crate::asm::{uimm_num_bits, CodeBlock};
+use crate::asm::*;
 use crate::asm::x86_64::*;
 use crate::codegen::{JITState};
 use crate::cruby::*;
@@ -119,7 +119,15 @@ impl Assembler
                             (asm.load(opnds[0]), asm.load(opnds[1]))
                         },
                         (Opnd::Mem(_), Opnd::UImm(value)) => {
-                            if uimm_num_bits(value) > 32 {
+                            // 32-bit values will be sign-extended
+                            if imm_num_bits(value as i64) > 32 {
+                                (asm.load(opnds[0]), asm.load(opnds[1]))
+                            } else {
+                                (asm.load(opnds[0]), opnds[1])
+                            }
+                        },
+                        (Opnd::Mem(_), Opnd::Imm(value)) => {
+                            if imm_num_bits(value) > 32 {
                                 (asm.load(opnds[0]), asm.load(opnds[1]))
                             } else {
                                 (asm.load(opnds[0]), opnds[1])
@@ -161,7 +169,16 @@ impl Assembler
                             asm.mov(opnds[0], opnd1);
                         },
                         (Opnd::Mem(_), Opnd::UImm(value)) => {
-                            if uimm_num_bits(value) > 32 {
+                            // 32-bit values will be sign-extended
+                            if imm_num_bits(value as i64) > 32 {
+                                let opnd1 = asm.load(opnds[1]);
+                                asm.mov(opnds[0], opnd1);
+                            } else {
+                                asm.mov(opnds[0], opnds[1]);
+                            }
+                        },
+                        (Opnd::Mem(_), Opnd::Imm(value)) => {
+                            if imm_num_bits(value) > 32 {
                                 let opnd1 = asm.load(opnds[1]);
                                 asm.mov(opnds[0], opnd1);
                             } else {
