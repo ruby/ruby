@@ -163,6 +163,9 @@ static const char *mmtk_env_plan = NULL;
 static const char *mmtk_pre_arg_plan = NULL;
 static const char *mmtk_post_arg_plan = NULL;
 static const char *mmtk_chosen_plan = NULL;
+
+static bool mmtk_max_heap_parse_error = false;
+static size_t mmtk_max_heap_size = 0;
 #endif
 
 static inline struct rbimpl_size_mul_overflow_tag
@@ -15228,9 +15231,41 @@ static size_t rb_mmtk_available_system_memory(void)
     return rb_mmtk_system_physical_memory();
 }
 
+static size_t
+rb_mmtk_parse_heap_limit(char *argv, bool* had_error)
+{
+    char *endval = NULL;
+    int pow = 0;
+
+    size_t base = strtol(argv, &endval, 10);
+    if (base == 0) {
+        mmtk_max_heap_parse_error = true;
+    }
+
+    // if there were non-numbers in the string
+    // try and parse them as IEC units
+    if (*endval) {
+
+        if (strcmp(endval, "TiB") == 0)  {
+            pow = 40; // tebibytes. 2^40
+        } else if (strcmp(endval, "GiB") == 0)  {
+            pow = 30; // gibibytes. 2^30
+        } else if (strcmp(endval, "MiB") == 0)  {
+            pow = 20; // mebibytes. 2^20
+        } else if (strcmp(endval, "KiB") == 0)  {
+            pow = 10; // kibibytes. 2^10
+        }
+    }
+
+    return (base << pow);
+}
+
 size_t rb_mmtk_heap_limit(void) {
     const char *envval;
-    if ((envval = getenv("THIRD_PARTY_HEAP_LIMIT")) != 0) {
+    if (mmtk_max_heap_size > 0) {
+        return mmtk_max_heap_size;
+    }
+    else if ((envval = getenv("THIRD_PARTY_HEAP_LIMIT")) != 0) {
         return atol(envval);
     } else {
         return rb_mmtk_available_system_memory() / 100 * rb_mmtk_heap_limit_percentage;
@@ -15259,6 +15294,9 @@ void rb_mmtk_pre_process_opts(int argc, char **argv) {
         }
         else if (strncmp(argv[n], "--mmtk-plan=", strlen("--mmtk-plan=")) == 0) {
             mmtk_pre_arg_plan = argv[n] + strlen("--mmtk-plan=");
+        }
+        else if (strncmp(argv[n], "--mmtk-max-heap=", strlen("--mmtk-max-heap=")) == 0) {
+            mmtk_max_heap_size = rb_mmtk_parse_heap_limit(argv[n] + strlen("--mmtk-max-heap="), &mmtk_max_heap_parse_error);
         }
     }
 
@@ -15317,6 +15355,9 @@ void rb_mmtk_post_process_opts(const char *s) {
     if (opt_match_arg(s, l, "plan")) {
         mmtk_post_arg_plan = s + 1;
     }
+    if (opt_match_arg(s, l, "max-heap")) {
+        // no-op
+    }
     else {
         rb_raise(rb_eRuntimeError,
                  "invalid MMTk option `%s' (--help will show valid MMTk options)", s);
@@ -15327,6 +15368,10 @@ void rb_mmtk_post_process_opts_finish(bool enable) {
     mmtk_enable |= enable;
     if (strcmp(mmtk_pre_arg_plan ? mmtk_pre_arg_plan : "", mmtk_post_arg_plan ? mmtk_post_arg_plan : "") != 0) {
         rb_raise(rb_eRuntimeError, "--mmtk-plan values disagree");
+    }
+    if (mmtk_max_heap_parse_error) {
+        rb_raise(rb_eRuntimeError,
+                "--mmtk-max-heap Invalid. Valid values positive integers, with optional KiB, MiB, GiB, TiB suffixes.");
     }
     if (!mmtk_enable) {
         rb_bug("must enable MMTk");
