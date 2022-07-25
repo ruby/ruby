@@ -88,9 +88,7 @@ module Bundler
     end
 
     def __materialize__(platform)
-      @specification = if source.is_a?(Source::Gemspec) && source.gemspec.name == name
-        source.gemspec.tap {|s| s.source = source }
-      else
+      @specification = begin
         search_object = if source.is_a?(Source::Path) || !ruby_platform_materializes_to_ruby_platform?
           Dependency.new(name, version)
         else
