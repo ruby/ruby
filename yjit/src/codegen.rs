@@ -1765,13 +1765,12 @@ fn gen_putstring(
     KeepCompiling
 }
 
-/*
 // Push Qtrue or Qfalse depending on whether the given keyword was supplied by
 // the caller
 fn gen_checkkeyword(
     jit: &mut JITState,
     ctx: &mut Context,
-    cb: &mut CodeBlock,
+    asm: &mut Assembler,
     _ocb: &mut OutlinedCb,
 ) -> CodegenStatus {
     // When a keyword is unspecified past index 32, a hash will be used
@@ -1787,27 +1786,26 @@ fn gen_checkkeyword(
     let index: i64 = jit_get_arg(jit, 1).as_i64();
 
     // Load environment pointer EP
-    gen_get_ep(cb, REG0, 0);
+    let ep_opnd = gen_get_ep(asm, 0);
 
     // VALUE kw_bits = *(ep - bits);
-    let bits_opnd = mem_opnd(64, REG0, (SIZEOF_VALUE as i32) * -bits_offset);
+    let bits_opnd = Opnd::mem(64, ep_opnd, (SIZEOF_VALUE as i32) * -bits_offset);
 
     // unsigned int b = (unsigned int)FIX2ULONG(kw_bits);
     // if ((b & (0x01 << idx))) {
     //
     // We can skip the FIX2ULONG conversion by shifting the bit we test
     let bit_test: i64 = 0x01 << (index + 1);
-    test(cb, bits_opnd, imm_opnd(bit_test));
-    mov(cb, REG0, uimm_opnd(Qfalse.into()));
-    mov(cb, REG1, uimm_opnd(Qtrue.into()));
-    cmovz(cb, REG0, REG1);
+    asm.test(bits_opnd, Opnd::Imm(bit_test));
+    let ret_opnd = asm.csel_z(Qtrue.into(), Qfalse.into());
 
     let stack_ret = ctx.stack_push(Type::UnknownImm);
-    mov(cb, stack_ret, REG0);
+    asm.mov(stack_ret, ret_opnd);
 
     KeepCompiling
 }
 
+/*
 fn gen_jnz_to_target0(
     cb: &mut CodeBlock,
     target0: CodePtr,
@@ -6002,7 +6000,9 @@ fn get_gen_fn(opcode: VALUE) -> Option<InsnGenFn> {
         /*
         YARVINSN_expandarray => Some(gen_expandarray),
         YARVINSN_defined => Some(gen_defined),
+        */
         YARVINSN_checkkeyword => Some(gen_checkkeyword),
+        /*
         YARVINSN_concatstrings => Some(gen_concatstrings),
         YARVINSN_getinstancevariable => Some(gen_getinstancevariable),
         YARVINSN_setinstancevariable => Some(gen_setinstancevariable),
