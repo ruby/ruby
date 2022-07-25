@@ -414,6 +414,11 @@ setup_fake_str(struct RString *fake_str, const char *name, long len, int encidx)
     fake_str->basic.flags = T_STRING|RSTRING_NOEMBED|STR_NOFREE|STR_FAKESTR;
     /* SHARED to be allocated by the callback */
 
+    if (!name) {
+	RUBY_ASSERT_ALWAYS(len == 0);
+	name = "";
+    }
+
     ENCODING_SET_INLINED((VALUE)fake_str, encidx);
 
     RBASIC_SET_CLASS_RAW((VALUE)fake_str, rb_cString);
