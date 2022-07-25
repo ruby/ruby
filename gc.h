@@ -123,7 +123,7 @@ struct rb_thread_struct;
 void rb_gc_init_collection();
 void rb_mmtk_pre_process_opts(int argc, char **argv);
 void rb_mmtk_post_process_opts(const char *arg);
-void rb_mmtk_post_process_opts_finish(void);
+void rb_mmtk_post_process_opts_finish(bool enable);
 #endif // USE_THIRD_PARTY_HEAP
 
 RUBY_SYMBOL_EXPORT_BEGIN
