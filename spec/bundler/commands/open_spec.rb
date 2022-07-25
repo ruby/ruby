@@ -36,7 +36,7 @@ RSpec.describe "bundle open" do
 
     it "does not blow up if the gem to open does not have a Gemfile" do
       git = build_git "foo"
-      ref = git.ref_for("master", 11)
+      ref = git.ref_for("main", 11)
 
       install_gemfile <<-G
         source "#{file_uri_for(gem_repo1)}"

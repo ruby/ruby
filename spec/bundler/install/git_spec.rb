@@ -10,7 +10,7 @@ RSpec.describe "bundle install" do
         gem "foo", :git => "#{file_uri_for(lib_path("foo"))}"
       G
 
-      expect(out).to include("Using foo 1.0 from #{file_uri_for(lib_path("foo"))} (at master@#{revision_for(lib_path("foo"))[0..6]})")
+      expect(out).to include("Using foo 1.0 from #{file_uri_for(lib_path("foo"))} (at main@#{revision_for(lib_path("foo"))[0..6]})")
       expect(the_bundle).to include_gems "foo 1.0", :source => "git@#{lib_path("foo")}"
     end
 
@@ -37,16 +37,16 @@ RSpec.describe "bundle install" do
 
       install_gemfile <<-G, :verbose => true
         source "#{file_uri_for(gem_repo1)}"
-        gem "foo", :git => "#{file_uri_for(lib_path("foo"))}", :ref => "master~2"
+        gem "foo", :git => "#{file_uri_for(lib_path("foo"))}", :ref => "main~2"
       G
 
-      expect(out).to include("Using foo 1.0 from #{file_uri_for(lib_path("foo"))} (at master~2@#{rev})")
+      expect(out).to include("Using foo 1.0 from #{file_uri_for(lib_path("foo"))} (at main~2@#{rev})")
       expect(the_bundle).to include_gems "foo 1.0", :source => "git@#{lib_path("foo")}"
 
       update_git "foo", "4.0", :path => lib_path("foo"), :gemspec => true
 
       bundle :update, :all => true, :verbose => true
-      expect(out).to include("Using foo 2.0 (was 1.0) from #{file_uri_for(lib_path("foo"))} (at master~2@#{rev2})")
+      expect(out).to include("Using foo 2.0 (was 1.0) from #{file_uri_for(lib_path("foo"))} (at main~2@#{rev2})")
       expect(the_bundle).to include_gems "foo 2.0", :source => "git@#{lib_path("foo")}"
     end
 

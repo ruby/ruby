@@ -489,7 +489,7 @@ RSpec.describe "Bundler.setup" do
 
       gemfile <<-G
         source "#{file_uri_for(gem_repo1)}"
-        gem "rack", :git => "#{lib_path("rack-0.8")}", :branch => "master"
+        gem "rack", :git => "#{lib_path("rack-0.8")}", :branch => "main"
       G
 
       bundle %(config set local.rack #{lib_path("local-rack")})
@@ -507,7 +507,7 @@ RSpec.describe "Bundler.setup" do
 
       gemfile <<-G
         source "#{file_uri_for(gem_repo1)}"
-        gem "rack", :git => "#{lib_path("rack-0.8")}", :branch => "master"
+        gem "rack", :git => "#{lib_path("rack-0.8")}", :branch => "main"
       G
 
       bundle %(config set local.rack #{lib_path("local-rack")})
@@ -529,7 +529,7 @@ RSpec.describe "Bundler.setup" do
 
       gemfile <<-G
         source "#{file_uri_for(gem_repo1)}"
-        gem "rack", :git => "#{lib_path("rack-0.8")}", :branch => "master"
+        gem "rack", :git => "#{lib_path("rack-0.8")}", :branch => "main"
       G
 
       bundle %(config set local.rack #{lib_path("local-rack")})
@@ -541,7 +541,7 @@ RSpec.describe "Bundler.setup" do
       G
 
       run "require 'rack'", :raise_on_error => false
-      expect(err).to match(/is using branch master but Gemfile specifies changed/)
+      expect(err).to match(/is using branch main but Gemfile specifies changed/)
     end
 
     it "explodes on refs with different branches on runtime" do
@@ -551,17 +551,17 @@ RSpec.describe "Bundler.setup" do
 
       install_gemfile <<-G
         source "#{file_uri_for(gem_repo1)}"
-        gem "rack", :git => "#{lib_path("rack-0.8")}", :ref => "master", :branch => "master"
+        gem "rack", :git => "#{lib_path("rack-0.8")}", :ref => "main", :branch => "main"
       G
 
       gemfile <<-G
         source "#{file_uri_for(gem_repo1)}"
-        gem "rack", :git => "#{lib_path("rack-0.8")}", :ref => "master", :branch => "nonexistant"
+        gem "rack", :git => "#{lib_path("rack-0.8")}", :ref => "main", :branch => "nonexistant"
       G
 
       bundle %(config set local.rack #{lib_path("local-rack")})
       run "require 'rack'", :raise_on_error => false
-      expect(err).to match(/is using branch master but Gemfile specifies nonexistant/)
+      expect(err).to match(/is using branch main but Gemfile specifies nonexistant/)
     end
   end
 

@@ -11,6 +11,7 @@ RSpec.describe Bundler::GemHelper do
   before(:each) do
     global_config "BUNDLE_GEM__MIT" => "false", "BUNDLE_GEM__TEST" => "false", "BUNDLE_GEM__COC" => "false", "BUNDLE_GEM__LINTER" => "false",
                   "BUNDLE_GEM__CI" => "false", "BUNDLE_GEM__CHANGELOG" => "false"
+    sys_exec("git config --global init.defaultBranch main")
     bundle "gem #{app_name}"
     prepare_gemspec(app_gemspec_path)
   end
@@ -295,7 +296,7 @@ RSpec.describe Bundler::GemHelper do
             mock_confirm_message "Tagged v#{app_version}."
             mock_confirm_message "Pushed git commits and release tag."
 
-            sys_exec("git push -u origin master", :dir => app_path)
+            sys_exec("git push -u origin main", :dir => app_path)
           end
 
           it "calls rubygem_push with proper arguments" do
@@ -336,7 +337,7 @@ RSpec.describe Bundler::GemHelper do
             mock_build_message app_name, app_version
             mock_confirm_message "Pushed git commits and release tag."
 
-            sys_exec("git push -u origin master", :dir => app_path)
+            sys_exec("git push -u origin main", :dir => app_path)
             expect(subject).to receive(:rubygem_push).with(app_gem_path.to_s)
           end
 
