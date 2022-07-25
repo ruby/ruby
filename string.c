@@ -177,6 +177,11 @@ str_enc_fastpath(VALUE str)
     const int termlen = TERM_LEN(str);\
     RESIZE_CAPA_TERM(str,capacity,termlen);\
 } while (0)
+#ifdef HAVE_MALLOC_USABLE_SIZE
+#define REAL_CAPA(ptr, capa, termlen) malloc_usable_size(ptr) - termlen
+#else
+#define REAL_CAPA(ptr, capa, termlen) capa
+#endif
 #define RESIZE_CAPA_TERM(str,capacity,termlen) do {\
     if (STR_EMBED_P(str)) {\
         if (str_embed_capa(str) < capacity + termlen) {\
@@ -186,14 +191,14 @@ str_enc_fastpath(VALUE str)
             RSTRING(str)->as.heap.ptr = tmp;\
             RSTRING(str)->as.heap.len = tlen;\
             STR_SET_NOEMBED(str);\
-            RSTRING(str)->as.heap.aux.capa = (capacity);\
+            RSTRING(str)->as.heap.aux.capa = REAL_CAPA(tmp, capacity, termlen);\
         }\
     }\
     else {\
         assert(!FL_TEST((str), STR_SHARED)); \
         SIZED_REALLOC_N(RSTRING(str)->as.heap.ptr, char, \
                         (size_t)(capacity) + (termlen), STR_HEAP_SIZE(str)); \
-        RSTRING(str)->as.heap.aux.capa = (capacity);\
+        RSTRING(str)->as.heap.aux.capa = REAL_CAPA(RSTRING(str)->as.heap.ptr, capacity, termlen);\
     }\
 } while (0)
 
