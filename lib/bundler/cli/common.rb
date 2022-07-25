@@ -15,6 +15,7 @@ module Bundler
     end
 
     def self.output_fund_metadata_summary
+      return if Bundler.settings["ignore_funding_requests"]
       definition = Bundler.definition
       current_dependencies = definition.requested_dependencies
       current_specs = definition.specs
