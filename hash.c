@@ -3294,7 +3294,7 @@ rb_hash_transform_keys_bang(int argc, VALUE *argv, VALUE hash)
     if (!RHASH_TABLE_EMPTY_P(hash)) {
         long i;
         VALUE new_keys = hash_alloc(0);
-        VALUE pairs = rb_ary_tmp_new(RHASH_SIZE(hash) * 2);
+        VALUE pairs = rb_ary_hidden_new(RHASH_SIZE(hash) * 2);
         rb_hash_foreach(hash, flatten_i, pairs);
         for (i = 0; i < RARRAY_LEN(pairs); i += 2) {
             VALUE key = RARRAY_AREF(pairs, i), new_key, val;

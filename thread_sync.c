@@ -754,7 +754,7 @@ szqueue_ptr(VALUE obj)
 static VALUE
 ary_buf_new(void)
 {
-    return rb_ary_tmp_new(1);
+    return rb_ary_hidden_new(1);
 }
 
 static VALUE

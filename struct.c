@@ -115,7 +115,7 @@ struct_set_members(VALUE klass, VALUE /* frozen hidden array */ members)
 
         while (mask < members_length * AREF_HASH_UNIT) mask *= 2;
 
-        back = rb_ary_tmp_new(mask + 1);
+        back = rb_ary_hidden_new(mask + 1);
         rb_ary_store(back, mask, INT2FIX(members_length));
         mask -= 2;			  /* mask = (2**k-1)*2 */
 
@@ -810,7 +810,7 @@ rb_struct_new(VALUE klass, ...)
 
     size = rb_long2int(num_members(klass));
     if (size > numberof(tmpargs)) {
-        tmpargs[0] = rb_ary_tmp_new(size);
+        tmpargs[0] = rb_ary_hidden_new(size);
         mem = RARRAY_PTR(tmpargs[0]);
     }
     va_start(args, klass);
