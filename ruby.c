@@ -725,7 +725,7 @@ add_modules(VALUE *req_list, const char *mod)
     VALUE feature;
 
     if (!list) {
-        *req_list = list = rb_ary_tmp_new(0);
+        *req_list = list = rb_ary_hidden_new(0);
     }
     feature = rb_str_cat_cstr(rb_str_tmp_new(0), mod);
     rb_ary_push(list, feature);

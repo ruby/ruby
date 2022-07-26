@@ -94,8 +94,8 @@ module Spec
         end
 
         build_gem "platform_specific" do |s|
-          s.platform = Bundler.local_platform
-          s.write "lib/platform_specific.rb", "PLATFORM_SPECIFIC = '1.0.0 #{Bundler.local_platform}'"
+          s.platform = Gem::Platform.local
+          s.write "lib/platform_specific.rb", "PLATFORM_SPECIFIC = '1.0.0 #{Gem::Platform.local}'"
         end
 
         build_gem "platform_specific" do |s|
@@ -528,7 +528,7 @@ module Spec
 
     class GitBuilder < LibBuilder
       def _build(options)
-        default_branch = options[:default_branch] || "master"
+        default_branch = options[:default_branch] || "main"
         path = options[:path] || _default_path
         source = options[:source] || "git@#{path}"
         super(options.merge(:path => path, :source => source))

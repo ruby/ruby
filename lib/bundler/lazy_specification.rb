@@ -1,16 +1,13 @@
 # frozen_string_literal: true
 
-require_relative "force_platform"
 require_relative "match_platform"
 
 module Bundler
   class LazySpecification
-    include ForcePlatform
     include MatchPlatform
 
     attr_reader :name, :version, :dependencies, :platform
-    attr_writer :force_ruby_platform
-    attr_accessor :source, :remote
+    attr_accessor :source, :remote, :force_ruby_platform
 
     def initialize(name, version, platform, source = nil)
       @name          = name
@@ -19,21 +16,14 @@ module Bundler
       @platform      = platform || Gem::Platform::RUBY
       @source        = source
       @specification = nil
-      @force_ruby_platform = nil
     end
 
     def full_name
-      if platform == Gem::Platform::RUBY || platform.nil?
+      if platform == Gem::Platform::RUBY
         "#{@name}-#{@version}"
       else
         "#{@name}-#{@version}-#{platform}"
       end
-    end
-
-    def force_ruby_platform
-      return @force_ruby_platform unless @force_ruby_platform.nil?
-
-      default_force_ruby_platform
     end
 
     def ==(other)
@@ -71,7 +61,7 @@ module Bundler
     def to_lock
       out = String.new
 
-      if platform == Gem::Platform::RUBY || platform.nil?
+      if platform == Gem::Platform::RUBY
         out << "    #{name} (#{version})\n"
       else
         out << "    #{name} (#{version}-#{platform})\n"
@@ -85,7 +75,17 @@ module Bundler
       out
     end
 
-    def __materialize__
+    def materialize_for_installation
+      __materialize__(ruby_platform_materializes_to_ruby_platform? ? platform : Bundler.local_platform)
+    end
+
+    def materialize_for_resolution
+      return self unless Gem::Platform.match_spec?(self)
+
+      __materialize__(platform)
+    end
+
+    def __materialize__(platform)
       @specification = if source.is_a?(Source::Gemspec) && source.gemspec.name == name
         source.gemspec.tap {|s| s.source = source }
       else
@@ -94,10 +94,9 @@ module Bundler
         else
           ruby_platform_materializes_to_ruby_platform? ? self : Dependency.new(name, version)
         end
-        platform_object = ruby_platform_materializes_to_ruby_platform? ? Gem::Platform.new(platform) : Gem::Platform.local
         candidates = source.specs.search(search_object)
         same_platform_candidates = candidates.select do |spec|
-          MatchPlatform.platforms_match?(spec.platform, platform_object)
+          MatchPlatform.platforms_match?(spec.platform, platform)
         end
         installable_candidates = same_platform_candidates.select do |spec|
           spec.is_a?(StubSpecification) ||
@@ -115,7 +114,7 @@ module Bundler
     end
 
     def to_s
-      @__to_s ||= if platform == Gem::Platform::RUBY || platform.nil?
+      @__to_s ||= if platform == Gem::Platform::RUBY
         "#{name} (#{version})"
       else
         "#{name} (#{version}-#{platform})"

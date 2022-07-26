@@ -26,7 +26,7 @@
 VALUE rb_ary_last(int, const VALUE *, VALUE);
 void rb_ary_set_len(VALUE, long);
 void rb_ary_delete_same(VALUE, VALUE);
-VALUE rb_ary_tmp_new_fill(long capa);
+VALUE rb_ary_hidden_new_fill(long capa);
 VALUE rb_ary_at(VALUE, VALUE);
 size_t rb_ary_memsize(VALUE);
 VALUE rb_to_array_type(VALUE obj);

@@ -74,7 +74,7 @@ with_gvl_callback(void *ptr)
     VALUE rbargs    = rb_iv_get(self, "@args");
     VALUE ctype     = rb_iv_get(self, "@ctype");
     int argc        = RARRAY_LENINT(rbargs);
-    VALUE params    = rb_ary_tmp_new(argc);
+    VALUE params    = rb_ary_hidden_new(argc);
     VALUE ret;
     VALUE cPointer;
     int i, type;

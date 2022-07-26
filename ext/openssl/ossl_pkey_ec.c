@@ -1462,7 +1462,7 @@ static VALUE ossl_ec_point_mul(int argc, VALUE *argv, VALUE self)
                    "use #mul(bn) form instead");
 
 	num = RARRAY_LEN(arg1);
-	bns_tmp = rb_ary_tmp_new(num);
+	bns_tmp = rb_ary_hidden_new(num);
 	bignums = ALLOCV_N(const BIGNUM *, tmp_b, num);
 	for (i = 0; i < num; i++) {
 	    VALUE item = RARRAY_AREF(arg1, i);

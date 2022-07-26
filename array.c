@@ -967,7 +967,7 @@ rb_ec_ary_new_from_values(rb_execution_context_t *ec, long n, const VALUE *elts)
 }
 
 VALUE
-rb_ary_tmp_new(long capa)
+rb_ary_hidden_new(long capa)
 {
     VALUE ary = ary_new(0, capa);
     rb_ary_transient_heap_evacuate(ary, TRUE);
@@ -975,12 +975,11 @@ rb_ary_tmp_new(long capa)
 }
 
 VALUE
-rb_ary_tmp_new_fill(long capa)
+rb_ary_hidden_new_fill(long capa)
 {
-    VALUE ary = ary_new(0, capa);
+    VALUE ary = rb_ary_hidden_new(capa);
     ary_memfill(ary, 0, capa, Qnil);
     ARY_SET_LEN(ary, capa);
-    rb_ary_transient_heap_evacuate(ary, TRUE);
     return ary;
 }
 
@@ -1023,14 +1022,6 @@ rb_ary_memsize(VALUE ary)
     else {
         return 0;
     }
-}
-
-static inline void
-ary_discard(VALUE ary)
-{
-    rb_ary_free(ary);
-    RBASIC(ary)->flags |= RARRAY_EMBED_FLAG;
-    RBASIC(ary)->flags &= ~(RARRAY_EMBED_LEN_MASK | RARRAY_TRANSIENT_FLAG);
 }
 
 static VALUE
@@ -5109,7 +5100,7 @@ rb_ary_concat_multi(int argc, VALUE *argv, VALUE ary)
     }
     else if (argc > 1) {
         int i;
-        VALUE args = rb_ary_tmp_new(argc);
+        VALUE args = rb_ary_hidden_new(argc);
         for (i = 0; i < argc; i++) {
             rb_ary_concat(args, argv[i]);
         }
@@ -6937,9 +6928,6 @@ rb_ary_cycle(int argc, VALUE *argv, VALUE ary)
     return Qnil;
 }
 
-#define tmpary(n) rb_ary_tmp_new(n)
-#define tmpary_discard(a) (ary_discard(a), RBASIC_SET_CLASS_RAW(a, rb_cArray))
-
 /*
  * Build a ruby array of the corresponding values and yield it to the
  * associated block.
@@ -7634,7 +7622,7 @@ static VALUE
 rb_ary_product(int argc, VALUE *argv, VALUE ary)
 {
     int n = argc+1;    /* How many arrays we're operating on */
-    volatile VALUE t0 = tmpary(n);
+    volatile VALUE t0 = rb_ary_hidden_new(n);
     volatile VALUE t1 = Qundef;
     VALUE *arrays = RARRAY_PTR(t0); /* The arrays we're computing the product of */
     int *counters = ALLOCV_N(int, t1, n); /* The current position in each one */
@@ -7711,8 +7699,8 @@ rb_ary_product(int argc, VALUE *argv, VALUE ary)
             counters[m]++;
         }
     }
+
 done:
-    tmpary_discard(t0);
     ALLOCV_END(t1);
 
     return NIL_P(result) ? ary : result;

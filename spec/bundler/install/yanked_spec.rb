@@ -15,7 +15,7 @@ RSpec.context "when installing a bundle that includes yanked gems" do
            foo (10.0.0)
 
        PLATFORMS
-         ruby
+         #{lockfile_platforms}
 
        DEPENDENCIES
          foo (= 10.0.0)
@@ -57,7 +57,7 @@ RSpec.context "when using gem before installing" do
           rack (0.9.1)
 
       PLATFORMS
-        ruby
+        #{lockfile_platforms}
 
       DEPENDENCIES
         rack (= 0.9.1)
@@ -86,7 +86,7 @@ RSpec.context "when using gem before installing" do
           rack_middleware (1.0)
 
       PLATFORMS
-        ruby
+        #{lockfile_platforms}
 
       DEPENDENCIES
         rack (= 0.9.1)

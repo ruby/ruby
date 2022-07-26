@@ -1487,7 +1487,7 @@ enum_sort_by(VALUE obj)
         ary = rb_ary_new();
     }
     RBASIC_CLEAR_CLASS(ary);
-    buf = rb_ary_tmp_new(SORT_BY_BUFSIZE*2);
+    buf = rb_ary_hidden_new(SORT_BY_BUFSIZE*2);
     rb_ary_store(buf, SORT_BY_BUFSIZE*2-1, Qnil);
     memo = MEMO_NEW(0, 0, 0);
     data = (struct sort_by_data *)&memo->v1;
@@ -1863,7 +1863,7 @@ rb_nmin_run(VALUE obj, VALUE num, int by, int rev, int ary)
         rb_raise(rb_eArgError, "too big size");
     data.bufmax = data.n * 4;
     data.curlen = 0;
-    data.buf = rb_ary_tmp_new(data.bufmax * (by ? 2 : 1));
+    data.buf = rb_ary_hidden_new(data.bufmax * (by ? 2 : 1));
     data.limit = Qundef;
     data.cmpfunc = by ? nmin_cmp :
                    rb_block_given_p() ? nmin_block_cmp :

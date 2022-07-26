@@ -843,7 +843,7 @@ thread_create_core(VALUE thval, struct thread_create_params *params)
     th->priority = current_th->priority;
     th->thgroup = current_th->thgroup;
 
-    th->pending_interrupt_queue = rb_ary_tmp_new(0);
+    th->pending_interrupt_queue = rb_ary_hidden_new(0);
     th->pending_interrupt_queue_checked = 0;
     th->pending_interrupt_mask_stack = rb_ary_dup(current_th->pending_interrupt_mask_stack);
     RBASIC_CLEAR_CLASS(th->pending_interrupt_mask_stack);
@@ -5352,9 +5352,9 @@ Init_Thread(void)
             struct rb_thread_sched *sched = TH_SCHED(th);
             thread_sched_to_running(sched, th);
 
-            th->pending_interrupt_queue = rb_ary_tmp_new(0);
+            th->pending_interrupt_queue = rb_ary_hidden_new(0);
             th->pending_interrupt_queue_checked = 0;
-            th->pending_interrupt_mask_stack = rb_ary_tmp_new(0);
+            th->pending_interrupt_mask_stack = rb_ary_hidden_new(0);
         }
     }
 
@@ -5651,17 +5651,17 @@ rb_reset_coverages(void)
 VALUE
 rb_default_coverage(int n)
 {
-    VALUE coverage = rb_ary_tmp_new_fill(3);
+    VALUE coverage = rb_ary_hidden_new_fill(3);
     VALUE lines = Qfalse, branches = Qfalse;
     int mode = GET_VM()->coverage_mode;
 
     if (mode & COVERAGE_TARGET_LINES) {
-        lines = n > 0 ? rb_ary_tmp_new_fill(n) : rb_ary_tmp_new(0);
+        lines = n > 0 ? rb_ary_hidden_new_fill(n) : rb_ary_hidden_new(0);
     }
     RARRAY_ASET(coverage, COVERAGE_INDEX_LINES, lines);
 
     if (mode & COVERAGE_TARGET_BRANCHES) {
-        branches = rb_ary_tmp_new_fill(2);
+        branches = rb_ary_hidden_new_fill(2);
         /* internal data structures for branch coverage:
          *
          * { branch base node =>
@@ -5687,7 +5687,7 @@ rb_default_coverage(int n)
         rb_obj_hide(structure);
         RARRAY_ASET(branches, 0, structure);
         /* branch execution counters */
-        RARRAY_ASET(branches, 1, rb_ary_tmp_new(0));
+        RARRAY_ASET(branches, 1, rb_ary_hidden_new(0));
     }
     RARRAY_ASET(coverage, COVERAGE_INDEX_BRANCHES, branches);
 
