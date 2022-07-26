@@ -1798,7 +1798,7 @@ cd -
     return if /mswin|mingw/ =~ RUBY_PLATFORM
 
     mkdir 'tmpdatadir'
-    chmod 0o700, 'tmpdatadir'
+    chmod 0o000, 'tmpdatadir'
     rm_rf 'tmpdatadir'
 
     assert_file_not_exist 'tmpdatadir'
