@@ -2238,11 +2238,11 @@ heap_page_resurrect(rb_objspace_t *objspace, rb_size_pool_t *size_pool)
 
     ccan_list_for_each_safe(&SIZE_POOL_TOMB_HEAP(size_pool)->pages, page, next, page_node) {
         asan_unlock_freelist(page);
-	if (page->freelist != NULL) {
-	    heap_unlink_page(objspace, &size_pool->tomb_heap, page);
+        if (page->freelist != NULL) {
+            heap_unlink_page(objspace, &size_pool->tomb_heap, page);
             asan_lock_freelist(page);
-	    return page;
-	}
+            return page;
+        }
     }
 
     return NULL;
