@@ -94,6 +94,8 @@ void rb_warning_category_update(unsigned int mask, unsigned int bits);
     SEP \
     X(did_you_mean) \
     SEP \
+    X(syntax_suggest) \
+    SEP \
     X(rubyopt) \
     SEP \
     X(frozen_string_literal) \
@@ -307,6 +309,7 @@ usage(const char *name, int help, int highlight, int columns)
         M("gems",    "",        "rubygems (only for debugging, default: "DEFAULT_RUBYGEMS_ENABLED")"),
         M("error_highlight", "", "error_highlight (default: "DEFAULT_RUBYGEMS_ENABLED")"),
         M("did_you_mean", "",   "did_you_mean (default: "DEFAULT_RUBYGEMS_ENABLED")"),
+        M("syntax_suggest", "", "syntax_suggest (default: "DEFAULT_RUBYGEMS_ENABLED")"),
         M("rubyopt", "",        "RUBYOPT environment variable (default: enabled)"),
         M("frozen-string-literal", "", "freeze all string literals (default: disabled)"),
 #if USE_MJIT
@@ -1552,6 +1555,9 @@ ruby_opt_init(ruby_cmdline_options_t *opt)
         }
         if (opt->features.set & FEATURE_BIT(did_you_mean)) {
             rb_define_module("DidYouMean");
+        }
+        if (opt->features.set & FEATURE_BIT(syntax_suggest)) {
+            rb_define_module("SyntaxSuggest");
         }
     }
 
