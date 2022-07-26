@@ -910,12 +910,40 @@ mod tests {
 
     #[test]
     fn test_b() {
-        check_bytes("00040014", |cb| b(cb, A64Opnd::new_imm(1024)));
+        check_bytes("ffffff15", |cb| b(cb, A64Opnd::new_imm((1 << 25) - 1)));
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_b_too_big() {
+        // There are 26 bits available
+        check_bytes("", |cb| b(cb, A64Opnd::new_imm(1 << 25)));
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_b_too_small() {
+        // There are 26 bits available
+        check_bytes("", |cb| b(cb, A64Opnd::new_imm(-(1 << 25) - 1)));
     }
 
     #[test]
     fn test_bl() {
-        check_bytes("00040094", |cb| bl(cb, A64Opnd::new_imm(1024)));
+        check_bytes("00000096", |cb| bl(cb, A64Opnd::new_imm(-(1 << 25))));
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_bl_too_big() {
+        // There are 26 bits available
+        check_bytes("", |cb| bl(cb, A64Opnd::new_imm(1 << 25)));
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_bl_too_small() {
+        // There are 26 bits available
+        check_bytes("", |cb| bl(cb, A64Opnd::new_imm(-(1 << 25) - 1)));
     }
 
     #[test]

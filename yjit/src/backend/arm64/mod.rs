@@ -683,20 +683,17 @@ impl Assembler
                     }
                 },
                 Op::CCall => {
-                    // The offset between the two instructions in bytes. Note
-                    // that when we encode this into a bl instruction, we'll
-                    // divide by 4 because it accepts the number of instructions
-                    // to jump over.
-                    let src_addr = cb.get_write_ptr().into_i64() + 4;
+                    // The offset to the call target in bytes
+                    let src_addr = cb.get_write_ptr().into_i64();
                     let dst_addr = insn.target.unwrap().unwrap_fun_ptr() as i64;
                     let offset = dst_addr - src_addr;
+                    // The offset in instruction count for BL's immediate
+                    let offset = offset / 4;
 
-                    // If the offset is short enough, then we'll use the branch
-                    // link instruction. Otherwise, we'll move the destination
-                    // and return address into appropriate registers and use the
-                    // branch register instruction.
+                    // Use BL if the offset is short enough to encode as an immediate.
+                    // Otherwise, use BLR with a register.
                     if b_offset_fits_bits(offset) {
-                        bl(cb, A64Opnd::new_imm(offset / 4));
+                        bl(cb, A64Opnd::new_imm(offset));
                     } else {
                         emit_load_value(cb, Self::SCRATCH0, dst_addr as u64);
                         blr(cb, Self::SCRATCH0);
@@ -717,7 +714,7 @@ impl Assembler
                 Op::Jmp => {
                     match insn.target.unwrap() {
                         Target::CodePtr(dst_ptr) => {
-                            let src_addr = cb.get_write_ptr().into_i64() + 4;
+                            let src_addr = cb.get_write_ptr().into_i64();
                             let dst_addr = dst_ptr.into_i64();
 
                             // The offset between the two instructions in bytes.
@@ -725,13 +722,14 @@ impl Assembler
                             // instruction, we'll divide by 4 because it accepts
                             // the number of instructions to jump over.
                             let offset = dst_addr - src_addr;
+                            let offset = offset / 4;
 
                             // If the offset is short enough, then we'll use the
                             // branch instruction. Otherwise, we'll move the
                             // destination into a register and use the branch
                             // register instruction.
                             if b_offset_fits_bits(offset) {
-                                b(cb, A64Opnd::new_imm(offset / 4));
+                                b(cb, A64Opnd::new_imm(offset));
                             } else {
                                 emit_load_value(cb, Self::SCRATCH0, dst_addr as u64);
                                 br(cb, Self::SCRATCH0);
