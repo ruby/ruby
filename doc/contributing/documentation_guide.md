@@ -38,21 +38,38 @@ Use your judgment about what the user needs to know.
 ## General Guidelines
 
 - Keep in mind that the reader may not be fluent in \English.
-- Write short declarative or imperative sentences.
-- Group sentences into (ideally short) paragraphs,
-  each covering a single topic.
-- Organize material with [headers](rdoc-ref:RDoc::Markup@Headers).
-- Refer to authoritative and relevant sources using
-  [links](rdoc-ref:RDoc::Markup@Links).
-- Use simple verb tenses: simple present, simple past, simple future.
-- Use simple sentence structure, not compound or complex structure.
-- Avoid:
-    - Excessive comma-separated phrases;
-      consider a [list](rdoc-ref:RDoc::Markup@Simple+Lists).
+
+- Prefer:
+
+    - Short declarative and imperative sentences.
+    - Short paragraphs, each covering a single topic.
+    - Simple verb tenses: simple present, simple past, simple future.
+    - Simple sentence structure, not compound or complex structure.
+    - Beginning each sentence on a new line
+      (helps with diffing later revisions).
+
+- Organize material with:
+
+    - [Headers](rdoc-ref:RDoc::Markup@Headers).
+    - [Simple lists](rdoc-ref:RDoc::Markup@Simple+Lists).
+    - [Labeled lists](rdoc-ref:RDoc::Markup@Labeled+Lists).
+
+- Consider [linking to](rdoc-ref:RDoc::Markup@Links):
+
+    - Headers and sections in the same document.
+    - Headers and sections in other Ruby documentation.
+    - Authoritative and relevant external sources.
+
+- \Avoid:
+
+    - Excessive comma-separated phrases; consider lists, as above.
     - Idioms and culture-specific references.
     - Overuse of headers.
     - Using US-ASCII-incompatible characters in C source files;
       see [Characters](#label-Characters) below.
+    - Lines longer than 80 characters.
+    - Splitting a clause or phrase with a newline
+      (helps with diffing later revisions).
 
 ### Characters
 
