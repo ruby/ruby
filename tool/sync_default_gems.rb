@@ -88,7 +88,7 @@ def sync_default_gems(gem)
   repo = REPOSITORIES[gem.to_sym]
   puts "Sync #{repo}"
 
-  upstream = File.join(__dir__, "../..", repo)
+  upstream = File.join("..", "..", repo)
 
   case gem
   when "rubygems"
