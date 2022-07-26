@@ -10784,16 +10784,16 @@ rb_str_b(VALUE str)
     // If we know the receiver's code range then we know the result's code range.
     int cr = ENC_CODERANGE(str);
     switch (cr) {
-        case ENC_CODERANGE_7BIT:
-            ENC_CODERANGE_SET(str2, ENC_CODERANGE_7BIT);
-            break;
-        case ENC_CODERANGE_BROKEN:
-        case ENC_CODERANGE_VALID:
-            ENC_CODERANGE_SET(str2, ENC_CODERANGE_VALID);
-            break;
-        default:
-            ENC_CODERANGE_CLEAR(str2);
-            break;
+      case ENC_CODERANGE_7BIT:
+        ENC_CODERANGE_SET(str2, ENC_CODERANGE_7BIT);
+        break;
+      case ENC_CODERANGE_BROKEN:
+      case ENC_CODERANGE_VALID:
+        ENC_CODERANGE_SET(str2, ENC_CODERANGE_VALID);
+        break;
+      default:
+        ENC_CODERANGE_CLEAR(str2);
+        break;
     }
 
     return str2;
