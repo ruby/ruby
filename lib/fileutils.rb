@@ -2328,13 +2328,21 @@ module FileUtils
 
     def postorder_traverse
       if directory?
-        entries().each do |ent|
+        begin
+          children = entries()
+        rescue Errno::EACCES
+          # Failed to get the list of children.
+          # Assuming there is no children, try to process the parent directory.
+          yield self
+          return
+        end
+
+        children.each do |ent|
           ent.postorder_traverse do |e|
             yield e
           end
         end
       end
-    ensure
       yield self
     end
 
