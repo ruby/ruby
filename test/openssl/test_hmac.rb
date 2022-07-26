@@ -21,7 +21,6 @@ class OpenSSL::TestHMAC < OpenSSL::TestCase
   end
 
   def test_dup
-    pend "HMAC#initialize_copy is currently broken on OpenSSL 3.0.0" if openssl?(3, 0, 0)
     h1 = OpenSSL::HMAC.new("KEY", "MD5")
     h1.update("DATA")
     h = h1.dup
