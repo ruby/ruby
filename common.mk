@@ -1062,6 +1062,7 @@ BUILTIN_RB_SRCS = \
 		$(srcdir)/kernel.rb \
 		$(srcdir)/ractor.rb \
 		$(srcdir)/timev.rb \
+		$(srcdir)/thread_sync.rb \
 		$(srcdir)/nilclass.rb \
 		$(srcdir)/prelude.rb \
 		$(srcdir)/gem_prelude.rb \
@@ -9447,6 +9448,7 @@ miniinit.$(OBJEXT): {$(VPATH)}st.h
 miniinit.$(OBJEXT): {$(VPATH)}subst.h
 miniinit.$(OBJEXT): {$(VPATH)}thread_$(THREAD_MODEL).h
 miniinit.$(OBJEXT): {$(VPATH)}thread_native.h
+miniinit.$(OBJEXT): {$(VPATH)}thread_sync.rb
 miniinit.$(OBJEXT): {$(VPATH)}timev.rb
 miniinit.$(OBJEXT): {$(VPATH)}trace_point.rb
 miniinit.$(OBJEXT): {$(VPATH)}vm_core.h
@@ -15230,6 +15232,7 @@ thread.$(OBJEXT): {$(VPATH)}backward/2/limits.h
 thread.$(OBJEXT): {$(VPATH)}backward/2/long_long.h
 thread.$(OBJEXT): {$(VPATH)}backward/2/stdalign.h
 thread.$(OBJEXT): {$(VPATH)}backward/2/stdarg.h
+thread.$(OBJEXT): {$(VPATH)}builtin.h
 thread.$(OBJEXT): {$(VPATH)}config.h
 thread.$(OBJEXT): {$(VPATH)}debug.h
 thread.$(OBJEXT): {$(VPATH)}debug_counter.h
@@ -15412,6 +15415,8 @@ thread.$(OBJEXT): {$(VPATH)}thread_$(THREAD_MODEL).c
 thread.$(OBJEXT): {$(VPATH)}thread_$(THREAD_MODEL).h
 thread.$(OBJEXT): {$(VPATH)}thread_native.h
 thread.$(OBJEXT): {$(VPATH)}thread_sync.c
+thread.$(OBJEXT): {$(VPATH)}thread_sync.rb
+thread.$(OBJEXT): {$(VPATH)}thread_sync.rbinc
 thread.$(OBJEXT): {$(VPATH)}timev.h
 thread.$(OBJEXT): {$(VPATH)}vm_core.h
 thread.$(OBJEXT): {$(VPATH)}vm_debug.h

@@ -111,6 +111,23 @@ class TestThreadQueue < Test::Unit::TestCase
     assert_equal(0, q.num_waiting)
   end
 
+  def test_queue_pop_timeout
+    q = Thread::Queue.new
+    q << 1
+    assert_equal 1, q.pop(timeout: 1)
+
+    t1 = Thread.new { q.pop(timeout: 1) }
+    assert_equal t1, t1.join(2)
+    assert_nil t1.value
+
+    t2 = Thread.new { q.pop(timeout: 0.1) }
+    assert_equal t2, t2.join(0.2)
+    assert_nil t2.value
+  ensure
+    t1&.kill
+    t2&.kill
+  end
+
   def test_queue_pop_non_block
     q = Thread::Queue.new
     assert_raise_with_message(ThreadError, /empty/) do
@@ -124,6 +141,24 @@ class TestThreadQueue < Test::Unit::TestCase
     sleep 0.01 until t1.stop?
     t1.kill.join
     assert_equal(0, q.num_waiting)
+  end
+
+  def test_sized_queue_pop_timeout
+    q = Thread::SizedQueue.new(1)
+
+    q << 1
+    assert_equal 1, q.pop(timeout: 1)
+
+    t1 = Thread.new { q.pop(timeout: 1) }
+    assert_equal t1, t1.join(2)
+    assert_nil t1.value
+
+    t2 = Thread.new { q.pop(timeout: 0.1) }
+    assert_equal t2, t2.join(0.2)
+    assert_nil t2.value
+  ensure
+    t1&.kill
+    t2&.kill
   end
 
   def test_sized_queue_pop_non_block
