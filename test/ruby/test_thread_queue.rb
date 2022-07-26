@@ -168,6 +168,24 @@ class TestThreadQueue < Test::Unit::TestCase
     end
   end
 
+  def test_sized_queue_push_timeout
+    q = Thread::SizedQueue.new(1)
+
+    q << 1
+    assert_equal 1, q.size
+
+    t1 = Thread.new { q.push(2, timeout: 1) }
+    assert_equal t1, t1.join(2)
+    assert_nil t1.value
+
+    t2 = Thread.new { q.push(2, timeout: 0.1) }
+    assert_equal t2, t2.join(0.2)
+    assert_nil t2.value
+  ensure
+    t1&.kill
+    t2&.kill
+  end
+
   def test_sized_queue_push_interrupt
     q = Thread::SizedQueue.new(1)
     q.push(1)
