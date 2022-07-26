@@ -132,7 +132,7 @@ rb_thread_local_storage(VALUE thread)
 
 static int sleep_hrtime(rb_thread_t *, rb_hrtime_t, unsigned int fl);
 static void sleep_forever(rb_thread_t *th, unsigned int fl);
-static void rb_thread_sleep_deadly_allow_spurious_wakeup(VALUE blocker);
+static void rb_thread_sleep_deadly_allow_spurious_wakeup(VALUE blocker, VALUE timeout, rb_hrtime_t end);
 static int rb_threadptr_dead(rb_thread_t *th);
 static void rb_check_deadlock(rb_ractor_t *r);
 static int rb_threadptr_pending_interrupt_empty_p(const rb_thread_t *th);
@@ -1328,6 +1328,28 @@ sleep_hrtime(rb_thread_t *th, rb_hrtime_t rel, unsigned int fl)
     return woke;
 }
 
+static int
+sleep_hrtime_until(rb_thread_t *th, rb_hrtime_t end, unsigned int fl)
+{
+    enum rb_thread_status prev_status = th->status;
+    int woke;
+    rb_hrtime_t rel = rb_hrtime_sub(end, rb_hrtime_now());
+
+    th->status = THREAD_STOPPED;
+    RUBY_VM_CHECK_INTS_BLOCKING(th->ec);
+    while (th->status == THREAD_STOPPED) {
+        native_sleep(th, &rel);
+        woke = vm_check_ints_blocking(th->ec);
+        if (woke && !(fl & SLEEP_SPURIOUS_CHECK))
+            break;
+        if (hrtime_update_expire(&rel, end))
+            break;
+        woke = 1;
+    }
+    th->status = prev_status;
+    return woke;
+}
+
 void
 rb_thread_sleep_forever(void)
 {
@@ -1355,15 +1377,20 @@ rb_thread_sleep_interruptible(void)
 }
 
 static void
-rb_thread_sleep_deadly_allow_spurious_wakeup(VALUE blocker)
+rb_thread_sleep_deadly_allow_spurious_wakeup(VALUE blocker, VALUE timeout, rb_hrtime_t end)
 {
     VALUE scheduler = rb_fiber_scheduler_current();
     if (scheduler != Qnil) {
-        rb_fiber_scheduler_block(scheduler, blocker, Qnil);
+        rb_fiber_scheduler_block(scheduler, blocker, timeout);
     }
     else {
         RUBY_DEBUG_LOG("%s", "");
-        sleep_forever(GET_THREAD(), SLEEP_DEADLOCKABLE);
+        if (end) {
+            sleep_hrtime_until(GET_THREAD(), end, SLEEP_SPURIOUS_CHECK);
+        }
+        else {
+            sleep_forever(GET_THREAD(), SLEEP_DEADLOCKABLE);
+        }
     }
 }
 

@@ -98,6 +98,7 @@ rb_call_builtin_inits(void)
     BUILTIN(array);
     BUILTIN(kernel);
     BUILTIN(timev);
+    BUILTIN(thread_sync);
     BUILTIN(yjit);
     BUILTIN(nilclass);
     BUILTIN(marshal);
