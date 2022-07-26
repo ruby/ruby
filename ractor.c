@@ -545,7 +545,7 @@ ractor_sleep_interrupt(void *ptr)
     RACTOR_UNLOCK(r);
 }
 
-#if USE_RUBY_DEBUG_LOG
+#if 1 // for USE_RUBY_DEBUG_LOG
 static const char *
 wait_status_str(enum rb_ractor_wait_status wait_status)
 {

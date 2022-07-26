@@ -100,23 +100,22 @@ bool ruby_debug_log_filter(const char *func_name, const char *file_name);
 #define _RUBY_DEBUG_LOG(...) ruby_debug_log(__FILE__, __LINE__, RUBY_FUNCTION_NAME_STRING, "" __VA_ARGS__)
 
 #if USE_RUBY_DEBUG_LOG
-# define RUBY_DEBUG_LOG_ENABLED(func_name, file_name)                     \
-    (ruby_debug_log_mode && ruby_debug_log_filter(func_name, file_name))
 
-#define RUBY_DEBUG_LOG(...) do { \
-    if (RUBY_DEBUG_LOG_ENABLED(RUBY_FUNCTION_NAME_STRING, __FILE__)) \
-        ruby_debug_log(__FILE__, __LINE__, RUBY_FUNCTION_NAME_STRING, "" __VA_ARGS__); \
-} while (0)
+# define RUBY_DEBUG_LOG_0(file_name, line, func_name, /*format,*/ ...) \
+    ((ruby_debug_log_mode && ruby_debug_log_filter(func_name, file_name)) ? \
+     ruby_debug_log(file_name, line, func_name, __VA_ARGS__) : (void)0)
 
-#define RUBY_DEBUG_LOG2(file, line, ...) do { \
-    if (RUBY_DEBUG_LOG_ENABLED(RUBY_FUNCTION_NAME_STRING, file)) \
-        ruby_debug_log(file, line, RUBY_FUNCTION_NAME_STRING, "" __VA_ARGS__); \
-} while (0)
+#else
 
-#else // USE_RUBY_DEBUG_LOG
-// do nothing
-#define RUBY_DEBUG_LOG(...)
-#define RUBY_DEBUG_LOG2(file, line, ...)
-#endif // USE_RUBY_DEBUG_LOG
+# define RUBY_DEBUG_LOG_0(file_name, line, func_name, /*format,*/ ...) \
+    (0 ? ruby_debug_log(NULL, 0, func_name, __VA_ARGS__) : (void)0)
+
+#endif
+
+#define RUBY_DEBUG_LOG(...) \
+     RUBY_DEBUG_LOG_0(__FILE__, __LINE__, RUBY_FUNCTION_NAME_STRING, "" __VA_ARGS__)
+
+#define RUBY_DEBUG_LOG2(file, line, ...) \
+     RUBY_DEBUG_LOG_0(file, line, RUBY_FUNCTION_NAME_STRING, "" __VA_ARGS__)
 
 #endif /* RUBY_DEBUG_H */
