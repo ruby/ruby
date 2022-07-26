@@ -634,6 +634,7 @@ RSpec.describe "Bundler.setup" do
 
       ruby "require '#{system_gem_path("gems/bundler-9.99.9.beta1/lib/bundler.rb")}'; Bundler.setup", :env => { "DEBUG" => "1" }
       expect(out).to include("Found no changes, using resolution from the lockfile")
+      expect(out).not_to include("lockfile does not have all gems needed for the current platform")
       expect(err).to be_empty
     end
 
