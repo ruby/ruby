@@ -3528,9 +3528,6 @@ obj_free(rb_objspace_t *objspace, VALUE obj)
                 if (RHASH_TRANSIENT_P(obj)) {
                     RB_DEBUG_COUNTER_INC(obj_hash_transient);
                 }
-                else {
-                    ruby_xfree(tab);
-                }
             }
         }
         else {

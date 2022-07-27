@@ -755,7 +755,7 @@ ar_free_and_clear_table(VALUE hash)
             RHASH_UNSET_TRANSIENT_FLAG(hash);
         }
         else {
-            ruby_xfree(RHASH_AR_TABLE(hash));
+            memset(tab, 0, sizeof(ar_table));
         }
         RHASH_AR_TABLE_CLEAR(hash);
     }
@@ -1564,6 +1564,35 @@ rb_hash_new(void)
     return hash_alloc(rb_cHash);
 }
 
+static size_t
+hash_embedded_size(unsigned long capa)
+{
+    if (0 < capa && capa <= RHASH_AR_TABLE_MAX_SIZE) {
+        // TODO: This isn't correct as when we're using a ar_table, we don't
+        // need the pointer anymore. but we'll fix it later
+        return sizeof(struct RHash) + sizeof(ar_table);
+    } 
+    else {
+        return sizeof(struct RHash);
+    }
+}
+
+VALUE
+rb_rvargc_hash_new(unsigned long capa)
+{
+    size_t size = hash_embedded_size(capa);
+
+    const VALUE wb = (RGENGC_WB_PROTECTED_HASH ? FL_WB_PROTECTED : 0);
+    RVARGC_NEWOBJ_OF(hash, struct RHash, rb_cHash, T_HASH | wb, size);
+
+    RHASH_SET_IFNONE((VALUE)hash, Qnil);
+
+    hash_ar_table_set((VALUE)hash, (ar_table *)((uintptr_t)hash + sizeof(struct RHash)));
+    memset(RHASH_AR_TABLE((VALUE)hash), 0, sizeof(ar_table));
+
+    return (VALUE)hash;
+}
+
 static VALUE
 copy_compare_by_id(VALUE hash, VALUE basis)
 {
@@ -1581,7 +1610,7 @@ rb_hash_new_with_size(st_index_t size)
         /* do nothing */
     }
     else if (size <= RHASH_AR_TABLE_MAX_SIZE) {
-        ar_alloc_table(ret);
+        ret = rb_rvargc_hash_new(size);
     }
     else {
         RHASH_ST_TABLE_SET(ret, st_init_table_with_size(&objhash, size));
