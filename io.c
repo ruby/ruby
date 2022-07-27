@@ -14094,9 +14094,9 @@ argf_to_s(VALUE argf)
  *  call-seq:
  *     ARGF.inplace_mode  -> String
  *
- *  Returns the file extension appended to the names of modified files under
- *  in-place edit mode. This value can be set using +ARGF.inplace_mode=+ or
- *  passing the +-i+ switch to the Ruby binary.
+ *  Returns the file extension appended to the names of backup copies of
+ *  modified files under in-place edit mode. This value can be set using
+ *  +ARGF.inplace_mode=+ or passing the +-i+ switch to the Ruby binary.
  */
 static VALUE
 argf_inplace_mode_get(VALUE argf)
@@ -14117,8 +14117,8 @@ opt_i_get(ID id, VALUE *var)
  *     ARGF.inplace_mode = ext  -> ARGF
  *
  *  Sets the filename extension for in-place editing mode to the given String.
- *  Each file being edited has this value appended to its filename. The
- *  modified file is saved under this new name.
+ *  The backup copy of each file being edited has this value appended to its
+ *  filename.
  *
  *  For example:
  *
@@ -14129,8 +14129,9 @@ opt_i_get(ID id, VALUE *var)
  *        print line.sub("foo","bar")
  *      end
  *
- *  Each line of _file.txt_ has the first occurrence of "foo" replaced with
- *  "bar", then the new line is written out to _file.txt.bak_.
+ *  First, _file.txt.bak_ is created as a backup copy of _file.txt_.
+ *  Then, each line of _file.txt_ has the first occurrence of "foo" replaced with
+ *  "bar".
  */
 static VALUE
 argf_inplace_mode_set(VALUE argf, VALUE val)
