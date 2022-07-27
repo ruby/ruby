@@ -15342,7 +15342,7 @@ void rb_mmtk_post_process_opts(const char *s) {
     if (opt_match_arg(s, l, "plan")) {
         mmtk_post_arg_plan = s + 1;
     }
-    if (opt_match_arg(s, l, "max-heap")) {
+    else if (opt_match_arg(s, l, "max-heap")) {
         // no-op
     }
     else {
