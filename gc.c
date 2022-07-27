@@ -8964,25 +8964,29 @@ rb_gc_writebarrier_unprotect(VALUE obj)
         gc_report(2, objspace, "rb_gc_writebarrier_unprotect: %s %s\n", obj_info(obj),
                   rgengc_remembered(objspace, obj) ? " (already remembered)" : "");
 
-        if (RVALUE_OLD_P(obj)) {
-            gc_report(1, objspace, "rb_gc_writebarrier_unprotect: %s\n", obj_info(obj));
-            RVALUE_DEMOTE(objspace, obj);
-            gc_mark_set(objspace, obj);
-            gc_remember_unprotected(objspace, obj);
+        RB_VM_LOCK_ENTER_NO_BARRIER();
+        {
+            if (RVALUE_OLD_P(obj)) {
+                gc_report(1, objspace, "rb_gc_writebarrier_unprotect: %s\n", obj_info(obj));
+                RVALUE_DEMOTE(objspace, obj);
+                gc_mark_set(objspace, obj);
+                gc_remember_unprotected(objspace, obj);
 
 #if RGENGC_PROFILE
-            objspace->profile.total_shade_operation_count++;
+                objspace->profile.total_shade_operation_count++;
 #if RGENGC_PROFILE >= 2
-            objspace->profile.shade_operation_count_types[BUILTIN_TYPE(obj)]++;
+                objspace->profile.shade_operation_count_types[BUILTIN_TYPE(obj)]++;
 #endif /* RGENGC_PROFILE >= 2 */
 #endif /* RGENGC_PROFILE */
-        }
-        else {
-            RVALUE_AGE_RESET(obj);
-        }
+            }
+            else {
+                RVALUE_AGE_RESET(obj);
+            }
 
-        RB_DEBUG_COUNTER_INC(obj_wb_unprotect);
-        MARK_IN_BITMAP(GET_HEAP_WB_UNPROTECTED_BITS(obj), obj);
+            RB_DEBUG_COUNTER_INC(obj_wb_unprotect);
+            MARK_IN_BITMAP(GET_HEAP_WB_UNPROTECTED_BITS(obj), obj);
+        }
+        RB_VM_LOCK_LEAVE_NO_BARRIER();
     }
 }
 
