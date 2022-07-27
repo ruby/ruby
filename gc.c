@@ -12368,6 +12368,7 @@ objspace_xfree(rb_objspace_t *objspace, void *ptr, size_t old_size)
 
     objspace_malloc_increase(objspace, ptr, 0, old_size, MEMOP_TYPE_FREE) {
         free(ptr);
+        ptr = NULL;
         RB_DEBUG_COUNTER_INC(heap_xfree);
     }
 }
