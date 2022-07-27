@@ -171,7 +171,7 @@ static inline void blocking_region_end(rb_thread_t *th, struct rb_blocking_regio
 #define THREAD_BLOCKING_BEGIN(th) do { \
   struct rb_thread_sched * const sched = TH_SCHED(th); \
   RB_GC_SAVE_MACHINE_CONTEXT(th); \
-  thread_sched_to_waiting(sched);
+  thread_sched_to_waiting(sched, th);
 
 #define THREAD_BLOCKING_END(th) \
   thread_sched_to_running(sched, th); \
@@ -772,12 +772,12 @@ thread_start_func_2(rb_thread_t *th, VALUE *stack_start)
         // after rb_ractor_living_threads_remove()
         // GC will happen anytime and this ractor can be collected (and destroy GVL).
         // So gvl_release() should be before it.
-        thread_sched_to_dead(TH_SCHED(th));
+        thread_sched_to_dead(TH_SCHED(th), th);
         rb_ractor_living_threads_remove(th->ractor, th);
     }
     else {
         rb_ractor_living_threads_remove(th->ractor, th);
-        thread_sched_to_dead(TH_SCHED(th));
+        thread_sched_to_dead(TH_SCHED(th), th);
     }
 
     return 0;
@@ -1457,7 +1457,7 @@ blocking_region_begin(rb_thread_t *th, struct rb_blocking_region_buffer *region,
         RUBY_DEBUG_LOG("%s", "");
 
         RB_GC_SAVE_MACHINE_CONTEXT(th);
-        thread_sched_to_waiting(TH_SCHED(th));
+        thread_sched_to_waiting(TH_SCHED(th), th);
         return TRUE;
     }
     else {

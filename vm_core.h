@@ -1009,7 +1009,7 @@ typedef struct rb_thread_struct {
     rb_execution_context_t *ec;
 
     struct rb_thread_sched_item sched;
-    rb_atomic_t serial; // only for RUBY_DEBUG_LOG()
+    rb_atomic_t serial;
 
     VALUE last_status; /* $? */
 
