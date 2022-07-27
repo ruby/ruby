@@ -1500,28 +1500,28 @@ VALUE
 rb_io_buffer_get_value(const void* base, size_t size, ID type, size_t offset)
 {
 #define READ_TYPE(name) if (type == RB_IO_BUFFER_TYPE_##name) return io_buffer_read_##name(base, size, &offset);
-    READ_TYPE(U8)
-    READ_TYPE(S8)
+    READ_TYPE(U8);
+    READ_TYPE(S8);
 
-    READ_TYPE(u16)
-    READ_TYPE(U16)
-    READ_TYPE(s16)
-    READ_TYPE(S16)
+    READ_TYPE(u16);
+    READ_TYPE(U16);
+    READ_TYPE(s16);
+    READ_TYPE(S16);
 
-    READ_TYPE(u32)
-    READ_TYPE(U32)
-    READ_TYPE(s32)
-    READ_TYPE(S32)
+    READ_TYPE(u32);
+    READ_TYPE(U32);
+    READ_TYPE(s32);
+    READ_TYPE(S32);
 
-    READ_TYPE(u64)
-    READ_TYPE(U64)
-    READ_TYPE(s64)
-    READ_TYPE(S64)
+    READ_TYPE(u64);
+    READ_TYPE(U64);
+    READ_TYPE(s64);
+    READ_TYPE(S64);
 
-    READ_TYPE(f32)
-    READ_TYPE(F32)
-    READ_TYPE(f64)
-    READ_TYPE(F64)
+    READ_TYPE(f32);
+    READ_TYPE(F32);
+    READ_TYPE(f64);
+    READ_TYPE(F64);
 #undef READ_TYPE
 
     rb_raise(rb_eArgError, "Invalid type name!");
@@ -1576,28 +1576,28 @@ void
 rb_io_buffer_set_value(const void* base, size_t size, ID type, size_t offset, VALUE value)
 {
 #define WRITE_TYPE(name) if (type == RB_IO_BUFFER_TYPE_##name) {io_buffer_write_##name(base, size, &offset, value); return;}
-    WRITE_TYPE(U8)
-    WRITE_TYPE(S8)
+    WRITE_TYPE(U8);
+    WRITE_TYPE(S8);
 
-    WRITE_TYPE(u16)
-    WRITE_TYPE(U16)
-    WRITE_TYPE(s16)
-    WRITE_TYPE(S16)
+    WRITE_TYPE(u16);
+    WRITE_TYPE(U16);
+    WRITE_TYPE(s16);
+    WRITE_TYPE(S16);
 
-    WRITE_TYPE(u32)
-    WRITE_TYPE(U32)
-    WRITE_TYPE(s32)
-    WRITE_TYPE(S32)
+    WRITE_TYPE(u32);
+    WRITE_TYPE(U32);
+    WRITE_TYPE(s32);
+    WRITE_TYPE(S32);
 
-    WRITE_TYPE(u64)
-    WRITE_TYPE(U64)
-    WRITE_TYPE(s64)
-    WRITE_TYPE(S64)
+    WRITE_TYPE(u64);
+    WRITE_TYPE(U64);
+    WRITE_TYPE(s64);
+    WRITE_TYPE(S64);
 
-    WRITE_TYPE(f32)
-    WRITE_TYPE(F32)
-    WRITE_TYPE(f64)
-    WRITE_TYPE(F64)
+    WRITE_TYPE(f32);
+    WRITE_TYPE(F32);
+    WRITE_TYPE(f64);
+    WRITE_TYPE(F64);
 #undef WRITE_TYPE
 
     rb_raise(rb_eArgError, "Invalid type name!");
