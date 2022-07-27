@@ -27,6 +27,10 @@ describe "String#downcase" do
     it "does not downcase non-ASCII characters" do
       "CÅR".downcase(:ascii).should == "cÅr"
     end
+
+    it "works with substrings" do
+      "prefix TÉ"[-2..-1].downcase(:ascii).should == "tÉ"
+    end
   end
 
   describe "full Unicode case mapping adapted for Turkic languages" do

@@ -120,10 +120,9 @@ static VALUE encoding_spec_rb_enc_from_index(VALUE self, VALUE index) {
   return rb_str_new2(rb_enc_from_index(NUM2INT(index))->name);
 }
 
-static VALUE encoding_spec_rb_enc_mbc_to_codepoint(VALUE self, VALUE str, VALUE offset) {
-  int o = FIX2INT(offset);
+static VALUE encoding_spec_rb_enc_mbc_to_codepoint(VALUE self, VALUE str) {
   char *p = RSTRING_PTR(str);
-  char *e = p + o;
+  char *e = RSTRING_END(str);
   return INT2FIX(rb_enc_mbc_to_codepoint(p, e, rb_enc_get(str)));
 }
 
@@ -341,7 +340,7 @@ void Init_encoding_spec(void) {
   rb_define_method(cls, "rb_enc_isalnum", encoding_spec_rb_enc_isalnum, 2);
   rb_define_method(cls, "rb_enc_isspace", encoding_spec_rb_enc_isspace, 2);
   rb_define_method(cls, "rb_enc_from_index", encoding_spec_rb_enc_from_index, 1);
-  rb_define_method(cls, "rb_enc_mbc_to_codepoint", encoding_spec_rb_enc_mbc_to_codepoint, 2);
+  rb_define_method(cls, "rb_enc_mbc_to_codepoint", encoding_spec_rb_enc_mbc_to_codepoint, 1);
   rb_define_method(cls, "rb_enc_mbcput", encoding_spec_rb_enc_mbcput, 2);
   rb_define_method(cls, "rb_enc_from_encoding", encoding_spec_rb_enc_from_encoding, 1);
   rb_define_method(cls, "rb_enc_get", encoding_spec_rb_enc_get, 1);

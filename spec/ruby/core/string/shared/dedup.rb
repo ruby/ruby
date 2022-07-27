@@ -38,6 +38,16 @@ describe :string_dedup, shared: true do
     dynamic.send(@method).should equal("this string is frozen".send(@method).freeze)
   end
 
+  it "does not deduplicate a frozen string when it has instance variables" do
+    dynamic = %w(this string is frozen).join(' ')
+    dynamic.instance_variable_set(:@a, 1)
+    dynamic.freeze
+
+    dynamic.send(@method).should_not equal("this string is frozen".freeze)
+    dynamic.send(@method).should_not equal("this string is frozen".send(@method).freeze)
+    dynamic.send(@method).should equal(dynamic)
+  end
+
   ruby_version_is "3.0" do
     it "interns the provided string if it is frozen" do
       dynamic = "this string is unique and frozen #{rand}".freeze

@@ -37,6 +37,41 @@ describe :file_executable_real, shared: true do
     -> { @object.send(@method, nil)   }.should raise_error(TypeError)
     -> { @object.send(@method, false) }.should raise_error(TypeError)
   end
+
+  platform_is_not :windows do
+    as_real_superuser do
+      context "when run by a real superuser" do
+        before :each do
+          @file = tmp('temp3.txt')
+          touch @file
+        end
+
+        after :each do
+          rm_r @file
+        end
+
+        it "returns true if file owner has permission to execute" do
+          File.chmod(0766, @file)
+          @object.send(@method, @file).should == true
+        end
+
+        it "returns true if group has permission to execute" do
+          File.chmod(0676, @file)
+          @object.send(@method, @file).should == true
+        end
+
+        it "returns true if other have permission to execute" do
+          File.chmod(0667, @file)
+          @object.send(@method, @file).should == true
+        end
+
+        it "return false if nobody has permission to execute" do
+          File.chmod(0666, @file)
+          @object.send(@method, @file).should == false
+        end
+      end
+    end
+  end
 end
 
 describe :file_executable_real_missing, shared: true do

@@ -25,4 +25,9 @@ describe "String#ord" do
   it "raises an ArgumentError if called on an empty String" do
     -> { ''.ord }.should raise_error(ArgumentError)
   end
+
+  it "raises ArgumentError if the character is broken" do
+    s = "©".force_encoding("US-ASCII")
+    -> { s.ord }.should raise_error(ArgumentError, "invalid byte sequence in US-ASCII")
+  end
 end

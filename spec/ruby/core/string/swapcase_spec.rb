@@ -28,6 +28,10 @@ describe "String#swapcase" do
     it "does not swapcase non-ASCII characters" do
       "aßet".swapcase(:ascii).should == "AßET"
     end
+
+    it "works with substrings" do
+      "prefix aTé"[-3..-1].swapcase(:ascii).should == "Até"
+    end
   end
 
   describe "full Unicode case mapping adapted for Turkic languages" do
