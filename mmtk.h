@@ -4,6 +4,7 @@
 #include <stdbool.h>
 #include <stddef.h>
 #include <unistd.h> // for ssize_t
+#include <stdint.h> // for int32_t
 
 #ifdef __cplusplus
 extern "C" {
@@ -57,13 +58,10 @@ extern MMTk_Mutator mmtk_bind_mutator(MMTk_VMMutatorThread tls);
 extern void mmtk_destroy_mutator(MMTk_Mutator mutator);
 
 extern void* mmtk_alloc(MMTk_Mutator mutator, size_t size,
-    size_t align, ssize_t offset, int semantics);
-
-extern void* mmtk_alloc_slow(MMTk_Mutator mutator, size_t size,
-    size_t align, ssize_t offset, int semantics);
+    size_t align, ssize_t offset, int32_t semantics);
 
 extern void mmtk_post_alloc(MMTk_Mutator mutator, void* refer,
-    size_t bytes, int semantics);
+    size_t bytes, int32_t semantics);
 
 /**
  * Tracing
@@ -78,7 +76,6 @@ extern void mmtk_flush_mark_buffer(MMTk_VMMutatorThread tls);
  * Misc
  */
 extern bool mmtk_will_never_move(void* object);
-extern bool mmtk_process(char* name, char* value);
 extern void mmtk_handle_user_collection_request(MMTk_VMMutatorThread tls);
 extern const char* mmtk_plan_name();
 
