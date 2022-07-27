@@ -57,17 +57,20 @@ module Psych
       assert_cycle(@list)
     end
 
+    def test_recursive_array
+      @list << @list
+
+      loaded = Psych.load(Psych.dump(@list), aliases: true)
+
+      assert_same loaded, loaded.last
+    end
+
     def test_recursive_array_uses_alias
       @list << @list
 
-      expected = <<~eoyaml
-        --- &1
-        - :a: b
-        - foo
-        - *1
-      eoyaml
-
-      assert_equal expected, Psych.dump(@list)
+      assert_raise(BadAlias) do
+        Psych.load(Psych.dump(@list), aliases: false)
+      end
     end
 
     def test_cycle

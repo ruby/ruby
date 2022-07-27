@@ -36,22 +36,19 @@ module Psych
     def test_cyclic_references
       foo = Foo.new(nil)
       foo.parent = foo
-      loaded = Psych.unsafe_load Psych.dump foo
+      loaded = Psych.load(Psych.dump(foo), permitted_classes: [Foo], aliases: true)
 
       assert_instance_of(Foo, loaded)
-      assert_equal loaded, loaded.parent
+      assert_same loaded, loaded.parent
     end
 
     def test_cyclic_reference_uses_alias
       foo = Foo.new(nil)
       foo.parent = foo
 
-      expected = <<~eoyaml
-        --- &1 !ruby/object:Psych::Foo
-        parent: *1
-      eoyaml
-
-      assert_equal expected, Psych.dump(foo)
+      assert_raise(BadAlias) do
+        Psych.load(Psych.dump(foo), permitted_classes: [Foo], aliases: false)
+      end
     end
   end
 end
