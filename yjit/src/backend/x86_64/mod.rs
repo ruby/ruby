@@ -339,11 +339,11 @@ impl Assembler
                 // C function call
                 Op::CCall => {
                     // Temporary
-                    assert!(insn.opnds.len() < C_ARG_REGS.len());
+                    assert!(insn.opnds.len() < _C_ARG_OPNDS.len());
 
                     // For each operand
                     for (idx, opnd) in insn.opnds.iter().enumerate() {
-                        mov(cb, C_ARG_REGS[idx], insn.opnds[idx].into());
+                        mov(cb, X86Opnd::Reg(_C_ARG_OPNDS[idx].unwrap_reg()), insn.opnds[idx].into());
                     }
 
                     let ptr = insn.target.unwrap().unwrap_fun_ptr();

@@ -2177,11 +2177,12 @@ fn gen_setinstancevariable(
 
     KeepCompiling
 }
+*/
 
 fn gen_defined(
     jit: &mut JITState,
     ctx: &mut Context,
-    cb: &mut CodeBlock,
+    asm: &mut Assembler,
     _ocb: &mut OutlinedCb,
 ) -> CodegenStatus {
     let op_type = jit_get_arg(jit, 0);
@@ -2190,26 +2191,19 @@ fn gen_defined(
 
     // Save the PC and SP because the callee may allocate
     // Note that this modifies REG_SP, which is why we do it first
-    jit_prepare_routine_call(jit, ctx, cb, REG0);
+    jit_prepare_routine_call(jit, ctx, asm);
 
     // Get the operands from the stack
     let v_opnd = ctx.stack_pop(1);
 
     // Call vm_defined(ec, reg_cfp, op_type, obj, v)
-    mov(cb, C_ARG_REGS[0], REG_EC);
-    mov(cb, C_ARG_REGS[1], REG_CFP);
-    mov(cb, C_ARG_REGS[2], uimm_opnd(op_type.into()));
-    jit_mov_gc_ptr(jit, cb, C_ARG_REGS[3], obj);
-    mov(cb, C_ARG_REGS[4], v_opnd);
-    call_ptr(cb, REG0, rb_vm_defined as *const u8);
+    let def_result = asm.ccall(rb_vm_defined as *const u8, vec![EC, CFP, op_type.into(), obj.into(), v_opnd]);
 
     // if (vm_defined(ec, GET_CFP(), op_type, obj, v)) {
     //  val = pushval;
     // }
-    jit_mov_gc_ptr(jit, cb, REG1, pushval);
-    cmp(cb, AL, imm_opnd(0));
-    mov(cb, RAX, uimm_opnd(Qnil.into()));
-    cmovnz(cb, RAX, REG1);
+    asm.test(def_result, Opnd::UImm(255));
+    let out_value = asm.csel_nz(pushval.into(), Qnil.into());
 
     // Push the return value onto the stack
     let out_type = if pushval.special_const_p() {
@@ -2218,11 +2212,12 @@ fn gen_defined(
         Type::Unknown
     };
     let stack_ret = ctx.stack_push(out_type);
-    mov(cb, stack_ret, RAX);
+    asm.mov(stack_ret, out_value);
 
     KeepCompiling
 }
 
+/*
 fn gen_checktype(
     jit: &mut JITState,
     ctx: &mut Context,
@@ -5997,10 +5992,8 @@ fn get_gen_fn(opcode: VALUE) -> Option<InsnGenFn> {
         YARVINSN_splatarray => Some(gen_splatarray),
         YARVINSN_newrange => Some(gen_newrange),
         YARVINSN_putstring => Some(gen_putstring),
-        /*
-        YARVINSN_expandarray => Some(gen_expandarray),
+        //YARVINSN_expandarray => Some(gen_expandarray),
         YARVINSN_defined => Some(gen_defined),
-        */
         YARVINSN_checkkeyword => Some(gen_checkkeyword),
         /*
         YARVINSN_concatstrings => Some(gen_concatstrings),
