@@ -1,3 +1,5 @@
+return if mmtk?
+
 # Simple tests that we know we can pass
 # To keep track of what we got working during the Rust port
 # And avoid breaking/losing functionality

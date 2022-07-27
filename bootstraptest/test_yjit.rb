@@ -1,3 +1,5 @@
+return if mmtk?
+
 assert_equal 'true', %q{
   # regression test for tracking type of locals for too long
   def local_setting_cmp(five)

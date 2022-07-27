@@ -720,4 +720,8 @@ def check_coredump
   end
 end
 
+def mmtk?
+  `#{BT.ruby} -e 'p defined?(GC::MMTk)'`.strip == '"constant"'
+end
+
 exit main
