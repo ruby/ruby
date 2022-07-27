@@ -979,22 +979,6 @@ pub type ruby_vminsn_type = u32;
 extern "C" {
     pub fn rb_vm_insn_addr2opcode(addr: *const ::std::os::raw::c_void) -> ::std::os::raw::c_int;
 }
-pub type rb_iseq_each_i = ::std::option::Option<
-    unsafe extern "C" fn(
-        code: *mut VALUE,
-        insn: VALUE,
-        index: size_t,
-        data: *mut ::std::os::raw::c_void,
-    ) -> bool,
->;
-extern "C" {
-    pub fn rb_iseq_each(
-        iseq: *const rb_iseq_t,
-        start_index: size_t,
-        iterator: rb_iseq_each_i,
-        data: *mut ::std::os::raw::c_void,
-    );
-}
 extern "C" {
     pub fn rb_iseqw_to_iseq(iseqw: VALUE) -> *const rb_iseq_t;
 }
