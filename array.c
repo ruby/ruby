@@ -1027,7 +1027,7 @@ rb_ary_memsize(VALUE ary)
 static VALUE
 ary_make_shared(VALUE ary)
 {
-    assert(!ARY_EMBED_P(ary));
+    assert(USE_RVARGC || !ARY_EMBED_P(ary));
     ary_verify(ary);
 
     if (ARY_SHARED_P(ary)) {
@@ -1037,21 +1037,38 @@ ary_make_shared(VALUE ary)
         return ary;
     }
     else if (OBJ_FROZEN(ary)) {
-        rb_ary_transient_heap_evacuate(ary, TRUE);
-        ary_shrink_capa(ary);
+        if (!ARY_EMBED_P(ary)) {
+            rb_ary_transient_heap_evacuate(ary, TRUE);
+            ary_shrink_capa(ary);
+        }
         return ary;
     }
     else {
-        long capa = ARY_CAPA(ary), len = RARRAY_LEN(ary);
-        const VALUE *ptr;
+        rb_ary_transient_heap_evacuate(ary, TRUE);
+
+        long capa = ARY_CAPA(ary);
+        long len = RARRAY_LEN(ary);
+
+        /* Shared roots cannot be embedded because the reference count
+         * (refcnt) is stored in as.heap.aux.capa. */
         VALUE shared = ary_alloc_heap(0);
 
-        rb_ary_transient_heap_evacuate(ary, TRUE);
-        ptr = ARY_HEAP_PTR(ary);
+        if (ARY_EMBED_P(ary)) {
+            /* Cannot use ary_heap_alloc because we don't want to allocate
+             * on the transient heap. */
+            VALUE *ptr = ALLOC_N(VALUE, capa);
+            ARY_SET_PTR(shared, ptr);
+            ary_memcpy(shared, 0, len, RARRAY_PTR(ary));
 
-        FL_UNSET_EMBED(shared);
+            FL_UNSET_EMBED(ary);
+            ARY_SET_HEAP_LEN(ary, len);
+            ARY_SET_PTR(ary, ptr);
+        }
+        else {
+            ARY_SET_PTR(shared, RARRAY_PTR(ary));
+        }
+
         ARY_SET_LEN(shared, capa);
-        ARY_SET_PTR(shared, ptr);
         ary_mem_clear(shared, len, capa - len);
         FL_SET_SHARED_ROOT(shared);
         ARY_SET_SHARED_ROOT_REFCNT(shared, 1);
@@ -1318,7 +1335,9 @@ ary_make_partial(VALUE ary, VALUE klass, long offset, long len)
     assert(len >= 0);
     assert(offset+len <= RARRAY_LEN(ary));
 
-    if (ary_embeddable_p(len)) {
+    const size_t rarray_embed_capa_max = (sizeof(struct RArray) - offsetof(struct RArray, as.ary)) / sizeof(VALUE);
+
+    if ((size_t)len <= rarray_embed_capa_max && ary_embeddable_p(len)) {
         VALUE result = ary_alloc_embed(klass, len);
         ary_memcpy(result, 0, len, RARRAY_CONST_PTR_TRANSIENT(ary) + offset);
         ARY_SET_EMBED_LEN(result, len);

@@ -9958,7 +9958,21 @@ static void
 gc_ref_update_array(rb_objspace_t * objspace, VALUE v)
 {
     if (ARY_SHARED_P(v)) {
+#if USE_RVARGC
+        VALUE old_root = RARRAY(v)->as.heap.aux.shared_root;
+#endif
+
         UPDATE_IF_MOVED(objspace, RARRAY(v)->as.heap.aux.shared_root);
+
+#if USE_RVARGC
+        VALUE new_root = RARRAY(v)->as.heap.aux.shared_root;
+        // If the root is embedded and its location has changed
+        if (ARY_EMBED_P(new_root) && new_root != old_root) {
+            size_t offset = (size_t)(RARRAY(v)->as.heap.ptr - RARRAY(old_root)->as.ary);
+            GC_ASSERT(RARRAY(v)->as.heap.ptr >= RARRAY(old_root)->as.ary);
+            RARRAY(v)->as.heap.ptr = RARRAY(new_root)->as.ary + offset;
+        }
+#endif
     }
     else {
         long len = RARRAY_LEN(v);
