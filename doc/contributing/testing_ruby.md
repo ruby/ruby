@@ -20,6 +20,12 @@ We can run any of the make scripts [in parallel](building_ruby.md#label-Running+
     make btest OPTS=-v
     ```
 
+    To run an individual bootstrap test, we can set the filename in the environment variable `BTESTS`:
+
+    ```
+    make btest BTESTS=bootstraptest/test_gc.rb
+    ```
+
     If we want to run the bootstrap test suite on Ruby (not Miniruby), we can use:
 
     ```
