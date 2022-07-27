@@ -9957,16 +9957,26 @@ gc_sort_heap_by_empty_slots(rb_objspace_t *objspace)
 static void
 gc_ref_update_array(rb_objspace_t * objspace, VALUE v)
 {
-    long i, len;
+    if (ARY_SHARED_P(v)) {
+        UPDATE_IF_MOVED(objspace, RARRAY(v)->as.heap.aux.shared_root);
+    }
+    else {
+        long len = RARRAY_LEN(v);
 
-    if (ARY_SHARED_P(v)) return;
-
-    len = RARRAY_LEN(v);
-    if (len > 0) {
-        VALUE *ptr = (VALUE *)RARRAY_CONST_PTR_TRANSIENT(v);
-        for (i = 0; i < len; i++) {
-            UPDATE_IF_MOVED(objspace, ptr[i]);
+        if (len > 0) {
+            VALUE *ptr = (VALUE *)RARRAY_CONST_PTR_TRANSIENT(v);
+            for (long i = 0; i < len; i++) {
+                UPDATE_IF_MOVED(objspace, ptr[i]);
+            }
         }
+
+#if USE_RVARGC
+        if ((size_t)GET_HEAP_PAGE(v)->slot_size >= rb_ary_size_as_embedded(v)) {
+            if (rb_ary_embeddable_p(v)) {
+                rb_ary_make_embedded(v);
+            }
+        }
+#endif
     }
 }
 
@@ -10466,19 +10476,7 @@ gc_update_object_references(rb_objspace_t *objspace, VALUE obj)
         return;
 
       case T_ARRAY:
-        if (ARY_SHARED_P(obj)) {
-            UPDATE_IF_MOVED(objspace, any->as.array.as.heap.aux.shared_root);
-        }
-        else {
-            gc_ref_update_array(objspace, obj);
-        }
-#if USE_RVARGC
-        if ((size_t)GET_HEAP_PAGE(obj)->slot_size >= rb_ary_size_as_embedded(obj)) {
-            if (rb_ary_embeddable_p(obj)) {
-                rb_ary_make_embedded(obj);
-            }
-        }
-#endif
+        gc_ref_update_array(objspace, obj);
         break;
 
       case T_HASH:
