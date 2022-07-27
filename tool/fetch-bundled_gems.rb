@@ -23,5 +23,5 @@ c = r || "v#{v}"
 checkout = %w"git -c advice.detachedHead=false checkout"
 puts "checking out #{c} (v=#{v}, r=#{r}) ..."
 unless system(*checkout, c, "--", chdir: n)
-  abort
+  abort if r or !system(*checkout, v, "--", chdir: n)
 end
