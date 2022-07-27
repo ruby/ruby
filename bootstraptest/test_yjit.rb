@@ -3066,3 +3066,11 @@ assert_equal '10', %q{
 
   a.length
 }
+
+# checktype
+assert_equal 'false', %q{
+    def function()
+        [1, 2] in [Integer, String]
+    end
+    function()
+}
