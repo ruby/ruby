@@ -1224,7 +1224,8 @@ io_flush_buffer(rb_io_t *fptr)
 {
     if (!NIL_P(fptr->write_lock) && rb_mutex_owned_p(fptr->write_lock)) {
         return (int)io_flush_buffer_async((VALUE)fptr);
-    } else {
+    }
+    else {
         return (int)rb_mutex_synchronize(fptr->write_lock, io_flush_buffer_async, (VALUE)fptr);
     }
 }
@@ -1699,7 +1700,8 @@ io_binwrite(VALUE str, const char *ptr, long len, rb_io_t *fptr, int nosync)
         else {
             return io_binwrite_string((VALUE)&arg);
         }
-    } else {
+    }
+    else {
         if (fptr->wbuf.off) {
             if (fptr->wbuf.len)
                 MEMMOVE(fptr->wbuf.ptr, fptr->wbuf.ptr+fptr->wbuf.off, char, fptr->wbuf.len);

@@ -4837,7 +4837,8 @@ struct masgn_state {
 };
 
 static int
-add_masgn_lhs_node(struct masgn_state *state, int lhs_pos, const NODE *line_node, int argc, INSN *before_insn) {
+add_masgn_lhs_node(struct masgn_state *state, int lhs_pos, const NODE *line_node, int argc, INSN *before_insn)
+{
     if (!state) {
         rb_bug("no masgn_state");
     }

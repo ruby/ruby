@@ -146,7 +146,8 @@ rb_internal_thread_remove_event_hook(rb_internal_thread_event_hook_t * hook)
     if (rb_internal_thread_event_hooks == hook) {
         ATOMIC_PTR_EXCHANGE(rb_internal_thread_event_hooks, hook->next);
         success = TRUE;
-    } else {
+    }
+    else {
         rb_internal_thread_event_hook_t *h = rb_internal_thread_event_hooks;
 
         do {

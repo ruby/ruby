@@ -91,7 +91,8 @@ rb_yjit_add_frame(VALUE hash, VALUE frame)
 
     if (RTEST(rb_hash_aref(hash, frame_id))) {
         return;
-    } else {
+    }
+    else {
         VALUE frame_info = rb_hash_new();
         // Full label for the frame
         VALUE name = rb_profile_frame_full_label(frame);

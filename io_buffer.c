@@ -312,7 +312,8 @@ struct io_buffer_for_yield_instance_arguments {
 };
 
 static VALUE
-io_buffer_for_yield_instance(VALUE _arguments) {
+io_buffer_for_yield_instance(VALUE _arguments)
+{
     struct io_buffer_for_yield_instance_arguments *arguments = (struct io_buffer_for_yield_instance_arguments *)_arguments;
 
     rb_str_locktmp(arguments->string);

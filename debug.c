@@ -348,7 +348,8 @@ setup_debug_log_filter(void)
             if (*str == '-') {
                 debug_log.filters[i].negative = true;
                 str++;
-            } else if (*str == '+') {
+            }
+            else if (*str == '+') {
                 // negative is false on default.
                 str++;
             }

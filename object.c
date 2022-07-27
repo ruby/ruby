@@ -1623,16 +1623,19 @@ rb_class_inherited_p(VALUE mod, VALUE arg)
             return RCLASS_SUPERCLASSES(mod)[arg_depth] == arg ?
                 Qtrue :
                 Qnil;
-        } else if (arg_depth > mod_depth) {
+        }
+        else if (arg_depth > mod_depth) {
             // check if mod > arg
             return RCLASS_SUPERCLASSES(arg)[mod_depth] == mod ?
                 Qfalse :
                 Qnil;
-        } else {
+        }
+        else {
             // Depths match, and we know they aren't equal: no relation
             return Qnil;
         }
-    } else {
+    }
+    else {
         if (!CLASS_OR_MODULE_P(arg) && !RB_TYPE_P(arg, T_ICLASS)) {
             rb_raise(rb_eTypeError, "compared with non class/module");
         }
@@ -2025,7 +2028,8 @@ rb_class_superclass(VALUE klass)
     if (!super) {
         if (klass == rb_cBasicObject) return Qnil;
         rb_raise(rb_eTypeError, "uninitialized class");
-    } else {
+    }
+    else {
         super = RCLASS_SUPERCLASSES(klass)[RCLASS_SUPERCLASS_DEPTH(klass) - 1];
         RUBY_ASSERT(RB_TYPE_P(klass, T_CLASS));
         return super;

@@ -1501,7 +1501,8 @@ create_unit(const rb_iseq_t *iseq)
     unit->id = current_unit_num++;
     if (iseq == NULL) { // Compact unit
         unit->compact_p = true;
-    } else { // Normal unit
+    }
+    else { // Normal unit
         unit->iseq = (rb_iseq_t *)iseq;
         ISEQ_BODY(iseq)->jit_unit = unit;
     }

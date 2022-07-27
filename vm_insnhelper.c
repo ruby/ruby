@@ -5359,7 +5359,8 @@ vm_opt_ltlt(VALUE recv, VALUE obj)
              BASIC_OP_UNREDEFINED_P(BOP_LTLT, STRING_REDEFINED_OP_FLAG)) {
         if (LIKELY(RB_TYPE_P(obj, T_STRING))) {
             return rb_str_buf_append(recv, obj);
-        } else {
+        }
+        else {
             return rb_str_concat(recv, obj);
         }
     }

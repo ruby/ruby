@@ -43,10 +43,12 @@ struct timeval;
  * @return              A `VALUE` which contains the result and/or errno.
  */
 static inline VALUE
-rb_fiber_scheduler_io_result(ssize_t result, int error) {
+rb_fiber_scheduler_io_result(ssize_t result, int error)
+{
     if (result == -1) {
         return RB_INT2NUM(-error);
-    } else {
+    }
+    else {
         return RB_SIZE2NUM(result);
     }
 }
@@ -63,11 +65,13 @@ rb_fiber_scheduler_io_result(ssize_t result, int error) {
  * @return              The original result of the system call.
  */
 static inline ssize_t
-rb_fiber_scheduler_io_result_apply(VALUE result) {
+rb_fiber_scheduler_io_result_apply(VALUE result)
+{
     if (RB_FIXNUM_P(result) && RB_NUM2INT(result) < 0) {
         errno = -RB_NUM2INT(result);
         return -1;
-    } else {
+    }
+    else {
         return RB_NUM2SIZE(result);
     }
 }
