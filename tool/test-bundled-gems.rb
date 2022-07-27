@@ -24,7 +24,7 @@ File.foreach("#{gem_dir}/bundled_gems") do |line|
   next if ARGV.any? {|pat| !File.fnmatch?(pat, gem)}
   puts "#{github_actions ? "##[group]" : "\n"}Testing the #{gem} gem"
 
-  test_command = "#{ruby} -C #{gem_dir}/src/#{gem} -Ilib #{rake} test"
+  test_command = "#{ruby} -C #{gem_dir}/src/#{gem} #{rake} test"
   first_timeout = 600 # 10min
 
   toplib = gem
