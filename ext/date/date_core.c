@@ -6708,19 +6708,43 @@ cmp_dd(VALUE self, VALUE other)
 
 /*
  * call-seq:
- *    d <=> other  -> -1, 0, +1 or nil
+ *   self <=> other  -> -1, 0, 1 or nil
  *
- * Compares the two dates and returns -1, zero, 1 or nil.  The other
- * should be a date object or a numeric value as an astronomical
- * Julian day number.
+ * Compares +self+ and +other+, returning:
  *
- *    Date.new(2001,2,3) <=> Date.new(2001,2,4)   #=> -1
- *    Date.new(2001,2,3) <=> Date.new(2001,2,3)   #=> 0
- *    Date.new(2001,2,3) <=> Date.new(2001,2,2)   #=> 1
- *    Date.new(2001,2,3) <=> Object.new           #=> nil
- *    Date.new(2001,2,3) <=> Rational(4903887,2)  #=> 0
+ * - <tt>-1</tt> if +other+ is larger.
+ * - <tt>0</tt> if the two are equal.
+ * - <tt>1</tt> if +other+ is smaller.
+ * - +nil+ if the two are incomparable.
  *
- * See also Comparable.
+ * Argument +other+ may be:
+ *
+ * - Another \Date object:
+ *
+ *     d = Date.new(2022, 7, 27) # => #<Date: 2022-07-27 ((2459788j,0s,0n),+0s,2299161j)>
+ *     prev_date = d.prev_day    # => #<Date: 2022-07-26 ((2459787j,0s,0n),+0s,2299161j)>
+ *     next_date = d.next_day    # => #<Date: 2022-07-28 ((2459789j,0s,0n),+0s,2299161j)>
+ *     d <=> next_date           # => -1
+ *     d <=> d                   # => 0
+ *     d <=> prev_date           # => 1
+ *
+ * - A DateTime object:
+ *
+ *     d <=> DateTime.new(2022, 7, 26) # => 1
+ *     d <=> DateTime.new(2022, 7, 27) # => 0
+ *     d <=> DateTime.new(2022, 7, 29) # => -1
+ *
+ * - A numeric (compares <tt>self.ajd</tt> to +other+):
+ *
+ *     d <=> 2459789 # => -1
+ *     d <=> 2459788 # => -1
+ *     d <=> 2459787 # => 1
+ *     d <=> d.ajd   # => 0
+ *
+ * - Any other object:
+ *
+ *     d <=> Object.new # => nil
+ *
  */
 static VALUE
 d_lite_cmp(VALUE self, VALUE other)
