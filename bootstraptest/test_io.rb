@@ -1,3 +1,4 @@
+/freebsd/ =~ RUBY_PLATFORM or
 assert_finish 5, %q{
   r, w = IO.pipe
   t1 = Thread.new { r.sysread(1) }
