@@ -246,6 +246,20 @@ pub const RUBY_ENCODING_SHIFT: ruby_encoding_consts = 22;
 pub const RUBY_ENCODING_MASK: ruby_encoding_consts = 532676608;
 pub const RUBY_ENCODING_MAXNAMELEN: ruby_encoding_consts = 42;
 pub type ruby_encoding_consts = u32;
+pub const RUBY_ENCINDEX_ASCII_8BIT: ruby_preserved_encindex = 0;
+pub const RUBY_ENCINDEX_UTF_8: ruby_preserved_encindex = 1;
+pub const RUBY_ENCINDEX_US_ASCII: ruby_preserved_encindex = 2;
+pub const RUBY_ENCINDEX_UTF_16BE: ruby_preserved_encindex = 3;
+pub const RUBY_ENCINDEX_UTF_16LE: ruby_preserved_encindex = 4;
+pub const RUBY_ENCINDEX_UTF_32BE: ruby_preserved_encindex = 5;
+pub const RUBY_ENCINDEX_UTF_32LE: ruby_preserved_encindex = 6;
+pub const RUBY_ENCINDEX_UTF_16: ruby_preserved_encindex = 7;
+pub const RUBY_ENCINDEX_UTF_32: ruby_preserved_encindex = 8;
+pub const RUBY_ENCINDEX_UTF8_MAC: ruby_preserved_encindex = 9;
+pub const RUBY_ENCINDEX_EUC_JP: ruby_preserved_encindex = 10;
+pub const RUBY_ENCINDEX_Windows_31J: ruby_preserved_encindex = 11;
+pub const RUBY_ENCINDEX_BUILTIN_MAX: ruby_preserved_encindex = 12;
+pub type ruby_preserved_encindex = u32;
 extern "C" {
     pub fn rb_obj_info_dump(obj: VALUE);
 }
@@ -650,6 +664,9 @@ pub const VM_ENV_FLAG_WB_REQUIRED: vm_frame_env_flags = 8;
 pub const VM_ENV_FLAG_ISOLATED: vm_frame_env_flags = 16;
 pub type vm_frame_env_flags = u32;
 extern "C" {
+    pub fn rb_iseq_path(iseq: *const rb_iseq_t) -> VALUE;
+}
+extern "C" {
     pub fn rb_vm_bh_to_procval(ec: *const rb_execution_context_t, block_handler: VALUE) -> VALUE;
 }
 extern "C" {
@@ -970,6 +987,9 @@ extern "C" {
     pub fn rb_iseqw_to_iseq(iseqw: VALUE) -> *const rb_iseq_t;
 }
 extern "C" {
+    pub fn rb_iseq_method_name(iseq: *const rb_iseq_t) -> VALUE;
+}
+extern "C" {
     pub fn rb_vm_barrier();
 }
 extern "C" {
@@ -1019,6 +1039,12 @@ extern "C" {
 }
 extern "C" {
     pub fn rb_iseq_opcode_at_pc(iseq: *const rb_iseq_t, pc: *const VALUE) -> ::std::os::raw::c_int;
+}
+extern "C" {
+    pub fn rb_RSTRING_LEN(str_: VALUE) -> ::std::os::raw::c_ulong;
+}
+extern "C" {
+    pub fn rb_RSTRING_PTR(str_: VALUE) -> *mut ::std::os::raw::c_char;
 }
 pub type rb_seq_param_keyword_struct = rb_iseq_constant_body__bindgen_ty_1_rb_iseq_param_keyword;
 extern "C" {

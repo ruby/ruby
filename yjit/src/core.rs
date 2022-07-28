@@ -6,6 +6,8 @@ use crate::cruby::*;
 use crate::options::*;
 use crate::stats::*;
 use crate::utils::*;
+#[cfg(feature="disasm")]
+use crate::disasm::*;
 use core::ffi::c_void;
 use std::cell::*;
 use std::hash::{Hash, Hasher};
@@ -1426,6 +1428,20 @@ fn gen_block_series_body(
         last_blockref = new_blockref;
     }
 
+    #[cfg(feature = "disasm")]
+    {
+        // If dump_iseq_disasm is active, see if this iseq's location matches the given substring.
+        // If so, we print the new blocks to the console.
+        if let Some(substr) = get_option_ref!(dump_iseq_disasm).as_ref() {
+            let iseq_location = iseq_get_location(blockid.iseq);
+            if iseq_location.contains(substr) {
+                let last_block = last_blockref.borrow();
+                println!("Compiling {} block(s) for {}, ISEQ offsets [{}, {})", batch.len(), iseq_location, blockid.idx, last_block.end_idx);
+                println!("{}", disasm_iseq_insn_range(blockid.iseq, blockid.idx, last_block.end_idx));
+            }
+        }
+    }
+
     Some(first_block)
 }
 
@@ -1955,6 +1971,17 @@ pub fn invalidate_block_version(blockref: &BlockRef) {
     let ocb = CodegenGlobals::get_outlined_cb();
 
     verify_blockid(block.blockid);
+
+    #[cfg(feature = "disasm")]
+    {
+        // If dump_iseq_disasm is specified, print to console that blocks for matching ISEQ names were invalidated.
+        if let Some(substr) = get_option_ref!(dump_iseq_disasm).as_ref() {
+            let iseq_location = iseq_get_location(block.blockid.iseq);
+            if iseq_location.contains(substr) {
+                println!("Invalidating block from {}, ISEQ offsets [{}, {})", iseq_location, block.blockid.idx, block.end_idx);
+            }
+        }
+    }
 
     // Remove this block from the version array
     remove_block_version(blockref);
