@@ -135,7 +135,7 @@ jobs:
         run: |
           # Actions uses UTF8, causes test failures, similar to normal OS setup
           chcp.com 437
-          time make ${{ StartsWith(matrix.test_task, 'test/') && matrix.test_task || 'test-all' }}
+          make ${{ StartsWith(matrix.test_task, 'test/') && matrix.test_task || 'test-all' }}
         env:
           RUBY_TESTOPTS: >-
             -j${{env.TEST_JOBS}} --retry --job-status=normal --show-skip --timeout-scale=1.5
