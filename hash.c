@@ -1578,7 +1578,7 @@ hash_embedded_size(unsigned long capa)
 }
 
 VALUE
-rb_rvargc_hash_new(unsigned long capa)
+rb_rvargc_hash_new(VALUE klass, unsigned long capa)
 {
     size_t size = hash_embedded_size(capa);
 
@@ -1610,7 +1610,7 @@ rb_hash_new_with_size(st_index_t size)
         /* do nothing */
     }
     else if (size <= RHASH_AR_TABLE_MAX_SIZE) {
-        ret = rb_rvargc_hash_new(size);
+        ret = rb_rvargc_hash_new(rb_cHash, size);
     }
     else {
         RHASH_ST_TABLE_SET(ret, st_init_table_with_size(&objhash, size));
@@ -1910,7 +1910,7 @@ rb_hash_s_create(int argc, VALUE *argv, VALUE klass)
     if (argc == 1) {
         tmp = rb_hash_s_try_convert(Qnil, argv[0]);
         if (!NIL_P(tmp)) {
-            hash = hash_alloc(klass);
+            hash = rb_rvargc_hash_new(klass, rb_hash_size(tmp));
             hash_copy(hash, tmp);
             return hash;
         }
@@ -1919,7 +1919,7 @@ rb_hash_s_create(int argc, VALUE *argv, VALUE klass)
         if (!NIL_P(tmp)) {
             long i;
 
-            hash = hash_alloc(klass);
+            hash = rb_rvargc_hash_new(klass, rb_hash_size(tmp));
             for (i = 0; i < RARRAY_LEN(tmp); ++i) {
                 VALUE e = RARRAY_AREF(tmp, i);
                 VALUE v = rb_check_array_type(e);
@@ -1947,7 +1947,8 @@ rb_hash_s_create(int argc, VALUE *argv, VALUE klass)
         rb_raise(rb_eArgError, "odd number of arguments for Hash");
     }
 
-    hash = hash_alloc(klass);
+    size_t size = (size_t)(argc / 2);
+    hash = rb_rvargc_hash_new(klass, size);
     rb_hash_bulk_insert(argc, argv, hash);
     hash_verify(hash);
     return hash;
@@ -2973,6 +2974,7 @@ rb_hash_aset(VALUE hash, VALUE key, VALUE val)
 
     rb_hash_modify(hash);
 
+    // this is only true for non-vwa hashes as we always init the ar_table in vwa
     if (RHASH_TABLE_NULL_P(hash)) {
         if (iter_lev > 0) no_new_key();
         ar_alloc_table(hash);
