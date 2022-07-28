@@ -513,6 +513,22 @@ class TestYJIT < Test::Unit::TestCase
     RUBY
   end
 
+  def test_getblockparamproxy_with_no_block
+    # Currently side exits on the send
+    assert_compiles(<<~'RUBY', insns: [:getblockparamproxy], exits: { send: 2 })
+      def bar
+      end
+
+      def foo &blk
+        bar(&blk)
+        bar(&blk)
+      end
+
+      foo
+      foo
+    RUBY
+  end
+
   def test_send_splat
     assert_compiles(<<~'RUBY', result: "3#1,2,3/P", exits: {})
       def internal_method(*args)

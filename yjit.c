@@ -699,6 +699,17 @@ rb_get_cfp_ep(struct rb_control_frame_struct *cfp)
     return (VALUE*)cfp->ep;
 }
 
+const VALUE *
+rb_get_cfp_ep_level(struct rb_control_frame_struct *cfp, uint32_t lv)
+{
+    uint32_t i;
+    const VALUE *ep = (VALUE*)cfp->ep;
+    for (i = 0; i < lv; i++) {
+        ep = VM_ENV_PREV_EP(ep);
+    }
+    return ep;
+}
+
 VALUE
 rb_yarv_class_of(VALUE obj)
 {
