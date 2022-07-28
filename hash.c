@@ -755,6 +755,7 @@ ar_free_and_clear_table(VALUE hash)
             RHASH_UNSET_TRANSIENT_FLAG(hash);
         }
         else {
+            fprintf(stderr, "memset ar table: %p from hash %p\n", tab, hash);
             memset(tab, 0, sizeof(ar_table));
         }
         RHASH_AR_TABLE_CLEAR(hash);
@@ -1588,6 +1589,7 @@ rb_rvargc_hash_new(VALUE klass, unsigned long capa)
     RHASH_SET_IFNONE((VALUE)hash, Qnil);
 
     hash_ar_table_set((VALUE)hash, (ar_table *)((uintptr_t)hash + sizeof(struct RHash)));
+    fprintf(stderr, "rb_rvargc_hash_new: memset ar table: %p from hash %p\n", RHASH_AR_TABLE((VALUE)hash), hash);
     memset(RHASH_AR_TABLE((VALUE)hash), 0, sizeof(ar_table));
 
     return (VALUE)hash;
