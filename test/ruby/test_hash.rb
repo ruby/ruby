@@ -304,6 +304,20 @@ class TestHash < Test::Unit::TestCase
     assert_equal before, ObjectSpace.count_objects[:T_STRING]
   end
 
+  def test_AREF_fstring_key_default_proc
+    assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
+      h = Hash.new do |h, k|
+        k.frozen?
+      end
+
+      str = "foo"
+      refute str.frozen? # assumes this file is frozen_string_literal: false
+      refute h[str]
+      refute h["foo"]
+    end;
+  end
+
   def test_ASET_fstring_key
     a, b = {}, {}
     assert_equal 1, a["abc"] = 1
