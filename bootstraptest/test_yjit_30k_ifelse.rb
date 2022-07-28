@@ -1,3 +1,5 @@
+return if mmtk?
+
 # This is a torture test for the JIT.
 # There are 30K tiny methods with if-else statements in a 30-deep call hierarchy.
 assert_equal '100000', %q{

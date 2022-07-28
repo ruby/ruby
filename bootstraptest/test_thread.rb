@@ -1,3 +1,5 @@
+return if mmtk?
+
 show_limit %q{
   threads = []
   begin
