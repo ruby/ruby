@@ -297,9 +297,9 @@ fn jit_prepare_routine_call(
 /// Record the current codeblock write position for rewriting into a jump into
 /// the outlined block later. Used to implement global code invalidation.
 fn record_global_inval_patch(asm: &mut Assembler, outline_block_target_pos: CodePtr) {
-    asm.pos_marker(Box::new(move |code_ptr| {
+    asm.pos_marker(move |code_ptr| {
         CodegenGlobals::push_global_inval_patch(code_ptr, outline_block_target_pos);
-    }));
+    });
 }
 
 /// Verify the ctx's types and mappings against the compile-time stack, self,

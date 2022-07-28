@@ -796,9 +796,9 @@ impl Assembler
     }
 
     //pub fn pos_marker<F: FnMut(CodePtr)>(&mut self, marker_fn: F)
-    pub fn pos_marker(&mut self, marker_fn: PosMarkerFn)
+    pub fn pos_marker(&mut self, marker_fn: impl Fn(CodePtr) + 'static)
     {
-        self.push_insn(Op::PosMarker, vec![], None, None, Some(marker_fn));
+        self.push_insn(Op::PosMarker, vec![], None, None, Some(Box::new(marker_fn)));
     }
 }
 

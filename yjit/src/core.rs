@@ -1814,10 +1814,10 @@ impl Assembler
         // so that we can move the closure below
         let branchref = branchref.clone();
 
-        self.pos_marker(Box::new(move |code_ptr| {
+        self.pos_marker(move |code_ptr| {
             let mut branch = branchref.borrow_mut();
             branch.start_addr = Some(code_ptr);
-        }));
+        });
     }
 
     // Mark the end position of a patchable branch in the machine code
@@ -1827,10 +1827,10 @@ impl Assembler
         // so that we can move the closure below
         let branchref = branchref.clone();
 
-        self.pos_marker(Box::new(move |code_ptr| {
+        self.pos_marker(move |code_ptr| {
             let mut branch = branchref.borrow_mut();
             branch.end_addr = Some(code_ptr);
-        }));
+        });
     }
 }
 
