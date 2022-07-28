@@ -412,9 +412,12 @@ if CROSS_COMPILING
   $ruby = $mflags.defined?("MINIRUBY") || CONFIG['MINIRUBY']
 elsif sep = config_string('BUILD_FILE_SEPARATOR')
   $ruby = "$(topdir:/=#{sep})#{sep}miniruby" + EXEEXT
-else
+elsif CONFIG['EXTSTATIC']
   $ruby = '$(topdir)/miniruby' + EXEEXT
+else
+  $ruby = '$(topdir)/ruby' + EXEEXT
 end
+$mflags << "BUILTRUBY=#$ruby"
 $ruby = [$ruby]
 $ruby << "-I'$(topdir)'"
 unless CROSS_COMPILING
