@@ -70,6 +70,9 @@ fn main() {
         .allowlist_function("rb_str_buf_append")
         .allowlist_function("rb_str_dup")
 
+        // From encindex.h
+        .allowlist_type("ruby_preserved_encindex")
+
         // This struct is public to Ruby C extensions
         // From include/ruby/internal/core/rbasic.h
         .allowlist_type("RBasic")
@@ -240,6 +243,7 @@ fn main() {
         .allowlist_var("VM_ENV_DATA_INDEX_SPECVAL")
         .allowlist_var("VM_ENV_DATA_INDEX_FLAGS")
         .allowlist_var("VM_ENV_DATA_SIZE")
+        .allowlist_function("rb_iseq_path")
 
         // From yjit.c
         .allowlist_function("rb_iseq_(get|set)_yjit_payload")
@@ -265,6 +269,8 @@ fn main() {
         .allowlist_function("rb_yjit_for_each_iseq")
         .allowlist_function("rb_yjit_obj_written")
         .allowlist_function("rb_yjit_str_simple_append")
+        .allowlist_function("rb_RSTRING_PTR")
+        .allowlist_function("rb_RSTRING_LEN")
         .allowlist_function("rb_ENCODING_GET")
         .allowlist_function("rb_yjit_exit_locations_dict")
 
@@ -282,6 +288,7 @@ fn main() {
         .allowlist_function("rb_vm_insn_addr2opcode")
         .allowlist_function("rb_iseqw_to_iseq")
         .allowlist_function("rb_iseq_each")
+        .allowlist_function("rb_iseq_method_name")
 
         // From builtin.h
         .allowlist_type("rb_builtin_function.*")

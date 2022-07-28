@@ -399,6 +399,18 @@ rb_str_bytesize(VALUE str)
     return LONG2NUM(RSTRING_LEN(str));
 }
 
+unsigned long
+rb_RSTRING_LEN(VALUE str)
+{
+    return RSTRING_LEN(str);
+}
+
+char *
+rb_RSTRING_PTR(VALUE str)
+{
+    return RSTRING_PTR(str);
+}
+
 // This is defined only as a named struct inside rb_iseq_constant_body.
 // By giving it a separate typedef, we make it nameable by rust-bindgen.
 // Bindgen's temp/anon name isn't guaranteed stable.

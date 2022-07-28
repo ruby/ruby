@@ -26,15 +26,17 @@ pub extern "C" fn rb_yjit_disasm_iseq(_ec: EcPtr, _ruby_self: VALUE, iseqw: VALU
         // Get the iseq pointer from the wrapper
         let iseq = unsafe { rb_iseqw_to_iseq(iseqw) };
 
-        let out_string = disasm_iseq(iseq);
+        // This will truncate disassembly of methods with 10k+ bytecodes.
+        // That's a good thing - this prints to console.
+        let out_string = disasm_iseq_insn_range(iseq, 0, 9999);
 
         return rust_str_to_ruby(&out_string);
     }
 }
 
 #[cfg(feature = "disasm")]
-fn disasm_iseq(iseq: IseqPtr) -> String {
-    let mut out = String::from("");
+pub fn disasm_iseq_insn_range(iseq: IseqPtr, start_idx: u32, end_idx: u32) -> String {
+        let mut out = String::from("");
 
     // Get a list of block versions generated for this iseq
     let mut block_list = get_iseq_block_list(iseq);
@@ -84,47 +86,49 @@ fn disasm_iseq(iseq: IseqPtr) -> String {
     for block_idx in 0..block_list.len() {
         let block = block_list[block_idx].borrow();
         let blockid = block.get_blockid();
-        let end_idx = block.get_end_idx();
-        let start_addr = block.get_start_addr().unwrap().raw_ptr();
-        let end_addr = block.get_end_addr().unwrap().raw_ptr();
-        let code_size = block.code_size();
+        if blockid.idx >= start_idx && blockid.idx < end_idx {
+            let end_idx = block.get_end_idx();
+            let start_addr = block.get_start_addr().unwrap().raw_ptr();
+            let end_addr = block.get_end_addr().unwrap().raw_ptr();
+            let code_size = block.code_size();
 
-        // Write some info about the current block
-        let block_ident = format!(
-            "BLOCK {}/{}, ISEQ RANGE [{},{}), {} bytes ",
-            block_idx + 1,
-            block_list.len(),
-            blockid.idx,
-            end_idx,
-            code_size
-        );
-        out.push_str(&format!("== {:=<60}\n", block_ident));
+            // Write some info about the current block
+            let block_ident = format!(
+                "BLOCK {}/{}, ISEQ RANGE [{},{}), {} bytes ",
+                block_idx + 1,
+                block_list.len(),
+                blockid.idx,
+                end_idx,
+                code_size
+            );
+            out.push_str(&format!("== {:=<60}\n", block_ident));
 
-        // Disassemble the instructions
-        let code_slice = unsafe { std::slice::from_raw_parts(start_addr, code_size) };
-        let insns = cs.disasm_all(code_slice, start_addr as u64).unwrap();
+            // Disassemble the instructions
+            let code_slice = unsafe { std::slice::from_raw_parts(start_addr, code_size) };
+            let insns = cs.disasm_all(code_slice, start_addr as u64).unwrap();
 
-        // For each instruction in this block
-        for insn in insns.as_ref() {
-            // Comments for this block
-            if let Some(comment_list) = global_cb.comments_at(insn.address() as usize) {
-                for comment in comment_list {
-                    out.push_str(&format!("  \x1b[1m# {}\x1b[0m\n", comment));
+            // For each instruction in this block
+            for insn in insns.as_ref() {
+                // Comments for this block
+                if let Some(comment_list) = global_cb.comments_at(insn.address() as usize) {
+                    for comment in comment_list {
+                        out.push_str(&format!("  \x1b[1m# {}\x1b[0m\n", comment));
+                    }
                 }
+                out.push_str(&format!("  {}\n", insn));
             }
-            out.push_str(&format!("  {}\n", insn));
-        }
 
-        // If this is not the last block
-        if block_idx < block_list.len() - 1 {
-            // Compute the size of the gap between this block and the next
-            let next_block = block_list[block_idx + 1].borrow();
-            let next_start_addr = next_block.get_start_addr().unwrap().raw_ptr();
-            let gap_size = (next_start_addr as usize) - (end_addr as usize);
+            // If this is not the last block
+            if block_idx < block_list.len() - 1 {
+                // Compute the size of the gap between this block and the next
+                let next_block = block_list[block_idx + 1].borrow();
+                let next_start_addr = next_block.get_start_addr().unwrap().raw_ptr();
+                let gap_size = (next_start_addr as usize) - (end_addr as usize);
 
-            // Log the size of the gap between the blocks if nonzero
-            if gap_size > 0 {
-                out.push_str(&format!("... {} byte gap ...\n", gap_size));
+                // Log the size of the gap between the blocks if nonzero
+                if gap_size > 0 {
+                    out.push_str(&format!("... {} byte gap ...\n", gap_size));
+                }
             }
         }
     }
