@@ -3500,6 +3500,9 @@ rb_convert_to_BigDecimal(VALUE val, size_t digs, int raise_exception)
  *  in the value, the result is rounded to that number of digits,
  *  according to the current rounding mode; see BigDecimal.mode.
  *
+ *  When +ndigits+ is 0, the number of digits to correctly represent a float number
+ *  is determined automatically.
+ *
  *  Returns +value+ converted to a \BigDecimal, depending on the type of +value+:
  *
  *  - Integer, Float, Rational, Complex, or BigDecimal: converted directly:
