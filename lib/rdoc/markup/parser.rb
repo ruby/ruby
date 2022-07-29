@@ -287,6 +287,8 @@ class RDoc::Markup::Parser
         line << ' ' * indent
       when :BREAK, :TEXT then
         line << data
+      when :BLOCKQUOTE then
+        line << '>>>'
       else # *LIST_TOKENS
         list_marker = case type
                       when :BULLET then data

@@ -812,6 +812,17 @@ EXPECTED
     assert_equal expected, @m.convert(str, @to)
   end
 
+  def test_block_quote_in_verbatim
+    str = "BlockQuote\n  >>>\n"
+
+    expected = <<-EXPECTED
+<p>BlockQuote</p>
+<pre>&gt;&gt;&gt;</pre>
+    EXPECTED
+
+    assert_equal expected, @m.convert(str, @to).gsub(/^\n/, "")
+  end
+
   def test_parseable_eh
     valid_syntax = [
       'def x() end',
