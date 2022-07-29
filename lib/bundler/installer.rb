@@ -268,7 +268,14 @@ module Bundler
         return false if @definition.nothing_changed? && !@definition.missing_specs?
       end
 
-      options["local"] ? @definition.resolve_with_cache! : @definition.resolve_remotely!
+      if options["local"]
+        @definition.resolve_with_cache!
+      elsif options["prefer-local"]
+        @definition.resolve_prefering_local!
+      else
+        @definition.resolve_remotely!
+      end
+
       true
     end
 

@@ -32,12 +32,12 @@ module Bundler
       @engine             = engine && engine.to_s || "ruby"
       @engine_versions    = (engine_version && Array(engine_version)) || @versions
       @engine_gem_version = Gem::Requirement.create(@engine_versions.first).requirements.first.last
-      @patchlevel         = patchlevel
+      @patchlevel         = patchlevel || (@gem_version.prerelease? ? "-1" : nil)
     end
 
     def to_s(versions = self.versions)
       output = String.new("ruby #{versions_string(versions)}")
-      output << "p#{patchlevel}" if patchlevel
+      output << "p#{patchlevel}" if patchlevel && patchlevel != "-1"
       output << " (#{engine} #{versions_string(engine_versions)})" unless engine == "ruby"
 
       output
@@ -46,7 +46,7 @@ module Bundler
     # @private
     PATTERN = /
       ruby\s
-      ([\d.]+) # ruby version
+      (\d+\.\d+\.\d+(?:\.\S+)?) # ruby version
       (?:p(-?\d+))? # optional patchlevel
       (?:\s\((\S+)\s(.+)\))? # optional engine info
     /xo.freeze
@@ -103,8 +103,8 @@ module Bundler
 
     def self.system
       ruby_engine = RUBY_ENGINE.dup
-      ruby_version = RUBY_VERSION.dup
-      ruby_engine_version = RUBY_ENGINE_VERSION.dup
+      ruby_version = Gem.ruby_version.to_s
+      ruby_engine_version = RUBY_ENGINE == "ruby" ? ruby_version : RUBY_ENGINE_VERSION.dup
       patchlevel = RUBY_PATCHLEVEL.to_s
 
       @ruby_version ||= RubyVersion.new(ruby_version, patchlevel, ruby_engine, ruby_engine_version)

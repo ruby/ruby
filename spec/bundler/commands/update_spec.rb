@@ -983,7 +983,7 @@ RSpec.describe "bundle update --ruby" do
   context "when the Gemfile removes the ruby" do
     before do
       install_gemfile <<-G
-        ruby '~> #{RUBY_VERSION}'
+        ruby '~> #{Gem.ruby_version}'
         source "#{file_uri_for(gem_repo1)}"
       G
 
@@ -1013,12 +1013,12 @@ RSpec.describe "bundle update --ruby" do
   context "when the Gemfile specified an updated Ruby version" do
     before do
       install_gemfile <<-G
-        ruby '~> #{RUBY_VERSION}'
+        ruby '~> #{Gem.ruby_version}'
         source "#{file_uri_for(gem_repo1)}"
       G
 
       gemfile <<-G
-          ruby '~> #{RUBY_VERSION[0..2]}'
+          ruby '~> #{current_ruby_minor}'
           source "#{file_uri_for(gem_repo1)}"
       G
     end
@@ -1047,7 +1047,7 @@ RSpec.describe "bundle update --ruby" do
   context "when a different Ruby is being used than has been versioned" do
     before do
       install_gemfile <<-G
-        ruby '~> #{RUBY_VERSION}'
+        ruby '~> #{Gem.ruby_version}'
         source "#{file_uri_for(gem_repo1)}"
       G
 
@@ -1083,7 +1083,7 @@ RSpec.describe "bundle update --ruby" do
       L
 
       gemfile <<-G
-          ruby '~> #{RUBY_VERSION}'
+          ruby '~> #{Gem.ruby_version}'
           source "#{file_uri_for(gem_repo1)}"
       G
     end

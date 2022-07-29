@@ -71,7 +71,7 @@ module Spec
     end
 
     def local_engine_version
-      RUBY_ENGINE_VERSION
+      RUBY_ENGINE == "ruby" ? Gem.ruby_version : RUBY_ENGINE_VERSION
     end
 
     def not_local_engine_version

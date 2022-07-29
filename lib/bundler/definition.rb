@@ -70,6 +70,7 @@ module Bundler
       @unlock          = unlock
       @optional_groups = optional_groups
       @remote          = false
+      @prefer_local    = false
       @specs           = nil
       @ruby_version    = ruby_version
       @gemfiles        = gemfiles
@@ -167,6 +168,13 @@ module Bundler
     def resolve_only_locally!
       @remote = false
       sources.local_only!
+      resolve
+    end
+
+    def resolve_prefering_local!
+      @prefer_local = true
+      @remote = true
+      sources.remote!
       resolve
     end
 
@@ -528,6 +536,19 @@ module Bundler
       @remote && sources.non_global_rubygems_sources.all?(&:dependency_api_available?) && !sources.aggregate_global_source?
     end
 
+    def pin_locally_available_names(source_requirements)
+      source_requirements.each_with_object({}) do |(name, original_source), new_source_requirements|
+        local_source = original_source.dup
+        local_source.local_only!
+
+        new_source_requirements[name] = if local_source.specs.search(name).any?
+          local_source
+        else
+          original_source
+        end
+      end
+    end
+
     def current_ruby_platform_locked?
       return false unless generic_local_platform == Gem::Platform::RUBY
       return false if Bundler.settings[:force_ruby_platform] && !@platforms.include?(Gem::Platform::RUBY)
@@ -765,7 +786,7 @@ module Bundler
 
     def metadata_dependencies
       @metadata_dependencies ||= [
-        Dependency.new("Ruby\0", RubyVersion.system.gem_version),
+        Dependency.new("Ruby\0", Gem.ruby_version),
         Dependency.new("RubyGems\0", Gem::VERSION),
       ]
     end
@@ -792,7 +813,9 @@ module Bundler
       # specs will be available later when the resolver knows where to
       # look for that gemspec (or its dependencies)
       source_requirements = if precompute_source_requirements_for_indirect_dependencies?
-        { :default => sources.default_source }.merge(source_map.all_requirements)
+        all_requirements = source_map.all_requirements
+        all_requirements = pin_locally_available_names(all_requirements) if @prefer_local
+        { :default => sources.default_source }.merge(all_requirements)
       else
         { :default => Source::RubygemsAggregate.new(sources, source_map) }.merge(source_map.direct_requirements)
       end
@@ -806,7 +829,9 @@ module Bundler
     end
 
     def requested_groups
-      groups - Bundler.settings[:without] - @optional_groups + Bundler.settings[:with]
+      values = groups - Bundler.settings[:without] - @optional_groups + Bundler.settings[:with]
+      values &= Bundler.settings[:only] unless Bundler.settings[:only].empty?
+      values
     end
 
     def lockfiles_equal?(current, proposed, preserve_unknown_sections)

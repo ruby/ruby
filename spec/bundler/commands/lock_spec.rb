@@ -541,11 +541,9 @@ RSpec.describe "bundle lock" do
   end
 
   it "respects lower bound ruby requirements" do
-    skip "this spec does not work with prereleases because their version is actually lower than their reported `RUBY_VERSION`" if RUBY_PATCHLEVEL == -1
-
     build_repo4 do
       build_gem "our_private_gem", "0.1.0" do |s|
-        s.required_ruby_version = ">= #{RUBY_VERSION}"
+        s.required_ruby_version = ">= #{Gem.ruby_version}"
       end
     end
 

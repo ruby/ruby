@@ -70,6 +70,10 @@ The maximum number of parallel download and install jobs\. The default is the nu
 Do not attempt to connect to \fBrubygems\.org\fR\. Instead, Bundler will use the gems already present in Rubygems\' cache or in \fBvendor/cache\fR\. Note that if an appropriate platform\-specific gem exists on \fBrubygems\.org\fR it will not be found\.
 .
 .TP
+\fB\-\-prefer\-local\fR
+Force using locally installed gems, or gems already present in Rubygems\' cache or in \fBvendor/cache\fR, when resolving, even if newer versions are available remotely\. Only attempt to connect to \fBrubygems\.org\fR for gems that are not present locally\.
+.
+.TP
 \fB\-\-no\-cache\fR
 Do not update the cache in \fBvendor/cache\fR with the newly bundled gems\. This does not remove any gems in the cache but keeps the newly bundled gems from being cached during the install\.
 .
