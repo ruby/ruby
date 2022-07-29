@@ -184,7 +184,7 @@ def sync_default_gems(gem)
     rm_rf(%w[ext/psych/lib/psych.{bundle,so} ext/psych/lib/2.*])
     rm_rf(["ext/psych/yaml/LICENSE"])
     cp_r("#{upstream}/psych.gemspec", "ext/psych")
-    `git checkout ext/psych/depend`
+    `git checkout ext/psych/depend ext/psych/.gitignore`
   when "fiddle"
     rm_rf(%w[ext/fiddle test/fiddle])
     cp_r("#{upstream}/ext/fiddle", "ext")
