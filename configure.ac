@@ -3736,7 +3736,7 @@ CARGO=
 CARGO_BUILD_ARGS=
 YJIT_LIBS=
 AS_CASE(["${YJIT_SUPPORT}"],
-[yes|dev|stats], [
+[yes|dev|stats|dev_nodebug], [
     AS_IF([test x"$enable_jit_support" = "xno"],
         AC_MSG_ERROR([--disable-jit-support but --enable-yjit. YJIT requires JIT support])
     )
@@ -3754,9 +3754,13 @@ AS_CASE(["${YJIT_SUPPORT}"],
 	CARGO_BUILD_ARGS='--features stats,disasm,asm_comments'
 	AC_DEFINE(RUBY_DEBUG, 1)
     ],
+    [dev_nodebug], [
+	rb_rust_target_subdir=dev_nodebug
+	CARGO_BUILD_ARGS='--profile dev_nodebug --features stats,disasm,asm_comments'
+    ],
     [stats], [
 	rb_rust_target_subdir=stats
-	CARGO_BUILD_ARGS='--profile stats --features stats,disasm,asm_comments'
+	CARGO_BUILD_ARGS='--profile stats --features stats'
     ])
 
     AS_IF([test -n "${CARGO_BUILD_ARGS}"], [
