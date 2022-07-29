@@ -33,6 +33,9 @@ overflow-checks = true
 [profile.stats]
 inherits = "release"
 
+[profile.dev_nodebug]
+inherits = "release"
+
 [profile.release]
 # NOTE: --enable-yjit builds use `rustc` without going through Cargo. You
 # might want to update the `rustc` invocation if you change this profile.
