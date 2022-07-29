@@ -96,12 +96,11 @@ module Bundler
         else
           source.specs.search(self)
         end
-        best_installable_candidate = candidates.reverse.find do |spec|
+        search = candidates.reverse.find do |spec|
           spec.is_a?(StubSpecification) ||
             (spec.required_ruby_version.satisfied_by?(Gem.ruby_version) &&
               spec.required_rubygems_version.satisfied_by?(Gem.rubygems_version))
-        end
-        search = best_installable_candidate || candidates.last
+        end || candidates.last
         search.dependencies = dependencies if search && (search.is_a?(RemoteSpecification) || search.is_a?(EndpointSpecification))
         search
       end
