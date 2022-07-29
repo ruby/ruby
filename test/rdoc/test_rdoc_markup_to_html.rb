@@ -821,6 +821,15 @@ EXPECTED
     EXPECTED
 
     assert_equal expected, @m.convert(str, @to).gsub(/^\n/, "")
+
+    str = "BlockQuote\n  >>>  word\n"
+
+    expected = <<-EXPECTED
+<p>BlockQuote</p>
+<pre>&gt;&gt;&gt;  word</pre>
+    EXPECTED
+
+    assert_equal expected, @m.convert(str, @to).gsub(/^\n/, "")
   end
 
   def test_parseable_eh
