@@ -78,24 +78,29 @@ module Bundler
     def materialize_for_installation
       source.local!
 
-      __materialize__(ruby_platform_materializes_to_ruby_platform? ? platform : Bundler.local_platform)
+      candidates = if source.is_a?(Source::Path) || !ruby_platform_materializes_to_ruby_platform?
+        target_platform = ruby_platform_materializes_to_ruby_platform? ? platform : Bundler.local_platform
+
+        source.specs.search(Dependency.new(name, version)).select do |spec|
+          MatchPlatform.platforms_match?(spec.platform, target_platform)
+        end
+      else
+        source.specs.search(self)
+      end
+
+      __materialize__(candidates)
     end
 
     def materialize_for_resolution
       return self unless Gem::Platform.match_spec?(self)
 
-      __materialize__(platform)
+      candidates = source.specs.search(self)
+
+      __materialize__(candidates)
     end
 
-    def __materialize__(platform)
+    def __materialize__(candidates)
       @specification = begin
-        candidates = if source.is_a?(Source::Path) || !ruby_platform_materializes_to_ruby_platform?
-          source.specs.search(Dependency.new(name, version)).select do |spec|
-            MatchPlatform.platforms_match?(spec.platform, platform)
-          end
-        else
-          source.specs.search(self)
-        end
         search = candidates.reverse.find do |spec|
           spec.is_a?(StubSpecification) ||
             (spec.required_ruby_version.satisfied_by?(Gem.ruby_version) &&
