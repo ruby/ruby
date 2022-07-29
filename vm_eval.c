@@ -1828,7 +1828,10 @@ VALUE
 ruby_eval_string_from_file(const char *str, const char *filename)
 {
     VALUE file = filename ? rb_str_new_cstr(filename) : 0;
-    return eval_string_with_cref(rb_vm_top_self(), rb_str_new2(str), NULL, file, 1);
+    rb_execution_context_t *ec = GET_EC();
+    rb_control_frame_t *cfp = ec ? rb_vm_get_ruby_level_next_cfp(ec, ec->cfp) : NULL;
+    VALUE self = cfp ? cfp->self : rb_vm_top_self();
+    return eval_string_with_cref(self, rb_str_new2(str), NULL, file, 1);
 }
 
 VALUE
