@@ -74,6 +74,9 @@ The options that can be configured are:
    `production` use. Please check carefully if you want to have this option
    enabled in `development` or `test` environments.
 
+* `only`:
+   A space-separated list of groups to install only gems of the specified groups.
+
 * `path`:
    The location to install the specified gems to. This defaults to Rubygems'
    setting. Bundler shares this location with Rubygems, `gem install ...` will
@@ -218,6 +221,8 @@ learn more about their operation in [bundle install(1)](bundle-install.1.html).
    Whether `bundle package` should skip installing gems.
 * `no_prune` (`BUNDLE_NO_PRUNE`):
    Whether Bundler should leave outdated gems unpruned when caching.
+* `only` (`BUNDLE_ONLY`):
+   A space-separated list of groups to install only gems of the specified groups.
 * `path` (`BUNDLE_PATH`):
    The location on disk where all gems in your bundle will be located regardless
    of `$GEM_HOME` or `$GEM_PATH` values. Bundle gems not found in this location

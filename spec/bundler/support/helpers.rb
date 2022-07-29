@@ -476,7 +476,7 @@ module Spec
     end
 
     def current_ruby_minor
-      Gem.ruby_version.segments[0..1].join(".")
+      Gem.ruby_version.segments.tap {|s| s.delete_at(2) }.join(".")
     end
 
     def next_ruby_minor

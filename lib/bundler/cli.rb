@@ -218,6 +218,8 @@ module Bundler
       "Specify the number of jobs to run in parallel"
     method_option "local", :type => :boolean, :banner =>
       "Do not attempt to fetch gems remotely and use the gem cache instead"
+    method_option "prefer-local", :type => :boolean, :banner =>
+      "Only attempt to fetch gems remotely if not present locally, even if newer versions are available remotely"
     method_option "no-cache", :type => :boolean, :banner =>
       "Don't update the existing gem cache."
     method_option "redownload", :type => :boolean, :aliases => "--force", :banner =>

@@ -57,6 +57,7 @@ module Bundler
     ].freeze
 
     ARRAY_KEYS = %w[
+      only
       with
       without
     ].freeze

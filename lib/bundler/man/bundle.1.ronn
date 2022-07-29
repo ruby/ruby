@@ -67,7 +67,7 @@ We divide `bundle` subcommands into primary commands and utilities:
 * [`bundle outdated(1)`](bundle-outdated.1.html):
   Show all of the outdated gems in the current bundle
 
-* `bundle console(1)`:
+* `bundle console(1)` (deprecated):
   Start an IRB session in the current bundle
 
 * [`bundle open(1)`](bundle-open.1.html):
@@ -108,3 +108,4 @@ and execute it, passing down any extra arguments to it.
 These commands are obsolete and should no longer be used:
 
 * `bundle cache(1)`
+* `bundle inject(1)`

@@ -211,7 +211,7 @@ RSpec.describe "bundle install with install-time dependencies" do
         end
 
         install_gemfile <<-G, :artifice => "compact_index", :env => { "BUNDLER_SPEC_GEM_REPO" => gem_repo2.to_s }
-          ruby "#{RUBY_VERSION}"
+          ruby "#{Gem.ruby_version}"
           source "http://localgemserver.test/"
           gem 'rack'
         G
@@ -232,7 +232,7 @@ RSpec.describe "bundle install with install-time dependencies" do
         end
 
         install_gemfile <<-G, :artifice => "endpoint", :env => { "BUNDLER_SPEC_GEM_REPO" => gem_repo2.to_s }
-          ruby "#{RUBY_VERSION}"
+          ruby "#{Gem.ruby_version}"
           source "http://localgemserver.test/"
           gem 'rack'
         G
@@ -309,7 +309,7 @@ RSpec.describe "bundle install with install-time dependencies" do
         end
 
         install_gemfile <<-G, :artifice => "compact_index_rate_limited", :env => { "BUNDLER_SPEC_GEM_REPO" => gem_repo4.to_s }
-          ruby "#{RUBY_VERSION}"
+          ruby "#{Gem.ruby_version}"
           source "http://localgemserver.test/"
           gem 'rack'
           gem 'foo1'
@@ -333,7 +333,7 @@ RSpec.describe "bundle install with install-time dependencies" do
 
         simulate_platform mingw do
           install_gemfile <<-G, :artifice => "compact_index", :env => { "BUNDLER_SPEC_GEM_REPO" => gem_repo4.to_s }
-            ruby "#{RUBY_VERSION}"
+            ruby "#{Gem.ruby_version}"
             source "http://localgemserver.test/"
             gem 'rack'
           G
@@ -354,8 +354,8 @@ RSpec.describe "bundle install with install-time dependencies" do
         end
       end
 
-      let(:ruby_requirement) { %("#{RUBY_VERSION}") }
-      let(:error_message_requirement) { "= #{RUBY_VERSION}" }
+      let(:ruby_requirement) { %("#{Gem.ruby_version}") }
+      let(:error_message_requirement) { "= #{Gem.ruby_version}" }
 
       it "raises a proper error that mentions the current Ruby version during resolution" do
         install_gemfile <<-G, :artifice => "compact_index", :env => { "BUNDLER_SPEC_GEM_REPO" => gem_repo2.to_s }, :raise_on_error => false

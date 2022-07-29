@@ -74,6 +74,10 @@ Creates a directory (defaults to \fB~/bin\fR) and place any executables from the
 In deployment mode, Bundler will \'roll\-out\' the bundle for \fBproduction\fR use\. Please check carefully if you want to have this option enabled in \fBdevelopment\fR or \fBtest\fR environments\.
 .
 .TP
+\fBonly\fR
+A space\-separated list of groups to install only gems of the specified groups\.
+.
+.TP
 \fBpath\fR
 The location to install the specified gems to\. This defaults to Rubygems\' setting\. Bundler shares this location with Rubygems, \fBgem install \.\.\.\fR will have gem installed there, too\. Therefore, gems installed without a \fB\-\-path \.\.\.\fR setting will show up by calling \fBgem list\fR\. Accordingly, gems installed to other locations will not get listed\.
 .
@@ -221,6 +225,9 @@ The following is a list of all configuration keys and their purpose\. You can le
 .
 .IP "\(bu" 4
 \fBno_prune\fR (\fBBUNDLE_NO_PRUNE\fR): Whether Bundler should leave outdated gems unpruned when caching\.
+.
+.IP "\(bu" 4
+\fBonly\fR (\fBBUNDLE_ONLY\fR): A space\-separated list of groups to install only gems of the specified groups\.
 .
 .IP "\(bu" 4
 \fBpath\fR (\fBBUNDLE_PATH\fR): The location on disk where all gems in your bundle will be located regardless of \fB$GEM_HOME\fR or \fB$GEM_PATH\fR values\. Bundle gems not found in this location will be installed by \fBbundle install\fR\. Defaults to \fBGem\.dir\fR\. When \-\-deployment is used, defaults to vendor/bundle\.
