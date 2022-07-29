@@ -111,18 +111,16 @@ rb_namespace_p(VALUE obj)
 static VALUE
 classname(VALUE klass, int *permanent)
 {
-    st_table *ivtbl;
-    st_data_t n;
-
     *permanent = 0;
     if (!RCLASS_EXT(klass)) return Qnil;
-    if (!(ivtbl = RCLASS_IV_TBL(klass))) return Qnil;
-    if (st_lookup(ivtbl, (st_data_t)classpath, &n)) {
+
+    VALUE classpathv = rb_ivar_lookup(klass, classpath, Qnil);
+    if (RTEST(classpathv)) {
         *permanent = 1;
-        return (VALUE)n;
+        return classpathv;
     }
-    if (st_lookup(ivtbl, (st_data_t)tmp_classpath, &n)) return (VALUE)n;
-    return Qnil;
+
+    return rb_ivar_lookup(klass, tmp_classpath, Qnil);;
 }
 
 /*

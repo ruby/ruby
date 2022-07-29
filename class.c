@@ -416,9 +416,9 @@ copy_tables(VALUE clone, VALUE orig)
 
         rb_iv_tbl_copy(clone, orig);
         CONST_ID(id, "__tmp_classpath__");
-        st_delete(RCLASS_IV_TBL(clone), &id, 0);
+        rb_attr_delete(clone, id);
         CONST_ID(id, "__classpath__");
-        st_delete(RCLASS_IV_TBL(clone), &id, 0);
+        rb_attr_delete(clone, id);
     }
     if (RCLASS_CONST_TBL(orig)) {
         struct clone_const_arg arg;
