@@ -13,6 +13,7 @@
 #include "ruby/internal/stdbool.h"     /* for bool */
 #include "ruby/ruby.h"          /* for struct RBasic */
 #include "ruby/st.h"            /* for struct st_table */
+#include "shape.h"
 
 #define RHASH_AR_TABLE_MAX_SIZE SIZEOF_VALUE
 
@@ -40,11 +41,19 @@ enum ruby_rhash_flags {
     RHASH_LEV_MAX = 127, /* 7 bits */
 };
 
+#if SHAPE_IN_BASIC_FLAGS
+# define RHASH_INLINE_AR_TABLE USE_RVARGC
+#else
+# define RHASH_INLINE_AR_TABLE 0
+#endif
+
 struct RHash {
     struct RBasic basic;
     union {
         st_table *st;
+#if !RHASH_INLINE_AR_TABLE
         struct ar_table_struct *ar; /* possibly 0 */
+#endif
     } as;
     const VALUE ifnone;
     union {
@@ -95,15 +104,19 @@ static inline struct ar_table_struct *RHASH_AR_TABLE(VALUE h);
 static inline st_table *RHASH_ST_TABLE(VALUE h);
 static inline size_t RHASH_ST_SIZE(VALUE h);
 static inline void RHASH_ST_CLEAR(VALUE h);
+#if !RHASH_INLINE_AR_TABLE
 static inline bool RHASH_TRANSIENT_P(VALUE h);
 static inline void RHASH_SET_TRANSIENT_FLAG(VALUE h);
 static inline void RHASH_UNSET_TRANSIENT_FLAG(VALUE h);
+#endif
 
 RUBY_SYMBOL_EXPORT_BEGIN
 /* hash.c (export) */
 VALUE rb_hash_delete_entry(VALUE hash, VALUE key);
 VALUE rb_ident_hash_new(void);
 int rb_hash_stlike_foreach(VALUE hash, st_foreach_callback_func *func, st_data_t arg);
+size_t rb_hash_size_as_embedded(VALUE hash);
+void rb_hash_convert_st_to_ar(VALUE hash);
 RUBY_SYMBOL_EXPORT_END
 
 MJIT_SYMBOL_EXPORT_BEGIN
@@ -153,7 +166,11 @@ RHASH_AR_TABLE_P(VALUE h)
 static inline struct ar_table_struct *
 RHASH_AR_TABLE(VALUE h)
 {
+#if RHASH_INLINE_AR_TABLE
+    return (struct ar_table_struct *)((uintptr_t)h + sizeof(struct RHash));
+#else
     return RHASH(h)->as.ar;
+#endif
 }
 
 static inline st_table *
@@ -214,6 +231,7 @@ RHASH_AR_TABLE_SIZE_RAW(VALUE h)
     return (unsigned)ret;
 }
 
+#if !RHASH_INLINE_AR_TABLE
 static inline bool
 RHASH_TRANSIENT_P(VALUE h)
 {
@@ -239,5 +257,6 @@ RHASH_UNSET_TRANSIENT_FLAG(VALUE h)
     FL_UNSET_RAW(h, RHASH_TRANSIENT_FLAG);
 #endif
 }
+#endif /* !RHASH_INLINE_AR_TABLE */
 
 #endif /* INTERNAL_HASH_H */

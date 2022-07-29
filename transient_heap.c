@@ -607,6 +607,7 @@ transient_heap_ptr(VALUE obj, int error)
             ptr = rb_struct_const_heap_ptr(obj);
         }
         break;
+#if !RHASH_INLINE_AR_TABLE
       case T_HASH:
         if (RHASH_TRANSIENT_P(obj)) {
             TH_ASSERT(RHASH_AR_TABLE_P(obj));
@@ -616,6 +617,7 @@ transient_heap_ptr(VALUE obj, int error)
             ptr = NULL;
         }
         break;
+#endif
       default:
         if (error) {
             rb_bug("transient_heap_ptr: unknown obj %s\n", rb_obj_info(obj));
@@ -736,9 +738,11 @@ transient_heap_block_evacuate(struct transient_heap* theap, struct transient_hea
               case T_STRUCT:
                 rb_struct_transient_heap_evacuate(obj, !TRANSIENT_HEAP_DEBUG_DONT_PROMOTE);
                 break;
+#if !RHASH_INLINE_AR_TABLE
               case T_HASH:
                 rb_hash_transient_heap_evacuate(obj, !TRANSIENT_HEAP_DEBUG_DONT_PROMOTE);
                 break;
+#endif
               default:
                 rb_bug("unsupported: %s\n", rb_obj_info(obj));
             }

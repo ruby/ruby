@@ -312,4 +312,23 @@ class TestGCCompact < Test::Unit::TestCase
       assert(ary) # warning: assigned but unused variable - ary
     end;
   end
+
+  def test_moving_hashes_down_size_pools
+    omit if GC::INTERNAL_CONSTANTS[:SIZE_POOL_COUNT] == 1
+    assert_separately([], "#{<<~"begin;"}\n#{<<~"end;"}", timeout: 10, signal: :SEGV)
+    begin;
+      HSH_COUNT=500
+
+      GC.verify_compaction_references(expand_heap: true, toward: :empty)
+
+      base_hash = { a: 1, b: 2, c: 3, d: 4, e: 5, f: 6, g: 7, h: 8 }
+      list = HSH_COUNT.times.map { base_hash.dup }
+      list.each { |h| h[:i] = 9 }
+
+      stats = GC.verify_compaction_references(expand_heap: true, toward: :empty)
+
+      assert_operator(stats[:moved_down][:T_HASH], :>=, HSH_COUNT)
+      assert(list) #warning: assigned but unused variable - list
+    end;
+  end
 end
