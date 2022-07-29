@@ -96,6 +96,9 @@ Note that each entry is kept to a minimum, see links for details.
 
 Note: We're only listing outstanding class updates.
 
+* Enumerator
+    * Enumerator.product has been added.  Enumerator::Product is the implementation. [[Feature #18685]]
+
 * Hash
     * Hash#shift now always returns nil if the hash is
       empty, instead of returning the default value or
