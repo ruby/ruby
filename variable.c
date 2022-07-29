@@ -2028,8 +2028,22 @@ autoload_data(VALUE mod, ID id)
     struct st_table *tbl;
     st_data_t val;
 
+    // If we are called with a non-origin ICLASS, fetch the autoload data from
+    // the original module.
+    if (RB_TYPE_P(mod, T_ICLASS)) {
+        if (FL_TEST_RAW(mod, RICLASS_IS_ORIGIN)) {
+            return 0;
+        } else {
+            mod = RBASIC(mod)->klass;
+        }
+    }
+
+    RUBY_ASSERT(RB_TYPE_P(mod, T_CLASS) || RB_TYPE_P(mod, T_MODULE));
+
     // Look up the instance variable table for `autoload`, then index into that table with the given constant name `id`.
-    if (!st_lookup(RCLASS_IV_TBL(mod), autoload, &val) || !(tbl = check_autoload_table((VALUE)val)) || !st_lookup(tbl, (st_data_t)id, &val)) {
+
+    VALUE tbl_value = rb_ivar_lookup(mod, autoload, 0);
+    if (!tbl_value || !(tbl = check_autoload_table(tbl_value)) || !st_lookup(tbl, (st_data_t)id, &val)) {
         return 0;
     }
 
@@ -2227,23 +2241,14 @@ autoload_feature_lookup_or_create(VALUE feature, struct autoload_data **autoload
 static struct st_table *
 autoload_table_lookup_or_create(VALUE module)
 {
-    // Get or create an autoload table in the class instance variables:
-    struct st_table *table = RCLASS_IV_TBL(module);
-    VALUE autoload_table_value;
-
-    if (table && st_lookup(table, (st_data_t)autoload, &autoload_table_value)) {
-        return check_autoload_table((VALUE)autoload_table_value);
+    VALUE autoload_table_value = rb_ivar_lookup(module, autoload, 0);
+    if (autoload_table_value) {
+        return check_autoload_table(autoload_table_value);
+    } else {
+        autoload_table_value = TypedData_Wrap_Struct(0, &autoload_table_type, 0);
+        rb_class_ivar_set(module, autoload, autoload_table_value);
+        return (DATA_PTR(autoload_table_value) = st_init_numtable());
     }
-
-    if (!table) {
-        table = RCLASS_IV_TBL(module) = st_init_numtable();
-    }
-
-    autoload_table_value = TypedData_Wrap_Struct(0, &autoload_table_type, 0);
-    st_add_direct(table, (st_data_t)autoload, (st_data_t)autoload_table_value);
-
-    RB_OBJ_WRITTEN(module, Qnil, autoload_table_value);
-    return (DATA_PTR(autoload_table_value) = st_init_numtable());
 }
 
 static VALUE
@@ -2312,10 +2317,13 @@ autoload_delete(VALUE module, ID name)
 {
     RUBY_ASSERT_CRITICAL_SECTION_ENTER();
 
-    st_data_t value, load = 0, key = name;
+    st_data_t load = 0, key = name;
 
-    if (st_lookup(RCLASS_IV_TBL(module), (st_data_t)autoload, &value)) {
-        struct st_table *table = check_autoload_table((VALUE)value);
+    RUBY_ASSERT(RB_TYPE_P(module, T_CLASS) || RB_TYPE_P(module, T_MODULE));
+
+    VALUE table_value = rb_ivar_lookup(module, autoload, 0);
+    if (table_value) {
+        struct st_table *table = check_autoload_table(table_value);
 
         st_delete(table, &key, &load);
 
@@ -2340,8 +2348,7 @@ autoload_delete(VALUE module, ID name)
 
             // If the autoload table is empty, we can delete it.
             if (table->num_entries == 0) {
-                name = autoload;
-                st_delete(RCLASS_IV_TBL(module), &name, &value);
+                rb_attr_delete(module, autoload);
             }
         }
     }
