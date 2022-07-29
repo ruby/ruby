@@ -57,6 +57,7 @@ require 'rdoc'
 # - {Paragraphs}[rdoc-ref:RDoc::MarkupReference@Paragraphs].
 # - {Verbatim text blocks}[rdoc-ref:RDoc::MarkupReference@Verbatim+Text+Blocks].
 # - {Code blocks}[rdoc-ref:RDoc::MarkupReference@Code+Blocks].
+# - {Block quotes}[rdoc-ref:RDoc::MarkupReference@Block+Quotes].
 # - {Bullet lists}[rdoc-ref:RDoc::MarkupReference@Bullet+Lists].
 # - {Numbered lists}[rdoc-ref:RDoc::MarkupReference@Numbered+Lists].
 # - {Lettered lists}[rdoc-ref:RDoc::MarkupReference@Lettered+Lists].
@@ -99,7 +100,10 @@ require 'rdoc'
 #
 # - Verbatim text blocks.
 # - Code blocks.
+# - Block quotes.
 # - Lists of any type.
+# - Headings.
+# - Horizontal rules.
 #
 # ==== Verbatim Text Blocks
 #
@@ -169,6 +173,49 @@ require 'rdoc'
 # Pro tip:  If your indented Ruby code does not get highlighted,
 # it may contain a syntax error.
 #
+# ==== Block Quotes
+#
+# You can use the characters <tt>>>></tt> (unindented),
+# followed by indented text, to treat the text
+# as a {block quote}[https://en.wikipedia.org/wiki/Block_quotation]:
+#
+# Example input:
+#
+#   >>>
+#     Lorem ipsum dolor sit amet, consectetur adipiscing elit. Integer
+#     commodo quam iaculis massa posuere, dictum fringilla justo pulvinar.
+#     Quisque turpis erat, pharetra eu dui at, sollicitudin accumsan nulla.
+#
+#     Aenean congue ligula eu ligula molestie, eu pellentesque purus
+#     faucibus. In id leo non ligula condimentum lobortis. Duis vestibulum,
+#     diam in pellentesque aliquet, mi tellus placerat sapien, id euismod
+#     purus magna ut tortor.
+#
+# Rendered HTML:
+#
+# >>>
+#   Lorem ipsum dolor sit amet, consectetur adipiscing elit. Integer
+#   commodo quam iaculis massa posuere, dictum fringilla justo pulvinar.
+#   Quisque turpis erat, pharetra eu dui at, sollicitudin accumsan nulla.
+#
+#   Aenean congue ligula eu ligula molestie, eu pellentesque purus
+#   faucibus. In id leo non ligula condimentum lobortis. Duis vestibulum,
+#   diam in pellentesque aliquet, mi tellus placerat sapien, id euismod
+#   purus magna ut tortor.
+#
+# A block quote may contain nested blocks, including:
+#
+# - Other block quotes.
+# - Paragraphs.
+# - Verbatim text blocks.
+# - Code blocks.
+# - Lists of any type.
+# - Headings.
+# - Horizontal rules.
+#
+# Note that, unlike verbatim text, single newlines are not honored,
+# but that a double newline begins a new paragraph in the block quote.
+#
 # ==== Lists
 #
 # Each type of list item is marked by a special beginning:
@@ -189,6 +236,16 @@ require 'rdoc'
 #
 # A list item may be continued on additional lines that are aligned
 # with the first line.  See examples below.
+#
+# A list item may contain nested blocks, including:
+#
+# - Other lists of any type.
+# - Paragraphs.
+# - Verbatim text blocks.
+# - Code blocks.
+# - Block quotes.
+# - Headings.
+# - Horizontal rules.
 #
 # ===== Bullet Lists
 #
@@ -290,15 +347,6 @@ require 'rdoc'
 #
 #   [bar baz] Yet another.
 #   bam:: Last one.
-#
-# ===== Blocks Nested in Lists
-#
-# A list item may contain nested blocks, including:
-#
-# - Paragraphs.
-# - Verbatim text blocks.
-# - Code blocks.
-# - Other lists of any type.
 #
 # ==== Headings
 #
