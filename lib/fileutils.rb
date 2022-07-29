@@ -440,6 +440,8 @@ module FileUtils
   # Raises an exception if a directory does not exist
   # or if for any reason a directory cannot be removed.
   #
+  # Related: {methods for deleting}[rdoc-ref:FileUtils@Deleting].
+  #
   def rmdir(list, parents: nil, noop: nil, verbose: nil)
     list = fu_list(list)
     fu_output_message "rmdir #{parents ? '-p ' : ''}#{list.join ' '}" if verbose
@@ -1261,6 +1263,8 @@ module FileUtils
   #     rm -r src0.dat src0.txt
   #     rm -r src1
   #
+  # Related: {methods for deleting}[rdoc-ref:FileUtils@Deleting].
+  #
   def rm_r(list, force: nil, noop: nil, verbose: nil, secure: nil)
     list = fu_list(list)
     fu_output_message "rm -r#{force ? 'f' : ''} #{list.join ' '}" if verbose
@@ -1290,6 +1294,8 @@ module FileUtils
   #
   # FileUtils.rmtree is an alias for FileUtils.rm_rf.
   #
+  # Related: {methods for deleting}[rdoc-ref:FileUtils@Deleting].
+  #
   def rm_rf(list, noop: nil, verbose: nil, secure: nil)
     rm_r list, force: true, noop: noop, verbose: verbose, secure: secure
   end
@@ -1310,6 +1316,8 @@ module FileUtils
   #
   # Optional argument +force+ specifies whether to ignore
   # raised exceptions of StandardError and its descendants.
+  #
+  # Related: {methods for deleting}[rdoc-ref:FileUtils@Deleting].
   #
   def remove_entry_secure(path, force = false)
     unless fu_have_symlink?
@@ -1431,6 +1439,8 @@ module FileUtils
   # Optional argument +force+ specifies whether to ignore
   # raised exceptions of StandardError and its descendants.
   #
+  # Related: {methods for deleting}[rdoc-ref:FileUtils@Deleting].
+  #
   def remove_file(path, force = false)
     Entry_.new(path).remove_file
   rescue
@@ -1447,6 +1457,8 @@ module FileUtils
   #
   # Optional argument +force+ specifies whether to ignore
   # raised exceptions of StandardError and its descendants.
+  #
+  # Related: {methods for deleting}[rdoc-ref:FileUtils@Deleting].
   #
   def remove_dir(path, force = false)
     remove_entry path, force   # FIXME?? check if it is a directory
@@ -1546,7 +1558,7 @@ module FileUtils
   #   using {File.chown}[https://docs.ruby-lang.org/en/master/File.html#method-c-chown].
   # - <tt>mode: <i>permissions</i></tt> - changes the permissions.
   #   using {File.chmod}[https://docs.ruby-lang.org/en/master/File.html#method-c-chmod].
-  # - <tt>noop: true</tt> - does not remove entries; returns +nil+.
+  # - <tt>noop: true</tt> - does not copy entries; returns +nil+.
   # - <tt>owner: <i>owner</i></tt> - changes the owner if not +nil+,
   #   using {File.chown}[https://docs.ruby-lang.org/en/master/File.html#method-c-chown].
   # - <tt>preserve: true</tt> - preserve timestamps
