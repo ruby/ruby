@@ -417,7 +417,6 @@ elsif CONFIG['EXTSTATIC']
 else
   $ruby = '$(topdir)/ruby' + EXEEXT
 end
-$mflags << "BUILTRUBY=#$ruby"
 $ruby = [$ruby]
 $ruby << "-I'$(topdir)'"
 unless CROSS_COMPILING
@@ -428,6 +427,7 @@ end
 topruby = $ruby
 $ruby = topruby.join(' ')
 $mflags << "ruby=#$ruby"
+$builtruby = '$(topdir)/ruby' + EXEEXT # Must be an executable path
 
 MTIMES = [__FILE__, 'rbconfig.rb', srcdir+'/lib/mkmf.rb'].collect {|f| File.mtime(f)}
 

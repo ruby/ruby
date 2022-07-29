@@ -2076,7 +2076,11 @@ sitearch = #{CONFIG['sitearch']}
 ruby_version = #{RbConfig::CONFIG['ruby_version']}
 ruby = #{$ruby.sub(%r[\A#{Regexp.quote(RbConfig::CONFIG['bindir'])}(?=/|\z)]) {'$(bindir)'}}
 RUBY = $(ruby#{sep})
-BUILTRUBY = $(RUBY)
+BUILTRUBY = #{if defined?($builtruby) && $builtruby
+    $builtruby
+  else
+    File.join('$(bindir)', CONFIG["RUBY_INSTALL_NAME"] + CONFIG['EXEEXT'])
+  end}
 ruby_headers = #{headers.join(' ')}
 
 RM = #{config_string('RM', &possible_command) || '$(RUBY) -run -e rm -- -f'}
