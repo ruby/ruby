@@ -3014,7 +3014,7 @@ STATIC=
 			AS_IF([test "x$EXTSTATIC" = x], [
                           # When building ext bundles, a mach-o bundle needs to know its loader
                           # program to bind symbols from the ruby executable
-                          EXTDLDFLAGS='-bundle_loader $(BUILTRUBY)'
+                          EXTDLDFLAGS="-bundle_loader '\$(BUILTRUBY)'"
                           PREP="$PREP"' $(PROGRAM)'
 			])
 			rb_cv_dlopen=yes],
