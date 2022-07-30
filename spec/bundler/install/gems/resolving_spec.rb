@@ -216,7 +216,7 @@ RSpec.describe "bundle install with install-time dependencies" do
           gem 'rack'
         G
 
-        expect(out).to_not include("rack-9001.0.0 requires ruby version > 9000")
+        expect(err).to_not include("rack-9001.0.0 requires ruby version > 9000")
         expect(the_bundle).to include_gems("rack 1.2")
       end
 
@@ -237,7 +237,7 @@ RSpec.describe "bundle install with install-time dependencies" do
           gem 'rack'
         G
 
-        expect(out).to_not include("rack-9001.0.0 requires ruby version > 9000")
+        expect(err).to_not include("rack-9001.0.0 requires ruby version > 9000")
         expect(the_bundle).to include_gems("rack 1.2")
       end
 
@@ -329,7 +329,7 @@ RSpec.describe "bundle install with install-time dependencies" do
           gem 'foo1'
         G
 
-        expect(out).to_not include("rack-9001.0.0 requires ruby version > 9000")
+        expect(err).to_not include("rack-9001.0.0 requires ruby version > 9000")
         expect(the_bundle).to include_gems("rack 1.2")
       end
 
@@ -353,8 +353,8 @@ RSpec.describe "bundle install with install-time dependencies" do
           G
         end
 
-        expect(out).to_not include("rack-9001.0.0 requires ruby version > 9000")
-        expect(out).to_not include("rack-1.2-#{Bundler.local_platform} requires ruby version > 9000")
+        expect(err).to_not include("rack-9001.0.0 requires ruby version > 9000")
+        expect(err).to_not include("rack-1.2-#{Bundler.local_platform} requires ruby version > 9000")
         expect(the_bundle).to include_gems("rack 1.2")
       end
     end
