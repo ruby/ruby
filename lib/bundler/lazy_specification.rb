@@ -108,7 +108,11 @@ module Bundler
             (spec.required_ruby_version.satisfied_by?(Gem.ruby_version) &&
               spec.required_rubygems_version.satisfied_by?(Gem.rubygems_version))
         end
-        search.dependencies = dependencies if search && search.full_name == full_name && (search.is_a?(RemoteSpecification) || search.is_a?(EndpointSpecification))
+        if search.nil? && Bundler.frozen_bundle?
+          search = candidates.last
+        else
+          search.dependencies = dependencies if search && search.full_name == full_name && (search.is_a?(RemoteSpecification) || search.is_a?(EndpointSpecification))
+        end
         search
       end
     end
