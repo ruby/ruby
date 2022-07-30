@@ -427,7 +427,7 @@ end
 topruby = $ruby
 $ruby = topruby.join(' ')
 $mflags << "ruby=#$ruby"
-$builtruby = '$(topdir)/ruby' + EXEEXT # Must be an executable path
+$builtruby = '$(topdir)/miniruby' + EXEEXT # Must be an executable path
 
 MTIMES = [__FILE__, 'rbconfig.rb', srcdir+'/lib/mkmf.rb'].collect {|f| File.mtime(f)}
 
