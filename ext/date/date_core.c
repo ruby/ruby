@@ -4833,11 +4833,14 @@ date_s_rfc2822(int argc, VALUE *argv, VALUE klass)
  * call-seq:
  *   Date._httpdate(string, limit: 128) -> hash
  *
- * Returns a hash of parsed elements.
+ * Returns a hash of values parsed from +string+:
  *
- * Raise an ArgumentError when the string length is longer than _limit_.
- * You can stop this check by passing <code>limit: nil</code>, but note
- * that it may take a long time to parse.
+ *   d = Date.new(2001, 2, 3)
+ *   s = d.httpdate # => "Sat, 03 Feb 2001 00:00:00 GMT"
+ *   Date._httpdate(s)
+ *   # => {:wday=>6, :mday=>3, :mon=>2, :year=>2001, :hour=>0, :min=>0, :sec=>0, :zone=>"GMT", :offset=>0}
+ *
+ * See argument {limit}[rdoc-ref:Date@Argument+limit].
  */
 static VALUE
 date_s__httpdate(int argc, VALUE *argv, VALUE klass)
@@ -8760,10 +8763,15 @@ time_to_datetime(VALUE self)
 
 /*
  * call-seq:
- *    d.to_time  ->  time
+ *   to_time -> time
  *
- * Returns a Time object which denotes self. If self is a julian date,
- * convert it to a gregorian date before converting it to Time.
+ * Returns a new Time object with the same value as +self+;
+ * if +self+ is a Julian date, derives its Gregorian date
+ * for conversion to the \Time object:
+ *
+ *   Date.new(2001, 2, 3).to_time               # => 2001-02-03 00:00:00 -0600
+ *   Date.new(2001, 2, 3, Date::JULIAN).to_time # => 2001-02-16 00:00:00 -0600
+ *
  */
 static VALUE
 date_to_time(VALUE self)
@@ -8784,9 +8792,9 @@ date_to_time(VALUE self)
 
 /*
  * call-seq:
- *    d.to_date  ->  self
+ *   to_date -> self
  *
- * Returns self.
+ * Returns +self+.
  */
 static VALUE
 date_to_date(VALUE self)
@@ -8798,7 +8806,10 @@ date_to_date(VALUE self)
  * call-seq:
  *    d.to_datetime  -> datetime
  *
- * Returns a DateTime object which denotes self.
+ * Returns a DateTime whose value is the same as +self+:
+ *
+ *   Date.new(2001, 2, 3).to_datetime # => #<DateTime: 2001-02-03T00:00:00+00:00>
+ *
  */
 static VALUE
 date_to_datetime(VALUE self)
@@ -9497,6 +9508,19 @@ Init_date_core(void)
      *
      * - Date::JULIAN - no changeover date; all dates are Julian.
      * - Date::GREGORIAN - no changeover date; all dates are Gregorian.
+     *
+     * === Argument +limit+
+     *
+     * Certain singleton methods in \Date that parse string arguments
+     * also take optional keyword argument +limit+,
+     * which can limit the length of the string argument.
+     *
+     * When +limit+ is:
+     *
+     * - Non-negative:
+     *   raises ArgumentError if the string length is greater than _limit_.
+     * - Other numeric or +nil+: ignores +limit+.
+     * - Other non-numeric: raises TypeError.
      *
      */
     cDate = rb_define_class("Date", rb_cObject);
