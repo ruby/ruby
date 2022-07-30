@@ -3015,7 +3015,6 @@ STATIC=
                           # When building ext bundles, a mach-o bundle needs to know its loader
                           # program to bind symbols from the ruby executable
                           EXTDLDFLAGS="-bundle_loader '\$(BUILTRUBY)'"
-                          PREP="$PREP"' $(PROGRAM)'
 			])
 			rb_cv_dlopen=yes],
         [aix*], [	: ${LDSHARED='$(CC)'}
@@ -3340,7 +3339,7 @@ AS_IF([test x"$cross_compiling" = xyes], [
   AC_SUBST(XRUBY_LIBDIR)
   AC_SUBST(XRUBY_RUBYLIBDIR)
   AC_SUBST(XRUBY_RUBYHDRDIR)
-  PREP="$PREP "'$(arch)-fake.rb'
+  PREP='$(arch)-fake.rb'
   RUNRUBY_COMMAND='$(MINIRUBY) -I`cd $(srcdir)/lib; pwd`'
   RUNRUBY='$(RUNRUBY_COMMAND)'
   XRUBY='$(MINIRUBY)'
@@ -3350,7 +3349,7 @@ AS_IF([test x"$cross_compiling" = xyes], [
 ], [
   MINIRUBY='./miniruby$(EXEEXT) -I$(srcdir)/lib -I.'
   MINIRUBY="$MINIRUBY"' -I$(EXTOUT)/common'
-  PREP="$PREP "'miniruby$(EXEEXT)'
+  PREP='miniruby$(EXEEXT)'
   RUNRUBY_COMMAND='$(MINIRUBY) $(tooldir)/runruby.rb --extout=$(EXTOUT) $(RUNRUBYOPT)'
   RUNRUBY='$(RUNRUBY_COMMAND) --'
   XRUBY='$(RUNRUBY)'
