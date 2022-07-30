@@ -34,8 +34,8 @@
   that follows (in reverse chronological order):
 
   2000-07-03 lpd Patched to eliminate warnings about "constant is
-                unsigned in ANSI C, signed in traditional";
-                made test program self-checking.
+		unsigned in ANSI C, signed in traditional";
+		made test program self-checking.
   1999-11-04 lpd Edited comments slightly for automatic TOC extraction.
   1999-10-18 lpd Fixed typo in header comment (ansi2knr rather than md5).
   1999-05-03 lpd Original version.
@@ -64,32 +64,32 @@ int
 main(void)
 {
     static const char *const test[7*2] = {
-        "", "d41d8cd98f00b204e9800998ecf8427e",
-        "a", "0cc175b9c0f1b6a831c399e269772661",
-        "abc", "900150983cd24fb0d6963f7d28e17f72",
-        "message digest", "f96b697d7cb7938d525a2f31aaf161d0",
-        "abcdefghijklmnopqrstuvwxyz", "c3fcd3d76192e4007dfb496cca67e13b",
-        "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789",
-                                "d174ab98d277d9f5a5611c2c9f419d9f",
-        "12345678901234567890123456789012345678901234567890123456789012345678901234567890", "57edf4a22be3c955ac49da2e2107b67a"
+	"", "d41d8cd98f00b204e9800998ecf8427e",
+	"a", "0cc175b9c0f1b6a831c399e269772661",
+	"abc", "900150983cd24fb0d6963f7d28e17f72",
+	"message digest", "f96b697d7cb7938d525a2f31aaf161d0",
+	"abcdefghijklmnopqrstuvwxyz", "c3fcd3d76192e4007dfb496cca67e13b",
+	"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789",
+				"d174ab98d277d9f5a5611c2c9f419d9f",
+	"12345678901234567890123456789012345678901234567890123456789012345678901234567890", "57edf4a22be3c955ac49da2e2107b67a"
     };
     int i;
 
     for (i = 0; i < 7*2; i += 2) {
-        MD5_CTX state;
-        uint8_t digest[16];
-        char hex_output[16*2 + 1];
-        int di;
+	MD5_CTX state;
+	uint8_t digest[16];
+	char hex_output[16*2 + 1];
+	int di;
 
-        MD5_Init(&state);
-        MD5_Update(&state, (const uint8_t *)test[i], strlen(test[i]));
-        MD5_Final(digest, &state);
-        printf("MD5 (\"%s\") = ", test[i]);
-        for (di = 0; di < 16; ++di)
-            sprintf(hex_output + di * 2, "%02x", digest[di]);
-        puts(hex_output);
-        if (strcmp(hex_output, test[i + 1]))
-            printf("**** ERROR, should be: %s\n", test[i + 1]);
+	MD5_Init(&state);
+	MD5_Update(&state, (const uint8_t *)test[i], strlen(test[i]));
+	MD5_Final(digest, &state);
+	printf("MD5 (\"%s\") = ", test[i]);
+	for (di = 0; di < 16; ++di)
+	    sprintf(hex_output + di * 2, "%02x", digest[di]);
+	puts(hex_output);
+	if (strcmp(hex_output, test[i + 1]))
+	    printf("**** ERROR, should be: %s\n", test[i + 1]);
     }
     return 0;
 }
@@ -106,18 +106,18 @@ main(void)
 {
     int i;
     for (i = 1; i <= 64; ++i) {
-        unsigned long v = (unsigned long)(4294967296.0 * fabs(sin((double)i)));
+	unsigned long v = (unsigned long)(4294967296.0 * fabs(sin((double)i)));
 
-        /*
-         * The following nonsense is only to avoid compiler warnings about
-         * "integer constant is unsigned in ANSI C, signed with -traditional".
-         */
-        if (v >> 31) {
-            printf("#define T%d /* 0x%08lx */ (T_MASK ^ 0x%08lx)\n", i,
-                   v, (unsigned long)(unsigned int)(~v));
-        } else {
-            printf("#define T%d    0x%08lx\n", i, v);
-        }
+	/*
+	 * The following nonsense is only to avoid compiler warnings about
+	 * "integer constant is unsigned in ANSI C, signed with -traditional".
+	 */
+	if (v >> 31) {
+	    printf("#define T%d /* 0x%08lx */ (T_MASK ^ 0x%08lx)\n", i,
+		   v, (unsigned long)(unsigned int)(~v));
+	} else {
+	    printf("#define T%d    0x%08lx\n", i, v);
+	}
     }
     return 0;
 }
@@ -199,8 +199,8 @@ static void
 md5_process(MD5_CTX *pms, const uint8_t *data /*[64]*/)
 {
     uint32_t
-        a = pms->state[0], b = pms->state[1],
-        c = pms->state[2], d = pms->state[3];
+	a = pms->state[0], b = pms->state[1],
+	c = pms->state[2], d = pms->state[3];
     uint32_t t;
 
 #ifdef WORDS_BIGENDIAN
@@ -214,7 +214,7 @@ md5_process(MD5_CTX *pms, const uint8_t *data /*[64]*/)
     int i;
 
     for (i = 0; i < 16; ++i, xp += 4)
-        X[i] = xp[0] + (xp[1] << 8) + (xp[2] << 16) + (xp[3] << 24);
+	X[i] = xp[0] + (xp[1] << 8) + (xp[2] << 16) + (xp[3] << 24);
 
 #else
 
@@ -226,12 +226,12 @@ md5_process(MD5_CTX *pms, const uint8_t *data /*[64]*/)
     const uint32_t *X;
 
     if (!(((uintptr_t)data) & 3)) {
-        /* data are properly aligned */
-        X = (const uint32_t *)data;
+	/* data are properly aligned */
+	X = (const uint32_t *)data;
     } else {
-        /* not aligned */
-        memcpy(xbuf, data, 64);
-        X = xbuf;
+	/* not aligned */
+	memcpy(xbuf, data, 64);
+	X = xbuf;
     }
 #endif
 
@@ -370,55 +370,55 @@ MD5_Update(MD5_CTX *pms, const uint8_t *data, size_t nbytes)
     uint32_t nbits = (uint32_t)(nbytes << 3);
 
     if (nbytes == 0)
-        return;
+	return;
 
     /* Update the message length. */
     pms->count[1] += nbytes >> 29;
     pms->count[0] += nbits;
     if (pms->count[0] < nbits)
-        pms->count[1]++;
+	pms->count[1]++;
 
     /* Process an initial partial block. */
     if (offset) {
-        size_t copy = (offset + nbytes > 64 ? 64 - offset : nbytes);
+	size_t copy = (offset + nbytes > 64 ? 64 - offset : nbytes);
 
-        memcpy(pms->buffer + offset, p, copy);
-        if (offset + copy < 64)
-            return;
-        p += copy;
-        left -= copy;
-        md5_process(pms, pms->buffer);
+	memcpy(pms->buffer + offset, p, copy);
+	if (offset + copy < 64)
+	    return;
+	p += copy;
+	left -= copy;
+	md5_process(pms, pms->buffer);
     }
 
     /* Process full blocks. */
     for (; left >= 64; p += 64, left -= 64)
-        md5_process(pms, p);
+	md5_process(pms, p);
 
     /* Process a final partial block. */
     if (left)
-        memcpy(pms->buffer, p, left);
+	memcpy(pms->buffer, p, left);
 }
 
 int
 MD5_Finish(MD5_CTX *pms, uint8_t *digest)
 {
     static const uint8_t pad[64] = {
-        0x80, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+	0x80, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
     };
     uint8_t data[8];
     size_t i;
 
     /* Save the length before padding. */
     for (i = 0; i < 8; ++i)
-        data[i] = (uint8_t)(pms->count[i >> 2] >> ((i & 3) << 3));
+	data[i] = (uint8_t)(pms->count[i >> 2] >> ((i & 3) << 3));
     /* Pad to 56 bytes mod 64. */
     MD5_Update(pms, pad, ((55 - (pms->count[0] >> 3)) & 63) + 1);
     /* Append the length. */
     MD5_Update(pms, data, 8);
     for (i = 0; i < 16; ++i)
-        digest[i] = (uint8_t)(pms->state[i >> 2] >> ((i & 3) << 3));
+	digest[i] = (uint8_t)(pms->state[i >> 2] >> ((i & 3) << 3));
     return 1;
 }
