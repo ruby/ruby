@@ -120,14 +120,14 @@ typedef unsigned long long uint64_t;	/* 8-bytes (64-bits) */
  *   cc -DSHA2_USE_INTTYPES_H ...
  */
 typedef struct _SHA256_CTX {
-        uint32_t	state[8];
-        uint64_t	bitcount;
-        uint8_t	buffer[SHA256_BLOCK_LENGTH];
+	uint32_t	state[8];
+	uint64_t	bitcount;
+	uint8_t	buffer[SHA256_BLOCK_LENGTH];
 } SHA256_CTX;
 typedef struct _SHA512_CTX {
-        uint64_t	state[8];
-        uint64_t	bitcount[2];
-        uint8_t	buffer[SHA512_BLOCK_LENGTH];
+	uint64_t	state[8];
+	uint64_t	bitcount[2];
+	uint8_t	buffer[SHA512_BLOCK_LENGTH];
 } SHA512_CTX;
 
 typedef SHA512_CTX SHA384_CTX;

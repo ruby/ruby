@@ -29,10 +29,10 @@
 #include "../defs.h"
 
 typedef struct {
-        uint32_t	state[5];	/* state (ABCDE) */
-        uint32_t	length[2];	/* number of bits */
-        uint8_t		bbuffer[64];    /* overflow buffer */
-        uint32_t	buflen;		/* number of chars in bbuffer */
+	uint32_t	state[5];	/* state (ABCDE) */
+	uint32_t	length[2];	/* number of bits */
+	uint8_t		bbuffer[64];    /* overflow buffer */
+	uint32_t	buflen;		/* number of chars in bbuffer */
 } RMD160_CTX;
 
 #ifdef RUBY
