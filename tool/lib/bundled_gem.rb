@@ -5,7 +5,9 @@ require 'rubygems/package'
 # This library is used by "make extract-gems" to
 # unpack bundled gem files.
 
-class << Gem
+module BundledGem
+  module_function
+
   def unpack(file, *rest)
     pkg = Gem::Package.new(file)
     prepare_test(pkg.spec, *rest) {|dir| pkg.extract_files(dir)}

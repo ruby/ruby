@@ -1361,16 +1361,16 @@ update-gems$(gnumake:yes=-sequential): PHONY
 extract-gems$(gnumake:yes=-sequential): PHONY
 	$(ECHO) Extracting bundled gem files...
 	$(Q) $(BASERUBY) -C "$(srcdir)" \
-	    -Itool -rfileutils -rgem-unpack -answ \
+	    -Itool/lib -rfileutils -rbundled_gem -answ \
 	    -e 'BEGIN {d = ".bundle/gems"}' \
 	    -e 'gem, ver, _, rev = *$$F' \
 	    -e 'next if !ver or /^#/=~gem' \
 	    -e 'g = "#{gem}-#{ver}"' \
 	    -e 'if File.directory?("#{d}/#{g}")' \
 	    -e 'elsif rev and File.exist?(gs = "gems/src/#{gem}/#{gem}.gemspec")' \
-	    -e   'Gem.copy(gs, ".bundle")' \
+	    -e   'BundledGem.copy(gs, ".bundle")' \
 	    -e 'else' \
-	    -e   'Gem.unpack("gems/#{g}.gem", ".bundle")' \
+	    -e   'BundledGem.unpack("gems/#{g}.gem", ".bundle")' \
 	    -e 'end' \
 	    gems/bundled_gems
 
