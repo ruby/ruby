@@ -811,8 +811,16 @@ start_compiling_c_to_so(const char *c_file, const char *so_file)
 # endif
         c_file, NULL
     };
-    char **args = form_args(7, CC_LDSHARED_ARGS, CC_CODEFLAG_ARGS, cc_added_args,
-                            so_args, CC_LIBS, CC_DLDFLAGS_ARGS, CC_LINKER_ARGS);
+
+# if defined(__MACH__)
+    extern VALUE rb_libruby_selfpath;
+    const char *loader_args[] = {"-bundle_loader", StringValuePtr(rb_libruby_selfpath), NULL};
+# else
+    const char *loader_args[] = {NULL};
+# endif
+
+    char **args = form_args(8, CC_LDSHARED_ARGS, CC_CODEFLAG_ARGS, cc_added_args,
+                            so_args, loader_args, CC_LIBS, CC_DLDFLAGS_ARGS, CC_LINKER_ARGS);
     if (args == NULL) return -1;
 
     rb_vm_t *vm = GET_VM();
