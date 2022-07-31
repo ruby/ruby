@@ -284,6 +284,11 @@ RSpec.describe "bundle install with gems on multiple sources" do
           expect(err).to include("Warning: the gem 'rack' was found in multiple sources.")
           expect(err).to include("Installed from: https://gem.repo2")
 
+          expected_checksums = construct_checksum_section do |c|
+            c.repo_gem gem_repo3, "depends_on_rack", "1.0.1"
+            c.repo_gem gem_repo2, "rack", "1.0.0"
+          end
+
           expect(lockfile).to eq <<~L
             GEM
               remote: https://gem.repo1/
@@ -302,6 +307,9 @@ RSpec.describe "bundle install with gems on multiple sources" do
 
             DEPENDENCIES
               depends_on_rack!
+
+            CHECKSUMS
+              #{expected_checksums}
 
             BUNDLED WITH
                #{Bundler::VERSION}
@@ -698,6 +706,21 @@ RSpec.describe "bundle install with gems on multiple sources" do
         expect(the_bundle).to include_gems("concurrent-ruby 1.1.8")
         expect(the_bundle).not_to include_gems("concurrent-ruby 1.1.9")
 
+        expected_checksums = construct_checksum_section do |c|
+          c.repo_gem gem_repo2, "activesupport", "6.0.3.4"
+          c.repo_gem gem_repo2, "concurrent-ruby", "1.1.8"
+          c.repo_gem gem_repo2, "connection_pool", "2.2.3"
+          c.repo_gem gem_repo2, "i18n", "1.8.9"
+          c.repo_gem gem_repo2, "minitest", "5.14.3"
+          c.repo_gem gem_repo2, "rack", "2.2.3"
+          c.repo_gem gem_repo2, "redis", "4.2.5"
+          c.repo_gem gem_repo2, "sidekiq", "6.1.3"
+          c.repo_gem gem_repo3, "sidekiq-pro", "5.2.1"
+          c.repo_gem gem_repo2, "thread_safe", "0.3.6"
+          c.repo_gem gem_repo2, "tzinfo", "1.2.9"
+          c.repo_gem gem_repo2, "zeitwerk", "2.4.2"
+        end
+
         expect(lockfile).to eq <<~L
           GEM
             remote: https://gem.repo2/
@@ -737,6 +760,9 @@ RSpec.describe "bundle install with gems on multiple sources" do
           DEPENDENCIES
             activesupport
             sidekiq-pro!
+
+          CHECKSUMS
+            #{expected_checksums}
 
           BUNDLED WITH
              #{Bundler::VERSION}
@@ -783,6 +809,20 @@ RSpec.describe "bundle install with gems on multiple sources" do
         expect(the_bundle).not_to include_gems("concurrent-ruby 1.1.8")
         expect(the_bundle).to include_gems("concurrent-ruby 1.1.9")
 
+        expected_checksums = construct_checksum_section do |c|
+          c.repo_gem gem_repo2, "activesupport", "6.1.2.1"
+          c.repo_gem gem_repo2, "concurrent-ruby", "1.1.9"
+          c.repo_gem gem_repo2, "connection_pool", "2.2.3"
+          c.repo_gem gem_repo2, "i18n", "1.8.9"
+          c.repo_gem gem_repo2, "minitest", "5.14.3"
+          c.repo_gem gem_repo2, "rack", "2.2.3"
+          c.repo_gem gem_repo2, "redis", "4.2.5"
+          c.repo_gem gem_repo2, "sidekiq", "6.1.3"
+          c.repo_gem gem_repo3, "sidekiq-pro", "5.2.1"
+          c.repo_gem gem_repo2, "tzinfo", "2.0.4"
+          c.repo_gem gem_repo2, "zeitwerk", "2.4.2"
+        end
+
         expect(lockfile).to eq <<~L
           GEM
             remote: https://gem.repo2/
@@ -822,6 +862,9 @@ RSpec.describe "bundle install with gems on multiple sources" do
             activesupport
             sidekiq-pro!
 
+          CHECKSUMS
+            #{expected_checksums}
+
           BUNDLED WITH
              #{Bundler::VERSION}
         L
@@ -837,6 +880,21 @@ RSpec.describe "bundle install with gems on multiple sources" do
         expect(the_bundle).not_to include_gems("tzinfo 2.0.4")
         expect(the_bundle).to include_gems("concurrent-ruby 1.1.9")
         expect(the_bundle).not_to include_gems("concurrent-ruby 1.1.8")
+
+        expected_checksums = construct_checksum_section do |c|
+          c.repo_gem gem_repo2, "activesupport", "6.0.3.4"
+          c.repo_gem gem_repo2, "concurrent-ruby", "1.1.9"
+          c.repo_gem gem_repo2, "connection_pool", "2.2.3"
+          c.repo_gem gem_repo2, "i18n", "1.8.9"
+          c.repo_gem gem_repo2, "minitest", "5.14.3"
+          c.repo_gem gem_repo2, "rack", "2.2.3"
+          c.repo_gem gem_repo2, "redis", "4.2.5"
+          c.repo_gem gem_repo2, "sidekiq", "6.1.3"
+          c.repo_gem gem_repo3, "sidekiq-pro", "5.2.1"
+          c.repo_gem gem_repo2, "thread_safe", "0.3.6"
+          c.repo_gem gem_repo2, "tzinfo", "1.2.9"
+          c.repo_gem gem_repo2, "zeitwerk", "2.4.2"
+        end
 
         expect(lockfile).to eq <<~L
           GEM
@@ -877,6 +935,9 @@ RSpec.describe "bundle install with gems on multiple sources" do
           DEPENDENCIES
             activesupport
             sidekiq-pro!
+
+          CHECKSUMS
+            #{expected_checksums}
 
           BUNDLED WITH
              #{Bundler::VERSION}
@@ -945,6 +1006,12 @@ RSpec.describe "bundle install with gems on multiple sources" do
       end
 
       it "installs from the default source without any warnings or errors and generates a proper lockfile" do
+        expected_checksums = construct_checksum_section do |c|
+          c.repo_gem gem_repo3, "handsoap", "0.2.5.5"
+          c.repo_gem gem_repo2, "nokogiri", "1.11.1"
+          c.repo_gem gem_repo2, "racca", "1.5.2"
+        end
+
         expected_lockfile = <<~L
           GEM
             remote: https://gem.repo2/
@@ -965,6 +1032,9 @@ RSpec.describe "bundle install with gems on multiple sources" do
           DEPENDENCIES
             handsoap!
             nokogiri
+
+          CHECKSUMS
+            #{expected_checksums}
 
           BUNDLED WITH
              #{Bundler::VERSION}
@@ -1489,6 +1559,8 @@ RSpec.describe "bundle install with gems on multiple sources" do
         DEPENDENCIES
           capybara (~> 2.5.0)
           mime-types (~> 3.0)!
+
+        CHECKSUMS
       L
     end
 
@@ -1513,6 +1585,8 @@ RSpec.describe "bundle install with gems on multiple sources" do
         DEPENDENCIES
           capybara (~> 2.5.0)
           mime-types (~> 3.0)!
+
+        CHECKSUMS
 
         BUNDLED WITH
            #{Bundler::VERSION}
@@ -1567,6 +1641,10 @@ RSpec.describe "bundle install with gems on multiple sources" do
         DEPENDENCIES
           ruport (= 1.7.0.3)!
 
+        CHECKSUMS
+          #{checksum_for_repo_gem gem_repo4, "pdf-writer", "1.1.8"}
+          #{checksum_for_repo_gem gem_repo2, "ruport", "1.7.0.3"}
+
         BUNDLED WITH
            #{Bundler::VERSION}
       L
@@ -1602,6 +1680,11 @@ RSpec.describe "bundle install with gems on multiple sources" do
     it "handles that fine" do
       bundle "install", :artifice => "compact_index_extra", :env => { "BUNDLER_SPEC_GEM_REPO" => gem_repo4.to_s }
 
+      expected_checksums = construct_checksum_section do |c|
+        c.repo_gem gem_repo4, "pdf-writer", "1.1.8"
+        c.repo_gem gem_repo2, "ruport", "1.7.0.3"
+      end
+
       expect(lockfile).to eq <<~L
         GEM
           remote: https://localgemserver.test/
@@ -1619,6 +1702,9 @@ RSpec.describe "bundle install with gems on multiple sources" do
 
         DEPENDENCIES
           ruport (= 1.7.0.3)!
+
+        CHECKSUMS
+          #{expected_checksums}
 
         BUNDLED WITH
            #{Bundler::VERSION}
@@ -1649,6 +1735,10 @@ RSpec.describe "bundle install with gems on multiple sources" do
     it "handles that fine" do
       bundle "install --verbose", :artifice => "endpoint", :env => { "BUNDLER_SPEC_GEM_REPO" => gem_repo4.to_s }
 
+      expected_checksums = construct_checksum_section do |c|
+        c.repo_gem gem_repo4, "pdf-writer", "1.1.8"
+      end
+
       expect(lockfile).to eq <<~L
         GEM
           remote: https://localgemserver.test/
@@ -1660,6 +1750,9 @@ RSpec.describe "bundle install with gems on multiple sources" do
 
         DEPENDENCIES
           pdf-writer (= 1.1.8)
+
+        CHECKSUMS
+          #{expected_checksums}
 
         BUNDLED WITH
            #{Bundler::VERSION}

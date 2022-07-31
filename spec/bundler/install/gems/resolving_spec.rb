@@ -288,6 +288,9 @@ RSpec.describe "bundle install with install-time dependencies" do
             DEPENDENCIES
               parallel_tests
 
+            CHECKSUMS
+              #{checksum_for_repo_gem gem_repo2, "parallel_tests", "3.7.0"}
+
             BUNDLED WITH
                #{Bundler::VERSION}
           L
@@ -367,6 +370,10 @@ RSpec.describe "bundle install with install-time dependencies" do
 
             DEPENDENCIES
               rubocop
+
+            CHECKSUMS
+              #{checksum_for_repo_gem gem_repo2, "rubocop", "1.28.2"}
+              #{checksum_for_repo_gem gem_repo2, "rubocop-ast", "1.17.0"}
 
             BUNDLED WITH
                #{Bundler::VERSION}

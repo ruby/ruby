@@ -225,6 +225,8 @@ RSpec.describe "bundle install across platforms" do
         empyrean (= 0.1.0)
         pry
 
+      CHECKSUMS
+
       BUNDLED WITH
          #{Bundler::VERSION}
     L
@@ -256,6 +258,8 @@ RSpec.describe "bundle install across platforms" do
       DEPENDENCIES
         empyrean (= 0.1.0)
         pry
+
+      CHECKSUMS
 
       BUNDLED WITH
          #{Bundler::VERSION}
@@ -289,6 +293,8 @@ RSpec.describe "bundle install across platforms" do
       DEPENDENCIES
         empyrean (= 0.1.0)
         pry
+
+      CHECKSUMS
 
       BUNDLED WITH
          1.16.1
@@ -398,6 +404,9 @@ RSpec.describe "bundle install across platforms" do
 
       DEPENDENCIES
         platform_specific
+
+      CHECKSUMS
+        #{checksum_for_repo_gem(gem_repo1, "platform_specific", "1.0")}
 
       BUNDLED WITH
          #{Bundler::VERSION}
@@ -567,6 +576,8 @@ RSpec.describe "bundle install with platform conditionals" do
 
       DEPENDENCIES
         rack
+
+      CHECKSUMS
 
       BUNDLED WITH
          #{Bundler::VERSION}

@@ -15,6 +15,7 @@ module Bundler
       :dependencies,
       :locked_deps,
       :locked_gems,
+      :locked_checksums,
       :platforms,
       :ruby_version,
       :lockfile,
@@ -92,6 +93,7 @@ module Bundler
         @locked_bundler_version = @locked_gems.bundler_version
         @locked_ruby_version = @locked_gems.ruby_version
         @originally_locked_specs = SpecSet.new(@locked_gems.specs)
+        @locked_checksums = @locked_gems.checksums
 
         if unlock != true
           @locked_deps    = @locked_gems.dependencies
@@ -112,6 +114,7 @@ module Bundler
         @originally_locked_specs = @locked_specs
         @locked_sources = []
         @locked_platforms = []
+        @locked_checksums = []
       end
 
       locked_gem_sources = @locked_sources.select {|s| s.is_a?(Source::Rubygems) }

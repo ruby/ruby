@@ -17,6 +17,7 @@ require "rspec/support/differ"
 
 require_relative "support/builders"
 require_relative "support/build_metadata"
+require_relative "support/checksums"
 require_relative "support/filters"
 require_relative "support/helpers"
 require_relative "support/indexes"
@@ -34,6 +35,7 @@ end
 
 RSpec.configure do |config|
   config.include Spec::Builders
+  config.include Spec::Checksums
   config.include Spec::Helpers
   config.include Spec::Indexes
   config.include Spec::Matchers

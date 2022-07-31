@@ -160,6 +160,8 @@ RSpec.context "when resolving a bundle that includes yanked gems, but unlocking 
         bar
         foo
 
+      CHECKSUMS
+
       BUNDLED WITH
          #{Bundler::VERSION}
     L

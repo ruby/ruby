@@ -80,7 +80,7 @@ class CompactIndexAPI < Endpoint
               CompactIndex::Dependency.new(d.name, reqs)
             end
             checksum = begin
-                         Digest(:SHA256).file("#{gem_repo}/gems/#{spec.original_name}.gem").base64digest
+                         Digest(:SHA256).file("#{gem_repo}/gems/#{spec.original_name}.gem").hexdigest
                        rescue StandardError
                          nil
                        end

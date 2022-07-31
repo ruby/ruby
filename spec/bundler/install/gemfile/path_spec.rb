@@ -120,6 +120,10 @@ RSpec.describe "bundle install with explicit source paths" do
         aaa!
         demo!
 
+      CHECKSUMS
+        aaa (1.0)
+        demo (1.0)
+
       BUNDLED WITH
          #{Bundler::VERSION}
     L
@@ -358,6 +362,10 @@ RSpec.describe "bundle install with explicit source paths" do
 
       DEPENDENCIES
         foo!
+
+      CHECKSUMS
+        foo (0.1.0)
+        #{checksum_for_repo_gem gem_repo4, "graphql", "2.0.15"}
 
       BUNDLED WITH
          #{Bundler::VERSION}
@@ -683,6 +691,10 @@ RSpec.describe "bundle install with explicit source paths" do
         DEPENDENCIES
           foo!
 
+        CHECKSUMS
+          foo (1.0)
+          #{checksum_for_repo_gem gem_repo1, "rack", "0.9.1"}
+
         BUNDLED WITH
            #{Bundler::VERSION}
       G
@@ -710,6 +722,10 @@ RSpec.describe "bundle install with explicit source paths" do
 
         DEPENDENCIES
           foo!
+
+        CHECKSUMS
+          foo (1.0)
+          #{checksum_for_repo_gem gem_repo1, "rack", "0.9.1"}
 
         BUNDLED WITH
            #{Bundler::VERSION}
@@ -745,6 +761,10 @@ RSpec.describe "bundle install with explicit source paths" do
         DEPENDENCIES
           foo!
 
+        CHECKSUMS
+          foo (1.0)
+          #{checksum_for_repo_gem gem_repo1, "rack", "0.9.1"}
+
         BUNDLED WITH
            #{Bundler::VERSION}
       G
@@ -775,6 +795,11 @@ RSpec.describe "bundle install with explicit source paths" do
 
         DEPENDENCIES
           foo!
+
+        CHECKSUMS
+          foo (1.0)
+          #{checksum_for_repo_gem gem_repo1, "rack", "0.9.1"}
+          #{checksum_for_repo_gem gem_repo1, "rake", "13.0.1"}
 
         BUNDLED WITH
            #{Bundler::VERSION}

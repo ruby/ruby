@@ -104,6 +104,11 @@ module Bundler
       @remote_specification = spec
     end
 
+    def to_checksum
+      digest = "sha256-#{checksum}" if checksum
+      Bundler::Checksum.new(name, version, platform, digest)
+    end
+
     private
 
     def _remote_specification

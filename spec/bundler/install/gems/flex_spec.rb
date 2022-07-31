@@ -283,6 +283,10 @@ RSpec.describe "bundle flex_install" do
           rack (= 0.9.1)
           rack-obama
 
+        CHECKSUMS
+          #{checksum_for_repo_gem gem_repo1, "rack", "0.9.1"}
+          #{checksum_for_repo_gem gem_repo1, "rack-obama", "1.0"}
+
         BUNDLED WITH
            #{Bundler::VERSION}
       L
@@ -323,6 +327,9 @@ RSpec.describe "bundle flex_install" do
 
         DEPENDENCIES
           rack
+
+        CHECKSUMS
+          #{checksum_for_repo_gem gem_repo1, "rack", "1.0.0"}
 
         BUNDLED WITH
            #{Bundler::VERSION}

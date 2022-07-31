@@ -76,6 +76,18 @@ module Bundler
       out
     end
 
+    #def materialize_for_checksum
+      #if @specification
+        #yield
+      #else
+        #materialize_for_installation
+
+        #yield
+
+        #@specification = nil
+      #end
+    #end
+
     def materialize_for_installation
       source.local!
 
@@ -132,6 +144,20 @@ module Bundler
     def git_version
       return unless source.is_a?(Bundler::Source::Git)
       " #{source.revision[0..6]}"
+    end
+
+    def to_checksum
+      return nil unless @specification
+
+      #
+      # See comment about #ruby_platform_materializes_to_ruby_platform?
+      # If the old lockfile format is present where there is no specific
+      # platform, then we should skip locking checksums as it is not
+      # deterministic which platform variant is locked.
+      #
+      return nil unless ruby_platform_materializes_to_ruby_platform?
+
+      @specification.to_checksum
     end
 
     private

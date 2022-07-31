@@ -42,6 +42,8 @@ RSpec.describe "bundle lock" do
         rails
         weakling
 
+      CHECKSUMS
+
       BUNDLED WITH
          #{Bundler::VERSION}
     L
@@ -104,6 +106,8 @@ RSpec.describe "bundle lock" do
       DEPENDENCIES
         foo
 
+      CHECKSUMS
+
       BUNDLED WITH
          #{Bundler::VERSION}
     L
@@ -126,8 +130,58 @@ RSpec.describe "bundle lock" do
     bundle "install"
     bundle "lock --lockfile=lock"
 
+    expected_checksums = construct_checksum_section do |c|
+      c.repo_gem repo, "actionmailer", "2.3.2"
+      c.repo_gem repo, "actionpack", "2.3.2"
+      c.repo_gem repo, "activerecord", "2.3.2"
+      c.repo_gem repo, "activeresource", "2.3.2"
+      c.repo_gem repo, "activesupport", "2.3.2"
+      c.repo_gem repo, "foo", "1.0"
+      c.repo_gem repo, "rails", "2.3.2"
+      c.repo_gem repo, "rake", "13.0.1"
+      c.repo_gem repo, "weakling", "0.0.3"
+    end
+
+    lockfile = strip_lockfile(<<-L)
+      GEM
+        remote: #{file_uri_for(repo)}/
+        specs:
+          actionmailer (2.3.2)
+            activesupport (= 2.3.2)
+          actionpack (2.3.2)
+            activesupport (= 2.3.2)
+          activerecord (2.3.2)
+            activesupport (= 2.3.2)
+          activeresource (2.3.2)
+            activesupport (= 2.3.2)
+          activesupport (2.3.2)
+          foo (1.0)
+          rails (2.3.2)
+            actionmailer (= 2.3.2)
+            actionpack (= 2.3.2)
+            activerecord (= 2.3.2)
+            activeresource (= 2.3.2)
+            rake (= 13.0.1)
+          rake (13.0.1)
+          weakling (0.0.3)
+
+      PLATFORMS
+        #{lockfile_platforms}
+
+      DEPENDENCIES
+        foo
+        rails
+        weakling
+
+      CHECKSUMS
+        #{expected_checksums}
+
+      BUNDLED WITH
+         #{Bundler::VERSION}
+    L
+
     expect(out).to match(/Writing lockfile to.+lock/)
-    expect(read_lockfile("lock")).to eq(@lockfile)
+    expect(read_lockfile("lock")).to eq(lockfile)
   end
 
   it "update specific gems using --update" do
@@ -535,6 +589,8 @@ RSpec.describe "bundle lock" do
         gssapi
         mixlib-shellout
 
+      CHECKSUMS
+
       BUNDLED WITH
          #{Bundler::VERSION}
     G
@@ -563,6 +619,8 @@ RSpec.describe "bundle lock" do
       DEPENDENCIES
         gssapi
         mixlib-shellout
+
+      CHECKSUMS
 
       BUNDLED WITH
          #{Bundler::VERSION}
@@ -642,6 +700,8 @@ RSpec.describe "bundle lock" do
       DEPENDENCIES
         libv8
 
+      CHECKSUMS
+
       BUNDLED WITH
          #{Bundler::VERSION}
     G
@@ -676,6 +736,10 @@ RSpec.describe "bundle lock" do
 
       DEPENDENCIES
         libv8
+
+      CHECKSUMS
+        #{checksum_for_repo_gem gem_repo4, "libv8", "8.4.255.0", "x86_64-darwin-19"}
+        #{checksum_for_repo_gem gem_repo4, "libv8", "8.4.255.0", "x86_64-darwin-20"}
 
       BUNDLED WITH
          #{Bundler::VERSION}
@@ -895,6 +959,8 @@ RSpec.describe "bundle lock" do
         DEPENDENCIES
           debug
 
+        CHECKSUMS
+
         BUNDLED WITH
            #{Bundler::VERSION}
       L
@@ -917,6 +983,8 @@ RSpec.describe "bundle lock" do
 
         DEPENDENCIES
           debug
+
+        CHECKSUMS
 
         BUNDLED WITH
            #{Bundler::VERSION}
