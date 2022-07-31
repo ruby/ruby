@@ -28,6 +28,7 @@
 #include "internal/encoding.h"
 #include "internal/error.h"
 #include "internal/hash.h"
+#include "internal/numeric.h"
 #include "internal/object.h"
 #include "internal/struct.h"
 #include "internal/symbol.h"
@@ -1940,10 +1941,28 @@ r_object_for(struct load_arg *arg, bool partial, int *ivp, VALUE extmod, int typ
 
             sign = r_byte(arg);
             len = r_long(arg);
-            data = r_bytes0(len * 2, arg);
-            v = rb_integer_unpack(RSTRING_PTR(data), len, 2, 0,
-                INTEGER_PACK_LITTLE_ENDIAN | (sign == '-' ? INTEGER_PACK_NEGATIVE : 0));
-            rb_str_resize(data, 0L);
+
+            if (SIZEOF_VALUE >= 8 && len <= 4) {
+                // Representable within uintptr, likely FIXNUM
+                VALUE num = 0;
+                for (int i = 0; i < len; i++) {
+                    num |= (VALUE)r_byte(arg) << (i * 16);
+                    num |= (VALUE)r_byte(arg) << (i * 16 + 8);
+                }
+#if SIZEOF_VALUE == SIZEOF_LONG
+                v = ULONG2NUM(num);
+#else
+                v = ULL2NUM(num);
+#endif
+                if (sign == '-') {
+                    v = rb_int_uminus(v);
+                }
+            } else {
+                data = r_bytes0(len * 2, arg);
+                v = rb_integer_unpack(RSTRING_PTR(data), len, 2, 0,
+                    INTEGER_PACK_LITTLE_ENDIAN | (sign == '-' ? INTEGER_PACK_NEGATIVE : 0));
+                rb_str_resize(data, 0L);
+            }
             v = r_entry(v, arg);
             v = r_leave(v, arg, false);
         }
