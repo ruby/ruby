@@ -26,7 +26,7 @@ class TestGemResolverIndexSpecification < Gem::TestCase
     spec = Gem::Resolver::IndexSpecification.new(
       set, "rails", version, source, Gem::Platform.local)
 
-    assert_equal Gem::Platform.local.to_s, spec.platform
+    assert_equal Gem::Platform.local, spec.platform
   end
 
   def test_install

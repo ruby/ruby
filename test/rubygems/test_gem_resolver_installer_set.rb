@@ -51,6 +51,19 @@ class TestGemResolverInstallerSet < Gem::TestCase
     assert_equal %w[a-1], set.always_install.map {|s| s.full_name }
   end
 
+  def test_add_always_install_index_spec_platform
+    a_1_local, a_1_local_gem = util_gem "a", 1 do |s|
+      s.platform = Gem::Platform.local
+    end
+
+    FileUtils.mv a_1_local_gem, @tempdir
+
+    set = Gem::Resolver::InstallerSet.new :both
+    set.add_always_install dep("a")
+
+    assert_equal [Gem::Platform.local], set.always_install.map {|s| s.platform }
+  end
+
   def test_add_always_install_prerelease
     spec_fetcher do |fetcher|
       fetcher.gem "a", 1
