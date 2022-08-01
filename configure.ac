@@ -199,14 +199,27 @@ AS_CASE(["/${rb_CC} "],
     # Ditto for LLVM.  Note however that llvm-as is a LLVM-IR to LLVM bitcode
     # assembler that does not target your machine native binary.
     : ${LD:="${CC}"}         # ... try -fuse-ld=lld ?
-    RUBY_CHECK_PROG_FOR_CC([AR],      [s/clang/llvm-ar/])
-#   RUBY_CHECK_PROG_FOR_CC([AS],      [s/clang/llvm-as/])
-    RUBY_CHECK_PROG_FOR_CC([CXX],     [s/clang/clang++/])
-    RUBY_CHECK_PROG_FOR_CC([NM],      [s/clang/llvm-nm/])
-    RUBY_CHECK_PROG_FOR_CC([OBJCOPY], [s/clang/llvm-objcopy/])
-    RUBY_CHECK_PROG_FOR_CC([OBJDUMP], [s/clang/llvm-objdump/])
-    RUBY_CHECK_PROG_FOR_CC([RANLIB],  [s/clang/llvm-ranlib/])
-    RUBY_CHECK_PROG_FOR_CC([STRIP],   [s/clang/llvm-strip/])
+    AS_CASE(["$target_os"],
+	[darwin*], [
+	    RUBY_CHECK_PROG_FOR_CC([AR],      [s/clang/xcrun ar/])
+	#   RUBY_CHECK_PROG_FOR_CC([AS],      [s/clang/xcrun as/])
+	    RUBY_CHECK_PROG_FOR_CC([CXX],     [s/clang/clang++/])
+	    RUBY_CHECK_PROG_FOR_CC([NM],      [s/clang/xcrun nm/])
+	    RUBY_CHECK_PROG_FOR_CC([OBJCOPY], [s/clang/xcrun objcopy/])
+	    RUBY_CHECK_PROG_FOR_CC([OBJDUMP], [s/clang/xcrun objdump/])
+	    RUBY_CHECK_PROG_FOR_CC([RANLIB],  [s/clang/xcrun ranlib/])
+	    RUBY_CHECK_PROG_FOR_CC([STRIP],   [s/clang/xcrun strip/])
+        ],
+        [*], [
+	    RUBY_CHECK_PROG_FOR_CC([AR],      [s/clang/llvm-ar/])
+	#   RUBY_CHECK_PROG_FOR_CC([AS],      [s/clang/llvm-as/])
+	    RUBY_CHECK_PROG_FOR_CC([CXX],     [s/clang/clang++/])
+	    RUBY_CHECK_PROG_FOR_CC([NM],      [s/clang/llvm-nm/])
+	    RUBY_CHECK_PROG_FOR_CC([OBJCOPY], [s/clang/llvm-objcopy/])
+	    RUBY_CHECK_PROG_FOR_CC([OBJDUMP], [s/clang/llvm-objdump/])
+	    RUBY_CHECK_PROG_FOR_CC([RANLIB],  [s/clang/llvm-ranlib/])
+	    RUBY_CHECK_PROG_FOR_CC([STRIP],   [s/clang/llvm-strip/])
+        ])
 ])
 AS_UNSET(rb_CC)
 AS_UNSET(rb_dummy)
