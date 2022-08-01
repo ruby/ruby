@@ -2653,6 +2653,8 @@ class Gem::Specification < Gem::BasicSpecification
 
   def version=(version)
     @version = Gem::Version.create(version)
+    return if @version.nil?
+
     # skip to set required_ruby_version when pre-released rubygems.
     # It caused to raise CircularDependencyError
     if @version.prerelease? && (@name.nil? || @name.strip != "rubygems")

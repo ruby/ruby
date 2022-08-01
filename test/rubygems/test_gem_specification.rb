@@ -1220,6 +1220,15 @@ dependencies: []
     assert_equal "1.0.0.dev", spec.version.to_s
   end
 
+  def test_initialize_nil_version
+    expected = "nil versions are discouraged and will be deprecated in Rubygems 4\n"
+    actual_stdout, actual_stderr = capture_output do
+      Gem::Specification.new.version = nil
+    end
+    assert_empty actual_stdout
+    assert_equal(expected, actual_stderr)
+  end
+
   def test__dump
     @a2.platform = Gem::Platform.local
     @a2.instance_variable_set :@original_platform, "old_platform"
