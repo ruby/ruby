@@ -1098,6 +1098,14 @@ class TestFileUtils < Test::Unit::TestCase
     ensure
       Dir.rmdir(drive) if drive and File.directory?(drive)
     end
+
+    def test_mkdir_p_offline_drive
+      offline_drive = ("A".."Z").to_a.reverse.find {|d| !File.exist?("#{d}:/") }
+
+      assert_raise(Errno::ENOENT) {
+        mkdir_p "#{offline_drive}:/new_dir"
+      }
+    end
   end
 
   def test_mkdir_p_file_perm
