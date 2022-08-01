@@ -46,7 +46,7 @@ module Bundler
 
       Bundler::CLI::Common.configure_gem_version_promoter(
         Bundler.definition,
-        options
+        options.merge(:strict => @strict)
       )
 
       definition_resolution = proc do
