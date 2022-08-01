@@ -5525,26 +5525,29 @@ fn gen_getspecial(
         KeepCompiling
     }
 }
+*/
 
 fn gen_getclassvariable(
     jit: &mut JITState,
     ctx: &mut Context,
-    cb: &mut CodeBlock,
+    asm: &mut Assembler,
     _ocb: &mut OutlinedCb,
 ) -> CodegenStatus {
     // rb_vm_getclassvariable can raise exceptions.
-    jit_prepare_routine_call(jit, ctx, cb, REG0);
+    jit_prepare_routine_call(jit, ctx, asm);
 
-    let cfp_iseq_opnd = mem_opnd(64, REG_CFP, RUBY_OFFSET_CFP_ISEQ);
-    mov(cb, C_ARG_REGS[0], cfp_iseq_opnd);
-    mov(cb, C_ARG_REGS[1], REG_CFP);
-    mov(cb, C_ARG_REGS[2], uimm_opnd(jit_get_arg(jit, 0).as_u64()));
-    mov(cb, C_ARG_REGS[3], uimm_opnd(jit_get_arg(jit, 1).as_u64()));
+    let val_opnd = asm.ccall(
+        rb_vm_getclassvariable as *const u8,
+        vec![
+            Opnd::mem(64, CFP, RUBY_OFFSET_CFP_ISEQ),
+            CFP,
+            Opnd::UImm(jit_get_arg(jit, 0).as_u64()),
+            Opnd::UImm(jit_get_arg(jit, 1).as_u64()),
+        ],
+    );
 
-    call_ptr(cb, REG0, rb_vm_getclassvariable as *const u8);
-
-    let stack_top = ctx.stack_push(Type::Unknown);
-    mov(cb, stack_top, RAX);
+    let top = ctx.stack_push(Type::Unknown);
+    asm.mov(top, val_opnd);
 
     KeepCompiling
 }
@@ -5552,24 +5555,27 @@ fn gen_getclassvariable(
 fn gen_setclassvariable(
     jit: &mut JITState,
     ctx: &mut Context,
-    cb: &mut CodeBlock,
+    asm: &mut Assembler,
     _ocb: &mut OutlinedCb,
 ) -> CodegenStatus {
     // rb_vm_setclassvariable can raise exceptions.
-    jit_prepare_routine_call(jit, ctx, cb, REG0);
+    jit_prepare_routine_call(jit, ctx, asm);
 
-    let cfp_iseq_opnd = mem_opnd(64, REG_CFP, RUBY_OFFSET_CFP_ISEQ);
-    mov(cb, C_ARG_REGS[0], cfp_iseq_opnd);
-    mov(cb, C_ARG_REGS[1], REG_CFP);
-    mov(cb, C_ARG_REGS[2], uimm_opnd(jit_get_arg(jit, 0).as_u64()));
-    mov(cb, C_ARG_REGS[3], ctx.stack_pop(1));
-    mov(cb, C_ARG_REGS[4], uimm_opnd(jit_get_arg(jit, 1).as_u64()));
-
-    call_ptr(cb, REG0, rb_vm_setclassvariable as *const u8);
+    asm.ccall(
+        rb_vm_setclassvariable as *const u8,
+        vec![
+            Opnd::mem(64, CFP, RUBY_OFFSET_CFP_ISEQ),
+            CFP,
+            Opnd::UImm(jit_get_arg(jit, 0).as_u64()),
+            ctx.stack_pop(1),
+            Opnd::UImm(jit_get_arg(jit, 1).as_u64()),
+        ],
+    );
 
     KeepCompiling
 }
 
+/*
 fn gen_opt_getinlinecache(
     jit: &mut JITState,
     ctx: &mut Context,
@@ -6035,9 +6041,9 @@ fn get_gen_fn(opcode: VALUE) -> Option<InsnGenFn> {
         YARVINSN_intern => Some(gen_intern),
         YARVINSN_toregexp => Some(gen_toregexp),
         YARVINSN_getspecial => Some(gen_getspecial),
+        */
         YARVINSN_getclassvariable => Some(gen_getclassvariable),
         YARVINSN_setclassvariable => Some(gen_setclassvariable),
-        */
 
         // Unimplemented opcode, YJIT won't generate code for this yet
         _ => None,
