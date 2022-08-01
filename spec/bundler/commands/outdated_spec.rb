@@ -1114,8 +1114,7 @@ RSpec.describe "bundle outdated" do
           gem 'major', '1.0.0'
         G
 
-        # remove 1.4.3 requirement and bar altogether
-        # to setup update specs below
+        # remove all version requirements
         gemfile <<-G
           source "#{file_uri_for(gem_repo4)}"
           gem 'patch'
