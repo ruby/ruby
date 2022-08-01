@@ -5298,30 +5298,30 @@ fn gen_getglobal(
     KeepCompiling
 }
 
-/*
 fn gen_setglobal(
     jit: &mut JITState,
     ctx: &mut Context,
-    cb: &mut CodeBlock,
+    asm: &mut Assembler,
     _ocb: &mut OutlinedCb,
 ) -> CodegenStatus {
     let gid = jit_get_arg(jit, 0);
 
     // Save the PC and SP because we might make a Ruby call for
     // Kernel#set_trace_var
-    jit_prepare_routine_call(jit, ctx, cb, REG0);
+    jit_prepare_routine_call(jit, ctx, asm);
 
-    mov(cb, C_ARG_REGS[0], imm_opnd(gid.as_i64()));
-
-    let val = ctx.stack_pop(1);
-
-    mov(cb, C_ARG_REGS[1], val);
-
-    call_ptr(cb, REG0, rb_gvar_set as *const u8);
+    asm.ccall(
+        rb_gvar_set as *const u8,
+        vec![
+            gid.into(),
+            ctx.stack_pop(1),
+        ],
+    );
 
     KeepCompiling
 }
 
+/*
 fn gen_anytostring(
     jit: &mut JITState,
     ctx: &mut Context,
@@ -6028,8 +6028,8 @@ fn get_gen_fn(opcode: VALUE) -> Option<InsnGenFn> {
         YARVINSN_leave => Some(gen_leave),
 
         YARVINSN_getglobal => Some(gen_getglobal),
-        /*
         YARVINSN_setglobal => Some(gen_setglobal),
+        /*
         YARVINSN_anytostring => Some(gen_anytostring),
         YARVINSN_objtostring => Some(gen_objtostring),
         YARVINSN_intern => Some(gen_intern),
