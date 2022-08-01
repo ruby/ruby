@@ -1735,9 +1735,7 @@ rb_reg_search_set_match(VALUE re, VALUE str, long pos, int reverse, int set_back
     }
 
     match = match_alloc(rb_cMatch);
-    int copy_err = rb_reg_region_copy(RMATCH_REGS(match), regs);
-    onig_region_free(regs, 0);
-    if (copy_err) rb_memerror();
+    memcpy(RMATCH_REGS(match), regs, sizeof(struct re_registers));
 
     if (set_backref_str) {
         RMATCH(match)->str = rb_str_new4(str);
