@@ -1207,6 +1207,18 @@ RSpec.describe "bundle outdated" do
 
         expect(out).to end_with(expected_output)
       end
+
+      it "shows gems with --strict updating to patch and filtering to patch, in debug mode" do
+        bundle "outdated --patch --strict --filter-patch", :raise_on_error => false, :env => { "DEBUG" => "1" }
+
+        expected_output = <<~TABLE.strip
+          Gem  Current  Latest  Requested  Groups   Path
+          bar  2.0.3    2.0.5
+          foo  1.4.3    1.4.4   >= 0       default
+        TABLE
+
+        expect(out).to end_with(expected_output)
+      end
     end
   end
 
