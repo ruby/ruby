@@ -604,6 +604,22 @@ RSpec.describe "bundle outdated" do
       expect(out).to end_with(expected_output)
     end
 
+    it "only reports gems that have a newer version that matches the specified dependency version requirements, using --strict alias" do
+      update_repo2 do
+        build_gem "activesupport", "3.0"
+        build_gem "weakling", "0.0.5"
+      end
+
+      bundle :outdated, :strict => true, :raise_on_error => false
+
+      expected_output = <<~TABLE.strip
+        Gem       Current  Latest  Requested  Groups
+        weakling  0.0.3    0.0.5   ~> 0.0.1   default
+      TABLE
+
+      expect(out).to end_with(expected_output)
+    end
+
     it "doesn't crash when some deps unused on the current platform" do
       install_gemfile <<-G
         source "#{file_uri_for(gem_repo2)}"
