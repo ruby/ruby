@@ -4371,14 +4371,18 @@ date_s__strptime_internal(int argc, VALUE *argv, VALUE klass,
  * call-seq:
  *   Date._strptime(string, format = '%F') -> hash
  *
- * Parses the given representation of date and time with the given
- * template, and returns a hash of parsed elements.  _strptime does
- * not support specification of flags and width unlike strftime.
+ * Returns a hash of values parsed from +string+
+ * according to the given +format+:
  *
- *    Date._strptime('2001-02-03', '%Y-%m-%d')
- *				#=> {:year=>2001, :mon=>2, :mday=>3}
+ *   Date._strptime('2001-02-03', '%Y-%m-%d') # => {:year=>2001, :mon=>2, :mday=>3}
  *
- * See also strptime(3) and #strftime.
+ * For other formats, see
+ * {Formats for Dates and Times}[https://docs.ruby-lang.org/en/master/strftime_formatting_rdoc.html].
+ * (Unlike Date.strftime, does not support flags and width.)
+ *
+ * See also {strptime(3)}[https://man7.org/linux/man-pages/man3/strptime.3.html].
+ *
+ * Related: Date.strptime (returns a \Date object).
  */
 static VALUE
 date_s__strptime(int argc, VALUE *argv, VALUE klass)
@@ -4390,21 +4394,26 @@ date_s__strptime(int argc, VALUE *argv, VALUE klass)
  * call-seq:
  *   Date.strptime(string = '-4712-01-01', format = '%F', start = Date::ITALY) -> date
  *
- * Parses the given representation of date and time with the given
- * template, and creates a date object.  strptime does not support
- * specification of flags and width unlike strftime.
+ * Returns a new \Date object with values parsed from +string+,
+ * according to the given +format+:
  *
- *    Date.strptime('2001-02-03', '%Y-%m-%d')	#=> #<Date: 2001-02-03 ...>
- *    Date.strptime('03-02-2001', '%d-%m-%Y')	#=> #<Date: 2001-02-03 ...>
- *    Date.strptime('2001-034', '%Y-%j')	#=> #<Date: 2001-02-03 ...>
- *    Date.strptime('2001-W05-6', '%G-W%V-%u')	#=> #<Date: 2001-02-03 ...>
- *    Date.strptime('2001 04 6', '%Y %U %w')	#=> #<Date: 2001-02-03 ...>
- *    Date.strptime('2001 05 6', '%Y %W %u')	#=> #<Date: 2001-02-03 ...>
- *    Date.strptime('sat3feb01', '%a%d%b%y')	#=> #<Date: 2001-02-03 ...>
+ *   Date.strptime('2001-02-03', '%Y-%m-%d')  # => #<Date: 2001-02-03>
+ *   Date.strptime('03-02-2001', '%d-%m-%Y')  # => #<Date: 2001-02-03>
+ *   Date.strptime('2001-034', '%Y-%j')       # => #<Date: 2001-02-03>
+ *   Date.strptime('2001-W05-6', '%G-W%V-%u') # => #<Date: 2001-02-03>
+ *   Date.strptime('2001 04 6', '%Y %U %w')   # => #<Date: 2001-02-03>
+ *   Date.strptime('2001 05 6', '%Y %W %u')   # => #<Date: 2001-02-03>
+ *   Date.strptime('sat3feb01', '%a%d%b%y')   # => #<Date: 2001-02-03>
+ *
+ * For other formats, see
+ * {Formats for Dates and Times}[https://docs.ruby-lang.org/en/master/strftime_formatting_rdoc.html].
+ * (Unlike Date.strftime, does not support flags and width.)
  *
  * See argument {start}[rdoc-ref:Date@Argument+start].
  *
- * See also strptime(3) and #strftime.
+ * See also {strptime(3)}[https://man7.org/linux/man-pages/man3/strptime.3.html].
+ *
+ * Related: Date._strptime (returns a hash).
  */
 static VALUE
 date_s_strptime(int argc, VALUE *argv, VALUE klass)
@@ -4513,6 +4522,7 @@ date_s__parse_internal(int argc, VALUE *argv, VALUE klass)
  *
  * See argument {limit}[rdoc-ref:Date@Argument+limit].
  *
+ * Related: Date.parse(returns a \Date object).
  */
 static VALUE
 date_s__parse(int argc, VALUE *argv, VALUE klass)
@@ -4549,6 +4559,7 @@ date_s__parse(int argc, VALUE *argv, VALUE klass)
  * - Argument {start}[rdoc-ref:Date@Argument+start].
  * - Argument {limit}[rdoc-ref:Date@Argument+limit].
  *
+ * Related: Date._parse (returns a hash).
  */
 static VALUE
 date_s_parse(int argc, VALUE *argv, VALUE klass)
@@ -4597,6 +4608,8 @@ VALUE date__jisx0301(VALUE);
  *   Date._iso8601(s) # => {:mday=>3, :year=>2001, :mon=>2}
  *
  * See argument {limit}[rdoc-ref:Date@Argument+limit].
+ *
+ * Related: Date.iso8601 (returns a \Date object).
  */
 static VALUE
 date_s__iso8601(int argc, VALUE *argv, VALUE klass)
@@ -4626,6 +4639,7 @@ date_s__iso8601(int argc, VALUE *argv, VALUE klass)
  * - Argument {start}[rdoc-ref:Date@Argument+start].
  * - Argument {limit}[rdoc-ref:Date@Argument+limit].
  *
+ * Related: Date._iso8601 (returns a hash).
  */
 static VALUE
 date_s_iso8601(int argc, VALUE *argv, VALUE klass)
@@ -4665,6 +4679,8 @@ date_s_iso8601(int argc, VALUE *argv, VALUE klass)
  *   # => {:year=>2001, :mon=>2, :mday=>3, :hour=>0, :min=>0, :sec=>0, :zone=>"+00:00", :offset=>0}
  *
  * See argument {limit}[rdoc-ref:Date@Argument+limit].
+ *
+ * Related: Date.rfc3339 (returns a \Date object).
  */
 static VALUE
 date_s__rfc3339(int argc, VALUE *argv, VALUE klass)
@@ -4694,6 +4710,7 @@ date_s__rfc3339(int argc, VALUE *argv, VALUE klass)
  * - Argument {start}[rdoc-ref:Date@Argument+start].
  * - Argument {limit}[rdoc-ref:Date@Argument+limit].
  *
+ * Related: Date._rfc3339 (returns a hash).
  */
 static VALUE
 date_s_rfc3339(int argc, VALUE *argv, VALUE klass)
@@ -4732,6 +4749,8 @@ date_s_rfc3339(int argc, VALUE *argv, VALUE klass)
  *   Date._xmlschema(s) # => {:year=>2001, :mon=>2, :mday=>3}
  *
  * See argument {limit}[rdoc-ref:Date@Argument+limit].
+ *
+ * Related: Date.xmlschema (returns a \Date object).
  */
 static VALUE
 date_s__xmlschema(int argc, VALUE *argv, VALUE klass)
@@ -4760,6 +4779,7 @@ date_s__xmlschema(int argc, VALUE *argv, VALUE klass)
  * - Argument {start}[rdoc-ref:Date@Argument+start].
  * - Argument {limit}[rdoc-ref:Date@Argument+limit].
  *
+ * Related: Date._xmlschema (returns a hash).
  */
 static VALUE
 date_s_xmlschema(int argc, VALUE *argv, VALUE klass)
@@ -4801,6 +4821,8 @@ date_s_xmlschema(int argc, VALUE *argv, VALUE klass)
  * See argument {limit}[rdoc-ref:Date@Argument+limit].
  *
  * Date._rfc822 is an alias for Date._rfc2822.
+ *
+ * Related: Date.rfc2822 (returns a \Date object).
  */
 static VALUE
 date_s__rfc2822(int argc, VALUE *argv, VALUE klass)
@@ -4831,6 +4853,8 @@ date_s__rfc2822(int argc, VALUE *argv, VALUE klass)
  * - Argument {limit}[rdoc-ref:Date@Argument+limit].
  *
  * Date.rfc822 is an alias for Date.rfc2822.
+ *
+ * Related: Date._rfc2822 (returns a hash).
  */
 static VALUE
 date_s_rfc2822(int argc, VALUE *argv, VALUE klass)
@@ -4868,6 +4892,7 @@ date_s_rfc2822(int argc, VALUE *argv, VALUE klass)
  *   Date._httpdate(s)
  *   # => {:wday=>6, :mday=>3, :mon=>2, :year=>2001, :hour=>0, :min=>0, :sec=>0, :zone=>"GMT", :offset=>0}
  *
+ * Related: Date.httpdate (returns a \Date object).
  */
 static VALUE
 date_s__httpdate(int argc, VALUE *argv, VALUE klass)
@@ -4897,6 +4922,7 @@ date_s__httpdate(int argc, VALUE *argv, VALUE klass)
  * - Argument {start}[rdoc-ref:Date@Argument+start].
  * - Argument {limit}[rdoc-ref:Date@Argument+limit].
  *
+ * Related: Date._httpdate (returns a hash).
  */
 static VALUE
 date_s_httpdate(int argc, VALUE *argv, VALUE klass)
@@ -4934,6 +4960,8 @@ date_s_httpdate(int argc, VALUE *argv, VALUE klass)
  *   Date._jisx0301(s) # => {:year=>2001, :mon=>2, :mday=>3}
  *
  * See argument {limit}[rdoc-ref:Date@Argument+limit].
+ *
+ * Related: Date.jisx0301 (returns a \Date object).
  */
 static VALUE
 date_s__jisx0301(int argc, VALUE *argv, VALUE klass)
@@ -4966,6 +4994,7 @@ date_s__jisx0301(int argc, VALUE *argv, VALUE klass)
  * - Argument {start}[rdoc-ref:Date@Argument+start].
  * - Argument {limit}[rdoc-ref:Date@Argument+limit].
  *
+ * Related: Date._jisx0301 (returns a hash).
  */
 static VALUE
 date_s_jisx0301(int argc, VALUE *argv, VALUE klass)
