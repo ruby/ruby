@@ -4493,23 +4493,26 @@ date_s__parse_internal(int argc, VALUE *argv, VALUE klass)
  * call-seq:
  *   Date._parse(string, comp = true, limit: 128) -> hash
  *
- * Parses the given representation of date and time, and returns a
- * hash of parsed elements.
+ * <b>Note</b>:
+ * This method recognizes many forms in +string+,
+ * but it is not a validator.
+ * If +string+ does not specify a valid date,
+ * the result is unpredictable;
+ * consider using Date._strptime instead.
  *
- * This method *does* *not* function as a validator.  If the input
- * string does not match valid formats strictly, you may get a cryptic
- * result.  Should consider to use Date._strptime or DateTime._strptime
- * instead of this method as possible.
+ * Returns a hash of values parsed from +string+:
  *
- * If the optional second argument is true and the detected year is in
- * the range "00" to "99", considers the year a 2-digit form and makes
- * it full.
+ *   Date._parse('2001-02-03') # => {:year=>2001, :mon=>2, :mday=>3}
  *
- *    Date._parse('2001-02-03')	#=> {:year=>2001, :mon=>2, :mday=>3}
+ * If +comp+ is +true+ and the given year is in the range <tt>(0..99)</tt>,
+ * the current century is supplied;
+ * otherwise, the year is taken as given:
  *
- * Raise an ArgumentError when the string length is longer than _limit_.
- * You can stop this check by passing <code>limit: nil</code>, but note
- * that it may take a long time to parse.
+ *   Date._parse('01-02-03', true)  # => {:year=>2001, :mon=>2, :mday=>3}
+ *   Date._parse('01-02-03', false) # => {:year=>1, :mon=>2, :mday=>3}
+ *
+ * See argument {limit}[rdoc-ref:Date@Argument+limit].
+ *
  */
 static VALUE
 date_s__parse(int argc, VALUE *argv, VALUE klass)
@@ -4521,27 +4524,31 @@ date_s__parse(int argc, VALUE *argv, VALUE klass)
  * call-seq:
  *   Date.parse(string = '-4712-01-01', comp = true, start = Date::ITALY, limit: 128) -> date
  *
- * Parses the given representation of date and time, and creates a
- * date object.
+ * <b>Note</b>:
+ * This method recognizes many forms in +string+,
+ * but it is not a validator.
+ * If +string+ does not specify a valid date,
+ * the result is unpredictable;
+ * consider using Date._strptime instead.
  *
- * This method *does* *not* function as a validator.  If the input
- * string does not match valid formats strictly, you may get a cryptic
- * result.  Should consider to use Date.strptime instead of this method
- * as possible.
+ * Returns a new \Date object with values parsed from +string+:
  *
- * If the optional second argument is true and the detected year is in
- * the range "00" to "99", considers the year a 2-digit form and makes
- * it full.
+ *   Date.parse('2001-02-03')   # => #<Date: 2001-02-03>
+ *   Date.parse('20010203')     # => #<Date: 2001-02-03>
+ *   Date.parse('3rd Feb 2001') # => #<Date: 2001-02-03>
  *
- *    Date.parse('2001-02-03')		#=> #<Date: 2001-02-03 ...>
- *    Date.parse('20010203')		#=> #<Date: 2001-02-03 ...>
- *    Date.parse('3rd Feb 2001')	#=> #<Date: 2001-02-03 ...>
+ * If +comp+ is +true+ and the given year is in the range <tt>(0..99)</tt>,
+ * the current century is supplied;
+ * otherwise, the year is taken as given:
  *
- * Raise an ArgumentError when the string length is longer than _limit_.
- * You can stop this check by passing <code>limit: nil</code>, but note
- * that it may take a long time to parse.
+ *   Date.parse('01-02-03', true)  # => #<Date: 2001-02-03>
+ *   Date.parse('01-02-03', false) # => #<Date: 0001-02-03>
  *
- * See argument {start}[rdoc-ref:Date@Argument+start].
+ * See:
+ *
+ * - Argument {start}[rdoc-ref:Date@Argument+start].
+ * - Argument {limit}[rdoc-ref:Date@Argument+limit].
+ *
  */
 static VALUE
 date_s_parse(int argc, VALUE *argv, VALUE klass)
@@ -4582,11 +4589,14 @@ VALUE date__jisx0301(VALUE);
  * call-seq:
  *   Date._iso8601(string, limit: 128) -> hash
  *
- * Returns a hash of parsed elements.
+ * Returns a hash of values parsed from +string+, which should contain
+ * an {ISO 8601 formatted date}[https://docs.ruby-lang.org/en/master/strftime_formatting_rdoc.html#label-ISO+8601+Format+Specifications]:
  *
- * Raise an ArgumentError when the string length is longer than _limit_.
- * You can stop this check by passing <code>limit: nil</code>, but note
- * that it may take a long time to parse.
+ *   d = Date.new(2001, 2, 3)
+ *   s = d.iso8601    # => "2001-02-03"
+ *   Date._iso8601(s) # => {:mday=>3, :year=>2001, :mon=>2}
+ *
+ * See argument {limit}[rdoc-ref:Date@Argument+limit].
  */
 static VALUE
 date_s__iso8601(int argc, VALUE *argv, VALUE klass)
@@ -4603,18 +4613,19 @@ date_s__iso8601(int argc, VALUE *argv, VALUE klass)
  * call-seq:
  *   Date.iso8601(string = '-4712-01-01', start = Date::ITALY, limit: 128) -> date
  *
- * Creates a new Date object by parsing from a string according to
- * some typical ISO 8601 formats.
+ * Returns a new \Date object with values parsed from +string+,
+ * which should contain
+ * an {ISO 8601 formatted date}[https://docs.ruby-lang.org/en/master/strftime_formatting_rdoc.html#label-ISO+8601+Format+Specifications]:
  *
- *    Date.iso8601('2001-02-03')	#=> #<Date: 2001-02-03 ...>
- *    Date.iso8601('20010203')		#=> #<Date: 2001-02-03 ...>
- *    Date.iso8601('2001-W05-6')	#=> #<Date: 2001-02-03 ...>
+ *   d = Date.new(2001, 2, 3)
+ *   s = d.iso8601   # => "2001-02-03"
+ *   Date.iso8601(s) # => #<Date: 2001-02-03>
  *
- * Raise an ArgumentError when the string length is longer than _limit_.
- * You can stop this check by passing <code>limit: nil</code>, but note
- * that it may take a long time to parse.
+ * See:
  *
- * See argument {start}[rdoc-ref:Date@Argument+start].
+ * - Argument {start}[rdoc-ref:Date@Argument+start].
+ * - Argument {limit}[rdoc-ref:Date@Argument+limit].
+ *
  */
 static VALUE
 date_s_iso8601(int argc, VALUE *argv, VALUE klass)
@@ -4645,11 +4656,15 @@ date_s_iso8601(int argc, VALUE *argv, VALUE klass)
  * call-seq:
  *   Date._rfc3339(string, limit: 128) -> hash
  *
- * Returns a hash of parsed elements.
+ * Returns a hash of values parsed from +string+, which should be a valid
+ * {RFC 3339 format}[https://datatracker.ietf.org/doc/html/rfc3339]:
  *
- * Raise an ArgumentError when the string length is longer than _limit_.
- * You can stop this check by passing <code>limit: nil</code>, but note
- * that it may take a long time to parse.
+ *   d = Date.new(2001, 2, 3)
+ *   s = d.rfc3339     # => "2001-02-03T00:00:00+00:00"
+ *   Date._rfc3339(s)
+ *   # => {:year=>2001, :mon=>2, :mday=>3, :hour=>0, :min=>0, :sec=>0, :zone=>"+00:00", :offset=>0}
+ *
+ * See argument {limit}[rdoc-ref:Date@Argument+limit].
  */
 static VALUE
 date_s__rfc3339(int argc, VALUE *argv, VALUE klass)
@@ -4666,16 +4681,19 @@ date_s__rfc3339(int argc, VALUE *argv, VALUE klass)
  * call-seq:
  *   Date.rfc3339(string = '-4712-01-01T00:00:00+00:00', start = Date::ITALY, limit: 128) -> date
  *
- * Creates a new Date object by parsing from a string according to
- * some typical RFC 3339 formats.
+ * Returns a new \Date object with values parsed from +string+,
+ * which should be a valid
+ * {RFC 3339 format}[https://datatracker.ietf.org/doc/html/rfc3339]:
  *
- *    Date.rfc3339('2001-02-03T04:05:06+07:00')	#=> #<Date: 2001-02-03 ...>
+ *   d = Date.new(2001, 2, 3)
+ *   s = d.rfc3339   # => "2001-02-03T00:00:00+00:00"
+ *   Date.rfc3339(s) # => #<Date: 2001-02-03>
  *
- * Raise an ArgumentError when the string length is longer than _limit_.
- * You can stop this check by passing <code>limit: nil</code>, but note
- * that it may take a long time to parse.
+ * See:
  *
- * See argument {start}[rdoc-ref:Date@Argument+start].
+ * - Argument {start}[rdoc-ref:Date@Argument+start].
+ * - Argument {limit}[rdoc-ref:Date@Argument+limit].
+ *
  */
 static VALUE
 date_s_rfc3339(int argc, VALUE *argv, VALUE klass)
@@ -4706,11 +4724,14 @@ date_s_rfc3339(int argc, VALUE *argv, VALUE klass)
  * call-seq:
  *   Date._xmlschema(string, limit: 128) -> hash
  *
- * Returns a hash of parsed elements.
+ * Returns a hash of values parsed from +string+, which should be a valid
+ * XML date format:
  *
- * Raise an ArgumentError when the string length is longer than _limit_.
- * You can stop this check by passing <code>limit: nil</code>, but note
- * that it may take a long time to parse.
+ *   d = Date.new(2001, 2, 3)
+ *   s = d.xmlschema    # => "2001-02-03"
+ *   Date._xmlschema(s) # => {:year=>2001, :mon=>2, :mday=>3}
+ *
+ * See argument {limit}[rdoc-ref:Date@Argument+limit].
  */
 static VALUE
 date_s__xmlschema(int argc, VALUE *argv, VALUE klass)
@@ -4727,16 +4748,17 @@ date_s__xmlschema(int argc, VALUE *argv, VALUE klass)
  * call-seq:
  *   Date.xmlschema(string = '-4712-01-01', start = Date::ITALY, limit: 128)  ->  date
  *
- * Creates a new Date object by parsing from a string according to
- * some typical XML Schema formats.
+ * Returns a new \Date object with values parsed from +string+,
+ * which should be a valid XML date format:
  *
- *    Date.xmlschema('2001-02-03')	#=> #<Date: 2001-02-03 ...>
+ *   d = Date.new(2001, 2, 3)
+ *   s = d.xmlschema   # => "2001-02-03"
+ *   Date.xmlschema(s) # => #<Date: 2001-02-03>
  *
- * Raise an ArgumentError when the string length is longer than _limit_.
- * You can stop this check by passing <code>limit: nil</code>, but note
- * that it may take a long time to parse.
+ * See:
  *
- * See argument {start}[rdoc-ref:Date@Argument+start].
+ * - Argument {start}[rdoc-ref:Date@Argument+start].
+ * - Argument {limit}[rdoc-ref:Date@Argument+limit].
  *
  */
 static VALUE
@@ -4768,11 +4790,15 @@ date_s_xmlschema(int argc, VALUE *argv, VALUE klass)
  * call-seq:
  *   Date._rfc2822(string, limit: 128) -> hash
  *
- * Returns a hash of parsed elements.
+ * Returns a hash of values parsed from +string+, which should be a valid
+ * {RFC 2822 date format}[https://datatracker.ietf.org/doc/html/rfc2822]:
  *
- * Raise an ArgumentError when the string length is longer than _limit_.
- * You can stop this check by passing <code>limit: nil</code>, but note
- * that it may take a long time to parse.
+ *   d = Date.new(2001, 2, 3)
+ *   s = d.rfc2822 # => "Sat, 3 Feb 2001 00:00:00 +0000"
+ *   Date._rfc2822(s)
+ *   # => {:wday=>6, :mday=>3, :mon=>2, :year=>2001, :hour=>0, :min=>0, :sec=>0, :zone=>"+0000", :offset=>0}
+ *
+ * See argument {limit}[rdoc-ref:Date@Argument+limit].
  *
  * Date._rfc822 is an alias for Date._rfc2822.
  */
@@ -4791,17 +4817,18 @@ date_s__rfc2822(int argc, VALUE *argv, VALUE klass)
  * call-seq:
  *   Date.rfc2822(string = 'Mon, 1 Jan -4712 00:00:00 +0000', start = Date::ITALY, limit: 128) -> date
  *
- * Creates a new Date object by parsing from a string according to
- * some typical RFC 2822 formats.
+ * Returns a new \Date object with values parsed from +string+,
+ * which should be a valid
+ * {RFC 2822 date format}[https://datatracker.ietf.org/doc/html/rfc2822]:
  *
- *    Date.rfc2822('Sat, 3 Feb 2001 00:00:00 +0000')
- *						#=> #<Date: 2001-02-03 ...>
+ *   d = Date.new(2001, 2, 3)
+ *   s = d.rfc2822   # => "Sat, 3 Feb 2001 00:00:00 +0000"
+ *   Date.rfc2822(s) # => #<Date: 2001-02-03>
  *
- * Raise an ArgumentError when the string length is longer than _limit_.
- * You can stop this check by passing <code>limit: nil</code>, but note
- * that it may take a long time to parse.
+ * See:
  *
- * See argument {start}[rdoc-ref:Date@Argument+start].
+ * - Argument {start}[rdoc-ref:Date@Argument+start].
+ * - Argument {limit}[rdoc-ref:Date@Argument+limit].
  *
  * Date.rfc822 is an alias for Date.rfc2822.
  */
@@ -4833,14 +4860,14 @@ date_s_rfc2822(int argc, VALUE *argv, VALUE klass)
  * call-seq:
  *   Date._httpdate(string, limit: 128) -> hash
  *
- * Returns a hash of values parsed from +string+:
+ * Returns a hash of values parsed from +string+, which should be a valid
+ * HTTP date format:
  *
  *   d = Date.new(2001, 2, 3)
  *   s = d.httpdate # => "Sat, 03 Feb 2001 00:00:00 GMT"
  *   Date._httpdate(s)
  *   # => {:wday=>6, :mday=>3, :mon=>2, :year=>2001, :hour=>0, :min=>0, :sec=>0, :zone=>"GMT", :offset=>0}
  *
- * See argument {limit}[rdoc-ref:Date@Argument+limit].
  */
 static VALUE
 date_s__httpdate(int argc, VALUE *argv, VALUE klass)
@@ -4857,17 +4884,18 @@ date_s__httpdate(int argc, VALUE *argv, VALUE klass)
  * call-seq:
  *   Date.httpdate(string = 'Mon, 01 Jan -4712 00:00:00 GMT', start = Date::ITALY, limit: 128) -> date
  *
- * Creates a new Date object by parsing from a string according to
- * some RFC 2616 format.
+ * Returns a new \Date object with values parsed from +string+,
+ * which should be a valid
+ * {RFC 2616 date format}[https://datatracker.ietf.org/doc/html/rfc2616]:
  *
- *    Date.httpdate('Sat, 03 Feb 2001 00:00:00 GMT')
- *						#=> #<Date: 2001-02-03 ...>
+ *   d = Date.new(2001, 2, 3)
+     s = d.httpdate   # => "Sat, 03 Feb 2001 00:00:00 GMT"
+     Date.httpdate(s) # => #<Date: 2001-02-03>
  *
- * Raise an ArgumentError when the string length is longer than _limit_.
- * You can stop this check by passing <code>limit: nil</code>, but note
- * that it may take a long time to parse.
+ * See:
  *
- * See argument {start}[rdoc-ref:Date@Argument+start].
+ * - Argument {start}[rdoc-ref:Date@Argument+start].
+ * - Argument {limit}[rdoc-ref:Date@Argument+limit].
  *
  */
 static VALUE
@@ -4898,11 +4926,14 @@ date_s_httpdate(int argc, VALUE *argv, VALUE klass)
  * call-seq:
  *   Date._jisx0301(string, limit: 128) -> hash
  *
- * Returns a hash of parsed elements.
+ * Returns a hash of values parsed from +string+, which should be a valid
+ * JIS X 0301 date format:
  *
- * Raise an ArgumentError when the string length is longer than _limit_.
- * You can stop this check by passing <code>limit: nil</code>, but note
- * that it may take a long time to parse.
+ *   d = Date.new(2001, 2, 3)
+ *   s = d.jisx0301    # => "H13.02.03"
+ *   Date._jisx0301(s) # => {:year=>2001, :mon=>2, :mday=>3}
+ *
+ * See argument {limit}[rdoc-ref:Date@Argument+limit].
  */
 static VALUE
 date_s__jisx0301(int argc, VALUE *argv, VALUE klass)
@@ -4919,20 +4950,21 @@ date_s__jisx0301(int argc, VALUE *argv, VALUE klass)
  * call-seq:
  *   Date.jisx0301(string = '-4712-01-01', start = Date::ITALY, limit: 128) -> date
  *
- * Creates a new Date object by parsing from a string according to
- * some typical JIS X 0301 formats.
+ * Returns a new \Date object with values parsed from +string+,
+ * which should be a valid JIS X 0301 format:
  *
- *    Date.jisx0301('H13.02.03')		#=> #<Date: 2001-02-03 ...>
+ *   d = Date.new(2001, 2, 3)
+ *   s = d.jisx0301   # => "H13.02.03"
+ *   Date.jisx0301(s) # => #<Date: 2001-02-03>
  *
  * For no-era year, legacy format, Heisei is assumed.
  *
- *    Date.jisx0301('13.02.03') 		#=> #<Date: 2001-02-03 ...>
+ *   Date.jisx0301('13.02.03') # => #<Date: 2001-02-03>
  *
- * Raise an ArgumentError when the string length is longer than _limit_.
- * You can stop this check by passing <code>limit: nil</code>, but note
- * that it may take a long time to parse.
+ * See:
  *
- * See argument {start}[rdoc-ref:Date@Argument+start].
+ * - Argument {start}[rdoc-ref:Date@Argument+start].
+ * - Argument {limit}[rdoc-ref:Date@Argument+limit].
  *
  */
 static VALUE
