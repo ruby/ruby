@@ -378,10 +378,6 @@ type PosMarkerFn = Box<dyn Fn(CodePtr)>;
 /// YJIT IR instruction
 pub struct Insn
 {
-    /// Previous and next instruction (doubly linked list)
-    pub(super) prev: Option<InsnIdx>,
-    pub(super) next: Option<InsnIdx>,
-
     /// Other instructions using this instruction's output
     pub(super) uses: Vec<(InsnIdx, OpndIdx)>,
 
@@ -403,6 +399,128 @@ pub struct Insn
     // Callback to mark the position of this instruction
     // in the generated code
     pub(super) pos_marker: Option<PosMarkerFn>,
+}
+
+impl Insn {
+    fn new(op: Op, out: Opnd) -> Self {
+        Self {
+            uses: Vec::new(),
+            op,
+            text: None,
+            opnds: Vec::default(),
+            out,
+            target: None,
+            pos_marker: None,
+        }
+    }
+}
+
+/// A container for an instruction within a doubly-linked list.
+struct InsnNode {
+    insn: Insn,
+    prev_idx: Option<InsnIdx>,
+    next_idx: Option<InsnIdx>
+}
+
+impl InsnNode {
+    fn new(insn: Insn, prev_idx: Option<InsnIdx>) -> Self {
+        Self { insn, prev_idx, next_idx: None }
+    }
+}
+
+/// A doubly-linked list containing instructions.
+pub(super) struct InsnList {
+    insns: Vec<InsnNode>,
+    first_idx: Option<InsnIdx>,
+    last_idx: Option<InsnIdx>
+}
+
+impl InsnList {
+    fn new() -> Self {
+        Self { insns: Vec::default(), first_idx: None, last_idx: None }
+    }
+
+    /// Returns the next instruction index that will be generated
+    fn next_idx(&self) -> InsnIdx {
+        self.insns.len() as InsnIdx
+    }
+
+    /// Return a mutable reference to the instruction for the given index
+    fn get_ref_mut(&mut self, idx: InsnIdx) -> &mut Insn {
+        &mut self.insns[idx as usize].insn
+    }
+
+    /// Push a new instruction onto the end of the list
+    fn push(&mut self, insn: Insn) -> InsnIdx {
+        let insn_idx = self.next_idx();
+
+        // Push the new node onto the list
+        self.insns.push(InsnNode::new(insn, self.last_idx));
+
+        // Update the first index if it's not already set
+        self.first_idx = self.first_idx.or(Some(insn_idx));
+
+        // Update the last node's next_idx field if necessary
+        if let Some(last_idx) = self.last_idx {
+            self.insns[last_idx as usize].next_idx = Some(insn_idx);
+        }
+
+        // Update the last index
+        self.last_idx = Some(insn_idx);
+
+        insn_idx
+    }
+
+    /// Remove an instruction from the list at a given index
+    fn remove(&mut self, insn_idx: InsnIdx) {
+        let prev_idx = self.insns[insn_idx as usize].prev_idx;
+        let next_idx = self.insns[insn_idx as usize].next_idx;
+
+        // Update the previous node's next_idx field if necessary
+        if let Some(prev_idx) = prev_idx {
+            self.insns[prev_idx as usize].next_idx = next_idx;
+        } else {
+            assert_eq!(self.first_idx, Some(insn_idx));
+            self.first_idx = next_idx;
+        }
+
+        // Update the next node's prev_idx field if necessary
+        if let Some(next_idx) = next_idx {
+            self.insns[next_idx as usize].prev_idx = prev_idx;
+        } else {
+            assert_eq!(self.last_idx, Some(insn_idx));
+            self.last_idx = prev_idx;
+        }
+    }
+}
+
+/// An iterator that will walk through the list of instructions in order
+/// according to the linked list.
+pub(super) struct InsnListIterator<'a> {
+    insn_list: &'a InsnList,
+    insn_idx: Option<InsnIdx>
+}
+
+impl<'a> Iterator for InsnListIterator<'a> {
+    type Item = &'a Insn;
+
+    /// Return an option containing the next instruction in the list.
+    fn next(&mut self) -> Option<Self::Item> {
+        self.insn_idx.map(|idx| {
+            let node = &self.insn_list.insns[idx as usize];
+            self.insn_idx = node.next_idx;
+            &node.insn
+        })
+    }
+}
+
+impl<'a> IntoIterator for &'a InsnList {
+    type Item = &'a Insn;
+    type IntoIter = InsnListIterator<'a>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        InsnListIterator { insn_list: self, insn_idx: self.first_idx }
+    }
 }
 
 /*
@@ -442,17 +560,11 @@ impl fmt::Debug for Insn {
 /// optimized and lowered
 pub struct Assembler
 {
-    /// All instructions created for this assembler (out of order)
-    pub(super) insns: Vec<Insn>,
-
-    /// First and last instructions in the linked list
-    pub(super) first_insn: Option<InsnIdx>,
-    pub(super) last_insn: Option<InsnIdx>,
+    /// The list of instructions created by this assembler
+    pub(super) insn_list: InsnList,
 
     /// Names of labels
     pub(super) label_names: Vec<String>,
-
-
 
     /*
     /// FIXME: only compute the live ranges when doing register allocation?
@@ -471,18 +583,9 @@ pub struct Assembler
 
 impl Assembler
 {
-    pub fn new() -> Assembler {
-        Assembler {
-            insns: Vec::default(),
-            first_insn: None,
-            last_insn: None,
-            label_names: Vec::default(),
-        }
+    pub fn new() -> Self {
+        Self { insn_list: InsnList::new(), label_names: Vec::default() }
     }
-
-
-
-
 
     /// Append an instruction to the list
     pub(super) fn push_insn(
@@ -494,9 +597,7 @@ impl Assembler
         pos_marker: Option<PosMarkerFn>
     ) -> Opnd
     {
-        // Id of this instruction
-        let insn_idx = self.insns.len() as InsnIdx;
-
+        let insn_idx = self.insn_list.next_idx();
         let mut out_num_bits: u8 = 0;
 
         for (opnd_idx, opnd) in opnds.iter().enumerate() {
@@ -516,7 +617,7 @@ impl Assembler
 
             // Track which instructions this insn is using as operands
             if let Opnd::InsnOut { idx, .. } = *opnd {
-                self.insns[idx as usize].uses.push((insn_idx, opnd_idx as OpndIdx));
+                self.insn_list.get_ref_mut(idx).uses.push((insn_idx, opnd_idx as OpndIdx));
             }
         }
 
@@ -527,9 +628,7 @@ impl Assembler
         // Operand for the output of this instruction
         let out_opnd = Opnd::InsnOut{ idx: insn_idx, num_bits: out_num_bits };
 
-        let insn = Insn {
-            prev: self.last_insn,
-            next: None,
+        self.insn_list.push(Insn {
             uses: Vec::default(),
             op,
             text,
@@ -537,15 +636,7 @@ impl Assembler
             out: out_opnd,
             target,
             pos_marker,
-        };
-
-        self.insns.push(insn);
-
-        if let Some(last_insn_idx) = self.last_insn {
-            self.insns[last_insn_idx as usize].next = Some(insn_idx);
-        }
-        self.last_insn = Some(insn_idx);
-        self.first_insn = self.first_insn.or(Some(insn_idx));
+        });
 
         // Return an operand for the output of this instruction
         out_opnd
@@ -555,21 +646,21 @@ impl Assembler
     pub(super) fn replace_uses(&mut self, insn_idx: InsnIdx, replace_with: Opnd)
     {
         // We're going to clear the vector of uses
-        let uses = std::mem::take(&mut self.insns[insn_idx as usize].uses);
+        let uses = std::mem::take(&mut self.insn_list.get_ref_mut(insn_idx).uses);
 
         // For each use of this instruction
         for (use_idx, opnd_idx) in uses {
 
             // TODO: assert that this is indeed a use of this insn (sanity check)
 
-            let use_insn = &mut self.insns[use_idx as usize];
+            let use_insn = self.insn_list.get_ref_mut(use_idx);
             use_insn.opnds[opnd_idx as usize] = replace_with;
 
             // If replace_with is an insn, update its uses
             if let Opnd::InsnOut { idx, .. } = replace_with {
-                let repl_insn = &mut self.insns[idx as usize];
-                assert!(repl_insn.prev.is_some() || repl_insn.next.is_some());
-                repl_insn.uses.push((use_idx, opnd_idx));
+                let repl_insn = &mut self.insn_list.insns[idx as usize];
+                assert!(repl_insn.prev_idx.is_some() || repl_insn.next_idx.is_some());
+                repl_insn.insn.uses.push((use_idx, opnd_idx));
             }
         }
     }
@@ -577,33 +668,9 @@ impl Assembler
     /// Remove a specific insn from the assembler
     pub(super) fn remove_insn(&mut self, insn_idx: InsnIdx)
     {
-        let prev = self.insns[insn_idx as usize].prev;
-        let next = self.insns[insn_idx as usize].next;
-
-        match prev {
-            Some(prev_idx) => {
-                let prev_insn = &mut self.insns[prev_idx as usize];
-                prev_insn.next = next;
-            }
-            None => {
-                assert!(self.first_insn == Some(insn_idx));
-                self.first_insn = next;
-            }
-        };
-
-        match next {
-            Some(next_idx) => {
-                let next_insn = &mut self.insns[next_idx as usize];
-                next_insn.prev = prev;
-            }
-            None => {
-                assert!(self.last_insn == Some(insn_idx));
-                self.last_insn = prev;
-            }
-        };
-
         // Note: we don't remove it from the vec because we do that
         // only when we're done with the assembler
+        self.insn_list.remove(insn_idx);
     }
 
 
@@ -1118,11 +1185,11 @@ mod tests
     fn test_replace_insn()
     {
         let mut asm = Assembler::new();
-        let v0 = asm.add(1.into(), 2.into());
-        let v1 = asm.add(v0, 3.into());
+        let v0 = asm.add(1_u64.into(), 2_u64.into());
+        let v1 = asm.add(v0, 3_u64.into());
 
         if let Opnd::InsnOut{ idx, ..} = v0 {
-            asm.replace_uses(idx, 3.into());
+            asm.replace_uses(idx, 3_u64.into());
             asm.remove_insn(idx);
         }
         else
@@ -1132,7 +1199,7 @@ mod tests
 
         // Nobody is using v1, but we should still be able to "replace" and remove it
         if let Opnd::InsnOut{ idx, ..} = v1 {
-            asm.replace_uses(idx, 6.into());
+            asm.replace_uses(idx, 6_u64.into());
             asm.remove_insn(idx);
         }
         else
@@ -1140,8 +1207,8 @@ mod tests
             panic!();
         }
 
-        assert!(asm.first_insn.is_none());
-        assert!(asm.last_insn.is_none());
+        assert!(asm.insn_list.first_idx.is_none());
+        assert!(asm.insn_list.last_idx.is_none());
     }
 
     #[test]
@@ -1160,6 +1227,35 @@ mod tests
         else
         {
             panic!();
+        }
+    }
+
+    #[test]
+    fn test_insn_list_push_and_remove() {
+        let mut insn_list = InsnList::new();
+
+        let insn_idx = insn_list.push(Insn::new(Op::Load, Opnd::None));
+        insn_list.remove(insn_idx);
+
+        assert_eq!(insn_list.first_idx, None);
+        assert_eq!(insn_list.last_idx, None);
+    }
+
+    #[test]
+    fn test_insn_list_iterator() {
+        let mut insn_list = InsnList::new();
+
+        let first_insn_idx = insn_list.push(Insn::new(Op::Add, Opnd::None));
+        let second_insn_idx = insn_list.push(Insn::new(Op::Sub, Opnd::None));
+        let third_insn_idx = insn_list.push(Insn::new(Op::Load, Opnd::None));
+
+        for (insn_idx, insn) in insn_list.into_iter().enumerate() {
+            match insn_idx {
+                0 => assert_eq!(insn.op, Op::Add),
+                1 => assert_eq!(insn.op, Op::Sub),
+                2 => assert_eq!(insn.op, Op::Load),
+                _ => panic!("Unexpected instruction index")
+            };
         }
     }
 }
