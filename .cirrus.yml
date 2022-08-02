@@ -153,4 +153,15 @@ yjit_task:
     bootstraptest/test_struct.rb \
     bootstraptest/test_yjit_new_backend.rb \
     bootstraptest/test_yjit_rust_port.rb
+
+  # These are the btests we can't run yet on arm:
+  #bootstraptest/test_block.rb (missing opt_send)
+  #bootstraptest/test_insns.rb (missing opt_send)
+  #bootstraptest/test_literal.rb (displacement bug)
+  #bootstraptest/test_syntax.rb (missing opt_send)
+  #bootstraptest/test_thread.rb (deadlock)
+  #bootstraptest/test_yjit.rb  (multiple bugs)
+  #bootstraptest/test_yjit_30k_ifelse.rb (missing opt_send)
+  #bootstraptest/test_yjit_30k_methods.rb (missing opt_send)
+
   # full_build_script: make -j

@@ -66,7 +66,7 @@ impl Assembler
     /// Note: we intentionally exclude C_RET_REG (X0) from this list
     /// because of the way it's used in gen_leave() and gen_leave_exit()
     pub fn get_alloc_regs() -> Vec<Reg> {
-        vec![X11_REG, X12_REG]
+        vec![X11_REG, X12_REG, X13_REG]
     }
 
     /// Get a list of all of the caller-saved registers
