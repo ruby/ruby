@@ -2278,7 +2278,6 @@ fn gen_checktype(
     }
 }
 
-
 fn gen_concatstrings(
     jit: &mut JITState,
     ctx: &mut Context,
@@ -2304,7 +2303,6 @@ fn gen_concatstrings(
 
     KeepCompiling
 }
-
 
 fn guard_two_fixnums(ctx: &mut Context, asm: &mut Assembler, side_exit: CodePtr) {
     // Get the stack operand types
