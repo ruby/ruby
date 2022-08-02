@@ -91,6 +91,10 @@ module Bundler
       SpecSet.new(materialized)
     end
 
+    def incomplete_ruby_specs?(deps)
+      self.class.new(self.for(deps, true, [Gem::Platform::RUBY])).incomplete_specs.any?
+    end
+
     def missing_specs
       @specs.select {|s| s.is_a?(LazySpecification) }
     end

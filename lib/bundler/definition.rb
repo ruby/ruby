@@ -484,6 +484,7 @@ module Bundler
 
     def reresolve
       last_resolve = converge_locked_specs
+      remove_ruby_from_platforms_if_necessary!(dependencies)
       expanded_dependencies = expand_dependencies(dependencies + metadata_dependencies, true)
       Resolver.resolve(expanded_dependencies, source_requirements, last_resolve, gem_version_promoter, additional_base_requirements_for_resolve, platforms)
     end
@@ -863,6 +864,17 @@ module Bundler
         dep = Dependency.new(name, ">= #{locked_spec.version}")
         DepProxy.get_proxy(dep, locked_spec.platform)
       end
+    end
+
+    def remove_ruby_from_platforms_if_necessary!(dependencies)
+      return if Bundler.frozen_bundle? ||
+        Bundler.local_platform == Gem::Platform::RUBY ||
+        !platforms.include?(Gem::Platform::RUBY) ||
+        (@new_platform && platforms.last == Gem::Platform::RUBY) ||
+        !@originally_locked_specs.incomplete_ruby_specs?(dependencies)
+
+      remove_platform(Gem::Platform::RUBY)
+      add_current_platform
     end
 
     def source_map
