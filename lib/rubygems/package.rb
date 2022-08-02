@@ -409,6 +409,8 @@ EOM
 
   def extract_tar_gz(io, destination_dir, pattern = "*") # :nodoc:
     directories = []
+    symlinks = []
+
     open_tar_gz io do |tar|
       tar.each do |entry|
         full_name = entry.full_name
@@ -422,6 +424,8 @@ EOM
 
           raise Gem::Package::SymlinkError.new(full_name, real_destination, destination_dir) unless
             normalize_path(real_destination).start_with? normalize_path(destination_dir + "/")
+
+          symlinks << [full_name, link_target, destination, real_destination]
         end
 
         FileUtils.rm_rf destination
@@ -445,9 +449,15 @@ EOM
           FileUtils.chmod file_mode(entry.header.mode), destination
         end if entry.file?
 
-        File.symlink(entry.header.linkname, destination) if entry.symlink?
-
         verbose destination
+      end
+    end
+
+    symlinks.each do |name, target, destination, real_destination|
+      if File.exist?(real_destination)
+        File.symlink(target, destination)
+      else
+        alert_warning "#{@spec.full_name} ships with a dangling symlink named #{name} pointing to missing #{target} file. Ignoring"
       end
     end
 

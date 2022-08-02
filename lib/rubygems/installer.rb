@@ -490,15 +490,7 @@ class Gem::Installer
     spec.executables.each do |filename|
       filename.tap(&Gem::UNTAINT)
       bin_path = File.join gem_dir, spec.bindir, filename
-
-      unless File.exist? bin_path
-        if File.symlink? bin_path
-          alert_warning "`#{bin_path}` is dangling symlink pointing to `#{File.readlink bin_path}`"
-        else
-          alert_warning "`#{bin_path}` does not exist, maybe `gem pristine #{spec.name}` will fix it?"
-        end
-        next
-      end
+      next unless File.exist? bin_path
 
       mode = File.stat(bin_path).mode
       dir_mode = options[:prog_mode] || (mode | 0111)
