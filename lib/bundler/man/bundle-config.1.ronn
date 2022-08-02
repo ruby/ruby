@@ -43,8 +43,8 @@ local and global sources.
 Executing `bundle config unset --global <name>` will delete the configuration
 only from the user configuration.
 
-Executing `bundle config unset --local <name> <value>` will delete the
-configuration only from the local application.
+Executing `bundle config unset --local <name>` will delete the configuration
+only from the local application.
 
 Executing bundle with the `BUNDLE_IGNORE_CONFIG` environment variable set will
 cause it to ignore all configuration.
