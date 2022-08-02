@@ -1881,6 +1881,7 @@ pub const OPT_AREF_MAX_CHAIN_DEPTH: i32 = 2;
 
 // up to 5 different classes
 pub const SEND_MAX_DEPTH: i32 = 5;
+*/
 
 // Codegen for setting an instance variable.
 // Preconditions:
@@ -1890,13 +1891,13 @@ pub const SEND_MAX_DEPTH: i32 = 5;
 fn gen_set_ivar(
     jit: &mut JITState,
     ctx: &mut Context,
-    cb: &mut CodeBlock,
+    asm: &mut Assembler,
     recv: VALUE,
     ivar_name: ID,
 ) -> CodegenStatus {
     // Save the PC and SP because the callee may allocate
     // Note that this modifies REG_SP, which is why we do it first
-    jit_prepare_routine_call(jit, ctx, cb, REG0);
+    jit_prepare_routine_call(jit, ctx, asm);
 
     // Get the operands from the stack
     let val_opnd = ctx.stack_pop(1);
@@ -1905,17 +1906,22 @@ fn gen_set_ivar(
     let ivar_index: u32 = unsafe { rb_obj_ensure_iv_index_mapping(recv, ivar_name) };
 
     // Call rb_vm_set_ivar_idx with the receiver, the index of the ivar, and the value
-    mov(cb, C_ARG_REGS[0], recv_opnd);
-    mov(cb, C_ARG_REGS[1], imm_opnd(ivar_index.into()));
-    mov(cb, C_ARG_REGS[2], val_opnd);
-    call_ptr(cb, REG0, rb_vm_set_ivar_idx as *const u8);
+    let val = asm.ccall(
+        rb_vm_set_ivar_idx as *const u8,
+        vec![
+            recv_opnd,
+            Opnd::Imm(ivar_index.into()),
+            val_opnd,
+        ],
+    );
 
     let out_opnd = ctx.stack_push(Type::Unknown);
-    mov(cb, out_opnd, RAX);
+    asm.mov(out_opnd, val);
 
     KeepCompiling
 }
 
+/*
 // Codegen for getting an instance variable.
 // Preconditions:
 //   - receiver is in REG0
@@ -3863,6 +3869,7 @@ fn lookup_cfunc_codegen(def: *const rb_method_definition_t) -> Option<MethodGenF
 
     CodegenGlobals::look_up_codegen_method(method_serial)
 }
+*/
 
 // Is anyone listening for :c_call and :c_return event currently?
 fn c_method_tracing_currently_enabled(jit: &JITState) -> bool {
@@ -3872,6 +3879,7 @@ fn c_method_tracing_currently_enabled(jit: &JITState) -> bool {
     }
 }
 
+/*
 // Similar to args_kw_argv_to_hash. It is called at runtime from within the
 // generated assembly to build a Ruby hash of the passed keyword arguments. The
 // keys are the Symbol objects associated with the keywords and the values are
@@ -4798,11 +4806,12 @@ fn gen_struct_aset(
     jump_to_next_insn(jit, ctx, cb, ocb);
     EndBlock
 }
+*/
 
 fn gen_send_general(
     jit: &mut JITState,
     ctx: &mut Context,
-    cb: &mut CodeBlock,
+    asm: &mut Assembler,
     ocb: &mut OutlinedCb,
     cd: *const rb_call_data,
     block: Option<IseqPtr>,
@@ -4824,24 +4833,24 @@ fn gen_send_general(
 
     // Don't JIT calls with keyword splat
     if flags & VM_CALL_KW_SPLAT != 0 {
-        gen_counter_incr!(cb, send_kw_splat);
+        gen_counter_incr!(asm, send_kw_splat);
         return CantCompile;
     }
 
     // Don't JIT calls that aren't simple
     // Note, not using VM_CALL_ARGS_SIMPLE because sometimes we pass a block.
     if flags & VM_CALL_ARGS_SPLAT != 0 {
-        gen_counter_incr!(cb, send_args_splat);
+        gen_counter_incr!(asm, send_args_splat);
         return CantCompile;
     }
     if flags & VM_CALL_ARGS_BLOCKARG != 0 {
-        gen_counter_incr!(cb, send_block_arg);
+        gen_counter_incr!(asm, send_block_arg);
         return CantCompile;
     }
 
     // Defer compilation so we can specialize on class of receiver
     if !jit_at_current_insn(jit) {
-        defer_compilation(jit, ctx, cb, ocb);
+        defer_compilation(jit, ctx, asm, ocb);
         return EndBlock;
     }
 
@@ -4854,6 +4863,8 @@ fn gen_send_general(
     // Points to the receiver operand on the stack
     let recv = ctx.stack_opnd(argc);
     let recv_opnd = StackOpnd(argc.try_into().unwrap());
+    // TODO: Resurrect this once jit_guard_known_klass is implemented for getivar
+    /*
     mov(cb, REG0, recv);
     jit_guard_known_klass(
         jit,
@@ -4865,7 +4876,7 @@ fn gen_send_general(
         comptime_recv,
         SEND_MAX_DEPTH,
         side_exit,
-    );
+    ); */
 
     // Do method lookup
     let mut cme = unsafe { rb_callable_method_entry(comptime_recv_klass, mid) };
@@ -4891,7 +4902,7 @@ fn gen_send_general(
             if flags & VM_CALL_FCALL == 0 {
                 // otherwise we need an ancestry check to ensure the receiver is vaild to be called
                 // as protected
-                jit_protected_callee_ancestry_guard(jit, cb, ocb, cme, side_exit);
+                return CantCompile; // jit_protected_callee_ancestry_guard(jit, cb, ocb, cme, side_exit);
             }
         }
         _ => {
@@ -4908,25 +4919,26 @@ fn gen_send_general(
         let def_type = unsafe { get_cme_def_type(cme) };
         match def_type {
             VM_METHOD_TYPE_ISEQ => {
-                return gen_send_iseq(jit, ctx, cb, ocb, ci, cme, block, argc);
+                return CantCompile; // return gen_send_iseq(jit, ctx, cb, ocb, ci, cme, block, argc);
             }
             VM_METHOD_TYPE_CFUNC => {
+                return CantCompile; /*
                 return gen_send_cfunc(
                     jit,
                     ctx,
-                    cb,
+                    asm,
                     ocb,
                     ci,
                     cme,
                     block,
                     argc,
                     &comptime_recv_klass,
-                );
+                ); */
             }
             VM_METHOD_TYPE_IVAR => {
                 if argc != 0 {
                     // Argument count mismatch. Getters take no arguments.
-                    gen_counter_incr!(cb, send_getter_arity);
+                    gen_counter_incr!(asm, send_getter_arity);
                     return CantCompile;
                 }
 
@@ -4940,10 +4952,11 @@ fn gen_send_general(
                     // attr_accessor is invalidated and we exit at the closest
                     // instruction boundary which is always outside of the body of
                     // the attr_accessor code.
-                    gen_counter_incr!(cb, send_cfunc_tracing);
+                    gen_counter_incr!(asm, send_cfunc_tracing);
                     return CantCompile;
                 }
 
+                return CantCompile; /*
                 mov(cb, REG0, recv);
                 let ivar_name = unsafe { get_cme_def_body_attr_id(cme) };
 
@@ -4958,31 +4971,32 @@ fn gen_send_general(
                     recv_opnd,
                     side_exit,
                 );
+                */
             }
             VM_METHOD_TYPE_ATTRSET => {
                 if flags & VM_CALL_KWARG != 0 {
-                    gen_counter_incr!(cb, send_attrset_kwargs);
+                    gen_counter_incr!(asm, send_attrset_kwargs);
                     return CantCompile;
                 } else if argc != 1 || unsafe { !RB_TYPE_P(comptime_recv, RUBY_T_OBJECT) } {
-                    gen_counter_incr!(cb, send_ivar_set_method);
+                    gen_counter_incr!(asm, send_ivar_set_method);
                     return CantCompile;
                 } else if c_method_tracing_currently_enabled(jit) {
                     // Can't generate code for firing c_call and c_return events
                     // See :attr-tracing:
-                    gen_counter_incr!(cb, send_cfunc_tracing);
+                    gen_counter_incr!(asm, send_cfunc_tracing);
                     return CantCompile;
                 } else {
                     let ivar_name = unsafe { get_cme_def_body_attr_id(cme) };
-                    return gen_set_ivar(jit, ctx, cb, comptime_recv, ivar_name);
+                    return gen_set_ivar(jit, ctx, asm, comptime_recv, ivar_name);
                 }
             }
             // Block method, e.g. define_method(:foo) { :my_block }
             VM_METHOD_TYPE_BMETHOD => {
-                gen_counter_incr!(cb, send_bmethod);
+                gen_counter_incr!(asm, send_bmethod);
                 return CantCompile;
             }
             VM_METHOD_TYPE_ZSUPER => {
-                gen_counter_incr!(cb, send_zsuper_method);
+                gen_counter_incr!(asm, send_zsuper_method);
                 return CantCompile;
             }
             VM_METHOD_TYPE_ALIAS => {
@@ -4991,15 +5005,16 @@ fn gen_send_general(
                 continue;
             }
             VM_METHOD_TYPE_UNDEF => {
-                gen_counter_incr!(cb, send_undef_method);
+                gen_counter_incr!(asm, send_undef_method);
                 return CantCompile;
             }
             VM_METHOD_TYPE_NOTIMPLEMENTED => {
-                gen_counter_incr!(cb, send_not_implemented_method);
+                gen_counter_incr!(asm, send_not_implemented_method);
                 return CantCompile;
             }
             // Send family of methods, e.g. call/apply
             VM_METHOD_TYPE_OPTIMIZED => {
+                return CantCompile; /*
                 let opt_type = unsafe { get_cme_def_body_optimized_type(cme) };
                 match opt_type {
                     OPTIMIZED_METHOD_TYPE_SEND => {
@@ -5042,13 +5057,14 @@ fn gen_send_general(
                         panic!("unknown optimized method type!")
                     }
                 }
+                */
             }
             VM_METHOD_TYPE_MISSING => {
-                gen_counter_incr!(cb, send_missing_method);
+                gen_counter_incr!(asm, send_missing_method);
                 return CantCompile;
             }
             VM_METHOD_TYPE_REFINED => {
-                gen_counter_incr!(cb, send_refined_method);
+                gen_counter_incr!(asm, send_refined_method);
                 return CantCompile;
             }
             _ => {
@@ -5061,23 +5077,24 @@ fn gen_send_general(
 fn gen_opt_send_without_block(
     jit: &mut JITState,
     ctx: &mut Context,
-    cb: &mut CodeBlock,
+    asm: &mut Assembler,
     ocb: &mut OutlinedCb,
 ) -> CodegenStatus {
     let cd = jit_get_arg(jit, 0).as_ptr();
 
-    gen_send_general(jit, ctx, cb, ocb, cd, None)
+    gen_send_general(jit, ctx, asm, ocb, cd, None)
 }
 
+/*
 fn gen_send(
     jit: &mut JITState,
     ctx: &mut Context,
-    cb: &mut CodeBlock,
+    asm: &mut Assembler,
     ocb: &mut OutlinedCb,
 ) -> CodegenStatus {
     let cd = jit_get_arg(jit, 0).as_ptr();
     let block = jit_get_arg(jit, 1).as_optional_ptr();
-    return gen_send_general(jit, ctx, cb, ocb, cd, block);
+    return gen_send_general(jit, ctx, asm, ocb, cd, block);
 }
 
 fn gen_invokesuper(
@@ -6028,7 +6045,7 @@ fn get_gen_fn(opcode: VALUE) -> Option<InsnGenFn> {
 
         //YARVINSN_getblockparamproxy => Some(gen_getblockparamproxy),
         //YARVINSN_getblockparam => Some(gen_getblockparam),
-        //YARVINSN_opt_send_without_block => Some(gen_opt_send_without_block),
+        YARVINSN_opt_send_without_block => Some(gen_opt_send_without_block),
         //YARVINSN_send => Some(gen_send),
         //YARVINSN_invokesuper => Some(gen_invokesuper),
         YARVINSN_leave => Some(gen_leave),

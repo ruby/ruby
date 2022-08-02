@@ -3074,3 +3074,16 @@ assert_equal 'false', %q{
     end
     function()
 }
+
+# opt_send_without_block (VM_METHOD_TYPE_ATTRSET)
+assert_equal 'foo', %q{
+    class Foo
+      attr_writer :foo
+
+      def foo()
+        self.foo = "foo"
+      end
+    end
+    foo = Foo.new
+    foo.foo
+}
