@@ -411,15 +411,16 @@ EOM
     directories = []
     open_tar_gz io do |tar|
       tar.each do |entry|
-        next unless File.fnmatch pattern, entry.full_name, File::FNM_DOTMATCH
+        full_name = entry.full_name
+        next unless File.fnmatch pattern, full_name, File::FNM_DOTMATCH
 
-        destination = install_location entry.full_name, destination_dir
+        destination = install_location full_name, destination_dir
 
         if entry.symlink?
           link_target = entry.header.linkname
           real_destination = link_target.start_with?("/") ? link_target : File.expand_path(link_target, File.dirname(destination))
 
-          raise Gem::Package::SymlinkError.new(entry.full_name, real_destination, destination_dir) unless
+          raise Gem::Package::SymlinkError.new(full_name, real_destination, destination_dir) unless
             normalize_path(real_destination).start_with? normalize_path(destination_dir + "/")
         end
 
