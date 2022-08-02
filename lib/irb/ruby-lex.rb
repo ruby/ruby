@@ -188,6 +188,7 @@ class RubyLex
         if line_count >= line_index
           return prev_spaces
         end
+        next if t.event == :on_tstring_content || t.event == :on_words_sep
         if (@tokens.size - 1) > i
           md = @tokens[i + 1].tok.match(/(\A +)/)
           prev_spaces = md.nil? ? 0 : md[1].count(' ')
