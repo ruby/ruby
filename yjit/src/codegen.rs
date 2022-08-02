@@ -2496,7 +2496,7 @@ fn gen_equality_specialized(
 
         // Otherwise guard that b is a T_STRING (from type info) or String (from runtime guard)
         let btype = ctx.get_opnd_type(StackOpnd(0));
-        if btype != Type::TString && btype != Type::CString {
+        if btype.known_value_type() != Some(RUBY_T_STRING) {
             mov(cb, REG0, C_ARG_REGS[1]);
             // Note: any T_STRING is valid here, but we check for a ::String for simplicity
             // To pass a mutable static variable (rb_cString) requires an unsafe block
