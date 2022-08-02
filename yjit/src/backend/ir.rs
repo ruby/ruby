@@ -633,7 +633,7 @@ impl Assembler
             let reg_index = regs.iter().position(|elem| elem.reg_no == reg.reg_no);
 
             if let Some(reg_index) = reg_index {
-                assert_eq!(*pool & (1 << reg_index), 0);
+                assert_eq!(*pool & (1 << reg_index), 0, "register already allocated");
                 *pool |= 1 << reg_index;
             }
 
@@ -702,7 +702,7 @@ impl Assembler
                 // We do this to improve register allocation on x86
                 // e.g. out  = add(reg0, reg1)
                 //      reg0 = add(reg0, reg1)
-                if opnds.len() > 0 {
+                else if opnds.len() > 0 {
                     if let Opnd::InsnOut{idx, ..} = opnds[0] {
                         if live_ranges[idx] == index {
                             if let Opnd::Reg(reg) = asm.insns[idx].out {

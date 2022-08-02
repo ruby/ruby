@@ -195,9 +195,7 @@ fn test_base_insn_out()
 fn test_c_call()
 {
     c_callable! {
-        fn dummy_c_fun(v0: usize, v1: usize)
-        {
-        }
+        fn dummy_c_fun(v0: usize, v1: usize) {}
     }
 
     let (mut asm, mut cb) = setup_asm();
@@ -211,6 +209,16 @@ fn test_c_call()
     asm.mov(Opnd::mem(64, SP, 0), ret_val);
 
     asm.compile_with_num_regs(&mut cb, 1);
+}
+
+#[test]
+fn test_alloc_ccall_regs() {
+    let mut asm = Assembler::new();
+    let out1 = asm.ccall(0 as *const u8, vec![]);
+    let out2 = asm.ccall(0 as *const u8, vec![out1]);
+    asm.mov(EC, out2);
+    let mut cb = CodeBlock::new_dummy(1024);
+    asm.compile_with_regs(&mut cb, Assembler::get_alloc_regs());
 }
 
 #[test]
