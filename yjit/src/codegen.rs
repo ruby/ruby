@@ -3557,23 +3557,25 @@ fn jit_rb_obj_not(
 ) -> bool {
     let recv_opnd = ctx.get_opnd_type(StackOpnd(0));
 
-    if recv_opnd == Type::Nil || recv_opnd == Type::False {
-        add_comment(cb, "rb_obj_not(nil_or_false)");
-        ctx.stack_pop(1);
-        let out_opnd = ctx.stack_push(Type::True);
-        mov(cb, out_opnd, uimm_opnd(Qtrue.into()));
-    } else if recv_opnd.is_heap() || recv_opnd.is_specific() {
-        // Note: recv_opnd != Type::Nil && recv_opnd != Type::False.
-        add_comment(cb, "rb_obj_not(truthy)");
-        ctx.stack_pop(1);
-        let out_opnd = ctx.stack_push(Type::False);
-        mov(cb, out_opnd, uimm_opnd(Qfalse.into()));
-    } else {
-        // jit_guard_known_klass() already ran on the receiver which should
-        // have deduced deduced the type of the receiver. This case should be
-        // rare if not unreachable.
-        return false;
+    match recv_opnd.known_truthy() {
+        Some(false) => {
+            add_comment(cb, "rb_obj_not(nil_or_false)");
+            ctx.stack_pop(1);
+            let out_opnd = ctx.stack_push(Type::True);
+            mov(cb, out_opnd, uimm_opnd(Qtrue.into()));
+        },
+        Some(true) => {
+            // Note: recv_opnd != Type::Nil && recv_opnd != Type::False.
+            add_comment(cb, "rb_obj_not(truthy)");
+            ctx.stack_pop(1);
+            let out_opnd = ctx.stack_push(Type::False);
+            mov(cb, out_opnd, uimm_opnd(Qfalse.into()));
+        },
+        _ => {
+            return false;
+        },
     }
+
     true
 }
 
