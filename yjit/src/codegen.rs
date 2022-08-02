@@ -2278,32 +2278,33 @@ fn gen_checktype(
     }
 }
 
-/*
+
 fn gen_concatstrings(
     jit: &mut JITState,
     ctx: &mut Context,
-    cb: &mut CodeBlock,
+    asm: &mut Assembler,
     _ocb: &mut OutlinedCb,
 ) -> CodegenStatus {
     let n = jit_get_arg(jit, 0);
 
     // Save the PC and SP because we are allocating
-    jit_prepare_routine_call(jit, ctx, cb, REG0);
+    jit_prepare_routine_call(jit, ctx, asm);
 
     let values_ptr = ctx.sp_opnd(-((SIZEOF_VALUE as isize) * n.as_isize()));
 
     // call rb_str_concat_literals(long n, const VALUE *strings);
-    mov(cb, C_ARG_REGS[0], imm_opnd(n.into()));
-    lea(cb, C_ARG_REGS[1], values_ptr);
-    call_ptr(cb, REG0, rb_str_concat_literals as *const u8);
+    let return_value = asm.ccall(
+        rb_str_concat_literals as *const u8,
+        vec![Opnd::UImm(n.into()), values_ptr]
+    );
 
     ctx.stack_pop(n.as_usize());
     let stack_ret = ctx.stack_push(Type::CString);
-    mov(cb, stack_ret, RAX);
+    asm.mov(stack_ret, return_value);
 
     KeepCompiling
 }
-*/
+
 
 fn guard_two_fixnums(ctx: &mut Context, asm: &mut Assembler, side_exit: CodePtr) {
     // Get the stack operand types
@@ -6015,8 +6016,8 @@ fn get_gen_fn(opcode: VALUE) -> Option<InsnGenFn> {
         //YARVINSN_expandarray => Some(gen_expandarray),
         YARVINSN_defined => Some(gen_defined),
         YARVINSN_checkkeyword => Some(gen_checkkeyword),
-        /*
         YARVINSN_concatstrings => Some(gen_concatstrings),
+        /*
         YARVINSN_getinstancevariable => Some(gen_getinstancevariable),
         YARVINSN_setinstancevariable => Some(gen_setinstancevariable),
 

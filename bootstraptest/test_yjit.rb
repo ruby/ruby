@@ -3103,3 +3103,11 @@ assert_equal '/true/', %q{
     end
     foo().inspect
 }
+
+# concatstrings
+assert_equal '9001', %q{
+    def foo()
+      "#{9001}"
+    end
+    foo()
+}
