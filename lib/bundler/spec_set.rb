@@ -64,7 +64,7 @@ module Bundler
     end
 
     def materialize(deps)
-      materialized = self.for(deps, true).uniq
+      materialized = self.for(deps, true)
 
       SpecSet.new(materialized)
     end
