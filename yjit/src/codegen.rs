@@ -2218,22 +2218,16 @@ fn gen_checktype(
         let val = ctx.stack_pop(1);
 
         // Check if we know from type information
-        match (type_val, val_type) {
-            (RUBY_T_STRING, Type::TString)
-            | (RUBY_T_STRING, Type::CString)
-            | (RUBY_T_ARRAY, Type::Array)
-            | (RUBY_T_HASH, Type::Hash) => {
-                // guaranteed type match
-                let stack_ret = ctx.stack_push(Type::True);
-                mov(cb, stack_ret, uimm_opnd(Qtrue.as_u64()));
-                return KeepCompiling;
-            }
-            _ if val_type.is_imm() || val_type.is_specific() => {
-                // guaranteed not to match T_STRING/T_ARRAY/T_HASH
-                let stack_ret = ctx.stack_push(Type::False);
-                mov(cb, stack_ret, uimm_opnd(Qfalse.as_u64()));
-                return KeepCompiling;
-            }
+        match val_type.known_value_type() {
+            Some(value_type) => {
+                if value_type == type_val {
+                    jit_putobject(jit, ctx, cb, Qtrue);
+                    return KeepCompiling;
+                } else {
+                    jit_putobject(jit, ctx, cb, Qfalse);
+                    return KeepCompiling;
+                }
+            },
             _ => (),
         }
 
