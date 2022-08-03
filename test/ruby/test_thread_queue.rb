@@ -121,11 +121,11 @@ class TestThreadQueue < Test::Unit::TestCase
     assert_nil t1.value
 
     t2 = Thread.new { q.pop(timeout: 0.1) }
-    assert_equal t2, t2.join(0.2)
+    assert_equal t2, t2.join(1)
     assert_nil t2.value
   ensure
-    t1&.kill
-    t2&.kill
+    t1&.kill&.join
+    t2&.kill&.join
   end
 
   def test_queue_pop_non_block
@@ -154,11 +154,11 @@ class TestThreadQueue < Test::Unit::TestCase
     assert_nil t1.value
 
     t2 = Thread.new { q.pop(timeout: 0.1) }
-    assert_equal t2, t2.join(0.2)
+    assert_equal t2, t2.join(1)
     assert_nil t2.value
   ensure
-    t1&.kill
-    t2&.kill
+    t1&.kill&.join
+    t2&.kill&.join
   end
 
   def test_sized_queue_pop_non_block
