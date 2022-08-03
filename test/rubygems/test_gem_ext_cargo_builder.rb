@@ -164,7 +164,7 @@ class TestGemExtCargoBuilder < Gem::TestCase
   def skip_unsupported_platforms!
     pend "jruby not supported" if java_platform?
     pend "truffleruby not supported (yet)" if RUBY_ENGINE == "truffleruby"
-    pend "mswin not supported (yet)" if /mswin/ =~ RUBY_PLATFORM && ENV.key?("GITHUB_ACTIONS")
+    pend "mswin not supported (yet)" if RUBY_PLATFORM.include?("mswin") && ENV.key?("GITHUB_ACTIONS")
     system(@rust_envs, "cargo", "-V", out: IO::NULL, err: [:child, :out])
     pend "cargo not present" unless $?.success?
     pend "ruby.h is not provided by ruby repo" if ruby_repo?

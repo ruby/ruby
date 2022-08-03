@@ -86,8 +86,9 @@ Use --overwrite to force rebuilding of documentation.
       begin
         doc.generate
       rescue Errno::ENOENT => e
-        e.message =~ / - /
-        alert_error "Unable to document #{spec.full_name}, #{$'} is missing, skipping"
+        match = / - /.match(e.message)
+        alert_error "Unable to document #{spec.full_name}, " \
+                    " #{match.post_match} is missing, skipping"
         terminate_interaction 1 if specs.length == 1
       end
     end
