@@ -3399,7 +3399,7 @@ fn jit_guard_known_klass(
 ) {
     let val_type = ctx.get_opnd_type(insn_opnd);
 
-    if val_type.known_class_of() == Some(known_klass) {
+    if val_type.known_class() == Some(known_klass) {
         // We already know from type information that this is a match
         return;
     }

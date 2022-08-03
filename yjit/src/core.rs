@@ -143,7 +143,7 @@ impl Type {
     }
 
     /// Returns an Option with the class if it is known, otherwise None
-    pub fn known_class_of(&self) -> Option<VALUE> {
+    pub fn known_class(&self) -> Option<VALUE> {
         unsafe {
             match self {
                 Type::Nil => Some(rb_cNilClass),
