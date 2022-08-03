@@ -5784,7 +5784,7 @@ int_rounding(int argc, VALUE *argv, VALUE num, VALUE func(VALUE, int))
     if (ndigits >= 0) {
         return num;
     }
-    return func(num, ndigits);   
+    return func(num, ndigits);
 }
 
 /*
