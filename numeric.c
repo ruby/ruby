@@ -5774,6 +5774,19 @@ int_round(int argc, VALUE* argv, VALUE num)
     return rb_int_round(num, ndigits, mode);
 }
 
+static VALUE
+int_rounding(int argc, VALUE *argv, VALUE num, VALUE func(VALUE, int))
+{
+    int ndigits;
+
+    if (!rb_check_arity(argc, 0, 1)) return num;
+    ndigits = NUM2INT(argv[0]);
+    if (ndigits >= 0) {
+        return num;
+    }
+    return func(num, ndigits);   
+}
+
 /*
  *  call-seq:
  *    floor(ndigits = 0) -> integer
@@ -5801,14 +5814,7 @@ int_round(int argc, VALUE* argv, VALUE num)
 static VALUE
 int_floor(int argc, VALUE* argv, VALUE num)
 {
-    int ndigits;
-
-    if (!rb_check_arity(argc, 0, 1)) return num;
-    ndigits = NUM2INT(argv[0]);
-    if (ndigits >= 0) {
-        return num;
-    }
-    return rb_int_floor(num, ndigits);
+    return int_rounding(argc, argv, num, rb_int_floor);
 }
 
 /*
@@ -5838,14 +5844,7 @@ int_floor(int argc, VALUE* argv, VALUE num)
 static VALUE
 int_ceil(int argc, VALUE* argv, VALUE num)
 {
-    int ndigits;
-
-    if (!rb_check_arity(argc, 0, 1)) return num;
-    ndigits = NUM2INT(argv[0]);
-    if (ndigits >= 0) {
-        return num;
-    }
-    return rb_int_ceil(num, ndigits);
+    return int_rounding(argc, argv, num, rb_int_ceil);
 }
 
 /*
@@ -5874,14 +5873,7 @@ int_ceil(int argc, VALUE* argv, VALUE num)
 static VALUE
 int_truncate(int argc, VALUE* argv, VALUE num)
 {
-    int ndigits;
-
-    if (!rb_check_arity(argc, 0, 1)) return num;
-    ndigits = NUM2INT(argv[0]);
-    if (ndigits >= 0) {
-        return num;
-    }
-    return rb_int_truncate(num, ndigits);
+    return int_rounding(argc, argv, num, rb_int_truncate);
 }
 
 #define DEFINE_INT_SQRT(rettype, prefix, argtype) \
