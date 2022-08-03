@@ -22,7 +22,7 @@ RSpec.describe "The library itself" do
   def check_for_tab_characters(filename)
     failing_lines = []
     each_line(filename) do |line, number|
-      failing_lines << number + 1 if line =~ /\t/
+      failing_lines << number + 1 if line.include?("\t")
     end
 
     return if failing_lines.empty?

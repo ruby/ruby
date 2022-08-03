@@ -231,7 +231,7 @@ G
       L
 
       bundle "platform --ruby"
-      expect(out).to eq("ruby 1.0.0p127")
+      expect(out).to eq("ruby 1.0.0")
     end
 
     it "handles when there is a requirement in the gemfile" do
