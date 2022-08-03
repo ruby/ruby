@@ -35,7 +35,7 @@ class TestGemConfigFile < Gem::TestCase
   def test_initialize
     assert_equal @temp_conf, @cfg.config_file_name
 
-    assert_equal false, @cfg.backtrace
+    assert_equal true, @cfg.backtrace
     assert_equal true, @cfg.update_sources
     assert_equal Gem::ConfigFile::DEFAULT_BULK_THRESHOLD, @cfg.bulk_threshold
     assert_equal true, @cfg.verbose
@@ -239,6 +239,12 @@ if you believe they were disclosed to a third party.
   end
 
   def test_handle_arguments_backtrace
+    File.open @temp_conf, "w" do |fp|
+      fp.puts ":backtrace: false"
+    end
+
+    util_config_file %W[--config-file=#{@temp_conf}]
+
     assert_equal false, @cfg.backtrace
 
     args = %w[--backtrace]
@@ -275,6 +281,12 @@ if you believe they were disclosed to a third party.
   end
 
   def test_handle_arguments_traceback
+    File.open @temp_conf, "w" do |fp|
+      fp.puts ":backtrace: false"
+    end
+
+    util_config_file %W[--config-file=#{@temp_conf}]
+
     assert_equal false, @cfg.backtrace
 
     args = %w[--traceback]
@@ -288,7 +300,7 @@ if you believe they were disclosed to a third party.
     assert_equal @temp_conf, @cfg.config_file_name
 
     File.open @temp_conf, "w" do |fp|
-      fp.puts ":backtrace: true"
+      fp.puts ":backtrace: false"
       fp.puts ":update_sources: false"
       fp.puts ":bulk_threshold: 10"
       fp.puts ":verbose: false"
@@ -300,7 +312,7 @@ if you believe they were disclosed to a third party.
 
     util_config_file args
 
-    assert_equal false, @cfg.backtrace
+    assert_equal true, @cfg.backtrace
     assert_equal true, @cfg.update_sources
     assert_equal Gem::ConfigFile::DEFAULT_BULK_THRESHOLD, @cfg.bulk_threshold
     assert_equal true, @cfg.verbose
@@ -386,7 +398,7 @@ if you believe they were disclosed to a third party.
   end
 
   def test_write
-    @cfg.backtrace = true
+    @cfg.backtrace = false
     @cfg.update_sources = false
     @cfg.bulk_threshold = 10
     @cfg.verbose = false
@@ -398,7 +410,7 @@ if you believe they were disclosed to a third party.
     util_config_file
 
     # These should not be written out to the config file.
-    assert_equal false, @cfg.backtrace, "backtrace"
+    assert_equal true, @cfg.backtrace, "backtrace"
     assert_equal Gem::ConfigFile::DEFAULT_BULK_THRESHOLD, @cfg.bulk_threshold,
                  "bulk_threshold"
     assert_equal true, @cfg.update_sources, "update_sources"

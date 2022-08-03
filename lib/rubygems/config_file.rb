@@ -39,7 +39,7 @@ require "rbconfig"
 class Gem::ConfigFile
   include Gem::UserInteraction
 
-  DEFAULT_BACKTRACE = false
+  DEFAULT_BACKTRACE = true
   DEFAULT_BULK_THRESHOLD = 1000
   DEFAULT_VERBOSITY = true
   DEFAULT_UPDATE_SOURCES = true
