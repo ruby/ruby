@@ -61,7 +61,7 @@
 #include "ruby/version.h"
 #include "ruby/internal/error.h"
 
-#ifdef USE_THIRD_PARTY_HEAP
+#if USE_MMTK
 #include "gc.h"
 #endif
 
@@ -291,7 +291,7 @@ usage(const char *name, int help, int highlight, int columns)
 #if YJIT_BUILD
         M("--yjit",        "",                     "enable in-process JIT compiler (experimental)"),
 #endif
-#ifdef USE_THIRD_PARTY_HEAP
+#if USE_MMTK
         M("--mmtk",        "",                     "use MMTk for garbage collection (experimental)"),
 #endif
         M("-h",		   "",			   "show this message, --help for more info"),
@@ -328,7 +328,7 @@ usage(const char *name, int help, int highlight, int columns)
 #if YJIT_BUILD
         M("yjit", "",           "in-process JIT compiler (default: disabled)"),
 #endif
-#ifdef USE_THIRD_PARTY_HEAP
+#if USE_MMTK
         M("mmtk", "",           "MMTk garbage collection (default: disabled)"),
 #endif
     };
@@ -350,7 +350,7 @@ usage(const char *name, int help, int highlight, int columns)
         M("--yjit-greedy-versioning",  "", "Greedy versioning mode (default: disabled)"),
     };
 #endif
-#ifdef USE_THIRD_PARTY_HEAP
+#if USE_MMTK
     static const struct ruby_opt_message mmtk_options[] = {
         M("--mmtk-plan=name",          "", "MMTk garbage collection plan to use (default: " MMTK_DEFAULT_PLAN ")"),
     };
@@ -391,7 +391,7 @@ usage(const char *name, int help, int highlight, int columns)
     for (i = 0; i < numberof(yjit_options); ++i)
         SHOW(yjit_options[i]);
 #endif
-#ifdef USE_THIRD_PARTY_HEAP
+#if USE_MMTK
     printf("%s""MMTk options (experimental):%s\n", sb, se);
     for (i = 0; i < numberof(mmtk_options); ++i)
         SHOW(mmtk_options[i]);
@@ -1468,7 +1468,7 @@ proc_options(long argc, char **argv, ruby_cmdline_options_t *opt, int envopt)
 #endif
             }
             else if (is_option_with_optarg("mmtk", '-', true, false, false)) {
-#ifdef USE_THIRD_PARTY_HEAP
+#if USE_MMTK
                 FEATURE_SET(opt->features, FEATURE_BIT(mmtk));
                 rb_mmtk_post_process_opts(s);
 #undef opt_match_noarg
@@ -1841,7 +1841,7 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
         FEATURE_SET_RESTORE(opt->warn, warn);
     }
 
-#ifdef USE_THIRD_PARTY_HEAP
+#if USE_MMTK
     rb_mmtk_post_process_opts_finish(FEATURE_SET_P(opt->features, mmtk));
 #endif
 

@@ -56,7 +56,7 @@ module JITSupport
   end
 
   def supported?
-    return false if defined?(GC::MMTk)
+    return false if defined?(GC::MMTk) && GC::MMTk.enabled?
     return @supported if defined?(@supported)
     @supported = RbConfig::CONFIG["MJIT_SUPPORT"] != 'no' && UNSUPPORTED_COMPILERS.all? do |regexp|
       !regexp.match?(RbConfig::CONFIG['MJIT_CC'])

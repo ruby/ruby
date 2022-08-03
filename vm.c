@@ -3072,13 +3072,12 @@ rb_execution_context_mark(const rb_execution_context_t *ec)
     }
 
     /* mark machine stack */
-    if (ec->machine.stack_start && ec->machine.stack_end &&
-#ifdef USE_THIRD_PARTY_HEAP
-            true // When using MMTk, stacks are marked by a GC worker thread which doesn't have "current ec".
-#else // USE_THIRD_PARTY_HEAP
+    if (ec->machine.stack_start && ec->machine.stack_end && (
+#if USE_MMTK
+            rb_mmtk_enabled_p() || // When using MMTk, stacks are marked by a GC worker thread which doesn't have "current ec".
+#endif
             ec != GET_EC() /* marked for current ec at the first stage of marking */
-#endif // USE_THIRD_PARTY_HEAP
-        ) {
+    )) {
         rb_gc_mark_machine_stack(ec);
         rb_gc_mark_locations((VALUE *)&ec->machine.regs,
                              (VALUE *)(&ec->machine.regs) +
@@ -3927,9 +3926,11 @@ Init_BareVM(void)
     rb_native_cond_initialize(&vm->ractor.sync.barrier_cond);
     rb_native_cond_initialize(&vm->ractor.sync.terminate_cond);
 
-#ifdef USE_THIRD_PARTY_HEAP
-    rb_gc_init_collection();
-#endif // USE_THIRD_PARTY_HEAP
+#if USE_MMTK
+    if (rb_mmtk_enabled_p()) {
+        rb_gc_init_collection();
+    }
+#endif
 }
 
 void

@@ -102,6 +102,10 @@ extern int ruby_assert_critical_section_entered;
 
 #include "ruby/thread_native.h"
 
+#if USE_MMTK
+#include "gc.h"
+#endif
+
 /*
  * implementation selector of get_insn_info algorithm
  *   0: linear search
@@ -1087,9 +1091,9 @@ typedef struct rb_thread_struct {
 
     struct rb_ext_config ext_config;
 
-#ifdef USE_THIRD_PARTY_HEAP
+#if USE_MMTK
     void* mutator;
-#endif // USE_THIRD_PARTY_HEAP
+#endif
 } rb_thread_t;
 
 static inline unsigned int
@@ -1417,9 +1421,13 @@ static inline VALUE
 VM_ENV_ENVVAL(const VALUE *ep)
 {
     VALUE envval = ep[VM_ENV_DATA_INDEX_ENV];
-#ifndef USE_THIRD_PARTY_HEAP
-    VM_ASSERT(VM_ENV_ESCAPED_P(ep));
-#endif // USE_THIRD_PARTY_HEAP
+#if USE_MMTK
+    if (!rb_mmtk_enabled_p()) {
+#endif
+        VM_ASSERT(VM_ENV_ESCAPED_P(ep));
+#if USE_MMTK
+    }
+#endif
     VM_ASSERT(vm_assert_env(envval));
     return envval;
 }

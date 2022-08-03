@@ -30,7 +30,7 @@
 # undef RUBY_DEBUG_ENV
 #endif
 
-#ifdef USE_THIRD_PARTY_HEAP
+#if USE_MMTK
 #include "gc.h"
 #endif
 
@@ -38,7 +38,7 @@ static int
 rb_main(int argc, char **argv)
 {
     RUBY_INIT_STACK;
-#ifdef USE_THIRD_PARTY_HEAP
+#if USE_MMTK
     rb_mmtk_pre_process_opts(argc, argv);
 #endif
     ruby_init();

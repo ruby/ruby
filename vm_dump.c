@@ -37,7 +37,7 @@
 #include "vm_core.h"
 #include "ractor_core.h"
 
-#ifdef USE_THIRD_PARTY_HEAP
+#if USE_MMTK
 #include "mmtk.h"
 #endif
 
@@ -1194,7 +1194,7 @@ rb_vm_bugreport(const void *ctx)
 #endif
     }
 
-#ifdef USE_THIRD_PARTY_HEAP
+#if USE_MMTK
     fprintf(stderr, "* MMTk:\n\n");
     fprintf(stderr, "                mmtk_plan_name: %s\n", mmtk_plan_name());
     fprintf(stderr, "               mmtk_free_bytes: %zu\n", mmtk_free_bytes());

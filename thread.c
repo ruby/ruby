@@ -100,9 +100,9 @@
 #include "vm_debug.h"
 #include "vm_sync.h"
 
-#ifdef USE_THIRD_PARTY_HEAP
+#if USE_MMTK
 #include "mmtk.h"
-#endif // USE_THIRD_PARTY_HEAP
+#endif
 
 #ifndef USE_NATIVE_THREAD_PRIORITY
 #define USE_NATIVE_THREAD_PRIORITY 0
@@ -650,12 +650,12 @@ thread_start_func_2(rb_thread_t *th, VALUE *stack_start)
     VM_ASSERT(th != th->vm->ractor.main_thread);
     RUBY_DEBUG_LOG("th:%u", rb_th_serial(th));
 
-#ifdef USE_THIRD_PARTY_HEAP
+#if USE_MMTK
     // Threads may be reused, so we only initialize MMTk mutator once.
-    if (th->mutator == NULL) {
+    if (rb_mmtk_enabled_p() && th->mutator == NULL) {
         th->mutator = mmtk_bind_mutator((MMTk_VMMutatorThread)th);
     }
-#endif // USE_THIRD_PARTY_HEAP
+#endif
 
     // setup native thread
     thread_sched_to_running(TH_SCHED(th), th);

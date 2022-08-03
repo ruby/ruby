@@ -16,7 +16,8 @@
 #include "yjit.h"
 #include <stdio.h>
 
-#ifdef USE_THIRD_PARTY_HEAP
+#if USE_MMTK
+#include "gc.h"
 #include "mmtk.h"
 #endif
 
@@ -115,10 +116,10 @@ Init_ruby_description(void)
             ruby_description_pre,
             MJIT_OPTS_ON ? " +MJIT" : "",
             rb_yjit_enabled_p() ? " +YJIT" : "",
-#ifdef USE_THIRD_PARTY_HEAP
-            " +MMTk(",
-            mmtk_plan_name(),
-            ")",
+#if USE_MMTK
+            rb_mmtk_enabled_p() ? " +MMTk(" : "",
+            rb_mmtk_enabled_p() ? mmtk_plan_name() : "",
+            rb_mmtk_enabled_p() ? ")" : "",
 #else
             "", "", "",
 #endif

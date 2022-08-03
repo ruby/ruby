@@ -66,7 +66,7 @@ AS_IF([test -n "$with_mmtk_ruby"], [
         AC_MSG_ERROR([$MMTK_RUBY_SO_NAME does not exist. $mmtk_ruby_build_suggestion])
     ])
 
-    AC_DEFINE([USE_THIRD_PARTY_HEAP])
+    AC_DEFINE([USE_MMTK], [1])
     AC_DEFINE([USE_TRANSIENT_HEAP], [0])
 
     mmtk_ruby_so_realpath=$(realpath $mmtk_ruby_so_path)
@@ -78,6 +78,7 @@ AS_IF([test -n "$with_mmtk_ruby"], [
     AC_SUBST([mmtk_ruby_lib_dir])
 ], [
     AC_MSG_RESULT([no])
+    AC_DEFINE([USE_MMTK], [0])
     gc_support="Ruby's built-in GC"
 ])
 
