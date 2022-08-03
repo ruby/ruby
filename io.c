@@ -14504,9 +14504,11 @@ set_LAST_READ_LINE(VALUE val, ID _x, VALUE *_y)
  *  Either of the following may be suffixed to any of the string read/write modes above:
  *
  *  - <tt>'t'</tt>: Text data; sets the default external encoding to +Encoding::UTF_8+;
- *    on Windows, enables conversion between EOL and CRLF.
+ *    on Windows, enables conversion between EOL and CRLF and enables interpreting +0x1A+
+ *    as an end-of-file marker.
  *  - <tt>'b'</tt>: Binary data; sets the default external encoding to +Encoding::ASCII_8BIT+;
- *    on Windows, suppresses conversion between EOL and CRLF.
+ *    on Windows, suppresses conversion between EOL and CRLF and disables interpreting +0x1A+
+ *    as an end-of-file marker.
  *
  *  If neither is given, the stream defaults to text data.
  *
