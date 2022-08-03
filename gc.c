@@ -1877,20 +1877,17 @@ rb_objspace_alloc(void)
 
 #if USE_MMTK
     if (rb_mmtk_enabled_p()) {
-        if (!mmtk_env_plan && setenv("MMTK_PLAN", mmtk_chosen_plan, 0) != 0) {
-            fputs("[FATAL] could not set MMTK_PLAN\n", stderr);
-            exit(EXIT_FAILURE);
-        }
+        MMTk_Builder mmtk_builder = mmtk_builder_default();
+
+        mmtk_builder_set_plan(mmtk_builder, mmtk_chosen_plan);
 
         // Note: the limit is currently broken for NoGC, but we still attempt to
         // initialise it properly regardless.
         // See https://github.com/mmtk/mmtk-core/issues/214
-        mmtk_init_binding(rb_mmtk_heap_limit(), &ruby_upcalls);
+        size_t heap_size = rb_mmtk_heap_limit();
+        mmtk_builder_set_heap_size(mmtk_builder, heap_size);
 
-        if (!mmtk_env_plan && unsetenv("MMTK_PLAN") != 0) {
-            fputs("[FATAL] could not unset MMTK_PLAN\n", stderr);
-            exit(EXIT_FAILURE);
-        }
+        mmtk_init_binding(mmtk_builder, &ruby_upcalls);
     }
 #endif
 

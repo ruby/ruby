@@ -13,6 +13,7 @@ extern "C" {
 #define MMTK_MIN_OBJ_ALIGN 8
 #define MMTK_OBJREF_OFFSET 8
 
+typedef void* MMTk_Builder;
 typedef void* MMTk_Mutator;
 typedef void* MMTk_TraceLocal;
 
@@ -39,9 +40,20 @@ typedef struct {
 } RubyUpcalls;
 
 /**
+ * MMTK builder and options
+ */
+MMTk_Builder mmtk_builder_default();
+
+void mmtk_builder_set_heap_size(MMTk_Builder builder, uintptr_t heap_size);
+
+void mmtk_builder_set_plan(MMTk_Builder builder, const char *plan_name);
+
+void mmtk_init_binding(MMTk_Builder builder, const RubyUpcalls *upcalls);
+
+/**
  * Initialization
  */
-extern void mmtk_init_binding(size_t heap_size, RubyUpcalls *ruby_upcalls);
+extern void mmtk_init_binding(MMTk_Builder builder, const RubyUpcalls *upcalls);
 extern void mmtk_initialize_collection(void *tls);
 extern void mmtk_enable_collection();
 
