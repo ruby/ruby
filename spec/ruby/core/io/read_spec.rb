@@ -104,6 +104,14 @@ describe "IO.read" do
     str = IO.read(@fname, encoding: Encoding::ISO_8859_1)
     str.encoding.should == Encoding::ISO_8859_1
   end
+
+  platform_is :windows do
+    it "reads the file in text mode" do
+      # 0x1A is CTRL+Z and is EOF in Windows text mode.
+      File.binwrite(@fname, "\x1Abbb")
+      IO.read(@fname).should.empty?
+    end
+  end
 end
 
 describe "IO.read from a pipe" do
