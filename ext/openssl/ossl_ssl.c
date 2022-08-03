@@ -2435,6 +2435,49 @@ ossl_ssl_alpn_protocol(VALUE self)
 
 /*
  * call-seq:
+ *    session.export_keying_material(label, length) -> String
+ *
+ * Enables use of shared session key material in accordance with RFC 5705.
+ */
+static VALUE
+ossl_ssl_export_keying_material(int argc, VALUE *argv, VALUE self)
+{
+    SSL *ssl;
+    VALUE str;
+    VALUE label;
+    VALUE length;
+    VALUE context;
+    unsigned char *p;
+    size_t len;
+    int use_ctx = 0;
+    unsigned char *ctx;
+    size_t ctx_len = 0;
+    int ret;
+
+    rb_scan_args(argc, argv, "21", &label, &length, &context);
+    StringValue(label);
+
+    GetSSL(self, ssl);
+
+    len = (size_t)NUM2LONG(length);
+    str = rb_str_new(0, len);
+    p = (unsigned char *)RSTRING_PTR(str);
+    if (!NIL_P(context)) {
+	use_ctx = 1;
+	StringValue(context);
+	ctx = (unsigned char *)RSTRING_PTR(context);
+	ctx_len = RSTRING_LEN(context);
+    }
+    ret = SSL_export_keying_material(ssl, p, len, (char *)RSTRING_PTR(label),
+				     RSTRING_LENINT(label), ctx, ctx_len, use_ctx);
+    if (ret == 0 || ret == -1) {
+	ossl_raise(eSSLError, "SSL_export_keying_material");
+    }
+    return str;
+}
+
+/*
+ * call-seq:
  *    ssl.tmp_key => PKey or nil
  *
  * Returns the ephemeral key used in case of forward secrecy cipher.
@@ -2860,6 +2903,7 @@ Init_ossl_ssl(void)
     rb_define_method(cSSLSocket, "peer_finished_message", ossl_ssl_get_peer_finished, 0);
     rb_define_method(cSSLSocket, "tmp_key", ossl_ssl_tmp_key, 0);
     rb_define_method(cSSLSocket, "alpn_protocol", ossl_ssl_alpn_protocol, 0);
+    rb_define_method(cSSLSocket, "export_keying_material", ossl_ssl_export_keying_material, -1);
 # ifndef OPENSSL_NO_NEXTPROTONEG
     rb_define_method(cSSLSocket, "npn_protocol", ossl_ssl_npn_protocol, 0);
 # endif

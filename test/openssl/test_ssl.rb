@@ -1817,6 +1817,19 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
     sock2.close
   end
 
+  def test_export_keying_material
+    start_server do |port|
+      cli_ctx = OpenSSL::SSL::SSLContext.new
+      server_connect(port, cli_ctx) do |ssl|
+        assert_instance_of(String, ssl.export_keying_material('ttls keying material', 64))
+        assert_operator(64, :==, ssl.export_keying_material('ttls keying material', 64).b.length)
+        assert_operator(8, :==, ssl.export_keying_material('ttls keying material', 8).b.length)
+        assert_operator(5, :==, ssl.export_keying_material('test', 5, 'context').b.length)
+        ssl.puts "abc"; ssl.gets # workaround to make tests work on windows
+      end
+    end
+  end
+
   private
 
   def start_server_version(version, ctx_proc = nil,
