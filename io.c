@@ -11776,11 +11776,15 @@ seek_before_access(VALUE argp)
  *    IO.read('| cat t.txt')
  *    # => "First line\nSecond line\n\nThird line\nFourth line\n"
  *
- *  With only argument +path+ given, reads and returns the entire content
+ *  With only argument +path+ given, reads in text mode and returns the entire content
  *  of the file at the given path:
  *
  *    IO.read('t.txt')
  *    # => "First line\nSecond line\n\nThird line\nFourth line\n"
+ *
+ *  On Windows, text mode can terminate reading and leave bytes in the file
+ *  unread when encountering certain special bytes. Consider using
+ *  IO.binread if all bytes in the file should be read.
  *
  *  For both forms, command and path, the remaining arguments are the same.
  *
