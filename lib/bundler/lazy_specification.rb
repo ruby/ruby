@@ -93,14 +93,6 @@ module Bundler
       __materialize__(candidates)
     end
 
-    def materialize_for_resolution
-      return self unless Gem::Platform.match_spec?(self)
-
-      candidates = source.specs.search(self)
-
-      __materialize__(candidates)
-    end
-
     def __materialize__(candidates)
       @specification = begin
         search = candidates.reverse.find do |spec|

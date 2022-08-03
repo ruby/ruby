@@ -82,15 +82,6 @@ module Bundler
       end
     end
 
-    def materialized_for_resolution
-      materialized = @specs.map do |s|
-        spec = s.materialize_for_resolution
-        yield spec if spec
-        spec
-      end.compact
-      SpecSet.new(materialized)
-    end
-
     def incomplete_ruby_specs?(deps)
       self.class.new(self.for(deps, true, [Gem::Platform::RUBY])).incomplete_specs.any?
     end
