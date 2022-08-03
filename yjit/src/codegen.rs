@@ -849,7 +849,9 @@ pub fn gen_single_block(
         let mut block = jit.block.borrow_mut();
 
         // Add the GC offsets to the block
-        gc_offsets.iter().map(|offs| { block.add_gc_obj_offset(*offs) });
+        for offset in gc_offsets {
+            block.add_gc_obj_offset(offset)
+        }
 
         // Mark the end position of the block
         block.set_end_addr(cb.get_write_ptr());

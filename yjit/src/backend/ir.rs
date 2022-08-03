@@ -313,8 +313,7 @@ impl From<u32> for Opnd {
 
 impl From<VALUE> for Opnd {
     fn from(value: VALUE) -> Self {
-        let VALUE(uimm) = value;
-        Opnd::UImm(uimm as u64)
+        Opnd::Value(value)
     }
 }
 

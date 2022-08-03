@@ -95,20 +95,22 @@ impl Assembler
         let live_ranges: Vec<usize> = std::mem::take(&mut self.live_ranges);
 
         self.forward_pass(|asm, index, op, opnds, target, text, pos_marker, original_opnds| {
-            // Load heap object operands into registers because most
-            // instructions can't directly work with 64-bit constants
+            // Load VALUEs into registers because
+            //  - Most instructions can't be encoded with 64-bit immediates.
+            //  - We look for Op::Load specifically when emiting to keep GC'ed
+            //    VALUEs alive. This is a sort of canonicalization.
             let opnds = match op {
-                Op::Load | Op::Mov => opnds,
+                Op::Load => opnds,
                 _ => opnds.into_iter().map(|opnd| {
                     if let Opnd::Value(value) = opnd {
-                        if !value.special_const_p() {
-                            asm.load(opnd)
-                        } else {
-                            opnd
+                        // Since mov(mem64, imm32) sign extends, as_i64() makes sure we split
+                        // when the extended value is different.
+                        if !value.special_const_p() || imm_num_bits(value.as_i64()) > 32 {
+                            return asm.load(opnd);
                         }
-                    } else {
-                        opnd
                     }
+
+                    opnd
                 }).collect()
             };
 
