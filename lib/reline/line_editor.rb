@@ -1724,17 +1724,18 @@ class Reline::LineEditor
       new_lines = whole_lines
     end
     new_indent = @auto_indent_proc.(new_lines, @line_index, @byte_pointer, @check_new_auto_indent)
-    new_indent = @cursor_max if new_indent&.> @cursor_max
     if new_indent&.>= 0
       md = new_lines[@line_index].match(/\A */)
       prev_indent = md[0].count(' ')
       if @check_new_auto_indent
-        @buffer_of_lines[@line_index] = ' ' * new_indent + @buffer_of_lines[@line_index].lstrip
+        line = @buffer_of_lines[@line_index] = ' ' * new_indent + @buffer_of_lines[@line_index].lstrip
         @cursor = new_indent
+        @cursor_max = calculate_width(line)
         @byte_pointer = new_indent
       else
         @line = ' ' * new_indent + @line.lstrip
         @cursor += new_indent - prev_indent
+        @cursor_max = calculate_width(@line)
         @byte_pointer += new_indent - prev_indent
       end
     end
