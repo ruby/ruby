@@ -65,7 +65,7 @@ MJIT_FUNC_EXPORTED
 #endif
 VALUE vm_exec(rb_execution_context_t *, bool);
 
-extern const char *const debug_counter_names[];
+extern const char *const rb_debug_counter_names[];
 
 PUREFUNC(static inline const VALUE *VM_EP_LEP(const VALUE *));
 static inline const VALUE *
@@ -569,7 +569,7 @@ vm_stat(int argc, VALUE *argv, VALUE self)
 #if USE_DEBUG_COUNTER
     ruby_debug_counter_show_at_exit(FALSE);
     for (size_t i = 0; i < RB_DEBUG_COUNTER_MAX; i++) {
-        const VALUE name = rb_sym_intern_ascii_cstr(debug_counter_names[i]);
+        const VALUE name = rb_sym_intern_ascii_cstr(rb_debug_counter_names[i]);
         const VALUE boxed_value = SIZET2NUM(rb_debug_counter[i]);
 
         if (key == name) {

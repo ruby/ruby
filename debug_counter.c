@@ -16,7 +16,7 @@
 
 #if USE_DEBUG_COUNTER
 
-const char *const debug_counter_names[] = {
+const char *const rb_debug_counter_names[] = {
 #define DEBUG_COUNTER_NAME_EMPTY "" /* Suppress -Wstring-concatenation */
     DEBUG_COUNTER_NAME_EMPTY
 #undef DEBUG_COUNTER_NAME_EMPTY
@@ -26,7 +26,7 @@ const char *const debug_counter_names[] = {
 };
 
 MJIT_SYMBOL_EXPORT_BEGIN
-size_t rb_debug_counter[numberof(debug_counter_names)];
+size_t rb_debug_counter[numberof(rb_debug_counter_names)];
 void rb_debug_counter_add_atomic(enum rb_debug_counter_type type, int add);
 MJIT_SYMBOL_EXPORT_END
 
@@ -77,7 +77,7 @@ ruby_debug_counter_get(const char **names_ptr, size_t *counters_ptr)
     int i;
     if (names_ptr != NULL) {
         for (i=0; i<RB_DEBUG_COUNTER_MAX; i++) {
-            names_ptr[i] = debug_counter_names[i];
+            names_ptr[i] = rb_debug_counter_names[i];
         }
     }
     if (counters_ptr != NULL) {
@@ -107,7 +107,7 @@ rb_debug_counter_show_results(const char *msg)
         fprintf(stderr, "[RUBY_DEBUG_COUNTER]\t%d %s\n", getpid(), msg);
         for (i=0; i<RB_DEBUG_COUNTER_MAX; i++) {
             fprintf(stderr, "[RUBY_DEBUG_COUNTER]\t%-30s\t%'14"PRIuSIZE"\n",
-                    debug_counter_names[i],
+                    rb_debug_counter_names[i],
                     rb_debug_counter[i]);
         }
     }
