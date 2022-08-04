@@ -1277,7 +1277,13 @@ rb_szqueue_push(int argc, VALUE *argv, VALUE self)
             ccan_list_add_tail(pushq, &queue_waiter.w.node);
             sq->num_waiting_push++;
 
-            rb_ensure(queue_sleep, self, szqueue_sleep_done, (VALUE)&queue_waiter);
+            struct queue_sleep_arg queue_sleep_arg = {
+                .self = self,
+                .timeout = Qnil,
+                .end = 0
+            };
+
+            rb_ensure(queue_sleep, (VALUE)&queue_sleep_arg, szqueue_sleep_done, (VALUE)&queue_waiter);
         }
     }
 
