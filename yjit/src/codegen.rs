@@ -1881,10 +1881,10 @@ pub const GET_IVAR_MAX_DEPTH: i32 = 10;
 /*
 // hashes and arrays
 pub const OPT_AREF_MAX_CHAIN_DEPTH: i32 = 2;
+*/
 
 // up to 5 different classes
 pub const SEND_MAX_DEPTH: i32 = 5;
-*/
 
 // Codegen for setting an instance variable.
 // Preconditions:
@@ -2221,7 +2221,7 @@ fn gen_checktype(
     // Only three types are emitted by compile.c at the moment
     if let RUBY_T_STRING | RUBY_T_ARRAY | RUBY_T_HASH = type_val {
         let val_type = ctx.get_opnd_type(StackOpnd(0));
-        let val = ctx.stack_pop(1);
+        let val = asm.load(ctx.stack_pop(1));
 
         // Check if we know from type information
         match val_type.known_value_type() {
@@ -2253,7 +2253,7 @@ fn gen_checktype(
             Opnd::mem(64, val, RUBY_OFFSET_RBASIC_FLAGS),
             Opnd::UImm(RUBY_T_MASK.into()));
         asm.cmp(object_type, Opnd::UImm(type_val.into()));
-        let ret_opnd = asm.csel_e(Opnd::UImm(Qfalse.into()), Opnd::UImm(Qtrue.into()));
+        let ret_opnd = asm.csel_e(Qtrue.into(), Qfalse.into());
 
         asm.write_label(ret);
         let stack_ret = ctx.stack_push(Type::UnknownImm);
@@ -3851,6 +3851,7 @@ fn jit_thread_s_current(
     mov(cb, stack_ret, REG0);
     true
 }
+*/
 
 // Check if we know how to codegen for a particular cfunc method
 fn lookup_cfunc_codegen(def: *const rb_method_definition_t) -> Option<MethodGenFn> {
@@ -3858,7 +3859,6 @@ fn lookup_cfunc_codegen(def: *const rb_method_definition_t) -> Option<MethodGenF
 
     CodegenGlobals::look_up_codegen_method(method_serial)
 }
-*/
 
 // Is anyone listening for :c_call and :c_return event currently?
 fn c_method_tracing_currently_enabled(jit: &JITState) -> bool {
@@ -3868,7 +3868,6 @@ fn c_method_tracing_currently_enabled(jit: &JITState) -> bool {
     }
 }
 
-/*
 // Similar to args_kw_argv_to_hash. It is called at runtime from within the
 // generated assembly to build a Ruby hash of the passed keyword arguments. The
 // keys are the Symbol objects associated with the keywords and the values are
@@ -3889,7 +3888,7 @@ unsafe extern "C" fn build_kwhash(ci: *const rb_callinfo, sp: *const VALUE) -> V
 fn gen_send_cfunc(
     jit: &mut JITState,
     ctx: &mut Context,
-    cb: &mut CodeBlock,
+    asm: &mut Assembler,
     ocb: &mut OutlinedCb,
     ci: *const rb_callinfo,
     cme: *const rb_callable_method_entry_t,
@@ -3902,7 +3901,7 @@ fn gen_send_cfunc(
 
     // If the function expects a Ruby array of arguments
     if cfunc_argc < 0 && cfunc_argc != -1 {
-        gen_counter_incr!(cb, send_cfunc_ruby_array_varg);
+        gen_counter_incr!(asm, send_cfunc_ruby_array_varg);
         return CantCompile;
     }
 
@@ -3923,19 +3922,19 @@ fn gen_send_cfunc(
 
     // If the argument count doesn't match
     if cfunc_argc >= 0 && cfunc_argc != passed_argc {
-        gen_counter_incr!(cb, send_cfunc_argc_mismatch);
+        gen_counter_incr!(asm, send_cfunc_argc_mismatch);
         return CantCompile;
     }
 
     // Don't JIT functions that need C stack arguments for now
-    if cfunc_argc >= 0 && passed_argc + 1 > (C_ARG_REGS.len() as i32) {
-        gen_counter_incr!(cb, send_cfunc_toomany_args);
+    if cfunc_argc >= 0 && passed_argc + 1 > (C_ARG_OPNDS.len() as i32) {
+        gen_counter_incr!(asm, send_cfunc_toomany_args);
         return CantCompile;
     }
 
     if c_method_tracing_currently_enabled(jit) {
         // Don't JIT if tracing c_call or c_return
-        gen_counter_incr!(cb, send_cfunc_tracing);
+        gen_counter_incr!(asm, send_cfunc_tracing);
         return CantCompile;
     }
 
@@ -3943,6 +3942,7 @@ fn gen_send_cfunc(
     if kw_arg.is_null() {
         let codegen_p = lookup_cfunc_codegen(unsafe { (*cme).def });
         if let Some(known_cfunc_codegen) = codegen_p {
+            return CantCompile; /*
             let start_pos = cb.get_write_ptr().raw_ptr() as usize;
             if known_cfunc_codegen(jit, ctx, cb, ocb, ci, cme, block, argc, recv_known_klass) {
                 let written_bytes = cb.get_write_ptr().raw_ptr() as usize - start_pos;
@@ -3955,6 +3955,7 @@ fn gen_send_cfunc(
                 jump_to_next_insn(jit, ctx, cb, ocb);
                 return EndBlock;
             }
+            */
         }
     }
 
@@ -3962,57 +3963,49 @@ fn gen_send_cfunc(
     let side_exit = get_side_exit(jit, ocb, ctx);
 
     // Check for interrupts
-    gen_check_ints(cb, side_exit);
+    gen_check_ints(asm, side_exit);
 
     // Stack overflow check
     // #define CHECK_VM_STACK_OVERFLOW0(cfp, sp, margin)
     // REG_CFP <= REG_SP + 4 * SIZEOF_VALUE + sizeof(rb_control_frame_t)
-    add_comment(cb, "stack overflow check");
-    lea(
-        cb,
-        REG0,
-        ctx.sp_opnd((SIZEOF_VALUE * 4 + 2 * RUBY_SIZEOF_CONTROL_FRAME) as isize),
-    );
-    cmp(cb, REG_CFP, REG0);
-    jle_ptr(cb, counted_exit!(ocb, side_exit, send_se_cf_overflow));
+    asm.comment("stack overflow check");
+    let stack_limit = asm.lea(ctx.sp_opnd((SIZEOF_VALUE * 4 + 2 * RUBY_SIZEOF_CONTROL_FRAME) as isize));
+    asm.cmp(CFP, stack_limit);
+    asm.jbe(counted_exit!(ocb, side_exit, send_se_cf_overflow).into());
 
     // Points to the receiver operand on the stack
     let recv = ctx.stack_opnd(argc);
 
     // Store incremented PC into current control frame in case callee raises.
-    jit_save_pc(jit, cb, REG0);
+    jit_save_pc(jit, asm);
 
     if let Some(block_iseq) = block {
         // Change cfp->block_code in the current frame. See vm_caller_setup_arg_block().
         // VM_CFP_TO_CAPTURED_BLOCK does &cfp->self, rb_captured_block->code.iseq aliases
         // with cfp->block_code.
-        jit_mov_gc_ptr(jit, cb, REG0, VALUE(block_iseq as usize));
-        let block_code_opnd = mem_opnd(64, REG_CFP, RUBY_OFFSET_CFP_BLOCK_CODE);
-        mov(cb, block_code_opnd, REG0);
+        asm.mov(Opnd::mem(64, CFP, RUBY_OFFSET_CFP_BLOCK_CODE), Opnd::UImm(block_iseq as u64));
     }
 
     // Increment the stack pointer by 3 (in the callee)
     // sp += 3
-    lea(cb, REG0, ctx.sp_opnd((SIZEOF_VALUE as isize) * 3));
+    let sp = asm.lea(ctx.sp_opnd((SIZEOF_VALUE as isize) * 3));
 
     // Write method entry at sp[-3]
     // sp[-3] = me;
     // Put compile time cme into REG1. It's assumed to be valid because we are notified when
     // any cme we depend on become outdated. See yjit_method_lookup_change().
-    jit_mov_gc_ptr(jit, cb, REG1, VALUE(cme as usize));
-    mov(cb, mem_opnd(64, REG0, 8 * -3), REG1);
+    asm.mov(Opnd::mem(64, sp, 8 * -3), Opnd::UImm(cme as u64));
 
     // Write block handler at sp[-2]
     // sp[-2] = block_handler;
     if let Some(_block_iseq) = block {
         // reg1 = VM_BH_FROM_ISEQ_BLOCK(VM_CFP_TO_CAPTURED_BLOCK(reg_cfp));
-        let cfp_self = mem_opnd(64, REG_CFP, RUBY_OFFSET_CFP_SELF);
-        lea(cb, REG1, cfp_self);
-        or(cb, REG1, imm_opnd(1));
-        mov(cb, mem_opnd(64, REG0, 8 * -2), REG1);
+        let cfp_self = asm.lea(Opnd::mem(64, CFP, RUBY_OFFSET_CFP_SELF));
+        let block_handler = asm.or(cfp_self, Opnd::Imm(1));
+        asm.mov(Opnd::mem(64, sp, 8 * -2), block_handler);
     } else {
-        let dst_opnd = mem_opnd(64, REG0, 8 * -2);
-        mov(cb, dst_opnd, uimm_opnd(VM_BLOCK_HANDLER_NONE.into()));
+        let dst_opnd = Opnd::mem(64, sp, 8 * -2);
+        asm.mov(dst_opnd, Opnd::UImm(VM_BLOCK_HANDLER_NONE.into()));
     }
 
     // Write env flags at sp[-1]
@@ -4021,11 +4014,12 @@ fn gen_send_cfunc(
     if !kw_arg.is_null() {
         frame_type |= VM_FRAME_FLAG_CFRAME_KW
     }
-    mov(cb, mem_opnd(64, REG0, 8 * -1), uimm_opnd(frame_type.into()));
+    asm.mov(Opnd::mem(64, sp, 8 * -1), Opnd::UImm(frame_type.into()));
 
     // Allocate a new CFP (ec->cfp--)
-    let ec_cfp_opnd = mem_opnd(64, REG_EC, RUBY_OFFSET_EC_CFP);
-    sub(cb, ec_cfp_opnd, uimm_opnd(RUBY_SIZEOF_CONTROL_FRAME as u64));
+    let ec_cfp_opnd = Opnd::mem(64, EC, RUBY_OFFSET_EC_CFP);
+    let new_cfp = asm.sub(ec_cfp_opnd, Opnd::UImm(RUBY_SIZEOF_CONTROL_FRAME as u64));
+    asm.store(ec_cfp_opnd, new_cfp);
 
     // Setup the new frame
     // *cfp = (const struct rb_control_frame_struct) {
@@ -4039,22 +4033,15 @@ fn gen_send_cfunc(
     // };
 
     // Can we re-use ec_cfp_opnd from above?
-    let ec_cfp_opnd = mem_opnd(64, REG_EC, RUBY_OFFSET_EC_CFP);
-    mov(cb, REG1, ec_cfp_opnd);
-    mov(cb, mem_opnd(64, REG1, RUBY_OFFSET_CFP_PC), imm_opnd(0));
-
-    mov(cb, mem_opnd(64, REG1, RUBY_OFFSET_CFP_SP), REG0);
-    mov(cb, mem_opnd(64, REG1, RUBY_OFFSET_CFP_ISEQ), imm_opnd(0));
-    mov(
-        cb,
-        mem_opnd(64, REG1, RUBY_OFFSET_CFP_BLOCK_CODE),
-        imm_opnd(0),
-    );
-    mov(cb, mem_opnd(64, REG1, RUBY_OFFSET_CFP_BP), REG0);
-    sub(cb, REG0, uimm_opnd(SIZEOF_VALUE as u64));
-    mov(cb, mem_opnd(64, REG1, RUBY_OFFSET_CFP_EP), REG0);
-    mov(cb, REG0, recv);
-    mov(cb, mem_opnd(64, REG1, RUBY_OFFSET_CFP_SELF), REG0);
+    let ec_cfp_opnd = asm.load(Opnd::mem(64, EC, RUBY_OFFSET_EC_CFP));
+    asm.mov(Opnd::mem(64, ec_cfp_opnd, RUBY_OFFSET_CFP_PC), Opnd::Imm(0));
+    asm.mov(Opnd::mem(64, ec_cfp_opnd, RUBY_OFFSET_CFP_SP), sp);
+    asm.mov(Opnd::mem(64, ec_cfp_opnd, RUBY_OFFSET_CFP_ISEQ), Opnd::Imm(0));
+    asm.mov(Opnd::mem(64, ec_cfp_opnd, RUBY_OFFSET_CFP_BLOCK_CODE), Opnd::Imm(0));
+    asm.mov(Opnd::mem(64, ec_cfp_opnd, RUBY_OFFSET_CFP_BP), sp);
+    let ep = asm.sub(sp, Opnd::UImm(SIZEOF_VALUE as u64));
+    asm.mov(Opnd::mem(64, ec_cfp_opnd, RUBY_OFFSET_CFP_EP), ep);
+    asm.mov(Opnd::mem(64, ec_cfp_opnd, RUBY_OFFSET_CFP_SELF), recv);
 
     /*
     // Verify that we are calling the right function
@@ -4070,71 +4057,66 @@ fn gen_send_cfunc(
 
     if !kw_arg.is_null() {
         // Build a hash from all kwargs passed
-        jit_mov_gc_ptr(jit, cb, C_ARG_REGS[0], VALUE(ci as usize));
-        lea(cb, C_ARG_REGS[1], ctx.sp_opnd(0));
-        call_ptr(cb, REG0, build_kwhash as *const u8);
+        asm.comment("build_kwhash");
+        let sp = asm.lea(ctx.sp_opnd(0));
+        let kwargs = asm.ccall(build_kwhash as *const u8, vec![Opnd::UImm(ci as u64), sp]);
 
         // Replace the stack location at the start of kwargs with the new hash
         let stack_opnd = ctx.stack_opnd(argc - passed_argc);
-        mov(cb, stack_opnd, RAX);
+        asm.mov(stack_opnd, kwargs);
     }
 
-    // Copy SP into RAX because REG_SP will get overwritten
-    lea(cb, RAX, ctx.sp_opnd(0));
+    // Copy SP because REG_SP will get overwritten
+    let sp = asm.lea(ctx.sp_opnd(0));
 
     // Pop the C function arguments from the stack (in the caller)
     ctx.stack_pop((argc + 1).try_into().unwrap());
 
     // Write interpreter SP into CFP.
     // Needed in case the callee yields to the block.
-    gen_save_sp(cb, ctx);
+    gen_save_sp(jit, asm, ctx);
 
     // Non-variadic method
-    if cfunc_argc >= 0 {
+    let args = if cfunc_argc >= 0 {
         // Copy the arguments from the stack to the C argument registers
         // self is the 0th argument and is at index argc from the stack top
-        for i in 0..=passed_argc as usize {
-            let stack_opnd = mem_opnd(64, RAX, -(argc + 1 - (i as i32)) * SIZEOF_VALUE_I32);
-            let c_arg_reg = C_ARG_REGS[i];
-            mov(cb, c_arg_reg, stack_opnd);
-        }
+        (0..=passed_argc).map(|i|
+            Opnd::mem(64, sp, -(argc + 1 - (i as i32)) * SIZEOF_VALUE_I32)
+        ).collect()
     }
-
     // Variadic method
-    if cfunc_argc == -1 {
+    else if cfunc_argc == -1 {
         // The method gets a pointer to the first argument
         // rb_f_puts(int argc, VALUE *argv, VALUE recv)
-        mov(cb, C_ARG_REGS[0], imm_opnd(passed_argc.into()));
-        lea(
-            cb,
-            C_ARG_REGS[1],
-            mem_opnd(64, RAX, -(argc) * SIZEOF_VALUE_I32),
-        );
-        mov(
-            cb,
-            C_ARG_REGS[2],
-            mem_opnd(64, RAX, -(argc + 1) * SIZEOF_VALUE_I32),
-        );
+        vec![
+            Opnd::Imm(passed_argc.into()),
+            asm.lea(Opnd::mem(64, sp, -(argc) * SIZEOF_VALUE_I32)),
+            Opnd::mem(64, sp, -(argc + 1) * SIZEOF_VALUE_I32),
+        ]
     }
+    else {
+        panic!("unexpected cfunc_args: {}", cfunc_argc)
+    };
 
     // Call the C function
     // VALUE ret = (cfunc->func)(recv, argv[0], argv[1]);
     // cfunc comes from compile-time cme->def, which we assume to be stable.
     // Invalidation logic is in yjit_method_lookup_change()
-    add_comment(cb, "call C function");
-    call_ptr(cb, REG0, unsafe { get_mct_func(cfunc) });
+    asm.comment("call C function");
+    let ret = asm.ccall(unsafe { get_mct_func(cfunc) }, args);
 
     // Record code position for TracePoint patching. See full_cfunc_return().
-    record_global_inval_patch(cb, CodegenGlobals::get_outline_full_cfunc_return_pos());
+    record_global_inval_patch(asm, CodegenGlobals::get_outline_full_cfunc_return_pos());
 
     // Push the return value on the Ruby stack
     let stack_ret = ctx.stack_push(Type::Unknown);
-    mov(cb, stack_ret, RAX);
+    asm.mov(stack_ret, ret);
 
     // Pop the stack frame (ec->cfp++)
     // Can we reuse ec_cfp_opnd from above?
-    let ec_cfp_opnd = mem_opnd(64, REG_EC, RUBY_OFFSET_EC_CFP);
-    add(cb, ec_cfp_opnd, uimm_opnd(RUBY_SIZEOF_CONTROL_FRAME as u64));
+    let ec_cfp_opnd = Opnd::mem(64, EC, RUBY_OFFSET_EC_CFP);
+    let new_cfp = asm.add(ec_cfp_opnd, Opnd::UImm(RUBY_SIZEOF_CONTROL_FRAME as u64));
+    asm.store(ec_cfp_opnd, new_cfp);
 
     // cfunc calls may corrupt types
     ctx.clear_local_types();
@@ -4144,10 +4126,11 @@ fn gen_send_cfunc(
 
     // Jump (fall through) to the call continuation block
     // We do this to end the current block after the call
-    jump_to_next_insn(jit, ctx, cb, ocb);
+    jump_to_next_insn(jit, ctx, asm, ocb);
     EndBlock
 }
 
+/*
 fn gen_return_branch(
     cb: &mut CodeBlock,
     target0: CodePtr,
@@ -4852,12 +4835,10 @@ fn gen_send_general(
     // Points to the receiver operand on the stack
     let recv = ctx.stack_opnd(argc);
     let recv_opnd = StackOpnd(argc.try_into().unwrap());
-    // TODO: Resurrect this once jit_guard_known_klass is implemented for getivar
-    /*
     jit_guard_known_klass(
         jit,
         ctx,
-        cb,
+        asm,
         ocb,
         comptime_recv_klass,
         recv,
@@ -4865,7 +4846,7 @@ fn gen_send_general(
         comptime_recv,
         SEND_MAX_DEPTH,
         side_exit,
-    ); */
+    );
 
     // Do method lookup
     let mut cme = unsafe { rb_callable_method_entry(comptime_recv_klass, mid) };
@@ -4911,7 +4892,6 @@ fn gen_send_general(
                 return CantCompile; // return gen_send_iseq(jit, ctx, cb, ocb, ci, cme, block, argc);
             }
             VM_METHOD_TYPE_CFUNC => {
-                return CantCompile; /*
                 return gen_send_cfunc(
                     jit,
                     ctx,
@@ -4922,7 +4902,7 @@ fn gen_send_general(
                     block,
                     argc,
                     &comptime_recv_klass,
-                ); */
+                );
             }
             VM_METHOD_TYPE_IVAR => {
                 if argc != 0 {
