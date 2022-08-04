@@ -721,7 +721,7 @@ def check_coredump
 end
 
 def mmtk?
-  `#{BT.ruby} -e 'puts (defined?(GC::MMTk.enabled?) && GC::MMTk.enabled?) || false'`.strip == 'true'
+  `#{BT.ruby} -e 'print (defined?(GC::MMTk.enabled?) && GC::MMTk.enabled?) || false'` == 'true'
 end
 
 exit main
