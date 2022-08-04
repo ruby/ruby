@@ -15,8 +15,8 @@ module BundledGem
   end
 
   def copy(path, *rest)
-    spec = Gem::Specification.load(path)
-    path = File.dirname(path)
+    path, n = File.split(path)
+    spec = Dir.chdir(path) {Gem::Specification.load(n)} or raise "Cannot load #{path}"
     prepare_test(spec, *rest) do |dir|
       FileUtils.rm_rf(dir)
       files = spec.files.reject {|f| f.start_with?(".git")}
