@@ -143,7 +143,7 @@ impl Assembler
             }
         }
 
-        self.forward_pass(|asm, index, op, opnds, target, text, pos_marker| {
+        self.forward_pass(|asm, index, op, opnds, target, text, pos_marker, original_opnds| {
             // Load all Value operands into registers that aren't already a part
             // of Load instructions.
             let opnds = match op {
