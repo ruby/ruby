@@ -1149,8 +1149,7 @@ fn gen_opt_plus(
 
         KeepCompiling
     } else {
-        todo!("opt_plus send path");
-        //gen_opt_send_without_block(jit, ctx, cb, ocb)
+        gen_opt_send_without_block(jit, ctx, asm, ocb)
     }
 }
 
@@ -2387,8 +2386,7 @@ fn gen_fixnum_cmp(
 
         KeepCompiling
     } else {
-        todo!("compare send path not yet implemented");
-        //gen_opt_send_without_block(jit, ctx, cb, ocb)
+        gen_opt_send_without_block(jit, ctx, asm, ocb)
     }
 }
 
@@ -2401,34 +2399,34 @@ fn gen_opt_lt(
     gen_fixnum_cmp(jit, ctx, asm, ocb, Assembler::csel_l)
 }
 
-/*
 fn gen_opt_le(
     jit: &mut JITState,
     ctx: &mut Context,
-    cb: &mut CodeBlock,
+    asm: &mut Assembler,
     ocb: &mut OutlinedCb,
 ) -> CodegenStatus {
-    gen_fixnum_cmp(jit, ctx, cb, ocb, cmovle)
+    gen_fixnum_cmp(jit, ctx, asm, ocb, Assembler::csel_le)
 }
 
 fn gen_opt_ge(
     jit: &mut JITState,
     ctx: &mut Context,
-    cb: &mut CodeBlock,
+    asm: &mut Assembler,
     ocb: &mut OutlinedCb,
 ) -> CodegenStatus {
-    gen_fixnum_cmp(jit, ctx, cb, ocb, cmovge)
+    gen_fixnum_cmp(jit, ctx, asm, ocb, Assembler::csel_ge)
 }
 
 fn gen_opt_gt(
     jit: &mut JITState,
     ctx: &mut Context,
-    cb: &mut CodeBlock,
+    asm: &mut Assembler,
     ocb: &mut OutlinedCb,
 ) -> CodegenStatus {
-    gen_fixnum_cmp(jit, ctx, cb, ocb, cmovg)
+    gen_fixnum_cmp(jit, ctx, asm, ocb, Assembler::csel_g)
 }
 
+/*
 // Implements specialized equality for either two fixnum or two strings
 // Returns true if code was generated, otherwise false
 fn gen_equality_specialized(
@@ -2951,27 +2949,29 @@ fn gen_opt_minus(
         gen_opt_send_without_block(jit, ctx, cb, ocb)
     }
 }
+*/
 
 fn gen_opt_mult(
     jit: &mut JITState,
     ctx: &mut Context,
-    cb: &mut CodeBlock,
+    asm: &mut Assembler,
     ocb: &mut OutlinedCb,
 ) -> CodegenStatus {
     // Delegate to send, call the method on the recv
-    gen_opt_send_without_block(jit, ctx, cb, ocb)
+    gen_opt_send_without_block(jit, ctx, asm, ocb)
 }
 
 fn gen_opt_div(
     jit: &mut JITState,
     ctx: &mut Context,
-    cb: &mut CodeBlock,
+    asm: &mut Assembler,
     ocb: &mut OutlinedCb,
 ) -> CodegenStatus {
     // Delegate to send, call the method on the recv
-    gen_opt_send_without_block(jit, ctx, cb, ocb)
+    gen_opt_send_without_block(jit, ctx, asm, ocb)
 }
 
+/*
 fn gen_opt_mod(
     jit: &mut JITState,
     ctx: &mut Context,
@@ -3023,47 +3023,49 @@ fn gen_opt_mod(
         gen_opt_send_without_block(jit, ctx, cb, ocb)
     }
 }
+*/
 
 fn gen_opt_ltlt(
     jit: &mut JITState,
     ctx: &mut Context,
-    cb: &mut CodeBlock,
+    asm: &mut Assembler,
     ocb: &mut OutlinedCb,
 ) -> CodegenStatus {
     // Delegate to send, call the method on the recv
-    gen_opt_send_without_block(jit, ctx, cb, ocb)
+    gen_opt_send_without_block(jit, ctx, asm, ocb)
 }
 
 fn gen_opt_nil_p(
     jit: &mut JITState,
     ctx: &mut Context,
-    cb: &mut CodeBlock,
+    asm: &mut Assembler,
     ocb: &mut OutlinedCb,
 ) -> CodegenStatus {
     // Delegate to send, call the method on the recv
-    gen_opt_send_without_block(jit, ctx, cb, ocb)
+    gen_opt_send_without_block(jit, ctx, asm, ocb)
 }
 
 fn gen_opt_empty_p(
     jit: &mut JITState,
     ctx: &mut Context,
-    cb: &mut CodeBlock,
+    asm: &mut Assembler,
     ocb: &mut OutlinedCb,
 ) -> CodegenStatus {
     // Delegate to send, call the method on the recv
-    gen_opt_send_without_block(jit, ctx, cb, ocb)
+    gen_opt_send_without_block(jit, ctx, asm, ocb)
 }
 
 fn gen_opt_succ(
     jit: &mut JITState,
     ctx: &mut Context,
-    cb: &mut CodeBlock,
+    asm: &mut Assembler,
     ocb: &mut OutlinedCb,
 ) -> CodegenStatus {
     // Delegate to send, call the method on the recv
-    gen_opt_send_without_block(jit, ctx, cb, ocb)
+    gen_opt_send_without_block(jit, ctx, asm, ocb)
 }
 
+/*
 fn gen_opt_str_freeze(
     jit: &mut JITState,
     ctx: &mut Context,
@@ -3103,47 +3105,48 @@ fn gen_opt_str_uminus(
 
     KeepCompiling
 }
+*/
 
 fn gen_opt_not(
     jit: &mut JITState,
     ctx: &mut Context,
-    cb: &mut CodeBlock,
+    asm: &mut Assembler,
     ocb: &mut OutlinedCb,
 ) -> CodegenStatus {
-    return gen_opt_send_without_block(jit, ctx, cb, ocb);
+    return gen_opt_send_without_block(jit, ctx, asm, ocb);
 }
 
 fn gen_opt_size(
     jit: &mut JITState,
     ctx: &mut Context,
-    cb: &mut CodeBlock,
+    asm: &mut Assembler,
     ocb: &mut OutlinedCb,
 ) -> CodegenStatus {
-    return gen_opt_send_without_block(jit, ctx, cb, ocb);
+    return gen_opt_send_without_block(jit, ctx, asm, ocb);
 }
 
 fn gen_opt_length(
     jit: &mut JITState,
     ctx: &mut Context,
-    cb: &mut CodeBlock,
+    asm: &mut Assembler,
     ocb: &mut OutlinedCb,
 ) -> CodegenStatus {
-    return gen_opt_send_without_block(jit, ctx, cb, ocb);
+    return gen_opt_send_without_block(jit, ctx, asm, ocb);
 }
 
 fn gen_opt_regexpmatch2(
     jit: &mut JITState,
     ctx: &mut Context,
-    cb: &mut CodeBlock,
+    asm: &mut Assembler,
     ocb: &mut OutlinedCb,
 ) -> CodegenStatus {
-    return gen_opt_send_without_block(jit, ctx, cb, ocb);
+    return gen_opt_send_without_block(jit, ctx, asm, ocb);
 }
 
 fn gen_opt_case_dispatch(
     _jit: &mut JITState,
     ctx: &mut Context,
-    _cb: &mut CodeBlock,
+    _asm: &mut Assembler,
     _ocb: &mut OutlinedCb,
 ) -> CodegenStatus {
     // Normally this instruction would lookup the key in a hash and jump to an
@@ -3158,7 +3161,6 @@ fn gen_opt_case_dispatch(
 
     KeepCompiling // continue with the next instruction
 }
-*/
 
 fn gen_branchif_branch(
     asm: &mut Assembler,
@@ -5056,7 +5058,6 @@ fn gen_opt_send_without_block(
     gen_send_general(jit, ctx, asm, ocb, cd, None)
 }
 
-/*
 fn gen_send(
     jit: &mut JITState,
     ctx: &mut Context,
@@ -5068,6 +5069,7 @@ fn gen_send(
     return gen_send_general(jit, ctx, asm, ocb, cd, block);
 }
 
+/*
 fn gen_invokesuper(
     jit: &mut JITState,
     ctx: &mut Context,
@@ -5971,10 +5973,10 @@ fn get_gen_fn(opcode: VALUE) -> Option<InsnGenFn> {
         YARVINSN_duparray => Some(gen_duparray),
         YARVINSN_checktype => Some(gen_checktype),
         YARVINSN_opt_lt => Some(gen_opt_lt),
-        /*
         YARVINSN_opt_le => Some(gen_opt_le),
         YARVINSN_opt_gt => Some(gen_opt_gt),
         YARVINSN_opt_ge => Some(gen_opt_ge),
+        /*
         YARVINSN_opt_mod => Some(gen_opt_mod),
         YARVINSN_opt_str_freeze => Some(gen_opt_str_freeze),
         YARVINSN_opt_str_uminus => Some(gen_opt_str_uminus),
@@ -5994,6 +5996,7 @@ fn get_gen_fn(opcode: VALUE) -> Option<InsnGenFn> {
         YARVINSN_opt_neq => Some(gen_opt_neq),
         YARVINSN_opt_aref => Some(gen_opt_aref),
         YARVINSN_opt_aset => Some(gen_opt_aset),
+        */
         YARVINSN_opt_mult => Some(gen_opt_mult),
         YARVINSN_opt_div => Some(gen_opt_div),
         YARVINSN_opt_ltlt => Some(gen_opt_ltlt),
@@ -6004,12 +6007,13 @@ fn get_gen_fn(opcode: VALUE) -> Option<InsnGenFn> {
         YARVINSN_opt_size => Some(gen_opt_size),
         YARVINSN_opt_length => Some(gen_opt_length),
         YARVINSN_opt_regexpmatch2 => Some(gen_opt_regexpmatch2),
+        /*
         YARVINSN_opt_getinlinecache => Some(gen_opt_getinlinecache),
         YARVINSN_invokebuiltin => Some(gen_invokebuiltin),
         YARVINSN_opt_invokebuiltin_delegate => Some(gen_opt_invokebuiltin_delegate),
         YARVINSN_opt_invokebuiltin_delegate_leave => Some(gen_opt_invokebuiltin_delegate),
-        YARVINSN_opt_case_dispatch => Some(gen_opt_case_dispatch),
         */
+        YARVINSN_opt_case_dispatch => Some(gen_opt_case_dispatch),
         YARVINSN_branchif => Some(gen_branchif),
         YARVINSN_branchunless => Some(gen_branchunless),
         YARVINSN_branchnil => Some(gen_branchnil),
