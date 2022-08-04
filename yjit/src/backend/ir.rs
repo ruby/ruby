@@ -57,6 +57,10 @@ pub enum Op
     // binary AND operation.
     And,
 
+    // This is the same as the OP_ADD instruction, except that it performs the
+    // binary OR operation.
+    Or,
+
     // Perform the NOT operation on an individual operand, and return the result
     // as a new operand. This operand can then be used as the operand on another
     // instruction.
@@ -899,6 +903,7 @@ def_push_jcc!(jo, Op::Jo);
 def_push_2_opnd!(add, Op::Add);
 def_push_2_opnd!(sub, Op::Sub);
 def_push_2_opnd!(and, Op::And);
+def_push_2_opnd!(or, Op::Or);
 def_push_1_opnd!(not, Op::Not);
 def_push_1_opnd_no_out!(cpush, Op::CPush);
 def_push_0_opnd!(cpop, Op::CPop);

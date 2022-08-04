@@ -175,7 +175,7 @@ impl Assembler
                         }
                     }
                 },
-                Op::And => {
+                Op::And | Op::Or => {
                     match (opnds[0], opnds[1]) {
                         (Opnd::Reg(_), Opnd::Reg(_)) => {
                             asm.and(opnds[0], opnds[1]);
@@ -567,6 +567,9 @@ impl Assembler
                 Op::And => {
                     and(cb, insn.out.into(), insn.opnds[0].into(), insn.opnds[1].into());
                 },
+                Op::Or => {
+                    orr(cb, insn.out.into(), insn.opnds[0].into(), insn.opnds[1].into());
+                },
                 Op::Not => {
                     mvn(cb, insn.out.into(), insn.opnds[0].into());
                 },
@@ -883,6 +886,15 @@ mod tests {
         asm.bake_string("Hello, world!");
         asm.store(Opnd::mem(64, SP, 0), opnd);
 
+        asm.compile_with_num_regs(&mut cb, 1);
+    }
+
+    #[test]
+    fn test_emit_or() {
+        let (mut asm, mut cb) = setup_asm();
+
+        let opnd = asm.or(Opnd::Reg(X0_REG), Opnd::Reg(X1_REG));
+        asm.store(Opnd::mem(64, Opnd::Reg(X2_REG), 0), opnd);
         asm.compile_with_num_regs(&mut cb, 1);
     }
 

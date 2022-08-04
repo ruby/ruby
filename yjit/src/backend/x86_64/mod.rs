@@ -113,7 +113,7 @@ impl Assembler
             };
 
             match op {
-                Op::Add | Op::Sub | Op::And | Op::Cmp => {
+                Op::Add | Op::Sub | Op::And | Op::Cmp | Op::Or => {
                     let (opnd0, opnd1) = match (opnds[0], opnds[1]) {
                         (Opnd::Mem(_), Opnd::Mem(_)) => {
                             (asm.load(opnds[0]), asm.load(opnds[1]))
@@ -269,6 +269,10 @@ impl Assembler
 
                 Op::And => {
                     and(cb, insn.opnds[0].into(), insn.opnds[1].into())
+                },
+
+                Op::Or => {
+                    or(cb, insn.opnds[0].into(), insn.opnds[1].into());
                 },
 
                 Op::Not => {
