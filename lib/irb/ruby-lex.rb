@@ -643,7 +643,7 @@ class RubyLex
       end
 
       case t.event
-      when :on_ignored_nl, :on_nl, :on_comment
+      when :on_ignored_nl, :on_nl, :on_comment, :on_heredoc_end, :on_embdoc_end
         if in_oneliner_def != :BODY
           corresponding_token_depth = nil
           spaces_at_line_head = 0
