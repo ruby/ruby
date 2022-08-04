@@ -72,10 +72,11 @@ module Bundler
         return super
       end
 
-      extension_dir = Pathname.new(extension_dir)
       build_complete = SharedHelpers.filesystem_access(extension_cache_path.join("gem.build_complete"), :read, &:file?)
       if build_complete && !options[:force]
-        SharedHelpers.filesystem_access(extension_dir.parent, &:mkpath)
+        SharedHelpers.filesystem_access(File.dirname(extension_dir)) do |p|
+          FileUtils.mkpath p
+        end
         SharedHelpers.filesystem_access(extension_cache_path) do
           FileUtils.cp_r extension_cache_path, extension_dir
         end

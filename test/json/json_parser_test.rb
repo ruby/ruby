@@ -115,6 +115,10 @@ class JSONParserTest < Test::Unit::TestCase
     assert_equal(BigDecimal("0.901234567890123456789E1"),JSON.parse('{"foo": 9.01234567890123456789}', decimal_class: BigDecimal)["foo"]      )
   end
 
+  def test_parse_string_mixed_unicode
+    assert_equal(["éé"], JSON.parse("[\"\\u00e9é\"]"))
+  end
+
   if Array.method_defined?(:permutation)
     def test_parse_more_complex_arrays
       a = [ nil, false, true, "foßbar", [ "n€st€d", true ], { "nested" => true, "n€ßt€ð2" => {} }]

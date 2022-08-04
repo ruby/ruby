@@ -136,7 +136,7 @@ rb_thread_local_storage(VALUE thread)
 
 static int sleep_hrtime(rb_thread_t *, rb_hrtime_t, unsigned int fl);
 static void sleep_forever(rb_thread_t *th, unsigned int fl);
-static void rb_thread_sleep_deadly_allow_spurious_wakeup(VALUE blocker);
+static void rb_thread_sleep_deadly_allow_spurious_wakeup(VALUE blocker, VALUE timeout, rb_hrtime_t end);
 static int rb_threadptr_dead(rb_thread_t *th);
 static void rb_check_deadlock(rb_ractor_t *r);
 static int rb_threadptr_pending_interrupt_empty_p(const rb_thread_t *th);
@@ -854,7 +854,7 @@ thread_create_core(VALUE thval, struct thread_create_params *params)
     th->priority = current_th->priority;
     th->thgroup = current_th->thgroup;
 
-    th->pending_interrupt_queue = rb_ary_tmp_new(0);
+    th->pending_interrupt_queue = rb_ary_hidden_new(0);
     th->pending_interrupt_queue_checked = 0;
     th->pending_interrupt_mask_stack = rb_ary_dup(current_th->pending_interrupt_mask_stack);
     RBASIC_CLEAR_CLASS(th->pending_interrupt_mask_stack);
@@ -1339,6 +1339,28 @@ sleep_hrtime(rb_thread_t *th, rb_hrtime_t rel, unsigned int fl)
     return woke;
 }
 
+static int
+sleep_hrtime_until(rb_thread_t *th, rb_hrtime_t end, unsigned int fl)
+{
+    enum rb_thread_status prev_status = th->status;
+    int woke;
+    rb_hrtime_t rel = rb_hrtime_sub(end, rb_hrtime_now());
+
+    th->status = THREAD_STOPPED;
+    RUBY_VM_CHECK_INTS_BLOCKING(th->ec);
+    while (th->status == THREAD_STOPPED) {
+        native_sleep(th, &rel);
+        woke = vm_check_ints_blocking(th->ec);
+        if (woke && !(fl & SLEEP_SPURIOUS_CHECK))
+            break;
+        if (hrtime_update_expire(&rel, end))
+            break;
+        woke = 1;
+    }
+    th->status = prev_status;
+    return woke;
+}
+
 void
 rb_thread_sleep_forever(void)
 {
@@ -1366,15 +1388,20 @@ rb_thread_sleep_interruptible(void)
 }
 
 static void
-rb_thread_sleep_deadly_allow_spurious_wakeup(VALUE blocker)
+rb_thread_sleep_deadly_allow_spurious_wakeup(VALUE blocker, VALUE timeout, rb_hrtime_t end)
 {
     VALUE scheduler = rb_fiber_scheduler_current();
     if (scheduler != Qnil) {
-        rb_fiber_scheduler_block(scheduler, blocker, Qnil);
+        rb_fiber_scheduler_block(scheduler, blocker, timeout);
     }
     else {
         RUBY_DEBUG_LOG("%s", "");
-        sleep_forever(GET_THREAD(), SLEEP_DEADLOCKABLE);
+        if (end) {
+            sleep_hrtime_until(GET_THREAD(), end, SLEEP_SPURIOUS_CHECK);
+        }
+        else {
+            sleep_forever(GET_THREAD(), SLEEP_DEADLOCKABLE);
+        }
     }
 }
 
@@ -5363,9 +5390,9 @@ Init_Thread(void)
             struct rb_thread_sched *sched = TH_SCHED(th);
             thread_sched_to_running(sched, th);
 
-            th->pending_interrupt_queue = rb_ary_tmp_new(0);
+            th->pending_interrupt_queue = rb_ary_hidden_new(0);
             th->pending_interrupt_queue_checked = 0;
-            th->pending_interrupt_mask_stack = rb_ary_tmp_new(0);
+            th->pending_interrupt_mask_stack = rb_ary_hidden_new(0);
         }
     }
 
@@ -5662,17 +5689,17 @@ rb_reset_coverages(void)
 VALUE
 rb_default_coverage(int n)
 {
-    VALUE coverage = rb_ary_tmp_new_fill(3);
+    VALUE coverage = rb_ary_hidden_new_fill(3);
     VALUE lines = Qfalse, branches = Qfalse;
     int mode = GET_VM()->coverage_mode;
 
     if (mode & COVERAGE_TARGET_LINES) {
-        lines = n > 0 ? rb_ary_tmp_new_fill(n) : rb_ary_tmp_new(0);
+        lines = n > 0 ? rb_ary_hidden_new_fill(n) : rb_ary_hidden_new(0);
     }
     RARRAY_ASET(coverage, COVERAGE_INDEX_LINES, lines);
 
     if (mode & COVERAGE_TARGET_BRANCHES) {
-        branches = rb_ary_tmp_new_fill(2);
+        branches = rb_ary_hidden_new_fill(2);
         /* internal data structures for branch coverage:
          *
          * { branch base node =>
@@ -5698,7 +5725,7 @@ rb_default_coverage(int n)
         rb_obj_hide(structure);
         RARRAY_ASET(branches, 0, structure);
         /* branch execution counters */
-        RARRAY_ASET(branches, 1, rb_ary_tmp_new(0));
+        RARRAY_ASET(branches, 1, rb_ary_hidden_new(0));
     }
     RARRAY_ASET(coverage, COVERAGE_INDEX_BRANCHES, branches);
 

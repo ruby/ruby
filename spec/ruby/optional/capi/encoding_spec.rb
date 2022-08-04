@@ -128,10 +128,16 @@ describe "C-API Encoding function" do
 
   describe "rb_enc_mbc_to_codepoint" do
     it "returns the correct codepoint for the given character and size" do
-       @s.rb_enc_mbc_to_codepoint("é", 2).should == 0x00E9
-       @s.rb_enc_mbc_to_codepoint("éa", 2).should == 0x00E9
-       @s.rb_enc_mbc_to_codepoint("éa", 1).should == 0xC3
-       @s.rb_enc_mbc_to_codepoint("éa", 3).should == 0x00E9
+       @s.rb_enc_mbc_to_codepoint("é").should == 0xE9
+    end
+
+    it "returns 0 if p == e" do
+      @s.rb_enc_mbc_to_codepoint("").should == 0
+    end
+
+    it "returns the raw byte if incomplete character in UTF-8" do
+      @s.rb_enc_mbc_to_codepoint("\xC3").should == 0xC3
+      @s.rb_enc_mbc_to_codepoint("\x80").should == 0x80
     end
   end
 
@@ -630,6 +636,7 @@ describe "C-API Encoding function" do
     it "returns the correct case fold for the given string" do
       @s.ONIGENC_MBC_CASE_FOLD("lower").should == ["l", 1]
       @s.ONIGENC_MBC_CASE_FOLD("Upper").should == ["u", 1]
+      @s.ONIGENC_MBC_CASE_FOLD("ABC"[1..-1]).should == ["b", 1]
     end
 
     it "works with other encodings" do

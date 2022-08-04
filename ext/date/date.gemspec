@@ -12,6 +12,7 @@ Gem::Specification.new do |s|
 
   s.require_path = %w{lib}
   s.files = [
+    "README.md",
     "lib/date.rb", "ext/date/date_core.c", "ext/date/date_parse.c", "ext/date/date_strftime.c",
     "ext/date/date_strptime.c", "ext/date/date_tmx.h", "ext/date/extconf.rb", "ext/date/prereq.mk",
     "ext/date/zonetab.h", "ext/date/zonetab.list"

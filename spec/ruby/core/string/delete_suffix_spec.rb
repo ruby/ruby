@@ -21,6 +21,10 @@ describe "String#delete_suffix" do
     r.should == s
   end
 
+  it "does not remove partial bytes, only full characters" do
+    "\xe3\x81\x82".delete_suffix("\x82").should == "\xe3\x81\x82"
+  end
+
   it "doesn't set $~" do
     $~ = nil
 

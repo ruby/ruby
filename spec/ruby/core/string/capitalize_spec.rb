@@ -10,6 +10,7 @@ describe "String#capitalize" do
     "hello".capitalize.should == "Hello"
     "HELLO".capitalize.should == "Hello"
     "123ABC".capitalize.should == "123abc"
+    "abcdef"[1...-1].capitalize.should == "Bcde"
   end
 
   describe "full Unicode case mapping" do
@@ -37,7 +38,7 @@ describe "String#capitalize" do
     end
 
     it "handles non-ASCII substrings properly" do
-      "garçon"[1..-1].capitalize(:ascii).should == "Arçon"
+      "garçon"[1...-1].capitalize(:ascii).should == "Arço"
     end
   end
 

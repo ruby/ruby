@@ -280,7 +280,7 @@ static VALUE
 make_unknown_kw_hash(const VALUE *passed_keywords, int passed_keyword_len, const VALUE *kw_argv)
 {
     int i;
-    VALUE obj = rb_ary_tmp_new(1);
+    VALUE obj = rb_ary_hidden_new(1);
 
     for (i=0; i<passed_keyword_len; i++) {
         if (kw_argv[i] != Qundef) {
@@ -343,7 +343,7 @@ args_setup_kw_parameters(rb_execution_context_t *const ec, const rb_iseq_t *cons
             found++;
         }
         else {
-            if (!missing) missing = rb_ary_tmp_new(1);
+            if (!missing) missing = rb_ary_hidden_new(1);
             rb_ary_push(missing, ID2SYM(key));
         }
     }
@@ -907,7 +907,7 @@ vm_caller_setup_arg_block(const rb_execution_context_t *ec, rb_control_frame_t *
                 VALUE func = rb_hash_lookup(ref, block_code);
                 if (NIL_P(func)) {
                     /* TODO: limit cached funcs */
-                    VALUE callback_arg = rb_ary_tmp_new(2);
+                    VALUE callback_arg = rb_ary_hidden_new(2);
                     rb_ary_push(callback_arg, block_code);
                     rb_ary_push(callback_arg, ref);
                     OBJ_FREEZE_RAW(callback_arg);

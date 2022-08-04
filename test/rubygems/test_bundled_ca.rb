@@ -36,7 +36,7 @@ class TestBundledCA < Gem::TestCase
     pend "#{host} seems offline, I can't tell whether ssl would work."
   rescue OpenSSL::SSL::SSLError => e
     # Only fail for certificate verification errors
-    if e.message =~ /certificate verify failed/
+    if e.message.include?("certificate verify failed")
       flunk "#{host} is not verifiable using the included certificates. Error was: #{e.message}"
     end
     raise

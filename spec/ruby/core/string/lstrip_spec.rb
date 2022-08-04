@@ -10,6 +10,14 @@ describe "String#lstrip" do
    "  hello world  ".lstrip.should == "hello world  "
    "\n\r\t\n\v\r hello world  ".lstrip.should == "hello world  "
    "hello".lstrip.should == "hello"
+   " こにちわ".lstrip.should == "こにちわ"
+  end
+
+  it "works with lazy substrings" do
+    "  hello  "[1...-1].lstrip.should == "hello "
+    "  hello world  "[1...-1].lstrip.should == "hello world "
+    "\n\r\t\n\v\r hello world  "[1...-1].lstrip.should == "hello world "
+    "   こにちわ "[1...-1].lstrip.should == "こにちわ"
   end
 
   ruby_version_is '3.0' do
@@ -27,18 +35,24 @@ describe "String#lstrip!" do
     a.should == "hello  "
   end
 
-  ruby_version_is '3.0' do
-    it "strips leading \\0" do
-      a = "\000 \000hello\000 \000"
-      a.lstrip!
-      a.should == "hello\000 \000"
-    end
-  end
-
   it "returns nil if no modifications were made" do
     a = "hello"
     a.lstrip!.should == nil
     a.should == "hello"
+  end
+
+  it "makes a string empty if it is only whitespace" do
+    "".lstrip!.should == nil
+    " ".lstrip.should == ""
+    "  ".lstrip.should == ""
+  end
+
+  ruby_version_is '3.0' do
+    it "removes leading NULL bytes and whitespace" do
+      a = "\000 \000hello\000 \000"
+      a.lstrip!
+      a.should == "hello\000 \000"
+    end
   end
 
   it "raises a FrozenError on a frozen instance that is modified" do
@@ -51,8 +65,12 @@ describe "String#lstrip!" do
     -> { "".freeze.lstrip!      }.should raise_error(FrozenError)
   end
 
-  it "raises an ArgumentError if the first codepoint is invalid" do
+  it "raises an ArgumentError if the first non-space codepoint is invalid" do
     s = "\xDFabc".force_encoding(Encoding::UTF_8)
+    s.valid_encoding?.should be_false
+    -> { s.lstrip! }.should raise_error(ArgumentError)
+
+    s = "   \xDFabc".force_encoding(Encoding::UTF_8)
     s.valid_encoding?.should be_false
     -> { s.lstrip! }.should raise_error(ArgumentError)
   end

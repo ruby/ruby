@@ -1138,6 +1138,7 @@ rb_node_init(NODE *n, enum node_type type, VALUE a0, VALUE a1, VALUE a2)
     n->nd_loc.beg_pos.column = 0;
     n->nd_loc.end_pos.lineno = 0;
     n->nd_loc.end_pos.column = 0;
+    n->node_id = -1;
 }
 
 typedef struct node_buffer_elem_struct {

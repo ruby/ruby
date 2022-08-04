@@ -906,4 +906,42 @@ class TestEnumerator < Test::Unit::TestCase
     e.chain.each(&->{})
     assert_equal(true, e.is_lambda)
   end
+
+  def test_product
+    e = Enumerator::Product.new
+    assert_instance_of(Enumerator::Product, e)
+    assert_kind_of(Enumerator, e)
+    assert_equal(1, e.size)
+    elts = []
+    e.each { |*x| elts << x }
+    assert_equal [[]], elts
+
+    e = Enumerator::Product.new(1..3, %w[a b])
+    assert_instance_of(Enumerator::Product, e)
+    assert_kind_of(Enumerator, e)
+    assert_equal(3 * 2, e.size)
+    elts = []
+    e.each { |*x| elts << x }
+    assert_equal [[1, "a"], [1, "b"], [2, "a"], [2, "b"], [3, "a"], [3, "b"]], elts
+
+    e = Enumerator.product(1..3, %w[a b])
+    assert_instance_of(Enumerator::Product, e)
+
+    elts = []
+    ret = Enumerator.product(1..3, %w[a b]) { |*x| elts << x }
+    assert_instance_of(Enumerator::Product, ret)
+    assert_equal [[1, "a"], [1, "b"], [2, "a"], [2, "b"], [3, "a"], [3, "b"]], elts
+
+    e = Enumerator.product(1.., 'a'..'c')
+    assert_equal(Float::INFINITY, e.size)
+    assert_equal [[1, "a"], [1, "b"], [1, "c"], [2, "a"]], e.take(4)
+
+    e = Enumerator.product(1.., Enumerator.new { |y| y << 'a' << 'b' })
+    assert_equal(Float::INFINITY, e.size)
+    assert_equal [[1, "a"], [1, "b"], [2, "a"], [2, "b"]], e.take(4)
+
+    e = Enumerator.product(1..3, Enumerator.new { |y| y << 'a' << 'b' })
+    assert_equal(nil, e.size)
+    assert_equal [[1, "a"], [1, "b"], [2, "a"], [2, "b"]], e.take(4)
+  end
 end

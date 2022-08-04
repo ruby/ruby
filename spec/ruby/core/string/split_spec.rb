@@ -455,12 +455,28 @@ describe "String#split with Regexp" do
       a.should == ["Chunky", "Bacon"]
     end
 
+    it "yields each split substring with default pattern for a lazy substring" do
+      a = []
+      returned_object = "chunky bacon"[1...-1].split { |str| a << str.capitalize }
+
+      returned_object.should == "hunky baco"
+      a.should == ["Hunky", "Baco"]
+    end
+
     it "yields each split substring with default pattern for a non-ASCII string" do
       a = []
       returned_object = "l'été arrive bientôt".split { |str| a << str }
 
       returned_object.should == "l'été arrive bientôt"
       a.should == ["l'été", "arrive", "bientôt"]
+    end
+
+    it "yields each split substring with default pattern for a non-ASCII lazy substring" do
+      a = []
+      returned_object = "l'été arrive bientôt"[1...-1].split { |str| a << str }
+
+      returned_object.should == "'été arrive bientô"
+      a.should == ["'été", "arrive", "bientô"]
     end
 
     it "yields the string when limit is 1" do

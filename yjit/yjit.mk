@@ -25,12 +25,16 @@ yjit-static-lib-no:
 	$(ECHO) 'Error: Tried to build YJIT without configuring it first. Check `make showconfig`?'
 	@false
 
-yjit-static-lib-dev:
-	$(ECHO) 'building Rust YJIT (dev mode)'
+yjit-static-lib-cargo:
+	$(ECHO) 'building Rust YJIT ($(YJIT_SUPPORT) mode)'
 	$(Q)$(CHDIR) $(top_srcdir)/yjit && \
 	        CARGO_TARGET_DIR='$(CARGO_TARGET_DIR)' \
 	        CARGO_TERM_PROGRESS_WHEN='never' \
 	        $(CARGO) $(CARGO_VERBOSE) build $(CARGO_BUILD_ARGS)
+
+yjit-static-lib-dev: yjit-static-lib-cargo
+yjit-static-lib-dev_nodebug: yjit-static-lib-cargo
+yjit-static-lib-stats: yjit-static-lib-cargo
 
 # This PHONY prerequisite makes it so that we always run cargo. When there are
 # no Rust changes on rebuild, Cargo does not touch the mtime of the static

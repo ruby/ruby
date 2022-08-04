@@ -100,7 +100,7 @@ bool ruby_debug_log_filter(const char *func_name, const char *file_name);
 } while (0)
 
 #define RUBY_DEBUG_LOG2(file, line, ...) do { \
-    if (RUBY_DEBUG_LOG_ENABLED(RUBY_FUNCTION_NAME_STRING, __FILE__)) \
+    if (RUBY_DEBUG_LOG_ENABLED(RUBY_FUNCTION_NAME_STRING, file)) \
         ruby_debug_log(file, line, RUBY_FUNCTION_NAME_STRING, "" __VA_ARGS__); \
 } while (0)
 

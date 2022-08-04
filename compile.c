@@ -313,7 +313,7 @@ static void iseq_add_setlocal(rb_iseq_t *iseq, LINK_ANCHOR *const seq, const NOD
     LABEL_REF(le);								\
     LABEL_REF(lc);								\
     if (NIL_P(ISEQ_COMPILE_DATA(iseq)->catch_table_ary)) \
-        RB_OBJ_WRITE(iseq, &ISEQ_COMPILE_DATA(iseq)->catch_table_ary, rb_ary_tmp_new(3)); \
+        RB_OBJ_WRITE(iseq, &ISEQ_COMPILE_DATA(iseq)->catch_table_ary, rb_ary_hidden_new(3)); \
     rb_ary_push(ISEQ_COMPILE_DATA(iseq)->catch_table_ary, freeze_hide_obj(_e));	\
 } while (0)
 
@@ -627,7 +627,7 @@ decl_branch_base(rb_iseq_t *iseq, const NODE *node, const char *type)
     VALUE branches;
 
     if (NIL_P(branch_base)) {
-        branch_base = rb_ary_tmp_new(6);
+        branch_base = rb_ary_hidden_new(6);
         rb_hash_aset(structure, key, branch_base);
         rb_ary_push(branch_base, ID2SYM(rb_intern(type)));
         rb_ary_push(branch_base, INT2FIX(first_lineno));
@@ -675,7 +675,7 @@ add_trace_branch_coverage(rb_iseq_t *iseq, LINK_ANCHOR *const seq, const NODE *n
     long counter_idx;
 
     if (NIL_P(branch)) {
-        branch = rb_ary_tmp_new(6);
+        branch = rb_ary_hidden_new(6);
         rb_hash_aset(branches, key, branch);
         rb_ary_push(branch, ID2SYM(rb_intern(type)));
         rb_ary_push(branch, INT2FIX(first_lineno));
@@ -1743,7 +1743,7 @@ iseq_set_arguments_keywords(rb_iseq_t *iseq, LINK_ANCHOR *const optargs,
     const NODE *node = args->kw_args;
     struct rb_iseq_constant_body *const body = ISEQ_BODY(iseq);
     struct rb_iseq_param_keyword *keyword;
-    const VALUE default_values = rb_ary_tmp_new(1);
+    const VALUE default_values = rb_ary_hidden_new(1);
     const VALUE complex_mark = rb_str_tmp_new(0);
     int kw = 0, rkw = 0, di = 0, i;
 
@@ -1847,7 +1847,7 @@ iseq_set_arguments(rb_iseq_t *iseq, LINK_ANCHOR *const optargs, const NODE *cons
         if (args->opt_args) {
             const NODE *node = args->opt_args;
             LABEL *label;
-            VALUE labels = rb_ary_tmp_new(1);
+            VALUE labels = rb_ary_hidden_new(1);
             VALUE *opt_table;
             int i = 0, j;
 
@@ -4369,7 +4369,7 @@ compile_array(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, int pop
 
             if ((first_chunk && stack_len == 0 && !node_tmp) || count >= min_tmp_ary_len) {
                 /* The literal contains only optimizable elements, or the subarray is long enough */
-                VALUE ary = rb_ary_tmp_new(count);
+                VALUE ary = rb_ary_hidden_new(count);
 
                 /* Create a hidden array */
                 for (; count; count--, node = node->nd_next)
@@ -4420,7 +4420,7 @@ static int
 compile_array_1(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node)
 {
     if (static_literal_node_p(node, iseq)) {
-        VALUE ary = rb_ary_tmp_new(1);
+        VALUE ary = rb_ary_hidden_new(1);
         rb_ary_push(ary, static_literal_value(node, iseq));
         OBJ_FREEZE(ary);
 
@@ -4517,7 +4517,7 @@ compile_hash(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, int meth
 
             if ((first_chunk && stack_len == 0 && !node_tmp) || count >= min_tmp_hash_len) {
                 /* The literal contains only optimizable elements, or the subsequence is long enough */
-                VALUE ary = rb_ary_tmp_new(count);
+                VALUE ary = rb_ary_hidden_new(count);
 
                 /* Create a hidden hash */
                 for (; count; count--, node = node->nd_next->nd_next) {
@@ -4837,7 +4837,8 @@ struct masgn_state {
 };
 
 static int
-add_masgn_lhs_node(struct masgn_state *state, int lhs_pos, const NODE *line_node, int argc, INSN *before_insn) {
+add_masgn_lhs_node(struct masgn_state *state, int lhs_pos, const NODE *line_node, int argc, INSN *before_insn)
+{
     if (!state) {
         rb_bug("no masgn_state");
     }
@@ -12077,7 +12078,7 @@ ibf_dump_iseq_list_i(st_data_t key, st_data_t val, st_data_t ptr)
 static void
 ibf_dump_iseq_list(struct ibf_dump *dump, struct ibf_header *header)
 {
-    VALUE offset_list = rb_ary_tmp_new(dump->iseq_table->num_entries);
+    VALUE offset_list = rb_ary_hidden_new(dump->iseq_table->num_entries);
 
     struct ibf_dump_iseq_list_arg args;
     args.dump = dump;
@@ -12349,7 +12350,7 @@ ibf_load_object_array(const struct ibf_load *load, const struct ibf_object_heade
 
     const long len = (long)ibf_load_small_value(load, &reading_pos);
 
-    VALUE ary = header->internal ? rb_ary_tmp_new(len) : rb_ary_new_capa(len);
+    VALUE ary = header->internal ? rb_ary_hidden_new(len) : rb_ary_new_capa(len);
     int i;
 
     for (i=0; i<len; i++) {
@@ -12744,7 +12745,7 @@ static void
 ibf_dump_object_list(struct ibf_dump *dump, ibf_offset_t *obj_list_offset, unsigned int *obj_list_size)
 {
     st_table *obj_table = dump->current_buffer->obj_table;
-    VALUE offset_list = rb_ary_tmp_new(obj_table->num_entries);
+    VALUE offset_list = rb_ary_hidden_new(obj_table->num_entries);
 
     struct ibf_dump_object_list_arg args;
     args.dump = dump;

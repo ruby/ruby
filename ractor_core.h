@@ -273,7 +273,7 @@ rb_ractor_set_current_ec_(rb_ractor_t *cr, rb_execution_context_t *ec, const cha
 #else
     native_tls_set(ruby_current_ec_key, ec);
 #endif
-    RUBY_DEBUG_LOG2(file, line, "ec:%p->%p", cr->threads.running_ec, ec);
+    RUBY_DEBUG_LOG2(file, line, "ec:%p->%p", (void *)cr->threads.running_ec, (void *)ec);
     VM_ASSERT(cr->threads.running_ec != ec);
     cr->threads.running_ec = ec;
 }

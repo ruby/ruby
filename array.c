@@ -967,7 +967,7 @@ rb_ec_ary_new_from_values(rb_execution_context_t *ec, long n, const VALUE *elts)
 }
 
 VALUE
-rb_ary_tmp_new(long capa)
+rb_ary_hidden_new(long capa)
 {
     VALUE ary = ary_new(0, capa);
     rb_ary_transient_heap_evacuate(ary, TRUE);
@@ -975,12 +975,11 @@ rb_ary_tmp_new(long capa)
 }
 
 VALUE
-rb_ary_tmp_new_fill(long capa)
+rb_ary_hidden_new_fill(long capa)
 {
-    VALUE ary = ary_new(0, capa);
+    VALUE ary = rb_ary_hidden_new(capa);
     ary_memfill(ary, 0, capa, Qnil);
     ARY_SET_LEN(ary, capa);
-    rb_ary_transient_heap_evacuate(ary, TRUE);
     return ary;
 }
 
@@ -1025,18 +1024,10 @@ rb_ary_memsize(VALUE ary)
     }
 }
 
-static inline void
-ary_discard(VALUE ary)
-{
-    rb_ary_free(ary);
-    RBASIC(ary)->flags |= RARRAY_EMBED_FLAG;
-    RBASIC(ary)->flags &= ~(RARRAY_EMBED_LEN_MASK | RARRAY_TRANSIENT_FLAG);
-}
-
 static VALUE
 ary_make_shared(VALUE ary)
 {
-    assert(!ARY_EMBED_P(ary));
+    assert(USE_RVARGC || !ARY_EMBED_P(ary));
     ary_verify(ary);
 
     if (ARY_SHARED_P(ary)) {
@@ -1046,21 +1037,38 @@ ary_make_shared(VALUE ary)
         return ary;
     }
     else if (OBJ_FROZEN(ary)) {
-        rb_ary_transient_heap_evacuate(ary, TRUE);
-        ary_shrink_capa(ary);
+        if (!ARY_EMBED_P(ary)) {
+            rb_ary_transient_heap_evacuate(ary, TRUE);
+            ary_shrink_capa(ary);
+        }
         return ary;
     }
     else {
-        long capa = ARY_CAPA(ary), len = RARRAY_LEN(ary);
-        const VALUE *ptr;
+        rb_ary_transient_heap_evacuate(ary, TRUE);
+
+        long capa = ARY_CAPA(ary);
+        long len = RARRAY_LEN(ary);
+
+        /* Shared roots cannot be embedded because the reference count
+         * (refcnt) is stored in as.heap.aux.capa. */
         VALUE shared = ary_alloc_heap(0);
 
-        rb_ary_transient_heap_evacuate(ary, TRUE);
-        ptr = ARY_HEAP_PTR(ary);
+        if (ARY_EMBED_P(ary)) {
+            /* Cannot use ary_heap_alloc because we don't want to allocate
+             * on the transient heap. */
+            VALUE *ptr = ALLOC_N(VALUE, capa);
+            ARY_SET_PTR(shared, ptr);
+            ary_memcpy(shared, 0, len, RARRAY_PTR(ary));
 
-        FL_UNSET_EMBED(shared);
+            FL_UNSET_EMBED(ary);
+            ARY_SET_HEAP_LEN(ary, len);
+            ARY_SET_PTR(ary, ptr);
+        }
+        else {
+            ARY_SET_PTR(shared, RARRAY_PTR(ary));
+        }
+
         ARY_SET_LEN(shared, capa);
-        ARY_SET_PTR(shared, ptr);
         ary_mem_clear(shared, len, capa - len);
         FL_SET_SHARED_ROOT(shared);
         ARY_SET_SHARED_ROOT_REFCNT(shared, 1);
@@ -1327,7 +1335,9 @@ ary_make_partial(VALUE ary, VALUE klass, long offset, long len)
     assert(len >= 0);
     assert(offset+len <= RARRAY_LEN(ary));
 
-    if (ary_embeddable_p(len)) {
+    const size_t rarray_embed_capa_max = (sizeof(struct RArray) - offsetof(struct RArray, as.ary)) / sizeof(VALUE);
+
+    if ((size_t)len <= rarray_embed_capa_max && ary_embeddable_p(len)) {
         VALUE result = ary_alloc_embed(klass, len);
         ary_memcpy(result, 0, len, RARRAY_CONST_PTR_TRANSIENT(ary) + offset);
         ARY_SET_EMBED_LEN(result, len);
@@ -5109,7 +5119,7 @@ rb_ary_concat_multi(int argc, VALUE *argv, VALUE ary)
     }
     else if (argc > 1) {
         int i;
-        VALUE args = rb_ary_tmp_new(argc);
+        VALUE args = rb_ary_hidden_new(argc);
         for (i = 0; i < argc; i++) {
             rb_ary_concat(args, argv[i]);
         }
@@ -6937,9 +6947,6 @@ rb_ary_cycle(int argc, VALUE *argv, VALUE ary)
     return Qnil;
 }
 
-#define tmpary(n) rb_ary_tmp_new(n)
-#define tmpary_discard(a) (ary_discard(a), RBASIC_SET_CLASS_RAW(a, rb_cArray))
-
 /*
  * Build a ruby array of the corresponding values and yield it to the
  * associated block.
@@ -7634,7 +7641,7 @@ static VALUE
 rb_ary_product(int argc, VALUE *argv, VALUE ary)
 {
     int n = argc+1;    /* How many arrays we're operating on */
-    volatile VALUE t0 = tmpary(n);
+    volatile VALUE t0 = rb_ary_hidden_new(n);
     volatile VALUE t1 = Qundef;
     VALUE *arrays = RARRAY_PTR(t0); /* The arrays we're computing the product of */
     int *counters = ALLOCV_N(int, t1, n); /* The current position in each one */
@@ -7711,8 +7718,8 @@ rb_ary_product(int argc, VALUE *argv, VALUE ary)
             counters[m]++;
         }
     }
+
 done:
-    tmpary_discard(t0);
     ALLOCV_END(t1);
 
     return NIL_P(result) ? ary : result;

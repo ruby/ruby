@@ -3294,7 +3294,7 @@ rb_hash_transform_keys_bang(int argc, VALUE *argv, VALUE hash)
     if (!RHASH_TABLE_EMPTY_P(hash)) {
         long i;
         VALUE new_keys = hash_alloc(0);
-        VALUE pairs = rb_ary_tmp_new(RHASH_SIZE(hash) * 2);
+        VALUE pairs = rb_ary_hidden_new(RHASH_SIZE(hash) * 2);
         rb_hash_foreach(hash, flatten_i, pairs);
         for (i = 0; i < RARRAY_LEN(pairs); i += 2) {
             VALUE key = RARRAY_AREF(pairs, i), new_key, val;
@@ -6639,31 +6639,26 @@ env_update(int argc, VALUE *argv, VALUE env)
     return env;
 }
 
+NORETURN(static VALUE env_clone(int, VALUE *, VALUE));
 /*
  * call-seq:
- *   ENV.clone(freeze: nil) -> ENV
+ *   ENV.clone(freeze: nil) # raises TypeError
  *
- * Returns ENV itself, and warns because ENV is a wrapper for the
- * process-wide environment variables and a clone is useless.
- * If +freeze+ keyword is given and not +nil+ or +false+, raises ArgumentError.
- * If +freeze+ keyword is given and +true+, raises TypeError, as ENV storage
- * cannot be frozen.
+ * Raises TypeError, because ENV is a wrapper for the process-wide
+ * environment variables and a clone is useless.
+ * Use #to_h to get a copy of ENV data as a hash.
  */
 static VALUE
 env_clone(int argc, VALUE *argv, VALUE obj)
 {
     if (argc) {
-        VALUE opt, kwfreeze;
+        VALUE opt;
         if (rb_scan_args(argc, argv, "0:", &opt) < argc) {
-            kwfreeze = rb_get_freeze_opt(1, &opt);
-            if (RTEST(kwfreeze)) {
-                rb_raise(rb_eTypeError, "cannot freeze ENV");
-            }
+            rb_get_freeze_opt(1, &opt);
         }
     }
 
-    rb_warn_deprecated("ENV.clone", "ENV.to_h");
-    return envtbl;
+    rb_raise(rb_eTypeError, "Cannot clone ENV, use ENV.to_h to get a copy of ENV as a hash");
 }
 
 NORETURN(static VALUE env_dup(VALUE));

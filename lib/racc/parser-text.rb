@@ -22,7 +22,7 @@ module Racc
   class ParseError < StandardError; end
 end
 unless defined?(::ParseError)
-  ParseError = Racc::ParseError
+  ParseError = Racc::ParseError # :nodoc:
 end
 
 # Racc is a LALR(1) parser generator.

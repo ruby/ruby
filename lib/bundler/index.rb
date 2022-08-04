@@ -56,17 +56,17 @@ module Bundler
 
     # Search this index's specs, and any source indexes that this index knows
     # about, returning all of the results.
-    def search(query, base = nil)
-      sort_specs(unsorted_search(query, base))
+    def search(query)
+      sort_specs(unsorted_search(query))
     end
 
-    def unsorted_search(query, base)
-      results = local_search(query, base)
+    def unsorted_search(query)
+      results = local_search(query)
 
       seen = results.map(&:full_name).uniq unless @sources.empty?
 
       @sources.each do |source|
-        source.unsorted_search(query, base).each do |spec|
+        source.unsorted_search(query).each do |spec|
           next if seen.include?(spec.full_name)
 
           seen << spec.full_name
@@ -89,12 +89,12 @@ module Bundler
       self.class.sort_specs(specs)
     end
 
-    def local_search(query, base = nil)
+    def local_search(query)
       case query
       when Gem::Specification, RemoteSpecification, LazySpecification, EndpointSpecification then search_by_spec(query)
       when String then specs_by_name(query)
-      when Gem::Dependency then search_by_dependency(query, base)
-      when DepProxy then search_by_dependency(query.dep, base)
+      when Gem::Dependency then search_by_dependency(query)
+      when DepProxy then search_by_dependency(query.dep)
       else
         raise "You can't search for a #{query.inspect}."
       end
@@ -185,11 +185,9 @@ module Bundler
       @specs[name].values
     end
 
-    def search_by_dependency(dependency, base = nil)
-      @cache[base || false] ||= {}
-      @cache[base || false][dependency] ||= begin
+    def search_by_dependency(dependency)
+      @cache[dependency] ||= begin
         specs = specs_by_name(dependency.name)
-        specs += base if base
         found = specs.select do |spec|
           next true if spec.source.is_a?(Source::Gemspec)
           dependency.matches_spec?(spec)

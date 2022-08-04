@@ -22,17 +22,16 @@ module Bundler
       metadata_requirements, regular_requirements = requirements.partition {|dep| dep.name.end_with?("\0") }
       resolver = new(source_requirements, base, gem_version_promoter, additional_base_requirements, platforms, metadata_requirements)
       result = resolver.start(requirements)
-      SpecSet.new(SpecSet.new(result).for(regular_requirements))
+      SpecSet.new(SpecSet.new(result).for(regular_requirements, false, platforms))
     end
 
     def initialize(source_requirements, base, gem_version_promoter, additional_base_requirements, platforms, metadata_requirements)
       @source_requirements = source_requirements
       @metadata_requirements = metadata_requirements
-      @base = base
       @resolver = Molinillo::Resolver.new(self, self)
       @search_for = {}
       @base_dg = Molinillo::DependencyGraph.new
-      @base.each do |ls|
+      @base = base.materialized_for_resolution do |ls|
         dep = Dependency.new(ls.name, ls.version)
         @base_dg.add_vertex(ls.name, DepProxy.get_proxy(dep, ls.platform), true)
       end
@@ -111,7 +110,7 @@ module Bundler
       dependency = dependency_proxy.dep
       name = dependency.name
       @search_for[dependency_proxy] ||= begin
-        results = results_for(dependency, @base[name])
+        results = results_for(dependency) + @base[name].select {|spec| requirement_satisfied_by?(dependency, nil, spec) }
 
         if vertex = @base_dg.vertex_named(name)
           locked_requirement = vertex.payload.requirement
@@ -176,8 +175,8 @@ module Bundler
       @source_requirements[name] || @source_requirements[:default]
     end
 
-    def results_for(dependency, base)
-      index_for(dependency).search(dependency, base)
+    def results_for(dependency)
+      index_for(dependency).search(dependency)
     end
 
     def name_for(dependency)

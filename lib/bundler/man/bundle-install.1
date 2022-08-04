@@ -1,7 +1,7 @@
 .\" generated with Ronn/v0.7.3
 .\" http://github.com/rtomayko/ronn/tree/0.7.3
 .
-.TH "BUNDLE\-INSTALL" "1" "June 2022" "" ""
+.TH "BUNDLE\-INSTALL" "1" "July 2022" "" ""
 .
 .SH "NAME"
 \fBbundle\-install\fR \- Install the dependencies specified in your Gemfile
@@ -68,6 +68,10 @@ The maximum number of parallel download and install jobs\. The default is the nu
 .TP
 \fB\-\-local\fR
 Do not attempt to connect to \fBrubygems\.org\fR\. Instead, Bundler will use the gems already present in Rubygems\' cache or in \fBvendor/cache\fR\. Note that if an appropriate platform\-specific gem exists on \fBrubygems\.org\fR it will not be found\.
+.
+.TP
+\fB\-\-prefer\-local\fR
+Force using locally installed gems, or gems already present in Rubygems\' cache or in \fBvendor/cache\fR, when resolving, even if newer versions are available remotely\. Only attempt to connect to \fBrubygems\.org\fR for gems that are not present locally\.
 .
 .TP
 \fB\-\-no\-cache\fR

@@ -96,6 +96,9 @@ Note that each entry is kept to a minimum, see links for details.
 
 Note: We're only listing outstanding class updates.
 
+* Enumerator
+    * Enumerator.product has been added.  Enumerator::Product is the implementation. [[Feature #18685]]
+
 * Hash
     * Hash#shift now always returns nil if the hash is
       empty, instead of returning the default value or
@@ -268,5 +271,6 @@ The following deprecated APIs are removed.
 [Feature #18598]: https://bugs.ruby-lang.org/issues/18598
 [Bug #18625]:     https://bugs.ruby-lang.org/issues/18625
 [Bug #18633]:     https://bugs.ruby-lang.org/issues/18633
+[Feature #18685]: https://bugs.ruby-lang.org/issues/18685
 [Bug #18782]:     https://bugs.ruby-lang.org/issues/18782
 [Feature #18788]: https://bugs.ruby-lang.org/issues/18788

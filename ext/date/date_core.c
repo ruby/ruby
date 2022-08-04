@@ -465,6 +465,7 @@ c_find_ldoy(int y, double sg, int *rjd, int *ns)
 }
 
 #ifndef NDEBUG
+/* :nodoc: */
 static int
 c_find_fdom(int y, int m, double sg, int *rjd, int *ns)
 {
@@ -621,6 +622,7 @@ c_jd_to_weeknum(int jd, int f, double sg, int *ry, int *rw, int *rd)
 }
 
 #ifndef NDEBUG
+/* :nodoc: */
 static void
 c_nth_kday_to_jd(int y, int m, int n, int k, double sg, int *rjd, int *ns)
 {
@@ -646,6 +648,7 @@ c_jd_to_wday(int jd)
 }
 
 #ifndef NDEBUG
+/* :nodoc: */
 static void
 c_jd_to_nth_kday(int jd, double sg, int *ry, int *rm, int *rn, int *rk)
 {
@@ -822,6 +825,7 @@ c_valid_weeknum_p(int y, int w, int d, int f, double sg,
 }
 
 #ifndef NDEBUG
+/* :nodoc: */
 static int
 c_valid_nth_kday_p(int y, int m, int n, int k, double sg,
 		   int *rm, int *rn, int *rk, int *rjd, int *ns)
@@ -963,6 +967,7 @@ ns_to_day(VALUE n)
 }
 
 #ifndef NDEBUG
+/* :nodoc: */
 static VALUE
 ms_to_sec(VALUE m)
 {
@@ -981,6 +986,7 @@ ns_to_sec(VALUE n)
 }
 
 #ifndef NDEBUG
+/* :nodoc: */
 inline static VALUE
 ins_to_day(int n)
 {
@@ -1016,6 +1022,7 @@ day_to_sec(VALUE d)
 }
 
 #ifndef NDEBUG
+/* :nodoc: */
 static VALUE
 day_to_ns(VALUE d)
 {
@@ -1040,6 +1047,7 @@ sec_to_ns(VALUE s)
 }
 
 #ifndef NDEBUG
+/* :nodoc: */
 static VALUE
 isec_to_ns(int s)
 {
@@ -1066,6 +1074,7 @@ div_df(VALUE d, VALUE *f)
 }
 
 #ifndef NDEBUG
+/* :nodoc: */
 static VALUE
 div_sf(VALUE s, VALUE *f)
 {
@@ -1500,6 +1509,7 @@ m_df(union DateData *x)
 }
 
 #ifndef NDEBUG
+/* :nodoc: */
 static VALUE
 m_df_in_day(union DateData *x)
 {
@@ -1997,6 +2007,7 @@ expect_numeric(VALUE x)
 }
 
 #ifndef NDEBUG
+/* :nodoc: */
 static void
 civil_to_jd(VALUE y, int m, int d, double sg,
 	    VALUE *nth, int *ry,
@@ -2309,6 +2320,7 @@ valid_weeknum_p(VALUE y, int w, int d, int f, double sg,
 }
 
 #ifndef NDEBUG
+/* :nodoc: */
 static int
 valid_nth_kday_p(VALUE y, int m, int n, int k, double sg,
 		 VALUE *nth, int *ry,
@@ -2446,6 +2458,7 @@ valid_jd_sub(int argc, VALUE *argv, VALUE klass, int need_jd)
 }
 
 #ifndef NDEBUG
+/* :nodoc: */
 static VALUE
 date_s__valid_jd_p(int argc, VALUE *argv, VALUE klass)
 {
@@ -2535,6 +2548,7 @@ valid_civil_sub(int argc, VALUE *argv, VALUE klass, int need_jd)
 }
 
 #ifndef NDEBUG
+/* :nodoc: */
 static VALUE
 date_s__valid_civil_p(int argc, VALUE *argv, VALUE klass)
 {
@@ -2626,6 +2640,7 @@ valid_ordinal_sub(int argc, VALUE *argv, VALUE klass, int need_jd)
 }
 
 #ifndef NDEBUG
+/* :nodoc: */
 static VALUE
 date_s__valid_ordinal_p(int argc, VALUE *argv, VALUE klass)
 {
@@ -2712,6 +2727,7 @@ valid_commercial_sub(int argc, VALUE *argv, VALUE klass, int need_jd)
 }
 
 #ifndef NDEBUG
+/* :nodoc: */
 static VALUE
 date_s__valid_commercial_p(int argc, VALUE *argv, VALUE klass)
 {
@@ -2773,6 +2789,7 @@ date_s_valid_commercial_p(int argc, VALUE *argv, VALUE klass)
 }
 
 #ifndef NDEBUG
+/* :nodoc: */
 static VALUE
 valid_weeknum_sub(int argc, VALUE *argv, VALUE klass, int need_jd)
 {
@@ -2804,6 +2821,7 @@ valid_weeknum_sub(int argc, VALUE *argv, VALUE klass, int need_jd)
     }
 }
 
+/* :nodoc: */
 static VALUE
 date_s__valid_weeknum_p(int argc, VALUE *argv, VALUE klass)
 {
@@ -2824,6 +2842,7 @@ date_s__valid_weeknum_p(int argc, VALUE *argv, VALUE klass)
     return valid_weeknum_sub(5, argv2, klass, 1);
 }
 
+/* :nodoc: */
 static VALUE
 date_s_valid_weeknum_p(int argc, VALUE *argv, VALUE klass)
 {
@@ -2875,6 +2894,7 @@ valid_nth_kday_sub(int argc, VALUE *argv, VALUE klass, int need_jd)
     }
 }
 
+/* :nodoc: */
 static VALUE
 date_s__valid_nth_kday_p(int argc, VALUE *argv, VALUE klass)
 {
@@ -2895,6 +2915,7 @@ date_s__valid_nth_kday_p(int argc, VALUE *argv, VALUE klass)
     return valid_nth_kday_sub(5, argv2, klass, 1);
 }
 
+/* :nodoc: */
 static VALUE
 date_s_valid_nth_kday_p(int argc, VALUE *argv, VALUE klass)
 {
@@ -2917,6 +2938,7 @@ date_s_valid_nth_kday_p(int argc, VALUE *argv, VALUE klass)
     return Qtrue;
 }
 
+/* :nodoc: */
 static VALUE
 date_s_zone_to_diff(VALUE klass, VALUE str)
 {
@@ -3112,6 +3134,7 @@ old_to_new(VALUE ajd, VALUE of, VALUE sg,
 }
 
 #ifndef NDEBUG
+/* :nodoc: */
 static VALUE
 date_s_new_bang(int argc, VALUE *argv, VALUE klass)
 {
@@ -3623,6 +3646,7 @@ date_s_commercial(int argc, VALUE *argv, VALUE klass)
 }
 
 #ifndef NDEBUG
+/* :nodoc: */
 static VALUE
 date_s_weeknum(int argc, VALUE *argv, VALUE klass)
 {
@@ -3672,6 +3696,7 @@ date_s_weeknum(int argc, VALUE *argv, VALUE klass)
     return ret;
 }
 
+/* :nodoc: */
 static VALUE
 date_s_nth_kday(int argc, VALUE *argv, VALUE klass)
 {
@@ -4346,14 +4371,18 @@ date_s__strptime_internal(int argc, VALUE *argv, VALUE klass,
  * call-seq:
  *   Date._strptime(string, format = '%F') -> hash
  *
- * Parses the given representation of date and time with the given
- * template, and returns a hash of parsed elements.  _strptime does
- * not support specification of flags and width unlike strftime.
+ * Returns a hash of values parsed from +string+
+ * according to the given +format+:
  *
- *    Date._strptime('2001-02-03', '%Y-%m-%d')
- *				#=> {:year=>2001, :mon=>2, :mday=>3}
+ *   Date._strptime('2001-02-03', '%Y-%m-%d') # => {:year=>2001, :mon=>2, :mday=>3}
  *
- * See also strptime(3) and #strftime.
+ * For other formats, see
+ * {Formats for Dates and Times}[https://docs.ruby-lang.org/en/master/strftime_formatting_rdoc.html].
+ * (Unlike Date.strftime, does not support flags and width.)
+ *
+ * See also {strptime(3)}[https://man7.org/linux/man-pages/man3/strptime.3.html].
+ *
+ * Related: Date.strptime (returns a \Date object).
  */
 static VALUE
 date_s__strptime(int argc, VALUE *argv, VALUE klass)
@@ -4365,21 +4394,26 @@ date_s__strptime(int argc, VALUE *argv, VALUE klass)
  * call-seq:
  *   Date.strptime(string = '-4712-01-01', format = '%F', start = Date::ITALY) -> date
  *
- * Parses the given representation of date and time with the given
- * template, and creates a date object.  strptime does not support
- * specification of flags and width unlike strftime.
+ * Returns a new \Date object with values parsed from +string+,
+ * according to the given +format+:
  *
- *    Date.strptime('2001-02-03', '%Y-%m-%d')	#=> #<Date: 2001-02-03 ...>
- *    Date.strptime('03-02-2001', '%d-%m-%Y')	#=> #<Date: 2001-02-03 ...>
- *    Date.strptime('2001-034', '%Y-%j')	#=> #<Date: 2001-02-03 ...>
- *    Date.strptime('2001-W05-6', '%G-W%V-%u')	#=> #<Date: 2001-02-03 ...>
- *    Date.strptime('2001 04 6', '%Y %U %w')	#=> #<Date: 2001-02-03 ...>
- *    Date.strptime('2001 05 6', '%Y %W %u')	#=> #<Date: 2001-02-03 ...>
- *    Date.strptime('sat3feb01', '%a%d%b%y')	#=> #<Date: 2001-02-03 ...>
+ *   Date.strptime('2001-02-03', '%Y-%m-%d')  # => #<Date: 2001-02-03>
+ *   Date.strptime('03-02-2001', '%d-%m-%Y')  # => #<Date: 2001-02-03>
+ *   Date.strptime('2001-034', '%Y-%j')       # => #<Date: 2001-02-03>
+ *   Date.strptime('2001-W05-6', '%G-W%V-%u') # => #<Date: 2001-02-03>
+ *   Date.strptime('2001 04 6', '%Y %U %w')   # => #<Date: 2001-02-03>
+ *   Date.strptime('2001 05 6', '%Y %W %u')   # => #<Date: 2001-02-03>
+ *   Date.strptime('sat3feb01', '%a%d%b%y')   # => #<Date: 2001-02-03>
+ *
+ * For other formats, see
+ * {Formats for Dates and Times}[https://docs.ruby-lang.org/en/master/strftime_formatting_rdoc.html].
+ * (Unlike Date.strftime, does not support flags and width.)
  *
  * See argument {start}[rdoc-ref:Date@Argument+start].
  *
- * See also strptime(3) and #strftime.
+ * See also {strptime(3)}[https://man7.org/linux/man-pages/man3/strptime.3.html].
+ *
+ * Related: Date._strptime (returns a hash).
  */
 static VALUE
 date_s_strptime(int argc, VALUE *argv, VALUE klass)
@@ -4468,23 +4502,27 @@ date_s__parse_internal(int argc, VALUE *argv, VALUE klass)
  * call-seq:
  *   Date._parse(string, comp = true, limit: 128) -> hash
  *
- * Parses the given representation of date and time, and returns a
- * hash of parsed elements.
+ * <b>Note</b>:
+ * This method recognizes many forms in +string+,
+ * but it is not a validator.
+ * If +string+ does not specify a valid date,
+ * the result is unpredictable;
+ * consider using Date._strptime instead.
  *
- * This method *does not* function as a validator.  If the input
- * string does not match valid formats strictly, you may get a cryptic
- * result.  Should consider to use `Date._strptime` or
- * `DateTime._strptime` instead of this method as possible.
+ * Returns a hash of values parsed from +string+:
  *
- * If the optional second argument is true and the detected year is in
- * the range "00" to "99", considers the year a 2-digit form and makes
- * it full.
+ *   Date._parse('2001-02-03') # => {:year=>2001, :mon=>2, :mday=>3}
  *
- *    Date._parse('2001-02-03')	#=> {:year=>2001, :mon=>2, :mday=>3}
+ * If +comp+ is +true+ and the given year is in the range <tt>(0..99)</tt>,
+ * the current century is supplied;
+ * otherwise, the year is taken as given:
  *
- * Raise an ArgumentError when the string length is longer than _limit_.
- * You can stop this check by passing `limit: nil`, but note that
- * it may take a long time to parse.
+ *   Date._parse('01-02-03', true)  # => {:year=>2001, :mon=>2, :mday=>3}
+ *   Date._parse('01-02-03', false) # => {:year=>1, :mon=>2, :mday=>3}
+ *
+ * See argument {limit}[rdoc-ref:Date@Argument+limit].
+ *
+ * Related: Date.parse(returns a \Date object).
  */
 static VALUE
 date_s__parse(int argc, VALUE *argv, VALUE klass)
@@ -4496,27 +4534,32 @@ date_s__parse(int argc, VALUE *argv, VALUE klass)
  * call-seq:
  *   Date.parse(string = '-4712-01-01', comp = true, start = Date::ITALY, limit: 128) -> date
  *
- * Parses the given representation of date and time, and creates a
- * date object.
+ * <b>Note</b>:
+ * This method recognizes many forms in +string+,
+ * but it is not a validator.
+ * If +string+ does not specify a valid date,
+ * the result is unpredictable;
+ * consider using Date._strptime instead.
  *
- * This method *does not* function as a validator.  If the input
- * string does not match valid formats strictly, you may get a cryptic
- * result.  Should consider to use `Date.strptime` instead of this
- * method as possible.
+ * Returns a new \Date object with values parsed from +string+:
  *
- * If the optional second argument is true and the detected year is in
- * the range "00" to "99", considers the year a 2-digit form and makes
- * it full.
+ *   Date.parse('2001-02-03')   # => #<Date: 2001-02-03>
+ *   Date.parse('20010203')     # => #<Date: 2001-02-03>
+ *   Date.parse('3rd Feb 2001') # => #<Date: 2001-02-03>
  *
- *    Date.parse('2001-02-03')		#=> #<Date: 2001-02-03 ...>
- *    Date.parse('20010203')		#=> #<Date: 2001-02-03 ...>
- *    Date.parse('3rd Feb 2001')	#=> #<Date: 2001-02-03 ...>
+ * If +comp+ is +true+ and the given year is in the range <tt>(0..99)</tt>,
+ * the current century is supplied;
+ * otherwise, the year is taken as given:
  *
- * Raise an ArgumentError when the string length is longer than _limit_.
- * You can stop this check by passing `limit: nil`, but note that
- * it may take a long time to parse.
+ *   Date.parse('01-02-03', true)  # => #<Date: 2001-02-03>
+ *   Date.parse('01-02-03', false) # => #<Date: 0001-02-03>
  *
- * See argument {start}[rdoc-ref:Date@Argument+start].
+ * See:
+ *
+ * - Argument {start}[rdoc-ref:Date@Argument+start].
+ * - Argument {limit}[rdoc-ref:Date@Argument+limit].
+ *
+ * Related: Date._parse (returns a hash).
  */
 static VALUE
 date_s_parse(int argc, VALUE *argv, VALUE klass)
@@ -4557,11 +4600,16 @@ VALUE date__jisx0301(VALUE);
  * call-seq:
  *   Date._iso8601(string, limit: 128) -> hash
  *
- * Returns a hash of parsed elements.
+ * Returns a hash of values parsed from +string+, which should contain
+ * an {ISO 8601 formatted date}[https://docs.ruby-lang.org/en/master/strftime_formatting_rdoc.html#label-ISO+8601+Format+Specifications]:
  *
- * Raise an ArgumentError when the string length is longer than _limit_.
- * You can stop this check by passing `limit: nil`, but note that
- * it may take a long time to parse.
+ *   d = Date.new(2001, 2, 3)
+ *   s = d.iso8601    # => "2001-02-03"
+ *   Date._iso8601(s) # => {:mday=>3, :year=>2001, :mon=>2}
+ *
+ * See argument {limit}[rdoc-ref:Date@Argument+limit].
+ *
+ * Related: Date.iso8601 (returns a \Date object).
  */
 static VALUE
 date_s__iso8601(int argc, VALUE *argv, VALUE klass)
@@ -4578,18 +4626,20 @@ date_s__iso8601(int argc, VALUE *argv, VALUE klass)
  * call-seq:
  *   Date.iso8601(string = '-4712-01-01', start = Date::ITALY, limit: 128) -> date
  *
- * Creates a new Date object by parsing from a string according to
- * some typical ISO 8601 formats.
+ * Returns a new \Date object with values parsed from +string+,
+ * which should contain
+ * an {ISO 8601 formatted date}[https://docs.ruby-lang.org/en/master/strftime_formatting_rdoc.html#label-ISO+8601+Format+Specifications]:
  *
- *    Date.iso8601('2001-02-03')	#=> #<Date: 2001-02-03 ...>
- *    Date.iso8601('20010203')		#=> #<Date: 2001-02-03 ...>
- *    Date.iso8601('2001-W05-6')	#=> #<Date: 2001-02-03 ...>
+ *   d = Date.new(2001, 2, 3)
+ *   s = d.iso8601   # => "2001-02-03"
+ *   Date.iso8601(s) # => #<Date: 2001-02-03>
  *
- * Raise an ArgumentError when the string length is longer than _limit_.
- * You can stop this check by passing `limit: nil`, but note that
- * it may take a long time to parse.
+ * See:
  *
- * See argument {start}[rdoc-ref:Date@Argument+start].
+ * - Argument {start}[rdoc-ref:Date@Argument+start].
+ * - Argument {limit}[rdoc-ref:Date@Argument+limit].
+ *
+ * Related: Date._iso8601 (returns a hash).
  */
 static VALUE
 date_s_iso8601(int argc, VALUE *argv, VALUE klass)
@@ -4620,11 +4670,17 @@ date_s_iso8601(int argc, VALUE *argv, VALUE klass)
  * call-seq:
  *   Date._rfc3339(string, limit: 128) -> hash
  *
- * Returns a hash of parsed elements.
+ * Returns a hash of values parsed from +string+, which should be a valid
+ * {RFC 3339 format}[https://datatracker.ietf.org/doc/html/rfc3339]:
  *
- * Raise an ArgumentError when the string length is longer than _limit_.
- * You can stop this check by passing `limit: nil`, but note that
- * it may take a long time to parse.
+ *   d = Date.new(2001, 2, 3)
+ *   s = d.rfc3339     # => "2001-02-03T00:00:00+00:00"
+ *   Date._rfc3339(s)
+ *   # => {:year=>2001, :mon=>2, :mday=>3, :hour=>0, :min=>0, :sec=>0, :zone=>"+00:00", :offset=>0}
+ *
+ * See argument {limit}[rdoc-ref:Date@Argument+limit].
+ *
+ * Related: Date.rfc3339 (returns a \Date object).
  */
 static VALUE
 date_s__rfc3339(int argc, VALUE *argv, VALUE klass)
@@ -4641,16 +4697,20 @@ date_s__rfc3339(int argc, VALUE *argv, VALUE klass)
  * call-seq:
  *   Date.rfc3339(string = '-4712-01-01T00:00:00+00:00', start = Date::ITALY, limit: 128) -> date
  *
- * Creates a new Date object by parsing from a string according to
- * some typical RFC 3339 formats.
+ * Returns a new \Date object with values parsed from +string+,
+ * which should be a valid
+ * {RFC 3339 format}[https://datatracker.ietf.org/doc/html/rfc3339]:
  *
- *    Date.rfc3339('2001-02-03T04:05:06+07:00')	#=> #<Date: 2001-02-03 ...>
+ *   d = Date.new(2001, 2, 3)
+ *   s = d.rfc3339   # => "2001-02-03T00:00:00+00:00"
+ *   Date.rfc3339(s) # => #<Date: 2001-02-03>
  *
- * Raise an ArgumentError when the string length is longer than _limit_.
- * You can stop this check by passing `limit: nil`, but note that
- * it may take a long time to parse.
+ * See:
  *
- * See argument {start}[rdoc-ref:Date@Argument+start].
+ * - Argument {start}[rdoc-ref:Date@Argument+start].
+ * - Argument {limit}[rdoc-ref:Date@Argument+limit].
+ *
+ * Related: Date._rfc3339 (returns a hash).
  */
 static VALUE
 date_s_rfc3339(int argc, VALUE *argv, VALUE klass)
@@ -4681,11 +4741,16 @@ date_s_rfc3339(int argc, VALUE *argv, VALUE klass)
  * call-seq:
  *   Date._xmlschema(string, limit: 128) -> hash
  *
- * Returns a hash of parsed elements.
+ * Returns a hash of values parsed from +string+, which should be a valid
+ * XML date format:
  *
- * Raise an ArgumentError when the string length is longer than _limit_.
- * You can stop this check by passing `limit: nil`, but note that
- * it may take a long time to parse.
+ *   d = Date.new(2001, 2, 3)
+ *   s = d.xmlschema    # => "2001-02-03"
+ *   Date._xmlschema(s) # => {:year=>2001, :mon=>2, :mday=>3}
+ *
+ * See argument {limit}[rdoc-ref:Date@Argument+limit].
+ *
+ * Related: Date.xmlschema (returns a \Date object).
  */
 static VALUE
 date_s__xmlschema(int argc, VALUE *argv, VALUE klass)
@@ -4702,17 +4767,19 @@ date_s__xmlschema(int argc, VALUE *argv, VALUE klass)
  * call-seq:
  *   Date.xmlschema(string = '-4712-01-01', start = Date::ITALY, limit: 128)  ->  date
  *
- * Creates a new Date object by parsing from a string according to
- * some typical XML Schema formats.
+ * Returns a new \Date object with values parsed from +string+,
+ * which should be a valid XML date format:
  *
- *    Date.xmlschema('2001-02-03')	#=> #<Date: 2001-02-03 ...>
+ *   d = Date.new(2001, 2, 3)
+ *   s = d.xmlschema   # => "2001-02-03"
+ *   Date.xmlschema(s) # => #<Date: 2001-02-03>
  *
- * Raise an ArgumentError when the string length is longer than _limit_.
- * You can stop this check by passing `limit: nil`, but note that
- * it may take a long time to parse.
+ * See:
  *
- * See argument {start}[rdoc-ref:Date@Argument+start].
+ * - Argument {start}[rdoc-ref:Date@Argument+start].
+ * - Argument {limit}[rdoc-ref:Date@Argument+limit].
  *
+ * Related: Date._xmlschema (returns a hash).
  */
 static VALUE
 date_s_xmlschema(int argc, VALUE *argv, VALUE klass)
@@ -4743,13 +4810,19 @@ date_s_xmlschema(int argc, VALUE *argv, VALUE klass)
  * call-seq:
  *   Date._rfc2822(string, limit: 128) -> hash
  *
- * Returns a hash of parsed elements.
+ * Returns a hash of values parsed from +string+, which should be a valid
+ * {RFC 2822 date format}[https://datatracker.ietf.org/doc/html/rfc2822]:
  *
- * Raise an ArgumentError when the string length is longer than _limit_.
- * You can stop this check by passing `limit: nil`, but note that
- * it may take a long time to parse.
+ *   d = Date.new(2001, 2, 3)
+ *   s = d.rfc2822 # => "Sat, 3 Feb 2001 00:00:00 +0000"
+ *   Date._rfc2822(s)
+ *   # => {:wday=>6, :mday=>3, :mon=>2, :year=>2001, :hour=>0, :min=>0, :sec=>0, :zone=>"+0000", :offset=>0}
+ *
+ * See argument {limit}[rdoc-ref:Date@Argument+limit].
  *
  * Date._rfc822 is an alias for Date._rfc2822.
+ *
+ * Related: Date.rfc2822 (returns a \Date object).
  */
 static VALUE
 date_s__rfc2822(int argc, VALUE *argv, VALUE klass)
@@ -4766,19 +4839,22 @@ date_s__rfc2822(int argc, VALUE *argv, VALUE klass)
  * call-seq:
  *   Date.rfc2822(string = 'Mon, 1 Jan -4712 00:00:00 +0000', start = Date::ITALY, limit: 128) -> date
  *
- * Creates a new Date object by parsing from a string according to
- * some typical RFC 2822 formats.
+ * Returns a new \Date object with values parsed from +string+,
+ * which should be a valid
+ * {RFC 2822 date format}[https://datatracker.ietf.org/doc/html/rfc2822]:
  *
- *    Date.rfc2822('Sat, 3 Feb 2001 00:00:00 +0000')
- *						#=> #<Date: 2001-02-03 ...>
+ *   d = Date.new(2001, 2, 3)
+ *   s = d.rfc2822   # => "Sat, 3 Feb 2001 00:00:00 +0000"
+ *   Date.rfc2822(s) # => #<Date: 2001-02-03>
  *
- * Raise an ArgumentError when the string length is longer than _limit_.
- * You can stop this check by passing `limit: nil`, but note that
- * it may take a long time to parse.
+ * See:
  *
- * See argument {start}[rdoc-ref:Date@Argument+start].
+ * - Argument {start}[rdoc-ref:Date@Argument+start].
+ * - Argument {limit}[rdoc-ref:Date@Argument+limit].
  *
  * Date.rfc822 is an alias for Date.rfc2822.
+ *
+ * Related: Date._rfc2822 (returns a hash).
  */
 static VALUE
 date_s_rfc2822(int argc, VALUE *argv, VALUE klass)
@@ -4808,11 +4884,15 @@ date_s_rfc2822(int argc, VALUE *argv, VALUE klass)
  * call-seq:
  *   Date._httpdate(string, limit: 128) -> hash
  *
- * Returns a hash of parsed elements.
+ * Returns a hash of values parsed from +string+, which should be a valid
+ * HTTP date format:
  *
- * Raise an ArgumentError when the string length is longer than _limit_.
- * You can stop this check by passing `limit: nil`, but note that
- * it may take a long time to parse.
+ *   d = Date.new(2001, 2, 3)
+ *   s = d.httpdate # => "Sat, 03 Feb 2001 00:00:00 GMT"
+ *   Date._httpdate(s)
+ *   # => {:wday=>6, :mday=>3, :mon=>2, :year=>2001, :hour=>0, :min=>0, :sec=>0, :zone=>"GMT", :offset=>0}
+ *
+ * Related: Date.httpdate (returns a \Date object).
  */
 static VALUE
 date_s__httpdate(int argc, VALUE *argv, VALUE klass)
@@ -4829,18 +4909,20 @@ date_s__httpdate(int argc, VALUE *argv, VALUE klass)
  * call-seq:
  *   Date.httpdate(string = 'Mon, 01 Jan -4712 00:00:00 GMT', start = Date::ITALY, limit: 128) -> date
  *
- * Creates a new Date object by parsing from a string according to
- * some RFC 2616 format.
+ * Returns a new \Date object with values parsed from +string+,
+ * which should be a valid
+ * {RFC 2616 date format}[https://datatracker.ietf.org/doc/html/rfc2616]:
  *
- *    Date.httpdate('Sat, 03 Feb 2001 00:00:00 GMT')
- *						#=> #<Date: 2001-02-03 ...>
+ *   d = Date.new(2001, 2, 3)
+     s = d.httpdate   # => "Sat, 03 Feb 2001 00:00:00 GMT"
+     Date.httpdate(s) # => #<Date: 2001-02-03>
  *
- * Raise an ArgumentError when the string length is longer than _limit_.
- * You can stop this check by passing `limit: nil`, but note that
- * it may take a long time to parse.
+ * See:
  *
- * See argument {start}[rdoc-ref:Date@Argument+start].
+ * - Argument {start}[rdoc-ref:Date@Argument+start].
+ * - Argument {limit}[rdoc-ref:Date@Argument+limit].
  *
+ * Related: Date._httpdate (returns a hash).
  */
 static VALUE
 date_s_httpdate(int argc, VALUE *argv, VALUE klass)
@@ -4870,11 +4952,16 @@ date_s_httpdate(int argc, VALUE *argv, VALUE klass)
  * call-seq:
  *   Date._jisx0301(string, limit: 128) -> hash
  *
- * Returns a hash of parsed elements.
+ * Returns a hash of values parsed from +string+, which should be a valid
+ * JIS X 0301 date format:
  *
- * Raise an ArgumentError when the string length is longer than _limit_.
- * You can stop this check by passing `limit: nil`, but note that
- * it may take a long time to parse.
+ *   d = Date.new(2001, 2, 3)
+ *   s = d.jisx0301    # => "H13.02.03"
+ *   Date._jisx0301(s) # => {:year=>2001, :mon=>2, :mday=>3}
+ *
+ * See argument {limit}[rdoc-ref:Date@Argument+limit].
+ *
+ * Related: Date.jisx0301 (returns a \Date object).
  */
 static VALUE
 date_s__jisx0301(int argc, VALUE *argv, VALUE klass)
@@ -4891,21 +4978,23 @@ date_s__jisx0301(int argc, VALUE *argv, VALUE klass)
  * call-seq:
  *   Date.jisx0301(string = '-4712-01-01', start = Date::ITALY, limit: 128) -> date
  *
- * Creates a new Date object by parsing from a string according to
- * some typical JIS X 0301 formats.
+ * Returns a new \Date object with values parsed from +string+,
+ * which should be a valid JIS X 0301 format:
  *
- *    Date.jisx0301('H13.02.03')		#=> #<Date: 2001-02-03 ...>
+ *   d = Date.new(2001, 2, 3)
+ *   s = d.jisx0301   # => "H13.02.03"
+ *   Date.jisx0301(s) # => #<Date: 2001-02-03>
  *
  * For no-era year, legacy format, Heisei is assumed.
  *
- *    Date.jisx0301('13.02.03') 		#=> #<Date: 2001-02-03 ...>
+ *   Date.jisx0301('13.02.03') # => #<Date: 2001-02-03>
  *
- * Raise an ArgumentError when the string length is longer than _limit_.
- * You can stop this check by passing `limit: nil`, but note that
- * it may take a long time to parse.
+ * See:
  *
- * See argument {start}[rdoc-ref:Date@Argument+start].
+ * - Argument {start}[rdoc-ref:Date@Argument+start].
+ * - Argument {limit}[rdoc-ref:Date@Argument+limit].
  *
+ * Related: Date._jisx0301 (returns a hash).
  */
 static VALUE
 date_s_jisx0301(int argc, VALUE *argv, VALUE klass)
@@ -5097,6 +5186,7 @@ d_lite_initialize_copy(VALUE copy, VALUE date)
 }
 
 #ifndef NDEBUG
+/* :nodoc: */
 static VALUE
 d_lite_fill(VALUE self)
 {
@@ -5342,6 +5432,7 @@ d_lite_cwday(VALUE self)
 }
 
 #ifndef NDEBUG
+/* :nodoc: */
 static VALUE
 d_lite_wnum0(VALUE self)
 {
@@ -5349,6 +5440,7 @@ d_lite_wnum0(VALUE self)
     return INT2FIX(m_wnum0(dat));
 }
 
+/* :nodoc: */
 static VALUE
 d_lite_wnum1(VALUE self)
 {
@@ -5465,6 +5557,7 @@ d_lite_saturday_p(VALUE self)
 }
 
 #ifndef NDEBUG
+/* :nodoc: */
 static VALUE
 d_lite_nth_kday_p(VALUE self, VALUE n, VALUE k)
 {
@@ -6315,9 +6408,9 @@ d_lite_prev_day(int argc, VALUE *argv, VALUE self)
  *
  * Returns a new \Date object representing the following day:
  *
- *   d = Date.today
- *   d.to_s      # => "2022-07-11"
- *   d.next.to_s # => "2022-07-12"
+ *   d = Date.new(2001, 2, 3)
+ *   d.to_s      # => "2001-02-03"
+ *   d.next.to_s # => "2001-02-04"
  *
  * Date#succ is an alias for Date#next.
  */
@@ -6679,19 +6772,43 @@ cmp_dd(VALUE self, VALUE other)
 
 /*
  * call-seq:
- *    d <=> other  -> -1, 0, +1 or nil
+ *   self <=> other  -> -1, 0, 1 or nil
  *
- * Compares the two dates and returns -1, zero, 1 or nil.  The other
- * should be a date object or a numeric value as an astronomical
- * Julian day number.
+ * Compares +self+ and +other+, returning:
  *
- *    Date.new(2001,2,3) <=> Date.new(2001,2,4)   #=> -1
- *    Date.new(2001,2,3) <=> Date.new(2001,2,3)   #=> 0
- *    Date.new(2001,2,3) <=> Date.new(2001,2,2)   #=> 1
- *    Date.new(2001,2,3) <=> Object.new           #=> nil
- *    Date.new(2001,2,3) <=> Rational(4903887,2)  #=> 0
+ * - <tt>-1</tt> if +other+ is larger.
+ * - <tt>0</tt> if the two are equal.
+ * - <tt>1</tt> if +other+ is smaller.
+ * - +nil+ if the two are incomparable.
  *
- * See also Comparable.
+ * Argument +other+ may be:
+ *
+ * - Another \Date object:
+ *
+ *     d = Date.new(2022, 7, 27) # => #<Date: 2022-07-27 ((2459788j,0s,0n),+0s,2299161j)>
+ *     prev_date = d.prev_day    # => #<Date: 2022-07-26 ((2459787j,0s,0n),+0s,2299161j)>
+ *     next_date = d.next_day    # => #<Date: 2022-07-28 ((2459789j,0s,0n),+0s,2299161j)>
+ *     d <=> next_date           # => -1
+ *     d <=> d                   # => 0
+ *     d <=> prev_date           # => 1
+ *
+ * - A DateTime object:
+ *
+ *     d <=> DateTime.new(2022, 7, 26) # => 1
+ *     d <=> DateTime.new(2022, 7, 27) # => 0
+ *     d <=> DateTime.new(2022, 7, 28) # => -1
+ *
+ * - A numeric (compares <tt>self.ajd</tt> to +other+):
+ *
+ *     d <=> 2459788 # => -1
+ *     d <=> 2459787 # => 1
+ *     d <=> 2459786 # => 1
+ *     d <=> d.ajd   # => 0
+ *
+ * - Any other object:
+ *
+ *     d <=> Object.new # => nil
+ *
  */
 static VALUE
 d_lite_cmp(VALUE self, VALUE other)
@@ -6751,20 +6868,39 @@ equal_gen(VALUE self, VALUE other)
 
 /*
  * call-seq:
- *    d === other  ->  bool
+ *   self === other -> true, false, or nil.
  *
- * Returns true if they are the same day.
+ * Returns +true+ if +self+ and +other+ represent the same date,
+ * +false+ if not, +nil+ if the two are not comparable.
  *
- *    Date.new(2001,2,3) === Date.new(2001,2,3)
- * 					#=> true
- *    Date.new(2001,2,3) === Date.new(2001,2,4)
- *					#=> false
- *    DateTime.new(2001,2,3) === DateTime.new(2001,2,3,12)
- *					#=> true
- *    DateTime.new(2001,2,3) === DateTime.new(2001,2,3,0,0,0,'+24:00')
- *					#=> true
- *    DateTime.new(2001,2,3) === DateTime.new(2001,2,4,0,0,0,'+24:00')
- *					#=> false
+ * Argument +other+ may be:
+ *
+ * - Another \Date object:
+ *
+ *     d = Date.new(2022, 7, 27) # => #<Date: 2022-07-27 ((2459788j,0s,0n),+0s,2299161j)>
+ *     prev_date = d.prev_day    # => #<Date: 2022-07-26 ((2459787j,0s,0n),+0s,2299161j)>
+ *     next_date = d.next_day    # => #<Date: 2022-07-28 ((2459789j,0s,0n),+0s,2299161j)>
+ *     d === prev_date           # => false
+ *     d === d                   # => true
+ *     d === next_date           # => false
+ *
+ * - A DateTime object:
+ *
+ *     d === DateTime.new(2022, 7, 26) # => false
+ *     d === DateTime.new(2022, 7, 27) # => true
+ *     d === DateTime.new(2022, 7, 28) # => false
+ *
+ * - A numeric (compares <tt>self.jd</tt> to +other+):
+ *
+ *     d === 2459788 # => true
+ *     d === 2459787 # => false
+ *     d === 2459786 # => false
+ *     d === d.jd    # => true
+ *
+ * - An object not comparable:
+ *
+ *     d === Object.new # => nil
+ *
  */
 static VALUE
 d_lite_equal(VALUE self, VALUE other)
@@ -6827,12 +6963,14 @@ static VALUE strftimev(const char *, VALUE,
 
 /*
  * call-seq:
- *    d.to_s  ->  string
+ *   to_s -> string
  *
- * Returns a string in an ISO 8601 format. (This method doesn't use the
- * expanded representations.)
+ * Returns a string representation of the date in +self+
+ * in {ISO 8601 extended date format}[https://docs.ruby-lang.org/en/master/strftime_formatting_rdoc.html#label-ISO+8601+Format+Specifications]
+ * (<tt>'%Y-%m-%d'</tt>):
  *
- *     Date.new(2001,2,3).to_s	#=> "2001-02-03"
+ *   Date.new(2001, 2, 3).to_s # => "2001-02-03"
+ *
  */
 static VALUE
 d_lite_to_s(VALUE self)
@@ -6841,6 +6979,7 @@ d_lite_to_s(VALUE self)
 }
 
 #ifndef NDEBUG
+/* :nodoc: */
 static VALUE
 mk_inspect_raw(union DateData *x, VALUE klass)
 {
@@ -6890,6 +7029,7 @@ mk_inspect_raw(union DateData *x, VALUE klass)
     }
 }
 
+/* :nodoc: */
 static VALUE
 d_lite_inspect_raw(VALUE self)
 {
@@ -6911,14 +7051,13 @@ mk_inspect(union DateData *x, VALUE klass, VALUE to_s)
 
 /*
  * call-seq:
- *    d.inspect  ->  string
+ *   inspect -> string
  *
- * Returns the value as a string for inspection.
+ * Returns a string representation of +self+:
  *
- *    Date.new(2001,2,3).inspect
- *		#=> "#<Date: 2001-02-03>"
- *    DateTime.new(2001,2,3,4,5,6,'-7').inspect
- *		#=> "#<DateTime: 2001-02-03T04:05:06-07:00>"
+ *   Date.new(2001, 2, 3).inspect
+ *   # => "#<Date: 2001-02-03 ((2451944j,0s,0n),+0s,2299161j)>"
+ *
  */
 static VALUE
 d_lite_inspect(VALUE self)
@@ -7100,12 +7239,12 @@ date_strftime_internal(int argc, VALUE *argv, VALUE self,
 
 /*
  * call-seq:
- *    strftime(format = '%F') -> string
+ *   strftime(format = '%F') -> string
  *
- * Returns a string representation of +self+,
+ * Returns a string representation of the date in +self+,
  * formatted according the given +format+:
  *
- *   Date.today.strftime # => "2022-07-01"
+ *   Date.new(2001, 2, 3).strftime # => "2001-02-03"
  *
  * For other formats, see
  * {Formats for Dates and Times}[https://docs.ruby-lang.org/en/master/strftime_formatting_rdoc.html].
@@ -7137,13 +7276,17 @@ strftimev(const char *fmt, VALUE self,
 
 /*
  * call-seq:
- *    d.asctime  ->  string
- *    d.ctime    ->  string
+ *   asctime -> string
  *
- * Returns a string in asctime(3) format (but without "\n\0" at the
- * end).  This method is equivalent to strftime('%c').
+ * Equivalent to #strftime with argument <tt>'%a %b %e %T %Y'</tt>
+ * (or its {shorthand form}[https://docs.ruby-lang.org/en/master/strftime_formatting_rdoc.html#label-Shorthand+Conversion+Specifiers]
+ * <tt>'%c'</tt>):
  *
- * See also asctime(3) or ctime(3).
+ *   Date.new(2001, 2, 3).asctime # => "Sat Feb  3 00:00:00 2001"
+ *
+ * See {asctime}[https://linux.die.net/man/3/asctime].
+ *
+ * Date#ctime is an alias for Date#asctime.
  */
 static VALUE
 d_lite_asctime(VALUE self)
@@ -7153,10 +7296,15 @@ d_lite_asctime(VALUE self)
 
 /*
  * call-seq:
- *    d.iso8601    ->  string
- *    d.xmlschema  ->  string
+ *   iso8601    ->  string
  *
- * This method is equivalent to strftime('%F').
+ * Equivalent to #strftime with argument <tt>'%Y-%m-%d'</tt>
+ * (or its {shorthand form}[https://docs.ruby-lang.org/en/master/strftime_formatting_rdoc.html#label-Shorthand+Conversion+Specifiers]
+ * <tt>'%F'</tt>);
+ *
+ *   Date.new(2001, 2, 3).iso8601 # => "2001-02-03"
+ *
+ * Date#xmlschema is an alias for Date#iso8601.
  */
 static VALUE
 d_lite_iso8601(VALUE self)
@@ -7166,9 +7314,13 @@ d_lite_iso8601(VALUE self)
 
 /*
  * call-seq:
- *    d.rfc3339  ->  string
+ *   rfc3339 -> string
  *
- * This method is equivalent to strftime('%FT%T%:z').
+ * Equivalent to #strftime with argument <tt>'%FT%T%:z'</tt>;
+ * see {Formats for Dates and Times}[https://docs.ruby-lang.org/en/master/strftime_formatting_rdoc.html]:
+ *
+ *   Date.new(2001, 2, 3).rfc3339 # => "2001-02-03T00:00:00+00:00"
+ *
  */
 static VALUE
 d_lite_rfc3339(VALUE self)
@@ -7178,10 +7330,14 @@ d_lite_rfc3339(VALUE self)
 
 /*
  * call-seq:
- *    d.rfc2822  ->  string
- *    d.rfc822   ->  string
+ *   rfc2822 -> string
  *
- * This method is equivalent to strftime('%a, %-d %b %Y %T %z').
+ * Equivalent to #strftime with argument <tt>'%a, %-d %b %Y %T %z'</tt>;
+ * see {Formats for Dates and Times}[https://docs.ruby-lang.org/en/master/strftime_formatting_rdoc.html]:
+ *
+ *   Date.new(2001, 2, 3).rfc2822 # => "Sat, 3 Feb 2001 00:00:00 +0000"
+ *
+ * Date#rfc822 is an alias for Date#rfc2822.
  */
 static VALUE
 d_lite_rfc2822(VALUE self)
@@ -7191,10 +7347,13 @@ d_lite_rfc2822(VALUE self)
 
 /*
  * call-seq:
- *    d.httpdate  ->  string
+ *   httpdate -> string
  *
- * This method is equivalent to strftime('%a, %d %b %Y %T GMT').
- * See also RFC 2616.
+ * Equivalent to #strftime with argument <tt>'%a, %d %b %Y %T GMT'</tt>;
+ * see {Formats for Dates and Times}[https://docs.ruby-lang.org/en/master/strftime_formatting_rdoc.html]:
+ *
+ *   Date.new(2001, 2, 3).httpdate # => "Sat, 03 Feb 2001 00:00:00 GMT"
+ *
  */
 static VALUE
 d_lite_httpdate(VALUE self)
@@ -7245,11 +7404,13 @@ jisx0301_date_format(char *fmt, size_t size, VALUE jd, VALUE y)
 
 /*
  * call-seq:
- *    d.jisx0301  ->  string
+ *   jisx0301 -> string
  *
- * Returns a string in a JIS X 0301 format.
+ * Returns a string representation of the date in +self+
+ * in JIS X 0301 format.
  *
- *    Date.new(2001,2,3).jisx0301	#=> "H13.02.03"
+ *   Date.new(2001, 2, 3).jisx0301 # => "H13.02.03"
+ *
  */
 static VALUE
 d_lite_jisx0301(VALUE self)
@@ -7265,6 +7426,7 @@ d_lite_jisx0301(VALUE self)
 }
 
 #ifndef NDEBUG
+/* :nodoc: */
 static VALUE
 d_lite_marshal_dump_old(VALUE self)
 {
@@ -7551,6 +7713,9 @@ datetime_s_ordinal(int argc, VALUE *argv, VALUE klass)
     return ret;
 }
 
+/*
+ * Same as DateTime.new.
+ */
 static VALUE
 datetime_s_civil(int argc, VALUE *argv, VALUE klass)
 {
@@ -7739,6 +7904,7 @@ datetime_s_commercial(int argc, VALUE *argv, VALUE klass)
 }
 
 #ifndef NDEBUG
+/* :nodoc: */
 static VALUE
 datetime_s_weeknum(int argc, VALUE *argv, VALUE klass)
 {
@@ -7808,6 +7974,7 @@ datetime_s_weeknum(int argc, VALUE *argv, VALUE klass)
     return ret;
 }
 
+/* :nodoc: */
 static VALUE
 datetime_s_nth_kday(int argc, VALUE *argv, VALUE klass)
 {
@@ -8153,9 +8320,9 @@ datetime_s_strptime(int argc, VALUE *argv, VALUE klass)
  * Parses the given representation of date and time, and creates a
  * DateTime object.
  *
- * This method *does not* function as a validator.  If the input
+ * This method *does* *not* function as a validator.  If the input
  * string does not match valid formats strictly, you may get a cryptic
- * result.  Should consider to use `DateTime.strptime` instead of this
+ * result.  Should consider to use DateTime.strptime instead of this
  * method as possible.
  *
  * If the optional second argument is true and the detected year is in
@@ -8169,8 +8336,8 @@ datetime_s_strptime(int argc, VALUE *argv, VALUE klass)
  *				#=> #<DateTime: 2001-02-03T16:05:06+00:00 ...>
  *
  * Raise an ArgumentError when the string length is longer than _limit_.
- * You can stop this check by passing `limit: nil`, but note that
- * it may take a long time to parse.
+ * You can stop this check by passing <code>limit: nil</code>, but note
+ * that it may take a long time to parse.
  */
 static VALUE
 datetime_s_parse(int argc, VALUE *argv, VALUE klass)
@@ -8216,8 +8383,8 @@ datetime_s_parse(int argc, VALUE *argv, VALUE klass)
  *				#=> #<DateTime: 2001-02-03T04:05:06+07:00 ...>
  *
  * Raise an ArgumentError when the string length is longer than _limit_.
- * You can stop this check by passing `limit: nil`, but note that
- * it may take a long time to parse.
+ * You can stop this check by passing <code>limit: nil</code>, but note
+ * that it may take a long time to parse.
  */
 static VALUE
 datetime_s_iso8601(int argc, VALUE *argv, VALUE klass)
@@ -8256,8 +8423,8 @@ datetime_s_iso8601(int argc, VALUE *argv, VALUE klass)
  *				#=> #<DateTime: 2001-02-03T04:05:06+07:00 ...>
  *
  * Raise an ArgumentError when the string length is longer than _limit_.
- * You can stop this check by passing `limit: nil`, but note that
- * it may take a long time to parse.
+ * You can stop this check by passing <code>limit: nil</code>, but note
+ * that it may take a long time to parse.
  */
 static VALUE
 datetime_s_rfc3339(int argc, VALUE *argv, VALUE klass)
@@ -8296,8 +8463,8 @@ datetime_s_rfc3339(int argc, VALUE *argv, VALUE klass)
  *				#=> #<DateTime: 2001-02-03T04:05:06+07:00 ...>
  *
  * Raise an ArgumentError when the string length is longer than _limit_.
- * You can stop this check by passing `limit: nil`, but note that
- * it may take a long time to parse.
+ * You can stop this check by passing <code>limit: nil</code>, but note
+ * that it may take a long time to parse.
  */
 static VALUE
 datetime_s_xmlschema(int argc, VALUE *argv, VALUE klass)
@@ -8337,8 +8504,8 @@ datetime_s_xmlschema(int argc, VALUE *argv, VALUE klass)
  *				#=> #<DateTime: 2001-02-03T04:05:06+07:00 ...>
  *
  * Raise an ArgumentError when the string length is longer than _limit_.
- * You can stop this check by passing `limit: nil`, but note that
- * it may take a long time to parse.
+ * You can stop this check by passing <code>limit: nil</code>, but note
+ * that it may take a long time to parse.
  */
 static VALUE
 datetime_s_rfc2822(int argc, VALUE *argv, VALUE klass)
@@ -8377,8 +8544,8 @@ datetime_s_rfc2822(int argc, VALUE *argv, VALUE klass)
  *				#=> #<DateTime: 2001-02-03T04:05:06+00:00 ...>
  *
  * Raise an ArgumentError when the string length is longer than _limit_.
- * You can stop this check by passing `limit: nil`, but note that
- * it may take a long time to parse.
+ * You can stop this check by passing <code>limit: nil</code>, but note
+ * that it may take a long time to parse.
  */
 static VALUE
 datetime_s_httpdate(int argc, VALUE *argv, VALUE klass)
@@ -8422,8 +8589,8 @@ datetime_s_httpdate(int argc, VALUE *argv, VALUE klass)
  *				#=> #<DateTime: 2001-02-03T04:05:06+07:00 ...>
  *
  * Raise an ArgumentError when the string length is longer than _limit_.
- * You can stop this check by passing `limit: nil`, but note that
- * it may take a long time to parse.
+ * You can stop this check by passing <code>limit: nil</code>, but note
+ * that it may take a long time to parse.
  */
 static VALUE
 datetime_s_jisx0301(int argc, VALUE *argv, VALUE klass)
@@ -8657,10 +8824,15 @@ time_to_datetime(VALUE self)
 
 /*
  * call-seq:
- *    d.to_time  ->  time
+ *   to_time -> time
  *
- * Returns a Time object which denotes self. If self is a julian date,
- * convert it to a gregorian date before converting it to Time.
+ * Returns a new Time object with the same value as +self+;
+ * if +self+ is a Julian date, derives its Gregorian date
+ * for conversion to the \Time object:
+ *
+ *   Date.new(2001, 2, 3).to_time               # => 2001-02-03 00:00:00 -0600
+ *   Date.new(2001, 2, 3, Date::JULIAN).to_time # => 2001-02-16 00:00:00 -0600
+ *
  */
 static VALUE
 date_to_time(VALUE self)
@@ -8681,9 +8853,9 @@ date_to_time(VALUE self)
 
 /*
  * call-seq:
- *    d.to_date  ->  self
+ *   to_date -> self
  *
- * Returns self.
+ * Returns +self+.
  */
 static VALUE
 date_to_date(VALUE self)
@@ -8695,7 +8867,10 @@ date_to_date(VALUE self)
  * call-seq:
  *    d.to_datetime  -> datetime
  *
- * Returns a DateTime object which denotes self.
+ * Returns a DateTime whose value is the same as +self+:
+ *
+ *   Date.new(2001, 2, 3).to_datetime # => #<DateTime: 2001-02-03T00:00:00+00:00>
+ *
  */
 static VALUE
 date_to_datetime(VALUE self)
@@ -8813,6 +8988,7 @@ datetime_to_datetime(VALUE self)
 #define MIN_JD -327
 #define MAX_JD 366963925
 
+/* :nodoc: */
 static int
 test_civil(int from, int to, double sg)
 {
@@ -8833,6 +9009,7 @@ test_civil(int from, int to, double sg)
     return 1;
 }
 
+/* :nodoc: */
 static VALUE
 date_s_test_civil(VALUE klass)
 {
@@ -8853,6 +9030,7 @@ date_s_test_civil(VALUE klass)
     return Qtrue;
 }
 
+/* :nodoc: */
 static int
 test_ordinal(int from, int to, double sg)
 {
@@ -8873,6 +9051,7 @@ test_ordinal(int from, int to, double sg)
     return 1;
 }
 
+/* :nodoc: */
 static VALUE
 date_s_test_ordinal(VALUE klass)
 {
@@ -8893,6 +9072,7 @@ date_s_test_ordinal(VALUE klass)
     return Qtrue;
 }
 
+/* :nodoc: */
 static int
 test_commercial(int from, int to, double sg)
 {
@@ -8913,6 +9093,7 @@ test_commercial(int from, int to, double sg)
     return 1;
 }
 
+/* :nodoc: */
 static VALUE
 date_s_test_commercial(VALUE klass)
 {
@@ -8933,6 +9114,7 @@ date_s_test_commercial(VALUE klass)
     return Qtrue;
 }
 
+/* :nodoc: */
 static int
 test_weeknum(int from, int to, int f, double sg)
 {
@@ -8953,6 +9135,7 @@ test_weeknum(int from, int to, int f, double sg)
     return 1;
 }
 
+/* :nodoc: */
 static VALUE
 date_s_test_weeknum(VALUE klass)
 {
@@ -8977,6 +9160,7 @@ date_s_test_weeknum(VALUE klass)
     return Qtrue;
 }
 
+/* :nodoc: */
 static int
 test_nth_kday(int from, int to, double sg)
 {
@@ -8997,6 +9181,7 @@ test_nth_kday(int from, int to, double sg)
     return 1;
 }
 
+/* :nodoc: */
 static VALUE
 date_s_test_nth_kday(VALUE klass)
 {
@@ -9017,6 +9202,7 @@ date_s_test_nth_kday(VALUE klass)
     return Qtrue;
 }
 
+/* :nodoc: */
 static int
 test_unit_v2v(VALUE i,
 	      VALUE (* conv1)(VALUE),
@@ -9028,6 +9214,7 @@ test_unit_v2v(VALUE i,
     return f_eqeq_p(o, i);
 }
 
+/* :nodoc: */
 static int
 test_unit_v2v_iter2(VALUE (* conv1)(VALUE),
 		    VALUE (* conv2)(VALUE))
@@ -9059,6 +9246,7 @@ test_unit_v2v_iter2(VALUE (* conv1)(VALUE),
     return 1;
 }
 
+/* :nodoc: */
 static int
 test_unit_v2v_iter(VALUE (* conv1)(VALUE),
 		   VALUE (* conv2)(VALUE))
@@ -9070,6 +9258,7 @@ test_unit_v2v_iter(VALUE (* conv1)(VALUE),
     return 1;
 }
 
+/* :nodoc: */
 static VALUE
 date_s_test_unit_conv(VALUE klass)
 {
@@ -9084,6 +9273,7 @@ date_s_test_unit_conv(VALUE klass)
     return Qtrue;
 }
 
+/* :nodoc: */
 static VALUE
 date_s_test_all(VALUE klass)
 {
@@ -9380,8 +9570,23 @@ Init_date_core(void)
      * - Date::JULIAN - no changeover date; all dates are Julian.
      * - Date::GREGORIAN - no changeover date; all dates are Gregorian.
      *
+     * === Argument +limit+
+     *
+     * Certain singleton methods in \Date that parse string arguments
+     * also take optional keyword argument +limit+,
+     * which can limit the length of the string argument.
+     *
+     * When +limit+ is:
+     *
+     * - Non-negative:
+     *   raises ArgumentError if the string length is greater than _limit_.
+     * - Other numeric or +nil+: ignores +limit+.
+     * - Other non-numeric: raises TypeError.
+     *
      */
     cDate = rb_define_class("Date", rb_cObject);
+
+    /* Exception for invalid date/time */
     eDateError = rb_define_class_under(cDate, "Error", rb_eArgError);
 
     rb_include_module(cDate, rb_mComparable);

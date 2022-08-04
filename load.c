@@ -54,7 +54,7 @@ rb_construct_expanded_load_path(rb_vm_t *vm, enum expand_type type, int *has_rel
     VALUE ary;
     long i;
 
-    ary = rb_ary_tmp_new(RARRAY_LEN(load_path));
+    ary = rb_ary_hidden_new(RARRAY_LEN(load_path));
     for (i = 0; i < RARRAY_LEN(load_path); ++i) {
         VALUE path, as_str, expanded_path;
         int is_string, non_cache;
@@ -1427,15 +1427,15 @@ Init_load(void)
     rb_alias_variable(rb_intern_const("$-I"), id_load_path);
     rb_alias_variable(rb_intern_const("$LOAD_PATH"), id_load_path);
     vm->load_path = rb_ary_new();
-    vm->expanded_load_path = rb_ary_tmp_new(0);
-    vm->load_path_snapshot = rb_ary_tmp_new(0);
+    vm->expanded_load_path = rb_ary_hidden_new(0);
+    vm->load_path_snapshot = rb_ary_hidden_new(0);
     vm->load_path_check_cache = 0;
     rb_define_singleton_method(vm->load_path, "resolve_feature_path", rb_resolve_feature_path, 1);
 
     rb_define_virtual_variable("$\"", get_LOADED_FEATURES, 0);
     rb_define_virtual_variable("$LOADED_FEATURES", get_LOADED_FEATURES, 0);
     vm->loaded_features = rb_ary_new();
-    vm->loaded_features_snapshot = rb_ary_tmp_new(0);
+    vm->loaded_features_snapshot = rb_ary_hidden_new(0);
     vm->loaded_features_index = st_init_numtable();
     vm->loaded_features_realpaths = rb_hash_new();
     rb_obj_hide(vm->loaded_features_realpaths);
@@ -1448,6 +1448,6 @@ Init_load(void)
     rb_define_global_function("autoload", rb_f_autoload, 2);
     rb_define_global_function("autoload?", rb_f_autoload_p, -1);
 
-    ruby_dln_librefs = rb_ary_tmp_new(0);
+    ruby_dln_librefs = rb_ary_hidden_new(0);
     rb_gc_register_mark_object(ruby_dln_librefs);
 }

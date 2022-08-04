@@ -128,6 +128,7 @@ def sync_default_gems(gem)
   when "rdoc"
     rm_rf(%w[lib/rdoc lib/rdoc.rb test/rdoc libexec/rdoc libexec/ri])
     cp_r(Dir.glob("#{upstream}/lib/rdoc*"), "lib")
+    cp_r("#{upstream}/doc/rdoc", "doc")
     cp_r("#{upstream}/test/rdoc", "test")
     cp_r("#{upstream}/rdoc.gemspec", "lib/rdoc")
     cp_r("#{upstream}/Gemfile", "lib/rdoc")
@@ -183,7 +184,7 @@ def sync_default_gems(gem)
     rm_rf(%w[ext/psych/lib/psych.{bundle,so} ext/psych/lib/2.*])
     rm_rf(["ext/psych/yaml/LICENSE"])
     cp_r("#{upstream}/psych.gemspec", "ext/psych")
-    `git checkout ext/psych/depend`
+    `git checkout ext/psych/depend ext/psych/.gitignore`
   when "fiddle"
     rm_rf(%w[ext/fiddle test/fiddle])
     cp_r("#{upstream}/ext/fiddle", "ext")

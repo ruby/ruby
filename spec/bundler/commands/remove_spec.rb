@@ -86,7 +86,7 @@ RSpec.describe "bundle remove" do
             gem 'git'
             gem 'rack',
                 git: "#{lib_path("rack-1.0")}",
-                branch: 'master'
+                branch: 'main'
             gem 'nokogiri'
           G
 

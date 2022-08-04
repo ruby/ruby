@@ -10,6 +10,14 @@ describe "Literal Ranges" do
     (1...10).should == Range.new(1, 10, true)
   end
 
+  it "creates a simple range as an object literal" do
+    ary = []
+    2.times do
+      ary.push(1..3)
+    end
+    ary[0].should.equal?(ary[1])
+  end
+
   it "creates endless ranges" do
     (1..).should == Range.new(1, nil)
     (1...).should == Range.new(1, nil, true)

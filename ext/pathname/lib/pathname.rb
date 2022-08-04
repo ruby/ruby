@@ -574,9 +574,9 @@ class Pathname    # * Find *
 end
 
 
-class Pathname    # * FileUtils *
-  autoload(:FileUtils, 'fileutils')
+autoload(:FileUtils, 'fileutils')
 
+class Pathname    # * FileUtils *
   # Creates a full path, including any intermediate directories that don't yet
   # exist.
   #

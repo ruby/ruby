@@ -27,6 +27,10 @@ describe "String#upcase" do
     it "does not upcase non-ASCII characters" do
       "aßet".upcase(:ascii).should == "AßET"
     end
+
+    it "works with substrings" do
+      "prefix té"[-2..-1].upcase(:ascii).should == "Té"
+    end
   end
 
   describe "full Unicode case mapping adapted for Turkic languages" do

@@ -1563,4 +1563,43 @@ RSpec.describe "bundle install with gems on multiple sources" do
       L
     end
   end
+
+  context "when mistakenly adding a top level gem already depended on and cached under the wrong source" do
+    before do
+      build_repo4 do
+        build_gem "some_private_gem", "0.1.0" do |s|
+          s.add_dependency "example", "~> 1.0"
+        end
+      end
+
+      build_repo2 do
+        build_gem "example", "1.0.0"
+      end
+
+      install_gemfile <<~G, :artifice => "compact_index"
+        source "https://gem.repo2"
+
+        source "https://gem.repo4" do
+          gem "some_private_gem"
+        end
+      G
+
+      gemfile <<~G
+        source "https://gem.repo2"
+
+        source "https://gem.repo4" do
+          gem "some_private_gem"
+          gem "example" # MISTAKE, example is not available at gem.repo4
+        end
+      G
+    end
+
+    it "shows a proper error message and does not generate a corrupted lockfile" do
+      expect do
+        bundle :install, :artifice => "compact_index", :raise_on_error => false, :env => { "BUNDLER_SPEC_GEM_REPO" => gem_repo4.to_s }
+      end.not_to change { lockfile }
+
+      expect(err).to include("Could not find gem 'example' in rubygems repository https://gem.repo4/")
+    end
+  end
 end

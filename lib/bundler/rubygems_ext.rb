@@ -17,6 +17,15 @@ require "rubygems/source"
 
 require_relative "match_platform"
 
+# Cherry-pick fixes to `Gem.ruby_version` to be useful for modern Bundler
+# versions and ignore patchlevels
+# (https://github.com/rubygems/rubygems/pull/5472,
+# https://github.com/rubygems/rubygems/pull/5486). May be removed once RubyGems
+# 3.3.12 support is dropped.
+unless Gem.ruby_version.to_s == RUBY_VERSION || RUBY_PATCHLEVEL == -1
+  Gem.instance_variable_set(:@ruby_version, Gem::Version.new(RUBY_VERSION))
+end
+
 module Gem
   class Specification
     include ::Bundler::MatchPlatform
@@ -146,6 +155,10 @@ module Gem
 
     alias_method :eql?, :==
 
+    def force_ruby_platform
+      false
+    end
+
     def encode_with(coder)
       to_yaml_properties.each do |ivar|
         coder[ivar.to_s.sub(/^@/, "")] = instance_variable_get(ivar)
@@ -222,9 +235,27 @@ module Gem
     MINGW = Gem::Platform.new("x86-mingw32")
     X64_MINGW = [Gem::Platform.new("x64-mingw32"),
                  Gem::Platform.new("x64-mingw-ucrt")].freeze
+  end
 
-    if RUBY_ENGINE == "truffleruby" && !defined?(REUSE_AS_BINARY_ON_TRUFFLERUBY)
-      REUSE_AS_BINARY_ON_TRUFFLERUBY = %w[libv8 sorbet-static].freeze
+  Platform.singleton_class.module_eval do
+    unless Platform.singleton_methods.include?(:match_spec?)
+      def match_spec?(spec)
+        match_gem?(spec.platform, spec.name)
+      end
+
+      def match_gem?(platform, gem_name)
+        match_platforms?(platform, Gem.platforms)
+      end
+
+      private
+
+      def match_platforms?(platform, platforms)
+        platforms.any? do |local_platform|
+          platform.nil? ||
+            local_platform == platform ||
+            (local_platform != Gem::Platform::RUBY && local_platform =~ platform)
+        end
+      end
     end
   end
 

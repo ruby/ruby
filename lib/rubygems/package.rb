@@ -409,18 +409,23 @@ EOM
 
   def extract_tar_gz(io, destination_dir, pattern = "*") # :nodoc:
     directories = []
+    symlinks = []
+
     open_tar_gz io do |tar|
       tar.each do |entry|
-        next unless File.fnmatch pattern, entry.full_name, File::FNM_DOTMATCH
+        full_name = entry.full_name
+        next unless File.fnmatch pattern, full_name, File::FNM_DOTMATCH
 
-        destination = install_location entry.full_name, destination_dir
+        destination = install_location full_name, destination_dir
 
         if entry.symlink?
           link_target = entry.header.linkname
           real_destination = link_target.start_with?("/") ? link_target : File.expand_path(link_target, File.dirname(destination))
 
-          raise Gem::Package::SymlinkError.new(entry.full_name, real_destination, destination_dir) unless
+          raise Gem::Package::SymlinkError.new(full_name, real_destination, destination_dir) unless
             normalize_path(real_destination).start_with? normalize_path(destination_dir + "/")
+
+          symlinks << [full_name, link_target, destination, real_destination]
         end
 
         FileUtils.rm_rf destination
@@ -444,9 +449,15 @@ EOM
           FileUtils.chmod file_mode(entry.header.mode), destination
         end if entry.file?
 
-        File.symlink(entry.header.linkname, destination) if entry.symlink?
-
         verbose destination
+      end
+    end
+
+    symlinks.each do |name, target, destination, real_destination|
+      if File.exist?(real_destination)
+        File.symlink(target, destination)
+      else
+        alert_warning "#{@spec.full_name} ships with a dangling symlink named #{name} pointing to missing #{target} file. Ignoring"
       end
     end
 

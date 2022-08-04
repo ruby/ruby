@@ -38,16 +38,12 @@ RDoc includes the +rdoc+ and +ri+ tools for generating and displaying documentat
     "CVE-2013-0256.rdoc",
     "ExampleMarkdown.md",
     "ExampleRDoc.rdoc",
-    "Gemfile",
     "History.rdoc",
     "LEGAL.rdoc",
     "LICENSE.rdoc",
     "README.rdoc",
     "RI.rdoc",
-    "Rakefile",
     "TODO.rdoc",
-    "bin/console",
-    "bin/setup",
     "exe/rdoc",
     "exe/ri",
     "lib/rdoc.rb",
@@ -223,7 +219,6 @@ RDoc includes the +rdoc+ and +ri+ tools for generating and displaying documentat
     "lib/rdoc/top_level.rb",
     "lib/rdoc/version.rb",
     "man/ri.1",
-    "rdoc.gemspec",
   ]
   # files from .gitignore
   s.files << "lib/rdoc/rd/block_parser.rb" << "lib/rdoc/rd/inline_parser.rb" << "lib/rdoc/markdown.rb" << "lib/rdoc/markdown/literals.rb"

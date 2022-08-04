@@ -756,7 +756,10 @@ gem 'other', version
       end
     end
 
-    assert_match %r{bin/ascii_binder` is dangling symlink pointing to `bin/asciibinder`}, @ui.error
+    errors = @ui.error.split("\n")
+    assert_equal "WARNING:  ascii_binder-0.1.10.1 ships with a dangling symlink named bin/ascii_binder pointing to missing bin/asciibinder file. Ignoring", errors.shift
+    assert_empty errors
+
     assert_empty @ui.output
   end
 
@@ -1490,7 +1493,7 @@ gem 'other', version
 
   def test_install_extension_and_script
     pend "Makefile creation crashes on jruby" if Gem.java_platform?
-    pend if /mswin/ =~ RUBY_PLATFORM && ENV.key?("GITHUB_ACTIONS") # not working from the beginning
+    pend if RUBY_PLATFORM.include?("mswin") && ENV.key?("GITHUB_ACTIONS") # not working from the beginning
 
     @spec = setup_base_spec
     @spec.extensions << "extconf.rb"

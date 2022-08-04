@@ -14,9 +14,9 @@
 #include "../defs.h"
 
 typedef struct {
-        uint32_t state[5];
-        uint32_t count[2];
-        uint8_t buffer[64];
+	uint32_t state[5];
+	uint32_t count[2];
+	uint8_t buffer[64];
 } SHA1_CTX;
 
 #ifdef RUBY

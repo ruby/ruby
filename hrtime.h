@@ -36,6 +36,7 @@
 #define RB_HRTIME_PER_MSEC (RB_HRTIME_PER_USEC * (rb_hrtime_t)1000)
 #define RB_HRTIME_PER_SEC  (RB_HRTIME_PER_MSEC * (rb_hrtime_t)1000)
 #define RB_HRTIME_MAX      UINT64_MAX
+#define RB_HRTIME_MIN      ((rb_hrtime_t)0)
 
 /*
  * Lets try to support time travelers.  Lets assume anybody with a time machine
@@ -89,6 +90,15 @@ rb_hrtime_add(rb_hrtime_t a, rb_hrtime_t b)
         return RB_HRTIME_MAX;
 #endif
     return c;
+}
+
+static inline rb_hrtime_t
+rb_hrtime_sub(rb_hrtime_t a, rb_hrtime_t b)
+{
+    if (a < b) {
+        return RB_HRTIME_MIN;
+    }
+    return a - b;
 }
 
 /*

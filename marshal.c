@@ -1763,7 +1763,7 @@ r_object_for(struct load_arg *arg, bool partial, int *ivp, VALUE extmod, int typ
         {
             VALUE path = r_unique(arg);
             VALUE m = rb_path_to_class(path);
-            if (NIL_P(extmod)) extmod = rb_ary_tmp_new(0);
+            if (NIL_P(extmod)) extmod = rb_ary_hidden_new(0);
 
             if (RB_TYPE_P(m, T_CLASS)) { /* prepended */
                 VALUE c;

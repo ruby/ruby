@@ -171,9 +171,7 @@ class Gem::Version
   # True if the +version+ string matches RubyGems' requirements.
 
   def self.correct?(version)
-    unless Gem::Deprecate.skip
-      warn "nil versions are discouraged and will be deprecated in Rubygems 4" if version.nil?
-    end
+    nil_versions_are_discouraged! if version.nil?
 
     !!(version.to_s =~ ANCHORED_VERSION_PATTERN)
   end
@@ -190,6 +188,8 @@ class Gem::Version
     if self === input # check yourself before you wreck yourself
       input
     elsif input.nil?
+      nil_versions_are_discouraged!
+
       nil
     else
       new input
@@ -205,6 +205,14 @@ class Gem::Version
 
     @@all[version] ||= super
   end
+
+  def self.nil_versions_are_discouraged!
+    unless Gem::Deprecate.skip
+      warn "nil versions are discouraged and will be deprecated in Rubygems 4"
+    end
+  end
+
+  private_class_method :nil_versions_are_discouraged!
 
   ##
   # Constructs a Version from the +version+ string.  A version string is a

@@ -91,7 +91,8 @@ rb_yjit_add_frame(VALUE hash, VALUE frame)
 
     if (RTEST(rb_hash_aref(hash, frame_id))) {
         return;
-    } else {
+    }
+    else {
         VALUE frame_info = rb_hash_new();
         // Full label for the frame
         VALUE name = rb_profile_frame_full_label(frame);
@@ -696,6 +697,17 @@ VALUE *
 rb_get_cfp_ep(struct rb_control_frame_struct *cfp)
 {
     return (VALUE*)cfp->ep;
+}
+
+const VALUE *
+rb_get_cfp_ep_level(struct rb_control_frame_struct *cfp, uint32_t lv)
+{
+    uint32_t i;
+    const VALUE *ep = (VALUE*)cfp->ep;
+    for (i = 0; i < lv; i++) {
+        ep = VM_ENV_PREV_EP(ep);
+    }
+    return ep;
 }
 
 VALUE

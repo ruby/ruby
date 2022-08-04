@@ -1010,7 +1010,7 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
   # Is this platform Solaris?
 
   def self.solaris_platform?
-    RUBY_PLATFORM =~ /solaris/
+    RUBY_PLATFORM.include?("solaris")
   end
 
   ##
