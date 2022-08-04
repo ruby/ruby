@@ -273,20 +273,20 @@ extract-gems: $(HAVE_BASERUBY:yes=update-gems)
 
 # 1. squeeze spaces
 # 2. strip and skip comment/empty lines
-# 3. "gem x.y.z URL xxxxxx" -> "gem/x.y.z/xxxxxx"
+# 3. "gem x.y.z URL xxxxxx" -> "gem|x.y.z|xxxxxx|URL"
 # 4. "gem x.y.z URL" -> "gem-x.y.z"
 bundled-gems := $(shell sed \
 	-e 's/[ 	][ 	]*/ /g' \
 	-e 's/^ //;/\#/d;s/ *$$//;/^$$/d' \
-	-e 's:\([^ ][^ ]*\) \([^ ][^ ]*\) [^ ][^ ]* :\1/\2/:' \
+	-e 's/^\(.*\) \(.*\) \(.*\) \(.*\)/\1|\2|\4|\3/' \
 	-e 's/ /-/;s/ .*//' \
 	 $(srcdir)/gems/bundled_gems)
 
-bundled-gems-rev := $(filter-out $(subst /,,$(bundled-gems)),$(bundled-gems))
+bundled-gems-rev := $(filter-out $(subst |,,$(bundled-gems)),$(bundled-gems))
 bundled-gems := $(filter-out $(bundled-gems-rev),$(bundled-gems))
 
 update-gems: | $(patsubst %,$(srcdir)/gems/%.gem,$(bundled-gems))
-update-gems: | $(foreach g,$(bundled-gems-rev),$(srcdir)/gems/src/$(word 1,$(subst /, ,$(value g))))
+update-gems: | $(foreach g,$(bundled-gems-rev),$(srcdir)/gems/src/$(word 1,$(subst |, ,$(value g))))
 
 test-bundler-precheck: | $(srcdir)/.bundle/cache
 
@@ -307,7 +307,7 @@ $(srcdir)/gems/%.gem:
 
 extract-gems: | $(patsubst %,$(srcdir)/.bundle/gems/%,$(bundled-gems))
 extract-gems: | $(foreach g,$(bundled-gems-rev), \
-	$(srcdir)/.bundle/gems/$(word 1,$(subst /, ,$(value g)))-$(word 2,$(subst /, ,$(value g))))
+	$(srcdir)/.bundle/gems/$(word 1,$(subst |, ,$(value g)))-$(word 2,$(subst |, ,$(value g))))
 
 $(srcdir)/.bundle/gems/%: $(srcdir)/gems/%.gem | .bundle/gems
 	$(ECHO) Extracting bundle gem $*...
@@ -316,8 +316,13 @@ $(srcdir)/.bundle/gems/%: $(srcdir)/gems/%.gem | .bundle/gems
 	    -e 'BundledGem.unpack("gems/$(@F).gem", ".bundle")'
 
 define copy-gem
+$(srcdir)/gems/src/$(1): | $(srcdir)/gems/src
+	$(ECHO) Cloning $(4)
+	$(Q) $(GIT) clone $(4) $$(@)
+
 $(srcdir)/.bundle/gems/$(1)-$(2): | $(srcdir)/gems/src/$(1) .bundle/gems
 	$(ECHO) Copying $(1)@$(3) to $$(@F)
+	$(Q) $(GIT) -C "$(srcdir)/gems/src/$(1)" fetch origin $(3)
 	$(Q) $(GIT) -C "$(srcdir)/gems/src/$(1)" checkout $(3)
 	$(Q) $(BASERUBY) -C "$(srcdir)" \
 	    -Itool/lib -rbundled_gem \
@@ -325,10 +330,13 @@ $(srcdir)/.bundle/gems/$(1)-$(2): | $(srcdir)/gems/src/$(1) .bundle/gems
 
 endef
 define copy-gem-0
-$(call copy-gem,$(word 1,$(1)),$(word 2,$(1)),$(word 3,$(1)))
+$(call copy-gem,$(word 1,$(1)),$(word 2,$(1)),$(word 3,$(1)),$(word 4,$(1)))
 endef
 
-$(foreach g,$(bundled-gems-rev),$(eval $(call copy-gem-0,$(subst /, ,$(value g)))))
+$(foreach g,$(bundled-gems-rev),$(eval $(call copy-gem-0,$(subst |, ,$(value g)))))
+
+$(srcdir)/gems/src:
+	$(MAKEDIRS) $@
 
 $(srcdir)/.bundle/gems:
 	$(MAKEDIRS) $@
