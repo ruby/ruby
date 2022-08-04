@@ -52,7 +52,7 @@ class TestGemResolverInstallerSet < Gem::TestCase
   end
 
   def test_add_always_install_index_spec_platform
-    a_1_local, a_1_local_gem = util_gem "a", 1 do |s|
+    _, a_1_local_gem = util_gem "a", 1 do |s|
       s.platform = Gem::Platform.local
     end
 
