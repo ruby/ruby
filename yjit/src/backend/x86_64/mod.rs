@@ -94,7 +94,7 @@ impl Assembler
     {
         let live_ranges: Vec<usize> = std::mem::take(&mut self.live_ranges);
 
-        self.forward_pass(|asm, index, op, opnds, target, text, pos_marker| {
+        self.forward_pass(|asm, index, op, opnds, target, text, pos_marker, original_opnds| {
             // Load heap object operands into registers because most
             // instructions can't directly work with 64-bit constants
             let opnds = match op {
@@ -134,7 +134,17 @@ impl Assembler
                             }
                         },
                         // Instruction output whose live range spans beyond this instruction
-                        (Opnd::InsnOut { idx, .. }, _) => {
+                        (Opnd::InsnOut { .. }, _) => {
+                            let idx = match original_opnds[0] {
+                                Opnd::InsnOut { idx, .. } => {
+                                    idx
+                                },
+                                _ => panic!("nooooo")
+                            };
+
+                            // Our input must be from a previous instruction!
+                            assert!(idx < index);
+
                             if live_ranges[idx] > index {
                                 (asm.load(opnds[0]), opnds[1])
                             } else {

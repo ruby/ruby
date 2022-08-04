@@ -567,7 +567,7 @@ impl Assembler
 
     /// Transform input instructions, consumes the input assembler
     pub(super) fn forward_pass<F>(mut self, mut map_insn: F) -> Assembler
-        where F: FnMut(&mut Assembler, usize, Op, Vec<Opnd>, Option<Target>, Option<String>, Option<PosMarkerFn>)
+        where F: FnMut(&mut Assembler, usize, Op, Vec<Opnd>, Option<Target>, Option<String>, Option<PosMarkerFn>, Vec<Opnd>)
     {
         let mut asm = Assembler {
             insns: Vec::default(),
@@ -594,6 +594,7 @@ impl Assembler
         }
 
         for (index, insn) in self.insns.drain(..).enumerate() {
+            let original_opnds = insn.opnds.clone();
             let opnds: Vec<Opnd> = insn.opnds.into_iter().map(|opnd| map_opnd(opnd, &mut indices)).collect();
 
             // For each instruction, either handle it here or allow the map_insn
@@ -603,7 +604,7 @@ impl Assembler
                     asm.comment(insn.text.unwrap().as_str());
                 },
                 _ => {
-                    map_insn(&mut asm, index, insn.op, opnds, insn.target, insn.text, insn.pos_marker);
+                    map_insn(&mut asm, index, insn.op, opnds, insn.target, insn.text, insn.pos_marker, original_opnds);
                 }
             };
 
@@ -664,7 +665,7 @@ impl Assembler
 
         let live_ranges: Vec<usize> = std::mem::take(&mut self.live_ranges);
 
-        let asm = self.forward_pass(|asm, index, op, opnds, target, text, pos_marker| {
+        let asm = self.forward_pass(|asm, index, op, opnds, target, text, pos_marker, original_insns| {
             // Check if this is the last instruction that uses an operand that
             // spans more than one instruction. In that case, return the
             // allocated register to the pool.
