@@ -213,7 +213,7 @@ macro_rules! gen_counter_incr {
             let counter_opnd = Opnd::mem(64, ptr_reg, 0);
 
             // Increment and store the updated value
-            $asm.incr_counter(counter_opnd, 1.into());
+            $asm.incr_counter(counter_opnd, Opnd::UImm(1));
         }
     };
 }
@@ -236,11 +236,14 @@ macro_rules! counted_exit {
             let ocb = $ocb.unwrap();
             let code_ptr = ocb.get_write_ptr();
 
+            let mut ocb_asm = Assembler::new();
+
             // Increment the counter
-            gen_counter_incr!(ocb, $counter_name);
+            gen_counter_incr!(ocb_asm, $counter_name);
 
             // Jump to the existing side exit
-            jmp_ptr(ocb, $existing_side_exit);
+            ocb_asm.jmp($existing_side_exit.into());
+            ocb_asm.compile(ocb);
 
             // Pointer to the side-exit code
             code_ptr
@@ -1805,40 +1808,39 @@ fn gen_checkkeyword(
     KeepCompiling
 }
 
-/*
 fn gen_jnz_to_target0(
-    cb: &mut CodeBlock,
+    asm: &mut Assembler,
     target0: CodePtr,
     _target1: Option<CodePtr>,
     shape: BranchShape,
 ) {
     match shape {
         BranchShape::Next0 | BranchShape::Next1 => unreachable!(),
-        BranchShape::Default => jnz_ptr(cb, target0),
+        BranchShape::Default => asm.jnz(target0.into()),
     }
 }
 
 fn gen_jz_to_target0(
-    cb: &mut CodeBlock,
+    asm: &mut Assembler,
     target0: CodePtr,
     _target1: Option<CodePtr>,
     shape: BranchShape,
 ) {
     match shape {
         BranchShape::Next0 | BranchShape::Next1 => unreachable!(),
-        BranchShape::Default => jz_ptr(cb, target0),
+        BranchShape::Default => asm.jz(Target::CodePtr(target0)),
     }
 }
 
 fn gen_jbe_to_target0(
-    cb: &mut CodeBlock,
+    asm: &mut Assembler,
     target0: CodePtr,
     _target1: Option<CodePtr>,
     shape: BranchShape,
 ) {
     match shape {
         BranchShape::Next0 | BranchShape::Next1 => unreachable!(),
-        BranchShape::Default => jbe_ptr(cb, target0),
+        BranchShape::Default => asm.jbe(Target::CodePtr(target0)),
     }
 }
 
@@ -1848,7 +1850,7 @@ fn jit_chain_guard(
     jcc: JCCKinds,
     jit: &JITState,
     ctx: &Context,
-    cb: &mut CodeBlock,
+    asm: &mut Assembler,
     ocb: &mut OutlinedCb,
     depth_limit: i32,
     side_exit: CodePtr,
@@ -1867,15 +1869,16 @@ fn jit_chain_guard(
             idx: jit.insn_idx,
         };
 
-        gen_branch(jit, ctx, cb, ocb, bid, &deeper, None, None, target0_gen_fn);
+        gen_branch(jit, ctx, asm, ocb, bid, &deeper, None, None, target0_gen_fn);
     } else {
-        target0_gen_fn(cb, side_exit, None, BranchShape::Default);
+        target0_gen_fn(asm, side_exit, None, BranchShape::Default);
     }
 }
 
 // up to 5 different classes, and embedded or not for each
 pub const GET_IVAR_MAX_DEPTH: i32 = 10;
 
+/*
 // hashes and arrays
 pub const OPT_AREF_MAX_CHAIN_DEPTH: i32 = 2;
 
@@ -1921,25 +1924,32 @@ fn gen_set_ivar(
     KeepCompiling
 }
 
-/*
+
+
 // Codegen for getting an instance variable.
 // Preconditions:
-//   - receiver is in REG0
 //   - receiver has the same class as CLASS_OF(comptime_receiver)
 //   - no stack push or pops to ctx since the entry to the codegen of the instruction being compiled
 fn gen_get_ivar(
     jit: &mut JITState,
     ctx: &mut Context,
-    cb: &mut CodeBlock,
+    asm: &mut Assembler,
     ocb: &mut OutlinedCb,
     max_chain_depth: i32,
     comptime_receiver: VALUE,
     ivar_name: ID,
-    reg0_opnd: InsnOpnd,
+    recv: Opnd,
+    recv_opnd: InsnOpnd,
     side_exit: CodePtr,
 ) -> CodegenStatus {
     let comptime_val_klass = comptime_receiver.class_of();
     let starting_context = *ctx; // make a copy for use with jit_chain_guard
+
+    // If recv isn't already a register, load it.
+    let recv = match recv {
+        Opnd::Reg(_) => recv,
+        _ => asm.load(recv),
+    };
 
     // Check if the comptime class uses a custom allocator
     let custom_allocator = unsafe { rb_get_alloc_func(comptime_val_klass) };
@@ -1961,45 +1971,25 @@ fn gen_get_ivar(
     if !receiver_t_object || uses_custom_allocator {
         // General case. Call rb_ivar_get().
         // VALUE rb_ivar_get(VALUE obj, ID id)
-        add_comment(cb, "call rb_ivar_get()");
+        asm.comment("call rb_ivar_get()");
 
         // The function could raise exceptions.
-        jit_prepare_routine_call(jit, ctx, cb, REG1);
+        jit_prepare_routine_call(jit, ctx, asm);
 
-        mov(cb, C_ARG_REGS[0], REG0);
-        mov(cb, C_ARG_REGS[1], uimm_opnd(ivar_name));
-        call_ptr(cb, REG1, rb_ivar_get as *const u8);
+        let ivar_val = asm.ccall(rb_ivar_get as *const u8, vec![recv, Opnd::UImm(ivar_name)]);
 
-        if reg0_opnd != SelfOpnd {
+        if recv_opnd != SelfOpnd {
             ctx.stack_pop(1);
         }
+
         // Push the ivar on the stack
         let out_opnd = ctx.stack_push(Type::Unknown);
-        mov(cb, out_opnd, RAX);
+        asm.mov(out_opnd, ivar_val);
 
         // Jump to next instruction. This allows guard chains to share the same successor.
-        jump_to_next_insn(jit, ctx, cb, ocb);
+        jump_to_next_insn(jit, ctx, asm, ocb);
         return EndBlock;
     }
-
-    /*
-    // FIXME:
-    // This check was added because of a failure in a test involving the
-    // Nokogiri Document class where we see a T_DATA that still has the default
-    // allocator.
-    // Aaron Patterson argues that this is a bug in the C extension, because
-    // people could call .allocate() on the class and still get a T_OBJECT
-    // For now I added an extra dynamic check that the receiver is T_OBJECT
-    // so we can safely pass all the tests in Shopify Core.
-    //
-    // Guard that the receiver is T_OBJECT
-    // #define RB_BUILTIN_TYPE(x) (int)(((struct RBasic*)(x))->flags & RUBY_T_MASK)
-    add_comment(cb, "guard receiver is T_OBJECT");
-    mov(cb, REG1, member_opnd(REG0, struct RBasic, flags));
-    and(cb, REG1, imm_opnd(RUBY_T_MASK));
-    cmp(cb, REG1, imm_opnd(T_OBJECT));
-    jit_chain_guard(JCC_JNE, jit, &starting_context, cb, ocb, max_chain_depth, side_exit);
-    */
 
     // FIXME: Mapping the index could fail when there is too many ivar names. If we're
     // compiling for a branch stub that can cause the exception to be thrown from the
@@ -2008,16 +1998,16 @@ fn gen_get_ivar(
         unsafe { rb_obj_ensure_iv_index_mapping(comptime_receiver, ivar_name) }.as_usize();
 
     // Pop receiver if it's on the temp stack
-    if reg0_opnd != SelfOpnd {
+    if recv_opnd != SelfOpnd {
         ctx.stack_pop(1);
     }
 
     if USE_RVARGC != 0 {
         // Check that the ivar table is big enough
         // Check that the slot is inside the ivar table (num_slots > index)
-        let num_slots = mem_opnd(32, REG0, ROBJECT_OFFSET_NUMIV);
-        cmp(cb, num_slots, uimm_opnd(ivar_index as u64));
-        jle_ptr(cb, counted_exit!(ocb, side_exit, getivar_idx_out_of_range));
+        let num_slots = Opnd::mem(32, recv, ROBJECT_OFFSET_NUMIV);
+        asm.cmp(num_slots, Opnd::UImm(ivar_index as u64));
+        asm.jbe(counted_exit!(ocb, side_exit, getivar_idx_out_of_range).into());
     }
 
     // Compile time self is embedded and the ivar index lands within the object
@@ -2027,15 +2017,15 @@ fn gen_get_ivar(
 
         // Guard that self is embedded
         // TODO: BT and JC is shorter
-        add_comment(cb, "guard embedded getivar");
-        let flags_opnd = mem_opnd(64, REG0, RUBY_OFFSET_RBASIC_FLAGS);
-        test(cb, flags_opnd, uimm_opnd(ROBJECT_EMBED as u64));
+        asm.comment("guard embedded getivar");
+        let flags_opnd = Opnd::mem(64, recv, RUBY_OFFSET_RBASIC_FLAGS);
+        asm.test(flags_opnd, Opnd::UImm(ROBJECT_EMBED as u64));
         let side_exit = counted_exit!(ocb, side_exit, getivar_megamorphic);
         jit_chain_guard(
             JCC_JZ,
             jit,
             &starting_context,
-            cb,
+            asm,
             ocb,
             max_chain_depth,
             side_exit,
@@ -2043,76 +2033,71 @@ fn gen_get_ivar(
 
         // Load the variable
         let offs = ROBJECT_OFFSET_AS_ARY + (ivar_index * SIZEOF_VALUE) as i32;
-        let ivar_opnd = mem_opnd(64, REG0, offs);
-        mov(cb, REG1, ivar_opnd);
+        let ivar_opnd = Opnd::mem(64, recv, offs);
 
         // Guard that the variable is not Qundef
-        cmp(cb, REG1, uimm_opnd(Qundef.into()));
-        mov(cb, REG0, uimm_opnd(Qnil.into()));
-        cmove(cb, REG1, REG0);
+        asm.cmp(ivar_opnd, Qundef.into());
+        let out_val = asm.csel_e(Qnil.into(), ivar_opnd);
 
         // Push the ivar on the stack
         let out_opnd = ctx.stack_push(Type::Unknown);
-        mov(cb, out_opnd, REG1);
+        asm.mov(out_opnd, out_val);
     } else {
         // Compile time value is *not* embedded.
 
         // Guard that value is *not* embedded
         // See ROBJECT_IVPTR() from include/ruby/internal/core/robject.h
-        add_comment(cb, "guard extended getivar");
-        let flags_opnd = mem_opnd(64, REG0, RUBY_OFFSET_RBASIC_FLAGS);
-        test(cb, flags_opnd, uimm_opnd(ROBJECT_EMBED as u64));
-        let side_exit = counted_exit!(ocb, side_exit, getivar_megamorphic);
+        asm.comment("guard extended getivar");
+        let flags_opnd = Opnd::mem(64, recv, RUBY_OFFSET_RBASIC_FLAGS);
+        asm.test(flags_opnd, Opnd::UImm(ROBJECT_EMBED as u64));
+        let megamorphic_side_exit = counted_exit!(ocb, side_exit, getivar_megamorphic);
         jit_chain_guard(
             JCC_JNZ,
             jit,
             &starting_context,
-            cb,
+            asm,
             ocb,
             max_chain_depth,
-            side_exit,
+            megamorphic_side_exit,
         );
 
         if USE_RVARGC == 0 {
             // Check that the extended table is big enough
             // Check that the slot is inside the extended table (num_slots > index)
-            let num_slots = mem_opnd(32, REG0, ROBJECT_OFFSET_NUMIV);
-            cmp(cb, num_slots, uimm_opnd(ivar_index as u64));
-            jle_ptr(cb, counted_exit!(ocb, side_exit, getivar_idx_out_of_range));
+            let num_slots = Opnd::mem(32, recv, ROBJECT_OFFSET_NUMIV);
+            asm.cmp(num_slots, Opnd::UImm(ivar_index as u64));
+            asm.jbe(Target::CodePtr(counted_exit!(ocb, side_exit, getivar_idx_out_of_range)));
         }
 
         // Get a pointer to the extended table
-        let tbl_opnd = mem_opnd(64, REG0, ROBJECT_OFFSET_AS_HEAP_IVPTR);
-        mov(cb, REG0, tbl_opnd);
+        let tbl_opnd = asm.load(Opnd::mem(64, recv, ROBJECT_OFFSET_AS_HEAP_IVPTR));
 
         // Read the ivar from the extended table
-        let ivar_opnd = mem_opnd(64, REG0, (SIZEOF_VALUE * ivar_index) as i32);
-        mov(cb, REG0, ivar_opnd);
+        let ivar_opnd = Opnd::mem(64, tbl_opnd, (SIZEOF_VALUE * ivar_index) as i32);
 
         // Check that the ivar is not Qundef
-        cmp(cb, REG0, uimm_opnd(Qundef.into()));
-        mov(cb, REG1, uimm_opnd(Qnil.into()));
-        cmove(cb, REG0, REG1);
+        asm.cmp(ivar_opnd, Qundef.into());
+        let out_val = asm.csel_ne(ivar_opnd, Qnil.into());
 
         // Push the ivar on the stack
         let out_opnd = ctx.stack_push(Type::Unknown);
-        mov(cb, out_opnd, REG0);
+        asm.mov(out_opnd, out_val);
     }
 
     // Jump to next instruction. This allows guard chains to share the same successor.
-    jump_to_next_insn(jit, ctx, cb, ocb);
+    jump_to_next_insn(jit, ctx, asm, ocb);
     EndBlock
 }
 
 fn gen_getinstancevariable(
     jit: &mut JITState,
     ctx: &mut Context,
-    cb: &mut CodeBlock,
+    asm: &mut Assembler,
     ocb: &mut OutlinedCb,
 ) -> CodegenStatus {
     // Defer compilation so we can specialize on a runtime `self`
     if !jit_at_current_insn(jit) {
-        defer_compilation(jit, ctx, cb, ocb);
+        defer_compilation(jit, ctx, asm, ocb);
         return EndBlock;
     }
 
@@ -2125,14 +2110,14 @@ fn gen_getinstancevariable(
     let side_exit = get_side_exit(jit, ocb, ctx);
 
     // Guard that the receiver has the same class as the one from compile time.
-    mov(cb, REG0, mem_opnd(64, REG_CFP, RUBY_OFFSET_CFP_SELF));
-
+    let self_asm_opnd = Opnd::mem(64, CFP, RUBY_OFFSET_CFP_SELF);
     jit_guard_known_klass(
         jit,
         ctx,
-        cb,
+        asm,
         ocb,
         comptime_val_klass,
+        self_asm_opnd,
         SelfOpnd,
         comptime_val,
         GET_IVAR_MAX_DEPTH,
@@ -2142,16 +2127,18 @@ fn gen_getinstancevariable(
     gen_get_ivar(
         jit,
         ctx,
-        cb,
+        asm,
         ocb,
         GET_IVAR_MAX_DEPTH,
         comptime_val,
         ivar_name,
+        self_asm_opnd,
         SelfOpnd,
         side_exit,
     )
 }
 
+/*
 fn gen_setinstancevariable(
     jit: &mut JITState,
     ctx: &mut Context,
@@ -2488,13 +2475,13 @@ fn gen_equality_specialized(
         mov(cb, C_ARG_REGS[1], b_opnd);
 
         // Guard that a is a String
-        mov(cb, REG0, C_ARG_REGS[0]);
         jit_guard_known_klass(
             jit,
             ctx,
             cb,
             ocb,
             unsafe { rb_cString },
+            C_ARG_REGS[0],
             StackOpnd(1),
             comptime_a,
             SEND_MAX_DEPTH,
@@ -2511,7 +2498,6 @@ fn gen_equality_specialized(
         // Otherwise guard that b is a T_STRING (from type info) or String (from runtime guard)
         let btype = ctx.get_opnd_type(StackOpnd(0));
         if btype.known_value_type() != Some(RUBY_T_STRING) {
-            mov(cb, REG0, C_ARG_REGS[1]);
             // Note: any T_STRING is valid here, but we check for a ::String for simplicity
             // To pass a mutable static variable (rb_cString) requires an unsafe block
             jit_guard_known_klass(
@@ -2520,6 +2506,7 @@ fn gen_equality_specialized(
                 cb,
                 ocb,
                 unsafe { rb_cString },
+                C_ARG_REGS[1],
                 StackOpnd(0),
                 comptime_b,
                 SEND_MAX_DEPTH,
@@ -2673,13 +2660,13 @@ fn gen_opt_aref(
         let recv_opnd = ctx.stack_opnd(1);
 
         // Guard that the receiver is a hash
-        mov(cb, REG0, recv_opnd);
         jit_guard_known_klass(
             jit,
             ctx,
             cb,
             ocb,
             unsafe { rb_cHash },
+            recv_opnd,
             StackOpnd(1),
             comptime_recv,
             OPT_AREF_MAX_CHAIN_DEPTH,
@@ -2735,13 +2722,13 @@ fn gen_opt_aset(
         let side_exit = get_side_exit(jit, ocb, ctx);
 
         // Guard receiver is an Array
-        mov(cb, REG0, recv);
         jit_guard_known_klass(
             jit,
             ctx,
             cb,
             ocb,
             unsafe { rb_cArray },
+            recv,
             StackOpnd(2),
             comptime_recv,
             SEND_MAX_DEPTH,
@@ -2749,13 +2736,13 @@ fn gen_opt_aset(
         );
 
         // Guard key is a fixnum
-        mov(cb, REG0, key);
         jit_guard_known_klass(
             jit,
             ctx,
             cb,
             ocb,
             unsafe { rb_cInteger },
+            key,
             StackOpnd(1),
             comptime_key,
             SEND_MAX_DEPTH,
@@ -2788,13 +2775,13 @@ fn gen_opt_aset(
         let side_exit = get_side_exit(jit, ocb, ctx);
 
         // Guard receiver is a Hash
-        mov(cb, REG0, recv);
         jit_guard_known_klass(
             jit,
             ctx,
             cb,
             ocb,
             unsafe { rb_cHash },
+            recv,
             StackOpnd(2),
             comptime_recv,
             SEND_MAX_DEPTH,
@@ -3395,20 +3382,19 @@ fn gen_jump(
     EndBlock
 }
 
-/*
 /// Guard that self or a stack operand has the same class as `known_klass`, using
 /// `sample_instance` to speculate about the shape of the runtime value.
 /// FIXNUM and on-heap integers are treated as if they have distinct classes, and
 /// the guard generated for one will fail for the other.
 ///
 /// Recompile as contingency if possible, or take side exit a last resort.
-
 fn jit_guard_known_klass(
     jit: &mut JITState,
     ctx: &mut Context,
-    cb: &mut CodeBlock,
+    asm: &mut Assembler,
     ocb: &mut OutlinedCb,
     known_klass: VALUE,
+    obj_opnd: Opnd,
     insn_opnd: InsnOpnd,
     sample_instance: VALUE,
     max_chain_depth: i32,
@@ -3425,28 +3411,28 @@ fn jit_guard_known_klass(
         assert!(!val_type.is_heap());
         assert!(val_type.is_unknown());
 
-        add_comment(cb, "guard object is nil");
-        cmp(cb, REG0, imm_opnd(Qnil.into()));
-        jit_chain_guard(JCC_JNE, jit, ctx, cb, ocb, max_chain_depth, side_exit);
+        asm.comment("guard object is nil");
+        asm.cmp(obj_opnd, Qnil.into());
+        jit_chain_guard(JCC_JNE, jit, ctx, asm, ocb, max_chain_depth, side_exit);
 
         ctx.upgrade_opnd_type(insn_opnd, Type::Nil);
     } else if unsafe { known_klass == rb_cTrueClass } {
         assert!(!val_type.is_heap());
         assert!(val_type.is_unknown());
 
-        add_comment(cb, "guard object is true");
-        cmp(cb, REG0, imm_opnd(Qtrue.into()));
-        jit_chain_guard(JCC_JNE, jit, ctx, cb, ocb, max_chain_depth, side_exit);
+        asm.comment("guard object is true");
+        asm.cmp(obj_opnd, Qtrue.into());
+        jit_chain_guard(JCC_JNE, jit, ctx, asm, ocb, max_chain_depth, side_exit);
 
         ctx.upgrade_opnd_type(insn_opnd, Type::True);
     } else if unsafe { known_klass == rb_cFalseClass } {
         assert!(!val_type.is_heap());
         assert!(val_type.is_unknown());
 
-        add_comment(cb, "guard object is false");
+        asm.comment("guard object is false");
         assert!(Qfalse.as_i32() == 0);
-        test(cb, REG0, REG0);
-        jit_chain_guard(JCC_JNZ, jit, ctx, cb, ocb, max_chain_depth, side_exit);
+        asm.test(obj_opnd, obj_opnd);
+        jit_chain_guard(JCC_JNZ, jit, ctx, asm, ocb, max_chain_depth, side_exit);
 
         ctx.upgrade_opnd_type(insn_opnd, Type::False);
     } else if unsafe { known_klass == rb_cInteger } && sample_instance.fixnum_p() {
@@ -3454,32 +3440,35 @@ fn jit_guard_known_klass(
         // BIGNUM can be handled by the general else case below
         assert!(val_type.is_unknown());
 
-        add_comment(cb, "guard object is fixnum");
-        test(cb, REG0, imm_opnd(RUBY_FIXNUM_FLAG as i64));
-        jit_chain_guard(JCC_JZ, jit, ctx, cb, ocb, max_chain_depth, side_exit);
+        asm.comment("guard object is fixnum");
+        asm.test(obj_opnd, Opnd::Imm(RUBY_FIXNUM_FLAG as i64));
+        jit_chain_guard(JCC_JZ, jit, ctx, asm, ocb, max_chain_depth, side_exit);
         ctx.upgrade_opnd_type(insn_opnd, Type::Fixnum);
     } else if unsafe { known_klass == rb_cSymbol } && sample_instance.static_sym_p() {
         assert!(!val_type.is_heap());
         // We will guard STATIC vs DYNAMIC as though they were separate classes
         // DYNAMIC symbols can be handled by the general else case below
-        assert!(val_type.is_unknown());
+        if val_type != Type::ImmSymbol || !val_type.is_imm() {
+            assert!(val_type.is_unknown());
 
-        add_comment(cb, "guard object is static symbol");
-        assert!(RUBY_SPECIAL_SHIFT == 8);
-        cmp(cb, REG0_8, uimm_opnd(RUBY_SYMBOL_FLAG as u64));
-        jit_chain_guard(JCC_JNE, jit, ctx, cb, ocb, max_chain_depth, side_exit);
-        ctx.upgrade_opnd_type(insn_opnd, Type::ImmSymbol);
+            asm.comment("guard object is static symbol");
+            assert!(RUBY_SPECIAL_SHIFT == 8);
+            asm.cmp(obj_opnd, Opnd::UImm(RUBY_SYMBOL_FLAG as u64));
+            jit_chain_guard(JCC_JNE, jit, ctx, asm, ocb, max_chain_depth, side_exit);
+            ctx.upgrade_opnd_type(insn_opnd, Type::ImmSymbol);
+        }
     } else if unsafe { known_klass == rb_cFloat } && sample_instance.flonum_p() {
         assert!(!val_type.is_heap());
-        assert!(val_type.is_unknown());
+        if val_type != Type::Flonum || !val_type.is_imm() {
+            assert!(val_type.is_unknown());
 
-        // We will guard flonum vs heap float as though they were separate classes
-        add_comment(cb, "guard object is flonum");
-        mov(cb, REG1, REG0);
-        and(cb, REG1, uimm_opnd(RUBY_FLONUM_MASK as u64));
-        cmp(cb, REG1, uimm_opnd(RUBY_FLONUM_FLAG as u64));
-        jit_chain_guard(JCC_JNE, jit, ctx, cb, ocb, max_chain_depth, side_exit);
-        ctx.upgrade_opnd_type(insn_opnd, Type::Flonum);
+            // We will guard flonum vs heap float as though they were separate classes
+            asm.comment("guard object is flonum");
+            asm.and(obj_opnd, Opnd::UImm(RUBY_FLONUM_MASK as u64));
+            asm.cmp(obj_opnd, Opnd::UImm(RUBY_FLONUM_FLAG as u64));
+            jit_chain_guard(JCC_JNE, jit, ctx, asm, ocb, max_chain_depth, side_exit);
+            ctx.upgrade_opnd_type(insn_opnd, Type::Flonum);
+        }
     } else if unsafe {
         FL_TEST(known_klass, VALUE(RUBY_FL_SINGLETON as usize)) != VALUE(0)
             && sample_instance == rb_attr_get(known_klass, id__attached__ as ID)
@@ -3494,35 +3483,42 @@ fn jit_guard_known_klass(
         // that its singleton class is empty, so we can't avoid the memory
         // access. As an example, `Object.new.singleton_class` is an object in
         // this situation.
-        add_comment(cb, "guard known object with singleton class");
-        // TODO: jit_mov_gc_ptr keeps a strong reference, which leaks the object.
-        jit_mov_gc_ptr(jit, cb, REG1, sample_instance);
-        cmp(cb, REG0, REG1);
-        jit_chain_guard(JCC_JNE, jit, ctx, cb, ocb, max_chain_depth, side_exit);
+        asm.comment("guard known object with singleton class");
+        asm.cmp(obj_opnd, sample_instance.into());
+        jit_chain_guard(JCC_JNE, jit, ctx, asm, ocb, max_chain_depth, side_exit);
+    } else if val_type == Type::CString && unsafe { known_klass == rb_cString } {
+        // guard elided because the context says we've already checked
+        unsafe {
+            assert_eq!(sample_instance.class_of(), rb_cString, "context says class is exactly ::String")
+        };
     } else {
         assert!(!val_type.is_imm());
 
         // Check that the receiver is a heap object
         // Note: if we get here, the class doesn't have immediate instances.
         if !val_type.is_heap() {
-            add_comment(cb, "guard not immediate");
+            asm.comment("guard not immediate");
             assert!(Qfalse.as_i32() < Qnil.as_i32());
-            test(cb, REG0, imm_opnd(RUBY_IMMEDIATE_MASK as i64));
-            jit_chain_guard(JCC_JNZ, jit, ctx, cb, ocb, max_chain_depth, side_exit);
-            cmp(cb, REG0, imm_opnd(Qnil.into()));
-            jit_chain_guard(JCC_JBE, jit, ctx, cb, ocb, max_chain_depth, side_exit);
+            asm.test(obj_opnd, Opnd::Imm(RUBY_IMMEDIATE_MASK as i64));
+            jit_chain_guard(JCC_JNZ, jit, ctx, asm, ocb, max_chain_depth, side_exit);
+            asm.cmp(obj_opnd, Qnil.into());
+            jit_chain_guard(JCC_JBE, jit, ctx, asm, ocb, max_chain_depth, side_exit);
 
             ctx.upgrade_opnd_type(insn_opnd, Type::UnknownHeap);
         }
 
-        let klass_opnd = mem_opnd(64, REG0, RUBY_OFFSET_RBASIC_KLASS);
+        // If obj_opnd isn't already a register, load it.
+        let obj_opnd = match obj_opnd {
+            Opnd::Reg(_) => obj_opnd,
+            _ => asm.load(obj_opnd),
+        };
+        let klass_opnd = Opnd::mem(64, obj_opnd, RUBY_OFFSET_RBASIC_KLASS);
 
         // Bail if receiver class is different from known_klass
         // TODO: jit_mov_gc_ptr keeps a strong reference, which leaks the class.
-        add_comment(cb, "guard known class");
-        jit_mov_gc_ptr(jit, cb, REG1, known_klass);
-        cmp(cb, klass_opnd, REG1);
-        jit_chain_guard(JCC_JNE, jit, ctx, cb, ocb, max_chain_depth, side_exit);
+        asm.comment("guard known class");
+        asm.cmp(klass_opnd, known_klass.into());
+        jit_chain_guard(JCC_JNE, jit, ctx, asm, ocb, max_chain_depth, side_exit);
 
         if known_klass == unsafe { rb_cString } {
             ctx.upgrade_opnd_type(insn_opnd, Type::CString);
@@ -3530,6 +3526,7 @@ fn jit_guard_known_klass(
     }
 }
 
+/*
 // Generate ancestry guard for protected callee.
 // Calls to protected callees only go through when self.is_a?(klass_that_defines_the_callee).
 fn jit_protected_callee_ancestry_guard(
@@ -3774,25 +3771,18 @@ fn jit_rb_str_concat(
     let side_exit = get_side_exit(jit, ocb, ctx);
 
     // Guard that the argument is of class String at runtime.
-    let insn_opnd = StackOpnd(0);
-    let arg_opnd = ctx.stack_opnd(0);
-    mov(cb, REG0, arg_opnd);
-    let arg_type = ctx.get_opnd_type(insn_opnd);
-
-    if arg_type != Type::CString && arg_type != Type::TString {
-        if !arg_type.is_heap() {
-            add_comment(cb, "guard arg not immediate");
-            test(cb, REG0, imm_opnd(RUBY_IMMEDIATE_MASK as i64));
-            jnz_ptr(cb, side_exit);
-            cmp(cb, REG0, imm_opnd(Qnil.into()));
-            jbe_ptr(cb, side_exit);
-
-            ctx.upgrade_opnd_type(insn_opnd, Type::UnknownHeap);
-        }
-        guard_object_is_string(cb, REG0, REG1, side_exit);
-        // We know this has type T_STRING, but not necessarily that it's a ::String
-        ctx.upgrade_opnd_type(insn_opnd, Type::TString);
-    }
+    jit_guard_known_klass(
+        jit,
+        ctx,
+        cb,
+        ocb,
+        unsafe { rb_cString },
+        ctx.stack_opnd(0),
+        StackOpnd(0),
+        comptime_arg,
+        SEND_MAX_DEPTH,
+        side_exit,
+    );
 
     let concat_arg = ctx.stack_pop(1);
     let recv = ctx.stack_pop(1);
@@ -4682,7 +4672,7 @@ fn gen_send_iseq(
     gen_branch(
         jit,
         ctx,
-        cb,
+        asm,
         ocb,
         return_block,
         &return_ctx,
@@ -4864,13 +4854,13 @@ fn gen_send_general(
     let recv_opnd = StackOpnd(argc.try_into().unwrap());
     // TODO: Resurrect this once jit_guard_known_klass is implemented for getivar
     /*
-    mov(cb, REG0, recv);
     jit_guard_known_klass(
         jit,
         ctx,
         cb,
         ocb,
         comptime_recv_klass,
+        recv,
         recv_opnd,
         comptime_recv,
         SEND_MAX_DEPTH,
@@ -5257,14 +5247,13 @@ fn gen_leave(
     // Only the return value should be on the stack
     assert!(ctx.get_stack_size() == 1);
 
-    // FIXME
-    /*
     // Create a side-exit to fall back to the interpreter
-    //let side_exit = get_side_exit(jit, ocb, ctx);
+    let side_exit = get_side_exit(jit, ocb, ctx);
+    let mut ocb_asm = Assembler::new();
 
     // Check for interrupts
-    //gen_check_ints(cb, counted_exit!(ocb, side_exit, leave_se_interrupt));
-    */
+    gen_check_ints(asm, counted_exit!(ocb, side_exit, leave_se_interrupt));
+    ocb_asm.compile(ocb.unwrap());
 
     // Pop the current frame (ec->cfp++)
     // Note: the return PC is already in the previous CFP
@@ -5376,13 +5365,13 @@ fn gen_objtostring(
     if unsafe { RB_TYPE_P(comptime_recv, RUBY_T_STRING) } {
         let side_exit = get_side_exit(jit, ocb, ctx);
 
-        mov(cb, REG0, recv);
         jit_guard_known_klass(
             jit,
             ctx,
             cb,
             ocb,
             comptime_recv.class_of(),
+            recv,
             StackOpnd(0),
             comptime_recv,
             SEND_MAX_DEPTH,
@@ -6015,10 +6004,10 @@ fn get_gen_fn(opcode: VALUE) -> Option<InsnGenFn> {
         YARVINSN_defined => Some(gen_defined),
         YARVINSN_checkkeyword => Some(gen_checkkeyword),
         YARVINSN_concatstrings => Some(gen_concatstrings),
-        /*
         YARVINSN_getinstancevariable => Some(gen_getinstancevariable),
-        YARVINSN_setinstancevariable => Some(gen_setinstancevariable),
+        //YARVINSN_setinstancevariable => Some(gen_setinstancevariable),
 
+        /*
         YARVINSN_opt_eq => Some(gen_opt_eq),
         YARVINSN_opt_neq => Some(gen_opt_neq),
         YARVINSN_opt_aref => Some(gen_opt_aref),

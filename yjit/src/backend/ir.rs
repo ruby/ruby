@@ -340,7 +340,14 @@ impl Target
     pub fn unwrap_label_idx(&self) -> usize {
         match self {
             Target::Label(idx) => *idx,
-            _ => unreachable!()
+            _ => unreachable!("trying to unwrap {:?} into label", self)
+        }
+    }
+
+    pub fn unwrap_code_ptr(&self) -> CodePtr {
+        match self {
+            Target::CodePtr(ptr) => *ptr,
+            _ => unreachable!("trying to unwrap {:?} into code ptr", self)
         }
     }
 }
