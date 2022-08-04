@@ -43,8 +43,8 @@ class Object
   elsif RubyVM.const_defined?(:YJIT) && RubyVM::YJIT.enabled?
     options << ' +YJIT'
   end
-  if GC.const_defined?(:MMTk)
-    options << ' +MMTk'
+  if defined?(GC::MMTk.enabled?) && GC::MMTk.enabled?
+    options << " +MMTk(#{GC::MMTk.plan_name})"
   end
   RUBY_DESCRIPTION = (<%=arg['RUBY_DESCRIPTION_PRE'].inspect%> + options.join('') + <%=arg['RUBY_DESCRIPTION_POST'].inspect%>).freeze
 end
