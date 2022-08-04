@@ -183,8 +183,8 @@ commit: $(if $(filter commit,$(MAKECMDGOALS)),$(filter-out commit,$(MAKECMDGOALS
 GITHUB_RUBY_URL = https://github.com/ruby/ruby
 PR =
 
-COMMIT_GPG_SIGN = $(shell git -C "$(srcdir)" config commit.gpgsign)
-REMOTE_GITHUB_URL = $(shell git -C "$(srcdir)" config remote.github.url)
+COMMIT_GPG_SIGN = $(shell $(GIT) -C "$(srcdir)" config commit.gpgsign)
+REMOTE_GITHUB_URL = $(shell $(GIT) -C "$(srcdir)" config remote.github.url)
 COMMITS_NOTES = commits
 
 .PHONY: fetch-github
@@ -197,21 +197,21 @@ define fetch-github
 	  exit 1; \
 	)
 	$(eval REMOTE_GITHUB_URL := $(REMOTE_GITHUB_URL))
-	$(if $(REMOTE_GITHUB_URL),, \
-	  echo adding $(GITHUB_RUBY_URL) as remote github; \
-	  git -C "$(srcdir)" remote add github $(GITHUB_RUBY_URL); \
-	  git -C "$(srcdir)" config --add remote.github.fetch +refs/notes/$(COMMITS_NOTES):refs/notes/$(COMMITS_NOTES)
-	  $(eval REMOTE_GITHUB_URL := $(GITHUB_RUBY_URL)) \
+	$(if $(REMOTE_GITHUB_URL),,
+	  echo adding $(GITHUB_RUBY_URL) as remote github
+	  $(GIT) -C "$(srcdir)" remote add github $(GITHUB_RUBY_URL)
+	  $(GIT) -C "$(srcdir)" config --add remote.github.fetch +refs/notes/$(COMMITS_NOTES):refs/notes/$(COMMITS_NOTES)
+	  $(eval REMOTE_GITHUB_URL := $(GITHUB_RUBY_URL))
 	)
-	$(if $(git -C "$(srcdir)" rev-parse "github/pull/$(1)/head" -- 2> /dev/null), \
-	    git -C "$(srcdir)" branch -f "gh-$(1)" "github/pull/$(1)/head", \
-	    git -C "$(srcdir)" fetch -f github "pull/$(1)/head:gh-$(1)" \
+	$(if $(shell $(GIT) -C "$(srcdir)" rev-parse "github/pull/$(1)/head" -- 2> /dev/null),
+	    $(GIT) -C "$(srcdir)" branch -f "gh-$(1)" "github/pull/$(1)/head",
+	    $(GIT) -C "$(srcdir)" fetch -f github "pull/$(1)/head:gh-$(1)"
 	)
 endef
 
 .PHONY: checkout-github
 checkout-github: fetch-github
-	git -C "$(srcdir)" checkout "gh-$(PR)"
+	$(GIT) -C "$(srcdir)" checkout "gh-$(PR)"
 
 .PHONY: update-github
 update-github: fetch-github
@@ -224,31 +224,31 @@ update-github: fetch-github
 	$(eval PR_BRANCH := $(word 2,$(PULL_REQUEST_FORK_BRANCH)))
 
 	$(eval GITHUB_UPDATE_WORKTREE := $(shell mktemp -d "$(srcdir)/gh-$(PR)-XXXXXX"))
-	git -C "$(srcdir)" worktree add $(notdir $(GITHUB_UPDATE_WORKTREE)) "gh-$(PR)"
-	git -C "$(GITHUB_UPDATE_WORKTREE)" merge master --no-edit
+	$(GIT) -C "$(srcdir)" worktree add $(notdir $(GITHUB_UPDATE_WORKTREE)) "gh-$(PR)"
+	$(GIT) -C "$(GITHUB_UPDATE_WORKTREE)" merge master --no-edit
 	@$(BASERUBY) -e 'print "Are you sure to push this to PR=$(PR)? [Y/n]: "; exit(gets.chomp != "n")'
-	git -C "$(srcdir)" remote add fork-$(PR) git@github.com:$(FORK_REPO).git
-	git -C "$(GITHUB_UPDATE_WORKTREE)" push fork-$(PR) gh-$(PR):$(PR_BRANCH)
-	git -C "$(srcdir)" remote rm fork-$(PR)
-	git -C "$(srcdir)" worktree remove $(notdir $(GITHUB_UPDATE_WORKTREE))
-	git -C "$(srcdir)" branch -D gh-$(PR)
+	$(GIT) -C "$(srcdir)" remote add fork-$(PR) git@github.com:$(FORK_REPO).git
+	$(GIT) -C "$(GITHUB_UPDATE_WORKTREE)" push fork-$(PR) gh-$(PR):$(PR_BRANCH)
+	$(GIT) -C "$(srcdir)" remote rm fork-$(PR)
+	$(GIT) -C "$(srcdir)" worktree remove $(notdir $(GITHUB_UPDATE_WORKTREE))
+	$(GIT) -C "$(srcdir)" branch -D gh-$(PR)
 
 .PHONY: pull-github
 pull-github: fetch-github
 	$(call pull-github,$(PR))
 
 define pull-github
-	$(eval GITHUB_MERGE_BASE := $(shell git -C "$(srcdir)" log -1 --format=format:%H))
-	$(eval GITHUB_MERGE_BRANCH := $(shell git -C "$(srcdir)" symbolic-ref --short HEAD))
+	$(eval GITHUB_MERGE_BASE := $(shell $(GIT) -C "$(srcdir)" log -1 --format=format:%H))
+	$(eval GITHUB_MERGE_BRANCH := $(shell $(GIT) -C "$(srcdir)" symbolic-ref --short HEAD))
 	$(eval GITHUB_MERGE_WORKTREE := $(shell mktemp -d "$(srcdir)/gh-$(1)-XXXXXX"))
-	git -C "$(srcdir)" worktree prune
-	git -C "$(srcdir)" worktree add $(notdir $(GITHUB_MERGE_WORKTREE)) "gh-$(1)"
-	git -C "$(GITHUB_MERGE_WORKTREE)" rebase $(GITHUB_MERGE_BRANCH)
+	$(GIT) -C "$(srcdir)" worktree prune
+	$(GIT) -C "$(srcdir)" worktree add $(notdir $(GITHUB_MERGE_WORKTREE)) "gh-$(1)"
+	$(GIT) -C "$(GITHUB_MERGE_WORKTREE)" rebase $(GITHUB_MERGE_BRANCH)
 	$(eval COMMIT_GPG_SIGN := $(COMMIT_GPG_SIGN))
 	$(if $(filter true,$(COMMIT_GPG_SIGN)), \
-	  git -C "$(GITHUB_MERGE_WORKTREE)" rebase --exec "git commit --amend --no-edit -S" "$(GITHUB_MERGE_BASE)"; \
+	  $(GIT) -C "$(GITHUB_MERGE_WORKTREE)" rebase --exec "$(GIT) commit --amend --no-edit -S" "$(GITHUB_MERGE_BASE)"; \
 	)
-	git -C "$(GITHUB_MERGE_WORKTREE)" rebase --exec "git notes add --message 'Merged: $(GITHUB_RUBY_URL)/pull/$(1)'" "$(GITHUB_MERGE_BASE)"
+	$(GIT) -C "$(GITHUB_MERGE_WORKTREE)" rebase --exec "$(GIT) notes add --message 'Merged: $(GITHUB_RUBY_URL)/pull/$(1)'" "$(GITHUB_MERGE_BASE)"
 endef
 
 .PHONY: fetch-github-%
@@ -257,7 +257,7 @@ fetch-github-%:
 
 .PHONY: checkout-github-%
 checkout-github-%: fetch-github-%
-	git -C "$(srcdir)" checkout "gh-$*"
+	$(GIT) -C "$(srcdir)" checkout "gh-$*"
 
 .PHONY: pr-% pull-github-%
 pr-% pull-github-%: fetch-github-%
@@ -351,7 +351,7 @@ REVISION_IN_HEADER := none
 REVISION_LATEST := update
 else
 REVISION_IN_HEADER := $(shell sed -n 's/^\#define RUBY_FULL_REVISION "\(.*\)"/\1/p' $(srcdir)/revision.h 2>/dev/null)
-REVISION_LATEST := $(shell $(CHDIR) $(srcdir) && git log -1 --format=%H 2>/dev/null)
+REVISION_LATEST := $(shell $(CHDIR) $(srcdir) && $(GIT) log -1 --format=%H 2>/dev/null)
 endif
 ifneq ($(REVISION_IN_HEADER),$(REVISION_LATEST))
 # GNU make treat the target as unmodified when its dependents get
@@ -403,19 +403,19 @@ endif
 update-deps:
 	$(eval update_deps := $(shell date +update-deps-%Y%m%d))
 	$(eval deps_dir := $(shell mktemp -d)/$(update_deps))
-	$(eval GIT_DIR := $(shell git -C $(srcdir) rev-parse --absolute-git-dir))
-	git --git-dir=$(GIT_DIR) worktree add $(deps_dir)
+	$(eval GIT_DIR := $(shell $(GIT) -C $(srcdir) rev-parse --absolute-git-dir))
+	$(GIT) --git-dir=$(GIT_DIR) worktree add $(deps_dir)
 	cp $(tooldir)/config.guess $(tooldir)/config.sub $(deps_dir)/tool
 	[ -f config.status ] && cp config.status $(deps_dir)
 	cd $(deps_dir) && autoconf && \
 	exec ./configure -q -C --enable-load-relative --disable-install-doc --disable-rubygems 'optflags=-O0' 'debugflags=-save-temps=obj -g'
 	$(RUNRUBY) -C $(deps_dir) tool/update-deps --fix
-	git -C $(deps_dir) diff --no-ext-diff --ignore-submodules --exit-code || \
-	    git -C $(deps_dir) commit --all --message='Update dependencies'
-	git --git-dir=$(GIT_DIR) worktree remove $(deps_dir)
+	$(GIT) -C $(deps_dir) diff --no-ext-diff --ignore-submodules --exit-code || \
+	    $(GIT) -C $(deps_dir) commit --all --message='Update dependencies'
+	$(GIT) --git-dir=$(GIT_DIR) worktree remove $(deps_dir)
 	$(RMDIR) $(dir $(deps_dir))
-	git --git-dir=$(GIT_DIR) merge --no-edit --ff-only $(update_deps)
-	git --git-dir=$(GIT_DIR) branch --delete $(update_deps)
+	$(GIT) --git-dir=$(GIT_DIR) merge --no-edit --ff-only $(update_deps)
+	$(GIT) --git-dir=$(GIT_DIR) branch --delete $(update_deps)
 
 # order-only-prerequisites doesn't work for $(RUBYSPEC_CAPIEXT)
 # because the same named directory exists in the source tree.
