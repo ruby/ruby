@@ -2218,22 +2218,16 @@ fn gen_checktype(
         let val = ctx.stack_pop(1);
 
         // Check if we know from type information
-        match (type_val, val_type) {
-            (RUBY_T_STRING, Type::TString)
-            | (RUBY_T_STRING, Type::CString)
-            | (RUBY_T_ARRAY, Type::Array)
-            | (RUBY_T_HASH, Type::Hash) => {
-                // guaranteed type match
-                let stack_ret = ctx.stack_push(Type::True);
-                mov(cb, stack_ret, uimm_opnd(Qtrue.as_u64()));
-                return KeepCompiling;
-            }
-            _ if val_type.is_imm() || val_type.is_specific() => {
-                // guaranteed not to match T_STRING/T_ARRAY/T_HASH
-                let stack_ret = ctx.stack_push(Type::False);
-                mov(cb, stack_ret, uimm_opnd(Qfalse.as_u64()));
-                return KeepCompiling;
-            }
+        match val_type.known_value_type() {
+            Some(value_type) => {
+                if value_type == type_val {
+                    jit_putobject(jit, ctx, cb, Qtrue);
+                    return KeepCompiling;
+                } else {
+                    jit_putobject(jit, ctx, cb, Qfalse);
+                    return KeepCompiling;
+                }
+            },
             _ => (),
         }
 
@@ -2502,7 +2496,7 @@ fn gen_equality_specialized(
 
         // Otherwise guard that b is a T_STRING (from type info) or String (from runtime guard)
         let btype = ctx.get_opnd_type(StackOpnd(0));
-        if btype != Type::TString && btype != Type::CString {
+        if btype.known_value_type() != Some(RUBY_T_STRING) {
             mov(cb, REG0, C_ARG_REGS[1]);
             // Note: any T_STRING is valid here, but we check for a ::String for simplicity
             // To pass a mutable static variable (rb_cString) requires an unsafe block
@@ -3405,78 +3399,70 @@ fn jit_guard_known_klass(
 ) {
     let val_type = ctx.get_opnd_type(insn_opnd);
 
+    if val_type.known_class() == Some(known_klass) {
+        // We already know from type information that this is a match
+        return;
+    }
+
     if unsafe { known_klass == rb_cNilClass } {
         assert!(!val_type.is_heap());
-        if val_type != Type::Nil {
-            assert!(val_type.is_unknown());
+        assert!(val_type.is_unknown());
 
-            add_comment(cb, "guard object is nil");
-            cmp(cb, REG0, imm_opnd(Qnil.into()));
-            jit_chain_guard(JCC_JNE, jit, ctx, cb, ocb, max_chain_depth, side_exit);
+        add_comment(cb, "guard object is nil");
+        cmp(cb, REG0, imm_opnd(Qnil.into()));
+        jit_chain_guard(JCC_JNE, jit, ctx, cb, ocb, max_chain_depth, side_exit);
 
-            ctx.upgrade_opnd_type(insn_opnd, Type::Nil);
-        }
+        ctx.upgrade_opnd_type(insn_opnd, Type::Nil);
     } else if unsafe { known_klass == rb_cTrueClass } {
         assert!(!val_type.is_heap());
-        if val_type != Type::True {
-            assert!(val_type.is_unknown());
+        assert!(val_type.is_unknown());
 
-            add_comment(cb, "guard object is true");
-            cmp(cb, REG0, imm_opnd(Qtrue.into()));
-            jit_chain_guard(JCC_JNE, jit, ctx, cb, ocb, max_chain_depth, side_exit);
+        add_comment(cb, "guard object is true");
+        cmp(cb, REG0, imm_opnd(Qtrue.into()));
+        jit_chain_guard(JCC_JNE, jit, ctx, cb, ocb, max_chain_depth, side_exit);
 
-            ctx.upgrade_opnd_type(insn_opnd, Type::True);
-        }
+        ctx.upgrade_opnd_type(insn_opnd, Type::True);
     } else if unsafe { known_klass == rb_cFalseClass } {
         assert!(!val_type.is_heap());
-        if val_type != Type::False {
-            assert!(val_type.is_unknown());
+        assert!(val_type.is_unknown());
 
-            add_comment(cb, "guard object is false");
-            assert!(Qfalse.as_i32() == 0);
-            test(cb, REG0, REG0);
-            jit_chain_guard(JCC_JNZ, jit, ctx, cb, ocb, max_chain_depth, side_exit);
+        add_comment(cb, "guard object is false");
+        assert!(Qfalse.as_i32() == 0);
+        test(cb, REG0, REG0);
+        jit_chain_guard(JCC_JNZ, jit, ctx, cb, ocb, max_chain_depth, side_exit);
 
-            ctx.upgrade_opnd_type(insn_opnd, Type::False);
-        }
+        ctx.upgrade_opnd_type(insn_opnd, Type::False);
     } else if unsafe { known_klass == rb_cInteger } && sample_instance.fixnum_p() {
-        assert!(!val_type.is_heap());
         // We will guard fixnum and bignum as though they were separate classes
         // BIGNUM can be handled by the general else case below
-        if val_type != Type::Fixnum || !val_type.is_imm() {
-            assert!(val_type.is_unknown());
+        assert!(val_type.is_unknown());
 
-            add_comment(cb, "guard object is fixnum");
-            test(cb, REG0, imm_opnd(RUBY_FIXNUM_FLAG as i64));
-            jit_chain_guard(JCC_JZ, jit, ctx, cb, ocb, max_chain_depth, side_exit);
-            ctx.upgrade_opnd_type(insn_opnd, Type::Fixnum);
-        }
+        add_comment(cb, "guard object is fixnum");
+        test(cb, REG0, imm_opnd(RUBY_FIXNUM_FLAG as i64));
+        jit_chain_guard(JCC_JZ, jit, ctx, cb, ocb, max_chain_depth, side_exit);
+        ctx.upgrade_opnd_type(insn_opnd, Type::Fixnum);
     } else if unsafe { known_klass == rb_cSymbol } && sample_instance.static_sym_p() {
         assert!(!val_type.is_heap());
         // We will guard STATIC vs DYNAMIC as though they were separate classes
         // DYNAMIC symbols can be handled by the general else case below
-        if val_type != Type::ImmSymbol || !val_type.is_imm() {
-            assert!(val_type.is_unknown());
+        assert!(val_type.is_unknown());
 
-            add_comment(cb, "guard object is static symbol");
-            assert!(RUBY_SPECIAL_SHIFT == 8);
-            cmp(cb, REG0_8, uimm_opnd(RUBY_SYMBOL_FLAG as u64));
-            jit_chain_guard(JCC_JNE, jit, ctx, cb, ocb, max_chain_depth, side_exit);
-            ctx.upgrade_opnd_type(insn_opnd, Type::ImmSymbol);
-        }
+        add_comment(cb, "guard object is static symbol");
+        assert!(RUBY_SPECIAL_SHIFT == 8);
+        cmp(cb, REG0_8, uimm_opnd(RUBY_SYMBOL_FLAG as u64));
+        jit_chain_guard(JCC_JNE, jit, ctx, cb, ocb, max_chain_depth, side_exit);
+        ctx.upgrade_opnd_type(insn_opnd, Type::ImmSymbol);
     } else if unsafe { known_klass == rb_cFloat } && sample_instance.flonum_p() {
         assert!(!val_type.is_heap());
-        if val_type != Type::Flonum || !val_type.is_imm() {
-            assert!(val_type.is_unknown());
+        assert!(val_type.is_unknown());
 
-            // We will guard flonum vs heap float as though they were separate classes
-            add_comment(cb, "guard object is flonum");
-            mov(cb, REG1, REG0);
-            and(cb, REG1, uimm_opnd(RUBY_FLONUM_MASK as u64));
-            cmp(cb, REG1, uimm_opnd(RUBY_FLONUM_FLAG as u64));
-            jit_chain_guard(JCC_JNE, jit, ctx, cb, ocb, max_chain_depth, side_exit);
-            ctx.upgrade_opnd_type(insn_opnd, Type::Flonum);
-        }
+        // We will guard flonum vs heap float as though they were separate classes
+        add_comment(cb, "guard object is flonum");
+        mov(cb, REG1, REG0);
+        and(cb, REG1, uimm_opnd(RUBY_FLONUM_MASK as u64));
+        cmp(cb, REG1, uimm_opnd(RUBY_FLONUM_FLAG as u64));
+        jit_chain_guard(JCC_JNE, jit, ctx, cb, ocb, max_chain_depth, side_exit);
+        ctx.upgrade_opnd_type(insn_opnd, Type::Flonum);
     } else if unsafe {
         FL_TEST(known_klass, VALUE(RUBY_FL_SINGLETON as usize)) != VALUE(0)
             && sample_instance == rb_attr_get(known_klass, id__attached__ as ID)
@@ -3496,11 +3482,6 @@ fn jit_guard_known_klass(
         jit_mov_gc_ptr(jit, cb, REG1, sample_instance);
         cmp(cb, REG0, REG1);
         jit_chain_guard(JCC_JNE, jit, ctx, cb, ocb, max_chain_depth, side_exit);
-    } else if val_type == Type::CString && unsafe { known_klass == rb_cString } {
-        // guard elided because the context says we've already checked
-        unsafe {
-            assert_eq!(sample_instance.class_of(), rb_cString, "context says class is exactly ::String")
-        };
     } else {
         assert!(!val_type.is_imm());
 
@@ -3576,23 +3557,25 @@ fn jit_rb_obj_not(
 ) -> bool {
     let recv_opnd = ctx.get_opnd_type(StackOpnd(0));
 
-    if recv_opnd == Type::Nil || recv_opnd == Type::False {
-        add_comment(cb, "rb_obj_not(nil_or_false)");
-        ctx.stack_pop(1);
-        let out_opnd = ctx.stack_push(Type::True);
-        mov(cb, out_opnd, uimm_opnd(Qtrue.into()));
-    } else if recv_opnd.is_heap() || recv_opnd.is_specific() {
-        // Note: recv_opnd != Type::Nil && recv_opnd != Type::False.
-        add_comment(cb, "rb_obj_not(truthy)");
-        ctx.stack_pop(1);
-        let out_opnd = ctx.stack_push(Type::False);
-        mov(cb, out_opnd, uimm_opnd(Qfalse.into()));
-    } else {
-        // jit_guard_known_klass() already ran on the receiver which should
-        // have deduced deduced the type of the receiver. This case should be
-        // rare if not unreachable.
-        return false;
+    match recv_opnd.known_truthy() {
+        Some(false) => {
+            add_comment(cb, "rb_obj_not(nil_or_false)");
+            ctx.stack_pop(1);
+            let out_opnd = ctx.stack_push(Type::True);
+            mov(cb, out_opnd, uimm_opnd(Qtrue.into()));
+        },
+        Some(true) => {
+            // Note: recv_opnd != Type::Nil && recv_opnd != Type::False.
+            add_comment(cb, "rb_obj_not(truthy)");
+            ctx.stack_pop(1);
+            let out_opnd = ctx.stack_push(Type::False);
+            mov(cb, out_opnd, uimm_opnd(Qfalse.into()));
+        },
+        _ => {
+            return false;
+        },
     }
+
     true
 }
 

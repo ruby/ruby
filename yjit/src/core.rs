@@ -126,6 +126,60 @@ impl Type {
         }
     }
 
+    /// Returns an Option with the T_ value type if it is known, otherwise None
+    pub fn known_value_type(&self) -> Option<ruby_value_type> {
+        match self {
+            Type::Nil => Some(RUBY_T_NIL),
+            Type::True => Some(RUBY_T_TRUE),
+            Type::False => Some(RUBY_T_FALSE),
+            Type::Fixnum => Some(RUBY_T_FIXNUM),
+            Type::Flonum => Some(RUBY_T_FLOAT),
+            Type::Array => Some(RUBY_T_ARRAY),
+            Type::Hash => Some(RUBY_T_HASH),
+            Type::ImmSymbol | Type::HeapSymbol => Some(RUBY_T_SYMBOL),
+            Type::TString | Type::CString => Some(RUBY_T_STRING),
+            Type::Unknown | Type::UnknownImm | Type::UnknownHeap => None
+        }
+    }
+
+    /// Returns an Option with the class if it is known, otherwise None
+    pub fn known_class(&self) -> Option<VALUE> {
+        unsafe {
+            match self {
+                Type::Nil => Some(rb_cNilClass),
+                Type::True => Some(rb_cTrueClass),
+                Type::False => Some(rb_cFalseClass),
+                Type::Fixnum => Some(rb_cInteger),
+                Type::Flonum => Some(rb_cFloat),
+                Type::ImmSymbol | Type::HeapSymbol => Some(rb_cSymbol),
+                Type::CString => Some(rb_cString),
+                _ => None,
+            }
+        }
+    }
+
+    /// Returns an Option with the exact value if it is known, otherwise None
+    #[allow(unused)] // not yet used
+    pub fn known_exact_value(&self) -> Option<VALUE> {
+        match self {
+            Type::Nil => Some(Qnil),
+            Type::True => Some(Qtrue),
+            Type::False => Some(Qfalse),
+            _ => None,
+        }
+    }
+
+    /// Returns an Option with the exact value if it is known, otherwise None
+    pub fn known_truthy(&self) -> Option<bool> {
+        match self {
+            Type::Nil => Some(false),
+            Type::False => Some(false),
+            Type::UnknownHeap => Some(true),
+            Type::Unknown | Type::UnknownImm => None,
+            _ => Some(true)
+        }
+    }
+
     /// Compute a difference between two value types
     /// Returns 0 if the two are the same
     /// Returns > 0 if different but compatible
