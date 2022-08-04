@@ -237,6 +237,32 @@ module Gem
     MINGW = Gem::Platform.new("x86-mingw32")
     X64_MINGW = [Gem::Platform.new("x64-mingw32"),
                  Gem::Platform.new("x64-mingw-ucrt")].freeze
+
+    if Gem::Platform.new("x86_64-linux-musl") === Gem::Platform.new("x86_64-linux")
+      remove_method :===
+
+      def ===(other)
+        return nil unless Gem::Platform === other
+
+        # universal-mingw32 matches x64-mingw-ucrt
+        return true if (@cpu == "universal" || other.cpu == "universal") &&
+                       @os.start_with?("mingw") && other.os.start_with?("mingw")
+
+        # cpu
+        ([nil,"universal"].include?(@cpu) || [nil, "universal"].include?(other.cpu) || @cpu == other.cpu ||
+        (@cpu == "arm" && other.cpu.start_with?("arm"))) &&
+
+          # os
+          @os == other.os &&
+
+          # version
+          (
+            (@os != "linux" && (@version.nil? || other.version.nil?)) ||
+            (@os == "linux" && ((@version.nil? && ["gnu", "musl"].include?(other.version)) || (@version == "gnu" && other.version.nil?))) ||
+            @version == other.version
+          )
+      end
+    end
   end
 
   Platform.singleton_class.module_eval do
