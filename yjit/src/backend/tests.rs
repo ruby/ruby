@@ -299,3 +299,41 @@ fn test_bake_string() {
     asm.bake_string("Hello, world!");
     asm.compile_with_num_regs(&mut cb, 0);
 }
+
+#[test]
+fn test_draining_iterator() {
+    let mut asm = Assembler::new();
+
+    asm.load(Opnd::None);
+    asm.store(Opnd::None, Opnd::None);
+    asm.add(Opnd::None, Opnd::None);
+
+    let mut iter = asm.into_draining_iter();
+
+    while let Some((index, insn)) = iter.next_unmapped() {
+        match index {
+            0 => assert_eq!(insn.op, Op::Load),
+            1 => assert_eq!(insn.op, Op::Store),
+            2 => assert_eq!(insn.op, Op::Add),
+            _ => panic!("Unexpected instruction index"),
+        };
+    }
+}
+
+#[test]
+fn test_lookback_iterator() {
+    let mut asm = Assembler::new();
+
+    asm.load(Opnd::None);
+    asm.store(Opnd::None, Opnd::None);
+    asm.store(Opnd::None, Opnd::None);
+
+    let mut iter = asm.into_lookback_iter();
+
+    while let Some((index, insn)) = iter.next_unmapped() {
+        if index > 0 {
+            assert_eq!(iter.get_previous().unwrap().opnds[0], Opnd::None);
+            assert_eq!(insn.op, Op::Store);
+        }
+    }
+}

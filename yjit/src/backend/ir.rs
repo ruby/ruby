@@ -2,8 +2,10 @@
 #![allow(unused_variables)]
 #![allow(unused_imports)]
 
+use std::cell::Cell;
 use std::fmt;
 use std::convert::From;
+use std::mem::take;
 use crate::cruby::{VALUE};
 use crate::virtualmem::{CodePtr};
 use crate::asm::{CodeBlock, uimm_num_bits, imm_num_bits};
@@ -288,6 +290,20 @@ impl Opnd
             _ => unreachable!()
         }
     }
+
+    /// Maps the indices from a previous list of instructions to a new list of
+    /// instructions.
+    pub fn map_index(self, indices: &Vec<usize>) -> Opnd {
+        match self {
+            Opnd::InsnOut { idx, num_bits } => {
+                Opnd::InsnOut { idx: indices[idx], num_bits }
+            }
+            Opnd::Mem(Mem { base: MemBase::InsnOut(idx), disp, num_bits }) => {
+                Opnd::Mem(Mem { base: MemBase::InsnOut(indices[idx]), disp, num_bits })
+            },
+            _ => self
+        }
+    }
 }
 
 impl From<usize> for Opnd {
@@ -433,11 +449,15 @@ pub struct Assembler
 
 impl Assembler
 {
-    pub fn new() -> Assembler {
-        Assembler {
+    pub fn new() -> Self {
+        Self::new_with_label_names(Vec::default())
+    }
+
+    pub fn new_with_label_names(label_names: Vec<String>) -> Self {
+        Self {
             insns: Vec::default(),
             live_ranges: Vec::default(),
-            label_names: Vec::default(),
+            label_names
         }
     }
 
@@ -573,58 +593,6 @@ impl Assembler
         self.live_ranges.push(self.insns.len());
     }
 
-    /// Transform input instructions, consumes the input assembler
-    pub(super) fn forward_pass<F>(mut self, mut map_insn: F) -> Assembler
-        where F: FnMut(&mut Assembler, usize, Op, Vec<Opnd>, Option<Target>, Option<String>, Option<PosMarkerFn>, Vec<Opnd>)
-    {
-        let mut asm = Assembler {
-            insns: Vec::default(),
-            live_ranges: Vec::default(),
-            label_names: self.label_names,
-        };
-
-        // Indices maps from the old instruction index to the new instruction
-        // index.
-        let mut indices: Vec<usize> = Vec::default();
-
-        // Map an operand to the next set of instructions by correcting previous
-        // InsnOut indices.
-        fn map_opnd(opnd: Opnd, indices: &mut Vec<usize>) -> Opnd {
-            match opnd {
-                Opnd::InsnOut{ idx, num_bits } => {
-                    Opnd::InsnOut{ idx: indices[idx], num_bits }
-                }
-                Opnd::Mem(Mem{ base: MemBase::InsnOut(idx), disp, num_bits,  }) => {
-                    Opnd::Mem(Mem{ base:MemBase::InsnOut(indices[idx]), disp, num_bits })
-                }
-                _ => opnd
-            }
-        }
-
-        for (index, insn) in self.insns.drain(..).enumerate() {
-            let original_opnds = insn.opnds.clone();
-            let opnds: Vec<Opnd> = insn.opnds.into_iter().map(|opnd| map_opnd(opnd, &mut indices)).collect();
-
-            // For each instruction, either handle it here or allow the map_insn
-            // callback to handle it.
-            match insn.op {
-                Op::Comment => {
-                    asm.comment(insn.text.unwrap().as_str());
-                },
-                _ => {
-                    map_insn(&mut asm, index, insn.op, opnds, insn.target, insn.text, insn.pos_marker, original_opnds);
-                }
-            };
-
-            // Here we're assuming that if we've pushed multiple instructions,
-            // the output that we're using is still the final instruction that
-            // was pushed.
-            indices.push(asm.insns.len() - 1);
-        }
-
-        asm
-    }
-
     /// Sets the out field on the various instructions that require allocated
     /// registers because their output is used as the operand on a subsequent
     /// instruction. This is our implementation of the linear scan algorithm.
@@ -671,13 +639,15 @@ impl Assembler
             }
         }
 
-        let live_ranges: Vec<usize> = std::mem::take(&mut self.live_ranges);
+        let live_ranges: Vec<usize> = take(&mut self.live_ranges);
+        let mut asm = Assembler::new_with_label_names(take(&mut self.label_names));
+        let mut iterator = self.into_draining_iter();
 
-        let asm = self.forward_pass(|asm, index, op, opnds, target, text, pos_marker, original_insns| {
+        while let Some((index, insn)) = iterator.next_unmapped() {
             // Check if this is the last instruction that uses an operand that
             // spans more than one instruction. In that case, return the
             // allocated register to the pool.
-            for opnd in &opnds {
+            for opnd in &insn.opnds {
                 match opnd {
                     Opnd::InsnOut{idx, .. } |
                     Opnd::Mem( Mem { base: MemBase::InsnOut(idx), .. }) => {
@@ -693,7 +663,7 @@ impl Assembler
                             if let Opnd::Reg(reg) = asm.insns[start_index].out {
                                 dealloc_reg(&mut pool, &regs, &reg);
                             } else {
-                                unreachable!("no register allocated for insn {:?}", op);
+                                unreachable!("no register allocated for insn {:?}", insn.op);
                             }
                         }
                     }
@@ -703,7 +673,7 @@ impl Assembler
             }
 
             // C return values need to be mapped to the C return register
-            if op == Op::CCall {
+            if insn.op == Op::CCall {
                 assert_eq!(pool, 0, "register lives past C function call");
             }
 
@@ -713,7 +683,7 @@ impl Assembler
             if live_ranges[index] != index {
 
                 // C return values need to be mapped to the C return register
-                if op == Op::CCall {
+                if insn.op == Op::CCall {
                     out_reg = Opnd::Reg(take_reg(&mut pool, &regs, &C_RET_REG))
                 }
 
@@ -722,8 +692,8 @@ impl Assembler
                 // We do this to improve register allocation on x86
                 // e.g. out  = add(reg0, reg1)
                 //      reg0 = add(reg0, reg1)
-                else if opnds.len() > 0 {
-                    if let Opnd::InsnOut{idx, ..} = opnds[0] {
+                else if insn.opnds.len() > 0 {
+                    if let Opnd::InsnOut{idx, ..} = insn.opnds[0] {
                         if live_ranges[idx] == index {
                             if let Opnd::Reg(reg) = asm.insns[idx].out {
                                 out_reg = Opnd::Reg(take_reg(&mut pool, &regs, &reg))
@@ -734,9 +704,9 @@ impl Assembler
 
                 // Allocate a new register for this instruction
                 if out_reg == Opnd::None {
-                    out_reg = if op == Op::LiveReg {
+                    out_reg = if insn.op == Op::LiveReg {
                         // Allocate a specific register
-                        let reg = opnds[0].unwrap_reg();
+                        let reg = insn.opnds[0].unwrap_reg();
                         Opnd::Reg(take_reg(&mut pool, &regs, &reg))
                     } else {
                         Opnd::Reg(alloc_reg(&mut pool, &regs))
@@ -745,7 +715,7 @@ impl Assembler
             }
 
             // Replace InsnOut operands by their corresponding register
-            let reg_opnds: Vec<Opnd> = opnds.into_iter().map(|opnd|
+            let reg_opnds: Vec<Opnd> = insn.opnds.into_iter().map(|opnd|
                 match opnd {
                     Opnd::InsnOut{idx, ..} => asm.insns[idx].out,
                     Opnd::Mem(Mem { base: MemBase::InsnOut(idx), disp, num_bits }) => {
@@ -760,7 +730,7 @@ impl Assembler
                 }
             ).collect();
 
-            asm.push_insn(op, reg_opnds, target, text, pos_marker);
+            asm.push_insn(insn.op, reg_opnds, insn.target, insn.text, insn.pos_marker);
 
             // Set the output register for this instruction
             let num_insns = asm.insns.len();
@@ -770,7 +740,7 @@ impl Assembler
                 out_reg = Opnd::Reg(reg.sub_reg(num_out_bits))
             }
             new_insn.out = out_reg;
-        });
+        }
 
         assert_eq!(pool, 0, "Expected all registers to be returned to the pool");
         asm
@@ -792,6 +762,123 @@ impl Assembler
         let alloc_regs = alloc_regs.drain(0..num_regs).collect();
         self.compile_with_regs(cb, alloc_regs)
     }
+
+    /// Consume the assembler by creating a new draining iterator.
+    pub fn into_draining_iter(self) -> AssemblerDrainingIterator {
+        AssemblerDrainingIterator::new(self)
+    }
+
+    /// Consume the assembler by creating a new lookback iterator.
+    pub fn into_lookback_iter(self) -> AssemblerLookbackIterator {
+        AssemblerLookbackIterator::new(self)
+    }
+
+    pub fn ccall(&mut self, fptr: *const u8, opnds: Vec<Opnd>) -> Opnd {
+        let target = Target::FunPtr(fptr);
+        self.push_insn(Op::CCall, opnds, Some(target), None, None)
+    }
+
+    // pub fn pos_marker<F: FnMut(CodePtr)>(&mut self, marker_fn: F)
+    pub fn pos_marker(&mut self, marker_fn: impl Fn(CodePtr) + 'static) {
+        self.push_insn(Op::PosMarker, vec![], None, None, Some(Box::new(marker_fn)));
+    }
+}
+
+/// A struct that allows iterating through an assembler's instructions and
+/// consuming them as it iterates.
+pub struct AssemblerDrainingIterator {
+    insns: std::vec::IntoIter<Insn>,
+    index: usize,
+    indices: Vec<usize>
+}
+
+impl AssemblerDrainingIterator {
+    fn new(asm: Assembler) -> Self {
+        Self {
+            insns: asm.insns.into_iter(),
+            index: 0,
+            indices: Vec::default()
+        }
+    }
+
+    /// When you're working with two lists of instructions, you need to make
+    /// sure you do some bookkeeping to align the indices contained within the
+    /// operands of the two lists.
+    ///
+    /// This function accepts the assembler that is being built and tracks the
+    /// end of the current list of instructions in order to maintain that
+    /// alignment.
+    pub fn map_insn_index(&mut self, asm: &mut Assembler) {
+        self.indices.push(asm.insns.len() - 1);
+    }
+
+    /// Map an operand by using this iterator's list of mapped indices.
+    pub fn map_opnd(&self, opnd: Opnd) -> Opnd {
+        opnd.map_index(&self.indices)
+    }
+
+    /// Returns the next instruction in the list with the indices corresponding
+    /// to the next list of instructions.
+    pub fn next_mapped(&mut self) -> Option<(usize, Insn)> {
+        self.next_unmapped().map(|(index, insn)| {
+            let opnds = insn.opnds.into_iter().map(|opnd| opnd.map_index(&self.indices)).collect();
+            (index, Insn { opnds, ..insn })
+        })
+    }
+
+    /// Returns the next instruction in the list with the indices corresponding
+    /// to the previous list of instructions.
+    pub fn next_unmapped(&mut self) -> Option<(usize, Insn)> {
+        let index = self.index;
+        self.index += 1;
+        self.insns.next().map(|insn| (index, insn))
+    }
+}
+
+/// A struct that allows iterating through references to an assembler's
+/// instructions without consuming them.
+pub struct AssemblerLookbackIterator {
+    asm: Assembler,
+    index: Cell<usize>
+}
+
+impl AssemblerLookbackIterator {
+    fn new(asm: Assembler) -> Self {
+        Self { asm, index: Cell::new(0) }
+    }
+
+    /// Fetches a reference to an instruction at a specific index.
+    pub fn get(&self, index: usize) -> Option<&Insn> {
+        self.asm.insns.get(index)
+    }
+
+    /// Fetches a reference to an instruction in the list relative to the
+    /// current cursor location of this iterator.
+    pub fn get_relative(&self, difference: i32) -> Option<&Insn> {
+        let index: Result<i32, _> = self.index.get().try_into();
+        let relative: Result<usize, _> = index.and_then(|value| (value + difference).try_into());
+        relative.ok().and_then(|value| self.asm.insns.get(value))
+    }
+
+    /// Fetches the previous instruction relative to the current cursor location
+    /// of this iterator.
+    pub fn get_previous(&self) -> Option<&Insn> {
+        self.get_relative(-1)
+    }
+
+    /// Fetches the next instruction relative to the current cursor location of
+    /// this iterator.
+    pub fn get_next(&self) -> Option<&Insn> {
+        self.get_relative(1)
+    }
+
+    /// Returns the next instruction in the list with the indices corresponding
+    /// to the previous list of instructions.
+    pub fn next_unmapped(&self) -> Option<(usize, &Insn)> {
+        let index = self.index.get();
+        self.index.set(index + 1);
+        self.asm.insns.get(index).map(|insn| (index, insn))
+    }
 }
 
 impl fmt::Debug for Assembler {
@@ -803,21 +890,6 @@ impl fmt::Debug for Assembler {
         }
 
         Ok(())
-    }
-}
-
-impl Assembler
-{
-    pub fn ccall(&mut self, fptr: *const u8, opnds: Vec<Opnd>) -> Opnd
-    {
-        let target = Target::FunPtr(fptr);
-        self.push_insn(Op::CCall, opnds, Some(target), None, None)
-    }
-
-    //pub fn pos_marker<F: FnMut(CodePtr)>(&mut self, marker_fn: F)
-    pub fn pos_marker(&mut self, marker_fn: impl Fn(CodePtr) + 'static)
-    {
-        self.push_insn(Op::PosMarker, vec![], None, None, Some(Box::new(marker_fn)));
     }
 }
 
