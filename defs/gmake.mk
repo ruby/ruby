@@ -271,9 +271,22 @@ HELP_EXTRA_TASKS = \
 
 extract-gems: $(HAVE_BASERUBY:yes=update-gems)
 
-bundled-gems := $(shell sed '/^[ 	]*\#/d;/^[ 	]*$$/d;s/[ 	][ 	]*/-/;s/[ 	].*//' $(srcdir)/gems/bundled_gems)
+# 1. squeeze spaces
+# 2. strip and skip comment/empty lines
+# 3. "gem x.y.z URL xxxxxx" -> "gem/x.y.z/xxxxxx"
+# 4. "gem x.y.z URL" -> "gem-x.y.z"
+bundled-gems := $(shell sed \
+	-e 's/[ 	][ 	]*/ /g' \
+	-e 's/^ //;/\#/d;s/ *$$//;/^$$/d' \
+	-e 's:\([^ ][^ ]*\) \([^ ][^ ]*\) [^ ][^ ]* :\1/\2/:' \
+	-e 's/ /-/;s/ .*//' \
+	 $(srcdir)/gems/bundled_gems)
 
-update-gems: | $(patsubst %,gems/%.gem,$(bundled-gems))
+bundled-gems-rev := $(filter-out $(subst /,,$(bundled-gems)),$(bundled-gems))
+bundled-gems := $(filter-out $(bundled-gems-rev),$(bundled-gems))
+
+update-gems: | $(patsubst %,$(srcdir)/gems/%.gem,$(bundled-gems))
+update-gems: | $(foreach g,$(bundled-gems-rev),$(srcdir)/gems/src/$(word 1,$(subst /, ,$(value g))))
 
 test-bundler-precheck: | $(srcdir)/.bundle/cache
 
@@ -281,7 +294,7 @@ $(srcdir)/.bundle/cache:
 	$(MAKEDIRS) $(@D) $(CACHE_DIR)
 	$(LN_S) ../.downloaded-cache $@
 
-gems/%.gem:
+$(srcdir)/gems/%.gem:
 	$(ECHO) Downloading bundled gem $*...
 	$(Q) $(BASERUBY) -C "$(srcdir)" \
 	    -I./tool -rdownloader \
@@ -292,20 +305,33 @@ gems/%.gem:
 	    -e 'File.unlink(*old) and' \
 	    -e 'FileUtils.rm_rf(old.map{'"|n|"'n.chomp(".gem")})'
 
-ifeq (,)
-extract-gems: extract-gems-sequential
-else
-extract-gems: | $(patsubst %,.bundle/gems/%,$(bundled-gems))
+extract-gems: | $(patsubst %,$(srcdir)/.bundle/gems/%,$(bundled-gems))
+extract-gems: | $(foreach g,$(bundled-gems-rev), \
+	$(srcdir)/.bundle/gems/$(word 1,$(subst /, ,$(value g)))-$(word 2,$(subst /, ,$(value g))))
 
-.bundle/gems/%: gems/%.gem | .bundle/gems
+$(srcdir)/.bundle/gems/%: $(srcdir)/gems/%.gem | .bundle/gems
 	$(ECHO) Extracting bundle gem $*...
 	$(Q) $(BASERUBY) -C "$(srcdir)" \
 	    -Itool/lib -rbundled_gem \
 	    -e 'BundledGem.unpack("gems/$(@F).gem", ".bundle")'
 
+define copy-gem
+$(srcdir)/.bundle/gems/$(1)-$(2): | $(srcdir)/gems/src/$(1) .bundle/gems
+	$(ECHO) Copying $(1)@$(3) to $$(@F)
+	$(Q) $(GIT) -C "$(srcdir)/gems/src/$(1)" checkout $(3)
+	$(Q) $(BASERUBY) -C "$(srcdir)" \
+	    -Itool/lib -rbundled_gem \
+	    -e 'BundledGem.copy("gems/src/$(1)/$(1).gemspec", ".bundle")'
+
+endef
+define copy-gem-0
+$(call copy-gem,$(word 1,$(1)),$(word 2,$(1)),$(word 3,$(1)))
+endef
+
+$(foreach g,$(bundled-gems-rev),$(eval $(call copy-gem-0,$(subst /, ,$(value g)))))
+
 $(srcdir)/.bundle/gems:
 	$(MAKEDIRS) $@
-endif
 
 ifneq ($(filter update-bundled_gems refresh-gems,$(MAKECMDGOALS)),)
 update-gems: update-bundled_gems
