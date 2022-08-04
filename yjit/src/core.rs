@@ -2021,7 +2021,7 @@ pub fn invalidate_block_version(blockref: &BlockRef) {
     // machine code that some other thread is running.
 
     let block = blockref.borrow();
-    let cb = CodegenGlobals::get_inline_cb();
+    let mut cb = CodegenGlobals::get_inline_cb();
     let ocb = CodegenGlobals::get_outlined_cb();
 
     verify_blockid(block.blockid);
@@ -2069,11 +2069,13 @@ pub fn invalidate_block_version(blockref: &BlockRef) {
             // if (block.start_addr >= cb_get_ptr(cb, yjit_codepage_frozen_bytes)) // Don't patch frozen code region
 
             // Patch in a jump to block.entry_exit.
+
             let cur_pos = cb.get_write_ptr();
             cb.set_write_ptr(block_start);
 
-            //jmp_ptr(cb, block_entry_exit);
-            todo!("jmp_ptr with new assembler");
+            let mut asm = Assembler::new();
+            asm.jmp(block_entry_exit.into());
+            asm.compile(&mut cb);
 
             assert!(
                 cb.get_write_ptr() < block_end,
@@ -2154,12 +2156,11 @@ pub fn invalidate_block_version(blockref: &BlockRef) {
     // change this in the future when we support optional parameters because
     // they enter the function with a non-zero PC
     if block.blockid.idx == 0 {
+        // TODO:
+        // We could reset the exec counter to zero in rb_iseq_reset_jit_func()
+        // so that we eventually compile a new entry point when useful
         unsafe { rb_iseq_reset_jit_func(block.blockid.iseq) };
     }
-
-    // TODO:
-    // May want to recompile a new entry point (for interpreter entry blocks)
-    // This isn't necessary for correctness
 
     // FIXME:
     // Call continuation addresses on the stack can also be atomically replaced by jumps going to the stub.
