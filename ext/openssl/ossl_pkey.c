@@ -200,6 +200,7 @@ static VALUE
 pkey_ctx_apply_options0(VALUE args_v)
 {
     VALUE *args = (VALUE *)args_v;
+    Check_Type(args[1], T_HASH);
 
     rb_block_call(args[1], rb_intern("each"), 0, NULL,
                   pkey_ctx_apply_options_i, args[0]);
