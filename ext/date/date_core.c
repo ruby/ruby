@@ -2486,7 +2486,7 @@ date_s__valid_jd_p(int argc, VALUE *argv, VALUE klass)
  *
  *   Date.valid_jd?(2451944) # => true
  *
- * See argument {start}[rdoc-ref:Date@Argument+start].
+ * See argument {start}[rdoc-ref:calendars.rdoc@Argument+start].
  *
  * Related: Date.jd.
  */
@@ -2580,7 +2580,7 @@ date_s__valid_civil_p(int argc, VALUE *argv, VALUE klass)
  *   Date.valid_date?(2001, 2, 29) # => false
  *   Date.valid_date?(2001, 2, -1) # => true
  *
- * See argument {start}[rdoc-ref:Date@Argument+start].
+ * See argument {start}[rdoc-ref:calendars.rdoc@Argument+start].
  *
  * Date.valid_date? is an alias for Date.valid_civil?.
  *
@@ -2670,7 +2670,7 @@ date_s__valid_ordinal_p(int argc, VALUE *argv, VALUE klass)
  *   Date.valid_ordinal?(2001, 34)  # => true
  *   Date.valid_ordinal?(2001, 366) # => false
  *
- * See argument {start}[rdoc-ref:Date@Argument+start].
+ * See argument {start}[rdoc-ref:calendars.rdoc@Argument+start].
  *
  * Related: Date.jd, Date.ordinal.
  */
@@ -2760,7 +2760,7 @@ date_s__valid_commercial_p(int argc, VALUE *argv, VALUE klass)
  *
  * See Date.commercial.
  *
- * See argument {start}[rdoc-ref:Date@Argument+start].
+ * See argument {start}[rdoc-ref:calendars.rdoc@Argument+start].
  *
  * Related: Date.jd, Date.commercial.
  */
@@ -3342,7 +3342,7 @@ static VALUE d_lite_plus(VALUE, VALUE);
  *
  *     Date.jd(Date::ITALY - 1).julian?    # => true
  *
- * See argument {start}[rdoc-ref:Date@Argument+start].
+ * See argument {start}[rdoc-ref:calendars.rdoc@Argument+start].
  *
  * Related: Date.new.
  */
@@ -3407,7 +3407,7 @@ date_s_jd(int argc, VALUE *argv, VALUE klass)
  *
  * Raises an exception if +yday+ is zero or out of range.
  *
- * See argument {start}[rdoc-ref:Date@Argument+start].
+ * See argument {start}[rdoc-ref:calendars.rdoc@Argument+start].
  *
  * Related: Date.jd, Date.new.
  */
@@ -3484,7 +3484,7 @@ date_s_civil(int argc, VALUE *argv, VALUE klass)
  * where +n+ is the number of days in the month;
  * when the argument is negative, counts backward from the end of the month.
  *
- * See argument {start}[rdoc-ref:Date@Argument+start].
+ * See argument {start}[rdoc-ref:calendars.rdoc@Argument+start].
  *
  * Date.civil is an alias for Date.new.
  *
@@ -3592,7 +3592,7 @@ date_initialize(int argc, VALUE *argv, VALUE self)
  *     Date.commercial(2020, 1, 1).to_s # => "2019-12-30"
        Date.commercial(2020, 1, 7).to_s # => "2020-01-05"
  *
- * See argument {start}[rdoc-ref:Date@Argument+start].
+ * See argument {start}[rdoc-ref:calendars.rdoc@Argument+start].
  *
  * Related: Date.jd, Date.new, Date.ordinal.
  */
@@ -3777,7 +3777,7 @@ static void set_sg(union DateData *, double);
  *
  *   Date.today.to_s # => "2022-07-06"
  *
- * See argument {start}[rdoc-ref:Date@Argument+start].
+ * See argument {start}[rdoc-ref:calendars.rdoc@Argument+start].
  *
  */
 static VALUE
@@ -4409,7 +4409,7 @@ date_s__strptime(int argc, VALUE *argv, VALUE klass)
  * {Formats for Dates and Times}[https://docs.ruby-lang.org/en/master/strftime_formatting_rdoc.html].
  * (Unlike Date.strftime, does not support flags and width.)
  *
- * See argument {start}[rdoc-ref:Date@Argument+start].
+ * See argument {start}[rdoc-ref:calendars.rdoc@Argument+start].
  *
  * See also {strptime(3)}[https://man7.org/linux/man-pages/man3/strptime.3.html].
  *
@@ -4556,7 +4556,7 @@ date_s__parse(int argc, VALUE *argv, VALUE klass)
  *
  * See:
  *
- * - Argument {start}[rdoc-ref:Date@Argument+start].
+ * - Argument {start}[rdoc-ref:calendars.rdoc@Argument+start].
  * - Argument {limit}[rdoc-ref:Date@Argument+limit].
  *
  * Related: Date._parse (returns a hash).
@@ -4636,7 +4636,7 @@ date_s__iso8601(int argc, VALUE *argv, VALUE klass)
  *
  * See:
  *
- * - Argument {start}[rdoc-ref:Date@Argument+start].
+ * - Argument {start}[rdoc-ref:calendars.rdoc@Argument+start].
  * - Argument {limit}[rdoc-ref:Date@Argument+limit].
  *
  * Related: Date._iso8601 (returns a hash).
@@ -4707,7 +4707,7 @@ date_s__rfc3339(int argc, VALUE *argv, VALUE klass)
  *
  * See:
  *
- * - Argument {start}[rdoc-ref:Date@Argument+start].
+ * - Argument {start}[rdoc-ref:calendars.rdoc@Argument+start].
  * - Argument {limit}[rdoc-ref:Date@Argument+limit].
  *
  * Related: Date._rfc3339 (returns a hash).
@@ -4776,7 +4776,7 @@ date_s__xmlschema(int argc, VALUE *argv, VALUE klass)
  *
  * See:
  *
- * - Argument {start}[rdoc-ref:Date@Argument+start].
+ * - Argument {start}[rdoc-ref:calendars.rdoc@Argument+start].
  * - Argument {limit}[rdoc-ref:Date@Argument+limit].
  *
  * Related: Date._xmlschema (returns a hash).
@@ -4849,7 +4849,7 @@ date_s__rfc2822(int argc, VALUE *argv, VALUE klass)
  *
  * See:
  *
- * - Argument {start}[rdoc-ref:Date@Argument+start].
+ * - Argument {start}[rdoc-ref:calendars.rdoc@Argument+start].
  * - Argument {limit}[rdoc-ref:Date@Argument+limit].
  *
  * Date.rfc822 is an alias for Date.rfc2822.
@@ -4919,7 +4919,7 @@ date_s__httpdate(int argc, VALUE *argv, VALUE klass)
  *
  * See:
  *
- * - Argument {start}[rdoc-ref:Date@Argument+start].
+ * - Argument {start}[rdoc-ref:calendars.rdoc@Argument+start].
  * - Argument {limit}[rdoc-ref:Date@Argument+limit].
  *
  * Related: Date._httpdate (returns a hash).
@@ -4991,7 +4991,7 @@ date_s__jisx0301(int argc, VALUE *argv, VALUE klass)
  *
  * See:
  *
- * - Argument {start}[rdoc-ref:Date@Argument+start].
+ * - Argument {start}[rdoc-ref:calendars.rdoc@Argument+start].
  * - Argument {limit}[rdoc-ref:Date@Argument+limit].
  *
  * Related: Date._jisx0301 (returns a hash).
@@ -5755,7 +5755,7 @@ d_lite_leap_p(VALUE self)
  *   Date.new(2001, 2, 3, Date::GREGORIAN).start # => -Infinity
  *   Date.new(2001, 2, 3, Date::JULIAN).start    # => Infinity
  *
- * See argument {start}[rdoc-ref:Date@Argument+start].
+ * See argument {start}[rdoc-ref:calendars.rdoc@Argument+start].
  *
  */
 static VALUE
@@ -5830,7 +5830,7 @@ dup_obj_with_new_start(VALUE obj, double sg)
  *   d1 = d0.new_start(Date::JULIAN)
  *   d1.julian? # => true
  *
- * See argument {start}[rdoc-ref:Date@Argument+start].
+ * See argument {start}[rdoc-ref:calendars.rdoc@Argument+start].
  *
  */
 static VALUE
@@ -9522,54 +9522,6 @@ Init_date_core(void)
      *     d += 1			#=> #<Date: 2001-02-04 ...>
      *     d.strftime('%a %d %b %Y')	#=> "Sun 04 Feb 2001"
      *
-     * === Argument +start+
-     *
-     * Certain calculations and comparisons for a \Date object
-     * are affected by what the object considers to have been
-     * the changeover date from the
-     * {Julian}[https://en.wikipedia.org/wiki/Julian_calendar] to the
-     * {Gregorian}[https://en.wikipedia.org/wiki/Gregorian_calendar]
-     * calendar;
-     * this is set by argument +start+ when the object is created:
-     *
-     * - Dates before the changeover are considered to be Julian.
-     * - Dates after the changeover are considered to be Gregorian.
-     *
-     * The value of the +start+ argument may be:
-     *
-     * - Date::ITALY (the default) - the changeover date is October 10, 1582:
-     *
-     *     Date::ITALY               # => 2299161
-     *     Date.jd(Date::ITALY).to_s # => "1582-10-15"
-     *
-     *     # Julian base date, Julian result date.
-     *     (Date.new(1581, 1, 1, Date::ITALY) + 365).to_s # => "1582-01-01"
-     *     # Gregorian base date, Gregorian result date.
-     *     (Date.new(1583, 1, 1, Date::ITALY) + 365).to_s # => "1584-01-01"
-     *
-     *     # Julian base date, Gregorian result date.
-     *     (Date.new(1582, 1, 1, Date::ITALY) + 365).to_s # => "1583-01-11"
-     *     # Gregorian base date, Julian result date.
-     *     (Date.new(1583, 1, 1, Date::ITALY) - 365).to_s # => "1581-12-22"
-     *
-     * - Date::ENGLAND - the changeover date is September 9, 1752:
-     *
-     *     Date::ENGLAND               # => 2361222
-     *     Date.jd(Date::ENGLAND).to_s # => "1752-09-14"
-     *
-     *     # Julian base date, Julian result date.
-     *     (Date.new(1751, 1, 1, Date::ENGLAND) + 365).to_s # => "1752-01-01"
-     *     # Gregorian base date, Gregorian result date.
-     *     (Date.new(1753, 1, 1, Date::ENGLAND) + 365).to_s # => "1754-01-01"
-     *
-     *     # Julian base date, Gregorian result date.
-     *     (Date.new(1752, 1, 1, Date::ENGLAND) + 365).to_s # => "1753-01-11"
-     *     # Gregorian base date, Julian result date.
-     *     (Date.new(1753, 1, 1, Date::ENGLAND) - 365).to_s # => "1751-12-22"
-     *
-     * - Date::JULIAN - no changeover date; all dates are Julian.
-     * - Date::GREGORIAN - no changeover date; all dates are Gregorian.
-     *
      * === Argument +limit+
      *
      * Certain singleton methods in \Date that parse string arguments
@@ -9584,6 +9536,7 @@ Init_date_core(void)
      * - Other non-numeric: raises TypeError.
      *
      */
+
     cDate = rb_define_class("Date", rb_cObject);
 
     /* Exception for invalid date/time */
