@@ -119,8 +119,8 @@ class TestGemPlatform < Gem::TestCase
       "i586-linux"             => ["x86",       "linux",     nil],
       "i486-linux"             => ["x86",       "linux",     nil],
       "i386-linux"             => ["x86",       "linux",     nil],
-      "i586-linux-gnu"         => ["x86",       "linux",     nil],
-      "i386-linux-gnu"         => ["x86",       "linux",     nil],
+      "i586-linux-gnu"         => ["x86",       "linux",     "gnu"],
+      "i386-linux-gnu"         => ["x86",       "linux",     "gnu"],
       "i386-mingw32"           => ["x86",       "mingw32",   nil],
       "x64-mingw-ucrt"         => ["x64",       "mingw",     "ucrt"],
       "i386-mswin32"           => ["x86",       "mswin32",   nil],
@@ -135,7 +135,7 @@ class TestGemPlatform < Gem::TestCase
       "i386-solaris2.8"        => ["x86",       "solaris",   "2.8"],
       "mswin32"                => ["x86",       "mswin32",   nil],
       "x86_64-linux"           => ["x86_64",    "linux",     nil],
-      "x86_64-linux-gnu"       => ["x86_64",    "linux",     nil],
+      "x86_64-linux-gnu"       => ["x86_64",    "linux",     "gnu"],
       "x86_64-linux-musl"      => ["x86_64",    "linux",     "musl"],
       "x86_64-linux-uclibc"    => ["x86_64",    "linux",     "uclibc"],
       "x86_64-openbsd3.9"      => ["x86_64",    "openbsd",   "3.9"],
@@ -283,6 +283,10 @@ class TestGemPlatform < Gem::TestCase
     assert(x86_linux === x86_linux_gnu, "linux =~ linux-gnu")
     assert(x86_linux_gnu === x86_linux, "linux-gnu =~ linux")
 
+    # musl and explicit gnu should differ
+    refute(x86_linux_gnu === x86_linux_musl, "linux-gnu =~ linux-musl")
+    refute(x86_linux_musl === x86_linux_gnu, "linux-musl =~ linux-gnu")
+
     # explicit libc differ
     refute(x86_linux_uclibc === x86_linux_musl, "linux-uclibc =~ linux-musl")
     refute(x86_linux_musl === x86_linux_uclibc, "linux-musl =~ linux-uclibc")
@@ -291,6 +295,10 @@ class TestGemPlatform < Gem::TestCase
     assert(x86_linux === x86_linux_musl, "linux =~ linux-musl")
     # ...but implicit gnu runtime generally does not accept musl-specific gems
     refute(x86_linux_musl === x86_linux, "linux-musl =~ linux")
+
+    # other libc are not glibc compatible
+    refute(x86_linux === x86_linux_uclibc, "linux =~ linux-uclibc")
+    refute(x86_linux_uclibc === x86_linux, "linux-uclibc =~ linux")
   end
 
   def test_equals3_cpu_arm
