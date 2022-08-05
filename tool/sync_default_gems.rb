@@ -228,6 +228,7 @@ def sync_default_gems(gem)
     `git checkout ext/etc/depend`
   when "date"
     rm_rf(%w[ext/date test/date])
+    cp_r("#{upstream}/doc/date", "doc")
     cp_r("#{upstream}/ext/date", "ext")
     cp_r("#{upstream}/lib", "ext/date")
     cp_r("#{upstream}/test/date", "test")
