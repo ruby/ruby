@@ -278,7 +278,9 @@ extract-gems: $(HAVE_BASERUBY:yes=update-gems)
 bundled-gems := $(shell sed \
 	-e 's/[ 	][ 	]*/ /g' \
 	-e 's/^ //;/\#/d;s/ *$$//;/^$$/d' \
+	$(if $(filter yes,$(HAVE_GIT)), \
 	-e 's/^\(.*\) \(.*\) \(.*\) \(.*\)/\1|\2|\4|\3/' \
+	) \
 	-e 's/ /-/;s/ .*//' \
 	 $(srcdir)/gems/bundled_gems)
 
