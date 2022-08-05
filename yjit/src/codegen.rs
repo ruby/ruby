@@ -2274,7 +2274,7 @@ fn gen_concatstrings(
     // Save the PC and SP because we are allocating
     jit_prepare_routine_call(jit, ctx, asm);
 
-    let values_ptr = ctx.sp_opnd(-((SIZEOF_VALUE as isize) * n.as_isize()));
+    let values_ptr = asm.lea(ctx.sp_opnd(-((SIZEOF_VALUE as isize) * n.as_isize())));
 
     // call rb_str_concat_literals(long n, const VALUE *strings);
     let return_value = asm.ccall(
@@ -5317,15 +5317,14 @@ fn gen_anytostring(
     KeepCompiling
 }
 
-/*
 fn gen_objtostring(
     jit: &mut JITState,
     ctx: &mut Context,
-    cb: &mut CodeBlock,
+    asm: &mut Assembler,
     ocb: &mut OutlinedCb,
 ) -> CodegenStatus {
     if !jit_at_current_insn(jit) {
-        defer_compilation(jit, ctx, cb, ocb);
+        defer_compilation(jit, ctx, asm, ocb);
         return EndBlock;
     }
 
@@ -5338,7 +5337,7 @@ fn gen_objtostring(
         jit_guard_known_klass(
             jit,
             ctx,
-            cb,
+            asm,
             ocb,
             comptime_recv.class_of(),
             recv,
@@ -5351,10 +5350,9 @@ fn gen_objtostring(
         KeepCompiling
     } else {
         let cd = jit_get_arg(jit, 0).as_ptr();
-        gen_send_general(jit, ctx, cb, ocb, cd, None)
+        gen_send_general(jit, ctx, asm, ocb, cd, None)
     }
 }
-*/
 
 fn gen_intern(
     jit: &mut JITState,
@@ -5388,7 +5386,7 @@ fn gen_toregexp(
     // raise an exception.
     jit_prepare_routine_call(jit, ctx, asm);
 
-    let values_ptr = ctx.sp_opnd(-((SIZEOF_VALUE as isize) * (cnt as isize)));
+    let values_ptr = asm.lea(ctx.sp_opnd(-((SIZEOF_VALUE as isize) * (cnt as isize))));
     ctx.stack_pop(cnt);
 
     let ary = asm.ccall(
@@ -6011,7 +6009,7 @@ fn get_gen_fn(opcode: VALUE) -> Option<InsnGenFn> {
         YARVINSN_getglobal => Some(gen_getglobal),
         YARVINSN_setglobal => Some(gen_setglobal),
         YARVINSN_anytostring => Some(gen_anytostring),
-        //YARVINSN_objtostring => Some(gen_objtostring),
+        YARVINSN_objtostring => Some(gen_objtostring),
         YARVINSN_intern => Some(gen_intern),
         YARVINSN_toregexp => Some(gen_toregexp),
         YARVINSN_getspecial => Some(gen_getspecial),
