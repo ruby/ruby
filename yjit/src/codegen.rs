@@ -2423,13 +2423,12 @@ fn gen_opt_gt(
     gen_fixnum_cmp(jit, ctx, asm, ocb, Assembler::csel_g)
 }
 
-/*
 // Implements specialized equality for either two fixnum or two strings
 // Returns true if code was generated, otherwise false
 fn gen_equality_specialized(
     jit: &mut JITState,
     ctx: &mut Context,
-    cb: &mut CodeBlock,
+    asm: &mut Assembler,
     ocb: &mut OutlinedCb,
     side_exit: CodePtr,
 ) -> bool {
@@ -2445,19 +2444,16 @@ fn gen_equality_specialized(
             return false;
         }
 
-        guard_two_fixnums(ctx, cb, side_exit);
+        guard_two_fixnums(ctx, asm, side_exit);
 
-        mov(cb, REG0, a_opnd);
-        cmp(cb, REG0, b_opnd);
+        asm.cmp(a_opnd, b_opnd);
 
-        mov(cb, REG0, imm_opnd(Qfalse.into()));
-        mov(cb, REG1, imm_opnd(Qtrue.into()));
-        cmove(cb, REG0, REG1);
+        let val = asm.csel_ne(Opnd::Imm(Qfalse.into()), Opnd::Imm(Qtrue.into()));
 
         // Push the output on the stack
         ctx.stack_pop(2);
         let dst = ctx.stack_push(Type::UnknownImm);
-        mov(cb, dst, REG0);
+        asm.mov(dst, val);
 
         true
     } else if unsafe { comptime_a.class_of() == rb_cString && comptime_b.class_of() == rb_cString }
@@ -2467,30 +2463,26 @@ fn gen_equality_specialized(
             return false;
         }
 
-        // Load a and b in preparation for call later
-        mov(cb, C_ARG_REGS[0], a_opnd);
-        mov(cb, C_ARG_REGS[1], b_opnd);
-
         // Guard that a is a String
         jit_guard_known_klass(
             jit,
             ctx,
-            cb,
+            asm,
             ocb,
             unsafe { rb_cString },
-            C_ARG_REGS[0],
+            a_opnd,
             StackOpnd(1),
             comptime_a,
             SEND_MAX_DEPTH,
             side_exit,
         );
 
-        let ret = cb.new_label("ret".to_string());
+        let equal = asm.new_label("equal");
+        let ret = asm.new_label("ret");
 
         // If they are equal by identity, return true
-        cmp(cb, C_ARG_REGS[0], C_ARG_REGS[1]);
-        mov(cb, RAX, imm_opnd(Qtrue.into()));
-        je_label(cb, ret);
+        asm.cmp(a_opnd, b_opnd);
+        asm.je(equal);
 
         // Otherwise guard that b is a T_STRING (from type info) or String (from runtime guard)
         let btype = ctx.get_opnd_type(StackOpnd(0));
@@ -2500,10 +2492,10 @@ fn gen_equality_specialized(
             jit_guard_known_klass(
                 jit,
                 ctx,
-                cb,
+                asm,
                 ocb,
                 unsafe { rb_cString },
-                C_ARG_REGS[1],
+                b_opnd,
                 StackOpnd(0),
                 comptime_b,
                 SEND_MAX_DEPTH,
@@ -2512,14 +2504,18 @@ fn gen_equality_specialized(
         }
 
         // Call rb_str_eql_internal(a, b)
-        call_ptr(cb, REG0, rb_str_eql_internal as *const u8);
+        let val = asm.ccall(rb_str_eql_internal as *const u8, vec![a_opnd, b_opnd]);
 
         // Push the output on the stack
-        cb.write_label(ret);
         ctx.stack_pop(2);
         let dst = ctx.stack_push(Type::UnknownImm);
-        mov(cb, dst, RAX);
-        cb.link_labels();
+        asm.mov(dst, val);
+        asm.jmp(ret);
+
+        asm.write_label(equal);
+        asm.mov(dst, Qtrue.into());
+
+        asm.write_label(ret);
 
         true
     } else {
@@ -2530,38 +2526,39 @@ fn gen_equality_specialized(
 fn gen_opt_eq(
     jit: &mut JITState,
     ctx: &mut Context,
-    cb: &mut CodeBlock,
+    asm: &mut Assembler,
     ocb: &mut OutlinedCb,
 ) -> CodegenStatus {
     // Defer compilation so we can specialize base on a runtime receiver
     if !jit_at_current_insn(jit) {
-        defer_compilation(jit, ctx, cb, ocb);
+        defer_compilation(jit, ctx, asm, ocb);
         return EndBlock;
     }
 
     // Create a side-exit to fall back to the interpreter
     let side_exit = get_side_exit(jit, ocb, ctx);
 
-    if gen_equality_specialized(jit, ctx, cb, ocb, side_exit) {
-        jump_to_next_insn(jit, ctx, cb, ocb);
+    if gen_equality_specialized(jit, ctx, asm, ocb, side_exit) {
+        jump_to_next_insn(jit, ctx, asm, ocb);
         EndBlock
     } else {
-        gen_opt_send_without_block(jit, ctx, cb, ocb)
+        gen_opt_send_without_block(jit, ctx, asm, ocb)
     }
 }
 
 fn gen_opt_neq(
     jit: &mut JITState,
     ctx: &mut Context,
-    cb: &mut CodeBlock,
+    asm: &mut Assembler,
     ocb: &mut OutlinedCb,
 ) -> CodegenStatus {
     // opt_neq is passed two rb_call_data as arguments:
     // first for ==, second for !=
     let cd = jit_get_arg(jit, 1).as_ptr();
-    return gen_send_general(jit, ctx, cb, ocb, cd, None);
+    return gen_send_general(jit, ctx, asm, ocb, cd, None);
 }
 
+/*
 fn gen_opt_aref(
     jit: &mut JITState,
     ctx: &mut Context,
@@ -5971,12 +5968,10 @@ fn get_gen_fn(opcode: VALUE) -> Option<InsnGenFn> {
         YARVINSN_getinstancevariable => Some(gen_getinstancevariable),
         YARVINSN_setinstancevariable => Some(gen_setinstancevariable),
 
-        /*
         YARVINSN_opt_eq => Some(gen_opt_eq),
         YARVINSN_opt_neq => Some(gen_opt_neq),
-        YARVINSN_opt_aref => Some(gen_opt_aref),
-        YARVINSN_opt_aset => Some(gen_opt_aset),
-        */
+        //YARVINSN_opt_aref => Some(gen_opt_aref),
+        //YARVINSN_opt_aset => Some(gen_opt_aset),
         YARVINSN_opt_mult => Some(gen_opt_mult),
         YARVINSN_opt_div => Some(gen_opt_div),
         YARVINSN_opt_ltlt => Some(gen_opt_ltlt),
