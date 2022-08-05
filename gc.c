@@ -1476,6 +1476,7 @@ asan_poison_object_restore(VALUE obj, void *ptr)
 #define RVALUE_WB_UNPROTECTED_BITMAP(obj) MARKED_IN_BITMAP(GET_HEAP_WB_UNPROTECTED_BITS(obj), (obj))
 #define RVALUE_UNCOLLECTIBLE_BITMAP(obj)  MARKED_IN_BITMAP(GET_HEAP_UNCOLLECTIBLE_BITS(obj), (obj))
 #define RVALUE_MARKING_BITMAP(obj)        MARKED_IN_BITMAP(GET_HEAP_MARKING_BITS(obj), (obj))
+
 #define RVALUE_PAGE_WB_UNPROTECTED(page, obj) MARKED_IN_BITMAP((page)->wb_unprotected_bits, (obj))
 #define RVALUE_PAGE_UNCOLLECTIBLE(page, obj)  MARKED_IN_BITMAP((page)->uncollectible_bits, (obj))
 #define RVALUE_PAGE_MARKING(page, obj)        MARKED_IN_BITMAP((page)->marking_bits, (obj))
@@ -7358,13 +7359,11 @@ gc_mark(rb_objspace_t *objspace, VALUE obj)
 #if USE_MMTK
     if (rb_mmtk_enabled_p()) {
         rb_mmtk_mark_movable(obj);
-    } else {
-#endif
-        if (!is_markable_object(objspace, obj)) return;
-        gc_mark_ptr(objspace, obj);
-#if USE_MMTK
+        return;
     }
 #endif
+    if (!is_markable_object(objspace, obj)) return;
+    gc_mark_ptr(objspace, obj);
 }
 
 void
@@ -7415,7 +7414,7 @@ gc_mark_imemo(rb_objspace_t *objspace, VALUE obj)
 #if USE_MMTK
                 if (!rb_mmtk_enabled_p()) {
 #endif
-                    GC_ASSERT(VM_ENV_ESCAPED_P(env->ep));
+                GC_ASSERT(VM_ENV_ESCAPED_P(env->ep));
 #if USE_MMTK
                 }
 #endif
@@ -7774,8 +7773,8 @@ static void
 gc_mark_roots(rb_objspace_t *objspace, const char **categoryp)
 {
     struct gc_list *list;
-    rb_vm_t *vm;
     rb_execution_context_t *ec;
+    rb_vm_t *vm;
 
 #if USE_MMTK
     const bool mmtk_enabled_local = rb_mmtk_enabled_p(); // Allows control-flow sensitive analysis of ec etc
@@ -7831,7 +7830,7 @@ gc_mark_roots(rb_objspace_t *objspace, const char **categoryp)
     // Therefore we don't set stack end or scan the current stack.
     if (!mmtk_enabled_local) {
 #endif
-        SET_STACK_END;
+    SET_STACK_END;
 #if USE_MMTK
     }
 #endif
@@ -10110,24 +10109,24 @@ gc_start_internal(rb_execution_context_t *ec, VALUE self, VALUE full_mark, VALUE
     }
     else {
 #endif
-        unsigned int reason = (GPR_FLAG_FULL_MARK |
-                            GPR_FLAG_IMMEDIATE_MARK |
-                            GPR_FLAG_IMMEDIATE_SWEEP |
-                            GPR_FLAG_METHOD);
+    unsigned int reason = (GPR_FLAG_FULL_MARK |
+                           GPR_FLAG_IMMEDIATE_MARK |
+                           GPR_FLAG_IMMEDIATE_SWEEP |
+                           GPR_FLAG_METHOD);
 
-        /* For now, compact implies full mark / sweep, so ignore other flags */
-        if (RTEST(compact)) {
-            GC_ASSERT(GC_COMPACTION_SUPPORTED);
+    /* For now, compact implies full mark / sweep, so ignore other flags */
+    if (RTEST(compact)) {
+        GC_ASSERT(GC_COMPACTION_SUPPORTED);
 
-            reason |= GPR_FLAG_COMPACT;
-        }
-        else {
-            if (!RTEST(full_mark))       reason &= ~GPR_FLAG_FULL_MARK;
-            if (!RTEST(immediate_mark))  reason &= ~GPR_FLAG_IMMEDIATE_MARK;
-            if (!RTEST(immediate_sweep)) reason &= ~GPR_FLAG_IMMEDIATE_SWEEP;
-        }
+        reason |= GPR_FLAG_COMPACT;
+    }
+    else {
+        if (!RTEST(full_mark))       reason &= ~GPR_FLAG_FULL_MARK;
+        if (!RTEST(immediate_mark))  reason &= ~GPR_FLAG_IMMEDIATE_MARK;
+        if (!RTEST(immediate_sweep)) reason &= ~GPR_FLAG_IMMEDIATE_SWEEP;
+    }
 
-        garbage_collect(objspace, reason);
+    garbage_collect(objspace, reason);
 #if USE_MMTK
     }
 #endif
