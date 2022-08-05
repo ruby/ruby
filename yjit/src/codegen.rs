@@ -3074,11 +3074,10 @@ fn gen_opt_str_freeze(
     KeepCompiling
 }
 
-/*
 fn gen_opt_str_uminus(
     jit: &mut JITState,
     ctx: &mut Context,
-    cb: &mut CodeBlock,
+    asm: &mut Assembler,
     ocb: &mut OutlinedCb,
 ) -> CodegenStatus {
     if !assume_bop_not_redefined(jit, ocb, STRING_REDEFINED_OP_FLAG, BOP_UMINUS) {
@@ -3086,15 +3085,13 @@ fn gen_opt_str_uminus(
     }
 
     let str = jit_get_arg(jit, 0);
-    jit_mov_gc_ptr(jit, cb, REG0, str);
 
     // Push the return value onto the stack
     let stack_ret = ctx.stack_push(Type::CString);
-    mov(cb, stack_ret, REG0);
+    asm.mov(stack_ret, str.into());
 
     KeepCompiling
 }
-*/
 
 fn gen_opt_not(
     jit: &mut JITState,
@@ -5965,7 +5962,7 @@ fn get_gen_fn(opcode: VALUE) -> Option<InsnGenFn> {
         YARVINSN_opt_ge => Some(gen_opt_ge),
         YARVINSN_opt_mod => Some(gen_opt_mod),
         YARVINSN_opt_str_freeze => Some(gen_opt_str_freeze),
-        //YARVINSN_opt_str_uminus => Some(gen_opt_str_uminus),
+        YARVINSN_opt_str_uminus => Some(gen_opt_str_uminus),
         YARVINSN_splatarray => Some(gen_splatarray),
         YARVINSN_newrange => Some(gen_newrange),
         YARVINSN_putstring => Some(gen_putstring),
