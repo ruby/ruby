@@ -66,6 +66,15 @@ pub enum Op
     // instruction.
     Not,
 
+    /// Shift a value right by a certain amount (signed).
+    RShift,
+
+    /// Shift a value right by a certain amount (unsigned).
+    URShift,
+
+    /// Shift a value left by a certain amount.
+    LShift,
+
     //
     // Low-level instructions
     //
@@ -912,6 +921,9 @@ def_push_2_opnd!(sub, Op::Sub);
 def_push_2_opnd!(and, Op::And);
 def_push_2_opnd!(or, Op::Or);
 def_push_1_opnd!(not, Op::Not);
+def_push_2_opnd!(lshift, Op::LShift);
+def_push_2_opnd!(rshift, Op::RShift);
+def_push_2_opnd!(urshift, Op::URShift);
 def_push_1_opnd_no_out!(cpush, Op::CPush);
 def_push_0_opnd!(cpop, Op::CPop);
 def_push_1_opnd_no_out!(cpop_into, Op::CPopInto);

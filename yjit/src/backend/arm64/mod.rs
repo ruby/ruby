@@ -576,6 +576,15 @@ impl Assembler
                 Op::Not => {
                     mvn(cb, insn.out.into(), insn.opnds[0].into());
                 },
+                Op::RShift => {
+                    asr(cb, insn.out.into(), insn.opnds[0].into(), insn.opnds[1].into());
+                },
+                Op::URShift => {
+                    lsr(cb, insn.out.into(), insn.opnds[0].into(), insn.opnds[1].into());
+                },
+                Op::LShift => {
+                    lsl(cb, insn.out.into(), insn.opnds[0].into(), insn.opnds[1].into());
+                },
                 Op::Store => {
                     // This order may be surprising but it is correct. The way
                     // the Arm64 assembler works, the register that is going to
@@ -897,6 +906,33 @@ mod tests {
         let (mut asm, mut cb) = setup_asm();
 
         let opnd = asm.or(Opnd::Reg(X0_REG), Opnd::Reg(X1_REG));
+        asm.store(Opnd::mem(64, Opnd::Reg(X2_REG), 0), opnd);
+        asm.compile_with_num_regs(&mut cb, 1);
+    }
+
+    #[test]
+    fn test_emit_lshift() {
+        let (mut asm, mut cb) = setup_asm();
+
+        let opnd = asm.lshift(Opnd::Reg(X0_REG), Opnd::UImm(5));
+        asm.store(Opnd::mem(64, Opnd::Reg(X2_REG), 0), opnd);
+        asm.compile_with_num_regs(&mut cb, 1);
+    }
+
+    #[test]
+    fn test_emit_rshift() {
+        let (mut asm, mut cb) = setup_asm();
+
+        let opnd = asm.rshift(Opnd::Reg(X0_REG), Opnd::UImm(5));
+        asm.store(Opnd::mem(64, Opnd::Reg(X2_REG), 0), opnd);
+        asm.compile_with_num_regs(&mut cb, 1);
+    }
+
+    #[test]
+    fn test_emit_urshift() {
+        let (mut asm, mut cb) = setup_asm();
+
+        let opnd = asm.urshift(Opnd::Reg(X0_REG), Opnd::UImm(5));
         asm.store(Opnd::mem(64, Opnd::Reg(X2_REG), 0), opnd);
         asm.compile_with_num_regs(&mut cb, 1);
     }

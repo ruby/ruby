@@ -164,6 +164,37 @@ impl Assembler
 
                     asm.push_insn(op, vec![opnd0, opnd1], target, text, pos_marker);
                 },
+                // These instructions modify their input operand in-place, so we
+                // may need to load the input value to preserve it
+                Op::LShift | Op::RShift | Op::URShift => {
+                    let (opnd0, opnd1) = match (opnds[0], opnds[1]) {
+                        // Instruction output whose live range spans beyond this instruction
+                        (Opnd::InsnOut { .. }, _) => {
+                            let idx = match original_opnds[0] {
+                                Opnd::InsnOut { idx, .. } => {
+                                    idx
+                                },
+                                _ => unreachable!()
+                            };
+
+                            // Our input must be from a previous instruction!
+                            assert!(idx < index);
+
+                            if live_ranges[idx] > index {
+                                (asm.load(opnds[0]), opnds[1])
+                            } else {
+                                (opnds[0], opnds[1])
+                            }
+                        },
+                        // We have to load memory operands to avoid corrupting them
+                        (Opnd::Mem(_) | Opnd::Reg(_), _) => {
+                            (asm.load(opnds[0]), opnds[1])
+                        },
+                        _ => (opnds[0], opnds[1])
+                    };
+
+                    asm.push_insn(op, vec![opnd0, opnd1], target, text, pos_marker);
+                },
                 Op::CSelZ | Op::CSelNZ | Op::CSelE | Op::CSelNE |
                 Op::CSelL | Op::CSelLE | Op::CSelG | Op::CSelGE => {
                     let new_opnds = opnds.into_iter().map(|opnd| {
@@ -291,6 +322,18 @@ impl Assembler
 
                 Op::Not => {
                     not(cb, insn.opnds[0].into())
+                },
+
+                Op::LShift => {
+                    shl(cb, insn.opnds[0].into(), insn.opnds[1].into())
+                },
+
+                Op::RShift => {
+                    sar(cb, insn.opnds[0].into(), insn.opnds[1].into())
+                },
+
+                Op::URShift => {
+                    shr(cb, insn.opnds[0].into(), insn.opnds[1].into())
                 },
 
                 Op::Store => mov(cb, insn.opnds[0].into(), insn.opnds[1].into()),

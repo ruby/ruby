@@ -166,6 +166,22 @@ pub fn ands(cb: &mut CodeBlock, rd: A64Opnd, rn: A64Opnd, rm: A64Opnd) {
     cb.write_bytes(&bytes);
 }
 
+/// ASR - arithmetic shift right rn by shift, put the result in rd, don't update
+/// flags
+pub fn asr(cb: &mut CodeBlock, rd: A64Opnd, rn: A64Opnd, shift: A64Opnd) {
+    let bytes: [u8; 4] = match (rd, rn, shift) {
+        (A64Opnd::Reg(rd), A64Opnd::Reg(rn), A64Opnd::UImm(shift)) => {
+            assert!(rd.num_bits == rn.num_bits, "rd and rn must be of the same size.");
+            assert!(uimm_fits_bits(shift, 6), "The shift operand must be 6 bits or less.");
+
+            SBFM::asr(rd.reg_no, rn.reg_no, shift.try_into().unwrap(), rd.num_bits).into()
+        },
+        _ => panic!("Invalid operand combination to asr instruction."),
+    };
+
+    cb.write_bytes(&bytes);
+}
+
 /// Whether or not the offset between two instructions fits into the branch with
 /// or without link instruction. If it doesn't, then we have to load the value
 /// into a register first.
@@ -901,6 +917,11 @@ mod tests {
     #[test]
     fn test_ands_immediate() {
         check_bytes("200840f2", |cb| ands(cb, X0, X1, A64Opnd::new_uimm(7)));
+    }
+
+    #[test]
+    fn test_asr() {
+        check_bytes("b4fe4a93", |cb| asr(cb, X20, X21, A64Opnd::new_uimm(10)));
     }
 
     #[test]

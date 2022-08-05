@@ -31,6 +31,18 @@ pub struct SBFM {
 }
 
 impl SBFM {
+    /// ASR
+    /// https://developer.arm.com/documentation/ddi0596/2020-12/Base-Instructions/ASR--immediate---Arithmetic-Shift-Right--immediate---an-alias-of-SBFM-?lang=en
+    pub fn asr(rd: u8, rn: u8, shift: u8, num_bits: u8) -> Self {
+        let (imms, n) = if num_bits == 64 {
+            (0b111111, true)
+        } else {
+            (0b011111, false)
+        };
+
+        Self { rd, rn, immr: shift, imms, n, sf: num_bits.into() }
+    }
+
     /// SXTW
     /// https://developer.arm.com/documentation/ddi0596/2021-12/Base-Instructions/SXTW--Sign-Extend-Word--an-alias-of-SBFM-?lang=en
     pub fn sxtw(rd: u8, rn: u8) -> Self {
@@ -44,13 +56,16 @@ const FAMILY: u32 = 0b1001;
 impl From<SBFM> for u32 {
     /// Convert an instruction into a 32-bit value.
     fn from(inst: SBFM) -> Self {
+        let immr = (inst.immr as u32) & ((1 << 6) - 1);
+        let imms = (inst.imms as u32) & ((1 << 6) - 1);
+
         0
         | ((inst.sf as u32) << 31)
         | (FAMILY << 25)
         | (1 << 24)
         | ((inst.n as u32) << 22)
-        | ((inst.immr as u32) << 16)
-        | ((inst.imms as u32) << 10)
+        | (immr << 16)
+        | (imms << 10)
         | ((inst.rn as u32) << 5)
         | inst.rd as u32
     }
@@ -67,6 +82,20 @@ impl From<SBFM> for [u8; 4] {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn test_asr_32_bits() {
+        let inst = SBFM::asr(0, 1, 2, 32);
+        let result: u32 = inst.into();
+        assert_eq!(0x13027c20, result);
+    }
+
+    #[test]
+    fn test_asr_64_bits() {
+        let inst = SBFM::asr(10, 11, 5, 64);
+        let result: u32 = inst.into();
+        assert_eq!(0x9345fd6a, result);
+    }
 
     #[test]
     fn test_sxtw() {
