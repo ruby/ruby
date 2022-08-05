@@ -2448,7 +2448,7 @@ fn gen_equality_specialized(
 
         asm.cmp(a_opnd, b_opnd);
 
-        let val = asm.csel_ne(Opnd::Imm(Qfalse.into()), Opnd::Imm(Qtrue.into()));
+        let val = asm.csel_ne(Qfalse.into(), Qtrue.into());
 
         // Push the output on the stack
         ctx.stack_pop(2);
