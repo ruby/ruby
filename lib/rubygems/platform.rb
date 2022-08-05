@@ -25,7 +25,7 @@ class Gem::Platform
     platforms.any? do |local_platform|
       platform.nil? ||
         local_platform == platform ||
-        (local_platform != Gem::Platform::RUBY && local_platform =~ platform)
+        (local_platform != Gem::Platform::RUBY && platform =~ local_platform)
     end
   end
   private_class_method :match_platforms?
