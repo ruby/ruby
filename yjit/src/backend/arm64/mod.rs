@@ -181,17 +181,17 @@ impl Assembler
                 Op::And | Op::Or => {
                     match (opnds[0], opnds[1]) {
                         (Opnd::Reg(_), Opnd::Reg(_)) => {
-                            asm.and(opnds[0], opnds[1]);
+                            asm.push_insn(op, vec![opnds[0], opnds[1]], target, text, pos_marker);
                         },
                         (reg_opnd @ Opnd::Reg(_), other_opnd) |
                         (other_opnd, reg_opnd @ Opnd::Reg(_)) => {
                             let opnd1 = split_bitmask_immediate(asm, other_opnd);
-                            asm.and(reg_opnd, opnd1);
+                            asm.push_insn(op, vec![reg_opnd, opnd1], target, text, pos_marker);
                         },
                         _ => {
                             let opnd0 = asm.load(opnds[0]);
                             let opnd1 = split_bitmask_immediate(asm, opnds[1]);
-                            asm.and(opnd0, opnd1);
+                            asm.push_insn(op, vec![opnd0, opnd1], target, text, pos_marker);
                         }
                     }
                 },

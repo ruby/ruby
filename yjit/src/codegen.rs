@@ -2809,16 +2809,17 @@ fn gen_opt_aset(
         gen_opt_send_without_block(jit, ctx, cb, ocb)
     }
 }
+*/
 
 fn gen_opt_and(
     jit: &mut JITState,
     ctx: &mut Context,
-    cb: &mut CodeBlock,
+    asm: &mut Assembler,
     ocb: &mut OutlinedCb,
 ) -> CodegenStatus {
     // Defer compilation so we can specialize on a runtime `self`
     if !jit_at_current_insn(jit) {
-        defer_compilation(jit, ctx, cb, ocb);
+        defer_compilation(jit, ctx, asm, ocb);
         return EndBlock;
     }
 
@@ -2835,36 +2836,35 @@ fn gen_opt_and(
         }
 
         // Check that both operands are fixnums
-        guard_two_fixnums(ctx, cb, side_exit);
+        guard_two_fixnums(ctx, asm, side_exit);
 
         // Get the operands and destination from the stack
         let arg1 = ctx.stack_pop(1);
         let arg0 = ctx.stack_pop(1);
 
         // Do the bitwise and arg0 & arg1
-        mov(cb, REG0, arg0);
-        and(cb, REG0, arg1);
+        let val = asm.and(arg0, arg1);
 
         // Push the output on the stack
         let dst = ctx.stack_push(Type::Fixnum);
-        mov(cb, dst, REG0);
+        asm.store(dst, val);
 
         KeepCompiling
     } else {
         // Delegate to send, call the method on the recv
-        gen_opt_send_without_block(jit, ctx, cb, ocb)
+        gen_opt_send_without_block(jit, ctx, asm, ocb)
     }
 }
 
 fn gen_opt_or(
     jit: &mut JITState,
     ctx: &mut Context,
-    cb: &mut CodeBlock,
+    asm: &mut Assembler,
     ocb: &mut OutlinedCb,
 ) -> CodegenStatus {
     // Defer compilation so we can specialize on a runtime `self`
     if !jit_at_current_insn(jit) {
-        defer_compilation(jit, ctx, cb, ocb);
+        defer_compilation(jit, ctx, asm, ocb);
         return EndBlock;
     }
 
@@ -2881,36 +2881,35 @@ fn gen_opt_or(
         }
 
         // Check that both operands are fixnums
-        guard_two_fixnums(ctx, cb, side_exit);
+        guard_two_fixnums(ctx, asm, side_exit);
 
         // Get the operands and destination from the stack
         let arg1 = ctx.stack_pop(1);
         let arg0 = ctx.stack_pop(1);
 
         // Do the bitwise or arg0 | arg1
-        mov(cb, REG0, arg0);
-        or(cb, REG0, arg1);
+        let val = asm.or(arg0, arg1);
 
         // Push the output on the stack
         let dst = ctx.stack_push(Type::Fixnum);
-        mov(cb, dst, REG0);
+        asm.store(dst, val);
 
         KeepCompiling
     } else {
         // Delegate to send, call the method on the recv
-        gen_opt_send_without_block(jit, ctx, cb, ocb)
+        gen_opt_send_without_block(jit, ctx, asm, ocb)
     }
 }
 
 fn gen_opt_minus(
     jit: &mut JITState,
     ctx: &mut Context,
-    cb: &mut CodeBlock,
+    asm: &mut Assembler,
     ocb: &mut OutlinedCb,
 ) -> CodegenStatus {
     // Defer compilation so we can specialize on a runtime `self`
     if !jit_at_current_insn(jit) {
-        defer_compilation(jit, ctx, cb, ocb);
+        defer_compilation(jit, ctx, asm, ocb);
         return EndBlock;
     }
 
@@ -2927,29 +2926,27 @@ fn gen_opt_minus(
         }
 
         // Check that both operands are fixnums
-        guard_two_fixnums(ctx, cb, side_exit);
+        guard_two_fixnums(ctx, asm, side_exit);
 
         // Get the operands and destination from the stack
         let arg1 = ctx.stack_pop(1);
         let arg0 = ctx.stack_pop(1);
 
         // Subtract arg0 - arg1 and test for overflow
-        mov(cb, REG0, arg0);
-        sub(cb, REG0, arg1);
-        jo_ptr(cb, side_exit);
-        add(cb, REG0, imm_opnd(1));
+        let val_untag = asm.sub(arg0, arg1);
+        asm.jo(side_exit.into());
+        let val = asm.add(val_untag, Opnd::Imm(1));
 
         // Push the output on the stack
         let dst = ctx.stack_push(Type::Fixnum);
-        mov(cb, dst, REG0);
+        asm.store(dst, val);
 
         KeepCompiling
     } else {
         // Delegate to send, call the method on the recv
-        gen_opt_send_without_block(jit, ctx, cb, ocb)
+        gen_opt_send_without_block(jit, ctx, asm, ocb)
     }
 }
-*/
 
 fn gen_opt_mult(
     jit: &mut JITState,
@@ -5957,11 +5954,9 @@ fn get_gen_fn(opcode: VALUE) -> Option<InsnGenFn> {
         YARVINSN_setlocal_WC_0 => Some(gen_setlocal_wc0),
         YARVINSN_setlocal_WC_1 => Some(gen_setlocal_wc1),
         YARVINSN_opt_plus => Some(gen_opt_plus),
-        /*
         YARVINSN_opt_minus => Some(gen_opt_minus),
         YARVINSN_opt_and => Some(gen_opt_and),
         YARVINSN_opt_or => Some(gen_opt_or),
-        */
         YARVINSN_newhash => Some(gen_newhash),
         YARVINSN_duphash => Some(gen_duphash),
         YARVINSN_newarray => Some(gen_newarray),
