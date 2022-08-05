@@ -3468,8 +3468,8 @@ fn jit_guard_known_klass(
 
             // We will guard flonum vs heap float as though they were separate classes
             asm.comment("guard object is flonum");
-            asm.and(obj_opnd, Opnd::UImm(RUBY_FLONUM_MASK as u64));
-            asm.cmp(obj_opnd, Opnd::UImm(RUBY_FLONUM_FLAG as u64));
+            let flag_bits = asm.and(obj_opnd, Opnd::UImm(RUBY_FLONUM_MASK as u64));
+            asm.cmp(flag_bits, Opnd::UImm(RUBY_FLONUM_FLAG as u64));
             jit_chain_guard(JCC_JNE, jit, ctx, asm, ocb, max_chain_depth, side_exit);
             ctx.upgrade_opnd_type(insn_opnd, Type::Flonum);
         }
