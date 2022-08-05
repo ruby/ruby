@@ -324,8 +324,7 @@ $(srcdir)/gems/src/$(1): | $(srcdir)/gems/src
 
 $(srcdir)/.bundle/gems/$(1)-$(2): | $(srcdir)/gems/src/$(1) .bundle/gems
 	$(ECHO) Copying $(1)@$(3) to $$(@F)
-	$(Q) $(GIT) -C "$(srcdir)/gems/src/$(1)" fetch origin $(3)
-	$(Q) $(GIT) -C "$(srcdir)/gems/src/$(1)" checkout $(3)
+	$(Q) $(CHDIR) "$(srcdir)/gems/src/$(1)" && $(GIT) fetch origin $(3) && $(GIT) checkout $(3)
 	$(Q) $(BASERUBY) -C "$(srcdir)" \
 	    -Itool/lib -rbundled_gem \
 	    -e 'BundledGem.copy("gems/src/$(1)/$(1).gemspec", ".bundle")'
