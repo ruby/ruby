@@ -5997,7 +5997,7 @@ fn get_gen_fn(opcode: VALUE) -> Option<InsnGenFn> {
         //YARVINSN_getblockparamproxy => Some(gen_getblockparamproxy),
         //YARVINSN_getblockparam => Some(gen_getblockparam),
         YARVINSN_opt_send_without_block => Some(gen_opt_send_without_block),
-        //YARVINSN_send => Some(gen_send),
+        YARVINSN_send => Some(gen_send),
         //YARVINSN_invokesuper => Some(gen_invokesuper),
         YARVINSN_leave => Some(gen_leave),
 
