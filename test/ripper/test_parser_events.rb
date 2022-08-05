@@ -864,6 +864,16 @@ class TestRipper::ParserEvents < Test::Unit::TestCase
     assert_equal false, recv_locals
 
     recv_params, recv_locals = nil, nil
+    parse('-> foo {}', :on_lambda_var) do |_, params, locals|
+      recv_params, recv_locals = params.list, locals
+    end
+
+    # parameters without block-local variables should return the list of
+    # parameters and false for locals
+    assert_equal ['foo'], recv_params
+    assert_equal false, recv_locals
+
+    recv_params, recv_locals = nil, nil
     parse('-> (foo; bar) {}', :on_lambda_var) do |_, params, locals|
       recv_params, recv_locals = params.list, locals
     end
