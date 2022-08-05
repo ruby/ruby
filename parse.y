@@ -3839,7 +3839,7 @@ f_larglist	: '(' f_args opt_bv_decl ')'
 			if (!args_info_empty_p($1->nd_ainfo))
 			    p->max_numparam = ORDINAL_PARAM;
 		    /*% %*/
-            /*% ripper: lambda_var!($1, Qnil) %*/
+		    /*% ripper[$1]: lambda_var!($1, Qnil) %*/
 			$$ = $1;
 		    }
 		;
