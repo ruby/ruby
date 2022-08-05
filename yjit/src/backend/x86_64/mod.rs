@@ -40,8 +40,6 @@ impl From<Opnd> for X86Opnd {
 
             Opnd::InsnOut{..} => panic!("InsnOut operand made it past register allocation"),
 
-            Opnd::None => X86Opnd::None,
-
             Opnd::UImm(val) => uimm_opnd(val),
             Opnd::Imm(val) => imm_opnd(val),
             Opnd::Value(VALUE(uimm)) => uimm_opnd(uimm as u64),
@@ -59,6 +57,10 @@ impl From<Opnd> for X86Opnd {
 
                 mem_opnd(num_bits, X86Opnd::Reg(reg), disp)
             }
+
+            Opnd::None => panic!(
+                "Attempted to lower an Opnd::None. This often happens when an out operand was not allocated for an instruction because the output of the instruction was not used. Please ensure you are using the output."
+            ),
 
             _ => panic!("unsupported x86 operand type")
         }

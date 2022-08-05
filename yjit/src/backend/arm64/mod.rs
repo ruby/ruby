@@ -50,8 +50,11 @@ impl From<Opnd> for A64Opnd {
                 panic!("attempted to lower an Opnd::Mem with a MemBase::InsnOut base")
             },
             Opnd::InsnOut { .. } => panic!("attempted to lower an Opnd::InsnOut"),
-            Opnd::None => panic!("attempted to lower an Opnd::None"),
             Opnd::Value(_) => panic!("attempted to lower an Opnd::Value"),
+            Opnd::None => panic!(
+                "Attempted to lower an Opnd::None. This often happens when an out operand was not allocated for an instruction because the output of the instruction was not used. Please ensure you are using the output."
+            ),
+
         }
     }
 }
