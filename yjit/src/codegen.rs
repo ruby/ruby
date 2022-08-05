@@ -2971,16 +2971,15 @@ fn gen_opt_div(
     gen_opt_send_without_block(jit, ctx, asm, ocb)
 }
 
-/*
 fn gen_opt_mod(
     jit: &mut JITState,
     ctx: &mut Context,
-    cb: &mut CodeBlock,
+    asm: &mut Assembler,
     ocb: &mut OutlinedCb,
 ) -> CodegenStatus {
     // Defer compilation so we can specialize on a runtime `self`
     if !jit_at_current_insn(jit) {
-        defer_compilation(jit, ctx, cb, ocb);
+        defer_compilation(jit, ctx, asm, ocb);
         return EndBlock;
     }
 
@@ -2997,33 +2996,29 @@ fn gen_opt_mod(
         }
 
         // Check that both operands are fixnums
-        guard_two_fixnums(ctx, cb, side_exit);
+        guard_two_fixnums(ctx, asm, side_exit);
 
         // Get the operands and destination from the stack
         let arg1 = ctx.stack_pop(1);
         let arg0 = ctx.stack_pop(1);
 
-        mov(cb, C_ARG_REGS[0], arg0);
-        mov(cb, C_ARG_REGS[1], arg1);
-
         // Check for arg0 % 0
-        cmp(cb, C_ARG_REGS[1], imm_opnd(VALUE::fixnum_from_usize(0).as_i64()));
-        je_ptr(cb, side_exit);
+        asm.cmp(arg1, Opnd::Imm(VALUE::fixnum_from_usize(0).as_i64()));
+        asm.je(side_exit.into());
 
         // Call rb_fix_mod_fix(VALUE recv, VALUE obj)
-        call_ptr(cb, REG0, rb_fix_mod_fix as *const u8);
+        let ret = asm.ccall(rb_fix_mod_fix as *const u8, vec![arg0, arg1]);
 
         // Push the return value onto the stack
         let stack_ret = ctx.stack_push(Type::Unknown);
-        mov(cb, stack_ret, RAX);
+        asm.mov(stack_ret, ret);
 
         KeepCompiling
     } else {
         // Delegate to send, call the method on the recv
-        gen_opt_send_without_block(jit, ctx, cb, ocb)
+        gen_opt_send_without_block(jit, ctx, asm, ocb)
     }
 }
-*/
 
 fn gen_opt_ltlt(
     jit: &mut JITState,
@@ -5976,11 +5971,9 @@ fn get_gen_fn(opcode: VALUE) -> Option<InsnGenFn> {
         YARVINSN_opt_le => Some(gen_opt_le),
         YARVINSN_opt_gt => Some(gen_opt_gt),
         YARVINSN_opt_ge => Some(gen_opt_ge),
-        /*
         YARVINSN_opt_mod => Some(gen_opt_mod),
-        YARVINSN_opt_str_freeze => Some(gen_opt_str_freeze),
-        YARVINSN_opt_str_uminus => Some(gen_opt_str_uminus),
-        */
+        //YARVINSN_opt_str_freeze => Some(gen_opt_str_freeze),
+        //YARVINSN_opt_str_uminus => Some(gen_opt_str_uminus),
         YARVINSN_splatarray => Some(gen_splatarray),
         YARVINSN_newrange => Some(gen_newrange),
         YARVINSN_putstring => Some(gen_putstring),
