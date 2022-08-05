@@ -2139,11 +2139,10 @@ fn gen_getinstancevariable(
     )
 }
 
-/*
 fn gen_setinstancevariable(
     jit: &mut JITState,
     ctx: &mut Context,
-    cb: &mut CodeBlock,
+    asm: &mut Assembler,
     _ocb: &mut OutlinedCb,
 ) -> CodegenStatus {
     let id = jit_get_arg(jit, 0);
@@ -2151,27 +2150,25 @@ fn gen_setinstancevariable(
 
     // Save the PC and SP because the callee may allocate
     // Note that this modifies REG_SP, which is why we do it first
-    jit_prepare_routine_call(jit, ctx, cb, REG0);
+    jit_prepare_routine_call(jit, ctx, asm);
 
     // Get the operands from the stack
     let val_opnd = ctx.stack_pop(1);
 
     // Call rb_vm_setinstancevariable(iseq, obj, id, val, ic);
-    mov(
-        cb,
-        C_ARG_REGS[1],
-        mem_opnd(64, REG_CFP, RUBY_OFFSET_CFP_SELF),
+    asm.ccall(
+        rb_vm_setinstancevariable as *const u8,
+        vec![
+            Opnd::const_ptr(jit.iseq as *const u8),
+            Opnd::mem(64, CFP, RUBY_OFFSET_CFP_SELF),
+            Opnd::UImm(id.into()),
+            val_opnd,
+            Opnd::const_ptr(ic as *const u8),
+        ]
     );
-    mov(cb, C_ARG_REGS[3], val_opnd);
-    mov(cb, C_ARG_REGS[2], uimm_opnd(id.into()));
-    mov(cb, C_ARG_REGS[4], const_ptr_opnd(ic as *const u8));
-    let iseq = VALUE(jit.iseq as usize);
-    jit_mov_gc_ptr(jit, cb, C_ARG_REGS[0], iseq);
-    call_ptr(cb, REG0, rb_vm_setinstancevariable as *const u8);
 
     KeepCompiling
 }
-*/
 
 fn gen_defined(
     jit: &mut JITState,
@@ -5977,7 +5974,7 @@ fn get_gen_fn(opcode: VALUE) -> Option<InsnGenFn> {
         YARVINSN_checkkeyword => Some(gen_checkkeyword),
         YARVINSN_concatstrings => Some(gen_concatstrings),
         YARVINSN_getinstancevariable => Some(gen_getinstancevariable),
-        //YARVINSN_setinstancevariable => Some(gen_setinstancevariable),
+        YARVINSN_setinstancevariable => Some(gen_setinstancevariable),
 
         /*
         YARVINSN_opt_eq => Some(gen_opt_eq),
