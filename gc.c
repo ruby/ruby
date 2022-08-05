@@ -1515,20 +1515,20 @@ check_rvalue_consistency_force(const VALUE obj, int terminate)
 #if USE_MMTK
             if (!rb_mmtk_enabled_p()) {
 #endif
-                /* check if it is in tomb_pages */
-                struct heap_page *page = NULL;
-                for (int i = 0; i < SIZE_POOL_COUNT; i++) {
-                    rb_size_pool_t *size_pool = &size_pools[i];
-                    ccan_list_for_each(&size_pool->tomb_heap.pages, page, page_node) {
-                        if (page->start <= (uintptr_t)obj &&
-                                (uintptr_t)obj < (page->start + (page->total_slots * size_pool->slot_size))) {
-                            fprintf(stderr, "check_rvalue_consistency: %p is in a tomb_heap (%p).\n",
-                                    (void *)obj, (void *)page);
-                            err++;
-                            goto skip;
-                        }
+            /* check if it is in tomb_pages */
+            struct heap_page *page = NULL;
+            for (int i = 0; i < SIZE_POOL_COUNT; i++) {
+                rb_size_pool_t *size_pool = &size_pools[i];
+                ccan_list_for_each(&size_pool->tomb_heap.pages, page, page_node) {
+                    if (page->start <= (uintptr_t)obj &&
+                            (uintptr_t)obj < (page->start + (page->total_slots * size_pool->slot_size))) {
+                        fprintf(stderr, "check_rvalue_consistency: %p is in a tomb_heap (%p).\n",
+                                (void *)obj, (void *)page);
+                        err++;
+                        goto skip;
                     }
                 }
+            }
 #if USE_MMTK
     }
 #endif
@@ -1578,46 +1578,46 @@ check_rvalue_consistency_force(const VALUE obj, int terminate)
 #if USE_MMTK
             if (!mmtk_enabled_local) {
 #endif
-                /* check generation
-                *
-                * OLD == age == 3 && old-bitmap && mark-bit (except incremental marking)
-                */
-                if (age > 0 && wb_unprotected_bit) {
-                    fprintf(stderr, "check_rvalue_consistency: %s is not WB protected, but age is %d > 0.\n", obj_info(obj), age);
+            /* check generation
+             *
+             * OLD == age == 3 && old-bitmap && mark-bit (except incremental marking)
+             */
+            if (age > 0 && wb_unprotected_bit) {
+                fprintf(stderr, "check_rvalue_consistency: %s is not WB protected, but age is %d > 0.\n", obj_info(obj), age);
+                err++;
+            }
+
+            if (!is_marking(objspace) && uncollectible_bit && !mark_bit) {
+                fprintf(stderr, "check_rvalue_consistency: %s is uncollectible, but is not marked while !gc.\n", obj_info(obj));
+                err++;
+            }
+
+            if (!is_full_marking(objspace)) {
+                if (uncollectible_bit && age != RVALUE_OLD_AGE && !wb_unprotected_bit) {
+                    fprintf(stderr, "check_rvalue_consistency: %s is uncollectible, but not old (age: %d) and not WB unprotected.\n",
+                            obj_info(obj), age);
                     err++;
                 }
-
-                if (!is_marking(objspace) && uncollectible_bit && !mark_bit) {
-                    fprintf(stderr, "check_rvalue_consistency: %s is uncollectible, but is not marked while !gc.\n", obj_info(obj));
+                if (remembered_bit && age != RVALUE_OLD_AGE) {
+                    fprintf(stderr, "check_rvalue_consistency: %s is remembered, but not old (age: %d).\n",
+                            obj_info(obj), age);
                     err++;
                 }
+            }
 
-                if (!is_full_marking(objspace)) {
-                    if (uncollectible_bit && age != RVALUE_OLD_AGE && !wb_unprotected_bit) {
-                        fprintf(stderr, "check_rvalue_consistency: %s is uncollectible, but not old (age: %d) and not WB unprotected.\n",
-                                obj_info(obj), age);
-                        err++;
-                    }
-                    if (remembered_bit && age != RVALUE_OLD_AGE) {
-                        fprintf(stderr, "check_rvalue_consistency: %s is remembered, but not old (age: %d).\n",
-                                obj_info(obj), age);
-                        err++;
-                    }
+            /*
+             * check coloring
+             *
+             *               marking:false marking:true
+             * marked:false  white         *invalid*
+             * marked:true   black         grey
+             */
+            if (is_incremental_marking(objspace) && marking_bit) {
+                if (!is_marking(objspace) && !mark_bit) {
+                    fprintf(stderr, "check_rvalue_consistency: %s is marking, but not marked.\n", obj_info(obj));
+                    err++;
                 }
-
-                /*
-                * check coloring
-                *
-                *               marking:false marking:true
-                * marked:false  white         *invalid*
-                * marked:true   black         grey
-                */
-                if (is_incremental_marking(objspace) && marking_bit) {
-                    if (!is_marking(objspace) && !mark_bit) {
-                        fprintf(stderr, "check_rvalue_consistency: %s is marking, but not marked.\n", obj_info(obj));
-                        err++;
-                    }
-                }
+            }
 #if USE_MMTK
             }
 #endif
@@ -2593,10 +2593,10 @@ newobj_init(VALUE klass, VALUE flags, int wb_protected, rb_objspace_t *objspace,
 #if USE_MMTK
     if (!rb_mmtk_enabled_p()) {
 #endif
-        if (UNLIKELY(wb_protected == FALSE)) {
-            ASSERT_vm_locking();
-            MARK_IN_BITMAP(GET_HEAP_WB_UNPROTECTED_BITS(obj), obj);
-        }
+    if (UNLIKELY(wb_protected == FALSE)) {
+        ASSERT_vm_locking();
+        MARK_IN_BITMAP(GET_HEAP_WB_UNPROTECTED_BITS(obj), obj);
+    }
 #if USE_MMTK
     }
 #endif
@@ -3556,9 +3556,9 @@ make_zombie(rb_objspace_t *objspace, VALUE obj, void (*dfree)(void *), void *dat
     // With MMTk, we decouple deferred jobs from memory management.
     if (!rb_mmtk_enabled_p()) {
 #endif
-        struct heap_page *page = GET_HEAP_PAGE(obj);
-        page->final_slots++;
-        heap_pages_final_slots++;
+    struct heap_page *page = GET_HEAP_PAGE(obj);
+    page->final_slots++;
+    heap_pages_final_slots++;
 #if USE_MMTK
     }
 #endif
@@ -3620,7 +3620,7 @@ obj_free(rb_objspace_t *objspace, VALUE obj)
 #if USE_MMTK
     if (!rb_mmtk_enabled_p()) {
 #endif
-        if (RVALUE_WB_UNPROTECTED(obj)) CLEAR_IN_BITMAP(GET_HEAP_WB_UNPROTECTED_BITS(obj), obj);
+    if (RVALUE_WB_UNPROTECTED(obj)) CLEAR_IN_BITMAP(GET_HEAP_WB_UNPROTECTED_BITS(obj), obj);
 #if USE_MMTK
     }
 #endif
@@ -4001,20 +4001,20 @@ Init_heap(void)
     if (!rb_mmtk_enabled_p()) {
 #endif
 #if RGENGC_ESTIMATE_OLDMALLOC
-        objspace->rgengc.oldmalloc_increase_limit = gc_params.oldmalloc_limit_min;
+    objspace->rgengc.oldmalloc_increase_limit = gc_params.oldmalloc_limit_min;
 #endif
 
-        heap_add_pages(objspace, &size_pools[0], SIZE_POOL_EDEN_HEAP(&size_pools[0]), gc_params.heap_init_slots / HEAP_PAGE_OBJ_LIMIT);
+    heap_add_pages(objspace, &size_pools[0], SIZE_POOL_EDEN_HEAP(&size_pools[0]), gc_params.heap_init_slots / HEAP_PAGE_OBJ_LIMIT);
 
-        /* Give other size pools allocatable pages. */
-        for (int i = 1; i < SIZE_POOL_COUNT; i++) {
-            rb_size_pool_t *size_pool = &size_pools[i];
-            int multiple = size_pool->slot_size / BASE_SLOT_SIZE;
-            size_pool->allocatable_pages = gc_params.heap_init_slots * multiple / HEAP_PAGE_OBJ_LIMIT;
-        }
-        heap_pages_expand_sorted(objspace);
+    /* Give other size pools allocatable pages. */
+    for (int i = 1; i < SIZE_POOL_COUNT; i++) {
+        rb_size_pool_t *size_pool = &size_pools[i];
+        int multiple = size_pool->slot_size / BASE_SLOT_SIZE;
+        size_pool->allocatable_pages = gc_params.heap_init_slots * multiple / HEAP_PAGE_OBJ_LIMIT;
+    }
+    heap_pages_expand_sorted(objspace);
 
-        init_mark_stack(&objspace->mark_stack);
+    init_mark_stack(&objspace->mark_stack);
 #if USE_MMTK
     }
 #endif
@@ -4609,20 +4609,20 @@ finalize_list(rb_objspace_t *objspace, VALUE zombie)
 #if USE_MMTK
             if (!mmtk_enabled_local) {
 #endif
-                // TODO: will probably need to re-enable this section when we
-                // implement object/ID bijective mappings
-                GC_ASSERT(BUILTIN_TYPE(zombie) == T_ZOMBIE);
-                if (FL_TEST(zombie, FL_SEEN_OBJ_ID)) {
-                    obj_free_object_id(objspace, zombie);
-                }
+            // TODO: will probably need to re-enable this section when we
+            // implement object/ID bijective mappings
+            GC_ASSERT(BUILTIN_TYPE(zombie) == T_ZOMBIE);
+            if (FL_TEST(zombie, FL_SEEN_OBJ_ID)) {
+                obj_free_object_id(objspace, zombie);
+            }
 
-                GC_ASSERT(heap_pages_final_slots > 0);
-                GC_ASSERT(page->final_slots > 0);
+            GC_ASSERT(heap_pages_final_slots > 0);
+            GC_ASSERT(page->final_slots > 0);
 
-                heap_pages_final_slots--;
-                page->final_slots--;
-                page->free_slots++;
-                heap_page_add_freeobj(objspace, page, zombie);
+            heap_pages_final_slots--;
+            page->final_slots--;
+            page->free_slots++;
+            heap_page_add_freeobj(objspace, page, zombie);
 #if USE_MMTK
             }
 #endif
@@ -4723,19 +4723,19 @@ rb_objspace_call_finalizer(rb_objspace_t *objspace)
     // We need mmtk-core to support PhantomReference.
     if (!rb_mmtk_enabled_p()) {
 #endif
-        /* force to run finalizer */
-        while (finalizer_table->num_entries) {
-            struct force_finalize_list *list = 0;
-            st_foreach(finalizer_table, force_chain_object, (st_data_t)&list);
-            while (list) {
-                struct force_finalize_list *curr = list;
-                st_data_t obj = (st_data_t)curr->obj;
-                run_finalizer(objspace, curr->obj, curr->table);
-                st_delete(finalizer_table, &obj, 0);
-                list = curr->next;
-                xfree(curr);
-            }
+    /* force to run finalizer */
+    while (finalizer_table->num_entries) {
+        struct force_finalize_list *list = 0;
+        st_foreach(finalizer_table, force_chain_object, (st_data_t)&list);
+        while (list) {
+            struct force_finalize_list *curr = list;
+            st_data_t obj = (st_data_t)curr->obj;
+            run_finalizer(objspace, curr->obj, curr->table);
+            st_delete(finalizer_table, &obj, 0);
+            list = curr->next;
+            xfree(curr);
         }
+    }
 #if USE_MMTK
     }
 #endif
@@ -7845,9 +7845,9 @@ gc_mark_roots(rb_objspace_t *objspace, const char **categoryp)
 #if USE_MMTK
     if (!mmtk_enabled_local) {
 #endif
-        // When using MMTk, the current thread is a GC worker.  Mutators are scanned separately.
-        MARK_CHECKPOINT("machine_context");
-        mark_current_machine_context(objspace, ec);
+    // When using MMTk, the current thread is a GC worker.  Mutators are scanned separately.
+    MARK_CHECKPOINT("machine_context");
+    mark_current_machine_context(objspace, ec);
 #if USE_MMTK
     }
 #endif
@@ -11558,8 +11558,8 @@ gc_stat_internal(VALUE hash_or_sym)
 #if USE_MMTK
     if (!rb_mmtk_enabled_p()) {
 #endif
-        SET(count, objspace->profile.count);
-        SET(time, (size_t) (objspace->profile.total_time_ns / (1000 * 1000) /* ns -> ms */)); // TODO: UINT64T2NUM
+    SET(count, objspace->profile.count);
+    SET(time, (size_t) (objspace->profile.total_time_ns / (1000 * 1000) /* ns -> ms */)); // TODO: UINT64T2NUM
 #if USE_MMTK
     }
 #endif
