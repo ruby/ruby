@@ -1383,14 +1383,13 @@ rb_thread_sleep_deadly_allow_spurious_wakeup(VALUE blocker, VALUE timeout, rb_hr
     if (scheduler != Qnil) {
         rb_fiber_scheduler_block(scheduler, blocker, timeout);
     }
+    else if (end) {
+        RUBY_DEBUG_LOG("until %"PRIuHRTIME, end);
+        sleep_hrtime_until(GET_THREAD(), end, SLEEP_SPURIOUS_CHECK);
+    }
     else {
         RUBY_DEBUG_LOG("");
-        if (end) {
-            sleep_hrtime_until(GET_THREAD(), end, SLEEP_SPURIOUS_CHECK);
-        }
-        else {
-            sleep_forever(GET_THREAD(), SLEEP_DEADLOCKABLE);
-        }
+        sleep_forever(GET_THREAD(), SLEEP_DEADLOCKABLE);
     }
 }
 
