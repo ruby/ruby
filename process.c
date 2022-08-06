@@ -3773,7 +3773,7 @@ rb_exec_atfork(void* arg, char *errmsg, size_t errmsg_buflen)
     return rb_exec_async_signal_safe(arg, errmsg, errmsg_buflen); /* hopefully async-signal-safe */
 }
 
-#if SIZEOF_INT == SIZEOF_LONG
+#if SIZEOF_INT == SIZEOF_VALUE
 #define proc_syswait (VALUE (*)(VALUE))rb_syswait
 #else
 static VALUE
