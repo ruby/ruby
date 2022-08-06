@@ -2283,8 +2283,14 @@ match_named_captures_iter(const OnigUChar *name, const OnigUChar *name_end,
     struct MEMO *memo = MEMO_CAST(arg);
     VALUE hash = memo->v1;
     VALUE match = memo->v2;
+    long symbolize = memo->u3.state;
 
     VALUE key = rb_enc_str_new((const char *)name, name_end-name, regex->enc);
+
+    if (symbolize > 0) {
+        key = rb_str_intern(key);
+    }
+
     VALUE value;
 
     int i;
@@ -2346,6 +2352,83 @@ match_named_captures(VALUE match)
     onig_foreach_name(RREGEXP(RMATCH(match)->regexp)->ptr, match_named_captures_iter, (void*)memo);
 
     return hash;
+}
+
+/*
+ *  call-seq:
+ *    deconstruct_keys(array_of_names) -> hash
+ *
+ *  Returns a hash of the named captures for the given names.
+ *
+ *    m = /(?<hours>\d{2}):(?<minutes>\d{2}):(?<seconds>\d{2})/.match("18:37:22")
+ *    m.deconstruct_keys([:hours, :minutes]) # => {:hours => "18", :minutes => "37"}
+ *    m.deconstruct_keys(nil) # => {:hours => "18", :minutes => "37", :seconds => "22"}
+ *
+ *  Returns an empty hash of no named captures were defined:
+ *
+ *    m = /(\d{2}):(\d{2}):(\d{2})/.match("18:37:22")
+ *    m.deconstruct_keys(nil) # => {}
+ *
+ */
+static VALUE
+match_deconstruct_keys(VALUE match, VALUE keys)
+{
+    VALUE h;
+    long i;
+
+    match_check(match);
+
+    if (NIL_P(RMATCH(match)->regexp)) {
+        return rb_hash_new_with_size(0);
+    }
+
+    if (NIL_P(keys)) {
+        h = rb_hash_new_with_size(onig_number_of_names(RREGEXP_PTR(RMATCH(match)->regexp)));
+
+        struct MEMO *memo;
+        memo = MEMO_NEW(h, match, 1);
+
+        onig_foreach_name(RREGEXP_PTR(RMATCH(match)->regexp), match_named_captures_iter, (void*)memo);
+
+        return h;
+    }
+
+    if (UNLIKELY(!RB_TYPE_P(keys, T_ARRAY))) {
+        rb_raise(rb_eTypeError,
+                 "wrong argument type %"PRIsVALUE" (expected Array or nil)",
+                 rb_obj_class(keys));
+
+    }
+
+    if (onig_number_of_names(RREGEXP_PTR(RMATCH(match)->regexp)) < RARRAY_LEN(keys)) {
+        return rb_hash_new_with_size(0);
+    }
+
+    h = rb_hash_new_with_size(RARRAY_LEN(keys));
+
+    for (i=0; i<RARRAY_LEN(keys); i++) {
+        VALUE key = RARRAY_AREF(keys, i);
+        VALUE name;
+
+        if (UNLIKELY(!SYMBOL_P(key))) {
+            rb_raise(rb_eTypeError,
+                 "wrong argument type %"PRIsVALUE" (expected Symbol)",
+                 rb_obj_class(key));
+        }
+
+        name = rb_sym2str(key);
+
+        int num = NAME_TO_NUMBER(RMATCH_REGS(match), RMATCH(match)->regexp, RMATCH(match)->regexp,
+                         RSTRING_PTR(name), RSTRING_END(name));
+
+        if (num >= 0) {
+            rb_hash_aset(h, key, rb_reg_nth_match(num, match));
+        } else {
+            return h;
+        }
+    }
+
+    return h;
 }
 
 /*
@@ -4542,7 +4625,9 @@ Init_Regexp(void)
     rb_define_method(rb_cMatch, "to_a", match_to_a, 0);
     rb_define_method(rb_cMatch, "[]", match_aref, -1);
     rb_define_method(rb_cMatch, "captures", match_captures, 0);
+    rb_define_alias(rb_cMatch,  "deconstruct", "captures");
     rb_define_method(rb_cMatch, "named_captures", match_named_captures, 0);
+    rb_define_method(rb_cMatch, "deconstruct_keys", match_deconstruct_keys, 1);
     rb_define_method(rb_cMatch, "values_at", match_values_at, -1);
     rb_define_method(rb_cMatch, "pre_match", rb_reg_match_pre, 0);
     rb_define_method(rb_cMatch, "post_match", rb_reg_match_post, 0);
