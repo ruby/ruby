@@ -1176,12 +1176,14 @@ rb_vm_thread_backtrace_locations(int argc, const VALUE *argv, VALUE thval)
     return thread_backtrace_to_ary(argc, argv, thval, 0);
 }
 
-VALUE rb_vm_backtrace(int argc, const VALUE * argv, struct rb_execution_context_struct * ec)
+VALUE
+rb_vm_backtrace(int argc, const VALUE * argv, struct rb_execution_context_struct * ec)
 {
     return ec_backtrace_to_ary(ec, argc, argv, 0, 0, 1);
 }
 
-VALUE rb_vm_backtrace_locations(int argc, const VALUE * argv, struct rb_execution_context_struct * ec)
+VALUE
+rb_vm_backtrace_locations(int argc, const VALUE * argv, struct rb_execution_context_struct * ec)
 {
     return ec_backtrace_to_ary(ec, argc, argv, 0, 0, 0);
 }

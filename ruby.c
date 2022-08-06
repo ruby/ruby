@@ -1529,7 +1529,8 @@ void rb_call_builtin_inits(void);
 #if RBIMPL_HAS_ATTRIBUTE(weak)
 __attribute__((weak))
 #endif
-void Init_extra_exts(void)
+void
+Init_extra_exts(void)
 {
 }
 

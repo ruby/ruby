@@ -624,7 +624,8 @@ rb_mutex_synchronize_m(VALUE self)
     return rb_mutex_synchronize(self, rb_yield, Qundef);
 }
 
-void rb_mutex_allow_trap(VALUE self, int val)
+void
+rb_mutex_allow_trap(VALUE self, int val)
 {
     Check_TypedStruct(self, &mutex_data_type);
 
@@ -714,7 +715,8 @@ queue_ptr(VALUE obj)
 #define QUEUE_CLOSED          FL_USER5
 
 static rb_hrtime_t
-queue_timeout2hrtime(VALUE timeout) {
+queue_timeout2hrtime(VALUE timeout)
+{
     if (NIL_P(timeout)) {
         return (rb_hrtime_t)0;
     }

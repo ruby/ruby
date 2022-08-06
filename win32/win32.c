@@ -5406,7 +5406,8 @@ wrename(const WCHAR *oldpath, const WCHAR *newpath)
 }
 
 /* License: Ruby's */
-int rb_w32_urename(const char *from, const char *to)
+int
+rb_w32_urename(const char *from, const char *to)
 {
     WCHAR *wfrom;
     WCHAR *wto;
@@ -5425,7 +5426,8 @@ int rb_w32_urename(const char *from, const char *to)
 }
 
 /* License: Ruby's */
-int rb_w32_rename(const char *from, const char *to)
+int
+rb_w32_rename(const char *from, const char *to)
 {
     WCHAR *wfrom;
     WCHAR *wto;

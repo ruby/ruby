@@ -2260,7 +2260,8 @@ rb_marshal_load_with_proc(VALUE port, VALUE proc, bool freeze)
     return v;
 }
 
-static VALUE marshal_load(rb_execution_context_t *ec, VALUE mod, VALUE source, VALUE proc, VALUE freeze)
+static VALUE
+marshal_load(rb_execution_context_t *ec, VALUE mod, VALUE source, VALUE proc, VALUE freeze)
 {
     return rb_marshal_load_with_proc(source, proc, RTEST(freeze));
 }
