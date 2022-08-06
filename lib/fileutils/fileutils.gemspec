@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-source_version = ["", "lib/"].find do |dir|
+source_version = ["../", "lib/"].find do |dir|
   begin
     break File.open(File.join(__dir__, "#{dir}fileutils.rb")) {|f|
       f.gets("\n  VERSION = ")

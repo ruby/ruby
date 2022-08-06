@@ -2,7 +2,7 @@ begin
   require_relative "lib/mutex_m"
 rescue LoadError
   # for Ruby core repository
-  require_relative "mutex_m"
+  require_relative "../mutex_m"
 end
 
 Gem::Specification.new do |spec|

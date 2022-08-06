@@ -306,7 +306,7 @@ def sync_default_gems(gem)
     rm_rf(%w[lib/erb* test/erb libexec/erb])
     cp_r("#{upstream}/lib/erb.rb", "lib")
     cp_r("#{upstream}/test/erb", "test")
-    cp_r("#{upstream}/erb.gemspec", "lib")
+    cp_r("#{upstream}/erb.gemspec", "lib/erb")
     cp_r("#{upstream}/libexec/erb", "libexec")
   when "nkf"
     rm_rf(%w[ext/nkf test/nkf])
@@ -530,11 +530,7 @@ def sync_lib(repo, upstream = nil)
             "test/test_#{repo}.rb"
           end
   cp_r("#{upstream}/#{tests}", "test") if File.exist?("#{upstream}/#{tests}")
-  gemspec = if File.directory?("lib/#{repo}")
-              "lib/#{repo}/#{repo}.gemspec"
-            else
-              "lib/#{repo}.gemspec"
-            end
+  gemspec = "lib/#{repo}/#{repo}.gemspec"
   cp_r("#{upstream}/#{repo}.gemspec", "#{gemspec}")
 end
 
