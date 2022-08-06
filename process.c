@@ -3773,16 +3773,12 @@ rb_exec_atfork(void* arg, char *errmsg, size_t errmsg_buflen)
     return rb_exec_async_signal_safe(arg, errmsg, errmsg_buflen); /* hopefully async-signal-safe */
 }
 
-#if SIZEOF_INT == SIZEOF_VALUE
-#define proc_syswait (VALUE (*)(VALUE))rb_syswait
-#else
 static VALUE
 proc_syswait(VALUE pid)
 {
-    rb_syswait((int)pid);
+    rb_syswait((rb_pid_t)pid);
     return Qnil;
 }
-#endif
 
 static int
 move_fds_to_avoid_crash(int *fdp, int n, VALUE fds)
