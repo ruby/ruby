@@ -113,6 +113,8 @@ Note: We're only listing outstanding class updates.
 
 * MatchData
     * MatchData#byteoffset has been added. [[Feature #13110]]
+    * MatchData#deconstruct has been added. [[Feature #18821]]
+    * MatchData#deconstruct_keys has been added. [[Feature #18821]]
 
 * Module
     * Module.used_refinements has been added. [[Feature #14332]]
