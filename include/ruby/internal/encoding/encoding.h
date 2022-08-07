@@ -643,10 +643,12 @@ rb_enc_code_to_mbclen(int c, rb_encoding *enc)
  * Identical to rb_enc_uint_chr(),  except it writes back to  the passed buffer
  * instead of allocating one.
  *
- * @param[in]   c    Code point.
- * @param[out]  buf  Return buffer.
- * @param[in]   enc  Target encoding scheme.
- * @post        `c` is encoded according to `enc`, then written to `buf`.
+ * @param[in]  c          Code point.
+ * @param[out] buf        Return buffer.
+ * @param[in]  enc        Target encoding scheme.
+ * @retval     <= 0       `c` is invalid in `enc`.
+ * @return     otherwise  Number of bytes written to `buf`.
+ * @post       `c` is encoded according to `enc`, then written to `buf`.
  *
  * @internal
  *
