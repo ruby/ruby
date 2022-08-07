@@ -811,7 +811,7 @@ class RDoc::Markdown
 
       @note_order.each_with_index do |ref, index|
         label = index + 1
-        note = @footnotes[ref]
+        note = @footnotes[ref] or raise ParseError, "footnote [^#{ref}] not found"
 
         link = "{^#{label}}[rdoc-label:footmark-#{label}:foottext-#{label}] "
         note.parts.unshift link
@@ -15533,7 +15533,7 @@ class RDoc::Markdown
     return _tmp
   end
 
-  # RawNoteBlock = @StartList:a (!@BlankLine OptionallyIndentedLine:l { a << l })+ < @BlankLine* > { a << text } { a }
+  # RawNoteBlock = @StartList:a (!@BlankLine !RawNoteReference OptionallyIndentedLine:l { a << l })+ < @BlankLine* > { a << text } { a }
   def _RawNoteBlock
 
     _save = self.pos
@@ -15556,6 +15556,14 @@ class RDoc::Markdown
           self.pos = _save2
           break
         end
+        _save4 = self.pos
+        _tmp = apply(:_RawNoteReference)
+        _tmp = _tmp ? nil : true
+        self.pos = _save4
+        unless _tmp
+          self.pos = _save2
+          break
+        end
         _tmp = apply(:_OptionallyIndentedLine)
         l = @result
         unless _tmp
@@ -15573,26 +15581,34 @@ class RDoc::Markdown
       if _tmp
         while true
 
-          _save4 = self.pos
+          _save5 = self.pos
           while true # sequence
-            _save5 = self.pos
+            _save6 = self.pos
             _tmp = _BlankLine()
             _tmp = _tmp ? nil : true
-            self.pos = _save5
+            self.pos = _save6
             unless _tmp
-              self.pos = _save4
+              self.pos = _save5
+              break
+            end
+            _save7 = self.pos
+            _tmp = apply(:_RawNoteReference)
+            _tmp = _tmp ? nil : true
+            self.pos = _save7
+            unless _tmp
+              self.pos = _save5
               break
             end
             _tmp = apply(:_OptionallyIndentedLine)
             l = @result
             unless _tmp
-              self.pos = _save4
+              self.pos = _save5
               break
             end
             @result = begin;  a << l ; end
             _tmp = true
             unless _tmp
-              self.pos = _save4
+              self.pos = _save5
             end
             break
           end # end sequence
@@ -16656,7 +16672,7 @@ class RDoc::Markdown
   Rules[:_Note] = rule_info("Note", "&{ notes? } @NonindentSpace RawNoteReference:ref \":\" @Sp @StartList:a RawNoteBlock:i { a.concat i } (&Indent RawNoteBlock:i { a.concat i })* { @footnotes[ref] = paragraph a                    nil                 }")
   Rules[:_InlineNote] = rule_info("InlineNote", "&{ notes? } \"^[\" @StartList:a (!\"]\" Inline:l { a << l })+ \"]\" { ref = [:inline, @note_order.length]                @footnotes[ref] = paragraph a                 note_for ref              }")
   Rules[:_Notes] = rule_info("Notes", "(Note | SkipBlock)*")
-  Rules[:_RawNoteBlock] = rule_info("RawNoteBlock", "@StartList:a (!@BlankLine OptionallyIndentedLine:l { a << l })+ < @BlankLine* > { a << text } { a }")
+  Rules[:_RawNoteBlock] = rule_info("RawNoteBlock", "@StartList:a (!@BlankLine !RawNoteReference OptionallyIndentedLine:l { a << l })+ < @BlankLine* > { a << text } { a }")
   Rules[:_CodeFence] = rule_info("CodeFence", "&{ github? } Ticks3 (@Sp StrChunk:format)? Spnl < ((!\"`\" Nonspacechar)+ | !Ticks3 /`+/ | Spacechar | @Newline)+ > Ticks3 @Sp @Newline* { verbatim = RDoc::Markup::Verbatim.new text               verbatim.format = format.intern if format.instance_of?(String)               verbatim             }")
   Rules[:_Table] = rule_info("Table", "&{ github? } TableRow:header TableLine:line TableRow+:body { table = RDoc::Markup::Table.new(header, line, body) }")
   Rules[:_TableRow] = rule_info("TableRow", "TableItem+:row \"|\" @Newline { row }")

@@ -761,7 +761,6 @@ with inline notes^[like this]
 and an extra note.[^2]
 
 [^1]: With a footnote
-
 [^2]: Which should be numbered correctly
     MD
 
