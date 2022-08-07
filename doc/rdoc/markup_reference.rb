@@ -662,6 +662,37 @@ require 'rdoc'
 #   # [<tt>Two words</tt>] <tt>Two words</tt> in labeled list item.
 #   # ====== <tt>Two words</tt> in heading
 #
+# ==== Escaping Text Markup
+#
+# Text markup can be escaped with a backslash, as in \<tt>, which was obtained
+# with <tt>\\<tt></tt>.  Except in verbatim sections and between \<tt> tags,
+# to produce a backslash you have to double it unless it is followed by a
+# space, tab or newline. Otherwise, the HTML formatter will discard it, as it
+# is used to escape potential links:
+#
+#   * The \ must be doubled if not followed by white space: \\.
+#   * But not in \<tt> tags: in a Regexp, <tt>\S</tt> matches non-space.
+#   * This is a link to {ruby-lang}[https://www.ruby-lang.org].
+#   * This is not a link, however: \{ruby-lang.org}[https://www.ruby-lang.org].
+#   * This will not be linked to \RDoc::RDoc#document
+#
+# generates:
+#
+# * The \ must be doubled if not followed by white space: \\.
+# * But not in \<tt> tags: in a Regexp, <tt>\S</tt> matches non-space.
+# * This is a link to {ruby-lang}[https://www.ruby-lang.org]
+# * This is not a link, however: \{ruby-lang.org}[https://www.ruby-lang.org]
+# * This will not be linked to \RDoc::RDoc#document
+#
+# Inside \<tt> tags, more precisely, leading backslashes are removed only if
+# followed by a markup character (<tt><*_+</tt>), a backslash, or a known link
+# reference (a known class or method). So in the example above, the backslash
+# of <tt>\S</tt> would be removed if there was a class or module named +S+ in
+# the current context.
+#
+# This behavior is inherited from RDoc version 1, and has been kept for
+# compatibility with existing RDoc documentation.
+#
 # ==== Character Conversions
 #
 # Certain combinations of characters may be converted to special characters;
