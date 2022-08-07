@@ -773,7 +773,7 @@ module RbInstall
                     remove_prefix(prefix, ruby_source)
                   end
                 else
-                  [File.basename(@gemspec, '.gemspec') + '.rb']
+                  [@gemspec[%r[(?:[^/]+/)?[^/]+(?=\.gemspec\z)]] + '.rb']
                 end
 
         case File.basename(@gemspec, ".gemspec")
