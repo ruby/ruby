@@ -88,6 +88,8 @@ module TestIRB
         "foo(*%W(bar))" => "foo(*#{RED}#{BOLD}%W(#{CLEAR}#{RED}bar#{CLEAR}#{RED}#{BOLD})#{CLEAR})",
         "$stdout" => "#{GREEN}#{BOLD}$stdout#{CLEAR}",
         "__END__" => "#{GREEN}__END__#{CLEAR}",
+        "foo\n__END__\nbar" => "foo\n#{GREEN}__END__#{CLEAR}\nbar",
+        "foo\n<<A\0\0bar\nA\nbaz" => "foo\n#{RED}<<A#{CLEAR}^@^@bar\n#{RED}A#{CLEAR}\nbaz",
       }
 
       # specific to Ruby 2.7+
