@@ -5818,45 +5818,40 @@ fn gen_getblockparam(
 
     KeepCompiling
 }
+*/
 
 fn gen_invokebuiltin(
     jit: &mut JITState,
     ctx: &mut Context,
-    cb: &mut CodeBlock,
+    asm: &mut Assembler,
     _ocb: &mut OutlinedCb,
 ) -> CodegenStatus {
     let bf: *const rb_builtin_function = jit_get_arg(jit, 0).as_ptr();
     let bf_argc: usize = unsafe { (*bf).argc }.try_into().expect("non negative argc");
 
     // ec, self, and arguments
-    if bf_argc + 2 > C_ARG_REGS.len() {
+    if bf_argc + 2 > C_ARG_OPNDS.len() {
         return CantCompile;
     }
 
     // If the calls don't allocate, do they need up to date PC, SP?
-    jit_prepare_routine_call(jit, ctx, cb, REG0);
+    jit_prepare_routine_call(jit, ctx, asm);
 
     // Call the builtin func (ec, recv, arg1, arg2, ...)
-    mov(cb, C_ARG_REGS[0], REG_EC);
-    mov(
-        cb,
-        C_ARG_REGS[1],
-        mem_opnd(64, REG_CFP, RUBY_OFFSET_CFP_SELF),
-    );
+    let mut args = vec![EC, Opnd::mem(64, CFP, RUBY_OFFSET_CFP_SELF)];
 
     // Copy arguments from locals
     for i in 0..bf_argc {
         let stack_opnd = ctx.stack_opnd((bf_argc - i - 1) as i32);
-        let c_arg_reg = C_ARG_REGS[2 + i];
-        mov(cb, c_arg_reg, stack_opnd);
+        args.push(stack_opnd);
     }
 
-    call_ptr(cb, REG0, unsafe { (*bf).func_ptr } as *const u8);
+    let val = asm.ccall(unsafe { (*bf).func_ptr } as *const u8, args);
 
     // Push the return value
     ctx.stack_pop(bf_argc);
     let stack_ret = ctx.stack_push(Type::Unknown);
-    mov(cb, stack_ret, RAX);
+    asm.mov(stack_ret, val);
 
     KeepCompiling
 }
@@ -5867,7 +5862,7 @@ fn gen_invokebuiltin(
 fn gen_opt_invokebuiltin_delegate(
     jit: &mut JITState,
     ctx: &mut Context,
-    cb: &mut CodeBlock,
+    asm: &mut Assembler,
     _ocb: &mut OutlinedCb,
 ) -> CodegenStatus {
     let bf: *const rb_builtin_function = jit_get_arg(jit, 0).as_ptr();
@@ -5875,44 +5870,36 @@ fn gen_opt_invokebuiltin_delegate(
     let start_index = jit_get_arg(jit, 1).as_i32();
 
     // ec, self, and arguments
-    if bf_argc + 2 > (C_ARG_REGS.len() as i32) {
+    if bf_argc + 2 > (C_ARG_OPNDS.len() as i32) {
         return CantCompile;
     }
 
     // If the calls don't allocate, do they need up to date PC, SP?
-    jit_prepare_routine_call(jit, ctx, cb, REG0);
-
-    if bf_argc > 0 {
-        // Load environment pointer EP from CFP
-        mov(cb, REG0, mem_opnd(64, REG_CFP, RUBY_OFFSET_CFP_EP));
-    }
+    jit_prepare_routine_call(jit, ctx, asm);
 
     // Call the builtin func (ec, recv, arg1, arg2, ...)
-    mov(cb, C_ARG_REGS[0], REG_EC);
-    mov(
-        cb,
-        C_ARG_REGS[1],
-        mem_opnd(64, REG_CFP, RUBY_OFFSET_CFP_SELF),
-    );
+    let mut args = vec![EC, Opnd::mem(64, CFP, RUBY_OFFSET_CFP_SELF)];
 
     // Copy arguments from locals
-    for i in 0..bf_argc {
-        let table_size = unsafe { get_iseq_body_local_table_size(jit.iseq) };
-        let offs: i32 = -(table_size as i32) - (VM_ENV_DATA_SIZE as i32) + 1 + start_index + i;
-        let local_opnd = mem_opnd(64, REG0, offs * (SIZEOF_VALUE as i32));
-        let offs: usize = (i + 2) as usize;
-        let c_arg_reg = C_ARG_REGS[offs];
-        mov(cb, c_arg_reg, local_opnd);
+    if bf_argc > 0 {
+        // Load environment pointer EP from CFP
+        let ep = asm.load(Opnd::mem(64, CFP, RUBY_OFFSET_CFP_EP));
+
+        for i in 0..bf_argc {
+            let table_size = unsafe { get_iseq_body_local_table_size(jit.iseq) };
+            let offs: i32 = -(table_size as i32) - (VM_ENV_DATA_SIZE as i32) + 1 + start_index + i;
+            let local_opnd = Opnd::mem(64, ep, offs * (SIZEOF_VALUE as i32));
+            args.push(local_opnd);
+        }
     }
-    call_ptr(cb, REG0, unsafe { (*bf).func_ptr } as *const u8);
+    let val = asm.ccall(unsafe { (*bf).func_ptr } as *const u8, args);
 
     // Push the return value
     let stack_ret = ctx.stack_push(Type::Unknown);
-    mov(cb, stack_ret, RAX);
+    asm.mov(stack_ret, val);
 
     KeepCompiling
 }
-*/
 
 /// Maps a YARV opcode to a code generation function (if supported)
 fn get_gen_fn(opcode: VALUE) -> Option<InsnGenFn> {
@@ -5982,12 +5969,10 @@ fn get_gen_fn(opcode: VALUE) -> Option<InsnGenFn> {
         YARVINSN_opt_size => Some(gen_opt_size),
         YARVINSN_opt_length => Some(gen_opt_length),
         YARVINSN_opt_regexpmatch2 => Some(gen_opt_regexpmatch2),
-        /*
-        YARVINSN_opt_getinlinecache => Some(gen_opt_getinlinecache),
+        //YARVINSN_opt_getinlinecache => Some(gen_opt_getinlinecache),
         YARVINSN_invokebuiltin => Some(gen_invokebuiltin),
         YARVINSN_opt_invokebuiltin_delegate => Some(gen_opt_invokebuiltin_delegate),
         YARVINSN_opt_invokebuiltin_delegate_leave => Some(gen_opt_invokebuiltin_delegate),
-        */
         YARVINSN_opt_case_dispatch => Some(gen_opt_case_dispatch),
         YARVINSN_branchif => Some(gen_branchif),
         YARVINSN_branchunless => Some(gen_branchunless),

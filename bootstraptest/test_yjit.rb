@@ -3143,3 +3143,25 @@ assert_equal '["a", "b"]', %q{
     end
     foo
 }
+
+# invokebuiltin
+assert_equal '123', %q{
+  def foo(obj)
+    obj.foo = 123
+  end
+
+  struct = Struct.new(:foo)
+  obj = struct.new
+  foo(obj)
+}
+
+# invokebuiltin_delegate
+assert_equal '.', %q{
+  def foo(path)
+    Dir.open(path).path
+  end
+  foo(".")
+}
+
+# opt_invokebuiltin_delegate_leave
+assert_equal '[0]', %q{"\x00".unpack("c")}

@@ -400,7 +400,7 @@ impl Assembler
                 // C function call
                 Op::CCall => {
                     // Temporary
-                    assert!(insn.opnds.len() < _C_ARG_OPNDS.len());
+                    assert!(insn.opnds.len() <= _C_ARG_OPNDS.len());
 
                     // For each operand
                     for (idx, opnd) in insn.opnds.iter().enumerate() {

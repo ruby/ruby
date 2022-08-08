@@ -196,7 +196,7 @@ impl Assembler
                     }
                 },
                 Op::CCall => {
-                    assert!(opnds.len() < C_ARG_OPNDS.len());
+                    assert!(opnds.len() <= C_ARG_OPNDS.len());
 
                     // For each of the operands we're going to first load them
                     // into a register and then move them into the correct
