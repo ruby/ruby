@@ -1,7 +1,5 @@
 # frozen_string_literal: true
 
-require_relative "match_platform"
-
 module Bundler
   class LazySpecification
     include MatchPlatform
