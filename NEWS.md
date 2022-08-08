@@ -158,6 +158,7 @@ Note: We're only listing outstanding class updates.
     * bigdecimal 3.1.2
     * bundler 2.4.0.dev
     * cgi 0.3.2
+    * date 3.2.3
     * etc 1.4.0
     * io-console 0.5.11
     * io-nonblock 0.1.1
