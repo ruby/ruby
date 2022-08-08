@@ -3,8 +3,6 @@
 module Bundler
   # used for Creating Specifications from the Gemcutter Endpoint
   class EndpointSpecification < Gem::Specification
-    include MatchPlatform
-
     attr_reader :name, :version, :platform, :checksum
     attr_accessor :source, :remote, :dependencies
 
