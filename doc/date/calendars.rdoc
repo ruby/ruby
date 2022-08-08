@@ -4,19 +4,16 @@ The difference between the
 {Julian calendar}[https://en.wikipedia.org/wiki/Julian_calendar]
 and the
 {Gregorian calendar}[https://en.wikipedia.org/wiki/Gregorian_calendar]
-may matter to your program if it uses dates in the interval:
+may matter to your program if it uses dates before the switchovers.
 
 - October 15, 1582.
 - September 14, 1752.
 
-A date outside that interval (including all dates in modern times)
-is the same in both calendars.
-However, a date _within_ that interval will be different
-in the two calendars.
+A date will be different in the two calendars, in general.
 
-=== Different Calendar, Different \Date
+=== Different switchover dates
 
-The reason for the difference is this:
+The reasons for the difference are religious/political histories.
 
 - On October 15, 1582, several countries changed
   from the Julian calendar to the Gregorian calendar;
@@ -25,9 +22,11 @@ The reason for the difference is this:
 - On September 14, 1752, most of the British empire
   changed from the Julian calendar to the Gregorian calendar.
 
-When your code uses a date in this "gap" interval,
+When your code uses a date before these switchover dates,
 it will matter whether it considers the switchover date
 to be the earlier date or the later date (or neither).
+
+See also {a concrete example here}[rdoc-ref:DateTime@When+should+you+use+DateTime+and+when+should+you+use+Time-3F].
 
 === Argument +start+
 
