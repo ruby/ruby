@@ -18,6 +18,19 @@ describe "DateTime#to_time" do
     time.sec.should == 59
   end
 
+  version_is(Date::VERSION, '3.2.3') do
+    it "returns a Time representing the same instant before Gregorian" do
+      datetime = DateTime.civil(1582, 10, 4, 23, 58, 59)
+      time = datetime.to_time.utc
+      time.year.should == 1582
+      time.month.should == 10
+      time.day.should == 14
+      time.hour.should == 23
+      time.min.should == 58
+      time.sec.should == 59
+    end
+  end
+
   it "preserves the same time regardless of local time or zone" do
     date = DateTime.new(2012, 12, 24, 12, 23, 00, '+03:00')
 
