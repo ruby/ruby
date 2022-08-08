@@ -8811,7 +8811,7 @@ time_to_datetime(VALUE self)
     ret = d_complex_new_internal(cDateTime,
 				 nth, 0,
 				 0, sf,
-				 of, DEFAULT_SG,
+				 of, GREGORIAN,
 				 ry, m, d,
 				 h, min, s,
 				 HAVE_CIVIL | HAVE_TIME);
@@ -8915,11 +8915,16 @@ date_to_datetime(VALUE self)
 static VALUE
 datetime_to_time(VALUE self)
 {
-    volatile VALUE dup = dup_obj(self);
+    get_d1(self);
+
+    if (m_julian_p(dat)) {
+	self = d_lite_gregorian(self);
+	get_d1a(self);
+	dat = adat;
+    }
+
     {
 	VALUE t;
-
-	get_d1(dup);
 
 	t = rb_funcall(rb_cTime,
 		   rb_intern("new"),
