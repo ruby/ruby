@@ -65,9 +65,9 @@ BENCH
 
   def test_benchmark_does_not_print_any_space_if_the_given_caption_is_empty
     assert_equal(<<-BENCH, capture_bench_output(:benchmark))
-first  --time--   --time--   --time-- (  --time--)
+first   --time--   --time--   --time-- (  --time--)
 second  --time--   --time--   --time-- (  --time--)
-third  --time--   --time--   --time-- (  --time--)
+third   --time--   --time--   --time-- (  --time--)
 BENCH
   end
 
