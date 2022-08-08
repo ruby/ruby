@@ -550,7 +550,7 @@ impl Assembler
                     }
                 },
                 Op::Add => {
-                    add(cb, insn.out.into(), insn.opnds[0].into(), insn.opnds[1].into());
+                    adds(cb, insn.out.into(), insn.opnds[0].into(), insn.opnds[1].into());
                 },
                 Op::FrameSetup => {
                     stp_pre(cb, X29, X30, A64Opnd::new_mem(128, C_SP_REG, -16));
@@ -565,7 +565,7 @@ impl Assembler
                     ldp_post(cb, X29, X30, A64Opnd::new_mem(128, C_SP_REG, 16));
                 },
                 Op::Sub => {
-                    sub(cb, insn.out.into(), insn.opnds[0].into(), insn.opnds[1].into());
+                    subs(cb, insn.out.into(), insn.opnds[0].into(), insn.opnds[1].into());
                 },
                 Op::And => {
                     and(cb, insn.out.into(), insn.opnds[0].into(), insn.opnds[1].into());
