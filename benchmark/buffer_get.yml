@@ -1,9 +1,10 @@
+prelude: |
+  # frozen_string_literal: true
+  Warning[:experimental] = false
+  buffer = IO::Buffer.new(32, IO::Buffer::MAPPED)
+  string = "\0" * 32
 benchmark:
-  - name: buffer.get
-    prelude: buffer = IO::Buffer.new(32, IO::Buffer::MAPPED)
-    script: buffer.get(:U32, 0)
-    loop_count: 20000000
-  - name: string.unpack
-    prelude: string = "\0" * 32
-    script: string.unpack("C")
-    loop_count: 20000000
+  buffer.get_value: |
+    buffer.get_value(:U32, 0)
+  string.unpack1: |
+    string.unpack1("N")
