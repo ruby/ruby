@@ -3,9 +3,9 @@ require 'time'
 
 describe "Time#to_datetime" do
   it "returns a DateTime representing the same instant" do
-    time = Time.utc(3, 12, 31, 23, 58, 59)
+    time = Time.utc(2012, 12, 31, 23, 58, 59)
     datetime = time.to_datetime
-    datetime.year.should == 3
+    datetime.year.should == 2012
     datetime.month.should == 12
     datetime.day.should == 31
     datetime.hour.should == 23
