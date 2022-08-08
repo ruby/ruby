@@ -2558,11 +2558,7 @@ class Resolv
     attr_reader :address
 
     def to_s # :nodoc:
-      address = sprintf("%x:%x:%x:%x:%x:%x:%x:%x", *@address.unpack("nnnnnnnn"))
-      unless address.sub!(/(^|:)0(:0)+(:|$)/, '::')
-        address.sub!(/(^|:)0(:|$)/, '::')
-      end
-      return address
+      sprintf("%x:%x:%x:%x:%x:%x:%x:%x", *@address.unpack("nnnnnnnn")).sub(/(^|:)0(:0)+(:|$)/, '::')
     end
 
     def inspect # :nodoc:
