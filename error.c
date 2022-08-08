@@ -1244,7 +1244,7 @@ rb_get_detailed_message(VALUE exc, VALUE opt)
         e = rb_check_funcall(exc, id_detailed_message, 0, 0);
     }
     else {
-        e = rb_check_funcall_kw(exc, id_detailed_message, 1, &opt, 1);
+        e = rb_check_funcall_kw(exc, id_detailed_message, 1, &opt, RB_PASS_KEYWORDS);
     }
     if (e == Qundef) return Qnil;
     if (!RB_TYPE_P(e, T_STRING)) e = rb_check_string_type(e);
