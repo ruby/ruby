@@ -76,10 +76,10 @@ class Gem::Source::Git < Gem::Source
   end
 
   def ==(other) # :nodoc:
-    super and
-      @name            == other.name and
-      @repository      == other.repository and
-      @reference       == other.reference and
+    super &&
+      @name            == other.name &&
+      @repository      == other.repository &&
+      @reference       == other.reference &&
       @need_submodules == other.need_submodules
   end
 

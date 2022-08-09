@@ -269,7 +269,7 @@ class TestGemRequire < Gem::TestCase
     assert_includes $LOAD_PATH, rubylibdir
     message = proc {
       "this test relies on the b-2 gem lib/ to be before stdlib to make sense\n" +
-      $LOAD_PATH.pretty_inspect
+        $LOAD_PATH.pretty_inspect
     }
     assert_operator $LOAD_PATH.index(b2.load_paths[0]), :<, $LOAD_PATH.index(rubylibdir), message
 

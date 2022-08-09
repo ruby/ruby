@@ -88,16 +88,16 @@ class Gem::Security::Policy
 
     message = "certificate #{signer.subject}"
 
-    if not_before = signer.not_before and not_before > time
+    if (not_before = signer.not_before) && not_before > time
       raise Gem::Security::Exception,
             "#{message} not valid before #{not_before}"
     end
 
-    if not_after = signer.not_after and not_after < time
+    if (not_after = signer.not_after) && not_after < time
       raise Gem::Security::Exception, "#{message} not valid after #{not_after}"
     end
 
-    if issuer and not signer.verify issuer.public_key
+    if issuer && !signer.verify(issuer.public_key)
       raise Gem::Security::Exception,
             "#{message} was not issued by #{issuer.subject}"
     end
@@ -109,7 +109,7 @@ class Gem::Security::Policy
   # Ensures the public key of +key+ matches the public key in +signer+
 
   def check_key(signer, key)
-    unless signer and key
+    unless signer && key
       return true unless @only_signed
 
       raise Gem::Security::Exception, "missing key or signature"
@@ -231,7 +231,7 @@ class Gem::Security::Policy
 
     if @verify_data
       raise Gem::Security::Exception, "no digests provided (probable bug)" if
-        signer_digests.nil? or signer_digests.empty?
+        signer_digests.nil? || signer_digests.empty?
     else
       signer_digests = {}
     end
@@ -248,7 +248,7 @@ class Gem::Security::Policy
 
     if @only_trusted
       check_trust chain, digester, trust_dir
-    elsif signatures.empty? and digests.empty?
+    elsif signatures.empty? && digests.empty?
       # trust is irrelevant if there's no signatures to verify
     else
       alert_warning "#{subject signer} is not trusted for #{full_name}"

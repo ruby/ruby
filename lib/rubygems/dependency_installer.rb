@@ -109,7 +109,7 @@ class Gem::DependencyInstaller
   # gems should be considered.
 
   def consider_local?
-    @domain == :both or @domain == :local
+    @domain == :both || @domain == :local
   end
 
   ##
@@ -117,7 +117,7 @@ class Gem::DependencyInstaller
   # gems should be considered.
 
   def consider_remote?
-    @domain == :both or @domain == :remote
+    @domain == :both || @domain == :remote
   end
 
   ##
@@ -197,7 +197,7 @@ class Gem::DependencyInstaller
 
   def in_background(what) # :nodoc:
     fork_happened = false
-    if @build_docs_in_background and Process.respond_to?(:fork)
+    if @build_docs_in_background && Process.respond_to?(:fork)
       begin
         Process.fork do
           yield
@@ -268,7 +268,7 @@ class Gem::DependencyInstaller
   end
 
   def install_development_deps # :nodoc:
-    if @development and @dev_shallow
+    if @development && @dev_shallow
       :shallow
     elsif @development
       :all
@@ -289,7 +289,7 @@ class Gem::DependencyInstaller
     installer_set.force = @force
 
     if consider_local?
-      if dep_or_name =~ /\.gem$/ and File.file? dep_or_name
+      if dep_or_name =~ /\.gem$/ && File.file?(dep_or_name)
         src = Gem::Source::SpecificFile.new dep_or_name
         installer_set.add_local dep_or_name, src.spec, src
         version = src.spec.version if version == Gem::Requirement.default

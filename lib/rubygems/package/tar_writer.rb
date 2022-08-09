@@ -314,7 +314,7 @@ class Gem::Package::TarWriter
         prefix = parts.join("/")
       end
 
-      if name.bytesize > 100 or prefix.empty?
+      if name.bytesize > 100 || prefix.empty?
         raise Gem::Package::TooLongFileName.new("File \"#{prefix}/#{name}\" has a too long name (should be 100 or less)")
       end
 

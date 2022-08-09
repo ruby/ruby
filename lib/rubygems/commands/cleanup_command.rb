@@ -149,7 +149,7 @@ If no gems are named all gems in GEM_HOME are cleaned.
     @primary_gems = {}
 
     Gem::Specification.each do |spec|
-      if @primary_gems[spec.name].nil? or
+      if @primary_gems[spec.name].nil? ||
          @primary_gems[spec.name].version < spec.version
         @primary_gems[spec.name] = spec
       end

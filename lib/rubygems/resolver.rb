@@ -153,10 +153,10 @@ class Gem::Resolver
     s.fetch_development_dependencies if @development
 
     s.dependencies.reverse_each do |d|
-      next if d.type == :development and not @development
-      next if d.type == :development and @development_shallow and
+      next if d.type == :development && !@development
+      next if d.type == :development && @development_shallow &&
               act.development?
-      next if d.type == :development and @development_shallow and
+      next if d.type == :development && @development_shallow &&
               act.parent
 
       reqs << Gem::Resolver::DependencyRequest.new(d, act)
@@ -192,7 +192,7 @@ class Gem::Resolver
     conflict = e.conflicts.values.first
     raise Gem::DependencyResolutionError, Conflict.new(conflict.requirement_trees.first.first, conflict.existing, conflict.requirement)
   ensure
-    @output.close if defined?(@output) and !debug?
+    @output.close if defined?(@output) && !debug?
   end
 
   ##

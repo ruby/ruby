@@ -1051,8 +1051,8 @@ class TestGemDependencyInstaller < Gem::TestCase
 
     releases = set.all_specs
 
-    assert releases.any? {|s| s.name == "a" and s.version.to_s == "1" }
-    refute releases.any? {|s| s.name == "a" and s.version.to_s == "1.a" }
+    assert releases.any? {|s| s.name == "a" && s.version.to_s == "1" }
+    refute releases.any? {|s| s.name == "a" && s.version.to_s == "1.a" }
 
     dependency.prerelease = true
 

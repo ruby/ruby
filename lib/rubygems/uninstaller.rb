@@ -105,8 +105,8 @@ class Gem::Uninstaller
     @default_specs_matching_uninstall_params = default_specs
 
     list, other_repo_specs = list.partition do |spec|
-      @gem_home == spec.base_dir or
-        (@user_install and spec.base_dir == Gem.user_dir)
+      @gem_home == spec.base_dir ||
+        (@user_install && spec.base_dir == Gem.user_dir)
     end
 
     list.sort!
@@ -239,8 +239,8 @@ class Gem::Uninstaller
   # spec:: the spec of the gem to be uninstalled
 
   def remove(spec)
-    unless path_ok?(@gem_home, spec) or
-           (@user_install and path_ok?(Gem.user_dir, spec))
+    unless path_ok?(@gem_home, spec) ||
+           (@user_install && path_ok?(Gem.user_dir, spec))
       e = Gem::GemNotInHomeException.new \
             "Gem '#{spec.full_name}' is not installed in directory #{@gem_home}"
       e.spec = spec

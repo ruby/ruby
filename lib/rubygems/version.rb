@@ -252,7 +252,7 @@ class Gem::Version
   # same precision. Version "1.0" is not the same as version "1".
 
   def eql?(other)
-    self.class === other and @version == other._version
+    self.class === other && @version == other._version
   end
 
   def hash # :nodoc:

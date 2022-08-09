@@ -30,7 +30,7 @@ class Gem::Doctor
 
   missing =
     Gem::REPOSITORY_SUBDIRECTORIES.sort -
-      REPOSITORY_EXTENSION_MAP.map {|(k,_)| k }.sort
+    REPOSITORY_EXTENSION_MAP.map {|(k,_)| k }.sort
 
   raise "Update REPOSITORY_EXTENSION_MAP, missing: #{missing.join ', '}" unless
     missing.empty?
@@ -59,7 +59,7 @@ class Gem::Doctor
   # Are we doctoring a gem repository?
 
   def gem_repository?
-    not installed_specs.empty?
+    !installed_specs.empty?
   end
 
   ##
@@ -111,8 +111,8 @@ class Gem::Doctor
       basename = File.basename(child, extension)
       next if installed_specs.include? basename
       next if /^rubygems-\d/ =~ basename
-      next if "specifications" == sub_directory and "default" == basename
-      next if "plugins" == sub_directory and Gem.plugin_suffix_regexp =~ basename
+      next if "specifications" == sub_directory && "default" == basename
+      next if "plugins" == sub_directory && Gem.plugin_suffix_regexp =~ (basename)
 
       type = File.directory?(child) ? "directory" : "file"
 

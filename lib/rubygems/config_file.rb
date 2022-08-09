@@ -368,7 +368,7 @@ if you believe they were disclosed to a third party.
 
   # True if the backtrace option has been specified, or debug is on.
   def backtrace
-    @backtrace or $DEBUG
+    @backtrace || $DEBUG
   end
 
   # The name of the configuration file.
@@ -477,11 +477,11 @@ if you believe they were disclosed to a third party.
   end
 
   def ==(other) # :nodoc:
-    self.class === other and
-      @backtrace == other.backtrace and
-      @bulk_threshold == other.bulk_threshold and
-      @verbose == other.verbose and
-      @update_sources == other.update_sources and
+    self.class === other &&
+      @backtrace == other.backtrace &&
+      @bulk_threshold == other.bulk_threshold &&
+      @verbose == other.verbose &&
+      @update_sources == other.update_sources &&
       @hash == other.hash
   end
 

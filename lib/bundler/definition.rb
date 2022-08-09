@@ -885,10 +885,10 @@ module Bundler
 
     def remove_ruby_from_platforms_if_necessary!(dependencies)
       return if Bundler.frozen_bundle? ||
-        Bundler.local_platform == Gem::Platform::RUBY ||
-        !platforms.include?(Gem::Platform::RUBY) ||
-        (@new_platform && platforms.last == Gem::Platform::RUBY) ||
-        !@originally_locked_specs.incomplete_ruby_specs?(dependencies)
+                Bundler.local_platform == Gem::Platform::RUBY ||
+                !platforms.include?(Gem::Platform::RUBY) ||
+                (@new_platform && platforms.last == Gem::Platform::RUBY) ||
+                !@originally_locked_specs.incomplete_ruby_specs?(dependencies)
 
       remove_platform(Gem::Platform::RUBY)
       add_current_platform
