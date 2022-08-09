@@ -347,6 +347,5 @@ While in your i386 shell, install Cargo and Homebrew, then hack away!
 
 1. You must install a version of Homebrew for each architecture
 2. Cargo will install in $HOME/.cargo by default, and I don't know a good way to change architectures after install
-3. `dev` won't work if you have i386 Homebrew installed on an M1
 
 If you use Fish shell you can [read this link](https://tenderlovemaking.com/2022/01/07/homebrew-rosetta-and-ruby.html) for information on making the dev environment easier.
