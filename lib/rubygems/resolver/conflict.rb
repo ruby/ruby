@@ -27,9 +27,9 @@ class Gem::Resolver::Conflict
   end
 
   def ==(other) # :nodoc:
-    self.class === other and
-      @dependency == other.dependency and
-      @activated  == other.activated  and
+    self.class === other &&
+      @dependency == other.dependency &&
+      @activated  == other.activated  &&
       @failed_dep == other.failed_dep
   end
 

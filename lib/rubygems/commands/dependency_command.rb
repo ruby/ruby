@@ -77,7 +77,7 @@ use with other commands.
         name_matches = name_pattern ? name_pattern =~ spec.name : true
         version_matches = requirement.satisfied_by?(spec.version)
 
-        name_matches and version_matches
+        name_matches && version_matches
       }.map(&:to_spec)
     end
 
@@ -133,7 +133,7 @@ use with other commands.
   end
 
   def ensure_local_only_reverse_dependencies # :nodoc:
-    if options[:reverse_dependencies] and remote? and not local?
+    if options[:reverse_dependencies] && remote? && !local?
       alert_error "Only reverse dependencies for local gems are supported."
       terminate_interaction 1
     end
@@ -182,7 +182,7 @@ use with other commands.
       sp.dependencies.each do |dep|
         dep = Gem::Dependency.new(*dep) unless Gem::Dependency === dep
 
-        if spec.name == dep.name and
+        if spec.name == dep.name &&
            dep.requirement.satisfied_by?(spec.version)
           result << [sp.full_name, dep]
         end
@@ -197,7 +197,7 @@ use with other commands.
   def name_pattern(args)
     return if args.empty?
 
-    if args.length == 1 and args.first =~ /\A(.*)(i)?\z/m
+    if args.length == 1 && args.first =~ /\A(.*)(i)?\z/m
       flags = $2 ? Regexp::IGNORECASE : nil
       Regexp.new $1, flags
     else

@@ -1,4 +1,4 @@
-# frozen_string_literal: true
+#) frozen_string_literal: true
 require_relative "parser"
 
 class Gem::RequestSet::Lockfile::Tokenizer
@@ -26,7 +26,7 @@ class Gem::RequestSet::Lockfile::Tokenizer
   end
 
   def skip(type)
-    @tokens.shift while not @tokens.empty? and peek.type == type
+    @tokens.shift while !@tokens.empty? && peek.type == type
   end
 
   ##

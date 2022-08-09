@@ -29,7 +29,7 @@ class TestGemPackageTarReader < Gem::Package::TarTestCase
 
     str =
       tar_file_header("lib/foo", "", 010644, content.size, Time.now) +
-        content + "\0" * (512 - content.size)
+      content + "\0" * (512 - content.size)
     str << "\0" * 1024
 
     io = TempIO.new(str)

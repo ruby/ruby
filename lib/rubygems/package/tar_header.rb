@@ -173,23 +173,23 @@ class Gem::Package::TarHeader
   end
 
   def ==(other) # :nodoc:
-    self.class === other and
-    @checksum == other.checksum and
-    @devmajor == other.devmajor and
-    @devminor == other.devminor and
-    @gid      == other.gid      and
-    @gname    == other.gname    and
-    @linkname == other.linkname and
-    @magic    == other.magic    and
-    @mode     == other.mode     and
-    @mtime    == other.mtime    and
-    @name     == other.name     and
-    @prefix   == other.prefix   and
-    @size     == other.size     and
-    @typeflag == other.typeflag and
-    @uid      == other.uid      and
-    @uname    == other.uname    and
-    @version  == other.version
+    self.class === other &&
+      @checksum == other.checksum &&
+      @devmajor == other.devmajor &&
+      @devminor == other.devminor &&
+      @gid      == other.gid      &&
+      @gname    == other.gname    &&
+      @linkname == other.linkname &&
+      @magic    == other.magic    &&
+      @mode     == other.mode     &&
+      @mtime    == other.mtime    &&
+      @name     == other.name     &&
+      @prefix   == other.prefix   &&
+      @size     == other.size     &&
+      @typeflag == other.typeflag &&
+      @uid      == other.uid      &&
+      @uname    == other.uname    &&
+      @version  == other.version
   end
 
   def to_s # :nodoc:
