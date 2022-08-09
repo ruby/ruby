@@ -84,13 +84,66 @@ impl Assembler
     /// have no memory operands.
     fn arm64_split(mut self) -> Assembler
     {
+        /// When we're attempting to load a memory address into a register, the
+        /// displacement must fit into the maximum number of bits for an Op::Add
+        /// immediate. If it doesn't, we have to load the displacement into a
+        /// register first.
+        fn split_lea_operand(asm: &mut Assembler, opnd: Opnd) -> Opnd {
+            match opnd {
+                Opnd::Mem(Mem { base, disp, num_bits }) => {
+                    if disp >= 0 && ShiftedImmediate::try_from(disp as u64).is_ok() {
+                        asm.lea(opnd)
+                    } else {
+                        let disp = asm.load(Opnd::Imm(disp.into()));
+                        let reg = match base {
+                            MemBase::Reg(reg_no) => Opnd::Reg(Reg { reg_no, num_bits }),
+                            MemBase::InsnOut(idx) => Opnd::InsnOut { idx, num_bits }
+                        };
+
+                        asm.add(reg, disp)
+                    }
+                },
+                _ => unreachable!("Op::Lea only accepts Opnd::Mem operands.")
+            }
+        }
+
+        /// When you're storing a register into a memory location or loading a
+        /// memory location into a register, the displacement from the base
+        /// register of the memory location must fit into 9 bits. If it doesn't,
+        /// then we need to load that memory address into a register first.
+        fn split_memory_address(asm: &mut Assembler, opnd: Opnd) -> Opnd {
+            match opnd {
+                Opnd::Mem(mem) => {
+                    if mem_disp_fits_bits(mem.disp) {
+                        opnd
+                    } else {
+                        let base = split_lea_operand(asm, opnd);
+                        Opnd::mem(64, base, 0)
+                    }
+                },
+                _ => unreachable!("Can only split memory addresses.")
+            }
+        }
+
+        /// Any memory operands you're sending into an Op::Load instruction need
+        /// to be split in case their displacement doesn't fit into 9 bits.
+        fn split_load_operand(asm: &mut Assembler, opnd: Opnd) -> Opnd {
+            match opnd {
+                Opnd::Mem(_) => {
+                    let split_opnd = split_memory_address(asm, opnd);
+                    asm.load(split_opnd)
+                },
+                _ => asm.load(opnd)
+            }
+        }
+
         /// Operands that take the place of bitmask immediates must follow a
         /// certain encoding. In this function we ensure that those operands
         /// do follow that encoding, and if they don't then we load them first.
         fn split_bitmask_immediate(asm: &mut Assembler, opnd: Opnd) -> Opnd {
             match opnd {
                 Opnd::Reg(_) | Opnd::InsnOut { .. } => opnd,
-                Opnd::Mem(_) => asm.load(opnd),
+                Opnd::Mem(_) => split_load_operand(asm, opnd),
                 Opnd::Imm(imm) => {
                     if imm <= 0 {
                         asm.load(opnd)
@@ -116,7 +169,8 @@ impl Assembler
         fn split_shifted_immediate(asm: &mut Assembler, opnd: Opnd) -> Opnd {
             match opnd {
                 Opnd::Reg(_) | Opnd::InsnOut { .. } => opnd,
-                Opnd::Mem(_) | Opnd::Imm(_) => asm.load(opnd),
+                Opnd::Mem(_) => split_load_operand(asm, opnd),
+                Opnd::Imm(_) => asm.load(opnd),
                 Opnd::UImm(uimm) => {
                     if ShiftedImmediate::try_from(uimm).is_ok() {
                         opnd
@@ -125,24 +179,6 @@ impl Assembler
                     }
                 },
                 Opnd::None | Opnd::Value(_) => unreachable!()
-            }
-        }
-
-        /// When you're storing a register into a memory location, the
-        /// displacement from the base register of the memory location must fit
-        /// into 9 bits. If it doesn't, then we need to load that memory address
-        /// into a register first.
-        fn split_store(asm: &mut Assembler, opnd: Opnd) -> Opnd {
-            match opnd {
-                Opnd::Mem(mem) => {
-                    if imm_fits_bits(mem.disp.into(), 9) {
-                        opnd
-                    } else {
-                        let base = asm.lea(opnd);
-                        Opnd::mem(64, base, 0)
-                    }
-                },
-                _ => unreachable!("Can only store memory addresses.")
             }
         }
 
@@ -172,7 +208,7 @@ impl Assembler
                             asm.add(reg_opnd, opnd1);
                         },
                         _ => {
-                            let opnd0 = asm.load(opnds[0]);
+                            let opnd0 = split_load_operand(asm, opnds[0]);
                             let opnd1 = split_shifted_immediate(asm, opnds[1]);
                             asm.add(opnd0, opnd1);
                         }
@@ -189,7 +225,7 @@ impl Assembler
                             asm.push_insn(op, vec![reg_opnd, opnd1], target, text, pos_marker);
                         },
                         _ => {
-                            let opnd0 = asm.load(opnds[0]);
+                            let opnd0 = split_load_operand(asm, opnds[0]);
                             let opnd1 = split_bitmask_immediate(asm, opnds[1]);
                             asm.push_insn(op, vec![opnd0, opnd1], target, text, pos_marker);
                         }
@@ -204,7 +240,7 @@ impl Assembler
                     // Note: the iteration order is reversed to avoid corrupting x0,
                     // which is both the return value and first argument register
                     for (idx, opnd) in opnds.into_iter().enumerate().rev() {
-                        let value = asm.load(opnd);
+                        let value = split_load_operand(asm, opnd);
                         asm.mov(C_ARG_OPNDS[idx], value);
                     }
 
@@ -215,16 +251,15 @@ impl Assembler
                 Op::Cmp => {
                     let opnd0 = match opnds[0] {
                         Opnd::Reg(_) | Opnd::InsnOut { .. } => opnds[0],
-                        _ => asm.load(opnds[0])
+                        _ => split_load_operand(asm, opnds[0])
                     };
 
                     let opnd1 = split_shifted_immediate(asm, opnds[1]);
-
-                    asm.push_insn(op, vec![opnd0, opnd1], target, text, pos_marker);
+                    asm.cmp(opnd0, opnd1);
                 },
                 Op::CRet => {
                     if opnds[0] != Opnd::Reg(C_RET_REG) {
-                        let value = asm.load(opnds[0]);
+                        let value = split_load_operand(asm, opnds[0]);
                         asm.mov(C_RET_OPND, value);
                     }
                     asm.cret(C_RET_OPND);
@@ -234,7 +269,7 @@ impl Assembler
                     let new_opnds = opnds.into_iter().map(|opnd| {
                         match opnd {
                             Opnd::Reg(_) | Opnd::InsnOut { .. } => opnd,
-                            _ => asm.load(opnd)
+                            _ => split_load_operand(asm, opnd)
                         }
                     }).collect();
 
@@ -243,7 +278,7 @@ impl Assembler
                 Op::IncrCounter => {
                     // We'll use LDADD later which only works with registers
                     // ... Load pointer into register
-                    let counter_addr = asm.lea(opnds[0]);
+                    let counter_addr = split_lea_operand(asm, opnds[0]);
 
                     // Load immediates into a register
                     let addend = match opnds[1] {
@@ -255,11 +290,14 @@ impl Assembler
                 },
                 Op::JmpOpnd => {
                     if let Opnd::Mem(_) = opnds[0] {
-                        let opnd0 = asm.load(opnds[0]);
+                        let opnd0 = split_load_operand(asm, opnds[0]);
                         asm.jmp_opnd(opnd0);
                     } else {
                         asm.jmp_opnd(opnds[0]);
                     }
+                },
+                Op::Load => {
+                    split_load_operand(asm, opnds[0]);
                 },
                 Op::LoadSExt => {
                     match opnds[0] {
@@ -295,7 +333,7 @@ impl Assembler
                     // we'll use the normal mov instruction.
                     match opnds[0] {
                         Opnd::Mem(_) => {
-                            let opnd0 = split_store(asm, opnds[0]);
+                            let opnd0 = split_memory_address(asm, opnds[0]);
                             asm.store(opnd0, value);
                         },
                         Opnd::Reg(_) => {
@@ -308,7 +346,7 @@ impl Assembler
                     // The value that is being negated must be in a register, so
                     // if we get anything else we need to load it first.
                     let opnd0 = match opnds[0] {
-                        Opnd::Mem(_) => asm.load(opnds[0]),
+                        Opnd::Mem(_) => split_load_operand(asm, opnds[0]),
                         _ => opnds[0]
                     };
 
@@ -318,13 +356,13 @@ impl Assembler
                     // The displacement for the STUR instruction can't be more
                     // than 9 bits long. If it's longer, we need to load the
                     // memory address into a register first.
-                    let opnd0 = split_store(asm, opnds[0]);
+                    let opnd0 = split_memory_address(asm, opnds[0]);
 
                     // The value being stored must be in a register, so if it's
                     // not already one we'll load it first.
                     let opnd1 = match opnds[1] {
                         Opnd::Reg(_) | Opnd::InsnOut { .. } => opnds[1],
-                        _ => asm.load(opnds[1])
+                        _ => split_load_operand(asm, opnds[1])
                     };
 
                     asm.store(opnd0, opnd1);
@@ -332,19 +370,18 @@ impl Assembler
                 Op::Sub => {
                     let opnd0 = match opnds[0] {
                         Opnd::Reg(_) | Opnd::InsnOut { .. } => opnds[0],
-                        _ => asm.load(opnds[0])
+                        _ => split_load_operand(asm, opnds[0])
                     };
 
                     let opnd1 = split_shifted_immediate(asm, opnds[1]);
-
-                    asm.push_insn(op, vec![opnd0, opnd1], target, text, pos_marker);
+                    asm.sub(opnd0, opnd1);
                 },
                 Op::Test => {
                     // The value being tested must be in a register, so if it's
                     // not already one we'll load it first.
                     let opnd0 = match opnds[0] {
                         Opnd::Reg(_) | Opnd::InsnOut { .. } => opnds[0],
-                        _ => asm.load(opnds[0])
+                        _ => split_load_operand(asm, opnds[0])
                     };
 
                     // The second value must be either a register or an
@@ -352,7 +389,6 @@ impl Assembler
                     // immediate. If it's not one of those, we'll need to load
                     // it first.
                     let opnd1 = split_bitmask_immediate(asm, opnds[1]);
-
                     asm.test(opnd0, opnd1);
                 },
                 _ => {
@@ -611,7 +647,7 @@ impl Assembler
                             // references to GC'd Value operands. If the value
                             // being loaded is a heap object, we'll report that
                             // back out to the gc_offsets list.
-                            ldr(cb, insn.out.into(), 2);
+                            ldr_literal(cb, insn.out.into(), 2);
                             b(cb, A64Opnd::new_imm(1 + (SIZEOF_VALUE as i64) / 4));
                             cb.write_bytes(&value.as_u64().to_le_bytes());
 
@@ -899,6 +935,42 @@ mod tests {
         asm.store(Opnd::mem(64, SP, 0), opnd);
 
         asm.compile_with_num_regs(&mut cb, 1);
+    }
+
+    #[test]
+    fn test_emit_load_mem_disp_fits_into_load() {
+        let (mut asm, mut cb) = setup_asm();
+
+        let opnd = asm.load(Opnd::mem(64, SP, 0));
+        asm.store(Opnd::mem(64, SP, 0), opnd);
+        asm.compile_with_num_regs(&mut cb, 1);
+
+        // Assert that two instructions were written: LDUR and STUR.
+        assert_eq!(8, cb.get_write_pos());
+    }
+
+    #[test]
+    fn test_emit_load_mem_disp_fits_into_add() {
+        let (mut asm, mut cb) = setup_asm();
+
+        let opnd = asm.load(Opnd::mem(64, SP, 1 << 10));
+        asm.store(Opnd::mem(64, SP, 0), opnd);
+        asm.compile_with_num_regs(&mut cb, 1);
+
+        // Assert that three instructions were written: ADD, LDUR, and STUR.
+        assert_eq!(12, cb.get_write_pos());
+    }
+
+    #[test]
+    fn test_emit_load_mem_disp_does_not_fit_into_add() {
+        let (mut asm, mut cb) = setup_asm();
+
+        let opnd = asm.load(Opnd::mem(64, SP, 1 << 12 | 1));
+        asm.store(Opnd::mem(64, SP, 0), opnd);
+        asm.compile_with_num_regs(&mut cb, 1);
+
+        // Assert that three instructions were written: MOVZ, ADD, LDUR, and STUR.
+        assert_eq!(16, cb.get_write_pos());
     }
 
     #[test]

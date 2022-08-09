@@ -39,7 +39,7 @@ pub struct LoadLiteral {
 impl LoadLiteral {
     /// LDR (load literal)
     /// https://developer.arm.com/documentation/ddi0596/2021-12/Base-Instructions/LDR--literal---Load-Register--literal--?lang=en
-    pub fn ldr(rt: u8, imm19: i32, num_bits: u8) -> Self {
+    pub fn ldr_literal(rt: u8, imm19: i32, num_bits: u8) -> Self {
         Self { rt, imm19, opc: num_bits.into() }
     }
 }
@@ -75,14 +75,14 @@ mod tests {
 
     #[test]
     fn test_ldr_positive() {
-        let inst = LoadLiteral::ldr(0, 5, 64);
+        let inst = LoadLiteral::ldr_literal(0, 5, 64);
         let result: u32 = inst.into();
         assert_eq!(0x580000a0, result);
     }
 
     #[test]
     fn test_ldr_negative() {
-        let inst = LoadLiteral::ldr(0, -5, 64);
+        let inst = LoadLiteral::ldr_literal(0, -5, 64);
         let result: u32 = inst.into();
         assert_eq!(0x58ffff60, result);
     }

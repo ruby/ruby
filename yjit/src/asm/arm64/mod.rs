@@ -374,11 +374,26 @@ pub fn ldp_post(cb: &mut CodeBlock, rt1: A64Opnd, rt2: A64Opnd, rn: A64Opnd) {
     cb.write_bytes(&bytes);
 }
 
+/// LDR - load a memory address into a register with a register offset
+pub fn ldr(cb: &mut CodeBlock, rt: A64Opnd, rn: A64Opnd, rm: A64Opnd) {
+    let bytes: [u8; 4] = match (rt, rn, rm) {
+        (A64Opnd::Reg(rt), A64Opnd::Reg(rn), A64Opnd::Reg(rm)) => {
+            assert!(rt.num_bits == rn.num_bits, "Expected registers to be the same size");
+            assert!(rn.num_bits == rm.num_bits, "Expected registers to be the same size");
+
+            LoadRegister::ldr(rt.reg_no, rn.reg_no, rm.reg_no, rt.num_bits).into()
+        },
+        _ => panic!("Invalid operand combination to ldr instruction.")
+    };
+
+    cb.write_bytes(&bytes);
+}
+
 /// LDR - load a PC-relative memory address into a register
-pub fn ldr(cb: &mut CodeBlock, rt: A64Opnd, rn: i32) {
+pub fn ldr_literal(cb: &mut CodeBlock, rt: A64Opnd, rn: i32) {
     let bytes: [u8; 4] = match rt {
         A64Opnd::Reg(rt) => {
-            LoadLiteral::ldr(rt.reg_no, rn, rt.num_bits).into()
+            LoadLiteral::ldr_literal(rt.reg_no, rn, rt.num_bits).into()
         },
         _ => panic!("Invalid operand combination to ldr instruction."),
     };
@@ -386,12 +401,18 @@ pub fn ldr(cb: &mut CodeBlock, rt: A64Opnd, rn: i32) {
     cb.write_bytes(&bytes);
 }
 
+/// Whether or not a memory address displacement fits into the maximum number of
+/// bits such that it can be used without loading it into a register first.
+pub fn mem_disp_fits_bits(disp: i32) -> bool {
+    imm_fits_bits(disp.into(), 9)
+}
+
 /// LDR (post-index) - load a register from memory, update the base pointer after loading it
 pub fn ldr_post(cb: &mut CodeBlock, rt: A64Opnd, rn: A64Opnd) {
     let bytes: [u8; 4] = match (rt, rn) {
         (A64Opnd::Reg(rt), A64Opnd::Mem(rn)) => {
             assert!(rt.num_bits == rn.num_bits, "All operands must be of the same size.");
-            assert!(imm_fits_bits(rn.disp.into(), 9), "The displacement must be 9 bits or less.");
+            assert!(mem_disp_fits_bits(rn.disp), "The displacement must be 9 bits or less.");
 
             LoadStore::ldr_post(rt.reg_no, rn.base_reg_no, rn.disp as i16, rt.num_bits).into()
         },
@@ -406,7 +427,7 @@ pub fn ldr_pre(cb: &mut CodeBlock, rt: A64Opnd, rn: A64Opnd) {
     let bytes: [u8; 4] = match (rt, rn) {
         (A64Opnd::Reg(rt), A64Opnd::Mem(rn)) => {
             assert!(rt.num_bits == rn.num_bits, "All operands must be of the same size.");
-            assert!(imm_fits_bits(rn.disp.into(), 9), "The displacement must be 9 bits or less.");
+            assert!(mem_disp_fits_bits(rn.disp), "The displacement must be 9 bits or less.");
 
             LoadStore::ldr_pre(rt.reg_no, rn.base_reg_no, rn.disp as i16, rt.num_bits).into()
         },
@@ -426,7 +447,7 @@ pub fn ldur(cb: &mut CodeBlock, rt: A64Opnd, rn: A64Opnd) {
         },
         (A64Opnd::Reg(rt), A64Opnd::Mem(rn)) => {
             assert!(rt.num_bits == rn.num_bits, "Expected registers to be the same size");
-            assert!(imm_fits_bits(rn.disp.into(), 9), "Expected displacement to be 9 bits or less");
+            assert!(mem_disp_fits_bits(rn.disp), "Expected displacement to be 9 bits or less");
 
             LoadStore::ldur(rt.reg_no, rn.base_reg_no, rn.disp as i16, rt.num_bits).into()
         },
@@ -441,7 +462,7 @@ pub fn ldursw(cb: &mut CodeBlock, rt: A64Opnd, rn: A64Opnd) {
     let bytes: [u8; 4] = match (rt, rn) {
         (A64Opnd::Reg(rt), A64Opnd::Mem(rn)) => {
             assert!(rt.num_bits == rn.num_bits, "Expected registers to be the same size");
-            assert!(imm_fits_bits(rn.disp.into(), 9), "Expected displacement to be 9 bits or less");
+            assert!(mem_disp_fits_bits(rn.disp), "Expected displacement to be 9 bits or less");
 
             LoadStore::ldursw(rt.reg_no, rn.base_reg_no, rn.disp as i16).into()
         },
@@ -670,7 +691,7 @@ pub fn str_post(cb: &mut CodeBlock, rt: A64Opnd, rn: A64Opnd) {
     let bytes: [u8; 4] = match (rt, rn) {
         (A64Opnd::Reg(rt), A64Opnd::Mem(rn)) => {
             assert!(rt.num_bits == rn.num_bits, "All operands must be of the same size.");
-            assert!(imm_fits_bits(rn.disp.into(), 9), "The displacement must be 9 bits or less.");
+            assert!(mem_disp_fits_bits(rn.disp), "The displacement must be 9 bits or less.");
 
             LoadStore::str_post(rt.reg_no, rn.base_reg_no, rn.disp as i16, rt.num_bits).into()
         },
@@ -685,7 +706,7 @@ pub fn str_pre(cb: &mut CodeBlock, rt: A64Opnd, rn: A64Opnd) {
     let bytes: [u8; 4] = match (rt, rn) {
         (A64Opnd::Reg(rt), A64Opnd::Mem(rn)) => {
             assert!(rt.num_bits == rn.num_bits, "All operands must be of the same size.");
-            assert!(imm_fits_bits(rn.disp.into(), 9), "The displacement must be 9 bits or less.");
+            assert!(mem_disp_fits_bits(rn.disp), "The displacement must be 9 bits or less.");
 
             LoadStore::str_pre(rt.reg_no, rn.base_reg_no, rn.disp as i16, rt.num_bits).into()
         },
@@ -700,7 +721,7 @@ pub fn stur(cb: &mut CodeBlock, rt: A64Opnd, rn: A64Opnd) {
     let bytes: [u8; 4] = match (rt, rn) {
         (A64Opnd::Reg(rt), A64Opnd::Mem(rn)) => {
             assert!(rt.num_bits == rn.num_bits, "Expected registers to be the same size");
-            assert!(imm_fits_bits(rn.disp.into(), 9), "Expected displacement to be 9 bits or less");
+            assert!(mem_disp_fits_bits(rn.disp), "Expected displacement to be 9 bits or less");
 
             LoadStore::stur(rt.reg_no, rn.base_reg_no, rn.disp as i16, rt.num_bits).into()
         },
@@ -1024,7 +1045,12 @@ mod tests {
 
     #[test]
     fn test_ldr() {
-        check_bytes("40010058", |cb| ldr(cb, X0, 10));
+        check_bytes("6a696cf8", |cb| ldr(cb, X10, X11, X12));
+    }
+
+    #[test]
+    fn test_ldr_literal() {
+        check_bytes("40010058", |cb| ldr_literal(cb, X0, 10));
     }
 
     #[test]
