@@ -165,4 +165,6 @@ yjit_task:
   # These are the btests we can't run yet on arm:
   #bootstraptest/test_yjit.rb (out of executable memory not handled)
 
-  # full_build_script: make -j
+  # FIXME: not currently working on CI, missing cargo
+  # Check that we can do a full ruby build
+  #full_build_script: make -j
