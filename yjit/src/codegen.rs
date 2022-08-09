@@ -3979,10 +3979,10 @@ fn gen_send_cfunc(
         // reg1 = VM_BH_FROM_ISEQ_BLOCK(VM_CFP_TO_CAPTURED_BLOCK(reg_cfp));
         let cfp_self = asm.lea(Opnd::mem(64, CFP, RUBY_OFFSET_CFP_SELF));
         let block_handler = asm.or(cfp_self, Opnd::Imm(1));
-        asm.mov(Opnd::mem(64, sp, SIZEOF_VALUE_I32 * -2), block_handler);
+        asm.store(Opnd::mem(64, sp, SIZEOF_VALUE_I32 * -2), block_handler);
     } else {
         let dst_opnd = Opnd::mem(64, sp, SIZEOF_VALUE_I32 * -2);
-        asm.mov(dst_opnd, Opnd::UImm(VM_BLOCK_HANDLER_NONE.into()));
+        asm.store(dst_opnd, Opnd::UImm(VM_BLOCK_HANDLER_NONE.into()));
     }
 
     // Write env flags at sp[-1]
@@ -3991,12 +3991,12 @@ fn gen_send_cfunc(
     if !kw_arg.is_null() {
         frame_type |= VM_FRAME_FLAG_CFRAME_KW
     }
-    asm.mov(Opnd::mem(64, sp, SIZEOF_VALUE_I32 * -1), Opnd::UImm(frame_type.into()));
+    asm.store(Opnd::mem(64, sp, SIZEOF_VALUE_I32 * -1), Opnd::UImm(frame_type.into()));
 
     // Allocate a new CFP (ec->cfp--)
     let ec_cfp_opnd = Opnd::mem(64, EC, RUBY_OFFSET_EC_CFP);
     let new_cfp = asm.sub(ec_cfp_opnd, Opnd::UImm(RUBY_SIZEOF_CONTROL_FRAME as u64));
-    asm.store(ec_cfp_opnd, new_cfp);
+    asm.mov(ec_cfp_opnd, new_cfp);
 
     // Setup the new frame
     // *cfp = (const struct rb_control_frame_struct) {
@@ -4496,7 +4496,7 @@ fn gen_send_iseq(
     // Store the updated SP on the current frame (pop arguments and receiver)
     asm.comment("store caller sp");
     let caller_sp = asm.lea(ctx.sp_opnd((SIZEOF_VALUE as isize) * -((argc as isize) + 1)));
-    asm.mov(Opnd::mem(64, CFP, RUBY_OFFSET_CFP_SP), caller_sp);
+    asm.store(Opnd::mem(64, CFP, RUBY_OFFSET_CFP_SP), caller_sp);
 
     // Store the next PC in the current frame
     jit_save_pc(jit, asm);
@@ -4505,7 +4505,7 @@ fn gen_send_iseq(
         // Change cfp->block_code in the current frame. See vm_caller_setup_arg_block().
         // VM_CFP_TO_CAPTURED_BLCOK does &cfp->self, rb_captured_block->code.iseq aliases
         // with cfp->block_code.
-        asm.mov(Opnd::mem(64, CFP, RUBY_OFFSET_CFP_BLOCK_CODE), VALUE(block_val as usize).into());
+        asm.store(Opnd::mem(64, CFP, RUBY_OFFSET_CFP_BLOCK_CODE), VALUE(block_val as usize).into());
     }
 
     // Adjust the callee's stack pointer
@@ -4516,7 +4516,7 @@ fn gen_send_iseq(
     // Initialize local variables to Qnil
     for i in 0..num_locals {
         let offs = (SIZEOF_VALUE as i32) * (i - num_locals - 3);
-        asm.mov(Opnd::mem(64, callee_sp, offs), Qnil.into());
+        asm.store(Opnd::mem(64, callee_sp, offs), Qnil.into());
     }
 
     asm.comment("push env");
@@ -4524,7 +4524,7 @@ fn gen_send_iseq(
     // any cme we depend on become outdated. See yjit_method_lookup_change().
     // Write method entry at sp[-3]
     // sp[-3] = me;
-    asm.mov(Opnd::mem(64, callee_sp, SIZEOF_VALUE_I32 * -3), VALUE(cme as usize).into());
+    asm.store(Opnd::mem(64, callee_sp, SIZEOF_VALUE_I32 * -3), VALUE(cme as usize).into());
 
     // Write block handler at sp[-2]
     // sp[-2] = block_handler;
@@ -4533,23 +4533,23 @@ fn gen_send_iseq(
             // reg1 = VM_BH_FROM_ISEQ_BLOCK(VM_CFP_TO_CAPTURED_BLOCK(reg_cfp));
             let block_handler = asm.lea(Opnd::mem(64, CFP, RUBY_OFFSET_CFP_SELF));
             let block_handler = asm.or(block_handler, 1.into());
-            asm.mov(Opnd::mem(64, callee_sp, SIZEOF_VALUE_I32 * -2), block_handler);
+            asm.store(Opnd::mem(64, callee_sp, SIZEOF_VALUE_I32 * -2), block_handler);
         }
         None => {
-            asm.mov(Opnd::mem(64, callee_sp, SIZEOF_VALUE_I32 * -2), VM_BLOCK_HANDLER_NONE.into());
+            asm.store(Opnd::mem(64, callee_sp, SIZEOF_VALUE_I32 * -2), VM_BLOCK_HANDLER_NONE.into());
         }
     }
 
     // Write env flags at sp[-1]
     // sp[-1] = frame_type;
     let frame_type = VM_FRAME_MAGIC_METHOD | VM_ENV_FLAG_LOCAL;
-    asm.mov(Opnd::mem(64, callee_sp, SIZEOF_VALUE_I32 * -1), frame_type.into());
+    asm.store(Opnd::mem(64, callee_sp, SIZEOF_VALUE_I32 * -1), frame_type.into());
 
     asm.comment("push callee CFP");
     // Allocate a new CFP (ec->cfp--)
     let new_cfp = asm.sub(CFP, (RUBY_SIZEOF_CONTROL_FRAME as u64).into());
     asm.mov(CFP, new_cfp);
-    asm.mov(Opnd::mem(64, EC, RUBY_OFFSET_EC_CFP), CFP);
+    asm.store(Opnd::mem(64, EC, RUBY_OFFSET_EC_CFP), CFP);
 
     // Setup the new frame
     // *cfp = (const struct rb_control_frame_struct) {
