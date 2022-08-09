@@ -471,8 +471,7 @@ each based on an external standard.
 
 The HTTP date format is based on
 {RFC 2616}[https://datatracker.ietf.org/doc/html/rfc2616],
-and treats dates in the format <tt>'%a, %d %b %Y %T GMT'</tt>;
-see {Formats for Dates and Times}[https://docs.ruby-lang.org/en/master/strftime_formatting_rdoc.html]:
+and treats dates in the format <tt>'%a, %d %b %Y %T GMT'</tt>:
 
   d = Date.new(2001, 2, 3) # => #<Date: 2001-02-03>
   # Return HTTP-formatted string.
@@ -501,8 +500,7 @@ see {ISO 8601 Format Specifications}[https://docs.ruby-lang.org/en/master/strfti
 === RFC 3339 Format
 
 The RFC 3339 date format is based on
-{RFC 3339}[https://datatracker.ietf.org/doc/html/rfc3339],
-see {Formats for Dates and Times}[https://docs.ruby-lang.org/en/master/strftime_formatting_rdoc.html]:
+{RFC 3339}[https://datatracker.ietf.org/doc/html/rfc3339]:
 
   d = Date.new(2001, 2, 3) # => #<Date: 2001-02-03>
   # Return 3339-formatted string.
@@ -517,8 +515,7 @@ see {Formats for Dates and Times}[https://docs.ruby-lang.org/en/master/strftime_
 
 The RFC 2822 date format is based on
 {RFC 2822}[https://datatracker.ietf.org/doc/html/rfc2822],
-and treats dates in the format <tt>'%a, %-d %b %Y %T %z'</tt>;
-see {Formats for Dates and Times}[https://docs.ruby-lang.org/en/master/strftime_formatting_rdoc.html]:
+and treats dates in the format <tt>'%a, %-d %b %Y %T %z'</tt>]:
 
   d = Date.new(2001, 2, 3) # => #<Date: 2001-02-03>
   # Return 2822-formatted string.
@@ -534,8 +531,7 @@ see {Formats for Dates and Times}[https://docs.ruby-lang.org/en/master/strftime_
 The JIS X 0301 format includes the
 {Japanese era name}[https://en.wikipedia.org/wiki/Japanese_era_name],
 and treats dates in the format <tt>'%Y-%m-%d'</tt>
-with the first letter of the romanized era name prefixed;
-see {Formats for Dates and Times}[https://docs.ruby-lang.org/en/master/strftime_formatting_rdoc.html]:
+with the first letter of the romanized era name prefixed:
 
   d = Date.new(2001, 2, 3) # => #<Date: 2001-02-03>
   # Return 0301-formatted string.
