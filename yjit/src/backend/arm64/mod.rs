@@ -882,8 +882,8 @@ mod tests {
         asm.store(Opnd::mem(64, Opnd::Reg(X2_REG), 0), opnd);
         asm.compile_with_regs(&mut cb, vec![X3_REG]);
 
-        let insns = cb.get_ptr(0).raw_ptr() as *const u32;
-        assert_eq!(0x8b010003, unsafe { *insns });
+        // Assert that only 2 instructions were written.
+        assert_eq!(8, cb.get_write_pos());
     }
 
     #[test]
