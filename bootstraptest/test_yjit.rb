@@ -3165,3 +3165,36 @@ assert_equal '.', %q{
 
 # opt_invokebuiltin_delegate_leave
 assert_equal '[0]', %q{"\x00".unpack("c")}
+
+# opt_send_without_block (VM_METHOD_TYPE_ISEQ)
+assert_equal '1', %q{
+  def foo = 1
+  def bar = foo
+  bar
+}
+assert_equal '[1, 2, 3]', %q{
+  def foo(a, b) = [1, a, b]
+  def bar = foo(2, 3)
+  bar
+}
+assert_equal '[1, 2, 3, 4, 5, 6]', %q{
+  def foo(a, b, c:, d:, e: 0, f: 6) = [a, b, c, d, e, f]
+  def bar = foo(1, 2, c: 3, d: 4, e: 5)
+  bar
+}
+assert_equal '[1, 2, 3, 4]', %q{
+  def foo(a, b = 2) = [a, b]
+  def bar = foo(1) + foo(3, 4)
+  bar
+}
+
+assert_equal '1', %q{
+  def foo(a) = a
+  def bar = foo(1) { 2 }
+  bar
+}
+assert_equal '[1, 2]', %q{
+  def foo(a, &block) = [a, block.call]
+  def bar = foo(1) { 2 }
+  bar
+}
