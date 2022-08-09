@@ -44,6 +44,26 @@ module Psych
       assert_match(/12:00:00-05:00/,  cycled.last.to_s)
     end
 
+    def test_julian_date
+      d = Date.new(1582, 10, 4, Date::GREGORIAN)
+      assert_cycle d
+    end
+
+    def test_proleptic_gregorian_date
+      d = Date.new(1582, 10, 14, Date::GREGORIAN)
+      assert_cycle d
+    end
+
+    def test_julian_datetime
+      dt = DateTime.new(1582, 10, 4, 23, 58, 59, 0, Date::GREGORIAN)
+      assert_cycle dt
+    end
+
+    def test_proleptic_gregorian_datetime
+      dt = DateTime.new(1582, 10, 14, 23, 58, 59, 0, Date::GREGORIAN)
+      assert_cycle dt
+    end
+
     def test_invalid_date
       assert_cycle "2013-10-31T10:40:07-000000000000033"
     end
