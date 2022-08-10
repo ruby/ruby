@@ -159,6 +159,7 @@ Note: We're only listing outstanding class updates.
     * bundler 2.4.0.dev
     * cgi 0.3.2
     * date 3.2.3
+    * error_highlight 0.4.0
     * etc 1.4.0
     * io-console 0.5.11
     * io-nonblock 0.1.1
