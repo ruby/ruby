@@ -1150,7 +1150,7 @@ nil can't be coerced into Integer
   def test_custom_formatter
     custom_formatter = Object.new
     def custom_formatter.message_for(spot)
-      "\n\n" + spot.inspect
+      "\n\n" + spot.except(:script_lines).inspect
     end
 
     original_formatter, ErrorHighlight.formatter = ErrorHighlight.formatter, custom_formatter
