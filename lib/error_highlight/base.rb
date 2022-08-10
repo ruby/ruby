@@ -26,9 +26,9 @@ module ErrorHighlight
     case obj
     when Exception
       exc = obj
+      loc = opts[:backtrace_location]
       opts = { point_type: opts.fetch(:point_type, :name) }
 
-      loc = opts[:backtrace_location]
       unless loc
         case exc
         when TypeError, ArgumentError
@@ -43,6 +43,8 @@ module ErrorHighlight
 
         opts[:name] = exc.name if NameError === obj
       end
+
+      return nil unless Thread::Backtrace::Location === loc
 
       node = RubyVM::AbstractSyntaxTree.of(loc, keep_script_lines: true)
 
