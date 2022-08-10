@@ -51,23 +51,37 @@ require 'rdoc'
 #
 # === Blocks
 #
-# It's convenient to think of markup input as a sequence of _blocks_,
-# such as:
+# It's convenient to think of \RDoc markup input as a sequence of _blocks_
+# of various types (details at the links):
 #
-# - {Paragraphs}[rdoc-ref:RDoc::MarkupReference@Paragraphs].
-# - {Verbatim text blocks}[rdoc-ref:RDoc::MarkupReference@Verbatim+Text+Blocks].
-# - {Code blocks}[rdoc-ref:RDoc::MarkupReference@Code+Blocks].
-# - {Block quotes}[rdoc-ref:RDoc::MarkupReference@Block+Quotes].
-# - {Bullet lists}[rdoc-ref:RDoc::MarkupReference@Bullet+Lists].
-# - {Numbered lists}[rdoc-ref:RDoc::MarkupReference@Numbered+Lists].
-# - {Lettered lists}[rdoc-ref:RDoc::MarkupReference@Lettered+Lists].
-# - {Labeled lists}[rdoc-ref:RDoc::MarkupReference@Labeled+Lists].
-# - {Headings}[rdoc-ref:RDoc::MarkupReference@Headings].
-# - {Horizontal rules}[rdoc-ref:RDoc::MarkupReference@Horizontal+Rules].
-# - {Directives}[rdoc-ref:RDoc::MarkupReference@Directives].
+# - {Paragraph}[rdoc-ref:RDoc::MarkupReference@Paragraphs]:
+#   an ordinary paragraph.
+# - {Verbatim text block}[rdoc-ref:RDoc::MarkupReference@Verbatim+Text+Blocks]:
+#   a block of text to be rendered literally.
+# - {Code block}[rdoc-ref:RDoc::MarkupReference@Code+Blocks]:
+#   a verbatim text block containing Ruby code,
+#   to be rendered with code highlighting.
+# - {Block quote}[rdoc-ref:RDoc::MarkupReference@Block+Quotes]:
+#   a longish quoted passage, to be rendered with indentation
+#   instead of quote marks.
+# - {List}[rdoc-ref:RDoc::MarkupReference@Lists]: items for
+#   a bullet list, numbered list, lettered list, or labeled list.
+# - {Heading}[rdoc-ref:RDoc::MarkupReference@Headings]:
+#   a section heading.
+# - {Horizontal rule}[rdoc-ref:RDoc::MarkupReference@Horizontal+Rules]:
+#   a line across the rendered page.
+# - {Directive}[rdoc-ref:RDoc::MarkupReference@Directives]:
+#   various special directions for the rendering.
+# - {Text Markup}[rdoc-ref:RDoc:MarkupReference@Text+Markup]:
+#   text to be rendered in italic, bold, or monofont.
 #
-# All of these except paragraph blocks are distinguished by indentation,
-# or by unusual initial or embedded characters.
+# About the blocks:
+#
+# - Except for a paragraph, a block is distinguished by its indentation,
+#   or by unusual initial or embedded characters.
+# - Any block may appear independently
+#   (that is, not nested in another block);
+#   some blocks may be nested, as detailed below.
 #
 # ==== Paragraphs
 #
@@ -98,12 +112,13 @@ require 'rdoc'
 #
 # A paragraph may contain nested blocks, including:
 #
-# - Verbatim text blocks.
-# - Code blocks.
-# - Block quotes.
-# - Lists of any type.
-# - Headings.
-# - Horizontal rules.
+# - {Verbatim text blocks}[rdoc-ref:RDoc::MarkupReference@Verbatim+Text+Blocks].
+# - {Code blocks}[rdoc-ref:RDoc::MarkupReference@Code+Blocks].
+# - {Block quotes}[rdoc-ref:RDoc::MarkupReference@Block+Quotes].
+# - {Lists}[rdoc-ref:RDoc::MarkupReference@Lists].
+# - {Headings}[rdoc-ref:RDoc::MarkupReference@Headings].
+# - {Horizontal rules}[rdoc-ref:RDoc::MarkupReference@Horizontal+Rules].
+# - {Text Markup}[rdoc-ref:RDoc:MarkupReference@Text+Markup].
 #
 # ==== Verbatim Text Blocks
 #
@@ -140,6 +155,9 @@ require 'rdoc'
 #
 #   This is not verbatim text.
 #
+# A verbatim text block may not contain nested blocks of any kind
+# -- it's verbatim.
+#
 # ==== Code Blocks
 #
 # A special case of verbatim text is the <em>code block</em>,
@@ -173,6 +191,9 @@ require 'rdoc'
 # Pro tip:  If your indented Ruby code does not get highlighted,
 # it may contain a syntax error.
 #
+# A code block may not contain nested blocks of any kind
+# -- it's verbatim.
+#
 # ==== Block Quotes
 #
 # You can use the characters <tt>>>></tt> (unindented),
@@ -181,6 +202,7 @@ require 'rdoc'
 #
 # Example input:
 #
+#   Here's a block quote:
 #   >>>
 #     Lorem ipsum dolor sit amet, consectetur adipiscing elit. Integer
 #     commodo quam iaculis massa posuere, dictum fringilla justo pulvinar.
@@ -194,27 +216,30 @@ require 'rdoc'
 # Rendered HTML:
 #
 # >>>
-#   Lorem ipsum dolor sit amet, consectetur adipiscing elit. Integer
-#   commodo quam iaculis massa posuere, dictum fringilla justo pulvinar.
-#   Quisque turpis erat, pharetra eu dui at, sollicitudin accumsan nulla.
+#   Here's a block quote:
+#   >>>
+#     Lorem ipsum dolor sit amet, consectetur adipiscing elit. Integer
+#     commodo quam iaculis massa posuere, dictum fringilla justo pulvinar.
+#     Quisque turpis erat, pharetra eu dui at, sollicitudin accumsan nulla.
 #
-#   Aenean congue ligula eu ligula molestie, eu pellentesque purus
-#   faucibus. In id leo non ligula condimentum lobortis. Duis vestibulum,
-#   diam in pellentesque aliquet, mi tellus placerat sapien, id euismod
-#   purus magna ut tortor.
+#     Aenean congue ligula eu ligula molestie, eu pellentesque purus
+#     faucibus. In id leo non ligula condimentum lobortis. Duis vestibulum,
+#     diam in pellentesque aliquet, mi tellus placerat sapien, id euismod
+#     purus magna ut tortor.
+#
+# Note that, unlike verbatim text, single newlines are not honored,
+# but that a double newline begins a new paragraph in the block quote.
 #
 # A block quote may contain nested blocks, including:
 #
 # - Other block quotes.
-# - Paragraphs.
-# - Verbatim text blocks.
-# - Code blocks.
-# - Lists of any type.
-# - Headings.
-# - Horizontal rules.
-#
-# Note that, unlike verbatim text, single newlines are not honored,
-# but that a double newline begins a new paragraph in the block quote.
+# - {Paragraphs}[rdoc-ref:RDoc::MarkupReference@Paragraphs].
+# - {Verbatim text blocks}[rdoc-ref:RDoc::MarkupReference@Verbatim+Text+Blocks].
+# - {Code blocks}[rdoc-ref:RDoc::MarkupReference@Code+Blocks].
+# - {Lists}[rdoc-ref:RDoc::MarkupReference@Lists].
+# - {Headings}[rdoc-ref:RDoc::MarkupReference@Headings].
+# - {Horizontal rules}[rdoc-ref:RDoc::MarkupReference@Horizontal+Rules].
+# - {Text Markup}[rdoc-ref:RDoc:MarkupReference@Text+Markup].
 #
 # ==== Lists
 #
@@ -240,12 +265,13 @@ require 'rdoc'
 # A list item may contain nested blocks, including:
 #
 # - Other lists of any type.
-# - Paragraphs.
-# - Verbatim text blocks.
-# - Code blocks.
-# - Block quotes.
-# - Headings.
-# - Horizontal rules.
+# - {Paragraphs}[rdoc-ref:RDoc::MarkupReference@Paragraphs].
+# - {Verbatim text blocks}[rdoc-ref:RDoc::MarkupReference@Verbatim+Text+Blocks].
+# - {Code blocks}[rdoc-ref:RDoc::MarkupReference@Code+Blocks].
+# - {Block quotes}[rdoc-ref:RDoc::MarkupReference@Block+Quotes].
+# - {Headings}[rdoc-ref:RDoc::MarkupReference@Headings].
+# - {Horizontal rules}[rdoc-ref:RDoc::MarkupReference@Horizontal+Rules].
+# - {Text Markup}[rdoc-ref:RDoc:MarkupReference@Text+Markup].
 #
 # ===== Bullet Lists
 #
@@ -370,30 +396,29 @@ require 'rdoc'
 #   # ============Still a Heading (Level 6)
 #   # \== Not a Heading
 #
+# A heading may contain only one type of nested block:
+#
+# - {Text Markup}[rdoc-ref:RDoc:MarkupReference@Text+Markup].
+#
 # ==== Horizontal Rules
 #
-# A horizontal rule begins with three or more hyphens.
+# A horizontal rule consists of a line with three or more hyphens
+# and nothing more.
 #
 # Example input:
 #
-#   # ------
-#   # Stuff between.
-#   #
-#   # \--- Not a horizontal rule.
-#   #
-#   # -- Also not a horizontal rule.
-#   #
-#   # ---
+#   ---
+#   --- Not a horizontal rule.
+#
+#   -- Also not a horizontal rule.
+#   ---
 #
 # Rendered HTML:
 # >>>
-#   ------
-#   Stuff between.
-#
-#   \--- Not a horizontal rule.
+#   ---
+#   --- Not a horizontal rule.
 #
 #   -- Also not a horizontal rule.
-#
 #   ---
 #
 # ==== Directives
@@ -584,83 +609,197 @@ require 'rdoc'
 #
 #   For C code, the directive may appear in a stand-alone comment
 #
-# === Text Markup
+# ==== Text Markup
 #
-# Text in a paragraph, list item (any type), or heading
-# may have markup formatting.
+# Text markup is metatext that marks text as:
 #
-# ==== Italic
+# - Italic.
+# - Bold.
+# - Monofont.
 #
-# A single word may be italicized by prefixed and suffixed underscores.
+# Text markup may contain only one type of nested block:
 #
-# Examples:
+# - More text markup:
+#   italic, bold, monofont.
 #
-#   # _Word_ in paragraph.
-#   # - _Word_ in bullet list item.
-#   # 1. _Word_ in numbered list item.
-#   # a. _Word_ in lettered list item.
-#   # [_word_] _Word_ in labeled list item.
-#   # ====== _Word_ in heading
+# ===== Italic
 #
-# Any text may be italicized via HTML tag +i+ or +em+.
+# Text may be marked as italic via HTML tag <tt><i></tt> or <tt><em></tt>.
 #
-# Examples:
+# Example input:
 #
-#   # <i>Two words</i> in paragraph.
-#   # - <i>Two words</i> in bullet list item.
-#   # 1. <i>Two words</i> in numbered list item.
-#   # a. <i>Two words</i> in lettered list item.
-#   # [<i>Two words</i>] <i>Two words</i> in labeled list item.
-#   # ====== <i>Two words</i> in heading
+#   <i>Two words</i> in a paragraph.
 #
-# ==== Bold
+#   >>>
+#     <i>Two words in a block quote</i>.
 #
-# A single word may be made bold by prefixed and suffixed asterisks.
+#   - <i>Two words</i> in a bullet list item.
 #
-# Examples:
+#   ====== <i>Two words</i> in a Heading
 #
-#   # *Word* in paragraph.
-#   # - *Word* in bullet list item.
-#   # 1. *Word* in numbered list item.
-#   # a. *Word* in lettered list item.
-#   # [*word*] *Word* in labeled list item.
-#   # ====== *Word* in heading
+#   <i>Italicized passage containing *bold* and +monofont+.</i>
 #
-# Any text may be made bold via HTML tag +b+.
+# Rendered HTML:
+# >>>
+#   <i>Two words</i> in a paragraph.
 #
-# Examples:
+#   >>>
+#     <i>Two words in a block quote</i>.
 #
-#   # <b>Two words</b> in paragraph.
-#   # - <b>Two words</b> in bullet list item.
-#   # 1. <b>Two words</b> in numbered list item.
-#   # a. <b>Two words</b> in lettered list item.
-#   # [<b>Two words</b>] <b>Two words</b> in labeled list item.
-#   # ====== <b>Two words</b> in heading
+#   - <i>Two words</i> in a bullet list item.
 #
-# ==== Monofont
+#   ====== <i>Two words</i> in a Heading
 #
-# A single word may be made monofont -- sometimes called "typewriter font" --
-# by prefixed and suffixed plus-signs.
+#   <i>Italicized passage containing *bold* and +monofont+.</i>
 #
-# Examples:
+# A single word may be italicized via a shorthand:
+# prefixed and suffixed underscores.
 #
-#   # +Word+ in paragraph.
-#   # - +Word+ in bullet list item.
-#   # 1. +Word+ in numbered list item.
-#   # a. +Word+ in lettered list item.
-#   # [+word+] +Word+ in labeled list item.
-#   # ====== +Word+ in heading
+# Example input:
 #
-# Any text may be made monofont via HTML tag +tt+ or +code+.
+#   _Word_ in a paragraph.
 #
-# Examples:
+#   >>>
+#     _Word_ in a block quote.
 #
-#   # <tt>Two words</tt> in paragraph.
-#   # - <tt>Two words</tt> in bullet list item.
-#   # 1. <tt>Two words</tt> in numbered list item.
-#   # a. <tt>Two words</tt> in lettered list item.
-#   # [<tt>Two words</tt>] <tt>Two words</tt> in labeled list item.
-#   # ====== <tt>Two words</tt> in heading
+#   - _Word_ in a bullet list item.
+#
+#   [_word_] _Word_ in a labeled list item.
+#
+#   ====== _Word_ in a Heading
+#
+# Rendered HTML:
+# >>>
+#   _Word_ in a paragraph.
+#
+#   >>>
+#     _Word_ in a block quote.
+#
+#   - _Word_ in a bullet list item.
+#
+#   [_word_] _Word_ in a labeled list item.
+#
+#   ====== _Word_ in a Heading
+#
+# ===== Bold
+#
+# Text may be marked as bold via HTML tag <tt><b></tt>.
+#
+# Example input:
+#
+#   <b>Two words</b> in a paragraph.
+#
+#   >>>
+#     <b>Two words</b> in a block quote.
+#
+#   - <b>Two words</b> in a bullet list item.
+#
+#   ====== <b>Two words</b> in a Heading
+#
+#   <b>Bold passage containing _italics_ and +monofont+.</b>
+#
+# Rendered HTML:
+#
+# >>>
+#   <b>Two words</b> in a paragraph.
+#
+#   >>>
+#     <b>Two words</b> in a block quote.
+#
+#   - <b>Two words</b> in a bullet list item.
+#
+#   ====== <b>Two words</b> in a Heading
+#
+#   <b>Bold passage containing _italics_ and +monofont+.</b>
+#
+# A single word may be made bold via a shorthand:
+# prefixed and suffixed asterisks.
+#
+# Example input:
+#
+#   *Word* in a paragraph.
+#
+#   >>>
+#     *Word* in a block quote.
+#
+#   - *Word* in a bullet list item.
+#
+#   [*word*] *Word* in a labeled list item.
+#
+#   ===== *Word* in a Heading
+#
+# Rendered HTML:
+#
+# >>>
+#   *Word* in a paragraph.
+#
+#   >>>
+#     *Word* in a block quote.
+#
+#   - *Word* in a bullet list item.
+#
+#   [*word*] *Word* in a labeled list item.
+#
+#   ===== *Word* in a Heading
+#
+# ===== Monofont
+#
+# Text may be marked as monofont
+# -- sometimes called 'typewriter font' --
+# via HTML tag <tt><tt></tt> or <tt><code></tt>.
+#
+# Example input:
+#
+#   <tt>Two words</tt> in a paragraph.
+#
+#   >>>
+#     <tt>Two words</tt> in a block quote.
+#
+#   - <tt>Two words</tt> in a bullet list item.
+#
+#   ====== <tt>Two words</tt> in heading
+#
+#   <tt>Monofont passage containing _italics_ and *bold*.</tt>
+#
+# Rendered HTML:
+#
+# >>>
+#   <tt>Two words</tt> in a paragraph.
+#
+#   >>>
+#     <tt>Two words</tt> in a block quote.
+#
+#   - <tt>Two words</tt> in a bullet list item.
+#
+#   ====== <tt>Two words</tt> in heading
+#
+#   <tt>Monofont passage containing _italics_ and *bold*.</tt>
+#
+# A single word may be made monofont by a shorthand:
+# prefixed and suffixed plus-signs.
+#
+# Example input:
+#
+#   +Word+ in a paragraph.
+#
+#   >>>
+#     +Word+ in a block quote.
+#
+#   - +Word+ in a bullet list item.
+#
+#   ====== +Word+ in a Heading
+#
+# Rendered HTML:
+#
+# >>>
+#   +Word+ in a paragraph.
+#
+#   >>>
+#     +Word+ in a block quote.
+#
+#   - +Word+ in a bullet list item.
+#
+#   ====== +Word+ in a Heading
 #
 # ==== Escaping Text Markup
 #
