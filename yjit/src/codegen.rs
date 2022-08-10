@@ -3531,6 +3531,7 @@ fn jit_protected_callee_ancestry_guard(
         counted_exit!(ocb, side_exit, send_se_protected_check_failed),
     );
 }
+*/
 
 // Codegen for rb_obj_not().
 // Note, caller is responsible for generating all the right guards, including
@@ -3538,7 +3539,7 @@ fn jit_protected_callee_ancestry_guard(
 fn jit_rb_obj_not(
     _jit: &mut JITState,
     ctx: &mut Context,
-    cb: &mut CodeBlock,
+    asm: &mut Assembler,
     _ocb: &mut OutlinedCb,
     _ci: *const rb_callinfo,
     _cme: *const rb_callable_method_entry_t,
@@ -3550,17 +3551,17 @@ fn jit_rb_obj_not(
 
     match recv_opnd.known_truthy() {
         Some(false) => {
-            add_comment(cb, "rb_obj_not(nil_or_false)");
+            asm.comment("rb_obj_not(nil_or_false)");
             ctx.stack_pop(1);
             let out_opnd = ctx.stack_push(Type::True);
-            mov(cb, out_opnd, uimm_opnd(Qtrue.into()));
+            asm.mov(out_opnd, Qtrue.into());
         },
         Some(true) => {
             // Note: recv_opnd != Type::Nil && recv_opnd != Type::False.
-            add_comment(cb, "rb_obj_not(truthy)");
+            asm.comment("rb_obj_not(truthy)");
             ctx.stack_pop(1);
             let out_opnd = ctx.stack_push(Type::False);
-            mov(cb, out_opnd, uimm_opnd(Qfalse.into()));
+            asm.mov(out_opnd, Qfalse.into());
         },
         _ => {
             return false;
@@ -3574,7 +3575,7 @@ fn jit_rb_obj_not(
 fn jit_rb_true(
     _jit: &mut JITState,
     ctx: &mut Context,
-    cb: &mut CodeBlock,
+    asm: &mut Assembler,
     _ocb: &mut OutlinedCb,
     _ci: *const rb_callinfo,
     _cme: *const rb_callable_method_entry_t,
@@ -3582,10 +3583,10 @@ fn jit_rb_true(
     _argc: i32,
     _known_recv_class: *const VALUE,
 ) -> bool {
-    add_comment(cb, "nil? == true");
+    asm.comment("nil? == true");
     ctx.stack_pop(1);
     let stack_ret = ctx.stack_push(Type::True);
-    mov(cb, stack_ret, uimm_opnd(Qtrue.into()));
+    asm.mov(stack_ret, Qtrue.into());
     true
 }
 
@@ -3593,7 +3594,7 @@ fn jit_rb_true(
 fn jit_rb_false(
     _jit: &mut JITState,
     ctx: &mut Context,
-    cb: &mut CodeBlock,
+    asm: &mut Assembler,
     _ocb: &mut OutlinedCb,
     _ci: *const rb_callinfo,
     _cme: *const rb_callable_method_entry_t,
@@ -3601,10 +3602,10 @@ fn jit_rb_false(
     _argc: i32,
     _known_recv_class: *const VALUE,
 ) -> bool {
-    add_comment(cb, "nil? == false");
+    asm.comment("nil? == false");
     ctx.stack_pop(1);
     let stack_ret = ctx.stack_push(Type::False);
-    mov(cb, stack_ret, uimm_opnd(Qfalse.into()));
+    asm.mov(stack_ret, Qfalse.into());
     true
 }
 
@@ -3613,7 +3614,7 @@ fn jit_rb_false(
 fn jit_rb_obj_equal(
     _jit: &mut JITState,
     ctx: &mut Context,
-    cb: &mut CodeBlock,
+    asm: &mut Assembler,
     _ocb: &mut OutlinedCb,
     _ci: *const rb_callinfo,
     _cme: *const rb_callable_method_entry_t,
@@ -3621,18 +3622,15 @@ fn jit_rb_obj_equal(
     _argc: i32,
     _known_recv_class: *const VALUE,
 ) -> bool {
-    add_comment(cb, "equal?");
+    asm.comment("equal?");
     let obj1 = ctx.stack_pop(1);
     let obj2 = ctx.stack_pop(1);
 
-    mov(cb, REG0, obj1);
-    cmp(cb, REG0, obj2);
-    mov(cb, REG0, uimm_opnd(Qtrue.into()));
-    mov(cb, REG1, uimm_opnd(Qfalse.into()));
-    cmovne(cb, REG0, REG1);
+    asm.cmp(obj1, obj2);
+    let ret_opnd = asm.csel_e(Qtrue.into(), Qfalse.into());
 
     let stack_ret = ctx.stack_push(Type::UnknownImm);
-    mov(cb, stack_ret, REG0);
+    asm.mov(stack_ret, ret_opnd);
     true
 }
 
@@ -3640,7 +3638,7 @@ fn jit_rb_obj_equal(
 fn jit_rb_str_uplus(
     _jit: &mut JITState,
     ctx: &mut Context,
-    cb: &mut CodeBlock,
+    asm: &mut Assembler,
     _ocb: &mut OutlinedCb,
     _ci: *const rb_callinfo,
     _cme: *const rb_callable_method_entry_t,
@@ -3649,35 +3647,30 @@ fn jit_rb_str_uplus(
     _known_recv_class: *const VALUE,
 ) -> bool
 {
-    let recv = ctx.stack_pop(1);
+    asm.comment("Unary plus on string");
+    let recv_opnd = asm.load(ctx.stack_pop(1));
+    let flags_opnd = asm.load(Opnd::mem(64, recv_opnd, RUBY_OFFSET_RBASIC_FLAGS));
+    asm.test(flags_opnd, Opnd::Imm(RUBY_FL_FREEZE as i64));
 
-    add_comment(cb, "Unary plus on string");
-    mov(cb, REG0, recv);
-    mov(cb, REG1, mem_opnd(64, REG0, RUBY_OFFSET_RBASIC_FLAGS));
-    test(cb, REG1, imm_opnd(RUBY_FL_FREEZE as i64));
-
-    let ret_label = cb.new_label("stack_ret".to_string());
+    let ret_label = asm.new_label("stack_ret");
     // If the string isn't frozen, we just return it. It's already in REG0.
-    jz_label(cb, ret_label);
+    asm.jz(ret_label);
 
     // Str is frozen - duplicate
-    mov(cb, C_ARG_REGS[0], REG0);
-    call_ptr(cb, REG0, rb_str_dup as *const u8);
-    // Return value is in REG0, drop through and return it.
+    let ret_opnd = asm.ccall(rb_str_dup as *const u8, vec![recv_opnd]);
 
-    cb.write_label(ret_label);
+    asm.write_label(ret_label);
     // We guard for an exact-class match on the receiver of rb_cString
     let stack_ret = ctx.stack_push(Type::CString);
-    mov(cb, stack_ret, REG0);
+    asm.mov(stack_ret, ret_opnd);
 
-    cb.link_labels();
     true
 }
 
 fn jit_rb_str_bytesize(
     _jit: &mut JITState,
     ctx: &mut Context,
-    cb: &mut CodeBlock,
+    asm: &mut Assembler,
     _ocb: &mut OutlinedCb,
     _ci: *const rb_callinfo,
     _cme: *const rb_callable_method_entry_t,
@@ -3685,18 +3678,18 @@ fn jit_rb_str_bytesize(
     _argc: i32,
     _known_recv_class: *const VALUE,
 ) -> bool {
-    add_comment(cb, "String#bytesize");
+    asm.comment("String#bytesize");
 
     let recv = ctx.stack_pop(1);
-    mov(cb, C_ARG_REGS[0], recv);
-    call_ptr(cb, REG0, rb_str_bytesize as *const u8);
+    let ret_opnd = asm.ccall(rb_str_bytesize as *const u8, vec![recv]);
 
     let out_opnd = ctx.stack_push(Type::Fixnum);
-    mov(cb, out_opnd, RAX);
+    asm.mov(out_opnd, ret_opnd);
 
     true
 }
 
+/*
 // Codegen for rb_str_to_s()
 // When String#to_s is called on a String instance, the method returns self and
 // most of the overhead comes from setting up the method call. We observed that
@@ -3727,7 +3720,7 @@ fn jit_rb_str_to_s(
 fn jit_rb_str_concat(
     jit: &mut JITState,
     ctx: &mut Context,
-    cb: &mut CodeBlock,
+    asm: &mut Assembler,
     ocb: &mut OutlinedCb,
     _ci: *const rb_callinfo,
     _cme: *const rb_callable_method_entry_t,
@@ -3748,64 +3741,69 @@ fn jit_rb_str_concat(
     let side_exit = get_side_exit(jit, ocb, ctx);
 
     // Guard that the argument is of class String at runtime.
-    jit_guard_known_klass(
-        jit,
-        ctx,
-        cb,
-        ocb,
-        unsafe { rb_cString },
-        ctx.stack_opnd(0),
-        StackOpnd(0),
-        comptime_arg,
-        SEND_MAX_DEPTH,
-        side_exit,
-    );
+    let insn_opnd = StackOpnd(0);
+    let arg_opnd = asm.load(ctx.stack_opnd(0));
+    let arg_type = ctx.get_opnd_type(insn_opnd);
+
+    if arg_type != Type::CString && arg_type != Type::TString {
+        if !arg_type.is_heap() {
+            asm.comment("guard arg not immediate");
+            asm.test(REG0, imm_opnd(RUBY_IMMEDIATE_MASK as i64));
+            asm.jnz(Target::CodePtr(side_exit));
+            asm.cmp(arg_opnd, Qnil.into());
+            asm.jbe(Target::CodePtr(side_exit));
+
+            ctx.upgrade_opnd_type(insn_opnd, Type::UnknownHeap);
+        }
+        guard_object_is_string(cb, REG0, REG1, side_exit);
+        // We know this has type T_STRING, but not necessarily that it's a ::String
+        ctx.upgrade_opnd_type(insn_opnd, Type::TString);
+    }
 
     let concat_arg = ctx.stack_pop(1);
     let recv = ctx.stack_pop(1);
 
     // Test if string encodings differ. If different, use rb_str_append. If the same,
     // use rb_yjit_str_simple_append, which calls rb_str_cat.
-    add_comment(cb, "<< on strings");
+    asm.comment("<< on strings");
 
     // Both rb_str_append and rb_yjit_str_simple_append take identical args
-    mov(cb, C_ARG_REGS[0], recv);
-    mov(cb, C_ARG_REGS[1], concat_arg);
+    let ccall_args = vec![recv, concat_arg];
 
     // Take receiver's object flags XOR arg's flags. If any
     // string-encoding flags are different between the two,
     // the encodings don't match.
-    mov(cb, REG0, recv);
-    mov(cb, REG1, concat_arg);
-    mov(cb, REG0, mem_opnd(64, REG0, RUBY_OFFSET_RBASIC_FLAGS));
-    xor(cb, REG0, mem_opnd(64, REG1, RUBY_OFFSET_RBASIC_FLAGS));
-    test(cb, REG0, uimm_opnd(RUBY_ENCODING_MASK as u64));
+    let flags_xor = asm.xor(
+        Opnd::mem(64, asm.load(recv), RUBY_OFFSET_RBASIC_FLAGS),
+        Opnd::mem(64, asm.load(concat_arg), RUBY_OFFSET_RBASIC_FLAGS)
+    );
+    asm.test(flags_xor, Opnd::UImm(RUBY_ENCODING_MASK as u64));
 
-    let enc_mismatch = cb.new_label("enc_mismatch".to_string());
-    jnz_label(cb, enc_mismatch);
+    let enc_mismatch = asm.new_label("enc_mismatch");
+    asm.jnz(enc_mismatch);
 
     // If encodings match, call the simple append function and jump to return
-    call_ptr(cb, REG0, rb_yjit_str_simple_append as *const u8);
-    let ret_label: usize = cb.new_label("stack_return".to_string());
-    jmp_label(cb, ret_label);
+    let ret_opnd = asm.ccall(rb_yjit_str_simple_append as *const u8, ccall_args);
+    let ret_label = asm.new_label("stack_return");
+    asm.jmp(ret_label);
 
     // If encodings are different, use a slower encoding-aware concatenate
-    cb.write_label(enc_mismatch);
-    call_ptr(cb, REG0, rb_str_buf_append as *const u8);
+    asm.write_label(enc_mismatch);
+    asm.ccall(rb_str_buf_append as *const u8, ccall_args);
     // Drop through to return
 
-    cb.write_label(ret_label);
+    asm.write_label(ret_label);
     let stack_ret = ctx.stack_push(Type::CString);
-    mov(cb, stack_ret, RAX);
+    asm.mov(stack_ret, ret_opnd);
 
-    cb.link_labels();
     true
 }
+*/
 
 fn jit_thread_s_current(
     _jit: &mut JITState,
     ctx: &mut Context,
-    cb: &mut CodeBlock,
+    asm: &mut Assembler,
     _ocb: &mut OutlinedCb,
     _ci: *const rb_callinfo,
     _cme: *const rb_callable_method_entry_t,
@@ -3813,22 +3811,19 @@ fn jit_thread_s_current(
     _argc: i32,
     _known_recv_class: *const VALUE,
 ) -> bool {
-    add_comment(cb, "Thread.current");
+    asm.comment("Thread.current");
     ctx.stack_pop(1);
 
     // ec->thread_ptr
-    let ec_thread_ptr = mem_opnd(64, REG_EC, RUBY_OFFSET_EC_THREAD_PTR);
-    mov(cb, REG0, ec_thread_ptr);
+    let ec_thread_opnd = asm.load(Opnd::mem(64, EC, RUBY_OFFSET_EC_THREAD_PTR));
 
     // thread->self
-    let thread_self = mem_opnd(64, REG0, RUBY_OFFSET_THREAD_SELF);
-    mov(cb, REG0, thread_self);
+    let thread_self = Opnd::mem(64, ec_thread_opnd, RUBY_OFFSET_THREAD_SELF);
 
     let stack_ret = ctx.stack_push(Type::UnknownHeap);
-    mov(cb, stack_ret, REG0);
+    asm.mov(stack_ret, thread_self);
     true
 }
-*/
 
 // Check if we know how to codegen for a particular cfunc method
 fn lookup_cfunc_codegen(def: *const rb_method_definition_t) -> Option<MethodGenFn> {
@@ -5976,7 +5971,7 @@ fn get_gen_fn(opcode: VALUE) -> Option<InsnGenFn> {
 type MethodGenFn = fn(
     jit: &mut JITState,
     ctx: &mut Context,
-    cb: &mut CodeBlock,
+    asm: &mut Assembler,
     ocb: &mut OutlinedCb,
     ci: *const rb_callinfo,
     cme: *const rb_callable_method_entry_t,
@@ -6151,7 +6146,6 @@ impl CodegenGlobals {
 
     /// Register codegen functions for some Ruby core methods
     fn reg_method_codegen_fns(&mut self) {
-        /*
         unsafe {
             // Specialization for C methods. See yjit_reg_method() for details.
             self.yjit_reg_method(rb_cBasicObject, "!", jit_rb_obj_not);
@@ -6167,10 +6161,10 @@ impl CodegenGlobals {
             self.yjit_reg_method(rb_cSymbol, "===", jit_rb_obj_equal);
 
             // rb_str_to_s() methods in string.c
-            self.yjit_reg_method(rb_cString, "to_s", jit_rb_str_to_s);
-            self.yjit_reg_method(rb_cString, "to_str", jit_rb_str_to_s);
+            //self.yjit_reg_method(rb_cString, "to_s", jit_rb_str_to_s);
+            //self.yjit_reg_method(rb_cString, "to_str", jit_rb_str_to_s);
             self.yjit_reg_method(rb_cString, "bytesize", jit_rb_str_bytesize);
-            self.yjit_reg_method(rb_cString, "<<", jit_rb_str_concat);
+            //self.yjit_reg_method(rb_cString, "<<", jit_rb_str_concat);
             self.yjit_reg_method(rb_cString, "+@", jit_rb_str_uplus);
 
             // Thread.current
@@ -6180,7 +6174,6 @@ impl CodegenGlobals {
                 jit_thread_s_current,
             );
         }
-        */
     }
 
     /// Get a mutable reference to the codegen globals instance
