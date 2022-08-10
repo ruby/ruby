@@ -2551,7 +2551,6 @@ newobj_init(VALUE klass, VALUE flags, int wb_protected, rb_objspace_t *objspace,
         case T_FILE:
         case T_SYMBOL:
             mmtk_register_finalizable((void*)obj);
-            // VALUE klass = CLASS_OF(obj);
             RUBY_DEBUG_LOG("Object registered for finalization: %p: %s %s",
                 (void*)obj,
                 rb_type_str(RB_BUILTIN_TYPE(obj)),
@@ -4802,7 +4801,7 @@ rb_objspace_call_finalizer(rb_objspace_t *objspace)
                 RUBY_DEBUG_LOG("Resurrected for obj_free: %p: %s %s",
                         resurrected,
                         rb_type_str(RB_BUILTIN_TYPE(obj)),
-                        klass==0?"(null)":rb_class2name(klass)
+                        CLASS_OF(obj)==0?"(null)":rb_class2name(CLASS_OF(obj))
                         );
             }
             if (rb_obj_is_thread(obj)) {
@@ -15075,7 +15074,7 @@ rb_mmtk_wait_until_ractors_stopped(void *unused)
 {
     while (rb_mmtk_global.stopped_ractors < 1) {
         RUBY_DEBUG_LOG("Will wait for 1 ractor to stop. cur: %zu, expected: %zu",
-                rb_mmtk_global.stopped_ractors, 1);
+                rb_mmtk_global.stopped_ractors, (size_t)1);
         pthread_cond_wait(&rb_mmtk_global.cond_world_stopped, &rb_mmtk_global.mutex);
     }
 }
@@ -15125,7 +15124,7 @@ rb_mmtk_block_for_gc_internal(void *unused)
 
     while (rb_mmtk_global.start_the_world_count < my_count + 1) {
         RUBY_DEBUG_LOG("Will wait for cond. cur: %zu, expected: %zu",
-                rb_mmtk_global.start_the_world_count, ctx->my_count + 1);
+                rb_mmtk_global.start_the_world_count, my_count + 1);
         pthread_cond_wait(&rb_mmtk_global.cond_world_started, &rb_mmtk_global.mutex);
     }
 
