@@ -5556,6 +5556,7 @@ fn gen_opt_getinlinecache(
     );
     EndBlock
 }
+*/
 
 // Push the explicit block parameter onto the temporary stack. Part of the
 // interpreter's scheme for avoiding Proc allocations when delegating
@@ -5563,11 +5564,11 @@ fn gen_opt_getinlinecache(
 fn gen_getblockparamproxy(
     jit: &mut JITState,
     ctx: &mut Context,
-    cb: &mut CodeBlock,
+    asm: &mut Assembler,
     ocb: &mut OutlinedCb,
 ) -> CodegenStatus {
     if !jit_at_current_insn(jit) {
-        defer_compilation(jit, ctx, cb, ocb);
+        defer_compilation(jit, ctx, asm, ocb);
         return EndBlock;
     }
 
@@ -5590,79 +5591,64 @@ fn gen_getblockparamproxy(
     }
 
     // Load environment pointer EP from CFP
-    gen_get_ep(cb, REG0, level);
+    let ep_opnd = gen_get_ep(asm, level);
 
     // Bail when VM_ENV_FLAGS(ep, VM_FRAME_FLAG_MODIFIED_BLOCK_PARAM) is non zero
-    let flag_check = mem_opnd(
+    let flag_check = Opnd::mem(
         64,
-        REG0,
+        ep_opnd,
         (SIZEOF_VALUE as i32) * (VM_ENV_DATA_INDEX_FLAGS as i32),
     );
-    test(
-        cb,
-        flag_check,
-        uimm_opnd(VM_FRAME_FLAG_MODIFIED_BLOCK_PARAM.into()),
-    );
-    jnz_ptr(cb, counted_exit!(ocb, side_exit, gbpp_block_param_modified));
+    asm.test(flag_check, VM_FRAME_FLAG_MODIFIED_BLOCK_PARAM.into());
+    asm.jnz(counted_exit!(ocb, side_exit, gbpp_block_param_modified).into());
 
     // Load the block handler for the current frame
     // note, VM_ASSERT(VM_ENV_LOCAL_P(ep))
-    mov(
-        cb,
-        REG0,
-        mem_opnd(
-            64,
-            REG0,
-            (SIZEOF_VALUE as i32) * (VM_ENV_DATA_INDEX_SPECVAL as i32),
-        ),
+    let block_handler = asm.load(
+        Opnd::mem(64, ep_opnd, (SIZEOF_VALUE as i32) * (VM_ENV_DATA_INDEX_SPECVAL as i32))
     );
 
     // Specialize compilation for the case where no block handler is present
     if comptime_handler.as_u64() == 0 {
         // Bail if there is a block handler
-        cmp(cb, REG0, uimm_opnd(0));
+        asm.cmp(block_handler, Opnd::UImm(0));
 
         jit_chain_guard(
             JCC_JNZ,
             jit,
             &starting_context,
-            cb,
+            asm,
             ocb,
             SEND_MAX_DEPTH,
             side_exit,
         );
 
-        jit_putobject(jit, ctx, cb, Qnil);
+        jit_putobject(jit, ctx, asm, Qnil);
     } else {
         // Block handler is a tagged pointer. Look at the tag. 0x03 is from VM_BH_ISEQ_BLOCK_P().
-        and(cb, REG0_8, imm_opnd(0x3));
+        let block_handler = asm.and(block_handler, 0x3.into());
 
         // Bail unless VM_BH_ISEQ_BLOCK_P(bh). This also checks for null.
-        cmp(cb, REG0_8, imm_opnd(0x1));
+        asm.cmp(block_handler, 0x1.into());
 
         jit_chain_guard(
             JCC_JNZ,
             jit,
             &starting_context,
-            cb,
+            asm,
             ocb,
             SEND_MAX_DEPTH,
             side_exit,
         );
 
         // Push rb_block_param_proxy. It's a root, so no need to use jit_mov_gc_ptr.
-        mov(
-            cb,
-            REG0,
-            const_ptr_opnd(unsafe { rb_block_param_proxy }.as_ptr()),
-        );
         assert!(!unsafe { rb_block_param_proxy }.special_const_p());
 
         let top = ctx.stack_push(Type::Unknown);
-        mov(cb, top, REG0);
+        asm.mov(top, Opnd::const_ptr(unsafe { rb_block_param_proxy }.as_ptr()));
     }
 
-    jump_to_next_insn(jit, ctx, cb, ocb);
+    jump_to_next_insn(jit, ctx, asm, ocb);
 
     EndBlock
 }
@@ -5670,95 +5656,85 @@ fn gen_getblockparamproxy(
 fn gen_getblockparam(
     jit: &mut JITState,
     ctx: &mut Context,
-    cb: &mut CodeBlock,
+    asm: &mut Assembler,
     ocb: &mut OutlinedCb,
 ) -> CodegenStatus {
     // EP level
     let level = jit_get_arg(jit, 1).as_u32();
 
     // Save the PC and SP because we might allocate
-    jit_prepare_routine_call(jit, ctx, cb, REG0);
+    jit_prepare_routine_call(jit, ctx, asm);
 
     // A mirror of the interpreter code. Checking for the case
     // where it's pushing rb_block_param_proxy.
     let side_exit = get_side_exit(jit, ocb, ctx);
 
     // Load environment pointer EP from CFP
-    gen_get_ep(cb, REG1, level);
+    let ep_opnd = gen_get_ep(asm, level);
 
     // Bail when VM_ENV_FLAGS(ep, VM_FRAME_FLAG_MODIFIED_BLOCK_PARAM) is non zero
-    let flag_check = mem_opnd(
-        64,
-        REG1,
-        (SIZEOF_VALUE as i32) * (VM_ENV_DATA_INDEX_FLAGS as i32),
-    );
+    let flag_check = Opnd::mem(64, ep_opnd, (SIZEOF_VALUE as i32) * (VM_ENV_DATA_INDEX_FLAGS as i32));
     // FIXME: This is testing bits in the same place that the WB check is testing.
     // We should combine these at some point
-    test(
-        cb,
-        flag_check,
-        uimm_opnd(VM_FRAME_FLAG_MODIFIED_BLOCK_PARAM.into()),
-    );
+    asm.test(flag_check, VM_FRAME_FLAG_MODIFIED_BLOCK_PARAM.into());
 
     // If the frame flag has been modified, then the actual proc value is
     // already in the EP and we should just use the value.
-    let frame_flag_modified = cb.new_label("frame_flag_modified".to_string());
-    jnz_label(cb, frame_flag_modified);
+    let frame_flag_modified = asm.new_label("frame_flag_modified");
+    asm.jnz(frame_flag_modified);
 
     // This instruction writes the block handler to the EP.  If we need to
     // fire a write barrier for the write, then exit (we'll let the
     // interpreter handle it so it can fire the write barrier).
     // flags & VM_ENV_FLAG_WB_REQUIRED
-    let flags_opnd = mem_opnd(
+    let flags_opnd = Opnd::mem(
         64,
-        REG1,
+        ep_opnd,
         SIZEOF_VALUE as i32 * VM_ENV_DATA_INDEX_FLAGS as i32,
     );
-    test(cb, flags_opnd, imm_opnd(VM_ENV_FLAG_WB_REQUIRED.into()));
+    asm.test(flags_opnd, VM_ENV_FLAG_WB_REQUIRED.into());
 
     // if (flags & VM_ENV_FLAG_WB_REQUIRED) != 0
-    jnz_ptr(cb, side_exit);
-
-    // Load the block handler for the current frame
-    // note, VM_ASSERT(VM_ENV_LOCAL_P(ep))
-    mov(
-        cb,
-        C_ARG_REGS[1],
-        mem_opnd(
-            64,
-            REG1,
-            (SIZEOF_VALUE as i32) * (VM_ENV_DATA_INDEX_SPECVAL as i32),
-        ),
-    );
+    asm.jnz(side_exit.into());
 
     // Convert the block handler in to a proc
     // call rb_vm_bh_to_procval(const rb_execution_context_t *ec, VALUE block_handler)
-    mov(cb, C_ARG_REGS[0], REG_EC);
-    call_ptr(cb, REG0, rb_vm_bh_to_procval as *const u8);
+    let proc = asm.ccall(
+        rb_vm_bh_to_procval as *const u8,
+        vec![
+            EC,
+            // The block handler for the current frame
+            // note, VM_ASSERT(VM_ENV_LOCAL_P(ep))
+            Opnd::mem(
+                64,
+                ep_opnd,
+                (SIZEOF_VALUE as i32) * (VM_ENV_DATA_INDEX_SPECVAL as i32),
+            ),
+        ]
+    );
 
     // Load environment pointer EP from CFP (again)
-    gen_get_ep(cb, REG1, level);
-
-    // Set the frame modified flag
-    or(cb, flag_check, uimm_opnd(VM_FRAME_FLAG_MODIFIED_BLOCK_PARAM.into()));
+    let ep_opnd = gen_get_ep(asm, level);
 
     // Write the value at the environment pointer
     let idx = jit_get_arg(jit, 0).as_i32();
     let offs = -(SIZEOF_VALUE as i32 * idx);
-    mov(cb, mem_opnd(64, REG1, offs), RAX);
+    asm.mov(Opnd::mem(64, ep_opnd, offs), proc);
 
-    cb.write_label(frame_flag_modified);
+    // Set the frame modified flag
+    let flag_check = Opnd::mem(64, ep_opnd, (SIZEOF_VALUE as i32) * (VM_ENV_DATA_INDEX_FLAGS as i32));
+    let modified_flag = asm.or(flag_check, VM_FRAME_FLAG_MODIFIED_BLOCK_PARAM.into());
+    asm.store(flag_check, modified_flag);
+
+    asm.write_label(frame_flag_modified);
 
     // Push the proc on the stack
     let stack_ret = ctx.stack_push(Type::Unknown);
-    mov(cb, RAX, mem_opnd(64, REG1, offs));
-    mov(cb, stack_ret, RAX);
-
-    cb.link_labels();
+    let ep_opnd = gen_get_ep(asm, level);
+    asm.mov(stack_ret, Opnd::mem(64, ep_opnd, offs));
 
     KeepCompiling
 }
-*/
 
 fn gen_invokebuiltin(
     jit: &mut JITState,
@@ -5919,8 +5895,8 @@ fn get_gen_fn(opcode: VALUE) -> Option<InsnGenFn> {
         YARVINSN_branchnil => Some(gen_branchnil),
         YARVINSN_jump => Some(gen_jump),
 
-        //YARVINSN_getblockparamproxy => Some(gen_getblockparamproxy),
-        //YARVINSN_getblockparam => Some(gen_getblockparam),
+        YARVINSN_getblockparamproxy => Some(gen_getblockparamproxy),
+        YARVINSN_getblockparam => Some(gen_getblockparam),
         YARVINSN_opt_send_without_block => Some(gen_opt_send_without_block),
         YARVINSN_send => Some(gen_send),
         YARVINSN_invokesuper => Some(gen_invokesuper),

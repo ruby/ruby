@@ -3220,3 +3220,19 @@ assert_equal 'foo', %q{
   Foo = Struct.new(:bar)
   Foo.new("foo").bar
 }
+
+# getblockparamproxy
+assert_equal 'foo', %q{
+  def foo(&block)
+    block.call
+  end
+  foo { "foo" }
+}
+
+# getblockparam
+assert_equal 'foo', %q{
+  def foo(&block)
+    block
+  end
+  foo { "foo" }.call
+}
