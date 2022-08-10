@@ -1869,10 +1869,8 @@ fn jit_chain_guard(
 // up to 5 different classes, and embedded or not for each
 pub const GET_IVAR_MAX_DEPTH: i32 = 10;
 
-/*
 // hashes and arrays
 pub const OPT_AREF_MAX_CHAIN_DEPTH: i32 = 2;
-*/
 
 // up to 5 different classes
 pub const SEND_MAX_DEPTH: i32 = 5;
@@ -2548,11 +2546,10 @@ fn gen_opt_neq(
     return gen_send_general(jit, ctx, asm, ocb, cd, None);
 }
 
-/*
 fn gen_opt_aref(
     jit: &mut JITState,
     ctx: &mut Context,
-    cb: &mut CodeBlock,
+    asm: &mut Assembler,
     ocb: &mut OutlinedCb,
 ) -> CodegenStatus {
     let cd: *const rb_call_data = jit_get_arg(jit, 0).as_ptr();
@@ -2560,13 +2557,13 @@ fn gen_opt_aref(
 
     // Only JIT one arg calls like `ary[6]`
     if argc != 1 {
-        gen_counter_incr!(cb, oaref_argc_not_one);
+        gen_counter_incr!(asm, oaref_argc_not_one);
         return CantCompile;
     }
 
     // Defer compilation so we can specialize base on a runtime receiver
     if !jit_at_current_insn(jit) {
-        defer_compilation(jit, ctx, cb, ocb);
+        defer_compilation(jit, ctx, asm, ocb);
         return EndBlock;
     }
 
@@ -2588,66 +2585,61 @@ fn gen_opt_aref(
         // Pop the stack operands
         let idx_opnd = ctx.stack_pop(1);
         let recv_opnd = ctx.stack_pop(1);
-        mov(cb, REG0, recv_opnd);
+        let recv_reg = asm.load(recv_opnd);
 
         // if (SPECIAL_CONST_P(recv)) {
         // Bail if receiver is not a heap object
-        test(cb, REG0, uimm_opnd(RUBY_IMMEDIATE_MASK as u64));
-        jnz_ptr(cb, side_exit);
-        cmp(cb, REG0, uimm_opnd(Qfalse.into()));
-        je_ptr(cb, side_exit);
-        cmp(cb, REG0, uimm_opnd(Qnil.into()));
-        je_ptr(cb, side_exit);
+        asm.test(recv_reg, (RUBY_IMMEDIATE_MASK as u64).into());
+        asm.jnz(side_exit.into());
+        asm.cmp(recv_reg, Qfalse.into());
+        asm.je(side_exit.into());
+        asm.cmp(recv_reg, Qnil.into());
+        asm.je(side_exit.into());
 
         // Bail if recv has a class other than ::Array.
         // BOP_AREF check above is only good for ::Array.
-        mov(cb, REG1, mem_opnd(64, REG0, RUBY_OFFSET_RBASIC_KLASS));
-        mov(cb, REG0, uimm_opnd(unsafe { rb_cArray }.into()));
-        cmp(cb, REG0, REG1);
+        asm.cmp(unsafe { rb_cArray }.into(), Opnd::mem(64, recv_reg, RUBY_OFFSET_RBASIC_KLASS));
         jit_chain_guard(
             JCC_JNE,
             jit,
             &starting_context,
-            cb,
+            asm,
             ocb,
             OPT_AREF_MAX_CHAIN_DEPTH,
             side_exit,
         );
 
         // Bail if idx is not a FIXNUM
-        mov(cb, REG1, idx_opnd);
-        test(cb, REG1, uimm_opnd(RUBY_FIXNUM_FLAG as u64));
-        jz_ptr(cb, counted_exit!(ocb, side_exit, oaref_arg_not_fixnum));
+        let idx_reg = asm.load(idx_opnd);
+        asm.test(idx_reg, (RUBY_FIXNUM_FLAG as u64).into());
+        asm.jz(counted_exit!(ocb, side_exit, oaref_arg_not_fixnum).into());
 
         // Call VALUE rb_ary_entry_internal(VALUE ary, long offset).
         // It never raises or allocates, so we don't need to write to cfp->pc.
         {
-            mov(cb, RDI, recv_opnd);
-            sar(cb, REG1, uimm_opnd(1)); // Convert fixnum to int
-            mov(cb, RSI, REG1);
-            call_ptr(cb, REG0, rb_ary_entry_internal as *const u8);
+            let idx_reg = asm.rshift(idx_reg, Opnd::UImm(1)); // Convert fixnum to int
+            let val = asm.ccall(rb_ary_entry_internal as *const u8, vec![recv_opnd, idx_reg]);
 
             // Push the return value onto the stack
             let stack_ret = ctx.stack_push(Type::Unknown);
-            mov(cb, stack_ret, RAX);
+            asm.mov(stack_ret, val);
         }
 
         // Jump to next instruction. This allows guard chains to share the same successor.
-        jump_to_next_insn(jit, ctx, cb, ocb);
+        jump_to_next_insn(jit, ctx, asm, ocb);
         return EndBlock;
     } else if comptime_recv.class_of() == unsafe { rb_cHash } {
         if !assume_bop_not_redefined(jit, ocb, HASH_REDEFINED_OP_FLAG, BOP_AREF) {
             return CantCompile;
         }
 
-        let key_opnd = ctx.stack_opnd(0);
         let recv_opnd = ctx.stack_opnd(1);
 
         // Guard that the receiver is a hash
         jit_guard_known_klass(
             jit,
             ctx,
-            cb,
+            asm,
             ocb,
             unsafe { rb_cHash },
             recv_opnd,
@@ -2657,40 +2649,39 @@ fn gen_opt_aref(
             side_exit,
         );
 
-        // Setup arguments for rb_hash_aref().
-        mov(cb, C_ARG_REGS[0], REG0);
-        mov(cb, C_ARG_REGS[1], key_opnd);
-
         // Prepare to call rb_hash_aref(). It might call #hash on the key.
-        jit_prepare_routine_call(jit, ctx, cb, REG0);
+        jit_prepare_routine_call(jit, ctx, asm);
 
-        call_ptr(cb, REG0, rb_hash_aref as *const u8);
+        // Call rb_hash_aref
+        let key_opnd = ctx.stack_opnd(0);
+        let recv_opnd = ctx.stack_opnd(1);
+        let val = asm.ccall(rb_hash_aref as *const u8, vec![recv_opnd, key_opnd]);
 
         // Pop the key and the receiver
         ctx.stack_pop(2);
 
         // Push the return value onto the stack
         let stack_ret = ctx.stack_push(Type::Unknown);
-        mov(cb, stack_ret, RAX);
+        asm.mov(stack_ret, val);
 
         // Jump to next instruction. This allows guard chains to share the same successor.
-        jump_to_next_insn(jit, ctx, cb, ocb);
+        jump_to_next_insn(jit, ctx, asm, ocb);
         EndBlock
     } else {
         // General case. Call the [] method.
-        gen_opt_send_without_block(jit, ctx, cb, ocb)
+        gen_opt_send_without_block(jit, ctx, asm, ocb)
     }
 }
 
 fn gen_opt_aset(
     jit: &mut JITState,
     ctx: &mut Context,
-    cb: &mut CodeBlock,
+    asm: &mut Assembler,
     ocb: &mut OutlinedCb,
 ) -> CodegenStatus {
     // Defer compilation so we can specialize on a runtime `self`
     if !jit_at_current_insn(jit) {
-        defer_compilation(jit, ctx, cb, ocb);
+        defer_compilation(jit, ctx, asm, ocb);
         return EndBlock;
     }
 
@@ -2709,7 +2700,7 @@ fn gen_opt_aset(
         jit_guard_known_klass(
             jit,
             ctx,
-            cb,
+            asm,
             ocb,
             unsafe { rb_cArray },
             recv,
@@ -2723,7 +2714,7 @@ fn gen_opt_aset(
         jit_guard_known_klass(
             jit,
             ctx,
-            cb,
+            asm,
             ocb,
             unsafe { rb_cInteger },
             key,
@@ -2733,27 +2724,26 @@ fn gen_opt_aset(
             side_exit,
         );
 
-        // Call rb_ary_store
-        mov(cb, C_ARG_REGS[0], recv);
-        mov(cb, C_ARG_REGS[1], key);
-        sar(cb, C_ARG_REGS[1], uimm_opnd(1)); // FIX2LONG(key)
-        mov(cb, C_ARG_REGS[2], val);
-
         // We might allocate or raise
-        jit_prepare_routine_call(jit, ctx, cb, REG0);
+        jit_prepare_routine_call(jit, ctx, asm);
 
-        call_ptr(cb, REG0, rb_ary_store as *const u8);
+        // Call rb_ary_store
+        let recv = ctx.stack_opnd(2);
+        let key = asm.load(ctx.stack_opnd(1));
+        let key = asm.rshift(key, Opnd::UImm(1)); // FIX2LONG(key)
+        let val = ctx.stack_opnd(0);
+        asm.ccall(rb_ary_store as *const u8, vec![recv, key, val]);
 
         // rb_ary_store returns void
         // stored value should still be on stack
-        mov(cb, REG0, ctx.stack_opnd(0));
+        let val = asm.load(ctx.stack_opnd(0));
 
         // Push the return value onto the stack
         ctx.stack_pop(3);
         let stack_ret = ctx.stack_push(Type::Unknown);
-        mov(cb, stack_ret, REG0);
+        asm.mov(stack_ret, val);
 
-        jump_to_next_insn(jit, ctx, cb, ocb);
+        jump_to_next_insn(jit, ctx, asm, ocb);
         return EndBlock;
     } else if comptime_recv.class_of() == unsafe { rb_cHash } {
         let side_exit = get_side_exit(jit, ocb, ctx);
@@ -2762,7 +2752,7 @@ fn gen_opt_aset(
         jit_guard_known_klass(
             jit,
             ctx,
-            cb,
+            asm,
             ocb,
             unsafe { rb_cHash },
             recv,
@@ -2772,28 +2762,26 @@ fn gen_opt_aset(
             side_exit,
         );
 
-        // Call rb_hash_aset
-        mov(cb, C_ARG_REGS[0], recv);
-        mov(cb, C_ARG_REGS[1], key);
-        mov(cb, C_ARG_REGS[2], val);
-
         // We might allocate or raise
-        jit_prepare_routine_call(jit, ctx, cb, REG0);
+        jit_prepare_routine_call(jit, ctx, asm);
 
-        call_ptr(cb, REG0, rb_hash_aset as *const u8);
+        // Call rb_hash_aset
+        let recv = ctx.stack_opnd(2);
+        let key = ctx.stack_opnd(1);
+        let val = ctx.stack_opnd(0);
+        let ret = asm.ccall(rb_hash_aset as *const u8, vec![recv, key, val]);
 
         // Push the return value onto the stack
         ctx.stack_pop(3);
         let stack_ret = ctx.stack_push(Type::Unknown);
-        mov(cb, stack_ret, RAX);
+        asm.mov(stack_ret, ret);
 
-        jump_to_next_insn(jit, ctx, cb, ocb);
+        jump_to_next_insn(jit, ctx, asm, ocb);
         EndBlock
     } else {
-        gen_opt_send_without_block(jit, ctx, cb, ocb)
+        gen_opt_send_without_block(jit, ctx, asm, ocb)
     }
 }
-*/
 
 fn gen_opt_and(
     jit: &mut JITState,
@@ -5873,8 +5861,8 @@ fn get_gen_fn(opcode: VALUE) -> Option<InsnGenFn> {
 
         YARVINSN_opt_eq => Some(gen_opt_eq),
         YARVINSN_opt_neq => Some(gen_opt_neq),
-        //YARVINSN_opt_aref => Some(gen_opt_aref),
-        //YARVINSN_opt_aset => Some(gen_opt_aset),
+        YARVINSN_opt_aref => Some(gen_opt_aref),
+        YARVINSN_opt_aset => Some(gen_opt_aset),
         YARVINSN_opt_mult => Some(gen_opt_mult),
         YARVINSN_opt_div => Some(gen_opt_div),
         YARVINSN_opt_ltlt => Some(gen_opt_ltlt),
