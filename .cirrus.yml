@@ -160,10 +160,8 @@ yjit_task:
     bootstraptest/test_yjit_30k_ifelse.rb \
     bootstraptest/test_yjit_30k_methods.rb \
     bootstraptest/test_yjit_new_backend.rb \
-    bootstraptest/test_yjit_rust_port.rb
-
-  # These are the btests we can't run yet on arm:
-  #bootstraptest/test_yjit.rb (out of executable memory not handled)
+    bootstraptest/test_yjit_rust_port.rb \
+    bootstraptest/test_yjit.rb
 
   # FIXME: not currently working on CI, missing cargo
   # Check that we can do a full ruby build
