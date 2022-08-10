@@ -3503,35 +3503,30 @@ fn jit_guard_known_klass(
     }
 }
 
-/*
 // Generate ancestry guard for protected callee.
 // Calls to protected callees only go through when self.is_a?(klass_that_defines_the_callee).
 fn jit_protected_callee_ancestry_guard(
     jit: &mut JITState,
-    cb: &mut CodeBlock,
+    asm: &mut Assembler,
     ocb: &mut OutlinedCb,
     cme: *const rb_callable_method_entry_t,
     side_exit: CodePtr,
 ) {
     // See vm_call_method().
-    mov(
-        cb,
-        C_ARG_REGS[0],
-        mem_opnd(64, REG_CFP, RUBY_OFFSET_CFP_SELF),
-    );
     let def_class = unsafe { (*cme).defined_class };
-    jit_mov_gc_ptr(jit, cb, C_ARG_REGS[1], def_class);
     // Note: PC isn't written to current control frame as rb_is_kind_of() shouldn't raise.
     // VALUE rb_obj_is_kind_of(VALUE obj, VALUE klass);
 
-    call_ptr(cb, REG0, rb_obj_is_kind_of as *mut u8);
-    test(cb, RAX, RAX);
-    jz_ptr(
-        cb,
-        counted_exit!(ocb, side_exit, send_se_protected_check_failed),
+    let val = asm.ccall(
+        rb_obj_is_kind_of as *mut u8,
+        vec![
+            Opnd::mem(64, CFP, RUBY_OFFSET_CFP_SELF),
+            def_class.into(),
+        ],
     );
+    asm.test(val, val);
+    asm.jz(counted_exit!(ocb, side_exit, send_se_protected_check_failed).into())
 }
-*/
 
 // Codegen for rb_obj_not().
 // Note, caller is responsible for generating all the right guards, including
@@ -4631,11 +4626,10 @@ fn gen_send_iseq(
     EndBlock
 }
 
-/*
 fn gen_struct_aref(
     jit: &mut JITState,
     ctx: &mut Context,
-    cb: &mut CodeBlock,
+    asm: &mut Assembler,
     ocb: &mut OutlinedCb,
     ci: *const rb_callinfo,
     cme: *const rb_callable_method_entry_t,
@@ -4669,32 +4663,28 @@ fn gen_struct_aref(
     // true of the converse.
     let embedded = unsafe { FL_TEST_RAW(comptime_recv, VALUE(RSTRUCT_EMBED_LEN_MASK)) };
 
-    add_comment(cb, "struct aref");
+    asm.comment("struct aref");
 
-    let recv = ctx.stack_pop(1);
+    let recv = asm.load(ctx.stack_pop(1));
 
-    mov(cb, REG0, recv);
-
-    if embedded != VALUE(0) {
-        let ary_elt = mem_opnd(64, REG0, RUBY_OFFSET_RSTRUCT_AS_ARY + (8 * off));
-        mov(cb, REG0, ary_elt);
+    let val = if embedded != VALUE(0) {
+        Opnd::mem(64, recv, RUBY_OFFSET_RSTRUCT_AS_ARY + ((SIZEOF_VALUE as i32) * off))
     } else {
-        let rstruct_ptr = mem_opnd(64, REG0, RUBY_OFFSET_RSTRUCT_AS_HEAP_PTR);
-        mov(cb, REG0, rstruct_ptr);
-        mov(cb, REG0, mem_opnd(64, REG0, (SIZEOF_VALUE as i32) * off));
-    }
+        let rstruct_ptr = asm.load(Opnd::mem(64, recv, RUBY_OFFSET_RSTRUCT_AS_HEAP_PTR));
+        Opnd::mem(64, rstruct_ptr, (SIZEOF_VALUE as i32) * off)
+    };
 
     let ret = ctx.stack_push(Type::Unknown);
-    mov(cb, ret, REG0);
+    asm.mov(ret, val);
 
-    jump_to_next_insn(jit, ctx, cb, ocb);
+    jump_to_next_insn(jit, ctx, asm, ocb);
     EndBlock
 }
 
 fn gen_struct_aset(
     jit: &mut JITState,
     ctx: &mut Context,
-    cb: &mut CodeBlock,
+    asm: &mut Assembler,
     ocb: &mut OutlinedCb,
     ci: *const rb_callinfo,
     cme: *const rb_callable_method_entry_t,
@@ -4713,23 +4703,19 @@ fn gen_struct_aset(
     assert!(unsafe { RB_TYPE_P(comptime_recv, RUBY_T_STRUCT) });
     assert!((off as i64) < unsafe { RSTRUCT_LEN(comptime_recv) });
 
-    add_comment(cb, "struct aset");
+    asm.comment("struct aset");
 
     let val = ctx.stack_pop(1);
     let recv = ctx.stack_pop(1);
 
-    mov(cb, C_ARG_REGS[0], recv);
-    mov(cb, C_ARG_REGS[1], imm_opnd(off as i64));
-    mov(cb, C_ARG_REGS[2], val);
-    call_ptr(cb, REG0, RSTRUCT_SET as *const u8);
+    let val = asm.ccall(RSTRUCT_SET as *const u8, vec![recv, (off as i64).into(), val]);
 
     let ret = ctx.stack_push(Type::Unknown);
-    mov(cb, ret, RAX);
+    asm.mov(ret, val);
 
-    jump_to_next_insn(jit, ctx, cb, ocb);
+    jump_to_next_insn(jit, ctx, asm, ocb);
     EndBlock
 }
-*/
 
 fn gen_send_general(
     jit: &mut JITState,
@@ -4823,7 +4809,7 @@ fn gen_send_general(
             if flags & VM_CALL_FCALL == 0 {
                 // otherwise we need an ancestry check to ensure the receiver is vaild to be called
                 // as protected
-                return CantCompile; // jit_protected_callee_ancestry_guard(jit, cb, ocb, cme, side_exit);
+                jit_protected_callee_ancestry_guard(jit, asm, ocb, cme, side_exit);
             }
         }
         _ => {
@@ -4876,22 +4862,20 @@ fn gen_send_general(
                     return CantCompile;
                 }
 
-                return CantCompile; /*
-                mov(cb, REG0, recv);
                 let ivar_name = unsafe { get_cme_def_body_attr_id(cme) };
 
                 return gen_get_ivar(
                     jit,
                     ctx,
-                    cb,
+                    asm,
                     ocb,
                     SEND_MAX_DEPTH,
                     comptime_recv,
                     ivar_name,
+                    recv,
                     recv_opnd,
                     side_exit,
                 );
-                */
             }
             VM_METHOD_TYPE_ATTRSET => {
                 if flags & VM_CALL_KWARG != 0 {
@@ -4934,26 +4918,25 @@ fn gen_send_general(
             }
             // Send family of methods, e.g. call/apply
             VM_METHOD_TYPE_OPTIMIZED => {
-                return CantCompile; /*
                 let opt_type = unsafe { get_cme_def_body_optimized_type(cme) };
                 match opt_type {
                     OPTIMIZED_METHOD_TYPE_SEND => {
-                        gen_counter_incr!(cb, send_optimized_method_send);
+                        gen_counter_incr!(asm, send_optimized_method_send);
                         return CantCompile;
                     }
                     OPTIMIZED_METHOD_TYPE_CALL => {
-                        gen_counter_incr!(cb, send_optimized_method_call);
+                        gen_counter_incr!(asm, send_optimized_method_call);
                         return CantCompile;
                     }
                     OPTIMIZED_METHOD_TYPE_BLOCK_CALL => {
-                        gen_counter_incr!(cb, send_optimized_method_block_call);
+                        gen_counter_incr!(asm, send_optimized_method_block_call);
                         return CantCompile;
                     }
                     OPTIMIZED_METHOD_TYPE_STRUCT_AREF => {
                         return gen_struct_aref(
                             jit,
                             ctx,
-                            cb,
+                            asm,
                             ocb,
                             ci,
                             cme,
@@ -4965,7 +4948,7 @@ fn gen_send_general(
                         return gen_struct_aset(
                             jit,
                             ctx,
-                            cb,
+                            asm,
                             ocb,
                             ci,
                             cme,
@@ -4977,7 +4960,6 @@ fn gen_send_general(
                         panic!("unknown optimized method type!")
                     }
                 }
-                */
             }
             VM_METHOD_TYPE_MISSING => {
                 gen_counter_incr!(asm, send_missing_method);

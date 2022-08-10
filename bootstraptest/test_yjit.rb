@@ -3198,3 +3198,25 @@ assert_equal '[1, 2]', %q{
   def bar = foo(1) { 2 }
   bar
 }
+
+# opt_send_without_block (VM_METHOD_TYPE_IVAR)
+assert_equal 'foo', %q{
+  class Foo
+    attr_reader :foo
+
+    def initialize
+      @foo = "foo"
+    end
+  end
+  Foo.new.foo
+}
+
+# opt_send_without_block (VM_METHOD_TYPE_OPTIMIZED)
+assert_equal 'foo', %q{
+  Foo = Struct.new(:bar)
+  Foo.new("bar").bar = "foo"
+}
+assert_equal 'foo', %q{
+  Foo = Struct.new(:bar)
+  Foo.new("foo").bar
+}
