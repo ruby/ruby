@@ -482,21 +482,6 @@ and treats dates in the format <tt>'%a, %d %b %Y %T GMT'</tt>:
   Date._httpdate(httpdate)
   # => {:wday=>6, :mday=>3, :mon=>2, :year=>2001, :hour=>0, :min=>0, :sec=>0, :zone=>"GMT", :offset=>0}
 
-=== ISO 8601 Format
-
-The ISO 8601 date format is based on
-{ISO 8601}[https://en.wikipedia.org/wiki/ISO_8601],
-and treats dates in the format <tt>'%Y-%m-%d'</tt>;
-see {ISO 8601 Format Specifications}[https://docs.ruby-lang.org/en/master/strftime_formatting_rdoc.html#label-ISO+8601+Format+Specifications]:
-
-  d = Date.new(2001, 2, 3) # => #<Date: 2001-02-03>
-  # Return 8601-formatted string.
-  iso8601 = d.iso8601      # => "2001-02-03"
-  # Return new date parsed from 8601-formatted string.
-  Date.iso8601(iso8601)    # => #<Date: 2001-02-03>
-  # Return hash parsed from 8601-formatted string.
-  Date._iso8601(iso8601)   # => {:mday=>3, :year=>2001, :mon=>2}
-
 === RFC 3339 Format
 
 The RFC 3339 date format is based on
