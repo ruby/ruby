@@ -4998,11 +4998,10 @@ fn gen_send(
     return gen_send_general(jit, ctx, asm, ocb, cd, block);
 }
 
-/*
 fn gen_invokesuper(
     jit: &mut JITState,
     ctx: &mut Context,
-    cb: &mut CodeBlock,
+    asm: &mut Assembler,
     ocb: &mut OutlinedCb,
 ) -> CodegenStatus {
     let cd: *const rb_call_data = jit_get_arg(jit, 0).as_ptr();
@@ -5010,7 +5009,7 @@ fn gen_invokesuper(
 
     // Defer compilation so we can specialize on class of receiver
     if !jit_at_current_insn(jit) {
-        defer_compilation(jit, ctx, cb, ocb);
+        defer_compilation(jit, ctx, asm, ocb);
         return EndBlock;
     }
 
@@ -5048,19 +5047,19 @@ fn gen_invokesuper(
     // Don't JIT calls that aren't simple
     // Note, not using VM_CALL_ARGS_SIMPLE because sometimes we pass a block.
     if ci_flags & VM_CALL_ARGS_SPLAT != 0 {
-        gen_counter_incr!(cb, send_args_splat);
+        gen_counter_incr!(asm, send_args_splat);
         return CantCompile;
     }
     if ci_flags & VM_CALL_KWARG != 0 {
-        gen_counter_incr!(cb, send_keywords);
+        gen_counter_incr!(asm, send_keywords);
         return CantCompile;
     }
     if ci_flags & VM_CALL_KW_SPLAT != 0 {
-        gen_counter_incr!(cb, send_kw_splat);
+        gen_counter_incr!(asm, send_kw_splat);
         return CantCompile;
     }
     if ci_flags & VM_CALL_ARGS_BLOCKARG != 0 {
-        gen_counter_incr!(cb, send_block_arg);
+        gen_counter_incr!(asm, send_block_arg);
         return CantCompile;
     }
 
@@ -5100,16 +5099,15 @@ fn gen_invokesuper(
         return CantCompile;
     }
 
-    add_comment(cb, "guard known me");
-    mov(cb, REG0, mem_opnd(64, REG_CFP, RUBY_OFFSET_CFP_EP));
-    let ep_me_opnd = mem_opnd(
+    asm.comment("guard known me");
+    let ep_opnd = asm.load(Opnd::mem(64, CFP, RUBY_OFFSET_CFP_EP));
+    let ep_me_opnd = Opnd::mem(
         64,
-        REG0,
+        ep_opnd,
         (SIZEOF_VALUE as i32) * (VM_ENV_DATA_INDEX_ME_CREF as i32),
     );
-    jit_mov_gc_ptr(jit, cb, REG1, me_as_value);
-    cmp(cb, ep_me_opnd, REG1);
-    jne_ptr(cb, counted_exit!(ocb, side_exit, invokesuper_me_changed));
+    asm.cmp(ep_me_opnd, me_as_value.into());
+    asm.jne(counted_exit!(ocb, side_exit, invokesuper_me_changed).into());
 
     if block.is_none() {
         // Guard no block passed
@@ -5118,20 +5116,17 @@ fn gen_invokesuper(
         //
         // TODO: this could properly forward the current block handler, but
         // would require changes to gen_send_*
-        add_comment(cb, "guard no block given");
+        asm.comment("guard no block given");
         // EP is in REG0 from above
-        let ep_specval_opnd = mem_opnd(
+        let ep_opnd = asm.load(Opnd::mem(64, CFP, RUBY_OFFSET_CFP_EP));
+        let ep_specval_opnd = Opnd::mem(
             64,
-            REG0,
+            ep_opnd,
             (SIZEOF_VALUE as i32) * (VM_ENV_DATA_INDEX_SPECVAL as i32),
         );
-        cmp(cb, ep_specval_opnd, uimm_opnd(VM_BLOCK_HANDLER_NONE.into()));
-        jne_ptr(cb, counted_exit!(ocb, side_exit, invokesuper_block));
+        asm.cmp(ep_specval_opnd, VM_BLOCK_HANDLER_NONE.into());
+        asm.jne(counted_exit!(ocb, side_exit, invokesuper_block).into());
     }
-
-    // Points to the receiver operand on the stack
-    let recv = ctx.stack_opnd(argc);
-    mov(cb, REG0, recv);
 
     // We need to assume that both our current method entry and the super
     // method entry we invoke remain stable
@@ -5142,14 +5137,13 @@ fn gen_invokesuper(
     ctx.clear_local_types();
 
     match cme_def_type {
-        VM_METHOD_TYPE_ISEQ => gen_send_iseq(jit, ctx, cb, ocb, ci, cme, block, argc),
+        VM_METHOD_TYPE_ISEQ => gen_send_iseq(jit, ctx, asm, ocb, ci, cme, block, argc),
         VM_METHOD_TYPE_CFUNC => {
-            gen_send_cfunc(jit, ctx, cb, ocb, ci, cme, block, argc, ptr::null())
+            gen_send_cfunc(jit, ctx, asm, ocb, ci, cme, block, argc, ptr::null())
         }
         _ => unreachable!(),
     }
 }
-*/
 
 fn gen_leave(
     jit: &mut JITState,
@@ -5929,7 +5923,7 @@ fn get_gen_fn(opcode: VALUE) -> Option<InsnGenFn> {
         //YARVINSN_getblockparam => Some(gen_getblockparam),
         YARVINSN_opt_send_without_block => Some(gen_opt_send_without_block),
         YARVINSN_send => Some(gen_send),
-        //YARVINSN_invokesuper => Some(gen_invokesuper),
+        YARVINSN_invokesuper => Some(gen_invokesuper),
         YARVINSN_leave => Some(gen_leave),
 
         YARVINSN_getglobal => Some(gen_getglobal),
