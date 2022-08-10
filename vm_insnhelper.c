@@ -3277,7 +3277,7 @@ vm_call_symbol(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp,
             vm_cc_method_missing_reason_set(cc, MISSING_PROTECTED);
             break;
           default:
-            rb_bug("unreachable");
+            VM_UNREACHABLE(vm_call_method);
         }
         return vm_call_method_missing(ec, reg_cfp, calling);
     }
