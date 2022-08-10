@@ -119,6 +119,7 @@ struct iseq_compile_data {
     int node_level;
     int isolated_depth;
     unsigned int ci_index;
+    unsigned int ic_index;
     const rb_compile_option_t *option;
     struct rb_id_table *ivar_cache_table;
     const struct rb_builtin_function *builtin_function_table;

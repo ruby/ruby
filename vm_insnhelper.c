@@ -1040,6 +1040,26 @@ vm_get_ev_const(rb_execution_context_t *ec, VALUE orig_klass, ID id, bool allow_
 }
 
 static inline VALUE
+vm_get_ev_const_chain(rb_execution_context_t *ec, const ID *segments)
+{
+    VALUE val = Qnil;
+    int idx = 0;
+    int allow_nil = TRUE;
+    if (segments[0] == idNULL) {
+        val = rb_cObject;
+        idx++;
+        allow_nil = FALSE;
+    }
+    while (segments[idx]) {
+        ID id = segments[idx++];
+        val = vm_get_ev_const(ec, val, id, allow_nil, 0);
+        allow_nil = FALSE;
+    }
+    return val;
+}
+
+
+static inline VALUE
 vm_get_cvar_base(const rb_cref_t *cref, const rb_control_frame_t *cfp, int top_level_raise)
 {
     VALUE klass;
@@ -4949,53 +4969,35 @@ vm_opt_newarray_min(rb_execution_context_t *ec, rb_num_t num, const VALUE *ptr)
 
 #define IMEMO_CONST_CACHE_SHAREABLE IMEMO_FL_USER0
 
-// This is the iterator used by vm_ic_compile for rb_iseq_each. It is used as a
-// callback for each instruction within the ISEQ, and is meant to return a
-// boolean indicating whether or not to keep iterating.
-//
-// This is used to walk through the ISEQ and find all getconstant instructions
-// between the starting opt_getinlinecache and the ending opt_setinlinecache and
-// associating the inline cache with the constant name components on the VM.
-static bool
-vm_ic_compile_i(VALUE *code, VALUE insn, size_t index, void *ic)
+static void
+vm_track_constant_cache(ID id, void *ic)
 {
-    if (insn == BIN(opt_setinlinecache)) {
-        return false;
+    struct rb_id_table *const_cache = GET_VM()->constant_cache;
+    VALUE lookup_result;
+    st_table *ics;
+
+    if (rb_id_table_lookup(const_cache, id, &lookup_result)) {
+        ics = (st_table *)lookup_result;
+    }
+    else {
+        ics = st_init_numtable();
+        rb_id_table_insert(const_cache, id, (VALUE)ics);
     }
 
-    if (insn == BIN(getconstant)) {
-        ID id = code[index + 1];
-        struct rb_id_table *const_cache = GET_VM()->constant_cache;
-        VALUE lookup_result;
-        st_table *ics;
-
-        if (rb_id_table_lookup(const_cache, id, &lookup_result)) {
-            ics = (st_table *)lookup_result;
-        }
-        else {
-            ics = st_init_numtable();
-            rb_id_table_insert(const_cache, id, (VALUE)ics);
-        }
-
-        st_insert(ics, (st_data_t) ic, (st_data_t) Qtrue);
-    }
-
-    return true;
+    st_insert(ics, (st_data_t) ic, (st_data_t) Qtrue);
 }
 
-// Loop through the instruction sequences starting at the opt_getinlinecache
-// call and gather up every getconstant's ID. Associate that with the VM's
-// constant cache so that whenever one of the constants changes the inline cache
-// will get busted.
 static void
-vm_ic_compile(rb_control_frame_t *cfp, IC ic)
+vm_ic_track_const_chain(rb_control_frame_t *cfp, IC ic, const ID *segments)
 {
-    const rb_iseq_t *iseq = cfp->iseq;
-
     RB_VM_LOCK_ENTER();
-    {
-        rb_iseq_each(iseq, cfp->pc - ISEQ_BODY(iseq)->iseq_encoded, vm_ic_compile_i, (void *) ic);
+
+    for (int i = 0; segments[i]; i++) {
+        ID id = segments[i];
+        if (id == idNULL) continue;
+        vm_track_constant_cache(id, ic);
     }
+
     RB_VM_LOCK_LEAVE();
 }
 
@@ -5027,7 +5029,7 @@ rb_vm_ic_hit_p(IC ic, const VALUE *reg_ep)
 }
 
 static void
-vm_ic_update(const rb_iseq_t *iseq, IC ic, VALUE val, const VALUE *reg_ep)
+vm_ic_update(const rb_iseq_t *iseq, IC ic, VALUE val, const VALUE *reg_ep, const VALUE *pc)
 {
     if (ruby_vm_const_missing_count > 0) {
         ruby_vm_const_missing_count = 0;
@@ -5043,7 +5045,9 @@ vm_ic_update(const rb_iseq_t *iseq, IC ic, VALUE val, const VALUE *reg_ep)
 #ifndef MJIT_HEADER
     // MJIT and YJIT can't be on at the same time, so there is no need to
     // notify YJIT about changes to the IC when running inside MJIT code.
-    rb_yjit_constant_ic_update(iseq, ic);
+    RUBY_ASSERT(pc >= ISEQ_BODY(iseq)->iseq_encoded);
+    unsigned pos = (unsigned)(pc - ISEQ_BODY(iseq)->iseq_encoded);
+    rb_yjit_constant_ic_update(iseq, ic, pos);
 #endif
 }
 
