@@ -2901,10 +2901,19 @@ assert_equal 'new', %q{
     foo
   end
 
+  def bar
+    :bar
+  end
+
+
   test
   test
 
   RubyVM::YJIT.simulate_oom! if defined?(RubyVM::YJIT)
+
+  # Old simulat_omm! leaves one byte of space and this fills it up
+  bar
+  bar
 
   def foo
     :new

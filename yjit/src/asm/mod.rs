@@ -121,10 +121,10 @@ impl CodeBlock {
 
     // Set the current write position
     pub fn set_pos(&mut self, pos: usize) {
-        // Assert here since while CodeBlock functions do bounds checking, there is
-        // nothing stopping users from taking out an out-of-bounds pointer and
-        // doing bad accesses with it.
-        assert!(pos < self.mem_size);
+        // No bounds check here since we can be out of bounds
+        // when the code block fills up. We want to be able to
+        // restore to the filled up state after patching something
+        // in the middle.
         self.write_pos = pos;
     }
 
@@ -152,12 +152,12 @@ impl CodeBlock {
         self.set_pos(pos);
     }
 
-    // Get a direct pointer into the executable memory block
+    /// Get a (possibly dangling) direct pointer into the executable memory block
     pub fn get_ptr(&self, offset: usize) -> CodePtr {
         self.mem_block.start_ptr().add_bytes(offset)
     }
 
-    // Get a direct pointer to the current write position
+    /// Get a (possibly dangling) direct pointer to the current write position
     pub fn get_write_ptr(&mut self) -> CodePtr {
         self.get_ptr(self.write_pos)
     }
