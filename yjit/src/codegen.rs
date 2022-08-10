@@ -4514,11 +4514,11 @@ fn gen_send_iseq(
         asm.store(Opnd::mem(64, callee_sp, offs), Qnil.into());
     }
 
-    asm.comment("push env");
-    // Put compile time cme into REG1. It's assumed to be valid because we are notified when
+    // Write the callee CME on the stack. It's assumed to be valid because we are notified when
     // any cme we depend on become outdated. See yjit_method_lookup_change().
     // Write method entry at sp[-3]
     // sp[-3] = me;
+    asm.comment("push cme, block handler, frame type");
     asm.store(Opnd::mem(64, callee_sp, SIZEOF_VALUE_I32 * -3), VALUE(cme as usize).into());
 
     // Write block handler at sp[-2]
@@ -4540,7 +4540,7 @@ fn gen_send_iseq(
     let frame_type = VM_FRAME_MAGIC_METHOD | VM_ENV_FLAG_LOCAL;
     asm.store(Opnd::mem(64, callee_sp, SIZEOF_VALUE_I32 * -1), frame_type.into());
 
-    asm.comment("push callee CFP");
+    asm.comment("push callee control frame");
     // Allocate a new CFP (ec->cfp--)
     let new_cfp = asm.sub(CFP, (RUBY_SIZEOF_CONTROL_FRAME as u64).into());
     asm.mov(CFP, new_cfp);
