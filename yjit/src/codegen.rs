@@ -767,9 +767,10 @@ pub fn gen_single_block(
             .try_into()
             .unwrap();
 
-        // opt_getinlinecache wants to be in a block all on its own. Cut the block short
-        // if we run into it. See gen_opt_getinlinecache() for details.
-        if opcode == YARVINSN_opt_getinlinecache.as_usize() && insn_idx > starting_insn_idx {
+        // We need opt_getconstant_path to be in a block all on its own. Cut the block short
+        // if we run into it. This is necessary because we want to invalidate based on the
+        // instruction's index.
+        if opcode == YARVINSN_opt_getconstant_path.as_usize() && insn_idx > starting_insn_idx {
             jump_to_next_insn(&mut jit, &ctx, &mut asm, ocb);
             break;
         }
@@ -5506,15 +5507,15 @@ fn gen_setclassvariable(
     KeepCompiling
 }
 
-fn gen_opt_getinlinecache(
+fn gen_opt_getconstant_path(
     jit: &mut JITState,
     ctx: &mut Context,
     asm: &mut Assembler,
     ocb: &mut OutlinedCb,
 ) -> CodegenStatus {
-    let jump_offset = jit_get_arg(jit, 0);
-    let const_cache_as_value = jit_get_arg(jit, 1);
+    let const_cache_as_value = jit_get_arg(jit, 0);
     let ic: *const iseq_inline_constant_cache = const_cache_as_value.as_ptr();
+    let idlist: *const ID = unsafe { (*ic).segments };
 
     // See vm_ic_hit_p(). The same conditions are checked in yjit_constant_ic_update().
     let ice = unsafe { (*ic).entry };
@@ -5571,22 +5572,12 @@ fn gen_opt_getinlinecache(
 
         // Invalidate output code on any constant writes associated with
         // constants referenced within the current block.
-        assume_stable_constant_names(jit, ocb);
+        assume_stable_constant_names(jit, ocb, idlist);
 
         jit_putobject(jit, ctx, asm, unsafe { (*ice).value });
     }
 
-    // Jump over the code for filling the cache
-    let jump_idx = jit_next_insn_idx(jit) + jump_offset.as_u32();
-    gen_direct_jump(
-        jit,
-        ctx,
-        BlockId {
-            iseq: jit.iseq,
-            idx: jump_idx,
-        },
-        asm,
-    );
+    jump_to_next_insn(jit, ctx, asm, ocb);
     EndBlock
 }
 
@@ -5918,7 +5909,7 @@ fn get_gen_fn(opcode: VALUE) -> Option<InsnGenFn> {
         YARVINSN_opt_size => Some(gen_opt_size),
         YARVINSN_opt_length => Some(gen_opt_length),
         YARVINSN_opt_regexpmatch2 => Some(gen_opt_regexpmatch2),
-        YARVINSN_opt_getinlinecache => Some(gen_opt_getinlinecache),
+        YARVINSN_opt_getconstant_path => Some(gen_opt_getconstant_path),
         YARVINSN_invokebuiltin => Some(gen_invokebuiltin),
         YARVINSN_opt_invokebuiltin_delegate => Some(gen_opt_invokebuiltin_delegate),
         YARVINSN_opt_invokebuiltin_delegate_leave => Some(gen_opt_invokebuiltin_delegate),

@@ -102,68 +102,49 @@ compile_data_free(struct iseq_compile_data *compile_data)
     }
 }
 
-struct iseq_clear_ic_references_data {
-    IC ic;
-};
+static void
+remove_from_constant_cache(ID id, IC ic) {
+    rb_vm_t *vm = GET_VM();
+    VALUE lookup_result;
+    st_data_t ic_data = (st_data_t)ic;
 
-// This iterator is used to walk through the instructions and clean any
-// references to ICs that are contained within this ISEQ out of the VM's
-// constant cache table. It passes around a struct that holds the current IC
-// we're looking for, which can be NULL (if we haven't hit an opt_getinlinecache
-// instruction yet) or set to an IC (if we've hit an opt_getinlinecache and
-// haven't yet hit the associated opt_setinlinecache).
-static bool
-iseq_clear_ic_references_i(VALUE *code, VALUE insn, size_t index, void *data)
-{
-    struct iseq_clear_ic_references_data *ic_data = (struct iseq_clear_ic_references_data *) data;
+    if (rb_id_table_lookup(vm->constant_cache, id, &lookup_result)) {
+        st_table *ics = (st_table *)lookup_result;
+        st_delete(ics, &ic_data, NULL);
 
-    switch (insn) {
-      case BIN(opt_getinlinecache): {
-        RUBY_ASSERT_ALWAYS(ic_data->ic == NULL);
-
-        ic_data->ic = (IC) code[index + 2];
-        return true;
-      }
-      case BIN(getconstant): {
-        if (ic_data->ic != NULL) {
-            ID id = (ID) code[index + 1];
-            rb_vm_t *vm = GET_VM();
-            VALUE lookup_result;
-
-            if (rb_id_table_lookup(vm->constant_cache, id, &lookup_result)) {
-                st_table *ics = (st_table *)lookup_result;
-                st_data_t ic = (st_data_t)ic_data->ic;
-                st_delete(ics, &ic, NULL);
-
-                if (ics->num_entries == 0) {
-                    rb_id_table_delete(vm->constant_cache, id);
-                    st_free_table(ics);
-                }
-            }
+        if (ics->num_entries == 0) {
+            rb_id_table_delete(vm->constant_cache, id);
+            st_free_table(ics);
         }
-
-        return true;
-      }
-      case BIN(opt_setinlinecache): {
-        RUBY_ASSERT_ALWAYS(ic_data->ic != NULL);
-
-        ic_data->ic = NULL;
-        return true;
-      }
-      default:
-        return true;
     }
 }
 
 // When an ISEQ is being freed, all of its associated ICs are going to go away
-// as well. Because of this, we need to walk through the ISEQ, find any
-// opt_getinlinecache calls, and clear out the VM's constant cache of associated
-// ICs.
+// as well. Because of this, we need to iterate over the ICs, and clear them
+// from the VM's constant cache.
 static void
 iseq_clear_ic_references(const rb_iseq_t *iseq)
 {
-    struct iseq_clear_ic_references_data data = { .ic = NULL };
-    rb_iseq_each(iseq, 0, iseq_clear_ic_references_i, (void *) &data);
+    for (unsigned int ic_idx = 0; ic_idx < ISEQ_BODY(iseq)->ic_size; ic_idx++) {
+        IC ic = &ISEQ_IS_IC_ENTRY(ISEQ_BODY(iseq), ic_idx);
+
+        // Iterate over the IC's constant path's segments and clean any references to
+        // the ICs out of the VM's constant cache table.
+        const ID *segments = ic->segments;
+
+        // It's possible that segments is NULL if we overallocated an IC but
+        // optimizations removed the instruction using it
+        if (segments == NULL)
+            continue;
+
+        for (int i = 0; segments[i]; i++) {
+            ID id = segments[i];
+            if (id == idNULL) continue;
+            remove_from_constant_cache(id, ic);
+        }
+
+        ruby_xfree((void *)segments);
+    }
 }
 
 void
@@ -213,32 +194,7 @@ rb_iseq_free(const rb_iseq_t *iseq)
     RUBY_FREE_LEAVE("iseq");
 }
 
-#if OPT_DIRECT_THREADED_CODE || OPT_CALL_THREADED_CODE
-static VALUE
-rb_vm_insn_addr2insn2(const void *addr)
-{
-    return (VALUE)rb_vm_insn_addr2insn(addr);
-}
-#endif
-
-// The translator for OPT_DIRECT_THREADED_CODE and OPT_CALL_THREADED_CODE does
-// some normalization to always return the non-trace version of instructions. To
-// mirror that behavior in token-threaded environments, we normalize in this
-// translator by also returning non-trace opcodes.
-static VALUE
-rb_vm_insn_normalizing_translator(const void *addr)
-{
-    VALUE opcode = (VALUE)addr;
-    VALUE trace_opcode_threshold = (VM_INSTRUCTION_SIZE / 2);
-
-    if (opcode >= trace_opcode_threshold) {
-        return opcode - trace_opcode_threshold;
-    }
-    return opcode;
-}
-
 typedef VALUE iseq_value_itr_t(void *ctx, VALUE obj);
-typedef VALUE rb_vm_insns_translator_t(const void *addr);
 
 static inline void
 iseq_scan_bits(unsigned int page, iseq_bits_t bits, VALUE *code, iseq_value_itr_t *func, void *data)
@@ -592,6 +548,17 @@ rb_iseq_memsize(const rb_iseq_t *iseq)
 
         /* body->is_entries */
         size += ISEQ_IS_SIZE(body) * sizeof(union iseq_inline_storage_entry);
+
+        /* IC entries constant segments */
+        for (unsigned int ic_idx = 0; ic_idx < body->ic_size; ic_idx++) {
+            IC ic = &ISEQ_IS_IC_ENTRY(body, ic_idx);
+            const ID *ids = ic->segments;
+            if (!ids) continue;
+            while (*ids++) {
+                size += sizeof(ID);
+            }
+            size += sizeof(ID); // null terminator
+        }
 
         /* body->call_data */
         size += body->ci_size * sizeof(struct rb_call_data);
@@ -2175,6 +2142,16 @@ rb_insn_operand_intern(const rb_iseq_t *iseq,
         }
 
       case TS_IC:
+        {
+            ret = rb_sprintf("<ic:%"PRIdPTRDIFF" ", (union iseq_inline_storage_entry *)op - ISEQ_BODY(iseq)->is_entries);
+            const ID *segments = ((IC)op)->segments;
+            rb_str_cat2(ret, rb_id2name(*segments++));
+            while (*segments) {
+                rb_str_catf(ret, "::%s", rb_id2name(*segments++));
+            }
+            rb_str_cat2(ret, ">");
+        }
+        break;
       case TS_IVC:
       case TS_ICVARC:
       case TS_ISE:
@@ -3011,6 +2988,15 @@ iseq_data_to_ary(const rb_iseq_t *iseq)
                 }
                 break;
               case TS_IC:
+                {
+                    VALUE list = rb_ary_new();
+                    const ID *ids = ((IC)*seq)->segments;
+                    while (*ids) {
+                        rb_ary_push(list, ID2SYM(*ids++));
+                    }
+                    rb_ary_push(ary, list);
+                }
+                break;
               case TS_IVC:
               case TS_ICVARC:
               case TS_ISE:
