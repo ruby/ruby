@@ -3182,9 +3182,11 @@ ci_missing_reason(const struct rb_callinfo *ci)
     return stat;
 }
 
+static VALUE vm_call_method_missing(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, struct rb_calling_info *calling);
+
 static VALUE
 vm_call_symbol(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp,
-               struct rb_calling_info *calling, const struct rb_callinfo *ci, VALUE symbol)
+               struct rb_calling_info *calling, const struct rb_callinfo *ci, VALUE symbol, int flags)
 {
     ASSUME(calling->argc >= 0);
     /* Also assumes CALLER_SETUP_ARG is already done. */
@@ -3194,9 +3196,7 @@ vm_call_symbol(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp,
     VALUE recv = calling->recv;
     VALUE klass = CLASS_OF(recv);
     ID mid = rb_check_id(&symbol);
-    int flags = VM_CALL_FCALL |
-                VM_CALL_OPT_SEND |
-                (calling->kw_splat ? VM_CALL_KW_SPLAT : 0);
+    flags |= VM_CALL_OPT_SEND | (calling->kw_splat ? VM_CALL_KW_SPLAT : 0);
 
     if (UNLIKELY(! mid)) {
         mid = idMethodMissing;
@@ -3243,7 +3243,29 @@ vm_call_symbol(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp,
                                   { .method_missing_reason = missing_reason },
                                   rb_callable_method_entry_with_refinements(klass, mid, NULL));
 
-    return vm_call_method(ec, reg_cfp, calling);
+    if (flags & VM_CALL_FCALL) {
+        return vm_call_method(ec, reg_cfp, calling);
+    }
+
+    const struct rb_callcache *cc = calling->cc;
+    VM_ASSERT(callable_method_entry_p(vm_cc_cme(cc)));
+
+    if (vm_cc_cme(cc) != NULL) {
+        switch (METHOD_ENTRY_VISI(vm_cc_cme(cc))) {
+          case METHOD_VISI_PUBLIC: /* likely */
+            return vm_call_method_each_type(ec, reg_cfp, calling);
+          case METHOD_VISI_PRIVATE:
+            vm_cc_method_missing_reason_set(cc, MISSING_PRIVATE);
+          case METHOD_VISI_PROTECTED:
+            vm_cc_method_missing_reason_set(cc, MISSING_PROTECTED);
+            break;
+          default:
+            VM_UNREACHABLE(vm_call_method);
+        }
+        return vm_call_method_missing(ec, reg_cfp, calling);
+    }
+
+    return vm_call_method_nome(ec, reg_cfp, calling);
 }
 
 static VALUE
@@ -3283,7 +3305,7 @@ vm_call_opt_send(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, struct
         calling->argc -= 1;
         DEC_SP(1);
 
-        return vm_call_symbol(ec, reg_cfp, calling, calling->ci, sym);
+        return vm_call_symbol(ec, reg_cfp, calling, calling->ci, sym, VM_CALL_FCALL);
     }
 }
 
@@ -4097,7 +4119,7 @@ vm_invoke_symbol_block(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp,
         VALUE symbol = VM_BH_TO_SYMBOL(block_handler);
         CALLER_SETUP_ARG(reg_cfp, calling, ci);
         calling->recv = TOPN(--calling->argc);
-        return vm_call_symbol(ec, reg_cfp, calling, ci, symbol);
+        return vm_call_symbol(ec, reg_cfp, calling, ci, symbol, 0);
     }
 }
 

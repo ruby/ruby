@@ -46,6 +46,33 @@ describe "Symbol#to_proc" do
     end
   end
 
+  ruby_version_is "3.2" do
+    it "only calls public methods" do
+      body = proc do
+        public def pub; @a << :pub end
+        protected def pro; @a << :pro end
+        private def pri; @a << :pri end
+        attr_reader :a
+      end
+
+      @a = []
+      singleton_class.class_eval(&body)
+      tap(&:pub)
+      proc{tap(&:pro)}.should raise_error(NoMethodError)
+      proc{tap(&:pri)}.should raise_error(NoMethodError)
+      @a.should == [:pub]
+
+      @a = []
+      c = Class.new(&body)
+      o = c.new
+      o.instance_variable_set(:@a, [])
+      o.tap(&:pub)
+      proc{tap(&:pro)}.should raise_error(NoMethodError)
+      proc{o.tap(&:pri)}.should raise_error(NoMethodError)
+      o.a.should == [:pub]
+    end
+  end
+
   it "raises an ArgumentError when calling #call on the Proc without receiver" do
     -> {
       :object_id.to_proc.call
