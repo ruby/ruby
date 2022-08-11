@@ -309,6 +309,28 @@ pub fn csel(cb: &mut CodeBlock, rd: A64Opnd, rn: A64Opnd, rm: A64Opnd, cond: u8)
     cb.write_bytes(&bytes);
 }
 
+/// EOR - perform a bitwise XOR of rn and rm, put the result in rd, don't update flags
+pub fn eor(cb: &mut CodeBlock, rd: A64Opnd, rn: A64Opnd, rm: A64Opnd) {
+    let bytes: [u8; 4] = match (rd, rn, rm) {
+        (A64Opnd::Reg(rd), A64Opnd::Reg(rn), A64Opnd::Reg(rm)) => {
+            assert!(
+                rd.num_bits == rn.num_bits && rn.num_bits == rm.num_bits,
+                "All operands must be of the same size."
+            );
+
+            LogicalReg::eor(rd.reg_no, rn.reg_no, rm.reg_no, rd.num_bits).into()
+        },
+        (A64Opnd::Reg(rd), A64Opnd::Reg(rn), A64Opnd::UImm(imm)) => {
+            assert!(rd.num_bits == rn.num_bits, "rd and rn must be of the same size.");
+
+            LogicalImm::eor(rd.reg_no, rn.reg_no, imm.try_into().unwrap(), rd.num_bits).into()
+        },
+        _ => panic!("Invalid operand combination to eor instruction."),
+    };
+
+    cb.write_bytes(&bytes);
+}
+
 /// LDADDAL - atomic add with acquire and release semantics
 pub fn ldaddal(cb: &mut CodeBlock, rs: A64Opnd, rt: A64Opnd, rn: A64Opnd) {
     let bytes: [u8; 4] = match (rs, rt, rn) {
@@ -1021,6 +1043,16 @@ mod tests {
     #[test]
     fn test_csel() {
         check_bytes("6a018c9a", |cb| csel(cb, X10, X11, X12, Condition::EQ));
+    }
+
+    #[test]
+    fn test_eor_register() {
+        check_bytes("6a010cca", |cb| eor(cb, X10, X11, X12));
+    }
+
+    #[test]
+    fn test_eor_immediate() {
+        check_bytes("6a0940d2", |cb| eor(cb, X10, X11, A64Opnd::new_uimm(7)));
     }
 
     #[test]

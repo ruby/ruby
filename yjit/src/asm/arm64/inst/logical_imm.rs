@@ -8,6 +8,9 @@ enum Opc {
     /// The ORR operation.
     Orr = 0b01,
 
+    /// The EOR operation.
+    Eor = 0b10,
+
     /// The ANDS operation.
     Ands = 0b11
 }
@@ -50,6 +53,12 @@ impl LogicalImm {
     /// https://developer.arm.com/documentation/ddi0596/2021-12/Base-Instructions/ANDS--immediate---Bitwise-AND--immediate---setting-flags-?lang=en
     pub fn ands(rd: u8, rn: u8, imm: BitmaskImmediate, num_bits: u8) -> Self {
         Self { rd, rn, imm, opc: Opc::Ands, sf: num_bits.into() }
+    }
+
+    /// EOR (bitmask immediate)
+    /// https://developer.arm.com/documentation/ddi0596/2020-12/Base-Instructions/EOR--immediate---Bitwise-Exclusive-OR--immediate--
+    pub fn eor(rd: u8, rn: u8, imm: BitmaskImmediate, num_bits: u8) -> Self {
+        Self { rd, rn, imm, opc: Opc::Eor, sf: num_bits.into() }
     }
 
     /// MOV (bitmask immediate)
@@ -113,6 +122,13 @@ mod tests {
         let inst = LogicalImm::ands(0, 1, 7.try_into().unwrap(), 64);
         let result: u32 = inst.into();
         assert_eq!(0xf2400820, result);
+    }
+
+    #[test]
+    fn test_eor() {
+        let inst = LogicalImm::eor(0, 1, 7.try_into().unwrap(), 64);
+        let result: u32 = inst.into();
+        assert_eq!(0xd2400820, result);
     }
 
     #[test]

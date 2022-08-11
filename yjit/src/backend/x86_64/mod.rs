@@ -139,7 +139,7 @@ impl Assembler
             }).collect();
 
             match insn.op {
-                Op::Add | Op::Sub | Op::And | Op::Cmp | Op::Or | Op::Test => {
+                Op::Add | Op::Sub | Op::And | Op::Cmp | Op::Or | Op::Test | Op::Xor => {
                     let (opnd0, opnd1) = match (insn.opnds[0], insn.opnds[1]) {
                         (Opnd::Mem(_), Opnd::Mem(_)) => {
                             (asm.load(opnds[0]), asm.load(opnds[1]))
@@ -326,6 +326,10 @@ impl Assembler
 
                 Op::Or => {
                     or(cb, insn.opnds[0].into(), insn.opnds[1].into());
+                },
+
+                Op::Xor => {
+                    xor(cb, insn.opnds[0].into(), insn.opnds[1].into());
                 },
 
                 Op::Not => {

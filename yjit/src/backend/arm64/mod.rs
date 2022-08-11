@@ -216,7 +216,7 @@ impl Assembler
                         }
                     }
                 },
-                Op::And | Op::Or => {
+                Op::And | Op::Or | Op::Xor => {
                     match (opnds[0], opnds[1]) {
                         (Opnd::Reg(_), Opnd::Reg(_)) => {
                             asm.push_insn(insn.op, vec![opnds[0], opnds[1]], insn.target, insn.text, insn.pos_marker);
@@ -614,6 +614,9 @@ impl Assembler
                 },
                 Op::Or => {
                     orr(cb, insn.out.into(), insn.opnds[0].into(), insn.opnds[1].into());
+                },
+                Op::Xor => {
+                    eor(cb, insn.out.into(), insn.opnds[0].into(), insn.opnds[1].into());
                 },
                 Op::Not => {
                     mvn(cb, insn.out.into(), insn.opnds[0].into());
@@ -1082,6 +1085,16 @@ mod tests {
 
         // Assert that a load and a test instruction were written.
         assert_eq!(8, cb.get_write_pos());
+    }
+
+    #[test]
+    fn test_emit_xor() {
+        let (mut asm, mut cb) = setup_asm();
+
+        let opnd = asm.xor(Opnd::Reg(X0_REG), Opnd::Reg(X1_REG));
+        asm.store(Opnd::mem(64, Opnd::Reg(X2_REG), 0), opnd);
+
+        asm.compile_with_num_regs(&mut cb, 1);
     }
 
     #[test]

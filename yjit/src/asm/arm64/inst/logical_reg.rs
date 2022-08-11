@@ -25,6 +25,9 @@ enum Opc {
     /// The ORR operation.
     Orr = 0b01,
 
+    /// The EOR operation.
+    Eor = 0b10,
+
     /// The ANDS operation.
     Ands = 0b11
 }
@@ -76,6 +79,12 @@ impl LogicalReg {
     /// https://developer.arm.com/documentation/ddi0596/2021-12/Base-Instructions/ANDS--shifted-register---Bitwise-AND--shifted-register---setting-flags-?lang=en
     pub fn ands(rd: u8, rn: u8, rm: u8, num_bits: u8) -> Self {
         Self { rd, rn, imm6: 0, rm, n: N::No, shift: Shift::LSL, opc: Opc::Ands, sf: num_bits.into() }
+    }
+
+    /// EOR (shifted register)
+    /// https://developer.arm.com/documentation/ddi0596/2020-12/Base-Instructions/EOR--shifted-register---Bitwise-Exclusive-OR--shifted-register--
+    pub fn eor(rd: u8, rn: u8, rm: u8, num_bits: u8) -> Self {
+        Self { rd, rn, imm6: 0, rm, n: N::No, shift: Shift::LSL, opc: Opc::Eor, sf: num_bits.into() }
     }
 
     /// MOV (register)
@@ -154,6 +163,13 @@ mod tests {
         let inst = LogicalReg::ands(0, 1, 2, 64);
         let result: u32 = inst.into();
         assert_eq!(0xea020020, result);
+    }
+
+    #[test]
+    fn test_eor() {
+        let inst = LogicalReg::eor(0, 1, 2, 64);
+        let result: u32 = inst.into();
+        assert_eq!(0xca020020, result);
     }
 
     #[test]
