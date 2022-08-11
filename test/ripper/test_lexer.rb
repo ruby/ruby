@@ -100,6 +100,20 @@ class TestRipper::Lexer < Test::Unit::TestCase
     assert_equal expect, Ripper.lex(src).map {|e| e[1]}
   end
 
+  def test_end_of_script_char
+    all_assertions do |all|
+      ["a", %w"[a ]", %w"{, }", "if"].each do |src, append|
+        expected = Ripper.lex(src).map {|e| e[1]}
+        ["\0b", "\4b", "\32b"].each do |eof|
+          c = "#{src}#{eof}#{append}"
+          all.for(c) do
+            assert_equal expected, Ripper.lex(c).map {|e| e[1]}
+          end
+        end
+      end
+    end
+  end
+
   def test_slice
     assert_equal "string\#{nil}\n",
       Ripper.slice(%(<<HERE\nstring\#{nil}\nHERE), "heredoc_beg .*? nl $(.*?) heredoc_end", 1)
