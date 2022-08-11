@@ -649,27 +649,27 @@ require 'rdoc'
 #
 # Example input:
 #
-#   <i>Two words</i> in a paragraph.
+#   <i>Italicized words</i> in a paragraph.
 #
 #   >>>
-#     <i>Two words in a block quote</i>.
+#     <i>Italicized words in a block quote</i>.
 #
-#   - <i>Two words</i> in a bullet list item.
+#   - <i>Italicized words</i> in a list item.
 #
-#   ====== <i>Two words</i> in a Heading
+#   ====== <i>Italicized words</i> in a Heading
 #
 #   <i>Italicized passage containing *bold* and +monofont+.</i>
 #
 # Rendered HTML:
 # >>>
-#   <i>Two words</i> in a paragraph.
+#   <i>Italicized words</i> in a paragraph.
 #
 #   >>>
-#     <i>Two words in a block quote</i>.
+#     <i>Italicized words in a block quote</i>.
 #
-#   - <i>Two words</i> in a bullet list item.
+#   - <i>Italicized words</i> in a list item.
 #
-#   ====== <i>Two words</i> in a Heading
+#   ====== <i>Italicized words</i> in a Heading
 #
 #   <i>Italicized passage containing *bold* and +monofont+.</i>
 #
@@ -678,29 +678,25 @@ require 'rdoc'
 #
 # Example input:
 #
-#   _Word_ in a paragraph.
+#   _Italic_ in a paragraph.
 #
 #   >>>
-#     _Word_ in a block quote.
+#     _Italic_ in a block quote.
 #
-#   - _Word_ in a bullet list item.
+#   - _Italic_ in a list item.
 #
-#   [_word_] _Word_ in a labeled list item.
-#
-#   ====== _Word_ in a Heading
+#   ====== _Italic_ in a Heading
 #
 # Rendered HTML:
 # >>>
-#   _Word_ in a paragraph.
+#   _Italic_ in a paragraph.
 #
 #   >>>
-#     _Word_ in a block quote.
+#     _Italic_ in a block quote.
 #
-#   - _Word_ in a bullet list item.
+#   - _Italic_ in a list item.
 #
-#   [_word_] _Word_ in a labeled list item.
-#
-#   ====== _Word_ in a Heading
+#   ====== _Italic_ in a Heading
 #
 # ===== Bold
 #
@@ -708,28 +704,28 @@ require 'rdoc'
 #
 # Example input:
 #
-#   <b>Two words</b> in a paragraph.
+#   <b>Bold words</b> in a paragraph.
 #
 #   >>>
-#     <b>Two words</b> in a block quote.
+#     <b>Bold words</b> in a block quote.
 #
-#   - <b>Two words</b> in a bullet list item.
+#   - <b>Bold words</b> in a list item.
 #
-#   ====== <b>Two words</b> in a Heading
+#   ====== <b>Bold words</b> in a Heading
 #
 #   <b>Bold passage containing _italics_ and +monofont+.</b>
 #
 # Rendered HTML:
 #
 # >>>
-#   <b>Two words</b> in a paragraph.
+#   <b>Bold words</b> in a paragraph.
 #
 #   >>>
-#     <b>Two words</b> in a block quote.
+#     <b>Bold words</b> in a block quote.
 #
-#   - <b>Two words</b> in a bullet list item.
+#   - <b>Bold words</b> in a list item.
 #
-#   ====== <b>Two words</b> in a Heading
+#   ====== <b>Bold words</b> in a Heading
 #
 #   <b>Bold passage containing _italics_ and +monofont+.</b>
 #
@@ -738,30 +734,26 @@ require 'rdoc'
 #
 # Example input:
 #
-#   *Word* in a paragraph.
+#   *Bold* in a paragraph.
 #
 #   >>>
-#     *Word* in a block quote.
+#     *Bold* in a block quote.
 #
-#   - *Word* in a bullet list item.
+#   - *Bold* in a list item.
 #
-#   [*word*] *Word* in a labeled list item.
-#
-#   ===== *Word* in a Heading
+#   ===== *Bold* in a Heading
 #
 # Rendered HTML:
 #
 # >>>
-#   *Word* in a paragraph.
+#   *Bold* in a paragraph.
 #
 #   >>>
-#     *Word* in a block quote.
+#     *Bold* in a block quote.
 #
-#   - *Word* in a bullet list item.
+#   - *Bold* in a list item.
 #
-#   [*word*] *Word* in a labeled list item.
-#
-#   ===== *Word* in a Heading
+#   ===== *Bold* in a Heading
 #
 # ===== Monofont
 #
@@ -771,28 +763,28 @@ require 'rdoc'
 #
 # Example input:
 #
-#   <tt>Two words</tt> in a paragraph.
+#   <tt>Monofont words</tt> in a paragraph.
 #
 #   >>>
-#     <tt>Two words</tt> in a block quote.
+#     <tt>Monofont words</tt> in a block quote.
 #
-#   - <tt>Two words</tt> in a bullet list item.
+#   - <tt>Monofont words</tt> in a list item.
 #
-#   ====== <tt>Two words</tt> in heading
+#   ====== <tt>Monofont words</tt> in heading
 #
 #   <tt>Monofont passage containing _italics_ and *bold*.</tt>
 #
 # Rendered HTML:
 #
 # >>>
-#   <tt>Two words</tt> in a paragraph.
+#   <tt>Monofont words</tt> in a paragraph.
 #
 #   >>>
-#     <tt>Two words</tt> in a block quote.
+#     <tt>Monofont words</tt> in a block quote.
 #
-#   - <tt>Two words</tt> in a bullet list item.
+#   - <tt>Monofont words</tt> in a list item.
 #
-#   ====== <tt>Two words</tt> in heading
+#   ====== <tt>Monofont words</tt> in heading
 #
 #   <tt>Monofont passage containing _italics_ and *bold*.</tt>
 #
@@ -801,26 +793,26 @@ require 'rdoc'
 #
 # Example input:
 #
-#   +Word+ in a paragraph.
+#   +Monofont+ in a paragraph.
 #
 #   >>>
-#     +Word+ in a block quote.
+#     +Monofont+ in a block quote.
 #
-#   - +Word+ in a bullet list item.
+#   - +Monofont+ in a list item.
 #
-#   ====== +Word+ in a Heading
+#   ====== +Monofont+ in a Heading
 #
 # Rendered HTML:
 #
 # >>>
-#   +Word+ in a paragraph.
+#   +Monofont+ in a paragraph.
 #
 #   >>>
-#     +Word+ in a block quote.
+#     +Monofont+ in a block quote.
 #
-#   - +Word+ in a bullet list item.
+#   - +Monofont+ in a list item.
 #
-#   ====== +Word+ in a Heading
+#   ====== +Monofont+ in a Heading
 #
 # ==== Escaping Text Markup
 #
