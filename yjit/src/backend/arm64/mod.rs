@@ -187,16 +187,25 @@ impl Assembler
         let mut iterator = self.into_draining_iter();
 
         while let Some((index, insn)) = iterator.next_mapped() {
-            let opnds = match insn.op {
-                Op::Load => insn.opnds,
-                _ => insn.opnds.into_iter().map(|opnd| {
-                    if let Opnd::Value(_) = opnd {
-                        asm.load(opnd)
-                    } else {
-                        opnd
-                    }
-                }).collect()
-            };
+            // Here we're going to map the operands of the instruction to load
+            // any Opnd::Value operands into registers if they are heap objects
+            // such that only the Op::Load instruction needs to handle that
+            // case. If the values aren't heap objects then we'll treat them as
+            // if they were just unsigned integer.
+            let opnds: Vec<Opnd> = insn.opnds.into_iter().map(|opnd| {
+                match opnd {
+                    Opnd::Value(value) => {
+                        if value.special_const_p() {
+                            Opnd::UImm(value.as_u64())
+                        } else if insn.op == Op::Load {
+                            opnd
+                        } else {
+                            asm.load(opnd)
+                        }
+                    },
+                    _ => opnd
+                }
+            }).collect();
 
             match insn.op {
                 Op::Add => {
@@ -652,6 +661,11 @@ impl Assembler
                             ldur(cb, insn.out.into(), insn.opnds[0].into());
                         },
                         Opnd::Value(value) => {
+                            // We dont need to check if it's a special const
+                            // here because we only allow these operands to hit
+                            // this point if they're not a special const.
+                            assert!(!value.special_const_p());
+
                             // This assumes only load instructions can contain
                             // references to GC'd Value operands. If the value
                             // being loaded is a heap object, we'll report that
@@ -660,10 +674,8 @@ impl Assembler
                             b(cb, A64Opnd::new_imm(1 + (SIZEOF_VALUE as i64) / 4));
                             cb.write_bytes(&value.as_u64().to_le_bytes());
 
-                            if !value.special_const_p() {
-                                let ptr_offset: u32 = (cb.get_write_pos() as u32) - (SIZEOF_VALUE as u32);
-                                gc_offsets.push(ptr_offset);
-                            }
+                            let ptr_offset: u32 = (cb.get_write_pos() as u32) - (SIZEOF_VALUE as u32);
+                            gc_offsets.push(ptr_offset);
                         },
                         Opnd::None => {
                             unreachable!("Attempted to load from None operand");
@@ -983,6 +995,32 @@ mod tests {
 
         // Assert that three instructions were written: MOVZ, ADD, LDUR, and STUR.
         assert_eq!(16, cb.get_write_pos());
+    }
+
+    #[test]
+    fn test_emit_load_value_immediate() {
+        let (mut asm, mut cb) = setup_asm();
+
+        let opnd = asm.load(Opnd::Value(Qnil));
+        asm.store(Opnd::mem(64, SP, 0), opnd);
+        asm.compile_with_num_regs(&mut cb, 1);
+
+        // Assert that only two instructions were written since the value is an
+        // immediate.
+        assert_eq!(8, cb.get_write_pos());
+    }
+
+    #[test]
+    fn test_emit_load_value_non_immediate() {
+        let (mut asm, mut cb) = setup_asm();
+
+        let opnd = asm.load(Opnd::Value(VALUE(0xCAFECAFECAFE0000)));
+        asm.store(Opnd::mem(64, SP, 0), opnd);
+        asm.compile_with_num_regs(&mut cb, 1);
+
+        // Assert that five instructions were written since the value is not an
+        // immediate and needs to be loaded into a register.
+        assert_eq!(20, cb.get_write_pos());
     }
 
     #[test]
