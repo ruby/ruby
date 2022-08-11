@@ -29,16 +29,37 @@ require 'rdoc'
 #   see <tt>:nodoc:</tt>, <tt>:doc:</tt>, and <tt>:notnew</tt>.
 # - \RDoc directives in single-line comments;
 #   see other {Directives}[rdoc-ref:RDoc::MarkupReference@Directives].
-# - The Ruby code itself;
-#   see {Documentation Derived from Ruby Code}[rdoc-ref:RDoc::MarkupReference@Documentation+Derived+from+Ruby+Code]
+# - The Ruby code itself (but not from C code);
+#   see {Documentation Derived from Ruby Code}[rdoc-ref:RDoc::MarkupReference@Documentation+Derived+from+Ruby+Code].
 #
 # == Markup in Comments
 #
-# A single-line or multi-line comment that immediately precedes
-# the definition of a class, module, method, alias, constant, or attribute
-# becomes the documentation for that defined object.
+# The treatment of markup in comments varies according to the type of file:
 #
-# (\RDoc ignores other such comments that do not precede definitions.)
+# - <tt>.rb</tt> (Ruby code file): markup is parsed from Ruby comments.
+# - <tt>.c</tt> (C code file): markup is parsed from C comments.
+# - <tt>.rdoc</tt> (RDoc text file): markup is parsed from the entire file.
+#
+# The comment associated with
+# a Ruby class, module, method, alias, constant, or attribute
+# becomes the documentation for that defined object:
+#
+# - In a Ruby file, that comment immediately precedes
+#   the definition of the object.
+# - In a C file, that comment immediately precedes
+#   the function that implements a method,
+#   or otherwise immediately precedes the definition of the object.
+#
+# In either a Ruby or a C file,
+# \RDoc ignores comments that do not precede object definitions.
+#
+# In an \RDoc file, the text is not associated with any code object,
+# but may (depending on how the documentation is built),
+# become a separate page.
+#
+# Almost all examples on this page are all RDoc-like;
+# that is, they have no comment markers like Ruby <tt>#</tt>
+# or C <tt>/* ... */</tt>.
 #
 # === Margins
 #
@@ -96,11 +117,11 @@ require 'rdoc'
 #
 # Example input:
 #
-#   # \RDoc produces HTML and command-line documentation for Ruby projects.
-#   # \RDoc includes the rdoc and ri tools for generating and displaying
-#   # documentation from the command-line.
-#   #
-#   # You'll love it.
+#   \RDoc produces HTML and command-line documentation for Ruby projects.
+#   \RDoc includes the rdoc and ri tools for generating and displaying
+#   documentation from the command-line.
+#
+#   You'll love it.
 #
 # Rendered HTML:
 # >>>
@@ -133,15 +154,15 @@ require 'rdoc'
 #
 # Example input:
 #
-#   # This is not verbatim text.
-#   #
-#   #   This is verbatim text.
-#   #     Whitespace is honored.     # See?
-#   #       Whitespace is honored.     # See?
-#   #
-#   #   This is still the same verbatim text block.
-#   #
-#   # This is not verbatim text.
+#   This is not verbatim text.
+#
+#     This is verbatim text.
+#       Whitespace is honored.     # See?
+#         Whitespace is honored.     # See?
+#
+#     This is still the same verbatim text block.
+#
+#   This is not verbatim text.
 #
 # Rendered HTML:
 # >>>
@@ -279,13 +300,13 @@ require 'rdoc'
 #
 # Example input:
 #
-#   # - An item.
-#   # - Another.
-#   # - An item spanning
-#   #   multiple lines.
-#   #
-#   # * Yet another.
-#   # - Last one.
+#   - An item.
+#   - Another.
+#   - An item spanning
+#     multiple lines.
+#
+#   * Yet another.
+#   - Last one.
 #
 # Rendered HTML:
 # >>>
@@ -305,13 +326,13 @@ require 'rdoc'
 #
 # Example input:
 #
-#   # 100. An item.
-#   # 10. Another.
-#   # 1. An item spanning
-#   #    multiple lines.
-#   #
-#   # 1. Yet another.
-#   # 1000. Last one.
+#   100. An item.
+#   10. Another.
+#   1. An item spanning
+#      multiple lines.
+#
+#   1. Yet another.
+#   1000. Last one.
 #
 # Rendered HTML:
 # >>>
@@ -331,13 +352,13 @@ require 'rdoc'
 #
 # Example input:
 #
-#   # z. An item.
-#   # y. Another.
-#   # x. An item spanning
-#   #    multiple lines.
-#   #
-#   # x. Yet another.
-#   # a. Last one.
+#   z. An item.
+#   y. Another.
+#   x. An item spanning
+#      multiple lines.
+#
+#   x. Yet another.
+#   a. Last one.
 #
 # Rendered HTML:
 # >>>
@@ -356,13 +377,13 @@ require 'rdoc'
 #
 # Example input:
 #
-#   # [foo] An item.
-#   # bat:: Another.
-#   # [bag] An item spanning
-#   #       multiple lines.
-#   #
-#   # [bar baz] Yet another.
-#   # bam:: Last one.
+#   [foo] An item.
+#   bat:: Another.
+#   [bag] An item spanning
+#         multiple lines.
+#
+#   [bar baz] Yet another.
+#   bam:: Last one.
 #
 # Rendered HTML:
 # >>>
@@ -381,20 +402,20 @@ require 'rdoc'
 #
 # Examples:
 #
-#   # = Section 1
-#   # == Section 1.1
-#   # === Section 1.1.1
-#   # === Section 1.1.2
-#   # == Section 1.2
-#   # = Section 2
-#   # = Foo
-#   # == Bar
-#   # === Baz
-#   # ==== Bam
-#   # ===== Bat
-#   # ====== Bad
-#   # ============Still a Heading (Level 6)
-#   # \== Not a Heading
+#   = Section 1
+#   == Section 1.1
+#   === Section 1.1.1
+#   === Section 1.1.2
+#   == Section 1.2
+#   = Section 2
+#   = Foo
+#   == Bar
+#   === Baz
+#   ==== Bam
+#   ===== Bat
+#   ====== Bad
+#   ============Still a Heading (Level 6)
+#   \== Not a Heading
 #
 # A heading may contain only one type of nested block:
 #
@@ -1147,10 +1168,10 @@ class RDoc::MarkupReference
   #
   # Here is the <tt>:call-seq:</tt> directive given for the method:
   #
-  #   # :call-seq:
-  #   #   call_seq_directive(foo, bar)
-  #   #   Can be anything -> bar
-  #   #   Also anything more -> baz or bat
+  #   :call-seq:
+  #     call_seq_directive(foo, bar)
+  #     Can be anything -> bar
+  #     Also anything more -> baz or bat
   #
   def call_seq_directive
     nil
