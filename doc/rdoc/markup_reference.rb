@@ -94,7 +94,7 @@ require 'rdoc'
 # - {Directive}[rdoc-ref:RDoc::MarkupReference@Directives]:
 #   various special directions for the rendering.
 # - {Text Markup}[rdoc-ref:RDoc:MarkupReference@Text+Markup]:
-#   text to be rendered in italic, bold, or monofont.
+#   text to be rendered in a special way.
 #
 # About the blocks:
 #
@@ -632,18 +632,24 @@ require 'rdoc'
 #
 # ==== Text Markup
 #
-# Text markup is metatext that marks text as:
+# Text markup is metatext that affects HTML rendering:
 #
-# - Italic.
-# - Bold.
-# - Monofont.
+# - Typeface: italic, bold, monofont.
+# - Character conversions: copyright, trademark, certain punctuation.
+# - Links.
+# - Escapes: marking text as "not markup."
 #
-# Text markup may contain only one type of nested block:
+# ===== Typeface Markup
 #
-# - More text markup:
+# Typeface markup can specify that text is to be rendered
+# as italic, bold, or monofont.
+#
+# Typeface markup may contain only one type of nested block:
+#
+# - More typeface markup:
 #   italic, bold, monofont.
 #
-# ===== Italic
+# ====== Italic
 #
 # Text may be marked as italic via HTML tag <tt><i></tt> or <tt><em></tt>.
 #
@@ -698,7 +704,7 @@ require 'rdoc'
 #
 #   ====== _Italic_ in a Heading
 #
-# ===== Bold
+# ====== Bold
 #
 # Text may be marked as bold via HTML tag <tt><b></tt>.
 #
@@ -755,7 +761,7 @@ require 'rdoc'
 #
 #   ===== *Bold* in a Heading
 #
-# ===== Monofont
+# ====== Monofont
 #
 # Text may be marked as monofont
 # -- sometimes called 'typewriter font' --
