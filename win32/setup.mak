@@ -80,6 +80,9 @@ $(BANG)else
 HAVE_BASERUBY = no
 $(BANG)endif
 <<
+!if "$(RUBY_DEVEL)" == "yes"
+	RUBY_DEVEL = yes
+!endif
 !if "$(GIT)" != ""
 	@echo GIT = $(GIT)>> $(MAKEFILE)
 !endif
@@ -197,7 +200,6 @@ echo MINOR = RUBY_VERSION_MINOR
 echo TEENY = RUBY_VERSION_TEENY
 echo ABI_VERSION = RUBY_ABI_VERSION
 #if defined RUBY_PATCHLEVEL && RUBY_PATCHLEVEL < 0
-echo RUBY_DEVEL = yes
 #endif
 set /a MSC_VER = _MSC_VER
 #if _MSC_VER >= 1920

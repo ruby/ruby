@@ -622,8 +622,13 @@ AS_IF([test "$fdeclspec" = yes], [
     RUBY_APPEND_OPTIONS(CXXFLAGS, -fdeclspec)
 ])
 
-AS_IF([test "x$RUBY_DEVEL" != xyes], [RUBY_DEVEL=no])
-particular_werror_flags=$RUBY_DEVEL
+AC_ARG_ENABLE(devel,
+    AS_HELP_STRING([--enable-devel], [enable development build]),
+    [RUBY_DEVEL=$enableval],
+    [AS_IF([test "x${RUBY_DEVEL-no}" != xyes], [RUBY_DEVEL=])]
+)dnl
+AC_SUBST(RUBY_DEVEL)
+particular_werror_flags=${RUBY_DEVEL:-no}
 AC_ARG_ENABLE(werror,
 	AS_HELP_STRING([--disable-werror],
 		       [don't make warnings into errors
@@ -867,7 +872,6 @@ AS_IF([test "$GCC" = yes], [
     test "${debugflags+set}" || {RUBY_TRY_CFLAGS(-g3, [debugflags=-g3])}
 ])
 test $ac_cv_prog_cc_g = yes && : ${debugflags=-g}
-AS_IF([test "x$RUBY_DEVEL" = xyes], [RUBY_APPEND_OPTION(XCFLAGS, -DRUBY_DEVEL=1)])
 
 AS_IF([test "$GCC" = ""], [
     AS_CASE(["$target_os"],[aix*],[warnflags="$warnflags -qinfo=por" rb_cv_warnflags="$rb_cv_warnflags -qinfo=por"])
