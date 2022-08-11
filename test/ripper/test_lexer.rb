@@ -100,6 +100,12 @@ class TestRipper::Lexer < Test::Unit::TestCase
     assert_equal expect, Ripper.lex(src).map {|e| e[1]}
   end
 
+  def test_end_of_script_char
+    ["a\0b", "a\4b", "a\32b"].each do |src|
+      assert_equal [:on_ident], Ripper.lex(src).map {|e| e[1]}
+    end
+  end
+
   def test_slice
     assert_equal "string\#{nil}\n",
       Ripper.slice(%(<<HERE\nstring\#{nil}\nHERE), "heredoc_beg .*? nl $(.*?) heredoc_end", 1)

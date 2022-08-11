@@ -178,9 +178,13 @@ class Ripper
       if raise_errors and !@errors.empty?
         raise SyntaxError, @errors.map(&:message).join(' ;')
       end
-      @buf.flatten!
-      unless (result = @buf).empty?
-        result.concat(@buf) until (@buf = []; super(); @buf.flatten!; @buf.empty?)
+      result = @buf.flatten
+      prev_errors_size = 0
+      until @errors.size == prev_errors_size
+        prev_errors_size = @errors.size
+        @buf = []
+        super()
+        result.concat(@buf.flatten)
       end
       result
     end
