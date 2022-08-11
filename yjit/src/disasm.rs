@@ -71,7 +71,7 @@ pub fn disasm_iseq_insn_range(iseq: IseqPtr, start_idx: u32, end_idx: u32) -> St
     use capstone::prelude::*;
 
     #[cfg(target_arch = "x86_64")]
-    let cs = Capstone::new()
+    let mut cs = Capstone::new()
         .x86()
         .mode(arch::x86::ArchMode::Mode64)
         .syntax(arch::x86::ArchSyntax::Intel)
@@ -79,11 +79,13 @@ pub fn disasm_iseq_insn_range(iseq: IseqPtr, start_idx: u32, end_idx: u32) -> St
         .unwrap();
 
     #[cfg(target_arch = "aarch64")]
-    let cs = Capstone::new()
+    let mut cs = Capstone::new()
         .arm64()
         .mode(arch::arm64::ArchMode::Arm)
+        .detail(true)
         .build()
         .unwrap();
+    cs.set_skipdata(true);
 
     out.push_str(&format!("NUM BLOCK VERSIONS: {}\n", block_list.len()));
     out.push_str(&format!(
