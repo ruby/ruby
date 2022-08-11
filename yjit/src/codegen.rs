@@ -5497,10 +5497,11 @@ fn gen_opt_getinlinecache(
     // to invalidate this block from yjit_constant_ic_update().
     jit_ensure_block_entry_exit(jit, ocb);
 
-    let inline_cache = Opnd::const_ptr(ic as *const u8);
     if !unsafe { (*ice).ic_cref }.is_null() {
         // Cache is keyed on a certain lexical scope. Use the interpreter's cache.
         let side_exit = get_side_exit(jit, ocb, ctx);
+
+        let inline_cache = asm.load(Opnd::const_ptr(ic as *const u8));
 
         // Call function to verify the cache. It doesn't allocate or call methods.
         let ret_val = asm.ccall(
@@ -5512,20 +5513,23 @@ fn gen_opt_getinlinecache(
         asm.test(ret_val, ret_val);
         asm.jz(counted_exit!(ocb, side_exit, opt_getinlinecache_miss).into());
 
-        let inline_cache_entry = Opnd::mem(
+        let inline_cache = asm.load(Opnd::const_ptr(ic as *const u8));
+
+        let ic_entry = asm.load(Opnd::mem(
             64,
             inline_cache,
             RUBY_OFFSET_IC_ENTRY
-        );
-        let inline_cache_entry_val = Opnd::mem(
+        ));
+
+        let ic_entry_val = asm.load(Opnd::mem(
             64,
-            inline_cache_entry,
+            ic_entry,
             RUBY_OFFSET_ICE_VALUE
-        );
+        ));
 
         // Push ic->entry->value
         let stack_top = ctx.stack_push(Type::Unknown);
-        asm.mov(stack_top, inline_cache_entry_val);
+        asm.store(stack_top, ic_entry_val);
     } else {
         // Optimize for single ractor mode.
         // FIXME: This leaks when st_insert raises NoMemoryError
@@ -5553,7 +5557,6 @@ fn gen_opt_getinlinecache(
     );
     EndBlock
 }
-
 
 // Push the explicit block parameter onto the temporary stack. Part of the
 // interpreter's scheme for avoiding Proc allocations when delegating
