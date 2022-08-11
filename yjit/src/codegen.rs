@@ -5475,11 +5475,10 @@ fn gen_setclassvariable(
     KeepCompiling
 }
 
-/*
 fn gen_opt_getinlinecache(
     jit: &mut JITState,
     ctx: &mut Context,
-    cb: &mut CodeBlock,
+    asm: &mut Assembler,
     ocb: &mut OutlinedCb,
 ) -> CodegenStatus {
     let jump_offset = jit_get_arg(jit, 0);
@@ -5498,25 +5497,35 @@ fn gen_opt_getinlinecache(
     // to invalidate this block from yjit_constant_ic_update().
     jit_ensure_block_entry_exit(jit, ocb);
 
+    let inline_cache = Opnd::const_ptr(ic as *const u8);
     if !unsafe { (*ice).ic_cref }.is_null() {
         // Cache is keyed on a certain lexical scope. Use the interpreter's cache.
         let side_exit = get_side_exit(jit, ocb, ctx);
 
         // Call function to verify the cache. It doesn't allocate or call methods.
-        mov(cb, C_ARG_REGS[0], const_ptr_opnd(ic as *const u8));
-        mov(cb, C_ARG_REGS[1], mem_opnd(64, REG_CFP, RUBY_OFFSET_CFP_EP));
-        call_ptr(cb, REG0, rb_vm_ic_hit_p as *const u8);
+        let ret_val = asm.ccall(
+            rb_vm_ic_hit_p as *const u8,
+            vec![inline_cache, Opnd::mem(64, CFP, RUBY_OFFSET_CFP_EP)]
+        );
 
         // Check the result. _Bool is one byte in SysV.
-        test(cb, AL, AL);
-        jz_ptr(cb, counted_exit!(ocb, side_exit, opt_getinlinecache_miss));
+        asm.test(ret_val, ret_val);
+        asm.jz(counted_exit!(ocb, side_exit, opt_getinlinecache_miss).into());
+
+        let inline_cache_entry = Opnd::mem(
+            64,
+            inline_cache,
+            RUBY_OFFSET_IC_ENTRY
+        );
+        let inline_cache_entry_val = Opnd::mem(
+            64,
+            inline_cache_entry,
+            RUBY_OFFSET_ICE_VALUE
+        );
 
         // Push ic->entry->value
-        mov(cb, REG0, const_ptr_opnd(ic as *mut u8));
-        mov(cb, REG0, mem_opnd(64, REG0, RUBY_OFFSET_IC_ENTRY));
         let stack_top = ctx.stack_push(Type::Unknown);
-        mov(cb, REG0, mem_opnd(64, REG0, RUBY_OFFSET_ICE_VALUE));
-        mov(cb, stack_top, REG0);
+        asm.mov(stack_top, inline_cache_entry_val);
     } else {
         // Optimize for single ractor mode.
         // FIXME: This leaks when st_insert raises NoMemoryError
@@ -5528,7 +5537,7 @@ fn gen_opt_getinlinecache(
         // constants referenced within the current block.
         assume_stable_constant_names(jit, ocb);
 
-        jit_putobject(jit, ctx, cb, unsafe { (*ice).value });
+        jit_putobject(jit, ctx, asm, unsafe { (*ice).value });
     }
 
     // Jump over the code for filling the cache
@@ -5540,11 +5549,11 @@ fn gen_opt_getinlinecache(
             iseq: jit.iseq,
             idx: jump_idx,
         },
-        cb,
+        asm,
     );
     EndBlock
 }
-*/
+
 
 // Push the explicit block parameter onto the temporary stack. Part of the
 // interpreter's scheme for avoiding Proc allocations when delegating
@@ -5873,7 +5882,7 @@ fn get_gen_fn(opcode: VALUE) -> Option<InsnGenFn> {
         YARVINSN_opt_size => Some(gen_opt_size),
         YARVINSN_opt_length => Some(gen_opt_length),
         YARVINSN_opt_regexpmatch2 => Some(gen_opt_regexpmatch2),
-        //YARVINSN_opt_getinlinecache => Some(gen_opt_getinlinecache),
+        YARVINSN_opt_getinlinecache => Some(gen_opt_getinlinecache),
         YARVINSN_invokebuiltin => Some(gen_invokebuiltin),
         YARVINSN_opt_invokebuiltin_delegate => Some(gen_opt_invokebuiltin_delegate),
         YARVINSN_opt_invokebuiltin_delegate_leave => Some(gen_opt_invokebuiltin_delegate),
