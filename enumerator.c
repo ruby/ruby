@@ -3802,6 +3802,13 @@ rb_arithmetic_sequence_beg_len_step(VALUE obj, long *begp, long *lenp, long *ste
     *stepp = step;
 
     if (step < 0) {
+        if (aseq.exclude_end && !NIL_P(aseq.end)) {
+            /* Handle exclusion before range reversal */
+            aseq.end = LONG2NUM(NUM2LONG(aseq.end) + 1);
+
+            /* Don't exclude the previous beginning */
+            aseq.exclude_end = 0;
+        }
         VALUE tmp = aseq.begin;
         aseq.begin = aseq.end;
         aseq.end = tmp;
