@@ -39,94 +39,35 @@ pub struct BitmaskImmediate {
 impl TryFrom<u64> for BitmaskImmediate {
     type Error = ();
 
-    /// Attempt to convert a u64 into a BitmaskImm.
+    /// Attempt to convert a u64 into a BitmaskImmediate.
+    /// 
+    /// The implementation here is largely based on this blog post:
+    /// https://dougallj.wordpress.com/2021/10/30/bit-twiddling-optimising-aarch64-logical-immediate-encoding-and-decoding/
     fn try_from(value: u64) -> Result<Self, Self::Error> {
-        // 0 is not encodable as a bitmask immediate. Immediately return here so
-        // that we don't have any issues with underflow.
         if value == 0 || value == u64::MAX {
             return Err(());
         }
 
-        /// Is this number's binary representation all 1s?
-        fn is_mask(imm: u64) -> bool {
-            if imm == u64::MAX { true } else { ((imm + 1) & imm) == 0 }
+        fn rotate_right(value: u64, rotations: u32) -> u64 {
+            (value >> (rotations & 0x3F)) |
+            (value << (rotations.wrapping_neg() & 0x3F))
         }
 
-        /// Is this number's binary representation one or more 1s followed by
-        /// one or more 0s?
-        fn is_shifted_mask(imm: u64) -> bool {
-            is_mask((imm - 1) | imm)
+        let rotations = (value & (value + 1)).trailing_zeros();
+        let normalized = rotate_right(value, rotations & 0x3F);
+
+        let zeroes = normalized.leading_zeros();
+        let ones = (!normalized).trailing_zeros();
+        let size = zeroes + ones;
+
+        if rotate_right(value, size & 0x3F) != value {
+            return Err(());
         }
-
-        let mut imm = value;
-        let mut size = 64;
-
-        // First, determine the element size.
-        loop {
-            size >>= 1;
-            let mask = (1 << size) - 1;
-
-            if (imm & mask) != ((imm >> size) & mask) {
-              size <<= 1;
-              break;
-            }
-
-            if size <= 2 {
-                break;
-            }
-        }
-
-        // Second, determine the rotation to make the pattern be aligned such
-        // that all of the least significant bits are 1.
-        let trailing_ones: u32;
-        let left_rotations: u32;
-
-        let mask = u64::MAX >> (64 - size);
-        imm &= mask;
-
-        if is_shifted_mask(imm) {
-            left_rotations = imm.trailing_zeros();
-            assert!(left_rotations < 64);
-            trailing_ones = (imm >> left_rotations).trailing_ones();
-        } else {
-            imm |= !mask;
-            if !is_shifted_mask(!imm) {
-                return Err(());
-            }
-
-            let leading_ones = imm.leading_ones();
-            left_rotations = 64 - leading_ones;
-            trailing_ones = leading_ones + imm.trailing_ones() - (64 - size);
-        }
-
-        // immr is the number of right rotations it takes to get from the
-        // matching unrotated pattern to the target value.
-        let immr = (size - left_rotations) & (size - 1);
-        assert!(size > left_rotations);
-
-        // imms is encoded as the size of the pattern, a 0, and then one less
-        // than the number of sequential 1s. The table below shows how this is
-        // encoded. (Note that the way it works out, it's impossible for every x
-        // in a row to be 1 at the same time).
-        // +-------------+--------------+--------------+
-        // | imms        | element size | number of 1s |
-        // +-------------+--------------+--------------+
-        // | 1 1 1 1 0 x | 2 bits       | 1            |
-        // | 1 1 1 0 x x | 4 bits       | 1-3          |
-        // | 1 1 0 x x x | 8 bits       | 1-7          |
-        // | 1 0 x x x x | 16 bits      | 1-15         |
-        // | 0 x x x x x | 32 bits      | 1-31         |
-        // | x x x x x x | 64 bits      | 1-63         |
-        // +-------------+--------------+--------------+
-        let imms = (!(size - 1) << 1) | (trailing_ones - 1);
-
-        // n is 1 if the element size is 64-bits, and 0 otherwise.
-        let n = ((imms >> 6) & 1) ^ 1;
 
         Ok(BitmaskImmediate {
-            n: n as u8,
-            imms: (imms & 0x3f) as u8,
-            immr: (immr & 0x3f) as u8
+            n: ((size >> 6) & 1) as u8,
+            imms: (((size << 1).wrapping_neg() | (ones - 1)) & 0x3F) as u8,
+            immr: ((rotations.wrapping_neg() & (size - 1)) & 0x3F) as u8
         })
     }
 }
@@ -135,7 +76,7 @@ impl From<BitmaskImmediate> for u32 {
     /// Encode a bitmask immediate into a 32-bit value.
     fn from(bitmask: BitmaskImmediate) -> Self {
         0
-        | (((bitmask.n as u32) & 1) << 12)
+        | ((bitmask.n as u32) << 12)
         | ((bitmask.immr as u32) << 6)
         | (bitmask.imms as u32)
     }
