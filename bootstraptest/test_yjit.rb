@@ -3066,3 +3066,13 @@ assert_equal '10', %q{
 
   a.length
 }
+
+assert_equal '[1, 2]', %q{
+  def foo
+    x = [2]
+    [1, *x]
+  end
+
+  foo
+  foo
+}
