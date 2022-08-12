@@ -2547,6 +2547,9 @@ newobj_init(VALUE klass, VALUE flags, int wb_protected, rb_objspace_t *objspace,
 #if USE_MMTK
     if (rb_mmtk_enabled_p()) {
         switch (RB_BUILTIN_TYPE(obj)) {
+        case T_STRING:
+        case T_ARRAY:
+        case T_HASH:
         case T_DATA:
         case T_FILE:
         case T_SYMBOL:
@@ -12433,11 +12436,20 @@ objspace_malloc_increase_body(rb_objspace_t *objspace, void *mem, size_t new_siz
     if (type == MEMOP_TYPE_MALLOC) {
       retry:
         if (malloc_increase > malloc_limit && ruby_native_thread_p() && !dont_gc_val()) {
+#if USE_MMTK
+            if (rb_mmtk_enabled_p()) {
+                mmtk_handle_user_collection_request((MMTk_VMMutatorThread)GET_THREAD());
+                gc_reset_malloc_info(objspace, true);
+            } else {
+#endif
             if (ruby_thread_has_gvl_p() && is_lazy_sweeping(objspace)) {
                 gc_rest(objspace); /* gc_rest can reduce malloc_increase */
                 goto retry;
             }
             garbage_collect_with_gvl(objspace, GPR_FLAG_MALLOC);
+#if USE_MMTK
+            }
+#endif
         }
     }
 
@@ -15280,6 +15292,12 @@ rb_mmtk_scan_object_ruby_style(void *object)
     gc_mark_children(objspace, obj);
 }
 
+static void
+rb_mmtk_obj_free(void *object) {
+    printf("Called back from Finalization.  Freeing %p\n", object);
+    obj_free(&rb_objspace, (VALUE)object);
+}
+
 RubyUpcalls ruby_upcalls = {
     rb_mmtk_init_gc_worker_thread,
     rb_mmtk_get_gc_thread_tls,
@@ -15293,6 +15311,7 @@ RubyUpcalls ruby_upcalls = {
     rb_mmtk_scan_thread_roots,
     rb_mmtk_scan_thread_root,
     rb_mmtk_scan_object_ruby_style,
+    rb_mmtk_obj_free,
 };
 
 // Use up to 80% of memory for the heap
