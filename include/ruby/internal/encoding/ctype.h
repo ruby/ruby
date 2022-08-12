@@ -127,6 +127,20 @@ rb_enc_isupper(OnigCodePoint c, rb_encoding *enc)
 }
 
 /**
+ * Identical to rb_iscntrl(), except it additionally takes an encoding.
+ *
+ * @param[in]  c          A code point.
+ * @param[in]  enc        An encoding.
+ * @retval     true       `enc` classifies `c` as "CNTRL".
+ * @retval     false      Otherwise.
+ */
+static inline bool
+rb_enc_iscntrl(OnigCodePoint c, rb_encoding *enc)
+{
+    return ONIGENC_IS_CODE_CNTRL(enc, c);
+}
+
+/**
  * Identical to rb_ispunct(), except it additionally takes an encoding.
  *
  * @param[in]  c          A code point.
@@ -235,6 +249,7 @@ RBIMPL_SYMBOL_EXPORT_END()
 #define rb_enc_isdigit    rb_enc_isdigit
 #define rb_enc_islower    rb_enc_islower
 #define rb_enc_isprint    rb_enc_isprint
+#define rb_enc_iscntrl    rb_enc_iscntrl
 #define rb_enc_ispunct    rb_enc_ispunct
 #define rb_enc_isspace    rb_enc_isspace
 #define rb_enc_isupper    rb_enc_isupper
