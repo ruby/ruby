@@ -475,12 +475,6 @@ fstr_update_callback(st_data_t *key, st_data_t *value, st_data_t data, int exist
         }
         RBASIC(str)->flags |= RSTRING_FSTR;
 
-#if USE_MMTK
-        if (rb_mmtk_enabled_p()) {
-            mmtk_register_finalizable((void *)str);
-        }
-#endif
-
         *key = *value = arg->fstr = str;
         return ST_CONTINUE;
     }

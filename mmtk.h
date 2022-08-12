@@ -24,6 +24,17 @@ typedef void* MMTk_VMMutatorThread;
 #define MMTK_GC_THREAD_KIND_CONTROLLER 0
 #define MMTK_GC_THREAD_KIND_WORKER 1
 
+struct ObjectClosure {
+    void* (*c_function)(void* rust_closure, void* worker, void *data);
+    void* rust_closure;
+};
+
+struct RawVecOfObjRef {
+    void **ptr;
+    size_t len;
+    size_t capa;
+};
+
 typedef struct {
     void (*init_gc_worker_thread)(MMTk_VMWorkerThread worker_tls);
     MMTk_VMWorkerThread (*get_gc_thread_tls)(void);
@@ -111,13 +122,10 @@ extern void mmtk_add_phantom_candidate(void* ref);
 extern void mmtk_harness_begin(void *tls);
 extern void mmtk_harness_end(void *tls);
 
-extern void mmtk_register_finalizable(void *reff);
-extern void* mmtk_poll_finalizable(bool include_live);
-
-struct ObjectClosure {
-    void* (*c_function)(void* rust_closure, void* worker, void *data);
-    void* rust_closure;
-};
+extern void mmtk_add_finalizer(void *reff);
+extern void* mmtk_get_finalized_object();
+extern struct RawVecOfObjRef mmtk_get_all_finalizers();
+extern void mmtk_free_raw_vec_of_obj_ref(struct RawVecOfObjRef raw_vec);
 
 #ifdef __cplusplus
 }

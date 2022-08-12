@@ -2553,7 +2553,7 @@ newobj_init(VALUE klass, VALUE flags, int wb_protected, rb_objspace_t *objspace,
         case T_DATA:
         case T_FILE:
         case T_SYMBOL:
-            mmtk_register_finalizable((void*)obj);
+            mmtk_add_finalizer((void*)obj);
             RUBY_DEBUG_LOG("Object registered for finalization: %p: %s %s",
                 (void*)obj,
                 rb_type_str(RB_BUILTIN_TYPE(obj)),
@@ -4701,6 +4701,60 @@ force_chain_object(st_data_t key, st_data_t val, st_data_t arg)
 
 bool rb_obj_is_main_ractor(VALUE gv);
 
+#if USE_MMTK
+void
+rb_mmtk_call_finalizer_inner(rb_objspace_t *objspace, VALUE obj) {
+    if (USE_RUBY_DEBUG_LOG) {
+        RUBY_DEBUG_LOG("Resurrected for obj_free: %p: %s %s",
+                resurrected,
+                rb_type_str(RB_BUILTIN_TYPE(obj)),
+                CLASS_OF(obj)==0?"(null)":rb_class2name(CLASS_OF(obj))
+                );
+    }
+    if (rb_obj_is_thread(obj)) {
+        RUBY_DEBUG_LOG("Skipped thread: %p: %s", resurrected, rb_type_str(RB_BUILTIN_TYPE(obj)));
+        return;
+    }
+    if (rb_obj_is_mutex(obj)) {
+        RUBY_DEBUG_LOG("Skipped mutex: %p: %s", resurrected, rb_type_str(RB_BUILTIN_TYPE(obj)));
+        return;
+    }
+    if (rb_obj_is_fiber(obj)) {
+        RUBY_DEBUG_LOG("Skipped fiber: %p: %s", resurrected, rb_type_str(RB_BUILTIN_TYPE(obj)));
+        return;
+    }
+    if (rb_obj_is_main_ractor(obj)) {
+        RUBY_DEBUG_LOG("Skipped main ractor: %p: %s", resurrected, rb_type_str(RB_BUILTIN_TYPE(obj)));
+        return;
+    }
+    obj_free(objspace, obj);
+    RUBY_DEBUG_LOG("Object freed: %p: %s", resurrected, rb_type_str(RB_BUILTIN_TYPE(obj)));
+}
+
+void
+rb_mmtk_call_finalizer(rb_objspace_t *objspace, bool on_exit)
+{
+    if (on_exit) {
+        struct RawVecOfObjRef resurrrected_objs = mmtk_get_all_finalizers();
+
+        for (size_t i = 0; i < resurrrected_objs.len; i++) {
+            void *resurrected = resurrrected_objs.ptr[resurrrected_objs.len - i - 1];
+
+            VALUE obj = (VALUE)resurrected;
+            rb_mmtk_call_finalizer_inner(objspace, obj);
+        }
+
+        mmtk_free_raw_vec_of_obj_ref(resurrrected_objs);
+    } else {
+        void *resurrected;
+        while ((resurrected = mmtk_get_finalized_object()) != NULL) {
+            VALUE obj = (VALUE)resurrected;
+            rb_mmtk_call_finalizer_inner(objspace, obj);
+        }
+    }
+}
+#endif
+
 void
 rb_objspace_call_finalizer(rb_objspace_t *objspace)
 {
@@ -4797,35 +4851,7 @@ rb_objspace_call_finalizer(rb_objspace_t *objspace)
 
 #if USE_MMTK
     if (rb_mmtk_enabled_p()) {
-        void *resurrected;
-        while ((resurrected = mmtk_poll_finalizable(true)) != NULL) {
-            VALUE obj = (VALUE)resurrected;
-            if (USE_RUBY_DEBUG_LOG) {
-                RUBY_DEBUG_LOG("Resurrected for obj_free: %p: %s %s",
-                        resurrected,
-                        rb_type_str(RB_BUILTIN_TYPE(obj)),
-                        CLASS_OF(obj)==0?"(null)":rb_class2name(CLASS_OF(obj))
-                        );
-            }
-            if (rb_obj_is_thread(obj)) {
-                RUBY_DEBUG_LOG("Skipped thread: %p: %s", resurrected, rb_type_str(RB_BUILTIN_TYPE(obj)));
-                continue;
-            }
-            if (rb_obj_is_mutex(obj)) {
-                RUBY_DEBUG_LOG("Skipped mutex: %p: %s", resurrected, rb_type_str(RB_BUILTIN_TYPE(obj)));
-                continue;
-            }
-            if (rb_obj_is_fiber(obj)) {
-                RUBY_DEBUG_LOG("Skipped fiber: %p: %s", resurrected, rb_type_str(RB_BUILTIN_TYPE(obj)));
-                continue;
-            }
-            if (rb_obj_is_main_ractor(obj)) {
-                RUBY_DEBUG_LOG("Skipped main ractor: %p: %s", resurrected, rb_type_str(RB_BUILTIN_TYPE(obj)));
-                continue;
-            }
-            obj_free(objspace, obj);
-            RUBY_DEBUG_LOG("Object freed: %p: %s", resurrected, rb_type_str(RB_BUILTIN_TYPE(obj)));
-        }
+        rb_mmtk_call_finalizer(objspace, true);
     }
 #endif
 
@@ -12440,6 +12466,7 @@ objspace_malloc_increase_body(rb_objspace_t *objspace, void *mem, size_t new_siz
             if (rb_mmtk_enabled_p()) {
                 mmtk_handle_user_collection_request((MMTk_VMMutatorThread)GET_THREAD());
                 gc_reset_malloc_info(objspace, true);
+                rb_mmtk_call_finalizer(objspace, false);
             } else {
 #endif
             if (ruby_thread_has_gvl_p() && is_lazy_sweeping(objspace)) {
