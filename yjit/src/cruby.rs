@@ -262,6 +262,7 @@ extern "C" {
     // Ruby only defines these in vm_insnhelper.c, not in any header.
     // Parsing it would result in a lot of duplicate definitions.
     pub fn rb_vm_splat_array(flag: VALUE, ary: VALUE) -> VALUE;
+    pub fn rb_vm_concat_array(ary1: VALUE, ary2st: VALUE) -> VALUE;
     pub fn rb_vm_defined(
         ec: EcPtr,
         reg_cfp: CfpPtr,
