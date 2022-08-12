@@ -4379,6 +4379,12 @@ vm_concat_array(VALUE ary1, VALUE ary2st)
     return rb_ary_concat(tmp1, tmp2);
 }
 
+VALUE
+rb_vm_concat_array(VALUE ary1, VALUE ary2st)
+{
+    return vm_concat_array(ary1, ary2st);
+}
+
 static VALUE
 vm_splat_array(VALUE flag, VALUE ary)
 {
