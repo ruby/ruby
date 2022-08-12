@@ -5986,6 +5986,7 @@ fn get_gen_fn(opcode: VALUE) -> Option<InsnGenFn> {
         YARVINSN_opt_str_freeze => Some(gen_opt_str_freeze),
         YARVINSN_opt_str_uminus => Some(gen_opt_str_uminus),
         YARVINSN_splatarray => Some(gen_splatarray),
+        YARVINSN_concatarray => Some(gen_concatarray),
         YARVINSN_newrange => Some(gen_newrange),
         YARVINSN_putstring => Some(gen_putstring),
         YARVINSN_expandarray => Some(gen_expandarray),
