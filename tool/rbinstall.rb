@@ -904,11 +904,8 @@ module RbInstall
       RbInstall.no_write(options) {super}
     end
 
-    if RbConfig::CONFIG["LIBRUBY_RELATIVE"] == "yes" || RbConfig::CONFIG["CROSS_COMPILING"] == "yes" || ENV["DESTDIR"]
-      # TODO: always build extensions in bundled gems by build-ext and
-      # install the built binaries.
-      def build_extensions
-      end
+    # Now build-ext builds all extensions including bundled gems.
+    def build_extensions
     end
 
     def generate_bin_script(filename, bindir)
@@ -1074,28 +1071,8 @@ install?(:ext, :comm, :gem, :'bundled-gems') do
     prepare "bundled gem cache", gem_dir+"/cache"
     install installed_gems, gem_dir+"/cache"
   end
-  next if gems.empty?
-  if defined?(Zlib)
-    silent = Gem::SilentUI.new
-    gems.each do |gem|
-      package = Gem::Package.new(gem)
-      inst = RbInstall::GemInstaller.new(package, options)
-      inst.spec.extension_dir = "#{extensions_dir}/#{inst.spec.full_name}"
-      begin
-        Gem::DefaultUserInteraction.use_ui(silent) {inst.install}
-      rescue Gem::InstallError
-        next
-      end
-      gemname = File.basename(gem)
-      puts "#{INDENT}#{gemname}"
-    end
-    # fix directory permissions
-    # TODO: Gem.install should accept :dir_mode option or something
-    File.chmod($dir_mode, *Dir.glob(install_dir+"/**/"))
-    # fix .gemspec permissions
-    File.chmod($data_mode, *Dir.glob(install_dir+"/specifications/*.gemspec"))
-  else
-    puts "skip installing bundled gems because of lacking zlib"
+  unless gems.empty?
+    puts "skipped bundled gems: #{gems.join(' ')}"
   end
 end
 

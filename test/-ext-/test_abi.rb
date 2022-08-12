@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+return unless RUBY_PATCHLEVEL < 0
+
 class TestABI < Test::Unit::TestCase
   def test_require_lib_with_incorrect_abi_on_dev_ruby
     omit "ABI is not checked" unless abi_checking_supported?
