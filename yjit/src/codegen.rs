@@ -1270,6 +1270,32 @@ fn gen_splatarray(
     KeepCompiling
 }
 
+// concat two arrays
+fn gen_concatarray(
+    jit: &mut JITState,
+    ctx: &mut Context,
+    cb: &mut CodeBlock,
+    _ocb: &mut OutlinedCb,
+) -> CodegenStatus {
+    // Save the PC and SP because the callee may allocate
+    // Note that this modifies REG_SP, which is why we do it first
+    jit_prepare_routine_call(jit, ctx, cb, REG0);
+
+    // Get the operands from the stack
+    let ary2st_opnd = ctx.stack_pop(1);
+    let ary1_opnd = ctx.stack_pop(1);
+
+    // Call rb_vm_concat_array(ary1, ary2st)
+    mov(cb, C_ARG_REGS[0], ary1_opnd);
+    mov(cb, C_ARG_REGS[1], ary2st_opnd);
+    call_ptr(cb, REG1, rb_vm_concat_array as *const u8);
+
+    let stack_ret = ctx.stack_push(Type::Array);
+    mov(cb, stack_ret, RAX);
+
+    KeepCompiling
+}
+
 // new range initialized from top 2 values
 fn gen_newrange(
     jit: &mut JITState,
