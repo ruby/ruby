@@ -1345,32 +1345,27 @@ fn guard_object_is_array(
     asm.jne(side_exit.into());
 }
 
-/*
 fn guard_object_is_string(
-    cb: &mut CodeBlock,
-    object_reg: X86Opnd,
-    flags_reg: X86Opnd,
+    asm: &mut Assembler,
+    object_reg: Opnd,
     side_exit: CodePtr,
 ) {
-    add_comment(cb, "guard object is string");
+    asm.comment("guard object is string");
 
     // Pull out the type mask
-    mov(
-        cb,
-        flags_reg,
-        mem_opnd(
+    let flags_reg = asm.load(
+        Opnd::mem(
             8 * SIZEOF_VALUE as u8,
             object_reg,
             RUBY_OFFSET_RBASIC_FLAGS,
         ),
     );
-    and(cb, flags_reg, uimm_opnd(RUBY_T_MASK as u64));
+    let flags_reg = asm.and(flags_reg, Opnd::UImm(RUBY_T_MASK as u64));
 
     // Compare the result with T_STRING
-    cmp(cb, flags_reg, uimm_opnd(RUBY_T_STRING as u64));
-    jne_ptr(cb, side_exit);
+    asm.cmp(flags_reg, Opnd::UImm(RUBY_T_STRING as u64));
+    asm.jne(side_exit.into());
 }
-*/
 
 // push enough nils onto the stack to fill out an array
 fn gen_expandarray(
@@ -2079,7 +2074,7 @@ fn gen_get_ivar(
             // Check that the slot is inside the extended table (num_slots > index)
             let num_slots = Opnd::mem(32, recv, ROBJECT_OFFSET_NUMIV);
             asm.cmp(num_slots, Opnd::UImm(ivar_index as u64));
-            asm.jbe(Target::CodePtr(counted_exit!(ocb, side_exit, getivar_idx_out_of_range)));
+            asm.jbe(counted_exit!(ocb, side_exit, getivar_idx_out_of_range).into());
         }
 
         // Get a pointer to the extended table
@@ -3660,16 +3655,19 @@ fn jit_rb_str_uplus(
     asm.test(flags_opnd, Opnd::Imm(RUBY_FL_FREEZE as i64));
 
     let ret_label = asm.new_label("stack_ret");
-    // If the string isn't frozen, we just return it. It's already in REG0.
+
+    // We guard for the receiver being a ::String, so the return value is too
+    let stack_ret = ctx.stack_push(Type::CString);
+
+    // If the string isn't frozen, we just return it.
+    asm.mov(stack_ret, recv_opnd);
     asm.jz(ret_label);
 
-    // Str is frozen - duplicate
+    // Str is frozen - duplicate it
     let ret_opnd = asm.ccall(rb_str_dup as *const u8, vec![recv_opnd]);
+    asm.mov(stack_ret, ret_opnd);
 
     asm.write_label(ret_label);
-    // We guard for an exact-class match on the receiver of rb_cString
-    let stack_ret = ctx.stack_push(Type::CString);
-    asm.mov(stack_ret, ret_opnd);
 
     true
 }
@@ -3720,6 +3718,7 @@ fn jit_rb_str_to_s(
     }
     false
 }
+*/
 
 // Codegen for rb_str_concat() -- *not* String#concat
 // Frequently strings are concatenated using "out_str << next_str".
@@ -3749,63 +3748,65 @@ fn jit_rb_str_concat(
 
     // Guard that the argument is of class String at runtime.
     let insn_opnd = StackOpnd(0);
-    let arg_opnd = asm.load(ctx.stack_opnd(0));
     let arg_type = ctx.get_opnd_type(insn_opnd);
-
-    if arg_type != Type::CString && arg_type != Type::TString {
-        if !arg_type.is_heap() {
-            asm.comment("guard arg not immediate");
-            asm.test(REG0, imm_opnd(RUBY_IMMEDIATE_MASK as i64));
-            asm.jnz(Target::CodePtr(side_exit));
-            asm.cmp(arg_opnd, Qnil.into());
-            asm.jbe(Target::CodePtr(side_exit));
-
-            ctx.upgrade_opnd_type(insn_opnd, Type::UnknownHeap);
-        }
-        guard_object_is_string(cb, REG0, REG1, side_exit);
-        // We know this has type T_STRING, but not necessarily that it's a ::String
-        ctx.upgrade_opnd_type(insn_opnd, Type::TString);
-    }
 
     let concat_arg = ctx.stack_pop(1);
     let recv = ctx.stack_pop(1);
+
+    // If we're not compile-time certain that this will always be a string, guard at runtime
+    if arg_type != Type::CString && arg_type != Type::TString {
+        let arg_opnd = asm.load(concat_arg);
+        if !arg_type.is_heap() {
+            asm.comment("guard arg not immediate");
+            asm.test(arg_opnd, Opnd::UImm(RUBY_IMMEDIATE_MASK as u64));
+            asm.jnz(side_exit.into());
+            asm.cmp(arg_opnd, Qnil.into());
+            asm.jbe(side_exit.into());
+
+            ctx.upgrade_opnd_type(insn_opnd, Type::UnknownHeap);
+        }
+        guard_object_is_string(asm, arg_opnd, side_exit);
+        // We know this is a string-or-subclass, but not necessarily that it's a ::String
+        ctx.upgrade_opnd_type(insn_opnd, Type::TString);
+    }
 
     // Test if string encodings differ. If different, use rb_str_append. If the same,
     // use rb_yjit_str_simple_append, which calls rb_str_cat.
     asm.comment("<< on strings");
 
-    // Both rb_str_append and rb_yjit_str_simple_append take identical args
-    let ccall_args = vec![recv, concat_arg];
-
     // Take receiver's object flags XOR arg's flags. If any
     // string-encoding flags are different between the two,
     // the encodings don't match.
+    let recv_reg = asm.load(recv);
+    let concat_arg_reg = asm.load(concat_arg);
     let flags_xor = asm.xor(
-        Opnd::mem(64, asm.load(recv), RUBY_OFFSET_RBASIC_FLAGS),
-        Opnd::mem(64, asm.load(concat_arg), RUBY_OFFSET_RBASIC_FLAGS)
+        Opnd::mem(64, recv_reg, RUBY_OFFSET_RBASIC_FLAGS),
+        Opnd::mem(64, concat_arg_reg, RUBY_OFFSET_RBASIC_FLAGS)
     );
     asm.test(flags_xor, Opnd::UImm(RUBY_ENCODING_MASK as u64));
+
+    // Push once, use the resulting operand in both branches below.
+    let stack_ret = ctx.stack_push(Type::CString);
 
     let enc_mismatch = asm.new_label("enc_mismatch");
     asm.jnz(enc_mismatch);
 
     // If encodings match, call the simple append function and jump to return
-    let ret_opnd = asm.ccall(rb_yjit_str_simple_append as *const u8, ccall_args);
-    let ret_label = asm.new_label("stack_return");
+    let ret_opnd = asm.ccall(rb_yjit_str_simple_append as *const u8, vec![recv, concat_arg]);
+    let ret_label = asm.new_label("func_return");
+    asm.mov(stack_ret, ret_opnd);
     asm.jmp(ret_label);
 
     // If encodings are different, use a slower encoding-aware concatenate
     asm.write_label(enc_mismatch);
-    asm.ccall(rb_str_buf_append as *const u8, ccall_args);
+    let ret_opnd = asm.ccall(rb_str_buf_append as *const u8, vec![recv, concat_arg]);
+    asm.mov(stack_ret, ret_opnd);
     // Drop through to return
 
     asm.write_label(ret_label);
-    let stack_ret = ctx.stack_push(Type::CString);
-    asm.mov(stack_ret, ret_opnd);
 
     true
 }
-*/
 
 fn jit_thread_s_current(
     _jit: &mut JITState,
@@ -3921,20 +3922,12 @@ fn gen_send_cfunc(
     if kw_arg.is_null() {
         let codegen_p = lookup_cfunc_codegen(unsafe { (*cme).def });
         if let Some(known_cfunc_codegen) = codegen_p {
-            return CantCompile; /*
-            let start_pos = cb.get_write_ptr().raw_ptr() as usize;
-            if known_cfunc_codegen(jit, ctx, cb, ocb, ci, cme, block, argc, recv_known_klass) {
-                let written_bytes = cb.get_write_ptr().raw_ptr() as usize - start_pos;
-                if written_bytes < JUMP_SIZE_IN_BYTES {
-                    add_comment(cb, "Writing NOPs to leave room for later invalidation code");
-                    nop(cb, (JUMP_SIZE_IN_BYTES - written_bytes) as u32);
-                }
+            if known_cfunc_codegen(jit, ctx, asm, ocb, ci, cme, block, argc, recv_known_klass) {
                 // cfunc codegen generated code. Terminate the block so
                 // there isn't multiple calls in the same block.
-                jump_to_next_insn(jit, ctx, cb, ocb);
+                jump_to_next_insn(jit, ctx, asm, ocb);
                 return EndBlock;
             }
-            */
         }
     }
 
@@ -6141,8 +6134,8 @@ impl CodegenGlobals {
             //self.yjit_reg_method(rb_cString, "to_s", jit_rb_str_to_s);
             //self.yjit_reg_method(rb_cString, "to_str", jit_rb_str_to_s);
             self.yjit_reg_method(rb_cString, "bytesize", jit_rb_str_bytesize);
-            //self.yjit_reg_method(rb_cString, "<<", jit_rb_str_concat);
-            self.yjit_reg_method(rb_cString, "+@", jit_rb_str_uplus);
+            self.yjit_reg_method(rb_cString, "<<", jit_rb_str_concat);
+            //self.yjit_reg_method(rb_cString, "+@", jit_rb_str_uplus);
 
             // Thread.current
             self.yjit_reg_method(

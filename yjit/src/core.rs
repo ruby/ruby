@@ -69,7 +69,7 @@ impl Type {
             } else if val.flonum_p() {
                 Type::Flonum
             } else {
-                unreachable!()
+                unreachable!("Illegal value: {:?}", val)
             }
         } else {
             // Core.rs can't reference rb_cString because it's linked by Rust-only tests.
