@@ -397,12 +397,13 @@ uncommon.mk: $(srcdir)/common.mk
 reconfig-args = $(srcdir)/$(CONFIGURE) $(yes_silence:yes=--silent) $(configure_args)
 config.status-args = ./config.status $(yes_silence:yes=--silent) --recheck
 reconfig-exec-0 = test -t 1 && { : $${CONFIGURE_TTY=yes}; export CONFIGURE_TTY; }; exec 3>&1; exit `exec 4>&1; { "$$@" 3>&- 4>&-; echo $$? 1>&4; } | fgrep -v '(cached)' 1>&3 3>&- 4>&-`
-reconfig-exec-1 = set -x; "$$@"
+reconfig-exec-1 = set -x; exec "$$@"
+reconfig-exec-yes = $(reconfig-exec-1)
 
 reconfig config.status:	$(srcdir)/$(CONFIGURE) $(srcdir)/enc/Makefile.in \
 			$(hdrdir)/ruby/version.h $(ABI_VERSION_HDR)
 	@PWD= MINIRUBY="$(MINIRUBY)"; export MINIRUBY; \
-	set $(SHELL) $($@-args); $(reconfig-exec-$(V))
+	set $(SHELL) $($@-args); $(reconfig-exec-$(silence:no=$(V)))
 
 $(srcdir)/$(CONFIGURE): $(srcdir)/configure.ac
 	$(CHDIR) $(srcdir) && exec $(AUTOCONF) -o $(@F)
