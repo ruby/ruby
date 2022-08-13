@@ -17,7 +17,6 @@
 #include "debug_counter.h"
 #include "ruby.h"
 #include "vm_core.h"
-#include "yjit.h"
 
 // Special address values of a function generated from the
 // corresponding iseq by MJIT:

@@ -21,6 +21,7 @@
 #include "internal/variable.h"
 #include "mjit.h"
 #include "mjit_unit.h"
+#include "yjit.h"
 #include "vm_core.h"
 #include "vm_callinfo.h"
 #include "vm_exec.h"
