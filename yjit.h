@@ -18,16 +18,11 @@
 #if USE_YJIT
 
 // We generate x86 assembly
-#if (defined(__x86_64__) && !defined(_WIN32)) || (defined(_WIN32) && defined(_M_AMD64)) // x64 platforms without mingw/msys
-// YJIT-supported platforms
+#if defined(_WIN32) ? defined(_M_AMD64) : defined(__x86_64__)
+// x86_64 platforms without mingw/msys or x64-mswin
 #else
-// Unsupported platforms
-# undef USE_YJIT
-# define USE_YJIT 0
+# error YJIT unsupported platform
 #endif
-#endif
-
-#if USE_YJIT
 
 // Expose these as declarations since we are building YJIT.
 bool rb_yjit_enabled_p(void);
