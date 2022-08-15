@@ -1200,6 +1200,47 @@ class TestMethod < Test::Unit::TestCase
     assert_nil(super_method)
   end
 
+  # Bug 18435
+  def test_instance_methods_owner_consistency
+    a = Module.new { def method1; end }
+
+    b = Class.new do
+      include a
+      protected :method1
+    end
+
+    assert_equal [:method1], b.instance_methods(false)
+    assert_equal b, b.instance_method(:method1).owner
+  end
+
+  def test_zsuper_method_removed
+    a = EnvUtil.labeled_class('A') do
+      private
+      def foo(arg = nil)
+        1
+      end
+    end
+    line = __LINE__ - 4
+
+    b = EnvUtil.labeled_class('B', a) do
+      public :foo
+    end
+
+    unbound = b.instance_method(:foo)
+
+    assert_equal unbound, b.public_instance_method(:foo)
+    assert_equal "#<UnboundMethod: B(A)#foo(arg=...) #{__FILE__}:#{line}>", unbound.inspect
+    assert_equal [[:opt, :arg]], unbound.parameters
+
+    a.remove_method(:foo)
+
+    assert_equal [[:opt, :arg]], unbound.parameters
+    assert_equal "#<UnboundMethod: B(A)#foo(arg=...) #{__FILE__}:#{line}>", unbound.inspect
+
+    obj = b.new
+    assert_equal 1, unbound.bind_call(obj)
+  end
+
   def rest_parameter(*rest)
     rest
   end
