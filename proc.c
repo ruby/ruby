@@ -1741,8 +1741,13 @@ mnew_unbound(VALUE klass, ID id, VALUE mclass, int scope)
 static inline VALUE
 method_entry_defined_class(const rb_method_entry_t *me)
 {
-    VALUE defined_class = me->defined_class;
-    return defined_class ? defined_class : me->owner;
+    if (me->def->type == VM_METHOD_TYPE_ALIAS) {
+        return me->def->body.alias.original_me->owner;
+    }
+    else {
+        VALUE defined_class = me->defined_class;
+        return defined_class ? defined_class : me->owner;
+    }
 }
 
 /**********************************************************************
@@ -3060,7 +3065,6 @@ method_inspect(VALUE method)
     VALUE str;
     const char *sharp = "#";
     VALUE mklass;
-    VALUE defined_class;
 
     TypedData_Get_Struct(method, struct METHOD, &method_data_type, data);
     str = rb_sprintf("#<% "PRIsVALUE": ", rb_obj_class(method));
@@ -3076,12 +3080,7 @@ method_inspect(VALUE method)
         mklass = RBASIC_CLASS(mklass);
     }
 
-    if (data->me->def->type == VM_METHOD_TYPE_ALIAS) {
-        defined_class = data->me->def->body.alias.original_me->owner;
-    }
-    else {
-        defined_class = method_entry_defined_class(data->me);
-    }
+    VALUE defined_class = method_entry_defined_class(data->me);
 
     if (RB_TYPE_P(defined_class, T_ICLASS)) {
         defined_class = RBASIC_CLASS(defined_class);
