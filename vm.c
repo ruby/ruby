@@ -3938,7 +3938,7 @@ Init_vm_objects(void)
 }
 
 /* Stub for builtin function when not building YJIT units*/
-#if !YJIT_BUILD
+#if !USE_YJIT
 void Init_builtin_yjit(void) {}
 #endif
 
