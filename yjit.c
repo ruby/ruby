@@ -472,61 +472,61 @@ rb_get_cikw_keywords_idx(const struct rb_callinfo_kwarg *cikw, int idx)
 }
 
 rb_method_visibility_t
-rb_METHOD_ENTRY_VISI(rb_callable_method_entry_t *me)
+rb_METHOD_ENTRY_VISI(const rb_callable_method_entry_t *me)
 {
     return METHOD_ENTRY_VISI(me);
 }
 
 rb_method_type_t
-rb_get_cme_def_type(rb_callable_method_entry_t *cme)
+rb_get_cme_def_type(const rb_callable_method_entry_t *cme)
 {
     return cme->def->type;
 }
 
 ID
-rb_get_cme_def_body_attr_id(rb_callable_method_entry_t *cme)
+rb_get_cme_def_body_attr_id(const rb_callable_method_entry_t *cme)
 {
     return cme->def->body.attr.id;
 }
 
 enum method_optimized_type
-rb_get_cme_def_body_optimized_type(rb_callable_method_entry_t *cme)
+rb_get_cme_def_body_optimized_type(const rb_callable_method_entry_t *cme)
 {
     return cme->def->body.optimized.type;
 }
 
 unsigned int
-rb_get_cme_def_body_optimized_index(rb_callable_method_entry_t *cme)
+rb_get_cme_def_body_optimized_index(const rb_callable_method_entry_t *cme)
 {
     return cme->def->body.optimized.index;
 }
 
 rb_method_cfunc_t *
-rb_get_cme_def_body_cfunc(rb_callable_method_entry_t *cme)
+rb_get_cme_def_body_cfunc(const rb_callable_method_entry_t *cme)
 {
     return UNALIGNED_MEMBER_PTR(cme->def, body.cfunc);
 }
 
 uintptr_t
-rb_get_def_method_serial(rb_method_definition_t *def)
+rb_get_def_method_serial(const rb_method_definition_t *def)
 {
     return def->method_serial;
 }
 
 ID
-rb_get_def_original_id(rb_method_definition_t *def)
+rb_get_def_original_id(const rb_method_definition_t *def)
 {
     return def->original_id;
 }
 
 int
-rb_get_mct_argc(rb_method_cfunc_t *mct)
+rb_get_mct_argc(const rb_method_cfunc_t *mct)
 {
     return mct->argc;
 }
 
 void *
-rb_get_mct_func(rb_method_cfunc_t *mct)
+rb_get_mct_func(const rb_method_cfunc_t *mct)
 {
     return (void*)mct->func; // this field is defined as type VALUE (*func)(ANYARGS)
 }
@@ -537,104 +537,104 @@ rb_get_def_iseq_ptr(rb_method_definition_t *def)
     return def_iseq_ptr(def);
 }
 
-rb_iseq_t *
-rb_get_iseq_body_local_iseq(rb_iseq_t  *iseq)
+const rb_iseq_t *
+rb_get_iseq_body_local_iseq(const rb_iseq_t *iseq)
 {
     return iseq->body->local_iseq;
 }
 
 unsigned int
-rb_get_iseq_body_local_table_size(rb_iseq_t *iseq)
+rb_get_iseq_body_local_table_size(const rb_iseq_t *iseq)
 {
     return iseq->body->local_table_size;
 }
 
 VALUE *
-rb_get_iseq_body_iseq_encoded(rb_iseq_t *iseq)
+rb_get_iseq_body_iseq_encoded(const rb_iseq_t *iseq)
 {
     return iseq->body->iseq_encoded;
 }
 
 bool
-rb_get_iseq_body_builtin_inline_p(rb_iseq_t *iseq)
+rb_get_iseq_body_builtin_inline_p(const rb_iseq_t *iseq)
 {
     return iseq->body->builtin_inline_p;
 }
 
 unsigned
-rb_get_iseq_body_stack_max(rb_iseq_t *iseq)
+rb_get_iseq_body_stack_max(const rb_iseq_t *iseq)
 {
     return iseq->body->stack_max;
 }
 
 bool
-rb_get_iseq_flags_has_opt(rb_iseq_t *iseq)
+rb_get_iseq_flags_has_opt(const rb_iseq_t *iseq)
 {
     return iseq->body->param.flags.has_opt;
 }
 
 bool
-rb_get_iseq_flags_has_kw(rb_iseq_t *iseq)
+rb_get_iseq_flags_has_kw(const rb_iseq_t *iseq)
 {
     return iseq->body->param.flags.has_kw;
 }
 
 bool
-rb_get_iseq_flags_has_post(rb_iseq_t *iseq)
+rb_get_iseq_flags_has_post(const rb_iseq_t *iseq)
 {
     return iseq->body->param.flags.has_post;
 }
 
 bool
-rb_get_iseq_flags_has_kwrest(rb_iseq_t *iseq)
+rb_get_iseq_flags_has_kwrest(const rb_iseq_t *iseq)
 {
     return iseq->body->param.flags.has_kwrest;
 }
 
 bool
-rb_get_iseq_flags_has_rest(rb_iseq_t *iseq)
+rb_get_iseq_flags_has_rest(const rb_iseq_t *iseq)
 {
     return iseq->body->param.flags.has_rest;
 }
 
 bool
-rb_get_iseq_flags_has_block(rb_iseq_t *iseq)
+rb_get_iseq_flags_has_block(const rb_iseq_t *iseq)
 {
     return iseq->body->param.flags.has_block;
 }
 
 bool
-rb_get_iseq_flags_has_accepts_no_kwarg(rb_iseq_t *iseq)
+rb_get_iseq_flags_has_accepts_no_kwarg(const rb_iseq_t *iseq)
 {
     return iseq->body->param.flags.accepts_no_kwarg;
 }
 
 const rb_seq_param_keyword_struct *
-rb_get_iseq_body_param_keyword(rb_iseq_t *iseq)
+rb_get_iseq_body_param_keyword(const rb_iseq_t *iseq)
 {
     return iseq->body->param.keyword;
 }
 
 unsigned
-rb_get_iseq_body_param_size(rb_iseq_t *iseq)
+rb_get_iseq_body_param_size(const rb_iseq_t *iseq)
 {
     return iseq->body->param.size;
 }
 
 int
-rb_get_iseq_body_param_lead_num(rb_iseq_t *iseq)
+rb_get_iseq_body_param_lead_num(const rb_iseq_t *iseq)
 {
     return iseq->body->param.lead_num;
 }
 
 int
-rb_get_iseq_body_param_opt_num(rb_iseq_t *iseq)
+rb_get_iseq_body_param_opt_num(const rb_iseq_t *iseq)
 {
     return iseq->body->param.opt_num;
 }
 
 const VALUE *
-rb_get_iseq_body_param_opt_table(rb_iseq_t *iseq)
+rb_get_iseq_body_param_opt_table(const rb_iseq_t *iseq)
 {
     return iseq->body->param.opt_table;
 }
@@ -669,7 +669,7 @@ rb_yjit_str_simple_append(VALUE str1, VALUE str2)
 }
 
 struct rb_control_frame_struct *
-rb_get_ec_cfp(rb_execution_context_t *ec)
+rb_get_ec_cfp(const rb_execution_context_t *ec)
 {
     return ec->cfp;
 }
@@ -803,7 +803,7 @@ rb_RSTRUCT_SET(VALUE st, int k, VALUE v)
 }
 
 const struct rb_callinfo *
-rb_get_call_data_ci(struct rb_call_data *cd)
+rb_get_call_data_ci(const struct rb_call_data *cd)
 {
     return cd->ci;
 }

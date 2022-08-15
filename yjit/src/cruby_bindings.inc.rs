@@ -548,6 +548,20 @@ pub const VM_METHOD_TYPE_OPTIMIZED: rb_method_type_t = 9;
 pub const VM_METHOD_TYPE_MISSING: rb_method_type_t = 10;
 pub const VM_METHOD_TYPE_REFINED: rb_method_type_t = 11;
 pub type rb_method_type_t = u32;
+#[repr(C)]
+#[derive(Debug, Copy, Clone)]
+pub struct rb_method_cfunc_struct {
+    pub func: ::std::option::Option<unsafe extern "C" fn() -> VALUE>,
+    pub invoker: ::std::option::Option<
+        unsafe extern "C" fn(
+            recv: VALUE,
+            argc: ::std::os::raw::c_int,
+            argv: *const VALUE,
+            func: ::std::option::Option<unsafe extern "C" fn() -> VALUE>,
+        ) -> VALUE,
+    >,
+    pub argc: ::std::os::raw::c_int,
+}
 pub const OPTIMIZED_METHOD_TYPE_SEND: method_optimized_type = 0;
 pub const OPTIMIZED_METHOD_TYPE_CALL: method_optimized_type = 1;
 pub const OPTIMIZED_METHOD_TYPE_BLOCK_CALL: method_optimized_type = 2;
@@ -1026,6 +1040,9 @@ extern "C" {
     pub fn rb_full_cfunc_return(ec: *mut rb_execution_context_t, return_value: VALUE);
 }
 extern "C" {
+    pub fn rb_iseq_encoded_size(iseq: *const rb_iseq_t) -> ::std::os::raw::c_uint;
+}
+extern "C" {
     pub fn rb_iseq_get_yjit_payload(iseq: *const rb_iseq_t) -> *mut ::std::os::raw::c_void;
 }
 extern "C" {
@@ -1048,6 +1065,122 @@ extern "C" {
 }
 pub type rb_seq_param_keyword_struct = rb_iseq_constant_body__bindgen_ty_1_rb_iseq_param_keyword;
 extern "C" {
+    pub fn rb_insn_name(insn: VALUE) -> *const ::std::os::raw::c_char;
+}
+extern "C" {
+    pub fn rb_insn_len(insn: VALUE) -> ::std::os::raw::c_int;
+}
+extern "C" {
+    pub fn rb_vm_ci_argc(ci: *const rb_callinfo) -> ::std::os::raw::c_uint;
+}
+extern "C" {
+    pub fn rb_vm_ci_mid(ci: *const rb_callinfo) -> ID;
+}
+extern "C" {
+    pub fn rb_vm_ci_flag(ci: *const rb_callinfo) -> ::std::os::raw::c_uint;
+}
+extern "C" {
+    pub fn rb_vm_ci_kwarg(ci: *const rb_callinfo) -> *const rb_callinfo_kwarg;
+}
+extern "C" {
+    pub fn rb_get_cikw_keyword_len(cikw: *const rb_callinfo_kwarg) -> ::std::os::raw::c_int;
+}
+extern "C" {
+    pub fn rb_get_cikw_keywords_idx(
+        cikw: *const rb_callinfo_kwarg,
+        idx: ::std::os::raw::c_int,
+    ) -> VALUE;
+}
+extern "C" {
+    pub fn rb_METHOD_ENTRY_VISI(me: *const rb_callable_method_entry_t) -> rb_method_visibility_t;
+}
+extern "C" {
+    pub fn rb_get_cme_def_type(cme: *const rb_callable_method_entry_t) -> rb_method_type_t;
+}
+extern "C" {
+    pub fn rb_get_cme_def_body_attr_id(cme: *const rb_callable_method_entry_t) -> ID;
+}
+extern "C" {
+    pub fn rb_get_cme_def_body_optimized_type(
+        cme: *const rb_callable_method_entry_t,
+    ) -> method_optimized_type;
+}
+extern "C" {
+    pub fn rb_get_cme_def_body_optimized_index(
+        cme: *const rb_callable_method_entry_t,
+    ) -> ::std::os::raw::c_uint;
+}
+extern "C" {
+    pub fn rb_get_cme_def_body_cfunc(
+        cme: *const rb_callable_method_entry_t,
+    ) -> *mut rb_method_cfunc_t;
+}
+extern "C" {
+    pub fn rb_get_def_method_serial(def: *const rb_method_definition_t) -> usize;
+}
+extern "C" {
+    pub fn rb_get_def_original_id(def: *const rb_method_definition_t) -> ID;
+}
+extern "C" {
+    pub fn rb_get_mct_argc(mct: *const rb_method_cfunc_t) -> ::std::os::raw::c_int;
+}
+extern "C" {
+    pub fn rb_get_mct_func(mct: *const rb_method_cfunc_t) -> *mut ::std::os::raw::c_void;
+}
+extern "C" {
+    pub fn rb_get_def_iseq_ptr(def: *mut rb_method_definition_t) -> *const rb_iseq_t;
+}
+extern "C" {
+    pub fn rb_get_iseq_body_local_iseq(iseq: *const rb_iseq_t) -> *const rb_iseq_t;
+}
+extern "C" {
+    pub fn rb_get_iseq_body_local_table_size(iseq: *const rb_iseq_t) -> ::std::os::raw::c_uint;
+}
+extern "C" {
+    pub fn rb_get_iseq_body_iseq_encoded(iseq: *const rb_iseq_t) -> *mut VALUE;
+}
+extern "C" {
+    pub fn rb_get_iseq_body_stack_max(iseq: *const rb_iseq_t) -> ::std::os::raw::c_uint;
+}
+extern "C" {
+    pub fn rb_get_iseq_flags_has_opt(iseq: *const rb_iseq_t) -> bool;
+}
+extern "C" {
+    pub fn rb_get_iseq_flags_has_kw(iseq: *const rb_iseq_t) -> bool;
+}
+extern "C" {
+    pub fn rb_get_iseq_flags_has_post(iseq: *const rb_iseq_t) -> bool;
+}
+extern "C" {
+    pub fn rb_get_iseq_flags_has_kwrest(iseq: *const rb_iseq_t) -> bool;
+}
+extern "C" {
+    pub fn rb_get_iseq_flags_has_rest(iseq: *const rb_iseq_t) -> bool;
+}
+extern "C" {
+    pub fn rb_get_iseq_flags_has_block(iseq: *const rb_iseq_t) -> bool;
+}
+extern "C" {
+    pub fn rb_get_iseq_flags_has_accepts_no_kwarg(iseq: *const rb_iseq_t) -> bool;
+}
+extern "C" {
+    pub fn rb_get_iseq_body_param_keyword(
+        iseq: *const rb_iseq_t,
+    ) -> *const rb_seq_param_keyword_struct;
+}
+extern "C" {
+    pub fn rb_get_iseq_body_param_size(iseq: *const rb_iseq_t) -> ::std::os::raw::c_uint;
+}
+extern "C" {
+    pub fn rb_get_iseq_body_param_lead_num(iseq: *const rb_iseq_t) -> ::std::os::raw::c_int;
+}
+extern "C" {
+    pub fn rb_get_iseq_body_param_opt_num(iseq: *const rb_iseq_t) -> ::std::os::raw::c_int;
+}
+extern "C" {
+    pub fn rb_get_iseq_body_param_opt_table(iseq: *const rb_iseq_t) -> *const VALUE;
+}
+extern "C" {
     pub fn rb_leaf_invokebuiltin_iseq_p(iseq: *const rb_iseq_t) -> bool;
 }
 extern "C" {
@@ -1055,6 +1188,15 @@ extern "C" {
 }
 extern "C" {
     pub fn rb_yjit_str_simple_append(str1: VALUE, str2: VALUE) -> VALUE;
+}
+extern "C" {
+    pub fn rb_get_ec_cfp(ec: *const rb_execution_context_t) -> *mut rb_control_frame_struct;
+}
+extern "C" {
+    pub fn rb_get_cfp_pc(cfp: *mut rb_control_frame_struct) -> *mut VALUE;
+}
+extern "C" {
+    pub fn rb_get_cfp_sp(cfp: *mut rb_control_frame_struct) -> *mut VALUE;
 }
 extern "C" {
     pub fn rb_set_cfp_pc(cfp: *mut rb_control_frame_struct, pc: *const VALUE);
@@ -1066,7 +1208,52 @@ extern "C" {
     pub fn rb_cfp_get_iseq(cfp: *mut rb_control_frame_struct) -> *mut rb_iseq_t;
 }
 extern "C" {
+    pub fn rb_get_cfp_self(cfp: *mut rb_control_frame_struct) -> VALUE;
+}
+extern "C" {
+    pub fn rb_get_cfp_ep(cfp: *mut rb_control_frame_struct) -> *mut VALUE;
+}
+extern "C" {
+    pub fn rb_get_cfp_ep_level(cfp: *mut rb_control_frame_struct, lv: u32) -> *const VALUE;
+}
+extern "C" {
+    pub fn rb_yarv_class_of(obj: VALUE) -> VALUE;
+}
+extern "C" {
+    pub fn rb_yarv_str_eql_internal(str1: VALUE, str2: VALUE) -> VALUE;
+}
+extern "C" {
+    pub fn rb_yarv_ary_entry_internal(ary: VALUE, offset: ::std::os::raw::c_long) -> VALUE;
+}
+extern "C" {
+    pub fn rb_yarv_fix_mod_fix(recv: VALUE, obj: VALUE) -> VALUE;
+}
+extern "C" {
     pub fn rb_yjit_dump_iseq_loc(iseq: *const rb_iseq_t, insn_idx: u32);
+}
+extern "C" {
+    pub fn rb_FL_TEST(obj: VALUE, flags: VALUE) -> VALUE;
+}
+extern "C" {
+    pub fn rb_FL_TEST_RAW(obj: VALUE, flags: VALUE) -> VALUE;
+}
+extern "C" {
+    pub fn rb_RB_TYPE_P(obj: VALUE, t: ruby_value_type) -> bool;
+}
+extern "C" {
+    pub fn rb_RSTRUCT_LEN(st: VALUE) -> ::std::os::raw::c_long;
+}
+extern "C" {
+    pub fn rb_RSTRUCT_SET(st: VALUE, k: ::std::os::raw::c_int, v: VALUE);
+}
+extern "C" {
+    pub fn rb_get_call_data_ci(cd: *const rb_call_data) -> *const rb_callinfo;
+}
+extern "C" {
+    pub fn rb_BASIC_OP_UNREDEFINED_P(bop: ruby_basic_operators, klass: u32) -> bool;
+}
+extern "C" {
+    pub fn rb_RCLASS_ORIGIN(c: VALUE) -> VALUE;
 }
 extern "C" {
     pub fn rb_ENCODING_GET(obj: VALUE) -> ::std::os::raw::c_int;

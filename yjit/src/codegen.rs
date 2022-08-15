@@ -4058,7 +4058,7 @@ fn gen_send_cfunc(
     // cfunc comes from compile-time cme->def, which we assume to be stable.
     // Invalidation logic is in yjit_method_lookup_change()
     asm.comment("call C function");
-    let ret = asm.ccall(unsafe { get_mct_func(cfunc) }, args);
+    let ret = asm.ccall(unsafe { get_mct_func(cfunc) }.cast(), args);
 
     // Record code position for TracePoint patching. See full_cfunc_return().
     record_global_inval_patch(asm, CodegenGlobals::get_outline_full_cfunc_return_pos());
@@ -4724,7 +4724,7 @@ fn gen_send_general(
     // see vm_call_method().
 
     let ci = unsafe { get_call_data_ci(cd) }; // info about the call site
-    let argc = unsafe { vm_ci_argc(ci) };
+    let argc: i32 = unsafe { vm_ci_argc(ci) }.try_into().unwrap();
     let mid = unsafe { vm_ci_mid(ci) };
     let flags = unsafe { vm_ci_flag(ci) };
 
@@ -5028,7 +5028,7 @@ fn gen_invokesuper(
         unsafe { rb_class_get_superclass(RCLASS_ORIGIN(current_defined_class)) };
 
     let ci = unsafe { get_call_data_ci(cd) };
-    let argc = unsafe { vm_ci_argc(ci) };
+    let argc: i32 = unsafe { vm_ci_argc(ci) }.try_into().unwrap();
 
     let ci_flags = unsafe { vm_ci_flag(ci) };
 
@@ -5960,7 +5960,7 @@ pub struct CodegenGlobals {
     inline_frozen_bytes: usize,
 
     // Methods for generating code for hardcoded (usually C) methods
-    method_codegen_table: HashMap<u64, MethodGenFn>,
+    method_codegen_table: HashMap<usize, MethodGenFn>,
 }
 
 /// For implementing global code invalidation. A position in the inline
@@ -6179,7 +6179,7 @@ impl CodegenGlobals {
         CodegenGlobals::get_instance().outline_full_cfunc_return_pos
     }
 
-    pub fn look_up_codegen_method(method_serial: u64) -> Option<MethodGenFn> {
+    pub fn look_up_codegen_method(method_serial: usize) -> Option<MethodGenFn> {
         let table = &CodegenGlobals::get_instance().method_codegen_table;
 
         let option_ref = table.get(&method_serial);
