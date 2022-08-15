@@ -866,7 +866,6 @@ require 'rdoc'
 #
 #   - On-page: <tt>::dummy_singleton_method</tt> links to ::dummy_singleton_method.
 #   - Off-page<tt>RDoc::TokenStream::to_html</tt> links to RDoc::TokenStream::to_html.
-#     to \RDoc::TokenStream::to_html.
 #
 #   Note: Occasionally \RDoc is not linked to a method whose name
 #   has only special characters. Check whether the links you were expecting
