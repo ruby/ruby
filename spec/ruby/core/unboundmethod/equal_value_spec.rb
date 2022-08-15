@@ -98,4 +98,41 @@ describe "UnboundMethod#==" do
 
     (@discard_1 == UnboundMethodSpecs::Methods.instance_method(:discard_1)).should == false
   end
+
+  it "considers methods through aliasing equal" do
+    c = Class.new do
+      class << self
+        alias_method :n, :new
+      end
+    end
+
+    c.method(:new).should == c.method(:n)
+    c.method(:n).should == Class.instance_method(:new).bind(c)
+  end
+
+  # On CRuby < 3.2, the 2 specs below pass due to method/instance_method skipping zsuper methods.
+  # We are interested in the general pattern working, i.e. the combination of method/instance_method
+  # and #== exposes the wanted behavior.
+  it "considers methods through visibility change equal" do
+    c = Class.new do
+      class << self
+        private :new
+      end
+    end
+
+    c.method(:new).should == Class.instance_method(:new).bind(c)
+  end
+
+  it "considers methods through aliasing and visibility change equal" do
+    c = Class.new do
+      class << self
+        alias_method :n, :new
+        private :new
+      end
+    end
+
+    c.method(:new).should == c.method(:n)
+    c.method(:n).should == Class.instance_method(:new).bind(c)
+    c.method(:new).should == Class.instance_method(:new).bind(c)
+  end
 end

@@ -1738,6 +1738,27 @@ mnew_unbound(VALUE klass, ID id, VALUE mclass, int scope)
     return mnew_from_me(me, klass, iclass, Qundef, id, mclass, scope);
 }
 
+static const rb_method_entry_t*
+zsuper_resolve(const rb_method_entry_t *me)
+{
+    const rb_method_entry_t *super_me;
+    while (me->def->type == VM_METHOD_TYPE_ZSUPER) {
+        VALUE defined_class = me->defined_class ? me->defined_class : me->owner;
+        VALUE super_class = RCLASS_SUPER(RCLASS_ORIGIN(defined_class));
+        if (!super_class) {
+            break;
+        }
+        ID id = me->def->original_id;
+        VALUE iclass;
+        super_me = (rb_method_entry_t *)rb_callable_method_entry_with_refinements(super_class, id, &iclass);
+        if (!super_me) {
+            break;
+        }
+        me = super_me;
+    }
+    return me;
+}
+
 static inline VALUE
 method_entry_defined_class(const rb_method_entry_t *me)
 {
@@ -1798,10 +1819,13 @@ method_eq(VALUE method, VALUE other)
     m1 = (struct METHOD *)DATA_PTR(method);
     m2 = (struct METHOD *)DATA_PTR(other);
 
-    klass1 = method_entry_defined_class(m1->me);
-    klass2 = method_entry_defined_class(m2->me);
+    const rb_method_entry_t *m1_me = zsuper_resolve(m1->me);
+    const rb_method_entry_t *m2_me = zsuper_resolve(m2->me);
 
-    if (!rb_method_entry_eq(m1->me, m2->me) ||
+    klass1 = method_entry_defined_class(m1_me);
+    klass2 = method_entry_defined_class(m2_me);
+
+    if (!rb_method_entry_eq(m1_me, m2_me) ||
         klass1 != klass2 ||
         m1->klass != m2->klass ||
         m1->recv != m2->recv) {
@@ -2945,22 +2969,12 @@ rb_method_entry_location(const rb_method_entry_t *me)
     return method_def_location(me->def);
 }
 
-static VALUE method_super_method(VALUE method);
-
 static const rb_method_definition_t *
 zsuper_ref_method_def(VALUE method)
 {
-    const rb_method_definition_t *def = rb_method_def(method);
-    VALUE super_method;
-    while (def->type == VM_METHOD_TYPE_ZSUPER) {
-        super_method = method_super_method(method);
-        if (NIL_P(super_method)) {
-            break;
-        }
-        method = super_method;
-        def = rb_method_def(method);
-    }
-    return def;
+    const struct METHOD *data;
+    TypedData_Get_Struct(method, struct METHOD, &method_data_type, data);
+    return zsuper_resolve(data->me)->def;
 }
 
 /*
@@ -3124,25 +3138,8 @@ method_inspect(VALUE method)
     if (data->me->def->type == VM_METHOD_TYPE_ALIAS) {
         defined_class = data->me->def->body.alias.original_me->owner;
     }
-    else if (data->me->def->type == VM_METHOD_TYPE_ZSUPER) {
-        const rb_method_definition_t *zsuper_ref_def = data->me->def;
-        struct METHOD *zsuper_ref_data;
-        VALUE super_method;
-
-        do {
-            super_method = method_super_method(method);
-            if (NIL_P(super_method)) {
-                break;
-            }
-            method = super_method;
-            zsuper_ref_def = rb_method_def(method);
-        } while (zsuper_ref_def->type == VM_METHOD_TYPE_ZSUPER);
-
-        TypedData_Get_Struct(method, struct METHOD, &method_data_type, zsuper_ref_data);
-        defined_class = method_entry_defined_class(zsuper_ref_data->me);
-    }
     else {
-        defined_class = method_entry_defined_class(data->me);
+        defined_class = method_entry_defined_class(zsuper_resolve(data->me));
     }
 
     if (RB_TYPE_P(defined_class, T_ICLASS)) {
