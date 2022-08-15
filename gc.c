@@ -15319,12 +15319,6 @@ rb_mmtk_scan_object_ruby_style(void *object)
     gc_mark_children(objspace, obj);
 }
 
-static void
-rb_mmtk_obj_free(void *object) {
-    printf("Called back from Finalization.  Freeing %p\n", object);
-    obj_free(&rb_objspace, (VALUE)object);
-}
-
 RubyUpcalls ruby_upcalls = {
     rb_mmtk_init_gc_worker_thread,
     rb_mmtk_get_gc_thread_tls,
@@ -15338,7 +15332,6 @@ RubyUpcalls ruby_upcalls = {
     rb_mmtk_scan_thread_roots,
     rb_mmtk_scan_thread_root,
     rb_mmtk_scan_object_ruby_style,
-    rb_mmtk_obj_free,
 };
 
 // Use up to 80% of memory for the heap
