@@ -1241,6 +1241,24 @@ class TestMethod < Test::Unit::TestCase
     assert_raise_with_message(NoMethodError, /super: no superclass method `foo'/) { unbound.bind_call(obj) }
   end
 
+  # Bug #18751
+  def method_equality_visbility_alias
+    c = Class.new do
+      class << self
+        alias_method :n, :new
+        private :new
+      end
+    end
+
+    assert_equal c.method(:n), c.method(:new)
+
+    assert_not_equal c.method(:n), Class.method(:new)
+    assert_equal c.method(:n) == Class.instance_method(:new).bind(c)
+
+    assert_not_equal c.method(:new), Class.method(:new)
+    assert_equal c.method(:new), Class.instance_method(:new).bind(c)
+  end
+
   def rest_parameter(*rest)
     rest
   end
