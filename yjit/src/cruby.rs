@@ -112,6 +112,7 @@ pub use autogened::*;
 #[cfg_attr(test, allow(unused))] // We don't link against C code when testing
 extern "C" {
     pub fn rb_vm_splat_array(flag: VALUE, ary: VALUE) -> VALUE;
+    pub fn rb_vm_concat_array(ary1: VALUE, ary2st: VALUE) -> VALUE;
     pub fn rb_vm_defined(
         ec: EcPtr,
         reg_cfp: CfpPtr,

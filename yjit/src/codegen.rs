@@ -1256,6 +1256,30 @@ fn gen_splatarray(
     KeepCompiling
 }
 
+// concat two arrays
+fn gen_concatarray(
+    jit: &mut JITState,
+    ctx: &mut Context,
+    asm: &mut Assembler,
+    _ocb: &mut OutlinedCb,
+) -> CodegenStatus {
+    // Save the PC and SP because the callee may allocate
+    // Note that this modifies REG_SP, which is why we do it first
+    jit_prepare_routine_call(jit, ctx, asm);
+
+    // Get the operands from the stack
+    let ary2st_opnd = ctx.stack_pop(1);
+    let ary1_opnd = ctx.stack_pop(1);
+
+    // Call rb_vm_concat_array(ary1, ary2st)
+    let ary = asm.ccall(rb_vm_concat_array as *const u8, vec![ary1_opnd, ary2st_opnd]);
+
+    let stack_ret = ctx.stack_push(Type::Array);
+    asm.mov(stack_ret, ary);
+
+    KeepCompiling
+}
+
 // new range initialized from top 2 values
 fn gen_newrange(
     jit: &mut JITState,
@@ -5862,6 +5886,7 @@ fn get_gen_fn(opcode: VALUE) -> Option<InsnGenFn> {
         YARVINSN_opt_str_freeze => Some(gen_opt_str_freeze),
         YARVINSN_opt_str_uminus => Some(gen_opt_str_uminus),
         YARVINSN_splatarray => Some(gen_splatarray),
+        YARVINSN_concatarray => Some(gen_concatarray),
         YARVINSN_newrange => Some(gen_newrange),
         YARVINSN_putstring => Some(gen_putstring),
         YARVINSN_expandarray => Some(gen_expandarray),
