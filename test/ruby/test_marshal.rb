@@ -33,7 +33,7 @@ class TestMarshal < Test::Unit::TestCase
   end
 
   def test_marshal
-    a = [1, 2, 3, [4,5,"foo"], {1=>"bar"}, 2.5, fact(30)]
+    a = [1, 2, 3, 2**32, 2**64, [4,5,"foo"], {1=>"bar"}, 2.5, fact(30)]
     assert_equal a, Marshal.load(Marshal.dump(a))
 
     [[1,2,3,4], [81, 2, 118, 3146]].each { |w,x,y,z|
@@ -45,6 +45,26 @@ class TestMarshal < Test::Unit::TestCase
     [1.0, 10.0, 100.0, 110.0].each {|x|
       assert_equal(x, Marshal.load(Marshal.dump(x)), bug3659)
     }
+  end
+
+  def test_marshal_integers
+    a = []
+    [-2, -1, 0, 1, 2].each do |i|
+      0.upto(65).map do |exp|
+        a << 2**exp + i
+      end
+    end
+    assert_equal a, Marshal.load(Marshal.dump(a))
+
+    a = [2**32, []]*2
+    assert_equal a, Marshal.load(Marshal.dump(a))
+
+    a = [2**32, 2**32, []]*2
+    assert_equal a, Marshal.load(Marshal.dump(a))
+  end
+
+  def test_marshal_small_bignum_backref
+    assert_equal [2**32, 2**32], Marshal.load("\x04\b[\al+\b\x00\x00\x00\x00\x01\x00@\x06")
   end
 
   StrClone = String.clone

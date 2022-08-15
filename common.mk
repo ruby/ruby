@@ -8715,12 +8715,15 @@ main.$(OBJEXT): {$(VPATH)}vm_debug.h
 marshal.$(OBJEXT): $(hdrdir)/ruby/ruby.h
 marshal.$(OBJEXT): $(top_srcdir)/internal/array.h
 marshal.$(OBJEXT): $(top_srcdir)/internal/bignum.h
+marshal.$(OBJEXT): $(top_srcdir)/internal/bits.h
 marshal.$(OBJEXT): $(top_srcdir)/internal/class.h
 marshal.$(OBJEXT): $(top_srcdir)/internal/compilers.h
 marshal.$(OBJEXT): $(top_srcdir)/internal/encoding.h
 marshal.$(OBJEXT): $(top_srcdir)/internal/error.h
+marshal.$(OBJEXT): $(top_srcdir)/internal/fixnum.h
 marshal.$(OBJEXT): $(top_srcdir)/internal/gc.h
 marshal.$(OBJEXT): $(top_srcdir)/internal/hash.h
+marshal.$(OBJEXT): $(top_srcdir)/internal/numeric.h
 marshal.$(OBJEXT): $(top_srcdir)/internal/object.h
 marshal.$(OBJEXT): $(top_srcdir)/internal/serial.h
 marshal.$(OBJEXT): $(top_srcdir)/internal/static_assert.h
