@@ -4505,6 +4505,9 @@ date_s__parse_internal(int argc, VALUE *argv, VALUE klass)
  * <b>Note</b>:
  * This method recognizes many forms in +string+,
  * but it is not a validator.
+ * For formats, see
+ * {"Specialized Format Strings" in Formats for Dates and Times}[https://docs.ruby-lang.org/en/master/strftime_formatting_rdoc.html#label-Specialized+Format+Strings]
+ *
  * If +string+ does not specify a valid date,
  * the result is unpredictable;
  * consider using Date._strptime instead.
@@ -4537,6 +4540,8 @@ date_s__parse(int argc, VALUE *argv, VALUE klass)
  * <b>Note</b>:
  * This method recognizes many forms in +string+,
  * but it is not a validator.
+ * For formats, see
+ * {"Specialized Format Strings" in Formats for Dates and Times}[https://docs.ruby-lang.org/en/master/strftime_formatting_rdoc.html#label-Specialized+Format+Strings]
  * If +string+ does not specify a valid date,
  * the result is unpredictable;
  * consider using Date._strptime instead.
@@ -4671,7 +4676,7 @@ date_s_iso8601(int argc, VALUE *argv, VALUE klass)
  *   Date._rfc3339(string, limit: 128) -> hash
  *
  * Returns a hash of values parsed from +string+, which should be a valid
- * {RFC 3339 format}[https://datatracker.ietf.org/doc/html/rfc3339]:
+ * {RFC 3339 format}[https://docs.ruby-lang.org/en/master/strftime_formatting_rdoc.html#label-RFC+3339+Format]:
  *
  *   d = Date.new(2001, 2, 3)
  *   s = d.rfc3339     # => "2001-02-03T00:00:00+00:00"
@@ -4699,7 +4704,7 @@ date_s__rfc3339(int argc, VALUE *argv, VALUE klass)
  *
  * Returns a new \Date object with values parsed from +string+,
  * which should be a valid
- * {RFC 3339 format}[https://datatracker.ietf.org/doc/html/rfc3339]:
+ * {RFC 3339 format}[https://docs.ruby-lang.org/en/master/strftime_formatting_rdoc.html#label-RFC+3339+Format]:
  *
  *   d = Date.new(2001, 2, 3)
  *   s = d.rfc3339   # => "2001-02-03T00:00:00+00:00"
@@ -4811,7 +4816,7 @@ date_s_xmlschema(int argc, VALUE *argv, VALUE klass)
  *   Date._rfc2822(string, limit: 128) -> hash
  *
  * Returns a hash of values parsed from +string+, which should be a valid
- * {RFC 2822 date format}[https://datatracker.ietf.org/doc/html/rfc2822]:
+ * {RFC 2822 date format}[https://docs.ruby-lang.org/en/master/strftime_formatting_rdoc.html#label-RFC+2822+Format]:
  *
  *   d = Date.new(2001, 2, 3)
  *   s = d.rfc2822 # => "Sat, 3 Feb 2001 00:00:00 +0000"
@@ -4841,7 +4846,7 @@ date_s__rfc2822(int argc, VALUE *argv, VALUE klass)
  *
  * Returns a new \Date object with values parsed from +string+,
  * which should be a valid
- * {RFC 2822 date format}[https://datatracker.ietf.org/doc/html/rfc2822]:
+ * {RFC 2822 date format}[https://docs.ruby-lang.org/en/master/strftime_formatting_rdoc.html#label-RFC+2822+Format]:
  *
  *   d = Date.new(2001, 2, 3)
  *   s = d.rfc2822   # => "Sat, 3 Feb 2001 00:00:00 +0000"
@@ -4885,7 +4890,7 @@ date_s_rfc2822(int argc, VALUE *argv, VALUE klass)
  *   Date._httpdate(string, limit: 128) -> hash
  *
  * Returns a hash of values parsed from +string+, which should be a valid
- * HTTP date format:
+ * {HTTP date format}[https://docs.ruby-lang.org/en/master/strftime_formatting_rdoc.html#label-HTTP+Format]:
  *
  *   d = Date.new(2001, 2, 3)
  *   s = d.httpdate # => "Sat, 03 Feb 2001 00:00:00 GMT"
@@ -4911,7 +4916,7 @@ date_s__httpdate(int argc, VALUE *argv, VALUE klass)
  *
  * Returns a new \Date object with values parsed from +string+,
  * which should be a valid
- * {RFC 2616 date format}[https://datatracker.ietf.org/doc/html/rfc2616]:
+ * {HTTP date format}[https://docs.ruby-lang.org/en/master/strftime_formatting_rdoc.html#label-HTTP+Format]:
  *
  *   d = Date.new(2001, 2, 3)
      s = d.httpdate   # => "Sat, 03 Feb 2001 00:00:00 GMT"
@@ -4953,7 +4958,7 @@ date_s_httpdate(int argc, VALUE *argv, VALUE klass)
  *   Date._jisx0301(string, limit: 128) -> hash
  *
  * Returns a hash of values parsed from +string+, which should be a valid
- * JIS X 0301 date format:
+ * {JIS X 0301 date format}[https://docs.ruby-lang.org/en/master/strftime_formatting_rdoc.html#label-JIS+X+0301+Format]:
  *
  *   d = Date.new(2001, 2, 3)
  *   s = d.jisx0301    # => "H13.02.03"
@@ -4979,7 +4984,7 @@ date_s__jisx0301(int argc, VALUE *argv, VALUE klass)
  *   Date.jisx0301(string = '-4712-01-01', start = Date::ITALY, limit: 128) -> date
  *
  * Returns a new \Date object with values parsed from +string+,
- * which should be a valid JIS X 0301 format:
+ * which should be a valid {JIS X 0301 format}[https://docs.ruby-lang.org/en/master/strftime_formatting_rdoc.html#label-JIS+X+0301+Format]:
  *
  *   d = Date.new(2001, 2, 3)
  *   s = d.jisx0301   # => "H13.02.03"
@@ -9383,151 +9388,65 @@ Init_date_core(void)
     negative_inf = -INFINITY;
 
     /*
-     * date and datetime class - Tadayoshi Funaba 1998-2011
+     * \Class \Date provides methods for storing and manipulating
+     * calendar dates.
      *
-     * 'date' provides two classes: Date and DateTime.
+     * Consider using
+     * {class Time}[https://docs.ruby-lang.org/en/master/Time.html]
+     * instead of class \Date if:
      *
-     * == Terms and Definitions
+     * - You need both dates and times; \Date handles only dates.
+     * - You need only Gregorian dates (and not Julian dates);
+     *   see {Julian and Gregorian Calendars}[rdoc-ref:calendars.rdoc].
      *
-     * Some terms and definitions are based on ISO 8601 and JIS X 0301.
+     * A \Date object, once created, is immutable, and cannot be modified.
      *
-     * === Calendar Date
+     * == Creating a \Date
      *
-     * The calendar date is a particular day of a calendar year,
-     * identified by its ordinal number within a calendar month within
-     * that year.
+     * You can create a date for the current date, using Date.today:
      *
-     * In those classes, this is so-called "civil".
+     *   Date.today # => #<Date: 1999-12-31>
      *
-     * === Ordinal Date
+     * You can create a specific date from various combinations of arguments:
      *
-     * The ordinal date is a particular day of a calendar year identified
-     * by its ordinal number within the year.
+     * - Date.new takes integer year, month, and day-of-month:
      *
-     * In those classes, this is so-called "ordinal".
+     *     Date.new(1999, 12, 31) # => #<Date: 1999-12-31>
      *
-     * === Week Date
+     * - Date.ordinal takes integer year and day-of-year:
      *
-     * The week date is a date identified by calendar week and day numbers.
+     *     Date.ordinal(1999, 365) # => #<Date: 1999-12-31>
      *
-     * The calendar week is a seven day period within a calendar year,
-     * starting on a Monday and identified by its ordinal number within
-     * the year; the first calendar week of the year is the one that
-     * includes the first Thursday of that year. In the Gregorian
-     * calendar, this is equivalent to the week which includes January 4.
+     * - Date.jd takes integer Julian day:
      *
-     * In those classes, this is so-called "commercial".
+     *     Date.jd(2451544) # => #<Date: 1999-12-31>
      *
-     * === Julian Day Number
+     * - Date.commercial takes integer commercial data (year, week, day-of-week):
      *
-     * The Julian day number is in elapsed days since noon (Greenwich Mean
-     * Time) on January 1, 4713 BCE (in the Julian calendar).
+     *     Date.commercial(1999, 52, 5) # => #<Date: 1999-12-31>
      *
-     * In this document, the astronomical Julian day number is the same as
-     * the original Julian day number. And the chronological Julian day
-     * number is a variation of the Julian day number. Its days begin at
-     * midnight on local time.
+     * - Date.parse takes a string, which it parses heuristically:
      *
-     * In this document, when the term "Julian day number" simply appears,
-     * it just refers to "chronological Julian day number", not the
-     * original.
+     *     Date.parse('1999-12-31')    # => #<Date: 1999-12-31>
+     *     Date.parse('31-12-1999')    # => #<Date: 1999-12-31>
+     *     Date.parse('1999-365')      # => #<Date: 1999-12-31>
+     *     Date.parse('1999-W52-5')    # => #<Date: 1999-12-31>
      *
-     * In those classes, those are so-called "ajd" and "jd".
+     * - Date.strptime takes a date string and a format string,
+     *   then parses the date string according to the format string:
      *
-     * === Modified Julian Day Number
+     *     Date.strptime('1999-12-31', '%Y-%m-%d')  # => #<Date: 1999-12-31>
+     *     Date.strptime('31-12-1999', '%d-%m-%Y')  # => #<Date: 1999-12-31>
+     *     Date.strptime('1999-365', '%Y-%j')       # => #<Date: 1999-12-31>
+     *     Date.strptime('1999-W52-5', '%G-W%V-%u') # => #<Date: 1999-12-31>
+     *     Date.strptime('1999 52 5', '%Y %U %w')   # => #<Date: 1999-12-31>
+     *     Date.strptime('1999 52 5', '%Y %W %u')   # => #<Date: 1999-12-31>
+     *     Date.strptime('fri31dec99', '%a%d%b%y')  # => #<Date: 1999-12-31>
      *
-     * The modified Julian day number is in elapsed days since midnight
-     * (Coordinated Universal Time) on November 17, 1858 CE (in the
-     * Gregorian calendar).
+     * See also the specialized methods in
+     * {"Specialized Format Strings" in Formats for Dates and Times}[https://docs.ruby-lang.org/en/master/strftime_formatting_rdoc.html#label-Specialized+Format+Strings]
      *
-     * In this document, the astronomical modified Julian day number is
-     * the same as the original modified Julian day number. And the
-     * chronological modified Julian day number is a variation of the
-     * modified Julian day number. Its days begin at midnight on local
-     * time.
-     *
-     * In this document, when the term "modified Julian day number" simply
-     * appears, it just refers to "chronological modified Julian day
-     * number", not the original.
-     *
-     * In those classes, those are so-called "amjd" and "mjd".
-     *
-     * == Date
-     *
-     * A subclass of Object that includes the Comparable module and
-     * easily handles date.
-     *
-     * A Date object is created with Date::new, Date::jd, Date::ordinal,
-     * Date::commercial, Date::parse, Date::strptime, Date::today,
-     * Time#to_date, etc.
-     *
-     *     require 'date'
-     *
-     *     Date.new(2001,2,3)
-     *	    #=> #<Date: 2001-02-03 ...>
-     *     Date.jd(2451944)
-     *	    #=> #<Date: 2001-02-03 ...>
-     *     Date.ordinal(2001,34)
-     *	    #=> #<Date: 2001-02-03 ...>
-     *     Date.commercial(2001,5,6)
-     *	    #=> #<Date: 2001-02-03 ...>
-     *     Date.parse('2001-02-03')
-     *	    #=> #<Date: 2001-02-03 ...>
-     *     Date.strptime('03-02-2001', '%d-%m-%Y')
-     *	    #=> #<Date: 2001-02-03 ...>
-     *     Time.new(2001,2,3).to_date
-     *	    #=> #<Date: 2001-02-03 ...>
-     *
-     * All date objects are immutable; hence cannot modify themselves.
-     *
-     * The concept of a date object can be represented as a tuple
-     * of the day count, the offset and the day of calendar reform.
-     *
-     * The day count denotes the absolute position of a temporal
-     * dimension. The offset is relative adjustment, which determines
-     * decoded local time with the day count. The day of calendar
-     * reform denotes the start day of the new style. The old style
-     * of the West is the Julian calendar which was adopted by
-     * Caesar. The new style is the Gregorian calendar, which is the
-     * current civil calendar of many countries.
-     *
-     * The day count is virtually the astronomical Julian day number.
-     * The offset in this class is usually zero, and cannot be
-     * specified directly.
-     *
-     * A Date object can be created with an optional argument,
-     * the day of calendar reform as a Julian day number, which
-     * should be 2298874 to 2426355 or negative/positive infinity.
-     * The default value is +Date::ITALY+ (2299161=1582-10-15).
-     * See also sample/cal.rb.
-     *
-     *     $ ruby sample/cal.rb -c it 10 1582
-     *         October 1582
-     *      S  M Tu  W Th  F  S
-     *         1  2  3  4 15 16
-     *     17 18 19 20 21 22 23
-     *     24 25 26 27 28 29 30
-     *     31
-     *
-     *     $ ruby sample/cal.rb -c gb  9 1752
-     *        September 1752
-     *      S  M Tu  W Th  F  S
-     *            1  2 14 15 16
-     *     17 18 19 20 21 22 23
-     *     24 25 26 27 28 29 30
-     *
-     * A Date object has various methods. See each reference.
-     *
-     *     d = Date.parse('3rd Feb 2001')
-     *					#=> #<Date: 2001-02-03 ...>
-     *     d.year			#=> 2001
-     *     d.mon			#=> 2
-     *     d.mday			#=> 3
-     *     d.wday			#=> 6
-     *     d += 1			#=> #<Date: 2001-02-04 ...>
-     *     d.strftime('%a %d %b %Y')	#=> "Sun 04 Feb 2001"
-     *
-     * === Argument +limit+
+     * == Argument +limit+
      *
      * Certain singleton methods in \Date that parse string arguments
      * also take optional keyword argument +limit+,
@@ -9541,7 +9460,6 @@ Init_date_core(void)
      * - Other non-numeric: raises TypeError.
      *
      */
-
     cDate = rb_define_class("Date", rb_cObject);
 
     /* Exception for invalid date/time */
