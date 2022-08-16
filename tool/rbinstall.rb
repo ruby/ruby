@@ -933,6 +933,7 @@ def load_gemspec(file, base = nil)
   end
   spec.loaded_from = base ? File.join(base, File.basename(file)) : file
   spec.files.reject! {|n| n.end_with?(".gemspec") or n.start_with?(".git")}
+  spec.date = RUBY_RELEASE_DATE
 
   spec
 end
