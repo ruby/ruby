@@ -74,6 +74,10 @@ class CGIUtilTest < Test::Unit::TestCase
     assert_equal('%26%3C%3E%22%20%E3%82%86%E3%82%93%E3%82%86%E3%82%93'.ascii_only?, CGI.escapeURIComponent(@str1).ascii_only?) if defined?(::Encoding)
   end
 
+  def test_cgi_escape_uri_component
+    assert_equal('%26%3C%3E%22%20%E3%82%86%E3%82%93%E3%82%86%E3%82%93', CGI.escape_uri_component(@str1))
+  end
+
   def test_cgi_escapeURIComponent_with_unreserved_characters
     assert_equal("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~",
                  CGI.escapeURIComponent("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~"),
@@ -99,6 +103,11 @@ class CGIUtilTest < Test::Unit::TestCase
 
     assert_equal(@str1.encoding, str.encoding)
     assert_equal("\u{30E1 30E2 30EA 691C 7D22}", CGI.unescapeURIComponent("\u{30E1 30E2 30EA}%E6%A4%9C%E7%B4%A2"))
+  end
+
+  def test_cgi_unescape_uri_component
+    str = CGI.unescape_uri_component('%26%3C%3E%22%20%E3%82%86%E3%82%93%E3%82%86%E3%82%93')
+    assert_equal(@str1, str)
   end
 
   def test_cgi_unescapeURIComponent_preserve_encoding
