@@ -6134,7 +6134,7 @@ impl CodegenGlobals {
             //self.yjit_reg_method(rb_cString, "to_s", jit_rb_str_to_s);
             //self.yjit_reg_method(rb_cString, "to_str", jit_rb_str_to_s);
             self.yjit_reg_method(rb_cString, "bytesize", jit_rb_str_bytesize);
-            self.yjit_reg_method(rb_cString, "<<", jit_rb_str_concat);
+            //self.yjit_reg_method(rb_cString, "<<", jit_rb_str_concat);
             //self.yjit_reg_method(rb_cString, "+@", jit_rb_str_uplus);
 
             // Thread.current
