@@ -1445,7 +1445,7 @@ fn gen_expandarray(
     // Only handle the case where the number of values in the array is greater
     // than or equal to the number of values requested.
     asm.cmp(array_len_opnd, num.into());
-    asm.jo(counted_exit!(ocb, side_exit, expandarray_rhs_too_small).into());
+    asm.jl(counted_exit!(ocb, side_exit, expandarray_rhs_too_small).into());
 
     // Load the address of the embedded array into REG1.
     // (struct RArray *)(obj)->as.ary

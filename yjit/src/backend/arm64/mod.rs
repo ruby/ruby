@@ -826,6 +826,9 @@ impl Assembler
                 Op::Jne => {
                     emit_conditional_jump::<{Condition::NE}>(cb, insn.target.unwrap());
                 },
+                Op::Jl => {
+                    emit_conditional_jump::<{Condition::LT}>(cb, insn.target.unwrap());
+                },
                 Op::Jbe => {
                     emit_conditional_jump::<{Condition::LS}>(cb, insn.target.unwrap());
                 },

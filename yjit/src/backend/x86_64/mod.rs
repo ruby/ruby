@@ -465,6 +465,14 @@ impl Assembler
                     }
                 }
 
+                Op::Jl => {
+                    match insn.target.unwrap() {
+                        Target::CodePtr(code_ptr) => jl_ptr(cb, code_ptr),
+                        Target::Label(label_idx) => jl_label(cb, label_idx),
+                        _ => unreachable!()
+                    }
+                },
+
                 Op::Jbe => {
                     match insn.target.unwrap() {
                         Target::CodePtr(code_ptr) => jbe_ptr(cb, code_ptr),
