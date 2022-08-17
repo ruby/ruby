@@ -440,39 +440,46 @@ impl Assembler
         /// Emit the required instructions to load the given value into the
         /// given register. Our goal here is to use as few instructions as
         /// possible to get this value into the register.
-        fn emit_load_value(cb: &mut CodeBlock, rd: A64Opnd, value: u64) {
+        fn emit_load_value(cb: &mut CodeBlock, rd: A64Opnd, value: u64) -> i32 {
             let mut current = value;
 
             if current <= 0xffff {
                 // If the value fits into a single movz
                 // instruction, then we'll use that.
                 movz(cb, rd, A64Opnd::new_uimm(current), 0);
+                return 1;
             } else if BitmaskImmediate::try_from(current).is_ok() {
                 // Otherwise, if the immediate can be encoded
                 // with the special bitmask immediate encoding,
                 // we'll use that.
                 mov(cb, rd, A64Opnd::new_uimm(current));
+                return 1;
             } else {
                 // Finally we'll fall back to encoding the value
                 // using movz for the first 16 bits and movk for
                 // each subsequent set of 16 bits as long we
                 // they are necessary.
                 movz(cb, rd, A64Opnd::new_uimm(current & 0xffff), 0);
+                let mut num_insns = 1;
 
                 // (We're sure this is necessary since we
                 // checked if it only fit into movz above).
                 current >>= 16;
                 movk(cb, rd, A64Opnd::new_uimm(current & 0xffff), 16);
+                num_insns += 1;
 
                 if current > 0xffff {
                     current >>= 16;
                     movk(cb, rd, A64Opnd::new_uimm(current & 0xffff), 32);
+                    num_insns += 1;
                 }
 
                 if current > 0xffff {
                     current >>= 16;
                     movk(cb, rd, A64Opnd::new_uimm(current & 0xffff), 48);
+                    num_insns += 1;
                 }
+                return num_insns;
             }
         }
 
@@ -495,8 +502,11 @@ impl Assembler
                     // next instruction that perform the direct jump.
 
                     b(cb, A64Opnd::new_imm(2i64 + emit_load_size(dst_addr) as i64));
-                    emit_load_value(cb, Assembler::SCRATCH0, dst_addr);
+                    let num_insns = emit_load_value(cb, Assembler::SCRATCH0, dst_addr);
                     br(cb, Assembler::SCRATCH0);
+                    for _ in num_insns..4 {
+                        nop(cb);
+                    }
 
                     /*
                     // If the jump offset fits into the conditional jump as an
@@ -568,6 +578,7 @@ impl Assembler
         let mut gc_offsets: Vec<u32> = Vec::new();
 
         // For each instruction
+        let start_write_pos = cb.get_write_pos();
         for insn in &self.insns {
             match insn {
                 Insn { op: Op::Comment, text, .. } => {
@@ -800,11 +811,10 @@ impl Assembler
                             // branch instruction. Otherwise, we'll move the
                             // destination into a register and use the branch
                             // register instruction.
-                            if b_offset_fits_bits(offset) {
-                                b(cb, A64Opnd::new_imm(offset));
-                            } else {
-                                emit_load_value(cb, Self::SCRATCH0, dst_addr as u64);
-                                br(cb, Self::SCRATCH0);
+                            let num_insns = emit_load_value(cb, Self::SCRATCH0, dst_addr as u64);
+                            br(cb, Self::SCRATCH0);
+                            for _ in num_insns..4 {
+                                nop(cb);
                             }
                         },
                         Target::Label(label_idx) => {
@@ -866,6 +876,12 @@ impl Assembler
                     csel(cb, (*out).into(), opnds[0].into(), opnds[1].into(), Condition::GE);
                 }
                 Insn { op: Op::LiveReg, .. } => (), // just a reg alloc signal, no code
+                Insn { op: Op::PadEntryExit, .. } => {
+                    let jmp_len = 5 * 4; // Op::Jmp may emit 5 instructions
+                    while (cb.get_write_pos() - start_write_pos) < jmp_len {
+                        nop(cb);
+                    }
+                }
             };
         }
 

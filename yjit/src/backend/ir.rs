@@ -168,6 +168,9 @@ pub enum Op
 
     /// Take a specific register. Signal the register allocator to not use it.
     LiveReg,
+
+    /// Pad nop instructions to accomodate Op::Jmp in case the block is invalidated.
+    PadEntryExit,
 }
 
 // Memory operand base
@@ -1137,5 +1140,9 @@ impl Assembler {
         let out = self.next_opnd_out(&[left, right]);
         self.push_insn(Insn { op: Op::Xor, opnds: vec![left, right], out, text: None, target: None, pos_marker: None });
         out
+    }
+
+    pub fn pad_entry_exit(&mut self) {
+        self.push_insn(Insn { op: Op::PadEntryExit, opnds: vec![], out: Opnd::None, text: None, target: None, pos_marker: None });
     }
 }

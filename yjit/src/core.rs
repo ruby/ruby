@@ -1420,9 +1420,6 @@ fn gen_block_series_body(
             .incoming
             .push(last_branchref.clone());
 
-        // This block should immediately follow the last branch
-        assert!(new_blockref.borrow().start_addr == last_branch.end_addr);
-
         // Track the block
         batch.push(new_blockref.clone());
 
@@ -2078,8 +2075,10 @@ pub fn invalidate_block_version(blockref: &BlockRef) {
             asm.compile(&mut cb);
 
             assert!(
-                cb.get_write_ptr() < block_end,
-                "invalidation wrote past end of block"
+                cb.get_write_ptr() <= block_end,
+                "invalidation wrote past end of block (code_size: {:?}, new_size: {})",
+                block.code_size(),
+                cb.get_write_ptr().into_i64() - block_start.into_i64(),
             );
             cb.set_write_ptr(cur_pos);
         }
@@ -2133,17 +2132,14 @@ pub fn invalidate_block_version(blockref: &BlockRef) {
         }
 
         // Rewrite the branch with the new jump target address
+        let branch_end_addr = branch.end_addr;
         regenerate_branch(cb, &mut branch);
 
         if target_next && branch.end_addr > block.end_addr {
-            dbg!(
-                branch.block.borrow().blockid.idx,
-                block.blockid.idx,
-                branch.end_addr,
-                block.end_addr,
-                block.code_size()
-            );
-            panic!("yjit invalidate rewrote branch past end of invalidated block");
+            panic!("yjit invalidate rewrote branch past end of invalidated block: {:?} (code_size: {})", branch, block.code_size());
+        }
+        if !target_next && branch.end_addr > branch_end_addr {
+            panic!("invalidated branch grew in size: {:?}", branch);
         }
     }
 
