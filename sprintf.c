@@ -1153,6 +1153,10 @@ ruby_vsprintf0(VALUE result, char *p, const char *fmt, va_list ap)
     rb_printf_buffer_extra buffer;
 #define f buffer.base
     VALUE klass = RBASIC(result)->klass;
+    int coderange = ENC_CODERANGE(result);
+    long scanned = 0;
+
+    if (coderange != ENC_CODERANGE_UNKNOWN) scanned = p - RSTRING_PTR(result);
 
     f._flags = __SWR | __SSTR;
     f._bf._size = 0;
@@ -1165,9 +1169,13 @@ ruby_vsprintf0(VALUE result, char *p, const char *fmt, va_list ap)
     buffer.value = 0;
     BSD_vfprintf(&f, fmt, ap);
     RBASIC_SET_CLASS_RAW(result, klass);
-    // vfprintf mutates the string without updating coderange
-    ENC_CODERANGE_CLEAR(result);
-    rb_str_resize(result, (char *)f._p - RSTRING_PTR(result));
+    p = RSTRING_PTR(result);
+    long blen = (char *)f._p - p;
+    if (scanned < blen) {
+        rb_str_coderange_scan_restartable(p + scanned, p + blen, rb_enc_get(result), &coderange);
+        ENC_CODERANGE_SET(result, coderange);
+    }
+    rb_str_resize(result, blen);
 #undef f
 }
 
