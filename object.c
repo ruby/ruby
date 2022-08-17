@@ -39,6 +39,7 @@
 #include "ruby/util.h"
 #include "ruby/assert.h"
 #include "builtin.h"
+#include "shape.h"
 
 /*!
  * \addtogroup object
@@ -271,22 +272,59 @@ rb_obj_copy_ivar(VALUE dest, VALUE obj)
     VALUE *src_buf = ROBJECT_IVPTR(obj);
     uint32_t dest_len = ROBJECT_NUMIV(dest);
     uint32_t src_len = ROBJECT_NUMIV(obj);
-    uint32_t len = dest_len < src_len ? dest_len : src_len;
+    uint32_t max_len = dest_len < src_len ? src_len : dest_len;
 
-    MEMCPY(dest_buf, src_buf, VALUE, len);
+    rb_ensure_iv_list_size(dest, dest_len, max_len);
+
+    dest_len = ROBJECT_NUMIV(dest);
+    uint32_t min_len = dest_len > src_len ? src_len : dest_len;
+
+    if (RBASIC(obj)->flags & ROBJECT_EMBED) {
+        src_buf = ROBJECT(obj)->as.ary;
+
+        // embedded -> embedded
+        if (RBASIC(dest)->flags & ROBJECT_EMBED) {
+            dest_buf = ROBJECT(dest)->as.ary;
+        }
+        // embedded -> extended
+        else {
+            dest_buf = ROBJECT(dest)->as.heap.ivptr;
+        }
+    }
+    // extended -> extended
+    else {
+        RUBY_ASSERT(!(RBASIC(dest)->flags & ROBJECT_EMBED));
+        dest_buf = ROBJECT(dest)->as.heap.ivptr;
+        src_buf = ROBJECT(obj)->as.heap.ivptr;
+    }
+
+    MEMCPY(dest_buf, src_buf, VALUE, min_len);
 }
 
 static void
-init_copy(VALUE dest, VALUE obj)
+init_copy(VALUE dest, VALUE obj, bool preserve_frozen)
 {
     if (OBJ_FROZEN(dest)) {
         rb_raise(rb_eTypeError, "[bug] frozen object (%s) allocated", rb_obj_classname(dest));
     }
     RBASIC(dest)->flags &= ~(T_MASK|FL_EXIVAR);
+    // Copies the shape id from obj to dest
     RBASIC(dest)->flags |= RBASIC(obj)->flags & (T_MASK|FL_EXIVAR);
     rb_copy_wb_protected_attribute(dest, obj);
     rb_copy_generic_ivar(dest, obj);
     rb_gc_copy_finalizer(dest, obj);
+
+    rb_shape_t *shape_to_set = rb_shape_get_shape(obj);
+
+    // If the object is frozen, the "dup"'d object will *not* be frozen,
+    // so we need to copy the frozen shape's parent to the new object.
+    if (!preserve_frozen && RB_OBJ_FROZEN((VALUE)shape_to_set)) {
+        shape_to_set = shape_to_set->parent;
+    }
+
+    // shape ids are different
+    rb_shape_set_shape(dest, shape_to_set);
+
     if (RB_TYPE_P(obj, T_OBJECT)) {
         rb_obj_copy_ivar(dest, obj);
     }
@@ -386,7 +424,7 @@ mutable_obj_clone(VALUE obj, VALUE kwfreeze)
         rb_singleton_class_attached(singleton, clone);
     }
 
-    init_copy(clone, obj);
+    init_copy(clone, obj, true);
 
     switch (kwfreeze) {
       case Qnil:
@@ -486,7 +524,7 @@ rb_obj_dup(VALUE obj)
         return obj;
     }
     dup = rb_obj_alloc(rb_obj_class(obj));
-    init_copy(dup, obj);
+    init_copy(dup, obj, false);
     rb_funcall(dup, id_init_dup, 1, obj);
 
     return dup;

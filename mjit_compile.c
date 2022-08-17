@@ -352,7 +352,7 @@ mjit_compile_body(FILE *f, const rb_iseq_t *iseq, struct compile_status *status)
 
     // Generate merged ivar guards first if needed
     if (!status->compile_info->disable_ivar_cache && status->merge_ivar_guards_p) {
-        fprintf(f, "    if (UNLIKELY(!(RB_TYPE_P(GET_SELF(), T_OBJECT) && (rb_serial_t)%"PRI_SERIALT_PREFIX"u == RCLASS_SERIAL(RBASIC(GET_SELF())->klass) &&", status->ivar_serial);
+        fprintf(f, "    if (UNLIKELY(!(RB_TYPE_P(GET_SELF(), T_OBJECT) && (rb_serial_t)%"PRI_SERIALT_PREFIX"u == rb_shape_get_shape_id(GET_SELF()) &&", status->ivar_serial);
 #if USE_RVARGC
         fprintf(f, "%"PRIuSIZE" < ROBJECT_NUMIV(GET_SELF())", status->max_ivar_index); // index < ROBJECT_NUMIV(obj)
 #else
@@ -467,17 +467,17 @@ init_ivar_compile_status(const struct rb_iseq_constant_body *body, struct compil
         if (insn == BIN(getinstancevariable) || insn == BIN(setinstancevariable)) {
             IVC ic = (IVC)body->iseq_encoded[pos+2];
             IVC ic_copy = &(status->is_entries + ((union iseq_inline_storage_entry *)ic - body->is_entries))->iv_cache;
-            if (ic_copy->entry) { // Only initialized (ic_serial > 0) IVCs are optimized
+            if (vm_ic_attr_index_p(ic_copy)) { // Only initialized (ic_serial > 0) IVCs are optimized
                 num_ivars++;
 
-                if (status->max_ivar_index < ic_copy->entry->index) {
-                    status->max_ivar_index = ic_copy->entry->index;
+                if (status->max_ivar_index < vm_ic_attr_index(ic_copy)) {
+                    status->max_ivar_index = vm_ic_attr_index(ic_copy);
                 }
 
                 if (status->ivar_serial == 0) {
-                    status->ivar_serial = ic_copy->entry->class_serial;
+                    status->ivar_serial = vm_ic_attr_index_source_shape_id(ic_copy);
                 }
-                else if (status->ivar_serial != ic_copy->entry->class_serial) {
+                else if (status->ivar_serial != vm_ic_attr_index_source_shape_id(ic_copy)) {
                     // Multiple classes have used this ISeq. Give up assuming one serial.
                     status->merge_ivar_guards_p = false;
                     return;

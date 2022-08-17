@@ -26,9 +26,9 @@ struct rb_subclass_entry {
 };
 
 struct rb_iv_index_tbl_entry {
-    uint32_t index;
-    rb_serial_t class_serial;
-    VALUE class_value;
+    uint32_t idx;
+    uint16_t source_shape_id;
+    uint16_t dest_shape_id;
 };
 
 struct rb_cvar_class_tbl_entry {
@@ -38,7 +38,6 @@ struct rb_cvar_class_tbl_entry {
 };
 
 struct rb_classext_struct {
-    struct st_table *iv_index_tbl; // ID -> struct rb_iv_index_tbl_entry
     struct st_table *iv_tbl;
 #if SIZEOF_SERIAL_T == SIZEOF_VALUE /* otherwise m_tbl is in struct RClass */
     struct rb_id_table *m_tbl;
@@ -64,6 +63,8 @@ struct rb_classext_struct {
     const VALUE refined_class;
     rb_alloc_func_t allocator;
     const VALUE includer;
+    uint32_t max_iv_count;
+    uint16_t shape_id;
 };
 
 struct RClass {
@@ -102,7 +103,6 @@ typedef struct rb_classext_struct rb_classext_t;
 #define RCLASS_CALLABLE_M_TBL(c) (RCLASS_EXT(c)->callable_m_tbl)
 #define RCLASS_CC_TBL(c) (RCLASS_EXT(c)->cc_tbl)
 #define RCLASS_CVC_TBL(c) (RCLASS_EXT(c)->cvc_tbl)
-#define RCLASS_IV_INDEX_TBL(c) (RCLASS_EXT(c)->iv_index_tbl)
 #define RCLASS_ORIGIN(c) (RCLASS_EXT(c)->origin_)
 #define RCLASS_REFINED_CLASS(c) (RCLASS_EXT(c)->refined_class)
 #if SIZEOF_SERIAL_T == SIZEOF_VALUE
@@ -126,6 +126,11 @@ typedef struct rb_classext_struct rb_classext_t;
 #define RCLASS_CLONED     FL_USER1
 #define RCLASS_SUPERCLASSES_INCLUDE_SELF FL_USER2
 #define RICLASS_ORIGIN_SHARED_MTBL FL_USER3
+
+#ifndef shape_id_t
+typedef uint16_t shape_id_t;
+#define shape_id_t shape_id_t
+#endif
 
 /* class.c */
 void rb_class_subclass_add(VALUE super, VALUE klass);

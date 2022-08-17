@@ -2058,20 +2058,7 @@ cdhash_set_label_i(VALUE key, VALUE val, VALUE ptr)
 static inline VALUE
 get_ivar_ic_value(rb_iseq_t *iseq,ID id)
 {
-    VALUE val;
-    struct rb_id_table *tbl = ISEQ_COMPILE_DATA(iseq)->ivar_cache_table;
-    if (tbl) {
-        if (rb_id_table_lookup(tbl,id,&val)) {
-            return val;
-        }
-    }
-    else {
-        tbl = rb_id_table_create(1);
-        ISEQ_COMPILE_DATA(iseq)->ivar_cache_table = tbl;
-    }
-    val = INT2FIX(ISEQ_BODY(iseq)->ivc_size++);
-    rb_id_table_insert(tbl,id,val);
-    return val;
+    return INT2FIX(ISEQ_BODY(iseq)->ivc_size++);
 }
 
 static inline VALUE
@@ -2432,10 +2419,14 @@ iseq_set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *const anchor)
                             break;
                         }
                       /* [ TS_IVC | TS_ICVARC | TS_ISE | TS_IC ] */
+		      case TS_IVC: /* inline ivar cache */
+                        {
+                            unsigned int ic_index = FIX2UINT(operands[j]);
+                            vm_ic_attr_index_initialize(((IVC)&body->is_entries[ic_index]), INVALID_SHAPE_ID);
+                        }
                       case TS_IC: /* inline cache: constants */
                       case TS_ISE: /* inline storage entry: `once` insn */
                       case TS_ICVARC: /* inline cvar cache */
-                      case TS_IVC: /* inline ivar cache */
                         {
                             unsigned int ic_index = FIX2UINT(operands[j]);
                             IC ic = &ISEQ_IS_ENTRY_START(body, type)[ic_index].ic_cache;
@@ -11378,6 +11369,10 @@ ibf_load_code(const struct ibf_load *load, rb_iseq_t *iseq, ibf_offset_t bytecod
 
                     ISE ic = ISEQ_IS_ENTRY_START(load_body, operand_type) + op;
                     code[code_index] = (VALUE)ic;
+
+                    if (operand_type == TS_IVC) {
+                        vm_ic_attr_index_initialize(((IVC)code[code_index]), INVALID_SHAPE_ID);
+                    }
 
                     if (insn == BIN(opt_getinlinecache) && operand_type == TS_IC) {
                         // Store the instruction index for opt_getinlinecache on the IC for

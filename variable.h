@@ -11,6 +11,7 @@
 /* per-object */
 
 struct gen_ivtbl {
+    uint16_t shape_id;
     uint32_t numiv;
     VALUE ivptr[FLEX_ARY_LEN];
 };

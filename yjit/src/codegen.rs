@@ -1897,7 +1897,6 @@ fn gen_set_ivar(
     jit: &mut JITState,
     ctx: &mut Context,
     cb: &mut CodeBlock,
-    recv: VALUE,
     ivar_name: ID,
 ) -> CodegenStatus {
     // Save the PC and SP because the callee may allocate
@@ -1908,13 +1907,11 @@ fn gen_set_ivar(
     let val_opnd = ctx.stack_pop(1);
     let recv_opnd = ctx.stack_pop(1);
 
-    let ivar_index: u32 = unsafe { rb_obj_ensure_iv_index_mapping(recv, ivar_name) };
-
-    // Call rb_vm_set_ivar_idx with the receiver, the index of the ivar, and the value
+    // Call rb_vm_set_ivar_id with the receiver, the ivar name, and the value
     mov(cb, C_ARG_REGS[0], recv_opnd);
-    mov(cb, C_ARG_REGS[1], imm_opnd(ivar_index.into()));
+    mov(cb, C_ARG_REGS[1], uimm_opnd(ivar_name.into()));
     mov(cb, C_ARG_REGS[2], val_opnd);
-    call_ptr(cb, REG0, rb_vm_set_ivar_idx as *const u8);
+    call_ptr(cb, REG0, rb_vm_set_ivar_id as *const u8);
 
     let out_opnd = ctx.stack_push(Type::Unknown);
     mov(cb, out_opnd, RAX);
@@ -2119,25 +2116,25 @@ fn gen_getinstancevariable(
     let ivar_name = jit_get_arg(jit, 0).as_u64();
 
     let comptime_val = jit_peek_at_self(jit);
-    let comptime_val_klass = comptime_val.class_of();
+    let comptime_val_shape = comptime_val.shape_of();
 
     // Generate a side exit
     let side_exit = get_side_exit(jit, ocb, ctx);
 
-    // Guard that the receiver has the same class as the one from compile time.
-    mov(cb, REG0, mem_opnd(64, REG_CFP, RUBY_OFFSET_CFP_SELF));
-
-    jit_guard_known_klass(
+    // Guard that the receiver has the same shape as the one from compile time.
+    jit_guard_known_shape(
         jit,
         ctx,
         cb,
         ocb,
-        comptime_val_klass,
-        SelfOpnd,
-        comptime_val,
+        comptime_val_shape,
         GET_IVAR_MAX_DEPTH,
+        0,
         side_exit,
     );
+
+    // Guard that the receiver has the same class as the one from compile time.
+    mov(cb, REG0, mem_opnd(64, REG_CFP, RUBY_OFFSET_CFP_SELF));
 
     gen_get_ivar(
         jit,
@@ -3536,6 +3533,35 @@ fn jit_guard_known_klass(
             ctx.upgrade_opnd_type(insn_opnd, Type::CString);
         }
     }
+}
+
+/// Guard that self or a stack operand has the same shape as `known_shape`, using
+/// `sample_instance` to speculate about the shape of the runtime value.
+/// FIXNUM and on-heap integers are treated as if they have distinct classes, and
+/// the guard generated for one will fail for the other.
+///
+/// Recompile as contingency if possible, or take side exit a last resort.
+
+fn jit_guard_known_shape(
+    jit: &mut JITState,
+    ctx: &mut Context,
+    cb: &mut CodeBlock,
+    ocb: &mut OutlinedCb,
+    known_shape: u16,
+    max_chain_depth: i32,
+    stack_index: i32,
+    side_exit: CodePtr,
+) {
+    mov(cb, C_ARG_REGS[0], ctx.stack_opnd(stack_index));
+    call_ptr(cb, REG0, rb_shape_get_shape_id as *const u8);
+    // panic if too many bits
+    let shape_into: i64 = known_shape.into();
+    if sig_imm_size(shape_into) > 32 {
+        panic!("{} shape is too big", sig_imm_size(shape_into));
+    }
+
+    cmp(cb, REG0, imm_opnd(shape_into));
+    jit_chain_guard(JCC_JNE, jit, ctx, cb, ocb, max_chain_depth, side_exit);
 }
 
 // Generate ancestry guard for protected callee.
@@ -4957,9 +4983,21 @@ fn gen_send_general(
                     return CantCompile;
                 }
 
-                mov(cb, REG0, recv);
                 let ivar_name = unsafe { get_cme_def_body_attr_id(cme) };
+                let comptime_recv_shape = comptime_recv.shape_of();
 
+                jit_guard_known_shape(
+                    jit,
+                    ctx,
+                    cb,
+                    ocb,
+                    comptime_recv_shape,
+                    SEND_MAX_DEPTH,
+                    argc,
+                    side_exit
+                );
+
+                mov(cb, REG0, recv);
                 return gen_get_ivar(
                     jit,
                     ctx,
@@ -4986,7 +5024,7 @@ fn gen_send_general(
                     return CantCompile;
                 } else {
                     let ivar_name = unsafe { get_cme_def_body_attr_id(cme) };
-                    return gen_set_ivar(jit, ctx, cb, comptime_recv, ivar_name);
+                    return gen_set_ivar(jit, ctx, cb, ivar_name);
                 }
             }
             // Block method, e.g. define_method(:foo) { :my_block }

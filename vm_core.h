@@ -92,6 +92,7 @@ extern int ruby_assert_critical_section_entered;
 #include "internal.h"
 #include "internal/array.h"
 #include "internal/serial.h"
+#include "internal/variable.h"
 #include "internal/vm.h"
 #include "method.h"
 #include "node.h"
@@ -262,7 +263,9 @@ struct iseq_inline_constant_cache {
 };
 
 struct iseq_inline_iv_cache_entry {
-    struct rb_iv_index_tbl_entry *entry;
+    shape_id_t source_shape_id;
+    shape_id_t dest_shape_id;
+    uint32_t attr_index;
 };
 
 struct iseq_inline_cvar_cache_entry {
@@ -335,6 +338,12 @@ pathobj_realpath(VALUE pathobj)
 /* Forward declarations */
 struct rb_mjit_unit;
 
+struct rb_shape;
+
+#ifndef rb_shape_t
+typedef struct rb_shape rb_shape_t;
+#define rb_shape_t rb_shape_t
+#endif
 typedef uintptr_t iseq_bits_t;
 
 #define ISEQ_IS_SIZE(body) (body->ic_size + body->ivc_size + body->ise_size + body->icvarc_size)
@@ -673,6 +682,14 @@ typedef struct rb_vm_struct {
     /* object management */
     VALUE mark_object_ary;
     const VALUE special_exceptions[ruby_special_error_count];
+
+    /* object shapes */
+    rb_shape_t **shape_list;
+    rb_shape_t *root_shape;
+    rb_shape_t *frozen_root_shape;
+    rb_shape_t *no_cache_shape;
+    shape_id_t max_shape_count;
+    uint32_t shape_bitmaps[2048];
 
     /* load */
     VALUE top_self;

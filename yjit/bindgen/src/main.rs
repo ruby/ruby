@@ -289,6 +289,7 @@ fn main() {
         // From internal/variable.h
         .allowlist_function("rb_gvar_(get|set)")
         .allowlist_function("rb_obj_ensure_iv_index_mapping")
+        .allowlist_function("rb_shape_get_shape_id")
 
         // From include/ruby/internal/intern/variable.h
         .allowlist_function("rb_attr_get")

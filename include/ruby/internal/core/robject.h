@@ -46,7 +46,6 @@
 #define ROBJECT_EMBED         ROBJECT_EMBED
 #define ROBJECT_NUMIV         ROBJECT_NUMIV
 #define ROBJECT_IVPTR         ROBJECT_IVPTR
-#define ROBJECT_IV_INDEX_TBL  ROBJECT_IV_INDEX_TBL
 /** @endcond */
 
 /**
@@ -132,7 +131,7 @@ struct RObject {
              *
              * This is a shortcut for `RCLASS_IV_INDEX_TBL(rb_obj_class(obj))`.
              */
-            struct st_table *iv_index_tbl;
+            struct rb_id_table *iv_index_tbl;
         } heap;
 
 #if USE_RVARGC
@@ -221,4 +220,27 @@ ROBJECT_IVPTR(VALUE obj)
     }
 }
 
+#ifndef shape_id_t
+typedef uint16_t shape_id_t;
+#define shape_id_t shape_id_t
+#endif
+
+static inline shape_id_t
+ROBJECT_SHAPE_ID(VALUE obj)
+{
+    RBIMPL_ASSERT_TYPE(obj, RUBY_T_OBJECT);
+    return (shape_id_t)(0xffff & (RBASIC(obj)->flags >> 16));
+}
+
+static inline void
+ROBJECT_SET_SHAPE_ID(VALUE obj, shape_id_t shape_id)
+{
+    // Ractors are occupying the upper 32 bits of flags
+    // Object shapes are occupying the next 16 bits
+    // 4 bits are unused
+    // 12 bits are occupied by RUBY_FL (see RUBY_FL_USHIFT)
+    // | XXXX ractor_id | shape_id | UUUU flags |
+    RBASIC(obj)->flags &= 0xffffffff0000ffff;
+    RBASIC(obj)->flags |= ((uint32_t)(shape_id) << 16);
+}
 #endif /* RBIMPL_ROBJECT_H */

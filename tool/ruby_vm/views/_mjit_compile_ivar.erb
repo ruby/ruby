@@ -16,18 +16,18 @@
 % # compiler: Use copied IVC to avoid race condition
     IVC ic_copy = &(status->is_entries + ((union iseq_inline_storage_entry *)ic - body->is_entries))->iv_cache;
 %
-    if (!status->compile_info->disable_ivar_cache && ic_copy->entry) { // Only ic_copy is enabled.
+    if (!status->compile_info->disable_ivar_cache && vm_ic_attr_index_p(ic_copy)) { // Only ic_copy is enabled.
 % # JIT: optimize away motion of sp and pc. This path does not call rb_warning() and so it's always leaf and not `handles_sp`.
 % # <%= render 'mjit_compile_pc_and_sp', locals: { insn: insn } -%>
 %
 % # JIT: prepare vm_getivar/vm_setivar arguments and variables
         fprintf(f, "{\n");
         fprintf(f, "    VALUE obj = GET_SELF();\n");
-        fprintf(f, "    const uint32_t index = %u;\n", (ic_copy->entry->index));
+        fprintf(f, "    const uint32_t index = %u;\n", vm_ic_attr_index(ic_copy));
         if (status->merge_ivar_guards_p) {
 % # JIT: Access ivar without checking these VM_ASSERTed prerequisites as we checked them in the beginning of `mjit_compile_body`
             fprintf(f, "    VM_ASSERT(RB_TYPE_P(obj, T_OBJECT));\n");
-            fprintf(f, "    VM_ASSERT((rb_serial_t)%"PRI_SERIALT_PREFIX"u == RCLASS_SERIAL(RBASIC(obj)->klass));\n", ic_copy->entry->class_serial);
+            fprintf(f, "    VM_ASSERT((shape_id_t)%hu == ROBJECT_SHAPE_ID(obj));\n", vm_ic_attr_shape_id(ic_copy));
             fprintf(f, "    VM_ASSERT(index < ROBJECT_NUMIV(obj));\n");
 % if insn.name == 'setinstancevariable'
 #if USE_RVARGC
@@ -53,16 +53,29 @@
 %end
         }
         else {
-            fprintf(f, "    const rb_serial_t ic_serial = (rb_serial_t)%"PRI_SERIALT_PREFIX"u;\n", ic_copy->entry->class_serial);
+            shape_id_t source_shape_id = vm_ic_attr_shape_id(ic_copy);
 % # JIT: cache hit path of vm_getivar/vm_setivar, or cancel JIT (recompile it with exivar)
 % if insn.name == 'setinstancevariable'
-            fprintf(f, "    if (LIKELY(RB_TYPE_P(obj, T_OBJECT) && ic_serial == RCLASS_SERIAL(RBASIC(obj)->klass) && index < ROBJECT_NUMIV(obj) && !RB_OBJ_FROZEN_RAW(obj))) {\n");
-            fprintf(f, "        VALUE *ptr = ROBJECT_IVPTR(obj);\n");
-            fprintf(f, "        RB_OBJ_WRITE(obj, &ptr[index], stack[%d]);\n", b->stack_size - 1);
-            fprintf(f, "    }\n");
+            shape_id_t dest_shape_id = vm_ic_attr_index_dest_shape_id(ic_copy);
+            fprintf(f, "    shape_id_t shape_id = (shape_id_t)%hu;\n", source_shape_id);
+            fprintf(f, "    shape_id_t dest_shape_id = %hu;\n", dest_shape_id);
+            if (source_shape_id == dest_shape_id) {
+                fprintf(f, "    if (LIKELY(RB_TYPE_P(obj, T_OBJECT) && dest_shape_id == ROBJECT_SHAPE_ID(obj) && index < ROBJECT_NUMIV(obj) && !RB_OBJ_FROZEN_RAW(obj))) {\n");
+                fprintf(f, "        VALUE *ptr = ROBJECT_IVPTR(obj);\n");
+                fprintf(f, "        RB_OBJ_WRITE(obj, &ptr[index], stack[%d]);\n", b->stack_size - 1);
+                fprintf(f, "    }\n");
+            }
+            else {
+                fprintf(f, "    if (LIKELY(RB_TYPE_P(obj, T_OBJECT) && shape_id == ROBJECT_SHAPE_ID(obj) && index < ROBJECT_NUMIV(obj) && !RB_OBJ_FROZEN_RAW(obj))) {\n");
+                fprintf(f, "        ROBJECT_SET_SHAPE_ID(obj, dest_shape_id);\n");
+                fprintf(f, "        VALUE *ptr = ROBJECT_IVPTR(obj);\n");
+                fprintf(f, "        RB_OBJ_WRITE(obj, &ptr[index], stack[%d]);\n", b->stack_size - 1);
+                fprintf(f, "    }\n");
+            }
 % else
             fprintf(f, "    VALUE val;\n");
-            fprintf(f, "    if (LIKELY(RB_TYPE_P(obj, T_OBJECT) && ic_serial == RCLASS_SERIAL(RBASIC(obj)->klass) && index < ROBJECT_NUMIV(obj) && (val = ROBJECT_IVPTR(obj)[index]) != Qundef)) {\n");
+            fprintf(f, "    shape_id_t shape_id = (shape_id_t)%hu;\n", source_shape_id);
+            fprintf(f, "    if (LIKELY(RB_TYPE_P(obj, T_OBJECT) && shape_id == ROBJECT_SHAPE_ID(obj) && index < ROBJECT_NUMIV(obj) && (val = ROBJECT_IVPTR(obj)[index]) != Qundef)) {\n");
             fprintf(f, "        stack[%d] = val;\n", b->stack_size);
             fprintf(f, "    }\n");
 % end
@@ -79,19 +92,19 @@
         break;
     }
 % if insn.name == 'getinstancevariable'
-    else if (!status->compile_info->disable_exivar_cache && ic_copy->entry) {
+    else if (!status->compile_info->disable_exivar_cache && vm_ic_attr_index_p(ic_copy)) {
 % # JIT: optimize away motion of sp and pc. This path does not call rb_warning() and so it's always leaf and not `handles_sp`.
 % # <%= render 'mjit_compile_pc_and_sp', locals: { insn: insn } -%>
 %
 % # JIT: prepare vm_getivar's arguments and variables
         fprintf(f, "{\n");
         fprintf(f, "    VALUE obj = GET_SELF();\n");
-        fprintf(f, "    const rb_serial_t ic_serial = (rb_serial_t)%"PRI_SERIALT_PREFIX"u;\n", ic_copy->entry->class_serial);
-        fprintf(f, "    const uint32_t index = %u;\n", ic_copy->entry->index);
+        fprintf(f, "    shape_id_t shape_id = (shape_id_t)%hu;\n", vm_ic_attr_shape_id(ic_copy));
+        fprintf(f, "    const uint32_t index = %u;\n", vm_ic_attr_index(ic_copy));
 % # JIT: cache hit path of vm_getivar, or cancel JIT (recompile it without any ivar optimization)
         fprintf(f, "    struct gen_ivtbl *ivtbl;\n");
         fprintf(f, "    VALUE val;\n");
-        fprintf(f, "    if (LIKELY(FL_TEST_RAW(obj, FL_EXIVAR) && ic_serial == RCLASS_SERIAL(RBASIC(obj)->klass) && rb_ivar_generic_ivtbl_lookup(obj, &ivtbl) && index < ivtbl->numiv && (val = ivtbl->ivptr[index]) != Qundef)) {\n");
+        fprintf(f, "    if (LIKELY(FL_TEST_RAW(obj, FL_EXIVAR) && shape_id == rb_shape_get_shape_id(obj) && rb_ivar_generic_ivtbl_lookup(obj, &ivtbl) && index < ivtbl->numiv && (val = ivtbl->ivptr[index]) != Qundef)) {\n");
         fprintf(f, "        stack[%d] = val;\n", b->stack_size);
         fprintf(f, "    }\n");
         fprintf(f, "    else {\n");

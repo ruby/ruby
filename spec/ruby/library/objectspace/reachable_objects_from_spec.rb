@@ -17,7 +17,7 @@ describe "ObjectSpace.reachable_objects_from" do
 
   it "enumerates objects directly reachable from a given object" do
     ObjectSpace.reachable_objects_from(['a', 'b', 'c']).should include(Array, 'a', 'b', 'c')
-    ObjectSpace.reachable_objects_from(Object.new).should == [Object]
+    ObjectSpace.reachable_objects_from(Object.new).should include(Object)
   end
 
   it "finds an object stored in an Array" do
