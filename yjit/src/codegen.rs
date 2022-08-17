@@ -5526,8 +5526,9 @@ fn gen_opt_getinlinecache(
             vec![inline_cache, Opnd::mem(64, CFP, RUBY_OFFSET_CFP_EP)]
         );
 
-        // Check the result. _Bool is one byte in SysV.
-        asm.test(ret_val, ret_val);
+        // Check the result. SysV only specifies one byte for _Bool return values,
+        // so it's important we only check one bit to ignore the higher bits in the register.
+        asm.test(ret_val, 1.into());
         asm.jz(counted_exit!(ocb, side_exit, opt_getinlinecache_miss).into());
 
         let inline_cache = asm.load(Opnd::const_ptr(ic as *const u8));
