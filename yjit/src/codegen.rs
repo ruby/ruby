@@ -3958,7 +3958,7 @@ fn gen_send_cfunc(
         // Change cfp->block_code in the current frame. See vm_caller_setup_arg_block().
         // VM_CFP_TO_CAPTURED_BLOCK does &cfp->self, rb_captured_block->code.iseq aliases
         // with cfp->block_code.
-        asm.mov(Opnd::mem(64, CFP, RUBY_OFFSET_CFP_BLOCK_CODE), Opnd::UImm(block_iseq as u64));
+        asm.mov(Opnd::mem(64, CFP, RUBY_OFFSET_CFP_BLOCK_CODE), VALUE::from(block_iseq).into());
     }
 
     // Increment the stack pointer by 3 (in the callee)
