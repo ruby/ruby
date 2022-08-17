@@ -843,10 +843,13 @@ pub fn gen_single_block(
 
     // Finish filling out the block
     {
+        let mut block = jit.block.borrow_mut();
+        if block.entry_exit.is_some() {
+            asm.pad_entry_exit();
+        }
+
         // Compile code into the code block
         let gc_offsets = asm.compile(cb);
-
-        let mut block = jit.block.borrow_mut();
 
         // Add the GC offsets to the block
         for offset in gc_offsets {
