@@ -466,23 +466,15 @@ impl Assembler
         }
     }
 
-    /// Append an instruction to the list
-    pub(super) fn push_insn(
-        &mut self,
-        op: Op,
-        opnds: Vec<Opnd>,
-        target: Option<Target>,
-        text: Option<String>,
-        pos_marker: Option<PosMarkerFn>
-    ) -> Opnd
-    {
+    /// Append an instruction onto the current list of instructions.
+    pub(super) fn push_insn(&mut self, mut insn: Insn) -> Opnd {
         // Index of this instruction
         let insn_idx = self.insns.len();
 
         // If we find any InsnOut from previous instructions, we're going to
         // update the live range of the previous instruction to point to this
         // one.
-        for opnd in &opnds {
+        for opnd in &insn.opnds {
             match opnd {
                 Opnd::InsnOut{ idx, .. } => {
                     self.live_ranges[*idx] = insn_idx;
@@ -496,7 +488,7 @@ impl Assembler
 
         let mut out_num_bits: u8 = 0;
 
-        for opnd in &opnds {
+        for opnd in &insn.opnds {
             match *opnd {
                 Opnd::InsnOut{ num_bits, .. } |
                 Opnd::Mem(Mem { num_bits, .. }) |
@@ -518,15 +510,7 @@ impl Assembler
 
         // Operand for the output of this instruction
         let out_opnd = Opnd::InsnOut{ idx: insn_idx, num_bits: out_num_bits };
-
-        let insn = Insn {
-            op,
-            text,
-            opnds,
-            out: out_opnd,
-            target,
-            pos_marker,
-        };
+        insn.out = out_opnd;
 
         self.insns.push(insn);
         self.live_ranges.push(insn_idx);
@@ -535,40 +519,25 @@ impl Assembler
         out_opnd
     }
 
-    /// Add a comment at the current position
-    pub fn comment(&mut self, text: &str)
+    /// Append an instruction to the list by creating a new instruction from the
+    /// component parts given to this function.
+    pub(super) fn push_insn_parts(
+        &mut self,
+        op: Op,
+        opnds: Vec<Opnd>,
+        target: Option<Target>,
+        text: Option<String>,
+        pos_marker: Option<PosMarkerFn>
+    ) -> Opnd
     {
-        let insn = Insn {
-            op: Op::Comment,
-            text: Some(text.to_owned()),
-            opnds: vec![],
+        self.push_insn(Insn {
+            op,
+            text,
+            opnds,
             out: Opnd::None,
-            target: None,
-            pos_marker: None,
-        };
-        self.insns.push(insn);
-        self.live_ranges.push(self.insns.len());
-    }
-
-    /// Bake a string at the current position
-    pub fn bake_string(&mut self, text: &str)
-    {
-        let insn = Insn {
-            op: Op::BakeString,
-            text: Some(text.to_owned()),
-            opnds: vec![],
-            out: Opnd::None,
-            target: None,
-            pos_marker: None,
-        };
-        self.insns.push(insn);
-        self.live_ranges.push(self.insns.len());
-    }
-
-    /// Load an address relative to the given label.
-    #[must_use]
-    pub fn lea_label(&mut self, target: Target) -> Opnd {
-        self.push_insn(Op::LeaLabel, vec![], Some(target), None, None)
+            target,
+            pos_marker,
+        })
     }
 
     /// Create a new label instance that we can jump to
@@ -735,7 +704,7 @@ impl Assembler
                 }
             ).collect();
 
-            asm.push_insn(insn.op, reg_opnds, insn.target, insn.text, insn.pos_marker);
+            asm.push_insn_parts(insn.op, reg_opnds, insn.target, insn.text, insn.pos_marker);
 
             // Set the output register for this instruction
             let num_insns = asm.insns.len();
@@ -776,16 +745,6 @@ impl Assembler
     /// Consume the assembler by creating a new lookback iterator.
     pub fn into_lookback_iter(self) -> AssemblerLookbackIterator {
         AssemblerLookbackIterator::new(self)
-    }
-
-    pub fn ccall(&mut self, fptr: *const u8, opnds: Vec<Opnd>) -> Opnd {
-        let target = Target::FunPtr(fptr);
-        self.push_insn(Op::CCall, opnds, Some(target), None, None)
-    }
-
-    // pub fn pos_marker<F: FnMut(CodePtr)>(&mut self, marker_fn: F)
-    pub fn pos_marker(&mut self, marker_fn: impl Fn(CodePtr) + 'static) {
-        self.push_insn(Op::PosMarker, vec![], None, None, Some(Box::new(marker_fn)));
     }
 }
 
@@ -898,134 +857,224 @@ impl fmt::Debug for Assembler {
     }
 }
 
-macro_rules! def_push_jcc {
-    ($op_name:ident, $opcode:expr) => {
-        impl Assembler
-        {
-            pub fn $op_name(&mut self, target: Target)
-            {
-                self.push_insn($opcode, vec![], Some(target), None, None);
-            }
-        }
-    };
-}
+impl Assembler {
+    #[must_use]
+    pub fn add(&mut self, left: Opnd, right: Opnd) -> Opnd {
+        self.push_insn(Insn { op: Op::Add, opnds: vec![left, right], out: Opnd::None, text: None, target: None, pos_marker: None })
+    }
 
-macro_rules! def_push_0_opnd {
-    ($op_name:ident, $opcode:expr) => {
-        impl Assembler
-        {
-            #[must_use]
-            pub fn $op_name(&mut self) -> Opnd
-            {
-                self.push_insn($opcode, vec![], None, None, None)
-            }
-        }
-    };
-}
+    #[must_use]
+    pub fn and(&mut self, left: Opnd, right: Opnd) -> Opnd {
+        self.push_insn(Insn { op: Op::And, opnds: vec![left, right], out: Opnd::None, text: None, target: None, pos_marker: None })
+    }
 
-macro_rules! def_push_0_opnd_no_out {
-    ($op_name:ident, $opcode:expr) => {
-        impl Assembler
-        {
-            pub fn $op_name(&mut self)
-            {
-                self.push_insn($opcode, vec![], None, None, None);
-            }
-        }
-    };
-}
+    pub fn bake_string(&mut self, text: &str) {
+        self.push_insn(Insn { op: Op::BakeString, opnds: vec![], out: Opnd::None, text: Some(text.to_string()), target: None, pos_marker: None });
+    }
 
-macro_rules! def_push_1_opnd {
-    ($op_name:ident, $opcode:expr) => {
-        impl Assembler
-        {
-            #[must_use]
-            pub fn $op_name(&mut self, opnd0: Opnd) -> Opnd
-            {
-                self.push_insn($opcode, vec![opnd0], None, None, None)
-            }
-        }
-    };
-}
+    pub fn breakpoint(&mut self) {
+        self.push_insn(Insn { op: Op::Breakpoint, opnds: vec![], out: Opnd::None, text: None, target: None, pos_marker: None });
+    }
 
-macro_rules! def_push_1_opnd_no_out {
-    ($op_name:ident, $opcode:expr) => {
-        impl Assembler
-        {
-            pub fn $op_name(&mut self, opnd0: Opnd)
-            {
-                self.push_insn($opcode, vec![opnd0], None, None, None);
-            }
-        }
-    };
-}
+    #[must_use]
+    pub fn ccall(&mut self, fptr: *const u8, opnds: Vec<Opnd>) -> Opnd {
+        self.push_insn(Insn { op: Op::CCall, opnds, out: Opnd::None, text: None, target: Some(Target::FunPtr(fptr)), pos_marker: None })
+    }
 
-macro_rules! def_push_2_opnd {
-    ($op_name:ident, $opcode:expr) => {
-        impl Assembler
-        {
-            #[must_use]
-            pub fn $op_name(&mut self, opnd0: Opnd, opnd1: Opnd) -> Opnd
-            {
-                self.push_insn($opcode, vec![opnd0, opnd1], None, None, None)
-            }
-        }
-    };
-}
+    pub fn cmp(&mut self, left: Opnd, right: Opnd) {
+        self.push_insn(Insn { op: Op::Cmp, opnds: vec![left, right], out: Opnd::None, text: None, target: None, pos_marker: None });
+    }
 
-macro_rules! def_push_2_opnd_no_out {
-    ($op_name:ident, $opcode:expr) => {
-        impl Assembler
-        {
-            pub fn $op_name(&mut self, opnd0: Opnd, opnd1: Opnd)
-            {
-                self.push_insn($opcode, vec![opnd0, opnd1], None, None, None);
-            }
-        }
-    };
-}
+    pub fn comment(&mut self, text: &str) {
+        self.push_insn(Insn { op: Op::Comment, opnds: vec![], out: Opnd::None, text: Some(text.to_string()), target: None, pos_marker: None });
+    }
 
-def_push_1_opnd_no_out!(jmp_opnd, Op::JmpOpnd);
-def_push_jcc!(jmp, Op::Jmp);
-def_push_jcc!(je, Op::Je);
-def_push_jcc!(jne, Op::Jne);
-def_push_jcc!(jl, Op::Jl);
-def_push_jcc!(jbe, Op::Jbe);
-def_push_jcc!(jz, Op::Jz);
-def_push_jcc!(jnz, Op::Jnz);
-def_push_jcc!(jo, Op::Jo);
-def_push_2_opnd!(add, Op::Add);
-def_push_2_opnd!(sub, Op::Sub);
-def_push_2_opnd!(and, Op::And);
-def_push_2_opnd!(or, Op::Or);
-def_push_2_opnd!(xor, Op::Xor);
-def_push_1_opnd!(not, Op::Not);
-def_push_2_opnd!(lshift, Op::LShift);
-def_push_2_opnd!(rshift, Op::RShift);
-def_push_2_opnd!(urshift, Op::URShift);
-def_push_1_opnd_no_out!(cpush, Op::CPush);
-def_push_0_opnd!(cpop, Op::CPop);
-def_push_1_opnd_no_out!(cpop_into, Op::CPopInto);
-def_push_0_opnd_no_out!(cpush_all, Op::CPushAll);
-def_push_0_opnd_no_out!(cpop_all, Op::CPopAll);
-def_push_1_opnd_no_out!(cret, Op::CRet);
-def_push_1_opnd!(load, Op::Load);
-def_push_1_opnd!(load_sext, Op::LoadSExt);
-def_push_1_opnd!(lea, Op::Lea);
-def_push_1_opnd!(live_reg_opnd, Op::LiveReg);
-def_push_2_opnd_no_out!(store, Op::Store);
-def_push_2_opnd_no_out!(mov, Op::Mov);
-def_push_2_opnd_no_out!(cmp, Op::Cmp);
-def_push_2_opnd_no_out!(test, Op::Test);
-def_push_0_opnd_no_out!(breakpoint, Op::Breakpoint);
-def_push_2_opnd_no_out!(incr_counter, Op::IncrCounter);
-def_push_2_opnd!(csel_z, Op::CSelZ);
-def_push_2_opnd!(csel_nz, Op::CSelNZ);
-def_push_2_opnd!(csel_e, Op::CSelE);
-def_push_2_opnd!(csel_ne, Op::CSelNE);
-def_push_2_opnd!(csel_l, Op::CSelL);
-def_push_2_opnd!(csel_le, Op::CSelLE);
-def_push_2_opnd!(csel_g, Op::CSelG);
-def_push_2_opnd!(csel_ge, Op::CSelGE);
-def_push_0_opnd_no_out!(frame_setup, Op::FrameSetup);
-def_push_0_opnd_no_out!(frame_teardown, Op::FrameTeardown);
+    pub fn cpop(&mut self) -> Opnd {
+        self.push_insn(Insn { op: Op::CPop, opnds: vec![], out: Opnd::None, text: None, target: None, pos_marker: None })
+    }
+
+    pub fn cpop_all(&mut self) {
+        self.push_insn(Insn { op: Op::CPopAll, opnds: vec![], out: Opnd::None, text: None, target: None, pos_marker: None });
+    }
+
+    pub fn cpop_into(&mut self, opnd: Opnd) {
+        self.push_insn(Insn { op: Op::CPopInto, opnds: vec![opnd], out: Opnd::None, text: None, target: None, pos_marker: None });
+    }
+
+    pub fn cpush(&mut self, opnd: Opnd) {
+        self.push_insn(Insn { op: Op::CPush, opnds: vec![opnd], out: Opnd::None, text: None, target: None, pos_marker: None });
+    }
+
+    pub fn cpush_all(&mut self) {
+        self.push_insn(Insn { op: Op::CPushAll, opnds: vec![], out: Opnd::None, text: None, target: None, pos_marker: None });
+    }
+
+    pub fn cret(&mut self, opnd: Opnd) {
+        self.push_insn(Insn { op: Op::CRet, opnds: vec![opnd], out: Opnd::None, text: None, target: None, pos_marker: None });
+    }
+
+    #[must_use]
+    pub fn csel_e(&mut self, truthy: Opnd, falsy: Opnd) -> Opnd {
+        self.push_insn(Insn { op: Op::CSelE, opnds: vec![truthy, falsy], out: Opnd::None, text: None, target: None, pos_marker: None })
+    }
+
+    #[must_use]
+    pub fn csel_g(&mut self, truthy: Opnd, falsy: Opnd) -> Opnd {
+        self.push_insn(Insn { op: Op::CSelG, opnds: vec![truthy, falsy], out: Opnd::None, text: None, target: None, pos_marker: None })
+    }
+
+    #[must_use]
+    pub fn csel_ge(&mut self, truthy: Opnd, falsy: Opnd) -> Opnd {
+        self.push_insn(Insn { op: Op::CSelGE, opnds: vec![truthy, falsy], out: Opnd::None, text: None, target: None, pos_marker: None })
+    }
+
+    #[must_use]
+    pub fn csel_l(&mut self, truthy: Opnd, falsy: Opnd) -> Opnd {
+        self.push_insn(Insn { op: Op::CSelL, opnds: vec![truthy, falsy], out: Opnd::None, text: None, target: None, pos_marker: None })
+    }
+
+    #[must_use]
+    pub fn csel_le(&mut self, truthy: Opnd, falsy: Opnd) -> Opnd {
+        self.push_insn(Insn { op: Op::CSelLE, opnds: vec![truthy, falsy], out: Opnd::None, text: None, target: None, pos_marker: None })
+    }
+
+    #[must_use]
+    pub fn csel_ne(&mut self, truthy: Opnd, falsy: Opnd) -> Opnd {
+        self.push_insn(Insn { op: Op::CSelNE, opnds: vec![truthy, falsy], out: Opnd::None, text: None, target: None, pos_marker: None })
+    }
+
+    #[must_use]
+    pub fn csel_nz(&mut self, truthy: Opnd, falsy: Opnd) -> Opnd {
+        self.push_insn(Insn { op: Op::CSelNZ, opnds: vec![truthy, falsy], out: Opnd::None, text: None, target: None, pos_marker: None })
+    }
+
+    #[must_use]
+    pub fn csel_z(&mut self, truthy: Opnd, falsy: Opnd) -> Opnd {
+        self.push_insn(Insn { op: Op::CSelZ, opnds: vec![truthy, falsy], out: Opnd::None, text: None, target: None, pos_marker: None })
+    }
+
+    pub fn frame_setup(&mut self) {
+        self.push_insn(Insn { op: Op::FrameSetup, opnds: vec![], out: Opnd::None, text: None, target: None, pos_marker: None });
+    }
+
+    pub fn frame_teardown(&mut self) {
+        self.push_insn(Insn { op: Op::FrameTeardown, opnds: vec![], out: Opnd::None, text: None, target: None, pos_marker: None });
+    }
+
+    pub fn incr_counter(&mut self, mem: Opnd, value: Opnd) {
+        self.push_insn(Insn { op: Op::IncrCounter, opnds: vec![mem, value], out: Opnd::None, text: None, target: None, pos_marker: None });
+    }
+
+    pub fn jbe(&mut self, target: Target) {
+        self.push_insn(Insn { op: Op::Jbe, opnds: vec![], out: Opnd::None, text: None, target: Some(target), pos_marker: None });
+    }
+
+    pub fn je(&mut self, target: Target) {
+        self.push_insn(Insn { op: Op::Je, opnds: vec![], out: Opnd::None, text: None, target: Some(target), pos_marker: None });
+    }
+
+    pub fn jl(&mut self, target: Target) {
+        self.push_insn(Insn { op: Op::Jl, opnds: vec![], out: Opnd::None, text: None, target: Some(target), pos_marker: None });
+    }
+
+    pub fn jmp(&mut self, target: Target) {
+        self.push_insn(Insn { op: Op::Jmp, opnds: vec![], out: Opnd::None, text: None, target: Some(target), pos_marker: None });
+    }
+
+    pub fn jmp_opnd(&mut self, opnd: Opnd) {
+        self.push_insn(Insn { op: Op::JmpOpnd, opnds: vec![opnd], out: Opnd::None, text: None, target: None, pos_marker: None });
+    }
+
+    pub fn jne(&mut self, target: Target) {
+        self.push_insn(Insn { op: Op::Jne, opnds: vec![], out: Opnd::None, text: None, target: Some(target), pos_marker: None });
+    }
+
+    pub fn jnz(&mut self, target: Target) {
+        self.push_insn(Insn { op: Op::Jnz, opnds: vec![], out: Opnd::None, text: None, target: Some(target), pos_marker: None });
+    }
+
+    pub fn jo(&mut self, target: Target) {
+        self.push_insn(Insn { op: Op::Jo, opnds: vec![], out: Opnd::None, text: None, target: Some(target), pos_marker: None });
+    }
+
+    pub fn jz(&mut self, target: Target) {
+        self.push_insn(Insn { op: Op::Jz, opnds: vec![], out: Opnd::None, text: None, target: Some(target), pos_marker: None });
+    }
+
+    #[must_use]
+    pub fn lea(&mut self, opnd: Opnd) -> Opnd {
+        self.push_insn(Insn { op: Op::Lea, opnds: vec![opnd], out: Opnd::None, text: None, target: None, pos_marker: None })
+    }
+
+    #[must_use]
+    pub fn lea_label(&mut self, target: Target) -> Opnd {
+        self.push_insn(Insn { op: Op::LeaLabel, opnds: vec![], out: Opnd::None, text: None, target: Some(target), pos_marker: None })
+    }
+
+    #[must_use]
+    pub fn live_reg_opnd(&mut self, opnd: Opnd) -> Opnd {
+        self.push_insn(Insn { op: Op::LiveReg, opnds: vec![opnd], out: Opnd::None, text: None, target: None, pos_marker: None })
+    }
+
+    #[must_use]
+    pub fn load(&mut self, opnd: Opnd) -> Opnd {
+        self.push_insn(Insn { op: Op::Load, opnds: vec![opnd], out: Opnd::None, text: None, target: None, pos_marker: None })
+    }
+
+    #[must_use]
+    pub fn load_sext(&mut self, opnd: Opnd) -> Opnd {
+        self.push_insn(Insn { op: Op::LoadSExt, opnds: vec![opnd], out: Opnd::None, text: None, target: None, pos_marker: None })
+    }
+
+    #[must_use]
+    pub fn lshift(&mut self, opnd: Opnd, shift: Opnd) -> Opnd {
+        self.push_insn(Insn { op: Op::LShift, opnds: vec![opnd, shift], out: Opnd::None, text: None, target: None, pos_marker: None })
+    }
+
+    pub fn mov(&mut self, dest: Opnd, src: Opnd) {
+        self.push_insn(Insn { op: Op::Mov, opnds: vec![dest, src], out: Opnd::None, text: None, target: None, pos_marker: None });
+    }
+
+    #[must_use]
+    pub fn not(&mut self, opnd: Opnd) -> Opnd {
+        self.push_insn(Insn { op: Op::Not, opnds: vec![opnd], out: Opnd::None, text: None, target: None, pos_marker: None })
+    }
+
+    #[must_use]
+    pub fn or(&mut self, left: Opnd, right: Opnd) -> Opnd {
+        self.push_insn(Insn { op: Op::Or, opnds: vec![left, right], out: Opnd::None, text: None, target: None, pos_marker: None })
+    }
+
+    //pub fn pos_marker<F: FnMut(CodePtr)>(&mut self, marker_fn: F)
+    pub fn pos_marker(&mut self, marker_fn: impl Fn(CodePtr) + 'static) {
+        self.push_insn(Insn { op: Op::PosMarker, opnds: vec![], out: Opnd::None, text: None, target: None, pos_marker: Some(Box::new(marker_fn)) });
+    }
+
+    #[must_use]
+    pub fn rshift(&mut self, opnd: Opnd, shift: Opnd) -> Opnd {
+        self.push_insn(Insn { op: Op::RShift, opnds: vec![opnd, shift], out: Opnd::None, text: None, target: None, pos_marker: None })
+    }
+
+    pub fn store(&mut self, dest: Opnd, src: Opnd) {
+        self.push_insn(Insn { op: Op::Store, opnds: vec![dest, src], out: Opnd::None, text: None, target: None, pos_marker: None });
+    }
+
+    #[must_use]
+    pub fn sub(&mut self, left: Opnd, right: Opnd) -> Opnd {
+        self.push_insn(Insn { op: Op::Sub, opnds: vec![left, right], out: Opnd::None, text: None, target: None, pos_marker: None })
+    }
+
+    pub fn test(&mut self, left: Opnd, right: Opnd) {
+        self.push_insn(Insn { op: Op::Test, opnds: vec![left, right], out: Opnd::None, text: None, target: None, pos_marker: None });
+    }
+
+    #[must_use]
+    pub fn urshift(&mut self, opnd: Opnd, shift: Opnd) -> Opnd {
+        self.push_insn(Insn { op: Op::URShift, opnds: vec![opnd, shift], out: Opnd::None, text: None, target: None, pos_marker: None })
+    }
+
+    #[must_use]
+    pub fn xor(&mut self, left: Opnd, right: Opnd) -> Opnd {
+        self.push_insn(Insn { op: Op::Xor, opnds: vec![left, right], out: Opnd::None, text: None, target: None, pos_marker: None })
+    }
+}

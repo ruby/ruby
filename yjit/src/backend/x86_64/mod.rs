@@ -174,7 +174,7 @@ impl Assembler
                         _ => (opnds[0], opnds[1])
                     };
 
-                    asm.push_insn(insn.op, vec![opnd0, opnd1], insn.target, insn.text, insn.pos_marker);
+                    asm.push_insn_parts(insn.op, vec![opnd0, opnd1], insn.target, insn.text, insn.pos_marker);
                 },
                 // These instructions modify their input operand in-place, so we
                 // may need to load the input value to preserve it
@@ -195,7 +195,7 @@ impl Assembler
                         _ => (opnds[0], opnds[1])
                     };
 
-                    asm.push_insn(insn.op, vec![opnd0, opnd1], insn.target, insn.text, insn.pos_marker);
+                    asm.push_insn_parts(insn.op, vec![opnd0, opnd1], insn.target, insn.text, insn.pos_marker);
                 },
                 Op::CSelZ | Op::CSelNZ | Op::CSelE | Op::CSelNE |
                 Op::CSelL | Op::CSelLE | Op::CSelG | Op::CSelGE => {
@@ -206,7 +206,7 @@ impl Assembler
                         }
                     }).collect();
 
-                    asm.push_insn(insn.op, new_opnds, insn.target, insn.text, insn.pos_marker);
+                    asm.push_insn_parts(insn.op, new_opnds, insn.target, insn.text, insn.pos_marker);
                 },
                 Op::Mov => {
                     match (opnds[0], opnds[1]) {
@@ -260,7 +260,7 @@ impl Assembler
                     asm.not(opnd0);
                 },
                 _ => {
-                    asm.push_insn(insn.op, opnds, insn.target, insn.text, insn.pos_marker);
+                    asm.push_insn_parts(insn.op, opnds, insn.target, insn.text, insn.pos_marker);
                 }
             };
 
