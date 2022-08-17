@@ -413,6 +413,10 @@ class TestGc < Test::Unit::TestCase
 
       1_000_000.times { Object.new }
 
+      # Previous loop may have caused GC to be in an intermediate state,
+      # running a minor GC here will guarantee that GC will be complete
+      GC.start(full_mark: false)
+
       after_stats = GC.stat
 
       # Should not be thrashing in page creation
