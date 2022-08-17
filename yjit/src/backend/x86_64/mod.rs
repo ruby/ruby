@@ -122,7 +122,7 @@ impl Assembler
             //   - Most instructions can't be encoded with 64-bit immediates.
             //   - We look for Op::Load specifically when emiting to keep GC'ed
             //     VALUEs alive. This is a sort of canonicalization.
-            let opnds: Vec<Opnd> = insn.opnds.iter().map(|opnd| {
+            let mapped_opnds: Vec<Opnd> = insn.opnds.iter().map(|opnd| {
                 if insn.op == Op::Load {
                     iterator.map_opnd(*opnd)
                 } else if let Opnd::Value(value) = opnd {
@@ -138,129 +138,128 @@ impl Assembler
                 }
             }).collect();
 
-            match insn.op {
-                Op::Add | Op::Sub | Op::And | Op::Cmp | Op::Or | Op::Test | Op::Xor => {
-                    let (opnd0, opnd1) = match (insn.opnds[0], insn.opnds[1]) {
+            match insn {
+                Insn { op: Op::Add | Op::Sub | Op::And | Op::Cmp | Op::Or | Op::Test | Op::Xor, opnds, target, text, pos_marker, .. } => {
+                    let (opnd0, opnd1) = match (opnds[0], opnds[1]) {
                         (Opnd::Mem(_), Opnd::Mem(_)) => {
-                            (asm.load(opnds[0]), asm.load(opnds[1]))
+                            (asm.load(mapped_opnds[0]), asm.load(mapped_opnds[1]))
                         },
                         (Opnd::Mem(_), Opnd::UImm(value)) => {
                             // 32-bit values will be sign-extended
                             if imm_num_bits(value as i64) > 32 {
-                                (asm.load(opnds[0]), asm.load(opnds[1]))
+                                (asm.load(mapped_opnds[0]), asm.load(mapped_opnds[1]))
                             } else {
-                                (asm.load(opnds[0]), opnds[1])
+                                (asm.load(mapped_opnds[0]), mapped_opnds[1])
                             }
                         },
                         (Opnd::Mem(_), Opnd::Imm(value)) => {
                             if imm_num_bits(value) > 32 {
-                                (asm.load(opnds[0]), asm.load(opnds[1]))
+                                (asm.load(mapped_opnds[0]), asm.load(mapped_opnds[1]))
                             } else {
-                                (asm.load(opnds[0]), opnds[1])
+                                (asm.load(mapped_opnds[0]), mapped_opnds[1])
                             }
                         },
                         // Instruction output whose live range spans beyond this instruction
                         (Opnd::InsnOut { idx, .. }, _) => {
                             if live_ranges[idx] > index {
-                                (asm.load(opnds[0]), opnds[1])
+                                (asm.load(mapped_opnds[0]), mapped_opnds[1])
                             } else {
-                                (opnds[0], opnds[1])
+                                (mapped_opnds[0], mapped_opnds[1])
                             }
                         },
                         // We have to load memory operands to avoid corrupting them
                         (Opnd::Mem(_) | Opnd::Reg(_), _) => {
-                            (asm.load(opnds[0]), opnds[1])
+                            (asm.load(mapped_opnds[0]), mapped_opnds[1])
                         },
-                        _ => (opnds[0], opnds[1])
+                        _ => (mapped_opnds[0], mapped_opnds[1])
                     };
 
-                    asm.push_insn_parts(insn.op, vec![opnd0, opnd1], insn.target, insn.text, insn.pos_marker);
+                    asm.push_insn_parts(insn.op, vec![opnd0, opnd1], target, text, pos_marker);
                 },
                 // These instructions modify their input operand in-place, so we
                 // may need to load the input value to preserve it
-                Op::LShift | Op::RShift | Op::URShift => {
-                    let (opnd0, opnd1) = match (insn.opnds[0], insn.opnds[1]) {
+                Insn { op: Op::LShift | Op::RShift | Op::URShift, opnds, target, text, pos_marker, .. } => {
+                    let (opnd0, opnd1) = match (opnds[0], opnds[1]) {
                         // Instruction output whose live range spans beyond this instruction
                         (Opnd::InsnOut { idx, .. }, _) => {
                             if live_ranges[idx] > index {
-                                (asm.load(opnds[0]), opnds[1])
+                                (asm.load(mapped_opnds[0]), mapped_opnds[1])
                             } else {
-                                (opnds[0], opnds[1])
+                                (mapped_opnds[0], mapped_opnds[1])
                             }
                         },
                         // We have to load memory operands to avoid corrupting them
                         (Opnd::Mem(_) | Opnd::Reg(_), _) => {
-                            (asm.load(opnds[0]), opnds[1])
+                            (asm.load(mapped_opnds[0]), mapped_opnds[1])
                         },
-                        _ => (opnds[0], opnds[1])
+                        _ => (mapped_opnds[0], mapped_opnds[1])
                     };
 
-                    asm.push_insn_parts(insn.op, vec![opnd0, opnd1], insn.target, insn.text, insn.pos_marker);
+                    asm.push_insn_parts(insn.op, vec![opnd0, opnd1], target, text, pos_marker);
                 },
-                Op::CSelZ | Op::CSelNZ | Op::CSelE | Op::CSelNE |
-                Op::CSelL | Op::CSelLE | Op::CSelG | Op::CSelGE => {
-                    let new_opnds = opnds.into_iter().map(|opnd| {
+                Insn { op: Op::CSelZ | Op::CSelNZ | Op::CSelE | Op::CSelNE | Op::CSelL | Op::CSelLE | Op::CSelG | Op::CSelGE, target, text, pos_marker, .. } => {
+                    let new_opnds = mapped_opnds.into_iter().map(|opnd| {
                         match opnd {
                             Opnd::Reg(_) | Opnd::InsnOut { .. } => opnd,
                             _ => asm.load(opnd)
                         }
                     }).collect();
 
-                    asm.push_insn_parts(insn.op, new_opnds, insn.target, insn.text, insn.pos_marker);
+                    asm.push_insn_parts(insn.op, new_opnds, target, text, pos_marker);
                 },
-                Op::Mov => {
-                    match (opnds[0], opnds[1]) {
+                Insn { op: Op::Mov, .. } => {
+                    match (mapped_opnds[0], mapped_opnds[1]) {
                         (Opnd::Mem(_), Opnd::Mem(_)) => {
                             // We load opnd1 because for mov, opnd0 is the output
-                            let opnd1 = asm.load(opnds[1]);
-                            asm.mov(opnds[0], opnd1);
+                            let opnd1 = asm.load(mapped_opnds[1]);
+                            asm.mov(mapped_opnds[0], opnd1);
                         },
                         (Opnd::Mem(_), Opnd::UImm(value)) => {
                             // 32-bit values will be sign-extended
                             if imm_num_bits(value as i64) > 32 {
-                                let opnd1 = asm.load(opnds[1]);
-                                asm.mov(opnds[0], opnd1);
+                                let opnd1 = asm.load(mapped_opnds[1]);
+                                asm.mov(mapped_opnds[0], opnd1);
                             } else {
-                                asm.mov(opnds[0], opnds[1]);
+                                asm.mov(mapped_opnds[0], mapped_opnds[1]);
                             }
                         },
                         (Opnd::Mem(_), Opnd::Imm(value)) => {
                             if imm_num_bits(value) > 32 {
-                                let opnd1 = asm.load(opnds[1]);
-                                asm.mov(opnds[0], opnd1);
+                                let opnd1 = asm.load(mapped_opnds[1]);
+                                asm.mov(mapped_opnds[0], opnd1);
                             } else {
-                                asm.mov(opnds[0], opnds[1]);
+                                asm.mov(mapped_opnds[0], mapped_opnds[1]);
                             }
                         },
                         _ => {
-                            asm.mov(opnds[0], opnds[1]);
+                            asm.mov(mapped_opnds[0], mapped_opnds[1]);
                         }
                     }
                 },
-                Op::Not => {
-                    let opnd0 = match insn.opnds[0] {
+                Insn { op: Op::Not, opnds, .. } => {
+                    let opnd0 = match opnds[0] {
                         // If we have an instruction output whose live range
                         // spans beyond this instruction, we have to load it.
                         Opnd::InsnOut { idx, .. } => {
                             if live_ranges[idx] > index {
-                                asm.load(opnds[0])
+                                asm.load(mapped_opnds[0])
                             } else {
-                                opnds[0]
+                                mapped_opnds[0]
                             }
                         },
                         // We have to load memory and register operands to avoid
                         // corrupting them.
                         Opnd::Mem(_) | Opnd::Reg(_) => {
-                            asm.load(opnds[0])
+                            asm.load(mapped_opnds[0])
                         },
                         // Otherwise we can just reuse the existing operand.
-                        _ => opnds[0]
+                        _ => mapped_opnds[0]
                     };
 
                     asm.not(opnd0);
                 },
                 _ => {
-                    asm.push_insn_parts(insn.op, opnds, insn.target, insn.text, insn.pos_marker);
+                    asm.push_insn_parts(insn.op, mapped_opnds, insn.target, insn.text, insn.pos_marker);
                 }
             };
 
@@ -280,27 +279,27 @@ impl Assembler
 
         // For each instruction
         for insn in &self.insns {
-            match insn.op {
-                Op::Comment => {
+            match insn {
+                Insn { op: Op::Comment, text, .. } => {
                     if cfg!(feature = "asm_comments") {
-                        cb.add_comment(&insn.text.as_ref().unwrap());
+                        cb.add_comment(text.as_ref().unwrap());
                     }
                 },
 
                 // Write the label at the current position
-                Op::Label => {
-                    cb.write_label(insn.target.unwrap().unwrap_label_idx());
+                Insn { op: Op::Label, target, .. } => {
+                    cb.write_label(target.unwrap().unwrap_label_idx());
                 },
 
                 // Report back the current position in the generated code
-                Op::PosMarker => {
+                Insn { op: Op::PosMarker, pos_marker, .. } => {
                     let pos = cb.get_write_ptr();
-                    let pos_marker_fn = insn.pos_marker.as_ref().unwrap();
+                    let pos_marker_fn = pos_marker.as_ref().unwrap();
                     pos_marker_fn(pos);
-                }
+                },
 
-                Op::BakeString => {
-                    for byte in insn.text.as_ref().unwrap().as_bytes() {
+                Insn { op: Op::BakeString, text, .. } => {
+                    for byte in text.as_ref().unwrap().as_bytes() {
                         cb.write_byte(*byte);
                     }
 
@@ -309,53 +308,55 @@ impl Assembler
                     cb.write_byte(0);
                 },
 
-                Op::Add => {
-                    add(cb, insn.opnds[0].into(), insn.opnds[1].into())
+                Insn { op: Op::Add, opnds, .. } => {
+                    add(cb, opnds[0].into(), opnds[1].into())
                 },
 
-                Op::FrameSetup => {},
-                Op::FrameTeardown => {},
+                Insn { op: Op::FrameSetup, .. } => {},
+                Insn { op: Op::FrameTeardown, .. } => {},
 
-                Op::Sub => {
-                    sub(cb, insn.opnds[0].into(), insn.opnds[1].into())
+                Insn { op: Op::Sub, opnds, .. } => {
+                    sub(cb, opnds[0].into(), opnds[1].into())
                 },
 
-                Op::And => {
-                    and(cb, insn.opnds[0].into(), insn.opnds[1].into())
+                Insn { op: Op::And, opnds, .. } => {
+                    and(cb, opnds[0].into(), opnds[1].into())
                 },
 
-                Op::Or => {
-                    or(cb, insn.opnds[0].into(), insn.opnds[1].into());
+                Insn { op: Op::Or, opnds, .. } => {
+                    or(cb, opnds[0].into(), opnds[1].into());
                 },
 
-                Op::Xor => {
-                    xor(cb, insn.opnds[0].into(), insn.opnds[1].into());
+                Insn { op: Op::Xor, opnds, .. } => {
+                    xor(cb, opnds[0].into(), opnds[1].into());
                 },
 
-                Op::Not => {
-                    not(cb, insn.opnds[0].into())
+                Insn { op: Op::Not, opnds, .. } => {
+                    not(cb, opnds[0].into());
                 },
 
-                Op::LShift => {
-                    shl(cb, insn.opnds[0].into(), insn.opnds[1].into())
+                Insn { op: Op::LShift, opnds, .. } => {
+                    shl(cb, opnds[0].into(), opnds[1].into())
                 },
 
-                Op::RShift => {
-                    sar(cb, insn.opnds[0].into(), insn.opnds[1].into())
+                Insn { op: Op::RShift, opnds, .. } => {
+                    sar(cb, opnds[0].into(), opnds[1].into())
                 },
 
-                Op::URShift => {
-                    shr(cb, insn.opnds[0].into(), insn.opnds[1].into())
+                Insn { op: Op::URShift, opnds, .. } => {
+                    shr(cb, opnds[0].into(), opnds[1].into())
                 },
 
-                Op::Store => mov(cb, insn.opnds[0].into(), insn.opnds[1].into()),
+                Insn { op: Op::Store, opnds, .. } => {
+                    mov(cb, opnds[0].into(), opnds[1].into());
+                },
 
                 // This assumes only load instructions can contain references to GC'd Value operands
-                Op::Load => {
-                    mov(cb, insn.out.into(), insn.opnds[0].into());
+                Insn { op: Op::Load, opnds, out, .. } => {
+                    mov(cb, (*out).into(), opnds[0].into());
 
                     // If the value being loaded is a heap object
-                    if let Opnd::Value(val) = insn.opnds[0] {
+                    if let Opnd::Value(val) = opnds[0] {
                         if !val.special_const_p() {
                             // The pointer immediate is encoded as the last part of the mov written out
                             let ptr_offset: u32 = (cb.get_write_pos() as u32) - (SIZEOF_VALUE as u32);
@@ -364,35 +365,45 @@ impl Assembler
                     }
                 },
 
-                Op::LoadSExt => {
-                    movsx(cb, insn.out.into(), insn.opnds[0].into())
+                Insn { op: Op::LoadSExt, opnds, out, .. } => {
+                    movsx(cb, (*out).into(), opnds[0].into());
                 },
 
-                Op::Mov => mov(cb, insn.opnds[0].into(), insn.opnds[1].into()),
+                Insn { op: Op::Mov, opnds, .. } => {
+                    mov(cb, opnds[0].into(), opnds[1].into());
+                },
 
                 // Load effective address
-                Op::Lea => lea(cb, insn.out.into(), insn.opnds[0].into()),
+                Insn { op: Op::Lea, opnds, out, .. } => {
+                    lea(cb, (*out).into(), opnds[0].into());
+                },
 
                 // Load relative address
-                Op::LeaLabel => {
-                    let label_idx = insn.target.unwrap().unwrap_label_idx();
+                Insn { op: Op::LeaLabel, out, target, .. } => {
+                    let label_idx = target.unwrap().unwrap_label_idx();
 
                     cb.label_ref(label_idx, 7, |cb, src_addr, dst_addr| {
                         let disp = dst_addr - src_addr;
                         lea(cb, Self::SCRATCH0, mem_opnd(8, RIP, disp.try_into().unwrap()));
                     });
 
-                    mov(cb, insn.out.into(), Self::SCRATCH0);
+                    mov(cb, (*out).into(), Self::SCRATCH0);
                 },
 
                 // Push and pop to/from the C stack
-                Op::CPush => push(cb, insn.opnds[0].into()),
-                Op::CPop => pop(cb, insn.out.into()),
-                Op::CPopInto => pop(cb, insn.opnds[0].into()),
+                Insn { op: Op::CPush, opnds, .. } => {
+                    push(cb, opnds[0].into());
+                },
+                Insn { op: Op::CPop, out, .. } => {
+                    pop(cb, (*out).into());
+                },
+                Insn { op: Op::CPopInto, opnds, .. } => {
+                    pop(cb, opnds[0].into());
+                },
 
                 // Push and pop to the C stack all caller-save registers and the
                 // flags
-                Op::CPushAll => {
+                Insn { op: Op::CPushAll, .. } => {
                     let regs = Assembler::get_caller_save_regs();
 
                     for reg in regs {
@@ -400,7 +411,7 @@ impl Assembler
                     }
                     pushfq(cb);
                 },
-                Op::CPopAll => {
+                Insn { op: Op::CPopAll, .. } => {
                     let regs = Assembler::get_caller_save_regs();
 
                     popfq(cb);
@@ -410,95 +421,101 @@ impl Assembler
                 },
 
                 // C function call
-                Op::CCall => {
+                Insn { op: Op::CCall, opnds, target, .. } => {
                     // Temporary
-                    assert!(insn.opnds.len() <= _C_ARG_OPNDS.len());
+                    assert!(opnds.len() <= _C_ARG_OPNDS.len());
 
                     // For each operand
-                    for (idx, opnd) in insn.opnds.iter().enumerate() {
-                        mov(cb, X86Opnd::Reg(_C_ARG_OPNDS[idx].unwrap_reg()), insn.opnds[idx].into());
+                    for (idx, opnd) in opnds.iter().enumerate() {
+                        mov(cb, X86Opnd::Reg(_C_ARG_OPNDS[idx].unwrap_reg()), opnds[idx].into());
                     }
 
-                    let ptr = insn.target.unwrap().unwrap_fun_ptr();
+                    let ptr = target.unwrap().unwrap_fun_ptr();
                     call_ptr(cb, RAX, ptr);
                 },
 
-                Op::CRet => {
+                Insn { op: Op::CRet, opnds, .. } => {
                     // TODO: bias allocation towards return register
-                    if insn.opnds[0] != Opnd::Reg(C_RET_REG) {
-                        mov(cb, RAX, insn.opnds[0].into());
+                    if opnds[0] != Opnd::Reg(C_RET_REG) {
+                        mov(cb, RAX, opnds[0].into());
                     }
 
                     ret(cb);
-                }
+                },
 
                 // Compare
-                Op::Cmp => cmp(cb, insn.opnds[0].into(), insn.opnds[1].into()),
+                Insn { op: Op::Cmp, opnds, .. } => {
+                    cmp(cb, opnds[0].into(), opnds[1].into());
+                }
 
                 // Test and set flags
-                Op::Test => test(cb, insn.opnds[0].into(), insn.opnds[1].into()),
+                Insn { op: Op::Test, opnds, .. } => {
+                    test(cb, opnds[0].into(), opnds[1].into());
+                }
 
-                Op::JmpOpnd => jmp_rm(cb, insn.opnds[0].into()),
+                Insn { op: Op::JmpOpnd, opnds, .. } => {
+                    jmp_rm(cb, opnds[0].into());
+                }
 
                 // Conditional jump to a label
-                Op::Jmp => {
-                    match insn.target.unwrap() {
+                Insn { op: Op::Jmp, target, .. } => {
+                    match target.unwrap() {
                         Target::CodePtr(code_ptr) => jmp_ptr(cb, code_ptr),
                         Target::Label(label_idx) => jmp_label(cb, label_idx),
                         _ => unreachable!()
                     }
                 }
 
-                Op::Je => {
-                    match insn.target.unwrap() {
+                Insn { op: Op::Je, target, .. } => {
+                    match target.unwrap() {
                         Target::CodePtr(code_ptr) => je_ptr(cb, code_ptr),
                         Target::Label(label_idx) => je_label(cb, label_idx),
                         _ => unreachable!()
                     }
                 }
 
-                Op::Jne => {
-                    match insn.target.unwrap() {
+                Insn { op: Op::Jne, target, .. } => {
+                    match target.unwrap() {
                         Target::CodePtr(code_ptr) => jne_ptr(cb, code_ptr),
                         Target::Label(label_idx) => jne_label(cb, label_idx),
                         _ => unreachable!()
                     }
                 }
 
-                Op::Jl => {
-                    match insn.target.unwrap() {
+                Insn { op: Op::Jl, target, .. } => {
+                    match target.unwrap() {
                         Target::CodePtr(code_ptr) => jl_ptr(cb, code_ptr),
                         Target::Label(label_idx) => jl_label(cb, label_idx),
                         _ => unreachable!()
                     }
                 },
 
-                Op::Jbe => {
-                    match insn.target.unwrap() {
+                Insn { op: Op::Jbe, target, .. } => {
+                    match target.unwrap() {
                         Target::CodePtr(code_ptr) => jbe_ptr(cb, code_ptr),
                         Target::Label(label_idx) => jbe_label(cb, label_idx),
                         _ => unreachable!()
                     }
                 },
 
-                Op::Jz => {
-                    match insn.target.unwrap() {
+                Insn { op: Op::Jz, target, .. } => {
+                    match target.unwrap() {
                         Target::CodePtr(code_ptr) => jz_ptr(cb, code_ptr),
                         Target::Label(label_idx) => jz_label(cb, label_idx),
                         _ => unreachable!()
                     }
                 }
 
-                Op::Jnz => {
-                    match insn.target.unwrap() {
+                Insn { op: Op::Jnz, target, .. } => {
+                    match target.unwrap() {
                         Target::CodePtr(code_ptr) => jnz_ptr(cb, code_ptr),
                         Target::Label(label_idx) => jnz_label(cb, label_idx),
                         _ => unreachable!()
                     }
                 }
 
-                Op::Jo => {
-                    match insn.target.unwrap() {
+                Insn { op: Op::Jo, target, .. } => {
+                    match target.unwrap() {
                         Target::CodePtr(code_ptr) => jo_ptr(cb, code_ptr),
                         Target::Label(label_idx) => jo_label(cb, label_idx),
                         _ => unreachable!()
@@ -506,48 +523,48 @@ impl Assembler
                 }
 
                 // Atomically increment a counter at a given memory location
-                Op::IncrCounter => {
-                    assert!(matches!(insn.opnds[0], Opnd::Mem(_)));
-                    assert!(matches!(insn.opnds[1], Opnd::UImm(_) | Opnd::Imm(_) ) );
+                Insn { op: Op::IncrCounter, opnds, .. } => {
+                    assert!(matches!(opnds[0], Opnd::Mem(_)));
+                    assert!(matches!(opnds[1], Opnd::UImm(_) | Opnd::Imm(_) ) );
                     write_lock_prefix(cb);
-                    add(cb, insn.opnds[0].into(), insn.opnds[1].into());
+                    add(cb, opnds[0].into(), opnds[1].into());
                 },
 
-                Op::Breakpoint => int3(cb),
+                Insn { op: Op::Breakpoint, .. } => int3(cb),
 
-                Op::CSelZ => {
-                    mov(cb, insn.out.into(), insn.opnds[0].into());
-                    cmovnz(cb, insn.out.into(), insn.opnds[1].into());
+                Insn { op: Op::CSelZ, opnds, out, .. } => {
+                    mov(cb, (*out).into(), opnds[0].into());
+                    cmovnz(cb, (*out).into(), opnds[1].into());
                 },
-                Op::CSelNZ => {
-                    mov(cb, insn.out.into(), insn.opnds[0].into());
-                    cmovz(cb, insn.out.into(), insn.opnds[1].into());
+                Insn { op: Op::CSelNZ, opnds, out, .. } => {
+                    mov(cb, (*out).into(), opnds[0].into());
+                    cmovz(cb, (*out).into(), opnds[1].into());
                 },
-                Op::CSelE => {
-                    mov(cb, insn.out.into(), insn.opnds[0].into());
-                    cmovne(cb, insn.out.into(), insn.opnds[1].into());
+                Insn { op: Op::CSelE, opnds, out, .. } => {
+                    mov(cb, (*out).into(), opnds[0].into());
+                    cmovne(cb, (*out).into(), opnds[1].into());
                 },
-                Op::CSelNE => {
-                    mov(cb, insn.out.into(), insn.opnds[0].into());
-                    cmove(cb, insn.out.into(), insn.opnds[1].into());
+                Insn { op: Op::CSelNE, opnds, out, .. } => {
+                    mov(cb, (*out).into(), opnds[0].into());
+                    cmove(cb, (*out).into(), opnds[1].into());
                 },
-                Op::CSelL => {
-                    mov(cb, insn.out.into(), insn.opnds[0].into());
-                    cmovge(cb, insn.out.into(), insn.opnds[1].into());
+                Insn { op: Op::CSelL, opnds, out, .. } => {
+                    mov(cb, (*out).into(), opnds[0].into());
+                    cmovge(cb, (*out).into(), opnds[1].into());
                 },
-                Op::CSelLE => {
-                    mov(cb, insn.out.into(), insn.opnds[0].into());
-                    cmovg(cb, insn.out.into(), insn.opnds[1].into());
+                Insn { op: Op::CSelLE, opnds, out, .. } => {
+                    mov(cb, (*out).into(), opnds[0].into());
+                    cmovg(cb, (*out).into(), opnds[1].into());
                 },
-                Op::CSelG => {
-                    mov(cb, insn.out.into(), insn.opnds[0].into());
-                    cmovle(cb, insn.out.into(), insn.opnds[1].into());
+                Insn { op: Op::CSelG, opnds, out, .. } => {
+                    mov(cb, (*out).into(), opnds[0].into());
+                    cmovle(cb, (*out).into(), opnds[1].into());
                 },
-                Op::CSelGE => {
-                    mov(cb, insn.out.into(), insn.opnds[0].into());
-                    cmovl(cb, insn.out.into(), insn.opnds[1].into());
+                Insn { op: Op::CSelGE, opnds, out, .. } => {
+                    mov(cb, (*out).into(), opnds[0].into());
+                    cmovl(cb, (*out).into(), opnds[1].into());
                 }
-                Op::LiveReg => (), // just a reg alloc signal, no code
+                Insn { op: Op::LiveReg, .. } => (), // just a reg alloc signal, no code
 
                 // We want to keep the panic here because some instructions that
                 // we feed to the backend could get lowered into other
