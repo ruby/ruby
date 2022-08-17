@@ -927,6 +927,10 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
         flags = FNONE;
     }
 
+    if (coderange != ENC_CODERANGE_BROKEN && scanned < blen) {
+        scanned += rb_str_coderange_scan_restartable(buf+scanned, buf+blen, enc, &coderange);
+        ENC_CODERANGE_SET(result, coderange);
+    }
   sprint_exit:
     rb_str_tmp_frozen_release(orig, fmt);
     /* XXX - We cannot validate the number of arguments if (digit)$ style used.
@@ -937,8 +941,6 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
         if (RTEST(ruby_verbose)) rb_warn("%s", mesg);
     }
     rb_str_resize(result, blen);
-    // rb_str_format mutates the string without updating coderange
-    ENC_CODERANGE_CLEAR(result);
 
     return result;
 }
