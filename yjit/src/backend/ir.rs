@@ -286,14 +286,19 @@ impl Opnd
         }
     }
 
-    /// Get the size in bits for register/memory operands
-    pub fn rm_num_bits(&self) -> u8 {
+    /// Get the size in bits for this operand if there is one.
+    fn num_bits(&self) -> Option<u8> {
         match *self {
-            Opnd::Reg(reg) => reg.num_bits,
-            Opnd::Mem(mem) => mem.num_bits,
-            Opnd::InsnOut{ num_bits, .. } => num_bits,
-            _ => unreachable!()
+            Opnd::Reg(Reg { num_bits, .. }) => Some(num_bits),
+            Opnd::Mem(Mem { num_bits, .. }) => Some(num_bits),
+            Opnd::InsnOut { num_bits, .. } => Some(num_bits),
+            _ => None
         }
+    }
+
+    /// Get the size in bits for register/memory operands.
+    pub fn rm_num_bits(&self) -> u8 {
+        self.num_bits().unwrap()
     }
 
     /// Maps the indices from a previous list of instructions to a new list of
@@ -308,6 +313,27 @@ impl Opnd
             },
             _ => self
         }
+    }
+
+    /// Determine the size in bits of the slice of the given operands. If any of
+    /// them are different sizes this will panic.
+    fn match_num_bits(opnds: &[Opnd]) -> u8 {
+        let mut value: Option<u8> = None;
+
+        for opnd in opnds {
+            if let Some(num_bits) = opnd.num_bits() {
+                match value {
+                    None => {
+                        value = Some(num_bits);
+                    },
+                    Some(value) => {
+                        assert_eq!(value, num_bits, "operands of incompatible sizes");
+                    }
+                };
+            }
+        }
+
+        value.unwrap_or(64)
     }
 }
 
@@ -470,30 +496,10 @@ impl Assembler
     /// given slice of operands. The operands are given to determine the number
     /// of bits necessary for the output operand. They should all be the same
     /// size.
-    fn next_opnd_out(&self, opnds: &[Opnd]) -> Opnd {
-        let mut out_num_bits: Option<u8> = None;
-
-        for opnd in opnds {
-            match opnd {
-                Opnd::InsnOut { num_bits, .. } |
-                Opnd::Mem(Mem { num_bits, .. }) |
-                Opnd::Reg(Reg { num_bits, .. }) => {
-                    match out_num_bits {
-                        None => {
-                            out_num_bits = Some(*num_bits);
-                        },
-                        Some(out_num_bits) => {
-                            assert_eq!(out_num_bits, *num_bits, "operands of incompatible sizes");
-                        }
-                    };
-                }
-                _ => {}
-            }
-        }
-
+    pub(super) fn next_opnd_out(&self, opnds: &[Opnd]) -> Opnd {
         Opnd::InsnOut {
             idx: self.insns.len(),
-            num_bits: out_num_bits.unwrap_or(64)
+            num_bits: Opnd::match_num_bits(opnds)
         }
     }
 
@@ -619,14 +625,14 @@ impl Assembler
         let mut asm = Assembler::new_with_label_names(take(&mut self.label_names));
         let mut iterator = self.into_draining_iter();
 
-        while let Some((index, insn)) = iterator.next_unmapped() {
+        while let Some((index, mut insn)) = iterator.next_unmapped() {
             // Check if this is the last instruction that uses an operand that
             // spans more than one instruction. In that case, return the
             // allocated register to the pool.
             for opnd in &insn.opnds {
                 match opnd {
-                    Opnd::InsnOut{idx, .. } |
-                    Opnd::Mem( Mem { base: MemBase::InsnOut(idx), .. }) => {
+                    Opnd::InsnOut{ idx, .. } |
+                    Opnd::Mem(Mem { base: MemBase::InsnOut(idx), .. }) => {
                         // Since we have an InsnOut, we know it spans more that one
                         // instruction.
                         let start_index = *idx;
@@ -643,7 +649,6 @@ impl Assembler
                             }
                         }
                     }
-
                     _ => {}
                 }
             }
@@ -655,12 +660,23 @@ impl Assembler
 
             // If this instruction is used by another instruction,
             // we need to allocate a register to it
-            let mut out_reg = Opnd::None;
             if live_ranges[index] != index {
+                // If we get to this point where the end of the live range is
+                // not equal to the index of the instruction, then it must be
+                // true that we set an output operand for this instruction. If
+                // it's not true, something has gone wrong.
+                assert!(
+                    !matches!(insn.out, Opnd::None),
+                    "Instruction output reused but no output operand set"
+                );
+
+                // This is going to be the output operand that we will set on
+                // the instruction.
+                let mut out_reg: Option<Reg> = None;
 
                 // C return values need to be mapped to the C return register
                 if insn.op == Op::CCall {
-                    out_reg = Opnd::Reg(take_reg(&mut pool, &regs, &C_RET_REG))
+                    out_reg = Some(take_reg(&mut pool, &regs, &C_RET_REG));
                 }
 
                 // If this instruction's first operand maps to a register and
@@ -672,50 +688,44 @@ impl Assembler
                     if let Opnd::InsnOut{idx, ..} = insn.opnds[0] {
                         if live_ranges[idx] == index {
                             if let Opnd::Reg(reg) = asm.insns[idx].out {
-                                out_reg = Opnd::Reg(take_reg(&mut pool, &regs, &reg))
+                                out_reg = Some(take_reg(&mut pool, &regs, &reg));
                             }
                         }
                     }
                 }
 
-                // Allocate a new register for this instruction
-                if out_reg == Opnd::None {
+                // Allocate a new register for this instruction if one is not
+                // already allocated.
+                if out_reg.is_none() {
                     out_reg = if insn.op == Op::LiveReg {
                         // Allocate a specific register
                         let reg = insn.opnds[0].unwrap_reg();
-                        Opnd::Reg(take_reg(&mut pool, &regs, &reg))
+                        Some(take_reg(&mut pool, &regs, &reg))
                     } else {
-                        Opnd::Reg(alloc_reg(&mut pool, &regs))
-                    }
+                        Some(alloc_reg(&mut pool, &regs))
+                    };
                 }
+
+                // Set the output operand on the instruction
+                let out_num_bits = Opnd::match_num_bits(&insn.opnds);
+                insn.out = Opnd::Reg(out_reg.unwrap().sub_reg(out_num_bits));
             }
 
             // Replace InsnOut operands by their corresponding register
-            let reg_opnds: Vec<Opnd> = insn.opnds.into_iter().map(|opnd|
-                match opnd {
-                    Opnd::InsnOut{idx, ..} => asm.insns[idx].out,
+            for opnd in &mut insn.opnds {
+                match *opnd {
+                    Opnd::InsnOut { idx, .. } => {
+                        *opnd = asm.insns[idx].out;
+                    },
                     Opnd::Mem(Mem { base: MemBase::InsnOut(idx), disp, num_bits }) => {
-                        let out_reg = asm.insns[idx].out.unwrap_reg();
-                        Opnd::Mem(Mem {
-                            base: MemBase::Reg(out_reg.reg_no),
-                            disp,
-                            num_bits
-                        })
+                        let base = MemBase::Reg(asm.insns[idx].out.unwrap_reg().reg_no);
+                        *opnd = Opnd::Mem(Mem { base, disp, num_bits });
                     }
-                     _ => opnd,
+                     _ => {},
                 }
-            ).collect();
-
-            asm.push_insn_parts(insn.op, reg_opnds, insn.target, insn.text, insn.pos_marker);
-
-            // Set the output register for this instruction
-            let num_insns = asm.insns.len();
-            let mut new_insn = &mut asm.insns[num_insns - 1];
-            if let Opnd::Reg(reg) = out_reg {
-                let num_out_bits = new_insn.out.rm_num_bits();
-                out_reg = Opnd::Reg(reg.sub_reg(num_out_bits))
             }
-            new_insn.out = out_reg;
+
+            asm.push_insn(insn);
         }
 
         assert_eq!(pool, 0, "Expected all registers to be returned to the pool");
