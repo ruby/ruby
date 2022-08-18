@@ -4033,8 +4033,11 @@ fn gen_send_cfunc(
     if !kw_arg.is_null() {
         // Build a hash from all kwargs passed
         asm.comment("build_kwhash");
+        let imemo_ci = VALUE(ci as usize);
+        assert_ne!(0, unsafe { rb_IMEMO_TYPE_P(imemo_ci, imemo_callinfo) },
+            "we assume all callinfos with kwargs are on the GC heap");
         let sp = asm.lea(ctx.sp_opnd(0));
-        let kwargs = asm.ccall(build_kwhash as *const u8, vec![Opnd::UImm(ci as u64), sp]);
+        let kwargs = asm.ccall(build_kwhash as *const u8, vec![imemo_ci.into(), sp]);
 
         // Replace the stack location at the start of kwargs with the new hash
         let stack_opnd = ctx.stack_opnd(argc - passed_argc);
