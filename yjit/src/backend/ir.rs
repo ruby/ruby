@@ -24,155 +24,6 @@ pub const SP: Opnd = _SP;
 pub const C_ARG_OPNDS: [Opnd; 6] = _C_ARG_OPNDS;
 pub const C_RET_OPND: Opnd = _C_RET_OPND;
 
-/// Instruction opcodes
-#[derive(Copy, Clone, PartialEq, Eq, Debug)]
-pub enum Op
-{
-    // Add a comment into the IR at the point that this instruction is added.
-    // It won't have any impact on that actual compiled code.
-    Comment,
-
-    // Add a label into the IR at the point that this instruction is added.
-    Label,
-
-    // Mark a position in the generated code
-    PosMarker,
-
-    // Bake a string directly into the instruction stream.
-    BakeString,
-
-    // Add two operands together, and return the result as a new operand. This
-    // operand can then be used as the operand on another instruction. It
-    // accepts two operands, which can be of any type
-    //
-    // Under the hood when allocating registers, the IR will determine the most
-    // efficient way to get these values into memory. For example, if both
-    // operands are immediates, then it will load the first one into a register
-    // first with a mov instruction and then add them together. If one of them
-    // is a register, however, it will just perform a single add instruction.
-    Add,
-
-    // This is the same as the OP_ADD instruction, except for subtraction.
-    Sub,
-
-    // This is the same as the OP_ADD instruction, except that it performs the
-    // binary AND operation.
-    And,
-
-    // This is the same as the OP_ADD instruction, except that it performs the
-    // binary OR operation.
-    Or,
-
-    // This is the same as the OP_ADD instruction, except that it performs the
-    // binary XOR operation.
-    Xor,
-
-    // Perform the NOT operation on an individual operand, and return the result
-    // as a new operand. This operand can then be used as the operand on another
-    // instruction.
-    Not,
-
-    /// Shift a value right by a certain amount (signed).
-    RShift,
-
-    /// Shift a value right by a certain amount (unsigned).
-    URShift,
-
-    /// Shift a value left by a certain amount.
-    LShift,
-
-    //
-    // Low-level instructions
-    //
-
-    // A low-level instruction that loads a value into a register.
-    Load,
-
-    // A low-level instruction that loads a value into a register and
-    // sign-extends it to a 64-bit value.
-    LoadSExt,
-
-    // Low-level instruction to store a value to memory.
-    Store,
-
-    // Load effective address
-    Lea,
-
-    // Load effective address relative to the current instruction pointer. It
-    // accepts a single signed immediate operand.
-    LeaLabel,
-
-    // A low-level mov instruction. It accepts two operands.
-    Mov,
-
-    // Bitwise AND test instruction
-    Test,
-
-    // Compare two operands
-    Cmp,
-
-    // Unconditional jump to a branch target
-    Jmp,
-
-    // Unconditional jump which takes a reg/mem address operand
-    JmpOpnd,
-
-    // Low-level conditional jump instructions
-    Jl,
-    Jbe,
-    Je,
-    Jne,
-    Jz,
-    Jnz,
-    Jo,
-
-    // Conditional select instructions
-    CSelZ,
-    CSelNZ,
-    CSelE,
-    CSelNE,
-    CSelL,
-    CSelLE,
-    CSelG,
-    CSelGE,
-
-    // Push and pop registers to/from the C stack
-    CPush,
-    CPop,
-    CPopInto,
-
-    // Push and pop all of the caller-save registers and the flags to/from the C
-    // stack
-    CPushAll,
-    CPopAll,
-
-    // C function call with N arguments (variadic)
-    CCall,
-
-    // C function return
-    CRet,
-
-    // Atomically increment a counter
-    // Input: memory operand, increment value
-    // Produces no output
-    IncrCounter,
-
-    // Trigger a debugger breakpoint
-    Breakpoint,
-
-    /// Set up the frame stack as necessary per the architecture.
-    FrameSetup,
-
-    /// Tear down the frame stack as necessary per the architecture.
-    FrameTeardown,
-
-    /// Take a specific register. Signal the register allocator to not use it.
-    LiveReg,
-
-    /// Pad nop instructions to accomodate Op::Jmp in case the block is invalidated.
-    PadEntryExit,
-}
-
 // Memory operand base
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub enum MemBase
@@ -429,26 +280,170 @@ impl From<CodePtr> for Target {
 type PosMarkerFn = Box<dyn Fn(CodePtr)>;
 
 /// YJIT IR instruction
-pub struct Insn
-{
-    // Opcode for the instruction
-    pub(super) op: Op,
+pub enum Insn {
+    /// Add two operands together, and return the result as a new operand.
+    Add { left: Opnd, right: Opnd, out: Opnd },
 
-    // Optional string for comments and labels
-    pub(super) text: Option<String>,
+    /// This is the same as the OP_ADD instruction, except that it performs the
+    /// binary AND operation.
+    And { left: Opnd, right: Opnd, out: Opnd },
 
-    // List of input operands/values
-    pub(super) opnds: Vec<Opnd>,
+    /// Bake a string directly into the instruction stream.
+    BakeString(String),
 
-    // Output operand for this instruction
-    pub(super) out: Opnd,
+    // Trigger a debugger breakpoint
+    Breakpoint,
 
-    // List of branch targets (branch instructions only)
-    pub(super) target: Option<Target>,
+    /// Add a comment into the IR at the point that this instruction is added.
+    /// It won't have any impact on that actual compiled code.
+    Comment(String),
 
-    // Callback to mark the position of this instruction
-    // in the generated code
-    pub(super) pos_marker: Option<PosMarkerFn>,
+    /// Compare two operands
+    Cmp { left: Opnd, right: Opnd },
+
+    /// Pop a register from the C stack
+    CPop { out: Opnd },
+
+    /// Pop all of the caller-save registers and the flags from the C stack
+    CPopAll,
+
+    /// Pop a register from the C stack and store it into another register
+    CPopInto(Opnd),
+
+    /// Push a register onto the C stack
+    CPush(Opnd),
+
+    /// Push all of the caller-save registers and the flags to the C stack
+    CPushAll,
+
+    // C function call with N arguments (variadic)
+    CCall { opnds: Vec<Opnd>, target: Target, out: Opnd },
+
+    // C function return
+    CRet(Opnd),
+
+    /// Conditionally select if equal
+    CSelE { truthy: Opnd, falsy: Opnd, out: Opnd },
+
+    /// Conditionally select if greater
+    CSelG { truthy: Opnd, falsy: Opnd, out: Opnd },
+
+    /// Conditionally select if greater or equal
+    CSelGE { truthy: Opnd, falsy: Opnd, out: Opnd },
+
+    /// Conditionally select if less
+    CSelL { truthy: Opnd, falsy: Opnd, out: Opnd },
+
+    /// Conditionally select if less or equal
+    CSelLE { truthy: Opnd, falsy: Opnd, out: Opnd },
+
+    /// Conditionally select if not equal
+    CSelNE { truthy: Opnd, falsy: Opnd, out: Opnd },
+
+    /// Conditionally select if not zero
+    CSelNZ { truthy: Opnd, falsy: Opnd, out: Opnd },
+
+    /// Conditionally select if zero
+    CSelZ { truthy: Opnd, falsy: Opnd, out: Opnd },
+
+    /// Set up the frame stack as necessary per the architecture.
+    FrameSetup,
+
+    /// Tear down the frame stack as necessary per the architecture.
+    FrameTeardown,
+
+    // Atomically increment a counter
+    // Input: memory operand, increment value
+    // Produces no output
+    IncrCounter { mem: Opnd, value: Opnd },
+
+    /// Jump if below or equal
+    Jbe(Target),
+
+    /// Jump if equal
+    Je(Target),
+
+    /// Jump if lower
+    Jl(Target),
+
+    // Unconditional jump to a branch target
+    Jmp(Target),
+
+    // Unconditional jump which takes a reg/mem address operand
+    JmpOpnd(Opnd),
+
+    /// Jump if not equal
+    Jne(Target),
+
+    /// Jump if not zero
+    Jnz(Target),
+
+    /// Jump if overflow
+    Jo(Target),
+
+    /// Jump if zero
+    Jz(Target),
+
+    // Add a label into the IR at the point that this instruction is added.
+    Label(Target),
+
+    // Load effective address relative to the current instruction pointer. It
+    // accepts a single signed immediate operand.
+    LeaLabel { target: Target, out: Opnd },
+
+    // Load effective address
+    Lea { opnd: Opnd, out: Opnd },
+
+    /// Take a specific register. Signal the register allocator to not use it.
+    LiveReg { opnd: Opnd, out: Opnd },
+
+    // A low-level instruction that loads a value into a register.
+    Load { opnd: Opnd, out: Opnd },
+
+    // A low-level instruction that loads a value into a register and
+    // sign-extends it to a 64-bit value.
+    LoadSExt { opnd: Opnd, out: Opnd },
+
+    /// Shift a value left by a certain amount.
+    LShift { opnd: Opnd, shift: Opnd, out: Opnd },
+
+    // A low-level mov instruction. It accepts two operands.
+    Mov { dest: Opnd, src: Opnd },
+
+    // Perform the NOT operation on an individual operand, and return the result
+    // as a new operand. This operand can then be used as the operand on another
+    // instruction.
+    Not { opnd: Opnd, out: Opnd },
+
+    // This is the same as the OP_ADD instruction, except that it performs the
+    // binary OR operation.
+    Or { left: Opnd, right: Opnd, out: Opnd },
+
+    /// Pad nop instructions to accomodate Op::Jmp in case the block is
+    /// invalidated.
+    PadEntryExit,
+
+    // Mark a position in the generated code
+    PosMarker(PosMarkerFn),
+
+    /// Shift a value right by a certain amount (signed).
+    RShift { opnd: Opnd, shift: Opnd, out: Opnd },
+
+    // Low-level instruction to store a value to memory.
+    Store { dest: Opnd, src: Opnd },
+
+    // This is the same as the OP_ADD instruction, except for subtraction.
+    Sub { left: Opnd, right: Opnd, out: Opnd },
+
+    // Bitwise AND test instruction
+    Test { left: Opnd, right: Opnd },
+
+    /// Shift a value right by a certain amount (unsigned).
+    URShift { opnd: Opnd, shift: Opnd, out: Opnd },
+
+    // This is the same as the OP_ADD instruction, except that it performs the
+    // binary XOR operation.
+    Xor { left: Opnd, right: Opnd, out: Opnd }
 }
 
 impl Insn {
@@ -464,34 +459,92 @@ impl Insn {
         InsnOpndMutIterator::new(self)
     }
 
+    /// Returns a string that describes which operation this instruction is
+    /// performing. This is used for debugging.
+    fn op(&self) -> &'static str {
+        match self {
+            Insn::Add { .. } => "Add",
+            Insn::And { .. } => "And",
+            Insn::BakeString(_) => "BakeString",
+            Insn::Breakpoint => "Breakpoint",
+            Insn::Comment(_) => "Comment",
+            Insn::Cmp { .. } => "Cmp",
+            Insn::CPop { .. } => "CPop",
+            Insn::CPopAll => "CPopAll",
+            Insn::CPopInto(_) => "CPopInto",
+            Insn::CPush(_) => "CPush",
+            Insn::CPushAll => "CPushAll",
+            Insn::CCall { .. } => "CCall",
+            Insn::CRet(_) => "CRet",
+            Insn::CSelE { .. } => "CSelE",
+            Insn::CSelG { .. } => "CSelG",
+            Insn::CSelGE { .. } => "CSelGE",
+            Insn::CSelL { .. } => "CSelL",
+            Insn::CSelLE { .. } => "CSelLE",
+            Insn::CSelNE { .. } => "CSelNE",
+            Insn::CSelNZ { .. } => "CSelNZ",
+            Insn::CSelZ { .. } => "CSelZ",
+            Insn::FrameSetup => "FrameSetup",
+            Insn::FrameTeardown => "FrameTeardown",
+            Insn::IncrCounter { .. } => "IncrCounter",
+            Insn::Jbe(_) => "Jbe",
+            Insn::Je(_) => "Je",
+            Insn::Jl(_) => "Jl",
+            Insn::Jmp(_) => "Jmp",
+            Insn::JmpOpnd(_) => "JmpOpnd",
+            Insn::Jne(_) => "Jne",
+            Insn::Jnz(_) => "Jnz",
+            Insn::Jo(_) => "Jo",
+            Insn::Jz(_) => "Jz",
+            Insn::Label(_) => "Label",
+            Insn::LeaLabel { .. } => "LeaLabel",
+            Insn::Lea { .. } => "Lea",
+            Insn::LiveReg { .. } => "LiveReg",
+            Insn::Load { .. } => "Load",
+            Insn::LoadSExt { .. } => "LoadSExt",
+            Insn::LShift { .. } => "LShift",
+            Insn::Mov { .. } => "Mov",
+            Insn::Not { .. } => "Not",
+            Insn::Or { .. } => "Or",
+            Insn::PadEntryExit => "PadEntryExit",
+            Insn::PosMarker(_) => "PosMarker",
+            Insn::RShift { .. } => "RShift",
+            Insn::Store { .. } => "Store",
+            Insn::Sub { .. } => "Sub",
+            Insn::Test { .. } => "Test",
+            Insn::URShift { .. } => "URShift",
+            Insn::Xor { .. } => "Xor"
+        }
+    }
+
     /// Return a non-mutable reference to the out operand for this instruction
     /// if it has one.
     pub fn out_opnd(&self) -> Option<&Opnd> {
         match self {
-            Insn { op: Op::Add, out, .. } |
-            Insn { op: Op::And, out, .. } |
-            Insn { op: Op::CCall, out, .. } |
-            Insn { op: Op::CPop, out, .. } |
-            Insn { op: Op::CSelE, out, .. } |
-            Insn { op: Op::CSelG, out, .. } |
-            Insn { op: Op::CSelGE, out, .. } |
-            Insn { op: Op::CSelL, out, .. } |
-            Insn { op: Op::CSelLE, out, .. } |
-            Insn { op: Op::CSelNE, out, .. } |
-            Insn { op: Op::CSelNZ, out, .. } |
-            Insn { op: Op::CSelZ, out, .. } |
-            Insn { op: Op::Lea, out, .. } |
-            Insn { op: Op::LeaLabel, out, .. } |
-            Insn { op: Op::LiveReg, out, .. } |
-            Insn { op: Op::Load, out, .. } |
-            Insn { op: Op::LoadSExt, out, .. } |
-            Insn { op: Op::LShift, out, .. } |
-            Insn { op: Op::Not, out, .. } |
-            Insn { op: Op::Or, out, .. } |
-            Insn { op: Op::RShift, out, .. } |
-            Insn { op: Op::Sub, out, .. } |
-            Insn { op: Op::URShift, out, .. } |
-            Insn { op: Op::Xor, out, .. } => Some(out),
+            Insn::Add { out, .. } |
+            Insn::And { out, .. } |
+            Insn::CCall { out, .. } |
+            Insn::CPop { out, .. } |
+            Insn::CSelE { out, .. } |
+            Insn::CSelG { out, .. } |
+            Insn::CSelGE { out, .. } |
+            Insn::CSelL { out, .. } |
+            Insn::CSelLE { out, .. } |
+            Insn::CSelNE { out, .. } |
+            Insn::CSelNZ { out, .. } |
+            Insn::CSelZ { out, .. } |
+            Insn::Lea { out, .. } |
+            Insn::LeaLabel { out, .. } |
+            Insn::LiveReg { out, .. } |
+            Insn::Load { out, .. } |
+            Insn::LoadSExt { out, .. } |
+            Insn::LShift { out, .. } |
+            Insn::Not { out, .. } |
+            Insn::Or { out, .. } |
+            Insn::RShift { out, .. } |
+            Insn::Sub { out, .. } |
+            Insn::URShift { out, .. } |
+            Insn::Xor { out, .. } => Some(out),
             _ => None
         }
     }
@@ -500,30 +553,55 @@ impl Insn {
     /// has one.
     pub fn out_opnd_mut(&mut self) -> Option<&mut Opnd> {
         match self {
-            Insn { op: Op::Add, out, .. } |
-            Insn { op: Op::And, out, .. } |
-            Insn { op: Op::CCall, out, .. } |
-            Insn { op: Op::CPop, out, .. } |
-            Insn { op: Op::CSelE, out, .. } |
-            Insn { op: Op::CSelG, out, .. } |
-            Insn { op: Op::CSelGE, out, .. } |
-            Insn { op: Op::CSelL, out, .. } |
-            Insn { op: Op::CSelLE, out, .. } |
-            Insn { op: Op::CSelNE, out, .. } |
-            Insn { op: Op::CSelNZ, out, .. } |
-            Insn { op: Op::CSelZ, out, .. } |
-            Insn { op: Op::Lea, out, .. } |
-            Insn { op: Op::LeaLabel, out, .. } |
-            Insn { op: Op::LiveReg, out, .. } |
-            Insn { op: Op::Load, out, .. } |
-            Insn { op: Op::LoadSExt, out, .. } |
-            Insn { op: Op::LShift, out, .. } |
-            Insn { op: Op::Not, out, .. } |
-            Insn { op: Op::Or, out, .. } |
-            Insn { op: Op::RShift, out, .. } |
-            Insn { op: Op::Sub, out, .. } |
-            Insn { op: Op::URShift, out, .. } |
-            Insn { op: Op::Xor, out, .. } => Some(out),
+            Insn::Add { out, .. } |
+            Insn::And { out, .. } |
+            Insn::CCall { out, .. } |
+            Insn::CPop { out, .. } |
+            Insn::CSelE { out, .. } |
+            Insn::CSelG { out, .. } |
+            Insn::CSelGE { out, .. } |
+            Insn::CSelL { out, .. } |
+            Insn::CSelLE { out, .. } |
+            Insn::CSelNE { out, .. } |
+            Insn::CSelNZ { out, .. } |
+            Insn::CSelZ { out, .. } |
+            Insn::Lea { out, .. } |
+            Insn::LeaLabel { out, .. } |
+            Insn::LiveReg { out, .. } |
+            Insn::Load { out, .. } |
+            Insn::LoadSExt { out, .. } |
+            Insn::LShift { out, .. } |
+            Insn::Not { out, .. } |
+            Insn::Or { out, .. } |
+            Insn::RShift { out, .. } |
+            Insn::Sub { out, .. } |
+            Insn::URShift { out, .. } |
+            Insn::Xor { out, .. } => Some(out),
+            _ => None
+        }
+    }
+
+    /// Returns the target for this instruction if there is one.
+    pub fn target(&self) -> Option<&Target> {
+        match self {
+            Insn::Jbe(target) |
+            Insn::Je(target) |
+            Insn::Jl(target) |
+            Insn::Jmp(target) |
+            Insn::Jne(target) |
+            Insn::Jnz(target) |
+            Insn::Jo(target) |
+            Insn::Jz(target) |
+            Insn::LeaLabel { target, .. } => Some(target),
+            _ => None
+        }
+    }
+
+    /// Returns the text associated with this instruction if there is some.
+    pub fn text(&self) -> Option<&String> {
+        match self {
+            Insn::BakeString(text) |
+            Insn::Comment(text) => Some(text),
             _ => None
         }
     }
@@ -547,77 +625,77 @@ impl<'a> Iterator for InsnOpndIterator<'a> {
 
     fn next(&mut self) -> Option<Self::Item> {
         match self.insn {
-            Insn { op: Op::BakeString, .. } |
-            Insn { op: Op::Breakpoint, .. } |
-            Insn { op: Op::Comment, .. } |
-            Insn { op: Op::CPop, .. } |
-            Insn { op: Op::CPopAll, .. } |
-            Insn { op: Op::CPushAll, .. } |
-            Insn { op: Op::FrameSetup, .. } |
-            Insn { op: Op::FrameTeardown, .. } |
-            Insn { op: Op::Jbe, .. } |
-            Insn { op: Op::Je, .. } |
-            Insn { op: Op::Jl, .. } |
-            Insn { op: Op::Jmp, .. } |
-            Insn { op: Op::Jne, .. } |
-            Insn { op: Op::Jnz, .. } |
-            Insn { op: Op::Jo, .. } |
-            Insn { op: Op::Jz, .. } |
-            Insn { op: Op::Label, .. } |
-            Insn { op: Op::LeaLabel, .. } |
-            Insn { op: Op::PadEntryExit, .. } |
-            Insn { op: Op::PosMarker, .. } => None,
-            Insn { op: Op::CPopInto, opnds, .. } |
-            Insn { op: Op::CPush, opnds, .. } |
-            Insn { op: Op::CRet, opnds, .. } |
-            Insn { op: Op::JmpOpnd, opnds, .. } |
-            Insn { op: Op::Lea, opnds, .. } |
-            Insn { op: Op::LiveReg, opnds, .. } |
-            Insn { op: Op::Load, opnds, .. } |
-            Insn { op: Op::LoadSExt, opnds, .. } |
-            Insn { op: Op::Not, opnds, .. } => {
+            Insn::BakeString(_) |
+            Insn::Breakpoint |
+            Insn::Comment(_) |
+            Insn::CPop { .. } |
+            Insn::CPopAll |
+            Insn::CPushAll |
+            Insn::FrameSetup |
+            Insn::FrameTeardown |
+            Insn::Jbe(_) |
+            Insn::Je(_) |
+            Insn::Jl(_) |
+            Insn::Jmp(_) |
+            Insn::Jne(_) |
+            Insn::Jnz(_) |
+            Insn::Jo(_) |
+            Insn::Jz(_) |
+            Insn::Label(_) |
+            Insn::LeaLabel { .. } |
+            Insn::PadEntryExit |
+            Insn::PosMarker(_) => None,
+            Insn::CPopInto(opnd) |
+            Insn::CPush(opnd) |
+            Insn::CRet(opnd) |
+            Insn::JmpOpnd(opnd) |
+            Insn::Lea { opnd, .. } |
+            Insn::LiveReg { opnd, .. } |
+            Insn::Load { opnd, .. } |
+            Insn::LoadSExt { opnd, .. } |
+            Insn::Not { opnd, .. } => {
                 match self.idx {
                     0 => {
                         self.idx += 1;
-                        Some(&opnds[0])
+                        Some(&opnd)
                     },
                     _ => None
                 }
             },
-            Insn { op: Op::Add, opnds, .. } |
-            Insn { op: Op::And, opnds, .. } |
-            Insn { op: Op::Cmp, opnds, .. } |
-            Insn { op: Op::CSelE, opnds, .. } |
-            Insn { op: Op::CSelG, opnds, .. } |
-            Insn { op: Op::CSelGE, opnds, .. } |
-            Insn { op: Op::CSelL, opnds, .. } |
-            Insn { op: Op::CSelLE, opnds, .. } |
-            Insn { op: Op::CSelNE, opnds, .. } |
-            Insn { op: Op::CSelNZ, opnds, .. } |
-            Insn { op: Op::CSelZ, opnds, .. } |
-            Insn { op: Op::IncrCounter, opnds, .. } |
-            Insn { op: Op::LShift, opnds, .. } |
-            Insn { op: Op::Mov, opnds, .. } |
-            Insn { op: Op::Or, opnds, .. } |
-            Insn { op: Op::RShift, opnds, .. } |
-            Insn { op: Op::Store, opnds, .. } |
-            Insn { op: Op::Sub, opnds, .. } |
-            Insn { op: Op::Test, opnds, .. } |
-            Insn { op: Op::URShift, opnds, .. } |
-            Insn { op: Op::Xor, opnds, .. } => {
+            Insn::Add { left: opnd0 @ _, right: opnd1 @ _, .. } |
+            Insn::And { left: opnd0 @ _, right: opnd1 @ _, .. } |
+            Insn::Cmp { left: opnd0 @ _, right: opnd1 @ _ } |
+            Insn::CSelE { truthy: opnd0 @ _, falsy: opnd1 @ _, .. } |
+            Insn::CSelG { truthy: opnd0 @ _, falsy: opnd1 @ _, .. } |
+            Insn::CSelGE { truthy: opnd0 @ _, falsy: opnd1 @ _, .. } |
+            Insn::CSelL { truthy: opnd0 @ _, falsy: opnd1 @ _, .. } |
+            Insn::CSelLE { truthy: opnd0 @ _, falsy: opnd1 @ _, .. } |
+            Insn::CSelNE { truthy: opnd0 @ _, falsy: opnd1 @ _, .. } |
+            Insn::CSelNZ { truthy: opnd0 @ _, falsy: opnd1 @ _, .. } |
+            Insn::CSelZ { truthy: opnd0 @ _, falsy: opnd1 @ _, .. } |
+            Insn::IncrCounter { mem: opnd0 @ _, value: opnd1 @ _, .. } |
+            Insn::LShift { opnd: opnd0 @ _, shift: opnd1 @ _, .. } |
+            Insn::Mov { dest: opnd0 @ _, src: opnd1 @ _ } |
+            Insn::Or { left: opnd0 @ _, right: opnd1 @ _, .. } |
+            Insn::RShift { opnd: opnd0 @ _, shift: opnd1 @ _, .. } |
+            Insn::Store { dest: opnd0 @ _, src: opnd1 @ _ } |
+            Insn::Sub { left: opnd0 @ _, right: opnd1 @ _, .. } |
+            Insn::Test { left: opnd0 @ _, right: opnd1 @ _ } |
+            Insn::URShift { opnd: opnd0 @ _, shift: opnd1 @ _, .. } |
+            Insn::Xor { left: opnd0 @ _, right: opnd1 @ _, .. } => {
                 match self.idx {
                     0 => {
                         self.idx += 1;
-                        Some(&opnds[0])
+                        Some(&opnd0)
                     }
                     1 => {
                         self.idx += 1;
-                        Some(&opnds[1])
+                        Some(&opnd1)
                     }
                     _ => None
                 }
             },
-            Insn { op: Op::CCall, opnds, .. } => {
+            Insn::CCall { opnds, .. } => {
                 if self.idx < opnds.len() {
                     let opnd = &opnds[self.idx];
                     self.idx += 1;
@@ -643,77 +721,77 @@ impl<'a> InsnOpndMutIterator<'a> {
 
     pub(super) fn next(&mut self) -> Option<&mut Opnd> {
         match self.insn {
-            Insn { op: Op::BakeString, .. } |
-            Insn { op: Op::Breakpoint, .. } |
-            Insn { op: Op::Comment, .. } |
-            Insn { op: Op::CPop, .. } |
-            Insn { op: Op::CPopAll, .. } |
-            Insn { op: Op::CPushAll, .. } |
-            Insn { op: Op::FrameSetup, .. } |
-            Insn { op: Op::FrameTeardown, .. } |
-            Insn { op: Op::Jbe, .. } |
-            Insn { op: Op::Je, .. } |
-            Insn { op: Op::Jl, .. } |
-            Insn { op: Op::Jmp, .. } |
-            Insn { op: Op::Jne, .. } |
-            Insn { op: Op::Jnz, .. } |
-            Insn { op: Op::Jo, .. } |
-            Insn { op: Op::Jz, .. } |
-            Insn { op: Op::Label, .. } |
-            Insn { op: Op::LeaLabel, .. } |
-            Insn { op: Op::PadEntryExit, .. } |
-            Insn { op: Op::PosMarker, .. } => None,
-            Insn { op: Op::CPopInto, opnds, .. } |
-            Insn { op: Op::CPush, opnds, .. } |
-            Insn { op: Op::CRet, opnds, .. } |
-            Insn { op: Op::JmpOpnd, opnds, .. } |
-            Insn { op: Op::Lea, opnds, .. } |
-            Insn { op: Op::LiveReg, opnds, .. } |
-            Insn { op: Op::Load, opnds, .. } |
-            Insn { op: Op::LoadSExt, opnds, .. } |
-            Insn { op: Op::Not, opnds, .. } => {
+            Insn::BakeString(_) |
+            Insn::Breakpoint |
+            Insn::Comment(_) |
+            Insn::CPop { .. } |
+            Insn::CPopAll |
+            Insn::CPushAll |
+            Insn::FrameSetup |
+            Insn::FrameTeardown |
+            Insn::Jbe(_) |
+            Insn::Je(_) |
+            Insn::Jl(_) |
+            Insn::Jmp(_) |
+            Insn::Jne(_) |
+            Insn::Jnz(_) |
+            Insn::Jo(_) |
+            Insn::Jz(_) |
+            Insn::Label(_) |
+            Insn::LeaLabel { .. } |
+            Insn::PadEntryExit |
+            Insn::PosMarker(_) => None,
+            Insn::CPopInto(opnd) |
+            Insn::CPush(opnd) |
+            Insn::CRet(opnd) |
+            Insn::JmpOpnd(opnd) |
+            Insn::Lea { opnd, .. } |
+            Insn::LiveReg { opnd, .. } |
+            Insn::Load { opnd, .. } |
+            Insn::LoadSExt { opnd, .. } |
+            Insn::Not { opnd, .. } => {
                 match self.idx {
                     0 => {
                         self.idx += 1;
-                        Some(&mut opnds[0])
+                        Some(opnd)
                     },
                     _ => None
                 }
             },
-            Insn { op: Op::Add, opnds, .. } |
-            Insn { op: Op::And, opnds, .. } |
-            Insn { op: Op::Cmp, opnds, .. } |
-            Insn { op: Op::CSelE, opnds, .. } |
-            Insn { op: Op::CSelG, opnds, .. } |
-            Insn { op: Op::CSelGE, opnds, .. } |
-            Insn { op: Op::CSelL, opnds, .. } |
-            Insn { op: Op::CSelLE, opnds, .. } |
-            Insn { op: Op::CSelNE, opnds, .. } |
-            Insn { op: Op::CSelNZ, opnds, .. } |
-            Insn { op: Op::CSelZ, opnds, .. } |
-            Insn { op: Op::IncrCounter, opnds, .. } |
-            Insn { op: Op::LShift, opnds, .. } |
-            Insn { op: Op::Mov, opnds, .. } |
-            Insn { op: Op::Or, opnds, .. } |
-            Insn { op: Op::RShift, opnds, .. } |
-            Insn { op: Op::Store, opnds, .. } |
-            Insn { op: Op::Sub, opnds, .. } |
-            Insn { op: Op::Test, opnds, .. } |
-            Insn { op: Op::URShift, opnds, .. } |
-            Insn { op: Op::Xor, opnds, .. } => {
+            Insn::Add { left: opnd0 @ _, right: opnd1 @ _, .. } |
+            Insn::And { left: opnd0 @ _, right: opnd1 @ _, .. } |
+            Insn::Cmp { left: opnd0 @ _, right: opnd1 @ _ } |
+            Insn::CSelE { truthy: opnd0 @ _, falsy: opnd1 @ _, .. } |
+            Insn::CSelG { truthy: opnd0 @ _, falsy: opnd1 @ _, .. } |
+            Insn::CSelGE { truthy: opnd0 @ _, falsy: opnd1 @ _, .. } |
+            Insn::CSelL { truthy: opnd0 @ _, falsy: opnd1 @ _, .. } |
+            Insn::CSelLE { truthy: opnd0 @ _, falsy: opnd1 @ _, .. } |
+            Insn::CSelNE { truthy: opnd0 @ _, falsy: opnd1 @ _, .. } |
+            Insn::CSelNZ { truthy: opnd0 @ _, falsy: opnd1 @ _, .. } |
+            Insn::CSelZ { truthy: opnd0 @ _, falsy: opnd1 @ _, .. } |
+            Insn::IncrCounter { mem: opnd0 @ _, value: opnd1 @ _, .. } |
+            Insn::LShift { opnd: opnd0 @ _, shift: opnd1 @ _, .. } |
+            Insn::Mov { dest: opnd0 @ _, src: opnd1 @ _ } |
+            Insn::Or { left: opnd0 @ _, right: opnd1 @ _, .. } |
+            Insn::RShift { opnd: opnd0 @ _, shift: opnd1 @ _, .. } |
+            Insn::Store { dest: opnd0 @ _, src: opnd1 @ _ } |
+            Insn::Sub { left: opnd0 @ _, right: opnd1 @ _, .. } |
+            Insn::Test { left: opnd0 @ _, right: opnd1 @ _ } |
+            Insn::URShift { opnd: opnd0 @ _, shift: opnd1 @ _, .. } |
+            Insn::Xor { left: opnd0 @ _, right: opnd1 @ _, .. } => {
                 match self.idx {
                     0 => {
                         self.idx += 1;
-                        Some(&mut opnds[0])
+                        Some(opnd0)
                     }
                     1 => {
                         self.idx += 1;
-                        Some(&mut opnds[1])
+                        Some(opnd1)
                     }
                     _ => None
                 }
             },
-            Insn { op: Op::CCall, opnds, .. } => {
+            Insn::CCall { opnds, .. } => {
                 if self.idx < opnds.len() {
                     let opnd = &mut opnds[self.idx];
                     self.idx += 1;
@@ -728,7 +806,7 @@ impl<'a> InsnOpndMutIterator<'a> {
 
 impl fmt::Debug for Insn {
     fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
-        write!(fmt, "{:?}(", self.op)?;
+        write!(fmt, "{}(", self.op())?;
 
         // Print list of operands
         let mut opnd_iter = self.opnd_iter();
@@ -741,10 +819,10 @@ impl fmt::Debug for Insn {
         write!(fmt, ")")?;
 
         // Print text, target, and pos if they are present
-        if let Some(text) = &self.text {
+        if let Some(text) = self.text() {
             write!(fmt, " {text:?}")?
         }
-        if let Some(target) = self.target {
+        if let Some(target) = self.target() {
             write!(fmt, " target={target:?}")?;
         }
 
@@ -814,23 +892,6 @@ impl Assembler
         self.live_ranges.push(insn_idx);
     }
 
-    /// Append an instruction to the list by creating a new instruction from the
-    /// component parts given to this function. This will also create a new
-    /// output operand from the given operands for the new instruction.
-    pub(super) fn push_insn_parts(
-        &mut self,
-        op: Op,
-        opnds: Vec<Opnd>,
-        target: Option<Target>,
-        text: Option<String>,
-        pos_marker: Option<PosMarkerFn>
-    ) -> Opnd
-    {
-        let out = self.next_opnd_out(Opnd::match_num_bits(&opnds));
-        self.push_insn(Insn { op, text, opnds, out, target, pos_marker });
-        out
-    }
-
     /// Create a new label instance that we can jump to
     pub fn new_label(&mut self, name: &str) -> Target
     {
@@ -839,23 +900,6 @@ impl Assembler
         let label_idx = self.label_names.len();
         self.label_names.push(name.to_string());
         Target::Label(label_idx)
-    }
-
-    /// Add a label at the current position
-    pub fn write_label(&mut self, label: Target)
-    {
-        assert!(label.unwrap_label_idx() < self.label_names.len());
-
-        let insn = Insn {
-            op: Op::Label,
-            text: None,
-            opnds: vec![],
-            out: Opnd::None,
-            target: Some(label),
-            pos_marker: None,
-        };
-        self.insns.push(insn);
-        self.live_ranges.push(self.insns.len());
     }
 
     /// Sets the out field on the various instructions that require allocated
@@ -928,7 +972,7 @@ impl Assembler
                             if let Some(Opnd::Reg(reg)) = asm.insns[start_index].out_opnd() {
                                 dealloc_reg(&mut pool, &regs, reg);
                             } else {
-                                unreachable!("no register allocated for insn {:?}", insn.op);
+                                unreachable!("no register allocated for insn {:?}", insn);
                             }
                         }
                     }
@@ -937,7 +981,7 @@ impl Assembler
             }
 
             // C return values need to be mapped to the C return register
-            if insn.op == Op::CCall {
+            if matches!(insn, Insn::CCall { .. }) {
                 assert_eq!(pool, 0, "register lives past C function call");
             }
 
@@ -958,7 +1002,7 @@ impl Assembler
                 let mut out_reg: Option<Reg> = None;
 
                 // C return values need to be mapped to the C return register
-                if insn.op == Op::CCall {
+                if matches!(insn, Insn::CCall { .. }) {
                     out_reg = Some(take_reg(&mut pool, &regs, &C_RET_REG));
                 }
 
@@ -983,9 +1027,9 @@ impl Assembler
                 // already allocated.
                 if out_reg.is_none() {
                     out_reg = match &insn {
-                        Insn { op: Op::LiveReg, opnds, .. } => {
+                        Insn::LiveReg { opnd, .. } => {
                             // Allocate a specific register
-                            let reg = opnds[0].unwrap_reg();
+                            let reg = opnd.unwrap_reg();
                             Some(take_reg(&mut pool, &regs, &reg))
                         },
                         _ => {
@@ -1090,9 +1134,13 @@ impl AssemblerDrainingIterator {
     /// Returns the next instruction in the list with the indices corresponding
     /// to the next list of instructions.
     pub fn next_mapped(&mut self) -> Option<(usize, Insn)> {
-        self.next_unmapped().map(|(index, insn)| {
-            let opnds = insn.opnd_iter().map(|opnd| opnd.map_index(&self.indices)).collect();
-            (index, Insn { opnds, ..insn })
+        self.next_unmapped().map(|(index, mut insn)| {
+            let mut opnd_iter = insn.opnd_iter_mut();
+            while let Some(opnd) = opnd_iter.next() {
+                *opnd = opnd.map_index(&self.indices);
+            }
+
+            (index, insn)
         })
     }
 
@@ -1167,273 +1215,279 @@ impl Assembler {
     #[must_use]
     pub fn add(&mut self, left: Opnd, right: Opnd) -> Opnd {
         let out = self.next_opnd_out(Opnd::match_num_bits(&[left, right]));
-        self.push_insn(Insn { op: Op::Add, opnds: vec![left, right], out, text: None, target: None, pos_marker: None });
+        self.push_insn(Insn::Add { left, right, out });
         out
     }
 
     #[must_use]
     pub fn and(&mut self, left: Opnd, right: Opnd) -> Opnd {
         let out = self.next_opnd_out(Opnd::match_num_bits(&[left, right]));
-        self.push_insn(Insn { op: Op::And, opnds: vec![left, right], out, text: None, target: None, pos_marker: None });
+        self.push_insn(Insn::And { left, right, out });
         out
     }
 
     pub fn bake_string(&mut self, text: &str) {
-        self.push_insn(Insn { op: Op::BakeString, opnds: vec![], out: Opnd::None, text: Some(text.to_string()), target: None, pos_marker: None });
+        self.push_insn(Insn::BakeString(text.to_string()));
     }
 
     pub fn breakpoint(&mut self) {
-        self.push_insn(Insn { op: Op::Breakpoint, opnds: vec![], out: Opnd::None, text: None, target: None, pos_marker: None });
+        self.push_insn(Insn::Breakpoint);
     }
 
     #[must_use]
     pub fn ccall(&mut self, fptr: *const u8, opnds: Vec<Opnd>) -> Opnd {
         let out = self.next_opnd_out(Opnd::match_num_bits(&opnds));
-        self.push_insn(Insn { op: Op::CCall, opnds, out, text: None, target: Some(Target::FunPtr(fptr)), pos_marker: None });
+        self.push_insn(Insn::CCall { target: Target::FunPtr(fptr), opnds, out });
         out
     }
 
     pub fn cmp(&mut self, left: Opnd, right: Opnd) {
-        self.push_insn(Insn { op: Op::Cmp, opnds: vec![left, right], out: Opnd::None, text: None, target: None, pos_marker: None });
+        self.push_insn(Insn::Cmp { left, right });
     }
 
     pub fn comment(&mut self, text: &str) {
-        self.push_insn(Insn { op: Op::Comment, opnds: vec![], out: Opnd::None, text: Some(text.to_string()), target: None, pos_marker: None });
+        self.push_insn(Insn::Comment(text.to_string()));
     }
 
     #[must_use]
     pub fn cpop(&mut self) -> Opnd {
         let out = self.next_opnd_out(Opnd::DEFAULT_NUM_BITS);
-        self.push_insn(Insn { op: Op::CPop, opnds: vec![], out, text: None, target: None, pos_marker: None });
+        self.push_insn(Insn::CPop { out });
         out
     }
 
     pub fn cpop_all(&mut self) {
-        self.push_insn(Insn { op: Op::CPopAll, opnds: vec![], out: Opnd::None, text: None, target: None, pos_marker: None });
+        self.push_insn(Insn::CPopAll);
     }
 
     pub fn cpop_into(&mut self, opnd: Opnd) {
-        self.push_insn(Insn { op: Op::CPopInto, opnds: vec![opnd], out: Opnd::None, text: None, target: None, pos_marker: None });
+        self.push_insn(Insn::CPopInto(opnd));
     }
 
     pub fn cpush(&mut self, opnd: Opnd) {
-        self.push_insn(Insn { op: Op::CPush, opnds: vec![opnd], out: Opnd::None, text: None, target: None, pos_marker: None });
+        self.push_insn(Insn::CPush(opnd));
     }
 
     pub fn cpush_all(&mut self) {
-        self.push_insn(Insn { op: Op::CPushAll, opnds: vec![], out: Opnd::None, text: None, target: None, pos_marker: None });
+        self.push_insn(Insn::CPushAll);
     }
 
     pub fn cret(&mut self, opnd: Opnd) {
-        self.push_insn(Insn { op: Op::CRet, opnds: vec![opnd], out: Opnd::None, text: None, target: None, pos_marker: None });
+        self.push_insn(Insn::CRet(opnd));
     }
 
     #[must_use]
     pub fn csel_e(&mut self, truthy: Opnd, falsy: Opnd) -> Opnd {
         let out = self.next_opnd_out(Opnd::match_num_bits(&[truthy, falsy]));
-        self.push_insn(Insn { op: Op::CSelE, opnds: vec![truthy, falsy], out, text: None, target: None, pos_marker: None });
+        self.push_insn(Insn::CSelE { truthy, falsy, out });
         out
     }
 
     #[must_use]
     pub fn csel_g(&mut self, truthy: Opnd, falsy: Opnd) -> Opnd {
         let out = self.next_opnd_out(Opnd::match_num_bits(&[truthy, falsy]));
-        self.push_insn(Insn { op: Op::CSelG, opnds: vec![truthy, falsy], out, text: None, target: None, pos_marker: None });
+        self.push_insn(Insn::CSelG { truthy, falsy, out });
         out
     }
 
     #[must_use]
     pub fn csel_ge(&mut self, truthy: Opnd, falsy: Opnd) -> Opnd {
         let out = self.next_opnd_out(Opnd::match_num_bits(&[truthy, falsy]));
-        self.push_insn(Insn { op: Op::CSelGE, opnds: vec![truthy, falsy], out, text: None, target: None, pos_marker: None });
+        self.push_insn(Insn::CSelGE { truthy, falsy, out });
         out
     }
 
     #[must_use]
     pub fn csel_l(&mut self, truthy: Opnd, falsy: Opnd) -> Opnd {
         let out = self.next_opnd_out(Opnd::match_num_bits(&[truthy, falsy]));
-        self.push_insn(Insn { op: Op::CSelL, opnds: vec![truthy, falsy], out, text: None, target: None, pos_marker: None });
+        self.push_insn(Insn::CSelL { truthy, falsy, out });
         out
     }
 
     #[must_use]
     pub fn csel_le(&mut self, truthy: Opnd, falsy: Opnd) -> Opnd {
         let out = self.next_opnd_out(Opnd::match_num_bits(&[truthy, falsy]));
-        self.push_insn(Insn { op: Op::CSelLE, opnds: vec![truthy, falsy], out, text: None, target: None, pos_marker: None });
+        self.push_insn(Insn::CSelLE { truthy, falsy, out });
         out
     }
 
     #[must_use]
     pub fn csel_ne(&mut self, truthy: Opnd, falsy: Opnd) -> Opnd {
         let out = self.next_opnd_out(Opnd::match_num_bits(&[truthy, falsy]));
-        self.push_insn(Insn { op: Op::CSelNE, opnds: vec![truthy, falsy], out, text: None, target: None, pos_marker: None });
+        self.push_insn(Insn::CSelNE { truthy, falsy, out });
         out
     }
 
     #[must_use]
     pub fn csel_nz(&mut self, truthy: Opnd, falsy: Opnd) -> Opnd {
         let out = self.next_opnd_out(Opnd::match_num_bits(&[truthy, falsy]));
-        self.push_insn(Insn { op: Op::CSelNZ, opnds: vec![truthy, falsy], out, text: None, target: None, pos_marker: None });
+        self.push_insn(Insn::CSelNZ { truthy, falsy, out });
         out
     }
 
     #[must_use]
     pub fn csel_z(&mut self, truthy: Opnd, falsy: Opnd) -> Opnd {
         let out = self.next_opnd_out(Opnd::match_num_bits(&[truthy, falsy]));
-        self.push_insn(Insn { op: Op::CSelZ, opnds: vec![truthy, falsy], out, text: None, target: None, pos_marker: None });
+        self.push_insn(Insn::CSelZ { truthy, falsy, out });
         out
     }
 
     pub fn frame_setup(&mut self) {
-        self.push_insn(Insn { op: Op::FrameSetup, opnds: vec![], out: Opnd::None, text: None, target: None, pos_marker: None });
+        self.push_insn(Insn::FrameSetup);
     }
 
     pub fn frame_teardown(&mut self) {
-        self.push_insn(Insn { op: Op::FrameTeardown, opnds: vec![], out: Opnd::None, text: None, target: None, pos_marker: None });
+        self.push_insn(Insn::FrameTeardown);
     }
 
     pub fn incr_counter(&mut self, mem: Opnd, value: Opnd) {
-        self.push_insn(Insn { op: Op::IncrCounter, opnds: vec![mem, value], out: Opnd::None, text: None, target: None, pos_marker: None });
+        self.push_insn(Insn::IncrCounter { mem, value });
     }
 
     pub fn jbe(&mut self, target: Target) {
-        self.push_insn(Insn { op: Op::Jbe, opnds: vec![], out: Opnd::None, text: None, target: Some(target), pos_marker: None });
+        self.push_insn(Insn::Jbe(target));
     }
 
     pub fn je(&mut self, target: Target) {
-        self.push_insn(Insn { op: Op::Je, opnds: vec![], out: Opnd::None, text: None, target: Some(target), pos_marker: None });
+        self.push_insn(Insn::Je(target));
     }
 
     pub fn jl(&mut self, target: Target) {
-        self.push_insn(Insn { op: Op::Jl, opnds: vec![], out: Opnd::None, text: None, target: Some(target), pos_marker: None });
+        self.push_insn(Insn::Jl(target));
     }
 
     pub fn jmp(&mut self, target: Target) {
-        self.push_insn(Insn { op: Op::Jmp, opnds: vec![], out: Opnd::None, text: None, target: Some(target), pos_marker: None });
+        self.push_insn(Insn::Jmp(target));
     }
 
     pub fn jmp_opnd(&mut self, opnd: Opnd) {
-        self.push_insn(Insn { op: Op::JmpOpnd, opnds: vec![opnd], out: Opnd::None, text: None, target: None, pos_marker: None });
+        self.push_insn(Insn::JmpOpnd(opnd));
     }
 
     pub fn jne(&mut self, target: Target) {
-        self.push_insn(Insn { op: Op::Jne, opnds: vec![], out: Opnd::None, text: None, target: Some(target), pos_marker: None });
+        self.push_insn(Insn::Jne(target));
     }
 
     pub fn jnz(&mut self, target: Target) {
-        self.push_insn(Insn { op: Op::Jnz, opnds: vec![], out: Opnd::None, text: None, target: Some(target), pos_marker: None });
+        self.push_insn(Insn::Jnz(target));
     }
 
     pub fn jo(&mut self, target: Target) {
-        self.push_insn(Insn { op: Op::Jo, opnds: vec![], out: Opnd::None, text: None, target: Some(target), pos_marker: None });
+        self.push_insn(Insn::Jo(target));
     }
 
     pub fn jz(&mut self, target: Target) {
-        self.push_insn(Insn { op: Op::Jz, opnds: vec![], out: Opnd::None, text: None, target: Some(target), pos_marker: None });
+        self.push_insn(Insn::Jz(target));
     }
 
     #[must_use]
     pub fn lea(&mut self, opnd: Opnd) -> Opnd {
         let out = self.next_opnd_out(Opnd::match_num_bits(&[opnd]));
-        self.push_insn(Insn { op: Op::Lea, opnds: vec![opnd], out, text: None, target: None, pos_marker: None });
+        self.push_insn(Insn::Lea { opnd, out });
         out
     }
 
     #[must_use]
     pub fn lea_label(&mut self, target: Target) -> Opnd {
         let out = self.next_opnd_out(Opnd::DEFAULT_NUM_BITS);
-        self.push_insn(Insn { op: Op::LeaLabel, opnds: vec![], out, text: None, target: Some(target), pos_marker: None });
+        self.push_insn(Insn::LeaLabel { target, out });
         out
     }
 
     #[must_use]
     pub fn live_reg_opnd(&mut self, opnd: Opnd) -> Opnd {
         let out = self.next_opnd_out(Opnd::match_num_bits(&[opnd]));
-        self.push_insn(Insn { op: Op::LiveReg, opnds: vec![opnd], out, text: None, target: None, pos_marker: None });
+        self.push_insn(Insn::LiveReg { opnd, out });
         out
     }
 
     #[must_use]
     pub fn load(&mut self, opnd: Opnd) -> Opnd {
         let out = self.next_opnd_out(Opnd::match_num_bits(&[opnd]));
-        self.push_insn(Insn { op: Op::Load, opnds: vec![opnd], out, text: None, target: None, pos_marker: None });
+        self.push_insn(Insn::Load { opnd, out });
         out
     }
 
     #[must_use]
     pub fn load_sext(&mut self, opnd: Opnd) -> Opnd {
         let out = self.next_opnd_out(Opnd::match_num_bits(&[opnd]));
-        self.push_insn(Insn { op: Op::LoadSExt, opnds: vec![opnd], out, text: None, target: None, pos_marker: None });
+        self.push_insn(Insn::LoadSExt { opnd, out });
         out
     }
 
     #[must_use]
     pub fn lshift(&mut self, opnd: Opnd, shift: Opnd) -> Opnd {
         let out = self.next_opnd_out(Opnd::match_num_bits(&[opnd, shift]));
-        self.push_insn(Insn { op: Op::LShift, opnds: vec![opnd, shift], out, text: None, target: None, pos_marker: None });
+        self.push_insn(Insn::LShift { opnd, shift, out });
         out
     }
 
     pub fn mov(&mut self, dest: Opnd, src: Opnd) {
-        self.push_insn(Insn { op: Op::Mov, opnds: vec![dest, src], out: Opnd::None, text: None, target: None, pos_marker: None });
+        self.push_insn(Insn::Mov { dest, src });
     }
 
     #[must_use]
     pub fn not(&mut self, opnd: Opnd) -> Opnd {
         let out = self.next_opnd_out(Opnd::match_num_bits(&[opnd]));
-        self.push_insn(Insn { op: Op::Not, opnds: vec![opnd], out, text: None, target: None, pos_marker: None });
+        self.push_insn(Insn::Not { opnd, out });
         out
     }
 
     #[must_use]
     pub fn or(&mut self, left: Opnd, right: Opnd) -> Opnd {
         let out = self.next_opnd_out(Opnd::match_num_bits(&[left, right]));
-        self.push_insn(Insn { op: Op::Or, opnds: vec![left, right], out, text: None, target: None, pos_marker: None });
+        self.push_insn(Insn::Or { left, right, out });
         out
     }
 
     pub fn pad_entry_exit(&mut self) {
-        self.push_insn(Insn { op: Op::PadEntryExit, opnds: vec![], out: Opnd::None, text: None, target: None, pos_marker: None });
+        self.push_insn(Insn::PadEntryExit);
     }
 
     //pub fn pos_marker<F: FnMut(CodePtr)>(&mut self, marker_fn: F)
     pub fn pos_marker(&mut self, marker_fn: impl Fn(CodePtr) + 'static) {
-        self.push_insn(Insn { op: Op::PosMarker, opnds: vec![], out: Opnd::None, text: None, target: None, pos_marker: Some(Box::new(marker_fn)) });
+        self.push_insn(Insn::PosMarker(Box::new(marker_fn)));
     }
 
     #[must_use]
     pub fn rshift(&mut self, opnd: Opnd, shift: Opnd) -> Opnd {
         let out = self.next_opnd_out(Opnd::match_num_bits(&[opnd, shift]));
-        self.push_insn(Insn { op: Op::RShift, opnds: vec![opnd, shift], out, text: None, target: None, pos_marker: None });
+        self.push_insn(Insn::RShift { opnd, shift, out });
         out
     }
 
     pub fn store(&mut self, dest: Opnd, src: Opnd) {
-        self.push_insn(Insn { op: Op::Store, opnds: vec![dest, src], out: Opnd::None, text: None, target: None, pos_marker: None });
+        self.push_insn(Insn::Store { dest, src });
     }
 
     #[must_use]
     pub fn sub(&mut self, left: Opnd, right: Opnd) -> Opnd {
         let out = self.next_opnd_out(Opnd::match_num_bits(&[left, right]));
-        self.push_insn(Insn { op: Op::Sub, opnds: vec![left, right], out, text: None, target: None, pos_marker: None });
+        self.push_insn(Insn::Sub { left, right, out });
         out
     }
 
     pub fn test(&mut self, left: Opnd, right: Opnd) {
-        self.push_insn(Insn { op: Op::Test, opnds: vec![left, right], out: Opnd::None, text: None, target: None, pos_marker: None });
+        self.push_insn(Insn::Test { left, right });
     }
 
     #[must_use]
     pub fn urshift(&mut self, opnd: Opnd, shift: Opnd) -> Opnd {
         let out = self.next_opnd_out(Opnd::match_num_bits(&[opnd, shift]));
-        self.push_insn(Insn { op: Op::URShift, opnds: vec![opnd, shift], out, text: None, target: None, pos_marker: None });
+        self.push_insn(Insn::URShift { opnd, shift, out });
         out
+    }
+
+    /// Add a label at the current position
+    pub fn write_label(&mut self, target: Target) {
+        assert!(target.unwrap_label_idx() < self.label_names.len());
+        self.push_insn(Insn::Label(target));
     }
 
     #[must_use]
     pub fn xor(&mut self, left: Opnd, right: Opnd) -> Opnd {
         let out = self.next_opnd_out(Opnd::match_num_bits(&[left, right]));
-        self.push_insn(Insn { op: Op::Xor, opnds: vec![left, right], out, text: None, target: None, pos_marker: None });
+        self.push_insn(Insn::Xor { left, right, out });
         out
     }
 }
@@ -1444,7 +1498,7 @@ mod tests {
 
     #[test]
     fn test_opnd_iter() {
-        let insn = Insn { op: Op::Add, opnds: vec![Opnd::None, Opnd::None], out: Opnd::None, text: None, target: None, pos_marker: None };
+        let insn = Insn::Add { left: Opnd::None, right: Opnd::None, out: Opnd::None };
 
         let mut opnd_iter = insn.opnd_iter();
         assert!(matches!(opnd_iter.next(), Some(Opnd::None)));
@@ -1455,7 +1509,7 @@ mod tests {
 
     #[test]
     fn test_opnd_iter_mut() {
-        let mut insn = Insn { op: Op::Add, opnds: vec![Opnd::None, Opnd::None], out: Opnd::None, text: None, target: None, pos_marker: None };
+        let mut insn = Insn::Add { left: Opnd::None, right: Opnd::None, out: Opnd::None };
 
         let mut opnd_iter = insn.opnd_iter_mut();
         assert!(matches!(opnd_iter.next(), Some(Opnd::None)));
