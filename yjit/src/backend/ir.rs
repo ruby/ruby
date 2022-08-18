@@ -318,9 +318,13 @@ impl Opnd
         }
     }
 
-    /// Determine the size in bits of the slice of the given operands. If any of
-    /// them are different sizes this will panic.
-    fn match_num_bits(opnds: &[Opnd]) -> u8 {
+    /// When there aren't any operands to check against, this is the number of
+    /// bits that should be used for any given output variable.
+    const DEFAULT_NUM_BITS: u8 = 64;
+
+    /// Determine the size in bits from the iterator of operands. If any of them
+    /// are different sizes this will panic.
+    pub fn match_num_bits_iter<'a>(opnds: impl Iterator<Item = &'a Opnd>) -> u8 {
         let mut value: Option<u8> = None;
 
         for opnd in opnds {
@@ -336,7 +340,13 @@ impl Opnd
             }
         }
 
-        value.unwrap_or(64)
+        value.unwrap_or(Self::DEFAULT_NUM_BITS)
+    }
+
+    /// Determine the size in bits of the slice of the given operands. If any of
+    /// them are different sizes this will panic.
+    pub fn match_num_bits(opnds: &[Opnd]) -> u8 {
+        Self::match_num_bits_iter(opnds.iter())
     }
 }
 
@@ -441,12 +451,287 @@ pub struct Insn
     pub(super) pos_marker: Option<PosMarkerFn>,
 }
 
+impl Insn {
+    /// Create an iterator that will yield a non-mutable reference to each
+    /// operand in turn for this instruction.
+    pub(super) fn opnd_iter(&self) -> InsnOpndIterator {
+        InsnOpndIterator::new(self)
+    }
+
+    /// Create an iterator that will yield a mutable reference to each operand
+    /// in turn for this instruction.
+    pub(super) fn opnd_iter_mut(&mut self) -> InsnOpndMutIterator {
+        InsnOpndMutIterator::new(self)
+    }
+
+    /// Return a non-mutable reference to the out operand for this instruction
+    /// if it has one.
+    pub fn out_opnd(&self) -> Option<&Opnd> {
+        match self {
+            Insn { op: Op::Add, out, .. } |
+            Insn { op: Op::And, out, .. } |
+            Insn { op: Op::CCall, out, .. } |
+            Insn { op: Op::CPop, out, .. } |
+            Insn { op: Op::CSelE, out, .. } |
+            Insn { op: Op::CSelG, out, .. } |
+            Insn { op: Op::CSelGE, out, .. } |
+            Insn { op: Op::CSelL, out, .. } |
+            Insn { op: Op::CSelLE, out, .. } |
+            Insn { op: Op::CSelNE, out, .. } |
+            Insn { op: Op::CSelNZ, out, .. } |
+            Insn { op: Op::CSelZ, out, .. } |
+            Insn { op: Op::Lea, out, .. } |
+            Insn { op: Op::LeaLabel, out, .. } |
+            Insn { op: Op::LiveReg, out, .. } |
+            Insn { op: Op::Load, out, .. } |
+            Insn { op: Op::LoadSExt, out, .. } |
+            Insn { op: Op::LShift, out, .. } |
+            Insn { op: Op::Not, out, .. } |
+            Insn { op: Op::Or, out, .. } |
+            Insn { op: Op::RShift, out, .. } |
+            Insn { op: Op::Sub, out, .. } |
+            Insn { op: Op::URShift, out, .. } |
+            Insn { op: Op::Xor, out, .. } => Some(out),
+            _ => None
+        }
+    }
+
+    /// Return a mutable reference to the out operand for this instruction if it
+    /// has one.
+    pub fn out_opnd_mut(&mut self) -> Option<&mut Opnd> {
+        match self {
+            Insn { op: Op::Add, out, .. } |
+            Insn { op: Op::And, out, .. } |
+            Insn { op: Op::CCall, out, .. } |
+            Insn { op: Op::CPop, out, .. } |
+            Insn { op: Op::CSelE, out, .. } |
+            Insn { op: Op::CSelG, out, .. } |
+            Insn { op: Op::CSelGE, out, .. } |
+            Insn { op: Op::CSelL, out, .. } |
+            Insn { op: Op::CSelLE, out, .. } |
+            Insn { op: Op::CSelNE, out, .. } |
+            Insn { op: Op::CSelNZ, out, .. } |
+            Insn { op: Op::CSelZ, out, .. } |
+            Insn { op: Op::Lea, out, .. } |
+            Insn { op: Op::LeaLabel, out, .. } |
+            Insn { op: Op::LiveReg, out, .. } |
+            Insn { op: Op::Load, out, .. } |
+            Insn { op: Op::LoadSExt, out, .. } |
+            Insn { op: Op::LShift, out, .. } |
+            Insn { op: Op::Not, out, .. } |
+            Insn { op: Op::Or, out, .. } |
+            Insn { op: Op::RShift, out, .. } |
+            Insn { op: Op::Sub, out, .. } |
+            Insn { op: Op::URShift, out, .. } |
+            Insn { op: Op::Xor, out, .. } => Some(out),
+            _ => None
+        }
+    }
+}
+
+/// An iterator that will yield a non-mutable reference to each operand in turn
+/// for the given instruction.
+pub(super) struct InsnOpndIterator<'a> {
+    insn: &'a Insn,
+    idx: usize,
+}
+
+impl<'a> InsnOpndIterator<'a> {
+    fn new(insn: &'a Insn) -> Self {
+        Self { insn, idx: 0 }
+    }
+}
+
+impl<'a> Iterator for InsnOpndIterator<'a> {
+    type Item = &'a Opnd;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        match self.insn {
+            Insn { op: Op::BakeString, .. } |
+            Insn { op: Op::Breakpoint, .. } |
+            Insn { op: Op::Comment, .. } |
+            Insn { op: Op::CPop, .. } |
+            Insn { op: Op::CPopAll, .. } |
+            Insn { op: Op::CPushAll, .. } |
+            Insn { op: Op::FrameSetup, .. } |
+            Insn { op: Op::FrameTeardown, .. } |
+            Insn { op: Op::Jbe, .. } |
+            Insn { op: Op::Je, .. } |
+            Insn { op: Op::Jl, .. } |
+            Insn { op: Op::Jmp, .. } |
+            Insn { op: Op::Jne, .. } |
+            Insn { op: Op::Jnz, .. } |
+            Insn { op: Op::Jo, .. } |
+            Insn { op: Op::Jz, .. } |
+            Insn { op: Op::Label, .. } |
+            Insn { op: Op::LeaLabel, .. } |
+            Insn { op: Op::PadEntryExit, .. } |
+            Insn { op: Op::PosMarker, .. } => None,
+            Insn { op: Op::CPopInto, opnds, .. } |
+            Insn { op: Op::CPush, opnds, .. } |
+            Insn { op: Op::CRet, opnds, .. } |
+            Insn { op: Op::JmpOpnd, opnds, .. } |
+            Insn { op: Op::Lea, opnds, .. } |
+            Insn { op: Op::LiveReg, opnds, .. } |
+            Insn { op: Op::Load, opnds, .. } |
+            Insn { op: Op::LoadSExt, opnds, .. } |
+            Insn { op: Op::Not, opnds, .. } => {
+                match self.idx {
+                    0 => {
+                        self.idx += 1;
+                        Some(&opnds[0])
+                    },
+                    _ => None
+                }
+            },
+            Insn { op: Op::Add, opnds, .. } |
+            Insn { op: Op::And, opnds, .. } |
+            Insn { op: Op::Cmp, opnds, .. } |
+            Insn { op: Op::CSelE, opnds, .. } |
+            Insn { op: Op::CSelG, opnds, .. } |
+            Insn { op: Op::CSelGE, opnds, .. } |
+            Insn { op: Op::CSelL, opnds, .. } |
+            Insn { op: Op::CSelLE, opnds, .. } |
+            Insn { op: Op::CSelNE, opnds, .. } |
+            Insn { op: Op::CSelNZ, opnds, .. } |
+            Insn { op: Op::CSelZ, opnds, .. } |
+            Insn { op: Op::IncrCounter, opnds, .. } |
+            Insn { op: Op::LShift, opnds, .. } |
+            Insn { op: Op::Mov, opnds, .. } |
+            Insn { op: Op::Or, opnds, .. } |
+            Insn { op: Op::RShift, opnds, .. } |
+            Insn { op: Op::Store, opnds, .. } |
+            Insn { op: Op::Sub, opnds, .. } |
+            Insn { op: Op::Test, opnds, .. } |
+            Insn { op: Op::URShift, opnds, .. } |
+            Insn { op: Op::Xor, opnds, .. } => {
+                match self.idx {
+                    0 => {
+                        self.idx += 1;
+                        Some(&opnds[0])
+                    }
+                    1 => {
+                        self.idx += 1;
+                        Some(&opnds[1])
+                    }
+                    _ => None
+                }
+            },
+            Insn { op: Op::CCall, opnds, .. } => {
+                if self.idx < opnds.len() {
+                    let opnd = &opnds[self.idx];
+                    self.idx += 1;
+                    Some(opnd)
+                } else {
+                    None
+                }
+            }
+        }
+    }
+}
+
+/// An iterator that will yield each operand in turn for the given instruction.
+pub(super) struct InsnOpndMutIterator<'a> {
+    insn: &'a mut Insn,
+    idx: usize,
+}
+
+impl<'a> InsnOpndMutIterator<'a> {
+    fn new(insn: &'a mut Insn) -> Self {
+        Self { insn, idx: 0 }
+    }
+
+    pub(super) fn next(&mut self) -> Option<&mut Opnd> {
+        match self.insn {
+            Insn { op: Op::BakeString, .. } |
+            Insn { op: Op::Breakpoint, .. } |
+            Insn { op: Op::Comment, .. } |
+            Insn { op: Op::CPop, .. } |
+            Insn { op: Op::CPopAll, .. } |
+            Insn { op: Op::CPushAll, .. } |
+            Insn { op: Op::FrameSetup, .. } |
+            Insn { op: Op::FrameTeardown, .. } |
+            Insn { op: Op::Jbe, .. } |
+            Insn { op: Op::Je, .. } |
+            Insn { op: Op::Jl, .. } |
+            Insn { op: Op::Jmp, .. } |
+            Insn { op: Op::Jne, .. } |
+            Insn { op: Op::Jnz, .. } |
+            Insn { op: Op::Jo, .. } |
+            Insn { op: Op::Jz, .. } |
+            Insn { op: Op::Label, .. } |
+            Insn { op: Op::LeaLabel, .. } |
+            Insn { op: Op::PadEntryExit, .. } |
+            Insn { op: Op::PosMarker, .. } => None,
+            Insn { op: Op::CPopInto, opnds, .. } |
+            Insn { op: Op::CPush, opnds, .. } |
+            Insn { op: Op::CRet, opnds, .. } |
+            Insn { op: Op::JmpOpnd, opnds, .. } |
+            Insn { op: Op::Lea, opnds, .. } |
+            Insn { op: Op::LiveReg, opnds, .. } |
+            Insn { op: Op::Load, opnds, .. } |
+            Insn { op: Op::LoadSExt, opnds, .. } |
+            Insn { op: Op::Not, opnds, .. } => {
+                match self.idx {
+                    0 => {
+                        self.idx += 1;
+                        Some(&mut opnds[0])
+                    },
+                    _ => None
+                }
+            },
+            Insn { op: Op::Add, opnds, .. } |
+            Insn { op: Op::And, opnds, .. } |
+            Insn { op: Op::Cmp, opnds, .. } |
+            Insn { op: Op::CSelE, opnds, .. } |
+            Insn { op: Op::CSelG, opnds, .. } |
+            Insn { op: Op::CSelGE, opnds, .. } |
+            Insn { op: Op::CSelL, opnds, .. } |
+            Insn { op: Op::CSelLE, opnds, .. } |
+            Insn { op: Op::CSelNE, opnds, .. } |
+            Insn { op: Op::CSelNZ, opnds, .. } |
+            Insn { op: Op::CSelZ, opnds, .. } |
+            Insn { op: Op::IncrCounter, opnds, .. } |
+            Insn { op: Op::LShift, opnds, .. } |
+            Insn { op: Op::Mov, opnds, .. } |
+            Insn { op: Op::Or, opnds, .. } |
+            Insn { op: Op::RShift, opnds, .. } |
+            Insn { op: Op::Store, opnds, .. } |
+            Insn { op: Op::Sub, opnds, .. } |
+            Insn { op: Op::Test, opnds, .. } |
+            Insn { op: Op::URShift, opnds, .. } |
+            Insn { op: Op::Xor, opnds, .. } => {
+                match self.idx {
+                    0 => {
+                        self.idx += 1;
+                        Some(&mut opnds[0])
+                    }
+                    1 => {
+                        self.idx += 1;
+                        Some(&mut opnds[1])
+                    }
+                    _ => None
+                }
+            },
+            Insn { op: Op::CCall, opnds, .. } => {
+                if self.idx < opnds.len() {
+                    let opnd = &mut opnds[self.idx];
+                    self.idx += 1;
+                    Some(opnd)
+                } else {
+                    None
+                }
+            }
+        }
+    }
+}
+
 impl fmt::Debug for Insn {
     fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
         write!(fmt, "{:?}(", self.op)?;
 
         // Print list of operands
-        let mut opnd_iter = self.opnds.iter();
+        let mut opnd_iter = self.opnd_iter();
         if let Some(first_opnd) = opnd_iter.next() {
             write!(fmt, "{first_opnd:?}")?;
         }
@@ -463,7 +748,7 @@ impl fmt::Debug for Insn {
             write!(fmt, " target={target:?}")?;
         }
 
-        write!(fmt, " -> {:?}", self.out)
+        write!(fmt, " -> {:?}", self.out_opnd().unwrap_or(&Opnd::None))
     }
 }
 
@@ -496,14 +781,9 @@ impl Assembler
     }
 
     /// Build an Opnd::InsnOut from the current index of the assembler and the
-    /// given slice of operands. The operands are given to determine the number
-    /// of bits necessary for the output operand. They should all be the same
-    /// size.
-    pub(super) fn next_opnd_out(&self, opnds: &[Opnd]) -> Opnd {
-        Opnd::InsnOut {
-            idx: self.insns.len(),
-            num_bits: Opnd::match_num_bits(opnds)
-        }
+    /// given number of bits.
+    pub(super) fn next_opnd_out(&self, num_bits: u8) -> Opnd {
+        Opnd::InsnOut { idx: self.insns.len(), num_bits }
     }
 
     /// Append an instruction onto the current list of instructions and update
@@ -516,7 +796,7 @@ impl Assembler
         // If we find any InsnOut from previous instructions, we're going to
         // update the live range of the previous instruction to point to this
         // one.
-        for opnd in &insn.opnds {
+        for opnd in insn.opnd_iter() {
             match opnd {
                 Opnd::InsnOut { idx, .. } => {
                     assert!(*idx < self.insns.len());
@@ -546,7 +826,7 @@ impl Assembler
         pos_marker: Option<PosMarkerFn>
     ) -> Opnd
     {
-        let out = self.next_opnd_out(&opnds);
+        let out = self.next_opnd_out(Opnd::match_num_bits(&opnds));
         self.push_insn(Insn { op, text, opnds, out, target, pos_marker });
         out
     }
@@ -632,9 +912,9 @@ impl Assembler
             // Check if this is the last instruction that uses an operand that
             // spans more than one instruction. In that case, return the
             // allocated register to the pool.
-            for opnd in &insn.opnds {
+            for opnd in insn.opnd_iter() {
                 match opnd {
-                    Opnd::InsnOut{ idx, .. } |
+                    Opnd::InsnOut { idx, .. } |
                     Opnd::Mem(Mem { base: MemBase::InsnOut(idx), .. }) => {
                         // Since we have an InsnOut, we know it spans more that one
                         // instruction.
@@ -645,8 +925,8 @@ impl Assembler
                         // uses this operand. If it is, we can return the allocated
                         // register to the pool.
                         if live_ranges[start_index] == index {
-                            if let Opnd::Reg(reg) = asm.insns[start_index].out {
-                                dealloc_reg(&mut pool, &regs, &reg);
+                            if let Some(Opnd::Reg(reg)) = asm.insns[start_index].out_opnd() {
+                                dealloc_reg(&mut pool, &regs, reg);
                             } else {
                                 unreachable!("no register allocated for insn {:?}", insn.op);
                             }
@@ -669,7 +949,7 @@ impl Assembler
                 // true that we set an output operand for this instruction. If
                 // it's not true, something has gone wrong.
                 assert!(
-                    !matches!(insn.out, Opnd::None),
+                    !matches!(insn.out_opnd(), None),
                     "Instruction output reused but no output operand set"
                 );
 
@@ -687,11 +967,13 @@ impl Assembler
                 // We do this to improve register allocation on x86
                 // e.g. out  = add(reg0, reg1)
                 //      reg0 = add(reg0, reg1)
-                else if insn.opnds.len() > 0 {
-                    if let Opnd::InsnOut{idx, ..} = insn.opnds[0] {
-                        if live_ranges[idx] == index {
-                            if let Opnd::Reg(reg) = asm.insns[idx].out {
-                                out_reg = Some(take_reg(&mut pool, &regs, &reg));
+                if out_reg.is_none() {
+                    let mut opnd_iter = insn.opnd_iter();
+
+                    if let Some(Opnd::InsnOut{ idx, .. }) = opnd_iter.next() {
+                        if live_ranges[*idx] == index {
+                            if let Some(Opnd::Reg(reg)) = asm.insns[*idx].out_opnd() {
+                                out_reg = Some(take_reg(&mut pool, &regs, reg));
                             }
                         }
                     }
@@ -700,28 +982,37 @@ impl Assembler
                 // Allocate a new register for this instruction if one is not
                 // already allocated.
                 if out_reg.is_none() {
-                    out_reg = if insn.op == Op::LiveReg {
-                        // Allocate a specific register
-                        let reg = insn.opnds[0].unwrap_reg();
-                        Some(take_reg(&mut pool, &regs, &reg))
-                    } else {
-                        Some(alloc_reg(&mut pool, &regs))
+                    out_reg = match &insn {
+                        Insn { op: Op::LiveReg, opnds, .. } => {
+                            // Allocate a specific register
+                            let reg = opnds[0].unwrap_reg();
+                            Some(take_reg(&mut pool, &regs, &reg))
+                        },
+                        _ => {
+                            Some(alloc_reg(&mut pool, &regs))
+                        }
                     };
                 }
 
                 // Set the output operand on the instruction
-                let out_num_bits = Opnd::match_num_bits(&insn.opnds);
-                insn.out = Opnd::Reg(out_reg.unwrap().sub_reg(out_num_bits));
+                let out_num_bits = Opnd::match_num_bits_iter(insn.opnd_iter());
+
+                // If we have gotten to this point, then we're sure we have an
+                // output operand on this instruction because the live range
+                // extends beyond the index of the instruction.
+                let out = insn.out_opnd_mut().unwrap();
+                *out = Opnd::Reg(out_reg.unwrap().sub_reg(out_num_bits));
             }
 
             // Replace InsnOut operands by their corresponding register
-            for opnd in &mut insn.opnds {
+            let mut opnd_iter = insn.opnd_iter_mut();
+            while let Some(opnd) = opnd_iter.next() {
                 match *opnd {
                     Opnd::InsnOut { idx, .. } => {
-                        *opnd = asm.insns[idx].out;
+                        *opnd = *asm.insns[idx].out_opnd().unwrap();
                     },
                     Opnd::Mem(Mem { base: MemBase::InsnOut(idx), disp, num_bits }) => {
-                        let base = MemBase::Reg(asm.insns[idx].out.unwrap_reg().reg_no);
+                        let base = MemBase::Reg(asm.insns[idx].out_opnd().unwrap().unwrap_reg().reg_no);
                         *opnd = Opnd::Mem(Mem { base, disp, num_bits });
                     }
                      _ => {},
@@ -800,7 +1091,7 @@ impl AssemblerDrainingIterator {
     /// to the next list of instructions.
     pub fn next_mapped(&mut self) -> Option<(usize, Insn)> {
         self.next_unmapped().map(|(index, insn)| {
-            let opnds = insn.opnds.into_iter().map(|opnd| opnd.map_index(&self.indices)).collect();
+            let opnds = insn.opnd_iter().map(|opnd| opnd.map_index(&self.indices)).collect();
             (index, Insn { opnds, ..insn })
         })
     }
@@ -875,14 +1166,14 @@ impl fmt::Debug for Assembler {
 impl Assembler {
     #[must_use]
     pub fn add(&mut self, left: Opnd, right: Opnd) -> Opnd {
-        let out = self.next_opnd_out(&[left, right]);
+        let out = self.next_opnd_out(Opnd::match_num_bits(&[left, right]));
         self.push_insn(Insn { op: Op::Add, opnds: vec![left, right], out, text: None, target: None, pos_marker: None });
         out
     }
 
     #[must_use]
     pub fn and(&mut self, left: Opnd, right: Opnd) -> Opnd {
-        let out = self.next_opnd_out(&[left, right]);
+        let out = self.next_opnd_out(Opnd::match_num_bits(&[left, right]));
         self.push_insn(Insn { op: Op::And, opnds: vec![left, right], out, text: None, target: None, pos_marker: None });
         out
     }
@@ -897,7 +1188,7 @@ impl Assembler {
 
     #[must_use]
     pub fn ccall(&mut self, fptr: *const u8, opnds: Vec<Opnd>) -> Opnd {
-        let out = self.next_opnd_out(&opnds);
+        let out = self.next_opnd_out(Opnd::match_num_bits(&opnds));
         self.push_insn(Insn { op: Op::CCall, opnds, out, text: None, target: Some(Target::FunPtr(fptr)), pos_marker: None });
         out
     }
@@ -912,7 +1203,7 @@ impl Assembler {
 
     #[must_use]
     pub fn cpop(&mut self) -> Opnd {
-        let out = self.next_opnd_out(&[]);
+        let out = self.next_opnd_out(Opnd::DEFAULT_NUM_BITS);
         self.push_insn(Insn { op: Op::CPop, opnds: vec![], out, text: None, target: None, pos_marker: None });
         out
     }
@@ -939,56 +1230,56 @@ impl Assembler {
 
     #[must_use]
     pub fn csel_e(&mut self, truthy: Opnd, falsy: Opnd) -> Opnd {
-        let out = self.next_opnd_out(&[truthy, falsy]);
+        let out = self.next_opnd_out(Opnd::match_num_bits(&[truthy, falsy]));
         self.push_insn(Insn { op: Op::CSelE, opnds: vec![truthy, falsy], out, text: None, target: None, pos_marker: None });
         out
     }
 
     #[must_use]
     pub fn csel_g(&mut self, truthy: Opnd, falsy: Opnd) -> Opnd {
-        let out = self.next_opnd_out(&[truthy, falsy]);
+        let out = self.next_opnd_out(Opnd::match_num_bits(&[truthy, falsy]));
         self.push_insn(Insn { op: Op::CSelG, opnds: vec![truthy, falsy], out, text: None, target: None, pos_marker: None });
         out
     }
 
     #[must_use]
     pub fn csel_ge(&mut self, truthy: Opnd, falsy: Opnd) -> Opnd {
-        let out = self.next_opnd_out(&[truthy, falsy]);
+        let out = self.next_opnd_out(Opnd::match_num_bits(&[truthy, falsy]));
         self.push_insn(Insn { op: Op::CSelGE, opnds: vec![truthy, falsy], out, text: None, target: None, pos_marker: None });
         out
     }
 
     #[must_use]
     pub fn csel_l(&mut self, truthy: Opnd, falsy: Opnd) -> Opnd {
-        let out = self.next_opnd_out(&[truthy, falsy]);
+        let out = self.next_opnd_out(Opnd::match_num_bits(&[truthy, falsy]));
         self.push_insn(Insn { op: Op::CSelL, opnds: vec![truthy, falsy], out, text: None, target: None, pos_marker: None });
         out
     }
 
     #[must_use]
     pub fn csel_le(&mut self, truthy: Opnd, falsy: Opnd) -> Opnd {
-        let out = self.next_opnd_out(&[truthy, falsy]);
+        let out = self.next_opnd_out(Opnd::match_num_bits(&[truthy, falsy]));
         self.push_insn(Insn { op: Op::CSelLE, opnds: vec![truthy, falsy], out, text: None, target: None, pos_marker: None });
         out
     }
 
     #[must_use]
     pub fn csel_ne(&mut self, truthy: Opnd, falsy: Opnd) -> Opnd {
-        let out = self.next_opnd_out(&[truthy, falsy]);
+        let out = self.next_opnd_out(Opnd::match_num_bits(&[truthy, falsy]));
         self.push_insn(Insn { op: Op::CSelNE, opnds: vec![truthy, falsy], out, text: None, target: None, pos_marker: None });
         out
     }
 
     #[must_use]
     pub fn csel_nz(&mut self, truthy: Opnd, falsy: Opnd) -> Opnd {
-        let out = self.next_opnd_out(&[truthy, falsy]);
+        let out = self.next_opnd_out(Opnd::match_num_bits(&[truthy, falsy]));
         self.push_insn(Insn { op: Op::CSelNZ, opnds: vec![truthy, falsy], out, text: None, target: None, pos_marker: None });
         out
     }
 
     #[must_use]
     pub fn csel_z(&mut self, truthy: Opnd, falsy: Opnd) -> Opnd {
-        let out = self.next_opnd_out(&[truthy, falsy]);
+        let out = self.next_opnd_out(Opnd::match_num_bits(&[truthy, falsy]));
         self.push_insn(Insn { op: Op::CSelZ, opnds: vec![truthy, falsy], out, text: None, target: None, pos_marker: None });
         out
     }
@@ -1043,42 +1334,42 @@ impl Assembler {
 
     #[must_use]
     pub fn lea(&mut self, opnd: Opnd) -> Opnd {
-        let out = self.next_opnd_out(&[opnd]);
+        let out = self.next_opnd_out(Opnd::match_num_bits(&[opnd]));
         self.push_insn(Insn { op: Op::Lea, opnds: vec![opnd], out, text: None, target: None, pos_marker: None });
         out
     }
 
     #[must_use]
     pub fn lea_label(&mut self, target: Target) -> Opnd {
-        let out = self.next_opnd_out(&[]);
+        let out = self.next_opnd_out(Opnd::DEFAULT_NUM_BITS);
         self.push_insn(Insn { op: Op::LeaLabel, opnds: vec![], out, text: None, target: Some(target), pos_marker: None });
         out
     }
 
     #[must_use]
     pub fn live_reg_opnd(&mut self, opnd: Opnd) -> Opnd {
-        let out = self.next_opnd_out(&[opnd]);
+        let out = self.next_opnd_out(Opnd::match_num_bits(&[opnd]));
         self.push_insn(Insn { op: Op::LiveReg, opnds: vec![opnd], out, text: None, target: None, pos_marker: None });
         out
     }
 
     #[must_use]
     pub fn load(&mut self, opnd: Opnd) -> Opnd {
-        let out = self.next_opnd_out(&[opnd]);
+        let out = self.next_opnd_out(Opnd::match_num_bits(&[opnd]));
         self.push_insn(Insn { op: Op::Load, opnds: vec![opnd], out, text: None, target: None, pos_marker: None });
         out
     }
 
     #[must_use]
     pub fn load_sext(&mut self, opnd: Opnd) -> Opnd {
-        let out = self.next_opnd_out(&[opnd]);
+        let out = self.next_opnd_out(Opnd::match_num_bits(&[opnd]));
         self.push_insn(Insn { op: Op::LoadSExt, opnds: vec![opnd], out, text: None, target: None, pos_marker: None });
         out
     }
 
     #[must_use]
     pub fn lshift(&mut self, opnd: Opnd, shift: Opnd) -> Opnd {
-        let out = self.next_opnd_out(&[opnd, shift]);
+        let out = self.next_opnd_out(Opnd::match_num_bits(&[opnd, shift]));
         self.push_insn(Insn { op: Op::LShift, opnds: vec![opnd, shift], out, text: None, target: None, pos_marker: None });
         out
     }
@@ -1089,16 +1380,20 @@ impl Assembler {
 
     #[must_use]
     pub fn not(&mut self, opnd: Opnd) -> Opnd {
-        let out = self.next_opnd_out(&[opnd]);
+        let out = self.next_opnd_out(Opnd::match_num_bits(&[opnd]));
         self.push_insn(Insn { op: Op::Not, opnds: vec![opnd], out, text: None, target: None, pos_marker: None });
         out
     }
 
     #[must_use]
     pub fn or(&mut self, left: Opnd, right: Opnd) -> Opnd {
-        let out = self.next_opnd_out(&[left, right]);
+        let out = self.next_opnd_out(Opnd::match_num_bits(&[left, right]));
         self.push_insn(Insn { op: Op::Or, opnds: vec![left, right], out, text: None, target: None, pos_marker: None });
         out
+    }
+
+    pub fn pad_entry_exit(&mut self) {
+        self.push_insn(Insn { op: Op::PadEntryExit, opnds: vec![], out: Opnd::None, text: None, target: None, pos_marker: None });
     }
 
     //pub fn pos_marker<F: FnMut(CodePtr)>(&mut self, marker_fn: F)
@@ -1108,7 +1403,7 @@ impl Assembler {
 
     #[must_use]
     pub fn rshift(&mut self, opnd: Opnd, shift: Opnd) -> Opnd {
-        let out = self.next_opnd_out(&[opnd, shift]);
+        let out = self.next_opnd_out(Opnd::match_num_bits(&[opnd, shift]));
         self.push_insn(Insn { op: Op::RShift, opnds: vec![opnd, shift], out, text: None, target: None, pos_marker: None });
         out
     }
@@ -1119,7 +1414,7 @@ impl Assembler {
 
     #[must_use]
     pub fn sub(&mut self, left: Opnd, right: Opnd) -> Opnd {
-        let out = self.next_opnd_out(&[left, right]);
+        let out = self.next_opnd_out(Opnd::match_num_bits(&[left, right]));
         self.push_insn(Insn { op: Op::Sub, opnds: vec![left, right], out, text: None, target: None, pos_marker: None });
         out
     }
@@ -1130,19 +1425,42 @@ impl Assembler {
 
     #[must_use]
     pub fn urshift(&mut self, opnd: Opnd, shift: Opnd) -> Opnd {
-        let out = self.next_opnd_out(&[opnd, shift]);
+        let out = self.next_opnd_out(Opnd::match_num_bits(&[opnd, shift]));
         self.push_insn(Insn { op: Op::URShift, opnds: vec![opnd, shift], out, text: None, target: None, pos_marker: None });
         out
     }
 
     #[must_use]
     pub fn xor(&mut self, left: Opnd, right: Opnd) -> Opnd {
-        let out = self.next_opnd_out(&[left, right]);
+        let out = self.next_opnd_out(Opnd::match_num_bits(&[left, right]));
         self.push_insn(Insn { op: Op::Xor, opnds: vec![left, right], out, text: None, target: None, pos_marker: None });
         out
     }
+}
 
-    pub fn pad_entry_exit(&mut self) {
-        self.push_insn(Insn { op: Op::PadEntryExit, opnds: vec![], out: Opnd::None, text: None, target: None, pos_marker: None });
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_opnd_iter() {
+        let insn = Insn { op: Op::Add, opnds: vec![Opnd::None, Opnd::None], out: Opnd::None, text: None, target: None, pos_marker: None };
+
+        let mut opnd_iter = insn.opnd_iter();
+        assert!(matches!(opnd_iter.next(), Some(Opnd::None)));
+        assert!(matches!(opnd_iter.next(), Some(Opnd::None)));
+
+        assert!(matches!(opnd_iter.next(), None));
+    }
+
+    #[test]
+    fn test_opnd_iter_mut() {
+        let mut insn = Insn { op: Op::Add, opnds: vec![Opnd::None, Opnd::None], out: Opnd::None, text: None, target: None, pos_marker: None };
+
+        let mut opnd_iter = insn.opnd_iter_mut();
+        assert!(matches!(opnd_iter.next(), Some(Opnd::None)));
+        assert!(matches!(opnd_iter.next(), Some(Opnd::None)));
+
+        assert!(matches!(opnd_iter.next(), None));
     }
 }

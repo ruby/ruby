@@ -192,12 +192,15 @@ impl Assembler
             // such that only the Op::Load instruction needs to handle that
             // case. If the values aren't heap objects then we'll treat them as
             // if they were just unsigned integer.
-            for opnd in &mut insn.opnds {
+            let skip_load = matches!(insn, Insn { op: Op::Load, .. });
+            let mut opnd_iter = insn.opnd_iter_mut();
+
+            while let Some(opnd) = opnd_iter.next() {
                 match opnd {
                     Opnd::Value(value) => {
                         if value.special_const_p() {
                             *opnd = Opnd::UImm(value.as_u64());
-                        } else if insn.op != Op::Load {
+                        } else if !skip_load {
                             *opnd = asm.load(*opnd);
                         }
                     },
@@ -400,9 +403,14 @@ impl Assembler
                     asm.test(opnd0, opnd1);
                 },
                 _ => {
-                    if insn.out.is_some() {
-                        insn.out = asm.next_opnd_out(&insn.opnds);
+                    // If we have an output operand, then we need to replace it
+                    // with a new output operand from the new assembler.
+                    if insn.out_opnd().is_some() {
+                        let out_num_bits = Opnd::match_num_bits_iter(insn.opnd_iter());
+                        let out = insn.out_opnd_mut().unwrap();
+                        *out = asm.next_opnd_out(out_num_bits);
                     }
+
                     asm.push_insn(insn);
                 }
             };
