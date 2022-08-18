@@ -4,7 +4,7 @@
 #   2. Rename the class to something descriptive that ends with Command.
 #   3. Change the program variable to be a descriptive command name
 #   4. Ensure you are inheriting from RbBaseCommand or another command that
-#      implements the same interfact
+#      implements the same interface
 
 import lldb
 
