@@ -172,4 +172,5 @@ yjit_task:
   # Run John's YJIT instruction tests, and make sure we can load the test-all runner
   test_yjit_script: source $HOME/.cargo/env && make -j test-all TESTS='test/ruby/test_method.rb test/ruby/test_yjit.rb' RUN_OPTS="--yjit-call-threshold=1"
 
-  # TODO: check that we can we run all of test-all successfully
+  # Run test-all with the default call threshold
+  test_yjit_script: source $HOME/.cargo/env && RUBY_YJIT_ENABLE=1 make -j test-all
