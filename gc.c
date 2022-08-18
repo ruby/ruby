@@ -4745,7 +4745,7 @@ bool rb_obj_is_main_ractor(VALUE gv);
 
 #if USE_MMTK
 void
-rb_mmtk_call_finalizer_inner(rb_objspace_t *objspace, VALUE obj) {
+rb_mmtk_call_finalizer_inner(rb_objspace_t *objspace, VALUE obj, bool on_exit) {
     if (USE_RUBY_DEBUG_LOG) {
         RUBY_DEBUG_LOG("Resurrected for obj_free: %p: %s %s",
                 resurrected,
@@ -4753,21 +4753,23 @@ rb_mmtk_call_finalizer_inner(rb_objspace_t *objspace, VALUE obj) {
                 CLASS_OF(obj)==0?"(null)":rb_class2name(CLASS_OF(obj))
                 );
     }
-    if (rb_obj_is_thread(obj)) {
-        RUBY_DEBUG_LOG("Skipped thread: %p: %s", resurrected, rb_type_str(RB_BUILTIN_TYPE(obj)));
-        return;
-    }
-    if (rb_obj_is_mutex(obj)) {
-        RUBY_DEBUG_LOG("Skipped mutex: %p: %s", resurrected, rb_type_str(RB_BUILTIN_TYPE(obj)));
-        return;
-    }
-    if (rb_obj_is_fiber(obj)) {
-        RUBY_DEBUG_LOG("Skipped fiber: %p: %s", resurrected, rb_type_str(RB_BUILTIN_TYPE(obj)));
-        return;
-    }
-    if (rb_obj_is_main_ractor(obj)) {
-        RUBY_DEBUG_LOG("Skipped main ractor: %p: %s", resurrected, rb_type_str(RB_BUILTIN_TYPE(obj)));
-        return;
+    if (on_exit) {
+        if (rb_obj_is_thread(obj)) {
+            RUBY_DEBUG_LOG("Skipped thread: %p: %s", resurrected, rb_type_str(RB_BUILTIN_TYPE(obj)));
+            return;
+        }
+        if (rb_obj_is_mutex(obj)) {
+            RUBY_DEBUG_LOG("Skipped mutex: %p: %s", resurrected, rb_type_str(RB_BUILTIN_TYPE(obj)));
+            return;
+        }
+        if (rb_obj_is_fiber(obj)) {
+            RUBY_DEBUG_LOG("Skipped fiber: %p: %s", resurrected, rb_type_str(RB_BUILTIN_TYPE(obj)));
+            return;
+        }
+        if (rb_obj_is_main_ractor(obj)) {
+            RUBY_DEBUG_LOG("Skipped main ractor: %p: %s", resurrected, rb_type_str(RB_BUILTIN_TYPE(obj)));
+            return;
+        }
     }
     obj_free(objspace, obj);
     RUBY_DEBUG_LOG("Object freed: %p: %s", resurrected, rb_type_str(RB_BUILTIN_TYPE(obj)));
@@ -4783,7 +4785,7 @@ rb_mmtk_call_finalizer(rb_objspace_t *objspace, bool on_exit)
             void *resurrected = resurrrected_objs.ptr[resurrrected_objs.len - i - 1];
 
             VALUE obj = (VALUE)resurrected;
-            rb_mmtk_call_finalizer_inner(objspace, obj);
+            rb_mmtk_call_finalizer_inner(objspace, obj, on_exit);
         }
 
         mmtk_free_raw_vec_of_obj_ref(resurrrected_objs);
@@ -4791,7 +4793,7 @@ rb_mmtk_call_finalizer(rb_objspace_t *objspace, bool on_exit)
         void *resurrected;
         while ((resurrected = mmtk_get_finalized_object()) != NULL) {
             VALUE obj = (VALUE)resurrected;
-            rb_mmtk_call_finalizer_inner(objspace, obj);
+            rb_mmtk_call_finalizer_inner(objspace, obj, on_exit);
         }
     }
 }
