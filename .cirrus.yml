@@ -170,6 +170,6 @@ yjit_task:
   make_rdoc_script: source $HOME/.cargo/env && make -j rdoc
 
   # Run John's YJIT instruction tests, and make sure we can load the test-all runner
-  test_yjit_script: source $HOME/.cargo/env && make test-all TESTS='test/ruby/test_yjit.rb' RUN_OPTS="--yjit-call-threshold=1"
+  test_yjit_script: source $HOME/.cargo/env && make -j test-all TESTS='test/ruby/test_method.rb test/ruby/test_yjit.rb' RUN_OPTS="--yjit-call-threshold=1"
 
   # TODO: check that we can we run all of test-all successfully

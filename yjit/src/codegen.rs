@@ -2186,7 +2186,7 @@ fn gen_defined(
     asm: &mut Assembler,
     _ocb: &mut OutlinedCb,
 ) -> CodegenStatus {
-    let op_type = jit_get_arg(jit, 0);
+    let op_type = jit_get_arg(jit, 0).as_u64();
     let obj = jit_get_arg(jit, 1);
     let pushval = jit_get_arg(jit, 2);
 
