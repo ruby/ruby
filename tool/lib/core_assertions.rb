@@ -548,11 +548,13 @@ eom
             anchored = false
           else
             if anchored
-              match = /\A#{pattern}/.match(rest)
+              match = rest.rindex(pattern, 0)
             else
-              match = pattern.match(rest)
+              match = rest.index(pattern)
             end
-            unless match
+            if match
+              post_match = $~ ? $~.post_match : rest[match+pattern.size..-1]
+            else
               msg = message(msg) {
                 expect_msg = "Expected #{mu_pp pattern}\n"
                 if /\n[^\n]/ =~ rest
@@ -569,7 +571,7 @@ eom
               }
               assert false, msg
             end
-            rest = match.post_match
+            rest = post_match
             anchored = true
           end
         }

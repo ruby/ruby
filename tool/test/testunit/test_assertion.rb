@@ -35,6 +35,14 @@ class TestAssertion < Test::Unit::TestCase
     assert_pattern_list([:*, /foo?/], "afoo")
     assert_not_pattern_list([:*, /foo?/], "afoo?")
     assert_pattern_list([/foo?/, :*], "foo?")
+
+    assert_not_pattern_list(["foo?"], "foo")
+    assert_not_pattern_list(["foo?"], "afoo")
+    assert_pattern_list(["foo?"], "foo?")
+    assert_not_pattern_list([:*, "foo?", :*], "foo")
+    assert_not_pattern_list([:*, "foo?"], "afoo")
+    assert_pattern_list([:*, "foo?"], "afoo?")
+    assert_pattern_list(["foo?", :*], "foo?")
   end
 
   def assert_not_pattern_list(pattern_list, actual, message=nil)
