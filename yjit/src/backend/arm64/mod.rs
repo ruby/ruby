@@ -234,7 +234,7 @@ impl Assembler
             // such that only the Op::Load instruction needs to handle that
             // case. If the values aren't heap objects then we'll treat them as
             // if they were just unsigned integer.
-            let skip_load = matches!(insn, Insn::Load { .. });
+            let is_load = matches!(insn, Insn::Load { .. });
             let mut opnd_iter = insn.opnd_iter_mut();
 
             while let Some(opnd) = opnd_iter.next() {
@@ -242,7 +242,7 @@ impl Assembler
                     Opnd::Value(value) => {
                         if value.special_const_p() {
                             *opnd = Opnd::UImm(value.as_u64());
-                        } else if !skip_load {
+                        } else if !is_load {
                             *opnd = asm.load(*opnd);
                         }
                     },
