@@ -662,27 +662,27 @@ impl<'a> Iterator for InsnOpndIterator<'a> {
                     _ => None
                 }
             },
-            Insn::Add { left: opnd0 @ _, right: opnd1 @ _, .. } |
-            Insn::And { left: opnd0 @ _, right: opnd1 @ _, .. } |
-            Insn::Cmp { left: opnd0 @ _, right: opnd1 @ _ } |
-            Insn::CSelE { truthy: opnd0 @ _, falsy: opnd1 @ _, .. } |
-            Insn::CSelG { truthy: opnd0 @ _, falsy: opnd1 @ _, .. } |
-            Insn::CSelGE { truthy: opnd0 @ _, falsy: opnd1 @ _, .. } |
-            Insn::CSelL { truthy: opnd0 @ _, falsy: opnd1 @ _, .. } |
-            Insn::CSelLE { truthy: opnd0 @ _, falsy: opnd1 @ _, .. } |
-            Insn::CSelNE { truthy: opnd0 @ _, falsy: opnd1 @ _, .. } |
-            Insn::CSelNZ { truthy: opnd0 @ _, falsy: opnd1 @ _, .. } |
-            Insn::CSelZ { truthy: opnd0 @ _, falsy: opnd1 @ _, .. } |
-            Insn::IncrCounter { mem: opnd0 @ _, value: opnd1 @ _, .. } |
-            Insn::LShift { opnd: opnd0 @ _, shift: opnd1 @ _, .. } |
-            Insn::Mov { dest: opnd0 @ _, src: opnd1 @ _ } |
-            Insn::Or { left: opnd0 @ _, right: opnd1 @ _, .. } |
-            Insn::RShift { opnd: opnd0 @ _, shift: opnd1 @ _, .. } |
-            Insn::Store { dest: opnd0 @ _, src: opnd1 @ _ } |
-            Insn::Sub { left: opnd0 @ _, right: opnd1 @ _, .. } |
-            Insn::Test { left: opnd0 @ _, right: opnd1 @ _ } |
-            Insn::URShift { opnd: opnd0 @ _, shift: opnd1 @ _, .. } |
-            Insn::Xor { left: opnd0 @ _, right: opnd1 @ _, .. } => {
+            Insn::Add { left: opnd0, right: opnd1, .. } |
+            Insn::And { left: opnd0, right: opnd1, .. } |
+            Insn::Cmp { left: opnd0, right: opnd1 } |
+            Insn::CSelE { truthy: opnd0, falsy: opnd1, .. } |
+            Insn::CSelG { truthy: opnd0, falsy: opnd1, .. } |
+            Insn::CSelGE { truthy: opnd0, falsy: opnd1, .. } |
+            Insn::CSelL { truthy: opnd0, falsy: opnd1, .. } |
+            Insn::CSelLE { truthy: opnd0, falsy: opnd1, .. } |
+            Insn::CSelNE { truthy: opnd0, falsy: opnd1, .. } |
+            Insn::CSelNZ { truthy: opnd0, falsy: opnd1, .. } |
+            Insn::CSelZ { truthy: opnd0, falsy: opnd1, .. } |
+            Insn::IncrCounter { mem: opnd0, value: opnd1, .. } |
+            Insn::LShift { opnd: opnd0, shift: opnd1, .. } |
+            Insn::Mov { dest: opnd0, src: opnd1 } |
+            Insn::Or { left: opnd0, right: opnd1, .. } |
+            Insn::RShift { opnd: opnd0, shift: opnd1, .. } |
+            Insn::Store { dest: opnd0, src: opnd1 } |
+            Insn::Sub { left: opnd0, right: opnd1, .. } |
+            Insn::Test { left: opnd0, right: opnd1 } |
+            Insn::URShift { opnd: opnd0, shift: opnd1, .. } |
+            Insn::Xor { left: opnd0, right: opnd1, .. } => {
                 match self.idx {
                     0 => {
                         self.idx += 1;
@@ -758,27 +758,27 @@ impl<'a> InsnOpndMutIterator<'a> {
                     _ => None
                 }
             },
-            Insn::Add { left: opnd0 @ _, right: opnd1 @ _, .. } |
-            Insn::And { left: opnd0 @ _, right: opnd1 @ _, .. } |
-            Insn::Cmp { left: opnd0 @ _, right: opnd1 @ _ } |
-            Insn::CSelE { truthy: opnd0 @ _, falsy: opnd1 @ _, .. } |
-            Insn::CSelG { truthy: opnd0 @ _, falsy: opnd1 @ _, .. } |
-            Insn::CSelGE { truthy: opnd0 @ _, falsy: opnd1 @ _, .. } |
-            Insn::CSelL { truthy: opnd0 @ _, falsy: opnd1 @ _, .. } |
-            Insn::CSelLE { truthy: opnd0 @ _, falsy: opnd1 @ _, .. } |
-            Insn::CSelNE { truthy: opnd0 @ _, falsy: opnd1 @ _, .. } |
-            Insn::CSelNZ { truthy: opnd0 @ _, falsy: opnd1 @ _, .. } |
-            Insn::CSelZ { truthy: opnd0 @ _, falsy: opnd1 @ _, .. } |
-            Insn::IncrCounter { mem: opnd0 @ _, value: opnd1 @ _, .. } |
-            Insn::LShift { opnd: opnd0 @ _, shift: opnd1 @ _, .. } |
-            Insn::Mov { dest: opnd0 @ _, src: opnd1 @ _ } |
-            Insn::Or { left: opnd0 @ _, right: opnd1 @ _, .. } |
-            Insn::RShift { opnd: opnd0 @ _, shift: opnd1 @ _, .. } |
-            Insn::Store { dest: opnd0 @ _, src: opnd1 @ _ } |
-            Insn::Sub { left: opnd0 @ _, right: opnd1 @ _, .. } |
-            Insn::Test { left: opnd0 @ _, right: opnd1 @ _ } |
-            Insn::URShift { opnd: opnd0 @ _, shift: opnd1 @ _, .. } |
-            Insn::Xor { left: opnd0 @ _, right: opnd1 @ _, .. } => {
+            Insn::Add { left: opnd0, right: opnd1, .. } |
+            Insn::And { left: opnd0, right: opnd1, .. } |
+            Insn::Cmp { left: opnd0, right: opnd1 } |
+            Insn::CSelE { truthy: opnd0, falsy: opnd1, .. } |
+            Insn::CSelG { truthy: opnd0, falsy: opnd1, .. } |
+            Insn::CSelGE { truthy: opnd0, falsy: opnd1, .. } |
+            Insn::CSelL { truthy: opnd0, falsy: opnd1, .. } |
+            Insn::CSelLE { truthy: opnd0, falsy: opnd1, .. } |
+            Insn::CSelNE { truthy: opnd0, falsy: opnd1, .. } |
+            Insn::CSelNZ { truthy: opnd0, falsy: opnd1, .. } |
+            Insn::CSelZ { truthy: opnd0, falsy: opnd1, .. } |
+            Insn::IncrCounter { mem: opnd0, value: opnd1, .. } |
+            Insn::LShift { opnd: opnd0, shift: opnd1, .. } |
+            Insn::Mov { dest: opnd0, src: opnd1 } |
+            Insn::Or { left: opnd0, right: opnd1, .. } |
+            Insn::RShift { opnd: opnd0, shift: opnd1, .. } |
+            Insn::Store { dest: opnd0, src: opnd1 } |
+            Insn::Sub { left: opnd0, right: opnd1, .. } |
+            Insn::Test { left: opnd0, right: opnd1 } |
+            Insn::URShift { opnd: opnd0, shift: opnd1, .. } |
+            Insn::Xor { left: opnd0, right: opnd1, .. } => {
                 match self.idx {
                     0 => {
                         self.idx += 1;
