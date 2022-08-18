@@ -1234,7 +1234,6 @@ impl Assembler {
         self.push_insn(Insn::Breakpoint);
     }
 
-    #[must_use]
     pub fn ccall(&mut self, fptr: *const u8, opnds: Vec<Opnd>) -> Opnd {
         let out = self.next_opnd_out(Opnd::match_num_bits(&opnds));
         self.push_insn(Insn::CCall { target: Target::FunPtr(fptr), opnds, out });
