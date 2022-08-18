@@ -2531,6 +2531,64 @@ gc_event_hook_body(rb_execution_context_t *ec, rb_objspace_t *objspace, const rb
 
 #define gc_event_hook(objspace, event, data) gc_event_hook_prep(objspace, event, data, (void)0)
 
+#if USE_MMTK
+static inline void
+maybe_register_finalizable(VALUE obj) {
+    // Any object that has non-trivial cleaning-up code in `obj_free`
+    // should be registered as "finalizable" to MMTk.
+    switch (RB_BUILTIN_TYPE(obj)) {
+      case T_OBJECT:
+        // FIXME: Ordinary objects can be non-embedded, too,
+        // but there are just too many such objects,
+        // and few of them have large buffers.
+        // Just let them leak for now.
+        // We'll prioritize eliminating the underlying buffer of ordinary objects.
+        break;
+      case T_MODULE:
+      case T_CLASS:
+      case T_STRING:
+      case T_ARRAY:
+      case T_HASH:
+      case T_REGEXP:
+      case T_DATA:
+      case T_MATCH:
+      case T_FILE:
+      case T_ICLASS:
+      case T_BIGNUM:
+      case T_STRUCT:
+      case T_SYMBOL:
+      case T_IMEMO:
+        mmtk_add_finalizer((void*)obj);
+        RUBY_DEBUG_LOG("Object registered for finalization: %p: %s %s",
+            (void*)obj,
+            rb_type_str(RB_BUILTIN_TYPE(obj)),
+            klass==0?"(null)":rb_class2name(klass)
+            );
+        break;
+      case T_RATIONAL:
+      case T_COMPLEX:
+      case T_FLOAT:
+        // There are only counters increments for these types in `obj_free`
+        break;
+      case T_NIL:
+      case T_FIXNUM:
+      case T_TRUE:
+      case T_FALSE:
+        // These are non-heap value types.
+      case T_MOVED:
+        // Should not see this when object is just created.
+      case T_NODE:
+        // GC doesn't handle T_NODE.
+        rb_bug("maybe_register_finalizable: unexpected data type 0x%x(%p) 0x%"PRIxVALUE,
+               BUILTIN_TYPE(obj), (void*)obj, RBASIC(obj)->flags);
+        break;
+      default:
+        rb_bug("maybe_register_finalizable: unknown data type 0x%x(%p) 0x%"PRIxVALUE,
+               BUILTIN_TYPE(obj), (void*)obj, RBASIC(obj)->flags);
+    }
+}
+#endif
+
 static inline VALUE
 newobj_init(VALUE klass, VALUE flags, int wb_protected, rb_objspace_t *objspace, VALUE obj)
 {
@@ -2546,23 +2604,7 @@ newobj_init(VALUE klass, VALUE flags, int wb_protected, rb_objspace_t *objspace,
 
 #if USE_MMTK
     if (rb_mmtk_enabled_p()) {
-        switch (RB_BUILTIN_TYPE(obj)) {
-        case T_STRING:
-        case T_ARRAY:
-        case T_HASH:
-        case T_DATA:
-        case T_FILE:
-        case T_SYMBOL:
-            mmtk_add_finalizer((void*)obj);
-            RUBY_DEBUG_LOG("Object registered for finalization: %p: %s %s",
-                (void*)obj,
-                rb_type_str(RB_BUILTIN_TYPE(obj)),
-                klass==0?"(null)":rb_class2name(klass)
-                );
-            break;
-        default:
-            break; // Do nothing.
-        }
+        maybe_register_finalizable(obj);
     }
 #endif
 
