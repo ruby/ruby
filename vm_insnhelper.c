@@ -3685,9 +3685,6 @@ vm_call_method_each_type(rb_execution_context_t *ec, rb_control_frame_t *cfp, st
       case VM_METHOD_TYPE_UNDEF:
         break;
 
-      case VM_METHOD_TYPE_ZSUPER:
-        return vm_call_zsuper(ec, cfp, calling, RCLASS_ORIGIN(vm_cc_cme(cc)->defined_class));
-
       case VM_METHOD_TYPE_REFINED:
         // CC_SET_FASTPATH(cc, vm_call_refined, TRUE);
         // should not set FASTPATH since vm_call_refined assumes cc->call is vm_call_super_method on invokesuper.

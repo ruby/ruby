@@ -5,8 +5,16 @@ require_relative 'shared/set_visibility'
 describe "Module#public" do
   it_behaves_like :set_visibility, :public
 
-  it "on a superclass method calls the redefined method" do
-    ModuleSpecs::ChildPrivateMethodMadePublic.new.private_method_redefined.should == :after_redefinition
+  ruby_version_is "3.2" do
+    it "on a superclass method calls the original method" do
+      ModuleSpecs::ChildPrivateMethodMadePublic.new.private_method_redefined.should == :before_redefinition
+    end
+  end
+
+  ruby_version_is ""..."3.2" do
+    it "on a superclass method calls the redefined method" do
+      ModuleSpecs::ChildPrivateMethodMadePublic.new.private_method_redefined.should == :after_redefinition
+    end
   end
 
   it "makes a private Object instance method public in a new module" do

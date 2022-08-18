@@ -111,7 +111,6 @@ typedef enum {
     VM_METHOD_TYPE_ATTRSET,   /*!< attr_writer or attr_accessor */
     VM_METHOD_TYPE_IVAR,      /*!< attr_reader or attr_accessor */
     VM_METHOD_TYPE_BMETHOD,
-    VM_METHOD_TYPE_ZSUPER,
     VM_METHOD_TYPE_ALIAS,
     VM_METHOD_TYPE_UNDEF,
     VM_METHOD_TYPE_NOTIMPLEMENTED,

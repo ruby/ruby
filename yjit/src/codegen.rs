@@ -4994,10 +4994,6 @@ fn gen_send_general(
                 gen_counter_incr!(cb, send_bmethod);
                 return CantCompile;
             }
-            VM_METHOD_TYPE_ZSUPER => {
-                gen_counter_incr!(cb, send_zsuper_method);
-                return CantCompile;
-            }
             VM_METHOD_TYPE_ALIAS => {
                 // Retrieve the aliased method and re-enter the switch
                 cme = unsafe { rb_aliased_callable_method_entry(cme) };

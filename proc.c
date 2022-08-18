@@ -1684,7 +1684,6 @@ mnew_internal(const rb_method_entry_t *me, VALUE klass, VALUE iclass,
     VALUE method;
     rb_method_visibility_t visi = METHOD_VISI_UNDEF;
 
-  again:
     if (UNDEFINED_METHOD_ENTRY_P(me)) {
         if (respond_to_missing_p(klass, obj, ID2SYM(id), scope)) {
             return mnew_missing(klass, obj, id, mclass);
@@ -1699,19 +1698,6 @@ mnew_internal(const rb_method_entry_t *me, VALUE klass, VALUE iclass,
             if (!error) return Qnil;
             rb_print_inaccessible(klass, id, visi);
         }
-    }
-    if (me->def->type == VM_METHOD_TYPE_ZSUPER) {
-        if (me->defined_class) {
-            VALUE klass = RCLASS_SUPER(RCLASS_ORIGIN(me->defined_class));
-            id = me->def->original_id;
-            me = (rb_method_entry_t *)rb_callable_method_entry_with_refinements(klass, id, &iclass);
-        }
-        else {
-            VALUE klass = RCLASS_SUPER(RCLASS_ORIGIN(me->owner));
-            id = me->def->original_id;
-            me = rb_method_entry_without_refinements(klass, id, &iclass);
-        }
-        goto again;
     }
 
     method = TypedData_Make_Struct(mclass, struct METHOD, &method_data_type, data);
@@ -2703,9 +2689,6 @@ method_def_min_max_arity(const rb_method_definition_t *def, int *max)
             return 0;
         }
         return *max = check_argc(def->body.cfunc.argc);
-      case VM_METHOD_TYPE_ZSUPER:
-        *max = UNLIMITED_ARGUMENTS;
-        return 0;
       case VM_METHOD_TYPE_ATTRSET:
         return *max = 1;
       case VM_METHOD_TYPE_IVAR:
@@ -2825,20 +2808,6 @@ method_arity(VALUE method)
     return rb_method_entry_arity(data->me);
 }
 
-static const rb_method_entry_t *
-original_method_entry(VALUE mod, ID id)
-{
-    const rb_method_entry_t *me;
-
-    while ((me = rb_method_entry(mod, id)) != 0) {
-        const rb_method_definition_t *def = me->def;
-        if (def->type != VM_METHOD_TYPE_ZSUPER) break;
-        mod = RCLASS_SUPER(me->owner);
-        id = def->original_id;
-    }
-    return me;
-}
-
 static int
 method_min_max_arity(VALUE method, int *max)
 {
@@ -2851,7 +2820,7 @@ method_min_max_arity(VALUE method, int *max)
 int
 rb_mod_method_arity(VALUE mod, ID id)
 {
-    const rb_method_entry_t *me = original_method_entry(mod, id);
+    const rb_method_entry_t *me = rb_method_entry(mod, id);
     if (!me) return 0;		/* should raise? */
     return rb_method_entry_arity(me);
 }
@@ -2899,7 +2868,6 @@ method_def_iseq(const rb_method_definition_t *def)
       case VM_METHOD_TYPE_CFUNC:
       case VM_METHOD_TYPE_ATTRSET:
       case VM_METHOD_TYPE_IVAR:
-      case VM_METHOD_TYPE_ZSUPER:
       case VM_METHOD_TYPE_UNDEF:
       case VM_METHOD_TYPE_NOTIMPLEMENTED:
       case VM_METHOD_TYPE_OPTIMIZED:
@@ -3016,7 +2984,6 @@ method_def_parameters(const rb_method_definition_t *def)
       case VM_METHOD_TYPE_CFUNC:
       case VM_METHOD_TYPE_ATTRSET:
       case VM_METHOD_TYPE_IVAR:
-      case VM_METHOD_TYPE_ZSUPER:
       case VM_METHOD_TYPE_UNDEF:
       case VM_METHOD_TYPE_NOTIMPLEMENTED:
       case VM_METHOD_TYPE_MISSING:

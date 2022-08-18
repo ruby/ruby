@@ -576,7 +576,6 @@ rb_method_definition_set(const rb_method_entry_t *me, rb_method_definition_t *de
           case VM_METHOD_TYPE_ALIAS:
             RB_OBJ_WRITE(me, &def->body.alias.original_me, (rb_method_entry_t *)opts);
             return;
-          case VM_METHOD_TYPE_ZSUPER:
           case VM_METHOD_TYPE_UNDEF:
           case VM_METHOD_TYPE_MISSING:
             return;
@@ -612,7 +611,6 @@ method_definition_reset(const rb_method_entry_t *me)
         RB_OBJ_WRITTEN(me, Qundef, def->body.alias.original_me);
         break;
       case VM_METHOD_TYPE_CFUNC:
-      case VM_METHOD_TYPE_ZSUPER:
       case VM_METHOD_TYPE_MISSING:
       case VM_METHOD_TYPE_OPTIMIZED:
       case VM_METHOD_TYPE_UNDEF:
@@ -844,8 +842,7 @@ rb_method_entry_make(VALUE klass, ID mid, VALUE defined_class, rb_method_visibil
     orig_klass = klass;
 
     if (!FL_TEST(klass, FL_SINGLETON) &&
-        type != VM_METHOD_TYPE_NOTIMPLEMENTED &&
-        type != VM_METHOD_TYPE_ZSUPER) {
+        type != VM_METHOD_TYPE_NOTIMPLEMENTED) {
         switch (mid) {
           case idInitialize:
           case idInitialize_copy:
@@ -892,7 +889,6 @@ rb_method_entry_make(VALUE klass, ID mid, VALUE defined_class, rb_method_visibil
             (!old_def->no_redef_warning) &&
             !make_refined &&
             old_def->type != VM_METHOD_TYPE_UNDEF &&
-            old_def->type != VM_METHOD_TYPE_ZSUPER &&
             old_def->type != VM_METHOD_TYPE_ALIAS) {
             const rb_iseq_t *iseq = 0;
 
@@ -1627,7 +1623,8 @@ rb_export_method(VALUE klass, ID name, rb_method_visibility_t visi)
             rb_clear_method_cache(klass, name);
         }
         else {
-            rb_add_method(klass, name, VM_METHOD_TYPE_ZSUPER, 0, visi);
+            const rb_method_entry_t *copy = rb_method_entry_clone(me);
+            rb_add_method(klass, name, VM_METHOD_TYPE_ALIAS, (void *)copy, visi);
         }
     }
 }
@@ -2075,7 +2072,6 @@ rb_method_definition_eq(const rb_method_definition_t *d1, const rb_method_defini
         return RTEST(rb_equal(d1->body.bmethod.proc, d2->body.bmethod.proc));
       case VM_METHOD_TYPE_MISSING:
         return d1->original_id == d2->original_id;
-      case VM_METHOD_TYPE_ZSUPER:
       case VM_METHOD_TYPE_NOTIMPLEMENTED:
       case VM_METHOD_TYPE_UNDEF:
         return 1;
@@ -2110,7 +2106,6 @@ rb_hash_method_definition(st_index_t hash, const rb_method_definition_t *def)
         return rb_hash_proc(hash, def->body.bmethod.proc);
       case VM_METHOD_TYPE_MISSING:
         return rb_hash_uint(hash, def->original_id);
-      case VM_METHOD_TYPE_ZSUPER:
       case VM_METHOD_TYPE_NOTIMPLEMENTED:
       case VM_METHOD_TYPE_UNDEF:
         return hash;
@@ -2144,7 +2139,6 @@ rb_alias(VALUE klass, ID alias_name, ID original_name)
 
     rb_class_modify_check(klass);
 
-  again:
     orig_me = search_method(klass, original_name, &defined_class);
 
     if (orig_me && orig_me->def->type == VM_METHOD_TYPE_REFINED) {
@@ -2161,11 +2155,6 @@ rb_alias(VALUE klass, ID alias_name, ID original_name)
     }
 
     switch (orig_me->def->type) {
-      case VM_METHOD_TYPE_ZSUPER:
-        klass = RCLASS_SUPER(klass);
-        original_name = orig_me->def->original_id;
-        visi = METHOD_ENTRY_VISI(orig_me);
-        goto again;
       case VM_METHOD_TYPE_ALIAS:
         visi = METHOD_ENTRY_VISI(orig_me);
         orig_me = orig_me->def->body.alias.original_me;
@@ -2646,20 +2635,13 @@ rb_mod_modfunc(int argc, VALUE *argv, VALUE module)
         VALUE m = module;
 
         id = rb_to_id(argv[i]);
-        for (;;) {
-            me = search_method(m, id, 0);
-            if (me == 0) {
-                me = search_method(rb_cObject, id, 0);
-            }
-            if (UNDEFINED_METHOD_ENTRY_P(me)) {
-                rb_print_undef(module, id, METHOD_VISI_UNDEF);
-            }
-            if (me->def->type != VM_METHOD_TYPE_ZSUPER) {
-                break; /* normal case: need not to follow 'super' link */
-            }
-            m = RCLASS_SUPER(m);
-            if (!m)
-                break;
+
+        me = search_method(m, id, 0);
+        if (me == 0) {
+            me = search_method(rb_cObject, id, 0);
+        }
+        if (UNDEFINED_METHOD_ENTRY_P(me)) {
+            rb_print_undef(module, id, METHOD_VISI_UNDEF);
         }
         rb_method_entry_set(rb_singleton_class(module), id, me, METHOD_VISI_PUBLIC);
     }

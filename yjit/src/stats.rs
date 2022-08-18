@@ -167,7 +167,6 @@ make_counters! {
     send_args_splat,
     send_block_arg,
     send_ivar_set_method,
-    send_zsuper_method,
     send_undef_method,
     send_optimized_method,
     send_optimized_method_send,

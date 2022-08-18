@@ -223,11 +223,6 @@ vm_call0_body(rb_execution_context_t *ec, struct rb_calling_info *calling, const
       case VM_METHOD_TYPE_BMETHOD:
         ret = vm_call_bmethod_body(ec, calling, argv);
         goto success;
-      case VM_METHOD_TYPE_ZSUPER:
-        {
-            VALUE klass = RCLASS_ORIGIN(vm_cc_cme(cc)->defined_class);
-            return vm_call0_super(ec, calling, argv, klass, MISSING_SUPER);
-        }
       case VM_METHOD_TYPE_REFINED:
         {
             const rb_callable_method_entry_t *cme = vm_cc_cme(cc);
