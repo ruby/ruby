@@ -3,7 +3,7 @@
 #   1. Copy it and rename the copy so it ends with `_command.py`.
 #   2. Rename the class to something descriptive that ends with Command.
 #   3. Change the program variable to be a descriptive command name
-#   4. Ensure you are inheriting from RbBaseCommand or another command that 
+#   4. Ensure you are inheriting from RbBaseCommand or another command that
 #      implements the same interfact
 
 import lldb
@@ -23,8 +23,8 @@ class TestCommand(RbBaseCommand):
     # call is where our command logic will be implemented
     def call(self, debugger, command, exe_ctx, result):
         # This method will be called once the LLDB environment has been setup.
-        # You will have access to self.target, self.process, self.frame, and 
+        # You will have access to self.target, self.process, self.frame, and
         # self.thread
-        # 
+        #
         # This is where we should implement our command logic
         pass
