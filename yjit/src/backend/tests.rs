@@ -315,9 +315,9 @@ fn test_draining_iterator() {
 
     while let Some((index, insn)) = iter.next_unmapped() {
         match index {
-            0 => assert_eq!(insn.op, Op::Load),
-            1 => assert_eq!(insn.op, Op::Store),
-            2 => assert_eq!(insn.op, Op::Add),
+            0 => assert!(matches!(insn, Insn::Load { .. })),
+            1 => assert!(matches!(insn, Insn::Store { .. })),
+            2 => assert!(matches!(insn, Insn::Add { .. })),
             _ => panic!("Unexpected instruction index"),
         };
     }
@@ -337,7 +337,7 @@ fn test_lookback_iterator() {
         if index > 0 {
             let opnd_iter = iter.get_previous().unwrap().opnd_iter();
             assert_eq!(opnd_iter.take(1).next(), Some(&Opnd::None));
-            assert_eq!(insn.op, Op::Store);
+            assert!(matches!(insn, Insn::Store { .. }));
         }
     }
 }
