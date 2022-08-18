@@ -122,7 +122,7 @@ impl Assembler
             //   - Most instructions can't be encoded with 64-bit immediates.
             //   - We look for Op::Load specifically when emiting to keep GC'ed
             //     VALUEs alive. This is a sort of canonicalization.
-            let mapped_opnds: Vec<Opnd> = insn.opnds.iter().map(|opnd| {
+            let mapped_opnds: Vec<Opnd> = insn.opnd_iter().map(|opnd| {
                 if insn.op == Op::Load {
                     iterator.map_opnd(*opnd)
                 } else if let Opnd::Value(value) = opnd {
