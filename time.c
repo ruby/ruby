@@ -3486,7 +3486,7 @@ time_to_f(VALUE time)
 
 /*
  *  call-seq:
- *    time.to_r -> rational
+ *    to_r -> rational
  *
  *  Returns the value of +self+ as a Rational number of seconds
  *  since the Epoch, which is exact:
@@ -3540,7 +3540,7 @@ time_usec(VALUE time)
 
 /*
  *  call-seq:
- *    time.nsec -> integer
+ *    nsec -> integer
  *
  *  Returns the number of nanoseconds in the subseconds part of +self+
  *  in the range (0..999_999_999);
@@ -3659,20 +3659,20 @@ time_eql(VALUE time1, VALUE time2)
 
 /*
  *  call-seq:
- *     time.utc? -> true or false
- *     time.gmt? -> true or false
+ *    utc? -> true or false
  *
- *  Returns +true+ if _time_ represents a time in UTC (GMT).
+ *  Returns +true+ if +self+ represents a time in UTC (GMT):
  *
- *     t = Time.now                        #=> 2007-11-19 08:15:23 -0600
- *     t.utc?                              #=> false
- *     t = Time.gm(2000,"jan",1,20,15,1)   #=> 2000-01-01 20:15:01 UTC
- *     t.utc?                              #=> true
+ *    now = Time.now
+ *    # => 2022-08-18 10:24:13.5398485 -0500
+ *    now.utc? # => false
+ *    utc = Time.utc(2000, 1, 1, 20, 15, 1)
+ *    # => 2000-01-01 20:15:01 UTC
+ *    utc.utc? # => true
  *
- *     t = Time.now                        #=> 2007-11-19 08:16:03 -0600
- *     t.gmt?                              #=> false
- *     t = Time.gm(2000,1,1,20,15,1)       #=> 2000-01-01 20:15:01 UTC
- *     t.gmt?                              #=> true
+ *  Time#gmt? is an alias for Time#utc?.
+ *
+ *  Related: Time.utc.
  */
 
 static VALUE
@@ -3686,11 +3686,11 @@ time_utc_p(VALUE time)
 
 /*
  * call-seq:
- *   time.hash   -> integer
+ *   hash -> integer
  *
- * Returns a hash code for this Time object.
+ * Returns the integer hash code for +self.
  *
- * See also Object#hash.
+ * Related: Object#hash.
  */
 
 static VALUE
@@ -3777,25 +3777,28 @@ time_zonelocal(VALUE time, VALUE off)
 
 /*
  *  call-seq:
- *     time.localtime -> time
- *     time.localtime(utc_offset) -> time
+ *    localtime -> self or new_time
+ *    localtime(zone) -> new_time
  *
- *  Converts _time_ to local time (using the local time zone in
- *  effect at the creation time of _time_) modifying the receiver.
+ *  With no argument given:
  *
- *  If +utc_offset+ is given, it is used instead of the local time.
+ *  - Returns +self+ if +self+ is a local time.
+ *  - Otherwise returns <tt>localtime(self.local)</tt>:
  *
- *     t = Time.utc(2000, "jan", 1, 20, 15, 1) #=> 2000-01-01 20:15:01 UTC
- *     t.utc?                                  #=> true
+ *      t = Time.utc(2000, 1, 1, 20, 15, 1) # => 2000-01-01 20:15:01 UTC
+ *      t.localtime                         # => 2000-01-01 14:15:01 -0600
  *
- *     t.localtime                             #=> 2000-01-01 14:15:01 -0600
- *     t.utc?                                  #=> false
+ *  With argument +zone+ given,
+ *  returns the new \Time object created by converting
+ *  +self+ to the given time zone:
  *
- *     t.localtime("+09:00")                   #=> 2000-01-02 05:15:01 +0900
- *     t.utc?                                  #=> false
+ *    t = Time.utc(2000, 1, 1, 20, 15, 1) # => 2000-01-01 20:15:01 UTC
+ *    t.localtime("-09:00")               # => 2000-01-01 11:15:01 -0900
  *
- *  If +utc_offset+ is not given and _time_ is local time, just returns
- *  the receiver.
+ *  Parameter:
+ *
+ *  :include: doc/time/zone.rdoc
+ *
  */
 
 static VALUE
