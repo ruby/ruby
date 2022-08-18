@@ -928,6 +928,16 @@ name_match_p(const char *name, const char *str, size_t len)
 #define LITERAL_NAME_ELEMENT(name) #name
 
 static void
+set_feature_jit(ruby_features_t *feat, unsigned int mask, unsigned int set)
+{
+#if !USE_MJIT && !USE_YJIT
+    rb_warn("Ruby was built without JIT support");
+#else
+    FEATURE_SET_TO(*feat, mask, set);
+#endif
+}
+
+static void
 feature_option(const char *str, int len, void *arg, const unsigned int enable)
 {
     static const char list[] = EACH_FEATURES(LITERAL_NAME_ELEMENT, ", ");
@@ -945,7 +955,8 @@ feature_option(const char *str, int len, void *arg, const unsigned int enable)
     EACH_FEATURES(SET_FEATURE, ;);
     if (NAME_MATCH_P("jit", str, len)) { // This allows you to cancel --jit
         set |= mask = FEATURE_BIT(jit);
-        goto found;
+        set_feature_jit(argp, mask, (mask & enable));
+        return;
     }
     if (NAME_MATCH_P("all", str, len)) {
         // YJIT and MJIT cannot be enabled at the same time. We enable only one for --enable=all.
@@ -1439,11 +1450,8 @@ proc_options(long argc, char **argv, ruby_cmdline_options_t *opt, int envopt)
                 ruby_verbose = Qtrue;
             }
             else if (strcmp("jit", s) == 0) {
-#if !USE_MJIT
-                rb_warn("Ruby was built without JIT support");
-#else
-                FEATURE_SET(opt->features, FEATURE_BIT(jit));
-#endif
+                const unsigned int bit = FEATURE_BIT(jit);
+                set_feature_jit(&opt->features, bit, bit);
             }
             else if (is_option_with_optarg("mjit", '-', true, false, false)) {
 #if USE_MJIT
