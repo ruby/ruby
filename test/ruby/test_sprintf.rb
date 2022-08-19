@@ -362,7 +362,8 @@ class TestSprintf < Test::Unit::TestCase
   def test_char
     assert_equal("a", sprintf("%c", 97))
     assert_equal("a", sprintf("%c", ?a))
-    assert_raise(ArgumentError) { sprintf("%c", sprintf("%c%c", ?a, ?a)) }
+    assert_equal("a", sprintf("%c", "a"))
+    assert_equal("a", sprintf("%c", sprintf("%c%c", ?a, ?a)))
     assert_equal(" " * (BSIZ - 1) + "a", sprintf(" " * (BSIZ - 1) + "%c", ?a))
     assert_equal(" " * (BSIZ - 1) + "a", sprintf(" " * (BSIZ - 1) + "%-1c", ?a))
     assert_equal(" " * BSIZ + "a", sprintf("%#{ BSIZ + 1 }c", ?a))
