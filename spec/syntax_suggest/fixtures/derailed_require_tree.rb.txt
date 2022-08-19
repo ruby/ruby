@@ -1,0 +1,74 @@
+# frozen_string_literal: true
+
+# Tree structure used to store and sort require memory costs
+# RequireTree.new('get_process_mem')
+module DerailedBenchmarks
+  class RequireTree
+    REQUIRED_BY = {}
+
+    attr_reader   :name
+    attr_writer   :cost
+    attr_accessor :parent
+
+    def initialize(name)
+      @name     = name
+      @children = {}
+      @cost = 0
+
+    def self.reset!
+      REQUIRED_BY.clear
+      if defined?(Kernel::REQUIRE_STACK)
+        Kernel::REQUIRE_STACK.clear
+
+        Kernel::REQUIRE_STACK.push(TOP_REQUIRE)
+      end
+    end
+
+    def <<(tree)
+      @children[tree.name.to_s] = tree
+      tree.parent = self
+      (REQUIRED_BY[tree.name.to_s] ||= []) << self.name
+    end
+
+    def [](name)
+      @children[name.to_s]
+    end
+
+    # Returns array of child nodes
+    def children
+      @children.values
+    end
+
+    def cost
+      @cost || 0
+    end
+
+    # Returns sorted array of child nodes from Largest to Smallest
+    def sorted_children
+      children.sort { |c1, c2| c2.cost <=> c1.cost }
+    end
+
+    def to_string
+      str = String.new("#{name}: #{cost.round(4)} MiB")
+      if parent && REQUIRED_BY[self.name.to_s]
+        names = REQUIRED_BY[self.name.to_s].uniq - [parent.name.to_s]
+        if names.any?
+          str << " (Also required by: #{ names.first(2).join(", ") }"
+          str << ", and #{names.count - 2} others" if names.count > 3
+          str << ")"
+        end
+      end
+      str
+    end
+
+    # Recursively prints all child nodes
+    def print_sorted_children(level = 0, out = STDOUT)
+      return if cost < ENV['CUT_OFF'].to_f
+      out.puts "  " * level + self.to_string
+      level += 1
+      sorted_children.each do |child|
+        child.print_sorted_children(level, out)
+      end
+    end
+  end
+end
