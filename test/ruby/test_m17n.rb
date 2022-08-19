@@ -893,7 +893,7 @@ class TestM17N < Test::Unit::TestCase
       "%s%s" % [s("\xc2\xa1"), e("\xc2\xa1")]
     }
 
-    "%c" % "\u3042".encode('Windows-31J')
+    assert_equal("\u3042".encode('Windows-31J'), "%c" % "\u3042\u3044".encode('Windows-31J'))
   end
 
   def test_sprintf_p
