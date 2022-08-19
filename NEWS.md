@@ -177,6 +177,7 @@ Note: We're only listing outstanding class updates.
     * reline 0.3.1
     * securerandom 0.2.0
     * stringio 3.0.3
+    * syntax_suggest 0.0.1
     * timeout 0.3.0
 *   The following bundled gems are updated.
     * minitest 5.16.3
