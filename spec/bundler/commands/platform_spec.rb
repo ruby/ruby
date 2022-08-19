@@ -234,6 +234,29 @@ G
       expect(out).to eq("ruby 1.0.0")
     end
 
+    it "handles when there is a lockfile with no requirement" do
+      gemfile <<-G
+        source "#{file_uri_for(gem_repo1)}"
+      G
+
+      lockfile <<-L
+        GEM
+          remote: #{file_uri_for(gem_repo1)}/
+          specs:
+
+        PLATFORMS
+          ruby
+
+        DEPENDENCIES
+
+        BUNDLED WITH
+           #{Bundler::VERSION}
+      L
+
+      bundle "platform --ruby"
+      expect(out).to eq("No ruby version specified")
+    end
+
     it "handles when there is a requirement in the gemfile" do
       gemfile <<-G
         source "#{file_uri_for(gem_repo1)}"
