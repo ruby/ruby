@@ -250,6 +250,7 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
     --argv;
     StringValue(fmt);
     enc = rb_enc_get(fmt);
+    rb_must_asciicompat(fmt);
     orig = fmt;
     fmt = rb_str_tmp_frozen_acquire(fmt);
     p = RSTRING_PTR(fmt);
