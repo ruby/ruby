@@ -447,8 +447,8 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
                     goto format_s1;
                 }
                 else {
-                    c = NUM2INT(val);
-                    n = rb_enc_codelen(c, enc);
+                    n = NUM2INT(val);
+                    if (n >= 0) n = rb_enc_codelen((c = n), enc);
                 }
                 if (n <= 0) {
                     rb_raise(rb_eArgError, "invalid character");
