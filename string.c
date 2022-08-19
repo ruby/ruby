@@ -2526,6 +2526,9 @@ void
 rb_must_asciicompat(VALUE str)
 {
     rb_encoding *enc = rb_enc_get(str);
+    if (!enc) {
+        rb_raise(rb_eTypeError, "not encoding capable object");
+    }
     if (!rb_enc_asciicompat(enc)) {
         rb_raise(rb_eEncCompatError, "ASCII incompatible encoding: %s", rb_enc_name(enc));
     }
