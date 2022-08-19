@@ -441,10 +441,11 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
 
                 tmp = rb_check_string_type(val);
                 if (!NIL_P(tmp)) {
-                    if (rb_enc_strlen(RSTRING_PTR(tmp),RSTRING_END(tmp),enc) != 1) {
+                    rb_encoding *valenc = rb_enc_get(tmp);
+                    if (rb_enc_strlen(RSTRING_PTR(tmp), RSTRING_END(tmp), valenc) != 1) {
                         rb_raise(rb_eArgError, "%%c requires a character");
                     }
-                    c = rb_enc_codepoint_len(RSTRING_PTR(tmp), RSTRING_END(tmp), &n, enc);
+                    c = rb_enc_codepoint_len(RSTRING_PTR(tmp), RSTRING_END(tmp), &n, valenc);
                     RB_GC_GUARD(tmp);
                 }
                 else {

@@ -892,6 +892,8 @@ class TestM17N < Test::Unit::TestCase
     assert_raise(Encoding::CompatibilityError) {
       "%s%s" % [s("\xc2\xa1"), e("\xc2\xa1")]
     }
+
+    "%c" % "\u3042".encode('Windows-31J')
   end
 
   def test_sprintf_p
