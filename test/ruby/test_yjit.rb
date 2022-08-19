@@ -19,6 +19,7 @@ class TestYJIT < Test::Unit::TestCase
 
   # Check that YJIT is in the version string
   def test_yjit_in_version
+    output_pattern = [RUBY_DESCRIPTION, "\n", :*]
     [
       %w(--version --yjit),
       %w(--version --disable-yjit --yjit),
@@ -37,10 +38,7 @@ class TestYJIT < Test::Unit::TestCase
         %w(--version --disable=jit --enable=jit),
       ] if JITSupport.yjit_supported?),
     ].each do |version_args|
-      assert_in_out_err(version_args) do |stdout, stderr|
-        assert_equal(RUBY_DESCRIPTION, stdout.first)
-        assert_equal([], stderr)
-      end
+      assert_in_out_err(version_args, "", output_pattern, [], version_args.inspect)
     end
   end
 
