@@ -3697,7 +3697,6 @@ fn jit_rb_str_bytesize(
     true
 }
 
-/*
 // Codegen for rb_str_to_s()
 // When String#to_s is called on a String instance, the method returns self and
 // most of the overhead comes from setting up the method call. We observed that
@@ -3705,7 +3704,7 @@ fn jit_rb_str_bytesize(
 fn jit_rb_str_to_s(
     _jit: &mut JITState,
     _ctx: &mut Context,
-    cb: &mut CodeBlock,
+    asm: &mut Assembler,
     _ocb: &mut OutlinedCb,
     _ci: *const rb_callinfo,
     _cme: *const rb_callable_method_entry_t,
@@ -3714,14 +3713,13 @@ fn jit_rb_str_to_s(
     known_recv_class: *const VALUE,
 ) -> bool {
     if !known_recv_class.is_null() && unsafe { *known_recv_class == rb_cString } {
-        add_comment(cb, "to_s on plain string");
+        asm.comment("to_s on plain string");
         // The method returns the receiver, which is already on the stack.
         // No stack movement.
         return true;
     }
     false
 }
-*/
 
 // Codegen for rb_str_concat() -- *not* String#concat
 // Frequently strings are concatenated using "out_str << next_str".
@@ -3750,8 +3748,7 @@ fn jit_rb_str_concat(
     let side_exit = get_side_exit(jit, ocb, ctx);
 
     // Guard that the argument is of class String at runtime.
-    let insn_opnd = StackOpnd(0);
-    let arg_type = ctx.get_opnd_type(insn_opnd);
+    let arg_type = ctx.get_opnd_type(StackOpnd(0));
 
     let concat_arg = ctx.stack_pop(1);
     let recv = ctx.stack_pop(1);
@@ -3765,12 +3762,8 @@ fn jit_rb_str_concat(
             asm.jnz(side_exit.into());
             asm.cmp(arg_opnd, Qnil.into());
             asm.jbe(side_exit.into());
-
-            ctx.upgrade_opnd_type(insn_opnd, Type::UnknownHeap);
         }
         guard_object_is_string(asm, arg_opnd, side_exit);
-        // We know this is a string-or-subclass, but not necessarily that it's a ::String
-        ctx.upgrade_opnd_type(insn_opnd, Type::TString);
     }
 
     // Test if string encodings differ. If different, use rb_str_append. If the same,
@@ -6138,11 +6131,11 @@ impl CodegenGlobals {
             self.yjit_reg_method(rb_cSymbol, "===", jit_rb_obj_equal);
 
             // rb_str_to_s() methods in string.c
-            //self.yjit_reg_method(rb_cString, "to_s", jit_rb_str_to_s);
-            //self.yjit_reg_method(rb_cString, "to_str", jit_rb_str_to_s);
+            self.yjit_reg_method(rb_cString, "to_s", jit_rb_str_to_s);
+            self.yjit_reg_method(rb_cString, "to_str", jit_rb_str_to_s);
             self.yjit_reg_method(rb_cString, "bytesize", jit_rb_str_bytesize);
-            //self.yjit_reg_method(rb_cString, "<<", jit_rb_str_concat);
-            //self.yjit_reg_method(rb_cString, "+@", jit_rb_str_uplus);
+            self.yjit_reg_method(rb_cString, "<<", jit_rb_str_concat);
+            self.yjit_reg_method(rb_cString, "+@", jit_rb_str_uplus);
 
             // Thread.current
             self.yjit_reg_method(
