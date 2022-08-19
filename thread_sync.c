@@ -1026,10 +1026,14 @@ szqueue_sleep_done(VALUE p)
 }
 
 static VALUE
-queue_do_pop(VALUE self, struct rb_queue *q, int should_block, VALUE timeout)
+queue_do_pop(VALUE self, struct rb_queue *q, int should_block, VALUE timeout, VALUE count)
 {
     check_array(self, q->que);
     rb_hrtime_t end = queue_timeout2hrtime(timeout);
+    long pop_size;
+    if (!NIL_P(count)) {
+        pop_size = NUM2LONG(count);
+    }
 
     while (RARRAY_LEN(q->que) == 0) {
         if (!should_block) {
@@ -1066,13 +1070,24 @@ queue_do_pop(VALUE self, struct rb_queue *q, int should_block, VALUE timeout)
         }
     }
 
-    return rb_ary_shift(q->que);
+    if (NIL_P(count)) {
+        return rb_ary_shift(q->que);
+    }
+    else if (pop_size >= RARRAY_LEN(q->que)) {
+        VALUE result = q->que;
+        RB_OBJ_WRITE(self, &q->que, ary_buf_new());
+        rb_obj_reveal(result, rb_cArray);
+        return result;
+    }
+    else {
+        return rb_ary_shift_n(q->que, pop_size);
+    }
 }
 
 static VALUE
-rb_queue_pop(rb_execution_context_t *ec, VALUE self, VALUE non_block, VALUE timeout)
+rb_queue_pop(rb_execution_context_t *ec, VALUE self, VALUE non_block, VALUE timeout, VALUE count)
 {
-    return queue_do_pop(self, queue_ptr(self), !RTEST(non_block), timeout);
+    return queue_do_pop(self, queue_ptr(self), !RTEST(non_block), timeout, count);
 }
 
 /*
@@ -1278,10 +1293,10 @@ rb_szqueue_push(rb_execution_context_t *ec, VALUE self, VALUE object, VALUE non_
 }
 
 static VALUE
-szqueue_do_pop(VALUE self, int should_block, VALUE timeout)
+szqueue_do_pop(VALUE self, int should_block, VALUE timeout, VALUE count)
 {
     struct rb_szqueue *sq = szqueue_ptr(self);
-    VALUE retval = queue_do_pop(self, &sq->q, should_block, timeout);
+    VALUE retval = queue_do_pop(self, &sq->q, should_block, timeout, count);
 
     if (queue_length(self, &sq->q) < sq->max) {
         wakeup_one(szqueue_pushq(sq));
@@ -1290,9 +1305,9 @@ szqueue_do_pop(VALUE self, int should_block, VALUE timeout)
     return retval;
 }
 static VALUE
-rb_szqueue_pop(rb_execution_context_t *ec, VALUE self, VALUE non_block, VALUE timeout)
+rb_szqueue_pop(rb_execution_context_t *ec, VALUE self, VALUE non_block, VALUE timeout, VALUE count)
 {
-    return szqueue_do_pop(self, !RTEST(non_block), timeout);
+    return szqueue_do_pop(self, !RTEST(non_block), timeout, count);
 }
 
 /*

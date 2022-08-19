@@ -1603,6 +1603,16 @@ rb_ary_shift(VALUE ary)
     return top;
 }
 
+VALUE
+rb_ary_shift_n(VALUE ary, long count)
+{
+    rb_ary_modify_check(ary);
+    VALUE result = ary_make_partial(ary, rb_cArray, 0, count);
+    count = RARRAY_LEN(result);
+    rb_ary_behead(ary, count);
+    return result;
+}
+
 /*
  *  call-seq:
  *     array.shift -> object or nil

@@ -31,6 +31,7 @@ VALUE rb_ary_at(VALUE, VALUE);
 size_t rb_ary_memsize(VALUE);
 VALUE rb_to_array_type(VALUE obj);
 VALUE rb_to_array(VALUE obj);
+VALUE rb_ary_shift_n(VALUE ary, long count);
 void rb_ary_cancel_sharing(VALUE ary);
 size_t rb_ary_size_as_embedded(VALUE ary);
 void rb_ary_make_embedded(VALUE ary);

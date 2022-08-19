@@ -11,11 +11,11 @@ class Thread
     #
     # If +timeout+ seconds have passed and no data is available +nil+ is
     # returned.
-    def pop(non_block = false, timeout: nil)
+    def pop(non_block = false, timeout: nil, count: nil)
       if non_block && timeout
         raise ArgumentError, "can't set a timeout if non_block is enabled"
       end
-      Primitive.rb_queue_pop(non_block, timeout)
+      Primitive.rb_queue_pop(non_block, timeout, count)
     end
     alias_method :deq, :pop
     alias_method :shift, :pop
@@ -33,11 +33,11 @@ class Thread
     #
     # If +timeout+ seconds have passed and no data is available +nil+ is
     # returned.
-    def pop(non_block = false, timeout: nil)
+    def pop(non_block = false, timeout: nil, count: nil)
       if non_block && timeout
         raise ArgumentError, "can't set a timeout if non_block is enabled"
       end
-      Primitive.rb_szqueue_pop(non_block, timeout)
+      Primitive.rb_szqueue_pop(non_block, timeout, count)
     end
     alias_method :deq, :pop
     alias_method :shift, :pop
