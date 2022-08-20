@@ -1,4 +1,4 @@
-===Timezone Specifiers
+=== Timezone Specifiers
 
 Certain methods in class Time accept arguments that specify timezones:
 
@@ -17,22 +17,25 @@ The value given with any of these must be one of the following:
 
   Examples:
 
-    Time.now(in: '-23:59') # => 2022-08-19 16:14:33.8572845 -2359
-    Time.now(in: '+23:59') # => 2022-08-21 16:12:38.0869585 +2359
+    t = Time.utc(2000, 1, 1, 20, 15, 1) # => 2000-01-01 20:15:01 UTC
+    Time.at(t, in: '-23:59')            # => 1999-12-31 20:16:01 -2359
+    Time.at(t, in: '+23:59')            # => 2000-01-02 20:14:01 +2359
 
 - A letter in the range <tt>'A'..'I'</tt> or <tt>'K'..'Z'</tt>;
-  see {List of military time zones}[https://github.com/ruby/ruby/pull/6255/files]:
+  see {List of military time zones}[https://en.wikipedia.org/wiki/List_of_military_time_zones]:
 
-    Time.now(in: 'A') # => 2022-08-20 17:21:50.6678776 +0100
-    Time.now(in: 'I') # => 2022-08-21 01:21:56.2778 +0900
-    Time.now(in: 'K') # => 2022-08-21 02:22:00.7633474 +1000
-    Time.now(in: 'Y') # => 2022-08-20 04:22:06.2045939 -1200
-    Time.now(in: 'Z') # => 2022-08-20 16:22:09.250977 UTC
+    t = Time.utc(2000, 1, 1, 20, 15, 1) # => 2000-01-01 20:15:01 UTC
+    Time.at(t, in: 'A')                 # => 2000-01-01 21:15:01 +0100
+    Time.at(t, in: 'I')                 # => 2000-01-02 05:15:01 +0900
+    Time.at(t, in: 'K')                 # => 2000-01-02 06:15:01 +1000
+    Time.at(t, in: 'Y')                 # => 2000-01-01 08:15:01 -1200
+    Time.at(t, in: 'Z')                 # => 2000-01-01 20:15:01 UTC
 
 - An integer number of seconds in the range <tt>-86399..86399</tt>:
 
-    t = Time.now(in: -86399) # => 2022-08-19 16:25:18.3193163 -235959
-    t = Time.now(in: 86399)  # => 2022-08-21 16:25:20.4449291 +235959
+    t = Time.utc(2000, 1, 1, 20, 15, 1) # => 2000-01-01 20:15:01 UTC
+    Time.at(t, in: -86399)              # => 1999-12-31 20:15:02 -235959
+    Time.at(t, in: 86399)               # => 2000-01-02 20:15:00 +235959
 
 --
 TODO:  Pull in and revise the text at the link,
