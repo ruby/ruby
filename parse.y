@@ -5071,10 +5071,8 @@ nonlocal_var    : tIVAR
 		;
 
 user_variable	: tIDENTIFIER
-		| tIVAR
-		| tGVAR
+		| nonlocal_var
 		| tCONSTANT
-		| tCVAR
 		;
 
 keyword_variable: keyword_nil {$$ = KWD2EID(nil, $1);}
