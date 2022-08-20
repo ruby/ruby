@@ -370,7 +370,7 @@ mjit_compile_body(FILE *f, const rb_iseq_t *iseq, struct compile_status *status)
     }
 
     // Simulate `opt_pc` in setup_parameters_complex. Other PCs which may be passed by catch tables
-    // are not considered since vm_exec doesn't call mjit_exec for catch tables.
+    // are not considered since vm_exec doesn't call jit_exec for catch tables.
     if (body->param.flags.has_opt) {
         int i;
         fprintf(f, "\n");

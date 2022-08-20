@@ -2286,8 +2286,8 @@ hook_before_rewind(rb_execution_context_t *ec, const rb_control_frame_t *cfp,
     void *code;                      //
   };
 
-  If mjit_exec is already called before calling vm_exec, `jit_enable_p` should
-  be FALSE to avoid calling `mjit_exec` twice.
+  If jit_exec is already called before calling vm_exec, `jit_enable_p` should
+  be FALSE to avoid calling `jit_exec` twice.
  */
 
 static inline VALUE

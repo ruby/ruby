@@ -22,7 +22,7 @@ pub extern "C" fn rb_yjit_parse_option(str_ptr: *const raw::c_char) -> bool {
 }
 
 /// Is YJIT on? The interpreter uses this function to decide whether to increment
-/// ISEQ call counters. See mjit_exec().
+/// ISEQ call counters. See jit_exec().
 /// This is used frequently since it's used on every method call in the interpreter.
 #[no_mangle]
 pub extern "C" fn rb_yjit_enabled_p() -> raw::c_int {

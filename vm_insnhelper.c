@@ -4801,8 +4801,7 @@ vm_sendish(
     }
 #else
     /* When calling from VM, longjmp in the callee won't purge any
-       JIT-ed caller frames.  So it's safe to directly call
-       mjit_exec. */
+       JIT-ed caller frames. So it's safe to directly call jit_exec. */
     return jit_exec(ec);
 #endif
 }

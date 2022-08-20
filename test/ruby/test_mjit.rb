@@ -749,7 +749,7 @@ class TestMJIT < Test::Unit::TestCase
       end
 
       def a
-        # Calling #b should be vm_exec, not direct mjit_exec.
+        # Calling #b should be vm_exec, not direct jit_exec.
         # Otherwise `1` on local variable would be purged.
         1 + b
       end
