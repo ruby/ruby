@@ -2,7 +2,7 @@ require 'benchmark_driver/struct'
 require 'benchmark_driver/metric'
 require 'erb'
 
-# A special runner dedicated for measuring mjit_exec overhead.
+# A special runner dedicated for measuring jit_exec overhead.
 class BenchmarkDriver::Runner::MjitExec
   METRIC = BenchmarkDriver::Metric.new(name: 'Iteration per second', unit: 'i/s')
 
@@ -12,8 +12,8 @@ class BenchmarkDriver::Runner::MjitExec
     :metrics,     # @param [Array<BenchmarkDriver::Metric>]
     :num_methods, # @param [Integer] num_methods - The number of methods to be defined
     :loop_count,  # @param [Integer] loop_count
-    :from_jit,    # @param [TrueClass,FalseClass] from_jit - Whether the mjit_exec() is from JIT or not
-    :to_jit,      # @param [TrueClass,FalseClass] to_jit - Whether the mjit_exec() is to JIT or not
+    :from_jit,    # @param [TrueClass,FalseClass] from_jit - Whether the jit_exec() is from JIT or not
+    :to_jit,      # @param [TrueClass,FalseClass] to_jit - Whether the jit_exec() is to JIT or not
   )
   # Dynamically fetched and used by `BenchmarkDriver::JobParser.parse`
   class << JobParser = Module.new

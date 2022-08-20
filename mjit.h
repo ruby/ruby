@@ -120,7 +120,7 @@ static inline struct mjit_cont *mjit_cont_new(rb_execution_context_t *ec){return
 static inline void mjit_cont_free(struct mjit_cont *cont){}
 static inline void mjit_free_iseq(const rb_iseq_t *iseq){}
 static inline void mjit_mark(void){}
-static inline VALUE mjit_exec(rb_execution_context_t *ec) { return Qundef; /* unreachable */ }
+static inline VALUE jit_exec(rb_execution_context_t *ec) { return Qundef; /* unreachable */ }
 static inline void mjit_child_after_fork(void){}
 
 #define mjit_enabled false
