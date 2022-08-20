@@ -107,7 +107,7 @@ require_relative 'logger/errors'
 #
 # - \Severity (one letter).
 # - Timestamp.
-# - Timezone.
+# - Process id.
 # - \Severity (word).
 # - Program name.
 # - Message.
