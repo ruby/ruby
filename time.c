@@ -3795,9 +3795,8 @@ time_zonelocal(VALUE time, VALUE off)
  *    t = Time.utc(2000, 1, 1, 20, 15, 1) # => 2000-01-01 20:15:01 UTC
  *    t.localtime("-09:00")               # => 2000-01-01 11:15:01 -0900
  *
- *  Parameter:
- *
- *  :include: doc/time/zone.rdoc
+ *  For forms of argument +zone+, see
+ *  {Timezone Specifiers}[rdoc-ref:doc/timezone_specifiers.rdoc].
  *
  */
 

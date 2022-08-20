@@ -1,0 +1,42 @@
+===Timezone Specifiers
+
+Certain methods in class Time accept arguments that specify timezones:
+
+- Time.at: keyword argument +in:+.
+- Time.new: positional argument +zone+ or keyword argument +in:+.
+- Time.now: keyword argument +in:+.
+- Time#localtime: positional argument +zone+.
+
+The value given with any of these must be one of the following:
+
+- A string offset from UTC in the form <tt>'+HH:MM'</tt> or <tt>-HH:MM</tt>,
+  where:
+
+  - +HH+ is the 2-digit hour in the range <tt>0..23</tt>.
+  - +MM+ is the 2-digit minute in the range <tt>0..59</tt>.
+
+  Examples:
+
+    Time.now(in: '-23:59') # => 2022-08-19 16:14:33.8572845 -2359
+    Time.now(in: '+23:59') # => 2022-08-21 16:12:38.0869585 +2359
+
+- A letter in the range <tt>'A'..'I'</tt> or <tt>'K'..'Z'</tt>;
+  see {List of military time zones}[https://github.com/ruby/ruby/pull/6255/files]:
+
+    Time.now(in: 'A') # => 2022-08-20 17:21:50.6678776 +0100
+    Time.now(in: 'I') # => 2022-08-21 01:21:56.2778 +0900
+    Time.now(in: 'K') # => 2022-08-21 02:22:00.7633474 +1000
+    Time.now(in: 'Y') # => 2022-08-20 04:22:06.2045939 -1200
+    Time.now(in: 'Z') # => 2022-08-20 16:22:09.250977 UTC
+
+- An integer number of seconds in the range <tt>-86399..86399</tt>:
+
+    t = Time.now(in: -86399) # => 2022-08-19 16:25:18.3193163 -235959
+    t = Time.now(in: 86399)  # => 2022-08-21 16:25:20.4449291 +235959
+
+--
+TODO:  Pull in and revise the text at the link,
+then add the example class TZ from the tests.
+++
+- A timezone object;
+  see {Timezone Argument}[rdoc-ref:Time@Timezone+Argument] for details.
