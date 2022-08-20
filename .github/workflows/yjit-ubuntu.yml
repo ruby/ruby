@@ -42,7 +42,7 @@ jobs:
             configure: "--with-gcc=clang-12 --enable-yjit=dev"
 
           - test_task: "check"
-            configure: "--enable-yjit RUSTC='rustc +1.58.1'" # release build
+            configure: "--enable-yjit --disable-mjit RUSTC='rustc +1.58.1'" # release build
             rust_version: "1.58.1"
 
           - test_task: "check"
