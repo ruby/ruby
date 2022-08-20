@@ -414,7 +414,7 @@ mjit_exec_slowpath(rb_execution_context_t *ec, const rb_iseq_t *iseq, struct rb_
 // If it is not, add ISEQ to the compilation queue and return Qundef for MJIT.
 // YJIT compiles on the thread running the iseq.
 static inline VALUE
-mjit_exec(rb_execution_context_t *ec)
+jit_exec(rb_execution_context_t *ec)
 {
     const rb_iseq_t *iseq = ec->cfp->iseq;
     struct rb_iseq_constant_body *body = ISEQ_BODY(iseq);
@@ -442,7 +442,7 @@ mjit_exec(rb_execution_context_t *ec)
     if (!(mjit_call_p || yjit_enabled))
         return Qundef;
 
-    RB_DEBUG_COUNTER_INC(mjit_exec);
+    RB_DEBUG_COUNTER_INC(jit_exec);
 
     mjit_func_t func = body->jit_func;
 
@@ -2286,7 +2286,7 @@ hook_before_rewind(rb_execution_context_t *ec, const rb_control_frame_t *cfp,
     void *code;                      //
   };
 
-  If mjit_exec is already called before calling vm_exec, `mjit_enable_p` should
+  If mjit_exec is already called before calling vm_exec, `jit_enable_p` should
   be FALSE to avoid calling `mjit_exec` twice.
  */
 
@@ -2303,7 +2303,7 @@ struct rb_vm_exec_context {
     VALUE initial;
     VALUE result;
     enum ruby_tag_type state;
-    bool mjit_enable_p;
+    bool jit_enable_p;
 };
 
 static void
@@ -2332,7 +2332,7 @@ vm_exec_bottom_main(void *context)
     struct rb_vm_exec_context *ctx = (struct rb_vm_exec_context *)context;
 
     ctx->state = TAG_NONE;
-    if (!ctx->mjit_enable_p || (ctx->result = mjit_exec(ctx->ec)) == Qundef) {
+    if (!ctx->jit_enable_p || (ctx->result = jit_exec(ctx->ec)) == Qundef) {
         ctx->result = vm_exec_core(ctx->ec, ctx->initial);
     }
     vm_exec_enter_vm_loop(ctx->ec, ctx, ctx->tag, true);
@@ -2347,12 +2347,12 @@ vm_exec_bottom_rescue(void *context)
 }
 
 VALUE
-vm_exec(rb_execution_context_t *ec, bool mjit_enable_p)
+vm_exec(rb_execution_context_t *ec, bool jit_enable_p)
 {
     struct rb_vm_exec_context ctx = {
         .ec = ec,
         .initial = 0, .result = Qundef,
-        .mjit_enable_p = mjit_enable_p,
+        .jit_enable_p = jit_enable_p,
     };
     struct rb_wasm_try_catch try_catch;
 
@@ -2374,7 +2374,7 @@ vm_exec(rb_execution_context_t *ec, bool mjit_enable_p)
 #else
 
 VALUE
-vm_exec(rb_execution_context_t *ec, bool mjit_enable_p)
+vm_exec(rb_execution_context_t *ec, bool jit_enable_p)
 {
     enum ruby_tag_type state;
     VALUE result = Qundef;
@@ -2384,7 +2384,7 @@ vm_exec(rb_execution_context_t *ec, bool mjit_enable_p)
 
     _tag.retval = Qnil;
     if ((state = EC_EXEC_TAG()) == TAG_NONE) {
-        if (!mjit_enable_p || (result = mjit_exec(ec)) == Qundef) {
+        if (!jit_enable_p || (result = jit_exec(ec)) == Qundef) {
             result = vm_exec_core(ec, initial);
         }
         goto vm_loop_start; /* fallback to the VM */
