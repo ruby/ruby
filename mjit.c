@@ -431,10 +431,12 @@ CRITICAL_SECTION_FINISH(int level, const char *msg)
     rb_native_mutex_unlock(&mjit_engine_mutex);
 }
 
+static pid_t mjit_pid = 0;
+
 static int
 sprint_uniq_filename(char *str, size_t size, unsigned long id, const char *prefix, const char *suffix)
 {
-    return snprintf(str, size, "%s/%sp%"PRI_PIDT_PREFIX"uu%lu%s", tmp_dir, prefix, getpid(), id, suffix);
+    return snprintf(str, size, "%s/%sp%"PRI_PIDT_PREFIX"uu%lu%s", tmp_dir, prefix, mjit_pid, id, suffix);
 }
 
 // Return time in milliseconds as a double.
@@ -798,8 +800,8 @@ make_pch(void)
     }
 }
 
-static pid_t
-start_compiling_c_to_so(const char *c_file, const char *so_file)
+static int
+compile_c_to_so(const char *c_file, const char *so_file)
 {
     const char *so_args[] = {
         "-o", so_file,
@@ -821,18 +823,14 @@ start_compiling_c_to_so(const char *c_file, const char *so_file)
 
     char **args = form_args(8, CC_LDSHARED_ARGS, CC_CODEFLAG_ARGS, cc_added_args,
                             so_args, loader_args, CC_LIBS, CC_DLDFLAGS_ARGS, CC_LINKER_ARGS);
-    if (args == NULL) return -1;
+    if (args == NULL) return 1;
 
-    rb_vm_t *vm = GET_VM();
-    rb_native_mutex_lock(&vm->waitpid_lock);
-
-    pid_t pid = start_process(cc_path, args);
-    mjit_add_waiting_pid(vm, pid);
-
-    rb_native_mutex_unlock(&vm->waitpid_lock);
+    int exit_code = exec_process(cc_path, args);
+    if (!mjit_opts.save_temps)
+        remove_file(c_file);
 
     free(args);
-    return pid;
+    return exit_code;
 }
 #endif // _MSC_VER
 
@@ -888,8 +886,8 @@ mjit_compact(char* c_file)
 
 // Compile all cached .c files and build a single .so file. Reload all JIT func from it.
 // This improves the code locality for better performance in terms of iTLB and iCache.
-static pid_t
-start_mjit_compact(struct rb_mjit_unit *unit)
+static int
+mjit_compact_unit(struct rb_mjit_unit *unit)
 {
     static const char c_ext[] = ".c";
     static const char so_ext[] = DLEXT;
@@ -900,9 +898,30 @@ start_mjit_compact(struct rb_mjit_unit *unit)
 
     bool success = mjit_compact(c_file);
     if (success) {
-        return start_compiling_c_to_so(c_file, so_file);
+        return compile_c_to_so(c_file, so_file);
     }
-    return -1;
+    return 1;
+}
+
+static pid_t
+start_mjit_compact(struct rb_mjit_unit *unit)
+{
+    rb_vm_t *vm = GET_VM();
+    rb_native_mutex_lock(&vm->waitpid_lock);
+
+    pid_t pid = fork();
+    if (pid == 0) {
+        rb_native_mutex_unlock(&vm->waitpid_lock);
+
+        int exit_code = mjit_compact_unit(unit);
+        exit(exit_code);
+    }
+    else {
+        mjit_add_waiting_pid(vm, pid);
+        rb_native_mutex_unlock(&vm->waitpid_lock);
+
+        return pid;
+    }
 }
 
 static void
@@ -1005,8 +1024,8 @@ compile_prelude(FILE *f)
 
 // Compile ISeq in UNIT and return function pointer of JIT-ed code.
 // It may return NOT_COMPILED_JIT_ISEQ_FUNC if something went wrong.
-static pid_t
-start_mjit_compile(struct rb_mjit_unit *unit)
+static int
+mjit_compile_unit(struct rb_mjit_unit *unit)
 {
     static const char c_ext[] = ".c";
     static const char so_ext[] = DLEXT;
@@ -1022,7 +1041,7 @@ start_mjit_compile(struct rb_mjit_unit *unit)
         int e = errno;
         if (fd >= 0) (void)close(fd);
         verbose(1, "Failed to fopen '%s', giving up JIT for it (%s)", c_file, strerror(e));
-        return -1;
+        return 1;
     }
 
     // print #include of MJIT header, etc.
@@ -1047,10 +1066,31 @@ start_mjit_compile(struct rb_mjit_unit *unit)
         if (!mjit_opts.save_temps)
             remove_file(c_file);
         verbose(1, "JIT failure: %s@%s:%ld -> %s", iseq_label, iseq_path, iseq_lineno, c_file);
-        return -1;
+        return 1;
     }
 
-    return start_compiling_c_to_so(c_file, so_file);
+    return compile_c_to_so(c_file, so_file);
+}
+
+static pid_t
+start_mjit_compile(struct rb_mjit_unit *unit)
+{
+    rb_vm_t *vm = GET_VM();
+    rb_native_mutex_lock(&vm->waitpid_lock);
+
+    pid_t pid = fork();
+    if (pid == 0) {
+        rb_native_mutex_unlock(&vm->waitpid_lock);
+
+        int exit_code = mjit_compile_unit(unit);
+        exit(exit_code);
+    }
+    else {
+        mjit_add_waiting_pid(vm, pid);
+        rb_native_mutex_unlock(&vm->waitpid_lock);
+
+        return pid;
+    }
 }
 
 #ifdef _WIN32
@@ -1556,8 +1596,6 @@ mjit_notify_waitpid(int status)
     // Delete .c file
     char c_file[MAXPATHLEN];
     sprint_uniq_filename(c_file, (int)sizeof(c_file), current_cc_unit->id, MJIT_TMP_PREFIX, ".c");
-    if (!mjit_opts.save_temps)
-        remove_file(c_file);
 
     // Check the result
     bool success = false;
@@ -2092,6 +2130,7 @@ mjit_init(const struct mjit_options *opts)
     mjit_opts = *opts;
     mjit_enabled = true;
     mjit_call_p = true;
+    mjit_pid = getpid();
 
     // Normalize options
     if (mjit_opts.min_calls == 0)
