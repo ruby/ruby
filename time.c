@@ -3688,7 +3688,7 @@ time_utc_p(VALUE time)
  * call-seq:
  *   hash -> integer
  *
- * Returns the integer hash code for +self.
+ * Returns the integer hash code for +self+.
  *
  * Related: Object#hash.
  */
