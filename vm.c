@@ -379,12 +379,12 @@ static VALUE vm_invoke_proc(rb_execution_context_t *ec, rb_proc_t *proc, VALUE s
 
 #if USE_MJIT
 # ifdef MJIT_HEADER
-NOINLINE(static COLDFUNC VALUE mjit_exec_slowpath(rb_execution_context_t *ec, const rb_iseq_t *iseq, struct rb_iseq_constant_body *body));
+NOINLINE(static COLDFUNC VALUE mjit_check_iseq(rb_execution_context_t *ec, const rb_iseq_t *iseq, struct rb_iseq_constant_body *body));
 # else
-static inline VALUE mjit_exec_slowpath(rb_execution_context_t *ec, const rb_iseq_t *iseq, struct rb_iseq_constant_body *body);
+static inline VALUE mjit_check_iseq(rb_execution_context_t *ec, const rb_iseq_t *iseq, struct rb_iseq_constant_body *body);
 # endif
 static VALUE
-mjit_exec_slowpath(rb_execution_context_t *ec, const rb_iseq_t *iseq, struct rb_iseq_constant_body *body)
+mjit_check_iseq(rb_execution_context_t *ec, const rb_iseq_t *iseq, struct rb_iseq_constant_body *body)
 {
     uintptr_t func_i = (uintptr_t)(body->jit_func);
     ASSUME(func_i <= LAST_JIT_ISEQ_FUNC);
@@ -458,7 +458,7 @@ jit_exec(rb_execution_context_t *ec)
 # else
         RB_DEBUG_COUNTER_INC(mjit_frame_VM2VM);
 # endif
-        return mjit_exec_slowpath(ec, iseq, body);
+        return mjit_check_iseq(ec, iseq, body);
     }
 
 # ifdef MJIT_HEADER
