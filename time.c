@@ -3783,7 +3783,7 @@ time_zonelocal(VALUE time, VALUE off)
  *  With no argument given:
  *
  *  - Returns +self+ if +self+ is a local time.
- *  - Otherwise returns <tt>localtime(self.local)</tt>:
+ *  - Otherwise returns a new \Time in the user's local timezone":
  *
  *      t = Time.utc(2000, 1, 1, 20, 15, 1) # => 2000-01-01 20:15:01 UTC
  *      t.localtime                         # => 2000-01-01 14:15:01 -0600
