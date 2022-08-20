@@ -295,7 +295,6 @@ AS = $(AS) -nologo
 	(echo AS = $(AS:64=) -nologo) || \
 	(echo AS = $(AS) -nologo) ) >>$(MAKEFILE)
 !endif
-	@(for %I in (cl.exe) do @set MJIT_CC=%~$$PATH:I) && (call echo MJIT_CC = "%MJIT_CC:\=/%" -nologo>>$(MAKEFILE))
 	@type << >>$(MAKEFILE)
 
 $(BANG)include $$(srcdir)/win32/Makefile.sub
