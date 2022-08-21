@@ -210,7 +210,7 @@ class BenchmarkDriver::Runner::MjitExec
 
         # You may need to:
         #   * Increase `JIT_ISEQ_SIZE_THRESHOLD` to 10000000 in mjit.h
-        #   * Always return false in `inlinable_iseq_p()` of mjit_compile.c
+        #   * Always return false in `inlinable_iseq_p()` of mjit_compiler.c
         def jit
           t = Process.clock_gettime(Process::CLOCK_MONOTONIC)
           i = 0

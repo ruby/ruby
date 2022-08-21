@@ -1,6 +1,6 @@
 /**********************************************************************
 
-  mjit_compile.c - MRI method JIT compiler
+  mjit_compiler.c - MRI method JIT compiler
 
   Copyright (C) 2017 Takashi Kokubun <takashikkbn@gmail.com>.
 
