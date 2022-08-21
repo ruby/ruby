@@ -1327,7 +1327,7 @@ static inline void gc_prof_set_heap_info(rb_objspace_t *);
 
 #ifdef HAVE_VA_ARGS_MACRO
 # define gc_report(level, objspace, ...) \
-    if (!RGENGC_DEBUG_ENABLED(level)) {} else gc_report_body(level, objspace, __VA_ARGS__)
+    if (!RGENGC_DEBUG_ENABLED(level)) {} else gc_report_body(level, objspace, "" __VA_ARGS__)
 #else
 # define gc_report if (!RGENGC_DEBUG_ENABLED(0)) {} else gc_report_body
 #endif
