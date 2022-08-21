@@ -76,6 +76,7 @@
 #include "internal/cont.h"
 #include "internal/file.h"
 #include "internal/hash.h"
+#include "internal/process.h"
 #include "internal/warnings.h"
 #include "vm_sync.h"
 #include "ractor_core.h"
@@ -747,7 +748,7 @@ start_mjit_compact(struct rb_mjit_unit *unit)
     rb_vm_t *vm = GET_VM();
     rb_native_mutex_lock(&vm->waitpid_lock);
 
-    pid_t pid = fork();
+    pid_t pid = rb_fork();
     if (pid == 0) {
         rb_native_mutex_unlock(&vm->waitpid_lock);
 
@@ -910,7 +911,7 @@ start_mjit_compile(struct rb_mjit_unit *unit)
     rb_vm_t *vm = GET_VM();
     rb_native_mutex_lock(&vm->waitpid_lock);
 
-    pid_t pid = fork();
+    pid_t pid = rb_fork();
     if (pid == 0) {
         rb_native_mutex_unlock(&vm->waitpid_lock);
 
