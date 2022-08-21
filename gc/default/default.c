@@ -6285,7 +6285,7 @@ gc_marks(rb_objspace_t *objspace, int full_mark)
 static void
 gc_report_body(int level, rb_objspace_t *objspace, const char *fmt, ...)
 {
-    if (level <= RGENGC_DEBUG) {
+    if (level <= (RGENGC_DEBUG < 0 ? ruby_rgengc_debug : RGENGC_DEBUG)) {
         char buf[1024];
         FILE *out = stderr;
         va_list args;
