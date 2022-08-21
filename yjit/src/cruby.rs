@@ -378,13 +378,6 @@ pub struct rb_method_cfunc_t {
     _marker: core::marker::PhantomData<(*mut u8, core::marker::PhantomPinned)>,
 }
 
-/// Opaque FILE type from the C standard library
-#[repr(C)]
-pub struct FILE {
-    _data: [u8; 0],
-    _marker: core::marker::PhantomData<(*mut u8, core::marker::PhantomPinned)>,
-}
-
 /// Opaque call-cache type from vm_callinfo.h
 #[repr(C)]
 pub struct rb_callcache {
