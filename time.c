@@ -3814,20 +3814,16 @@ time_localtime_m(int argc, VALUE *argv, VALUE time)
 
 /*
  *  call-seq:
- *     time.gmtime    -> time
- *     time.utc       -> time
+ *    utc -> self
  *
- *  Converts _time_ to UTC (GMT), modifying the receiver.
+ *  Returns +self+, converted to the UTC timezone:
  *
- *     t = Time.now   #=> 2007-11-19 08:18:31 -0600
- *     t.gmt?         #=> false
- *     t.gmtime       #=> 2007-11-19 14:18:31 UTC
- *     t.gmt?         #=> true
+ *    t = Time.new(2000) # => 2000-01-01 00:00:00 -0600
+ *    t.utc?             # => false
+ *    t.utc              # => 2000-01-01 06:00:00 UTC
+ *    t.utc?             # => true
  *
- *     t = Time.now   #=> 2007-11-19 08:18:51 -0600
- *     t.utc?         #=> false
- *     t.utc          #=> 2007-11-19 14:18:51 UTC
- *     t.utc?         #=> true
+ *  Time#gmtime is an alias for Time#utc.
  */
 
 static VALUE
@@ -3889,31 +3885,19 @@ time_fixoff(VALUE time)
 
 /*
  *  call-seq:
- *     time.getlocal -> new_time
- *     time.getlocal(utc_offset) -> new_time
- *     time.getlocal(timezone) -> new_time
+ *    getlocal(zone = nil) -> new_time
  *
- *  Returns a new Time object representing _time_ in
- *  local time (using the local time zone in effect for this process).
+ *  Returns a new \Time object representing the value of +self+
+ *  converted to a given timezone;
+ *  if +zone+ is +nil+, the local timezone is used:
  *
- *  If +utc_offset+ is given, it is used instead of the local time.
- *  +utc_offset+ can be given as a human-readable string (eg. <code>"+09:00"</code>)
- *  or as a number of seconds (eg. <code>32400</code>).
+ *    t = Time.utc(2000)                    # => 2000-01-01 00:00:00 UTC
+ *    t.getlocal                            # => 1999-12-31 18:00:00 -0600
+ *    t.getlocal('+12:00')                  # => 2000-01-01 12:00:00 +1200
  *
- *     t = Time.utc(2000,1,1,20,15,1)  #=> 2000-01-01 20:15:01 UTC
- *     t.utc?                          #=> true
+ *  For forms of argument +zone+, see
+ *  {Timezone Specifiers}[rdoc-ref:doc/timezone_specifiers.rdoc].
  *
- *     l = t.getlocal                  #=> 2000-01-01 14:15:01 -0600
- *     l.utc?                          #=> false
- *     t == l                          #=> true
- *
- *     j = t.getlocal("+09:00")        #=> 2000-01-02 05:15:01 +0900
- *     j.utc?                          #=> false
- *     t == j                          #=> true
- *
- *     k = t.getlocal(9*60*60)         #=> 2000-01-02 05:15:01 +0900
- *     k.utc?                          #=> false
- *     t == k                          #=> true
  */
 
 static VALUE
@@ -3950,16 +3934,18 @@ time_getlocaltime(int argc, VALUE *argv, VALUE time)
 
 /*
  *  call-seq:
- *     time.getgm  -> new_time
- *     time.getutc -> new_time
+ *    getutc -> new_time
  *
- *  Returns a new Time object representing _time_ in UTC.
+ *  Returns a new \Time object representing the value of +self+
+ *  converted to the UTC timezone:
  *
- *     t = Time.local(2000,1,1,20,15,1)   #=> 2000-01-01 20:15:01 -0600
- *     t.gmt?                             #=> false
- *     y = t.getgm                        #=> 2000-01-02 02:15:01 UTC
- *     y.gmt?                             #=> true
- *     t == y                             #=> true
+ *    local = Time.local(2000) # => 2000-01-01 00:00:00 -0600
+ *    local.utc?               # => false
+ *    utc = local.getutc       # => 2000-01-01 06:00:00 UTC
+ *    utc.utc?                 # => true
+ *    utc == local             # => true
+ *
+ *  Time#getgm is an alias for Time#utc.
  */
 
 static VALUE
@@ -3981,13 +3967,25 @@ static VALUE strftime_cstr(const char *fmt, size_t len, VALUE time, rb_encoding 
 
 /*
  *  call-seq:
- *     time.asctime -> string
- *     time.ctime   -> string
+ *    ctime -> string
  *
- *  Returns a canonical string representation of _time_.
+ *  Returns a string representation of +self+,
+ *  formatted by <tt>strftime('%a %b %e %T %Y')</tt>
+ *  or its shorthand version <tt>strftime('%c')</tt>;
+ *  see {Formats for Dates and Times}[https://docs.ruby-lang.org/en/master/strftime_formatting_rdoc.html]:
  *
- *     Time.now.asctime   #=> "Wed Apr  9 08:56:03 2003"
- *     Time.now.ctime     #=> "Wed Apr  9 08:56:03 2003"
+ *    t = Time.new(2000, 12, 31, 23, 59, 59, 0.5)
+ *    t.ctime                      # => "Sun Dec 31 23:59:59 2000"
+ *    t.strftime('%a %b %e %T %Y') # => "Sun Dec 31 23:59:59 2000"
+ *    t.strftime('%c')             # => "Sun Dec 31 23:59:59 2000"
+ *
+ *  Time#asctime is an alias for Time#ctime.
+ *
+ *  Related: Time#to_s, Time#inspect:
+ *
+ *    t.inspect                    # => "2000-12-31 23:59:59.5 +000001"
+ *    t.to_s                       # => "2000-12-31 23:59:59 +0000"
+ *
  */
 
 static VALUE
@@ -3998,17 +3996,18 @@ time_asctime(VALUE time)
 
 /*
  *  call-seq:
- *     time.to_s    -> string
+ *    to_s    -> string
  *
- *  Returns a string representing _time_. Equivalent to calling
- *  #strftime with the appropriate format string.
+ *  Returns a string representation of +self+, without subseconds:
  *
- *     t = Time.now
- *     t.to_s                              #=> "2012-11-10 18:16:12 +0100"
- *     t.strftime "%Y-%m-%d %H:%M:%S %z"   #=> "2012-11-10 18:16:12 +0100"
+ *    t = Time.new(2000, 12, 31, 23, 59, 59, 0.5)
+ *    t.to_s    # => "2000-12-31 23:59:59 +0000"
  *
- *     t.utc.to_s                          #=> "2012-11-10 17:16:12 UTC"
- *     t.strftime "%Y-%m-%d %H:%M:%S UTC"  #=> "2012-11-10 17:16:12 UTC"
+ *  Related: Time#ctime, Time#inspect:
+ *
+ *    t.ctime   # => "Sun Dec 31 23:59:59 2000"
+ *    t.inspect # => "2000-12-31 23:59:59.5 +000001"
+ *
  */
 
 static VALUE
@@ -4025,17 +4024,18 @@ time_to_s(VALUE time)
 
 /*
  *  call-seq:
- *     time.inspect -> string
+ *    inspect -> string
  *
- *  Returns a detailed string representing _time_. Unlike to_s,
- *  preserves subsecond in the representation for easier debugging.
+ *  Returns a string representation of +self+ with subseconds:
  *
- *     t = Time.now
- *     t.inspect                             #=> "2012-11-10 18:16:12.261257655 +0100"
- *     t.strftime "%Y-%m-%d %H:%M:%S.%N %z"  #=> "2012-11-10 18:16:12.261257655 +0100"
+ *    t = Time.new(2000, 12, 31, 23, 59, 59, 0.5)
+ *    t.inspect # => "2000-12-31 23:59:59.5 +000001"
  *
- *     t.utc.inspect                          #=> "2012-11-10 17:16:12.261257655 UTC"
- *     t.strftime "%Y-%m-%d %H:%M:%S.%N UTC"  #=> "2012-11-10 17:16:12.261257655 UTC"
+ *  Related: Time#ctime, Time#to_s:
+ *
+ *    t.ctime   # => "Sun Dec 31 23:59:59 2000"
+ *    t.to_s    # => "2000-12-31 23:59:59 +0000"
+ *
  */
 
 static VALUE
