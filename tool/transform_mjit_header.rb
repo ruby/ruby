@@ -226,7 +226,7 @@ end
 
 MJITHeader.remove_predefined_macros!(code)
 
-if MJITHeader.windows? # transformation is broken on Windows and the platfor is not supported
+if MJITHeader.windows? # transformation is broken on Windows and the platform is not supported
   MJITHeader.remove_harmful_macros!(code)
   MJITHeader.check_code!(code, cc, cflags, 'initial')
   puts "\nSkipped transforming external functions to static on Windows."
