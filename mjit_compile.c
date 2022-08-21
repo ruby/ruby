@@ -587,9 +587,6 @@ mjit_compile(FILE *f, const rb_iseq_t *iseq, const char *funcname, int id)
             return false;
     }
 
-#ifdef _WIN32
-    fprintf(f, "__declspec(dllexport)\n");
-#endif
     fprintf(f, "VALUE\n%s(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp)\n{\n", funcname);
     bool success = mjit_compile_body(f, iseq, &status);
     fprintf(f, "\n} // end of %s\n", funcname);
