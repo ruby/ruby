@@ -2498,7 +2498,6 @@ rb_str_modify_expand(VALUE str, long expand)
     else if (expand > 0) {
         RESIZE_CAPA_TERM(str, len + expand, termlen);
     }
-    ENC_CODERANGE_CLEAR(str);
 }
 
 /* As rb_str_modify(), but don't clear coderange */
@@ -2527,6 +2526,9 @@ void
 rb_must_asciicompat(VALUE str)
 {
     rb_encoding *enc = rb_enc_get(str);
+    if (!enc) {
+        rb_raise(rb_eTypeError, "not encoding capable object");
+    }
     if (!rb_enc_asciicompat(enc)) {
         rb_raise(rb_eEncCompatError, "ASCII incompatible encoding: %s", rb_enc_name(enc));
     }
@@ -3073,16 +3075,16 @@ rb_str_set_len(VALUE str, long len)
 VALUE
 rb_str_resize(VALUE str, long len)
 {
-    long slen;
-    int independent;
-
     if (len < 0) {
         rb_raise(rb_eArgError, "negative string size (or size too big)");
     }
 
-    independent = str_independent(str);
-    ENC_CODERANGE_CLEAR(str);
-    slen = RSTRING_LEN(str);
+    int independent = str_independent(str);
+    long slen = RSTRING_LEN(str);
+
+    if (slen > len && ENC_CODERANGE(str) != ENC_CODERANGE_7BIT) {
+        ENC_CODERANGE_CLEAR(str);
+    }
 
     {
         long capa;
@@ -6777,7 +6779,15 @@ rb_str_inspect(VALUE str)
             prev = p;
             continue;
         }
-        if ((enc == resenc && rb_enc_isprint(c, enc)) ||
+        /* The special casing of 0x85 (NEXT_LINE) here is because
+         * Oniguruma historically treats it as printable, but it
+         * doesn't match the print POSIX bracket class or character
+         * property in regexps.
+         *
+         * See Ruby Bug #16842 for details:
+         * https://bugs.ruby-lang.org/issues/16842
+         */
+        if ((enc == resenc && rb_enc_isprint(c, enc) && c != 0x85) ||
             (asciicompat && rb_enc_isascii(c, enc) && ISPRINT(c))) {
             continue;
         }

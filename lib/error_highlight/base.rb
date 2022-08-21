@@ -22,6 +22,14 @@ module ErrorHighlight
   #    snippet: String,
   #    script_lines: [String],
   #  } | nil
+  #
+  # Limitations:
+  #
+  # Currently, ErrorHighlight.spot only supports a single-line code fragment.
+  # Therefore, if the return value is not nil, first_lineno and last_lineno will have
+  # the same value. If the relevant code fragment spans multiple lines
+  # (e.g., Array#[] of +ary[(newline)expr(newline)]+), the method will return nil.
+  # This restriction may be removed in the future.
   def self.spot(obj, **opts)
     case obj
     when Exception

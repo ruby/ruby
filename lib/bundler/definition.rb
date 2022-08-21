@@ -888,7 +888,7 @@ module Bundler
                 Bundler.local_platform == Gem::Platform::RUBY ||
                 !platforms.include?(Gem::Platform::RUBY) ||
                 (@new_platform && platforms.last == Gem::Platform::RUBY) ||
-                !@originally_locked_specs.incomplete_ruby_specs?(dependencies)
+                !@originally_locked_specs.incomplete_ruby_specs?(expand_dependencies(dependencies))
 
       remove_platform(Gem::Platform::RUBY)
       add_current_platform

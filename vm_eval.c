@@ -20,7 +20,7 @@ static inline VALUE vm_yield_with_cref(rb_execution_context_t *ec, int argc, con
 static inline VALUE vm_yield(rb_execution_context_t *ec, int argc, const VALUE *argv, int kw_splat);
 static inline VALUE vm_yield_with_block(rb_execution_context_t *ec, int argc, const VALUE *argv, VALUE block_handler, int kw_splat);
 static inline VALUE vm_yield_force_blockarg(rb_execution_context_t *ec, VALUE args);
-VALUE vm_exec(rb_execution_context_t *ec, bool mjit_enable_p);
+VALUE vm_exec(rb_execution_context_t *ec, bool jit_enable_p);
 static void vm_set_eval_stack(rb_execution_context_t * th, const rb_iseq_t *iseq, const rb_cref_t *cref, const struct rb_block *base_block);
 static int vm_collect_local_variables_in_heap(const VALUE *dfp, const struct local_var_list *vars);
 

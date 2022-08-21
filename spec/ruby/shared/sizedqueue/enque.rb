@@ -47,4 +47,61 @@ describe :sizedqueue_enq, shared: true do
     t.join
     q.pop.should == 1
   end
+
+  describe "with a timeout" do
+    ruby_version_is "3.2" do
+      it "returns self if the item was pushed in time" do
+        q = @object.call(1)
+        q << 1
+
+        t = Thread.new {
+          q.send(@method, 2, timeout: 1).should == q
+        }
+        Thread.pass until t.status == "sleep" && q.num_waiting == 1
+        q.pop
+        t.join
+      end
+
+      it "does nothing if the timeout is nil" do
+        q = @object.call(1)
+        q << 1
+        t = Thread.new {
+          q.send(@method, 2, timeout: nil).should == q
+        }
+        t.join(0.2).should == nil
+        q.pop
+        t.join
+      end
+
+      it "returns nil if no item is available in time" do
+        q = @object.call(1)
+        q << 1
+        t = Thread.new {
+          q.send(@method, 2, timeout: 0.1).should == nil
+        }
+        t.join
+      end
+
+      it "raise TypeError if timeout is not a valid numeric" do
+        q = @object.call(1)
+        -> { q.send(@method, 2, timeout: "1") }.should raise_error(
+          TypeError,
+          "no implicit conversion to float from string",
+        )
+
+        -> { q.send(@method, 2, timeout: false) }.should raise_error(
+          TypeError,
+          "no implicit conversion to float from false",
+        )
+      end
+
+      it "raise ArgumentError if non_block = true is passed too" do
+        q = @object.call(1)
+        -> { q.send(@method, 2, true, timeout: 1) }.should raise_error(
+          ArgumentError,
+          "can't set a timeout if non_block is enabled",
+        )
+      end
+    end
+  end
 end

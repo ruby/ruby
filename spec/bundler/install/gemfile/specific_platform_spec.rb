@@ -445,6 +445,47 @@ RSpec.describe "bundle install with specific platforms" do
     L
   end
 
+  it "does not remove ruby if gems for other platforms, and not present in the lockfile, exist in the Gemfile" do
+    build_repo4 do
+      build_gem "nokogiri", "1.13.8"
+      build_gem "nokogiri", "1.13.8" do |s|
+        s.platform = Gem::Platform.local
+      end
+    end
+
+    gemfile <<~G
+      source "#{file_uri_for(gem_repo4)}"
+
+      gem "nokogiri"
+
+      gem "tzinfo", "~> 1.2", platform: :#{not_local_tag}
+    G
+
+    original_lockfile = <<~L
+      GEM
+        remote: #{file_uri_for(gem_repo4)}/
+        specs:
+          nokogiri (1.13.8)
+          nokogiri (1.13.8-#{Gem::Platform.local})
+
+      PLATFORMS
+        #{lockfile_platforms_for([specific_local_platform, "ruby"])}
+
+      DEPENDENCIES
+        nokogiri
+        tzinfo (~> 1.2)
+
+      BUNDLED WITH
+         #{Bundler::VERSION}
+    L
+
+    lockfile original_lockfile
+
+    bundle "lock --update"
+
+    expect(lockfile).to eq(original_lockfile)
+  end
+
   it "can fallback to a source gem when platform gems are incompatible with current ruby version" do
     setup_multiplatform_gem_with_source_gem
 

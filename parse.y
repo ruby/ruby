@@ -5779,8 +5779,7 @@ rbracket	: opt_nl ']'
 rbrace		: opt_nl '}'
 		;
 
-trailer		: /* none */
-		| '\n'
+trailer		: opt_nl
 		| ','
 		;
 
@@ -9299,6 +9298,7 @@ parser_yylex(struct parser_params *p)
       case '\004':		/* ^D */
       case '\032':		/* ^Z */
       case -1:			/* end of script. */
+	p->eofp  = 1;
 	return 0;
 
 	/* white spaces */
@@ -13611,7 +13611,7 @@ ripper_validate_object(VALUE self, VALUE x)
 {
     if (x == Qfalse) return x;
     if (x == Qtrue) return x;
-    if (x == Qnil) return x;
+    if (NIL_P(x)) return x;
     if (x == Qundef)
 	rb_raise(rb_eArgError, "Qundef given");
     if (FIXNUM_P(x)) return x;

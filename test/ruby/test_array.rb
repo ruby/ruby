@@ -1580,6 +1580,96 @@ class TestArray < Test::Unit::TestCase
     assert_equal_instance(a.values_at(*idx), a.slice((3..90)%2))
     idx = 90.step(3, -2).to_a
     assert_equal_instance(a.values_at(*idx), a.slice((90 .. 3)% -2))
+
+    a = [0, 1, 2, 3, 4, 5]
+    assert_equal([2, 1, 0], a.slice((2..).step(-1)))
+    assert_equal([2, 0], a.slice((2..).step(-2)))
+    assert_equal([2], a.slice((2..).step(-3)))
+    assert_equal([2], a.slice((2..).step(-4)))
+
+    assert_equal([3, 2, 1, 0], a.slice((-3..).step(-1)))
+    assert_equal([3, 1], a.slice((-3..).step(-2)))
+    assert_equal([3, 0], a.slice((-3..).step(-3)))
+    assert_equal([3], a.slice((-3..).step(-4)))
+    assert_equal([3], a.slice((-3..).step(-5)))
+
+    assert_equal([5, 4, 3, 2, 1, 0], a.slice((..0).step(-1)))
+    assert_equal([5, 3, 1], a.slice((..0).step(-2)))
+    assert_equal([5, 2], a.slice((..0).step(-3)))
+    assert_equal([5, 1], a.slice((..0).step(-4)))
+    assert_equal([5, 0], a.slice((..0).step(-5)))
+    assert_equal([5], a.slice((..0).step(-6)))
+    assert_equal([5], a.slice((..0).step(-7)))
+
+    assert_equal([5, 4, 3, 2, 1], a.slice((...0).step(-1)))
+    assert_equal([5, 3, 1], a.slice((...0).step(-2)))
+    assert_equal([5, 2], a.slice((...0).step(-3)))
+    assert_equal([5, 1], a.slice((...0).step(-4)))
+    assert_equal([5], a.slice((...0).step(-5)))
+    assert_equal([5], a.slice((...0).step(-6)))
+
+    assert_equal([5, 4, 3, 2], a.slice((...1).step(-1)))
+    assert_equal([5, 3], a.slice((...1).step(-2)))
+    assert_equal([5, 2], a.slice((...1).step(-3)))
+    assert_equal([5], a.slice((...1).step(-4)))
+    assert_equal([5], a.slice((...1).step(-5)))
+
+    assert_equal([5, 4, 3, 2, 1], a.slice((..-5).step(-1)))
+    assert_equal([5, 3, 1], a.slice((..-5).step(-2)))
+    assert_equal([5, 2], a.slice((..-5).step(-3)))
+    assert_equal([5, 1], a.slice((..-5).step(-4)))
+    assert_equal([5], a.slice((..-5).step(-5)))
+    assert_equal([5], a.slice((..-5).step(-6)))
+
+    assert_equal([5, 4, 3, 2], a.slice((...-5).step(-1)))
+    assert_equal([5, 3], a.slice((...-5).step(-2)))
+    assert_equal([5, 2], a.slice((...-5).step(-3)))
+    assert_equal([5], a.slice((...-5).step(-4)))
+    assert_equal([5], a.slice((...-5).step(-5)))
+
+    assert_equal([4, 3, 2, 1], a.slice((4..1).step(-1)))
+    assert_equal([4, 2], a.slice((4..1).step(-2)))
+    assert_equal([4, 1], a.slice((4..1).step(-3)))
+    assert_equal([4], a.slice((4..1).step(-4)))
+    assert_equal([4], a.slice((4..1).step(-5)))
+
+    assert_equal([4, 3, 2], a.slice((4...1).step(-1)))
+    assert_equal([4, 2], a.slice((4...1).step(-2)))
+    assert_equal([4], a.slice((4...1).step(-3)))
+    assert_equal([4], a.slice((4...1).step(-4)))
+
+    assert_equal([4, 3, 2, 1], a.slice((-2..1).step(-1)))
+    assert_equal([4, 2], a.slice((-2..1).step(-2)))
+    assert_equal([4, 1], a.slice((-2..1).step(-3)))
+    assert_equal([4], a.slice((-2..1).step(-4)))
+    assert_equal([4], a.slice((-2..1).step(-5)))
+
+    assert_equal([4, 3, 2], a.slice((-2...1).step(-1)))
+    assert_equal([4, 2], a.slice((-2...1).step(-2)))
+    assert_equal([4], a.slice((-2...1).step(-3)))
+    assert_equal([4], a.slice((-2...1).step(-4)))
+
+    assert_equal([4, 3, 2, 1], a.slice((4..-5).step(-1)))
+    assert_equal([4, 2], a.slice((4..-5).step(-2)))
+    assert_equal([4, 1], a.slice((4..-5).step(-3)))
+    assert_equal([4], a.slice((4..-5).step(-4)))
+    assert_equal([4], a.slice((4..-5).step(-5)))
+
+    assert_equal([4, 3, 2], a.slice((4...-5).step(-1)))
+    assert_equal([4, 2], a.slice((4...-5).step(-2)))
+    assert_equal([4], a.slice((4...-5).step(-3)))
+    assert_equal([4], a.slice((4...-5).step(-4)))
+
+    assert_equal([4, 3, 2, 1], a.slice((-2..-5).step(-1)))
+    assert_equal([4, 2], a.slice((-2..-5).step(-2)))
+    assert_equal([4, 1], a.slice((-2..-5).step(-3)))
+    assert_equal([4], a.slice((-2..-5).step(-4)))
+    assert_equal([4], a.slice((-2..-5).step(-5)))
+
+    assert_equal([4, 3, 2], a.slice((-2...-5).step(-1)))
+    assert_equal([4, 2], a.slice((-2...-5).step(-2)))
+    assert_equal([4], a.slice((-2...-5).step(-3)))
+    assert_equal([4], a.slice((-2...-5).step(-4)))
   end
 
   def test_slice_out_of_range

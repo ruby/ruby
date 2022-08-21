@@ -357,47 +357,42 @@ warn_vsprintf(rb_encoding *enc, const char *file, int line, const char *fmt, va_
     return rb_str_cat2(str, "\n");
 }
 
+#define with_warn_vsprintf(file, line, fmt) \
+    VALUE str; \
+    va_list args; \
+    va_start(args, fmt); \
+    str = warn_vsprintf(NULL, file, line, fmt, args); \
+    va_end(args);
+
 void
 rb_compile_warn(const char *file, int line, const char *fmt, ...)
 {
-    VALUE str;
-    va_list args;
-
-    if (NIL_P(ruby_verbose)) return;
-
-    va_start(args, fmt);
-    str = warn_vsprintf(NULL, file, line, fmt, args);
-    va_end(args);
-    rb_write_warning_str(str);
+    if (!NIL_P(ruby_verbose)) {
+        with_warn_vsprintf(file, line, fmt) {
+            rb_write_warning_str(str);
+        }
+    }
 }
 
 /* rb_compile_warning() reports only in verbose mode */
 void
 rb_compile_warning(const char *file, int line, const char *fmt, ...)
 {
-    VALUE str;
-    va_list args;
-
-    if (!RTEST(ruby_verbose)) return;
-
-    va_start(args, fmt);
-    str = warn_vsprintf(NULL, file, line, fmt, args);
-    va_end(args);
-    rb_write_warning_str(str);
+    if (RTEST(ruby_verbose)) {
+        with_warn_vsprintf(file, line, fmt) {
+            rb_write_warning_str(str);
+        }
+    }
 }
 
 void
 rb_category_compile_warn(rb_warning_category_t category, const char *file, int line, const char *fmt, ...)
 {
-    VALUE str;
-    va_list args;
-
-    if (NIL_P(ruby_verbose)) return;
-
-    va_start(args, fmt);
-    str = warn_vsprintf(NULL, file, line, fmt, args);
-    va_end(args);
-    rb_warn_category(str, rb_warning_category_to_name(category));
+    if (!NIL_P(ruby_verbose)) {
+        with_warn_vsprintf(file, line, fmt) {
+            rb_warn_category(str, rb_warning_category_to_name(category));
+        }
+    }
 }
 
 RBIMPL_ATTR_FORMAT(RBIMPL_PRINTF_FORMAT, 2, 0)

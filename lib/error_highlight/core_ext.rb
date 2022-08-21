@@ -37,9 +37,6 @@ module ErrorHighlight
   end
 
   NameError.prepend(CoreExt)
-
-  # The extension for TypeError/ArgumentError is temporarily disabled due to many test failures
-
-  #TypeError.prepend(CoreExt)
-  #ArgumentError.prepend(CoreExt)
+  TypeError.prepend(CoreExt)
+  ArgumentError.prepend(CoreExt)
 end

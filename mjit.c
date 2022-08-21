@@ -76,6 +76,7 @@
 #include "internal/cont.h"
 #include "internal/file.h"
 #include "internal/hash.h"
+#include "internal/process.h"
 #include "internal/warnings.h"
 #include "vm_sync.h"
 #include "ractor_core.h"
@@ -98,14 +99,9 @@
 #include "insns_info.inc"
 #include "internal/compile.h"
 
-#ifdef _WIN32
-#include <winsock2.h>
-#include <windows.h>
-#else
 #include <sys/wait.h>
 #include <sys/time.h>
 #include <dlfcn.h>
-#endif
 #include <errno.h>
 #ifdef HAVE_FCNTL_H
 #include <fcntl.h>
@@ -122,33 +118,10 @@
 # define MAXPATHLEN 1024
 #endif
 
-#ifdef _WIN32
-#define dlopen(name,flag) ((void*)LoadLibrary(name))
-#define dlerror() strerror(rb_w32_map_errno(GetLastError()))
-#define dlsym(handle,name) ((void*)GetProcAddress((handle),(name)))
-#define dlclose(handle) (!FreeLibrary(handle))
-#define RTLD_NOW  -1
-
-#define waitpid(pid,stat_loc,options) (WaitForSingleObject((HANDLE)(pid), INFINITE), GetExitCodeProcess((HANDLE)(pid), (LPDWORD)(stat_loc)), CloseHandle((HANDLE)pid), (pid))
-#define WIFEXITED(S) ((S) != STILL_ACTIVE)
-#define WEXITSTATUS(S) (S)
-#define WIFSIGNALED(S) (0)
-typedef intptr_t pid_t;
-#endif
-
 // Atomically set function pointer if possible.
 #define MJIT_ATOMIC_SET(var, val) (void)ATOMIC_PTR_EXCHANGE(var, val)
 
 #define MJIT_TMP_PREFIX "_ruby_mjit_"
-
-// JIT compaction requires the header transformation because linking multiple .o files
-// doesn't work without having `static` in the same function definitions. We currently
-// don't support transforming the MJIT header on Windows.
-#ifdef _WIN32
-# define USE_JIT_COMPACTION 0
-#else
-# define USE_JIT_COMPACTION 1
-#endif
 
 // Linked list of struct rb_mjit_unit.
 struct rb_mjit_unit_list {
@@ -237,15 +210,8 @@ static struct rb_mjit_unit *current_cc_unit = NULL;
 // PID of currently running C compiler process. 0 if nothing is running.
 static pid_t current_cc_pid = 0; // TODO: make this part of unit?
 
-#ifndef _MSC_VER
 // Name of the header file.
 static char *header_file;
-#endif
-
-#ifdef _WIN32
-// Linker option to enable libruby.
-static char *libruby_pathflag;
-#endif
 
 #include "mjit_config.h"
 
@@ -261,7 +227,7 @@ static char *libruby_pathflag;
 
 // Use `-nodefaultlibs -nostdlib` for GCC where possible, which does not work on cygwin, AIX, and OpenBSD.
 // This seems to improve MJIT performance on GCC.
-#if defined __GNUC__ && !defined __clang__ && !defined(_WIN32) && !defined(__CYGWIN__) && !defined(_AIX) && !defined(__OpenBSD__)
+#if defined __GNUC__ && !defined __clang__ && !defined(__CYGWIN__) && !defined(_AIX) && !defined(__OpenBSD__)
 # define GCC_NOSTDLIB_FLAGS "-nodefaultlibs", "-nostdlib",
 #else
 # define GCC_NOSTDLIB_FLAGS // empty
@@ -286,7 +252,7 @@ static const char *const CC_LINKER_ARGS[] = {
 };
 
 static const char *const CC_LIBS[] = {
-#if defined(_WIN32) || defined(__CYGWIN__)
+#if defined(__CYGWIN__)
     MJIT_LIBS // mswin, cygwin
 #endif
 #if defined __GNUC__ && !defined __clang__
@@ -371,22 +337,6 @@ remove_file(const char *filename)
     }
 }
 
-// Lazily delete .so files.
-static void
-clean_temp_files(struct rb_mjit_unit *unit)
-{
-#if defined(_WIN32)
-    if (unit->so_file) {
-        char *so_file = unit->so_file;
-
-        unit->so_file = NULL;
-        // unit->so_file is set only when mjit_opts.save_temps is false.
-        remove_file(so_file);
-        free(so_file);
-    }
-#endif
-}
-
 // This is called in the following situations:
 // 1) On dequeue or `unload_units()`, associated ISeq is already GCed.
 // 2) The unit is not called often and unloaded by `unload_units()`.
@@ -409,7 +359,6 @@ free_unit(struct rb_mjit_unit *unit)
     if (unit->handle && dlclose(unit->handle)) { // handle is NULL if it's in queue
         mjit_warning("failed to close handle for u%d: %s", unit->id, dlerror());
     }
-    clean_temp_files(unit);
     free(unit);
 }
 
@@ -431,10 +380,12 @@ CRITICAL_SECTION_FINISH(int level, const char *msg)
     rb_native_mutex_unlock(&mjit_engine_mutex);
 }
 
+static pid_t mjit_pid = 0;
+
 static int
 sprint_uniq_filename(char *str, size_t size, unsigned long id, const char *prefix, const char *suffix)
 {
-    return snprintf(str, size, "%s/%sp%"PRI_PIDT_PREFIX"uu%lu%s", tmp_dir, prefix, getpid(), id, suffix);
+    return snprintf(str, size, "%s/%sp%"PRI_PIDT_PREFIX"uu%lu%s", tmp_dir, prefix, mjit_pid, id, suffix);
 }
 
 // Return time in milliseconds as a double.
@@ -554,22 +505,6 @@ start_process(const char *abspath, char *const *argv)
     }
 
     pid_t pid;
-#ifdef _WIN32
-    extern HANDLE rb_w32_start_process(const char *abspath, char *const *argv, int out_fd);
-    int out_fd = 0;
-    if (mjit_opts.verbose <= 1) {
-        // Discard cl.exe's outputs like:
-        //   _ruby_mjit_p12u3.c
-        //     Creating library C:.../_ruby_mjit_p12u3.lib and object C:.../_ruby_mjit_p12u3.exp
-        out_fd = dev_null;
-    }
-
-    pid = (pid_t)rb_w32_start_process(abspath, argv, out_fd);
-    if (pid == 0) {
-        verbose(1, "MJIT: Failed to create process: %s", dlerror());
-        return -1;
-    }
-#else
     if ((pid = vfork()) == 0) { /* TODO: reuse some function in process.c */
         umask(0077);
         if (mjit_opts.verbose == 0) {
@@ -587,7 +522,6 @@ start_process(const char *abspath, char *const *argv)
         verbose(1, "MJIT: Error in execv: %s", abspath);
         _exit(1);
     }
-#endif
     (void)close(dev_null);
     return pid;
 }
@@ -627,14 +561,7 @@ exec_process(const char *path, char *const argv[])
 static void
 remove_so_file(const char *so_file, struct rb_mjit_unit *unit)
 {
-#if defined(_WIN32)
-    // Windows can't remove files while it's used.
-    unit->so_file = strdup(so_file); // lazily delete on `clean_temp_files()`
-    if (unit->so_file == NULL)
-        mjit_warning("failed to allocate memory to lazily remove '%s': %s", so_file, strerror(errno));
-#else
     remove_file(so_file);
-#endif
 }
 
 // Print _mjitX, but make a human-readable funcname when --mjit-debug is used
@@ -681,87 +608,6 @@ static const int c_file_access_mode =
 #define append_str(p, str) append_str2(p, str, sizeof(str)-1)
 #define append_lit(p, str) append_str2(p, str, rb_strlen_lit(str))
 
-#ifdef _MSC_VER
-// Compile C file to so. It returns true if it succeeds. (mswin)
-static bool
-compile_c_to_so(const char *c_file, const char *so_file)
-{
-    const char *files[] = { NULL, NULL, NULL, NULL, NULL, NULL, NULL, "-link", libruby_pathflag, NULL };
-    char *p;
-
-    // files[0] = "-Fe*.dll"
-    files[0] = p = alloca(sizeof(char) * (rb_strlen_lit("-Fe") + strlen(so_file) + 1));
-    p = append_lit(p, "-Fe");
-    p = append_str2(p, so_file, strlen(so_file));
-    *p = '\0';
-
-    // files[1] = "-Fo*.obj"
-    // We don't need .obj file, but it's somehow created to cwd without -Fo and we want to control the output directory.
-    files[1] = p = alloca(sizeof(char) * (rb_strlen_lit("-Fo") + strlen(so_file) - rb_strlen_lit(DLEXT) + rb_strlen_lit(".obj") + 1));
-    char *obj_file = p = append_lit(p, "-Fo");
-    p = append_str2(p, so_file, strlen(so_file) - rb_strlen_lit(DLEXT));
-    p = append_lit(p, ".obj");
-    *p = '\0';
-
-    // files[2] = "-Yu*.pch"
-    files[2] = p = alloca(sizeof(char) * (rb_strlen_lit("-Yu") + strlen(pch_file) + 1));
-    p = append_lit(p, "-Yu");
-    p = append_str2(p, pch_file, strlen(pch_file));
-    *p = '\0';
-
-    // files[3] = "C:/.../rb_mjit_header-*.obj"
-    files[3] = p = alloca(sizeof(char) * (strlen(pch_file) + 1));
-    p = append_str2(p, pch_file, strlen(pch_file) - strlen(".pch"));
-    p = append_lit(p, ".obj");
-    *p = '\0';
-
-    // files[4] = "-Tc*.c"
-    files[4] = p = alloca(sizeof(char) * (rb_strlen_lit("-Tc") + strlen(c_file) + 1));
-    p = append_lit(p, "-Tc");
-    p = append_str2(p, c_file, strlen(c_file));
-    *p = '\0';
-
-    // files[5] = "-Fd*.pdb"
-    // Generate .pdb file in temporary directory instead of cwd.
-    files[5] = p = alloca(sizeof(char) * (rb_strlen_lit("-Fd") + strlen(so_file) - rb_strlen_lit(DLEXT) + rb_strlen_lit(".pdb") + 1));
-    p = append_lit(p, "-Fd");
-    p = append_str2(p, so_file, strlen(so_file) - rb_strlen_lit(DLEXT));
-    p = append_lit(p, ".pdb");
-    *p = '\0';
-
-    // files[6] = "-Z7"
-    // Put this last to override any debug options that came previously.
-    files[6] = p = alloca(sizeof(char) * rb_strlen_lit("-Z7") + 1);
-    p = append_lit(p, "-Z7");
-    *p = '\0';
-
-    char **args = form_args(5, CC_LDSHARED_ARGS, CC_CODEFLAG_ARGS,
-            files, CC_LIBS, CC_DLDFLAGS_ARGS);
-    if (args == NULL)
-        return false;
-
-    int exit_code = exec_process(cc_path, args);
-    free(args);
-
-    if (exit_code == 0) {
-        // remove never-used files (.obj, .lib, .exp, .pdb). XXX: Is there any way not to generate this?
-        if (!mjit_opts.save_temps) {
-            char *before_dot;
-            remove_file(obj_file);
-
-            before_dot = obj_file + strlen(obj_file) - rb_strlen_lit(".obj");
-            append_lit(before_dot, ".lib"); remove_file(obj_file);
-            append_lit(before_dot, ".exp"); remove_file(obj_file);
-            append_lit(before_dot, ".pdb"); remove_file(obj_file);
-        }
-    }
-    else {
-        verbose(2, "compile_c_to_so: compile error: %d", exit_code);
-    }
-    return exit_code == 0;
-}
-#else // _MSC_VER
-
 // The function producing the pre-compiled header.
 static void
 make_pch(void)
@@ -798,14 +644,11 @@ make_pch(void)
     }
 }
 
-static pid_t
-start_compiling_c_to_so(const char *c_file, const char *so_file)
+static int
+compile_c_to_so(const char *c_file, const char *so_file)
 {
     const char *so_args[] = {
         "-o", so_file,
-# ifdef _WIN32
-        libruby_pathflag,
-# endif
 # ifdef __clang__
         "-include-pch", pch_file,
 # endif
@@ -821,22 +664,16 @@ start_compiling_c_to_so(const char *c_file, const char *so_file)
 
     char **args = form_args(8, CC_LDSHARED_ARGS, CC_CODEFLAG_ARGS, cc_added_args,
                             so_args, loader_args, CC_LIBS, CC_DLDFLAGS_ARGS, CC_LINKER_ARGS);
-    if (args == NULL) return -1;
+    if (args == NULL) return 1;
 
-    rb_vm_t *vm = GET_VM();
-    rb_native_mutex_lock(&vm->waitpid_lock);
-
-    pid_t pid = start_process(cc_path, args);
-    mjit_add_waiting_pid(vm, pid);
-
-    rb_native_mutex_unlock(&vm->waitpid_lock);
+    int exit_code = exec_process(cc_path, args);
+    if (!mjit_opts.save_temps)
+        remove_file(c_file);
 
     free(args);
-    return pid;
+    return exit_code;
 }
-#endif // _MSC_VER
 
-#if USE_JIT_COMPACTION
 static void compile_prelude(FILE *f);
 
 // Compile all JIT code into a single .c file
@@ -888,8 +725,8 @@ mjit_compact(char* c_file)
 
 // Compile all cached .c files and build a single .so file. Reload all JIT func from it.
 // This improves the code locality for better performance in terms of iTLB and iCache.
-static pid_t
-start_mjit_compact(struct rb_mjit_unit *unit)
+static int
+mjit_compact_unit(struct rb_mjit_unit *unit)
 {
     static const char c_ext[] = ".c";
     static const char so_ext[] = DLEXT;
@@ -900,9 +737,30 @@ start_mjit_compact(struct rb_mjit_unit *unit)
 
     bool success = mjit_compact(c_file);
     if (success) {
-        return start_compiling_c_to_so(c_file, so_file);
+        return compile_c_to_so(c_file, so_file);
     }
-    return -1;
+    return 1;
+}
+
+static pid_t
+start_mjit_compact(struct rb_mjit_unit *unit)
+{
+    rb_vm_t *vm = GET_VM();
+    rb_native_mutex_lock(&vm->waitpid_lock);
+
+    pid_t pid = rb_fork();
+    if (pid == 0) {
+        rb_native_mutex_unlock(&vm->waitpid_lock);
+
+        int exit_code = mjit_compact_unit(unit);
+        exit(exit_code);
+    }
+    else {
+        mjit_add_waiting_pid(vm, pid);
+        rb_native_mutex_unlock(&vm->waitpid_lock);
+
+        return pid;
+    }
 }
 
 static void
@@ -942,7 +800,6 @@ load_compact_funcs_from_so(struct rb_mjit_unit *unit, char *c_file, char *so_fil
     }
     verbose(1, "JIT compaction (%.1fms): Compacted %d methods %s -> %s", end_time - current_cc_ms, active_units.length, c_file, so_file);
 }
-#endif // USE_JIT_COMPACTION
 
 static void *
 load_func_from_so(const char *so_file, const char *funcname, struct rb_mjit_unit *unit)
@@ -996,133 +853,78 @@ compile_prelude(FILE *f)
     }
     fprintf(f, "\"\n");
 #endif
-
-#ifdef _WIN32
-    fprintf(f, "void _pei386_runtime_relocator(void){}\n");
-    fprintf(f, "int __stdcall DllMainCRTStartup(void* hinstDLL, unsigned int fdwReason, void* lpvReserved) { return 1; }\n");
-#endif
 }
 
 // Compile ISeq in UNIT and return function pointer of JIT-ed code.
 // It may return NOT_COMPILED_JIT_ISEQ_FUNC if something went wrong.
+static int
+mjit_compile_unit(struct rb_mjit_unit *unit)
+{
+    static const char c_ext[] = ".c";
+    static const char so_ext[] = DLEXT;
+    char c_file[MAXPATHLEN], so_file[MAXPATHLEN], funcname[MAXPATHLEN];
+
+    sprint_uniq_filename(c_file, (int)sizeof(c_file), unit->id, MJIT_TMP_PREFIX, c_ext);
+    sprint_uniq_filename(so_file, (int)sizeof(so_file), unit->id, MJIT_TMP_PREFIX, so_ext);
+    sprint_funcname(funcname, unit);
+
+    FILE *f;
+    int fd = rb_cloexec_open(c_file, c_file_access_mode, 0600);
+    if (fd < 0 || (f = fdopen(fd, "w")) == NULL) {
+        int e = errno;
+        if (fd >= 0) (void)close(fd);
+        verbose(1, "Failed to fopen '%s', giving up JIT for it (%s)", c_file, strerror(e));
+        return 1;
+    }
+
+    // print #include of MJIT header, etc.
+    compile_prelude(f);
+
+    // To make MJIT worker thread-safe against GC.compact, copy ISeq values while `in_jit` is true.
+    long iseq_lineno = 0;
+    if (FIXNUM_P(ISEQ_BODY(unit->iseq)->location.first_lineno))
+        // FIX2INT may fallback to rb_num2long(), which is a method call and dangerous in MJIT worker. So using only FIX2LONG.
+        iseq_lineno = FIX2LONG(ISEQ_BODY(unit->iseq)->location.first_lineno);
+    char *iseq_label = alloca(RSTRING_LEN(ISEQ_BODY(unit->iseq)->location.label) + 1);
+    char *iseq_path  = alloca(RSTRING_LEN(rb_iseq_path(unit->iseq)) + 1);
+    strcpy(iseq_label, RSTRING_PTR(ISEQ_BODY(unit->iseq)->location.label));
+    strcpy(iseq_path,  RSTRING_PTR(rb_iseq_path(unit->iseq)));
+
+    verbose(2, "start compilation: %s@%s:%ld -> %s", iseq_label, iseq_path, iseq_lineno, c_file);
+    fprintf(f, "/* %s@%s:%ld */\n\n", iseq_label, iseq_path, iseq_lineno);
+    bool success = mjit_compile(f, unit->iseq, funcname, unit->id);
+
+    fclose(f);
+    if (!success) {
+        if (!mjit_opts.save_temps)
+            remove_file(c_file);
+        verbose(1, "JIT failure: %s@%s:%ld -> %s", iseq_label, iseq_path, iseq_lineno, c_file);
+        return 1;
+    }
+
+    return compile_c_to_so(c_file, so_file);
+}
+
 static pid_t
 start_mjit_compile(struct rb_mjit_unit *unit)
 {
-    static const char c_ext[] = ".c";
-    static const char so_ext[] = DLEXT;
-    char c_file[MAXPATHLEN], so_file[MAXPATHLEN], funcname[MAXPATHLEN];
+    rb_vm_t *vm = GET_VM();
+    rb_native_mutex_lock(&vm->waitpid_lock);
 
-    sprint_uniq_filename(c_file, (int)sizeof(c_file), unit->id, MJIT_TMP_PREFIX, c_ext);
-    sprint_uniq_filename(so_file, (int)sizeof(so_file), unit->id, MJIT_TMP_PREFIX, so_ext);
-    sprint_funcname(funcname, unit);
+    pid_t pid = rb_fork();
+    if (pid == 0) {
+        rb_native_mutex_unlock(&vm->waitpid_lock);
 
-    FILE *f;
-    int fd = rb_cloexec_open(c_file, c_file_access_mode, 0600);
-    if (fd < 0 || (f = fdopen(fd, "w")) == NULL) {
-        int e = errno;
-        if (fd >= 0) (void)close(fd);
-        verbose(1, "Failed to fopen '%s', giving up JIT for it (%s)", c_file, strerror(e));
-        return -1;
+        int exit_code = mjit_compile_unit(unit);
+        exit(exit_code);
     }
+    else {
+        mjit_add_waiting_pid(vm, pid);
+        rb_native_mutex_unlock(&vm->waitpid_lock);
 
-    // print #include of MJIT header, etc.
-    compile_prelude(f);
-
-    // To make MJIT worker thread-safe against GC.compact, copy ISeq values while `in_jit` is true.
-    long iseq_lineno = 0;
-    if (FIXNUM_P(ISEQ_BODY(unit->iseq)->location.first_lineno))
-        // FIX2INT may fallback to rb_num2long(), which is a method call and dangerous in MJIT worker. So using only FIX2LONG.
-        iseq_lineno = FIX2LONG(ISEQ_BODY(unit->iseq)->location.first_lineno);
-    char *iseq_label = alloca(RSTRING_LEN(ISEQ_BODY(unit->iseq)->location.label) + 1);
-    char *iseq_path  = alloca(RSTRING_LEN(rb_iseq_path(unit->iseq)) + 1);
-    strcpy(iseq_label, RSTRING_PTR(ISEQ_BODY(unit->iseq)->location.label));
-    strcpy(iseq_path,  RSTRING_PTR(rb_iseq_path(unit->iseq)));
-
-    verbose(2, "start compilation: %s@%s:%ld -> %s", iseq_label, iseq_path, iseq_lineno, c_file);
-    fprintf(f, "/* %s@%s:%ld */\n\n", iseq_label, iseq_path, iseq_lineno);
-    bool success = mjit_compile(f, unit->iseq, funcname, unit->id);
-
-    fclose(f);
-    if (!success) {
-        if (!mjit_opts.save_temps)
-            remove_file(c_file);
-        verbose(1, "JIT failure: %s@%s:%ld -> %s", iseq_label, iseq_path, iseq_lineno, c_file);
-        return -1;
+        return pid;
     }
-
-    return start_compiling_c_to_so(c_file, so_file);
 }
-
-#ifdef _WIN32
-// Compile ISeq in UNIT and return function pointer of JIT-ed code.
-// It may return NOT_COMPILED_JIT_ISEQ_FUNC if something went wrong.
-static mjit_func_t
-convert_unit_to_func(struct rb_mjit_unit *unit)
-{
-    static const char c_ext[] = ".c";
-    static const char so_ext[] = DLEXT;
-    char c_file[MAXPATHLEN], so_file[MAXPATHLEN], funcname[MAXPATHLEN];
-
-    sprint_uniq_filename(c_file, (int)sizeof(c_file), unit->id, MJIT_TMP_PREFIX, c_ext);
-    sprint_uniq_filename(so_file, (int)sizeof(so_file), unit->id, MJIT_TMP_PREFIX, so_ext);
-    sprint_funcname(funcname, unit);
-
-    FILE *f;
-    int fd = rb_cloexec_open(c_file, c_file_access_mode, 0600);
-    if (fd < 0 || (f = fdopen(fd, "w")) == NULL) {
-        int e = errno;
-        if (fd >= 0) (void)close(fd);
-        verbose(1, "Failed to fopen '%s', giving up JIT for it (%s)", c_file, strerror(e));
-        return (mjit_func_t)NOT_COMPILED_JIT_ISEQ_FUNC;
-    }
-
-    // print #include of MJIT header, etc.
-    compile_prelude(f);
-
-    // To make MJIT worker thread-safe against GC.compact, copy ISeq values while `in_jit` is true.
-    long iseq_lineno = 0;
-    if (FIXNUM_P(ISEQ_BODY(unit->iseq)->location.first_lineno))
-        // FIX2INT may fallback to rb_num2long(), which is a method call and dangerous in MJIT worker. So using only FIX2LONG.
-        iseq_lineno = FIX2LONG(ISEQ_BODY(unit->iseq)->location.first_lineno);
-    char *iseq_label = alloca(RSTRING_LEN(ISEQ_BODY(unit->iseq)->location.label) + 1);
-    char *iseq_path  = alloca(RSTRING_LEN(rb_iseq_path(unit->iseq)) + 1);
-    strcpy(iseq_label, RSTRING_PTR(ISEQ_BODY(unit->iseq)->location.label));
-    strcpy(iseq_path,  RSTRING_PTR(rb_iseq_path(unit->iseq)));
-
-    verbose(2, "start compilation: %s@%s:%ld -> %s", iseq_label, iseq_path, iseq_lineno, c_file);
-    fprintf(f, "/* %s@%s:%ld */\n\n", iseq_label, iseq_path, iseq_lineno);
-    bool success = mjit_compile(f, unit->iseq, funcname, unit->id);
-
-    fclose(f);
-    if (!success) {
-        if (!mjit_opts.save_temps)
-            remove_file(c_file);
-        verbose(1, "JIT failure: %s@%s:%ld -> %s", iseq_label, iseq_path, iseq_lineno, c_file);
-        return (mjit_func_t)NOT_COMPILED_JIT_ISEQ_FUNC;
-    }
-
-    double start_time = real_ms_time();
-    success = compile_c_to_so(c_file, so_file);
-    if (!mjit_opts.save_temps)
-        remove_file(c_file);
-    double end_time = real_ms_time();
-
-    if (!success) {
-        verbose(2, "Failed to generate so: %s", so_file);
-        return (mjit_func_t)NOT_COMPILED_JIT_ISEQ_FUNC;
-    }
-
-    void *func = load_func_from_so(so_file, funcname, unit);
-    if (!mjit_opts.save_temps)
-        remove_so_file(so_file, unit);
-
-    if ((uintptr_t)func > (uintptr_t)LAST_JIT_ISEQ_FUNC) {
-        verbose(1, "JIT success (%.1fms): %s@%s:%ld -> %s",
-                end_time - start_time, iseq_label, iseq_path, iseq_lineno, c_file);
-    }
-    return (mjit_func_t)func;
-}
-#endif
 
 // Capture cc entries of `captured_iseq` and append them to `compiled_iseq->jit_unit->cc_entries`.
 // This is needed when `captured_iseq` is inlined by `compiled_iseq` and GC needs to mark inlined cc.
@@ -1372,7 +1174,6 @@ free_list(struct rb_mjit_unit_list *list, bool close_handle_p)
             if (unit->handle && dlclose(unit->handle)) {
                 mjit_warning("failed to close handle for u%d: %s", unit->id, dlerror());
             }
-            clean_temp_files(unit);
             free(unit);
         }
         else {
@@ -1470,15 +1271,6 @@ check_unit_queue(void)
     struct rb_mjit_unit *unit = get_from_list(&unit_queue);
     if (unit == NULL) return;
 
-#ifdef _WIN32
-    // Synchronously compile methods on Windows.
-    // mswin: No SIGCHLD, MinGW: directly compiling .c to .so doesn't work
-    mjit_func_t func = convert_unit_to_func(unit);
-    MJIT_ATOMIC_SET(ISEQ_BODY(unit->iseq)->jit_func, func);
-    if ((uintptr_t)func > (uintptr_t)LAST_JIT_ISEQ_FUNC) {
-        add_to_list(unit, &active_units);
-    }
-#else
     current_cc_ms = real_ms_time();
     current_cc_unit = unit;
     current_cc_pid = start_mjit_compile(unit);
@@ -1494,7 +1286,6 @@ check_unit_queue(void)
     if (mjit_opts.wait) {
         mjit_wait(unit->iseq->body);
     }
-#endif
 }
 
 // Create unit for `iseq`. This function may be called from an MJIT worker.
@@ -1521,7 +1312,6 @@ create_unit(const rb_iseq_t *iseq)
 static void
 check_compaction(void)
 {
-#if USE_JIT_COMPACTION
     // Allow only `max_cache_size / 100` times (default: 100) of compaction.
     // Note: GC of compacted code has not been implemented yet.
     int max_compact_size = mjit_opts.max_cache_size / 100;
@@ -1543,7 +1333,6 @@ check_compaction(void)
             // TODO: check -1
         }
     }
-#endif
 }
 
 // Check the current CC process if any, and start a next C compiler process as needed.
@@ -1556,8 +1345,6 @@ mjit_notify_waitpid(int status)
     // Delete .c file
     char c_file[MAXPATHLEN];
     sprint_uniq_filename(c_file, (int)sizeof(c_file), current_cc_unit->id, MJIT_TMP_PREFIX, ".c");
-    if (!mjit_opts.save_temps)
-        remove_file(c_file);
 
     // Check the result
     bool success = false;
@@ -1578,12 +1365,8 @@ mjit_notify_waitpid(int status)
     char so_file[MAXPATHLEN];
     sprint_uniq_filename(so_file, (int)sizeof(so_file), current_cc_unit->id, MJIT_TMP_PREFIX, DLEXT);
     if (current_cc_unit->compact_p) { // Compact unit
-#if USE_JIT_COMPACTION
         load_compact_funcs_from_so(current_cc_unit, c_file, so_file);
         current_cc_unit = NULL;
-#else
-        RUBY_ASSERT(!current_cc_unit->compact_p);
-#endif
     }
     else { // Normal unit
         // Load the function from so
@@ -1795,16 +1578,6 @@ init_header_filename(void)
     const char *basedir = "";
     size_t baselen = 0;
     char *p;
-#ifdef _WIN32
-    static const char libpathflag[] =
-# ifdef _MSC_VER
-        "-LIBPATH:"
-# else
-        "-L"
-# endif
-        ;
-    const size_t libpathflag_len = sizeof(libpathflag) - 1;
-#endif
 
 #ifdef LOAD_RELATIVE
     basedir_val = ruby_prefix_path;
@@ -1846,7 +1619,6 @@ init_header_filename(void)
     }
     else
 #endif
-#ifndef _MSC_VER
     {
         // A name of the header file included in any C file generated by MJIT for iseqs.
         static const char header_name[] = MJIT_HEADER_INSTALL_DIR "/" MJIT_MIN_HEADER_NAME;
@@ -1866,56 +1638,15 @@ init_header_filename(void)
     }
 
     pch_file = get_uniq_filename(0, MJIT_TMP_PREFIX "h", ".h.gch");
-#else
-    {
-        static const char pch_name[] = MJIT_HEADER_INSTALL_DIR "/" MJIT_PRECOMPILED_HEADER_NAME;
-        const size_t pch_name_len = sizeof(pch_name) - 1;
-
-        pch_file = xmalloc(baselen + pch_name_len + 1);
-        p = append_str2(pch_file, basedir, baselen);
-        p = append_str2(p, pch_name, pch_name_len + 1);
-        if ((fd = rb_cloexec_open(pch_file, O_RDONLY, 0)) < 0) {
-            verbose(1, "Cannot access precompiled header file: %s", pch_file);
-            xfree(pch_file);
-            pch_file = NULL;
-            return false;
-        }
-        (void)close(fd);
-    }
-#endif
-
-#ifdef _WIN32
-    basedir_val = ruby_archlibdir_path;
-    basedir = StringValuePtr(basedir_val);
-    baselen = RSTRING_LEN(basedir_val);
-    libruby_pathflag = p = xmalloc(libpathflag_len + baselen + 1);
-    p = append_str(p, libpathflag);
-    p = append_str2(p, basedir, baselen);
-    *p = '\0';
-#endif
 
     return true;
 }
-
-#ifdef _WIN32
-UINT rb_w32_system_tmpdir(WCHAR *path, UINT len);
-#endif
 
 static char *
 system_default_tmpdir(void)
 {
     // c.f. ext/etc/etc.c:etc_systmpdir()
-#ifdef _WIN32
-    WCHAR tmppath[_MAX_PATH];
-    UINT len = rb_w32_system_tmpdir(tmppath, numberof(tmppath));
-    if (len) {
-        int blen = WideCharToMultiByte(CP_UTF8, 0, tmppath, len, NULL, 0, NULL, NULL);
-        char *tmpdir = xmalloc(blen + 1);
-        WideCharToMultiByte(CP_UTF8, 0, tmppath, len, tmpdir, blen, NULL, NULL);
-        tmpdir[blen] = '\0';
-        return tmpdir;
-    }
-#elif defined _CS_DARWIN_USER_TEMP_DIR
+#if defined _CS_DARWIN_USER_TEMP_DIR
     char path[MAXPATHLEN];
     size_t len = confstr(_CS_DARWIN_USER_TEMP_DIR, path, sizeof(path));
     if (len > 0) {
@@ -1943,19 +1674,17 @@ check_tmpdir(const char *dir)
 #   define S_ISDIR(m) (((m) & S_IFMT) == S_IFDIR)
 #endif
     if (!S_ISDIR(st.st_mode)) return FALSE;
-#ifndef _WIN32
-# ifndef S_IWOTH
+#ifndef S_IWOTH
 #   define S_IWOTH 002
-# endif
+#endif
     if (st.st_mode & S_IWOTH) {
-# ifdef S_ISVTX
+#ifdef S_ISVTX
         if (!(st.st_mode & S_ISVTX)) return FALSE;
-# else
+#else
         return FALSE;
-# endif
+#endif
     }
     if (access(dir, W_OK)) return FALSE;
-#endif
     return TRUE;
 }
 
@@ -2092,6 +1821,7 @@ mjit_init(const struct mjit_options *opts)
     mjit_opts = *opts;
     mjit_enabled = true;
     mjit_call_p = true;
+    mjit_pid = getpid();
 
     // Normalize options
     if (mjit_opts.min_calls == 0)
@@ -2102,11 +1832,7 @@ mjit_init(const struct mjit_options *opts)
         mjit_opts.max_cache_size = MIN_CACHE_SIZE;
 
     // Initialize variables for compilation
-#ifdef _MSC_VER
-    pch_status = PCH_SUCCESS; // has prebuilt precompiled header
-#else
     pch_status = PCH_NOT_READY;
-#endif
     cc_path = CC_COMMON_ARGS[0];
     verbose(2, "MJIT: CC defaults to %s", cc_path);
     cc_common_args = xmalloc(sizeof(CC_COMMON_ARGS));
@@ -2150,10 +1876,8 @@ mjit_init(const struct mjit_options *opts)
     // Initialize worker thread
     start_worker();
 
-#ifndef _MSC_VER
     // TODO: Consider running C compiler asynchronously
     make_pch();
-#endif
 }
 
 static void
@@ -2272,12 +1996,10 @@ mjit_finish(bool close_handle_p)
     mjit_dump_total_calls();
 #endif
 
-#ifndef _MSC_VER // mswin has prebuilt precompiled header
     if (!mjit_opts.save_temps && getpid() == pch_owner_pid)
         remove_file(pch_file);
 
     xfree(header_file); header_file = NULL;
-#endif
     xfree((void *)cc_common_args); cc_common_args = NULL;
     for (char **flag = cc_added_args; *flag != NULL; flag++)
         xfree(*flag);

@@ -73,6 +73,7 @@ REPOSITORIES = {
   pathname: "ruby/pathname",
   digest: "ruby/digest",
   error_highlight: "ruby/error_highlight",
+  syntax_suggest: "ruby/syntax_suggest",
   un: "ruby/un",
   win32ole: "ruby/win32ole",
 }

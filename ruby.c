@@ -94,6 +94,8 @@ void rb_warning_category_update(unsigned int mask, unsigned int bits);
     SEP \
     X(did_you_mean) \
     SEP \
+    X(syntax_suggest) \
+    SEP \
     X(rubyopt) \
     SEP \
     X(frozen_string_literal) \
@@ -111,7 +113,7 @@ void rb_warning_category_update(unsigned int mask, unsigned int bits);
 enum feature_flag_bits {
     EACH_FEATURES(DEFINE_FEATURE, COMMA),
     feature_debug_flag_first,
-#if defined(MJIT_FORCE_ENABLE) || !YJIT_BUILD
+#if defined(MJIT_FORCE_ENABLE) || !USE_YJIT
     DEFINE_FEATURE(jit) = feature_mjit,
 #else
     DEFINE_FEATURE(jit) = feature_yjit,
@@ -248,7 +250,7 @@ usage(const char *name, int help, int highlight, int columns)
 
 #define M(shortopt, longopt, desc) RUBY_OPT_MESSAGE(shortopt, longopt, desc)
 
-#if YJIT_BUILD
+#if USE_YJIT
 # define PLATFORM_JIT_OPTION "--yjit"
 #else
 # define PLATFORM_JIT_OPTION "--mjit"
@@ -278,7 +280,7 @@ usage(const char *name, int help, int highlight, int columns)
 #if USE_MJIT
         M("--mjit",        "",                     "enable C compiler-based JIT compiler (experimental)"),
 #endif
-#if YJIT_BUILD
+#if USE_YJIT
         M("--yjit",        "",                     "enable in-process JIT compiler (experimental)"),
 #endif
         M("-h",		   "",			   "show this message, --help for more info"),
@@ -307,12 +309,13 @@ usage(const char *name, int help, int highlight, int columns)
         M("gems",    "",        "rubygems (only for debugging, default: "DEFAULT_RUBYGEMS_ENABLED")"),
         M("error_highlight", "", "error_highlight (default: "DEFAULT_RUBYGEMS_ENABLED")"),
         M("did_you_mean", "",   "did_you_mean (default: "DEFAULT_RUBYGEMS_ENABLED")"),
+        M("syntax_suggest", "", "syntax_suggest (default: "DEFAULT_RUBYGEMS_ENABLED")"),
         M("rubyopt", "",        "RUBYOPT environment variable (default: enabled)"),
         M("frozen-string-literal", "", "freeze all string literals (default: disabled)"),
 #if USE_MJIT
         M("mjit", "",           "C compiler-based JIT compiler (default: disabled)"),
 #endif
-#if YJIT_BUILD
+#if USE_YJIT
         M("yjit", "",           "in-process JIT compiler (default: disabled)"),
 #endif
     };
@@ -323,7 +326,7 @@ usage(const char *name, int help, int highlight, int columns)
 #if USE_MJIT
     extern const struct ruby_opt_message mjit_option_messages[];
 #endif
-#if YJIT_BUILD
+#if USE_YJIT
     static const struct ruby_opt_message yjit_options[] = {
 #if YJIT_STATS
         M("--yjit-stats",              "", "Enable collecting YJIT statistics"),
@@ -365,7 +368,7 @@ usage(const char *name, int help, int highlight, int columns)
     for (i = 0; mjit_option_messages[i].str; ++i)
         SHOW(mjit_option_messages[i]);
 #endif
-#if YJIT_BUILD
+#if USE_YJIT
     printf("%s""YJIT options (experimental):%s\n", sb, se);
     for (i = 0; i < numberof(yjit_options); ++i)
         SHOW(yjit_options[i]);
@@ -1047,7 +1050,7 @@ set_option_encoding_once(const char *type, VALUE *name, const char *e, long elen
 #define yjit_opt_match_arg(s, l, name) \
     opt_match(s, l, name) && (*(s) && *(s+1) ? 1 : (rb_raise(rb_eRuntimeError, "--yjit-" name " needs an argument"), 0))
 
-#if YJIT_BUILD
+#if USE_YJIT
 static bool
 setup_yjit_options(const char *s)
 {
@@ -1452,7 +1455,7 @@ proc_options(long argc, char **argv, ruby_cmdline_options_t *opt, int envopt)
 #endif
             }
             else if (is_option_with_optarg("yjit", '-', true, false, false)) {
-#if YJIT_BUILD
+#if USE_YJIT
                 FEATURE_SET(opt->features, FEATURE_BIT(yjit));
                 setup_yjit_options(s);
 #else
@@ -1552,6 +1555,9 @@ ruby_opt_init(ruby_cmdline_options_t *opt)
         }
         if (opt->features.set & FEATURE_BIT(did_you_mean)) {
             rb_define_module("DidYouMean");
+        }
+        if (opt->features.set & FEATURE_BIT(syntax_suggest)) {
+            rb_define_module("SyntaxSuggest");
         }
     }
 
@@ -1831,7 +1837,7 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
         rb_warning("-K is specified; it is for 1.8 compatibility and may cause odd behavior");
 
     if (!(FEATURE_SET_BITS(opt->features) & feature_jit_mask)) {
-#if YJIT_BUILD
+#if USE_YJIT
         if (!FEATURE_USED_P(opt->features, yjit) && getenv("RUBY_YJIT_ENABLE")) {
             FEATURE_SET(opt->features, FEATURE_BIT(yjit));
         }
@@ -1847,7 +1853,7 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
         opt->mjit.on = TRUE; /* set mjit.on for ruby_show_version() API and check to call mjit_init() */
     }
 #endif
-#if YJIT_BUILD
+#if USE_YJIT
     if (FEATURE_SET_P(opt->features, yjit)) {
         rb_yjit_init();
     }

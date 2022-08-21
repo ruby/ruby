@@ -289,16 +289,28 @@ describe :kernel_sprintf, shared: true do
         @method.call("%c", "a").should == "a"
       end
 
-      it "raises ArgumentError if argument is a string of several characters" do
-        -> {
-          @method.call("%c", "abc")
-        }.should raise_error(ArgumentError)
+      ruby_version_is ""..."3.2" do
+        it "raises ArgumentError if argument is a string of several characters" do
+          -> {
+            @method.call("%c", "abc")
+          }.should raise_error(ArgumentError)
+        end
+
+        it "raises ArgumentError if argument is an empty string" do
+          -> {
+            @method.call("%c", "")
+          }.should raise_error(ArgumentError)
+        end
       end
 
-      it "raises ArgumentError if argument is an empty string" do
-        -> {
-          @method.call("%c", "")
-        }.should raise_error(ArgumentError)
+      ruby_version_is "3.2" do
+        it "displays only the first character if argument is a string of several characters" do
+          @method.call("%c", "abc").should == "a"
+        end
+
+        it "displays no characters if argument is an empty string" do
+          @method.call("%c", "").should == ""
+        end
       end
 
       it "supports Unicode characters" do

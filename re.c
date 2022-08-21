@@ -3499,12 +3499,17 @@ rb_reg_match2(VALUE re)
  *
  *  With no block given, returns the MatchData object
  *  that describes the match, if any, or +nil+ if none;
- *  the search begins at the given byte +offset+ in +self+:
+ *  the search begins at the given character +offset+ in +string+:
  *
  *    /abra/.match('abracadabra')      # => #<MatchData "abra">
  *    /abra/.match('abracadabra', 4)   # => #<MatchData "abra">
  *    /abra/.match('abracadabra', 8)   # => nil
  *    /abra/.match('abracadabra', 800) # => nil
+ *
+ *    string = "\u{5d0 5d1 5e8 5d0}cadabra"
+ *    /abra/.match(string, 7)          #=> #<MatchData "abra">
+ *    /abra/.match(string, 8)          #=> nil
+ *    /abra/.match(string.b, 8)        #=> #<MatchData "abra">
  *
  *  With a block given, calls the block if and only if a match is found;
  *  returns the block's value:

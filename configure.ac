@@ -88,7 +88,9 @@ AC_SUBST(GIT)
 AC_SUBST(HAVE_GIT)
 
 eval `sed -n -e ['s/^@%:@define RUBY_[A-Z_]*VERSION_\([A-Z][A-Z][A-Z_0-9]*\) \([0-9][0-9]*\)$/\1=\2/p'] \
+      -e ['s/^@%:@define \(RUBY_ABI_VERSION\) \([0-9][0-9]*\).*/\1=\2/p'] \
       -e ['s/^@%:@define \(RUBY_PATCHLEVEL\) \(.*\)/\1=\2/p'] \
+     $srcdir/include/ruby/internal/abi.h \
      $srcdir/include/ruby/version.h $srcdir/version.h`
 for v in MAJOR MINOR TEENY; do
     AS_IF([eval "test \"\$$v\" = ''"], [
@@ -100,6 +102,9 @@ AC_SUBST(MINOR)
 AC_SUBST(TEENY)
 AC_SUBST(RUBY_API_VERSION, '$(MAJOR).$(MINOR)')
 AC_SUBST(RUBY_PROGRAM_VERSION, '$(MAJOR).$(MINOR).$(TEENY)')
+AS_CASE([$RUBY_PATCHLEVEL], [-*], [
+    AC_DEFINE_UNQUOTED(RUBY_ABI_VERSION, [${RUBY_ABI_VERSION}])
+], [RUBY_ABI_VERSION=])
 
 AS_IF([test "$program_prefix" = NONE], [
   program_prefix=
@@ -622,8 +627,13 @@ AS_IF([test "$fdeclspec" = yes], [
     RUBY_APPEND_OPTIONS(CXXFLAGS, -fdeclspec)
 ])
 
-AS_IF([test "x$RUBY_DEVEL" != xyes], [RUBY_DEVEL=no])
-particular_werror_flags=$RUBY_DEVEL
+AC_ARG_ENABLE(devel,
+    AS_HELP_STRING([--enable-devel], [enable development build]),
+    [RUBY_DEVEL=$enableval],
+    [AS_IF([test "x${RUBY_DEVEL-no}" != xyes], [RUBY_DEVEL=])]
+)dnl
+AC_SUBST(RUBY_DEVEL)
+particular_werror_flags=${RUBY_DEVEL:-no}
 AC_ARG_ENABLE(werror,
 	AS_HELP_STRING([--disable-werror],
 		       [don't make warnings into errors
@@ -867,7 +877,6 @@ AS_IF([test "$GCC" = yes], [
     test "${debugflags+set}" || {RUBY_TRY_CFLAGS(-g3, [debugflags=-g3])}
 ])
 test $ac_cv_prog_cc_g = yes && : ${debugflags=-g}
-AS_IF([test "x$RUBY_DEVEL" = xyes], [RUBY_APPEND_OPTION(XCFLAGS, -DRUBY_DEVEL=1)])
 
 AS_IF([test "$GCC" = ""], [
     AS_CASE(["$target_os"],[aix*],[warnflags="$warnflags -qinfo=por" rb_cv_warnflags="$rb_cv_warnflags -qinfo=por"])
@@ -4114,6 +4123,7 @@ AS_CASE(["$ruby_version"],
 AS_IF([test ${RUBY_LIB_VERSION_STYLE+set}], [
     {
     echo "#define RUBY_LIB_VERSION_STYLE $RUBY_LIB_VERSION_STYLE"
+    echo '@%:@include "confdefs.h"'
     echo '#define STRINGIZE(x) x'
     test -f revision.h -o -f "${srcdir}/revision.h" || echo '#define RUBY_REVISION 0'
     echo '#include "version.h"'
