@@ -460,14 +460,16 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
                     blen += n;
                 }
                 else if ((flags & FMINUS)) {
-                    CHECK(n);
+                    --width;
+                    CHECK(n + (width > 0 ? width : 0));
                     rb_enc_mbcput(c, &buf[blen], enc);
                     blen += n;
-                    if (width > 1) FILL(' ', width-1);
+                    if (width > 0) FILL_(' ', width);
                 }
                 else {
-                    if (width > 1) FILL(' ', width-1);
-                    CHECK(n);
+                    --width;
+                    CHECK(n + (width > 0 ? width : 0));
+                    if (width > 0) FILL_(' ', width);
                     rb_enc_mbcput(c, &buf[blen], enc);
                     blen += n;
                 }
@@ -512,16 +514,16 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
                     /* need to adjust multi-byte string pos */
                     if ((flags&FWIDTH) && (width > slen)) {
                         width -= (int)slen;
+                        CHECK(len + width);
                         if (!(flags&FMINUS)) {
-                            FILL(' ', width);
+                            FILL_(' ', width);
                             width = 0;
                         }
-                        CHECK(len);
                         memcpy(&buf[blen], RSTRING_PTR(str), len);
                         RB_GC_GUARD(str);
                         blen += len;
                         if (flags&FMINUS) {
-                            FILL(' ', width);
+                            FILL_(' ', width);
                         }
                         rb_enc_associate(result, enc);
                         break;
