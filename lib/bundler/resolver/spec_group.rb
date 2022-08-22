@@ -105,7 +105,7 @@ module Bundler
       end
 
       def metadata_dependency(name, requirement, platform)
-        return if requirement.none?
+        return if requirement.nil? || requirement.none?
 
         DepProxy.get_proxy(Dependency.new("#{name}\0", requirement), platform)
       end

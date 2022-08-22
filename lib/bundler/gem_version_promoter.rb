@@ -88,6 +88,10 @@ module Bundler
       end
     end
 
+    def reset
+      @sort_versions = {}
+    end
+
     # @return [bool] Convenience method for testing value of level variable.
     def major?
       level == :major
