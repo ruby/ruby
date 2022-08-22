@@ -1,14 +1,14 @@
 # frozen_string_literal: true
 
-require_relative 'package/tar_test_case'
-require 'rubygems/openssl'
+require_relative "package/tar_test_case"
+require "rubygems/openssl"
 
 class TestGemPackage < Gem::Package::TarTestCase
   def setup
     super
 
-    @spec = quick_gem 'a' do |s|
-      s.description = 'π'
+    @spec = quick_gem "a" do |s|
+      s.description = "π"
       s.files = %w[lib/code.rb]
     end
 
@@ -16,7 +16,7 @@ class TestGemPackage < Gem::Package::TarTestCase
 
     @gem = @spec.cache_file
 
-    @destination = File.join @tempdir, 'extract'
+    @destination = File.join @tempdir, "extract"
 
     FileUtils.mkdir_p @destination
   end
@@ -24,11 +24,11 @@ class TestGemPackage < Gem::Package::TarTestCase
   def test_class_new_old_format
     pend "jruby can't require the simple_gem file" if Gem.java_platform?
     require_relative "simple_gem"
-    File.open 'old_format.gem', 'wb' do |io|
+    File.open "old_format.gem", "wb" do |io|
       io.write SIMPLE_GEM
     end
 
-    package = Gem::Package.new 'old_format.gem'
+    package = Gem::Package.new "old_format.gem"
 
     assert package.spec
   end
@@ -36,17 +36,17 @@ class TestGemPackage < Gem::Package::TarTestCase
   def test_add_checksums
     gem_io = StringIO.new
 
-    spec = Gem::Specification.new 'build', '1'
-    spec.summary = 'build'
-    spec.authors = 'build'
-    spec.files = ['lib/code.rb']
+    spec = Gem::Specification.new "build", "1"
+    spec.summary = "build"
+    spec.authors = "build"
+    spec.files = ["lib/code.rb"]
     spec.date = Time.at 0
-    spec.rubygems_version = Gem::Version.new '0'
+    spec.rubygems_version = Gem::Version.new "0"
 
-    FileUtils.mkdir 'lib'
+    FileUtils.mkdir "lib"
 
-    File.open 'lib/code.rb', 'w' do |io|
-      io.write '# lib/code.rb'
+    File.open "lib/code.rb", "w" do |io|
+      io.write "# lib/code.rb"
     end
 
     package = Gem::Package.new spec.file_name
@@ -69,11 +69,11 @@ class TestGemPackage < Gem::Package::TarTestCase
 
     reader.each_entry do |entry|
       case entry.full_name
-      when 'checksums.yaml.gz' then
+      when "checksums.yaml.gz" then
         Zlib::GzipReader.wrap entry do |io|
           checksums = io.read
         end
-      when 'data.tar.gz' then
+      when "data.tar.gz" then
         tar = entry.read
       end
     end
@@ -88,13 +88,13 @@ class TestGemPackage < Gem::Package::TarTestCase
     metadata_sha512 = OpenSSL::Digest::SHA512.hexdigest s.string
 
     expected = {
-      'SHA512' => {
-        'metadata.gz' => metadata_sha512,
-        'data.tar.gz' => OpenSSL::Digest::SHA512.hexdigest(tar),
+      "SHA512" => {
+        "metadata.gz" => metadata_sha512,
+        "data.tar.gz" => OpenSSL::Digest::SHA512.hexdigest(tar),
       },
-      'SHA256' => {
-        'metadata.gz' => metadata_sha256,
-        'data.tar.gz' => OpenSSL::Digest::SHA256.hexdigest(tar),
+      "SHA256" => {
+        "metadata.gz" => metadata_sha256,
+        "data.tar.gz" => OpenSSL::Digest::SHA256.hexdigest(tar),
       },
     }
 
@@ -105,12 +105,12 @@ class TestGemPackage < Gem::Package::TarTestCase
     epoch = ENV["SOURCE_DATE_EPOCH"]
     ENV["SOURCE_DATE_EPOCH"] = "123456789"
 
-    spec = Gem::Specification.new 'build', '1'
-    spec.summary = 'build'
-    spec.authors = 'build'
-    spec.files = ['lib/code.rb']
+    spec = Gem::Specification.new "build", "1"
+    spec.summary = "build"
+    spec.authors = "build"
+    spec.files = ["lib/code.rb"]
     spec.date = Time.at 0
-    spec.rubygems_version = Gem::Version.new '0'
+    spec.rubygems_version = Gem::Version.new "0"
 
     package = Gem::Package.new spec.file_name
 
@@ -123,11 +123,11 @@ class TestGemPackage < Gem::Package::TarTestCase
     epoch = ENV["SOURCE_DATE_EPOCH"]
     ENV["SOURCE_DATE_EPOCH"] = nil
 
-    spec = Gem::Specification.new 'build', '1'
-    spec.summary = 'build'
-    spec.authors = 'build'
-    spec.files = ['lib/code.rb']
-    spec.rubygems_version = Gem::Version.new '0'
+    spec = Gem::Specification.new "build", "1"
+    spec.summary = "build"
+    spec.authors = "build"
+    spec.files = ["lib/code.rb"]
+    spec.rubygems_version = Gem::Version.new "0"
 
     package = Gem::Package.new spec.file_name
 
@@ -144,17 +144,17 @@ class TestGemPackage < Gem::Package::TarTestCase
     spec = Gem::Specification.new
     spec.files = %w[lib/code.rb lib/empty]
 
-    FileUtils.mkdir_p 'lib/empty'
+    FileUtils.mkdir_p "lib/empty"
 
-    File.open 'lib/code.rb', 'w' do |io|
-      io.write '# lib/code.rb'
+    File.open "lib/code.rb", "w" do |io|
+      io.write "# lib/code.rb"
     end
 
-    File.open 'lib/extra.rb', 'w' do |io|
-      io.write '# lib/extra.rb'
+    File.open "lib/extra.rb", "w" do |io|
+      io.write "# lib/extra.rb"
     end
 
-    package = Gem::Package.new 'bogus.gem'
+    package = Gem::Package.new "bogus.gem"
     package.spec = spec
 
     tar = util_tar do |tar_io|
@@ -178,16 +178,16 @@ class TestGemPackage < Gem::Package::TarTestCase
     spec = Gem::Specification.new
     spec.files = %w[lib/code.rb lib/code_sym.rb lib/code_sym2.rb]
 
-    FileUtils.mkdir_p 'lib'
+    FileUtils.mkdir_p "lib"
 
-    File.open 'lib/code.rb', 'w' do |io|
-      io.write '# lib/code.rb'
+    File.open "lib/code.rb", "w" do |io|
+      io.write "# lib/code.rb"
     end
 
     # NOTE: 'code.rb' is correct, because it's relative to lib/code_sym.rb
     begin
-      File.symlink('code.rb', 'lib/code_sym.rb')
-      File.symlink('../lib/code.rb', 'lib/code_sym2.rb')
+      File.symlink("code.rb", "lib/code_sym.rb")
+      File.symlink("../lib/code.rb", "lib/code_sym2.rb")
     rescue Errno::EACCES => e
       if win_platform?
         pend "symlink - must be admin with no UAC on Windows"
@@ -196,7 +196,7 @@ class TestGemPackage < Gem::Package::TarTestCase
       end
     end
 
-    package = Gem::Package.new 'bogus.gem'
+    package = Gem::Package.new "bogus.gem"
     package.spec = spec
 
     tar = util_tar do |tar_io|
@@ -218,20 +218,20 @@ class TestGemPackage < Gem::Package::TarTestCase
     end
 
     assert_equal %w[lib/code.rb], files
-    assert_equal [{ 'lib/code_sym.rb' => 'code.rb' }, { 'lib/code_sym2.rb' => '../lib/code.rb' }], symlinks
+    assert_equal [{ "lib/code_sym.rb" => "code.rb" }, { "lib/code_sym2.rb" => "../lib/code.rb" }], symlinks
   end
 
   def test_build
-    spec = Gem::Specification.new 'build', '1'
-    spec.summary = 'build'
-    spec.authors = 'build'
-    spec.files = ['lib/code.rb']
+    spec = Gem::Specification.new "build", "1"
+    spec.summary = "build"
+    spec.authors = "build"
+    spec.files = ["lib/code.rb"]
     spec.rubygems_version = :junk
 
-    FileUtils.mkdir 'lib'
+    FileUtils.mkdir "lib"
 
-    File.open 'lib/code.rb', 'w' do |io|
-      io.write '# lib/code.rb'
+    File.open "lib/code.rb", "w" do |io|
+      io.write "# lib/code.rb"
     end
 
     package = Gem::Package.new spec.file_name
@@ -252,25 +252,25 @@ class TestGemPackage < Gem::Package::TarTestCase
   end
 
   def test_build_auto_signed
-    pend 'openssl is missing' unless Gem::HAVE_OPENSSL
+    pend "openssl is missing" unless Gem::HAVE_OPENSSL
 
-    FileUtils.mkdir_p File.join(Gem.user_home, '.gem')
+    FileUtils.mkdir_p File.join(Gem.user_home, ".gem")
 
-    private_key_path = File.join Gem.user_home, '.gem', 'gem-private_key.pem'
+    private_key_path = File.join Gem.user_home, ".gem", "gem-private_key.pem"
     Gem::Security.write PRIVATE_KEY, private_key_path
 
-    public_cert_path = File.join Gem.user_home, '.gem', 'gem-public_cert.pem'
+    public_cert_path = File.join Gem.user_home, ".gem", "gem-public_cert.pem"
     FileUtils.cp PUBLIC_CERT_PATH, public_cert_path
 
-    spec = Gem::Specification.new 'build', '1'
-    spec.summary = 'build'
-    spec.authors = 'build'
-    spec.files = ['lib/code.rb']
+    spec = Gem::Specification.new "build", "1"
+    spec.summary = "build"
+    spec.authors = "build"
+    spec.files = ["lib/code.rb"]
 
-    FileUtils.mkdir 'lib'
+    FileUtils.mkdir "lib"
 
-    File.open 'lib/code.rb', 'w' do |io|
-      io.write '# lib/code.rb'
+    File.open "lib/code.rb", "w" do |io|
+      io.write "# lib/code.rb"
     end
 
     package = Gem::Package.new spec.file_name
@@ -295,25 +295,25 @@ class TestGemPackage < Gem::Package::TarTestCase
   end
 
   def test_build_auto_signed_encrypted_key
-    pend 'openssl is missing' unless Gem::HAVE_OPENSSL
+    pend "openssl is missing" unless Gem::HAVE_OPENSSL
 
-    FileUtils.mkdir_p File.join(Gem.user_home, '.gem')
+    FileUtils.mkdir_p File.join(Gem.user_home, ".gem")
 
-    private_key_path = File.join Gem.user_home, '.gem', 'gem-private_key.pem'
+    private_key_path = File.join Gem.user_home, ".gem", "gem-private_key.pem"
     FileUtils.cp ENCRYPTED_PRIVATE_KEY_PATH, private_key_path
 
-    public_cert_path = File.join Gem.user_home, '.gem', 'gem-public_cert.pem'
+    public_cert_path = File.join Gem.user_home, ".gem", "gem-public_cert.pem"
     Gem::Security.write PUBLIC_CERT, public_cert_path
 
-    spec = Gem::Specification.new 'build', '1'
-    spec.summary = 'build'
-    spec.authors = 'build'
-    spec.files = ['lib/code.rb']
+    spec = Gem::Specification.new "build", "1"
+    spec.summary = "build"
+    spec.authors = "build"
+    spec.files = ["lib/code.rb"]
 
-    FileUtils.mkdir 'lib'
+    FileUtils.mkdir "lib"
 
-    File.open 'lib/code.rb', 'w' do |io|
-      io.write '# lib/code.rb'
+    File.open "lib/code.rb", "w" do |io|
+      io.write "# lib/code.rb"
     end
 
     package = Gem::Package.new spec.file_name
@@ -338,7 +338,7 @@ class TestGemPackage < Gem::Package::TarTestCase
   end
 
   def test_build_invalid
-    spec = Gem::Specification.new 'build', '1'
+    spec = Gem::Specification.new "build", "1"
 
     package = Gem::Package.new spec.file_name
     package.spec = spec
@@ -347,11 +347,11 @@ class TestGemPackage < Gem::Package::TarTestCase
       package.build
     end
 
-    assert_equal 'missing value for attribute summary', e.message
+    assert_equal "missing value for attribute summary", e.message
   end
 
   def test_build_invalid_arguments
-    spec = Gem::Specification.new 'build', '1'
+    spec = Gem::Specification.new "build", "1"
 
     package = Gem::Package.new spec.file_name
     package.spec = spec
@@ -364,19 +364,19 @@ class TestGemPackage < Gem::Package::TarTestCase
   end
 
   def test_build_signed
-    pend 'openssl is missing' unless Gem::HAVE_OPENSSL
+    pend "openssl is missing" unless Gem::HAVE_OPENSSL
 
-    spec = Gem::Specification.new 'build', '1'
-    spec.summary = 'build'
-    spec.authors = 'build'
-    spec.files = ['lib/code.rb']
+    spec = Gem::Specification.new "build", "1"
+    spec.summary = "build"
+    spec.authors = "build"
+    spec.files = ["lib/code.rb"]
     spec.cert_chain = [PUBLIC_CERT.to_pem]
     spec.signing_key = PRIVATE_KEY
 
-    FileUtils.mkdir 'lib'
+    FileUtils.mkdir "lib"
 
-    File.open 'lib/code.rb', 'w' do |io|
-      io.write '# lib/code.rb'
+    File.open "lib/code.rb", "w" do |io|
+      io.write "# lib/code.rb"
     end
 
     package = Gem::Package.new spec.file_name
@@ -401,19 +401,19 @@ class TestGemPackage < Gem::Package::TarTestCase
   end
 
   def test_build_signed_encrypted_key
-    pend 'openssl is missing' unless Gem::HAVE_OPENSSL
+    pend "openssl is missing" unless Gem::HAVE_OPENSSL
 
-    spec = Gem::Specification.new 'build', '1'
-    spec.summary = 'build'
-    spec.authors = 'build'
-    spec.files = ['lib/code.rb']
+    spec = Gem::Specification.new "build", "1"
+    spec.summary = "build"
+    spec.authors = "build"
+    spec.files = ["lib/code.rb"]
     spec.cert_chain = [PUBLIC_CERT.to_pem]
     spec.signing_key = ENCRYPTED_PRIVATE_KEY
 
-    FileUtils.mkdir 'lib'
+    FileUtils.mkdir "lib"
 
-    File.open 'lib/code.rb', 'w' do |io|
-      io.write '# lib/code.rb'
+    File.open "lib/code.rb", "w" do |io|
+      io.write "# lib/code.rb"
     end
 
     package = Gem::Package.new spec.file_name
@@ -441,11 +441,11 @@ class TestGemPackage < Gem::Package::TarTestCase
     data_tgz = util_tar_gz {}
 
     gem = util_tar do |tar|
-      tar.add_file 'data.tar.gz', 0644 do |io|
+      tar.add_file "data.tar.gz", 0644 do |io|
         io.write data_tgz.string
       end
 
-      tar.add_file 'metadata.gz', 0644 do |io|
+      tar.add_file "metadata.gz", 0644 do |io|
         Zlib::GzipWriter.wrap io do |gzio|
           gzio.write @spec.to_yaml
         end
@@ -475,7 +475,7 @@ class TestGemPackage < Gem::Package::TarTestCase
 
     package.extract_files @destination
 
-    extracted = File.join @destination, 'lib/code.rb'
+    extracted = File.join @destination, "lib/code.rb"
     assert_path_exist extracted
 
     mask = 0100666 & (~File.umask)
@@ -488,22 +488,22 @@ class TestGemPackage < Gem::Package::TarTestCase
     data_tgz = util_tar_gz {}
 
     gem = util_tar do |tar|
-      tar.add_file 'data.tar.gz', 0644 do |io|
+      tar.add_file "data.tar.gz", 0644 do |io|
         io.write data_tgz.string
       end
 
-      tar.add_file 'metadata.gz', 0644 do |io|
+      tar.add_file "metadata.gz", 0644 do |io|
         Zlib::GzipWriter.wrap io do |gzio|
           gzio.write @spec.to_yaml
         end
       end
     end
 
-    File.open 'empty.gem', 'wb' do |io|
+    File.open "empty.gem", "wb" do |io|
       io.write gem.string
     end
 
-    package = Gem::Package.new 'empty.gem'
+    package = Gem::Package.new "empty.gem"
 
     package.extract_files @destination
 
@@ -514,8 +514,8 @@ class TestGemPackage < Gem::Package::TarTestCase
     package = Gem::Package.new @gem
 
     tgz_io = util_tar_gz do |tar|
-      tar.add_file '/absolute.rb', 0644 do |io|
-        io.write 'hi'
+      tar.add_file "/absolute.rb", 0644 do |io|
+        io.write "hi"
       end
     end
 
@@ -531,12 +531,12 @@ class TestGemPackage < Gem::Package::TarTestCase
     package = Gem::Package.new @gem
 
     tgz_io = util_tar_gz do |tar|
-      tar.add_file 'relative.rb', 0644 do |io|
-        io.write 'hi'
+      tar.add_file "relative.rb", 0644 do |io|
+        io.write "hi"
       end
 
-      tar.mkdir       'lib', 0755
-      tar.add_symlink 'lib/foo.rb', '../relative.rb', 0644
+      tar.mkdir       "lib", 0755
+      tar.add_symlink "lib/foo.rb", "../relative.rb", 0644
     end
 
     begin
@@ -549,11 +549,11 @@ class TestGemPackage < Gem::Package::TarTestCase
       end
     end
 
-    extracted = File.join @destination, 'lib/foo.rb'
+    extracted = File.join @destination, "lib/foo.rb"
     assert_path_exist extracted
-    assert_equal '../relative.rb',
+    assert_equal "../relative.rb",
                  File.readlink(extracted)
-    assert_equal 'hi',
+    assert_equal "hi",
                  File.read(extracted)
   end
 
@@ -561,17 +561,17 @@ class TestGemPackage < Gem::Package::TarTestCase
     package = Gem::Package.new @gem
 
     tgz_io = util_tar_gz do |tar|
-      tar.mkdir       'lib',               0755
-      tar.add_symlink 'lib/link', '../..', 0644
-      tar.add_file    'lib/link/outside.txt', 0644 do |io|
-        io.write 'hi'
+      tar.mkdir       "lib",               0755
+      tar.add_symlink "lib/link", "../..", 0644
+      tar.add_file    "lib/link/outside.txt", 0644 do |io|
+        io.write "hi"
       end
     end
 
     # Extract into a subdirectory of @destination; if this test fails it writes
     # a file outside destination_subdir, but we want the file to remain inside
     # @destination so it will be cleaned up.
-    destination_subdir = File.join @destination, 'subdir'
+    destination_subdir = File.join @destination, "subdir"
     FileUtils.mkdir_p destination_subdir
 
     expected_exceptions = win_platform? ? [Gem::Package::SymlinkError, Errno::EACCES] : [Gem::Package::SymlinkError]
@@ -595,18 +595,18 @@ class TestGemPackage < Gem::Package::TarTestCase
     # Extract into a subdirectory of @destination; if this test fails it writes
     # a file outside destination_subdir, but we want the file to remain inside
     # @destination so it will be cleaned up.
-    destination_subdir = File.join @destination, 'subdir'
+    destination_subdir = File.join @destination, "subdir"
     FileUtils.mkdir_p destination_subdir
 
-    destination_user_dir = File.join @destination, 'user'
-    destination_user_subdir = File.join destination_user_dir, 'dir'
+    destination_user_dir = File.join @destination, "user"
+    destination_user_subdir = File.join destination_user_dir, "dir"
     FileUtils.mkdir_p destination_user_subdir
 
     pend "TMPDIR seems too long to add it as symlink into tar" if destination_user_dir.size > 90
 
     tgz_io = util_tar_gz do |tar|
-      tar.add_symlink 'link', destination_user_dir, 16877
-      tar.add_symlink 'link/dir', '.', 16877
+      tar.add_symlink "link", destination_user_dir, 16877
+      tar.add_symlink "link/dir", ".", 16877
     end
 
     expected_exceptions = win_platform? ? [Gem::Package::SymlinkError, Errno::EACCES] : [Gem::Package::SymlinkError]
@@ -629,19 +629,19 @@ class TestGemPackage < Gem::Package::TarTestCase
     package = Gem::Package.new @gem
 
     tgz_io = util_tar_gz do |tar|
-      tar.mkdir    'lib',        0755
-      tar.add_file 'lib/foo.rb', 0644 do |io|
-        io.write 'hi'
+      tar.mkdir    "lib",        0755
+      tar.add_file "lib/foo.rb", 0644 do |io|
+        io.write "hi"
       end
-      tar.mkdir    'lib/foo', 0755
+      tar.mkdir    "lib/foo", 0755
     end
 
     package.extract_tar_gz tgz_io, @destination
 
-    extracted = File.join @destination, 'lib/foo.rb'
+    extracted = File.join @destination, "lib/foo.rb"
     assert_path_exist extracted
 
-    extracted = File.join @destination, 'lib/foo'
+    extracted = File.join @destination, "lib/foo"
     assert_path_exist extracted
   end
 
@@ -649,14 +649,14 @@ class TestGemPackage < Gem::Package::TarTestCase
     package = Gem::Package.new @gem
 
     tgz_io = util_tar_gz do |tar|
-      tar.add_file './dot_slash.rb', 0644 do |io|
-        io.write 'hi'
+      tar.add_file "./dot_slash.rb", 0644 do |io|
+        io.write "hi"
       end
     end
 
     package.extract_tar_gz tgz_io, @destination
 
-    extracted = File.join @destination, 'dot_slash.rb'
+    extracted = File.join @destination, "dot_slash.rb"
     assert_path_exist extracted
   end
 
@@ -664,14 +664,14 @@ class TestGemPackage < Gem::Package::TarTestCase
     package = Gem::Package.new @gem
 
     tgz_io = util_tar_gz do |tar|
-      tar.add_file '.dot_file.rb', 0644 do |io|
-        io.write 'hi'
+      tar.add_file ".dot_file.rb", 0644 do |io|
+        io.write "hi"
       end
     end
 
     package.extract_tar_gz tgz_io, @destination
 
-    extracted = File.join @destination, '.dot_file.rb'
+    extracted = File.join @destination, ".dot_file.rb"
     assert_path_exist extracted
   end
 
@@ -680,14 +680,14 @@ class TestGemPackage < Gem::Package::TarTestCase
       package = Gem::Package.new @gem
 
       tgz_io = util_tar_gz do |tar|
-        tar.add_file 'foo/file.rb', 0644 do |io|
-          io.write 'hi'
+        tar.add_file "foo/file.rb", 0644 do |io|
+          io.write "hi"
         end
       end
 
       package.extract_tar_gz tgz_io, @destination.upcase
 
-      extracted = File.join @destination, 'foo/file.rb'
+      extracted = File.join @destination, "foo/file.rb"
       assert_path_exist extracted
     end
   end
@@ -695,20 +695,20 @@ class TestGemPackage < Gem::Package::TarTestCase
   def test_install_location
     package = Gem::Package.new @gem
 
-    file = 'file.rb'.dup
-    file.taint if RUBY_VERSION < '2.7'
+    file = "file.rb".dup
+    file.taint if RUBY_VERSION < "2.7"
 
     destination = package.install_location file, @destination
 
-    assert_equal File.join(@destination, 'file.rb'), destination
-    refute destination.tainted? if RUBY_VERSION < '2.7'
+    assert_equal File.join(@destination, "file.rb"), destination
+    refute destination.tainted? if RUBY_VERSION < "2.7"
   end
 
   def test_install_location_absolute
     package = Gem::Package.new @gem
 
     e = assert_raise Gem::Package::PathError do
-      package.install_location '/absolute.rb', @destination
+      package.install_location "/absolute.rb", @destination
     end
 
     assert_equal("installing into parent path /absolute.rb of " +
@@ -718,36 +718,36 @@ class TestGemPackage < Gem::Package::TarTestCase
   def test_install_location_dots
     package = Gem::Package.new @gem
 
-    file = 'file.rb'
+    file = "file.rb"
 
-    destination = File.join @destination, 'foo', '..', 'bar'
+    destination = File.join @destination, "foo", "..", "bar"
 
-    FileUtils.mkdir_p File.join @destination, 'foo'
+    FileUtils.mkdir_p File.join @destination, "foo"
     FileUtils.mkdir_p File.expand_path destination
 
     destination = package.install_location file, destination
 
     # this test only fails on ruby missing File.realpath
-    assert_equal File.join(@destination, 'bar', 'file.rb'), destination
+    assert_equal File.join(@destination, "bar", "file.rb"), destination
   end
 
   def test_install_location_extra_slash
     package = Gem::Package.new @gem
 
-    file = 'foo//file.rb'.dup
-    file.taint if RUBY_VERSION < '2.7'
+    file = "foo//file.rb".dup
+    file.taint if RUBY_VERSION < "2.7"
 
     destination = package.install_location file, @destination
 
-    assert_equal File.join(@destination, 'foo', 'file.rb'), destination
-    refute destination.tainted? if RUBY_VERSION < '2.7'
+    assert_equal File.join(@destination, "foo", "file.rb"), destination
+    refute destination.tainted? if RUBY_VERSION < "2.7"
   end
 
   def test_install_location_relative
     package = Gem::Package.new @gem
 
     e = assert_raise Gem::Package::PathError do
-      package.install_location '../relative.rb', @destination
+      package.install_location "../relative.rb", @destination
     end
 
     parent = File.expand_path File.join @destination, "../relative.rb"
@@ -773,9 +773,9 @@ class TestGemPackage < Gem::Package::TarTestCase
 
   def test_load_spec
     entry = StringIO.new Gem::Util.gzip @spec.to_yaml
-    def entry.full_name() 'metadata.gz' end
+    def entry.full_name() "metadata.gz" end
 
-    package = Gem::Package.new 'nonexistent.gem'
+    package = Gem::Package.new "nonexistent.gem"
 
     spec = package.load_spec entry
 
@@ -794,8 +794,8 @@ class TestGemPackage < Gem::Package::TarTestCase
 
   def test_verify_checksum_bad
     data_tgz = util_tar_gz do |tar|
-      tar.add_file 'lib/code.rb', 0444 do |io|
-        io.write '# lib/code.rb'
+      tar.add_file "lib/code.rb", 0444 do |io|
+        io.write "# lib/code.rb"
       end
     end
 
@@ -804,45 +804,45 @@ class TestGemPackage < Gem::Package::TarTestCase
     gem = util_tar do |tar|
       metadata_gz = Gem::Util.gzip @spec.to_yaml
 
-      tar.add_file 'metadata.gz', 0444 do |io|
+      tar.add_file "metadata.gz", 0444 do |io|
         io.write metadata_gz
       end
 
-      tar.add_file 'data.tar.gz', 0444 do |io|
+      tar.add_file "data.tar.gz", 0444 do |io|
         io.write data_tgz
       end
 
       bogus_checksums = {
-        'SHA1' => {
-          'data.tar.gz' => 'bogus',
-          'metadata.gz' => 'bogus',
+        "SHA1" => {
+          "data.tar.gz" => "bogus",
+          "metadata.gz" => "bogus",
         },
       }
-      tar.add_file 'checksums.yaml.gz', 0444 do |io|
+      tar.add_file "checksums.yaml.gz", 0444 do |io|
         Zlib::GzipWriter.wrap io do |gz_io|
           gz_io.write Psych.dump bogus_checksums
         end
       end
     end
 
-    File.open 'mismatch.gem', 'wb' do |io|
+    File.open "mismatch.gem", "wb" do |io|
       io.write gem.string
     end
 
-    package = Gem::Package.new 'mismatch.gem'
+    package = Gem::Package.new "mismatch.gem"
 
     e = assert_raise Gem::Package::FormatError do
       package.verify
     end
 
-    assert_equal 'SHA1 checksum mismatch for data.tar.gz in mismatch.gem',
+    assert_equal "SHA1 checksum mismatch for data.tar.gz in mismatch.gem",
                  e.message
   end
 
   def test_verify_checksum_missing
     data_tgz = util_tar_gz do |tar|
-      tar.add_file 'lib/code.rb', 0444 do |io|
-        io.write '# lib/code.rb'
+      tar.add_file "lib/code.rb", 0444 do |io|
+        io.write "# lib/code.rb"
       end
     end
 
@@ -851,7 +851,7 @@ class TestGemPackage < Gem::Package::TarTestCase
     gem = util_tar do |tar|
       metadata_gz = Gem::Util.gzip @spec.to_yaml
 
-      tar.add_file 'metadata.gz', 0444 do |io|
+      tar.add_file "metadata.gz", 0444 do |io|
         io.write metadata_gz
       end
 
@@ -859,37 +859,37 @@ class TestGemPackage < Gem::Package::TarTestCase
       digest << metadata_gz
 
       checksums = {
-        'SHA1' => {
-          'metadata.gz' => digest.hexdigest,
+        "SHA1" => {
+          "metadata.gz" => digest.hexdigest,
         },
       }
 
-      tar.add_file 'checksums.yaml.gz', 0444 do |io|
+      tar.add_file "checksums.yaml.gz", 0444 do |io|
         Zlib::GzipWriter.wrap io do |gz_io|
           gz_io.write Psych.dump checksums
         end
       end
 
-      tar.add_file 'data.tar.gz', 0444 do |io|
+      tar.add_file "data.tar.gz", 0444 do |io|
         io.write data_tgz
       end
     end
 
-    File.open 'data_checksum_missing.gem', 'wb' do |io|
+    File.open "data_checksum_missing.gem", "wb" do |io|
       io.write gem.string
     end
 
-    package = Gem::Package.new 'data_checksum_missing.gem'
+    package = Gem::Package.new "data_checksum_missing.gem"
 
     assert package.verify
   end
 
   def test_verify_corrupt
     pend "jruby strips the null byte and does not think it's corrupt" if Gem.java_platform?
-    tf = Tempfile.open 'corrupt' do |io|
-      data = Gem::Util.gzip 'a' * 10
+    tf = Tempfile.open "corrupt" do |io|
+      data = Gem::Util.gzip "a" * 10
       io.write \
-        tar_file_header('metadata.gz', "\000x", 0644, data.length, Time.now)
+        tar_file_header("metadata.gz", "\000x", 0644, data.length, Time.now)
       io.write data
       io.rewind
 
@@ -907,19 +907,19 @@ class TestGemPackage < Gem::Package::TarTestCase
   end
 
   def test_verify_empty
-    FileUtils.touch 'empty.gem'
+    FileUtils.touch "empty.gem"
 
-    package = Gem::Package.new 'empty.gem'
+    package = Gem::Package.new "empty.gem"
 
     e = assert_raise Gem::Package::FormatError do
       package.verify
     end
 
-    assert_equal 'package metadata is missing in empty.gem', e.message
+    assert_equal "package metadata is missing in empty.gem", e.message
   end
 
   def test_verify_nonexistent
-    package = Gem::Package.new 'nonexistent.gem'
+    package = Gem::Package.new "nonexistent.gem"
 
     e = assert_raise Gem::Package::FormatError do
       package.verify
@@ -930,19 +930,19 @@ class TestGemPackage < Gem::Package::TarTestCase
   end
 
   def test_verify_duplicate_file
-    FileUtils.mkdir_p 'lib'
-    FileUtils.touch 'lib/code.rb'
+    FileUtils.mkdir_p "lib"
+    FileUtils.touch "lib/code.rb"
 
     build = Gem::Package.new @gem
     build.spec = @spec
     build.setup_signer
-    File.open @gem, 'wb' do |gem_io|
+    File.open @gem, "wb" do |gem_io|
       Gem::Package::TarWriter.new gem_io do |gem|
         build.add_metadata gem
         build.add_contents gem
 
-        gem.add_file_simple 'a.sig', 0444, 0
-        gem.add_file_simple 'a.sig', 0444, 0
+        gem.add_file_simple "a.sig", 0444, 0
+        gem.add_file_simple "a.sig", 0444, 0
       end
     end
 
@@ -956,7 +956,7 @@ class TestGemPackage < Gem::Package::TarTestCase
   end
 
   def test_verify_security_policy
-    pend 'openssl is missing' unless Gem::HAVE_OPENSSL
+    pend "openssl is missing" unless Gem::HAVE_OPENSSL
 
     package = Gem::Package.new @gem
     package.security_policy = Gem::Security::HighSecurity
@@ -965,21 +965,21 @@ class TestGemPackage < Gem::Package::TarTestCase
       package.verify
     end
 
-    assert_equal 'unsigned gems are not allowed by the High Security policy',
+    assert_equal "unsigned gems are not allowed by the High Security policy",
                  e.message
 
-    refute package.instance_variable_get(:@spec), '@spec must not be loaded'
-    assert_empty package.instance_variable_get(:@files), '@files must empty'
+    refute package.instance_variable_get(:@spec), "@spec must not be loaded"
+    assert_empty package.instance_variable_get(:@files), "@files must empty"
   end
 
   def test_verify_security_policy_low_security
-    pend 'openssl is missing' unless Gem::HAVE_OPENSSL
+    pend "openssl is missing" unless Gem::HAVE_OPENSSL
 
     @spec.cert_chain = [PUBLIC_CERT.to_pem]
     @spec.signing_key = PRIVATE_KEY
 
-    FileUtils.mkdir_p 'lib'
-    FileUtils.touch 'lib/code.rb'
+    FileUtils.mkdir_p "lib"
+    FileUtils.touch "lib/code.rb"
 
     build = Gem::Package.new @gem
     build.spec = @spec
@@ -993,7 +993,7 @@ class TestGemPackage < Gem::Package::TarTestCase
   end
 
   def test_verify_security_policy_checksum_missing
-    pend 'openssl is missing' unless Gem::HAVE_OPENSSL
+    pend "openssl is missing" unless Gem::HAVE_OPENSSL
 
     @spec.cert_chain = [PUBLIC_CERT.to_pem]
     @spec.signing_key = PRIVATE_KEY
@@ -1002,23 +1002,23 @@ class TestGemPackage < Gem::Package::TarTestCase
     build.spec = @spec
     build.setup_signer
 
-    FileUtils.mkdir 'lib'
-    FileUtils.touch 'lib/code.rb'
+    FileUtils.mkdir "lib"
+    FileUtils.touch "lib/code.rb"
 
-    File.open @gem, 'wb' do |gem_io|
+    File.open @gem, "wb" do |gem_io|
       Gem::Package::TarWriter.new gem_io do |gem|
         build.add_metadata gem
         build.add_contents gem
 
         # write bogus data.tar.gz to foil signature
-        bogus_data = Gem::Util.gzip 'hello'
+        bogus_data = Gem::Util.gzip "hello"
         fake_signer = Class.new do
-          def digest_name; 'SHA512'; end
+          def digest_name; "SHA512"; end
           def digest_algorithm; OpenSSL::Digest(:SHA512).new; end
-          def key; 'key'; end
-          def sign(*); 'fake_sig'; end
+          def key; "key"; end
+          def sign(*); "fake_sig"; end
         end
-        gem.add_file_signed 'data2.tar.gz', 0444, fake_signer.new do |io|
+        gem.add_file_signed "data2.tar.gz", 0444, fake_signer.new do |io|
           io.write bogus_data
         end
 
@@ -1035,24 +1035,24 @@ class TestGemPackage < Gem::Package::TarTestCase
       package.verify
     end
 
-    assert_equal 'invalid signature', e.message
+    assert_equal "invalid signature", e.message
 
-    refute package.instance_variable_get(:@spec), '@spec must not be loaded'
-    assert_empty package.instance_variable_get(:@files), '@files must empty'
+    refute package.instance_variable_get(:@spec), "@spec must not be loaded"
+    assert_empty package.instance_variable_get(:@files), "@files must empty"
   end
 
   def test_verify_truncate
-    File.open 'bad.gem', 'wb' do |io|
+    File.open "bad.gem", "wb" do |io|
       io.write File.read(@gem, 1024) # don't care about newlines
     end
 
-    package = Gem::Package.new 'bad.gem'
+    package = Gem::Package.new "bad.gem"
 
     e = assert_raise Gem::Package::FormatError do
       package.verify
     end
 
-    assert_equal 'package content (data.tar.gz) is missing in bad.gem',
+    assert_equal "package content (data.tar.gz) is missing in bad.gem",
                  e.message
   end
 
@@ -1060,7 +1060,7 @@ class TestGemPackage < Gem::Package::TarTestCase
 
   def test_verify_entry
     entry = Object.new
-    def entry.full_name() raise ArgumentError, 'whatever' end
+    def entry.full_name() raise ArgumentError, "whatever" end
 
     package = Gem::Package.new @gem
 

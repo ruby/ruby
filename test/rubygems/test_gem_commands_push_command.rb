@@ -1,6 +1,6 @@
 # frozen_string_literal: true
-require_relative 'helper'
-require 'rubygems/commands/push_command'
+require_relative "helper"
+require "rubygems/commands/push_command"
 
 class TestGemCommandsPushCommand < Gem::TestCase
   def setup
@@ -12,7 +12,7 @@ class TestGemCommandsPushCommand < Gem::TestCase
     Gem.host = Gem::DEFAULT_HOST
     Gem.configuration.disable_default_gem_server = false
 
-    @gems_dir  = File.join @tempdir, 'gems'
+    @gems_dir  = File.join @tempdir, "gems"
     @cache_dir = File.join @gemhome, "cache"
 
     FileUtils.mkdir @gems_dir
@@ -21,7 +21,7 @@ class TestGemCommandsPushCommand < Gem::TestCase
       "ed244fbf2b1a52e012da8616c512fa47f9aa5250"
 
     @spec, @path = util_gem "freewill", "1.0.0"
-    @host = 'https://rubygems.example'
+    @host = "https://rubygems.example"
     @api_key = Gem.configuration.rubygems_api_key
 
     @fetcher = Gem::FakeFetcher.new
@@ -68,7 +68,7 @@ class TestGemCommandsPushCommand < Gem::TestCase
 
   def test_execute
     @response = "Successfully registered gem: freewill (1.0.0)"
-    @fetcher.data["#{Gem.host}/api/v1/gems"] = [@response, 200, 'OK']
+    @fetcher.data["#{Gem.host}/api/v1/gems"] = [@response, 200, "OK"]
 
     @cmd.options[:args] = [@path]
 
@@ -81,12 +81,12 @@ class TestGemCommandsPushCommand < Gem::TestCase
   end
 
   def test_execute_host
-    host = 'https://other.example'
+    host = "https://other.example"
 
     @response = "Successfully registered gem: freewill (1.0.0)"
-    @fetcher.data["#{host}/api/v1/gems"] = [@response, 200, 'OK']
+    @fetcher.data["#{host}/api/v1/gems"] = [@response, 200, "OK"]
     @fetcher.data["#{Gem.host}/api/v1/gems"] =
-      ['fail', 500, 'Internal Server Error']
+      ["fail", 500, "Internal Server Error"]
 
     @cmd.options[:host] = host
     @cmd.options[:args] = [@path]
@@ -101,13 +101,13 @@ class TestGemCommandsPushCommand < Gem::TestCase
 
   def test_execute_allowed_push_host
     @spec, @path = util_gem "freebird", "1.0.1" do |spec|
-      spec.metadata['allowed_push_host'] = "https://privategemserver.example"
+      spec.metadata["allowed_push_host"] = "https://privategemserver.example"
     end
 
     @response = "Successfully registered gem: freewill (1.0.0)"
-    @fetcher.data["#{@spec.metadata['allowed_push_host']}/api/v1/gems"] = [@response, 200, 'OK']
+    @fetcher.data["#{@spec.metadata['allowed_push_host']}/api/v1/gems"] = [@response, 200, "OK"]
     @fetcher.data["#{Gem.host}/api/v1/gems"] =
-      ['fail', 500, 'Internal Server Error']
+      ["fail", 500, "Internal Server Error"]
 
     @cmd.options[:args] = [@path]
 
@@ -136,7 +136,7 @@ class TestGemCommandsPushCommand < Gem::TestCase
     ENV["RUBYGEMS_HOST"] = @host
     Gem.configuration.disable_default_gem_server = true
     @response = "Successfully registered gem: freewill (1.0.0)"
-    @fetcher.data["#{@host}/api/v1/gems"] = [@response, 200, 'OK']
+    @fetcher.data["#{@host}/api/v1/gems"] = [@response, 200, "OK"]
 
     send_battery
   end
@@ -145,17 +145,17 @@ class TestGemCommandsPushCommand < Gem::TestCase
     @host = "http://privategemserver.example"
 
     @spec, @path = util_gem "freebird", "1.0.1" do |spec|
-      spec.metadata['default_gem_server'] = @host
+      spec.metadata["default_gem_server"] = @host
     end
 
     @api_key = "EYKEY"
 
     keys = {
-      :rubygems_api_key => 'KEY',
+      :rubygems_api_key => "KEY",
       @host => @api_key,
     }
 
-    File.open Gem.configuration.credentials_path, 'w' do |f|
+    File.open Gem.configuration.credentials_path, "w" do |f|
       f.write keys.to_yaml
     end
     Gem.configuration.load_api_keys
@@ -163,14 +163,14 @@ class TestGemCommandsPushCommand < Gem::TestCase
     FileUtils.rm Gem.configuration.credentials_path
 
     @response = "Successfully registered gem: freebird (1.0.1)"
-    @fetcher.data["#{@host}/api/v1/gems"] = [@response, 200, 'OK']
+    @fetcher.data["#{@host}/api/v1/gems"] = [@response, 200, "OK"]
 
     send_battery
   end
 
   def test_sending_gem
     @response = "Successfully registered gem: freewill (1.0.0)"
-    @fetcher.data["#{@host}/api/v1/gems"] = [@response, 200, 'OK']
+    @fetcher.data["#{@host}/api/v1/gems"] = [@response, 200, "OK"]
 
     send_battery
   end
@@ -179,17 +179,17 @@ class TestGemCommandsPushCommand < Gem::TestCase
     @host = "http://privategemserver.example"
 
     @spec, @path = util_gem "freebird", "1.0.1" do |spec|
-      spec.metadata['allowed_push_host'] = @host
+      spec.metadata["allowed_push_host"] = @host
     end
 
     @api_key = "PRIVKEY"
 
     keys = {
-      :rubygems_api_key => 'KEY',
+      :rubygems_api_key => "KEY",
       @host => @api_key,
     }
 
-    File.open Gem.configuration.credentials_path, 'w' do |f|
+    File.open Gem.configuration.credentials_path, "w" do |f|
       f.write keys.to_yaml
     end
     Gem.configuration.load_api_keys
@@ -197,7 +197,7 @@ class TestGemCommandsPushCommand < Gem::TestCase
     FileUtils.rm Gem.configuration.credentials_path
 
     @response = "Successfully registered gem: freebird (1.0.1)"
-    @fetcher.data["#{@host}/api/v1/gems"] = [@response, 200, 'OK']
+    @fetcher.data["#{@host}/api/v1/gems"] = [@response, 200, "OK"]
     send_battery
   end
 
@@ -205,14 +205,14 @@ class TestGemCommandsPushCommand < Gem::TestCase
     @host = "http://privategemserver.example"
 
     @spec, @path = util_gem "freebird", "1.0.1" do |spec|
-      spec.metadata['allowed_push_host'] = @host
+      spec.metadata["allowed_push_host"] = @host
     end
 
     @api_key = "PRIVKEY"
     ENV["GEM_HOST_API_KEY"] = "PRIVKEY"
 
     @response = "Successfully registered gem: freebird (1.0.1)"
-    @fetcher.data["#{@host}/api/v1/gems"] = [@response, 200, 'OK']
+    @fetcher.data["#{@host}/api/v1/gems"] = [@response, 200, "OK"]
     send_battery
   end
 
@@ -221,7 +221,7 @@ class TestGemCommandsPushCommand < Gem::TestCase
     @host           = "http://user:password@privategemserver.example"
 
     @spec, @path = util_gem "freebird", "1.0.1" do |spec|
-      spec.metadata['allowed_push_host'] = @sanitized_host
+      spec.metadata["allowed_push_host"] = @sanitized_host
     end
 
     @api_key = "DOESNTMATTER"
@@ -230,7 +230,7 @@ class TestGemCommandsPushCommand < Gem::TestCase
       :rubygems_api_key => @api_key,
     }
 
-    File.open Gem.configuration.credentials_path, 'w' do |f|
+    File.open Gem.configuration.credentials_path, "w" do |f|
       f.write keys.to_yaml
     end
     Gem.configuration.load_api_keys
@@ -238,13 +238,13 @@ class TestGemCommandsPushCommand < Gem::TestCase
     FileUtils.rm Gem.configuration.credentials_path
 
     @response = "Successfully registered gem: freebird (1.0.1)"
-    @fetcher.data["#{@host}/api/v1/gems"] = [@response, 200, 'OK']
+    @fetcher.data["#{@host}/api/v1/gems"] = [@response, 200, "OK"]
     send_battery
   end
 
   def test_sending_gem_to_disallowed_default_host
     @spec, @path = util_gem "freebird", "1.0.1" do |spec|
-      spec.metadata['allowed_push_host'] = "https://privategemserver.example"
+      spec.metadata["allowed_push_host"] = "https://privategemserver.example"
     end
 
     response = %(ERROR:  "#{@host}" is not allowed by the gemspec, which only allows "https://privategemserver.example")
@@ -261,17 +261,17 @@ class TestGemCommandsPushCommand < Gem::TestCase
     push_host = "https://privategemserver.example"
 
     @spec, @path = util_gem "freebird", "1.0.1" do |spec|
-      spec.metadata['allowed_push_host'] = push_host
+      spec.metadata["allowed_push_host"] = push_host
     end
 
     @api_key = "PRIVKEY"
 
     keys = {
-      :rubygems_api_key => 'KEY',
+      :rubygems_api_key => "KEY",
       @host => @api_key,
     }
 
-    File.open Gem.configuration.credentials_path, 'w' do |f|
+    File.open Gem.configuration.credentials_path, "w" do |f|
       f.write keys.to_yaml
     end
     Gem.configuration.load_api_keys
@@ -291,8 +291,8 @@ class TestGemCommandsPushCommand < Gem::TestCase
     host = "http://privategemserver.example"
 
     @spec, @path = util_gem "freebird", "1.0.1" do |spec|
-      spec.metadata.delete('default_gem_server')
-      spec.metadata['allowed_push_host'] = host
+      spec.metadata.delete("default_gem_server")
+      spec.metadata["allowed_push_host"] = host
     end
 
     api_key = "PRIVKEY"
@@ -301,7 +301,7 @@ class TestGemCommandsPushCommand < Gem::TestCase
       host => api_key,
     }
 
-    File.open Gem.configuration.credentials_path, 'w' do |f|
+    File.open Gem.configuration.credentials_path, "w" do |f|
       f.write keys.to_yaml
     end
     Gem.configuration.load_api_keys
@@ -309,7 +309,7 @@ class TestGemCommandsPushCommand < Gem::TestCase
     FileUtils.rm Gem.configuration.credentials_path
 
     @response = "Successfully registered gem: freebird (1.0.1)"
-    @fetcher.data["#{host}/api/v1/gems"] = [@response, 200, 'OK']
+    @fetcher.data["#{host}/api/v1/gems"] = [@response, 200, "OK"]
 
     # do not set @host
     use_ui(@ui) { @cmd.send_gem(@path) }
@@ -334,7 +334,7 @@ class TestGemCommandsPushCommand < Gem::TestCase
 
   def test_sending_gem_denied
     response = "You don't have permission to push to this gem"
-    @fetcher.data["#{@host}/api/v1/gems"] = [response, 403, 'Forbidden']
+    @fetcher.data["#{@host}/api/v1/gems"] = [response, 403, "Forbidden"]
     @cmd.instance_variable_set :@host, @host
 
     assert_raise Gem::MockGemUi::TermError do
@@ -349,8 +349,8 @@ class TestGemCommandsPushCommand < Gem::TestCase
   def test_sending_gem_key
     @response = "Successfully registered gem: freewill (1.0.0)"
     @fetcher.data["#{@host}/api/v1/gems"] = [@response, 200, "OK"]
-    File.open Gem.configuration.credentials_path, 'a' do |f|
-      f.write ':other: 701229f217cdf23b1344c7b4b54ca97'
+    File.open Gem.configuration.credentials_path, "a" do |f|
+      f.write ":other: 701229f217cdf23b1344c7b4b54ca97"
     end
     Gem.configuration.load_api_keys
 
@@ -364,11 +364,11 @@ class TestGemCommandsPushCommand < Gem::TestCase
 
   def test_otp_verified_success
     response_fail = "You have enabled multifactor authentication but your request doesn't have the correct OTP code. Please check it and retry."
-    response_success = 'Successfully registered gem: freewill (1.0.0)'
+    response_success = "Successfully registered gem: freewill (1.0.0)"
 
     @fetcher.data["#{Gem.host}/api/v1/gems"] = [
-      [response_fail, 401, 'Unauthorized'],
-      [response_success, 200, 'OK'],
+      [response_fail, 401, "Unauthorized"],
+      [response_success, 200, "OK"],
     ]
 
     @otp_ui = Gem::MockGemUi.new "111111\n"
@@ -376,15 +376,15 @@ class TestGemCommandsPushCommand < Gem::TestCase
       @cmd.send_gem(@path)
     end
 
-    assert_match 'You have enabled multi-factor authentication. Please enter OTP code.', @otp_ui.output
-    assert_match 'Code: ', @otp_ui.output
+    assert_match "You have enabled multi-factor authentication. Please enter OTP code.", @otp_ui.output
+    assert_match "Code: ", @otp_ui.output
     assert_match response_success, @otp_ui.output
-    assert_equal '111111', @fetcher.last_request['OTP']
+    assert_equal "111111", @fetcher.last_request["OTP"]
   end
 
   def test_otp_verified_failure
     response = "You have enabled multifactor authentication but your request doesn't have the correct OTP code. Please check it and retry."
-    @fetcher.data["#{Gem.host}/api/v1/gems"] = [response, 401, 'Unauthorized']
+    @fetcher.data["#{Gem.host}/api/v1/gems"] = [response, 401, "Unauthorized"]
 
     @otp_ui = Gem::MockGemUi.new "111111\n"
     assert_raise Gem::MockGemUi::TermError do
@@ -394,19 +394,19 @@ class TestGemCommandsPushCommand < Gem::TestCase
     end
 
     assert_match response, @otp_ui.output
-    assert_match 'You have enabled multi-factor authentication. Please enter OTP code.', @otp_ui.output
-    assert_match 'Code: ', @otp_ui.output
-    assert_equal '111111', @fetcher.last_request['OTP']
+    assert_match "You have enabled multi-factor authentication. Please enter OTP code.", @otp_ui.output
+    assert_match "Code: ", @otp_ui.output
+    assert_equal "111111", @fetcher.last_request["OTP"]
   end
 
   def test_sending_gem_unathorized_api_key_with_mfa_enabled
     response_mfa_enabled = "You have enabled multifactor authentication but your request doesn't have the correct OTP code. Please check it and retry."
     response_forbidden = "The API key doesn't have access"
-    response_success   = 'Successfully registered gem: freewill (1.0.0)'
+    response_success   = "Successfully registered gem: freewill (1.0.0)"
 
     @fetcher.data["#{@host}/api/v1/gems"] = [
-      [response_mfa_enabled, 401, 'Unauthorized'],
-      [response_forbidden, 403, 'Forbidden'],
+      [response_mfa_enabled, 401, "Unauthorized"],
+      [response_forbidden, 403, "Forbidden"],
       [response_success, 200, "OK"],
     ]
 
@@ -427,14 +427,14 @@ class TestGemCommandsPushCommand < Gem::TestCase
     assert_match "Password:", @ui.output
     assert_match "Added push_rubygem scope to the existing API key", @ui.output
     assert_match response_success, @ui.output
-    assert_equal '11111', @fetcher.last_request['OTP']
+    assert_equal "11111", @fetcher.last_request["OTP"]
   end
 
   def test_sending_gem_with_no_local_creds
     Gem.configuration.rubygems_api_key = nil
 
     response_mfa_enabled = "You have enabled multifactor authentication but your request doesn't have the correct OTP code. Please check it and retry."
-    response_success     = 'Successfully registered gem: freewill (1.0.0)'
+    response_success     = "Successfully registered gem: freewill (1.0.0)"
     response_profile     = "mfa: disabled\n"
 
     @fetcher.data["#{@host}/api/v1/gems"] = [
@@ -442,7 +442,7 @@ class TestGemCommandsPushCommand < Gem::TestCase
     ]
 
     @fetcher.data["#{@host}/api/v1/api_key"] = [
-      [response_mfa_enabled, 401, 'Unauthorized'],
+      [response_mfa_enabled, 401, "Unauthorized"],
       ["", 200, "OK"],
     ]
 
@@ -466,7 +466,7 @@ class TestGemCommandsPushCommand < Gem::TestCase
     assert_match "Password:", @ui.output
     assert_match "Signed in with API key:", @ui.output
     assert_match response_success, @ui.output
-    assert_equal '11111', @fetcher.last_request['OTP']
+    assert_equal "11111", @fetcher.last_request["OTP"]
   end
 
   private

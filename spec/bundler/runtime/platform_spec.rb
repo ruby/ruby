@@ -408,6 +408,7 @@ RSpec.describe "Bundler.setup with multi platform stuff" do
         gem "requires_platform_specific"
       G
 
+      expect(out).to include("lockfile does not have all gems needed for the current platform")
       expect(the_bundle).to include_gem "platform_specific 1.0 x64-mingw32"
     end
   end

@@ -1,13 +1,13 @@
 # frozen_string_literal: true
-require_relative '../command'
-require_relative '../command_manager'
-require_relative '../dependency_installer'
-require_relative '../install_update_options'
-require_relative '../local_remote_options'
-require_relative '../spec_fetcher'
-require_relative '../version_option'
-require_relative '../install_message' # must come before rdoc for messaging
-require_relative '../rdoc'
+require_relative "../command"
+require_relative "../command_manager"
+require_relative "../dependency_installer"
+require_relative "../install_update_options"
+require_relative "../local_remote_options"
+require_relative "../spec_fetcher"
+require_relative "../version_option"
+require_relative "../install_message" # must come before rdoc for messaging
+require_relative "../rdoc"
 
 class Gem::Commands::UpdateCommand < Gem::Command
   include Gem::InstallUpdateOptions
@@ -25,7 +25,7 @@ class Gem::Commands::UpdateCommand < Gem::Command
 
     options.merge!(install_update_options)
 
-    super 'update', 'Update installed gems to the latest version', options
+    super "update", "Update installed gems to the latest version", options
 
     add_install_update_options
 
@@ -35,8 +35,8 @@ class Gem::Commands::UpdateCommand < Gem::Command
       value
     end
 
-    add_option('--system [VERSION]', Gem::Version,
-               'Update the RubyGems system software') do |value, options|
+    add_option("--system [VERSION]", Gem::Version,
+               "Update the RubyGems system software") do |value, options|
       value = true unless value
 
       options[:system] = value
@@ -166,13 +166,8 @@ command to remove old versions.
   def highest_remote_name_tuple(spec) # :nodoc:
     spec_tuples = fetch_remote_gems spec
 
-    matching_gems = spec_tuples.select do |g,_|
-      g.name == spec.name and g.match_platform?
-    end
-
-    highest_remote_gem = matching_gems.max
-
-    highest_remote_gem ||= [Gem::NameTuple.null]
+    highest_remote_gem = spec_tuples.max
+    return unless highest_remote_gem
 
     highest_remote_gem.first
   end
@@ -181,13 +176,13 @@ command to remove old versions.
     args = update_rubygems_arguments
     version = spec.version
 
-    update_dir = File.join spec.base_dir, 'gems', "rubygems-update-#{version}"
+    update_dir = File.join spec.base_dir, "gems", "rubygems-update-#{version}"
 
     Dir.chdir update_dir do
       say "Installing RubyGems #{version}" unless options[:silent]
 
       installed = preparing_gem_layout_for(version) do
-        system Gem.ruby, '--disable-gems', 'setup.rb', *args
+        system Gem.ruby, "--disable-gems", "setup.rb", *args
       end
 
       say "RubyGems system software updated" if installed unless options[:silent]
@@ -218,30 +213,22 @@ command to remove old versions.
     version = options[:system]
     update_latest = version == true
 
-    if update_latest
-      version     = Gem::Version.new     Gem::VERSION
-      requirement = Gem::Requirement.new ">= #{Gem::VERSION}"
-    else
+    unless update_latest
       version     = Gem::Version.new     version
       requirement = Gem::Requirement.new version
+
+      return version, requirement
     end
+
+    version     = Gem::Version.new     Gem::VERSION
+    requirement = Gem::Requirement.new ">= #{Gem::VERSION}"
 
     rubygems_update         = Gem::Specification.new
-    rubygems_update.name    = 'rubygems-update'
+    rubygems_update.name    = "rubygems-update"
     rubygems_update.version = version
 
-    hig = {
-      'rubygems-update' => rubygems_update,
-    }
-
-    gems_to_update = which_to_update hig, options[:args], :system
-    up_ver = gems_to_update.first.version
-
-    target = if update_latest
-      up_ver
-    else
-      version
-    end
+    highest_remote_tup = highest_remote_name_tuple(rubygems_update)
+    target = highest_remote_tup ? highest_remote_tup.version : version
 
     return target, requirement
   end
@@ -291,8 +278,8 @@ command to remove old versions.
 
     check_oldest_rubygems version
 
-    installed_gems = Gem::Specification.find_all_by_name 'rubygems-update', requirement
-    installed_gems = update_gem('rubygems-update', version) if installed_gems.empty? || installed_gems.first.version != version
+    installed_gems = Gem::Specification.find_all_by_name "rubygems-update", requirement
+    installed_gems = update_gem("rubygems-update", version) if installed_gems.empty? || installed_gems.first.version != version
     return if installed_gems.empty?
 
     install_rubygems installed_gems.first
@@ -300,17 +287,17 @@ command to remove old versions.
 
   def update_rubygems_arguments # :nodoc:
     args = []
-    args << '--silent' if options[:silent]
-    args << '--prefix' << Gem.prefix if Gem.prefix
-    args << '--no-document' unless options[:document].include?('rdoc') || options[:document].include?('ri')
-    args << '--no-format-executable' if options[:no_format_executable]
-    args << '--previous-version' << Gem::VERSION if
+    args << "--silent" if options[:silent]
+    args << "--prefix" << Gem.prefix if Gem.prefix
+    args << "--no-document" unless options[:document].include?("rdoc") || options[:document].include?("ri")
+    args << "--no-format-executable" if options[:no_format_executable]
+    args << "--previous-version" << Gem::VERSION if
       options[:system] == true or
         Gem::Version.new(options[:system]) >= Gem::Version.new(2)
     args
   end
 
-  def which_to_update(highest_installed_gems, gem_names, system = false)
+  def which_to_update(highest_installed_gems, gem_names)
     result = []
 
     highest_installed_gems.each do |l_name, l_spec|
@@ -318,12 +305,9 @@ command to remove old versions.
               gem_names.none? {|name| name == l_spec.name }
 
       highest_remote_tup = highest_remote_name_tuple l_spec
-      highest_remote_ver = highest_remote_tup.version
-      highest_installed_ver = l_spec.version
+      next unless highest_remote_tup
 
-      if system or (highest_installed_ver < highest_remote_ver)
-        result << Gem::NameTuple.new(l_spec.name, [highest_installed_ver, highest_remote_ver].max, highest_remote_tup.platform)
-      end
+      result << highest_remote_tup
     end
 
     result

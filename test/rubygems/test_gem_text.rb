@@ -1,5 +1,5 @@
 # frozen_string_literal: true
-require_relative 'helper'
+require_relative "helper"
 require "rubygems/text"
 
 class TestGemText < Gem::TestCase

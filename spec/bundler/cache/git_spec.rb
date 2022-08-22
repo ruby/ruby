@@ -15,7 +15,7 @@ end
 RSpec.describe "bundle cache with git" do
   it "copies repository to vendor cache and uses it" do
     git = build_git "foo"
-    ref = git.ref_for("master", 11)
+    ref = git.ref_for("main", 11)
 
     install_gemfile <<-G
       source "#{file_uri_for(gem_repo1)}"
@@ -34,7 +34,7 @@ RSpec.describe "bundle cache with git" do
 
   it "copies repository to vendor cache and uses it even when configured with `path`" do
     git = build_git "foo"
-    ref = git.ref_for("master", 11)
+    ref = git.ref_for("main", 11)
 
     install_gemfile <<-G
       source "#{file_uri_for(gem_repo1)}"
@@ -72,7 +72,7 @@ RSpec.describe "bundle cache with git" do
 
   it "tracks updates" do
     git = build_git "foo"
-    old_ref = git.ref_for("master", 11)
+    old_ref = git.ref_for("main", 11)
 
     install_gemfile <<-G
       source "#{file_uri_for(gem_repo1)}"
@@ -86,7 +86,7 @@ RSpec.describe "bundle cache with git" do
       s.write "lib/foo.rb", "puts :CACHE"
     end
 
-    ref = git.ref_for("master", 11)
+    ref = git.ref_for("main", 11)
     expect(ref).not_to eq(old_ref)
 
     bundle "update", :all => true
@@ -103,7 +103,7 @@ RSpec.describe "bundle cache with git" do
 
   it "tracks updates when specifying the gem" do
     git = build_git "foo"
-    old_ref = git.ref_for("master", 11)
+    old_ref = git.ref_for("main", 11)
 
     install_gemfile <<-G
       source "#{file_uri_for(gem_repo1)}"
@@ -117,7 +117,7 @@ RSpec.describe "bundle cache with git" do
       s.write "lib/foo.rb", "puts :CACHE"
     end
 
-    ref = git.ref_for("master", 11)
+    ref = git.ref_for("main", 11)
     expect(ref).not_to eq(old_ref)
 
     bundle "update foo"
@@ -132,11 +132,11 @@ RSpec.describe "bundle cache with git" do
 
   it "uses the local repository to generate the cache" do
     git = build_git "foo"
-    ref = git.ref_for("master", 11)
+    ref = git.ref_for("main", 11)
 
     gemfile <<-G
       source "#{file_uri_for(gem_repo1)}"
-      gem "foo", :git => '#{lib_path("foo-invalid")}', :branch => :master
+      gem "foo", :git => '#{lib_path("foo-invalid")}', :branch => :main
     G
 
     bundle %(config set local.foo #{lib_path("foo-1.0")})
@@ -172,7 +172,7 @@ RSpec.describe "bundle cache with git" do
       end
     G
 
-    ref = git.ref_for("master", 11)
+    ref = git.ref_for("main", 11)
     bundle "config set cache_all true"
     bundle :cache
 
@@ -196,7 +196,7 @@ RSpec.describe "bundle cache with git" do
     bundle "config set cache_all true"
     bundle :cache
 
-    ref = git.ref_for("master", 11)
+    ref = git.ref_for("main", 11)
     gemspec = bundled_app("vendor/cache/foo-1.0-#{ref}/foo.gemspec").read
     expect(gemspec).to_not match("`echo bob`")
   end

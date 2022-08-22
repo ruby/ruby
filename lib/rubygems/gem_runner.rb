@@ -5,9 +5,9 @@
 # See LICENSE.txt for permissions.
 #++
 
-require_relative '../rubygems'
-require_relative 'command_manager'
-require_relative 'deprecate'
+require_relative "../rubygems"
+require_relative "command_manager"
+require_relative "deprecate"
 
 ##
 # Run an instance of the gem program.
@@ -41,7 +41,7 @@ class Gem::GemRunner
       config_args = Gem.configuration[command_name]
       config_args = case config_args
       when String
-        config_args.split ' '
+        config_args.split " "
       else
         Array(config_args)
       end
@@ -56,7 +56,7 @@ class Gem::GemRunner
   # other arguments in the list.
 
   def extract_build_args(args) # :nodoc:
-    return [] unless offset = args.index('--')
+    return [] unless offset = args.index("--")
 
     build_args = args.slice!(offset...args.length)
 

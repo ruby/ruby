@@ -57,7 +57,7 @@ RSpec.describe "bundle update" do
       expect(the_bundle).to include_gems "foo 1.1"
     end
 
-    it "floats on master when updating all gems that are pinned to the source even if you have child dependencies" do
+    it "floats on main when updating all gems that are pinned to the source even if you have child dependencies" do
       build_git "foo", :path => lib_path("foo")
       build_gem "bar", :to_bundle => true do |s|
         s.add_dependency "foo"
@@ -103,7 +103,7 @@ RSpec.describe "bundle update" do
       build_git "foo"
       @remote = build_git("bar", :bare => true)
       update_git "foo", :remote => file_uri_for(@remote.path)
-      update_git "foo", :push => "master"
+      update_git "foo", :push => "main"
 
       install_gemfile <<-G
         source "#{file_uri_for(gem_repo1)}"
@@ -211,7 +211,7 @@ RSpec.describe "bundle update" do
 
       install_gemfile <<-G
         source "#{file_uri_for(gem_repo1)}"
-        gem "rack", :git => "#{file_uri_for(lib_path("rack-0.8"))}", :branch => "master"
+        gem "rack", :git => "#{file_uri_for(lib_path("rack-0.8"))}", :branch => "main"
       G
 
       bundle %(config set local.rack #{lib_path("local-rack")})
@@ -230,7 +230,7 @@ RSpec.describe "bundle update" do
       update_git "rails", "3.0", :path => lib_path("rails"), :gemspec => true
 
       bundle "update", :all => true
-      expect(out).to include("Using rails 3.0 (was 2.3.2) from #{file_uri_for(lib_path("rails"))} (at master@#{revision_for(lib_path("rails"))[0..6]})")
+      expect(out).to include("Using rails 3.0 (was 2.3.2) from #{file_uri_for(lib_path("rails"))} (at main@#{revision_for(lib_path("rails"))[0..6]})")
     end
   end
 
@@ -301,7 +301,7 @@ RSpec.describe "bundle update" do
         s.write "foo.gemspec", spec_lines.join("\n")
       end
 
-      ref = @git.ref_for "master"
+      ref = @git.ref_for "main"
 
       bundle "update --source bar"
 

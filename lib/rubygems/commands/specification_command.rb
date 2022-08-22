@@ -1,8 +1,8 @@
 # frozen_string_literal: true
-require_relative '../command'
-require_relative '../local_remote_options'
-require_relative '../version_option'
-require_relative '../package'
+require_relative "../command"
+require_relative "../local_remote_options"
+require_relative "../version_option"
+require_relative "../package"
 
 class Gem::Commands::SpecificationCommand < Gem::Command
   include Gem::LocalRemoteOptions
@@ -11,28 +11,28 @@ class Gem::Commands::SpecificationCommand < Gem::Command
   def initialize
     Gem.load_yaml
 
-    super 'specification', 'Display gem specification (in yaml)',
+    super "specification", "Display gem specification (in yaml)",
           :domain => :local, :version => Gem::Requirement.default,
           :format => :yaml
 
-    add_version_option('examine')
+    add_version_option("examine")
     add_platform_option
     add_prerelease_option
 
-    add_option('--all', 'Output specifications for all versions of',
-               'the gem') do |value, options|
+    add_option("--all", "Output specifications for all versions of",
+               "the gem") do |value, options|
       options[:all] = true
     end
 
-    add_option('--ruby', 'Output ruby format') do |value, options|
+    add_option("--ruby", "Output ruby format") do |value, options|
       options[:format] = :ruby
     end
 
-    add_option('--yaml', 'Output YAML format') do |value, options|
+    add_option("--yaml", "Output YAML format") do |value, options|
       options[:format] = :yaml
     end
 
-    add_option('--marshal', 'Output Marshal format') do |value, options|
+    add_option("--marshal", "Output Marshal format") do |value, options|
       options[:format] = :marshal
     end
 

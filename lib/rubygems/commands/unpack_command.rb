@@ -1,9 +1,9 @@
 # frozen_string_literal: true
-require_relative '../command'
-require_relative '../version_option'
-require_relative '../security_option'
-require_relative '../remote_fetcher'
-require_relative '../package'
+require_relative "../command"
+require_relative "../version_option"
+require_relative "../security_option"
+require_relative "../remote_fetcher"
+require_relative "../package"
 
 # forward-declare
 
@@ -17,18 +17,18 @@ class Gem::Commands::UnpackCommand < Gem::Command
   include Gem::SecurityOption
 
   def initialize
-    require 'fileutils'
+    require "fileutils"
 
-    super 'unpack', 'Unpack an installed gem to the current directory',
+    super "unpack", "Unpack an installed gem to the current directory",
           :version => Gem::Requirement.default,
           :target  => Dir.pwd
 
-    add_option('--target=DIR',
-               'target directory for unpacking') do |value, options|
+    add_option("--target=DIR",
+               "target directory for unpacking") do |value, options|
       options[:target] = value
     end
 
-    add_option('--spec', 'unpack the gem specification') do |value, options|
+    add_option("--spec", "unpack the gem specification") do |value, options|
       options[:spec] = true
     end
 
@@ -103,11 +103,11 @@ command help for an example.
           end
         end
 
-        File.open destination, 'w' do |io|
+        File.open destination, "w" do |io|
           io.write metadata
         end
       else
-        basename = File.basename path, '.gem'
+        basename = File.basename path, ".gem"
         target_dir = File.expand_path basename, options[:target]
 
         package = Gem::Package.new path, security_policy

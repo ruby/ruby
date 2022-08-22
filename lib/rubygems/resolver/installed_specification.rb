@@ -30,7 +30,7 @@ class Gem::Resolver::InstalledSpecification < Gem::Resolver::SpecSpecification
   end
 
   def pretty_print(q) # :nodoc:
-    q.group 2, '[InstalledSpecification', ']' do
+    q.group 2, "[InstalledSpecification", "]" do
       q.breakable
       q.text "name: #{name}"
 
@@ -41,7 +41,7 @@ class Gem::Resolver::InstalledSpecification < Gem::Resolver::SpecSpecification
       q.text "platform: #{platform}"
 
       q.breakable
-      q.text 'dependencies:'
+      q.text "dependencies:"
       q.breakable
       q.pp spec.dependencies
     end

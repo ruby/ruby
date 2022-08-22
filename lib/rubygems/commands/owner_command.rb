@@ -1,8 +1,8 @@
 # frozen_string_literal: true
-require_relative '../command'
-require_relative '../local_remote_options'
-require_relative '../gemcutter_utilities'
-require_relative '../text'
+require_relative "../command"
+require_relative "../local_remote_options"
+require_relative "../gemcutter_utilities"
+require_relative "../text"
 
 class Gem::Commands::OwnerCommand < Gem::Command
   include Gem::Text
@@ -34,23 +34,23 @@ permission to.
   end
 
   def initialize
-    super 'owner', 'Manage gem owners of a gem on the push server'
+    super "owner", "Manage gem owners of a gem on the push server"
     add_proxy_option
     add_key_option
     add_otp_option
     defaults.merge! :add => [], :remove => []
 
-    add_option '-a', '--add NEW_OWNER', 'Add an owner by user identifier' do |value, options|
+    add_option "-a", "--add NEW_OWNER", "Add an owner by user identifier" do |value, options|
       options[:add] << value
     end
 
-    add_option '-r', '--remove OLD_OWNER', 'Remove an owner by user identifier' do |value, options|
+    add_option "-r", "--remove OLD_OWNER", "Remove an owner by user identifier" do |value, options|
       options[:remove] << value
     end
 
-    add_option '-h', '--host HOST',
-               'Use another gemcutter-compatible host',
-               '  (e.g. https://rubygems.org)' do |value, options|
+    add_option "-h", "--host HOST",
+               "Use another gemcutter-compatible host",
+               "  (e.g. https://rubygems.org)" do |value, options|
       options[:host] = value
     end
   end
@@ -108,7 +108,7 @@ permission to.
 
   def send_owner_request(method, name, owner)
     rubygems_api_request method, "api/v1/gems/#{name}/owners", scope: get_owner_scope(method: method) do |request|
-      request.set_form_data 'email' => owner
+      request.set_form_data "email" => owner
       request.add_field "Authorization", api_key
     end
   end

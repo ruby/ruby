@@ -1,16 +1,16 @@
 # coding: US-ASCII
-require_relative 'helper'
-require 'rubygems'
-require 'rubygems/command'
-require 'rubygems/installer'
-require 'pathname'
-require 'tmpdir'
-require 'rbconfig'
+require_relative "helper"
+require "rubygems"
+require "rubygems/command"
+require "rubygems/installer"
+require "pathname"
+require "tmpdir"
+require "rbconfig"
 
 class TestGem < Gem::TestCase
   PLUGINS_LOADED = [] # rubocop:disable Style/MutableConstant
 
-  PROJECT_DIR = File.expand_path('../..', __dir__).tap(&Gem::UNTAINT)
+  PROJECT_DIR = File.expand_path("../..", __dir__).tap(&Gem::UNTAINT)
 
   def setup
     super
@@ -89,32 +89,32 @@ class TestGem < Gem::TestCase
 
   def test_self_install
     spec_fetcher do |f|
-      f.gem  'a', 1
-      f.spec 'a', 2
+      f.gem  "a", 1
+      f.spec "a", 2
     end
 
     gemhome2 = "#{@gemhome}2"
 
-    installed = Gem.install 'a', '= 1', :install_dir => gemhome2
+    installed = Gem.install "a", "= 1", :install_dir => gemhome2
 
     assert_equal %w[a-1], installed.map {|spec| spec.full_name }
 
-    assert_path_exist File.join(gemhome2, 'gems', 'a-1')
+    assert_path_exist File.join(gemhome2, "gems", "a-1")
   end
 
   def test_self_install_in_rescue
     spec_fetcher do |f|
-      f.gem  'a', 1
-      f.spec 'a', 2
+      f.gem  "a", 1
+      f.spec "a", 2
     end
 
     gemhome2 = "#{@gemhome}2"
 
     installed =
       begin
-        raise 'Error'
+        raise "Error"
       rescue StandardError
-        Gem.install 'a', '= 1', :install_dir => gemhome2
+        Gem.install "a", "= 1", :install_dir => gemhome2
       end
     assert_equal %w[a-1], installed.map {|spec| spec.full_name }
   end
@@ -143,7 +143,7 @@ class TestGem < Gem::TestCase
 
   def test_self_install_permissions_with_format_executable_and_non_standard_ruby_install_name
     Gem::Installer.exec_format = nil
-    ruby_install_name 'ruby27' do
+    ruby_install_name "ruby27" do
       assert_self_install_permissions(format_executable: true)
     end
   ensure
@@ -160,35 +160,35 @@ class TestGem < Gem::TestCase
       :format_executable => format_executable,
     }
     Dir.chdir @tempdir do
-      Dir.mkdir 'bin'
-      Dir.mkdir 'data'
+      Dir.mkdir "bin"
+      Dir.mkdir "data"
 
-      File.write 'bin/foo', "#!/usr/bin/env ruby\n"
-      File.chmod 0755, 'bin/foo'
+      File.write "bin/foo", "#!/usr/bin/env ruby\n"
+      File.chmod 0755, "bin/foo"
 
-      File.write 'data/foo.txt', "blah\n"
+      File.write "data/foo.txt", "blah\n"
 
       spec_fetcher do |f|
-        f.gem 'foo', 1 do |s|
-          s.executables = ['foo']
+        f.gem "foo", 1 do |s|
+          s.executables = ["foo"]
           s.files = %w[bin/foo data/foo.txt]
         end
       end
-      Gem.install 'foo', Gem::Requirement.default, options
+      Gem.install "foo", Gem::Requirement.default, options
     end
 
     prog_mode = (options[:prog_mode] & mask).to_s(8)
     dir_mode = (options[:dir_mode] & mask).to_s(8)
     data_mode = (options[:data_mode] & mask).to_s(8)
-    prog_name = 'foo'
-    prog_name = RbConfig::CONFIG['ruby_install_name'].sub('ruby', 'foo') if options[:format_executable]
+    prog_name = "foo"
+    prog_name = RbConfig::CONFIG["ruby_install_name"].sub("ruby", "foo") if options[:format_executable]
     expected = {
       "bin/#{prog_name}" => prog_mode,
-      'gems/foo-1' => dir_mode,
-      'gems/foo-1/bin' => dir_mode,
-      'gems/foo-1/data' => dir_mode,
-      'gems/foo-1/bin/foo' => prog_mode,
-      'gems/foo-1/data/foo.txt' => data_mode,
+      "gems/foo-1" => dir_mode,
+      "gems/foo-1/bin" => dir_mode,
+      "gems/foo-1/data" => dir_mode,
+      "gems/foo-1/bin/foo" => prog_mode,
+      "gems/foo-1/data/foo.txt" => data_mode,
     }
     # add Windows script
     expected["bin/#{prog_name}.bat"] = mask.to_s(8) if win_platform?
@@ -200,7 +200,7 @@ class TestGem < Gem::TestCase
     end
     assert_equal(expected, result)
   ensure
-    File.chmod(0755, *Dir.glob(@gemhome + '/gems/**/').map {|path| path.tap(&Gem::UNTAINT) })
+    File.chmod(0755, *Dir.glob(@gemhome + "/gems/**/").map {|path| path.tap(&Gem::UNTAINT) })
   end
 
   def test_require_missing
@@ -222,57 +222,57 @@ class TestGem < Gem::TestCase
   end
 
   def test_self_bin_path_active
-    a1 = util_spec 'a', '1' do |s|
-      s.executables = ['exec']
+    a1 = util_spec "a", "1" do |s|
+      s.executables = ["exec"]
     end
 
-    util_spec 'a', '2' do |s|
-      s.executables = ['exec']
+    util_spec "a", "2" do |s|
+      s.executables = ["exec"]
     end
 
     a1.activate
 
-    assert_match 'a-1/bin/exec', Gem.bin_path('a', 'exec', '>= 0')
+    assert_match "a-1/bin/exec", Gem.bin_path("a", "exec", ">= 0")
   end
 
   def test_self_bin_path_picking_newest
-    a1 = util_spec 'a', '1' do |s|
-      s.executables = ['exec']
+    a1 = util_spec "a", "1" do |s|
+      s.executables = ["exec"]
     end
 
-    a2 = util_spec 'a', '2' do |s|
-      s.executables = ['exec']
+    a2 = util_spec "a", "2" do |s|
+      s.executables = ["exec"]
     end
 
     install_specs a1, a2
 
-    assert_match 'a-2/bin/exec', Gem.bin_path('a', 'exec', '>= 0')
+    assert_match "a-2/bin/exec", Gem.bin_path("a", "exec", ">= 0")
   end
 
   def test_self_activate_bin_path_no_exec_name
     e = assert_raise ArgumentError do
-      Gem.activate_bin_path 'a'
+      Gem.activate_bin_path "a"
     end
 
-    assert_equal 'you must supply exec_name', e.message
+    assert_equal "you must supply exec_name", e.message
   end
 
   def test_activate_bin_path_resolves_eagerly
-    a1 = util_spec 'a', '1' do |s|
-      s.executables = ['exec']
-      s.add_dependency 'b'
+    a1 = util_spec "a", "1" do |s|
+      s.executables = ["exec"]
+      s.add_dependency "b"
     end
 
-    b1 = util_spec 'b', '1' do |s|
-      s.add_dependency 'c', '2'
+    b1 = util_spec "b", "1" do |s|
+      s.add_dependency "c", "2"
     end
 
-    b2 = util_spec 'b', '2' do |s|
-      s.add_dependency 'c', '1'
+    b2 = util_spec "b", "2" do |s|
+      s.add_dependency "c", "1"
     end
 
-    c1 = util_spec 'c', '1'
-    c2 = util_spec 'c', '2'
+    c1 = util_spec "c", "1"
+    c2 = util_spec "c", "2"
 
     install_specs c1, c2, b1, b2, a1
 
@@ -280,27 +280,27 @@ class TestGem < Gem::TestCase
 
     # If we didn't eagerly resolve, this would activate c-2 and then the
     # finish_resolve would cause a conflict
-    gem 'c'
+    gem "c"
     Gem.finish_resolve
 
     assert_equal %w[a-1 b-2 c-1], loaded_spec_names
   end
 
   def test_activate_bin_path_does_not_error_if_a_gem_thats_not_finally_activated_has_orphaned_dependencies
-    a1 = util_spec 'a', '1' do |s|
-      s.executables = ['exec']
-      s.add_dependency 'b'
+    a1 = util_spec "a", "1" do |s|
+      s.executables = ["exec"]
+      s.add_dependency "b"
     end
 
-    b1 = util_spec 'b', '1' do |s|
-      s.add_dependency 'c', '1'
+    b1 = util_spec "b", "1" do |s|
+      s.add_dependency "c", "1"
     end
 
-    b2 = util_spec 'b', '2' do |s|
-      s.add_dependency 'c', '2'
+    b2 = util_spec "b", "2" do |s|
+      s.add_dependency "c", "2"
     end
 
-    c2 = util_spec 'c', '2'
+    c2 = util_spec "c", "2"
 
     install_specs c2, b1, b2, a1
 
@@ -312,20 +312,20 @@ class TestGem < Gem::TestCase
   end
 
   def test_activate_bin_path_raises_a_meaningful_error_if_a_gem_thats_finally_activated_has_orphaned_dependencies
-    a1 = util_spec 'a', '1' do |s|
-      s.executables = ['exec']
-      s.add_dependency 'b'
+    a1 = util_spec "a", "1" do |s|
+      s.executables = ["exec"]
+      s.add_dependency "b"
     end
 
-    b1 = util_spec 'b', '1' do |s|
-      s.add_dependency 'c', '1'
+    b1 = util_spec "b", "1" do |s|
+      s.add_dependency "c", "1"
     end
 
-    b2 = util_spec 'b', '2' do |s|
-      s.add_dependency 'c', '2'
+    b2 = util_spec "b", "2" do |s|
+      s.add_dependency "c", "2"
     end
 
-    c1 = util_spec 'c', '1'
+    c1 = util_spec "c", "1"
 
     install_specs c1, b1, b2, a1
 
@@ -339,8 +339,8 @@ class TestGem < Gem::TestCase
   end
 
   def test_activate_bin_path_in_debug_mode
-    a1 = util_spec 'a', '1' do |s|
-      s.executables = ['exec']
+    a1 = util_spec "a", "1" do |s|
+      s.executables = ["exec"]
     end
 
     install_specs a1
@@ -355,12 +355,12 @@ class TestGem < Gem::TestCase
   end
 
   def test_activate_bin_path_selects_exact_bundler_version_if_present
-    bundler_latest = util_spec 'bundler', '2.0.1' do |s|
-      s.executables = ['bundle']
+    bundler_latest = util_spec "bundler", "2.0.1" do |s|
+      s.executables = ["bundle"]
     end
 
-    bundler_previous = util_spec 'bundler', '2.0.0' do |s|
-      s.executables = ['bundle']
+    bundler_previous = util_spec "bundler", "2.0.0" do |s|
+      s.executables = ["bundle"]
     end
 
     install_specs bundler_latest, bundler_previous
@@ -389,12 +389,12 @@ class TestGem < Gem::TestCase
   end
 
   def test_activate_bin_path_respects_underscore_selection_if_given
-    bundler_latest = util_spec 'bundler', '2.0.1' do |s|
-      s.executables = ['bundle']
+    bundler_latest = util_spec "bundler", "2.0.1" do |s|
+      s.executables = ["bundle"]
     end
 
-    bundler_previous = util_spec 'bundler', '1.17.3' do |s|
-      s.executables = ['bundle']
+    bundler_previous = util_spec "bundler", "1.17.3" do |s|
+      s.executables = ["bundle"]
     end
 
     install_specs bundler_latest, bundler_previous
@@ -450,57 +450,57 @@ class TestGem < Gem::TestCase
 
   def test_self_bin_path_no_exec_name
     e = assert_raise ArgumentError do
-      Gem.bin_path 'a'
+      Gem.bin_path "a"
     end
 
-    assert_equal 'you must supply exec_name', e.message
+    assert_equal "you must supply exec_name", e.message
   end
 
   def test_self_bin_path_bin_name
     install_specs util_exec_gem
-    assert_equal @abin_path, Gem.bin_path('a', 'abin')
+    assert_equal @abin_path, Gem.bin_path("a", "abin")
   end
 
   def test_self_bin_path_bin_name_version
     install_specs util_exec_gem
-    assert_equal @abin_path, Gem.bin_path('a', 'abin', '4')
+    assert_equal @abin_path, Gem.bin_path("a", "abin", "4")
   end
 
   def test_self_bin_path_nonexistent_binfile
-    util_spec 'a', '2' do |s|
-      s.executables = ['exec']
+    util_spec "a", "2" do |s|
+      s.executables = ["exec"]
     end
     assert_raise(Gem::GemNotFoundException) do
-      Gem.bin_path('a', 'other', '2')
+      Gem.bin_path("a", "other", "2")
     end
   end
 
   def test_self_bin_path_no_bin_file
-    util_spec 'a', '1'
+    util_spec "a", "1"
     assert_raise(ArgumentError) do
-      Gem.bin_path('a', nil, '1')
+      Gem.bin_path("a", nil, "1")
     end
   end
 
   def test_self_bin_path_not_found
     assert_raise(Gem::GemNotFoundException) do
-      Gem.bin_path('non-existent', 'blah')
+      Gem.bin_path("non-existent", "blah")
     end
   end
 
   def test_self_bin_path_bin_file_gone_in_latest
     install_specs util_exec_gem
-    spec = util_spec 'a', '10' do |s|
+    spec = util_spec "a", "10" do |s|
       s.executables = []
     end
     install_specs spec
-    assert_equal @abin_path, Gem.bin_path('a', 'abin')
+    assert_equal @abin_path, Gem.bin_path("a", "abin")
   end
 
   def test_self_bindir
-    assert_equal File.join(@gemhome, 'bin'), Gem.bindir
-    assert_equal File.join(@gemhome, 'bin'), Gem.bindir(Gem.dir)
-    assert_equal File.join(@gemhome, 'bin'), Gem.bindir(Pathname.new(Gem.dir))
+    assert_equal File.join(@gemhome, "bin"), Gem.bindir
+    assert_equal File.join(@gemhome, "bin"), Gem.bindir(Gem.dir)
+    assert_equal File.join(@gemhome, "bin"), Gem.bindir(Pathname.new(Gem.dir))
   end
 
   def test_self_bindir_default_dir
@@ -529,21 +529,21 @@ class TestGem < Gem::TestCase
     foo = nil
 
     Dir.chdir @tempdir do
-      FileUtils.mkdir_p 'data'
-      File.open File.join('data', 'foo.txt'), 'w' do |fp|
-        fp.puts 'blah'
+      FileUtils.mkdir_p "data"
+      File.open File.join("data", "foo.txt"), "w" do |fp|
+        fp.puts "blah"
       end
 
-      foo = util_spec 'foo' do |s|
+      foo = util_spec "foo" do |s|
         s.files = %w[data/foo.txt]
       end
 
       install_gem foo
     end
 
-    gem 'foo'
+    gem "foo"
 
-    expected = File.join @gemhome, 'gems', foo.full_name, 'data', 'foo'
+    expected = File.join @gemhome, "gems", foo.full_name, "data", "foo"
 
     assert_equal expected, Gem::Specification.find_by_name("foo").datadir
   end
@@ -555,25 +555,25 @@ class TestGem < Gem::TestCase
   end
 
   def test_self_default_exec_format
-    ruby_install_name 'ruby' do
-      assert_equal '%s', Gem.default_exec_format
+    ruby_install_name "ruby" do
+      assert_equal "%s", Gem.default_exec_format
     end
   end
 
   def test_self_default_exec_format_18
-    ruby_install_name 'ruby18' do
-      assert_equal '%s18', Gem.default_exec_format
+    ruby_install_name "ruby18" do
+      assert_equal "%s18", Gem.default_exec_format
     end
   end
 
   def test_self_default_exec_format_jruby
-    ruby_install_name 'jruby' do
-      assert_equal 'j%s', Gem.default_exec_format
+    ruby_install_name "jruby" do
+      assert_equal "j%s", Gem.default_exec_format
     end
   end
 
   def test_default_path
-    vendordir(File.join(@tempdir, 'vendor')) do
+    vendordir(File.join(@tempdir, "vendor")) do
       FileUtils.rm_rf Gem.user_home
 
       expected = [Gem.default_dir]
@@ -593,7 +593,7 @@ class TestGem < Gem::TestCase
   end
 
   def test_default_path_user_home
-    vendordir(File.join(@tempdir, 'vendor')) do
+    vendordir(File.join(@tempdir, "vendor")) do
       expected = [Gem.user_dir, Gem.default_dir]
 
       assert_equal expected, Gem.default_path
@@ -601,7 +601,7 @@ class TestGem < Gem::TestCase
   end
 
   def test_default_path_vendor_dir
-    vendordir(File.join(@tempdir, 'vendor')) do
+    vendordir(File.join(@tempdir, "vendor")) do
       FileUtils.mkdir_p Gem.vendor_dir
 
       FileUtils.rm_rf Gem.user_home
@@ -617,14 +617,14 @@ class TestGem < Gem::TestCase
   end
 
   def test_self_use_gemdeps
-    with_rubygems_gemdeps('-') do
-      FileUtils.mkdir_p 'detect/a/b'
-      FileUtils.mkdir_p 'detect/a/Isolate'
+    with_rubygems_gemdeps("-") do
+      FileUtils.mkdir_p "detect/a/b"
+      FileUtils.mkdir_p "detect/a/Isolate"
 
-      FileUtils.touch 'detect/Isolate'
+      FileUtils.touch "detect/Isolate"
 
       begin
-        Dir.chdir 'detect/a/b'
+        Dir.chdir "detect/a/b"
 
         Gem.use_gemdeps
 
@@ -645,12 +645,12 @@ class TestGem < Gem::TestCase
 
     Gem.ensure_gem_subdirectories @gemhome
 
-    assert_path_exist File.join @gemhome, 'build_info'
-    assert_path_exist File.join @gemhome, 'cache'
-    assert_path_exist File.join @gemhome, 'doc'
-    assert_path_exist File.join @gemhome, 'extensions'
-    assert_path_exist File.join @gemhome, 'gems'
-    assert_path_exist File.join @gemhome, 'specifications'
+    assert_path_exist File.join @gemhome, "build_info"
+    assert_path_exist File.join @gemhome, "cache"
+    assert_path_exist File.join @gemhome, "doc"
+    assert_path_exist File.join @gemhome, "extensions"
+    assert_path_exist File.join @gemhome, "gems"
+    assert_path_exist File.join @gemhome, "specifications"
   end
 
   def test_self_ensure_gem_directories_permissions
@@ -680,9 +680,9 @@ class TestGem < Gem::TestCase
   end unless win_platform?
 
   def test_self_ensure_gem_directories_missing_parents
-    gemdir = File.join @tempdir, 'a/b/c/gemdir'
-    FileUtils.rm_rf File.join(@tempdir, 'a') rescue nil
-    refute File.exist?(File.join(@tempdir, 'a')),
+    gemdir = File.join @tempdir, "a/b/c/gemdir"
+    FileUtils.rm_rf File.join(@tempdir, "a") rescue nil
+    refute File.exist?(File.join(@tempdir, "a")),
            "manually remove #{File.join @tempdir, 'a'}, tests are broken"
     Gem.use_paths gemdir
 
@@ -725,19 +725,19 @@ class TestGem < Gem::TestCase
     end
 
     def test_self_ensure_gem_directories_non_existent_paths
-      Gem.ensure_gem_subdirectories '/proc/0123456789/bogus' # should not raise
-      Gem.ensure_gem_subdirectories 'classpath:/bogus/x' # JRuby embed scenario
+      Gem.ensure_gem_subdirectories "/proc/0123456789/bogus" # should not raise
+      Gem.ensure_gem_subdirectories "classpath:/bogus/x" # JRuby embed scenario
     end
   end
 
   def test_self_extension_dir_shared
-    enable_shared 'yes' do
+    enable_shared "yes" do
       assert_equal Gem.ruby_api_version, Gem.extension_api_version
     end
   end
 
   def test_self_extension_dir_static
-    enable_shared 'no' do
+    enable_shared "no" do
       assert_equal "#{Gem.ruby_api_version}-static", Gem.extension_api_version
     end
   end
@@ -746,14 +746,14 @@ class TestGem < Gem::TestCase
     cwd = File.expand_path("test/rubygems", PROJECT_DIR)
     $LOAD_PATH.unshift cwd
 
-    discover_path = File.join 'lib', 'sff', 'discover.rb'
+    discover_path = File.join "lib", "sff", "discover.rb"
 
     foo1, foo2 = %w[1 2].map do |version|
-      spec = quick_gem 'sff', version do |s|
+      spec = quick_gem "sff", version do |s|
         s.files << discover_path
       end
 
-      write_file(File.join 'gems', spec.full_name, discover_path) do |fp|
+      write_file(File.join "gems", spec.full_name, discover_path) do |fp|
         fp.puts "# #{spec.full_name}"
       end
 
@@ -763,13 +763,13 @@ class TestGem < Gem::TestCase
     Gem.refresh
 
     expected = [
-      File.expand_path('test/rubygems/sff/discover.rb', PROJECT_DIR),
+      File.expand_path("test/rubygems/sff/discover.rb", PROJECT_DIR),
       File.join(foo2.full_gem_path, discover_path),
       File.join(foo1.full_gem_path, discover_path),
     ]
 
-    assert_equal expected, Gem.find_files('sff/discover')
-    assert_equal expected, Gem.find_files('sff/**.rb'), '[ruby-core:31730]'
+    assert_equal expected, Gem.find_files("sff/discover")
+    assert_equal expected, Gem.find_files("sff/**.rb"), "[ruby-core:31730]"
   ensure
     assert_equal cwd, $LOAD_PATH.shift
   end
@@ -778,14 +778,14 @@ class TestGem < Gem::TestCase
     cwd = File.expand_path("test/rubygems", PROJECT_DIR)
     actual_load_path = $LOAD_PATH.unshift(cwd).dup
 
-    discover_path = File.join 'lib', 'sff', 'discover.rb'
+    discover_path = File.join "lib", "sff", "discover.rb"
 
     foo1, _ = %w[1 2].map do |version|
-      spec = quick_gem 'sff', version do |s|
+      spec = quick_gem "sff", version do |s|
         s.files << discover_path
       end
 
-      write_file(File.join 'gems', spec.full_name, discover_path) do |fp|
+      write_file(File.join "gems", spec.full_name, discover_path) do |fp|
         fp.puts "# #{spec.full_name}"
       end
 
@@ -793,19 +793,19 @@ class TestGem < Gem::TestCase
     end
     Gem.refresh
 
-    write_file(File.join Dir.pwd, 'Gemfile') do |fp|
+    write_file(File.join Dir.pwd, "Gemfile") do |fp|
       fp.puts "source 'https://rubygems.org'"
       fp.puts "gem '#{foo1.name}', '#{foo1.version}'"
     end
-    Gem.use_gemdeps(File.join Dir.pwd, 'Gemfile')
+    Gem.use_gemdeps(File.join Dir.pwd, "Gemfile")
 
     expected = [
-      File.expand_path('test/rubygems/sff/discover.rb', PROJECT_DIR),
+      File.expand_path("test/rubygems/sff/discover.rb", PROJECT_DIR),
       File.join(foo1.full_gem_path, discover_path),
     ].sort
 
-    assert_equal expected, Gem.find_files('sff/discover').sort
-    assert_equal expected, Gem.find_files('sff/**.rb').sort, '[ruby-core:31730]'
+    assert_equal expected, Gem.find_files("sff/discover").sort
+    assert_equal expected, Gem.find_files("sff/**.rb").sort, "[ruby-core:31730]"
   ensure
     assert_equal cwd, actual_load_path.shift unless Gem.java_platform?
   end
@@ -814,14 +814,14 @@ class TestGem < Gem::TestCase
     cwd = File.expand_path("test/rubygems", PROJECT_DIR)
     $LOAD_PATH.unshift cwd
 
-    discover_path = File.join 'lib', 'sff', 'discover.rb'
+    discover_path = File.join "lib", "sff", "discover.rb"
 
     _, foo2 = %w[1 2].map do |version|
-      spec = quick_gem 'sff', version do |s|
+      spec = quick_gem "sff", version do |s|
         s.files << discover_path
       end
 
-      write_file(File.join 'gems', spec.full_name, discover_path) do |fp|
+      write_file(File.join "gems", spec.full_name, discover_path) do |fp|
         fp.puts "# #{spec.full_name}"
       end
 
@@ -831,30 +831,30 @@ class TestGem < Gem::TestCase
     Gem.refresh
 
     expected = [
-      File.expand_path('test/rubygems/sff/discover.rb', PROJECT_DIR),
+      File.expand_path("test/rubygems/sff/discover.rb", PROJECT_DIR),
       File.join(foo2.full_gem_path, discover_path),
     ]
 
-    assert_equal expected, Gem.find_latest_files('sff/discover')
-    assert_equal expected, Gem.find_latest_files('sff/**.rb'), '[ruby-core:31730]'
+    assert_equal expected, Gem.find_latest_files("sff/discover")
+    assert_equal expected, Gem.find_latest_files("sff/**.rb"), "[ruby-core:31730]"
   ensure
     assert_equal cwd, $LOAD_PATH.shift
   end
 
   def test_self_latest_spec_for
     gems = spec_fetcher do |fetcher|
-      fetcher.spec 'a', 1
-      fetcher.spec 'a', '3.a'
-      fetcher.spec 'a', 2
+      fetcher.spec "a", 1
+      fetcher.spec "a", "3.a"
+      fetcher.spec "a", 2
     end
 
-    spec = Gem.latest_spec_for 'a'
+    spec = Gem.latest_spec_for "a"
 
-    assert_equal gems['a-2'], spec
+    assert_equal gems["a-2"], spec
   end
 
   def test_self_latest_spec_for_multiple_sources
-    uri = 'https://example.sample.com/'
+    uri = "https://example.sample.com/"
     source = Gem::Source.new(uri)
     source_list = Gem::SourceList.new
     source_list << Gem::Source.new(@uri)
@@ -862,44 +862,44 @@ class TestGem < Gem::TestCase
     Gem.sources.replace source_list
 
     spec_fetcher(uri) do |fetcher|
-      fetcher.spec 'a', 1.1
+      fetcher.spec "a", 1.1
     end
 
     gems = spec_fetcher do |fetcher|
-      fetcher.spec 'a', 1
-      fetcher.spec 'a', '3.a'
-      fetcher.spec 'a', 2
+      fetcher.spec "a", 1
+      fetcher.spec "a", "3.a"
+      fetcher.spec "a", 2
     end
-    spec = Gem.latest_spec_for 'a'
-    assert_equal gems['a-2'], spec
+    spec = Gem.latest_spec_for "a"
+    assert_equal gems["a-2"], spec
   end
 
   def test_self_latest_rubygems_version
     spec_fetcher do |fetcher|
-      fetcher.spec 'rubygems-update', '1.8.23'
-      fetcher.spec 'rubygems-update', '1.8.24'
-      fetcher.spec 'rubygems-update', '2.0.0.preview3'
+      fetcher.spec "rubygems-update", "1.8.23"
+      fetcher.spec "rubygems-update", "1.8.24"
+      fetcher.spec "rubygems-update", "2.0.0.preview3"
     end
 
     version = Gem.latest_rubygems_version
 
-    assert_equal Gem::Version.new('1.8.24'), version
+    assert_equal Gem::Version.new("1.8.24"), version
   end
 
   def test_self_latest_version_for
     spec_fetcher do |fetcher|
-      fetcher.spec 'a', 1
-      fetcher.spec 'a', 2
-      fetcher.spec 'a', '3.a'
+      fetcher.spec "a", 1
+      fetcher.spec "a", 2
+      fetcher.spec "a", "3.a"
     end
 
-    version = Gem.latest_version_for 'a'
+    version = Gem.latest_version_for "a"
 
     assert_equal Gem::Version.new(2), version
   end
 
   def test_self_latest_version_for_multiple_sources
-    uri = 'https://example.sample.com/'
+    uri = "https://example.sample.com/"
     source = Gem::Source.new(uri)
     source_list = Gem::SourceList.new
     source_list << Gem::Source.new(@uri)
@@ -907,27 +907,27 @@ class TestGem < Gem::TestCase
     Gem.sources.replace source_list
 
     spec_fetcher(uri) do |fetcher|
-      fetcher.spec 'a', 1.1
+      fetcher.spec "a", 1.1
     end
 
     spec_fetcher do |fetcher|
-      fetcher.spec 'a', 1
-      fetcher.spec 'a', 2
-      fetcher.spec 'a', '3.a'
+      fetcher.spec "a", 1
+      fetcher.spec "a", 2
+      fetcher.spec "a", "3.a"
     end
 
-    version = Gem.latest_version_for 'a'
+    version = Gem.latest_version_for "a"
 
     assert_equal Gem::Version.new(2), version
   end
 
   def test_self_loaded_specs
-    foo = util_spec 'foo'
+    foo = util_spec "foo"
     install_gem foo
 
     foo.activate
 
-    assert_equal true, Gem.loaded_specs.keys.include?('foo')
+    assert_equal true, Gem.loaded_specs.keys.include?("foo")
   end
 
   def test_self_path
@@ -947,7 +947,7 @@ class TestGem < Gem::TestCase
     path_count = Gem.path.size
     Gem.clear_paths
 
-    ENV['GEM_PATH'] = @additional.join(File::PATH_SEPARATOR)
+    ENV["GEM_PATH"] = @additional.join(File::PATH_SEPARATOR)
 
     assert_equal @additional, Gem.path[0,2]
 
@@ -959,10 +959,10 @@ class TestGem < Gem::TestCase
   def test_self_path_duplicate
     Gem.clear_paths
     util_ensure_gem_dirs
-    dirs = @additional + [@gemhome] + [File.join(@tempdir, 'a')]
+    dirs = @additional + [@gemhome] + [File.join(@tempdir, "a")]
 
-    ENV['GEM_HOME'] = @gemhome
-    ENV['GEM_PATH'] = dirs.join File::PATH_SEPARATOR
+    ENV["GEM_HOME"] = @gemhome
+    ENV["GEM_PATH"] = dirs.join File::PATH_SEPARATOR
 
     assert_equal @gemhome, Gem.dir
 
@@ -974,8 +974,8 @@ class TestGem < Gem::TestCase
     Gem.clear_paths
 
     util_ensure_gem_dirs
-    ENV['GEM_HOME'] = @gemhome
-    ENV['GEM_PATH'] = @additional.join(File::PATH_SEPARATOR)
+    ENV["GEM_HOME"] = @gemhome
+    ENV["GEM_PATH"] = @additional.join(File::PATH_SEPARATOR)
 
     assert_equal @gemhome, Gem.dir
 
@@ -992,38 +992,38 @@ class TestGem < Gem::TestCase
   end
 
   def test_self_prefix_libdir
-    orig_libdir = RbConfig::CONFIG['libdir']
-    RbConfig::CONFIG['libdir'] = PROJECT_DIR
+    orig_libdir = RbConfig::CONFIG["libdir"]
+    RbConfig::CONFIG["libdir"] = PROJECT_DIR
 
     assert_nil Gem.prefix
   ensure
-    RbConfig::CONFIG['libdir'] = orig_libdir
+    RbConfig::CONFIG["libdir"] = orig_libdir
   end
 
   def test_self_prefix_sitelibdir
-    orig_sitelibdir = RbConfig::CONFIG['sitelibdir']
-    RbConfig::CONFIG['sitelibdir'] = PROJECT_DIR
+    orig_sitelibdir = RbConfig::CONFIG["sitelibdir"]
+    RbConfig::CONFIG["sitelibdir"] = PROJECT_DIR
 
     assert_nil Gem.prefix
   ensure
-    RbConfig::CONFIG['sitelibdir'] = orig_sitelibdir
+    RbConfig::CONFIG["sitelibdir"] = orig_sitelibdir
   end
 
   def test_self_read_binary
-    File.open 'test', 'w' do |io|
+    File.open "test", "w" do |io|
       io.write "\xCF\x80"
     end
 
-    assert_equal ["\xCF", "\x80"], Gem.read_binary('test').chars.to_a
+    assert_equal ["\xCF", "\x80"], Gem.read_binary("test").chars.to_a
 
-    pend 'chmod not supported' if Gem.win_platform?
+    pend "chmod not supported" if Gem.win_platform?
 
     begin
-      File.chmod 0444, 'test'
+      File.chmod 0444, "test"
 
-      assert_equal ["\xCF", "\x80"], Gem.read_binary('test').chars.to_a
+      assert_equal ["\xCF", "\x80"], Gem.read_binary("test").chars.to_a
     ensure
-      File.chmod 0644, 'test'
+      File.chmod 0644, "test"
     end
   end
 
@@ -1084,72 +1084,72 @@ class TestGem < Gem::TestCase
   end
 
   def test_self_ruby_api_version
-    orig_ruby_version, RbConfig::CONFIG['ruby_version'] = RbConfig::CONFIG['ruby_version'], '1.2.3'
+    orig_ruby_version, RbConfig::CONFIG["ruby_version"] = RbConfig::CONFIG["ruby_version"], "1.2.3"
 
     Gem.instance_variable_set :@ruby_api_version, nil
 
-    assert_equal '1.2.3', Gem.ruby_api_version
+    assert_equal "1.2.3", Gem.ruby_api_version
   ensure
     Gem.instance_variable_set :@ruby_api_version, nil
 
-    RbConfig::CONFIG['ruby_version'] = orig_ruby_version
+    RbConfig::CONFIG["ruby_version"] = orig_ruby_version
   end
 
   def test_self_env_requirement
-    ENV["GEM_REQUIREMENT_FOO"] = '>= 1.2.3'
-    ENV["GEM_REQUIREMENT_BAR"] = '1.2.3'
-    ENV["GEM_REQUIREMENT_BAZ"] = 'abcd'
+    ENV["GEM_REQUIREMENT_FOO"] = ">= 1.2.3"
+    ENV["GEM_REQUIREMENT_BAR"] = "1.2.3"
+    ENV["GEM_REQUIREMENT_BAZ"] = "abcd"
 
-    assert_equal Gem::Requirement.create('>= 1.2.3'), Gem.env_requirement('foo')
-    assert_equal Gem::Requirement.create('1.2.3'), Gem.env_requirement('bAr')
-    assert_raise(Gem::Requirement::BadRequirementError) { Gem.env_requirement('baz') }
-    assert_equal Gem::Requirement.default, Gem.env_requirement('qux')
+    assert_equal Gem::Requirement.create(">= 1.2.3"), Gem.env_requirement("foo")
+    assert_equal Gem::Requirement.create("1.2.3"), Gem.env_requirement("bAr")
+    assert_raise(Gem::Requirement::BadRequirementError) { Gem.env_requirement("baz") }
+    assert_equal Gem::Requirement.default, Gem.env_requirement("qux")
   end
 
   def test_self_ruby_version_with_non_mri_implementations
-    util_set_RUBY_VERSION '2.5.0', 0, 60928, 'jruby 9.2.0.0 (2.5.0) 2018-05-24 81156a8 OpenJDK 64-Bit Server VM 25.171-b11 on 1.8.0_171-8u171-b11-0ubuntu0.16.04.1-b11 [linux-x86_64]'
+    util_set_RUBY_VERSION "2.5.0", 0, 60928, "jruby 9.2.0.0 (2.5.0) 2018-05-24 81156a8 OpenJDK 64-Bit Server VM 25.171-b11 on 1.8.0_171-8u171-b11-0ubuntu0.16.04.1-b11 [linux-x86_64]"
 
-    assert_equal Gem::Version.new('2.5.0'), Gem.ruby_version
+    assert_equal Gem::Version.new("2.5.0"), Gem.ruby_version
   ensure
     util_restore_RUBY_VERSION
   end
 
   def test_self_ruby_version_with_svn_prerelease
-    util_set_RUBY_VERSION '2.6.0', -1, 63539, 'ruby 2.6.0preview2 (2018-05-31 trunk 63539) [x86_64-linux]'
+    util_set_RUBY_VERSION "2.6.0", -1, 63539, "ruby 2.6.0preview2 (2018-05-31 trunk 63539) [x86_64-linux]"
 
-    assert_equal Gem::Version.new('2.6.0.preview2'), Gem.ruby_version
+    assert_equal Gem::Version.new("2.6.0.preview2"), Gem.ruby_version
   ensure
     util_restore_RUBY_VERSION
   end
 
   def test_self_ruby_version_with_git_prerelease
-    util_set_RUBY_VERSION '2.7.0', -1, 'b563439274a402e33541f5695b1bfd4ac1085638', 'ruby 2.7.0preview3 (2019-11-23 master b563439274) [x86_64-linux]'
+    util_set_RUBY_VERSION "2.7.0", -1, "b563439274a402e33541f5695b1bfd4ac1085638", "ruby 2.7.0preview3 (2019-11-23 master b563439274) [x86_64-linux]"
 
-    assert_equal Gem::Version.new('2.7.0.preview3'), Gem.ruby_version
+    assert_equal Gem::Version.new("2.7.0.preview3"), Gem.ruby_version
   ensure
     util_restore_RUBY_VERSION
   end
 
   def test_self_ruby_version_with_non_mri_implementations_with_mri_prerelase_compatibility
-    util_set_RUBY_VERSION '2.6.0', -1, 63539, 'weirdjruby 9.2.0.0 (2.6.0preview2) 2018-05-24 81156a8 OpenJDK 64-Bit Server VM 25.171-b11 on 1.8.0_171-8u171-b11-0ubuntu0.16.04.1-b11 [linux-x86_64]', 'weirdjruby', '9.2.0.0'
+    util_set_RUBY_VERSION "2.6.0", -1, 63539, "weirdjruby 9.2.0.0 (2.6.0preview2) 2018-05-24 81156a8 OpenJDK 64-Bit Server VM 25.171-b11 on 1.8.0_171-8u171-b11-0ubuntu0.16.04.1-b11 [linux-x86_64]", "weirdjruby", "9.2.0.0"
 
-    assert_equal Gem::Version.new('2.6.0.preview2'), Gem.ruby_version
+    assert_equal Gem::Version.new("2.6.0.preview2"), Gem.ruby_version
   ensure
     util_restore_RUBY_VERSION
   end
 
   def test_self_ruby_version_with_svn_trunk
-    util_set_RUBY_VERSION '1.9.2', -1, 23493, 'ruby 1.9.2dev (2009-05-20 trunk 23493) [x86_64-linux]'
+    util_set_RUBY_VERSION "1.9.2", -1, 23493, "ruby 1.9.2dev (2009-05-20 trunk 23493) [x86_64-linux]"
 
-    assert_equal Gem::Version.new('1.9.2.dev'), Gem.ruby_version
+    assert_equal Gem::Version.new("1.9.2.dev"), Gem.ruby_version
   ensure
     util_restore_RUBY_VERSION
   end
 
   def test_self_ruby_version_with_git_master
-    util_set_RUBY_VERSION '2.7.0', -1, '5de284ec78220e75643f89b454ce999da0c1c195', 'ruby 2.7.0dev (2019-12-23T01:37:30Z master 5de284ec78) [x86_64-linux]'
+    util_set_RUBY_VERSION "2.7.0", -1, "5de284ec78220e75643f89b454ce999da0c1c195", "ruby 2.7.0dev (2019-12-23T01:37:30Z master 5de284ec78) [x86_64-linux]"
 
-    assert_equal Gem::Version.new('2.7.0.dev'), Gem.ruby_version
+    assert_equal Gem::Version.new("2.7.0.dev"), Gem.ruby_version
   ensure
     util_restore_RUBY_VERSION
   end
@@ -1159,7 +1159,7 @@ class TestGem < Gem::TestCase
   end
 
   def test_self_paths_eq
-    other = File.join @tempdir, 'other'
+    other = File.join @tempdir, "other"
     path = [@userhome, other].join File::PATH_SEPARATOR
 
     #
@@ -1172,12 +1172,12 @@ class TestGem < Gem::TestCase
   end
 
   def test_self_paths_eq_nonexistent_home
-    ENV['GEM_HOME'] = @gemhome
+    ENV["GEM_HOME"] = @gemhome
     Gem.clear_paths
 
-    other = File.join @tempdir, 'other'
+    other = File.join @tempdir, "other"
 
-    ENV['HOME'] = other
+    ENV["HOME"] = other
 
     Gem.paths = { "GEM_PATH" => other }
 
@@ -1256,43 +1256,43 @@ class TestGem < Gem::TestCase
   end
 
   def test_try_activate_returns_true_for_activated_specs
-    b = util_spec 'b', '1.0' do |spec|
-      spec.files << 'lib/b.rb'
+    b = util_spec "b", "1.0" do |spec|
+      spec.files << "lib/b.rb"
     end
     install_specs b
 
-    assert Gem.try_activate('b'), 'try_activate should return true'
-    assert Gem.try_activate('b'), 'try_activate should still return true'
+    assert Gem.try_activate("b"), "try_activate should return true"
+    assert Gem.try_activate("b"), "try_activate should still return true"
   end
 
   def test_spec_order_is_consistent
-    b1 = util_spec 'b', '1.0'
-    b2 = util_spec 'b', '2.0'
-    b3 = util_spec 'b', '3.0'
+    b1 = util_spec "b", "1.0"
+    b2 = util_spec "b", "2.0"
+    b3 = util_spec "b", "3.0"
 
     install_specs b1, b2, b3
 
-    specs1 = Gem::Specification.stubs.find_all {|s| s.name == 'b' }
+    specs1 = Gem::Specification.stubs.find_all {|s| s.name == "b" }
     Gem::Specification.reset
-    specs2 = Gem::Specification.stubs_for('b')
+    specs2 = Gem::Specification.stubs_for("b")
     assert_equal specs1.map(&:version), specs2.map(&:version)
   end
 
   def test_self_try_activate_missing_dep
-    b = util_spec 'b', '1.0'
-    a = util_spec 'a', '1.0', 'b' => '>= 1.0'
+    b = util_spec "b", "1.0"
+    a = util_spec "a", "1.0", "b" => ">= 1.0"
 
     install_specs b, a
     uninstall_gem b
 
-    a_file = File.join a.gem_dir, 'lib', 'a_file.rb'
+    a_file = File.join a.gem_dir, "lib", "a_file.rb"
 
     write_file a_file do |io|
-      io.puts '# a_file.rb'
+      io.puts "# a_file.rb"
     end
 
     e = assert_raise Gem::MissingSpecError do
-      Gem.try_activate 'a_file'
+      Gem.try_activate "a_file"
     end
 
     assert_match %r{Could not find 'b' }, e.message
@@ -1300,30 +1300,30 @@ class TestGem < Gem::TestCase
   end
 
   def test_self_try_activate_missing_prerelease
-    b = util_spec 'b', '1.0rc1'
-    a = util_spec 'a', '1.0rc1', 'b' => '1.0rc1'
+    b = util_spec "b", "1.0rc1"
+    a = util_spec "a", "1.0rc1", "b" => "1.0rc1"
 
     install_specs b, a
     uninstall_gem b
 
-    a_file = File.join a.gem_dir, 'lib', 'a_file.rb'
+    a_file = File.join a.gem_dir, "lib", "a_file.rb"
 
     write_file a_file do |io|
-      io.puts '# a_file.rb'
+      io.puts "# a_file.rb"
     end
 
     e = assert_raise Gem::MissingSpecError do
-      Gem.try_activate 'a_file'
+      Gem.try_activate "a_file"
     end
 
     assert_match %r{Could not find 'b' \(= 1.0rc1\)}, e.message
   end
 
   def test_self_try_activate_missing_extensions
-    spec = util_spec 'ext', '1' do |s|
+    spec = util_spec "ext", "1" do |s|
       s.extensions = %w[ext/extconf.rb]
       s.mark_version
-      s.installed_by_version = v('2.2')
+      s.installed_by_version = v("2.2")
     end
 
     # write the spec without install to simulate a failed install
@@ -1332,7 +1332,7 @@ class TestGem < Gem::TestCase
     end
 
     _, err = capture_output do
-      refute Gem.try_activate 'nonexistent'
+      refute Gem.try_activate "nonexistent"
     end
 
     unless Gem.java_platform?
@@ -1344,43 +1344,43 @@ class TestGem < Gem::TestCase
   end
 
   def test_self_use_paths_with_nils
-    orig_home = ENV.delete 'GEM_HOME'
-    orig_path = ENV.delete 'GEM_PATH'
+    orig_home = ENV.delete "GEM_HOME"
+    orig_path = ENV.delete "GEM_PATH"
     Gem.use_paths nil, nil
     assert_equal Gem.default_dir, Gem.paths.home
     path = (Gem.default_path + [Gem.paths.home]).uniq
     assert_equal path, Gem.paths.path
   ensure
-    ENV['GEM_HOME'] = orig_home
-    ENV['GEM_PATH'] = orig_path
+    ENV["GEM_HOME"] = orig_home
+    ENV["GEM_PATH"] = orig_path
   end
 
   def test_setting_paths_does_not_warn_about_unknown_keys
     stdout, stderr = capture_output do
-      Gem.paths = { 'foo'      => [],
-                    'bar'      => Object.new,
-                    'GEM_HOME' => Gem.paths.home,
-                    'GEM_PATH' => 'foo' }
+      Gem.paths = { "foo"      => [],
+                    "bar"      => Object.new,
+                    "GEM_HOME" => Gem.paths.home,
+                    "GEM_PATH" => "foo" }
     end
-    assert_equal ['foo', Gem.paths.home], Gem.paths.path
-    assert_equal '', stderr
-    assert_equal '', stdout
+    assert_equal ["foo", Gem.paths.home], Gem.paths.path
+    assert_equal "", stderr
+    assert_equal "", stdout
   end
 
   def test_setting_paths_does_not_mutate_parameter_object
-    Gem.paths = { 'GEM_HOME' => Gem.paths.home,
-                  'GEM_PATH' => 'foo' }.freeze
-    assert_equal ['foo', Gem.paths.home], Gem.paths.path
+    Gem.paths = { "GEM_HOME" => Gem.paths.home,
+                  "GEM_PATH" => "foo" }.freeze
+    assert_equal ["foo", Gem.paths.home], Gem.paths.path
   end
 
   def test_deprecated_paths=
     stdout, stderr = capture_output do
-      Gem.paths = { 'GEM_HOME' => Gem.paths.home,
-                    'GEM_PATH' => [Gem.paths.home, 'foo'] }
+      Gem.paths = { "GEM_HOME" => Gem.paths.home,
+                    "GEM_PATH" => [Gem.paths.home, "foo"] }
     end
-    assert_equal [Gem.paths.home, 'foo'], Gem.paths.path
+    assert_equal [Gem.paths.home, "foo"], Gem.paths.path
     assert_match(/Array values in the parameter to `Gem.paths=` are deprecated.\nPlease use a String or nil/m, stderr)
-    assert_equal '', stdout
+    assert_equal "", stdout
   end
 
   def test_self_use_paths
@@ -1393,8 +1393,8 @@ class TestGem < Gem::TestCase
   end
 
   def test_self_user_dir
-    parts = [@userhome, '.gem', Gem.ruby_engine]
-    parts << RbConfig::CONFIG['ruby_version'] unless RbConfig::CONFIG['ruby_version'].empty?
+    parts = [@userhome, ".gem", Gem.ruby_engine]
+    parts << RbConfig::CONFIG["ruby_version"] unless RbConfig::CONFIG["ruby_version"].empty?
 
     FileUtils.mkdir_p File.join(parts)
 
@@ -1402,10 +1402,10 @@ class TestGem < Gem::TestCase
   end
 
   def test_self_user_home
-    if ENV['HOME']
-      assert_equal ENV['HOME'], Gem.user_home
+    if ENV["HOME"]
+      assert_equal ENV["HOME"], Gem.user_home
     else
-      assert true, 'count this test'
+      assert true, "count this test"
     end
   end
 
@@ -1430,7 +1430,7 @@ class TestGem < Gem::TestCase
     a = util_spec "a", "1"
     b = util_spec "b", "1", "c" => nil
     c = util_spec "c", "2"
-    d = util_spec "d", "1", { 'e' => '= 1' }, "lib/d#{$$}.rb"
+    d = util_spec "d", "1", { "e" => "= 1" }, "lib/d#{$$}.rb"
     e = util_spec "e", "1"
 
     install_specs a, c, b, e, d
@@ -1451,35 +1451,35 @@ class TestGem < Gem::TestCase
 
     output = Gem::Util.gunzip input
 
-    assert_equal 'hello', output
+    assert_equal "hello", output
     assert_equal Encoding::BINARY, output.encoding
   end
 
   def test_self_gzip
-    input = 'hello'
+    input = "hello"
 
     output = Gem::Util.gzip input
 
     zipped = StringIO.new output
 
-    assert_equal 'hello', Zlib::GzipReader.new(zipped).read
+    assert_equal "hello", Zlib::GzipReader.new(zipped).read
     assert_equal Encoding::BINARY, output.encoding
   end
 
   def test_self_vendor_dir
-    vendordir(File.join(@tempdir, 'vendor')) do
+    vendordir(File.join(@tempdir, "vendor")) do
       expected =
-        File.join RbConfig::CONFIG['vendordir'], 'gems',
-                  RbConfig::CONFIG['ruby_version']
+        File.join RbConfig::CONFIG["vendordir"], "gems",
+                  RbConfig::CONFIG["ruby_version"]
 
       assert_equal expected, Gem.vendor_dir
     end
   end
 
   def test_self_vendor_dir_ENV_GEM_VENDOR
-    ENV['GEM_VENDOR'] = File.join @tempdir, 'vendor', 'gems'
+    ENV["GEM_VENDOR"] = File.join @tempdir, "vendor", "gems"
 
-    assert_equal ENV['GEM_VENDOR'], Gem.vendor_dir
+    assert_equal ENV["GEM_VENDOR"], Gem.vendor_dir
     refute Gem.vendor_dir.frozen?
   end
 
@@ -1493,18 +1493,18 @@ class TestGem < Gem::TestCase
     plugin_path = File.join "lib", "rubygems_plugin.rb"
 
     Dir.chdir @tempdir do
-      FileUtils.mkdir_p 'lib'
+      FileUtils.mkdir_p "lib"
       File.open plugin_path, "w" do |fp|
         fp.puts "class TestGem; PLUGINS_LOADED << 'plugin'; end"
       end
 
-      foo1 = util_spec 'foo', '1' do |s|
+      foo1 = util_spec "foo", "1" do |s|
         s.files << plugin_path
       end
 
       install_gem foo1
 
-      foo2 = util_spec 'foo', '2' do |s|
+      foo2 = util_spec "foo", "2" do |s|
         s.files << plugin_path
       end
 
@@ -1513,7 +1513,7 @@ class TestGem < Gem::TestCase
 
     Gem::Specification.reset
 
-    gem 'foo'
+    gem "foo"
 
     Gem.load_plugins
 
@@ -1524,12 +1524,12 @@ class TestGem < Gem::TestCase
     plugin_path = File.join "lib", "rubygems_plugin.rb"
 
     Dir.chdir @tempdir do
-      FileUtils.mkdir_p 'lib'
+      FileUtils.mkdir_p "lib"
       File.open plugin_path, "w" do |fp|
         fp.puts "class TestGem; PLUGINS_LOADED << 'plugin'; end"
       end
 
-      foo = util_spec 'foo', '1' do |s|
+      foo = util_spec "foo", "1" do |s|
         s.files << plugin_path
       end
 
@@ -1538,7 +1538,7 @@ class TestGem < Gem::TestCase
 
     Gem.paths = { "GEM_PATH" => [Gem.dir, Gem.user_dir].join(File::PATH_SEPARATOR) }
 
-    gem 'foo'
+    gem "foo"
 
     Gem.load_plugins
 
@@ -1546,30 +1546,30 @@ class TestGem < Gem::TestCase
   end
 
   def test_load_env_plugins
-    with_plugin('load') { Gem.load_env_plugins }
+    with_plugin("load") { Gem.load_env_plugins }
     assert_equal :loaded, TEST_PLUGIN_LOAD rescue nil
 
     util_remove_interrupt_command
 
     # Should attempt to cause a StandardError
-    with_plugin('standarderror') { Gem.load_env_plugins }
+    with_plugin("standarderror") { Gem.load_env_plugins }
     assert_equal :loaded, TEST_PLUGIN_STANDARDERROR rescue nil
 
     util_remove_interrupt_command
 
     # Should attempt to cause an Exception
-    with_plugin('exception') { Gem.load_env_plugins }
+    with_plugin("exception") { Gem.load_env_plugins }
     assert_equal :loaded, TEST_PLUGIN_EXCEPTION rescue nil
   end
 
   def test_gem_path_ordering
     refute_equal Gem.dir, Gem.user_dir
 
-    write_file File.join(@tempdir, 'lib', "g.rb") {|fp| fp.puts "" }
-    write_file File.join(@tempdir, 'lib', 'm.rb') {|fp| fp.puts "" }
+    write_file File.join(@tempdir, "lib", "g.rb") {|fp| fp.puts "" }
+    write_file File.join(@tempdir, "lib", "m.rb") {|fp| fp.puts "" }
 
-    g = util_spec 'g', '1', nil, "lib/g.rb"
-    m = util_spec 'm', '1', nil, "lib/m.rb"
+    g = util_spec "g", "1", nil, "lib/g.rb"
+    m = util_spec "m", "1", nil, "lib/m.rb"
 
     install_gem g, :install_dir => Gem.dir
     m0 = install_gem m, :install_dir => Gem.dir
@@ -1588,15 +1588,15 @@ class TestGem < Gem::TestCase
       Gem::Specification.reset
       Gem.searcher = nil
 
-      assert_equal Gem::Dependency.new('m','1').to_specs,
-                   Gem::Dependency.new('m','1').to_specs.sort
+      assert_equal Gem::Dependency.new("m","1").to_specs,
+                   Gem::Dependency.new("m","1").to_specs.sort
 
       assert_equal \
         [expected.gem_dir],
-        Gem::Dependency.new('m','1').to_specs.map(&:gem_dir).sort,
+        Gem::Dependency.new("m","1").to_specs.map(&:gem_dir).sort,
         "Wrong specs for #{_name}"
 
-      spec = Gem::Dependency.new('m','1').to_spec
+      spec = Gem::Dependency.new("m","1").to_spec
 
       assert_equal \
         File.join(_paths.first, "gems", "m-1"),
@@ -1606,7 +1606,7 @@ class TestGem < Gem::TestCase
 
       gem "m"
 
-      spec = Gem::Dependency.new('m','1').to_spec
+      spec = Gem::Dependency.new("m","1").to_spec
       assert spec.activated?, "dependency not activated for #{_name}"
 
       assert_equal \
@@ -1621,11 +1621,11 @@ class TestGem < Gem::TestCase
   end
 
   def test_gem_path_ordering_short
-    write_file File.join(@tempdir, 'lib', "g.rb") {|fp| fp.puts "" }
-    write_file File.join(@tempdir, 'lib', 'm.rb') {|fp| fp.puts "" }
+    write_file File.join(@tempdir, "lib", "g.rb") {|fp| fp.puts "" }
+    write_file File.join(@tempdir, "lib", "m.rb") {|fp| fp.puts "" }
 
-    g = util_spec 'g', '1', nil, "lib/g.rb"
-    m = util_spec 'm', '1', nil, "lib/m.rb"
+    g = util_spec "g", "1", nil, "lib/g.rb"
+    m = util_spec "m", "1", nil, "lib/m.rb"
 
     install_gem g, :install_dir => Gem.dir
     install_gem m, :install_dir => Gem.dir
@@ -1635,7 +1635,7 @@ class TestGem < Gem::TestCase
 
     assert_equal \
       File.join(Gem.dir, "gems", "m-1"),
-      Gem::Dependency.new('m','1').to_spec.gem_dir,
+      Gem::Dependency.new("m","1").to_spec.gem_dir,
       "Wrong spec selected"
   end
 
@@ -1702,7 +1702,7 @@ class TestGem < Gem::TestCase
       s.bindir = "exe"
     end
 
-    write_file File.join(@tempdir, 'exe', 'foo') do |fp|
+    write_file File.join(@tempdir, "exe", "foo") do |fp|
       fp.puts "puts Gem.loaded_specs.values.map(&:full_name).sort"
     end
 
@@ -1716,7 +1716,7 @@ class TestGem < Gem::TestCase
     install_gem b, :install_dir => path
     install_gem c, :install_dir => path
 
-    ENV['GEM_PATH'] = path
+    ENV["GEM_PATH"] = path
 
     with_rubygems_gemdeps("-") do
       new_PATH = [File.join(path, "bin"), ENV["PATH"]].join(File::PATH_SEPARATOR)
@@ -1751,7 +1751,7 @@ class TestGem < Gem::TestCase
       s.bindir = "exe"
     end
 
-    write_file File.join(@tempdir, 'exe', 'foo') do |fp|
+    write_file File.join(@tempdir, "exe", "foo") do |fp|
       fp.puts "puts Gem.loaded_specs.values.map(&:full_name).sort"
     end
 
@@ -1765,7 +1765,7 @@ class TestGem < Gem::TestCase
     install_gem b, :install_dir => path
     install_gem c, :install_dir => path
 
-    ENV['GEM_PATH'] = path
+    ENV["GEM_PATH"] = path
 
     with_rubygems_gemdeps("-") do
       Dir.mkdir "sub1"
@@ -1837,14 +1837,14 @@ class TestGem < Gem::TestCase
   end
 
   def test_use_gemdeps
-    gem_deps_file = 'gem.deps.rb'.tap(&Gem::UNTAINT)
-    spec = util_spec 'a', 1
+    gem_deps_file = "gem.deps.rb".tap(&Gem::UNTAINT)
+    spec = util_spec "a", 1
     install_specs spec
 
     spec = Gem::Specification.find {|s| s == spec }
     refute spec.activated?
 
-    File.open gem_deps_file, 'w' do |io|
+    File.open gem_deps_file, "w" do |io|
       io.write 'gem "a"'
     end
 
@@ -1858,11 +1858,11 @@ class TestGem < Gem::TestCase
 
   def test_use_gemdeps_ENV
     with_rubygems_gemdeps(nil) do
-      spec = util_spec 'a', 1
+      spec = util_spec "a", 1
 
       refute spec.activated?
 
-      File.open 'gem.deps.rb', 'w' do |io|
+      File.open "gem.deps.rb", "w" do |io|
         io.write 'gem "a"'
       end
 
@@ -1874,33 +1874,33 @@ class TestGem < Gem::TestCase
 
   def test_use_gemdeps_argument_missing
     e = assert_raise ArgumentError do
-      Gem.use_gemdeps 'gem.deps.rb'
+      Gem.use_gemdeps "gem.deps.rb"
     end
 
-    assert_equal 'Unable to find gem dependencies file at gem.deps.rb',
+    assert_equal "Unable to find gem dependencies file at gem.deps.rb",
                  e.message
   end
 
   def test_use_gemdeps_argument_missing_match_ENV
-    with_rubygems_gemdeps('gem.deps.rb') do
+    with_rubygems_gemdeps("gem.deps.rb") do
       e = assert_raise ArgumentError do
-        Gem.use_gemdeps 'gem.deps.rb'
+        Gem.use_gemdeps "gem.deps.rb"
       end
 
-      assert_equal 'Unable to find gem dependencies file at gem.deps.rb',
+      assert_equal "Unable to find gem dependencies file at gem.deps.rb",
                    e.message
     end
   end
 
   def test_use_gemdeps_automatic
-    with_rubygems_gemdeps('-') do
-      spec = util_spec 'a', 1
+    with_rubygems_gemdeps("-") do
+      spec = util_spec "a", 1
       install_specs spec
       spec = Gem::Specification.find {|s| s == spec }
 
       refute spec.activated?
 
-      File.open 'Gemfile', 'w' do |io|
+      File.open "Gemfile", "w" do |io|
         io.write 'gem "a"'
       end
 
@@ -1911,7 +1911,7 @@ class TestGem < Gem::TestCase
   end
 
   def test_use_gemdeps_automatic_missing
-    with_rubygems_gemdeps('-') do
+    with_rubygems_gemdeps("-") do
       Gem.use_gemdeps
 
       assert true # count
@@ -1919,12 +1919,12 @@ class TestGem < Gem::TestCase
   end
 
   def test_use_gemdeps_disabled
-    with_rubygems_gemdeps('') do
-      spec = util_spec 'a', 1
+    with_rubygems_gemdeps("") do
+      spec = util_spec "a", 1
 
       refute spec.activated?
 
-      File.open 'gem.deps.rb', 'w' do |io|
+      File.open "gem.deps.rb", "w" do |io|
         io.write 'gem "a"'
       end
 
@@ -1935,8 +1935,8 @@ class TestGem < Gem::TestCase
   end
 
   def test_use_gemdeps_missing_gem
-    with_rubygems_gemdeps('x') do
-      File.open 'x', 'w' do |io|
+    with_rubygems_gemdeps("x") do
+      File.open "x", "w" do |io|
         io.write 'gem "a"'
       end
 
@@ -1957,14 +1957,14 @@ You may need to `bundle install` to install missing gems
   end
 
   def test_use_gemdeps_specific
-    with_rubygems_gemdeps('x') do
-      spec = util_spec 'a', 1
+    with_rubygems_gemdeps("x") do
+      spec = util_spec "a", 1
       install_specs spec
 
       spec = Gem::Specification.find {|s| s == spec }
       refute spec.activated?
 
-      File.open 'x', 'w' do |io|
+      File.open "x", "w" do |io|
         io.write 'gem "a"'
       end
 
@@ -1991,8 +1991,8 @@ You may need to `bundle install` to install missing gems
   # Ensure that `Gem.source_date_epoch` is consistent even if
   # $SOURCE_DATE_EPOCH has not been set.
   def test_default_source_date_epoch_doesnt_change
-    old_epoch = ENV['SOURCE_DATE_EPOCH']
-    ENV['SOURCE_DATE_EPOCH'] = nil
+    old_epoch = ENV["SOURCE_DATE_EPOCH"]
+    ENV["SOURCE_DATE_EPOCH"] = nil
 
     # Unfortunately, there is no real way to test this aside from waiting
     # enough for `Time.now.to_i` to change -- which is a whole second.
@@ -2003,23 +2003,23 @@ You may need to `bundle install` to install missing gems
     b = Gem.source_date_epoch
     assert_equal a, b
   ensure
-    ENV['SOURCE_DATE_EPOCH'] = old_epoch
+    ENV["SOURCE_DATE_EPOCH"] = old_epoch
   end
 
   private
 
   def ruby_install_name(name)
     with_clean_path_to_ruby do
-      orig_RUBY_INSTALL_NAME = RbConfig::CONFIG['ruby_install_name']
-      RbConfig::CONFIG['ruby_install_name'] = name
+      orig_RUBY_INSTALL_NAME = RbConfig::CONFIG["ruby_install_name"]
+      RbConfig::CONFIG["ruby_install_name"] = name
 
       begin
         yield
       ensure
         if orig_RUBY_INSTALL_NAME
-          RbConfig::CONFIG['ruby_install_name'] = orig_RUBY_INSTALL_NAME
+          RbConfig::CONFIG["ruby_install_name"] = orig_RUBY_INSTALL_NAME
         else
-          RbConfig::CONFIG.delete 'ruby_install_name'
+          RbConfig::CONFIG.delete "ruby_install_name"
         end
       end
     end
@@ -2074,12 +2074,12 @@ You may need to `bundle install` to install missing gems
   end
 
   def util_exec_gem
-    spec, _ = util_spec 'a', '4' do |s|
-      s.executables = ['exec', 'abin']
+    spec, _ = util_spec "a", "4" do |s|
+      s.executables = ["exec", "abin"]
     end
 
-    @exec_path = File.join spec.full_gem_path, spec.bindir, 'exec'
-    @abin_path = File.join spec.full_gem_path, spec.bindir, 'abin'
+    @exec_path = File.join spec.full_gem_path, spec.bindir, "exec"
+    @abin_path = File.join spec.full_gem_path, spec.bindir, "abin"
     spec
   end
 
@@ -2093,20 +2093,20 @@ You may need to `bundle install` to install missing gems
   end
 
   def with_path_and_rubyopt(path_value, rubyopt_value)
-    path, ENV['PATH'] = ENV['PATH'], path_value
-    rubyopt, ENV['RUBYOPT'] = ENV['RUBYOPT'], rubyopt_value
+    path, ENV["PATH"] = ENV["PATH"], path_value
+    rubyopt, ENV["RUBYOPT"] = ENV["RUBYOPT"], rubyopt_value
 
     yield
   ensure
-    ENV['PATH'] = path
-    ENV['RUBYOPT'] = rubyopt
+    ENV["PATH"] = path
+    ENV["RUBYOPT"] = rubyopt
   end
 
   def with_rubygems_gemdeps(value)
-    rubygems_gemdeps, ENV['RUBYGEMS_GEMDEPS'] = ENV['RUBYGEMS_GEMDEPS'], value
+    rubygems_gemdeps, ENV["RUBYGEMS_GEMDEPS"] = ENV["RUBYGEMS_GEMDEPS"], value
 
     yield
   ensure
-    ENV['RUBYGEMS_GEMDEPS'] = rubygems_gemdeps
+    ENV["RUBYGEMS_GEMDEPS"] = rubygems_gemdeps
   end
 end

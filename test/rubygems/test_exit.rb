@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
-require_relative 'helper'
-require 'rubygems'
+require_relative "helper"
+require "rubygems"
 
 class TestExit < Gem::TestCase
   def test_exit

@@ -25,7 +25,7 @@ module Bundler
 
       extract_files
 
-      build_extensions
+      build_extensions if spec.extensions.any?
       write_build_info_file
       run_post_build_hooks
 
@@ -66,26 +66,26 @@ module Bundler
 
     def build_extensions
       extension_cache_path = options[:bundler_extension_cache_path]
-      unless extension_cache_path && extension_dir = spec.extension_dir
-        require "shellwords" unless Bundler.rubygems.provides?(">= 3.2.25")
+      extension_dir = spec.extension_dir
+      unless extension_cache_path && extension_dir
+        prepare_extension_build(extension_dir)
         return super
       end
 
-      extension_dir = Pathname.new(extension_dir)
       build_complete = SharedHelpers.filesystem_access(extension_cache_path.join("gem.build_complete"), :read, &:file?)
       if build_complete && !options[:force]
-        SharedHelpers.filesystem_access(extension_dir.parent, &:mkpath)
+        SharedHelpers.filesystem_access(File.dirname(extension_dir)) do |p|
+          FileUtils.mkpath p
+        end
         SharedHelpers.filesystem_access(extension_cache_path) do
-          FileUtils.cp_r extension_cache_path, spec.extension_dir
+          FileUtils.cp_r extension_cache_path, extension_dir
         end
       else
-        require "shellwords" # compensate missing require in rubygems before version 3.2.25
+        prepare_extension_build(extension_dir)
         super
-        if extension_dir.directory? # not made for gems without extensions
-          SharedHelpers.filesystem_access(extension_cache_path.parent, &:mkpath)
-          SharedHelpers.filesystem_access(extension_cache_path) do
-            FileUtils.cp_r extension_dir, extension_cache_path
-          end
+        SharedHelpers.filesystem_access(extension_cache_path.parent, &:mkpath)
+        SharedHelpers.filesystem_access(extension_cache_path) do
+          FileUtils.cp_r extension_dir, extension_cache_path
         end
       end
     end
@@ -99,6 +99,13 @@ module Bundler
     end
 
     private
+
+    def prepare_extension_build(extension_dir)
+      SharedHelpers.filesystem_access(extension_dir, :create) do
+        FileUtils.mkdir_p extension_dir
+      end
+      require "shellwords" unless Bundler.rubygems.provides?(">= 3.2.25")
+    end
 
     def strict_rm_rf(dir)
       Bundler.rm_rf dir

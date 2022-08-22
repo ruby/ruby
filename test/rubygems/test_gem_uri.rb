@@ -1,5 +1,5 @@
-require_relative 'helper'
-require 'rubygems/uri'
+require_relative "helper"
+require "rubygems/uri"
 
 class TestUri < Gem::TestCase
   def test_to_s_not_string
@@ -31,9 +31,9 @@ class TestUri < Gem::TestCase
   end
 
   def test_redacted_does_not_modify_uri
-    url = 'https://user:password@example.com'
+    url = "https://user:password@example.com"
     uri = Gem::Uri.new(url)
-    assert_equal 'https://user:REDACTED@example.com', uri.redacted.to_s
+    assert_equal "https://user:REDACTED@example.com", uri.redacted.to_s
     assert_equal url, uri.to_s
   end
 end

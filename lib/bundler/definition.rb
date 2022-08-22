@@ -138,13 +138,13 @@ module Bundler
         @unlock[:gems] ||= @dependencies.map(&:name)
       else
         eager_unlock = expand_dependencies(@unlock[:gems] || [], true)
-        @unlock[:gems] = @locked_specs.for(eager_unlock, false, false).map(&:name)
+        @unlock[:gems] = @locked_specs.for(eager_unlock, false, platforms).map(&:name)
       end
 
       @dependency_changes = converge_dependencies
       @local_changes = converge_locals
 
-      @locked_specs_incomplete_for_platform = !@locked_specs.for(requested_dependencies & expand_dependencies(locked_dependencies), true, true)
+      @reresolve = nil
 
       @requires = compute_requires
     end
@@ -279,11 +279,8 @@ module Bundler
           end
         end
       else
-        last_resolve = converge_locked_specs
-        # Run a resolve against the locally available gems
         Bundler.ui.debug("Found changes from the lockfile, re-resolving dependencies because #{change_reason}")
-        expanded_dependencies = expand_dependencies(dependencies + metadata_dependencies, true)
-        Resolver.resolve(expanded_dependencies, source_requirements, last_resolve, gem_version_promoter, additional_base_requirements_for_resolve, platforms)
+        @reresolve = reresolve
       end
     end
 
@@ -468,7 +465,7 @@ module Bundler
     private :sources
 
     def nothing_changed?
-      !@source_changes && !@dependency_changes && !@new_platform && !@path_changes && !@local_changes && !@locked_specs_incomplete_for_platform
+      !@source_changes && !@dependency_changes && !@new_platform && !@path_changes && !@local_changes
     end
 
     def unlocking?
@@ -477,8 +474,14 @@ module Bundler
 
     private
 
+    def reresolve
+      last_resolve = converge_locked_specs
+      expanded_dependencies = expand_dependencies(dependencies + metadata_dependencies, true)
+      Resolver.resolve(expanded_dependencies, source_requirements, last_resolve, gem_version_promoter, additional_base_requirements_for_resolve, platforms)
+    end
+
     def filter_specs(specs, deps)
-      SpecSet.new(specs).for(expand_dependencies(deps, true), false, false)
+      SpecSet.new(specs).for(expand_dependencies(deps, true), false, platforms)
     end
 
     def materialize(dependencies)
@@ -495,7 +498,22 @@ module Bundler
                              "removed in order to install."
         end
 
-        raise GemNotFound, "Could not find #{missing_specs.map(&:full_name).join(", ")} in any of the sources"
+        missing_specs_list = missing_specs.group_by(&:source).map do |source, missing_specs_for_source|
+          "#{missing_specs_for_source.map(&:full_name).join(", ")} in #{source}"
+        end
+
+        raise GemNotFound, "Could not find #{missing_specs_list.join(" nor ")}"
+      end
+
+      if @reresolve.nil?
+        incomplete_specs = specs.incomplete_specs
+
+        if incomplete_specs.any?
+          Bundler.ui.debug("The lockfile does not have all gems needed for the current platform though, Bundler will still re-resolve dependencies")
+          @unlock[:gems].concat(incomplete_specs.map(&:name))
+          @resolve = reresolve
+          specs = resolve.materialize(dependencies)
+        end
       end
 
       unless specs["bundler"].any?
@@ -545,7 +563,6 @@ module Bundler
         [@new_platform, "you added a new platform to your gemfile"],
         [@path_changes, "the gemspecs for path gems changed"],
         [@local_changes, "the gemspecs for git local gems changed"],
-        [@locked_specs_incomplete_for_platform, "the lockfile does not have all gems needed for the current platform"],
       ].select(&:first).map(&:last).join(", ")
     end
 
@@ -721,7 +738,7 @@ module Bundler
             # if we won't need the source (according to the lockfile),
             # don't error if the path/git source isn't available
             next if specs.
-                    for(requested_dependencies, false, true).
+                    for(requested_dependencies, false).
                     none? {|locked_spec| locked_spec.source == s.source }
 
             raise
@@ -789,7 +806,9 @@ module Bundler
     end
 
     def requested_groups
-      groups - Bundler.settings[:without] - @optional_groups + Bundler.settings[:with]
+      values = groups - Bundler.settings[:without] - @optional_groups + Bundler.settings[:with]
+      values &= Bundler.settings[:only] unless Bundler.settings[:only].empty?
+      values
     end
 
     def lockfiles_equal?(current, proposed, preserve_unknown_sections)

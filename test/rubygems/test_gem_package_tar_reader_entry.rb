@@ -1,12 +1,12 @@
 # frozen_string_literal: true
-require_relative 'package/tar_test_case'
-require 'rubygems/package'
+require_relative "package/tar_test_case"
+require "rubygems/package"
 
 class TestGemPackageTarReaderEntry < Gem::Package::TarTestCase
   def setup
     super
 
-    @contents = ('a'..'z').to_a.join * 100
+    @contents = ("a".."z").to_a.join * 100
 
     @tar = String.new
     @tar << tar_file_header("lib/foo", "", 0, @contents.size, Time.now)
@@ -43,19 +43,19 @@ class TestGemPackageTarReaderEntry < Gem::Package::TarTestCase
     assert @entry.bytes_read
 
     e = assert_raise(IOError) { @entry.eof? }
-    assert_equal 'closed Gem::Package::TarReader::Entry', e.message
+    assert_equal "closed Gem::Package::TarReader::Entry", e.message
 
     e = assert_raise(IOError) { @entry.getc }
-    assert_equal 'closed Gem::Package::TarReader::Entry', e.message
+    assert_equal "closed Gem::Package::TarReader::Entry", e.message
 
     e = assert_raise(IOError) { @entry.pos }
-    assert_equal 'closed Gem::Package::TarReader::Entry', e.message
+    assert_equal "closed Gem::Package::TarReader::Entry", e.message
 
     e = assert_raise(IOError) { @entry.read }
-    assert_equal 'closed Gem::Package::TarReader::Entry', e.message
+    assert_equal "closed Gem::Package::TarReader::Entry", e.message
 
     e = assert_raise(IOError) { @entry.rewind }
-    assert_equal 'closed Gem::Package::TarReader::Entry', e.message
+    assert_equal "closed Gem::Package::TarReader::Entry", e.message
   end
 
   def test_closed_eh
@@ -71,7 +71,7 @@ class TestGemPackageTarReaderEntry < Gem::Package::TarTestCase
   end
 
   def test_full_name
-    assert_equal 'lib/foo', @entry.full_name
+    assert_equal "lib/foo", @entry.full_name
   end
 
   def test_full_name_null
@@ -82,7 +82,7 @@ class TestGemPackageTarReaderEntry < Gem::Package::TarTestCase
       @entry.full_name
     end
 
-    assert_equal 'tar is corrupt, name contains null byte', e.message
+    assert_equal "tar is corrupt, name contains null byte", e.message
   end
 
   def test_getc

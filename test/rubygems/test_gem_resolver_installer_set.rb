@@ -1,26 +1,26 @@
 # frozen_string_literal: true
-require_relative 'helper'
+require_relative "helper"
 
 class TestGemResolverInstallerSet < Gem::TestCase
   def test_add_always_install
     spec_fetcher do |fetcher|
-      fetcher.download 'a', 1
-      fetcher.download 'a', 2
+      fetcher.download "a", 1
+      fetcher.download "a", 2
     end
 
-    util_gem 'a', 1
+    util_gem "a", 1
 
     set = Gem::Resolver::InstallerSet.new :both
 
-    set.add_always_install dep('a')
+    set.add_always_install dep("a")
 
     assert_equal %w[a-2], set.always_install.map {|s| s.full_name }
 
     e = assert_raise Gem::UnsatisfiableDependencyError do
-      set.add_always_install dep('b')
+      set.add_always_install dep("b")
     end
 
-    assert_equal dep('b'), e.dependency.dependency
+    assert_equal dep("b"), e.dependency.dependency
   end
 
   def test_add_always_install_errors
@@ -30,7 +30,7 @@ class TestGemResolverInstallerSet < Gem::TestCase
     set = Gem::Resolver::InstallerSet.new :both
 
     e = assert_raise Gem::UnsatisfiableDependencyError do
-      set.add_always_install dep 'a'
+      set.add_always_install dep "a"
     end
 
     refute_empty e.errors
@@ -38,64 +38,64 @@ class TestGemResolverInstallerSet < Gem::TestCase
 
   def test_add_always_install_platform
     spec_fetcher do |fetcher|
-      fetcher.download 'a', 1
-      fetcher.download 'a', 2 do |s|
-        s.platform = Gem::Platform.new 'x86-freebsd-9'
+      fetcher.download "a", 1
+      fetcher.download "a", 2 do |s|
+        s.platform = Gem::Platform.new "x86-freebsd-9"
       end
     end
 
     set = Gem::Resolver::InstallerSet.new :both
 
-    set.add_always_install dep('a')
+    set.add_always_install dep("a")
 
     assert_equal %w[a-1], set.always_install.map {|s| s.full_name }
   end
 
   def test_add_always_install_prerelease
     spec_fetcher do |fetcher|
-      fetcher.gem 'a', 1
-      fetcher.gem 'a', '3.a'
+      fetcher.gem "a", 1
+      fetcher.gem "a", "3.a"
     end
 
     set = Gem::Resolver::InstallerSet.new :both
 
-    set.add_always_install dep('a')
+    set.add_always_install dep("a")
 
     assert_equal %w[a-1], set.always_install.map {|s| s.full_name }
   end
 
   def test_add_always_install_prerelease_github_problem
     spec_fetcher do |fetcher|
-      fetcher.gem 'a', 1
+      fetcher.gem "a", 1
     end
 
     # Github has an issue in which it will generate a misleading prerelease output in its RubyGems server API and
     # returns a 0 version for the gem while it doesn't exist.
     @fetcher.data["#{@gem_repo}prerelease_specs.#{Gem.marshal_version}.gz"] = util_gzip(Marshal.dump([
-      Gem::NameTuple.new('a', Gem::Version.new(0), 'ruby'),
+      Gem::NameTuple.new("a", Gem::Version.new(0), "ruby"),
     ]))
 
     set = Gem::Resolver::InstallerSet.new :both
 
-    set.add_always_install dep('a')
+    set.add_always_install dep("a")
 
     assert_equal %w[a-1], set.always_install.map {|s| s.full_name }
   end
 
   def test_add_always_install_prerelease_only
     spec_fetcher do |fetcher|
-      fetcher.gem 'a', '3.a'
+      fetcher.gem "a", "3.a"
     end
 
     set = Gem::Resolver::InstallerSet.new :both
 
     assert_raise Gem::UnsatisfiableDependencyError do
-      set.add_always_install dep('a')
+      set.add_always_install dep("a")
     end
   end
 
   def test_add_local
-    a_1, a_1_gem = util_gem 'a', 1
+    a_1, a_1_gem = util_gem "a", 1
 
     a_1_source = Gem::Source::SpecificFile.new a_1_gem
 
@@ -108,7 +108,7 @@ class TestGemResolverInstallerSet < Gem::TestCase
     FileUtils.rm a_1_gem
     util_clear_gems
 
-    req = Gem::Resolver::DependencyRequest.new dep('a'), nil
+    req = Gem::Resolver::DependencyRequest.new dep("a"), nil
 
     assert_equal %w[a-1], set.find_all(req).map {|spec| spec.full_name }
   end
@@ -146,7 +146,7 @@ class TestGemResolverInstallerSet < Gem::TestCase
 
     set.instance_variable_get(:@errors) << :a
 
-    req = Gem::Resolver::DependencyRequest.new dep('a'), nil
+    req = Gem::Resolver::DependencyRequest.new dep("a"), nil
 
     set.find_all req
 
@@ -155,33 +155,33 @@ class TestGemResolverInstallerSet < Gem::TestCase
 
   def test_find_all_always_install
     spec_fetcher do |fetcher|
-      fetcher.download 'a', 2
+      fetcher.download "a", 2
     end
 
-    util_gem 'a', 1
+    util_gem "a", 1
 
     set = Gem::Resolver::InstallerSet.new :both
 
-    set.add_always_install dep 'a'
+    set.add_always_install dep "a"
 
-    req = Gem::Resolver::DependencyRequest.new dep('a'), nil
+    req = Gem::Resolver::DependencyRequest.new dep("a"), nil
 
     assert_equal %w[a-2], set.find_all(req).map {|spec| spec.full_name }
   end
 
   def test_find_all_prerelease
     spec_fetcher do |fetcher|
-      fetcher.download 'a', '1'
-      fetcher.download 'a', '1.a'
+      fetcher.download "a", "1"
+      fetcher.download "a", "1.a"
     end
 
     set = Gem::Resolver::InstallerSet.new :both
 
-    req = Gem::Resolver::DependencyRequest.new dep('a'), nil
+    req = Gem::Resolver::DependencyRequest.new dep("a"), nil
 
     assert_equal %w[a-1], set.find_all(req).map {|spec| spec.full_name }
 
-    req = Gem::Resolver::DependencyRequest.new dep('a', '>= 0.a'), nil
+    req = Gem::Resolver::DependencyRequest.new dep("a", ">= 0.a"), nil
 
     assert_equal %w[a-1 a-1.a],
                  set.find_all(req).map {|spec| spec.full_name }.sort
@@ -189,8 +189,8 @@ class TestGemResolverInstallerSet < Gem::TestCase
 
   def test_load_spec
     specs = spec_fetcher do |fetcher|
-      fetcher.spec 'a', 2
-      fetcher.spec 'a', 2 do |s|
+      fetcher.spec "a", 2
+      fetcher.spec "a", 2 do |s|
         s.platform = Gem::Platform.local
       end
     end
@@ -200,7 +200,7 @@ class TestGemResolverInstallerSet < Gem::TestCase
 
     set = Gem::Resolver::InstallerSet.new :remote
 
-    spec = set.load_spec 'a', version, Gem::Platform.local, source
+    spec = set.load_spec "a", version, Gem::Platform.local, source
 
     assert_equal specs["a-2-#{Gem::Platform.local}"].full_name, spec.full_name
   end

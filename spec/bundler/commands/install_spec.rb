@@ -723,6 +723,36 @@ RSpec.describe "bundle install with gem sources" do
     end
   end
 
+  describe "when bundle extensions path does not have write access", :permissions do
+    let(:extensions_path) { bundled_app("vendor/#{Bundler.ruby_scope}/extensions/#{Gem::Platform.local}/#{Gem.extension_api_version}") }
+
+    before do
+      FileUtils.mkdir_p(extensions_path)
+      gemfile <<-G
+        source "#{file_uri_for(gem_repo1)}"
+        gem 'simple_binary'
+      G
+    end
+
+    it "should display a proper message to explain the problem" do
+      FileUtils.chmod("-x", extensions_path)
+      bundle "config set --local path vendor"
+
+      begin
+        bundle :install, :raise_on_error => false
+      ensure
+        FileUtils.chmod("+x", extensions_path)
+      end
+
+      expect(err).not_to include("ERROR REPORT TEMPLATE")
+
+      expect(err).to include(
+        "There was an error while trying to create `#{extensions_path.join("simple_binary-1.0")}`. " \
+        "It is likely that you need to grant executable permissions for all parent directories and write permissions for `#{extensions_path}`."
+      )
+    end
+  end
+
   describe "when the path of a specific gem is not writable", :permissions do
     let(:gems_path) { bundled_app("vendor/#{Bundler.ruby_scope}/gems") }
     let(:foo_path) { gems_path.join("foo-1.0.0") }
@@ -967,6 +997,26 @@ RSpec.describe "bundle install with gem sources" do
       G
 
       expect(last_command).to be_success
+    end
+  end
+
+  context "with only option" do
+    before do
+      bundle "config set only a:b"
+    end
+
+    it "installs only gems of the specified groups" do
+      install_gemfile <<-G
+        source "#{file_uri_for(gem_repo1)}"
+        gem "rails"
+        gem "rack", group: :a
+        gem "rake", group: :b
+        gem "yard", group: :c
+      G
+
+      expect(out).to include("Installing rack")
+      expect(out).to include("Installing rake")
+      expect(out).not_to include("Installing yard")
     end
   end
 

@@ -1,6 +1,6 @@
 # frozen_string_literal: true
-require_relative 'helper'
-require 'rubygems/installer'
+require_relative "helper"
+require "rubygems/installer"
 
 class Gem::Installer
   ##
@@ -133,7 +133,7 @@ class Gem::InstallerTestCase < Gem::TestCase
   # And returns it
 
   def setup_base_spec
-    quick_gem 'a' do |spec|
+    quick_gem "a" do |spec|
       util_make_exec spec
     end
   end
@@ -154,7 +154,7 @@ class Gem::InstallerTestCase < Gem::TestCase
   # And returns a Gem::Installer for the @user_spec that installs into Gem.user_dir
 
   def setup_base_user_installer
-    @user_spec = quick_gem 'b' do |spec|
+    @user_spec = quick_gem "b" do |spec|
       util_make_exec spec
     end
 
@@ -183,23 +183,23 @@ class Gem::InstallerTestCase < Gem::TestCase
   #   ext/a/mkrf_conf.rb
 
   def util_setup_gem(ui = @ui, force = true)
-    @spec.files << File.join('lib', 'code.rb')
-    @spec.extensions << File.join('ext', 'a', 'mkrf_conf.rb')
+    @spec.files << File.join("lib", "code.rb")
+    @spec.extensions << File.join("ext", "a", "mkrf_conf.rb")
 
     Dir.chdir @tempdir do
-      FileUtils.mkdir_p 'bin'
-      FileUtils.mkdir_p 'lib'
-      FileUtils.mkdir_p File.join('ext', 'a')
+      FileUtils.mkdir_p "bin"
+      FileUtils.mkdir_p "lib"
+      FileUtils.mkdir_p File.join("ext", "a")
 
-      File.open File.join('bin', 'executable'), 'w' do |f|
+      File.open File.join("bin", "executable"), "w" do |f|
         f.puts "raise 'ran executable'"
       end
 
-      File.open File.join('lib', 'code.rb'), 'w' do |f|
-        f.puts '1'
+      File.open File.join("lib", "code.rb"), "w" do |f|
+        f.puts "1"
       end
 
-      File.open File.join('ext', 'a', 'mkrf_conf.rb'), 'w' do |f|
+      File.open File.join("ext", "a", "mkrf_conf.rb"), "w" do |f|
         f << <<-EOF
           File.open 'Rakefile', 'w' do |rf| rf.puts "task :default" end
         EOF

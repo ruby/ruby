@@ -74,6 +74,9 @@ The options that can be configured are:
    `production` use. Please check carefully if you want to have this option
    enabled in `development` or `test` environments.
 
+* `only`:
+   A space-separated list of groups to install only gems of the specified groups.
+
 * `path`:
    The location to install the specified gems to. This defaults to Rubygems'
    setting. Bundler shares this location with Rubygems, `gem install ...` will
@@ -204,6 +207,8 @@ learn more about their operation in [bundle install(1)](bundle-install.1.html).
 * `global_gem_cache` (`BUNDLE_GLOBAL_GEM_CACHE`):
    Whether Bundler should cache all gems globally, rather than locally to the
    installing Ruby installation.
+* `ignore_funding_requests` (`BUNDLE_IGNORE_FUNDING_REQUESTS`):
+   When set, no funding requests will be printed.
 * `ignore_messages` (`BUNDLE_IGNORE_MESSAGES`):
    When set, no post install messages will be printed. To silence a single gem,
    use dot notation like `ignore_messages.httparty true`.
@@ -216,6 +221,8 @@ learn more about their operation in [bundle install(1)](bundle-install.1.html).
    Whether `bundle package` should skip installing gems.
 * `no_prune` (`BUNDLE_NO_PRUNE`):
    Whether Bundler should leave outdated gems unpruned when caching.
+* `only` (`BUNDLE_ONLY`):
+   A space-separated list of groups to install only gems of the specified groups.
 * `path` (`BUNDLE_PATH`):
    The location on disk where all gems in your bundle will be located regardless
    of `$GEM_HOME` or `$GEM_PATH` values. Bundle gems not found in this location
@@ -321,9 +328,9 @@ mirror to fetch gems.
 
     bundle config set --global mirror.SOURCE_URL MIRROR_URL
 
-For example, to use a mirror of rubygems.org hosted at rubygems-mirror.org:
+For example, to use a mirror of https://rubygems.org hosted at https://example.org:
 
-    bundle config set --global mirror.http://rubygems.org http://rubygems-mirror.org
+    bundle config set --global mirror.https://rubygems.org https://example.org
 
 Each mirror also provides a fallback timeout setting. If the mirror does not
 respond within the fallback timeout, Bundler will try to use the original

@@ -1,13 +1,13 @@
 # frozen_string_literal: true
-require 'benchmark'
-require_relative 'helper'
-require 'date'
-require 'pathname'
-require 'stringio'
-require 'rubygems/ext'
-require 'rubygems/specification'
-require 'rubygems/installer'
-require 'rubygems/platform'
+require "benchmark"
+require_relative "helper"
+require "date"
+require "pathname"
+require "stringio"
+require "rubygems/ext"
+require "rubygems/specification"
+require "rubygems/installer"
+require "rubygems/platform"
 
 class TestGemSpecification < Gem::TestCase
   LEGACY_YAML_SPEC = <<-EOF.freeze
@@ -44,16 +44,16 @@ end
   EOF
 
   def make_spec_c1
-    @c1 = util_spec 'a', '1' do |s|
-      s.executable = 'exec'
-      s.extensions << 'ext/a/extconf.rb'
-      s.test_file = 'test/suite.rb'
-      s.requirements << 'A working computer'
-      s.license = 'MIT'
+    @c1 = util_spec "a", "1" do |s|
+      s.executable = "exec"
+      s.extensions << "ext/a/extconf.rb"
+      s.test_file = "test/suite.rb"
+      s.requirements << "A working computer"
+      s.license = "MIT"
 
-      s.add_dependency 'rake', '> 0.4'
-      s.add_dependency 'jabber4r', '> 0.0.0'
-      s.add_dependency 'pqa', ['> 0.4', '<= 0.6']
+      s.add_dependency "rake", "> 0.4"
+      s.add_dependency "jabber4r", "> 0.0.0"
+      s.add_dependency "pqa", ["> 0.4", "<= 0.6"]
 
       s.mark_version
       s.files = %w[lib/code.rb]
@@ -61,16 +61,16 @@ end
   end
 
   def ext_spec(platform: Gem::Platform::RUBY)
-    @ext = util_spec 'ext', '1' do |s|
-      s.executable = 'exec'
-      s.test_file = 'test/suite.rb'
+    @ext = util_spec "ext", "1" do |s|
+      s.executable = "exec"
+      s.test_file = "test/suite.rb"
       s.extensions = %w[ext/extconf.rb]
-      s.license = 'MIT'
+      s.license = "MIT"
       s.platform = platform
 
       s.mark_version
       s.files = %w[lib/code.rb]
-      s.installed_by_version = v('2.2')
+      s.installed_by_version = v("2.2")
     end
   end
 
@@ -88,40 +88,40 @@ end
     # is not set.
     Gem.instance_variable_set(:'@default_source_date_epoch', nil)
 
-    @a1 = util_spec 'a', '1' do |s|
-      s.executable = 'exec'
-      s.test_file = 'test/suite.rb'
-      s.requirements << 'A working computer'
-      s.license = 'MIT'
+    @a1 = util_spec "a", "1" do |s|
+      s.executable = "exec"
+      s.test_file = "test/suite.rb"
+      s.requirements << "A working computer"
+      s.license = "MIT"
 
       s.mark_version
       s.files = %w[lib/code.rb]
     end
 
-    @a2 = util_spec 'a', '2' do |s|
+    @a2 = util_spec "a", "2" do |s|
       s.files = %w[lib/code.rb]
     end
 
-    @a3 = util_spec 'a', '3' do |s|
-      s.metadata['allowed_push_host'] = "https://privategemserver.com"
+    @a3 = util_spec "a", "3" do |s|
+      s.metadata["allowed_push_host"] = "https://privategemserver.com"
     end
 
     @current_version = Gem::Specification::CURRENT_SPECIFICATION_VERSION
   end
 
   def test_self_find_active_stub_by_path
-    spec = util_spec('a', '1', nil, 'lib/foo.rb')
+    spec = util_spec("a", "1", nil, "lib/foo.rb")
     spec.activated = true
 
     # There used to be a bug (introduced in a9c1aaf) when Gem::Specification
     # objects are present in the @stubs collection. This test verifies that
     # this scenario works correctly.
     Gem::Specification.all = [spec]
-    assert_equal spec, Gem::Specification.find_active_stub_by_path('foo')
+    assert_equal spec, Gem::Specification.find_active_stub_by_path("foo")
   end
 
   def test_self_activate
-    foo = util_spec 'foo', '1'
+    foo = util_spec "foo", "1"
 
     assert_activate %w[foo-1], foo
   end
@@ -147,7 +147,7 @@ end
   end
 
   def test_find_in_unresolved_tree_is_not_exponentiental
-    pend "currently slower in CI on TruffleRuby" if RUBY_ENGINE == 'truffleruby'
+    pend "currently slower in CI on TruffleRuby" if RUBY_ENGINE == "truffleruby"
     num_of_pkg = 7
     num_of_version_per_pkg = 3
     packages = (0..num_of_pkg).map do |pkgi|
@@ -166,7 +166,7 @@ end
     base.activate
 
     tms = Benchmark.measure do
-      assert_raise(LoadError) { require 'no_such_file_foo' }
+      assert_raise(LoadError) { require "no_such_file_foo" }
     end
     assert_operator tms.total, :<=, 10
   end
@@ -372,13 +372,13 @@ end
   #     [B] ~> 1.0 (satisfied by 1.0)
 
   def test_self_activate_checks_dependencies
-    a = util_spec 'a', '1.0'
-    a.add_dependency 'c', '= 1.0'
-    a.add_dependency 'b', '~> 1.0'
+    a = util_spec "a", "1.0"
+    a.add_dependency "c", "= 1.0"
+    a.add_dependency "b", "~> 1.0"
 
-    b1 = util_spec 'b', '1.0'
-    b2 = util_spec 'b', '2.0'
-    c  = util_spec 'c', '1.0', 'b' => '= 2.0'
+    b1 = util_spec "b", "1.0"
+    b2 = util_spec "b", "2.0"
+    c  = util_spec "c", "1.0", "b" => "= 2.0"
     install_specs b1, b2, c, a
 
     e = assert_raise Gem::LoadError do
@@ -396,10 +396,10 @@ end
   #         [B] = 2.0
 
   def test_self_activate_divergent
-    a  = util_spec 'a', '1.0', 'b' => '~> 1.0', 'c' => '= 1.0'
-    b1 = util_spec 'b', '1.0'
-    b2 = util_spec 'b', '2.0'
-    c  = util_spec 'c', '1.0', 'b' => '= 2.0'
+    a  = util_spec "a", "1.0", "b" => "~> 1.0", "c" => "= 1.0"
+    b1 = util_spec "b", "1.0"
+    b2 = util_spec "b", "2.0"
+    c  = util_spec "c", "1.0", "b" => "= 2.0"
 
     install_specs b1, b2, c, a
 
@@ -415,9 +415,9 @@ end
   # DOC
 
   def test_self_activate_old_required
-    e1, = util_spec 'e', '1', 'd' => '= 1'
-    @d1 = util_spec 'd', '1'
-    @d2 = util_spec 'd', '2'
+    e1, = util_spec "e", "1", "d" => "= 1"
+    @d1 = util_spec "d", "1"
+    @d2 = util_spec "d", "2"
 
     install_specs @d1, @d2, e1
 
@@ -428,17 +428,17 @@ end
   # DOC
 
   def test_self_activate_platform_alternate
-    @x1_m = util_spec 'x', '1' do |s|
+    @x1_m = util_spec "x", "1" do |s|
       s.platform = Gem::Platform.new %w[cpu my_platform 1]
     end
 
-    @x1_o = util_spec 'x', '1' do |s|
+    @x1_o = util_spec "x", "1" do |s|
       s.platform = Gem::Platform.new %w[cpu other_platform 1]
     end
 
-    @w1 = util_spec 'w', '1', 'x' => nil
+    @w1 = util_spec "w", "1", "x" => nil
 
-    util_set_arch 'cpu-my_platform1'
+    util_set_arch "cpu-my_platform1"
     install_specs @x1_m, @x1_o, @w1
 
     assert_activate %w[x-1-cpu-my_platform-1 w-1], @w1, @x1_m
@@ -448,13 +448,13 @@ end
   # DOC
 
   def test_self_activate_platform_bump
-    @y1 = util_spec 'y', '1'
+    @y1 = util_spec "y", "1"
 
-    @y1_1_p = util_spec 'y', '1.1' do |s|
+    @y1_1_p = util_spec "y", "1.1" do |s|
       s.platform = Gem::Platform.new %w[cpu my_platform 1]
     end
 
-    @z1 = util_spec 'z', '1', 'y' => nil
+    @z1 = util_spec "z", "1", "y" => nil
     install_specs @y1, @y1_1_p, @z1
 
     assert_activate %w[y-1 z-1], @z1, @y1
@@ -467,11 +467,11 @@ end
   #         [A] >= 0 (satisfied by 1.a)
 
   def test_self_activate_prerelease
-    @c1_pre = util_spec 'c', '1.a', "a" => "1.a", "b" => "1"
-    @a1_pre = util_spec 'a', '1.a'
-    @b1     = util_spec 'b', '1' do |s|
-      s.add_dependency 'a'
-      s.add_development_dependency 'aa'
+    @c1_pre = util_spec "c", "1.a", "a" => "1.a", "b" => "1"
+    @a1_pre = util_spec "a", "1.a"
+    @b1     = util_spec "b", "1" do |s|
+      s.add_dependency "a"
+      s.add_development_dependency "aa"
     end
     install_specs @a1_pre, @b1, @c1_pre
 
@@ -533,7 +533,7 @@ end
   end
 
   def test_self_activate_loaded
-    foo = util_spec 'foo', '1'
+    foo = util_spec "foo", "1"
 
     assert foo.activate
     refute foo.activate
@@ -545,9 +545,9 @@ end
   # [C] depends on nothing
 
   def test_self_activate_unrelated
-    a = util_spec 'a', '1.0', 'b' => '>= 1.0'
-    b = util_spec 'b', '1.0'
-    c = util_spec 'c', '1.0'
+    a = util_spec "a", "1.0", "b" => ">= 1.0"
+    b = util_spec "b", "1.0"
+    c = util_spec "c", "1.0"
     install_specs b, c, a
 
     assert_activate %w[b-1.0 c-1.0 a-1.0], a, c, "b"
@@ -563,11 +563,11 @@ end
   # TODO: move these to specification
 
   def test_self_activate_over
-    a = util_spec 'a', '1.0', 'b' => '>= 1.0', 'c' => '= 1.0'
-    install_specs util_spec 'b', '1.0'
-    install_specs util_spec 'b', '1.1'
-    install_specs util_spec 'b', '2.0'
-    install_specs util_spec 'c', '1.0', 'b' => '~> 1.0'
+    a = util_spec "a", "1.0", "b" => ">= 1.0", "c" => "= 1.0"
+    install_specs util_spec "b", "1.0"
+    install_specs util_spec "b", "1.1"
+    install_specs util_spec "b", "2.0"
+    install_specs util_spec "c", "1.0", "b" => "~> 1.0"
     install_specs a
 
     a.activate
@@ -588,10 +588,10 @@ end
   # first resolve through a dependency that is later pruned.
 
   def test_self_activate_under
-    a    = util_spec 'a', '1.0', 'b' => '~> 1.0', 'c' => '= 1.0'
-    b1   = util_spec 'b', '1.0'
-    b1_1 = util_spec 'b', '1.1'
-    c    = util_spec 'c', '1.0', 'b' => '= 1.0'
+    a    = util_spec "a", "1.0", "b" => "~> 1.0", "c" => "= 1.0"
+    b1   = util_spec "b", "1.0"
+    b1_1 = util_spec "b", "1.1"
+    c    = util_spec "c", "1.0", "b" => "= 1.0"
 
     install_specs b1, b1_1, c, a
 
@@ -607,10 +607,10 @@ end
   # [C1] depends on nothing
 
   def test_self_activate_dropped
-    a1 = util_spec 'a', '1', 'b' => nil
-    b1 = util_spec 'b', '1', 'c' => nil
-    b2 = util_spec 'b', '2'
-    c1 = util_spec 'c', '1'
+    a1 = util_spec "a", "1", "b" => nil
+    b1 = util_spec "b", "1", "c" => nil
+    b2 = util_spec "b", "2"
+    c1 = util_spec "c", "1"
     install_specs c1, b1, b2, a1
 
     assert_activate %w[b-2 a-1], a1, "b"
@@ -627,11 +627,11 @@ end
   # resolve.
 
   def test_self_activate_raggi_the_edgecase_generator
-    a    = util_spec 'a', '1.0', 'b' => '>= 1.0', 'c' => '>= 1.0'
-    b1   = util_spec 'b', '1.0'
-    b1_0 = util_spec 'b', '1.1', 'z' => '>= 1.0'
-    c    = util_spec 'c', '1.0', 'b' => '= 1.0'
-    z    = util_spec 'z', '1'
+    a    = util_spec "a", "1.0", "b" => ">= 1.0", "c" => ">= 1.0"
+    b1   = util_spec "b", "1.0"
+    b1_0 = util_spec "b", "1.1", "z" => ">= 1.0"
+    c    = util_spec "c", "1.0", "b" => "= 1.0"
+    z    = util_spec "z", "1"
 
     install_specs z, b1, b1_0, c, z
 
@@ -639,8 +639,8 @@ end
   end
 
   def test_self_activate_conflict
-    install_specs util_spec 'b', '1.0'
-    install_specs util_spec 'b', '2.0'
+    install_specs util_spec "b", "1.0"
+    install_specs util_spec "b", "2.0"
 
     gem "b", "= 1.0"
 
@@ -655,7 +655,7 @@ end
     install_specs a
     Gem::Specification.all = [a]
 
-    assert_equal a, Gem::Specification.find_inactive_by_path('foo')
+    assert_equal a, Gem::Specification.find_inactive_by_path("foo")
   end
 
   def test_self_attribute_names
@@ -698,13 +698,13 @@ end
 
   def test_self__load_future
     spec = Gem::Specification.new
-    spec.name = 'a'
-    spec.version = '1'
+    spec.name = "a"
+    spec.version = "1"
     spec.specification_version = @current_version + 1
 
     load_spec = Marshal.load Marshal.dump(spec)
 
-    assert_equal 'a', load_spec.name
+    assert_equal "a", load_spec.name
     assert_equal Gem::Version.new(1), load_spec.version
     assert_equal @current_version, load_spec.specification_version
   end
@@ -783,20 +783,20 @@ dependencies: []
   end
 
   def test_self_load_relative
-    File.open 'a-2.gemspec', 'w' do |io|
+    File.open "a-2.gemspec", "w" do |io|
       io.write @a2.to_ruby_for_cache
     end
 
-    spec = Gem::Specification.load 'a-2.gemspec'
+    spec = Gem::Specification.load "a-2.gemspec"
 
     @a2.files.clear
 
     assert_equal @a2, spec
 
-    assert_equal File.join(@tempdir, 'a-2.gemspec'), spec.loaded_from
+    assert_equal File.join(@tempdir, "a-2.gemspec"), spec.loaded_from
   end
 
-  if RUBY_ENGINE == 'ruby' and RUBY_VERSION < '2.7'
+  if RUBY_ENGINE == "ruby" and RUBY_VERSION < "2.7"
     def test_self_load_tainted
       full_path = @a2.spec_file
       write_file full_path do |io|
@@ -874,13 +874,13 @@ dependencies: []
   end
 
   def test_self_load_utf8_with_ascii_encoding
-    with_internal_encoding('US-ASCII') do
+    with_internal_encoding("US-ASCII") do
       spec2 = @a2.dup
       bin = "\u5678".dup
       spec2.authors = [bin]
       full_path = spec2.spec_file
       write_file full_path do |io|
-        io.write spec2.to_ruby_for_cache.force_encoding('BINARY').sub("\\u{5678}", bin.force_encoding('BINARY'))
+        io.write spec2.to_ruby_for_cache.force_encoding("BINARY").sub("\\u{5678}", bin.force_encoding("BINARY"))
       end
 
       spec = Gem::Specification.load full_path
@@ -895,10 +895,10 @@ dependencies: []
     spec = Gem::Deprecate.skip_during do
       eval LEGACY_RUBY_SPEC
     end
-    assert_equal 'keyedlist', spec.name
-    assert_equal '0.4.0', spec.version.to_s
+    assert_equal "keyedlist", spec.name
+    assert_equal "0.4.0", spec.version.to_s
     assert_kind_of Time, spec.date
-    assert spec.required_ruby_version.satisfied_by?(Gem::Version.new('1'))
+    assert spec.required_ruby_version.satisfied_by?(Gem::Version.new("1"))
     assert_equal false, spec.has_unit_tests?
   end
 
@@ -933,9 +933,9 @@ dependencies: []
 
   def test_self_outdated
     spec_fetcher do |fetcher|
-      fetcher.download 'a', 4
+      fetcher.download "a", 4
 
-      fetcher.spec 'a', 3
+      fetcher.spec "a", 3
     end
 
     assert_equal %w[a], Gem::Specification.outdated
@@ -943,16 +943,16 @@ dependencies: []
 
   def test_self_outdated_and_latest_remotes
     spec_fetcher do |fetcher|
-      fetcher.download 'a', 4
-      fetcher.download 'b', 3
+      fetcher.download "a", 4
+      fetcher.download "b", 3
 
-      fetcher.spec 'a', '3.a'
-      fetcher.spec 'b', 2
+      fetcher.spec "a", "3.a"
+      fetcher.spec "b", 2
     end
 
     expected = [
-      [Gem::Specification.stubs.find {|s| s.full_name == 'a-3.a' }, v(4)],
-      [Gem::Specification.stubs.find {|s| s.full_name == 'b-2' }, v(3)],
+      [Gem::Specification.stubs.find {|s| s.full_name == "a-3.a" }, v(4)],
+      [Gem::Specification.stubs.find {|s| s.full_name == "b-2" }, v(3)],
     ]
 
     assert_equal expected, Gem::Specification.outdated_and_latest_version.to_a
@@ -961,18 +961,18 @@ dependencies: []
   def test_self_remove_spec
     install_specs @a1
 
-    assert_includes Gem::Specification.all_names, 'a-1'
-    assert_includes Gem::Specification.stubs.map {|s| s.full_name }, 'a-1'
+    assert_includes Gem::Specification.all_names, "a-1"
+    assert_includes Gem::Specification.stubs.map {|s| s.full_name }, "a-1"
 
     uninstall_gem @a1
     Gem::Specification.reset
 
-    refute_includes Gem::Specification.all_names, 'a-1'
-    refute_includes Gem::Specification.stubs.map {|s| s.full_name }, 'a-1'
+    refute_includes Gem::Specification.all_names, "a-1"
+    refute_includes Gem::Specification.stubs.map {|s| s.full_name }, "a-1"
   end
 
   def test_self_remove_spec_removed
-    File.open @a1.spec_file, 'w' do |io|
+    File.open @a1.spec_file, "w" do |io|
       io.write @a1.to_ruby
     end
 
@@ -982,40 +982,40 @@ dependencies: []
 
     Gem::Specification.reset
 
-    refute_includes Gem::Specification.all_names, 'a-1'
-    refute_includes Gem::Specification.stubs.map {|s| s.full_name }, 'a-1'
+    refute_includes Gem::Specification.all_names, "a-1"
+    refute_includes Gem::Specification.stubs.map {|s| s.full_name }, "a-1"
   end
 
   def test_self_stubs_for_lazy_loading
     Gem.loaded_specs.clear
     Gem::Specification.class_variable_set(:@@stubs, nil)
 
-    dir_standard_specs = File.join Gem.dir, 'specifications'
+    dir_standard_specs = File.join Gem.dir, "specifications"
 
-    save_gemspec('a-1', '1', dir_standard_specs) {|s| s.name = 'a' }
-    save_gemspec('b-1', '1', dir_standard_specs) {|s| s.name = 'b' }
+    save_gemspec("a-1", "1", dir_standard_specs) {|s| s.name = "a" }
+    save_gemspec("b-1", "1", dir_standard_specs) {|s| s.name = "b" }
 
-    assert_equal ['a-1'], Gem::Specification.stubs_for('a').map {|s| s.full_name }
+    assert_equal ["a-1"], Gem::Specification.stubs_for("a").map {|s| s.full_name }
     assert_equal 1, Gem::Specification.class_variable_get(:@@stubs_by_name).length
-    assert_equal ['b-1'], Gem::Specification.stubs_for('b').map {|s| s.full_name }
+    assert_equal ["b-1"], Gem::Specification.stubs_for("b").map {|s| s.full_name }
     assert_equal 2, Gem::Specification.class_variable_get(:@@stubs_by_name).length
 
     assert_equal(
-      Gem::Specification.stubs_for('a').map {|s| s.object_id },
-      Gem::Specification.stubs_for('a').map {|s| s.object_id }
+      Gem::Specification.stubs_for("a").map {|s| s.object_id },
+      Gem::Specification.stubs_for("a").map {|s| s.object_id }
     )
 
-    Gem.loaded_specs.delete 'a'
-    Gem.loaded_specs.delete 'b'
+    Gem.loaded_specs.delete "a"
+    Gem.loaded_specs.delete "b"
     Gem::Specification.class_variable_set(:@@stubs, nil)
   end
 
   def test_self_stubs_for_no_lazy_loading_after_all_specs_setup
-    Gem::Specification.all = [util_spec('a', '1')]
+    Gem::Specification.all = [util_spec("a", "1")]
 
-    save_gemspec('b-1', '1', File.join(Gem.dir, 'specifications')) {|s| s.name = 'b' }
+    save_gemspec("b-1", "1", File.join(Gem.dir, "specifications")) {|s| s.name = "b" }
 
-    assert_equal [], Gem::Specification.stubs_for('b').map {|s| s.full_name }
+    assert_equal [], Gem::Specification.stubs_for("b").map {|s| s.full_name }
   end
 
   def test_self_stubs_for_mult_platforms
@@ -1025,30 +1025,30 @@ dependencies: []
     orig_platform = Gem.platforms.dup
 
     # create user spec
-    user_spec_dir = File.join Gem.user_dir, 'specifications'
+    user_spec_dir = File.join Gem.user_dir, "specifications"
     FileUtils.mkdir_p(user_spec_dir) unless Dir.exist? user_spec_dir
     # dirs doesn't include user ?
     Gem::Specification.dirs << user_spec_dir
 
-    gem = 'mingw'
-    v   = '1.1.1'
-    platforms = ['x86-mingw32', 'x64-mingw32']
+    gem = "mingw"
+    v   = "1.1.1"
+    platforms = ["x86-mingw32", "x64-mingw32"]
 
     #create specs
     platforms.each do |plat|
       spec = Gem::Specification.new(gem, v) {|s| s.platform = plat }
-      File.open File.join(user_spec_dir, "#{gem}-#{v}-#{plat}.gemspec"), 'w' do |io|
+      File.open File.join(user_spec_dir, "#{gem}-#{v}-#{plat}.gemspec"), "w" do |io|
         io.write spec.to_ruby
       end
     end
 
     platforms.each do |plat|
       cur_plat = Gem::Platform.new plat
-      Gem.platforms = ['ruby', cur_plat]
+      Gem.platforms = ["ruby", cur_plat]
 
       Gem::Specification.class_variable_set :@@stubs, nil
       Gem::Specification.stubs if plat == platforms.last # test loading via stubs
-      t = Gem::Specification.stubs_for 'mingw'
+      t = Gem::Specification.stubs_for "mingw"
 
       assert_equal 1, t.length
       assert_equal cur_plat, t.first.platform
@@ -1058,17 +1058,17 @@ dependencies: []
   end
 
   def test_self_stubs_returns_only_specified_named_specs
-    dir_standard_specs = File.join Gem.dir, 'specifications'
+    dir_standard_specs = File.join Gem.dir, "specifications"
 
-    save_gemspec('a-1', '1', dir_standard_specs) {|s| s.name = 'a' }
-    save_gemspec('a-2', '2', dir_standard_specs) {|s| s.name = 'a' }
-    save_gemspec('a-a', '3', dir_standard_specs) {|s| s.name = 'a-a' }
+    save_gemspec("a-1", "1", dir_standard_specs) {|s| s.name = "a" }
+    save_gemspec("a-2", "2", dir_standard_specs) {|s| s.name = "a" }
+    save_gemspec("a-a", "3", dir_standard_specs) {|s| s.name = "a-a" }
 
-    assert_equal ['a-1', 'a-2'], Gem::Specification.stubs_for('a').map(&:full_name).sort
+    assert_equal ["a-1", "a-2"], Gem::Specification.stubs_for("a").map(&:full_name).sort
   end
 
   def test_handles_private_null_type
-    path = File.expand_path 'data/pry-0.4.7.gemspec.rz', __dir__
+    path = File.expand_path "data/pry-0.4.7.gemspec.rz", __dir__
 
     data = Marshal.load Gem::Util.inflate(Gem.read_binary(path))
 
@@ -1076,7 +1076,7 @@ dependencies: []
   end
 
   def test_handles_dependencies_with_syck_requirements_bug
-    path = File.expand_path 'data/excon-0.7.7.gemspec.rz', __dir__
+    path = File.expand_path "data/excon-0.7.7.gemspec.rz", __dir__
 
     data = Marshal.load Gem::Util.inflate(Gem.read_binary(path))
 
@@ -1102,9 +1102,9 @@ dependencies: []
     assert_equal [], spec.extensions
     assert_equal [], spec.requirements
     assert_equal [], spec.dependencies
-    assert_equal 'bin', spec.bindir
-    assert_equal '>= 0', spec.required_ruby_version.to_s
-    assert_equal '>= 0', spec.required_rubygems_version.to_s
+    assert_equal "bin", spec.bindir
+    assert_equal ">= 0", spec.required_ruby_version.to_s
+    assert_equal ">= 0", spec.required_rubygems_version.to_s
   end
 
   def test_initialize_future
@@ -1126,18 +1126,18 @@ dependencies: []
     spec = Gem::Specification.new do |s|
       s.name = "blah"
       s.version = "1.3.5"
-      s.summary = 'summary'
-      s.description = 'description'
-      s.authors = 'author a', 'author b'
-      s.licenses = 'BSD-2-Clause'
-      s.files = 'lib/file.rb'
-      s.test_files = 'test/file.rb'
-      s.rdoc_options = '--foo'
-      s.extra_rdoc_files = 'README.txt'
-      s.executables = 'exec'
-      s.extensions = 'ext/extconf.rb'
-      s.requirements = 'requirement'
-      s.add_dependency 'some_gem'
+      s.summary = "summary"
+      s.description = "description"
+      s.authors = "author a", "author b"
+      s.licenses = "BSD-2-Clause"
+      s.files = "lib/file.rb"
+      s.test_files = "test/file.rb"
+      s.rdoc_options = "--foo"
+      s.extra_rdoc_files = "README.txt"
+      s.executables = "exec"
+      s.extensions = "ext/extconf.rb"
+      s.requirements = "requirement"
+      s.add_dependency "some_gem"
     end
 
     dup_spec = spec.dup
@@ -1151,69 +1151,69 @@ dependencies: []
     assert_equal Gem::Platform::RUBY, spec.platform
     assert_same spec.platform, dup_spec.platform
 
-    assert_equal 'summary', spec.summary
+    assert_equal "summary", spec.summary
     assert_same spec.summary, dup_spec.summary
 
     assert_equal %w[README.txt bin/exec ext/extconf.rb lib/file.rb
                     test/file.rb].sort,
                  spec.files
-    refute_same spec.files, dup_spec.files, 'files'
+    refute_same spec.files, dup_spec.files, "files"
 
     assert_equal %w[test/file.rb], spec.test_files
-    refute_same spec.test_files, dup_spec.test_files, 'test_files'
+    refute_same spec.test_files, dup_spec.test_files, "test_files"
 
     assert_equal %w[--foo], spec.rdoc_options
-    refute_same spec.rdoc_options, dup_spec.rdoc_options, 'rdoc_options'
+    refute_same spec.rdoc_options, dup_spec.rdoc_options, "rdoc_options"
 
     assert_equal %w[README.txt], spec.extra_rdoc_files
     refute_same spec.extra_rdoc_files, dup_spec.extra_rdoc_files,
-                'extra_rdoc_files'
+                "extra_rdoc_files"
 
     assert_equal %w[exec], spec.executables
-    refute_same spec.executables, dup_spec.executables, 'executables'
+    refute_same spec.executables, dup_spec.executables, "executables"
 
     assert_equal %w[ext/extconf.rb], spec.extensions
-    refute_same spec.extensions, dup_spec.extensions, 'extensions'
+    refute_same spec.extensions, dup_spec.extensions, "extensions"
 
     assert_equal %w[requirement], spec.requirements
-    refute_same spec.requirements, dup_spec.requirements, 'requirements'
+    refute_same spec.requirements, dup_spec.requirements, "requirements"
 
-    assert_equal [Gem::Dependency.new('some_gem', Gem::Requirement.default)],
+    assert_equal [Gem::Dependency.new("some_gem", Gem::Requirement.default)],
                  spec.dependencies
-    refute_same spec.dependencies, dup_spec.dependencies, 'dependencies'
+    refute_same spec.dependencies, dup_spec.dependencies, "dependencies"
 
-    assert_equal 'bin', spec.bindir
+    assert_equal "bin", spec.bindir
     assert_same spec.bindir, dup_spec.bindir
 
-    assert_equal '>= 0', spec.required_ruby_version.to_s
+    assert_equal ">= 0", spec.required_ruby_version.to_s
     assert_same spec.required_ruby_version, dup_spec.required_ruby_version
 
-    assert_equal '>= 0', spec.required_rubygems_version.to_s
+    assert_equal ">= 0", spec.required_rubygems_version.to_s
     assert_same spec.required_rubygems_version,
                 dup_spec.required_rubygems_version
   end
 
   def test_initialize_copy_broken
     spec = Gem::Specification.new do |s|
-      s.name = 'a'
-      s.version = '1'
+      s.name = "a"
+      s.version = "1"
     end
 
     spec.instance_variable_set :@licenses, (class << (Object.new);self;end)
-    spec.loaded_from = '/path/to/file'
+    spec.loaded_from = "/path/to/file"
 
     e = assert_raise Gem::FormatException do
       spec.dup
     end
 
-    assert_equal 'a-1 has an invalid value for @licenses', e.message
-    assert_equal '/path/to/file', e.file_path
+    assert_equal "a-1 has an invalid value for @licenses", e.message
+    assert_equal "/path/to/file", e.file_path
   end
 
   def test_initialize_prerelease_version_before_name
     spec = Gem::Specification.new do |s|
-      s.version = '1.0.0.dev'
-      s.name = 'a'
+      s.version = "1.0.0.dev"
+      s.name = "a"
     end
 
     assert_equal "a", spec.name
@@ -1222,13 +1222,13 @@ dependencies: []
 
   def test__dump
     @a2.platform = Gem::Platform.local
-    @a2.instance_variable_set :@original_platform, 'old_platform'
+    @a2.instance_variable_set :@original_platform, "old_platform"
 
     data = Marshal.dump @a2
 
     same_spec = Marshal.load data
 
-    assert_equal 'old_platform', same_spec.original_platform
+    assert_equal "old_platform", same_spec.original_platform
   end
 
   def test_activate
@@ -1247,7 +1247,7 @@ dependencies: []
   end
 
   def test_add_dependency_from_existing_dependency
-    dep  = Gem::Dependency.new("existing_dep", Gem::Requirement.new('> 1'), :runtime)
+    dep  = Gem::Dependency.new("existing_dep", Gem::Requirement.new("> 1"), :runtime)
     spec = Gem::Specification.new {|s| s.add_dependency dep }
     assert_equal dep, spec.dependencies.first
   end
@@ -1262,22 +1262,22 @@ dependencies: []
   end
 
   def test_author
-    assert_equal 'A User', @a1.author
+    assert_equal "A User", @a1.author
   end
 
   def test_authors
-    assert_equal ['A User'], @a1.authors
+    assert_equal ["A User"], @a1.authors
   end
 
   def test_bindir_equals
-    @a1.bindir = 'apps'
+    @a1.bindir = "apps"
 
-    assert_equal 'apps', @a1.bindir
+    assert_equal "apps", @a1.bindir
   end
 
   def test_bindir_equals_nil
     @a2.bindir = nil
-    @a2.executable = 'app'
+    @a2.executable = "app"
 
     assert_nil                             @a2.bindir
     assert_equal %w[app lib/code.rb].sort, @a2.files
@@ -1313,14 +1313,14 @@ dependencies: []
 
     assert_empty @ext.build_args
 
-    File.open @ext.build_info_file, 'w' do |io|
+    File.open @ext.build_info_file, "w" do |io|
       io.puts
     end
 
     assert_empty @ext.build_args
 
-    File.open @ext.build_info_file, 'w' do |io|
-      io.puts '--with-foo-dir=wherever'
+    File.open @ext.build_info_file, "w" do |io|
+      io.puts "--with-foo-dir=wherever"
     end
 
     assert_equal %w[--with-foo-dir=wherever], @ext.build_args
@@ -1330,13 +1330,13 @@ dependencies: []
     pend "extensions don't quite work on jruby" if Gem.java_platform?
     ext_spec
 
-    assert_path_not_exist @ext.extension_dir, 'sanity check'
-    refute_empty @ext.extensions, 'sanity check'
+    assert_path_not_exist @ext.extension_dir, "sanity check"
+    refute_empty @ext.extensions, "sanity check"
 
     extconf_rb = File.join @ext.gem_dir, @ext.extensions.first
     FileUtils.mkdir_p File.dirname extconf_rb
 
-    File.open extconf_rb, 'w' do |f|
+    File.open extconf_rb, "w" do |f|
       f.write <<-'RUBY'
         File.open 'Makefile', 'w' do |f|
           f.puts "clean:\n\techo clean"
@@ -1352,13 +1352,13 @@ dependencies: []
   end
 
   def test_default_spec_stub_is_marked_default
-    default = new_default_spec 'default', 2
+    default = new_default_spec "default", 2
     install_default_gems default
 
-    stub = Gem::Specification.stubs.find {|s| s.name == 'default' }
+    stub = Gem::Specification.stubs.find {|s| s.name == "default" }
     assert_predicate stub, :default_gem?
 
-    stub = Gem::Specification.find_all_by_name('default').first
+    stub = Gem::Specification.find_all_by_name("default").first
     assert_predicate stub, :default_gem?
   end
 
@@ -1366,28 +1366,28 @@ dependencies: []
     pend "extensions don't quite work on jruby" if Gem.java_platform?
     ext_spec
 
-    refute_empty @ext.extensions, 'sanity check'
+    refute_empty @ext.extensions, "sanity check"
 
     gem_build_complete =
-      File.join @ext.extension_dir, 'gem.build_complete'
+      File.join @ext.extension_dir, "gem.build_complete"
 
     FileUtils.mkdir_p @ext.extension_dir
     FileUtils.touch gem_build_complete
 
     @ext.build_extensions
 
-    gem_make_out = File.join @ext.extension_dir, 'gem_make.out'
+    gem_make_out = File.join @ext.extension_dir, "gem_make.out"
     assert_path_not_exist gem_make_out
   end
 
   def test_build_extensions_default_gem
-    spec = new_default_spec 'default', 1
-    spec.extensions << 'extconf.rb'
+    spec = new_default_spec "default", 1
+    spec.extensions << "extconf.rb"
 
     extconf_rb = File.join spec.gem_dir, spec.extensions.first
     FileUtils.mkdir_p File.dirname extconf_rb
 
-    File.open extconf_rb, 'w' do |f|
+    File.open extconf_rb, "w" do |f|
       f.write <<-'RUBY'
         File.open 'Makefile', 'w' do |f|
           f.puts "default:\n\techo built"
@@ -1405,7 +1405,7 @@ dependencies: []
     pend "extensions don't quite work on jruby" if Gem.java_platform?
     ext_spec
 
-    refute_empty @ext.extensions, 'sanity check'
+    refute_empty @ext.extensions, "sanity check"
 
     assert_raise Gem::Ext::BuildError do
       @ext.build_extensions
@@ -1413,18 +1413,18 @@ dependencies: []
   end
 
   def test_build_extensions_extensions_dir_unwritable
-    pend 'chmod not supported' if Gem.win_platform?
-    pend 'skipped in root privilege' if Process.uid.zero?
+    pend "chmod not supported" if Gem.win_platform?
+    pend "skipped in root privilege" if Process.uid.zero?
 
     pend "extensions don't quite work on jruby" if Gem.java_platform?
     ext_spec
 
-    refute_empty @ext.extensions, 'sanity check'
+    refute_empty @ext.extensions, "sanity check"
 
     extconf_rb = File.join @ext.gem_dir, @ext.extensions.first
     FileUtils.mkdir_p File.dirname extconf_rb
 
-    File.open extconf_rb, 'w' do |f|
+    File.open extconf_rb, "w" do |f|
       f.write <<-'RUBY'
         File.open 'Makefile', 'w' do |f|
           f.puts "clean:\n\techo clean"
@@ -1434,30 +1434,30 @@ dependencies: []
       RUBY
     end
 
-    FileUtils.mkdir_p File.join @ext.base_dir, 'extensions'
+    FileUtils.mkdir_p File.join @ext.base_dir, "extensions"
     FileUtils.chmod 0555, @ext.base_dir
-    FileUtils.chmod 0555, File.join(@ext.base_dir, 'extensions')
+    FileUtils.chmod 0555, File.join(@ext.base_dir, "extensions")
 
     @ext.build_extensions
     assert_path_not_exist @ext.extension_dir
   ensure
     unless ($DEBUG or win_platform? or Process.uid.zero? or Gem.java_platform?)
-      FileUtils.chmod 0755, File.join(@ext.base_dir, 'extensions')
+      FileUtils.chmod 0755, File.join(@ext.base_dir, "extensions")
       FileUtils.chmod 0755, @ext.base_dir
     end
   end
 
   def test_build_extensions_no_extensions_dir_unwritable
-    pend 'chmod not supported' if Gem.win_platform?
+    pend "chmod not supported" if Gem.win_platform?
     pend "extensions don't quite work on jruby" if Gem.java_platform?
     ext_spec
 
-    refute_empty @ext.extensions, 'sanity check'
+    refute_empty @ext.extensions, "sanity check"
 
     extconf_rb = File.join @ext.gem_dir, @ext.extensions.first
     FileUtils.mkdir_p File.dirname extconf_rb
 
-    File.open extconf_rb, 'w' do |f|
+    File.open extconf_rb, "w" do |f|
       f.write <<-'RUBY'
         File.open 'Makefile', 'w' do |f|
           f.puts "clean:\n\techo clean"
@@ -1467,20 +1467,20 @@ dependencies: []
       RUBY
     end
 
-    FileUtils.rm_r File.join @gemhome, 'extensions'
+    FileUtils.rm_r File.join @gemhome, "extensions"
     FileUtils.chmod 0555, @gemhome
 
     @ext.build_extensions
 
-    gem_make_out = File.join @ext.extension_dir, 'gem_make.out'
+    gem_make_out = File.join @ext.extension_dir, "gem_make.out"
     assert_path_not_exist gem_make_out
   ensure
     FileUtils.chmod 0755, @gemhome
   end
 
   def test_build_extensions_none
-    assert_path_not_exist @a1.extension_dir, 'sanity check'
-    assert_empty @a1.extensions, 'sanity check'
+    assert_path_not_exist @a1.extension_dir, "sanity check"
+    assert_empty @a1.extensions, "sanity check"
 
     @a1.build_extensions
 
@@ -1494,7 +1494,7 @@ dependencies: []
     extconf_rb = File.join @ext.gem_dir, @ext.extensions.first
     FileUtils.mkdir_p File.dirname extconf_rb
 
-    File.open extconf_rb, 'w' do |f|
+    File.open extconf_rb, "w" do |f|
       f.write <<-'RUBY'
         File.open 'Makefile', 'w' do |f|
           f.puts "clean:\n\techo clean"
@@ -1504,22 +1504,22 @@ dependencies: []
       RUBY
     end
 
-    refute_empty @ext.extensions, 'sanity check'
+    refute_empty @ext.extensions, "sanity check"
 
-    @ext.installed_by_version = v('2.2.0.preview.2')
+    @ext.installed_by_version = v("2.2.0.preview.2")
 
     @ext.build_extensions
 
-    gem_make_out = File.join @ext.extension_dir, 'gem_make.out'
+    gem_make_out = File.join @ext.extension_dir, "gem_make.out"
     assert_path_exist gem_make_out
   end
 
   def test_contains_requirable_file_eh
-    code_rb = File.join @a1.gem_dir, 'lib', 'code.rb'
+    code_rb = File.join @a1.gem_dir, "lib", "code.rb"
     FileUtils.mkdir_p File.dirname code_rb
     FileUtils.touch code_rb
 
-    assert @a1.contains_requirable_file? 'code'
+    assert @a1.contains_requirable_file? "code"
   end
 
   def test_contains_requirable_file_eh_extension
@@ -1527,7 +1527,7 @@ dependencies: []
     ext_spec
 
     _, err = capture_output do
-      refute @ext.contains_requirable_file? 'nonexistent'
+      refute @ext.contains_requirable_file? "nonexistent"
     end
 
     expected = "Ignoring ext-1 because its extensions are not built. " +
@@ -1540,7 +1540,7 @@ dependencies: []
     ext_spec(platform: Gem::Platform.new("java"))
 
     _, err = capture_output do
-      refute @ext.contains_requirable_file? 'nonexistent'
+      refute @ext.contains_requirable_file? "nonexistent"
     end
 
     assert_empty err
@@ -1556,13 +1556,13 @@ dependencies: []
   end
 
   def test_date_equals_string
-    @a1.date = '2003-09-17'
+    @a1.date = "2003-09-17"
     assert_equal Time.utc(2003, 9, 17, 0,0,0), @a1.date
   end
 
   def test_date_equals_string_bad
     assert_raise Gem::InvalidSpecificationException do
-      @a1.date = '9/11/2003'
+      @a1.date = "9/11/2003"
     end
   end
 
@@ -1609,7 +1609,7 @@ dependencies: []
 
     assert_empty @gem.dependent_gems
 
-    bonobo = util_spec 'bonobo', 1
+    bonobo = util_spec "bonobo", 1
     install_gem bonobo
     install_gem @gem
 
@@ -1621,11 +1621,11 @@ dependencies: []
   end
 
   def test_doc_dir
-    assert_equal File.join(@gemhome, 'doc', 'a-1'), @a1.doc_dir
+    assert_equal File.join(@gemhome, "doc", "a-1"), @a1.doc_dir
   end
 
   def test_doc_dir_type
-    assert_equal File.join(@gemhome, 'doc', 'a-1', 'ri'), @a1.doc_dir('ri')
+    assert_equal File.join(@gemhome, "doc", "a-1", "ri"), @a1.doc_dir("ri")
   end
 
   def test_runtime_dependencies
@@ -1639,12 +1639,12 @@ dependencies: []
   end
 
   def test_description
-    assert_equal 'This is a test description', @a1.description
+    assert_equal "This is a test description", @a1.description
   end
 
   def test_eql_eh
-    g1 = util_spec 'gem', 1
-    g2 = util_spec 'gem', 1
+    g1 = util_spec "gem", 1
+    g2 = util_spec "gem", 1
 
     assert_equal g1, g2
     assert_equal g1.hash, g2.hash
@@ -1653,47 +1653,47 @@ dependencies: []
 
   def test_eql_eh_extensions
     spec = @a1.dup
-    spec.extensions = 'xx'
+    spec.extensions = "xx"
 
     refute_operator @a1, :eql?, spec
     refute_operator spec, :eql?, @a1
   end
 
   def test_executables
-    @a1.executable = 'app'
+    @a1.executable = "app"
     assert_equal %w[app], @a1.executables
   end
 
   def test_executable_equals
-    @a2.executable = 'app'
-    assert_equal 'app', @a2.executable
+    @a2.executable = "app"
+    assert_equal "app", @a2.executable
     assert_equal %w[bin/app lib/code.rb].sort, @a2.files
   end
 
   def test_extensions
-    assert_equal ['ext/extconf.rb'], ext_spec.extensions
+    assert_equal ["ext/extconf.rb"], ext_spec.extensions
   end
 
   def test_extension_dir
-    enable_shared, RbConfig::CONFIG['ENABLE_SHARED'] =
-      RbConfig::CONFIG['ENABLE_SHARED'], 'no'
+    enable_shared, RbConfig::CONFIG["ENABLE_SHARED"] =
+      RbConfig::CONFIG["ENABLE_SHARED"], "no"
 
     ext_spec
 
     refute_empty @ext.extensions
 
     expected =
-      File.join(@ext.base_dir, 'extensions', Gem::Platform.local.to_s,
+      File.join(@ext.base_dir, "extensions", Gem::Platform.local.to_s,
                 "#{Gem.ruby_api_version}-static", @ext.full_name)
 
     assert_equal expected, @ext.extension_dir
   ensure
-    RbConfig::CONFIG['ENABLE_SHARED'] = enable_shared
+    RbConfig::CONFIG["ENABLE_SHARED"] = enable_shared
   end
 
   def test_extension_dir_override
-    enable_shared, RbConfig::CONFIG['ENABLE_SHARED'] =
-      RbConfig::CONFIG['ENABLE_SHARED'], 'no'
+    enable_shared, RbConfig::CONFIG["ENABLE_SHARED"] =
+      RbConfig::CONFIG["ENABLE_SHARED"], "no"
 
     class << Gem
       alias orig_default_ext_dir_for default_ext_dir_for
@@ -1701,7 +1701,7 @@ dependencies: []
       remove_method :default_ext_dir_for
 
       def Gem.default_ext_dir_for(base_dir)
-        'elsewhere'
+        "elsewhere"
       end
     end
 
@@ -1709,11 +1709,11 @@ dependencies: []
 
     refute_empty @ext.extensions
 
-    expected = File.join @tempdir, 'elsewhere', @ext.full_name
+    expected = File.join @tempdir, "elsewhere", @ext.full_name
 
     assert_equal expected, @ext.extension_dir
   ensure
-    RbConfig::CONFIG['ENABLE_SHARED'] = enable_shared
+    RbConfig::CONFIG["ENABLE_SHARED"] = enable_shared
 
     class << Gem
       remove_method :default_ext_dir_for
@@ -1803,9 +1803,9 @@ dependencies: []
   end
 
   def test_for_cache
-    @a2.add_runtime_dependency 'b', '1'
+    @a2.add_runtime_dependency "b", "1"
     @a2.dependencies.first.instance_variable_set :@type, nil
-    @a2.required_rubygems_version = Gem::Requirement.new '> 0'
+    @a2.required_rubygems_version = Gem::Requirement.new "> 0"
     @a2.test_files = %w[test/test_b.rb]
 
     refute_empty @a2.files
@@ -1821,11 +1821,11 @@ dependencies: []
   end
 
   def test_full_gem_path
-    assert_equal File.join(@gemhome, 'gems', @a1.full_name), @a1.full_gem_path
+    assert_equal File.join(@gemhome, "gems", @a1.full_name), @a1.full_gem_path
 
-    @a1.original_platform = 'mswin32'
+    @a1.original_platform = "mswin32"
 
-    assert_equal File.join(@gemhome, 'gems', @a1.original_name),
+    assert_equal File.join(@gemhome, "gems", @a1.original_name),
                  @a1.full_gem_path
   end
 
@@ -1838,40 +1838,40 @@ dependencies: []
   end
 
   def test_full_name
-    assert_equal 'a-1', @a1.full_name
+    assert_equal "a-1", @a1.full_name
 
     @a1 = Gem::Specification.new "a", 1
-    @a1.platform = Gem::Platform.new ['universal', 'darwin', nil]
-    assert_equal 'a-1-universal-darwin', @a1.full_name
+    @a1.platform = Gem::Platform.new ["universal", "darwin", nil]
+    assert_equal "a-1-universal-darwin", @a1.full_name
 
     @a1 = Gem::Specification.new "a", 1
-    @a1.instance_variable_set :@new_platform, 'mswin32'
-    assert_equal 'a-1-mswin32', @a1.full_name, 'legacy'
+    @a1.instance_variable_set :@new_platform, "mswin32"
+    assert_equal "a-1-mswin32", @a1.full_name, "legacy"
 
     return if win_platform?
 
     @a1 = Gem::Specification.new "a", 1
-    @a1.platform = 'current'
-    assert_equal 'a-1-x86-darwin-8', @a1.full_name
+    @a1.platform = "current"
+    assert_equal "a-1-x86-darwin-8", @a1.full_name
   end
 
   def test_full_name_windows
     test_cases = {
-      'i386-mswin32'      => 'a-1-x86-mswin32-60',
-      'i386-mswin32_80'   => 'a-1-x86-mswin32-80',
-      'i386-mingw32'      => 'a-1-x86-mingw32',
+      "i386-mswin32"      => "a-1-x86-mswin32-60",
+      "i386-mswin32_80"   => "a-1-x86-mswin32-80",
+      "i386-mingw32"      => "a-1-x86-mingw32",
     }
 
     test_cases.each do |arch, expected|
       @a1 = Gem::Specification.new "a", 1
       util_set_arch arch
-      @a1.platform = 'current'
+      @a1.platform = "current"
       assert_equal expected, @a1.full_name
     end
   end
 
   def test_gem_build_complete_path
-    expected = File.join @a1.extension_dir, 'gem.build_complete'
+    expected = File.join @a1.extension_dir, "gem.build_complete"
     assert_equal expected, @a1.gem_build_complete_path
   end
 
@@ -1915,23 +1915,23 @@ dependencies: []
   end
 
   def test_license
-    assert_equal 'MIT', @a1.license
+    assert_equal "MIT", @a1.license
   end
 
   def test_licenses
-    assert_equal ['MIT'], @a1.licenses
+    assert_equal ["MIT"], @a1.licenses
   end
 
   def test_name
-    assert_equal 'a', @a1.name
+    assert_equal "a", @a1.name
   end
 
   def test_original_name
-    assert_equal 'a-1', @a1.full_name
+    assert_equal "a-1", @a1.full_name
 
-    @a1.platform = 'i386-linux'
-    @a1.instance_variable_set :@original_platform, 'i386-linux'
-    assert_equal 'a-1-i386-linux', @a1.original_name
+    @a1.platform = "i386-linux"
+    @a1.instance_variable_set :@original_platform, "i386-linux"
+    assert_equal "a-1-i386-linux", @a1.original_name
   end
 
   def test_platform
@@ -1960,10 +1960,10 @@ dependencies: []
     assert_equal Gem::Platform::RUBY, @a1.platform
 
     test_cases = {
-      'i386-mswin32'    => ['x86', 'mswin32', '60'],
-      'i386-mswin32_80' => ['x86', 'mswin32', '80'],
-      'i386-mingw32'    => ['x86', 'mingw32', nil ],
-      'x86-darwin8'     => ['x86', 'darwin',  '8' ],
+      "i386-mswin32"    => ["x86", "mswin32", "60"],
+      "i386-mswin32_80" => ["x86", "mswin32", "80"],
+      "i386-mingw32"    => ["x86", "mingw32", nil ],
+      "x86-darwin8"     => ["x86", "darwin",  "8" ],
     }
 
     test_cases.each do |arch, expected|
@@ -1980,29 +1980,29 @@ dependencies: []
   end
 
   def test_platform_equals_legacy
-    @a1.platform = 'mswin32'
-    assert_equal Gem::Platform.new('x86-mswin32'), @a1.platform
+    @a1.platform = "mswin32"
+    assert_equal Gem::Platform.new("x86-mswin32"), @a1.platform
 
-    @a1.platform = 'i586-linux'
-    assert_equal Gem::Platform.new('x86-linux'), @a1.platform
+    @a1.platform = "i586-linux"
+    assert_equal Gem::Platform.new("x86-linux"), @a1.platform
 
-    @a1.platform = 'powerpc-darwin'
-    assert_equal Gem::Platform.new('ppc-darwin'), @a1.platform
+    @a1.platform = "powerpc-darwin"
+    assert_equal Gem::Platform.new("ppc-darwin"), @a1.platform
   end
 
   def test_prerelease_spec_adds_required_rubygems_version
-    @prerelease = util_spec('tardis', '2.2.0.a')
-    refute @prerelease.required_rubygems_version.satisfied_by?(Gem::Version.new('1.3.1'))
-    assert @prerelease.required_rubygems_version.satisfied_by?(Gem::Version.new('1.4.0'))
+    @prerelease = util_spec("tardis", "2.2.0.a")
+    refute @prerelease.required_rubygems_version.satisfied_by?(Gem::Version.new("1.3.1"))
+    assert @prerelease.required_rubygems_version.satisfied_by?(Gem::Version.new("1.4.0"))
   end
 
   def test_require_paths
-    enable_shared 'no' do
+    enable_shared "no" do
       ext_spec
 
-      @ext.require_paths = 'lib'
+      @ext.require_paths = "lib"
 
-      assert_equal [@ext.extension_dir, 'lib'], @ext.require_paths
+      assert_equal [@ext.extension_dir, "lib"], @ext.require_paths
     end
   end
 
@@ -2014,15 +2014,15 @@ dependencies: []
     end
 
     def Gem.default_ext_dir_for(base_dir)
-      '/foo'
+      "/foo"
     end
 
-    enable_shared 'no' do
+    enable_shared "no" do
       ext_spec
 
-      @ext.require_paths = 'lib'
+      @ext.require_paths = "lib"
 
-      assert_equal [File.expand_path('/foo/ext-1'), 'lib'], @ext.require_paths
+      assert_equal [File.expand_path("/foo/ext-1"), "lib"], @ext.require_paths
     end
   ensure
     class << Gem
@@ -2040,7 +2040,7 @@ dependencies: []
     ext_spec
 
     @ext.require_paths = %w[lib ext foo]
-    @ext.extensions << 'bar/baz'
+    @ext.extensions << "bar/baz"
 
     expected = %w[
       lib
@@ -2055,10 +2055,10 @@ dependencies: []
   def test_full_require_paths
     ext_spec
 
-    @ext.require_paths = 'lib'
+    @ext.require_paths = "lib"
 
     expected = [
-      File.join(@gemhome, 'gems', @ext.original_name, 'lib'),
+      File.join(@gemhome, "gems", @ext.original_name, "lib"),
       @ext.extension_dir,
     ]
 
@@ -2068,10 +2068,10 @@ dependencies: []
   def test_to_fullpath
     ext_spec
 
-    @ext.require_paths = 'lib'
+    @ext.require_paths = "lib"
 
-    dir = File.join(@gemhome, 'gems', @ext.original_name, 'lib')
-    expected_rb = File.join(dir, 'code.rb')
+    dir = File.join(@gemhome, "gems", @ext.original_name, "lib")
+    expected_rb = File.join(dir, "code.rb")
     FileUtils.mkdir_p dir
     FileUtils.touch expected_rb
 
@@ -2105,10 +2105,10 @@ dependencies: []
   def test_fullpath_return_rb_extension_file_when_exist_the_same_name_file
     ext_spec
 
-    @ext.require_paths = 'lib'
+    @ext.require_paths = "lib"
 
-    dir = File.join(@gemhome, 'gems', @ext.original_name, 'lib')
-    expected_rb = File.join(dir, 'code.rb')
+    dir = File.join(@gemhome, "gems", @ext.original_name, "lib")
+    expected_rb = File.join(dir, "code.rb")
     FileUtils.mkdir_p dir
     FileUtils.touch expected_rb
 
@@ -2160,12 +2160,12 @@ dependencies: []
   end
 
   def test_requirements
-    assert_equal ['A working computer'], @a1.requirements
+    assert_equal ["A working computer"], @a1.requirements
   end
 
   def test_allowed_push_host
-    assert_nil                                   @a1.metadata['allowed_push_host']
-    assert_equal 'https://privategemserver.com', @a3.metadata['allowed_push_host']
+    assert_nil                                   @a1.metadata["allowed_push_host"]
+    assert_equal "https://privategemserver.com", @a3.metadata["allowed_push_host"]
   end
 
   def test_runtime_dependencies_legacy
@@ -2181,8 +2181,8 @@ dependencies: []
   end
 
   def test_spaceship_name
-    s1 = util_spec 'a', '1'
-    s2 = util_spec 'b', '1'
+    s1 = util_spec "a", "1"
+    s2 = util_spec "b", "1"
 
     assert_equal(-1, (s1 <=> s2))
     assert_equal(0, (s1 <=> s1))
@@ -2190,9 +2190,9 @@ dependencies: []
   end
 
   def test_spaceship_platform
-    s1 = util_spec 'a', '1'
-    s2 = util_spec 'a', '1' do |s|
-      s.platform = Gem::Platform.new 'x86-my_platform1'
+    s1 = util_spec "a", "1"
+    s2 = util_spec "a", "1" do |s|
+      s.platform = Gem::Platform.new "x86-my_platform1"
     end
 
     assert_equal(-1, (s1 <=> s2))
@@ -2201,8 +2201,8 @@ dependencies: []
   end
 
   def test_spaceship_version
-    s1 = util_spec 'a', '1'
-    s2 = util_spec 'a', '2'
+    s1 = util_spec "a", "1"
+    s2 = util_spec "a", "2"
 
     assert_equal(-1, (s1 <=> s2))
     assert_equal(0, (s1 <=> s1))
@@ -2210,25 +2210,25 @@ dependencies: []
   end
 
   def test_spec_file
-    assert_equal File.join(@gemhome, 'specifications', 'a-1.gemspec'),
+    assert_equal File.join(@gemhome, "specifications", "a-1.gemspec"),
                  @a1.spec_file
   end
 
   def test_spec_name
-    assert_equal 'a-1.gemspec', @a1.spec_name
+    assert_equal "a-1.gemspec", @a1.spec_name
   end
 
   def test_summary
-    assert_equal 'this is a summary', @a1.summary
+    assert_equal "this is a summary", @a1.summary
   end
 
   def test_test_files
-    @a1.test_file = 'test/suite.rb'
-    assert_equal ['test/suite.rb'], @a1.test_files
+    @a1.test_file = "test/suite.rb"
+    assert_equal ["test/suite.rb"], @a1.test_files
   end
 
   def test_runtime_predicate_true
-    @a2.add_runtime_dependency 'b', '1'
+    @a2.add_runtime_dependency "b", "1"
     assert_predicate @a2.dependencies.first, :runtime?
 
     @a2.dependencies.first.instance_variable_set :@type, nil
@@ -2236,15 +2236,15 @@ dependencies: []
   end
 
   def test_runtime_predicate_false
-    @a2.add_development_dependency 'b', '1'
+    @a2.add_development_dependency "b", "1"
     refute_predicate @a2.dependencies.first, :runtime?
   end
 
   def test_to_ruby
-    @a2.add_runtime_dependency 'b', '1'
+    @a2.add_runtime_dependency "b", "1"
     @a2.dependencies.first.instance_variable_set :@type, nil
-    @a2.required_rubygems_version = Gem::Requirement.new '> 0'
-    @a2.require_paths << 'other'
+    @a2.required_rubygems_version = Gem::Requirement.new "> 0"
+    @a2.require_paths << "other"
 
     ruby_code = @a2.to_ruby
 
@@ -2287,8 +2287,8 @@ end
   end
 
   def test_to_ruby_with_rsa_key
-    require 'rubygems/openssl'
-    pend 'openssl is missing' unless defined?(OpenSSL::PKey::RSA)
+    require "rubygems/openssl"
+    pend "openssl is missing" unless defined?(OpenSSL::PKey::RSA)
 
     rsa_key = OpenSSL::PKey::RSA.new(2048)
     @a2.signing_key = rsa_key
@@ -2319,9 +2319,9 @@ end
   end
 
   def test_to_ruby_for_cache
-    @a2.add_runtime_dependency 'b', '1'
+    @a2.add_runtime_dependency "b", "1"
     @a2.dependencies.first.instance_variable_set :@type, nil
-    @a2.required_rubygems_version = Gem::Requirement.new '> 0'
+    @a2.required_rubygems_version = Gem::Requirement.new "> 0"
     @a2.installed_by_version = Gem.rubygems_version
 
     # cached specs do not have spec.files populated:
@@ -2430,8 +2430,8 @@ end
   end
 
   def test_to_ruby_keeps_requirements_as_originally_specified
-    spec = util_spec 'a', '1' do |s|
-      s.add_dependency 'b', ['~> 1.0', '>= 1.0.0']
+    spec = util_spec "a", "1" do |s|
+      s.add_dependency "b", ["~> 1.0", ">= 1.0.0"]
     end
 
     assert_includes spec.to_ruby, '"~> 1.0", ">= 1.0.0"'
@@ -2460,13 +2460,13 @@ end
 
   def test_to_ruby_platform
     @a2.platform = Gem::Platform.local
-    @a2.instance_variable_set :@original_platform, 'old_platform'
+    @a2.instance_variable_set :@original_platform, "old_platform"
 
     ruby_code = @a2.to_ruby
 
     same_spec = eval ruby_code
 
-    assert_equal 'old_platform', same_spec.original_platform
+    assert_equal "old_platform", same_spec.original_platform
   end
 
   def test_to_yaml
@@ -2491,21 +2491,21 @@ end
   end
 
   def test_to_yaml_platform_empty_string
-    @a1.instance_variable_set :@original_platform, ''
+    @a1.instance_variable_set :@original_platform, ""
 
     assert_match %r{^platform: ruby$}, @a1.to_yaml
   end
 
   def test_to_yaml_platform_legacy
-    @a1.platform = 'powerpc-darwin7.9.0'
-    @a1.instance_variable_set :@original_platform, 'powerpc-darwin7.9.0'
+    @a1.platform = "powerpc-darwin7.9.0"
+    @a1.instance_variable_set :@original_platform, "powerpc-darwin7.9.0"
 
     yaml_str = @a1.to_yaml
 
     same_spec = load_yaml yaml_str
 
-    assert_equal Gem::Platform.new('powerpc-darwin7'), same_spec.platform
-    assert_equal 'powerpc-darwin7.9.0', same_spec.original_platform
+    assert_equal Gem::Platform.new("powerpc-darwin7"), same_spec.platform
+    assert_equal "powerpc-darwin7.9.0", same_spec.original_platform
   end
 
   def test_to_yaml_platform_nil
@@ -2522,7 +2522,7 @@ end
     end
   end
 
-  def x(s); s.gsub(/xxx/, ''); end
+  def x(s); s.gsub(/xxx/, ""); end
   def w; x "WARxxxNING"; end
   def t; x "TOxxxDO"; end
   def f; x "FxxxIXME"; end
@@ -2537,7 +2537,7 @@ end
         @a1.validate
       end
 
-      assert_match "#{w}:  no author specified\n", @ui.error, 'error'
+      assert_match "#{w}:  no author specified\n", @ui.error, "error"
 
       @a1.authors = [Object.new]
 
@@ -2571,14 +2571,14 @@ end
     util_setup_validate
 
     Dir.chdir @tempdir do
-      @a1.autorequire = 'code'
+      @a1.autorequire = "code"
 
       use_ui @ui do
         @a1.validate
       end
 
       assert_match "#{w}:  deprecated autorequire specified\n",
-                   @ui.error, 'error'
+                   @ui.error, "error"
     end
   end
 
@@ -2586,19 +2586,19 @@ end
     util_setup_validate
 
     Dir.chdir @tempdir do
-      @a1.add_runtime_dependency     'b', '>= 1.0.rc1'
-      @a1.add_development_dependency 'c', '>= 2.0.rc2'
-      @a1.add_runtime_dependency     'd', '~> 1.2.3'
-      @a1.add_runtime_dependency     'e', '~> 1.2.3.4'
-      @a1.add_runtime_dependency     'g', '~> 1.2.3', '>= 1.2.3.4'
-      @a1.add_runtime_dependency     'h', '>= 1.2.3', '<= 2'
-      @a1.add_runtime_dependency     'i', '>= 1.2'
-      @a1.add_runtime_dependency     'j', '>= 1.2.3'
-      @a1.add_runtime_dependency     'k', '> 1.2'
-      @a1.add_runtime_dependency     'l', '> 1.2.3'
-      @a1.add_runtime_dependency     'm', '~> 2.1.0'
-      @a1.add_runtime_dependency     'n', '~> 0.1.0'
-      @a1.add_runtime_dependency     'o'
+      @a1.add_runtime_dependency     "b", ">= 1.0.rc1"
+      @a1.add_development_dependency "c", ">= 2.0.rc2"
+      @a1.add_runtime_dependency     "d", "~> 1.2.3"
+      @a1.add_runtime_dependency     "e", "~> 1.2.3.4"
+      @a1.add_runtime_dependency     "g", "~> 1.2.3", ">= 1.2.3.4"
+      @a1.add_runtime_dependency     "h", ">= 1.2.3", "<= 2"
+      @a1.add_runtime_dependency     "i", ">= 1.2"
+      @a1.add_runtime_dependency     "j", ">= 1.2.3"
+      @a1.add_runtime_dependency     "k", "> 1.2"
+      @a1.add_runtime_dependency     "l", "> 1.2.3"
+      @a1.add_runtime_dependency     "m", "~> 2.1.0"
+      @a1.add_runtime_dependency     "n", "~> 0.1.0"
+      @a1.add_runtime_dependency     "o"
 
       use_ui @ui do
         @a1.validate
@@ -2624,7 +2624,7 @@ end
 #{w}:  See https://guides.rubygems.org/specification-reference/ for help
       EXPECTED
 
-      assert_equal expected, @ui.error, 'warning'
+      assert_equal expected, @ui.error, "warning"
     end
   end
 
@@ -2632,10 +2632,10 @@ end
     util_setup_validate
 
     Dir.chdir @tempdir do
-      @a1.add_runtime_dependency 'b', '~> 1.2'
-      @a1.add_runtime_dependency 'b', '>= 1.2.3'
-      @a1.add_development_dependency 'c', '~> 1.2'
-      @a1.add_development_dependency 'c', '>= 1.2.3'
+      @a1.add_runtime_dependency "b", "~> 1.2"
+      @a1.add_runtime_dependency "b", ">= 1.2.3"
+      @a1.add_development_dependency "c", "~> 1.2"
+      @a1.add_development_dependency "c", ">= 1.2.3"
 
       use_ui @ui do
         e = assert_raise Gem::InvalidSpecificationException do
@@ -2662,14 +2662,14 @@ duplicate dependency on c (>= 1.2.3, development), (~> 1.2) use:
     util_setup_validate
 
     Dir.chdir @tempdir do
-      @a1.add_runtime_dependency 'b', '~> 1.2'
-      @a1.add_development_dependency 'b', '= 1.2.3'
+      @a1.add_runtime_dependency "b", "~> 1.2"
+      @a1.add_development_dependency "b", "= 1.2.3"
 
       use_ui @ui do
         @a1.validate
       end
 
-      assert_equal '', @ui.error, 'warning'
+      assert_equal "", @ui.error, "warning"
     end
   end
 
@@ -2677,14 +2677,14 @@ duplicate dependency on c (>= 1.2.3, development), (~> 1.2) use:
     util_setup_validate
 
     Dir.chdir @tempdir do
-      @a1.version = '1.0.0.beta.1'
-      @a1.add_runtime_dependency 'b', '~> 1.2.0.beta.1'
+      @a1.version = "1.0.0.beta.1"
+      @a1.add_runtime_dependency "b", "~> 1.2.0.beta.1"
 
       use_ui @ui do
         @a1.validate
       end
 
-      assert_equal '', @ui.error, 'warning'
+      assert_equal "", @ui.error, "warning"
     end
   end
 
@@ -2692,8 +2692,8 @@ duplicate dependency on c (>= 1.2.3, development), (~> 1.2) use:
     util_setup_validate
 
     Dir.chdir @tempdir do
-      @a1.extensions = ['Rakefile']
-      File.write File.join(@tempdir, 'Rakefile'), ''
+      @a1.extensions = ["Rakefile"]
+      File.write File.join(@tempdir, "Rakefile"), ""
 
       use_ui @ui do
         @a1.validate
@@ -2707,9 +2707,9 @@ duplicate dependency on c (>= 1.2.3, development), (~> 1.2) use:
     util_setup_validate
 
     Dir.chdir @tempdir do
-      @a1.extensions = ['Rakefile']
-      @a1.add_runtime_dependency 'rake'
-      File.write File.join(@tempdir, 'Rakefile'), ''
+      @a1.extensions = ["Rakefile"]
+      @a1.add_runtime_dependency "rake"
+      File.write File.join(@tempdir, "Rakefile"), ""
 
       use_ui @ui do
         @a1.validate
@@ -2723,7 +2723,7 @@ duplicate dependency on c (>= 1.2.3, development), (~> 1.2) use:
     util_setup_validate
 
     Dir.chdir @tempdir do
-      @a1.description = ''
+      @a1.description = ""
 
       use_ui @ui do
         @a1.validate
@@ -2813,7 +2813,7 @@ duplicate dependency on c (>= 1.2.3, development), (~> 1.2) use:
       Gem::Specification.new.validate
     end
 
-    assert_equal 'missing value for attribute name', e.message
+    assert_equal "missing value for attribute name", e.message
   end
 
   def test_validate_error
@@ -2823,15 +2823,15 @@ duplicate dependency on c (>= 1.2.3, development), (~> 1.2) use:
       end
     end
 
-    assert_match 'See https://guides.rubygems.org/specification-reference/ for help', @ui.error
+    assert_match "See https://guides.rubygems.org/specification-reference/ for help", @ui.error
   end
 
   def test_validate_executables
     util_setup_validate
 
-    FileUtils.mkdir_p File.join(@tempdir, 'bin')
-    File.write File.join(@tempdir, 'bin', 'exec'), ''
-    FileUtils.mkdir_p File.join(@tempdir, 'exec')
+    FileUtils.mkdir_p File.join(@tempdir, "bin")
+    File.write File.join(@tempdir, "bin", "exec"), ""
+    FileUtils.mkdir_p File.join(@tempdir, "exec")
 
     use_ui @ui do
       Dir.chdir @tempdir do
@@ -2841,13 +2841,13 @@ duplicate dependency on c (>= 1.2.3, development), (~> 1.2) use:
 
     assert_equal %w[exec], @a1.executables
 
-    assert_equal '', @ui.output, 'output'
-    assert_match "#{w}:  bin/exec is missing #! line\n", @ui.error, 'error'
+    assert_equal "", @ui.output, "output"
+    assert_match "#{w}:  bin/exec is missing #! line\n", @ui.error, "error"
   end
 
   def test_validate_empty_require_paths
     if win_platform?
-      pend 'test_validate_empty_require_paths skipped on MS Windows (symlink)'
+      pend "test_validate_empty_require_paths skipped on MS Windows (symlink)"
     else
       util_setup_validate
 
@@ -2856,26 +2856,26 @@ duplicate dependency on c (>= 1.2.3, development), (~> 1.2) use:
         @a1.validate
       end
 
-      assert_equal 'specification must have at least one require_path',
+      assert_equal "specification must have at least one require_path",
                    e.message
     end
   end
 
   def test_validate_files
-    pend 'test_validate_files skipped on MS Windows (symlink)' if win_platform?
+    pend "test_validate_files skipped on MS Windows (symlink)" if win_platform?
     util_setup_validate
 
-    @a1.files += ['lib', 'lib2']
-    @a1.extensions << 'ext/a/extconf.rb'
+    @a1.files += ["lib", "lib2"]
+    @a1.extensions << "ext/a/extconf.rb"
 
     Dir.chdir @tempdir do
-      FileUtils.ln_s 'lib/code.rb', 'lib2' unless vc_windows?
+      FileUtils.ln_s "lib/code.rb", "lib2" unless vc_windows?
 
       use_ui @ui do
         @a1.validate
       end
 
-      assert_match 'WARNING:  lib2 is a symlink, which is not supported on all platforms', @ui.error
+      assert_match "WARNING:  lib2 is a symlink, which is not supported on all platforms", @ui.error
     end
 
     assert_equal %w[bin/exec ext/a/extconf.rb lib/code.rb lib2 test/suite.rb].sort,
@@ -2981,19 +2981,19 @@ Please report a bug if this causes problems.
         @a1.validate
       end
 
-      assert_match "#{w}:  no homepage specified\n", @ui.error, 'error'
+      assert_match "#{w}:  no homepage specified\n", @ui.error, "error"
 
       @ui = Gem::MockGemUi.new
 
-      @a1.homepage = ''
+      @a1.homepage = ""
 
       use_ui @ui do
         @a1.validate
       end
 
-      assert_match "#{w}:  no homepage specified\n", @ui.error, 'error'
+      assert_match "#{w}:  no homepage specified\n", @ui.error, "error"
 
-      @a1.homepage = 'over at my cool site'
+      @a1.homepage = "over at my cool site"
 
       e = assert_raise Gem::InvalidSpecificationException do
         @a1.validate
@@ -3001,7 +3001,7 @@ Please report a bug if this causes problems.
 
       assert_equal '"over at my cool site" is not a valid HTTP URI', e.message
 
-      @a1.homepage = 'ftp://rubygems.org'
+      @a1.homepage = "ftp://rubygems.org"
 
       e = assert_raise Gem::InvalidSpecificationException do
         @a1.validate
@@ -3009,12 +3009,11 @@ Please report a bug if this causes problems.
 
       assert_equal '"ftp://rubygems.org" is not a valid HTTP URI', e.message
 
-      @a1.homepage = 'https://rubygems.org/'
+      @a1.homepage = "https://rubygems.org/"
       assert_equal true, @a1.validate
 
-      @a1.homepage = 'https://rubygems.org'
+      @a1.homepage = "https://rubygems.org"
       assert_equal true, @a1.validate
-
     end
   end
 
@@ -3051,7 +3050,7 @@ http://spdx.org/licenses or 'Nonstandard' for a nonstandard license.
     util_setup_validate
 
     use_ui @ui do
-      @a1.rubyforge_project = 'invalid-attribute'
+      @a1.rubyforge_project = "invalid-attribute"
       @a1.validate
     end
 
@@ -3062,7 +3061,7 @@ http://spdx.org/licenses or 'Nonstandard' for a nonstandard license.
     util_setup_validate
 
     use_ui @ui do
-      @a1.licenses = ['BSD']
+      @a1.licenses = ["BSD"]
       @a1.validate
     end
 
@@ -3076,7 +3075,7 @@ http://spdx.org/licenses or 'Nonstandard' for a nonstandard license.
     util_setup_validate
 
     use_ui @ui do
-      @a1.licenses = ['LicenseRef-LICENSE.md']
+      @a1.licenses = ["LicenseRef-LICENSE.md"]
       @a1.validate
     end
 
@@ -3087,7 +3086,7 @@ http://spdx.org/licenses or 'Nonstandard' for a nonstandard license.
     util_setup_validate
 
     use_ui @ui do
-      @a1.licenses = ['GPL-2.0+']
+      @a1.licenses = ["GPL-2.0+"]
       @a1.validate
     end
 
@@ -3098,7 +3097,7 @@ http://spdx.org/licenses or 'Nonstandard' for a nonstandard license.
     util_setup_validate
 
     use_ui @ui do
-      @a1.licenses = ['GPL-2.0-or-later']
+      @a1.licenses = ["GPL-2.0-or-later"]
       @a1.validate
     end
 
@@ -3109,7 +3108,7 @@ http://spdx.org/licenses or 'Nonstandard' for a nonstandard license.
     util_setup_validate
 
     use_ui @ui do
-      @a1.licenses = ['GPL-2.0+ WITH Autoconf-exception-2.0']
+      @a1.licenses = ["GPL-2.0+ WITH Autoconf-exception-2.0"]
       @a1.validate
     end
 
@@ -3120,7 +3119,7 @@ http://spdx.org/licenses or 'Nonstandard' for a nonstandard license.
     util_setup_validate
 
     use_ui @ui do
-      @a1.licenses = ['GPL-2.0+ FOO', 'GPL-2.0 FOO']
+      @a1.licenses = ["GPL-2.0+ FOO", "GPL-2.0 FOO"]
       @a1.validate
     end
 
@@ -3138,7 +3137,7 @@ http://spdx.org/licenses or 'Nonstandard' for a nonstandard license.
     util_setup_validate
 
     use_ui @ui do
-      @a1.licenses = ['GPL-2.0+ WITH Autocofn-exception-2.0']
+      @a1.licenses = ["GPL-2.0+ WITH Autocofn-exception-2.0"]
       @a1.validate
     end
 
@@ -3152,7 +3151,7 @@ http://spdx.org/licenses or 'Nonstandard' for a nonstandard license.
     util_setup_validate
 
     use_ui @ui do
-      @a1.licenses = ['ruby']
+      @a1.licenses = ["ruby"]
       @a1.validate
     end
 
@@ -3262,13 +3261,13 @@ Did you mean 'Ruby'?
   end
 
   def test_validate_permissions
-    pend 'chmod not supported' if Gem.win_platform?
+    pend "chmod not supported" if Gem.win_platform?
 
     util_setup_validate
 
     Dir.chdir @tempdir do
-      File.chmod 0640, File.join('lib', 'code.rb')
-      File.chmod 0640, File.join('bin', 'exec')
+      File.chmod 0640, File.join("lib", "code.rb")
+      File.chmod 0640, File.join("bin", "exec")
 
       use_ui @ui do
         @a1.validate
@@ -3281,12 +3280,12 @@ Did you mean 'Ruby'?
   end
 
   def test_validate_permissions_of_missing_file_non_packaging
-    pend 'chmod not supported' if Gem.win_platform?
+    pend "chmod not supported" if Gem.win_platform?
 
     util_setup_validate
 
     Dir.chdir @tempdir do
-      File.delete File.join('lib', 'code.rb')
+      File.delete File.join("lib", "code.rb")
 
       use_ui @ui do
         assert @a1.validate(false)
@@ -3298,13 +3297,13 @@ Did you mean 'Ruby'?
     util_setup_validate
 
     Dir.chdir @tempdir do
-      @a1.platform = 'mswin32'
+      @a1.platform = "mswin32"
       assert @a1.validate
 
-      @a1.platform = 'i586-linux'
+      @a1.platform = "i586-linux"
       assert @a1.validate
 
-      @a1.platform = 'powerpc-darwin'
+      @a1.platform = "powerpc-darwin"
       assert @a1.validate
     end
   end
@@ -3325,7 +3324,7 @@ Did you mean 'Ruby'?
     util_setup_validate
 
     Dir.chdir @tempdir do
-      @a1.specification_version = '1.0'
+      @a1.specification_version = "1.0"
 
       e = assert_raise Gem::InvalidSpecificationException do
         use_ui @ui do
@@ -3333,7 +3332,7 @@ Did you mean 'Ruby'?
         end
       end
 
-      err = 'specification_version must be an Integer (did you mean version?)'
+      err = "specification_version must be an Integer (did you mean version?)"
       assert_equal err, e.message
     end
   end
@@ -3342,13 +3341,13 @@ Did you mean 'Ruby'?
     util_setup_validate
 
     Dir.chdir @tempdir do
-      @a1.summary = ''
+      @a1.summary = ""
 
       use_ui @ui do
         @a1.validate
       end
 
-      assert_match "#{w}:  no summary specified\n", @ui.error, 'error'
+      assert_match "#{w}:  no summary specified\n", @ui.error, "error"
 
       @a1.summary = "#{f} (describe your package)"
 
@@ -3376,11 +3375,11 @@ Did you mean 'Ruby'?
       @a1.validate
     end
 
-    assert_match 'See https://guides.rubygems.org/specification-reference/ for help', @ui.error
+    assert_match "See https://guides.rubygems.org/specification-reference/ for help", @ui.error
   end
 
   def test_version
-    assert_equal Gem::Version.new('1'), @a1.version
+    assert_equal Gem::Version.new("1"), @a1.version
   end
 
   def test_version_change_reset_full_name
@@ -3426,22 +3425,22 @@ Did you mean 'Ruby'?
 
   def test_latest_specs
     spec_fetcher do |fetcher|
-      fetcher.spec 'a', 1 do |s|
-        s.platform = Gem::Platform.new 'x86-my_platform1'
+      fetcher.spec "a", 1 do |s|
+        s.platform = Gem::Platform.new "x86-my_platform1"
       end
 
-      fetcher.spec 'a', 2
+      fetcher.spec "a", 2
 
-      fetcher.spec 'a', 2 do |s|
-        s.platform = Gem::Platform.new 'x86-my_platform1'
+      fetcher.spec "a", 2 do |s|
+        s.platform = Gem::Platform.new "x86-my_platform1"
       end
 
-      fetcher.spec 'a', 2 do |s|
-        s.platform = Gem::Platform.new 'x86-other_platform1'
+      fetcher.spec "a", 2 do |s|
+        s.platform = Gem::Platform.new "x86-other_platform1"
       end
 
-      fetcher.spec 'a', 3 do |s|
-        s.platform = Gem::Platform.new 'x86-other_platform1'
+      fetcher.spec "a", 3 do |s|
+        s.platform = Gem::Platform.new "x86-other_platform1"
       end
     end
 
@@ -3458,7 +3457,7 @@ Did you mean 'Ruby'?
     util_setup_validate
 
     Dir.chdir @tempdir do
-      @m1 = quick_gem 'm', '1' do |s|
+      @m1 = quick_gem "m", "1" do |s|
         s.files = %w[lib/code.rb]
         s.metadata = {
           "one"          => "two",
@@ -3478,7 +3477,7 @@ Did you mean 'Ruby'?
     util_setup_validate
 
     Dir.chdir @tempdir do
-      @m2 = quick_gem 'm', '2' do |s|
+      @m2 = quick_gem "m", "2" do |s|
         s.files = %w[lib/code.rb]
         s.metadata = { 1 => "fail" }
       end
@@ -3495,7 +3494,7 @@ Did you mean 'Ruby'?
     util_setup_validate
 
     Dir.chdir @tempdir do
-      @m2 = quick_gem 'm', '2' do |s|
+      @m2 = quick_gem "m", "2" do |s|
         s.files = %w[lib/code.rb]
         s.metadata = { ("x" * 129) => "fail" }
       end
@@ -3512,9 +3511,9 @@ Did you mean 'Ruby'?
     util_setup_validate
 
     Dir.chdir @tempdir do
-      @m2 = quick_gem 'm', '2' do |s|
+      @m2 = quick_gem "m", "2" do |s|
         s.files = %w[lib/code.rb]
-        s.metadata = { 'fail' => [] }
+        s.metadata = { "fail" => [] }
       end
 
       e = assert_raise Gem::InvalidSpecificationException do
@@ -3529,9 +3528,9 @@ Did you mean 'Ruby'?
     util_setup_validate
 
     Dir.chdir @tempdir do
-      @m2 = quick_gem 'm', '2' do |s|
+      @m2 = quick_gem "m", "2" do |s|
         s.files = %w[lib/code.rb]
-        s.metadata = { 'fail' => ("x" * 1025) }
+        s.metadata = { "fail" => ("x" * 1025) }
       end
 
       e = assert_raise Gem::InvalidSpecificationException do
@@ -3546,9 +3545,9 @@ Did you mean 'Ruby'?
     util_setup_validate
 
     Dir.chdir @tempdir do
-      @m2 = quick_gem 'm', '2' do |s|
+      @m2 = quick_gem "m", "2" do |s|
         s.files = %w[lib/code.rb]
-        s.metadata = { 'homepage_uri' => 'http:/example.com' }
+        s.metadata = { "homepage_uri" => "http:/example.com" }
       end
 
       e = assert_raise Gem::InvalidSpecificationException do
@@ -3560,9 +3559,9 @@ Did you mean 'Ruby'?
   end
 
   def test_metadata_specs
-    @m1 = quick_gem 'm', '1' do |s|
+    @m1 = quick_gem "m", "1" do |s|
       s.files = %w[lib/code.rb]
-      s.metadata = { 'one' => "two", 'two' => "three" }
+      s.metadata = { "one" => "two", "two" => "three" }
     end
 
     valid_ruby_spec = <<-EOF
@@ -3599,7 +3598,7 @@ end
     extconf_rb = File.join @ext.gem_dir, @ext.extensions.first
     FileUtils.mkdir_p File.dirname extconf_rb
 
-    File.open extconf_rb, 'w' do |f|
+    File.open extconf_rb, "w" do |f|
       f.write <<-'RUBY'
         File.open 'Makefile', 'w' do |f|
           f.puts "clean:\n\techo clean"
@@ -3615,8 +3614,8 @@ end
   end
 
   def test_missing_extensions_eh_default_gem
-    spec = new_default_spec 'default', 1
-    spec.extensions << 'extconf.rb'
+    spec = new_default_spec "default", 1
+    spec.extensions << "extconf.rb"
 
     refute spec.missing_extensions?
   end
@@ -3626,7 +3625,7 @@ end
   end
 
   def test_find_all_by_full_name
-    pl = Gem::Platform.new 'i386-linux'
+    pl = Gem::Platform.new "i386-linux"
 
     a1 = util_spec "a", "1"
     a1_pre = util_spec "a", "1.0.0.pre.1"
@@ -3693,9 +3692,9 @@ end
 
     install_specs a
 
-    assert_equal a, Gem::Specification.find_by_path('foo')
+    assert_equal a, Gem::Specification.find_by_path("foo")
     a.activate
-    assert_equal a, Gem::Specification.find_by_path('foo')
+    assert_equal a, Gem::Specification.find_by_path("foo")
   end
 
   def test_find_inactive_by_path
@@ -3703,9 +3702,9 @@ end
 
     install_specs a
 
-    assert_equal a, Gem::Specification.find_inactive_by_path('foo')
+    assert_equal a, Gem::Specification.find_inactive_by_path("foo")
     a.activate
-    assert_nil Gem::Specification.find_inactive_by_path('foo')
+    assert_nil Gem::Specification.find_inactive_by_path("foo")
   end
 
   def test_load_default_gem
