@@ -275,6 +275,7 @@ The following deprecated APIs are removed.
 [Bug #17545]:     https://bugs.ruby-lang.org/issues/17545
 [Feature #17881]: https://bugs.ruby-lang.org/issues/17881
 [Feature #18037]: https://bugs.ruby-lang.org/issues/18037
+[Feature #18159]: https://bugs.ruby-lang.org/issues/18159
 [Feature #18351]: https://bugs.ruby-lang.org/issues/18351
 [Bug #18487]:     https://bugs.ruby-lang.org/issues/18487
 [Feature #18571]: https://bugs.ruby-lang.org/issues/18571
@@ -286,4 +287,3 @@ The following deprecated APIs are removed.
 [Bug #18782]:     https://bugs.ruby-lang.org/issues/18782
 [Feature #18788]: https://bugs.ruby-lang.org/issues/18788
 [Feature #18809]: https://bugs.ruby-lang.org/issues/18809
-[Feature #18159]: https://bugs.ruby-lang.org/issues/18159
