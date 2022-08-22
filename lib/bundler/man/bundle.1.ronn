@@ -36,9 +36,9 @@ We divide `bundle` subcommands into primary commands and utilities:
 * [`bundle update(1)`](bundle-update.1.html):
   Update dependencies to their latest versions
 
-* [`bundle package(1)`](bundle-package.1.html):
+* [`bundle cache(1)`](bundle-cache.1.html):
   Package the .gem files required by your application into the
-  `vendor/cache` directory
+  `vendor/cache` directory (aliases: `bundle package`, `bundle pack`)
 
 * [`bundle exec(1)`](bundle-exec.1.html):
   Execute a script in the current bundle
@@ -67,7 +67,7 @@ We divide `bundle` subcommands into primary commands and utilities:
 * [`bundle outdated(1)`](bundle-outdated.1.html):
   Show all of the outdated gems in the current bundle
 
-* `bundle console(1)`:
+* `bundle console(1)` (deprecated):
   Start an IRB session in the current bundle
 
 * [`bundle open(1)`](bundle-open.1.html):
@@ -107,5 +107,4 @@ and execute it, passing down any extra arguments to it.
 
 These commands are obsolete and should no longer be used:
 
-* `bundle cache(1)`
 * `bundle inject(1)`

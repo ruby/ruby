@@ -21,7 +21,8 @@ class Gem::Resolver::IndexSpecification < Gem::Resolver::Specification
     @name = name
     @version = version
     @source = source
-    @platform = platform.to_s
+    @platform = Gem::Platform.new(platform.to_s)
+    @original_platform = platform.to_s
 
     @spec = nil
   end
@@ -91,7 +92,7 @@ class Gem::Resolver::IndexSpecification < Gem::Resolver::Specification
   def spec # :nodoc:
     @spec ||=
       begin
-        tuple = Gem::NameTuple.new @name, @version, @platform
+        tuple = Gem::NameTuple.new @name, @version, @original_platform
 
         @source.fetch_spec tuple
       end

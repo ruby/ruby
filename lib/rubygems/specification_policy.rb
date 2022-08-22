@@ -188,7 +188,7 @@ duplicate dependency on #{dep}, (#{prev.requirement}) use:
           prerelease_dep && !@specification.version.prerelease?
 
       open_ended = dep.requirement.requirements.all? do |op, version|
-        not version.prerelease? and (op == ">" or op == ">=")
+        !version.prerelease? && (op == ">" || op == ">=")
       end
 
       if open_ended
@@ -203,7 +203,7 @@ duplicate dependency on #{dep}, (#{prev.requirement}) use:
         else
           bugfix = if op == ">"
             ", '> #{dep_version}'"
-          elsif op == ">=" and base != segments
+          elsif op == ">=" && base != segments
             ", '>= #{dep_version}'"
           end
 
@@ -338,7 +338,7 @@ duplicate dependency on #{dep}, (#{prev.requirement}) use:
       String
     end
 
-    unless Array === val and val.all? {|x| x.kind_of?(klass) }
+    unless Array === val && val.all? {|x| x.kind_of?(klass) }
       error "#{field} must be an Array of #{klass}"
     end
   end
@@ -404,7 +404,7 @@ http://spdx.org/licenses or '#{Gem::Licenses::NONSTANDARD}' for a nonstandard li
     homepage = @specification.homepage
 
     # Make sure a homepage is valid HTTP/HTTPS URI
-    if homepage and not homepage.empty?
+    if homepage && !homepage.empty?
       require "uri"
       begin
         homepage_uri = URI.parse(homepage)

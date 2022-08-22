@@ -32,8 +32,15 @@ class TestGemVersion < Gem::TestCase
   def test_class_create
     real = Gem::Version.new(1.0)
 
-    assert_same  real, Gem::Version.create(real)
-    assert_nil   Gem::Version.create(nil)
+    assert_same real, Gem::Version.create(real)
+
+    expected = "nil versions are discouraged and will be deprecated in Rubygems 4\n"
+    actual_stdout, actual_stderr = capture_output do
+      assert_nil Gem::Version.create(nil)
+    end
+    assert_empty actual_stdout
+    assert_equal(expected, actual_stderr)
+
     assert_equal v("5.1"), Gem::Version.create("5.1")
 
     ver = "1.1".freeze

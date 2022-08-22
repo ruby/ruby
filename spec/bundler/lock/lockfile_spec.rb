@@ -1174,7 +1174,7 @@ RSpec.describe "the lockfile format" do
   it "captures the Ruby version in the lockfile" do
     install_gemfile <<-G
       source "#{file_uri_for(gem_repo2)}/"
-      ruby '#{RUBY_VERSION}'
+      ruby '#{Gem.ruby_version}'
       gem "rack", "> 0.9", "< 1.0"
     G
 
@@ -1191,7 +1191,7 @@ RSpec.describe "the lockfile format" do
         rack (> 0.9, < 1.0)
 
       RUBY VERSION
-         ruby #{RUBY_VERSION}p#{RUBY_PATCHLEVEL}
+         #{Bundler::RubyVersion.system}
 
       BUNDLED WITH
          #{Bundler::VERSION}

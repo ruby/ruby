@@ -98,7 +98,7 @@ class Gem::SpecFetcher
 
       found[source] = specs.select do |tup|
         if dependency.match?(tup)
-          if matching_platform and !Gem::Platform.match_gem?(tup.platform, tup.name)
+          if matching_platform && !Gem::Platform.match_gem?(tup.platform, tup.name)
             pm = (
               rejected_specs[dependency] ||= \
                 Gem::PlatformMismatch.new(tup.name, tup.version))

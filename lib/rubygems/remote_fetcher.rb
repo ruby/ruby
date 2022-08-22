@@ -114,7 +114,7 @@ class Gem::RemoteFetcher
     cache_dir =
       if Dir.pwd == install_dir # see fetch_command
         install_dir
-      elsif File.writable?(install_cache_dir) || (File.writable?(install_dir) && (not File.exist?(install_cache_dir)))
+      elsif File.writable?(install_cache_dir) || (File.writable?(install_dir) && (!File.exist?(install_cache_dir)))
         install_cache_dir
       else
         File.join Gem.user_dir, "cache"
@@ -247,7 +247,7 @@ class Gem::RemoteFetcher
 
     data = send "fetch_#{uri.scheme}", uri, mtime, head
 
-    if data and !head and uri.to_s.end_with?(".gz")
+    if data && !head && uri.to_s.end_with?(".gz")
       begin
         data = Gem::Util.gunzip data
       rescue Zlib::GzipFile::Error
@@ -288,7 +288,7 @@ class Gem::RemoteFetcher
       return Gem.read_binary(path)
     end
 
-    if update and path
+    if update && path
       Gem.write_binary(path, data)
     end
 

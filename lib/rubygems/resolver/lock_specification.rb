@@ -71,7 +71,7 @@ class Gem::Resolver::LockSpecification < Gem::Resolver::Specification
 
   def spec
     @spec ||= Gem::Specification.find do |spec|
-      spec.name == @name and spec.version == @version
+      spec.name == @name && spec.version == @version
     end
 
     @spec ||= Gem::Specification.new do |s|

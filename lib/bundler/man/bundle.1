@@ -43,8 +43,8 @@ Install the gems specified by the \fBGemfile\fR or \fBGemfile\.lock\fR
 Update dependencies to their latest versions
 .
 .TP
-\fBbundle package(1)\fR \fIbundle\-package\.1\.html\fR
-Package the \.gem files required by your application into the \fBvendor/cache\fR directory
+\fBbundle cache(1)\fR \fIbundle\-cache\.1\.html\fR
+Package the \.gem files required by your application into the \fBvendor/cache\fR directory (aliases: \fBbundle package\fR, \fBbundle pack\fR)
 .
 .TP
 \fBbundle exec(1)\fR \fIbundle\-exec\.1\.html\fR
@@ -81,7 +81,7 @@ Show the source location of a particular gem in the bundle
 Show all of the outdated gems in the current bundle
 .
 .TP
-\fBbundle console(1)\fR
+\fBbundle console(1)\fR (deprecated)
 Start an IRB session in the current bundle
 .
 .TP
@@ -125,9 +125,6 @@ When running a command that isn\'t listed in PRIMARY COMMANDS or UTILITIES, Bund
 .
 .SH "OBSOLETE"
 These commands are obsolete and should no longer be used:
-.
-.IP "\(bu" 4
-\fBbundle cache(1)\fR
 .
 .IP "\(bu" 4
 \fBbundle inject(1)\fR

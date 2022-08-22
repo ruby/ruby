@@ -9,6 +9,9 @@
 .SH "SYNOPSIS"
 \fBbundle cache\fR
 .
+.P
+alias: \fBpackage\fR, \fBpack\fR
+.
 .SH "DESCRIPTION"
 Copy all of the \fB\.gem\fR files needed to run the application into the \fBvendor/cache\fR directory\. In the future, when running [bundle install(1)][bundle\-install], use the gems in the cache in preference to the ones on \fBrubygems\.org\fR\.
 .
@@ -53,3 +56,6 @@ One way to be sure that you have the right platformed versions of all your gems 
 .
 .P
 By default, bundle cache(1) \fIbundle\-cache\.1\.html\fR fetches and also installs the gems to the default location\. To package the dependencies to \fBvendor/cache\fR without installing them to the local install location, you can run \fBbundle cache \-\-no\-install\fR\.
+.
+.SH "HISTORY"
+In Bundler 2\.1, \fBcache\fR took in the functionalities of \fBpackage\fR and now \fBpackage\fR and \fBpack\fR are aliases of \fBcache\fR\.

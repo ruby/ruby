@@ -109,6 +109,12 @@ automatically and that requires `bundler` to silently remember them. Since
   appropriate platform-specific gem exists on `rubygems.org` it will not be
   found.
 
+* `--prefer-local`:
+  Force using locally installed gems, or gems already present in Rubygems' cache
+  or in `vendor/cache`, when resolving, even if newer versions are available
+  remotely. Only attempt to connect to `rubygems.org` for gems that are not
+  present locally.
+
 * `--no-cache`:
   Do not update the cache in `vendor/cache` with the newly bundled gems. This
   does not remove any gems in the cache but keeps the newly bundled gems from

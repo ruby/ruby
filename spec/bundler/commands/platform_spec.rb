@@ -19,7 +19,7 @@ Your app has gems that work on these platforms:
 * #{specific_local_platform}
 
 Your Gemfile specifies a Ruby version requirement:
-* ruby #{RUBY_VERSION}
+* ruby #{Gem.ruby_version}
 
 Your current platform satisfies the Ruby version requirement.
 G
@@ -42,7 +42,7 @@ Your app has gems that work on these platforms:
 * #{specific_local_platform}
 
 Your Gemfile specifies a Ruby version requirement:
-* ruby #{RUBY_VERSION}p#{RUBY_PATCHLEVEL}
+* #{Bundler::RubyVersion.system.single_version_string}
 
 Your current platform satisfies the Ruby version requirement.
 G
@@ -85,7 +85,7 @@ Your app has gems that work on these platforms:
 Your Gemfile specifies a Ruby version requirement:
 * ruby #{not_local_ruby_version}
 
-Your Ruby version is #{RUBY_VERSION}, but your Gemfile specified #{not_local_ruby_version}
+Your Ruby version is #{Gem.ruby_version}, but your Gemfile specified #{not_local_ruby_version}
 G
     end
   end
@@ -231,7 +231,7 @@ G
       L
 
       bundle "platform --ruby"
-      expect(out).to eq("ruby 1.0.0p127")
+      expect(out).to eq("ruby 1.0.0")
     end
 
     it "handles when there is a requirement in the gemfile" do
@@ -255,18 +255,18 @@ G
     end
   end
 
-  let(:ruby_version_correct) { "ruby \"#{RUBY_VERSION}\", :engine => \"#{local_ruby_engine}\", :engine_version => \"#{local_engine_version}\"" }
-  let(:ruby_version_correct_engineless) { "ruby \"#{RUBY_VERSION}\"" }
+  let(:ruby_version_correct) { "ruby \"#{Gem.ruby_version}\", :engine => \"#{local_ruby_engine}\", :engine_version => \"#{local_engine_version}\"" }
+  let(:ruby_version_correct_engineless) { "ruby \"#{Gem.ruby_version}\"" }
   let(:ruby_version_correct_patchlevel) { "#{ruby_version_correct}, :patchlevel => '#{RUBY_PATCHLEVEL}'" }
   let(:ruby_version_incorrect) { "ruby \"#{not_local_ruby_version}\", :engine => \"#{local_ruby_engine}\", :engine_version => \"#{not_local_ruby_version}\"" }
-  let(:engine_incorrect) { "ruby \"#{RUBY_VERSION}\", :engine => \"#{not_local_tag}\", :engine_version => \"#{RUBY_VERSION}\"" }
-  let(:engine_version_incorrect) { "ruby \"#{RUBY_VERSION}\", :engine => \"#{local_ruby_engine}\", :engine_version => \"#{not_local_engine_version}\"" }
+  let(:engine_incorrect) { "ruby \"#{Gem.ruby_version}\", :engine => \"#{not_local_tag}\", :engine_version => \"#{Gem.ruby_version}\"" }
+  let(:engine_version_incorrect) { "ruby \"#{Gem.ruby_version}\", :engine => \"#{local_ruby_engine}\", :engine_version => \"#{not_local_engine_version}\"" }
   let(:patchlevel_incorrect) { "#{ruby_version_correct}, :patchlevel => '#{not_local_patchlevel}'" }
   let(:patchlevel_fixnum) { "#{ruby_version_correct}, :patchlevel => #{RUBY_PATCHLEVEL}1" }
 
   def should_be_ruby_version_incorrect
     expect(exitstatus).to eq(18)
-    expect(err).to be_include("Your Ruby version is #{RUBY_VERSION}, but your Gemfile specified #{not_local_ruby_version}")
+    expect(err).to be_include("Your Ruby version is #{Gem.ruby_version}, but your Gemfile specified #{not_local_ruby_version}")
   end
 
   def should_be_engine_incorrect

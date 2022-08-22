@@ -43,8 +43,8 @@ local and global sources.
 Executing `bundle config unset --global <name>` will delete the configuration
 only from the user configuration.
 
-Executing `bundle config unset --local <name> <value>` will delete the
-configuration only from the local application.
+Executing `bundle config unset --local <name>` will delete the configuration
+only from the local application.
 
 Executing bundle with the `BUNDLE_IGNORE_CONFIG` environment variable set will
 cause it to ignore all configuration.
@@ -280,7 +280,7 @@ learn more about their operation in [bundle install(1)](bundle-install.1.html).
    A `:`-separated list of groups whose gems bundler should not install.
 
 In general, you should set these settings per-application by using the applicable
-flag to the [bundle install(1)](bundle-install.1.html) or [bundle package(1)](bundle-package.1.html) command.
+flag to the [bundle install(1)](bundle-install.1.html) or [bundle cache(1)](bundle-cache.1.html) command.
 
 You can set them globally either via environment variables or `bundle config`,
 whichever is preferable for your setup. If you use both, environment variables

@@ -62,7 +62,7 @@ class Gem::Source
   end
 
   def ==(other) # :nodoc:
-    self.class === other and @uri == other.uri
+    self.class === other && @uri == other.uri
   end
 
   alias_method :eql?, :== # :nodoc:

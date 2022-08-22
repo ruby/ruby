@@ -374,6 +374,112 @@ RSpec.describe "bundle install with specific platforms" do
     ERROR
   end
 
+  it "automatically fixes the lockfile if RUBY platform is locked and some gem has no RUBY variant available" do
+    build_repo4 do
+      build_gem("sorbet-static-and-runtime", "0.5.10160") do |s|
+        s.add_runtime_dependency "sorbet", "= 0.5.10160"
+        s.add_runtime_dependency "sorbet-runtime", "= 0.5.10160"
+      end
+
+      build_gem("sorbet", "0.5.10160") do |s|
+        s.add_runtime_dependency "sorbet-static", "= 0.5.10160"
+      end
+
+      build_gem("sorbet-runtime", "0.5.10160")
+
+      build_gem("sorbet-static", "0.5.10160") do |s|
+        s.platform = Gem::Platform.local
+      end
+    end
+
+    gemfile <<~G
+      source "#{file_uri_for(gem_repo4)}"
+
+      gem "sorbet-static-and-runtime"
+    G
+
+    lockfile <<~L
+      GEM
+        remote: #{file_uri_for(gem_repo4)}/
+        specs:
+          sorbet (0.5.10160)
+            sorbet-static (= 0.5.10160)
+          sorbet-runtime (0.5.10160)
+          sorbet-static (0.5.10160-#{Gem::Platform.local})
+          sorbet-static-and-runtime (0.5.10160)
+            sorbet (= 0.5.10160)
+            sorbet-runtime (= 0.5.10160)
+
+      PLATFORMS
+        #{lockfile_platforms_for([specific_local_platform, "ruby"])}
+
+      DEPENDENCIES
+        sorbet-static-and-runtime
+
+      BUNDLED WITH
+         #{Bundler::VERSION}
+    L
+
+    bundle "update"
+
+    expect(lockfile).to eq <<~L
+      GEM
+        remote: #{file_uri_for(gem_repo4)}/
+        specs:
+          sorbet (0.5.10160)
+            sorbet-static (= 0.5.10160)
+          sorbet-runtime (0.5.10160)
+          sorbet-static (0.5.10160-#{Gem::Platform.local})
+          sorbet-static-and-runtime (0.5.10160)
+            sorbet (= 0.5.10160)
+            sorbet-runtime (= 0.5.10160)
+
+      PLATFORMS
+        #{lockfile_platforms}
+
+      DEPENDENCIES
+        sorbet-static-and-runtime
+
+      BUNDLED WITH
+         #{Bundler::VERSION}
+    L
+  end
+
+  it "can fallback to a source gem when platform gems are incompatible with current ruby version" do
+    setup_multiplatform_gem_with_source_gem
+
+    source = file_uri_for(gem_repo2)
+
+    gemfile <<~G
+      source "#{source}"
+
+      gem "my-precompiled-gem"
+    G
+
+    # simulate lockfile which includes both a precompiled gem with:
+    # - Gem the current platform (with imcompatible ruby version)
+    # - A source gem with compatible ruby version
+    lockfile <<-L
+      GEM
+        remote: #{source}/
+        specs:
+          my-precompiled-gem (3.0.0)
+          my-precompiled-gem (3.0.0-#{Bundler.local_platform})
+
+      PLATFORMS
+        ruby
+        #{Bundler.local_platform}
+
+      DEPENDENCIES
+        my-precompiled-gem
+
+      BUNDLED WITH
+         #{Bundler::VERSION}
+    L
+
+    bundle :install
+  end
+
   private
 
   def setup_multiplatform_gem
@@ -402,6 +508,18 @@ RSpec.describe "bundle install with specific platforms" do
         s.add_runtime_dependency "CFPropertyList"
       end
       build_gem("CFPropertyList")
+    end
+  end
+
+  def setup_multiplatform_gem_with_source_gem
+    build_repo2 do
+      build_gem("my-precompiled-gem", "3.0.0")
+      build_gem("my-precompiled-gem", "3.0.0") do |s|
+        s.platform = Bundler.local_platform
+
+        # purposely unresolvable
+        s.required_ruby_version = ">= 1000.0.0"
+      end
     end
   end
 end
