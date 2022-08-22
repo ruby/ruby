@@ -255,6 +255,95 @@ RSpec.describe "Bundler.setup with multi platform stuff" do
     expect(the_bundle).to include_gems "platform_specific 1.0 RUBY"
   end
 
+  it "doesn't pull platform specific gems on truffleruby (except when whitelisted) even if lockfile was generated with an older version that declared RUBY as platform", :truffleruby_only do
+    gemfile <<-G
+      source "#{file_uri_for(gem_repo1)}"
+      gem "platform_specific"
+    G
+
+    lockfile <<-L
+      GEM
+        remote: #{file_uri_for(gem_repo1)}/
+        specs:
+          platform_specific (1.0)
+
+      PLATFORMS
+        ruby
+
+      DEPENDENCIES
+        platform_specific
+
+      BUNDLED WITH
+         #{Bundler::VERSION}
+    L
+
+    bundle "install"
+
+    expect(the_bundle).to include_gems "platform_specific 1.0 RUBY"
+
+    simulate_platform "x86_64-linux" do
+      build_repo4 do
+        build_gem "libv8"
+
+        build_gem "libv8" do |s|
+          s.platform = "x86_64-linux"
+        end
+      end
+
+      gemfile <<-G
+        source "#{file_uri_for(gem_repo4)}"
+        gem "libv8"
+      G
+
+      lockfile <<-L
+        GEM
+          remote: #{file_uri_for(gem_repo4)}/
+          specs:
+            libv8 (1.0)
+
+        PLATFORMS
+          ruby
+
+        DEPENDENCIES
+          libv8
+
+        BUNDLED WITH
+           #{Bundler::VERSION}
+      L
+
+      bundle "install"
+
+      expect(the_bundle).to include_gems "libv8 1.0 x86_64-linux"
+    end
+  end
+
+  it "doesn't pull platform specific gems on truffleruby, even if lockfile only includes those", :truffleruby_only do
+    gemfile <<-G
+      source "#{file_uri_for(gem_repo1)}"
+      gem "platform_specific"
+    G
+
+    lockfile <<-L
+      GEM
+        remote: #{file_uri_for(gem_repo1)}/
+        specs:
+          platform_specific (1.0-x86-darwin-100)
+
+      PLATFORMS
+        x86-darwin-100
+
+      DEPENDENCIES
+        platform_specific
+
+      BUNDLED WITH
+         #{Bundler::VERSION}
+    L
+
+    bundle "install"
+
+    expect(the_bundle).to include_gems "platform_specific 1.0 RUBY"
+  end
+
   it "allows specifying only-ruby-platform on windows with dependency platforms" do
     simulate_windows do
       install_gemfile <<-G

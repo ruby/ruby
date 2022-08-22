@@ -446,11 +446,15 @@ module Spec
     end
 
     def simulate_windows(platform = mswin)
+      old = ENV["BUNDLER_SPEC_WINDOWS"]
+      ENV["BUNDLER_SPEC_WINDOWS"] = "true"
       simulate_platform platform do
         simulate_bundler_version_when_missing_prerelease_default_gem_activation do
           yield
         end
       end
+    ensure
+      ENV["BUNDLER_SPEC_WINDOWS"] = old
     end
 
     def simulate_bundler_version_when_missing_prerelease_default_gem_activation

@@ -365,10 +365,11 @@ By default, this RubyGems will install gem as:
 
     bundler_spec = Dir.chdir("bundler") { Gem::Specification.load("bundler.gemspec") }
 
-    # Remove bundler-*.gemspec in default specification directory.
-    Dir.entries(specs_dir).
-      select {|gs| gs.start_with?("bundler-") }.
-      each {|gs| File.delete(File.join(specs_dir, gs)) }
+    current_default_spec = Gem::Specification.default_stubs.find {|s| s.name == "bundler" }
+    if current_default_spec
+      File.delete(current_default_spec.loaded_from)
+      Gem::Specification.remove_spec current_default_spec
+    end
 
     default_spec_path = File.join(specs_dir, "#{bundler_spec.full_name}.gemspec")
     Gem.write_binary(default_spec_path, bundler_spec.to_ruby)

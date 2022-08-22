@@ -159,6 +159,10 @@ class Gem::Platform
   def ===(other)
     return nil unless Gem::Platform === other
 
+    # universal-mingw32 matches x64-mingw-ucrt
+    return true if (@cpu == 'universal' or other.cpu == 'universal') and
+                   @os.start_with?('mingw') and other.os.start_with?('mingw')
+
     # cpu
     ([nil,'universal'].include?(@cpu) or [nil, 'universal'].include?(other.cpu) or @cpu == other.cpu or
     (@cpu == 'arm' and other.cpu.start_with?("arm"))) and
