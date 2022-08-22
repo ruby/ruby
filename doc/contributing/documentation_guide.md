@@ -376,12 +376,22 @@ Mention aliases in the form
 In some cases, it is useful to document which methods are related to
 the current method.  For example, documentation for `Hash#[]` might
 mention `Hash#fetch` as a related method, and `Hash#merge` might mention
-`Hash#merge!` as a related method.  Consider which methods may be related
-to the current method, and if you think the reader would benefit it,
-at the end of the method documentation, add a line starting with
-"Related: " (e.g. "Related: #fetch").  Don't list more than three
-related methods. If you think more than three methods are related,
-pick the three you think are most important and list those three.
+`Hash#merge!` as a related method.
+
+- Consider which methods may be related
+  to the current method, and if you think the reader would benefit it,
+  at the end of the method documentation, add a line starting with
+  "Related: " (e.g. "Related: #fetch.").
+- Don't list more than three related methods.
+  If you think more than three methods are related,
+  list the three you think are most important.
+- Consider adding:
+
+    - A phrase suggesting how the related method is similar to,
+      or different from,the current method.
+      See an example at Time#getutc.
+    - Example code that illustrates the similarities and differences.
+      See examples at Time#ctime, Time#inspect, Time#to_s.
 
 ### Methods Accepting Multiple Argument Types
 
