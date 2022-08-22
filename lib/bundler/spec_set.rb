@@ -30,7 +30,7 @@ module Bundler
 
           specs_for_dep.first.dependencies.each do |d|
             next if d.type == :development
-            d = DepProxy.get_proxy(d, dep.__platform) unless match_current_platform
+            d = DepProxy.get_proxy(Dependency.new(d.name, d.requirement), dep.__platform) unless match_current_platform
             deps << d
           end
         elsif check
@@ -178,7 +178,7 @@ module Bundler
       if match_current_platform
         GemHelpers.select_best_platform_match(specs_for_name.select {|s| Gem::Platform.match_spec?(s) }, Bundler.local_platform)
       else
-        specs_for_name_and_platform = GemHelpers.select_best_platform_match(specs_for_name, dep.__platform)
+        specs_for_name_and_platform = GemHelpers.select_best_platform_match(specs_for_name, dep.force_ruby_platform ? Gem::Platform::RUBY : dep.__platform)
         specs_for_name_and_platform.any? ? specs_for_name_and_platform : specs_for_name
       end
     end

@@ -337,6 +337,14 @@ RSpec.describe "Resolving platform craziness" do
         should_resolve_as %w[thin-1.2.7-x64-mingw-ucrt]
       end
     end
+
+    if Gem.rubygems_version >= Gem::Version.new("3.3.18")
+      it "finds universal-mingw gems on x64-mingw-ucrt" do
+        platform "x64-mingw-ucrt"
+        dep "win32-api"
+        should_resolve_as %w[win32-api-1.5.1-universal-mingw32]
+      end
+    end
   end
 
   describe "with conflicting cases" do

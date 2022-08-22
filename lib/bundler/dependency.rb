@@ -7,7 +7,7 @@ require_relative "rubygems_ext"
 module Bundler
   class Dependency < Gem::Dependency
     attr_reader :autorequire
-    attr_reader :groups, :platforms, :gemfile, :git, :github, :branch, :ref
+    attr_reader :groups, :platforms, :gemfile, :git, :github, :branch, :ref, :force_ruby_platform
 
     # rubocop:disable Naming/VariableNumber
     PLATFORM_MAP = {
@@ -109,6 +109,7 @@ module Bundler
       @env            = options["env"]
       @should_include = options.fetch("should_include", true)
       @gemfile        = options["gemfile"]
+      @force_ruby_platform = options["force_ruby_platform"]
 
       @autorequire = Array(options["require"] || []) if options.key?("require")
     end

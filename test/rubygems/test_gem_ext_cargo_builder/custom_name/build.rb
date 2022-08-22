@@ -15,7 +15,7 @@ gemspec = File.expand_path('custom_name.gemspec', __dir__)
 
 Dir.mktmpdir("custom_name") do |dir|
   built_gem = File.expand_path(File.join(dir, "custom_name.gem"))
-  system *gem, "build", gemspec, "--output", built_gem
-  system *gem, "install", "--verbose", "--local", built_gem, *ARGV
+  system(*gem, "build", gemspec, "--output", built_gem)
+  system(*gem, "install", "--verbose", "--local", built_gem, *ARGV)
   system %q(ruby -rcustom_name -e "puts 'Result: ' + CustomName.say_hello")
 end

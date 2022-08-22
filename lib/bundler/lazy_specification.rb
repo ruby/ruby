@@ -7,7 +7,7 @@ module Bundler
     include MatchPlatform
 
     attr_reader :name, :version, :dependencies, :platform
-    attr_accessor :source, :remote
+    attr_accessor :source, :remote, :force_ruby_platform
 
     def initialize(name, version, platform, source = nil)
       @name          = name
@@ -152,7 +152,7 @@ module Bundler
     # explicitly add a more specific platform.
     #
     def ruby_platform_materializes_to_ruby_platform?
-      !Bundler.most_specific_locked_platform?(generic_local_platform) || Bundler.settings[:force_ruby_platform]
+      !Bundler.most_specific_locked_platform?(generic_local_platform) || force_ruby_platform || Bundler.settings[:force_ruby_platform]
     end
   end
 end

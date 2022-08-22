@@ -216,28 +216,28 @@ RSpec.describe "bundle install across platforms" do
         pry
 
       BUNDLED WITH
-         #{Bundler::VERSION}
+         1.16.1
     L
 
     aggregate_failures do
       lockfile bad_lockfile
-      bundle :install
+      bundle :install, :env => { "BUNDLER_VERSION" => Bundler::VERSION }
       expect(lockfile).to eq good_lockfile
 
       lockfile bad_lockfile
-      bundle :update, :all => true
+      bundle :update, :all => true, :env => { "BUNDLER_VERSION" => Bundler::VERSION }
       expect(lockfile).to eq good_lockfile
 
       lockfile bad_lockfile
-      bundle "update ffi"
+      bundle "update ffi", :env => { "BUNDLER_VERSION" => Bundler::VERSION }
       expect(lockfile).to eq good_lockfile
 
       lockfile bad_lockfile
-      bundle "update empyrean"
+      bundle "update empyrean", :env => { "BUNDLER_VERSION" => Bundler::VERSION }
       expect(lockfile).to eq good_lockfile
 
       lockfile bad_lockfile
-      bundle :lock
+      bundle :lock, :env => { "BUNDLER_VERSION" => Bundler::VERSION }
       expect(lockfile).to eq good_lockfile
     end
   end

@@ -143,9 +143,12 @@ module Bundler
             end
 
             spec_group_ruby = SpecGroup.create_for(specs_by_platform, [Gem::Platform::RUBY], Gem::Platform::RUBY)
-            groups << spec_group_ruby if spec_group_ruby
+            if spec_group_ruby
+              spec_group_ruby.force_ruby_platform = dependency.force_ruby_platform
+              groups << spec_group_ruby
+            end
 
-            next groups if @resolving_only_for_ruby
+            next groups if @resolving_only_for_ruby || dependency.force_ruby_platform
 
             spec_group = SpecGroup.create_for(specs_by_platform, @platforms, platform)
             groups << spec_group

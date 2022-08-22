@@ -280,6 +280,22 @@ class TestGemPlatform < Gem::TestCase
     refute((Gem::Platform.local === arm), 'armv7 === arm')
   end
 
+  def test_equals3_universal_mingw
+    uni_mingw  = Gem::Platform.new 'universal-mingw'
+    mingw32    = Gem::Platform.new 'x64-mingw32'
+    mingw_ucrt = Gem::Platform.new 'x64-mingw-ucrt'
+
+    util_set_arch 'x64-mingw32'
+    assert((uni_mingw === Gem::Platform.local), 'uni_mingw === mingw32')
+    assert((mingw32 === Gem::Platform.local), 'mingw32 === mingw32')
+    refute((mingw_ucrt === Gem::Platform.local), 'mingw32 === mingw_ucrt')
+
+    util_set_arch 'x64-mingw-ucrt'
+    assert((uni_mingw === Gem::Platform.local), 'uni_mingw === mingw32')
+    assert((mingw_ucrt === Gem::Platform.local), 'mingw_ucrt === mingw_ucrt')
+    refute((mingw32 === Gem::Platform.local), 'mingw32 === mingw_ucrt')
+  end
+
   def test_equals3_version
     util_set_arch 'i686-darwin8'
 

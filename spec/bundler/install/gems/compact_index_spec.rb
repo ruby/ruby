@@ -163,6 +163,25 @@ The checksum of /versions does not match the checksum provided by the server! So
     expect(the_bundle).to include_gems "rack 1.0.0"
   end
 
+  it "shows proper path when permission errors happen", :permissions do
+    gemfile <<-G
+      source "#{source_uri}"
+      gem "rack"
+    G
+
+    versions = File.join(Bundler.rubygems.user_home, ".bundle", "cache", "compact_index",
+      "localgemserver.test.80.dd34752a738ee965a2a4298dc16db6c5", "versions")
+    FileUtils.mkdir_p(File.dirname(versions))
+    FileUtils.touch(versions)
+    FileUtils.chmod("-r", versions)
+
+    bundle :install, :artifice => "compact_index", :raise_on_error => false
+
+    expect(err).to include(
+      "There was an error while trying to read from `#{versions}`. It is likely that you need to grant read permissions for that path."
+    )
+  end
+
   it "falls back when the user's home directory does not exist or is not writable" do
     ENV["HOME"] = tmp("missing_home").to_s
 
