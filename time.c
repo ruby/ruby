@@ -3947,7 +3947,7 @@ time_getlocaltime(int argc, VALUE *argv, VALUE time)
  *    utc.utc?                 # => true
  *    utc == local             # => true
  *
- *  Time#getgm is an alias for Time#utc.
+ *  Time#getgm is an alias for Time#getutc.
  */
 
 static VALUE
