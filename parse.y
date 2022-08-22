@@ -5035,9 +5035,7 @@ ssym		: tSYMBEG sym
 		;
 
 sym		: fname
-		| tIVAR
-		| tGVAR
-		| tCVAR
+		| nonlocal_var
 		;
 
 dsym		: tSYMBEG string_contents tSTRING_END
@@ -5073,10 +5071,8 @@ nonlocal_var    : tIVAR
 		;
 
 user_variable	: tIDENTIFIER
-		| tIVAR
-		| tGVAR
 		| tCONSTANT
-		| tCVAR
+		| nonlocal_var
 		;
 
 keyword_variable: keyword_nil {$$ = KWD2EID(nil, $1);}
