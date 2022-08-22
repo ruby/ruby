@@ -7,6 +7,8 @@ module Bundler
 
     include GemHelpers
 
+    attr_writer :platforms
+
     # Figures out the best possible configuration of gems that satisfies
     # the list of passed dependencies and any child dependencies without
     # causing any gem activation errors.
@@ -19,41 +21,48 @@ module Bundler
     #   collection of gemspecs is returned. Otherwise, nil is returned.
     def self.resolve(requirements, source_requirements = {}, base = [], gem_version_promoter = GemVersionPromoter.new, additional_base_requirements = [], platforms = nil)
       base = SpecSet.new(base) unless base.is_a?(SpecSet)
-      metadata_requirements, regular_requirements = requirements.partition {|dep| dep.name.end_with?("\0") }
-      resolver = new(source_requirements, base, gem_version_promoter, additional_base_requirements, platforms, metadata_requirements)
-      result = resolver.start(requirements)
-      SpecSet.new(SpecSet.new(result).for(regular_requirements, false, platforms))
+      resolver = new(source_requirements, base, gem_version_promoter, additional_base_requirements, platforms)
+      resolver.start(requirements)
     end
 
-    def initialize(source_requirements, base, gem_version_promoter, additional_base_requirements, platforms, metadata_requirements)
+    def initialize(source_requirements, base, gem_version_promoter, additional_base_requirements, platforms)
       @source_requirements = source_requirements
-      @metadata_requirements = metadata_requirements
       @base = base
       @resolver = Molinillo::Resolver.new(self, self)
+      @results_for = {}
       @search_for = {}
-      @base_dg = Molinillo::DependencyGraph.new
-      base.each do |ls|
-        dep = Dependency.new(ls.name, ls.version)
-        @base_dg.add_vertex(ls.name, DepProxy.get_proxy(dep, ls.platform), true)
-      end
-      additional_base_requirements.each {|d| @base_dg.add_vertex(d.name, d) }
-      @platforms = platforms.reject {|p| p != Gem::Platform::RUBY && (platforms - [p]).any? {|pl| generic(pl) == p } }
+      @additional_base_requirements = additional_base_requirements
+      @platforms = platforms
       @resolving_only_for_ruby = platforms == [Gem::Platform::RUBY]
       @gem_version_promoter = gem_version_promoter
       @use_gvp = Bundler.feature_flag.use_gem_version_promoter_for_major_updates? || !@gem_version_promoter.major?
     end
 
-    def start(requirements)
+    def start(requirements, exclude_specs: [])
+      @metadata_requirements, regular_requirements = requirements.partition {|dep| dep.name.end_with?("\0") }
+
+      exclude_specs.each do |spec|
+        remove_from_candidates(spec)
+      end
+
+      @base_dg = Molinillo::DependencyGraph.new
+      @base.each do |ls|
+        dep = Dependency.new(ls.name, ls.version)
+        @base_dg.add_vertex(ls.name, DepProxy.get_proxy(dep, ls.platform), true)
+      end
+      @additional_base_requirements.each {|d| @base_dg.add_vertex(d.name, d) }
+
       @gem_version_promoter.prerelease_specified = @prerelease_specified = {}
       requirements.each {|dep| @prerelease_specified[dep.name] ||= dep.prerelease? }
 
       verify_gemfile_dependencies_are_found!(requirements)
-      dg = @resolver.resolve(requirements, @base_dg)
-      dg.
+      result = @resolver.resolve(requirements, @base_dg).
         map(&:payload).
         reject {|sg| sg.name.end_with?("\0") }.
         map(&:to_specs).
         flatten
+
+      SpecSet.new(SpecSet.new(result).for(regular_requirements, false, @platforms))
     rescue Molinillo::VersionConflict => e
       message = version_conflict_message(e)
       raise VersionConflict.new(e.conflicts.keys.uniq, message)
@@ -177,7 +186,7 @@ module Bundler
     end
 
     def results_for(dependency)
-      index_for(dependency).search(dependency)
+      @results_for[dependency] ||= index_for(dependency).search(dependency)
     end
 
     def name_for(dependency)
@@ -227,6 +236,19 @@ module Bundler
     end
 
     private
+
+    def remove_from_candidates(spec)
+      @base.delete(spec)
+      @gem_version_promoter.reset
+
+      @results_for.keys.each do |dep|
+        next unless dep.name == spec.name
+
+        @results_for[dep].reject {|s| s.name == spec.name && s.version == spec.version }
+      end
+
+      @search_for = {}
+    end
 
     # returns an integer \in (-\infty, 0]
     # a number closer to 0 means the dependency is less constraining

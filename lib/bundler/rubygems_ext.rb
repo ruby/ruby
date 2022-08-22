@@ -15,6 +15,7 @@ require "rubygems/specification"
 # `Gem::Source` from the redefined `Gem::Specification#source`.
 require "rubygems/source"
 
+require_relative "match_metadata"
 require_relative "match_platform"
 
 # Cherry-pick fixes to `Gem.ruby_version` to be useful for modern Bundler
@@ -28,6 +29,7 @@ end
 
 module Gem
   class Specification
+    include ::Bundler::MatchMetadata
     include ::Bundler::MatchPlatform
 
     attr_accessor :remote, :location, :relative_loaded_from
