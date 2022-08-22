@@ -10,7 +10,7 @@ env:
 
 task:
   name: Arm64 Graviton2 / $CC
-  skip: "changesIncludeOnly('doc/**', '**.{md,rdoc}')"
+  skip: "changesIncludeOnly('doc/**', '**.{md,rdoc}', '.document')"
   arm_container:
     # We use the arm64 images at https://github.com/ruby/ruby-ci-image/pkgs/container/ruby-ci-image .
     image: ghcr.io/ruby/ruby-ci-image:$CC
