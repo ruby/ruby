@@ -3796,7 +3796,7 @@ time_zonelocal(VALUE time, VALUE off)
  *    t.localtime("-09:00")               # => 2000-01-01 11:15:01 -0900
  *
  *  For forms of argument +zone+, see
- *  {Timezone Specifiers}[rdoc-ref:doc/timezone_specifiers.rdoc].
+ *  {Timezone Specifiers}[rdoc-ref:timezone_specifiers.rdoc].
  *
  */
 

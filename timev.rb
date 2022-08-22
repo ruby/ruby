@@ -218,7 +218,7 @@ class Time
   #    Time.now(in: '+04:00') # => 2009-06-24 07:39:54 +0400
   #
   # For forms of argument +zone+, see
-  # {Timezone Specifiers}[rdoc-ref:doc/timezone_specifiers.rdoc].
+  # {Timezone Specifiers}[rdoc-ref:timezone_specifiers.rdoc].
   def self.now(in: nil)
     Primitive.time_s_now(Primitive.arg!(:in))
   end
