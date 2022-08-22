@@ -618,7 +618,7 @@ module Gem::Security
     path = File.expand_path path
 
     File.open path, "wb", permissions do |io|
-      if passphrase and cipher
+      if passphrase && cipher
         io.write pemmable.to_pem cipher, passphrase
       else
         io.write pemmable.to_pem

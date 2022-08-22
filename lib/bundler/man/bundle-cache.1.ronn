@@ -5,6 +5,8 @@ bundle-cache(1) -- Package your needed `.gem` files into your application
 
 `bundle cache`
 
+alias: `package`, `pack`
+
 ## DESCRIPTION
 
 Copy all of the `.gem` files needed to run the application into the
@@ -70,3 +72,8 @@ By default, [bundle cache(1)](bundle-cache.1.html) fetches and also
 installs the gems to the default location. To package the
 dependencies to `vendor/cache` without installing them to the
 local install location, you can run `bundle cache --no-install`.
+
+## HISTORY
+
+In Bundler 2.1, `cache` took in the functionalities of `package` and now
+`package` and `pack` are aliases of `cache`.

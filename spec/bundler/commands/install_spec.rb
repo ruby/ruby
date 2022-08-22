@@ -522,14 +522,14 @@ RSpec.describe "bundle install with gem sources" do
           ruby '~> 1.2'
           source "#{file_uri_for(gem_repo1)}"
         G
-        expect(err).to include("Your Ruby version is #{RUBY_VERSION}, but your Gemfile specified ~> 1.2")
+        expect(err).to include("Your Ruby version is #{Gem.ruby_version}, but your Gemfile specified ~> 1.2")
       end
     end
 
     context "and using a supported Ruby version" do
       before do
         install_gemfile <<-G
-          ruby '~> #{RUBY_VERSION}'
+          ruby '~> #{Gem.ruby_version}'
           source "#{file_uri_for(gem_repo1)}"
         G
       end
@@ -555,7 +555,7 @@ RSpec.describe "bundle install with gem sources" do
 
       it "updates Gemfile.lock with updated yet still compatible ruby version" do
         install_gemfile <<-G
-          ruby '~> #{RUBY_VERSION[0..2]}'
+          ruby '~> #{current_ruby_minor}'
           source "#{file_uri_for(gem_repo1)}"
         G
 
@@ -913,7 +913,7 @@ RSpec.describe "bundle install with gem sources" do
       gemfile <<-G
         source "https://gem.repo4"
 
-        ruby "#{RUBY_VERSION}"
+        ruby "#{Gem.ruby_version}"
 
         gem "loofah", "~> 2.12.0"
       G
@@ -1017,6 +1017,30 @@ RSpec.describe "bundle install with gem sources" do
       expect(out).to include("Installing rack")
       expect(out).to include("Installing rake")
       expect(out).not_to include("Installing yard")
+    end
+  end
+
+  context "with --prefer-local flag" do
+    before do
+      build_repo4 do
+        build_gem "foo", "1.0.1"
+        build_gem "foo", "1.0.0"
+        build_gem "bar", "1.0.0"
+      end
+
+      system_gems "foo-1.0.0", :path => default_bundle_path, :gem_repo => gem_repo4
+    end
+
+    it "fetches remote sources only when not available locally" do
+      install_gemfile <<-G, :"prefer-local" => true, :verbose => true
+        source "#{file_uri_for(gem_repo4)}"
+
+        gem "foo"
+        gem "bar"
+      G
+
+      expect(out).to include("Using foo 1.0.0").and include("Fetching bar 1.0.0").and include("Installing bar 1.0.0")
+      expect(last_command).to be_success
     end
   end
 

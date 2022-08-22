@@ -599,7 +599,7 @@ class Gem::TestCase < Test::Unit::TestCase
   end
 
   def in_path?(executable) # :nodoc:
-    return true if %r{\A([A-Z]:|/)} =~ executable and File.exist? executable
+    return true if %r{\A([A-Z]:|/)} =~ executable && File.exist?(executable)
 
     ENV["PATH"].split(File::PATH_SEPARATOR).any? do |directory|
       File.exist? File.join directory, executable
@@ -849,7 +849,7 @@ class Gem::TestCase < Test::Unit::TestCase
   # or a +block+ can be given for full customization of the specification.
 
   def util_spec(name, version = 2, deps = nil, *files) # :yields: specification
-    raise "deps or block, not both" if deps and block_given?
+    raise "deps or block, not both" if deps && block_given?
 
     spec = Gem::Specification.new do |s|
       s.platform    = Gem::Platform::RUBY
@@ -1279,10 +1279,10 @@ Also, a list:
     rubyexe = "#{ruby}.exe"
 
     3.times do
-      if File.exist? ruby and File.executable? ruby and !File.directory? ruby
+      if File.exist?(ruby) && File.executable?(ruby) && !File.directory?(ruby)
         return File.expand_path(ruby)
       end
-      if File.exist? rubyexe and File.executable? rubyexe
+      if File.exist?(rubyexe) && File.executable?(rubyexe)
         return File.expand_path(rubyexe)
       end
       ruby = File.join("..", ruby)
@@ -1592,7 +1592,7 @@ class Object
 
     metaclass = class << self; self; end
 
-    if respond_to? name and not methods.map(&:to_s).include? name.to_s
+    if respond_to?(name) && !methods.map(&:to_s).include?(name.to_s)
       metaclass.send :define_method, name do |*args|
         super(*args)
       end

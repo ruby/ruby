@@ -371,7 +371,7 @@ class Gem::RequestSet::GemDependencyAPI
     duplicate = @dependencies.include? name
 
     @dependencies[name] =
-      if requirements.empty? and not source_set
+      if requirements.empty? && !source_set
         Gem::Requirement.default
       elsif source_set
         Gem::Requirement.source_set
@@ -789,7 +789,7 @@ Gem dependencies file #{@path} includes git reference for both ref/branch and ta
 
     raise ArgumentError,
           "You must specify engine_version along with the Ruby engine" if
-            engine and not engine_version
+            engine && !engine_version
 
     return true if @installing
 
@@ -800,7 +800,7 @@ Gem dependencies file #{@path} includes git reference for both ref/branch and ta
       raise Gem::RubyVersionMismatch, message
     end
 
-    if engine and engine != Gem.ruby_engine
+    if engine && engine != Gem.ruby_engine
       message = "Your Ruby engine is #{Gem.ruby_engine}, " +
                 "but your #{gem_deps_file} requires #{engine}"
 

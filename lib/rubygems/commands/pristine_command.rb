@@ -102,10 +102,10 @@ extensions will be restored.
 
     # `--extensions` must be explicitly given to pristine only gems
     # with extensions.
-    elsif options[:extensions_set] and
-                  options[:extensions] and options[:args].empty?
+    elsif options[:extensions_set] &&
+          options[:extensions] && options[:args].empty?
       Gem::Specification.select do |spec|
-        spec.extensions and not spec.extensions.empty?
+        spec.extensions && !spec.extensions.empty?
       end
     else
       get_all_gem_names.sort.map do |gem_name|
@@ -135,14 +135,14 @@ extensions will be restored.
         end
       end
 
-      unless spec.extensions.empty? or options[:extensions] or options[:only_executables] or options[:only_plugins]
+      unless spec.extensions.empty? || options[:extensions] || options[:only_executables] || options[:only_plugins]
         say "Skipped #{spec.full_name}, it needs to compile an extension"
         next
       end
 
       gem = spec.cache_file
 
-      unless File.exist? gem or options[:only_executables] or options[:only_plugins]
+      unless File.exist?(gem) || options[:only_executables] || options[:only_plugins]
         require_relative "../remote_fetcher"
 
         say "Cached gem for #{spec.full_name} not found, attempting to fetch..."

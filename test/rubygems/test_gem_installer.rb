@@ -473,7 +473,7 @@ gem 'other', version
       end
     end
   ensure
-    FileUtils.chmod 0755, util_inst_bindir unless ($DEBUG or win_platform?)
+    FileUtils.chmod 0755, util_inst_bindir unless ($DEBUG || win_platform?)
   end
 
   def test_generate_bin_script_no_shebang
@@ -577,7 +577,7 @@ gem 'other', version
       end
     end
   ensure
-    FileUtils.chmod 0755, util_inst_bindir unless ($DEBUG or win_platform?)
+    FileUtils.chmod 0755, util_inst_bindir unless ($DEBUG || win_platform?)
   end
 
   def test_generate_bin_symlink_update_newer
@@ -756,7 +756,10 @@ gem 'other', version
       end
     end
 
-    assert_match %r{bin/ascii_binder` is dangling symlink pointing to `bin/asciibinder`}, @ui.error
+    errors = @ui.error.split("\n")
+    assert_equal "WARNING:  ascii_binder-0.1.10.1 ships with a dangling symlink named bin/ascii_binder pointing to missing bin/asciibinder file. Ignoring", errors.shift
+    assert_empty errors
+
     assert_empty @ui.output
   end
 

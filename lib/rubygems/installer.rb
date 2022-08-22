@@ -251,7 +251,7 @@ class Gem::Installer
     return if spec.name == existing
 
     # somebody has written to RubyGems' directory, overwrite, too bad
-    return if Gem.default_bindir != @bin_dir and not ruby_executable
+    return if Gem.default_bindir != @bin_dir && !ruby_executable
 
     question = "#{spec.name}'s executable \"#{filename}\" conflicts with ".dup
 
@@ -418,10 +418,10 @@ class Gem::Installer
   # True if the gems in the system satisfy +dependency+.
 
   def installation_satisfies_dependency?(dependency)
-    return true if @options[:development] and dependency.type == :development
+    return true if @options[:development] && dependency.type == :development
     return true if installed_specs.detect {|s| dependency.matches_spec? s }
     return false if @only_install_dir
-    not dependency.matching_specs.empty?
+    !dependency.matching_specs.empty?
   end
 
   ##
@@ -483,22 +483,14 @@ class Gem::Installer
   end
 
   def generate_bin # :nodoc:
-    return if spec.executables.nil? or spec.executables.empty?
+    return if spec.executables.nil? || spec.executables.empty?
 
     ensure_writable_dir @bin_dir
 
     spec.executables.each do |filename|
       filename.tap(&Gem::UNTAINT)
       bin_path = File.join gem_dir, spec.bindir, filename
-
-      unless File.exist? bin_path
-        if File.symlink? bin_path
-          alert_warning "`#{bin_path}` is dangling symlink pointing to `#{File.readlink bin_path}`"
-        else
-          alert_warning "`#{bin_path}` does not exist, maybe `gem pristine #{spec.name}` will fix it?"
-        end
-        next
-      end
+      next unless File.exist? bin_path
 
       mode = File.stat(bin_path).mode
       dir_mode = options[:prog_mode] || (mode | 0111)

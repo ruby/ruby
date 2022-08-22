@@ -88,7 +88,7 @@ Specific fields in the specification can be extracted in YAML format:
       raise Gem::CommandLineError, "Unsupported version type: '#{v}'"
     end
 
-    if !req.none? and options[:all]
+    if !req.none? && options[:all]
       alert_error "Specify --all or -v, not both"
       terminate_interaction 1
     end
@@ -102,7 +102,7 @@ Specific fields in the specification can be extracted in YAML format:
     field = get_one_optional_argument
 
     raise Gem::CommandLineError, "--ruby and FIELD are mutually exclusive" if
-      field and options[:format] == :ruby
+      field && options[:format] == :ruby
 
     if local?
       if File.exist? gem

@@ -796,7 +796,7 @@ dependencies: []
     assert_equal File.join(@tempdir, "a-2.gemspec"), spec.loaded_from
   end
 
-  if RUBY_ENGINE == "ruby" and RUBY_VERSION < "2.7"
+  if RUBY_ENGINE == "ruby" && RUBY_VERSION < "2.7"
     def test_self_load_tainted
       full_path = @a2.spec_file
       write_file full_path do |io|
@@ -1220,6 +1220,15 @@ dependencies: []
     assert_equal "1.0.0.dev", spec.version.to_s
   end
 
+  def test_initialize_nil_version
+    expected = "nil versions are discouraged and will be deprecated in Rubygems 4\n"
+    actual_stdout, actual_stderr = capture_output do
+      Gem::Specification.new.version = nil
+    end
+    assert_empty actual_stdout
+    assert_equal(expected, actual_stderr)
+  end
+
   def test__dump
     @a2.platform = Gem::Platform.local
     @a2.instance_variable_set :@original_platform, "old_platform"
@@ -1441,7 +1450,7 @@ dependencies: []
     @ext.build_extensions
     assert_path_not_exist @ext.extension_dir
   ensure
-    unless ($DEBUG or win_platform? or Process.uid.zero? or Gem.java_platform?)
+    unless ($DEBUG || win_platform? || Process.uid.zero? || Gem.java_platform?)
       FileUtils.chmod 0755, File.join(@ext.base_dir, "extensions")
       FileUtils.chmod 0755, @ext.base_dir
     end

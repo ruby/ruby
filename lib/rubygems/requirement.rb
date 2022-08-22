@@ -253,7 +253,7 @@ class Gem::Requirement
   def specific?
     return true if @requirements.length > 1 # GIGO, > 1, > 2 is silly
 
-    not %w[> >=].include? @requirements.first.first # grab the operator
+    !%w[> >=].include? @requirements.first.first # grab the operator
   end
 
   def to_s # :nodoc:

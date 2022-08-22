@@ -11,13 +11,13 @@ RSpec.describe "ruby requirement" do
   it "allows adding gems" do
     install_gemfile <<-G
       source "#{file_uri_for(gem_repo1)}"
-      ruby "#{RUBY_VERSION}"
+      ruby "#{Gem.ruby_version}"
       gem "rack"
     G
 
     install_gemfile <<-G
       source "#{file_uri_for(gem_repo1)}"
-      ruby "#{RUBY_VERSION}"
+      ruby "#{Gem.ruby_version}"
       gem "rack"
       gem "rack-obama"
     G
@@ -28,7 +28,7 @@ RSpec.describe "ruby requirement" do
   it "allows removing the ruby version requirement" do
     install_gemfile <<-G
       source "#{file_uri_for(gem_repo1)}"
-      ruby "~> #{RUBY_VERSION}"
+      ruby "~> #{Gem.ruby_version}"
       gem "rack"
     G
 
@@ -46,7 +46,7 @@ RSpec.describe "ruby requirement" do
   it "allows changing the ruby version requirement to something compatible" do
     install_gemfile <<-G
       source "#{file_uri_for(gem_repo1)}"
-      ruby ">= #{RUBY_VERSION[0..2]}.0"
+      ruby ">= #{current_ruby_minor}"
       gem "rack"
     G
 
@@ -55,7 +55,7 @@ RSpec.describe "ruby requirement" do
 
     install_gemfile <<-G
       source "#{file_uri_for(gem_repo1)}"
-      ruby ">= #{RUBY_VERSION}"
+      ruby ">= #{Gem.ruby_version}"
       gem "rack"
     G
 
@@ -93,7 +93,7 @@ RSpec.describe "ruby requirement" do
 
     install_gemfile <<-G
       source "#{file_uri_for(gem_repo1)}"
-      ruby ">= #{RUBY_VERSION[0..2]}.0"
+      ruby ">= #{current_ruby_minor}"
       gem "rack"
     G
 
@@ -104,7 +104,7 @@ RSpec.describe "ruby requirement" do
   it "allows requirements with trailing whitespace" do
     install_gemfile <<-G
       source "#{file_uri_for(gem_repo1)}"
-      ruby "#{RUBY_VERSION}\\n \t\\n"
+      ruby "#{Gem.ruby_version}\\n \t\\n"
       gem "rack"
     G
 

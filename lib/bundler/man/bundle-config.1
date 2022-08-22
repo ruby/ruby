@@ -51,7 +51,7 @@ Executing \fBbundle config unset <name>\fR will delete the configuration in both
 Executing \fBbundle config unset \-\-global <name>\fR will delete the configuration only from the user configuration\.
 .
 .P
-Executing \fBbundle config unset \-\-local <name> <value>\fR will delete the configuration only from the local application\.
+Executing \fBbundle config unset \-\-local <name>\fR will delete the configuration only from the local application\.
 .
 .P
 Executing bundle with the \fBBUNDLE_IGNORE_CONFIG\fR environment variable set will cause it to ignore all configuration\.
@@ -298,7 +298,7 @@ The following is a list of all configuration keys and their purpose\. You can le
 .IP "" 0
 .
 .P
-In general, you should set these settings per\-application by using the applicable flag to the bundle install(1) \fIbundle\-install\.1\.html\fR or bundle package(1) \fIbundle\-package\.1\.html\fR command\.
+In general, you should set these settings per\-application by using the applicable flag to the bundle install(1) \fIbundle\-install\.1\.html\fR or bundle cache(1) \fIbundle\-cache\.1\.html\fR command\.
 .
 .P
 You can set them globally either via environment variables or \fBbundle config\fR, whichever is preferable for your setup\. If you use both, environment variables will take preference over global settings\.

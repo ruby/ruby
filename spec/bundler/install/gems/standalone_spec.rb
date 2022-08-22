@@ -461,3 +461,31 @@ RSpec.describe "bundle install --standalone run in a subdirectory" do
 
   include_examples("bundle install --standalone")
 end
+
+RSpec.describe "bundle install --standalone --local" do
+  before do
+    gemfile <<-G
+      source "#{file_uri_for(gem_repo1)}"
+      gem "rack"
+    G
+
+    system_gems "rack-1.0.0", :path => default_bundle_path
+  end
+
+  it "generates script pointing to system gems" do
+    bundle "install --standalone --local --verbose"
+
+    expect(out).to include("Using rack 1.0.0")
+
+    load_error_ruby <<-RUBY, "spec"
+      require "./bundler/setup"
+
+      require "rack"
+      puts RACK
+      require "spec"
+    RUBY
+
+    expect(out).to eq("1.0.0")
+    expect(err).to eq("ZOMG LOAD ERROR")
+  end
+end

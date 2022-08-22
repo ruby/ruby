@@ -47,7 +47,7 @@ module Bundler
     end
 
     def bundler_path
-      Bundler.root.join(Bundler.settings[:path], "bundler")
+      Bundler.root.join(Bundler.settings[:path].to_s, "bundler")
     end
 
     def gem_path(path, spec)

@@ -10,7 +10,7 @@ class Gem::NameTuple
     @version = version
 
     unless platform.kind_of? Gem::Platform
-      platform = "ruby" if !platform or platform.empty?
+      platform = "ruby" if !platform || platform.empty?
     end
 
     @platform = platform
@@ -102,8 +102,8 @@ class Gem::NameTuple
   def ==(other)
     case other
     when self.class
-      @name == other.name and
-        @version == other.version and
+      @name == other.name &&
+        @version == other.version &&
         @platform == other.platform
     when Array
       to_a == other

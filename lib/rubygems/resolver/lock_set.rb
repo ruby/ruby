@@ -54,7 +54,7 @@ class Gem::Resolver::LockSet < Gem::Resolver::Set
     dep = Gem::Dependency.new name, version
 
     found = @specs.find do |spec|
-      dep.matches_spec? spec and spec.platform == platform
+      dep.matches_spec?(spec) && spec.platform == platform
     end
 
     tuple = Gem::NameTuple.new found.name, found.version, found.platform

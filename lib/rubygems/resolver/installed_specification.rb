@@ -5,8 +5,8 @@
 
 class Gem::Resolver::InstalledSpecification < Gem::Resolver::SpecSpecification
   def ==(other) # :nodoc:
-    self.class === other and
-      @set  == other.set and
+    self.class === other &&
+      @set  == other.set &&
       @spec == other.spec
   end
 

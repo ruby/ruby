@@ -70,6 +70,7 @@ module Bundler
       @unlock          = unlock
       @optional_groups = optional_groups
       @remote          = false
+      @prefer_local    = false
       @specs           = nil
       @ruby_version    = ruby_version
       @gemfiles        = gemfiles
@@ -167,6 +168,13 @@ module Bundler
     def resolve_only_locally!
       @remote = false
       sources.local_only!
+      resolve
+    end
+
+    def resolve_prefering_local!
+      @prefer_local = true
+      @remote = true
+      sources.remote!
       resolve
     end
 
@@ -476,6 +484,7 @@ module Bundler
 
     def reresolve
       last_resolve = converge_locked_specs
+      remove_ruby_from_platforms_if_necessary!(dependencies)
       expanded_dependencies = expand_dependencies(dependencies + metadata_dependencies, true)
       Resolver.resolve(expanded_dependencies, source_requirements, last_resolve, gem_version_promoter, additional_base_requirements_for_resolve, platforms)
     end
@@ -516,16 +525,27 @@ module Bundler
         end
       end
 
-      unless specs["bundler"].any?
-        bundler = sources.metadata_source.specs.search(Gem::Dependency.new("bundler", VERSION)).last
-        specs["bundler"] = bundler
-      end
+      bundler = sources.metadata_source.specs.search(Gem::Dependency.new("bundler", VERSION)).last
+      specs["bundler"] = bundler
 
       specs
     end
 
     def precompute_source_requirements_for_indirect_dependencies?
       @remote && sources.non_global_rubygems_sources.all?(&:dependency_api_available?) && !sources.aggregate_global_source?
+    end
+
+    def pin_locally_available_names(source_requirements)
+      source_requirements.each_with_object({}) do |(name, original_source), new_source_requirements|
+        local_source = original_source.dup
+        local_source.local_only!
+
+        new_source_requirements[name] = if local_source.specs.search(name).any?
+          local_source
+        else
+          original_source
+        end
+      end
     end
 
     def current_ruby_platform_locked?
@@ -719,16 +739,24 @@ module Bundler
         specs[dep].any? {|s| s.satisfies?(dep) && (!dep.source || s.source.include?(dep.source)) }
       end
 
+      @specs_that_changed_sources = []
+
       specs.each do |s|
-        # Replace the locked dependency's source with the equivalent source from the Gemfile
         dep = @dependencies.find {|d| s.satisfies?(d) }
 
-        s.source = (dep && dep.source) || sources.get(s.source) || sources.default_source
+        # Replace the locked dependency's source with the equivalent source from the Gemfile
+        s.source = if dep && dep.source
+          gemfile_source = dep.source
+          lockfile_source = s.source
+
+          @specs_that_changed_sources << s if gemfile_source != lockfile_source
+
+          gemfile_source
+        else
+          sources.get_with_fallback(s.source)
+        end
 
         next if @unlock[:sources].include?(s.source.name)
-
-        # If the spec is from a path source and it doesn't exist anymore
-        # then we unlock it.
 
         # Path sources have special logic
         if s.source.instance_of?(Source::Path) || s.source.instance_of?(Source::Gemspec)
@@ -765,7 +793,7 @@ module Bundler
 
     def metadata_dependencies
       @metadata_dependencies ||= [
-        Dependency.new("Ruby\0", RubyVersion.system.gem_version),
+        Dependency.new("Ruby\0", Gem.ruby_version),
         Dependency.new("RubyGems\0", Gem::VERSION),
       ]
     end
@@ -792,7 +820,9 @@ module Bundler
       # specs will be available later when the resolver knows where to
       # look for that gemspec (or its dependencies)
       source_requirements = if precompute_source_requirements_for_indirect_dependencies?
-        { :default => sources.default_source }.merge(source_map.all_requirements)
+        all_requirements = source_map.all_requirements
+        all_requirements = pin_locally_available_names(all_requirements) if @prefer_local
+        { :default => sources.default_source }.merge(all_requirements)
       else
         { :default => Source::RubygemsAggregate.new(sources, source_map) }.merge(source_map.direct_requirements)
       end
@@ -802,7 +832,16 @@ module Bundler
       end
       source_requirements[:default_bundler] = source_requirements["bundler"] || sources.default_source
       source_requirements["bundler"] = sources.metadata_source # needs to come last to override
+      verify_changed_sources!
       source_requirements
+    end
+
+    def verify_changed_sources!
+      @specs_that_changed_sources.each do |s|
+        if s.source.specs.search(s.name).empty?
+          raise GemNotFound, "Could not find gem '#{s.name}' in #{s.source}"
+        end
+      end
     end
 
     def requested_groups
@@ -842,6 +881,17 @@ module Bundler
         dep = Dependency.new(name, ">= #{locked_spec.version}")
         DepProxy.get_proxy(dep, locked_spec.platform)
       end
+    end
+
+    def remove_ruby_from_platforms_if_necessary!(dependencies)
+      return if Bundler.frozen_bundle? ||
+                Bundler.local_platform == Gem::Platform::RUBY ||
+                !platforms.include?(Gem::Platform::RUBY) ||
+                (@new_platform && platforms.last == Gem::Platform::RUBY) ||
+                !@originally_locked_specs.incomplete_ruby_specs?(dependencies)
+
+      remove_platform(Gem::Platform::RUBY)
+      add_current_platform
     end
 
     def source_map

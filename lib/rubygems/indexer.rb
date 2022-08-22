@@ -149,7 +149,7 @@ class Gem::Indexer
             next
           end
 
-          platform = Gem::Platform::RUBY if platform.nil? or platform.empty?
+          platform = Gem::Platform::RUBY if platform.nil? || platform.empty?
           [spec.name, spec.version, platform]
         end
 
@@ -296,7 +296,7 @@ class Gem::Indexer
     files = @files
     files.delete @quick_marshal_dir if files.include? @quick_dir
 
-    if files.include? @quick_marshal_dir and not files.include? @quick_dir
+    if files.include?(@quick_marshal_dir) && !files.include?(@quick_dir)
       files.delete @quick_marshal_dir
 
       dst_name = File.join(@dest_directory, @quick_marshal_dir_base)
@@ -414,7 +414,7 @@ class Gem::Indexer
 
     index.each do |spec|
       platform = spec.original_platform
-      platform = Gem::Platform::RUBY if platform.nil? or platform.empty?
+      platform = Gem::Platform::RUBY if platform.nil? || platform.empty?
       specs_index << [spec.name, spec.version, platform]
     end
 

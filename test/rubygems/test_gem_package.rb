@@ -529,6 +529,7 @@ class TestGemPackage < Gem::Package::TarTestCase
 
   def test_extract_tar_gz_symlink_relative_path
     package = Gem::Package.new @gem
+    package.verify
 
     tgz_io = util_tar_gz do |tar|
       tar.add_file "relative.rb", 0644 do |io|
@@ -555,6 +556,27 @@ class TestGemPackage < Gem::Package::TarTestCase
                  File.readlink(extracted)
     assert_equal "hi",
                  File.read(extracted)
+  end
+
+  def test_extract_tar_gz_symlink_broken_relative_path
+    package = Gem::Package.new @gem
+    package.verify
+
+    tgz_io = util_tar_gz do |tar|
+      tar.mkdir       "lib", 0755
+      tar.add_symlink "lib/foo.rb", "../broken.rb", 0644
+    end
+
+    ui = Gem::MockGemUi.new
+
+    use_ui ui do
+      package.extract_tar_gz tgz_io, @destination
+    end
+
+    assert_equal "WARNING:  a-2 ships with a dangling symlink named lib/foo.rb pointing to missing ../broken.rb file. Ignoring\n", ui.error
+
+    extracted = File.join @destination, "lib/foo.rb"
+    assert_path_not_exist extracted
   end
 
   def test_extract_symlink_parent
