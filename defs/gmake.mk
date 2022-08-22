@@ -264,9 +264,9 @@ pr-% pull-github-%: fetch-github-%
 	$(call pull-github,$*)
 
 HELP_EXTRA_TASKS = \
-	"  checkout-github:     checkout GitHub Pull Request [PR=1234]" \
-	"  pull-github:         rebase GitHub Pull Request to new worktree [PR=1234]" \
-	"  update-github:       merge master branch and push it to Pull Request [PR=1234]" \
+	"  checkout-github:       checkout GitHub Pull Request [PR=1234]" \
+	"  pull-github:           rebase GitHub Pull Request to new worktree [PR=1234]" \
+	"  update-github:         merge master branch and push it to Pull Request [PR=1234]" \
 	""
 
 extract-gems: $(HAVE_BASERUBY:yes=update-gems)
