@@ -5,6 +5,7 @@ Certain methods in class Time accept arguments that specify timezones:
 - Time.at: keyword argument +in:+.
 - Time.new: positional argument +zone+ or keyword argument +in:+.
 - Time.now: keyword argument +in:+.
+- Time#getlocal: positional argument +zone+.
 - Time#localtime: positional argument +zone+.
 
 The value given with any of these must be one of the following:
