@@ -6,12 +6,11 @@
 # See LICENSE.txt for permissions.
 #++
 
-require_relative 'deprecate'
-require_relative 'basic_specification'
-require_relative 'stub_specification'
-require_relative 'platform'
-require_relative 'requirement'
-require_relative 'util/list'
+require_relative "deprecate"
+require_relative "basic_specification"
+require_relative "stub_specification"
+require_relative "platform"
+require_relative "util/list"
 
 ##
 # The Specification class contains the information for a gem.  Typically
@@ -75,20 +74,20 @@ class Gem::Specification < Gem::BasicSpecification
   # key should be equal to the CURRENT_SPECIFICATION_VERSION.
 
   SPECIFICATION_VERSION_HISTORY = { # :nodoc:
-    -1 => ['(RubyGems versions up to and including 0.7 did not have versioned specifications)'],
+    -1 => ["(RubyGems versions up to and including 0.7 did not have versioned specifications)"],
     1  => [
       'Deprecated "test_suite_file" in favor of the new, but equivalent, "test_files"',
       '"test_file=x" is a shortcut for "test_files=[x]"',
     ],
     2 => [
       'Added "required_rubygems_version"',
-      'Now forward-compatible with future versions',
+      "Now forward-compatible with future versions",
     ],
     3 => [
-      'Added Fixnum validation to the specification_version',
+      "Added Fixnum validation to the specification_version",
     ],
     4 => [
-      'Added sandboxed freeform metadata to the specification version.',
+      "Added sandboxed freeform metadata to the specification version.",
     ],
   }.freeze
 
@@ -127,7 +126,7 @@ class Gem::Specification < Gem::BasicSpecification
   @@default_value = {
     :authors                   => [],
     :autorequire               => nil,
-    :bindir                    => 'bin',
+    :bindir                    => "bin",
     :cert_chain                => [],
     :date                      => nil,
     :dependencies              => [],
@@ -144,7 +143,7 @@ class Gem::Specification < Gem::BasicSpecification
     :platform                  => Gem::Platform::RUBY,
     :post_install_message      => nil,
     :rdoc_options              => [],
-    :require_paths             => ['lib'],
+    :require_paths             => ["lib"],
     :required_ruby_version     => Gem::Requirement.default,
     :required_rubygems_version => Gem::Requirement.default,
     :requirements              => [],
@@ -490,12 +489,12 @@ class Gem::Specification < Gem::BasicSpecification
     # legacy constants
     when nil, Gem::Platform::RUBY then
       @new_platform = Gem::Platform::RUBY
-    when 'mswin32' then # was Gem::Platform::WIN32
-      @new_platform = Gem::Platform.new 'x86-mswin32'
-    when 'i586-linux' then # was Gem::Platform::LINUX_586
-      @new_platform = Gem::Platform.new 'x86-linux'
-    when 'powerpc-darwin' then # was Gem::Platform::DARWIN
-      @new_platform = Gem::Platform.new 'ppc-darwin'
+    when "mswin32" then # was Gem::Platform::WIN32
+      @new_platform = Gem::Platform.new "x86-mswin32"
+    when "i586-linux" then # was Gem::Platform::LINUX_586
+      @new_platform = Gem::Platform.new "x86-linux"
+    when "powerpc-darwin" then # was Gem::Platform::DARWIN
+      @new_platform = Gem::Platform.new "ppc-darwin"
     else
       @new_platform = Gem::Platform.new platform
     end
@@ -1150,7 +1149,7 @@ class Gem::Specification < Gem::BasicSpecification
     file = file.dup.tap(&Gem::UNTAINT)
     return unless File.file?(file)
 
-    code = Gem.open_file(file, 'r:UTF-8:-', &:read)
+    code = Gem.open_file(file, "r:UTF-8:-", &:read)
 
     code.tap(&Gem::UNTAINT)
 
@@ -1392,7 +1391,7 @@ class Gem::Specification < Gem::BasicSpecification
       @required_rubygems_version,
       @original_platform,
       @dependencies,
-      '', # rubyforge_project
+      "", # rubyforge_project
       @email,
       @authors,
       @description,
@@ -1610,7 +1609,7 @@ class Gem::Specification < Gem::BasicSpecification
     return if default_gem?
     return if File.exist? gem_build_complete_path
     return if !File.writable?(base_dir)
-    return if !File.exist?(File.join(base_dir, 'extensions'))
+    return if !File.exist?(File.join(base_dir, "extensions"))
 
     begin
       # We need to require things in $LOAD_PATH without looking for the
@@ -1618,9 +1617,9 @@ class Gem::Specification < Gem::BasicSpecification
       unresolved_deps = Gem::Specification.unresolved_deps.dup
       Gem::Specification.unresolved_deps.clear
 
-      require_relative 'config_file'
-      require_relative 'ext'
-      require_relative 'user_interaction'
+      require_relative "config_file"
+      require_relative "ext"
+      require_relative "user_interaction"
 
       ui = Gem::SilentUI.new
       Gem::DefaultUserInteraction.use_ui ui do
@@ -1839,7 +1838,7 @@ class Gem::Specification < Gem::BasicSpecification
   #   spec.doc_dir 'ri' # => "/path/to/gem_repo/doc/a-1/ri"
 
   def doc_dir(type = nil)
-    @doc_dir ||= File.join base_dir, 'doc', full_name
+    @doc_dir ||= File.join base_dir, "doc", full_name
 
     if type
       File.join @doc_dir, type
@@ -1851,17 +1850,17 @@ class Gem::Specification < Gem::BasicSpecification
   def encode_with(coder) # :nodoc:
     mark_version
 
-    coder.add 'name', @name
-    coder.add 'version', @version
+    coder.add "name", @name
+    coder.add "version", @version
     platform = case @original_platform
-    when nil, '' then
-      'ruby'
+    when nil, "" then
+      "ruby"
     when String then
       @original_platform
     else
       @original_platform.to_s
     end
-    coder.add 'platform', platform
+    coder.add "platform", platform
 
     attributes = @@attributes.map(&:to_s) - %w[name version platform]
     attributes.each do |name|
@@ -2231,7 +2230,7 @@ class Gem::Specification < Gem::BasicSpecification
   end
 
   def pretty_print(q) # :nodoc:
-    q.group 2, 'Gem::Specification.new do |s|', 'end' do
+    q.group 2, "Gem::Specification.new do |s|", "end" do
       q.breakable
 
       attributes = @@attributes - [:name, :version]
@@ -2326,7 +2325,7 @@ class Gem::Specification < Gem::BasicSpecification
   # Returns the full path to this spec's ri directory.
 
   def ri_dir
-    @ri_dir ||= File.join base_dir, 'ri', full_name
+    @ri_dir ||= File.join base_dir, "ri", full_name
   end
 
   ##
@@ -2336,13 +2335,13 @@ class Gem::Specification < Gem::BasicSpecification
   def ruby_code(obj)
     case obj
     when String             then obj.dump + ".freeze"
-    when Array              then '[' + obj.map {|x| ruby_code x }.join(", ") + ']'
+    when Array              then "[" + obj.map {|x| ruby_code x }.join(", ") + "]"
     when Hash               then
       seg = obj.keys.sort.map {|k| "#{k.to_s.dump} => #{obj[k].to_s.dump}" }
       "{ #{seg.join(', ')} }"
     when Gem::Version       then obj.to_s.dump
-    when DateLike           then obj.strftime('%Y-%m-%d').dump
-    when Time               then obj.strftime('%Y-%m-%d').dump
+    when DateLike           then obj.strftime("%Y-%m-%d").dump
+    when Time               then obj.strftime("%Y-%m-%d").dump
     when Numeric            then obj.inspect
     when true, false, nil   then obj.inspect
     when Gem::Platform      then "Gem::Platform.new(#{obj.to_a.inspect})"
@@ -2575,14 +2574,14 @@ class Gem::Specification < Gem::BasicSpecification
     # back, we have to check again here to make sure that our
     # psych code was properly loaded, and load it if not.
     unless Gem.const_defined?(:NoAliasYAMLTree)
-      require_relative 'psych_tree'
+      require_relative "psych_tree"
     end
 
     builder = Gem::NoAliasYAMLTree.create
     builder << self
     ast = builder.tree
 
-    require 'stringio'
+    require "stringio"
     io = StringIO.new
     io.set_encoding Encoding::UTF_8
 
@@ -2669,7 +2668,7 @@ class Gem::Specification < Gem::BasicSpecification
     # skip to set required_ruby_version when pre-released rubygems.
     # It caused to raise CircularDependencyError
     if @version.prerelease? && (@name.nil? || @name.strip != "rubygems")
-      self.required_rubygems_version = '> 1.3.1'
+      self.required_rubygems_version = "> 1.3.1"
     end
     invalidate_memoized_attributes
 

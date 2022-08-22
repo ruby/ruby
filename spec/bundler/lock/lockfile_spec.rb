@@ -386,7 +386,7 @@ RSpec.describe "the lockfile format" do
     expect(lockfile).to eq <<~G
       GIT
         remote: #{lib_path("foo-1.0")}
-        revision: #{git.ref_for("master")}
+        revision: #{git.ref_for("main")}
         specs:
           foo (1.0)
 
@@ -457,7 +457,7 @@ RSpec.describe "the lockfile format" do
     expect(lockfile).to eq <<~G
       GIT
         remote: #{lib_path("foo-1.0")}
-        revision: #{git.ref_for("master")}
+        revision: #{git.ref_for("main")}
         specs:
           foo (1.0)
 
@@ -617,7 +617,7 @@ RSpec.describe "the lockfile format" do
     expect(lockfile).to eq <<~G
       GIT
         remote: #{lib_path("bar-1.0")}
-        revision: #{bar.ref_for("master")}
+        revision: #{bar.ref_for("main")}
         specs:
           bar (1.0)
 

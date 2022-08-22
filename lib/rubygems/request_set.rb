@@ -1,5 +1,5 @@
 # frozen_string_literal: true
-require_relative 'tsort'
+require_relative "tsort"
 
 ##
 # A RequestSet groups a request to activate a set of dependencies.
@@ -254,7 +254,7 @@ class Gem::RequestSet
   end
 
   def install_into(dir, force = true, options = {})
-    gem_home, ENV['GEM_HOME'] = ENV['GEM_HOME'], dir
+    gem_home, ENV["GEM_HOME"] = ENV["GEM_HOME"], dir
 
     existing = force ? [] : specs_in(dir)
     existing.delete_if {|s| @always_install.include? s }
@@ -287,7 +287,7 @@ class Gem::RequestSet
 
     installed
   ensure
-    ENV['GEM_HOME'] = gem_home
+    ENV["GEM_HOME"] = gem_home
   end
 
   ##
@@ -337,32 +337,32 @@ class Gem::RequestSet
   end
 
   def pretty_print(q) # :nodoc:
-    q.group 2, '[RequestSet:', ']' do
+    q.group 2, "[RequestSet:", "]" do
       q.breakable
 
       if @remote
-        q.text 'remote'
+        q.text "remote"
         q.breakable
       end
 
       if @prerelease
-        q.text 'prerelease'
+        q.text "prerelease"
         q.breakable
       end
 
       if @development_shallow
-        q.text 'shallow development'
+        q.text "shallow development"
         q.breakable
       elsif @development
-        q.text 'development'
+        q.text "development"
         q.breakable
       end
 
       if @soft_missing
-        q.text 'soft missing'
+        q.text "soft missing"
       end
 
-      q.group 2, '[dependencies:', ']' do
+      q.group 2, "[dependencies:", "]" do
         q.breakable
         @dependencies.map do |dep|
           q.text dep.to_s
@@ -371,7 +371,7 @@ class Gem::RequestSet
       end
 
       q.breakable
-      q.text 'sets:'
+      q.text "sets:"
 
       q.breakable
       q.pp @sets.map {|set| set.class }
@@ -461,6 +461,6 @@ class Gem::RequestSet
   end
 end
 
-require_relative 'request_set/gem_dependency_api'
-require_relative 'request_set/lockfile'
-require_relative 'request_set/lockfile/tokenizer'
+require_relative "request_set/gem_dependency_api"
+require_relative "request_set/lockfile"
+require_relative "request_set/lockfile/tokenizer"

@@ -1,7 +1,7 @@
 # frozen_string_literal: true
-require_relative '../command'
-require_relative '../local_remote_options'
-require_relative '../version_option'
+require_relative "../command"
+require_relative "../local_remote_options"
+require_relative "../version_option"
 
 class Gem::Commands::FetchCommand < Gem::Command
   include Gem::LocalRemoteOptions
@@ -13,7 +13,7 @@ class Gem::Commands::FetchCommand < Gem::Command
       :version           => Gem::Requirement.default,
     }
 
-    super 'fetch', 'Download a gem and place it in the current directory', defaults
+    super "fetch", "Download a gem and place it in the current directory", defaults
 
     add_bulk_threshold_option
     add_proxy_option
@@ -24,13 +24,13 @@ class Gem::Commands::FetchCommand < Gem::Command
     add_platform_option
     add_prerelease_option
 
-    add_option '--[no-]suggestions', 'Suggest alternates when gems are not found' do |value, options|
+    add_option "--[no-]suggestions", "Suggest alternates when gems are not found" do |value, options|
       options[:suggest_alternate] = value
     end
   end
 
   def arguments # :nodoc:
-    'GEMNAME       name of gem to download'
+    "GEMNAME       name of gem to download"
   end
 
   def defaults_str # :nodoc:

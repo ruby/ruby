@@ -1,12 +1,12 @@
 # frozen_string_literal: true
-require_relative 'helper'
-require 'rubygems/source'
+require_relative "helper"
+require "rubygems/source"
 
 class TestGemSourceSpecificFile < Gem::TestCase
   def setup
     super
 
-    @a, @a_gem = util_gem "a", '1'
+    @a, @a_gem = util_gem "a", "1"
     @sf = Gem::Source::SpecificFile.new(@a_gem)
   end
 
@@ -37,7 +37,7 @@ class TestGemSourceSpecificFile < Gem::TestCase
   end
 
   def test_spaceship
-    a1 = quick_gem 'a', '1'
+    a1 = quick_gem "a", "1"
     util_build_gem a1
 
     remote    = Gem::Source.new @gem_repo
@@ -45,31 +45,31 @@ class TestGemSourceSpecificFile < Gem::TestCase
     installed = Gem::Source::Installed.new
     local     = Gem::Source::Local.new
 
-    assert_equal(0, specific.<=>(specific), 'specific <=> specific')
+    assert_equal(0, specific.<=>(specific), "specific <=> specific")
 
-    assert_equal(-1, remote.<=>(specific), 'remote <=> specific')
-    assert_equal(1, specific.<=>(remote), 'specific <=> remote')
+    assert_equal(-1, remote.<=>(specific), "remote <=> specific")
+    assert_equal(1, specific.<=>(remote), "specific <=> remote")
 
-    assert_equal(-1, specific.<=>(local),     'specific <=> local')
-    assert_equal(1, local.    <=>(specific),  'local <=> specific')
+    assert_equal(-1, specific.<=>(local),     "specific <=> local")
+    assert_equal(1, local.    <=>(specific),  "local <=> specific")
 
-    assert_equal(-1, specific. <=>(installed), 'specific <=> installed')
-    assert_equal(1, installed.<=>(specific), 'installed <=> specific')
+    assert_equal(-1, specific. <=>(installed), "specific <=> installed")
+    assert_equal(1, installed.<=>(specific), "installed <=> specific")
 
-    a2 = quick_gem 'a', '2'
+    a2 = quick_gem "a", "2"
     util_build_gem a2
 
-    b1 = quick_gem 'b', '1'
+    b1 = quick_gem "b", "1"
     util_build_gem b1
 
     a1_source = specific
     a2_source = Gem::Source::SpecificFile.new a2.cache_file
     b1_source = Gem::Source::SpecificFile.new b1.cache_file
 
-    assert_nil       a1_source.<=>(b1_source), 'a1_source <=> b1_source'
+    assert_nil       a1_source.<=>(b1_source), "a1_source <=> b1_source"
 
-    assert_equal(-1, a1_source.<=>(a2_source), 'a1_source <=> a2_source')
-    assert_equal(0, a1_source.<=>(a1_source), 'a1_source <=> a1_source')
-    assert_equal(1, a2_source.<=>(a1_source), 'a2_source <=> a1_source')
+    assert_equal(-1, a1_source.<=>(a2_source), "a1_source <=> a2_source")
+    assert_equal(0, a1_source.<=>(a1_source), "a1_source <=> a1_source")
+    assert_equal(1, a2_source.<=>(a1_source), "a2_source <=> a1_source")
   end
 end

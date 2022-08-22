@@ -97,14 +97,14 @@ class Gem::Dependency
   end
 
   def pretty_print(q) # :nodoc:
-    q.group 1, 'Gem::Dependency.new(', ')' do
+    q.group 1, "Gem::Dependency.new(", ")" do
       q.pp name
-      q.text ','
+      q.text ","
       q.breakable
 
       q.pp requirement
 
-      q.text ','
+      q.text ","
       q.breakable
 
       q.pp type
@@ -197,7 +197,7 @@ class Gem::Dependency
     reqs = other.requirement.requirements
 
     return false unless reqs.length == 1
-    return false unless reqs.first.first == '='
+    return false unless reqs.first.first == "="
 
     version = reqs.first.last
 

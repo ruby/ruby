@@ -52,6 +52,33 @@ RSpec.describe "bundle install" do
       end
     end
 
+    context "when gems include a fund URI but `ignore_funding_requests` is configured" do
+      before do
+        bundle "config set ignore_funding_requests true"
+      end
+
+      it "does not display the plural fund message after installing" do
+        install_gemfile <<-G
+          source "#{file_uri_for(gem_repo2)}"
+          gem 'has_funding_and_other_metadata'
+          gem 'has_funding'
+          gem 'rack-obama'
+        G
+
+        expect(out).not_to include("2 installed gems you directly depend on are looking for funding.")
+      end
+
+      it "does not display the singular fund message after installing" do
+        install_gemfile <<-G
+          source "#{file_uri_for(gem_repo2)}"
+          gem 'has_funding'
+          gem 'rack-obama'
+        G
+
+        expect(out).not_to include("1 installed gem you directly depend on is looking for funding.")
+      end
+    end
+
     context "when gems do not include fund messages" do
       it "does not display any fund messages" do
         install_gemfile <<-G

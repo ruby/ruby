@@ -1,13 +1,13 @@
 # frozen_string_literal: true
-require_relative 'helper'
-require 'net/http'
-require 'rubygems/openssl'
+require_relative "helper"
+require "net/http"
+require "rubygems/openssl"
 
 unless Gem::HAVE_OPENSSL
-  warn 'Skipping bundled certificates tests.  openssl not found.'
+  warn "Skipping bundled certificates tests.  openssl not found."
 end
 
-require 'rubygems/request'
+require "rubygems/request"
 
 # = Testing Bundled CA
 #
@@ -31,7 +31,7 @@ class TestBundledCA < Gem::TestCase
     http.use_ssl = true
     http.verify_mode = OpenSSL::SSL::VERIFY_PEER
     http.cert_store = bundled_certificate_store
-    http.get('/')
+    http.get("/")
   rescue Errno::ENOENT, Errno::ETIMEDOUT, SocketError
     pend "#{host} seems offline, I can't tell whether ssl would work."
   rescue OpenSSL::SSL::SSLError => e
@@ -43,18 +43,18 @@ class TestBundledCA < Gem::TestCase
   end
 
   def test_accessing_rubygems
-    assert_https('rubygems.org')
+    assert_https("rubygems.org")
   end
 
   def test_accessing_www_rubygems
-    assert_https('www.rubygems.org')
+    assert_https("www.rubygems.org")
   end
 
   def test_accessing_staging
-    assert_https('staging.rubygems.org')
+    assert_https("staging.rubygems.org")
   end
 
   def test_accessing_new_index
-    assert_https('index.rubygems.org')
+    assert_https("index.rubygems.org")
   end
 end if Gem::HAVE_OPENSSL

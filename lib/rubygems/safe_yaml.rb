@@ -26,7 +26,7 @@ module Gem
 
     if ::Psych.respond_to? :safe_load
       def self.safe_load(input)
-        if Gem::Version.new(Psych::VERSION) >= Gem::Version.new('3.1.0.pre1')
+        if Gem::Version.new(Psych::VERSION) >= Gem::Version.new("3.1.0.pre1")
           ::Psych.safe_load(input, permitted_classes: PERMITTED_CLASSES, permitted_symbols: PERMITTED_SYMBOLS, aliases: true)
         else
           ::Psych.safe_load(input, PERMITTED_CLASSES, PERMITTED_SYMBOLS, true)
@@ -34,7 +34,7 @@ module Gem
       end
 
       def self.load(input)
-        if Gem::Version.new(Psych::VERSION) >= Gem::Version.new('3.1.0.pre1')
+        if Gem::Version.new(Psych::VERSION) >= Gem::Version.new("3.1.0.pre1")
           ::Psych.safe_load(input, permitted_classes: [::Symbol])
         else
           ::Psych.safe_load(input, [::Symbol])

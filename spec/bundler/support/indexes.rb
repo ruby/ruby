@@ -26,6 +26,7 @@ module Spec
         end
       end
       args[0] ||= [] # base
+      args[0].each {|ls| ls.source = default_source }
       args[1] ||= Bundler::GemVersionPromoter.new # gem_version_promoter
       args[2] ||= [] # additional_base_requirements
       args[3] ||= @platforms # platforms

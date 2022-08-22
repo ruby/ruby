@@ -9,7 +9,7 @@ class Gem::StubSpecification < Gem::BasicSpecification
   PREFIX = "# stub: ".freeze
 
   # :nodoc:
-  OPEN_MODE = 'r:UTF-8:-'.freeze
+  OPEN_MODE = "r:UTF-8:-".freeze
 
   class StubLine # :nodoc: all
     attr_reader :name, :version, :platform, :require_paths, :extensions,
@@ -19,9 +19,9 @@ class Gem::StubSpecification < Gem::BasicSpecification
 
     # These are common require paths.
     REQUIRE_PATHS = { # :nodoc:
-      'lib'  => 'lib'.freeze,
-      'test' => 'test'.freeze,
-      'ext'  => 'ext'.freeze,
+      "lib"  => "lib".freeze,
+      "test" => "test".freeze,
+      "ext"  => "ext".freeze,
     }.freeze
 
     # These are common require path lists.  This hash is used to optimize
@@ -29,7 +29,7 @@ class Gem::StubSpecification < Gem::BasicSpecification
     # in their require paths, so lets take advantage of that by pre-allocating
     # a require path list for that case.
     REQUIRE_PATH_LIST = { # :nodoc:
-      'lib' => ['lib'].freeze,
+      "lib" => ["lib"].freeze,
     }.freeze
 
     def initialize(data, extensions)

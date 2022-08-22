@@ -15,7 +15,7 @@ RSpec.context "when installing a bundle that includes yanked gems" do
            foo (10.0.0)
 
        PLATFORMS
-         ruby
+         #{lockfile_platforms}
 
        DEPENDENCIES
          foo (= 10.0.0)
@@ -57,7 +57,7 @@ RSpec.context "when using gem before installing" do
           rack (0.9.1)
 
       PLATFORMS
-        ruby
+        #{lockfile_platforms}
 
       DEPENDENCIES
         rack (= 0.9.1)
@@ -65,7 +65,7 @@ RSpec.context "when using gem before installing" do
 
     bundle :list, :raise_on_error => false
 
-    expect(err).to include("Could not find rack-0.9.1 in any of the sources")
+    expect(err).to include("Could not find rack-0.9.1 in locally installed gems")
     expect(err).to_not include("Your bundle is locked to rack (0.9.1) from")
     expect(err).to_not include("If you haven't changed sources, that means the author of rack (0.9.1) has removed it.")
     expect(err).to_not include("You'll need to update your bundle to a different version of rack (0.9.1) that hasn't been removed in order to install.")
@@ -86,7 +86,7 @@ RSpec.context "when using gem before installing" do
           rack_middleware (1.0)
 
       PLATFORMS
-        ruby
+        #{lockfile_platforms}
 
       DEPENDENCIES
         rack (= 0.9.1)
@@ -95,7 +95,7 @@ RSpec.context "when using gem before installing" do
 
     bundle :list, :raise_on_error => false
 
-    expect(err).to include("Could not find rack-0.9.1, rack_middleware-1.0 in any of the sources")
+    expect(err).to include("Could not find rack-0.9.1, rack_middleware-1.0 in locally installed gems")
     expect(err).to include("Install missing gems with `bundle install`.")
     expect(err).to_not include("Your bundle is locked to rack (0.9.1) from")
     expect(err).to_not include("If you haven't changed sources, that means the author of rack (0.9.1) has removed it.")

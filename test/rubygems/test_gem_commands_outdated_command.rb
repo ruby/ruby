@@ -1,6 +1,6 @@
 # frozen_string_literal: true
-require_relative 'helper'
-require 'rubygems/commands/outdated_command'
+require_relative "helper"
+require "rubygems/commands/outdated_command"
 
 class TestGemCommandsOutdatedCommand < Gem::TestCase
   def setup
@@ -15,10 +15,10 @@ class TestGemCommandsOutdatedCommand < Gem::TestCase
 
   def test_execute
     spec_fetcher do |fetcher|
-      fetcher.download 'foo', '1.0'
-      fetcher.download 'foo', '2.0'
-      fetcher.gem 'foo', '0.1'
-      fetcher.gem 'foo', '0.2'
+      fetcher.download "foo", "1.0"
+      fetcher.download "foo", "2.0"
+      fetcher.gem "foo", "0.1"
+      fetcher.gem "foo", "0.2"
     end
 
     use_ui @ui do
@@ -31,10 +31,10 @@ class TestGemCommandsOutdatedCommand < Gem::TestCase
 
   def test_execute_with_up_to_date_platform_specific_gem
     spec_fetcher do |fetcher|
-      fetcher.download 'foo', '2.0'
+      fetcher.download "foo", "2.0"
 
-      fetcher.gem 'foo', '1.0'
-      fetcher.gem 'foo', '2.0' do |s|
+      fetcher.gem "foo", "1.0"
+      fetcher.gem "foo", "2.0" do |s|
         s.platform = Gem::Platform.local
       end
     end

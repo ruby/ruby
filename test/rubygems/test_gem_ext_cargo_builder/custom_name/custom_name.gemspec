@@ -6,5 +6,5 @@ Gem::Specification.new do |s|
   s.authors       = ["Ian Ker-Seymer"]
   s.files         = ["Cargo.toml", "Cargo.lock", "src/lib.rs"]
 
-  s.metadata['cargo_crate_name'] = 'custom-name-ext'
+  s.metadata["cargo_crate_name"] = "custom-name-ext"
 end

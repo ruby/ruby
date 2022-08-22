@@ -1,7 +1,7 @@
 # frozen_string_literal: false
 
 module Bundler
-  VERSION = "2.3.18".freeze
+  VERSION = "2.3.19".freeze
 
   def self.bundler_major_version
     @bundler_major_version ||= VERSION.split(".").first.to_i

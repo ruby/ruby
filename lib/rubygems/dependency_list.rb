@@ -5,8 +5,8 @@
 # See LICENSE.txt for permissions.
 #++
 
-require_relative 'tsort'
-require_relative 'deprecate'
+require_relative "tsort"
+require_relative "deprecate"
 
 ##
 # Gem::DependencyList is used for installing and uninstalling gems in the

@@ -1,7 +1,7 @@
 .\" generated with Ronn/v0.7.3
 .\" http://github.com/rtomayko/ronn/tree/0.7.3
 .
-.TH "BUNDLE\-CONFIG" "1" "June 2022" "" ""
+.TH "BUNDLE\-CONFIG" "1" "July 2022" "" ""
 .
 .SH "NAME"
 \fBbundle\-config\fR \- Set bundler configuration options
@@ -72,6 +72,10 @@ Creates a directory (defaults to \fB~/bin\fR) and place any executables from the
 .TP
 \fBdeployment\fR
 In deployment mode, Bundler will \'roll\-out\' the bundle for \fBproduction\fR use\. Please check carefully if you want to have this option enabled in \fBdevelopment\fR or \fBtest\fR environments\.
+.
+.TP
+\fBonly\fR
+A space\-separated list of groups to install only gems of the specified groups\.
 .
 .TP
 \fBpath\fR
@@ -205,6 +209,9 @@ The following is a list of all configuration keys and their purpose\. You can le
 \fBglobal_gem_cache\fR (\fBBUNDLE_GLOBAL_GEM_CACHE\fR): Whether Bundler should cache all gems globally, rather than locally to the installing Ruby installation\.
 .
 .IP "\(bu" 4
+\fBignore_funding_requests\fR (\fBBUNDLE_IGNORE_FUNDING_REQUESTS\fR): When set, no funding requests will be printed\.
+.
+.IP "\(bu" 4
 \fBignore_messages\fR (\fBBUNDLE_IGNORE_MESSAGES\fR): When set, no post install messages will be printed\. To silence a single gem, use dot notation like \fBignore_messages\.httparty true\fR\.
 .
 .IP "\(bu" 4
@@ -218,6 +225,9 @@ The following is a list of all configuration keys and their purpose\. You can le
 .
 .IP "\(bu" 4
 \fBno_prune\fR (\fBBUNDLE_NO_PRUNE\fR): Whether Bundler should leave outdated gems unpruned when caching\.
+.
+.IP "\(bu" 4
+\fBonly\fR (\fBBUNDLE_ONLY\fR): A space\-separated list of groups to install only gems of the specified groups\.
 .
 .IP "\(bu" 4
 \fBpath\fR (\fBBUNDLE_PATH\fR): The location on disk where all gems in your bundle will be located regardless of \fB$GEM_HOME\fR or \fB$GEM_PATH\fR values\. Bundle gems not found in this location will be installed by \fBbundle install\fR\. Defaults to \fBGem\.dir\fR\. When \-\-deployment is used, defaults to vendor/bundle\.
@@ -342,13 +352,13 @@ bundle config set \-\-global mirror\.SOURCE_URL MIRROR_URL
 .IP "" 0
 .
 .P
-For example, to use a mirror of rubygems\.org hosted at rubygems\-mirror\.org:
+For example, to use a mirror of https://rubygems\.org hosted at https://example\.org:
 .
 .IP "" 4
 .
 .nf
 
-bundle config set \-\-global mirror\.http://rubygems\.org http://rubygems\-mirror\.org
+bundle config set \-\-global mirror\.https://rubygems\.org https://example\.org
 .
 .fi
 .

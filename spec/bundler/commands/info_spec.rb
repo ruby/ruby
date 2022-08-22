@@ -163,10 +163,10 @@ RSpec.describe "bundle info" do
       expect(the_bundle).to include_gems "foo 1.0"
 
       bundle "info foo"
-      expect(out).to include("foo (1.0 #{@git.ref_for("master", 6)}")
+      expect(out).to include("foo (1.0 #{@git.ref_for("main", 6)}")
     end
 
-    it "prints out branch names other than master" do
+    it "prints out branch names other than main" do
       update_git "foo", :branch => "omg" do |s|
         s.write "lib/foo.rb", "FOO = '1.0.omg'"
       end

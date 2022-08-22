@@ -1,10 +1,10 @@
 # frozen_string_literal: true
-require_relative '../command'
-require_relative '../install_update_options'
-require_relative '../dependency_installer'
-require_relative '../local_remote_options'
-require_relative '../validator'
-require_relative '../version_option'
+require_relative "../command"
+require_relative "../install_update_options"
+require_relative "../dependency_installer"
+require_relative "../local_remote_options"
+require_relative "../validator"
+require_relative "../version_option"
 
 ##
 # Gem installer command line tool
@@ -29,7 +29,7 @@ class Gem::Commands::InstallCommand < Gem::Command
 
     defaults.merge!(install_update_options)
 
-    super 'install', 'Install a gem into the local repository', defaults
+    super "install", "Install a gem into the local repository", defaults
 
     add_install_update_options
     add_local_remote_options
@@ -157,7 +157,7 @@ You can use `i` command instead of `install`.
 
     @installed_specs = []
 
-    ENV.delete 'GEM_PATH' if options[:install_dir].nil?
+    ENV.delete "GEM_PATH" if options[:install_dir].nil?
 
     check_install_dir
     check_version
@@ -172,7 +172,7 @@ You can use `i` command instead of `install`.
   end
 
   def install_from_gemdeps # :nodoc:
-    require_relative '../request_set'
+    require_relative "../request_set"
     rs = Gem::RequestSet.new
 
     specs = rs.install_from_gemdeps options do |req, inst|
@@ -247,11 +247,11 @@ You can use `i` command instead of `install`.
 
   def load_hooks # :nodoc:
     if options[:install_as_default]
-      require_relative '../install_default_message'
+      require_relative "../install_default_message"
     else
-      require_relative '../install_message'
+      require_relative "../install_message"
     end
-    require_relative '../rdoc'
+    require_relative "../rdoc"
   end
 
   def show_install_errors(errors) # :nodoc:
@@ -270,7 +270,7 @@ You can use `i` command instead of `install`.
   def show_installed # :nodoc:
     return if @installed_specs.empty?
 
-    gems = @installed_specs.length == 1 ? 'gem' : 'gems'
+    gems = @installed_specs.length == 1 ? "gem" : "gems"
     say "#{@installed_specs.length} #{gems} installed"
   end
 end

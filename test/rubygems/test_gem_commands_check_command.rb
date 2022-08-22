@@ -1,6 +1,6 @@
 # frozen_string_literal: true
-require_relative 'helper'
-require 'rubygems/commands/check_command'
+require_relative "helper"
+require "rubygems/commands/check_command"
 
 class TestGemCommandsCheckCommand < Gem::TestCase
   def setup
@@ -45,8 +45,8 @@ class TestGemCommandsCheckCommand < Gem::TestCase
   end
 
   def test_doctor
-    gem 'a'
-    b = gem 'b'
+    gem "a"
+    b = gem "b"
 
     FileUtils.rm b.spec_file
 

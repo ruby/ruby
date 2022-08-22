@@ -5,8 +5,8 @@
 #++
 
 require_relative "../rubygems"
-require_relative 'security'
-require_relative 'user_interaction'
+require_relative "security"
+require_relative "user_interaction"
 
 ##
 # Example using a Gem::Package
@@ -158,7 +158,7 @@ class Gem::Package
     return super unless gem.present?
 
     return super unless gem.start
-    return super unless gem.start.include? 'MD5SUM ='
+    return super unless gem.start.include? "MD5SUM ="
 
     Gem::Package::Old.new gem
   end
@@ -178,9 +178,9 @@ class Gem::Package
       tar = Gem::Package::TarReader.new io
       tar.each_entry do |entry|
         case entry.full_name
-        when 'metadata' then
+        when "metadata" then
           metadata = entry.read
-        when 'metadata.gz' then
+        when "metadata.gz" then
           metadata = Gem::Util.gunzip entry.read
         end
       end
@@ -193,7 +193,7 @@ class Gem::Package
   # Creates a new package that will read or write to the file +gem+.
 
   def initialize(gem, security_policy) # :notnew:
-    require 'zlib'
+    require "zlib"
 
     @gem = gem
 
@@ -229,7 +229,7 @@ class Gem::Package
       end
     end
 
-    tar.add_file_signed 'checksums.yaml.gz', 0444, @signer do |io|
+    tar.add_file_signed "checksums.yaml.gz", 0444, @signer do |io|
       gzip_to io do |gz_io|
         Psych.dump checksums_by_algorithm, gz_io
       end
@@ -241,7 +241,7 @@ class Gem::Package
   # and adds this file to the +tar+.
 
   def add_contents(tar) # :nodoc:
-    digests = tar.add_file_signed 'data.tar.gz', 0444, @signer do |io|
+    digests = tar.add_file_signed "data.tar.gz", 0444, @signer do |io|
       gzip_to io do |gz_io|
         Gem::Package::TarWriter.new gz_io do |data_tar|
           add_files data_tar
@@ -249,7 +249,7 @@ class Gem::Package
       end
     end
 
-    @checksums['data.tar.gz'] = digests
+    @checksums["data.tar.gz"] = digests
   end
 
   ##
@@ -266,7 +266,7 @@ class Gem::Package
       next unless stat.file?
 
       tar.add_file_simple file, stat.mode, stat.size do |dst_io|
-        File.open file, 'rb' do |src_io|
+        File.open file, "rb" do |src_io|
           dst_io.write src_io.read 16384 until src_io.eof?
         end
       end
@@ -277,13 +277,13 @@ class Gem::Package
   # Adds the package's Gem::Specification to the +tar+ file
 
   def add_metadata(tar) # :nodoc:
-    digests = tar.add_file_signed 'metadata.gz', 0444, @signer do |io|
+    digests = tar.add_file_signed "metadata.gz", 0444, @signer do |io|
       gzip_to io do |gz_io|
         gz_io.write @spec.to_yaml
       end
     end
 
-    @checksums['metadata.gz'] = digests
+    @checksums["metadata.gz"] = digests
   end
 
   ##
@@ -335,7 +335,7 @@ EOM
       gem_tar = Gem::Package::TarReader.new io
 
       gem_tar.each do |entry|
-        next unless entry.full_name == 'data.tar.gz'
+        next unless entry.full_name == "data.tar.gz"
 
         open_tar_gz entry do |pkg_tar|
           pkg_tar.each do |contents_entry|
@@ -387,7 +387,7 @@ EOM
       reader = Gem::Package::TarReader.new io
 
       reader.each do |entry|
-        next unless entry.full_name == 'data.tar.gz'
+        next unless entry.full_name == "data.tar.gz"
 
         extract_tar_gz entry, destination_dir, pattern
 
@@ -420,7 +420,7 @@ EOM
           real_destination = link_target.start_with?("/") ? link_target : File.expand_path(link_target, File.dirname(destination))
 
           raise Gem::Package::SymlinkError.new(entry.full_name, real_destination, destination_dir) unless
-            normalize_path(real_destination).start_with? normalize_path(destination_dir + '/')
+            normalize_path(real_destination).start_with? normalize_path(destination_dir + "/")
         end
 
         FileUtils.rm_rf destination
@@ -439,7 +439,7 @@ EOM
           directories << mkdir
         end
 
-        File.open destination, 'wb' do |out|
+        File.open destination, "wb" do |out|
           out.write entry.read
           FileUtils.chmod file_mode(entry.header.mode), destination
         end if entry.file?
@@ -481,13 +481,13 @@ EOM
 
   def install_location(filename, destination_dir) # :nodoc:
     raise Gem::Package::PathError.new(filename, destination_dir) if
-      filename.start_with? '/'
+      filename.start_with? "/"
 
     destination_dir = File.realpath(destination_dir)
     destination = File.expand_path(filename, destination_dir)
 
     raise Gem::Package::PathError.new(destination, destination_dir) unless
-      normalize_path(destination).start_with? normalize_path(destination_dir + '/')
+      normalize_path(destination).start_with? normalize_path(destination_dir + "/")
 
     destination.tap(&Gem::UNTAINT)
     destination
@@ -506,9 +506,9 @@ EOM
 
   def load_spec(entry) # :nodoc:
     case entry.full_name
-    when 'metadata' then
+    when "metadata" then
       @spec = Gem::Specification.from_yaml entry.read
-    when 'metadata.gz' then
+    when "metadata.gz" then
       Zlib::GzipReader.wrap(entry, external_encoding: Encoding::UTF_8) do |gzio|
         @spec = Gem::Specification.from_yaml gzio.read
       end
@@ -532,7 +532,7 @@ EOM
   def read_checksums(gem)
     Gem.load_yaml
 
-    @checksums = gem.seek 'checksums.yaml.gz' do |entry|
+    @checksums = gem.seek "checksums.yaml.gz" do |entry|
       Zlib::GzipReader.wrap entry do |gz_io|
         Gem::SafeYAML.safe_load gz_io.read
       end
@@ -544,7 +544,7 @@ EOM
   # certificate and key are not present only checksum generation is set up.
 
   def setup_signer(signer_options: {})
-    passphrase = ENV['GEM_PRIVATE_KEY_PASSPHRASE']
+    passphrase = ENV["GEM_PRIVATE_KEY_PASSPHRASE"]
     if @spec.signing_key
       @signer =
         Gem::Security::Signer.new(
@@ -651,7 +651,7 @@ EOM
     case file_name
     when "metadata", "metadata.gz" then
       load_spec entry
-    when 'data.tar.gz' then
+    when "data.tar.gz" then
       verify_gz entry
     end
   rescue
@@ -668,12 +668,12 @@ EOM
     end
 
     unless @spec
-      raise Gem::Package::FormatError.new 'package metadata is missing', @gem
+      raise Gem::Package::FormatError.new "package metadata is missing", @gem
     end
 
-    unless @files.include? 'data.tar.gz'
+    unless @files.include? "data.tar.gz"
       raise Gem::Package::FormatError.new \
-              'package content (data.tar.gz) is missing', @gem
+              "package content (data.tar.gz) is missing", @gem
     end
 
     if duplicates = @files.group_by {|f| f }.select {|k,v| v.size > 1 }.map(&:first) and duplicates.any?
@@ -693,12 +693,12 @@ EOM
   end
 end
 
-require_relative 'package/digest_io'
-require_relative 'package/source'
-require_relative 'package/file_source'
-require_relative 'package/io_source'
-require_relative 'package/old'
-require_relative 'package/tar_header'
-require_relative 'package/tar_reader'
-require_relative 'package/tar_reader/entry'
-require_relative 'package/tar_writer'
+require_relative "package/digest_io"
+require_relative "package/source"
+require_relative "package/file_source"
+require_relative "package/io_source"
+require_relative "package/old"
+require_relative "package/tar_header"
+require_relative "package/tar_reader"
+require_relative "package/tar_reader/entry"
+require_relative "package/tar_writer"

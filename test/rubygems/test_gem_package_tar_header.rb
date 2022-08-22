@@ -1,25 +1,25 @@
 # frozen_string_literal: true
-require_relative 'package/tar_test_case'
-require 'rubygems/package'
+require_relative "package/tar_test_case"
+require "rubygems/package"
 
 class TestGemPackageTarHeader < Gem::Package::TarTestCase
   def setup
     super
 
     header = {
-      :name     => 'x',
+      :name     => "x",
       :mode     => 0644,
       :uid      => 1000,
       :gid      => 10000,
       :size     => 100,
       :mtime    => 12345,
-      :typeflag => '0',
-      :linkname => 'link',
-      :uname    => 'user',
-      :gname    => 'group',
+      :typeflag => "0",
+      :linkname => "link",
+      :uname    => "user",
+      :gname    => "group",
       :devmajor => 1,
       :devminor => 2,
-      :prefix   => 'y',
+      :prefix   => "y",
     }
 
     @tar_header = Gem::Package::TarHeader.new header
@@ -36,62 +36,62 @@ class TestGemPackageTarHeader < Gem::Package::TarTestCase
   end
 
   def test_initialize
-    assert_equal '',      @tar_header.checksum, 'checksum'
-    assert_equal 1,       @tar_header.devmajor, 'devmajor'
-    assert_equal 2,       @tar_header.devminor, 'devminor'
-    assert_equal 10000,   @tar_header.gid,      'gid'
-    assert_equal 'group', @tar_header.gname,    'gname'
-    assert_equal 'link',  @tar_header.linkname, 'linkname'
-    assert_equal 'ustar', @tar_header.magic,    'magic'
-    assert_equal 0644,    @tar_header.mode,     'mode'
-    assert_equal 12345,   @tar_header.mtime,    'mtime'
-    assert_equal 'x',     @tar_header.name,     'name'
-    assert_equal 'y',     @tar_header.prefix,   'prefix'
-    assert_equal 100,     @tar_header.size,     'size'
-    assert_equal '0',     @tar_header.typeflag, 'typeflag'
-    assert_equal 1000,    @tar_header.uid,      'uid'
-    assert_equal 'user',  @tar_header.uname,    'uname'
-    assert_equal '00',    @tar_header.version,  'version'
+    assert_equal "",      @tar_header.checksum, "checksum"
+    assert_equal 1,       @tar_header.devmajor, "devmajor"
+    assert_equal 2,       @tar_header.devminor, "devminor"
+    assert_equal 10000,   @tar_header.gid,      "gid"
+    assert_equal "group", @tar_header.gname,    "gname"
+    assert_equal "link",  @tar_header.linkname, "linkname"
+    assert_equal "ustar", @tar_header.magic,    "magic"
+    assert_equal 0644,    @tar_header.mode,     "mode"
+    assert_equal 12345,   @tar_header.mtime,    "mtime"
+    assert_equal "x",     @tar_header.name,     "name"
+    assert_equal "y",     @tar_header.prefix,   "prefix"
+    assert_equal 100,     @tar_header.size,     "size"
+    assert_equal "0",     @tar_header.typeflag, "typeflag"
+    assert_equal 1000,    @tar_header.uid,      "uid"
+    assert_equal "user",  @tar_header.uname,    "uname"
+    assert_equal "00",    @tar_header.version,  "version"
 
-    refute_empty @tar_header, 'empty'
+    refute_empty @tar_header, "empty"
   end
 
   def test_initialize_bad
     assert_raise ArgumentError do
-      Gem::Package::TarHeader.new :name => '', :size => '', :mode => ''
+      Gem::Package::TarHeader.new :name => "", :size => "", :mode => ""
     end
 
     assert_raise ArgumentError do
-      Gem::Package::TarHeader.new :name => '', :size => '', :prefix => ''
+      Gem::Package::TarHeader.new :name => "", :size => "", :prefix => ""
     end
 
     assert_raise ArgumentError do
-      Gem::Package::TarHeader.new :name => '', :prefix => '', :mode => ''
+      Gem::Package::TarHeader.new :name => "", :prefix => "", :mode => ""
     end
 
     assert_raise ArgumentError do
-      Gem::Package::TarHeader.new :prefix => '', :size => '', :mode => ''
+      Gem::Package::TarHeader.new :prefix => "", :size => "", :mode => ""
     end
   end
 
   def test_initialize_typeflag
     header = {
-      :mode     => '',
-      :name     => '',
-      :prefix   => '',
-      :size     => '',
-      :typeflag => '',
+      :mode     => "",
+      :name     => "",
+      :prefix   => "",
+      :size     => "",
+      :typeflag => "",
     }
 
     tar_header = Gem::Package::TarHeader.new header
 
-    assert_equal '0', tar_header.typeflag
+    assert_equal "0", tar_header.typeflag
   end
 
   def test_empty_eh
     refute_empty @tar_header
 
-    @tar_header = Gem::Package::TarHeader.new :name => 'x', :prefix => '',
+    @tar_header = Gem::Package::TarHeader.new :name => "x", :prefix => "",
                                               :mode => 0, :size => 0,
                                               :empty => true
 
@@ -135,11 +135,11 @@ group\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000
   end
 
   def test_update_checksum
-    assert_equal '', @tar_header.checksum
+    assert_equal "", @tar_header.checksum
 
     @tar_header.update_checksum
 
-    assert_equal '012467', @tar_header.checksum
+    assert_equal "012467", @tar_header.checksum
   end
 
   def test_from_bad_octal
@@ -165,7 +165,7 @@ group\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000
 
   def test_big_uid_gid
     stream = StringIO.new(
-      <<-EOF.dup.force_encoding('binary').split("\n").join
+      <<-EOF.dup.force_encoding("binary").split("\n").join
 GeoIP2-City_20190528/
 \x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00
 \x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00
@@ -197,7 +197,7 @@ tjmather\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00
     assert_equal 1991400094, tar_header.uid
     assert_equal 1991400094, tar_header.gid
 
-    assert_equal 'GeoIP2-City_20190528/', tar_header.name
+    assert_equal "GeoIP2-City_20190528/", tar_header.name
     assert_equal 0755, tar_header.mode
     assert_equal 0, tar_header.size
     assert_equal 1559064640, tar_header.mtime
@@ -206,7 +206,7 @@ tjmather\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00
 
   def test_spaces_in_headers
     stream = StringIO.new(
-      <<-EOF.dup.force_encoding('binary').split("\n").join
+      <<-EOF.dup.force_encoding("binary").split("\n").join
 Access_Points_09202018.csv
 \x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00
 \x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00

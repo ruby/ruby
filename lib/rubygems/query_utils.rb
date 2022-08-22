@@ -1,9 +1,9 @@
 # frozen_string_literal: true
 
-require_relative 'local_remote_options'
-require_relative 'spec_fetcher'
-require_relative 'version_option'
-require_relative 'text'
+require_relative "local_remote_options"
+require_relative "spec_fetcher"
+require_relative "version_option"
+require_relative "text"
 
 module Gem::QueryUtils
 
@@ -12,41 +12,41 @@ module Gem::QueryUtils
   include Gem::VersionOption
 
   def add_query_options
-    add_option('-i', '--[no-]installed',
-               'Check for installed gem') do |value, options|
+    add_option("-i", "--[no-]installed",
+               "Check for installed gem") do |value, options|
       options[:installed] = value
     end
 
-    add_option('-I', 'Equivalent to --no-installed') do |value, options|
+    add_option("-I", "Equivalent to --no-installed") do |value, options|
       options[:installed] = false
     end
 
     add_version_option command, "for use with --installed"
 
-    add_option('-d', '--[no-]details',
-               'Display detailed information of gem(s)') do |value, options|
+    add_option("-d", "--[no-]details",
+               "Display detailed information of gem(s)") do |value, options|
       options[:details] = value
     end
 
-    add_option('--[no-]versions',
-               'Display only gem names') do |value, options|
+    add_option("--[no-]versions",
+               "Display only gem names") do |value, options|
       options[:versions] = value
       options[:details] = false unless value
     end
 
-    add_option('-a', '--all',
-               'Display all gem versions') do |value, options|
+    add_option("-a", "--all",
+               "Display all gem versions") do |value, options|
       options[:all] = value
     end
 
-    add_option('-e', '--exact',
-               'Name of gem(s) to query on matches the',
-               'provided STRING') do |value, options|
+    add_option("-e", "--exact",
+               "Name of gem(s) to query on matches the",
+               "provided STRING") do |value, options|
       options[:exact] = value
     end
 
-    add_option('--[no-]prerelease',
-               'Display prerelease versions') do |value, options|
+    add_option("--[no-]prerelease",
+               "Display prerelease versions") do |value, options|
       options[:prerelease] = value
     end
 
@@ -257,7 +257,7 @@ module Gem::QueryUtils
 
           if pls != [Gem::Platform::RUBY]
             platform_list = [pls.delete(Gem::Platform::RUBY), *pls.sort].compact
-            out = platform_list.unshift(out).join(' ')
+            out = platform_list.unshift(out).join(" ")
           end
 
           out
@@ -284,7 +284,7 @@ module Gem::QueryUtils
 
   def spec_authors(entry, spec)
     authors = "Author#{spec.authors.length > 1 ? 's' : ''}: ".dup
-    authors << spec.authors.join(', ')
+    authors << spec.authors.join(", ")
     entry << format_text(authors, 68, 4)
   end
 
@@ -298,7 +298,7 @@ module Gem::QueryUtils
     return if spec.license.nil? or spec.license.empty?
 
     licenses = "License#{spec.licenses.length > 1 ? 's' : ''}: ".dup
-    licenses << spec.licenses.join(', ')
+    licenses << spec.licenses.join(", ")
     entry << "\n" << format_text(licenses, 68, 4)
   end
 
@@ -306,15 +306,15 @@ module Gem::QueryUtils
     return unless spec.loaded_from
 
     if specs.length == 1
-      default = spec.default_gem? ? ' (default)' : nil
+      default = spec.default_gem? ? " (default)" : nil
       entry << "\n" << "    Installed at#{default}: #{spec.base_dir}"
     else
-      label = 'Installed at'
+      label = "Installed at"
       specs.each do |s|
         version = s.version.to_s
-        version << ', default' if s.default_gem?
+        version << ", default" if s.default_gem?
         entry << "\n" << "    #{label} (#{version}): #{s.base_dir}"
-        label = ' ' * label.length
+        label = " " * label.length
       end
     end
   end
@@ -327,7 +327,7 @@ module Gem::QueryUtils
     return unless non_ruby
 
     if platforms.length == 1
-      title = platforms.values.length == 1 ? 'Platform' : 'Platforms'
+      title = platforms.values.length == 1 ? "Platform" : "Platforms"
       entry << "    #{title}: #{platforms.values.sort.join(', ')}\n"
     else
       entry << "    Platforms:\n"
@@ -336,7 +336,7 @@ module Gem::QueryUtils
 
       sorted_platforms.each do |version, pls|
         label = "        #{version}: "
-        data = format_text pls.sort.join(', '), 68, label.length
+        data = format_text pls.sort.join(", "), 68, label.length
         data[0, label.length] = label
         entry << data << "\n"
       end

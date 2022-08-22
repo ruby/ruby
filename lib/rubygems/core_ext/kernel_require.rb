@@ -5,7 +5,7 @@
 # See LICENSE.txt for permissions.
 #++
 
-require 'monitor'
+require "monitor"
 
 module Kernel
 

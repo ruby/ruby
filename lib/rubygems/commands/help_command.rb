@@ -1,5 +1,5 @@
 # frozen_string_literal: true
-require_relative '../command'
+require_relative "../command"
 
 class Gem::Commands::HelpCommand < Gem::Command
   # :stopdoc:
@@ -280,7 +280,7 @@ platform.
   # :startdoc:
 
   def initialize
-    super 'help', "Provide help on the 'gem' command"
+    super "help", "Provide help on the 'gem' command"
 
     @command_manager = Gem::CommandManager.instance
   end
@@ -326,7 +326,7 @@ platform.
     desc_width = @command_manager.command_names.map {|n| n.size }.max + 4
 
     summary_width = 80 - margin_width - desc_width
-    wrap_indent = ' ' * (margin_width + desc_width)
+    wrap_indent = " " * (margin_width + desc_width)
     format = "#{' ' * margin_width}%-#{desc_width}s%s"
 
     @command_manager.command_names.each do |cmd_name|
