@@ -3824,6 +3824,8 @@ time_localtime_m(int argc, VALUE *argv, VALUE time)
  *    t.utc?             # => true
  *
  *  Time#gmtime is an alias for Time#utc.
+ *
+ *  Related: Time#getutc (returns a new converted \Time object).
  */
 
 static VALUE
