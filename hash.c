@@ -605,7 +605,7 @@ hash_ar_table_set(VALUE hash, ar_table *ar)
     // then the ar pointer shouldn't be a GC pointer
     // hash should be allocated from the largest size pool
     if (rb_gc_obj_slot_size(hash) == 40) {
-        HASH_ASSERT(!is_gc_pointer(ar)); 
+        HASH_ASSERT(!is_gc_pointer(ar));
     }
     HASH_ASSERT(RHASH_AR_TABLE_P(hash));
     HASH_ASSERT((RHASH_TRANSIENT_P(hash) && ar == NULL) ? FALSE : TRUE);
@@ -1577,7 +1577,7 @@ hash_embedded_size(unsigned long capa)
         // TODO: This isn't correct as when we're using a ar_table, we don't
         // need the pointer anymore. but we'll fix it later
         return sizeof(struct RHash) + sizeof(ar_table);
-    } 
+    }
     else {
         return sizeof(struct RHash);
     }
