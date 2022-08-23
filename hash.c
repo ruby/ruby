@@ -1587,19 +1587,19 @@ VALUE
 rb_rvargc_hash_new(VALUE klass, unsigned long capa)
 {
     if (capa == 0) {
-        return rb_hash_new();
+        return hash_alloc(klass);
     }
 
+    const VALUE wb = (RGENGC_WB_PROTECTED_HASH ? FL_WB_PROTECTED : 0);
     if (capa > RHASH_AR_TABLE_MAX_SIZE) {
-        VALUE hash = rb_hash_new();
-        RHASH_ST_TABLE_SET(hash, st_init_table_with_size(&objhash, capa));
+        RVARGC_NEWOBJ_OF(hash, struct RHash, klass, T_HASH | wb, sizeof(struct RHash));
+        RHASH_ST_TABLE_SET((VALUE)hash, st_init_table_with_size(&objhash, capa));
+
         return hash;
     }
 
     size_t size = hash_embedded_size(capa);
-
-    const VALUE wb = (RGENGC_WB_PROTECTED_HASH ? FL_WB_PROTECTED : 0);
-    RVARGC_NEWOBJ_OF(hash, struct RHash, rb_cHash, T_HASH | wb, size);
+    RVARGC_NEWOBJ_OF(hash, struct RHash, klass, T_HASH | wb, size);
 
     RHASH_SET_IFNONE((VALUE)hash, Qnil);
 
