@@ -3898,7 +3898,7 @@ time_fixoff(VALUE time)
  *    t.getlocal('+12:00')                  # => 2000-01-01 12:00:00 +1200
  *
  *  For forms of argument +zone+, see
- *  {Timezone Specifiers}[rdoc-ref:doc/timezone_specifiers.rdoc].
+ *  {Timezone Specifiers}[rdoc-ref:timezone_specifiers.rdoc].
  *
  */
 
