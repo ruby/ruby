@@ -1,6 +1,9 @@
 use crate::core::*;
 use crate::cruby::*;
 use crate::yjit::yjit_enabled_p;
+use crate::asm::CodeBlock;
+use crate::codegen::CodePtr;
+use std::fmt::Write;
 
 /// Primitive called in yjit.rb
 /// Produce a string representing the disassembly for an ISEQ
@@ -36,7 +39,7 @@ pub extern "C" fn rb_yjit_disasm_iseq(_ec: EcPtr, _ruby_self: VALUE, iseqw: VALU
 
 #[cfg(feature = "disasm")]
 pub fn disasm_iseq_insn_range(iseq: IseqPtr, start_idx: u32, end_idx: u32) -> String {
-        let mut out = String::from("");
+    let mut out = String::from("");
 
     // Get a list of block versions generated for this iseq
     let mut block_list = get_iseq_block_list(iseq);
@@ -67,26 +70,6 @@ pub fn disasm_iseq_insn_range(iseq: IseqPtr, start_idx: u32, end_idx: u32) -> St
         total_code_size += blockref.borrow().code_size();
     }
 
-    // Initialize capstone
-    use capstone::prelude::*;
-
-    #[cfg(target_arch = "x86_64")]
-    let mut cs = Capstone::new()
-        .x86()
-        .mode(arch::x86::ArchMode::Mode64)
-        .syntax(arch::x86::ArchSyntax::Intel)
-        .build()
-        .unwrap();
-
-    #[cfg(target_arch = "aarch64")]
-    let mut cs = Capstone::new()
-        .arm64()
-        .mode(arch::arm64::ArchMode::Arm)
-        .detail(true)
-        .build()
-        .unwrap();
-    cs.set_skipdata(true);
-
     out.push_str(&format!("NUM BLOCK VERSIONS: {}\n", block_list.len()));
     out.push_str(&format!(
         "TOTAL INLINE CODE SIZE: {} bytes\n",
@@ -115,19 +98,7 @@ pub fn disasm_iseq_insn_range(iseq: IseqPtr, start_idx: u32, end_idx: u32) -> St
             out.push_str(&format!("== {:=<60}\n", block_ident));
 
             // Disassemble the instructions
-            let code_slice = unsafe { std::slice::from_raw_parts(start_addr, code_size) };
-            let insns = cs.disasm_all(code_slice, start_addr as u64).unwrap();
-
-            // For each instruction in this block
-            for insn in insns.as_ref() {
-                // Comments for this block
-                if let Some(comment_list) = global_cb.comments_at(insn.address() as usize) {
-                    for comment in comment_list {
-                        out.push_str(&format!("  \x1b[1m# {}\x1b[0m\n", comment));
-                    }
-                }
-                out.push_str(&format!("  {}\n", insn));
-            }
+            out.push_str(&disasm_addr_range(global_cb, start_addr, code_size));
 
             // If this is not the last block
             if block_idx < block_list.len() - 1 {
@@ -142,6 +113,49 @@ pub fn disasm_iseq_insn_range(iseq: IseqPtr, start_idx: u32, end_idx: u32) -> St
                 }
             }
         }
+    }
+
+    return out;
+}
+
+
+#[cfg(feature = "disasm")]
+pub fn disasm_addr_range(cb: &CodeBlock, start_addr: *const u8, code_size: usize) -> String {
+    let mut out = String::from("");
+
+    // Initialize capstone
+    use capstone::prelude::*;
+
+    #[cfg(target_arch = "x86_64")]
+    let mut cs = Capstone::new()
+        .x86()
+        .mode(arch::x86::ArchMode::Mode64)
+        .syntax(arch::x86::ArchSyntax::Intel)
+        .build()
+        .unwrap();
+
+    #[cfg(target_arch = "aarch64")]
+    let mut cs = Capstone::new()
+        .arm64()
+        .mode(arch::arm64::ArchMode::Arm)
+        .detail(true)
+        .build()
+        .unwrap();
+    cs.set_skipdata(true);
+
+    // Disassemble the instructions
+    let code_slice = unsafe { std::slice::from_raw_parts(start_addr, code_size) };
+    let insns = cs.disasm_all(code_slice, start_addr as u64).unwrap();
+
+    // For each instruction in this block
+    for insn in insns.as_ref() {
+        // Comments for this block
+        if let Some(comment_list) = cb.comments_at(insn.address() as usize) {
+            for comment in comment_list {
+                write!(&mut out, "  \x1b[1m# {}\x1b[0m\n", comment).unwrap();
+            }
+        }
+        write!(&mut out, "  {}\n", insn).unwrap();
     }
 
     return out;

@@ -10,6 +10,7 @@ use crate::cruby::{VALUE};
 use crate::virtualmem::{CodePtr};
 use crate::asm::{CodeBlock, uimm_num_bits, imm_num_bits};
 use crate::core::{Context, Type, TempMapping};
+use crate::options::*;
 
 #[cfg(target_arch = "x86_64")]
 use crate::backend::x86_64::*;
@@ -1075,11 +1076,25 @@ impl Assembler
     ///       compiling multiple blocks at a time?
     pub fn compile(self, cb: &mut CodeBlock) -> Vec<u32>
     {
+        #[cfg(feature = "disasm")]
+        let start_addr = cb.get_write_ptr().raw_ptr();
+
         let alloc_regs = Self::get_alloc_regs();
-        self.compile_with_regs(cb, alloc_regs)
+        let gc_offsets = self.compile_with_regs(cb, alloc_regs);
+
+        #[cfg(feature = "disasm")]
+        if get_option!(dump_disasm) && !cb.outlined {
+            use crate::disasm::disasm_addr_range;
+            let last_ptr = cb.get_write_ptr();
+            let disasm = disasm_addr_range(cb, start_addr, last_ptr.raw_ptr() as usize - start_addr as usize);
+            if disasm.len() > 0 {
+                println!("{disasm}");
+            }
+        }
+        gc_offsets
     }
 
-    /// Compile with a limited number of registers
+    /// Compile with a limited number of registers. Used only for unit tests.
     pub fn compile_with_num_regs(self, cb: &mut CodeBlock, num_regs: usize) -> Vec<u32>
     {
         let mut alloc_regs = Self::get_alloc_regs();
