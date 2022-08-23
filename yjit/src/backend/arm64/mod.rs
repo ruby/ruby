@@ -289,7 +289,14 @@ impl Assembler
                     // Note: the iteration order is reversed to avoid corrupting x0,
                     // which is both the return value and first argument register
                     for (idx, opnd) in opnds.into_iter().enumerate().rev() {
-                        let value = split_load_operand(asm, opnd);
+                        // If the value that we're sending is 0, then we can use
+                        // the zero register, so in this case we'll just send
+                        // a UImm of 0 along as the argument to the move.
+                        let value = match opnd {
+                            Opnd::UImm(0) | Opnd::Imm(0) => Opnd::UImm(0),
+                            _ => split_load_operand(asm, opnd)
+                        };
+
                         asm.mov(C_ARG_OPNDS[idx], value);
                     }
 
@@ -386,7 +393,10 @@ impl Assembler
                     };
                 },
                 Insn::Mov { dest, src } => {
-                    let value = match (dest, src) {
+                    let value: Opnd = match (dest, src) {
+                        // If the first operand is zero, then we can just use
+                        // the zero register.
+                        (Opnd::Mem(_), Opnd::UImm(0) | Opnd::Imm(0)) => Opnd::Reg(XZR_REG),
                         // If the first operand is a memory operand, we're going
                         // to transform this into a store instruction, so we'll
                         // need to load this anyway.
