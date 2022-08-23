@@ -24,7 +24,6 @@ jobs:
         test_task: ["check", "test-bundler-parallel", "test-bundled-gems"]
         os:
           - ubuntu-20.04
-#         - ubuntu-18.04
         configure: ["", "cppflags=-DRUBY_DEBUG"]
         include:
           - test_task: "check"
