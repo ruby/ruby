@@ -542,6 +542,9 @@ pub fn mov(cb: &mut CodeBlock, rd: A64Opnd, rm: A64Opnd) {
 
             LogicalReg::mov(rd.reg_no, rm.reg_no, rd.num_bits).into()
         },
+        (A64Opnd::Reg(rd), A64Opnd::UImm(0)) => {
+            LogicalReg::mov(rd.reg_no, XZR_REG.reg_no, rd.num_bits).into()
+        },
         (A64Opnd::Reg(rd), A64Opnd::UImm(imm)) => {
             LogicalImm::mov(rd.reg_no, imm.try_into().unwrap(), rd.num_bits).into()
         },

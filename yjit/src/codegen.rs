@@ -1168,9 +1168,14 @@ fn gen_newarray(
     // Save the PC and SP because we are allocating
     jit_prepare_routine_call(jit, ctx, asm);
 
-    let offset_magnitude = SIZEOF_VALUE as u32 * n;
-    let values_opnd = ctx.sp_opnd(-(offset_magnitude as isize));
-    let values_ptr = asm.lea(values_opnd);
+    // If n is 0, then elts is never going to be read, so we can just pass null
+    let values_ptr = if n == 0 {
+        Opnd::UImm(0)
+    } else {
+        let offset_magnitude = SIZEOF_VALUE as u32 * n;
+        let values_opnd = ctx.sp_opnd(-(offset_magnitude as isize));
+        asm.lea(values_opnd)
+    };
 
     // call rb_ec_ary_new_from_values(struct rb_execution_context_struct *ec, long n, const VALUE *elts);
     let new_ary = asm.ccall(
