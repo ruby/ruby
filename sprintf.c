@@ -449,6 +449,9 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
                 }
                 else {
                     n = NUM2INT(val);
+                    if (n >= 128 && enc == rb_usascii_encoding()) {
+                        rb_raise(rb_eArgError, "invalid character");
+                    }
                     if (n >= 0) n = rb_enc_codelen((c = n), enc);
                 }
                 if (n <= 0) {

@@ -369,6 +369,7 @@ class TestSprintf < Test::Unit::TestCase
     assert_equal(" " * BSIZ + "a", sprintf("%#{ BSIZ + 1 }c", ?a))
     assert_equal("a" + " " * BSIZ, sprintf("%-#{ BSIZ + 1 }c", ?a))
     assert_raise(ArgumentError) { sprintf("%c", -1) }
+    assert_raise(ArgumentError) { sprintf("%c".encode('US-ASCII'), 128) }
   end
 
   def test_string
