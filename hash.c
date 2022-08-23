@@ -1935,7 +1935,7 @@ rb_hash_s_create(int argc, VALUE *argv, VALUE klass)
         if (!NIL_P(tmp)) {
             long i;
 
-            hash = rb_rvargc_hash_new(klass, RHASH_SIZE(tmp));
+            hash = rb_rvargc_hash_new(klass, RARRAY_LEN(tmp));
             for (i = 0; i < RARRAY_LEN(tmp); ++i) {
                 VALUE e = RARRAY_AREF(tmp, i);
                 VALUE v = rb_check_array_type(e);
