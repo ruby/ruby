@@ -4300,7 +4300,7 @@ static VALUE
 usage_analysis_clear(VALUE self, ID usage_hash)
 {
     VALUE uh;
-    uh = rb_const_get(rb_cRubyVM, usage_hash);
+    uh = rb_const_get(self, usage_hash);
     rb_hash_clear(uh);
 
     return Qtrue;
