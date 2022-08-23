@@ -295,6 +295,21 @@ class TestLazyEnumerator < Test::Unit::TestCase
     assert_equal(nil, a.current)
   end
 
+  def test_take_0_bug_18971
+    assert_equal([], (2..10).lazy.take(0).map(&:itself).to_a)
+    assert_equal([], (2..10).lazy.take(0).select(&:even?).to_a)
+    assert_equal([], (2..10).lazy.take(0).select(&:odd?).to_a)
+    assert_equal([], (2..10).lazy.take(0).reject(&:even?).to_a)
+    assert_equal([], (2..10).lazy.take(0).reject(&:odd?).to_a)
+    assert_equal([], (2..10).lazy.take(0).take(1).to_a)
+    assert_equal([], (2..10).lazy.take(0).take(0).take(1).to_a)
+    assert_equal([], (2..10).lazy.take(0).drop(0).to_a)
+    assert_equal([], (2..10).lazy.take(0).find_all {|_| true}.to_a)
+    assert_equal([], (2..10).lazy.take(0).zip((12..20)).to_a)
+    assert_equal([], (2..10).lazy.take(0).uniq.to_a)
+    assert_equal([], (2..10).lazy.take(0).sort.to_a)
+  end
+
   def test_take_bad_arg
     a = Step.new(1..10)
     assert_raise(ArgumentError) { a.lazy.take(-1) }
@@ -438,8 +453,8 @@ class TestLazyEnumerator < Test::Unit::TestCase
                  "foo".each_char.lazy.inspect)
     assert_equal("#<Enumerator::Lazy: #<Enumerator::Lazy: 1..10>:map>",
                  (1..10).lazy.map {}.inspect)
-    assert_equal("#<Enumerator::Lazy: #<Enumerator::Lazy: 1..10>:take(0)>",
-                 (1..10).lazy.take(0).inspect)
+    assert_equal("#<Enumerator::Lazy: #<Enumerator::Lazy: 1..10>:take(1)>",
+                 (1..10).lazy.take(1).inspect)
     assert_equal("#<Enumerator::Lazy: #<Enumerator::Lazy: 1..10>:take(3)>",
                  (1..10).lazy.take(3).inspect)
     assert_equal('#<Enumerator::Lazy: #<Enumerator::Lazy: "a".."c">:grep(/b/)>',

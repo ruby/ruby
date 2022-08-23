@@ -127,8 +127,8 @@ VALUE rb_cEnumerator;
 static VALUE rb_cLazy;
 static ID id_rewind, id_new, id_to_enum, id_each_entry;
 static ID id_next, id_result, id_receiver, id_arguments, id_memo, id_method, id_force;
-static ID id_begin, id_end, id_step, id_exclude_end;
-static VALUE sym_each, sym_cycle, sym_yield;
+static ID id_begin, id_end, id_step, id_exclude_end, id_cycle;
+static VALUE sym_each, sym_yield;
 
 static VALUE lazy_use_super_method;
 
@@ -2467,9 +2467,7 @@ lazy_take(VALUE obj, VALUE n)
     }
 
     if (len == 0) {
-       argv[0] = sym_cycle;
-       argv[1] = INT2NUM(0);
-       argc = 2;
+       obj = rb_funcall(obj, id_cycle, 1, INT2NUM(0));
     }
 
     return lazy_add_method(obj, argc, argv, n, rb_ary_new3(1, n), &lazy_take_funcs);
@@ -4620,8 +4618,8 @@ Init_Enumerator(void)
     id_end = rb_intern_const("end");
     id_step = rb_intern_const("step");
     id_exclude_end = rb_intern_const("exclude_end");
+    id_cycle = rb_intern_const("cycle");
     sym_each = ID2SYM(id_each);
-    sym_cycle = ID2SYM(rb_intern_const("cycle"));
     sym_yield = ID2SYM(rb_intern_const("yield"));
 
     InitVM(Enumerator);
