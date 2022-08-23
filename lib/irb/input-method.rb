@@ -14,7 +14,6 @@ require_relative 'magic-file'
 require_relative 'completion'
 require 'io/console'
 require 'reline'
-require 'rdoc'
 
 module IRB
   STDIN_FILE_NAME = "(line)" # :nodoc:
