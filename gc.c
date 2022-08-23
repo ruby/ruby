@@ -3159,6 +3159,12 @@ heap_page_for_ptr(rb_objspace_t *objspace, uintptr_t ptr)
     }
 }
 
+int
+is_gc_pointer(void *ptr)
+{
+    return is_pointer_to_heap(&rb_objspace, ptr);
+}
+
 PUREFUNC(static inline int is_pointer_to_heap(rb_objspace_t *objspace, void *ptr);)
 static inline int
 is_pointer_to_heap(rb_objspace_t *objspace, void *ptr)

@@ -601,6 +601,12 @@ rb_hash_st_table_set(VALUE hash, st_table *st)
 static void
 hash_ar_table_set(VALUE hash, ar_table *ar)
 {
+    // if the hash has been allocated out of the 40 byte pool
+    // then the ar pointer shouldn't be a GC pointer
+    // hash should be allocated from the largest size pool
+    if (rb_gc_obj_slot_size(hash) == 40) {
+        HASH_ASSERT(!is_gc_pointer(ar)); 
+    }
     HASH_ASSERT(RHASH_AR_TABLE_P(hash));
     HASH_ASSERT((RHASH_TRANSIENT_P(hash) && ar == NULL) ? FALSE : TRUE);
     RHASH(hash)->as.ar = ar;
@@ -1581,6 +1587,16 @@ hash_embedded_size(unsigned long capa)
 VALUE
 rb_rvargc_hash_new(VALUE klass, unsigned long capa)
 {
+    if (capa == 0) {
+        return rb_hash_new();
+    }
+
+    if (capa > RHASH_AR_TABLE_MAX_SIZE) {
+        VALUE hash = rb_hash_new();
+        RHASH_ST_TABLE_SET(hash, st_init_table_with_size(&objhash, capa));
+        return hash;
+    }
+
     size_t size = hash_embedded_size(capa);
 
     const VALUE wb = (RGENGC_WB_PROTECTED_HASH ? FL_WB_PROTECTED : 0);
@@ -1912,7 +1928,7 @@ rb_hash_s_create(int argc, VALUE *argv, VALUE klass)
     if (argc == 1) {
         tmp = rb_hash_s_try_convert(Qnil, argv[0]);
         if (!NIL_P(tmp)) {
-            hash = rb_rvargc_hash_new(klass, rb_hash_size(tmp));
+            hash = rb_rvargc_hash_new(klass, RHASH_SIZE(tmp));
             hash_copy(hash, tmp);
             return hash;
         }
@@ -1921,7 +1937,7 @@ rb_hash_s_create(int argc, VALUE *argv, VALUE klass)
         if (!NIL_P(tmp)) {
             long i;
 
-            hash = rb_rvargc_hash_new(klass, rb_hash_size(tmp));
+            hash = rb_rvargc_hash_new(klass, RHASH_SIZE(tmp));
             for (i = 0; i < RARRAY_LEN(tmp); ++i) {
                 VALUE e = RARRAY_AREF(tmp, i);
                 VALUE v = rb_check_array_type(e);
