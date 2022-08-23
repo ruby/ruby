@@ -57,6 +57,10 @@ pub struct CodeBlock {
     #[cfg(feature = "asm_comments")]
     asm_comments: BTreeMap<usize, Vec<String>>,
 
+    // True for OutlinedCb
+    #[cfg(feature = "disasm")]
+    pub outlined: bool,
+
     // Set if the CodeBlock is unable to output some instructions,
     // for example, when there is not enough space or when a jump
     // target is too far away.
@@ -65,7 +69,7 @@ pub struct CodeBlock {
 
 impl CodeBlock {
     /// Make a new CodeBlock
-    pub fn new(mem_block: VirtualMem) -> Self {
+    pub fn new(mem_block: VirtualMem, outlined: bool) -> Self {
         Self {
             mem_size: mem_block.virtual_region_size(),
             mem_block,
@@ -75,6 +79,8 @@ impl CodeBlock {
             label_refs: Vec::new(),
             #[cfg(feature = "asm_comments")]
             asm_comments: BTreeMap::new(),
+            #[cfg(feature = "disasm")]
+            outlined,
             dropped_bytes: false,
         }
     }
@@ -282,7 +288,7 @@ impl CodeBlock {
         let mem_start: *const u8 = alloc.mem_start();
         let virt_mem = VirtualMem::new(alloc, 1, mem_start as *mut u8, mem_size);
 
-        Self::new(virt_mem)
+        Self::new(virt_mem, false)
     }
 }
 

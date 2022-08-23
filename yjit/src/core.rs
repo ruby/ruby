@@ -1510,6 +1510,7 @@ fn regenerate_branch(cb: &mut CodeBlock, branch: &mut Branch) {
     cb.set_write_ptr(branch.start_addr.unwrap());
 
     let mut asm = Assembler::new();
+    asm.comment("regenerate_branch");
 
     (branch.gen_fn)(
         &mut asm,

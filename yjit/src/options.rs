@@ -30,6 +30,9 @@ pub struct Options {
     /// Dump compiled and executed instructions for debugging
     pub dump_insns: bool,
 
+    /// Dump all compiled instructions in inlined CodeBlock
+    pub dump_disasm: bool,
+
     /// Print when specific ISEQ items are compiled or invalidated
     pub dump_iseq_disasm: Option<String>,
 
@@ -53,6 +56,7 @@ pub static mut OPTIONS: Options = Options {
     gen_stats: false,
     gen_trace_exits: false,
     dump_insns: false,
+    dump_disasm: false,
     verify_ctx: false,
     global_constant_state: false,
     dump_iseq_disasm: None,
@@ -128,6 +132,7 @@ pub fn parse_option(str_ptr: *const std::os::raw::c_char) -> Option<()> {
         ("stats", "") => unsafe { OPTIONS.gen_stats = true },
         ("trace-exits", "") => unsafe { OPTIONS.gen_trace_exits = true; OPTIONS.gen_stats = true },
         ("dump-insns", "") => unsafe { OPTIONS.dump_insns = true },
+        ("dump-disasm", "") => unsafe { OPTIONS.dump_disasm = true },
         ("verify-ctx", "") => unsafe { OPTIONS.verify_ctx = true },
         ("global-constant-state", "") => unsafe { OPTIONS.global_constant_state = true },
 
