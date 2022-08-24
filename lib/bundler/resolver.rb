@@ -127,13 +127,6 @@ module Bundler
         results = results_for(dependency) + locked_results
         results = results.select {|spec| requirement_satisfied_by?(locked_requirement, nil, spec) } if locked_requirement
 
-        if !@prerelease_specified[name] && locked_results.empty?
-          # Move prereleases to the beginning of the list, so they're considered
-          # last during resolution.
-          pre, results = results.partition {|spec| spec.version.prerelease? }
-          results = pre + results
-        end
-
         if results.any?
           results = @gem_version_promoter.sort_versions(dependency, results)
 
