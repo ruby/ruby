@@ -42,8 +42,7 @@ module Bundler
         remove_from_candidates(spec)
       end
 
-      @gem_version_promoter.prerelease_specified = @prerelease_specified = {}
-      requirements.each {|dep| @prerelease_specified[dep.name] ||= dep.prerelease? }
+      requirements.each {|dep| prerelease_specified[dep.name] ||= dep.prerelease? }
 
       verify_gemfile_dependencies_are_found!(requirements)
       result = @resolver.resolve(requirements).
@@ -214,6 +213,10 @@ module Bundler
       @base.base_requirements
     end
 
+    def prerelease_specified
+      @gem_version_promoter.prerelease_specified
+    end
+
     def remove_from_candidates(spec)
       @base.delete(spec)
 
@@ -248,7 +251,7 @@ module Bundler
           all - 1_000_000
         else
           search = search_for(dependency)
-          search = @prerelease_specified[dependency.name] ? search.count : search.count {|s| !s.version.prerelease? }
+          search = prerelease_specified[dependency.name] ? search.count : search.count {|s| !s.version.prerelease? }
           search - all
         end
       end
