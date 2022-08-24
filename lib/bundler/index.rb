@@ -78,15 +78,11 @@ module Bundler
     end
     protected :unsorted_search
 
-    def self.sort_specs(specs)
+    def sort_specs(specs)
       specs.sort_by do |s|
         platform_string = s.platform.to_s
         [s.version, platform_string == RUBY ? NULL : platform_string]
       end
-    end
-
-    def sort_specs(specs)
-      self.class.sort_specs(specs)
     end
 
     def local_search(query)
