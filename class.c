@@ -1755,6 +1755,15 @@ class_instance_method_list(int argc, const VALUE *argv, VALUE mod, int obj, int 
  *     B.instance_methods(true).include?(:method1) #=> true
  *     C.instance_methods(false)                   #=> [:method3]
  *     C.instance_methods.include?(:method2)       #=> true
+ *
+ *  Note that method visibility changes in the current class, as well as aliases,
+ *  are considered as methods of the current class by this method:
+ *
+ *     class C < B
+ *       alias method4 method2
+ *       protected :method2
+ *     end
+ *     C.instance_methods(false).sort               #=> [:method2, :method3, :method4]
  */
 
 VALUE
