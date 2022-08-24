@@ -3349,62 +3349,81 @@ tmcmp(struct tm *a, struct tm *b)
 /*
  * call-seq:
  *   Time.utc(year, month = 1, mday = 1, hour = 0, min = 0, sec = 0, usec = 0) -> new_time
- *   Time.utc(sec, min, hour, mday, month, year, dummy, *more_dummies)` -> new_time
+ *   Time.utc(sec, min, hour, mday, month, year, dummy, dummy, dummy, dummy) -> new_time
  *
  * Returns a new \Time object based the on given arguments,
- * always in the UTC timezone.
+ * in the UTC timezone.
  *
- * With one to seven arguments given, returns a new \Time object
- * based on the given values:
- *
- *   Time.utc(2000)  # => 2000-01-01 00:00:00 UTC
- *   Time.utc(-2000) # => -2000-01-01 00:00:00 UTC
- *
- * There are no minimum and maximum values for +year+;
- * otherwise, these are the minimum and maximum values:
- *
- *   Time.utc(-2000, 1, 1, 0, 0, 0, 0)
- *   # => -2000-01-01 00:00:00 UTC
- *   Time.utc(2000, 12, 31, 23, 59, 60, 999999)
- *   # => 2001-01-01 00:00:00.999999 UTC # Note the rollover caused by 60 sec.
- *
- * The values may be numerics convertible to integers:
- *
- *   Time.utc(Float(0.0), Rational(1, 1), 1.0, 0.0, 0.0, 0.0, 0.0)
- *   # => 0000-01-01 00:00:00 UTC
- *
- * Or string integers:
- *
- *   a = %w[0 1 1 0 0 0 0 0]
- *   # => ["0", "1", "1", "0", "0", "0", "0", "0"]
- *   Time.utc(*a) # => 0000-01-01 00:00:00 UTC
- *
- * And the value for +month+ may be a case-insensitive 3-letter month name:
- *
- *   a = %w[0 jan 1 0 0 0 0 2]
- *   # => ["0", "jan", "1", "0", "0", "0", "0", "2"]
- *   Time.utc(*a) # => 0000-01-01 00:00:00 UTC
- *   a = %w[0 JAN 1 0 0 0 0 2]
- *   # => ["0", "JAN", "1", "0", "0", "0", "0", "2"]
- *   Time.utc(*a) # => 0000-01-01 00:00:00 UTC
- *
- * As seen in the above examples, when seven or fewer arguments are given,
+ * With one to seven arguments given,
  * the arguments are interpreted as in the first calling sequence above:
  *
  *   Time.utc(year, month = 1, mday = 1, hour = 0, min = 0, sec = 0, usec = 0)
  *
- * For longer argument lists:
+ * Examples:
  *
- * - When eight arguments are given, the last is ignored.
- * - When nine arguments are given, ArgumentError is raised.
- * - When eleven or more arguments are give, ArgumentError is raised.
+ *   Time.utc(2000)  # => 2000-01-01 00:00:00 UTC
+ *   Time.utc(-2000) # => -2000-01-01 00:00:00 UTC
+ *
+ * There are no minimum and maximum values for the required argument +year+.
+ *
+ * For the optional arguments:
+ *
+ * - +month+: Month in range (1..12), or case-insensitive
+ *   3-letter month name:
+ *
+ *     Time.utc(2000, 1)     # => 2000-01-01 00:00:00 UTC
+ *     Time.utc(2000, 12)    # => 2000-12-01 00:00:00 UTC
+ *     Time.utc(2000, 'jan') # => 2000-01-01 00:00:00 UTC
+ *     Time.utc(2000, 'JAN') # => 2000-01-01 00:00:00 UTC
+ *
+ * - +mday+: Month day in range(1..31):
+ *
+ *     Time.utc(2000, 1, 1)  # => 2000-01-01 00:00:00 UTC
+ *     Time.utc(2000, 1, 31) # => 2000-01-31 00:00:00 UTC
+ *
+ * - +hour+: Hour in range (0..23), or 24 if +min+, +sec+, and +usec+
+ *   are zero:
+ *
+ *     Time.utc(2000, 1, 1, 0)  # => 2000-01-01 00:00:00 UTC
+ *     Time.utc(2000, 1, 1, 23) # => 2000-01-01 23:00:00 UTC
+ *     Time.utc(2000, 1, 1, 24) # => 2000-01-02 00:00:00 UTC
+ *
+ * - +min+: Minute in range (0..59):
+ *
+ *     Time.utc(2000, 1, 1, 0, 0)  # => 2000-01-01 00:00:00 UTC
+ *     Time.utc(2000, 1, 1, 0, 59) # => 2000-01-01 00:59:00 UTC
+ *
+ * - +sec+: Second in range (0..59), or 60 if +usec+ is zero:
+ *
+ *     Time.utc(2000, 1, 1, 0, 0, 0)  # => 2000-01-01 00:00:00 UTC
+ *     Time.utc(2000, 1, 1, 0, 0, 59) # => 2000-01-01 00:00:59 UTC
+ *     Time.utc(2000, 1, 1, 0, 0, 60) # => 2000-01-01 00:01:00 UTC
+ *
+ * - +usec+: Microsecond in range (0..999999):
+ *
+ *     Time.utc(2000, 1, 1, 0, 0, 0, 0)      # => 2000-01-01 00:00:00 UTC
+ *     Time.utc(2000, 1, 1, 0, 0, 0, 999999) # => 2000-01-01 00:00:00.999999 UTC
+ *
+ * The values may be:
+ *
+ * - Integers, as above.
+ * - Numerics convertible to integers:
+ *
+ *     Time.utc(Float(0.0), Rational(1, 1), 1.0, 0.0, 0.0, 0.0, 0.0)
+ *     # => 0000-01-01 00:00:00 UTC
+ *
+ * - \String integers:
+ *
+ *     a = %w[0 1 1 0 0 0 0 0]
+ *     # => ["0", "1", "1", "0", "0", "0", "0", "0"]
+ *     Time.utc(*a) # => 0000-01-01 00:00:00 UTC
  *
  * When exactly ten arguments are given,
  * the arguments are interpreted as in the second calling sequence above:
  *
  *   Time.utc(sec, min, hour, mday, month, year, dummy, dummy, dummy, dummy)
  *
- * where the seventh and following arguments (+dummy+, etc.) are ignored:
+ * where the +dummy+ arguments are ignored:
  *
  *   a = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
  *   # => [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
@@ -3417,22 +3436,12 @@ tmcmp(struct tm *a, struct tm *b)
  *   a = t.to_a   # => [5, 4, 3, 2, 1, 2000, 0, 2, false, nil]
  *   Time.utc(*a) # => 2000-01-02 03:04:05 UTC
  *
- * This form has the same argument values and ranges as the first form:
+ * The two forms have their first six arguments in common,
+ * though in different orders;
+ * the ranges of these common arguments are the same for both forms; see above.
  *
- *   a = [Float(0.0), Rational(1, 1), 2, 3, 4, 5, 6, 7, 8, 9]
- *   # => [0.0, (1/1), 2, 3, 4, 5, 6, 7, 8, 9]
- *   Time.utc(*a) # => 0005-04-03 02:01:00 UTC
- *
- *   a = %w[0 1 2 3 4 5 6 7 8 9]
- *   # => ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"]
- *   Time.utc(*a) # => 0005-04-03 02:01:00 UTC
- *
- *   a = %w[0 1 2 3 apr 5 6 7 8 9]
- *   # => ["0", "1", "2", "3", "apr", "5", "6", "7", "8", "9"]
- *   Time.utc(*a) # => 0005-04-03 02:01:00 UTC
- *   a = %w[0 1 2 3 APR 5 6 7 8 9]
- *   # => ["0", "1", "2", "3", "APR", "5", "6", "7", "8", "9"]
- *   Time.utc(*a) # => 0005-04-03 02:01:00 UTC
+ * Raises an exception if the number of arguments is eight, nine,
+ * or greater than ten.
  *
  * Time.gm is an alias for Time.utc.
  *
@@ -3456,10 +3465,10 @@ time_s_mkutc(int argc, VALUE *argv, VALUE klass)
  * Like Time.utc, except that the returned \Time object
  * has the local timezone, not the UTC timezone:
  *
- *   With seven arguments.
+ *   # With seven arguments.
  *   Time.local(0, 1, 2, 3, 4, 5, 6)
  *   # => 0000-01-02 03:04:05.000006 -0600
- *   With exactly ten arguments.
+ *   # With exactly ten arguments.
  *   Time.local(0, 1, 2, 3, 4, 5, 6, 7, 8, 9)
  *   # => 0005-04-03 02:01:00 -0600
  *

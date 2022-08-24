@@ -229,15 +229,17 @@ class Time
   #
   # - A \Time object, whose value is the basis for the returned time;
   #   also influenced by optional keyword argument +in:+ (see below).
-  # - A numeric number of seconds (since the epoch) for the returned time,
-  #   in the range <tt>0..60</tt>.
+  # - A numeric number of seconds (since the epoch) for the returned time.
   #
   # Examples:
   #
   #   t = Time.new(2000, 12, 31, 23, 59, 59) # => 2000-12-31 23:59:59 -0600
   #   secs = t.to_i                          # => 978328799
   #   Time.at(secs)                          # => 2000-12-31 23:59:59 -0600
-  #   Time.at(secs +0.5)                     # => 2000-12-31 23:59:59.5 -0600
+  #   Time.at(secs + 0.5)                    # => 2000-12-31 23:59:59.5 -0600
+  #   Time.at(1000000000)                    # => 2001-09-08 20:46:40 -0500
+  #   Time.at(0)                             # => 1969-12-31 18:00:00 -0600
+  #   Time.at(-1000000000)                   # => 1938-04-24 17:13:20 -0500
   #
   # Optional numeric argument +subsec+ and optional symbol argument +units+
   # work together to specify subseconds for the returned time;
@@ -250,14 +252,14 @@ class Time
   #     Time.at(secs, 1000, :millisecond)  # => 2001-01-01 00:00:00 -0600
   #     Time.at(secs, -1000, :millisecond) # => 2000-12-31 23:59:58 -0600
   #
-  # - +:microsecond+ or +:usec+: +subsec+ in range <tt>0..999999</tt>:
+  # - +:microsecond+ or +:usec+: +subsec+ in microseconds:
   #
   #     Time.at(secs, 0, :microsecond)        # => 2000-12-31 23:59:59 -0600
   #     Time.at(secs, 500000, :microsecond)   # => 2000-12-31 23:59:59.5 -0600
   #     Time.at(secs, 1000000, :microsecond)  # => 2001-01-01 00:00:00 -0600
   #     Time.at(secs, -1000000, :microsecond) # => 2000-12-31 23:59:58 -0600
   #
-  # - +:nsec+ (nanosecond): +subsec+ in range <tt>0..999999999</tt>:
+  # - +:nsec+ (nanosecond): +subsec+ in nanoseconds:
   #
   #     Time.at(secs, 0, :nanosecond)           # => 2000-12-31 23:59:59 -0600
   #     Time.at(secs, 500000000, :nanosecond)   # => 2000-12-31 23:59:59.5 -0600
@@ -265,16 +267,14 @@ class Time
   #     Time.at(secs, -1000000000, :nanosecond) # => 2000-12-31 23:59:58 -0600
   #
   #
-  # Optional keyword argument +in:+ specifies the timezone
+  # Optional keyword argument <tt>+in: zone</tt> specifies the timezone
   # for the returned time:
   #
-  # - <tt>in: zone</tt>: a timezone +zone+:
+  #   Time.at(secs, in: '+12:00') # => 2001-01-01 17:59:59 +1200
+  #   Time.at(secs, in: '-12:00') # => 2000-12-31 17:59:59 -1200
   #
-  #     Time.at(secs, in: '+12:00') # => 2001-01-01 17:59:59 +1200
-  #     Time.at(secs, in: '-12:00') # => 2000-12-31 17:59:59 -1200
-  #
-  #   For the forms of argument +zone+, see
-  #   {Timezone Specifiers}[rdoc-ref:timezone_specifiers.rdoc].
+  # For the forms of argument +zone+, see
+  # {Timezone Specifiers}[rdoc-ref:timezone_specifiers.rdoc].
   #
   def self.at(time, subsec = false, unit = :microsecond, in: nil)
     if Primitive.mandatory_only?
