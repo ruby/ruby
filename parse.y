@@ -4633,7 +4633,16 @@ opt_rescue	: k_rescue exc_list exc_var then
 			$$ = NEW_RESBODY($2,
 					 $3 ? block_append(p, node_assign(p, $3, NEW_ERRINFO(&@3), NO_LEX_CTXT, &@3), $5) : $5,
 					 $6, &@$);
-			fixpos($$, $2?$2:$5);
+
+                        if ($2) {
+                            fixpos($$, $2);
+                        }
+                        else if ($3) {
+                            fixpos($$, $3);
+                        }
+                        else {
+                            fixpos($$, $5);
+                        }
 		    /*% %*/
 		    /*% ripper: rescue!(escape_Qundef($2), escape_Qundef($3), escape_Qundef($5), escape_Qundef($6)) %*/
 		    }
