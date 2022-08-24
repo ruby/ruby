@@ -9759,6 +9759,9 @@ rstrip_offset(VALUE str, const char *s, const char *e, rb_encoding *enc)
     const char *t;
 
     rb_str_check_dummy_enc(enc);
+    if (rb_enc_str_coderange(str) == ENC_CODERANGE_BROKEN) {
+        rb_raise(rb_eEncCompatError, "invalid byte sequence in %s", rb_enc_name(enc));
+    }
     if (!s || s >= e) return 0;
     t = e;
 

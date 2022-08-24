@@ -2805,6 +2805,11 @@ CODE
     assert_equal("\u3042", s5)
 
     assert_raise(Encoding::CompatibilityError) { S("\u3042".encode("ISO-2022-JP")).rstrip! }
+    assert_raise(Encoding::CompatibilityError) { S("abc \x80 ".force_encoding('UTF-8')).rstrip! }
+    assert_raise(Encoding::CompatibilityError) { S("abc\x80 ".force_encoding('UTF-8')).rstrip! }
+    assert_raise(Encoding::CompatibilityError) { S("abc \x80".force_encoding('UTF-8')).rstrip! }
+    assert_raise(Encoding::CompatibilityError) { S("\x80".force_encoding('UTF-8')).rstrip! }
+    assert_raise(Encoding::CompatibilityError) { S(" \x80 ".force_encoding('UTF-8')).rstrip! }
   end
 
   def test_lstrip
