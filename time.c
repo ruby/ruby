@@ -2863,7 +2863,7 @@ validate_vtm(struct vtm *vtm)
 static void
 time_arg(int argc, const VALUE *argv, struct vtm *vtm)
 {
-    VALUE v[8];
+    VALUE v[7];
     VALUE subsecx = INT2FIX(0);
 
     vtm->year = INT2FIX(0);
@@ -2890,9 +2890,8 @@ time_arg(int argc, const VALUE *argv, struct vtm *vtm)
         vtm->isdst = RTEST(argv[8]) ? 1 : 0;
     }
     else {
-        rb_scan_args(argc, argv, "17", &v[0],&v[1],&v[2],&v[3],&v[4],&v[5],&v[6],&v[7]);
+        rb_scan_args(argc, argv, "16", &v[0], &v[1], &v[2], &v[3], &v[4], &v[5], &v[6]);
         /* v[6] may be usec or zone (parsedate) */
-        /* v[7] is wday (parsedate; ignored) */
         vtm->wday = VTM_WDAY_INITVAL;
         vtm->isdst = VTM_ISDST_INITVAL;
     }

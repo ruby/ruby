@@ -427,20 +427,20 @@ class TestTime < Test::Unit::TestCase
     assert_equal(t2000, Time.gm(2000, "1"))
     assert_equal(t2000, Time.gm(2000, 1, 1, 0, 0, 0, 0))
     assert_equal(t2000, Time.gm(2000, 1, 1, 0, 0, 0, "0"))
-    assert_equal(t2000, Time.gm(2000, 1, 1, 0, 0, "0", :foo, :foo))
+    assert_raise(ArgumentError) { Time.gm(2000, 1, 1, 0, 0, 0, 0, 0) }
     assert_raise(ArgumentError) { Time.gm(2000, 1, 1, 0, 0, -1, :foo, :foo) }
     assert_raise(ArgumentError) { Time.gm(2000, 1, 1, 0, 0, -1.0, :foo, :foo) }
     assert_raise(RangeError) do
-      Time.gm(2000, 1, 1, 0, 0, 10_000_000_000_000_000_001.0, :foo, :foo)
+      Time.gm(2000, 1, 1, 0, 0, 10_000_000_000_000_000_001.0)
     end
     assert_raise(ArgumentError) { Time.gm(2000, 1, 1, 0, 0, -(2**31), :foo, :foo) }
     o = Object.new
     def o.to_int; 0; end
     def o.to_r; nil; end
-    assert_raise(TypeError) { Time.gm(2000, 1, 1, 0, 0, o, :foo, :foo) }
+    assert_raise(TypeError) { Time.gm(2000, 1, 1, 0, 0, o) }
     class << o; remove_method(:to_r); end
     def o.to_r; ""; end
-    assert_raise(TypeError) { Time.gm(2000, 1, 1, 0, 0, o, :foo, :foo) }
+    assert_raise(TypeError) { Time.gm(2000, 1, 1, 0, 0, o) }
     class << o; remove_method(:to_r); end
     def o.to_r; Rational(11); end
     assert_equal(11, Time.gm(2000, 1, 1, 0, 0, o).sec)
