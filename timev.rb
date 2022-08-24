@@ -259,7 +259,7 @@ class Time
   #     Time.at(secs, 1000000, :microsecond)  # => 2001-01-01 00:00:00 -0600
   #     Time.at(secs, -1000000, :microsecond) # => 2000-12-31 23:59:58 -0600
   #
-  # - +:nsec+ (nanosecond): +subsec+ in nanoseconds:
+  # - +:nsec+ or +:nanosecond+: +subsec+ in nanoseconds:
   #
   #     Time.at(secs, 0, :nanosecond)           # => 2000-12-31 23:59:59 -0600
   #     Time.at(secs, 500000000, :nanosecond)   # => 2000-12-31 23:59:59.5 -0600
@@ -296,31 +296,57 @@ class Time
   #
   #   Time.new(2000, 1, 2, 3, 4, 5) # => 2000-01-02 03:04:05 -0600
   #
-  # There are no minimum and maximum values for +year+;
-  # otherwise, these are the minimum and maximum values:
+  # For the positional arguments (other than +zone+):
   #
-  #   Time.new(-2000, 1, 1, 0, 0, 0)
-  #   # => -2000-01-01 00:00:00 -0600
-  #   Time.new(2000, 12, 31, 23, 59, 60)
-  #   # => 2001-01-01 00:00:00 -0600 # Note the rollover cause by 60 sec.
+  # - +year+: Year, with no range limits:
   #
-  # The values may be numerics convertible to integers:
+  #     Time.new(999999999)  # => 999999999-01-01 00:00:00 -0600
+  #     Time.new(-999999999) # => -999999999-01-01 00:00:00 -0600
   #
-  #   Time.new(Float(0.0), Rational(1, 1), 2, 3, 4, 5)
-  #   # => 0000-01-02 03:04:05 -0600
+  # - +month+: Month in range (1..12), or case-insensitive
+  #   3-letter month name:
   #
-  # Or string integers:
+  #     Time.new(2000, 1)     # => 2000-01-01 00:00:00 -0600
+  #     Time.new(2000, 12)    # => 2000-12-01 00:00:00 -0600
+  #     Time.new(2000, 'jan') # => 2000-01-01 00:00:00 -0600
+  #     Time.new(2000, 'JAN') # => 2000-01-01 00:00:00 -0600
   #
-  #   a = %w[0 1 2 3 4 5]
-  #   # => ["0", "1", "2", "3", "4", "5"]
-  #   Time.new(*a) # => 0000-01-02 03:04:05 -0600
+  # - +mday+: Month day in range(1..31):
   #
-  # And the value for +month+ may be a case-insensitive 3-letter month name:
+  #     Time.new(2000, 1, 1)  # => 2000-01-01 00:00:00 -0600
+  #     Time.new(2000, 1, 31) # => 2000-01-31 00:00:00 -0600
   #
-  #   a = %w[0 jan 2 3 4 5] # => ["0", "jan", "2", "3", "4", "5"]
-  #   Time.new(*a) # => 0000-01-02 03:04:05 -0600
-  #   a = %w[0 JAN 2 3 4 5] # => ["0", "JAN", "2", "3", "4", "5"]
-  #   Time.new(*a) # => 0000-01-02 03:04:05 -0600
+  # - +hour+: Hour in range (0..23), or 24 if +min+, +sec+, and +usec+
+  #   are zero:
+  #
+  #     Time.new(2000, 1, 1, 0)  # => 2000-01-01 00:00:00 -0600
+  #     Time.new(2000, 1, 1, 23) # => 2000-01-01 23:00:00 -0600
+  #     Time.new(2000, 1, 1, 24) # => 2000-01-02 00:00:00 -0600
+  #
+  # - +min+: Minute in range (0..59):
+  #
+  #     Time.new(2000, 1, 1, 0, 0)  # => 2000-01-01 00:00:00 -0600
+  #     Time.new(2000, 1, 1, 0, 59) # => 2000-01-01 00:59:00 -0600
+  #
+  # - +sec+: Second in range (0..59), or 60 if +usec+ is zero:
+  #
+  #     Time.new(2000, 1, 1, 0, 0, 0)  # => 2000-01-01 00:00:00 -0600
+  #     Time.new(2000, 1, 1, 0, 0, 59) # => 2000-01-01 00:00:59 -0600
+  #     Time.new(2000, 1, 1, 0, 0, 60) # => 2000-01-01 00:01:00 -0600
+  #
+  # These values may be:
+  #
+  # - Integers, as above.
+  # - Numerics convertible to integers:
+  #
+  #     Time.new(Float(0.0), Rational(1, 1), 1.0, 0.0, 0.0, 0.0)
+  #     # => 0000-01-01 00:00:00 -0600
+  #
+  # - \String integers:
+  #
+  #     a = %w[0 1 1 0 0 0]
+  #     # => ["0", "1", "1", "0", "0", "0"]
+  #     Time.new(*a) # => 0000-01-01 00:00:00 -0600
   #
   # When positional argument +zone+ or keyword argument +in:+ is given,
   # the new \Time object is in the specified timezone.
