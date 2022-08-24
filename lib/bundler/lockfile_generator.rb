@@ -60,7 +60,7 @@ module Bundler
       handled = []
       definition.dependencies.sort_by(&:to_s).each do |dep|
         next if handled.include?(dep.name)
-        out << dep.to_lock
+        out << dep.to_lock << "\n"
         handled << dep.name
       end
     end

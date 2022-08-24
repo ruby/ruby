@@ -151,7 +151,7 @@ module Bundler
     def to_lock
       out = super
       out << "!" if source
-      out << "\n"
+      out
     end
 
     def specific?
