@@ -57,16 +57,12 @@ module Bundler
     # Search this index's specs, and any source indexes that this index knows
     # about, returning all of the results.
     def search(query)
-      sort_specs(unsorted_search(query))
-    end
-
-    def unsorted_search(query)
       results = local_search(query)
 
       seen = results.map(&:full_name).uniq unless @sources.empty?
 
       @sources.each do |source|
-        source.unsorted_search(query).each do |spec|
+        source.search(query).each do |spec|
           next if seen.include?(spec.full_name)
 
           seen << spec.full_name
@@ -75,14 +71,6 @@ module Bundler
       end
 
       results
-    end
-    protected :unsorted_search
-
-    def sort_specs(specs)
-      specs.sort_by do |s|
-        platform_string = s.platform.to_s
-        [s.version, platform_string == RUBY ? NULL : platform_string]
-      end
     end
 
     def local_search(query)

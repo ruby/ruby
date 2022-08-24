@@ -284,7 +284,7 @@ module Bundler
     end
 
     def gem_not_found_message(name, requirement, source, extra_message = "")
-      specs = source.specs.search(name)
+      specs = source.specs.search(name).sort_by {|s| [s.version, s.platform.to_s] }
       matching_part = name
       requirement_label = SharedHelpers.pretty_dependency(requirement)
       cache_message = begin
