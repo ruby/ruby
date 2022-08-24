@@ -445,6 +445,77 @@ RSpec.describe "bundle install with specific platforms" do
     L
   end
 
+  it "automatically fixes the lockfile if only RUBY platform is locked and some gem has no RUBY variant available" do
+    build_repo4 do
+      build_gem("sorbet-static-and-runtime", "0.5.10160") do |s|
+        s.add_runtime_dependency "sorbet", "= 0.5.10160"
+        s.add_runtime_dependency "sorbet-runtime", "= 0.5.10160"
+      end
+
+      build_gem("sorbet", "0.5.10160") do |s|
+        s.add_runtime_dependency "sorbet-static", "= 0.5.10160"
+      end
+
+      build_gem("sorbet-runtime", "0.5.10160")
+
+      build_gem("sorbet-static", "0.5.10160") do |s|
+        s.platform = Gem::Platform.local
+      end
+    end
+
+    gemfile <<~G
+      source "#{file_uri_for(gem_repo4)}"
+
+      gem "sorbet-static-and-runtime"
+    G
+
+    lockfile <<~L
+      GEM
+        remote: #{file_uri_for(gem_repo4)}/
+        specs:
+          sorbet (0.5.10160)
+            sorbet-static (= 0.5.10160)
+          sorbet-runtime (0.5.10160)
+          sorbet-static (0.5.10160-#{Gem::Platform.local})
+          sorbet-static-and-runtime (0.5.10160)
+            sorbet (= 0.5.10160)
+            sorbet-runtime (= 0.5.10160)
+
+      PLATFORMS
+        ruby
+
+      DEPENDENCIES
+        sorbet-static-and-runtime
+
+      BUNDLED WITH
+         #{Bundler::VERSION}
+    L
+
+    bundle "update"
+
+    expect(lockfile).to eq <<~L
+      GEM
+        remote: #{file_uri_for(gem_repo4)}/
+        specs:
+          sorbet (0.5.10160)
+            sorbet-static (= 0.5.10160)
+          sorbet-runtime (0.5.10160)
+          sorbet-static (0.5.10160-#{Gem::Platform.local})
+          sorbet-static-and-runtime (0.5.10160)
+            sorbet (= 0.5.10160)
+            sorbet-runtime (= 0.5.10160)
+
+      PLATFORMS
+        #{lockfile_platforms}
+
+      DEPENDENCIES
+        sorbet-static-and-runtime
+
+      BUNDLED WITH
+         #{Bundler::VERSION}
+    L
+  end
+
   it "does not remove ruby if gems for other platforms, and not present in the lockfile, exist in the Gemfile" do
     build_repo4 do
       build_gem "nokogiri", "1.13.8"

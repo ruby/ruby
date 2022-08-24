@@ -7,8 +7,6 @@ module Bundler
 
     include GemHelpers
 
-    attr_writer :platforms
-
     # Figures out the best possible configuration of gems that satisfies
     # the list of passed dependencies and any child dependencies without
     # causing any gem activation errors.

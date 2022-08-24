@@ -484,15 +484,13 @@ module Bundler
     def resolver
       @resolver ||= begin
         last_resolve = converge_locked_specs
+        remove_ruby_from_platforms_if_necessary!(dependencies)
         Resolver.new(source_requirements, last_resolve, gem_version_promoter, additional_base_requirements_for_resolve, platforms)
       end
     end
 
     def expanded_dependencies
-      @expanded_dependencies ||= begin
-        remove_ruby_from_platforms_if_necessary!(dependencies)
-        expand_dependencies(dependencies + metadata_dependencies, true)
-      end
+      @expanded_dependencies ||= expand_dependencies(dependencies + metadata_dependencies, true)
     end
 
     def filter_specs(specs, deps)
@@ -896,7 +894,6 @@ module Bundler
 
       remove_platform(Gem::Platform::RUBY)
       add_current_platform
-      resolver.platforms = @platforms
     end
 
     def source_map
