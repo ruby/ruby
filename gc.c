@@ -4772,6 +4772,14 @@ rb_mmtk_call_finalizer_inner(rb_objspace_t *objspace, VALUE obj, bool on_exit) {
         }
     }
     obj_free(objspace, obj);
+
+    // The object may contain dangling pointers after `obj_free`.
+    // Clear its flags field to ensure the GC does not attempt to scan it.
+    // TODO: We can instead clear the VO bit (a.k.a. alloc-bit) when mmtk-core supports that.
+    RVALUE *v = RANY(obj);
+    v->as.free.flags = 0;
+    v->as.free.next = NULL;
+
     RUBY_DEBUG_LOG("Object freed: %p: %s", resurrected, rb_type_str(RB_BUILTIN_TYPE(obj)));
 }
 
@@ -15358,6 +15366,11 @@ rb_mmtk_scan_object_ruby_style(void *object)
     rb_mmtk_assert_mmtk_worker();
 
     VALUE obj = (VALUE)object;
+
+    // TODO: When mmtk-core can clear the VO bit (a.k.a. alloc-bit), we can remove this.
+    if (RB_BUILTIN_TYPE(obj) == T_NONE) {
+        return;
+    }
 
     rb_objspace_t *objspace = &rb_objspace;
     gc_mark_children(objspace, obj);
