@@ -4,9 +4,9 @@ require "-test-/eval"
 
 class  EvalTest < Test::Unit::TestCase
   def test_rb_eval_string
-    a = 1
+    _a = 1
     assert_equal [self, 1, __method__], rb_eval_string(%q{
-      [self, a, __method__]
+      [self, _a, __method__]
     })
   end
 end
