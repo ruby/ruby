@@ -2531,6 +2531,64 @@ gc_event_hook_body(rb_execution_context_t *ec, rb_objspace_t *objspace, const rb
 
 #define gc_event_hook(objspace, event, data) gc_event_hook_prep(objspace, event, data, (void)0)
 
+#if USE_MMTK
+static inline void
+maybe_register_finalizable(VALUE obj) {
+    // Any object that has non-trivial cleaning-up code in `obj_free`
+    // should be registered as "finalizable" to MMTk.
+    switch (RB_BUILTIN_TYPE(obj)) {
+      case T_OBJECT:
+        // FIXME: Ordinary objects can be non-embedded, too,
+        // but there are just too many such objects,
+        // and few of them have large buffers.
+        // Just let them leak for now.
+        // We'll prioritize eliminating the underlying buffer of ordinary objects.
+        break;
+      case T_MODULE:
+      case T_CLASS:
+      case T_STRING:
+      case T_ARRAY:
+      case T_HASH:
+      case T_REGEXP:
+      case T_DATA:
+      case T_MATCH:
+      case T_FILE:
+      case T_ICLASS:
+      case T_BIGNUM:
+      case T_STRUCT:
+      case T_SYMBOL:
+      case T_IMEMO:
+        mmtk_add_finalizer((void*)obj);
+        RUBY_DEBUG_LOG("Object registered for finalization: %p: %s %s",
+            (void*)obj,
+            rb_type_str(RB_BUILTIN_TYPE(obj)),
+            klass==0?"(null)":rb_class2name(klass)
+            );
+        break;
+      case T_RATIONAL:
+      case T_COMPLEX:
+      case T_FLOAT:
+        // There are only counters increments for these types in `obj_free`
+        break;
+      case T_NIL:
+      case T_FIXNUM:
+      case T_TRUE:
+      case T_FALSE:
+        // These are non-heap value types.
+      case T_MOVED:
+        // Should not see this when object is just created.
+      case T_NODE:
+        // GC doesn't handle T_NODE.
+        rb_bug("maybe_register_finalizable: unexpected data type 0x%x(%p) 0x%"PRIxVALUE,
+               BUILTIN_TYPE(obj), (void*)obj, RBASIC(obj)->flags);
+        break;
+      default:
+        rb_bug("maybe_register_finalizable: unknown data type 0x%x(%p) 0x%"PRIxVALUE,
+               BUILTIN_TYPE(obj), (void*)obj, RBASIC(obj)->flags);
+    }
+}
+#endif
+
 static inline VALUE
 newobj_init(VALUE klass, VALUE flags, int wb_protected, rb_objspace_t *objspace, VALUE obj)
 {
@@ -2546,20 +2604,7 @@ newobj_init(VALUE klass, VALUE flags, int wb_protected, rb_objspace_t *objspace,
 
 #if USE_MMTK
     if (rb_mmtk_enabled_p()) {
-        switch (RB_BUILTIN_TYPE(obj)) {
-        case T_DATA:
-        case T_FILE:
-        case T_SYMBOL:
-            mmtk_register_finalizable((void*)obj);
-            RUBY_DEBUG_LOG("Object registered for finalization: %p: %s %s",
-                (void*)obj,
-                rb_type_str(RB_BUILTIN_TYPE(obj)),
-                klass==0?"(null)":rb_class2name(klass)
-                );
-            break;
-        default:
-            break; // Do nothing.
-        }
+        maybe_register_finalizable(obj);
     }
 #endif
 
@@ -4698,6 +4743,70 @@ force_chain_object(st_data_t key, st_data_t val, st_data_t arg)
 
 bool rb_obj_is_main_ractor(VALUE gv);
 
+#if USE_MMTK
+void
+rb_mmtk_call_finalizer_inner(rb_objspace_t *objspace, VALUE obj, bool on_exit) {
+    if (USE_RUBY_DEBUG_LOG) {
+        RUBY_DEBUG_LOG("Resurrected for obj_free: %p: %s %s",
+                resurrected,
+                rb_type_str(RB_BUILTIN_TYPE(obj)),
+                CLASS_OF(obj)==0?"(null)":rb_class2name(CLASS_OF(obj))
+                );
+    }
+    if (on_exit) {
+        if (rb_obj_is_thread(obj)) {
+            RUBY_DEBUG_LOG("Skipped thread: %p: %s", resurrected, rb_type_str(RB_BUILTIN_TYPE(obj)));
+            return;
+        }
+        if (rb_obj_is_mutex(obj)) {
+            RUBY_DEBUG_LOG("Skipped mutex: %p: %s", resurrected, rb_type_str(RB_BUILTIN_TYPE(obj)));
+            return;
+        }
+        if (rb_obj_is_fiber(obj)) {
+            RUBY_DEBUG_LOG("Skipped fiber: %p: %s", resurrected, rb_type_str(RB_BUILTIN_TYPE(obj)));
+            return;
+        }
+        if (rb_obj_is_main_ractor(obj)) {
+            RUBY_DEBUG_LOG("Skipped main ractor: %p: %s", resurrected, rb_type_str(RB_BUILTIN_TYPE(obj)));
+            return;
+        }
+    }
+    obj_free(objspace, obj);
+
+    // The object may contain dangling pointers after `obj_free`.
+    // Clear its flags field to ensure the GC does not attempt to scan it.
+    // TODO: We can instead clear the VO bit (a.k.a. alloc-bit) when mmtk-core supports that.
+    RVALUE *v = RANY(obj);
+    v->as.free.flags = 0;
+    v->as.free.next = NULL;
+
+    RUBY_DEBUG_LOG("Object freed: %p: %s", resurrected, rb_type_str(RB_BUILTIN_TYPE(obj)));
+}
+
+void
+rb_mmtk_call_finalizer(rb_objspace_t *objspace, bool on_exit)
+{
+    if (on_exit) {
+        struct RawVecOfObjRef resurrrected_objs = mmtk_get_all_finalizers();
+
+        for (size_t i = 0; i < resurrrected_objs.len; i++) {
+            void *resurrected = resurrrected_objs.ptr[resurrrected_objs.len - i - 1];
+
+            VALUE obj = (VALUE)resurrected;
+            rb_mmtk_call_finalizer_inner(objspace, obj, on_exit);
+        }
+
+        mmtk_free_raw_vec_of_obj_ref(resurrrected_objs);
+    } else {
+        void *resurrected;
+        while ((resurrected = mmtk_get_finalized_object()) != NULL) {
+            VALUE obj = (VALUE)resurrected;
+            rb_mmtk_call_finalizer_inner(objspace, obj, on_exit);
+        }
+    }
+}
+#endif
+
 void
 rb_objspace_call_finalizer(rb_objspace_t *objspace)
 {
@@ -4794,35 +4903,7 @@ rb_objspace_call_finalizer(rb_objspace_t *objspace)
 
 #if USE_MMTK
     if (rb_mmtk_enabled_p()) {
-        void *resurrected;
-        while ((resurrected = mmtk_poll_finalizable(true)) != NULL) {
-            VALUE obj = (VALUE)resurrected;
-            if (USE_RUBY_DEBUG_LOG) {
-                RUBY_DEBUG_LOG("Resurrected for obj_free: %p: %s %s",
-                        resurrected,
-                        rb_type_str(RB_BUILTIN_TYPE(obj)),
-                        CLASS_OF(obj)==0?"(null)":rb_class2name(CLASS_OF(obj))
-                        );
-            }
-            if (rb_obj_is_thread(obj)) {
-                RUBY_DEBUG_LOG("Skipped thread: %p: %s", resurrected, rb_type_str(RB_BUILTIN_TYPE(obj)));
-                continue;
-            }
-            if (rb_obj_is_mutex(obj)) {
-                RUBY_DEBUG_LOG("Skipped mutex: %p: %s", resurrected, rb_type_str(RB_BUILTIN_TYPE(obj)));
-                continue;
-            }
-            if (rb_obj_is_fiber(obj)) {
-                RUBY_DEBUG_LOG("Skipped fiber: %p: %s", resurrected, rb_type_str(RB_BUILTIN_TYPE(obj)));
-                continue;
-            }
-            if (rb_obj_is_main_ractor(obj)) {
-                RUBY_DEBUG_LOG("Skipped main ractor: %p: %s", resurrected, rb_type_str(RB_BUILTIN_TYPE(obj)));
-                continue;
-            }
-            obj_free(objspace, obj);
-            RUBY_DEBUG_LOG("Object freed: %p: %s", resurrected, rb_type_str(RB_BUILTIN_TYPE(obj)));
-        }
+        rb_mmtk_call_finalizer(objspace, true);
     }
 #endif
 
@@ -12433,11 +12514,21 @@ objspace_malloc_increase_body(rb_objspace_t *objspace, void *mem, size_t new_siz
     if (type == MEMOP_TYPE_MALLOC) {
       retry:
         if (malloc_increase > malloc_limit && ruby_native_thread_p() && !dont_gc_val()) {
+#if USE_MMTK
+            if (rb_mmtk_enabled_p()) {
+                mmtk_handle_user_collection_request((MMTk_VMMutatorThread)GET_THREAD());
+                gc_reset_malloc_info(objspace, true);
+                rb_mmtk_call_finalizer(objspace, false);
+            } else {
+#endif
             if (ruby_thread_has_gvl_p() && is_lazy_sweeping(objspace)) {
                 gc_rest(objspace); /* gc_rest can reduce malloc_increase */
                 goto retry;
             }
             garbage_collect_with_gvl(objspace, GPR_FLAG_MALLOC);
+#if USE_MMTK
+            }
+#endif
         }
     }
 
@@ -15275,6 +15366,11 @@ rb_mmtk_scan_object_ruby_style(void *object)
     rb_mmtk_assert_mmtk_worker();
 
     VALUE obj = (VALUE)object;
+
+    // TODO: When mmtk-core can clear the VO bit (a.k.a. alloc-bit), we can remove this.
+    if (RB_BUILTIN_TYPE(obj) == T_NONE) {
+        return;
+    }
 
     rb_objspace_t *objspace = &rb_objspace;
     gc_mark_children(objspace, obj);
