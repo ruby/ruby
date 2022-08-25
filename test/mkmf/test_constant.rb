@@ -4,8 +4,10 @@ require_relative 'base'
 class TestMkmfTryConstant < TestMkmf
   def setup
     if ENV.key?('APPVEYOR')
+      @omitted = true
       omit 'This test fails too often on AppVeyor'
     end
+    super
   end
 
   def test_simple
