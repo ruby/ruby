@@ -1,5 +1,0 @@
-- +zone+: a timezone +zone+.
-- <tt>in: zone</tt>: a timezone +zone+.
-
-For forms of +zone+, see
-{Timezone Specifiers}[rdoc-ref:timezone_specifiers.rdoc].

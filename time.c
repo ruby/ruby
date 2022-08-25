@@ -3348,32 +3348,100 @@ tmcmp(struct tm *a, struct tm *b)
 
 /*
  * call-seq:
- *   Time.utc(year, month = 1, day = 1, hour = 0, min = 0, sec_i = 0, usec = 0) -> new_time
- *   Time.utc(sec_i, min, hour, day, month, year, dummy, dummy, dummy, dummy) -> new_time
+ *   Time.utc(year, month = 1, mday = 1, hour = 0, min = 0, sec = 0, usec = 0) -> new_time
+ *   Time.utc(sec, min, hour, mday, month, year, dummy, dummy, dummy, dummy) -> new_time
  *
- * Returns a new \Time object based the on given arguments;
- * its timezone is UTC.
+ * Returns a new \Time object based the on given arguments,
+ * in the UTC timezone.
  *
- * In the first form (up to seven arguments), argument +year+ is required.
+ * With one to seven arguments given,
+ * the arguments are interpreted as in the first calling sequence above:
  *
- *   Time.utc(2000)                  # => 2000-01-01 00:00:00 UTC
- *   Time.utc(0, 1, 2, 3, 4, 5, 6.5) # => 0000-01-02 03:04:05.0000065 UTC
+ *   Time.utc(year, month = 1, mday = 1, hour = 0, min = 0, sec = 0, usec = 0)
  *
- * In the second form, all ten arguments are required,
- * though the last four are ignored.
- * This form is useful for creating a time from a 10-element array
- * such as is returned by #to_a.
+ * Examples:
  *
- *   array = Time.now.to_a
- *   # => [55, 14, 10, 7, 7, 2022, 4, 188, true, "Central Daylight Time"]
- *   array[5] = 2000
- *   Time.utc(*array) # => 2000-07-07 10:14:55 UTC
+ *   Time.utc(2000)  # => 2000-01-01 00:00:00 UTC
+ *   Time.utc(-2000) # => -2000-01-01 00:00:00 UTC
  *
- * Parameters:
- * :include: doc/time/year.rdoc
- * :include: doc/time/mon-min.rdoc
- * :include: doc/time/sec_i.rdoc
- * :include: doc/time/usec.rdoc
+ * There are no minimum and maximum values for the required argument +year+.
+ *
+ * For the optional arguments:
+ *
+ * - +month+: Month in range (1..12), or case-insensitive
+ *   3-letter month name:
+ *
+ *     Time.utc(2000, 1)     # => 2000-01-01 00:00:00 UTC
+ *     Time.utc(2000, 12)    # => 2000-12-01 00:00:00 UTC
+ *     Time.utc(2000, 'jan') # => 2000-01-01 00:00:00 UTC
+ *     Time.utc(2000, 'JAN') # => 2000-01-01 00:00:00 UTC
+ *
+ * - +mday+: Month day in range(1..31):
+ *
+ *     Time.utc(2000, 1, 1)  # => 2000-01-01 00:00:00 UTC
+ *     Time.utc(2000, 1, 31) # => 2000-01-31 00:00:00 UTC
+ *
+ * - +hour+: Hour in range (0..23), or 24 if +min+, +sec+, and +usec+
+ *   are zero:
+ *
+ *     Time.utc(2000, 1, 1, 0)  # => 2000-01-01 00:00:00 UTC
+ *     Time.utc(2000, 1, 1, 23) # => 2000-01-01 23:00:00 UTC
+ *     Time.utc(2000, 1, 1, 24) # => 2000-01-02 00:00:00 UTC
+ *
+ * - +min+: Minute in range (0..59):
+ *
+ *     Time.utc(2000, 1, 1, 0, 0)  # => 2000-01-01 00:00:00 UTC
+ *     Time.utc(2000, 1, 1, 0, 59) # => 2000-01-01 00:59:00 UTC
+ *
+ * - +sec+: Second in range (0..59), or 60 if +usec+ is zero:
+ *
+ *     Time.utc(2000, 1, 1, 0, 0, 0)  # => 2000-01-01 00:00:00 UTC
+ *     Time.utc(2000, 1, 1, 0, 0, 59) # => 2000-01-01 00:00:59 UTC
+ *     Time.utc(2000, 1, 1, 0, 0, 60) # => 2000-01-01 00:01:00 UTC
+ *
+ * - +usec+: Microsecond in range (0..999999):
+ *
+ *     Time.utc(2000, 1, 1, 0, 0, 0, 0)      # => 2000-01-01 00:00:00 UTC
+ *     Time.utc(2000, 1, 1, 0, 0, 0, 999999) # => 2000-01-01 00:00:00.999999 UTC
+ *
+ * The values may be:
+ *
+ * - Integers, as above.
+ * - Numerics convertible to integers:
+ *
+ *     Time.utc(Float(0.0), Rational(1, 1), 1.0, 0.0, 0.0, 0.0, 0.0)
+ *     # => 0000-01-01 00:00:00 UTC
+ *
+ * - \String integers:
+ *
+ *     a = %w[0 1 1 0 0 0 0 0]
+ *     # => ["0", "1", "1", "0", "0", "0", "0", "0"]
+ *     Time.utc(*a) # => 0000-01-01 00:00:00 UTC
+ *
+ * When exactly ten arguments are given,
+ * the arguments are interpreted as in the second calling sequence above:
+ *
+ *   Time.utc(sec, min, hour, mday, month, year, dummy, dummy, dummy, dummy)
+ *
+ * where the +dummy+ arguments are ignored:
+ *
+ *   a = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+ *   # => [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+ *   Time.utc(*a) # => 0005-04-03 02:01:00 UTC
+ *
+ * This form is useful for creating a \Time object from a 10-element
+ * array returned by Time.to_a:
+ *
+ *   t = Time.new(2000, 1, 2, 3, 4, 5, 6) # => 2000-01-02 03:04:05 +000006
+ *   a = t.to_a   # => [5, 4, 3, 2, 1, 2000, 0, 2, false, nil]
+ *   Time.utc(*a) # => 2000-01-02 03:04:05 UTC
+ *
+ * The two forms have their first six arguments in common,
+ * though in different orders;
+ * the ranges of these common arguments are the same for both forms; see above.
+ *
+ * Raises an exception if the number of arguments is eight, nine,
+ * or greater than ten.
  *
  * Time.gm is an alias for Time.utc.
  *
@@ -3391,36 +3459,19 @@ time_s_mkutc(int argc, VALUE *argv, VALUE klass)
 
 /*
  * call-seq:
- *   Time.local(year, month = 1, day = 1, hour = 0, min = 0, sec_i = 0, usec = 0) -> new_time
- *   Time.local(sec, min, hour, day, month, year, dummy, dummy, dummy, dummy) -> new_time
+ *   Time.local(year, month = 1, mday = 1, hour = 0, min = 0, sec = 0, usec = 0) -> new_time
+ *   Time.local(sec, min, hour, mday, month, year, dummy, dummy, dummy, dummy) -> new_time
  *
- * Returns a new \Time object based the on given arguments;
- * its timezone is the local timezone.
+ * Like Time.utc, except that the returned \Time object
+ * has the local timezone, not the UTC timezone:
  *
- * In the first form (up to seven arguments), argument +year+ is required.
+ *   # With seven arguments.
+ *   Time.local(0, 1, 2, 3, 4, 5, 6)
+ *   # => 0000-01-02 03:04:05.000006 -0600
+ *   # With exactly ten arguments.
+ *   Time.local(0, 1, 2, 3, 4, 5, 6, 7, 8, 9)
+ *   # => 0005-04-03 02:01:00 -0600
  *
- *   Time.local(2000)                   # => 2000-01-01 00:00:00 -0600
- *   Time.local(0, 1, 2, 3, 4, 5, 6.5)  # => 0000-01-02 03:04:05.0000065 -0600
- *
- * In the second form, all ten arguments are required,
- * though the last four are ignored.
- * This form is useful for creating a time from a 10-element array
- * such as those returned by #to_a.
- *
- *   array = Time.now.to_a
- *   # => [57, 18, 10, 7, 7, 2022, 4, 188, true, "Central Daylight Time"]
- *   array[5] = 2000
- *   Time.local(*array) # => 2000-07-07 10:18:57 -0500
- *
- * Parameters:
- * :include: doc/time/year.rdoc
- * :include: doc/time/mon-min.rdoc
- * :include: doc/time/sec_i.rdoc
- * :include: doc/time/usec.rdoc
- *
- * Time.mktime is an alias for Time.local.
- *
- * Related: Time.utc.
  */
 
 static VALUE

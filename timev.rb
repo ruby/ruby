@@ -223,48 +223,58 @@ class Time
     Primitive.time_s_now(Primitive.arg!(:in))
   end
 
-  # _Time_
+  # Returns a new \Time object based on the given arguments.
   #
-  # This form accepts a \Time object +time+
-  # and optional keyword argument +in+:
+  # Required argument +time+ may be either of:
   #
-  #   Time.at(Time.new)               # => 2021-04-26 08:52:31.6023486 -0500
-  #   Time.at(Time.new, in: '+09:00') # => 2021-04-26 22:52:31.6023486 +0900
+  # - A \Time object, whose value is the basis for the returned time;
+  #   also influenced by optional keyword argument +in:+ (see below).
+  # - A numeric number of seconds (since the epoch) for the returned time.
   #
-  # _Seconds_
+  # Examples:
   #
-  # This form accepts a numeric number of seconds +sec+
-  # and optional keyword argument +in+:
+  #   t = Time.new(2000, 12, 31, 23, 59, 59) # => 2000-12-31 23:59:59 -0600
+  #   secs = t.to_i                          # => 978328799
+  #   Time.at(secs)                          # => 2000-12-31 23:59:59 -0600
+  #   Time.at(secs + 0.5)                    # => 2000-12-31 23:59:59.5 -0600
+  #   Time.at(1000000000)                    # => 2001-09-08 20:46:40 -0500
+  #   Time.at(0)                             # => 1969-12-31 18:00:00 -0600
+  #   Time.at(-1000000000)                   # => 1938-04-24 17:13:20 -0500
   #
-  #   Time.at(946702800)               # => 1999-12-31 23:00:00 -0600
-  #   Time.at(946702800, in: '+09:00') # => 2000-01-01 14:00:00 +0900
+  # Optional numeric argument +subsec+ and optional symbol argument +units+
+  # work together to specify subseconds for the returned time;
+  # argument +units+ specifies the units for +subsec+:
   #
-  # <em>Seconds with Subseconds and Units</em>
+  # - +:millisecond+: +subsec+ in milliseconds:
   #
-  # This form accepts an integer number of seconds +sec_i+,
-  # a numeric number of milliseconds +msec+,
-  # a symbol argument for the subsecond unit type (defaulting to :usec),
-  # and an optional keyword argument +in+:
+  #     Time.at(secs, 0, :millisecond)     # => 2000-12-31 23:59:59 -0600
+  #     Time.at(secs, 500, :millisecond)   # => 2000-12-31 23:59:59.5 -0600
+  #     Time.at(secs, 1000, :millisecond)  # => 2001-01-01 00:00:00 -0600
+  #     Time.at(secs, -1000, :millisecond) # => 2000-12-31 23:59:58 -0600
   #
-  #   Time.at(946702800, 500, :millisecond)               # => 1999-12-31 23:00:00.5 -0600
-  #   Time.at(946702800, 500, :millisecond, in: '+09:00') # => 2000-01-01 14:00:00.5 +0900
-  #   Time.at(946702800, 500000)                             # => 1999-12-31 23:00:00.5 -0600
-  #   Time.at(946702800, 500000, :usec)                      # => 1999-12-31 23:00:00.5 -0600
-  #   Time.at(946702800, 500000, :microsecond)               # => 1999-12-31 23:00:00.5 -0600
-  #   Time.at(946702800, 500000, in: '+09:00')               # => 2000-01-01 14:00:00.5 +0900
-  #   Time.at(946702800, 500000, :usec, in: '+09:00')        # => 2000-01-01 14:00:00.5 +0900
-  #   Time.at(946702800, 500000, :microsecond, in: '+09:00') # => 2000-01-01 14:00:00.5 +0900
-  #   Time.at(946702800, 500000000, :nsec)                     # => 1999-12-31 23:00:00.5 -0600
-  #   Time.at(946702800, 500000000, :nanosecond)               # => 1999-12-31 23:00:00.5 -0600
-  #   Time.at(946702800, 500000000, :nsec, in: '+09:00')       # => 2000-01-01 14:00:00.5 +0900
-  #   Time.at(946702800, 500000000, :nanosecond, in: '+09:00') # => 2000-01-01 14:00:00.5 +0900
+  # - +:microsecond+ or +:usec+: +subsec+ in microseconds:
   #
-  # Parameters:
-  # :include: doc/time/sec_i.rdoc
-  # :include: doc/time/msec.rdoc
-  # :include: doc/time/usec.rdoc
-  # :include: doc/time/nsec.rdoc
-  # :include: doc/time/in.rdoc
+  #     Time.at(secs, 0, :microsecond)        # => 2000-12-31 23:59:59 -0600
+  #     Time.at(secs, 500000, :microsecond)   # => 2000-12-31 23:59:59.5 -0600
+  #     Time.at(secs, 1000000, :microsecond)  # => 2001-01-01 00:00:00 -0600
+  #     Time.at(secs, -1000000, :microsecond) # => 2000-12-31 23:59:58 -0600
+  #
+  # - +:nsec+ or +:nanosecond+: +subsec+ in nanoseconds:
+  #
+  #     Time.at(secs, 0, :nanosecond)           # => 2000-12-31 23:59:59 -0600
+  #     Time.at(secs, 500000000, :nanosecond)   # => 2000-12-31 23:59:59.5 -0600
+  #     Time.at(secs, 1000000000, :nanosecond)  # => 2001-01-01 00:00:00 -0600
+  #     Time.at(secs, -1000000000, :nanosecond) # => 2000-12-31 23:59:58 -0600
+  #
+  #
+  # Optional keyword argument <tt>+in: zone</tt> specifies the timezone
+  # for the returned time:
+  #
+  #   Time.at(secs, in: '+12:00') # => 2001-01-01 17:59:59 +1200
+  #   Time.at(secs, in: '-12:00') # => 2000-12-31 17:59:59 -1200
+  #
+  # For the forms of argument +zone+, see
+  # {Timezone Specifiers}[rdoc-ref:timezone_specifiers.rdoc].
   #
   def self.at(time, subsec = false, unit = :microsecond, in: nil)
     if Primitive.mandatory_only?
@@ -274,24 +284,81 @@ class Time
     end
   end
 
-  # Returns a new \Time object based on the given arguments.
+  # Returns a new \Time object based on the given arguments,
+  # by default in the local timezone.
   #
   # With no positional arguments, returns the value of Time.now:
   #
-  #   Time.new                                       # => 2021-04-24 17:27:46.0512465 -0500
+  #   Time.new # => 2021-04-24 17:27:46.0512465 -0500
   #
-  # Otherwise, returns a new \Time object based on the given parameters:
+  # With one to six arguments, returns a new \Time object
+  # based on the given arguments, in the local timezone.
   #
-  #   Time.new(2000)                                 # => 2000-01-01 00:00:00 -0600
-  #   Time.new(2000, 12, 31, 23, 59, 59.5)           # => 2000-12-31 23:59:59.5 -0600
-  #   Time.new(2000, 12, 31, 23, 59, 59.5, '+09:00') # => 2000-12-31 23:59:59.5 +0900
+  #   Time.new(2000, 1, 2, 3, 4, 5) # => 2000-01-02 03:04:05 -0600
   #
-  # Parameters:
+  # For the positional arguments (other than +zone+):
   #
-  # :include: doc/time/year.rdoc
-  # :include: doc/time/mon-min.rdoc
-  # :include: doc/time/sec.rdoc
-  # :include: doc/time/zone_and_in.rdoc
+  # - +year+: Year, with no range limits:
+  #
+  #     Time.new(999999999)  # => 999999999-01-01 00:00:00 -0600
+  #     Time.new(-999999999) # => -999999999-01-01 00:00:00 -0600
+  #
+  # - +month+: Month in range (1..12), or case-insensitive
+  #   3-letter month name:
+  #
+  #     Time.new(2000, 1)     # => 2000-01-01 00:00:00 -0600
+  #     Time.new(2000, 12)    # => 2000-12-01 00:00:00 -0600
+  #     Time.new(2000, 'jan') # => 2000-01-01 00:00:00 -0600
+  #     Time.new(2000, 'JAN') # => 2000-01-01 00:00:00 -0600
+  #
+  # - +mday+: Month day in range(1..31):
+  #
+  #     Time.new(2000, 1, 1)  # => 2000-01-01 00:00:00 -0600
+  #     Time.new(2000, 1, 31) # => 2000-01-31 00:00:00 -0600
+  #
+  # - +hour+: Hour in range (0..23), or 24 if +min+, +sec+, and +usec+
+  #   are zero:
+  #
+  #     Time.new(2000, 1, 1, 0)  # => 2000-01-01 00:00:00 -0600
+  #     Time.new(2000, 1, 1, 23) # => 2000-01-01 23:00:00 -0600
+  #     Time.new(2000, 1, 1, 24) # => 2000-01-02 00:00:00 -0600
+  #
+  # - +min+: Minute in range (0..59):
+  #
+  #     Time.new(2000, 1, 1, 0, 0)  # => 2000-01-01 00:00:00 -0600
+  #     Time.new(2000, 1, 1, 0, 59) # => 2000-01-01 00:59:00 -0600
+  #
+  # - +sec+: Second in range (0..59), or 60 if +usec+ is zero:
+  #
+  #     Time.new(2000, 1, 1, 0, 0, 0)  # => 2000-01-01 00:00:00 -0600
+  #     Time.new(2000, 1, 1, 0, 0, 59) # => 2000-01-01 00:00:59 -0600
+  #     Time.new(2000, 1, 1, 0, 0, 60) # => 2000-01-01 00:01:00 -0600
+  #
+  # These values may be:
+  #
+  # - Integers, as above.
+  # - Numerics convertible to integers:
+  #
+  #     Time.new(Float(0.0), Rational(1, 1), 1.0, 0.0, 0.0, 0.0)
+  #     # => 0000-01-01 00:00:00 -0600
+  #
+  # - \String integers:
+  #
+  #     a = %w[0 1 1 0 0 0]
+  #     # => ["0", "1", "1", "0", "0", "0"]
+  #     Time.new(*a) # => 0000-01-01 00:00:00 -0600
+  #
+  # When positional argument +zone+ or keyword argument +in:+ is given,
+  # the new \Time object is in the specified timezone.
+  # For the forms of argument +zone+, see
+  # {Timezone Specifiers}[rdoc-ref:timezone_specifiers.rdoc]:
+  #
+  #   Time.new(2000, 1, 1, 0, 0, 0, '+12:00')
+  #   # => 2000-01-01 00:00:00 +1200
+  #   Time.new(2000, 1, 1, 0, 0, 0, in: '-12:00')
+  #   # => 2000-01-01 00:00:00 -1200
+  #   Time.new(in: '-12:00')
+  #   # => 2022-08-23 08:49:26.1941467 -1200
   #
   def initialize(year = (now = true), mon = nil, mday = nil, hour = nil, min = nil, sec = nil, zone = nil, in: nil)
     if zone
