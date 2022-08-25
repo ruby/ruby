@@ -3580,6 +3580,12 @@ iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list, const int do_tailcal
         }
     }
 
+    if (IS_INSN_ID(iobj, getblockparam)) {
+        if (IS_NEXT_INSN_ID(&iobj->link, branchif) || IS_NEXT_INSN_ID(&iobj->link, branchunless)) {
+            iobj->insn_id = BIN(getblockparamproxy);
+        }
+    }
+
     return COMPILE_OK;
 }
 
