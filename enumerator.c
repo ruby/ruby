@@ -2447,13 +2447,8 @@ lazy_take_proc(VALUE proc_entry, struct MEMO *result, VALUE memos, long memo_ind
     }
 
     remain = NUM2LONG(memo);
-    if (remain == 0) {
-        LAZY_MEMO_SET_BREAK(result);
-    }
-    else {
-        if (--remain == 0) LAZY_MEMO_SET_BREAK(result);
-        rb_ary_store(memos, memo_index, LONG2NUM(remain));
-    }
+    if (--remain == 0) LAZY_MEMO_SET_BREAK(result);
+    rb_ary_store(memos, memo_index, LONG2NUM(remain));
     return result;
 }
 
