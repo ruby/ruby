@@ -247,6 +247,9 @@ line,5,jkl
   def assert_parse_errors_out(data, **options)
     assert_raise(CSV::MalformedCSVError) do
       timeout = 0.2
+      if defined?(RubyVM::YJIT.enabled?) and RubyVM::YJIT.enabled?
+        timeout = 1  # for --yjit-call-threshold=1
+      end
       if defined?(RubyVM::MJIT.enabled?) and RubyVM::MJIT.enabled?
         timeout = 5  # for --jit-wait
       end
