@@ -82,6 +82,79 @@ RSpec.describe "Resolving platform craziness" do
     should_resolve_as %w[foo-1.0.0-x64-mingw32]
   end
 
+  describe "on a linux platform", :rubygems => ">= 3.1.0.pre.1" do
+    # Ruby's platform is *-linux => platform's libc is glibc, so not musl
+    # Ruby's platform is *-linux-musl => platform's libc is musl, so not glibc
+    # Gem's platform is *-linux => gem is glibc + maybe musl compatible
+    # Gem's platform is *-linux-musl => gem is musl compatible but not glibc
+
+    it "favors the platform version-specific gem on a version-specifying linux platform" do
+      @index = build_index do
+        gem "foo", "1.0.0"
+        gem "foo", "1.0.0", "x86_64-linux"
+        gem "foo", "1.0.0", "x86_64-linux-musl"
+      end
+      dep "foo"
+      platforms "x86_64-linux-musl"
+
+      should_resolve_as %w[foo-1.0.0-x86_64-linux-musl]
+    end
+
+    it "favors the version-less gem over the version-specific gem on a gnu linux platform" do
+      @index = build_index do
+        gem "foo", "1.0.0"
+        gem "foo", "1.0.0", "x86_64-linux"
+        gem "foo", "1.0.0", "x86_64-linux-musl"
+      end
+      dep "foo"
+      platforms "x86_64-linux"
+
+      should_resolve_as %w[foo-1.0.0-x86_64-linux]
+    end
+
+    it "ignores the platform version-specific gem on a gnu linux platform" do
+      @index = build_index do
+        gem "foo", "1.0.0", "x86_64-linux-musl"
+      end
+      dep "foo"
+      platforms "x86_64-linux"
+
+      should_not_resolve
+    end
+
+    it "falls back to the platform version-less gem on a linux platform with a version" do
+      @index = build_index do
+        gem "foo", "1.0.0"
+        gem "foo", "1.0.0", "x86_64-linux"
+      end
+      dep "foo"
+      platforms "x86_64-linux-musl"
+
+      should_resolve_as %w[foo-1.0.0-x86_64-linux]
+    end
+
+    it "falls back to the ruby platform gem on a gnu linux platform when only a version-specifying gem is available" do
+      @index = build_index do
+        gem "foo", "1.0.0"
+        gem "foo", "1.0.0", "x86_64-linux-musl"
+      end
+      dep "foo"
+      platforms "x86_64-linux"
+
+      should_resolve_as %w[foo-1.0.0]
+    end
+
+    it "falls back to the platform version-less gem on a version-specifying linux platform and no ruby platform gem is available" do
+      @index = build_index do
+        gem "foo", "1.0.0", "x86_64-linux"
+      end
+      dep "foo"
+      platforms "x86_64-linux-musl"
+
+      should_resolve_as %w[foo-1.0.0-x86_64-linux]
+    end
+  end
+
   it "takes the latest ruby gem if the platform specific gem doesn't match the required_ruby_version" do
     @index = build_index do
       gem "foo", "1.0.0"
