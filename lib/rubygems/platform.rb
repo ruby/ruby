@@ -25,7 +25,7 @@ class Gem::Platform
     platforms.any? do |local_platform|
       platform.nil? ||
         local_platform == platform ||
-        (local_platform != Gem::Platform::RUBY && local_platform =~ platform)
+        (local_platform != Gem::Platform::RUBY && platform =~ local_platform)
     end
   end
   private_class_method :match_platforms?
@@ -70,7 +70,7 @@ class Gem::Platform
     when String then
       arch = arch.split "-"
 
-      if arch.length > 2 && arch.last !~ (/\d/) # reassemble x86-linux-gnu
+      if arch.length > 2 && arch.last !~ /\d+(\.\d+)?$/ # reassemble x86-linux-{libc}
         extra = arch.pop
         arch.last << "-#{extra}"
       end
@@ -102,7 +102,7 @@ class Gem::Platform
       when /^dalvik(\d+)?$/ then        [ "dalvik",    $1  ]
       when /^dotnet$/ then              [ "dotnet",    nil ]
       when /^dotnet([\d.]*)/ then       [ "dotnet",    $1  ]
-      when /linux-?((?!gnu)\w+)?/ then  [ "linux",     $1  ]
+      when /linux-?(\w+)?/ then         [ "linux",     $1  ]
       when /mingw32/ then               [ "mingw32",   nil ]
       when /mingw-?(\w+)?/ then         [ "mingw",     $1  ]
       when /(mswin\d+)(\_(\d+))?/ then
@@ -151,10 +151,17 @@ class Gem::Platform
   ##
   # Does +other+ match this platform?  Two platforms match if they have the
   # same CPU, or either has a CPU of 'universal', they have the same OS, and
-  # they have the same version, or either has no version.
+  # they have the same version, or either one has no version
   #
   # Additionally, the platform will match if the local CPU is 'arm' and the
   # other CPU starts with "arm" (for generic ARM family support).
+  #
+  # Of note, this method is not commutative. Indeed the OS 'linux' has a
+  # special case: the version is the libc name, yet while "no version" stands
+  # as a wildcard for a binary gem platform (as for other OSes), for the
+  # runtime platform "no version" stands for 'gnu'. To be able to disinguish
+  # these, the method receiver is the gem platform, while the argument is
+  # the runtime platform.
 
   def ===(other)
     return nil unless Gem::Platform === other
@@ -171,7 +178,11 @@ class Gem::Platform
       @os == other.os &&
 
       # version
-      (@version.nil? || other.version.nil? || @version == other.version)
+      (
+        (@os != "linux" && (@version.nil? || other.version.nil?)) ||
+        (@os == "linux" && ((@version.nil? && ["gnu", "musl"].include?(other.version)) || (@version == "gnu" && other.version.nil?))) ||
+        @version == other.version
+      )
   end
 
   ##

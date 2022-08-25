@@ -1,13 +1,22 @@
 .\" generated with Ronn/v0.7.3
 .\" http://github.com/rtomayko/ronn/tree/0.7.3
 .
-.TH "BUNDLE\-CONFIG" "1" "July 2022" "" ""
+.TH "BUNDLE\-CONFIG" "1" "August 2022" "" ""
 .
 .SH "NAME"
 \fBbundle\-config\fR \- Set bundler configuration options
 .
 .SH "SYNOPSIS"
-\fBbundle config\fR [list|get|set|unset] [\fIname\fR [\fIvalue\fR]]
+\fBbundle config\fR list
+.
+.br
+\fBbundle config\fR [get] NAME
+.
+.br
+\fBbundle config\fR [set] NAME VALUE
+.
+.br
+\fBbundle config\fR unset NAME
 .
 .SH "DESCRIPTION"
 This command allows you to interact with Bundler\'s configuration system\.

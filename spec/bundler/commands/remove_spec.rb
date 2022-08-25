@@ -522,7 +522,7 @@ RSpec.describe "bundle remove" do
       end
     end
 
-    context "when gems can not be removed from other gemfile" do
+    context "when gems cannot be removed from other gemfile" do
       it "shows error" do
         create_file "Gemfile-other", <<-G
           gem "rails"; gem "rack"
@@ -574,7 +574,7 @@ RSpec.describe "bundle remove" do
     end
 
     context "when gem present in gemfiles but could not be removed from one from one of them" do
-      it "removes gem which can be removed and shows warning for file from which it can not be removed" do
+      it "removes gem which can be removed and shows warning for file from which it cannot be removed" do
         create_file "Gemfile-other", <<-G
           gem "rack"
         G

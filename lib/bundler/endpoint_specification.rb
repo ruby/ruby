@@ -3,7 +3,7 @@
 module Bundler
   # used for Creating Specifications from the Gemcutter Endpoint
   class EndpointSpecification < Gem::Specification
-    include MatchPlatform
+    include MatchRemoteMetadata
 
     attr_reader :name, :version, :platform, :checksum
     attr_accessor :source, :remote, :dependencies
@@ -20,17 +20,6 @@ module Bundler
       @remote_specification = nil
 
       parse_metadata(metadata)
-    end
-
-    def required_ruby_version
-      @required_ruby_version ||= _remote_specification.required_ruby_version
-    end
-
-    # A fallback is included because the original version of the specification
-    # API didn't include that field, so some marshalled specs in the index have it
-    # set to +nil+.
-    def required_rubygems_version
-      @required_rubygems_version ||= _remote_specification.required_rubygems_version || Gem::Requirement.default
     end
 
     def fetch_platform

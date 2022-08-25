@@ -18,6 +18,7 @@ bundle-lock(1)        bundle-lock.1
 bundle-open(1)        bundle-open.1
 bundle-outdated(1)    bundle-outdated.1
 bundle-platform(1)    bundle-platform.1
+bundle-plugin(1)      bundle-plugin.1
 bundle-pristine(1)    bundle-pristine.1
 bundle-remove(1)      bundle-remove.1
 bundle-show(1)        bundle-show.1

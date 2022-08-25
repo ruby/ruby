@@ -443,6 +443,22 @@ RSpec.describe "gemcutter's dependency API" do
     expect(the_bundle).to include_gems "back_deps 1.0"
   end
 
+  it "does not fetch all marshaled specs" do
+    build_repo2 do
+      build_gem "foo", "1.0"
+      build_gem "foo", "2.0"
+    end
+
+    install_gemfile <<-G, :artifice => "endpoint", :env => { "BUNDLER_SPEC_GEM_REPO" => gem_repo2.to_s }, :verbose => true
+      source "#{source_uri}"
+
+      gem "foo"
+    G
+
+    expect(out).to include("foo-2.0.gemspec.rz")
+    expect(out).not_to include("foo-1.0.gemspec.rz")
+  end
+
   it "does not refetch if the only unmet dependency is bundler" do
     build_repo2 do
       build_gem "bundler_dep" do |s|

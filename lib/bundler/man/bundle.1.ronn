@@ -97,6 +97,9 @@ We divide `bundle` subcommands into primary commands and utilities:
 * [`bundle remove(1)`](bundle-remove.1.html):
   Removes gems from the Gemfile
 
+* [`bundle plugin(1)`](bundle-plugin.1.html):
+  Manage Bundler plugins
+
 ## PLUGINS
 
 When running a command that isn't listed in PRIMARY COMMANDS or UTILITIES,
