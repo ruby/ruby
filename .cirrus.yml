@@ -91,6 +91,7 @@ yjit_task:
     matrix:
       CC: clang-12
       CC: gcc-11
+  timeout_in: 90m
   id_script: id
   set_env_script:
     # Set `GNUMAKEFLAGS`, because the flags are GNU make specific. Note using
@@ -136,7 +137,7 @@ yjit_task:
   make_btest_script: source $HOME/.cargo/env && make -j btest RUN_OPTS="--yjit-call-threshold=1 --yjit-verify-ctx"
 
   # Check that we can run test-all successfully (running TestGCCompact separately until we fix its performance)
-  make_test_all_script: source $HOME/.cargo/env && make -j test-all RUN_OPTS="--yjit-call-threshold=1" TESTOPTS='--name=!/TestGCCompact/'
+  make_test_all_script: source $HOME/.cargo/env && make -j test-all RUN_OPTS="--yjit-call-threshold=1" TESTOPTS="$RUBY_TESTOPTS"' --name=!/TestGCCompact/'
   test_gc_compact_script: source $HOME/.cargo/env && make -j test-all RUN_OPTS="--yjit-call-threshold=1" TESTS="test/ruby/test_gc_compact.rb"
 
   # Check that we can run test-spec successfully
