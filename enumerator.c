@@ -173,9 +173,11 @@ struct producer {
 
 typedef struct MEMO *lazyenum_proc_func(VALUE, struct MEMO *, VALUE, long);
 typedef VALUE lazyenum_size_func(VALUE, VALUE);
+typedef int lazyenum_precheck_func(VALUE proc_entry);
 typedef struct {
     lazyenum_proc_func *proc;
     lazyenum_size_func *size;
+    lazyenum_precheck_func *precheck;
 } lazyenum_funcs;
 
 struct proc_entry {
@@ -519,8 +521,8 @@ rb_enumeratorize(VALUE obj, VALUE meth, int argc, const VALUE *argv)
     return rb_enumeratorize_with_size(obj, meth, argc, argv, 0);
 }
 
-static VALUE
-lazy_to_enum_i(VALUE self, VALUE meth, int argc, const VALUE *argv, rb_enumerator_size_func *size_fn, int kw_splat);
+static VALUE lazy_to_enum_i(VALUE self, VALUE meth, int argc, const VALUE *argv, rb_enumerator_size_func *size_fn, int kw_splat);
+static int lazy_precheck(VALUE procs);
 
 VALUE
 rb_enumeratorize_with_size_kw(VALUE obj, VALUE meth, int argc, const VALUE *argv, rb_enumerator_size_func *size_fn, int kw_splat)
@@ -598,9 +600,10 @@ enumerator_block_call(VALUE obj, rb_block_call_func *func, VALUE arg)
 static VALUE
 enumerator_each(int argc, VALUE *argv, VALUE obj)
 {
+    struct enumerator *e = enumerator_ptr(obj);
+
     if (argc > 0) {
-        struct enumerator *e = enumerator_ptr(obj = rb_obj_dup(obj));
-        VALUE args = e->args;
+        VALUE args = (e = enumerator_ptr(obj = rb_obj_dup(obj)))->args;
         if (args) {
 #if SIZEOF_INT < SIZEOF_LONG
             /* check int range overflow */
@@ -617,6 +620,9 @@ enumerator_each(int argc, VALUE *argv, VALUE obj)
         e->size_fn = 0;
     }
     if (!rb_block_given_p()) return obj;
+
+    if (!lazy_precheck(e->procs)) return Qnil;
+
     return enumerator_block_call(obj, 0, obj);
 }
 
@@ -1676,6 +1682,22 @@ lazy_generator_init(VALUE enumerator, VALUE procs)
     return generator;
 }
 
+static int
+lazy_precheck(VALUE procs)
+{
+    if (RTEST(procs)) {
+        long num_procs = RARRAY_LEN(procs), i = num_procs;
+        while (i-- > 0) {
+            VALUE proc = RARRAY_AREF(procs, i);
+            struct proc_entry *entry = proc_entry_ptr(proc);
+            lazyenum_precheck_func *precheck = entry->fn->precheck;
+            if (precheck && !precheck(proc)) return FALSE;
+        }
+    }
+
+    return TRUE;
+}
+
 /*
  * Document-class: Enumerator::Lazy
  *
@@ -2444,8 +2466,15 @@ lazy_take_size(VALUE entry, VALUE receiver)
     return LONG2NUM(len);
 }
 
+static int
+lazy_take_precheck(VALUE proc_entry)
+{
+    struct proc_entry *entry = proc_entry_ptr(proc_entry);
+    return entry->memo != INT2FIX(0);
+}
+
 static const lazyenum_funcs lazy_take_funcs = {
-    lazy_take_proc, lazy_take_size,
+    lazy_take_proc, lazy_take_size, lazy_take_precheck,
 };
 
 /*
@@ -2459,20 +2488,14 @@ static VALUE
 lazy_take(VALUE obj, VALUE n)
 {
     long len = NUM2LONG(n);
-    int argc = 0;
-    VALUE argv[2];
 
     if (len < 0) {
         rb_raise(rb_eArgError, "attempt to take negative size");
     }
 
-    if (len == 0) {
-       argv[0] = sym_cycle;
-       argv[1] = INT2NUM(0);
-       argc = 2;
-    }
+    n = LONG2NUM(len);          /* no more conversion */
 
-    return lazy_add_method(obj, argc, argv, n, rb_ary_new3(1, n), &lazy_take_funcs);
+    return lazy_add_method(obj, 0, 0, n, rb_ary_new3(1, n), &lazy_take_funcs);
 }
 
 static struct MEMO *
