@@ -3256,6 +3256,7 @@ vm_call_symbol(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp,
             return vm_call_method_each_type(ec, reg_cfp, calling);
           case METHOD_VISI_PRIVATE:
             vm_cc_method_missing_reason_set(cc, MISSING_PRIVATE);
+            break;
           case METHOD_VISI_PROTECTED:
             vm_cc_method_missing_reason_set(cc, MISSING_PROTECTED);
             break;
