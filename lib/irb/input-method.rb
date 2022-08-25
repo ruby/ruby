@@ -320,6 +320,11 @@ module IRB
         [195, 164], # The "ä" that appears when Alt+d is pressed on xterm.
         [226, 136, 130] # The "∂" that appears when Alt+d in pressed on iTerm2.
       ]
+      begin
+        require 'rdoc'
+      rescue LoadError
+        return nil
+      end
 
       if just_cursor_moving and completion_journey_data.nil?
         return nil
