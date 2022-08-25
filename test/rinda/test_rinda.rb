@@ -498,7 +498,7 @@ class TupleSpaceProxyTest < Test::Unit::TestCase
   def setup
     if RUBY_PLATFORM.match?(/mingw/)
       @omitted = true
-      omit 'This test seems to randomly hang on GitHub Actions MinGW UCRT64'
+      omit 'This test seems to randomly hang on GitHub Actions MinGW'
     end
     super
     ThreadGroup.new.add(Thread.current)
