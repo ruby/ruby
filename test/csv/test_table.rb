@@ -274,6 +274,22 @@ A,B,C,Type,Index
     @table.each { |row| assert_instance_of(CSV::Row, row) }
   end
 
+  def test_each_by_col_duplicated_headers
+    table = CSV.parse(<<-CSV, headers: true)
+a,a,,,b
+1,2,3,4,5
+11,12,13,14,15
+    CSV
+    assert_equal([
+                   ["a", ["1", "11"]],
+                   ["a", ["2", "12"]],
+                   [nil, ["3", "13"]],
+                   [nil, ["4", "14"]],
+                   ["b", ["5", "15"]],
+                 ],
+                 table.by_col.each.to_a)
+  end
+
   def test_each_split
     yielded_values = []
     @table.each do |column1, column2, column3|
@@ -318,6 +334,43 @@ A,B,C
 
     # with headers
     assert_equal(csv, @header_table.to_csv)
+  end
+
+  def test_to_csv_limit_positive
+    assert_equal(<<-CSV, @table.to_csv(limit: 2))
+A,B,C
+1,2,3
+4,5,6
+    CSV
+  end
+
+  def test_to_csv_limit_positive_over
+    assert_equal(<<-CSV, @table.to_csv(limit: 5))
+A,B,C
+1,2,3
+4,5,6
+7,8,9
+    CSV
+  end
+
+  def test_to_csv_limit_zero
+    assert_equal(<<-CSV, @table.to_csv(limit: 0))
+A,B,C
+    CSV
+  end
+
+  def test_to_csv_limit_negative
+    assert_equal(<<-CSV, @table.to_csv(limit: -2))
+A,B,C
+1,2,3
+4,5,6
+    CSV
+  end
+
+  def test_to_csv_limit_negative_over
+    assert_equal(<<-CSV, @table.to_csv(limit: -5))
+A,B,C
+    CSV
   end
 
   def test_append
@@ -549,7 +602,25 @@ A
     assert_send([Encoding, :compatible?,
                  Encoding.find("US-ASCII"),
                  @table.inspect.encoding],
-            "inspect() was not ASCII compatible." )
+                "inspect() was not ASCII compatible." )
+  end
+
+  def test_inspect_with_rows
+    additional_rows  = [ CSV::Row.new(%w{A B C}, [101, 102, 103]),
+                         CSV::Row.new(%w{A B C}, [104, 105, 106]),
+                         CSV::Row.new(%w{A B C}, [107, 108, 109]) ]
+    table = CSV::Table.new(@rows + additional_rows)
+    str_table = table.inspect
+
+    assert_equal(<<-CSV, str_table)
+#<CSV::Table mode:col_or_row row_count:7>
+A,B,C
+1,2,3
+4,5,6
+7,8,9
+101,102,103
+104,105,106
+    CSV
   end
 
   def test_dig_mixed

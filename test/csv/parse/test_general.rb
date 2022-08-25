@@ -199,6 +199,32 @@ line,5,jkl
                              field_size_limit: 2048 )
   end
 
+  def test_field_size_limit_max_allowed
+    column = "abcde"
+    assert_equal([[column]],
+                 CSV.parse("\"#{column}\"",
+                           field_size_limit: column.size + 1))
+  end
+
+  def test_field_size_limit_quote_simple
+    column = "abcde"
+    assert_parse_errors_out("\"#{column}\"",
+                            field_size_limit: column.size)
+  end
+
+  def test_field_size_limit_no_quote_implicitly
+    column = "abcde"
+    assert_parse_errors_out("#{column}",
+                            field_size_limit: column.size)
+  end
+
+  def test_field_size_limit_no_quote_explicitly
+    column = "abcde"
+    assert_parse_errors_out("#{column}",
+                            field_size_limit: column.size,
+                            quote_char: nil)
+  end
+
   def test_field_size_limit_in_extended_column_not_exceeding
     data = <<~DATA
       "a","b"
@@ -219,6 +245,59 @@ line,5,jkl
       ",""
     DATA
     assert_parse_errors_out(data, field_size_limit: 5)
+  end
+
+  def test_max_field_size_controls_lookahead
+    assert_parse_errors_out( 'valid,fields,"' + BIG_DATA + '"',
+                             max_field_size: 2048 )
+  end
+
+  def test_max_field_size_max_allowed
+    column = "abcde"
+    assert_equal([[column]],
+                 CSV.parse("\"#{column}\"",
+                           max_field_size: column.size))
+  end
+
+  def test_max_field_size_quote_simple
+    column = "abcde"
+    assert_parse_errors_out("\"#{column}\"",
+                            max_field_size: column.size - 1)
+  end
+
+  def test_max_field_size_no_quote_implicitly
+    column = "abcde"
+    assert_parse_errors_out("#{column}",
+                            max_field_size: column.size - 1)
+  end
+
+  def test_max_field_size_no_quote_explicitly
+    column = "abcde"
+    assert_parse_errors_out("#{column}",
+                            max_field_size: column.size - 1,
+                            quote_char: nil)
+  end
+
+  def test_max_field_size_in_extended_column_not_exceeding
+    data = <<~DATA
+      "a","b"
+      "
+      2
+      ",""
+    DATA
+    assert_nothing_raised(CSV::MalformedCSVError) do
+      CSV.parse(data, max_field_size: 3)
+    end
+  end
+
+  def test_max_field_size_in_extended_column_exceeding
+    data = <<~DATA
+      "a","b"
+      "
+      2345
+      ",""
+    DATA
+    assert_parse_errors_out(data, max_field_size: 4)
   end
 
   def test_row_sep_auto_cr
@@ -246,11 +325,7 @@ line,5,jkl
   private
   def assert_parse_errors_out(data, **options)
     assert_raise(CSV::MalformedCSVError) do
-      timeout = 0.2
-      if defined?(RubyVM::MJIT.enabled?) and RubyVM::MJIT.enabled?
-        timeout = 5  # for --jit-wait
-      end
-      Timeout.timeout(timeout) do
+      Timeout.timeout(0.2) do
         CSV.parse(data, **options)
         fail("Parse didn't error out")
       end
