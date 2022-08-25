@@ -5632,13 +5632,14 @@ Init_Time(void)
     rb_gc_register_mark_object(str_empty);
 
     rb_cTime = rb_define_class("Time", rb_cObject);
+    VALUE scTime = rb_singleton_class(rb_cTime);
     rb_include_module(rb_cTime, rb_mComparable);
 
     rb_define_alloc_func(rb_cTime, time_s_alloc);
     rb_define_singleton_method(rb_cTime, "utc", time_s_mkutc, -1);
     rb_define_singleton_method(rb_cTime, "local", time_s_mktime, -1);
-    rb_define_alias(rb_singleton_class(rb_cTime), "gm", "utc");
-    rb_define_alias(rb_singleton_class(rb_cTime), "mktime", "local");
+    rb_define_alias(scTime, "gm", "utc");
+    rb_define_alias(scTime, "mktime", "local");
 
     rb_define_method(rb_cTime, "to_i", time_to_i, 0);
     rb_define_method(rb_cTime, "to_f", time_to_f, 0);
@@ -5707,7 +5708,7 @@ Init_Time(void)
 
     /* methods for marshaling */
     rb_define_private_method(rb_cTime, "_dump", time_dump, -1);
-    rb_define_private_method(rb_singleton_class(rb_cTime), "_load", time_load, 1);
+    rb_define_private_method(scTime, "_load", time_load, 1);
 #if 0
     /* Time will support marshal_dump and marshal_load in the future (1.9 maybe) */
     rb_define_private_method(rb_cTime, "marshal_dump", time_mdump, 0);
