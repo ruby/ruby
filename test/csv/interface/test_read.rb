@@ -205,6 +205,16 @@ class TestCSVInterfaceRead < Test::Unit::TestCase
     end
   end
 
+  def test_open_with_newline
+    CSV.open(@input.path, col_sep: "\t", universal_newline: true) do |csv|
+      assert_equal(@rows, csv.to_a)
+    end
+    File.binwrite(@input.path, "1,2,3\r\n" "4,5\n")
+    CSV.open(@input.path, newline: :universal) do |csv|
+      assert_equal(@rows, csv.to_a)
+    end
+  end
+
   def test_parse
     assert_equal(@rows,
                  CSV.parse(@data, col_sep: "\t", row_sep: "\r\n"))
