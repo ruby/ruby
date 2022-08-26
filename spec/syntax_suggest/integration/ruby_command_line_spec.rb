@@ -46,6 +46,8 @@ module SyntaxSuggest
     end
 
     it "detects require error and adds a message with auto mode" do
+      skip if ruby_core?
+
       Dir.mktmpdir do |dir|
         tmpdir = Pathname(dir)
         script = tmpdir.join("script.rb")
@@ -77,6 +79,7 @@ module SyntaxSuggest
     it "annotates a syntax error in Ruby 3.2+ when require is not used" do
       pending("Support for SyntaxError#detailed_message monkeypatch needed https://gist.github.com/schneems/09f45cc23b9a8c46e9af6acbb6e6840d?permalink_comment_id=4172585#gistcomment-4172585")
 
+      skip if ruby_core?
       skip if Gem::Version.new(RUBY_VERSION) < Gem::Version.new("3.2")
 
       Dir.mktmpdir do |dir|
