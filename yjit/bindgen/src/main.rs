@@ -273,6 +273,7 @@ fn main() {
         .allowlist_function("rb_RSTRING_LEN")
         .allowlist_function("rb_ENCODING_GET")
         .allowlist_function("rb_yjit_exit_locations_dict")
+        .allowlist_function("rb_yjit_icache_invalidate")
 
         // from vm_sync.h
         .allowlist_function("rb_vm_barrier")
