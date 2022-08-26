@@ -1357,18 +1357,18 @@ new_child_iseq_with_callback(rb_iseq_t *iseq, const struct rb_iseq_new_with_call
 static void
 set_catch_except_p(struct rb_iseq_constant_body *body)
 {
-    body->catch_except_p = TRUE;
+    body->catch_except_p = true;
     if (body->parent_iseq != NULL) {
         set_catch_except_p(ISEQ_BODY(body->parent_iseq));
     }
 }
 
-/* Set body->catch_except_p to TRUE if the ISeq may catch an exception. If it is FALSE,
-   JIT-ed code may be optimized.  If we are extremely conservative, we should set TRUE
+/* Set body->catch_except_p to true if the ISeq may catch an exception. If it is false,
+   JIT-ed code may be optimized.  If we are extremely conservative, we should set true
    if catch table exists.  But we want to optimize while loop, which always has catch
    table entries for break/next/redo.
 
-   So this function sets TRUE for limited ISeqs with break/next/redo catch table entries
+   So this function sets true for limited ISeqs with break/next/redo catch table entries
    whose child ISeq would really raise an exception. */
 static void
 update_catch_except_flags(struct rb_iseq_constant_body *body)
@@ -1399,7 +1399,7 @@ update_catch_except_flags(struct rb_iseq_constant_body *body)
         if (entry->type != CATCH_TYPE_BREAK
             && entry->type != CATCH_TYPE_NEXT
             && entry->type != CATCH_TYPE_REDO) {
-            body->catch_except_p = TRUE;
+            body->catch_except_p = true;
             break;
         }
     }
