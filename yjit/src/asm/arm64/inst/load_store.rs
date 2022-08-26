@@ -1,3 +1,5 @@
+use super::super::arg::truncate_imm;
+
 /// The size of the operands being operated on.
 enum Size {
     Size32 = 0b10,
@@ -110,14 +112,12 @@ const FAMILY: u32 = 0b0100;
 impl From<LoadStore> for u32 {
     /// Convert an instruction into a 32-bit value.
     fn from(inst: LoadStore) -> Self {
-        let imm9 = (inst.imm9 as u32) & ((1 << 9) - 1);
-
         0
         | ((inst.size as u32) << 30)
         | (0b11 << 28)
         | (FAMILY << 25)
         | ((inst.opc as u32) << 22)
-        | (imm9 << 12)
+        | (truncate_imm::<_, 9>(inst.imm9) << 12)
         | ((inst.idx as u32) << 10)
         | ((inst.rn as u32) << 5)
         | (inst.rt as u32)

@@ -1,3 +1,5 @@
+use super::super::arg::truncate_imm;
+
 /// The upper bit of the bit number to test.
 #[derive(Debug)]
 enum B5 {
@@ -77,11 +79,7 @@ impl From<TestBit> for u32 {
     /// Convert an instruction into a 32-bit value.
     fn from(inst: TestBit) -> Self {
         let b40 = (inst.b40 & 0b11111) as u32;
-        let mut imm14 = (inst.imm14 & ((1 << 13) - 1)) as u32;
-
-        if inst.imm14 < 0 {
-            imm14 |= (1 << 13);
-        }
+        let imm14 = truncate_imm::<_, 14>(inst.imm14);
 
         0
         | ((inst.b5 as u32) << 31)

@@ -1,3 +1,5 @@
+use super::super::arg::truncate_imm;
+
 /// The operation to perform for this instruction.
 enum Opc {
     /// When the registers are 32-bits wide.
@@ -114,18 +116,12 @@ const FAMILY: u32 = 0b0100;
 impl From<RegisterPair> for u32 {
     /// Convert an instruction into a 32-bit value.
     fn from(inst: RegisterPair) -> Self {
-        let mut imm7 = (inst.imm7 as u32) & ((1 << 7) - 1);
-
-        if inst.imm7 < 0 {
-            imm7 |= 1 << 6;
-        }
-
         0
         | ((inst.opc as u32) << 30)
         | (1 << 29)
         | (FAMILY << 25)
         | ((inst.index as u32) << 22)
-        | (imm7 << 15)
+        | (truncate_imm::<_, 7>(inst.imm7) << 15)
         | ((inst.rt2 as u32) << 10)
         | ((inst.rn as u32) << 5)
         | (inst.rt1 as u32)

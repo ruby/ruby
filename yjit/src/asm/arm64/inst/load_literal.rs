@@ -1,3 +1,5 @@
+use super::super::arg::truncate_imm;
+
 /// The size of the operands being operated on.
 enum Opc {
     Size32 = 0b00,
@@ -50,13 +52,11 @@ const FAMILY: u32 = 0b0100;
 impl From<LoadLiteral> for u32 {
     /// Convert an instruction into a 32-bit value.
     fn from(inst: LoadLiteral) -> Self {
-        let imm19 = (inst.imm19 as u32) & ((1 << 19) - 1);
-
         0
         | ((inst.opc as u32) << 30)
         | (1 << 28)
         | (FAMILY << 25)
-        | (imm19 << 5)
+        | (truncate_imm::<_, 19>(inst.imm19) << 5)
         | (inst.rt as u32)
     }
 }

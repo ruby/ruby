@@ -1,4 +1,4 @@
-use super::super::arg::Sf;
+use super::super::arg::{Sf, truncate_uimm};
 
 /// Whether or not this is a NOT instruction.
 enum N {
@@ -124,8 +124,6 @@ const FAMILY: u32 = 0b0101;
 impl From<LogicalReg> for u32 {
     /// Convert an instruction into a 32-bit value.
     fn from(inst: LogicalReg) -> Self {
-        let imm6 = (inst.imm6 as u32) & ((1 << 6) - 1);
-
         0
         | ((inst.sf as u32) << 31)
         | ((inst.opc as u32) << 29)
@@ -133,7 +131,7 @@ impl From<LogicalReg> for u32 {
         | ((inst.shift as u32) << 22)
         | ((inst.n as u32) << 21)
         | ((inst.rm as u32) << 16)
-        | (imm6 << 10)
+        | (truncate_uimm::<_, 6>(inst.imm6) << 10)
         | ((inst.rn as u32) << 5)
         | inst.rd as u32
     }
