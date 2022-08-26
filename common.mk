@@ -1423,7 +1423,7 @@ no-test-syntax-suggest-prepare: no-test-syntax-suggest-precheck
 yes-test-syntax-suggest-prepare: yes-test-syntax-suggest-precheck
 	$(ACTIONS_GROUP)
 	$(XRUBY) -C "$(srcdir)" bin/gem install --no-document \
-		--install-dir .bundle --conservative "bundler" "rake" "rspec:~> 3" "ruby-prof"
+		--install-dir .bundle --conservative "bundler" "rake" "rspec:~> 3" #"ruby-prof"
 	$(ACTIONS_ENDGROUP)
 
 RSPECOPTS =
