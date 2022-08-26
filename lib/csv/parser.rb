@@ -2,14 +2,9 @@
 
 require "strscan"
 
-require_relative "delete_suffix"
 require_relative "input_record_separator"
-require_relative "match_p"
 require_relative "row"
 require_relative "table"
-
-using CSV::DeleteSuffix if CSV.const_defined?(:DeleteSuffix)
-using CSV::MatchP if CSV.const_defined?(:MatchP)
 
 class CSV
   # Note: Don't use this class directly. This is an internal class.
@@ -763,9 +758,10 @@ class CSV
       case headers
       when Array
         @raw_headers = headers
+        quoted_fields = [false] * @raw_headers.size
         @use_headers = true
       when String
-        @raw_headers = parse_headers(headers)
+        @raw_headers, quoted_fields = parse_headers(headers)
         @use_headers = true
       when nil, false
         @raw_headers = nil
@@ -775,21 +771,28 @@ class CSV
         @use_headers = true
       end
       if @raw_headers
-        @headers = adjust_headers(@raw_headers)
+        @headers = adjust_headers(@raw_headers, quoted_fields)
       else
         @headers = nil
       end
     end
 
     def parse_headers(row)
-      CSV.parse_line(row,
-                     col_sep:    @column_separator,
-                     row_sep:    @row_separator,
-                     quote_char: @quote_character)
+      quoted_fields = []
+      converter = lambda do |field, info|
+        quoted_fields << info.quoted?
+        field
+      end
+      headers = CSV.parse_line(row,
+                               col_sep:    @column_separator,
+                               row_sep:    @row_separator,
+                               quote_char: @quote_character,
+                               converters: [converter])
+      [headers, quoted_fields]
     end
 
-    def adjust_headers(headers)
-      adjusted_headers = @header_fields_converter.convert(headers, nil, @lineno)
+    def adjust_headers(headers, quoted_fields)
+      adjusted_headers = @header_fields_converter.convert(headers, nil, @lineno, quoted_fields)
       adjusted_headers.each {|h| h.freeze if h.is_a? String}
       adjusted_headers
     end
@@ -933,9 +936,11 @@ class CSV
         if line.empty?
           next if @skip_blanks
           row = []
+          quoted_fields = []
         else
           line = strip_value(line)
           row = line.split(@split_column_separator, -1)
+          quoted_fields = [false] * row.size
           if @max_field_size
             row.each do |column|
               validate_field_size(column)
@@ -949,7 +954,7 @@ class CSV
           end
         end
         @last_line = original_line
-        emit_row(row, &block)
+        emit_row(row, quoted_fields, &block)
       end
     end
 
@@ -971,25 +976,30 @@ class CSV
             next
           end
           row = []
+          quoted_fields = []
         elsif line.include?(@cr) or line.include?(@lf)
           @scanner.keep_back
           @need_robust_parsing = true
           return parse_quotable_robust(&block)
         else
           row = line.split(@split_column_separator, -1)
+          quoted_fields = []
           n_columns = row.size
           i = 0
           while i < n_columns
             column = row[i]
             if column.empty?
+              quoted_fields << false
               row[i] = nil
             else
               n_quotes = column.count(@quote_character)
               if n_quotes.zero?
+                quoted_fields << false
                 # no quote
               elsif n_quotes == 2 and
                    column.start_with?(@quote_character) and
                    column.end_with?(@quote_character)
+                quoted_fields << true
                 row[i] = column[1..-2]
               else
                 @scanner.keep_back
@@ -1004,13 +1014,14 @@ class CSV
         @scanner.keep_drop
         @scanner.keep_start
         @last_line = original_line
-        emit_row(row, &block)
+        emit_row(row, quoted_fields, &block)
       end
       @scanner.keep_drop
     end
 
     def parse_quotable_robust(&block)
       row = []
+      quoted_fields = []
       skip_needless_lines
       start_row
       while true
@@ -1024,20 +1035,24 @@ class CSV
         end
         if parse_column_end
           row << value
+          quoted_fields << @quoted_column_value
         elsif parse_row_end
           if row.empty? and value.nil?
-            emit_row([], &block) unless @skip_blanks
+            emit_row([], [], &block) unless @skip_blanks
           else
             row << value
-            emit_row(row, &block)
+            quoted_fields << @quoted_column_value
+            emit_row(row, quoted_fields, &block)
             row = []
+            quoted_fields = []
           end
           skip_needless_lines
           start_row
         elsif @scanner.eos?
           break if row.empty? and value.nil?
           row << value
-          emit_row(row, &block)
+          quoted_fields << @quoted_column_value
+          emit_row(row, quoted_fields, &block)
           break
         else
           if @quoted_column_value
@@ -1141,7 +1156,7 @@ class CSV
       if (n_quotes % 2).zero?
         quotes[0, (n_quotes - 2) / 2]
       else
-        value = quotes[0, (n_quotes - 1) / 2]
+        value = quotes[0, n_quotes / 2]
         while true
           quoted_value = @scanner.scan_all(@quoted_value)
           value << quoted_value if quoted_value
@@ -1165,11 +1180,9 @@ class CSV
           n_quotes = quotes.size
           if n_quotes == 1
             break
-          elsif (n_quotes % 2) == 1
-            value << quotes[0, (n_quotes - 1) / 2]
-            break
           else
             value << quotes[0, n_quotes / 2]
+            break if (n_quotes % 2) == 1
           end
         end
         value
@@ -1205,18 +1218,15 @@ class CSV
 
     def strip_value(value)
       return value unless @strip
-      return nil if value.nil?
+      return value if value.nil?
 
       case @strip
       when String
-        size = value.size
-        while value.start_with?(@strip)
-          size -= 1
-          value = value[1, size]
+        while value.delete_prefix!(@strip)
+          # do nothing
         end
-        while value.end_with?(@strip)
-          size -= 1
-          value = value[0, size]
+        while value.delete_suffix!(@strip)
+          # do nothing
         end
       else
         value.strip!
@@ -1239,22 +1249,22 @@ class CSV
       @scanner.keep_start
     end
 
-    def emit_row(row, &block)
+    def emit_row(row, quoted_fields, &block)
       @lineno += 1
 
       raw_row = row
       if @use_headers
         if @headers.nil?
-          @headers = adjust_headers(row)
+          @headers = adjust_headers(row, quoted_fields)
           return unless @return_headers
           row = Row.new(@headers, row, true)
         else
           row = Row.new(@headers,
-                        @fields_converter.convert(raw_row, @headers, @lineno))
+                        @fields_converter.convert(raw_row, @headers, @lineno, quoted_fields))
         end
       else
         # convert fields, if needed...
-        row = @fields_converter.convert(raw_row, nil, @lineno)
+        row = @fields_converter.convert(raw_row, nil, @lineno, quoted_fields)
       end
 
       # inject unconverted fields and accessor, if requested...

@@ -95,13 +95,10 @@ require "stringio"
 
 require_relative "csv/fields_converter"
 require_relative "csv/input_record_separator"
-require_relative "csv/match_p"
 require_relative "csv/parser"
 require_relative "csv/row"
 require_relative "csv/table"
 require_relative "csv/writer"
-
-using CSV::MatchP if CSV.const_defined?(:MatchP)
 
 # == \CSV
 #
@@ -866,8 +863,9 @@ class CSV
   # <b><tt>index</tt></b>::  The zero-based index of the field in its row.
   # <b><tt>line</tt></b>::   The line of the data source this row is from.
   # <b><tt>header</tt></b>:: The header for the column, when available.
+  # <b><tt>quoted?</tt></b>:: True or false, whether the original value is quoted or not.
   #
-  FieldInfo = Struct.new(:index, :line, :header)
+  FieldInfo = Struct.new(:index, :line, :header, :quoted?)
 
   # A Regexp used to find and convert some common Date formats.
   DateMatcher     = / \A(?: (\w+,?\s+)?\w+\s+\d{1,2},?\s+\d{2,4} |
@@ -875,10 +873,9 @@ class CSV
   # A Regexp used to find and convert some common DateTime formats.
   DateTimeMatcher =
     / \A(?: (\w+,?\s+)?\w+\s+\d{1,2}\s+\d{1,2}:\d{1,2}:\d{1,2},?\s+\d{2,4} |
-            \d{4}-\d{2}-\d{2}\s\d{2}:\d{2}:\d{2} |
-            # ISO-8601
+            # ISO-8601 and RFC-3339 (space instead of T) recognized by DateTime.parse
             \d{4}-\d{2}-\d{2}
-              (?:T\d{2}:\d{2}(?::\d{2}(?:\.\d+)?(?:[+-]\d{2}(?::\d{2})|Z)?)?)?
+              (?:[T\s]\d{2}:\d{2}(?::\d{2}(?:\.\d+)?(?:[+-]\d{2}(?::\d{2})|Z)?)?)?
         )\z /x
 
   # The encoding used by all converters.
@@ -1893,8 +1890,19 @@ class CSV
     raise ArgumentError.new("Cannot parse nil as CSV") if data.nil?
 
     if data.is_a?(String)
+      if encoding
+        if encoding.is_a?(String)
+          data_external_encoding, data_internal_encoding = encoding.split(":", 2)
+          if data_internal_encoding
+            data = data.encode(data_internal_encoding, data_external_encoding)
+          else
+            data = data.dup.force_encoding(data_external_encoding)
+          end
+        else
+          data = data.dup.force_encoding(encoding)
+        end
+      end
       @io = StringIO.new(data)
-      @io.set_encoding(encoding || data.encoding)
     else
       @io = data
     end
