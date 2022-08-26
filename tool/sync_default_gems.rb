@@ -373,6 +373,11 @@ def sync_default_gems(gem)
   when "open3"
     sync_lib gem, upstream
     rm_rf("lib/open3/jruby_windows.rb")
+  when "syntax_suggest"
+    sync_lib gem, upstream
+    rm_rf(%w[spec/syntax_suggest libexec/syntax_suggest])
+    cp_r("#{upstream}/spec", "spec/syntax_suggest")
+    cp_r("#{upstream}/exe/syntax_suggest", "libexec/syntax_suggest")
   else
     sync_lib gem, upstream
   end
