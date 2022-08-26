@@ -63,10 +63,9 @@ task:
   make_test-all_script: make test-all
   make_test-spec_script: make test-spec
 
-
 # The following is to test YJIT on ARM64 CPUs available on Cirrus CI
 yjit_task:
-  name: Arm64 Graviton2 / $CC YJIT New Backend Temp Checks
+  name: Arm64 Graviton2 / $CC YJIT
   auto_cancellation: $CIRRUS_BRANCH != 'master'
   skip: "changesIncludeOnly('doc/**', '**.{md,rdoc}')"
   arm_container:
@@ -126,19 +125,9 @@ yjit_task:
   boot_miniruby_script: RUST_BACKTRACE=1 ./miniruby --yjit-call-threshold=1 -e0
   test_dump_insns_script: RUST_BACKTRACE=1 ./miniruby --yjit-call-threshold=1 --yjit-dump-insns -e0
   output_stats_script: RUST_BACKTRACE=1 ./miniruby --yjit-call-threshold=1 --yjit-stats -e0
-
-  # Check that we can do a full ruby build
   full_build_script: source $HOME/.cargo/env && make -j
-
-  # Check that we can build rdoc successfully
   make_rdoc_script: source $HOME/.cargo/env && make -j rdoc
-
-  # Check that we can run btest successfully
   make_btest_script: source $HOME/.cargo/env && make -j btest RUN_OPTS="--yjit-call-threshold=1 --yjit-verify-ctx"
-
-  # Check that we can run test-all successfully (running TestGCCompact separately until we fix its performance)
   make_test_all_script: source $HOME/.cargo/env && make -j test-all RUN_OPTS="--yjit-call-threshold=1" TESTOPTS="$RUBY_TESTOPTS"' --test-order=alpha --name=!/TestGCCompact/'
   test_gc_compact_script: source $HOME/.cargo/env && make -j test-all RUN_OPTS="--yjit-call-threshold=1" TESTS="test/ruby/test_gc_compact.rb"
-
-  # Check that we can run test-spec successfully
   make_test_spec_script: source $HOME/.cargo/env && make -j test-spec RUN_OPTS="--yjit-call-threshold=1"
