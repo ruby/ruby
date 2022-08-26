@@ -1021,6 +1021,12 @@ extern "C" {
     pub fn rb_yjit_mark_executable(mem_block: *mut ::std::os::raw::c_void, mem_size: u32);
 }
 extern "C" {
+    pub fn rb_yjit_icache_invalidate(
+        start: *mut ::std::os::raw::c_void,
+        end: *mut ::std::os::raw::c_void,
+    );
+}
+extern "C" {
     pub fn rb_yjit_exit_locations_dict(
         yjit_raw_samples: *mut VALUE,
         yjit_line_samples: *mut ::std::os::raw::c_int,

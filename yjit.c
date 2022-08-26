@@ -78,11 +78,17 @@ rb_yjit_mark_executable(void *mem_block, uint32_t mem_size)
         rb_bug("Couldn't make JIT page (%p, %lu bytes) executable, errno: %s\n",
             mem_block, (unsigned long)mem_size, strerror(errno));
     }
+}
 
+// `start` is inclusive and `end` is exclusive.
+void
+rb_yjit_icache_invalidate(void *start, void *end)
+{
     // Clear/invalidate the instruction cache. Compiles to nothing on x86_64
-    // but required on ARM. On Darwin it's the same as calling sys_icache_invalidate().
+    // but required on ARM before running freshly written code.
+    // On Darwin it's the same as calling sys_icache_invalidate().
 #ifdef __GNUC__
-    __builtin___clear_cache(mem_block, (char *)mem_block + mem_size);
+    __builtin___clear_cache(start, end);
 #endif
 }
 

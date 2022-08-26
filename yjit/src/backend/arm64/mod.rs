@@ -961,6 +961,16 @@ impl Assembler
             };
         }
 
+        // Invalidate icache for newly written out region so we don't run
+        // stale code.
+        {
+            let start = cb.get_ptr(start_write_pos).raw_ptr();
+            let write_ptr = cb.get_write_ptr().raw_ptr();
+            let codeblock_end = cb.get_ptr(cb.get_mem_size()).raw_ptr();
+            let end = std::cmp::min(write_ptr, codeblock_end);
+            unsafe { rb_yjit_icache_invalidate(start as _, end as _) };
+        }
+
         gc_offsets
     }
 
