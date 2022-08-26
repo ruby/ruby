@@ -22,6 +22,7 @@ mod reg_pair;
 mod sbfm;
 mod shift_imm;
 mod sys_reg;
+mod test_bit;
 
 pub use atomic::Atomic;
 pub use branch::Branch;
@@ -44,3 +45,4 @@ pub use reg_pair::RegisterPair;
 pub use sbfm::SBFM;
 pub use shift_imm::ShiftImm;
 pub use sys_reg::SysReg;
+pub use test_bit::TestBit;

@@ -934,6 +934,30 @@ pub fn ret(cb: &mut CodeBlock, rn: A64Opnd) {
     cb.write_bytes(&bytes);
 }
 
+/// TBNZ - test bit and branch if not zero
+pub fn tbnz(cb: &mut CodeBlock, rt: A64Opnd, bit_num: A64Opnd, offset: A64Opnd) {
+    let bytes: [u8; 4] = match (rt, bit_num, offset) {
+        (A64Opnd::Reg(rt), A64Opnd::UImm(bit_num), A64Opnd::Imm(offset)) => {
+            TestBit::tbnz(rt.reg_no, bit_num.try_into().unwrap(), offset.try_into().unwrap()).into()
+        },
+        _ => panic!("Invalid operand combination to tbnz instruction.")
+    };
+
+    cb.write_bytes(&bytes);
+}
+
+/// TBZ - test bit and branch if zero
+pub fn tbz(cb: &mut CodeBlock, rt: A64Opnd, bit_num: A64Opnd, offset: A64Opnd) {
+    let bytes: [u8; 4] = match (rt, bit_num, offset) {
+        (A64Opnd::Reg(rt), A64Opnd::UImm(bit_num), A64Opnd::Imm(offset)) => {
+            TestBit::tbz(rt.reg_no, bit_num.try_into().unwrap(), offset.try_into().unwrap()).into()
+        },
+        _ => panic!("Invalid operand combination to tbz instruction.")
+    };
+
+    cb.write_bytes(&bytes);
+}
+
 /// TST - test the bits of a register against a mask, then update flags
 pub fn tst(cb: &mut CodeBlock, rn: A64Opnd, rm: A64Opnd) {
     let bytes: [u8; 4] = match (rn, rm) {
@@ -1391,6 +1415,16 @@ mod tests {
     #[test]
     fn test_sxtw() {
         check_bytes("6a7d4093", |cb| sxtw(cb, X10, W11));
+    }
+
+    #[test]
+    fn test_tbnz() {
+        check_bytes("4a005037", |cb| tbnz(cb, X10, A64Opnd::UImm(10), A64Opnd::Imm(2)));
+    }
+
+    #[test]
+    fn test_tbz() {
+        check_bytes("4a005036", |cb| tbz(cb, X10, A64Opnd::UImm(10), A64Opnd::Imm(2)));
     }
 
     #[test]
