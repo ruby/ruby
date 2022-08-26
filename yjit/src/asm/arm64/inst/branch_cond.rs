@@ -1,4 +1,4 @@
-use super::super::arg::Condition;
+use super::super::arg::{Condition, truncate_imm};
 
 /// The struct that represents an A64 conditional branch instruction that can be
 /// encoded.
@@ -31,12 +31,10 @@ const FAMILY: u32 = 0b101;
 impl From<BranchCond> for u32 {
     /// Convert an instruction into a 32-bit value.
     fn from(inst: BranchCond) -> Self {
-        let imm19 = (inst.imm19 as u32) & ((1 << 19) - 1);
-
         0
         | (1 << 30)
         | (FAMILY << 26)
-        | (imm19 << 5)
+        | (truncate_imm::<_, 19>(inst.imm19) << 5)
         | (inst.cond as u32)
     }
 }
@@ -66,8 +64,14 @@ mod tests {
     }
 
     #[test]
-    fn test_b_ne_neg() {
-        let result: u32 = BranchCond::bcond(Condition::NE, -128).into();
-        assert_eq!(0x54fffc01, result);
+    fn test_b_eq_max() {
+        let result: u32 = BranchCond::bcond(Condition::EQ, (1 << 20) - 4).into();
+        assert_eq!(0x547fffe0, result);
+    }
+
+    #[test]
+    fn test_b_eq_min() {
+        let result: u32 = BranchCond::bcond(Condition::EQ, -(1 << 20)).into();
+        assert_eq!(0x54800000, result);
     }
 }

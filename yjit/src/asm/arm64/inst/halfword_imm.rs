@@ -1,3 +1,5 @@
+use super::super::arg::truncate_imm;
+
 /// Whether this is a load or a store.
 enum Op {
     Load = 1,
@@ -95,11 +97,12 @@ impl From<HalfwordImm> for u32 {
     fn from(inst: HalfwordImm) -> Self {
         let (mut opc, imm) = match inst.index {
             Index::None => {
-                let mut imm12 = ((inst.imm / 2) as u32) & ((1 << 12) - 1);
+                assert_eq!(inst.imm & 1, 0, "immediate offset must be even");
+                let imm12 = truncate_imm::<_, 12>(inst.imm / 2);
                 (0b100, imm12)
             },
             Index::PreIndex | Index::PostIndex => {
-                let mut imm9 = (inst.imm as u32) & ((1 << 9) - 1);
+                let imm9 = truncate_imm::<_, 9>(inst.imm);
                 (0b000, (imm9 << 2) | (inst.index as u32))
             }
         };

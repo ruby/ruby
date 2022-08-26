@@ -1,3 +1,5 @@
+use super::super::arg::truncate_imm;
+
 /// The operation to perform for this instruction.
 enum Op {
     /// Branch directly, with a hint that this is not a subroutine call or
@@ -45,12 +47,10 @@ const FAMILY: u32 = 0b101;
 impl From<Call> for u32 {
     /// Convert an instruction into a 32-bit value.
     fn from(inst: Call) -> Self {
-        let imm26 = (inst.imm26 as u32) & ((1 << 26) - 1);
-
         0
         | ((inst.op as u32) << 31)
         | (FAMILY << 26)
-        | imm26
+        | truncate_imm::<_, 26>(inst.imm26)
     }
 }
 
@@ -92,13 +92,13 @@ mod tests {
 
     #[test]
     fn test_b_positive() {
-        let result: u32 = Call::b(256).into();
-        assert_eq!(0x14000100, result);
+        let result: u32 = Call::b((1 << 25) - 1).into();
+        assert_eq!(0x15ffffff, result);
     }
 
     #[test]
     fn test_b_negative() {
-        let result: u32 = Call::b(-256).into();
-        assert_eq!(0x17ffff00, result);
+        let result: u32 = Call::b(-(1 << 25)).into();
+        assert_eq!(0x16000000, result);
     }
 }

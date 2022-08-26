@@ -1,4 +1,4 @@
-use super::super::arg::Sf;
+use super::super::arg::{Sf, truncate_uimm};
 
 /// The struct that represents an A64 signed bitfield move instruction that can
 /// be encoded.
@@ -56,16 +56,13 @@ const FAMILY: u32 = 0b1001;
 impl From<SBFM> for u32 {
     /// Convert an instruction into a 32-bit value.
     fn from(inst: SBFM) -> Self {
-        let immr = (inst.immr as u32) & ((1 << 6) - 1);
-        let imms = (inst.imms as u32) & ((1 << 6) - 1);
-
         0
         | ((inst.sf as u32) << 31)
         | (FAMILY << 25)
         | (1 << 24)
         | ((inst.n as u32) << 22)
-        | (immr << 16)
-        | (imms << 10)
+        | (truncate_uimm::<_, 6>(inst.immr) << 16)
+        | (truncate_uimm::<_, 6>(inst.imms) << 10)
         | ((inst.rn as u32) << 5)
         | inst.rd as u32
     }
