@@ -21,7 +21,7 @@ jobs:
   make:
     strategy:
       matrix:
-        test_task: ["check", "test-bundler-parallel", "test-bundled-gems"]
+        test_task: ["check", "test-syntax-suggest", "test-bundler-parallel", "test-bundled-gems"]
         os:
           - ubuntu-20.04
         configure: ["", "cppflags=-DRUBY_DEBUG"]
