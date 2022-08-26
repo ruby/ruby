@@ -257,13 +257,35 @@ MESSAGE
 
   def rm_f(*files)
     opt = (Hash === files.last ? [files.pop] : [])
-    FileUtils.rm_f(Dir[*files.flatten], *opt)
+    files = Dir[*files.flatten]
+    try_count = 0
+    begin
+      FileUtils.rm_f(files, *opt)
+    rescue SystemCallError
+      try_count += 1
+      if try_count < 3
+        sleep 1
+        retry
+      end
+      # Failed to delete the file; should we report it? How?
+    end
   end
   module_function :rm_f
 
   def rm_rf(*files)
     opt = (Hash === files.last ? [files.pop] : [])
-    FileUtils.rm_rf(Dir[*files.flatten], *opt)
+    files = Dir[*files.flatten]
+    try_count = 0
+    begin
+      FileUtils.rm_rf(files, *opt)
+    rescue SystemCallError
+      try_count += 1
+      if try_count < 3
+        sleep 1
+        retry
+      end
+      # Failed to delete the file; should we report it? How?
+    end
   end
   module_function :rm_rf
 
