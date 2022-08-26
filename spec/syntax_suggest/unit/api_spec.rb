@@ -1,7 +1,10 @@
 # frozen_string_literal: true
 
 require_relative "../spec_helper"
-require "ruby-prof"
+begin
+  require "ruby-prof"
+rescue LoadError
+end
 
 module SyntaxSuggest
   RSpec.describe "Top level SyntaxSuggest api" do
