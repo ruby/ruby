@@ -5,7 +5,11 @@ require_relative "../spec_helper"
 module SyntaxSuggest
   RSpec.describe "exe" do
     def exe_path
-      root_dir.join("exe").join("syntax_suggest")
+      if ruby_core?
+        root_dir.join("../libexec").join("syntax_suggest")
+      else
+        root_dir.join("exe").join("syntax_suggest")
+      end
     end
 
     def exe(cmd)

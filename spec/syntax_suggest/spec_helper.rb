@@ -43,6 +43,10 @@ def fixtures_dir
   spec_dir.join("fixtures")
 end
 
+def ruby_core?
+  !root_dir.join("syntax_suggest.gemspec").exist?
+end
+
 def code_line_array(source)
   SyntaxSuggest::CleanDocument.new(source: source).call.lines
 end
