@@ -1415,6 +1415,25 @@ BUNDLED_GEMS =
 test-bundled-gems-run: $(PREPARE_BUNDLED_GEMS)
 	$(gnumake_recursive)$(Q) $(XRUBY) $(tooldir)/test-bundled-gems.rb $(BUNDLED_GEMS)
 
+test-syntax-suggest-precheck: $(TEST_RUNNABLE)-test-syntax-suggest-precheck
+no-test-syntax-suggest-precheck:
+yes-test-syntax-suggest-precheck: main
+
+no-test-syntax-suggest-prepare: no-test-syntax-suggest-precheck
+yes-test-syntax-suggest-prepare: yes-test-syntax-suggest-precheck
+	$(ACTIONS_GROUP)
+	$(XRUBY) -C "$(srcdir)" bin/gem install --no-document \
+		--install-dir .bundle --conservative "bundler" "rake" "rspec:~> 3" "ruby-prof"
+	$(ACTIONS_ENDGROUP)
+
+RSPECOPTS =
+SYNTAX_SUGGEST_SPECS =
+test-syntax-suggest: $(TEST_RUNNABLE)-test-syntax-suggest
+yes-test-syntax-suggest: yes-test-syntax-suggest-prepare
+	$(XRUBY) -C $(srcdir) -Ispec/syntax_suggest .bundle/bin/rspec \
+		--require spec_helper $(RSPECOPTS) spec/syntax_suggest/$(SYNTAX-SUGGEST_SPECS)
+no-test-syntax-suggest:
+
 test-bundler-precheck: $(TEST_RUNNABLE)-test-bundler-precheck
 no-test-bundler-precheck:
 yes-test-bundler-precheck: main
