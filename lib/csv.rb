@@ -1465,6 +1465,46 @@ class CSV
       (new(str, **options) << row).string
     end
 
+    # :call-seq:
+    #   CSV.generate_lines(rows)
+    #   CSV.generate_lines(rows, **options)
+    #
+    # Returns the \String created by generating \CSV from
+    # using the specified +options+.
+    #
+    # Argument +rows+ must be an \Array of row. Row is \Array of \String or \CSV::Row.
+    #
+    # Special options:
+    # * Option <tt>:row_sep</tt> defaults to <tt>"\n"</tt> on Ruby 3.0 or later
+    #   and <tt>$INPUT_RECORD_SEPARATOR</tt> (<tt>$/</tt>) otherwise.:
+    #     $INPUT_RECORD_SEPARATOR # => "\n"
+    # * This method accepts an additional option, <tt>:encoding</tt>, which sets the base
+    #   Encoding for the output. This method will try to guess your Encoding from
+    #   the first non-+nil+ field in +row+, if possible, but you may need to use
+    #   this parameter as a backup plan.
+    #
+    # For other +options+,
+    # see {Options for Generating}[#class-CSV-label-Options+for+Generating].
+    #
+    # ---
+    #
+    # Returns the \String generated from an
+    #   CSV.generate_lines(['foo', '0'], ['bar', '1'], ['baz', '2']) # => "foo,0\nbar,1\nbaz.2\n"
+    #
+    # ---
+    #
+    # Raises an exception
+    #   # Raises NoMethodError (undefined method `find' for :foo:Symbol)
+    #   CSV.generate_lines(:foo)
+    #
+    def generate_lines(rows, **options)
+      self.generate(**options) do |csv|
+        rows.each do |row|
+          csv << row
+        end
+      end
+    end
+
     #
     # :call-seq:
     #   open(file_path, mode = "rb", **options ) -> new_csv
