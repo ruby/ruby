@@ -423,6 +423,51 @@ pub fn ldr_literal(cb: &mut CodeBlock, rt: A64Opnd, rn: i32) {
     cb.write_bytes(&bytes);
 }
 
+/// LDRH - load a halfword from memory
+pub fn ldrh(cb: &mut CodeBlock, rt: A64Opnd, rn: A64Opnd) {
+    let bytes: [u8; 4] = match (rt, rn) {
+        (A64Opnd::Reg(rt), A64Opnd::Mem(rn)) => {
+            assert_eq!(rt.num_bits, 32, "Expected to be loading a halfword");
+            assert!(imm_fits_bits(rn.disp.into(), 12), "The displacement must be 12 bits or less.");
+
+            HalfwordImm::ldrh(rt.reg_no, rn.base_reg_no, rn.disp as i16).into()
+        },
+        _ => panic!("Invalid operand combination to ldrh instruction.")
+    };
+
+    cb.write_bytes(&bytes);
+}
+
+/// LDRH (pre-index) - load a halfword from memory, update the base pointer before loading it
+pub fn ldrh_pre(cb: &mut CodeBlock, rt: A64Opnd, rn: A64Opnd) {
+    let bytes: [u8; 4] = match (rt, rn) {
+        (A64Opnd::Reg(rt), A64Opnd::Mem(rn)) => {
+            assert_eq!(rt.num_bits, 32, "Expected to be loading a halfword");
+            assert!(imm_fits_bits(rn.disp.into(), 9), "The displacement must be 9 bits or less.");
+
+            HalfwordImm::ldrh_pre(rt.reg_no, rn.base_reg_no, rn.disp as i16).into()
+        },
+        _ => panic!("Invalid operand combination to ldrh instruction.")
+    };
+
+    cb.write_bytes(&bytes);
+}
+
+/// LDRH (post-index) - load a halfword from memory, update the base pointer after loading it
+pub fn ldrh_post(cb: &mut CodeBlock, rt: A64Opnd, rn: A64Opnd) {
+    let bytes: [u8; 4] = match (rt, rn) {
+        (A64Opnd::Reg(rt), A64Opnd::Mem(rn)) => {
+            assert_eq!(rt.num_bits, 32, "Expected to be loading a halfword");
+            assert!(imm_fits_bits(rn.disp.into(), 9), "The displacement must be 9 bits or less.");
+
+            HalfwordImm::ldrh_post(rt.reg_no, rn.base_reg_no, rn.disp as i16).into()
+        },
+        _ => panic!("Invalid operand combination to ldrh instruction.")
+    };
+
+    cb.write_bytes(&bytes);
+}
+
 /// Whether or not a memory address displacement fits into the maximum number of
 /// bits such that it can be used without loading it into a register first.
 pub fn mem_disp_fits_bits(disp: i32) -> bool {
@@ -736,6 +781,51 @@ pub fn str_pre(cb: &mut CodeBlock, rt: A64Opnd, rn: A64Opnd) {
             LoadStore::str_pre(rt.reg_no, rn.base_reg_no, rn.disp as i16, rt.num_bits).into()
         },
         _ => panic!("Invalid operand combination to str instruction."),
+    };
+
+    cb.write_bytes(&bytes);
+}
+
+/// STRH - store a halfword into memory
+pub fn strh(cb: &mut CodeBlock, rt: A64Opnd, rn: A64Opnd) {
+    let bytes: [u8; 4] = match (rt, rn) {
+        (A64Opnd::Reg(rt), A64Opnd::Mem(rn)) => {
+            assert_eq!(rt.num_bits, 32, "Expected to be loading a halfword");
+            assert!(imm_fits_bits(rn.disp.into(), 12), "The displacement must be 12 bits or less.");
+
+            HalfwordImm::strh(rt.reg_no, rn.base_reg_no, rn.disp as i16).into()
+        },
+        _ => panic!("Invalid operand combination to strh instruction.")
+    };
+
+    cb.write_bytes(&bytes);
+}
+
+/// STRH (pre-index) - store a halfword into memory, update the base pointer before loading it
+pub fn strh_pre(cb: &mut CodeBlock, rt: A64Opnd, rn: A64Opnd) {
+    let bytes: [u8; 4] = match (rt, rn) {
+        (A64Opnd::Reg(rt), A64Opnd::Mem(rn)) => {
+            assert_eq!(rt.num_bits, 32, "Expected to be loading a halfword");
+            assert!(imm_fits_bits(rn.disp.into(), 9), "The displacement must be 9 bits or less.");
+
+            HalfwordImm::strh_pre(rt.reg_no, rn.base_reg_no, rn.disp as i16).into()
+        },
+        _ => panic!("Invalid operand combination to strh instruction.")
+    };
+
+    cb.write_bytes(&bytes);
+}
+
+/// STRH (post-index) - store a halfword into memory, update the base pointer after loading it
+pub fn strh_post(cb: &mut CodeBlock, rt: A64Opnd, rn: A64Opnd) {
+    let bytes: [u8; 4] = match (rt, rn) {
+        (A64Opnd::Reg(rt), A64Opnd::Mem(rn)) => {
+            assert_eq!(rt.num_bits, 32, "Expected to be loading a halfword");
+            assert!(imm_fits_bits(rn.disp.into(), 9), "The displacement must be 9 bits or less.");
+
+            HalfwordImm::strh_post(rt.reg_no, rn.base_reg_no, rn.disp as i16).into()
+        },
+        _ => panic!("Invalid operand combination to strh instruction.")
     };
 
     cb.write_bytes(&bytes);
@@ -1099,6 +1189,21 @@ mod tests {
     }
 
     #[test]
+    fn test_ldrh() {
+        check_bytes("6a194079", |cb| ldrh(cb, W10, A64Opnd::new_mem(64, X11, 12)));
+    }
+
+    #[test]
+    fn test_ldrh_pre() {
+        check_bytes("6acd4078", |cb| ldrh_pre(cb, W10, A64Opnd::new_mem(64, X11, 12)));
+    }
+
+    #[test]
+    fn test_ldrh_post() {
+        check_bytes("6ac54078", |cb| ldrh_post(cb, W10, A64Opnd::new_mem(64, X11, 12)));
+    }
+
+    #[test]
     fn test_ldur_memory() {
         check_bytes("20b047f8", |cb| ldur(cb, X0, A64Opnd::new_mem(64, X1, 123)));
     }
@@ -1221,6 +1326,21 @@ mod tests {
     #[test]
     fn test_str_pre() {
         check_bytes("6a0d1ff8", |cb| str_pre(cb, X10, A64Opnd::new_mem(64, X11, -16)));
+    }
+
+    #[test]
+    fn test_strh() {
+        check_bytes("6a190079", |cb| strh(cb, W10, A64Opnd::new_mem(64, X11, 12)));
+    }
+
+    #[test]
+    fn test_strh_pre() {
+        check_bytes("6acd0078", |cb| strh_pre(cb, W10, A64Opnd::new_mem(64, X11, 12)));
+    }
+
+    #[test]
+    fn test_strh_post() {
+        check_bytes("6ac50078", |cb| strh_post(cb, W10, A64Opnd::new_mem(64, X11, 12)));
     }
 
     #[test]
