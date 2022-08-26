@@ -1146,7 +1146,7 @@ fn gen_opt_plus(
         // Check that both operands are fixnums
         guard_two_fixnums(ctx, asm, side_exit);
 
-        // Get the operands and destination from the stack
+        // Get the operands from the stack
         let arg1 = ctx.stack_pop(1);
         let arg0 = ctx.stack_pop(1);
 
