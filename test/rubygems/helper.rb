@@ -465,11 +465,13 @@ class Gem::TestCase < Test::Unit::TestCase
 
     Dir.chdir @current_dir
 
-    # FileUtils.rm_rf randomly fails on ci.rvm.jp trunk-mjit
-    if ENV['RUBY_DEBUG']&.include?('ci')
-      system('rm', '-rf', @tempdir)
-    else
-      FileUtils.rm_rf @tempdir
+    # Prevent a race condition on removing TMPDIR being written by MJIT
+    if defined?(RubyVM::MJIT.enabled?) && RubyVM::MJIT.enabled?
+      RubyVM::MJIT.pause
+    end
+    FileUtils.rm_rf @tempdir
+    if defined?(RubyVM::MJIT.enabled?) && RubyVM::MJIT.enabled?
+      RubyVM::MJIT.resume
     end
 
     ENV.replace(@orig_env)
