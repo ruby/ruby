@@ -3829,7 +3829,7 @@ time_zonelocal(VALUE time, VALUE off)
 /*
  *  call-seq:
  *    localtime -> self or new_time
- *    localtime(zone) -> new_time
+ *    localtime(offset) -> new_time
  *
  *  With no argument given:
  *
@@ -3839,15 +3839,15 @@ time_zonelocal(VALUE time, VALUE off)
  *      t = Time.utc(2000, 1, 1, 20, 15, 1) # => 2000-01-01 20:15:01 UTC
  *      t.localtime                         # => 2000-01-01 14:15:01 -0600
  *
- *  With argument +zone+ given,
+ *  With argument +offset+ given,
  *  returns the new \Time object created by converting
- *  +self+ to the given time zone:
+ *  +self+ to the given time offset:
  *
  *    t = Time.utc(2000, 1, 1, 20, 15, 1) # => 2000-01-01 20:15:01 UTC
  *    t.localtime("-09:00")               # => 2000-01-01 11:15:01 -0900
  *
- *  For forms of argument +zone+, see
- *  {Timezone Specifiers}[rdoc-ref:timezone_specifiers.rdoc].
+ *  For values of argument +offset+, see
+ *  {Time Offsets}[rdoc-ref:time_offsets.rdoc].
  *
  */
 
@@ -3938,18 +3938,18 @@ time_fixoff(VALUE time)
 
 /*
  *  call-seq:
- *    getlocal(zone = nil) -> new_time
+ *    getlocal(offset = nil) -> new_time
  *
  *  Returns a new \Time object representing the value of +self+
- *  converted to a given timezone;
- *  if +zone+ is +nil+, the local timezone is used:
+ *  converted to a given time offset;
+ *  if +offset+ is +nil+, the local time offset is used:
  *
  *    t = Time.utc(2000)                    # => 2000-01-01 00:00:00 UTC
  *    t.getlocal                            # => 1999-12-31 18:00:00 -0600
  *    t.getlocal('+12:00')                  # => 2000-01-01 12:00:00 +1200
  *
- *  For forms of argument +zone+, see
- *  {Timezone Specifiers}[rdoc-ref:timezone_specifiers.rdoc].
+ *  For values of argument +offset+, see
+ *  {Time Offsets}[rdoc-ref:time_offsets.rdoc].
  *
  */
 

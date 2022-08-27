@@ -1,12 +1,12 @@
-=== Timezone Specifiers
+=== \Time Offsets
 
-Certain methods in class Time accept arguments that specify timezones:
+Certain methods in class \Time accept arguments that specify time offsets:
 
 - Time.at: keyword argument +in:+.
-- Time.new: positional argument +zone+ or keyword argument +in:+.
+- Time.new: positional argument +offset+ or keyword argument +in:+.
 - Time.now: keyword argument +in:+.
-- Time#getlocal: positional argument +zone+.
-- Time#localtime: positional argument +zone+.
+- Time#getlocal: positional argument +offset+.
+- Time#localtime: positional argument +offset+.
 
 The value given with any of these must be one of the following:
 

@@ -110,9 +110,9 @@
 # === Methods for Creating
 #
 # - ::new: Returns a new time from specified arguments (year, month, etc.),
-#   including an optional timezone value.
+#   including an optional offset value.
 # - ::local (aliased as ::mktime): Same as ::new, except the
-#   timezone is the local timezone.
+#   offset is the local offset.
 # - ::utc (aliased as ::gm): Same as ::new, except the timezone is UTC.
 # - ::at: Returns a new time based on seconds since epoch.
 # - ::now: Returns a new time based on the current system time.
@@ -217,8 +217,8 @@ class Time
   #    Time.now               # => 2009-06-24 12:39:54 +0900
   #    Time.now(in: '+04:00') # => 2009-06-24 07:39:54 +0400
   #
-  # For forms of argument +zone+, see
-  # {Timezone Specifiers}[rdoc-ref:timezone_specifiers.rdoc].
+  # For values of keyword argument +in:+, see
+  # {Time Offsets}[rdoc-ref:time_offsets.rdoc].
   def self.now(in: nil)
     Primitive.time_s_now(Primitive.arg!(:in))
   end
@@ -267,15 +267,14 @@ class Time
   #     Time.at(secs, -1000000000, :nanosecond) # => 2000-12-31 23:59:58 -0600
   #
   #
-  # Optional keyword argument <tt>+in: zone</tt> specifies the timezone
+  # Optional keyword argument +in:+ specifies the offset
   # for the returned time:
   #
   #   Time.at(secs, in: '+12:00') # => 2001-01-01 17:59:59 +1200
   #   Time.at(secs, in: '-12:00') # => 2000-12-31 17:59:59 -1200
   #
-  # For the forms of argument +zone+, see
-  # {Timezone Specifiers}[rdoc-ref:timezone_specifiers.rdoc].
-  #
+  # For values of keyword argument +in:+, see
+  # {Time Offsets}[rdoc-ref:time_offsets.rdoc].
   def self.at(time, subsec = false, unit = :microsecond, in: nil)
     if Primitive.mandatory_only?
       Primitive.time_s_at1(time)
@@ -285,18 +284,18 @@ class Time
   end
 
   # Returns a new \Time object based on the given arguments,
-  # by default in the local timezone.
+  # by default in the local time offset.
   #
   # With no positional arguments, returns the value of Time.now:
   #
   #   Time.new # => 2021-04-24 17:27:46.0512465 -0500
   #
   # With one to six arguments, returns a new \Time object
-  # based on the given arguments, in the local timezone.
+  # based on the given arguments, in the local time offset.
   #
   #   Time.new(2000, 1, 2, 3, 4, 5) # => 2000-01-02 03:04:05 -0600
   #
-  # For the positional arguments (other than +zone+):
+  # For the positional arguments (other than +offset+):
   #
   # - +year+: Year, with no range limits:
   #
@@ -348,10 +347,8 @@ class Time
   #     # => ["0", "1", "1", "0", "0", "0"]
   #     Time.new(*a) # => 0000-01-01 00:00:00 -0600
   #
-  # When positional argument +zone+ or keyword argument +in:+ is given,
-  # the new \Time object is in the specified timezone.
-  # For the forms of argument +zone+, see
-  # {Timezone Specifiers}[rdoc-ref:timezone_specifiers.rdoc]:
+  # When positional argument +offset+ or keyword argument +in:+ is given,
+  # the new \Time object has the specified offset.
   #
   #   Time.new(2000, 1, 1, 0, 0, 0, '+12:00')
   #   # => 2000-01-01 00:00:00 +1200
@@ -360,19 +357,21 @@ class Time
   #   Time.new(in: '-12:00')
   #   # => 2022-08-23 08:49:26.1941467 -1200
   #
-  def initialize(year = (now = true), mon = nil, mday = nil, hour = nil, min = nil, sec = nil, zone = nil, in: nil)
-    if zone
+  # For values of positional argument +offset+ or keyword argument +in:+, see
+  # {Time Offsets}[rdoc-ref:time_offsets.rdoc].
+  def initialize(year = (now = true), mon = nil, mday = nil, hour = nil, min = nil, sec = nil, offset = nil, in: nil)
+    if offset
       if Primitive.arg!(:in)
-        raise ArgumentError, "timezone argument given as positional and keyword arguments"
+        raise ArgumentError, "Positional argument offset and keyword argument in: may not both be given."
       end
     else
-      zone = Primitive.arg!(:in)
+      offset = Primitive.arg!(:in)
     end
 
     if now
-      return Primitive.time_init_now(zone)
+      return Primitive.time_init_now(offset)
     end
 
-    Primitive.time_init_args(year, mon, mday, hour, min, sec, zone)
+    Primitive.time_init_args(year, mon, mday, hour, min, sec, offset)
   end
 end
