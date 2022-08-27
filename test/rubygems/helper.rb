@@ -467,7 +467,7 @@ class Gem::TestCase < Test::Unit::TestCase
 
     # Prevent a race condition on removing TMPDIR being written by MJIT
     if defined?(RubyVM::MJIT.enabled?) && RubyVM::MJIT.enabled?
-      RubyVM::MJIT.pause
+      RubyVM::MJIT.pause(wait: false)
     end
     FileUtils.rm_rf @tempdir
     if defined?(RubyVM::MJIT.enabled?) && RubyVM::MJIT.enabled?
