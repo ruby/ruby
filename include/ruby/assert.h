@@ -103,7 +103,7 @@
 # /* keep NDEBUG undefined */
 
 #elif (RBIMPL_NDEBUG == 0) && (RBIMPL_RUBY_DEBUG == 0)
-# /* The (*1) situation in avobe diagram. */
+# /* The (*1) situation in above diagram. */
 # define RUBY_DEBUG 0
 # define RUBY_NDEBUG 1
 # define NDEBUG
