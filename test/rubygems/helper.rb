@@ -467,7 +467,7 @@ class Gem::TestCase < Test::Unit::TestCase
 
     # FileUtils.rm_rf randomly fails on ci.rvm.jp trunk-mjit
     if ENV['RUBY_DEBUG']&.include?('ci')
-      system('rm', '-rf', @tempdir.shellescape, exception: true)
+      system('rm', '-rf', @tempdir)
     else
       FileUtils.rm_rf @tempdir
     end
