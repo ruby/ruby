@@ -465,7 +465,12 @@ class Gem::TestCase < Test::Unit::TestCase
 
     Dir.chdir @current_dir
 
-    FileUtils.rm_rf @tempdir
+    # FileUtils.rm_rf randomly fails on ci.rvm.jp trunk-mjit
+    if ENV['RUBY_DEBUG']&.include?('ci')
+      system('rm', '-rf', @tempdir.shellescape, exception: true)
+    else
+      FileUtils.rm_rf @tempdir
+    end
 
     ENV.replace(@orig_env)
 
