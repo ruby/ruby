@@ -5437,7 +5437,7 @@ rb_str_aset(VALUE str, VALUE indx, VALUE val)
  *    string[index] = new_string
  *    string[start, length] = new_string
  *    string[range] = new_string
- *    string[regexp, capture = 0) = new_string
+ *    string[regexp, capture = 0] = new_string
  *    string[substring] = new_string
  *
  *  Replaces all, some, or none of the contents of +self+; returns +new_string+.
