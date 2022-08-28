@@ -2,7 +2,7 @@
 #
 #   Time.new(2000, 1, 1, 0, 0, 0) # => 2000-01-01 00:00:00 -0600
 #
-# Although its value is stored internally as a single numeric
+# Although its value can be expressed as a single numeric
 # (see {Epoch Seconds}[rdoc-ref:Time@Epoch+Seconds] below),
 # it can be convenient to deal with the value by parts:
 #
