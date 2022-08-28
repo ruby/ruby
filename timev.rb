@@ -28,8 +28,8 @@
 #
 # == Epoch Seconds
 #
-<i>Epoch seconds</i> is the exact number of seconds
-(including fractional subseconds) since the Unix Epoch, January 1, 1970.
+# <i>Epoch seconds</i> is the exact number of seconds
+# (including fractional subseconds) since the Unix Epoch, January 1, 1970.
 #
 # You can retrieve that value exactly using method Time.to_r:
 #
