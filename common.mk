@@ -1049,11 +1049,7 @@ $(srcs_vpath)insns_info.inc: $(tooldir)/ruby_vm/views/insns_info.inc.erb $(inc_c
 $(srcs_vpath)vmtc.inc: $(tooldir)/ruby_vm/views/vmtc.inc.erb $(inc_common_headers)
 $(srcs_vpath)vm.inc: $(tooldir)/ruby_vm/views/vm.inc.erb $(inc_common_headers) \
   $(tooldir)/ruby_vm/views/_insn_entry.erb $(tooldir)/ruby_vm/views/_trace_instruction.erb
-$(srcs_vpath)mjit_compile.inc: $(tooldir)/ruby_vm/views/mjit_compile.inc.erb $(inc_common_headers) \
-  $(tooldir)/ruby_vm/views/_mjit_compile_insn.erb $(tooldir)/ruby_vm/views/_mjit_compile_send.erb \
-  $(tooldir)/ruby_vm/views/_mjit_compile_ivar.erb \
-  $(tooldir)/ruby_vm/views/_mjit_compile_insn_body.erb $(tooldir)/ruby_vm/views/_mjit_compile_pc_and_sp.erb \
-  $(tooldir)/ruby_vm/views/_mjit_compile_invokebuiltin.erb $(tooldir)/ruby_vm/views/_mjit_compile_getconstant_path.erb
+$(srcs_vpath)mjit_compile_attr.inc: $(tooldir)/ruby_vm/views/mjit_compile_attr.inc.erb
 
 BUILTIN_RB_SRCS = \
 		$(srcdir)/ast.rb \
@@ -1063,6 +1059,8 @@ BUILTIN_RB_SRCS = \
 		$(srcdir)/io.rb \
 		$(srcdir)/marshal.rb \
 		$(srcdir)/mjit.rb \
+		$(srcdir)/mjit_compiler.rb \
+		$(srcdir)/mjit_instruction.rb \
 		$(srcdir)/pack.rb \
 		$(srcdir)/trace_point.rb \
 		$(srcdir)/warning.rb \
@@ -1154,7 +1152,7 @@ vm_call_iseq_optimized.inc: $(srcdir)/template/call_iseq_optimized.inc.tmpl
 	$(ECHO) generating $@
 	$(Q) $(BASERUBY) $(tooldir)/generic_erb.rb -c -o $@ $(srcdir)/template/call_iseq_optimized.inc.tmpl
 
-$(MINIPRELUDE_C): $(COMPILE_PRELUDE) $(BUILTIN_RB_SRCS)
+$(MINIPRELUDE_C): $(COMPILE_PRELUDE) $(BUILTIN_RB_SRCS) $(srcdir)/mjit_instruction.rb
 	$(ECHO) generating $@
 	$(Q) $(BASERUBY) $(tooldir)/generic_erb.rb -I$(srcdir) -o $@ \
 		$(srcdir)/template/prelude.c.tmpl $(BUILTIN_RB_SRCS)
@@ -9280,6 +9278,7 @@ miniinit.$(OBJEXT): $(CCAN_DIR)/container_of/container_of.h
 miniinit.$(OBJEXT): $(CCAN_DIR)/list/list.h
 miniinit.$(OBJEXT): $(CCAN_DIR)/str/str.h
 miniinit.$(OBJEXT): $(hdrdir)/ruby/ruby.h
+miniinit.$(OBJEXT): $(srcdir)/mjit_instruction.rb
 miniinit.$(OBJEXT): $(top_srcdir)/internal/array.h
 miniinit.$(OBJEXT): $(top_srcdir)/internal/compilers.h
 miniinit.$(OBJEXT): $(top_srcdir)/internal/gc.h
@@ -9470,6 +9469,8 @@ miniinit.$(OBJEXT): {$(VPATH)}miniinit.c
 miniinit.$(OBJEXT): {$(VPATH)}miniprelude.c
 miniinit.$(OBJEXT): {$(VPATH)}missing.h
 miniinit.$(OBJEXT): {$(VPATH)}mjit.rb
+miniinit.$(OBJEXT): {$(VPATH)}mjit_compiler.rb
+miniinit.$(OBJEXT): {$(VPATH)}mjit_instruction.rb
 miniinit.$(OBJEXT): {$(VPATH)}nilclass.rb
 miniinit.$(OBJEXT): {$(VPATH)}node.h
 miniinit.$(OBJEXT): {$(VPATH)}numeric.rb
@@ -9723,6 +9724,7 @@ mjit_compiler.$(OBJEXT): $(CCAN_DIR)/list/list.h
 mjit_compiler.$(OBJEXT): $(CCAN_DIR)/str/str.h
 mjit_compiler.$(OBJEXT): $(hdrdir)/ruby.h
 mjit_compiler.$(OBJEXT): $(hdrdir)/ruby/ruby.h
+mjit_compiler.$(OBJEXT): $(srcdir)/mjit_instruction.rb
 mjit_compiler.$(OBJEXT): $(top_srcdir)/internal/array.h
 mjit_compiler.$(OBJEXT): $(top_srcdir)/internal/class.h
 mjit_compiler.$(OBJEXT): $(top_srcdir)/internal/compile.h
@@ -9903,8 +9905,12 @@ mjit_compiler.$(OBJEXT): {$(VPATH)}iseq.h
 mjit_compiler.$(OBJEXT): {$(VPATH)}method.h
 mjit_compiler.$(OBJEXT): {$(VPATH)}missing.h
 mjit_compiler.$(OBJEXT): {$(VPATH)}mjit.h
-mjit_compiler.$(OBJEXT): {$(VPATH)}mjit_compile.inc
+mjit_compiler.$(OBJEXT): {$(VPATH)}mjit_compile_attr.inc
 mjit_compiler.$(OBJEXT): {$(VPATH)}mjit_compiler.c
+mjit_compiler.$(OBJEXT): {$(VPATH)}mjit_compiler.h
+mjit_compiler.$(OBJEXT): {$(VPATH)}mjit_compiler.rb
+mjit_compiler.$(OBJEXT): {$(VPATH)}mjit_compiler.rbinc
+mjit_compiler.$(OBJEXT): {$(VPATH)}mjit_instruction.rbinc
 mjit_compiler.$(OBJEXT): {$(VPATH)}mjit_unit.h
 mjit_compiler.$(OBJEXT): {$(VPATH)}node.h
 mjit_compiler.$(OBJEXT): {$(VPATH)}ruby_assert.h

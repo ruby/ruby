@@ -1399,7 +1399,7 @@ mjit_target_iseq_p(const rb_iseq_t *iseq)
     struct rb_iseq_constant_body *body = ISEQ_BODY(iseq);
     return (body->type == ISEQ_TYPE_METHOD || body->type == ISEQ_TYPE_BLOCK)
         && !body->builtin_inline_p
-        && strcmp("<internal:mjit>", RSTRING_PTR(rb_iseq_path(iseq)));
+        && strcmp("<internal:mjit>", RSTRING_PTR(rb_iseq_path(iseq))) != 0;
 }
 
 // If recompile_p is true, the call is initiated by mjit_recompile.
@@ -1439,7 +1439,7 @@ rb_mjit_add_iseq_to_process(const rb_iseq_t *iseq)
 }
 
 // For this timeout seconds, --jit-wait will wait for JIT compilation finish.
-#define MJIT_WAIT_TIMEOUT_SECONDS 60
+#define MJIT_WAIT_TIMEOUT_SECONDS 600
 
 static void
 mjit_wait(struct rb_iseq_constant_body *body)
@@ -1804,8 +1804,8 @@ const struct ruby_opt_message mjit_option_messages[] = {
 void
 mjit_init(const struct mjit_options *opts)
 {
+    VM_ASSERT(mjit_enabled);
     mjit_opts = *opts;
-    mjit_enabled = true;
     mjit_call_p = true;
     mjit_pid = getpid();
 
@@ -1859,11 +1859,11 @@ mjit_init(const struct mjit_options *opts)
     // rb_fiber_init_mjit_cont again with mjit_enabled=true to set the root_fiber's mjit_cont.
     rb_fiber_init_mjit_cont(GET_EC()->fiber_ptr);
 
-    // Initialize worker thread
-    start_worker();
-
     // TODO: Consider running C compiler asynchronously
     make_pch();
+
+    // Enable MJIT compilation
+    start_worker();
 }
 
 static void

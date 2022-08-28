@@ -1,0 +1,17 @@
+static rb_snum_t
+mjit_call_attribute_sp_inc(const int insn, const VALUE *operands)
+{
+    switch (insn) {
+% (RubyVM::BareInstructions.to_a + RubyVM::OperandsUnifications.to_a).each do |insn|
+      case BIN(<%= insn.name %>): {
+% # compiler: Prepare operands which may be used by `insn.call_attribute`
+% insn.opes.each_with_index do |ope, i|
+        MAYBE_UNUSED(<%= ope.fetch(:decl) %>) = (<%= ope.fetch(:type) %>)operands[<%= i %>];
+% end
+        return <%= insn.call_attribute('sp_inc') %>;
+      }
+% end
+      default:
+        rb_bug("unexpected insn in mjit_call_attribute_sp_inc");
+    }
+}
