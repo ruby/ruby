@@ -36,17 +36,18 @@ module Bundler
       rbx
       ruby
       truffleruby
+      windows
       x64_mingw
     ].freeze
 
     def ruby?
       return true if Bundler::GemHelpers.generic_local_platform == Gem::Platform::RUBY
 
-      !mswin? && (RUBY_ENGINE == "ruby" || RUBY_ENGINE == "rbx" || RUBY_ENGINE == "maglev" || RUBY_ENGINE == "truffleruby")
+      !windows? && (RUBY_ENGINE == "ruby" || RUBY_ENGINE == "rbx" || RUBY_ENGINE == "maglev" || RUBY_ENGINE == "truffleruby")
     end
 
     def mri?
-      !mswin? && RUBY_ENGINE == "ruby"
+      !windows? && RUBY_ENGINE == "ruby"
     end
 
     def rbx?
@@ -65,16 +66,24 @@ module Bundler
       RUBY_ENGINE == "truffleruby"
     end
 
-    def mswin?
+    def windows?
       Gem.win_platform?
     end
 
+    def mswin?
+      # For backwards compatibility
+      windows?
+
+      # TODO: This should correctly be:
+      # windows? && Bundler.local_platform != Gem::Platform::RUBY && Bundler.local_platform.os == "mswin32" && Bundler.local_platform.cpu == "x86"
+    end
+
     def mswin64?
-      Gem.win_platform? && Bundler.local_platform != Gem::Platform::RUBY && Bundler.local_platform.os == "mswin64" && Bundler.local_platform.cpu == "x64"
+      windows? && Bundler.local_platform != Gem::Platform::RUBY && Bundler.local_platform.os == "mswin64" && Bundler.local_platform.cpu == "x64"
     end
 
     def mingw?
-      Gem.win_platform? && Bundler.local_platform != Gem::Platform::RUBY && Bundler.local_platform.os == "mingw32" && Bundler.local_platform.cpu != "x64"
+      windows? && Bundler.local_platform != Gem::Platform::RUBY && Bundler.local_platform.os == "mingw32" && Bundler.local_platform.cpu != "x64"
     end
 
     def x64_mingw?

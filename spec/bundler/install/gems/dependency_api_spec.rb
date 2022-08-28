@@ -119,7 +119,7 @@ RSpec.describe "gemcutter's dependency API" do
   end
 
   it "falls back when the API errors out" do
-    simulate_platform mswin
+    simulate_platform x86_mswin32
 
     build_repo2 do
       # The rcov gem is platform mswin32, but has no arch

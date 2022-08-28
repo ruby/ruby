@@ -423,13 +423,13 @@ RSpec.describe "bundle install with install-time dependencies" do
             s.required_ruby_version = "> 9000"
           end
           build_gem "rack", "1.2" do |s|
-            s.platform = mingw
+            s.platform = x86_mingw32
             s.required_ruby_version = "> 9000"
           end
           build_gem "rack", "1.2"
         end
 
-        simulate_platform mingw do
+        simulate_platform x86_mingw32 do
           install_gemfile <<-G, :artifice => "compact_index", :env => { "BUNDLER_SPEC_GEM_REPO" => gem_repo4.to_s }
             ruby "#{Gem.ruby_version}"
             source "http://localgemserver.test/"

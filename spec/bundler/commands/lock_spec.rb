@@ -217,7 +217,7 @@ RSpec.describe "bundle lock" do
 
     allow(Bundler::SharedHelpers).to receive(:find_gemfile).and_return(bundled_app_gemfile)
     lockfile = Bundler::LockfileParser.new(read_lockfile)
-    expect(lockfile.platforms).to match_array([java, mingw, specific_local_platform].uniq)
+    expect(lockfile.platforms).to match_array([java, x86_mingw32, specific_local_platform].uniq)
   end
 
   it "supports adding new platforms with force_ruby_platform = true" do
@@ -241,7 +241,7 @@ RSpec.describe "bundle lock" do
 
     allow(Bundler::SharedHelpers).to receive(:find_gemfile).and_return(bundled_app_gemfile)
     lockfile = Bundler::LockfileParser.new(read_lockfile)
-    expect(lockfile.platforms).to contain_exactly(rb, linux, java, mingw)
+    expect(lockfile.platforms).to contain_exactly(rb, linux, java, x86_mingw32)
   end
 
   it "supports adding the `ruby` platform" do
@@ -262,12 +262,12 @@ RSpec.describe "bundle lock" do
 
     allow(Bundler::SharedHelpers).to receive(:find_gemfile).and_return(bundled_app_gemfile)
     lockfile = Bundler::LockfileParser.new(read_lockfile)
-    expect(lockfile.platforms).to match_array([java, mingw, specific_local_platform].uniq)
+    expect(lockfile.platforms).to match_array([java, x86_mingw32, specific_local_platform].uniq)
 
     bundle "lock --remove-platform java"
 
     lockfile = Bundler::LockfileParser.new(read_lockfile)
-    expect(lockfile.platforms).to match_array([mingw, specific_local_platform].uniq)
+    expect(lockfile.platforms).to match_array([x86_mingw32, specific_local_platform].uniq)
   end
 
   it "errors when removing all platforms" do
@@ -280,7 +280,7 @@ RSpec.describe "bundle lock" do
     build_repo4 do
       build_gem "ffi", "1.9.14"
       build_gem "ffi", "1.9.14" do |s|
-        s.platform = mingw
+        s.platform = x86_mingw32
       end
 
       build_gem "gssapi", "0.1"
@@ -312,7 +312,7 @@ RSpec.describe "bundle lock" do
       gem "gssapi"
     G
 
-    simulate_platform(mingw) { bundle :lock }
+    simulate_platform(x86_mingw32) { bundle :lock }
 
     expect(lockfile).to eq <<~G
       GEM

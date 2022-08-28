@@ -237,6 +237,7 @@ module Gem
     MINGW = Gem::Platform.new("x86-mingw32")
     X64_MINGW = [Gem::Platform.new("x64-mingw32"),
                  Gem::Platform.new("x64-mingw-ucrt")].freeze
+    WINDOWS = [MSWIN, MSWIN64, MINGW, X64_MINGW].flatten.freeze
 
     if Gem::Platform.new("x86_64-linux-musl") === Gem::Platform.new("x86_64-linux")
       remove_method :===
