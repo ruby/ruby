@@ -3489,7 +3489,7 @@ time_s_mktime(int argc, VALUE *argv, VALUE klass)
  *
  *  Returns the value of +self+ as integer
  *  {Epoch seconds}[rdoc-ref:Time@Epoch+Seconds];
- *  subseconds are omitted (not rounded):
+ *  subseconds are truncated (not rounded):
  *
  *    Time.utc(1970, 1, 1, 0, 0, 0).to_i         # => 0
  *    Time.utc(1970, 1, 1, 0, 0, 0, 999999).to_i # => 0
@@ -3498,12 +3498,7 @@ time_s_mktime(int argc, VALUE *argv, VALUE klass)
  *
  *  Time#tv_sec is an alias for Time#to_i.
  *
- *  Related:
- *
- *  - Time.to_f: returns Epoch seconds as a Float (may be approximate).
- *  - Time.to_r: returns Epoch seconds as a Rational (exact),
- *  - Time.at: returns the time for a given number of Epoch seconds).
- *
+ *  Related: Time#to_f Time#to_r.
  */
 
 static VALUE
@@ -3532,12 +3527,7 @@ time_to_i(VALUE time)
  *    Time.utc(1950, 1, 1, 0, 0, 0).to_f         # => -631152000.0
  *    Time.utc(1990, 1, 1, 0, 0, 0).to_f         # => 631152000.0
  *
- *  Related:
- *
- *  - Time.to_i: returns Epoch seconds as an integer (subseconds truncated).
- *  - Time.to_r: returns Epoch seconds as a Rational (exact),
- *  - Time.at: returns the time for a given number of Epoch seconds).
- *
+ *  Related: Time#to_i, Time#to_r.
  */
 
 static VALUE
@@ -3558,12 +3548,7 @@ time_to_f(VALUE time)
  *
  *    Time.now.to_r # => (16571402750320203/10000000)
  *
- *  Related:
- *
- *  - Time.to_f: returns Epoch seconds as a Float (may be approximate).
- *  - Time.to_i: returns Epoch seconds as an integer (subseconds truncated).
- *  - Time.at: returns the time for a given number of Epoch seconds).
- *
+ *  Related: Time#to_f, Time#to_i.
  */
 
 static VALUE
