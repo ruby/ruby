@@ -3487,18 +3487,18 @@ time_s_mktime(int argc, VALUE *argv, VALUE klass)
  *  call-seq:
  *    to_i -> integer
  *
- *  Returns the number of seconds since the Epoch
- *  for the time represented in +self+:
+ *  Returns the value of +self+ as integer
+ *  {Epoch seconds}[rdoc-ref:Time@Epoch+Seconds];
+ *  subseconds are truncated (not rounded):
  *
- *    Time.utc(1970, 1, 1).to_i # => 0
- *    t = Time.now.to_i         # => 1595263289
- *
- *  Subseconds are omitted:
- *
- *    t = Time.now # => 2022-07-12 09:13:48.5075976 -0500
- *    t.to_i       # => 1657635228
+ *    Time.utc(1970, 1, 1, 0, 0, 0).to_i         # => 0
+ *    Time.utc(1970, 1, 1, 0, 0, 0, 999999).to_i # => 0
+ *    Time.utc(1950, 1, 1, 0, 0, 0).to_i         # => -631152000
+ *    Time.utc(1990, 1, 1, 0, 0, 0).to_i         # => 631152000
  *
  *  Time#tv_sec is an alias for Time#to_i.
+ *
+ *  Related: Time#to_f Time#to_r.
  */
 
 static VALUE
@@ -3514,16 +3514,20 @@ time_to_i(VALUE time)
  *  call-seq:
  *    to_f -> float
  *
- *  Returns the value of +self+ as a Float number of seconds
- *  since the Epoch.
+ *  Returns the value of +self+ as a Float number
+ *  {Epoch seconds}[rdoc-ref:Time@Epoch+Seconds];
+ *  subseconds are included.
+ *
  *  The stored value of +self+ is a
  *  {Rational}[rdoc-ref:Rational@#method-i-to_f],
  *  which means that the returned value may be approximate:
  *
- *    t = Time.now # => 2022-07-07 11:23:18.0784889 -0500
- *    t.to_f       # => 1657210998.0784888
- *    t.to_i       # => 1657210998
+ *    Time.utc(1970, 1, 1, 0, 0, 0).to_f         # => 0.0
+ *    Time.utc(1970, 1, 1, 0, 0, 0, 999999).to_f # => 0.999999
+ *    Time.utc(1950, 1, 1, 0, 0, 0).to_f         # => -631152000.0
+ *    Time.utc(1990, 1, 1, 0, 0, 0).to_f         # => 631152000.0
  *
+ *  Related: Time#to_i, Time#to_r.
  */
 
 static VALUE
@@ -3539,11 +3543,12 @@ time_to_f(VALUE time)
  *  call-seq:
  *    to_r -> rational
  *
- *  Returns the value of +self+ as a Rational number of seconds
- *  since the Epoch, which is exact:
+ *  Returns the value of +self+ as a Rational exact number of
+ *  {Epoch seconds}[rdoc-ref:Time@Epoch+Seconds];
  *
  *    Time.now.to_r # => (16571402750320203/10000000)
  *
+ *  Related: Time#to_f, Time#to_i.
  */
 
 static VALUE
