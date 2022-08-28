@@ -7196,6 +7196,10 @@ tokadd_string(struct parser_params *p,
 {
     int c;
     bool erred = false;
+#ifdef RIPPER
+    const int heredoc_end = (p->heredoc_end ? p->heredoc_end + 1 : 0);
+    int top_of_line = FALSE;
+#endif
 
 #define mixed_error(enc1, enc2) \
     (void)(erred || (parser_mixed_error(p, enc1, enc2), erred = true))
@@ -7206,6 +7210,12 @@ tokadd_string(struct parser_params *p,
 	if (p->heredoc_indent > 0) {
 	    parser_update_heredoc_indent(p, c);
 	}
+#ifdef RIPPER
+        if (top_of_line && heredoc_end == p->ruby_sourceline) {
+            pushback(p, c);
+            break;
+        }
+#endif
 
 	if (paren && c == paren) {
 	    ++*nest;
@@ -7332,6 +7342,9 @@ tokadd_string(struct parser_params *p,
 	    }
         }
 	tokadd(p, c);
+#ifdef RIPPER
+	top_of_line = (c == '\n');
+#endif
     }
   terminate:
     if (*enc) *encp = *enc;

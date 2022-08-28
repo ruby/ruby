@@ -242,4 +242,14 @@ class TestRipper::Lexer < Test::Unit::TestCase
     EOF
     assert_equal([[5, 0], :on_heredoc_end, "EOS\n", state(:EXPR_BEG)], Ripper.lex(s).last, bug)
   end
+
+  def test_tokenize_with_here_document
+    bug = '[Bug #18963]'
+    code = %[
+<<A + "hello
+A
+world"
+]
+    assert_equal(code, Ripper.tokenize(code).join(""), bug)
+  end
 end
