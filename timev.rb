@@ -1,19 +1,61 @@
-# Time is an abstraction of dates and times. Time is stored internally as
-# the number of seconds with subsecond since the _Epoch_,
-# 1970-01-01 00:00:00 UTC.
+# A \Time object represents a date and time:
 #
-# The Time class treats GMT
-# (Greenwich Mean Time) and UTC (Coordinated Universal Time) as equivalent.
+#   Time.new(2000, 1, 1, 0, 0, 0) # => 2000-01-01 00:00:00 -0600
+#
+# Although its value is stored internally as a single numeric
+# (see {Epoch Seconds}[rdoc-ref:Time@Epoch+Seconds] below),
+# it can be convenient to deal with the value by parts:
+#
+#   t = Time.new(-2000, 1, 1, 0, 0, 0.0)
+#   # => -2000-01-01 00:00:00 -0600
+#   t.year # => -2000
+#   t.month # => 1
+#   t.mday # => 1
+#   t.hour # => 0
+#   t.min # => 0
+#   t.sec # => 0
+#   t.subsec # => 0
+#
+#   t = Time.new(2000, 12, 31, 23, 59, 59.5)
+#   # => 2000-12-31 23:59:59.5 -0600
+#   t.year # => 2000
+#   t.month # => 12
+#   t.mday # => 31
+#   t.hour # => 23
+#   t.min # => 59
+#   t.sec # => 59
+#   t.subsec # => (1/2)
+#
+# == Epoch Seconds
+#
+# The value of a \Time object is stored internally as a Rational object
+# representing <i>Epoch seconds</i>,
+# which the exact number of seconds (including fractional subseconds)
+# since the Unix Epoch, January 1, 1970.
+#
+# You can retrieve that exact number using method Time.to_r:
+#
+#   Time.at(0).to_r        # => (0/1)
+#   Time.at(0.999999).to_r # => (9007190247541737/9007199254740992)
+#
+# Other retrieval methods such as Time.to_i and Time.to_f
+# may return a value that rounds or truncates subseconds.
+#
+# == \Time Resolution
+#
+# A \Time object derived from the system clock
+# (for example, by method Time.now)
+# has the resolution supported by the system.
+#
+# == GMT and UTC
+#
+# The \Time class treats
+# GMT ({Greenwich Mean Time}[https://en.wikipedia.org/wiki/Greenwich_Mean_Time])
+# and
+# UTC ({Coordinated Universal Time}[https://en.wikipedia.org/wiki/Coordinated_Universal_Time])
+# as equivalent.
 # GMT is the older way of referring to these baseline times but persists in
 # the names of calls on POSIX systems.
-#
-# Note: A \Time object uses the resolution available on your system clock.
-#
-# All times may have subsecond. Be aware of this fact when comparing times
-# with each other -- times that are apparently equal when displayed may be
-# different when compared.
-# (Since Ruby 2.7.0, Time#inspect shows subsecond but
-# Time#to_s still doesn't show subsecond.)
 #
 # == Examples
 #
@@ -229,7 +271,9 @@ class Time
   #
   # - A \Time object, whose value is the basis for the returned time;
   #   also influenced by optional keyword argument +in:+ (see below).
-  # - A numeric number of seconds (since the epoch) for the returned time.
+  # - A numeric number of
+  #   {Epoch seconds}[rdoc-ref:Time@Epoch+Seconds]
+  #   for the returned time.
   #
   # Examples:
   #
@@ -259,7 +303,7 @@ class Time
   #     Time.at(secs, 1000000, :microsecond)  # => 2001-01-01 00:00:00 -0600
   #     Time.at(secs, -1000000, :microsecond) # => 2000-12-31 23:59:58 -0600
   #
-  # - +:nsec+ or +:nanosecond+: +subsec+ in nanoseconds:
+  # - +:nanosecond+ or +:nsec+: +subsec+ in nanoseconds:
   #
   #     Time.at(secs, 0, :nanosecond)           # => 2000-12-31 23:59:59 -0600
   #     Time.at(secs, 500000000, :nanosecond)   # => 2000-12-31 23:59:59.5 -0600
@@ -275,6 +319,12 @@ class Time
   #
   # For the forms of argument +zone+, see
   # {Timezone Specifiers}[rdoc-ref:timezone_specifiers.rdoc].
+  #
+  # Related:
+  #
+  # - Time.to_f: returns Epoch seconds as a Float (may be approximate).
+  # - Time.to_i: returns Epoch seconds as an integer (subseconds truncated).
+  # - Time.to_r: returns Epoch seconds as a Rational (exact),
   #
   def self.at(time, subsec = false, unit = :microsecond, in: nil)
     if Primitive.mandatory_only?
