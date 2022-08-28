@@ -383,7 +383,7 @@ print <<EOS
     )
   end
 end
-CROSS_COMPILING = nil unless defined? CROSS_COMPILING
+CROSS_COMPILING = (RbConfig::CONFIG["arch"] != RUBY_PLATFORM) unless defined? CROSS_COMPILING
 EOS
 
 # vi:set sw=2:

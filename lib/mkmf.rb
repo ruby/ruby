@@ -1866,7 +1866,7 @@ SRC
     if pkgconfig = with_config("#{pkg}-config") and find_executable0(pkgconfig)
       # if and only if package specific config command is given
     elsif ($PKGCONFIG ||=
-           (pkgconfig = with_config("pkg-config", ("pkg-config" unless CROSS_COMPILING))) &&
+           (pkgconfig = with_config("pkg-config", CROSS_COMPILING ? RbConfig::CONFIG["CC"].sub(/-gcc$/, "-pkg-config"): "pkg-config")) &&
            find_executable0(pkgconfig) && pkgconfig) and
         xsystem([*envs, $PKGCONFIG, "--exists", pkg])
       # default to pkg-config command
