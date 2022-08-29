@@ -3454,7 +3454,7 @@ fn jit_guard_known_klass(
 
             asm.comment("guard object is static symbol");
             assert!(RUBY_SPECIAL_SHIFT == 8);
-            let flag_bits = asm.and(obj_opnd, Opnd::UImm(RUBY_SYMBOL_FLAG as u64));
+            let flag_bits = asm.and(obj_opnd, Opnd::UImm(0xf));
             asm.cmp(flag_bits, Opnd::UImm(RUBY_SYMBOL_FLAG as u64));
             jit_chain_guard(JCC_JNE, jit, ctx, asm, ocb, max_chain_depth, side_exit);
             ctx.upgrade_opnd_type(insn_opnd, Type::ImmSymbol);
