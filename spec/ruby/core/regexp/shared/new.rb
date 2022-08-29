@@ -24,6 +24,32 @@ describe :regexp_new, shared: true do
   end
 end
 
+describe :regexp_new_non_string_or_regexp, shared: true do
+  it "calls #to_str method for non-String/Regexp argument" do
+    obj = Object.new
+    def obj.to_str() "a" end
+
+    Regexp.send(@method, obj).should == /a/
+  end
+
+  it "raises TypeError if there is no #to_str method for non-String/Regexp argument" do
+    obj = Object.new
+    -> { Regexp.send(@method, obj) }.should raise_error(TypeError, "no implicit conversion of Object into String")
+
+    -> { Regexp.send(@method, 1) }.should raise_error(TypeError, "no implicit conversion of Integer into String")
+    -> { Regexp.send(@method, 1.0) }.should raise_error(TypeError, "no implicit conversion of Float into String")
+    -> { Regexp.send(@method, :symbol) }.should raise_error(TypeError, "no implicit conversion of Symbol into String")
+    -> { Regexp.send(@method, []) }.should raise_error(TypeError, "no implicit conversion of Array into String")
+  end
+
+  it "raises TypeError if #to_str returns non-String value" do
+    obj = Object.new
+    def obj.to_str() [] end
+
+    -> { Regexp.send(@method, obj) }.should raise_error(TypeError, /can't convert Object to String/)
+  end
+end
+
 describe :regexp_new_string, shared: true do
   it "uses the String argument as an unescaped literal to construct a Regexp object" do
     Regexp.send(@method, "^hi{2,3}fo.o$").should == /^hi{2,3}fo.o$/
@@ -95,6 +121,16 @@ describe :regexp_new_string, shared: true do
     (r.options & Regexp::IGNORECASE).should_not == 0
     (r.options & Regexp::MULTILINE).should == 0
     (r.options & Regexp::EXTENDED).should_not == 0
+  end
+
+  it "does not try to convert the second argument to Integer with #to_int method call" do
+    ScratchPad.clear
+    obj = Object.new
+    def obj.to_int() ScratchPad.record(:called) end
+
+    Regexp.send(@method, "Hi", obj)
+
+    ScratchPad.recorded.should == nil
   end
 
   ruby_version_is ""..."3.2" do

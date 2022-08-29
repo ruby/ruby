@@ -58,6 +58,11 @@ describe "Zlib::Deflate#deflate" do
                       Array.new(31, 0) +
                       [24, 128, 0, 0, 1]).pack('C*')
   end
+
+  it "has a binary encoding" do
+    @deflator.deflate("").encoding.should == Encoding::BINARY
+    @deflator.finish.encoding.should == Encoding::BINARY
+  end
 end
 
 describe "Zlib::Deflate#deflate" do

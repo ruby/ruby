@@ -572,6 +572,13 @@ describe "A method" do
     end
 
     evaluate <<-ruby do
+        def m(a:, **kw) [a, kw] end
+      ruby
+
+      -> { m(b: 1) }.should raise_error(ArgumentError)
+    end
+
+    evaluate <<-ruby do
         def m(a: 1) a end
       ruby
 

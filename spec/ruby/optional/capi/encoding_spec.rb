@@ -63,6 +63,48 @@ describe "C-API Encoding function" do
     end
   end
 
+  describe "rb_enc_strlen" do
+    before :each do
+      @str = 'こにちわ' # Each codepoint in this string is 3 bytes in UTF-8
+    end
+
+    it "returns the correct string length for the encoding" do
+      @s.rb_enc_strlen(@str, @str.bytesize, Encoding::UTF_8).should == 4
+      @s.rb_enc_strlen(@str, @str.bytesize, Encoding::BINARY).should == 12
+    end
+
+    it "returns the string length based on a fixed-width encoding's character length, even if the encoding is incompatible" do
+      @s.rb_enc_strlen(@str, @str.bytesize, Encoding::UTF_16BE).should == 6
+      @s.rb_enc_strlen(@str, @str.bytesize, Encoding::UTF_16LE).should == 6
+      @s.rb_enc_strlen(@str, @str.bytesize, Encoding::UTF_32BE).should == 3
+      @s.rb_enc_strlen(@str, @str.bytesize, Encoding::UTF_32LE).should == 3
+    end
+
+    it "does not consider strings to be NUL-terminated" do
+      s = "abc\0def"
+      @s.rb_enc_strlen(s, s.bytesize, Encoding::US_ASCII).should == 7
+      @s.rb_enc_strlen(s, s.bytesize, Encoding::UTF_8).should == 7
+    end
+
+    describe "handles broken strings" do
+      it "combines valid character and invalid character counts in UTF-8" do
+        # The result is 3 because `rb_enc_strlen` counts the first valid character and then adds
+        # the byte count for the invalid character that follows for 1 + 2.
+        @s.rb_enc_strlen(@str, 5, Encoding::UTF_8).should == 3
+      end
+
+      it "combines valid character and invalid character counts in UTF-16" do
+        @s.rb_enc_strlen(@str, 5, Encoding::UTF_16BE).should == 3
+      end
+
+      it "rounds up for fixed-width encodings" do
+        @s.rb_enc_strlen(@str, 7, Encoding::UTF_32BE).should == 2
+        @s.rb_enc_strlen(@str, 7, Encoding::UTF_32LE).should == 2
+        @s.rb_enc_strlen(@str, 5, Encoding::BINARY).should == 5
+      end
+    end
+  end
+
   describe "rb_enc_find" do
     it "returns the encoding of an Encoding" do
       @s.rb_enc_find("UTF-8").should == "UTF-8"

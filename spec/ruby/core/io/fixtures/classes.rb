@@ -7,6 +7,18 @@ module IOSpecs
   class SubIO < IO
   end
 
+  class SubIOWithRedefinedNew < IO
+    def self.new(...)
+      ScratchPad << :redefined_new_called
+      super
+    end
+
+    def initialize(...)
+      ScratchPad << :call_original_initialize
+      super
+    end
+  end
+
   def self.collector
     Proc.new { |x| ScratchPad << x }
   end
