@@ -126,8 +126,8 @@ Note: We're only listing outstanding class updates.
 
 * Regexp
     * Regexp.new now supports passing the regexp flags not only as an Integer,
-      but also as a String Unknown flags raise errors.  Otherwise, anything
-      other than `true`, `false`, `nil` or Integer will be warned.
+      but also as a String.  Unknown flags raise ArgumentError.
+      Otherwise, anything other than `true`, `false`, `nil` or Integer will be warned.
       [[Feature #18788]]
 
 * Refinement
