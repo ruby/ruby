@@ -18,7 +18,8 @@ describe "DateTime#to_time" do
     time.sec.should == 59
   end
 
-  version_is(Date::VERSION, '3.2.3') do
+  date_version = defined?(Date::VERSION) ? Date::VERSION : '0.0.0'
+  version_is(date_version, '3.2.3') do
     it "returns a Time representing the same instant before Gregorian" do
       datetime = DateTime.civil(1582, 10, 4, 23, 58, 59)
       time = datetime.to_time.utc

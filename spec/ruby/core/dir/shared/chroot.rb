@@ -3,7 +3,7 @@ describe :dir_chroot_as_root, shared: true do
     DirSpecs.create_mock_dirs
 
     @real_root = "../" * (File.dirname(__FILE__).count('/') - 1)
-    @ref_dir = File.join("/", Dir.new('/').entries.first)
+    @ref_dir = File.join("/", File.basename(Dir["/*"].first))
   end
 
   after :all do
