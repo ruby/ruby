@@ -257,6 +257,8 @@ jobs:
       - run: make test-all TESTS='-- ruby -ext-'
         if: ${{ matrix.entry.check }}
       - run: make test-spec
+        env:
+          CHECK_LEAKS: true
         if: ${{ matrix.entry.check }}
       - run: make test-annocheck
         if: ${{ matrix.entry.check && endsWith(matrix.entry.name, 'annocheck') }}
