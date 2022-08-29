@@ -43,6 +43,7 @@ prehook = proc do |extmk|
   $extout_prefix = '$(extout)$(target_prefix)/'
   config = RbConfig::CONFIG
   mkconfig = RbConfig::MAKEFILE_CONFIG
+  $builtruby ||= File.join(builddir, config['RUBY_INSTALL_NAME'] + config['EXEEXT'])
   RbConfig.fire_update!("builddir", builddir)
   RbConfig.fire_update!("buildlibdir", builddir)
   RbConfig.fire_update!("libdir", builddir)
