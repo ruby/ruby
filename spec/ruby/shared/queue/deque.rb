@@ -55,8 +55,8 @@ describe :queue_deq, shared: true do
     t.join
   end
 
-  describe "with a timeout" do
-    ruby_version_is "3.2" do
+  ruby_version_is "3.2" do
+    describe "with a timeout" do
       it "returns an item if one is available in time" do
         q = @object.call
 
@@ -106,6 +106,31 @@ describe :queue_deq, shared: true do
           ArgumentError,
           "can't set a timeout if non_block is enabled",
         )
+      end
+    end
+
+    describe "with exception: false" do
+      it "raise ArgumentError if exception is anything but true or false" do
+        q = @object.call
+        q << 1 << 2 << 3
+        q.send(@method, exception: true).should == 1
+        q.send(@method, exception: false).should == 2
+
+        -> { q.send(@method, exception: nil) }.should raise_error(
+          ArgumentError,
+          "expected true or false as exception: nil",
+        )
+      end
+
+      it "returns nil if nonblock=true and the queue is empty" do
+        q = @object.call
+        q.send(@method, true, exception: false).should == nil
+      end
+
+      it "returns nil if nonblock=true and the queue is closed and empty" do
+        q = @object.call
+        q.close
+        q.send(@method, true, exception: false).should == nil
       end
     end
   end

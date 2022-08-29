@@ -135,6 +135,11 @@ class TestThreadQueue < Test::Unit::TestCase
     end
   end
 
+  def test_queue_pop_non_block_no_exception
+    q = Thread::Queue.new
+    assert_nil q.pop(true, exception: false)
+  end
+
   def test_sized_queue_pop_interrupt
     q = Thread::SizedQueue.new(1)
     t1 = Thread.new { q.pop }
@@ -168,6 +173,11 @@ class TestThreadQueue < Test::Unit::TestCase
     end
   end
 
+  def test_sized_queue_pop_non_block_no_exception
+    q = Thread::SizedQueue.new(1)
+    assert_nil q.pop(true, exception: false)
+  end
+
   def test_sized_queue_push_timeout
     q = Thread::SizedQueue.new(1)
 
@@ -192,6 +202,12 @@ class TestThreadQueue < Test::Unit::TestCase
     assert_raise_with_message(ThreadError, /full/) do
       q.push(2, true)
     end
+  end
+
+  def test_sized_queue_push_interrupt_no_exception
+    q = Thread::SizedQueue.new(1)
+    q.push(1)
+    assert_nil q.push(2, true, exception: false)
   end
 
   def test_sized_queue_push_non_block
@@ -452,6 +468,12 @@ class TestThreadQueue < Test::Unit::TestCase
     q = Thread::SizedQueue.new 7
     q.close
     assert_raise_with_message(ClosedQueueError, /queue closed/){q.push(non_block=true)}
+  end
+
+  def test_sized_queue_closed_push_non_blocking_no_exception
+    q = Thread::SizedQueue.new 7
+    q.close
+    assert_nil q.push(non_block=true, exception: false)
   end
 
   def test_blocked_pushers

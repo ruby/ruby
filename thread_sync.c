@@ -901,10 +901,13 @@ rb_queue_initialize(int argc, VALUE *argv, VALUE self)
 }
 
 static VALUE
-queue_do_push(VALUE self, struct rb_queue *q, VALUE obj)
+queue_do_push(VALUE self, struct rb_queue *q, VALUE obj, bool raise)
 {
     if (queue_closed_p(self)) {
-        raise_closed_queue_error(self);
+        if (raise) {
+            raise_closed_queue_error(self);
+        }
+        return Qnil;
     }
     rb_ary_push(check_array(self, q->que), obj);
     wakeup_one(queue_waitq(q));
@@ -971,20 +974,10 @@ rb_queue_closed_p(VALUE self)
     return RBOOL(queue_closed_p(self));
 }
 
-/*
- * Document-method: Thread::Queue#push
- * call-seq:
- *   push(object)
- *   enq(object)
- *   <<(object)
- *
- * Pushes the given +object+ to the queue.
- */
-
 static VALUE
-rb_queue_push(VALUE self, VALUE obj)
+rb_queue_push(rb_execution_context_t *ec, VALUE self, VALUE obj, VALUE exception)
 {
-    return queue_do_push(self, queue_ptr(self), obj);
+    return queue_do_push(self, queue_ptr(self), obj, rb_bool_expected(exception, "exception", TRUE));
 }
 
 static VALUE
@@ -1026,14 +1019,17 @@ szqueue_sleep_done(VALUE p)
 }
 
 static VALUE
-queue_do_pop(VALUE self, struct rb_queue *q, int should_block, VALUE timeout)
+queue_do_pop(VALUE self, struct rb_queue *q, int should_block, VALUE timeout, bool raise)
 {
     check_array(self, q->que);
     rb_hrtime_t end = queue_timeout2hrtime(timeout);
 
     while (RARRAY_LEN(q->que) == 0) {
         if (!should_block) {
-            rb_raise(rb_eThreadError, "queue empty");
+            if (raise) {
+                rb_raise(rb_eThreadError, "queue empty");
+            }
+            return Qnil;
         }
         else if (queue_closed_p(self)) {
             return queue_closed_result(self, q);
@@ -1070,9 +1066,9 @@ queue_do_pop(VALUE self, struct rb_queue *q, int should_block, VALUE timeout)
 }
 
 static VALUE
-rb_queue_pop(rb_execution_context_t *ec, VALUE self, VALUE non_block, VALUE timeout)
+rb_queue_pop(rb_execution_context_t *ec, VALUE self, VALUE non_block, VALUE timeout, VALUE exception)
 {
-    return queue_do_pop(self, queue_ptr(self), !RTEST(non_block), timeout);
+    return queue_do_pop(self, queue_ptr(self), !RTEST(non_block), timeout, rb_bool_expected(exception, "exception", TRUE));
 }
 
 /*
@@ -1230,15 +1226,20 @@ rb_szqueue_max_set(VALUE self, VALUE vmax)
 }
 
 static VALUE
-rb_szqueue_push(rb_execution_context_t *ec, VALUE self, VALUE object, VALUE non_block, VALUE timeout)
+rb_szqueue_push(rb_execution_context_t *ec, VALUE self, VALUE object, VALUE non_block, VALUE timeout, VALUE exception)
 {
     rb_hrtime_t end = queue_timeout2hrtime(timeout);
     bool timed_out = false;
     struct rb_szqueue *sq = szqueue_ptr(self);
 
+    bool raise = rb_bool_expected(exception, "exception", TRUE);
+
     while (queue_length(self, &sq->q) >= sq->max) {
         if (RTEST(non_block)) {
-            rb_raise(rb_eThreadError, "queue full");
+            if (raise) {
+                rb_raise(rb_eThreadError, "queue full");
+            }
+            return Qnil;
         }
         else if (queue_closed_p(self)) {
             break;
@@ -1269,19 +1270,22 @@ rb_szqueue_push(rb_execution_context_t *ec, VALUE self, VALUE object, VALUE non_
     }
 
     if (queue_closed_p(self)) {
-        raise_closed_queue_error(self);
+        if (raise) {
+            raise_closed_queue_error(self);
+        }
+        return Qnil;
     }
 
     if (timed_out) return Qnil;
 
-    return queue_do_push(self, &sq->q, object);
+    return queue_do_push(self, &sq->q, object, exception);
 }
 
 static VALUE
-szqueue_do_pop(VALUE self, int should_block, VALUE timeout)
+szqueue_do_pop(VALUE self, int should_block, VALUE timeout, bool raise)
 {
     struct rb_szqueue *sq = szqueue_ptr(self);
-    VALUE retval = queue_do_pop(self, &sq->q, should_block, timeout);
+    VALUE retval = queue_do_pop(self, &sq->q, should_block, timeout, raise);
 
     if (queue_length(self, &sq->q) < sq->max) {
         wakeup_one(szqueue_pushq(sq));
@@ -1290,9 +1294,9 @@ szqueue_do_pop(VALUE self, int should_block, VALUE timeout)
     return retval;
 }
 static VALUE
-rb_szqueue_pop(rb_execution_context_t *ec, VALUE self, VALUE non_block, VALUE timeout)
+rb_szqueue_pop(rb_execution_context_t *ec, VALUE self, VALUE non_block, VALUE timeout, VALUE exception)
 {
-    return szqueue_do_pop(self, !RTEST(non_block), timeout);
+    return szqueue_do_pop(self, !RTEST(non_block), timeout, rb_bool_expected(exception, "exception", TRUE));
 }
 
 /*
@@ -1575,14 +1579,11 @@ Init_thread_sync(void)
     rb_define_method(rb_cQueue, "marshal_dump", undumpable, 0);
     rb_define_method(rb_cQueue, "close", rb_queue_close, 0);
     rb_define_method(rb_cQueue, "closed?", rb_queue_closed_p, 0);
-    rb_define_method(rb_cQueue, "push", rb_queue_push, 1);
     rb_define_method(rb_cQueue, "empty?", rb_queue_empty_p, 0);
     rb_define_method(rb_cQueue, "clear", rb_queue_clear, 0);
     rb_define_method(rb_cQueue, "length", rb_queue_length, 0);
     rb_define_method(rb_cQueue, "num_waiting", rb_queue_num_waiting, 0);
 
-    rb_define_alias(rb_cQueue, "enq", "push");
-    rb_define_alias(rb_cQueue, "<<", "push");
     rb_define_alias(rb_cQueue, "size", "length");
 
     DEFINE_CLASS(SizedQueue, Queue);

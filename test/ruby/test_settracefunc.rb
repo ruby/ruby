@@ -2101,14 +2101,15 @@ CODE
     t.join
     assert_equal ["c-return", base_line + 3], events[0]
     assert_equal ["line", base_line + 6],     events[1]
-    assert_equal ["c-call", base_line + 6],   events[2]
-    assert_equal ["c-return", base_line + 6], events[3]
-    assert_equal ["line", base_line + 7],     events[4]
-    assert_equal ["line", base_line + 8],     events[5]
-    assert_equal ["call", base_line + -6],    events[6]
-    assert_equal ["return", base_line + -4],  events[7]
-    assert_equal ["line", base_line + 9],     events[8]
-    assert_equal nil,                         events[9]
+    assert_equal ["call"],                    events[2].first(1) # Queue#push
+    assert_equal ["line"],                    events[3].first(1) # Queue#push
+    assert_equal ["return"],                  events[4].first(1) # Queue#push
+    assert_equal ["line", base_line + 7],     events[5]
+    assert_equal ["line", base_line + 8],     events[6]
+    assert_equal ["call", base_line + -6],    events[7]
+    assert_equal ["return", base_line + -4],  events[8]
+    assert_equal ["line", base_line + 9],     events[9]
+    assert_equal nil,                         events[10]
 
     # other thread
     events = []
@@ -2140,15 +2141,15 @@ CODE
     m2t_q.push 1
     t.join
 
-    assert_equal ["line", base_line + 32],     events[0]
-    assert_equal ["line", base_line + 33],     events[1]
+    assert_equal ["line", base_line + 33],     events[0]
+    assert_equal ["line", base_line + 34],     events[1]
     assert_equal ["call", base_line + -6],     events[2]
     assert_equal ["return", base_line + -4],   events[3]
-    assert_equal ["line", base_line + 34],     events[4]
-    assert_equal ["line", base_line + 35],     events[5]
-    assert_equal ["c-call", base_line + 35],   events[6] # Thread.current
-    assert_equal ["c-return", base_line + 35], events[7] # Thread.current
-    assert_equal ["c-call", base_line + 35],   events[8] # Thread#set_trace_func
+    assert_equal ["line", base_line + 35],     events[4]
+    assert_equal ["line", base_line + 36],     events[5]
+    assert_equal ["c-call", base_line + 36],   events[6] # Thread.current
+    assert_equal ["c-return", base_line + 36], events[7] # Thread.current
+    assert_equal ["c-call", base_line + 36],   events[8] # Thread#set_trace_func
     assert_equal nil,                          events[9]
   end
 
