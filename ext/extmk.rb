@@ -408,8 +408,10 @@ if CROSS_COMPILING
   $ruby = $mflags.defined?("MINIRUBY") || CONFIG['MINIRUBY']
 elsif sep = config_string('BUILD_FILE_SEPARATOR')
   $ruby = "$(topdir:/=#{sep})#{sep}miniruby" + EXEEXT
-else
+elsif CONFIG['EXTSTATIC']
   $ruby = '$(topdir)/miniruby' + EXEEXT
+else
+  $ruby = '$(topdir)/ruby' + EXEEXT
 end
 $ruby = [$ruby]
 $ruby << "-I'$(topdir)'"
@@ -421,6 +423,7 @@ end
 topruby = $ruby
 $ruby = topruby.join(' ')
 $mflags << "ruby=#$ruby"
+$builtruby = '$(topdir)/miniruby' + EXEEXT # Must be an executable path
 
 MTIMES = [__FILE__, 'rbconfig.rb', srcdir+'/lib/mkmf.rb'].collect {|f| File.mtime(f)}
 
