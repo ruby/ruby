@@ -804,6 +804,54 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
     end
   end
 
+  def test_keylog_cb
+    pend "Keylog callback is not supported" if !openssl?(1, 1, 1) || libressl?
+
+    prefix = 'CLIENT_RANDOM'
+    context = OpenSSL::SSL::SSLContext.new
+    context.min_version = context.max_version = OpenSSL::SSL::TLS1_2_VERSION
+
+    cb_called = false
+    context.keylog_cb = proc do |_sock, line|
+      cb_called = true
+      assert_equal(prefix, line.split.first)
+    end
+
+    start_server do |port|
+      server_connect(port, context) do |ssl|
+        ssl.puts "abc"
+        assert_equal("abc\n", ssl.gets)
+        assert_equal(true, cb_called)
+      end
+    end
+
+    if tls13_supported?
+      prefixes = [
+        'SERVER_HANDSHAKE_TRAFFIC_SECRET',
+        'EXPORTER_SECRET',
+        'SERVER_TRAFFIC_SECRET_0',
+        'CLIENT_HANDSHAKE_TRAFFIC_SECRET',
+        'CLIENT_TRAFFIC_SECRET_0',
+      ]
+      context = OpenSSL::SSL::SSLContext.new
+      context.min_version = context.max_version = OpenSSL::SSL::TLS1_3_VERSION
+      cb_called = false
+      context.keylog_cb = proc do |_sock, line|
+        cb_called = true
+        assert_not_nil(prefixes.delete(line.split.first))
+      end
+
+      start_server do |port|
+        server_connect(port, context) do |ssl|
+          ssl.puts "abc"
+          assert_equal("abc\n", ssl.gets)
+          assert_equal(true, cb_called)
+        end
+        assert_equal(0, prefixes.size)
+      end
+    end
+  end
+
   def test_tlsext_hostname
     fooctx = OpenSSL::SSL::SSLContext.new
     fooctx.cert = @cli_cert
