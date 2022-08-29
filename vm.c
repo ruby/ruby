@@ -4296,51 +4296,48 @@ usage_analysis_register_running(VALUE self)
   return RBOOL(ruby_vm_collect_usage_func_register != 0);
 }
 
+static VALUE
+usage_analysis_clear(VALUE self, ID usage_hash)
+{
+    VALUE uh;
+    uh = rb_const_get(self, usage_hash);
+    rb_hash_clear(uh);
+
+    return Qtrue;
+}
+
+
 /* :nodoc: */
 static VALUE
 usage_analysis_insn_clear(VALUE self)
 {
-  ID usage_hash;
-  ID bigram_hash;
-  VALUE uh;
-  VALUE bh;
+    ID usage_hash;
+    ID bigram_hash;
 
-  CONST_ID(usage_hash, "USAGE_ANALYSIS_INSN");
-  CONST_ID(bigram_hash, "USAGE_ANALYSIS_INSN_BIGRAM");
-  uh = rb_const_get(rb_cRubyVM, usage_hash);
-  bh = rb_const_get(rb_cRubyVM, bigram_hash);
-  rb_hash_clear(uh);
-  rb_hash_clear(bh);
-
-  return Qtrue;
+    CONST_ID(usage_hash, "USAGE_ANALYSIS_INSN");
+    CONST_ID(bigram_hash, "USAGE_ANALYSIS_INSN_BIGRAM");
+    usage_analysis_clear(rb_cRubyVM, usage_hash);
+    return usage_analysis_clear(rb_cRubyVM, bigram_hash);
 }
 
 /* :nodoc: */
 static VALUE
 usage_analysis_operand_clear(VALUE self)
 {
-  ID usage_hash;
-  VALUE uh;
+    ID usage_hash;
 
-  CONST_ID(usage_hash, "USAGE_ANALYSIS_INSN");
-  uh = rb_const_get(rb_cRubyVM, usage_hash);
-  rb_hash_clear(uh);
-
-  return Qtrue;
+    CONST_ID(usage_hash, "USAGE_ANALYSIS_INSN");
+    return usage_analysis_clear(self, usage_hash);
 }
 
 /* :nodoc: */
 static VALUE
 usage_analysis_register_clear(VALUE self)
 {
-  ID usage_hash;
-  VALUE uh;
+      ID usage_hash;
 
-  CONST_ID(usage_hash, "USAGE_ANALYSIS_REGS");
-  uh = rb_const_get(rb_cRubyVM, usage_hash);
-  rb_hash_clear(uh);
-
-  return Qtrue;
+    CONST_ID(usage_hash, "USAGE_ANALYSIS_REGS");
+    return usage_analysis_clear(self, usage_hash);
 }
 
 #else
