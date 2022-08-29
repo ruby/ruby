@@ -823,8 +823,15 @@ link_o_to_so(const char **o_files, const char *so_file)
         NULL
     };
 
-    char **args = form_args(7, CC_LDSHARED_ARGS, CC_CODEFLAG_ARGS,
-            options, o_files, CC_LIBS, CC_DLDFLAGS_ARGS, CC_LINKER_ARGS);
+# if defined(__MACH__)
+    extern VALUE rb_libruby_selfpath;
+    const char *loader_args[] = {"-bundle_loader", StringValuePtr(rb_libruby_selfpath), NULL};
+# else
+    const char *loader_args[] = {NULL};
+# endif
+
+    char **args = form_args(8, CC_LDSHARED_ARGS, CC_CODEFLAG_ARGS,
+            options, o_files, loader_args, CC_LIBS, CC_DLDFLAGS_ARGS, CC_LINKER_ARGS);
     if (args == NULL)
         return false;
 
