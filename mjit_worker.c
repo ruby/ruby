@@ -939,7 +939,13 @@ compile_c_to_so(const char *c_file, const char *so_file)
 # endif
         o_file, NULL
     };
-    args = form_args(6, CC_LDSHARED_ARGS, CC_CODEFLAG_ARGS, so_args, CC_LIBS, CC_DLDFLAGS_ARGS, CC_LINKER_ARGS);
+# if defined(__MACH__)
+    extern VALUE rb_libruby_selfpath;
+    const char *loader_args[] = {"-bundle_loader", StringValuePtr(rb_libruby_selfpath), NULL};
+# else
+    const char *loader_args[] = {NULL};
+# endif
+    args = form_args(7, CC_LDSHARED_ARGS, CC_CODEFLAG_ARGS, so_args, loader_args, CC_LIBS, CC_DLDFLAGS_ARGS, CC_LINKER_ARGS);
     if (args == NULL) return false;
     exit_code = exec_process(cc_path, args);
     free(args);
