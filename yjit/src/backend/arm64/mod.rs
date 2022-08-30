@@ -963,6 +963,7 @@ impl Assembler
 
         // Invalidate icache for newly written out region so we don't run
         // stale code.
+        #[cfg(not(test))]
         {
             let start = cb.get_ptr(start_write_pos).raw_ptr();
             let write_ptr = cb.get_write_ptr().raw_ptr();
