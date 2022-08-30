@@ -139,6 +139,32 @@ impl Assembler
             }
         }
 
+        fn split_comparison_opnds(asm: &mut Assembler, unmapped_opnds: &Vec<Opnd>, left: &Opnd, right: &Opnd) -> (Opnd, Opnd) {
+            let split_opnd = match (unmapped_opnds[0], unmapped_opnds[1]) {
+                (Opnd::Mem(_), Opnd::Mem(_)) => {
+                    asm.load(*right)
+                },
+                (Opnd::Mem(_), Opnd::UImm(value)) => {
+                    // 32-bit values will be sign-extended
+                    if imm_num_bits(value as i64) > 32 {
+                       asm.load(*right)
+                    } else {
+                       *right
+                    }
+                },
+                (Opnd::Mem(_), Opnd::Imm(value)) => {
+                    if imm_num_bits(value) > 32 {
+                        asm.load(*right)
+                    } else {
+                        *right
+                    }
+                },
+                _ => *right
+            };
+
+            (*left, split_opnd)
+        }
+
         let live_ranges: Vec<usize> = take(&mut self.live_ranges);
         let mut asm = Assembler::new_with_label_names(take(&mut self.label_names));
         let mut iterator = self.into_draining_iter();
@@ -204,7 +230,7 @@ impl Assembler
                 },
                 Insn::Cmp { left, right } |
                 Insn::Test { left, right } => {
-                    let (split_left, split_right) = split_arithmetic_opnds(&mut asm, &live_ranges, index, &unmapped_opnds, left, right);
+                    let (split_left, split_right) = split_comparison_opnds(&mut asm, &unmapped_opnds, left, right);
 
                     *left = split_left;
                     *right = split_right;
