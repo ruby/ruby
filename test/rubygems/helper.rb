@@ -334,8 +334,6 @@ class Gem::TestCase < Test::Unit::TestCase
     # capture output
     Gem::DefaultUserInteraction.ui = Gem::MockGemUi.new
 
-    ENV["TMPDIR"] = @tempdir
-
     @orig_SYSTEM_WIDE_CONFIG_FILE = Gem::ConfigFile::SYSTEM_WIDE_CONFIG_FILE
     Gem::ConfigFile.send :remove_const, :SYSTEM_WIDE_CONFIG_FILE
     Gem::ConfigFile.send :const_set, :SYSTEM_WIDE_CONFIG_FILE,
