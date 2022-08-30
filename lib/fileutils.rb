@@ -1165,7 +1165,7 @@ module FileUtils
   #
   # Keyword arguments:
   #
-  # - <tt>force: true</tt> - ignores raised exceptions of Errno::ENOENT
+  # - <tt>force: true</tt> - ignores raised exceptions of StandardError
   #   and its descendants.
   # - <tt>noop: true</tt> - does not remove files; returns +nil+.
   # - <tt>verbose: true</tt> - prints an equivalent command:
@@ -1248,7 +1248,7 @@ module FileUtils
   #
   # Keyword arguments:
   #
-  # - <tt>force: true</tt> - ignores raised exceptions of Errno::ENOENT
+  # - <tt>force: true</tt> - ignores raised exceptions of StandardError
   #   and its descendants.
   # - <tt>noop: true</tt> - does not remove entries; returns +nil+.
   # - <tt>secure: true</tt> - removes +src+ securely;
@@ -1315,7 +1315,7 @@ module FileUtils
   # see {Avoiding the TOCTTOU Vulnerability}[rdoc-ref:FileUtils@Avoiding+the+TOCTTOU+Vulnerability].
   #
   # Optional argument +force+ specifies whether to ignore
-  # raised exceptions of Errno::ENOENT and its descendants.
+  # raised exceptions of StandardError and its descendants.
   #
   # Related: {methods for deleting}[rdoc-ref:FileUtils@Deleting].
   #
@@ -1384,12 +1384,10 @@ module FileUtils
         ent.remove
       rescue
         raise unless force
-        raise unless Errno::ENOENT === $!
       end
     end
   rescue
     raise unless force
-    raise unless Errno::ENOENT === $!
   end
   module_function :remove_entry_secure
 
@@ -1415,7 +1413,7 @@ module FileUtils
   # should be {interpretable as a path}[rdoc-ref:FileUtils@Path+Arguments].
   #
   # Optional argument +force+ specifies whether to ignore
-  # raised exceptions of Errno::ENOENT and its descendants.
+  # raised exceptions of StandardError and its descendants.
   #
   # Related: FileUtils.remove_entry_secure.
   #
@@ -1425,12 +1423,10 @@ module FileUtils
         ent.remove
       rescue
         raise unless force
-        raise unless Errno::ENOENT === $!
       end
     end
   rescue
     raise unless force
-    raise unless Errno::ENOENT === $!
   end
   module_function :remove_entry
 
@@ -1441,7 +1437,7 @@ module FileUtils
   # should be {interpretable as a path}[rdoc-ref:FileUtils@Path+Arguments].
   #
   # Optional argument +force+ specifies whether to ignore
-  # raised exceptions of Errno::ENOENT and its descendants.
+  # raised exceptions of StandardError and its descendants.
   #
   # Related: {methods for deleting}[rdoc-ref:FileUtils@Deleting].
   #
@@ -1449,7 +1445,6 @@ module FileUtils
     Entry_.new(path).remove_file
   rescue
     raise unless force
-    raise unless Errno::ENOENT === $!
   end
   module_function :remove_file
 
@@ -1461,7 +1456,7 @@ module FileUtils
   # should be {interpretable as a path}[rdoc-ref:FileUtils@Path+Arguments].
   #
   # Optional argument +force+ specifies whether to ignore
-  # raised exceptions of Errno::ENOENT and its descendants.
+  # raised exceptions of StandardError and its descendants.
   #
   # Related: {methods for deleting}[rdoc-ref:FileUtils@Deleting].
   #
