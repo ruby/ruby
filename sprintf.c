@@ -221,7 +221,7 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
     VALUE result;
 
     long scanned = 0;
-    int coderange = ENC_CODERANGE_7BIT;
+    enum ruby_coderange_type coderange = ENC_CODERANGE_7BIT;
     int width, prec, flags = FNONE;
     int nextarg = 1;
     int posarg = 0;
@@ -246,6 +246,16 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
         rb_raise(rb_eArgError, "flag after precision"); \
     }
 
+#define update_coderange(partial) do { \
+        if (coderange != ENC_CODERANGE_BROKEN && scanned < blen \
+            && rb_enc_to_index(enc) /* != ENCINDEX_ASCII_8BIT */) { \
+            int cr = coderange; \
+            scanned += rb_str_coderange_scan_restartable(buf+scanned, buf+blen, enc, &cr); \
+            ENC_CODERANGE_SET(result, \
+                              (partial && cr == ENC_CODERANGE_UNKNOWN ? \
+                               ENC_CODERANGE_BROKEN : (coderange = cr))); \
+        } \
+    } while (0)
     ++argc;
     --argv;
     StringValue(fmt);
@@ -273,10 +283,7 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
             rb_raise(rb_eArgError, "incomplete format specifier; use %%%% (double %%) instead");
         }
         PUSH(p, t - p);
-        if (coderange != ENC_CODERANGE_BROKEN && scanned < blen) {
-            scanned += rb_str_coderange_scan_restartable(buf+scanned, buf+blen, enc, &coderange);
-            ENC_CODERANGE_SET(result, coderange);
-        }
+        update_coderange(FALSE);
         if (t >= end) {
             /* end of fmt string */
             goto sprint_exit;
@@ -492,13 +499,7 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
               format_s1:
                 len = RSTRING_LEN(str);
                 rb_str_set_len(result, blen);
-                if (coderange != ENC_CODERANGE_BROKEN && scanned < blen) {
-                    int cr = coderange;
-                    scanned += rb_str_coderange_scan_restartable(buf+scanned, buf+blen, enc, &cr);
-                    ENC_CODERANGE_SET(result,
-                                      (cr == ENC_CODERANGE_UNKNOWN ?
-                                       ENC_CODERANGE_BROKEN : (coderange = cr)));
-                }
+                update_coderange(TRUE);
                 enc = rb_enc_check(result, str);
                 if (flags&(FPREC|FWIDTH)) {
                     slen = rb_enc_strlen(RSTRING_PTR(str),RSTRING_END(str),enc);
@@ -930,10 +931,7 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
         flags = FNONE;
     }
 
-    if (coderange != ENC_CODERANGE_BROKEN && scanned < blen) {
-        scanned += rb_str_coderange_scan_restartable(buf+scanned, buf+blen, enc, &coderange);
-        ENC_CODERANGE_SET(result, coderange);
-    }
+    update_coderange(FALSE);
   sprint_exit:
     rb_str_tmp_frozen_release(orig, fmt);
     /* XXX - We cannot validate the number of arguments if (digit)$ style used.
