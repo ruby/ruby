@@ -369,6 +369,9 @@ class TestSprintf < Test::Unit::TestCase
     assert_equal(" " * BSIZ + "a", sprintf("%#{ BSIZ + 1 }c", ?a))
     assert_equal("a" + " " * BSIZ, sprintf("%-#{ BSIZ + 1 }c", ?a))
     assert_raise(ArgumentError) { sprintf("%c", -1) }
+    s = sprintf("%c".encode(Encoding::US_ASCII), 0x80)
+    assert_equal("\x80".b, s)
+    assert_predicate(s, :valid_encoding?)
   end
 
   def test_string
