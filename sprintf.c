@@ -454,12 +454,17 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
                     str = tmp;
                     goto format_s1;
                 }
-                else {
-                    n = NUM2INT(val);
-                    if (n >= 0) n = rb_enc_codelen((c = n), enc);
-                }
+                n = NUM2INT(val);
+                if (n >= 0) n = rb_enc_codelen((c = n), enc);
                 if (n <= 0) {
                     rb_raise(rb_eArgError, "invalid character");
+                }
+                int encidx = rb_ascii8bit_appendable_encoding_index(enc, c);
+                if (encidx >= 0 && encidx != rb_enc_to_index(enc)) {
+                    /* special case */
+                    rb_enc_associate_index(result, encidx);
+                    enc = rb_enc_from_index(encidx);
+                    coderange = ENC_CODERANGE_VALID;
                 }
                 if (!(flags & FWIDTH)) {
                     CHECK(n);

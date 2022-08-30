@@ -3481,17 +3481,13 @@ rb_str_concat(VALUE str1, VALUE str2)
         return rb_str_append(str1, str2);
     }
 
-    encidx = rb_enc_to_index(enc);
-    if (encidx == ENCINDEX_ASCII_8BIT || encidx == ENCINDEX_US_ASCII) {
-        /* US-ASCII automatically extended to ASCII-8BIT */
+    encidx = rb_ascii8bit_appendable_encoding_index(enc, code);
+    if (encidx >= 0) {
         char buf[1];
         buf[0] = (char)code;
-        if (code > 0xFF) {
-            rb_raise(rb_eRangeError, "%u out of char range", code);
-        }
         rb_str_cat(str1, buf, 1);
-        if (encidx == ENCINDEX_US_ASCII && code > 127) {
-            rb_enc_associate_index(str1, ENCINDEX_ASCII_8BIT);
+        if (encidx != rb_enc_to_index(enc)) {
+            rb_enc_associate_index(str1, encidx);
             ENC_CODERANGE_SET(str1, ENC_CODERANGE_VALID);
         }
     }
@@ -3522,6 +3518,26 @@ rb_str_concat(VALUE str1, VALUE str2)
         ENC_CODERANGE_SET(str1, cr);
     }
     return str1;
+}
+
+int
+rb_ascii8bit_appendable_encoding_index(rb_encoding *enc, unsigned int code)
+{
+    int encidx = rb_enc_to_index(enc);
+
+    if (encidx == ENCINDEX_ASCII_8BIT || encidx == ENCINDEX_US_ASCII) {
+        /* US-ASCII automatically extended to ASCII-8BIT */
+        if (code > 0xFF) {
+            rb_raise(rb_eRangeError, "%u out of char range", code);
+        }
+        if (encidx == ENCINDEX_US_ASCII && code > 127) {
+            return ENCINDEX_ASCII_8BIT;
+        }
+        return encidx;
+    }
+    else {
+        return -1;
+    }
 }
 
 /*
