@@ -204,6 +204,34 @@ class VCS
     revision_handler(rev).short_revision(rev)
   end
 
+  def revision_header(last, changed, modified, branch, title, limit: 20)
+    short = short_revision(last)
+    if /[^\x00-\x7f]/ =~ title and title.respond_to?(:force_encoding)
+      title = title.dup.force_encoding("US-ASCII")
+    end
+    code = [
+      "#define RUBY_REVISION #{short.inspect}",
+    ]
+    unless short == last
+      code << "#define RUBY_FULL_REVISION #{last.inspect}"
+    end
+    if branch
+      e = '..'
+      name = branch.sub(/\A(.{#{limit-e.size}}).{#{e.size+1},}/o) {$1+e}
+      name = name.dump.sub(/\\#/, '#')
+      code << "#define RUBY_BRANCH_NAME #{name}"
+    end
+    if title
+      title = title.dump.sub(/\\#/, '#')
+      code << "#define RUBY_LAST_COMMIT_TITLE #{title}"
+    end
+    if modified
+      t = modified.utc
+      code << t.strftime('#define RUBY_RELEASE_DATETIME "%FT%TZ"')
+    end
+    code
+  end
+
   class SVN < self
     register(".svn")
     COMMAND = ENV['SVN'] || 'svn'
