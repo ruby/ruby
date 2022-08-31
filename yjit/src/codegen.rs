@@ -398,6 +398,7 @@ fn gen_code_for_exit_from_stub(ocb: &mut OutlinedCb) -> CodePtr {
 
     gen_counter_incr!(asm, exit_from_branch_stub);
 
+    asm.comment("exit from branch stub");
     asm.cpop_into(SP);
     asm.cpop_into(EC);
     asm.cpop_into(CFP);
@@ -525,7 +526,7 @@ fn gen_full_cfunc_return(ocb: &mut OutlinedCb) -> CodePtr {
     // This chunk of code expects REG_EC to be filled properly and
     // RAX to contain the return value of the C method.
 
-    // Call full_cfunc_return()
+    asm.comment("full cfunc return");
     asm.ccall(
         rb_full_cfunc_return as *const u8,
         vec![EC, C_RET_OPND]
@@ -562,6 +563,7 @@ fn gen_leave_exit(ocb: &mut OutlinedCb) -> CodePtr {
     // Every exit to the interpreter should be counted
     gen_counter_incr!(asm, leave_interp_return);
 
+    asm.comment("exit from leave");
     asm.cpop_into(SP);
     asm.cpop_into(EC);
     asm.cpop_into(CFP);
@@ -624,7 +626,7 @@ pub fn gen_entry_prologue(cb: &mut CodeBlock, iseq: IseqPtr, insn_idx: u32) -> O
     let code_ptr = cb.get_write_ptr();
 
     let mut asm = Assembler::new();
-    if get_option!(dump_disasm) {
+    if get_option!(dump_disasm).is_some() {
         asm.comment(&format!("YJIT entry: {}", iseq_get_location(iseq)));
     } else {
         asm.comment("YJIT entry");
@@ -753,7 +755,7 @@ pub fn gen_single_block(
     let mut asm = Assembler::new();
 
     #[cfg(feature = "disasm")]
-    if get_option!(dump_disasm) {
+    if get_option!(dump_disasm).is_some() {
         asm.comment(&format!("Block: {} (ISEQ offset: {})", iseq_get_location(blockid.iseq), blockid.idx));
     }
 
