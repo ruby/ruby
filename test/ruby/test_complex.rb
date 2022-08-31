@@ -567,7 +567,7 @@ class Complex_Test < Test::Unit::TestCase
     assert_raise_with_message(TypeError, /C\u{1f5ff}/) { Complex(1).coerce(obj) }
   end
 
-  class ObjectX
+  class ObjectX < Numeric
     def initialize(real = true, n = 1) @n = n; @real = real; end
     def +(x) Rational(@n) end
     alias - +
