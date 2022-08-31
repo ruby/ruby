@@ -115,10 +115,10 @@ yjit_task:
     --with-ext=-test-/cxxanyargs,+
     --prefix="$RUBY_PREFIX"
     --enable-yjit=dev
-  make_miniruby_script: source $HOME/.cargo/env && make -j miniruby
+  make_miniruby_script: source $HOME/.cargo/env && make miniruby
   make_bindgen_script: |
     if [[ "$CC" = "clang-12" ]]; then
-      source $HOME/.cargo/env && make -j yjit-bindgen
+      source $HOME/.cargo/env && make yjit-bindgen
     else
       echo "only running bindgen on clang image"
     fi
@@ -127,7 +127,7 @@ yjit_task:
   output_stats_script: RUST_BACKTRACE=1 ./miniruby --yjit-call-threshold=1 --yjit-stats -e0
   full_build_script: source $HOME/.cargo/env && make -j
   cargo_test_script: source $HOME/.cargo/env && cd yjit && cargo test
-  make_test_script: source $HOME/.cargo/env && make -j test RUN_OPTS="--yjit-call-threshold=1 --yjit-verify-ctx"
-  make_test_all_script: source $HOME/.cargo/env && make -j test-all RUN_OPTS="--yjit-call-threshold=1" TESTOPTS="$RUBY_TESTOPTS"' --test-order=alpha --name=!/TestGCCompact/'
-  test_gc_compact_script: source $HOME/.cargo/env && make -j test-all RUN_OPTS="--yjit-call-threshold=1" TESTS="test/ruby/test_gc_compact.rb"
-  make_test_spec_script: source $HOME/.cargo/env && make -j test-spec RUN_OPTS="--yjit-call-threshold=1"
+  make_test_script: source $HOME/.cargo/env && make test RUN_OPTS="--yjit-call-threshold=1 --yjit-verify-ctx"
+  make_test_all_script: source $HOME/.cargo/env && make test-all RUN_OPTS="--yjit-call-threshold=1" TESTOPTS="$RUBY_TESTOPTS"' --test-order=alpha --name=!/TestGCCompact/'
+  test_gc_compact_script: source $HOME/.cargo/env && make test-all RUN_OPTS="--yjit-call-threshold=1" TESTS="test/ruby/test_gc_compact.rb"
+  make_test_spec_script: source $HOME/.cargo/env && make test-spec RUN_OPTS="--yjit-call-threshold=1"
