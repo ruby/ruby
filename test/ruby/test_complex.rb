@@ -568,19 +568,23 @@ class Complex_Test < Test::Unit::TestCase
   end
 
   class ObjectX
-    def +(x) Rational(1) end
+    def initialize(real = true, n = 1) @n = n; @real = real; end
+    def +(x) Rational(@n) end
     alias - +
     alias * +
     alias / +
     alias quo +
     alias ** +
-    def coerce(x) [x, Complex(1)] end
+    def coerce(x) [x, Complex(@n)] end
+    def real?; @real; end
   end
 
   def test_coerce2
     x = ObjectX.new
+    y = ObjectX.new(false)
     %w(+ - * / quo ** <=>).each do |op|
-      assert_kind_of(Numeric, Complex(1).__send__(op, x))
+      assert_kind_of(Numeric, Complex(1).__send__(op, x), op)
+      assert_kind_of(Numeric, Complex(1).__send__(op, y), op)
     end
   end
 
