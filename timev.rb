@@ -208,38 +208,6 @@
 # - #ceil: Returns a new time with subseconds raised to a ceiling.
 # - #floor: Returns a new time with subseconds lowered to a floor.
 #
-# == Timezone Argument
-#
-# A timezone argument must have +local_to_utc+ and +utc_to_local+
-# methods, and may have +name+, +abbr+, and +dst?+ methods.
-#
-# The +local_to_utc+ method should convert a Time-like object from
-# the timezone to UTC, and +utc_to_local+ is the opposite.  The
-# result also should be a Time or Time-like object (not necessary to
-# be the same class).  The #zone of the result is just ignored.
-# Time-like argument to these methods is similar to a Time object in
-# UTC without subsecond; it has attribute readers for the parts,
-# e.g. #year, #month, and so on, and epoch time readers, #to_i.  The
-# subsecond attributes are fixed as 0, and #utc_offset, #zone,
-# #isdst, and their aliases are same as a Time object in UTC.
-# Also #to_time, #+, and #- methods are defined.
-#
-# The +name+ method is used for marshaling. If this method is not
-# defined on a timezone object, Time objects using that timezone
-# object can not be dumped by Marshal.
-#
-# The +abbr+ method is used by '%Z' in #strftime.
-#
-# The +dst?+ method is called with a +Time+ value and should return whether
-# the +Time+ value is in daylight savings time in the zone.
-#
-# === Auto Conversion to Timezone
-#
-# At loading marshaled data, a timezone name will be converted to a timezone
-# object by +find_timezone+ class method, if the method is defined.
-#
-# Similarly, that class method will be called when a timezone argument does
-# not have the necessary methods mentioned above.
 class Time
   # Creates a new \Time object from the current system time.
   # This is the same as Time.new without arguments.
@@ -248,7 +216,7 @@ class Time
   #    Time.now(in: '+04:00') # => 2009-06-24 07:39:54 +0400
   #
   # For forms of argument +zone+, see
-  # {Timezone Specifiers}[rdoc-ref:timezone_specifiers.rdoc].
+  # {Timezone Specifiers}[rdoc-ref:timezones.rdoc].
   def self.now(in: nil)
     Primitive.time_s_now(Primitive.arg!(:in))
   end
@@ -306,7 +274,7 @@ class Time
   #   Time.at(secs, in: '-12:00') # => 2000-12-31 17:59:59 -1200
   #
   # For the forms of argument +zone+, see
-  # {Timezone Specifiers}[rdoc-ref:timezone_specifiers.rdoc].
+  # {Timezone Specifiers}[rdoc-ref:timezones.rdoc].
   #
   def self.at(time, subsec = false, unit = :microsecond, in: nil)
     if Primitive.mandatory_only?
@@ -383,7 +351,7 @@ class Time
   # When positional argument +zone+ or keyword argument +in:+ is given,
   # the new \Time object is in the specified timezone.
   # For the forms of argument +zone+, see
-  # {Timezone Specifiers}[rdoc-ref:timezone_specifiers.rdoc]:
+  # {Timezone Specifiers}[rdoc-ref:timezones.rdoc]:
   #
   #   Time.new(2000, 1, 1, 0, 0, 0, '+12:00')
   #   # => 2000-01-01 00:00:00 +1200
