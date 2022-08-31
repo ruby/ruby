@@ -90,7 +90,6 @@ yjit_task:
     matrix:
       CC: clang-12
       CC: gcc-11
-  timeout_in: 90m
   id_script: id
   set_env_script:
     # Set `GNUMAKEFLAGS`, because the flags are GNU make specific. Note using
@@ -128,6 +127,5 @@ yjit_task:
   full_build_script: source $HOME/.cargo/env && make
   cargo_test_script: source $HOME/.cargo/env && cd yjit && cargo test
   make_test_script: source $HOME/.cargo/env && make test RUN_OPTS="--yjit-call-threshold=1 --yjit-verify-ctx"
-  make_test_all_script: source $HOME/.cargo/env && make test-all RUN_OPTS="--yjit-call-threshold=1" TESTOPTS="$RUBY_TESTOPTS"' --test-order=alpha --name=!/TestGCCompact/'
-  test_gc_compact_script: source $HOME/.cargo/env && make test-all RUN_OPTS="--yjit-call-threshold=1" TESTS="test/ruby/test_gc_compact.rb"
+  make_test_all_script: source $HOME/.cargo/env && make test-all RUN_OPTS="--yjit-call-threshold=1" TESTOPTS="$RUBY_TESTOPTS"
   make_test_spec_script: source $HOME/.cargo/env && make test-spec RUN_OPTS="--yjit-call-threshold=1"
