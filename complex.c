@@ -495,7 +495,11 @@ nucomp_s_new(int argc, VALUE *argv, VALUE klass)
 inline static VALUE
 f_complex_new2(VALUE klass, VALUE x, VALUE y)
 {
-    assert(!RB_TYPE_P(x, T_COMPLEX));
+    if (RB_TYPE_P(x, T_COMPLEX)) {
+        get_dat1(x);
+        x = dat->real;
+        y = f_add(dat->imag, y);
+    }
     return nucomp_s_canonicalize_internal(klass, x, y);
 }
 
@@ -609,8 +613,14 @@ m_sin(VALUE x)
 static VALUE
 f_complex_polar(VALUE klass, VALUE x, VALUE y)
 {
-    assert(!RB_TYPE_P(x, T_COMPLEX));
-    assert(!RB_TYPE_P(y, T_COMPLEX));
+    if (RB_TYPE_P(x, T_COMPLEX)) {
+        get_dat1(x);
+        x = dat->real;
+    }
+    if (RB_TYPE_P(y, T_COMPLEX)) {
+        get_dat1(y);
+        y = dat->real;
+    }
     if (f_zero_p(x) || f_zero_p(y)) {
         return nucomp_s_new_internal(klass, x, RFLOAT_0);
     }
@@ -702,14 +712,6 @@ nucomp_s_polar(int argc, VALUE *argv, VALUE klass)
         nucomp_real_check(abs);
         nucomp_real_check(arg);
         break;
-    }
-    if (RB_TYPE_P(abs, T_COMPLEX)) {
-        get_dat1(abs);
-        abs = dat->real;
-    }
-    if (RB_TYPE_P(arg, T_COMPLEX)) {
-        get_dat1(arg);
-        arg = dat->real;
     }
     return f_complex_polar(klass, abs, arg);
 }
