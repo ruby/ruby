@@ -208,6 +208,8 @@
 # - #ceil: Returns a new time with subseconds raised to a ceiling.
 # - #floor: Returns a new time with subseconds lowered to a floor.
 #
+# For the forms of argument +zone+, see
+# {Timezone Specifiers}[rdoc-ref:timezones.rdoc].
 class Time
   # Creates a new \Time object from the current system time.
   # This is the same as Time.new without arguments.

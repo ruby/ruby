@@ -2,7 +2,7 @@
 
 === Timezone Specifiers
 
-Certain Ruby methods accept arguments that specify timezones:
+Certain \Time methods accept arguments that specify timezones:
 
 - Time.at: keyword argument +in:+.
 - Time.new: positional argument +zone+ or keyword argument +in:+.
@@ -57,45 +57,15 @@ in the range <tt>-86399..86399</tt>:
 
 ==== Timezone Objects
 
-In most cases, the zone value may be an instance
-of a specialized timezone class.
+In most cases, the zone value may be an object
+responding to certain timezone methods.
 
-\Exception (timezone object not allowed):
+\Exceptions (timezone object not allowed):
 
 - Time.new with positional argument +zone+.
 - Time.now with keyword argument +in:+.
 
-===== +TZInfo::Timezone+ Subclasses
-
-Among the timezone objects are instances of class TZInfo::Timezone
-and its subclasses.
-The class is defined in Ruby gem +tzinfo+;
-to install the gem:
-
-   gem install tzinfo
-
-Also of interest is Ruby gem +tzinfo-data+,
-which contains detailed information about hundreds of timezones;
-to install it:
-
-   gem install tzinfo-data
-
-Its timezones may be seen at
-https://en.wikipedia.org/wiki/List_of_tz_database_time_zones.
-
-Example:
-
-  require 'tzinfo'
-  tz = TZInfo::Timezone.get('America/New_York')
-  # => #<TZInfo::DataTimezone: America/New_York>
-  tz.kind_of?(TZInfo::Timezone) # => true
-
-===== Custom Timezone Classes
-
-A custom timezone object +tz+ may be used as the value for +zone+
-in creating a new \Time object +t+.
-
-A custom timezone class must have these instance methods:
+The timezone methods are:
 
 - +local_to_utc+:
 
@@ -136,4 +106,3 @@ which will be called if defined:
   - Called when <tt>Marshal.dump(t) is invoked
   - Argument: none.
   - Returns: the string name of the time.
-
