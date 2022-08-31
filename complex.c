@@ -316,7 +316,7 @@ f_negative_p(VALUE x)
 
 #define f_positive_p(x) (!f_negative_p(x))
 
-inline static int
+inline static bool
 f_zero_p(VALUE x)
 {
     if (RB_FLOAT_TYPE_P(x)) {
@@ -329,7 +329,7 @@ f_zero_p(VALUE x)
         const VALUE num = RRATIONAL(x)->num;
         return FIXNUM_ZERO_P(num);
     }
-    return (int)rb_equal(x, ZERO);
+    return rb_equal(x, ZERO) != 0;
 }
 
 #define f_nonzero_p(x) (!f_zero_p(x))
@@ -832,7 +832,7 @@ rb_complex_minus(VALUE self, VALUE other)
 }
 
 static VALUE
-safe_mul(VALUE a, VALUE b, int az, int bz)
+safe_mul(VALUE a, VALUE b, bool az, bool bz)
 {
     double v;
     if (!az && bz && RB_FLOAT_TYPE_P(a) && (v = RFLOAT_VALUE(a), !isnan(v))) {
@@ -847,10 +847,10 @@ safe_mul(VALUE a, VALUE b, int az, int bz)
 static void
 comp_mul(VALUE areal, VALUE aimag, VALUE breal, VALUE bimag, VALUE *real, VALUE *imag)
 {
-    int arzero = f_zero_p(areal);
-    int aizero = f_zero_p(aimag);
-    int brzero = f_zero_p(breal);
-    int bizero = f_zero_p(bimag);
+    bool arzero = f_zero_p(areal);
+    bool aizero = f_zero_p(aimag);
+    bool brzero = f_zero_p(breal);
+    bool bizero = f_zero_p(bimag);
     *real = f_sub(safe_mul(areal, breal, arzero, brzero),
                   safe_mul(aimag, bimag, aizero, bizero));
     *imag = f_add(safe_mul(areal, bimag, arzero, bizero),
@@ -1101,7 +1101,7 @@ static bool
 nucomp_real_p(VALUE self)
 {
     get_dat1(self);
-    return(f_zero_p(dat->imag) ? true : false);
+    return f_zero_p(dat->imag);
 }
 
 /*
