@@ -562,7 +562,7 @@ impl Assembler
 
         /// Emit a conditional jump instruction to a specific target. This is
         /// called when lowering any of the conditional jump instructions.
-        fn emit_conditional_jump<const CONDITION: u8, const INVERSE: u8>(cb: &mut CodeBlock, target: Target) {
+        fn emit_conditional_jump<const CONDITION: u8>(cb: &mut CodeBlock, target: Target) {
             match target {
                 Target::CodePtr(dst_ptr) => {
                     let dst_addr = dst_ptr.into_i64();
@@ -587,7 +587,7 @@ impl Assembler
                         // We're going to write out the inverse condition so
                         // that if it doesn't match it will skip over the
                         // instructions used for branching.
-                        bcond(cb, INVERSE, A64Opnd::new_imm((load_insns + 2) * 4));
+                        bcond(cb, Condition::inverse(CONDITION), A64Opnd::new_imm((load_insns + 2) * 4));
                         emit_load_value(cb, Assembler::SCRATCH0, dst_addr);
                         br(cb, Assembler::SCRATCH0);
 
@@ -883,19 +883,19 @@ impl Assembler
                     };
                 },
                 Insn::Je(target) | Insn::Jz(target) => {
-                    emit_conditional_jump::<{Condition::EQ}, {Condition::NE}>(cb, *target);
+                    emit_conditional_jump::<{Condition::EQ}>(cb, *target);
                 },
                 Insn::Jne(target) | Insn::Jnz(target) => {
-                    emit_conditional_jump::<{Condition::NE}, {Condition::EQ}>(cb, *target);
+                    emit_conditional_jump::<{Condition::NE}>(cb, *target);
                 },
                 Insn::Jl(target) => {
-                    emit_conditional_jump::<{Condition::LT}, {Condition::GE}>(cb, *target);
+                    emit_conditional_jump::<{Condition::LT}>(cb, *target);
                 },
                 Insn::Jbe(target) => {
-                    emit_conditional_jump::<{Condition::LS}, {Condition::HI}>(cb, *target);
+                    emit_conditional_jump::<{Condition::LS}>(cb, *target);
                 },
                 Insn::Jo(target) => {
-                    emit_conditional_jump::<{Condition::VS}, {Condition::VC}>(cb, *target);
+                    emit_conditional_jump::<{Condition::VS}>(cb, *target);
                 },
                 Insn::IncrCounter { mem, value } => {
                     ldaddal(cb, value.into(), value.into(), mem.into());

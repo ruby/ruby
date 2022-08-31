@@ -19,4 +19,34 @@ impl Condition {
     pub const GT: u8 = 0b1100; // greater than (signed)
     pub const LE: u8 = 0b1101; // less than or equal to (signed)
     pub const AL: u8 = 0b1110; // always
+
+    pub const fn inverse(condition: u8) -> u8 {
+        match condition {
+            Condition::EQ => Condition::NE,
+            Condition::NE => Condition::EQ,
+
+            Condition::CS => Condition::CC,
+            Condition::CC => Condition::CS,
+
+            Condition::MI => Condition::PL,
+            Condition::PL => Condition::MI,
+
+            Condition::VS => Condition::VC,
+            Condition::VC => Condition::VS,
+
+            Condition::HI => Condition::LS,
+            Condition::LS => Condition::HI,
+
+            Condition::LT => Condition::GE,
+            Condition::GE => Condition::LT,
+
+            Condition::GT => Condition::LE,
+            Condition::LE => Condition::GT,
+
+            Condition::AL => Condition::AL,
+
+            _ => panic!("Unknown condition")
+
+        }
+    }
 }
