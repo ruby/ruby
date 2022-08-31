@@ -20,8 +20,8 @@ pub struct BranchCond {
 impl BranchCond {
     /// B.cond
     /// https://developer.arm.com/documentation/ddi0596/2020-12/Base-Instructions/B-cond--Branch-conditionally-
-    pub fn bcond(cond: u8, byte_offset: i32) -> Self {
-        Self { cond, imm19: byte_offset >> 2 }
+    pub fn bcond(cond: u8, imm19: i32) -> Self {
+        Self { cond, imm19 }
     }
 }
 
@@ -53,25 +53,25 @@ mod tests {
 
     #[test]
     fn test_b_eq() {
-        let result: u32 = BranchCond::bcond(Condition::EQ, 128).into();
+        let result: u32 = BranchCond::bcond(Condition::EQ, 32).into();
         assert_eq!(0x54000400, result);
     }
 
     #[test]
     fn test_b_vs() {
-        let result: u32 = BranchCond::bcond(Condition::VS, 128).into();
+        let result: u32 = BranchCond::bcond(Condition::VS, 32).into();
         assert_eq!(0x54000406, result);
     }
 
     #[test]
     fn test_b_eq_max() {
-        let result: u32 = BranchCond::bcond(Condition::EQ, (1 << 20) - 4).into();
+        let result: u32 = BranchCond::bcond(Condition::EQ, (1 << 18) - 1).into();
         assert_eq!(0x547fffe0, result);
     }
 
     #[test]
     fn test_b_eq_min() {
-        let result: u32 = BranchCond::bcond(Condition::EQ, -(1 << 20)).into();
+        let result: u32 = BranchCond::bcond(Condition::EQ, -(1 << 18)).into();
         assert_eq!(0x54800000, result);
     }
 }
