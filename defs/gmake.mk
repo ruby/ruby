@@ -163,9 +163,8 @@ $(SCRIPTBINDIR)%$(EXEEXT): bin/% $(STUBPROGRAM) \
 	$(Q) chmod +x $@
 	$(Q) $(POSTLINK)
 
-$(TIMESTAMPDIR)/.exec.time:
-	$(Q) mkdir exec
-	$(Q) exit > $@
+$(SCRIPTBINDIR):
+	$(Q) mkdir $@
 
 .PHONY: commit
 commit: $(if $(filter commit,$(MAKECMDGOALS)),$(filter-out commit,$(MAKECMDGOALS))) up
