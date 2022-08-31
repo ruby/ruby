@@ -469,7 +469,10 @@ class Assertion < Struct.new(:src, :path, :lineno, :proc)
         kw = self.err ? {err: self.err} : {}
         out = IO.popen("#{BT.ruby} -W0 #{opt} #{filename}", **kw)
         pid = out.pid
-        out.read.tap{ Process.waitpid(pid); out.close }
+        result = out.read.tap{ Process.waitpid(pid); out.close }
+        # https://github.com/mmtk/mmtk-core/issues/654
+        result.gsub! /Warning: User attempted a collection request, but it is not supported in NoGC. The request is ignored.\n/, ''
+        result
       ensure
         raise Interrupt if $? and $?.signaled? && $?.termsig == Signal.list["INT"]
 
