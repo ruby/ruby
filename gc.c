@@ -160,6 +160,8 @@ static const char *mmtk_env_plan = NULL;
 static const char *mmtk_pre_arg_plan = NULL;
 static const char *mmtk_post_arg_plan = NULL;
 static const char *mmtk_chosen_plan = NULL;
+static size_t mmtk_pre_max_heap_size = 0;
+static size_t mmtk_post_max_heap_size = 0;
 
 static bool mmtk_max_heap_parse_error = false;
 static size_t mmtk_max_heap_size = 0;
@@ -15463,10 +15465,23 @@ size_t rb_mmtk_heap_limit(void) {
 }
 
 void rb_mmtk_pre_process_opts(int argc, char **argv) {
+    /*
+     * Processing these arguments is a mess - we have to process them before
+     * Ruby is set up, when arguments are normally processed, because we need
+     * the GC up and running to set up Ruby. We have to kind of rough parsing
+     * and then re-parse them properly later and compare against our rough
+     * parsing. We also can't report errors using exceptions. Needs tidying
+     * up in general, but may always be a bit awkward.
+     */
+
     bool enable_rubyopt = true;
 
     mmtk_env_plan = getenv("MMTK_PLAN");
     if (mmtk_env_plan) {
+        mmtk_enable = true;
+    }
+
+    if (getenv("THIRD_PARTY_HEAP_LIMIT")) {
         mmtk_enable = true;
     }
 
@@ -15493,13 +15508,23 @@ void rb_mmtk_pre_process_opts(int argc, char **argv) {
                 || strcmp(argv[n], "--disable=mmtk") == 0) {
             mmtk_enable = false;
         }
-        else if (strncmp(argv[n], "--mmtk-plan=", strlen("--mmtk-plan=")) == 0) {
+        else if (strncmp(argv[n], "--mmtk-plan", strlen("--mmtk-plan")) == 0) {
             mmtk_enable = true;
             mmtk_pre_arg_plan = argv[n] + strlen("--mmtk-plan=");
+            if (argv[n][strlen("--mmtk-plan")] != '=' || strlen(mmtk_pre_arg_plan) == 0) {
+                fputs("[FATAL] --mmtk-plan needs an argument\n", stderr);
+                exit(EXIT_FAILURE);
+            }
         }
-        else if (strncmp(argv[n], "--mmtk-max-heap=", strlen("--mmtk-max-heap=")) == 0) {
+        else if (strncmp(argv[n], "--mmtk-max-heap", strlen("--mmtk-max-heap")) == 0) {
             mmtk_enable = true;
-            mmtk_max_heap_size = rb_mmtk_parse_heap_limit(argv[n] + strlen("--mmtk-max-heap="), &mmtk_max_heap_parse_error);
+            char *mmtk_max_heap_size_arg = argv[n] + strlen("--mmtk-max-heap=");
+            if (argv[n][strlen("--mmtk-max-heap")] != '=' || strlen(mmtk_max_heap_size_arg) == 0) {
+                fputs("[FATAL] --mmtk-max-heap needs an argument\n", stderr);
+                exit(EXIT_FAILURE);
+            }
+            mmtk_pre_max_heap_size = rb_mmtk_parse_heap_limit(mmtk_max_heap_size_arg, &mmtk_max_heap_parse_error);
+            mmtk_max_heap_size = mmtk_pre_max_heap_size;
         }
     }
 
@@ -15516,12 +15541,41 @@ void rb_mmtk_pre_process_opts(int argc, char **argv) {
                         length++;
                     }
 
-                    if (strncmp(env_args, "--mmtk-plan=", strlen("--mmtk-plan=")) == 0) {
+                    if (strncmp(env_args, "--mmtk", strlen("--mmtk")) == 0) {
                         mmtk_enable = true;
+                    } else if (strncmp(env_args, "--enable-mmtk", strlen("--enable-mmtk")) == 0) {
+                        mmtk_enable = true;
+                    } else if (strncmp(env_args, "--enable=mmtk", strlen("--enable=mmtk")) == 0) {
+                        mmtk_enable = true;
+                    }
+
+                    if (strncmp(env_args, "--mmtk-plan", strlen("--mmtk-plan")) == 0) {
+                        if (env_args[strlen("--mmtk-plan")] != '=') {
+                            fputs("[FATAL] --mmtk-plan needs an argument\n", stderr);
+                            exit(EXIT_FAILURE);
+                        }
                         mmtk_pre_arg_plan = strndup(env_args + strlen("--mmtk-plan="), length - strlen("--mmtk-plan="));
                         if (mmtk_pre_arg_plan == NULL) {
                             rb_bug("could not allocate space for argument");
                         }
+                        if (strlen(mmtk_pre_arg_plan) == 0) {
+                            fputs("[FATAL] --mmtk-plan needs an argument\n", stderr);
+                            exit(EXIT_FAILURE);
+                        }
+                    } else if (strncmp(env_args, "--mmtk-max-heap", strlen("--mmtk-max-heap")) == 0) {
+                        if (env_args[strlen("--mmtk-max-heap")] != '=') {
+                            fputs("[FATAL] --mmtk-max-heap needs an argument\n", stderr);
+                            exit(EXIT_FAILURE);
+                        }
+                        char *mmtk_max_heap_size_arg = strndup(env_args + strlen("--mmtk-max-heap="), length - strlen("--mmtk-max-heap="));
+                        if (mmtk_max_heap_size_arg == NULL) {
+                            rb_bug("could not allocate space for argument");
+                        }
+                        if (strlen(mmtk_max_heap_size_arg) == 0) {
+                            fputs("[FATAL] --mmtk-max-heap needs an argument\n", stderr);
+                            exit(EXIT_FAILURE);
+                        }
+                        mmtk_pre_max_heap_size = rb_mmtk_parse_heap_limit(mmtk_max_heap_size_arg, &mmtk_max_heap_parse_error);
                     }
 
                     env_args += length;
@@ -15532,7 +15586,7 @@ void rb_mmtk_pre_process_opts(int argc, char **argv) {
 
     if (enable_rubyopt && mmtk_env_plan && mmtk_pre_arg_plan && strcmp(mmtk_env_plan, mmtk_pre_arg_plan) != 0) {
         fputs("[FATAL] MMTK_PLAN and --mmtk-plan do not agree\n", stderr);
-            exit(EXIT_FAILURE);
+        exit(EXIT_FAILURE);
     }
 
     if (enable_rubyopt && mmtk_env_plan) {
@@ -15546,8 +15600,6 @@ void rb_mmtk_pre_process_opts(int argc, char **argv) {
     }
 }
 
-#define opt_match_noarg(s, l, name) \
-    opt_match(s, l, name) && (*(s) ? (rb_warn("argument to --mmtk-" name " is ignored"), 1) : 1)
 #define opt_match_arg(s, l, name) \
     opt_match(s, l, name) && (*(s) ? 1 : (rb_raise(rb_eRuntimeError, "--mmtk-" name " needs an argument"), 0))
 
@@ -15560,7 +15612,7 @@ void rb_mmtk_post_process_opts(const char *s) {
         mmtk_post_arg_plan = s + 1;
     }
     else if (opt_match_arg(s, l, "max-heap")) {
-        // no-op
+        mmtk_post_max_heap_size = rb_mmtk_parse_heap_limit((char *) (s + 1), &mmtk_max_heap_parse_error);
     }
     else {
         rb_raise(rb_eRuntimeError,
@@ -15575,6 +15627,10 @@ void rb_mmtk_post_process_opts_finish(bool feature_enable) {
 
     if (strcmp(mmtk_pre_arg_plan ? mmtk_pre_arg_plan : "", mmtk_post_arg_plan ? mmtk_post_arg_plan : "") != 0) {
         rb_raise(rb_eRuntimeError, "--mmtk-plan values disagree");
+    }
+
+    if (mmtk_pre_max_heap_size != 0 && mmtk_post_max_heap_size != 0 && mmtk_pre_max_heap_size != mmtk_post_max_heap_size) {
+        rb_raise(rb_eRuntimeError, "--mmtk-max-heap values disagree");
     }
 
     if (mmtk_max_heap_parse_error) {
