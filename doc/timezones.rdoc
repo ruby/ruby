@@ -105,4 +105,4 @@ which will be called if defined:
 
   - Called when <tt>Marshal.dump(t) is invoked
   - Argument: none.
-  - Returns: the string name of the time.
+  - Returns: the string name of the timezone.
