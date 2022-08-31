@@ -204,7 +204,7 @@ class VCS
     revision_handler(rev).short_revision(rev)
   end
 
-  def revision_header(last, changed, modified, branch, title, limit: 20)
+  def revision_header(last, changed, modified, branch, title, limit: 20, time: true)
     short = short_revision(last)
     if /[^\x00-\x7f]/ =~ title and title.respond_to?(:force_encoding)
       title = title.dup.force_encoding("US-ASCII")
@@ -225,7 +225,7 @@ class VCS
       title = title.dump.sub(/\\#/, '#')
       code << "#define RUBY_LAST_COMMIT_TITLE #{title}"
     end
-    if modified
+    if modified and time
       t = modified.utc
       code << t.strftime('#define RUBY_RELEASE_DATETIME "%FT%TZ"')
     end
