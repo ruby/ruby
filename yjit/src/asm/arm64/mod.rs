@@ -203,9 +203,10 @@ pub fn b(cb: &mut CodeBlock, imm26: A64Opnd) {
     cb.write_bytes(&bytes);
 }
 
-/// Whether or not the offset between two instructions fits into the b.cond
-/// instruction. If it doesn't, then we have to load the value into a register
-/// first, then use the b.cond instruction to skip past a direct jump.
+/// Whether or not the offset in number of instructions between two instructions
+/// fits into the b.cond instruction. If it doesn't, then we have to load the
+/// value into a register first, then use the b.cond instruction to skip past a
+/// direct jump.
 pub const fn bcond_offset_fits_bits(offset: i64) -> bool {
     imm_fits_bits(offset, 21) && (offset & 0b11 == 0)
 }
@@ -216,7 +217,7 @@ pub fn bcond(cb: &mut CodeBlock, cond: u8, byte_offset: A64Opnd) {
         A64Opnd::Imm(imm) => {
             assert!(bcond_offset_fits_bits(imm), "The immediate operand must be 21 bits or less and be aligned to a 2-bit boundary.");
 
-            BranchCond::bcond(cond, imm as i32).into()
+            BranchCond::bcond(cond, (imm / 4) as i32).into()
         },
         _ => panic!("Invalid operand combination to bcond instruction."),
     };

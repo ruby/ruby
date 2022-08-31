@@ -562,67 +562,45 @@ impl Assembler
 
         /// Emit a conditional jump instruction to a specific target. This is
         /// called when lowering any of the conditional jump instructions.
-        fn emit_conditional_jump<const CONDITION: u8>(cb: &mut CodeBlock, target: Target) {
+        fn emit_conditional_jump<const CONDITION: u8, const INVERSE: u8>(cb: &mut CodeBlock, target: Target) {
             match target {
                 Target::CodePtr(dst_ptr) => {
-                    let dst_addr = dst_ptr.into_u64();
-                    //let src_addr = cb.get_write_ptr().into_i64() + 4;
-                    //let offset = dst_addr - src_addr;
+                    let dst_addr = dst_ptr.into_i64();
+                    let src_addr = cb.get_write_ptr().into_i64();
+                    let offset = dst_addr - src_addr;
 
-                    // If the condition is met, then we'll skip past the
-                    // next instruction, put the address in a register, and
-                    // jump to it.
-                    bcond(cb, CONDITION, A64Opnd::new_imm(8));
+                    let num_insns = if bcond_offset_fits_bits(offset) {
+                        // If the jump offset fits into the conditional jump as
+                        // an immediate value and it's properly aligned, then we
+                        // can use the b.cond instruction directly.
+                        bcond(cb, CONDITION, A64Opnd::new_imm(offset));
 
-                    // If we get to this instruction, then the condition
-                    // wasn't met, in which case we'll jump past the
-                    // next instruction that perform the direct jump.
-
-                    b(cb, A64Opnd::new_imm(2i64 + emit_load_size(dst_addr) as i64));
-                    let num_insns = emit_load_value(cb, Assembler::SCRATCH0, dst_addr);
-                    br(cb, Assembler::SCRATCH0);
-                    for _ in num_insns..4 {
-                        nop(cb);
-                    }
-
-                    /*
-                    // If the jump offset fits into the conditional jump as an
-                    // immediate value and it's properly aligned, then we can
-                    // use the b.cond instruction directly. Otherwise, we need
-                    // to load the address into a register and use the branch
-                    // register instruction.
-                    if bcond_offset_fits_bits(offset) {
-                        bcond(cb, CONDITION, A64Opnd::new_imm(dst_addr - src_addr));
+                        // Here we're going to return 1 because we've only
+                        // written out 1 instruction.
+                        1
                     } else {
-                        // If the condition is met, then we'll skip past the
-                        // next instruction, put the address in a register, and
-                        // jump to it.
-                        bcond(cb, CONDITION, A64Opnd::new_imm(8));
+                        // Otherwise, we need to load the address into a
+                        // register and use the branch register instruction.
+                        let dst_addr = dst_ptr.into_u64();
+                        let load_insns: i64 = emit_load_size(dst_addr).into();
 
-                        // If the offset fits into a direct jump, then we'll use
-                        // that and the number of instructions will be shorter.
-                        // Otherwise we'll use the branch register instruction.
-                        if b_offset_fits_bits(offset) {
-                            // If we get to this instruction, then the condition
-                            // wasn't met, in which case we'll jump past the
-                            // next instruction that performs the direct jump.
-                            b(cb, A64Opnd::new_imm(1));
+                        // We're going to write out the inverse condition so
+                        // that if it doesn't match it will skip over the
+                        // instructions used for branching.
+                        bcond(cb, INVERSE, A64Opnd::new_imm((load_insns + 2) * 4));
+                        emit_load_value(cb, Assembler::SCRATCH0, dst_addr);
+                        br(cb, Assembler::SCRATCH0);
 
-                            // Here we'll perform the direct jump to the target.
-                            let offset = dst_addr - cb.get_write_ptr().into_i64() + 4;
-                            b(cb, A64Opnd::new_imm(offset / 4));
-                        } else {
-                            // If we get to this instruction, then the condition
-                            // wasn't met, in which case we'll jump past the
-                            // next instruction that perform the direct jump.
-                            let value = dst_addr as u64;
+                        // Here we'll return the number of instructions that it
+                        // took to write out the destination address + 1 for the
+                        // b.cond and 1 for the br.
+                        load_insns + 2
+                    };
 
-                            b(cb, A64Opnd::new_imm(emit_load_size(value).into()));
-                            emit_load_value(cb, Assembler::SCRATCH0, value);
-                            br(cb, Assembler::SCRATCH0);
-                        }
-                    }
-                    */
+                    // We need to make sure we have at least 6 instructions for
+                    // every kind of jump for invalidation purposes, so we're
+                    // going to write out padding nop instructions here.
+                    for _ in num_insns..6 { nop(cb); }
                 },
                 Target::Label(label_idx) => {
                     // Here we're going to save enough space for ourselves and
@@ -904,26 +882,20 @@ impl Assembler
                         _ => unreachable!()
                     };
                 },
-                Insn::Je(target) => {
-                    emit_conditional_jump::<{Condition::EQ}>(cb, *target);
+                Insn::Je(target) | Insn::Jz(target) => {
+                    emit_conditional_jump::<{Condition::EQ}, {Condition::NE}>(cb, *target);
                 },
-                Insn::Jne(target) => {
-                    emit_conditional_jump::<{Condition::NE}>(cb, *target);
+                Insn::Jne(target) | Insn::Jnz(target) => {
+                    emit_conditional_jump::<{Condition::NE}, {Condition::EQ}>(cb, *target);
                 },
                 Insn::Jl(target) => {
-                    emit_conditional_jump::<{Condition::LT}>(cb, *target);
+                    emit_conditional_jump::<{Condition::LT}, {Condition::GE}>(cb, *target);
                 },
                 Insn::Jbe(target) => {
-                    emit_conditional_jump::<{Condition::LS}>(cb, *target);
-                },
-                Insn::Jz(target) => {
-                    emit_conditional_jump::<{Condition::EQ}>(cb, *target);
-                },
-                Insn::Jnz(target) => {
-                    emit_conditional_jump::<{Condition::NE}>(cb, *target);
+                    emit_conditional_jump::<{Condition::LS}, {Condition::HI}>(cb, *target);
                 },
                 Insn::Jo(target) => {
-                    emit_conditional_jump::<{Condition::VS}>(cb, *target);
+                    emit_conditional_jump::<{Condition::VS}, {Condition::VC}>(cb, *target);
                 },
                 Insn::IncrCounter { mem, value } => {
                     ldaddal(cb, value.into(), value.into(), mem.into());
@@ -1050,6 +1022,28 @@ mod tests {
 
         asm.frame_setup();
         asm.frame_teardown();
+        asm.compile_with_num_regs(&mut cb, 0);
+    }
+
+    #[test]
+    fn test_emit_je_fits_into_bcond() {
+        let (mut asm, mut cb) = setup_asm();
+
+        let offset = 80;
+        let target: CodePtr = ((cb.get_write_ptr().into_u64() + offset) as *mut u8).into();
+
+        asm.je(Target::CodePtr(target));
+        asm.compile_with_num_regs(&mut cb, 0);
+    }
+
+    #[test]
+    fn test_emit_je_does_not_fit_into_bcond() {
+        let (mut asm, mut cb) = setup_asm();
+
+        let offset = 1 << 21;
+        let target: CodePtr = ((cb.get_write_ptr().into_u64() + offset) as *mut u8).into();
+
+        asm.je(Target::CodePtr(target));
         asm.compile_with_num_regs(&mut cb, 0);
     }
 
