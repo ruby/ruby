@@ -69,6 +69,7 @@ impl From<&Opnd> for A64Opnd {
 impl Assembler
 {
     // A special scratch register for intermediate processing.
+    // This register is caller-saved (so we don't have to save it before using it)
     const SCRATCH0: A64Opnd = A64Opnd::Reg(X15_REG);
 
     /// Get the list of registers from which we will allocate on this platform
