@@ -74,11 +74,7 @@ pub enum DumpDisasm {
 
 impl DumpDisasm {
     pub fn is_enabled(&self) -> bool {
-        match self {
-            DumpDisasm::Inline => true,
-            DumpDisasm::All => true,
-            DumpDisasm::None => false,
-        }
+        *self != DumpDisasm::None
     }
 }
 
