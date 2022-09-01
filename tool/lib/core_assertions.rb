@@ -268,7 +268,7 @@ module Test
         src = <<eom
 # -*- coding: #{line += __LINE__; src.encoding}; -*-
 BEGIN {
-  require "test/unit";include Test::Unit::Assertions;include Test::Unit::CoreAssertions;require #{__FILE__.dump}
+  require "test/unit";include Test::Unit::Assertions;require #{__FILE__.dump};include Test::Unit::CoreAssertions
   separated_runner #{token_dump}, #{res_c&.fileno || 'nil'}
 }
 #{line -= __LINE__; src}
