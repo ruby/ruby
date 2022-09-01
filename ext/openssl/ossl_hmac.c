@@ -97,11 +97,19 @@ ossl_hmac_initialize(VALUE self, VALUE key, VALUE digest)
 
     GetHMAC(self, ctx);
     StringValue(key);
+#ifdef HAVE_EVP_PKEY_NEW_RAW_PRIVATE_KEY
+    pkey = EVP_PKEY_new_raw_private_key(EVP_PKEY_HMAC, NULL,
+                                        (unsigned char *)RSTRING_PTR(key),
+                                        RSTRING_LENINT(key));
+    if (!pkey)
+        ossl_raise(eHMACError, "EVP_PKEY_new_raw_private_key");
+#else
     pkey = EVP_PKEY_new_mac_key(EVP_PKEY_HMAC, NULL,
                                 (unsigned char *)RSTRING_PTR(key),
                                 RSTRING_LENINT(key));
     if (!pkey)
         ossl_raise(eHMACError, "EVP_PKEY_new_mac_key");
+#endif
     if (EVP_DigestSignInit(ctx, NULL, ossl_evp_get_digestbyname(digest),
                            NULL, pkey) != 1) {
         EVP_PKEY_free(pkey);
