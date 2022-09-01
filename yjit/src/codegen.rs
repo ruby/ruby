@@ -626,7 +626,7 @@ pub fn gen_entry_prologue(cb: &mut CodeBlock, iseq: IseqPtr, insn_idx: u32) -> O
     let code_ptr = cb.get_write_ptr();
 
     let mut asm = Assembler::new();
-    if get_option!(dump_disasm).is_some() {
+    if get_option!(dump_disasm).is_enabled() {
         asm.comment(&format!("YJIT entry: {}", iseq_get_location(iseq)));
     } else {
         asm.comment("YJIT entry");
@@ -755,7 +755,7 @@ pub fn gen_single_block(
     let mut asm = Assembler::new();
 
     #[cfg(feature = "disasm")]
-    if get_option!(dump_disasm).is_some() {
+    if get_option!(dump_disasm).is_enabled() {
         asm.comment(&format!("Block: {} (ISEQ offset: {})", iseq_get_location(blockid.iseq), blockid.idx));
     }
 

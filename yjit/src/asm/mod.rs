@@ -275,6 +275,10 @@ impl CodeBlock {
     pub fn mark_all_executable(&mut self) {
         self.mem_block.mark_all_executable();
     }
+
+    pub fn inline(&self) -> bool {
+        !self.outlined
+    }
 }
 
 #[cfg(test)]

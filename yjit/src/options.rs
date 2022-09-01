@@ -31,7 +31,7 @@ pub struct Options {
     pub dump_insns: bool,
 
     /// Dump all compiled instructions of target cbs.
-    pub dump_disasm: Option<DumpDisasm>,
+    pub dump_disasm: DumpDisasm,
 
     /// Print when specific ISEQ items are compiled or invalidated
     pub dump_iseq_disasm: Option<String>,
@@ -56,7 +56,7 @@ pub static mut OPTIONS: Options = Options {
     gen_stats: false,
     gen_trace_exits: false,
     dump_insns: false,
-    dump_disasm: None,
+    dump_disasm: DumpDisasm::None,
     verify_ctx: false,
     global_constant_state: false,
     dump_iseq_disasm: None,
@@ -68,6 +68,18 @@ pub enum DumpDisasm {
     Inlined,
     // Dump both inlined and outlined cbs
     All,
+    // Dont dump anything
+    None,
+}
+
+impl DumpDisasm {
+    pub fn is_enabled(&self) -> bool {
+        match self {
+            DumpDisasm::Inlined => true,
+            DumpDisasm::All => true,
+            DumpDisasm::None => false,
+        }
+    }
 }
 
 /// Macro to get an option value by name
@@ -132,8 +144,8 @@ pub fn parse_option(str_ptr: *const std::os::raw::c_char) -> Option<()> {
         },
 
         ("dump-disasm", _) => match opt_val.to_string().as_str() {
-            "all" => unsafe { OPTIONS.dump_disasm = Some(DumpDisasm::All) },
-            "" => unsafe { OPTIONS.dump_disasm = Some(DumpDisasm::Inlined) },
+            "all" => unsafe { OPTIONS.dump_disasm = DumpDisasm::All },
+            "" => unsafe { OPTIONS.dump_disasm = DumpDisasm::Inlined },
             _ => return None,
          },
 

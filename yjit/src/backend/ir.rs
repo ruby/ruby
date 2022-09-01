@@ -1083,8 +1083,8 @@ impl Assembler
         let gc_offsets = self.compile_with_regs(cb, alloc_regs);
 
         #[cfg(feature = "disasm")]
-        if let Some(target) = get_option!(dump_disasm) {
-            if target == DumpDisasm::All || !cb.outlined {
+        match get_option!(dump_disasm) {
+            DumpDisasm::All | DumpDisasm::Inlined if cb.inlined() => {
                 use crate::disasm::disasm_addr_range;
                 let last_ptr = cb.get_write_ptr();
                 let disasm = disasm_addr_range(cb, start_addr, last_ptr.raw_ptr() as usize - start_addr as usize);
@@ -1092,6 +1092,7 @@ impl Assembler
                     println!("{disasm}");
                 }
             }
+            _ => {}
         }
         gc_offsets
     }
