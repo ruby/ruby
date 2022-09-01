@@ -276,6 +276,7 @@ impl CodeBlock {
         self.mem_block.mark_all_executable();
     }
 
+    #[cfg(feature = "disasm")]
     pub fn inline(&self) -> bool {
         !self.outlined
     }
