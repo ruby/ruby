@@ -402,6 +402,8 @@ fn gen_code_for_exit_from_stub(ocb: &mut OutlinedCb) -> CodePtr {
     asm.cpop_into(SP);
     asm.cpop_into(EC);
     asm.cpop_into(CFP);
+    #[cfg(target_arch = "aarch64")]
+    asm.cpop_into(SCRATCH0);
 
     asm.frame_teardown();
 
@@ -453,6 +455,8 @@ fn gen_exit(exit_pc: *mut VALUE, ctx: &Context, asm: &mut Assembler) {
     asm.cpop_into(SP);
     asm.cpop_into(EC);
     asm.cpop_into(CFP);
+    #[cfg(target_arch = "aarch64")]
+    asm.cpop_into(SCRATCH0);
 
     asm.frame_teardown();
 
@@ -539,6 +543,8 @@ fn gen_full_cfunc_return(ocb: &mut OutlinedCb) -> CodePtr {
     asm.cpop_into(SP);
     asm.cpop_into(EC);
     asm.cpop_into(CFP);
+    #[cfg(target_arch = "aarch64")]
+    asm.cpop_into(SCRATCH0);
 
     asm.frame_teardown();
 
@@ -567,6 +573,8 @@ fn gen_leave_exit(ocb: &mut OutlinedCb) -> CodePtr {
     asm.cpop_into(SP);
     asm.cpop_into(EC);
     asm.cpop_into(CFP);
+    #[cfg(target_arch = "aarch64")]
+    asm.cpop_into(SCRATCH0);
 
     asm.frame_teardown();
 
@@ -598,6 +606,8 @@ fn gen_pc_guard(asm: &mut Assembler, iseq: IseqPtr, insn_idx: u32) {
     asm.cpop_into(SP);
     asm.cpop_into(EC);
     asm.cpop_into(CFP);
+    #[cfg(target_arch = "aarch64")]
+    asm.cpop_into(SCRATCH0);
 
     asm.frame_teardown();
 
@@ -635,6 +645,8 @@ pub fn gen_entry_prologue(cb: &mut CodeBlock, iseq: IseqPtr, insn_idx: u32) -> O
     asm.frame_setup();
 
     // Save the CFP, EC, SP registers to the C stack
+    #[cfg(target_arch = "aarch64")]
+    asm.cpush(SCRATCH0);
     asm.cpush(CFP);
     asm.cpush(EC);
     asm.cpush(SP);

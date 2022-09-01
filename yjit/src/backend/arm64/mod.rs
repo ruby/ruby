@@ -16,6 +16,8 @@ pub type Reg = A64Reg;
 pub const _CFP: Opnd = Opnd::Reg(X19_REG);
 pub const _EC: Opnd = Opnd::Reg(X20_REG);
 pub const _SP: Opnd = Opnd::Reg(X21_REG);
+// A special scratch register for intermediate processing.
+pub const _SCRATCH0: Opnd = Opnd::Reg(X22_REG);
 
 // C argument registers on this platform
 pub const _C_ARG_OPNDS: [Opnd; 6] = [
@@ -68,9 +70,6 @@ impl From<&Opnd> for A64Opnd {
 
 impl Assembler
 {
-    // A special scratch register for intermediate processing.
-    const SCRATCH0: A64Opnd = A64Opnd::Reg(X22_REG);
-
     /// Get the list of registers from which we will allocate on this platform
     /// These are caller-saved registers
     /// Note: we intentionally exclude C_RET_REG (X0) from this list
@@ -588,8 +587,8 @@ impl Assembler
                         // that if it doesn't match it will skip over the
                         // instructions used for branching.
                         bcond(cb, Condition::inverse(CONDITION), A64Opnd::new_imm((load_insns + 2) * 4));
-                        emit_load_value(cb, Assembler::SCRATCH0, dst_addr);
-                        br(cb, Assembler::SCRATCH0);
+                        emit_load_value(cb, SCRATCH0.into(), dst_addr);
+                        br(cb, SCRATCH0.into());
 
                         // Here we'll return the number of instructions that it
                         // took to write out the destination address + 1 for the
@@ -781,10 +780,10 @@ impl Assembler
                     let label_idx = target.unwrap_label_idx();
 
                     cb.label_ref(label_idx, 4, |cb, end_addr, dst_addr| {
-                        adr(cb, Self::SCRATCH0, A64Opnd::new_imm(dst_addr - (end_addr - 4)));
+                        adr(cb, SCRATCH0.into(), A64Opnd::new_imm(dst_addr - (end_addr - 4)));
                     });
 
-                    mov(cb, out.into(), Self::SCRATCH0);
+                    mov(cb, out.into(), SCRATCH0.into());
                 },
                 Insn::CPush(opnd) => {
                     emit_push(cb, opnd.into());
@@ -803,15 +802,15 @@ impl Assembler
                     }
 
                     // Push the flags/state register
-                    mrs(cb, Self::SCRATCH0, SystemRegister::NZCV);
-                    emit_push(cb, Self::SCRATCH0);
+                    mrs(cb, SCRATCH0.into(), SystemRegister::NZCV);
+                    emit_push(cb, SCRATCH0.into());
                 },
                 Insn::CPopAll => {
                     let regs = Assembler::get_caller_save_regs();
 
                     // Pop the state/flags register
-                    msr(cb, SystemRegister::NZCV, Self::SCRATCH0);
-                    emit_pop(cb, Self::SCRATCH0);
+                    msr(cb, SystemRegister::NZCV, SCRATCH0.into());
+                    emit_pop(cb, SCRATCH0.into());
 
                     for reg in regs.into_iter().rev() {
                         emit_pop(cb, A64Opnd::Reg(reg));
@@ -830,8 +829,8 @@ impl Assembler
                     if b_offset_fits_bits(offset) {
                         bl(cb, A64Opnd::new_imm(offset));
                     } else {
-                        emit_load_value(cb, Self::SCRATCH0, dst_addr as u64);
-                        blr(cb, Self::SCRATCH0);
+                        emit_load_value(cb, SCRATCH0.into(), dst_addr as u64);
+                        blr(cb, SCRATCH0.into());
                     }
                 },
                 Insn::CRet { .. } => {
@@ -863,8 +862,8 @@ impl Assembler
                             // branch instruction. Otherwise, we'll move the
                             // destination into a register and use the branch
                             // register instruction.
-                            let num_insns = emit_load_value(cb, Self::SCRATCH0, dst_addr as u64);
-                            br(cb, Self::SCRATCH0);
+                            let num_insns = emit_load_value(cb, SCRATCH0.into(), dst_addr as u64);
+                            br(cb, SCRATCH0.into());
                             for _ in num_insns..4 {
                                 nop(cb);
                             }
