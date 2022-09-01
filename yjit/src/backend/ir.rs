@@ -21,8 +21,6 @@ use crate::backend::arm64::*;
 pub const EC: Opnd = _EC;
 pub const CFP: Opnd = _CFP;
 pub const SP: Opnd = _SP;
-#[cfg(target_arch = "aarch64")]
-pub const SCRATCH0: Opnd = _SCRATCH0;
 
 pub const C_ARG_OPNDS: [Opnd; 6] = _C_ARG_OPNDS;
 pub const C_RET_OPND: Opnd = _C_RET_OPND;
