@@ -90,7 +90,7 @@ yjit_task:
     matrix:
       - CC: clang-12
         configure: --enable-yjit=dev
-      - CC: gcc-11
+      - CC: gcc-9
         configure: --enable-yjit
   timeout_in: 90m
   id_script: id
