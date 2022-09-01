@@ -64,9 +64,9 @@ pub static mut OPTIONS: Options = Options {
 
 #[derive(Copy, Clone, PartialEq, Eq, Debug)]
 pub enum DumpDisasm {
-    // Dump only inlined cb
-    Inlined,
-    // Dump both inlined and outlined cbs
+    // Dump only inline cb
+    Inline,
+    // Dump both inline and outlined cbs
     All,
     // Dont dump anything
     None,
@@ -75,7 +75,7 @@ pub enum DumpDisasm {
 impl DumpDisasm {
     pub fn is_enabled(&self) -> bool {
         match self {
-            DumpDisasm::Inlined => true,
+            DumpDisasm::Inline => true,
             DumpDisasm::All => true,
             DumpDisasm::None => false,
         }
@@ -145,7 +145,7 @@ pub fn parse_option(str_ptr: *const std::os::raw::c_char) -> Option<()> {
 
         ("dump-disasm", _) => match opt_val.to_string().as_str() {
             "all" => unsafe { OPTIONS.dump_disasm = DumpDisasm::All },
-            "" => unsafe { OPTIONS.dump_disasm = DumpDisasm::Inlined },
+            "" => unsafe { OPTIONS.dump_disasm = DumpDisasm::Inline },
             _ => return None,
          },
 

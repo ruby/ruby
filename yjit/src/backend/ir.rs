@@ -1084,7 +1084,7 @@ impl Assembler
 
         #[cfg(feature = "disasm")]
         match get_option!(dump_disasm) {
-            DumpDisasm::All | DumpDisasm::Inlined if cb.inline() => {
+            DumpDisasm::All | DumpDisasm::Inline if cb.inline() => {
                 use crate::disasm::disasm_addr_range;
                 let last_ptr = cb.get_write_ptr();
                 let disasm = disasm_addr_range(cb, start_addr, last_ptr.raw_ptr() as usize - start_addr as usize);
