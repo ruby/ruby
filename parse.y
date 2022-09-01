@@ -7737,8 +7737,7 @@ heredoc_dedent(struct parser_params *p, NODE *root)
 	  next_str:
 	    if (!nd_type_p(node, NODE_LIST)) break;
 	    if ((str_node = node->nd_head) != 0) {
-		enum node_type type = nd_type(str_node);
-		if (type == NODE_STR || type == NODE_DSTR) break;
+		if (nd_type_p(str_node, NODE_STR) || nd_type_p(str_node, NODE_DSTR)) break;
 		prev_lit = 0;
 		str_node = 0;
 	    }
@@ -10622,8 +10621,7 @@ new_regexp(struct parser_params *p, NODE *node, int options, const YYLTYPE *loc)
 	if (!NIL_P(node->nd_lit)) reg_fragment_check(p, node->nd_lit, options);
 	for (list = (prev = node)->nd_next; list; list = list->nd_next) {
 	    NODE *frag = list->nd_head;
-	    enum node_type type = nd_type(frag);
-	    if (type == NODE_STR || (type == NODE_DSTR && !frag->nd_next)) {
+	    if (nd_type_p(frag, NODE_STR) || (nd_type_p(frag, NODE_DSTR) && !frag->nd_next)) {
 		VALUE tail = frag->nd_lit;
 		if (reg_fragment_check(p, tail, options) && prev && !NIL_P(prev->nd_lit)) {
 		    VALUE lit = prev == node ? prev->nd_lit : prev->nd_head->nd_lit;
@@ -11818,13 +11816,10 @@ static NODE *cond0(struct parser_params*,NODE*,enum cond_type,const YYLTYPE*);
 static NODE*
 range_op(struct parser_params *p, NODE *node, const YYLTYPE *loc)
 {
-    enum node_type type;
-
     if (node == 0) return 0;
 
-    type = nd_type(node);
     value_expr(node);
-    if (type == NODE_LIT && FIXNUM_P(node->nd_lit)) {
+    if (nd_type_p(node, NODE_LIT) && FIXNUM_P(node->nd_lit)) {
 	if (!e_option_supplied(p)) parser_warn(p, node, "integer literal in flip-flop");
 	ID lineno = rb_intern("$.");
 	return NEW_CALL(node, tEQ, NEW_LIST(NEW_GVAR(lineno, loc), loc), loc);
