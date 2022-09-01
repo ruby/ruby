@@ -746,7 +746,7 @@ static unsigned long __stdcall
 timer_thread_func(void *dummy)
 {
     rb_vm_t *vm = GET_VM();
-    RUBY_DEBUG_LOG("%s", "start");
+    RUBY_DEBUG_LOG("start");
     rb_w32_set_thread_description(GetCurrentThread(), L"ruby-timer-thread");
     while (WaitForSingleObject(timer_thread.lock,
                                TIME_QUANTUM_USEC/1000) == WAIT_TIMEOUT) {
@@ -754,7 +754,7 @@ timer_thread_func(void *dummy)
         ruby_sigchld_handler(vm); /* probably no-op */
         rb_threadptr_check_signal(vm->ractor.main_thread);
     }
-    RUBY_DEBUG_LOG("%s", "end");
+    RUBY_DEBUG_LOG("end");
     return 0;
 }
 

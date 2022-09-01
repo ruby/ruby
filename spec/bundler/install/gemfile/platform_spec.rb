@@ -501,7 +501,7 @@ end
 
 RSpec.describe "when a gem has no architecture" do
   it "still installs correctly" do
-    simulate_platform mswin
+    simulate_platform x86_mswin32
 
     build_repo2 do
       # The rcov gem is platform mswin32, but has no arch

@@ -397,6 +397,12 @@ class Reline::Test < Reline::TestCase
     # TODO in Reline::Core
   end
 
+  def test_dumb_terminal
+    lib = File.expand_path("../../lib", __dir__)
+    out = IO.popen([{"TERM"=>"dumb"}, "ruby", "-I#{lib}", "-rreline", "-e", "p Reline::IOGate"], &:read)
+    assert_equal("Reline::GeneralIO", out.chomp)
+  end
+
   def get_reline_encoding
     if encoding = Reline::IOGate.encoding
       encoding

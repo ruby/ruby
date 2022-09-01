@@ -56,7 +56,7 @@ class Gem::Commands::UpdateCommand < Gem::Command
 
   def defaults_str # :nodoc:
     "--no-force --install-dir #{Gem.dir}\n" +
-    install_update_defaults_str
+      install_update_defaults_str
   end
 
   def description # :nodoc:
@@ -155,7 +155,7 @@ command to remove old versions.
     Gem::Specification.dirs = Gem.user_dir if options[:user_install]
 
     Gem::Specification.each do |spec|
-      if hig[spec.name].nil? or hig[spec.name].version < spec.version
+      if hig[spec.name].nil? || hig[spec.name].version < spec.version
         hig[spec.name] = spec
       end
     end
@@ -292,8 +292,8 @@ command to remove old versions.
     args << "--no-document" unless options[:document].include?("rdoc") || options[:document].include?("ri")
     args << "--no-format-executable" if options[:no_format_executable]
     args << "--previous-version" << Gem::VERSION if
-      options[:system] == true or
-        Gem::Version.new(options[:system]) >= Gem::Version.new(2)
+      options[:system] == true ||
+      Gem::Version.new(options[:system]) >= Gem::Version.new(2)
     args
   end
 
@@ -301,7 +301,7 @@ command to remove old versions.
     result = []
 
     highest_installed_gems.each do |l_name, l_spec|
-      next if not gem_names.empty? and
+      next if !gem_names.empty? &&
               gem_names.none? {|name| name == l_spec.name }
 
       highest_remote_tup = highest_remote_name_tuple l_spec

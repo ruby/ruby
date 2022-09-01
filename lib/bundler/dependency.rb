@@ -42,6 +42,7 @@ module Bundler
       :jruby    => Gem::Platform::JAVA,
       :jruby_18 => Gem::Platform::JAVA,
       :jruby_19 => Gem::Platform::JAVA,
+      :windows  => Gem::Platform::WINDOWS,
       :mswin    => Gem::Platform::MSWIN,
       :mswin_18 => Gem::Platform::MSWIN,
       :mswin_19 => Gem::Platform::MSWIN,
@@ -151,7 +152,7 @@ module Bundler
     def to_lock
       out = super
       out << "!" if source
-      out << "\n"
+      out
     end
 
     def specific?

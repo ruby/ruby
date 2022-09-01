@@ -2614,6 +2614,11 @@ CODE
     assert_equal '"\x0012"', s.inspect, bug8290
   end
 
+  def test_inspect_next_line
+    bug16842 = '[ruby-core:98231]'
+    assert_equal '"\\u0085"', 0x85.chr(Encoding::UTF_8).inspect, bug16842
+  end
+
   def test_partition
     assert_equal(%w(he l lo), S("hello").partition(/l/))
     assert_equal(%w(he l lo), S("hello").partition("l"))

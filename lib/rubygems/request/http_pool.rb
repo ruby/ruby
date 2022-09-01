@@ -26,7 +26,7 @@ class Gem::Request::HTTPPool # :nodoc:
 
   def close_all
     until @queue.empty?
-      if connection = @queue.pop(true) and connection.started?
+      if (connection = @queue.pop(true)) && connection.started?
         connection.finish
       end
     end

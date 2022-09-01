@@ -305,6 +305,77 @@ RSpec.describe "bundle install with install-time dependencies" do
         end
       end
 
+      context "in a transitive dependencies in a lockfile" do
+        before do
+          build_repo2 do
+            build_gem "rubocop", "1.28.2" do |s|
+              s.required_ruby_version = ">= #{current_ruby_minor}"
+
+              s.add_dependency "rubocop-ast", ">= 1.17.0", "< 2.0"
+            end
+
+            build_gem "rubocop", "1.35.0" do |s|
+              s.required_ruby_version = ">= #{next_ruby_minor}"
+
+              s.add_dependency "rubocop-ast", ">= 1.20.1", "< 2.0"
+            end
+
+            build_gem "rubocop-ast", "1.17.0" do |s|
+              s.required_ruby_version = ">= #{current_ruby_minor}"
+            end
+
+            build_gem "rubocop-ast", "1.21.0" do |s|
+              s.required_ruby_version = ">= #{next_ruby_minor}"
+            end
+          end
+
+          gemfile <<-G
+            source "http://localgemserver.test/"
+            gem 'rubocop'
+          G
+
+          lockfile <<~L
+            GEM
+              remote: http://localgemserver.test/
+              specs:
+                rubocop (1.35.0)
+                  rubocop-ast (>= 1.20.1, < 2.0)
+                rubocop-ast (1.21.0)
+
+            PLATFORMS
+              #{lockfile_platforms}
+
+            DEPENDENCIES
+              parallel_tests
+
+            BUNDLED WITH
+               #{Bundler::VERSION}
+          L
+        end
+
+        it "automatically updates lockfile to use the older compatible versions" do
+          bundle "install --verbose", :artifice => "compact_index", :env => { "BUNDLER_SPEC_GEM_REPO" => gem_repo2.to_s }
+
+          expect(lockfile).to eq <<~L
+            GEM
+              remote: http://localgemserver.test/
+              specs:
+                rubocop (1.28.2)
+                  rubocop-ast (>= 1.17.0, < 2.0)
+                rubocop-ast (1.17.0)
+
+            PLATFORMS
+              #{lockfile_platforms}
+
+            DEPENDENCIES
+              rubocop
+
+            BUNDLED WITH
+               #{Bundler::VERSION}
+          L
+        end
+      end
+
       it "gives a meaningful error on ruby version mismatches between dependencies" do
         build_repo4 do
           build_gem "requires-old-ruby" do |s|
@@ -352,13 +423,13 @@ RSpec.describe "bundle install with install-time dependencies" do
             s.required_ruby_version = "> 9000"
           end
           build_gem "rack", "1.2" do |s|
-            s.platform = mingw
+            s.platform = x86_mingw32
             s.required_ruby_version = "> 9000"
           end
           build_gem "rack", "1.2"
         end
 
-        simulate_platform mingw do
+        simulate_platform x86_mingw32 do
           install_gemfile <<-G, :artifice => "compact_index", :env => { "BUNDLER_SPEC_GEM_REPO" => gem_repo4.to_s }
             ruby "#{Gem.ruby_version}"
             source "http://localgemserver.test/"

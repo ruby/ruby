@@ -4,7 +4,7 @@ SHELL = $(COMSPEC)
 ECHO1 = $(V:1=@:)
 RUNCMD = $(COMSPEC) /c
 MKFILES = Makefile verconf.mk
-NULLCMD = type nul
+NULLCMD = exit /b0.		# exit ignores the rest
 NULL = nul
 CHDIR = cd
 PATH_SEPARATOR = ;
@@ -148,7 +148,10 @@ PLATFORM_DIR = win32
 arch = $(ARCH)-$(PLATFORM)
 sitearch = $(ARCH)-$(RT)
 !if !defined(ruby_version)
-ruby_version = $(MAJOR).$(MINOR).0+$(ABI_VERSION)
+ruby_version = $(MAJOR).$(MINOR).0
+!endif
+!if defined(ABI_VERSION)
+ruby_version = $(ruby_version)+$(ABI_VERSION)
 !endif
 !if !defined(RUBY_VERSION_NAME)
 RUBY_VERSION_NAME = $(RUBY_BASE_NAME)-$(ruby_version)
@@ -316,33 +319,7 @@ CPPFLAGS = $(DEFS) $(ARCHDEFS) $(CPPFLAGS)
 CPPFLAGS = -DDISABLE_RUBYGEMS $(CPPFLAGS)
 !endif
 !ifndef MJIT_SUPPORT
-MJIT_SUPPORT = yes
-!endif
-!if "$(CPPOUTFLAG)" == ">"
-MJIT_HEADER_FLAGS =
-!else
-MJIT_HEADER_FLAGS = -P
-!endif
-MJIT_HEADER_SUFFIX =
-MJIT_HEADER_ARCH =
-MJIT_HEADER_INSTALL_DIR = include/$(RUBY_VERSION_NAME)/$(arch)
-MJIT_PRECOMPILED_HEADER_NAME = rb_mjit_header-$(RUBY_PROGRAM_VERSION).pch
-MJIT_PRECOMPILED_HEADER = $(MJIT_HEADER_INSTALL_DIR)/$(MJIT_PRECOMPILED_HEADER_NAME)
-!ifndef MJIT_CC
-MJIT_CC = $(CC)
-!endif
-!ifndef MJIT_OPTFLAGS
-# TODO: Use only $(OPTFLAGS) for performance. It requires to modify flags for precompiled header too.
-# For now, using flags used for building precompiled header to make JIT succeed.
-MJIT_OPTFLAGS = -DMJIT_HEADER $(CFLAGS) $(XCFLAGS) $(CPPFLAGS)
-!endif
-!ifndef MJIT_DEBUGFLAGS
-# TODO: Make this work... Another header for debug build needs to be installed first.
-MJIT_DEBUGFLAGS = $(empty) $(DEBUGFLAGS) $(empty)
-MJIT_DEBUGFLAGS = $(MJIT_DEBUGFLAGS: -Zi = -Z7 )
-!endif
-!ifndef MJIT_LDSHARED
-MJIT_LDSHARED = $(MJIT_CC) -LD
+MJIT_SUPPORT = no
 !endif
 
 POSTLINK =
@@ -624,6 +601,9 @@ $(CONFIG_H): $(MKFILES) $(srcdir)/win32/Makefile.sub $(win_srcdir)/Makefile.sub
 #endif
 !endif
 #define RUBY_MSVCRT_VERSION $(RT_VER)
+!if defined(ABI_VERSION)
+#define RUBY_ABI_VERSION $(ABI_VERSION)
+!endif
 #define STDC_HEADERS 1
 #define HAVE_SYS_TYPES_H 1
 #define HAVE_SYS_STAT_H 1
@@ -912,11 +892,7 @@ $(CONFIG_H): $(MKFILES) $(srcdir)/win32/Makefile.sub $(win_srcdir)/Makefile.sub
 #define RUBY_COREDLL "$(RT)"
 #define RUBY_PLATFORM "$(arch)"
 #define RUBY_SITEARCH "$(sitearch)"
-!if "$(MJIT_SUPPORT)" == "yes"
-#define USE_MJIT 1
-!else
 #define USE_MJIT 0
-!endif
 #endif /* $(guard) */
 <<
 
@@ -1332,42 +1308,6 @@ probes.h: {$(VPATH)}probes.dmyh
 #include "$(*F).dmyh"
 <<KEEP
 
-main: mjit-headers
-yes-mjit-headers: $(MJIT_PRECOMPILED_HEADER)
-clean-local::
-	$(Q)$(RM) $(MJIT_PRECOMPILED_HEADER_NAME) $(MJIT_PRECOMPILED_HEADER_NAME:.pch=.)$(OBJEXT)
-	$(Q)$(RM) $(TIMESTAMPDIR)/$(MJIT_PRECOMPILED_HEADER_NAME:.pch=.time) mjit_config.h
-	$(Q)$(RM) $(MJIT_HEADER_INSTALL_DIR)/rb_mjit_header-*.pch
-	$(Q)$(RM) $(MJIT_HEADER_INSTALL_DIR)/rb_mjit_header-*.$(OBJEXT)
-	-$(Q) $(RMDIRS) $(MJIT_HEADER_INSTALL_DIR) 2> $(NULL) || exit 0
-	$(Q)$(RM) $(arch_hdrdir)/rb_mjit_header-*.pch
-	$(Q)$(RM) $(arch_hdrdir)/rb_mjit_header-*.$(OBJEXT)
-
-# Non-mswin environment is not using prebuilt precompiled header because upgrading compiler
-# or changing compiler options may break MJIT so build (currently only by --mjit-debug though).
-#
-# But mswin is building precompiled header because cl.exe cannot leave macro after preprocess.
-# As a workaround to use macro without installing many source files, it uses precompiled header
-# without sufficient guard for a broken build.
-#
-# TODO: Fix the above issue by including VC version in header name, and create another header
-# for --mjit-debug as well.
-$(TIMESTAMPDIR)/$(MJIT_PRECOMPILED_HEADER_NAME:.pch=).time: probes.h vm.$(OBJEXT)
-	$(ECHO) building $(@F:.time=.pch)
-	$(Q) $(CC) -DMJIT_HEADER $(CFLAGS: -Zi = -Z7 ) $(XCFLAGS:-DRUBY_EXPORT =) -URUBY_EXPORT $(CPPFLAGS) $(srcdir)/vm.c -c -Yc \
-	  $(COUTFLAG)$(@F:.time=.)$(OBJEXT) -Fd$(@F:.time=.pdb) -Fp$(@F:.time=.pch).new -Z7
-	$(Q) $(IFCHANGE) "--timestamp=$@" $(@F:.time=.pch) $(@F:.time=.pch).new
-
-$(MJIT_PRECOMPILED_HEADER_NAME): $(TIMESTAMPDIR)/$(MJIT_PRECOMPILED_HEADER_NAME:.pch=).time
-
-$(MJIT_PRECOMPILED_HEADER): $(MJIT_PRECOMPILED_HEADER_NAME)
-	$(Q) $(MAKEDIRS) $(MJIT_HEADER_INSTALL_DIR)
-	$(Q) $(MAKE_LINK) $(MJIT_PRECOMPILED_HEADER_NAME) $@
-	$(Q) $(MAKE_LINK) $(MJIT_PRECOMPILED_HEADER_NAME:.pch=.)$(OBJEXT) $(MJIT_HEADER_INSTALL_DIR)/$(MJIT_PRECOMPILED_HEADER_NAME:.pch=.)$(OBJEXT)
-	$(Q) $(MAKEDIRS) $(arch_hdrdir)
-	$(Q) $(MAKE_LINK) $(MJIT_PRECOMPILED_HEADER_NAME) $(arch_hdrdir)/$(MJIT_PRECOMPILED_HEADER_NAME)
-	$(Q) $(MAKE_LINK) $(MJIT_PRECOMPILED_HEADER_NAME:.pch=.)$(OBJEXT) $(arch_hdrdir)/$(MJIT_PRECOMPILED_HEADER_NAME:.pch=.)$(OBJEXT)
-
 INSNS	= opt_sc.inc optinsn.inc optunifs.inc insns.inc insns_info.inc \
 	  vmtc.inc vm.inc mjit_compile.inc
 
@@ -1393,46 +1333,3 @@ loadpath: verconf.h
 	@$(CPP) $(XCFLAGS) $(CPPFLAGS) $(srcdir)/loadpath.c | \
 	sed -e '1,/^const char ruby_initial_load_paths/d;/;/,$$d' \
 	    -e '/^^ /!d;s/ *"\\\\0"$$//;s/" *"//g'
-
-mjit_config.h: $(MKFILES) $(srcdir)/win32/Makefile.sub $(win_srcdir)/Makefile.sub
-	@echo making <<$@
-#ifndef RUBY_MJIT_CONFIG_H
-#define RUBY_MJIT_CONFIG_H 1
-
-#define MJIT_CONFIG_ESCAPED_EQ "="
-#define MJIT_HEADER_INSTALL_DIR "/$(MJIT_HEADER_INSTALL_DIR)"
-#define MJIT_MIN_HEADER_NAME "$(MJIT_MIN_HEADER_NAME)"
-#define MJIT_PRECOMPILED_HEADER_NAME "$(MJIT_PRECOMPILED_HEADER_NAME)"
-<<KEEP
-	@
-	@(set sep=#define MJIT_CC_COMMON ) & \
-	for %I in ($(MJIT_CC)) do @(call echo.%%sep%%"%%~I", \& set sep= ) >> $@
-	@echo /* MJIT_CC_COMMON */>> $@
-	@
-	@(set sep=#define MJIT_CFLAGS ) & \
-	for %I in ($(RUNTIMEFLAG) $(ARCH_FLAG)) do @(call echo.%%sep%%"%%~I", \& set sep= ) >> $@
-	@echo /* MJIT_CFLAGS */>> $@
-	@
-	@(set sep=#define MJIT_OPTFLAGS ) & \
-	for %I in ($(MJIT_OPTFLAGS:^==" MJIT_CONFIG_ESCAPED_EQ ")) do @(call echo.%%sep%%"%%~I", \& set sep= ) >> $@
-	@echo /* MJIT_OPTFLAGS */>> $@
-	@
-	@(set sep=#define MJIT_DEBUGFLAGS ) & \
-	for %I in ($(MJIT_DEBUGFLAGS:^==" MJIT_CONFIG_ESCAPED_EQ ")) do @(call echo.%%sep%%"%%~I", \& set sep= ) >> $@
-	@echo /* MJIT_DEBUGFLAGS */>> $@
-	@
-	@(set sep=#define MJIT_LDSHARED ) & \
-	for %I in ($(MJIT_LDSHARED)) do @(call echo.%%sep%%"%%~I", \& set sep= ) >> $@
-	@echo /* MJIT_LDSHARED */>> $@
-	@
-	@(set sep=#define MJIT_DLDFLAGS ) & \
-	for %I in ($(DLDFLAGS)) do @(call echo.%%sep%%"%%~I", \& set sep= ) >> $@
-	@echo /* MJIT_DLDFLAGS */>> $@
-	@
-	@(set sep=#define MJIT_LIBS ) & \
-	for %I in ($(LIBRUBYARG_SHARED)) do @(call echo.%%sep%%"%%~I", \& set sep= ) >> $@
-	@echo /* MJIT_LIBS */>> $@
-	@
-	@echo.>> $@
-	@echo #endif /* RUBY_MJIT_CONFIG_H */>> $@
-	@$(Q:@=: :) type $@

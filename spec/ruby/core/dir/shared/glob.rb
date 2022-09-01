@@ -111,6 +111,10 @@ describe :dir_glob, shared: true do
     it "matches files with backslashes in their name" do
       Dir.glob('special/\\\\{a,b}').should == ['special/\a']
     end
+
+    it "matches directory with special characters in their name in complex patterns" do
+      Dir.glob("special/test +()\\[\\]\\{\\}/hello_world{.{en},}{.{html},}{+{phone},}{.{erb},}").should == ['special/test +()[]{}/hello_world.erb']
+    end
   end
 
   it "matches regexp special ^" do
@@ -225,6 +229,7 @@ describe :dir_glob, shared: true do
       dir/
       nested/
       special/
+      special/test\ +()[]{}/
       special/test{1}/
       special/{}/
       subdir_one/

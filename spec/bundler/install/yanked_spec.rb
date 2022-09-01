@@ -43,6 +43,63 @@ RSpec.context "when installing a bundle that includes yanked gems" do
   end
 end
 
+RSpec.context "when resolving a bundle that includes yanked gems, but unlocking an unrelated gem" do
+  before(:each) do
+    build_repo4 do
+      build_gem "foo", "10.0.0"
+
+      build_gem "bar", "1.0.0"
+      build_gem "bar", "2.0.0"
+    end
+
+    lockfile <<-L
+      GEM
+        remote: #{file_uri_for(gem_repo4)}
+        specs:
+          foo (9.0.0)
+          bar (1.0.0)
+
+      PLATFORMS
+        #{lockfile_platforms}
+
+      DEPENDENCIES
+        foo
+        bar
+
+      BUNDLED WITH
+         #{Bundler::VERSION}
+    L
+
+    gemfile <<-G
+      source "#{file_uri_for(gem_repo4)}"
+      gem "foo"
+      gem "bar"
+    G
+  end
+
+  it "does not update the yanked gem" do
+    bundle "lock --update bar"
+
+    expect(lockfile).to eq <<~L
+      GEM
+        remote: #{file_uri_for(gem_repo4)}/
+        specs:
+          bar (2.0.0)
+          foo (9.0.0)
+
+      PLATFORMS
+        #{lockfile_platforms}
+
+      DEPENDENCIES
+        bar
+        foo
+
+      BUNDLED WITH
+         #{Bundler::VERSION}
+    L
+  end
+end
+
 RSpec.context "when using gem before installing" do
   it "does not suggest the author has yanked the gem" do
     gemfile <<-G

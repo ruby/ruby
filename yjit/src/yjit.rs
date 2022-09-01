@@ -22,7 +22,7 @@ pub extern "C" fn rb_yjit_parse_option(str_ptr: *const raw::c_char) -> bool {
 }
 
 /// Is YJIT on? The interpreter uses this function to decide whether to increment
-/// ISEQ call counters. See mjit_exec().
+/// ISEQ call counters. See jit_exec().
 /// This is used frequently since it's used on every method call in the interpreter.
 #[no_mangle]
 pub extern "C" fn rb_yjit_enabled_p() -> raw::c_int {
@@ -91,8 +91,8 @@ pub extern "C" fn rb_yjit_simulate_oom_bang(_ec: EcPtr, _ruby_self: VALUE) -> VA
     if cfg!(debug_assertions) {
         let cb = CodegenGlobals::get_inline_cb();
         let ocb = CodegenGlobals::get_outlined_cb().unwrap();
-        cb.set_pos(cb.get_mem_size() - 1);
-        ocb.set_pos(ocb.get_mem_size() - 1);
+        cb.set_pos(cb.get_mem_size());
+        ocb.set_pos(ocb.get_mem_size());
     }
 
     return Qnil;

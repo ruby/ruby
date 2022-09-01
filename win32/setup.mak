@@ -80,6 +80,9 @@ $(BANG)else
 HAVE_BASERUBY = no
 $(BANG)endif
 <<
+!if "$(RUBY_DEVEL)" == "yes"
+	RUBY_DEVEL = yes
+!endif
 !if "$(GIT)" != ""
 	@echo GIT = $(GIT)>> $(MAKEFILE)
 !endif
@@ -175,6 +178,7 @@ main(void)
 -version-: nul verconf.mk
 
 verconf.mk: nul
+	@findstr /R /C:"^#define RUBY_ABI_VERSION " $(srcdir:/=\)\include\ruby\internal\abi.h > $(@)
 	@$(CPP) -I$(srcdir) -I$(srcdir)/include <<"Creating $(@)" > $(*F).bat && cmd /c $(*F).bat > $(@)
 @echo off
 #define RUBY_REVISION 0
@@ -195,9 +199,9 @@ echo RUBY_RELEASE_DAY = %ruby_release_day:~-2%
 echo MAJOR = RUBY_VERSION_MAJOR
 echo MINOR = RUBY_VERSION_MINOR
 echo TEENY = RUBY_VERSION_TEENY
-echo ABI_VERSION = RUBY_ABI_VERSION
 #if defined RUBY_PATCHLEVEL && RUBY_PATCHLEVEL < 0
-echo RUBY_DEVEL = yes
+#include "$(@F)"
+echo ABI_VERSION = RUBY_ABI_VERSION
 #endif
 set /a MSC_VER = _MSC_VER
 #if _MSC_VER >= 1920
@@ -291,7 +295,6 @@ AS = $(AS) -nologo
 	(echo AS = $(AS:64=) -nologo) || \
 	(echo AS = $(AS) -nologo) ) >>$(MAKEFILE)
 !endif
-	@(for %I in (cl.exe) do @set MJIT_CC=%~$$PATH:I) && (call echo MJIT_CC = "%MJIT_CC:\=/%" -nologo>>$(MAKEFILE))
 	@type << >>$(MAKEFILE)
 
 $(BANG)include $$(srcdir)/win32/Makefile.sub

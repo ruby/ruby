@@ -294,6 +294,124 @@ longhand specifier.
     DateTime.now.strftime('%a %b %e %H:%M:%S %Z %Y')
     # => "Wed Jun 29 08:32:18 -05:00 2022"
 
+=== Flags
+
+Flags may affect certain formatting specifications.
+
+Multiple flags may be given with a single conversion specified;
+order does not matter.
+
+==== Padding Flags
+
+- <tt>0</tt> - Pad with zeroes:
+
+    Time.new(10).strftime('%0Y') # => "0010"
+
+- <tt>_</tt> - Pad with blanks:
+
+    Time.new(10).strftime('%_Y') # => "  10"
+
+- <tt>-</tt> - Don't pad:
+
+    Time.new(10).strftime('%-Y') # => "10"
+
+==== Casing Flags
+
+- <tt>^</tt> - Upcase result:
+
+    Time.new(2022, 1).strftime('%B')  # => "January" # No casing flag.
+    Time.new(2022, 1).strftime('%^B') # => "JANUARY"
+
+- <tt>#</tt> - Swapcase result:
+
+    Time.now.strftime('%p')  # => "AM"
+    Time.now.strftime('%^p') # => "AM"
+    Time.now.strftime('%#p') # => "am"
+
+==== Timezone Flags
+
+- <tt>:</tt> - Put timezone as colon-separated hours and minutes:
+
+    Time.now.strftime('%:z')  # => "-05:00"
+
+- <tt>::</tt> - Put timezone as colon-separated hours, minutes, and seconds:
+
+    Time.now.strftime('%::z') # => "-05:00:00"
+
+=== Width Specifiers
+
+The integer width specifier gives a minimum width for the returned string:
+
+  Time.new(2002).strftime('%Y')       # => "2002"     # No width specifier.
+  Time.new(2002).strftime('%10Y')     # => "0000002002"
+  Time.new(2002, 12).strftime('%B')   # => "December" # No width specifier.
+  Time.new(2002, 12).strftime('%10B') # => "  December"
+  Time.new(2002, 12).strftime('%3B')  # => "December" # Ignored if too small.
+
+== Specialized Format Strings
+
+Here are a few specialized format strings,
+each based on an external standard.
+
+=== HTTP Format
+
+The HTTP date format is based on
+{RFC 2616}[https://datatracker.ietf.org/doc/html/rfc2616],
+and treats dates in the format <tt>'%a, %d %b %Y %T GMT'</tt>:
+
+  d = Date.new(2001, 2, 3) # => #<Date: 2001-02-03>
+  # Return HTTP-formatted string.
+  httpdate = d.httpdate    # => "Sat, 03 Feb 2001 00:00:00 GMT"
+  # Return new date parsed from HTTP-formatted string.
+  Date.httpdate(httpdate)  # => #<Date: 2001-02-03>
+  # Return hash parsed from HTTP-formatted string.
+  Date._httpdate(httpdate)
+  # => {:wday=>6, :mday=>3, :mon=>2, :year=>2001, :hour=>0, :min=>0, :sec=>0, :zone=>"GMT", :offset=>0}
+
+=== RFC 3339 Format
+
+The RFC 3339 date format is based on
+{RFC 3339}[https://datatracker.ietf.org/doc/html/rfc3339]:
+
+  d = Date.new(2001, 2, 3) # => #<Date: 2001-02-03>
+  # Return 3339-formatted string.
+  rfc3339 = d.rfc3339      # => "2001-02-03T00:00:00+00:00"
+  # Return new date parsed from 3339-formatted string.
+  Date.rfc3339(rfc3339)    # => #<Date: 2001-02-03>
+  # Return hash parsed from 3339-formatted string.
+  Date._rfc3339(rfc3339)
+  # => {:year=>2001, :mon=>2, :mday=>3, :hour=>0, :min=>0, :sec=>0, :zone=>"+00:00", :offset=>0}
+
+=== RFC 2822 Format
+
+The RFC 2822 date format is based on
+{RFC 2822}[https://datatracker.ietf.org/doc/html/rfc2822],
+and treats dates in the format <tt>'%a, %-d %b %Y %T %z'</tt>]:
+
+  d = Date.new(2001, 2, 3) # => #<Date: 2001-02-03>
+  # Return 2822-formatted string.
+  rfc2822 = d.rfc2822      # => "Sat, 3 Feb 2001 00:00:00 +0000"
+  # Return new date parsed from 2822-formatted string.
+  Date.rfc2822(rfc2822)    # => #<Date: 2001-02-03>
+  # Return hash parsed from 2822-formatted string.
+  Date._rfc2822(rfc2822)
+  # => {:wday=>6, :mday=>3, :mon=>2, :year=>2001, :hour=>0, :min=>0, :sec=>0, :zone=>"+0000", :offset=>0}
+
+=== JIS X 0301 Format
+
+The JIS X 0301 format includes the
+{Japanese era name}[https://en.wikipedia.org/wiki/Japanese_era_name],
+and treats dates in the format <tt>'%Y-%m-%d'</tt>
+with the first letter of the romanized era name prefixed:
+
+  d = Date.new(2001, 2, 3) # => #<Date: 2001-02-03>
+  # Return 0301-formatted string.
+  jisx0301 = d.jisx0301    # => "H13.02.03"
+  # Return new date parsed from 0301-formatted string.
+  Date.jisx0301(jisx0301)  # => #<Date: 2001-02-03>
+  # Return hash parsed from 0301-formatted string.
+  Date._jisx0301(jisx0301) # => {:year=>2001, :mon=>2, :mday=>3}
+
 === ISO 8601 Format Specifications
 
 This section shows format specifications that are compatible with
@@ -407,57 +525,3 @@ separated by the letter +T+.
 For the relevant +strftime+ formats, see
 {Dates}[rdoc-ref:strftime_formatting.rdoc@Dates]
 and {Times}[rdoc-ref:strftime_formatting.rdoc@Times] above.
-
-=== Flags
-
-Flags may affect certain formatting specifications.
-
-Multiple flags may be given with a single conversion specified;
-order does not matter.
-
-==== Padding Flags
-
-- <tt>0</tt> - Pad with zeroes:
-
-    Time.new(10).strftime('%0Y') # => "0010"
-
-- <tt>_</tt> - Pad with blanks:
-
-    Time.new(10).strftime('%_Y') # => "  10"
-
-- <tt>-</tt> - Don't pad:
-
-    Time.new(10).strftime('%-Y') # => "10"
-
-==== Casing Flags
-
-- <tt>^</tt> - Upcase result:
-
-    Time.new(2022, 1).strftime('%B')  # => "January" # No casing flag.
-    Time.new(2022, 1).strftime('%^B') # => "JANUARY"
-
-- <tt>#</tt> - Swapcase result:
-
-    Time.now.strftime('%p')  # => "AM"
-    Time.now.strftime('%^p') # => "AM"
-    Time.now.strftime('%#p') # => "am"
-
-==== Timezone Flags
-
-- <tt>:</tt> - Put timezone as colon-separated hours and minutes:
-
-    Time.now.strftime('%:z')  # => "-05:00"
-
-- <tt>::</tt> - Put timezone as colon-separated hours, minutes, and seconds:
-
-    Time.now.strftime('%::z') # => "-05:00:00"
-
-=== Width Specifiers
-
-The integer width specifier gives a minimum width for the returned string:
-
-  Time.new(2002).strftime('%Y')       # => "2002"     # No width specifier.
-  Time.new(2002).strftime('%10Y')     # => "0000002002"
-  Time.new(2002, 12).strftime('%B')   # => "December" # No width specifier.
-  Time.new(2002, 12).strftime('%10B') # => "  December"
-  Time.new(2002, 12).strftime('%3B')  # => "December" # Ignored if too small.

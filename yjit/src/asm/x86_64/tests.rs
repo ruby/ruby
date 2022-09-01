@@ -1,18 +1,6 @@
 #![cfg(test)]
 
 use crate::asm::x86_64::*;
-use std::fmt;
-
-/// Produce hex string output from the bytes in a code block
-impl<'a> fmt::LowerHex for super::CodeBlock {
-    fn fmt(&self, fmtr: &mut fmt::Formatter) -> fmt::Result {
-        for pos in 0..self.write_pos {
-            let byte = unsafe { self.mem_block.start_ptr().raw_ptr().add(pos).read() };
-            fmtr.write_fmt(format_args!("{:02x}", byte))?;
-        }
-        Ok(())
-    }
-}
 
 /// Check that the bytes for an instruction sequence match a hex string
 fn check_bytes<R>(bytes: &str, run: R) where R: FnOnce(&mut super::CodeBlock) {

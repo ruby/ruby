@@ -796,7 +796,7 @@ dependencies: []
     assert_equal File.join(@tempdir, "a-2.gemspec"), spec.loaded_from
   end
 
-  if RUBY_ENGINE == "ruby" and RUBY_VERSION < "2.7"
+  if RUBY_ENGINE == "ruby" && RUBY_VERSION < "2.7"
     def test_self_load_tainted
       full_path = @a2.spec_file
       write_file full_path do |io|
@@ -1450,7 +1450,7 @@ dependencies: []
     @ext.build_extensions
     assert_path_not_exist @ext.extension_dir
   ensure
-    unless ($DEBUG or win_platform? or Process.uid.zero? or Gem.java_platform?)
+    unless ($DEBUG || win_platform? || Process.uid.zero? || Gem.java_platform?)
       FileUtils.chmod 0755, File.join(@ext.base_dir, "extensions")
       FileUtils.chmod 0755, @ext.base_dir
     end

@@ -97,6 +97,32 @@ describe "C-API String function" do
     end
   end
 
+  describe "rb_str_set_len on a UTF-16 String" do
+    before :each do
+      @str = "abcdefghij".force_encoding(Encoding::UTF_16BE)
+      # Make sure to unshare the string
+      @s.rb_str_modify(@str)
+    end
+
+    it "inserts two NULL bytes at the length" do
+      @s.rb_str_set_len(@str, 4).b.should == "abcd".b
+      @s.rb_str_set_len(@str, 8).b.should == "abcd\x00\x00gh".b
+    end
+  end
+
+  describe "rb_str_set_len on a UTF-32 String" do
+    before :each do
+      @str = "abcdefghijkl".force_encoding(Encoding::UTF_32BE)
+      # Make sure to unshare the string
+      @s.rb_str_modify(@str)
+    end
+
+    it "inserts four NULL bytes at the length" do
+      @s.rb_str_set_len(@str, 4).b.should == "abcd".b
+      @s.rb_str_set_len(@str, 12).b.should == "abcd\x00\x00\x00\x00ijkl".b
+    end
+  end
+
   describe "rb_str_buf_new" do
     it "returns the equivalent of an empty string" do
       buf = @s.rb_str_buf_new(10, nil)
@@ -591,6 +617,12 @@ describe "C-API String function" do
       capacities[1].should >= 53
       capacities[0].should < capacities[1]
       str.should == "fixture file contents to test read() with RSTRING_PTR"
+    end
+
+    it "terminates the string with at least (encoding min length) \\0 bytes" do
+      @s.RSTRING_PTR_null_terminate("abc", 1).should == "\x00"
+      @s.RSTRING_PTR_null_terminate("abc".encode("UTF-16BE"), 2).should == "\x00\x00"
+      @s.RSTRING_PTR_null_terminate("abc".encode("UTF-32BE"), 4).should == "\x00\x00\x00\x00"
     end
   end
 

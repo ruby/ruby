@@ -77,7 +77,7 @@ prefix or only the files that are requireable.
           gem_contents name
         end
 
-      terminate_interaction 1 unless found or names.length > 1
+      terminate_interaction 1 unless found || names.length > 1
     end
   end
 

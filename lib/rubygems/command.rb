@@ -159,11 +159,11 @@ class Gem::Command
     gem = "'#{gem_name}' (#{version})"
     msg = String.new "Could not find a valid gem #{gem}"
 
-    if errors and !errors.empty?
+    if errors && !errors.empty?
       msg << ", here is why:\n"
       errors.each {|x| msg << "          #{x.wordy}\n" }
     else
-      if required_by and gem != required_by
+      if required_by && gem != required_by
         msg << " (required by #{required_by}) in any repository"
       else
         msg << " in any repository"
@@ -186,7 +186,7 @@ class Gem::Command
   def get_all_gem_names
     args = options[:args]
 
-    if args.nil? or args.empty?
+    if args.nil? || args.empty?
       raise Gem::CommandLineError,
             "Please specify at least one gem name (e.g. gem build GEMNAME)"
     end
@@ -216,7 +216,7 @@ class Gem::Command
   def get_one_gem_name
     args = options[:args]
 
-    if args.nil? or args.empty?
+    if args.nil? || args.empty?
       raise Gem::CommandLineError,
             "Please specify a gem name on the command line (e.g. gem build GEMNAME)"
     end
@@ -554,7 +554,7 @@ class Gem::Command
   end
 
   def configure_options(header, option_list)
-    return if option_list.nil? or option_list.empty?
+    return if option_list.nil? || option_list.empty?
 
     header = header.to_s.empty? ? "" : "#{header} "
     @parser.separator "  #{header}Options:"
@@ -586,7 +586,7 @@ class Gem::Command
   add_common_option("-V", "--[no-]verbose",
                     "Set the verbose level of output") do |value, options|
     # Set us to "really verbose" so the progress meter works
-    if Gem.configuration.verbose and value
+    if Gem.configuration.verbose && value
       Gem.configuration.verbose = 1
     else
       Gem.configuration.verbose = value

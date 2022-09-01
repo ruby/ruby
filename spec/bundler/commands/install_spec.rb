@@ -285,7 +285,7 @@ RSpec.describe "bundle install with gem sources" do
       end
 
       it "installs gems for windows" do
-        simulate_platform mswin
+        simulate_platform x86_mswin32
 
         install_gemfile <<-G
           source "#{file_uri_for(gem_repo1)}"
@@ -293,7 +293,7 @@ RSpec.describe "bundle install with gem sources" do
         G
 
         run "require 'platform_specific' ; puts PLATFORM_SPECIFIC"
-        expect(out).to eq("1.0.0 MSWIN")
+        expect(out).to eq("1.0 x86-mswin32")
       end
     end
 

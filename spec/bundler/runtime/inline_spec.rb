@@ -355,6 +355,20 @@ RSpec.describe "bundler/inline#gemfile" do
     expect(err).to be_empty
   end
 
+  it "still installs if the application has `bundle package` no_install config set" do
+    bundle "config set --local no_install true"
+
+    script <<-RUBY
+      gemfile do
+        source "#{file_uri_for(gem_repo1)}"
+        gem "rack"
+      end
+    RUBY
+
+    expect(last_command).to be_success
+    expect(system_gem_path("gems/rack-1.0.0")).to exist
+  end
+
   it "preserves previous BUNDLE_GEMFILE value" do
     ENV["BUNDLE_GEMFILE"] = ""
     script <<-RUBY

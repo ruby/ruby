@@ -1,7 +1,7 @@
 use std::ffi::CStr;
 
 // Command-line options
-#[derive(Copy, Clone, PartialEq, Eq, Debug)]
+#[derive(Clone, PartialEq, Eq, Debug)]
 #[repr(C)]
 pub struct Options {
     // Size of the executable memory block to allocate in MiB
@@ -30,6 +30,12 @@ pub struct Options {
     /// Dump compiled and executed instructions for debugging
     pub dump_insns: bool,
 
+    /// Dump all compiled instructions in inlined CodeBlock
+    pub dump_disasm: bool,
+
+    /// Print when specific ISEQ items are compiled or invalidated
+    pub dump_iseq_disasm: Option<String>,
+
     /// Verify context objects (debug mode only)
     pub verify_ctx: bool,
 
@@ -50,8 +56,10 @@ pub static mut OPTIONS: Options = Options {
     gen_stats: false,
     gen_trace_exits: false,
     dump_insns: false,
+    dump_disasm: false,
     verify_ctx: false,
     global_constant_state: false,
+    dump_iseq_disasm: None,
 };
 
 /// Macro to get an option value by name
@@ -63,6 +71,16 @@ macro_rules! get_option {
     };
 }
 pub(crate) use get_option;
+
+/// Macro to reference an option value by name; we assume it's a cloneable type like String or an Option of same.
+macro_rules! get_option_ref {
+    // Unsafe is ok here because options are initialized
+    // once before any Ruby code executes
+    ($option_name:ident) => {
+        unsafe { &(OPTIONS.$option_name) }
+    };
+}
+pub(crate) use get_option_ref;
 
 /// Expected to receive what comes after the third dash in "--yjit-*".
 /// Empty string means user passed only "--yjit". C code rejects when
@@ -105,11 +123,16 @@ pub fn parse_option(str_ptr: *const std::os::raw::c_char) -> Option<()> {
             }
         },
 
+        ("dump-iseq-disasm", _) => unsafe {
+            OPTIONS.dump_iseq_disasm = Some(opt_val.to_string());
+        },
+
         ("greedy-versioning", "") => unsafe { OPTIONS.greedy_versioning = true },
         ("no-type-prop", "") => unsafe { OPTIONS.no_type_prop = true },
         ("stats", "") => unsafe { OPTIONS.gen_stats = true },
         ("trace-exits", "") => unsafe { OPTIONS.gen_trace_exits = true; OPTIONS.gen_stats = true },
         ("dump-insns", "") => unsafe { OPTIONS.dump_insns = true },
+        ("dump-disasm", "") => unsafe { OPTIONS.dump_disasm = true },
         ("verify-ctx", "") => unsafe { OPTIONS.verify_ctx = true },
         ("global-constant-state", "") => unsafe { OPTIONS.global_constant_state = true },
 

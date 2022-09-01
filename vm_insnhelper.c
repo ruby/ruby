@@ -3182,9 +3182,11 @@ ci_missing_reason(const struct rb_callinfo *ci)
     return stat;
 }
 
+static VALUE vm_call_method_missing(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, struct rb_calling_info *calling);
+
 static VALUE
 vm_call_symbol(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp,
-               struct rb_calling_info *calling, const struct rb_callinfo *ci, VALUE symbol)
+               struct rb_calling_info *calling, const struct rb_callinfo *ci, VALUE symbol, int flags)
 {
     ASSUME(calling->argc >= 0);
     /* Also assumes CALLER_SETUP_ARG is already done. */
@@ -3194,9 +3196,7 @@ vm_call_symbol(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp,
     VALUE recv = calling->recv;
     VALUE klass = CLASS_OF(recv);
     ID mid = rb_check_id(&symbol);
-    int flags = VM_CALL_FCALL |
-                VM_CALL_OPT_SEND |
-                (calling->kw_splat ? VM_CALL_KW_SPLAT : 0);
+    flags |= VM_CALL_OPT_SEND | (calling->kw_splat ? VM_CALL_KW_SPLAT : 0);
 
     if (UNLIKELY(! mid)) {
         mid = idMethodMissing;
@@ -3243,7 +3243,30 @@ vm_call_symbol(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp,
                                   { .method_missing_reason = missing_reason },
                                   rb_callable_method_entry_with_refinements(klass, mid, NULL));
 
-    return vm_call_method(ec, reg_cfp, calling);
+    if (flags & VM_CALL_FCALL) {
+        return vm_call_method(ec, reg_cfp, calling);
+    }
+
+    const struct rb_callcache *cc = calling->cc;
+    VM_ASSERT(callable_method_entry_p(vm_cc_cme(cc)));
+
+    if (vm_cc_cme(cc) != NULL) {
+        switch (METHOD_ENTRY_VISI(vm_cc_cme(cc))) {
+          case METHOD_VISI_PUBLIC: /* likely */
+            return vm_call_method_each_type(ec, reg_cfp, calling);
+          case METHOD_VISI_PRIVATE:
+            vm_cc_method_missing_reason_set(cc, MISSING_PRIVATE);
+            break;
+          case METHOD_VISI_PROTECTED:
+            vm_cc_method_missing_reason_set(cc, MISSING_PROTECTED);
+            break;
+          default:
+            VM_UNREACHABLE(vm_call_method);
+        }
+        return vm_call_method_missing(ec, reg_cfp, calling);
+    }
+
+    return vm_call_method_nome(ec, reg_cfp, calling);
 }
 
 static VALUE
@@ -3283,7 +3306,7 @@ vm_call_opt_send(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, struct
         calling->argc -= 1;
         DEC_SP(1);
 
-        return vm_call_symbol(ec, reg_cfp, calling, calling->ci, sym);
+        return vm_call_symbol(ec, reg_cfp, calling, calling->ci, sym, VM_CALL_FCALL);
     }
 }
 
@@ -4097,7 +4120,7 @@ vm_invoke_symbol_block(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp,
         VALUE symbol = VM_BH_TO_SYMBOL(block_handler);
         CALLER_SETUP_ARG(reg_cfp, calling, ci);
         calling->recv = TOPN(--calling->argc);
-        return vm_call_symbol(ec, reg_cfp, calling, ci, symbol);
+        return vm_call_symbol(ec, reg_cfp, calling, ci, symbol, 0);
     }
 }
 
@@ -4357,6 +4380,14 @@ vm_concat_array(VALUE ary1, VALUE ary2st)
     return rb_ary_concat(tmp1, tmp2);
 }
 
+// YJIT implementation is using the C function
+// and needs to call a non-static function
+VALUE
+rb_vm_concat_array(VALUE ary1, VALUE ary2st)
+{
+    return vm_concat_array(ary1, ary2st);
+}
+
 static VALUE
 vm_splat_array(VALUE flag, VALUE ary)
 {
@@ -4372,6 +4403,8 @@ vm_splat_array(VALUE flag, VALUE ary)
     }
 }
 
+// YJIT implementation is using the C function
+// and needs to call a non-static function
 VALUE
 rb_vm_splat_array(VALUE flag, VALUE ary)
 {
@@ -4761,16 +4794,16 @@ vm_sendish(
 
 #ifdef MJIT_HEADER
     /* When calling ISeq which may catch an exception from JIT-ed
-       code, we should not call mjit_exec directly to prevent the
+       code, we should not call jit_exec directly to prevent the
        caller frame from being canceled. That's because the caller
        frame may have stack values in the local variables and the
        cancelling the caller frame will purge them. But directly
-       calling mjit_exec is faster... */
+       calling jit_exec is faster... */
     if (ISEQ_BODY(GET_ISEQ())->catch_except_p) {
         VM_ENV_FLAGS_SET(GET_EP(), VM_FRAME_FLAG_FINISH);
         return vm_exec(ec, true);
     }
-    else if ((val = mjit_exec(ec)) == Qundef) {
+    else if ((val = jit_exec(ec)) == Qundef) {
         VM_ENV_FLAGS_SET(GET_EP(), VM_FRAME_FLAG_FINISH);
         return vm_exec(ec, false);
     }
@@ -4779,9 +4812,8 @@ vm_sendish(
     }
 #else
     /* When calling from VM, longjmp in the callee won't purge any
-       JIT-ed caller frames.  So it's safe to directly call
-       mjit_exec. */
-    return mjit_exec(ec);
+       JIT-ed caller frames. So it's safe to directly call jit_exec. */
+    return jit_exec(ec);
 #endif
 }
 
@@ -4819,7 +4851,7 @@ vm_objtostring(const rb_iseq_t *iseq, VALUE recv, CALL_DATA cd)
             // going to use this string for interpolation, it's fine to use the
             // frozen string.
             VALUE val = rb_mod_name(recv);
-            if (val == Qnil) {
+            if (NIL_P(val)) {
                 val = rb_mod_to_s(recv);
             }
             return val;
@@ -5458,7 +5490,8 @@ vm_opt_aref_with(VALUE recv, VALUE key)
 {
     if (!SPECIAL_CONST_P(recv) && RBASIC_CLASS(recv) == rb_cHash &&
         BASIC_OP_UNREDEFINED_P(BOP_AREF, HASH_REDEFINED_OP_FLAG) &&
-        rb_hash_compare_by_id_p(recv) == Qfalse) {
+        rb_hash_compare_by_id_p(recv) == Qfalse &&
+        !FL_TEST(recv, RHASH_PROC_DEFAULT)) {
         return rb_hash_aref(recv, key);
     }
     else {

@@ -1,7 +1,5 @@
 # frozen_string_literal: true
 
-require_relative "match_platform"
-
 module Bundler
   class LazySpecification
     include MatchPlatform
@@ -93,20 +91,12 @@ module Bundler
       __materialize__(candidates)
     end
 
-    def materialize_for_resolution
-      return self unless Gem::Platform.match_spec?(self)
-
-      candidates = source.specs.search(self)
-
-      __materialize__(candidates)
-    end
-
     def __materialize__(candidates)
       @specification = begin
         search = candidates.reverse.find do |spec|
           spec.is_a?(StubSpecification) ||
-            (spec.required_ruby_version.satisfied_by?(Gem.ruby_version) &&
-              spec.required_rubygems_version.satisfied_by?(Gem.rubygems_version))
+            (spec.matches_current_ruby? &&
+              spec.matches_current_rubygems?)
         end
         if search.nil? && Bundler.frozen_bundle?
           search = candidates.last

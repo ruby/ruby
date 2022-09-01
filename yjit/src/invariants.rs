@@ -528,8 +528,6 @@ pub extern "C" fn rb_yjit_tracing_invalidate_all() {
         return;
     }
 
-    use crate::asm::x86_64::jmp_ptr;
-
     // Stop other ractors since we are going to patch machine code.
     with_vm_lock(src_loc!(), || {
         // Make it so all live block versions are no longer valid branch targets
@@ -561,13 +559,18 @@ pub extern "C" fn rb_yjit_tracing_invalidate_all() {
 
         // Apply patches
         let old_pos = cb.get_write_pos();
-        let patches = CodegenGlobals::take_global_inval_patches();
+        let mut patches = CodegenGlobals::take_global_inval_patches();
+        patches.sort_by_cached_key(|patch| patch.inline_patch_pos.raw_ptr());
+        let mut last_patch_end = std::ptr::null();
         for patch in &patches {
-            cb.set_write_ptr(patch.inline_patch_pos);
-            jmp_ptr(cb, patch.outlined_target_pos);
+            assert!(last_patch_end <= patch.inline_patch_pos.raw_ptr(), "patches should not overlap");
 
-            // FIXME: Can't easily check we actually wrote out the JMP at the moment.
-            // assert!(!cb.has_dropped_bytes(), "patches should have space and jump offsets should fit in JMP rel32");
+            let mut asm = crate::backend::ir::Assembler::new();
+            asm.jmp(patch.outlined_target_pos.into());
+
+            cb.set_write_ptr(patch.inline_patch_pos);
+            asm.compile(cb);
+            last_patch_end = cb.get_write_ptr().raw_ptr();
         }
         cb.set_pos(old_pos);
 

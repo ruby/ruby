@@ -252,7 +252,7 @@ class Gem::UnsatisfiableDependencyError < Gem::DependencyError
   # Gem::Resolver::DependencyRequest +dep+
 
   def initialize(dep, platform_mismatch=nil)
-    if platform_mismatch and !platform_mismatch.empty?
+    if platform_mismatch && !platform_mismatch.empty?
       plats = platform_mismatch.map {|x| x.platform.to_s }.sort.uniq
       super "Unable to resolve dependency: No match for '#{dep}' on this platform. Found: #{plats.join(', ')}"
     else

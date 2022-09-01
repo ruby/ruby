@@ -1796,7 +1796,8 @@ lazy_initialize(int argc, VALUE *argv, VALUE self)
  * Expands +lazy+ enumerator to an array.
  * See Enumerable#to_a.
  */
-static VALUE lazy_to_a(VALUE self)
+static VALUE
+lazy_to_a(VALUE self)
 {
 }
 #endif
@@ -2753,7 +2754,8 @@ lazy_with_index(int argc, VALUE *argv, VALUE obj)
  *
  *  Like Enumerable#chunk, but chains operation to be lazy-evaluated.
  */
-static VALUE lazy_chunk(VALUE self)
+static VALUE
+lazy_chunk(VALUE self)
 {
 }
 
@@ -2763,7 +2765,8 @@ static VALUE lazy_chunk(VALUE self)
  *
  *  Like Enumerable#chunk_while, but chains operation to be lazy-evaluated.
  */
-static VALUE lazy_chunk_while(VALUE self)
+static VALUE
+lazy_chunk_while(VALUE self)
 {
 }
 
@@ -2774,7 +2777,8 @@ static VALUE lazy_chunk_while(VALUE self)
  *
  *  Like Enumerable#slice_after, but chains operation to be lazy-evaluated.
  */
-static VALUE lazy_slice_after(VALUE self)
+static VALUE
+lazy_slice_after(VALUE self)
 {
 }
 
@@ -2785,7 +2789,8 @@ static VALUE lazy_slice_after(VALUE self)
  *
  *  Like Enumerable#slice_before, but chains operation to be lazy-evaluated.
  */
-static VALUE lazy_slice_before(VALUE self)
+static VALUE
+lazy_slice_before(VALUE self)
 {
 }
 
@@ -2795,7 +2800,8 @@ static VALUE lazy_slice_before(VALUE self)
  *
  *  Like Enumerable#slice_when, but chains operation to be lazy-evaluated.
  */
-static VALUE lazy_slice_when(VALUE self)
+static VALUE
+lazy_slice_when(VALUE self)
 {
 }
 # endif
@@ -3562,7 +3568,8 @@ product_each(VALUE obj, struct product_state *pstate)
         VALUE eobj = RARRAY_AREF(enums, pstate->index);
 
         rb_block_call(eobj, id_each_entry, 0, NULL, product_each_i, (VALUE)pstate);
-    } else {
+    }
+    else {
         rb_funcallv(pstate->block, id_call, pstate->argc, pstate->argv);
     }
 
@@ -3677,7 +3684,8 @@ enumerator_s_product(VALUE klass, VALUE enums)
 
     if (rb_block_given_p()) {
         return enum_product_run(obj, rb_block_proc());
-    } else {
+    }
+    else {
         return obj;
     }
 }
@@ -3794,6 +3802,13 @@ rb_arithmetic_sequence_beg_len_step(VALUE obj, long *begp, long *lenp, long *ste
     *stepp = step;
 
     if (step < 0) {
+        if (aseq.exclude_end && !NIL_P(aseq.end)) {
+            /* Handle exclusion before range reversal */
+            aseq.end = LONG2NUM(NUM2LONG(aseq.end) + 1);
+
+            /* Don't exclude the previous beginning */
+            aseq.exclude_end = 0;
+        }
         VALUE tmp = aseq.begin;
         aseq.begin = aseq.end;
         aseq.end = tmp;

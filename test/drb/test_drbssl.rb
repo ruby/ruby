@@ -41,6 +41,10 @@ end
 class TestDRbSSLCore < Test::Unit::TestCase
   include DRbCore
   def setup
+    if RUBY_PLATFORM.match?(/mingw/)
+      @omitted = true
+      omit 'This test seems to randomly hang on GitHub Actions MinGW'
+    end
     @drb_service = DRbSSLService.new
     super
     setup_service 'ut_drb_drbssl.rb'

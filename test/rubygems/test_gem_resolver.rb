@@ -322,16 +322,15 @@ class TestGemResolver < Gem::TestCase
   def test_picks_best_platform
     is      = Gem::Resolver::IndexSpecification
     unknown = Gem::Platform.new "unknown"
-    a2_p1   = a3_p2 = nil
 
     spec_fetcher do |fetcher|
       fetcher.spec "a", 2
 
-      a2_p1 = fetcher.spec "a", 2 do |s|
+      fetcher.spec "a", 2 do |s|
         s.platform = Gem::Platform.local
       end
 
-      a3_p2 = fetcher.spec "a", 3 do |s|
+      fetcher.spec "a", 3 do |s|
         s.platform = unknown
       end
     end
@@ -355,6 +354,41 @@ class TestGemResolver < Gem::TestCase
     res = Gem::Resolver.new([ad], s)
 
     assert_resolves_to [a2_p1.spec], res
+  end
+
+  def test_does_not_pick_musl_variants_on_non_musl_linux
+    util_set_arch "aarch64-linux" do
+      is = Gem::Resolver::IndexSpecification
+
+      linux_musl = Gem::Platform.new("aarch64-linux-musl")
+
+      spec_fetcher do |fetcher|
+        fetcher.spec "libv8-node", "15.14.0.1" do |s|
+          s.platform = Gem::Platform.local
+        end
+
+        fetcher.spec "libv8-node", "15.14.0.1" do |s|
+          s.platform = linux_musl
+        end
+      end
+
+      v15 = v("15.14.0.1")
+      source = Gem::Source.new @gem_repo
+
+      s = set
+
+      v15_linux = is.new s, "libv8-node", v15, source, Gem::Platform.local.to_s
+      v15_linux_musl = is.new s, "libv8-node", v15, source, linux_musl.to_s
+
+      s.add v15_linux
+      s.add v15_linux_musl
+
+      ad = make_dep "libv8-node", "= 15.14.0.1"
+
+      res = Gem::Resolver.new([ad], s)
+
+      assert_resolves_to [v15_linux.spec], res
+    end
   end
 
   def test_only_returns_spec_once

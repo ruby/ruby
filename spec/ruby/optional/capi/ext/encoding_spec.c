@@ -301,6 +301,14 @@ static VALUE encoding_spec_rb_enc_codelen(VALUE self, VALUE code, VALUE encoding
   return INT2FIX(rb_enc_codelen(c, enc));
 }
 
+static VALUE encoding_spec_rb_enc_strlen(VALUE self, VALUE str, VALUE length, VALUE encoding) {
+  int l = FIX2INT(length);
+  char *p = RSTRING_PTR(str);
+  char *e = p + l;
+
+  return LONG2FIX(rb_enc_strlen(p, e, rb_to_encoding(encoding)));
+}
+
 void Init_encoding_spec(void) {
   VALUE cls;
   native_rb_encoding_pointer = (rb_encoding**) malloc(sizeof(rb_encoding*));
@@ -335,6 +343,7 @@ void Init_encoding_spec(void) {
   rb_define_method(cls, "rb_enc_compatible", encoding_spec_rb_enc_compatible, 2);
   rb_define_method(cls, "rb_enc_copy", encoding_spec_rb_enc_copy, 2);
   rb_define_method(cls, "rb_enc_codelen", encoding_spec_rb_enc_codelen, 2);
+  rb_define_method(cls, "rb_enc_strlen", encoding_spec_rb_enc_strlen, 3);
   rb_define_method(cls, "rb_enc_find", encoding_spec_rb_enc_find, 1);
   rb_define_method(cls, "rb_enc_find_index", encoding_spec_rb_enc_find_index, 1);
   rb_define_method(cls, "rb_enc_isalnum", encoding_spec_rb_enc_isalnum, 2);

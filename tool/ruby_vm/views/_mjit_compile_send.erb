@@ -90,7 +90,7 @@
                     fprintf(f, "        val = vm_exec(ec, true);\n");
                 }
                 else {
-                    fprintf(f, "        if ((val = mjit_exec(ec)) == Qundef) {\n");
+                    fprintf(f, "        if ((val = jit_exec(ec)) == Qundef) {\n");
                     fprintf(f, "            VM_ENV_FLAGS_SET(ec->cfp->ep, VM_FRAME_FLAG_FINISH);\n"); // This is vm_call0_body's code after vm_call_iseq_setup
                     fprintf(f, "            val = vm_exec(ec, false);\n");
                     fprintf(f, "        }\n");

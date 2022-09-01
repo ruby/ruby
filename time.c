@@ -3348,32 +3348,100 @@ tmcmp(struct tm *a, struct tm *b)
 
 /*
  * call-seq:
- *   Time.utc(year, month = 1, day = 1, hour = 0, min = 0, sec_i = 0, usec = 0) -> new_time
- *   Time.utc(sec_i, min, hour, day, month, year, dummy, dummy, dummy, dummy) -> new_time
+ *   Time.utc(year, month = 1, mday = 1, hour = 0, min = 0, sec = 0, usec = 0) -> new_time
+ *   Time.utc(sec, min, hour, mday, month, year, dummy, dummy, dummy, dummy) -> new_time
  *
- * Returns a new \Time object based the on given arguments;
- * its timezone is UTC.
+ * Returns a new \Time object based the on given arguments,
+ * in the UTC timezone.
  *
- * In the first form (up to seven arguments), argument +year+ is required.
+ * With one to seven arguments given,
+ * the arguments are interpreted as in the first calling sequence above:
  *
- *   Time.utc(2000)                  # => 2000-01-01 00:00:00 UTC
- *   Time.utc(0, 1, 2, 3, 4, 5, 6.5) # => 0000-01-02 03:04:05.0000065 UTC
+ *   Time.utc(year, month = 1, mday = 1, hour = 0, min = 0, sec = 0, usec = 0)
  *
- * In the second form, all ten arguments are required,
- * though the last four are ignored.
- * This form is useful for creating a time from a 10-element array
- * such as is returned by #to_a.
+ * Examples:
  *
- *   array = Time.now.to_a
- *   # => [55, 14, 10, 7, 7, 2022, 4, 188, true, "Central Daylight Time"]
- *   array[5] = 2000
- *   Time.utc(*array) # => 2000-07-07 10:14:55 UTC
+ *   Time.utc(2000)  # => 2000-01-01 00:00:00 UTC
+ *   Time.utc(-2000) # => -2000-01-01 00:00:00 UTC
  *
- * Parameters:
- * :include: doc/time/year.rdoc
- * :include: doc/time/mon-min.rdoc
- * :include: doc/time/sec_i.rdoc
- * :include: doc/time/usec.rdoc
+ * There are no minimum and maximum values for the required argument +year+.
+ *
+ * For the optional arguments:
+ *
+ * - +month+: Month in range (1..12), or case-insensitive
+ *   3-letter month name:
+ *
+ *     Time.utc(2000, 1)     # => 2000-01-01 00:00:00 UTC
+ *     Time.utc(2000, 12)    # => 2000-12-01 00:00:00 UTC
+ *     Time.utc(2000, 'jan') # => 2000-01-01 00:00:00 UTC
+ *     Time.utc(2000, 'JAN') # => 2000-01-01 00:00:00 UTC
+ *
+ * - +mday+: Month day in range(1..31):
+ *
+ *     Time.utc(2000, 1, 1)  # => 2000-01-01 00:00:00 UTC
+ *     Time.utc(2000, 1, 31) # => 2000-01-31 00:00:00 UTC
+ *
+ * - +hour+: Hour in range (0..23), or 24 if +min+, +sec+, and +usec+
+ *   are zero:
+ *
+ *     Time.utc(2000, 1, 1, 0)  # => 2000-01-01 00:00:00 UTC
+ *     Time.utc(2000, 1, 1, 23) # => 2000-01-01 23:00:00 UTC
+ *     Time.utc(2000, 1, 1, 24) # => 2000-01-02 00:00:00 UTC
+ *
+ * - +min+: Minute in range (0..59):
+ *
+ *     Time.utc(2000, 1, 1, 0, 0)  # => 2000-01-01 00:00:00 UTC
+ *     Time.utc(2000, 1, 1, 0, 59) # => 2000-01-01 00:59:00 UTC
+ *
+ * - +sec+: Second in range (0..59), or 60 if +usec+ is zero:
+ *
+ *     Time.utc(2000, 1, 1, 0, 0, 0)  # => 2000-01-01 00:00:00 UTC
+ *     Time.utc(2000, 1, 1, 0, 0, 59) # => 2000-01-01 00:00:59 UTC
+ *     Time.utc(2000, 1, 1, 0, 0, 60) # => 2000-01-01 00:01:00 UTC
+ *
+ * - +usec+: Microsecond in range (0..999999):
+ *
+ *     Time.utc(2000, 1, 1, 0, 0, 0, 0)      # => 2000-01-01 00:00:00 UTC
+ *     Time.utc(2000, 1, 1, 0, 0, 0, 999999) # => 2000-01-01 00:00:00.999999 UTC
+ *
+ * The values may be:
+ *
+ * - Integers, as above.
+ * - Numerics convertible to integers:
+ *
+ *     Time.utc(Float(0.0), Rational(1, 1), 1.0, 0.0, 0.0, 0.0, 0.0)
+ *     # => 0000-01-01 00:00:00 UTC
+ *
+ * - \String integers:
+ *
+ *     a = %w[0 1 1 0 0 0 0 0]
+ *     # => ["0", "1", "1", "0", "0", "0", "0", "0"]
+ *     Time.utc(*a) # => 0000-01-01 00:00:00 UTC
+ *
+ * When exactly ten arguments are given,
+ * the arguments are interpreted as in the second calling sequence above:
+ *
+ *   Time.utc(sec, min, hour, mday, month, year, dummy, dummy, dummy, dummy)
+ *
+ * where the +dummy+ arguments are ignored:
+ *
+ *   a = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+ *   # => [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+ *   Time.utc(*a) # => 0005-04-03 02:01:00 UTC
+ *
+ * This form is useful for creating a \Time object from a 10-element
+ * array returned by Time.to_a:
+ *
+ *   t = Time.new(2000, 1, 2, 3, 4, 5, 6) # => 2000-01-02 03:04:05 +000006
+ *   a = t.to_a   # => [5, 4, 3, 2, 1, 2000, 0, 2, false, nil]
+ *   Time.utc(*a) # => 2000-01-02 03:04:05 UTC
+ *
+ * The two forms have their first six arguments in common,
+ * though in different orders;
+ * the ranges of these common arguments are the same for both forms; see above.
+ *
+ * Raises an exception if the number of arguments is eight, nine,
+ * or greater than ten.
  *
  * Time.gm is an alias for Time.utc.
  *
@@ -3391,36 +3459,19 @@ time_s_mkutc(int argc, VALUE *argv, VALUE klass)
 
 /*
  * call-seq:
- *   Time.local(year, month = 1, day = 1, hour = 0, min = 0, sec_i = 0, usec = 0) -> new_time
- *   Time.local(sec, min, hour, day, month, year, dummy, dummy, dummy, dummy) -> new_time
+ *   Time.local(year, month = 1, mday = 1, hour = 0, min = 0, sec = 0, usec = 0) -> new_time
+ *   Time.local(sec, min, hour, mday, month, year, dummy, dummy, dummy, dummy) -> new_time
  *
- * Returns a new \Time object based the on given arguments;
- * its timezone is the local timezone.
+ * Like Time.utc, except that the returned \Time object
+ * has the local timezone, not the UTC timezone:
  *
- * In the first form (up to seven arguments), argument +year+ is required.
+ *   # With seven arguments.
+ *   Time.local(0, 1, 2, 3, 4, 5, 6)
+ *   # => 0000-01-02 03:04:05.000006 -0600
+ *   # With exactly ten arguments.
+ *   Time.local(0, 1, 2, 3, 4, 5, 6, 7, 8, 9)
+ *   # => 0005-04-03 02:01:00 -0600
  *
- *   Time.local(2000)                   # => 2000-01-01 00:00:00 -0600
- *   Time.local(0, 1, 2, 3, 4, 5, 6.5)  # => 0000-01-02 03:04:05.0000065 -0600
- *
- * In the second form, all ten arguments are required,
- * though the last four are ignored.
- * This form is useful for creating a time from a 10-element array
- * such as those returned by #to_a.
- *
- *   array = Time.now.to_a
- *   # => [57, 18, 10, 7, 7, 2022, 4, 188, true, "Central Daylight Time"]
- *   array[5] = 2000
- *   Time.local(*array) # => 2000-07-07 10:18:57 -0500
- *
- * Parameters:
- * :include: doc/time/year.rdoc
- * :include: doc/time/mon-min.rdoc
- * :include: doc/time/sec_i.rdoc
- * :include: doc/time/usec.rdoc
- *
- * Time.mktime is an alias for Time.local.
- *
- * Related: Time.utc.
  */
 
 static VALUE
@@ -3436,18 +3487,18 @@ time_s_mktime(int argc, VALUE *argv, VALUE klass)
  *  call-seq:
  *    to_i -> integer
  *
- *  Returns the number of seconds since the Epoch
- *  for the time represented in +self+:
+ *  Returns the value of +self+ as integer
+ *  {Epoch seconds}[rdoc-ref:Time@Epoch+Seconds];
+ *  subseconds are truncated (not rounded):
  *
- *    Time.utc(1970, 1, 1).to_i # => 0
- *    t = Time.now.to_i         # => 1595263289
- *
- *  Subseconds are omitted:
- *
- *    t = Time.now # => 2022-07-12 09:13:48.5075976 -0500
- *    t.to_i       # => 1657635228
+ *    Time.utc(1970, 1, 1, 0, 0, 0).to_i         # => 0
+ *    Time.utc(1970, 1, 1, 0, 0, 0, 999999).to_i # => 0
+ *    Time.utc(1950, 1, 1, 0, 0, 0).to_i         # => -631152000
+ *    Time.utc(1990, 1, 1, 0, 0, 0).to_i         # => 631152000
  *
  *  Time#tv_sec is an alias for Time#to_i.
+ *
+ *  Related: Time#to_f Time#to_r.
  */
 
 static VALUE
@@ -3463,16 +3514,20 @@ time_to_i(VALUE time)
  *  call-seq:
  *    to_f -> float
  *
- *  Returns the value of +self+ as a Float number of seconds
- *  since the Epoch.
+ *  Returns the value of +self+ as a Float number
+ *  {Epoch seconds}[rdoc-ref:Time@Epoch+Seconds];
+ *  subseconds are included.
+ *
  *  The stored value of +self+ is a
  *  {Rational}[rdoc-ref:Rational@#method-i-to_f],
  *  which means that the returned value may be approximate:
  *
- *    t = Time.now # => 2022-07-07 11:23:18.0784889 -0500
- *    t.to_f       # => 1657210998.0784888
- *    t.to_i       # => 1657210998
+ *    Time.utc(1970, 1, 1, 0, 0, 0).to_f         # => 0.0
+ *    Time.utc(1970, 1, 1, 0, 0, 0, 999999).to_f # => 0.999999
+ *    Time.utc(1950, 1, 1, 0, 0, 0).to_f         # => -631152000.0
+ *    Time.utc(1990, 1, 1, 0, 0, 0).to_f         # => 631152000.0
  *
+ *  Related: Time#to_i, Time#to_r.
  */
 
 static VALUE
@@ -3486,13 +3541,14 @@ time_to_f(VALUE time)
 
 /*
  *  call-seq:
- *    time.to_r -> rational
+ *    to_r -> rational
  *
- *  Returns the value of +self+ as a Rational number of seconds
- *  since the Epoch, which is exact:
+ *  Returns the value of +self+ as a Rational exact number of
+ *  {Epoch seconds}[rdoc-ref:Time@Epoch+Seconds];
  *
  *    Time.now.to_r # => (16571402750320203/10000000)
  *
+ *  Related: Time#to_f, Time#to_i.
  */
 
 static VALUE
@@ -3540,7 +3596,7 @@ time_usec(VALUE time)
 
 /*
  *  call-seq:
- *    time.nsec -> integer
+ *    nsec -> integer
  *
  *  Returns the number of nanoseconds in the subseconds part of +self+
  *  in the range (0..999_999_999);
@@ -3659,20 +3715,20 @@ time_eql(VALUE time1, VALUE time2)
 
 /*
  *  call-seq:
- *     time.utc? -> true or false
- *     time.gmt? -> true or false
+ *    utc? -> true or false
  *
- *  Returns +true+ if _time_ represents a time in UTC (GMT).
+ *  Returns +true+ if +self+ represents a time in UTC (GMT):
  *
- *     t = Time.now                        #=> 2007-11-19 08:15:23 -0600
- *     t.utc?                              #=> false
- *     t = Time.gm(2000,"jan",1,20,15,1)   #=> 2000-01-01 20:15:01 UTC
- *     t.utc?                              #=> true
+ *    now = Time.now
+ *    # => 2022-08-18 10:24:13.5398485 -0500
+ *    now.utc? # => false
+ *    utc = Time.utc(2000, 1, 1, 20, 15, 1)
+ *    # => 2000-01-01 20:15:01 UTC
+ *    utc.utc? # => true
  *
- *     t = Time.now                        #=> 2007-11-19 08:16:03 -0600
- *     t.gmt?                              #=> false
- *     t = Time.gm(2000,1,1,20,15,1)       #=> 2000-01-01 20:15:01 UTC
- *     t.gmt?                              #=> true
+ *  Time#gmt? is an alias for Time#utc?.
+ *
+ *  Related: Time.utc.
  */
 
 static VALUE
@@ -3686,11 +3742,11 @@ time_utc_p(VALUE time)
 
 /*
  * call-seq:
- *   time.hash   -> integer
+ *   hash -> integer
  *
- * Returns a hash code for this Time object.
+ * Returns the integer hash code for +self+.
  *
- * See also Object#hash.
+ * Related: Object#hash.
  */
 
 static VALUE
@@ -3777,25 +3833,27 @@ time_zonelocal(VALUE time, VALUE off)
 
 /*
  *  call-seq:
- *     time.localtime -> time
- *     time.localtime(utc_offset) -> time
+ *    localtime -> self or new_time
+ *    localtime(zone) -> new_time
  *
- *  Converts _time_ to local time (using the local time zone in
- *  effect at the creation time of _time_) modifying the receiver.
+ *  With no argument given:
  *
- *  If +utc_offset+ is given, it is used instead of the local time.
+ *  - Returns +self+ if +self+ is a local time.
+ *  - Otherwise returns a new \Time in the user's local timezone:
  *
- *     t = Time.utc(2000, "jan", 1, 20, 15, 1) #=> 2000-01-01 20:15:01 UTC
- *     t.utc?                                  #=> true
+ *      t = Time.utc(2000, 1, 1, 20, 15, 1) # => 2000-01-01 20:15:01 UTC
+ *      t.localtime                         # => 2000-01-01 14:15:01 -0600
  *
- *     t.localtime                             #=> 2000-01-01 14:15:01 -0600
- *     t.utc?                                  #=> false
+ *  With argument +zone+ given,
+ *  returns the new \Time object created by converting
+ *  +self+ to the given time zone:
  *
- *     t.localtime("+09:00")                   #=> 2000-01-02 05:15:01 +0900
- *     t.utc?                                  #=> false
+ *    t = Time.utc(2000, 1, 1, 20, 15, 1) # => 2000-01-01 20:15:01 UTC
+ *    t.localtime("-09:00")               # => 2000-01-01 11:15:01 -0900
  *
- *  If +utc_offset+ is not given and _time_ is local time, just returns
- *  the receiver.
+ *  For forms of argument +zone+, see
+ *  {Timezone Specifiers}[rdoc-ref:timezones.rdoc].
+ *
  */
 
 static VALUE
@@ -3812,20 +3870,18 @@ time_localtime_m(int argc, VALUE *argv, VALUE time)
 
 /*
  *  call-seq:
- *     time.gmtime    -> time
- *     time.utc       -> time
+ *    utc -> self
  *
- *  Converts _time_ to UTC (GMT), modifying the receiver.
+ *  Returns +self+, converted to the UTC timezone:
  *
- *     t = Time.now   #=> 2007-11-19 08:18:31 -0600
- *     t.gmt?         #=> false
- *     t.gmtime       #=> 2007-11-19 14:18:31 UTC
- *     t.gmt?         #=> true
+ *    t = Time.new(2000) # => 2000-01-01 00:00:00 -0600
+ *    t.utc?             # => false
+ *    t.utc              # => 2000-01-01 06:00:00 UTC
+ *    t.utc?             # => true
  *
- *     t = Time.now   #=> 2007-11-19 08:18:51 -0600
- *     t.utc?         #=> false
- *     t.utc          #=> 2007-11-19 14:18:51 UTC
- *     t.utc?         #=> true
+ *  Time#gmtime is an alias for Time#utc.
+ *
+ *  Related: Time#getutc (returns a new converted \Time object).
  */
 
 static VALUE
@@ -3887,31 +3943,19 @@ time_fixoff(VALUE time)
 
 /*
  *  call-seq:
- *     time.getlocal -> new_time
- *     time.getlocal(utc_offset) -> new_time
- *     time.getlocal(timezone) -> new_time
+ *    getlocal(zone = nil) -> new_time
  *
- *  Returns a new Time object representing _time_ in
- *  local time (using the local time zone in effect for this process).
+ *  Returns a new \Time object representing the value of +self+
+ *  converted to a given timezone;
+ *  if +zone+ is +nil+, the local timezone is used:
  *
- *  If +utc_offset+ is given, it is used instead of the local time.
- *  +utc_offset+ can be given as a human-readable string (eg. <code>"+09:00"</code>)
- *  or as a number of seconds (eg. <code>32400</code>).
+ *    t = Time.utc(2000)                    # => 2000-01-01 00:00:00 UTC
+ *    t.getlocal                            # => 1999-12-31 18:00:00 -0600
+ *    t.getlocal('+12:00')                  # => 2000-01-01 12:00:00 +1200
  *
- *     t = Time.utc(2000,1,1,20,15,1)  #=> 2000-01-01 20:15:01 UTC
- *     t.utc?                          #=> true
+ *  For forms of argument +zone+, see
+ *  {Timezone Specifiers}[rdoc-ref:timezones.rdoc].
  *
- *     l = t.getlocal                  #=> 2000-01-01 14:15:01 -0600
- *     l.utc?                          #=> false
- *     t == l                          #=> true
- *
- *     j = t.getlocal("+09:00")        #=> 2000-01-02 05:15:01 +0900
- *     j.utc?                          #=> false
- *     t == j                          #=> true
- *
- *     k = t.getlocal(9*60*60)         #=> 2000-01-02 05:15:01 +0900
- *     k.utc?                          #=> false
- *     t == k                          #=> true
  */
 
 static VALUE
@@ -3948,16 +3992,18 @@ time_getlocaltime(int argc, VALUE *argv, VALUE time)
 
 /*
  *  call-seq:
- *     time.getgm  -> new_time
- *     time.getutc -> new_time
+ *    getutc -> new_time
  *
- *  Returns a new Time object representing _time_ in UTC.
+ *  Returns a new \Time object representing the value of +self+
+ *  converted to the UTC timezone:
  *
- *     t = Time.local(2000,1,1,20,15,1)   #=> 2000-01-01 20:15:01 -0600
- *     t.gmt?                             #=> false
- *     y = t.getgm                        #=> 2000-01-02 02:15:01 UTC
- *     y.gmt?                             #=> true
- *     t == y                             #=> true
+ *    local = Time.local(2000) # => 2000-01-01 00:00:00 -0600
+ *    local.utc?               # => false
+ *    utc = local.getutc       # => 2000-01-01 06:00:00 UTC
+ *    utc.utc?                 # => true
+ *    utc == local             # => true
+ *
+ *  Time#getgm is an alias for Time#getutc.
  */
 
 static VALUE
@@ -3979,13 +4025,25 @@ static VALUE strftime_cstr(const char *fmt, size_t len, VALUE time, rb_encoding 
 
 /*
  *  call-seq:
- *     time.asctime -> string
- *     time.ctime   -> string
+ *    ctime -> string
  *
- *  Returns a canonical string representation of _time_.
+ *  Returns a string representation of +self+,
+ *  formatted by <tt>strftime('%a %b %e %T %Y')</tt>
+ *  or its shorthand version <tt>strftime('%c')</tt>;
+ *  see {Formats for Dates and Times}[https://docs.ruby-lang.org/en/master/strftime_formatting_rdoc.html]:
  *
- *     Time.now.asctime   #=> "Wed Apr  9 08:56:03 2003"
- *     Time.now.ctime     #=> "Wed Apr  9 08:56:03 2003"
+ *    t = Time.new(2000, 12, 31, 23, 59, 59, 0.5)
+ *    t.ctime                      # => "Sun Dec 31 23:59:59 2000"
+ *    t.strftime('%a %b %e %T %Y') # => "Sun Dec 31 23:59:59 2000"
+ *    t.strftime('%c')             # => "Sun Dec 31 23:59:59 2000"
+ *
+ *  Time#asctime is an alias for Time#ctime.
+ *
+ *  Related: Time#to_s, Time#inspect:
+ *
+ *    t.inspect                    # => "2000-12-31 23:59:59.5 +000001"
+ *    t.to_s                       # => "2000-12-31 23:59:59 +0000"
+ *
  */
 
 static VALUE
@@ -3996,17 +4054,18 @@ time_asctime(VALUE time)
 
 /*
  *  call-seq:
- *     time.to_s    -> string
+ *    to_s    -> string
  *
- *  Returns a string representing _time_. Equivalent to calling
- *  #strftime with the appropriate format string.
+ *  Returns a string representation of +self+, without subseconds:
  *
- *     t = Time.now
- *     t.to_s                              #=> "2012-11-10 18:16:12 +0100"
- *     t.strftime "%Y-%m-%d %H:%M:%S %z"   #=> "2012-11-10 18:16:12 +0100"
+ *    t = Time.new(2000, 12, 31, 23, 59, 59, 0.5)
+ *    t.to_s    # => "2000-12-31 23:59:59 +0000"
  *
- *     t.utc.to_s                          #=> "2012-11-10 17:16:12 UTC"
- *     t.strftime "%Y-%m-%d %H:%M:%S UTC"  #=> "2012-11-10 17:16:12 UTC"
+ *  Related: Time#ctime, Time#inspect:
+ *
+ *    t.ctime   # => "Sun Dec 31 23:59:59 2000"
+ *    t.inspect # => "2000-12-31 23:59:59.5 +000001"
+ *
  */
 
 static VALUE
@@ -4023,17 +4082,18 @@ time_to_s(VALUE time)
 
 /*
  *  call-seq:
- *     time.inspect -> string
+ *    inspect -> string
  *
- *  Returns a detailed string representing _time_. Unlike to_s,
- *  preserves subsecond in the representation for easier debugging.
+ *  Returns a string representation of +self+ with subseconds:
  *
- *     t = Time.now
- *     t.inspect                             #=> "2012-11-10 18:16:12.261257655 +0100"
- *     t.strftime "%Y-%m-%d %H:%M:%S.%N %z"  #=> "2012-11-10 18:16:12.261257655 +0100"
+ *    t = Time.new(2000, 12, 31, 23, 59, 59, 0.5)
+ *    t.inspect # => "2000-12-31 23:59:59.5 +000001"
  *
- *     t.utc.inspect                          #=> "2012-11-10 17:16:12.261257655 UTC"
- *     t.strftime "%Y-%m-%d %H:%M:%S.%N UTC"  #=> "2012-11-10 17:16:12.261257655 UTC"
+ *  Related: Time#ctime, Time#to_s:
+ *
+ *    t.ctime   # => "Sun Dec 31 23:59:59 2000"
+ *    t.to_s    # => "2000-12-31 23:59:59 +0000"
+ *
  */
 
 static VALUE
@@ -5628,13 +5688,14 @@ Init_Time(void)
     rb_gc_register_mark_object(str_empty);
 
     rb_cTime = rb_define_class("Time", rb_cObject);
+    VALUE scTime = rb_singleton_class(rb_cTime);
     rb_include_module(rb_cTime, rb_mComparable);
 
     rb_define_alloc_func(rb_cTime, time_s_alloc);
     rb_define_singleton_method(rb_cTime, "utc", time_s_mkutc, -1);
     rb_define_singleton_method(rb_cTime, "local", time_s_mktime, -1);
-    rb_define_alias(rb_singleton_class(rb_cTime), "gm", "utc");
-    rb_define_alias(rb_singleton_class(rb_cTime), "mktime", "local");
+    rb_define_alias(scTime, "gm", "utc");
+    rb_define_alias(scTime, "mktime", "local");
 
     rb_define_method(rb_cTime, "to_i", time_to_i, 0);
     rb_define_method(rb_cTime, "to_f", time_to_f, 0);
@@ -5703,7 +5764,7 @@ Init_Time(void)
 
     /* methods for marshaling */
     rb_define_private_method(rb_cTime, "_dump", time_dump, -1);
-    rb_define_private_method(rb_singleton_class(rb_cTime), "_load", time_load, 1);
+    rb_define_private_method(scTime, "_load", time_load, 1);
 #if 0
     /* Time will support marshal_dump and marshal_load in the future (1.9 maybe) */
     rb_define_private_method(rb_cTime, "marshal_dump", time_mdump, 0);

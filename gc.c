@@ -4165,7 +4165,8 @@ objspace_each_objects_try(VALUE arg)
             uintptr_t pstart = (uintptr_t)page->start;
             uintptr_t pend = pstart + (page->total_slots * size_pool->slot_size);
 
-            if ((*data->callback)((void *)pstart, (void *)pend, size_pool->slot_size, data->data)) {
+            if (!__asan_region_is_poisoned((void *)pstart, pend - pstart) &&
+                (*data->callback)((void *)pstart, (void *)pend, size_pool->slot_size, data->data)) {
                 break;
             }
 

@@ -73,6 +73,7 @@ REPOSITORIES = {
   pathname: "ruby/pathname",
   digest: "ruby/digest",
   error_highlight: "ruby/error_highlight",
+  syntax_suggest: "ruby/syntax_suggest",
   un: "ruby/un",
   win32ole: "ruby/win32ole",
 }
@@ -228,6 +229,7 @@ def sync_default_gems(gem)
     `git checkout ext/etc/depend`
   when "date"
     rm_rf(%w[ext/date test/date])
+    cp_r("#{upstream}/doc/date", "doc")
     cp_r("#{upstream}/ext/date", "ext")
     cp_r("#{upstream}/lib", "ext/date")
     cp_r("#{upstream}/test/date", "test")
@@ -300,6 +302,7 @@ def sync_default_gems(gem)
     cp_r(Dir.glob("#{upstream}/lib/did_you_mean*"), "lib")
     cp_r("#{upstream}/did_you_mean.gemspec", "lib/did_you_mean")
     cp_r("#{upstream}/test", "test/did_you_mean")
+    rm_rf("test/did_you_mean/lib")
     rm_rf(%w[test/did_you_mean/tree_spell/test_explore.rb])
   when "erb"
     rm_rf(%w[lib/erb* test/erb libexec/erb])
@@ -371,6 +374,11 @@ def sync_default_gems(gem)
   when "open3"
     sync_lib gem, upstream
     rm_rf("lib/open3/jruby_windows.rb")
+  when "syntax_suggest"
+    sync_lib gem, upstream
+    rm_rf(%w[spec/syntax_suggest libexec/syntax_suggest])
+    cp_r("#{upstream}/spec", "spec/syntax_suggest")
+    cp_r("#{upstream}/exe/syntax_suggest", "libexec/syntax_suggest")
   else
     sync_lib gem, upstream
   end
@@ -540,6 +548,12 @@ end
 def update_default_gems(gem, release: false)
 
   author, repository = REPOSITORIES[gem.to_sym].split('/')
+  default_branch = case gem
+                  when 'syntax_suggest'
+                    "main"
+                  else
+                    "master"
+                  end
 
   puts "Update #{author}/#{repository}"
 
@@ -565,8 +579,8 @@ def update_default_gems(gem, release: false)
       last_release = `git tag`.chomp.split.delete_if{|v| v =~ /pre|beta/ }.last
       `git checkout #{last_release}`
     else
-      `git checkout master`
-      `git rebase origin/master`
+      `git checkout #{default_branch}`
+      `git rebase origin/#{default_branch}`
     end
   end
 end

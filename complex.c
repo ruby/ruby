@@ -1121,7 +1121,10 @@ nucomp_real_p(VALUE self)
 static VALUE
 nucomp_cmp(VALUE self, VALUE other)
 {
-    if (nucomp_real_p(self) && k_numeric_p(other)) {
+    if (!k_numeric_p(other)) {
+        return rb_num_coerce_cmp(self, other, idCmp);
+    }
+    if (nucomp_real_p(self)) {
         if (RB_TYPE_P(other, T_COMPLEX) && nucomp_real_p(other)) {
             get_dat2(self, other);
             return rb_funcall(adat->real, idCmp, 1, bdat->real);

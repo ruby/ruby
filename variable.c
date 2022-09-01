@@ -2605,7 +2605,7 @@ autoload_load_needed(VALUE _arguments)
         return Qfalse;
     }
 
-    if (autoload_data->mutex == Qnil) {
+    if (NIL_P(autoload_data->mutex)) {
         autoload_data->mutex = rb_mutex_new();
         autoload_data->fork_gen = GET_VM()->fork_gen;
     }

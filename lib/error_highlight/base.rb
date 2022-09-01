@@ -1,12 +1,17 @@
 require_relative "version"
 
 module ErrorHighlight
-  # Identify the code fragment that seems associated with a given error
+  # Identify the code fragment at that a given exception occurred.
   #
-  # Arguments:
-  #  node: RubyVM::AbstractSyntaxTree::Node (script_lines should be enabled)
-  #  point_type: :name | :args
-  #  name: The name associated with the NameError/NoMethodError
+  # Options:
+  #
+  # point_type: :name | :args
+  #   :name (default) points the method/variable name that the exception occurred.
+  #   :args points the arguments of the method call that the exception occurred.
+  #
+  # backtrace_location: Thread::Backtrace::Location
+  #   It locates the code fragment of the given backtrace_location.
+  #   By default, it uses the first frame of backtrace_locations of the given exception.
   #
   # Returns:
   #  {
@@ -15,9 +20,57 @@ module ErrorHighlight
   #    last_lineno: Integer,
   #    last_column: Integer,
   #    snippet: String,
+  #    script_lines: [String],
   #  } | nil
-  def self.spot(...)
-    Spotter.new(...).spot
+  #
+  # Limitations:
+  #
+  # Currently, ErrorHighlight.spot only supports a single-line code fragment.
+  # Therefore, if the return value is not nil, first_lineno and last_lineno will have
+  # the same value. If the relevant code fragment spans multiple lines
+  # (e.g., Array#[] of +ary[(newline)expr(newline)]+), the method will return nil.
+  # This restriction may be removed in the future.
+  def self.spot(obj, **opts)
+    case obj
+    when Exception
+      exc = obj
+      loc = opts[:backtrace_location]
+      opts = { point_type: opts.fetch(:point_type, :name) }
+
+      unless loc
+        case exc
+        when TypeError, ArgumentError
+          opts[:point_type] = :args
+        end
+
+        locs = exc.backtrace_locations
+        return nil unless locs
+
+        loc = locs.first
+        return nil unless loc
+
+        opts[:name] = exc.name if NameError === obj
+      end
+
+      return nil unless Thread::Backtrace::Location === loc
+
+      node = RubyVM::AbstractSyntaxTree.of(loc, keep_script_lines: true)
+
+      Spotter.new(node, **opts).spot
+
+    when RubyVM::AbstractSyntaxTree::Node
+      # Just for compatibility
+      Spotter.new(node, **opts).spot
+
+    else
+      raise TypeError, "Exception is expected"
+    end
+
+  rescue SyntaxError,
+         SystemCallError, # file not found or something
+         ArgumentError # eval'ed code
+
+    return nil
   end
 
   class Spotter
@@ -122,6 +175,7 @@ module ErrorHighlight
           last_lineno: @end_lineno,
           last_column: @end_column,
           snippet: @snippet,
+          script_lines: @node.script_lines,
         }
       else
         return nil

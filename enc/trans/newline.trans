@@ -17,10 +17,16 @@
   map_cr["0a"] = "0d"
 
   transcode_generate_node(ActionMap.parse(map_cr), "cr_newline")
+
+  map_normalize = {}
+  map_normalize["{00-ff}"] = :func_so
+
+  transcode_generate_node(ActionMap.parse(map_normalize), "lf_newline")
 %>
 
 <%= transcode_generated_code %>
 
+#define lf_newline universal_newline
 #define STATE (sp[0])
 #define NORMAL 0
 #define JUST_AFTER_CR 1
@@ -126,10 +132,24 @@ rb_cr_newline = {
     0, 0, 0, 0
 };
 
+static const rb_transcoder
+rb_lf_newline = {
+    "", "lf_newline", lf_newline,
+    TRANSCODE_TABLE_INFO,
+    1, /* input_unit_length */
+    1, /* max_input */
+    2, /* max_output */
+    asciicompat_converter, /* asciicompat_type */
+    2, universal_newline_init, universal_newline_init, /* state_size, state_init, state_fini */
+    0, 0, 0, fun_so_universal_newline,
+    universal_newline_finish
+};
+
 void
 Init_newline(void)
 {
     rb_register_transcoder(&rb_universal_newline);
     rb_register_transcoder(&rb_crlf_newline);
     rb_register_transcoder(&rb_cr_newline);
+    rb_register_transcoder(&rb_lf_newline);
 }

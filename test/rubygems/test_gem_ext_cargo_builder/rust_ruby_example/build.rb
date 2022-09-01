@@ -1,4 +1,4 @@
-if ENV["RUBYOPT"] or defined? Gem
+if ENV["RUBYOPT"] || defined? Gem
   ENV.delete "RUBYOPT"
 
   require "rbconfig"
