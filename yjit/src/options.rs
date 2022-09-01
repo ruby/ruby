@@ -30,9 +30,8 @@ pub struct Options {
     /// Dump compiled and executed instructions for debugging
     pub dump_insns: bool,
 
-    /// Dump all compiled instructions. Some(false) dumps only inlined cb,
-    /// and Some(true) dumps both inlined and outlined cbs.
-    pub dump_disasm: Option<bool>,
+    /// Dump all compiled instructions of target cbs.
+    pub dump_disasm: Option<DumpDisasm>,
 
     /// Print when specific ISEQ items are compiled or invalidated
     pub dump_iseq_disasm: Option<String>,
@@ -62,6 +61,14 @@ pub static mut OPTIONS: Options = Options {
     global_constant_state: false,
     dump_iseq_disasm: None,
 };
+
+#[derive(Copy, Clone, PartialEq, Eq, Debug)]
+pub enum DumpDisasm {
+    // Dump only inlined cb
+    Inlined,
+    // Dump both inlined and outlined cbs
+    All,
+}
 
 /// Macro to get an option value by name
 macro_rules! get_option {
@@ -125,8 +132,8 @@ pub fn parse_option(str_ptr: *const std::os::raw::c_char) -> Option<()> {
         },
 
         ("dump-disasm", _) => match opt_val.to_string().as_str() {
-            "all" => unsafe { OPTIONS.dump_disasm = Some(true) },
-            "" => unsafe { OPTIONS.dump_disasm = Some(false) },
+            "all" => unsafe { OPTIONS.dump_disasm = Some(DumpDisasm::All) },
+            "" => unsafe { OPTIONS.dump_disasm = Some(DumpDisasm::Inlined) },
             _ => return None,
          },
 
