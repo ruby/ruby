@@ -9581,14 +9581,14 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const no
       case NODE_CONST:{
         debugi("nd_vid", node->nd_vid);
 
-	if (ISEQ_COMPILE_DATA(iseq)->option->inline_const_cache) {
-	    body->ic_size++;
+        if (ISEQ_COMPILE_DATA(iseq)->option->inline_const_cache) {
+            body->ic_size++;
             VALUE segments = rb_ary_new_from_args(1, ID2SYM(node->nd_vid));
             ADD_INSN1(ret, node, opt_getconstant_path, segments);
             RB_OBJ_WRITTEN(iseq, Qundef, segments);
-	}
-	else {
-	    ADD_INSN(ret, node, putnil);
+        }
+        else {
+            ADD_INSN(ret, node, putnil);
             ADD_INSN1(ret, node, putobject, Qtrue);
             ADD_INSN1(ret, node, getconstant, ID2SYM(node->nd_vid));
         }
