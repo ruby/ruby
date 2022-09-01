@@ -76,7 +76,7 @@ exit unless vcs
     }
   when :revision_h
     Proc.new {|last, changed, modified, branch, title|
-      vcs.revision_header(last, changed, modified, branch, title, limit: @limit)
+      vcs.revision_header(last, modified, branch, title, limit: @limit)
     }
   when :doxygen
     Proc.new {|last, changed|

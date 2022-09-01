@@ -309,7 +309,7 @@ def package(vcs, rev, destdir, tmp = nil)
       warn "#{$0}: #{rev} not found"
       return
     end
-    revision = (info = vcs.get_revisions(url))[1]
+    revision = vcs.get_revisions(url)[1]
   end
 
   v = "ruby"
@@ -346,7 +346,7 @@ def package(vcs, rev, destdir, tmp = nil)
   end
 
   File.open("#{v}/revision.h", "wb") {|f|
-    f.puts vcs.revision_header(*info, time: false)
+    f.puts vcs.revision_header(revision)
   }
   version ||= (versionhdr = IO.read("#{v}/version.h"))[RUBY_VERSION_PATTERN, 1]
   version ||=
