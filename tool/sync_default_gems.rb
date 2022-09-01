@@ -302,6 +302,7 @@ def sync_default_gems(gem)
     cp_r(Dir.glob("#{upstream}/lib/did_you_mean*"), "lib")
     cp_r("#{upstream}/did_you_mean.gemspec", "lib/did_you_mean")
     cp_r("#{upstream}/test", "test/did_you_mean")
+    rm_rf("test/did_you_mean/lib")
     rm_rf(%w[test/did_you_mean/tree_spell/test_explore.rb])
   when "erb"
     rm_rf(%w[lib/erb* test/erb libexec/erb])
