@@ -875,18 +875,22 @@ impl Assembler
                             let src_addr = cb.get_write_ptr().into_i64();
                             let dst_addr = dst_ptr.into_i64();
 
-                            // The offset between the two instructions in bytes.
-                            // Note that when we encode this into a b
-                            // instruction, we'll divide by 4 because it accepts
-                            // the number of instructions to jump over.
-                            // let offset = (dst_addr - src_addr) / 4;
-
                             // If the offset is short enough, then we'll use the
                             // branch instruction. Otherwise, we'll move the
                             // destination into a register and use the branch
                             // register instruction.
-                            let num_insns = emit_load_value(cb, Self::SCRATCH0, dst_addr as u64);
-                            br(cb, Self::SCRATCH0);
+                            let num_insns = if b_offset_fits_bits((dst_addr - src_addr) / 4) {
+                                b(cb, InstructionOffset::from_bytes((dst_addr - src_addr) as i32));
+                                0
+                            } else {
+                                let num_insns = emit_load_value(cb, Self::SCRATCH0, dst_addr as u64);
+                                br(cb, Self::SCRATCH0);
+                                num_insns
+                            };
+
+                            // Make sure it's always a consistent number of
+                            // instructions in case it gets patched and has to
+                            // use the other branch.
                             for _ in num_insns..4 {
                                 nop(cb);
                             }
