@@ -402,6 +402,32 @@ class TestGc < Test::Unit::TestCase
     eom
   end
 
+  def test_thrashing_for_young_objects
+    # This test prevents bugs like [Bug #18929]
+
+    assert_separately %w[--disable-gem], __FILE__, __LINE__, <<-RUBY
+      # Warmup to make sure heap stabilizes
+      1_000_000.times { Object.new }
+
+      before_stats = GC.stat
+
+      1_000_000.times { Object.new }
+
+      # Previous loop may have caused GC to be in an intermediate state,
+      # running a minor GC here will guarantee that GC will be complete
+      GC.start(full_mark: false)
+
+      after_stats = GC.stat
+
+      # Should not be thrashing in page creation
+      assert_equal before_stats[:heap_allocated_pages], after_stats[:heap_allocated_pages]
+      assert_equal 0, after_stats[:heap_tomb_pages]
+      assert_equal 0, after_stats[:total_freed_pages]
+      # Only young objects, so should not trigger major GC
+      assert_equal before_stats[:major_gc_count], after_stats[:major_gc_count]
+    RUBY
+  end
+
   def test_gc_internals
     assert_not_nil GC::INTERNAL_CONSTANTS[:HEAP_PAGE_OBJ_LIMIT]
     assert_not_nil GC::INTERNAL_CONSTANTS[:RVALUE_SIZE]

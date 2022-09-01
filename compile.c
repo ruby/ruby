@@ -1357,18 +1357,18 @@ new_child_iseq_with_callback(rb_iseq_t *iseq, const struct rb_iseq_new_with_call
 static void
 set_catch_except_p(struct rb_iseq_constant_body *body)
 {
-    body->catch_except_p = TRUE;
+    body->catch_except_p = true;
     if (body->parent_iseq != NULL) {
         set_catch_except_p(ISEQ_BODY(body->parent_iseq));
     }
 }
 
-/* Set body->catch_except_p to TRUE if the ISeq may catch an exception. If it is FALSE,
-   JIT-ed code may be optimized.  If we are extremely conservative, we should set TRUE
+/* Set body->catch_except_p to true if the ISeq may catch an exception. If it is false,
+   JIT-ed code may be optimized.  If we are extremely conservative, we should set true
    if catch table exists.  But we want to optimize while loop, which always has catch
    table entries for break/next/redo.
 
-   So this function sets TRUE for limited ISeqs with break/next/redo catch table entries
+   So this function sets true for limited ISeqs with break/next/redo catch table entries
    whose child ISeq would really raise an exception. */
 static void
 update_catch_except_flags(struct rb_iseq_constant_body *body)
@@ -1399,7 +1399,7 @@ update_catch_except_flags(struct rb_iseq_constant_body *body)
         if (entry->type != CATCH_TYPE_BREAK
             && entry->type != CATCH_TYPE_NEXT
             && entry->type != CATCH_TYPE_REDO) {
-            body->catch_except_p = TRUE;
+            body->catch_except_p = true;
             break;
         }
     }
@@ -3329,6 +3329,84 @@ iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list, const int do_tailcal
         if (IS_INSN(next) && IS_INSN_ID(next, splatarray)) {
             /* remove splatarray following always-array insn */
             ELEM_REMOVE(next);
+        }
+    }
+
+    if (IS_INSN_ID(iobj, newarray)) {
+        LINK_ELEMENT *next = iobj->link.next;
+        if (IS_INSN(next) && IS_INSN_ID(next, expandarray) &&
+            OPERAND_AT(next, 1) == INT2FIX(0)) {
+            VALUE op1, op2;
+            op1 = OPERAND_AT(iobj, 0);
+            op2 = OPERAND_AT(next, 0);
+            ELEM_REMOVE(next);
+
+            if (op1 == op2) {
+                /*
+                 *  newarray 2
+                 *  expandarray 2, 0
+                 * =>
+                 *  swap
+                 */
+                if (op1 == INT2FIX(2)) {
+                    INSN_OF(iobj) = BIN(swap);
+                    iobj->operand_size = 0;
+                }
+                /*
+                 *  newarray X
+                 *  expandarray X, 0
+                 * =>
+                 *  opt_reverse X
+                 */
+                else {
+                    INSN_OF(iobj) = BIN(opt_reverse);
+                }
+            }
+            else {
+                NODE dummy_line_node = generate_dummy_line_node(iobj->insn_info.line_no, iobj->insn_info.node_id);
+                long diff = FIX2LONG(op1) - FIX2LONG(op2);
+                INSN_OF(iobj) = BIN(opt_reverse);
+                OPERAND_AT(iobj, 0) = OPERAND_AT(next, 0);
+
+                if (op1 > op2) {
+                    /* X > Y
+                     *  newarray X
+                     *  expandarray Y, 0
+                     * =>
+                     *  pop * (Y-X)
+                     *  opt_reverse Y
+                     */
+                    for (; diff > 0; diff--) {
+                        INSERT_BEFORE_INSN(iobj, &dummy_line_node, pop);
+                    }
+                }
+                else { /* (op1 < op2) */
+                    /* X < Y
+                     *  newarray X
+                     *  expandarray Y, 0
+                     * =>
+                     *  putnil * (Y-X)
+                     *  opt_reverse Y
+                     */
+                    for (; diff < 0; diff++) {
+                        INSERT_BEFORE_INSN(iobj, &dummy_line_node, putnil);
+                    }
+                }
+            }
+        }
+    }
+
+    if (IS_INSN_ID(iobj, duparray)) {
+        LINK_ELEMENT *next = iobj->link.next;
+        /*
+         *  duparray obj
+         *  expandarray X, 0
+         * =>
+         *  putobject obj
+         *  expandarray X, 0
+         */
+        if (IS_INSN(next) && IS_INSN_ID(next, expandarray)) {
+            INSN_OF(iobj) = BIN(putobject);
         }
     }
 

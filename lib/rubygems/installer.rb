@@ -251,7 +251,7 @@ class Gem::Installer
     return if spec.name == existing
 
     # somebody has written to RubyGems' directory, overwrite, too bad
-    return if Gem.default_bindir != @bin_dir and not ruby_executable
+    return if Gem.default_bindir != @bin_dir && !ruby_executable
 
     question = "#{spec.name}'s executable \"#{filename}\" conflicts with ".dup
 
@@ -418,10 +418,10 @@ class Gem::Installer
   # True if the gems in the system satisfy +dependency+.
 
   def installation_satisfies_dependency?(dependency)
-    return true if @options[:development] and dependency.type == :development
+    return true if @options[:development] && dependency.type == :development
     return true if installed_specs.detect {|s| dependency.matches_spec? s }
     return false if @only_install_dir
-    not dependency.matching_specs.empty?
+    !dependency.matching_specs.empty?
   end
 
   ##
@@ -483,7 +483,7 @@ class Gem::Installer
   end
 
   def generate_bin # :nodoc:
-    return if spec.executables.nil? or spec.executables.empty?
+    return if spec.executables.nil? || spec.executables.empty?
 
     ensure_writable_dir @bin_dir
 

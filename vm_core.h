@@ -478,7 +478,7 @@ struct rb_iseq_constant_body {
         iseq_bits_t single;
     } mark_bits;
 
-    char catch_except_p; /* If a frame of this ISeq may catch exception, set TRUE */
+    bool catch_except_p; // If a frame of this ISeq may catch exception, set true.
     // If true, this ISeq is leaf *and* backtraces are not used, for example,
     // by rb_profile_frames. We verify only leafness on VM_CHECK_MODE though.
     // Note that GC allocations might use backtraces due to
@@ -493,13 +493,12 @@ struct rb_iseq_constant_body {
     /* The following fields are MJIT related info.  */
     VALUE (*jit_func)(struct rb_execution_context_struct *,
                       struct rb_control_frame_struct *); /* function pointer for loaded native code */
-    long unsigned total_calls; /* number of total calls with `mjit_exec()` */
+    long unsigned total_calls; /* number of total calls with `jit_exec()` */
     struct rb_mjit_unit *jit_unit;
 #endif
 
 #if USE_YJIT
     // YJIT stores some data on each iseq.
-    // Note: Cannot use YJIT_BUILD here since yjit.h includes this header.
     void *yjit_payload;
 #endif
 };

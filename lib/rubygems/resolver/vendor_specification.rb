@@ -6,9 +6,9 @@
 
 class Gem::Resolver::VendorSpecification < Gem::Resolver::SpecSpecification
   def ==(other) # :nodoc:
-    self.class === other and
-      @set  == other.set and
-      @spec == other.spec and
+    self.class === other &&
+      @set  == other.set &&
+      @spec == other.spec &&
       @source == other.source
   end
 

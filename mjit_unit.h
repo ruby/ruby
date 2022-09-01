@@ -1,5 +1,5 @@
-#ifndef INTERNAL_MJIT_H
-#define INTERNAL_MJIT_H
+#ifndef MJIT_UNIT_H
+#define MJIT_UNIT_H
 
 #include "ccan/list/list.h"
 
@@ -26,4 +26,4 @@ struct rb_mjit_unit {
     unsigned int cc_entries_size; // ISEQ_BODY(iseq)->ci_size + ones of inlined iseqs
 };
 
-#endif /* INTERNAL_MJIT_H */
+#endif /* MJIT_UNIT_H */

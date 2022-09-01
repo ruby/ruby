@@ -40,10 +40,10 @@ class Gem::Resolver::APISpecification < Gem::Resolver::Specification
   end
 
   def ==(other) # :nodoc:
-    self.class === other and
-      @set          == other.set and
-      @name         == other.name and
-      @version      == other.version and
+    self.class === other &&
+      @set          == other.set &&
+      @name         == other.name &&
+      @version      == other.version &&
       @platform     == other.platform
   end
 

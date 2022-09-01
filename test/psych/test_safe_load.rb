@@ -19,18 +19,31 @@ module Psych
       end
     end
 
-    def test_no_recursion
-      x = []
-      x << x
-      assert_raise(Psych::BadAlias) do
-        Psych.safe_load Psych.dump(x)
+    def test_raises_when_alias_found_if_alias_parsing_not_enabled
+      yaml_with_aliases = <<~YAML
+        ---
+        a: &ABC
+          k1: v1
+          k2: v2
+        b: *ABC
+      YAML
+
+      assert_raise(Psych::AliasesNotEnabled) do
+        Psych.safe_load(yaml_with_aliases)
       end
     end
 
-    def test_explicit_recursion
-      x = []
-      x << x
-      assert_equal(x, Psych.safe_load(Psych.dump(x), permitted_classes: [], permitted_symbols: [], aliases: true))
+    def test_aliases_are_parsed_when_alias_parsing_is_enabled
+      yaml_with_aliases = <<~YAML
+        ---
+        a: &ABC
+          k1: v1
+          k2: v2
+        b: *ABC
+      YAML
+
+      result = Psych.safe_load(yaml_with_aliases, aliases: true)
+      assert_same result.fetch("a"), result.fetch("b")
     end
 
     def test_permitted_symbol

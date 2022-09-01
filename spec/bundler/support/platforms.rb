@@ -24,20 +24,32 @@ module Spec
       Gem::Platform.new(["x86", "linux", nil])
     end
 
-    def mswin
+    def x86_mswin32
       Gem::Platform.new(["x86", "mswin32", nil])
     end
 
-    def mingw
+    def x64_mswin64
+      Gem::Platform.new(["x64", "mswin64", nil])
+    end
+
+    def x86_mingw32
       Gem::Platform.new(["x86", "mingw32", nil])
     end
 
-    def x64_mingw
+    def x64_mingw32
       Gem::Platform.new(["x64", "mingw32", nil])
     end
 
+    def x64_mingw_ucrt
+      Gem::Platform.new(["x64", "mingw", "ucrt"])
+    end
+
+    def windows_platforms
+      [x86_mswin32, x64_mswin64, x86_mingw32, x64_mingw32, x64_mingw_ucrt]
+    end
+
     def all_platforms
-      [rb, java, linux, mswin, mingw, x64_mingw]
+      [rb, java, linux, windows_platforms].flatten
     end
 
     def local

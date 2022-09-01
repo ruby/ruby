@@ -40,7 +40,6 @@ struct METHOD {
     const VALUE iclass;
     const rb_method_entry_t * const me;
     /* for bound methods, `me' should be rb_callable_method_entry_t * */
-    rb_method_visibility_t visibility;
 };
 
 VALUE rb_cUnboundMethod;
@@ -1664,7 +1663,6 @@ mnew_missing(VALUE klass, VALUE obj, ID id, VALUE mclass)
     me = rb_method_entry_create(id, klass, METHOD_VISI_UNDEF, def);
 
     RB_OBJ_WRITE(method, &data->me, me);
-    data->visibility = METHOD_ENTRY_VISI(me);
 
     return method;
 }
@@ -1686,7 +1684,6 @@ mnew_internal(const rb_method_entry_t *me, VALUE klass, VALUE iclass,
     VALUE method;
     rb_method_visibility_t visi = METHOD_VISI_UNDEF;
 
-  again:
     if (UNDEFINED_METHOD_ENTRY_P(me)) {
         if (respond_to_missing_p(klass, obj, ID2SYM(id), scope)) {
             return mnew_missing(klass, obj, id, mclass);
@@ -1702,19 +1699,6 @@ mnew_internal(const rb_method_entry_t *me, VALUE klass, VALUE iclass,
             rb_print_inaccessible(klass, id, visi);
         }
     }
-    if (me->def->type == VM_METHOD_TYPE_ZSUPER) {
-        if (me->defined_class) {
-            VALUE klass = RCLASS_SUPER(RCLASS_ORIGIN(me->defined_class));
-            id = me->def->original_id;
-            me = (rb_method_entry_t *)rb_callable_method_entry_with_refinements(klass, id, &iclass);
-        }
-        else {
-            VALUE klass = RCLASS_SUPER(RCLASS_ORIGIN(me->owner));
-            id = me->def->original_id;
-            me = rb_method_entry_without_refinements(klass, id, &iclass);
-        }
-        goto again;
-    }
 
     method = TypedData_Make_Struct(mclass, struct METHOD, &method_data_type, data);
 
@@ -1722,7 +1706,6 @@ mnew_internal(const rb_method_entry_t *me, VALUE klass, VALUE iclass,
     RB_OBJ_WRITE(method, &data->klass, klass);
     RB_OBJ_WRITE(method, &data->iclass, iclass);
     RB_OBJ_WRITE(method, &data->me, me);
-    data->visibility = visi;
 
     return method;
 }
@@ -1753,6 +1736,27 @@ mnew_unbound(VALUE klass, ID id, VALUE mclass, int scope)
 
     me = rb_method_entry_with_refinements(klass, id, &iclass);
     return mnew_from_me(me, klass, iclass, Qundef, id, mclass, scope);
+}
+
+static const rb_method_entry_t*
+zsuper_resolve(const rb_method_entry_t *me)
+{
+    const rb_method_entry_t *super_me;
+    while (me->def->type == VM_METHOD_TYPE_ZSUPER) {
+        VALUE defined_class = me->defined_class ? me->defined_class : me->owner;
+        VALUE super_class = RCLASS_SUPER(RCLASS_ORIGIN(defined_class));
+        if (!super_class) {
+            break;
+        }
+        ID id = me->def->original_id;
+        VALUE iclass;
+        super_me = (rb_method_entry_t *)rb_callable_method_entry_with_refinements(super_class, id, &iclass);
+        if (!super_me) {
+            break;
+        }
+        me = super_me;
+    }
+    return me;
 }
 
 static inline VALUE
@@ -1815,12 +1819,14 @@ method_eq(VALUE method, VALUE other)
     m1 = (struct METHOD *)DATA_PTR(method);
     m2 = (struct METHOD *)DATA_PTR(other);
 
-    klass1 = method_entry_defined_class(m1->me);
-    klass2 = method_entry_defined_class(m2->me);
+    const rb_method_entry_t *m1_me = zsuper_resolve(m1->me);
+    const rb_method_entry_t *m2_me = zsuper_resolve(m2->me);
 
-    if (!rb_method_entry_eq(m1->me, m2->me) ||
+    klass1 = method_entry_defined_class(m1_me);
+    klass2 = method_entry_defined_class(m2_me);
+
+    if (!rb_method_entry_eq(m1_me, m2_me) ||
         klass1 != klass2 ||
-        m1->visibility != m2->visibility ||
         m1->klass != m2->klass ||
         m1->recv != m2->recv) {
         return Qfalse;
@@ -1874,7 +1880,6 @@ method_unbind(VALUE obj)
     RB_OBJ_WRITE(method, &data->klass, orig->klass);
     RB_OBJ_WRITE(method, &data->iclass, orig->iclass);
     RB_OBJ_WRITE(method, &data->me, rb_method_entry_clone(orig->me));
-    data->visibility = orig->visibility;
 
     return method;
 }
@@ -1939,7 +1944,15 @@ method_original_name(VALUE obj)
  *  call-seq:
  *     meth.owner    -> class_or_module
  *
- *  Returns the class or module that defines the method.
+ *  Returns the class or module on which this method is defined.
+ *  In other words,
+ *
+ *    meth.owner.instance_methods(false).include?(meth.name) # => true
+ *
+ *  holds as long as the method is not removed/undefined/replaced,
+ *  (with private_instance_methods instead of instance_methods if the method
+ *  is private).
+ *
  *  See also Method#receiver.
  *
  *    (1..3).method(:map).owner #=> Enumerable
@@ -2390,7 +2403,6 @@ method_clone(VALUE self)
     RB_OBJ_WRITE(clone, &data->klass, orig->klass);
     RB_OBJ_WRITE(clone, &data->iclass, orig->iclass);
     RB_OBJ_WRITE(clone, &data->me, rb_method_entry_clone(orig->me));
-    data->visibility = orig->visibility;
     return clone;
 }
 
@@ -2549,7 +2561,7 @@ rb_method_call_with_block(int argc, const VALUE *argv, VALUE method, VALUE passe
  */
 
 static void
-convert_umethod_to_method_components(const struct METHOD *data, VALUE recv, VALUE *methclass_out, VALUE *klass_out, VALUE *iclass_out, const rb_method_entry_t **me_out)
+convert_umethod_to_method_components(const struct METHOD *data, VALUE recv, VALUE *methclass_out, VALUE *klass_out, VALUE *iclass_out, const rb_method_entry_t **me_out, const bool clone)
 {
     VALUE methclass = data->me->owner;
     VALUE iclass = data->me->defined_class;
@@ -2571,9 +2583,19 @@ convert_umethod_to_method_components(const struct METHOD *data, VALUE recv, VALU
         }
     }
 
-    const rb_method_entry_t *me = rb_method_entry_clone(data->me);
+    const rb_method_entry_t *me;
+    if (clone) {
+        me = rb_method_entry_clone(data->me);
+    } else {
+        me = data->me;
+    }
 
     if (RB_TYPE_P(me->owner, T_MODULE)) {
+        if (!clone) {
+            // if we didn't previously clone the method entry, then we need to clone it now
+            // because this branch manipualtes it in rb_method_entry_complement_defined_class
+            me = rb_method_entry_clone(me);
+        }
         VALUE ic = rb_class_search_ancestor(klass, me->owner);
         if (ic) {
             klass = ic;
@@ -2633,7 +2655,7 @@ umethod_bind(VALUE method, VALUE recv)
     const rb_method_entry_t *me;
     const struct METHOD *data;
     TypedData_Get_Struct(method, struct METHOD, &method_data_type, data);
-    convert_umethod_to_method_components(data, recv, &methclass, &klass, &iclass, &me);
+    convert_umethod_to_method_components(data, recv, &methclass, &klass, &iclass, &me, true);
 
     struct METHOD *bound;
     method = TypedData_Make_Struct(rb_cMethod, struct METHOD, &method_data_type, bound);
@@ -2641,7 +2663,6 @@ umethod_bind(VALUE method, VALUE recv)
     RB_OBJ_WRITE(method, &bound->klass, klass);
     RB_OBJ_WRITE(method, &bound->iclass, iclass);
     RB_OBJ_WRITE(method, &bound->me, me);
-    bound->visibility = data->visibility;
 
     return method;
 }
@@ -2676,8 +2697,8 @@ umethod_bind_call(int argc, VALUE *argv, VALUE method)
     else {
         VALUE methclass, klass, iclass;
         const rb_method_entry_t *me;
-        convert_umethod_to_method_components(data, recv, &methclass, &klass, &iclass, &me);
-        struct METHOD bound = { recv, klass, 0, me, METHOD_ENTRY_VISI(me) };
+        convert_umethod_to_method_components(data, recv, &methclass, &klass, &iclass, &me, false);
+        struct METHOD bound = { recv, klass, 0, me };
 
         return call_method_data(ec, &bound, argc, argv, passed_procval, RB_PASS_CALLED_KEYWORDS);
     }
@@ -2948,6 +2969,14 @@ rb_method_entry_location(const rb_method_entry_t *me)
     return method_def_location(me->def);
 }
 
+static const rb_method_definition_t *
+zsuper_ref_method_def(VALUE method)
+{
+    const struct METHOD *data;
+    TypedData_Get_Struct(method, struct METHOD, &method_data_type, data);
+    return zsuper_resolve(data->me)->def;
+}
+
 /*
  * call-seq:
  *    meth.source_location  -> [String, Integer]
@@ -2959,7 +2988,7 @@ rb_method_entry_location(const rb_method_entry_t *me)
 VALUE
 rb_method_location(VALUE method)
 {
-    return method_def_location(rb_method_def(method));
+    return method_def_location(zsuper_ref_method_def(method));
 }
 
 static const rb_method_definition_t *
@@ -3047,7 +3076,7 @@ method_def_parameters(const rb_method_definition_t *def)
 static VALUE
 rb_method_parameters(VALUE method)
 {
-    return method_def_parameters(rb_method_def(method));
+    return method_def_parameters(zsuper_ref_method_def(method));
 }
 
 /*
@@ -3110,7 +3139,7 @@ method_inspect(VALUE method)
         defined_class = data->me->def->body.alias.original_me->owner;
     }
     else {
-        defined_class = method_entry_defined_class(data->me);
+        defined_class = method_entry_defined_class(zsuper_resolve(data->me));
     }
 
     if (RB_TYPE_P(defined_class, T_ICLASS)) {
@@ -3352,51 +3381,6 @@ method_super_method(VALUE method)
     me = (rb_method_entry_t *)rb_callable_method_entry_with_refinements(super_class, mid, &iclass);
     if (!me) return Qnil;
     return mnew_internal(me, me->owner, iclass, data->recv, mid, rb_obj_class(method), FALSE, FALSE);
-}
-
-/*
- *  call-seq:
- *    meth.public? -> true or false
- *
- *  Returns whether the method is public.
- */
-
-static VALUE
-method_public_p(VALUE method)
-{
-    const struct METHOD *data;
-    TypedData_Get_Struct(method, struct METHOD, &method_data_type, data);
-    return RBOOL(data->visibility == METHOD_VISI_PUBLIC);
-}
-
-/*
- *  call-seq:
- *    meth.protected? -> true or false
- *
- *  Returns whether the method is protected.
- */
-
-static VALUE
-method_protected_p(VALUE method)
-{
-    const struct METHOD *data;
-    TypedData_Get_Struct(method, struct METHOD, &method_data_type, data);
-    return RBOOL(data->visibility == METHOD_VISI_PROTECTED);
-}
-
-/*
- *  call-seq:
- *    meth.private? -> true or false
- *
- *  Returns whether the method is private.
- */
-
-static VALUE
-method_private_p(VALUE method)
-{
-    const struct METHOD *data;
-    TypedData_Get_Struct(method, struct METHOD, &method_data_type, data);
-    return RBOOL(data->visibility == METHOD_VISI_PRIVATE);
 }
 
 /*
@@ -4339,9 +4323,6 @@ Init_Proc(void)
     rb_define_method(rb_cMethod, "source_location", rb_method_location, 0);
     rb_define_method(rb_cMethod, "parameters", rb_method_parameters, 0);
     rb_define_method(rb_cMethod, "super_method", method_super_method, 0);
-    rb_define_method(rb_cMethod, "public?", method_public_p, 0);
-    rb_define_method(rb_cMethod, "protected?", method_protected_p, 0);
-    rb_define_method(rb_cMethod, "private?", method_private_p, 0);
     rb_define_method(rb_mKernel, "method", rb_obj_method, 1);
     rb_define_method(rb_mKernel, "public_method", rb_obj_public_method, 1);
     rb_define_method(rb_mKernel, "singleton_method", rb_obj_singleton_method, 1);
@@ -4365,9 +4346,6 @@ Init_Proc(void)
     rb_define_method(rb_cUnboundMethod, "source_location", rb_method_location, 0);
     rb_define_method(rb_cUnboundMethod, "parameters", rb_method_parameters, 0);
     rb_define_method(rb_cUnboundMethod, "super_method", method_super_method, 0);
-    rb_define_method(rb_cUnboundMethod, "public?", method_public_p, 0);
-    rb_define_method(rb_cUnboundMethod, "protected?", method_protected_p, 0);
-    rb_define_method(rb_cUnboundMethod, "private?", method_private_p, 0);
 
     /* Module#*_method */
     rb_define_method(rb_cModule, "instance_method", rb_mod_instance_method, 1);

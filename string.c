@@ -2502,7 +2502,6 @@ rb_str_modify_expand(VALUE str, long expand)
     else if (expand > 0) {
         RESIZE_CAPA_TERM(str, len + expand, termlen);
     }
-    ENC_CODERANGE_CLEAR(str);
 }
 
 /* As rb_str_modify(), but don't clear coderange */
@@ -2531,6 +2530,9 @@ void
 rb_must_asciicompat(VALUE str)
 {
     rb_encoding *enc = rb_enc_get(str);
+    if (!enc) {
+        rb_raise(rb_eTypeError, "not encoding capable object");
+    }
     if (!rb_enc_asciicompat(enc)) {
         rb_raise(rb_eEncCompatError, "ASCII incompatible encoding: %s", rb_enc_name(enc));
     }
@@ -3077,16 +3079,16 @@ rb_str_set_len(VALUE str, long len)
 VALUE
 rb_str_resize(VALUE str, long len)
 {
-    long slen;
-    int independent;
-
     if (len < 0) {
         rb_raise(rb_eArgError, "negative string size (or size too big)");
     }
 
-    independent = str_independent(str);
-    ENC_CODERANGE_CLEAR(str);
-    slen = RSTRING_LEN(str);
+    int independent = str_independent(str);
+    long slen = RSTRING_LEN(str);
+
+    if (slen > len && ENC_CODERANGE(str) != ENC_CODERANGE_7BIT) {
+        ENC_CODERANGE_CLEAR(str);
+    }
 
     {
         long capa;
@@ -3483,17 +3485,13 @@ rb_str_concat(VALUE str1, VALUE str2)
         return rb_str_append(str1, str2);
     }
 
-    encidx = rb_enc_to_index(enc);
-    if (encidx == ENCINDEX_ASCII_8BIT || encidx == ENCINDEX_US_ASCII) {
-        /* US-ASCII automatically extended to ASCII-8BIT */
+    encidx = rb_ascii8bit_appendable_encoding_index(enc, code);
+    if (encidx >= 0) {
         char buf[1];
         buf[0] = (char)code;
-        if (code > 0xFF) {
-            rb_raise(rb_eRangeError, "%u out of char range", code);
-        }
         rb_str_cat(str1, buf, 1);
-        if (encidx == ENCINDEX_US_ASCII && code > 127) {
-            rb_enc_associate_index(str1, ENCINDEX_ASCII_8BIT);
+        if (encidx != rb_enc_to_index(enc)) {
+            rb_enc_associate_index(str1, encidx);
             ENC_CODERANGE_SET(str1, ENC_CODERANGE_VALID);
         }
     }
@@ -3524,6 +3522,26 @@ rb_str_concat(VALUE str1, VALUE str2)
         ENC_CODERANGE_SET(str1, cr);
     }
     return str1;
+}
+
+int
+rb_ascii8bit_appendable_encoding_index(rb_encoding *enc, unsigned int code)
+{
+    int encidx = rb_enc_to_index(enc);
+
+    if (encidx == ENCINDEX_ASCII_8BIT || encidx == ENCINDEX_US_ASCII) {
+        /* US-ASCII automatically extended to ASCII-8BIT */
+        if (code > 0xFF) {
+            rb_raise(rb_eRangeError, "%u out of char range", code);
+        }
+        if (encidx == ENCINDEX_US_ASCII && code > 127) {
+            return ENCINDEX_ASCII_8BIT;
+        }
+        return encidx;
+    }
+    else {
+        return -1;
+    }
 }
 
 /*
@@ -5439,7 +5457,7 @@ rb_str_aset(VALUE str, VALUE indx, VALUE val)
  *    string[index] = new_string
  *    string[start, length] = new_string
  *    string[range] = new_string
- *    string[regexp, capture = 0) = new_string
+ *    string[regexp, capture = 0] = new_string
  *    string[substring] = new_string
  *
  *  Replaces all, some, or none of the contents of +self+; returns +new_string+.
@@ -6781,7 +6799,15 @@ rb_str_inspect(VALUE str)
             prev = p;
             continue;
         }
-        if ((enc == resenc && rb_enc_isprint(c, enc)) ||
+        /* The special casing of 0x85 (NEXT_LINE) here is because
+         * Oniguruma historically treats it as printable, but it
+         * doesn't match the print POSIX bracket class or character
+         * property in regexps.
+         *
+         * See Ruby Bug #16842 for details:
+         * https://bugs.ruby-lang.org/issues/16842
+         */
+        if ((enc == resenc && rb_enc_isprint(c, enc) && c != 0x85) ||
             (asciicompat && rb_enc_isascii(c, enc) && ISPRINT(c))) {
             continue;
         }

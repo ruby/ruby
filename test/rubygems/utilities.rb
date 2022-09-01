@@ -39,9 +39,9 @@ class Gem::FakeFetcher
   end
 
   def find_data(path)
-    return Gem.read_binary path.path if URI === path and "file" == path.scheme
+    return Gem.read_binary path.path if URI === path && "file" == path.scheme
 
-    if URI === path and "URI::#{path.scheme.upcase}" != path.class.name
+    if URI === path && "URI::#{path.scheme.upcase}" != path.class.name
       raise ArgumentError,
         "mismatch for scheme #{path.scheme} and class #{path.class}"
     end
@@ -67,7 +67,7 @@ class Gem::FakeFetcher
     if data.respond_to?(:call)
       data.call
     else
-      if path.to_s.end_with?(".gz") and not data.nil? and not data.empty?
+      if path.to_s.end_with?(".gz") && !data.nil? && !data.empty?
         data = Gem::Util.gunzip data
       end
       data
@@ -76,7 +76,7 @@ class Gem::FakeFetcher
 
   def cache_update_path(uri, path = nil, update = true)
     if data = fetch_path(uri)
-      File.open(path, "wb") {|io| io.write data } if path and update
+      File.open(path, "wb") {|io| io.write data } if path && update
       data
     else
       Gem.read_binary(path) if path

@@ -173,7 +173,7 @@ class Gem::Request
     require "uri"
     uri = URI(Gem::UriFormatter.new(env_proxy).normalize)
 
-    if uri and uri.user.nil? and uri.password.nil?
+    if uri && uri.user.nil? && uri.password.nil?
       user     = ENV["#{_scheme}_proxy_user"] || ENV["#{_SCHEME}_PROXY_USER"]
       password = ENV["#{_scheme}_proxy_pass"] || ENV["#{_SCHEME}_PROXY_PASS"]
 

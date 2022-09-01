@@ -34,10 +34,10 @@ if "%1" == "--enable-install-static-library" goto :enable-lib
 if "%1" == "--disable-install-static-library" goto :disable-lib
 if "%1" == "--enable-debug-env" goto :enable-debug-env
 if "%1" == "--disable-debug-env" goto :disable-debug-env
+if "%1" == "--enable-devel" goto :enable-devel
+if "%1" == "--disable-devel" goto :disable-devel
 if "%1" == "--enable-rubygems" goto :enable-rubygems
 if "%1" == "--disable-rubygems" goto :disable-rubygems
-if "%1" == "--enable-mjit-support" goto :enable-mjit-support
-if "%1" == "--disable-mjit-support" goto :disable-mjit-support
 if "%1" == "--extout" goto :extout
 if "%1" == "--path" goto :path
 if "%1" == "--with-baseruby" goto :baseruby
@@ -143,6 +143,16 @@ goto :loop ;
   echo>>confargs.tmp  %1 \
   shift
 goto :loop ;
+:enable-devel
+  echo>> ~tmp~.mak 	"RUBY_DEVEL=yes" \
+  echo>>confargs.tmp  %1 \
+  shift
+goto :loop ;
+:disable-devel
+  echo>> ~tmp~.mak 	"RUBY_DEVEL=no" \
+  echo>>confargs.tmp  %1 \
+  shift
+goto :loop ;
 :enable-rubygems
   echo>> ~tmp~.mak 	"USE_RUBYGEMS=yes" \
   echo>>confargs.tmp  %1 \
@@ -150,16 +160,6 @@ goto :loop ;
 goto :loop ;
 :disable-rubygems
   echo>> ~tmp~.mak 	"USE_RUBYGEMS=no" \
-  echo>>confargs.tmp  %1 \
-  shift
-goto :loop ;
-:enable-mjit-support
-  echo>> ~tmp~.mak 	"MJIT_SUPPORT=yes" \
-  echo>>confargs.tmp  %1 \
-  shift
-goto :loop ;
-:disable-mjit-support
-  echo>> ~tmp~.mak 	"MJIT_SUPPORT=no" \
   echo>>confargs.tmp  %1 \
   shift
 goto :loop ;

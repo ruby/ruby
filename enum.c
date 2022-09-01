@@ -4808,7 +4808,7 @@ enum_compact(VALUE obj)
  * - #grep_v: Returns elements selected by a given object
  *   or objects returned by a given block.
  * - #reduce, #inject: Returns the object formed by combining all elements.
- * - #sum: Returns the sum of the elements, using method +++.
+ * - #sum: Returns the sum of the elements, using method <tt>+</tt>.
  * - #zip: Combines each element with elements from other enumerables;
  *   returns the n-tuples or calls the block with each.
  * - #cycle: Calls the block with each element, cycling repeatedly.

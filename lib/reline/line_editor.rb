@@ -758,7 +758,6 @@ class Reline::LineEditor
           @output.write @full_block
         elsif dialog.scrollbar_pos <= (i * 2) and (i * 2) < (dialog.scrollbar_pos + bar_height)
           @output.write @upper_half_block
-          str += ''
         elsif dialog.scrollbar_pos <= (i * 2 + 1) and (i * 2) < (dialog.scrollbar_pos + bar_height)
           @output.write @lower_half_block
         else

@@ -175,7 +175,7 @@ rb_iseq_free(const rb_iseq_t *iseq)
         iseq_clear_ic_references(iseq);
         struct rb_iseq_constant_body *const body = ISEQ_BODY(iseq);
         mjit_free_iseq(iseq); /* Notify MJIT */
-#if YJIT_BUILD
+#if USE_YJIT
         rb_yjit_iseq_free(body->yjit_payload);
 #endif
         ruby_xfree((void *)body->iseq_encoded);
@@ -438,7 +438,7 @@ rb_iseq_update_references(rb_iseq_t *iseq)
 #if USE_MJIT
         mjit_update_references(iseq);
 #endif
-#if YJIT_BUILD
+#if USE_YJIT
         rb_yjit_iseq_update_references(body->yjit_payload);
 #endif
     }
@@ -526,7 +526,7 @@ rb_iseq_mark(const rb_iseq_t *iseq)
 #if USE_MJIT
         mjit_mark_cc_entries(body);
 #endif
-#if YJIT_BUILD
+#if USE_YJIT
         rb_yjit_iseq_mark(body->yjit_payload);
 #endif
     }
@@ -2411,7 +2411,7 @@ rb_iseq_disasm_recursive(const rb_iseq_t *iseq, VALUE indent)
     rb_str_cat2(str, "== disasm: ");
 
     rb_str_append(str, iseq_inspect(iseq));
-    rb_str_catf(str, " (catch: %s)", body->catch_except_p ? "TRUE" : "FALSE");
+    rb_str_catf(str, " (catch: %s)", body->catch_except_p ? "true" : "false");
     if ((l = RSTRING_LEN(str) - indent_len) < header_minlen) {
         rb_str_modify_expand(str, header_minlen - l);
         memset(RSTRING_END(str), '=', header_minlen - l);

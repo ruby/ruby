@@ -1,7 +1,6 @@
 #![allow(dead_code)] // Some functions for print debugging in here
 
-use crate::asm::x86_64::*;
-use crate::asm::*;
+use crate::backend::ir::*;
 use crate::cruby::*;
 use std::slice;
 
@@ -71,8 +70,156 @@ macro_rules! offset_of {
 #[allow(unused)]
 pub(crate) use offset_of;
 
+// Convert a CRuby UTF-8-encoded RSTRING into a Rust string.
+// This should work fine on ASCII strings and anything else
+// that is considered legal UTF-8, including embedded nulls.
+fn ruby_str_to_rust(v: VALUE) -> String {
+    // Make sure the CRuby encoding is UTF-8 compatible
+    let encoding = unsafe { rb_ENCODING_GET(v) } as u32;
+    assert!(encoding == RUBY_ENCINDEX_ASCII_8BIT || encoding == RUBY_ENCINDEX_UTF_8 || encoding == RUBY_ENCINDEX_US_ASCII);
+
+    let str_ptr = unsafe { rb_RSTRING_PTR(v) } as *mut u8;
+    let str_len: usize = unsafe { rb_RSTRING_LEN(v) }.try_into().unwrap();
+    let str_slice: &[u8] = unsafe { slice::from_raw_parts(str_ptr, str_len) };
+    String::from_utf8(str_slice.to_vec()).unwrap() // does utf8 validation
+}
+
+// Location is the file defining the method, colon, method name.
+// Filenames are sometimes internal strings supplied to eval,
+// so be careful with them.
+pub fn iseq_get_location(iseq: IseqPtr) -> String {
+    let iseq_path = unsafe { rb_iseq_path(iseq) };
+    let iseq_method = unsafe { rb_iseq_method_name(iseq) };
+
+    let mut s = if iseq_path == Qnil {
+        "None".to_string()
+    } else {
+        ruby_str_to_rust(iseq_path)
+    };
+    s.push_str(":");
+    if iseq_method == Qnil {
+        s.push_str("None");
+    } else {
+        s.push_str(& ruby_str_to_rust(iseq_method));
+    }
+    s
+}
+
+// TODO: we may want to move this function into yjit.c, maybe add a convenient Rust-side wrapper
+/*
+// For debugging. Print the bytecode for an iseq.
+RBIMPL_ATTR_MAYBE_UNUSED()
+static void
+yjit_print_iseq(const rb_iseq_t *iseq)
+{
+    char *ptr;
+    long len;
+    VALUE disassembly = rb_iseq_disasm(iseq);
+    RSTRING_GETMEM(disassembly, ptr, len);
+    fprintf(stderr, "%.*s\n", (int)len, ptr);
+}
+*/
+
+#[cfg(target_arch = "aarch64")]
+macro_rules! c_callable {
+    (fn $f:ident $args:tt $(-> $ret:ty)? $body:block) => { extern "C" fn $f $args $(-> $ret)? $body };
+}
+
+#[cfg(target_arch = "x86_64")]
+macro_rules! c_callable {
+    (fn $f:ident $args:tt $(-> $ret:ty)? $body:block) => { extern "sysv64" fn $f $args $(-> $ret)? $body };
+}
+pub(crate) use c_callable;
+
+pub fn print_int(asm: &mut Assembler, opnd: Opnd) {
+    c_callable!{
+        fn print_int_fn(val: i64) {
+            println!("{}", val);
+        }
+    }
+
+    asm.cpush_all();
+
+    let argument = match opnd {
+        Opnd::Mem(_) | Opnd::Reg(_) | Opnd::InsnOut { .. } => {
+            // Sign-extend the value if necessary
+            if opnd.rm_num_bits() < 64 {
+                asm.load_sext(opnd)
+            } else {
+                opnd
+            }
+        },
+        Opnd::Imm(_) | Opnd::UImm(_) => opnd,
+        _ => unreachable!(),
+    };
+
+    asm.ccall(print_int_fn as *const u8, vec![argument]);
+    asm.cpop_all();
+}
+
+/// Generate code to print a pointer
+pub fn print_ptr(asm: &mut Assembler, opnd: Opnd) {
+    c_callable!{
+        fn print_ptr_fn(ptr: *const u8) {
+            println!("{:p}", ptr);
+        }
+    }
+
+    assert!(opnd.rm_num_bits() == 64);
+
+    asm.cpush_all();
+    asm.ccall(print_ptr_fn as *const u8, vec![opnd]);
+    asm.cpop_all();
+}
+
+/// Generate code to print a value
+pub fn print_value(asm: &mut Assembler, opnd: Opnd) {
+    c_callable!{
+        fn print_value_fn(val: VALUE) {
+            unsafe { rb_obj_info_dump(val) }
+        }
+    }
+
+    assert!(matches!(opnd, Opnd::Value(_)));
+
+    asm.cpush_all();
+    asm.ccall(print_value_fn as *const u8, vec![opnd]);
+    asm.cpop_all();
+}
+
+/// Generate code to print constant string to stdout
+pub fn print_str(asm: &mut Assembler, str: &str) {
+    c_callable!{
+        fn print_str_cfun(ptr: *const u8, num_bytes: usize) {
+            unsafe {
+                let slice = slice::from_raw_parts(ptr, num_bytes);
+                let str = std::str::from_utf8(slice).unwrap();
+                println!("{}", str);
+            }
+        }
+    }
+
+    asm.cpush_all();
+
+    let string_data = asm.new_label("string_data");
+    let after_string = asm.new_label("after_string");
+
+    asm.jmp(after_string);
+    asm.write_label(string_data);
+    asm.bake_string(str);
+    asm.write_label(after_string);
+
+    let opnd = asm.lea_label(string_data);
+    asm.ccall(print_str_cfun as *const u8, vec![opnd, Opnd::UImm(str.len() as u64)]);
+
+    asm.cpop_all();
+}
+
 #[cfg(test)]
 mod tests {
+    use super::*;
+    use crate::asm::CodeBlock;
+
     #[test]
     fn min_max_preserved_after_cast_to_usize() {
         use crate::utils::IntoUsize;
@@ -99,140 +246,22 @@ mod tests {
         assert_eq!(0, offset_of!(Foo, a), "C99 6.7.2.1p13 says no padding at the front");
         assert_eq!(8, offset_of!(Foo, b), "ABI dependent, but should hold");
     }
-}
 
-// TODO: we may want to move this function into yjit.c, maybe add a convenient Rust-side wrapper
-/*
-// For debugging. Print the bytecode for an iseq.
-RBIMPL_ATTR_MAYBE_UNUSED()
-static void
-yjit_print_iseq(const rb_iseq_t *iseq)
-{
-    char *ptr;
-    long len;
-    VALUE disassembly = rb_iseq_disasm(iseq);
-    RSTRING_GETMEM(disassembly, ptr, len);
-    fprintf(stderr, "%.*s\n", (int)len, ptr);
-}
-*/
+    #[test]
+    fn test_print_int() {
+        let mut asm = Assembler::new();
+        let mut cb = CodeBlock::new_dummy(1024);
 
-// Save caller-save registers on the stack before a C call
-fn push_regs(cb: &mut CodeBlock) {
-    push(cb, RAX);
-    push(cb, RCX);
-    push(cb, RDX);
-    push(cb, RSI);
-    push(cb, RDI);
-    push(cb, R8);
-    push(cb, R9);
-    push(cb, R10);
-    push(cb, R11);
-    pushfq(cb);
-}
-
-// Restore caller-save registers from the after a C call
-fn pop_regs(cb: &mut CodeBlock) {
-    popfq(cb);
-    pop(cb, R11);
-    pop(cb, R10);
-    pop(cb, R9);
-    pop(cb, R8);
-    pop(cb, RDI);
-    pop(cb, RSI);
-    pop(cb, RDX);
-    pop(cb, RCX);
-    pop(cb, RAX);
-}
-
-pub fn print_int(cb: &mut CodeBlock, opnd: X86Opnd) {
-    extern "sysv64" fn print_int_fn(val: i64) {
-        println!("{}", val);
+        print_int(&mut asm, Opnd::Imm(42));
+        asm.compile(&mut cb);
     }
 
-    push_regs(cb);
+    #[test]
+    fn test_print_str() {
+        let mut asm = Assembler::new();
+        let mut cb = CodeBlock::new_dummy(1024);
 
-    match opnd {
-        X86Opnd::Mem(_) | X86Opnd::Reg(_) => {
-            // Sign-extend the value if necessary
-            if opnd.num_bits() < 64 {
-                movsx(cb, C_ARG_REGS[0], opnd);
-            } else {
-                mov(cb, C_ARG_REGS[0], opnd);
-            }
-        }
-        X86Opnd::Imm(_) | X86Opnd::UImm(_) => {
-            mov(cb, C_ARG_REGS[0], opnd);
-        }
-        _ => unreachable!(),
+        print_str(&mut asm, "Hello, world!");
+        asm.compile(&mut cb);
     }
-
-    mov(cb, RAX, const_ptr_opnd(print_int_fn as *const u8));
-    call(cb, RAX);
-    pop_regs(cb);
-}
-
-/// Generate code to print a pointer
-pub fn print_ptr(cb: &mut CodeBlock, opnd: X86Opnd) {
-    extern "sysv64" fn print_ptr_fn(ptr: *const u8) {
-        println!("{:p}", ptr);
-    }
-
-    assert!(opnd.num_bits() == 64);
-
-    push_regs(cb);
-    mov(cb, C_ARG_REGS[0], opnd);
-    mov(cb, RAX, const_ptr_opnd(print_ptr_fn as *const u8));
-    call(cb, RAX);
-    pop_regs(cb);
-}
-
-/// Generate code to print a value
-pub fn print_value(cb: &mut CodeBlock, opnd: X86Opnd) {
-    extern "sysv64" fn print_value_fn(val: VALUE) {
-        unsafe { rb_obj_info_dump(val) }
-    }
-
-    assert!(opnd.num_bits() == 64);
-
-    push_regs(cb);
-
-    mov(cb, RDI, opnd);
-    mov(cb, RAX, const_ptr_opnd(print_value_fn as *const u8));
-    call(cb, RAX);
-
-    pop_regs(cb);
-}
-
-/// Generate code to print constant string to stdout
-pub fn print_str(cb: &mut CodeBlock, str: &str) {
-    extern "sysv64" fn print_str_cfun(ptr: *const u8, num_bytes: usize) {
-        unsafe {
-            let slice = slice::from_raw_parts(ptr, num_bytes);
-            let str = std::str::from_utf8(slice).unwrap();
-            println!("{}", str);
-        }
-    }
-
-    let bytes = str.as_ptr();
-    let num_bytes = str.len();
-
-    push_regs(cb);
-
-    // Load the string address and jump over the string data
-    lea(cb, C_ARG_REGS[0], mem_opnd(8, RIP, 5));
-    jmp32(cb, num_bytes as i32);
-
-    // Write the string chars and a null terminator
-    for i in 0..num_bytes {
-        cb.write_byte(unsafe { *bytes.add(i) });
-    }
-
-    // Pass the string length as an argument
-    mov(cb, C_ARG_REGS[1], uimm_opnd(num_bytes as u64));
-
-    // Call the print function
-    mov(cb, RAX, const_ptr_opnd(print_str_cfun as *const u8));
-    call(cb, RAX);
-
-    pop_regs(cb);
 }

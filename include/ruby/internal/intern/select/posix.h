@@ -136,7 +136,7 @@ rb_fd_max(const rb_fdset_t *f)
 }
 
 /** @cond INTERNAL_MACRO */
-/* :FIXME: What are these?  They don't exist for shibling implementations. */
+/* :FIXME: What are these?  They don't exist for sibling implementations. */
 #define rb_fd_init_copy(d, s) (*(d) = *(s))
 #define rb_fd_term(f)   ((void)(f))
 /** @endcond */

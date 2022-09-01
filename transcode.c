@@ -47,6 +47,7 @@ static VALUE sym_xml, sym_text, sym_attr;
 static VALUE sym_universal_newline;
 static VALUE sym_crlf_newline;
 static VALUE sym_cr_newline;
+static VALUE sym_lf_newline;
 #ifdef ENABLE_ECONV_NEWLINE_OPTION
 static VALUE sym_newline, sym_universal, sym_crlf, sym_cr, sym_lf;
 #endif
@@ -1039,6 +1040,7 @@ decorator_names(int ecflags, const char **decorators_ret)
       case ECONV_UNIVERSAL_NEWLINE_DECORATOR:
       case ECONV_CRLF_NEWLINE_DECORATOR:
       case ECONV_CR_NEWLINE_DECORATOR:
+      case ECONV_LF_NEWLINE_DECORATOR:
       case 0:
         break;
       default:
@@ -1062,6 +1064,8 @@ decorator_names(int ecflags, const char **decorators_ret)
         decorators_ret[num_decorators++] = "crlf_newline";
     if (ecflags & ECONV_CR_NEWLINE_DECORATOR)
         decorators_ret[num_decorators++] = "cr_newline";
+    if (ecflags & ECONV_LF_NEWLINE_DECORATOR)
+        decorators_ret[num_decorators++] = "lf_newline";
     if (ecflags & ECONV_UNIVERSAL_NEWLINE_DECORATOR)
         decorators_ret[num_decorators++] = "universal_newline";
 
@@ -1812,6 +1816,12 @@ rb_econv_asciicompat_encoding(const char *ascii_incompat_name)
     return data.ascii_compat_name;
 }
 
+/*
+ * Append `len` bytes pointed by `ss` to `dst` with converting with `ec`.
+ *
+ * If the result of the conversion is not compatible with the encoding of
+ * `dst`, `dst` may not be valid encoding.
+ */
 VALUE
 rb_econv_append(rb_econv_t *ec, const char *ss, long len, VALUE dst, int flags)
 {
@@ -1819,11 +1829,19 @@ rb_econv_append(rb_econv_t *ec, const char *ss, long len, VALUE dst, int flags)
     unsigned char *ds, *dp, *de;
     rb_econv_result_t res;
     int max_output;
+    enum ruby_coderange_type coderange;
+    rb_encoding *dst_enc = ec->destination_encoding;
 
     if (NIL_P(dst)) {
         dst = rb_str_buf_new(len);
-        if (ec->destination_encoding)
-            rb_enc_associate(dst, ec->destination_encoding);
+        if (dst_enc) {
+            rb_enc_associate(dst, dst_enc);
+        }
+        coderange = ENC_CODERANGE_7BIT; // scan from the start
+    }
+    else {
+        dst_enc = rb_enc_get(dst);
+        coderange = rb_enc_str_coderange(dst);
     }
 
     if (ec->last_tc)
@@ -1832,13 +1850,13 @@ rb_econv_append(rb_econv_t *ec, const char *ss, long len, VALUE dst, int flags)
         max_output = 1;
 
     do {
+        int cr;
         long dlen = RSTRING_LEN(dst);
         if (rb_str_capacity(dst) - dlen < (size_t)len + max_output) {
             unsigned long new_capa = (unsigned long)dlen + len + max_output;
             if (LONG_MAX < new_capa)
                 rb_raise(rb_eArgError, "too long string");
-            rb_str_resize(dst, new_capa);
-            rb_str_set_len(dst, dlen);
+            rb_str_modify_expand(dst, new_capa - dlen);
         }
         sp = (const unsigned char *)ss;
         se = sp + len;
@@ -1846,6 +1864,18 @@ rb_econv_append(rb_econv_t *ec, const char *ss, long len, VALUE dst, int flags)
         de = ds + rb_str_capacity(dst);
         dp = ds += dlen;
         res = rb_econv_convert(ec, &sp, se, &dp, de, flags);
+        switch (coderange) {
+          case ENC_CODERANGE_7BIT:
+          case ENC_CODERANGE_VALID:
+            cr = (int)coderange;
+            rb_str_coderange_scan_restartable((char *)ds, (char *)dp, dst_enc, &cr);
+            coderange = cr;
+            ENC_CODERANGE_SET(dst, coderange);
+            break;
+          case ENC_CODERANGE_UNKNOWN:
+          case ENC_CODERANGE_BROKEN:
+            break;
+        }
         len -= (const char *)sp - ss;
         ss  = (const char *)sp;
         rb_str_set_len(dst, dlen + (dp - ds));
@@ -1956,6 +1986,9 @@ rb_econv_binmode(rb_econv_t *ec)
       case ECONV_CR_NEWLINE_DECORATOR:
         dname = "cr_newline";
         break;
+      case ECONV_LF_NEWLINE_DECORATOR:
+        dname = "lf_newline";
+        break;
     }
 
     if (dname) {
@@ -2013,6 +2046,10 @@ econv_description(const char *sname, const char *dname, int ecflags, VALUE mesg)
         if (ecflags & ECONV_CR_NEWLINE_DECORATOR) {
             rb_str_cat2(mesg, pre); pre = ",";
             rb_str_cat2(mesg, "cr_newline");
+        }
+        if (ecflags & ECONV_LF_NEWLINE_DECORATOR) {
+            rb_str_cat2(mesg, pre); pre = ",";
+            rb_str_cat2(mesg, "lf_newline");
         }
         if (ecflags & ECONV_XML_TEXT_DECORATOR) {
             rb_str_cat2(mesg, pre); pre = ",";
@@ -2489,7 +2526,7 @@ econv_opts(VALUE opt, int ecflags)
             ecflags |= ECONV_CR_NEWLINE_DECORATOR;
         }
         else if (v == sym_lf) {
-            /* ecflags |= ECONV_LF_NEWLINE_DECORATOR; */
+            ecflags |= ECONV_LF_NEWLINE_DECORATOR;
         }
         else if (SYMBOL_P(v)) {
             rb_raise(rb_eArgError, "unexpected value for newline option: %"PRIsVALUE,
@@ -2516,6 +2553,11 @@ econv_opts(VALUE opt, int ecflags)
         v = rb_hash_aref(opt, sym_cr_newline);
         if (RTEST(v))
             setflags |= ECONV_CR_NEWLINE_DECORATOR;
+        newlineflag |= !NIL_P(v);
+
+        v = rb_hash_aref(opt, sym_lf_newline);
+        if (RTEST(v))
+            setflags |= ECONV_LF_NEWLINE_DECORATOR;
         newlineflag |= !NIL_P(v);
 
         switch (newlineflag) {
@@ -3255,11 +3297,13 @@ rb_econv_init_by_convpath(VALUE self, VALUE convpath,
  *     :undef => :replace         # replace undefined conversion
  *     :replace => string         # replacement string ("?" or "\uFFFD" if not specified)
  *     :newline => :universal     # decorator for converting CRLF and CR to LF
+ *     :newline => :lf            # decorator for converting CRLF and CR to LF when writing
  *     :newline => :crlf          # decorator for converting LF to CRLF
  *     :newline => :cr            # decorator for converting LF to CR
  *     :universal_newline => true # decorator for converting CRLF and CR to LF
  *     :crlf_newline => true      # decorator for converting LF to CRLF
  *     :cr_newline => true        # decorator for converting LF to CR
+ *     :lf_newline => true        # decorator for converting CRLF and CR to LF when writing
  *     :xml => :text              # escape as XML CharData.
  *     :xml => :attr              # escape as XML AttValue
  *   integer form:
@@ -3267,6 +3311,7 @@ rb_econv_init_by_convpath(VALUE self, VALUE convpath,
  *     Encoding::Converter::UNDEF_REPLACE
  *     Encoding::Converter::UNDEF_HEX_CHARREF
  *     Encoding::Converter::UNIVERSAL_NEWLINE_DECORATOR
+ *     Encoding::Converter::LF_NEWLINE_DECORATOR
  *     Encoding::Converter::CRLF_NEWLINE_DECORATOR
  *     Encoding::Converter::CR_NEWLINE_DECORATOR
  *     Encoding::Converter::XML_TEXT_DECORATOR
@@ -3309,6 +3354,8 @@ rb_econv_init_by_convpath(VALUE self, VALUE convpath,
  *   Convert LF to CRLF.
  * [:cr_newline => true]
  *   Convert LF to CR.
+ * [:lf_newline => true]
+ *   Convert CRLF and CR to LF (when writing).
  * [:xml => :text]
  *   Escape as XML CharData.
  *   This form can be used as an HTML 4.0 #PCDATA.
@@ -4411,6 +4458,7 @@ Init_transcode(void)
     sym_universal_newline = ID2SYM(rb_intern_const("universal_newline"));
     sym_crlf_newline = ID2SYM(rb_intern_const("crlf_newline"));
     sym_cr_newline = ID2SYM(rb_intern_const("cr_newline"));
+    sym_lf_newline = ID2SYM(rb_intern("lf_newline"));
     sym_partial_input = ID2SYM(rb_intern_const("partial_input"));
 
 #ifdef ENABLE_ECONV_NEWLINE_OPTION
@@ -4506,6 +4554,12 @@ InitVM_transcode(void)
      * Decorator for converting CRLF and CR to LF
      */
     rb_define_const(rb_cEncodingConverter, "UNIVERSAL_NEWLINE_DECORATOR", INT2FIX(ECONV_UNIVERSAL_NEWLINE_DECORATOR));
+
+    /* Document-const: LF_NEWLINE_DECORATOR
+     *
+     * Decorator for converting CRLF and CR to LF when writing
+     */
+    rb_define_const(rb_cEncodingConverter, "LF_NEWLINE_DECORATOR", INT2FIX(ECONV_LF_NEWLINE_DECORATOR));
 
     /* Document-const: CRLF_NEWLINE_DECORATOR
      *

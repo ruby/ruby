@@ -68,14 +68,14 @@ class Gem::Package
   class PathError < Error
     def initialize(destination, destination_dir)
       super "installing into parent path %s of %s is not allowed" %
-              [destination, destination_dir]
+        [destination, destination_dir]
     end
   end
 
   class SymlinkError < Error
     def initialize(name, destination, destination_dir)
       super "installing symlink '%s' pointing to parent path %s of %s is not allowed" %
-              [name, destination, destination_dir]
+        [name, destination, destination_dir]
     end
   end
 
@@ -687,7 +687,7 @@ EOM
               "package content (data.tar.gz) is missing", @gem
     end
 
-    if duplicates = @files.group_by {|f| f }.select {|k,v| v.size > 1 }.map(&:first) and duplicates.any?
+    if (duplicates = @files.group_by {|f| f }.select {|k,v| v.size > 1 }.map(&:first)) && duplicates.any?
       raise Gem::Security::Exception, "duplicate files in the package: (#{duplicates.map(&:inspect).join(', ')})"
     end
   end

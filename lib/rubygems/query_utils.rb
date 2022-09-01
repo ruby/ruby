@@ -112,7 +112,7 @@ module Gem::QueryUtils
   end
 
   def display_header(type)
-    if (ui.outs.tty? and Gem.configuration.verbose) or both?
+    if (ui.outs.tty? && Gem.configuration.verbose) || both?
       say
       say "*** #{type} GEMS ***"
       say
@@ -132,7 +132,7 @@ module Gem::QueryUtils
       name_matches = name ? s.name =~ name : true
       version_matches = show_prereleases? || !s.version.prerelease?
 
-      name_matches and version_matches
+      name_matches && version_matches
     end
 
     spec_tuples = specs.map do |spec|
@@ -176,7 +176,7 @@ module Gem::QueryUtils
   # Check if gem +name+ version +version+ is installed.
 
   def installed?(name, req = Gem::Requirement.default)
-    Gem::Specification.any? {|s| s.name =~ name and req =~ s.version }
+    Gem::Specification.any? {|s| s.name =~ name && req =~ s.version }
   end
 
   def output_query_results(spec_tuples)
@@ -242,7 +242,7 @@ module Gem::QueryUtils
     return unless options[:versions]
 
     list =
-      if platforms.empty? or options[:details]
+      if platforms.empty? || options[:details]
         name_tuples.map {|n| n.version }.uniq
       else
         platforms.sort.reverse.map do |version, pls|
@@ -289,13 +289,13 @@ module Gem::QueryUtils
   end
 
   def spec_homepage(entry, spec)
-    return if spec.homepage.nil? or spec.homepage.empty?
+    return if spec.homepage.nil? || spec.homepage.empty?
 
     entry << "\n" << format_text("Homepage: #{spec.homepage}", 68, 4)
   end
 
   def spec_license(entry, spec)
-    return if spec.license.nil? or spec.license.empty?
+    return if spec.license.nil? || spec.license.empty?
 
     licenses = "License#{spec.licenses.length > 1 ? 's' : ''}: ".dup
     licenses << spec.licenses.join(", ")

@@ -1150,7 +1150,7 @@ nil can't be coerced into Integer
   def test_custom_formatter
     custom_formatter = Object.new
     def custom_formatter.message_for(spot)
-      "\n\n" + spot.inspect
+      "\n\n" + spot.except(:script_lines).inspect
     end
 
     original_formatter, ErrorHighlight.formatter = ErrorHighlight.formatter, custom_formatter
@@ -1230,5 +1230,31 @@ undefined method `foo' for nil:NilClass
         end
       end
     end
+  end
+
+  def raise_name_error
+    1.time
+  end
+
+  def test_spot_with_backtrace_location
+    lineno = __LINE__
+    begin
+      raise_name_error
+    rescue NameError => exc
+    end
+
+    spot = ErrorHighlight.spot(exc).except(:script_lines)
+    assert_equal(lineno - 4, spot[:first_lineno])
+    assert_equal(lineno - 4, spot[:last_lineno])
+    assert_equal(5, spot[:first_column])
+    assert_equal(10, spot[:last_column])
+    assert_equal("    1.time\n", spot[:snippet])
+
+    spot = ErrorHighlight.spot(exc, backtrace_location: exc.backtrace_locations[1]).except(:script_lines)
+    assert_equal(lineno + 2, spot[:first_lineno])
+    assert_equal(lineno + 2, spot[:last_lineno])
+    assert_equal(6, spot[:first_column])
+    assert_equal(22, spot[:last_column])
+    assert_equal("      raise_name_error\n", spot[:snippet])
   end
 end

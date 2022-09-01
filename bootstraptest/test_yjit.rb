@@ -2903,10 +2903,19 @@ assert_equal 'new', %q{
     foo
   end
 
+  def bar
+    :bar
+  end
+
+
   test
   test
 
   RubyVM::YJIT.simulate_oom! if defined?(RubyVM::YJIT)
+
+  # Old simulat_omm! leaves one byte of space and this fills it up
+  bar
+  bar
 
   def foo
     :new
@@ -3067,4 +3076,184 @@ assert_equal '10', %q{
   a << Ractor.receive_if{|msg| msg == 1}
 
   a.length
+}
+
+# checktype
+assert_equal 'false', %q{
+    def function()
+        [1, 2] in [Integer, String]
+    end
+    function()
+}
+
+# opt_send_without_block (VM_METHOD_TYPE_ATTRSET)
+assert_equal 'foo', %q{
+    class Foo
+      attr_writer :foo
+
+      def foo()
+        self.foo = "foo"
+      end
+    end
+    foo = Foo.new
+    foo.foo
+}
+
+# anytostring, intern
+assert_equal 'true', %q{
+    def foo()
+      :"#{true}"
+    end
+    foo()
+}
+
+# toregexp, objtostring
+assert_equal '/true/', %q{
+    def foo()
+      /#{true}/
+    end
+    foo().inspect
+}
+
+# concatstrings, objtostring
+assert_equal '9001', %q{
+    def foo()
+      "#{9001}"
+    end
+    foo()
+}
+
+# opt_send_without_block (VM_METHOD_TYPE_CFUNC)
+assert_equal 'nil', %q{
+    def foo
+      nil.inspect # argc: 0
+    end
+    foo
+}
+assert_equal '4', %q{
+    def foo
+      2.pow(2) # argc: 1
+    end
+    foo
+}
+assert_equal 'aba', %q{
+    def foo
+      "abc".tr("c", "a") # argc: 2
+    end
+    foo
+}
+assert_equal 'true', %q{
+    def foo
+      respond_to?(:inspect) # argc: -1
+    end
+    foo
+}
+assert_equal '["a", "b"]', %q{
+    def foo
+      "a\nb".lines(chomp: true) # kwargs
+    end
+    foo
+}
+
+# invokebuiltin
+assert_equal '123', %q{
+  def foo(obj)
+    obj.foo = 123
+  end
+
+  struct = Struct.new(:foo)
+  obj = struct.new
+  foo(obj)
+}
+
+# invokebuiltin_delegate
+assert_equal '.', %q{
+  def foo(path)
+    Dir.open(path).path
+  end
+  foo(".")
+}
+
+# opt_invokebuiltin_delegate_leave
+assert_equal '[0]', %q{"\x00".unpack("c")}
+
+# opt_send_without_block (VM_METHOD_TYPE_ISEQ)
+assert_equal '1', %q{
+  def foo = 1
+  def bar = foo
+  bar
+}
+assert_equal '[1, 2, 3]', %q{
+  def foo(a, b) = [1, a, b]
+  def bar = foo(2, 3)
+  bar
+}
+assert_equal '[1, 2, 3, 4, 5, 6]', %q{
+  def foo(a, b, c:, d:, e: 0, f: 6) = [a, b, c, d, e, f]
+  def bar = foo(1, 2, c: 3, d: 4, e: 5)
+  bar
+}
+assert_equal '[1, 2, 3, 4]', %q{
+  def foo(a, b = 2) = [a, b]
+  def bar = foo(1) + foo(3, 4)
+  bar
+}
+
+assert_equal '1', %q{
+  def foo(a) = a
+  def bar = foo(1) { 2 }
+  bar
+}
+assert_equal '[1, 2]', %q{
+  def foo(a, &block) = [a, block.call]
+  def bar = foo(1) { 2 }
+  bar
+}
+
+# opt_send_without_block (VM_METHOD_TYPE_IVAR)
+assert_equal 'foo', %q{
+  class Foo
+    attr_reader :foo
+
+    def initialize
+      @foo = "foo"
+    end
+  end
+  Foo.new.foo
+}
+
+# opt_send_without_block (VM_METHOD_TYPE_OPTIMIZED)
+assert_equal 'foo', %q{
+  Foo = Struct.new(:bar)
+  Foo.new("bar").bar = "foo"
+}
+assert_equal 'foo', %q{
+  Foo = Struct.new(:bar)
+  Foo.new("foo").bar
+}
+
+# getblockparamproxy
+assert_equal 'foo', %q{
+  def foo(&block)
+    block.call
+  end
+  foo { "foo" }
+}
+
+# getblockparam
+assert_equal 'foo', %q{
+  def foo(&block)
+    block
+  end
+  foo { "foo" }.call
+}
+
+assert_equal '[1, 2]', %q{
+  def foo
+    x = [2]
+    [1, *x]
+  end
+
+  foo
+  foo
 }

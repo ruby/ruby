@@ -20,6 +20,7 @@ This project is open source and falls under the same license as CRuby.
 If you wish to learn more about the approach taken, here are some conference talks and publications:
 - RubyKaigi 2021 talk: [YJIT: Building a New JIT Compiler Inside CRuby](https://www.youtube.com/watch?v=PBVLf3yfMs8)
 - Blog post: [YJIT: Building a New JIT Compiler Inside CRuby](https://pointersgonewild.com/2021/06/02/yjit-building-a-new-jit-compiler-inside-cruby/)
+- VMIL 2021 paper: [YJIT: A Basic Block Versioning JIT Compiler for CRuby](https://dl.acm.org/doi/10.1145/3486606.3486781)
 - MoreVMs 2021 talk: [YJIT: Building a New JIT Compiler Inside CRuby](https://www.youtube.com/watch?v=vucLAqv7qpc)
 - ECOOP 2016 talk: [Interprocedural Type Specialization of JavaScript Programs Without Type Analysis](https://www.youtube.com/watch?v=sRNBY7Ss97A)
 - ECOOP 2016 paper: [Interprocedural Type Specialization of JavaScript Programs Without Type Analysis](https://drops.dagstuhl.de/opus/volltexte/2016/6101/pdf/LIPIcs-ECOOP-2016-7.pdf)
@@ -45,7 +46,7 @@ YJIT is a work in progress and as such may not yet be mature enough for mission-
 
 - No garbage collection for generated code.
 - Currently supports only macOS and Linux.
-- Currently supports only x86-64 CPUs.
+- Supports x86-64 and arm64/aarch64 CPUs only.
 
 Because there is no GC for generated code yet, your software could run out of executable memory if it is large enough. You can change how much executable memory is allocated using [YJIT's command-line options](#command-line-options).
 
@@ -57,6 +58,7 @@ You will need to install:
 - A C compiler such as GCC or Clang
 - GNU Make and Autoconf
 - The Rust compiler `rustc` and Cargo (if you want to build in dev/debug mode)
+  - The Rust version must be [>= 1.58.1](../../yjit/Cargo.toml).
 
 To install the Rust build toolchain, we suggest following the [recommended installation method][rust-install]. Rust also provides first class [support][editor-tools] for many source code editors.
 
@@ -308,9 +310,9 @@ You can use the Intel syntax for disassembly in LLDB, keeping it consistent with
 echo "settings set target.x86-disassembly-flavor intel" >> ~/.lldbinit
 ```
 
-## Running YJIT on M1
+## Running x86 YJIT on Apple's Rosetta
 
-It is possible to run YJIT on an Apple M1 via Rosetta.  You can find basic
+For development purposes, it is possible to run x86 YJIT on an Apple M1 via Rosetta.  You can find basic
 instructions below, but there are a few caveats listed further down.
 
 First, install Rosetta:
@@ -343,10 +345,9 @@ $ rustup default stable-x86_64-apple-darwin
 
 While in your i386 shell, install Cargo and Homebrew, then hack away!
 
-### M1 Caveats
+### Rosetta Caveats
 
 1. You must install a version of Homebrew for each architecture
 2. Cargo will install in $HOME/.cargo by default, and I don't know a good way to change architectures after install
-3. `dev` won't work if you have i386 Homebrew installed on an M1
 
 If you use Fish shell you can [read this link](https://tenderlovemaking.com/2022/01/07/homebrew-rosetta-and-ruby.html) for information on making the dev environment easier.

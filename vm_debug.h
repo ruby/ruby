@@ -86,6 +86,15 @@ void ruby_debug_log(const char *file, int line, const char *func_name, const cha
 void ruby_debug_log_print(unsigned int n);
 bool ruby_debug_log_filter(const char *func_name, const char *file_name);
 
+#if RBIMPL_COMPILER_IS(GCC) && defined(__OPTIMIZE__)
+# define ruby_debug_log(...) \
+    RB_GNUC_EXTENSION_BLOCK( \
+        RBIMPL_WARNING_PUSH(); \
+        RBIMPL_WARNING_IGNORED(-Wformat-zero-length); \
+        ruby_debug_log(__VA_ARGS__); \
+        RBIMPL_WARNING_POP())
+#endif
+
 // convenient macro to log even if the USE_RUBY_DEBUG_LOG macro is not specified.
 // You can use this macro for temporary usage (you should not commit it).
 #define _RUBY_DEBUG_LOG(...) ruby_debug_log(__FILE__, __LINE__, RUBY_FUNCTION_NAME_STRING, "" __VA_ARGS__)

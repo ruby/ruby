@@ -499,6 +499,7 @@ pretty_filename(const char *path)
     return path;
 }
 
+#undef ruby_debug_log
 void
 ruby_debug_log(const char *file, int line, const char *func_name, const char *fmt, ...)
 {

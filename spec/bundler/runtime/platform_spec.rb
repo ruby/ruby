@@ -386,7 +386,7 @@ RSpec.describe "Bundler.setup with multi platform stuff" do
         s.add_dependency "platform_specific"
       end
     end
-    simulate_windows x64_mingw do
+    simulate_windows x64_mingw32 do
       lockfile <<-L
         GEM
           remote: #{file_uri_for(gem_repo2)}/
@@ -410,6 +410,38 @@ RSpec.describe "Bundler.setup with multi platform stuff" do
 
       expect(out).to include("lockfile does not have all gems needed for the current platform")
       expect(the_bundle).to include_gem "platform_specific 1.0 x64-mingw32"
+    end
+  end
+
+  %w[x86-mswin32 x64-mswin64 x86-mingw32 x64-mingw32 x64-mingw-ucrt].each do |arch|
+    it "allows specifying platform windows on #{arch} arch" do
+      platform = send(arch.tr("-", "_"))
+
+      simulate_windows platform do
+        lockfile <<-L
+          GEM
+            remote: #{file_uri_for(gem_repo1)}/
+            specs:
+              platform_specific (1.0-#{platform})
+              requires_platform_specific (1.0)
+                platform_specific
+
+          PLATFORMS
+            #{platform}
+
+          DEPENDENCIES
+            requires_platform_specific
+        L
+
+        install_gemfile <<-G
+          source "#{file_uri_for(gem_repo1)}"
+          gem "platform_specific", :platforms => [:windows]
+        G
+
+        bundle "install"
+
+        expect(the_bundle).to include_gems "platform_specific 1.0 #{platform}"
+      end
     end
   end
 end

@@ -374,7 +374,7 @@ module FileUtils
       path = remove_trailing_slash(item)
 
       stack = []
-      until File.directory?(path)
+      until File.directory?(path) || File.dirname(path) == path
         stack.push path
         path = File.dirname(path)
       end
@@ -1165,7 +1165,7 @@ module FileUtils
   #
   # Keyword arguments:
   #
-  # - <tt>force: true</tt> - ignores raised exceptions of StandardError
+  # - <tt>force: true</tt> - ignores raised exceptions of Errno::ENOENT
   #   and its descendants.
   # - <tt>noop: true</tt> - does not remove files; returns +nil+.
   # - <tt>verbose: true</tt> - prints an equivalent command:
@@ -1248,7 +1248,7 @@ module FileUtils
   #
   # Keyword arguments:
   #
-  # - <tt>force: true</tt> - ignores raised exceptions of StandardError
+  # - <tt>force: true</tt> - ignores raised exceptions of Errno::ENOENT
   #   and its descendants.
   # - <tt>noop: true</tt> - does not remove entries; returns +nil+.
   # - <tt>secure: true</tt> - removes +src+ securely;
@@ -1315,7 +1315,7 @@ module FileUtils
   # see {Avoiding the TOCTTOU Vulnerability}[rdoc-ref:FileUtils@Avoiding+the+TOCTTOU+Vulnerability].
   #
   # Optional argument +force+ specifies whether to ignore
-  # raised exceptions of StandardError and its descendants.
+  # raised exceptions of Errno::ENOENT and its descendants.
   #
   # Related: {methods for deleting}[rdoc-ref:FileUtils@Deleting].
   #
@@ -1384,10 +1384,12 @@ module FileUtils
         ent.remove
       rescue
         raise unless force
+        raise unless Errno::ENOENT === $!
       end
     end
   rescue
     raise unless force
+    raise unless Errno::ENOENT === $!
   end
   module_function :remove_entry_secure
 
@@ -1413,7 +1415,7 @@ module FileUtils
   # should be {interpretable as a path}[rdoc-ref:FileUtils@Path+Arguments].
   #
   # Optional argument +force+ specifies whether to ignore
-  # raised exceptions of StandardError and its descendants.
+  # raised exceptions of Errno::ENOENT and its descendants.
   #
   # Related: FileUtils.remove_entry_secure.
   #
@@ -1423,10 +1425,12 @@ module FileUtils
         ent.remove
       rescue
         raise unless force
+        raise unless Errno::ENOENT === $!
       end
     end
   rescue
     raise unless force
+    raise unless Errno::ENOENT === $!
   end
   module_function :remove_entry
 
@@ -1437,7 +1441,7 @@ module FileUtils
   # should be {interpretable as a path}[rdoc-ref:FileUtils@Path+Arguments].
   #
   # Optional argument +force+ specifies whether to ignore
-  # raised exceptions of StandardError and its descendants.
+  # raised exceptions of Errno::ENOENT and its descendants.
   #
   # Related: {methods for deleting}[rdoc-ref:FileUtils@Deleting].
   #
@@ -1445,6 +1449,7 @@ module FileUtils
     Entry_.new(path).remove_file
   rescue
     raise unless force
+    raise unless Errno::ENOENT === $!
   end
   module_function :remove_file
 
@@ -1456,7 +1461,7 @@ module FileUtils
   # should be {interpretable as a path}[rdoc-ref:FileUtils@Path+Arguments].
   #
   # Optional argument +force+ specifies whether to ignore
-  # raised exceptions of StandardError and its descendants.
+  # raised exceptions of Errno::ENOENT and its descendants.
   #
   # Related: {methods for deleting}[rdoc-ref:FileUtils@Deleting].
   #
@@ -2328,13 +2333,21 @@ module FileUtils
 
     def postorder_traverse
       if directory?
-        entries().each do |ent|
+        begin
+          children = entries()
+        rescue Errno::EACCES
+          # Failed to get the list of children.
+          # Assuming there is no children, try to process the parent directory.
+          yield self
+          return
+        end
+
+        children.each do |ent|
           ent.postorder_traverse do |e|
             yield e
           end
         end
       end
-    ensure
       yield self
     end
 

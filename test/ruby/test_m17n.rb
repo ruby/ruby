@@ -892,10 +892,22 @@ class TestM17N < Test::Unit::TestCase
     assert_raise(Encoding::CompatibilityError) {
       "%s%s" % [s("\xc2\xa1"), e("\xc2\xa1")]
     }
+
+    assert_equal("\u3042".encode('Windows-31J'), "%c" % "\u3042\u3044".encode('Windows-31J'))
   end
 
   def test_sprintf_p
     Encoding.list.each do |e|
+      unless e.ascii_compatible?
+        format = e.dummy? ? "%p".force_encoding(e) : "%p".encode(e)
+        assert_raise(Encoding::CompatibilityError) do
+          sprintf(format, nil)
+        end
+        assert_raise(Encoding::CompatibilityError) do
+          format % nil
+        end
+        next
+      end
       format = "%p".force_encoding(e)
       ['', 'a', "\xC2\xA1", "\x00"].each do |s|
         s.force_encoding(e)

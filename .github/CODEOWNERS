@@ -3,9 +3,9 @@
 # Code owners will be automatically tagged as reviewers when a pull request is opened
 
 # YJIT sources and tests
-yjit* @maximecb @xrxr @tenderlove
-yjit/* @maximecb @xrxr @tenderlove
-doc/yjit/* @maximecb @xrxr @tenderlove
-bootstraptest/test_yjit* @maximecb @xrxr @tenderlove
-test/ruby/test_yjit* @maximecb @xrxr @tenderlove
-.github/workflows/yjit* @maximecb @xrxr @tenderlove
+yjit* @maximecb @xrxr @tenderlove @k0kubun
+yjit/* @maximecb @xrxr @tenderlove @k0kubun
+doc/yjit/* @maximecb @xrxr @tenderlove @k0kubun
+bootstraptest/test_yjit* @maximecb @xrxr @tenderlove @k0kubun
+test/ruby/test_yjit* @maximecb @xrxr @tenderlove @k0kubun
+.github/workflows/yjit* @maximecb @xrxr @tenderlove @k0kubun

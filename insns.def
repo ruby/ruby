@@ -597,6 +597,25 @@ swap
     /* none */
 }
 
+/* reverse stack top N order. */
+DEFINE_INSN
+opt_reverse
+(rb_num_t n)
+(...)
+(...)
+// attr rb_snum_t sp_inc = 0;
+{
+    rb_num_t i;
+    VALUE *sp = STACK_ADDR_FROM_TOP(n);
+
+    for (i=0; i<n/2; i++) {
+	VALUE v0 = sp[i];
+	VALUE v1 = TOPN(i);
+	sp[i] = v1;
+	TOPN(i) = v0;
+    }
+}
+
 /* for stack caching. */
 DEFINE_INSN_IF(STACK_CACHING)
 reput

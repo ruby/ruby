@@ -579,7 +579,7 @@ class Complex_Test < Test::Unit::TestCase
 
   def test_coerce2
     x = ObjectX.new
-    %w(+ - * / quo **).each do |op|
+    %w(+ - * / quo ** <=>).each do |op|
       assert_kind_of(Numeric, Complex(1).__send__(op, x))
     end
   end

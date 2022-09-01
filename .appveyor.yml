@@ -16,6 +16,7 @@ skip_commits:
     - doc/*
     - '**/*.md'
     - '**/*.rdoc'
+    - '**/.document'
 environment:
   ruby_version: "24-%Platform%"
   zlib_version: "1.2.12"

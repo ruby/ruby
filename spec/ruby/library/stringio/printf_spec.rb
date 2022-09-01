@@ -4,7 +4,7 @@ require_relative '../../core/kernel/shared/sprintf'
 
 describe "StringIO#printf" do
   before :each do
-    @io = StringIO.new('example')
+    @io = StringIO.new()
   end
 
   it "returns nil" do
@@ -12,9 +12,9 @@ describe "StringIO#printf" do
   end
 
   it "pads self with \\000 when the current position is after the end" do
-    @io.pos = 10
+    @io.pos = 3
     @io.printf("%d", 123)
-    @io.string.should == "example\000\000\000123"
+    @io.string.should == "\000\000\000123"
   end
 
   it "performs format conversion" do
@@ -36,6 +36,27 @@ describe "StringIO#printf" do
       io.printf(format, *args)
       io.string
     }
+  end
+end
+
+describe "StringIO#printf when in read-write mode" do
+  before :each do
+    @io = StringIO.new("example", "r+")
+  end
+
+  it "starts from the beginning" do
+    @io.printf("%s", "abcdefghijk")
+    @io.string.should == "abcdefghijk"
+  end
+
+  it "does not truncate existing string" do
+    @io.printf("%s", "abc")
+    @io.string.should == "abcmple"
+  end
+
+  it "correctly updates self's position" do
+    @io.printf("%s", "abc")
+    @io.pos.should eql(3)
   end
 end
 

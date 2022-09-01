@@ -141,7 +141,7 @@ class Gem::Security::Signer
 
     raise Gem::Security::Exception, "no certs provided" if @cert_chain.empty?
 
-    if @cert_chain.length == 1 and @cert_chain.last.not_after < Time.now
+    if @cert_chain.length == 1 && @cert_chain.last.not_after < Time.now
       alert("Your certificate has expired, trying to re-sign it...")
 
       re_sign_key(

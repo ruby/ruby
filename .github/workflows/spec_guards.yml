@@ -6,11 +6,13 @@ on:
       - 'doc/**'
       - '**.md'
       - '**.rdoc'
+      - '**/.document'
   pull_request:
     paths-ignore:
       - 'doc/**'
       - '**.md'
       - '**.rdoc'
+      - '**/.document'
 
 concurrency:
   group: ${{ github.workflow }} / ${{ startsWith(github.event_name, 'pull') && github.ref_name || github.sha }}
@@ -38,6 +40,8 @@ jobs:
       - run: gem install webrick
       - run: ruby ../mspec/bin/mspec
         working-directory: spec/ruby
+        env:
+          CHECK_LEAKS: true
       - uses: k0kubun/action-slack@v2.0.0
         with:
           payload: |

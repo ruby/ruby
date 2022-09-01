@@ -33,6 +33,10 @@ module Spec
       Bundler::Resolver.resolve(deps, source_requirements, *args)
     end
 
+    def should_not_resolve
+      expect { resolve }.to raise_error(Bundler::GemNotFound)
+    end
+
     def should_resolve_as(specs)
       got = resolve
       got = got.map(&:full_name).sort

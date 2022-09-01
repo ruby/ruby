@@ -443,14 +443,14 @@ class Gem::RequestSet
 
   def tsort_each_child(node) # :nodoc:
     node.spec.dependencies.each do |dep|
-      next if dep.type == :development and not @development
+      next if dep.type == :development && !@development
 
       match = @requests.find do |r|
-        dep.match? r.spec.name, r.spec.version, @prerelease
+        dep.match? r.spec.name, r.spec.version, r.spec.is_a?(Gem::Resolver::InstalledSpecification) || @prerelease
       end
 
       unless match
-        next if dep.type == :development and @development_shallow
+        next if dep.type == :development && @development_shallow
         next if @soft_missing
         raise Gem::DependencyError,
               "Unresolved dependency found during sorting - #{dep} (requested by #{node.spec.full_name})"

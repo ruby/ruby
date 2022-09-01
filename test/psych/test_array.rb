@@ -57,6 +57,22 @@ module Psych
       assert_cycle(@list)
     end
 
+    def test_recursive_array
+      @list << @list
+
+      loaded = Psych.load(Psych.dump(@list), aliases: true)
+
+      assert_same loaded, loaded.last
+    end
+
+    def test_recursive_array_uses_alias
+      @list << @list
+
+      assert_raise(AliasesNotEnabled) do
+        Psych.load(Psych.dump(@list), aliases: false)
+      end
+    end
+
     def test_cycle
       assert_cycle(@list)
     end

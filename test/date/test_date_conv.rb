@@ -77,6 +77,11 @@ class TestDateConv < Test::Unit::TestCase
     assert_equal([2004, 9, 19, 1, 2, 3, 456789],
 		 [t.year, t.mon, t.mday, t.hour, t.min, t.sec, t.usec])
 
+    d = DateTime.new(1582, 10, 3, 1, 2, 3, 0) + 456789.to_r/86400000000
+    t = d.to_time.utc
+    assert_equal([1582, 10, 13, 1, 2, 3, 456789],
+		 [t.year, t.mon, t.mday, t.hour, t.min, t.sec, t.usec])
+
     if Time.allocate.respond_to?(:nsec)
       d = DateTime.new(2004, 9, 19, 1, 2, 3, 0) + 456789123.to_r/86400000000000
       t = d.to_time.utc
@@ -100,6 +105,10 @@ class TestDateConv < Test::Unit::TestCase
     t = Time.utc(2004, 9, 19, 1, 2, 3, 456789)
     d = t.to_date
     assert_equal([2004, 9, 19, 0], [d.year, d.mon, d.mday, d.day_fraction])
+
+    t = Time.utc(1582, 10, 13, 1, 2, 3, 456789)
+    d = t.to_date # using ITALY
+    assert_equal([1582, 10, 3, 0], [d.year, d.mon, d.mday, d.day_fraction])
   end
 
   def test_to_date__from_date
@@ -131,6 +140,14 @@ class TestDateConv < Test::Unit::TestCase
     t = Time.utc(2004, 9, 19, 1, 2, 3, 456789)
     d = t.to_datetime
     assert_equal([2004, 9, 19, 1, 2, 3,
+		  456789.to_r/1000000,
+		  0],
+		 [d.year, d.mon, d.mday, d.hour, d.min, d.sec,
+		  d.sec_fraction, d.offset])
+
+    t = Time.utc(1582, 10, 13, 1, 2, 3, 456789)
+    d = t.to_datetime # using ITALY
+    assert_equal([1582, 10, 3, 1, 2, 3,
 		  456789.to_r/1000000,
 		  0],
 		 [d.year, d.mon, d.mday, d.hour, d.min, d.sec,

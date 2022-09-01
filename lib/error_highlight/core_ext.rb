@@ -3,36 +3,9 @@ require_relative "formatter"
 module ErrorHighlight
   module CoreExt
     private def generate_snippet
-      locs = backtrace_locations
-      return "" unless locs
-
-      loc = locs.first
-      return "" unless loc
-
-      begin
-        node = RubyVM::AbstractSyntaxTree.of(loc, keep_script_lines: true)
-        opts = {}
-
-        case self
-        when NoMethodError, NameError
-          opts[:point_type] = :name
-          opts[:name] = name
-        when TypeError, ArgumentError
-          opts[:point_type] = :args
-        end
-
-        spot = ErrorHighlight.spot(node, **opts)
-
-      rescue SyntaxError
-      rescue SystemCallError # file not found or something
-      rescue ArgumentError   # eval'ed code
-      end
-
-      if spot
-        return ErrorHighlight.formatter.message_for(spot)
-      end
-
-      ""
+      spot = ErrorHighlight.spot(self)
+      return "" unless spot
+      return ErrorHighlight.formatter.message_for(spot)
     end
 
     if Exception.method_defined?(:detailed_message)
@@ -64,9 +37,6 @@ module ErrorHighlight
   end
 
   NameError.prepend(CoreExt)
-
-  # The extension for TypeError/ArgumentError is temporarily disabled due to many test failures
-
-  #TypeError.prepend(CoreExt)
-  #ArgumentError.prepend(CoreExt)
+  TypeError.prepend(CoreExt)
+  ArgumentError.prepend(CoreExt)
 end

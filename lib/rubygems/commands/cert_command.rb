@@ -152,7 +152,7 @@ class Gem::Commands::CertCommand < Gem::Command
 
   def build_cert(email, key) # :nodoc:
     expiration_length_days = options[:expiration_length_days] ||
-      Gem.configuration.cert_expiration_length_days
+                             Gem.configuration.cert_expiration_length_days
 
     cert = Gem::Security.create_cert_email(
       email,

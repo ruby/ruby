@@ -1,3 +1,4 @@
+use std::fmt;
 use std::mem;
 
 #[cfg(feature = "asm_comments")]
@@ -8,6 +9,8 @@ use crate::virtualmem::{VirtualMem, CodePtr};
 // Lots of manual vertical alignment in there that rustfmt doesn't handle well.
 #[rustfmt::skip]
 pub mod x86_64;
+
+pub mod arm64;
 
 //
 // TODO: need a field_size_of macro, to compute the size of a struct field in bytes
@@ -20,6 +23,14 @@ struct LabelRef {
 
     // Label which this refers to
     label_idx: usize,
+
+    /// The number of bytes that this label reference takes up in the memory.
+    /// It's necessary to know this ahead of time so that when we come back to
+    /// patch it it takes the same amount of space.
+    num_bytes: usize,
+
+    /// The object that knows how to encode the branch instruction.
+    encode: fn(&mut CodeBlock, i64, i64)
 }
 
 /// Block of memory into which instructions can be assembled
@@ -46,6 +57,10 @@ pub struct CodeBlock {
     #[cfg(feature = "asm_comments")]
     asm_comments: BTreeMap<usize, Vec<String>>,
 
+    // True for OutlinedCb
+    #[cfg(feature = "disasm")]
+    pub outlined: bool,
+
     // Set if the CodeBlock is unable to output some instructions,
     // for example, when there is not enough space or when a jump
     // target is too far away.
@@ -54,7 +69,7 @@ pub struct CodeBlock {
 
 impl CodeBlock {
     /// Make a new CodeBlock
-    pub fn new(mem_block: VirtualMem) -> Self {
+    pub fn new(mem_block: VirtualMem, outlined: bool) -> Self {
         Self {
             mem_size: mem_block.virtual_region_size(),
             mem_block,
@@ -64,6 +79,8 @@ impl CodeBlock {
             label_refs: Vec::new(),
             #[cfg(feature = "asm_comments")]
             asm_comments: BTreeMap::new(),
+            #[cfg(feature = "disasm")]
+            outlined,
             dropped_bytes: false,
         }
     }
@@ -110,10 +127,10 @@ impl CodeBlock {
 
     // Set the current write position
     pub fn set_pos(&mut self, pos: usize) {
-        // Assert here since while CodeBlock functions do bounds checking, there is
-        // nothing stopping users from taking out an out-of-bounds pointer and
-        // doing bad accesses with it.
-        assert!(pos < self.mem_size);
+        // No bounds check here since we can be out of bounds
+        // when the code block fills up. We want to be able to
+        // restore to the filled up state after patching something
+        // in the middle.
         self.write_pos = pos;
     }
 
@@ -141,17 +158,17 @@ impl CodeBlock {
         self.set_pos(pos);
     }
 
-    // Get a direct pointer into the executable memory block
+    /// Get a (possibly dangling) direct pointer into the executable memory block
     pub fn get_ptr(&self, offset: usize) -> CodePtr {
         self.mem_block.start_ptr().add_bytes(offset)
     }
 
-    // Get a direct pointer to the current write position
+    /// Get a (possibly dangling) direct pointer to the current write position
     pub fn get_write_ptr(&mut self) -> CodePtr {
         self.get_ptr(self.write_pos)
     }
 
-    // Write a single byte at the current position
+    /// Write a single byte at the current position.
     pub fn write_byte(&mut self, byte: u8) {
         let write_ptr = self.get_write_ptr();
 
@@ -162,15 +179,15 @@ impl CodeBlock {
         }
     }
 
-    // Write multiple bytes starting from the current position
+    /// Write multiple bytes starting from the current position.
     pub fn write_bytes(&mut self, bytes: &[u8]) {
         for byte in bytes {
             self.write_byte(*byte);
         }
     }
 
-    // Write a signed integer over a given number of bits at the current position
-    pub fn write_int(&mut self, val: u64, num_bits: u32) {
+    /// Write an integer over the given number of bits at the current position.
+    fn write_int(&mut self, val: u64, num_bits: u32) {
         assert!(num_bits > 0);
         assert!(num_bits % 8 == 0);
 
@@ -212,22 +229,18 @@ impl CodeBlock {
 
     /// Write a label at the current address
     pub fn write_label(&mut self, label_idx: usize) {
-        // TODO: make sure that label_idx is valid
-        // TODO: add an asseer here
-
         self.label_addrs[label_idx] = self.write_pos;
     }
 
     // Add a label reference at the current write position
-    pub fn label_ref(&mut self, label_idx: usize) {
-        // TODO: make sure that label_idx is valid
-        // TODO: add an asseer here
+    pub fn label_ref(&mut self, label_idx: usize, num_bytes: usize, encode: fn(&mut CodeBlock, i64, i64)) {
+        assert!(label_idx < self.label_addrs.len());
 
         // Keep track of the reference
-        self.label_refs.push(LabelRef {
-            pos: self.write_pos,
-            label_idx,
-        });
+        self.label_refs.push(LabelRef { pos: self.write_pos, label_idx, num_bytes, encode });
+
+        // Move past however many bytes the instruction takes up
+        self.write_pos += num_bytes;
     }
 
     // Link internal label references
@@ -243,11 +256,12 @@ impl CodeBlock {
             let label_addr = self.label_addrs[label_idx];
             assert!(label_addr < self.mem_size);
 
-            // Compute the offset from the reference's end to the label
-            let offset = (label_addr as i64) - ((ref_pos + 4) as i64);
-
             self.set_pos(ref_pos);
-            self.write_int(offset as u64, 32);
+            (label_ref.encode)(self, (ref_pos + label_ref.num_bytes) as i64, label_addr as i64);
+
+            // Assert that we've written the same number of bytes that we
+            // expected to have written.
+            assert!(self.write_pos == ref_pos + label_ref.num_bytes);
         }
 
         self.write_pos = orig_pos;
@@ -274,7 +288,18 @@ impl CodeBlock {
         let mem_start: *const u8 = alloc.mem_start();
         let virt_mem = VirtualMem::new(alloc, 1, mem_start as *mut u8, mem_size);
 
-        Self::new(virt_mem)
+        Self::new(virt_mem, false)
+    }
+}
+
+/// Produce hex string output from the bytes in a code block
+impl<'a> fmt::LowerHex for CodeBlock {
+    fn fmt(&self, fmtr: &mut fmt::Formatter) -> fmt::Result {
+        for pos in 0..self.write_pos {
+            let byte = unsafe { self.mem_block.start_ptr().raw_ptr().add(pos).read() };
+            fmtr.write_fmt(format_args!("{:02x}", byte))?;
+        }
+        Ok(())
     }
 }
 
@@ -292,5 +317,76 @@ impl OutlinedCb {
 
     pub fn unwrap(&mut self) -> &mut CodeBlock {
         &mut self.cb
+    }
+}
+
+/// Compute the number of bits needed to encode a signed value
+pub fn imm_num_bits(imm: i64) -> u8
+{
+    // Compute the smallest size this immediate fits in
+    if imm >= i8::MIN.into() && imm <= i8::MAX.into() {
+        return 8;
+    }
+    if imm >= i16::MIN.into() && imm <= i16::MAX.into() {
+        return 16;
+    }
+    if imm >= i32::MIN.into() && imm <= i32::MAX.into() {
+        return 32;
+    }
+
+    return 64;
+}
+
+/// Compute the number of bits needed to encode an unsigned value
+pub fn uimm_num_bits(uimm: u64) -> u8
+{
+    // Compute the smallest size this immediate fits in
+    if uimm <= u8::MAX.into() {
+        return 8;
+    }
+    else if uimm <= u16::MAX.into() {
+        return 16;
+    }
+    else if uimm <= u32::MAX.into() {
+        return 32;
+    }
+
+    return 64;
+}
+
+#[cfg(test)]
+mod tests
+{
+    use super::*;
+
+    #[test]
+    fn test_imm_num_bits()
+    {
+        assert_eq!(imm_num_bits(i8::MIN.into()), 8);
+        assert_eq!(imm_num_bits(i8::MAX.into()), 8);
+
+        assert_eq!(imm_num_bits(i16::MIN.into()), 16);
+        assert_eq!(imm_num_bits(i16::MAX.into()), 16);
+
+        assert_eq!(imm_num_bits(i32::MIN.into()), 32);
+        assert_eq!(imm_num_bits(i32::MAX.into()), 32);
+
+        assert_eq!(imm_num_bits(i64::MIN.into()), 64);
+        assert_eq!(imm_num_bits(i64::MAX.into()), 64);
+    }
+
+    #[test]
+    fn test_uimm_num_bits() {
+        assert_eq!(uimm_num_bits(u8::MIN.into()), 8);
+        assert_eq!(uimm_num_bits(u8::MAX.into()), 8);
+
+        assert_eq!(uimm_num_bits(((u8::MAX as u16) + 1).into()), 16);
+        assert_eq!(uimm_num_bits(u16::MAX.into()), 16);
+
+        assert_eq!(uimm_num_bits(((u16::MAX as u32) + 1).into()), 32);
+        assert_eq!(uimm_num_bits(u32::MAX.into()), 32);
+
+        assert_eq!(uimm_num_bits(((u32::MAX as u64) + 1).into()), 64);
+        assert_eq!(uimm_num_bits(u64::MAX.into()), 64);
     }
 }

@@ -68,8 +68,8 @@ Marshal::MINOR_VERSION constants.  It is used to ensure compatibility.
     # This is always true because it's the only way now.
     options[:build_modern] = true
 
-    if not File.exist?(options[:directory]) or
-       not File.directory?(options[:directory])
+    if !File.exist?(options[:directory]) ||
+       !File.directory?(options[:directory])
       alert_error "unknown directory name #{options[:directory]}."
       terminate_interaction 1
     else

@@ -750,6 +750,24 @@ class TestFileUtils < Test::Unit::TestCase
     assert_file_not_exist 'tmp/tmpdir3'
   end
 
+  def test_rm_r_no_permissions
+    check_singleton :rm_rf
+
+    return if /mswin|mingw/ =~ RUBY_PLATFORM
+
+    mkdir 'tmpdatadir'
+    touch 'tmpdatadir/tmpdata'
+    chmod "-x", 'tmpdatadir'
+
+    begin
+      assert_raise Errno::EACCES do
+        rm_r 'tmpdatadir'
+      end
+    ensure
+      chmod "+x", 'tmpdatadir'
+    end
+  end
+
   def test_remove_entry_cjk_path
     dir = "tmpdir\u3042"
     my_rm_rf dir
@@ -1097,6 +1115,14 @@ class TestFileUtils < Test::Unit::TestCase
       assert_file_not_exist drive
     ensure
       Dir.rmdir(drive) if drive and File.directory?(drive)
+    end
+
+    def test_mkdir_p_offline_drive
+      offline_drive = ("A".."Z").to_a.reverse.find {|d| !File.exist?("#{d}:/") }
+
+      assert_raise(Errno::ENOENT) {
+        mkdir_p "#{offline_drive}:/new_dir"
+      }
     end
   end
 
@@ -1790,10 +1816,30 @@ cd -
     return if /mswin|mingw/ =~ RUBY_PLATFORM
 
     mkdir 'tmpdatadir'
-    chmod 0o700, 'tmpdatadir'
+    chmod 0o000, 'tmpdatadir'
     rm_rf 'tmpdatadir'
 
     assert_file_not_exist 'tmpdatadir'
+  end
+
+  def test_rm_rf_no_permissions
+    check_singleton :rm_rf
+
+    return if /mswin|mingw/ =~ RUBY_PLATFORM
+
+    mkdir 'tmpdatadir'
+    touch 'tmpdatadir/tmpdata'
+    chmod "-x", 'tmpdatadir'
+
+    begin
+      assert_raise Errno::EACCES do
+        rm_rf 'tmpdatadir'
+      end
+
+      assert_file_exist 'tmpdatadir'
+    ensure
+      chmod "+x", 'tmpdatadir'
+    end
   end
 
   def test_rmdir
