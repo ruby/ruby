@@ -58,6 +58,7 @@ You will need to install:
 - A C compiler such as GCC or Clang
 - GNU Make and Autoconf
 - The Rust compiler `rustc` and Cargo (if you want to build in dev/debug mode)
+  - The Rust version must be [>= 1.58.1](yjit/Cargo.toml).
 
 To install the Rust build toolchain, we suggest following the [recommended installation method][rust-install]. Rust also provides first class [support][editor-tools] for many source code editors.
 
