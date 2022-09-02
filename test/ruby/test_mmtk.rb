@@ -37,7 +37,8 @@ class TestMMTk < Test::Unit::TestCase
   def test_enable
     ENABLE_OPTIONS.each do |version_args|
       assert_in_out_err(['--version'] + version_args) do |stdout, stderr|
-        assert_equal(RUBY_DESCRIPTION, stdout.first)
+        # Need to scrub the description because --mmtk etc will use the default plan
+        assert_equal(scrub_desc(RUBY_DESCRIPTION), scrub_desc(stdout.first))
         assert_equal([], stderr)
       end
     end
@@ -47,7 +48,8 @@ class TestMMTk < Test::Unit::TestCase
     ENABLE_OPTIONS.each do |version_args|
       mmtk_child_env = {'RUBYOPT' => version_args.join(' ')}
       assert_in_out_err([mmtk_child_env, '--version'], '') do |stdout, stderr|
-        assert_equal(RUBY_DESCRIPTION, stdout.first)
+        # Need to scrub the description because --mmtk etc will use the default plan
+        assert_equal(scrub_desc(RUBY_DESCRIPTION), scrub_desc(stdout.first))
         assert_equal([], stderr)
       end
     end
@@ -106,5 +108,9 @@ class TestMMTk < Test::Unit::TestCase
     assert_operator(GC.stat(:mmtk_last_heap_address), :>, GC.stat(:mmtk_starting_heap_address))
     assert_operator(GC.stat(:mmtk_free_bytes), :<=, GC.stat(:mmtk_total_bytes))
     assert_operator(GC.stat(:mmtk_used_bytes), :<=, GC.stat(:mmtk_total_bytes))
+  end
+
+  def scrub_desc(desc)
+    desc.gsub(/\((MarkSweep|NoGC)\)/, '(XGC)')
   end
 end
