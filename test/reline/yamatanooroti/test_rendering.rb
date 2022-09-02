@@ -1400,6 +1400,18 @@ begin
       EOC
     end
 
+    def test_bracket_newline_indent
+      start_terminal(5, 30, %W{ruby -I#{@pwd}/lib #{@pwd}/test/reline/yamatanooroti/multiline_repl --auto-indent}, startup_message: 'Multiline REPL.')
+      write("[\n")
+      write("1")
+      close
+      assert_screen(<<~EOC)
+        Multiline REPL.
+        prompt> [
+        prompt>   1
+      EOC
+    end
+
     def write_inputrc(content)
       File.open(@inputrc_file, 'w') do |f|
         f.write content
