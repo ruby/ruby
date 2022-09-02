@@ -3102,7 +3102,7 @@ is_readable_console(SOCKET sock) /* call this for console only */
     RUBY_CRITICAL {
         if (PeekConsoleInputW((HANDLE)sock, &ir, 1, &n) && n > 0) {
             if (ir.EventType == KEY_EVENT && ir.Event.KeyEvent.bKeyDown &&
-                ir.Event.KeyEvent.uChar.AsciiChar) {
+                ir.Event.KeyEvent.uChar.UnicodeChar) {
                 ret = 1;
             }
             else {
