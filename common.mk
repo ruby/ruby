@@ -839,6 +839,8 @@ extconf: $(PREP)
 	$(Q) $(MAKEDIRS) "$(EXTCONFDIR)"
 	$(RUNRUBY) -C "$(EXTCONFDIR)" $(EXTCONF) $(EXTCONFARGS)
 
+rbconfig.rb: $(RBCONFIG)
+
 $(RBCONFIG): $(tooldir)/mkconfig.rb config.status $(srcdir)/version.h
 	$(Q)$(BOOTSTRAPRUBY) -n \
 	-e 'BEGIN{version=ARGV.shift;mis=ARGV.dup}' \

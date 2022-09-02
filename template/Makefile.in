@@ -355,10 +355,6 @@ pre-install-local:: pkgconfig-data
 ruby-runner.h: template/ruby-runner.h.in config.status
 		@./config.status --file=$@:$(srcdir)/template/$(@F).in
 
-$(RBCONFIG): $(PREP)
-
-rbconfig.rb: $(RBCONFIG)
-
 install-cross: $(arch)-fake.rb $(RBCONFIG) rbconfig.rb $(arch_hdrdir)/ruby/config.h \
 	$(LIBRUBY_A) $(LIBRUBY_SO) $(ARCHFILE) pkgconfig-data
 	$(ECHO) installing cross-compiling stuff
@@ -671,7 +667,6 @@ $(INSNS): $(srcdir)/insns.def vm_opts.h \
 	$(ECHO) generating $@
 	$(Q) $(BASERUBY) -Ku $(tooldir)/insns2vm.rb $(INSNS2VMOPT) $@
 
-verconf.h: $(RBCONFIG)
 
 loadpath: verconf.h
 	@$(CPP) $(XCFLAGS) $(CPPFLAGS) $(srcdir)/loadpath.c | \
