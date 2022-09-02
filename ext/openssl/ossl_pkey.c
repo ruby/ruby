@@ -104,6 +104,42 @@ ossl_pkey_read_generic(BIO *bio, VALUE pass)
     /* Then check PEM; multiple OSSL_DECODER_from_bio() calls may be needed */
     if (OSSL_DECODER_CTX_set_input_type(dctx, "PEM") != 1)
         goto out;
+    /*
+     * First check for private key formats. This is to keep compatibility with
+     * ruby/openssl < 3.0 which decoded the following as a private key.
+     *
+     *     $ openssl ecparam -name prime256v1 -genkey -outform PEM
+     *     -----BEGIN EC PARAMETERS-----
+     *     BggqhkjOPQMBBw==
+     *     -----END EC PARAMETERS-----
+     *     -----BEGIN EC PRIVATE KEY-----
+     *     MHcCAQEEIAG8ugBbA5MHkqnZ9ujQF93OyUfL9tk8sxqM5Wv5tKg5oAoGCCqGSM49
+     *     AwEHoUQDQgAEVcjhJfkwqh5C7kGuhAf8XaAjVuG5ADwb5ayg/cJijCgs+GcXeedj
+     *     86avKpGH84DXUlB23C/kPt+6fXYlitUmXQ==
+     *     -----END EC PRIVATE KEY-----
+     *
+     * While the first PEM block is a proper encoding of ECParameters, thus
+     * OSSL_DECODER_from_bio() would pick it up, ruby/openssl used to return
+     * the latter instead. Existing applications expect this behavior.
+     *
+     * Note that normally, the input is supposed to contain a single decodable
+     * PEM block only, so this special handling should not create a new problem.
+     */
+    OSSL_DECODER_CTX_set_selection(dctx, EVP_PKEY_KEYPAIR);
+    while (1) {
+        if (OSSL_DECODER_from_bio(dctx, bio) == 1)
+            goto out;
+        if (BIO_eof(bio))
+            break;
+        pos2 = BIO_tell(bio);
+        if (pos2 < 0 || pos2 <= pos)
+            break;
+        ossl_clear_error();
+        pos = pos2;
+    }
+
+    OSSL_BIO_reset(bio);
+    OSSL_DECODER_CTX_set_selection(dctx, 0);
     while (1) {
         if (OSSL_DECODER_from_bio(dctx, bio) == 1)
             goto out;
