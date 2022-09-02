@@ -61,8 +61,10 @@ class OpenSSL::TestEC < OpenSSL::PKeyTestCase
   def test_generate_key
     ec = OpenSSL::PKey::EC.new("prime256v1")
     assert_equal false, ec.private?
+    assert_raise(OpenSSL::PKey::ECError) { ec.to_der }
     ec.generate_key!
     assert_equal true, ec.private?
+    assert_nothing_raised { ec.to_der }
   end if !openssl?(3, 0, 0)
 
   def test_marshal
