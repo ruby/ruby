@@ -65,12 +65,18 @@ AC_ARG_WITH(baseruby,
 		AC_PATH_PROG([BASERUBY], [ruby], [false])
 	])
 AS_IF([test "$HAVE_BASERUBY" != no -a "`RUBYOPT=- $BASERUBY --disable=gems -e 'print 42 if RUBY_VERSION > "2.2"' 2>/dev/null`" = 42], [
+    AS_CASE(["$build_os"], [mingw*], [
+        # Can MSys shell run a command with a drive letter?
+        RUBYOPT=- `cygpath -ma "$BASERUBY"` --disable=gems -e exit 2>/dev/null || HAVE_BASERUBY=no
+    ])
     BASERUBY="$BASERUBY --disable=gems"
     BASERUBY_VERSION=`$BASERUBY -v`
     $BASERUBY -C "$srcdir" tool/downloader.rb -d tool -e gnu config.guess config.sub >&AS_MESSAGE_FD
 ], [
-    BASERUBY="echo executable host ruby is required.  use --with-baseruby option.; false"
     HAVE_BASERUBY=no
+])
+AS_IF([test "$HAVE_BASERUBY" = no], [
+    BASERUBY="echo executable host ruby is required.  use --with-baseruby option.; false"
 ])
 AC_SUBST(BASERUBY)
 AC_SUBST(HAVE_BASERUBY)
@@ -3364,7 +3370,7 @@ AS_IF([test x"$cross_compiling" = xyes], [
   RUNRUBY_COMMAND='$(MINIRUBY) $(tooldir)/runruby.rb --extout=$(EXTOUT) $(RUNRUBYOPT)'
   RUNRUBY='$(RUNRUBY_COMMAND) --'
   XRUBY='$(RUNRUBY)'
-  AS_CASE(["$HAVE_BASERUBY:$build_os"], [no:*|*:mingw*], [BOOTSTRAPRUBY='$(MINIRUBY)'])
+  AS_CASE(["$HAVE_BASERUBY"], [no], [BOOTSTRAPRUBY='$(MINIRUBY)'])
   TEST_RUNNABLE=yes
   CROSS_COMPILING=no
 ])
