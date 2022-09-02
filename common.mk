@@ -82,7 +82,7 @@ EXTSOLIBS     =
 MINIOBJS      = $(ARCHMINIOBJS) miniinit.$(OBJEXT) dmyext.$(OBJEXT)
 ENC_MK        = enc.mk
 MAKE_ENC      = -f $(ENC_MK) V="$(V)" UNICODE_HDR_DIR="$(UNICODE_HDR_DIR)" \
-		RUBY="$(MINIRUBY)" MINIRUBY="$(MINIRUBY)" $(mflags)
+		RUBY="$(BOOTSTRAPRUBY)" MINIRUBY="$(BOOTSTRAPRUBY)" $(mflags)
 
 COMMONOBJS    = array.$(OBJEXT) \
 		ast.$(OBJEXT) \
@@ -755,9 +755,12 @@ fake: $(CROSS_COMPILING)-fake
 yes-fake: $(arch)-fake.rb $(RBCONFIG) PHONY
 no-fake -fake: PHONY
 
-# really doesn't depend on .o, just ensure newer than headers which
-# version.o depends on.
-$(arch)-fake.rb: $(srcdir)/template/fake.rb.in $(tooldir)/generic_erb.rb version.$(OBJEXT) miniruby$(EXEEXT)
+$(HAVE_BASERUBY:no=)$(arch)-fake.rb: miniruby$(EXEEXT)
+
+# actually depending on other headers more.
+$(arch)-fake.rb: $(top_srcdir)/revision.h $(top_srcdir)/version.h $(srcdir)/version.c {$(VPATH)}vm_opts.h
+
+$(arch)-fake.rb: $(srcdir)/template/fake.rb.in $(tooldir)/generic_erb.rb
 	$(ECHO) generating $@
 	$(Q) $(CPP) -DRUBY_EXPORT $(INCFLAGS) $(CPPFLAGS) "$(srcdir)/version.c" | \
 	$(BOOTSTRAPRUBY) "$(tooldir)/generic_erb.rb" -o $@ "$(srcdir)/template/fake.rb.in" \
@@ -841,6 +844,7 @@ extconf: $(PREP)
 
 rbconfig.rb: $(RBCONFIG)
 
+$(HAVE_BASERUBY:no=)$(RBCONFIG): $(PREP)
 $(RBCONFIG): $(tooldir)/mkconfig.rb config.status $(srcdir)/version.h
 	$(Q)$(BOOTSTRAPRUBY) -n \
 	-e 'BEGIN{version=ARGV.shift;mis=ARGV.dup}' \
@@ -887,9 +891,10 @@ libtrans trans: {$(VPATH)}transdb.h
 ENC_HEADERS = $(srcdir)/enc/jis/props.h
 # Use MINIRUBY which loads fake.rb for cross compiling
 $(ENC_MK): $(srcdir)/enc/make_encmake.rb $(srcdir)/enc/Makefile.in $(srcdir)/enc/depend \
-	   $(srcdir)/enc/encinit.c.erb $(ENC_HEADERS) $(srcdir)/lib/mkmf.rb $(RBCONFIG) fake
+	   $(srcdir)/enc/encinit.c.erb $(ENC_HEADERS) $(srcdir)/lib/mkmf.rb $(RBCONFIG) $(HAVE_BASERUBY)-fake
 	$(ECHO) generating $@
-	$(Q) $(MINIRUBY) $(srcdir)/enc/make_encmake.rb --builtin-encs="$(BUILTIN_ENCOBJS)" --builtin-transes="$(BUILTIN_TRANSOBJS)" --module$(ENCSTATIC) $(ENCS) $@
+	$(Q) $(BOOTSTRAPRUBY) -r./$(arch)-fake $(srcdir)/enc/make_encmake.rb \
+	  --builtin-encs="$(BUILTIN_ENCOBJS)" --builtin-transes="$(BUILTIN_TRANSOBJS)" --module$(ENCSTATIC) $(ENCS) $@
 
 .PRECIOUS: $(MKFILES)
 
@@ -1130,13 +1135,13 @@ node_name.inc: $(tooldir)/node_name.rb $(srcdir)/node.h
 	$(ECHO) generating $@
 	$(Q) $(BASERUBY) -n $(tooldir)/node_name.rb < $(srcdir)/node.h > $@
 
-encdb.h: $(PREP) $(tooldir)/generic_erb.rb $(srcdir)/template/encdb.h.tmpl
+encdb.h: $(RBCONFIG) $(tooldir)/generic_erb.rb $(srcdir)/template/encdb.h.tmpl
 	$(ECHO) generating $@
-	$(Q) $(MINIRUBY) $(tooldir)/generic_erb.rb -c -o $@ $(srcdir)/template/encdb.h.tmpl $(srcdir)/enc enc
+	$(Q) $(BOOTSTRAPRUBY) $(tooldir)/generic_erb.rb -c -o $@ $(srcdir)/template/encdb.h.tmpl $(srcdir)/enc enc
 
-transdb.h: $(PREP) srcs-enc $(tooldir)/generic_erb.rb $(srcdir)/template/transdb.h.tmpl
+transdb.h: $(RBCONFIG) srcs-enc $(tooldir)/generic_erb.rb $(srcdir)/template/transdb.h.tmpl
 	$(ECHO) generating $@
-	$(Q) $(MINIRUBY) $(tooldir)/generic_erb.rb -c -o $@ $(srcdir)/template/transdb.h.tmpl $(srcdir)/enc/trans enc/trans
+	$(Q) $(BOOTSTRAPRUBY) $(tooldir)/generic_erb.rb -c -o $@ $(srcdir)/template/transdb.h.tmpl $(srcdir)/enc/trans enc/trans
 
 enc/encinit.c: $(ENC_MK) $(srcdir)/enc/encinit.c.erb
 

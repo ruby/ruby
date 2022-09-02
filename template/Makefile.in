@@ -166,6 +166,7 @@ XRUBY_LIBDIR = @XRUBY_LIBDIR@
 XRUBY_RUBYLIBDIR = @XRUBY_RUBYLIBDIR@
 XRUBY_RUBYHDRDIR = @XRUBY_RUBYHDRDIR@
 BOOTSTRAPRUBY = @BOOTSTRAPRUBY@
+BOOTSTRAPRUBY_COMMAND = @BOOTSTRAPRUBY_COMMAND@
 
 COROUTINE_H = @X_COROUTINE_H@
 COROUTINE_OBJ = $(COROUTINE_H:.h=.$(OBJEXT))
@@ -668,7 +669,6 @@ $(INSNS): $(srcdir)/insns.def vm_opts.h \
 	  $(tooldir)/ruby_vm/views/vmtc.inc.erb
 	$(ECHO) generating $@
 	$(Q) $(BASERUBY) -Ku $(tooldir)/insns2vm.rb $(INSNS2VMOPT) $@
-
 
 loadpath: verconf.h
 	@$(CPP) $(XCFLAGS) $(CPPFLAGS) $(srcdir)/loadpath.c | \

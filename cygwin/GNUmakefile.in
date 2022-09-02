@@ -54,7 +54,7 @@ $(RUBY_EXP) $(LIBRUBY_SO): $(DLL_BASE_NAME).res.$(OBJEXT)
 
 %.rc: $(RBCONFIG) $(srcdir)/revision.h $(srcdir)/win32/resource.rb
 	$(ECHO) generating $@
-	$(Q) $(MINIRUBY) $(srcdir)/win32/resource.rb \
+	$(Q) $(BOOTSTRAPRUBY_COMMAND) $(srcdir)/win32/resource.rb \
 	  -ruby_name=$(RUBY_INSTALL_NAME) -rubyw_name=$(RUBYW_INSTALL_NAME) \
 	  -so_name=$(DLL_BASE_NAME) -output=$(*F) \
 	  . $(icondirs) $(srcdir)/win32
@@ -96,7 +96,7 @@ $(LIBRUBY_SO): $(RUBYDEF)
 
 $(RUBYDEF): $(LIBRUBY_A) $(PREP) $(RBCONFIG)
 	$(ECHO) generating $@
-	$(Q) $(MINIRUBY) $(srcdir)/win32/mkexports.rb -output=$@ $(LIBRUBY_A)
+	$(Q) $(BOOTSTRAPRUBY_COMMAND) $(srcdir)/win32/mkexports.rb -output=$@ $(LIBRUBY_A)
 
 clean-local::
 	@$(RM) $(RUBYDEF)

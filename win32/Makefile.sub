@@ -358,8 +358,10 @@ RUNRUBY = $(RUNRUBY) "$(tooldir)/runruby.rb" --extout="$(EXTOUT)" $(RUNRUBYOPT) 
 !if "$(CROSS_COMPILING)" == "yes"
 XRUBY = $(MINIRUBY)
 BOOTSTRAPRUBY = $(BASERUBY)
+BOOTSTRAPRUBY_COMMAND = $(BOOTSTRAPRUBY) -r./$(arch)-fake
 !else
 BOOTSTRAPRUBY = $(MINIRUBY)
+BOOTSTRAPRUBY_COMMAND = $(BOOTSTRAPRUBY)
 XRUBY = $(RUNRUBY)
 !endif
 BTESTRUBY = $(MINIRUBY) -r./$(arch)-fake
@@ -1088,6 +1090,10 @@ s,@ruby_pc@,$(ruby_pc),;t t
 s,@MJIT_SUPPORT@,$(MJIT_SUPPORT),;t t
 <<KEEP
 
+!if "$(HAVE_BASERUBY)" != "yes" || "$(CROSS_COMPILING)" == "yes"
+$(RBCONFIG): $(PREP)
+!endif
+
 miniruby: miniruby$(EXEEXT)
 
 miniruby$(EXEEXT):
@@ -1167,7 +1173,7 @@ $(LIBRUBY_SO):	$(LIBRUBY_A) $(DLDOBJS) $(RUBYDEF) $(RUBY_SO_NAME).res
 
 $(RUBYDEF):	$(LIBRUBY_A) $(RBCONFIG)
 		$(ECHO) generating $(@:\=/)
-		$(Q) $(MINIRUBY) $(srcdir)/win32/mkexports.rb \
+		$(Q) $(BOOTSTRAPRUBY_COMMAND) $(srcdir)/win32/mkexports.rb \
 		  -output=$@ -arch=$(ARCH) $(LIBRUBY_A)
 
 {$(win_srcdir)}.def.lib:
@@ -1212,7 +1218,7 @@ clean-enc distclean-enc realclean-enc:
 !endif
 
 $(RCFILES): $(RBCONFIG) $(srcdir)/revision.h $(srcdir)/win32/resource.rb
-		@$(MINIRUBY) $(srcdir)/win32/resource.rb \
+		@$(BOOTSTRAPRUBY_COMMAND) $(srcdir)/win32/resource.rb \
 			-ruby_name=$(RUBY_INSTALL_NAME) \
 			-rubyw_name=$(RUBYW_INSTALL_NAME) \
 			-so_name=$(RUBY_SO_NAME) \
