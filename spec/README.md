@@ -10,6 +10,14 @@ To run rspec for bundler:
 make test-bundler
 ```
 
+or run rspec with parallel execution:
+
+```bash
+make test-bundler-parallel
+```
+
+If you specify `BUNDLER_SPECS=foo/bar_spec.rb` then only `spec/bundler/foo/bar_spec.rb` will be run.
+
 # spec/ruby
 
 ruby/spec (https://github.com/ruby/spec/) is
