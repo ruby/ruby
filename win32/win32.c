@@ -3105,6 +3105,11 @@ is_readable_console(SOCKET sock) /* call this for console only */
                 ir.Event.KeyEvent.uChar.UnicodeChar) {
                 ret = 1;
             }
+            else if (ir.EventType == KEY_EVENT && !ir.Event.KeyEvent.bKeyDown &&
+                ir.Event.KeyEvent.wVirtualKeyCode == 18 /* VK_MENU */ &&
+                ir.Event.KeyEvent.uChar.UnicodeChar) {
+                ret = 1;
+            }
             else {
                 ReadConsoleInputW((HANDLE)sock, &ir, 1, &n);
             }
