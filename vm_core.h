@@ -256,9 +256,19 @@ STATIC_ASSERT(sizeof_iseq_inline_constant_cache_entry,
 
 struct iseq_inline_constant_cache {
     struct iseq_inline_constant_cache_entry *entry;
-    // For YJIT: the index to the opt_getinlinecache instruction in the same iseq.
-    // It's set during compile time and constant once set.
-    unsigned get_insn_idx;
+
+    /**
+     * A null-terminated list of ids, used to represent a constant's path
+     * idNULL is used to represent the :: prefix, and 0 is used to donate the end
+     * of the list.
+     *
+     * For example
+     *   FOO        {rb_intern("FOO"), 0}
+     *   FOO::BAR   {rb_intern("FOO"), rb_intern("BAR"), 0}
+     *   ::FOO      {idNULL, rb_intern("FOO"), 0}
+     *   ::FOO::BAR {idNULL, rb_intern("FOO"), rb_intern("BAR"), 0}
+     */
+    const ID *segments;
 };
 
 struct iseq_inline_iv_cache_entry {
@@ -338,6 +348,9 @@ struct rb_mjit_unit;
 typedef uintptr_t iseq_bits_t;
 
 #define ISEQ_IS_SIZE(body) (body->ic_size + body->ivc_size + body->ise_size + body->icvarc_size)
+
+/* [ TS_IVC | TS_ICVARC | TS_ISE | TS_IC ] */
+#define ISEQ_IS_IC_ENTRY(body, idx) (body->is_entries[(idx) + body->ise_size + body->icvarc_size + body->ivc_size].ic_cache);
 
 /* instruction sequence type */
 enum rb_iseq_type {

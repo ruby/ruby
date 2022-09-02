@@ -17,7 +17,6 @@
 %       # JIT: Inline everything in IC, and cancel the slow path
         fprintf(f, "    if (vm_inlined_ic_hit_p(0x%"PRIxVALUE", 0x%"PRIxVALUE", (const rb_cref_t *)0x%"PRIxVALUE", reg_cfp->ep)) {", ice->flags, ice->value, (VALUE)ice->ic_cref);
         fprintf(f, "        stack[%d] = 0x%"PRIxVALUE";\n", b->stack_size, ice->value);
-        fprintf(f, "        goto label_%d;\n", pos + insn_len(insn) + (int)dst);
         fprintf(f, "    }");
         fprintf(f, "    else {");
         fprintf(f, "        reg_cfp->sp = vm_base_ptr(reg_cfp) + %d;\n", b->stack_size);

@@ -12,7 +12,6 @@ use crate::yjit::yjit_enabled_p;
 
 use std::collections::{HashMap, HashSet};
 use std::mem;
-use std::os::raw::c_void;
 
 // Invariants to track:
 // assume_bop_not_redefined(jit, INTEGER_REDEFINED_OP_FLAG, BOP_PLUS)
@@ -173,57 +172,41 @@ pub fn assume_single_ractor_mode(jit: &mut JITState, ocb: &mut OutlinedCb) -> bo
 /// subsequent opt_setinlinecache and find all of the name components that are
 /// associated with this constant (which correspond to the getconstant
 /// arguments).
-pub fn assume_stable_constant_names(jit: &mut JITState, ocb: &mut OutlinedCb) {
+pub fn assume_stable_constant_names(jit: &mut JITState, ocb: &mut OutlinedCb, idlist: *const ID) {
     /// Tracks that a block is assuming that the name component of a constant
     /// has not changed since the last call to this function.
-    unsafe extern "C" fn assume_stable_constant_name(
-        code: *mut VALUE,
-        insn: VALUE,
-        index: u64,
-        data: *mut c_void,
-    ) -> bool {
-        if insn.as_u32() == YARVINSN_opt_setinlinecache {
-            return false;
+    fn assume_stable_constant_name(
+        jit: &mut JITState,
+        id: ID,
+    ) {
+        if id == idNULL as u64 {
+            // Used for :: prefix
+            return;
         }
 
-        if insn.as_u32() == YARVINSN_getconstant {
-            let jit = &mut *(data as *mut JITState);
+        let invariants = Invariants::get_instance();
+        invariants
+            .constant_state_blocks
+            .entry(id)
+            .or_default()
+            .insert(jit.get_block());
+        invariants
+            .block_constant_states
+            .entry(jit.get_block())
+            .or_default()
+            .insert(id);
+    }
 
-            // The first operand to GETCONSTANT is always the ID associated with
-            // the constant lookup. We are grabbing this out in order to
-            // associate this block with the stability of this constant name.
-            let id = code.add(index.as_usize() + 1).read().as_u64() as ID;
 
-            let invariants = Invariants::get_instance();
-            invariants
-                .constant_state_blocks
-                .entry(id)
-                .or_default()
-                .insert(jit.get_block());
-            invariants
-                .block_constant_states
-                .entry(jit.get_block())
-                .or_default()
-                .insert(id);
+    for i in 0.. {
+        match unsafe { *idlist.offset(i) } {
+            0 => break, // End of NULL terminated list
+            id => assume_stable_constant_name(jit, id),
         }
-
-        true
     }
 
     jit_ensure_block_entry_exit(jit, ocb);
 
-    unsafe {
-        let iseq = jit.get_iseq();
-        let encoded = get_iseq_body_iseq_encoded(iseq);
-        let start_index = jit.get_pc().offset_from(encoded);
-
-        rb_iseq_each(
-            iseq,
-            start_index.try_into().unwrap(),
-            Some(assume_stable_constant_name),
-            jit as *mut _ as *mut c_void,
-        );
-    };
 }
 
 /// Called when a basic operator is redefined. Note that all the blocks assuming
@@ -450,7 +433,7 @@ pub fn block_assumptions_free(blockref: &BlockRef) {
 /// Invalidate the block for the matching opt_getinlinecache so it could regenerate code
 /// using the new value in the constant cache.
 #[no_mangle]
-pub extern "C" fn rb_yjit_constant_ic_update(iseq: *const rb_iseq_t, ic: IC) {
+pub extern "C" fn rb_yjit_constant_ic_update(iseq: *const rb_iseq_t, ic: IC, insn_idx: u32) {
     // If YJIT isn't enabled, do nothing
     if !yjit_enabled_p() {
         return;
@@ -464,34 +447,33 @@ pub extern "C" fn rb_yjit_constant_ic_update(iseq: *const rb_iseq_t, ic: IC) {
 
     with_vm_lock(src_loc!(), || {
         let code = unsafe { get_iseq_body_iseq_encoded(iseq) };
-        let get_insn_idx = unsafe { (*ic).get_insn_idx };
 
         // This should come from a running iseq, so direct threading translation
         // should have been done
         assert!(unsafe { FL_TEST(iseq.into(), VALUE(ISEQ_TRANSLATED as usize)) } != VALUE(0));
-        assert!(get_insn_idx < unsafe { get_iseq_encoded_size(iseq) });
+        assert!(insn_idx < unsafe { get_iseq_encoded_size(iseq) });
 
-        // Ensure that the instruction the get_insn_idx is pointing to is in
-        // fact a opt_getinlinecache instruction.
+        // Ensure that the instruction the insn_idx is pointing to is in
+        // fact a opt_getconstant_path instruction.
         assert_eq!(
             unsafe {
-                let opcode_pc = code.add(get_insn_idx.as_usize());
+                let opcode_pc = code.add(insn_idx.as_usize());
                 let translated_opcode: VALUE = opcode_pc.read();
                 rb_vm_insn_decode(translated_opcode)
             },
-            YARVINSN_opt_getinlinecache.try_into().unwrap()
+            YARVINSN_opt_getconstant_path.try_into().unwrap()
         );
 
         // Find the matching opt_getinlinecache and invalidate all the blocks there
         // RUBY_ASSERT(insn_op_type(BIN(opt_getinlinecache), 1) == TS_IC);
 
-        let ic_pc = unsafe { code.add(get_insn_idx.as_usize() + 2) };
+        let ic_pc = unsafe { code.add(insn_idx.as_usize() + 1) };
         let ic_operand: IC = unsafe { ic_pc.read() }.as_mut_ptr();
 
         if ic == ic_operand {
             for block in take_version_list(BlockId {
                 iseq,
-                idx: get_insn_idx,
+                idx: insn_idx,
             }) {
                 invalidate_block_version(&block);
                 incr_counter!(invalidate_constant_ic_fill);
