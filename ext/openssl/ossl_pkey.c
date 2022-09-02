@@ -99,17 +99,20 @@ ossl_pkey_read_generic(BIO *bio, VALUE pass)
     /* First check DER */
     if (OSSL_DECODER_from_bio(dctx, bio) == 1)
         goto out;
+    OSSL_BIO_reset(bio);
 
     /* Then check PEM; multiple OSSL_DECODER_from_bio() calls may be needed */
-    OSSL_BIO_reset(bio);
     if (OSSL_DECODER_CTX_set_input_type(dctx, "PEM") != 1)
         goto out;
-    while (OSSL_DECODER_from_bio(dctx, bio) != 1) {
-        if (BIO_eof(bio))
+    while (1) {
+        if (OSSL_DECODER_from_bio(dctx, bio) == 1)
             goto out;
+        if (BIO_eof(bio))
+            break;
         pos2 = BIO_tell(bio);
         if (pos2 < 0 || pos2 <= pos)
-            goto out;
+            break;
+        ossl_clear_error();
         pos = pos2;
     }
 
