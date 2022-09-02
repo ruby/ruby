@@ -756,6 +756,7 @@ w_objivar(VALUE obj, struct dump_call_arg *arg)
     w_ivar_each(obj, num, arg);
 }
 
+#if SIZEOF_LONG > 4
 // Optimized dump for fixnum larger than 31-bits
 static void
 w_bigfixnum(VALUE obj, struct dump_arg *arg)
@@ -803,6 +804,7 @@ w_bigfixnum(VALUE obj, struct dump_arg *arg)
 
     RUBY_ASSERT(num == 0);
 }
+#endif
 
 static void
 w_remember(VALUE obj, struct dump_arg *arg)
