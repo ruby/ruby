@@ -4330,7 +4330,7 @@ time_floor(int argc, VALUE *argv, VALUE time)
 
 /*
  * call-seq:
- *   time.ceil(ndigits = 0)   -> new_time
+ *   ceil(ndigits = 0)   -> new_time
  *
  * Returns a new \Time object whose numerical value
  * is greater than or equal to +self+ truncated to precision +ndigits+:
