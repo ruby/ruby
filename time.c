@@ -4392,7 +4392,7 @@ time_ceil(int argc, VALUE *argv, VALUE time)
  *  Note: the second value may be 60 when there is a
  *  {leap second}[https://en.wikipedia.org/wiki/Leap_second].
  *
- *  Related: Time#year, Time#mon, etc.
+ *  Related: Time#year, Time#mon, Time#min.
  */
 
 static VALUE
@@ -4416,7 +4416,7 @@ time_sec(VALUE time)
  *    # => 2000-01-02 03:04:05 +000006
  *    t.min # => 4
  *
- *  Related: Time#year, Time#mon, etc.
+ *  Related: Time#year, Time#mon, Time#sec.
  */
 
 static VALUE
@@ -4440,7 +4440,7 @@ time_min(VALUE time)
  *    # => 2000-01-02 03:04:05 +000006
  *    t.hour # => 3
  *
- *  Related: Time#year, Time#mon, etc.
+ *  Related: Time#year, Time#mon, Time#min.
  */
 
 static VALUE
@@ -4466,7 +4466,7 @@ time_hour(VALUE time)
  *
  *  Time#day is an alias for Time#mday.
  *
- *  Related: Time#year, Time#mon, etc.
+ *  Related: Time#year, Time#hour, Time#min.
  */
 
 static VALUE
@@ -4481,7 +4481,7 @@ time_mday(VALUE time)
 
 /*
  *  call-seq:
- *    mon   -> integer
+ *    mon -> integer
  *
  *  Returns the integer month of the year for +self+,
  *  in range (1..12):
@@ -4492,7 +4492,7 @@ time_mday(VALUE time)
  *
  *  Time#month is an alias for Time#mday.
  *
- *  Related: Time#year, Time#mday, etc.
+ *  Related: Time#year, Time#hour, Time#min.
  */
 
 static VALUE
@@ -4515,7 +4515,7 @@ time_mon(VALUE time)
  *    # => 2000-01-02 03:04:05 +000006
  *    t.year # => 2000
  *
- *  Related: Time#mon, Time#mday, etc.
+ *  Related: Time#mon, Time#hour, Time#min.
  */
 
 static VALUE
@@ -4540,7 +4540,7 @@ time_year(VALUE time)
  *    t.wday    # => 0
  *    t.sunday? # => true
  *
- *  Related: Time#year, Time#mon, etc.
+ *  Related: Time#year, Time#hour, Time#min.
  */
 
 static VALUE
@@ -4559,12 +4559,14 @@ time_wday(VALUE time)
 
 /*
  *  call-seq:
- *     time.sunday? -> true or false
+ *    sunday? -> true or false
  *
- *  Returns +true+ if _time_ represents Sunday.
+ *  Returns +true+ if +self+ represents a Sunday, +false+ otherwise:
  *
- *     t = Time.local(1990, 4, 1)       #=> 1990-04-01 00:00:00 -0600
- *     t.sunday?                        #=> true
+ *    t = Time.utc(2000, 1, 2) # => 2000-01-02 00:00:00 UTC
+ *    t.sunday?                # => true
+ *
+ *  Related: Time#monday?, Time#tuesday?, Time#wednesday?.
  */
 
 static VALUE
@@ -4575,12 +4577,14 @@ time_sunday(VALUE time)
 
 /*
  *  call-seq:
- *     time.monday? -> true or false
+ *    monday? -> true or false
  *
- *  Returns +true+ if _time_ represents Monday.
+ *  Returns +true+ if +self+ represents a Monday, +false+ otherwise:
  *
- *     t = Time.local(2003, 8, 4)       #=> 2003-08-04 00:00:00 -0500
- *     t.monday?                        #=> true
+ *    t = Time.utc(2000, 1, 3) # => 2000-01-03 00:00:00 UTC
+ *    t.monday?                # => true
+ *
+ *  Related: Time#tuesday?, Time#wednesday?, Time#thursday?.
  */
 
 static VALUE
@@ -4591,12 +4595,14 @@ time_monday(VALUE time)
 
 /*
  *  call-seq:
- *     time.tuesday? -> true or false
+ *    tuesday? -> true or false
  *
- *  Returns +true+ if _time_ represents Tuesday.
+ *  Returns +true+ if +self+ represents a Tuesday, +false+ otherwise:
  *
- *     t = Time.local(1991, 2, 19)      #=> 1991-02-19 00:00:00 -0600
- *     t.tuesday?                       #=> true
+ *    t = Time.utc(2000, 1, 4) # => 2000-01-04 00:00:00 UTC
+ *    t.tuesday?               # => true
+ *
+ *  Related: Time#wednesday?, Time#thursday?, Time#friday?.
  */
 
 static VALUE
@@ -4607,12 +4613,14 @@ time_tuesday(VALUE time)
 
 /*
  *  call-seq:
- *     time.wednesday? -> true or false
+ *    wednesday? -> true or false
  *
- *  Returns +true+ if _time_ represents Wednesday.
+ *  Returns +true+ if +self+ represents a Wednesday, +false+ otherwise:
  *
- *     t = Time.local(1993, 2, 24)      #=> 1993-02-24 00:00:00 -0600
- *     t.wednesday?                     #=> true
+ *    t = Time.utc(2000, 1, 5) # => 2000-01-05 00:00:00 UTC
+ *    t.wednesday?             # => true
+ *
+ *  Related: Time#thursday?, Time#friday?, Time#saturday?.
  */
 
 static VALUE
@@ -4623,12 +4631,14 @@ time_wednesday(VALUE time)
 
 /*
  *  call-seq:
- *     time.thursday? -> true or false
+ *    thursday? -> true or false
  *
- *  Returns +true+ if _time_ represents Thursday.
+ *  Returns +true+ if +self+ represents a Thursday, +false+ otherwise:
  *
- *     t = Time.local(1995, 12, 21)     #=> 1995-12-21 00:00:00 -0600
- *     t.thursday?                      #=> true
+ *    t = Time.utc(2000, 1, 6) # => 2000-01-06 00:00:00 UTC
+ *    t.thursday?              # => true
+ *
+ *  Related: Time#friday?, Time#saturday?, Time#sunday?.
  */
 
 static VALUE
@@ -4639,12 +4649,14 @@ time_thursday(VALUE time)
 
 /*
  *  call-seq:
- *     time.friday? -> true or false
+ *    friday? -> true or false
  *
- *  Returns +true+ if _time_ represents Friday.
+ *  Returns +true+ if +self+ represents a Friday, +false+ otherwise:
  *
- *     t = Time.local(1987, 12, 18)     #=> 1987-12-18 00:00:00 -0600
- *     t.friday?                        #=> true
+ *    t = Time.utc(2000, 1, 7) # => 2000-01-07 00:00:00 UTC
+ *    t.friday?                # => true
+ *
+ *  Related: Time#saturday?, Time#sunday?, Time#monday?.
  */
 
 static VALUE
@@ -4655,12 +4667,14 @@ time_friday(VALUE time)
 
 /*
  *  call-seq:
- *     time.saturday? -> true or false
+ *    saturday? -> true or false
  *
- *  Returns +true+ if _time_ represents Saturday.
+ *  Returns +true+ if +self+ represents a Saturday, +false+ otherwise:
  *
- *     t = Time.local(2006, 6, 10)      #=> 2006-06-10 00:00:00 -0500
- *     t.saturday?                      #=> true
+ *    t = Time.utc(2000, 1, 1) # => 2000-01-01 00:00:00 UTC
+ *    t.saturday?              # => true
+ *
+ *  Related: Time#sunday?, Time#monday?, Time#tuesday?.
  */
 
 static VALUE
