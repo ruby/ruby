@@ -88,8 +88,10 @@ yjit_task:
       --color=always
       --tty=no
     matrix:
-      CC: clang-12
-      CC: gcc-11
+      - CC: clang-12
+        configure: --enable-yjit=dev
+      - CC: gcc-11
+        configure: --enable-yjit
   id_script: id
   set_env_script:
     # Set `GNUMAKEFLAGS`, because the flags are GNU make specific. Note using
@@ -113,7 +115,7 @@ yjit_task:
     --disable-install-doc
     --with-ext=-test-/cxxanyargs,+
     --prefix="$RUBY_PREFIX"
-    --enable-yjit=dev
+    $configure
   make_miniruby_script: source $HOME/.cargo/env && make miniruby
   make_bindgen_script: |
     if [[ "$CC" = "clang-12" ]]; then
