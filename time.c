@@ -4160,13 +4160,16 @@ time_add(const struct time_object *tobj, VALUE torig, VALUE offset, int sign)
 
 /*
  *  call-seq:
- *     time + numeric -> time
+ *    self + addend -> new_time
  *
- *  Adds some number of seconds (possibly including subsecond) to
- *  _time_ and returns that value as a new Time object.
+ *  Returns a new \Time object whose value is the sum of the numeric value
+ *  of +self+ and the given numeric +addend+:
  *
- *     t = Time.now         #=> 2020-07-20 22:14:43.170490982 +0900
- *     t + (60 * 60 * 24)   #=> 2020-07-21 22:14:43.170490982 +0900
+ *    t = Time.new(2000) # => 2000-01-01 00:00:00 -0600
+ *    t + (60 * 60 * 24) # => 2000-01-02 00:00:00 -0600
+ *    t + 0.5            # => 2000-01-01 00:00:00.5 -0600
+ *
+ *  Related: Time#-.
  */
 
 static VALUE
@@ -4183,17 +4186,23 @@ time_plus(VALUE time1, VALUE time2)
 
 /*
  *  call-seq:
- *     time - other_time -> float
- *     time - numeric    -> time
+ *    self - subtrahend -> new_time or float
  *
- *  Returns a difference in seconds as a Float
- *  between _time_ and +other_time+, or subtracts the given number
- *  of seconds in +numeric+ from _time_.
+ *  When +subtrahend+ is numeric,
+ *  returns a new \Time object whose value is the difference
+ *  of the numeric value of +self+ and +subtrahend+:
  *
- *     t = Time.now       #=> 2020-07-20 22:15:49.302766336 +0900
- *     t2 = t + 2592000   #=> 2020-08-19 22:15:49.302766336 +0900
- *     t2 - t             #=> 2592000.0
- *     t2 - 2592000       #=> 2020-07-20 22:15:49.302766336 +0900
+ *    t = Time.new(2000) # => 2000-01-01 00:00:00 -0600
+ *    t - (60 * 60 * 24) # => 1999-12-31 00:00:00 -0600
+ *    t - 0.5            # => 1999-12-31 23:59:59.5 -0600
+ *
+ *  When +subtrahend+ is another \Time object,
+ *  returns a Float whose value is the difference
+ *  of the numeric values of +self+ and +subtrahend+:
+ *
+ *    t - t # => 0.0
+ *
+ *  Related: Time#+.
  */
 
 static VALUE
@@ -4228,31 +4237,30 @@ ndigits_denominator(VALUE ndigits)
 
 /*
  * call-seq:
- *   time.round([ndigits])   -> new_time
+ *   round(ndigits = 0) -> new_time
  *
- * Rounds subsecond to a given precision in decimal digits (0 digits by default).
- * It returns a new Time object.
- * +ndigits+ should be zero or a positive integer.
+ * Returns a new \Time object whose numeric value is that of +self+,
+ * rounded to precision +ndigits+:
  *
- *     t = Time.utc(2010,3,30, 5,43,25.123456789r)
- *     t                       #=> 2010-03-30 05:43:25.123456789 UTC
- *     t.round                 #=> 2010-03-30 05:43:25 UTC
- *     t.round(0)              #=> 2010-03-30 05:43:25 UTC
- *     t.round(1)              #=> 2010-03-30 05:43:25.1 UTC
- *     t.round(2)              #=> 2010-03-30 05:43:25.12 UTC
- *     t.round(3)              #=> 2010-03-30 05:43:25.123 UTC
- *     t.round(4)              #=> 2010-03-30 05:43:25.1235 UTC
+ *   t = Time.utc(2010, 3, 30, 5, 43, 25.123456789r)
+ *   t          # => 2010-03-30 05:43:25.123456789 UTC
+ *   t.round    # => 2010-03-30 05:43:25 UTC
+ *   t.round(0) # => 2010-03-30 05:43:25 UTC
+ *   t.round(1) # => 2010-03-30 05:43:25.1 UTC
+ *   t.round(2) # => 2010-03-30 05:43:25.12 UTC
+ *   t.round(3) # => 2010-03-30 05:43:25.123 UTC
+ *   t.round(4) # => 2010-03-30 05:43:25.1235 UTC
  *
- *     t = Time.utc(1999,12,31, 23,59,59)
- *     (t + 0.4).round         #=> 1999-12-31 23:59:59 UTC
- *     (t + 0.49).round        #=> 1999-12-31 23:59:59 UTC
- *     (t + 0.5).round         #=> 2000-01-01 00:00:00 UTC
- *     (t + 1.4).round         #=> 2000-01-01 00:00:00 UTC
- *     (t + 1.49).round        #=> 2000-01-01 00:00:00 UTC
- *     (t + 1.5).round         #=> 2000-01-01 00:00:01 UTC
+ *   t = Time.utc(1999, 12,31, 23, 59, 59)
+ *   t                # => 1999-12-31 23:59:59 UTC
+ *   (t + 0.4).round  # => 1999-12-31 23:59:59 UTC
+ *   (t + 0.49).round # => 1999-12-31 23:59:59 UTC
+ *   (t + 0.5).round  # => 2000-01-01 00:00:00 UTC
+ *   (t + 1.4).round  # => 2000-01-01 00:00:00 UTC
+ *   (t + 1.49).round # => 2000-01-01 00:00:00 UTC
+ *   (t + 1.5).round  # => 2000-01-01 00:00:01 UTC
  *
- *     t = Time.utc(1999,12,31, 23,59,59)     #=> 1999-12-31 23:59:59 UTC
- *     (t + 0.123456789).round(4).iso8601(6)  #=> 1999-12-31 23:59:59.1235 UTC
+ * Related: Time#ceil, Time#floor.
  */
 
 static VALUE
@@ -4278,29 +4286,28 @@ time_round(int argc, VALUE *argv, VALUE time)
 
 /*
  * call-seq:
- *   time.floor([ndigits])   -> new_time
+ *   floor(ndigits = 0) -> new_time
  *
- * Floors subsecond to a given precision in decimal digits (0 digits by default).
- * It returns a new Time object.
- * +ndigits+ should be zero or a positive integer.
+ * Returns a new \Time object whose numerical value
+ * is less than or equal to +self+ truncated to precision +ndigits+:
  *
- *     t = Time.utc(2010,3,30, 5,43,25.123456789r)
- *     t                       #=> 2010-03-30 05:43:25.123456789 UTC
- *     t.floor                 #=> 2010-03-30 05:43:25 UTC
- *     t.floor(0)              #=> 2010-03-30 05:43:25 UTC
- *     t.floor(1)              #=> 2010-03-30 05:43:25.1 UTC
- *     t.floor(2)              #=> 2010-03-30 05:43:25.12 UTC
- *     t.floor(3)              #=> 2010-03-30 05:43:25.123 UTC
- *     t.floor(4)              #=> 2010-03-30 05:43:25.1234 UTC
+ *   t = Time.utc(2010, 3, 30, 5, 43, 25.123456789r)
+ *   t           # => 2010-03-30 05:43:25.123456789 UTC
+ *   t.floor     # => 2010-03-30 05:43:25 UTC
+ *   t.floor(2)  # => 2010-03-30 05:43:25.12 UTC
+ *   t.floor(4)  # => 2010-03-30 05:43:25.1234 UTC
+ *   t.floor(6)  # => 2010-03-30 05:43:25.123456 UTC
+ *   t.floor(8)  # => 2010-03-30 05:43:25.12345678 UTC
+ *   t.floor(10) # => 2010-03-30 05:43:25.123456789 UTC
  *
- *     t = Time.utc(1999,12,31, 23,59,59)
- *     (t + 0.4).floor    #=> 1999-12-31 23:59:59 UTC
- *     (t + 0.9).floor    #=> 1999-12-31 23:59:59 UTC
- *     (t + 1.4).floor    #=> 2000-01-01 00:00:00 UTC
- *     (t + 1.9).floor    #=> 2000-01-01 00:00:00 UTC
+ *   t = Time.utc(1999, 12, 31, 23, 59, 59)
+ *   t               # => 1999-12-31 23:59:59 UTC
+ *   (t + 0.4).floor # => 1999-12-31 23:59:59 UTC
+ *   (t + 0.9).floor # => 1999-12-31 23:59:59 UTC
+ *   (t + 1.4).floor # => 2000-01-01 00:00:00 UTC
+ *   (t + 1.9).floor # => 2000-01-01 00:00:00 UTC
  *
- *     t = Time.utc(1999,12,31, 23,59,59)
- *     (t + 0.123456789).floor(4)  #=> 1999-12-31 23:59:59.1234 UTC
+ * Related: Time#ceil, Time#round.
  */
 
 static VALUE
@@ -4323,29 +4330,28 @@ time_floor(int argc, VALUE *argv, VALUE time)
 
 /*
  * call-seq:
- *   time.ceil([ndigits])   -> new_time
+ *   time.ceil(ndigits = 0)   -> new_time
  *
- * Ceils subsecond to a given precision in decimal digits (0 digits by default).
- * It returns a new Time object.
- * +ndigits+ should be zero or a positive integer.
+ * Returns a new \Time object whose numerical value
+ * is greater than or equal to +self+ truncated to precision +ndigits+:
  *
- *     t = Time.utc(2010,3,30, 5,43,25.0123456789r)
- *     t                      #=> 2010-03-30 05:43:25 123456789/10000000000 UTC
- *     t.ceil                 #=> 2010-03-30 05:43:26 UTC
- *     t.ceil(0)              #=> 2010-03-30 05:43:26 UTC
- *     t.ceil(1)              #=> 2010-03-30 05:43:25.1 UTC
- *     t.ceil(2)              #=> 2010-03-30 05:43:25.02 UTC
- *     t.ceil(3)              #=> 2010-03-30 05:43:25.013 UTC
- *     t.ceil(4)              #=> 2010-03-30 05:43:25.0124 UTC
+ *   t = Time.utc(2010, 3, 30, 5, 43, 25.123456789r)
+ *   t          # => 2010-03-30 05:43:25.123456789 UTC
+ *   t.ceil     # => 2010-03-30 05:43:26 UTC
+ *   t.ceil(2)  # => 2010-03-30 05:43:25.13 UTC
+ *   t.ceil(4)  # => 2010-03-30 05:43:25.1235 UTC
+ *   t.ceil(6)  # => 2010-03-30 05:43:25.123457 UTC
+ *   t.ceil(8)  # => 2010-03-30 05:43:25.12345679 UTC
+ *   t.ceil(10) # => 2010-03-30 05:43:25.123456789 UTC
  *
- *     t = Time.utc(1999,12,31, 23,59,59)
- *     (t + 0.4).ceil         #=> 2000-01-01 00:00:00 UTC
- *     (t + 0.9).ceil         #=> 2000-01-01 00:00:00 UTC
- *     (t + 1.4).ceil         #=> 2000-01-01 00:00:01 UTC
- *     (t + 1.9).ceil         #=> 2000-01-01 00:00:01 UTC
+ *   t = Time.utc(1999, 12, 31, 23, 59, 59)
+ *   t              # => 1999-12-31 23:59:59 UTC
+ *   (t + 0.4).ceil # => 2000-01-01 00:00:00 UTC
+ *   (t + 0.9).ceil # => 2000-01-01 00:00:00 UTC
+ *   (t + 1.4).ceil # => 2000-01-01 00:00:01 UTC
+ *   (t + 1.9).ceil # => 2000-01-01 00:00:01 UTC
  *
- *     t = Time.utc(1999,12,31, 23,59,59)
- *     (t + 0.123456789).ceil(4)  #=> 1999-12-31 23:59:59.1235 UTC
+ * Related: Time#floor, Time#round.
  */
 
 static VALUE
@@ -4371,16 +4377,19 @@ time_ceil(int argc, VALUE *argv, VALUE time)
 
 /*
  *  call-seq:
- *     time.sec -> integer
+ *    sec -> integer
  *
- *  Returns the second of the minute (0..60) for _time_.
+ *  Returns the integer second of the minute for +self+,
+ *  in range (0..60):
  *
- *  *Note:* Seconds range from zero to 60 to allow the system to inject
- *  leap seconds. See https://en.wikipedia.org/wiki/Leap_second for further
- *  details.
+ *    t = Time.new(2000, 1, 2, 3, 4, 5, 6)
+ *    # => 2000-01-02 03:04:05 +000006
+ *    t.sec # => 5
  *
- *     t = Time.now   #=> 2007-11-19 08:25:02 -0600
- *     t.sec          #=> 2
+ *  Note: the second value may be 60 when there is a
+ *  {leap second}[https://en.wikipedia.org/wiki/Leap_second].
+ *
+ *  Related: Time#year, Time#mon, etc.
  */
 
 static VALUE
@@ -4395,12 +4404,16 @@ time_sec(VALUE time)
 
 /*
  *  call-seq:
- *     time.min -> integer
+ *    min -> integer
  *
- *  Returns the minute of the hour (0..59) for _time_.
+ *  Returns the integer minute of the hour for +self+,
+ *  in range (0..59):
  *
- *     t = Time.now   #=> 2007-11-19 08:25:51 -0600
- *     t.min          #=> 25
+ *    t = Time.new(2000, 1, 2, 3, 4, 5, 6)
+ *    # => 2000-01-02 03:04:05 +000006
+ *    t.min # => 4
+ *
+ *  Related: Time#year, Time#mon, etc.
  */
 
 static VALUE
@@ -4415,12 +4428,16 @@ time_min(VALUE time)
 
 /*
  *  call-seq:
- *     time.hour -> integer
+ *    hour -> integer
  *
- *  Returns the hour of the day (0..23) for _time_.
+ *  Returns the integer hour of the day for +self+,
+ *  in range (0.23):
  *
- *     t = Time.now   #=> 2007-11-19 08:26:20 -0600
- *     t.hour         #=> 8
+ *    t = Time.new(2000, 1, 2, 3, 4, 5, 6)
+ *    # => 2000-01-02 03:04:05 +000006
+ *    t.hour # => 3
+ *
+ *  Related: Time#year, Time#mon, etc.
  */
 
 static VALUE
@@ -4435,14 +4452,18 @@ time_hour(VALUE time)
 
 /*
  *  call-seq:
- *     time.day  -> integer
- *     time.mday -> integer
+ *    mday -> integer
  *
- *  Returns the day of the month (1..31) for _time_.
+ *  Returns the integer day of the month for +self+,
+ *  in range (1..31):
  *
- *     t = Time.now   #=> 2007-11-19 08:27:03 -0600
- *     t.day          #=> 19
- *     t.mday         #=> 19
+ *    t = Time.new(2000, 1, 2, 3, 4, 5, 6)
+ *    # => 2000-01-02 03:04:05 +000006
+ *    t.mday # => 2
+ *
+ *  Time#day is an alias for Time#mday.
+ *
+ *  Related: Time#year, Time#mon, etc.
  */
 
 static VALUE
@@ -4457,14 +4478,18 @@ time_mday(VALUE time)
 
 /*
  *  call-seq:
- *     time.mon   -> integer
- *     time.month -> integer
+ *    mon   -> integer
  *
- *  Returns the month of the year (1..12) for _time_.
+ *  Returns the integer month of the year for +self+,
+ *  in range (1..12):
  *
- *     t = Time.now   #=> 2007-11-19 08:27:30 -0600
- *     t.mon          #=> 11
- *     t.month        #=> 11
+ *    t = Time.new(2000, 1, 2, 3, 4, 5, 6)
+ *    # => 2000-01-02 03:04:05 +000006
+ *    t.mon # => 1
+ *
+ *  Time#month is an alias for Time#mday.
+ *
+ *  Related: Time#year, Time#mday, etc.
  */
 
 static VALUE
@@ -4479,12 +4504,15 @@ time_mon(VALUE time)
 
 /*
  *  call-seq:
- *     time.year -> integer
+ *    year -> integer
  *
- *  Returns the year for _time_ (including the century).
+ *  Returns the integer year for +self+:
  *
- *     t = Time.now   #=> 2007-11-19 08:27:51 -0600
- *     t.year         #=> 2007
+ *    t = Time.new(2000, 1, 2, 3, 4, 5, 6)
+ *    # => 2000-01-02 03:04:05 +000006
+ *    t.year # => 2000
+ *
+ *  Related: Time#mon, Time#mday, etc.
  */
 
 static VALUE
@@ -4499,20 +4527,17 @@ time_year(VALUE time)
 
 /*
  *  call-seq:
- *     time.wday -> integer
+ *    wday -> integer
  *
- *  Returns an integer representing the day of the week, 0..6, with
- *  Sunday == 0.
+ *  Returns the integer day of the week for +self+,
+ *  in range (0..6), with Sunday as zero.
  *
- *     t = Time.now   #=> 2007-11-20 02:35:35 -0600
- *     t.wday         #=> 2
- *     t.sunday?      #=> false
- *     t.monday?      #=> false
- *     t.tuesday?     #=> true
- *     t.wednesday?   #=> false
- *     t.thursday?    #=> false
- *     t.friday?      #=> false
- *     t.saturday?    #=> false
+ *    t = Time.new(2000, 1, 2, 3, 4, 5, 6)
+ *    # => 2000-01-02 03:04:05 +000006
+ *    t.wday    # => 0
+ *    t.sunday? # => true
+ *
+ *  Related: Time#year, Time#mon, etc.
  */
 
 static VALUE
