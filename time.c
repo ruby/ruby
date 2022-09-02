@@ -4160,10 +4160,10 @@ time_add(const struct time_object *tobj, VALUE torig, VALUE offset, int sign)
 
 /*
  *  call-seq:
- *    self + addend -> new_time
+ *    self + numeric -> new_time
  *
  *  Returns a new \Time object whose value is the sum of the numeric value
- *  of +self+ and the given numeric +addend+:
+ *  of +self+ and the given +numeric+:
  *
  *    t = Time.new(2000) # => 2000-01-01 00:00:00 -0600
  *    t + (60 * 60 * 24) # => 2000-01-02 00:00:00 -0600
@@ -4186,19 +4186,20 @@ time_plus(VALUE time1, VALUE time2)
 
 /*
  *  call-seq:
- *    self - subtrahend -> new_time or float
+ *    self - numeric -> new_time
+ *    self - other_time -> float
  *
- *  When +subtrahend+ is numeric,
+ *  When +numeric+ is given,
  *  returns a new \Time object whose value is the difference
- *  of the numeric value of +self+ and +subtrahend+:
+ *  of the numeric value of +self+ and +numeric+:
  *
  *    t = Time.new(2000) # => 2000-01-01 00:00:00 -0600
  *    t - (60 * 60 * 24) # => 1999-12-31 00:00:00 -0600
  *    t - 0.5            # => 1999-12-31 23:59:59.5 -0600
  *
- *  When +subtrahend+ is another \Time object,
+ *  When +other_time+ is given,
  *  returns a Float whose value is the difference
- *  of the numeric values of +self+ and +subtrahend+:
+ *  of the numeric values of +self+ and +other_time+:
  *
  *    t - t # => 0.0
  *
@@ -4240,7 +4241,7 @@ ndigits_denominator(VALUE ndigits)
  *   round(ndigits = 0) -> new_time
  *
  * Returns a new \Time object whose numeric value is that of +self+,
- * rounded to precision +ndigits+:
+ * with its seconds value rounded to precision +ndigits+:
  *
  *   t = Time.utc(2010, 3, 30, 5, 43, 25.123456789r)
  *   t          # => 2010-03-30 05:43:25.123456789 UTC
@@ -4289,7 +4290,8 @@ time_round(int argc, VALUE *argv, VALUE time)
  *   floor(ndigits = 0) -> new_time
  *
  * Returns a new \Time object whose numerical value
- * is less than or equal to +self+ truncated to precision +ndigits+:
+ * is less than or equal to +self+ with its seconds
+ * truncated to precision +ndigits+:
  *
  *   t = Time.utc(2010, 3, 30, 5, 43, 25.123456789r)
  *   t           # => 2010-03-30 05:43:25.123456789 UTC
@@ -4333,7 +4335,8 @@ time_floor(int argc, VALUE *argv, VALUE time)
  *   ceil(ndigits = 0)   -> new_time
  *
  * Returns a new \Time object whose numerical value
- * is greater than or equal to +self+ truncated to precision +ndigits+:
+ * is greater than or equal to +self+ with its seconds
+ * truncated to precision +ndigits+:
  *
  *   t = Time.utc(2010, 3, 30, 5, 43, 25.123456789r)
  *   t          # => 2010-03-30 05:43:25.123456789 UTC
@@ -4431,7 +4434,7 @@ time_min(VALUE time)
  *    hour -> integer
  *
  *  Returns the integer hour of the day for +self+,
- *  in range (0.23):
+ *  in range (0..23):
  *
  *    t = Time.new(2000, 1, 2, 3, 4, 5, 6)
  *    # => 2000-01-02 03:04:05 +000006
