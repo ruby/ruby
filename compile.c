@@ -5277,8 +5277,7 @@ static VALUE
 collect_const_segments(rb_iseq_t *iseq, const NODE *node)
 {
     VALUE arr = rb_ary_new();
-    for (;;)
-    {
+    for (;;) {
         switch (nd_type(node)) {
           case NODE_CONST:
             rb_ary_unshift(arr, ID2SYM(node->nd_vid));
@@ -9042,7 +9041,8 @@ compile_colon2(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, 
             ISEQ_BODY(iseq)->ic_size++;
             ADD_INSN1(ret, node, opt_getconstant_path, segments);
             RB_OBJ_WRITTEN(iseq, Qundef, segments);
-        } else {
+        }
+        else {
             /* constant */
             DECL_ANCHOR(pref);
             DECL_ANCHOR(body);
@@ -9083,7 +9083,8 @@ compile_colon3(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, 
         VALUE segments = rb_ary_new_from_args(2, ID2SYM(idNULL), ID2SYM(node->nd_mid));
         ADD_INSN1(ret, node, opt_getconstant_path, segments);
         RB_OBJ_WRITTEN(iseq, Qundef, segments);
-    } else {
+    }
+    else {
         ADD_INSN1(ret, node, putobject, rb_cObject);
         ADD_INSN1(ret, node, putobject, Qtrue);
         ADD_INSN1(ret, node, getconstant, ID2SYM(node->nd_mid));

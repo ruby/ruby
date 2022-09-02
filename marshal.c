@@ -1957,7 +1957,8 @@ r_object_for(struct load_arg *arg, bool partial, int *ivp, VALUE extmod, int typ
                 if (sign == '-') {
                     v = rb_int_uminus(v);
                 }
-            } else {
+            }
+            else {
                 data = r_bytes0(len * 2, arg);
                 v = rb_integer_unpack(RSTRING_PTR(data), len, 2, 0,
                     INTEGER_PACK_LITTLE_ENDIAN | (sign == '-' ? INTEGER_PACK_NEGATIVE : 0));
