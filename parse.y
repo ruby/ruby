@@ -1783,7 +1783,7 @@ expr		: command_call
 		  p_top_expr_body
 		    {
 			pop_pvtbl(p, $<tbl>3);
-			p->ctxt.in_kwarg = $<ctxt>1.in_kwarg;
+			p->ctxt.in_kwarg = $<ctxt>2.in_kwarg;
 		    /*%%%*/
 			$$ = NEW_CASE3($1, NEW_IN($4, NEW_TRUE(&@4), NEW_FALSE(&@4), &@4), &@$);
 		    /*% %*/
