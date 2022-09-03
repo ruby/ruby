@@ -758,7 +758,8 @@ no-fake -fake: PHONY
 $(HAVE_BASERUBY:no=)$(arch)-fake.rb: miniruby$(EXEEXT)
 
 # actually depending on other headers more.
-$(arch)-fake.rb: $(top_srcdir)/revision.h $(top_srcdir)/version.h $(srcdir)/version.c {$(VPATH)}vm_opts.h
+$(arch)-fake.rb: $(top_srcdir)/revision.h $(top_srcdir)/version.h $(srcdir)/version.c
+$(arch)-fake.rb: {$(VPATH)}id.h {$(VPATH)}vm_opts.h
 
 $(arch)-fake.rb: $(srcdir)/template/fake.rb.in $(tooldir)/generic_erb.rb
 	$(ECHO) generating $@
