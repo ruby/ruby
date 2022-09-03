@@ -68,7 +68,7 @@ rb_encoding* rb_nkf_enc_get(const char *name)
         nkf_encoding *nkf_enc = nkf_enc_find(name);
         idx = rb_enc_find_index(nkf_enc_name(nkf_enc_to_base_encoding(nkf_enc)));
         if (idx < 0) {
-            idx = rb_define_dummy_encoding(name);
+            rb_raise(rb_eArgError, "unknown encoding name - %s", name);
         }
     }
     return rb_enc_from_index(idx);
