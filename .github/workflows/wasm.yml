@@ -92,7 +92,8 @@ jobs:
             debugflags="${{ matrix.entry.debugflags }}" \
             wasmoptflags="${{ matrix.entry.wasmoptflags }} ${{ matrix.entry.debugflags }}"
 
-      - run: make ruby
+      # miniruby may not be built when cross-compling
+      - run: make mini ruby
       - name: Run basictest
         run: wasmtime run ./../build/miniruby --mapdir /::./ -- basictest/test.rb
         working-directory: src
