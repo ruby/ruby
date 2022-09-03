@@ -2800,7 +2800,7 @@ str_transcode0(int argc, VALUE *argv, VALUE *self, int ecflags, VALUE ecopts)
 
     /* set encoding */
     if (!denc) {
-        dencidx = rb_define_dummy_encoding(dname);
+        rb_raise(rb_eArgError, "unknown encoding name - %s", dname);
         RB_GC_GUARD(arg1);
         RB_GC_GUARD(arg2);
     }
@@ -2936,22 +2936,12 @@ econv_s_allocate(VALUE klass)
 }
 
 static rb_encoding *
-make_dummy_encoding(const char *name)
-{
-    rb_encoding *enc;
-    int idx;
-    idx = rb_define_dummy_encoding(name);
-    enc = rb_enc_from_index(idx);
-    return enc;
-}
-
-static rb_encoding *
 make_encoding(const char *name)
 {
     rb_encoding *enc;
     enc = rb_enc_find(name);
     if (!enc)
-        enc = make_dummy_encoding(name);
+        rb_raise(rb_eArgError, "unknown encoding name - %s", name);
     return enc;
 }
 
@@ -3428,9 +3418,9 @@ econv_init(int argc, VALUE *argv, VALUE self)
 
     if (!DECORATOR_P(sname, dname)) {
         if (!senc)
-            senc = make_dummy_encoding(sname);
+            rb_raise(rb_eArgError, "unknown encoding name - %s", sname);
         if (!denc)
-            denc = make_dummy_encoding(dname);
+            rb_raise(rb_eArgError, "unknown encoding name - %s", dname);
         RB_GC_GUARD(snamev);
         RB_GC_GUARD(dnamev);
     }
