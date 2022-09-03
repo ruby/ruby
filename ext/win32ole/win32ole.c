@@ -690,7 +690,7 @@ ole_cp2encoding(UINT cp)
     enc_name = rb_sprintf("CP%d", cp);
     idx = rb_enc_find_index(enc_cstr = StringValueCStr(enc_name));
     if (idx < 0)
-        idx = rb_define_dummy_encoding(enc_cstr);
+        rb_raise(rb_eArgError, "unknown encoding name - %s", enc_cstr);
     return rb_enc_from_index(idx);
 }
 
