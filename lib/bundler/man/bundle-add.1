@@ -7,7 +7,7 @@
 \fBbundle\-add\fR \- Add gem to the Gemfile and run bundle install
 .
 .SH "SYNOPSIS"
-\fBbundle add\fR \fIGEM_NAME\fR [\-\-group=GROUP] [\-\-version=VERSION] [\-\-source=SOURCE] [\-\-git=GIT] [\-\-github=GITHUB] [\-\-branch=BRANCH] [\-\-ref=REF] [\-\-skip\-install] [\-\-strict] [\-\-optimistic]
+\fBbundle add\fR \fIGEM_NAME\fR [\-\-group=GROUP] [\-\-version=VERSION] [\-\-source=SOURCE] [\-\-path=PATH] [\-\-git=GIT] [\-\-github=GITHUB] [\-\-branch=BRANCH] [\-\-ref=REF] [\-\-skip\-install] [\-\-strict] [\-\-optimistic]
 .
 .SH "DESCRIPTION"
 Adds the named gem to the Gemfile and run \fBbundle install\fR\. \fBbundle install\fR can be avoided by using the flag \fB\-\-skip\-install\fR\.
@@ -47,6 +47,10 @@ Specify the source for the added gem\.
 .TP
 \fB\-\-require\fR, \fB\-r\fR
 Adds require path to gem\. Provide false, or a path as a string\.
+.
+.TP
+\fB\-\-path\fR
+Specify the file system path for the added gem\.
 .
 .TP
 \fB\-\-git\fR
