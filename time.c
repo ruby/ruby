@@ -4864,7 +4864,6 @@ strftime_cstr(const char *fmt, size_t len, VALUE time, rb_encoding *enc)
  *  Returns a string representation of +self+,
  *  formatted according to the given string +format+.
  *  See {Formats for Dates and Times}[rdoc-ref:doc/strftime_formatting.rdoc].
- *  Formats _time_ according to the directives in the given format string.
  */
 
 static VALUE
