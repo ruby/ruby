@@ -3361,6 +3361,7 @@ AS_IF([test x"$cross_compiling" = xyes], [
   RUNRUBY_COMMAND='$(MINIRUBY) -I`cd $(srcdir)/lib; pwd`'
   RUNRUBY='$(RUNRUBY_COMMAND)'
   XRUBY='$(MINIRUBY)'
+  BOOTSTRAPRUBY_COMMAND='$(BOOTSTRAPRUBY) -r./$(arch)-fake'
   TEST_RUNNABLE=no
   CROSS_COMPILING=yes
   AC_DEFINE(CROSS_COMPILING, 1)
