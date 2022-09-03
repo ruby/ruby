@@ -2592,7 +2592,14 @@ class CSV
   #   # Raises IOError (not opened for reading)
   #   csv.read
   def read
-    rows = to_a
+    rows = []
+    enumerator = parser_enumerator
+    begin
+      while true
+        rows << enumerator.next
+      end
+    rescue StopIteration
+    end
     if parser.use_headers?
       Table.new(rows, headers: parser.headers)
     else
