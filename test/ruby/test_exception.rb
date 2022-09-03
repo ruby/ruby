@@ -1053,7 +1053,7 @@ $stderr = $stdout; raise "\x82\xa0"') do |outs, errs, status|
           warning << [str, category]
         end
       else
-        define_method(:warn) do |str|
+        define_method(:warn) do |str, category: nil|
           warning << str
         end
       end
