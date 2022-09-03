@@ -356,7 +356,7 @@ if defined?(WIN32OLE)
         rescue WIN32OLERuntimeError
         end
         if (WIN32OLE.codepage == 20932)
-          assert_equal("\xA4\xA2".force_encoding("CP20932"), obj.value)
+          assert_equal("\xA4\xA2".force_encoding("eucJP-ms"), obj.value)
         end
 
         WIN32OLE.codepage = cp

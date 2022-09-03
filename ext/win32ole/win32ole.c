@@ -687,8 +687,17 @@ ole_cp2encoding(UINT cp)
         }
     }
 
-    enc_name = rb_sprintf("CP%d", cp);
-    idx = rb_enc_find_index(enc_cstr = StringValueCStr(enc_name));
+    switch(cp) {
+      case 20932:
+        enc_cstr = "eucJP-ms";
+        break;
+      default:
+        enc_name = rb_sprintf("CP%d", cp);
+        enc_cstr = StringValueCStr(enc_name);
+        break;
+    }
+
+    idx = rb_enc_find_index(enc_cstr);
     if (idx < 0)
         rb_raise(rb_eArgError, "unknown encoding name - %s", enc_cstr);
     return rb_enc_from_index(idx);
