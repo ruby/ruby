@@ -208,9 +208,11 @@ io_buffer_free(struct rb_io_buffer *data)
             io_buffer_unmap(data->base, data->size);
         }
 
-        if (RB_TYPE_P(data->source, T_STRING)) {
-            rb_str_unlocktmp(data->source);
-        }
+        // Previously we had this, but we found out due to the way GC works, we
+        // can't refer to any other Ruby objects here.
+        // if (RB_TYPE_P(data->source, T_STRING)) {
+        //     rb_str_unlocktmp(data->source);
+        // }
 
         data->base = NULL;
 
@@ -282,44 +284,13 @@ rb_io_buffer_type_allocate(VALUE self)
     return instance;
 }
 
-/*
- *  call-seq: IO::Buffer.for(string) -> io_buffer
- *
- *  Creates a IO::Buffer from the given string's memory. The buffer remains
- *  associated with the string, and writing to a buffer will update the string's
- *  contents.
- *
- *  Until #free is invoked on the buffer, either explicitly or via the garbage
- *  collector, the source string will be locked and cannot be modified.
- *
- *  If the string is frozen, it will create a read-only buffer which cannot be
- *  modified.
- *
- *    string = 'test'
- *    buffer = IO::Buffer.for(str)
- *    buffer.external? #=> true
- *
- *    buffer.get_string(0, 1)
- *    # => "t"
- *    string
- *    # => "best"
- *
- *    buffer.resize(100)
- *    # in `resize': Cannot resize external buffer! (IO::Buffer::AccessError)
- */
-VALUE
-rb_io_buffer_type_for(VALUE klass, VALUE string)
+static VALUE
+io_buffer_for_make_instance(VALUE klass, VALUE string)
 {
-    io_buffer_experimental();
-
-    StringValue(string);
-
     VALUE instance = rb_io_buffer_type_allocate(klass);
 
     struct rb_io_buffer *data = NULL;
     TypedData_Get_Struct(instance, struct rb_io_buffer, &rb_io_buffer_type, data);
-
-    rb_str_locktmp(string);
 
     enum rb_io_buffer_flags flags = RB_IO_BUFFER_EXTERNAL;
 
@@ -329,6 +300,94 @@ rb_io_buffer_type_for(VALUE klass, VALUE string)
     io_buffer_initialize(data, RSTRING_PTR(string), RSTRING_LEN(string), flags, string);
 
     return instance;
+}
+
+struct io_buffer_for_yield_instance_arguments {
+  VALUE klass;
+  VALUE string;
+  VALUE instance;
+};
+
+static VALUE
+io_buffer_for_yield_instance(VALUE _arguments) {
+    struct io_buffer_for_yield_instance_arguments *arguments = (struct io_buffer_for_yield_instance_arguments *)_arguments;
+
+    rb_str_locktmp(arguments->string);
+
+    arguments->instance = io_buffer_for_make_instance(arguments->klass, arguments->string);
+
+    return rb_yield(arguments->instance);
+}
+
+static VALUE
+io_buffer_for_yield_instance_ensure(VALUE _arguments)
+{
+    struct io_buffer_for_yield_instance_arguments *arguments = (struct io_buffer_for_yield_instance_arguments *)_arguments;
+
+    if (arguments->instance != Qnil) {
+        rb_io_buffer_free(arguments->instance);
+    }
+
+    rb_str_unlocktmp(arguments->string);
+
+    return Qnil;
+}
+
+/*
+ *  call-seq:
+ *    IO::Buffer.for(string) -> readonly io_buffer
+ *    IO::Buffer.for(string) {|io_buffer| ... read/write io_buffer ...}
+ *
+ *  Creates a IO::Buffer from the given string's memory. Without a block a
+ *  frozen internal copy of the string is created efficiently and used as the
+ *  buffer source. When a block is provided, the buffer is associated directly
+ *  with the string's internal data and updating the buffer will update the
+ *  string.
+ *
+ *  Until #free is invoked on the buffer, either explicitly or via the garbage
+ *  collector, the source string will be locked and cannot be modified.
+ *
+ *  If the string is frozen, it will create a read-only buffer which cannot be
+ *  modified.
+ *
+ *    string = 'test'
+ *    buffer = IO::Buffer.for(string)
+ *    buffer.external? #=> true
+ *
+ *    buffer.get_string(0, 1)
+ *    # => "t"
+ *    string
+ *    # => "best"
+ *
+ *    buffer.resize(100)
+ *    # in `resize': Cannot resize external buffer! (IO::Buffer::AccessError)
+ *
+ *    IO::Buffer.for(string) do |buffer|
+ *      buffer.set_string("T")
+ *      string
+ *      # => "Test"
+ *    end
+ */
+VALUE
+rb_io_buffer_type_for(VALUE klass, VALUE string)
+{
+    StringValue(string);
+
+    // If the string is frozen, both code paths are okay.
+    // If the string is not frozen, if a block is not given, it must be frozen.
+    if (rb_block_given_p()) {
+      struct io_buffer_for_yield_instance_arguments arguments = {
+          .klass = klass,
+          .string = string,
+          .instance = Qnil,
+      };
+
+      return rb_ensure(io_buffer_for_yield_instance, (VALUE)&arguments, io_buffer_for_yield_instance_ensure, (VALUE)&arguments);
+    } else {
+      // This internally returns the source string if it's already frozen.
+      string = rb_str_tmp_frozen_acquire(string);
+      return io_buffer_for_make_instance(klass, string);
+    }
 }
 
 VALUE
