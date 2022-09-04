@@ -1768,19 +1768,19 @@ mjit_setup_options(const char *s, struct mjit_options *mjit_opt)
         return;
     }
     else if (opt_match_noarg(s, l, "warnings")) {
-        mjit_opt->warnings = 1;
+        mjit_opt->warnings = true;
     }
     else if (opt_match(s, l, "debug")) {
         if (*s)
             mjit_opt->debug_flags = strdup(s + 1);
         else
-            mjit_opt->debug = 1;
+            mjit_opt->debug = true;
     }
     else if (opt_match_noarg(s, l, "wait")) {
-        mjit_opt->wait = 1;
+        mjit_opt->wait = true;
     }
     else if (opt_match_noarg(s, l, "save-temps")) {
-        mjit_opt->save_temps = 1;
+        mjit_opt->save_temps = true;
     }
     else if (opt_match(s, l, "verbose")) {
         mjit_opt->verbose = *s ? atoi(s + 1) : 1;

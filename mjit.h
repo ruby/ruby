@@ -37,20 +37,20 @@ enum rb_mjit_iseq_func {
 struct mjit_options {
     // Converted from "jit" feature flag to tell the enablement
     // information to ruby_show_version().
-    char on;
+    bool on;
     // Save temporary files after MRI finish.  The temporary files
     // include the pre-compiled header, C code file generated for ISEQ,
     // and the corresponding object file.
-    char save_temps;
+    bool save_temps;
     // Print MJIT warnings to stderr.
-    char warnings;
+    bool warnings;
     // Disable compiler optimization and add debug symbols. It can be
     // very slow.
-    char debug;
+    bool debug;
     // Add arbitrary cflags.
     char* debug_flags;
     // If not 0, all ISeqs are synchronously compiled. For testing.
-    unsigned int wait;
+    bool wait;
     // Number of calls to trigger JIT compilation. For testing.
     unsigned int min_calls;
     // Force printing info about MJIT work of level VERBOSE or

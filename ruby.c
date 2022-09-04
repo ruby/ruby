@@ -1850,7 +1850,7 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
 
 #if USE_MJIT
     if (FEATURE_SET_P(opt->features, mjit)) {
-        opt->mjit.on = TRUE; /* set mjit.on for ruby_show_version() API and check to call mjit_init() */
+        opt->mjit.on = true; // set mjit.on for ruby_show_version() API and check to call mjit_init()
     }
 #endif
 #if USE_YJIT
