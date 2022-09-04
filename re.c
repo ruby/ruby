@@ -2120,7 +2120,7 @@ match_aref(int argc, VALUE *argv, VALUE match)
 	else if (beg > num_regs) {
 	    return Qnil;
 	}
-	else if (beg+len > num_regs) {
+	if (beg+len > num_regs) {
 	    len = num_regs - beg;
 	}
 	return match_ary_subseq(match, beg, len, Qnil);
