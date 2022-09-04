@@ -1406,6 +1406,12 @@ class TestRegexp < Test::Unit::TestCase
     end;
   end
 
+  def test_bug18631
+    assert_kind_of MatchData, /(?<x>a)(?<x>aa)\k<x>/.match("aaaaa")
+    assert_kind_of MatchData, /(?<x>a)(?<x>aa)\k<x>/.match("aaaa")
+    assert_kind_of MatchData, /(?<x>a)(?<x>aa)\k<x>/.match("aaaab")
+  end
+
   # This assertion is for porting x2() tests in testpy.py of Onigmo.
   def assert_match_at(re, str, positions, msg = nil)
     re = Regexp.new(re) unless re.is_a?(Regexp)
