@@ -75,10 +75,6 @@
 #include <sys/fcntl.h>
 #endif
 
-#if !HAVE_OFF_T && !defined(off_t)
-# define off_t  long
-#endif
-
 #ifdef HAVE_SYS_TIME_H
 # include <sys/time.h>
 #endif
@@ -147,10 +143,6 @@
 
 #ifndef O_ACCMODE
 #define O_ACCMODE (O_RDONLY | O_WRONLY | O_RDWR)
-#endif
-
-#if SIZEOF_OFF_T > SIZEOF_LONG && !defined(HAVE_LONG_LONG)
-# error off_t is bigger than long, but you have no long long...
 #endif
 
 #ifndef PIPE_BUF
@@ -620,7 +612,7 @@ raise_on_write(rb_io_t *fptr, int e, VALUE errinfo)
 static void
 io_unread(rb_io_t *fptr)
 {
-    off_t r, pos;
+    rb_off_t r, pos;
     ssize_t read_size;
     long i;
     long newlines = 0;
@@ -859,7 +851,7 @@ rb_io_s_try_convert(VALUE dummy, VALUE io)
 static void
 io_unread(rb_io_t *fptr)
 {
-    off_t r;
+    rb_off_t r;
     rb_io_check_closed(fptr);
     if (fptr->rbuf.len == 0 || fptr->mode & FMODE_DUPLEX)
         return;
@@ -2224,7 +2216,7 @@ static VALUE
 rb_io_tell(VALUE io)
 {
     rb_io_t *fptr;
-    off_t pos;
+    rb_off_t pos;
 
     GetOpenFile(io, fptr);
     pos = io_tell(fptr);
@@ -2237,7 +2229,7 @@ static VALUE
 rb_io_seek(VALUE io, VALUE offset, int whence)
 {
     rb_io_t *fptr;
-    off_t pos;
+    rb_off_t pos;
 
     pos = NUM2OFFT(offset);
     GetOpenFile(io, fptr);
@@ -2348,7 +2340,7 @@ static VALUE
 rb_io_set_pos(VALUE io, VALUE offset)
 {
     rb_io_t *fptr;
-    off_t pos;
+    rb_off_t pos;
 
     pos = NUM2OFFT(offset);
     GetOpenFile(io, fptr);
@@ -2884,8 +2876,8 @@ static long
 remain_size(rb_io_t *fptr)
 {
     struct stat st;
-    off_t siz = READ_DATA_PENDING_COUNT(fptr);
-    off_t pos;
+    rb_off_t siz = READ_DATA_PENDING_COUNT(fptr);
+    rb_off_t pos;
 
     if (fstat(fptr->fd, &st) == 0  && S_ISREG(st.st_mode)
 #if defined(__HAIKU__)
@@ -5662,7 +5654,7 @@ rb_io_sysseek(int argc, VALUE *argv, VALUE io)
     VALUE offset, ptrname;
     int whence = SEEK_SET;
     rb_io_t *fptr;
-    off_t pos;
+    rb_off_t pos;
 
     if (rb_scan_args(argc, argv, "11", &offset, &ptrname) == 2) {
         whence = interpret_seek_whence(ptrname);
@@ -5790,7 +5782,7 @@ struct prdwr_internal_arg {
     int fd;
     void *buf;
     size_t count;
-    off_t offset;
+    rb_off_t offset;
 };
 #endif /* HAVE_PREAD || HAVE_PWRITE */
 
@@ -7984,7 +7976,7 @@ io_reopen(VALUE io, VALUE nfile)
 {
     rb_io_t *fptr, *orig;
     int fd, fd2;
-    off_t pos = 0;
+    rb_off_t pos = 0;
 
     nfile = rb_io_get_io(nfile);
     GetOpenFile(io, fptr);
@@ -8204,7 +8196,7 @@ rb_io_init_copy(VALUE dest, VALUE io)
     rb_io_t *fptr, *orig;
     int fd;
     VALUE write_io;
-    off_t pos;
+    rb_off_t pos;
 
     io = rb_io_get_io(io);
     if (!OBJ_INIT_COPY(dest, io)) return dest;
@@ -10345,8 +10337,8 @@ static VALUE sym_normal,   sym_sequential, sym_random,
 struct io_advise_struct {
     int fd;
     int advice;
-    off_t offset;
-    off_t len;
+    rb_off_t offset;
+    rb_off_t len;
 };
 
 static VALUE
@@ -10393,7 +10385,7 @@ io_advise_sym_to_const(VALUE sym)
 }
 
 static VALUE
-do_io_advise(rb_io_t *fptr, VALUE advice, off_t offset, off_t len)
+do_io_advise(rb_io_t *fptr, VALUE advice, rb_off_t offset, rb_off_t len)
 {
     int rv;
     struct io_advise_struct ias;
@@ -10483,7 +10475,7 @@ static VALUE
 rb_io_advise(int argc, VALUE *argv, VALUE io)
 {
     VALUE advice, offset, len;
-    off_t off, l;
+    rb_off_t off, l;
     rb_io_t *fptr;
 
     rb_scan_args(argc, argv, "12", &advice, &offset, &len);
@@ -12029,15 +12021,15 @@ rb_io_s_binwrite(int argc, VALUE *argv, VALUE io)
 struct copy_stream_struct {
     VALUE src;
     VALUE dst;
-    off_t copy_length; /* (off_t)-1 if not specified */
-    off_t src_offset; /* (off_t)-1 if not specified */
+    rb_off_t copy_length; /* (rb_off_t)-1 if not specified */
+    rb_off_t src_offset; /* (rb_off_t)-1 if not specified */
 
     rb_io_t *src_fptr;
     rb_io_t *dst_fptr;
     unsigned close_src : 1;
     unsigned close_dst : 1;
     int error_no;
-    off_t total;
+    rb_off_t total;
     const char *syserr;
     const char *notimp;
     VALUE th;
@@ -12202,7 +12194,7 @@ nogvl_copy_stream_wait_write(struct copy_stream_struct *stp)
 #ifdef USE_COPY_FILE_RANGE
 
 static ssize_t
-simple_copy_file_range(int in_fd, off_t *in_offset, int out_fd, off_t *out_offset, size_t count, unsigned int flags)
+simple_copy_file_range(int in_fd, rb_off_t *in_offset, int out_fd, rb_off_t *out_offset, size_t count, unsigned int flags)
 {
 #ifdef HAVE_COPY_FILE_RANGE
     return copy_file_range(in_fd, in_offset, out_fd, out_offset, count, flags);
@@ -12215,15 +12207,15 @@ static int
 nogvl_copy_file_range(struct copy_stream_struct *stp)
 {
     ssize_t ss;
-    off_t src_size;
-    off_t copy_length, src_offset, *src_offset_ptr;
+    rb_off_t src_size;
+    rb_off_t copy_length, src_offset, *src_offset_ptr;
 
     if (!S_ISREG(stp->src_stat.st_mode))
         return 0;
 
     src_size = stp->src_stat.st_size;
     src_offset = stp->src_offset;
-    if (src_offset >= (off_t)0) {
+    if (src_offset >= (rb_off_t)0) {
         src_offset_ptr = &src_offset;
     }
     else {
@@ -12231,12 +12223,12 @@ nogvl_copy_file_range(struct copy_stream_struct *stp)
     }
 
     copy_length = stp->copy_length;
-    if (copy_length < (off_t)0) {
-        if (src_offset < (off_t)0) {
-            off_t current_offset;
+    if (copy_length < (rb_off_t)0) {
+        if (src_offset < (rb_off_t)0) {
+            rb_off_t current_offset;
             errno = 0;
             current_offset = lseek(stp->src_fptr->fd, 0, SEEK_CUR);
-            if (current_offset < (off_t)0 && errno) {
+            if (current_offset < (rb_off_t)0 && errno) {
                 stp->syserr = "lseek";
                 stp->error_no = errno;
                 return (int)current_offset;
@@ -12251,7 +12243,7 @@ nogvl_copy_file_range(struct copy_stream_struct *stp)
   retry_copy_file_range:
 # if SIZEOF_OFF_T > SIZEOF_SIZE_T
     /* we are limited by the 32-bit ssize_t return value on 32-bit */
-    ss = (copy_length > (off_t)SSIZE_MAX) ? SSIZE_MAX : (ssize_t)copy_length;
+    ss = (copy_length > (rb_off_t)SSIZE_MAX) ? SSIZE_MAX : (ssize_t)copy_length;
 # else
     ss = (ssize_t)copy_length;
 # endif
@@ -12310,11 +12302,11 @@ nogvl_copy_file_range(struct copy_stream_struct *stp)
 static int
 nogvl_fcopyfile(struct copy_stream_struct *stp)
 {
-    off_t cur, ss = 0;
-    const off_t src_offset = stp->src_offset;
+    rb_off_t cur, ss = 0;
+    const rb_off_t src_offset = stp->src_offset;
     int ret;
 
-    if (stp->copy_length >= (off_t)0) {
+    if (stp->copy_length >= (rb_off_t)0) {
         /* copy_length can't be specified in fcopyfile(3) */
         return 0;
     }
@@ -12324,30 +12316,30 @@ nogvl_fcopyfile(struct copy_stream_struct *stp)
 
     if (!S_ISREG(stp->dst_stat.st_mode))
         return 0;
-    if (lseek(stp->dst_fptr->fd, 0, SEEK_CUR) > (off_t)0) /* if dst IO was already written */
+    if (lseek(stp->dst_fptr->fd, 0, SEEK_CUR) > (rb_off_t)0) /* if dst IO was already written */
         return 0;
     if (fcntl(stp->dst_fptr->fd, F_GETFL) & O_APPEND) {
         /* fcopyfile(3) appends src IO to dst IO and then truncates
          * dst IO to src IO's original size. */
-        off_t end = lseek(stp->dst_fptr->fd, 0, SEEK_END);
+        rb_off_t end = lseek(stp->dst_fptr->fd, 0, SEEK_END);
         lseek(stp->dst_fptr->fd, 0, SEEK_SET);
-        if (end > (off_t)0) return 0;
+        if (end > (rb_off_t)0) return 0;
     }
 
-    if (src_offset > (off_t)0) {
-        off_t r;
+    if (src_offset > (rb_off_t)0) {
+        rb_off_t r;
 
         /* get current offset */
         errno = 0;
         cur = lseek(stp->src_fptr->fd, 0, SEEK_CUR);
-        if (cur < (off_t)0 && errno) {
+        if (cur < (rb_off_t)0 && errno) {
             stp->error_no = errno;
             return 1;
         }
 
         errno = 0;
         r = lseek(stp->src_fptr->fd, src_offset, SEEK_SET);
-        if (r < (off_t)0 && errno) {
+        if (r < (rb_off_t)0 && errno) {
             stp->error_no = errno;
             return 1;
         }
@@ -12359,12 +12351,12 @@ nogvl_fcopyfile(struct copy_stream_struct *stp)
 
     if (ret == 0) { /* success */
         stp->total = ss;
-        if (src_offset > (off_t)0) {
-            off_t r;
+        if (src_offset > (rb_off_t)0) {
+            rb_off_t r;
             errno = 0;
             /* reset offset */
             r = lseek(stp->src_fptr->fd, cur, SEEK_SET);
-            if (r < (off_t)0 && errno) {
+            if (r < (rb_off_t)0 && errno) {
                 stp->error_no = errno;
                 return 1;
             }
@@ -12395,7 +12387,7 @@ nogvl_fcopyfile(struct copy_stream_struct *stp)
 #  endif
 
 static ssize_t
-simple_sendfile(int out_fd, int in_fd, off_t *offset, off_t count)
+simple_sendfile(int out_fd, int in_fd, rb_off_t *offset, rb_off_t count)
 {
     return sendfile(out_fd, in_fd, offset, (size_t)count);
 }
@@ -12407,11 +12399,11 @@ simple_sendfile(int out_fd, int in_fd, off_t *offset, off_t count)
 #  define USE_SENDFILE
 
 static ssize_t
-simple_sendfile(int out_fd, int in_fd, off_t *offset, off_t count)
+simple_sendfile(int out_fd, int in_fd, rb_off_t *offset, rb_off_t count)
 {
     int r;
-    off_t pos = offset ? *offset : lseek(in_fd, 0, SEEK_CUR);
-    off_t sbytes;
+    rb_off_t pos = offset ? *offset : lseek(in_fd, 0, SEEK_CUR);
+    rb_off_t sbytes;
 #  ifdef __APPLE__
     r = sendfile(in_fd, out_fd, pos, &count, NULL, 0);
     sbytes = count;
@@ -12437,9 +12429,9 @@ static int
 nogvl_copy_stream_sendfile(struct copy_stream_struct *stp)
 {
     ssize_t ss;
-    off_t src_size;
-    off_t copy_length;
-    off_t src_offset;
+    rb_off_t src_size;
+    rb_off_t copy_length;
+    rb_off_t src_offset;
     int use_pread;
 
     if (!S_ISREG(stp->src_stat.st_mode))
@@ -12452,17 +12444,17 @@ nogvl_copy_stream_sendfile(struct copy_stream_struct *stp)
 #endif
 
     src_offset = stp->src_offset;
-    use_pread = src_offset >= (off_t)0;
+    use_pread = src_offset >= (rb_off_t)0;
 
     copy_length = stp->copy_length;
-    if (copy_length < (off_t)0) {
+    if (copy_length < (rb_off_t)0) {
         if (use_pread)
             copy_length = src_size - src_offset;
         else {
-            off_t cur;
+            rb_off_t cur;
             errno = 0;
             cur = lseek(stp->src_fptr->fd, 0, SEEK_CUR);
-            if (cur < (off_t)0 && errno) {
+            if (cur < (rb_off_t)0 && errno) {
                 stp->syserr = "lseek";
                 stp->error_no = errno;
                 return (int)cur;
@@ -12474,7 +12466,7 @@ nogvl_copy_stream_sendfile(struct copy_stream_struct *stp)
   retry_sendfile:
 # if SIZEOF_OFF_T > SIZEOF_SIZE_T
     /* we are limited by the 32-bit ssize_t return value on 32-bit */
-    ss = (copy_length > (off_t)SSIZE_MAX) ? SSIZE_MAX : (ssize_t)copy_length;
+    ss = (copy_length > (rb_off_t)SSIZE_MAX) ? SSIZE_MAX : (ssize_t)copy_length;
 # else
     ss = (ssize_t)copy_length;
 # endif
@@ -12545,11 +12537,11 @@ maygvl_read(int has_gvl, rb_io_t *fptr, void *buf, size_t count)
 }
 
 static ssize_t
-maygvl_copy_stream_read(int has_gvl, struct copy_stream_struct *stp, char *buf, size_t len, off_t offset)
+maygvl_copy_stream_read(int has_gvl, struct copy_stream_struct *stp, char *buf, size_t len, rb_off_t offset)
 {
     ssize_t ss;
   retry_read:
-    if (offset < (off_t)0) {
+    if (offset < (rb_off_t)0) {
         ss = maygvl_read(has_gvl, stp->src_fptr, buf, len);
     }
     else {
@@ -12582,7 +12574,7 @@ maygvl_copy_stream_read(int has_gvl, struct copy_stream_struct *stp, char *buf, 
             return ss;
 #endif
         }
-        stp->syserr = offset < (off_t)0 ?  "read" : "pread";
+        stp->syserr = offset < (rb_off_t)0 ?  "read" : "pread";
         stp->error_no = errno;
     }
     return ss;
@@ -12621,31 +12613,31 @@ nogvl_copy_stream_read_write(struct copy_stream_struct *stp)
     size_t len;
     ssize_t ss;
     int ret;
-    off_t copy_length;
+    rb_off_t copy_length;
+    rb_off_t src_offset;
     int use_eof;
-    off_t src_offset;
     int use_pread;
 
     copy_length = stp->copy_length;
-    use_eof = copy_length < (off_t)0;
+    use_eof = copy_length < (rb_off_t)0;
     src_offset = stp->src_offset;
-    use_pread = src_offset >= (off_t)0;
+    use_pread = src_offset >= (rb_off_t)0;
 
     if (use_pread && stp->close_src) {
-        off_t r;
+        rb_off_t r;
         errno = 0;
         r = lseek(stp->src_fptr->fd, src_offset, SEEK_SET);
-        if (r < (off_t)0 && errno) {
+        if (r < (rb_off_t)0 && errno) {
             stp->syserr = "lseek";
             stp->error_no = errno;
             return;
         }
-        src_offset = (off_t)-1;
+        src_offset = (rb_off_t)-1;
         use_pread = 0;
     }
 
     while (use_eof || 0 < copy_length) {
-        if (!use_eof && copy_length < (off_t)sizeof(buf)) {
+        if (!use_eof && copy_length < (rb_off_t)sizeof(buf)) {
             len = (size_t)copy_length;
         }
         else {
@@ -12657,7 +12649,7 @@ nogvl_copy_stream_read_write(struct copy_stream_struct *stp)
                 src_offset += ss;
         }
         else {
-            ss = maygvl_copy_stream_read(0, stp, buf, len, (off_t)-1);
+            ss = maygvl_copy_stream_read(0, stp, buf, len, (rb_off_t)-1);
         }
         if (ss <= 0) /* EOF or error */
             return;
@@ -12712,8 +12704,8 @@ copy_stream_fallback_body(VALUE arg)
     const int buflen = 16*1024;
     VALUE n;
     VALUE buf = rb_str_buf_new(buflen);
-    off_t rest = stp->copy_length;
-    off_t off = stp->src_offset;
+    rb_off_t rest = stp->copy_length;
+    rb_off_t off = stp->src_offset;
     ID read_method = id_readpartial;
 
     if (!stp->src_fptr) {
@@ -12725,7 +12717,7 @@ copy_stream_fallback_body(VALUE arg)
     while (1) {
         long numwrote;
         long l;
-        if (stp->copy_length < (off_t)0) {
+        if (stp->copy_length < (rb_off_t)0) {
             l = buflen;
         }
         else {
@@ -12750,7 +12742,7 @@ copy_stream_fallback_body(VALUE arg)
                 return Qnil;
             if (ss == 0)
                 rb_eof_error();
-            if (off >= (off_t)0)
+            if (off >= (rb_off_t)0)
                 off += ss;
         }
         n = rb_io_write(stp->dst, buf);
@@ -12768,7 +12760,7 @@ copy_stream_fallback_body(VALUE arg)
 static VALUE
 copy_stream_fallback(struct copy_stream_struct *stp)
 {
-    if (!stp->src_fptr && stp->src_offset >= (off_t)0) {
+    if (!stp->src_fptr && stp->src_offset >= (rb_off_t)0) {
         rb_raise(rb_eArgError, "cannot specify src_offset for non-IO");
     }
     rb_rescue2(copy_stream_fallback_body, (VALUE)stp,
@@ -12868,10 +12860,10 @@ copy_stream_body(VALUE arg)
     if (stp->dst_fptr)
         io_ascii8bit_binmode(stp->dst_fptr);
 
-    if (stp->src_offset < (off_t)0 && stp->src_fptr && stp->src_fptr->rbuf.len) {
+    if (stp->src_offset < (rb_off_t)0 && stp->src_fptr && stp->src_fptr->rbuf.len) {
         size_t len = stp->src_fptr->rbuf.len;
         VALUE str;
-        if (stp->copy_length >= (off_t)0 && stp->copy_length < (off_t)len) {
+        if (stp->copy_length >= (rb_off_t)0 && stp->copy_length < (rb_off_t)len) {
             len = (size_t)stp->copy_length;
         }
         str = rb_str_buf_new(len);
@@ -12885,7 +12877,7 @@ copy_stream_body(VALUE arg)
             rb_io_write(dst_io, str);
         rb_str_resize(str, 0);
         stp->total += len;
-        if (stp->copy_length >= (off_t)0)
+        if (stp->copy_length >= (rb_off_t)0)
             stp->copy_length -= len;
     }
 
@@ -12998,12 +12990,12 @@ rb_io_s_copy_stream(int argc, VALUE *argv, VALUE io)
     st.dst_fptr = NULL;
 
     if (NIL_P(length))
-        st.copy_length = (off_t)-1;
+        st.copy_length = (rb_off_t)-1;
     else
         st.copy_length = NUM2OFFT(length);
 
     if (NIL_P(src_offset))
-        st.src_offset = (off_t)-1;
+        st.src_offset = (rb_off_t)-1;
     else
         st.src_offset = NUM2OFFT(src_offset);
 

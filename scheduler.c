@@ -242,7 +242,7 @@ rb_fiber_scheduler_io_read(VALUE scheduler, VALUE io, VALUE buffer, size_t lengt
 }
 
 VALUE
-rb_fiber_scheduler_io_pread(VALUE scheduler, VALUE io, VALUE buffer, size_t length, off_t offset)
+rb_fiber_scheduler_io_pread(VALUE scheduler, VALUE io, VALUE buffer, size_t length, rb_off_t offset)
 {
     VALUE arguments[] = {
         io, buffer, SIZET2NUM(length), OFFT2NUM(offset)
@@ -262,7 +262,7 @@ rb_fiber_scheduler_io_write(VALUE scheduler, VALUE io, VALUE buffer, size_t leng
 }
 
 VALUE
-rb_fiber_scheduler_io_pwrite(VALUE scheduler, VALUE io, VALUE buffer, size_t length, off_t offset)
+rb_fiber_scheduler_io_pwrite(VALUE scheduler, VALUE io, VALUE buffer, size_t length, rb_off_t offset)
 {
     VALUE arguments[] = {
         io, buffer, SIZET2NUM(length), OFFT2NUM(offset)
