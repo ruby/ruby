@@ -128,11 +128,6 @@ RSpec.shared_examples "bundle install --standalone" do
       skip "does not work on rubygems versions where `--install_dir` doesn't respect --default" unless Gem::Installer.for_spec(loaded_gemspec, :install_dir => "/foo").default_spec_file == "/foo/specifications/default/bundler-#{Bundler::VERSION}.gemspec" # Since rubygems 3.2.0.rc.2
       skip "does not work on old rubies because the realworld gems that need to be installed don't support them" if RUBY_VERSION < "2.7.0"
 
-      if Gem.win_platform? && RUBY_VERSION < "3.1.0"
-        default_fiddle_version = ruby "require 'fiddle'; puts Gem.loaded_specs['fiddle'].version"
-        realworld_system_gems "fiddle --version #{default_fiddle_version}"
-      end
-
       realworld_system_gems "tsort --version 0.1.0"
 
       necessary_system_gems = ["optparse --version 0.1.1", "psych --version 3.3.2", "logger --version 1.4.3", "etc --version 1.2.0", "stringio --version 3.0.1"]
