@@ -18,14 +18,13 @@ def src.value(name)
   end
   eval(val.gsub(/#/, '\\#').gsub(/((?:\G|[^\\])(?:\\\\)*)\n/, '\1'))
 end
-version = Hash.new {|h, v| h[v] || src.value(v)}
-arg['versions'] = version
+arg['versions'] = version = {}
 File.read(File.join(arg['srcdir'], 'version.c')).
   scan(/rb_define_global_const\("(RUBY_\w+)",[^;]*?\bMK(?:INT|(STR))\(([^()]*)\)/m) do |n, s, v|
-  version[n] = arg[v] || (s ? "" : 0)
+  version[n] = arg[v] || src.value(v) || (s ? "" : 0)
 end
-arg['RUBY_DESCRIPTION_WITH_MJIT'] = arg['description_with_mjit'] || ""
-arg['RUBY_DESCRIPTION_WITH_YJIT'] = arg['description_with_yjit'] || ""
+arg['RUBY_DESCRIPTION_WITH_MJIT'] = src.value('description_with_mjit') || version['RUBY_DESCRIPTION']
+arg['RUBY_DESCRIPTION_WITH_YJIT'] = src.value('description_with_yjit') || version['RUBY_DESCRIPTION']
 %>baseruby="<%=arg['BASERUBY']%>"
 _\
 =begin
