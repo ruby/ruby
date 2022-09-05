@@ -742,23 +742,17 @@ mjit_compact_unit(struct rb_mjit_unit *unit)
     return 1;
 }
 
+extern pid_t rb_mjit_fork();
+
 static pid_t
 start_mjit_compact(struct rb_mjit_unit *unit)
 {
-    rb_vm_t *vm = GET_VM();
-    rb_native_mutex_lock(&vm->waitpid_lock);
-
-    pid_t pid = rb_fork();
+    pid_t pid = rb_mjit_fork();
     if (pid == 0) {
-        rb_native_mutex_unlock(&vm->waitpid_lock);
-
         int exit_code = mjit_compact_unit(unit);
         exit(exit_code);
     }
     else {
-        mjit_add_waiting_pid(vm, pid);
-        rb_native_mutex_unlock(&vm->waitpid_lock);
-
         return pid;
     }
 }
@@ -908,20 +902,12 @@ mjit_compile_unit(struct rb_mjit_unit *unit)
 static pid_t
 start_mjit_compile(struct rb_mjit_unit *unit)
 {
-    rb_vm_t *vm = GET_VM();
-    rb_native_mutex_lock(&vm->waitpid_lock);
-
-    pid_t pid = rb_fork();
+    pid_t pid = rb_mjit_fork();
     if (pid == 0) {
-        rb_native_mutex_unlock(&vm->waitpid_lock);
-
         int exit_code = mjit_compile_unit(unit);
         exit(exit_code);
     }
     else {
-        mjit_add_waiting_pid(vm, pid);
-        rb_native_mutex_unlock(&vm->waitpid_lock);
-
         return pid;
     }
 }
