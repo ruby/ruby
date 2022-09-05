@@ -617,7 +617,7 @@ update-known-errors:
 	$(IFCHANGE) $(srcdir)/defs/known_errors.def -
 
 INSNS	= opt_sc.inc optinsn.inc optunifs.inc insns.inc insns_info.inc \
-	  vmtc.inc vm.inc mjit_compile.inc
+	  vmtc.inc vm.inc mjit_compile_attr.inc
 
 $(INSNS): $(srcdir)/insns.def vm_opts.h \
 	  $(srcdir)/defs/opt_operand.def $(srcdir)/defs/opt_insn_unif.def \
@@ -651,22 +651,21 @@ $(INSNS): $(srcdir)/insns.def vm_opts.h \
 	  $(tooldir)/ruby_vm/views/_insn_sp_pc_dependency.erb \
 	  $(tooldir)/ruby_vm/views/_insn_type_chars.erb \
 	  $(tooldir)/ruby_vm/views/_leaf_helpers.erb \
-	  $(tooldir)/ruby_vm/views/_mjit_compile_insn.erb \
-	  $(tooldir)/ruby_vm/views/_mjit_compile_insn_body.erb \
-	  $(tooldir)/ruby_vm/views/_mjit_compile_ivar.erb \
-	  $(tooldir)/ruby_vm/views/_mjit_compile_pc_and_sp.erb \
-	  $(tooldir)/ruby_vm/views/_mjit_compile_send.erb \
 	  $(tooldir)/ruby_vm/views/_notice.erb \
 	  $(tooldir)/ruby_vm/views/_sp_inc_helpers.erb \
 	  $(tooldir)/ruby_vm/views/_trace_instruction.erb \
 	  $(tooldir)/ruby_vm/views/insns.inc.erb \
 	  $(tooldir)/ruby_vm/views/insns_info.inc.erb \
-	  $(tooldir)/ruby_vm/views/mjit_compile.inc.erb \
+	  $(tooldir)/ruby_vm/views/mjit_compile_attr.inc.erb \
 	  $(tooldir)/ruby_vm/views/opt_sc.inc.erb \
 	  $(tooldir)/ruby_vm/views/optinsn.inc.erb \
 	  $(tooldir)/ruby_vm/views/optunifs.inc.erb \
 	  $(tooldir)/ruby_vm/views/vm.inc.erb \
 	  $(tooldir)/ruby_vm/views/vmtc.inc.erb
+	$(ECHO) generating $@
+	$(Q) $(BASERUBY) -Ku $(tooldir)/insns2vm.rb $(INSNS2VMOPT) $@
+
+$(srcdir)/mjit_instruction.rb: $(tooldir)/ruby_vm/views/mjit_instruction.rb.erb
 	$(ECHO) generating $@
 	$(Q) $(BASERUBY) -Ku $(tooldir)/insns2vm.rb $(INSNS2VMOPT) $@
 

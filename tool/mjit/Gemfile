@@ -1,0 +1,4 @@
+source 'https://rubygems.org'
+
+gem 'ffi-clang', git: 'https://github.com/ioquatix/ffi-clang'
+gem 'pry-byebug'

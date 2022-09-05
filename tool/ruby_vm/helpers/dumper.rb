@@ -28,7 +28,7 @@ class RubyVM::Dumper
     path  = Pathname.new(__FILE__)
     path  = (path.relative_path_from(Pathname.pwd) rescue path).dirname
     path += '../views'
-    path += spec
+    path += File.basename(spec)
     src   = path.read mode: 'rt:utf-8:utf-8'
   rescue Errno::ENOENT
     raise "don't know how to generate #{path}"
