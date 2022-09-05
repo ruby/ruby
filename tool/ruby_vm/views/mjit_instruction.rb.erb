@@ -36,5 +36,5 @@ module RubyVM::MJIT
 % end
   }
 
-  private_constant *constants
+  private_constant(*constants)
 end if RubyVM::MJIT.enabled?
