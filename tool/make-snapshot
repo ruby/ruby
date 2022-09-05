@@ -436,7 +436,7 @@ def package(vcs, rev, destdir, tmp = nil)
         # use fallback file
       end
       clean.create("config.status", status)
-      clean.create("noarch-fake.rb")
+      clean.create("noarch-fake.rb", "require_relative 'cross'\n")
       FileUtils.mkpath(hdrdir = "#{extout}/include/ruby")
       File.binwrite("#{hdrdir}/config.h", "")
       FileUtils.mkpath(defaults = "#{extout}/rubygems/defaults")
