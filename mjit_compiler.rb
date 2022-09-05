@@ -8,7 +8,7 @@ if RubyVM::MJIT.enabled?
   end
 
   case RUBY_PLATFORM.split('-', 2).first
-  when 'x86_64', 'aarch64', 'arm64'
+  when 'x86_64', 'aarch64', 'arm64', 's390x'
     require 'mjit/c_64'
   else
     require 'mjit/c_32'
