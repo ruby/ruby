@@ -3197,12 +3197,6 @@ fn gen_branchif(
         gen_check_ints(asm, side_exit);
     }
 
-    // Test if any bit (outside of the Qnil bit) is on
-    // RUBY_Qfalse  /* ...0000 0000 */
-    // RUBY_Qnil    /* ...0000 1000 */
-    let val_opnd = ctx.stack_pop(1);
-    asm.test(val_opnd, Opnd::Imm(!Qnil.as_i64()));
-
     // Get the branch target instruction offsets
     let next_idx = jit_next_insn_idx(jit);
     let jump_idx = (next_idx as i32) + jump_offset;
@@ -3215,18 +3209,31 @@ fn gen_branchif(
         idx: jump_idx as u32,
     };
 
-    // Generate the branch instructions
-    gen_branch(
-        jit,
-        ctx,
-        asm,
-        ocb,
-        jump_block,
-        ctx,
-        Some(next_block),
-        Some(ctx),
-        gen_branchif_branch,
-    );
+    // Test if any bit (outside of the Qnil bit) is on
+    // RUBY_Qfalse  /* ...0000 0000 */
+    // RUBY_Qnil    /* ...0000 1000 */
+    let val_type = ctx.get_opnd_type(StackOpnd(0));
+    let val_opnd = ctx.stack_pop(1);
+
+    if let Some(result) = val_type.known_truthy() {
+        let target = if result { jump_block } else { next_block };
+        gen_direct_jump(jit, ctx, target, asm);
+    } else {
+        asm.test(val_opnd.into(), Opnd::Imm(!Qnil.as_i64()));
+
+        // Generate the branch instructions
+        gen_branch(
+            jit,
+            ctx,
+            asm,
+            ocb,
+            jump_block,
+            ctx,
+            Some(next_block),
+            Some(ctx),
+            gen_branchif_branch,
+        );
+    }
 
     EndBlock
 }
@@ -3261,13 +3268,6 @@ fn gen_branchunless(
         gen_check_ints(asm, side_exit);
     }
 
-    // Test if any bit (outside of the Qnil bit) is on
-    // RUBY_Qfalse  /* ...0000 0000 */
-    // RUBY_Qnil    /* ...0000 1000 */
-    let val_opnd = ctx.stack_pop(1);
-    let not_qnil = !Qnil.as_i64();
-    asm.test(val_opnd, not_qnil.into());
-
     // Get the branch target instruction offsets
     let next_idx = jit_next_insn_idx(jit) as i32;
     let jump_idx = next_idx + jump_offset;
@@ -3280,18 +3280,32 @@ fn gen_branchunless(
         idx: jump_idx.try_into().unwrap(),
     };
 
-    // Generate the branch instructions
-    gen_branch(
-        jit,
-        ctx,
-        asm,
-        ocb,
-        jump_block,
-        ctx,
-        Some(next_block),
-        Some(ctx),
-        gen_branchunless_branch,
-    );
+    let val_type = ctx.get_opnd_type(StackOpnd(0));
+    let val_opnd = ctx.stack_pop(1);
+
+    if let Some(result) = val_type.known_truthy() {
+        let target = if result { next_block } else { jump_block };
+        gen_direct_jump(jit, ctx, target, asm);
+    } else {
+        // Test if any bit (outside of the Qnil bit) is on
+        // RUBY_Qfalse  /* ...0000 0000 */
+        // RUBY_Qnil    /* ...0000 1000 */
+        let not_qnil = !Qnil.as_i64();
+        asm.test(val_opnd.into(), not_qnil.into());
+
+        // Generate the branch instructions
+        gen_branch(
+            jit,
+            ctx,
+            asm,
+            ocb,
+            jump_block,
+            ctx,
+            Some(next_block),
+            Some(ctx),
+            gen_branchunless_branch,
+        );
+    }
 
     EndBlock
 }
