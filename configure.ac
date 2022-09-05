@@ -3744,7 +3744,7 @@ AC_ARG_ENABLE(jit-support,
     AS_HELP_STRING([--disable-jit-support], [disable JIT features]),
     [MJIT_SUPPORT=$enableval],
     [AS_CASE(["$target_os"],
-        [wasi | mingw*], [MJIT_SUPPORT=no],
+        [wasi | mingw* | solaris*], [MJIT_SUPPORT=no],
         [MJIT_SUPPORT=yes]
     )])
 
