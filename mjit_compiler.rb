@@ -3,12 +3,12 @@
 if RubyVM::MJIT.enabled?
   begin
     require 'etc'
+    require 'fiddle'
   rescue LoadError
     return # skip miniruby
   end
 
-  case RUBY_PLATFORM.split('-', 2).first
-  when 'x86_64', 'aarch64', 'arm64', 's390x'
+  if Fiddle::SIZEOF_VOIDP == 8
     require 'mjit/c_64'
   else
     require 'mjit/c_32'
