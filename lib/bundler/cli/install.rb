@@ -94,9 +94,8 @@ module Bundler
 
     def warn_if_root
       return if Bundler.settings[:silence_root_warning] || Gem.win_platform? || !Process.uid.zero?
-      Bundler.ui.warn "Don't run Bundler as root. Bundler can ask for sudo " \
-        "if it is needed, and installing your bundle as root will break this " \
-        "application for all non-root users on this machine.", :wrap => true
+      Bundler.ui.warn "Don't run Bundler as root. Installing your bundle as root " \
+                      "will break this application for all non-root users on this machine.", :wrap => true
     end
 
     def dependencies_count_for(definition)

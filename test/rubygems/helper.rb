@@ -463,14 +463,7 @@ class Gem::TestCase < Test::Unit::TestCase
 
     Dir.chdir @current_dir
 
-    # Prevent a race condition on removing TMPDIR being written by MJIT
-    if defined?(RubyVM::MJIT.enabled?) && RubyVM::MJIT.enabled?
-      RubyVM::MJIT.pause(wait: false)
-    end
     FileUtils.rm_rf @tempdir
-    if defined?(RubyVM::MJIT.enabled?) && RubyVM::MJIT.enabled?
-      RubyVM::MJIT.resume
-    end
 
     ENV.replace(@orig_env)
 

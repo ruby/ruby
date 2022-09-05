@@ -2,8 +2,11 @@
 
 module Bundler
   module FetchMetadata
+    # A fallback is included because the original version of the specification
+    # API didn't include that field, so some marshalled specs in the index have it
+    # set to +nil+.
     def matches_current_ruby?
-      @required_ruby_version ||= _remote_specification.required_ruby_version
+      @required_ruby_version ||= _remote_specification.required_ruby_version || Gem::Requirement.default
 
       super
     end
