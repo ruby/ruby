@@ -5086,41 +5086,17 @@ rb_file_s_join(VALUE klass, VALUE args)
     return rb_file_join(args);
 }
 
-#if defined(HAVE_TRUNCATE) || defined(HAVE_CHSIZE)
+#if defined(HAVE_TRUNCATE)
 struct truncate_arg {
     const char *path;
-#if defined(HAVE_TRUNCATE)
-#define NUM2POS(n) NUM2OFFT(n)
     off_t pos;
-#else
-#define NUM2POS(n) NUM2LONG(n)
-    long pos;
-#endif
 };
 
 static void *
 nogvl_truncate(void *ptr)
 {
     struct truncate_arg *ta = ptr;
-#ifdef HAVE_TRUNCATE
     return (void *)(VALUE)truncate(ta->path, ta->pos);
-#else /* defined(HAVE_CHSIZE) */
-    {
-        int tmpfd = rb_cloexec_open(ta->path, 0, 0);
-
-        if (tmpfd < 0)
-            return (void *)-1;
-        rb_update_max_fd(tmpfd);
-        if (chsize(tmpfd, ta->pos) < 0) {
-            int e = errno;
-            close(tmpfd);
-            errno = e;
-            return (void *)-1;
-        }
-        close(tmpfd);
-        return 0;
-    }
-#endif
 }
 
 /*
@@ -5144,7 +5120,7 @@ rb_file_s_truncate(VALUE klass, VALUE path, VALUE len)
     struct truncate_arg ta;
     int r;
 
-    ta.pos = NUM2POS(len);
+    ta.pos = NUM2OFFT(len);
     FilePathValue(path);
     path = rb_str_encode_ospath(path);
     ta.path = StringValueCStr(path);
@@ -5154,22 +5130,15 @@ rb_file_s_truncate(VALUE klass, VALUE path, VALUE len)
     if (r < 0)
         rb_sys_fail_path(path);
     return INT2FIX(0);
-#undef NUM2POS
 }
 #else
 #define rb_file_s_truncate rb_f_notimplement
 #endif
 
-#if defined(HAVE_FTRUNCATE) || defined(HAVE_CHSIZE)
+#if defined(HAVE_FTRUNCATE)
 struct ftruncate_arg {
     int fd;
-#if defined(HAVE_FTRUNCATE)
-#define NUM2POS(n) NUM2OFFT(n)
     off_t pos;
-#else
-#define NUM2POS(n) NUM2LONG(n)
-    long pos;
-#endif
 };
 
 static VALUE
@@ -5177,11 +5146,7 @@ nogvl_ftruncate(void *ptr)
 {
     struct ftruncate_arg *fa = ptr;
 
-#ifdef HAVE_FTRUNCATE
     return (VALUE)ftruncate(fa->fd, fa->pos);
-#else /* defined(HAVE_CHSIZE) */
-    return (VALUE)chsize(fa->fd, fa->pos);
-#endif
 }
 
 /*
@@ -5204,7 +5169,7 @@ rb_file_truncate(VALUE obj, VALUE len)
     rb_io_t *fptr;
     struct ftruncate_arg fa;
 
-    fa.pos = NUM2POS(len);
+    fa.pos = NUM2OFFT(len);
     GetOpenFile(obj, fptr);
     if (!(fptr->mode & FMODE_WRITABLE)) {
         rb_raise(rb_eIOError, "not opened for writing");
@@ -5215,7 +5180,6 @@ rb_file_truncate(VALUE obj, VALUE len)
         rb_sys_fail_path(fptr->pathv);
     }
     return INT2FIX(0);
-#undef NUM2POS
 }
 #else
 #define rb_file_truncate rb_f_notimplement
