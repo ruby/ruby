@@ -4,7 +4,15 @@ require 'etc'
 require 'fiddle/import'
 require 'set'
 
-arch_bits = Integer(ARGV.first || 64)
+unless build_dir = ARGV.first
+  abort "Usage: #{$0} BUILD_DIR"
+end
+
+if Fiddle::SIZEOF_VOIDP == 8
+  arch_bits = 64
+else
+  arch_bits = 32
+end
 
 # Help ffi-clang find libclang
 if arch_bits == 64
@@ -235,7 +243,7 @@ class BindingGenerator
         in Node[kind: :field_decl, spelling:, bitwidth:, children: [_grandchild]] if bitwidth > 0
           buf << field_builder.call(spelling, "CType::BitField.new(#{bitwidth}, #{node.offsetof.fetch(spelling) % 8})")
         # In most cases, we'd like to let generate_type handle the type unless it's "(unnamed ...)".
-        in Node[kind: :field_decl, spelling:, type:] if !type.empty? && !type.match?(/\(unnamed [^)]+\)\z/)
+        in Node[kind: :field_decl, spelling:, type:] if !type.empty? && !type.match?(/\((unnamed|anonymous) [^)]+\)\z/)
           buf << field_builder.call(spelling, generate_type(type))
         # Lastly, "(unnamed ...)" struct and union are handled here, which are also struct-specific.
         in Node[kind: :field_decl, spelling:, children: [grandchild]]
@@ -312,33 +320,27 @@ class BindingGenerator
 end
 
 src_dir = File.expand_path('../..', __dir__)
-if arch_bits == 64
-  build_dir = File.join(src_dir, '.ruby')
-  ruby_platform = RUBY_PLATFORM
-else
-  build_dir = File.join(src_dir, '.ruby-m32')
-  ruby_platform = 'i686-linux'
-end
+build_dir = File.expand_path(build_dir)
 cflags = [
   src_dir,
   build_dir,
   File.join(src_dir, 'include'),
-  File.join(build_dir, ".ext/include/#{ruby_platform}"),
+  File.join(build_dir, ".ext/include/#{RUBY_PLATFORM}"),
 ].map { |dir| "-I#{dir}" }
 
 nodes = HeaderParser.new(File.join(src_dir, 'mjit_compiler.h'), cflags: cflags).parse
 generator = BindingGenerator.new(
   macros: %w[
+    NOT_COMPILED_STACK_SIZE
     USE_LAZY_LOAD
     USE_RVARGC
     VM_CALL_KW_SPLAT
     VM_CALL_TAILCALL
-    NOT_COMPILED_STACK_SIZE
   ],
   enums: {
     rb_method_type_t: %w[
-      VM_METHOD_TYPE_ISEQ
       VM_METHOD_TYPE_CFUNC
+      VM_METHOD_TYPE_ISEQ
     ],
     vm_call_flag_bits: %w[
       VM_CALL_KW_SPLAT_bit
@@ -346,43 +348,43 @@ generator = BindingGenerator.new(
     ],
   },
   types: %w[
+    CALL_DATA
     IC
     IVC
     RB_BUILTIN
     VALUE
+    compile_branch
     compile_status
+    inlined_call_context
     iseq_inline_constant_cache
     iseq_inline_constant_cache_entry
     iseq_inline_iv_cache_entry
     iseq_inline_storage_entry
+    mjit_options
     rb_builtin_function
+    rb_call_data
+    rb_callable_method_entry_struct
+    rb_callcache
+    rb_callinfo
     rb_cref_t
     rb_iseq_constant_body
+    rb_iseq_location_t
     rb_iseq_struct
     rb_iseq_t
     rb_iv_index_tbl_entry
-    rb_mjit_compile_info
-    rb_serial_t
-    rb_mjit_unit
-    CALL_DATA
-    rb_call_data
-    rb_callcache
-    rb_callable_method_entry_struct
     rb_method_definition_struct
     rb_method_iseq_t
-    rb_callinfo
     rb_method_type_t
-    mjit_options
-    compile_branch
-    inlined_call_context
-    rb_iseq_location_t
+    rb_mjit_compile_info
+    rb_mjit_unit
+    rb_serial_t
   ],
   ruby_fields: {
     rb_iseq_location_struct: %w[
-      pathobj
       base_label
-      label
       first_lineno
+      label
+      pathobj
     ]
   },
 )

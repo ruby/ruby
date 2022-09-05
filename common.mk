@@ -229,6 +229,21 @@ yes-mjit-headers: mjit_config.h PHONY
 mjit.$(OBJEXT): mjit_config.h
 mjit_config.h: Makefile
 
+.PHONY: mjit-bindgen
+mjit-bindgen:
+	$(Q)$(XRUBY) -C $(srcdir) -Ilib \
+		-e 'ENV["GEM_HOME"] = File.expand_path(".bundle")' \
+		-e 'ENV["BUNDLE_APP_CONFIG"] = File.expand_path(".bundle")' \
+		-e 'ENV["BUNDLE_PATH__SYSTEM"] = "true"' \
+		-e 'ENV["BUNDLE_WITHOUT"] = "lint doc"' \
+		-e 'load "spec/bundler/support/bundle.rb"' -- install --gemfile=tool/mjit/Gemfile
+	$(Q)$(XRUBY) -C $(srcdir) -Ilib \
+		-e 'ENV["GEM_HOME"] = File.expand_path(".bundle")' \
+		-e 'ENV["BUNDLE_APP_CONFIG"] = File.expand_path(".bundle")' \
+		-e 'ENV["BUNDLE_GEMFILE"] = "tool/mjit/Gemfile"' \
+		-e 'ENV["BUNDLE_PATH__SYSTEM"] = "true"' \
+		-e 'ENV["BUNDLE_WITHOUT"] = "lint doc"' \
+		-e 'load "spec/bundler/support/bundle.rb"' -- exec tool/mjit/bindgen.rb $(CURDIR)
 
 # These rules using MJIT_HEADER_SUFFIX must be in common.mk, not
 # Makefile.in, in order to override the macro in defs/universal.mk.
