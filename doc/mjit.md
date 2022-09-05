@@ -14,7 +14,7 @@ The following platforms are either tested on CI or assumed to work.
 The MJIT support for the following platforms is no longer maintained.
 
 * OS: Windows (mswin, MinGW), Solaris
-* Arch: SPARC
+* Arch: SPARC, s390x
 
 ### Architectures
 
