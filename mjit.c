@@ -1806,6 +1806,15 @@ mjit_init(const struct mjit_options *opts)
 {
     VM_ASSERT(mjit_enabled);
     mjit_opts = *opts;
+
+    // MJIT doesn't support miniruby, but it might reach here by MJIT_FORCE_ENABLE.
+    VALUE rb_mMJIT = rb_const_get(rb_cRubyVM, rb_intern("MJIT"));
+    if (!rb_const_defined(rb_mMJIT, rb_intern("Compiler"))) {
+        verbose(1, "Disabling MJIT because RubyVM::MJIT::Compiler is not defined");
+        mjit_enabled = false;
+        return;
+    }
+
     mjit_call_p = true;
     mjit_pid = getpid();
 
