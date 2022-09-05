@@ -64,7 +64,7 @@ io_buffer_map_memory(size_t size)
 }
 
 static void
-io_buffer_map_file(struct rb_io_buffer *data, int descriptor, size_t size, off_t offset, enum rb_io_buffer_flags flags)
+io_buffer_map_file(struct rb_io_buffer *data, int descriptor, size_t size, rb_off_t offset, enum rb_io_buffer_flags flags)
 {
 #if defined(_WIN32)
     HANDLE file = (HANDLE)_get_osfhandle(descriptor);
@@ -409,7 +409,7 @@ rb_io_buffer_new(void *base, size_t size, enum rb_io_buffer_flags flags)
 }
 
 VALUE
-rb_io_buffer_map(VALUE io, size_t size, off_t offset, enum rb_io_buffer_flags flags)
+rb_io_buffer_map(VALUE io, size_t size, rb_off_t offset, enum rb_io_buffer_flags flags)
 {
     io_buffer_experimental();
 
@@ -478,7 +478,7 @@ io_buffer_map(int argc, VALUE *argv, VALUE klass)
         size = RB_NUM2SIZE(argv[1]);
     }
     else {
-        off_t file_size = rb_file_size(io);
+        rb_off_t file_size = rb_file_size(io);
 
         // Compiler can confirm that we handled file_size < 0 case:
         if (file_size < 0) {
@@ -494,7 +494,7 @@ io_buffer_map(int argc, VALUE *argv, VALUE klass)
         }
     }
 
-    off_t offset = 0;
+    rb_off_t offset = 0;
     if (argc >= 3) {
         offset = NUM2OFFT(argv[2]);
     }
@@ -2037,7 +2037,7 @@ io_buffer_read(VALUE self, VALUE io, VALUE length)
 }
 
 VALUE
-rb_io_buffer_pread(VALUE self, VALUE io, size_t length, off_t offset)
+rb_io_buffer_pread(VALUE self, VALUE io, size_t length, rb_off_t offset)
 {
     VALUE scheduler = rb_fiber_scheduler_current();
     if (scheduler != Qnil) {
@@ -2063,16 +2063,16 @@ rb_io_buffer_pread(VALUE self, VALUE io, size_t length, off_t offset)
     ssize_t result = pread(descriptor, base, size, offset);
 #else
     // This emulation is not thread safe, but the GVL means it's unlikely to be a problem.
-    off_t current_offset = lseek(descriptor, 0, SEEK_CUR);
-    if (current_offset == (off_t)-1)
+    rb_off_t current_offset = lseek(descriptor, 0, SEEK_CUR);
+    if (current_offset == (rb_off_t)-1)
         return rb_fiber_scheduler_io_result(-1, errno);
 
-    if (lseek(descriptor, offset, SEEK_SET) == (off_t)-1)
+    if (lseek(descriptor, offset, SEEK_SET) == (rb_off_t)-1)
         return rb_fiber_scheduler_io_result(-1, errno);
 
     ssize_t result = read(descriptor, base, size);
 
-    if (lseek(descriptor, current_offset, SEEK_SET) == (off_t)-1)
+    if (lseek(descriptor, current_offset, SEEK_SET) == (rb_off_t)-1)
         return rb_fiber_scheduler_io_result(-1, errno);
 #endif
 
@@ -2120,7 +2120,7 @@ io_buffer_write(VALUE self, VALUE io, VALUE length)
 }
 
 VALUE
-rb_io_buffer_pwrite(VALUE self, VALUE io, size_t length, off_t offset)
+rb_io_buffer_pwrite(VALUE self, VALUE io, size_t length, rb_off_t offset)
 {
     VALUE scheduler = rb_fiber_scheduler_current();
     if (scheduler != Qnil) {
@@ -2146,16 +2146,16 @@ rb_io_buffer_pwrite(VALUE self, VALUE io, size_t length, off_t offset)
     ssize_t result = pwrite(descriptor, base, length, offset);
 #else
     // This emulation is not thread safe, but the GVL means it's unlikely to be a problem.
-    off_t current_offset = lseek(descriptor, 0, SEEK_CUR);
-    if (current_offset == (off_t)-1)
+    rb_off_t current_offset = lseek(descriptor, 0, SEEK_CUR);
+    if (current_offset == (rb_off_t)-1)
         return rb_fiber_scheduler_io_result(-1, errno);
 
-    if (lseek(descriptor, offset, SEEK_SET) == (off_t)-1)
+    if (lseek(descriptor, offset, SEEK_SET) == (rb_off_t)-1)
         return rb_fiber_scheduler_io_result(-1, errno);
 
     ssize_t result = write(descriptor, base, length);
 
-    if (lseek(descriptor, current_offset, SEEK_SET) == (off_t)-1)
+    if (lseek(descriptor, current_offset, SEEK_SET) == (rb_off_t)-1)
         return rb_fiber_scheduler_io_result(-1, errno);
 #endif
 

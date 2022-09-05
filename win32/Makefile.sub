@@ -622,6 +622,10 @@ $(CONFIG_H): $(MKFILES) $(srcdir)/win32/Makefile.sub $(win_srcdir)/Makefile.sub
 #define ULL_TO_DOUBLE(n) ((double)(unsigned long)((n)>>32) * (1I64 << 32) + (unsigned long)(n))
 !endif
 #define HAVE_OFF_T 1
+#define rb_off_t __int64
+#define SIGNEDNESS_OF_OFF_T -1
+#define OFFT2NUM(v) LL2NUM(v)
+#define NUM2OFFT(v) NUM2LL(v)
 #define SIZEOF_INT 4
 #define SIZEOF_SHORT 2
 #define SIZEOF_LONG 4

@@ -5899,8 +5899,8 @@ rb_w32_lstati128(const char *path, struct stati128 *st)
 }
 
 /* License: Ruby's */
-off_t
-rb_w32_lseek(int fd, off_t ofs, int whence)
+rb_off_t
+rb_w32_lseek(int fd, rb_off_t ofs, int whence)
 {
     SOCKET sock = TO_SOCKET(fd);
     if (is_socket(sock) || is_pipe(sock)) {
@@ -5941,7 +5941,7 @@ rb_w32_uaccess(const char *path, int mode)
 
 /* License: Ruby's */
 static int
-rb_chsize(HANDLE h, off_t size)
+rb_chsize(HANDLE h, rb_off_t size)
 {
     long upos, lpos, usize, lsize;
     int ret = -1;
@@ -5970,7 +5970,7 @@ rb_chsize(HANDLE h, off_t size)
 
 /* License: Ruby's */
 static int
-w32_truncate(const char *path, off_t length, UINT cp)
+w32_truncate(const char *path, rb_off_t length, UINT cp)
 {
     HANDLE h;
     int ret;
@@ -5992,21 +5992,21 @@ w32_truncate(const char *path, off_t length, UINT cp)
 
 /* License: Ruby's */
 int
-rb_w32_utruncate(const char *path, off_t length)
+rb_w32_utruncate(const char *path, rb_off_t length)
 {
     return w32_truncate(path, length, CP_UTF8);
 }
 
 /* License: Ruby's */
 int
-rb_w32_truncate(const char *path, off_t length)
+rb_w32_truncate(const char *path, rb_off_t length)
 {
     return w32_truncate(path, length, filecp());
 }
 
 /* License: Ruby's */
 int
-rb_w32_ftruncate(int fd, off_t length)
+rb_w32_ftruncate(int fd, rb_off_t length)
 {
     HANDLE h;
 
@@ -8214,7 +8214,7 @@ VALUE (*const rb_f_notimplement_)(int, const VALUE *, VALUE, VALUE) = rb_f_notim
 #endif
 
 void *
-rb_w32_mmap(void *addr, size_t len, int prot, int flags, int fd, off_t offset)
+rb_w32_mmap(void *addr, size_t len, int prot, int flags, int fd, rb_off_t offset)
 {
     void *ptr;
     //DWORD protect = 0;

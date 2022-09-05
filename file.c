@@ -2517,7 +2517,7 @@ rb_file_birthtime(VALUE obj)
  *
  */
 
-off_t
+rb_off_t
 rb_file_size(VALUE file)
 {
     if (RB_TYPE_P(file, T_FILE)) {
@@ -5089,7 +5089,7 @@ rb_file_s_join(VALUE klass, VALUE args)
 #if defined(HAVE_TRUNCATE)
 struct truncate_arg {
     const char *path;
-    off_t pos;
+    rb_off_t pos;
 };
 
 static void *
@@ -5138,7 +5138,7 @@ rb_file_s_truncate(VALUE klass, VALUE path, VALUE len)
 #if defined(HAVE_FTRUNCATE)
 struct ftruncate_arg {
     int fd;
-    off_t pos;
+    rb_off_t pos;
 };
 
 static VALUE
@@ -6093,7 +6093,7 @@ rb_stat_z(VALUE obj)
 static VALUE
 rb_stat_s(VALUE obj)
 {
-    off_t size = get_stat(obj)->st_size;
+    rb_off_t size = get_stat(obj)->st_size;
 
     if (size == 0) return Qnil;
     return OFFT2NUM(size);
