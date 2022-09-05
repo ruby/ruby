@@ -181,6 +181,7 @@ Note: We're only listing outstanding class updates.
     * psych 5.0.0.dev
     * reline 0.3.1
     * securerandom 0.2.0
+    * set 1.0.3.dev
     * stringio 3.0.3
     * syntax_suggest 0.0.1
     * timeout 0.3.0
