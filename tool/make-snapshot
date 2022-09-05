@@ -416,6 +416,7 @@ def package(vcs, rev, destdir, tmp = nil)
       f.puts "Object.__send__(:remove_const, :RUBY_VERSION)"
       f.puts "RUBY_VERSION='#{version}'"
     end
+    warn "cross.rb:", File.read("cross.rb").gsub(/^/, "> "), ""
     unless File.exist?("configure")
       print "creating configure..."
       unless system([ENV["AUTOCONF"]]*2)
