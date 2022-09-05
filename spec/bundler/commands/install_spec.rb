@@ -293,7 +293,7 @@ RSpec.describe "bundle install with gem sources" do
         G
 
         run "require 'platform_specific' ; puts PLATFORM_SPECIFIC"
-        expect(out).to eq("1.0 x86-mswin32")
+        expect(out).to eq("1.0.0 MSWIN")
       end
     end
 

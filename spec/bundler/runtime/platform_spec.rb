@@ -457,6 +457,8 @@ RSpec.describe "Bundler.setup with multi platform stuff" do
 
         bundle "install"
 
+        platform = "MSWIN" if arch =~ /mswin/
+
         expect(the_bundle).to include_gems "platform_specific 1.0 #{platform}"
       end
     end
