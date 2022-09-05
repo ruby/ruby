@@ -55,7 +55,6 @@ module Bundler
   class CyclicDependencyError < BundlerError; status_code(21); end
   class GemfileLockNotFound < BundlerError; status_code(22); end
   class PluginError < BundlerError; status_code(29); end
-  class SudoNotPermittedError < BundlerError; status_code(30); end
   class ThreadCreationError < BundlerError; status_code(33); end
   class APIResponseMismatchError < BundlerError; status_code(34); end
   class APIResponseInvalidDependenciesError < BundlerError; status_code(35); end

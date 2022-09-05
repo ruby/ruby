@@ -190,27 +190,32 @@ RSpec.describe "bundle flex_install" do
       expect(err).to match(/could not find gem 'rack-obama/i)
     end
 
-    it "suggests deleting the Gemfile.lock file when the Gemfile requires different versions than the lock" do
+    it "discards the locked gems when the Gemfile requires different versions than the lock" do
       bundle "config set force_ruby_platform true"
 
       nice_error = <<-E.strip.gsub(/^ {8}/, "")
-        Bundler could not find compatible versions for gem "rack":
-          In snapshot (Gemfile.lock):
-            rack (= 0.9.1)
+        Could not find gem 'rack (= 1.2)', which is required by gem 'rack-obama (= 2.0)', in rubygems repository #{file_uri_for(gem_repo2)}/ or installed locally.
 
-          In Gemfile:
-            rack-obama (= 2.0) was resolved to 2.0, which depends on
-              rack (= 1.2)
-
-            rack_middleware was resolved to 1.0, which depends on
-              rack (= 0.9.1)
-
-        Deleting your Gemfile.lock file and running `bundle install` will rebuild your snapshot from scratch, using only
-        the gems in your Gemfile, which may resolve the conflict.
+        The source contains the following gems matching 'rack':
+          * rack-0.9.1
+          * rack-1.0.0
       E
 
       bundle :install, :retry => 0, :raise_on_error => false
       expect(err).to end_with(nice_error)
+    end
+
+    it "does not include conflicts with a single requirement tree, because that can't possibly be a conflict" do
+      bundle "config set force_ruby_platform true"
+
+      bad_error = <<-E.strip.gsub(/^ {8}/, "")
+        Bundler could not find compatible versions for gem "rack-obama":
+          In Gemfile:
+            rack-obama (= 2.0)
+      E
+
+      bundle "update rack_middleware", :retry => 0, :raise_on_error => false
+      expect(err).not_to end_with(bad_error)
     end
   end
 
@@ -230,22 +235,6 @@ RSpec.describe "bundle flex_install" do
         gem "jekyll-feed", "~> 0.12"
       G
 
-      lockfile <<-L
-        GEM
-          remote: #{file_uri_for(gem_repo4)}/
-          specs:
-            jekyll-feed (0.16.0)
-
-        PLATFORMS
-          #{lockfile_platforms}
-
-        DEPENDENCIES
-          jekyll-feed
-
-        BUNDLED WITH
-           #{Bundler::VERSION}
-      L
-
       gemfile <<-G
         source "#{file_uri_for(gem_repo4)}"
         gem "github-pages", "~> 226"
@@ -253,24 +242,9 @@ RSpec.describe "bundle flex_install" do
       G
     end
 
-    it "suggests deleting the Gemfile.lock file when the Gemfile requires different versions than the lock" do
-      nice_error = <<-E.strip.gsub(/^ {8}/, "")
-        Bundler could not find compatible versions for gem "jekyll-feed":
-          In snapshot (Gemfile.lock):
-            jekyll-feed (>= 0.16.0)
-
-          In Gemfile:
-            jekyll-feed (~> 0.12)
-
-            github-pages (~> 226) was resolved to 226, which depends on
-              jekyll-feed (= 0.15.1)
-
-        Deleting your Gemfile.lock file and running `bundle install` will rebuild your snapshot from scratch, using only
-        the gems in your Gemfile, which may resolve the conflict.
-      E
-
-      bundle :update, :raise_on_error => false
-      expect(err).to end_with(nice_error)
+    it "discards the conflicting lockfile information and resolves properly" do
+      bundle :update, :raise_on_error => false, :all => true
+      expect(err).to be_empty
     end
   end
 
@@ -374,7 +348,7 @@ RSpec.describe "bundle flex_install" do
       end
     end
 
-    it "prints the correct error message" do
+    it "resolves them" do
       # install Rails 3.0.0.rc
       install_gemfile <<-G
         source "#{file_uri_for(gem_repo2)}"
@@ -383,13 +357,12 @@ RSpec.describe "bundle flex_install" do
       G
 
       # upgrade Rails to 3.0.0 and then install again
-      install_gemfile <<-G, :raise_on_error => false
+      install_gemfile <<-G
         source "#{file_uri_for(gem_repo2)}"
         gem "rails", "3.0.0"
         gem "capybara", "0.3.9"
       G
-
-      expect(err).to include("Gemfile.lock")
+      expect(err).to be_empty
     end
   end
 end

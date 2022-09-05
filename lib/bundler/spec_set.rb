@@ -114,8 +114,18 @@ module Bundler
       SpecSet.new(arr)
     end
 
+    def -(other)
+      SpecSet.new(to_a - other.to_a)
+    end
+
     def find_by_name_and_platform(name, platform)
       @specs.detect {|spec| spec.name == name && spec.match_platform(platform) }
+    end
+
+    def delete_by_name_and_version(name, version)
+      @specs.reject! {|spec| spec.name == name && spec.version == version }
+      @lookup = nil
+      @sorted = nil
     end
 
     def what_required(spec)

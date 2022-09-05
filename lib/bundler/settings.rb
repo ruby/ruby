@@ -45,7 +45,6 @@ module Bundler
       silence_root_warning
       suppress_install_using_messages
       update_requires_all_flag
-      use_gem_version_promoter_for_major_updates
     ].freeze
 
     NUMBER_KEYS = %w[
@@ -276,12 +275,6 @@ module Bundler
         raise InvalidOption,
           "Using a custom path while using system gems is unsupported.\n#{path.join("\n")}\n#{system_path.join("\n")}\n#{disable_shared_gems.join("\n")}"
       end
-    end
-
-    def allow_sudo?
-      key = key_for(:path)
-      path_configured = @temporary.key?(key) || @local_config.key?(key)
-      !path_configured
     end
 
     def ignore_config?
