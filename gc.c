@@ -4802,6 +4802,8 @@ rb_mmtk_call_finalizer(rb_objspace_t *objspace, bool on_exit)
         mmtk_free_raw_vec_of_obj_ref(resurrrected_objs);
     } else {
         void *resurrected;
+        // mmtk_get_finalized_object is thread-safe,
+        // so in theory multiple Ruby threads can poll for resurrected objects concurrently.
         while ((resurrected = mmtk_get_finalized_object()) != NULL) {
             VALUE obj = (VALUE)resurrected;
             rb_mmtk_call_finalizer_inner(objspace, obj, on_exit);
@@ -12519,9 +12521,11 @@ objspace_malloc_increase_body(rb_objspace_t *objspace, void *mem, size_t new_siz
         if (malloc_increase > malloc_limit && ruby_native_thread_p() && !dont_gc_val()) {
 #if USE_MMTK
             if (rb_mmtk_enabled_p()) {
+                // This will trigger user-requested GC.
+                // After GC finishes, obj_free will be invoked on resurrected objects.
                 mmtk_handle_user_collection_request((MMTk_VMMutatorThread)GET_THREAD());
+
                 gc_reset_malloc_info(objspace, true);
-                rb_mmtk_call_finalizer(objspace, false);
             } else {
 #endif
             if (ruby_thread_has_gvl_p() && is_lazy_sweeping(objspace)) {
@@ -15236,6 +15240,15 @@ rb_mmtk_block_for_gc(MMTk_VMMutatorThread tls)
     rb_thread_t *th = GET_THREAD();
     RB_GC_SAVE_MACHINE_CONTEXT(th);
     rb_mmtk_use_mmtk_global(rb_mmtk_block_for_gc_internal, NULL);
+
+    // Use this opportunity to execute finalizers.
+#if USE_MMTK
+    if (rb_mmtk_enabled_p()) {
+        RUBY_DEBUG_LOG("Call finalizers after GC finished...");
+        rb_mmtk_call_finalizer(&rb_objspace, false);
+        RUBY_DEBUG_LOG("Finished calling finalizers.");
+    }
+#endif
 }
 
 static size_t
