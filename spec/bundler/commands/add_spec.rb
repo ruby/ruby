@@ -236,6 +236,40 @@ RSpec.describe "bundle add" do
     end
   end
 
+  describe "with mismatched pair in --git/--github, --branch/--ref" do
+    describe "with --git and --github" do
+      it "throws error" do
+        bundle "add 'foo' --git x --github y", :raise_on_error => false
+
+        expect(err).to include("You cannot specify `--git` and `--github` at the same time.")
+      end
+    end
+
+    describe "with --branch and --ref with --git" do
+      it "throws error" do
+        bundle "add 'foo' --branch x --ref y --git file://git", :raise_on_error => false
+
+        expect(err).to include("You cannot specify `--branch` and `--ref` at the same time.")
+      end
+    end
+
+    describe "with --branch but without --git or --github" do
+      it "throws error" do
+        bundle "add 'foo' --branch x", :raise_on_error => false
+
+        expect(err).to include("You cannot specify `--branch` unless `--git` or `--github` is specified.")
+      end
+    end
+
+    describe "with --ref but without --git or --github" do
+      it "throws error" do
+        bundle "add 'foo' --ref y", :raise_on_error => false
+
+        expect(err).to include("You cannot specify `--ref` unless `--git` or `--github` is specified.")
+      end
+    end
+  end
+
   describe "with --skip-install" do
     it "adds gem to Gemfile but is not installed" do
       bundle "add foo --skip-install --version=2.0"
