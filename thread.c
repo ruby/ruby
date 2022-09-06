@@ -100,6 +100,10 @@
 #include "vm_debug.h"
 #include "vm_sync.h"
 
+#if USE_MJIT && defined(HAVE_SYS_WAIT_H)
+#include <sys/wait.h>
+#endif
+
 #ifndef USE_NATIVE_THREAD_PRIORITY
 #define USE_NATIVE_THREAD_PRIORITY 0
 #define RUBY_THREAD_PRIORITY_MAX 3
