@@ -1404,14 +1404,39 @@ mjit_target_iseq_p(const rb_iseq_t *iseq)
         && strcmp("<internal:mjit>", RSTRING_PTR(rb_iseq_path(iseq))) != 0;
 }
 
+// RubyVM::MJIT
+static VALUE rb_mMJIT = 0;
+// RubyVM::MJIT::C
+VALUE rb_mMJITC = 0;
+// RubyVM::MJIT::Compiler
+VALUE rb_mMJITCompiler = 0;
+
+// [experimental] Call custom RubyVM::MJIT.compile if defined
+static void
+mjit_hook_custom_compile(const rb_iseq_t *iseq)
+{
+    bool original_call_p = mjit_call_p;
+    mjit_call_p = false; // Avoid impacting JIT metrics by itself
+
+    VALUE iseq_class = rb_funcall(rb_mMJITC, rb_intern("rb_iseq_t"), 0);
+    VALUE iseq_ptr = rb_funcall(iseq_class, rb_intern("new"), 1, ULONG2NUM((size_t)iseq));
+    VALUE jit_func = rb_funcall(rb_mMJIT, rb_intern("compile"), 1, iseq_ptr);
+    ISEQ_BODY(iseq)->jit_func = (mjit_func_t)NUM2ULONG(jit_func);
+
+    mjit_call_p = original_call_p;
+}
+
 // If recompile_p is true, the call is initiated by mjit_recompile.
 // This assumes the caller holds CRITICAL_SECTION when recompile_p is true.
 static void
 mjit_add_iseq_to_process(const rb_iseq_t *iseq, const struct rb_mjit_compile_info *compile_info, bool recompile_p)
 {
-    // TODO: Support non-main Ractors
-    if (!mjit_enabled || pch_status == PCH_FAILED || !rb_ractor_main_p())
+    if (!mjit_enabled || pch_status == PCH_FAILED || !rb_ractor_main_p()) // TODO: Support non-main Ractors
         return;
+    if (mjit_opts.custom) {
+        mjit_hook_custom_compile(iseq);
+        return;
+    }
     if (!mjit_target_iseq_p(iseq)) {
         ISEQ_BODY(iseq)->jit_func = (mjit_func_t)NOT_COMPILED_JIT_ISEQ_FUNC; // skip mjit_wait
         return;
@@ -1804,11 +1829,6 @@ const struct ruby_opt_message mjit_option_messages[] = {
 };
 #undef M
 
-// RubyVM::MJIT::Compiler
-VALUE rb_mMJITCompiler = 0;
-// RubyVM::MJIT::C
-VALUE rb_mMJITC = 0;
-
 // Initialize MJIT.  Start a thread creating the precompiled header and
 // processing ISeqs.  The function should be called first for using MJIT.
 // If everything is successful, MJIT_INIT_P will be TRUE.
@@ -1819,7 +1839,7 @@ mjit_init(const struct mjit_options *opts)
     mjit_opts = *opts;
 
     // MJIT doesn't support miniruby, but it might reach here by MJIT_FORCE_ENABLE.
-    VALUE rb_mMJIT = rb_const_get(rb_cRubyVM, rb_intern("MJIT"));
+    rb_mMJIT = rb_const_get(rb_cRubyVM, rb_intern("MJIT"));
     if (!rb_const_defined(rb_mMJIT, rb_intern("Compiler"))) {
         verbose(1, "Disabling MJIT because RubyVM::MJIT::Compiler is not defined");
         mjit_enabled = false;
@@ -1937,7 +1957,14 @@ mjit_resume(void)
 
     // Lazily prepare PCH when --mjit=pause is given
     if (pch_status == PCH_NOT_READY) {
-        make_pch();
+        if (rb_respond_to(rb_mMJITCompiler, rb_intern("compile"))) {
+            // [experimental] defining RubyVM::MJIT.compile allows you to replace JIT
+            mjit_opts.custom = true;
+        }
+        else {
+            // Lazy MJIT boot
+            make_pch();
+        }
     }
 
     if (!start_worker()) {

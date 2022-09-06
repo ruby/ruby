@@ -59,8 +59,10 @@ struct mjit_options {
     // Maximal permitted number of iseq JIT codes in a MJIT memory
     // cache.
     int max_cache_size;
-    // [experimental] If true, do not start MJIT until MJIT.resume is called.
+    // [experimental] Do not start MJIT until MJIT.resume is called.
     bool pause;
+    // [experimental] Call custom RubyVM::MJIT.compile instead of MJIT.
+    bool custom;
 };
 
 // State of optimization switches
