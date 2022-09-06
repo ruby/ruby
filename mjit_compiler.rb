@@ -104,13 +104,10 @@ if RubyVM::MJIT.enabled?
       Primitive.cexpr! '(VALUE)NUM2PTR(value)'
     end
 
-    def debug(status)
-      _cc_entries_addr = status.compiled_iseq.jit_unit.cc_entries.instance_variable_get(:@addr)
-      Primitive.cstmt! %{
-        const struct rb_callcache **cc_entries = (const struct rb_callcache **)NUM2PTR(_cc_entries_addr);
-        fprintf(stderr, "debug: %p\n", cc_entries[0]);
-        return Qnil;
-      }
+    # Convert RubyVM::InstructionSequence to C.rb_iseq_t. Not used by the compiler, but useful for debugging.
+    def rb_iseqw_to_iseq(iseqw)
+      iseq_addr = Primitive.cexpr! 'PTR2NUM((VALUE)rb_iseqw_to_iseq(iseqw))'
+      rb_iseq_t.new(iseq_addr)
     end
 
     # TODO: remove this after migration
