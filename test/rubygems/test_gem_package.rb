@@ -510,6 +510,21 @@ class TestGemPackage < Gem::Package::TarTestCase
     assert_path_exist @destination
   end
 
+  def test_extract_file_permissions
+    pend "chmod not supported" if win_platform?
+
+    gem_with_long_permissions = File.expand_path("packages/Bluebie-legs-0.6.2.gem", __dir__)
+
+    package = Gem::Package.new gem_with_long_permissions
+
+    package.extract_files @destination
+
+    filepath = File.join @destination, "README.rdoc"
+    assert_path_exist filepath
+
+    assert_equal 0104444, File.stat(filepath).mode
+  end
+
   def test_extract_tar_gz_absolute
     package = Gem::Package.new @gem
 
