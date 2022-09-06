@@ -742,23 +742,17 @@ mjit_compact_unit(struct rb_mjit_unit *unit)
     return 1;
 }
 
+extern pid_t rb_mjit_fork();
+
 static pid_t
 start_mjit_compact(struct rb_mjit_unit *unit)
 {
-    rb_vm_t *vm = GET_VM();
-    rb_native_mutex_lock(&vm->waitpid_lock);
-
-    pid_t pid = rb_fork();
+    pid_t pid = rb_mjit_fork();
     if (pid == 0) {
-        rb_native_mutex_unlock(&vm->waitpid_lock);
-
         int exit_code = mjit_compact_unit(unit);
         exit(exit_code);
     }
     else {
-        mjit_add_waiting_pid(vm, pid);
-        rb_native_mutex_unlock(&vm->waitpid_lock);
-
         return pid;
     }
 }
@@ -908,20 +902,12 @@ mjit_compile_unit(struct rb_mjit_unit *unit)
 static pid_t
 start_mjit_compile(struct rb_mjit_unit *unit)
 {
-    rb_vm_t *vm = GET_VM();
-    rb_native_mutex_lock(&vm->waitpid_lock);
-
-    pid_t pid = rb_fork();
+    pid_t pid = rb_mjit_fork();
     if (pid == 0) {
-        rb_native_mutex_unlock(&vm->waitpid_lock);
-
         int exit_code = mjit_compile_unit(unit);
         exit(exit_code);
     }
     else {
-        mjit_add_waiting_pid(vm, pid);
-        rb_native_mutex_unlock(&vm->waitpid_lock);
-
         return pid;
     }
 }
@@ -1273,18 +1259,18 @@ check_unit_queue(void)
 
     current_cc_ms = real_ms_time();
     current_cc_unit = unit;
-    current_cc_pid = start_mjit_compile(unit);
-
-    // JIT failure
-    if (current_cc_pid == -1) {
-        current_cc_pid = 0;
-        current_cc_unit->iseq->body->jit_func = (mjit_func_t)NOT_COMPILED_JIT_ISEQ_FUNC; // TODO: consider unit->compact_p
-        current_cc_unit = NULL;
-        return;
-    }
-
     if (mjit_opts.wait) {
-        mjit_wait(unit->iseq->body);
+        int exit_code = mjit_compile_unit(unit);
+        mjit_notify_waitpid(exit_code);
+    }
+    else {
+        current_cc_pid = start_mjit_compile(unit);
+        if (current_cc_pid == -1) { // JIT failure
+            current_cc_pid = 0;
+            current_cc_unit->iseq->body->jit_func = (mjit_func_t)NOT_COMPILED_JIT_ISEQ_FUNC; // TODO: consider unit->compact_p
+            current_cc_unit = NULL;
+            return;
+        }
     }
 }
 
@@ -1329,7 +1315,13 @@ check_compaction(void)
             // TODO: assert unit is null
             current_cc_ms = real_ms_time();
             current_cc_unit = unit;
-            current_cc_pid = start_mjit_compact(unit);
+            if (mjit_opts.wait) {
+                int exit_code = mjit_compact_unit(unit);
+                mjit_notify_waitpid(exit_code);
+            }
+            else {
+                current_cc_pid = start_mjit_compact(unit);
+            }
             // TODO: check -1
         }
     }
@@ -1337,7 +1329,7 @@ check_compaction(void)
 
 // Check the current CC process if any, and start a next C compiler process as needed.
 void
-mjit_notify_waitpid(int status)
+mjit_notify_waitpid(int exit_code)
 {
     // TODO: check current_cc_pid?
     current_cc_pid = 0;
@@ -1347,11 +1339,7 @@ mjit_notify_waitpid(int status)
     sprint_uniq_filename(c_file, (int)sizeof(c_file), current_cc_unit->id, MJIT_TMP_PREFIX, ".c");
 
     // Check the result
-    bool success = false;
-    if (WIFEXITED(status)) {
-        success = (WEXITSTATUS(status) == 0);
-    }
-    if (!success) {
+    if (exit_code != 0) {
         verbose(2, "Failed to generate so");
         if (!current_cc_unit->compact_p) {
             current_cc_unit->iseq->body->jit_func = (mjit_func_t)NOT_COMPILED_JIT_ISEQ_FUNC;
@@ -1413,7 +1401,29 @@ mjit_target_iseq_p(const rb_iseq_t *iseq)
     struct rb_iseq_constant_body *body = ISEQ_BODY(iseq);
     return (body->type == ISEQ_TYPE_METHOD || body->type == ISEQ_TYPE_BLOCK)
         && !body->builtin_inline_p
-        && strcmp("<internal:mjit>", RSTRING_PTR(rb_iseq_path(iseq)));
+        && strcmp("<internal:mjit>", RSTRING_PTR(rb_iseq_path(iseq))) != 0;
+}
+
+// RubyVM::MJIT
+static VALUE rb_mMJIT = 0;
+// RubyVM::MJIT::C
+VALUE rb_mMJITC = 0;
+// RubyVM::MJIT::Compiler
+VALUE rb_mMJITCompiler = 0;
+
+// [experimental] Call custom RubyVM::MJIT.compile if defined
+static void
+mjit_hook_custom_compile(const rb_iseq_t *iseq)
+{
+    bool original_call_p = mjit_call_p;
+    mjit_call_p = false; // Avoid impacting JIT metrics by itself
+
+    VALUE iseq_class = rb_funcall(rb_mMJITC, rb_intern("rb_iseq_t"), 0);
+    VALUE iseq_ptr = rb_funcall(iseq_class, rb_intern("new"), 1, ULONG2NUM((size_t)iseq));
+    VALUE jit_func = rb_funcall(rb_mMJIT, rb_intern("compile"), 1, iseq_ptr);
+    ISEQ_BODY(iseq)->jit_func = (mjit_func_t)NUM2ULONG(jit_func);
+
+    mjit_call_p = original_call_p;
 }
 
 // If recompile_p is true, the call is initiated by mjit_recompile.
@@ -1421,9 +1431,12 @@ mjit_target_iseq_p(const rb_iseq_t *iseq)
 static void
 mjit_add_iseq_to_process(const rb_iseq_t *iseq, const struct rb_mjit_compile_info *compile_info, bool recompile_p)
 {
-    // TODO: Support non-main Ractors
-    if (!mjit_enabled || pch_status == PCH_FAILED || !rb_ractor_main_p())
+    if (!mjit_enabled || pch_status == PCH_FAILED || !rb_ractor_main_p()) // TODO: Support non-main Ractors
         return;
+    if (mjit_opts.custom) {
+        mjit_hook_custom_compile(iseq);
+        return;
+    }
     if (!mjit_target_iseq_p(iseq)) {
         ISEQ_BODY(iseq)->jit_func = (mjit_func_t)NOT_COMPILED_JIT_ISEQ_FUNC; // skip mjit_wait
         return;
@@ -1452,8 +1465,8 @@ rb_mjit_add_iseq_to_process(const rb_iseq_t *iseq)
     check_unit_queue();
 }
 
-// For this timeout seconds, --jit-wait will wait for JIT compilation finish.
-#define MJIT_WAIT_TIMEOUT_SECONDS 60
+// For this timeout seconds, mjit_finish will wait for JIT compilation finish.
+#define MJIT_WAIT_TIMEOUT_SECONDS 5
 
 static void
 mjit_wait(struct rb_iseq_constant_body *body)
@@ -1768,19 +1781,19 @@ mjit_setup_options(const char *s, struct mjit_options *mjit_opt)
         return;
     }
     else if (opt_match_noarg(s, l, "warnings")) {
-        mjit_opt->warnings = 1;
+        mjit_opt->warnings = true;
     }
     else if (opt_match(s, l, "debug")) {
         if (*s)
             mjit_opt->debug_flags = strdup(s + 1);
         else
-            mjit_opt->debug = 1;
+            mjit_opt->debug = true;
     }
     else if (opt_match_noarg(s, l, "wait")) {
-        mjit_opt->wait = 1;
+        mjit_opt->wait = true;
     }
     else if (opt_match_noarg(s, l, "save-temps")) {
-        mjit_opt->save_temps = 1;
+        mjit_opt->save_temps = true;
     }
     else if (opt_match(s, l, "verbose")) {
         mjit_opt->verbose = *s ? atoi(s + 1) : 1;
@@ -1790,6 +1803,10 @@ mjit_setup_options(const char *s, struct mjit_options *mjit_opt)
     }
     else if (opt_match_arg(s, l, "min-calls")) {
         mjit_opt->min_calls = atoi(s + 1);
+    }
+    // --mjit=pause is an undocumented feature for experiments
+    else if (opt_match_noarg(s, l, "pause")) {
+        mjit_opt->pause = true;
     }
     else {
         rb_raise(rb_eRuntimeError,
@@ -1818,8 +1835,19 @@ const struct ruby_opt_message mjit_option_messages[] = {
 void
 mjit_init(const struct mjit_options *opts)
 {
+    VM_ASSERT(mjit_enabled);
     mjit_opts = *opts;
-    mjit_enabled = true;
+
+    // MJIT doesn't support miniruby, but it might reach here by MJIT_FORCE_ENABLE.
+    rb_mMJIT = rb_const_get(rb_cRubyVM, rb_intern("MJIT"));
+    if (!rb_const_defined(rb_mMJIT, rb_intern("Compiler"))) {
+        verbose(1, "Disabling MJIT because RubyVM::MJIT::Compiler is not defined");
+        mjit_enabled = false;
+        return;
+    }
+    rb_mMJITCompiler = rb_const_get(rb_mMJIT, rb_intern("Compiler"));
+    rb_mMJITC = rb_const_get(rb_mMJIT, rb_intern("C"));
+
     mjit_call_p = true;
     mjit_pid = getpid();
 
@@ -1873,11 +1901,15 @@ mjit_init(const struct mjit_options *opts)
     // rb_fiber_init_mjit_cont again with mjit_enabled=true to set the root_fiber's mjit_cont.
     rb_fiber_init_mjit_cont(GET_EC()->fiber_ptr);
 
-    // Initialize worker thread
-    start_worker();
+    // If --mjit=pause is given, lazily start MJIT when RubyVM::MJIT.resume is called.
+    // You can use it to control MJIT warmup, or to customize the JIT implementation.
+    if (!mjit_opts.pause) {
+        // TODO: Consider running C compiler asynchronously
+        make_pch();
 
-    // TODO: Consider running C compiler asynchronously
-    make_pch();
+        // Enable MJIT compilation
+        start_worker();
+    }
 }
 
 static void
@@ -1921,6 +1953,18 @@ mjit_resume(void)
     }
     if (!worker_stopped) {
         return Qfalse;
+    }
+
+    // Lazily prepare PCH when --mjit=pause is given
+    if (pch_status == PCH_NOT_READY) {
+        if (rb_respond_to(rb_mMJITCompiler, rb_intern("compile"))) {
+            // [experimental] defining RubyVM::MJIT.compile allows you to replace JIT
+            mjit_opts.custom = true;
+        }
+        else {
+            // Lazy MJIT boot
+            make_pch();
+        }
     }
 
     if (!start_worker()) {
@@ -1996,7 +2040,7 @@ mjit_finish(bool close_handle_p)
     mjit_dump_total_calls();
 #endif
 
-    if (!mjit_opts.save_temps && getpid() == pch_owner_pid)
+    if (!mjit_opts.save_temps && getpid() == pch_owner_pid && pch_status != PCH_NOT_READY)
         remove_file(pch_file);
 
     xfree(header_file); header_file = NULL;

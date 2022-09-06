@@ -102,13 +102,7 @@ module Bundler
         @install_path ||= begin
           git_scope = "#{base_name}-#{shortref_for_path(revision)}"
 
-          path = Bundler.install_path.join(git_scope)
-
-          if !path.exist? && Bundler.requires_sudo?
-            Bundler.user_bundle_path.join(Bundler.ruby_scope).join(git_scope)
-          else
-            path
-          end
+          Bundler.install_path.join(git_scope)
         end
       end
 
@@ -219,7 +213,7 @@ module Bundler
       # across different projects, this cache will be shared.
       # When using local git repos, this is set to the local repo.
       def cache_path
-        @cache_path ||= if Bundler.requires_sudo? || Bundler.feature_flag.global_gem_cache?
+        @cache_path ||= if Bundler.feature_flag.global_gem_cache?
           Bundler.user_cache
         else
           Bundler.bundle_path.join("cache", "bundler")

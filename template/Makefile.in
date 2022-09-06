@@ -166,6 +166,7 @@ XRUBY_LIBDIR = @XRUBY_LIBDIR@
 XRUBY_RUBYLIBDIR = @XRUBY_RUBYLIBDIR@
 XRUBY_RUBYHDRDIR = @XRUBY_RUBYHDRDIR@
 BOOTSTRAPRUBY = @BOOTSTRAPRUBY@
+BOOTSTRAPRUBY_COMMAND = @BOOTSTRAPRUBY_COMMAND@
 
 COROUTINE_H = @X_COROUTINE_H@
 COROUTINE_OBJ = $(COROUTINE_H:.h=.$(OBJEXT))
@@ -297,6 +298,8 @@ $(PROGRAM):
 		$(Q) $(PURIFY) $(CC) $(EXE_LDFLAGS) $(XLDFLAGS) $(MAINOBJ) $(EXTOBJS) $(LIBRUBYARG) $(MAINLIBS) $(LIBS) $(EXTLIBS) $(OUTFLAG)$@
 		$(Q) $(POSTLINK)
 
+$(PROGRAM): @XRUBY_LIBPATHENV_WRAPPER@
+
 PRE_LIBRUBY_UPDATE = [ -n "$(LIBRUBY_SO_UPDATE)" ] || $(gnumake:yes=exec) $(RM) $(LIBRUBY_EXTS)
 
 # We must `rm' the library each time this rule is invoked because "updating" a
@@ -354,10 +357,6 @@ pre-install-local:: pkgconfig-data
 
 ruby-runner.h: template/ruby-runner.h.in config.status
 		@./config.status --file=$@:$(srcdir)/template/$(@F).in
-
-$(RBCONFIG): $(PREP)
-
-rbconfig.rb: $(RBCONFIG)
 
 install-cross: $(arch)-fake.rb $(RBCONFIG) rbconfig.rb $(arch_hdrdir)/ruby/config.h \
 	$(LIBRUBY_A) $(LIBRUBY_SO) $(ARCHFILE) pkgconfig-data
@@ -618,7 +617,7 @@ update-known-errors:
 	$(IFCHANGE) $(srcdir)/defs/known_errors.def -
 
 INSNS	= opt_sc.inc optinsn.inc optunifs.inc insns.inc insns_info.inc \
-	  vmtc.inc vm.inc mjit_compile.inc
+	  vmtc.inc vm.inc mjit_compile_attr.inc
 
 $(INSNS): $(srcdir)/insns.def vm_opts.h \
 	  $(srcdir)/defs/opt_operand.def $(srcdir)/defs/opt_insn_unif.def \
@@ -652,17 +651,12 @@ $(INSNS): $(srcdir)/insns.def vm_opts.h \
 	  $(tooldir)/ruby_vm/views/_insn_sp_pc_dependency.erb \
 	  $(tooldir)/ruby_vm/views/_insn_type_chars.erb \
 	  $(tooldir)/ruby_vm/views/_leaf_helpers.erb \
-	  $(tooldir)/ruby_vm/views/_mjit_compile_insn.erb \
-	  $(tooldir)/ruby_vm/views/_mjit_compile_insn_body.erb \
-	  $(tooldir)/ruby_vm/views/_mjit_compile_ivar.erb \
-	  $(tooldir)/ruby_vm/views/_mjit_compile_pc_and_sp.erb \
-	  $(tooldir)/ruby_vm/views/_mjit_compile_send.erb \
 	  $(tooldir)/ruby_vm/views/_notice.erb \
 	  $(tooldir)/ruby_vm/views/_sp_inc_helpers.erb \
 	  $(tooldir)/ruby_vm/views/_trace_instruction.erb \
 	  $(tooldir)/ruby_vm/views/insns.inc.erb \
 	  $(tooldir)/ruby_vm/views/insns_info.inc.erb \
-	  $(tooldir)/ruby_vm/views/mjit_compile.inc.erb \
+	  $(tooldir)/ruby_vm/views/mjit_compile_attr.inc.erb \
 	  $(tooldir)/ruby_vm/views/opt_sc.inc.erb \
 	  $(tooldir)/ruby_vm/views/optinsn.inc.erb \
 	  $(tooldir)/ruby_vm/views/optunifs.inc.erb \
@@ -671,7 +665,9 @@ $(INSNS): $(srcdir)/insns.def vm_opts.h \
 	$(ECHO) generating $@
 	$(Q) $(BASERUBY) -Ku $(tooldir)/insns2vm.rb $(INSNS2VMOPT) $@
 
-verconf.h: $(RBCONFIG)
+$(srcdir)/mjit_instruction.rb: $(tooldir)/ruby_vm/views/mjit_instruction.rb.erb
+	$(ECHO) generating $@
+	$(Q) $(BASERUBY) -Ku $(tooldir)/insns2vm.rb $(INSNS2VMOPT) $@
 
 loadpath: verconf.h
 	@$(CPP) $(XCFLAGS) $(CPPFLAGS) $(srcdir)/loadpath.c | \

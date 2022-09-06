@@ -10,6 +10,14 @@ To run rspec for bundler:
 make test-bundler
 ```
 
+or run rspec with parallel execution:
+
+```bash
+make test-bundler-parallel
+```
+
+If you specify `BUNDLER_SPECS=foo/bar_spec.rb` then only `spec/bundler/foo/bar_spec.rb` will be run.
+
 # spec/ruby
 
 ruby/spec (https://github.com/ruby/spec/) is
@@ -138,3 +146,15 @@ end
 ```
 
 For more details, see `spec/ruby/CONTRIBUTING.md`.
+
+# spec/syntax_suggest
+
+## Running spec/syntax_suggest
+
+To run rspec for syntax_suggest:
+
+```bash
+make test-syntax-suggest
+```
+
+If you specify `SYNTAX_SUGGEST_SPECS=foo/bar_spec.rb` then only `spec/syntax_suggest/foo/bar_spec.rb` will be run.

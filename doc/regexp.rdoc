@@ -550,12 +550,16 @@ characters, <i>anchoring</i> the match to a specific position.
 * <tt>(?<!</tt><i>pat</i><tt>)</tt> - <i>Negative lookbehind</i>
   assertion: ensures that the preceding characters do not match
   <i>pat</i>, but doesn't include those characters in the matched text
-* <tt>\K</tt> - Uses an positive lookbehind of the content preceding
-  <tt>\K</tt> in the regexp.  For example, the following two regexps are
-  almost equivalent:
 
-      /ab\Kc/
-      /(?<=ab)c/
+* <tt>\K</tt> - <i>Match reset</i>: the matched content preceding
+  <tt>\K</tt> in the regexp is excluded from the result.  For example,
+  the following two regexps are almost equivalent:
+
+      /ab\Kc/ =~ "abc"     #=> 0
+      /(?<=ab)c/ =~ "abc"  #=> 2
+
+  These match same string and <i>$&</i> equals <tt>"c"</tt>, while the
+  matched position is different.
 
   As are the following two regexps:
 

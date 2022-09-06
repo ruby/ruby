@@ -562,6 +562,8 @@ class TestSocket < Test::Unit::TestCase
   end
 
   def test_closed_read
+    omit if RUBY_PLATFORM.include?("freebsd")
+
     require 'timeout'
     require 'socket'
     bug4390 = '[ruby-core:35203]'

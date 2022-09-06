@@ -78,9 +78,6 @@ module Spec
     end
 
     def bundle(cmd, options = {}, &block)
-      with_sudo = options.delete(:sudo)
-      sudo = with_sudo == :preserve_env ? "sudo -E --preserve-env=RUBYOPT" : "sudo" if with_sudo
-
       bundle_bin = options.delete(:bundle_bin)
       bundle_bin ||= installed_bindir.join("bundle")
 
@@ -119,7 +116,7 @@ module Spec
         end
       end.join
 
-      ruby_cmd = build_ruby_cmd({ :sudo => sudo, :load_path => load_path, :requires => requires })
+      ruby_cmd = build_ruby_cmd({ :load_path => load_path, :requires => requires })
       cmd = "#{ruby_cmd} #{bundle_bin} #{cmd}#{args}"
       sys_exec(cmd, { :env => env, :dir => dir, :raise_on_error => raise_on_error }, &block)
     end
@@ -146,8 +143,6 @@ module Spec
     end
 
     def build_ruby_cmd(options = {})
-      sudo = options.delete(:sudo)
-
       libs = options.delete(:load_path)
       lib_option = libs ? "-I#{libs.join(File::PATH_SEPARATOR)}" : []
 
@@ -155,7 +150,7 @@ module Spec
       requires << "#{Path.spec_dir}/support/hax.rb"
       require_option = requires.map {|r| "-r#{r}" }
 
-      [sudo, Gem.ruby, *lib_option, *require_option].compact.join(" ")
+      [Gem.ruby, *lib_option, *require_option].compact.join(" ")
     end
 
     def gembin(cmd, options = {})

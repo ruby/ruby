@@ -82,7 +82,7 @@ EXTSOLIBS     =
 MINIOBJS      = $(ARCHMINIOBJS) miniinit.$(OBJEXT) dmyext.$(OBJEXT)
 ENC_MK        = enc.mk
 MAKE_ENC      = -f $(ENC_MK) V="$(V)" UNICODE_HDR_DIR="$(UNICODE_HDR_DIR)" \
-		RUBY="$(MINIRUBY)" MINIRUBY="$(MINIRUBY)" $(mflags)
+		RUBY="$(BOOTSTRAPRUBY)" MINIRUBY="$(BOOTSTRAPRUBY)" $(mflags)
 
 COMMONOBJS    = array.$(OBJEXT) \
 		ast.$(OBJEXT) \
@@ -229,6 +229,21 @@ yes-mjit-headers: mjit_config.h PHONY
 mjit.$(OBJEXT): mjit_config.h
 mjit_config.h: Makefile
 
+.PHONY: mjit-bindgen
+mjit-bindgen:
+	$(Q)$(XRUBY) -C $(srcdir) -Ilib \
+		-e 'ENV["GEM_HOME"] = File.expand_path(".bundle")' \
+		-e 'ENV["BUNDLE_APP_CONFIG"] = File.expand_path(".bundle")' \
+		-e 'ENV["BUNDLE_PATH__SYSTEM"] = "true"' \
+		-e 'ENV["BUNDLE_WITHOUT"] = "lint doc"' \
+		-e 'load "spec/bundler/support/bundle.rb"' -- install --gemfile=tool/mjit/Gemfile
+	$(Q)$(XRUBY) -C $(srcdir) -Ilib \
+		-e 'ENV["GEM_HOME"] = File.expand_path(".bundle")' \
+		-e 'ENV["BUNDLE_APP_CONFIG"] = File.expand_path(".bundle")' \
+		-e 'ENV["BUNDLE_GEMFILE"] = "tool/mjit/Gemfile"' \
+		-e 'ENV["BUNDLE_PATH__SYSTEM"] = "true"' \
+		-e 'ENV["BUNDLE_WITHOUT"] = "lint doc"' \
+		-e 'load "spec/bundler/support/bundle.rb"' -- exec tool/mjit/bindgen.rb $(CURDIR)
 
 # These rules using MJIT_HEADER_SUFFIX must be in common.mk, not
 # Makefile.in, in order to override the macro in defs/universal.mk.
@@ -755,9 +770,13 @@ fake: $(CROSS_COMPILING)-fake
 yes-fake: $(arch)-fake.rb $(RBCONFIG) PHONY
 no-fake -fake: PHONY
 
-# really doesn't depend on .o, just ensure newer than headers which
-# version.o depends on.
-$(arch)-fake.rb: $(srcdir)/template/fake.rb.in $(tooldir)/generic_erb.rb version.$(OBJEXT) miniruby$(EXEEXT)
+$(HAVE_BASERUBY:no=)$(arch)-fake.rb: miniruby$(EXEEXT)
+
+# actually depending on other headers more.
+$(arch:noarch=ignore)-fake.rb: $(top_srcdir)/revision.h $(top_srcdir)/version.h $(srcdir)/version.c
+$(arch:noarch=ignore)-fake.rb: {$(VPATH)}id.h {$(VPATH)}vm_opts.h
+
+$(arch:noarch=ignore)-fake.rb: $(srcdir)/template/fake.rb.in $(tooldir)/generic_erb.rb
 	$(ECHO) generating $@
 	$(Q) $(CPP) -DRUBY_EXPORT $(INCFLAGS) $(CPPFLAGS) "$(srcdir)/version.c" | \
 	$(BOOTSTRAPRUBY) "$(tooldir)/generic_erb.rb" -o $@ "$(srcdir)/template/fake.rb.in" \
@@ -839,6 +858,9 @@ extconf: $(PREP)
 	$(Q) $(MAKEDIRS) "$(EXTCONFDIR)"
 	$(RUNRUBY) -C "$(EXTCONFDIR)" $(EXTCONF) $(EXTCONFARGS)
 
+rbconfig.rb: $(RBCONFIG)
+
+$(HAVE_BASERUBY:no=)$(RBCONFIG)$(HAVE_BASERUBY:no=): $(PREP)
 $(RBCONFIG): $(tooldir)/mkconfig.rb config.status $(srcdir)/version.h
 	$(Q)$(BOOTSTRAPRUBY) -n \
 	-e 'BEGIN{version=ARGV.shift;mis=ARGV.dup}' \
@@ -885,9 +907,10 @@ libtrans trans: {$(VPATH)}transdb.h
 ENC_HEADERS = $(srcdir)/enc/jis/props.h
 # Use MINIRUBY which loads fake.rb for cross compiling
 $(ENC_MK): $(srcdir)/enc/make_encmake.rb $(srcdir)/enc/Makefile.in $(srcdir)/enc/depend \
-	   $(srcdir)/enc/encinit.c.erb $(ENC_HEADERS) $(srcdir)/lib/mkmf.rb $(RBCONFIG) fake
+	   $(srcdir)/enc/encinit.c.erb $(ENC_HEADERS) $(srcdir)/lib/mkmf.rb $(RBCONFIG) $(HAVE_BASERUBY)-fake
 	$(ECHO) generating $@
-	$(Q) $(MINIRUBY) $(srcdir)/enc/make_encmake.rb --builtin-encs="$(BUILTIN_ENCOBJS)" --builtin-transes="$(BUILTIN_TRANSOBJS)" --module$(ENCSTATIC) $(ENCS) $@
+	$(Q) $(BOOTSTRAPRUBY) -r./$(arch)-fake $(srcdir)/enc/make_encmake.rb \
+	  --builtin-encs="$(BUILTIN_ENCOBJS)" --builtin-transes="$(BUILTIN_TRANSOBJS)" --module$(ENCSTATIC) $(ENCS) $@
 
 .PRECIOUS: $(MKFILES)
 
@@ -923,11 +946,11 @@ $(PLATFORM_D):
 	$(Q) $(MAKEDIRS) $(PLATFORM_DIR) $(@D)
 	@$(NULLCMD) > $@
 
-exe/$(PROGRAM): ruby-runner.c ruby-runner.h exe/.time miniruby$(EXEEXT) {$(VPATH)}config.h
+exe/$(PROGRAM): ruby-runner.c ruby-runner.h exe/.time $(PREP) {$(VPATH)}config.h
 	$(Q) $(CC) $(CFLAGS) $(INCFLAGS) $(CPPFLAGS) -DRUBY_INSTALL_NAME=$(@F) $(COUTFLAG)ruby-runner.$(OBJEXT) -c $(CSRCFLAG)$(srcdir)/ruby-runner.c
 	$(Q) $(PURIFY) $(CC) $(CFLAGS) $(LDFLAGS) $(OUTFLAG)$@ ruby-runner.$(OBJEXT) $(LIBS)
 	$(Q) $(POSTLINK)
-	$(Q) ./miniruby$(EXEEXT) \
+	$(Q) $(BOOTSTRAPRUBY) \
 	    -e 'prog, dest, inst = ARGV; dest += "/ruby"' \
 	    -e 'exit unless prog==inst' \
 	    -e 'unless prog=="ruby"' \
@@ -1041,11 +1064,7 @@ $(srcs_vpath)insns_info.inc: $(tooldir)/ruby_vm/views/insns_info.inc.erb $(inc_c
 $(srcs_vpath)vmtc.inc: $(tooldir)/ruby_vm/views/vmtc.inc.erb $(inc_common_headers)
 $(srcs_vpath)vm.inc: $(tooldir)/ruby_vm/views/vm.inc.erb $(inc_common_headers) \
   $(tooldir)/ruby_vm/views/_insn_entry.erb $(tooldir)/ruby_vm/views/_trace_instruction.erb
-$(srcs_vpath)mjit_compile.inc: $(tooldir)/ruby_vm/views/mjit_compile.inc.erb $(inc_common_headers) \
-  $(tooldir)/ruby_vm/views/_mjit_compile_insn.erb $(tooldir)/ruby_vm/views/_mjit_compile_send.erb \
-  $(tooldir)/ruby_vm/views/_mjit_compile_ivar.erb \
-  $(tooldir)/ruby_vm/views/_mjit_compile_insn_body.erb $(tooldir)/ruby_vm/views/_mjit_compile_pc_and_sp.erb \
-  $(tooldir)/ruby_vm/views/_mjit_compile_invokebuiltin.erb $(tooldir)/ruby_vm/views/_mjit_compile_getinlinecache.erb
+$(srcs_vpath)mjit_compile_attr.inc: $(tooldir)/ruby_vm/views/mjit_compile_attr.inc.erb
 
 BUILTIN_RB_SRCS = \
 		$(srcdir)/ast.rb \
@@ -1055,6 +1074,8 @@ BUILTIN_RB_SRCS = \
 		$(srcdir)/io.rb \
 		$(srcdir)/marshal.rb \
 		$(srcdir)/mjit.rb \
+		$(srcdir)/mjit_compiler.rb \
+		$(srcdir)/mjit_instruction.rb \
 		$(srcdir)/pack.rb \
 		$(srcdir)/trace_point.rb \
 		$(srcdir)/warning.rb \
@@ -1072,7 +1093,7 @@ BUILTIN_RB_INCS = $(BUILTIN_RB_SRCS:.rb=.rbinc)
 
 common-srcs: $(srcs_vpath)parse.c $(srcs_vpath)lex.c $(srcs_vpath)enc/trans/newline.c $(srcs_vpath)id.c \
 	     $(BUILTIN_RB_INCS) \
-	     srcs-lib srcs-ext incs
+	     srcs-lib srcs-ext incs preludes
 
 missing-srcs: $(srcdir)/missing/des_tables.c
 
@@ -1128,13 +1149,13 @@ node_name.inc: $(tooldir)/node_name.rb $(srcdir)/node.h
 	$(ECHO) generating $@
 	$(Q) $(BASERUBY) -n $(tooldir)/node_name.rb < $(srcdir)/node.h > $@
 
-encdb.h: $(PREP) $(tooldir)/generic_erb.rb $(srcdir)/template/encdb.h.tmpl
+encdb.h: $(RBCONFIG) $(tooldir)/generic_erb.rb $(srcdir)/template/encdb.h.tmpl
 	$(ECHO) generating $@
-	$(Q) $(MINIRUBY) $(tooldir)/generic_erb.rb -c -o $@ $(srcdir)/template/encdb.h.tmpl $(srcdir)/enc enc
+	$(Q) $(BOOTSTRAPRUBY) $(tooldir)/generic_erb.rb -c -o $@ $(srcdir)/template/encdb.h.tmpl $(srcdir)/enc enc
 
-transdb.h: $(PREP) srcs-enc $(tooldir)/generic_erb.rb $(srcdir)/template/transdb.h.tmpl
+transdb.h: $(RBCONFIG) srcs-enc $(tooldir)/generic_erb.rb $(srcdir)/template/transdb.h.tmpl
 	$(ECHO) generating $@
-	$(Q) $(MINIRUBY) $(tooldir)/generic_erb.rb -c -o $@ $(srcdir)/template/transdb.h.tmpl $(srcdir)/enc/trans enc/trans
+	$(Q) $(BOOTSTRAPRUBY) $(tooldir)/generic_erb.rb -c -o $@ $(srcdir)/template/transdb.h.tmpl $(srcdir)/enc/trans enc/trans
 
 enc/encinit.c: $(ENC_MK) $(srcdir)/enc/encinit.c.erb
 
@@ -1146,7 +1167,7 @@ vm_call_iseq_optimized.inc: $(srcdir)/template/call_iseq_optimized.inc.tmpl
 	$(ECHO) generating $@
 	$(Q) $(BASERUBY) $(tooldir)/generic_erb.rb -c -o $@ $(srcdir)/template/call_iseq_optimized.inc.tmpl
 
-$(MINIPRELUDE_C): $(COMPILE_PRELUDE) $(BUILTIN_RB_SRCS)
+$(MINIPRELUDE_C): $(COMPILE_PRELUDE) $(BUILTIN_RB_SRCS) $(srcdir)/mjit_instruction.rb
 	$(ECHO) generating $@
 	$(Q) $(BASERUBY) $(tooldir)/generic_erb.rb -I$(srcdir) -o $@ \
 		$(srcdir)/template/prelude.c.tmpl $(BUILTIN_RB_SRCS)
@@ -1720,6 +1741,9 @@ help: PHONY
 	"see DeveloperHowto for more detail: " \
 	"  https://bugs.ruby-lang.org/projects/ruby/wiki/DeveloperHowto" \
 	$(MESSAGE_END)
+
+$(CROSS_COMPILING:yes=)builtin.$(OBJEXT): {$(VPATH)}mini_builtin.c
+$(CROSS_COMPILING:yes=)builtin.$(OBJEXT): {$(VPATH)}miniprelude.c
 
 # AUTOGENERATED DEPENDENCIES START
 addr2line.$(OBJEXT): {$(VPATH)}addr2line.c
@@ -9269,6 +9293,7 @@ miniinit.$(OBJEXT): $(CCAN_DIR)/container_of/container_of.h
 miniinit.$(OBJEXT): $(CCAN_DIR)/list/list.h
 miniinit.$(OBJEXT): $(CCAN_DIR)/str/str.h
 miniinit.$(OBJEXT): $(hdrdir)/ruby/ruby.h
+miniinit.$(OBJEXT): $(srcdir)/mjit_instruction.rb
 miniinit.$(OBJEXT): $(top_srcdir)/internal/array.h
 miniinit.$(OBJEXT): $(top_srcdir)/internal/compilers.h
 miniinit.$(OBJEXT): $(top_srcdir)/internal/gc.h
@@ -9459,6 +9484,8 @@ miniinit.$(OBJEXT): {$(VPATH)}miniinit.c
 miniinit.$(OBJEXT): {$(VPATH)}miniprelude.c
 miniinit.$(OBJEXT): {$(VPATH)}missing.h
 miniinit.$(OBJEXT): {$(VPATH)}mjit.rb
+miniinit.$(OBJEXT): {$(VPATH)}mjit_compiler.rb
+miniinit.$(OBJEXT): {$(VPATH)}mjit_instruction.rb
 miniinit.$(OBJEXT): {$(VPATH)}nilclass.rb
 miniinit.$(OBJEXT): {$(VPATH)}node.h
 miniinit.$(OBJEXT): {$(VPATH)}numeric.rb
@@ -9712,6 +9739,7 @@ mjit_compiler.$(OBJEXT): $(CCAN_DIR)/list/list.h
 mjit_compiler.$(OBJEXT): $(CCAN_DIR)/str/str.h
 mjit_compiler.$(OBJEXT): $(hdrdir)/ruby.h
 mjit_compiler.$(OBJEXT): $(hdrdir)/ruby/ruby.h
+mjit_compiler.$(OBJEXT): $(srcdir)/mjit_instruction.rb
 mjit_compiler.$(OBJEXT): $(top_srcdir)/internal/array.h
 mjit_compiler.$(OBJEXT): $(top_srcdir)/internal/class.h
 mjit_compiler.$(OBJEXT): $(top_srcdir)/internal/compile.h
@@ -9892,8 +9920,12 @@ mjit_compiler.$(OBJEXT): {$(VPATH)}iseq.h
 mjit_compiler.$(OBJEXT): {$(VPATH)}method.h
 mjit_compiler.$(OBJEXT): {$(VPATH)}missing.h
 mjit_compiler.$(OBJEXT): {$(VPATH)}mjit.h
-mjit_compiler.$(OBJEXT): {$(VPATH)}mjit_compile.inc
+mjit_compiler.$(OBJEXT): {$(VPATH)}mjit_compile_attr.inc
 mjit_compiler.$(OBJEXT): {$(VPATH)}mjit_compiler.c
+mjit_compiler.$(OBJEXT): {$(VPATH)}mjit_compiler.h
+mjit_compiler.$(OBJEXT): {$(VPATH)}mjit_compiler.rb
+mjit_compiler.$(OBJEXT): {$(VPATH)}mjit_compiler.rbinc
+mjit_compiler.$(OBJEXT): {$(VPATH)}mjit_instruction.rbinc
 mjit_compiler.$(OBJEXT): {$(VPATH)}mjit_unit.h
 mjit_compiler.$(OBJEXT): {$(VPATH)}node.h
 mjit_compiler.$(OBJEXT): {$(VPATH)}ruby_assert.h

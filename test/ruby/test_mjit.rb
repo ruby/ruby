@@ -179,7 +179,7 @@ class TestMJIT < Test::Unit::TestCase
   end
 
   def test_compile_insn_constant
-    assert_compile_once("#{<<~"begin;"}\n#{<<~"end;"}", result_inspect: '1', insns: %i[getconstant setconstant])
+    assert_compile_once("#{<<~"begin;"}\n#{<<~"end;"}", result_inspect: '1', insns: %i[opt_getconstant_path setconstant])
     begin;
       FOO = 1
       FOO
@@ -490,8 +490,8 @@ class TestMJIT < Test::Unit::TestCase
     end;
   end
 
-  def test_compile_insn_inlinecache
-    assert_compile_once('Struct', result_inspect: 'Struct', insns: %i[opt_getinlinecache opt_setinlinecache])
+  def test_compile_insn_getconstant_path
+    assert_compile_once('Struct', result_inspect: 'Struct', insns: %i[opt_getconstant_path])
   end
 
   def test_compile_insn_once

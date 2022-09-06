@@ -1309,13 +1309,13 @@ end
         else
           %w[io-console openssl]
         end << "bundler"
-        exempts << "fiddle" if Gem.win_platform? && Gem.rubygems_version >= Gem::Version.new("2.7")
         exempts << "uri" if Gem.ruby_version >= Gem::Version.new("2.7")
         exempts << "pathname" if Gem.ruby_version >= Gem::Version.new("3.0")
         exempts << "set" unless Gem.rubygems_version >= Gem::Version.new("3.2.6")
         exempts << "tsort" unless Gem.rubygems_version >= Gem::Version.new("3.2.31")
         exempts << "error_highlight" # added in Ruby 3.1 as a default gem
         exempts << "ruby2_keywords" # added in Ruby 3.1 as a default gem
+        exempts << "syntax_suggest" # added in Ruby 3.2 as a default gem
         exempts
       end
 

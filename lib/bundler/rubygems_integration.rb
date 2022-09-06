@@ -504,10 +504,6 @@ module Bundler
       Gem::Package.build(spec, skip_validation)
     end
 
-    def repository_subdirectories
-      Gem::REPOSITORY_SUBDIRECTORIES
-    end
-
     def path_separator
       Gem.path_separator
     end

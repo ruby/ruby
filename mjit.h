@@ -37,20 +37,20 @@ enum rb_mjit_iseq_func {
 struct mjit_options {
     // Converted from "jit" feature flag to tell the enablement
     // information to ruby_show_version().
-    char on;
+    bool on;
     // Save temporary files after MRI finish.  The temporary files
     // include the pre-compiled header, C code file generated for ISEQ,
     // and the corresponding object file.
-    char save_temps;
+    bool save_temps;
     // Print MJIT warnings to stderr.
-    char warnings;
+    bool warnings;
     // Disable compiler optimization and add debug symbols. It can be
     // very slow.
-    char debug;
+    bool debug;
     // Add arbitrary cflags.
     char* debug_flags;
-    // If not 0, all ISeqs are synchronously compiled. For testing.
-    unsigned int wait;
+    // If true, all ISeqs are synchronously compiled. For testing.
+    bool wait;
     // Number of calls to trigger JIT compilation. For testing.
     unsigned int min_calls;
     // Force printing info about MJIT work of level VERBOSE or
@@ -59,6 +59,10 @@ struct mjit_options {
     // Maximal permitted number of iseq JIT codes in a MJIT memory
     // cache.
     int max_cache_size;
+    // [experimental] Do not start MJIT until MJIT.resume is called.
+    bool pause;
+    // [experimental] Call custom RubyVM::MJIT.compile instead of MJIT.
+    bool custom;
 };
 
 // State of optimization switches
@@ -100,7 +104,7 @@ extern void mjit_mark(void);
 extern struct mjit_cont *mjit_cont_new(rb_execution_context_t *ec);
 extern void mjit_cont_free(struct mjit_cont *cont);
 extern void mjit_mark_cc_entries(const struct rb_iseq_constant_body *const body);
-extern void mjit_notify_waitpid(int status);
+extern void mjit_notify_waitpid(int exit_code);
 
 void mjit_child_after_fork(void);
 

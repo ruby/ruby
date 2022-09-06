@@ -567,20 +567,24 @@ class Complex_Test < Test::Unit::TestCase
     assert_raise_with_message(TypeError, /C\u{1f5ff}/) { Complex(1).coerce(obj) }
   end
 
-  class ObjectX
-    def +(x) Rational(1) end
+  class ObjectX < Numeric
+    def initialize(real = true, n = 1) @n = n; @real = real; end
+    def +(x) Rational(@n) end
     alias - +
     alias * +
     alias / +
     alias quo +
     alias ** +
-    def coerce(x) [x, Complex(1)] end
+    def coerce(x) [x, Complex(@n)] end
+    def real?; @real; end
   end
 
   def test_coerce2
     x = ObjectX.new
+    y = ObjectX.new(false)
     %w(+ - * / quo ** <=>).each do |op|
-      assert_kind_of(Numeric, Complex(1).__send__(op, x))
+      assert_kind_of(Numeric, Complex(1).__send__(op, x), op)
+      assert_kind_of(Numeric, Complex(1).__send__(op, y), op)
     end
   end
 

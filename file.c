@@ -2839,14 +2839,14 @@ utime_failed(struct apply_arg *aa)
 #   if defined(__has_attribute) && __has_attribute(availability)
 typedef int utimensat_func(int, const char *, const struct timespec [2], int);
 
-RBIMPL_WARNING_PUSH();
-RBIMPL_WARNING_IGNORED(-Wunguarded-availability-new);
+RBIMPL_WARNING_PUSH()
+RBIMPL_WARNING_IGNORED(-Wunguarded-availability-new)
 static inline utimensat_func *
 rb_utimensat(void)
 {
     return &utimensat;
 }
-RBIMPL_WARNING_POP();
+RBIMPL_WARNING_POP()
 
 #   define utimensat rb_utimensat()
 #   else /* __API_AVAILABLE macro does nothing on gcc */

@@ -76,28 +76,7 @@ exit unless vcs
     }
   when :revision_h
     Proc.new {|last, changed, modified, branch, title|
-      short = vcs.short_revision(last)
-      if /[^\x00-\x7f]/ =~ title and title.respond_to?(:force_encoding)
-        title = title.dup.force_encoding("US-ASCII")
-      end
-      [
-        "#define RUBY_REVISION #{short.inspect}",
-        ("#define RUBY_FULL_REVISION #{last.inspect}" unless short == last),
-        if branch
-          e = '..'
-          limit = @limit
-          name = branch.sub(/\A(.{#{limit-e.size}}).{#{e.size+1},}/o) {$1+e}
-          name = name.dump.sub(/\\#/, '#')
-          "#define RUBY_BRANCH_NAME #{name}"
-        end,
-        if title
-          title = title.dump.sub(/\\#/, '#')
-          "#define RUBY_LAST_COMMIT_TITLE #{title}"
-        end,
-        if modified
-          modified.utc.strftime('#define RUBY_RELEASE_DATETIME "%FT%TZ"')
-        end,
-      ].compact
+      vcs.revision_header(last, modified, branch, title, limit: @limit)
     }
   when :doxygen
     Proc.new {|last, changed|

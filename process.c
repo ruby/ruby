@@ -4204,6 +4204,29 @@ retry_fork_async_signal_safe(struct rb_process_status *status, int *ep,
     }
 }
 
+#if USE_MJIT
+// This is used to create MJIT's child Ruby process
+pid_t
+rb_mjit_fork(void)
+{
+    struct child_handler_disabler_state old;
+    rb_vm_t *vm = GET_VM();
+    prefork();
+    disable_child_handler_before_fork(&old);
+    before_fork_ruby();
+
+    rb_native_mutex_lock(&vm->waitpid_lock);
+    pid_t pid = rb_fork();
+    if (pid > 0) mjit_add_waiting_pid(vm, pid);
+    rb_native_mutex_unlock(&vm->waitpid_lock);
+
+    after_fork_ruby();
+    disable_child_handler_fork_parent(&old);
+
+    return pid;
+}
+#endif
+
 static rb_pid_t
 fork_check_err(struct rb_process_status *status, int (*chfunc)(void*, char *, size_t), void *charg,
         VALUE fds, char *errmsg, size_t errmsg_buflen,

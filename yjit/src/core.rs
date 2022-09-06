@@ -1779,6 +1779,7 @@ fn get_branch_target(
     let branch_ptr: *const RefCell<Branch> = BranchRef::into_raw(branchref.clone());
 
     let mut asm = Assembler::new();
+    asm.comment("branch stub hit");
 
     // Call branch_stub_hit(branch_ptr, target_idx, ec)
     let jump_addr = asm.ccall(

@@ -31,6 +31,7 @@ assert_finish 10, %q{
   end
 }, '[ruby-dev:32566]'
 
+/freebsd/ =~ RUBY_PLATFORM or
 assert_finish 5, %q{
   r, w = IO.pipe
   Thread.new {

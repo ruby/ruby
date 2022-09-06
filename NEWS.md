@@ -181,6 +181,7 @@ Note: We're only listing outstanding class updates.
     * psych 5.0.0.dev
     * reline 0.3.1
     * securerandom 0.2.0
+    * set 1.0.3
     * stringio 3.0.3
     * syntax_suggest 0.0.1
     * timeout 0.3.0
@@ -238,9 +239,12 @@ The following deprecated APIs are removed.
 
 ## JIT
 
-### MJIT
+### YJIT
 
-### YJIT: New experimental in-process JIT compiler
+* Support arm64 / aarch64 on UNIX platforms.
+* Building YJIT requires Rust 1.58.1+. [[Feature #18481]]
+
+### MJIT
 
 ## Static analysis
 
@@ -287,3 +291,4 @@ The following deprecated APIs are removed.
 [Bug #18782]:     https://bugs.ruby-lang.org/issues/18782
 [Feature #18788]: https://bugs.ruby-lang.org/issues/18788
 [Feature #18809]: https://bugs.ruby-lang.org/issues/18809
+[Feature #18481]: https://bugs.ruby-lang.org/issues/18481

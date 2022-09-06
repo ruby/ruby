@@ -253,6 +253,29 @@ setclassvariable
     vm_setclassvariable(GET_ISEQ(), GET_CFP(), id,  val, ic);
 }
 
+DEFINE_INSN
+opt_getconstant_path
+(IC ic)
+()
+(VALUE val)
+// attr bool leaf = false; /* may autoload or raise */
+{
+    const ID *segments = ic->segments;
+    struct iseq_inline_constant_cache_entry *ice = ic->entry;
+    if (ice && vm_ic_hit_p(ice, GET_EP())) {
+        val = ice->value;
+
+        VM_ASSERT(val == vm_get_ev_const_chain(ec, segments));
+    } else {
+        ruby_vm_constant_cache_misses++;
+        val = vm_get_ev_const_chain(ec, segments);
+        vm_ic_track_const_chain(GET_CFP(), ic, segments);
+        // Because leaf=false, we need to undo the PC increment to get the address to this instruction
+        // INSN_ATTR(width) == 2
+        vm_ic_update(GET_ISEQ(), ic, val, GET_EP(), GET_PC() - 2);
+    }
+}
+
 /* Get constant variable id. If klass is Qnil and allow_nil is Qtrue, constants
    are searched in the current scope. Otherwise, get constant under klass
    class or module.
@@ -1038,46 +1061,6 @@ branchnil
 /**********************************************************/
 /* for optimize                                           */
 /**********************************************************/
-
-/* push inline-cached value and go to dst if it is valid */
-DEFINE_INSN
-opt_getinlinecache
-(OFFSET dst, IC ic)
-()
-(VALUE val)
-{
-    struct iseq_inline_constant_cache_entry *ice = ic->entry;
-
-    // If there isn't an entry, then we're going to walk through the ISEQ
-    // starting at this instruction until we get to the associated
-    // opt_setinlinecache and associate this inline cache with every getconstant
-    // listed in between. We're doing this here instead of when the instructions
-    // are first compiled because it's possible to turn off inline caches and we
-    // want this to work in either case.
-    if (!ice) {
-        vm_ic_compile(GET_CFP(), ic);
-    }
-
-    if (ice && vm_ic_hit_p(ice, GET_EP())) {
-        val = ice->value;
-        JUMP(dst);
-    }
-    else {
-        ruby_vm_constant_cache_misses++;
-        val = Qnil;
-    }
-}
-
-/* set inline cache */
-DEFINE_INSN
-opt_setinlinecache
-(IC ic)
-(VALUE val)
-(VALUE val)
-// attr bool leaf = false;
-{
-    vm_ic_update(GET_ISEQ(), ic, val, GET_EP());
-}
 
 /* run iseq only once */
 DEFINE_INSN

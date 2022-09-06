@@ -2,10 +2,8 @@
 
 RSpec.describe "bundle install" do
   describe "when system_bindir is set" do
-    # On OS X, Gem.bindir defaults to /usr/bin, so system_bindir is useful if
-    # you want to avoid sudo installs for system gems with OS X's default ruby
     it "overrides Gem.bindir" do
-      expect(Pathname.new("/usr/bin")).not_to be_writable unless Process.euid == 0
+      expect(Pathname.new("/usr/bin")).not_to be_writable
       gemfile <<-G
         def Gem.bindir; "/usr/bin"; end
         source "#{file_uri_for(gem_repo1)}"

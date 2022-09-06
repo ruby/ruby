@@ -103,42 +103,6 @@ impl Assembler
     /// Split IR instructions for the x86 platform
     fn x86_split(mut self) -> Assembler
     {
-        fn split_arithmetic_opnds(asm: &mut Assembler, live_ranges: &Vec<usize>, index: usize, unmapped_opnds: &Vec<Opnd>, left: &Opnd, right: &Opnd) -> (Opnd, Opnd) {
-            match (unmapped_opnds[0], unmapped_opnds[1]) {
-                (Opnd::Mem(_), Opnd::Mem(_)) => {
-                    (asm.load(*left), asm.load(*right))
-                },
-                (Opnd::Mem(_), Opnd::UImm(value)) => {
-                    // 32-bit values will be sign-extended
-                    if imm_num_bits(value as i64) > 32 {
-                        (asm.load(*left), asm.load(*right))
-                    } else {
-                        (asm.load(*left), *right)
-                    }
-                },
-                (Opnd::Mem(_), Opnd::Imm(value)) => {
-                    if imm_num_bits(value) > 32 {
-                        (asm.load(*left), asm.load(*right))
-                    } else {
-                        (asm.load(*left), *right)
-                    }
-                },
-                // Instruction output whose live range spans beyond this instruction
-                (Opnd::InsnOut { idx, .. }, _) => {
-                    if live_ranges[idx] > index {
-                        (asm.load(*left), *right)
-                    } else {
-                        (*left, *right)
-                    }
-                },
-                // We have to load memory operands to avoid corrupting them
-                (Opnd::Mem(_) | Opnd::Reg(_), _) => {
-                    (asm.load(*left), *right)
-                },
-                _ => (*left, *right)
-            }
-        }
-
         let live_ranges: Vec<usize> = take(&mut self.live_ranges);
         let mut asm = Assembler::new_with_label_names(take(&mut self.label_names));
         let mut iterator = self.into_draining_iter();
@@ -194,20 +158,36 @@ impl Assembler
                 Insn::And { left, right, out } |
                 Insn::Or { left, right, out } |
                 Insn::Xor { left, right, out } => {
-                    let (split_left, split_right) = split_arithmetic_opnds(&mut asm, &live_ranges, index, &unmapped_opnds, left, right);
+                    match (unmapped_opnds[0], unmapped_opnds[1]) {
+                        (Opnd::Mem(_), Opnd::Mem(_)) => {
+                            *left = asm.load(*left);
+                            *right = asm.load(*right);
+                        },
+                        (Opnd::Mem(_), Opnd::UImm(_) | Opnd::Imm(_)) => {
+                            *left = asm.load(*left);
+                        },
+                        // Instruction output whose live range spans beyond this instruction
+                        (Opnd::InsnOut { idx, .. }, _) => {
+                            if live_ranges[idx] > index {
+                                *left = asm.load(*left);
+                            }
+                        },
+                        // We have to load memory operands to avoid corrupting them
+                        (Opnd::Mem(_) | Opnd::Reg(_), _) => {
+                            *left = asm.load(*left);
+                        },
+                        _ => {}
+                    };
 
-                    *left = split_left;
-                    *right = split_right;
                     *out = asm.next_opnd_out(Opnd::match_num_bits(&[*left, *right]));
-
                     asm.push_insn(insn);
                 },
                 Insn::Cmp { left, right } |
                 Insn::Test { left, right } => {
-                    let (split_left, split_right) = split_arithmetic_opnds(&mut asm, &live_ranges, index, &unmapped_opnds, left, right);
-
-                    *left = split_left;
-                    *right = split_right;
+                    if let (Opnd::Mem(_), Opnd::Mem(_)) = (&left, &right) {
+                        let loaded = asm.load(*right);
+                        *right = loaded;
+                    }
 
                     asm.push_insn(insn);
                 },
@@ -329,6 +309,34 @@ impl Assembler
     /// Emit platform-specific machine code
     pub fn x86_emit(&mut self, cb: &mut CodeBlock) -> Vec<u32>
     {
+        /// For some instructions, we want to be able to lower a 64-bit operand
+        /// without requiring more registers to be available in the register
+        /// allocator. So we just use the SCRATCH0 register temporarily to hold
+        /// the value before we immediately use it.
+        fn emit_64bit_immediate(cb: &mut CodeBlock, opnd: &Opnd) -> X86Opnd {
+            match opnd {
+                Opnd::Imm(value) => {
+                    // 32-bit values will be sign-extended
+                    if imm_num_bits(*value) > 32 {
+                        mov(cb, Assembler::SCRATCH0, opnd.into());
+                        Assembler::SCRATCH0
+                    } else {
+                        opnd.into()
+                    }
+                },
+                Opnd::UImm(value) => {
+                    // 32-bit values will be sign-extended
+                    if imm_num_bits(*value as i64) > 32 {
+                        mov(cb, Assembler::SCRATCH0, opnd.into());
+                        Assembler::SCRATCH0
+                    } else {
+                        opnd.into()
+                    }
+                },
+                _ => opnd.into()
+            }
+        }
+
         //dbg!(&self.insns);
 
         // List of GC offsets
@@ -365,26 +373,31 @@ impl Assembler
                 },
 
                 Insn::Add { left, right, .. } => {
-                    add(cb, left.into(), right.into())
+                    let opnd1 = emit_64bit_immediate(cb, right);
+                    add(cb, left.into(), opnd1);
                 },
 
                 Insn::FrameSetup => {},
                 Insn::FrameTeardown => {},
 
                 Insn::Sub { left, right, .. } => {
-                    sub(cb, left.into(), right.into())
+                    let opnd1 = emit_64bit_immediate(cb, right);
+                    sub(cb, left.into(), opnd1);
                 },
 
                 Insn::And { left, right, .. } => {
-                    and(cb, left.into(), right.into())
+                    let opnd1 = emit_64bit_immediate(cb, right);
+                    and(cb, left.into(), opnd1);
                 },
 
                 Insn::Or { left, right, .. } => {
-                    or(cb, left.into(), right.into());
+                    let opnd1 = emit_64bit_immediate(cb, right);
+                    or(cb, left.into(), opnd1);
                 },
 
                 Insn::Xor { left, right, .. } => {
-                    xor(cb, left.into(), right.into());
+                    let opnd1 = emit_64bit_immediate(cb, right);
+                    xor(cb, left.into(), opnd1);
                 },
 
                 Insn::Not { opnd, .. } => {
@@ -501,12 +514,14 @@ impl Assembler
 
                 // Compare
                 Insn::Cmp { left, right } => {
-                    cmp(cb, left.into(), right.into());
+                    let emitted = emit_64bit_immediate(cb, right);
+                    cmp(cb, left.into(), emitted);
                 }
 
                 // Test and set flags
                 Insn::Test { left, right } => {
-                    test(cb, left.into(), right.into());
+                    let emitted = emit_64bit_immediate(cb, right);
+                    test(cb, left.into(), emitted);
                 }
 
                 Insn::JmpOpnd(opnd) => {
@@ -658,5 +673,154 @@ impl Assembler
         }
 
         gc_offsets
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn setup_asm() -> (Assembler, CodeBlock) {
+        (Assembler::new(), CodeBlock::new_dummy(1024))
+    }
+
+    #[test]
+    fn test_emit_add_lt_32_bits() {
+        let (mut asm, mut cb) = setup_asm();
+
+        asm.add(Opnd::Reg(RAX_REG), Opnd::UImm(0xFF));
+        asm.compile_with_num_regs(&mut cb, 1);
+
+        assert_eq!(format!("{:x}", cb), "4889c04881c0ff000000");
+    }
+
+    #[test]
+    fn test_emit_add_gt_32_bits() {
+        let (mut asm, mut cb) = setup_asm();
+
+        asm.add(Opnd::Reg(RAX_REG), Opnd::UImm(0xFFFF_FFFF_FFFF));
+        asm.compile_with_num_regs(&mut cb, 1);
+
+        assert_eq!(format!("{:x}", cb), "4889c049bbffffffffffff00004c01d8");
+    }
+
+    #[test]
+    fn test_emit_and_lt_32_bits() {
+        let (mut asm, mut cb) = setup_asm();
+
+        asm.and(Opnd::Reg(RAX_REG), Opnd::UImm(0xFF));
+        asm.compile_with_num_regs(&mut cb, 1);
+
+        assert_eq!(format!("{:x}", cb), "4889c04881e0ff000000");
+    }
+
+    #[test]
+    fn test_emit_and_gt_32_bits() {
+        let (mut asm, mut cb) = setup_asm();
+
+        asm.and(Opnd::Reg(RAX_REG), Opnd::UImm(0xFFFF_FFFF_FFFF));
+        asm.compile_with_num_regs(&mut cb, 1);
+
+        assert_eq!(format!("{:x}", cb), "4889c049bbffffffffffff00004c21d8");
+    }
+
+    #[test]
+    fn test_emit_cmp_lt_32_bits() {
+        let (mut asm, mut cb) = setup_asm();
+
+        asm.cmp(Opnd::Reg(RAX_REG), Opnd::UImm(0xFF));
+        asm.compile_with_num_regs(&mut cb, 0);
+
+        assert_eq!(format!("{:x}", cb), "4881f8ff000000");
+    }
+
+    #[test]
+    fn test_emit_cmp_gt_32_bits() {
+        let (mut asm, mut cb) = setup_asm();
+
+        asm.cmp(Opnd::Reg(RAX_REG), Opnd::UImm(0xFFFF_FFFF_FFFF));
+        asm.compile_with_num_regs(&mut cb, 0);
+
+        assert_eq!(format!("{:x}", cb), "49bbffffffffffff00004c39d8");
+    }
+
+    #[test]
+    fn test_emit_or_lt_32_bits() {
+        let (mut asm, mut cb) = setup_asm();
+
+        asm.or(Opnd::Reg(RAX_REG), Opnd::UImm(0xFF));
+        asm.compile_with_num_regs(&mut cb, 1);
+
+        assert_eq!(format!("{:x}", cb), "4889c04881c8ff000000");
+    }
+
+    #[test]
+    fn test_emit_or_gt_32_bits() {
+        let (mut asm, mut cb) = setup_asm();
+
+        asm.or(Opnd::Reg(RAX_REG), Opnd::UImm(0xFFFF_FFFF_FFFF));
+        asm.compile_with_num_regs(&mut cb, 1);
+
+        assert_eq!(format!("{:x}", cb), "4889c049bbffffffffffff00004c09d8");
+    }
+
+    #[test]
+    fn test_emit_sub_lt_32_bits() {
+        let (mut asm, mut cb) = setup_asm();
+
+        asm.sub(Opnd::Reg(RAX_REG), Opnd::UImm(0xFF));
+        asm.compile_with_num_regs(&mut cb, 1);
+
+        assert_eq!(format!("{:x}", cb), "4889c04881e8ff000000");
+    }
+
+    #[test]
+    fn test_emit_sub_gt_32_bits() {
+        let (mut asm, mut cb) = setup_asm();
+
+        asm.sub(Opnd::Reg(RAX_REG), Opnd::UImm(0xFFFF_FFFF_FFFF));
+        asm.compile_with_num_regs(&mut cb, 1);
+
+        assert_eq!(format!("{:x}", cb), "4889c049bbffffffffffff00004c29d8");
+    }
+
+    #[test]
+    fn test_emit_test_lt_32_bits() {
+        let (mut asm, mut cb) = setup_asm();
+
+        asm.test(Opnd::Reg(RAX_REG), Opnd::UImm(0xFF));
+        asm.compile_with_num_regs(&mut cb, 0);
+
+        assert_eq!(format!("{:x}", cb), "f6c0ff");
+    }
+
+    #[test]
+    fn test_emit_test_gt_32_bits() {
+        let (mut asm, mut cb) = setup_asm();
+
+        asm.test(Opnd::Reg(RAX_REG), Opnd::UImm(0xFFFF_FFFF_FFFF));
+        asm.compile_with_num_regs(&mut cb, 0);
+
+        assert_eq!(format!("{:x}", cb), "49bbffffffffffff00004c85d8");
+    }
+
+    #[test]
+    fn test_emit_xor_lt_32_bits() {
+        let (mut asm, mut cb) = setup_asm();
+
+        asm.xor(Opnd::Reg(RAX_REG), Opnd::UImm(0xFF));
+        asm.compile_with_num_regs(&mut cb, 1);
+
+        assert_eq!(format!("{:x}", cb), "4889c04881f0ff000000");
+    }
+
+    #[test]
+    fn test_emit_xor_gt_32_bits() {
+        let (mut asm, mut cb) = setup_asm();
+
+        asm.xor(Opnd::Reg(RAX_REG), Opnd::UImm(0xFFFF_FFFF_FFFF));
+        asm.compile_with_num_regs(&mut cb, 1);
+
+        assert_eq!(format!("{:x}", cb), "4889c049bbffffffffffff00004c31d8");
     }
 }

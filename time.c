@@ -4160,13 +4160,16 @@ time_add(const struct time_object *tobj, VALUE torig, VALUE offset, int sign)
 
 /*
  *  call-seq:
- *     time + numeric -> time
+ *    self + numeric -> new_time
  *
- *  Adds some number of seconds (possibly including subsecond) to
- *  _time_ and returns that value as a new Time object.
+ *  Returns a new \Time object whose value is the sum of the numeric value
+ *  of +self+ and the given +numeric+:
  *
- *     t = Time.now         #=> 2020-07-20 22:14:43.170490982 +0900
- *     t + (60 * 60 * 24)   #=> 2020-07-21 22:14:43.170490982 +0900
+ *    t = Time.new(2000) # => 2000-01-01 00:00:00 -0600
+ *    t + (60 * 60 * 24) # => 2000-01-02 00:00:00 -0600
+ *    t + 0.5            # => 2000-01-01 00:00:00.5 -0600
+ *
+ *  Related: Time#-.
  */
 
 static VALUE
@@ -4183,17 +4186,24 @@ time_plus(VALUE time1, VALUE time2)
 
 /*
  *  call-seq:
- *     time - other_time -> float
- *     time - numeric    -> time
+ *    self - numeric -> new_time
+ *    self - other_time -> float
  *
- *  Returns a difference in seconds as a Float
- *  between _time_ and +other_time+, or subtracts the given number
- *  of seconds in +numeric+ from _time_.
+ *  When +numeric+ is given,
+ *  returns a new \Time object whose value is the difference
+ *  of the numeric value of +self+ and +numeric+:
  *
- *     t = Time.now       #=> 2020-07-20 22:15:49.302766336 +0900
- *     t2 = t + 2592000   #=> 2020-08-19 22:15:49.302766336 +0900
- *     t2 - t             #=> 2592000.0
- *     t2 - 2592000       #=> 2020-07-20 22:15:49.302766336 +0900
+ *    t = Time.new(2000) # => 2000-01-01 00:00:00 -0600
+ *    t - (60 * 60 * 24) # => 1999-12-31 00:00:00 -0600
+ *    t - 0.5            # => 1999-12-31 23:59:59.5 -0600
+ *
+ *  When +other_time+ is given,
+ *  returns a Float whose value is the difference
+ *  of the numeric values of +self+ and +other_time+:
+ *
+ *    t - t # => 0.0
+ *
+ *  Related: Time#+.
  */
 
 static VALUE
@@ -4228,31 +4238,30 @@ ndigits_denominator(VALUE ndigits)
 
 /*
  * call-seq:
- *   time.round([ndigits])   -> new_time
+ *   round(ndigits = 0) -> new_time
  *
- * Rounds subsecond to a given precision in decimal digits (0 digits by default).
- * It returns a new Time object.
- * +ndigits+ should be zero or a positive integer.
+ * Returns a new \Time object whose numeric value is that of +self+,
+ * with its seconds value rounded to precision +ndigits+:
  *
- *     t = Time.utc(2010,3,30, 5,43,25.123456789r)
- *     t                       #=> 2010-03-30 05:43:25.123456789 UTC
- *     t.round                 #=> 2010-03-30 05:43:25 UTC
- *     t.round(0)              #=> 2010-03-30 05:43:25 UTC
- *     t.round(1)              #=> 2010-03-30 05:43:25.1 UTC
- *     t.round(2)              #=> 2010-03-30 05:43:25.12 UTC
- *     t.round(3)              #=> 2010-03-30 05:43:25.123 UTC
- *     t.round(4)              #=> 2010-03-30 05:43:25.1235 UTC
+ *   t = Time.utc(2010, 3, 30, 5, 43, 25.123456789r)
+ *   t          # => 2010-03-30 05:43:25.123456789 UTC
+ *   t.round    # => 2010-03-30 05:43:25 UTC
+ *   t.round(0) # => 2010-03-30 05:43:25 UTC
+ *   t.round(1) # => 2010-03-30 05:43:25.1 UTC
+ *   t.round(2) # => 2010-03-30 05:43:25.12 UTC
+ *   t.round(3) # => 2010-03-30 05:43:25.123 UTC
+ *   t.round(4) # => 2010-03-30 05:43:25.1235 UTC
  *
- *     t = Time.utc(1999,12,31, 23,59,59)
- *     (t + 0.4).round         #=> 1999-12-31 23:59:59 UTC
- *     (t + 0.49).round        #=> 1999-12-31 23:59:59 UTC
- *     (t + 0.5).round         #=> 2000-01-01 00:00:00 UTC
- *     (t + 1.4).round         #=> 2000-01-01 00:00:00 UTC
- *     (t + 1.49).round        #=> 2000-01-01 00:00:00 UTC
- *     (t + 1.5).round         #=> 2000-01-01 00:00:01 UTC
+ *   t = Time.utc(1999, 12,31, 23, 59, 59)
+ *   t                # => 1999-12-31 23:59:59 UTC
+ *   (t + 0.4).round  # => 1999-12-31 23:59:59 UTC
+ *   (t + 0.49).round # => 1999-12-31 23:59:59 UTC
+ *   (t + 0.5).round  # => 2000-01-01 00:00:00 UTC
+ *   (t + 1.4).round  # => 2000-01-01 00:00:00 UTC
+ *   (t + 1.49).round # => 2000-01-01 00:00:00 UTC
+ *   (t + 1.5).round  # => 2000-01-01 00:00:01 UTC
  *
- *     t = Time.utc(1999,12,31, 23,59,59)     #=> 1999-12-31 23:59:59 UTC
- *     (t + 0.123456789).round(4).iso8601(6)  #=> 1999-12-31 23:59:59.1235 UTC
+ * Related: Time#ceil, Time#floor.
  */
 
 static VALUE
@@ -4278,29 +4287,29 @@ time_round(int argc, VALUE *argv, VALUE time)
 
 /*
  * call-seq:
- *   time.floor([ndigits])   -> new_time
+ *   floor(ndigits = 0) -> new_time
  *
- * Floors subsecond to a given precision in decimal digits (0 digits by default).
- * It returns a new Time object.
- * +ndigits+ should be zero or a positive integer.
+ * Returns a new \Time object whose numerical value
+ * is less than or equal to +self+ with its seconds
+ * truncated to precision +ndigits+:
  *
- *     t = Time.utc(2010,3,30, 5,43,25.123456789r)
- *     t                       #=> 2010-03-30 05:43:25.123456789 UTC
- *     t.floor                 #=> 2010-03-30 05:43:25 UTC
- *     t.floor(0)              #=> 2010-03-30 05:43:25 UTC
- *     t.floor(1)              #=> 2010-03-30 05:43:25.1 UTC
- *     t.floor(2)              #=> 2010-03-30 05:43:25.12 UTC
- *     t.floor(3)              #=> 2010-03-30 05:43:25.123 UTC
- *     t.floor(4)              #=> 2010-03-30 05:43:25.1234 UTC
+ *   t = Time.utc(2010, 3, 30, 5, 43, 25.123456789r)
+ *   t           # => 2010-03-30 05:43:25.123456789 UTC
+ *   t.floor     # => 2010-03-30 05:43:25 UTC
+ *   t.floor(2)  # => 2010-03-30 05:43:25.12 UTC
+ *   t.floor(4)  # => 2010-03-30 05:43:25.1234 UTC
+ *   t.floor(6)  # => 2010-03-30 05:43:25.123456 UTC
+ *   t.floor(8)  # => 2010-03-30 05:43:25.12345678 UTC
+ *   t.floor(10) # => 2010-03-30 05:43:25.123456789 UTC
  *
- *     t = Time.utc(1999,12,31, 23,59,59)
- *     (t + 0.4).floor    #=> 1999-12-31 23:59:59 UTC
- *     (t + 0.9).floor    #=> 1999-12-31 23:59:59 UTC
- *     (t + 1.4).floor    #=> 2000-01-01 00:00:00 UTC
- *     (t + 1.9).floor    #=> 2000-01-01 00:00:00 UTC
+ *   t = Time.utc(1999, 12, 31, 23, 59, 59)
+ *   t               # => 1999-12-31 23:59:59 UTC
+ *   (t + 0.4).floor # => 1999-12-31 23:59:59 UTC
+ *   (t + 0.9).floor # => 1999-12-31 23:59:59 UTC
+ *   (t + 1.4).floor # => 2000-01-01 00:00:00 UTC
+ *   (t + 1.9).floor # => 2000-01-01 00:00:00 UTC
  *
- *     t = Time.utc(1999,12,31, 23,59,59)
- *     (t + 0.123456789).floor(4)  #=> 1999-12-31 23:59:59.1234 UTC
+ * Related: Time#ceil, Time#round.
  */
 
 static VALUE
@@ -4323,29 +4332,29 @@ time_floor(int argc, VALUE *argv, VALUE time)
 
 /*
  * call-seq:
- *   time.ceil([ndigits])   -> new_time
+ *   ceil(ndigits = 0)   -> new_time
  *
- * Ceils subsecond to a given precision in decimal digits (0 digits by default).
- * It returns a new Time object.
- * +ndigits+ should be zero or a positive integer.
+ * Returns a new \Time object whose numerical value
+ * is greater than or equal to +self+ with its seconds
+ * truncated to precision +ndigits+:
  *
- *     t = Time.utc(2010,3,30, 5,43,25.0123456789r)
- *     t                      #=> 2010-03-30 05:43:25 123456789/10000000000 UTC
- *     t.ceil                 #=> 2010-03-30 05:43:26 UTC
- *     t.ceil(0)              #=> 2010-03-30 05:43:26 UTC
- *     t.ceil(1)              #=> 2010-03-30 05:43:25.1 UTC
- *     t.ceil(2)              #=> 2010-03-30 05:43:25.02 UTC
- *     t.ceil(3)              #=> 2010-03-30 05:43:25.013 UTC
- *     t.ceil(4)              #=> 2010-03-30 05:43:25.0124 UTC
+ *   t = Time.utc(2010, 3, 30, 5, 43, 25.123456789r)
+ *   t          # => 2010-03-30 05:43:25.123456789 UTC
+ *   t.ceil     # => 2010-03-30 05:43:26 UTC
+ *   t.ceil(2)  # => 2010-03-30 05:43:25.13 UTC
+ *   t.ceil(4)  # => 2010-03-30 05:43:25.1235 UTC
+ *   t.ceil(6)  # => 2010-03-30 05:43:25.123457 UTC
+ *   t.ceil(8)  # => 2010-03-30 05:43:25.12345679 UTC
+ *   t.ceil(10) # => 2010-03-30 05:43:25.123456789 UTC
  *
- *     t = Time.utc(1999,12,31, 23,59,59)
- *     (t + 0.4).ceil         #=> 2000-01-01 00:00:00 UTC
- *     (t + 0.9).ceil         #=> 2000-01-01 00:00:00 UTC
- *     (t + 1.4).ceil         #=> 2000-01-01 00:00:01 UTC
- *     (t + 1.9).ceil         #=> 2000-01-01 00:00:01 UTC
+ *   t = Time.utc(1999, 12, 31, 23, 59, 59)
+ *   t              # => 1999-12-31 23:59:59 UTC
+ *   (t + 0.4).ceil # => 2000-01-01 00:00:00 UTC
+ *   (t + 0.9).ceil # => 2000-01-01 00:00:00 UTC
+ *   (t + 1.4).ceil # => 2000-01-01 00:00:01 UTC
+ *   (t + 1.9).ceil # => 2000-01-01 00:00:01 UTC
  *
- *     t = Time.utc(1999,12,31, 23,59,59)
- *     (t + 0.123456789).ceil(4)  #=> 1999-12-31 23:59:59.1235 UTC
+ * Related: Time#floor, Time#round.
  */
 
 static VALUE
@@ -4371,16 +4380,19 @@ time_ceil(int argc, VALUE *argv, VALUE time)
 
 /*
  *  call-seq:
- *     time.sec -> integer
+ *    sec -> integer
  *
- *  Returns the second of the minute (0..60) for _time_.
+ *  Returns the integer second of the minute for +self+,
+ *  in range (0..60):
  *
- *  *Note:* Seconds range from zero to 60 to allow the system to inject
- *  leap seconds. See https://en.wikipedia.org/wiki/Leap_second for further
- *  details.
+ *    t = Time.new(2000, 1, 2, 3, 4, 5, 6)
+ *    # => 2000-01-02 03:04:05 +000006
+ *    t.sec # => 5
  *
- *     t = Time.now   #=> 2007-11-19 08:25:02 -0600
- *     t.sec          #=> 2
+ *  Note: the second value may be 60 when there is a
+ *  {leap second}[https://en.wikipedia.org/wiki/Leap_second].
+ *
+ *  Related: Time#year, Time#mon, Time#min.
  */
 
 static VALUE
@@ -4395,12 +4407,16 @@ time_sec(VALUE time)
 
 /*
  *  call-seq:
- *     time.min -> integer
+ *    min -> integer
  *
- *  Returns the minute of the hour (0..59) for _time_.
+ *  Returns the integer minute of the hour for +self+,
+ *  in range (0..59):
  *
- *     t = Time.now   #=> 2007-11-19 08:25:51 -0600
- *     t.min          #=> 25
+ *    t = Time.new(2000, 1, 2, 3, 4, 5, 6)
+ *    # => 2000-01-02 03:04:05 +000006
+ *    t.min # => 4
+ *
+ *  Related: Time#year, Time#mon, Time#sec.
  */
 
 static VALUE
@@ -4415,12 +4431,16 @@ time_min(VALUE time)
 
 /*
  *  call-seq:
- *     time.hour -> integer
+ *    hour -> integer
  *
- *  Returns the hour of the day (0..23) for _time_.
+ *  Returns the integer hour of the day for +self+,
+ *  in range (0..23):
  *
- *     t = Time.now   #=> 2007-11-19 08:26:20 -0600
- *     t.hour         #=> 8
+ *    t = Time.new(2000, 1, 2, 3, 4, 5, 6)
+ *    # => 2000-01-02 03:04:05 +000006
+ *    t.hour # => 3
+ *
+ *  Related: Time#year, Time#mon, Time#min.
  */
 
 static VALUE
@@ -4435,14 +4455,18 @@ time_hour(VALUE time)
 
 /*
  *  call-seq:
- *     time.day  -> integer
- *     time.mday -> integer
+ *    mday -> integer
  *
- *  Returns the day of the month (1..31) for _time_.
+ *  Returns the integer day of the month for +self+,
+ *  in range (1..31):
  *
- *     t = Time.now   #=> 2007-11-19 08:27:03 -0600
- *     t.day          #=> 19
- *     t.mday         #=> 19
+ *    t = Time.new(2000, 1, 2, 3, 4, 5, 6)
+ *    # => 2000-01-02 03:04:05 +000006
+ *    t.mday # => 2
+ *
+ *  Time#day is an alias for Time#mday.
+ *
+ *  Related: Time#year, Time#hour, Time#min.
  */
 
 static VALUE
@@ -4457,14 +4481,18 @@ time_mday(VALUE time)
 
 /*
  *  call-seq:
- *     time.mon   -> integer
- *     time.month -> integer
+ *    mon -> integer
  *
- *  Returns the month of the year (1..12) for _time_.
+ *  Returns the integer month of the year for +self+,
+ *  in range (1..12):
  *
- *     t = Time.now   #=> 2007-11-19 08:27:30 -0600
- *     t.mon          #=> 11
- *     t.month        #=> 11
+ *    t = Time.new(2000, 1, 2, 3, 4, 5, 6)
+ *    # => 2000-01-02 03:04:05 +000006
+ *    t.mon # => 1
+ *
+ *  Time#month is an alias for Time#mday.
+ *
+ *  Related: Time#year, Time#hour, Time#min.
  */
 
 static VALUE
@@ -4479,12 +4507,15 @@ time_mon(VALUE time)
 
 /*
  *  call-seq:
- *     time.year -> integer
+ *    year -> integer
  *
- *  Returns the year for _time_ (including the century).
+ *  Returns the integer year for +self+:
  *
- *     t = Time.now   #=> 2007-11-19 08:27:51 -0600
- *     t.year         #=> 2007
+ *    t = Time.new(2000, 1, 2, 3, 4, 5, 6)
+ *    # => 2000-01-02 03:04:05 +000006
+ *    t.year # => 2000
+ *
+ *  Related: Time#mon, Time#hour, Time#min.
  */
 
 static VALUE
@@ -4499,20 +4530,17 @@ time_year(VALUE time)
 
 /*
  *  call-seq:
- *     time.wday -> integer
+ *    wday -> integer
  *
- *  Returns an integer representing the day of the week, 0..6, with
- *  Sunday == 0.
+ *  Returns the integer day of the week for +self+,
+ *  in range (0..6), with Sunday as zero.
  *
- *     t = Time.now   #=> 2007-11-20 02:35:35 -0600
- *     t.wday         #=> 2
- *     t.sunday?      #=> false
- *     t.monday?      #=> false
- *     t.tuesday?     #=> true
- *     t.wednesday?   #=> false
- *     t.thursday?    #=> false
- *     t.friday?      #=> false
- *     t.saturday?    #=> false
+ *    t = Time.new(2000, 1, 2, 3, 4, 5, 6)
+ *    # => 2000-01-02 03:04:05 +000006
+ *    t.wday    # => 0
+ *    t.sunday? # => true
+ *
+ *  Related: Time#year, Time#hour, Time#min.
  */
 
 static VALUE
@@ -4531,12 +4559,14 @@ time_wday(VALUE time)
 
 /*
  *  call-seq:
- *     time.sunday? -> true or false
+ *    sunday? -> true or false
  *
- *  Returns +true+ if _time_ represents Sunday.
+ *  Returns +true+ if +self+ represents a Sunday, +false+ otherwise:
  *
- *     t = Time.local(1990, 4, 1)       #=> 1990-04-01 00:00:00 -0600
- *     t.sunday?                        #=> true
+ *    t = Time.utc(2000, 1, 2) # => 2000-01-02 00:00:00 UTC
+ *    t.sunday?                # => true
+ *
+ *  Related: Time#monday?, Time#tuesday?, Time#wednesday?.
  */
 
 static VALUE
@@ -4547,12 +4577,14 @@ time_sunday(VALUE time)
 
 /*
  *  call-seq:
- *     time.monday? -> true or false
+ *    monday? -> true or false
  *
- *  Returns +true+ if _time_ represents Monday.
+ *  Returns +true+ if +self+ represents a Monday, +false+ otherwise:
  *
- *     t = Time.local(2003, 8, 4)       #=> 2003-08-04 00:00:00 -0500
- *     t.monday?                        #=> true
+ *    t = Time.utc(2000, 1, 3) # => 2000-01-03 00:00:00 UTC
+ *    t.monday?                # => true
+ *
+ *  Related: Time#tuesday?, Time#wednesday?, Time#thursday?.
  */
 
 static VALUE
@@ -4563,12 +4595,14 @@ time_monday(VALUE time)
 
 /*
  *  call-seq:
- *     time.tuesday? -> true or false
+ *    tuesday? -> true or false
  *
- *  Returns +true+ if _time_ represents Tuesday.
+ *  Returns +true+ if +self+ represents a Tuesday, +false+ otherwise:
  *
- *     t = Time.local(1991, 2, 19)      #=> 1991-02-19 00:00:00 -0600
- *     t.tuesday?                       #=> true
+ *    t = Time.utc(2000, 1, 4) # => 2000-01-04 00:00:00 UTC
+ *    t.tuesday?               # => true
+ *
+ *  Related: Time#wednesday?, Time#thursday?, Time#friday?.
  */
 
 static VALUE
@@ -4579,12 +4613,14 @@ time_tuesday(VALUE time)
 
 /*
  *  call-seq:
- *     time.wednesday? -> true or false
+ *    wednesday? -> true or false
  *
- *  Returns +true+ if _time_ represents Wednesday.
+ *  Returns +true+ if +self+ represents a Wednesday, +false+ otherwise:
  *
- *     t = Time.local(1993, 2, 24)      #=> 1993-02-24 00:00:00 -0600
- *     t.wednesday?                     #=> true
+ *    t = Time.utc(2000, 1, 5) # => 2000-01-05 00:00:00 UTC
+ *    t.wednesday?             # => true
+ *
+ *  Related: Time#thursday?, Time#friday?, Time#saturday?.
  */
 
 static VALUE
@@ -4595,12 +4631,14 @@ time_wednesday(VALUE time)
 
 /*
  *  call-seq:
- *     time.thursday? -> true or false
+ *    thursday? -> true or false
  *
- *  Returns +true+ if _time_ represents Thursday.
+ *  Returns +true+ if +self+ represents a Thursday, +false+ otherwise:
  *
- *     t = Time.local(1995, 12, 21)     #=> 1995-12-21 00:00:00 -0600
- *     t.thursday?                      #=> true
+ *    t = Time.utc(2000, 1, 6) # => 2000-01-06 00:00:00 UTC
+ *    t.thursday?              # => true
+ *
+ *  Related: Time#friday?, Time#saturday?, Time#sunday?.
  */
 
 static VALUE
@@ -4611,12 +4649,14 @@ time_thursday(VALUE time)
 
 /*
  *  call-seq:
- *     time.friday? -> true or false
+ *    friday? -> true or false
  *
- *  Returns +true+ if _time_ represents Friday.
+ *  Returns +true+ if +self+ represents a Friday, +false+ otherwise:
  *
- *     t = Time.local(1987, 12, 18)     #=> 1987-12-18 00:00:00 -0600
- *     t.friday?                        #=> true
+ *    t = Time.utc(2000, 1, 7) # => 2000-01-07 00:00:00 UTC
+ *    t.friday?                # => true
+ *
+ *  Related: Time#saturday?, Time#sunday?, Time#monday?.
  */
 
 static VALUE
@@ -4627,12 +4667,14 @@ time_friday(VALUE time)
 
 /*
  *  call-seq:
- *     time.saturday? -> true or false
+ *    saturday? -> true or false
  *
- *  Returns +true+ if _time_ represents Saturday.
+ *  Returns +true+ if +self+ represents a Saturday, +false+ otherwise:
  *
- *     t = Time.local(2006, 6, 10)      #=> 2006-06-10 00:00:00 -0500
- *     t.saturday?                      #=> true
+ *    t = Time.utc(2000, 1, 1) # => 2000-01-01 00:00:00 UTC
+ *    t.saturday?              # => true
+ *
+ *  Related: Time#sunday?, Time#monday?, Time#tuesday?.
  */
 
 static VALUE
@@ -4643,12 +4685,12 @@ time_saturday(VALUE time)
 
 /*
  *  call-seq:
- *     time.yday -> integer
+ *    yday -> integer
  *
- *  Returns an integer representing the day of the year, 1..366.
+ *  Returns the integer day of the year of +self+, in range (1..366).
  *
- *     t = Time.now   #=> 2007-11-19 08:32:31 -0600
- *     t.yday         #=> 323
+ *    Time.new(2000, 1, 1).yday   # => 1
+ *    Time.new(2000, 12, 31).yday # => 366
  */
 
 static VALUE
@@ -4663,27 +4705,18 @@ time_yday(VALUE time)
 
 /*
  *  call-seq:
- *     time.isdst -> true or false
- *     time.dst?  -> true or false
+ *    dst?  -> true or false
  *
- *  Returns +true+ if _time_ occurs during Daylight
- *  Saving Time in its time zone.
+ *  Returns +true+ if +self+ is in daylight saving time, +false+ otherwise:
  *
- *   # CST6CDT:
- *     Time.local(2000, 1, 1).zone    #=> "CST"
- *     Time.local(2000, 1, 1).isdst   #=> false
- *     Time.local(2000, 1, 1).dst?    #=> false
- *     Time.local(2000, 7, 1).zone    #=> "CDT"
- *     Time.local(2000, 7, 1).isdst   #=> true
- *     Time.local(2000, 7, 1).dst?    #=> true
+ *    t = Time.local(2000, 1, 1) # => 2000-01-01 00:00:00 -0600
+ *    t.zone                     # => "Central Standard Time"
+ *    t.dst?                     # => false
+ *    t = Time.local(2000, 7, 1) # => 2000-07-01 00:00:00 -0500
+ *    t.zone                     # => "Central Daylight Time"
+ *    t.dst?                     # => true
  *
- *   # Asia/Tokyo:
- *     Time.local(2000, 1, 1).zone    #=> "JST"
- *     Time.local(2000, 1, 1).isdst   #=> false
- *     Time.local(2000, 1, 1).dst?    #=> false
- *     Time.local(2000, 7, 1).zone    #=> "JST"
- *     Time.local(2000, 7, 1).isdst   #=> false
- *     Time.local(2000, 7, 1).dst?    #=> false
+ *    Time#isdst is an alias for Time#dst?.
  */
 
 static VALUE
@@ -4703,13 +4736,10 @@ time_isdst(VALUE time)
  *  call-seq:
  *     time.zone -> string or timezone
  *
- *  Returns the name of the time zone used for _time_. As of Ruby
- *  1.8, returns ``UTC'' rather than ``GMT'' for UTC times.
+ *  Returns the string name of the time zone for +self+:
  *
- *     t = Time.gm(2000, "jan", 1, 20, 15, 1)
- *     t.zone   #=> "UTC"
- *     t = Time.local(2000, "jan", 1, 20, 15, 1)
- *     t.zone   #=> "CST"
+ *    Time.utc(2000, 1, 1).zone # => "UTC"
+ *    Time.new(2000, 1, 1).zone # => "Central Standard Time"
  */
 
 static VALUE
@@ -4735,17 +4765,14 @@ time_zone(VALUE time)
 
 /*
  *  call-seq:
- *     time.gmt_offset -> integer
- *     time.gmtoff     -> integer
- *     time.utc_offset -> integer
+ *    utc_offset -> integer
  *
- *  Returns the offset in seconds between the timezone of _time_
- *  and UTC.
+ *  Returns the offset in seconds between the timezones of UTC and +self+:
  *
- *     t = Time.gm(2000,1,1,20,15,1)   #=> 2000-01-01 20:15:01 UTC
- *     t.gmt_offset                    #=> 0
- *     l = t.getlocal                  #=> 2000-01-01 14:15:01 -0600
- *     l.gmt_offset                    #=> -21600
+ *    Time.utc(2000, 1, 1).utc_offset   # => 0
+ *    Time.local(2000, 1, 1).utc_offset # => -21600 # -6*3600, or minus six hours.
+ *
+ *  Time#gmt_offset and Time#gmtoff are aliases for Time#utc_offset.
  */
 
 VALUE
@@ -4766,19 +4793,17 @@ rb_time_utc_offset(VALUE time)
 
 /*
  *  call-seq:
- *     time.to_a -> array
+ *    to_a -> array
  *
- *  Returns a ten-element _array_ of values for _time_:
+ *  Returns a 10-element array of values representing +self+:
  *
- *     [sec, min, hour, day, month, year, wday, yday, isdst, zone]
+ *    Time.utc(2000, 1, 1).to_a
+ *    # => [0,   0,   0,    1,   1,   2000, 6,    1,    false, "UTC"]
+ *    #    [sec, min, hour, day, mon, year, wday, yday, dst?,   zone]
  *
- *  See the individual methods for an explanation of the
- *  valid ranges of each value. The ten elements can be passed directly
- *  to Time.utc or Time.local to create a
- *  new Time object.
+ *  The returned array is suitable for use as an argument to Time.utc or Time.local
+ *  to create a new \Time object.
  *
- *     t = Time.now     #=> 2007-11-19 08:36:01 -0600
- *     now = t.to_a     #=> [1, 36, 8, 19, 11, 2007, 1, 323, false, "CST"]
  */
 
 static VALUE
@@ -4834,189 +4859,11 @@ strftime_cstr(const char *fmt, size_t len, VALUE time, rb_encoding *enc)
 
 /*
  *  call-seq:
- *     time.strftime( string ) -> string
+ *    strftime(format_string) -> string
  *
- *  Formats _time_ according to the directives in the given format string.
- *
- *  The directives begin with a percent (%) character.
- *  Any text not listed as a directive will be passed through to the
- *  output string.
- *
- *  The directive consists of a percent (%) character,
- *  zero or more flags, optional minimum field width,
- *  optional modifier and a conversion specifier
- *  as follows:
- *
- *    %<flags><width><modifier><conversion>
- *
- *  Flags:
- *    -  don't pad a numerical output
- *    _  use spaces for padding
- *    0  use zeros for padding
- *    ^  upcase the result string
- *    #  change case
- *    :  use colons for %z
- *
- *  The minimum field width specifies the minimum width.
- *
- *  The modifiers are "E" and "O".
- *  They are ignored.
- *
- *  Format directives:
- *
- *    Date (Year, Month, Day):
- *      %Y - Year with century if provided, will pad result at least 4 digits.
- *              -0001, 0000, 1995, 2009, 14292, etc.
- *      %C - year / 100 (rounded down such as 20 in 2009)
- *      %y - year % 100 (00..99)
- *
- *      %m - Month of the year, zero-padded (01..12)
- *              %_m  blank-padded ( 1..12)
- *              %-m  no-padded (1..12)
- *      %B - The full month name (``January'')
- *              %^B  uppercased (``JANUARY'')
- *      %b - The abbreviated month name (``Jan'')
- *              %^b  uppercased (``JAN'')
- *      %h - Equivalent to %b
- *
- *      %d - Day of the month, zero-padded (01..31)
- *              %-d  no-padded (1..31)
- *      %e - Day of the month, blank-padded ( 1..31)
- *
- *      %j - Day of the year (001..366)
- *
- *    Time (Hour, Minute, Second, Subsecond):
- *      %H - Hour of the day, 24-hour clock, zero-padded (00..23)
- *      %k - Hour of the day, 24-hour clock, blank-padded ( 0..23)
- *      %I - Hour of the day, 12-hour clock, zero-padded (01..12)
- *      %l - Hour of the day, 12-hour clock, blank-padded ( 1..12)
- *      %P - Meridian indicator, lowercase (``am'' or ``pm'')
- *      %p - Meridian indicator, uppercase (``AM'' or ``PM'')
- *
- *      %M - Minute of the hour (00..59)
- *
- *      %S - Second of the minute (00..60)
- *
- *      %L - Millisecond of the second (000..999)
- *           The digits under millisecond are truncated to not produce 1000.
- *      %N - Fractional seconds digits, default is 9 digits (nanosecond)
- *              %3N  millisecond (3 digits)
- *              %6N  microsecond (6 digits)
- *              %9N  nanosecond (9 digits)
- *              %12N picosecond (12 digits)
- *              %15N femtosecond (15 digits)
- *              %18N attosecond (18 digits)
- *              %21N zeptosecond (21 digits)
- *              %24N yoctosecond (24 digits)
- *           The digits under the specified length are truncated to avoid
- *           carry up.
- *
- *    Time zone:
- *      %z - Time zone as hour and minute offset from UTC (e.g. +0900)
- *              %:z - hour and minute offset from UTC with a colon (e.g. +09:00)
- *              %::z - hour, minute and second offset from UTC (e.g. +09:00:00)
- *      %Z - Abbreviated time zone name or similar information.  (OS dependent)
- *
- *    Weekday:
- *      %A - The full weekday name (``Sunday'')
- *              %^A  uppercased (``SUNDAY'')
- *      %a - The abbreviated name (``Sun'')
- *              %^a  uppercased (``SUN'')
- *      %u - Day of the week (Monday is 1, 1..7)
- *      %w - Day of the week (Sunday is 0, 0..6)
- *
- *    ISO 8601 week-based year and week number:
- *    The first week of YYYY starts with a Monday and includes YYYY-01-04.
- *    The days in the year before the first week are in the last week of
- *    the previous year.
- *      %G - The week-based year
- *      %g - The last 2 digits of the week-based year (00..99)
- *      %V - Week number of the week-based year (01..53)
- *
- *    Week number:
- *    The first week of YYYY that starts with a Sunday or Monday (according to %U
- *    or %W). The days in the year before the first week are in week 0.
- *      %U - Week number of the year. The week starts with Sunday. (00..53)
- *      %W - Week number of the year. The week starts with Monday. (00..53)
- *
- *    Seconds since the Epoch:
- *      %s - Number of seconds since 1970-01-01 00:00:00 UTC.
- *
- *    Literal string:
- *      %n - Newline character (\n)
- *      %t - Tab character (\t)
- *      %% - Literal ``%'' character
- *
- *    Combination:
- *      %c - date and time (%a %b %e %T %Y)
- *      %D - Date (%m/%d/%y)
- *      %F - The ISO 8601 date format (%Y-%m-%d)
- *      %v - VMS date (%e-%^b-%4Y)
- *      %x - Same as %D
- *      %X - Same as %T
- *      %r - 12-hour time (%I:%M:%S %p)
- *      %R - 24-hour time (%H:%M)
- *      %T - 24-hour time (%H:%M:%S)
- *
- *  This method is similar to strftime() function defined in ISO C and POSIX.
- *
- *  While all directives are locale independent since Ruby 1.9, %Z is platform
- *  dependent.
- *  So, the result may differ even if the same format string is used in other
- *  systems such as C.
- *
- *  %z is recommended over %Z.
- *  %Z doesn't identify the timezone.
- *  For example, "CST" is used at America/Chicago (-06:00),
- *  America/Havana (-05:00), Asia/Harbin (+08:00), Australia/Darwin (+09:30)
- *  and Australia/Adelaide (+10:30).
- *  Also, %Z is highly dependent on the operating system.
- *  For example, it may generate a non ASCII string on Japanese Windows,
- *  i.e. the result can be different to "JST".
- *  So the numeric time zone offset, %z, is recommended.
- *
- *  Examples:
- *
- *    t = Time.new(2007,11,19,8,37,48,"-06:00") #=> 2007-11-19 08:37:48 -0600
- *    t.strftime("Printed on %m/%d/%Y")         #=> "Printed on 11/19/2007"
- *    t.strftime("at %I:%M %p")                 #=> "at 08:37 AM"
- *
- *  Various ISO 8601 formats:
- *    %Y%m%d           => 20071119                  Calendar date (basic)
- *    %F               => 2007-11-19                Calendar date (extended)
- *    %Y-%m            => 2007-11                   Calendar date, reduced accuracy, specific month
- *    %Y               => 2007                      Calendar date, reduced accuracy, specific year
- *    %C               => 20                        Calendar date, reduced accuracy, specific century
- *    %Y%j             => 2007323                   Ordinal date (basic)
- *    %Y-%j            => 2007-323                  Ordinal date (extended)
- *    %GW%V%u          => 2007W471                  Week date (basic)
- *    %G-W%V-%u        => 2007-W47-1                Week date (extended)
- *    %GW%V            => 2007W47                   Week date, reduced accuracy, specific week (basic)
- *    %G-W%V           => 2007-W47                  Week date, reduced accuracy, specific week (extended)
- *    %H%M%S           => 083748                    Local time (basic)
- *    %T               => 08:37:48                  Local time (extended)
- *    %H%M             => 0837                      Local time, reduced accuracy, specific minute (basic)
- *    %H:%M            => 08:37                     Local time, reduced accuracy, specific minute (extended)
- *    %H               => 08                        Local time, reduced accuracy, specific hour
- *    %H%M%S,%L        => 083748,000                Local time with decimal fraction, comma as decimal sign (basic)
- *    %T,%L            => 08:37:48,000              Local time with decimal fraction, comma as decimal sign (extended)
- *    %H%M%S.%L        => 083748.000                Local time with decimal fraction, full stop as decimal sign (basic)
- *    %T.%L            => 08:37:48.000              Local time with decimal fraction, full stop as decimal sign (extended)
- *    %H%M%S%z         => 083748-0600               Local time and the difference from UTC (basic)
- *    %T%:z            => 08:37:48-06:00            Local time and the difference from UTC (extended)
- *    %Y%m%dT%H%M%S%z  => 20071119T083748-0600      Date and time of day for calendar date (basic)
- *    %FT%T%:z         => 2007-11-19T08:37:48-06:00 Date and time of day for calendar date (extended)
- *    %Y%jT%H%M%S%z    => 2007323T083748-0600       Date and time of day for ordinal date (basic)
- *    %Y-%jT%T%:z      => 2007-323T08:37:48-06:00   Date and time of day for ordinal date (extended)
- *    %GW%V%uT%H%M%S%z => 2007W471T083748-0600      Date and time of day for week date (basic)
- *    %G-W%V-%uT%T%:z  => 2007-W47-1T08:37:48-06:00 Date and time of day for week date (extended)
- *    %Y%m%dT%H%M      => 20071119T0837             Calendar date and local time (basic)
- *    %FT%R            => 2007-11-19T08:37          Calendar date and local time (extended)
- *    %Y%jT%H%MZ       => 2007323T0837Z             Ordinal date and UTC of day (basic)
- *    %Y-%jT%RZ        => 2007-323T08:37Z           Ordinal date and UTC of day (extended)
- *    %GW%V%uT%H%M%z   => 2007W471T0837-0600        Week date and local time and difference from UTC (basic)
- *    %G-W%V-%uT%R%:z  => 2007-W47-1T08:37-06:00    Week date and local time and difference from UTC (extended)
- *
+ *  Returns a string representation of +self+,
+ *  formatted according to the given string +format+.
+ *  See {Formats for Dates and Times}[rdoc-ref:strftime_formatting.rdoc].
  */
 
 static VALUE

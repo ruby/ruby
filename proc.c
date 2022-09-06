@@ -2586,7 +2586,8 @@ convert_umethod_to_method_components(const struct METHOD *data, VALUE recv, VALU
     const rb_method_entry_t *me;
     if (clone) {
         me = rb_method_entry_clone(data->me);
-    } else {
+    }
+    else {
         me = data->me;
     }
 
