@@ -1259,18 +1259,18 @@ check_unit_queue(void)
 
     current_cc_ms = real_ms_time();
     current_cc_unit = unit;
-    current_cc_pid = start_mjit_compile(unit);
-
-    // JIT failure
-    if (current_cc_pid == -1) {
-        current_cc_pid = 0;
-        current_cc_unit->iseq->body->jit_func = (mjit_func_t)NOT_COMPILED_JIT_ISEQ_FUNC; // TODO: consider unit->compact_p
-        current_cc_unit = NULL;
-        return;
-    }
-
     if (mjit_opts.wait) {
-        mjit_wait(unit->iseq->body);
+        int exit_code = mjit_compile_unit(unit);
+        mjit_notify_waitpid(exit_code);
+    }
+    else {
+        current_cc_pid = start_mjit_compile(unit);
+        if (current_cc_pid == -1) { // JIT failure
+            current_cc_pid = 0;
+            current_cc_unit->iseq->body->jit_func = (mjit_func_t)NOT_COMPILED_JIT_ISEQ_FUNC; // TODO: consider unit->compact_p
+            current_cc_unit = NULL;
+            return;
+        }
     }
 }
 
@@ -1315,7 +1315,13 @@ check_compaction(void)
             // TODO: assert unit is null
             current_cc_ms = real_ms_time();
             current_cc_unit = unit;
-            current_cc_pid = start_mjit_compact(unit);
+            if (mjit_opts.wait) {
+                int exit_code = mjit_compact_unit(unit);
+                mjit_notify_waitpid(exit_code);
+            }
+            else {
+                current_cc_pid = start_mjit_compact(unit);
+            }
             // TODO: check -1
         }
     }
@@ -1323,7 +1329,7 @@ check_compaction(void)
 
 // Check the current CC process if any, and start a next C compiler process as needed.
 void
-mjit_notify_waitpid(int status)
+mjit_notify_waitpid(int exit_code)
 {
     // TODO: check current_cc_pid?
     current_cc_pid = 0;
@@ -1333,11 +1339,7 @@ mjit_notify_waitpid(int status)
     sprint_uniq_filename(c_file, (int)sizeof(c_file), current_cc_unit->id, MJIT_TMP_PREFIX, ".c");
 
     // Check the result
-    bool success = false;
-    if (WIFEXITED(status)) {
-        success = (WEXITSTATUS(status) == 0);
-    }
-    if (!success) {
+    if (exit_code != 0) {
         verbose(2, "Failed to generate so");
         if (!current_cc_unit->compact_p) {
             current_cc_unit->iseq->body->jit_func = (mjit_func_t)NOT_COMPILED_JIT_ISEQ_FUNC;
@@ -1438,8 +1440,8 @@ rb_mjit_add_iseq_to_process(const rb_iseq_t *iseq)
     check_unit_queue();
 }
 
-// For this timeout seconds, --jit-wait will wait for JIT compilation finish.
-#define MJIT_WAIT_TIMEOUT_SECONDS 600
+// For this timeout seconds, mjit_finish will wait for JIT compilation finish.
+#define MJIT_WAIT_TIMEOUT_SECONDS 5
 
 static void
 mjit_wait(struct rb_iseq_constant_body *body)

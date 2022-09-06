@@ -393,8 +393,8 @@ mjit_check_iseq(rb_execution_context_t *ec, const rb_iseq_t *iseq, struct rb_ise
         RB_DEBUG_COUNTER_INC(mjit_exec_not_added);
         if (body->total_calls == mjit_opts.min_calls) {
             rb_mjit_add_iseq_to_process(iseq);
-            if (UNLIKELY(mjit_opts.wait)) {
-                return rb_mjit_wait_call(ec, body);
+            if (UNLIKELY(mjit_opts.wait && (uintptr_t)body->jit_func > LAST_JIT_ISEQ_FUNC)) {
+                return body->jit_func(ec, ec->cfp);
             }
         }
         break;

@@ -2323,7 +2323,7 @@ rb_threadptr_execute_interrupts(rb_thread_t *th, int blocking_timing)
             // outside ruby_sigchld_handler to avoid recursively relying on the SIGCHLD handler.
             if (mjit_waitpid_finished) {
                 mjit_waitpid_finished = false;
-                mjit_notify_waitpid(mjit_waitpid_status);
+                mjit_notify_waitpid(WIFEXITED(mjit_waitpid_status) ? WEXITSTATUS(mjit_waitpid_status) : -1);
             }
 #endif
         }
