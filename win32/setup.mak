@@ -68,7 +68,7 @@ MJIT_SUPPORT = $(MJIT_SUPPORT)
 !if defined(BASERUBY)
 	@echo BASERUBY = $(BASERUBY:/=\)>> $(MAKEFILE)
 !else
-	@for %I in (ruby.exe) do @echo BASERUBY = %~s$$PATH:I>> $(MAKEFILE)
+	@for %I in (ruby.exe) do @echo BASERUBY = %~s$$PATH:I --disable=gems>> $(MAKEFILE)
 !endif
 	@type << >> $(MAKEFILE)
 $(BANG)if "$$(BASERUBY)" == ""
