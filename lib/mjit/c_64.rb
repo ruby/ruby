@@ -119,7 +119,7 @@ module RubyVM::MJIT
 
   def C.mjit_options
     @mjit_options ||= CType::Struct.new(
-      "mjit_options", 32,
+      "mjit_options", 40,
       on: [0, self._Bool],
       save_temps: [8, self._Bool],
       warnings: [16, self._Bool],
@@ -129,6 +129,8 @@ module RubyVM::MJIT
       min_calls: [160, CType::Immediate.new(-4)],
       verbose: [192, CType::Immediate.new(4)],
       max_cache_size: [224, CType::Immediate.new(4)],
+      pause: [256, self._Bool],
+      custom: [264, self._Bool],
     )
   end
 
