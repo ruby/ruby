@@ -363,13 +363,15 @@ RUNRUBY = .\$(PROGRAM) -I$(srcdir)/lib -I"$(EXTOUT)/$(arch)" -I.
 !endif
 MINIRUBY = $(MINIRUBY) $(MINIRUBYOPT)
 RUNRUBY = $(RUNRUBY) "$(tooldir)/runruby.rb" --extout="$(EXTOUT)" $(RUNRUBYOPT) -- $(RUN_OPTS)
+yes_baseruby = $(HAVE_BASERUBY:no=)
+no_baseruby = $(HAVE_BASERUBY:yes=)
 !if "$(CROSS_COMPILING)" == "yes"
 XRUBY = $(MINIRUBY)
 BOOTSTRAPRUBY = $(BASERUBY)
-BOOTSTRAPRUBY_COMMAND = $(BOOTSTRAPRUBY) -r./$(arch)-fake
+BOOTSTRAPRUBY_OPT = -r./$(arch)-fake
 !else
 BOOTSTRAPRUBY = $(MINIRUBY)
-BOOTSTRAPRUBY_COMMAND = $(BOOTSTRAPRUBY)
+BOOTSTRAPRUBY_OPT =
 XRUBY = $(RUNRUBY)
 !endif
 BTESTRUBY = $(MINIRUBY) -r./$(arch)-fake
