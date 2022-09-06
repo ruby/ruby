@@ -36,10 +36,8 @@ struct case_dispatch_var {
 static VALUE
 rb_ptr(const char *type, const void *ptr)
 {
-    // TODO: cache constant
-    VALUE rb_mMJIT = rb_const_get(rb_cRubyVM, rb_intern("MJIT"));
-    VALUE rb_mC = rb_const_get(rb_mMJIT, rb_intern("C"));
-    VALUE rb_type = rb_funcall(rb_mC, rb_intern(type), 0);
+    extern VALUE rb_mMJITC;
+    VALUE rb_type = rb_funcall(rb_mMJITC, rb_intern(type), 0);
     return rb_funcall(rb_type, rb_intern("new"), 1, ULONG2NUM((size_t)ptr));
 }
 
@@ -124,10 +122,8 @@ mjit_compile(FILE *f, const rb_iseq_t *iseq, const char *funcname, int id)
     bool original_call_p = mjit_call_p;
     mjit_call_p = false; // Avoid impacting JIT metrics by itself
 
-    // TODO: initialize the constant in mjit_init and use it
-    VALUE rb_mMJIT = rb_const_get(rb_cRubyVM, rb_intern("MJIT"));
-    VALUE rb_mCompiler = rb_const_get(rb_mMJIT, rb_intern("Compiler"));
-    bool success = RTEST(rb_funcall(rb_mCompiler, rb_intern("compile"), 4,
+    extern VALUE rb_mMJITCompiler;
+    bool success = RTEST(rb_funcall(rb_mMJITCompiler, rb_intern("compile"), 4,
                 PTR2NUM((VALUE)f), rb_ptr("rb_iseq_t", iseq), rb_str_new_cstr(funcname), INT2NUM(id)));
 
     mjit_call_p = original_call_p;

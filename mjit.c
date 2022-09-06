@@ -1804,6 +1804,11 @@ const struct ruby_opt_message mjit_option_messages[] = {
 };
 #undef M
 
+// RubyVM::MJIT::Compiler
+VALUE rb_mMJITCompiler = 0;
+// RubyVM::MJIT::C
+VALUE rb_mMJITC = 0;
+
 // Initialize MJIT.  Start a thread creating the precompiled header and
 // processing ISeqs.  The function should be called first for using MJIT.
 // If everything is successful, MJIT_INIT_P will be TRUE.
@@ -1820,6 +1825,8 @@ mjit_init(const struct mjit_options *opts)
         mjit_enabled = false;
         return;
     }
+    rb_mMJITCompiler = rb_const_get(rb_mMJIT, rb_intern("Compiler"));
+    rb_mMJITC = rb_const_get(rb_mMJIT, rb_intern("C"));
 
     mjit_call_p = true;
     mjit_pid = getpid();
