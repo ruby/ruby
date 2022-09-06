@@ -130,7 +130,7 @@ module RubyVM::MJIT
       verbose: [128, CType::Immediate.new(4)],
       max_cache_size: [160, CType::Immediate.new(4)],
       pause: [192, self._Bool],
-      pause: [200, self._Bool],
+      custom: [200, self._Bool],
     )
   end
 
