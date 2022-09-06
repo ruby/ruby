@@ -1779,6 +1779,10 @@ mjit_setup_options(const char *s, struct mjit_options *mjit_opt)
     else if (opt_match_arg(s, l, "min-calls")) {
         mjit_opt->min_calls = atoi(s + 1);
     }
+    // --mjit=pause is an undocumented feature for experiments
+    else if (opt_match_noarg(s, l, "pause")) {
+        mjit_opt->pause = true;
+    }
     else {
         rb_raise(rb_eRuntimeError,
                  "invalid MJIT option `%s' (--help will show valid MJIT options)", s);
@@ -1870,11 +1874,15 @@ mjit_init(const struct mjit_options *opts)
     // rb_fiber_init_mjit_cont again with mjit_enabled=true to set the root_fiber's mjit_cont.
     rb_fiber_init_mjit_cont(GET_EC()->fiber_ptr);
 
-    // TODO: Consider running C compiler asynchronously
-    make_pch();
+    // If --mjit=pause is given, lazily start MJIT when RubyVM::MJIT.resume is called.
+    // You can use it to control MJIT warmup, or to customize the JIT implementation.
+    if (!mjit_opts.pause) {
+        // TODO: Consider running C compiler asynchronously
+        make_pch();
 
-    // Enable MJIT compilation
-    start_worker();
+        // Enable MJIT compilation
+        start_worker();
+    }
 }
 
 static void
@@ -1918,6 +1926,11 @@ mjit_resume(void)
     }
     if (!worker_stopped) {
         return Qfalse;
+    }
+
+    // Lazily prepare PCH when --mjit=pause is given
+    if (pch_status == PCH_NOT_READY) {
+        make_pch();
     }
 
     if (!start_worker()) {
@@ -1993,7 +2006,7 @@ mjit_finish(bool close_handle_p)
     mjit_dump_total_calls();
 #endif
 
-    if (!mjit_opts.save_temps && getpid() == pch_owner_pid)
+    if (!mjit_opts.save_temps && getpid() == pch_owner_pid && pch_status != PCH_NOT_READY)
         remove_file(pch_file);
 
     xfree(header_file); header_file = NULL;

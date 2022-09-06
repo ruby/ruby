@@ -49,7 +49,7 @@ struct mjit_options {
     bool debug;
     // Add arbitrary cflags.
     char* debug_flags;
-    // If not 0, all ISeqs are synchronously compiled. For testing.
+    // If true, all ISeqs are synchronously compiled. For testing.
     bool wait;
     // Number of calls to trigger JIT compilation. For testing.
     unsigned int min_calls;
@@ -59,6 +59,8 @@ struct mjit_options {
     // Maximal permitted number of iseq JIT codes in a MJIT memory
     // cache.
     int max_cache_size;
+    // [experimental] If true, do not start MJIT until MJIT.resume is called.
+    bool pause;
 };
 
 // State of optimization switches
