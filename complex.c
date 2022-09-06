@@ -316,7 +316,7 @@ f_negative_p(VALUE x)
 
 #define f_positive_p(x) (!f_negative_p(x))
 
-inline static int
+inline static bool
 f_zero_p(VALUE x)
 {
     if (RB_FLOAT_TYPE_P(x)) {
@@ -329,7 +329,7 @@ f_zero_p(VALUE x)
         const VALUE num = RRATIONAL(x)->num;
         return FIXNUM_ZERO_P(num);
     }
-    return (int)rb_equal(x, ZERO);
+    return rb_equal(x, ZERO) != 0;
 }
 
 #define f_nonzero_p(x) (!f_zero_p(x))
@@ -495,7 +495,11 @@ nucomp_s_new(int argc, VALUE *argv, VALUE klass)
 inline static VALUE
 f_complex_new2(VALUE klass, VALUE x, VALUE y)
 {
-    assert(!RB_TYPE_P(x, T_COMPLEX));
+    if (RB_TYPE_P(x, T_COMPLEX)) {
+        get_dat1(x);
+        x = dat->real;
+        y = f_add(dat->imag, y);
+    }
     return nucomp_s_canonicalize_internal(klass, x, y);
 }
 
@@ -609,8 +613,14 @@ m_sin(VALUE x)
 static VALUE
 f_complex_polar(VALUE klass, VALUE x, VALUE y)
 {
-    assert(!RB_TYPE_P(x, T_COMPLEX));
-    assert(!RB_TYPE_P(y, T_COMPLEX));
+    if (RB_TYPE_P(x, T_COMPLEX)) {
+        get_dat1(x);
+        x = dat->real;
+    }
+    if (RB_TYPE_P(y, T_COMPLEX)) {
+        get_dat1(y);
+        y = dat->real;
+    }
     if (f_zero_p(x) || f_zero_p(y)) {
         return nucomp_s_new_internal(klass, x, RFLOAT_0);
     }
@@ -702,14 +712,6 @@ nucomp_s_polar(int argc, VALUE *argv, VALUE klass)
         nucomp_real_check(abs);
         nucomp_real_check(arg);
         break;
-    }
-    if (RB_TYPE_P(abs, T_COMPLEX)) {
-        get_dat1(abs);
-        abs = dat->real;
-    }
-    if (RB_TYPE_P(arg, T_COMPLEX)) {
-        get_dat1(arg);
-        arg = dat->real;
     }
     return f_complex_polar(klass, abs, arg);
 }
@@ -832,7 +834,7 @@ rb_complex_minus(VALUE self, VALUE other)
 }
 
 static VALUE
-safe_mul(VALUE a, VALUE b, int az, int bz)
+safe_mul(VALUE a, VALUE b, bool az, bool bz)
 {
     double v;
     if (!az && bz && RB_FLOAT_TYPE_P(a) && (v = RFLOAT_VALUE(a), !isnan(v))) {
@@ -847,10 +849,10 @@ safe_mul(VALUE a, VALUE b, int az, int bz)
 static void
 comp_mul(VALUE areal, VALUE aimag, VALUE breal, VALUE bimag, VALUE *real, VALUE *imag)
 {
-    int arzero = f_zero_p(areal);
-    int aizero = f_zero_p(aimag);
-    int brzero = f_zero_p(breal);
-    int bizero = f_zero_p(bimag);
+    bool arzero = f_zero_p(areal);
+    bool aizero = f_zero_p(aimag);
+    bool brzero = f_zero_p(breal);
+    bool bizero = f_zero_p(bimag);
     *real = f_sub(safe_mul(areal, breal, arzero, brzero),
                   safe_mul(aimag, bimag, aizero, bizero));
     *imag = f_add(safe_mul(areal, bimag, arzero, bizero),
@@ -1101,7 +1103,7 @@ static bool
 nucomp_real_p(VALUE self)
 {
     get_dat1(self);
-    return(f_zero_p(dat->imag) ? true : false);
+    return f_zero_p(dat->imag);
 }
 
 /*
@@ -1124,14 +1126,22 @@ nucomp_cmp(VALUE self, VALUE other)
     if (!k_numeric_p(other)) {
         return rb_num_coerce_cmp(self, other, idCmp);
     }
-    if (nucomp_real_p(self)) {
-        if (RB_TYPE_P(other, T_COMPLEX) && nucomp_real_p(other)) {
+    if (!nucomp_real_p(self)) {
+        return Qnil;
+    }
+    if (RB_TYPE_P(other, T_COMPLEX)) {
+        if (nucomp_real_p(other)) {
             get_dat2(self, other);
             return rb_funcall(adat->real, idCmp, 1, bdat->real);
         }
-        else if (f_real_p(other)) {
-            get_dat1(self);
+    }
+    else {
+        get_dat1(self);
+        if (f_real_p(other)) {
             return rb_funcall(dat->real, idCmp, 1, other);
+        }
+        else {
+            return rb_num_coerce_cmp(dat->real, other, idCmp);
         }
     }
     return Qnil;

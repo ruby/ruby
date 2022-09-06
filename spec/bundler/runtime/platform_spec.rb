@@ -344,6 +344,23 @@ RSpec.describe "Bundler.setup with multi platform stuff" do
     expect(the_bundle).to include_gems "platform_specific 1.0 RUBY"
   end
 
+  it "pulls platform specific gems correctly on musl" do
+    build_repo4 do
+      build_gem "nokogiri", "1.13.8" do |s|
+        s.platform = "aarch64-linux"
+      end
+    end
+
+    simulate_platform "aarch64-linux-musl" do
+      install_gemfile <<-G, :artifice => "compact_index", :env => { "BUNDLER_SPEC_GEM_REPO" => gem_repo4.to_s }, :verbose => true
+        source "https://gems.repo4"
+        gem "nokogiri"
+      G
+    end
+
+    expect(out).to include("Fetching nokogiri 1.13.8 (aarch64-linux)")
+  end
+
   it "allows specifying only-ruby-platform on windows with dependency platforms" do
     simulate_windows do
       install_gemfile <<-G

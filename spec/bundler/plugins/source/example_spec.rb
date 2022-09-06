@@ -304,13 +304,7 @@ RSpec.describe "real source plugins" do
                 @install_path ||= begin
                   git_scope = "\#{base_name}-\#{shortref_for_path(revision)}"
 
-                  path = gem_install_dir.join(git_scope)
-
-                  if !path.exist? && requires_sudo?
-                    user_bundle_path.join(ruby_scope).join(git_scope)
-                  else
-                    path
-                  end
+                  gem_install_dir.join(git_scope)
                 end
               end
 

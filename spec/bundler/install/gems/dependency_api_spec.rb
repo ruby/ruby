@@ -476,18 +476,6 @@ RSpec.describe "gemcutter's dependency API" do
     expect(out).to include("Fetching gem metadata from #{source_uri}")
   end
 
-  it "should install when EndpointSpecification has a bin dir owned by root", :sudo => true do
-    sudo "mkdir -p #{system_gem_path("bin")}"
-    sudo "chown -R root #{system_gem_path("bin")}"
-
-    gemfile <<-G
-      source "#{source_uri}"
-      gem "rails"
-    G
-    bundle :install, :artifice => "endpoint"
-    expect(the_bundle).to include_gems "rails 2.3.2"
-  end
-
   it "installs the binstubs", :bundler => "< 3" do
     gemfile <<-G
       source "#{source_uri}"

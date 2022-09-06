@@ -23,7 +23,6 @@ require_relative "support/indexes"
 require_relative "support/matchers"
 require_relative "support/permissions"
 require_relative "support/platforms"
-require_relative "support/sudo"
 
 $debug = false
 
@@ -40,7 +39,6 @@ RSpec.configure do |config|
   config.include Spec::Matchers
   config.include Spec::Path
   config.include Spec::Platforms
-  config.include Spec::Sudo
   config.include Spec::Permissions
 
   # Enable flags like --only-failures and --next-failure
@@ -113,10 +111,6 @@ RSpec.configure do |config|
     ensure
       reset!
     end
-  end
-
-  config.before :each, :sudo => true do
-    Spec::Sudo.write_safe_config
   end
 
   config.after :suite do

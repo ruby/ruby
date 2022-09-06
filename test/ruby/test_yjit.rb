@@ -389,8 +389,8 @@ class TestYJIT < Test::Unit::TestCase
     assert_compiles("'foo' =~ /(o)./; $2", insns: %i[getspecial], result: nil)
   end
 
-  def test_compile_opt_getinlinecache
-    assert_compiles(<<~RUBY, insns: %i[opt_getinlinecache], result: 123, call_threshold: 2)
+  def test_compile_opt_getconstant_path
+    assert_compiles(<<~RUBY, insns: %i[opt_getconstant_path], result: 123, call_threshold: 2)
       def get_foo
         FOO
       end
@@ -402,8 +402,8 @@ class TestYJIT < Test::Unit::TestCase
     RUBY
   end
 
-  def test_opt_getinlinecache_slowpath
-    assert_compiles(<<~RUBY, exits: { opt_getinlinecache: 1 }, result: [42, 42, 1, 1], call_threshold: 2)
+  def test_opt_getconstant_path_slowpath
+    assert_compiles(<<~RUBY, exits: { opt_getconstant_path: 1 }, result: [42, 42, 1, 1], call_threshold: 2)
       class A
         FOO = 42
         class << self

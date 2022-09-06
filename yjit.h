@@ -41,7 +41,7 @@ void rb_yjit_iseq_mark(void *payload);
 void rb_yjit_iseq_update_references(void *payload);
 void rb_yjit_iseq_free(void *payload);
 void rb_yjit_before_ractor_spawn(void);
-void rb_yjit_constant_ic_update(const rb_iseq_t *const iseq, IC ic);
+void rb_yjit_constant_ic_update(const rb_iseq_t *const iseq, IC ic, unsigned insn_idx);
 void rb_yjit_tracing_invalidate_all(void);
 
 #else
@@ -64,7 +64,7 @@ static inline void rb_yjit_iseq_mark(void *payload) {}
 static inline void rb_yjit_iseq_update_references(void *payload) {}
 static inline void rb_yjit_iseq_free(void *payload) {}
 static inline void rb_yjit_before_ractor_spawn(void) {}
-static inline void rb_yjit_constant_ic_update(const rb_iseq_t *const iseq, IC ic) {}
+static inline void rb_yjit_constant_ic_update(const rb_iseq_t *const iseq, IC ic, unsigned insn_idx) {}
 static inline void rb_yjit_tracing_invalidate_all(void) {}
 
 #endif // #if USE_YJIT

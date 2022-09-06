@@ -1107,16 +1107,16 @@ rb_int_range_last(int argc, VALUE *argv, VALUE range)
     x = EXCL(range);
 
     len_1 = rb_int_minus(e, b);
-    if (FIXNUM_ZERO_P(len_1) || rb_num_negative_p(len_1)) {
-        return rb_ary_new_capa(0);
-    }
-
     if (x) {
         e = rb_int_minus(e, ONE);
         len = len_1;
     }
     else {
         len = rb_int_plus(len_1, ONE);
+    }
+
+    if (FIXNUM_ZERO_P(len) || rb_num_negative_p(len)) {
+        return rb_ary_new_capa(0);
     }
 
     rb_scan_args(argc, argv, "1", &nv);

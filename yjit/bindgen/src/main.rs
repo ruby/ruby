@@ -288,7 +288,6 @@ fn main() {
         // From iseq.h
         .allowlist_function("rb_vm_insn_addr2opcode")
         .allowlist_function("rb_iseqw_to_iseq")
-        .allowlist_function("rb_iseq_each")
         .allowlist_function("rb_iseq_method_name")
 
         // From builtin.h

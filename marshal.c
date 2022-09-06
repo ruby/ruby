@@ -756,6 +756,7 @@ w_objivar(VALUE obj, struct dump_call_arg *arg)
     w_ivar_each(obj, num, arg);
 }
 
+#if SIZEOF_LONG > 4
 // Optimized dump for fixnum larger than 31-bits
 static void
 w_bigfixnum(VALUE obj, struct dump_arg *arg)
@@ -803,6 +804,7 @@ w_bigfixnum(VALUE obj, struct dump_arg *arg)
 
     RUBY_ASSERT(num == 0);
 }
+#endif
 
 static void
 w_remember(VALUE obj, struct dump_arg *arg)
@@ -1957,7 +1959,8 @@ r_object_for(struct load_arg *arg, bool partial, int *ivp, VALUE extmod, int typ
                 if (sign == '-') {
                     v = rb_int_uminus(v);
                 }
-            } else {
+            }
+            else {
                 data = r_bytes0(len * 2, arg);
                 v = rb_integer_unpack(RSTRING_PTR(data), len, 2, 0,
                     INTEGER_PACK_LITTLE_ENDIAN | (sign == '-' ? INTEGER_PACK_NEGATIVE : 0));

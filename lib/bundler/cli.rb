@@ -372,6 +372,7 @@ module Bundler
     method_option "group", :aliases => "-g", :type => :string
     method_option "source", :aliases => "-s", :type => :string
     method_option "require", :aliases => "-r", :type => :string, :banner => "Adds require path to gem. Provide false, or a path as a string."
+    method_option "path", :type => :string
     method_option "git", :type => :string
     method_option "github", :type => :string
     method_option "branch", :type => :string

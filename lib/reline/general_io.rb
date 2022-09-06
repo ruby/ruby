@@ -57,6 +57,12 @@ class Reline::GeneralIO
     Reline::CursorPos.new(1, 1)
   end
 
+  def self.hide_cursor
+  end
+
+  def self.show_cursor
+  end
+
   def self.move_cursor_column(val)
   end
 

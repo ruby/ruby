@@ -1599,10 +1599,22 @@ ruby_opt_init(ruby_cmdline_options_t *opt)
 
     rb_warning_category_update(opt->warn.mask, opt->warn.set);
 
+#if USE_MJIT
+    // rb_call_builtin_inits depends on RubyVM::MJIT.enabled?
+    if (opt->mjit.on)
+        mjit_enabled = true;
+#endif
+
     Init_ext(); /* load statically linked extensions before rubygems */
     Init_extra_exts();
     rb_call_builtin_inits();
     ruby_init_prelude();
+
+#if USE_MJIT
+    // mjit_init is safe only after rb_call_builtin_inits defines RubyVM::MJIT::Compiler
+    if (opt->mjit.on)
+        mjit_init(&opt->mjit);
+#endif
 
     ruby_set_script_name(opt->script_name);
     require_libraries(&opt->req_list);
@@ -1890,7 +1902,7 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
 
 #if USE_MJIT
     if (FEATURE_SET_P(opt->features, mjit)) {
-        opt->mjit.on = TRUE; /* set mjit.on for ruby_show_version() API and check to call mjit_init() */
+        opt->mjit.on = true; // set mjit.on for ruby_show_version() API and check to call mjit_init()
     }
 #endif
 #if USE_YJIT
@@ -1954,12 +1966,6 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
 
     ruby_gc_set_params();
     ruby_init_loadpath();
-
-#if USE_MJIT
-    if (opt->mjit.on)
-        /* Using TMP_RUBY_PREFIX created by ruby_init_loadpath(). */
-        mjit_init(&opt->mjit);
-#endif
 
     Init_enc();
     lenc = rb_locale_encoding();
