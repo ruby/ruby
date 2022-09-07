@@ -1961,6 +1961,7 @@ mjit_resume(void)
         if (rb_respond_to(rb_mMJITCompiler, rb_intern("compile"))) {
             // [experimental] defining RubyVM::MJIT.compile allows you to replace JIT
             mjit_opts.custom = true;
+            pch_status = PCH_SUCCESS;
         }
         else {
             // Lazy MJIT boot
@@ -2041,7 +2042,7 @@ mjit_finish(bool close_handle_p)
     mjit_dump_total_calls();
 #endif
 
-    if (!mjit_opts.save_temps && getpid() == pch_owner_pid && pch_status != PCH_NOT_READY)
+    if (!mjit_opts.save_temps && getpid() == pch_owner_pid && pch_status == PCH_SUCCESS && !mjit_opts.custom)
         remove_file(pch_file);
 
     xfree(header_file); header_file = NULL;
