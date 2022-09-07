@@ -151,7 +151,7 @@ module Gem::QueryUtils
       fetcher.detect(specs_type) { true }
     else
       fetcher.detect(specs_type) do |name_tuple|
-        name === name_tuple.name
+        name === name_tuple.name && options[:version].satisfied_by?(name_tuple.version)
       end
     end
 
@@ -159,7 +159,7 @@ module Gem::QueryUtils
   end
 
   def specs_type
-    if options[:all]
+    if options[:all] || options[:version].specific?
       if options[:prerelease]
         :complete
       else

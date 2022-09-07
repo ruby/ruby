@@ -195,6 +195,7 @@ INSTRUBY_ARGS =	$(SCRIPT_ARGS) \
 INSTALL_PROG_MODE = 0755
 INSTALL_DATA_MODE = 0644
 
+BOOTSTRAPRUBY_COMMAND = $(BOOTSTRAPRUBY) $(BOOTSTRAPRUBY_OPT)
 TESTSDIR      = $(srcdir)/test
 TOOL_TESTSDIR = $(tooldir)/test
 TEST_EXCLUDES = --excludes-dir=$(TESTSDIR)/excludes $(ADDITIONAL_EXCLUDES) --name=!/memory_leak/
@@ -909,7 +910,7 @@ ENC_HEADERS = $(srcdir)/enc/jis/props.h
 $(ENC_MK): $(srcdir)/enc/make_encmake.rb $(srcdir)/enc/Makefile.in $(srcdir)/enc/depend \
 	   $(srcdir)/enc/encinit.c.erb $(ENC_HEADERS) $(srcdir)/lib/mkmf.rb $(RBCONFIG) $(HAVE_BASERUBY)-fake
 	$(ECHO) generating $@
-	$(Q) $(BOOTSTRAPRUBY) -r./$(arch)-fake $(srcdir)/enc/make_encmake.rb \
+	$(Q) $(BOOTSTRAPRUBY_COMMAND) $(srcdir)/enc/make_encmake.rb \
 	  --builtin-encs="$(BUILTIN_ENCOBJS)" --builtin-transes="$(BUILTIN_TRANSOBJS)" --module$(ENCSTATIC) $(ENCS) $@
 
 .PRECIOUS: $(MKFILES)
@@ -1332,7 +1333,7 @@ lldb-ruby: $(PROGRAM) PHONY
 DISTPKGS = gzip,zip,all
 PKGSDIR = tmp
 dist:
-	$(BASERUBY) $(tooldir)/make-snapshot \
+	$(BASERUBY) $(V0:1=-v) $(tooldir)/make-snapshot \
 	-srcdir=$(srcdir) -packages=$(DISTPKGS) \
 	-unicode-version=$(UNICODE_VERSION) \
 	$(DISTOPTS) $(PKGSDIR) $(RELNAME)

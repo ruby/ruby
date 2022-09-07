@@ -40,4 +40,30 @@ class TestGemCommandsInfoCommand < Gem::TestCase
     assert_match %r{#{@gem.summary}\n}, @ui.output
     assert_match "", @ui.error
   end
+
+  def test_execute_with_version_flag
+    spec_fetcher do |fetcher|
+      fetcher.spec "coolgem", "1.0"
+      fetcher.spec "coolgem", "2.0"
+    end
+
+    @cmd.handle_options %w[coolgem --remote --version 1.0]
+
+    use_ui @ui do
+      @cmd.execute
+    end
+
+    expected = <<-EOF
+
+*** REMOTE GEMS ***
+
+coolgem (1.0)
+    Author: A User
+    Homepage: http://example.com
+
+    this is a summary
+    EOF
+
+    assert_equal expected, @ui.output
+  end
 end

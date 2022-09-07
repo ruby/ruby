@@ -24,6 +24,14 @@ REVISION_FORCE = PHONY
 
 !ifndef CROSS_COMPILING
 CROSS_COMPILING = no
+!else if "$(CROSS_COMPILING)" == "yes"
+! if "$(HAVE_BASERUBY)" != "yes"
+!   error executable host ruby is required for cross-compiling
+! endif
+!else
+! if "$(CROSS_COMPILING)" != "no"
+!   error Bad CROSS_COMPILING
+! endif
 !endif
 !ifndef win_srcdir
 win_srcdir = $(srcdir)/win32
@@ -355,13 +363,15 @@ RUNRUBY = .\$(PROGRAM) -I$(srcdir)/lib -I"$(EXTOUT)/$(arch)" -I.
 !endif
 MINIRUBY = $(MINIRUBY) $(MINIRUBYOPT)
 RUNRUBY = $(RUNRUBY) "$(tooldir)/runruby.rb" --extout="$(EXTOUT)" $(RUNRUBYOPT) -- $(RUN_OPTS)
+yes_baseruby = $(HAVE_BASERUBY:no=)
+no_baseruby = $(HAVE_BASERUBY:yes=)
 !if "$(CROSS_COMPILING)" == "yes"
 XRUBY = $(MINIRUBY)
 BOOTSTRAPRUBY = $(BASERUBY)
-BOOTSTRAPRUBY_COMMAND = $(BOOTSTRAPRUBY) -r./$(arch)-fake
+BOOTSTRAPRUBY_OPT = -r./$(arch)-fake
 !else
 BOOTSTRAPRUBY = $(MINIRUBY)
-BOOTSTRAPRUBY_COMMAND = $(BOOTSTRAPRUBY)
+BOOTSTRAPRUBY_OPT =
 XRUBY = $(RUNRUBY)
 !endif
 BTESTRUBY = $(MINIRUBY) -r./$(arch)-fake

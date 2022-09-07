@@ -80,7 +80,9 @@ module Psych
         when "!ruby/object:DateTime"
           class_loader.date_time
           require 'date' unless defined? DateTime
-          @ss.parse_time(o.value).to_datetime
+          t = @ss.parse_time(o.value)
+          DateTime.civil(*t.to_a[0, 6].reverse, Rational(t.utc_offset, 86400)) +
+            (t.subsec/86400)
         when '!ruby/encoding'
           ::Encoding.find o.value
         when "!ruby/object:Complex"
