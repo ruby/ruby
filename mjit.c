@@ -1237,6 +1237,7 @@ static void mjit_wait(struct rb_iseq_constant_body *body);
 static void
 check_unit_queue(void)
 {
+    if (mjit_opts.custom) return;
     if (worker_stopped) return;
     if (current_cc_pid != 0) return; // still compiling
 
