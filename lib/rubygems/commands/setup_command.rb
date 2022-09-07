@@ -576,7 +576,7 @@ abort "#{deprecation_message}"
     require_relative "../uninstaller"
 
     ui = Gem::Uninstaller.new("gemcutter", :all => true, :ignore => true,
-                              :version => "< 0.4")
+                                           :version => "< 0.4")
     ui.uninstall
   rescue Gem::InstallError
   end

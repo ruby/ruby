@@ -1357,8 +1357,8 @@ class TestGem < Gem::TestCase
 
   def test_setting_paths_does_not_warn_about_unknown_keys
     stdout, stderr = capture_output do
-      Gem.paths = { "foo"      => [],
-                    "bar"      => Object.new,
+      Gem.paths = { "foo" => [],
+                    "bar" => Object.new,
                     "GEM_HOME" => Gem.paths.home,
                     "GEM_PATH" => "foo" }
     end

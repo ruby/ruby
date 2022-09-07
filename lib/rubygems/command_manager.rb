@@ -73,8 +73,8 @@ class Gem::CommandManager
   ].freeze
 
   ALIAS_COMMANDS = {
-    "i"      => "install",
-    "login"  => "signin",
+    "i" => "install",
+    "login" => "signin",
     "logout" => "signout",
   }.freeze
 

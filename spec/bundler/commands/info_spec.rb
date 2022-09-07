@@ -6,13 +6,13 @@ RSpec.describe "bundle info" do
       build_repo2 do
         build_gem "has_metadata" do |s|
           s.metadata = {
-            "bug_tracker_uri"   => "https://example.com/user/bestgemever/issues",
-            "changelog_uri"     => "https://example.com/user/bestgemever/CHANGELOG.md",
+            "bug_tracker_uri" => "https://example.com/user/bestgemever/issues",
+            "changelog_uri" => "https://example.com/user/bestgemever/CHANGELOG.md",
             "documentation_uri" => "https://www.example.info/gems/bestgemever/0.0.1",
-            "homepage_uri"      => "https://bestgemever.example.io",
-            "mailing_list_uri"  => "https://groups.example.com/bestgemever",
-            "source_code_uri"   => "https://example.com/user/bestgemever",
-            "wiki_uri"          => "https://example.com/user/bestgemever/wiki",
+            "homepage_uri" => "https://bestgemever.example.io",
+            "mailing_list_uri" => "https://groups.example.com/bestgemever",
+            "source_code_uri" => "https://example.com/user/bestgemever",
+            "wiki_uri" => "https://example.com/user/bestgemever/wiki",
           }
         end
       end

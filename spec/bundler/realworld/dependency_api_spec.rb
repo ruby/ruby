@@ -13,12 +13,12 @@ RSpec.describe "gemcutter's dependency API", :realworld => true do
       require_relative "../support/artifice/endpoint_timeout"
 
       @t = Thread.new do
-        server = Rack::Server.start(:app       => EndpointTimeout,
-                                    :Host      => "0.0.0.0",
-                                    :Port      => port,
-                                    :server    => "webrick",
+        server = Rack::Server.start(:app => EndpointTimeout,
+                                    :Host => "0.0.0.0",
+                                    :Port => port,
+                                    :server => "webrick",
                                     :AccessLog => [],
-                                    :Logger    => Spec::SilentLogger.new)
+                                    :Logger => Spec::SilentLogger.new)
         server.start
       end
       @t.run
