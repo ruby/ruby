@@ -1432,7 +1432,7 @@ mjit_hook_custom_compile(const rb_iseq_t *iseq)
 static void
 mjit_add_iseq_to_process(const rb_iseq_t *iseq, const struct rb_mjit_compile_info *compile_info, bool recompile_p)
 {
-    if (!mjit_enabled || pch_status == PCH_FAILED || !rb_ractor_main_p()) // TODO: Support non-main Ractors
+    if (!mjit_enabled || pch_status != PCH_SUCCESS || !rb_ractor_main_p()) // TODO: Support non-main Ractors
         return;
     if (mjit_opts.custom) {
         mjit_hook_custom_compile(iseq);
