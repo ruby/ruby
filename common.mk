@@ -1333,7 +1333,7 @@ lldb-ruby: $(PROGRAM) PHONY
 DISTPKGS = gzip,zip,all
 PKGSDIR = tmp
 dist:
-	$(BASERUBY) $(tooldir)/make-snapshot \
+	$(BASERUBY) $(V0:1=-v) $(tooldir)/make-snapshot \
 	-srcdir=$(srcdir) -packages=$(DISTPKGS) \
 	-unicode-version=$(UNICODE_VERSION) \
 	$(DISTOPTS) $(PKGSDIR) $(RELNAME)

@@ -22,6 +22,7 @@ $keep_temp ||= nil
 $patch_file ||= nil
 $packages ||= nil
 $digests ||= nil
+$no7z ||= nil
 $tooldir = File.expand_path("..", __FILE__)
 $unicode_version = nil if ($unicode_version ||= nil) == ""
 $colorize = Colorize.new
@@ -146,7 +147,7 @@ unless destdir = ARGV.shift
 end
 revisions = ARGV.empty? ? [nil] : ARGV
 
-if $exported
+if defined?($exported)
   abort "#{File.basename $0}: -exported option is deprecated; use -srcdir instead"
 end
 
@@ -416,7 +417,7 @@ def package(vcs, rev, destdir, tmp = nil)
       f.puts "Object.__send__(:remove_const, :RUBY_VERSION)"
       f.puts "RUBY_VERSION='#{version}'"
     end
-    warn "cross.rb:", File.read("cross.rb").gsub(/^/, "> "), ""
+    puts "cross.rb:", File.read("cross.rb").gsub(/^/, "> "), "" if $VERBOSE
     unless File.exist?("configure")
       print "creating configure..."
       unless system([ENV["AUTOCONF"]]*2)
