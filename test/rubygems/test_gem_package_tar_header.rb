@@ -7,19 +7,19 @@ class TestGemPackageTarHeader < Gem::Package::TarTestCase
     super
 
     header = {
-      :name     => "x",
-      :mode     => 0644,
-      :uid      => 1000,
-      :gid      => 10000,
-      :size     => 100,
-      :mtime    => 12345,
+      :name => "x",
+      :mode => 0644,
+      :uid => 1000,
+      :gid => 10000,
+      :size => 100,
+      :mtime => 12345,
       :typeflag => "0",
       :linkname => "link",
-      :uname    => "user",
-      :gname    => "group",
+      :uname => "user",
+      :gname => "group",
       :devmajor => 1,
       :devminor => 2,
-      :prefix   => "y",
+      :prefix => "y",
     }
 
     @tar_header = Gem::Package::TarHeader.new header
@@ -76,10 +76,10 @@ class TestGemPackageTarHeader < Gem::Package::TarTestCase
 
   def test_initialize_typeflag
     header = {
-      :mode     => "",
-      :name     => "",
-      :prefix   => "",
-      :size     => "",
+      :mode => "",
+      :name => "",
+      :prefix => "",
+      :size => "",
       :typeflag => "",
     }
 

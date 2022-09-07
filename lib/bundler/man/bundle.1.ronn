@@ -100,6 +100,9 @@ We divide `bundle` subcommands into primary commands and utilities:
 * [`bundle plugin(1)`](bundle-plugin.1.html):
   Manage Bundler plugins
 
+* [`bundle version(1)`](bundle-version.1.html):
+  Prints Bundler version information
+
 ## PLUGINS
 
 When running a command that isn't listed in PRIMARY COMMANDS or UTILITIES,

@@ -475,7 +475,7 @@ RSpec.describe "bundle install with platform conditionals" do
     gemfile <<-G
       source "#{file_uri_for(gem_repo1)}"
 
-      gem "rack", :platform => [:mingw, :mswin, :x64_mingw, :jruby]
+      gem "rack", :platform => [:windows, :mingw, :mswin, :x64_mingw, :jruby]
     G
 
     bundle "install"

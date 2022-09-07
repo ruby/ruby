@@ -75,7 +75,7 @@ class Gem::Specification < Gem::BasicSpecification
 
   SPECIFICATION_VERSION_HISTORY = { # :nodoc:
     -1 => ["(RubyGems versions up to and including 0.7 did not have versioned specifications)"],
-    1  => [
+    1 => [
       'Deprecated "test_suite_file" in favor of the new, but equivalent, "test_files"',
       '"test_file=x" is a shortcut for "test_files=[x]"',
     ],
@@ -93,10 +93,10 @@ class Gem::Specification < Gem::BasicSpecification
 
   MARSHAL_FIELDS = { # :nodoc:
     -1 => 16,
-     1 => 16,
-     2 => 16,
-     3 => 17,
-     4 => 18,
+    1 => 16,
+    2 => 16,
+    3 => 17,
+    4 => 18,
   }.freeze
 
   today = Time.now.utc
@@ -124,35 +124,35 @@ class Gem::Specification < Gem::BasicSpecification
   # Map of attribute names to default values.
 
   @@default_value = {
-    :authors                   => [],
-    :autorequire               => nil,
-    :bindir                    => "bin",
-    :cert_chain                => [],
-    :date                      => nil,
-    :dependencies              => [],
-    :description               => nil,
-    :email                     => nil,
-    :executables               => [],
-    :extensions                => [],
-    :extra_rdoc_files          => [],
-    :files                     => [],
-    :homepage                  => nil,
-    :licenses                  => [],
-    :metadata                  => {},
-    :name                      => nil,
-    :platform                  => Gem::Platform::RUBY,
-    :post_install_message      => nil,
-    :rdoc_options              => [],
-    :require_paths             => ["lib"],
-    :required_ruby_version     => Gem::Requirement.default,
+    :authors => [],
+    :autorequire => nil,
+    :bindir => "bin",
+    :cert_chain => [],
+    :date => nil,
+    :dependencies => [],
+    :description => nil,
+    :email => nil,
+    :executables => [],
+    :extensions => [],
+    :extra_rdoc_files => [],
+    :files => [],
+    :homepage => nil,
+    :licenses => [],
+    :metadata => {},
+    :name => nil,
+    :platform => Gem::Platform::RUBY,
+    :post_install_message => nil,
+    :rdoc_options => [],
+    :require_paths => ["lib"],
+    :required_ruby_version => Gem::Requirement.default,
     :required_rubygems_version => Gem::Requirement.default,
-    :requirements              => [],
-    :rubygems_version          => Gem::VERSION,
-    :signing_key               => nil,
-    :specification_version     => CURRENT_SPECIFICATION_VERSION,
-    :summary                   => nil,
-    :test_files                => [],
-    :version                   => nil,
+    :requirements => [],
+    :rubygems_version => Gem::VERSION,
+    :signing_key => nil,
+    :specification_version => CURRENT_SPECIFICATION_VERSION,
+    :summary => nil,
+    :test_files => [],
+    :version => nil,
   }.freeze
 
   # rubocop:disable Style/MutableConstant

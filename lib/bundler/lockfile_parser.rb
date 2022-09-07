@@ -100,9 +100,9 @@ module Bundler
     private
 
     TYPES = {
-      GIT    => Bundler::Source::Git,
-      GEM    => Bundler::Source::Rubygems,
-      PATH   => Bundler::Source::Path,
+      GIT => Bundler::Source::Git,
+      GEM => Bundler::Source::Rubygems,
+      PATH => Bundler::Source::Path,
       PLUGIN => Bundler::Plugin,
     }.freeze
 
