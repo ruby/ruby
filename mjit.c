@@ -1958,7 +1958,7 @@ mjit_resume(void)
 
     // Lazily prepare PCH when --mjit=pause is given
     if (pch_status == PCH_NOT_READY) {
-        if (rb_respond_to(rb_mMJITCompiler, rb_intern("compile"))) {
+        if (rb_respond_to(rb_mMJIT, rb_intern("compile"))) {
             // [experimental] defining RubyVM::MJIT.compile allows you to replace JIT
             mjit_opts.custom = true;
             pch_status = PCH_SUCCESS;
