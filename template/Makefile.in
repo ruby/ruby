@@ -168,7 +168,7 @@ XRUBY_RUBYHDRDIR = @XRUBY_RUBYHDRDIR@
 
 yes_baseruby = $(HAVE_BASERUBY:no=)
 no_baseruby = $(HAVE_BASERUBY:yes=)
-BOOTSTRAPRUBY = $(yes_baseruby:yes=$(BASERUBY)) $(no_baseruby:$(MINIRUBY))
+BOOTSTRAPRUBY = $(yes_baseruby:yes=$(BASERUBY)) $(no_baseruby:no=$(MINIRUBY))
 BOOTSTRAPRUBY_OPT = $(yes_baseruby:yes=-r./$(arch)-fake)
 
 COROUTINE_H = @X_COROUTINE_H@
