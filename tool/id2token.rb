@@ -5,18 +5,15 @@
 
 BEGIN {
   require 'optparse'
-  require_relative 'lib/vpath'
-  vpath = VPath.new
-  header = nil
 
   opt = OptionParser.new do |o|
-    vpath.def_options(o)
-    header = o.order!(ARGV).shift
+    o.order!(ARGV)
   end or abort opt.opt_s
 
   TOKENS = {}
-  h = vpath.read(header) rescue abort("#{header} not found in #{vpath.inspect}")
-  h.scan(/^#define\s+RUBY_TOKEN_(\w+)\s+(\d+)/) do |token, id|
+  defs = File.join(File.dirname(File.dirname(__FILE__)), "defs/id.def")
+  ids = eval(File.read(defs), nil, defs)
+  ids[:token_op].each do |_id, _op, token, id|
     TOKENS[token] = id
   end
 
