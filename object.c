@@ -3175,6 +3175,11 @@ rb_opts_exception_p(VALUE opts, int default_value)
  *  using +to_int+ first and +to_i+ second;
  *  see below for exceptions.
  *
+ *  With a non-zero +base+, +object+ must be a string or convertible
+ *  to a string.
+ *
+ *  ==== numeric objects
+ *
  *  With integer argument +object+ given, returns +object+:
  *
  *    Integer(1)                # => 1
@@ -3186,6 +3191,8 @@ rb_opts_exception_p(VALUE opts, int default_value)
  *    Integer(1.9)              # => 1  # Rounds toward zero.
  *    Integer(-1.9)             # => -1 # Rounds toward zero.
  *
+ *  ==== string objects
+ *
  *  With string argument +object+ and zero +base+ given,
  *  returns +object+ converted to an integer in base 10:
  *
@@ -3193,19 +3200,31 @@ rb_opts_exception_p(VALUE opts, int default_value)
  *    Integer('-100')   # => -100
  *
  *  With +base+ zero, string +object+ may contain leading characters
- *  to specify the actual base:
+ *  to specify the actual base (radix indicator):
  *
  *    Integer('0100')  # => 64  # Leading '0' specifies base 8.
  *    Integer('0b100') # => 4   # Leading '0b', specifies base 2.
  *    Integer('0x100') # => 256 # Leading '0x' specifies base 16.
  *
- *  With a non-zero +base+ (in range 2..36) given
- *  (in which case +object+ must be a string),
- *  returns +object+ converted to an integer in the given base:
+ *  With a positive +base+ (in range 2..36) given, returns +object+
+ *  converted to an integer in the given base:
  *
  *    Integer('100', 2)   # => 4
  *    Integer('100', 8)   # => 64
  *    Integer('-100', 16) # => -256
+ *
+ *  With a negative +base+ (in range -36..-2) given, returns +object+
+ *  converted to an integer in the radix indicator if exists or
+ *  +-base+:
+ *
+ *    Integer('0x100', -2)   # => 256
+ *    Integer('100', -2)     # => 4
+ *    Integer('0b100', -8)   # => 4
+ *    Integer('100', -8)     # => 64
+ *    Integer('0o100', -10)  # => 64
+ *    Integer('100', -10)    # => 100
+ *
+ *  +base+ -1 is equal the -10 case.
  *
  *  When converting strings, surrounding whitespace and embedded underscores
  *  are allowed and ignored:
@@ -3213,11 +3232,15 @@ rb_opts_exception_p(VALUE opts, int default_value)
  *    Integer(' 100 ')      # => 100
  *    Integer('-1_0_0', 16) # => -256
  *
+ *  ==== other classes
+ *
  *  Examples with +object+ of various other classes:
  *
  *    Integer(Rational(9, 10)) # => 0  # Rounds toward zero.
  *    Integer(Complex(2, 0))   # => 2  # Imaginary part must be zero.
  *    Integer(Time.now)        # => 1650974042
+ *
+ *  ==== keywords
  *
  *  With optional keyword argument +exception+ given as +true+ (the default):
  *

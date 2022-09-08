@@ -6513,10 +6513,20 @@ rb_str_include(VALUE str, VALUE arg)
  *    to_i(base = 10) -> integer
  *
  *  Returns the result of interpreting leading characters in +self+
- *  as an integer in the given +base+ (which must be in (2..36)):
+ *  as an integer in the given +base+ (which must be in (0, 2..36)):
  *
  *    '123456'.to_i     # => 123456
  *    '123def'.to_i(16) # => 1195503
+ *
+ *  With +base+ zero, string +object+ may contain leading characters
+ *  to specify the actual base:
+ *
+ *    '123def'.to_i(0)   # => 123
+ *    '0123def'.to_i(0)  # => 83
+ *    '0b123def'.to_i(0) # => 1
+ *    '0o123def'.to_i(0) # => 83
+ *    '0d123def'.to_i(0) # => 123
+ *    '0x123def'.to_i(0) # => 1195503
  *
  *  Characters past a leading valid number (in the given +base+) are ignored:
  *
@@ -10083,9 +10093,9 @@ rb_str_hex(VALUE str)
  *  returns zero if there is no such leading substring:
  *
  *    '123'.oct             # => 83
-      '-377'.oct            # => -255
-      '0377non-numeric'.oct # => 255
-      'non-numeric'.oct     # => 0
+ *    '-377'.oct            # => -255
+ *    '0377non-numeric'.oct # => 255
+ *    'non-numeric'.oct     # => 0
  *
  *  If +self+ starts with <tt>0</tt>, radix indicators are honored;
  *  see Kernel#Integer.
