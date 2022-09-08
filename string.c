@@ -3390,7 +3390,12 @@ rb_str_concat_literals(size_t num, const VALUE *strary)
     }
 
     for (i = s; i < num; ++i) {
-        const VALUE v = strary[i];
+        VALUE v = strary[i];
+
+        if (UNLIKELY(!RB_TYPE_P(v, T_STRING))) {
+            v = rb_any_to_s(v);
+        }
+
         int encidx = ENCODING_GET(v);
 
         rb_str_buf_append(str, v);

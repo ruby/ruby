@@ -7896,11 +7896,7 @@ compile_evstr(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, i
         const NODE *line_node = node;
         const unsigned int flag = VM_CALL_FCALL;
 
-        // Note, this dup could be removed if we are willing to change anytostring. It pops
-        // two VALUEs off the stack when it could work by replacing the top most VALUE.
-        ADD_INSN(ret, line_node, dup);
         ADD_INSN1(ret, line_node, objtostring, new_callinfo(iseq, idTo_s, 0, flag, NULL, FALSE));
-        ADD_INSN(ret, line_node, anytostring);
     }
     return COMPILE_OK;
 }
