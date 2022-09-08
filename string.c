@@ -3393,8 +3393,7 @@ rb_str_concat_literals(size_t num, const VALUE *strary)
         const VALUE v = strary[i];
         int encidx = ENCODING_GET(v);
 
-        rb_enc_cr_str_buf_cat(str, RSTRING_PTR(v), RSTRING_LEN(v),
-                              encidx, ENC_CODERANGE(v), NULL);
+        rb_str_buf_append(str, v);
         if (encidx != ENCINDEX_US_ASCII) {
             if (ENCODING_GET_INLINED(str) == ENCINDEX_US_ASCII)
                 rb_enc_set_index(str, encidx);
