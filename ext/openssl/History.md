@@ -1,3 +1,13 @@
+Version 2.1.4
+=============
+
+Bug fixes
+---------
+
+* Do not use pkg-config if --with-openssl-dir option is specified.
+ [[GitHub #486]](https://github.com/ruby/openssl/pull/486)
+
+
 Version 2.1.3
 =============
 
