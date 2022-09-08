@@ -194,13 +194,14 @@ predefined.split(/^/).each_with_index do |line, num|
   end << token
   predefined_ids[token] = name
 end
+index = 127
 token_ops.split(/^/).each do |line|
   next if /^#/ =~ line
   line.sub!(/\s+#.*/, '')
   id, op, token = line.split
   next unless id and op
   token ||= (id unless /\A\W\z/ =~ op)
-  token_op_ids << [id, op, token]
+  token_op_ids << [id, op, token, (index += 1 if token)]
 end
 {
   "LOCAL" => local_ids,
@@ -212,4 +213,5 @@ end
   :preserved => preserved_ids,
   :predefined => predefined_ids,
   :token_op => token_op_ids,
+  :last_token => index,
 }
