@@ -63,7 +63,7 @@ module Psych
       elsif string.match?(/^\d{4}-(?:1[012]|0\d|\d)-(?:[12]\d|3[01]|0\d|\d)$/)
         require 'date'
         begin
-          class_loader.date.strptime(string, '%Y-%m-%d')
+          class_loader.date.strptime(string, '%F', Date::GREGORIAN)
         rescue ArgumentError
           string
         end

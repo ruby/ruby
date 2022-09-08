@@ -1237,6 +1237,7 @@ static void mjit_wait(struct rb_iseq_constant_body *body);
 static void
 check_unit_queue(void)
 {
+    if (mjit_opts.custom) return;
     if (worker_stopped) return;
     if (current_cc_pid != 0) return; // still compiling
 
@@ -1431,7 +1432,7 @@ mjit_hook_custom_compile(const rb_iseq_t *iseq)
 static void
 mjit_add_iseq_to_process(const rb_iseq_t *iseq, const struct rb_mjit_compile_info *compile_info, bool recompile_p)
 {
-    if (!mjit_enabled || pch_status == PCH_FAILED || !rb_ractor_main_p()) // TODO: Support non-main Ractors
+    if (!mjit_enabled || pch_status != PCH_SUCCESS || !rb_ractor_main_p()) // TODO: Support non-main Ractors
         return;
     if (mjit_opts.custom) {
         mjit_hook_custom_compile(iseq);
@@ -1957,9 +1958,10 @@ mjit_resume(void)
 
     // Lazily prepare PCH when --mjit=pause is given
     if (pch_status == PCH_NOT_READY) {
-        if (rb_respond_to(rb_mMJITCompiler, rb_intern("compile"))) {
+        if (rb_respond_to(rb_mMJIT, rb_intern("compile"))) {
             // [experimental] defining RubyVM::MJIT.compile allows you to replace JIT
             mjit_opts.custom = true;
+            pch_status = PCH_SUCCESS;
         }
         else {
             // Lazy MJIT boot
@@ -2040,7 +2042,7 @@ mjit_finish(bool close_handle_p)
     mjit_dump_total_calls();
 #endif
 
-    if (!mjit_opts.save_temps && getpid() == pch_owner_pid && pch_status != PCH_NOT_READY)
+    if (!mjit_opts.save_temps && getpid() == pch_owner_pid && pch_status == PCH_SUCCESS && !mjit_opts.custom)
         remove_file(pch_file);
 
     xfree(header_file); header_file = NULL;
