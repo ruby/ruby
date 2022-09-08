@@ -604,6 +604,12 @@ rb_get_iseq_flags_has_rest(const rb_iseq_t *iseq)
 }
 
 bool
+rb_get_iseq_flags_ruby2_keywords(const rb_iseq_t *iseq)
+{
+    return iseq->body->param.flags.ruby2_keywords;
+}
+
+bool
 rb_get_iseq_flags_has_block(const rb_iseq_t *iseq)
 {
     return iseq->body->param.flags.has_block;

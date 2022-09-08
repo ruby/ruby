@@ -342,6 +342,7 @@ fn main() {
         .allowlist_function("rb_get_iseq_flags_has_kwrest")
         .allowlist_function("rb_get_iseq_flags_has_block")
         .allowlist_function("rb_get_iseq_flags_has_accepts_no_kwarg")
+        .allowlist_function("rb_get_iseq_flags_ruby2_keywords")
         .allowlist_function("rb_get_iseq_body_local_table_size")
         .allowlist_function("rb_get_iseq_body_param_keyword")
         .allowlist_function("rb_get_iseq_body_param_size")
