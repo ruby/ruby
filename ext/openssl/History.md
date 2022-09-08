@@ -100,6 +100,12 @@ Notable changes
     [[GitHub #342]](https://github.com/ruby/openssl/issues/342)
 
 
+Version 2.2.2
+=============
+
+Merged changes in 2.1.4.
+
+
 Version 2.2.1
 =============
 
