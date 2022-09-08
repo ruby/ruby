@@ -5359,7 +5359,6 @@ rb_str_update(VALUE str, long beg, long len, VALUE val)
     if (len > slen - beg) {
         len = slen - beg;
     }
-    str_modify_keep_cr(str);
     p = str_nth(RSTRING_PTR(str), RSTRING_END(str), beg, enc, singlebyte);
     if (!p) p = RSTRING_END(str);
     e = str_nth(p, RSTRING_END(str), len, enc, singlebyte);
