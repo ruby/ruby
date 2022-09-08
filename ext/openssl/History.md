@@ -1,3 +1,9 @@
+Version 2.2.2
+=============
+
+Merged changes in 2.1.4.
+
+
 Version 2.2.1
 =============
 
@@ -90,6 +96,16 @@ Notable changes
   added to `OpenSSL::PKey` classes: `private_to_der`, `private_to_pem`,
   `public_to_der` and `public_to_pem`.
   [[GitHub #297]](https://github.com/ruby/openssl/pull/297)
+
+
+Version 2.1.4
+=============
+
+Bug fixes
+---------
+
+* Do not use pkg-config if --with-openssl-dir option is specified.
+ [[GitHub #486]](https://github.com/ruby/openssl/pull/486)
 
 
 Version 2.1.3
