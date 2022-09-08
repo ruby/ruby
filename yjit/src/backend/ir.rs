@@ -401,6 +401,9 @@ pub enum Insn {
     // A low-level instruction that loads a value into a register.
     Load { opnd: Opnd, out: Opnd },
 
+    // A low-level instruction that loads a value into a specified register.
+    LoadInto { dest: Opnd, opnd: Opnd },
+
     // A low-level instruction that loads a value into a register and
     // sign-extends it to a 64-bit value.
     LoadSExt { opnd: Opnd, out: Opnd },
@@ -502,6 +505,7 @@ impl Insn {
             Insn::Lea { .. } => "Lea",
             Insn::LiveReg { .. } => "LiveReg",
             Insn::Load { .. } => "Load",
+            Insn::LoadInto { .. } => "LoadInto",
             Insn::LoadSExt { .. } => "LoadSExt",
             Insn::LShift { .. } => "LShift",
             Insn::Mov { .. } => "Mov",
@@ -675,6 +679,7 @@ impl<'a> Iterator for InsnOpndIterator<'a> {
             Insn::CSelNZ { truthy: opnd0, falsy: opnd1, .. } |
             Insn::CSelZ { truthy: opnd0, falsy: opnd1, .. } |
             Insn::IncrCounter { mem: opnd0, value: opnd1, .. } |
+            Insn::LoadInto { dest: opnd0, opnd: opnd1 } |
             Insn::LShift { opnd: opnd0, shift: opnd1, .. } |
             Insn::Mov { dest: opnd0, src: opnd1 } |
             Insn::Or { left: opnd0, right: opnd1, .. } |
@@ -771,6 +776,7 @@ impl<'a> InsnOpndMutIterator<'a> {
             Insn::CSelNZ { truthy: opnd0, falsy: opnd1, .. } |
             Insn::CSelZ { truthy: opnd0, falsy: opnd1, .. } |
             Insn::IncrCounter { mem: opnd0, value: opnd1, .. } |
+            Insn::LoadInto { dest: opnd0, opnd: opnd1 } |
             Insn::LShift { opnd: opnd0, shift: opnd1, .. } |
             Insn::Mov { dest: opnd0, src: opnd1 } |
             Insn::Or { left: opnd0, right: opnd1, .. } |
@@ -1420,6 +1426,10 @@ impl Assembler {
         let out = self.next_opnd_out(Opnd::match_num_bits(&[opnd]));
         self.push_insn(Insn::Load { opnd, out });
         out
+    }
+
+    pub fn load_into(&mut self, dest: Opnd, opnd: Opnd) {
+        self.push_insn(Insn::LoadInto { dest, opnd });
     }
 
     #[must_use]
