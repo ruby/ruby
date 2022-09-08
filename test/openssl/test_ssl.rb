@@ -676,10 +676,16 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
     #     buzz.example.net, respectively).  ...
     assert_equal(true, OpenSSL::SSL.verify_certificate_identity(
       create_cert_with_san('DNS:baz*.example.com'), 'baz1.example.com'))
+
+    # LibreSSL 3.5.0+ doesn't support other wildcard certificates
+    # (it isn't required to, as RFC states MAY, not MUST)
+    return if libressl?(3, 5, 0)
+
     assert_equal(true, OpenSSL::SSL.verify_certificate_identity(
       create_cert_with_san('DNS:*baz.example.com'), 'foobaz.example.com'))
     assert_equal(true, OpenSSL::SSL.verify_certificate_identity(
       create_cert_with_san('DNS:b*z.example.com'), 'buzz.example.com'))
+
     # Section 6.4.3 of RFC6125 states that client should NOT match identifier
     # where wildcard is other than left-most label.
     #

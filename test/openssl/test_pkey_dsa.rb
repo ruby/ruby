@@ -28,6 +28,25 @@ class OpenSSL::TestPKeyDSA < OpenSSL::PKeyTestCase
     end
   end
 
+  def test_generate
+    # DSA.generate used to call DSA_generate_parameters_ex(), which adjusts the
+    # size of q according to the size of p
+    key1024 = OpenSSL::PKey::DSA.generate(1024)
+    assert_predicate key1024, :private?
+    assert_equal 1024, key1024.p.num_bits
+    assert_equal 160, key1024.q.num_bits
+
+    key2048 = OpenSSL::PKey::DSA.generate(2048)
+    assert_equal 2048, key2048.p.num_bits
+    assert_equal 256, key2048.q.num_bits
+
+    if ENV["OSSL_TEST_ALL"] == "1" # slow
+      key3072 = OpenSSL::PKey::DSA.generate(3072)
+      assert_equal 3072, key3072.p.num_bits
+      assert_equal 256, key3072.q.num_bits
+    end
+  end
+
   def test_sign_verify
     dsa512 = Fixtures.pkey("dsa512")
     data = "Sign me!"
