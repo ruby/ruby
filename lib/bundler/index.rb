@@ -58,19 +58,12 @@ module Bundler
     # about, returning all of the results.
     def search(query)
       results = local_search(query)
-
-      seen = results.map(&:full_name).uniq unless @sources.empty?
+      return results unless @sources.any?
 
       @sources.each do |source|
-        source.search(query).each do |spec|
-          next if seen.include?(spec.full_name)
-
-          seen << spec.full_name
-          results << spec
-        end
+        results.concat(source.search(query))
       end
-
-      results
+      results.uniq(&:full_name)
     end
 
     def local_search(query)
