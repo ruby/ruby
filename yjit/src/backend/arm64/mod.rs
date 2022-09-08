@@ -137,6 +137,7 @@ impl Assembler
         /// to be split in case their displacement doesn't fit into 9 bits.
         fn split_load_operand(asm: &mut Assembler, opnd: Opnd) -> Opnd {
             match opnd {
+                Opnd::Reg(_) | Opnd::InsnOut { .. } => opnd,
                 Opnd::Mem(_) => {
                     let split_opnd = split_memory_address(asm, opnd);
                     asm.load(split_opnd)
@@ -235,7 +236,7 @@ impl Assembler
             // such that only the Op::Load instruction needs to handle that
             // case. If the values aren't heap objects then we'll treat them as
             // if they were just unsigned integer.
-            let is_load = matches!(insn, Insn::Load { .. });
+            let is_load = matches!(insn, Insn::Load { .. } | Insn::LoadInto { .. });
             let mut opnd_iter = insn.opnd_iter_mut();
 
             while let Some(opnd) = opnd_iter.next() {
@@ -284,9 +285,8 @@ impl Assembler
                 Insn::CCall { opnds, target, .. } => {
                     assert!(opnds.len() <= C_ARG_OPNDS.len());
 
-                    // For each of the operands we're going to first load them
-                    // into a register and then move them into the correct
-                    // argument register.
+                    // Load each operand into the corresponding argument
+                    // register.
                     // Note: the iteration order is reversed to avoid corrupting x0,
                     // which is both the return value and first argument register
                     for (idx, opnd) in opnds.into_iter().enumerate().rev() {
@@ -295,10 +295,11 @@ impl Assembler
                         // a UImm of 0 along as the argument to the move.
                         let value = match opnd {
                             Opnd::UImm(0) | Opnd::Imm(0) => Opnd::UImm(0),
-                            _ => split_load_operand(asm, opnd)
+                            Opnd::Mem(_) => split_memory_address(asm, opnd),
+                            _ => opnd
                         };
 
-                        asm.mov(C_ARG_OPNDS[idx], value);
+                        asm.load_into(C_ARG_OPNDS[idx], value);
                     }
 
                     // Now we push the CCall without any arguments so that it
@@ -306,18 +307,29 @@ impl Assembler
                     asm.ccall(target.unwrap_fun_ptr(), vec![]);
                 },
                 Insn::Cmp { left, right } => {
-                    let opnd0 = match left {
-                        Opnd::Reg(_) | Opnd::InsnOut { .. } => left,
-                        _ => split_load_operand(asm, left)
-                    };
-
+                    let opnd0 = split_load_operand(asm, left);
                     let opnd1 = split_shifted_immediate(asm, right);
                     asm.cmp(opnd0, opnd1);
                 },
                 Insn::CRet(opnd) => {
-                    if opnd != Opnd::Reg(C_RET_REG) {
-                        let value = split_load_operand(asm, opnd);
-                        asm.mov(C_RET_OPND, value);
+                    match opnd {
+                        // If the value is already in the return register, then
+                        // we don't need to do anything.
+                        Opnd::Reg(C_RET_REG) => {},
+
+                        // If the value is a memory address, we need to first
+                        // make sure the displacement isn't too large and then
+                        // load it into the return register.
+                        Opnd::Mem(_) => {
+                            let split = split_memory_address(asm, opnd);
+                            asm.load_into(C_RET_OPND, split);
+                        },
+
+                        // Otherwise we just need to load the value into the
+                        // return register.
+                        _ => {
+                            asm.load_into(C_RET_OPND, opnd);
+                        }
                     }
                     asm.cret(C_RET_OPND);
                 },
@@ -375,7 +387,20 @@ impl Assembler
                     }
                 },
                 Insn::Load { opnd, .. } => {
-                    split_load_operand(asm, opnd);
+                    let value = match opnd {
+                        Opnd::Mem(_) => split_memory_address(asm, opnd),
+                        _ => opnd
+                    };
+
+                    asm.load(value);
+                },
+                Insn::LoadInto { dest, opnd } => {
+                    let value = match opnd {
+                        Opnd::Mem(_) => split_memory_address(asm, opnd),
+                        _ => opnd
+                    };
+
+                    asm.load_into(dest, value);
                 },
                 Insn::LoadSExt { opnd, .. } => {
                     match opnd {
@@ -442,28 +467,24 @@ impl Assembler
                     // The value being stored must be in a register, so if it's
                     // not already one we'll load it first.
                     let opnd1 = match src {
-                        Opnd::Reg(_) | Opnd::InsnOut { .. } => src,
+                         // If the first operand is zero, then we can just use
+                        // the zero register.
+                        Opnd::UImm(0) | Opnd::Imm(0) => Opnd::Reg(XZR_REG),
+                        // Otherwise we'll check if we need to load it first.
                         _ => split_load_operand(asm, src)
                     };
 
                     asm.store(opnd0, opnd1);
                 },
                 Insn::Sub { left, right, .. } => {
-                    let opnd0 = match left {
-                        Opnd::Reg(_) | Opnd::InsnOut { .. } => left,
-                        _ => split_load_operand(asm, left)
-                    };
-
+                    let opnd0 = split_load_operand(asm, left);
                     let opnd1 = split_shifted_immediate(asm, right);
                     asm.sub(opnd0, opnd1);
                 },
                 Insn::Test { left, right } => {
                     // The value being tested must be in a register, so if it's
                     // not already one we'll load it first.
-                    let opnd0 = match left {
-                        Opnd::Reg(_) | Opnd::InsnOut { .. } => left,
-                        _ => split_load_operand(asm, left)
-                    };
+                    let opnd0 = split_load_operand(asm, left);
 
                     // The second value must be either a register or an
                     // unsigned immediate that can be encoded as a bitmask
@@ -710,7 +731,8 @@ impl Assembler
                     // our IR we have the address first and the register second.
                     stur(cb, src.into(), dest.into());
                 },
-                Insn::Load { opnd, out } => {
+                Insn::Load { opnd, out } |
+                Insn::LoadInto { opnd, dest: out } => {
                     match *opnd {
                         Opnd::Reg(_) | Opnd::InsnOut { .. } => {
                             mov(cb, out.into(), opnd.into());

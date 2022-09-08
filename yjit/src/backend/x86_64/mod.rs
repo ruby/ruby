@@ -131,7 +131,7 @@ impl Assembler
             //     VALUEs alive. This is a sort of canonicalization.
             let mut unmapped_opnds: Vec<Opnd> = vec![];
 
-            let is_load = matches!(insn, Insn::Load { .. });
+            let is_load = matches!(insn, Insn::Load { .. } | Insn::LoadInto { .. });
             let mut opnd_iter = insn.opnd_iter_mut();
 
             while let Some(opnd) = opnd_iter.next() {
@@ -289,6 +289,19 @@ impl Assembler
 
                     asm.not(opnd0);
                 },
+                Insn::CCall { opnds, target, .. } => {
+                    assert!(opnds.len() <= C_ARG_OPNDS.len());
+
+                    // Load each operand into the corresponding argument
+                    // register.
+                    for (idx, opnd) in opnds.into_iter().enumerate() {
+                        asm.load_into(C_ARG_OPNDS[idx], *opnd);
+                    }
+
+                    // Now we push the CCall without any arguments so that it
+                    // just performs the call.
+                    asm.ccall(target.unwrap_fun_ptr(), vec![]);
+                },
                 _ => {
                     if insn.out_opnd().is_some() {
                         let out_num_bits = Opnd::match_num_bits_iter(insn.opnd_iter());
@@ -421,7 +434,8 @@ impl Assembler
                 },
 
                 // This assumes only load instructions can contain references to GC'd Value operands
-                Insn::Load { opnd, out } => {
+                Insn::Load { opnd, out } |
+                Insn::LoadInto { dest: out, opnd } => {
                     mov(cb, out.into(), opnd.into());
 
                     // If the value being loaded is a heap object
@@ -490,17 +504,8 @@ impl Assembler
                 },
 
                 // C function call
-                Insn::CCall { opnds, target, .. } => {
-                    // Temporary
-                    assert!(opnds.len() <= _C_ARG_OPNDS.len());
-
-                    // For each operand
-                    for (idx, opnd) in opnds.iter().enumerate() {
-                        mov(cb, X86Opnd::Reg(_C_ARG_OPNDS[idx].unwrap_reg()), opnds[idx].into());
-                    }
-
-                    let ptr = target.unwrap_fun_ptr();
-                    call_ptr(cb, RAX, ptr);
+                Insn::CCall { target, .. } => {
+                    call_ptr(cb, RAX, target.unwrap_fun_ptr());
                 },
 
                 Insn::CRet(opnd) => {
