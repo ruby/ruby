@@ -10,6 +10,6 @@
 #if !defined(_OSSL_VERSION_H_)
 #define _OSSL_VERSION_H_
 
-#define OSSL_VERSION "2.1.3"
+#define OSSL_VERSION "2.1.4"
 
 #endif /* _OSSL_VERSION_H_ */
