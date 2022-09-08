@@ -4851,11 +4851,14 @@ VALUE rb_mod_name(VALUE);
 static VALUE
 vm_objtostring(const rb_iseq_t *iseq, VALUE recv, CALL_DATA cd)
 {
+    int type = TYPE(recv);
+    if (type == T_STRING) {
+        return recv;
+    }
+
     const struct rb_callcache *cc = vm_search_method((VALUE)iseq, cd, recv);
 
-    switch (TYPE(recv)) {
-      case T_STRING:
-        return recv;
+    switch (type) {
       case T_SYMBOL:
         if (check_cfunc(vm_cc_cme(cc), rb_sym_to_s)) {
             // rb_sym_to_s() allocates a mutable string, but since we are only
