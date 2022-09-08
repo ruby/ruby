@@ -1,3 +1,27 @@
+Version 3.0.1
+=============
+
+Merged changes in 2.1.4 and 2.2.2. Additionally, the following issues are fixed
+by this release.
+
+Bug fixes
+---------
+
+* Add missing type check in OpenSSL::PKey::PKey#sign's optional parameters.
+  [[GitHub #531]](https://github.com/ruby/openssl/pull/531)
+* Work around OpenSSL 3.0's HMAC issues with a zero-length key.
+  [[GitHub #538]](https://github.com/ruby/openssl/pull/538)
+* Fix a regression in OpenSSL::PKey::DSA.generate's default of 'q' size.
+  [[GitHub #483]](https://github.com/ruby/openssl/issues/483)
+  [[GitHub #539]](https://github.com/ruby/openssl/pull/539)
+* Restore OpenSSL::PKey.read's ability to decode "openssl ecparam -genkey"
+  output when linked against OpenSSL 3.0.
+  [[GitHub #535]](https://github.com/ruby/openssl/pull/535)
+  [[GitHub #540]](https://github.com/ruby/openssl/pull/540)
+* Restore error checks in OpenSSL::PKey::EC#{to_der,to_pem}.
+  [[GitHub #541]](https://github.com/ruby/openssl/pull/541)
+
+
 Version 3.0.0
 =============
 
@@ -100,6 +124,12 @@ Notable changes
     [[GitHub #342]](https://github.com/ruby/openssl/issues/342)
 
 
+Version 2.2.2
+=============
+
+Merged changes in 2.1.4.
+
+
 Version 2.2.1
 =============
 
@@ -192,6 +222,16 @@ Notable changes
   added to `OpenSSL::PKey` classes: `private_to_der`, `private_to_pem`,
   `public_to_der` and `public_to_pem`.
   [[GitHub #297]](https://github.com/ruby/openssl/pull/297)
+
+
+Version 2.1.4
+=============
+
+Bug fixes
+---------
+
+* Do not use pkg-config if --with-openssl-dir option is specified.
+ [[GitHub #486]](https://github.com/ruby/openssl/pull/486)
 
 
 Version 2.1.3

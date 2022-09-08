@@ -380,13 +380,13 @@ ossl_x509req_set_attributes(VALUE self, VALUE ary)
 	OSSL_Check_Kind(RARRAY_AREF(ary, i), cX509Attr);
     }
     GetX509Req(self, req);
-    while ((attr = X509_REQ_delete_attr(req, 0)))
-	X509_ATTRIBUTE_free(attr);
+    for (i = X509_REQ_get_attr_count(req); i > 0; i--)
+        X509_ATTRIBUTE_free(X509_REQ_delete_attr(req, 0));
     for (i=0;i<RARRAY_LEN(ary); i++) {
 	item = RARRAY_AREF(ary, i);
 	attr = GetX509AttrPtr(item);
 	if (!X509_REQ_add1_attr(req, attr)) {
-	    ossl_raise(eX509ReqError, NULL);
+	    ossl_raise(eX509ReqError, "X509_REQ_add1_attr");
 	}
     }
     return ary;

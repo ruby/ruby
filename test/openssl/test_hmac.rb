@@ -63,6 +63,14 @@ class OpenSSL::TestHMAC < OpenSSL::TestCase
     b64digest = OpenSSL::HMAC.base64digest("MD5", key, "Hi There")
     assert_equal "kpRyejY4uxwT9I74FYv8nQ==", b64digest
   end
+
+  def test_zero_length_key
+    # Empty string as the key
+    hexdigest = OpenSSL::HMAC.hexdigest("SHA256", "\0"*32, "test")
+    assert_equal "43b0cef99265f9e34c10ea9d3501926d27b39f57c6d674561d8ba236e7a819fb", hexdigest
+    hexdigest = OpenSSL::HMAC.hexdigest("SHA256", "", "test")
+    assert_equal "43b0cef99265f9e34c10ea9d3501926d27b39f57c6d674561d8ba236e7a819fb", hexdigest
+  end
 end
 
 end
