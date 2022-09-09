@@ -3340,11 +3340,6 @@ fn gen_branchnil(
         gen_check_ints(asm, side_exit);
     }
 
-    // Test if the value is Qnil
-    // RUBY_Qnil    /* ...0000 1000 */
-    let val_opnd = ctx.stack_pop(1);
-    asm.cmp(val_opnd, Opnd::UImm(Qnil.into()));
-
     // Get the branch target instruction offsets
     let next_idx = jit_next_insn_idx(jit) as i32;
     let jump_idx = next_idx + jump_offset;
@@ -3357,18 +3352,29 @@ fn gen_branchnil(
         idx: jump_idx.try_into().unwrap(),
     };
 
-    // Generate the branch instructions
-    gen_branch(
-        jit,
-        ctx,
-        asm,
-        ocb,
-        jump_block,
-        ctx,
-        Some(next_block),
-        Some(ctx),
-        gen_branchnil_branch,
-    );
+    let val_type = ctx.get_opnd_type(StackOpnd(0));
+    let val_opnd = ctx.stack_pop(1);
+
+    if let Some(result) = val_type.known_nil() {
+        let target = if result { jump_block } else { next_block };
+        gen_direct_jump(jit, ctx, target, asm);
+    } else {
+        // Test if the value is Qnil
+        // RUBY_Qnil    /* ...0000 1000 */
+        asm.cmp(val_opnd, Opnd::UImm(Qnil.into()));
+        // Generate the branch instructions
+        gen_branch(
+            jit,
+            ctx,
+            asm,
+            ocb,
+            jump_block,
+            ctx,
+            Some(next_block),
+            Some(ctx),
+            gen_branchnil_branch,
+        );
+    }
 
     EndBlock
 }
