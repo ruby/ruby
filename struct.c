@@ -460,6 +460,16 @@ rb_struct_define_under(VALUE outer, const char *name, ...)
     return setup_struct(rb_define_class_under(outer, name, rb_cStruct), ary);
 }
 
+static VALUE build_struct_members(int argc, VALUE *argv);
+
+static void
+eval_init_block(VALUE st)
+{
+    if (rb_block_given_p()) {
+        rb_mod_module_eval(0, 0, st);
+    }
+}
+
 /*
  *  call-seq:
  *    Struct.new(*member_names, keyword_init: false){|Struct_subclass| ... } -> Struct_subclass
@@ -574,9 +584,7 @@ static VALUE
 rb_struct_s_def(int argc, VALUE *argv, VALUE klass)
 {
     VALUE name, rest, keyword_init = Qnil;
-    long i;
     VALUE st;
-    st_table *tbl;
     VALUE opt;
 
     argc = rb_scan_args(argc, argv, "1*:", NULL, NULL, &opt);
@@ -603,12 +611,52 @@ rb_struct_s_def(int argc, VALUE *argv, VALUE klass)
             keyword_init = Qtrue;
         }
     }
+    rest = build_struct_members(argc, argv);
 
-    rest = rb_ident_hash_new();
+    if (NIL_P(name)) {
+        st = anonymous_struct(klass);
+    }
+    else {
+        st = new_struct(name, klass);
+    }
+    setup_struct(st, rest);
+    rb_ivar_set(st, id_keyword_init, keyword_init);
+    eval_init_block(st);
+    return st;
+}
+
+/*
+ *  call-seq:
+ *    Struct.define(*member_names){|Struct_subclass| ... } -> Struct_subclass
+ *    Struct_subclass.new(*member_names) -> Struct_subclass_instance
+ *    Struct_subclass.new(**member_names) -> Struct_subclass_instance
+ *
+ *  <tt>Struct.define</tt> returns a new subclass of +Struct+.  The
+ *  new subclass are anonymous and +keyword_init+ is false.
+ *
+ *  See Struct.new.
+ *
+ */
+static VALUE
+rb_struct_s_define(int argc, VALUE *argv, VALUE klass)
+{
+    VALUE rest = build_struct_members(argc, argv);
+    VALUE st = anonymous_struct(klass);
+    setup_struct(st, rest);
+    rb_ivar_set(st, id_keyword_init, Qfalse);
+    eval_init_block(st);
+    return st;
+}
+
+static VALUE
+build_struct_members(int argc, VALUE *argv)
+{
+
+    VALUE rest = rb_ident_hash_new();
     RBASIC_CLEAR_CLASS(rest);
     OBJ_WB_UNPROTECT(rest);
-    tbl = RHASH_TBL_RAW(rest);
-    for (i=0; i<argc; i++) {
+    st_table *tbl = RHASH_TBL_RAW(rest);
+    for (int i = 0; i < argc; i++) {
         VALUE mem = rb_to_symbol(argv[i]);
         if (rb_is_attrset_sym(mem)) {
             rb_raise(rb_eArgError, "invalid struct member: %"PRIsVALUE, mem);
@@ -621,19 +669,8 @@ rb_struct_s_def(int argc, VALUE *argv, VALUE klass)
     st_clear(tbl);
     RBASIC_CLEAR_CLASS(rest);
     OBJ_FREEZE_RAW(rest);
-    if (NIL_P(name)) {
-        st = anonymous_struct(klass);
-    }
-    else {
-        st = new_struct(name, klass);
-    }
-    setup_struct(st, rest);
-    rb_ivar_set(st, id_keyword_init, keyword_init);
-    if (rb_block_given_p()) {
-        rb_mod_module_eval(0, 0, st);
-    }
 
-    return st;
+    return rest;
 }
 
 static long
@@ -1629,6 +1666,7 @@ InitVM_Struct(void)
 
     rb_undef_alloc_func(rb_cStruct);
     rb_define_singleton_method(rb_cStruct, "new", rb_struct_s_def, -1);
+    rb_define_singleton_method(rb_cStruct, "define", rb_struct_s_define, -1);
 #if 0 /* for RDoc */
     rb_define_singleton_method(rb_cStruct, "keyword_init?", rb_struct_s_keyword_init_p, 0);
     rb_define_singleton_method(rb_cStruct, "members", rb_struct_s_members_m, 0);

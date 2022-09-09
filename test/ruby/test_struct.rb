@@ -29,6 +29,33 @@ module TestStruct
     end
   end
 
+  def test_define
+    struct_test = @Struct.define("Defined", :foo, :bar)
+    assert_not_send([@Struct, :const_defined?, "Defined"])
+
+    test = struct_test.new(0, 1, 2)
+    assert_equal(0, test.Defined)
+    assert_equal(1, test.foo)
+    assert_equal(2, test.bar)
+    assert_equal(0, test[0])
+    assert_equal(1, test[1])
+    assert_equal(2, test[2])
+
+    d, a, b = test.to_a
+    assert_equal(0, d)
+    assert_equal(1, a)
+    assert_equal(2, b)
+
+    test[0] = 9
+    assert_equal(9, test.Defined)
+
+    test[1] = 22
+    assert_equal(22, test.foo)
+
+    test.bar = 47
+    assert_equal(47, test.bar)
+  end
+
   # [ruby-dev:26247] more than 10 struct members causes segmentation fault
   def test_morethan10members
     list = %w( a b c d  e f g h  i j k l  m n o p )
