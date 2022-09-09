@@ -221,8 +221,6 @@ impl Assembler
                 Insn::CSelLE { truthy, falsy, out } |
                 Insn::CSelG { truthy, falsy, out } |
                 Insn::CSelGE { truthy, falsy, out } => {
-                    dbg!(&truthy, &falsy);
-
                     match unmapped_opnds[0] {
                         // If we have an instruction output whose live range
                         // spans beyond this instruction, we have to load it.
