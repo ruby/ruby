@@ -1087,6 +1087,7 @@ BUILTIN_RB_SRCS = \
 		$(srcdir)/thread_sync.rb \
 		$(srcdir)/nilclass.rb \
 		$(srcdir)/prelude.rb \
+		$(srcdir)/data.rb \
 		$(srcdir)/gem_prelude.rb \
 		$(srcdir)/yjit.rb \
 		$(empty)
@@ -7285,6 +7286,7 @@ inits.$(OBJEXT): {$(VPATH)}backward/2/stdalign.h
 inits.$(OBJEXT): {$(VPATH)}backward/2/stdarg.h
 inits.$(OBJEXT): {$(VPATH)}builtin.h
 inits.$(OBJEXT): {$(VPATH)}config.h
+inits.$(OBJEXT): {$(VPATH)}data.rbinc
 inits.$(OBJEXT): {$(VPATH)}defines.h
 inits.$(OBJEXT): {$(VPATH)}inits.c
 inits.$(OBJEXT): {$(VPATH)}intern.h
@@ -9318,6 +9320,7 @@ miniinit.$(OBJEXT): {$(VPATH)}backward/2/stdalign.h
 miniinit.$(OBJEXT): {$(VPATH)}backward/2/stdarg.h
 miniinit.$(OBJEXT): {$(VPATH)}builtin.h
 miniinit.$(OBJEXT): {$(VPATH)}config.h
+miniinit.$(OBJEXT): {$(VPATH)}data.rb
 miniinit.$(OBJEXT): {$(VPATH)}defines.h
 miniinit.$(OBJEXT): {$(VPATH)}dir.rb
 miniinit.$(OBJEXT): {$(VPATH)}encoding.h

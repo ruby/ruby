@@ -29,3 +29,5 @@ module Enumerable
     klass.new(self, *args, &block)
   end
 end
+
+require_relative 'data'

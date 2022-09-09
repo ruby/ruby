@@ -14,7 +14,7 @@ ruby_version_is ''...'3.0' do
   end
 end
 
-ruby_version_is '3.0' do
+ruby_version_is '3.0'...'3.2' do
   describe "Data" do
     it "does not exist anymore" do
       Object.should_not have_constant(:Data)
