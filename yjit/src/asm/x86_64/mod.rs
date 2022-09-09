@@ -925,6 +925,19 @@ pub fn lea(cb: &mut CodeBlock, dst: X86Opnd, src: X86Opnd) {
 /// mov - Data move operation
 pub fn mov(cb: &mut CodeBlock, dst: X86Opnd, src: X86Opnd) {
     match (dst, src) {
+        // R + 0
+        // The encoding for xor is shorter
+        (X86Opnd::Reg(reg), X86Opnd::Imm(X86Imm{ value: 0, .. }) | X86Opnd::UImm(X86UImm{ value:0, .. })) => {
+            if reg.num_bits == 64 {
+                let dst = X86Opnd::Reg(reg.sub_reg(32));
+                xor(cb, dst, dst);
+            }
+            else
+            {
+                xor(cb, dst, dst);
+            }
+        }
+
         // R + Imm
         (X86Opnd::Reg(reg), X86Opnd::Imm(imm)) => {
             assert!(imm.num_bits <= reg.num_bits);
