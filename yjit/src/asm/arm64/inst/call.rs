@@ -1,4 +1,4 @@
-use super::super::arg::truncate_imm;
+use super::super::arg::{InstructionOffset, truncate_imm};
 
 /// The operation to perform for this instruction.
 enum Op {
@@ -20,8 +20,8 @@ enum Op {
 /// +-------------+-------------+-------------+-------------+-------------+-------------+-------------+-------------+
 ///
 pub struct Call {
-    /// The PC-relative offset to jump to (which will be multiplied by 4).
-    imm26: i32,
+    /// The PC-relative offset to jump to in terms of number of instructions.
+    offset: InstructionOffset,
 
     /// The operation to perform for this instruction.
     op: Op
@@ -30,14 +30,14 @@ pub struct Call {
 impl Call {
     /// B
     /// https://developer.arm.com/documentation/ddi0596/2021-12/Base-Instructions/B--Branch-
-    pub fn b(imm26: i32) -> Self {
-        Self { imm26, op: Op::Branch }
+    pub fn b(offset: InstructionOffset) -> Self {
+        Self { offset, op: Op::Branch }
     }
 
     /// BL
     /// https://developer.arm.com/documentation/ddi0596/2021-12/Base-Instructions/BL--Branch-with-Link-?lang=en
-    pub fn bl(imm26: i32) -> Self {
-        Self { imm26, op: Op::BranchWithLink }
+    pub fn bl(offset: InstructionOffset) -> Self {
+        Self { offset, op: Op::BranchWithLink }
     }
 }
 
@@ -50,7 +50,7 @@ impl From<Call> for u32 {
         0
         | ((inst.op as u32) << 31)
         | (FAMILY << 26)
-        | truncate_imm::<_, 26>(inst.imm26)
+        | truncate_imm::<_, 26>(inst.offset)
     }
 }
 
@@ -68,37 +68,37 @@ mod tests {
 
     #[test]
     fn test_bl() {
-        let result: u32 = Call::bl(0).into();
+        let result: u32 = Call::bl(0.into()).into();
         assert_eq!(0x94000000, result);
     }
 
     #[test]
     fn test_bl_positive() {
-        let result: u32 = Call::bl(256).into();
+        let result: u32 = Call::bl(256.into()).into();
         assert_eq!(0x94000100, result);
     }
 
     #[test]
     fn test_bl_negative() {
-        let result: u32 = Call::bl(-256).into();
+        let result: u32 = Call::bl((-256).into()).into();
         assert_eq!(0x97ffff00, result);
     }
 
     #[test]
     fn test_b() {
-        let result: u32 = Call::b(0).into();
+        let result: u32 = Call::b(0.into()).into();
         assert_eq!(0x14000000, result);
     }
 
     #[test]
     fn test_b_positive() {
-        let result: u32 = Call::b((1 << 25) - 1).into();
+        let result: u32 = Call::b(((1 << 25) - 1).into()).into();
         assert_eq!(0x15ffffff, result);
     }
 
     #[test]
     fn test_b_negative() {
-        let result: u32 = Call::b(-(1 << 25)).into();
+        let result: u32 = Call::b((-(1 << 25)).into()).into();
         assert_eq!(0x16000000, result);
     }
 }

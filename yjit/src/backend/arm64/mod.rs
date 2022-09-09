@@ -589,13 +589,15 @@ impl Assembler
                 Target::CodePtr(dst_ptr) => {
                     let dst_addr = dst_ptr.into_i64();
                     let src_addr = cb.get_write_ptr().into_i64();
-                    let offset = dst_addr - src_addr;
 
-                    let num_insns = if bcond_offset_fits_bits(offset) {
+                    let num_insns = if bcond_offset_fits_bits((dst_addr - src_addr) / 4) {
                         // If the jump offset fits into the conditional jump as
                         // an immediate value and it's properly aligned, then we
-                        // can use the b.cond instruction directly.
-                        bcond(cb, CONDITION, A64Opnd::new_imm(offset));
+                        // can use the b.cond instruction directly. We're safe
+                        // to use as i32 here since we already checked that it
+                        // fits.
+                        let bytes = (dst_addr - src_addr) as i32;
+                        bcond(cb, CONDITION, InstructionOffset::from_bytes(bytes));
 
                         // Here we're going to return 1 because we've only
                         // written out 1 instruction.
@@ -604,12 +606,12 @@ impl Assembler
                         // Otherwise, we need to load the address into a
                         // register and use the branch register instruction.
                         let dst_addr = dst_ptr.into_u64();
-                        let load_insns: i64 = emit_load_size(dst_addr).into();
+                        let load_insns: i32 = emit_load_size(dst_addr).into();
 
                         // We're going to write out the inverse condition so
                         // that if it doesn't match it will skip over the
                         // instructions used for branching.
-                        bcond(cb, Condition::inverse(CONDITION), A64Opnd::new_imm((load_insns + 2) * 4));
+                        bcond(cb, Condition::inverse(CONDITION), (load_insns + 2).into());
                         emit_load_value(cb, Assembler::SCRATCH0, dst_addr);
                         br(cb, Assembler::SCRATCH0);
 
@@ -630,7 +632,8 @@ impl Assembler
                     // offset. We're going to assume we can fit into a single
                     // b.cond instruction. It will panic otherwise.
                     cb.label_ref(label_idx, 4, |cb, src_addr, dst_addr| {
-                        bcond(cb, CONDITION, A64Opnd::new_imm(dst_addr - (src_addr - 4)));
+                        let bytes: i32 = (dst_addr - (src_addr - 4)).try_into().unwrap();
+                        bcond(cb, CONDITION, InstructionOffset::from_bytes(bytes));
                     });
                 },
                 Target::FunPtr(_) => unreachable!()
@@ -756,8 +759,8 @@ impl Assembler
                             // references to GC'd Value operands. If the value
                             // being loaded is a heap object, we'll report that
                             // back out to the gc_offsets list.
-                            ldr_literal(cb, out.into(), 2);
-                            b(cb, A64Opnd::new_imm(1 + (SIZEOF_VALUE as i64) / 4));
+                            ldr_literal(cb, out.into(), 2.into());
+                            b(cb, InstructionOffset::from_bytes(4 + (SIZEOF_VALUE as i32)));
                             cb.write_bytes(&value.as_u64().to_le_bytes());
 
                             let ptr_offset: u32 = (cb.get_write_pos() as u32) - (SIZEOF_VALUE as u32);
@@ -844,14 +847,11 @@ impl Assembler
                     // The offset to the call target in bytes
                     let src_addr = cb.get_write_ptr().into_i64();
                     let dst_addr = target.unwrap_fun_ptr() as i64;
-                    let offset = dst_addr - src_addr;
-                    // The offset in instruction count for BL's immediate
-                    let offset = offset / 4;
 
                     // Use BL if the offset is short enough to encode as an immediate.
                     // Otherwise, use BLR with a register.
-                    if b_offset_fits_bits(offset) {
-                        bl(cb, A64Opnd::new_imm(offset));
+                    if b_offset_fits_bits((dst_addr - src_addr) / 4) {
+                        bl(cb, InstructionOffset::from_bytes((dst_addr - src_addr) as i32));
                     } else {
                         emit_load_value(cb, Self::SCRATCH0, dst_addr as u64);
                         blr(cb, Self::SCRATCH0);
@@ -875,19 +875,22 @@ impl Assembler
                             let src_addr = cb.get_write_ptr().into_i64();
                             let dst_addr = dst_ptr.into_i64();
 
-                            // The offset between the two instructions in bytes.
-                            // Note that when we encode this into a b
-                            // instruction, we'll divide by 4 because it accepts
-                            // the number of instructions to jump over.
-                            let offset = dst_addr - src_addr;
-                            let offset = offset / 4;
-
                             // If the offset is short enough, then we'll use the
                             // branch instruction. Otherwise, we'll move the
                             // destination into a register and use the branch
                             // register instruction.
-                            let num_insns = emit_load_value(cb, Self::SCRATCH0, dst_addr as u64);
-                            br(cb, Self::SCRATCH0);
+                            let num_insns = if b_offset_fits_bits((dst_addr - src_addr) / 4) {
+                                b(cb, InstructionOffset::from_bytes((dst_addr - src_addr) as i32));
+                                0
+                            } else {
+                                let num_insns = emit_load_value(cb, Self::SCRATCH0, dst_addr as u64);
+                                br(cb, Self::SCRATCH0);
+                                num_insns
+                            };
+
+                            // Make sure it's always a consistent number of
+                            // instructions in case it gets patched and has to
+                            // use the other branch.
                             for _ in num_insns..4 {
                                 nop(cb);
                             }
@@ -899,7 +902,8 @@ impl Assembler
                             // to assume we can fit into a single b instruction.
                             // It will panic otherwise.
                             cb.label_ref(*label_idx, 4, |cb, src_addr, dst_addr| {
-                                b(cb, A64Opnd::new_imm((dst_addr - (src_addr - 4)) / 4));
+                                let bytes: i32 = (dst_addr - (src_addr - 4)).try_into().unwrap();
+                                b(cb, InstructionOffset::from_bytes(bytes));
                             });
                         },
                         _ => unreachable!()

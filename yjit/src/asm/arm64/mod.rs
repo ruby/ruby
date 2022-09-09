@@ -190,15 +190,9 @@ pub const fn b_offset_fits_bits(offset: i64) -> bool {
 }
 
 /// B - branch without link (offset is number of instructions to jump)
-pub fn b(cb: &mut CodeBlock, imm26: A64Opnd) {
-    let bytes: [u8; 4] = match imm26 {
-        A64Opnd::Imm(imm26) => {
-            assert!(b_offset_fits_bits(imm26), "The immediate operand must be 26 bits or less.");
-
-            Call::b(imm26 as i32).into()
-        },
-        _ => panic!("Invalid operand combination to b instruction.")
-    };
+pub fn b(cb: &mut CodeBlock, offset: InstructionOffset) {
+    assert!(b_offset_fits_bits(offset.into()), "The immediate operand must be 26 bits or less.");
+    let bytes: [u8; 4] = Call::b(offset).into();
 
     cb.write_bytes(&bytes);
 }
@@ -208,33 +202,21 @@ pub fn b(cb: &mut CodeBlock, imm26: A64Opnd) {
 /// value into a register first, then use the b.cond instruction to skip past a
 /// direct jump.
 pub const fn bcond_offset_fits_bits(offset: i64) -> bool {
-    imm_fits_bits(offset, 21) && (offset & 0b11 == 0)
+    imm_fits_bits(offset, 19)
 }
 
 /// B.cond - branch to target if condition is true
-pub fn bcond(cb: &mut CodeBlock, cond: u8, byte_offset: A64Opnd) {
-    let bytes: [u8; 4] = match byte_offset {
-        A64Opnd::Imm(imm) => {
-            assert!(bcond_offset_fits_bits(imm), "The immediate operand must be 21 bits or less and be aligned to a 2-bit boundary.");
-
-            BranchCond::bcond(cond, (imm / 4) as i32).into()
-        },
-        _ => panic!("Invalid operand combination to bcond instruction."),
-    };
+pub fn bcond(cb: &mut CodeBlock, cond: u8, offset: InstructionOffset) {
+    assert!(bcond_offset_fits_bits(offset.into()), "The offset must be 19 bits or less.");
+    let bytes: [u8; 4] = BranchCond::bcond(cond, offset).into();
 
     cb.write_bytes(&bytes);
 }
 
 /// BL - branch with link (offset is number of instructions to jump)
-pub fn bl(cb: &mut CodeBlock, imm26: A64Opnd) {
-    let bytes: [u8; 4] = match imm26 {
-        A64Opnd::Imm(imm26) => {
-            assert!(b_offset_fits_bits(imm26), "The immediate operand must be 26 bits or less.");
-
-            Call::bl(imm26 as i32).into()
-        },
-        _ => panic!("Invalid operand combination to bl instruction.")
-    };
+pub fn bl(cb: &mut CodeBlock, offset: InstructionOffset) {
+    assert!(b_offset_fits_bits(offset.into()), "The offset must be 26 bits or less.");
+    let bytes: [u8; 4] = Call::bl(offset).into();
 
     cb.write_bytes(&bytes);
 }
@@ -413,7 +395,7 @@ pub fn ldr(cb: &mut CodeBlock, rt: A64Opnd, rn: A64Opnd, rm: A64Opnd) {
 }
 
 /// LDR - load a PC-relative memory address into a register
-pub fn ldr_literal(cb: &mut CodeBlock, rt: A64Opnd, rn: i32) {
+pub fn ldr_literal(cb: &mut CodeBlock, rt: A64Opnd, rn: InstructionOffset) {
     let bytes: [u8; 4] = match rt {
         A64Opnd::Reg(rt) => {
             LoadLiteral::ldr_literal(rt.reg_no, rn, rt.num_bits).into()
@@ -1087,45 +1069,52 @@ mod tests {
 
     #[test]
     fn test_bcond() {
-        check_bytes("01200054", |cb| bcond(cb, Condition::NE, A64Opnd::new_imm(0x400)));
+        let offset = InstructionOffset::from_insns(0x100);
+        check_bytes("01200054", |cb| bcond(cb, Condition::NE, offset));
     }
 
     #[test]
     fn test_b() {
-        check_bytes("ffffff15", |cb| b(cb, A64Opnd::new_imm((1 << 25) - 1)));
+        let offset = InstructionOffset::from_insns((1 << 25) - 1);
+        check_bytes("ffffff15", |cb| b(cb, offset));
     }
 
     #[test]
     #[should_panic]
     fn test_b_too_big() {
         // There are 26 bits available
-        check_bytes("", |cb| b(cb, A64Opnd::new_imm(1 << 25)));
+        let offset = InstructionOffset::from_insns(1 << 25);
+        check_bytes("", |cb| b(cb, offset));
     }
 
     #[test]
     #[should_panic]
     fn test_b_too_small() {
         // There are 26 bits available
-        check_bytes("", |cb| b(cb, A64Opnd::new_imm(-(1 << 25) - 1)));
+        let offset = InstructionOffset::from_insns(-(1 << 25) - 1);
+        check_bytes("", |cb| b(cb, offset));
     }
 
     #[test]
     fn test_bl() {
-        check_bytes("00000096", |cb| bl(cb, A64Opnd::new_imm(-(1 << 25))));
+        let offset = InstructionOffset::from_insns(-(1 << 25));
+        check_bytes("00000096", |cb| bl(cb, offset));
     }
 
     #[test]
     #[should_panic]
     fn test_bl_too_big() {
         // There are 26 bits available
-        check_bytes("", |cb| bl(cb, A64Opnd::new_imm(1 << 25)));
+        let offset = InstructionOffset::from_insns(1 << 25);
+        check_bytes("", |cb| bl(cb, offset));
     }
 
     #[test]
     #[should_panic]
     fn test_bl_too_small() {
         // There are 26 bits available
-        check_bytes("", |cb| bl(cb, A64Opnd::new_imm(-(1 << 25) - 1)));
+        let offset = InstructionOffset::from_insns(-(1 << 25) - 1);
+        check_bytes("", |cb| bl(cb, offset));
     }
 
     #[test]
@@ -1200,7 +1189,7 @@ mod tests {
 
     #[test]
     fn test_ldr_literal() {
-        check_bytes("40010058", |cb| ldr_literal(cb, X0, 10));
+        check_bytes("40010058", |cb| ldr_literal(cb, X0, 10.into()));
     }
 
     #[test]
