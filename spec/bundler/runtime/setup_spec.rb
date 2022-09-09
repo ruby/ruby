@@ -1656,4 +1656,35 @@ end
     expect(err).to be_empty
     expect(out).to include("Installing myrack 1.0.0")
   end
+
+  context "in a read-only filesystem" do
+    before do
+      gemfile <<-G
+        source "https://gem.repo4"
+      G
+
+      lockfile <<-L
+        GEM
+          remote: https://gem.repo4/
+
+        PLATFORMS
+          x86_64-darwin-19
+
+        DEPENDENCIES
+
+        BUNDLED WITH
+           #{Bundler::VERSION}
+      L
+    end
+
+    it "should fail loudly if the lockfile platforms don't include the current platform" do
+      simulate_platform "x86_64-linux" do
+        ruby <<-RUBY, raise_on_error: false, env: { "BUNDLER_SPEC_READ_ONLY" => "true", "BUNDLER_FORCE_TTY" => "true" }
+          require "bundler/setup"
+        RUBY
+      end
+
+      expect(err).to include("Your lockfile does not include the current platform, but the lockfile can't be updated because file system is read-only")
+    end
+  end
 end

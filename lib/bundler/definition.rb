@@ -412,39 +412,8 @@ module Bundler
 
       raise ProductionError, "Frozen mode is set, but there's no lockfile" unless lockfile_exists?
 
-      added =   []
-      deleted = []
-      changed = []
-
-      added.concat @new_platforms.map {|p| "* platform: #{p}" }
-      deleted.concat @removed_platforms.map {|p| "* platform: #{p}" }
-
-      added.concat new_deps.map {|d| "* #{pretty_dep(d)}" } if new_deps.any?
-      deleted.concat deleted_deps.map {|d| "* #{pretty_dep(d)}" } if deleted_deps.any?
-
-      both_sources = Hash.new {|h, k| h[k] = [] }
-      current_dependencies.each {|d| both_sources[d.name][0] = d }
-      current_locked_dependencies.each {|d| both_sources[d.name][1] = d }
-
-      both_sources.each do |name, (dep, lock_dep)|
-        next if dep.nil? || lock_dep.nil?
-
-        gemfile_source = dep.source || default_source
-        lock_source = lock_dep.source || default_source
-        next if lock_source.include?(gemfile_source)
-
-        gemfile_source_name = dep.source ? gemfile_source.to_gemfile : "no specified source"
-        lockfile_source_name = lock_dep.source ? lock_source.to_gemfile : "no specified source"
-        changed << "* #{name} from `#{lockfile_source_name}` to `#{gemfile_source_name}`"
-      end
-
-      reason = resolve_needed? ? change_reason : "some dependencies were deleted from your gemfile"
-      msg = String.new
-      msg << "#{reason.capitalize.strip}, but the lockfile can't be updated because frozen mode is set"
-      msg << "\n\nYou have added to the Gemfile:\n" << added.join("\n") if added.any?
-      msg << "\n\nYou have deleted from the Gemfile:\n" << deleted.join("\n") if deleted.any?
-      msg << "\n\nYou have changed in the Gemfile:\n" << changed.join("\n") if changed.any?
-      msg << "\n\nRun `bundle install` elsewhere and add the updated #{SharedHelpers.relative_gemfile_path} to version control.\n" unless unlocking?
+      msg = lockfile_changes_summary("frozen mode is set")
+      return unless msg
 
       unless explicit_flag
         suggested_command = unless Bundler.settings.locations("frozen").keys.include?(:env)
@@ -454,7 +423,7 @@ module Bundler
                "freeze by running `#{suggested_command}`." if suggested_command
       end
 
-      raise ProductionError, msg if added.any? || deleted.any? || changed.any? || resolve_needed?
+      raise ProductionError, msg
     end
 
     def validate_runtime!
@@ -539,6 +508,46 @@ module Bundler
 
     private
 
+    def lockfile_changes_summary(update_refused_reason)
+      added =   []
+      deleted = []
+      changed = []
+
+      added.concat @new_platforms.map {|p| "* platform: #{p}" }
+      deleted.concat @removed_platforms.map {|p| "* platform: #{p}" }
+
+      added.concat new_deps.map {|d| "* #{pretty_dep(d)}" } if new_deps.any?
+      deleted.concat deleted_deps.map {|d| "* #{pretty_dep(d)}" } if deleted_deps.any?
+
+      both_sources = Hash.new {|h, k| h[k] = [] }
+      current_dependencies.each {|d| both_sources[d.name][0] = d }
+      current_locked_dependencies.each {|d| both_sources[d.name][1] = d }
+
+      both_sources.each do |name, (dep, lock_dep)|
+        next if dep.nil? || lock_dep.nil?
+
+        gemfile_source = dep.source || default_source
+        lock_source = lock_dep.source || default_source
+        next if lock_source.include?(gemfile_source)
+
+        gemfile_source_name = dep.source ? gemfile_source.to_gemfile : "no specified source"
+        lockfile_source_name = lock_dep.source ? lock_source.to_gemfile : "no specified source"
+        changed << "* #{name} from `#{lockfile_source_name}` to `#{gemfile_source_name}`"
+      end
+
+      return unless added.any? || deleted.any? || changed.any? || resolve_needed?
+
+      reason = resolve_needed? ? change_reason : "some dependencies were deleted from your gemfile"
+
+      msg = String.new
+      msg << "#{reason.capitalize.strip}, but the lockfile can't be updated because #{update_refused_reason}"
+      msg << "\n\nYou have added to the Gemfile:\n" << added.join("\n") if added.any?
+      msg << "\n\nYou have deleted from the Gemfile:\n" << deleted.join("\n") if deleted.any?
+      msg << "\n\nYou have changed in the Gemfile:\n" << changed.join("\n") if changed.any?
+      msg << "\n\nRun `bundle install` elsewhere and add the updated #{SharedHelpers.relative_gemfile_path} to version control.\n" unless unlocking?
+      msg
+    end
+
     def install_needed?
       resolve_needed? || missing_specs?
     end
@@ -599,8 +608,12 @@ module Bundler
         return
       end
 
-      SharedHelpers.filesystem_access(file) do |p|
-        File.open(p, "wb") {|f| f.puts(contents) }
+      begin
+        SharedHelpers.filesystem_access(file) do |p|
+          File.open(p, "wb") {|f| f.puts(contents) }
+        end
+      rescue ReadOnlyFileSystemError
+        raise ProductionError, lockfile_changes_summary("file system is read-only")
       end
     end
 
