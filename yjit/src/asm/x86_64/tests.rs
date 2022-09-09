@@ -201,7 +201,7 @@ fn test_mov_unsigned() {
     // MOV EAX, imm32
     check_bytes("b801000000", |cb| mov(cb, EAX, uimm_opnd(1)));
     check_bytes("b8ffffffff", |cb| mov(cb, EAX, uimm_opnd(u32::MAX.into())));
-    check_bytes("41b800000000", |cb| mov(cb, R8, uimm_opnd(0)));
+    check_bytes("4531c0", |cb| mov(cb, R8, uimm_opnd(0)));
     check_bytes("41b8ffffffff", |cb| mov(cb, R8, uimm_opnd(0xFF_FF_FF_FF)));
 
     // MOV RAX, imm64, will move down into EAX since it fits into 32 bits
