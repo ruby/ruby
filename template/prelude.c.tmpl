@@ -48,7 +48,7 @@ class Prelude
       line.rstrip!
       lineno += 1
       @preludes[filename] ||= result
-      comment = ($1 || '' if line.sub!(/(?:^|\s+)\#(?:$|[#\s](.*))/, ''))
+      comment = ($1 || '' if line.sub!(/(?:^|\s+)\#(?!\{)(?:$|(?:[#\s]|(?=\W))(.*))/, ''))
       if !line.empty? or start_line
         line << "\n"
         start_line ||= lineno
