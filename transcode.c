@@ -2590,7 +2590,7 @@ rb_econv_prepare_options(VALUE opthash, VALUE *opts, int ecflags)
     v = rb_hash_aref(opthash, sym_replace);
     if (!NIL_P(v)) {
         StringValue(v);
-        if (rb_enc_str_coderange(v) == ENC_CODERANGE_BROKEN) {
+        if (is_broken_string(v)) {
             VALUE dumped = rb_str_dump(v);
             rb_raise(rb_eArgError, "replacement string is broken: %s as %s",
                      StringValueCStr(dumped),

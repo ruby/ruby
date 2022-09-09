@@ -4500,9 +4500,9 @@ rb_check_realpath_internal(VALUE basedir, VALUE path, rb_encoding *origenc, enum
         rb_enc_associate(resolved, origenc);
     }
 
-    if (rb_enc_str_coderange(resolved) == ENC_CODERANGE_BROKEN) {
+    if (is_broken_string(resolved)) {
         rb_enc_associate(resolved, rb_filesystem_encoding());
-        if (rb_enc_str_coderange(resolved) == ENC_CODERANGE_BROKEN) {
+        if (is_broken_string(resolved)) {
             rb_enc_associate(resolved, rb_ascii8bit_encoding());
         }
     }
