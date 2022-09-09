@@ -2450,7 +2450,7 @@ ossl_ssl_export_keying_material(int argc, VALUE *argv, VALUE self)
     unsigned char *p;
     size_t len;
     int use_ctx = 0;
-    unsigned char *ctx;
+    unsigned char *ctx = NULL;
     size_t ctx_len = 0;
     int ret;
 
