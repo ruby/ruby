@@ -3712,6 +3712,25 @@ AS_IF([test x"$MJIT_SUPPORT" = "xyes"],
 
 AC_SUBST(MJIT_SUPPORT)
 
+AC_ARG_ENABLE(compile-commands,
+        AS_HELP_STRING([--enable-compile-commands],
+        [enable compile commands for language servers (only works with clang)[default=no]]),
+        [COMPILE_COMMANDS=$enableval], [COMPILE_COMMANDS=no])
+
+AS_IF([test x"$COMPILE_COMMANDS" = "xyes"], [
+    rm -f conftest.o.json
+    COMPILE_COMMANDS=no
+    RUBY_TRY_CFLAGS([-MJ conftest.o.json], [
+        AS_IF([test -f conftest.o.json], [
+            rm -f conftest.o.json
+            COMPILE_COMMANDS=yes
+        ])
+    ])
+    AS_IF([test x"$COMPILE_COMMANDS" = "xno"],
+        [AC_MSG_ERROR([compile commands does not work with this compiler])])
+    RUBY_APPEND_OPTIONS(XCFLAGS, '-MJ $@.json')
+])
+
 AC_ARG_ENABLE(yjit,
         AS_HELP_STRING([--enable-yjit],
         [enable experimental in-process JIT compiler that requires Rust build tools [default=no]]),

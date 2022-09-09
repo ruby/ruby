@@ -49,6 +49,8 @@ y.tab.c
 *.gcov
 *.vscode
 lcov*.info
+*.o.json
+compile_commands.json
 
 # /
 /*-fake.rb

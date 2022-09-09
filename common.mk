@@ -630,7 +630,7 @@ clean-local:: clean-runnable
 	$(Q)$(RM) $(PROGRAM) $(WPROGRAM) miniruby$(EXEEXT) dmyext.$(OBJEXT) dmyenc.$(OBJEXT) $(ARCHFILE) .*.time
 	$(Q)$(RM) y.tab.c y.output encdb.h transdb.h config.log rbconfig.rb $(ruby_pc) $(COROUTINE_H:/Context.h=/.time)
 	$(Q)$(RM) probes.h probes.$(OBJEXT) probes.stamp ruby-glommed.$(OBJEXT) ruby.imp ChangeLog $(STATIC_RUBY)$(EXEEXT)
-	$(Q)$(RM) GNUmakefile.old Makefile.old $(arch)-fake.rb bisect.sh $(ENC_TRANS_D) builtin_binary.inc
+	$(Q)$(RM) GNUmakefile.old Makefile.old $(arch)-fake.rb bisect.sh $(ENC_TRANS_D) builtin_binary.inc $(ALLOBJS:.o=.o.json) compile_commands.json
 	-$(Q) $(RMDIR) enc/jis enc/trans enc $(COROUTINE_H:/Context.h=) coroutine 2> $(NULL) || $(NULLCMD)
 
 bin/clean-runnable:: PHONY
@@ -1657,6 +1657,12 @@ $(UNICODE_HDR_DIR)/casefold.h:
 	$(Q) $(BASERUBY) $(srcdir)/enc/unicode/case-folding.rb \
 		--output-file=$@ \
 		--mapping-data-directory=$(UNICODE_SRC_DATA_DIR)
+
+$(COROUTINE_OBJ).json:
+	$(Q) echo > $@
+
+compile_commands.json: $(ALLOBJS) $(COROUTINE_OBJ).json
+	$(Q) sed -f $(tooldir)/json_list.sed $(ALLOBJS:.o=.o.json) > $@
 
 download-extlibs:
 	$(Q) $(BASERUBY) -C $(srcdir) -w tool/extlibs.rb --download ext
