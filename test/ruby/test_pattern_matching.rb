@@ -1570,6 +1570,18 @@ END
     assert_equal false, (1 in 2)
   end
 
+  def test_bug18990
+    {a: 0} => a:
+    assert_equal 0, a
+    {a: 0} => a:
+    assert_equal 0, a
+
+    {a: 0} in a:
+    assert_equal 0, a
+    {a: 0} in a:
+    assert_equal 0, a
+  end
+
   ################################################################
 
   def test_single_pattern_error_value_pattern
