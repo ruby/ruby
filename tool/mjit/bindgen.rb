@@ -39,6 +39,212 @@ class Node < Struct.new(
 )
 end
 
+class CParser
+  def initialize(tokens)
+    @tokens = lex(tokens)
+    @pos = 0
+  end
+
+  def parse
+    expression
+  end
+
+  private
+
+  def lex(toks)
+    toks.map do |tok|
+      case tok
+      when /\A\d+\z/         then [:NUMBER, tok]
+      when /\A0x[0-9a-f]*\z/ then [:NUMBER, tok]
+      when '('               then [:LEFT_PAREN, tok]
+      when ')'               then [:RIGHT_PAREN, tok]
+      when 'unsigned', 'int' then [:TYPE, tok]
+      when '<<'              then [:LSHIFT, tok]
+      when '>>'              then [:RSHIFT, tok]
+      when '-'               then [:MINUS, tok]
+      when '+'               then [:PLUS, tok]
+      when /\A\w+\z/         then [:IDENT, tok]
+      else
+        raise "Unknown token: #{tok}"
+      end
+    end
+  end
+
+  def expression
+    equality
+  end
+
+  def equality
+    exp = comparison
+
+    while match(:BANG_EQUAL, :EQUAL_EQUAL)
+      operator = previous
+      right = comparison
+      exp = [:BINARY, operator, exp, right]
+    end
+
+    exp
+  end
+
+  def comparison
+    expr = term
+
+    while match(:GREATER, :GREATER_EQUAL, :LESS, :LESS_EQUAL)
+      operator = previous
+      right = comparison
+      expr = [:BINARY, operator, expr, right]
+    end
+
+    expr
+  end
+
+  def term
+    expr = bitwise
+
+    while match(:MINUS, :PLUS)
+      operator = previous
+      right = bitwise
+      expr = [:BINARY, operator, expr, right]
+    end
+
+    expr
+  end
+
+  def bitwise
+    expr = unary
+
+    while match(:RSHIFT, :LSHIFT)
+      operator = previous
+      right = unary
+      expr = [:BINARY, operator, expr, right]
+    end
+
+    expr
+  end
+
+  def unary
+    if match(:BANG, :MINUS)
+      [:UNARY, previous, primary]
+    else
+      primary
+    end
+  end
+
+  def primary
+    if match(:LEFT_PAREN)
+      grouping
+    else
+      if match(:IDENT)
+        [:VAR, previous]
+      elsif match(:NUMBER)
+        previous
+      else
+        raise peek.inspect
+      end
+    end
+  end
+
+  def grouping
+    if peek.first == :TYPE
+      cast = types
+      consume(:RIGHT_PAREN)
+      exp = [:TYPECAST, cast, unary]
+    else
+      exp = [:GROUP, expression]
+      consume(:RIGHT_PAREN)
+    end
+    exp
+  end
+
+  def consume(tok)
+    unless peek.first == tok
+      raise "Expected #{tok} but was #{peek}"
+    end
+    advance
+  end
+
+  def types
+    list = []
+    loop do
+      thing = peek
+      break unless thing.first == :TYPE
+      list << thing
+      advance
+    end
+    list
+  end
+
+  def match(*toks)
+    advance if peek && toks.grep(peek.first).any?
+  end
+
+  def advance
+    @pos += 1
+    raise("nope") if @pos > @tokens.length
+    true
+  end
+
+  def peek
+    @tokens[@pos]
+  end
+
+  def previous
+    @tokens[@pos - 1]
+  end
+end
+
+class ToRuby
+  def initialize(enums)
+    @enums = enums
+  end
+
+  def visit(node)
+    send node.first, node
+  end
+
+  private
+
+  def GROUP(node)
+    "(" + visit(node[1]) + ")"
+  end
+
+  def BINARY(node)
+    visit(node[2]) + " " + visit(node[1]) + " " + visit(node[3])
+  end
+
+  def TYPECAST(node)
+    visit node[2]
+  end
+
+  def NUMBER(node)
+    node[1].to_s
+  end
+
+  def UNARY(node)
+    visit(node[1]) + visit(node[2])
+  end
+
+  def lit(node)
+    node.last
+  end
+
+  alias MINUS lit
+  alias RSHIFT lit
+  alias LSHIFT lit
+
+  def IDENT(node)
+    if @enums.include?(node.last)
+      "self.#{node.last}"
+    else
+      "unexpected macro token: #{node.last}"
+    end
+  end
+
+  def VAR(node)
+    visit node[1]
+  end
+end
+
 # Parse a C header with ffi-clang and return Node objects.
 # To ease the maintenance, ffi-clang should be used only inside this class.
 class HeaderParser
@@ -197,16 +403,8 @@ class BindingGenerator
         if tokens.first != node.spelling
           raise "unexpected first token: '#{tokens.first}' != '#{node.spelling}'"
         end
-        tokens.drop(1).map do |token|
-          case token
-          when /\A(0x)?\d+\z/, '(', '-', '<<',  ')'
-            token
-          when *@enums.values.flatten
-            "self.#{token}"
-          else
-            raise "unexpected macro token: #{token}"
-          end
-        end.join(' ')
+        ast = CParser.new(tokens.drop(1)).parse
+        ToRuby.new(@enums.values.flatten).visit(ast)
       end
     end
   end
