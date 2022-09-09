@@ -193,6 +193,24 @@ module Bundler
     status_code(31)
   end
 
+  class ReadOnlyFileSystemError < PermissionError
+    def message
+      "There was an error while trying to #{action} `#{@path}`. " \
+      "File system is read-only."
+    end
+
+    status_code(42)
+  end
+
+  class OperationNotPermittedError < PermissionError
+    def message
+      "There was an error while trying to #{action} `#{@path}`. " \
+      "Underlying OS system call raised an EPERM error."
+    end
+
+    status_code(43)
+  end
+
   class GenericSystemCallError < BundlerError
     attr_reader :underlying_error
 
