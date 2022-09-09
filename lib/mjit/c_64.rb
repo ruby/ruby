@@ -3,15 +3,15 @@ require_relative 'c_type'
 module RubyVM::MJIT
   C = Object.new
 
-  def C.NOT_COMPILED_STACK_SIZE = - 1
+  def C.NOT_COMPILED_STACK_SIZE = -1
 
   def C.USE_LAZY_LOAD = false
 
   def C.USE_RVARGC = true
 
-  def C.VM_CALL_KW_SPLAT = ( 0x01 << self.VM_CALL_KW_SPLAT_bit )
+  def C.VM_CALL_KW_SPLAT = (0x01 << self.VM_CALL_KW_SPLAT_bit)
 
-  def C.VM_CALL_TAILCALL = ( 0x01 << self.VM_CALL_TAILCALL_bit )
+  def C.VM_CALL_TAILCALL = (0x01 << self.VM_CALL_TAILCALL_bit)
 
   def C.VM_METHOD_TYPE_CFUNC = 1
 
