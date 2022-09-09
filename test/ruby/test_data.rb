@@ -5,12 +5,12 @@ require 'test/unit'
 class TestData < Test::Unit::TestCase
   def test_empty
     assert_raise_with_message(ArgumentError, /expected 1\+/) {
-      Data.def()
+      Data.define()
     }
   end
 
   def test_def
-    data = Data.def(:a, :b)
+    data = Data.define(:a, :b)
     assert_equal(data.new(1, 2), data.new(1, 2))
 
     assert_raise_with_message(ArgumentError, /\bmissing argument a\b/) {

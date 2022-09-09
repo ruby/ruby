@@ -1,5 +1,5 @@
 class Data
-  def self.def(a, *attrs)
+  def self.define(a, *attrs)
     attrs.unshift(a)
     Class.new(self) do
       attr_reader(*attrs)
