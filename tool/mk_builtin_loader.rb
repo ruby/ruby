@@ -4,6 +4,9 @@ require 'ripper'
 require 'stringio'
 require_relative 'ruby_vm/helpers/c_escape'
 
+SUBLIBS = {}
+REQUIRED = {}
+
 def string_literal(lit, str = [])
   while lit
     case lit.first
@@ -174,6 +177,21 @@ def collect_builtin base, tree, name, bs, inlines, locals = nil
         end
 
         bs[func_name] = [argc, cfunc_name] if func_name
+      elsif /\Arequire(?:_relative)\z/ =~ mid and args.size == 1 and
+           (arg1 = args[0])[0] == :string_literal and
+           (arg1 = arg1[1])[0] == :string_content and
+           (arg1 = arg1[1])[0] == :@tstring_content and
+           sublib = arg1[1]
+        if File.exist?(f = File.join(@dir, sublib)+".rb")
+          puts "- #{@base}.rb requires #{sublib}"
+          if REQUIRED[sublib]
+            warn "!!! #{sublib} is required from #{REQUIRED[sublib]} already; ignored"
+          else
+            REQUIRED[sublib] = @base
+            (SUBLIBS[@base] ||= []) << sublib
+          end
+          ARGV.push(f)
+        end
       end
       break unless tree = args
     end
@@ -242,7 +260,9 @@ def generate_cexpr(ofile, lineno, line_file, body_lineno, text, locals, func_nam
 end
 
 def mk_builtin_header file
+  @dir = File.dirname(file)
   base = File.basename(file, '.rb')
+  @base = base
   ofile = "#{file}inc"
 
   # bs = { func_name => argc }
@@ -331,6 +351,14 @@ def mk_builtin_header file
       f.puts
     }
 
+    if SUBLIBS[base]
+      f.puts "// sub libraries"
+      SUBLIBS[base].each do |sub|
+        f.puts %[#include #{(sub+".rbinc").dump}]
+      end
+      f.puts
+    end
+
     f.puts "void Init_builtin_#{base}(void)"
     f.puts "{"
 
@@ -353,6 +381,14 @@ def mk_builtin_header file
       f.puts "  if (0) rb_builtin_function_check_arity#{argc}(#{cfunc_name});"
     }
     f.puts "COMPILER_WARNING_POP"
+
+    if SUBLIBS[base]
+      f.puts
+      f.puts "  // sub libraries"
+      SUBLIBS[base].each do |sub|
+        f.puts "  Init_builtin_#{sub}();"
+      end
+    end
 
     f.puts
     f.puts "  // load"
