@@ -151,7 +151,7 @@ class TestGemSecurity < Gem::TestCase
   end
 
   def test_class_re_sign
-    assert_equal "sha1WithRSAEncryption", EXPIRED_CERT.signature_algorithm
+    assert_equal "sha256WithRSAEncryption", EXPIRED_CERT.signature_algorithm
     re_signed = Gem::Security.re_sign EXPIRED_CERT, PRIVATE_KEY, 60
 
     assert_in_delta Time.now,      re_signed.not_before, 10
