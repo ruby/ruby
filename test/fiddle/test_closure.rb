@@ -6,6 +6,14 @@ end
 
 module Fiddle
   class TestClosure < Fiddle::TestCase
+    def teardown
+      super
+      # Ensure freeing all closures.
+      # See https://github.com/ruby/fiddle/issues/102#issuecomment-1241763091 .
+      GC.start
+      assert_equal(0, ObjectSpace.each_object(Fiddle::Closure) {})
+    end
+
     def test_argument_errors
       assert_raise(TypeError) do
         Closure.new(TYPE_INT, TYPE_INT)
@@ -103,6 +111,9 @@ module Fiddle
           func = Function.new(clos, [t], t)
           assert_equal(v, func.call(v))
           assert_equal(arg, v, n)
+        ensure
+          clos = nil
+          func = nil
         end
       end
     end

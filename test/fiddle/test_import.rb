@@ -22,7 +22,6 @@ module Fiddle
     extern "int fprintf(FILE*, char*)" rescue nil
     extern "int gettimeofday(timeval*, timezone*)" rescue nil
 
-    BoundQsortCallback = bind("void *bound_qsort_callback(void*, void*)"){|ptr1,ptr2| ptr1[0] <=> ptr2[0]}
     Timeval = struct [
       "long tv_sec",
       "long tv_usec",
@@ -59,11 +58,6 @@ module Fiddle
         ]
       }
     ]
-
-    CallCallback = bind("void call_callback(void*, void*)"){ | ptr1, ptr2|
-      f = Function.new(ptr1.to_i, [TYPE_VOIDP], TYPE_VOID)
-      f.call(ptr2)
-    }
   end
 
   class TestImport < TestCase

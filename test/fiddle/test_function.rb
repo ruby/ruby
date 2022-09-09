@@ -15,6 +15,13 @@ module Fiddle
       end
     end
 
+    def teardown
+      # Ensure freeing all closures.
+      # See https://github.com/ruby/fiddle/issues/102#issuecomment-1241763091 .
+      GC.start
+      assert_equal(0, ObjectSpace.each_object(Fiddle::Closure) {})
+    end
+
     def test_default_abi
       func = Function.new(@libm['sin'], [TYPE_DOUBLE], TYPE_DOUBLE)
       assert_equal Function::DEFAULT, func.abi

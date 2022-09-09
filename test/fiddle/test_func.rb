@@ -79,6 +79,12 @@ module Fiddle
         qsort.call(buff, buff.size, 1, cb)
       end
       assert_equal("1349", buff, bug4929)
+    ensure
+      # Ensure freeing all closures.
+      # See https://github.com/ruby/fiddle/issues/102#issuecomment-1241763091 .
+      cb = nil
+      GC.start
+      assert_equal(0, ObjectSpace.each_object(Fiddle::Closure) {})
     end
 
     def test_snprintf
