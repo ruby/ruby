@@ -1738,6 +1738,7 @@ rb_objspace_alloc(void)
 }
 
 static void free_stack_chunks(mark_stack_t *);
+static void mark_stack_free_cache(mark_stack_t *);
 static void heap_page_free(rb_objspace_t *objspace, struct heap_page *page);
 
 void
@@ -1777,7 +1778,10 @@ rb_objspace_free(rb_objspace_t *objspace)
     }
     st_free_table(objspace->id_to_obj_tbl);
     st_free_table(objspace->obj_to_id_tbl);
+
     free_stack_chunks(&objspace->mark_stack);
+    mark_stack_free_cache(&objspace->mark_stack);
+
     free(objspace);
 }
 
@@ -5997,9 +6001,8 @@ pop_mark_stack_chunk(mark_stack_t *stack)
 }
 
 static void
-free_stack_chunks(mark_stack_t *stack)
+mark_stack_chunk_list_free(stack_chunk_t *chunk)
 {
-    stack_chunk_t *chunk = stack->chunk;
     stack_chunk_t *next = NULL;
 
     while (chunk != NULL) {
@@ -6007,6 +6010,20 @@ free_stack_chunks(mark_stack_t *stack)
         free(chunk);
         chunk = next;
     }
+}
+
+static void
+free_stack_chunks(mark_stack_t *stack)
+{
+    mark_stack_chunk_list_free(stack->chunk);
+}
+
+static void
+mark_stack_free_cache(mark_stack_t *stack)
+{
+    mark_stack_chunk_list_free(stack->cache);
+    stack->cache_size = 0;
+    stack->unused_cache_size = 0;
 }
 
 static void
