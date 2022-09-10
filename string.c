@@ -356,39 +356,9 @@ rb_debug_rstring_null_ptr(const char *func)
 static VALUE sym_ascii, sym_turkic, sym_lithuanian, sym_fold;
 
 static rb_encoding *
-get_actual_encoding(const int encidx, VALUE str)
-{
-    const unsigned char *q;
-
-    switch (encidx) {
-      case ENCINDEX_UTF_16:
-        if (RSTRING_LEN(str) < 2) break;
-        q = (const unsigned char *)RSTRING_PTR(str);
-        if (q[0] == 0xFE && q[1] == 0xFF) {
-            return rb_enc_get_from_index(ENCINDEX_UTF_16BE);
-        }
-        if (q[0] == 0xFF && q[1] == 0xFE) {
-            return rb_enc_get_from_index(ENCINDEX_UTF_16LE);
-        }
-        return rb_ascii8bit_encoding();
-      case ENCINDEX_UTF_32:
-        if (RSTRING_LEN(str) < 4) break;
-        q = (const unsigned char *)RSTRING_PTR(str);
-        if (q[0] == 0 && q[1] == 0 && q[2] == 0xFE && q[3] == 0xFF) {
-            return rb_enc_get_from_index(ENCINDEX_UTF_32BE);
-        }
-        if (q[3] == 0 && q[2] == 0 && q[1] == 0xFE && q[0] == 0xFF) {
-            return rb_enc_get_from_index(ENCINDEX_UTF_32LE);
-        }
-        return rb_ascii8bit_encoding();
-    }
-    return rb_enc_from_index(encidx);
-}
-
-static rb_encoding *
 get_encoding(VALUE str)
 {
-    return get_actual_encoding(ENCODING_GET(str), str);
+    return rb_enc_from_index(ENCODING_GET(str));
 }
 
 static void
@@ -832,21 +802,15 @@ rb_enc_cr_str_exact_copy(VALUE dest, VALUE src)
 }
 
 static int
-enc_coderange_scan(VALUE str, rb_encoding *enc, int encidx)
+enc_coderange_scan(VALUE str, rb_encoding *enc)
 {
-    if (rb_enc_mbminlen(enc) > 1 && rb_enc_dummy_p(enc) &&
-        rb_enc_mbminlen(enc = get_actual_encoding(encidx, str)) == 1) {
-        return ENC_CODERANGE_BROKEN;
-    }
-    else {
-        return coderange_scan(RSTRING_PTR(str), RSTRING_LEN(str), enc);
-    }
+    return coderange_scan(RSTRING_PTR(str), RSTRING_LEN(str), enc);
 }
 
 int
 rb_enc_str_coderange_scan(VALUE str, rb_encoding *enc)
 {
-    return enc_coderange_scan(str, enc, rb_enc_to_index(enc));
+    return enc_coderange_scan(str, enc);
 }
 
 int
@@ -855,9 +819,7 @@ rb_enc_str_coderange(VALUE str)
     int cr = ENC_CODERANGE(str);
 
     if (cr == ENC_CODERANGE_UNKNOWN) {
-        int encidx = ENCODING_GET(str);
-        rb_encoding *enc = rb_enc_from_index(encidx);
-        cr = enc_coderange_scan(str, enc, encidx);
+        cr = enc_coderange_scan(str, get_encoding(str));
         ENC_CODERANGE_SET(str, cr);
     }
     return cr;
@@ -1123,7 +1085,7 @@ is_enc_ascii_string(VALUE str, rb_encoding *enc)
     int encidx = rb_enc_to_index(enc);
     if (rb_enc_get_index(str) == encidx)
         return is_ascii_string(str);
-    return enc_coderange_scan(str, enc, encidx) == ENC_CODERANGE_7BIT;
+    return enc_coderange_scan(str, enc) == ENC_CODERANGE_7BIT;
 }
 
 VALUE
@@ -6730,7 +6692,7 @@ VALUE
 rb_str_inspect(VALUE str)
 {
     int encidx = ENCODING_GET(str);
-    rb_encoding *enc = rb_enc_from_index(encidx), *actenc;
+    rb_encoding *enc = rb_enc_from_index(encidx);
     const char *p, *pend, *prev;
     char buf[CHAR_ESC_LEN + 1];
     VALUE result = rb_str_buf_new(0);
@@ -6745,11 +6707,6 @@ rb_str_inspect(VALUE str)
 
     p = RSTRING_PTR(str); pend = RSTRING_END(str);
     prev = p;
-    actenc = get_actual_encoding(encidx, str);
-    if (actenc != enc) {
-        enc = actenc;
-        if (unicode_p) unicode_p = rb_enc_unicode_p(enc);
-    }
     while (p < pend) {
         unsigned int c, cc;
         int n;
@@ -9374,7 +9331,7 @@ rb_str_each_grapheme_cluster_size(VALUE str, VALUE args, VALUE eobj)
 {
     size_t grapheme_cluster_count = 0;
     regex_t *reg_grapheme_cluster = NULL;
-    rb_encoding *enc = rb_enc_from_index(ENCODING_GET(str));
+    rb_encoding *enc = get_encoding(str);
     const char *ptr, *end;
 
     if (!rb_enc_unicode_p(enc)) {
@@ -9402,7 +9359,7 @@ rb_str_enumerate_grapheme_clusters(VALUE str, VALUE ary)
 {
     VALUE orig = str;
     regex_t *reg_grapheme_cluster = NULL;
-    rb_encoding *enc = rb_enc_from_index(ENCODING_GET(str));
+    rb_encoding *enc = get_encoding(str);
     const char *ptr0, *ptr, *end;
 
     if (!rb_enc_unicode_p(enc)) {

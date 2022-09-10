@@ -2232,12 +2232,12 @@ class TestTranscode < Test::Unit::TestCase
     assert_equal("U+3042", "\u{3042}".encode("US-ASCII", fallback: fallback))
   end
 
-  bug8940 = '[ruby-core:57318] [Bug #8940]'
-  %w[UTF-32 UTF-16].each do |enc|
-    define_method("test_pseudo_encoding_inspect(#{enc})") do
-      assert_normal_exit("'aaa'.encode('#{enc}').inspect", bug8940)
-      assert_equal(4, 'aaa'.encode(enc).length, "should count in #{enc} with BOM")
-    end
+  def test_pseudo_encoding_inspect
+    s = 'aaa'.encode "UTF-16"
+    assert_equal '"\xFE\xFF\x00\x61\x00\x61\x00\x61"', s.inspect
+
+    s = 'aaa'.encode "UTF-32"
+    assert_equal '"\x00\x00\xFE\xFF\x00\x00\x00\x61\x00\x00\x00\x61\x00\x00\x00\x61"', s.inspect
   end
 
   def test_encode_with_invalid_chars
