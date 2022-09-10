@@ -3053,7 +3053,8 @@ static int
 io_setstrbuf(VALUE *str, long len)
 {
 #ifdef _WIN32
-    len = (len + 1) & ~1L;	/* round up for wide char */
+    if (len > 0)
+        len = (len + 1) & ~1L;	/* round up for wide char */
 #endif
     if (NIL_P(*str)) {
         *str = rb_str_new(0, len);
