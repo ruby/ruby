@@ -4222,6 +4222,7 @@ rb_mjit_fork(void)
 
     after_fork_ruby();
     disable_child_handler_fork_parent(&old);
+    if (pid == 0) rb_thread_atfork();
 
     return pid;
 }
