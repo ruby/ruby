@@ -102,6 +102,11 @@ Note that each entry is kept to a minimum, see links for details.
 
 Note: We're only listing outstanding class updates.
 
+* Data
+    * New core class to represent simple immutable value object. The class is
+      similar to `Struct` and partially shares an implementation, but has more
+      lean and strict API. [[Feature #16122]]
+
 * Encoding
     * Encoding#replicate has been deprecated and will be removed in 3.3. [[Feature #18949]]
     * The dummy `Encoding::UTF_16` and `Encoding::UTF_32` encodings no longer
@@ -323,3 +328,4 @@ The following deprecated APIs are removed.
 [Feature #18949]: https://bugs.ruby-lang.org/issues/18949
 [Feature #19008]: https://bugs.ruby-lang.org/issues/19008
 [Feature #19026]: https://bugs.ruby-lang.org/issues/19026
+[Feature #16122]: https://bugs.ruby-lang.org/issues/16122

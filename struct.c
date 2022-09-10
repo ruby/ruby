@@ -28,7 +28,10 @@ enum {
     AREF_HASH_THRESHOLD = 10
 };
 
-VALUE rb_cStruct;
+/* Note: Data is a stricter version of the Struct: no attr writers & no
+   hash-alike/array-alike behavior. It shares most of the implementation
+   on the C level, but is unrelated on the Ruby level. */
+VALUE rb_cStruct, rb_cData;
 static ID id_members, id_back_members, id_keyword_init;
 
 static VALUE struct_alloc(VALUE);
@@ -44,7 +47,7 @@ struct_ivar_get(VALUE c, ID id)
 
     for (;;) {
         c = rb_class_superclass(c);
-        if (c == 0 || c == rb_cStruct)
+        if (c == 0 || c == rb_cStruct || c == rb_cData)
             return Qnil;
         RUBY_ASSERT(RB_TYPE_P(c, T_CLASS));
         ivar = rb_attr_get(c, id);
@@ -297,6 +300,29 @@ rb_struct_s_inspect(VALUE klass)
     return inspect;
 }
 
+static VALUE
+rb_data_s_new(int argc, const VALUE *argv, VALUE klass)
+{
+    if (rb_keyword_given_p()) {
+        if (argc > 1 || !RB_TYPE_P(argv[0], T_HASH)) {
+            rb_error_arity(argc, 0, 0);
+        }
+        return rb_class_new_instance_pass_kw(argc, argv, klass);
+    }
+    else {
+        VALUE members = struct_ivar_get(klass, id_members);
+        int num_members = RARRAY_LENINT(members);
+
+         rb_check_arity(argc, 0, num_members);
+        VALUE arg_hash = rb_hash_new_with_size(num_members);
+        for (long i=0; i<argc; i++) {
+            VALUE k = rb_ary_entry(members, i), v = argv[i];
+            rb_hash_aset(arg_hash, k, v);
+        }
+        return rb_class_new_instance_kw(1, &arg_hash, klass, RB_PASS_KEYWORDS);
+    }
+}
+
 #if 0 /* for RDoc */
 
 /*
@@ -347,6 +373,30 @@ setup_struct(VALUE nstr, VALUE members)
     }
 
     return nstr;
+}
+
+static VALUE
+setup_data(VALUE subclass, VALUE members)
+{
+    long i, len;
+
+    members = struct_set_members(subclass, members);
+
+    rb_define_alloc_func(subclass, struct_alloc);
+    rb_define_singleton_method(subclass, "new", rb_data_s_new, -1);
+    rb_define_singleton_method(subclass, "[]", rb_data_s_new, -1);
+    rb_define_singleton_method(subclass, "members", rb_struct_s_members_m, 0);
+    rb_define_singleton_method(subclass, "inspect", rb_struct_s_inspect, 0); // FIXME: just a separate method?..
+
+    len = RARRAY_LEN(members);
+    for (i=0; i< len; i++) {
+        VALUE sym = RARRAY_AREF(members, i);
+        VALUE off = LONG2NUM(i);
+
+        define_aref_method(subclass, sym, off);
+    }
+
+    return subclass;
 }
 
 VALUE
@@ -912,10 +962,11 @@ rb_struct_each_pair(VALUE s)
 }
 
 static VALUE
-inspect_struct(VALUE s, VALUE dummy, int recur)
+inspect_struct(VALUE s, VALUE prefix, int recur)
 {
     VALUE cname = rb_class_path(rb_obj_class(s));
-    VALUE members, str = rb_str_new2("#<struct ");
+    VALUE members;
+    VALUE str = prefix;
     long i, len;
     char first = RSTRING_PTR(cname)[0];
 
@@ -972,7 +1023,7 @@ inspect_struct(VALUE s, VALUE dummy, int recur)
 static VALUE
 rb_struct_inspect(VALUE s)
 {
-    return rb_exec_recursive(inspect_struct, s, 0);
+    return rb_exec_recursive(inspect_struct, s, rb_str_new2("#<struct "));
 }
 
 /*
@@ -1520,6 +1571,448 @@ rb_struct_dig(int argc, VALUE *argv, VALUE self)
 }
 
 /*
+ *  Document-class: Data
+ *
+ *  \Class \Data provides a convenient way to define simple classes
+ *  for value-alike objects.
+ *
+ *  The simplest example of usage:
+ *
+ *     Measure = Data.define(:amount, :unit)
+ *
+ *     # Positional arguments constructor is provided
+ *     distance = Measure.new(100, 'km')
+ *     #=> #<data Measure amount=100, unit="km">
+ *
+ *     # Keyword arguments constructor is provided
+ *     weight = Measure.new(amount: 50, unit: 'kg')
+ *     #=> #<data Measure amount=50, unit="kg">
+ *
+ *     # Alternative form to construct an object:
+ *     speed = Measure[10, 'mPh']
+ *     #=> #<data Measure amount=10, unit="mPh">
+ *
+ *     # Works with keyword arguments, too:
+ *     area = Measure[amount: 1.5, unit: 'm^2']
+ *     #=> #<data Measure amount=1.5, unit="m^2">
+ *
+ *     # Argument accessors are provided:
+ *     distance.amount #=> 100
+ *     distance.unit #=> "km"
+ *
+ *  Constructed object also has a reasonable definitions of #==
+ *  operator, #to_h hash conversion, and #deconstruct/#deconstruct_keys
+ *  to be used in pattern matching.
+ *
+ *  ::define method accepts an optional block and evaluates it in
+ *  the context of the newly defined class. That allows to define
+ *  additional methods:
+ *
+ *     Measure = Data.define(:amount, :unit) do
+ *       def <=>(other)
+ *         return unless other.is_a?(self.class) && other.unit == unit
+ *         amount <=> other.amount
+ *       end
+ *
+ *       include Comparable
+ *     end
+ *
+ *     Measure[3, 'm'] < Measure[5, 'm'] #=> true
+ *     Measure[3, 'm'] < Measure[5, 'kg']
+ *     # comparison of Measure with Measure failed (ArgumentError)
+ *
+ *  Data provides no member writers, or enumerators: it is meant
+ *  to be a storage for immutable atomic values. But note that
+ *  if some of data members is of a mutable class, Data does no additional
+ *  immutability enforcement:
+ *
+ *     Event = Data.define(:time, :weekdays)
+ *     event = Event.new('18:00', %w[Tue Wed Fri])
+ *     #=> #<data Event time="18:00", weekdays=["Tue", "Wed", "Fri"]>
+ *
+ *     # There is no #time= or #weekdays= accessors, but changes are
+ *     # still possible:
+ *     event.weekdays << 'Sat'
+ *     event
+ *     #=> #<data Event time="18:00", weekdays=["Tue", "Wed", "Fri", "Sat"]>
+ *
+ *  See also Struct, which is a similar concept, but has more
+ *  container-alike API, allowing to change contents of the object
+ *  and enumerate it.
+ */
+
+/*
+ * call-seq:
+ *   define(name, *symbols) -> class
+ *   define(*symbols) -> class
+ *
+ *  Defines a new \Data class. If the first argument is a string, the class
+ *  is stored in <tt>Data::<name></tt> constant.
+ *
+ *     measure = Data.define(:amount, :unit)
+ *     #=> #<Class:0x00007f70c6868498>
+ *     measure.new(1, 'km')
+ *     #=> #<data amount=1, unit="km">
+ *
+ *     # It you store the new class in the constant, it will
+ *     # affect #inspect and will be more natural to use:
+ *     Measure = Data.define(:amount, :unit)
+ *     #=> Measure
+ *     Measure.new(1, 'km')
+ *     #=> #<data Measure amount=1, unit="km">
+ *
+ *
+ *  Note that member-less \Data is acceptable and might be a useful technique
+ *  for defining several homogenous data classes, like
+ *
+ *     class HTTPFetcher
+ *       Response = Data.define(:body)
+ *       NotFound = Data.define
+ *       # ... implementation
+ *     end
+ *
+ *  Now, different kinds of responses from +HTTPFetcher+ would have consistent
+ *  representation:
+ *
+ *      #<data HTTPFetcher::Response body="<html...">
+ *      #<data HTTPFetcher::NotFound>
+ *
+ *  And are convenient to use in pattern matching:
+ *
+ *     case fetcher.get(url)
+ *     in HTTPFetcher::Response(body)
+ *       # process body variable
+ *     in HTTPFetcher::NotFound
+ *       # handle not found case
+ *     end
+ */
+
+static VALUE
+rb_data_s_def(int argc, VALUE *argv, VALUE klass)
+{
+    VALUE rest;
+    long i;
+    VALUE data_class;
+    st_table *tbl;
+
+    rest = rb_ident_hash_new();
+    RBASIC_CLEAR_CLASS(rest);
+    OBJ_WB_UNPROTECT(rest);
+    tbl = RHASH_TBL_RAW(rest);
+    for (i=0; i<argc; i++) {
+        VALUE mem = rb_to_symbol(argv[i]);
+        if (rb_is_attrset_sym(mem)) {
+            rb_raise(rb_eArgError, "invalid data member: %"PRIsVALUE, mem);
+        }
+        if (st_insert(tbl, mem, Qtrue)) {
+            rb_raise(rb_eArgError, "duplicate member: %"PRIsVALUE, mem);
+        }
+    }
+    rest = rb_hash_keys(rest);
+    st_clear(tbl);
+    RBASIC_CLEAR_CLASS(rest);
+    OBJ_FREEZE_RAW(rest);
+    data_class = anonymous_struct(klass);
+    setup_data(data_class, rest);
+    if (rb_block_given_p()) {
+        rb_mod_module_eval(0, 0, data_class);
+    }
+
+    return data_class;
+}
+
+/*
+ *  call-seq:
+ *    DataClass::members -> array_of_symbols
+ *
+ *  Returns an array of member names of the data class:
+ *
+ *     Measure = Data.define(:amount, :unit)
+ *     Measure.members # => [:amount, :unit]
+ *
+ */
+
+#define rb_data_s_members_m rb_struct_s_members_m
+
+
+/*
+ * call-seq:
+ *   new(*args) -> instance
+ *   new(**kwargs) -> instance
+ *   ::[](*args) -> instance
+ *   ::[](**kwargs) -> instance
+ *
+ *  Constructors for classes defined with ::define accept both positional and
+ *  keyword arguments.
+ *
+ *     Measure = Data.define(:amount, :unit)
+ *
+ *     Measure.new(1, 'km')
+ *     #=> #<data Measure amount=1, unit="km">
+ *     Measure.new(amount: 1, unit: 'km')
+ *     #=> #<data Measure amount=1, unit="km">
+ *
+ *     # Alternative shorter intialization with []
+ *     Measure[1, 'km']
+ *     #=> #<data Measure amount=1, unit="km">
+ *     Measure[amount: 1, unit: 'km']
+ *     #=> #<data Measure amount=1, unit="km">
+ *
+ *  All arguments are mandatory (unlike Struct), and converted to keyword arguments:
+ *
+ *     Measure.new(amount: 1)
+ *     # in `initialize': missing keyword: :unit (ArgumentError)
+ *
+ *     Measure.new(1)
+ *     # in `initialize': missing keyword: :unit (ArgumentError)
+ *
+ *  Note that <tt>Measure#initialize</tt> always receives keyword arguments, and that
+ *  mandatory arguments are checked in +initialize+, not in +new+. This can be
+ *  important for redefining initialize in order to convert arguments or provide
+ *  defaults:
+ *
+ *     Measure = Data.define(:amount, :unit) do
+ *       NONE = Data.define
+ *
+ *       def initialize(amount:, unit: NONE.new)
+ *         super(amount: Float(amount), unit:)
+ *       end
+ *     end
+ *
+ *     Measure.new('10', 'km') # => #<data Measure amount=10.0, unit="km">
+ *     Measure.new(10_000)     # => #<data Measure amount=10000.0, unit=#<data NONE>>
+ *
+ */
+
+static VALUE
+rb_data_initialize_m(int argc, const VALUE *argv, VALUE self)
+{
+    VALUE klass = rb_obj_class(self);
+    rb_struct_modify(self);
+    VALUE members = struct_ivar_get(klass, id_members);
+    size_t num_members = RARRAY_LEN(members);
+
+    if (argc > 1 || !RB_TYPE_P(argv[0], T_HASH)) {
+        rb_raise(rb_eArgError, "wrong number of arguments (given %d, expected 0)", argc);
+    }
+
+    if (RHASH_SIZE(argv[0]) < num_members) {
+        VALUE missing = rb_ary_diff(members, rb_hash_keys(argv[0]));
+        rb_exc_raise(rb_keyword_error_new("missing", missing));
+    }
+
+    struct struct_hash_set_arg arg;
+    rb_mem_clear((VALUE *)RSTRUCT_CONST_PTR(self), num_members);
+    arg.self = self;
+    arg.unknown_keywords = Qnil;
+    rb_hash_foreach(argv[0], struct_hash_set_i, (VALUE)&arg);
+    if (arg.unknown_keywords != Qnil) {
+        rb_exc_raise(rb_keyword_error_new("unknown", arg.unknown_keywords));
+    }
+    return Qnil;
+}
+
+/*
+ *  call-seq:
+ *    inspect -> string
+ *    to_s -> string
+ *
+ *  Returns a string representation of +self+:
+ *
+ *    Measure = Data.define(:amount, :unit)
+ *
+ *    distance = Measure[10, 'km']
+ *
+ *    p distance  # uses #inspect underneath
+ *    #<data Measure amount=10, unit="km">
+ *
+ *    puts distance  # uses #to_s underneath, same representation
+ *    #<data Measure amount=10, unit="km">
+ *
+ */
+
+static VALUE
+rb_data_inspect(VALUE s)
+{
+    return rb_exec_recursive(inspect_struct, s, rb_str_new2("#<data "));
+}
+
+/*
+ *  call-seq:
+ *    self == other -> true or false
+ *
+ *  Returns  +true+ if +other+ is the same class as +self+, and all members are
+ *  equal.
+ *
+ *  Examples:
+ *
+ *    Measure = Data.new(:amount, :unit)
+ *
+ *    Measure[1, 'km'] == Measure[1, 'km'] #=> true
+ *    Measure[1, 'km'] == Measure[2, 'km'] #=> false
+ *    Measure[1, 'km'] == Measure[1, 'm']  #=> false
+ *
+ *    Measurement = Data.new(:amount, :unit)
+ *    # Even though Measurement and Measure have the same "shape"
+ *    # their instances are never equal
+ *    Measure[1, 'km'] == Measurement[1, 'km'] #=> false
+ */
+
+#define rb_data_equal rb_struct_equal
+
+/*
+ *  call-seq:
+ *    self.eql?(other) -> true or false
+ *
+ *  Equality check that is used when two items of data are keys of a Hash.
+ *
+ *  The subtle difference with #== is that members are also compared with their
+ *  #eql? method, which might be important in some cases:
+ *
+ *    Measure = Data.new(:amount, :unit)
+ *
+ *    Measure[1, 'km'] == Measure[1.0, 'km'] #=> true, they are equal as values
+ *    # ...but...
+ *    Measure[1, 'km'].eql? Measure[1.0, 'km'] #=> false, they represent different hash keys
+ *
+ *  See also Object#eql? for further explanations of the method usage.
+ */
+
+#define rb_data_eql rb_struct_eql
+
+/*
+ *  call-seq:
+ *    hash -> integer
+ *
+ *  Redefines Object#hash (used to distinguish objects as Hash keys) so that
+ *  data objects of the same class with same content would have the same +hash+
+ *  value, and represented the same Hash key.
+ *
+ *    Measure = Data.define(:amount, :unit)
+ *
+ *    Measure[1, 'km'].hash == Measure[1, 'km'].hash #=> true
+ *    Measure[1, 'km'].hash == Measure[10, 'km'].hash #=> false
+ *    Measure[1, 'km'].hash == Measure[1, 'm'].hash #=> false
+ *    Measure[1, 'km'].hash == Measure[1.0, 'km'].hash #=> false
+ *
+ *    # Structurally similar data class, but shouldn't be considered
+ *    # the same hash key
+ *    Measurement = Data.define(:amount, :unit)
+ *
+ *    Measure[1, 'km'].hash == Measurement[1, 'km'].hash #=> false
+ */
+
+#define rb_data_hash rb_struct_hash
+
+/*
+ *  call-seq:
+ *    to_h -> hash
+ *    to_h {|name, value| ... } -> hash
+ *
+ *  Returns Hash representation of the data object.
+ *
+ *    Measure = Data.define(:amount, :unit)
+ *    distance = Measure[10, 'km']
+ *
+ *    distance.to_h
+ *    #=> {:amount=>10, :unit=>"km"}
+ *
+ *  Like Enumerable#to_h, if the block is provided, it is expected to
+ *  produce key-value pairs to construct a hash:
+ *
+ *
+ *    distance.to_h { |name, val| [name.to_s, val.to_s] }
+ *    #=> {"amount"=>"10", "unit"=>"km"}
+ *
+ *  Note that there is a useful symmetry between #to_h and #initialize:
+ *
+ *   distance2 = Measure.new(**distance.to_h)
+ *   #=> #<data Measure amount=10, unit="km">
+ *   distance2 == distance
+ *   #=> true
+ */
+
+#define rb_data_to_h rb_struct_to_h
+
+/*
+ *  call-seq:
+ *    members -> array_of_symbols
+ *
+ *  Returns the member names from +self+ as an array:
+ *
+ *     Measure = Data.define(:amount, :unit)
+ *     distance = Measure[10, 'km']
+ *
+ *     distance.members #=> [:amount, :unit]
+ *
+ */
+
+#define rb_data_members_m rb_struct_members_m
+
+/*
+ *  call-seq:
+ *    deconstruct     -> array
+ *
+ *  Returns the values in +self+ as an array, to use in pattern matching:
+ *
+ *    Measure = Data.define(:amount, :unit)
+ *
+ *    distance = Measure[10, 'km']
+ *    distance.deconstruct #=> [10, "km"]
+ *
+ *    # usage
+ *    case distance
+ *    in n, 'km' # calls #deconstruct underneath
+ *      puts "It is #{n} kilometers away"
+ *    else
+ *      puts "Don't know how to handle it"
+ *    end
+ *    # prints "It is 10 kilometers away"
+ *
+ *  Or, with checking the class, too:
+ *
+ *    case distance
+ *    in Measure(n, 'km')
+ *      puts "It is #{n} kilometers away"
+ *    # ...
+ *    end
+ */
+
+#define rb_data_deconstruct rb_struct_to_a
+
+/*
+ *  call-seq:
+ *    deconstruct_keys(array_of_names_or_nil) -> hash
+ *
+ *  Returns a hash of the name/value pairs, to use in pattern matching.
+ *
+ *    Measure = Data.define(:amount, :unit)
+ *
+ *    distance = Measure[10, 'km']
+ *    distance.deconstruct_keys(nil) #=> {:amount=>10, :unit=>"km"}
+ *    distance.deconstruct_keys([:amount]) #=> {:amount=>10}
+ *
+ *    # usage
+ *    case distance
+ *    in amount:, unit: 'km' # calls #deconstruct_keys underneath
+ *      puts "It is #{amount} kilometers away"
+ *    else
+ *      puts "Don't know how to handle it"
+ *    end
+ *    # prints "It is 10 kilometers away"
+ *
+ *  Or, with checking the class, too:
+ *
+ *    case distance
+ *    in Measure(amount:, unit: 'km')
+ *      puts "It is #{amount} kilometers away"
+ *    # ...
+ *    end
+ */
+
+#define rb_data_deconstruct_keys rb_struct_deconstruct_keys
+
+/*
  *  Document-class: Struct
  *
  *  \Class \Struct provides a convenient way to create a simple class
@@ -1567,6 +2060,9 @@ rb_struct_dig(int argc, VALUE *argv, VALUE self)
  *  - Inherits from {class Object}[rdoc-ref:Object@What-27s+Here].
  *  - Includes {module Enumerable}[rdoc-ref:Enumerable@What-27s+Here],
  *    which provides dozens of additional methods.
+ *
+ *  See also Data, which is a somewhat similar, but stricter concept for defining immutable
+ *  value objects.
  *
  *  Here, class \Struct provides methods that are useful for:
  *
@@ -1663,6 +2159,30 @@ InitVM_Struct(void)
 
     rb_define_method(rb_cStruct, "deconstruct", rb_struct_to_a, 0);
     rb_define_method(rb_cStruct, "deconstruct_keys", rb_struct_deconstruct_keys, 1);
+
+    rb_cData = rb_define_class("Data", rb_cObject);
+
+    rb_undef_method(CLASS_OF(rb_cData), "new");
+    rb_undef_alloc_func(rb_cData);
+    rb_define_singleton_method(rb_cData, "define", rb_data_s_def, -1);
+
+    rb_define_singleton_method(rb_cData, "members", rb_data_s_members_m, 0);
+
+    rb_define_method(rb_cData, "initialize", rb_data_initialize_m, -1);
+    rb_define_method(rb_cData, "initialize_copy", rb_struct_init_copy, 1);
+
+    rb_define_method(rb_cData, "==", rb_data_equal, 1);
+    rb_define_method(rb_cData, "eql?", rb_data_eql, 1);
+    rb_define_method(rb_cData, "hash", rb_data_hash, 0);
+
+    rb_define_method(rb_cData, "inspect", rb_data_inspect, 0);
+    rb_define_alias(rb_cData,  "to_s", "inspect");
+    rb_define_method(rb_cData, "to_h", rb_data_to_h, 0);
+
+    rb_define_method(rb_cData, "members", rb_data_members_m, 0);
+
+    rb_define_method(rb_cData, "deconstruct", rb_data_deconstruct, 0);
+    rb_define_method(rb_cData, "deconstruct_keys", rb_data_deconstruct_keys, 1);
 }
 
 #undef rb_intern
