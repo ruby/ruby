@@ -44,10 +44,6 @@ TEST_DEPENDS += $(if $(filter great exam love check,$(MAKECMDGOALS)),all exts)
 
 in-srcdir := $(if $(filter-out .,$(srcdir)),$(CHDIR) $(srcdir) &&)
 
-ifneq ($(filter -O0 -Od,$(optflags)),)
-override XCFLAGS := $(filter-out -D_FORTIFY_SOURCE=%,$(XCFLAGS))
-endif
-
 ifeq ($(if $(filter all main exts enc trans libencs libenc libtrans \
 		    prog program ruby ruby$(EXEEXT) \
 		    wprogram rubyw rubyw$(EXEEXT) \
