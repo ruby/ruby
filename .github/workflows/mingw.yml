@@ -70,7 +70,6 @@ jobs:
       - name: set env
         run: |
           echo "GNUMAKEFLAGS=-j$((2 * NUMBER_OF_PROCESSORS))" >> $GITHUB_ENV
-          echo "TEST_JOBS=$((15 * NUMBER_OF_PROCESSORS / 10))" >> $GITHUB_ENV
 
       - name: where check
         run: |
@@ -140,7 +139,7 @@ jobs:
           make ${{ StartsWith(matrix.test_task, 'test/') && matrix.test_task || 'test-all' }}
         env:
           RUBY_TESTOPTS: >-
-            -j${{env.TEST_JOBS}} --retry --job-status=normal --show-skip --timeout-scale=1.5
+            --retry --job-status=normal --show-skip --timeout-scale=1.5
             ${{ matrix.test-all-opts }}
           BUNDLER_VERSION:
         if: ${{matrix.test_task == 'check' || matrix.test_task == 'test-all' || StartsWith(matrix.test_task, 'test/')}}
