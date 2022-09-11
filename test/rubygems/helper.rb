@@ -309,6 +309,7 @@ class Gem::TestCase < Test::Unit::TestCase
     ENV["XDG_DATA_HOME"] = nil
     ENV["SOURCE_DATE_EPOCH"] = nil
     ENV["BUNDLER_VERSION"] = nil
+    ENV["RUBYGEMS_PREVENT_UPDATE_SUGGESTION"] = "true"
 
     @current_dir = Dir.pwd
     @fetcher     = nil

@@ -371,6 +371,18 @@ if you believe they were disclosed to a third party.
     @backtrace || $DEBUG
   end
 
+  # Check config file is writable. Creates empty file if not present to ensure we can write to it.
+  def config_file_writable?
+    if File.exist?(config_file_name)
+      File.writable?(config_file_name)
+    else
+      require "fileutils"
+      FileUtils.mkdir_p File.dirname(config_file_name)
+      File.open(config_file_name, "w") {}
+      true
+    end
+  end
+
   # The name of the configuration file.
   def config_file_name
     @config_file_name || Gem.config_file
