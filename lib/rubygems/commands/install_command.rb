@@ -5,6 +5,7 @@ require_relative "../dependency_installer"
 require_relative "../local_remote_options"
 require_relative "../validator"
 require_relative "../version_option"
+require_relative "../update_suggestion"
 
 ##
 # Gem installer command line tool
@@ -17,6 +18,7 @@ class Gem::Commands::InstallCommand < Gem::Command
   include Gem::VersionOption
   include Gem::LocalRemoteOptions
   include Gem::InstallUpdateOptions
+  include Gem::UpdateSuggestion
 
   def initialize
     defaults = Gem::DependencyInstaller::DEFAULT_OPTIONS.merge({
@@ -167,6 +169,8 @@ You can use `i` command instead of `install`.
     exit_code = install_gems
 
     show_installed
+
+    say update_suggestion if eglible_for_update?
 
     terminate_interaction exit_code
   end
