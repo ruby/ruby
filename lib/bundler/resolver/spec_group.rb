@@ -6,20 +6,17 @@ module Bundler
       attr_accessor :name, :version, :source
       attr_accessor :activated_platforms, :force_ruby_platform
 
-      def self.create_for(specs, all_platforms, specific_platform)
-        specific_platform_specs = specs[specific_platform]
-        return unless specific_platform_specs.any?
-
+      def self.create_for(specs, all_platforms)
         platforms = all_platforms.select {|p| specs[p].any? }
 
-        new(specific_platform_specs.first, specs, platforms)
+        new(specs, platforms)
       end
 
-      def initialize(exemplary_spec, specs, relevant_platforms)
-        @exemplary_spec = exemplary_spec
-        @name = exemplary_spec.name
-        @version = exemplary_spec.version
-        @source = exemplary_spec.source
+      def initialize(specs, relevant_platforms)
+        @exemplary_spec = specs[relevant_platforms.first].first
+        @name = @exemplary_spec.name
+        @version = @exemplary_spec.version
+        @source = @exemplary_spec.source
 
         @activated_platforms = relevant_platforms
         @dependencies = Hash.new do |dependencies, platforms|
