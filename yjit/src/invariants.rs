@@ -154,6 +154,25 @@ pub fn assume_method_lookup_stable(
         .insert(block);
 }
 
+// Checks rb_method_basic_definition_p and registers the current block for invalidation if method
+// lookup changes.
+// A "basic method" is one defined during VM boot, so we can use this to check assumptions based on
+// default behavior.
+pub fn assume_method_basic_definition(
+    jit: &mut JITState,
+    ocb: &mut OutlinedCb,
+    klass: VALUE,
+    mid: ID
+    ) -> bool {
+    if unsafe { rb_method_basic_definition_p(klass, mid) } != 0 {
+        let mut cme = unsafe { rb_callable_method_entry(klass, mid) };
+        assume_method_lookup_stable(jit, ocb, klass, cme);
+        true
+    } else {
+        false
+    }
+}
+
 /// Tracks that a block is assuming it is operating in single-ractor mode.
 #[must_use]
 pub fn assume_single_ractor_mode(jit: &mut JITState, ocb: &mut OutlinedCb) -> bool {

@@ -367,6 +367,7 @@ fn main() {
         .allowlist_function("rb_vm_ci_kwarg")
         .allowlist_function("rb_METHOD_ENTRY_VISI")
         .allowlist_function("rb_RCLASS_ORIGIN")
+        .allowlist_function("rb_method_basic_definition_p")
 
         // We define VALUE manually, don't import it
         .blocklist_type("VALUE")

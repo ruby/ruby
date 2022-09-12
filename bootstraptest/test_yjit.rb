@@ -3255,3 +3255,57 @@ assert_equal '[1, 2]', %q{
   foo
   foo
 }
+
+# respond_to? with changing symbol
+assert_equal 'false', %q{
+  def foo(name)
+    :sym.respond_to?(name)
+  end
+  foo(:to_s)
+  foo(:to_s)
+  foo(:not_exist)
+}
+
+# respond_to? with method being defined
+assert_equal 'true', %q{
+  def foo
+    :sym.respond_to?(:not_yet_defined)
+  end
+  foo
+  foo
+  module Kernel
+    def not_yet_defined = true
+  end
+  foo
+}
+
+# respond_to? with undef method
+assert_equal 'false', %q{
+  module Kernel
+    def to_be_removed = true
+  end
+  def foo
+    :sym.respond_to?(:to_be_removed)
+  end
+  foo
+  foo
+  class Object
+    undef_method :to_be_removed
+  end
+  foo
+}
+
+# respond_to? with respond_to_missing?
+assert_equal 'true', %q{
+  class Foo
+  end
+  def foo(x)
+    x.respond_to?(:bar)
+  end
+  foo(Foo.new)
+  foo(Foo.new)
+  class Foo
+    def respond_to_missing?(*) = true
+  end
+  foo(Foo.new)
+}
