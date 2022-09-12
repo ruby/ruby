@@ -267,7 +267,12 @@ pub fn cmp(cb: &mut CodeBlock, rn: A64Opnd, rm: A64Opnd) {
             DataReg::cmp(rn.reg_no, rm.reg_no, rn.num_bits).into()
         },
         (A64Opnd::Reg(rn), A64Opnd::UImm(imm12)) => {
-            DataImm::cmp(rn.reg_no, imm12.try_into().unwrap(), rn.num_bits).into()
+            let num_bits = if (rn.num_bits == 8) {
+                32 // size can't be 8. assume the remaining 24 bits are zero-extended.
+            } else {
+                rn.num_bits
+            };
+            DataImm::cmp(rn.reg_no, imm12.try_into().unwrap(), num_bits).into()
         },
         _ => panic!("Invalid operand combination to cmp instruction."),
     };
@@ -502,6 +507,22 @@ pub fn ldur(cb: &mut CodeBlock, rt: A64Opnd, rn: A64Opnd) {
             LoadStore::ldur(rt.reg_no, rn.base_reg_no, rn.disp as i16, rt.num_bits).into()
         },
         _ => panic!("Invalid operands for LDUR")
+    };
+
+    cb.write_bytes(&bytes);
+}
+
+/// LDURB - load a byte from memory, zero-extend it, and write it to a register
+pub fn ldurb(cb: &mut CodeBlock, rt: A64Opnd, rn: A64Opnd) {
+    let bytes: [u8; 4] = match (rt, rn) {
+        (A64Opnd::Reg(rt), A64Opnd::Mem(rn)) => {
+            assert!(rt.num_bits == rn.num_bits, "Expected registers to be the same size");
+            assert!(rt.num_bits == 8, "Expected registers to have size 8");
+            assert!(mem_disp_fits_bits(rn.disp), "Expected displacement to be 9 bits or less");
+
+            LoadStore::ldurb(rt.reg_no, rn.base_reg_no, rn.disp as i16).into()
+        },
+        _ => panic!("Invalid operands for LDURB")
     };
 
     cb.write_bytes(&bytes);

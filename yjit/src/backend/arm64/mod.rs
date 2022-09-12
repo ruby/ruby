@@ -747,7 +747,11 @@ impl Assembler
                             emit_load_value(cb, out.into(), imm as u64);
                         },
                         Opnd::Mem(_) => {
-                            ldur(cb, out.into(), opnd.into());
+                            match opnd.rm_num_bits() {
+                                64 | 32 => ldur(cb, out.into(), opnd.into()),
+                                8 => ldurb(cb, out.into(), opnd.into()),
+                                num_bits => panic!("unexpected num_bits: {}", num_bits)
+                            };
                         },
                         Opnd::Value(value) => {
                             // We dont need to check if it's a special const

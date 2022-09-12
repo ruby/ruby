@@ -151,6 +151,15 @@ impl Opnd
         }
     }
 
+    pub fn sub_opnd(&self, num_bits: u8) -> Option<Opnd> {
+        match *self {
+            Opnd::Reg(reg) => Some(Opnd::Reg(reg.sub_reg(num_bits))),
+            Opnd::Mem(Mem { base, disp, .. }) => Some(Opnd::Mem(Mem { base, disp, num_bits })),
+            Opnd::InsnOut { idx, .. } => Some(Opnd::InsnOut { idx, num_bits }),
+            _ => None,
+        }
+    }
+
     /// Get the size in bits for register/memory operands.
     pub fn rm_num_bits(&self) -> u8 {
         self.num_bits().unwrap()
@@ -1059,14 +1068,14 @@ impl Assembler
             let mut opnd_iter = insn.opnd_iter_mut();
             while let Some(opnd) = opnd_iter.next() {
                 match *opnd {
-                    Opnd::InsnOut { idx, .. } => {
-                        *opnd = *asm.insns[idx].out_opnd().unwrap();
+                    Opnd::InsnOut { idx, num_bits } => {
+                        *opnd = (*asm.insns[idx].out_opnd().unwrap()).sub_opnd(num_bits).unwrap();
                     },
                     Opnd::Mem(Mem { base: MemBase::InsnOut(idx), disp, num_bits }) => {
                         let base = MemBase::Reg(asm.insns[idx].out_opnd().unwrap().unwrap_reg().reg_no);
                         *opnd = Opnd::Mem(Mem { base, disp, num_bits });
                     }
-                     _ => {},
+                    _ => {},
                 }
             }
 

@@ -13,7 +13,7 @@ pub struct A64Reg
 
 impl A64Reg {
     pub fn sub_reg(&self, num_bits: u8) -> Self {
-        assert!(num_bits == 32 || num_bits == 64);
+        assert!(num_bits == 8 || num_bits == 32 || num_bits == 64);
         assert!(num_bits <= self.num_bits);
 
         Self { num_bits, reg_no: self.reg_no }
