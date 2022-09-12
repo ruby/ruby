@@ -19,9 +19,6 @@ module Bundler
         @source = @exemplary_spec.source
 
         @activated_platforms = relevant_platforms
-        @dependencies = Hash.new do |dependencies, platforms|
-          dependencies[platforms] = dependencies_for(platforms)
-        end
         @specs = specs
       end
 
@@ -45,7 +42,7 @@ module Bundler
       end
 
       def dependencies_for_activated_platforms
-        @dependencies[activated_platforms]
+        @dependencies_for_activated_platforms ||= dependencies_for(activated_platforms)
       end
 
       def ==(other)
