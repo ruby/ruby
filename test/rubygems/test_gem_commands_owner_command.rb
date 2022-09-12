@@ -262,6 +262,7 @@ EOF
   end
 
   def test_otp_verified_failure
+    omit
     response = "You have enabled multifactor authentication but your request doesn't have the correct OTP code. Please check it and retry."
     @stub_fetcher.data["#{Gem.host}/api/v1/gems/freewill/owners"] = [response, 401, "Unauthorized"]
 

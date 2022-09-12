@@ -11,7 +11,6 @@
 #include "internal.h"
 #include "internal/array.h"
 #include "internal/gc.h"
-#include "internal/hash.h"
 #include "internal/sanitizers.h"
 #include "internal/static_assert.h"
 #include "internal/struct.h"
@@ -607,15 +606,6 @@ transient_heap_ptr(VALUE obj, int error)
             ptr = rb_struct_const_heap_ptr(obj);
         }
         break;
-      case T_HASH:
-        if (RHASH_TRANSIENT_P(obj)) {
-            TH_ASSERT(RHASH_AR_TABLE_P(obj));
-            ptr = (VALUE *)(RHASH(obj)->as.ar);
-        }
-        else {
-            ptr = NULL;
-        }
-        break;
       default:
         if (error) {
             rb_bug("transient_heap_ptr: unknown obj %s\n", rb_obj_info(obj));
@@ -735,9 +725,6 @@ transient_heap_block_evacuate(struct transient_heap* theap, struct transient_hea
                 break;
               case T_STRUCT:
                 rb_struct_transient_heap_evacuate(obj, !TRANSIENT_HEAP_DEBUG_DONT_PROMOTE);
-                break;
-              case T_HASH:
-                rb_hash_transient_heap_evacuate(obj, !TRANSIENT_HEAP_DEBUG_DONT_PROMOTE);
                 break;
               default:
                 rb_bug("unsupported: %s\n", rb_obj_info(obj));

@@ -6632,7 +6632,9 @@ mark_hash(rb_objspace_t *objspace, VALUE hash)
     }
 
     if (RHASH_AR_TABLE_P(hash)) {
+        GC_ASSERT(GET_HEAP_PAGE(hash)->slot_size == 320);
         if (LIKELY(during_gc) && RHASH_TRANSIENT_P(hash)) {
+            rb_bug("shouldn't be here");
             rb_transient_heap_mark(hash, RHASH_AR_TABLE(hash));
         }
     }
