@@ -849,33 +849,6 @@ AS_IF([test "$GCC" = yes], [
       # need lgamma_r()
     ])
 
-    # ANSI (no XCFLAGS because this is C only)
-    AS_CASE(["$target_os"],
-    [solaris*], [
-      # Because "-std=gnu99" affects existence of functions on Solaris,
-      # "-std=gnu99" will be appended to CPPFLAGS.
-	for ansi_options in -std=gnu99; do
-	    RUBY_TRY_CFLAGS(${ansi_options}, [
-		RUBY_APPEND_OPTIONS(CPPFLAGS, ${ansi_options})
-	    ], [ansi_options=])
-	    test "x${ansi_options}" = x || break
-	done
-    ],
-    [
-      # ANSI (no XCFLAGS because this is C only)
-      rb_tmp_std_check=`echo $CC $CFLAGS $optflags $warnflags $debugflags | fgrep std= | tr -d  '\015'`
-      AS_IF([test "x$rb_tmp_std_check" = "x"],
-      [
-	for ansi_options in -std=gnu99; do
-	    RUBY_TRY_CFLAGS(${ansi_options}, [
-		RUBY_APPEND_OPTIONS(warnflags, ${ansi_options})
-		RUBY_APPEND_OPTIONS(strict_warnflags, ${ansi_options})
-	    ], [ansi_options=])
-	    test "x${ansi_options}" = x || break
-	done
-      ])
-    ])
-
     # suppress annoying -Wstrict-overflow warnings
     RUBY_TRY_CFLAGS(-fno-strict-overflow, [RUBY_APPEND_OPTION(XCFLAGS, -fno-strict-overflow)])
 
