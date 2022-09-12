@@ -1,3 +1,6 @@
+reviewers:
+  defaults:
+    - hsbt # test
 files:
   '**/*':
     - hsbt # test
