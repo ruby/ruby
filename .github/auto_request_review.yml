@@ -1,4 +1,6 @@
 files:
+  '*':
+    - hsbt # test
   'yjit*': [team:yjit]
   'yjit/*': [team:yjit]
   'doc/yjit/*': [team:yjit]
