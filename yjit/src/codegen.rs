@@ -3963,9 +3963,9 @@ fn gen_send_cfunc(
     asm.cmp(CFP, stack_limit);
     asm.jbe(counted_exit!(ocb, side_exit, send_se_cf_overflow).into());
 
-
     if flags & VM_CALL_ARGS_SPLAT != 0 {
         if cfunc_argc > 0 {
+            // push_splat_args does a ctx.stack_push so we can no longer side exit
             argc = push_splat_args(argc, ctx, asm, ocb, side_exit, cfunc_argc as u32);
         } else {
             // This is a variadic c function and we'd need to pop
@@ -3974,10 +3974,6 @@ fn gen_send_cfunc(
             return CantCompile
         }
     }
-
-    // push_splat_args writes to the Ruby stack so we can no longer side exit
-    let side_exit: Option<()> = None;
-
 
     // Number of args which will be passed through to the callee
     // This is adjusted by the kwargs being combined into a hash.
@@ -4515,12 +4511,10 @@ fn gen_send_iseq(
     asm.cmp(CFP, stack_limit);
     asm.jbe(counted_exit!(ocb, side_exit, send_se_cf_overflow).into());
 
-
-    // pop_args_splat does a ctx.stack_push so we can no longer side exit
+    // push_splat_args does a ctx.stack_push so we can no longer side exit
     if flags & VM_CALL_ARGS_SPLAT != 0 {
         argc = push_splat_args(argc, ctx, asm, ocb, side_exit, num_params);
     }
-    let side_exit: Option<()> = None;
 
     if doing_kw_call {
         // Here we're calling a method with keyword arguments and specifying
