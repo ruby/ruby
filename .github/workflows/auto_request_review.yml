@@ -17,4 +17,4 @@ jobs:
           # https://github.com/marketplace/actions/auto-request-review
           # if you'd like to use GitHub teams to specify reviewers, you need to make a new PAT because
           # the default GITHUB_TOKEN doesn’t have the permission to request a review from a team.
-          token: ${{ secrets.KOKUBUN_GITHUB_TOKEN }}
+          token: ${{ secrets.YJIT_GITHUB_TOKEN }}
