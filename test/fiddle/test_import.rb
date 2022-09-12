@@ -124,8 +124,18 @@ module Fiddle
         name = $1.sub(/P\z/,"*").gsub(/_(?!T\z)/, " ").downcase
         type_name = name
       end
+      type_name = "unsigned #{$1}" if type_name =~ /\Au(long|short|char|int|long long)\z/
+
       define_method("test_sizeof_#{name}") do
         assert_equal(size, Fiddle::Importer.sizeof(type_name), type)
+      end
+    end
+
+    # Assert that the unsigned constants are equal to the "negative" signed ones
+    # for backwards compatibility
+    def test_unsigned_equals_negative_signed
+      Fiddle.constants.grep(/\ATYPE_(?!VOID|VARIADIC\z)(U.*)/) do |unsigned|
+        assert_equal -Fiddle.const_get(unsigned.to_s.sub(/U/, '')), Fiddle.const_get(unsigned)
       end
     end
 

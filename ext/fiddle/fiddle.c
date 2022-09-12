@@ -182,11 +182,23 @@ Init_fiddle(void)
      */
     rb_define_const(mFiddle, "TYPE_CHAR",      INT2NUM(TYPE_CHAR));
 
+    /* Document-const: TYPE_UCHAR
+     *
+     * C type - unsigned char
+     */
+    rb_define_const(mFiddle, "TYPE_UCHAR",      INT2NUM(TYPE_UCHAR));
+
     /* Document-const: TYPE_SHORT
      *
      * C type - short
      */
     rb_define_const(mFiddle, "TYPE_SHORT",     INT2NUM(TYPE_SHORT));
+
+    /* Document-const: TYPE_USHORT
+     *
+     * C type - unsigned short
+     */
+    rb_define_const(mFiddle, "TYPE_USHORT",     INT2NUM(TYPE_USHORT));
 
     /* Document-const: TYPE_INT
      *
@@ -194,11 +206,23 @@ Init_fiddle(void)
      */
     rb_define_const(mFiddle, "TYPE_INT",       INT2NUM(TYPE_INT));
 
+    /* Document-const: TYPE_UINT
+     *
+     * C type - unsigned int
+     */
+    rb_define_const(mFiddle, "TYPE_UINT",       INT2NUM(TYPE_UINT));
+
     /* Document-const: TYPE_LONG
      *
      * C type - long
      */
     rb_define_const(mFiddle, "TYPE_LONG",      INT2NUM(TYPE_LONG));
+
+    /* Document-const: TYPE_ULONG
+     *
+     * C type - long
+     */
+    rb_define_const(mFiddle, "TYPE_ULONG",      INT2NUM(TYPE_ULONG));
 
 #if HAVE_LONG_LONG
     /* Document-const: TYPE_LONG_LONG
@@ -206,6 +230,12 @@ Init_fiddle(void)
      * C type - long long
      */
     rb_define_const(mFiddle, "TYPE_LONG_LONG", INT2NUM(TYPE_LONG_LONG));
+
+    /* Document-const: TYPE_ULONG_LONG
+     *
+     * C type - long long
+     */
+    rb_define_const(mFiddle, "TYPE_ULONG_LONG", INT2NUM(TYPE_ULONG_LONG));
 #endif
 
 #ifdef TYPE_INT8_T
@@ -214,6 +244,12 @@ Init_fiddle(void)
      * C type - int8_t
      */
     rb_define_const(mFiddle, "TYPE_INT8_T",    INT2NUM(TYPE_INT8_T));
+
+    /* Document-const: TYPE_UINT8_T
+     *
+     * C type - uint8_t
+     */
+    rb_define_const(mFiddle, "TYPE_UINT8_T",    INT2NUM(TYPE_UINT8_T));
 #endif
 
 #ifdef TYPE_INT16_T
@@ -222,6 +258,12 @@ Init_fiddle(void)
      * C type - int16_t
      */
     rb_define_const(mFiddle, "TYPE_INT16_T",   INT2NUM(TYPE_INT16_T));
+
+    /* Document-const: TYPE_UINT16_T
+     *
+     * C type - uint16_t
+     */
+    rb_define_const(mFiddle, "TYPE_UINT16_T",   INT2NUM(TYPE_UINT16_T));
 #endif
 
 #ifdef TYPE_INT32_T
@@ -230,6 +272,12 @@ Init_fiddle(void)
      * C type - int32_t
      */
     rb_define_const(mFiddle, "TYPE_INT32_T",   INT2NUM(TYPE_INT32_T));
+
+    /* Document-const: TYPE_UINT32_T
+     *
+     * C type - uint32_t
+     */
+    rb_define_const(mFiddle, "TYPE_UINT32_T",   INT2NUM(TYPE_UINT32_T));
 #endif
 
 #ifdef TYPE_INT64_T
@@ -238,6 +286,12 @@ Init_fiddle(void)
      * C type - int64_t
      */
     rb_define_const(mFiddle, "TYPE_INT64_T",   INT2NUM(TYPE_INT64_T));
+
+    /* Document-const: TYPE_UINT64_T
+     *
+     * C type - uint64_t
+     */
+    rb_define_const(mFiddle, "TYPE_UINT64_T",   INT2NUM(TYPE_UINT64_T));
 #endif
 
     /* Document-const: TYPE_FLOAT
@@ -422,11 +476,23 @@ Init_fiddle(void)
      */
     rb_define_const(mFiddle, "SIZEOF_CHAR",  INT2NUM(sizeof(char)));
 
+    /* Document-const: SIZEOF_UCHAR
+     *
+     * size of a unsigned char
+     */
+    rb_define_const(mFiddle, "SIZEOF_UCHAR",  INT2NUM(sizeof(unsigned char)));
+
     /* Document-const: SIZEOF_SHORT
      *
      * size of a short
      */
     rb_define_const(mFiddle, "SIZEOF_SHORT", INT2NUM(sizeof(short)));
+
+    /* Document-const: SIZEOF_USHORT
+     *
+     * size of a unsigned short
+     */
+    rb_define_const(mFiddle, "SIZEOF_USHORT", INT2NUM(sizeof(unsigned short)));
 
     /* Document-const: SIZEOF_INT
      *
@@ -434,11 +500,23 @@ Init_fiddle(void)
      */
     rb_define_const(mFiddle, "SIZEOF_INT",   INT2NUM(sizeof(int)));
 
+    /* Document-const: SIZEOF_UINT
+     *
+     * size of an unsigned int
+     */
+    rb_define_const(mFiddle, "SIZEOF_UINT",   INT2NUM(sizeof(unsigned int)));
+
     /* Document-const: SIZEOF_LONG
      *
      * size of a long
      */
     rb_define_const(mFiddle, "SIZEOF_LONG",  INT2NUM(sizeof(long)));
+
+    /* Document-const: SIZEOF_ULONG
+     *
+     * size of a unsigned long
+     */
+    rb_define_const(mFiddle, "SIZEOF_ULONG",  INT2NUM(sizeof(unsigned long)));
 
 #if HAVE_LONG_LONG
     /* Document-const: SIZEOF_LONG_LONG
@@ -446,6 +524,12 @@ Init_fiddle(void)
      * size of a long long
      */
     rb_define_const(mFiddle, "SIZEOF_LONG_LONG",  INT2NUM(sizeof(LONG_LONG)));
+
+    /* Document-const: SIZEOF_ULONG_LONG
+     *
+     * size of a unsigned long long
+     */
+    rb_define_const(mFiddle, "SIZEOF_ULONG_LONG",  INT2NUM(sizeof(unsigned LONG_LONG)));
 #endif
 
     /* Document-const: SIZEOF_INT8_T
@@ -454,11 +538,23 @@ Init_fiddle(void)
      */
     rb_define_const(mFiddle, "SIZEOF_INT8_T",  INT2NUM(sizeof(int8_t)));
 
+    /* Document-const: SIZEOF_UINT8_T
+     *
+     * size of a uint8_t
+     */
+    rb_define_const(mFiddle, "SIZEOF_UINT8_T",  INT2NUM(sizeof(uint8_t)));
+
     /* Document-const: SIZEOF_INT16_T
      *
      * size of a int16_t
      */
     rb_define_const(mFiddle, "SIZEOF_INT16_T", INT2NUM(sizeof(int16_t)));
+
+    /* Document-const: SIZEOF_UINT16_T
+     *
+     * size of a uint16_t
+     */
+    rb_define_const(mFiddle, "SIZEOF_UINT16_T", INT2NUM(sizeof(uint16_t)));
 
     /* Document-const: SIZEOF_INT32_T
      *
@@ -466,11 +562,23 @@ Init_fiddle(void)
      */
     rb_define_const(mFiddle, "SIZEOF_INT32_T", INT2NUM(sizeof(int32_t)));
 
+    /* Document-const: SIZEOF_UINT32_T
+     *
+     * size of a uint32_t
+     */
+    rb_define_const(mFiddle, "SIZEOF_UINT32_T", INT2NUM(sizeof(uint32_t)));
+
     /* Document-const: SIZEOF_INT64_T
      *
      * size of a int64_t
      */
     rb_define_const(mFiddle, "SIZEOF_INT64_T", INT2NUM(sizeof(int64_t)));
+
+    /* Document-const: SIZEOF_UINT64_T
+     *
+     * size of a uint64_t
+     */
+    rb_define_const(mFiddle, "SIZEOF_UINT64_T", INT2NUM(sizeof(uint64_t)));
 
     /* Document-const: SIZEOF_FLOAT
      *
