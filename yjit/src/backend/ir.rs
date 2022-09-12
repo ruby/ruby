@@ -1060,7 +1060,7 @@ impl Assembler
                         let base = MemBase::Reg(asm.insns[idx].out_opnd().unwrap().unwrap_reg().reg_no);
                         *opnd = Opnd::Mem(Mem { base, disp, num_bits });
                     }
-                    _ => {},
+                     _ => {},
                 }
             }
 
