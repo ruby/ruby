@@ -166,6 +166,7 @@ int rb_enc_replicate(const char *name, rb_encoding *src);
  * @post       Encoding  named `name`  is created,  whose index  is the  return
  *             value.
  */
+RBIMPL_ATTR_DEPRECATED(("rb_raise(rb_eArgError, \"unknown encoding name - %s\", name); instead or use Encoding::BINARY"))
 int rb_define_dummy_encoding(const char *name);
 
 RBIMPL_ATTR_PURE()
