@@ -1,0 +1,20 @@
+name: Auto Request Review
+
+on:
+  pull_request:
+    types: [opened, ready_for_review, reopened]
+
+jobs:
+  auto-request-review:
+    name: Auto Request Review
+    runs-on: ubuntu-latest
+    steps:
+      - name: Request review based on files changes and/or groups the author belongs to
+        uses: necojackarc/auto-request-review@v0.7.0
+        with:
+          # k0kubun's personal access token to ask reviews from @ruby/yjit.
+          #
+          # https://github.com/marketplace/actions/auto-request-review
+          # if you'd like to use GitHub teams to specify reviewers, you need to make a new PAT because
+          # the default GITHUB_TOKEN doesn’t have the permission to request a review from a team.
+          token: ${{ secrets.KOKUBUN_GITHUB_TOKEN }}
