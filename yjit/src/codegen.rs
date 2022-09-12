@@ -3975,7 +3975,7 @@ fn gen_send_cfunc(
         }
     }
 
-    // pop_args_splat does a ctx.stack_pop so we can no longer side exit
+    // push_splat_args writes to the Ruby stack so we can no longer side exit
     let side_exit: Option<()> = None;
 
 
@@ -4222,7 +4222,6 @@ fn push_splat_args(argc: i32, ctx: &mut Context, asm: &mut Assembler, ocb: &mut 
     asm.cmp(array_len_opnd, required_args.into());
     asm.jne(counted_exit!(ocb, side_exit, send_splatarray_rhs_too_small).into());
 
-
     let array_opnd = ctx.stack_pop(1);
 
     if required_args > 0 {
@@ -4241,7 +4240,6 @@ fn push_splat_args(argc: i32, ctx: &mut Context, asm: &mut Assembler, ocb: &mut 
             asm.load(array_opnd),
             RUBY_OFFSET_RARRAY_AS_HEAP_PTR,
         );
-
 
         let ary_opnd = asm.csel_nz(ary_opnd, heap_ptr_opnd);
 
