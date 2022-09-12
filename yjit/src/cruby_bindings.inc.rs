@@ -575,6 +575,12 @@ extern "C" {
 extern "C" {
     pub fn rb_callable_method_entry(klass: VALUE, id: ID) -> *const rb_callable_method_entry_t;
 }
+extern "C" {
+    pub fn rb_callable_method_entry_or_negative(
+        klass: VALUE,
+        id: ID,
+    ) -> *const rb_callable_method_entry_t;
+}
 pub type rb_num_t = ::std::os::raw::c_ulong;
 #[repr(C)]
 pub struct iseq_inline_constant_cache_entry {
