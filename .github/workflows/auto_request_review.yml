@@ -1,7 +1,7 @@
 name: Auto Request Review
 on:
   pull_request_target:
-    types: [opened, synchronized, ready_for_review, reopened]
+    types: [opened, ready_for_review, reopened]
 jobs:
   auto-request-review:
     name: Auto Request Review
@@ -10,5 +10,5 @@ jobs:
       - name: Request review based on files changes and/or groups the author belongs to
         uses: necojackarc/auto-request-review@e08cdffa277d50854744de3f76230260e61c67f4 # v0.7.0, checking sha
         with:
-          # scope: repo:status
+          # scope: public_repo
           token: ${{ secrets.MATZBOT_GITHUB_TOKEN }}
