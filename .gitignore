@@ -228,6 +228,7 @@ lcov*.info
 # /tool/
 /tool/config.guess
 /tool/config.sub
+/tool/bundler/*.lock
 
 # /win32/
 /win32/*.ico
