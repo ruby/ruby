@@ -2700,14 +2700,16 @@ static VALUE
 call_cfunc_m2(VALUE recv, int argc, const VALUE *argv, VALUE (*func)(ANYARGS))
 {
     ractor_unsafe_check();
-    return (*func)(recv, rb_ary_new4(argc, argv));
+    VALUE(*f)(VALUE, VALUE) = (VALUE(*)(VALUE, VALUE))func;
+    return (*f)(recv, rb_ary_new4(argc, argv));
 }
 
 static VALUE
 call_cfunc_m1(VALUE recv, int argc, const VALUE *argv, VALUE (*func)(ANYARGS))
 {
     ractor_unsafe_check();
-    return (*func)(argc, argv, recv);
+    VALUE(*f)(int, const VALUE *, VALUE) = (VALUE(*)(int, const VALUE *, VALUE))func;
+    return (*f)(argc, argv, recv);
 }
 
 static VALUE
@@ -2841,13 +2843,15 @@ call_cfunc_15(VALUE recv, int argc, const VALUE *argv, VALUE (*func)(ANYARGS))
 static VALUE
 ractor_safe_call_cfunc_m2(VALUE recv, int argc, const VALUE *argv, VALUE (*func)(ANYARGS))
 {
-    return (*func)(recv, rb_ary_new4(argc, argv));
+    VALUE(*f)(VALUE, VALUE) = (VALUE(*)(VALUE, VALUE))func;
+    return (*f)(recv, rb_ary_new4(argc, argv));
 }
 
 static VALUE
 ractor_safe_call_cfunc_m1(VALUE recv, int argc, const VALUE *argv, VALUE (*func)(ANYARGS))
 {
-    return (*func)(argc, argv, recv);
+    VALUE(*f)(int, const VALUE *, VALUE) = (VALUE(*)(int, const VALUE *, VALUE))func;
+    return (*f)(argc, argv, recv);
 }
 
 static VALUE
