@@ -3928,6 +3928,7 @@ fn jit_obj_respond_to(
     let sym_opnd = ctx.stack_pop(1);
     let recv_opnd = ctx.stack_pop(1);
 
+    // This is necessary because we have no guarantee that sym_opnd is a constant
     asm.comment("guard known mid");
     asm.cmp(sym_opnd, mid_sym.into());
     asm.jne(side_exit.into());
