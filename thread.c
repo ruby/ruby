@@ -1675,6 +1675,10 @@ rb_thread_io_blocking_region(rb_blocking_function_t *func, void *data1, int fd)
         .th = rb_ec_thread_ptr(ec)
     };
 
+    // `errno` is only valid when there is an actual error - but we can't
+    // extract that from the return value of `func` alone, so we clear any
+    // prior `errno` value here so that we can later check if it was set by
+    // `func` or not (as opposed to some previously set value).
     errno = 0;
 
     RB_VM_LOCK_ENTER();

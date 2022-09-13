@@ -1355,11 +1355,13 @@ io_flush_buffer_sync(void *arg)
         fptr->wbuf.len = 0;
         return 0;
     }
+
     if (0 <= r) {
         fptr->wbuf.off += (int)r;
         fptr->wbuf.len -= (int)r;
         errno = EAGAIN;
     }
+
     return (VALUE)-1;
 }
 
@@ -12323,7 +12325,11 @@ nogvl_wait_for(VALUE th, rb_io_t *fptr, short events, struct timeval *timeout)
     }
 
     int fd = fptr->fd;
-    if (fd == -1) return -1;
+
+    if (fd == -1) {
+        errno = EBADF;
+        return -1;
+    }
 
     rb_fdset_t fds;
     int ret;
