@@ -139,6 +139,12 @@ module Fiddle
       end
     end
 
+    def test_type_constants
+      Fiddle::Types.constants.each do |const|
+        assert_equal Fiddle::Types.const_get(const), Fiddle.const_get("TYPE_#{const}")
+      end
+    end
+
     def test_unsigned_result()
       d = (2 ** 31) + 1
 
