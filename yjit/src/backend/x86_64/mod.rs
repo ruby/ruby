@@ -670,7 +670,8 @@ impl Assembler
     /// Optimize and compile the stored instructions
     pub fn compile_with_regs(self, cb: &mut CodeBlock, regs: Vec<Reg>) -> Vec<u32>
     {
-        let mut asm = self.x86_split().alloc_regs(regs);
+        let mut asm = self.x86_split();
+        asm.alloc_regs(regs);
 
         // Create label instances in the code block
         for (idx, name) in asm.label_names.iter().enumerate() {

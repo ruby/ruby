@@ -4,6 +4,7 @@
 
 use std::cell::Cell;
 use std::fmt;
+use std::collections::HashMap;
 use std::convert::From;
 use std::mem::take;
 use crate::cruby::{VALUE};
@@ -912,7 +913,7 @@ impl Assembler
     /// Sets the out field on the various instructions that require allocated
     /// registers because their output is used as the operand on a subsequent
     /// instruction. This is our implementation of the linear scan algorithm.
-    pub(super) fn alloc_regs(mut self, regs: Vec<Reg>) -> Assembler
+    pub(super) fn alloc_regs(&mut self, regs: Vec<Reg>)
     {
         //dbg!(&self);
 
@@ -955,36 +956,87 @@ impl Assembler
             }
         }
 
-        let live_ranges: Vec<usize> = take(&mut self.live_ranges);
-        let mut asm = Assembler::new_with_label_names(take(&mut self.label_names));
-        let mut iterator = self.into_draining_iter();
-
-        while let Some((index, mut insn)) = iterator.next_unmapped() {
-            // Check if this is the last instruction that uses an operand that
-            // spans more than one instruction. In that case, return the
-            // allocated register to the pool.
-            for opnd in insn.opnd_iter() {
-                match opnd {
-                    Opnd::InsnOut { idx, .. } |
-                    Opnd::Mem(Mem { base: MemBase::InsnOut(idx), .. }) => {
-                        // Since we have an InsnOut, we know it spans more that one
-                        // instruction.
-                        let start_index = *idx;
-                        assert!(start_index < index);
-
-                        // We're going to check if this is the last instruction that
-                        // uses this operand. If it is, we can return the allocated
-                        // register to the pool.
-                        if live_ranges[start_index] == index {
-                            if let Some(Opnd::Reg(reg)) = asm.insns[start_index].out_opnd() {
-                                dealloc_reg(&mut pool, &regs, reg);
-                            } else {
-                                unreachable!("no register allocated for insn {:?}", insn);
+        // Pull out the allocated register for a given index. If one doesn't
+        // already exist at this point, we allocate one.
+        fn allocated_reg(asm: &mut Assembler, allocated: &mut Vec<Option<Reg>>, idx: usize, pool: &mut u32, regs: &Vec<Reg>, index: usize) -> Reg {
+            if allocated[idx].is_none() {
+                let source = &asm.insns[idx];
+    
+                // This is going to be the output operand that we
+                // will set on the instruction.
+                let mut out_reg: Option<Reg> = None;
+    
+                // C return values need to be mapped to the C return
+                // register.
+                if matches!(source, Insn::CCall { .. }) {
+                    out_reg = Some(take_reg(pool, regs, &C_RET_REG));
+                }
+    
+                // If this instruction's first operand maps to a register and
+                // this is the last use of the register, reuse the register
+                // We do this to improve register allocation on x86
+                // e.g. out  = add(reg0, reg1)
+                //      reg0 = add(reg0, reg1)
+                if out_reg.is_none() {
+                    let mut opnd_iter = source.opnd_iter();
+    
+                    if let Some(Opnd::InsnOut{ idx, .. }) = opnd_iter.next() {
+                        if asm.live_ranges[*idx] == index {
+                            if let Some(Opnd::Reg(reg)) = source.out_opnd() {
+                                out_reg = Some(take_reg(pool, regs, &reg));
                             }
                         }
                     }
-                    _ => {}
                 }
+    
+                // Allocate a new register for this instruction if one is not
+                // already allocated.
+                if out_reg.is_none() {
+                    out_reg = match source {
+                        Insn::LiveReg { opnd, .. } => {
+                            // Allocate a specific register
+                            let reg = opnd.unwrap_reg();
+                            Some(take_reg(pool, regs, &reg))
+                        },
+                        _ => {
+                            Some(alloc_reg(pool, regs))
+                        }
+                    };
+                }
+    
+                let out_num_bits = Opnd::match_num_bits_iter(source.opnd_iter());
+                allocated[idx] = Some(out_reg.unwrap().sub_reg(out_num_bits));
+            }
+
+            allocated[idx].unwrap()
+        }
+
+        // This stores a map from the index of an instruction to the register
+        // that was allocated for its output.
+        let mut allocated: Vec<Option<Reg>> = vec![None; self.insns.len()];
+
+        for index in (0..self.insns.len()).rev() {
+            // Yank the instruction out of the list so that we can mutate it
+            // without the borrow checker throwing a fit.
+            let mut insn = std::mem::replace(&mut self.insns[index], Insn::Breakpoint);
+
+            // If this instruction has an allocated register, then we can return
+            // it to the pool here after we set the output.
+            if allocated[index].is_some() {
+                // If we get to this point where the end of the live range is
+                // not equal to the index of the instruction, then it must be
+                // true that we set an output operand for this instruction. If
+                // it's not true, something has gone wrong.
+                assert!(
+                    self.live_ranges[index] != index,
+                    "Instruction output reused but no output operand set"
+                );
+
+                let out = insn.out_opnd_mut().unwrap();
+                let reg = allocated[index].unwrap();
+
+                *out = Opnd::Reg(reg);
+                dealloc_reg(&mut pool, &regs, &reg);
             }
 
             // C return values need to be mapped to the C return register
@@ -992,89 +1044,31 @@ impl Assembler
                 assert_eq!(pool, 0, "register lives past C function call");
             }
 
-            // If this instruction is used by another instruction,
-            // we need to allocate a register to it
-            if live_ranges[index] != index {
-                // If we get to this point where the end of the live range is
-                // not equal to the index of the instruction, then it must be
-                // true that we set an output operand for this instruction. If
-                // it's not true, something has gone wrong.
-                assert!(
-                    !matches!(insn.out_opnd(), None),
-                    "Instruction output reused but no output operand set"
-                );
-
-                // This is going to be the output operand that we will set on
-                // the instruction.
-                let mut out_reg: Option<Reg> = None;
-
-                // C return values need to be mapped to the C return register
-                if matches!(insn, Insn::CCall { .. }) {
-                    out_reg = Some(take_reg(&mut pool, &regs, &C_RET_REG));
-                }
-
-                // If this instruction's first operand maps to a register and
-                // this is the last use of the register, reuse the register
-                // We do this to improve register allocation on x86
-                // e.g. out  = add(reg0, reg1)
-                //      reg0 = add(reg0, reg1)
-                if out_reg.is_none() {
-                    let mut opnd_iter = insn.opnd_iter();
-
-                    if let Some(Opnd::InsnOut{ idx, .. }) = opnd_iter.next() {
-                        if live_ranges[*idx] == index {
-                            if let Some(Opnd::Reg(reg)) = asm.insns[*idx].out_opnd() {
-                                out_reg = Some(take_reg(&mut pool, &regs, reg));
-                            }
-                        }
-                    }
-                }
-
-                // Allocate a new register for this instruction if one is not
-                // already allocated.
-                if out_reg.is_none() {
-                    out_reg = match &insn {
-                        Insn::LiveReg { opnd, .. } => {
-                            // Allocate a specific register
-                            let reg = opnd.unwrap_reg();
-                            Some(take_reg(&mut pool, &regs, &reg))
-                        },
-                        _ => {
-                            Some(alloc_reg(&mut pool, &regs))
-                        }
-                    };
-                }
-
-                // Set the output operand on the instruction
-                let out_num_bits = Opnd::match_num_bits_iter(insn.opnd_iter());
-
-                // If we have gotten to this point, then we're sure we have an
-                // output operand on this instruction because the live range
-                // extends beyond the index of the instruction.
-                let out = insn.out_opnd_mut().unwrap();
-                *out = Opnd::Reg(out_reg.unwrap().sub_reg(out_num_bits));
-            }
-
-            // Replace InsnOut operands by their corresponding register
+            // Find each instruction out that is not currently allocated and
+            // allocate a new register for it. Otherwise use the existing
+            // allocated register.
             let mut opnd_iter = insn.opnd_iter_mut();
+
             while let Some(opnd) = opnd_iter.next() {
-                match *opnd {
+                match opnd {
                     Opnd::InsnOut { idx, .. } => {
-                        *opnd = *asm.insns[idx].out_opnd().unwrap();
-                    },
-                    Opnd::Mem(Mem { base: MemBase::InsnOut(idx), disp, num_bits }) => {
-                        let base = MemBase::Reg(asm.insns[idx].out_opnd().unwrap().unwrap_reg().reg_no);
-                        *opnd = Opnd::Mem(Mem { base, disp, num_bits });
+                        let reg = allocated_reg(self, &mut allocated, *idx, &mut pool, &regs, index);
+                        *opnd = Opnd::Reg(reg);
                     }
-                     _ => {},
+                    Opnd::Mem(Mem { base, .. }) => {
+                        if let MemBase::InsnOut(idx) = base {
+                            let reg = allocated_reg(self, &mut allocated, *idx, &mut pool, &regs, index);
+                            *base = MemBase::Reg(reg.reg_no);
+                        }
+                    },
+                    _ => {}
                 }
             }
 
-            asm.push_insn(insn);
+            std::mem::swap(&mut self.insns[index], &mut insn);
         }
 
         assert_eq!(pool, 0, "Expected all registers to be returned to the pool");
-        asm
     }
 
     /// Compile the instructions down to machine code

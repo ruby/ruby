@@ -69,7 +69,7 @@ fn test_alloc_regs() {
     asm.add(out3, Opnd::UImm(6));
 
     // Here we're going to allocate the registers.
-    let result = asm.alloc_regs(Assembler::get_alloc_regs());
+    asm.alloc_regs(Assembler::get_alloc_regs());
 
     // Now we're going to verify that the out field has been appropriately
     // updated for each of the instructions that needs it.
@@ -77,9 +77,9 @@ fn test_alloc_regs() {
     let reg0 = regs[0];
     let reg1 = regs[1];
 
-    assert!(matches!(result.insns[0].out_opnd(), Some(Opnd::Reg(reg0))));
-    assert!(matches!(result.insns[2].out_opnd(), Some(Opnd::Reg(reg1))));
-    assert!(matches!(result.insns[5].out_opnd(), Some(Opnd::Reg(reg0))));
+    assert!(matches!(asm.insns[0].out_opnd(), Some(Opnd::Reg(reg0))));
+    assert!(matches!(asm.insns[2].out_opnd(), Some(Opnd::Reg(reg1))));
+    assert!(matches!(asm.insns[5].out_opnd(), Some(Opnd::Reg(reg0))));
 }
 
 fn setup_asm() -> (Assembler, CodeBlock) {
