@@ -157,6 +157,7 @@ impl Opnd
     }
 
     pub fn with_num_bits(&self, num_bits: u8) -> Option<Opnd> {
+        assert!(num_bits == 8 || num_bits == 16 || num_bits == 32 || num_bits == 64);
         match *self {
             Opnd::Reg(reg) => Some(Opnd::Reg(reg.with_num_bits(num_bits))),
             Opnd::Mem(Mem { base, disp, .. }) => Some(Opnd::Mem(Mem { base, disp, num_bits })),
