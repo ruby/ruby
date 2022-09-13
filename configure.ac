@@ -2774,7 +2774,6 @@ AS_IF([test "$with_dln_a_out" != yes], [
     AS_CASE(["$target_os"],
       [darwin*], [
 	for flag in \
-	  "-undefined dynamic_lookup" \
 	  "-multiply_defined suppress" \
 	  ; do
 	  test "x${linker_flag}" = x || flag="${linker_flag}`echo ${flag} | tr ' ' ,`"
