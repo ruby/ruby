@@ -1,6 +1,6 @@
 files:
   'yjit*': [team:yjit]
-  'yjit/*': [team:yjit]
+  'yjit/**/*': [team:yjit]
   'doc/yjit/*': [team:yjit]
   'bootstraptest/test_yjit*': [team:yjit]
   'test/ruby/test_yjit*': [team:yjit]
