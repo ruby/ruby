@@ -90,6 +90,10 @@ $(BANG)endif
 	@echo HAVE_GIT = $(HAVE_GIT)>> $(MAKEFILE)
 !endif
 
+!if "$(WITH_GMP)" == "yes"
+	@echo>>$(MAKEFILE) USE_GMP = 1
+!endif
+
 -osname-section-:
 	@$(APPEND)
 	@echo # TARGET>>$(MAKEFILE)

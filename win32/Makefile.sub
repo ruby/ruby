@@ -288,6 +288,9 @@ LIBS = user32.lib advapi32.lib shell32.lib ws2_32.lib
 !if $(MSC_VER) >= 1400
 LIBS = $(LIBS) iphlpapi.lib
 !endif
+!if defined(USE_GMP)
+LIBS = $(LIBS) gmp.lib
+!endif
 LIBS = $(LIBS) imagehlp.lib shlwapi.lib bcrypt.lib $(EXTLIBS)
 !endif
 !if !defined(MISSING)
@@ -903,6 +906,9 @@ $(CONFIG_H): $(MKFILES) $(srcdir)/win32/Makefile.sub $(win_srcdir)/Makefile.sub
 !endif
 !if "$(EXTSTATIC)" == "static"
 #define EXTSTATIC 1
+!endif
+!if "$(USE_GMP)" != ""
+#define USE_GMP 1
 !endif
 #define EXECUTABLE_EXTS $(EXECUTABLE_EXTS)
 #define RUBY_COREDLL "$(RT)"
