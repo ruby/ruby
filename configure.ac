@@ -497,6 +497,7 @@ AS_CASE(["$target_os"],
 	AC_DEFINE_UNQUOTED(RUBY_MSVCRT_VERSION, $RT_VER)
 	sysconfdir=
     ])
+    rb_cv_binary_elf=no
     : ${enable_shared=yes}
     ],
 [hiuxmpp*], [AC_DEFINE(__HIUX_MPP__)])    # by TOYODA Eizi <toyoda@npd.kishou.go.jp>
@@ -606,22 +607,39 @@ RUBY_WERROR_FLAG([
     cd .. && rm -fr tmp.$$.try_link
 ])
 
-: ${RPATHFLAG=''}
-rpathflag=''
-AS_IF([test x"${RPATHFLAG}" = x], [
-    AS_CASE(["$target_os"],
+: "rpath" && {
+    AC_CACHE_CHECK(whether ELF binaries are produced, rb_cv_binary_elf,
+        [AC_LINK_IFELSE([AC_LANG_PROGRAM([[]], [[]])],[
+            AS_CASE(["`head -1 conftest$EXEEXT | tr -dc '\177ELF' | tr '\177' .`"],
+            [.ELF*], [rb_cv_binary_elf=yes], [rb_cv_binary_elf=no])],
+            [rb_cv_binary_elf=no])])
+
+    rpathflag=''
+    AS_IF([test x"${RPATHFLAG=}" = x], [
+	AS_CASE(["$target_os"],
 	[aix*], [rpathflag='-blibpath:'],
-	[for rpathflag in -R "-rpath "; do
+	[for rpathflag in "-rpath " -R; do
 	    AS_CASE("$rpathflag",
 		    [*" "], [AS_CASE(["${linker_flag}"],
 				     [*,], [rpathflag=`echo "$rpathflag" | tr ' ' ,`])])
 	    rpathflag="${linker_flag}${rpathflag}"
 	    RUBY_TRY_LDFLAGS([${rpathflag}.], [], [rpathflag=])
-	    AS_IF([test "x${rpathflag}" != x], [])
+	    AS_IF([test "x${rpathflag}" != x], [break])
         done])
-], [
-    rpathflag=`echo "$RPATHFLAG" | sed 's/%.*//'`
-])
+    ], [
+        rpathflag=`echo "$RPATHFLAG" | sed 's/%.*//'`
+    ])
+
+    AC_ARG_ENABLE(rpath,
+        AS_HELP_STRING([--enable-rpath], [embed run path into extension libraries.
+        enabled by default on ELF platforms]),
+        [enable_rpath=$enableval], [enable_rpath="$rb_cv_binary_elf"])
+
+    AS_IF([test "$enable_rpath:${RPATHFLAG}" = yes:], [
+        RPATHFLAG="${rpathflag:+ ${rpathflag}%1\$-s}"
+    ])
+    AS_CASE([${RPATHFLAG}],[*'%1$'*],[: ${LIBPATHFLAG=' -L%1$-s'}],[: ${LIBPATHFLAG=' -L%s'}])
+}
 
 RUBY_TRY_LDFLAGS(-fdeclspec, [fdeclspec=yes], [fdeclspec=no])
 AS_IF([test "$fdeclspec" = yes], [
@@ -1140,7 +1158,6 @@ main()
 		ac_cv_func_getpgrp_void=no
 		ac_cv_func_memcmp_working=yes
 		ac_cv_lib_dl_dlopen=no
-		rb_cv_binary_elf=no
 		rb_cv_negative_time_t=yes
 		ac_cv_func_fcntl=yes
 		ac_cv_func_flock=yes
@@ -2850,12 +2867,6 @@ AC_ARG_WITH(dln-a-out,
 	])
 ])
 
-AC_CACHE_CHECK(whether ELF binaries are produced, rb_cv_binary_elf,
-[AC_LINK_IFELSE([AC_LANG_PROGRAM([[]], [[]])],[
-AS_CASE(["`head -1 conftest$EXEEXT | tr -dc '\177ELF' | tr '\177' .`"],
-[.ELF*], [rb_cv_binary_elf=yes], [rb_cv_binary_elf=no])],
-rb_cv_binary_elf=no)])
-
 AS_IF([test "$rb_cv_binary_elf" = yes], [
   AC_DEFINE(USE_ELF)
   AC_CHECK_HEADERS([elf.h elf_abi.h])
@@ -2933,11 +2944,6 @@ STATIC=
 }
 
 : "rpath" && {
-  AC_ARG_ENABLE(rpath,
-       AS_HELP_STRING([--enable-rpath], [embed run path into extension libraries.
-       enabled by default on ELF platforms]),
-       [enable_rpath=$enableval], [enable_rpath="$rb_cv_binary_elf"])
-
   AS_CASE(["$target_os"],
 	[solaris*], [	AS_IF([test "$GCC" = yes], [
 			    : ${LDSHARED='$(CC) -shared'}
@@ -2978,7 +2984,6 @@ STATIC=
 			rb_cv_dlopen=yes],
 	[interix*], [	: ${LDSHARED='$(CC) -shared'}
 			XLDFLAGS="$XLDFLAGS -Wl,-E"
-			LIBPATHFLAG=" -L%1\$-s"
 			rb_cv_dlopen=yes],
 	[freebsd*|dragonfly*], [
 			: ${LDSHARED='$(CC) -shared'}
@@ -3055,12 +3060,6 @@ STATIC=
 	done
       ])
   ])
-
-  AS_IF([test "$enable_rpath:${RPATHFLAG}" = yes:], [
-      AS_IF([test "x$rpathflag" != x], [
-	  RPATHFLAG=" ${rpathflag}%1\$-s"
-      ])
-  ])
 }
 
 AS_IF([test "${LDSHAREDXX}" = ""], [
@@ -3077,7 +3076,6 @@ AS_IF([test "${LDSHAREDXX}" = ""], [
 	[ld" "*], [
 	    ])
 ])
-AS_CASE([${RPATHFLAG}],[*'%1$'*],[: ${LIBPATHFLAG=' -L%1$-s'}],[: ${LIBPATHFLAG=' -L%s'}])
 
 AC_SUBST(LINK_SO)
 AC_SUBST(LIBPATHFLAG)
