@@ -930,6 +930,15 @@ AS_CASE(["$target_cpu"], [[i[3-6]86*]], [
 ])
 
 OPT_DIR=
+AC_ARG_WITH([gmp-dir],
+  AS_HELP_STRING([--with-gmp-dir=DIR],
+                 [specify the prefix directory where gmp is installed]),
+  [OPT_DIR="$withval"], [])
+AC_ARG_WITH([gmp],
+  [AS_HELP_STRING([--without-gmp],
+                  [disable GNU GMP to accelerate Bignum operations])],
+  [OPT_DIR=], [with_gmp=yes])
+
 AC_ARG_WITH(opt-dir,
 	AS_HELP_STRING([--with-opt-dir=DIR-LIST],
 		       [add optional headers and libraries directories separated by $PATH_SEPARATOR]),
@@ -1319,11 +1328,6 @@ AS_CASE("$target_cpu", [x64|x86_64|i[3-6]86*], [
 ])
 RUBY_UNIVERSAL_CHECK_HEADER([x86_64, i386], x86intrin.h)
 
-AC_ARG_WITH([gmp],
-  [AS_HELP_STRING([--without-gmp],
-    [disable GNU GMP to accelerate Bignum operations])],
-  [],
-  [with_gmp=yes])
 AS_IF([test "x$with_gmp" != xno],
   [AC_CHECK_HEADERS(gmp.h)
    AS_IF([test "x$ac_cv_header_gmp_h" != xno],
