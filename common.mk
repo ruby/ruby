@@ -1475,7 +1475,10 @@ RSPECOPTS =
 BUNDLER_SPECS =
 test-bundler: $(TEST_RUNNABLE)-test-bundler
 yes-test-bundler: yes-test-bundler-prepare
-	$(gnumake_recursive)$(XRUBY) -C $(srcdir) -Ispec/bundler .bundle/bin/rspec \
+	$(gnumake_recursive)$(XRUBY) \
+		-r./$(arch)-fake \
+		-e "exec(*ARGV)" -- \
+		$(XRUBY) -C $(srcdir) -Ispec/bundler .bundle/bin/rspec \
 		--require spec_helper $(RSPECOPTS) spec/bundler/$(BUNDLER_SPECS)
 no-test-bundler:
 
@@ -1483,6 +1486,7 @@ PARALLELRSPECOPTS = --runtime-log $(srcdir)/tmp/parallel_runtime_rspec.log
 test-bundler-parallel: $(TEST_RUNNABLE)-test-bundler-parallel
 yes-test-bundler-parallel: yes-test-bundler-prepare
 	$(gnumake_recursive)$(XRUBY) \
+		-r./$(arch)-fake \
 		-e "ARGV[-1] = File.expand_path(ARGV[-1])" \
 		-e "exec(*ARGV)" -- \
 		$(XRUBY) -I$(srcdir)/spec/bundler \
