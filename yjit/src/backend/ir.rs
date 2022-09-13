@@ -152,8 +152,13 @@ impl Opnd
     }
 
     pub fn sub_opnd(&self, num_bits: u8) -> Option<Opnd> {
+        assert!(num_bits <= self.rm_num_bits());
+        self.with_num_bits(num_bits)
+    }
+
+    pub fn with_num_bits(&self, num_bits: u8) -> Option<Opnd> {
         match *self {
-            Opnd::Reg(reg) => Some(Opnd::Reg(reg.sub_reg(num_bits))),
+            Opnd::Reg(reg) => Some(Opnd::Reg(reg.with_num_bits(num_bits))),
             Opnd::Mem(Mem { base, disp, .. }) => Some(Opnd::Mem(Mem { base, disp, num_bits })),
             Opnd::InsnOut { idx, .. } => Some(Opnd::InsnOut { idx, num_bits }),
             _ => None,
@@ -1061,7 +1066,7 @@ impl Assembler
                 // output operand on this instruction because the live range
                 // extends beyond the index of the instruction.
                 let out = insn.out_opnd_mut().unwrap();
-                *out = Opnd::Reg(out_reg.unwrap().sub_reg(out_num_bits));
+                *out = Opnd::Reg(out_reg.unwrap().with_num_bits(out_num_bits));
             }
 
             // Replace InsnOut operands by their corresponding register
@@ -1069,7 +1074,7 @@ impl Assembler
             while let Some(opnd) = opnd_iter.next() {
                 match *opnd {
                     Opnd::InsnOut { idx, num_bits } => {
-                        *opnd = (*asm.insns[idx].out_opnd().unwrap()).sub_opnd(num_bits).unwrap();
+                        *opnd = (*asm.insns[idx].out_opnd().unwrap()).with_num_bits(num_bits).unwrap();
                     },
                     Opnd::Mem(Mem { base: MemBase::InsnOut(idx), disp, num_bits }) => {
                         let base = MemBase::Reg(asm.insns[idx].out_opnd().unwrap().unwrap_reg().reg_no);

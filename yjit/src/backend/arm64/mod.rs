@@ -140,7 +140,14 @@ impl Assembler
                 Opnd::Reg(_) | Opnd::InsnOut { .. } => opnd,
                 Opnd::Mem(_) => {
                     let split_opnd = split_memory_address(asm, opnd);
-                    asm.load(split_opnd)
+                    let out_opnd = asm.load(split_opnd);
+                    // Many Arm insns support only 32-bit or 64-bit operands. asm.load with fewer
+                    // bits zero-extends the value, so it's safe to recognize it as a 32-bit value.
+                    if out_opnd.rm_num_bits() < 32 {
+                        out_opnd.with_num_bits(32).unwrap()
+                    } else {
+                        out_opnd
+                    }
                 },
                 _ => asm.load(opnd)
             }

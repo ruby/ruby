@@ -267,12 +267,7 @@ pub fn cmp(cb: &mut CodeBlock, rn: A64Opnd, rm: A64Opnd) {
             DataReg::cmp(rn.reg_no, rm.reg_no, rn.num_bits).into()
         },
         (A64Opnd::Reg(rn), A64Opnd::UImm(imm12)) => {
-            let num_bits = if (rn.num_bits == 8) {
-                32 // size can't be 8. assume the remaining 24 bits are zero-extended.
-            } else {
-                rn.num_bits
-            };
-            DataImm::cmp(rn.reg_no, imm12.try_into().unwrap(), num_bits).into()
+            DataImm::cmp(rn.reg_no, imm12.try_into().unwrap(), rn.num_bits).into()
         },
         _ => panic!("Invalid operand combination to cmp instruction."),
     };
