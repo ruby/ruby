@@ -115,7 +115,7 @@ jobs:
           make update-gems
 
       - name: make all
-        timeout-minutes: 20
+        timeout-minutes: 30
         run: |
           make
 
