@@ -769,7 +769,7 @@ gem 'other', version
   def test_generate_plugins
     installer = util_setup_installer do |spec|
       write_file File.join(@tempdir, "lib", "rubygems_plugin.rb") do |io|
-        io.write "puts __FILE__"
+        io.write "# do nothing"
       end
 
       spec.files += %w[lib/rubygems_plugin.rb]
@@ -856,11 +856,59 @@ gem 'other', version
     refute_includes File.read(build_root_path), build_root
   end
 
+  class << self
+    attr_accessor :plugin_loaded
+    attr_accessor :post_install_is_called
+  end
+
+  def test_use_plugin_immediately
+    self.class.plugin_loaded = false
+    self.class.post_install_is_called = false
+    spec_version = nil
+    plugin_path = nil
+    installer = util_setup_installer do |spec|
+      spec_version = spec.version
+      plugin_path = File.join("lib", "rubygems_plugin.rb")
+      write_file File.join(@tempdir, plugin_path) do |io|
+        io.write <<-PLUGIN
+#{self.class}.plugin_loaded = true
+Gem.post_install do
+  #{self.class}.post_install_is_called = true
+end
+        PLUGIN
+      end
+      spec.files += [plugin_path]
+      plugin_path = File.join(spec.gem_dir, plugin_path)
+    end
+    build_rake_in do
+      installer.install
+    end
+    assert self.class.plugin_loaded, "plugin is not loaded"
+    assert self.class.post_install_is_called,
+           "post install hook registered by plugin is not called"
+
+    self.class.plugin_loaded = false
+    $LOADED_FEATURES.delete(plugin_path)
+    installer_new = util_setup_installer do |spec_new|
+      spec_new.version = spec_version.version.succ
+      plugin_path = File.join("lib", "rubygems_plugin.rb")
+      write_file File.join(@tempdir, plugin_path) do |io|
+        io.write "#{self.class}.plugin_loaded = true"
+      end
+      spec_new.files += [plugin_path]
+    end
+    build_rake_in do
+      installer_new.install
+    end
+    assert !self.class.plugin_loaded,
+           "plugin is loaded even when old version is already loaded"
+  end
+
   def test_keeps_plugins_up_to_date
     # NOTE: version a-2 is already installed by setup hooks
 
     write_file File.join(@tempdir, "lib", "rubygems_plugin.rb") do |io|
-      io.write "puts __FILE__"
+      io.write "# do nothing"
     end
 
     build_rake_in do
