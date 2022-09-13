@@ -108,10 +108,7 @@ def sync_default_gems(gem)
     File.write("lib/bundler/bundler.gemspec", gemspec_content)
 
     cp_r("#{upstream}/bundler/spec", "spec/bundler")
-    cp_r(Dir.glob("#{upstream}/bundler/tool/bundler/dev_gems*"), "tool/bundler")
-    cp_r(Dir.glob("#{upstream}/bundler/tool/bundler/test_gems*"), "tool/bundler")
-    cp_r(Dir.glob("#{upstream}/bundler/tool/bundler/rubocop_gems*"), "tool/bundler")
-    cp_r(Dir.glob("#{upstream}/bundler/tool/bundler/standard_gems*"), "tool/bundler")
+    cp_r(Dir.glob("#{upstream}/bundler/tool/bundler/*_gems.rb"), "tool/bundler")
     rm_rf(%w[spec/bundler/support/artifice/vcr_cassettes])
     license_files = %w[
       lib/bundler/vendor/thor/LICENSE.md
