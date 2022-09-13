@@ -2685,7 +2685,7 @@ obj_refer_only_shareables_p_i(VALUE obj, void *ptr)
     int *pcnt = (int *)ptr;
 
     if (!rb_ractor_shareable_p(obj)) {
-        pcnt++;
+        *pcnt++;
     }
 }
 
