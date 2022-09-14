@@ -102,11 +102,14 @@ module Fiddle
       end
     end
 
-    def test_memsize
+    def test_memsize_ruby_dev_42480
       require 'objspace'
-      bug = '[ruby-dev:42480]'
       n = 10000
-      assert_equal(n, n.times {ObjectSpace.memsize_of(Closure.allocate)}, bug)
+      n.times do
+        Closure.create(:int, [:void]) do |closure|
+          ObjectSpace.memsize_of(closure)
+        end
+      end
     end
 
     %w[INT SHORT CHAR LONG LONG_LONG].each do |name|
