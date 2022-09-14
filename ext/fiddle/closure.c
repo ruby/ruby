@@ -224,9 +224,16 @@ allocate(VALUE klass)
     return i;
 }
 
+typedef struct {
+    VALUE self;
+    int argc;
+    VALUE *argv;
+} initialize_data;
+
 static VALUE
-initialize(int rbargc, VALUE argv[], VALUE self)
+initialize_body(VALUE user_data)
 {
+    initialize_data *data = (initialize_data *)user_data;
     VALUE ret;
     VALUE args;
     VALUE normalized_args;
@@ -237,14 +244,14 @@ initialize(int rbargc, VALUE argv[], VALUE self)
     ffi_status result;
     int i, argc;
 
-    if (2 == rb_scan_args(rbargc, argv, "21", &ret, &args, &abi))
-	abi = INT2NUM(FFI_DEFAULT_ABI);
+    if (2 == rb_scan_args(data->argc, data->argv, "21", &ret, &args, &abi))
+        abi = INT2NUM(FFI_DEFAULT_ABI);
 
     Check_Type(args, T_ARRAY);
 
     argc = RARRAY_LENINT(args);
 
-    TypedData_Get_Struct(self, fiddle_closure, &closure_data_type, cl);
+    TypedData_Get_Struct(data->self, fiddle_closure, &closure_data_type, cl);
 
     cl->argv = (ffi_type **)xcalloc(argc + 1, sizeof(ffi_type *));
 
@@ -257,8 +264,8 @@ initialize(int rbargc, VALUE argv[], VALUE self)
     cl->argv[argc] = NULL;
 
     ret = rb_fiddle_type_ensure(ret);
-    rb_iv_set(self, "@ctype", ret);
-    rb_iv_set(self, "@args", normalized_args);
+    rb_iv_set(data->self, "@ctype", ret);
+    rb_iv_set(data->self, "@args", normalized_args);
 
     cif = &cl->cif;
     pcl = cl->pcl;
@@ -269,25 +276,48 @@ initialize(int rbargc, VALUE argv[], VALUE self)
                           rb_fiddle_int_to_ffi_type(NUM2INT(ret)),
                           cl->argv);
 
-    if (FFI_OK != result)
-	rb_raise(rb_eRuntimeError, "error prepping CIF %d", result);
+    if (FFI_OK != result) {
+        rb_raise(rb_eRuntimeError, "error prepping CIF %d", result);
+    }
 
 #if USE_FFI_CLOSURE_ALLOC
     result = ffi_prep_closure_loc(pcl, cif, callback,
-		(void *)self, cl->code);
+                                  (void *)(data->self), cl->code);
 #else
     result = ffi_prep_closure(pcl, cif, callback, (void *)(data->self));
     cl->code = (void *)pcl;
     i = mprotect(pcl, sizeof(*pcl), PROT_READ | PROT_EXEC);
     if (i) {
-	rb_sys_fail("mprotect");
+        rb_sys_fail("mprotect");
     }
 #endif
 
-    if (FFI_OK != result)
-	rb_raise(rb_eRuntimeError, "error prepping closure %d", result);
+    if (FFI_OK != result) {
+        rb_raise(rb_eRuntimeError, "error prepping closure %d", result);
+    }
 
-    return self;
+    return data->self;
+}
+
+static VALUE
+initialize_rescue(VALUE user_data, VALUE exception)
+{
+    initialize_data *data = (initialize_data *)user_data;
+    dealloc(RTYPEDDATA_DATA(data->self));
+    RTYPEDDATA_DATA(data->self) = NULL;
+    rb_exc_raise(exception);
+    return data->self;
+}
+
+static VALUE
+initialize(int argc, VALUE *argv, VALUE self)
+{
+    initialize_data data;
+    data.self = self;
+    data.argc = argc;
+    data.argv = argv;
+    return rb_rescue(initialize_body, (VALUE)&data,
+                     initialize_rescue, (VALUE)&data);
 }
 
 static VALUE
