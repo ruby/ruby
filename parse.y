@@ -10561,7 +10561,7 @@ static NODE *
 kwd_append(NODE *kwlist, NODE *kw)
 {
     if (kwlist) {
-		opt_arg_append(kwlist, kw);
+	opt_arg_append(kwlist, kw);
     }
     return kwlist;
 }
