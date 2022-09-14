@@ -507,6 +507,22 @@ pub fn ldur(cb: &mut CodeBlock, rt: A64Opnd, rn: A64Opnd) {
     cb.write_bytes(&bytes);
 }
 
+/// LDURB - load a byte from memory, zero-extend it, and write it to a register
+pub fn ldurb(cb: &mut CodeBlock, rt: A64Opnd, rn: A64Opnd) {
+    let bytes: [u8; 4] = match (rt, rn) {
+        (A64Opnd::Reg(rt), A64Opnd::Mem(rn)) => {
+            assert!(rt.num_bits == rn.num_bits, "Expected registers to be the same size");
+            assert!(rt.num_bits == 8, "Expected registers to have size 8");
+            assert!(mem_disp_fits_bits(rn.disp), "Expected displacement to be 9 bits or less");
+
+            LoadStore::ldurb(rt.reg_no, rn.base_reg_no, rn.disp as i16).into()
+        },
+        _ => panic!("Invalid operands for LDURB")
+    };
+
+    cb.write_bytes(&bytes);
+}
+
 /// LDURSW - load a 32-bit memory address into a register and sign-extend it
 pub fn ldursw(cb: &mut CodeBlock, rt: A64Opnd, rn: A64Opnd) {
     let bytes: [u8; 4] = match (rt, rn) {

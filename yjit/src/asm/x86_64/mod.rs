@@ -89,16 +89,13 @@ pub enum X86Opnd
 }
 
 impl X86Reg {
-    pub fn sub_reg(&self, num_bits: u8) -> Self {
+    pub fn with_num_bits(&self, num_bits: u8) -> Self {
         assert!(
             num_bits == 8 ||
             num_bits == 16 ||
             num_bits == 32 ||
             num_bits == 64
         );
-
-        assert!(num_bits <= self.num_bits);
-
         Self {
             num_bits,
             reg_type: self.reg_type,
