@@ -19,7 +19,9 @@ gnumake_recursive =
 enable_shared = $(ENABLE_SHARED:no=)
 
 UNICODE_VERSION = 14.0.0
-UNICODE_EMOJI_VERSION = 14.0
+UNICODE_EMOJI_VERSION_0 = $(UNICODE_VERSION)///
+UNICODE_EMOJI_VERSION_1 = $(UNICODE_EMOJI_VERSION_0:.0///=)
+UNICODE_EMOJI_VERSION = $(UNICODE_EMOJI_VERSION_1:///=)
 UNICODE_BETA = NO
 
 ### set the following environment variable or uncomment the line if
