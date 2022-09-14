@@ -113,6 +113,7 @@ env:
         libncursesw5-dev:armhf
         libreadline-dev:armhf
         libssl-dev:armhf
+        libyaml-dev:armhf
         linux-libc-dev:armhf
         zlib1g-dev:armhf
 
