@@ -170,7 +170,7 @@ module TestIRB
         io.class::HISTORY.concat(%w"line1 line2")
 
         history_file = IRB.rc_file("_history")
-        assert !File.file?(history_file)
+        assert_not_send [File, :file?, history_file]
         File.write(history_file, "line0\n")
         io.save_history
         assert_equal(%w"line0 line1 line2", File.read(history_file).split)
