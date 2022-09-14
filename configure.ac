@@ -933,11 +933,11 @@ OPT_DIR=
 AC_ARG_WITH([gmp-dir],
   AS_HELP_STRING([--with-gmp-dir=DIR],
                  [specify the prefix directory where gmp is installed]),
-  [OPT_DIR="$withval"], [])
+  [OPT_DIR="${OPT_DIR:+$OPT_DIR$PATH_SEPARATOR}$withval"], [])
 AC_ARG_WITH([gmp],
   [AS_HELP_STRING([--without-gmp],
                   [disable GNU GMP to accelerate Bignum operations])],
-  [OPT_DIR=], [with_gmp=yes])
+  [], [with_gmp=yes])
 
 AC_ARG_WITH(opt-dir,
 	AS_HELP_STRING([--with-opt-dir=DIR-LIST],
