@@ -1980,8 +1980,33 @@ vm_search_method(VALUE cd_owner, struct rb_call_data *cd, VALUE recv)
     return vm_search_method_fastpath(cd_owner, cd, klass);
 }
 
+#if __has_attribute(transparent_union)
+typedef union {
+    VALUE (*anyargs)(ANYARGS);
+    VALUE (*f00)(VALUE);
+    VALUE (*f01)(VALUE, VALUE);
+    VALUE (*f02)(VALUE, VALUE, VALUE);
+    VALUE (*f03)(VALUE, VALUE, VALUE, VALUE);
+    VALUE (*f04)(VALUE, VALUE, VALUE, VALUE, VALUE);
+    VALUE (*f05)(VALUE, VALUE, VALUE, VALUE, VALUE, VALUE);
+    VALUE (*f06)(VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE);
+    VALUE (*f07)(VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE);
+    VALUE (*f08)(VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE);
+    VALUE (*f09)(VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE);
+    VALUE (*f10)(VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE);
+    VALUE (*f11)(VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE);
+    VALUE (*f12)(VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE);
+    VALUE (*f13)(VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE);
+    VALUE (*f14)(VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE);
+    VALUE (*f15)(VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE);
+    VALUE (*fm1)(int, union { VALUE *x; const VALUE *y; } __attribute__((__transparent_union__)), VALUE);
+} __attribute__((__transparent_union__)) cfunc_type;
+#else
+typedef VALUE (*cfunc_type)(ANYARGS);
+#endif
+
 static inline int
-check_cfunc(const rb_callable_method_entry_t *me, VALUE (*func)(ANYARGS))
+check_cfunc(const rb_callable_method_entry_t *me, cfunc_type func)
 {
     if (! me) {
         return false;
@@ -1994,13 +2019,17 @@ check_cfunc(const rb_callable_method_entry_t *me, VALUE (*func)(ANYARGS))
             return false;
         }
         else {
+#if __has_attribute(transparent_union)
+            return me->def->body.cfunc.func == func.anyargs;
+#else
             return me->def->body.cfunc.func == func;
+#endif
         }
     }
 }
 
 static inline int
-vm_method_cfunc_is(const rb_iseq_t *iseq, CALL_DATA cd, VALUE recv, VALUE (*func)(ANYARGS))
+vm_method_cfunc_is(const rb_iseq_t *iseq, CALL_DATA cd, VALUE recv, cfunc_type func)
 {
     VM_ASSERT(iseq != NULL);
     const struct rb_callcache *cc = vm_search_method((VALUE)iseq, cd, recv);
