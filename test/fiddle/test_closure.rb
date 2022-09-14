@@ -10,8 +10,11 @@ module Fiddle
       super
       # Ensure freeing all closures.
       # See https://github.com/ruby/fiddle/issues/102#issuecomment-1241763091 .
-      GC.start
-      assert_equal(0, ObjectSpace.each_object(Fiddle::Closure) {})
+      not_freed_closures = []
+      ObjectSpace.each_object(Fiddle::Closure) do |closure|
+        not_freed_closures << closure unless closure.freed?
+      end
+      assert_equal([], not_freed_closures)
     end
 
     def test_argument_errors
