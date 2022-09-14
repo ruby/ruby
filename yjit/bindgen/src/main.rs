@@ -225,6 +225,7 @@ fn main() {
         .allowlist_var(".*_REDEFINED_OP_FLAG")
         .allowlist_type("rb_num_t")
         .allowlist_function("rb_callable_method_entry")
+        .allowlist_function("rb_callable_method_entry_or_negative")
         .allowlist_function("rb_vm_frame_method_entry")
         .allowlist_type("IVC") // pointer to iseq_inline_iv_cache_entry
         .allowlist_type("IC")  // pointer to iseq_inline_constant_cache
@@ -367,6 +368,7 @@ fn main() {
         .allowlist_function("rb_vm_ci_kwarg")
         .allowlist_function("rb_METHOD_ENTRY_VISI")
         .allowlist_function("rb_RCLASS_ORIGIN")
+        .allowlist_function("rb_method_basic_definition_p")
 
         // We define VALUE manually, don't import it
         .blocklist_type("VALUE")

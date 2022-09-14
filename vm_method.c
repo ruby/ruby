@@ -1347,7 +1347,7 @@ negative_cme(ID mid)
 }
 
 static const rb_callable_method_entry_t *
-callable_method_entry(VALUE klass, ID mid, VALUE *defined_class_ptr)
+callable_method_entry_or_negative(VALUE klass, ID mid, VALUE *defined_class_ptr)
 {
     const rb_callable_method_entry_t *cme;
 
@@ -1376,6 +1376,20 @@ callable_method_entry(VALUE klass, ID mid, VALUE *defined_class_ptr)
     }
     RB_VM_LOCK_LEAVE();
 
+    return cme;
+}
+
+// This is exposed for YJIT so that we can make assumptions that methods are
+// not defined.
+const rb_callable_method_entry_t *
+rb_callable_method_entry_or_negative(VALUE klass, ID mid) {
+    return callable_method_entry_or_negative(klass, mid, NULL);
+}
+
+static const rb_callable_method_entry_t *
+callable_method_entry(VALUE klass, ID mid, VALUE *defined_class_ptr) {
+    const rb_callable_method_entry_t *cme;
+    cme = callable_method_entry_or_negative(klass, mid, defined_class_ptr);
     return !UNDEFINED_METHOD_ENTRY_P(cme) ? cme : NULL;
 }
 

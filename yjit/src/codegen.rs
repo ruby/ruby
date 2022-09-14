@@ -3841,6 +3841,102 @@ fn jit_rb_str_concat(
     true
 }
 
+fn jit_obj_respond_to(
+    jit: &mut JITState,
+    ctx: &mut Context,
+    asm: &mut Assembler,
+    ocb: &mut OutlinedCb,
+    _ci: *const rb_callinfo,
+    _cme: *const rb_callable_method_entry_t,
+    _block: Option<IseqPtr>,
+    argc: i32,
+    known_recv_class: *const VALUE,
+) -> bool {
+    // respond_to(:sym) or respond_to(:sym, true)
+    if argc != 1 && argc != 2 {
+        return false;
+    }
+
+    if known_recv_class.is_null() {
+        return false;
+    }
+
+    let recv_class = unsafe { *known_recv_class };
+
+    // Get the method_id from compile time. We will later add a guard against it.
+    let mid_sym = jit_peek_at_stack(jit, ctx, (argc - 1) as isize);
+    if !mid_sym.static_sym_p() {
+        return false
+    }
+    let mid = unsafe { rb_sym2id(mid_sym) };
+
+    // Option<bool> representing the value of the "include_all" argument and whether it's known
+    let allow_priv = if argc == 1 {
+        // Default is false
+        Some(false)
+    } else {
+        // Get value from type information (may or may not be known)
+        ctx.get_opnd_type(StackOpnd(0)).known_truthy()
+    };
+
+    let mut target_cme = unsafe { rb_callable_method_entry_or_negative(recv_class, mid) };
+
+    // Should never be null, as in that case we will be returned a "negative CME"
+    assert!(!target_cme.is_null());
+
+    let cme_def_type = unsafe { get_cme_def_type(target_cme) };
+
+    if cme_def_type == VM_METHOD_TYPE_REFINED {
+        return false;
+    }
+
+    let visibility = if cme_def_type == VM_METHOD_TYPE_UNDEF {
+        METHOD_VISI_UNDEF
+    } else {
+        unsafe { METHOD_ENTRY_VISI(target_cme) }
+    };
+
+    let result = match (visibility, allow_priv) {
+        (METHOD_VISI_UNDEF, _) => Qfalse, // No method => false
+        (METHOD_VISI_PUBLIC, _) => Qtrue, // Public method => true regardless of include_all
+        (_, Some(true)) => Qtrue, // include_all => always true
+        (_, _) => return false // not public and include_all not known, can't compile
+    };
+
+    if result != Qtrue {
+        // Only if respond_to_missing? hasn't been overridden
+        // In the future, we might want to jit the call to respond_to_missing?
+        if !assume_method_basic_definition(jit, ocb, recv_class, idRespond_to_missing.into()) {
+            return false;
+        }
+    }
+
+    // Invalidate this block if method lookup changes for the method being queried. This works
+    // both for the case where a method does or does not exist, as for the latter we asked for a
+    // "negative CME" earlier.
+    assume_method_lookup_stable(jit, ocb, recv_class, target_cme);
+
+    // Generate a side exit
+    let side_exit = get_side_exit(jit, ocb, ctx);
+
+    if argc == 2 {
+        // pop include_all argument (we only use its type info)
+        ctx.stack_pop(1);
+    }
+
+    let sym_opnd = ctx.stack_pop(1);
+    let recv_opnd = ctx.stack_pop(1);
+
+    // This is necessary because we have no guarantee that sym_opnd is a constant
+    asm.comment("guard known mid");
+    asm.cmp(sym_opnd, mid_sym.into());
+    asm.jne(side_exit.into());
+
+    jit_putobject(jit, ctx, asm, result);
+
+    true
+}
+
 fn jit_thread_s_current(
     _jit: &mut JITState,
     ctx: &mut Context,
@@ -6291,6 +6387,8 @@ impl CodegenGlobals {
             self.yjit_reg_method(rb_cString, "bytesize", jit_rb_str_bytesize);
             self.yjit_reg_method(rb_cString, "<<", jit_rb_str_concat);
             self.yjit_reg_method(rb_cString, "+@", jit_rb_str_uplus);
+
+            self.yjit_reg_method(rb_mKernel, "respond_to?", jit_obj_respond_to);
 
             // Thread.current
             self.yjit_reg_method(

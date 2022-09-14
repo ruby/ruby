@@ -486,7 +486,11 @@ rb_METHOD_ENTRY_VISI(const rb_callable_method_entry_t *me)
 rb_method_type_t
 rb_get_cme_def_type(const rb_callable_method_entry_t *cme)
 {
-    return cme->def->type;
+    if (UNDEFINED_METHOD_ENTRY_P(cme)) {
+        return VM_METHOD_TYPE_UNDEF;
+    } else {
+        return cme->def->type;
+    }
 }
 
 ID
