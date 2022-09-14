@@ -224,6 +224,17 @@ allocate(VALUE klass)
     return i;
 }
 
+static fiddle_closure *
+get_raw(VALUE self)
+{
+    fiddle_closure *closure;
+    TypedData_Get_Struct(self, fiddle_closure, &closure_data_type, closure);
+    if (!closure) {
+        rb_raise(rb_eArgError, "already freed: %+"PRIsVALUE, self);
+    }
+    return closure;
+}
+
 static VALUE
 initialize(int rbargc, VALUE argv[], VALUE self)
 {
@@ -293,14 +304,28 @@ initialize(int rbargc, VALUE argv[], VALUE self)
 static VALUE
 to_i(VALUE self)
 {
-    fiddle_closure * cl;
-    void *code;
+    fiddle_closure *closure = get_raw(self);
+    return PTR2NUM(closure->code);
+}
 
-    TypedData_Get_Struct(self, fiddle_closure, &closure_data_type, cl);
+static VALUE
+closure_free(VALUE self)
+{
+    fiddle_closure *closure;
+    TypedData_Get_Struct(self, fiddle_closure, &closure_data_type, closure);
+    if (closure) {
+        dealloc(closure);
+        RTYPEDDATA_DATA(self) = NULL;
+    }
+    return RUBY_Qnil;
+}
 
-    code = cl->code;
-
-    return PTR2NUM(code);
+static VALUE
+closure_freed_p(VALUE self)
+{
+    fiddle_closure *closure;
+    TypedData_Get_Struct(self, fiddle_closure, &closure_data_type, closure);
+    return closure ? RUBY_Qfalse : RUBY_Qtrue;
 }
 
 void
@@ -353,8 +378,24 @@ Init_fiddle_closure(void)
     /*
      * Document-method: to_i
      *
-     * Returns the memory address for this closure
+     * Returns the memory address for this closure.
      */
     rb_define_method(cFiddleClosure, "to_i", to_i, 0);
+
+    /*
+     * Document-method: free
+     *
+     * Free this closure explicitly. You can't use this closure anymore.
+     *
+     * If this closure is already freed, this does nothing.
+     */
+    rb_define_method(cFiddleClosure, "free", closure_free, 0);
+
+    /*
+     * Document-method: freed?
+     *
+     * Whether this closure was freed explicitly.
+     */
+    rb_define_method(cFiddleClosure, "freed?", closure_freed_p, 0);
 }
 /* vim: set noet sw=4 sts=4 */
