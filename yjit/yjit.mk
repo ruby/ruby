@@ -13,6 +13,12 @@ YJIT_SRC_FILES = $(wildcard \
 	$(top_srcdir)/yjit/src/*/*/*/*.rs \
 	)
 
+# Because of Cargo cache, if the actual binary is not changed from the
+# previous build, the mtime is preserved as the cached file.
+# This means the target is not updated actually, and it will need to
+# rebuild at the next build.
+YJIT_LIB_TOUCH = touch $@
+
 # YJIT_SUPPORT=yes when `configure` gets `--enable-yjit`
 ifeq ($(YJIT_SUPPORT),yes)
 $(YJIT_LIBS): $(YJIT_SRC_FILES)
@@ -25,7 +31,7 @@ $(YJIT_LIBS): $(YJIT_SRC_FILES)
 	        -C overflow-checks=on \
 	        '--out-dir=$(CARGO_TARGET_DIR)/release/' \
 	        $(top_srcdir)/yjit/src/lib.rs
-	touch $@
+	$(YJIT_LIB_TOUCH)
 else ifeq ($(YJIT_SUPPORT),no)
 $(YJIT_LIBS):
 	$(ECHO) 'Error: Tried to build YJIT without configuring it first. Check `make showconfig`?'
@@ -37,7 +43,7 @@ $(YJIT_LIBS): $(YJIT_SRC_FILES)
 	        CARGO_TARGET_DIR='$(CARGO_TARGET_DIR)' \
 	        CARGO_TERM_PROGRESS_WHEN='never' \
 	        $(CARGO) $(CARGO_VERBOSE) build $(CARGO_BUILD_ARGS)
-	touch $@
+	$(YJIT_LIB_TOUCH)
 else
 endif
 
