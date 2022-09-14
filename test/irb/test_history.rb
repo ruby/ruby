@@ -162,7 +162,7 @@ module TestIRB
       backup_home = ENV["HOME"]
       backup_xdg_config_home = ENV.delete("XDG_CONFIG_HOME")
       IRB.conf[:SAVE_HISTORY] = 1
-      Dir.mktmpdir("test_irb_history_#{$$}") do |tmpdir|
+      Dir.mktmpdir("test_irb_history_") do |tmpdir|
         ENV["HOME"] = tmpdir
         io = TestInputMethod.new
         io.class::HISTORY.clear
@@ -188,7 +188,7 @@ module TestIRB
       backup_xdg_config_home = ENV.delete("XDG_CONFIG_HOME")
       IRB.conf[:LC_MESSAGES] = IRB::Locale.new
       actual_history = nil
-      Dir.mktmpdir("test_irb_history_#{$$}") do |tmpdir|
+      Dir.mktmpdir("test_irb_history_") do |tmpdir|
         ENV["HOME"] = tmpdir
         open(IRB.rc_file("_history"), "w") do |f|
           f.write(initial_irb_history)
