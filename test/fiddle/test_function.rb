@@ -18,8 +18,11 @@ module Fiddle
     def teardown
       # Ensure freeing all closures.
       # See https://github.com/ruby/fiddle/issues/102#issuecomment-1241763091 .
-      GC.start
-      assert_equal(0, ObjectSpace.each_object(Fiddle::Closure) {})
+      not_freed_closures = []
+      ObjectSpace.each_object(Fiddle::Closure) do |closure|
+        not_freed_closures << closure unless closure.freed?
+      end
+      assert_equal([], not_freed_closures)
     end
 
     def test_default_abi
@@ -82,18 +85,20 @@ module Fiddle
     end
 
     def test_argument_count
-      closure = Class.new(Closure) {
+      closure_class = Class.new(Closure) do
         def call one
           10 + one
         end
-      }.new(TYPE_INT, [TYPE_INT])
-      func = Function.new(closure, [TYPE_INT], TYPE_INT)
-
-      assert_raise(ArgumentError) do
-        func.call(1,2,3)
       end
-      assert_raise(ArgumentError) do
-        func.call
+      closure_class.create(TYPE_INT, [TYPE_INT]) do |closure|
+        func = Function.new(closure, [TYPE_INT], TYPE_INT)
+
+        assert_raise(ArgumentError) do
+          func.call(1,2,3)
+        end
+        assert_raise(ArgumentError) do
+          func.call
+        end
       end
     end
 
