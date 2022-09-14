@@ -135,7 +135,8 @@ module Fiddle
     # for backwards compatibility
     def test_unsigned_equals_negative_signed
       Fiddle.constants.grep(/\ATYPE_(?!VOID|VARIADIC\z)(U.*)/) do |unsigned|
-        assert_equal -Fiddle.const_get(unsigned.to_s.sub(/U/, '')), Fiddle.const_get(unsigned)
+        assert_equal(-Fiddle.const_get(unsigned.to_s.sub(/U/, '')),
+                     Fiddle.const_get(unsigned))
       end
     end
 
