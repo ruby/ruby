@@ -497,6 +497,7 @@ AS_CASE(["$target_os"],
 	AC_DEFINE_UNQUOTED(RUBY_MSVCRT_VERSION, $RT_VER)
 	sysconfdir=
     ])
+    rb_cv_binary_elf=no
     : ${enable_shared=yes}
     ],
 [hiuxmpp*], [AC_DEFINE(__HIUX_MPP__)])    # by TOYODA Eizi <toyoda@npd.kishou.go.jp>
@@ -606,22 +607,39 @@ RUBY_WERROR_FLAG([
     cd .. && rm -fr tmp.$$.try_link
 ])
 
-: ${RPATHFLAG=''}
-rpathflag=''
-AS_IF([test x"${RPATHFLAG}" = x], [
-    AS_CASE(["$target_os"],
+: "rpath" && {
+    AC_CACHE_CHECK(whether ELF binaries are produced, rb_cv_binary_elf,
+        [AC_LINK_IFELSE([AC_LANG_PROGRAM([[]], [[]])],[
+            AS_CASE(["`head -1 conftest$EXEEXT | tr -dc '\177ELF' | tr '\177' .`"],
+            [.ELF*], [rb_cv_binary_elf=yes], [rb_cv_binary_elf=no])],
+            [rb_cv_binary_elf=no])])
+
+    rpathflag=''
+    AS_IF([test x"${RPATHFLAG=}" = x], [
+	AS_CASE(["$target_os"],
 	[aix*], [rpathflag='-blibpath:'],
-	[for rpathflag in -R "-rpath "; do
+	[for rpathflag in "-rpath " -R; do
 	    AS_CASE("$rpathflag",
 		    [*" "], [AS_CASE(["${linker_flag}"],
 				     [*,], [rpathflag=`echo "$rpathflag" | tr ' ' ,`])])
 	    rpathflag="${linker_flag}${rpathflag}"
 	    RUBY_TRY_LDFLAGS([${rpathflag}.], [], [rpathflag=])
-	    AS_IF([test "x${rpathflag}" != x], [])
+	    AS_IF([test "x${rpathflag}" != x], [break])
         done])
-], [
-    rpathflag=`echo "$RPATHFLAG" | sed 's/%.*//'`
-])
+    ], [
+        rpathflag=`echo "$RPATHFLAG" | sed 's/%.*//'`
+    ])
+
+    AC_ARG_ENABLE(rpath,
+        AS_HELP_STRING([--enable-rpath], [embed run path into extension libraries.
+        enabled by default on ELF platforms]),
+        [enable_rpath=$enableval], [enable_rpath="$rb_cv_binary_elf"])
+
+    AS_IF([test "$enable_rpath:${RPATHFLAG}" = yes:], [
+        RPATHFLAG="${rpathflag:+ ${rpathflag}%1\$-s}"
+    ])
+    AS_CASE([${RPATHFLAG}],[*'%1$'*],[: ${LIBPATHFLAG=' -L%1$-s'}],[: ${LIBPATHFLAG=' -L%s'}])
+}
 
 RUBY_TRY_LDFLAGS(-fdeclspec, [fdeclspec=yes], [fdeclspec=no])
 AS_IF([test "$fdeclspec" = yes], [
@@ -911,17 +929,25 @@ AS_CASE(["$target_cpu"], [[i[3-6]86*]], [
     AS_IF([test "$rb_cv_gcc_compiler_cas" = i486], [ARCH_FLAG="-march=i486"])
 ])
 
+OPT_DIR=
 AC_ARG_WITH(opt-dir,
 	AS_HELP_STRING([--with-opt-dir=DIR-LIST],
 		       [add optional headers and libraries directories separated by $PATH_SEPARATOR]),
-	[
-		val=`echo "$PATH_SEPARATOR$withval" | sed "s|$PATH_SEPARATOR\([[^$PATH_SEPARATOR]*]\)| -I\1/include|g;s/^ //"`
-		CPPFLAGS="$CPPFLAGS $val"
-		val=`echo "$PATH_SEPARATOR$withval" | sed "s|$PATH_SEPARATOR\([[^$PATH_SEPARATOR]*]\)| -L\1/lib${rpathflag:+ $rpathflag\\\\1/lib}|g;s/^ //"`
-		LDFLAGS="$LDFLAGS $val"
-		LDFLAGS_OPTDIR="$val"
-		OPT_DIR="$withval"
-	], [OPT_DIR=])
+	[OPT_DIR="${OPT_DIR:+$OPT_DIR$PATH_SEPARATOR}$withval"], [])
+
+AS_IF([test "x$OPT_DIR" != x], [
+    val=`IFS="$PATH_SEPARATOR"
+        for dir in $OPT_DIR; do
+            test -z "$dir" && continue
+            echo x ${LIBPATHFLAG} ${RPATHFLAG} |
+            sed "s/^x *//;s${IFS}"'%1\\$-s'"${IFS}${dir}/lib${IFS}g;s${IFS}%s${IFS}${dir}/lib${IFS}g"
+        done | tr '\012' ' ' | sed 's/ *$//'`
+    LDFLAGS="${LDFLAGS:+$LDFLAGS }$val"
+    DLDFLAGS="${DLDFLAGS:+$DLDFLAGS }$val"
+    LDFLAGS_OPTDIR="$val"
+    CPPFLAGS="${CPPFLAGS:+$CPPFLAGS }"`echo "$OPT_DIR" | tr "${PATH_SEPARATOR}" '\012' |
+        sed '/^$/d;s|^|-I|;s|$|/include|' | tr '\012' ' ' | sed 's/ *$//'`
+])
 
 test -z "${ac_env_CFLAGS_set}" -a -n "${cflags+set}" && eval CFLAGS="\"$cflags $ARCH_FLAG\""
 test -z "${ac_env_CXXFLAGS_set}" -a -n "${cxxflags+set}" && eval CXXFLAGS="\"$cxxflags $ARCH_FLAG\""
@@ -1140,7 +1166,6 @@ main()
 		ac_cv_func_getpgrp_void=no
 		ac_cv_func_memcmp_working=yes
 		ac_cv_lib_dl_dlopen=no
-		rb_cv_binary_elf=no
 		rb_cv_negative_time_t=yes
 		ac_cv_func_fcntl=yes
 		ac_cv_func_flock=yes
@@ -2850,12 +2875,6 @@ AC_ARG_WITH(dln-a-out,
 	])
 ])
 
-AC_CACHE_CHECK(whether ELF binaries are produced, rb_cv_binary_elf,
-[AC_LINK_IFELSE([AC_LANG_PROGRAM([[]], [[]])],[
-AS_CASE(["`head -1 conftest$EXEEXT | tr -dc '\177ELF' | tr '\177' .`"],
-[.ELF*], [rb_cv_binary_elf=yes], [rb_cv_binary_elf=no])],
-rb_cv_binary_elf=no)])
-
 AS_IF([test "$rb_cv_binary_elf" = yes], [
   AC_DEFINE(USE_ELF)
   AC_CHECK_HEADERS([elf.h elf_abi.h])
@@ -2933,11 +2952,6 @@ STATIC=
 }
 
 : "rpath" && {
-  AC_ARG_ENABLE(rpath,
-       AS_HELP_STRING([--enable-rpath], [embed run path into extension libraries.
-       enabled by default on ELF platforms]),
-       [enable_rpath=$enableval], [enable_rpath="$rb_cv_binary_elf"])
-
   AS_CASE(["$target_os"],
 	[solaris*], [	AS_IF([test "$GCC" = yes], [
 			    : ${LDSHARED='$(CC) -shared'}
@@ -2978,7 +2992,6 @@ STATIC=
 			rb_cv_dlopen=yes],
 	[interix*], [	: ${LDSHARED='$(CC) -shared'}
 			XLDFLAGS="$XLDFLAGS -Wl,-E"
-			LIBPATHFLAG=" -L%1\$-s"
 			rb_cv_dlopen=yes],
 	[freebsd*|dragonfly*], [
 			: ${LDSHARED='$(CC) -shared'}
@@ -3055,12 +3068,6 @@ STATIC=
 	done
       ])
   ])
-
-  AS_IF([test "$enable_rpath:${RPATHFLAG}" = yes:], [
-      AS_IF([test "x$rpathflag" != x], [
-	  RPATHFLAG=" ${rpathflag}%1\$-s"
-      ])
-  ])
 }
 
 AS_IF([test "${LDSHAREDXX}" = ""], [
@@ -3077,7 +3084,6 @@ AS_IF([test "${LDSHAREDXX}" = ""], [
 	[ld" "*], [
 	    ])
 ])
-AS_CASE([${RPATHFLAG}],[*'%1$'*],[: ${LIBPATHFLAG=' -L%1$-s'}],[: ${LIBPATHFLAG=' -L%s'}])
 
 AC_SUBST(LINK_SO)
 AC_SUBST(LIBPATHFLAG)
@@ -3085,23 +3091,6 @@ AC_SUBST(RPATHFLAG)
 AC_SUBST(LIBPATHENV, "${LIBPATHENV-LD_LIBRARY_PATH}")
 AC_SUBST(PRELOADENV, "${PRELOADENV-LD_PRELOAD}")
 AC_SUBST(TRY_LINK)
-
-AS_IF([test "x$OPT_DIR" != x], [
-    pat=`echo "${LDFLAGS_OPTDIR}" | sed ['s/[][\\.*|]/\\\\&/']`
-    LDFLAGS=`echo "${LDFLAGS}" | sed "s| ${pat}||"`
-    val=`IFS="$PATH_SEPARATOR"
-        for dir in $OPT_DIR; do
-            echo x ${LIBPATHFLAG} ${RPATHFLAG} |
-            sed "s/^x *//;s${IFS}"'%1\\$-s'"${IFS}${dir}/lib${IFS}g;s${IFS}%s${IFS}${dir}/lib${IFS}g"
-        done | tr '\012' ' ' | sed 's/ *$//'`
-    AS_IF([test x"$val" != x], [
-	test x"${LDFLAGS}" = x || LDFLAGS="$LDFLAGS "
-	LDFLAGS="$LDFLAGS$val"
-	test x"${DLDFLAGS}" = x || DLDFLAGS="$DLDFLAGS "
-	DLDFLAGS="$DLDFLAGS$val"
-    ])
-    LDFLAGS_OPTDIR="$val"
-])
 
 AS_CASE(["$target_os"],
 [freebsd*], [
