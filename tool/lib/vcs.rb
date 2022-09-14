@@ -659,7 +659,7 @@ class VCS
 
             if %r[^ +(https://github\.com/[^/]+/[^/]+/)commit/\h+\n(?=(?: +\n(?i: +Co-authored-by: .*\n)+)?(?:\n|\Z))] =~ s
               issue = "#{$1}pull/"
-              s.gsub!(/\b[Ff]ix(?:e[sd])? \K#(?=\d+)/) {issue}
+              s.gsub!(/\b(?:(?i:fix(?:e[sd])?) +|GH-)\K#(?=\d+\b)|\(\K#(?=\d+\))/) {issue}
             end
 
             s.gsub!(/ +\n/, "\n")
