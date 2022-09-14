@@ -482,7 +482,7 @@ fn gen_outlined_exit(exit_pc: *mut VALUE, ctx: &Context, ocb: &mut OutlinedCb) -
 //
 // No guards change the logic for reconstructing interpreter state at the
 // moment, so there is one unique side exit for each context. Note that
-// it's incorrect to jump to the side exit after any ctx stack push/pop operations
+// it's incorrect to jump to the side exit after any ctx stack push operations
 // since they change the logic required for reconstructing interpreter state.
 fn get_side_exit(jit: &mut JITState, ocb: &mut OutlinedCb, ctx: &Context) -> CodePtr {
     match jit.side_exit_for_pc {
@@ -1427,7 +1427,7 @@ fn gen_expandarray(
         return KeepCompiling;
     }
 
-    // Move the array from the stack into REG0 and check that it's an array.
+    // Move the array from the stack and check that it's an array.
     let array_reg = asm.load(array_opnd);
     guard_object_is_heap(
         asm,
@@ -3911,6 +3911,12 @@ fn gen_send_cfunc(
 ) -> CodegenStatus {
     let cfunc = unsafe { get_cme_def_body_cfunc(cme) };
     let cfunc_argc = unsafe { get_mct_argc(cfunc) };
+    let mut argc = argc;
+
+    // Create a side-exit to fall back to the interpreter
+    let side_exit = get_side_exit(jit, ocb, ctx);
+
+    let flags = unsafe { vm_ci_flag(ci) };
 
     // If the function expects a Ruby array of arguments
     if cfunc_argc < 0 && cfunc_argc != -1 {
@@ -3925,25 +3931,6 @@ fn gen_send_cfunc(
         unsafe { get_cikw_keyword_len(kw_arg) }
     };
 
-    // Number of args which will be passed through to the callee
-    // This is adjusted by the kwargs being combined into a hash.
-    let passed_argc = if kw_arg.is_null() {
-        argc
-    } else {
-        argc - kw_arg_num + 1
-    };
-
-    // If the argument count doesn't match
-    if cfunc_argc >= 0 && cfunc_argc != passed_argc {
-        gen_counter_incr!(asm, send_cfunc_argc_mismatch);
-        return CantCompile;
-    }
-
-    // Don't JIT functions that need C stack arguments for now
-    if cfunc_argc >= 0 && passed_argc + 1 > (C_ARG_OPNDS.len() as i32) {
-        gen_counter_incr!(asm, send_cfunc_toomany_args);
-        return CantCompile;
-    }
 
     if c_method_tracing_currently_enabled(jit) {
         // Don't JIT if tracing c_call or c_return
@@ -3964,9 +3951,6 @@ fn gen_send_cfunc(
         }
     }
 
-    // Create a side-exit to fall back to the interpreter
-    let side_exit = get_side_exit(jit, ocb, ctx);
-
     // Check for interrupts
     gen_check_ints(asm, side_exit);
 
@@ -3977,6 +3961,38 @@ fn gen_send_cfunc(
     let stack_limit = asm.lea(ctx.sp_opnd((SIZEOF_VALUE * 4 + 2 * RUBY_SIZEOF_CONTROL_FRAME) as isize));
     asm.cmp(CFP, stack_limit);
     asm.jbe(counted_exit!(ocb, side_exit, send_se_cf_overflow).into());
+
+    if flags & VM_CALL_ARGS_SPLAT != 0 {
+        if cfunc_argc > 0 {
+            // push_splat_args does a ctx.stack_push so we can no longer side exit
+            argc = push_splat_args(argc, ctx, asm, ocb, side_exit, cfunc_argc as u32);
+        } else {
+            // This is a variadic c function and we'd need to pop
+            // each of the elements off the array, but the array may be dynamically sized
+            gen_counter_incr!(asm, send_args_splat_variadic);
+            return CantCompile
+        }
+    }
+
+    // Number of args which will be passed through to the callee
+    // This is adjusted by the kwargs being combined into a hash.
+    let passed_argc = if kw_arg.is_null() {
+        argc
+    } else {
+        argc - kw_arg_num + 1
+    };
+
+    // If the argument count doesn't match
+    if cfunc_argc >= 0 && cfunc_argc != passed_argc {
+        gen_counter_incr!(asm, send_cfunc_argc_mismatch);
+        return CantCompile;
+    }
+
+    // Don't JIT functions that need C stack arguments for now
+    if cfunc_argc >= 0 && passed_argc + 1 > (C_ARG_OPNDS.len() as i32) {
+        gen_counter_incr!(asm, send_cfunc_toomany_args);
+        return CantCompile;
+    }
 
     // Points to the receiver operand on the stack
     let recv = ctx.stack_opnd(argc);
@@ -4152,6 +4168,85 @@ fn gen_return_branch(
     }
 }
 
+
+/// Pushes arguments from an array to the stack that are passed with a splat (i.e. *args)
+/// It optimistically compiles to a static size that is the exact number of arguments
+/// needed for the function.
+fn push_splat_args(argc: i32, ctx: &mut Context, asm: &mut Assembler, ocb: &mut OutlinedCb, side_exit: CodePtr, num_params: u32) -> i32 {
+
+    let mut argc = argc;
+
+    asm.comment("push_splat_args");
+
+    let array_opnd = ctx.stack_opnd(0);
+
+    argc = argc - 1;
+
+    let array_reg = asm.load(array_opnd);
+    guard_object_is_heap(
+        asm,
+        array_reg,
+        counted_exit!(ocb, side_exit, send_splat_not_array),
+    );
+    guard_object_is_array(
+        asm,
+        array_reg,
+        counted_exit!(ocb, side_exit, send_splat_not_array),
+    );
+
+    // Pull out the embed flag to check if it's an embedded array.
+    let flags_opnd = Opnd::mem((8 * SIZEOF_VALUE) as u8, array_reg, RUBY_OFFSET_RBASIC_FLAGS);
+
+    // Get the length of the array
+    let emb_len_opnd = asm.and(flags_opnd, (RARRAY_EMBED_LEN_MASK as u64).into());
+    let emb_len_opnd = asm.rshift(emb_len_opnd, (RARRAY_EMBED_LEN_SHIFT as u64).into());
+
+    // Conditionally move the length of the heap array
+    let flags_opnd = Opnd::mem((8 * SIZEOF_VALUE) as u8, array_reg, RUBY_OFFSET_RBASIC_FLAGS);
+    asm.test(flags_opnd, (RARRAY_EMBED_FLAG as u64).into());
+    let array_len_opnd = Opnd::mem(
+        (8 * size_of::<std::os::raw::c_long>()) as u8,
+        asm.load(array_opnd),
+        RUBY_OFFSET_RARRAY_AS_HEAP_LEN,
+    );
+    let array_len_opnd = asm.csel_nz(emb_len_opnd, array_len_opnd);
+
+    let required_args = num_params - argc as u32;
+
+    // Only handle the case where the number of values in the array is equal to the number requested
+    asm.cmp(array_len_opnd, required_args.into());
+    asm.jne(counted_exit!(ocb, side_exit, send_splatarray_rhs_too_small).into());
+
+    let array_opnd = ctx.stack_pop(1);
+
+    if required_args > 0 {
+
+        // Load the address of the embedded array
+        // (struct RArray *)(obj)->as.ary
+        let array_reg = asm.load(array_opnd);
+        let ary_opnd = asm.lea(Opnd::mem((8 * SIZEOF_VALUE) as u8, array_reg, RUBY_OFFSET_RARRAY_AS_ARY));
+
+        // Conditionally load the address of the heap array
+        // (struct RArray *)(obj)->as.heap.ptr
+        let flags_opnd = Opnd::mem((8 * SIZEOF_VALUE) as u8, array_reg, RUBY_OFFSET_RBASIC_FLAGS);
+        asm.test(flags_opnd, Opnd::UImm(RARRAY_EMBED_FLAG as u64));
+        let heap_ptr_opnd = Opnd::mem(
+            (8 * size_of::<usize>()) as u8,
+            asm.load(array_opnd),
+            RUBY_OFFSET_RARRAY_AS_HEAP_PTR,
+        );
+
+        let ary_opnd = asm.csel_nz(ary_opnd, heap_ptr_opnd);
+
+        for i in (0..required_args as i32) {
+            let top = ctx.stack_push(Type::Unknown);
+            asm.mov(top, Opnd::mem(64, ary_opnd, i * (SIZEOF_VALUE as i32)));
+            argc += 1;
+        }
+    }
+    argc
+}
+
 fn gen_send_iseq(
     jit: &mut JITState,
     ctx: &mut Context,
@@ -4164,6 +4259,11 @@ fn gen_send_iseq(
 ) -> CodegenStatus {
     let iseq = unsafe { get_def_iseq_ptr((*cme).def) };
     let mut argc = argc;
+
+    let flags = unsafe { vm_ci_flag(ci) };
+
+    // Create a side-exit to fall back to the interpreter
+    let side_exit = get_side_exit(jit, ocb, ctx);
 
     // When you have keyword arguments, there is an extra object that gets
     // placed on the stack the represents a bitmap of the keywords that were not
@@ -4187,6 +4287,18 @@ fn gen_send_iseq(
             || get_iseq_flags_has_kwrest(iseq)
     } {
         gen_counter_incr!(asm, send_iseq_complex_callee);
+        return CantCompile;
+    }
+
+    // In order to handle backwards compatibility between ruby 3 and 2
+    // ruby2_keywords was introduced. It is called only on methods
+    // with splat and changes they way they handle them.
+    // We are just going to not compile these.
+    // https://www.rubydoc.info/stdlib/core/Proc:ruby2_keywords
+    if unsafe {
+        get_iseq_flags_ruby2_keywords(jit.iseq)
+    } {
+        gen_counter_incr!(asm, send_iseq_ruby2_keywords);
         return CantCompile;
     }
 
@@ -4221,6 +4333,16 @@ fn gen_send_iseq(
         }
     }
 
+
+    if flags & VM_CALL_ARGS_SPLAT != 0 && flags & VM_CALL_ZSUPER != 0 {
+        // zsuper methods are super calls without any arguments.
+        // They are also marked as splat, but don't actually have an array
+        // they pull arguments from, instead we need to change to call
+        // a different method with the current stack.
+        gen_counter_incr!(asm, send_iseq_zsuper);
+        return CantCompile;
+    }
+
     let mut start_pc_offset = 0;
     let required_num = unsafe { get_iseq_body_param_lead_num(iseq) };
 
@@ -4237,6 +4359,11 @@ fn gen_send_iseq(
     let opts_filled = argc - required_num - kw_arg_num;
     let opt_num = unsafe { get_iseq_body_param_opt_num(iseq) };
     let opts_missing: i32 = opt_num - opts_filled;
+
+    if opt_num > 0 && flags & VM_CALL_ARGS_SPLAT != 0 {
+        gen_counter_incr!(asm, send_iseq_complex_callee);
+        return CantCompile;
+    }
 
     if opts_filled < 0 || opts_filled > opt_num {
         gen_counter_incr!(asm, send_iseq_arity_error);
@@ -4334,8 +4461,7 @@ fn gen_send_iseq(
     // Number of locals that are not parameters
     let num_locals = unsafe { get_iseq_body_local_table_size(iseq) as i32 } - (num_params as i32);
 
-    // Create a side-exit to fall back to the interpreter
-    let side_exit = get_side_exit(jit, ocb, ctx);
+
 
     // Check for interrupts
     gen_check_ints(asm, side_exit);
@@ -4383,6 +4509,11 @@ fn gen_send_iseq(
     let stack_limit = asm.lea(ctx.sp_opnd(locals_offs as isize));
     asm.cmp(CFP, stack_limit);
     asm.jbe(counted_exit!(ocb, side_exit, send_se_cf_overflow).into());
+
+    // push_splat_args does a ctx.stack_push so we can no longer side exit
+    if flags & VM_CALL_ARGS_SPLAT != 0 {
+        argc = push_splat_args(argc, ctx, asm, ocb, side_exit, num_params);
+    }
 
     if doing_kw_call {
         // Here we're calling a method with keyword arguments and specifying
@@ -4787,12 +4918,7 @@ fn gen_send_general(
         return CantCompile;
     }
 
-    // Don't JIT calls that aren't simple
-    // Note, not using VM_CALL_ARGS_SIMPLE because sometimes we pass a block.
-    if flags & VM_CALL_ARGS_SPLAT != 0 {
-        gen_counter_incr!(asm, send_args_splat);
-        return CantCompile;
-    }
+
     if flags & VM_CALL_ARGS_BLOCKARG != 0 {
         gen_counter_incr!(asm, send_block_arg);
         return CantCompile;
@@ -4865,6 +4991,11 @@ fn gen_send_general(
     // To handle the aliased method case (VM_METHOD_TYPE_ALIAS)
     loop {
         let def_type = unsafe { get_cme_def_type(cme) };
+        if flags & VM_CALL_ARGS_SPLAT != 0 && (def_type != VM_METHOD_TYPE_ISEQ && def_type != VM_METHOD_TYPE_CFUNC)  {
+            // We can't handle splat calls to non-iseq methods
+            return CantCompile;
+        }
+
         match def_type {
             VM_METHOD_TYPE_ISEQ => {
                 return gen_send_iseq(jit, ctx, asm, ocb, ci, cme, block, argc);
@@ -5087,10 +5218,7 @@ fn gen_invokesuper(
 
     // Don't JIT calls that aren't simple
     // Note, not using VM_CALL_ARGS_SIMPLE because sometimes we pass a block.
-    if ci_flags & VM_CALL_ARGS_SPLAT != 0 {
-        gen_counter_incr!(asm, send_args_splat);
-        return CantCompile;
-    }
+
     if ci_flags & VM_CALL_KWARG != 0 {
         gen_counter_incr!(asm, send_keywords);
         return CantCompile;

@@ -1146,6 +1146,9 @@ extern "C" {
     pub fn rb_get_iseq_flags_has_rest(iseq: *const rb_iseq_t) -> bool;
 }
 extern "C" {
+    pub fn rb_get_iseq_flags_ruby2_keywords(iseq: *const rb_iseq_t) -> bool;
+}
+extern "C" {
     pub fn rb_get_iseq_flags_has_block(iseq: *const rb_iseq_t) -> bool;
 }
 extern "C" {

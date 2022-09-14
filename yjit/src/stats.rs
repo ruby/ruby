@@ -164,7 +164,8 @@ make_counters! {
 
     send_keywords,
     send_kw_splat,
-    send_args_splat,
+    send_args_splat_super,
+    send_iseq_zsuper,
     send_block_arg,
     send_ivar_set_method,
     send_zsuper_method,
@@ -192,6 +193,10 @@ make_counters! {
     send_getter_arity,
     send_se_cf_overflow,
     send_se_protected_check_failed,
+    send_splatarray_rhs_too_small,
+    send_splat_not_array,
+    send_args_splat_variadic,
+    send_iseq_ruby2_keywords,
 
     traced_cfunc_return,
 
