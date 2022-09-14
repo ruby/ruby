@@ -314,8 +314,8 @@ def data_foreach(name, &block)
   File.open(fn, 'rb') do |f|
     if /^emoji/ =~ name
       line = f.gets("")
-      # Headers till Emoji 13
-      version = line[/^# #{Regexp.quote(File.basename(name))}.*^# Version: ([\d.]+)/m, 1]
+      # Headers till Emoji 13 or 15
+      version = line[/^# #{Regexp.quote(File.basename(name))}.*(?:^# Version:|Emoji Version) ([\d.]+)/m, 1]
       type = :Emoji
     else
       # Headers since Emoji 14 or other Unicode data
