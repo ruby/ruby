@@ -113,7 +113,7 @@ module IRB
           append_history = true
         end
 
-        open(history_file, "#{append_history ? 'a' : 'w'}:#{IRB.conf[:LC_MESSAGES].encoding}", 0600) do |f|
+        File.open(history_file, (append_history ? 'a' : 'w'), 0o600, encoding: IRB.conf[:LC_MESSAGES]&.encoding) do |f|
           hist = history.map{ |l| l.split("\n").join("\\\n") }
           unless append_history
             begin
