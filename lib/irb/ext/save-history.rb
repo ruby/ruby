@@ -107,9 +107,9 @@ module IRB
           raise
         end
 
-        if File.exist?(history_file) && @loaded_history_mtime &&
+        if File.exist?(history_file) &&
            File.mtime(history_file) != @loaded_history_mtime
-          history = history[@loaded_history_lines..-1]
+          history = history[@loaded_history_lines..-1] if @loaded_history_lines
           append_history = true
         end
 
