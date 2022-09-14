@@ -25,6 +25,7 @@ $(YJIT_LIBS): $(YJIT_SRC_FILES)
 	        -C overflow-checks=on \
 	        '--out-dir=$(CARGO_TARGET_DIR)/release/' \
 	        $(top_srcdir)/yjit/src/lib.rs
+	touch $@
 else ifeq ($(YJIT_SUPPORT),no)
 $(YJIT_LIBS):
 	$(ECHO) 'Error: Tried to build YJIT without configuring it first. Check `make showconfig`?'
@@ -36,6 +37,7 @@ $(YJIT_LIBS): $(YJIT_SRC_FILES)
 	        CARGO_TARGET_DIR='$(CARGO_TARGET_DIR)' \
 	        CARGO_TERM_PROGRESS_WHEN='never' \
 	        $(CARGO) $(CARGO_VERBOSE) build $(CARGO_BUILD_ARGS)
+	touch $@
 else
 endif
 
