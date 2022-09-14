@@ -799,7 +799,7 @@ cref_replace_with_duplicated_cref_each_frame(const VALUE *vptr, int can_be_svar,
             break;
         }
     }
-    return FALSE;
+    return NULL;
 }
 
 static rb_cref_t *
