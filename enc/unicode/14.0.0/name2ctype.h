@@ -1565,7 +1565,7 @@ static const OnigCodePoint CR_Graph[] = {
 
 /* 'Lower': [[:Lower:]] */
 static const OnigCodePoint CR_Lower[] = {
-	664,
+	668,
 	0x0061, 0x007a,
 	0x00aa, 0x00aa,
 	0x00b5, 0x00b5,
@@ -2196,6 +2196,10 @@ static const OnigCodePoint CR_Lower[] = {
 	0x105a3, 0x105b1,
 	0x105b3, 0x105b9,
 	0x105bb, 0x105bc,
+	0x10780, 0x10780,
+	0x10783, 0x10785,
+	0x10787, 0x107b0,
+	0x107b2, 0x107ba,
 	0x10cc0, 0x10cf2,
 	0x118c0, 0x118df,
 	0x16e60, 0x16e7f,
@@ -12651,7 +12655,7 @@ static const OnigCodePoint CR_Math[] = {
 
 /* 'Cased': Derived Property */
 static const OnigCodePoint CR_Cased[] = {
-	151,
+	155,
 	0x0041, 0x005a,
 	0x0061, 0x007a,
 	0x00aa, 0x00aa,
@@ -12763,6 +12767,10 @@ static const OnigCodePoint CR_Cased[] = {
 	0x105a3, 0x105b1,
 	0x105b3, 0x105b9,
 	0x105bb, 0x105bc,
+	0x10780, 0x10780,
+	0x10783, 0x10785,
+	0x10787, 0x107b0,
+	0x107b2, 0x107ba,
 	0x10c80, 0x10cb2,
 	0x10cc0, 0x10cf2,
 	0x118a0, 0x118df,
@@ -22615,7 +22623,7 @@ static const OnigCodePoint CR_Extender[] = {
 
 /* 'Other_Lowercase': Binary Property */
 static const OnigCodePoint CR_Other_Lowercase[] = {
-	20,
+	24,
 	0x00aa, 0x00aa,
 	0x00ba, 0x00ba,
 	0x02b0, 0x02b8,
@@ -22636,6 +22644,10 @@ static const OnigCodePoint CR_Other_Lowercase[] = {
 	0xa770, 0xa770,
 	0xa7f8, 0xa7f9,
 	0xab5c, 0xab5f,
+	0x10780, 0x10780,
+	0x10783, 0x10785,
+	0x10787, 0x107b0,
+	0x107b2, 0x107ba,
 }; /* CR_Other_Lowercase */
 
 /* 'Other_Uppercase': Binary Property */
@@ -37049,7 +37061,7 @@ static const OnigCodePoint CR_Grapheme_Cluster_Break_Extend[] = {
 
 /* 'Grapheme_Cluster_Break_SpacingMark': Grapheme_Cluster_Break=SpacingMark */
 static const OnigCodePoint CR_Grapheme_Cluster_Break_SpacingMark[] = {
-	161,
+	160,
 	0x0903, 0x0903,
 	0x093b, 0x093b,
 	0x093e, 0x0940,
@@ -37183,7 +37195,6 @@ static const OnigCodePoint CR_Grapheme_Cluster_Break_SpacingMark[] = {
 	0x116ac, 0x116ac,
 	0x116ae, 0x116af,
 	0x116b6, 0x116b6,
-	0x11720, 0x11721,
 	0x11726, 0x11726,
 	0x1182c, 0x1182e,
 	0x11838, 0x11838,
