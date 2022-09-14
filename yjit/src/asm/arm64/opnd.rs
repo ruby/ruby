@@ -12,11 +12,6 @@ pub struct A64Reg
 }
 
 impl A64Reg {
-    pub fn sub_reg(&self, num_bits: u8) -> Self {
-        assert!(num_bits <= self.num_bits);
-        self.with_num_bits(num_bits)
-    }
-
     pub fn with_num_bits(&self, num_bits: u8) -> Self {
         assert!(num_bits == 8 || num_bits == 16 || num_bits == 32 || num_bits == 64);
         Self { num_bits, reg_no: self.reg_no }

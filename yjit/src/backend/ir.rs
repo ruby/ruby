@@ -151,11 +151,6 @@ impl Opnd
         }
     }
 
-    pub fn sub_opnd(&self, num_bits: u8) -> Option<Opnd> {
-        assert!(num_bits <= self.rm_num_bits());
-        self.with_num_bits(num_bits)
-    }
-
     pub fn with_num_bits(&self, num_bits: u8) -> Option<Opnd> {
         assert!(num_bits == 8 || num_bits == 16 || num_bits == 32 || num_bits == 64);
         match *self {
