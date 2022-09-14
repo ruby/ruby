@@ -10561,13 +10561,7 @@ static NODE *
 kwd_append(NODE *kwlist, NODE *kw)
 {
     if (kwlist) {
-	NODE *kws = kwlist;
-	kws->nd_loc.end_pos = kw->nd_loc.end_pos;
-	while (kws->nd_next) {
-	    kws = kws->nd_next;
-	    kws->nd_loc.end_pos = kw->nd_loc.end_pos;
-	}
-	kws->nd_next = kw;
+	opt_arg_append(kwlist, kw);
     }
     return kwlist;
 }
