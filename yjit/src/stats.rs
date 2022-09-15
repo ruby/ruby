@@ -196,6 +196,7 @@ make_counters! {
     send_splatarray_length_not_equal,
     send_splat_not_array,
     send_args_splat_non_iseq,
+    send_args_splat_cfunc,
     send_iseq_ruby2_keywords,
 
     traced_cfunc_return,

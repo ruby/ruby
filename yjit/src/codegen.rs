@@ -4023,6 +4023,11 @@ fn gen_send_cfunc(
         return CantCompile;
     }
 
+    if flags & VM_CALL_ARGS_SPLAT != 0  {
+        gen_counter_incr!(asm, send_args_splat_cfunc);
+        return CantCompile;
+    }
+
     let kw_arg = unsafe { vm_ci_kwarg(ci) };
     let kw_arg_num = if kw_arg.is_null() {
         0
