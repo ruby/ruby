@@ -4457,7 +4457,6 @@ fn gen_send_iseq(
         return CantCompile;
     }
 
-
     // If we have unfilled optional arguments and keyword arguments then we
     // would need to move adjust the arguments location to account for that.
     // For now we aren't handling this case.
