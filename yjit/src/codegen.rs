@@ -4060,18 +4060,6 @@ fn gen_send_cfunc(
     asm.cmp(CFP, stack_limit);
     asm.jbe(counted_exit!(ocb, side_exit, send_se_cf_overflow).into());
 
-    if flags & VM_CALL_ARGS_SPLAT != 0 {
-        if cfunc_argc > 0 {
-            // push_splat_args does a ctx.stack_push so we can no longer side exit
-            argc = push_splat_args(argc, ctx, asm, ocb, side_exit, cfunc_argc as u32);
-        } else {
-            // This is a variadic c function and we'd need to pop
-            // each of the elements off the array, but the array may be dynamically sized
-            gen_counter_incr!(asm, send_args_splat_variadic);
-            return CantCompile
-        }
-    }
-
     // Number of args which will be passed through to the callee
     // This is adjusted by the kwargs being combined into a hash.
     let passed_argc = if kw_arg.is_null() {
@@ -4257,18 +4245,15 @@ fn gen_return_branch(
 }
 
 
+
 /// Pushes arguments from an array to the stack that are passed with a splat (i.e. *args)
 /// It optimistically compiles to a static size that is the exact number of arguments
 /// needed for the function.
-fn push_splat_args(argc: i32, ctx: &mut Context, asm: &mut Assembler, ocb: &mut OutlinedCb, side_exit: CodePtr, num_params: u32) -> i32 {
-
-    let mut argc = argc;
+fn push_splat_args(required_args: i32, ctx: &mut Context, asm: &mut Assembler, ocb: &mut OutlinedCb, side_exit: CodePtr) {
 
     asm.comment("push_splat_args");
 
     let array_opnd = ctx.stack_opnd(0);
-
-    argc = argc - 1;
 
     let array_reg = asm.load(array_opnd);
     guard_object_is_heap(
@@ -4299,11 +4284,9 @@ fn push_splat_args(argc: i32, ctx: &mut Context, asm: &mut Assembler, ocb: &mut 
     );
     let array_len_opnd = asm.csel_nz(emb_len_opnd, array_len_opnd);
 
-    let required_args = num_params - argc as u32;
-
     // Only handle the case where the number of values in the array is equal to the number requested
     asm.cmp(array_len_opnd, required_args.into());
-    asm.jne(counted_exit!(ocb, side_exit, send_splatarray_rhs_too_small).into());
+    asm.jne(counted_exit!(ocb, side_exit, send_splatarray_length_not_equal).into());
 
     let array_opnd = ctx.stack_pop(1);
 
@@ -4329,10 +4312,8 @@ fn push_splat_args(argc: i32, ctx: &mut Context, asm: &mut Assembler, ocb: &mut 
         for i in (0..required_args as i32) {
             let top = ctx.stack_push(Type::Unknown);
             asm.mov(top, Opnd::mem(64, ary_opnd, i * (SIZEOF_VALUE as i32)));
-            argc += 1;
         }
     }
-    argc
 }
 
 fn gen_send_iseq(
@@ -4448,15 +4429,29 @@ fn gen_send_iseq(
     let opt_num = unsafe { get_iseq_body_param_opt_num(iseq) };
     let opts_missing: i32 = opt_num - opts_filled;
 
+
     if opt_num > 0 && flags & VM_CALL_ARGS_SPLAT != 0 {
         gen_counter_incr!(asm, send_iseq_complex_callee);
         return CantCompile;
     }
 
-    if opts_filled < 0 || opts_filled > opt_num {
+    if doing_kw_call && flags & VM_CALL_ARGS_SPLAT != 0 {
+        gen_counter_incr!(asm, send_iseq_complex_callee);
+        return CantCompile;
+    }
+
+    if opts_filled < 0 && VM_CALL_ARGS_SPLAT == 0  {
+        // Too few arguments and no splat to make up for it
         gen_counter_incr!(asm, send_iseq_arity_error);
         return CantCompile;
     }
+
+    if opts_filled > opt_num {
+        // Too many arguments
+        gen_counter_incr!(asm, send_iseq_arity_error);
+        return CantCompile;
+    }
+
 
     // If we have unfilled optional arguments and keyword arguments then we
     // would need to move adjust the arguments location to account for that.
@@ -4596,9 +4591,14 @@ fn gen_send_iseq(
     asm.cmp(CFP, stack_limit);
     asm.jbe(counted_exit!(ocb, side_exit, send_se_cf_overflow).into());
 
-    // push_splat_args does a ctx.stack_push so we can no longer side exit
+    // push_splat_args does stack manipulation so we can no longer side exit
     if flags & VM_CALL_ARGS_SPLAT != 0 {
-        argc = push_splat_args(argc, ctx, asm, ocb, side_exit, num_params);
+        let required_args = num_params as i32 - (argc - 1);
+        // We are going to assume that the splat fills
+        // all the remaining arguments. In the generated code
+        // we test if this is true and if not side exit.
+        argc = num_params as i32;
+        push_splat_args(required_args, ctx, asm, ocb, side_exit)
     }
 
     if doing_kw_call {
@@ -5077,8 +5077,9 @@ fn gen_send_general(
     // To handle the aliased method case (VM_METHOD_TYPE_ALIAS)
     loop {
         let def_type = unsafe { get_cme_def_type(cme) };
-        if flags & VM_CALL_ARGS_SPLAT != 0 && (def_type != VM_METHOD_TYPE_ISEQ && def_type != VM_METHOD_TYPE_CFUNC)  {
-            // We can't handle splat calls to non-iseq methods
+
+        if flags & VM_CALL_ARGS_SPLAT != 0 && def_type != VM_METHOD_TYPE_ISEQ  {
+            gen_counter_incr!(asm, send_args_splat_non_iseq);
             return CantCompile;
         }
 
