@@ -260,6 +260,7 @@ fn jit_save_pc(jit: &JITState, asm: &mut Assembler) {
         pc.offset(cur_insn_len)
     };
 
+    asm.comment("save PC to CFP");
     asm.mov(Opnd::mem(64, CFP, RUBY_OFFSET_CFP_PC), Opnd::const_ptr(ptr as *const u8));
 }
 
@@ -269,6 +270,7 @@ fn jit_save_pc(jit: &JITState, asm: &mut Assembler) {
 ///       which could invalidate memory operands
 fn gen_save_sp(jit: &JITState, asm: &mut Assembler, ctx: &mut Context) {
     if ctx.get_sp_offset() != 0 {
+        asm.comment("save SP to CFP");
         let stack_pointer = ctx.sp_opnd(0);
         let sp_addr = asm.lea(stack_pointer);
         asm.mov(SP, sp_addr);
@@ -1184,7 +1186,8 @@ fn gen_newarray(
     let values_ptr = if n == 0 {
         Opnd::UImm(0)
     } else {
-        let offset_magnitude = SIZEOF_VALUE as u32 * n;
+        asm.comment("load pointer to array elts");
+        let offset_magnitude = (SIZEOF_VALUE as u32) * n;
         let values_opnd = ctx.sp_opnd(-(offset_magnitude as isize));
         asm.lea(values_opnd)
     };
@@ -4027,7 +4030,6 @@ fn gen_send_cfunc(
         unsafe { get_cikw_keyword_len(kw_arg) }
     };
 
-
     if c_method_tracing_currently_enabled(jit) {
         // Don't JIT if tracing c_call or c_return
         gen_counter_incr!(asm, send_cfunc_tracing);
@@ -4111,6 +4113,7 @@ fn gen_send_cfunc(
     // sp[-3] = me;
     // Put compile time cme into REG1. It's assumed to be valid because we are notified when
     // any cme we depend on become outdated. See yjit_method_lookup_change().
+    asm.comment("push cme, block handler, frame type");
     asm.mov(Opnd::mem(64, sp, SIZEOF_VALUE_I32 * -3), Opnd::UImm(cme as u64));
 
     // Write block handler at sp[-2]
@@ -4134,6 +4137,7 @@ fn gen_send_cfunc(
     asm.store(Opnd::mem(64, sp, SIZEOF_VALUE_I32 * -1), Opnd::UImm(frame_type.into()));
 
     // Allocate a new CFP (ec->cfp--)
+    asm.comment("push callee control frame");
     let ec_cfp_opnd = Opnd::mem(64, EC, RUBY_OFFSET_EC_CFP);
     let new_cfp = asm.sub(ec_cfp_opnd, Opnd::UImm(RUBY_SIZEOF_CONTROL_FRAME as u64));
     asm.mov(ec_cfp_opnd, new_cfp);
@@ -4159,18 +4163,6 @@ fn gen_send_cfunc(
     let ep = asm.sub(sp, Opnd::UImm(SIZEOF_VALUE as u64));
     asm.mov(Opnd::mem(64, ec_cfp_opnd, RUBY_OFFSET_CFP_EP), ep);
     asm.mov(Opnd::mem(64, ec_cfp_opnd, RUBY_OFFSET_CFP_SELF), recv);
-
-    /*
-    // Verify that we are calling the right function
-    if (YJIT_CHECK_MODE > 0) {  // TODO: will we have a YJIT_CHECK_MODE?
-        // Call check_cfunc_dispatch
-        mov(cb, C_ARG_REGS[0], recv);
-        jit_mov_gc_ptr(jit, cb, C_ARG_REGS[1], (VALUE)ci);
-        mov(cb, C_ARG_REGS[2], const_ptr_opnd((void *)cfunc->func));
-        jit_mov_gc_ptr(jit, cb, C_ARG_REGS[3], (VALUE)cme);
-        call_ptr(cb, REG0, (void *)&check_cfunc_dispatch);
-    }
-    */
 
     if !kw_arg.is_null() {
         // Build a hash from all kwargs passed
@@ -4556,8 +4548,6 @@ fn gen_send_iseq(
 
     // Number of locals that are not parameters
     let num_locals = unsafe { get_iseq_body_local_table_size(iseq) as i32 } - (num_params as i32);
-
-
 
     // Check for interrupts
     gen_check_ints(asm, side_exit);
@@ -5432,7 +5422,7 @@ fn gen_leave(
     asm.comment("pop stack frame");
     let incr_cfp = asm.add(CFP, RUBY_SIZEOF_CONTROL_FRAME.into());
     asm.mov(CFP, incr_cfp);
-    asm.mov(Opnd::mem(64, EC, RUBY_OFFSET_EC_CFP), incr_cfp);
+    asm.mov(Opnd::mem(64, EC, RUBY_OFFSET_EC_CFP), CFP);
 
     // Load the return value
     let retval_opnd = ctx.stack_pop(1);
