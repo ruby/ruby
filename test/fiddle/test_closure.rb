@@ -83,9 +83,9 @@ module Fiddle
 
     def test_free
       Closure.create(:int, [:void]) do |closure|
-        assert_false(closure.freed?)
+        assert(!closure.freed?)
         closure.free
-        assert_true(closure.freed?)
+        assert(closure.freed?)
         closure.free
       end
     end
