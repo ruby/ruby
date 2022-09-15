@@ -292,12 +292,9 @@ def package(vcs, rev, destdir, tmp = nil)
     warn "#{$0}: unknown version - #{rev}"
     return
   end
-  if info = vcs.get_revisions(url)
-    modified = info[2]
-  else
-    modified = Time.now - 10
-  end
-  if !revision and info
+  info = vcs.get_revisions(url)
+  modified = info[2]
+  if !revision
     revision = info
     url ||= vcs.branch(revision[3])
     revision = revision[1]
@@ -347,7 +344,7 @@ def package(vcs, rev, destdir, tmp = nil)
   end
 
   File.open("#{v}/revision.h", "wb") {|f|
-    f.puts vcs.revision_header(revision)
+    f.puts vcs.revision_header(revision, info[2])
   }
   version ||= (versionhdr = IO.read("#{v}/version.h"))[RUBY_VERSION_PATTERN, 1]
   version ||=

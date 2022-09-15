@@ -204,12 +204,13 @@ class VCS
     revision_handler(rev).short_revision(rev)
   end
 
-  def revision_header(last, modified = nil, branch = nil, title = nil, limit: 20)
+  def revision_header(last, modified, branch = nil, title = nil, limit: 20)
     short = short_revision(last)
     if /[^\x00-\x7f]/ =~ title and title.respond_to?(:force_encoding)
       title = title.dup.force_encoding("US-ASCII")
     end
     code = [
+      "#ifndef RUBY_REVISION",
       "#define RUBY_REVISION #{short.inspect}",
     ]
     unless short == last
@@ -225,10 +226,14 @@ class VCS
       title = title.dump.sub(/\\#/, '#')
       code << "#define RUBY_LAST_COMMIT_TITLE #{title}"
     end
-    if modified
-      t = modified.utc
-      code << t.strftime('#define RUBY_RELEASE_DATETIME "%FT%TZ"')
-    end
+    t = modified.utc
+    code << t.strftime('#define RUBY_RELEASE_DATETIME "%FT%TZ"')
+    code << "#endif"
+
+    code << t.strftime('#define RUBY_RELEASE_YEAR %Y')
+    code << t.strftime('#define RUBY_RELEASE_MONTH %-m')
+    code << t.strftime('#define RUBY_RELEASE_DAY %-d')
+
     code
   end
 

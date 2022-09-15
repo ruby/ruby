@@ -13,10 +13,7 @@
 #define RUBY_RELEASE_DATE RUBY_RELEASE_YEAR_STR"-"RUBY_RELEASE_MONTH_STR"-"RUBY_RELEASE_DAY_STR
 #define RUBY_PATCHLEVEL -1
 
-#define RUBY_RELEASE_YEAR 2022
-#define RUBY_RELEASE_MONTH 9
-#define RUBY_RELEASE_DAY 15
-
+#include "revision.h"
 #include "ruby/version.h"
 #include "ruby/internal/abi.h"
 
@@ -59,10 +56,6 @@
 #error RUBY_ABI_VERSION is defined in non-development branch
 #else
 #define RUBY_PATCHLEVEL_STR ""
-#endif
-
-#ifndef RUBY_REVISION
-# include "revision.h"
 #endif
 
 #endif /* RUBY_TOPLEVEL_VERSION_H */
