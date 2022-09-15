@@ -4445,7 +4445,7 @@ fn gen_send_iseq(
         return CantCompile;
     }
 
-    if opts_filled < 0 && VM_CALL_ARGS_SPLAT == 0  {
+    if opts_filled < 0 && flags & VM_CALL_ARGS_SPLAT == 0  {
         // Too few arguments and no splat to make up for it
         gen_counter_incr!(asm, send_iseq_arity_error);
         return CantCompile;
