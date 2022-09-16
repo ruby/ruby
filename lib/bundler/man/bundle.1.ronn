@@ -46,7 +46,7 @@ We divide `bundle` subcommands into primary commands and utilities:
 * [`bundle config(1)`](bundle-config.1.html):
   Specify and read configuration options for Bundler
 
-* `bundle help(1)`:
+* [`bundle help(1)`](bundle-help.1.html):
   Display detailed help for each subcommand
 
 ## UTILITIES
@@ -99,6 +99,9 @@ We divide `bundle` subcommands into primary commands and utilities:
 
 * [`bundle plugin(1)`](bundle-plugin.1.html):
   Manage Bundler plugins
+
+* [`bundle version(1)`](bundle-version.1.html):
+  Prints Bundler version information
 
 ## PLUGINS
 

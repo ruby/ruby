@@ -237,8 +237,11 @@ module Gem
     MINGW = Gem::Platform.new("x86-mingw32")
     X64_MINGW = [Gem::Platform.new("x64-mingw32"),
                  Gem::Platform.new("x64-mingw-ucrt")].freeze
+    WINDOWS = [MSWIN, MSWIN64, MINGW, X64_MINGW].flatten.freeze
+    X64_LINUX = Gem::Platform.new("x86_64-linux")
+    X64_LINUX_MUSL = Gem::Platform.new("x86_64-linux-musl")
 
-    if Gem::Platform.new("x86_64-linux-musl") === Gem::Platform.new("x86_64-linux")
+    if X64_LINUX === X64_LINUX_MUSL
       remove_method :===
 
       def ===(other)
@@ -258,7 +261,7 @@ module Gem
           # version
           (
             (@os != "linux" && (@version.nil? || other.version.nil?)) ||
-            (@os == "linux" && ((@version.nil? && ["gnu", "musl"].include?(other.version)) || (@version == "gnu" && other.version.nil?))) ||
+            (@os == "linux" && (other.version == "gnu#{@version}" || other.version == "musl#{@version}" || @version == "gnu#{other.version}")) ||
             @version == other.version
           )
       end
@@ -274,14 +277,21 @@ module Gem
       def match_gem?(platform, gem_name)
         match_platforms?(platform, Gem.platforms)
       end
+    end
+
+    match_platforms_defined = Gem::Platform.respond_to?(:match_platforms?, true)
+
+    if !match_platforms_defined || Gem::Platform.send(:match_platforms?, Gem::Platform::X64_LINUX_MUSL, [Gem::Platform::X64_LINUX])
 
       private
+
+      remove_method :match_platforms? if match_platforms_defined
 
       def match_platforms?(platform, platforms)
         platforms.any? do |local_platform|
           platform.nil? ||
             local_platform == platform ||
-            (local_platform != Gem::Platform::RUBY && local_platform =~ platform)
+            (local_platform != Gem::Platform::RUBY && platform =~ local_platform)
         end
       end
     end

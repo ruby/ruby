@@ -4,9 +4,9 @@ RSpec.describe "real world edgecases", :realworld => true do
   def rubygems_version(name, requirement)
     ruby <<-RUBY
       require "#{spec_dir}/support/artifice/vcr"
-      require "#{entrypoint}"
-      require "#{entrypoint}/source/rubygems/remote"
-      require "#{entrypoint}/fetcher"
+      require "bundler"
+      require "bundler/source/rubygems/remote"
+      require "bundler/fetcher"
       rubygem = Bundler.ui.silence do
         source = Bundler::Source::Rubygems::Remote.new(Bundler::URI("https://rubygems.org"))
         fetcher = Bundler::Fetcher.new(source)
@@ -64,7 +64,7 @@ RSpec.describe "real world edgecases", :realworld => true do
   it "is able to update a top-level dependency when there is a conflict on a shared transitive child" do
     # from https://github.com/rubygems/bundler/issues/5031
 
-    system_gems "bundler-2.99.0"
+    pristine_system_gems "bundler-1.99.0"
 
     gemfile <<-G
       source "https://rubygems.org"
@@ -154,7 +154,7 @@ RSpec.describe "real world edgecases", :realworld => true do
             activemodel (= 4.2.7.1)
             activerecord (= 4.2.7.1)
             activesupport (= 4.2.7.1)
-            bundler (>= 1.3.0, < 3.0)
+            bundler (>= 1.3.0, < 2.0)
             railties (= 4.2.7.1)
             sprockets-rails
           rails-deprecated_sanitizer (1.0.3)
@@ -191,7 +191,7 @@ RSpec.describe "real world edgecases", :realworld => true do
         rails (~> 4.2.7.1)
     L
 
-    bundle "lock --update paperclip", :env => { "BUNDLER_VERSION" => "2.99.0" }
+    bundle "lock --update paperclip", :env => { "BUNDLER_VERSION" => "1.99.0" }
 
     expect(lockfile).to include(rubygems_version("paperclip", "~> 5.1.0"))
   end

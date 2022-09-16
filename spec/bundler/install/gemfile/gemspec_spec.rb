@@ -436,7 +436,7 @@ RSpec.describe "bundle install from an existing gemspec" do
 
         simulate_new_machine
         simulate_platform("jruby") { bundle "install" }
-        simulate_platform(x64_mingw) { bundle "install" }
+        simulate_platform(x64_mingw32) { bundle "install" }
       end
 
       context "on ruby" do

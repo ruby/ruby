@@ -180,7 +180,7 @@ class Gem::Platform
       # version
       (
         (@os != "linux" && (@version.nil? || other.version.nil?)) ||
-        (@os == "linux" && ((@version.nil? && ["gnu", "musl"].include?(other.version)) || (@version == "gnu" && other.version.nil?))) ||
+        (@os == "linux" && (other.version == "gnu#{@version}" || other.version == "musl#{@version}" || @version == "gnu#{other.version}")) ||
         @version == other.version
       )
   end

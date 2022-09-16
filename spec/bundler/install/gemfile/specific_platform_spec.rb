@@ -227,9 +227,9 @@ RSpec.describe "bundle install with specific platforms" do
       it "adds the foreign platform" do
         setup_multiplatform_gem
         install_gemfile(google_protobuf)
-        bundle "lock --add-platform=#{x64_mingw}"
+        bundle "lock --add-platform=#{x64_mingw32}"
 
-        expect(the_bundle.locked_gems.platforms).to eq([x64_mingw, pl("x86_64-darwin-15")])
+        expect(the_bundle.locked_gems.platforms).to eq([x64_mingw32, pl("x86_64-darwin-15")])
         expect(the_bundle.locked_gems.specs.map(&:full_name)).to eq(%w[
           google-protobuf-3.0.0.alpha.5.0.5.1-universal-darwin
           google-protobuf-3.0.0.alpha.5.0.5.1-x64-mingw32
@@ -412,6 +412,77 @@ RSpec.describe "bundle install with specific platforms" do
 
       PLATFORMS
         #{lockfile_platforms_for([specific_local_platform, "ruby"])}
+
+      DEPENDENCIES
+        sorbet-static-and-runtime
+
+      BUNDLED WITH
+         #{Bundler::VERSION}
+    L
+
+    bundle "update"
+
+    expect(lockfile).to eq <<~L
+      GEM
+        remote: #{file_uri_for(gem_repo4)}/
+        specs:
+          sorbet (0.5.10160)
+            sorbet-static (= 0.5.10160)
+          sorbet-runtime (0.5.10160)
+          sorbet-static (0.5.10160-#{Gem::Platform.local})
+          sorbet-static-and-runtime (0.5.10160)
+            sorbet (= 0.5.10160)
+            sorbet-runtime (= 0.5.10160)
+
+      PLATFORMS
+        #{lockfile_platforms}
+
+      DEPENDENCIES
+        sorbet-static-and-runtime
+
+      BUNDLED WITH
+         #{Bundler::VERSION}
+    L
+  end
+
+  it "automatically fixes the lockfile if only RUBY platform is locked and some gem has no RUBY variant available" do
+    build_repo4 do
+      build_gem("sorbet-static-and-runtime", "0.5.10160") do |s|
+        s.add_runtime_dependency "sorbet", "= 0.5.10160"
+        s.add_runtime_dependency "sorbet-runtime", "= 0.5.10160"
+      end
+
+      build_gem("sorbet", "0.5.10160") do |s|
+        s.add_runtime_dependency "sorbet-static", "= 0.5.10160"
+      end
+
+      build_gem("sorbet-runtime", "0.5.10160")
+
+      build_gem("sorbet-static", "0.5.10160") do |s|
+        s.platform = Gem::Platform.local
+      end
+    end
+
+    gemfile <<~G
+      source "#{file_uri_for(gem_repo4)}"
+
+      gem "sorbet-static-and-runtime"
+    G
+
+    lockfile <<~L
+      GEM
+        remote: #{file_uri_for(gem_repo4)}/
+        specs:
+          sorbet (0.5.10160)
+            sorbet-static (= 0.5.10160)
+          sorbet-runtime (0.5.10160)
+          sorbet-static (0.5.10160-#{Gem::Platform.local})
+          sorbet-static-and-runtime (0.5.10160)
+            sorbet (= 0.5.10160)
+            sorbet-runtime (= 0.5.10160)
+
+      PLATFORMS
+        ruby
 
       DEPENDENCIES
         sorbet-static-and-runtime

@@ -12,7 +12,7 @@ module Bundler
       super()
       @name         = name
       @version      = Gem::Version.create version
-      @platform     = platform
+      @platform     = Gem::Platform.new(platform)
       @spec_fetcher = spec_fetcher
       @dependencies = dependencies.map {|dep, reqs| build_dependency(dep, reqs) }
 
