@@ -327,19 +327,17 @@ class TestGemCommandsPushCommand < Gem::TestCase
 
   def test_sending_gem_to_permanent_redirect_host
     @host = "http://rubygems.example"
-    @fetcher.data["#{@host}/api/v1/gems"] = ["", 308, "Permanent Redirect"]
+    redirected_uri = "https://rubygems.example/api/v1/gems"
+    @fetcher.data["#{@host}/api/v1/gems"] = HTTPResponseFactory.create(body: "", code: 308, msg: "Permanent Redirect", headers: { "Location" => redirected_uri })
 
     assert_raise Gem::MockGemUi::TermError do
       use_ui @ui do
         @cmd.instance_variable_set :@host, @host
-
-        Gem::Uri.stub("parse", URI.parse("https://rubygems.example/")) do
-          @cmd.send_gem(@path)
-        end
+        @cmd.send_gem(@path)
       end
     end
 
-    response = "The request has redirected permanently to https://rubygems.example. Please check your defined push host."
+    response = "The request has redirected permanently to #{redirected_uri}. Please check your defined push host."
     assert_match response, @ui.output
   end
 

@@ -73,22 +73,26 @@ class TestGemCommandsSigninCommand < Gem::TestCase
 
   def test_execute_with_host_permanent_redirect
     host = "http://rubygems.example/"
-    ENV["RUBYGEMS_HOST"]       = host
-    data_key                   = "#{host}/api/v1/api_key"
-    fetcher                    = Gem::FakeFetcher.new
-    fetcher.data[data_key]     = ["", 308, "Moved Permanently"]
+    ENV["RUBYGEMS_HOST"] = host
+    path = "/api/v1/api_key"
+    redirected_uri = "http://rubygems.example#{path}"
+    fetcher = Gem::FakeFetcher.new
+    fetcher.data["#{host}#{path}"] = HTTPResponseFactory.create(
+      body: "",
+      code: "308",
+      msg: "Permanent Redirect",
+      headers: { "location" => redirected_uri }
+    )
     Gem::RemoteFetcher.fetcher = fetcher
     ui = Gem::MockGemUi.new("you@example.com\nsecret\n\n\n\n\n\n\n\n\n")
 
     assert_raise Gem::MockGemUi::TermError do
       use_ui ui do
-        Gem::Uri.stub("parse", URI.parse("https://rubygems.example/")) do
-          @cmd.execute
-        end
+        @cmd.execute
       end
     end
 
-    response = "The request has redirected permanently to https://rubygems.example. Please check your defined push host."
+    response = "The request has redirected permanently to #{redirected_uri}. Please check your defined push host."
     assert_match response, ui.output
   end
 

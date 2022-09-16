@@ -61,6 +61,19 @@ class Gem::FakeFetcher
     end
   end
 
+  def create_response(uri)
+    data = find_data(uri)
+    if data.kind_of?(Array)
+      body, code, msg = data
+      HTTPResponseFactory.create(body: body, code: code, msg: msg)
+    elsif data.respond_to?(:call)
+      body, code, msg = data.call
+      HTTPResponseFactory.create(body: body, code: code, msg: msg)
+    else
+      data
+    end
+  end
+
   def fetch_path(path, mtime = nil, head = false)
     data = find_data(path)
 
@@ -86,25 +99,15 @@ class Gem::FakeFetcher
   # Thanks, FakeWeb!
   def open_uri_or_path(path)
     data = find_data(path)
-    body, code, msg = data
 
-    response = Net::HTTPResponse.send(:response_class, code.to_s).new("1.0", code.to_s, msg)
-    response.instance_variable_set(:@body, body)
-    response.instance_variable_set(:@read, true)
-    response
+    create_response(uri)
   end
 
   def request(uri, request_class, last_modified = nil)
-    data = find_data(uri)
-    body, code, msg = (data.respond_to?(:call) ? data.call : data)
-
     @last_request = request_class.new uri.request_uri
     yield @last_request if block_given?
 
-    response = Net::HTTPResponse.send(:response_class, code.to_s).new("1.0", code.to_s, msg)
-    response.instance_variable_set(:@body, body)
-    response.instance_variable_set(:@read, true)
-    response
+    create_response(uri)
   end
 
   def pretty_print(q) # :nodoc:
@@ -161,6 +164,30 @@ class Gem::FakeFetcher
     spec, source = found.first
 
     download spec, source.uri.to_s
+  end
+end
+
+##
+# The HTTPResponseFactory allows easy creation of Net::HTTPResponse instances in RubyGems tests:
+#
+# Example:
+#
+#   HTTPResponseFactory.create(
+#     body: "",
+#     code: 301,
+#     msg: "Moved Permanently",
+#     headers: { "location" => "http://example.com" }
+#   )
+#
+
+class HTTPResponseFactory
+  def self.create(body:, code:, msg:, headers: {})
+    response = Net::HTTPResponse.send(:response_class, code.to_s).new("1.0", code.to_s, msg)
+    response.instance_variable_set(:@body, body)
+    response.instance_variable_set(:@read, true)
+    headers.each {|name, value| response[name] = value }
+
+    response
   end
 end
 

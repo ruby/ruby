@@ -121,17 +121,23 @@ EOF
   def test_show_owners_permanent_redirect
     host = "http://rubygems.example"
     ENV["RUBYGEMS_HOST"] = host
-    @stub_fetcher.data["#{host}/api/v1/gems/freewill/owners.yaml"] = ["", 301, "Moved Permanently"]
+    path = "/api/v1/gems/freewill/owners.yaml"
+    redirected_uri = "https://rubygems.example#{path}"
+
+    @stub_fetcher.data["#{host}#{path}"] = HTTPResponseFactory.create(
+      body: "",
+      code: "301",
+      msg: "Moved Permanently",
+      headers: { "location" => redirected_uri }
+    )
 
     assert_raise Gem::MockGemUi::TermError do
       use_ui @stub_ui do
-        Gem::Uri.stub("parse", URI.parse("https://rubygems.example/")) do
-          @cmd.show_owners("freewill")
-        end
+        @cmd.show_owners("freewill")
       end
     end
 
-    response = "The request has redirected permanently to https://rubygems.example. Please check your defined push host."
+    response = "The request has redirected permanently to #{redirected_uri}. Please check your defined push host."
     assert_match response, @stub_ui.output
   end
 
@@ -178,15 +184,21 @@ EOF
   def test_add_owners_permanent_redirect
     host = "http://rubygems.example"
     ENV["RUBYGEMS_HOST"] = host
-    @stub_fetcher.data["#{host}/api/v1/gems/freewill/owners"] = ["", 308, "Permanent Redirect"]
+    path = "/api/v1/gems/freewill/owners"
+    redirected_uri = "https://rubygems.example#{path}"
+
+    @stub_fetcher.data["#{host}#{path}"] = HTTPResponseFactory.create(
+      body: "",
+      code: "308",
+      msg: "Permanent Redirect",
+      headers: { "location" => redirected_uri }
+    )
 
     use_ui @stub_ui do
-      Gem::Uri.stub("parse", URI.parse("https://rubygems.example/")) do
-        @cmd.add_owners("freewill", ["user-new1@example.com"])
-      end
+      @cmd.add_owners("freewill", ["user-new1@example.com"])
     end
 
-    response = "The request has redirected permanently to https://rubygems.example. Please check your defined push host."
+    response = "The request has redirected permanently to #{redirected_uri}. Please check your defined push host."
     assert_match response, @stub_ui.output
   end
 
@@ -251,15 +263,37 @@ EOF
   def test_remove_owners_permanent_redirect
     host = "http://rubygems.example"
     ENV["RUBYGEMS_HOST"] = host
-    @stub_fetcher.data["#{host}/api/v1/gems/freewill/owners"] = ["", 308, "Permanent Redirect"]
+    path = "/api/v1/gems/freewill/owners"
+    redirected_uri = "https://rubygems.example#{path}"
+    @stub_fetcher.data["#{host}#{path}"] = HTTPResponseFactory.create(
+      body: "",
+      code: "308",
+      msg: "Permanent Redirect",
+      headers: { "location" => redirected_uri }
+    )
 
     use_ui @stub_ui do
-      Gem::Uri.stub("parse", URI.parse("https://rubygems.example/")) do
-        @cmd.remove_owners("freewill", ["user-remove1@example.com"])
-      end
+      @cmd.remove_owners("freewill", ["user-remove1@example.com"])
     end
 
-    response = "The request has redirected permanently to https://rubygems.example. Please check your defined push host."
+    response = "The request has redirected permanently to #{redirected_uri}. Please check your defined push host."
+    assert_match response, @stub_ui.output
+
+    path = "/api/v1/gems/freewill/owners"
+    redirected_uri = "https://rubygems.example#{path}"
+
+    @stub_fetcher.data["#{host}#{path}"] = HTTPResponseFactory.create(
+      body: "",
+      code: "308",
+      msg: "Permanent Redirect",
+      headers: { "location" => redirected_uri }
+    )
+
+    use_ui @stub_ui do
+      @cmd.add_owners("freewill", ["user-new1@example.com"])
+    end
+
+    response = "The request has redirected permanently to #{redirected_uri}. Please check your defined push host."
     assert_match response, @stub_ui.output
   end
 
