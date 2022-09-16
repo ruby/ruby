@@ -44,7 +44,7 @@ jobs:
       - name: Autoconf
         run: |
           cd src
-          autoconf
+          autoreconf -i
       - name: Configure
         run: |
           mkdir build
