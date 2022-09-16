@@ -118,6 +118,23 @@ EOF
     assert_match response, @stub_ui.output
   end
 
+  def test_show_owners_permanent_redirect
+    host = "http://rubygems.example"
+    ENV["RUBYGEMS_HOST"] = host
+    @stub_fetcher.data["#{host}/api/v1/gems/freewill/owners.yaml"] = ["", 301, "Moved Permanently"]
+
+    assert_raise Gem::MockGemUi::TermError do
+      use_ui @stub_ui do
+        Gem::Uri.stub("parse", URI.parse("https://rubygems.example/")) do
+          @cmd.show_owners("freewill")
+        end
+      end
+    end
+
+    response = "The request has redirected permanently to https://rubygems.example. Please check your defined push host."
+    assert_match response, @stub_ui.output
+  end
+
   def test_show_owners_key
     response = "- email: user1@example.com\n"
     @stub_fetcher.data["#{Gem.host}/api/v1/gems/freewill/owners.yaml"] = [response, 200, "OK"]
@@ -155,6 +172,21 @@ EOF
       @cmd.add_owners("freewill", ["user-new1@example.com"])
     end
 
+    assert_match response, @stub_ui.output
+  end
+
+  def test_add_owners_permanent_redirect
+    host = "http://rubygems.example"
+    ENV["RUBYGEMS_HOST"] = host
+    @stub_fetcher.data["#{host}/api/v1/gems/freewill/owners"] = ["", 308, "Permanent Redirect"]
+
+    use_ui @stub_ui do
+      Gem::Uri.stub("parse", URI.parse("https://rubygems.example/")) do
+        @cmd.add_owners("freewill", ["user-new1@example.com"])
+      end
+    end
+
+    response = "The request has redirected permanently to https://rubygems.example. Please check your defined push host."
     assert_match response, @stub_ui.output
   end
 
@@ -213,6 +245,21 @@ EOF
       @cmd.remove_owners("freewill", ["user-remove1@example.com"])
     end
 
+    assert_match response, @stub_ui.output
+  end
+
+  def test_remove_owners_permanent_redirect
+    host = "http://rubygems.example"
+    ENV["RUBYGEMS_HOST"] = host
+    @stub_fetcher.data["#{host}/api/v1/gems/freewill/owners"] = ["", 308, "Permanent Redirect"]
+
+    use_ui @stub_ui do
+      Gem::Uri.stub("parse", URI.parse("https://rubygems.example/")) do
+        @cmd.remove_owners("freewill", ["user-remove1@example.com"])
+      end
+    end
+
+    response = "The request has redirected permanently to https://rubygems.example. Please check your defined push host."
     assert_match response, @stub_ui.output
   end
 

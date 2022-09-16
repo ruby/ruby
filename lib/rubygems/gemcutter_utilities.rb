@@ -201,7 +201,8 @@ module Gem::GemcutterUtilities
   # block was given or shows the response body to the user.
   #
   # If the response was not successful, shows an error to the user including
-  # the +error_prefix+ and the response body.
+  # the +error_prefix+ and the response body. If the response was a permanent redirect,
+  # shows an error to the user including the redirect location.
 
   def with_response(response, error_prefix = nil)
     case response
@@ -211,6 +212,13 @@ module Gem::GemcutterUtilities
       else
         say clean_text(response.body)
       end
+    when Net::HTTPPermanentRedirect, Net::HTTPRedirection then
+      message = "The request has redirected permanently to #{Gem::Uri.parse(response['location']).origin}. " \
+        "Please check your defined push host."
+      message = "#{error_prefix}: #{message}" if error_prefix
+
+      say clean_text(message)
+      terminate_interaction(ERROR_CODE)
     else
       message = response.body
       message = "#{error_prefix}: #{message}" if error_prefix
