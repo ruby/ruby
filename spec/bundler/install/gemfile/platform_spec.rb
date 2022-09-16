@@ -475,7 +475,7 @@ RSpec.describe "bundle install with platform conditionals" do
     gemfile <<-G
       source "#{file_uri_for(gem_repo1)}"
 
-      gem "rack", :platform => [:mingw, :mswin, :x64_mingw, :jruby]
+      gem "rack", :platform => [:windows, :mingw, :mswin, :x64_mingw, :jruby]
     G
 
     bundle "install"
@@ -501,7 +501,7 @@ end
 
 RSpec.describe "when a gem has no architecture" do
   it "still installs correctly" do
-    simulate_platform mswin
+    simulate_platform x86_mswin32
 
     build_repo2 do
       # The rcov gem is platform mswin32, but has no arch

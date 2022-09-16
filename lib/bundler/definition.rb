@@ -484,15 +484,13 @@ module Bundler
     def resolver
       @resolver ||= begin
         last_resolve = converge_locked_specs
-        Resolver.new(source_requirements, last_resolve, gem_version_promoter, additional_base_requirements_for_resolve, platforms)
+        remove_ruby_from_platforms_if_necessary!(dependencies)
+        Resolver.new(source_requirements, last_resolve, gem_version_promoter, additional_base_requirements_for_resolve(last_resolve), platforms)
       end
     end
 
     def expanded_dependencies
-      @expanded_dependencies ||= begin
-        remove_ruby_from_platforms_if_necessary!(dependencies)
-        expand_dependencies(dependencies + metadata_dependencies, true)
-      end
+      @expanded_dependencies ||= expand_dependencies(dependencies + metadata_dependencies, true)
     end
 
     def filter_specs(specs, deps)
@@ -880,9 +878,9 @@ module Bundler
       end
     end
 
-    def additional_base_requirements_for_resolve
+    def additional_base_requirements_for_resolve(last_resolve)
       return [] unless @locked_gems && unlocking? && !sources.expired_sources?(@locked_gems.sources)
-      converge_specs(@originally_locked_specs).map do |locked_spec|
+      converge_specs(@originally_locked_specs - last_resolve).map do |locked_spec|
         Dependency.new(locked_spec.name, ">= #{locked_spec.version}")
       end.uniq
     end
@@ -896,7 +894,6 @@ module Bundler
 
       remove_platform(Gem::Platform::RUBY)
       add_current_platform
-      resolver.platforms = @platforms
     end
 
     def source_map

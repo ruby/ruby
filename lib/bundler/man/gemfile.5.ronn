@@ -190,47 +190,29 @@ platforms.
 There are a number of `Gemfile` platforms:
 
   * `ruby`:
-    C Ruby (MRI), Rubinius or TruffleRuby, but `NOT` Windows
+    C Ruby (MRI), Rubinius, or TruffleRuby, but not Windows
   * `mri`:
-    Same as _ruby_, but only C Ruby (MRI)
-  * `mingw`:
-    Windows 32 bit 'mingw32' platform (aka RubyInstaller)
-  * `x64_mingw`:
-    Windows 64 bit 'mingw32' platform (aka RubyInstaller x64)
+    C Ruby (MRI) only, but not Windows
+  * `windows`:
+    Windows C Ruby (MRI), including RubyInstaller 32-bit and 64-bit versions
   * `rbx`:
     Rubinius
   * `jruby`:
     JRuby
   * `truffleruby`:
     TruffleRuby
-  * `mswin`:
-    Windows
 
-You can restrict further by platform and version for all platforms *except* for
-`rbx`, `jruby`, `truffleruby` and `mswin`.
-
-To specify a version in addition to a platform, append the version number without
-the delimiter to the platform. For example, to specify that a gem should only be
-used on platforms with Ruby 2.3, use:
+On platforms `ruby`, `mri`, and `windows`, you may additionally specify a version
+by appending the major and minor version numbers without a delimiter. For example,
+to specify that a gem should only be used on platform `ruby` version 2.3, use:
 
     ruby_23
 
-The full list of platforms and supported versions includes:
-
-  * `ruby`:
-    1.8, 1.9, 2.0, 2.1, 2.2, 2.3, 2.4, 2.5, 2.6
-  * `mri`:
-    1.8, 1.9, 2.0, 2.1, 2.2, 2.3, 2.4, 2.5, 2.6
-  * `mingw`:
-    1.8, 1.9, 2.0, 2.1, 2.2, 2.3, 2.4, 2.5, 2.6
-  * `x64_mingw`:
-    2.0, 2.1, 2.2, 2.3, 2.4, 2.5, 2.6
-
-As with groups, you can specify one or more platforms:
+As with groups (above), you may specify one or more platforms:
 
     gem "weakling",   platforms: :jruby
     gem "ruby-debug", platforms: :mri_18
-    gem "nokogiri",   platforms: [:mri_18, :jruby]
+    gem "nokogiri",   platforms: [:windows_26, :jruby]
 
 All operations involving groups ([`bundle install`](bundle-install.1.html), `Bundler.setup`,
 `Bundler.require`) behave exactly the same as if any groups not

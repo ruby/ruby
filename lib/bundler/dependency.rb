@@ -7,92 +7,24 @@ require_relative "rubygems_ext"
 module Bundler
   class Dependency < Gem::Dependency
     attr_reader :autorequire
-    attr_reader :groups, :platforms, :gemfile, :git, :github, :branch, :ref, :force_ruby_platform
+    attr_reader :groups, :platforms, :gemfile, :path, :git, :github, :branch, :ref, :force_ruby_platform
 
-    # rubocop:disable Naming/VariableNumber
+    ALL_RUBY_VERSIONS = ((18..27).to_a + (30..31).to_a).freeze
     PLATFORM_MAP = {
-      :ruby     => Gem::Platform::RUBY,
-      :ruby_18  => Gem::Platform::RUBY,
-      :ruby_19  => Gem::Platform::RUBY,
-      :ruby_20  => Gem::Platform::RUBY,
-      :ruby_21  => Gem::Platform::RUBY,
-      :ruby_22  => Gem::Platform::RUBY,
-      :ruby_23  => Gem::Platform::RUBY,
-      :ruby_24  => Gem::Platform::RUBY,
-      :ruby_25  => Gem::Platform::RUBY,
-      :ruby_26  => Gem::Platform::RUBY,
-      :ruby_27  => Gem::Platform::RUBY,
-      :ruby_30  => Gem::Platform::RUBY,
-      :ruby_31  => Gem::Platform::RUBY,
-      :mri      => Gem::Platform::RUBY,
-      :mri_18   => Gem::Platform::RUBY,
-      :mri_19   => Gem::Platform::RUBY,
-      :mri_20   => Gem::Platform::RUBY,
-      :mri_21   => Gem::Platform::RUBY,
-      :mri_22   => Gem::Platform::RUBY,
-      :mri_23   => Gem::Platform::RUBY,
-      :mri_24   => Gem::Platform::RUBY,
-      :mri_25   => Gem::Platform::RUBY,
-      :mri_26   => Gem::Platform::RUBY,
-      :mri_27   => Gem::Platform::RUBY,
-      :mri_30   => Gem::Platform::RUBY,
-      :mri_31   => Gem::Platform::RUBY,
-      :rbx      => Gem::Platform::RUBY,
-      :truffleruby => Gem::Platform::RUBY,
-      :jruby    => Gem::Platform::JAVA,
-      :jruby_18 => Gem::Platform::JAVA,
-      :jruby_19 => Gem::Platform::JAVA,
-      :mswin    => Gem::Platform::MSWIN,
-      :mswin_18 => Gem::Platform::MSWIN,
-      :mswin_19 => Gem::Platform::MSWIN,
-      :mswin_20 => Gem::Platform::MSWIN,
-      :mswin_21 => Gem::Platform::MSWIN,
-      :mswin_22 => Gem::Platform::MSWIN,
-      :mswin_23 => Gem::Platform::MSWIN,
-      :mswin_24 => Gem::Platform::MSWIN,
-      :mswin_25 => Gem::Platform::MSWIN,
-      :mswin_26 => Gem::Platform::MSWIN,
-      :mswin_27 => Gem::Platform::MSWIN,
-      :mswin_30 => Gem::Platform::MSWIN,
-      :mswin_31 => Gem::Platform::MSWIN,
-      :mswin64    => Gem::Platform::MSWIN64,
-      :mswin64_19 => Gem::Platform::MSWIN64,
-      :mswin64_20 => Gem::Platform::MSWIN64,
-      :mswin64_21 => Gem::Platform::MSWIN64,
-      :mswin64_22 => Gem::Platform::MSWIN64,
-      :mswin64_23 => Gem::Platform::MSWIN64,
-      :mswin64_24 => Gem::Platform::MSWIN64,
-      :mswin64_25 => Gem::Platform::MSWIN64,
-      :mswin64_26 => Gem::Platform::MSWIN64,
-      :mswin64_27 => Gem::Platform::MSWIN64,
-      :mswin64_30 => Gem::Platform::MSWIN64,
-      :mswin64_31 => Gem::Platform::MSWIN64,
-      :mingw    => Gem::Platform::MINGW,
-      :mingw_18 => Gem::Platform::MINGW,
-      :mingw_19 => Gem::Platform::MINGW,
-      :mingw_20 => Gem::Platform::MINGW,
-      :mingw_21 => Gem::Platform::MINGW,
-      :mingw_22 => Gem::Platform::MINGW,
-      :mingw_23 => Gem::Platform::MINGW,
-      :mingw_24 => Gem::Platform::MINGW,
-      :mingw_25 => Gem::Platform::MINGW,
-      :mingw_26 => Gem::Platform::MINGW,
-      :mingw_27 => Gem::Platform::MINGW,
-      :mingw_30 => Gem::Platform::MINGW,
-      :mingw_31 => Gem::Platform::MINGW,
-      :x64_mingw    => Gem::Platform::X64_MINGW,
-      :x64_mingw_20 => Gem::Platform::X64_MINGW,
-      :x64_mingw_21 => Gem::Platform::X64_MINGW,
-      :x64_mingw_22 => Gem::Platform::X64_MINGW,
-      :x64_mingw_23 => Gem::Platform::X64_MINGW,
-      :x64_mingw_24 => Gem::Platform::X64_MINGW,
-      :x64_mingw_25 => Gem::Platform::X64_MINGW,
-      :x64_mingw_26 => Gem::Platform::X64_MINGW,
-      :x64_mingw_27 => Gem::Platform::X64_MINGW,
-      :x64_mingw_30 => Gem::Platform::X64_MINGW,
-      :x64_mingw_31 => Gem::Platform::X64_MINGW,
-    }.freeze
-    # rubocop:enable Naming/VariableNumber
+      :ruby        => [Gem::Platform::RUBY, ALL_RUBY_VERSIONS],
+      :mri         => [Gem::Platform::RUBY, ALL_RUBY_VERSIONS],
+      :rbx         => [Gem::Platform::RUBY],
+      :truffleruby => [Gem::Platform::RUBY],
+      :jruby       => [Gem::Platform::JAVA, [18, 19]],
+      :windows     => [Gem::Platform::WINDOWS, ALL_RUBY_VERSIONS],
+      :mswin       => [Gem::Platform::MSWIN,     ALL_RUBY_VERSIONS],
+      :mswin64     => [Gem::Platform::MSWIN64,   ALL_RUBY_VERSIONS - [18]],
+      :mingw       => [Gem::Platform::MINGW,     ALL_RUBY_VERSIONS],
+      :x64_mingw   => [Gem::Platform::X64_MINGW, ALL_RUBY_VERSIONS - [18, 19]],
+    }.each_with_object({}) do |(platform, spec), hash|
+      hash[platform] = spec[0]
+      spec[1]&.each {|version| hash[:"#{platform}_#{version}"] = spec[0] }
+    end.freeze
 
     def initialize(name, version, options = {}, &blk)
       type = options["type"] || :runtime
@@ -101,6 +33,7 @@ module Bundler
       @autorequire    = nil
       @groups         = Array(options["group"] || :default).map(&:to_sym)
       @source         = options["source"]
+      @path           = options["path"]
       @git            = options["git"]
       @github         = options["github"]
       @branch         = options["branch"]
@@ -151,7 +84,7 @@ module Bundler
     def to_lock
       out = super
       out << "!" if source
-      out << "\n"
+      out
     end
 
     def specific?

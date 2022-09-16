@@ -449,8 +449,6 @@ RSpec.describe "bundler/inline#gemfile" do
 
     realworld_system_gems "pathname --version 0.2.0"
 
-    realworld_system_gems "fiddle" # not sure why, but this is needed on Windows to boot rubygems successfully
-
     realworld_system_gems "timeout uri" # this spec uses net/http which requires these default gems
 
     script <<-RUBY, :dir => tmp("path_without_gemfile"), :env => { "BUNDLER_GEM_DEFAULT_DIR" => system_gem_path.to_s }

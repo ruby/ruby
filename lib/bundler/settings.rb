@@ -45,7 +45,6 @@ module Bundler
       silence_root_warning
       suppress_install_using_messages
       update_requires_all_flag
-      use_gem_version_promoter_for_major_updates
     ].freeze
 
     NUMBER_KEYS = %w[

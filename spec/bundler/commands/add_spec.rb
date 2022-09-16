@@ -103,6 +103,15 @@ RSpec.describe "bundle add" do
     end
   end
 
+  describe "with --path" do
+    it "adds dependency with specified path" do
+      bundle "add 'foo' --path='#{lib_path("foo-2.0")}'"
+
+      expect(bundled_app_gemfile.read).to match(/gem "foo", "~> 2.0", :path => "#{lib_path("foo-2.0")}"/)
+      expect(the_bundle).to include_gems "foo 2.0"
+    end
+  end
+
   describe "with --git" do
     it "adds dependency with specified git source" do
       bundle "add foo --git=#{lib_path("foo-2.0")}"

@@ -138,6 +138,10 @@ class TestGemPlatform < Gem::TestCase
       "x86_64-linux-gnu"       => ["x86_64",    "linux",     "gnu"],
       "x86_64-linux-musl"      => ["x86_64",    "linux",     "musl"],
       "x86_64-linux-uclibc"    => ["x86_64",    "linux",     "uclibc"],
+      "arm-linux-eabi"         => ["arm",       "linux",     "eabi"],
+      "arm-linux-gnueabi"      => ["arm",       "linux",     "gnueabi"],
+      "arm-linux-musleabi"     => ["arm",       "linux",     "musleabi"],
+      "arm-linux-uclibceabi"   => ["arm",       "linux",     "uclibceabi"],
       "x86_64-openbsd3.9"      => ["x86_64",    "openbsd",   "3.9"],
       "x86_64-openbsd4.0"      => ["x86_64",    "openbsd",   "4.0"],
       "x86_64-openbsd"         => ["x86_64",    "openbsd",   nil],
@@ -299,6 +303,34 @@ class TestGemPlatform < Gem::TestCase
     # other libc are not glibc compatible
     refute(x86_linux === x86_linux_uclibc, "linux =~ linux-uclibc")
     refute(x86_linux_uclibc === x86_linux, "linux-uclibc =~ linux")
+  end
+
+  def test_eabi_version_is_stricter_for_linux_os
+    arm_linux_eabi = Gem::Platform.new "arm-linux-eabi"
+    arm_linux_gnueabi = Gem::Platform.new "arm-linux-gnueabi"
+    arm_linux_musleabi = Gem::Platform.new "arm-linux-musleabi"
+    arm_linux_uclibceabi = Gem::Platform.new "arm-linux-uclibceabi"
+
+    # a naked linux runtime is implicit gnu, as it represents the common glibc-linked runtime
+    assert(arm_linux_eabi === arm_linux_gnueabi, "linux-eabi =~ linux-gnueabi")
+    assert(arm_linux_gnueabi === arm_linux_eabi, "linux-gnueabi =~ linux-eabi")
+
+    # musl and explicit gnu should differ
+    refute(arm_linux_gnueabi === arm_linux_musleabi, "linux-gnueabi =~ linux-musleabi")
+    refute(arm_linux_musleabi === arm_linux_gnueabi, "linux-musleabi =~ linux-gnueabi")
+
+    # explicit libc differ
+    refute(arm_linux_uclibceabi === arm_linux_musleabi, "linux-uclibceabi =~ linux-musleabi")
+    refute(arm_linux_musleabi === arm_linux_uclibceabi, "linux-musleabi =~ linux-uclibceabi")
+
+    # musl host runtime accepts libc-generic or statically linked gems...
+    assert(arm_linux_eabi === arm_linux_musleabi, "linux-eabi =~ linux-musleabi")
+    # ...but implicit gnu runtime generally does not accept musl-specific gems
+    refute(arm_linux_musleabi === arm_linux_eabi, "linux-musleabi =~ linux-eabi")
+
+    # other libc are not glibc compatible
+    refute(arm_linux_eabi === arm_linux_uclibceabi, "linux-eabi =~ linux-uclibceabi")
+    refute(arm_linux_uclibceabi === arm_linux_eabi, "linux-uclibceabi =~ linux-eabi")
   end
 
   def test_equals3_cpu_arm
