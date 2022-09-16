@@ -38,6 +38,8 @@ Usage:  irb.rb [options] [programfile] [arguments]
   --sample-book-mode, --simple-prompt
                     Set prompt mode to 'simple'.
   --noprompt        Don't output prompt.
+  --script          Script mode (default, treat first argument as script)
+  --noscript        No script mode (leave arguments in argv)
   --single-irb      Share self with sub-irb.
   --tracer          Show stack trace for each command.
   --back-trace-limit n[=16]

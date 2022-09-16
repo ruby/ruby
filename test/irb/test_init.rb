@@ -16,6 +16,7 @@ module TestIRB
     def teardown
       ENV.update(@backup_env)
       FileUtils.rm_rf(@tmpdir)
+      IRB.conf.delete(:SCRIPT)
     end
 
     def test_setup_with_argv_preserves_global_argv
@@ -85,6 +86,50 @@ module TestIRB
     ensure
       ENV['NO_COLOR'] = orig_no_color
       IRB.conf[:USE_COLORIZE] = orig_use_colorize
+    end
+
+    def test_noscript
+      argv = %w[--noscript -- -f]
+      IRB.setup(eval("__FILE__"), argv: argv)
+      assert_nil IRB.conf[:SCRIPT]
+      assert_equal(['-f'], argv)
+
+      argv = %w[--noscript -- a]
+      IRB.setup(eval("__FILE__"), argv: argv)
+      assert_nil IRB.conf[:SCRIPT]
+      assert_equal(['a'], argv)
+
+      argv = %w[--noscript a]
+      IRB.setup(eval("__FILE__"), argv: argv)
+      assert_nil IRB.conf[:SCRIPT]
+      assert_equal(['a'], argv)
+
+      argv = %w[--script --noscript a]
+      IRB.setup(eval("__FILE__"), argv: argv)
+      assert_nil IRB.conf[:SCRIPT]
+      assert_equal(['a'], argv)
+
+      argv = %w[--noscript --script a]
+      IRB.setup(eval("__FILE__"), argv: argv)
+      assert_equal('a', IRB.conf[:SCRIPT])
+      assert_equal([], argv)
+    end
+
+    def test_dash
+      argv = %w[-]
+      IRB.setup(eval("__FILE__"), argv: argv)
+      assert_equal('-', IRB.conf[:SCRIPT])
+      assert_equal([], argv)
+
+      argv = %w[-- -]
+      IRB.setup(eval("__FILE__"), argv: argv)
+      assert_equal('-', IRB.conf[:SCRIPT])
+      assert_equal([], argv)
+
+      argv = %w[-- - -f]
+      IRB.setup(eval("__FILE__"), argv: argv)
+      assert_equal('-', IRB.conf[:SCRIPT])
+      assert_equal(['-f'], argv)
     end
 
     private
