@@ -1212,7 +1212,7 @@ $(BUILTIN_RB_INCS): $(top_srcdir)/tool/mk_builtin_loader.rb
 $(srcdir)/revision.h:
 $(srcdir)/revision.h$(gnumake:yes=-nongnumake):
 	$(Q)$(RM) $(@F)
-	$(Q)$(NULLCMD) > $@ || $(NULLCMD) > $(@F)
+	$(NULLCMD) > $(@F)
 
 revision.tmp::
 	$(Q) $(NULLCMD) > $@
