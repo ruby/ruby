@@ -46,11 +46,11 @@ Many examples here use these variables:
 
   # English text with newlines.
   text = <<~EOT
-  First line
-  Second line
+    First line
+    Second line
 
-  Fourth line
-  Fifth line
+    Fourth line
+    Fifth line
   EOT
 
   # Russian text.
@@ -112,7 +112,7 @@ it must begin with one of the following:
 
     f = File.new('t.txt', 'r')        # => #<File:t.txt>
     io = IO.new(f.fileno, 'r')        # => #<IO:fd 4>
-    sio = StringIO.new(text.dup, 'r') # => #<StringIO>
+    sio = StringIO.new(text, 'r')     # => #<StringIO>
 
   The stream is initially positioned at the beginning.
   Each read begins at the current stream position;
@@ -130,7 +130,7 @@ it must begin with one of the following:
     f.readline # => "First line\n"
     f.pos = 3
     f.readline # => "st line\n"
-    f.pos = 800
+    f.pos = 800  # Past end-of-stream, nothing read.
     f.read     # => ""
 
   Raises an exception if:
@@ -139,7 +139,7 @@ it must begin with one of the following:
   - The stream is to be a \File object,
     but the given path does not point to a readable file.
   - The stream is to be an \IO object,
-    but the given file descriptor does not point to a readable file.
+    but the given file descriptor does not point to a readable file or stream.
 
 - <tt>'w'</tt>: Write-only stream, positioned at the beginning:
 
@@ -157,7 +157,7 @@ it must begin with one of the following:
     # StringIO (not file).
     sio = StringIO.new(text.dup, 'w') # => #<StringIO>
 
-  The stream is initially positioned at the beginning (which is also the end).
+  The stream is initially positioned at the beginning of the empty stream.
   After each write, the stream is positioned at the end of the written data:
 
     f.puts('First line')
@@ -170,7 +170,7 @@ it must begin with one of the following:
     File.new('t.tmp').read # => "First line\nSecond line\n"
 
   You can use methods IO#rewind, IO#pos=, and IO#seek
-  to change to and read from any position (even past the stream's end):
+  to change to and write to any position (even past the stream's end):
 
     f.pos = 0
     f.write('FOO')
@@ -182,7 +182,7 @@ it must begin with one of the following:
     f.flush
     File.new('t.tmp').read # => "FOOst lineBARecond line\n"
 
-    f.pos = 24
+    f.pos = 24 # Past end-of-stream, zero fill added.
     f.write('BAZ')
     f.flush
     File.new('t.tmp').read # => "FOOst lineBARecond line\n\u0000\u0000BAZ"
@@ -193,7 +193,7 @@ it must begin with one of the following:
   - The stream is to be a \File object,
     but the given path exists and does not point to a writable file.
   - The stream is to be an \IO object,
-    but the given file descriptor does not point to a writable file.
+    but the given file descriptor does not point to a writable file or stream.
 
 - <tt>'a'</tt>: Write-only stream, positioned at the end:
 
@@ -238,7 +238,7 @@ it must begin with one of the following:
   - The stream is to be a \File object,
     but the given path exists and does not point to a writable file.
   - The stream is to be an \IO object,
-    but the given file descriptor does not point to a writable file.
+    but the given file descriptor does not point to a writable file or stream.
 
 - <tt>'r+'</tt>: Read-write stream, positioned at the beginning:
 
@@ -247,7 +247,7 @@ it must begin with one of the following:
     f.size # => 47
     io = IO.new(f.fileno, 'r+')
 
-    sio = StringIO.new(text.dup, 'r+')
+    sio = StringIO.new(text, 'r+')
     sio.size # => 47
 
   The stream is initially positioned at the beginning:
@@ -271,7 +271,7 @@ it must begin with one of the following:
     f.read
     # => "FOOBARline\nSecond line\n\nFourth line\nFifth line\n"
 
-    f.pos = 47
+    f.pos = 47 # Past end-of-stream, zero fill added.
     f.write('BAZ')
     f.rewind
     f.read
@@ -282,7 +282,8 @@ it must begin with one of the following:
   - The stream is to be a \File object,
     but the given path does not point to a readable/writable file.
   - The stream is to be an \IO object,
-    but the given file descriptor does not point to a readable/writable file.
+    but the given file descriptor does not point to a readable/writable file
+    or stream.
 
 - <tt>'w+'</tt>: Read-write stream, positioned at the beginning:
 
@@ -301,7 +302,7 @@ it must begin with one of the following:
     # StringIO.
     sio = StringIO.new(text.dup, 'w+') # => #<StringIO>
 
-  The stream is initially positioned at the beginning (which is also the end):
+  The stream is initially positioned at the beginning of the empty stream:
 
     f.read # => ""
 
@@ -309,7 +310,7 @@ it must begin with one of the following:
   to change to, read from, and write to any position
   (even past the stream's end):
 
-    f,pos = 0
+    f.pos = 0
     f.puts('First line')
     f.puts('Second line')
     f.rewind
@@ -322,7 +323,7 @@ it must begin with one of the following:
     f.read
     # => "FirFOOline\nSecond line\n"
 
-    f.pos = 23
+    f.pos = 23 # Past end-of-stream, zero fill added.
     f.write('BAR')
     f.rewind
     f.read
@@ -333,14 +334,15 @@ it must begin with one of the following:
   - The stream is to be a \File object,
     but the given path exists and does not point to a readable/writable file.
   - The stream is to be an \IO object,
-    but the given file descriptor does not point to a readable/writable file.
+    but the given file descriptor does not point to a readable/writable file
+    or stream.
 
-- <tt>'a+'</tt>: Read-write stream, positioned at the end:
+- <tt>'a+'</tt>: Read-write stream, positioned at the beginning for reading:
 
     # File does not exist.
     FileUtils.rm_f('t.tmp')
-    f = File.new('t.tmp')
-    io = IO.new(f.fileno)
+    f = File.new('t.tmp', 'a+')
+    io = IO.new(f.fileno, 'a+')
 
     # File exists.
     File.write('t.tmp', text)
@@ -353,15 +355,19 @@ it must begin with one of the following:
     # StringIO.
     sio = StringIO.new(text.dup, 'a+')
 
-  The stream is initially positioned at the end:
+  Reading begins at the beginning:
 
+    f.readline # => "First line\n"
+    f.readline # => "Second line\n"
+
+  Written data is always appended, regardless of the use
+  of methods IO#rewind, IO#pos=, and IO#seek:
+
+    f.pos = 0
     f.write('FOO')
     f.rewind
     f.read
     # => "First line\nSecond line\n\nFourth line\nFifth line\nFOO"
-
-  Written data is always appended, regardless of the use
-  of methods IO#rewind, IO#pos=, and IO#seek:
 
     f.pos = 10
     f.write('BAR')
@@ -380,7 +386,22 @@ it must begin with one of the following:
   - The stream is to be a \File object,
     but the given path exists but does not point to a readable/writable file.
   - The stream is to be an \IO object,
-    but the given file descriptor does not point to a readable/writable file.
+    but the given file descriptor does not point to a readable/writable file
+    or stream.
+
+Differences among the read/writte streams
+<tt>'r+'</tt>, <tt>'w+'</tt>, and <tt>'a+'</tt>:
+
+- If the file does not exist:
+
+  - <tt>'r+'</tt> raises an exception.
+  - <tt>'w+'</tt> or <tt>'a+'</tt> creates the file.
+
+- If the file exists:
+
+  - <tt>'r+'</tt> does not truncate; overwrites as directed.
+  - <tt>'w+'</tt> truncates the file to length zero.
+  - <tt>'a+'</tt> does not truncate; appends, not overwriting.
 
 ===== Data Mode Specified as a \String
 
@@ -481,7 +502,6 @@ by appending one or both encoding names, separated by colons:
 
 The numerous encoding names are available in array Encoding.name_list:
 
-  Encoding.name_list.size    # => 175
   Encoding.name_list.take(3) # => ["ASCII-8BIT", "UTF-8", "US-ASCII"]
 
 When the external encoding is set, strings read are tagged by that encoding
@@ -637,7 +657,7 @@ Each of these methods may be called with:
 ==== Line Separator
 
 The default line separator is the given by the global variable <tt>$/</tt>,
-whose value is often <tt>"\n"</tt>.
+whose value is by default <tt>"\n"</tt>.
 The line to be read next is all data from the current position
 to the next line separator:
 
@@ -737,17 +757,19 @@ Reading lines from a stream usually changes its line number:
 
 Iterating over lines in a stream usually changes its line number:
 
-     f = File.new('t.txt')
-     f.each_line do |line|
-       p "position=#{f.pos} eof?=#{f.eof?} line=#{line}"
-     end
-     f.close
+   f = File.new('t.txt')
+   f.each_line do |line|
+     p "position=#{f.pos} eof?=#{f.eof?} lineno=#{f.lineno}"
+   end
+   f.close
 
 Output:
 
- "position=19 eof?=false line=This is line one.\n"
- "position=45 eof?=false line=This is the second line.\n"
- "position=70 eof?=true line=This is the third line.\n"
+  "position=11 eof?=false lineno=1"
+  "position=23 eof?=false lineno=2"
+  "position=24 eof?=false lineno=3"
+  "position=36 eof?=false lineno=4"
+  "position=47 eof?=true lineno=5"
 
 ==== Line Options
 
