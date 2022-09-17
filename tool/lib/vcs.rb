@@ -397,10 +397,7 @@ class VCS
   end
 
   class GIT < self
-    register(".git") do |path, dir|
-      File.exist?(File.join(path, dir)) &&
-        (`#{COMMAND} -v` rescue false) # make sure git command exists
-    end
+    register(".git") { |path, dir| File.exist?(File.join(path, dir)) }
     COMMAND = ENV["GIT"] || 'git'
 
     def cmd_args(cmds, srcdir = nil)
