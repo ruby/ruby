@@ -93,7 +93,7 @@ class TestGemGemcutterUtilities < Gem::TestCase
 
   def test_sign_in
     api_key = "a5fdbb6ba150cbb83aad2bb2fede64cf040453903"
-    util_sign_in [api_key, 200, "OK"]
+    util_sign_in HTTPResponseFactory.create(body: api_key, code: 200, msg: "OK")
 
     assert_match %r{Enter your RubyGems.org credentials.}, @sign_in_ui.output
     assert @fetcher.last_request["authorization"]
@@ -106,7 +106,7 @@ class TestGemGemcutterUtilities < Gem::TestCase
   def test_sign_in_with_host
     api_key = "a5fdbb6ba150cbb83aad2bb2fede64cf040453903"
 
-    util_sign_in [api_key, 200, "OK"], "http://example.com", ["http://example.com"]
+    util_sign_in HTTPResponseFactory.create(body: api_key, code: 200, msg: "OK"), "http://example.com", ["http://example.com"]
 
     assert_match "Enter your http://example.com credentials.",
                  @sign_in_ui.output
@@ -120,7 +120,7 @@ class TestGemGemcutterUtilities < Gem::TestCase
   def test_sign_in_with_host_nil
     api_key = "a5fdbb6ba150cbb83aad2bb2fede64cf040453903"
 
-    util_sign_in [api_key, 200, "OK"], nil, [nil]
+    util_sign_in HTTPResponseFactory.create(body: api_key, code: 200, msg: "OK"), nil, [nil]
 
     assert_match "Enter your RubyGems.org credentials.",
                  @sign_in_ui.output
@@ -133,7 +133,7 @@ class TestGemGemcutterUtilities < Gem::TestCase
 
   def test_sign_in_with_host_ENV
     api_key = "a5fdbb6ba150cbb83aad2bb2fede64cf040453903"
-    util_sign_in [api_key, 200, "OK"], "http://example.com"
+    util_sign_in HTTPResponseFactory.create(body: api_key, code: 200, msg: "OK"), "http://example.com"
 
     assert_match "Enter your http://example.com credentials.",
                  @sign_in_ui.output
@@ -148,7 +148,7 @@ class TestGemGemcutterUtilities < Gem::TestCase
     api_key = "a5fdbb6ba150cbb83aad2bb2fede64cf040453903"
     Gem.configuration.rubygems_api_key = api_key
 
-    util_sign_in [api_key, 200, "OK"]
+    util_sign_in HTTPResponseFactory.create(body: api_key, code: 200, msg: "OK")
 
     assert_equal "", @sign_in_ui.output
   end
@@ -157,7 +157,7 @@ class TestGemGemcutterUtilities < Gem::TestCase
     api_key = "a5fdbb6ba150cbb83aad2bb2fede64cf040453903"
     Gem.configuration.api_keys[:KEY] = "other"
     @cmd.options[:key] = :KEY
-    util_sign_in [api_key, 200, "OK"]
+    util_sign_in HTTPResponseFactory.create(body: api_key, code: 200, msg: "OK")
 
     assert_equal "", @sign_in_ui.output
   end
@@ -169,7 +169,7 @@ class TestGemGemcutterUtilities < Gem::TestCase
     File.open Gem.configuration.credentials_path, "w" do |f|
       f.write Hash[:other_api_key, other_api_key].to_yaml
     end
-    util_sign_in [api_key, 200, "OK"]
+    util_sign_in HTTPResponseFactory.create(body: api_key, code: 200, msg: "OK")
 
     assert_match %r{Enter your RubyGems.org credentials.}, @sign_in_ui.output
     assert_match %r{Signed in.}, @sign_in_ui.output
@@ -181,7 +181,7 @@ class TestGemGemcutterUtilities < Gem::TestCase
 
   def test_sign_in_with_bad_credentials
     assert_raise Gem::MockGemUi::TermError do
-      util_sign_in ["Access Denied.", 403, "Forbidden"]
+      util_sign_in HTTPResponseFactory.create(body: "Access Denied.", code: 403, msg: "Forbidden")
     end
 
     assert_match %r{Enter your RubyGems.org credentials.}, @sign_in_ui.output
@@ -192,7 +192,7 @@ class TestGemGemcutterUtilities < Gem::TestCase
     ENV["GEM_HOST_OTP_CODE"] = "111111"
     api_key = "a5fdbb6ba150cbb83aad2bb2fede64cf040453903"
 
-    util_sign_in [api_key, 200, "OK"]
+    util_sign_in HTTPResponseFactory.create(body: api_key, code: 200, msg: "OK")
 
     assert_match "Signed in with API key:", @sign_in_ui.output
     assert_equal "111111", @fetcher.last_request["OTP"]
@@ -204,7 +204,11 @@ class TestGemGemcutterUtilities < Gem::TestCase
 
     util_sign_in(proc do
       @call_count ||= 0
-      (@call_count += 1).odd? ? [response_fail, 401, "Unauthorized"] : [api_key, 200, "OK"]
+      if (@call_count += 1).odd?
+        HTTPResponseFactory.create(body: response_fail, code: 401, msg: "Unauthorized")
+      else
+        HTTPResponseFactory.create(body: api_key, code: 200, msg: "OK")
+      end
     end, nil, [], "111111\n")
 
     assert_match "You have enabled multi-factor authentication. Please enter OTP code.", @sign_in_ui.output
@@ -217,7 +221,7 @@ class TestGemGemcutterUtilities < Gem::TestCase
     response = "You have enabled multifactor authentication but your request doesn't have the correct OTP code. Please check it and retry."
 
     assert_raise Gem::MockGemUi::TermError do
-      util_sign_in [response, 401, "Unauthorized"], nil, [], "111111\n"
+      util_sign_in HTTPResponseFactory.create(body: response, code: 401, msg: "Unauthorized"), nil, [], "111111\n"
     end
 
     assert_match "You have enabled multi-factor authentication. Please enter OTP code.", @sign_in_ui.output
@@ -229,7 +233,7 @@ class TestGemGemcutterUtilities < Gem::TestCase
   def util_sign_in(response, host = nil, args = [], extra_input = "")
     email            = "you@example.com"
     password         = "secret"
-    profile_response = [ "mfa: disabled\n" , 200, "OK"]
+    profile_response = HTTPResponseFactory.create(body: "mfa: disabled\n", code: 200, msg: "OK")
 
     if host
       ENV["RUBYGEMS_HOST"] = host

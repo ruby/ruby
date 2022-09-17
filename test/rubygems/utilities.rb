@@ -54,7 +54,7 @@ class Gem::FakeFetcher
       raise Gem::RemoteFetcher::FetchError.new("no data for #{path}", path)
     end
 
-    if @data[path].kind_of?(Array) && @data[path].first.kind_of?(Array)
+    if @data[path].kind_of?(Array)
       @data[path].shift
     else
       @data[path]
@@ -63,15 +63,10 @@ class Gem::FakeFetcher
 
   def create_response(uri)
     data = find_data(uri)
-    if data.kind_of?(Array)
-      body, code, msg = data
-      HTTPResponseFactory.create(body: body, code: code, msg: msg)
-    elsif data.respond_to?(:call)
-      body, code, msg = data.call
-      HTTPResponseFactory.create(body: body, code: code, msg: msg)
-    else
-      data
-    end
+    response = data.respond_to?(:call) ? data.call : data
+    raise TypeError, "#{response.class} is not a type of Net::HTTPResponse" unless response.kind_of?(Net::HTTPResponse)
+
+    response
   end
 
   def fetch_path(path, mtime = nil, head = false)

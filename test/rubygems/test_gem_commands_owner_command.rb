@@ -36,7 +36,7 @@ class TestGemCommandsOwnerCommand < Gem::TestCase
 - id: 4
 EOF
 
-    @stub_fetcher.data["#{Gem.host}/api/v1/gems/freewill/owners.yaml"] = [response, 200, "OK"]
+    @stub_fetcher.data["#{Gem.host}/api/v1/gems/freewill/owners.yaml"] = HTTPResponseFactory.create(body: response, code: 200, msg: "OK")
 
     use_ui @stub_ui do
       @cmd.show_owners("freewill")
@@ -66,7 +66,7 @@ EOF
 - id: 4
 EOF
 
-    @stub_fetcher.data["#{Gem.host}/api/v1/gems/freewill/owners.yaml"] = [response, 200, "OK"]
+    @stub_fetcher.data["#{Gem.host}/api/v1/gems/freewill/owners.yaml"] = HTTPResponseFactory.create(body: response, code: 200, msg: "OK")
 
     assert_raise Psych::DisallowedClass do
       use_ui @ui do
@@ -80,7 +80,7 @@ EOF
     host = "http://rubygems.example"
     ENV["RUBYGEMS_HOST"] = host
 
-    @stub_fetcher.data["#{host}/api/v1/gems/freewill/owners.yaml"] = [response, 200, "OK"]
+    @stub_fetcher.data["#{host}/api/v1/gems/freewill/owners.yaml"] = HTTPResponseFactory.create(body: response, code: 200, msg: "OK")
 
     use_ui @stub_ui do
       @cmd.show_owners("freewill")
@@ -95,7 +95,7 @@ EOF
     host = "http://rubygems.example"
     @cmd.host = host
 
-    @stub_fetcher.data["#{host}/api/v1/gems/freewill/owners.yaml"] = [response, 200, "OK"]
+    @stub_fetcher.data["#{host}/api/v1/gems/freewill/owners.yaml"] = HTTPResponseFactory.create(body: response, code: 200, msg: "OK")
 
     use_ui @stub_ui do
       @cmd.show_owners("freewill")
@@ -107,7 +107,7 @@ EOF
 
   def test_show_owners_denied
     response = "You don't have permission to push to this gem"
-    @stub_fetcher.data["#{Gem.host}/api/v1/gems/freewill/owners.yaml"] = [response, 403, "Forbidden"]
+    @stub_fetcher.data["#{Gem.host}/api/v1/gems/freewill/owners.yaml"] = HTTPResponseFactory.create(body: response, code: 403, msg: "Forbidden")
 
     assert_raise Gem::MockGemUi::TermError do
       use_ui @stub_ui do
@@ -143,7 +143,7 @@ EOF
 
   def test_show_owners_key
     response = "- email: user1@example.com\n"
-    @stub_fetcher.data["#{Gem.host}/api/v1/gems/freewill/owners.yaml"] = [response, 200, "OK"]
+    @stub_fetcher.data["#{Gem.host}/api/v1/gems/freewill/owners.yaml"] = HTTPResponseFactory.create(body: response, code: 200, msg: "OK")
     File.open Gem.configuration.credentials_path, "a" do |f|
       f.write ":other: 701229f217cdf23b1344c7b4b54ca97"
     end
@@ -157,7 +157,7 @@ EOF
 
   def test_add_owners
     response = "Owner added successfully."
-    @stub_fetcher.data["#{Gem.host}/api/v1/gems/freewill/owners"] = [response, 200, "OK"]
+    @stub_fetcher.data["#{Gem.host}/api/v1/gems/freewill/owners"] = HTTPResponseFactory.create(body: response, code: 200, msg: "OK")
 
     use_ui @stub_ui do
       @cmd.add_owners("freewill", ["user-new1@example.com"])
@@ -172,7 +172,7 @@ EOF
 
   def test_add_owners_denied
     response = "You don't have permission to push to this gem"
-    @stub_fetcher.data["#{Gem.host}/api/v1/gems/freewill/owners"] = [response, 403, "Forbidden"]
+    @stub_fetcher.data["#{Gem.host}/api/v1/gems/freewill/owners"] = HTTPResponseFactory.create(body: response, code: 403, msg: "Forbidden")
 
     use_ui @stub_ui do
       @cmd.add_owners("freewill", ["user-new1@example.com"])
@@ -206,8 +206,8 @@ EOF
     host = "http://rubygems.example"
     add_owner_response = "Owner added successfully."
     show_owners_response = "- email: user1@example.com\n"
-    @stub_fetcher.data["#{host}/api/v1/gems/freewill/owners"] = [add_owner_response, 200, "OK"]
-    @stub_fetcher.data["#{host}/api/v1/gems/freewill/owners.yaml"] = [show_owners_response, 200, "OK"]
+    @stub_fetcher.data["#{host}/api/v1/gems/freewill/owners"] = HTTPResponseFactory.create(body: add_owner_response, code: 200, msg: "OK")
+    @stub_fetcher.data["#{host}/api/v1/gems/freewill/owners.yaml"] = HTTPResponseFactory.create(body: show_owners_response, code: 200, msg: "OK")
 
     @cmd.handle_options %W[--host #{host} --add user-new1@example.com freewill]
 
@@ -222,7 +222,7 @@ EOF
 
   def test_add_owners_key
     response = "Owner added successfully."
-    @stub_fetcher.data["#{Gem.host}/api/v1/gems/freewill/owners"] = [response, 200, "OK"]
+    @stub_fetcher.data["#{Gem.host}/api/v1/gems/freewill/owners"] = HTTPResponseFactory.create(body: response, code: 200, msg: "OK")
     File.open Gem.configuration.credentials_path, "a" do |f|
       f.write ":other: 701229f217cdf23b1344c7b4b54ca97"
     end
@@ -236,7 +236,7 @@ EOF
 
   def test_remove_owners
     response = "Owner removed successfully."
-    @stub_fetcher.data["#{Gem.host}/api/v1/gems/freewill/owners"] = [response, 200, "OK"]
+    @stub_fetcher.data["#{Gem.host}/api/v1/gems/freewill/owners"] = HTTPResponseFactory.create(body: response, code: 200, msg: "OK")
 
     use_ui @stub_ui do
       @cmd.remove_owners("freewill", ["user-remove1@example.com"])
@@ -251,7 +251,7 @@ EOF
 
   def test_remove_owners_denied
     response = "You don't have permission to push to this gem"
-    @stub_fetcher.data["#{Gem.host}/api/v1/gems/freewill/owners"] = [response, 403, "Forbidden"]
+    @stub_fetcher.data["#{Gem.host}/api/v1/gems/freewill/owners"] = HTTPResponseFactory.create(body: response, code: 403, msg: "Forbidden")
 
     use_ui @stub_ui do
       @cmd.remove_owners("freewill", ["user-remove1@example.com"])
@@ -299,7 +299,7 @@ EOF
 
   def test_remove_owners_key
     response = "Owner removed successfully."
-    @stub_fetcher.data["#{Gem.host}/api/v1/gems/freewill/owners"] = [response, 200, "OK"]
+    @stub_fetcher.data["#{Gem.host}/api/v1/gems/freewill/owners"] = HTTPResponseFactory.create(body: response, code: 200, msg: "OK")
     File.open Gem.configuration.credentials_path, "a" do |f|
       f.write ":other: 701229f217cdf23b1344c7b4b54ca97"
     end
@@ -313,7 +313,7 @@ EOF
 
   def test_remove_owners_missing
     response = "Owner could not be found."
-    @stub_fetcher.data["#{Gem.host}/api/v1/gems/freewill/owners"] = [response, 404, "Not Found"]
+    @stub_fetcher.data["#{Gem.host}/api/v1/gems/freewill/owners"] = HTTPResponseFactory.create(body: response, code: 404, msg: "Not Found")
 
     use_ui @stub_ui do
       @cmd.remove_owners("freewill", ["missing@example"])
@@ -327,8 +327,8 @@ EOF
     response_success = "Owner added successfully."
 
     @stub_fetcher.data["#{Gem.host}/api/v1/gems/freewill/owners"] = [
-      [response_fail, 401, "Unauthorized"],
-      [response_success, 200, "OK"],
+      HTTPResponseFactory.create(body: response_fail, code: 401, msg: "Unauthorized"),
+      HTTPResponseFactory.create(body: response_success, code: 200, msg: "OK"),
     ]
 
     @otp_ui = Gem::MockGemUi.new "111111\n"
@@ -344,7 +344,7 @@ EOF
 
   def test_otp_verified_failure
     response = "You have enabled multifactor authentication but your request doesn't have the correct OTP code. Please check it and retry."
-    @stub_fetcher.data["#{Gem.host}/api/v1/gems/freewill/owners"] = [response, 401, "Unauthorized"]
+    @stub_fetcher.data["#{Gem.host}/api/v1/gems/freewill/owners"] = HTTPResponseFactory.create(body: response, code: 401, msg: "Unauthorized")
 
     @otp_ui = Gem::MockGemUi.new "111111\n"
     use_ui @otp_ui do
@@ -362,10 +362,10 @@ EOF
     response_success   = "Owner removed successfully."
 
     @stub_fetcher.data["#{Gem.host}/api/v1/gems/freewill/owners"] = [
-      [response_forbidden, 403, "Forbidden"],
-      [response_success, 200, "OK"],
+      HTTPResponseFactory.create(body: response_forbidden, code: 403, msg: "Forbidden"),
+      HTTPResponseFactory.create(body: response_success, code: 200, msg: "OK"),
     ]
-    @stub_fetcher.data["#{Gem.host}/api/v1/api_key"] = ["", 200, "OK"]
+    @stub_fetcher.data["#{Gem.host}/api/v1/api_key"] = HTTPResponseFactory.create(body: "", code: 200, msg: "OK")
     @cmd.instance_variable_set :@scope, :remove_owner
 
     @stub_ui = Gem::MockGemUi.new "some@mail.com\npass\n"
@@ -386,10 +386,10 @@ EOF
     response_success   = "Owner added successfully."
 
     @stub_fetcher.data["#{Gem.host}/api/v1/gems/freewill/owners"] = [
-      [response_forbidden, 403, "Forbidden"],
-      [response_success, 200, "OK"],
+      HTTPResponseFactory.create(body: response_forbidden, code: 403, msg: "Forbidden"),
+      HTTPResponseFactory.create(body: response_success, code: 200, msg: "OK"),
     ]
-    @stub_fetcher.data["#{Gem.host}/api/v1/api_key"] = ["", 200, "OK"]
+    @stub_fetcher.data["#{Gem.host}/api/v1/api_key"] = HTTPResponseFactory.create(body: "", code: 200, msg: "OK")
     @cmd.instance_variable_set :@scope, :add_owner
 
     @stub_ui = Gem::MockGemUi.new "some@mail.com\npass\n"

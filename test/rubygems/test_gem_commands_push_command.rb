@@ -68,7 +68,7 @@ class TestGemCommandsPushCommand < Gem::TestCase
 
   def test_execute
     @response = "Successfully registered gem: freewill (1.0.0)"
-    @fetcher.data["#{Gem.host}/api/v1/gems"] = [@response, 200, "OK"]
+    @fetcher.data["#{Gem.host}/api/v1/gems"] = HTTPResponseFactory.create(body: @response, code: 200, msg: "OK")
 
     @cmd.options[:args] = [@path]
 
@@ -84,7 +84,7 @@ class TestGemCommandsPushCommand < Gem::TestCase
     host = "https://other.example"
 
     @response = "Successfully registered gem: freewill (1.0.0)"
-    @fetcher.data["#{host}/api/v1/gems"] = [@response, 200, "OK"]
+    @fetcher.data["#{host}/api/v1/gems"] = HTTPResponseFactory.create(body: @response, code: 200, msg: "OK")
     @fetcher.data["#{Gem.host}/api/v1/gems"] =
       ["fail", 500, "Internal Server Error"]
 
@@ -105,7 +105,7 @@ class TestGemCommandsPushCommand < Gem::TestCase
     end
 
     @response = "Successfully registered gem: freewill (1.0.0)"
-    @fetcher.data["#{@spec.metadata['allowed_push_host']}/api/v1/gems"] = [@response, 200, "OK"]
+    @fetcher.data["#{@spec.metadata['allowed_push_host']}/api/v1/gems"] = HTTPResponseFactory.create(body: @response, code: 200, msg: "OK")
     @fetcher.data["#{Gem.host}/api/v1/gems"] =
       ["fail", 500, "Internal Server Error"]
 
@@ -136,7 +136,7 @@ class TestGemCommandsPushCommand < Gem::TestCase
     ENV["RUBYGEMS_HOST"] = @host
     Gem.configuration.disable_default_gem_server = true
     @response = "Successfully registered gem: freewill (1.0.0)"
-    @fetcher.data["#{@host}/api/v1/gems"] = [@response, 200, "OK"]
+    @fetcher.data["#{@host}/api/v1/gems"] = HTTPResponseFactory.create(body: @response, code: 200, msg: "OK")
 
     send_battery
   end
@@ -163,14 +163,14 @@ class TestGemCommandsPushCommand < Gem::TestCase
     FileUtils.rm Gem.configuration.credentials_path
 
     @response = "Successfully registered gem: freebird (1.0.1)"
-    @fetcher.data["#{@host}/api/v1/gems"] = [@response, 200, "OK"]
+    @fetcher.data["#{@host}/api/v1/gems"] = HTTPResponseFactory.create(body: @response, code: 200, msg: "OK")
 
     send_battery
   end
 
   def test_sending_gem
     @response = "Successfully registered gem: freewill (1.0.0)"
-    @fetcher.data["#{@host}/api/v1/gems"] = [@response, 200, "OK"]
+    @fetcher.data["#{@host}/api/v1/gems"] = HTTPResponseFactory.create(body: @response, code: 200, msg: "OK")
 
     send_battery
   end
@@ -197,7 +197,7 @@ class TestGemCommandsPushCommand < Gem::TestCase
     FileUtils.rm Gem.configuration.credentials_path
 
     @response = "Successfully registered gem: freebird (1.0.1)"
-    @fetcher.data["#{@host}/api/v1/gems"] = [@response, 200, "OK"]
+    @fetcher.data["#{@host}/api/v1/gems"] = HTTPResponseFactory.create(body: @response, code: 200, msg: "OK")
     send_battery
   end
 
@@ -212,7 +212,7 @@ class TestGemCommandsPushCommand < Gem::TestCase
     ENV["GEM_HOST_API_KEY"] = "PRIVKEY"
 
     @response = "Successfully registered gem: freebird (1.0.1)"
-    @fetcher.data["#{@host}/api/v1/gems"] = [@response, 200, "OK"]
+    @fetcher.data["#{@host}/api/v1/gems"] = HTTPResponseFactory.create(body: @response, code: 200, msg: "OK")
     send_battery
   end
 
@@ -238,7 +238,7 @@ class TestGemCommandsPushCommand < Gem::TestCase
     FileUtils.rm Gem.configuration.credentials_path
 
     @response = "Successfully registered gem: freebird (1.0.1)"
-    @fetcher.data["#{@host}/api/v1/gems"] = [@response, 200, "OK"]
+    @fetcher.data["#{@host}/api/v1/gems"] = HTTPResponseFactory.create(body: @response, code: 200, msg: "OK")
     send_battery
   end
 
@@ -309,7 +309,7 @@ class TestGemCommandsPushCommand < Gem::TestCase
     FileUtils.rm Gem.configuration.credentials_path
 
     @response = "Successfully registered gem: freebird (1.0.1)"
-    @fetcher.data["#{host}/api/v1/gems"] = [@response, 200, "OK"]
+    @fetcher.data["#{host}/api/v1/gems"] = HTTPResponseFactory.create(body: @response, code: 200, msg: "OK")
 
     # do not set @host
     use_ui(@ui) { @cmd.send_gem(@path) }
@@ -325,10 +325,15 @@ class TestGemCommandsPushCommand < Gem::TestCase
     assert_match @response, @ui.output
   end
 
-  def test_sending_gem_to_permanent_redirect_host
+  def test_sending_gem_to_host_permanent_redirect
     @host = "http://rubygems.example"
     redirected_uri = "https://rubygems.example/api/v1/gems"
-    @fetcher.data["#{@host}/api/v1/gems"] = HTTPResponseFactory.create(body: "", code: 308, msg: "Permanent Redirect", headers: { "Location" => redirected_uri })
+    @fetcher.data["#{@host}/api/v1/gems"] = HTTPResponseFactory.create(
+      body: "",
+      code: 308,
+      msg: "Permanent Redirect",
+      headers: { "Location" => redirected_uri }
+    )
 
     assert_raise Gem::MockGemUi::TermError do
       use_ui @ui do
@@ -350,7 +355,7 @@ class TestGemCommandsPushCommand < Gem::TestCase
 
   def test_sending_gem_denied
     response = "You don't have permission to push to this gem"
-    @fetcher.data["#{@host}/api/v1/gems"] = [response, 403, "Forbidden"]
+    @fetcher.data["#{@host}/api/v1/gems"] = HTTPResponseFactory.create(body: response, code: 403, msg: "Forbidden")
     @cmd.instance_variable_set :@host, @host
 
     assert_raise Gem::MockGemUi::TermError do
@@ -364,7 +369,7 @@ class TestGemCommandsPushCommand < Gem::TestCase
 
   def test_sending_gem_key
     @response = "Successfully registered gem: freewill (1.0.0)"
-    @fetcher.data["#{@host}/api/v1/gems"] = [@response, 200, "OK"]
+    @fetcher.data["#{@host}/api/v1/gems"] = HTTPResponseFactory.create(body: @response, code: 200, msg: "OK")
     File.open Gem.configuration.credentials_path, "a" do |f|
       f.write ":other: 701229f217cdf23b1344c7b4b54ca97"
     end
@@ -383,8 +388,8 @@ class TestGemCommandsPushCommand < Gem::TestCase
     response_success = "Successfully registered gem: freewill (1.0.0)"
 
     @fetcher.data["#{Gem.host}/api/v1/gems"] = [
-      [response_fail, 401, "Unauthorized"],
-      [response_success, 200, "OK"],
+      HTTPResponseFactory.create(body: response_fail, code: 401, msg: "Unauthorized"),
+      HTTPResponseFactory.create(body: response_success, code: 200, msg: "OK"),
     ]
 
     @otp_ui = Gem::MockGemUi.new "111111\n"
@@ -400,7 +405,7 @@ class TestGemCommandsPushCommand < Gem::TestCase
 
   def test_otp_verified_failure
     response = "You have enabled multifactor authentication but your request doesn't have the correct OTP code. Please check it and retry."
-    @fetcher.data["#{Gem.host}/api/v1/gems"] = [response, 401, "Unauthorized"]
+    @fetcher.data["#{Gem.host}/api/v1/gems"] = HTTPResponseFactory.create(body: response, code: 401, msg: "Unauthorized")
 
     @otp_ui = Gem::MockGemUi.new "111111\n"
     assert_raise Gem::MockGemUi::TermError do
@@ -421,12 +426,12 @@ class TestGemCommandsPushCommand < Gem::TestCase
     response_success   = "Successfully registered gem: freewill (1.0.0)"
 
     @fetcher.data["#{@host}/api/v1/gems"] = [
-      [response_mfa_enabled, 401, "Unauthorized"],
-      [response_forbidden, 403, "Forbidden"],
-      [response_success, 200, "OK"],
+      HTTPResponseFactory.create(body: response_mfa_enabled, code: 401, msg: "Unauthorized"),
+      HTTPResponseFactory.create(body: response_forbidden, code: 403, msg: "Forbidden"),
+      HTTPResponseFactory.create(body: response_success, code: 200, msg: "OK"),
     ]
 
-    @fetcher.data["#{@host}/api/v1/api_key"] = ["", 200, "OK"]
+    @fetcher.data["#{@host}/api/v1/api_key"] = HTTPResponseFactory.create(body: "", code: 200, msg: "OK")
     @cmd.instance_variable_set :@host, @host
     @cmd.instance_variable_set :@scope, :push_rubygem
 
@@ -454,16 +459,16 @@ class TestGemCommandsPushCommand < Gem::TestCase
     response_profile     = "mfa: disabled\n"
 
     @fetcher.data["#{@host}/api/v1/gems"] = [
-      [response_success, 200, "OK"],
+      HTTPResponseFactory.create(body: response_success, code: 200, msg: "OK"),
     ]
 
     @fetcher.data["#{@host}/api/v1/api_key"] = [
-      [response_mfa_enabled, 401, "Unauthorized"],
-      ["", 200, "OK"],
+      HTTPResponseFactory.create(body: response_mfa_enabled, code: 401, msg: "Unauthorized"),
+      HTTPResponseFactory.create(body: "", code: 200, msg: "OK"),
     ]
 
     @fetcher.data["#{@host}/api/v1/profile/me.yaml"] = [
-      [response_profile, 200, "OK"],
+      HTTPResponseFactory.create(body: response_profile, code: 200, msg: "OK"),
     ]
 
     @cmd.instance_variable_set :@scope, :push_rubygem
