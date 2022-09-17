@@ -395,18 +395,20 @@ if $0 == __FILE__
     end
 
     case ARGV[0]
-    when '-d'
+    when '-d', '--destdir'
       destdir = ARGV[1]
       ARGV.shift
-    when '-p'
+    when '-p', '--prefix'
       # strip directory names from the name to download, and add the
       # prefix instead.
       prefix = ARGV[1]
       ARGV.shift
-    when '-e'
+    when '-e', '--exist', '--non-existent-only'
       since = nil
-    when '-a'
+    when '-a', '--always'
       since = false
+    when '-u', '--update', '--if-modified'
+      since = true
     when '-n', '--dryrun'
       options[:dryrun] = true
     when '--cache-dir'
