@@ -95,7 +95,7 @@ class VCS
     opts
   end
 
-  def self.release_date(time)
+  def self.release_date(time = Time.now - 10) # the same default as make-snapshot
     t = time.utc
     [
       t.strftime('#define RUBY_RELEASE_YEAR %Y'),

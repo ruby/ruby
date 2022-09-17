@@ -68,13 +68,11 @@ OptionParser.new {|opts|
 }
 unless vcs
   # Output only release_date when .git is missing
-  if @output == :revision_h
-    puts VCS.release_date(Time.now - 10) # same as make-snapshot
-  end
+  puts VCS.release_date if @output == :revision_h
   exit
 end
 
-@output =
+output =
   case @output
   when :changed, nil
     Proc.new {|last, changed|
@@ -99,9 +97,12 @@ end
 ok = true
 (ARGV.empty? ? [nil] : ARGV).each do |arg|
   begin
-    puts @output[*vcs.get_revisions(arg)]
+    puts output[*vcs.get_revisions(arg)]
   rescue => e
-    next if @suppress_not_found and VCS::NotFoundError === e
+    if @suppress_not_found and VCS::NotFoundError === e
+      puts VCS.release_date if @output == :revision_h
+      next
+    end
     warn "#{File.basename(Program)}: #{e.message}"
     ok = false
   end
