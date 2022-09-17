@@ -1211,14 +1211,9 @@ builtin_binary.inc: $(PREP) $(BUILTIN_RB_SRCS) $(srcdir)/template/builtin_binary
 
 $(BUILTIN_RB_INCS): $(top_srcdir)/tool/mk_builtin_loader.rb
 
-$(srcdir)/revision.h:
-$(srcdir)/revision.h$(gnumake:yes=-nongnumake):
-	$(Q)$(RM) $(@F)
-	$(NULLCMD) > $(@F)
+$(srcdir)/revision.h: $(REVISION_H)
 
-revision.tmp::
-	$(Q) $(NULLCMD) > $@
-revision.$(HAVE_BASERUBY:yes=tmp):: $(srcdir)/version.h $(tooldir)/file2lastrev.rb $(REVISION_FORCE)
+revision.tmp:: $(srcdir)/version.h $(tooldir)/file2lastrev.rb $(REVISION_FORCE)
 	$(Q) $(BASERUBY) $(tooldir)/file2lastrev.rb -q --revision.h --srcdir="$(srcdir)" > $@
 
 $(REVISION_H): revision.tmp

@@ -383,19 +383,6 @@ $(UNICODE_SRC_DATA_DIR)/.unicode-tables.time: \
 	$(UNICODE_FILES) $(UNICODE_PROPERTY_FILES)
 endif
 
-ifeq ($(wildcard $(srcdir)/revision.h),)
-REVISION_IN_HEADER := none
-REVISION_LATEST := update
-else
-REVISION_IN_HEADER := $(shell sed -n 's/^\#define RUBY_FULL_REVISION "\(.*\)"/\1/p' $(srcdir)/revision.h 2>/dev/null)
-REVISION_LATEST := $(shell $(CHDIR) $(srcdir) && $(GIT) log -1 --format=%H 2>/dev/null)
-endif
-ifneq ($(REVISION_IN_HEADER),$(REVISION_LATEST))
-# GNU make treat the target as unmodified when its dependents get
-# updated but it is not updated, while others may not.
-$(srcdir)/revision.h: $(REVISION_H)
-endif
-
 include $(top_srcdir)/yjit/yjit.mk
 
 # Query on the generated rdoc
