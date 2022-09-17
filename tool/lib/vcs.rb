@@ -95,6 +95,15 @@ class VCS
     opts
   end
 
+  def self.release_date(time)
+    t = time.utc
+    [
+      t.strftime('#define RUBY_RELEASE_YEAR %Y'),
+      t.strftime('#define RUBY_RELEASE_MONTH %-m'),
+      t.strftime('#define RUBY_RELEASE_DAY %-d'),
+    ]
+  end
+
   attr_reader :srcdir
 
   def initialize(path)
@@ -204,7 +213,8 @@ class VCS
     revision_handler(rev).short_revision(rev)
   end
 
-  def revision_header(last, modified = nil, branch = nil, title = nil, limit: 20)
+  # make-snapshot generates only release_date whereas file2lastrev generates both release_date and release_datetime
+  def revision_header(last, release_date, release_datetime = nil, branch = nil, title = nil, limit: 20)
     short = short_revision(last)
     if /[^\x00-\x7f]/ =~ title and title.respond_to?(:force_encoding)
       title = title.dup.force_encoding("US-ASCII")
@@ -225,10 +235,11 @@ class VCS
       title = title.dump.sub(/\\#/, '#')
       code << "#define RUBY_LAST_COMMIT_TITLE #{title}"
     end
-    if modified
-      t = modified.utc
+    if release_datetime
+      t = release_datetime.utc
       code << t.strftime('#define RUBY_RELEASE_DATETIME "%FT%TZ"')
     end
+    code += VCS.release_date(release_date)
     code
   end
 
@@ -386,7 +397,10 @@ class VCS
   end
 
   class GIT < self
-    register(".git") {|path, dir| File.exist?(File.join(path, dir))}
+    register(".git") do |path, dir|
+      File.exist?(File.join(path, dir)) &&
+        (`#{COMMAND} -v` rescue false) # make sure git command exists
+    end
     COMMAND = ENV["GIT"] || 'git'
 
     def cmd_args(cmds, srcdir = nil)

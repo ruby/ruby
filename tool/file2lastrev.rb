@@ -66,7 +66,13 @@ OptionParser.new {|opts|
     new_vcs["."]
   end
 }
-exit unless vcs
+unless vcs
+  # Output only release_date when .git is missing
+  if @output == :revision_h
+    puts VCS.release_date(Time.now - 10) # same as make-snapshot
+  end
+  exit
+end
 
 @output =
   case @output
@@ -76,7 +82,7 @@ exit unless vcs
     }
   when :revision_h
     Proc.new {|last, changed, modified, branch, title|
-      vcs.revision_header(last, modified, branch, title, limit: @limit)
+      vcs.revision_header(last, modified, modified, branch, title, limit: @limit)
     }
   when :doxygen
     Proc.new {|last, changed|
