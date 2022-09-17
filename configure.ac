@@ -2956,7 +2956,7 @@ STATIC=
 }
 
 : "rpath" && {
-  AS_CASE(["$target_os"],
+    AS_CASE(["$target_os"],
 	[solaris*], [	AS_IF([test "$GCC" = yes], [
 			    : ${LDSHARED='$(CC) -shared'}
 			    AS_IF([test "$rb_cv_prog_gnu_ld" = yes], [
@@ -3055,23 +3055,35 @@ STATIC=
 	[atheos*], [	: ${LDSHARED='$(CC) -shared'}
 			rb_cv_dlopen=yes],
 	[	: ${LDSHARED='$(LD)'}])
-  AC_MSG_RESULT($rb_cv_dlopen)
+    AC_MSG_RESULT($rb_cv_dlopen)
+}
 
-  AS_IF([test "$rb_cv_dlopen" = yes], [
+AS_IF([test "$rb_cv_dlopen" = yes], [
     AS_CASE(["$target_os"],
-      [darwin*], [
+    [darwin*], [
+        AC_SUBST(ADDITIONAL_DLDFLAGS, "")
 	for flag in \
 	  "-multiply_defined suppress" \
+	  "-undefined dynamic_lookup" \
 	  ; do
-	  test "x${linker_flag}" = x || flag="${linker_flag}`echo ${flag} | tr ' ' ,`"
-	  RUBY_TRY_LDFLAGS([$flag], [], [flag=])
-	  AS_IF([test "x$flag" != x], [
-	    RUBY_APPEND_OPTIONS(DLDFLAGS, [$flag])
-	  ])
+            test "x${linker_flag}" = x || flag="${linker_flag}`echo ${flag} | tr ' ' ,`"
+            RUBY_TRY_LDFLAGS([$flag], [], [$flag=])
+            AS_IF([test x"$flag" = x], [continue])
+
+            AC_MSG_CHECKING([whether $flag is accepted for bundle])
+            : > conftest.c
+            AS_IF([${LDSHARED/'$(CC)'/$CC} -o conftest.bundle $flag conftest.c >/dev/null 2>conftest.err &&
+                test ! -s conftest.err], [
+                AC_MSG_RESULT([yes])
+                RUBY_APPEND_OPTIONS(DLDFLAGS, [$flag])
+            ], [
+                AC_MSG_RESULT([no])
+                RUBY_APPEND_OPTIONS(ADDITIONAL_DLDFLAGS, [$flag])
+            ])
+            rm -fr conftest.*
 	done
-      ])
-  ])
-}
+    ])
+])
 
 AS_IF([test "${LDSHAREDXX}" = ""], [
     AS_CASE(["${LDSHARED}"],

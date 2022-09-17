@@ -289,6 +289,10 @@ module IRB # :nodoc:
         @CONF[:PROMPT_MODE] = prompt_mode
       when "--noprompt"
         @CONF[:PROMPT_MODE] = :NULL
+      when "--script"
+        noscript = false
+      when "--noscript"
+        noscript = true
       when "--inf-ruby-mode"
         @CONF[:PROMPT_MODE] = :INF_RUBY
       when "--sample-book-mode", "--simple-prompt"
@@ -309,16 +313,20 @@ module IRB # :nodoc:
         IRB.print_usage
         exit 0
       when "--"
-        if opt = argv.shift
+        if !noscript && (opt = argv.shift)
           @CONF[:SCRIPT] = opt
           $0 = opt
         end
         break
-      when /^-/
+      when /^-./
         fail UnrecognizedSwitch, opt
       else
-        @CONF[:SCRIPT] = opt
-        $0 = opt
+        if noscript
+          argv.unshift(opt)
+        else
+          @CONF[:SCRIPT] = opt
+          $0 = opt
+        end
         break
       end
     end

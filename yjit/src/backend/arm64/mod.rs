@@ -971,17 +971,6 @@ impl Assembler
             };
         }
 
-        // Invalidate icache for newly written out region so we don't run
-        // stale code.
-        #[cfg(not(test))]
-        {
-            let start = cb.get_ptr(start_write_pos).raw_ptr();
-            let write_ptr = cb.get_write_ptr().raw_ptr();
-            let codeblock_end = cb.get_ptr(cb.get_mem_size()).raw_ptr();
-            let end = std::cmp::min(write_ptr, codeblock_end);
-            unsafe { rb_yjit_icache_invalidate(start as _, end as _) };
-        }
-
         gc_offsets
     }
 
@@ -996,10 +985,21 @@ impl Assembler
             assert!(label_idx == idx);
         }
 
+        let start_write_pos = cb.get_write_pos();
         let gc_offsets = asm.arm64_emit(cb);
 
         if !cb.has_dropped_bytes() {
             cb.link_labels();
+        }
+
+        // Invalidate icache for newly written out region so we don't run stale code.
+        #[cfg(not(test))]
+        {
+            let start = cb.get_ptr(start_write_pos).raw_ptr();
+            let write_ptr = cb.get_write_ptr().raw_ptr();
+            let codeblock_end = cb.get_ptr(cb.get_mem_size()).raw_ptr();
+            let end = std::cmp::min(write_ptr, codeblock_end);
+            unsafe { rb_yjit_icache_invalidate(start as _, end as _) };
         }
 
         gc_offsets

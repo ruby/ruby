@@ -137,7 +137,7 @@ module IRB
     # Creates a new input method object
     def initialize(file)
       super
-      @io = IRB::MagicFile.open(file)
+      @io = file.is_a?(IO) ? file : IRB::MagicFile.open(file)
       @external_encoding = @io.external_encoding
     end
     # The file name of this input method, usually given during initialization.

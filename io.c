@@ -4056,7 +4056,7 @@ rb_io_gets_internal(VALUE io)
  *
  *  With only integer argument +limit+ given,
  *  limits the number of bytes in the line;
- *  see {Line Limit}}[rdoc-ref:IO@Line+Limit]:
+ *  see {Line Limit}[rdoc-ref:IO@Line+Limit]:
  *
  *    # No more than one line.
  *    File.open('t.txt') {|f| f.gets(10) } # => "First line"
@@ -4313,7 +4313,7 @@ io_readlines(const struct getline_arg *arg, VALUE io)
  *
  *  With only integer argument +limit+ given,
  *  limits the number of bytes in each line;
- *  see {Line Limit}}[rdoc-ref:IO@Line+Limit]:
+ *  see {Line Limit}[rdoc-ref:IO@Line+Limit]:
  *
  *    f = File.new('t.txt')
  *    f.each_line(8) {|line| p line }
