@@ -91,15 +91,31 @@ describe 'Coverage.result' do
     Coverage.result.should_not include(@config_file)
   end
 
-  it 'returns the correct results when eval is used' do
-    Coverage.start
-    require @eval_code_file.chomp('.rb')
-    result = Coverage.result
+  ruby_version_is '3.1'...'3.2' do
+    it 'returns the correct results when eval is used' do
+      Coverage.start
+      require @eval_code_file.chomp('.rb')
+      result = Coverage.result
 
-    result.should == {
-        @eval_code_file => [
-            1, nil, 1, nil, 1, nil, nil, nil, nil, nil, 1
-        ]
-    }
+      result.should == {
+          @eval_code_file => [
+              1, nil, 1, nil, 1, nil, nil, nil, nil, nil, 1
+          ]
+      }
+    end
+  end
+
+  ruby_version_is '3.2' do
+    it 'returns the correct results when eval is used' do
+      Coverage.start
+      require @eval_code_file.chomp('.rb')
+      result = Coverage.result
+
+      result.should == {
+          @eval_code_file => [
+              1, nil, 1, nil, 1, 1, nil, nil, nil, nil, 1
+          ]
+      }
+    end
   end
 end

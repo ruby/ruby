@@ -136,7 +136,7 @@ class TestCoverage < Test::Unit::TestCase
           f.puts 'REPEATS = 400'
           f.puts 'def add_method(target)'
           f.puts '  REPEATS.times do'
-          f.puts '    target.class_eval(<<~RUBY, __FILE__, __LINE__ + 1)'
+          f.puts '    target.class_eval(<<~RUBY)'
           f.puts '      def foo'
           f.puts '        #{"\n" * rand(REPEATS)}'
           f.puts '      end'
@@ -155,6 +155,21 @@ class TestCoverage < Test::Unit::TestCase
         end;
       }
     }
+  end
+
+  def test_eval_coverage
+    assert_in_out_err(%w[-rcoverage], <<-"end;", ["[1, nil, 1, nil]"], [])
+      Coverage.start
+
+      eval(<<-RUBY, TOPLEVEL_BINDING, "test.rb")
+      s = String.new
+      begin
+      s << "foo
+      bar".freeze; end
+      RUBY
+
+      p Coverage.result["test.rb"]
+    end;
   end
 
   def test_nocoverage_optimized_line
