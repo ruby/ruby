@@ -697,7 +697,6 @@ prepare_iseq_build(rb_iseq_t *iseq,
     ISEQ_COMPILE_DATA(iseq)->ivar_cache_table = NULL;
     ISEQ_COMPILE_DATA(iseq)->builtin_function_table = GET_VM()->builtin_function_table;
 
-
     if (option->coverage_enabled) {
         VALUE coverages = rb_get_coverages();
         if (RTEST(coverages)) {
@@ -928,6 +927,18 @@ rb_iseq_new_main(const rb_ast_body_t *ast, VALUE path, VALUE realpath, const rb_
 rb_iseq_t *
 rb_iseq_new_eval(const rb_ast_body_t *ast, VALUE name, VALUE path, VALUE realpath, VALUE first_lineno, const rb_iseq_t *parent, int isolated_depth)
 {
+    VALUE coverages = rb_get_coverages();
+    if (RTEST(coverages) && RTEST(path) && !RTEST(rb_hash_has_key(coverages, path))) {
+        int line_offset = RB_NUM2INT(first_lineno) - 1;
+        int line_count = line_offset + ast_line_count(ast);
+
+        if (line_count >= 0) {
+            int len = (rb_get_coverage_mode() & COVERAGE_TARGET_ONESHOT_LINES) ? 0 : line_count;
+            VALUE coverage = rb_default_coverage(len);
+            rb_hash_aset(coverages, path, coverage);
+        }
+    }
+
     return rb_iseq_new_with_opt(ast, name, path, realpath, first_lineno,
                                 parent, isolated_depth, ISEQ_TYPE_EVAL, &COMPILE_OPTION_DEFAULT);
 }
