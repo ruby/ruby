@@ -32,226 +32,17 @@ class Node < Struct.new(
   :bitwidth,
   :sizeof_type,
   :offsetof,
-  :tokens,
   :enum_value,
   :children,
   keyword_init: true,
 )
 end
 
-class CParser
-  def initialize(tokens)
-    @tokens = lex(tokens)
-    @pos = 0
-  end
-
-  def parse
-    expression
-  end
-
-  private
-
-  def lex(toks)
-    toks.map do |tok|
-      case tok
-      when /\A\d+\z/         then [:NUMBER, tok]
-      when /\A0x[0-9a-f]*\z/ then [:NUMBER, tok]
-      when '('               then [:LEFT_PAREN, tok]
-      when ')'               then [:RIGHT_PAREN, tok]
-      when 'unsigned', 'int' then [:TYPE, tok]
-      when '<<'              then [:LSHIFT, tok]
-      when '>>'              then [:RSHIFT, tok]
-      when '-'               then [:MINUS, tok]
-      when '+'               then [:PLUS, tok]
-      when /\A\w+\z/         then [:IDENT, tok]
-      else
-        raise "Unknown token: #{tok}"
-      end
-    end
-  end
-
-  def expression
-    equality
-  end
-
-  def equality
-    exp = comparison
-
-    while match(:BANG_EQUAL, :EQUAL_EQUAL)
-      operator = previous
-      right = comparison
-      exp = [:BINARY, operator, exp, right]
-    end
-
-    exp
-  end
-
-  def comparison
-    expr = term
-
-    while match(:GREATER, :GREATER_EQUAL, :LESS, :LESS_EQUAL)
-      operator = previous
-      right = comparison
-      expr = [:BINARY, operator, expr, right]
-    end
-
-    expr
-  end
-
-  def term
-    expr = bitwise
-
-    while match(:MINUS, :PLUS)
-      operator = previous
-      right = bitwise
-      expr = [:BINARY, operator, expr, right]
-    end
-
-    expr
-  end
-
-  def bitwise
-    expr = unary
-
-    while match(:RSHIFT, :LSHIFT)
-      operator = previous
-      right = unary
-      expr = [:BINARY, operator, expr, right]
-    end
-
-    expr
-  end
-
-  def unary
-    if match(:BANG, :MINUS)
-      [:UNARY, previous, primary]
-    else
-      primary
-    end
-  end
-
-  def primary
-    if match(:LEFT_PAREN)
-      grouping
-    else
-      if match(:IDENT)
-        [:VAR, previous]
-      elsif match(:NUMBER)
-        previous
-      else
-        raise peek.inspect
-      end
-    end
-  end
-
-  def grouping
-    if peek.first == :TYPE
-      cast = types
-      consume(:RIGHT_PAREN)
-      exp = [:TYPECAST, cast, unary]
-    else
-      exp = [:GROUP, expression]
-      consume(:RIGHT_PAREN)
-    end
-    exp
-  end
-
-  def consume(tok)
-    unless peek.first == tok
-      raise "Expected #{tok} but was #{peek}"
-    end
-    advance
-  end
-
-  def types
-    list = []
-    loop do
-      thing = peek
-      break unless thing.first == :TYPE
-      list << thing
-      advance
-    end
-    list
-  end
-
-  def match(*toks)
-    advance if peek && toks.grep(peek.first).any?
-  end
-
-  def advance
-    @pos += 1
-    raise("nope") if @pos > @tokens.length
-    true
-  end
-
-  def peek
-    @tokens[@pos]
-  end
-
-  def previous
-    @tokens[@pos - 1]
-  end
-end
-
-class ToRuby
-  def initialize(enums)
-    @enums = enums
-  end
-
-  def visit(node)
-    send node.first, node
-  end
-
-  private
-
-  def GROUP(node)
-    "(" + visit(node[1]) + ")"
-  end
-
-  def BINARY(node)
-    visit(node[2]) + " " + visit(node[1]) + " " + visit(node[3])
-  end
-
-  def TYPECAST(node)
-    visit node[2]
-  end
-
-  def NUMBER(node)
-    node[1].to_s
-  end
-
-  def UNARY(node)
-    visit(node[1]) + visit(node[2])
-  end
-
-  def lit(node)
-    node.last
-  end
-
-  alias MINUS lit
-  alias RSHIFT lit
-  alias LSHIFT lit
-
-  def IDENT(node)
-    if @enums.include?(node.last)
-      "self.#{node.last}"
-    else
-      "unexpected macro token: #{node.last}"
-    end
-  end
-
-  def VAR(node)
-    visit node[1]
-  end
-end
-
 # Parse a C header with ffi-clang and return Node objects.
 # To ease the maintenance, ffi-clang should be used only inside this class.
 class HeaderParser
   def initialize(header, cflags:)
-    @translation_unit = FFI::Clang::Index.new.parse_translation_unit(
-      header, cflags, [], { detailed_preprocessing_record: true }
-    )
+    @translation_unit = FFI::Clang::Index.new.parse_translation_unit(header, cflags, [], {})
   end
 
   def parse
@@ -263,10 +54,7 @@ class HeaderParser
   def parse_children(cursor)
     children = []
     cursor.visit_children do |cursor, _parent|
-      child = parse_cursor(cursor)
-      if child.kind != :macro_expansion
-        children << child
-      end
+      children << parse_cursor(cursor)
       next :continue
     end
     children
@@ -291,11 +79,6 @@ class HeaderParser
       sizeof_type = cursor.type.sizeof
     end
 
-    tokens = nil
-    if kind == :macro_definition
-      tokens = @translation_unit.tokenize(cursor.extent).map(&:spelling)
-    end
-
     enum_value = nil
     if kind == :enum_constant_decl
       enum_value = cursor.enum_value
@@ -309,7 +92,6 @@ class HeaderParser
       bitwidth: cursor.bitwidth,
       sizeof_type: sizeof_type,
       offsetof: offsetof,
-      tokens: tokens,
       enum_value: enum_value,
       children: children,
     )
@@ -339,9 +121,19 @@ class BindingGenerator
   def generate(_nodes)
     println "module RubyVM::MJIT"
     println "  C = Object.new"
+    println
+
+    # Define macros
+    @macros.each do |macro|
+      println "  def C.#{macro} = #{generate_macro(macro)}"
+      println
+    end
+
+    chomp
     println "end if RubyVM::MJIT.enabled?"
   end
 
+  # TODO: Remove this
   def legacy_generate(nodes)
     # TODO: Support nested declarations
     nodes_index = nodes.group_by(&:spelling).transform_values(&:last)
@@ -349,15 +141,6 @@ class BindingGenerator
     println "require_relative 'c_type'"
     println
     println "module RubyVM::MJIT"
-
-    # Define macros
-    @macros.each do |macro|
-      unless definition = generate_macro(nodes_index[macro])
-        raise "Failed to generate macro: #{macro}"
-      end
-      println "  def C.#{macro} = #{definition}"
-      println
-    end
 
     # Define enum values
     @enums.each do |enum, values|
@@ -393,23 +176,11 @@ class BindingGenerator
 
   private
 
-  def generate_macro(node)
-    if node.spelling.start_with?('USE_')
-      # Special case: Always force USE_* to be true or false
-      case node
-      in Node[kind: :macro_definition, tokens: [_, '0' | '1' => token], children: []]
-        (Integer(token) == 1).to_s
-      end
+  def generate_macro(macro)
+    if macro.start_with?('USE_')
+      "Primitive.cexpr! %q{ RBOOL(#{macro} != 0) }"
     else
-      # Otherwise, convert a C expression to a Ruby expression when possible
-      case node
-      in Node[kind: :macro_definition, tokens: tokens, children: []]
-        if tokens.first != node.spelling
-          raise "unexpected first token: '#{tokens.first}' != '#{node.spelling}'"
-        end
-        ast = CParser.new(tokens.drop(1)).parse
-        ToRuby.new(@enums.values.flatten).visit(ast)
-      end
+      "Primitive.cexpr! %q{ INT2NUM(#{macro}) }"
     end
   end
 
