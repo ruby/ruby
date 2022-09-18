@@ -575,6 +575,7 @@ class Gem::TestCase < Test::Unit::TestCase
     Dir.chdir directory do
       unless File.exist? ".git"
         system @git, "init", "--quiet"
+        system @git, "checkout", "-b", "master", "--quiet"
         system @git, "config", "user.name",  "RubyGems Tests"
         system @git, "config", "user.email", "rubygems@example"
       end
