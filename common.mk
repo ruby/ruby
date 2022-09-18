@@ -239,11 +239,6 @@ $(srcdir)/lib/mjit/instruction.rb: $(tooldir)/insns2vm.rb $(tooldir)/ruby_vm/vie
 	$(ECHO) generating $@
 	$(Q) $(BASERUBY) -Ku $(tooldir)/insns2vm.rb --basedir="$(srcdir)" $(INSNS2VMOPT) $@
 
-srcs: $(srcdir)/mjit_c.rb
-$(srcdir)/mjit_c.rb: $(tooldir)/insns2vm.rb $(tooldir)/ruby_vm/views/mjit_c.rb.erb
-	$(ECHO) generating $@
-	$(Q) $(BASERUBY) -Ku $(tooldir)/insns2vm.rb --basedir="$(srcdir)" $(INSNS2VMOPT) $@
-
 mjit-headers: $(MJIT_SUPPORT)-mjit-headers
 no-mjit-headers: PHONY
 yes-mjit-headers: mjit_config.h PHONY
