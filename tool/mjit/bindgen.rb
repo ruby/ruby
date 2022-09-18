@@ -100,16 +100,20 @@ end
 
 # Convert Node objects to a Ruby binding source.
 class BindingGenerator
+  BINDGEN_BEG = '### MJIT bindgen begin ###'
+  BINDGEN_END = '### MJIT bindgen end ###'
   DEFAULTS = { '_Bool' => 'CType::Bool.new' }
   DEFAULTS.default_proc = proc { |_h, k| "CType::Stub.new(:#{k})" }
 
   attr_reader :src
 
+  # @param src_path [String] Source path used for preamble/postamble
   # @param macros [Array<String>] Imported macros
   # @param enums [Hash{ Symbol => Array<String> }] Imported enum values
   # @param types [Array<String>] Imported types
   # @param ruby_fields [Hash{ Symbol => Array<String> }] Struct VALUE fields that are considered Ruby objects
-  def initialize(macros:, enums:, types:, ruby_fields:)
+  def initialize(src_path:, macros:, enums:, types:, ruby_fields:)
+    @preamble, @postamble = split_ambles(src_path)
     @src = String.new
     @macros = macros.sort
     @enums = enums.transform_keys(&:to_s).transform_values(&:sort).sort.to_h
@@ -119,9 +123,7 @@ class BindingGenerator
   end
 
   def generate(_nodes)
-    println "module RubyVM::MJIT"
-    println "  C = Object.new"
-    println
+    println @preamble
 
     # Define macros
     @macros.each do |macro|
@@ -129,8 +131,7 @@ class BindingGenerator
       println
     end
 
-    chomp
-    println "end if RubyVM::MJIT.enabled?"
+    print @postamble
   end
 
   # TODO: Remove this
@@ -175,6 +176,20 @@ class BindingGenerator
   end
 
   private
+
+  # Return code before BINDGEN_BEG and code after BINDGEN_END
+  def split_ambles(src_path)
+    lines = File.read(src_path).lines
+
+    preamble_end = lines.index { |l| l.include?(BINDGEN_BEG) }
+    raise "`#{BINDGEN_BEG}` was not found in '#{src_path}'" if preamble_end.nil?
+
+    postamble_beg = lines.index { |l| l.include?(BINDGEN_END) }
+    raise "`#{BINDGEN_END}` was not found in '#{src_path}'" if postamble_beg.nil?
+    raise "`#{BINDGEN_BEG}` was found after `#{BINDGEN_END}`" if preamble_end >= postamble_beg
+
+    return lines[0..preamble_end].join, lines[postamble_beg..-1].join
+  end
 
   def generate_macro(macro)
     if macro.start_with?('USE_')
@@ -293,6 +308,7 @@ class BindingGenerator
 end
 
 src_dir = File.expand_path('../..', __dir__)
+src_path = File.join(src_dir, 'tool/ruby_vm/views/mjit_c.rb.erb')
 build_dir = File.expand_path(build_dir)
 cflags = [
   src_dir,
@@ -303,6 +319,7 @@ cflags = [
 
 nodes = HeaderParser.new(File.join(src_dir, 'mjit_compiler.h'), cflags: cflags).parse
 generator = BindingGenerator.new(
+  src_path: src_path,
   macros: %w[
     NOT_COMPILED_STACK_SIZE
     USE_LAZY_LOAD
@@ -366,4 +383,4 @@ generator = BindingGenerator.new(
 )
 generator.generate(nodes)
 
-File.write(File.join(src_dir, 'tool/ruby_vm/views/mjit_c.rb.erb'), generator.src)
+File.write(src_path, generator.src)
