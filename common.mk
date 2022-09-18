@@ -9938,12 +9938,13 @@ mjit_compiler.$(OBJEXT): {$(VPATH)}iseq.h
 mjit_compiler.$(OBJEXT): {$(VPATH)}method.h
 mjit_compiler.$(OBJEXT): {$(VPATH)}missing.h
 mjit_compiler.$(OBJEXT): {$(VPATH)}mjit.h
+mjit_compiler.$(OBJEXT): {$(VPATH)}mjit_c.rb
+mjit_compiler.$(OBJEXT): {$(VPATH)}mjit_c.rbinc
 mjit_compiler.$(OBJEXT): {$(VPATH)}mjit_compile_attr.inc
 mjit_compiler.$(OBJEXT): {$(VPATH)}mjit_compiler.c
 mjit_compiler.$(OBJEXT): {$(VPATH)}mjit_compiler.h
 mjit_compiler.$(OBJEXT): {$(VPATH)}mjit_compiler.rb
 mjit_compiler.$(OBJEXT): {$(VPATH)}mjit_compiler.rbinc
-mjit_compiler.$(OBJEXT): {$(VPATH)}mjit_c.rbinc
 mjit_compiler.$(OBJEXT): {$(VPATH)}mjit_unit.h
 mjit_compiler.$(OBJEXT): {$(VPATH)}node.h
 mjit_compiler.$(OBJEXT): {$(VPATH)}ruby_assert.h

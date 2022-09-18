@@ -111,16 +111,16 @@ class BindingGenerator
 
   attr_reader :src
 
-  # @param src_path [String] Source path used for preamble/postamble
-  # @param macros [Array<String>] Imported macros
-  # @param enums [Hash{ Symbol => Array<String> }] Imported enum values
+  # @param src_path [String]
+  # @param uses [Array<String>]
+  # @param ints [Array<String>]
   # @param types [Array<String>] Imported types
   # @param ruby_fields [Hash{ Symbol => Array<String> }] Struct VALUE fields that are considered Ruby objects
-  def initialize(src_path:, macros:, enums:, types:, ruby_fields:)
+  def initialize(src_path:, uses:, ints:, types:, ruby_fields:)
     @preamble, @postamble = split_ambles(src_path)
     @src = String.new
-    @macros = macros.sort
-    @enums = enums.transform_keys(&:to_s).transform_values(&:sort).sort.to_h
+    @uses = uses.sort
+    @ints = ints.sort
     @types = types.sort
     @ruby_fields = ruby_fields.transform_keys(&:to_s)
     @references = Set.new
@@ -129,10 +129,18 @@ class BindingGenerator
   def generate(_nodes)
     println @preamble
 
-    # Define macros
-    @macros.each do |macro|
-      println "  def C.#{macro}"
-      println "    #{generate_macro(macro)}"
+    # Define USE_* macros
+    @uses.each do |use|
+      println "  def C.#{use}"
+      println "    Primitive.cexpr! %q{ RBOOL(#{use} != 0) }"
+      println "  end"
+      println
+    end
+
+    # Define int macros/enums
+    @ints.each do |int|
+      println "  def C.#{int}"
+      println "    Primitive.cexpr! %q{ INT2NUM(#{int}) }"
       println "  end"
       println
     end
@@ -148,17 +156,6 @@ class BindingGenerator
     println "require_relative 'c_type'"
     println
     println "module RubyVM::MJIT"
-
-    # Define enum values
-    @enums.each do |enum, values|
-      values.each do |value|
-        unless definition = generate_enum(nodes_index[enum], value)
-          raise "Failed to generate enum value: #{value}"
-        end
-        println "  def C.#{value} = #{definition}"
-        println
-      end
-    end
 
     # Define types
     @types.each do |type|
@@ -195,23 +192,6 @@ class BindingGenerator
     raise "`#{BINDGEN_BEG}` was found after `#{BINDGEN_END}`" if preamble_end >= postamble_beg
 
     return lines[0..preamble_end].join, lines[postamble_beg..-1].join
-  end
-
-  def generate_macro(macro)
-    if macro.start_with?('USE_')
-      "Primitive.cexpr! %q{ RBOOL(#{macro} != 0) }"
-    else
-      "Primitive.cexpr! %q{ INT2NUM(#{macro}) }"
-    end
-  end
-
-  def generate_enum(node, value)
-    case node
-    in Node[kind: :enum_decl, children:]
-      children.find { |c| c.spelling == value }&.enum_value
-    in Node[kind: :typedef_decl, children: [child]]
-      generate_enum(child, value)
-    end
   end
 
   # Generate code from a node. Used for constructing a complex nested node.
@@ -326,23 +306,19 @@ cflags = [
 nodes = HeaderParser.new(File.join(src_dir, 'mjit_compiler.h'), cflags: cflags).parse
 generator = BindingGenerator.new(
   src_path: src_path,
-  macros: %w[
-    NOT_COMPILED_STACK_SIZE
+  uses: %w[
     USE_LAZY_LOAD
     USE_RVARGC
-    VM_CALL_KW_SPLAT
-    VM_CALL_TAILCALL
   ],
-  enums: {
-    rb_method_type_t: %w[
-      VM_METHOD_TYPE_CFUNC
-      VM_METHOD_TYPE_ISEQ
-    ],
-    vm_call_flag_bits: %w[
-      VM_CALL_KW_SPLAT_bit
-      VM_CALL_TAILCALL_bit
-    ],
-  },
+  ints: %w[
+    NOT_COMPILED_STACK_SIZE
+    VM_CALL_KW_SPLAT
+    VM_CALL_KW_SPLAT_bit
+    VM_CALL_TAILCALL
+    VM_CALL_TAILCALL_bit
+    VM_METHOD_TYPE_CFUNC
+    VM_METHOD_TYPE_ISEQ
+  ],
   types: %w[
     CALL_DATA
     IC
