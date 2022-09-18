@@ -336,7 +336,13 @@ class BindingGenerator
     @references = Set.new
   end
 
-  def generate(nodes)
+  def generate(_nodes)
+    println "module RubyVM::MJIT"
+    println "  C = Object.new"
+    println "end if RubyVM::MJIT.enabled?"
+  end
+
+  def legacy_generate(nodes)
     # TODO: Support nested declarations
     nodes_index = nodes.group_by(&:spelling).transform_values(&:last)
 
@@ -589,4 +595,4 @@ generator = BindingGenerator.new(
 )
 generator.generate(nodes)
 
-File.write(File.join(src_dir, "lib/mjit/c_#{arch_bits}.rb"), generator.src)
+File.write(File.join(src_dir, 'tool/ruby_vm/views/mjit_c.rb.erb'), generator.src)
