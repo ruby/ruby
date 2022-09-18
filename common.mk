@@ -226,6 +226,7 @@ main: $(SHOWFLAGS) exts $(ENCSTATIC:static=lib)encs
 	@$(NULLCMD)
 
 main: $(srcdir)/lib/mjit/instruction.rb
+srcs: $(srcdir)/lib/mjit/instruction.rb
 $(srcdir)/lib/mjit/instruction.rb: $(tooldir)/ruby_vm/views/lib/mjit/instruction.rb.erb $(srcdir)/insns.def
 	$(ECHO) generating $@
 	$(Q) $(BASERUBY) -Ku $(tooldir)/insns2vm.rb --basedir="$(srcdir)" $(INSNS2VMOPT) $@
