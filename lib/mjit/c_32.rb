@@ -1,14 +1,6 @@
 require_relative 'c_type'
 
 module RubyVM::MJIT
-  def C.VM_METHOD_TYPE_CFUNC = 1
-
-  def C.VM_METHOD_TYPE_ISEQ = 0
-
-  def C.VM_CALL_KW_SPLAT_bit = 7
-
-  def C.VM_CALL_TAILCALL_bit = 8
-
   def C.CALL_DATA
     @CALL_DATA ||= self.rb_call_data
   end
