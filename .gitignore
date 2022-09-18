@@ -235,7 +235,6 @@ lcov*.info
 # MJIT
 /include/ruby-*/*/rb_mjit_min_header-*.h
 /lib/mjit/instruction.rb
-/mjit_c.rb
 /mjit_config.h
 /rb_mjit_header.h
 
