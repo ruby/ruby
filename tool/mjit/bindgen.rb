@@ -131,7 +131,9 @@ class BindingGenerator
 
     # Define macros
     @macros.each do |macro|
-      println "  def C.#{macro} = #{generate_macro(macro)}"
+      println "  def C.#{macro}"
+      println "    #{generate_macro(macro)}"
+      println "  end"
       println
     end
 

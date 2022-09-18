@@ -123,15 +123,25 @@ module RubyVM::MJIT
 
   ### MJIT bindgen begin ###
 
-  def C.NOT_COMPILED_STACK_SIZE = Primitive.cexpr! %q{ INT2NUM(NOT_COMPILED_STACK_SIZE) }
+  def C.NOT_COMPILED_STACK_SIZE
+    Primitive.cexpr! %q{ INT2NUM(NOT_COMPILED_STACK_SIZE) }
+  end
 
-  def C.USE_LAZY_LOAD = Primitive.cexpr! %q{ RBOOL(USE_LAZY_LOAD != 0) }
+  def C.USE_LAZY_LOAD
+    Primitive.cexpr! %q{ RBOOL(USE_LAZY_LOAD != 0) }
+  end
 
-  def C.USE_RVARGC = Primitive.cexpr! %q{ RBOOL(USE_RVARGC != 0) }
+  def C.USE_RVARGC
+    Primitive.cexpr! %q{ RBOOL(USE_RVARGC != 0) }
+  end
 
-  def C.VM_CALL_KW_SPLAT = Primitive.cexpr! %q{ INT2NUM(VM_CALL_KW_SPLAT) }
+  def C.VM_CALL_KW_SPLAT
+    Primitive.cexpr! %q{ INT2NUM(VM_CALL_KW_SPLAT) }
+  end
 
-  def C.VM_CALL_TAILCALL = Primitive.cexpr! %q{ INT2NUM(VM_CALL_TAILCALL) }
+  def C.VM_CALL_TAILCALL
+    Primitive.cexpr! %q{ INT2NUM(VM_CALL_TAILCALL) }
+  end
 
   ### MJIT bindgen end ###
 end if RubyVM::MJIT.enabled?
