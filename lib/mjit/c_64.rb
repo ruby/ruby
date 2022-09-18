@@ -1,8 +1,6 @@
 require_relative 'c_type'
 
 module RubyVM::MJIT
-  C = Object.new
-
   def C.NOT_COMPILED_STACK_SIZE = -1
 
   def C.USE_LAZY_LOAD = false
