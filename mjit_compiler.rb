@@ -132,5 +132,6 @@ if RubyVM::MJIT.enabled?
     def rb_cFloat;      Primitive.cexpr! 'PTR2NUM(rb_cFloat)'      end
   end
 
+  require "mjit/instruction"
   require "mjit/compiler"
 end

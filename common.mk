@@ -1081,7 +1081,6 @@ BUILTIN_RB_SRCS = \
 		$(srcdir)/marshal.rb \
 		$(srcdir)/mjit.rb \
 		$(srcdir)/mjit_compiler.rb \
-		$(srcdir)/mjit_instruction.rb \
 		$(srcdir)/pack.rb \
 		$(srcdir)/trace_point.rb \
 		$(srcdir)/warning.rb \
@@ -1173,7 +1172,7 @@ vm_call_iseq_optimized.inc: $(srcdir)/template/call_iseq_optimized.inc.tmpl
 	$(ECHO) generating $@
 	$(Q) $(BASERUBY) $(tooldir)/generic_erb.rb -c -o $@ $(srcdir)/template/call_iseq_optimized.inc.tmpl
 
-$(MINIPRELUDE_C): $(COMPILE_PRELUDE) $(BUILTIN_RB_SRCS) $(srcdir)/mjit_instruction.rb
+$(MINIPRELUDE_C): $(COMPILE_PRELUDE) $(BUILTIN_RB_SRCS)
 	$(ECHO) generating $@
 	$(Q) $(BASERUBY) $(tooldir)/generic_erb.rb -I$(srcdir) -o $@ \
 		$(srcdir)/template/prelude.c.tmpl $(BUILTIN_RB_SRCS)
@@ -9302,7 +9301,6 @@ miniinit.$(OBJEXT): $(CCAN_DIR)/container_of/container_of.h
 miniinit.$(OBJEXT): $(CCAN_DIR)/list/list.h
 miniinit.$(OBJEXT): $(CCAN_DIR)/str/str.h
 miniinit.$(OBJEXT): $(hdrdir)/ruby/ruby.h
-miniinit.$(OBJEXT): $(srcdir)/mjit_instruction.rb
 miniinit.$(OBJEXT): $(top_srcdir)/internal/array.h
 miniinit.$(OBJEXT): $(top_srcdir)/internal/compilers.h
 miniinit.$(OBJEXT): $(top_srcdir)/internal/gc.h
@@ -9494,7 +9492,6 @@ miniinit.$(OBJEXT): {$(VPATH)}miniprelude.c
 miniinit.$(OBJEXT): {$(VPATH)}missing.h
 miniinit.$(OBJEXT): {$(VPATH)}mjit.rb
 miniinit.$(OBJEXT): {$(VPATH)}mjit_compiler.rb
-miniinit.$(OBJEXT): {$(VPATH)}mjit_instruction.rb
 miniinit.$(OBJEXT): {$(VPATH)}nilclass.rb
 miniinit.$(OBJEXT): {$(VPATH)}node.h
 miniinit.$(OBJEXT): {$(VPATH)}numeric.rb
@@ -9748,7 +9745,6 @@ mjit_compiler.$(OBJEXT): $(CCAN_DIR)/list/list.h
 mjit_compiler.$(OBJEXT): $(CCAN_DIR)/str/str.h
 mjit_compiler.$(OBJEXT): $(hdrdir)/ruby.h
 mjit_compiler.$(OBJEXT): $(hdrdir)/ruby/ruby.h
-mjit_compiler.$(OBJEXT): $(srcdir)/mjit_instruction.rb
 mjit_compiler.$(OBJEXT): $(top_srcdir)/internal/array.h
 mjit_compiler.$(OBJEXT): $(top_srcdir)/internal/class.h
 mjit_compiler.$(OBJEXT): $(top_srcdir)/internal/compile.h
@@ -9934,7 +9930,6 @@ mjit_compiler.$(OBJEXT): {$(VPATH)}mjit_compiler.c
 mjit_compiler.$(OBJEXT): {$(VPATH)}mjit_compiler.h
 mjit_compiler.$(OBJEXT): {$(VPATH)}mjit_compiler.rb
 mjit_compiler.$(OBJEXT): {$(VPATH)}mjit_compiler.rbinc
-mjit_compiler.$(OBJEXT): {$(VPATH)}mjit_instruction.rbinc
 mjit_compiler.$(OBJEXT): {$(VPATH)}mjit_unit.h
 mjit_compiler.$(OBJEXT): {$(VPATH)}node.h
 mjit_compiler.$(OBJEXT): {$(VPATH)}ruby_assert.h

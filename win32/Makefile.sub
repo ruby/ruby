@@ -1351,10 +1351,6 @@ INSNS	= opt_sc.inc optinsn.inc optunifs.inc insns.inc insns_info.inc \
 ! endif
 !endif
 
-$(srcdir)/mjit_instruction.rb: $(tooldir)/ruby_vm/views/mjit_instruction.rb.erb
-	$(ECHO) generating $@
-	$(Q) $(BASERUBY) -Ku $(tooldir)/insns2vm.rb $(INSNS2VMOPT) $@
-
 verconf.h: verconf.mk
 
 loadpath: verconf.h

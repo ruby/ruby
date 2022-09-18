@@ -504,6 +504,11 @@ clean-local::
 	$(Q)$(RM) -r mjit_build_dir.*
 	-$(Q) $(RMDIRS) $(MJIT_HEADER_INSTALL_DIR) $(MJIT_HEADER_BUILD_DIR) $(TIMESTAMPDIR) 2> $(NULL) || $(NULLCMD)
 
+main: $(srcdir)/lib/mjit/instruction.rb
+$(srcdir)/lib/mjit/instruction.rb: $(tooldir)/ruby_vm/views/instruction.rb.erb $(srcdir)/insns.def
+	$(ECHO) generating $@
+	$(Q) $(BASERUBY) -Ku $(tooldir)/insns2vm.rb $(INSNS2VMOPT) $@
+
 # DTrace static library hacks described here:
 # https://marc.info/?l=opensolaris-dtrace-discuss&m=114761203110734&w=4
 ruby-glommed.$(OBJEXT):
@@ -666,10 +671,6 @@ $(INSNS): $(srcdir)/insns.def vm_opts.h \
 	  $(tooldir)/ruby_vm/views/optunifs.inc.erb \
 	  $(tooldir)/ruby_vm/views/vm.inc.erb \
 	  $(tooldir)/ruby_vm/views/vmtc.inc.erb
-	$(ECHO) generating $@
-	$(Q) $(BASERUBY) -Ku $(tooldir)/insns2vm.rb $(INSNS2VMOPT) $@
-
-$(srcdir)/mjit_instruction.rb: $(tooldir)/ruby_vm/views/mjit_instruction.rb.erb
 	$(ECHO) generating $@
 	$(Q) $(BASERUBY) -Ku $(tooldir)/insns2vm.rb $(INSNS2VMOPT) $@
 
