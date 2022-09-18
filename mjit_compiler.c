@@ -164,6 +164,7 @@ has_cache_for_send(rb_execution_context_t *ec, VALUE self, VALUE cc_addr, VALUE 
 
 extern bool rb_splat_or_kwargs_p(const struct rb_callinfo *restrict ci);
 
+#include "mjit_c.rbinc"
 #include "mjit_compiler.rbinc"
 
 #endif // USE_MJIT

@@ -343,8 +343,6 @@ class BindingGenerator
     println "require_relative 'c_type'"
     println
     println "module RubyVM::MJIT"
-    println "  C = Object.new"
-    println
 
     # Define macros
     @macros.each do |macro|
