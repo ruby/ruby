@@ -126,7 +126,7 @@ class BindingGenerator
     @references = Set.new
   end
 
-  def generate(_nodes)
+  def generate(nodes)
     println @preamble
 
     # Define USE_* macros
@@ -145,17 +145,8 @@ class BindingGenerator
       println
     end
 
-    print @postamble
-  end
-
-  # TODO: Remove this
-  def legacy_generate(nodes)
     # TODO: Support nested declarations
     nodes_index = nodes.group_by(&:spelling).transform_values(&:last)
-
-    println "require_relative 'c_type'"
-    println
-    println "module RubyVM::MJIT"
 
     # Define types
     @types.each do |type|
@@ -170,12 +161,13 @@ class BindingGenerator
 
     # Leave a stub for types that are referenced but not targeted
     (@references - @types).each do |type|
-      println "  def C.#{type} = #{DEFAULTS[type]}"
+      println "  def C.#{type}"
+      println "    #{DEFAULTS[type]}"
+      println "  end"
       println
     end
 
-    chomp
-    println "end"
+    print @postamble
   end
 
   private
@@ -261,10 +253,11 @@ class BindingGenerator
     else
       begin
         ctype = Fiddle::Importer.parse_ctype(type)
-        "CType::Immediate.new(#{ctype})"
       rescue Fiddle::DLError
         push_target(type)
         "self.#{type}"
+      else
+        "CType::Immediate.new(#{ctype})"
       end
     end
   end
