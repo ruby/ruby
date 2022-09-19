@@ -452,6 +452,13 @@ class TestGemPlatform < Gem::TestCase
     assert_equal 1, result.scan(/@version=/).size
   end
 
+  def test_gem_platform_match_with_string_argument
+    util_set_arch "x86_64-linux-musl"
+
+    assert(Gem::Platform.match(Gem::Platform.new("x86_64-linux")), "should match Gem::Platform")
+    assert(Gem::Platform.match("x86_64-linux"), "should match String platform")
+  end
+
   def assert_local_match(name)
     assert_match Gem::Platform.local, name
   end
