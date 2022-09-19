@@ -59,10 +59,16 @@ jobs:
 
           - test_task: "test-bundled-gems"
             configure: "--enable-yjit=dev"
+
+          - test_task: "yjit-bench"
+            configure: "--enable-yjit=dev"
+            yjit_bench_opts: "--yjit-stats"
     env:
       GITPULLOPTIONS: --no-tags origin ${{github.ref}}
       RUN_OPTS: ${{ matrix.yjit_opts }}
+      YJIT_BENCH_OPTS: ${{ matrix.yjit_bench_opts }}
       RUBY_DEBUG: ci
+      BUNDLE_JOBS: 8 # for yjit-bench
     runs-on: ubuntu-20.04
     if: ${{ !contains(github.event.head_commit.message, '[DOC]') && !contains(github.event.pull_request.labels.*.name, 'Documentation') }}
     steps:
@@ -98,7 +104,7 @@ jobs:
       - run: ./autogen.sh
         working-directory: src
       - name: Run configure
-        run: ../src/configure -C --disable-install-doc ${{ matrix.configure }}
+        run: ../src/configure -C --disable-install-doc --prefix=$(pwd)/install ${{ matrix.configure }}
       - run: make incs
       - run: make prepare-gems
         if: ${{ matrix.test_task == 'test-bundled-gems' }}
@@ -111,12 +117,20 @@ jobs:
         if: ${{ matrix.test_task == 'check' }}
       - name: Enable YJIT through ENV
         run: echo "RUBY_YJIT_ENABLE=1" >> $GITHUB_ENV
-      - run: make -s ${{ matrix.test_task }} RUN_OPTS="$RUN_OPTS"
+      - name: make ${{ matrix.test_task }}
+        run: make -s -j ${{ matrix.test_task }} RUN_OPTS="$RUN_OPTS" YJIT_BENCH_OPTS="$YJIT_BENCH_OPTS"
         timeout-minutes: 60
         env:
           RUBY_TESTOPTS: "-q --tty=no"
           TEST_BUNDLED_GEMS_ALLOW_FAILURES: ""
           PRECHECK_BUNDLED_GEMS: "no"
+        continue-on-error: ${{ matrix.test_task == 'yjit-bench' }}
+      - name: Show ${{ github.event.pull_request.base.ref }} GitHub URL for yjit-bench comparison
+        run: echo "https://github.com/${BASE_REPO}/commit/${BASE_SHA}"
+        env:
+          BASE_REPO: ${{ github.event.pull_request.base.repo.full_name }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        if: ${{ matrix.test_task == 'yjit-bench' && startsWith(github.event_name, 'pull') }}
       - uses: k0kubun/action-slack@v2.0.0
         with:
           payload: |

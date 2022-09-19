@@ -238,5 +238,8 @@ lcov*.info
 /include/ruby-*/*/rb_mjit_min_header-*.h
 /lib/mjit/instruction.rb
 
+# YJIT
+/yjit-bench
+
 # /wasm/
 /wasm/tests/*.wasm

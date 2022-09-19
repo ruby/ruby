@@ -51,6 +51,19 @@ endif
 # TODO: might need to move for BSD Make support
 miniruby$(EXEEXT): $(YJIT_LIBS)
 
+# By using YJIT_BENCH_OPTS instead of RUN_OPTS, you can skip passing the options to `make install`
+YJIT_BENCH_OPTS = $(RUN_OPTS) --enable-gems
+YJIT_BENCH = benchmarks/railsbench/benchmark.rb
+
+# Run yjit-bench's ./run_once.sh for CI
+yjit-bench: install update-yjit-bench PHONY
+	$(Q) cd $(srcdir)/yjit-bench && PATH=$(prefix)/bin:$$PATH \
+		./run_once.sh $(YJIT_BENCH_OPTS) $(YJIT_BENCH)
+
+update-yjit-bench:
+	$(Q) $(tooldir)/git-refresh -C $(srcdir) --branch main \
+		https://github.com/Shopify/yjit-bench yjit-bench $(GIT_OPTS)
+
 # Generate Rust bindings. See source for details.
 # Needs `./configure --enable-yjit=dev` and Clang.
 ifneq ($(strip $(CARGO)),) # if configure found Cargo
