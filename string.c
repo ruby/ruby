@@ -813,7 +813,7 @@ rb_enc_cr_str_copy_for_substr(VALUE dest, VALUE src)
     /* this function is designed for copying encoding and coderange
      * from src to new string "dest" which is made from the part of src.
      */
-    str_enc_copy(dest, src);
+    rb_enc_set_index_fastpath(dest, ENCODING_GET(src));
     if (RSTRING_LEN(dest) == 0) {
         if (!rb_enc_asciicompat(STR_ENC_GET(src)))
             ENC_CODERANGE_SET(dest, ENC_CODERANGE_VALID);
