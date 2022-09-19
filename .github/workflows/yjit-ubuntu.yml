@@ -117,12 +117,19 @@ jobs:
         if: ${{ matrix.test_task == 'check' }}
       - name: Enable YJIT through ENV
         run: echo "RUBY_YJIT_ENABLE=1" >> $GITHUB_ENV
-      - run: make -s -j ${{ matrix.test_task }} RUN_OPTS="$RUN_OPTS" YJIT_BENCH_OPTS="$YJIT_BENCH_OPTS"
+      - name: make ${{ matrix.test_task }}
+        run: make -s -j ${{ matrix.test_task }} RUN_OPTS="$RUN_OPTS" YJIT_BENCH_OPTS="$YJIT_BENCH_OPTS"
         timeout-minutes: 60
         env:
           RUBY_TESTOPTS: "-q --tty=no"
           TEST_BUNDLED_GEMS_ALLOW_FAILURES: ""
           PRECHECK_BUNDLED_GEMS: "no"
+      - name: Show ${{ github.event.pull_request.base.ref }} GitHub URL for yjit-bench comparison
+        run: echo "https://github.com/${BASE_REPO}/commit/${BASE_SHA}"
+        env:
+          BASE_REPO: ${{ github.event.pull_request.base.repo.full_name }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        if: ${{ matrix.test_task == 'yjit-bench' && startsWith(github.event_name, 'pull') }}
       - uses: k0kubun/action-slack@v2.0.0
         with:
           payload: |
