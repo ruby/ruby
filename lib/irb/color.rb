@@ -176,14 +176,18 @@ module IRB # :nodoc:
           end
 
           on_scan = proc do |elem|
-            str = elem.tok
             start_pos = line_positions[elem.pos[0] - 1] + elem.pos[1]
-            end_pos = start_pos + str.bytesize
-            next if start_pos < byte_pos
 
-            yield(nil, inner_code.byteslice(byte_pos...start_pos), nil) if byte_pos < start_pos
-            yield(elem.event, str, elem.state)
-            byte_pos = end_pos
+            # yield uncolorable code
+            if byte_pos < start_pos
+              yield(nil, inner_code.byteslice(byte_pos...start_pos), nil)
+            end
+
+            if byte_pos <= start_pos
+              str = elem.tok
+              yield(elem.event, str, elem.state)
+              byte_pos = start_pos + str.bytesize
+            end
           end
 
           if lexer.respond_to?(:scan) # Ruby 2.7+
