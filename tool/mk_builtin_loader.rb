@@ -87,7 +87,7 @@ def collect_builtin base, tree, name, bs, inlines, locals = nil
       tree = tree[2]
       next
     when :method_add_arg
-      _, mid, (_, (_, args)) = tree
+      _method_add_arg, mid, (_arg_paren, args) = tree
       case mid.first
       when :call
         _, recv, sep, mid = mid
@@ -95,6 +95,11 @@ def collect_builtin base, tree, name, bs, inlines, locals = nil
         _, mid = mid
       else
         mid = nil
+      end
+      # w/  trailing comma: [[:method_add_arg, ...]]
+      # w/o trailing comma: [:args_add_block, [[:method_add_arg, ...]]]
+      if args && args.first == :args_add_block
+        args = args[1]
       end
     when :vcall
       _, mid = tree
