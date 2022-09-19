@@ -124,6 +124,7 @@ jobs:
           RUBY_TESTOPTS: "-q --tty=no"
           TEST_BUNDLED_GEMS_ALLOW_FAILURES: ""
           PRECHECK_BUNDLED_GEMS: "no"
+        continue-on-error: ${{ matrix.test_task == 'yjit-bench' }}
       - name: Show ${{ github.event.pull_request.base.ref }} GitHub URL for yjit-bench comparison
         run: echo "https://github.com/${BASE_REPO}/commit/${BASE_SHA}"
         env:
