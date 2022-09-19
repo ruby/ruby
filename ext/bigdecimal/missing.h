@@ -172,16 +172,6 @@ rb_complex_imag(VALUE cmp)
 }
 #endif
 
-/* symbol */
-
-#ifndef HAVE_RB_SYM2STR
-static inline VALUE
-rb_sym2str(VALUE sym)
-{
-    return rb_id2str(SYM2ID(sym));
-}
-#endif
-
 /* st */
 
 #ifndef ST2FIX
