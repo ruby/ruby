@@ -4,6 +4,11 @@ require "irb"
 
 module TestIRB
   class TestCompletion < Test::Unit::TestCase
+    def setup
+      # make sure require completion candidates are not cached
+      IRB::InputCompletor.class_variable_set(:@@files_from_load_path, nil)
+    end
+
     def test_nonstring_module_name
       begin
         require "irb/completion"
@@ -82,6 +87,43 @@ module TestIRB
       %w['irb/init 'irb/ruby-lex].each do |word|
         assert_include candidates, word
       end
+    end
+
+    def test_complete_require_with_pathname_in_load_path
+      temp_dir = Dir.mktmpdir
+      File.write(File.join(temp_dir, "foo.rb"), "test")
+      test_path = Pathname.new(temp_dir)
+      $LOAD_PATH << test_path
+
+      candidates = IRB::InputCompletor::CompletionProc.("'foo", "require ", "")
+      assert_equal ["'foo"], candidates
+    ensure
+      $LOAD_PATH.pop if test_path
+      FileUtils.remove_entry(temp_dir) if temp_dir
+    end
+
+    def test_complete_require_with_string_convertable_in_load_path
+      temp_dir = Dir.mktmpdir
+      File.write(File.join(temp_dir, "foo.rb"), "test")
+      object = Object.new
+      object.define_singleton_method(:to_s) { temp_dir }
+      $LOAD_PATH << object
+
+      candidates = IRB::InputCompletor::CompletionProc.("'foo", "require ", "")
+      assert_equal ["'foo"], candidates
+    ensure
+      $LOAD_PATH.pop if object
+      FileUtils.remove_entry(temp_dir) if temp_dir
+    end
+
+    def test_complete_require_with_malformed_object_in_load_path
+      object = Object.new
+      def object.to_s; raise; end
+      $LOAD_PATH << object
+
+      assert_empty IRB::InputCompletor::CompletionProc.("'foo", "require ", "")
+    ensure
+      $LOAD_PATH.pop if object
     end
 
     def test_complete_require_library_name_first
