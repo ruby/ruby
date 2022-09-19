@@ -61,7 +61,7 @@ jobs:
             configure: "--enable-yjit=dev"
 
           - test_task: "yjit-bench"
-            configure: "--enable-yjit=dev_nodebug"
+            configure: "--enable-yjit=dev"
             yjit_bench_opts: "--yjit-stats"
     env:
       GITPULLOPTIONS: --no-tags origin ${{github.ref}}
