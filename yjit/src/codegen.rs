@@ -209,6 +209,7 @@ macro_rules! gen_counter_incr {
             let ptr = ptr_to_counter!($counter_name);
 
             // Load the pointer into a register
+            $asm.comment(&format!("increment counter {}", stringify!($counter_name)));
             let ptr_reg = $asm.load(Opnd::const_ptr(ptr as *const u8));
             let counter_opnd = Opnd::mem(64, ptr_reg, 0);
 
