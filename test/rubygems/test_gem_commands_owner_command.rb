@@ -137,7 +137,7 @@ EOF
       end
     end
 
-    response = "The request has redirected permanently to #{redirected_uri}. Please check your defined push host."
+    response = "The request has redirected permanently to #{redirected_uri}. Please check your defined push host URL."
     assert_match response, @stub_ui.output
   end
 
@@ -198,7 +198,7 @@ EOF
       @cmd.add_owners("freewill", ["user-new1@example.com"])
     end
 
-    response = "The request has redirected permanently to #{redirected_uri}. Please check your defined push host."
+    response = "The request has redirected permanently to #{redirected_uri}. Please check your defined push host URL."
     assert_match response, @stub_ui.output
   end
 
@@ -276,7 +276,7 @@ EOF
       @cmd.remove_owners("freewill", ["user-remove1@example.com"])
     end
 
-    response = "The request has redirected permanently to #{redirected_uri}. Please check your defined push host."
+    response = "The request has redirected permanently to #{redirected_uri}. Please check your defined push host URL."
     assert_match response, @stub_ui.output
 
     path = "/api/v1/gems/freewill/owners"
@@ -293,7 +293,7 @@ EOF
       @cmd.add_owners("freewill", ["user-new1@example.com"])
     end
 
-    response = "The request has redirected permanently to #{redirected_uri}. Please check your defined push host."
+    response = "The request has redirected permanently to #{redirected_uri}. Please check your defined push host URL."
     assert_match response, @stub_ui.output
   end
 

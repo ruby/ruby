@@ -92,7 +92,7 @@ class TestGemCommandsSigninCommand < Gem::TestCase
       end
     end
 
-    response = "The request has redirected permanently to #{redirected_uri}. Please check your defined push host."
+    response = "The request has redirected permanently to #{redirected_uri}. Please check your defined push host URL."
     assert_match response, ui.output
   end
 
