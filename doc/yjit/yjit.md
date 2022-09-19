@@ -79,7 +79,7 @@ The YJIT `ruby` binary can be built with either GCC or Clang. It can be built ei
 ```
 # Configure in release mode for maximum performance, build and install
 ./autogen.sh
-./configure --enable-yjit --prefix=$HOME/.rubies/ruby-yjit --disable-install-doc --disable--install-rdoc
+./configure --enable-yjit --prefix=$HOME/.rubies/ruby-yjit --disable-install-doc
 make -j install
 ```
 
@@ -88,7 +88,7 @@ or
 ```
 # Configure in dev (debug) mode for development, build and install
 ./autogen.sh
-./configure --enable-yjit=dev --prefix=$HOME/.rubies/ruby-yjit --disable-install-doc --disable--install-rdoc
+./configure --enable-yjit=dev --prefix=$HOME/.rubies/ruby-yjit --disable-install-doc
 make -j install
 ```
 
@@ -100,7 +100,7 @@ brew install openssl readline libyaml
 
 # Configure in dev (debug) mode for development, build and install
 ./autogen.sh
-./configure --enable-yjit=dev --prefix=$HOME/.rubies/ruby-yjit --disable-install-doc --disable--install-rdoc --with-opt-dir="$(brew --prefix openssl):$(brew --prefix readline):$(brew --prefix libyaml)"
+./configure --enable-yjit=dev --prefix=$HOME/.rubies/ruby-yjit --disable-install-doc --with-opt-dir="$(brew --prefix openssl):$(brew --prefix readline):$(brew --prefix libyaml)"
 make -j install
 ```
 
