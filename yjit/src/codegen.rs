@@ -4370,7 +4370,7 @@ fn gen_send_iseq(
     // We are just going to not compile these.
     // https://www.rubydoc.info/stdlib/core/Proc:ruby2_keywords
     if unsafe {
-        get_iseq_flags_ruby2_keywords(jit.iseq)
+        get_iseq_flags_ruby2_keywords(jit.iseq) && flags & VM_CALL_ARGS_SPLAT != 0
     } {
         gen_counter_incr!(asm, send_iseq_ruby2_keywords);
         return CantCompile;
