@@ -1,0 +1,98 @@
+name: macOS
+on:
+  push:
+    paths-ignore:
+      - 'doc/**'
+      - '**.md'
+      - '**.rdoc'
+  pull_request:
+    paths-ignore:
+      - 'doc/**'
+      - '**.md'
+      - '**.rdoc'
+
+concurrency:
+  group: ${{ github.workflow }} / ${{ startsWith(github.event_name, 'pull') && github.ref_name || github.sha }}
+  cancel-in-progress: ${{ startsWith(github.event_name, 'pull') }}
+
+jobs:
+  make:
+    strategy:
+      matrix:
+        test_task: ["check"] # "test-bundler-parallel", "test-bundled-gems"
+        os:
+          - macos-11
+          - macos-12
+      fail-fast: false
+    env:
+      GITPULLOPTIONS: --no-tags origin ${{github.ref}}
+    runs-on: ${{ matrix.os }}
+    if: ${{ !contains(github.event.head_commit.message, '[DOC]') && !contains(github.event.pull_request.labels.*.name, 'Documentation') }}
+    steps:
+      - run: mkdir build
+        working-directory:
+      - name: git config
+        run: |
+          git config --global advice.detachedHead 0
+          git config --global init.defaultBranch garbage
+      - uses: actions/checkout@v3
+        with:
+          path: src
+      - uses: actions/cache@v3
+        with:
+          path: src/.downloaded-cache
+          key: downloaded-cache
+      - name: Install libraries
+        run: |
+          brew upgrade
+          brew install gmp libffi openssl@1.1 zlib autoconf automake libtool readline
+        working-directory: src
+      - name: Set ENV
+        run: |
+          echo "MAKEFLAGS=-j$((1 + $(sysctl -n hw.activecpu)))" >> $GITHUB_ENV
+      - run: ./autogen.sh
+        working-directory: src
+      - name: Run configure
+        run: ../src/configure -C --disable-install-doc --with-openssl-dir=$(brew --prefix openssl@1.1) --with-readline-dir=$(brew --prefix readline)
+      - run: make incs
+      - run: make
+      - run: make leaked-globals
+        if: ${{ matrix.test_task == 'check' }}
+      - run: make prepare-gems
+        if: ${{ matrix.test_task == 'check' }}
+      - name: make ${{ matrix.test_task }}
+        run: |
+          make -s ${{ matrix.test_task }} ${TESTS:+TESTS=`echo "$TESTS" | sed 's| |$$/ -n!/|g;s|^|-n!/|;s|$|$$/|'`}
+        timeout-minutes: 40
+        env:
+          RUBY_TESTOPTS: "-q --tty=no"
+          TESTS: ${{ matrix.test_task == 'check' && matrix.skipped_tests || '' }}
+          TEST_BUNDLED_GEMS_ALLOW_FAILURES: ""
+          PRECHECK_BUNDLED_GEMS: "no"
+      - name: make skipped tests
+        run: |
+          make -s test-all TESTS=`echo "$TESTS" | sed 's| |$$/ -n/|g;s|^|-n/|;s|$|$$/|'`
+        env:
+          GNUMAKEFLAGS: ""
+          RUBY_TESTOPTS: "-v --tty=no"
+          TESTS: ${{ matrix.skipped_tests }}
+          PRECHECK_BUNDLED_GEMS: "no"
+        if: ${{ matrix.test_task == 'check' && matrix.skipped_tests != '' }}
+        continue-on-error: ${{ matrix.continue-on-skipped_tests || false }}
+      - uses: k0kubun/action-slack@v2.0.0
+        with:
+          payload: |
+            {
+              "ci": "GitHub Actions",
+              "env": "${{ matrix.os }} / ${{ matrix.test_task }}${{ matrix.configure }}",
+              "url": "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}",
+              "commit": "${{ github.sha }}",
+              "branch": "${{ github.ref }}".split('/').reverse()[0]
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SIMPLER_ALERTS_URL }} # ruby-lang slack: ruby/simpler-alerts-bot
+        if: ${{ failure() && github.event_name == 'push' }}
+
+defaults:
+  run:
+    working-directory: build
