@@ -587,7 +587,7 @@ tr25:
         if (json->allow_nan) {
             *result = CInfinity;
         } else {
-            rb_enc_raise(EXC_ENCODING eParserError, "unexpected token at '%s'", p - 8);
+            rb_enc_raise(EXC_ENCODING eParserError, "unexpected token at '%s'", p - 7);
         }
     }
 	goto st29;
