@@ -2469,52 +2469,6 @@ fn gen_equality_specialized(
     let a_opnd = ctx.stack_opnd(1);
     let b_opnd = ctx.stack_opnd(0);
 
-    // Get the stack operand types
-    let a_type = ctx.get_opnd_type(StackOpnd(0));
-    let b_type = ctx.get_opnd_type(StackOpnd(1));
-
-    /*
-    if comptime_a.static_sym_p() && comptime_b.static_sym_p() {
-        if !assume_bop_not_redefined(jit, ocb, SYMBOL_REDEFINED_OP_FLAG, BOP_EQ) {
-            // if overridden, emit the generic version
-            return false;
-        }
-
-        // If not symbols, fall back
-        if a_type != Type::ImmSymbol {
-            asm.comment("guard arg0 symbol");
-            let low_bits = asm.and(a_opnd, Opnd::UImm(0xff));
-            asm.cmp(low_bits, Opnd::UImm(RUBY_SYMBOL_FLAG as u64));
-            asm.jne(side_exit.into());
-        }
-        if b_type != Type::ImmSymbol {
-            asm.comment("guard arg1 symbol");
-            let low_bits = asm.and(b_opnd, Opnd::UImm(0xff));
-            asm.cmp(low_bits, Opnd::UImm(RUBY_SYMBOL_FLAG as u64));
-            asm.jne(side_exit.into());
-        }
-
-        // Set stack types in context
-        ctx.upgrade_opnd_type(StackOpnd(0), Type::ImmSymbol);
-        ctx.upgrade_opnd_type(StackOpnd(1), Type::ImmSymbol);
-
-        //print_str(asm, "comparing imm symbols");
-
-        // Compare the symbols
-        asm.cmp(a_opnd, b_opnd);
-        let val = asm.csel_ne(Qfalse.into(), Qtrue.into());
-
-        // Push the output on the stack
-        ctx.stack_pop(2);
-        let dst = ctx.stack_push(Type::UnknownImm);
-        asm.mov(dst, val);
-
-        return true
-
-
-
-    } else*/
-
     if comptime_a.fixnum_p() && comptime_b.fixnum_p() {
         if !assume_bop_not_redefined(jit, ocb, INTEGER_REDEFINED_OP_FLAG, BOP_EQ) {
             // if overridden, emit the generic version
@@ -2596,14 +2550,6 @@ fn gen_equality_specialized(
 
         true
     } else {
-
-        let a_type = Type::from(comptime_a);
-        let b_type = Type::from(comptime_b);
-        dbg!(a_type, b_type);
-        dbg!("bail");
-
-
-
         false
     }
 }
