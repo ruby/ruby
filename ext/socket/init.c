@@ -116,6 +116,7 @@ recvfrom_blocking(void *data)
     ssize_t ret;
     ret = recvfrom(arg->fd, RSTRING_PTR(arg->str), arg->length,
                    arg->flags, &arg->buf.addr, &arg->alen);
+
     if (ret != -1 && len0 < arg->alen)
         arg->alen = len0;
 
@@ -145,6 +146,18 @@ recvfrom_locktmp(VALUE v)
     struct recvfrom_arg *arg = (struct recvfrom_arg *)v;
 
     return rb_thread_io_blocking_region(recvfrom_blocking, arg, arg->fd);
+}
+
+int
+rsock_is_dgram(rb_io_t *fptr)
+{
+    int socktype;
+    socklen_t optlen = (socklen_t)sizeof(socktype);
+    int ret = getsockopt(fptr->fd, SOL_SOCKET, SO_TYPE, (void*)&socktype, &optlen);
+    if (ret == -1) {
+        rb_sys_fail("getsockopt(SO_TYPE)");
+    }
+    return socktype == SOCK_DGRAM;
 }
 
 VALUE
@@ -187,6 +200,9 @@ rsock_s_recvfrom(VALUE socket, int argc, VALUE *argv, enum sock_recv_type from)
 
         slen = (long)rb_str_locktmp_ensure(str, recvfrom_locktmp, (VALUE)&arg);
 
+        if (slen == 0 && !rsock_is_dgram(fptr)) {
+            return Qnil;
+        }
         if (slen >= 0) break;
 
         if (!rb_io_maybe_wait_readable(errno, socket, RUBY_IO_TIMEOUT_DEFAULT))
@@ -258,6 +274,10 @@ rsock_s_recvfrom_nonblock(VALUE sock, VALUE len, VALUE flg, VALUE str,
     slen = recvfrom(fd, RSTRING_PTR(str), buflen, flags, &buf.addr, &alen);
     if (slen != -1 && len0 < alen)
         alen = len0;
+
+    if (slen == 0 && !rsock_is_dgram(fptr)) {
+        return Qnil;
+    }
 
     if (slen < 0) {
         int e = errno;
