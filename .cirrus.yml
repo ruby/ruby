@@ -125,7 +125,12 @@ yjit_task:
     fi
   boot_miniruby_script: RUST_BACKTRACE=1 ./miniruby --yjit-call-threshold=1 -e0
   test_dump_insns_script: RUST_BACKTRACE=1 ./miniruby --yjit-call-threshold=1 --yjit-dump-insns -e0
-  output_stats_script: RUST_BACKTRACE=1 ./miniruby --yjit-call-threshold=1 --yjit-stats -e0
+  output_stats_script: |
+    if [[ "$configure" = "--enable-yjit=dev" ]]; then
+      RUST_BACKTRACE=1 ./miniruby --yjit-call-threshold=1 --yjit-stats -e0
+    else
+      echo "only generating --yjit-stats with dev builds"
+    fi
   full_build_script: source $HOME/.cargo/env && make
   cargo_test_script: source $HOME/.cargo/env && cd yjit && cargo test
   make_test_script: source $HOME/.cargo/env && make test RUN_OPTS="--yjit-call-threshold=1 --yjit-verify-ctx"
