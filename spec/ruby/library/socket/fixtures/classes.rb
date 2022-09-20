@@ -113,7 +113,7 @@ module SocketSpecs
       begin
         data = socket.recv(1024)
 
-        return if data.empty?
+        return if data.nil? || data.empty?
         log "SpecTCPServer received: #{data.inspect}"
 
         return if data == "QUIT"
