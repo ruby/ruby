@@ -3367,6 +3367,7 @@ cont.$(OBJEXT): $(top_srcdir)/internal/cont.h
 cont.$(OBJEXT): $(top_srcdir)/internal/gc.h
 cont.$(OBJEXT): $(top_srcdir)/internal/imemo.h
 cont.$(OBJEXT): $(top_srcdir)/internal/proc.h
+cont.$(OBJEXT): $(top_srcdir)/internal/sanitizers.h
 cont.$(OBJEXT): $(top_srcdir)/internal/serial.h
 cont.$(OBJEXT): $(top_srcdir)/internal/static_assert.h
 cont.$(OBJEXT): $(top_srcdir)/internal/vm.h
