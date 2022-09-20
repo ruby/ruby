@@ -151,8 +151,10 @@ pub fn parse_option(str_ptr: *const std::os::raw::c_char) -> Option<()> {
 
         ("greedy-versioning", "") => unsafe { OPTIONS.greedy_versioning = true },
         ("no-type-prop", "") => unsafe { OPTIONS.no_type_prop = true },
+
         ("stats", "") => {
             // Insn::IncrCounter uses ldaddal, which works only on ARMv8.1+.
+            #[cfg(feature = "stats")]
             #[cfg(target_arch = "aarch64")]
             if !std::arch::is_aarch64_feature_detected!("lse") {
                 eprintln!("Your processor does not support --yjit-stats. Aborting.");
@@ -161,6 +163,7 @@ pub fn parse_option(str_ptr: *const std::os::raw::c_char) -> Option<()> {
 
             unsafe { OPTIONS.gen_stats = true }
         },
+
         ("trace-exits", "") => unsafe { OPTIONS.gen_trace_exits = true; OPTIONS.gen_stats = true },
         ("dump-insns", "") => unsafe { OPTIONS.dump_insns = true },
         ("verify-ctx", "") => unsafe { OPTIONS.verify_ctx = true },
