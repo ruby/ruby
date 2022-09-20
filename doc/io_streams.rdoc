@@ -341,12 +341,6 @@ You can query whether a stream is closed using these methods:
 
 - +#closed?+ - returns whether the stream is closed.
 
-- +#closed_read?+ (\StringIO only) - returns whether the stream
-  is closed for reading.
-
-- +#closed_write?+ (\StringIO only) - returns whether the stream
-  is closed for writing.
-
 === Stream End-of-File
 
 You can query whether a stream is at end-of-file using this method:
