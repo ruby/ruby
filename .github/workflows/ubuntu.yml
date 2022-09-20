@@ -11,7 +11,7 @@ jobs:
     strategy:
       matrix:
         test_task: [ "check", "test-bundler", "test-bundled-gems" ]
-        os: [ubuntu-latest, ubuntu-16.04]
+        os: [ubuntu-latest, ubuntu-18.04]
         exclude:
           - test_task: test-bundler
             os: ubuntu-16.04
