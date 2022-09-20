@@ -114,14 +114,16 @@ class BindingGenerator
   # @param src_path [String]
   # @param uses [Array<String>]
   # @param ints [Array<String>]
-  # @param types [Array<String>] Imported types
+  # @param types [Array<String>]
+  # @param dynamic_types [Array<String>] #ifdef-dependent immediate types, which need Primitive.cexpr! for type detection
   # @param ruby_fields [Hash{ Symbol => Array<String> }] Struct VALUE fields that are considered Ruby objects
-  def initialize(src_path:, uses:, ints:, types:, ruby_fields:)
+  def initialize(src_path:, uses:, ints:, types:, dynamic_types:, ruby_fields:)
     @preamble, @postamble = split_ambles(src_path)
     @src = String.new
     @uses = uses.sort
     @ints = ints.sort
     @types = types.sort
+    @dynamic_types = dynamic_types.sort
     @ruby_fields = ruby_fields.transform_keys(&:to_s)
     @references = Set.new
   end
@@ -159,8 +161,19 @@ class BindingGenerator
       println
     end
 
+    # Define dynamic types
+    @dynamic_types.each do |type|
+      unless generate_node(nodes_index[type])&.start_with?('CType::Immediate')
+        raise "Non-immediate type is given to dynamic_types: #{type}"
+      end
+      println "  def C.#{type}"
+      println "    @#{type} ||= CType::Immediate.find(Primitive.cexpr!(\"SIZEOF(#{type})\"), Primitive.cexpr!(\"SIGNED_TYPE_P(#{type})\"))"
+      println "  end"
+      println
+    end
+
     # Leave a stub for types that are referenced but not targeted
-    (@references - @types).each do |type|
+    (@references - @types - @dynamic_types).each do |type|
       println "  def C.#{type}"
       println "    #{DEFAULTS[type]}"
       println "  end"
@@ -257,7 +270,12 @@ class BindingGenerator
         push_target(type)
         "self.#{type}"
       else
-        "CType::Immediate.new(#{ctype})"
+        # Convert any function pointers to void* to workaround FILE* vs int*
+        if ctype == Fiddle::TYPE_VOIDP
+          "CType::Immediate.parse(\"void *\")"
+        else
+          "CType::Immediate.parse(#{type.dump})"
+        end
       end
     end
   end
@@ -317,7 +335,6 @@ generator = BindingGenerator.new(
     IC
     IVC
     RB_BUILTIN
-    VALUE
     compile_branch
     compile_status
     inlined_call_context
@@ -346,6 +363,9 @@ generator = BindingGenerator.new(
     rb_mjit_compile_info
     rb_mjit_unit
     rb_serial_t
+  ],
+  dynamic_types: %w[
+    VALUE
   ],
   ruby_fields: {
     rb_iseq_location_struct: %w[
