@@ -10847,9 +10847,7 @@ rb_str_b(VALUE str)
 static VALUE
 rb_str_valid_encoding_p(VALUE str)
 {
-    int cr = rb_enc_str_coderange(str);
-
-    return RBOOL(cr != ENC_CODERANGE_BROKEN);
+    return RBOOL(!is_broken_string(str));
 }
 
 /*
@@ -10867,9 +10865,7 @@ rb_str_valid_encoding_p(VALUE str)
 static VALUE
 rb_str_is_ascii_only_p(VALUE str)
 {
-    int cr = rb_enc_str_coderange(str);
-
-    return RBOOL(cr == ENC_CODERANGE_7BIT);
+    return RBOOL(is_ascii_string(str));
 }
 
 VALUE
