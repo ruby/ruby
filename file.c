@@ -6559,10 +6559,6 @@ const char ruby_null_device[] =
  *    f.write(data)
  *    f.close
  *
- *  The examples also assume that \StringIO has been required:
- *
- *    require 'stringio'
- *
  *  == \File Access Modes
  *
  *  \Methods File.new and File.open each create a \File object for a given file path.
@@ -6622,7 +6618,7 @@ const char ruby_null_device[] =
  *    |------|----------|----------|----------|-----------|
  *
  *  Note that modes <tt>'r'</tt> and <tt>'r+'</tt> are not allowed
- *  for a non-existent file.
+ *  for a non-existent file (exception raised).
  *
  *  In the tables:
  *
@@ -6806,18 +6802,15 @@ const char ruby_null_device[] =
  *        File.read(path)
  *        # => "WWWst lineXXXecond line\nFourth line\nFifth YYYe\n\u0000\u0000ZZZ"
  *
- *    - Writing is not allowed:
- *
- *        f.write('foo') # Raises IOError.
  *
  *  - <tt>'a+'</tt>:
  *
  *    - File is not initially truncated:
  *
- *            path = 't.tmp'
- *            File.write(path, 'foo')
- *            f = File.new(path, 'a+')
- *            f.size == 0 # => false
+ *        path = 't.tmp'
+ *        File.write(path, 'foo')
+ *        f = File.new(path, 'a+')
+ *        f.size == 0 # => false
  *
  *    - File's initial read position is 0:
  *
@@ -6852,7 +6845,7 @@ const char ruby_null_device[] =
  *  ===== Read/Write Modes for \File To Be Created
  *
  *  Note that modes <tt>'r'</tt> and <tt>'r+'</tt> are not allowed
- *  for a non-existent file.
+ *  for a non-existent file (exception raised).
  *
  *  - <tt>'w'</tt>:
  *
