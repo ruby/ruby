@@ -97,7 +97,7 @@ def collect_builtin base, tree, name, bs, inlines, locals = nil
         mid = nil
       end
       # w/  trailing comma: [[:method_add_arg, ...]]
-      # w/o trailing comma: [:args_add_block, [[:method_add_arg, ...]]]
+      # w/o trailing comma: [:args_add_block, [[:method_add_arg, ...]], false]
       if args && args.first == :args_add_block
         args = args[1]
       end
