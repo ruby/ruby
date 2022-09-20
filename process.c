@@ -7115,7 +7115,8 @@ rb_daemon(int nochdir, int noclose)
       default: _exit(EXIT_SUCCESS);
     }
 
-    if (setsid() < 0) return -1;
+    /* ignore EPERM which means already being process-leader */
+    if (setsid() < 0) (void)0;
 
     if (!nochdir)
         err = chdir("/");
