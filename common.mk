@@ -219,6 +219,14 @@ MAKE_LINK = $(MINIRUBY) -rfileutils -e "include FileUtils::Verbose" \
 	  -e "noraise {ln(src, dest)} or" \
 	  -e "cp(src, dest)"
 
+# For release builds
+YJIT_RUSTC_ARGS = --crate-name=yjit \
+	--crate-type=staticlib \
+	--edition=2021 \
+	-C opt-level=3 \
+	-C overflow-checks=on \
+	'--out-dir=$(CARGO_TARGET_DIR)/release/' \
+	$(top_srcdir)/yjit/src/lib.rs
 
 all: $(SHOWFLAGS) main docs
 
