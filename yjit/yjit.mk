@@ -23,14 +23,7 @@ YJIT_LIB_TOUCH = touch $@
 ifeq ($(YJIT_SUPPORT),yes)
 $(YJIT_LIBS): $(YJIT_SRC_FILES)
 	$(ECHO) 'building Rust YJIT (release mode)'
-	$(Q) $(RUSTC) \
-	        --crate-name=yjit \
-	        --crate-type=staticlib \
-	        --edition=2021 \
-	        -C opt-level=3 \
-	        -C overflow-checks=on \
-	        '--out-dir=$(CARGO_TARGET_DIR)/release/' \
-	        $(top_srcdir)/yjit/src/lib.rs
+	$(Q) $(RUSTC) $(YJIT_RUSTC_ARGS)
 	$(YJIT_LIB_TOUCH)
 else ifeq ($(YJIT_SUPPORT),no)
 $(YJIT_LIBS):
@@ -48,7 +41,6 @@ else
 endif
 
 # Put this here instead of in common.mk to avoid breaking nmake builds
-# TODO: might need to move for BSD Make support
 miniruby$(EXEEXT): $(YJIT_LIBS)
 
 # By using YJIT_BENCH_OPTS instead of RUN_OPTS, you can skip passing the options to `make install`
