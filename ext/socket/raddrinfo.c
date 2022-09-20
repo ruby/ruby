@@ -2192,7 +2192,7 @@ addrinfo_ipv6_multicast_p(VALUE self)
 }
 
 /*
- * Returns true for IPv6 link local address (ff80::/10).
+ * Returns true for IPv6 link local address (fe80::/10).
  * It returns false otherwise.
  */
 static VALUE
@@ -2204,7 +2204,7 @@ addrinfo_ipv6_linklocal_p(VALUE self)
 }
 
 /*
- * Returns true for IPv6 site local address (ffc0::/10).
+ * Returns true for IPv6 site local address (fec0::/10).
  * It returns false otherwise.
  */
 static VALUE
