@@ -1402,7 +1402,7 @@ test-bundled-gems-run: $(PREPARE_BUNDLED_GEMS)
 
 test-bundler-precheck: $(TEST_RUNNABLE)-test-bundler-precheck
 no-test-bundler-precheck:
-yes-test-bundler-precheck: main
+yes-test-bundler-precheck: main $(arch)-fake.rb
 
 no-test-bundler-prepare: no-test-bundler-precheck
 yes-test-bundler-prepare: yes-test-bundler-precheck
