@@ -19,8 +19,7 @@ class Dir
   # Returns the operating system's temporary file path.
 
   def self.tmpdir
-    tmp = nil
-    ['TMPDIR', 'TMP', 'TEMP', ['system temporary path', @@systmpdir], ['/tmp']*2, ['.']*2].each do |name, dir = ENV[name]|
+    tmp = ['TMPDIR', 'TMP', 'TEMP', ['system temporary path', @@systmpdir], ['/tmp']*2, ['.']*2].find do |name, dir = ENV[name]|
       next if !dir
       dir = File.expand_path(dir)
       stat = File.stat(dir) rescue next
@@ -32,8 +31,7 @@ class Dir
       when stat.world_writable? && !stat.sticky?
         warn "#{name} is world-writable: #{dir}"
       else
-        tmp = dir
-        break
+        break dir
       end
     end
     raise ArgumentError, "could not find a temporary directory" unless tmp
