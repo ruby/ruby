@@ -30,6 +30,7 @@ extern int madvise(caddr_t, size_t, int);
 #include "internal.h"
 #include "internal/cont.h"
 #include "internal/proc.h"
+#include "internal/sanitizers.h"
 #include "internal/warnings.h"
 #include "ruby/fiber/scheduler.h"
 #include "mjit.h"
@@ -1161,6 +1162,7 @@ cont_save_machine_stack(rb_thread_t *th, rb_context_t *cont)
     }
 
     FLUSH_REGISTER_WINDOWS;
+    asan_unpoison_memory_region(cont->machine.stack_src, size, false);
     MEMCPY(cont->machine.stack, cont->machine.stack_src, VALUE, size);
 }
 
