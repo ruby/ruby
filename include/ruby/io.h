@@ -877,6 +877,9 @@ VALUE rb_io_set_timeout(VALUE io, VALUE timeout);
  * here is  a Ruby level  integer, which is  an OR-ed value  of `IO::READABLE`,
  * `IO::WRITable`, and `IO::PRIORITY`.
  *
+ * If timeout is `Qundef`, it will use the default timeout as given by
+ * `rb_io_timeout(io)`.
+ *
  * @param[in]  io                   An IO object to wait.
  * @param[in]  events               See above.
  * @param[in]  timeout              Time, or numeric seconds since UNIX epoch.

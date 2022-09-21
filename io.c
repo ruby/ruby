@@ -830,7 +830,6 @@ rb_io_set_write_io(VALUE io, VALUE w)
     return write_io ? write_io : Qnil;
 }
 
-
 /*
  *  call-seq:
  *    timeout -> duration or nil
@@ -1415,6 +1414,10 @@ rb_io_wait(VALUE io, VALUE events, VALUE timeout)
 
     struct timeval tv_storage;
     struct timeval *tv = NULL;
+
+    if (timeout == Qundef) {
+        timeout = fptr->timeout;
+    }
 
     if (timeout != Qnil) {
         tv_storage = rb_time_interval(timeout);
