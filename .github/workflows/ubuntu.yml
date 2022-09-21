@@ -33,8 +33,6 @@ jobs:
             configure: '' # test without -DRUBY_DEBUG as well
           - test_task: check
             configure: "--enable-shared --enable-load-relative"
-            skipped_tests: "TestGem#test_.*_from_binstubs.*"
-            continue-on-skipped_tests: true
           - test_task: test-all TESTS=--repeat-count=2
           - test_task: test-syntax-suggest
           - test_task: test-bundler-parallel
