@@ -1458,12 +1458,8 @@ class Reline::KeyActor::ViInsert::Test < Reline::TestCase
   def test_vi_motion_operators
     assert_instance_of(Reline::KeyActor::ViInsert, @config.editing_mode)
 
-    begin
+    assert_nothing_raised do
       input_keys("test = { foo: bar }\C-[BBBldt}b")
-
-      assert true
-    rescue NoMethodError
-      assert false
     end
   end
 end
