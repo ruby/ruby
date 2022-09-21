@@ -1,5 +1,6 @@
 # frozen_string_literal: false
 require "test/unit"
+require "pathname"
 require "irb"
 
 module TestIRB
@@ -96,7 +97,7 @@ module TestIRB
       $LOAD_PATH << test_path
 
       candidates = IRB::InputCompletor::CompletionProc.("'foo", "require ", "")
-      assert_equal ["'foo"], candidates
+      assert_include candidates, "'foo"
     ensure
       $LOAD_PATH.pop if test_path
       FileUtils.remove_entry(temp_dir) if temp_dir
@@ -110,7 +111,7 @@ module TestIRB
       $LOAD_PATH << object
 
       candidates = IRB::InputCompletor::CompletionProc.("'foo", "require ", "")
-      assert_equal ["'foo"], candidates
+      assert_include candidates, "'foo"
     ensure
       $LOAD_PATH.pop if object
       FileUtils.remove_entry(temp_dir) if temp_dir
@@ -121,7 +122,9 @@ module TestIRB
       def object.to_s; raise; end
       $LOAD_PATH << object
 
-      assert_empty IRB::InputCompletor::CompletionProc.("'foo", "require ", "")
+      assert_nothing_raised do
+        IRB::InputCompletor::CompletionProc.("'foo", "require ", "")
+      end
     ensure
       $LOAD_PATH.pop if object
     end
