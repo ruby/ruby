@@ -161,6 +161,7 @@ module TestIRB
     def test_history_concurrent_use_not_present
       backup_home = ENV["HOME"]
       backup_xdg_config_home = ENV.delete("XDG_CONFIG_HOME")
+      backup_irbrc = ENV.delete("IRBRC")
       IRB.conf[:LC_MESSAGES] = IRB::Locale.new
       IRB.conf[:SAVE_HISTORY] = 1
       Dir.mktmpdir("test_irb_history_") do |tmpdir|
@@ -179,6 +180,7 @@ module TestIRB
     ensure
       ENV["HOME"] = backup_home
       ENV["XDG_CONFIG_HOME"] = backup_xdg_config_home
+      ENV["IRBRC"] = backup_irbrc
     end
 
     private
