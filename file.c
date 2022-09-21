@@ -6542,17 +6542,11 @@ const char ruby_null_device[] =
  *      Fifth line
  *    EOT
  *
- *    # Russian text.
- *    russian = "\u{442 435 441 442}" # => "тест"
- *
  *    # Binary data.
  *    data = "\u9990\u9991\u9992\u9993\u9994"
  *
  *    # Text file.
  *    File.write('t.txt', text)
- *
- *    # File with Russian text.
- *    File.write('t.rus', russian)
  *
  *    # File with binary data.
  *    f = File.new('t.dat', 'wb:UTF-16')
