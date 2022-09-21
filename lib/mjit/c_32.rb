@@ -191,6 +191,20 @@ module RubyVM::MJIT
     )
   end
 
+  def C.rb_control_frame_t
+    @rb_control_frame_t ||= CType::Struct.new(
+      "rb_control_frame_struct", 32,
+      pc: [0, CType::Pointer.new { self.VALUE }],
+      sp: [32, CType::Pointer.new { self.VALUE }],
+      iseq: [64, CType::Pointer.new { self.rb_iseq_t }],
+      self: [96, self.VALUE],
+      ep: [128, CType::Pointer.new { self.VALUE }],
+      block_code: [160, CType::Pointer.new { CType::Immediate.new(0) }],
+      __bp__: [192, CType::Pointer.new { self.VALUE }],
+      jit_return: [224, CType::Pointer.new { CType::Immediate.new(0) }],
+    )
+  end
+
   def C.rb_cref_t
     @rb_cref_t ||= CType::Struct.new(
       "rb_cref_struct", 20,
