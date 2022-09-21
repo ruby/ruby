@@ -1001,9 +1001,7 @@ rb_yjit_invalidate_all_method_lookup_assumptions(void)
 bool
 rb_yjit_stats_supported(void)
 {
-    // Insn::IncrCounter uses ldaddal, which works only on ARMv8.1+.
-    // __ARM_FEATURE_ATOMICS: https://developer.arm.com/documentation/101028/0010/Feature-test-macros
-#if defined(__aarch64__) && !defined(__ARM_FEATURE_ATOMICS)
+#if defined(BROKEN_YJIT_STATS)
     return false;
 #else
     return true;
