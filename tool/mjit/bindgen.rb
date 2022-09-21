@@ -566,6 +566,8 @@ generator = BindingGenerator.new(
     rb_callinfo
     rb_cref_t
     rb_control_frame_t
+    rb_execution_context_t
+    rb_execution_context_struct
     rb_iseq_constant_body
     rb_iseq_location_t
     rb_iseq_struct
