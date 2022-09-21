@@ -1296,3 +1296,6 @@ extern "C" {
         line: ::std::os::raw::c_int,
     );
 }
+extern "C" {
+    pub fn rb_yjit_stats_supported() -> bool;
+}

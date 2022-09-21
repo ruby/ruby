@@ -1,4 +1,5 @@
 use std::ffi::CStr;
+use crate::cruby::rb_yjit_stats_supported;
 
 // Command-line options
 #[derive(Clone, PartialEq, Eq, Debug)]
@@ -153,14 +154,10 @@ pub fn parse_option(str_ptr: *const std::os::raw::c_char) -> Option<()> {
         ("no-type-prop", "") => unsafe { OPTIONS.no_type_prop = true },
 
         ("stats", "") => {
-            // Insn::IncrCounter uses ldaddal, which works only on ARMv8.1+.
-            #[cfg(feature = "stats")]
-            #[cfg(target_arch = "aarch64")]
-            if !std::arch::is_aarch64_feature_detected!("lse") {
+            if unsafe { !rb_yjit_stats_supported() } {
                 eprintln!("Your processor does not support --yjit-stats. Aborting.");
                 std::process::exit(1);
             }
-
             unsafe { OPTIONS.gen_stats = true }
         },
 

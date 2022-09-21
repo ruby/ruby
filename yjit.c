@@ -998,6 +998,18 @@ rb_yjit_invalidate_all_method_lookup_assumptions(void)
     // method caches, so we do nothing here for now.
 }
 
+bool
+rb_yjit_stats_supported(void)
+{
+    // Insn::IncrCounter uses ldaddal, which works only on ARMv8.1+.
+    // __ARM_FEATURE_ATOMICS: https://developer.arm.com/documentation/101028/0010/Feature-test-macros
+#if defined(__aarch64__) && !defined(__ARM_FEATURE_ATOMICS)
+    return false;
+#else
+    return true;
+#endif
+}
+
 // Primitives used by yjit.rb
 VALUE rb_yjit_stats_enabled_p(rb_execution_context_t *ec, VALUE self);
 VALUE rb_yjit_trace_exit_locations_enabled_p(rb_execution_context_t *ec, VALUE self);
