@@ -6527,6 +6527,602 @@ const char ruby_null_device[] =
  *  \Class \File extends module FileTest, supporting such singleton methods
  *  as <tt>File.exist?</tt>.
  *
+ *  === About the Examples
+ *
+ *  Many examples here use these variables:
+ *
+ *    :include: doc/examples/files.rdoc
+ *
+ *  == \File Access Modes
+ *
+ *  \Methods File.new and File.open each create a \File object for a given file path.
+ *
+ *  === \String Access Modes
+ *
+ *  \Methods File.new and File.open each may take string argument +mode+, which:
+ *
+ *  - Begins with a 1- or 2-character
+ *    {read/write mode}[rdoc-ref:File@Read-2FWrite+Mode].
+ *  - May also contain a 1-character {data mode}[rdoc-ref:File@Data+Mode].
+ *  - May also contain a 1-character
+ *    {file-create mode}[rdoc-ref:File@File-Create+Mode].
+ *
+ *  ==== Read/Write Mode
+ *
+ *  The read/write +mode+ determines:
+ *
+ *  - Whether the file is to be initially truncated.
+ *
+ *  - Whether reading is allowed, and if so:
+ *
+ *    - The initial read position in the file.
+ *    - Where in the file reading can occur.
+ *
+ *  - Whether writing is allowed, and if so:
+ *
+ *    - The initial write position in the file.
+ *    - Where in the file writing can occur.
+ *
+ *  These tables summarize:
+ *
+ *    Read/Write Modes for Existing File
+ *
+ *    |------|-----------|----------|----------|----------|-----------|
+ *    | R/W  | Initial   |          | Initial  |          | Initial   |
+ *    | Mode | Truncate? |  Read    | Read Pos |  Write   | Write Pos |
+ *    |------|-----------|----------|----------|----------|-----------|
+ *    | 'r'  |    No     | Anywhere |    0     |   Error  |     -     |
+ *    | 'w'  |    Yes    |   Error  |    -     | Anywhere |     0     |
+ *    | 'a'  |    No     |   Error  |    -     | End only |    End    |
+ *    | 'r+' |    No     | Anywhere |    0     | Anywhere |     0     |
+ *    | 'w+' |    Yes    | Anywhere |    0     | Anywhere |     0     |
+ *    | 'a+' |    No     | Anywhere |   End    | End only |    End    |
+ *    |------|-----------|----------|----------|----------|-----------|
+ *
+ *    Read/Write Modes for \File To Be Created
+ *
+ *    |------|----------|----------|----------|-----------|
+ *    | R/W  |          | Initial  |          | Initial   |
+ *    | Mode |  Read    | Read Pos |  Write   | Write Pos |
+ *    |------|----------|----------|----------|-----------|
+ *    | 'w'  |   Error  |    -     | Anywhere |     0     |
+ *    | 'a'  |   Error  |    -     | End only |     0     |
+ *    | 'w+' | Anywhere |    0     | Anywhere |     0     |
+ *    | 'a+' | Anywhere |    0     | End only |    End    |
+ *    |------|----------|----------|----------|-----------|
+ *
+ *  Note that modes <tt>'r'</tt> and <tt>'r+'</tt> are not allowed
+ *  for a non-existent file (exception raised).
+ *
+ *  In the tables:
+ *
+ *  - +Anywhere+ means that methods IO#rewind, IO#pos=, and IO#seek
+ *    may be used to change the file's position,
+ *    so that allowed reading or writing may occur anywhere in the file.
+ *  - <tt>End only</tt> means that writing can occur only at end-of-file,
+ *    and that methods IO#rewind, IO#pos=, and IO#seek do not affect writing.
+ *  - +Error+ means that an exception is raised if disallowed reading or writing
+ *    is attempted.
+ *
+ *  ===== Read/Write Modes for Existing \File
+ *
+ *  - <tt>'r'</tt>:
+ *
+ *    - File is not initially truncated:
+ *
+ *        f = File.new('t.txt') # => #<File:t.txt>
+ *        f.size == 0           # => false
+ *
+ *    - File's initial read position is 0:
+ *
+ *        f.pos # => 0
+ *
+ *    - File may be read anywhere; see IO#rewind, IO#pos=, IO#seek:
+ *
+ *        f.readline # => "First line\n"
+ *        f.readline # => "Second line\n"
+ *
+ *        f.rewind
+ *        f.readline # => "First line\n"
+ *
+ *        f.pos = 1
+ *        f.readline # => "irst line\n"
+ *
+ *        f.seek(1, :CUR)
+ *        f.readline # => "econd line\n"
+ *
+ *    - Writing is not allowed:
+ *
+ *        f.write('foo') # Raises IOError.
+ *
+ *  - <tt>'w'</tt>:
+ *
+ *    - File is initially truncated:
+ *
+ *        path = 't.tmp'
+ *        File.write(path, text)
+ *        f = File.new(path, 'w')
+ *        f.size == 0 # => true
+ *
+ *    - File's initial write position is 0:
+ *
+ *        f.pos # => 0
+ *
+ *    - File may be written anywhere (even past end-of-file);
+ *      see IO#rewind, IO#pos=, IO#seek:
+ *
+ *        f.write('foo')
+ *        f.flush
+ *        File.read(path) # => "foo"
+ *        f.pos # => 3
+ *
+ *        f.write('bar')
+ *        f.flush
+ *        File.read(path) # => "foobar"
+ *        f.pos # => 6
+ *
+ *        f.rewind
+ *        f.write('baz')
+ *        f.flush
+ *        File.read(path) # => "bazbar"
+ *        f.pos # => 3
+ *
+ *        f.pos = 3
+ *        f.write('foo')
+ *        f.flush
+ *        File.read(path) # => "bazfoo"
+ *        f.pos # => 6
+ *
+ *        f.seek(-3, :END)
+ *        f.write('bam')
+ *        f.flush
+ *        File.read(path) # => "bazbam"
+ *        f.pos # => 6
+ *
+ *        f.pos = 8
+ *        f.write('bah')  # Zero padding as needed.
+ *        f.flush
+ *        File.read(path) # => "bazbam\u0000\u0000bah"
+ *        f.pos # => 11
+ *
+ *    - Reading is not allowed:
+ *
+ *        f.read # Raises IOError.
+ *
+ *  - <tt>'a'</tt>:
+ *
+ *    - File is not initially truncated:
+ *
+ *        path = 't.tmp'
+ *        File.write(path, 'foo')
+ *        f = File.new(path, 'a')
+ *        f.size == 0 # => false
+ *
+ *    - File's initial position is 0 (but is ignored):
+ *
+ *        f.pos # => 0
+ *
+ *    - File may be written only at end-of-file;
+ *      IO#rewind, IO#pos=, IO#seek do not affect writing:
+ *
+ *        f.write('bar')
+ *        f.flush
+ *        File.read(path) # => "foobar"
+ *        f.write('baz')
+ *        f.flush
+ *        File.read(path) # => "foobarbaz"
+ *
+ *        f.rewind
+ *        f.write('bat')
+ *        f.flush
+ *        File.read(path) # => "foobarbazbat"
+ *
+ *    - Reading is not allowed:
+ *
+ *        f.read # Raises IOError.
+ *
+ *  - <tt>'r+'</tt>:
+ *
+ *    - File is not initially truncated:
+ *
+ *        path = 't.tmp'
+ *        File.write(path, text)
+ *        f = File.new(path, 'r+')
+ *        f.size == 0 # => false
+ *
+ *    - File's initial read position is 0:
+ *
+ *        f.pos # => 0
+ *
+ *    - File may be read or written anywhere (even past end-of-file);
+ *      see IO#rewind, IO#pos=, IO#seek:
+ *
+ *        f.readline # => "First line\n"
+ *        f.readline # => "Second line\n"
+ *
+ *        f.rewind
+ *        f.readline # => "First line\n"
+ *
+ *        f.pos = 1
+ *        f.readline # => "irst line\n"
+ *
+ *        f.seek(1, :CUR)
+ *        f.readline # => "econd line\n"
+ *
+ *        f.rewind
+ *        f.write('WWW')
+ *        f.flush
+ *        File.read(path)
+ *        # => "WWWst line\nSecond line\nFourth line\nFifth line\n"
+ *
+ *        f.pos = 10
+ *        f.write('XXX')
+ *        f.flush
+ *        File.read(path)
+ *        # => "WWWst lineXXXecond line\nFourth line\nFifth line\n"
+ *
+ *        f.seek(-6, :END)
+ *        # => 0
+ *        f.write('YYY')
+ *        # => 3
+ *        f.flush
+ *        # => #<File:t.tmp>
+ *        File.read(path)
+ *        # => "WWWst lineXXXecond line\nFourth line\nFifth YYYe\n"
+ *
+ *        f.seek(2, :END)
+ *        f.write('ZZZ') # Zero padding as needed.
+ *        f.flush
+ *        File.read(path)
+ *        # => "WWWst lineXXXecond line\nFourth line\nFifth YYYe\n\u0000\u0000ZZZ"
+ *
+ *
+ *  - <tt>'a+'</tt>:
+ *
+ *    - File is not initially truncated:
+ *
+ *        path = 't.tmp'
+ *        File.write(path, 'foo')
+ *        f = File.new(path, 'a+')
+ *        f.size == 0 # => false
+ *
+ *    - File's initial read position is 0:
+ *
+ *        f.pos # => 0
+ *
+ *    - File may be written only at end-of-file;
+ *      IO#rewind, IO#pos=, IO#seek do not affect writing:
+ *
+ *        f.write('bar')
+ *        f.flush
+ *        File.read(path)      # => "foobar"
+ *        f.write('baz')
+ *        f.flush
+ *        File.read(path)      # => "foobarbaz"
+ *
+ *        f.rewind
+ *        f.write('bat')
+ *        f.flush
+ *        File.read(path) # => "foobarbazbat"
+ *
+ *    - File may be read anywhere; see IO#rewind, IO#pos=, IO#seek:
+ *
+ *        f.rewind
+ *        f.read # => "foobarbazbat"
+ *
+ *        f.pos = 3
+ *        f.read # => "barbazbat"
+ *
+ *        f.seek(-3, :END)
+ *        f.read # => "bat"
+ *
+ *  ===== Read/Write Modes for \File To Be Created
+ *
+ *  Note that modes <tt>'r'</tt> and <tt>'r+'</tt> are not allowed
+ *  for a non-existent file (exception raised).
+ *
+ *  - <tt>'w'</tt>:
+ *
+ *    - File's initial write position is 0:
+ *
+ *        path = 't.tmp'
+ *        FileUtils.rm_f(path)
+ *        f = File.new(path, 'w')
+ *        f.pos # => 0
+ *
+ *    - File may be written anywhere (even past end-of-file);
+ *      see IO#rewind, IO#pos=, IO#seek:
+ *
+ *        f.write('foo')
+ *        f.flush
+ *        File.read(path) # => "foo"
+ *        f.pos # => 3
+ *
+ *        f.write('bar')
+ *        f.flush
+ *        File.read(path) # => "foobar"
+ *        f.pos # => 6
+ *
+ *        f.rewind
+ *        f.write('baz')
+ *        f.flush
+ *        File.read(path) # => "bazbar"
+ *        f.pos # => 3
+ *
+ *        f.pos = 3
+ *        f.write('foo')
+ *        f.flush
+ *        File.read(path) # => "bazfoo"
+ *        f.pos # => 6
+ *
+ *        f.seek(-3, :END)
+ *        f.write('bam')
+ *        f.flush
+ *        File.read(path) # => "bazbam"
+ *        f.pos # => 6
+ *
+ *        f.pos = 8
+ *        f.write('bah')  # Zero padding as needed.
+ *        f.flush
+ *        File.read(path) # => "bazbam\u0000\u0000bah"
+ *        f.pos # => 11
+ *
+ *    - Reading is not allowed:
+ *
+ *        f.read # Raises IOError.
+ *
+ *  - <tt>'a'</tt>:
+ *
+ *    - File's initial write position is 0:
+ *
+ *        path = 't.tmp'
+ *        FileUtils.rm_f(path)
+ *        f = File.new(path, 'a')
+ *        f.pos # => 0
+ *
+ *    - Writing occurs only at end-of-file:
+ *
+ *        f.write('foo')
+ *        f.pos # => 3
+ *        f.write('bar')
+ *        f.pos # => 6
+ *        f.flush
+ *        File.read(path) # => "foobar"
+ *
+ *        f.rewind
+ *        f.write('baz')
+ *        f.flush
+ *        File.read(path) # => "foobarbaz"
+ *
+ *    - Reading is not allowed:
+ *
+ *        f.read # Raises IOError.
+ *
+ *  - <tt>'w+'</tt>:
+ *
+ *    - File's initial position is 0:
+ *
+ *        path = 't.tmp'
+ *        FileUtils.rm_f(path)
+ *        f = File.new(path, 'w+')
+ *        f.pos # => 0
+ *
+ *    - File may be written anywhere (even past end-of-file);
+ *      see IO#rewind, IO#pos=, IO#seek:
+ *
+ *        f.write('foo')
+ *        f.flush
+ *        File.read(path) # => "foo"
+ *        f.pos # => 3
+ *
+ *        f.write('bar')
+ *        f.flush
+ *        File.read(path) # => "foobar"
+ *        f.pos # => 6
+ *
+ *        f.rewind
+ *        f.write('baz')
+ *        f.flush
+ *        File.read(path) # => "bazbar"
+ *        f.pos # => 3
+ *
+ *        f.pos = 3
+ *        f.write('foo')
+ *        f.flush
+ *        File.read(path) # => "bazfoo"
+ *        f.pos # => 6
+ *
+ *        f.seek(-3, :END)
+ *        f.write('bam')
+ *        f.flush
+ *        File.read(path) # => "bazbam"
+ *        f.pos # => 6
+ *
+ *        f.pos = 8
+ *        f.write('bah')  # Zero padding as needed.
+ *        f.flush
+ *        File.read(path) # => "bazbam\u0000\u0000bah"
+ *        f.pos # => 11
+ *
+ *    - File may be read anywhere (even past end-of-file);
+ *      see IO#rewind, IO#pos=, IO#seek:
+ *
+ *        f.rewind
+ *        # => 0
+ *        f.read
+ *        # => "bazbam\u0000\u0000bah"
+ *
+ *        f.pos = 3
+ *        # => 3
+ *        f.read
+ *        # => "bam\u0000\u0000bah"
+ *
+ *        f.seek(-3, :END)
+ *        # => 0
+ *        f.read
+ *        # => "bah"
+ *
+ *  - <tt>'a+'</tt>:
+ *
+ *    - File's initial write position is 0:
+ *
+ *        path = 't.tmp'
+ *        FileUtils.rm_f(path)
+ *        f = File.new(path, 'a+')
+ *        f.pos # => 0
+ *
+ *    - Writing occurs only at end-of-file:
+ *
+ *        f.write('foo')
+ *        f.pos # => 3
+ *        f.write('bar')
+ *        f.pos # => 6
+ *        f.flush
+ *        File.read(path) # => "foobar"
+ *
+ *        f.rewind
+ *        f.write('baz')
+ *        f.flush
+ *        File.read(path) # => "foobarbaz"
+ *
+ *    - File may be read anywhere (even past end-of-file);
+ *      see IO#rewind, IO#pos=, IO#seek:
+ *
+ *        f.rewind
+ *        f.read # => "foobarbaz"
+ *
+ *        f.pos = 3
+ *        f.read # => "barbaz"
+ *
+ *        f.seek(-3, :END)
+ *        f.read # => "baz"
+ *
+ *        f.pos = 800
+ *        f.read # => ""
+ *
+ *  ==== Data Mode
+ *
+ *  To specify whether data is to be treated as text or as binary data,
+ *  either of the following may be suffixed to any of the string read/write modes
+ *  above:
+ *
+ *  - <tt>'t'</tt>: Text data; sets the default external encoding
+ *    to <tt>Encoding::UTF_8</tt>;
+ *    on Windows, enables conversion between EOL and CRLF
+ *    and enables interpreting <tt>0x1A</tt> as an end-of-file marker.
+ *  - <tt>'b'</tt>: Binary data; sets the default external encoding
+ *    to <tt>Encoding::ASCII_8BIT</tt>;
+ *    on Windows, suppresses conversion between EOL and CRLF
+ *    and disables interpreting <tt>0x1A</tt> as an end-of-file marker.
+ *
+ *  If neither is given, the stream defaults to text data.
+ *
+ *  Examples:
+ *
+ *    File.new('t.txt', 'rt')
+ *    File.new('t.dat', 'rb')
+ *
+ *  When the data mode is specified, the read/write mode may not be omitted,
+ *  and the data mode must precede the file-create mode, if given:
+ *
+ *    File.new('t.dat', 'b')   # Raises an exception.
+ *    File.new('t.dat', 'rxb') # Raises an exception.
+ *
+ *  ==== \File-Create Mode
+ *
+ *  The following may be suffixed to any writable string mode above:
+ *
+ *  - <tt>'x'</tt>: Creates the file if it does not exist;
+ *    raises an exception if the file exists.
+ *
+ *  Example:
+ *
+ *    File.new('t.tmp', 'wx')
+ *
+ *  When the file-create mode is specified, the read/write mode may not be omitted,
+ *  and the file-create mode must follow the data mode:
+ *
+ *    File.new('t.dat', 'x')   # Raises an exception.
+ *    File.new('t.dat', 'rxb') # Raises an exception.
+ *
+ *  === \Integer Access Modes
+ *
+ *  When mode is an integer it must be one or more of the following constants,
+ *  which may be combined by the bitwise OR operator <tt>|</tt>:
+ *
+ *  - +File::RDONLY+: Open for reading only.
+ *  - +File::WRONLY+: Open for writing only.
+ *  - +File::RDWR+: Open for reading and writing.
+ *  - +File::APPEND+: Open for appending only.
+ *
+ *  Examples:
+ *
+ *    File.new('t.txt', File::RDONLY)
+ *    File.new('t.tmp', File::RDWR | File::CREAT | File::EXCL)
+ *
+ *  Note: Method IO#set_encoding does not allow the mode to be specified as an integer.
+ *
+ *  === File-Create Mode Specified as an \Integer
+ *
+ *  These constants may also be ORed into the integer mode:
+ *
+ *  - +File::CREAT+: Create file if it does not exist.
+ *  - +File::EXCL+: Raise an exception if +File::CREAT+ is given and the file exists.
+ *
+ *  === Data Mode Specified as an \Integer
+ *
+ *  Data mode cannot be specified as an integer.
+ *  When the stream access mode is given as an integer,
+ *  the data mode is always text, never binary.
+ *
+ *  Note that although there is a constant +File::BINARY+,
+ *  setting its value in an integer stream mode has no effect;
+ *  this is because, as documented in File::Constants,
+ *  the +File::BINARY+ value disables line code conversion,
+ *  but does not change the external encoding.
+ *
+ *  === Encodings
+ *
+ *  Any of the string modes above may specify encodings -
+ *  either external encoding only or both external and internal encodings -
+ *  by appending one or both encoding names, separated by colons:
+ *
+ *    f = File.new('t.dat', 'rb')
+ *    f.external_encoding # => #<Encoding:ASCII-8BIT>
+ *    f.internal_encoding # => nil
+ *    f = File.new('t.dat', 'rb:UTF-16')
+ *    f.external_encoding # => #<Encoding:UTF-16 (dummy)>
+ *    f.internal_encoding # => nil
+ *    f = File.new('t.dat', 'rb:UTF-16:UTF-16')
+ *    f.external_encoding # => #<Encoding:UTF-16 (dummy)>
+ *    f.internal_encoding # => #<Encoding:UTF-16>
+ *    f.close
+ *
+ *  The numerous encoding names are available in array Encoding.name_list:
+ *
+ *    Encoding.name_list.take(3) # => ["ASCII-8BIT", "UTF-8", "US-ASCII"]
+ *
+ *  When the external encoding is set, strings read are tagged by that encoding
+ *  when reading, and strings written are converted to that encoding when
+ *  writing.
+ *
+ *  When both external and internal encodings are set,
+ *  strings read are converted from external to internal encoding,
+ *  and strings written are converted from internal to external encoding.
+ *  For further details about transcoding input and output,
+ *  see {Encodings}[rdoc-ref:io_streams.rdoc@Encodings].
+ *
+ *  If the external encoding is <tt>'BOM|UTF-8'</tt>, <tt>'BOM|UTF-16LE'</tt>
+ *  or <tt>'BOM|UTF16-BE'</tt>,
+ *  Ruby checks for a Unicode BOM in the input document
+ *  to help determine the encoding.
+ *  For UTF-16 encodings the file open mode must be binary.
+ *  If the BOM is found,
+ *  it is stripped and the external encoding from the BOM is used.
+ *
+ *  Note that the BOM-style encoding option is case insensitive,
+ *  so <tt>'bom|utf-8'</tt> is also valid.
+ *
  *  == \File Permissions
  *
  *  A \File object has _permissions_, an octal integer representing
@@ -6583,34 +7179,6 @@ const char ruby_null_device[] =
  *  Various constants for use in \File and \IO methods
  *  may be found in module File::Constants;
  *  an array of their names is returned by <tt>File::Constants.constants</tt>.
- *
- *  == Example Files
- *
- *  Many examples here use these filenames and their corresponding files:
- *
- *  - <tt>t.txt</tt>: A text-only file that is assumed to exist via:
- *
- *      text = <<~EOT
- *        First line
- *        Second line
- *
- *        Fourth line
- *        Fifth line
- *      EOT
- *      File.write('t.txt', text)
- *
- *  - <tt>t.dat</tt>: A data file that is assumed to exist via:
- *
- *      data = "\u9990\u9991\u9992\u9993\u9994"
- *      f = File.open('t.dat', 'wb:UTF-16')
- *      f.write(data)
- *      f.close
- *
- *  - <tt>t.rus</tt>: A Russian-language text file that is assumed to exist via:
- *
- *      File.write('t.rus', "\u{442 435 441 442}")
- *
- *  - <tt>t.tmp</tt>: A file that is assumed _not_ to exist.
  *
  *  == What's Here
  *
