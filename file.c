@@ -6533,25 +6533,7 @@ const char ruby_null_device[] =
  *
  *  Many examples here use these variables:
  *
- *    # English text with newlines.
- *    text = <<~EOT
- *      First line
- *      Second line
- *
- *      Fourth line
- *      Fifth line
- *    EOT
- *
- *    # Binary data.
- *    data = "\u9990\u9991\u9992\u9993\u9994"
- *
- *    # Text file.
- *    File.write('t.txt', text)
- *
- *    # File with binary data.
- *    f = File.new('t.dat', 'wb:UTF-16')
- *    f.write(data)
- *    f.close
+ *    :include: doc/examples/files.rdoc
  *
  *  == \File Access Modes
  *
