@@ -7085,8 +7085,8 @@ const char ruby_null_device[] =
  *
  *  === Encodings
  *
- *  Any of the string modes above may specify encodings
- *  – either external encoding only or both external and internal encodings –
+ *  Any of the string modes above may specify encodings -
+ *  either external encoding only or both external and internal encodings –
  *  by appending one or both encoding names, separated by colons:
  *
  *    f = File.new('t.dat', 'rb')
@@ -7123,7 +7123,7 @@ const char ruby_null_device[] =
  *  it is stripped and the external encoding from the BOM is used.
  *
  *  Note that the BOM-style encoding option is case insensitive,
- *  so <tt>‘bom|utf-8’</tt> is also valid.
+ *  so <tt>'bom|utf-8'</tt> is also valid.
  *
  *  == \File Permissions
  *
