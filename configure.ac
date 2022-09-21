@@ -3768,15 +3768,19 @@ AS_CASE(["${YJIT_SUPPORT}"],
 
         # Insn::IncrCounter uses ldaddal, which works only on ARMv8.1+.
         AC_CACHE_CHECK(yjit stats are broken, rb_cv_broken_yjit_stats, [
-            AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]], [[
-                @%:@ifdef __aarch64__
-                    asm volatile(".arch armv8-a+lse\nldaddal x0,x0,@<:@sp@:>@");
-                @%:@endif
-            ]])], [rb_cv_broken_yjit_stats=no], [rb_cv_broken_yjit_stats=yes])
+            AC_RUN_IFELSE(
+                [AC_LANG_PROGRAM([[]], [[
+                    @%:@ifdef __aarch64__
+                        asm volatile(".arch armv8-a+lse\n"
+                                     "ldaddal xzr, xzr, @<:@sp@:>@");
+                    @%:@endif
+                ]])],
+                [rb_cv_broken_yjit_stats=no],
+                [rb_cv_broken_yjit_stats=yes],
+                [rb_cv_broken_yjit_stats=yes]
+            )
         ])
-        AS_IF([test "$rb_cv_broken_yjit_stats" = yes], [
-            AC_DEFINE(BROKEN_YJIT_STATS, 1)
-        ])
+        AS_IF([test "$rb_cv_broken_yjit_stats" = yes], [AC_DEFINE(BROKEN_YJIT_STATS, 1)])
     )
 
     YJIT_LIBS="yjit/target/${rb_rust_target_subdir}/libyjit.a"
