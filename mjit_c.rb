@@ -178,7 +178,7 @@ module RubyVM::MJIT
 
   def C.compile_branch
     @compile_branch ||= CType::Struct.new(
-      "compile_branch", 8,
+      "compile_branch", Primitive.cexpr!("SIZEOF(struct compile_branch)"),
       stack_size: [0, CType::Immediate.parse("unsigned int")],
       finish_p: [32, self._Bool],
     )
@@ -186,7 +186,7 @@ module RubyVM::MJIT
 
   def C.compile_status
     @compile_status ||= CType::Struct.new(
-      "compile_status", 120,
+      "compile_status", Primitive.cexpr!("SIZEOF(struct compile_status)"),
       success: [0, self._Bool],
       stack_size_for_pos: [64, CType::Pointer.new { CType::Immediate.parse("int") }],
       local_stack_p: [128, self._Bool],
@@ -205,7 +205,7 @@ module RubyVM::MJIT
 
   def C.inlined_call_context
     @inlined_call_context ||= CType::Struct.new(
-      "inlined_call_context", 24,
+      "inlined_call_context", Primitive.cexpr!("SIZEOF(struct inlined_call_context)"),
       orig_argc: [0, CType::Immediate.parse("int")],
       me: [64, self.VALUE],
       param_size: [128, CType::Immediate.parse("int")],
@@ -215,7 +215,7 @@ module RubyVM::MJIT
 
   def C.iseq_inline_constant_cache
     @iseq_inline_constant_cache ||= CType::Struct.new(
-      "iseq_inline_constant_cache", 16,
+      "iseq_inline_constant_cache", Primitive.cexpr!("SIZEOF(struct iseq_inline_constant_cache)"),
       entry: [0, CType::Pointer.new { self.iseq_inline_constant_cache_entry }],
       segments: [64, CType::Pointer.new { self.ID }],
     )
@@ -223,7 +223,7 @@ module RubyVM::MJIT
 
   def C.iseq_inline_constant_cache_entry
     @iseq_inline_constant_cache_entry ||= CType::Struct.new(
-      "iseq_inline_constant_cache_entry", 40,
+      "iseq_inline_constant_cache_entry", Primitive.cexpr!("SIZEOF(struct iseq_inline_constant_cache_entry)"),
       flags: [0, self.VALUE],
       value: [64, self.VALUE],
       _unused1: [128, self.VALUE],
@@ -234,16 +234,16 @@ module RubyVM::MJIT
 
   def C.iseq_inline_iv_cache_entry
     @iseq_inline_iv_cache_entry ||= CType::Struct.new(
-      "iseq_inline_iv_cache_entry", 8,
+      "iseq_inline_iv_cache_entry", Primitive.cexpr!("SIZEOF(struct iseq_inline_iv_cache_entry)"),
       entry: [0, CType::Pointer.new { self.rb_iv_index_tbl_entry }],
     )
   end
 
   def C.iseq_inline_storage_entry
     @iseq_inline_storage_entry ||= CType::Union.new(
-      "iseq_inline_storage_entry", 16,
+      "iseq_inline_storage_entry", Primitive.cexpr!("SIZEOF(union iseq_inline_storage_entry)"),
       once: CType::Struct.new(
-        "", 16,
+        "", Primitive.cexpr!("SIZEOF(((union iseq_inline_storage_entry *)NULL)->once)"),
         running_thread: [0, CType::Pointer.new { self.rb_thread_struct }],
         value: [64, self.VALUE],
       ),
@@ -254,7 +254,7 @@ module RubyVM::MJIT
 
   def C.mjit_options
     @mjit_options ||= CType::Struct.new(
-      "mjit_options", 40,
+      "mjit_options", Primitive.cexpr!("SIZEOF(struct mjit_options)"),
       on: [0, self._Bool],
       save_temps: [8, self._Bool],
       warnings: [16, self._Bool],
@@ -271,7 +271,7 @@ module RubyVM::MJIT
 
   def C.rb_builtin_function
     @rb_builtin_function ||= CType::Struct.new(
-      "rb_builtin_function", 32,
+      "rb_builtin_function", Primitive.cexpr!("SIZEOF(struct rb_builtin_function)"),
       func_ptr: [0, CType::Pointer.new { CType::Immediate.parse("void") }],
       argc: [64, CType::Immediate.parse("int")],
       index: [96, CType::Immediate.parse("int")],
@@ -282,7 +282,7 @@ module RubyVM::MJIT
 
   def C.rb_call_data
     @rb_call_data ||= CType::Struct.new(
-      "rb_call_data", 16,
+      "rb_call_data", Primitive.cexpr!("SIZEOF(struct rb_call_data)"),
       ci: [0, CType::Pointer.new { self.rb_callinfo }],
       cc: [64, CType::Pointer.new { self.rb_callcache }],
     )
@@ -290,7 +290,7 @@ module RubyVM::MJIT
 
   def C.rb_callable_method_entry_struct
     @rb_callable_method_entry_struct ||= CType::Struct.new(
-      "rb_callable_method_entry_struct", 40,
+      "rb_callable_method_entry_struct", Primitive.cexpr!("SIZEOF(struct rb_callable_method_entry_struct)"),
       flags: [0, self.VALUE],
       defined_class: [64, self.VALUE],
       def: [128, CType::Pointer.new { self.rb_method_definition_struct }],
@@ -301,13 +301,13 @@ module RubyVM::MJIT
 
   def C.rb_callcache
     @rb_callcache ||= CType::Struct.new(
-      "rb_callcache", 40,
+      "rb_callcache", Primitive.cexpr!("SIZEOF(struct rb_callcache)"),
       flags: [0, self.VALUE],
       klass: [64, self.VALUE],
       cme_: [128, CType::Pointer.new { self.rb_callable_method_entry_struct }],
       call_: [192, self.vm_call_handler],
       aux_: [256, CType::Union.new(
-        "", 8,
+        "", Primitive.cexpr!("SIZEOF(((struct rb_callcache *)NULL)->aux_)"),
         attr_index: CType::Immediate.parse("unsigned int"),
         method_missing_reason: self.method_missing_reason,
         v: self.VALUE,
@@ -317,7 +317,7 @@ module RubyVM::MJIT
 
   def C.rb_callinfo
     @rb_callinfo ||= CType::Struct.new(
-      "rb_callinfo", 40,
+      "rb_callinfo", Primitive.cexpr!("SIZEOF(struct rb_callinfo)"),
       flags: [0, self.VALUE],
       kwarg: [64, CType::Pointer.new { self.rb_callinfo_kwarg }],
       mid: [128, self.VALUE],
@@ -342,7 +342,7 @@ module RubyVM::MJIT
 
   def C.rb_cref_t
     @rb_cref_t ||= CType::Struct.new(
-      "rb_cref_struct", 40,
+      "rb_cref_struct", Primitive.cexpr!("SIZEOF(struct rb_cref_struct)"),
       flags: [0, self.VALUE],
       refinements: [64, self.VALUE],
       klass_or_self: [128, self.VALUE],
@@ -390,14 +390,14 @@ module RubyVM::MJIT
 
   def C.rb_iseq_constant_body
     @rb_iseq_constant_body ||= CType::Struct.new(
-      "rb_iseq_constant_body", 336,
+      "rb_iseq_constant_body", Primitive.cexpr!("SIZEOF(struct rb_iseq_constant_body)"),
       type: [0, self.rb_iseq_type],
       iseq_size: [32, CType::Immediate.parse("unsigned int")],
       iseq_encoded: [64, CType::Pointer.new { self.VALUE }],
       param: [128, CType::Struct.new(
-        "", 48,
+        "", Primitive.cexpr!("SIZEOF(((struct rb_iseq_constant_body *)NULL)->param)"),
         flags: [0, CType::Struct.new(
-          "", 4,
+          "", Primitive.cexpr!("SIZEOF(((struct rb_iseq_constant_body *)NULL)->param.flags)"),
           has_lead: [0, CType::BitField.new(1, 0)],
           has_opt: [1, CType::BitField.new(1, 1)],
           has_rest: [2, CType::BitField.new(1, 2)],
@@ -428,7 +428,7 @@ module RubyVM::MJIT
       is_entries: [1472, CType::Pointer.new { self.iseq_inline_storage_entry }],
       call_data: [1536, CType::Pointer.new { self.rb_call_data }],
       variable: [1600, CType::Struct.new(
-        "", 40,
+        "", Primitive.cexpr!("SIZEOF(((struct rb_iseq_constant_body *)NULL)->variable)"),
         flip_count: [0, self.rb_snum_t],
         script_lines: [64, self.VALUE],
         coverage: [128, self.VALUE],
@@ -443,7 +443,7 @@ module RubyVM::MJIT
       ci_size: [2080, CType::Immediate.parse("unsigned int")],
       stack_max: [2112, CType::Immediate.parse("unsigned int")],
       mark_bits: [2176, CType::Union.new(
-        "", 8,
+        "", Primitive.cexpr!("SIZEOF(((struct rb_iseq_constant_body *)NULL)->mark_bits)"),
         list: CType::Pointer.new { self.iseq_bits_t },
         single: self.iseq_bits_t,
       )],
@@ -460,7 +460,7 @@ module RubyVM::MJIT
 
   def C.rb_iseq_location_t
     @rb_iseq_location_t ||= CType::Struct.new(
-      "rb_iseq_location_struct", 56,
+      "rb_iseq_location_struct", Primitive.cexpr!("SIZEOF(struct rb_iseq_location_struct)"),
       pathobj: [0, self.VALUE, true],
       base_label: [64, self.VALUE, true],
       label: [128, self.VALUE, true],
@@ -472,20 +472,20 @@ module RubyVM::MJIT
 
   def C.rb_iseq_struct
     @rb_iseq_struct ||= CType::Struct.new(
-      "rb_iseq_struct", 40,
+      "rb_iseq_struct", Primitive.cexpr!("SIZEOF(struct rb_iseq_struct)"),
       flags: [0, self.VALUE],
       wrapper: [64, self.VALUE],
       body: [128, CType::Pointer.new { self.rb_iseq_constant_body }],
       aux: [192, CType::Union.new(
-        "", 16,
+        "", Primitive.cexpr!("SIZEOF(((struct rb_iseq_struct *)NULL)->aux)"),
         compile_data: CType::Pointer.new { self.iseq_compile_data },
         loader: CType::Struct.new(
-          "", 16,
+          "", Primitive.cexpr!("SIZEOF(((struct rb_iseq_struct *)NULL)->aux.loader)"),
           obj: [0, self.VALUE],
           index: [64, CType::Immediate.parse("int")],
         ),
         exec: CType::Struct.new(
-          "", 16,
+          "", Primitive.cexpr!("SIZEOF(((struct rb_iseq_struct *)NULL)->aux.exec)"),
           local_hooks: [0, CType::Pointer.new { self.rb_hook_list_struct }],
           global_trace_events: [64, self.rb_event_flag_t],
         ),
@@ -499,7 +499,7 @@ module RubyVM::MJIT
 
   def C.rb_iv_index_tbl_entry
     @rb_iv_index_tbl_entry ||= CType::Struct.new(
-      "rb_iv_index_tbl_entry", 24,
+      "rb_iv_index_tbl_entry", Primitive.cexpr!("SIZEOF(struct rb_iv_index_tbl_entry)"),
       index: [0, CType::Immediate.parse("uint32_t")],
       class_serial: [64, self.rb_serial_t],
       class_value: [128, self.VALUE],
@@ -508,14 +508,14 @@ module RubyVM::MJIT
 
   def C.rb_method_definition_struct
     @rb_method_definition_struct ||= CType::Struct.new(
-      "rb_method_definition_struct", 48,
+      "rb_method_definition_struct", Primitive.cexpr!("SIZEOF(struct rb_method_definition_struct)"),
       type: [0, self.rb_method_type_t],
       iseq_overload: [4, CType::BitField.new(1, 4)],
       alias_count: [5, CType::BitField.new(27, 5)],
       complemented_count: [32, CType::BitField.new(28, 0)],
       no_redef_warning: [60, CType::BitField.new(1, 4)],
       body: [64, CType::Union.new(
-        "", 24,
+        "", Primitive.cexpr!("SIZEOF(((struct rb_method_definition_struct *)NULL)->body)"),
         iseq: self.rb_method_iseq_t,
         cfunc: self.rb_method_cfunc_t,
         attr: self.rb_method_attr_t,
@@ -531,7 +531,7 @@ module RubyVM::MJIT
 
   def C.rb_method_iseq_t
     @rb_method_iseq_t ||= CType::Struct.new(
-      "rb_method_iseq_struct", 16,
+      "rb_method_iseq_struct", Primitive.cexpr!("SIZEOF(struct rb_method_iseq_struct)"),
       iseqptr: [0, CType::Pointer.new { self.rb_iseq_t }],
       cref: [64, CType::Pointer.new { self.rb_cref_t }],
     )
@@ -543,7 +543,7 @@ module RubyVM::MJIT
 
   def C.rb_mjit_compile_info
     @rb_mjit_compile_info ||= CType::Struct.new(
-      "rb_mjit_compile_info", 5,
+      "rb_mjit_compile_info", Primitive.cexpr!("SIZEOF(struct rb_mjit_compile_info)"),
       disable_ivar_cache: [0, self._Bool],
       disable_exivar_cache: [8, self._Bool],
       disable_send_cache: [16, self._Bool],
@@ -554,7 +554,7 @@ module RubyVM::MJIT
 
   def C.rb_mjit_unit
     @rb_mjit_unit ||= CType::Struct.new(
-      "rb_mjit_unit", 64,
+      "rb_mjit_unit", Primitive.cexpr!("SIZEOF(struct rb_mjit_unit)"),
       unode: [0, self.ccan_list_node],
       id: [128, CType::Immediate.parse("int")],
       handle: [192, CType::Pointer.new { CType::Immediate.parse("void") }],
