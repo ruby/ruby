@@ -201,12 +201,12 @@ class BindingGenerator
 
   # Generate code from a node. Used for constructing a complex nested node.
   # @param node [Node]
-  def generate_node(node)
+  def generate_node(node, sizeof_type: nil)
     case node&.kind
     when :struct, :union
       # node.spelling is often empty for union, but we'd like to give it a name when it has one.
       buf = +"CType::#{node.kind.to_s.sub(/\A[a-z]/, &:upcase)}.new(\n"
-      buf << "  \"#{node.spelling}\", #{node.sizeof_type},\n"
+      buf << "  \"#{node.spelling}\", Primitive.cexpr!(\"SIZEOF(#{sizeof_type || node.type})\"),\n"
       node.children.each do |child|
         field_builder = proc do |field, type|
           if node.kind == :struct
@@ -221,12 +221,17 @@ class BindingGenerator
         # BitField is struct-specific. So it must be handled here.
         in Node[kind: :field_decl, spelling:, bitwidth:, children: [_grandchild]] if bitwidth > 0
           buf << field_builder.call(spelling, "CType::BitField.new(#{bitwidth}, #{node.offsetof.fetch(spelling) % 8})")
+        # "(unnamed ...)" struct and union are handled here, which are also struct-specific.
+        in Node[kind: :field_decl, spelling:, type:, children: [grandchild]] if type.match?(/\((unnamed|anonymous) [^)]+\)\z/)
+          if sizeof_type
+            child_type = "#{sizeof_type}.#{child.spelling}"
+          else
+            child_type = "((#{node.type} *)NULL)->#{child.spelling}"
+          end
+          buf << field_builder.call(spelling, generate_node(grandchild, sizeof_type: child_type).gsub(/^/, '  ').sub(/\A +/, ''))
         # In most cases, we'd like to let generate_type handle the type unless it's "(unnamed ...)".
-        in Node[kind: :field_decl, spelling:, type:] if !type.empty? && !type.match?(/\((unnamed|anonymous) [^)]+\)\z/)
+        in Node[kind: :field_decl, spelling:, type:] if !type.empty?
           buf << field_builder.call(spelling, generate_type(type))
-        # Lastly, "(unnamed ...)" struct and union are handled here, which are also struct-specific.
-        in Node[kind: :field_decl, spelling:, children: [grandchild]]
-          buf << field_builder.call(spelling, generate_node(grandchild).gsub(/^/, '  ').sub(/\A +/, ''))
         else # forward declarations are ignored
         end
       end
