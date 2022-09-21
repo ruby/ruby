@@ -47,8 +47,12 @@ static VALUE sGroup;
 #define HAVE_UNAME 1
 #endif
 
-#ifndef _WIN32
-char *getenv();
+#ifdef STDC_HEADERS
+# include <stdlib.h>
+#else
+# ifdef HAVE_STDLIB_H
+#  include <stdlib.h>
+# endif
 #endif
 char *getlogin();
 
