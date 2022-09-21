@@ -7086,7 +7086,7 @@ const char ruby_null_device[] =
  *  === Encodings
  *
  *  Any of the string modes above may specify encodings -
- *  either external encoding only or both external and internal encodings –
+ *  either external encoding only or both external and internal encodings -
  *  by appending one or both encoding names, separated by colons:
  *
  *    f = File.new('t.dat', 'rb')
