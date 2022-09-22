@@ -131,6 +131,9 @@ Note: We're only listing outstanding class updates.
     * Proc#dup returns an instance of subclass. [[Bug #17545]]
     * Proc#parameters now accepts lambda keyword. [[Feature #15357]]
 
+* Process
+    * Added `RLIMIT_NPTS` constant to FreeBSD platform
+
 * Regexp
     * Regexp.new now supports passing the regexp flags not only as an Integer,
       but also as a String.  Unknown flags raise ArgumentError.
@@ -143,6 +146,16 @@ Note: We're only listing outstanding class updates.
 * Set
     * Set is now available as a built-in class without the need for `require "set"`. [[Feature #16989]]
       It is currently autoloaded via the `Set` constant or a call to `Enumerable#to_set`.
+
+* Socket
+    * Added the following constants for supported platforms.
+      * `SO_INCOMING_CPU`
+      * `SO_INCOMING_NAPI_ID`
+      * `SO_RTABLE`
+      * `SO_SETFIB`
+      * `SO_USER_COOKIE`
+      * `TCP_KEEPALIVE`
+      * `TCP_CONNECTION_INFO`
 
 * String
     * String#byteindex and String#byterindex have been added. [[Feature #13110]]
