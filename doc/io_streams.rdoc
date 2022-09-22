@@ -76,7 +76,8 @@ An \IO stream has a nonnegative integer _position_,
 which is the byte offset at which the next read or write is to occur;
 the relevant methods:
 
-- +#tell+ (aliased as #pos): Returns the current position (in bytes) in the stream:
+- IO#tell (aliased as +#pos+):
+  Returns the current position (in bytes) in the stream:
 
     f = File.new('t.txt')
     f.tell # => 0
@@ -84,7 +85,7 @@ the relevant methods:
     f.tell # => 12
     f.close
 
-- +#pos=+:  Sets the position of the stream (in bytes):
+- IO#pos=:  Sets the position of the stream (in bytes):
 
     f = File.new('t.txt')
     f.tell     # => 0
@@ -92,7 +93,7 @@ the relevant methods:
     f.tell     # => 20
     f.close
 
-- +#seek+: Sets the position of the stream to a given integer +offset+
+- IO#seek: Sets the position of the stream to a given integer +offset+
   (in bytes), with respect to a given constant +whence+, which is one of:
 
   - +:CUR+ or <tt>IO::SEEK_CUR</tt>:
@@ -130,7 +131,7 @@ the relevant methods:
       f.tell           # => 40
       f.close
 
-- +#rewind+: Positions the stream to the beginning:
+- IO#rewind: Positions the stream to the beginning:
 
     f = File.new('t.txt')
     f.tell     # => 0
@@ -149,7 +150,7 @@ which are separated by an implicit or explicit line separator.
 These methods are included (except as noted) in classes Kernel, IO, File,
 and {ARGF}[rdoc-ref:ARGF]:
 
-- +#each_line+ - passes each line to the block; not in Kernel:
+- IO#each_line: Passes each line to the block; not in Kernel:
 
     f = File.new('t.txt')
     f.each_line {|line| p line }
@@ -173,7 +174,7 @@ and {ARGF}[rdoc-ref:ARGF]:
     "rth line\n"
     "Fifth line\n"
 
-- +#gets+ - returns the next line (which may begin mid-line):
+- IO#gets: Returns the next line (which may begin mid-line):
 
     f = File.new('t.txt')
     f.gets      # => "First line\n"
@@ -183,10 +184,10 @@ and {ARGF}[rdoc-ref:ARGF]:
     f.readlines # => ["Fifth line\n"]
     f.gets      # => nil
 
-- +#readline+ - like #gets, but raises an exception at end-of-file;
+- IO#readline: Like #gets, but raises an exception at end-of-file;
   not in StringIO.
 
-- +#readlines+ - returns all remaining lines in an array;
+- IO#readlines: Returns all remaining lines in an array;
   may begin mid-line:
 
     f = File.new('t.txt')
@@ -304,11 +305,11 @@ Reading lines from a stream usually changes its line number:
 
 Iterating over lines in a stream usually changes its line number:
 
-   f = File.new('t.txt')
-   f.each_line do |line|
-     p "position=#{f.pos} eof?=#{f.eof?} lineno=#{f.lineno}"
-   end
-   f.close
+  f = File.new('t.txt')
+  f.each_line do |line|
+    p "position=#{f.pos} eof?=#{f.eof?} lineno=#{f.lineno}"
+  end
+  f.close
 
 Output:
 
@@ -331,20 +332,17 @@ A new \IO stream may be open for reading, open for writing, or both.
 
 You can close a stream using these methods:
 
-- +#close+ - closes the stream for both reading and writing.
-
-- +#close_read+ (not available in \ARGF) - closes the stream for reading.
-
-- +#close_write+ (not available in \ARGF) - closes the stream for writing.
+- IO#close: Closes the stream for both reading and writing.
+- IO#close_read (not available in \ARGF): Closes the stream for reading.
+- IO#close_write (not available in \ARGF): Closes the stream for writing.
 
 You can query whether a stream is closed using these methods:
 
-- +#closed?+ - returns whether the stream is closed.
+- IO#closed?: Returns whether the stream is closed.
 
 === Stream End-of-File
 
 You can query whether a stream is at end-of-file using this method:
 
-- +#eof?+ (also aliased as +#eof+) -
-  returns whether the stream is at end-of-file.
-
+- IO#eof? (also aliased as +#eof+) -
+  Returns whether the stream is at end-of-file.
