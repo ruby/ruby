@@ -5548,6 +5548,9 @@ rlimit_resource_name2int(const char *name, long len, int casetype)
 #ifdef RLIMIT_NPROC
         RESCHECK(NPROC);
 #endif
+#ifdef RLIMIT_NPTS
+        RESCHECK(NPTS);
+#endif
 #ifdef RLIMIT_NICE
         RESCHECK(NICE);
 #endif
@@ -5776,6 +5779,7 @@ proc_getrlimit(VALUE obj, VALUE resource)
  *  [NICE] ceiling on process's nice(2) value (number) (GNU/Linux)
  *  [NOFILE] file descriptors (number) (SUSv3)
  *  [NPROC] number of processes for the user (number) (4.4BSD, GNU/Linux)
+ *  [NPTS] number of pseudo terminals (number) (FreeBSD)
  *  [RSS] resident memory size (bytes) (4.2BSD, GNU/Linux)
  *  [RTPRIO] ceiling on the process's real-time priority (number) (GNU/Linux)
  *  [RTTIME] CPU time for real-time process (us) (GNU/Linux)
