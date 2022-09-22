@@ -372,14 +372,12 @@ module RubyVM::MJIT
       errinfo: [self.VALUE, Primitive.cexpr!("OFFSETOF((*((struct rb_execution_context_struct *)NULL)), errinfo)")],
       passed_block_handler: [self.VALUE, Primitive.cexpr!("OFFSETOF((*((struct rb_execution_context_struct *)NULL)), passed_block_handler)")],
       raised_flag: [CType::Immediate.parse("uint8_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_execution_context_struct *)NULL)), raised_flag)")],
-      method_missing_reason: [self.method_missing_reason, nil],
       private_const_reference: [self.VALUE, Primitive.cexpr!("OFFSETOF((*((struct rb_execution_context_struct *)NULL)), private_const_reference)")],
       machine: [CType::Struct.new(
         "", Primitive.cexpr!("SIZEOF(((struct rb_execution_context_struct *)NULL)->machine)"),
         stack_start: [CType::Pointer.new { self.VALUE }, Primitive.cexpr!("OFFSETOF(((struct rb_execution_context_struct *)NULL)->machine, stack_start)")],
         stack_end: [CType::Pointer.new { self.VALUE }, Primitive.cexpr!("OFFSETOF(((struct rb_execution_context_struct *)NULL)->machine, stack_end)")],
         stack_maxsize: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF(((struct rb_execution_context_struct *)NULL)->machine, stack_maxsize)")],
-        regs: [CType::Immediate.parse("int"), Primitive.cexpr!("OFFSETOF(((struct rb_execution_context_struct *)NULL)->machine, regs)")],
       ), Primitive.cexpr!("OFFSETOF((*((struct rb_execution_context_struct *)NULL)), machine)")],
     )
   end
@@ -454,7 +452,6 @@ module RubyVM::MJIT
       jit_func: [CType::Immediate.parse("void *"), Primitive.cexpr!("OFFSETOF((*((struct rb_iseq_constant_body *)NULL)), jit_func)")],
       total_calls: [CType::Immediate.parse("unsigned long"), Primitive.cexpr!("OFFSETOF((*((struct rb_iseq_constant_body *)NULL)), total_calls)")],
       jit_unit: [CType::Pointer.new { self.rb_mjit_unit }, Primitive.cexpr!("OFFSETOF((*((struct rb_iseq_constant_body *)NULL)), jit_unit)")],
-      yjit_payload: [CType::Pointer.new { CType::Immediate.parse("void") }, Primitive.cexpr!("OFFSETOF((*((struct rb_iseq_constant_body *)NULL)), yjit_payload)")],
     )
   end
 

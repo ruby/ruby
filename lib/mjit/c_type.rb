@@ -46,9 +46,9 @@ module RubyVM::MJIT
         new(Fiddle::Importer.parse_ctype(ctype))
       end
 
-      def self.find(size, unsigned)
+      def self.find(size, signed)
         fiddle_type = TYPE_MAP.fetch(size)
-        fiddle_type = -fiddle_type if unsigned
+        fiddle_type = -fiddle_type unless signed
         new(fiddle_type)
       end
 

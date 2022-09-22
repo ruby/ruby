@@ -12,20 +12,9 @@ unless build_dir = ARGV.first
   abort "Usage: #{$0} BUILD_DIR"
 end
 
-if Fiddle::SIZEOF_VOIDP == 8
-  arch_bits = 64
-else
-  arch_bits = 32
-end
-
 # Help ffi-clang find libclang
-if arch_bits == 64
-  # apt install libclang1
-  ENV['LIBCLANG'] ||= Dir.glob("/lib/#{RUBY_PLATFORM}-gnu/libclang-*.so*").grep_v(/-cpp/).sort.last
-else
-  # apt install libclang1:i386
-  ENV['LIBCLANG'] ||= Dir.glob("/lib/i386-linux-gnu/libclang-*.so*").sort.last
-end
+# Hint: apt install libclang1
+ENV['LIBCLANG'] ||= Dir.glob("/lib/#{RUBY_PLATFORM}-gnu/libclang-*.so*").grep_v(/-cpp/).sort.last
 require 'ffi/clang'
 
 class Node < Struct.new(
@@ -116,14 +105,16 @@ class BindingGenerator
   # @param ints [Array<String>]
   # @param types [Array<String>]
   # @param dynamic_types [Array<String>] #ifdef-dependent immediate types, which need Primitive.cexpr! for type detection
+  # @param skip_fields [Hash{ Symbol => Array<String> }] Struct fields that are skipped from bindgen
   # @param ruby_fields [Hash{ Symbol => Array<String> }] Struct VALUE fields that are considered Ruby objects
-  def initialize(src_path:, uses:, ints:, types:, dynamic_types:, ruby_fields:)
+  def initialize(src_path:, uses:, ints:, types:, dynamic_types:, skip_fields:, ruby_fields:)
     @preamble, @postamble = split_ambles(src_path)
     @src = String.new
     @uses = uses.sort
     @ints = ints.sort
     @types = types.sort
     @dynamic_types = dynamic_types.sort
+    @skip_fields = skip_fields.transform_keys(&:to_s)
     @ruby_fields = ruby_fields.transform_keys(&:to_s)
     @references = Set.new
   end
@@ -209,12 +200,16 @@ class BindingGenerator
       buf << "  \"#{node.spelling}\", Primitive.cexpr!(\"SIZEOF(#{sizeof_type || node.type})\"),\n"
       bit_fields_end = node.children.index { |c| c.bitwidth == -1 } || node.children.size # first non-bit field index
       node.children.each_with_index do |child, i|
+        skip_type = sizeof_type&.gsub(/\(\(struct ([^\)]+) \*\)NULL\)->/, '\1.') || node.spelling
+        next if @skip_fields.fetch(skip_type, []).include?(child.spelling)
         field_builder = proc do |field, type|
           if node.kind == :struct
             to_ruby = @ruby_fields.fetch(node.spelling, []).include?(field)
             if child.bitwidth > 0
-              # give up offsetof calculation for non-leading bit fields
-              offsetof = (i < bit_fields_end ? node.offsetof.fetch(field) : nil).inspect
+              if bit_fields_end <= i # give up offsetof calculation for non-leading bit fields
+                raise "non-leading bit fields are not supported. consider including '#{field}' in skip_fields."
+              end
+              offsetof = node.offsetof.fetch(field)
             else
               off_type = sizeof_type || "(*((#{node.type} *)NULL))"
               offsetof = "Primitive.cexpr!(\"OFFSETOF(#{off_type}, #{field})\")"
@@ -380,6 +375,11 @@ generator = BindingGenerator.new(
   dynamic_types: %w[
     VALUE
   ],
+  skip_fields: {
+    'rb_execution_context_struct.machine': %w[regs], # differs between macOS and Linux
+    rb_execution_context_struct: %w[method_missing_reason], # non-leading bit fields not supported
+    rb_iseq_constant_body: %w[yjit_payload], # conditionally defined
+  },
   ruby_fields: {
     rb_iseq_location_struct: %w[
       base_label
