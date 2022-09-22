@@ -1150,7 +1150,7 @@ fn gen_opt_plus(
         }
 
         // Check that both operands are fixnums
-        guard_two_fixnums(ctx, asm, side_exit);
+        guard_two_fixnums(jit, ctx, asm, ocb, side_exit);
 
         // Get the operands from the stack
         let arg1 = ctx.stack_pop(1);
@@ -2320,7 +2320,13 @@ fn gen_concatstrings(
     KeepCompiling
 }
 
-fn guard_two_fixnums(ctx: &mut Context, asm: &mut Assembler, side_exit: CodePtr) {
+fn guard_two_fixnums(
+    jit: &mut JITState,
+    ctx: &mut Context,
+    asm: &mut Assembler,
+    ocb: &mut OutlinedCb,
+    side_exit: CodePtr
+) {
     // Get the stack operand types
     let arg1_type = ctx.get_opnd_type(StackOpnd(0));
     let arg0_type = ctx.get_opnd_type(StackOpnd(1));
@@ -2352,16 +2358,34 @@ fn guard_two_fixnums(ctx: &mut Context, asm: &mut Assembler, side_exit: CodePtr)
     let arg1 = ctx.stack_opnd(0);
     let arg0 = ctx.stack_opnd(1);
 
-    // If not fixnums, fall back
+    // If not fixnums at run-time, fall back
     if arg0_type != Type::Fixnum {
         asm.comment("guard arg0 fixnum");
         asm.test(arg0, Opnd::UImm(RUBY_FIXNUM_FLAG as u64));
-        asm.jz(side_exit.into());
+
+        jit_chain_guard(
+            JCC_JZ,
+            jit,
+            &ctx,
+            asm,
+            ocb,
+            SEND_MAX_DEPTH,
+            side_exit,
+        );
     }
     if arg1_type != Type::Fixnum {
         asm.comment("guard arg1 fixnum");
         asm.test(arg1, Opnd::UImm(RUBY_FIXNUM_FLAG as u64));
-        asm.jz(side_exit.into());
+
+        jit_chain_guard(
+            JCC_JZ,
+            jit,
+            &ctx,
+            asm,
+            ocb,
+            SEND_MAX_DEPTH,
+            side_exit,
+        );
     }
 
     // Set stack types in context
@@ -2398,7 +2422,7 @@ fn gen_fixnum_cmp(
         }
 
         // Check that both operands are fixnums
-        guard_two_fixnums(ctx, asm, side_exit);
+        guard_two_fixnums(jit, ctx, asm, ocb, side_exit);
 
         // Get the operands from the stack
         let arg1 = ctx.stack_pop(1);
@@ -2469,13 +2493,70 @@ fn gen_equality_specialized(
     let a_opnd = ctx.stack_opnd(1);
     let b_opnd = ctx.stack_opnd(0);
 
-    if comptime_a.fixnum_p() && comptime_b.fixnum_p() {
+    // Get the stack operand types
+    let a_type = ctx.get_opnd_type(StackOpnd(1));
+    let b_type = ctx.get_opnd_type(StackOpnd(0));
+
+    if comptime_a.static_sym_p() && comptime_b.static_sym_p() {
+        if !assume_bop_not_redefined(jit, ocb, SYMBOL_REDEFINED_OP_FLAG, BOP_EQ) {
+            // if overridden, emit the generic version
+            return false;
+        }
+
+        // If not symbols, fall back
+        if a_type != Type::ImmSymbol {
+            asm.comment("guard arg0 symbol");
+            let low_bits = asm.and(a_opnd, Opnd::UImm(0xff));
+            asm.cmp(low_bits, Opnd::UImm(RUBY_SYMBOL_FLAG as u64));
+
+            jit_chain_guard(
+                JCC_JNE,
+                jit,
+                &ctx,
+                asm,
+                ocb,
+                SEND_MAX_DEPTH,
+                side_exit,
+            );
+        }
+        if b_type != Type::ImmSymbol {
+            asm.comment("guard arg1 symbol");
+            let low_bits = asm.and(b_opnd, Opnd::UImm(0xff));
+            asm.cmp(low_bits, Opnd::UImm(RUBY_SYMBOL_FLAG as u64));
+
+            jit_chain_guard(
+                JCC_JNE,
+                jit,
+                &ctx,
+                asm,
+                ocb,
+                SEND_MAX_DEPTH,
+                side_exit,
+            );
+        }
+
+        // Set stack types in context
+        ctx.upgrade_opnd_type(StackOpnd(0), Type::ImmSymbol);
+        ctx.upgrade_opnd_type(StackOpnd(1), Type::ImmSymbol);
+
+        // Compare the symbols
+        asm.cmp(a_opnd, b_opnd);
+        let val = asm.csel_ne(Qfalse.into(), Qtrue.into());
+
+        // Push the output on the stack
+        ctx.stack_pop(2);
+        let dst = ctx.stack_push(Type::UnknownImm);
+        asm.mov(dst, val);
+
+        return true
+
+    } else if comptime_a.fixnum_p() && comptime_b.fixnum_p() {
         if !assume_bop_not_redefined(jit, ocb, INTEGER_REDEFINED_OP_FLAG, BOP_EQ) {
             // if overridden, emit the generic version
             return false;
         }
 
-        guard_two_fixnums(ctx, asm, side_exit);
+        guard_two_fixnums(jit, ctx, asm, ocb, side_exit);
 
         asm.cmp(a_opnd, b_opnd);
 
@@ -2487,7 +2568,8 @@ fn gen_equality_specialized(
         asm.mov(dst, val);
 
         true
-    } else if unsafe { comptime_a.class_of() == rb_cString && comptime_b.class_of() == rb_cString }
+    }
+    else if unsafe { comptime_a.class_of() == rb_cString && comptime_b.class_of() == rb_cString }
     {
         if !assume_bop_not_redefined(jit, ocb, STRING_REDEFINED_OP_FLAG, BOP_EQ) {
             // if overridden, emit the generic version
@@ -2851,7 +2933,7 @@ fn gen_opt_and(
         }
 
         // Check that both operands are fixnums
-        guard_two_fixnums(ctx, asm, side_exit);
+        guard_two_fixnums(jit, ctx, asm, ocb, side_exit);
 
         // Get the operands and destination from the stack
         let arg1 = ctx.stack_pop(1);
@@ -2896,7 +2978,7 @@ fn gen_opt_or(
         }
 
         // Check that both operands are fixnums
-        guard_two_fixnums(ctx, asm, side_exit);
+        guard_two_fixnums(jit, ctx, asm, ocb, side_exit);
 
         // Get the operands and destination from the stack
         let arg1 = ctx.stack_pop(1);
@@ -2941,7 +3023,7 @@ fn gen_opt_minus(
         }
 
         // Check that both operands are fixnums
-        guard_two_fixnums(ctx, asm, side_exit);
+        guard_two_fixnums(jit, ctx, asm, ocb, side_exit);
 
         // Get the operands and destination from the stack
         let arg1 = ctx.stack_pop(1);
@@ -3008,7 +3090,7 @@ fn gen_opt_mod(
         }
 
         // Check that both operands are fixnums
-        guard_two_fixnums(ctx, asm, side_exit);
+        guard_two_fixnums(jit, ctx, asm, ocb, side_exit);
 
         // Get the operands and destination from the stack
         let arg1 = ctx.stack_pop(1);
@@ -5008,7 +5090,6 @@ fn gen_send_general(
         gen_counter_incr!(asm, send_kw_splat);
         return CantCompile;
     }
-
 
     if flags & VM_CALL_ARGS_BLOCKARG != 0 {
         gen_counter_incr!(asm, send_block_arg);
