@@ -207,11 +207,19 @@ class BindingGenerator
       # node.spelling is often empty for union, but we'd like to give it a name when it has one.
       buf = +"CType::#{node.kind.to_s.sub(/\A[a-z]/, &:upcase)}.new(\n"
       buf << "  \"#{node.spelling}\", Primitive.cexpr!(\"SIZEOF(#{sizeof_type || node.type})\"),\n"
-      node.children.each do |child|
+      bit_fields_end = node.children.index { |c| c.bitwidth == -1 } || node.children.size # first non-bit field index
+      node.children.each_with_index do |child, i|
         field_builder = proc do |field, type|
           if node.kind == :struct
             to_ruby = @ruby_fields.fetch(node.spelling, []).include?(field)
-            "  #{field}: [#{node.offsetof.fetch(field)}, #{type}#{', true' if to_ruby}],\n"
+            if child.bitwidth > 0
+              # give up offsetof calculation for non-leading bit fields
+              offsetof = (i < bit_fields_end ? node.offsetof.fetch(field) : nil).inspect
+            else
+              off_type = sizeof_type || "(*((#{node.type} *)NULL))"
+              offsetof = "Primitive.cexpr!(\"OFFSETOF(#{off_type}, #{field})\")"
+            end
+            "  #{field}: [#{offsetof}, #{type}#{', true' if to_ruby}],\n"
           else
             "  #{field}: #{type},\n"
           end
