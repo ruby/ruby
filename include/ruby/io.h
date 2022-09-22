@@ -864,7 +864,8 @@ int rb_wait_for_single_fd(int fd, int events, struct timeval *tv);
 VALUE rb_io_timeout(VALUE io);
 
 /**
- * Set the timeout associated with the specified io object.
+ * Set the timeout associated with the specified io object. This timeout is
+ * used as a best effort timeout to prevent operations from blocking forever.
  *
  * @param[in]  io                   An IO object.
  * @param[in]  timeout              A timeout value. Must respond to #to_f.

@@ -851,13 +851,17 @@ rb_io_timeout(VALUE self)
  *    timeout = nil -> nil
  *
  *  Set the internal timeout to the specified duration or nil. The timeout
- *  applies to all blocking operations provided the IO is in non-blocking mode:
- *  +io.nonblock? => true+.
+ *  applies to all blocking operations where possible.
  *
  *  This affects the following methods (but is not limited to): #gets, #puts,
  *  #read, #write, #wait_readable and #wait_writable. This also affects
  *  blocking socket operations like Socket#accept and Socket#connect.
  *
+ *  Some operations like File#open and IO#close are not affected by the
+ *  timeout. A timeout during a write operation may leave the IO in an
+ *  inconsistent state, e.g. data was partially written. Generally speaking, a
+ *  timeout is a last ditch effort to prevent an application from hanging on
+ *  slow I/O operations, such as those that occur during a slowloris attack.
  */
 VALUE
 rb_io_set_timeout(VALUE self, VALUE timeout)
