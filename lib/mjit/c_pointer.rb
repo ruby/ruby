@@ -7,7 +7,7 @@ module RubyVM::MJIT
     class Struct
       # @param name [String]
       # @param sizeof [Integer]
-      # @param members [Hash{ Symbol => [Integer, RubyVM::MJIT::CType::*] }]
+      # @param members [Hash{ Symbol => [RubyVM::MJIT::CType::*, Integer, TrueClass] }]
       def initialize(addr, sizeof, members)
         @addr = addr
         @sizeof = sizeof
@@ -34,7 +34,7 @@ module RubyVM::MJIT
       # TODO: remove this?
       # @param member [Symbol]
       def [](member)
-        offset, type = @members.fetch(member)
+        type, offset = @members.fetch(member)
         type.new(@addr + offset / 8)
       end
 
@@ -43,7 +43,7 @@ module RubyVM::MJIT
       # @param member [Symbol]
       # @param value [Object]
       def []=(member, value)
-        offset, type = @members.fetch(member)
+        type, offset = @members.fetch(member)
         type[@addr + offset / 8] = value
       end
 
@@ -61,7 +61,7 @@ module RubyVM::MJIT
             super(addr, sizeof, members)
           end
 
-          members.each do |member, (offset, type, to_ruby)|
+          members.each do |member, (type, offset, to_ruby)|
             # Intelligent API that does automatic dereference
             define_method(member) do
               value = self[member]
