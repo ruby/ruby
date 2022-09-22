@@ -219,7 +219,7 @@ class BindingGenerator
               off_type = sizeof_type || "(*((#{node.type} *)NULL))"
               offsetof = "Primitive.cexpr!(\"OFFSETOF(#{off_type}, #{field})\")"
             end
-            "  #{field}: [#{offsetof}, #{type}#{', true' if to_ruby}],\n"
+            "  #{field}: [#{type}, #{offsetof}#{', true' if to_ruby}],\n"
           else
             "  #{field}: #{type},\n"
           end
