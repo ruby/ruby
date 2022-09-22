@@ -1,5 +1,4 @@
 use std::ffi::CStr;
-use crate::cruby::rb_yjit_stats_supported;
 
 // Command-line options
 #[derive(Clone, PartialEq, Eq, Debug)]
@@ -154,7 +153,7 @@ pub fn parse_option(str_ptr: *const std::os::raw::c_char) -> Option<()> {
         ("no-type-prop", "") => unsafe { OPTIONS.no_type_prop = true },
 
         ("stats", "") => {
-            if unsafe { !rb_yjit_stats_supported() } {
+            if cfg!(target_arch = "aarch64") && !cfg!(target_feature = "lse") {
                 eprintln!("Your processor does not support --yjit-stats. Aborting.");
                 std::process::exit(1);
             }
