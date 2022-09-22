@@ -179,63 +179,63 @@ module RubyVM::MJIT
   def C.compile_branch
     @compile_branch ||= CType::Struct.new(
       "compile_branch", Primitive.cexpr!("SIZEOF(struct compile_branch)"),
-      stack_size: [0, CType::Immediate.parse("unsigned int")],
-      finish_p: [32, self._Bool],
+      stack_size: [Primitive.cexpr!("OFFSETOF((*((struct compile_branch *)NULL)), stack_size)"), CType::Immediate.parse("unsigned int")],
+      finish_p: [Primitive.cexpr!("OFFSETOF((*((struct compile_branch *)NULL)), finish_p)"), self._Bool],
     )
   end
 
   def C.compile_status
     @compile_status ||= CType::Struct.new(
       "compile_status", Primitive.cexpr!("SIZEOF(struct compile_status)"),
-      success: [0, self._Bool],
-      stack_size_for_pos: [64, CType::Pointer.new { CType::Immediate.parse("int") }],
-      local_stack_p: [128, self._Bool],
-      is_entries: [192, CType::Pointer.new { self.iseq_inline_storage_entry }],
-      cc_entries_index: [256, CType::Immediate.parse("int")],
-      compiled_iseq: [320, CType::Pointer.new { self.rb_iseq_constant_body }],
-      compiled_id: [384, CType::Immediate.parse("int")],
-      compile_info: [448, CType::Pointer.new { self.rb_mjit_compile_info }],
-      merge_ivar_guards_p: [512, self._Bool],
-      ivar_serial: [576, self.rb_serial_t],
-      max_ivar_index: [640, CType::Immediate.parse("size_t")],
-      inlined_iseqs: [704, CType::Pointer.new { CType::Pointer.new { self.rb_iseq_constant_body } }],
-      inline_context: [768, self.inlined_call_context],
+      success: [Primitive.cexpr!("OFFSETOF((*((struct compile_status *)NULL)), success)"), self._Bool],
+      stack_size_for_pos: [Primitive.cexpr!("OFFSETOF((*((struct compile_status *)NULL)), stack_size_for_pos)"), CType::Pointer.new { CType::Immediate.parse("int") }],
+      local_stack_p: [Primitive.cexpr!("OFFSETOF((*((struct compile_status *)NULL)), local_stack_p)"), self._Bool],
+      is_entries: [Primitive.cexpr!("OFFSETOF((*((struct compile_status *)NULL)), is_entries)"), CType::Pointer.new { self.iseq_inline_storage_entry }],
+      cc_entries_index: [Primitive.cexpr!("OFFSETOF((*((struct compile_status *)NULL)), cc_entries_index)"), CType::Immediate.parse("int")],
+      compiled_iseq: [Primitive.cexpr!("OFFSETOF((*((struct compile_status *)NULL)), compiled_iseq)"), CType::Pointer.new { self.rb_iseq_constant_body }],
+      compiled_id: [Primitive.cexpr!("OFFSETOF((*((struct compile_status *)NULL)), compiled_id)"), CType::Immediate.parse("int")],
+      compile_info: [Primitive.cexpr!("OFFSETOF((*((struct compile_status *)NULL)), compile_info)"), CType::Pointer.new { self.rb_mjit_compile_info }],
+      merge_ivar_guards_p: [Primitive.cexpr!("OFFSETOF((*((struct compile_status *)NULL)), merge_ivar_guards_p)"), self._Bool],
+      ivar_serial: [Primitive.cexpr!("OFFSETOF((*((struct compile_status *)NULL)), ivar_serial)"), self.rb_serial_t],
+      max_ivar_index: [Primitive.cexpr!("OFFSETOF((*((struct compile_status *)NULL)), max_ivar_index)"), CType::Immediate.parse("size_t")],
+      inlined_iseqs: [Primitive.cexpr!("OFFSETOF((*((struct compile_status *)NULL)), inlined_iseqs)"), CType::Pointer.new { CType::Pointer.new { self.rb_iseq_constant_body } }],
+      inline_context: [Primitive.cexpr!("OFFSETOF((*((struct compile_status *)NULL)), inline_context)"), self.inlined_call_context],
     )
   end
 
   def C.inlined_call_context
     @inlined_call_context ||= CType::Struct.new(
       "inlined_call_context", Primitive.cexpr!("SIZEOF(struct inlined_call_context)"),
-      orig_argc: [0, CType::Immediate.parse("int")],
-      me: [64, self.VALUE],
-      param_size: [128, CType::Immediate.parse("int")],
-      local_size: [160, CType::Immediate.parse("int")],
+      orig_argc: [Primitive.cexpr!("OFFSETOF((*((struct inlined_call_context *)NULL)), orig_argc)"), CType::Immediate.parse("int")],
+      me: [Primitive.cexpr!("OFFSETOF((*((struct inlined_call_context *)NULL)), me)"), self.VALUE],
+      param_size: [Primitive.cexpr!("OFFSETOF((*((struct inlined_call_context *)NULL)), param_size)"), CType::Immediate.parse("int")],
+      local_size: [Primitive.cexpr!("OFFSETOF((*((struct inlined_call_context *)NULL)), local_size)"), CType::Immediate.parse("int")],
     )
   end
 
   def C.iseq_inline_constant_cache
     @iseq_inline_constant_cache ||= CType::Struct.new(
       "iseq_inline_constant_cache", Primitive.cexpr!("SIZEOF(struct iseq_inline_constant_cache)"),
-      entry: [0, CType::Pointer.new { self.iseq_inline_constant_cache_entry }],
-      segments: [64, CType::Pointer.new { self.ID }],
+      entry: [Primitive.cexpr!("OFFSETOF((*((struct iseq_inline_constant_cache *)NULL)), entry)"), CType::Pointer.new { self.iseq_inline_constant_cache_entry }],
+      segments: [Primitive.cexpr!("OFFSETOF((*((struct iseq_inline_constant_cache *)NULL)), segments)"), CType::Pointer.new { self.ID }],
     )
   end
 
   def C.iseq_inline_constant_cache_entry
     @iseq_inline_constant_cache_entry ||= CType::Struct.new(
       "iseq_inline_constant_cache_entry", Primitive.cexpr!("SIZEOF(struct iseq_inline_constant_cache_entry)"),
-      flags: [0, self.VALUE],
-      value: [64, self.VALUE],
-      _unused1: [128, self.VALUE],
-      _unused2: [192, self.VALUE],
-      ic_cref: [256, CType::Pointer.new { self.rb_cref_t }],
+      flags: [Primitive.cexpr!("OFFSETOF((*((struct iseq_inline_constant_cache_entry *)NULL)), flags)"), self.VALUE],
+      value: [Primitive.cexpr!("OFFSETOF((*((struct iseq_inline_constant_cache_entry *)NULL)), value)"), self.VALUE],
+      _unused1: [Primitive.cexpr!("OFFSETOF((*((struct iseq_inline_constant_cache_entry *)NULL)), _unused1)"), self.VALUE],
+      _unused2: [Primitive.cexpr!("OFFSETOF((*((struct iseq_inline_constant_cache_entry *)NULL)), _unused2)"), self.VALUE],
+      ic_cref: [Primitive.cexpr!("OFFSETOF((*((struct iseq_inline_constant_cache_entry *)NULL)), ic_cref)"), CType::Pointer.new { self.rb_cref_t }],
     )
   end
 
   def C.iseq_inline_iv_cache_entry
     @iseq_inline_iv_cache_entry ||= CType::Struct.new(
       "iseq_inline_iv_cache_entry", Primitive.cexpr!("SIZEOF(struct iseq_inline_iv_cache_entry)"),
-      entry: [0, CType::Pointer.new { self.rb_iv_index_tbl_entry }],
+      entry: [Primitive.cexpr!("OFFSETOF((*((struct iseq_inline_iv_cache_entry *)NULL)), entry)"), CType::Pointer.new { self.rb_iv_index_tbl_entry }],
     )
   end
 
@@ -244,8 +244,8 @@ module RubyVM::MJIT
       "iseq_inline_storage_entry", Primitive.cexpr!("SIZEOF(union iseq_inline_storage_entry)"),
       once: CType::Struct.new(
         "", Primitive.cexpr!("SIZEOF(((union iseq_inline_storage_entry *)NULL)->once)"),
-        running_thread: [0, CType::Pointer.new { self.rb_thread_struct }],
-        value: [64, self.VALUE],
+        running_thread: [Primitive.cexpr!("OFFSETOF(((union iseq_inline_storage_entry *)NULL)->once, running_thread)"), CType::Pointer.new { self.rb_thread_struct }],
+        value: [Primitive.cexpr!("OFFSETOF(((union iseq_inline_storage_entry *)NULL)->once, value)"), self.VALUE],
       ),
       ic_cache: self.iseq_inline_constant_cache,
       iv_cache: self.iseq_inline_iv_cache_entry,
@@ -255,58 +255,58 @@ module RubyVM::MJIT
   def C.mjit_options
     @mjit_options ||= CType::Struct.new(
       "mjit_options", Primitive.cexpr!("SIZEOF(struct mjit_options)"),
-      on: [0, self._Bool],
-      save_temps: [8, self._Bool],
-      warnings: [16, self._Bool],
-      debug: [24, self._Bool],
-      debug_flags: [64, CType::Pointer.new { CType::Immediate.parse("char") }],
-      wait: [128, self._Bool],
-      min_calls: [160, CType::Immediate.parse("unsigned int")],
-      verbose: [192, CType::Immediate.parse("int")],
-      max_cache_size: [224, CType::Immediate.parse("int")],
-      pause: [256, self._Bool],
-      custom: [264, self._Bool],
+      on: [Primitive.cexpr!("OFFSETOF((*((struct mjit_options *)NULL)), on)"), self._Bool],
+      save_temps: [Primitive.cexpr!("OFFSETOF((*((struct mjit_options *)NULL)), save_temps)"), self._Bool],
+      warnings: [Primitive.cexpr!("OFFSETOF((*((struct mjit_options *)NULL)), warnings)"), self._Bool],
+      debug: [Primitive.cexpr!("OFFSETOF((*((struct mjit_options *)NULL)), debug)"), self._Bool],
+      debug_flags: [Primitive.cexpr!("OFFSETOF((*((struct mjit_options *)NULL)), debug_flags)"), CType::Pointer.new { CType::Immediate.parse("char") }],
+      wait: [Primitive.cexpr!("OFFSETOF((*((struct mjit_options *)NULL)), wait)"), self._Bool],
+      min_calls: [Primitive.cexpr!("OFFSETOF((*((struct mjit_options *)NULL)), min_calls)"), CType::Immediate.parse("unsigned int")],
+      verbose: [Primitive.cexpr!("OFFSETOF((*((struct mjit_options *)NULL)), verbose)"), CType::Immediate.parse("int")],
+      max_cache_size: [Primitive.cexpr!("OFFSETOF((*((struct mjit_options *)NULL)), max_cache_size)"), CType::Immediate.parse("int")],
+      pause: [Primitive.cexpr!("OFFSETOF((*((struct mjit_options *)NULL)), pause)"), self._Bool],
+      custom: [Primitive.cexpr!("OFFSETOF((*((struct mjit_options *)NULL)), custom)"), self._Bool],
     )
   end
 
   def C.rb_builtin_function
     @rb_builtin_function ||= CType::Struct.new(
       "rb_builtin_function", Primitive.cexpr!("SIZEOF(struct rb_builtin_function)"),
-      func_ptr: [0, CType::Pointer.new { CType::Immediate.parse("void") }],
-      argc: [64, CType::Immediate.parse("int")],
-      index: [96, CType::Immediate.parse("int")],
-      name: [128, CType::Pointer.new { CType::Immediate.parse("char") }],
-      compiler: [192, CType::Immediate.parse("void *")],
+      func_ptr: [Primitive.cexpr!("OFFSETOF((*((struct rb_builtin_function *)NULL)), func_ptr)"), CType::Pointer.new { CType::Immediate.parse("void") }],
+      argc: [Primitive.cexpr!("OFFSETOF((*((struct rb_builtin_function *)NULL)), argc)"), CType::Immediate.parse("int")],
+      index: [Primitive.cexpr!("OFFSETOF((*((struct rb_builtin_function *)NULL)), index)"), CType::Immediate.parse("int")],
+      name: [Primitive.cexpr!("OFFSETOF((*((struct rb_builtin_function *)NULL)), name)"), CType::Pointer.new { CType::Immediate.parse("char") }],
+      compiler: [Primitive.cexpr!("OFFSETOF((*((struct rb_builtin_function *)NULL)), compiler)"), CType::Immediate.parse("void *")],
     )
   end
 
   def C.rb_call_data
     @rb_call_data ||= CType::Struct.new(
       "rb_call_data", Primitive.cexpr!("SIZEOF(struct rb_call_data)"),
-      ci: [0, CType::Pointer.new { self.rb_callinfo }],
-      cc: [64, CType::Pointer.new { self.rb_callcache }],
+      ci: [Primitive.cexpr!("OFFSETOF((*((struct rb_call_data *)NULL)), ci)"), CType::Pointer.new { self.rb_callinfo }],
+      cc: [Primitive.cexpr!("OFFSETOF((*((struct rb_call_data *)NULL)), cc)"), CType::Pointer.new { self.rb_callcache }],
     )
   end
 
   def C.rb_callable_method_entry_struct
     @rb_callable_method_entry_struct ||= CType::Struct.new(
       "rb_callable_method_entry_struct", Primitive.cexpr!("SIZEOF(struct rb_callable_method_entry_struct)"),
-      flags: [0, self.VALUE],
-      defined_class: [64, self.VALUE],
-      def: [128, CType::Pointer.new { self.rb_method_definition_struct }],
-      called_id: [192, self.ID],
-      owner: [256, self.VALUE],
+      flags: [Primitive.cexpr!("OFFSETOF((*((struct rb_callable_method_entry_struct *)NULL)), flags)"), self.VALUE],
+      defined_class: [Primitive.cexpr!("OFFSETOF((*((struct rb_callable_method_entry_struct *)NULL)), defined_class)"), self.VALUE],
+      def: [Primitive.cexpr!("OFFSETOF((*((struct rb_callable_method_entry_struct *)NULL)), def)"), CType::Pointer.new { self.rb_method_definition_struct }],
+      called_id: [Primitive.cexpr!("OFFSETOF((*((struct rb_callable_method_entry_struct *)NULL)), called_id)"), self.ID],
+      owner: [Primitive.cexpr!("OFFSETOF((*((struct rb_callable_method_entry_struct *)NULL)), owner)"), self.VALUE],
     )
   end
 
   def C.rb_callcache
     @rb_callcache ||= CType::Struct.new(
       "rb_callcache", Primitive.cexpr!("SIZEOF(struct rb_callcache)"),
-      flags: [0, self.VALUE],
-      klass: [64, self.VALUE],
-      cme_: [128, CType::Pointer.new { self.rb_callable_method_entry_struct }],
-      call_: [192, self.vm_call_handler],
-      aux_: [256, CType::Union.new(
+      flags: [Primitive.cexpr!("OFFSETOF((*((struct rb_callcache *)NULL)), flags)"), self.VALUE],
+      klass: [Primitive.cexpr!("OFFSETOF((*((struct rb_callcache *)NULL)), klass)"), self.VALUE],
+      cme_: [Primitive.cexpr!("OFFSETOF((*((struct rb_callcache *)NULL)), cme_)"), CType::Pointer.new { self.rb_callable_method_entry_struct }],
+      call_: [Primitive.cexpr!("OFFSETOF((*((struct rb_callcache *)NULL)), call_)"), self.vm_call_handler],
+      aux_: [Primitive.cexpr!("OFFSETOF((*((struct rb_callcache *)NULL)), aux_)"), CType::Union.new(
         "", Primitive.cexpr!("SIZEOF(((struct rb_callcache *)NULL)->aux_)"),
         attr_index: CType::Immediate.parse("unsigned int"),
         method_missing_reason: self.method_missing_reason,
@@ -318,68 +318,68 @@ module RubyVM::MJIT
   def C.rb_callinfo
     @rb_callinfo ||= CType::Struct.new(
       "rb_callinfo", Primitive.cexpr!("SIZEOF(struct rb_callinfo)"),
-      flags: [0, self.VALUE],
-      kwarg: [64, CType::Pointer.new { self.rb_callinfo_kwarg }],
-      mid: [128, self.VALUE],
-      flag: [192, self.VALUE],
-      argc: [256, self.VALUE],
+      flags: [Primitive.cexpr!("OFFSETOF((*((struct rb_callinfo *)NULL)), flags)"), self.VALUE],
+      kwarg: [Primitive.cexpr!("OFFSETOF((*((struct rb_callinfo *)NULL)), kwarg)"), CType::Pointer.new { self.rb_callinfo_kwarg }],
+      mid: [Primitive.cexpr!("OFFSETOF((*((struct rb_callinfo *)NULL)), mid)"), self.VALUE],
+      flag: [Primitive.cexpr!("OFFSETOF((*((struct rb_callinfo *)NULL)), flag)"), self.VALUE],
+      argc: [Primitive.cexpr!("OFFSETOF((*((struct rb_callinfo *)NULL)), argc)"), self.VALUE],
     )
   end
 
   def C.rb_control_frame_t
     @rb_control_frame_t ||= CType::Struct.new(
-      "rb_control_frame_struct", 64,
-      pc: [0, CType::Pointer.new { self.VALUE }],
-      sp: [64, CType::Pointer.new { self.VALUE }],
-      iseq: [128, CType::Pointer.new { self.rb_iseq_t }],
-      self: [192, self.VALUE],
-      ep: [256, CType::Pointer.new { self.VALUE }],
-      block_code: [320, CType::Pointer.new { CType::Immediate.parse("void") }],
-      __bp__: [384, CType::Pointer.new { self.VALUE }],
-      jit_return: [448, CType::Pointer.new { CType::Immediate.parse("void") }],
+      "rb_control_frame_struct", Primitive.cexpr!("SIZEOF(struct rb_control_frame_struct)"),
+      pc: [Primitive.cexpr!("OFFSETOF((*((struct rb_control_frame_struct *)NULL)), pc)"), CType::Pointer.new { self.VALUE }],
+      sp: [Primitive.cexpr!("OFFSETOF((*((struct rb_control_frame_struct *)NULL)), sp)"), CType::Pointer.new { self.VALUE }],
+      iseq: [Primitive.cexpr!("OFFSETOF((*((struct rb_control_frame_struct *)NULL)), iseq)"), CType::Pointer.new { self.rb_iseq_t }],
+      self: [Primitive.cexpr!("OFFSETOF((*((struct rb_control_frame_struct *)NULL)), self)"), self.VALUE],
+      ep: [Primitive.cexpr!("OFFSETOF((*((struct rb_control_frame_struct *)NULL)), ep)"), CType::Pointer.new { self.VALUE }],
+      block_code: [Primitive.cexpr!("OFFSETOF((*((struct rb_control_frame_struct *)NULL)), block_code)"), CType::Pointer.new { CType::Immediate.parse("void") }],
+      __bp__: [Primitive.cexpr!("OFFSETOF((*((struct rb_control_frame_struct *)NULL)), __bp__)"), CType::Pointer.new { self.VALUE }],
+      jit_return: [Primitive.cexpr!("OFFSETOF((*((struct rb_control_frame_struct *)NULL)), jit_return)"), CType::Pointer.new { CType::Immediate.parse("void") }],
     )
   end
 
   def C.rb_cref_t
     @rb_cref_t ||= CType::Struct.new(
       "rb_cref_struct", Primitive.cexpr!("SIZEOF(struct rb_cref_struct)"),
-      flags: [0, self.VALUE],
-      refinements: [64, self.VALUE],
-      klass_or_self: [128, self.VALUE],
-      next: [192, CType::Pointer.new { self.rb_cref_struct }],
-      scope_visi: [256, self.rb_scope_visibility_t],
+      flags: [Primitive.cexpr!("OFFSETOF((*((struct rb_cref_struct *)NULL)), flags)"), self.VALUE],
+      refinements: [Primitive.cexpr!("OFFSETOF((*((struct rb_cref_struct *)NULL)), refinements)"), self.VALUE],
+      klass_or_self: [Primitive.cexpr!("OFFSETOF((*((struct rb_cref_struct *)NULL)), klass_or_self)"), self.VALUE],
+      next: [Primitive.cexpr!("OFFSETOF((*((struct rb_cref_struct *)NULL)), next)"), CType::Pointer.new { self.rb_cref_struct }],
+      scope_visi: [Primitive.cexpr!("OFFSETOF((*((struct rb_cref_struct *)NULL)), scope_visi)"), self.rb_scope_visibility_t],
     )
   end
 
   def C.rb_execution_context_struct
     @rb_execution_context_struct ||= CType::Struct.new(
-      "rb_execution_context_struct", 1,
-      vm_stack: [-1, CType::Pointer.new { self.VALUE }],
-      vm_stack_size: [-1, CType::Immediate.parse("size_t")],
-      cfp: [-1, CType::Pointer.new { self.rb_control_frame_t }],
-      tag: [-1, CType::Pointer.new { self.rb_vm_tag }],
-      interrupt_flag: [-1, self.rb_atomic_t],
-      interrupt_mask: [-1, self.rb_atomic_t],
-      fiber_ptr: [-1, CType::Pointer.new { self.rb_fiber_t }],
-      thread_ptr: [-1, CType::Pointer.new { self.rb_thread_struct }],
-      local_storage: [-1, CType::Pointer.new { self.rb_id_table }],
-      local_storage_recursive_hash: [-1, self.VALUE],
-      local_storage_recursive_hash_for_trace: [-1, self.VALUE],
-      root_lep: [-1, CType::Pointer.new { self.VALUE }],
-      root_svar: [-1, self.VALUE],
-      ensure_list: [-1, CType::Pointer.new { self.rb_ensure_list_t }],
-      trace_arg: [-1, CType::Pointer.new { self.rb_trace_arg_struct }],
-      errinfo: [-1, self.VALUE],
-      passed_block_handler: [-1, self.VALUE],
-      raised_flag: [-1, CType::Immediate.parse("uint8_t")],
-      method_missing_reason: [-1, self.method_missing_reason],
-      private_const_reference: [-1, self.VALUE],
-      machine: [-1, CType::Struct.new(
-        "", 1,
-        stack_start: [-1, CType::Pointer.new { self.VALUE }],
-        stack_end: [-1, CType::Pointer.new { self.VALUE }],
-        stack_maxsize: [-1, CType::Immediate.parse("size_t")],
-        regs: [-1, CType::Immediate.parse("int")],
+      "rb_execution_context_struct", Primitive.cexpr!("SIZEOF(struct rb_execution_context_struct)"),
+      vm_stack: [Primitive.cexpr!("OFFSETOF((*((struct rb_execution_context_struct *)NULL)), vm_stack)"), CType::Pointer.new { self.VALUE }],
+      vm_stack_size: [Primitive.cexpr!("OFFSETOF((*((struct rb_execution_context_struct *)NULL)), vm_stack_size)"), CType::Immediate.parse("size_t")],
+      cfp: [Primitive.cexpr!("OFFSETOF((*((struct rb_execution_context_struct *)NULL)), cfp)"), CType::Pointer.new { self.rb_control_frame_t }],
+      tag: [Primitive.cexpr!("OFFSETOF((*((struct rb_execution_context_struct *)NULL)), tag)"), CType::Pointer.new { self.rb_vm_tag }],
+      interrupt_flag: [Primitive.cexpr!("OFFSETOF((*((struct rb_execution_context_struct *)NULL)), interrupt_flag)"), self.rb_atomic_t],
+      interrupt_mask: [Primitive.cexpr!("OFFSETOF((*((struct rb_execution_context_struct *)NULL)), interrupt_mask)"), self.rb_atomic_t],
+      fiber_ptr: [Primitive.cexpr!("OFFSETOF((*((struct rb_execution_context_struct *)NULL)), fiber_ptr)"), CType::Pointer.new { self.rb_fiber_t }],
+      thread_ptr: [Primitive.cexpr!("OFFSETOF((*((struct rb_execution_context_struct *)NULL)), thread_ptr)"), CType::Pointer.new { self.rb_thread_struct }],
+      local_storage: [Primitive.cexpr!("OFFSETOF((*((struct rb_execution_context_struct *)NULL)), local_storage)"), CType::Pointer.new { self.rb_id_table }],
+      local_storage_recursive_hash: [Primitive.cexpr!("OFFSETOF((*((struct rb_execution_context_struct *)NULL)), local_storage_recursive_hash)"), self.VALUE],
+      local_storage_recursive_hash_for_trace: [Primitive.cexpr!("OFFSETOF((*((struct rb_execution_context_struct *)NULL)), local_storage_recursive_hash_for_trace)"), self.VALUE],
+      root_lep: [Primitive.cexpr!("OFFSETOF((*((struct rb_execution_context_struct *)NULL)), root_lep)"), CType::Pointer.new { self.VALUE }],
+      root_svar: [Primitive.cexpr!("OFFSETOF((*((struct rb_execution_context_struct *)NULL)), root_svar)"), self.VALUE],
+      ensure_list: [Primitive.cexpr!("OFFSETOF((*((struct rb_execution_context_struct *)NULL)), ensure_list)"), CType::Pointer.new { self.rb_ensure_list_t }],
+      trace_arg: [Primitive.cexpr!("OFFSETOF((*((struct rb_execution_context_struct *)NULL)), trace_arg)"), CType::Pointer.new { self.rb_trace_arg_struct }],
+      errinfo: [Primitive.cexpr!("OFFSETOF((*((struct rb_execution_context_struct *)NULL)), errinfo)"), self.VALUE],
+      passed_block_handler: [Primitive.cexpr!("OFFSETOF((*((struct rb_execution_context_struct *)NULL)), passed_block_handler)"), self.VALUE],
+      raised_flag: [Primitive.cexpr!("OFFSETOF((*((struct rb_execution_context_struct *)NULL)), raised_flag)"), CType::Immediate.parse("uint8_t")],
+      method_missing_reason: [nil, self.method_missing_reason],
+      private_const_reference: [Primitive.cexpr!("OFFSETOF((*((struct rb_execution_context_struct *)NULL)), private_const_reference)"), self.VALUE],
+      machine: [Primitive.cexpr!("OFFSETOF((*((struct rb_execution_context_struct *)NULL)), machine)"), CType::Struct.new(
+        "", Primitive.cexpr!("SIZEOF(((struct rb_execution_context_struct *)NULL)->machine)"),
+        stack_start: [Primitive.cexpr!("OFFSETOF(((struct rb_execution_context_struct *)NULL)->machine, stack_start)"), CType::Pointer.new { self.VALUE }],
+        stack_end: [Primitive.cexpr!("OFFSETOF(((struct rb_execution_context_struct *)NULL)->machine, stack_end)"), CType::Pointer.new { self.VALUE }],
+        stack_maxsize: [Primitive.cexpr!("OFFSETOF(((struct rb_execution_context_struct *)NULL)->machine, stack_maxsize)"), CType::Immediate.parse("size_t")],
+        regs: [Primitive.cexpr!("OFFSETOF(((struct rb_execution_context_struct *)NULL)->machine, regs)"), CType::Immediate.parse("int")],
       )],
     )
   end
@@ -391,12 +391,12 @@ module RubyVM::MJIT
   def C.rb_iseq_constant_body
     @rb_iseq_constant_body ||= CType::Struct.new(
       "rb_iseq_constant_body", Primitive.cexpr!("SIZEOF(struct rb_iseq_constant_body)"),
-      type: [0, self.rb_iseq_type],
-      iseq_size: [32, CType::Immediate.parse("unsigned int")],
-      iseq_encoded: [64, CType::Pointer.new { self.VALUE }],
-      param: [128, CType::Struct.new(
+      type: [Primitive.cexpr!("OFFSETOF((*((struct rb_iseq_constant_body *)NULL)), type)"), self.rb_iseq_type],
+      iseq_size: [Primitive.cexpr!("OFFSETOF((*((struct rb_iseq_constant_body *)NULL)), iseq_size)"), CType::Immediate.parse("unsigned int")],
+      iseq_encoded: [Primitive.cexpr!("OFFSETOF((*((struct rb_iseq_constant_body *)NULL)), iseq_encoded)"), CType::Pointer.new { self.VALUE }],
+      param: [Primitive.cexpr!("OFFSETOF((*((struct rb_iseq_constant_body *)NULL)), param)"), CType::Struct.new(
         "", Primitive.cexpr!("SIZEOF(((struct rb_iseq_constant_body *)NULL)->param)"),
-        flags: [0, CType::Struct.new(
+        flags: [Primitive.cexpr!("OFFSETOF(((struct rb_iseq_constant_body *)NULL)->param, flags)"), CType::Struct.new(
           "", Primitive.cexpr!("SIZEOF(((struct rb_iseq_constant_body *)NULL)->param.flags)"),
           has_lead: [0, CType::BitField.new(1, 0)],
           has_opt: [1, CType::BitField.new(1, 1)],
@@ -409,85 +409,85 @@ module RubyVM::MJIT
           accepts_no_kwarg: [8, CType::BitField.new(1, 0)],
           ruby2_keywords: [9, CType::BitField.new(1, 1)],
         )],
-        size: [32, CType::Immediate.parse("unsigned int")],
-        lead_num: [64, CType::Immediate.parse("int")],
-        opt_num: [96, CType::Immediate.parse("int")],
-        rest_start: [128, CType::Immediate.parse("int")],
-        post_start: [160, CType::Immediate.parse("int")],
-        post_num: [192, CType::Immediate.parse("int")],
-        block_start: [224, CType::Immediate.parse("int")],
-        opt_table: [256, CType::Pointer.new { self.VALUE }],
-        keyword: [320, CType::Pointer.new { self.rb_iseq_param_keyword }],
+        size: [Primitive.cexpr!("OFFSETOF(((struct rb_iseq_constant_body *)NULL)->param, size)"), CType::Immediate.parse("unsigned int")],
+        lead_num: [Primitive.cexpr!("OFFSETOF(((struct rb_iseq_constant_body *)NULL)->param, lead_num)"), CType::Immediate.parse("int")],
+        opt_num: [Primitive.cexpr!("OFFSETOF(((struct rb_iseq_constant_body *)NULL)->param, opt_num)"), CType::Immediate.parse("int")],
+        rest_start: [Primitive.cexpr!("OFFSETOF(((struct rb_iseq_constant_body *)NULL)->param, rest_start)"), CType::Immediate.parse("int")],
+        post_start: [Primitive.cexpr!("OFFSETOF(((struct rb_iseq_constant_body *)NULL)->param, post_start)"), CType::Immediate.parse("int")],
+        post_num: [Primitive.cexpr!("OFFSETOF(((struct rb_iseq_constant_body *)NULL)->param, post_num)"), CType::Immediate.parse("int")],
+        block_start: [Primitive.cexpr!("OFFSETOF(((struct rb_iseq_constant_body *)NULL)->param, block_start)"), CType::Immediate.parse("int")],
+        opt_table: [Primitive.cexpr!("OFFSETOF(((struct rb_iseq_constant_body *)NULL)->param, opt_table)"), CType::Pointer.new { self.VALUE }],
+        keyword: [Primitive.cexpr!("OFFSETOF(((struct rb_iseq_constant_body *)NULL)->param, keyword)"), CType::Pointer.new { self.rb_iseq_param_keyword }],
       )],
-      location: [512, self.rb_iseq_location_t],
-      insns_info: [960, self.iseq_insn_info],
-      local_table: [1216, CType::Pointer.new { self.ID }],
-      catch_table: [1280, CType::Pointer.new { self.iseq_catch_table }],
-      parent_iseq: [1344, CType::Pointer.new { self.rb_iseq_struct }],
-      local_iseq: [1408, CType::Pointer.new { self.rb_iseq_struct }],
-      is_entries: [1472, CType::Pointer.new { self.iseq_inline_storage_entry }],
-      call_data: [1536, CType::Pointer.new { self.rb_call_data }],
-      variable: [1600, CType::Struct.new(
+      location: [Primitive.cexpr!("OFFSETOF((*((struct rb_iseq_constant_body *)NULL)), location)"), self.rb_iseq_location_t],
+      insns_info: [Primitive.cexpr!("OFFSETOF((*((struct rb_iseq_constant_body *)NULL)), insns_info)"), self.iseq_insn_info],
+      local_table: [Primitive.cexpr!("OFFSETOF((*((struct rb_iseq_constant_body *)NULL)), local_table)"), CType::Pointer.new { self.ID }],
+      catch_table: [Primitive.cexpr!("OFFSETOF((*((struct rb_iseq_constant_body *)NULL)), catch_table)"), CType::Pointer.new { self.iseq_catch_table }],
+      parent_iseq: [Primitive.cexpr!("OFFSETOF((*((struct rb_iseq_constant_body *)NULL)), parent_iseq)"), CType::Pointer.new { self.rb_iseq_struct }],
+      local_iseq: [Primitive.cexpr!("OFFSETOF((*((struct rb_iseq_constant_body *)NULL)), local_iseq)"), CType::Pointer.new { self.rb_iseq_struct }],
+      is_entries: [Primitive.cexpr!("OFFSETOF((*((struct rb_iseq_constant_body *)NULL)), is_entries)"), CType::Pointer.new { self.iseq_inline_storage_entry }],
+      call_data: [Primitive.cexpr!("OFFSETOF((*((struct rb_iseq_constant_body *)NULL)), call_data)"), CType::Pointer.new { self.rb_call_data }],
+      variable: [Primitive.cexpr!("OFFSETOF((*((struct rb_iseq_constant_body *)NULL)), variable)"), CType::Struct.new(
         "", Primitive.cexpr!("SIZEOF(((struct rb_iseq_constant_body *)NULL)->variable)"),
-        flip_count: [0, self.rb_snum_t],
-        script_lines: [64, self.VALUE],
-        coverage: [128, self.VALUE],
-        pc2branchindex: [192, self.VALUE],
-        original_iseq: [256, CType::Pointer.new { self.VALUE }],
+        flip_count: [Primitive.cexpr!("OFFSETOF(((struct rb_iseq_constant_body *)NULL)->variable, flip_count)"), self.rb_snum_t],
+        script_lines: [Primitive.cexpr!("OFFSETOF(((struct rb_iseq_constant_body *)NULL)->variable, script_lines)"), self.VALUE],
+        coverage: [Primitive.cexpr!("OFFSETOF(((struct rb_iseq_constant_body *)NULL)->variable, coverage)"), self.VALUE],
+        pc2branchindex: [Primitive.cexpr!("OFFSETOF(((struct rb_iseq_constant_body *)NULL)->variable, pc2branchindex)"), self.VALUE],
+        original_iseq: [Primitive.cexpr!("OFFSETOF(((struct rb_iseq_constant_body *)NULL)->variable, original_iseq)"), CType::Pointer.new { self.VALUE }],
       )],
-      local_table_size: [1920, CType::Immediate.parse("unsigned int")],
-      ic_size: [1952, CType::Immediate.parse("unsigned int")],
-      ise_size: [1984, CType::Immediate.parse("unsigned int")],
-      ivc_size: [2016, CType::Immediate.parse("unsigned int")],
-      icvarc_size: [2048, CType::Immediate.parse("unsigned int")],
-      ci_size: [2080, CType::Immediate.parse("unsigned int")],
-      stack_max: [2112, CType::Immediate.parse("unsigned int")],
-      mark_bits: [2176, CType::Union.new(
+      local_table_size: [Primitive.cexpr!("OFFSETOF((*((struct rb_iseq_constant_body *)NULL)), local_table_size)"), CType::Immediate.parse("unsigned int")],
+      ic_size: [Primitive.cexpr!("OFFSETOF((*((struct rb_iseq_constant_body *)NULL)), ic_size)"), CType::Immediate.parse("unsigned int")],
+      ise_size: [Primitive.cexpr!("OFFSETOF((*((struct rb_iseq_constant_body *)NULL)), ise_size)"), CType::Immediate.parse("unsigned int")],
+      ivc_size: [Primitive.cexpr!("OFFSETOF((*((struct rb_iseq_constant_body *)NULL)), ivc_size)"), CType::Immediate.parse("unsigned int")],
+      icvarc_size: [Primitive.cexpr!("OFFSETOF((*((struct rb_iseq_constant_body *)NULL)), icvarc_size)"), CType::Immediate.parse("unsigned int")],
+      ci_size: [Primitive.cexpr!("OFFSETOF((*((struct rb_iseq_constant_body *)NULL)), ci_size)"), CType::Immediate.parse("unsigned int")],
+      stack_max: [Primitive.cexpr!("OFFSETOF((*((struct rb_iseq_constant_body *)NULL)), stack_max)"), CType::Immediate.parse("unsigned int")],
+      mark_bits: [Primitive.cexpr!("OFFSETOF((*((struct rb_iseq_constant_body *)NULL)), mark_bits)"), CType::Union.new(
         "", Primitive.cexpr!("SIZEOF(((struct rb_iseq_constant_body *)NULL)->mark_bits)"),
         list: CType::Pointer.new { self.iseq_bits_t },
         single: self.iseq_bits_t,
       )],
-      catch_except_p: [2240, self._Bool],
-      builtin_inline_p: [2248, self._Bool],
-      outer_variables: [2304, CType::Pointer.new { self.rb_id_table }],
-      mandatory_only_iseq: [2368, CType::Pointer.new { self.rb_iseq_t }],
-      jit_func: [2432, CType::Immediate.parse("void *")],
-      total_calls: [2496, CType::Immediate.parse("unsigned long")],
-      jit_unit: [2560, CType::Pointer.new { self.rb_mjit_unit }],
-      yjit_payload: [2624, CType::Pointer.new { CType::Immediate.parse("void") }],
+      catch_except_p: [Primitive.cexpr!("OFFSETOF((*((struct rb_iseq_constant_body *)NULL)), catch_except_p)"), self._Bool],
+      builtin_inline_p: [Primitive.cexpr!("OFFSETOF((*((struct rb_iseq_constant_body *)NULL)), builtin_inline_p)"), self._Bool],
+      outer_variables: [Primitive.cexpr!("OFFSETOF((*((struct rb_iseq_constant_body *)NULL)), outer_variables)"), CType::Pointer.new { self.rb_id_table }],
+      mandatory_only_iseq: [Primitive.cexpr!("OFFSETOF((*((struct rb_iseq_constant_body *)NULL)), mandatory_only_iseq)"), CType::Pointer.new { self.rb_iseq_t }],
+      jit_func: [Primitive.cexpr!("OFFSETOF((*((struct rb_iseq_constant_body *)NULL)), jit_func)"), CType::Immediate.parse("void *")],
+      total_calls: [Primitive.cexpr!("OFFSETOF((*((struct rb_iseq_constant_body *)NULL)), total_calls)"), CType::Immediate.parse("unsigned long")],
+      jit_unit: [Primitive.cexpr!("OFFSETOF((*((struct rb_iseq_constant_body *)NULL)), jit_unit)"), CType::Pointer.new { self.rb_mjit_unit }],
+      yjit_payload: [Primitive.cexpr!("OFFSETOF((*((struct rb_iseq_constant_body *)NULL)), yjit_payload)"), CType::Pointer.new { CType::Immediate.parse("void") }],
     )
   end
 
   def C.rb_iseq_location_t
     @rb_iseq_location_t ||= CType::Struct.new(
       "rb_iseq_location_struct", Primitive.cexpr!("SIZEOF(struct rb_iseq_location_struct)"),
-      pathobj: [0, self.VALUE, true],
-      base_label: [64, self.VALUE, true],
-      label: [128, self.VALUE, true],
-      first_lineno: [192, self.VALUE, true],
-      node_id: [256, CType::Immediate.parse("int")],
-      code_location: [288, self.rb_code_location_t],
+      pathobj: [Primitive.cexpr!("OFFSETOF((*((struct rb_iseq_location_struct *)NULL)), pathobj)"), self.VALUE, true],
+      base_label: [Primitive.cexpr!("OFFSETOF((*((struct rb_iseq_location_struct *)NULL)), base_label)"), self.VALUE, true],
+      label: [Primitive.cexpr!("OFFSETOF((*((struct rb_iseq_location_struct *)NULL)), label)"), self.VALUE, true],
+      first_lineno: [Primitive.cexpr!("OFFSETOF((*((struct rb_iseq_location_struct *)NULL)), first_lineno)"), self.VALUE, true],
+      node_id: [Primitive.cexpr!("OFFSETOF((*((struct rb_iseq_location_struct *)NULL)), node_id)"), CType::Immediate.parse("int")],
+      code_location: [Primitive.cexpr!("OFFSETOF((*((struct rb_iseq_location_struct *)NULL)), code_location)"), self.rb_code_location_t],
     )
   end
 
   def C.rb_iseq_struct
     @rb_iseq_struct ||= CType::Struct.new(
       "rb_iseq_struct", Primitive.cexpr!("SIZEOF(struct rb_iseq_struct)"),
-      flags: [0, self.VALUE],
-      wrapper: [64, self.VALUE],
-      body: [128, CType::Pointer.new { self.rb_iseq_constant_body }],
-      aux: [192, CType::Union.new(
+      flags: [Primitive.cexpr!("OFFSETOF((*((struct rb_iseq_struct *)NULL)), flags)"), self.VALUE],
+      wrapper: [Primitive.cexpr!("OFFSETOF((*((struct rb_iseq_struct *)NULL)), wrapper)"), self.VALUE],
+      body: [Primitive.cexpr!("OFFSETOF((*((struct rb_iseq_struct *)NULL)), body)"), CType::Pointer.new { self.rb_iseq_constant_body }],
+      aux: [Primitive.cexpr!("OFFSETOF((*((struct rb_iseq_struct *)NULL)), aux)"), CType::Union.new(
         "", Primitive.cexpr!("SIZEOF(((struct rb_iseq_struct *)NULL)->aux)"),
         compile_data: CType::Pointer.new { self.iseq_compile_data },
         loader: CType::Struct.new(
           "", Primitive.cexpr!("SIZEOF(((struct rb_iseq_struct *)NULL)->aux.loader)"),
-          obj: [0, self.VALUE],
-          index: [64, CType::Immediate.parse("int")],
+          obj: [Primitive.cexpr!("OFFSETOF(((struct rb_iseq_struct *)NULL)->aux.loader, obj)"), self.VALUE],
+          index: [Primitive.cexpr!("OFFSETOF(((struct rb_iseq_struct *)NULL)->aux.loader, index)"), CType::Immediate.parse("int")],
         ),
         exec: CType::Struct.new(
           "", Primitive.cexpr!("SIZEOF(((struct rb_iseq_struct *)NULL)->aux.exec)"),
-          local_hooks: [0, CType::Pointer.new { self.rb_hook_list_struct }],
-          global_trace_events: [64, self.rb_event_flag_t],
+          local_hooks: [Primitive.cexpr!("OFFSETOF(((struct rb_iseq_struct *)NULL)->aux.exec, local_hooks)"), CType::Pointer.new { self.rb_hook_list_struct }],
+          global_trace_events: [Primitive.cexpr!("OFFSETOF(((struct rb_iseq_struct *)NULL)->aux.exec, global_trace_events)"), self.rb_event_flag_t],
         ),
       )],
     )
@@ -500,9 +500,9 @@ module RubyVM::MJIT
   def C.rb_iv_index_tbl_entry
     @rb_iv_index_tbl_entry ||= CType::Struct.new(
       "rb_iv_index_tbl_entry", Primitive.cexpr!("SIZEOF(struct rb_iv_index_tbl_entry)"),
-      index: [0, CType::Immediate.parse("uint32_t")],
-      class_serial: [64, self.rb_serial_t],
-      class_value: [128, self.VALUE],
+      index: [Primitive.cexpr!("OFFSETOF((*((struct rb_iv_index_tbl_entry *)NULL)), index)"), CType::Immediate.parse("uint32_t")],
+      class_serial: [Primitive.cexpr!("OFFSETOF((*((struct rb_iv_index_tbl_entry *)NULL)), class_serial)"), self.rb_serial_t],
+      class_value: [Primitive.cexpr!("OFFSETOF((*((struct rb_iv_index_tbl_entry *)NULL)), class_value)"), self.VALUE],
     )
   end
 
@@ -514,7 +514,7 @@ module RubyVM::MJIT
       alias_count: [5, CType::BitField.new(27, 5)],
       complemented_count: [32, CType::BitField.new(28, 0)],
       no_redef_warning: [60, CType::BitField.new(1, 4)],
-      body: [64, CType::Union.new(
+      body: [Primitive.cexpr!("OFFSETOF((*((struct rb_method_definition_struct *)NULL)), body)"), CType::Union.new(
         "", Primitive.cexpr!("SIZEOF(((struct rb_method_definition_struct *)NULL)->body)"),
         iseq: self.rb_method_iseq_t,
         cfunc: self.rb_method_cfunc_t,
@@ -524,16 +524,16 @@ module RubyVM::MJIT
         bmethod: self.rb_method_bmethod_t,
         optimized: self.rb_method_optimized_t,
       )],
-      original_id: [256, self.ID],
-      method_serial: [320, CType::Immediate.parse("uintptr_t")],
+      original_id: [Primitive.cexpr!("OFFSETOF((*((struct rb_method_definition_struct *)NULL)), original_id)"), self.ID],
+      method_serial: [Primitive.cexpr!("OFFSETOF((*((struct rb_method_definition_struct *)NULL)), method_serial)"), CType::Immediate.parse("uintptr_t")],
     )
   end
 
   def C.rb_method_iseq_t
     @rb_method_iseq_t ||= CType::Struct.new(
       "rb_method_iseq_struct", Primitive.cexpr!("SIZEOF(struct rb_method_iseq_struct)"),
-      iseqptr: [0, CType::Pointer.new { self.rb_iseq_t }],
-      cref: [64, CType::Pointer.new { self.rb_cref_t }],
+      iseqptr: [Primitive.cexpr!("OFFSETOF((*((struct rb_method_iseq_struct *)NULL)), iseqptr)"), CType::Pointer.new { self.rb_iseq_t }],
+      cref: [Primitive.cexpr!("OFFSETOF((*((struct rb_method_iseq_struct *)NULL)), cref)"), CType::Pointer.new { self.rb_cref_t }],
     )
   end
 
@@ -544,26 +544,26 @@ module RubyVM::MJIT
   def C.rb_mjit_compile_info
     @rb_mjit_compile_info ||= CType::Struct.new(
       "rb_mjit_compile_info", Primitive.cexpr!("SIZEOF(struct rb_mjit_compile_info)"),
-      disable_ivar_cache: [0, self._Bool],
-      disable_exivar_cache: [8, self._Bool],
-      disable_send_cache: [16, self._Bool],
-      disable_inlining: [24, self._Bool],
-      disable_const_cache: [32, self._Bool],
+      disable_ivar_cache: [Primitive.cexpr!("OFFSETOF((*((struct rb_mjit_compile_info *)NULL)), disable_ivar_cache)"), self._Bool],
+      disable_exivar_cache: [Primitive.cexpr!("OFFSETOF((*((struct rb_mjit_compile_info *)NULL)), disable_exivar_cache)"), self._Bool],
+      disable_send_cache: [Primitive.cexpr!("OFFSETOF((*((struct rb_mjit_compile_info *)NULL)), disable_send_cache)"), self._Bool],
+      disable_inlining: [Primitive.cexpr!("OFFSETOF((*((struct rb_mjit_compile_info *)NULL)), disable_inlining)"), self._Bool],
+      disable_const_cache: [Primitive.cexpr!("OFFSETOF((*((struct rb_mjit_compile_info *)NULL)), disable_const_cache)"), self._Bool],
     )
   end
 
   def C.rb_mjit_unit
     @rb_mjit_unit ||= CType::Struct.new(
       "rb_mjit_unit", Primitive.cexpr!("SIZEOF(struct rb_mjit_unit)"),
-      unode: [0, self.ccan_list_node],
-      id: [128, CType::Immediate.parse("int")],
-      handle: [192, CType::Pointer.new { CType::Immediate.parse("void") }],
-      iseq: [256, CType::Pointer.new { self.rb_iseq_t }],
-      used_code_p: [320, self._Bool],
-      compact_p: [328, self._Bool],
-      compile_info: [336, self.rb_mjit_compile_info],
-      cc_entries: [384, CType::Pointer.new { CType::Pointer.new { self.rb_callcache } }],
-      cc_entries_size: [448, CType::Immediate.parse("unsigned int")],
+      unode: [Primitive.cexpr!("OFFSETOF((*((struct rb_mjit_unit *)NULL)), unode)"), self.ccan_list_node],
+      id: [Primitive.cexpr!("OFFSETOF((*((struct rb_mjit_unit *)NULL)), id)"), CType::Immediate.parse("int")],
+      handle: [Primitive.cexpr!("OFFSETOF((*((struct rb_mjit_unit *)NULL)), handle)"), CType::Pointer.new { CType::Immediate.parse("void") }],
+      iseq: [Primitive.cexpr!("OFFSETOF((*((struct rb_mjit_unit *)NULL)), iseq)"), CType::Pointer.new { self.rb_iseq_t }],
+      used_code_p: [Primitive.cexpr!("OFFSETOF((*((struct rb_mjit_unit *)NULL)), used_code_p)"), self._Bool],
+      compact_p: [Primitive.cexpr!("OFFSETOF((*((struct rb_mjit_unit *)NULL)), compact_p)"), self._Bool],
+      compile_info: [Primitive.cexpr!("OFFSETOF((*((struct rb_mjit_unit *)NULL)), compile_info)"), self.rb_mjit_compile_info],
+      cc_entries: [Primitive.cexpr!("OFFSETOF((*((struct rb_mjit_unit *)NULL)), cc_entries)"), CType::Pointer.new { CType::Pointer.new { self.rb_callcache } }],
+      cc_entries_size: [Primitive.cexpr!("OFFSETOF((*((struct rb_mjit_unit *)NULL)), cc_entries_size)"), CType::Immediate.parse("unsigned int")],
     )
   end
 
