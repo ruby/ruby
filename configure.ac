@@ -3767,6 +3767,10 @@ AS_CASE(["${YJIT_SUPPORT}"],
              ]))
 
     YJIT_LIBS="yjit/target/${rb_rust_target_subdir}/libyjit.a"
+    AS_CASE(["$target_os"],[openbsd*],[
+        # Link libc++abi (which requires libpthread) for _Unwind_* functions needed by yjit
+        LDFLAGS="$LDFLAGS -lpthread -lc++abi"
+    ])
     YJIT_OBJ='yjit.$(OBJEXT)'
     AC_DEFINE(USE_YJIT, 1)
 ], [AC_DEFINE(USE_YJIT, 0)])
