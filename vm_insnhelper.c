@@ -1097,12 +1097,10 @@ fill_ivar_cache(const rb_iseq_t *iseq, IVC ic, const struct rb_callcache *cc, in
     if (is_attr) {
         if (vm_cc_markable(cc)) {
             vm_cc_attr_index_set(cc, index, shape_id, shape_id);
-            RB_OBJ_WRITTEN(cc, Qundef, rb_shape_get_shape_by_id(shape_id));
         }
     }
     else {
         vm_ic_attr_index_set(iseq, ic, index, shape_id, shape_id);
-        RB_OBJ_WRITTEN(iseq, Qundef, rb_shape_get_shape_by_id(shape_id));
     }
 }
 
@@ -1238,20 +1236,16 @@ general_path:
 }
 
 static void
-populate_cache(attr_index_t index, rb_shape_t *shape, rb_shape_t *next_shape, ID id, const rb_iseq_t *iseq, IVC ic, const struct rb_callcache *cc, bool is_attr)
+populate_cache(attr_index_t index, shape_id_t shape_id, shape_id_t next_shape_id, ID id, const rb_iseq_t *iseq, IVC ic, const struct rb_callcache *cc, bool is_attr)
 {
     // Cache population code
     if (is_attr) {
         if (vm_cc_markable(cc)) {
-            vm_cc_attr_index_set(cc, index, SHAPE_ID(shape), SHAPE_ID(next_shape));
-            RB_OBJ_WRITTEN(cc, Qundef, (VALUE)shape);
-            RB_OBJ_WRITTEN(cc, Qundef, (VALUE)next_shape);
+            vm_cc_attr_index_set(cc, index, shape_id, next_shape_id);
         }
     }
     else {
-        vm_ic_attr_index_set(iseq, ic, index, SHAPE_ID(shape), SHAPE_ID(next_shape));
-        RB_OBJ_WRITTEN(iseq, Qundef, (VALUE)shape);
-        RB_OBJ_WRITTEN(iseq, Qundef, (VALUE)next_shape);
+        vm_ic_attr_index_set(iseq, ic, index, shape_id, next_shape_id);
     }
 }
 
@@ -1272,9 +1266,14 @@ vm_setivar_slowpath(VALUE obj, ID id, VALUE val, const rb_iseq_t *iseq, IVC ic, 
 
                 uint32_t num_iv = ROBJECT_NUMIV(obj);
                 rb_shape_t* shape = rb_shape_get_shape(obj);
+                shape_id_t current_shape_id = ROBJECT_SHAPE_ID(obj);
+                shape_id_t next_shape_id = current_shape_id;
+
                 rb_shape_t* next_shape = rb_shape_get_next(shape, obj, id);
+
                 if (shape != next_shape) {
                     rb_shape_set_shape(obj, next_shape);
+                    next_shape_id = ROBJECT_SHAPE_ID(obj);
                 }
 
                 if (rb_shape_get_iv_index(next_shape, id, &index)) { // based off the hash stored in the transition tree
@@ -1282,7 +1281,7 @@ vm_setivar_slowpath(VALUE obj, ID id, VALUE val, const rb_iseq_t *iseq, IVC ic, 
                         rb_raise(rb_eArgError, "too many instance variables");
                     }
 
-                    populate_cache(index, shape, next_shape, id, iseq, ic, cc, is_attr);
+                    populate_cache(index, current_shape_id, next_shape_id, id, iseq, ic, cc, is_attr);
                 }
                 else {
                     rb_bug("Didn't find instance variable %s\n", rb_id2name(id));
@@ -1304,9 +1303,10 @@ vm_setivar_slowpath(VALUE obj, ID id, VALUE val, const rb_iseq_t *iseq, IVC ic, 
             break;
       default:
             {
-                rb_shape_t * shape = rb_shape_get_shape(obj);
+                shape_id_t shape_id = rb_shape_get_shape_id(obj);
                 rb_ivar_set(obj, id, val);
-                rb_shape_t * next_shape = rb_shape_get_shape(obj);
+                shape_id_t next_shape_id = rb_shape_get_shape_id(obj);
+                rb_shape_t *next_shape = rb_shape_get_shape_by_id(next_shape_id);
                 attr_index_t index;
 
                 if (rb_shape_get_iv_index(next_shape, id, &index)) { // based off the hash stored in the transition tree
@@ -1314,7 +1314,7 @@ vm_setivar_slowpath(VALUE obj, ID id, VALUE val, const rb_iseq_t *iseq, IVC ic, 
                         rb_raise(rb_eArgError, "too many instance variables");
                     }
 
-                    populate_cache(index, shape, next_shape, id, iseq, ic, cc, is_attr);
+                    populate_cache(index, shape_id, next_shape_id, id, iseq, ic, cc, is_attr);
                 }
                 else {
                     rb_bug("didn't find the id\n");
@@ -1362,11 +1362,9 @@ vm_setivar_default(VALUE obj, ID id, VALUE val, shape_id_t source_shape_id, shap
 #else
             ivtbl->shape_id = dest_shape_id;
 #endif
-            RB_OBJ_WRITTEN(obj, Qundef, rb_shape_get_shape_by_id(dest_shape_id));
         }
         else {
             // Just get the IV table
-            RUBY_ASSERT(GET_VM()->shape_list[dest_shape_id]);
             rb_gen_ivtbl_get(obj, 0, &ivtbl);
         }
 
@@ -1407,9 +1405,6 @@ vm_setivar(VALUE obj, ID id, VALUE val, shape_id_t source_shape_id, shape_id_t d
                             rb_init_iv_list(obj);
                         }
                         ROBJECT_SET_SHAPE_ID(obj, dest_shape_id);
-                    }
-                    else {
-                        RUBY_ASSERT(GET_VM()->shape_list[dest_shape_id]);
                     }
 
                     RUBY_ASSERT(index < ROBJECT_NUMIV(obj));

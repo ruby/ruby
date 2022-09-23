@@ -14,6 +14,12 @@ rb_shape_get_root_shape(void) {
     return GET_VM()->root_shape;
 }
 
+shape_id_t
+SHAPE_ID(rb_shape_t * shape)
+{
+    return (shape_id_t)(shape - GET_VM()->shape_list);
+}
+
 static rb_shape_t*
 rb_shape_get_frozen_root_shape(void) {
     return GET_VM()->frozen_root_shape;
@@ -30,8 +36,7 @@ rb_shape_get_shape_by_id(shape_id_t shape_id)
     RUBY_ASSERT(shape_id != INVALID_SHAPE_ID);
 
     rb_vm_t *vm = GET_VM();
-    rb_shape_t *shape = vm->shape_list[shape_id];
-    RUBY_ASSERT(IMEMO_TYPE_P(shape, imemo_shape));
+    rb_shape_t *shape = &vm->shape_list[shape_id];
     return shape;
 }
 
@@ -41,14 +46,8 @@ rb_shape_get_shape_by_id_without_assertion(shape_id_t shape_id)
     RUBY_ASSERT(shape_id != INVALID_SHAPE_ID);
 
     rb_vm_t *vm = GET_VM();
-    rb_shape_t *shape = vm->shape_list[shape_id];
+    rb_shape_t *shape = &vm->shape_list[shape_id];
     return shape;
-}
-
-static inline shape_id_t
-shape_set_shape_id(rb_shape_t *shape, shape_id_t id) {
-    VALUE flags = shape->flags & ~((uint64_t)SHAPE_MASK << 16);
-    return (shape_id_t)(shape->flags = (flags | ((VALUE)id << SHAPE_FLAG_SHIFT)));
 }
 
 #if !SHAPE_IN_BASIC_FLAGS
@@ -65,7 +64,7 @@ shape_id_t
 rb_shape_get_shape_id(VALUE obj)
 {
     if (RB_SPECIAL_CONST_P(obj)) {
-        return SHAPE_ID(rb_shape_get_frozen_root_shape());
+        return FROZEN_ROOT_SHAPE_ID;
     }
 
 #if SHAPE_IN_BASIC_FLAGS
@@ -88,14 +87,6 @@ rb_shape_t*
 rb_shape_get_shape(VALUE obj)
 {
     return rb_shape_get_shape_by_id(rb_shape_get_shape_id(obj));
-}
-
-static shape_id_t
-get_next_shape_id(void)
-{
-    rb_vm_t *vm = GET_VM();
-    vm->max_shape_count++;
-    return vm->max_shape_count;
 }
 
 static rb_shape_t *
@@ -134,56 +125,42 @@ get_next_shape_internal(rb_shape_t* shape, ID id, VALUE obj, enum shape_type sha
 
             // Lookup the shape in edges - if there's already an edge and a corresponding shape for it,
             // we can return that. Otherwise, we'll need to get a new shape
-            if (!rb_id_table_lookup(shape->edges, id, (VALUE *)&res) || rb_objspace_garbage_object_p((VALUE)res)) {
+            if (!rb_id_table_lookup(shape->edges, id, (VALUE *)&res)) {
                 // In this case, the shape exists, but the shape is garbage, so we need to recreate it
                 if (res) {
                     rb_id_table_delete(shape->edges, id);
                     res->parent = NULL;
                 }
 
-                shape_id_t next_shape_id = get_next_shape_id();
+                rb_shape_t * new_shape = rb_shape_alloc(id, shape);
 
-                if (next_shape_id == MAX_SHAPE_ID) {
-                    // TODO: Make an OutOfShapesError ??
-                    rb_bug("Out of shapes\n");
-                }
-                else {
-                    RUBY_ASSERT(next_shape_id < MAX_SHAPE_ID);
-                    rb_shape_t * new_shape = rb_shape_alloc(next_shape_id,
-                            id,
-                            shape);
+                new_shape->type = (uint8_t)shape_type;
 
-                    new_shape->type = (uint8_t)shape_type;
+                switch(shape_type) {
+                    case SHAPE_IVAR:
+                        new_shape->iv_count = new_shape->parent->iv_count + 1;
 
-                    switch(shape_type) {
-                        case SHAPE_FROZEN:
-                            RB_OBJ_FREEZE_RAW((VALUE)new_shape);
-                            break;
-                        case SHAPE_IVAR:
-                            new_shape->iv_count = new_shape->parent->iv_count + 1;
-
-                            // Check if we should update max_iv_count on the object's class
-                            if (BUILTIN_TYPE(obj) == T_OBJECT) {
-                                VALUE klass = rb_obj_class(obj);
-                                if (new_shape->iv_count > RCLASS_EXT(klass)->max_iv_count) {
-                                    RCLASS_EXT(klass)->max_iv_count = new_shape->iv_count;
-                                }
+                        // Check if we should update max_iv_count on the object's class
+                        if (BUILTIN_TYPE(obj) == T_OBJECT) {
+                            VALUE klass = rb_obj_class(obj);
+                            if (new_shape->iv_count > RCLASS_EXT(klass)->max_iv_count) {
+                                RCLASS_EXT(klass)->max_iv_count = new_shape->iv_count;
                             }
-                            break;
-                        case SHAPE_IVAR_UNDEF:
-                            new_shape->iv_count = new_shape->parent->iv_count;
-                            break;
-                        case SHAPE_ROOT:
-                            rb_bug("Unreachable");
-                            break;
-                    }
-
-                    rb_id_table_insert(shape->edges, id, (VALUE)new_shape);
-                    RB_OBJ_WRITTEN((VALUE)shape, Qundef, (VALUE)new_shape);
-                    rb_shape_set_shape_by_id(next_shape_id, new_shape);
-
-                    res = new_shape;
+                        }
+                        break;
+                    case SHAPE_IVAR_UNDEF:
+                        new_shape->iv_count = new_shape->parent->iv_count;
+                        break;
+                    case SHAPE_ROOT:
+                        rb_bug("Unreachable");
+                        break;
+                    case SHAPE_FROZEN:
+                        break;
                 }
+
+                rb_id_table_insert(shape->edges, id, (VALUE)new_shape);
+
+                res = new_shape;
             }
         }
     }
@@ -206,7 +183,6 @@ rb_shape_transition_shape_remove_ivar(VALUE obj, ID id, rb_shape_t *shape)
         return;
     }
 
-    RUBY_ASSERT(!rb_objspace_garbage_object_p((VALUE)next_shape));
     rb_shape_set_shape(obj, next_shape);
 }
 
@@ -254,8 +230,6 @@ rb_shape_transition_shape(VALUE obj, ID id, rb_shape_t *shape)
     if (shape == next_shape) {
         return;
     }
-
-    RUBY_ASSERT(!rb_objspace_garbage_object_p((VALUE)next_shape));
     rb_shape_set_shape(obj, next_shape);
 }
 
@@ -292,24 +266,26 @@ rb_shape_get_iv_index(rb_shape_t * shape, ID id, attr_index_t *value) {
 static rb_shape_t *
 shape_alloc(void)
 {
-    rb_shape_t *shape = (rb_shape_t *)rb_imemo_new(imemo_shape, 0, 0, 0, 0);
-    FL_SET_RAW((VALUE)shape, RUBY_FL_SHAREABLE);
-    FL_SET_RAW((VALUE)shape, RUBY_FL_PROMOTED1);
-    return shape;
+    rb_vm_t *vm = GET_VM();
+    shape_id_t shape_id = vm->next_shape_id;
+    vm->next_shape_id++;
+
+    if (shape_id == MAX_SHAPE_ID) {
+        // TODO: Make an OutOfShapesError ??
+        rb_bug("Out of shapes\n");
+    }
+
+    return &GET_VM()->shape_list[shape_id];
 }
 
 rb_shape_t *
-rb_shape_alloc(shape_id_t shape_id, ID edge_name, rb_shape_t * parent)
+rb_shape_alloc(ID edge_name, rb_shape_t * parent)
 {
     rb_shape_t * shape = shape_alloc();
-    shape_set_shape_id(shape, shape_id);
 
     shape->edge_name = edge_name;
     shape->iv_count = 0;
-
-    RB_OBJ_WRITE(shape, &shape->parent, parent);
-
-    RUBY_ASSERT(!parent || IMEMO_TYPE_P(parent, imemo_shape));
+    shape->parent = parent;
 
     return shape;
 }
@@ -317,23 +293,7 @@ rb_shape_alloc(shape_id_t shape_id, ID edge_name, rb_shape_t * parent)
 MJIT_FUNC_EXPORTED void
 rb_shape_set_shape(VALUE obj, rb_shape_t* shape)
 {
-    RUBY_ASSERT(IMEMO_TYPE_P(shape, imemo_shape));
-    RUBY_ASSERT(SHAPE_FROZEN == shape->type ? RB_OBJ_FROZEN(obj) : 1);
-
-    if(rb_shape_set_shape_id(obj, SHAPE_ID(shape))) {
-        if (shape != rb_shape_get_frozen_root_shape()) {
-            RB_OBJ_WRITTEN(obj, Qundef, (VALUE)shape);
-        }
-    }
-}
-
-void
-rb_shape_set_shape_by_id(shape_id_t shape_id, rb_shape_t *shape)
-{
-    rb_vm_t *vm = GET_VM();
-
-    RUBY_ASSERT(shape == NULL || IMEMO_TYPE_P(shape, imemo_shape));
-    vm->shape_list[shape_id] = shape;
+    rb_shape_set_shape_id(obj, SHAPE_ID(shape));
 }
 
 VALUE rb_cShape;
@@ -394,7 +354,6 @@ rb_shape_t_to_rb_cShape(rb_shape_t *shape) {
     VALUE res;
     deconst.in = shape;
     res = TypedData_Wrap_Struct(rb_cShape, &shape_data_type, deconst.out);
-    RB_OBJ_WRITTEN(res, Qundef, shape);
 
     return res;
 }
@@ -522,7 +481,7 @@ static VALUE shape_transition_tree(VALUE self) {
 static VALUE shape_count(VALUE self) {
     int shape_count = 0;
     rb_vm_t *vm = GET_VM();
-    for(shape_id_t i = 0; i < vm->max_shape_count; i++) {
+    for(shape_id_t i = 0; i < vm->next_shape_id; i++) {
         if(rb_shape_get_shape_by_id_without_assertion(i)) {
             shape_count++;
         }
@@ -533,7 +492,7 @@ static VALUE shape_count(VALUE self) {
 static VALUE
 shape_max_shape_count(VALUE self)
 {
-    return INT2NUM(GET_VM()->max_shape_count);
+    return INT2NUM(GET_VM()->next_shape_id);
 }
 
 VALUE

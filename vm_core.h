@@ -691,10 +691,10 @@ typedef struct rb_vm_struct {
     const VALUE special_exceptions[ruby_special_error_count];
 
     /* object shapes */
-    rb_shape_t **shape_list;
+    rb_shape_t *shape_list;
     rb_shape_t *root_shape;
     rb_shape_t *frozen_root_shape;
-    shape_id_t max_shape_count;
+    shape_id_t next_shape_id;
 
     /* load */
     VALUE top_self;

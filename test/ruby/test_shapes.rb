@@ -116,7 +116,9 @@ class TestShapes < Test::Unit::TestCase
     obj = Object.new.freeze
     obj2 = obj.dup
     refute_predicate(obj2, :frozen?)
-    refute_equal(RubyVM.debug_shape(obj).id, RubyVM.debug_shape(obj2).id)
+    # dup'd objects shouldn't be frozen, and the shape should be the
+    # parent shape of the copied object
+    assert_equal(RubyVM.debug_shape(obj).parent.id, RubyVM.debug_shape(obj2).id)
   end
 
   def test_freezing_and_duplicating_object_with_ivars

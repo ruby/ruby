@@ -2971,7 +2971,6 @@ rb_imemo_name(enum imemo_type type)
         IMEMO_NAME(callinfo);
         IMEMO_NAME(callcache);
         IMEMO_NAME(constcache);
-        IMEMO_NAME(shape);
 #undef IMEMO_NAME
     }
     return "unknown";
@@ -3018,14 +3017,6 @@ imemo_memsize(VALUE obj)
       case imemo_iseq:
         size += rb_iseq_memsize((rb_iseq_t *)obj);
         break;
-      case imemo_shape:
-        {
-            struct rb_id_table* edges = ((rb_shape_t *) obj)->edges;
-            if (edges) {
-                size += rb_id_table_memsize(edges);
-            }
-            break;
-        }
       case imemo_env:
         size += RANY(obj)->as.imemo.env.env_size * sizeof(VALUE);
         break;
@@ -3381,22 +3372,6 @@ obj_free_object_id(rb_objspace_t *objspace, VALUE obj)
     }
 }
 
-static enum rb_id_table_iterator_result
-remove_child_shapes_parent(VALUE value, void *ref)
-{
-    rb_shape_t * shape = (rb_shape_t *) value;
-    GC_ASSERT(IMEMO_TYPE_P(shape, imemo_shape));
-
-    // If both objects live on the same page and we're currently
-    // sweeping that page, then we need to assert that neither are marked
-    if (GET_HEAP_PAGE(shape) == GET_HEAP_PAGE(shape->parent)) {
-        GC_ASSERT(!MARKED_IN_BITMAP(GET_HEAP_MARK_BITS(shape), shape));
-    }
-
-    shape->parent = NULL;
-    return ID_TABLE_CONTINUE;
-}
-
 static int
 obj_free(rb_objspace_t *objspace, VALUE obj)
 {
@@ -3445,10 +3420,7 @@ obj_free(rb_objspace_t *objspace, VALUE obj)
             RB_DEBUG_COUNTER_INC(obj_obj_transient);
         }
         else {
-            // A shape can be collected before an object is collected (if both
-            // happened to be garbage at the same time), so when we look up the shape, _do not_
-            // assert that the shape is an IMEMO because it could be null
-            rb_shape_t *shape = rb_shape_get_shape_by_id_without_assertion(ROBJECT_SHAPE_ID(obj));
+            rb_shape_t *shape = rb_shape_get_shape_by_id(ROBJECT_SHAPE_ID(obj));
             if (shape) {
                 VALUE klass = RBASIC_CLASS(obj);
 
@@ -3748,37 +3720,6 @@ obj_free(rb_objspace_t *objspace, VALUE obj)
           case imemo_constcache:
             RB_DEBUG_COUNTER_INC(obj_imemo_constcache);
             break;
-          case imemo_shape:
-            {
-                rb_shape_t *shape = (rb_shape_t *)obj;
-                rb_shape_t *parent = shape->parent;
-
-                if (parent) {
-                    RUBY_ASSERT(IMEMO_TYPE_P(parent, imemo_shape));
-                    RUBY_ASSERT(parent->edges);
-                    VALUE res; // Only used to temporarily store lookup value
-                    if (rb_id_table_lookup(parent->edges, shape->edge_name, &res)) {
-                        if ((rb_shape_t *)res == shape) {
-                            rb_id_table_delete(parent->edges, shape->edge_name);
-                        }
-                    }
-                    else {
-                        rb_bug("Edge %s should exist", rb_id2name(shape->edge_name));
-                    }
-                }
-                if (shape->edges) {
-                    rb_id_table_foreach_values(shape->edges, remove_child_shapes_parent, NULL);
-                    rb_id_table_free(shape->edges);
-                    shape->edges = NULL;
-                }
-
-                shape->parent = NULL;
-
-                rb_shape_set_shape_by_id(SHAPE_ID(shape), NULL);
-
-                RB_DEBUG_COUNTER_INC(obj_imemo_shape);
-                break;
-            }
 	}
 	return TRUE;
 
@@ -7201,35 +7142,12 @@ gc_mark_imemo(rb_objspace_t *objspace, VALUE obj)
             const struct rb_callcache *cc = (const struct rb_callcache *)obj;
             // should not mark klass here
             gc_mark(objspace, (VALUE)vm_cc_cme(cc));
-
-            // Check it's an attr_(reader|writer)
-            if (cc->cme_ && (cc->cme_->def->type == VM_METHOD_TYPE_ATTRSET ||
-                        cc->cme_->def->type == VM_METHOD_TYPE_IVAR)) {
-                shape_id_t source_shape_id = vm_cc_attr_index_source_shape_id(cc);
-                shape_id_t dest_shape_id = vm_cc_attr_index_dest_shape_id(cc);
-                if (source_shape_id != INVALID_SHAPE_ID) {
-                    rb_shape_t *shape = rb_shape_get_shape_by_id(source_shape_id);
-                    rb_gc_mark((VALUE)shape);
-                }
-                if (dest_shape_id != INVALID_SHAPE_ID) {
-                    rb_shape_t *shape = rb_shape_get_shape_by_id(dest_shape_id);
-                    rb_gc_mark((VALUE)shape);
-                }
-            }
         }
         return;
       case imemo_constcache:
         {
             const struct iseq_inline_constant_cache_entry *ice = (struct iseq_inline_constant_cache_entry *)obj;
             gc_mark(objspace, ice->value);
-        }
-        return;
-      case imemo_shape:
-        {
-            rb_shape_t *shape = (rb_shape_t *)obj;
-            if (shape->edges) {
-                mark_m_tbl(objspace, shape->edges);
-            }
         }
         return;
 #if VM_CHECK_MODE > 0
@@ -9836,9 +9754,6 @@ gc_is_moveable_obj(rb_objspace_t *objspace, VALUE obj)
 
     switch (BUILTIN_TYPE(obj)) {
       case T_IMEMO:
-        if (IMEMO_TYPE_P(obj, imemo_shape)) {
-            return FALSE;
-        }
       case T_NONE:
       case T_NIL:
       case T_MOVED:
@@ -10354,17 +10269,6 @@ gc_ref_update_imemo(rb_objspace_t *objspace, VALUE obj)
       case imemo_parser_strterm:
       case imemo_tmpbuf:
       case imemo_callinfo:
-        break;
-      case imemo_shape:
-        {
-            rb_shape_t * shape = (rb_shape_t *)obj;
-            if(shape->edges) {
-                update_m_tbl(objspace, shape->edges);
-            }
-            if (shape->parent) {
-                shape->parent = (rb_shape_t *)rb_gc_location((VALUE)shape->parent);
-            }
-        }
         break;
       default:
         rb_bug("not reachable %d", imemo_type(obj));

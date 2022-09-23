@@ -421,10 +421,7 @@ def lldb_inspect(debugger, target, result, val):
 
             print("T_IMEMO: ", file=result)
             append_command_output(debugger, "p (enum imemo_type) %d" % imemo_type, result)
-            if imemo_type == imemo_shape:
-                append_command_output(debugger, "p *(rb_shape_t *) %0#x" % val.GetValueAsUnsigned(), result)
-            else:
-                append_command_output(debugger, "p *(struct MEMO *) %0#x" % val.GetValueAsUnsigned(), result)
+            append_command_output(debugger, "p *(struct MEMO *) %0#x" % val.GetValueAsUnsigned(), result)
         elif flType == RUBY_T_STRUCT:
             tRTypedData = target.FindFirstType("struct RStruct").GetPointerType()
             val = val.Cast(tRTypedData)

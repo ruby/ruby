@@ -230,20 +230,8 @@ rb_iseq_each_value(const rb_iseq_t *iseq, iseq_value_itr_t * func, void *data)
     union iseq_inline_storage_entry *is_entries = body->is_entries;
 
     if (body->is_entries) {
-        // IVC entries
-        for (unsigned int i = 0; i < body->ivc_size; i++, is_entries++) {
-            IVC ivc = (IVC)is_entries;
-            shape_id_t source_shape_id = vm_ic_attr_index_source_shape_id(ivc);
-            shape_id_t dest_shape_id = vm_ic_attr_index_dest_shape_id(ivc);
-            if (source_shape_id != INVALID_SHAPE_ID) {
-                rb_shape_t *shape = rb_shape_get_shape_by_id(source_shape_id);
-                func(data, (VALUE)shape);
-            }
-            if (dest_shape_id != INVALID_SHAPE_ID) {
-                rb_shape_t *shape = rb_shape_get_shape_by_id(dest_shape_id);
-                func(data, (VALUE)shape);
-            }
-        }
+        // Skip iterating over ivc caches
+        is_entries += body->ivc_size;
 
         // ICVARC entries
         for (unsigned int i = 0; i < body->icvarc_size; i++, is_entries++) {
