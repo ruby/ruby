@@ -48,10 +48,6 @@
 #include "ruby/ractor.h"
 #include "vm_sync.h"
 
-#ifndef HASH_DEBUG
-#define HASH_DEBUG 0
-#endif
-
 #if HASH_DEBUG
 #include "gc.h"
 #endif
@@ -466,8 +462,6 @@ ar_set_entry(VALUE hash, unsigned int index, st_data_t key, st_data_t val, st_ha
 #define RHASH_ST_TABLE_SET(h, s)  rb_hash_st_table_set(h, s)
 #define RHASH_TYPE(hash) (RHASH_AR_TABLE_P(hash) ? &objhash : RHASH_ST_TABLE(hash)->type)
 
-#define HASH_ASSERT(expr) RUBY_ASSERT_MESG_WHEN(HASH_DEBUG, expr, #expr)
-
 #if HASH_DEBUG
 #define hash_verify(hash) hash_verify_(hash, __FILE__, __LINE__)
 
@@ -549,7 +543,7 @@ hash_verify_(VALUE hash, const char *file, int line)
 static inline int
 RHASH_TABLE_NULL_P(VALUE hash)
 {
-    if (RHASH(hash)->as.ar == NULL) {
+    if (RHASH_AR_TABLE(hash) == NULL) {
         HASH_ASSERT(RHASH_AR_TABLE_P(hash));
         return TRUE;
     }
@@ -568,19 +562,12 @@ int
 rb_hash_ar_table_p(VALUE hash)
 {
     if (FL_TEST_RAW((hash), RHASH_ST_TABLE_FLAG)) {
-        HASH_ASSERT(RHASH(hash)->as.st != NULL);
+        HASH_ASSERT(RHASH_AR_TABLE(hash) != NULL);
         return FALSE;
     }
     else {
         return TRUE;
     }
-}
-
-ar_table *
-rb_hash_ar_table(VALUE hash)
-{
-    HASH_ASSERT(RHASH_AR_TABLE_P(hash));
-    return RHASH(hash)->as.ar;
 }
 
 st_table *
@@ -603,7 +590,7 @@ hash_ar_table_set(VALUE hash, ar_table *ar)
 {
     HASH_ASSERT(RHASH_AR_TABLE_P(hash));
     HASH_ASSERT((RHASH_TRANSIENT_P(hash) && ar == NULL) ? FALSE : TRUE);
-    RHASH(hash)->as.ar = ar;
+    RHASH_AR_TABLE_SET(hash, ar);
     hash_verify(hash);
 }
 

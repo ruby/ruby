@@ -3522,7 +3522,7 @@ obj_free(rb_objspace_t *objspace, VALUE obj)
         }
 #endif
         if (/* RHASH_AR_TABLE_P(obj) */ !FL_TEST_RAW(obj, RHASH_ST_TABLE_FLAG)) {
-            struct ar_table_struct *tab = RHASH(obj)->as.ar;
+            struct ar_table_struct *tab = RHASH_AR_TABLE(obj);
 
             if (tab) {
                 if (RHASH_TRANSIENT_P(obj)) {

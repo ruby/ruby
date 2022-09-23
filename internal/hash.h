@@ -16,6 +16,12 @@
 
 #define RHASH_AR_TABLE_MAX_SIZE SIZEOF_VALUE
 
+#ifndef HASH_DEBUG
+#define HASH_DEBUG 0
+#endif
+
+#define HASH_ASSERT(expr) RUBY_ASSERT_MESG_WHEN(HASH_DEBUG, expr, #expr)
+
 struct ar_table_struct;
 typedef unsigned char ar_hint_t;
 
@@ -132,8 +138,8 @@ RHASH_AR_TABLE_P(VALUE h)
 static inline struct ar_table_struct *
 RHASH_AR_TABLE(VALUE h)
 {
-    extern struct ar_table_struct *rb_hash_ar_table(VALUE hash);
-    return rb_hash_ar_table(h)
+    HASH_ASSERT(RHASH_AR_TABLE_P(h));
+    return RHASH(h)->as.ar;
 }
 
 static inline st_table *
@@ -163,6 +169,12 @@ RHASH_ST_TABLE(VALUE h)
 }
 
 #endif
+
+static inline void
+RHASH_AR_TABLE_SET(VALUE h, struct ar_table_struct *tab)
+{
+    RHASH(h)->as.ar = tab;
+}
 
 static inline VALUE
 RHASH_IFNONE(VALUE h)

@@ -610,7 +610,7 @@ transient_heap_ptr(VALUE obj, int error)
       case T_HASH:
         if (RHASH_TRANSIENT_P(obj)) {
             TH_ASSERT(RHASH_AR_TABLE_P(obj));
-            ptr = (VALUE *)(RHASH(obj)->as.ar);
+            ptr = (VALUE *)(RHASH_AR_TABLE(obj));
         }
         else {
             ptr = NULL;
