@@ -213,7 +213,6 @@ class_alloc(VALUE flags, VALUE klass)
 #endif
 
     /* ZALLOC
-      RCLASS_IV_TBL(obj) = 0;
       RCLASS_CONST_TBL(obj) = 0;
       RCLASS_M_TBL(obj) = 0;
       RCLASS_IV_INDEX_TBL(obj) = 0;
@@ -402,16 +401,12 @@ class_init_copy_check(VALUE clone, VALUE orig)
 static void
 copy_tables(VALUE clone, VALUE orig)
 {
-    if (RCLASS_IV_TBL(clone)) {
-        st_free_table(RCLASS_IV_TBL(clone));
-        RCLASS_IV_TBL(clone) = 0;
-    }
     if (RCLASS_CONST_TBL(clone)) {
         rb_free_const_table(RCLASS_CONST_TBL(clone));
         RCLASS_CONST_TBL(clone) = 0;
     }
     RCLASS_M_TBL(clone) = 0;
-    if (RCLASS_IV_TBL(orig)) {
+    {
         st_data_t id;
 
         rb_iv_tbl_copy(clone, orig);
@@ -520,7 +515,6 @@ rb_mod_init_copy(VALUE clone, VALUE orig)
             prev_clone_p = clone_p;
             RCLASS_M_TBL(clone_p) = RCLASS_M_TBL(p);
             RCLASS_CONST_TBL(clone_p) = RCLASS_CONST_TBL(p);
-            RCLASS_IV_TBL(clone_p) = RCLASS_IV_TBL(p);
             RCLASS_ALLOCATOR(clone_p) = RCLASS_ALLOCATOR(p);
             if (RB_TYPE_P(clone, T_CLASS)) {
                 RCLASS_SET_INCLUDER(clone_p, clone);
@@ -607,9 +601,7 @@ rb_singleton_class_clone_and_attach(VALUE obj, VALUE attach)
 
         RCLASS_SET_SUPER(clone, RCLASS_SUPER(klass));
         RCLASS_ALLOCATOR(clone) = RCLASS_ALLOCATOR(klass);
-        if (RCLASS_IV_TBL(klass)) {
-            rb_iv_tbl_copy(clone, klass);
-        }
+        rb_iv_tbl_copy(clone, klass);
         if (RCLASS_CONST_TBL(klass)) {
             struct clone_const_arg arg;
             arg.tbl = RCLASS_CONST_TBL(clone) = rb_id_table_create(0);
@@ -1062,13 +1054,10 @@ rb_include_class_new(VALUE module, VALUE super)
         module = METACLASS_OF(module);
     }
     RUBY_ASSERT(!RB_TYPE_P(module, T_ICLASS));
-    if (!RCLASS_IV_TBL(module)) {
-        RCLASS_IV_TBL(module) = st_init_numtable();
-    }
     if (!RCLASS_CONST_TBL(module)) {
         RCLASS_CONST_TBL(module) = rb_id_table_create(0);
     }
-    RCLASS_IV_TBL(klass) = RCLASS_IV_TBL(module);
+
     RCLASS_CVC_TBL(klass) = RCLASS_CVC_TBL(module);
     RCLASS_CONST_TBL(klass) = RCLASS_CONST_TBL(module);
 

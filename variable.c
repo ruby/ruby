@@ -3869,8 +3869,12 @@ void
 rb_iv_tbl_copy(VALUE dst, VALUE src)
 {
     st_table *orig_tbl = RCLASS_IV_TBL(src);
+    if (!orig_tbl) return;
+
     st_table *new_tbl = st_copy(orig_tbl);
     st_foreach(new_tbl, tbl_copy_i, (st_data_t)dst);
+
+    RUBY_ASSERT(!RCLASS_IV_TBL(dst));
     RCLASS_IV_TBL(dst) = new_tbl;
 }
 
