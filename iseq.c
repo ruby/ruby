@@ -899,17 +899,29 @@ ast_line_count(const rb_ast_body_t *ast)
     return FIX2INT(ast->script_lines);
 }
 
+static VALUE
+iseq_setup_coverage(VALUE coverages, VALUE path, const rb_ast_body_t *ast, int line_offset)
+{
+    int line_count = line_offset + ast_line_count(ast);
+
+    if (line_count >= 0) {
+        int len = (rb_get_coverage_mode() & COVERAGE_TARGET_ONESHOT_LINES) ? 0 : line_count;
+
+        VALUE coverage = rb_default_coverage(len);
+        rb_hash_aset(coverages, path, coverage);
+
+        return coverage;
+    }
+
+    return Qnil;
+}
+
 rb_iseq_t *
 rb_iseq_new_top(const rb_ast_body_t *ast, VALUE name, VALUE path, VALUE realpath, const rb_iseq_t *parent)
 {
     VALUE coverages = rb_get_coverages();
     if (RTEST(coverages)) {
-        int line_count = ast_line_count(ast);
-        if (line_count >= 0) {
-            int len = (rb_get_coverage_mode() & COVERAGE_TARGET_ONESHOT_LINES) ? 0 : line_count;
-            VALUE coverage = rb_default_coverage(len);
-            rb_hash_aset(coverages, path, coverage);
-        }
+        iseq_setup_coverage(coverages, path, ast, 0);
     }
 
     return rb_iseq_new_with_opt(ast, name, path, realpath, INT2FIX(0), parent, 0,
@@ -930,13 +942,7 @@ rb_iseq_new_eval(const rb_ast_body_t *ast, VALUE name, VALUE path, VALUE realpat
     VALUE coverages = rb_get_coverages();
     if (RTEST(coverages) && RTEST(path) && !RTEST(rb_hash_has_key(coverages, path))) {
         int line_offset = RB_NUM2INT(first_lineno) - 1;
-        int line_count = line_offset + ast_line_count(ast);
-
-        if (line_count >= 0) {
-            int len = (rb_get_coverage_mode() & COVERAGE_TARGET_ONESHOT_LINES) ? 0 : line_count;
-            VALUE coverage = rb_default_coverage(len);
-            rb_hash_aset(coverages, path, coverage);
-        }
+        iseq_setup_coverage(coverages, path, ast, line_offset);
     }
 
     return rb_iseq_new_with_opt(ast, name, path, realpath, first_lineno,
