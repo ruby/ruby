@@ -344,5 +344,5 @@ You can query whether a stream is closed using these methods:
 
 You can query whether a stream is at end-of-file using this method:
 
-- IO#eof? (also aliased as +#eof+) -
+- IO#eof? (also aliased as +#eof+):
   Returns whether the stream is at end-of-file.
