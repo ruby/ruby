@@ -3761,10 +3761,27 @@ AS_CASE(["${YJIT_SUPPORT}"],
     ])
 
     AS_IF([test -n "${CARGO_BUILD_ARGS}"], [
-             AC_CHECK_TOOL(CARGO, [cargo], [no])
-             AS_IF([test x"$CARGO" = "xno"],
-                AC_MSG_ERROR([cargo is required. Installation instructions available at https://www.rust-lang.org/tools/install])
-             ]))
+        AC_CHECK_TOOL(CARGO, [cargo], [no])
+        AS_IF([test x"$CARGO" = "xno"],
+            AC_MSG_ERROR([cargo is required. Installation instructions available at https://www.rust-lang.org/tools/install])
+        ])
+
+        # Insn::IncrCounter uses ldaddal, which works only on ARMv8.1+.
+        AC_CACHE_CHECK(yjit stats are broken, rb_cv_broken_yjit_stats, [
+            AC_RUN_IFELSE(
+                [AC_LANG_PROGRAM([[]], [[
+                    @%:@ifdef __aarch64__
+                        asm volatile(".arch armv8-a+lse\n"
+                                     "ldaddal xzr, xzr, @<:@sp@:>@");
+                    @%:@endif
+                ]])],
+                [rb_cv_broken_yjit_stats=no],
+                [rb_cv_broken_yjit_stats=yes],
+                [rb_cv_broken_yjit_stats=yes]
+            )
+        ])
+        AS_IF([test "$rb_cv_broken_yjit_stats" = yes], [AC_DEFINE(BROKEN_YJIT_STATS, 1)])
+    )
 
     YJIT_LIBS="yjit/target/${rb_rust_target_subdir}/libyjit.a"
     YJIT_OBJ='yjit.$(OBJEXT)'
