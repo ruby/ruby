@@ -3780,6 +3780,8 @@ AS_CASE(["${YJIT_SUPPORT}"],
                 [rb_cv_broken_yjit_stats=yes]
             )
         ])
+        # This won't enable stats in release builds because we don't use cargo
+        # for release builds, use rustc directly
         AS_IF([test "$rb_cv_broken_yjit_stats" = no], [
             CARGO_BUILD_ARGS="${CARGO_BUILD_ARGS} --features stats"
         ])
