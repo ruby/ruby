@@ -192,6 +192,14 @@ Note: We're only listing outstanding class updates.
 
 * RubyVM::AbstractSyntaxTree
     * Add `error_tolerant` option for `parse`, `parse_file` and `of`. [[Feature #19013]]
+    * Add `keep_tokens` option for `parse`, `parse_file` and `of`. Add `#tokens` and `#all_tokens`
+      for `RubyVM::AbstractSyntaxTree::Node` [[Feature #19070]]
+
+    ```ruby
+    root = RubyVM::AbstractSyntaxTree.parse("x = 1 + 2", keep_tokens: true)
+    root.tokens # => [[0, :tIDENTIFIER, "x", [1, 0, 1, 1]], [1, :tSP, " ", [1, 1, 1, 2]], ...]
+    root.tokens.map{_1[2]}.join # => "x = 1 + 2"
+    ```
 
 * Set
     * Set is now available as a built-in class without the need for `require "set"`. [[Feature #16989]]

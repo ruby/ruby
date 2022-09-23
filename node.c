@@ -1161,6 +1161,12 @@ struct node_buffer_struct {
     node_buffer_list_t markable;
     struct rb_ast_local_table_link *local_tables;
     VALUE mark_hash;
+    // - id (sequence number)
+    // - token_type
+    // - text of token
+    // - location info
+    // Array, whose entry is array
+    VALUE tokens;
 };
 
 static void
@@ -1187,6 +1193,7 @@ rb_node_buffer_new(void)
     init_node_buffer_list(&nb->markable, (node_buffer_elem_t*)((size_t)nb->unmarkable.head + bucket_size));
     nb->local_tables = 0;
     nb->mark_hash = Qnil;
+    nb->tokens = Qnil;
     return nb;
 }
 
@@ -1418,7 +1425,10 @@ rb_ast_update_references(rb_ast_t *ast)
 void
 rb_ast_mark(rb_ast_t *ast)
 {
-    if (ast->node_buffer) rb_gc_mark(ast->node_buffer->mark_hash);
+    if (ast->node_buffer) {
+        rb_gc_mark(ast->node_buffer->mark_hash);
+        rb_gc_mark(ast->node_buffer->tokens);
+    }
     if (ast->body.compile_option) rb_gc_mark(ast->body.compile_option);
     if (ast->node_buffer) {
         node_buffer_t *nb = ast->node_buffer;
@@ -1476,4 +1486,16 @@ rb_ast_add_mark_object(rb_ast_t *ast, VALUE obj)
         RB_OBJ_WRITE(ast, &ast->node_buffer->mark_hash, rb_ident_hash_new());
     }
     rb_hash_aset(ast->node_buffer->mark_hash, obj, Qtrue);
+}
+
+VALUE
+rb_ast_tokens(rb_ast_t *ast)
+{
+    return ast->node_buffer->tokens;
+}
+
+void
+rb_ast_set_tokens(rb_ast_t *ast, VALUE tokens)
+{
+    RB_OBJ_WRITE(ast, &ast->node_buffer->tokens, tokens);
 }
