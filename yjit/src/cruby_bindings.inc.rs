@@ -269,6 +269,30 @@ extern "C" {
 extern "C" {
     pub fn rb_reg_new_ary(ary: VALUE, options: ::std::os::raw::c_int) -> VALUE;
 }
+pub type attr_index_t = u32;
+pub type shape_id_t = u32;
+#[repr(C)]
+pub struct rb_shape {
+    pub flags: VALUE,
+    pub parent: *mut rb_shape,
+    pub edges: *mut rb_id_table,
+    pub edge_name: ID,
+    pub iv_count: attr_index_t,
+    pub type_: u8,
+}
+pub type rb_shape_t = rb_shape;
+extern "C" {
+    pub fn rb_shape_get_shape_by_id(shape_id: shape_id_t) -> *mut rb_shape_t;
+}
+extern "C" {
+    pub fn rb_shape_get_shape_id(obj: VALUE) -> shape_id_t;
+}
+extern "C" {
+    pub fn rb_shape_get_iv_index(shape: *mut rb_shape_t, id: ID, value: *mut attr_index_t) -> bool;
+}
+extern "C" {
+    pub fn rb_shape_flags_mask() -> VALUE;
+}
 pub const idDot2: ruby_method_ids = 128;
 pub const idDot3: ruby_method_ids = 129;
 pub const idUPlus: ruby_method_ids = 132;
@@ -513,6 +537,7 @@ pub const imemo_parser_strterm: imemo_type = 10;
 pub const imemo_callinfo: imemo_type = 11;
 pub const imemo_callcache: imemo_type = 12;
 pub const imemo_constcache: imemo_type = 13;
+pub const imemo_shape: imemo_type = 14;
 pub type imemo_type = u32;
 pub const METHOD_VISI_UNDEF: rb_method_visibility_t = 0;
 pub const METHOD_VISI_PUBLIC: rb_method_visibility_t = 1;
@@ -572,6 +597,11 @@ pub const OPTIMIZED_METHOD_TYPE_STRUCT_AREF: method_optimized_type = 3;
 pub const OPTIMIZED_METHOD_TYPE_STRUCT_ASET: method_optimized_type = 4;
 pub const OPTIMIZED_METHOD_TYPE__MAX: method_optimized_type = 5;
 pub type method_optimized_type = u32;
+#[repr(C)]
+#[derive(Debug, Copy, Clone)]
+pub struct rb_id_table {
+    _unused: [u8; 0],
+}
 extern "C" {
     pub fn rb_method_entry_at(obj: VALUE, id: ID) -> *const rb_method_entry_t;
 }
@@ -600,9 +630,10 @@ pub struct iseq_inline_constant_cache {
     pub segments: *const ID,
 }
 #[repr(C)]
-#[derive(Debug, Copy, Clone)]
 pub struct iseq_inline_iv_cache_entry {
-    pub entry: *mut rb_iv_index_tbl_entry,
+    pub source_shape_id: shape_id_t,
+    pub dest_shape_id: shape_id_t,
+    pub attr_index: attr_index_t,
 }
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
@@ -696,12 +727,6 @@ extern "C" {
     pub fn rb_vm_frame_method_entry(
         cfp: *const rb_control_frame_t,
     ) -> *const rb_callable_method_entry_t;
-}
-#[repr(C)]
-pub struct rb_iv_index_tbl_entry {
-    pub index: u32,
-    pub class_serial: rb_serial_t,
-    pub class_value: VALUE,
 }
 #[repr(C)]
 pub struct rb_cvar_class_tbl_entry {

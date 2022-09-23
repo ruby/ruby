@@ -10,6 +10,7 @@
 
 #include "debug_counter.h"
 #include "internal/class.h"
+#include "shape.h"
 
 enum vm_call_flag_bits {
     VM_CALL_ARGS_SPLAT_bit,     /* m(*args) */
@@ -284,14 +285,32 @@ struct rb_callcache {
     const vm_call_handler call_;
 
     union {
-        const unsigned int attr_index;
+        struct {
+          const attr_index_t index;
+          shape_id_t dest_shape_id;
+        } attr;
         const enum method_missing_reason method_missing_reason; /* used by method_missing */
         VALUE v;
     } aux_;
 };
 
-#define VM_CALLCACHE_UNMARKABLE IMEMO_FL_USER0
-#define VM_CALLCACHE_ON_STACK   IMEMO_FL_USER1
+#define VM_CALLCACHE_UNMARKABLE FL_FREEZE
+#define VM_CALLCACHE_ON_STACK   FL_EXIVAR
+
+extern const struct rb_callcache *rb_vm_empty_cc(void);
+extern const struct rb_callcache *rb_vm_empty_cc_for_super(void);
+
+#define vm_cc_empty() rb_vm_empty_cc()
+
+static inline void
+vm_cc_attr_index_initialize(const struct rb_callcache *cc, shape_id_t shape_id)
+{
+    VM_ASSERT(IMEMO_TYPE_P(cc, imemo_callcache));
+    VM_ASSERT(cc != vm_cc_empty());
+    IMEMO_SET_CACHED_SHAPE_ID((VALUE)cc, shape_id);
+    *(attr_index_t *)&cc->aux_.attr.index = 0;
+    *(shape_id_t *)&cc->aux_.attr.dest_shape_id = shape_id;
+}
 
 static inline const struct rb_callcache *
 vm_cc_new(VALUE klass,
@@ -299,6 +318,7 @@ vm_cc_new(VALUE klass,
           vm_call_handler call)
 {
     const struct rb_callcache *cc = (const struct rb_callcache *)rb_imemo_new(imemo_callcache, (VALUE)cme, (VALUE)call, 0, klass);
+    vm_cc_attr_index_initialize(cc, INVALID_SHAPE_ID);
     RB_DEBUG_COUNTER_INC(cc_new);
     return cc;
 }
@@ -350,30 +370,71 @@ vm_cc_call(const struct rb_callcache *cc)
     return cc->call_;
 }
 
-static inline unsigned int
+static inline attr_index_t
 vm_cc_attr_index(const struct rb_callcache *cc)
 {
     VM_ASSERT(IMEMO_TYPE_P(cc, imemo_callcache));
-    return cc->aux_.attr_index - 1;
+    return cc->aux_.attr.index - 1;
 }
 
 static inline bool
 vm_cc_attr_index_p(const struct rb_callcache *cc)
 {
     VM_ASSERT(IMEMO_TYPE_P(cc, imemo_callcache));
-    return cc->aux_.attr_index > 0;
+    return cc->aux_.attr.index != 0;
 }
 
-static inline uint32_t
-vm_ic_entry_index(const struct iseq_inline_iv_cache_entry *ic)
+static inline shape_id_t
+vm_cc_attr_index_source_shape_id(const struct rb_callcache *cc)
 {
-    return ic->entry->index;
+    VM_ASSERT(IMEMO_TYPE_P(cc, imemo_callcache));
+
+    return IMEMO_CACHED_SHAPE_ID((VALUE)cc);
+}
+
+static inline shape_id_t
+vm_cc_attr_shape_id(const struct rb_callcache *cc)
+{
+    VM_ASSERT(IMEMO_TYPE_P(cc, imemo_callcache));
+    return vm_cc_attr_index_source_shape_id(cc);
+}
+
+static inline shape_id_t
+vm_cc_attr_index_dest_shape_id(const struct rb_callcache *cc)
+{
+    VM_ASSERT(IMEMO_TYPE_P(cc, imemo_callcache));
+
+    return cc->aux_.attr.dest_shape_id;
+}
+
+static inline attr_index_t
+vm_ic_attr_index(const struct iseq_inline_iv_cache_entry *ic)
+{
+    return ic->attr_index - 1;
 }
 
 static inline bool
-vm_ic_entry_p(const struct iseq_inline_iv_cache_entry *ic)
+vm_ic_attr_index_p(const struct iseq_inline_iv_cache_entry *ic)
 {
-    return ic->entry;
+    return ic->attr_index > 0;
+}
+
+static inline shape_id_t
+vm_ic_attr_shape_id(const struct iseq_inline_iv_cache_entry *ic)
+{
+    return ic->source_shape_id;
+}
+
+static inline shape_id_t
+vm_ic_attr_index_source_shape_id(const struct iseq_inline_iv_cache_entry *ic)
+{
+    return ic->source_shape_id;
+}
+
+static inline shape_id_t
+vm_ic_attr_index_dest_shape_id(const struct iseq_inline_iv_cache_entry *ic)
+{
+    return ic->dest_shape_id;
 }
 
 static inline unsigned int
@@ -407,10 +468,6 @@ vm_cc_valid_p(const struct rb_callcache *cc, const rb_callable_method_entry_t *c
     }
 }
 
-extern const struct rb_callcache *rb_vm_empty_cc(void);
-extern const struct rb_callcache *rb_vm_empty_cc_for_super(void);
-#define vm_cc_empty() rb_vm_empty_cc()
-
 /* callcache: mutate */
 
 static inline void
@@ -422,26 +479,29 @@ vm_cc_call_set(const struct rb_callcache *cc, vm_call_handler call)
 }
 
 static inline void
-vm_cc_attr_index_set(const struct rb_callcache *cc, int index)
+vm_cc_attr_index_set(const struct rb_callcache *cc, attr_index_t index, shape_id_t source_shape_id, shape_id_t dest_shape_id)
 {
     VM_ASSERT(IMEMO_TYPE_P(cc, imemo_callcache));
     VM_ASSERT(cc != vm_cc_empty());
-    *(int *)&cc->aux_.attr_index = index + 1;
+    IMEMO_SET_CACHED_SHAPE_ID((VALUE)cc, source_shape_id);
+    *(attr_index_t *)&cc->aux_.attr.index = (index + 1);
+    *(shape_id_t *)&cc->aux_.attr.dest_shape_id = dest_shape_id;
 }
 
 static inline void
-vm_ic_entry_set(struct iseq_inline_iv_cache_entry *ic, struct rb_iv_index_tbl_entry *entry, const rb_iseq_t *iseq)
+vm_ic_attr_index_set(const rb_iseq_t *iseq, const struct iseq_inline_iv_cache_entry *ic, attr_index_t index, shape_id_t source_shape_id, shape_id_t dest_shape_id)
 {
-    ic->entry = entry;
-    RB_OBJ_WRITTEN(iseq, Qundef, entry->class_value);
+    *(shape_id_t *)&ic->source_shape_id = source_shape_id;
+    *(shape_id_t *)&ic->dest_shape_id = dest_shape_id;
+    *(attr_index_t *)&ic->attr_index = index + 1;
 }
 
 static inline void
-vm_cc_attr_index_initialize(const struct rb_callcache *cc)
+vm_ic_attr_index_initialize(const struct iseq_inline_iv_cache_entry *ic, shape_id_t shape_id)
 {
-    VM_ASSERT(IMEMO_TYPE_P(cc, imemo_callcache));
-    VM_ASSERT(cc != vm_cc_empty());
-    *(int *)&cc->aux_.attr_index = 0;
+    *(shape_id_t *)&ic->source_shape_id = shape_id;
+    *(shape_id_t *)&ic->dest_shape_id = shape_id;
+    *(attr_index_t *)&ic->attr_index = 0;
 }
 
 static inline void

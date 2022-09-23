@@ -116,12 +116,16 @@ class TestObjSpace < Test::Unit::TestCase
     opts = %w[--disable-gem --disable=frozen-string-literal -robjspace]
     assert_separately opts, "#{<<-"begin;"}\n#{<<-'end;'}"
     begin;
-      assert_equal(nil, ObjectSpace.reachable_objects_from(nil))
-      assert_equal([Array, 'a', 'b', 'c'], ObjectSpace.reachable_objects_from(['a', 'b', 'c']))
+      def assert_reachable_object_as_expected(expectation, reachable_objects_from_array)
+        reachable_objects = ObjectSpace.reachable_objects_from(reachable_objects_from_array)
+        assert_equal(expectation, reachable_objects)
+      end
 
-      assert_equal([Array, 'a', 'a', 'a'], ObjectSpace.reachable_objects_from(['a', 'a', 'a']))
-      assert_equal([Array, 'a', 'a'], ObjectSpace.reachable_objects_from(['a', v = 'a', v]))
-      assert_equal([Array, 'a'], ObjectSpace.reachable_objects_from([v = 'a', v, v]))
+      assert_equal(nil, ObjectSpace.reachable_objects_from(nil))
+      assert_reachable_object_as_expected([Array, 'a', 'b', 'c'], ['a', 'b', 'c'])
+      assert_reachable_object_as_expected([Array, 'a', 'a', 'a'], ['a', 'a', 'a'])
+      assert_reachable_object_as_expected([Array, 'a', 'a'], ['a', v = 'a', v])
+      assert_reachable_object_as_expected([Array, 'a'], [v = 'a', v, v])
 
       long_ary = Array.new(1_000){''}
       max = 0
