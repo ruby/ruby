@@ -142,10 +142,11 @@ RHASH_AR_TABLE(VALUE h)
     return RHASH(h)->as.ar;
 }
 
-static inline st_table *
+static inline struct st_table *
 RHASH_ST_TABLE(VALUE h)
 {
-    return rb_hash_st_table(h)
+    HASH_ASSERT(!RHASH_AR_TABLE_P(h));
+    return RHASH(h)->as.st;
 }
 
 #else
@@ -174,6 +175,12 @@ static inline void
 RHASH_AR_TABLE_SET(VALUE h, struct ar_table_struct *tab)
 {
     RHASH(h)->as.ar = tab;
+}
+
+static inline void
+RHASH_ST_TABLE_SET(VALUE h, st_table *tab)
+{
+    RHASH(h)->as.st = tab;
 }
 
 static inline VALUE

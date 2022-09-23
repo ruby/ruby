@@ -3535,7 +3535,7 @@ obj_free(rb_objspace_t *objspace, VALUE obj)
         }
         else {
             GC_ASSERT(RHASH_ST_TABLE_P(obj));
-            st_free_table(RHASH(obj)->as.st);
+            st_free_table(RHASH_ST_TABLE(obj));
         }
         break;
       case T_REGEXP:

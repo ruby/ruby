@@ -2269,7 +2269,7 @@ obj_traverse_rec(struct obj_traverse_data *data)
 {
     if (UNLIKELY(!data->rec)) {
         data->rec_hash = rb_ident_hash_new();
-        data->rec = rb_hash_st_table(data->rec_hash);
+        data->rec = RHASH_ST_TABLE(data->rec_hash);
     }
     return data->rec;
 }
@@ -2667,7 +2667,7 @@ obj_traverse_replace_rec(struct obj_traverse_replace_data *data)
 {
     if (UNLIKELY(!data->rec)) {
         data->rec_hash = rb_ident_hash_new();
-        data->rec = rb_hash_st_table(data->rec_hash);
+        data->rec = RHASH_ST_TABLE(data->rec_hash);
     }
     return data->rec;
 }
