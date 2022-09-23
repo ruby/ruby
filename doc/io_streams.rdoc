@@ -85,7 +85,7 @@ the relevant methods:
     f.tell # => 12
     f.close
 
-- IO#pos=:  Sets the position of the stream (in bytes):
+- IO#pos=: Sets the position of the stream (in bytes):
 
     f = File.new('t.txt')
     f.tell     # => 0
