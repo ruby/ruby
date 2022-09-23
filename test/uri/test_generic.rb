@@ -964,6 +964,11 @@ class URI::TestGeneric < Test::Unit::TestCase
       ['127.0.0.1', '127.0.0.1', 80, '10.224.0.0/22', true],
       ['10.224.1.1', '10.224.1.1', 80, '10.224.1.1', false],
       ['10.224.1.1', '10.224.1.1', 80, '10.224.0.0/22', false],
+      ['10.224.1.1', '10.224.1.1', 80, '.example.com,10.224.0.0/22', false],
+      ['127.0.0.1', '127.0.0.1', 80, '.example.com,10.224.0.0/22', true],
+      ['example.com', nil, 80, '10.224.0.0/22,example.com', false],
+      ['foo.example.com', nil, 80, '10.224.0.0/22,.example.com', false],
+      ['xample.com', nil, 80, '10.224.0.0/22,.example.com', true],
     ].each do |hostname, addr, port, no_proxy, expected|
       assert_equal expected, URI::Generic.use_proxy?(hostname, addr, port, no_proxy),
         "use_proxy?('#{hostname}', '#{addr}', #{port}, '#{no_proxy}')"
