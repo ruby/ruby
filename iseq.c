@@ -230,18 +230,8 @@ rb_iseq_each_value(const rb_iseq_t *iseq, iseq_value_itr_t * func, void *data)
     union iseq_inline_storage_entry *is_entries = body->is_entries;
 
     if (body->is_entries) {
-        // IVC entries
-        for (unsigned int i = 0; i < body->ivc_size; i++, is_entries++) {
-            IVC ivc = (IVC)is_entries;
-            if (ivc->entry) {
-                RUBY_ASSERT(!RB_TYPE_P(ivc->entry->class_value, T_NONE));
-
-                VALUE nv = func(data, ivc->entry->class_value);
-                if (ivc->entry->class_value != nv) {
-                    ivc->entry->class_value = nv;
-                }
-            }
-        }
+        // Skip iterating over ivc caches
+        is_entries += body->ivc_size;
 
         // ICVARC entries
         for (unsigned int i = 0; i < body->icvarc_size; i++, is_entries++) {

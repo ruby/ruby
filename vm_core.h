@@ -99,6 +99,7 @@ extern int ruby_assert_critical_section_entered;
 #include "ruby/st.h"
 #include "ruby_atomic.h"
 #include "vm_opts.h"
+#include "shape.h"
 
 #include "ruby/thread_native.h"
 
@@ -272,7 +273,9 @@ struct iseq_inline_constant_cache {
 };
 
 struct iseq_inline_iv_cache_entry {
-    struct rb_iv_index_tbl_entry *entry;
+    shape_id_t source_shape_id;
+    shape_id_t dest_shape_id;
+    attr_index_t attr_index;
 };
 
 struct iseq_inline_cvar_cache_entry {
@@ -686,6 +689,12 @@ typedef struct rb_vm_struct {
     /* object management */
     VALUE mark_object_ary;
     const VALUE special_exceptions[ruby_special_error_count];
+
+    /* object shapes */
+    rb_shape_t *shape_list;
+    rb_shape_t *root_shape;
+    rb_shape_t *frozen_root_shape;
+    shape_id_t next_shape_id;
 
     /* load */
     VALUE top_self;
