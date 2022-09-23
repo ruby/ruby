@@ -253,6 +253,46 @@ rb_str_encode_ospath(VALUE path)
 
 #ifdef __APPLE__
 # define NORMALIZE_UTF8PATH 1
+
+# ifdef HAVE_WORKING_FORK
+static void
+rb_CFString_class_initialize_before_fork(void)
+{
+    /*
+     * Since macOS 13, CFString family API used in
+     * rb_str_append_normalized_ospath may internally use Objective-C classes
+     * (NSTaggedPointerString and NSPlaceholderMutableString) for small strings.
+     *
+     * On the other hand, Objective-C classes should not be used for the first
+     * time in a fork()'ed but not exec()'ed process. Violations for this rule
+     * can result deadlock during class initialization, so Objective-C runtime
+     * conservatively crashes on such cases by default.
+     *
+     * Therefore, we need to use CFString API to initialize Objective-C classes
+     * used internally *before* fork().
+     *
+     * For future changes, please note that this initialization process cannot
+     * be done in ctor because NSTaggedPointerString in CoreFoundation is enabled
+     * after CFStringInitializeTaggedStrings(), which is called during loading
+     * Objective-C runtime after ctor.
+     * For more details, see https://bugs.ruby-lang.org/issues/18912
+     */
+
+    /* Enough small but non-empty ASCII string to fit in NSTaggedPointerString. */
+    const char small_str[] = "/";
+    long len = sizeof(small_str) - 1;
+
+    const CFAllocatorRef alloc = kCFAllocatorDefault;
+    CFStringRef s = CFStringCreateWithBytesNoCopy(alloc,
+                                                  (const UInt8 *)small_str,
+                                                  len, kCFStringEncodingUTF8,
+                                                  FALSE, kCFAllocatorNull);
+    CFMutableStringRef m = CFStringCreateMutableCopy(alloc, len, s);
+    CFRelease(m);
+    CFRelease(s);
+}
+# endif
+
 static VALUE
 rb_str_append_normalized_ospath(VALUE str, const char *ptr, long len)
 {
@@ -6455,6 +6495,10 @@ const char ruby_null_device[] =
 void
 Init_File(void)
 {
+#if defined(__APPLE__) && defined(HAVE_WORKING_FORK)
+    rb_CFString_class_initialize_before_fork();
+#endif
+
     VALUE separator;
 
     rb_mFileTest = rb_define_module("FileTest");
