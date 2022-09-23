@@ -51,11 +51,12 @@ jobs:
       - name: Install libraries
         run: |
           brew upgrade
-          brew install gmp libffi openssl@1.1 zlib autoconf automake libtool readline
+          brew install gmp libffi openssl@1.1 zlib autoconf automake libtool readline bison
         working-directory: src
       - name: Set ENV
         run: |
           echo "MAKEFLAGS=-j$((1 + $(sysctl -n hw.activecpu)))" >> $GITHUB_ENV
+          echo "PATH="/usr/local/opt/bison/bin:$PATH"" >> $GITHUB_ENV
       - run: ./autogen.sh
         working-directory: src
       - name: Run configure
