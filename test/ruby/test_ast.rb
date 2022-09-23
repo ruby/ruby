@@ -132,6 +132,34 @@ class TestAst < Test::Unit::TestCase
     end
   end
 
+  Dir.glob("test/**/*.rb", base: SRCDIR).each do |path|
+    define_method("test_all_tokens:#{path}") do
+      node = RubyVM::AbstractSyntaxTree.parse_file("#{SRCDIR}/#{path}", keep_tokens: true)
+      tokens = node.all_tokens.sort_by { [_1.last[0], _1.last[1]] }
+      tokens_bytes = tokens.map { _1[2]}.join.bytes
+      source_bytes = File.read("#{SRCDIR}/#{path}").bytes
+
+      assert_equal(source_bytes, tokens_bytes)
+
+      (tokens.count - 1).times do |i|
+        token_0 = tokens[i]
+        token_1 = tokens[i + 1]
+        end_pos = token_0.last[2..3]
+        beg_pos = token_1.last[0..1]
+
+        if end_pos[0] == beg_pos[0]
+          # When both tokens are same line, column should be consecutives
+          assert_equal(beg_pos[1], end_pos[1], "#{token_0}. #{token_1}")
+        else
+          # Line should be next
+          assert_equal(beg_pos[0], end_pos[0] + 1, "#{token_0}. #{token_1}")
+          # It should be on the beginning of the line
+          assert_equal(0, beg_pos[1], "#{token_0}. #{token_1}")
+        end
+      end
+    end
+  end
+
   private def parse(src)
     EnvUtil.suppress_warning {
       RubyVM::AbstractSyntaxTree.parse(src)
@@ -705,11 +733,11 @@ dummy
         a = 1
       else
     STR
-      (SCOPE@1:0-3:5
+      (SCOPE@1:0-3:4
        tbl: [:a]
        args: nil
        body:
-         (IF@1:0-3:5 (VCALL@1:3-1:7 :cond) (LASGN@2:2-2:7 :a (LIT@2:6-2:7 1))
+         (IF@1:0-3:4 (VCALL@1:3-1:7 :cond) (LASGN@2:2-2:7 :a (LIT@2:6-2:7 1))
             (BEGIN@3:4-3:4 nil)))
     EXP
   end
@@ -732,11 +760,11 @@ dummy
         a = 1
       else
     STR
-      (SCOPE@1:0-3:5
+      (SCOPE@1:0-3:4
        tbl: [:a]
        args: nil
        body:
-         (UNLESS@1:0-3:5 (VCALL@1:7-1:11 :cond) (LASGN@2:2-2:7 :a (LIT@2:6-2:7 1))
+         (UNLESS@1:0-3:4 (VCALL@1:7-1:11 :cond) (LASGN@2:2-2:7 :a (LIT@2:6-2:7 1))
             (BEGIN@3:4-3:4 nil)))
     EXP
   end
