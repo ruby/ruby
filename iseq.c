@@ -233,13 +233,15 @@ rb_iseq_each_value(const rb_iseq_t *iseq, iseq_value_itr_t * func, void *data)
         // IVC entries
         for (unsigned int i = 0; i < body->ivc_size; i++, is_entries++) {
             IVC ivc = (IVC)is_entries;
-            if (ivc->entry) {
-                RUBY_ASSERT(!RB_TYPE_P(ivc->entry->class_value, T_NONE));
-
-                VALUE nv = func(data, ivc->entry->class_value);
-                if (ivc->entry->class_value != nv) {
-                    ivc->entry->class_value = nv;
-                }
+            shape_id_t source_shape_id = vm_ic_attr_index_source_shape_id(ivc);
+            shape_id_t dest_shape_id = vm_ic_attr_index_dest_shape_id(ivc);
+            if (source_shape_id != INVALID_SHAPE_ID) {
+                rb_shape_t *shape = rb_shape_get_shape_by_id(source_shape_id);
+                func(data, (VALUE)shape);
+            }
+            if (dest_shape_id != INVALID_SHAPE_ID) {
+                rb_shape_t *shape = rb_shape_get_shape_by_id(dest_shape_id);
+                func(data, (VALUE)shape);
             }
         }
 

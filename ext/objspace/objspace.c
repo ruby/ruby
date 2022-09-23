@@ -644,6 +644,7 @@ count_imemo_objects(int argc, VALUE *argv, VALUE self)
         INIT_IMEMO_TYPE_ID(imemo_callinfo);
         INIT_IMEMO_TYPE_ID(imemo_callcache);
         INIT_IMEMO_TYPE_ID(imemo_constcache);
+        INIT_IMEMO_TYPE_ID(imemo_shape);
 #undef INIT_IMEMO_TYPE_ID
     }
 

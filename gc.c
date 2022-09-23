@@ -2895,8 +2895,7 @@ rb_class_instance_allocate_internal(VALUE klass, VALUE flags, bool wb_protected)
     GC_ASSERT((flags & RUBY_T_MASK) == T_OBJECT);
     GC_ASSERT(flags & ROBJECT_EMBED);
 
-    st_table *index_tbl = RCLASS_IV_INDEX_TBL(klass);
-    uint32_t index_tbl_num_entries = index_tbl == NULL ? 0 : (uint32_t)index_tbl->num_entries;
+    uint32_t index_tbl_num_entries = RCLASS_EXT(klass)->max_iv_count;
 
     size_t size;
     bool embed = true;
@@ -2931,7 +2930,7 @@ rb_class_instance_allocate_internal(VALUE klass, VALUE flags, bool wb_protected)
 #endif
     }
     else {
-        rb_init_iv_list(obj);
+        rb_ensure_iv_list_size(obj, 0, index_tbl_num_entries);
     }
 
     return obj;
@@ -2972,6 +2971,7 @@ rb_imemo_name(enum imemo_type type)
         IMEMO_NAME(callinfo);
         IMEMO_NAME(callcache);
         IMEMO_NAME(constcache);
+        IMEMO_NAME(shape);
 #undef IMEMO_NAME
     }
     return "unknown";
@@ -3018,6 +3018,14 @@ imemo_memsize(VALUE obj)
       case imemo_iseq:
         size += rb_iseq_memsize((rb_iseq_t *)obj);
         break;
+      case imemo_shape:
+        {
+            struct rb_id_table* edges = ((rb_shape_t *) obj)->edges;
+            if (edges) {
+                size += rb_id_table_memsize(edges);
+            }
+            break;
+        }
       case imemo_env:
         size += RANY(obj)->as.imemo.env.env_size * sizeof(VALUE);
         break;
@@ -3206,20 +3214,6 @@ rb_free_const_table(struct rb_id_table *tbl)
     rb_id_table_free(tbl);
 }
 
-static int
-free_iv_index_tbl_free_i(st_data_t key, st_data_t value, st_data_t data)
-{
-    xfree((void *)value);
-    return ST_CONTINUE;
-}
-
-static void
-iv_index_tbl_free(struct st_table *tbl)
-{
-    st_foreach(tbl, free_iv_index_tbl_free_i, 0);
-    st_free_table(tbl);
-}
-
 // alive: if false, target pointers can be freed already.
 //        To check it, we need objspace parameter.
 static void
@@ -3387,6 +3381,22 @@ obj_free_object_id(rb_objspace_t *objspace, VALUE obj)
     }
 }
 
+static enum rb_id_table_iterator_result
+remove_child_shapes_parent(VALUE value, void *ref)
+{
+    rb_shape_t * shape = (rb_shape_t *) value;
+    GC_ASSERT(IMEMO_TYPE_P(shape, imemo_shape));
+
+    // If both objects live on the same page and we're currently
+    // sweeping that page, then we need to assert that neither are marked
+    if (GET_HEAP_PAGE(shape) == GET_HEAP_PAGE(shape->parent)) {
+        GC_ASSERT(!MARKED_IN_BITMAP(GET_HEAP_MARK_BITS(shape), shape));
+    }
+
+    shape->parent = NULL;
+    return ID_TABLE_CONTINUE;
+}
+
 static int
 obj_free(rb_objspace_t *objspace, VALUE obj)
 {
@@ -3435,6 +3445,19 @@ obj_free(rb_objspace_t *objspace, VALUE obj)
             RB_DEBUG_COUNTER_INC(obj_obj_transient);
         }
         else {
+            // A shape can be collected before an object is collected (if both
+            // happened to be garbage at the same time), so when we look up the shape, _do not_
+            // assert that the shape is an IMEMO because it could be null
+            rb_shape_t *shape = rb_shape_get_shape_by_id_without_assertion(ROBJECT_SHAPE_ID(obj));
+            if (shape) {
+                VALUE klass = RBASIC_CLASS(obj);
+
+                // Increment max_iv_count if applicable, used to determine size pool allocation
+                uint32_t num_of_ivs = shape->iv_count;
+                if (RCLASS_EXT(klass)->max_iv_count < num_of_ivs) {
+                    RCLASS_EXT(klass)->max_iv_count = num_of_ivs;
+                }
+            }
             xfree(RANY(obj)->as.object.as.heap.ivptr);
             RB_DEBUG_COUNTER_INC(obj_obj_ptr);
         }
@@ -3448,9 +3471,6 @@ obj_free(rb_objspace_t *objspace, VALUE obj)
         }
         if (RCLASS_CONST_TBL(obj)) {
             rb_free_const_table(RCLASS_CONST_TBL(obj));
-        }
-        if (RCLASS_IV_INDEX_TBL(obj)) {
-            iv_index_tbl_free(RCLASS_IV_INDEX_TBL(obj));
         }
         if (RCLASS_CVC_TBL(obj)) {
             rb_id_table_foreach_values(RCLASS_CVC_TBL(obj), cvar_table_free_i, NULL);
@@ -3728,8 +3748,39 @@ obj_free(rb_objspace_t *objspace, VALUE obj)
           case imemo_constcache:
             RB_DEBUG_COUNTER_INC(obj_imemo_constcache);
             break;
-        }
-        return TRUE;
+          case imemo_shape:
+            {
+                rb_shape_t *shape = (rb_shape_t *)obj;
+                rb_shape_t *parent = shape->parent;
+
+                if (parent) {
+                    RUBY_ASSERT(IMEMO_TYPE_P(parent, imemo_shape));
+                    RUBY_ASSERT(parent->edges);
+                    VALUE res; // Only used to temporarily store lookup value
+                    if (rb_id_table_lookup(parent->edges, shape->edge_name, &res)) {
+                        if ((rb_shape_t *)res == shape) {
+                            rb_id_table_delete(parent->edges, shape->edge_name);
+                        }
+                    }
+                    else {
+                        rb_bug("Edge %s should exist", rb_id2name(shape->edge_name));
+                    }
+                }
+                if (shape->edges) {
+                    rb_id_table_foreach_values(shape->edges, remove_child_shapes_parent, NULL);
+                    rb_id_table_free(shape->edges);
+                    shape->edges = NULL;
+                }
+
+                shape->parent = NULL;
+
+                rb_shape_set_shape_by_id(SHAPE_ID(shape), NULL);
+
+                RB_DEBUG_COUNTER_INC(obj_imemo_shape);
+                break;
+            }
+	}
+	return TRUE;
 
       default:
         rb_bug("gc_sweep(): unknown data type 0x%x(%p) 0x%"PRIxVALUE,
@@ -4872,10 +4923,6 @@ obj_memsize_of(VALUE obj, int use_all_types)
             }
             if (RCLASS_CVC_TBL(obj)) {
                 size += rb_id_table_memsize(RCLASS_CVC_TBL(obj));
-            }
-            if (RCLASS_IV_INDEX_TBL(obj)) {
-                // TODO: more correct value
-                size += st_memsize(RCLASS_IV_INDEX_TBL(obj));
             }
             if (RCLASS_EXT(obj)->iv_tbl) {
                 size += st_memsize(RCLASS_EXT(obj)->iv_tbl);
@@ -7154,12 +7201,35 @@ gc_mark_imemo(rb_objspace_t *objspace, VALUE obj)
             const struct rb_callcache *cc = (const struct rb_callcache *)obj;
             // should not mark klass here
             gc_mark(objspace, (VALUE)vm_cc_cme(cc));
+
+            // Check it's an attr_(reader|writer)
+            if (cc->cme_ && (cc->cme_->def->type == VM_METHOD_TYPE_ATTRSET ||
+                        cc->cme_->def->type == VM_METHOD_TYPE_IVAR)) {
+                shape_id_t source_shape_id = vm_cc_attr_index_source_shape_id(cc);
+                shape_id_t dest_shape_id = vm_cc_attr_index_dest_shape_id(cc);
+                if (source_shape_id != INVALID_SHAPE_ID) {
+                    rb_shape_t *shape = rb_shape_get_shape_by_id(source_shape_id);
+                    rb_gc_mark((VALUE)shape);
+                }
+                if (dest_shape_id != INVALID_SHAPE_ID) {
+                    rb_shape_t *shape = rb_shape_get_shape_by_id(dest_shape_id);
+                    rb_gc_mark((VALUE)shape);
+                }
+            }
         }
         return;
       case imemo_constcache:
         {
             const struct iseq_inline_constant_cache_entry *ice = (struct iseq_inline_constant_cache_entry *)obj;
             gc_mark(objspace, ice->value);
+        }
+        return;
+      case imemo_shape:
+        {
+            rb_shape_t *shape = (rb_shape_t *)obj;
+            if (shape->edges) {
+                mark_m_tbl(objspace, shape->edges);
+            }
         }
         return;
 #if VM_CHECK_MODE > 0
@@ -9765,6 +9835,10 @@ gc_is_moveable_obj(rb_objspace_t *objspace, VALUE obj)
     GC_ASSERT(!SPECIAL_CONST_P(obj));
 
     switch (BUILTIN_TYPE(obj)) {
+      case T_IMEMO:
+        if (IMEMO_TYPE_P(obj, imemo_shape)) {
+            return FALSE;
+        }
       case T_NONE:
       case T_NIL:
       case T_MOVED:
@@ -9778,7 +9852,6 @@ gc_is_moveable_obj(rb_objspace_t *objspace, VALUE obj)
       case T_STRING:
       case T_OBJECT:
       case T_FLOAT:
-      case T_IMEMO:
       case T_ARRAY:
       case T_BIGNUM:
       case T_ICLASS:
@@ -10178,6 +10251,38 @@ gc_update_values(rb_objspace_t *objspace, long n, VALUE *values)
     }
 }
 
+static enum rb_id_table_iterator_result
+check_id_table_move(VALUE value, void *data)
+{
+    rb_objspace_t *objspace = (rb_objspace_t *)data;
+
+    if (gc_object_moved_p(objspace, (VALUE)value)) {
+        return ID_TABLE_REPLACE;
+    }
+
+    return ID_TABLE_CONTINUE;
+}
+
+static enum rb_id_table_iterator_result
+update_id_table(VALUE *value, void *data, int existing)
+{
+    rb_objspace_t *objspace = (rb_objspace_t *)data;
+
+    if (gc_object_moved_p(objspace, (VALUE)*value)) {
+        *value = rb_gc_location((VALUE)*value);
+    }
+
+    return ID_TABLE_CONTINUE;
+}
+
+static void
+update_m_tbl(rb_objspace_t *objspace, struct rb_id_table *tbl)
+{
+    if (tbl) {
+        rb_id_table_foreach_values_with_replace(tbl, check_id_table_move, update_id_table, objspace);
+    }
+}
+
 static void
 gc_ref_update_imemo(rb_objspace_t *objspace, VALUE obj)
 {
@@ -10250,22 +10355,21 @@ gc_ref_update_imemo(rb_objspace_t *objspace, VALUE obj)
       case imemo_tmpbuf:
       case imemo_callinfo:
         break;
+      case imemo_shape:
+        {
+            rb_shape_t * shape = (rb_shape_t *)obj;
+            if(shape->edges) {
+                update_m_tbl(objspace, shape->edges);
+            }
+            if (shape->parent) {
+                shape->parent = (rb_shape_t *)rb_gc_location((VALUE)shape->parent);
+            }
+        }
+        break;
       default:
         rb_bug("not reachable %d", imemo_type(obj));
         break;
     }
-}
-
-static enum rb_id_table_iterator_result
-check_id_table_move(VALUE value, void *data)
-{
-    rb_objspace_t *objspace = (rb_objspace_t *)data;
-
-    if (gc_object_moved_p(objspace, (VALUE)value)) {
-        return ID_TABLE_REPLACE;
-    }
-
-    return ID_TABLE_CONTINUE;
 }
 
 /* Returns the new location of an object, if it moved.  Otherwise returns
@@ -10298,26 +10402,6 @@ rb_gc_location(VALUE value)
     }
 
     return destination;
-}
-
-static enum rb_id_table_iterator_result
-update_id_table(VALUE *value, void *data, int existing)
-{
-    rb_objspace_t *objspace = (rb_objspace_t *)data;
-
-    if (gc_object_moved_p(objspace, (VALUE)*value)) {
-        *value = rb_gc_location((VALUE)*value);
-    }
-
-    return ID_TABLE_CONTINUE;
-}
-
-static void
-update_m_tbl(rb_objspace_t *objspace, struct rb_id_table *tbl)
-{
-    if (tbl) {
-        rb_id_table_foreach_values_with_replace(tbl, check_id_table_move, update_id_table, objspace);
-    }
 }
 
 static enum rb_id_table_iterator_result
@@ -10407,15 +10491,6 @@ update_subclass_entries(rb_objspace_t *objspace, rb_subclass_entry_t *entry)
     }
 }
 
-static int
-update_iv_index_tbl_i(st_data_t key, st_data_t value, st_data_t arg)
-{
-    rb_objspace_t *objspace = (rb_objspace_t *)arg;
-    struct rb_iv_index_tbl_entry *ent = (struct rb_iv_index_tbl_entry *)value;
-    UPDATE_IF_MOVED(objspace, ent->class_value);
-    return ST_CONTINUE;
-}
-
 static void
 update_class_ext(rb_objspace_t *objspace, rb_classext_t *ext)
 {
@@ -10423,11 +10498,6 @@ update_class_ext(rb_objspace_t *objspace, rb_classext_t *ext)
     UPDATE_IF_MOVED(objspace, ext->includer);
     UPDATE_IF_MOVED(objspace, ext->refined_class);
     update_subclass_entries(objspace, ext->subclasses);
-
-    // ext->iv_index_tbl
-    if (ext->iv_index_tbl) {
-        st_foreach(ext->iv_index_tbl, update_iv_index_tbl_i, (st_data_t)objspace);
-    }
 }
 
 static void
@@ -10669,6 +10739,8 @@ gc_update_references(rb_objspace_t *objspace)
 
     struct heap_page *page = NULL;
 
+    rb_vm_update_references(vm);
+
     for (int i = 0; i < SIZE_POOL_COUNT; i++) {
         bool should_set_mark_bits = TRUE;
         rb_size_pool_t *size_pool = &size_pools[i];
@@ -10687,7 +10759,6 @@ gc_update_references(rb_objspace_t *objspace)
             }
         }
     }
-    rb_vm_update_references(vm);
     rb_transient_heap_update_references();
     rb_gc_update_global_tbl();
     global_symbols.ids = rb_gc_location(global_symbols.ids);
