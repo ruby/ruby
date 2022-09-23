@@ -90,6 +90,9 @@ Note that each entry is kept to a minimum, see links for details.
     foo(k: 1)
     ```
 
+* `eval` and related methods are able to generate code coverage.
+  [[Feature #19008]]
+
 ## Command line options
 
 ## Core classes updates
@@ -313,3 +316,4 @@ The following deprecated APIs are removed.
 [Feature #18809]: https://bugs.ruby-lang.org/issues/18809
 [Feature #18481]: https://bugs.ruby-lang.org/issues/18481
 [Feature #18949]: https://bugs.ruby-lang.org/issues/18949
+[Feature #19008]: https://bugs.ruby-lang.org/issues/19008
