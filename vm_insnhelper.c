@@ -3140,10 +3140,47 @@ vm_call_bmethod_body(rb_execution_context_t *ec, struct rb_calling_info *calling
     return val;
 }
 
+static int vm_callee_setup_block_arg(rb_execution_context_t *ec, struct rb_calling_info *calling,
+                                     const struct rb_callinfo *ci, const rb_iseq_t *iseq,
+                                     VALUE *argv, const enum arg_setup_type arg_setup_type);
+
 static VALUE
 vm_call_bmethod(rb_execution_context_t *ec, rb_control_frame_t *cfp, struct rb_calling_info *calling)
 {
     RB_DEBUG_COUNTER_INC(ccf_bmethod);
+
+    const rb_callable_method_entry_t *cme = vm_cc_cme(calling->cc);
+    VALUE procv = cme->def->body.bmethod.proc;
+    rb_proc_t *proc;
+    GetProcPtr(procv, proc);
+
+    // fast-path for iseq -> iseq bmethod call
+    if (vm_block_type(&proc->block) == block_type_iseq) {
+        if (!RB_OBJ_SHAREABLE_P(procv) &&
+            cme->def->body.bmethod.defined_ractor != rb_ractor_self(rb_ec_ractor_ptr(ec))) {
+            rb_raise(rb_eRuntimeError, "defined with an un-shareable Proc in a different Ractor");
+        }
+
+        const struct rb_captured_block *captured = &proc->block.as.captured;
+        const rb_iseq_t *iseq = rb_iseq_check(captured->code.iseq);
+        const int arg_size = ISEQ_BODY(iseq)->param.size;
+        VALUE * const argv = cfp->sp - calling->argc;
+        int opt_pc = vm_callee_setup_block_arg(ec, calling, calling->ci, iseq, argv, arg_setup_method);
+
+        cfp->sp = argv - 1 /* recv */;
+
+        vm_push_frame(ec, iseq,
+                      VM_FRAME_MAGIC_BLOCK | VM_FRAME_FLAG_LAMBDA | VM_FRAME_FLAG_BMETHOD,
+                      calling->recv,
+                      VM_GUARDED_PREV_EP(captured->ep),
+                      (VALUE)cme,
+                      ISEQ_BODY(iseq)->iseq_encoded + opt_pc,
+                      argv + arg_size,
+                      ISEQ_BODY(iseq)->local_table_size - arg_size,
+                      ISEQ_BODY(iseq)->stack_max);
+
+        return Qundef;
+    }
 
     VALUE *argv;
     int argc;
