@@ -3748,23 +3748,44 @@ AS_CASE(["${YJIT_SUPPORT}"],
     ],
     [dev], [
 	rb_rust_target_subdir=debug
-	CARGO_BUILD_ARGS='--features stats,disasm,asm_comments'
+        CARGO_BUILD_ARGS='--features disasm,asm_comments'
 	AC_DEFINE(RUBY_DEBUG, 1)
     ],
     [dev_nodebug], [
 	rb_rust_target_subdir=dev_nodebug
-	CARGO_BUILD_ARGS='--profile dev_nodebug --features stats,disasm,asm_comments'
+        CARGO_BUILD_ARGS='--profile dev_nodebug --features disasm,asm_comments'
     ],
     [stats], [
 	rb_rust_target_subdir=stats
-	CARGO_BUILD_ARGS='--profile stats --features stats'
+        CARGO_BUILD_ARGS='--profile stats'
     ])
 
     AS_IF([test -n "${CARGO_BUILD_ARGS}"], [
-             AC_CHECK_TOOL(CARGO, [cargo], [no])
-             AS_IF([test x"$CARGO" = "xno"],
-                AC_MSG_ERROR([cargo is required. Installation instructions available at https://www.rust-lang.org/tools/install])
-             ]))
+        AC_CHECK_TOOL(CARGO, [cargo], [no])
+        AS_IF([test x"$CARGO" = "xno"],
+            AC_MSG_ERROR([cargo is required. Installation instructions available at https://www.rust-lang.org/tools/install])
+        ])
+
+        # Insn::IncrCounter uses ldaddal, which works only on ARMv8.1+.
+        AC_CACHE_CHECK(yjit stats are broken, rb_cv_broken_yjit_stats, [
+            AC_RUN_IFELSE(
+                [AC_LANG_PROGRAM([[]], [[
+                    @%:@ifdef __aarch64__
+                        asm volatile(".arch armv8-a+lse\n"
+                                     "ldaddal xzr, xzr, @<:@sp@:>@");
+                    @%:@endif
+                ]])],
+                [rb_cv_broken_yjit_stats=no],
+                [rb_cv_broken_yjit_stats=yes],
+                [rb_cv_broken_yjit_stats=yes]
+            )
+        ])
+        # This won't enable stats in release builds because we don't use cargo
+        # for release builds, use rustc directly
+        AS_IF([test "$rb_cv_broken_yjit_stats" = no], [
+            CARGO_BUILD_ARGS="${CARGO_BUILD_ARGS} --features stats"
+        ])
+    )
 
     YJIT_LIBS="yjit/target/${rb_rust_target_subdir}/libyjit.a"
     AS_CASE(["$target_os"],[openbsd*],[
