@@ -3474,8 +3474,20 @@ original_module(VALUE c)
 static int
 cvar_lookup_at(VALUE klass, ID id, st_data_t *v)
 {
-    if (!RCLASS_IV_TBL(klass)) return 0;
-    return st_lookup(RCLASS_IV_TBL(klass), (st_data_t)id, v);
+    if (RB_TYPE_P(klass, T_ICLASS)) {
+        if (FL_TEST_RAW(klass, RICLASS_IS_ORIGIN)) {
+            return 0;
+        } else {
+            // check the original module
+            klass = RBASIC(klass)->klass;
+        }
+    }
+
+    VALUE n = rb_ivar_lookup(klass, id, Qundef);
+    if (n == Qundef) return 0;
+
+    if (v) *v = n;
+    return 1;
 }
 
 static VALUE
@@ -3494,8 +3506,6 @@ static void
 cvar_overtaken(VALUE front, VALUE target, ID id)
 {
     if (front && target != front) {
-        st_data_t did = (st_data_t)id;
-
         if (original_module(front) != original_module(target)) {
             rb_raise(rb_eRuntimeError,
                      "class variable % "PRIsVALUE" of %"PRIsVALUE" is overtaken by %"PRIsVALUE"",
@@ -3503,7 +3513,7 @@ cvar_overtaken(VALUE front, VALUE target, ID id)
                        rb_class_name(original_module(target)));
         }
         if (BUILTIN_TYPE(front) == T_CLASS) {
-            st_delete(RCLASS_IV_TBL(front), &did, 0);
+            rb_ivar_delete(front, id, Qundef);
         }
     }
 }
@@ -3548,9 +3558,8 @@ find_cvar(VALUE klass, VALUE * front, VALUE * target, ID id)
 static void
 check_for_cvar_table(VALUE subclass, VALUE key)
 {
-    st_table *tbl = RCLASS_IV_TBL(subclass);
-
-    if (tbl && st_lookup(tbl, key, NULL)) {
+    // Must not check ivar on ICLASS
+    if (!RB_TYPE_P(subclass, T_ICLASS) && RTEST(rb_ivar_defined(subclass, key))) {
         RB_DEBUG_COUNTER_INC(cvar_class_invalidate);
         ruby_vm_global_cvar_state++;
         return;
@@ -3693,9 +3702,9 @@ mod_cvar_at(VALUE mod, void *data)
     if (!tbl) {
         tbl = st_init_numtable();
     }
-    if (RCLASS_IV_TBL(mod)) {
-        st_foreach_safe(RCLASS_IV_TBL(mod), cv_i, (st_data_t)tbl);
-    }
+    mod = original_module(mod);
+
+    rb_ivar_foreach(mod, cv_i, (st_data_t)tbl);
     return tbl;
 }
 

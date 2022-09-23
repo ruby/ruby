@@ -1507,15 +1507,13 @@ vm_getclassvariable(const rb_iseq_t *iseq, const rb_control_frame_t *reg_cfp, ID
 {
     const rb_cref_t *cref;
 
-    if (ic->entry && ic->entry->global_cvar_state == GET_GLOBAL_CVAR_STATE()) {
-        VALUE v = Qundef;
+    if (ic->entry && ic->entry->global_cvar_state == GET_GLOBAL_CVAR_STATE() && LIKELY(rb_ractor_main_p())) {
         RB_DEBUG_COUNTER_INC(cvar_read_inline_hit);
 
-        if (st_lookup(RCLASS_IV_TBL(ic->entry->class_value), (st_data_t)id, &v) &&
-            LIKELY(rb_ractor_main_p())) {
+        VALUE v = rb_ivar_lookup(ic->entry->class_value, id, Qundef);
+        RUBY_ASSERT(v != Qundef);
 
-            return v;
-        }
+        return v;
     }
 
     cref = vm_get_cref(GET_EP());
