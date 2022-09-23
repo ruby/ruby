@@ -102,16 +102,16 @@ class BindingGenerator
 
   # @param src_path [String]
   # @param uses [Array<String>]
-  # @param ints [Array<String>]
+  # @param values [Hash{ Symbol => Array<String> }]
   # @param types [Array<String>]
   # @param dynamic_types [Array<String>] #ifdef-dependent immediate types, which need Primitive.cexpr! for type detection
   # @param skip_fields [Hash{ Symbol => Array<String> }] Struct fields that are skipped from bindgen
   # @param ruby_fields [Hash{ Symbol => Array<String> }] Struct VALUE fields that are considered Ruby objects
-  def initialize(src_path:, uses:, ints:, types:, dynamic_types:, skip_fields:, ruby_fields:)
+  def initialize(src_path:, uses:, values:, types:, dynamic_types:, skip_fields:, ruby_fields:)
     @preamble, @postamble = split_ambles(src_path)
     @src = String.new
     @uses = uses.sort
-    @ints = ints.sort
+    @values = values.transform_values(&:sort)
     @types = types.sort
     @dynamic_types = dynamic_types.sort
     @skip_fields = skip_fields.transform_keys(&:to_s)
@@ -130,12 +130,14 @@ class BindingGenerator
       println
     end
 
-    # Define int macros/enums
-    @ints.each do |int|
-      println "  def C.#{int}"
-      println "    Primitive.cexpr! %q{ INT2NUM(#{int}) }"
-      println "  end"
-      println
+    # Define macros/enums
+    @values.each do |type, values|
+      values.each do |value|
+        println "  def C.#{value}"
+        println "    Primitive.cexpr! %q{ #{type}2NUM(#{value}) }"
+        println "  end"
+        println
+      end
     end
 
     # TODO: Support nested declarations
@@ -329,15 +331,17 @@ generator = BindingGenerator.new(
     USE_LAZY_LOAD
     USE_RVARGC
   ],
-  ints: %w[
-    NOT_COMPILED_STACK_SIZE
-    VM_CALL_KW_SPLAT
-    VM_CALL_KW_SPLAT_bit
-    VM_CALL_TAILCALL
-    VM_CALL_TAILCALL_bit
-    VM_METHOD_TYPE_CFUNC
-    VM_METHOD_TYPE_ISEQ
-  ],
+  values: {
+    INT: %w[
+      NOT_COMPILED_STACK_SIZE
+      VM_CALL_KW_SPLAT
+      VM_CALL_KW_SPLAT_bit
+      VM_CALL_TAILCALL
+      VM_CALL_TAILCALL_bit
+      VM_METHOD_TYPE_CFUNC
+      VM_METHOD_TYPE_ISEQ
+    ],
+  },
   types: %w[
     CALL_DATA
     IC
