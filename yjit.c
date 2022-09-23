@@ -998,16 +998,6 @@ rb_yjit_invalidate_all_method_lookup_assumptions(void)
     // method caches, so we do nothing here for now.
 }
 
-bool
-rb_yjit_stats_supported(void)
-{
-#if defined(BROKEN_YJIT_STATS)
-    return false;
-#else
-    return true;
-#endif
-}
-
 // Primitives used by yjit.rb
 VALUE rb_yjit_stats_enabled_p(rb_execution_context_t *ec, VALUE self);
 VALUE rb_yjit_trace_exit_locations_enabled_p(rb_execution_context_t *ec, VALUE self);

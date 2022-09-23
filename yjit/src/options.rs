@@ -1,5 +1,4 @@
 use std::ffi::CStr;
-use crate::cruby::rb_yjit_stats_supported;
 
 // Command-line options
 #[derive(Clone, PartialEq, Eq, Debug)]
@@ -152,15 +151,7 @@ pub fn parse_option(str_ptr: *const std::os::raw::c_char) -> Option<()> {
 
         ("greedy-versioning", "") => unsafe { OPTIONS.greedy_versioning = true },
         ("no-type-prop", "") => unsafe { OPTIONS.no_type_prop = true },
-
-        ("stats", "") => {
-            if unsafe { !rb_yjit_stats_supported() } {
-                eprintln!("Your processor does not support --yjit-stats. Aborting.");
-                std::process::exit(1);
-            }
-            unsafe { OPTIONS.gen_stats = true }
-        },
-
+        ("stats", "") => unsafe { OPTIONS.gen_stats = true },
         ("trace-exits", "") => unsafe { OPTIONS.gen_trace_exits = true; OPTIONS.gen_stats = true },
         ("dump-insns", "") => unsafe { OPTIONS.dump_insns = true },
         ("verify-ctx", "") => unsafe { OPTIONS.verify_ctx = true },

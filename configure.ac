@@ -3748,16 +3748,16 @@ AS_CASE(["${YJIT_SUPPORT}"],
     ],
     [dev], [
 	rb_rust_target_subdir=debug
-	CARGO_BUILD_ARGS='--features stats,disasm,asm_comments'
+        CARGO_BUILD_ARGS='--features disasm,asm_comments'
 	AC_DEFINE(RUBY_DEBUG, 1)
     ],
     [dev_nodebug], [
 	rb_rust_target_subdir=dev_nodebug
-	CARGO_BUILD_ARGS='--profile dev_nodebug --features stats,disasm,asm_comments'
+        CARGO_BUILD_ARGS='--profile dev_nodebug --features disasm,asm_comments'
     ],
     [stats], [
 	rb_rust_target_subdir=stats
-	CARGO_BUILD_ARGS='--profile stats --features stats'
+        CARGO_BUILD_ARGS='--profile stats'
     ])
 
     AS_IF([test -n "${CARGO_BUILD_ARGS}"], [
@@ -3780,7 +3780,9 @@ AS_CASE(["${YJIT_SUPPORT}"],
                 [rb_cv_broken_yjit_stats=yes]
             )
         ])
-        AS_IF([test "$rb_cv_broken_yjit_stats" = yes], [AC_DEFINE(BROKEN_YJIT_STATS, 1)])
+        AS_IF([test "$rb_cv_broken_yjit_stats" = no], [
+            CARGO_BUILD_ARGS="${CARGO_BUILD_ARGS} --features stats"
+        ])
     )
 
     YJIT_LIBS="yjit/target/${rb_rust_target_subdir}/libyjit.a"
