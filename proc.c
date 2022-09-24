@@ -2452,8 +2452,7 @@ method_clone(VALUE self)
 static VALUE
 rb_method_call_pass_called_kw(int argc, const VALUE *argv, VALUE method)
 {
-    VALUE procval = rb_block_given_p() ? rb_block_proc() : Qnil;
-    return rb_method_call_with_block_kw(argc, argv, method, procval, RB_PASS_CALLED_KEYWORDS);
+    return rb_method_call_kw(argc, argv, method, RB_PASS_CALLED_KEYWORDS);
 }
 
 VALUE
