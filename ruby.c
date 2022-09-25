@@ -154,6 +154,7 @@ enum feature_flag_bits {
     /* END OF DUMPS */
 enum dump_flag_bits {
     dump_version_v,
+    dump_error_tolerant,
     EACH_DUMPS(DEFINE_DUMP, COMMA),
     dump_exit_bits = (DUMP_BIT(yydebug) | DUMP_BIT(syntax) |
                       DUMP_BIT(parsetree) | DUMP_BIT(parsetree_with_comment) |
@@ -301,9 +302,9 @@ usage(const char *name, int help, int highlight, int columns)
     static const struct ruby_opt_message dumps[] = {
         M("insns",                  "", "instruction sequences"),
         M("insns_without_opt",      "", "instruction sequences compiled with no optimization"),
-        M("yydebug",                "", "yydebug of yacc parser generator"),
-        M("parsetree",              "", "AST"),
-        M("parsetree_with_comment", "", "AST with comments"),
+        M("yydebug(+error-tolerant)", "", "yydebug of yacc parser generator"),
+        M("parsetree(+error-tolerant)","", "AST"),
+        M("parsetree_with_comment(+error-tolerant)", "", "AST with comments"),
     };
     static const struct ruby_opt_message features[] = {
         M("gems",    "",        "rubygems (only for debugging, default: "DEFAULT_RUBYGEMS_ENABLED")"),
@@ -1016,6 +1017,11 @@ static void
 dump_option(const char *str, int len, void *arg)
 {
     static const char list[] = EACH_DUMPS(LITERAL_NAME_ELEMENT, ", ");
+#define NAME_MATCH_TOLERANT_P(name) (len >= 15 && NAME_MATCH_P(#name "+error-tolerant", str, len))
+    if (NAME_MATCH_TOLERANT_P(yydebug) || NAME_MATCH_TOLERANT_P(parsetree) || NAME_MATCH_TOLERANT_P(parsetree_with_comment)) {
+        *(unsigned int *)arg |= DUMP_BIT(error_tolerant);
+        len -= 15;
+    }
 #define SET_WHEN_DUMP(bit) SET_WHEN(#bit, DUMP_BIT(bit), str, len)
     EACH_DUMPS(SET_WHEN_DUMP, ;);
     rb_warn("don't know how to dump `%.*s',", len, str);
@@ -1934,6 +1940,9 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
     parser = rb_parser_new();
     if (opt->dump & DUMP_BIT(yydebug)) {
         rb_parser_set_yydebug(parser, Qtrue);
+    }
+    if (opt->dump & DUMP_BIT(error_tolerant)) {
+        rb_parser_error_tolerant(parser);
     }
     if (opt->ext.enc.name != 0) {
         opt->ext.enc.index = opt_enc_index(opt->ext.enc.name);
