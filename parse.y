@@ -348,6 +348,7 @@ struct parser_params {
     unsigned int do_chomp: 1;
     unsigned int do_split: 1;
     unsigned int keep_script_lines: 1;
+    unsigned int error_tolerant: 1;
 
     NODE *eval_tree_begin;
     NODE *eval_tree;
@@ -6384,7 +6385,9 @@ yycompile0(VALUE arg)
 	    mesg = rb_class_new_instance(0, 0, rb_eSyntaxError);
 	}
 	rb_set_errinfo(mesg);
-	return FALSE;
+	if (!p->error_tolerant) {
+	    return FALSE;
+	}
     }
     tree = p->eval_tree;
     if (!tree) {
@@ -13313,6 +13316,16 @@ rb_parser_keep_script_lines(VALUE vparser)
     TypedData_Get_Struct(vparser, struct parser_params, &parser_data_type, p);
     p->keep_script_lines = 1;
 }
+
+void
+rb_parser_error_tolerant(VALUE vparser)
+{
+    struct parser_params *p;
+
+    TypedData_Get_Struct(vparser, struct parser_params, &parser_data_type, p);
+    p->error_tolerant = 1;
+}
+
 #endif
 
 #ifdef RIPPER

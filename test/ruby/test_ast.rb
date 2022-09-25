@@ -565,4 +565,17 @@ dummy
     assert_in_out_err(["-e", "def foo; end; pp RubyVM::AbstractSyntaxTree.of(method(:foo)).type"],
                       "", [":SCOPE"], [])
   end
+
+  def test_error_tolerant
+    node = RubyVM::AbstractSyntaxTree.parse(<<~STR, error_tolerant: true)
+      class A
+        def m
+          if;
+          a = 10
+        end
+      end
+    STR
+
+    assert_equal(:SCOPE, node.type)
+  end
 end
