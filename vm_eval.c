@@ -1718,7 +1718,7 @@ eval_make_iseq(VALUE src, VALUE fname, int line, const rb_binding_t *bind,
 
         iseq = rb_iseq_new_eval(&ast->body,
                                 ISEQ_BODY(parent)->location.label,
-                                fname, Qnil, INT2FIX(line),
+                                fname, Qnil, line,
                                 parent, isolated_depth);
     }
     rb_ast_dispose(ast);
