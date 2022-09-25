@@ -1333,7 +1333,7 @@ new_child_iseq(rb_iseq_t *iseq, const NODE *const node,
     int isolated_depth = ISEQ_COMPILE_DATA(iseq)->isolated_depth;
     ret_iseq = rb_iseq_new_with_opt(&ast, name,
                                     rb_iseq_path(iseq), rb_iseq_realpath(iseq),
-                                    INT2FIX(line_no), parent,
+                                    line_no, parent,
                                     isolated_depth ? isolated_depth + 1 : 0,
                                     type, ISEQ_COMPILE_DATA(iseq)->option);
     debugs("[new_child_iseq]< ---------------------------------------\n");
@@ -1349,7 +1349,7 @@ new_child_iseq_with_callback(rb_iseq_t *iseq, const struct rb_iseq_new_with_call
     debugs("[new_child_iseq_with_callback]> ---------------------------------------\n");
     ret_iseq = rb_iseq_new_with_callback(ifunc, name,
                                  rb_iseq_path(iseq), rb_iseq_realpath(iseq),
-                                 INT2FIX(line_no), parent, type, ISEQ_COMPILE_DATA(iseq)->option);
+                                 line_no, parent, type, ISEQ_COMPILE_DATA(iseq)->option);
     debugs("[new_child_iseq_with_callback]< ---------------------------------------\n");
     return ret_iseq;
 }
@@ -8231,7 +8231,7 @@ compile_builtin_mandatory_only_method(rb_iseq_t *iseq, const NODE *node, const N
     ISEQ_BODY(iseq)->mandatory_only_iseq =
       rb_iseq_new_with_opt(&ast, rb_iseq_base_label(iseq),
                            rb_iseq_path(iseq), rb_iseq_realpath(iseq),
-                           INT2FIX(nd_line(line_node)), NULL, 0,
+                           nd_line(line_node), NULL, 0,
                            ISEQ_TYPE_METHOD, ISEQ_COMPILE_DATA(iseq)->option);
 
     GET_VM()->builtin_inline_index = prev_inline_index;
