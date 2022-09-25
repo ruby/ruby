@@ -1,6 +1,7 @@
 # frozen_string_literal: false
 require 'test/unit'
 require 'tempfile'
+require 'pp'
 
 class RubyVM
   module AbstractSyntaxTree
@@ -577,5 +578,382 @@ dummy
     STR
 
     assert_equal(:SCOPE, node.type)
+  end
+
+  def test_error_tolerant_end_is_short_for_method_define
+    node = RubyVM::AbstractSyntaxTree.parse(<<~STR, error_tolerant: true)
+      def m
+        m2
+    STR
+
+    str = ""
+    PP.pp(node, str)
+    assert_equal(<<~EXP, str)
+      (SCOPE@1:0-2:4
+       tbl: []
+       args: nil
+       body:
+         (DEFN@1:0-2:4
+          mid: :m
+          body:
+            (SCOPE@1:0-2:4
+             tbl: []
+             args:
+               (ARGS@1:5-1:5
+                pre_num: 0
+                pre_init: nil
+                opt: nil
+                first_post: nil
+                post_num: 0
+                post_init: nil
+                rest: nil
+                kw: nil
+                kwrest: nil
+                block: nil)
+             body: (VCALL@2:2-2:4 :m2))))
+    EXP
+  end
+
+  def test_error_tolerant_end_is_short_for_singleton_method_define
+    node = RubyVM::AbstractSyntaxTree.parse(<<~STR, error_tolerant: true)
+      def obj.m
+        m2
+    STR
+
+    str = ""
+    PP.pp(node, str)
+    assert_equal(<<~EXP, str)
+      (SCOPE@1:0-2:4
+       tbl: []
+       args: nil
+       body:
+         (DEFS@1:0-2:4 (VCALL@1:4-1:7 :obj) :m
+            (SCOPE@1:0-2:4
+             tbl: []
+             args:
+               (ARGS@1:9-1:9
+                pre_num: 0
+                pre_init: nil
+                opt: nil
+                first_post: nil
+                post_num: 0
+                post_init: nil
+                rest: nil
+                kw: nil
+                kwrest: nil
+                block: nil)
+             body: (VCALL@2:2-2:4 :m2))))
+    EXP
+  end
+
+  def test_error_tolerant_end_is_short_for_begin
+    node = RubyVM::AbstractSyntaxTree.parse(<<~STR, error_tolerant: true)
+      begin
+        a = 1
+    STR
+
+    str = ""
+    PP.pp(node, str)
+    assert_equal(<<~EXP, str)
+      (SCOPE@1:0-2:7 tbl: [:a] args: nil body: (LASGN@2:2-2:7 :a (LIT@2:6-2:7 1)))
+    EXP
+  end
+
+  def test_error_tolerant_end_is_short_for_if
+    node = RubyVM::AbstractSyntaxTree.parse(<<~STR, error_tolerant: true)
+      if cond
+        a = 1
+    STR
+
+    str = ""
+    PP.pp(node, str)
+    assert_equal(<<~EXP, str)
+      (SCOPE@1:0-2:7
+       tbl: [:a]
+       args: nil
+       body:
+         (IF@1:0-2:7 (VCALL@1:3-1:7 :cond) (LASGN@2:2-2:7 :a (LIT@2:6-2:7 1)) nil))
+    EXP
+
+    node = RubyVM::AbstractSyntaxTree.parse(<<~STR, error_tolerant: true)
+      if cond
+        a = 1
+      else
+    STR
+
+    str = ""
+    PP.pp(node, str)
+    assert_equal(<<~EXP, str)
+      (SCOPE@1:0-3:5
+       tbl: [:a]
+       args: nil
+       body:
+         (IF@1:0-3:5 (VCALL@1:3-1:7 :cond) (LASGN@2:2-2:7 :a (LIT@2:6-2:7 1))
+            (BEGIN@3:4-3:4 nil)))
+    EXP
+  end
+
+  def test_error_tolerant_end_is_short_for_unless
+    node = RubyVM::AbstractSyntaxTree.parse(<<~STR, error_tolerant: true)
+      unless cond
+        a = 1
+    STR
+
+    str = ""
+    PP.pp(node, str)
+    assert_equal(<<~EXP, str)
+      (SCOPE@1:0-2:7
+       tbl: [:a]
+       args: nil
+       body:
+         (UNLESS@1:0-2:7 (VCALL@1:7-1:11 :cond) (LASGN@2:2-2:7 :a (LIT@2:6-2:7 1))
+            nil))
+    EXP
+
+    node = RubyVM::AbstractSyntaxTree.parse(<<~STR, error_tolerant: true)
+      unless cond
+        a = 1
+      else
+    STR
+
+    str = ""
+    PP.pp(node, str)
+    assert_equal(<<~EXP, str)
+      (SCOPE@1:0-3:5
+       tbl: [:a]
+       args: nil
+       body:
+         (UNLESS@1:0-3:5 (VCALL@1:7-1:11 :cond) (LASGN@2:2-2:7 :a (LIT@2:6-2:7 1))
+            (BEGIN@3:4-3:4 nil)))
+    EXP
+  end
+
+  def test_error_tolerant_end_is_short_for_while
+    node = RubyVM::AbstractSyntaxTree.parse(<<~STR, error_tolerant: true)
+      while true
+        m
+    STR
+
+    str = ""
+    PP.pp(node, str)
+    assert_equal(<<~EXP, str)
+      (SCOPE@1:0-2:3
+       tbl: []
+       args: nil
+       body: (WHILE@1:0-2:3 (TRUE@1:6-1:10) (VCALL@2:2-2:3 :m) true))
+    EXP
+  end
+
+  def test_error_tolerant_end_is_short_for_until
+    node = RubyVM::AbstractSyntaxTree.parse(<<~STR, error_tolerant: true)
+      until true
+        m
+    STR
+
+    str = ""
+    PP.pp(node, str)
+    assert_equal(<<~EXP, str)
+      (SCOPE@1:0-2:3
+       tbl: []
+       args: nil
+       body: (UNTIL@1:0-2:3 (TRUE@1:6-1:10) (VCALL@2:2-2:3 :m) true))
+    EXP
+  end
+
+  def test_error_tolerant_end_is_short_for_case
+    node = RubyVM::AbstractSyntaxTree.parse(<<~STR, error_tolerant: true)
+      case a
+      when 1
+    STR
+
+    str = ""
+    PP.pp(node, str)
+    assert_equal(<<~EXP, str)
+      (SCOPE@1:0-2:6
+       tbl: []
+       args: nil
+       body:
+         (CASE@1:0-2:6 (VCALL@1:5-1:6 :a)
+            (WHEN@2:0-2:6 (LIST@2:5-2:6 (LIT@2:5-2:6 1) nil) (BEGIN@2:6-2:6 nil)
+               nil)))
+    EXP
+
+
+    node = RubyVM::AbstractSyntaxTree.parse(<<~STR, error_tolerant: true)
+      case
+      when a == 1
+    STR
+
+    str = ""
+    PP.pp(node, str)
+    assert_equal(<<~EXP, str)
+      (SCOPE@1:0-2:11
+       tbl: []
+       args: nil
+       body:
+         (CASE2@1:0-2:11 nil
+            (WHEN@2:0-2:11
+               (LIST@2:5-2:11
+                  (OPCALL@2:5-2:11 (VCALL@2:5-2:6 :a) :==
+                     (LIST@2:10-2:11 (LIT@2:10-2:11 1) nil)) nil)
+               (BEGIN@2:11-2:11 nil) nil)))
+    EXP
+
+
+    node = RubyVM::AbstractSyntaxTree.parse(<<~STR, error_tolerant: true)
+      case a
+      in {a: String}
+    STR
+
+    str = ""
+    PP.pp(node, str)
+    assert_equal(<<~EXP, str)
+      (SCOPE@1:0-2:14
+       tbl: []
+       args: nil
+       body:
+         (CASE3@1:0-2:14 (VCALL@1:5-1:6 :a)
+            (IN@2:0-2:14
+               (HSHPTN@2:4-2:13
+                const: nil
+                kw:
+                  (HASH@2:4-2:13
+                     (LIST@2:4-2:13 (LIT@2:4-2:6 :a) (CONST@2:7-2:13 :String) nil))
+                kwrest: nil) (BEGIN@2:14-2:14 nil) nil)))
+    EXP
+  end
+
+  def test_error_tolerant_end_is_short_for_for
+    node = RubyVM::AbstractSyntaxTree.parse(<<~STR, error_tolerant: true)
+      for i in ary
+        m
+    STR
+
+    str = ""
+    PP.pp(node, str)
+    assert_equal(<<~EXP, str)
+      (SCOPE@1:0-2:3
+       tbl: [:i]
+       args: nil
+       body:
+         (FOR@1:0-2:3 (VCALL@1:9-1:12 :ary)
+            (SCOPE@1:0-2:3
+             tbl: [nil]
+             args:
+               (ARGS@1:4-1:5
+                pre_num: 1
+                pre_init: (LASGN@1:4-1:5 :i (DVAR@1:4-1:5 nil))
+                opt: nil
+                first_post: nil
+                post_num: 0
+                post_init: nil
+                rest: nil
+                kw: nil
+                kwrest: nil
+                block: nil)
+             body: (VCALL@2:2-2:3 :m))))
+    EXP
+  end
+
+  def test_error_tolerant_end_is_short_for_class
+    node = RubyVM::AbstractSyntaxTree.parse(<<~STR, error_tolerant: true)
+      class C
+    STR
+
+    str = ""
+    PP.pp(node, str)
+    assert_equal(<<~EXP, str)
+      (SCOPE@1:0-1:7
+       tbl: []
+       args: nil
+       body:
+         (CLASS@1:0-1:7 (COLON2@1:6-1:7 nil :C) nil
+            (SCOPE@1:0-1:7 tbl: [] args: nil body: (BEGIN@1:7-1:7 nil))))
+    EXP
+  end
+
+  def test_error_tolerant_end_is_short_for_module
+    node = RubyVM::AbstractSyntaxTree.parse(<<~STR, error_tolerant: true)
+      module M
+    STR
+
+    str = ""
+    PP.pp(node, str)
+    assert_equal(<<~EXP, str)
+      (SCOPE@1:0-1:8
+       tbl: []
+       args: nil
+       body:
+         (MODULE@1:0-1:8 (COLON2@1:7-1:8 nil :M)
+            (SCOPE@1:0-1:8 tbl: [] args: nil body: (BEGIN@1:8-1:8 nil))))
+    EXP
+  end
+
+  def test_error_tolerant_end_is_short_for_do
+    node = RubyVM::AbstractSyntaxTree.parse(<<~STR, error_tolerant: true)
+      m do
+        a
+    STR
+
+    str = ""
+    PP.pp(node, str)
+    assert_equal(<<~EXP, str)
+      (SCOPE@1:0-2:3
+       tbl: []
+       args: nil
+       body:
+         (ITER@1:0-2:3 (FCALL@1:0-1:1 :m nil)
+            (SCOPE@1:2-2:3 tbl: [] args: nil body: (VCALL@2:2-2:3 :a))))
+    EXP
+  end
+
+  def test_error_tolerant_end_is_short_for_do_block
+    node = RubyVM::AbstractSyntaxTree.parse(<<~STR, error_tolerant: true)
+      m 1 do
+        a
+    STR
+
+    str = ""
+    PP.pp(node, str)
+    assert_equal(<<~EXP, str)
+      (SCOPE@1:0-2:3
+       tbl: []
+       args: nil
+       body:
+         (ITER@1:0-2:3 (FCALL@1:0-1:3 :m (LIST@1:2-1:3 (LIT@1:2-1:3 1) nil))
+            (SCOPE@1:4-2:3 tbl: [] args: nil body: (VCALL@2:2-2:3 :a))))
+    EXP
+  end
+
+  def test_error_tolerant_end_is_short_for_do_LAMBDA
+    node = RubyVM::AbstractSyntaxTree.parse(<<~STR, error_tolerant: true)
+      -> do
+        a
+    STR
+
+    str = ""
+    PP.pp(node, str)
+    assert_equal(<<~EXP, str)
+      (SCOPE@1:0-2:3
+       tbl: []
+       args: nil
+       body:
+         (LAMBDA@1:0-2:3
+            (SCOPE@1:2-2:3
+             tbl: []
+             args:
+               (ARGS@1:2-1:2
+                pre_num: 0
+                pre_init: nil
+                opt: nil
+                first_post: nil
+                post_num: 0
+                post_init: nil
+                rest: nil
+                kw: nil
+                kwrest: nil
+                block: nil)
+             body: (VCALL@2:2-2:3 :a))))
+    EXP
   end
 end
