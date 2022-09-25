@@ -654,6 +654,7 @@ static uint32_t month_arg(VALUE arg);
 static VALUE validate_utc_offset(VALUE utc_offset);
 static VALUE validate_zone_name(VALUE zone_name);
 static void validate_vtm(struct vtm *vtm);
+static void vtm_add_day(struct vtm *vtm, int day);
 static uint32_t obj2subsecx(VALUE obj, VALUE *subsecx);
 
 static VALUE time_gmtime(VALUE);
@@ -2025,6 +2026,12 @@ vtm_add_offset(struct vtm *vtm, VALUE off, int sign)
         vtm->hour = hour;
     }
 
+    vtm_add_day(vtm, day);
+}
+
+static void
+vtm_add_day(struct vtm *vtm, int day)
+{
     if (day) {
         if (day < 0) {
             if (vtm->mon == 1 && vtm->mday == 1) {
@@ -2386,6 +2393,13 @@ time_init_args(rb_execution_context_t *ec, VALUE time, VALUE year, VALUE mon, VA
 
     if (utc == UTC_ZONE) {
         tobj->timew = timegmw(&vtm);
+        if (vtm.hour == 24) { /* special case: 24:00:00 only */
+            /* Since no need to take care of DST in UTC, just reset
+             * hour and advance date, not to discard the validated
+             * vtm. */
+            vtm.hour = 0;
+            vtm_add_day(&vtm, 1);
+        }
         tobj->vtm = vtm;
         tobj->tm_got = 1;
         TZMODE_SET_UTC(tobj);

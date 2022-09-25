@@ -53,6 +53,8 @@ class TestTime < Test::Unit::TestCase
     assert_raise_with_message(ArgumentError, msg) { Time.new(2021, 1, 1, "+09:99") }
     assert_raise_with_message(ArgumentError, msg) { Time.new(2021, 1, "+09:99") }
     assert_raise_with_message(ArgumentError, msg) { Time.new(2021, "+09:99") }
+
+    assert_equal([0, 0, 0, 2, 1, 2000], Time.new(2000, 1, 1, 24, 0, 0, "-00:00").to_a[0, 6])
   end
 
   def test_time_add()
