@@ -12024,7 +12024,7 @@ ibf_dump_iseq_each(struct ibf_dump *dump, const rb_iseq_t *iseq)
     ibf_dump_write_small_value(dump, location_pathobj_index);
     ibf_dump_write_small_value(dump, location_base_label_index);
     ibf_dump_write_small_value(dump, location_label_index);
-    ibf_dump_write_small_value(dump, RB_INT2NUM(body->location.first_lineno));
+    ibf_dump_write_small_value(dump, body->location.first_lineno);
     ibf_dump_write_small_value(dump, body->location.node_id);
     ibf_dump_write_small_value(dump, body->location.code_location.beg_pos.lineno);
     ibf_dump_write_small_value(dump, body->location.code_location.beg_pos.column);
@@ -12135,7 +12135,7 @@ ibf_load_iseq_each(struct ibf_load *load, rb_iseq_t *iseq, ibf_offset_t offset)
     const VALUE location_pathobj_index = ibf_load_small_value(load, &reading_pos);
     const VALUE location_base_label_index = ibf_load_small_value(load, &reading_pos);
     const VALUE location_label_index = ibf_load_small_value(load, &reading_pos);
-    const VALUE location_first_lineno = ibf_load_small_value(load, &reading_pos);
+    const int location_first_lineno = (int)ibf_load_small_value(load, &reading_pos);
     const int location_node_id = (int)ibf_load_small_value(load, &reading_pos);
     const int location_code_location_beg_pos_lineno = (int)ibf_load_small_value(load, &reading_pos);
     const int location_code_location_beg_pos_column = (int)ibf_load_small_value(load, &reading_pos);
@@ -12195,7 +12195,7 @@ ibf_load_iseq_each(struct ibf_load *load, rb_iseq_t *iseq, ibf_offset_t offset)
     load_body->variable.flip_count = variable_flip_count;
     load_body->variable.script_lines = Qnil;
 
-    load_body->location.first_lineno = RB_NUM2INT(location_first_lineno);
+    load_body->location.first_lineno = location_first_lineno;
     load_body->location.node_id = location_node_id;
     load_body->location.code_location.beg_pos.lineno = location_code_location_beg_pos_lineno;
     load_body->location.code_location.beg_pos.column = location_code_location_beg_pos_column;
