@@ -2161,7 +2161,7 @@ rb_file_sticky_p(VALUE obj, VALUE fname)
 #ifdef S_ISVTX
     return check3rdbyte(fname, S_ISVTX);
 #else
-    return Qnil;
+    return Qfalse;
 #endif
 }
 
