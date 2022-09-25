@@ -173,9 +173,7 @@ class TestFileExhaustive < Test::Unit::TestCase
   end
 
   def chardev
-    return @chardev if defined? @chardev
-    @chardev = File::NULL == "/dev/null" ? "/dev/null" : nil
-    @chardev
+    File::NULL
   end
 
   def blockdev
@@ -332,7 +330,7 @@ class TestFileExhaustive < Test::Unit::TestCase
     assert_file.not_chardev?(regular_file)
     assert_file.not_chardev?(utf8_file)
     assert_file.not_chardev?(nofile)
-    assert_file.chardev?(chardev) if chardev
+    assert_file.chardev?(chardev)
   end
 
   def test_exist_p
@@ -1512,6 +1510,31 @@ class TestFileExhaustive < Test::Unit::TestCase
       assert_equal(File.executable?(f), test(?x, f), f)
       assert_equal(File.executable_real?(f), test(?X, f), f)
       assert_equal(File.zero?(f), test(?z, f), f)
+
+      stat = File.stat(f)
+      assert_equal(stat.atime, File.atime(f), f)
+      assert_equal(stat.ctime, File.ctime(f), f)
+      assert_equal(stat.mtime, File.mtime(f), f)
+      assert_equal(stat.blockdev?, File.blockdev?(f), f)
+      assert_equal(stat.chardev?, File.chardev?(f), f)
+      assert_equal(stat.directory?, File.directory?(f), f)
+      assert_equal(stat.file?, File.file?(f), f)
+      assert_equal(stat.setgid?, File.setgid?(f), f)
+      assert_equal(stat.grpowned?, File.grpowned?(f), f)
+      assert_equal(stat.sticky?, File.sticky?(f), f)
+      assert_equal(File.lstat(f).symlink?, File.symlink?(f), f)
+      assert_equal(stat.owned?, File.owned?(f), f)
+      assert_equal(stat.pipe?, File.pipe?(f), f)
+      assert_equal(stat.readable?, File.readable?(f), f)
+      assert_equal(stat.readable_real?, File.readable_real?(f), f)
+      assert_equal(stat.size?, File.size?(f), f)
+      assert_equal(stat.socket?, File.socket?(f), f)
+      assert_equal(stat.setuid?, File.setuid?(f), f)
+      assert_equal(stat.writable?, File.writable?(f), f)
+      assert_equal(stat.writable_real?, File.writable_real?(f), f)
+      assert_equal(stat.executable?, File.executable?(f), f)
+      assert_equal(stat.executable_real?, File.executable_real?(f), f)
+      assert_equal(stat.zero?, File.zero?(f), f)
     end
     assert_equal(false, test(?-, @dir, fn1))
     assert_equal(true, test(?-, fn1, fn1))
@@ -1621,7 +1644,7 @@ class TestFileExhaustive < Test::Unit::TestCase
   def test_stat_chardev_p
     assert_not_predicate(File::Stat.new(@dir), :chardev?)
     assert_not_predicate(File::Stat.new(regular_file), :chardev?)
-    assert_predicate(File::Stat.new(chardev), :chardev?) if chardev
+    assert_predicate(File::Stat.new(chardev), :chardev?)
   end
 
   def test_stat_readable_p
