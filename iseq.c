@@ -598,7 +598,7 @@ iseq_location_setup(rb_iseq_t *iseq, VALUE name, VALUE path, VALUE realpath, int
     rb_iseq_pathobj_set(iseq, path, realpath);
     RB_OBJ_WRITE(iseq, &loc->label, name);
     RB_OBJ_WRITE(iseq, &loc->base_label, name);
-    loc->first_lineno = RB_INT2NUM(first_lineno);
+    loc->first_lineno = first_lineno;
     if (code_location) {
         loc->node_id = node_id;
         loc->code_location = *code_location;
@@ -1235,7 +1235,7 @@ rb_iseq_base_label(const rb_iseq_t *iseq)
 VALUE
 rb_iseq_first_lineno(const rb_iseq_t *iseq)
 {
-    return ISEQ_BODY(iseq)->location.first_lineno;
+    return RB_INT2NUM(ISEQ_BODY(iseq)->location.first_lineno);
 }
 
 VALUE
@@ -3164,7 +3164,7 @@ iseq_data_to_ary(const rb_iseq_t *iseq)
     rb_ary_push(val, iseq_body->location.label);
     rb_ary_push(val, rb_iseq_path(iseq));
     rb_ary_push(val, rb_iseq_realpath(iseq));
-    rb_ary_push(val, iseq_body->location.first_lineno);
+    rb_ary_push(val, RB_INT2NUM(iseq_body->location.first_lineno));
     rb_ary_push(val, ID2SYM(type));
     rb_ary_push(val, locals);
     rb_ary_push(val, params);

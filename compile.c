@@ -766,7 +766,7 @@ rb_iseq_compile_node(rb_iseq_t *iseq, const NODE *node)
                 end->rescued = LABEL_RESCUE_END;
 
                 ADD_TRACE(ret, RUBY_EVENT_B_CALL);
-                NODE dummy_line_node = generate_dummy_line_node(FIX2INT(ISEQ_BODY(iseq)->location.first_lineno), -1);
+                NODE dummy_line_node = generate_dummy_line_node(ISEQ_BODY(iseq)->location.first_lineno, -1);
                 ADD_INSN (ret, &dummy_line_node, nop);
                 ADD_LABEL(ret, start);
                 CHECK(COMPILE(ret, "block body", node->nd_body));
@@ -12024,7 +12024,7 @@ ibf_dump_iseq_each(struct ibf_dump *dump, const rb_iseq_t *iseq)
     ibf_dump_write_small_value(dump, location_pathobj_index);
     ibf_dump_write_small_value(dump, location_base_label_index);
     ibf_dump_write_small_value(dump, location_label_index);
-    ibf_dump_write_small_value(dump, body->location.first_lineno);
+    ibf_dump_write_small_value(dump, RB_INT2NUM(body->location.first_lineno));
     ibf_dump_write_small_value(dump, body->location.node_id);
     ibf_dump_write_small_value(dump, body->location.code_location.beg_pos.lineno);
     ibf_dump_write_small_value(dump, body->location.code_location.beg_pos.column);
@@ -12195,7 +12195,7 @@ ibf_load_iseq_each(struct ibf_load *load, rb_iseq_t *iseq, ibf_offset_t offset)
     load_body->variable.flip_count = variable_flip_count;
     load_body->variable.script_lines = Qnil;
 
-    load_body->location.first_lineno = location_first_lineno;
+    load_body->location.first_lineno = RB_NUM2INT(location_first_lineno);
     load_body->location.node_id = location_node_id;
     load_body->location.code_location.beg_pos.lineno = location_code_location_beg_pos_lineno;
     load_body->location.code_location.beg_pos.column = location_code_location_beg_pos_column;

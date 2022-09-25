@@ -310,7 +310,7 @@ typedef struct rb_iseq_location_struct {
     VALUE pathobj;      /* String (path) or Array [path, realpath]. Frozen. */
     VALUE base_label;   /* String */
     VALUE label;        /* String */
-    VALUE first_lineno;
+    int first_lineno;
     int node_id;
     rb_code_location_t code_location;
 } rb_iseq_location_t;
@@ -1193,7 +1193,7 @@ extern const rb_data_type_t ruby_binding_data_type;
 typedef struct {
     const struct rb_block block;
     const VALUE pathobj;
-    unsigned short first_lineno;
+    int first_lineno;
 } rb_binding_t;
 
 /* used by compile time and send insn */

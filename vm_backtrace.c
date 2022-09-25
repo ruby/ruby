@@ -46,7 +46,7 @@ calc_pos(const rb_iseq_t *iseq, const VALUE *pc, int *lineno, int *node_id)
             VM_ASSERT(! ISEQ_BODY(iseq)->local_table_size);
             return 0;
         }
-        if (lineno) *lineno = FIX2INT(ISEQ_BODY(iseq)->location.first_lineno);
+        if (lineno) *lineno = ISEQ_BODY(iseq)->location.first_lineno;
 #ifdef USE_ISEQ_NODE_ID
         if (node_id) *node_id = -1;
 #endif
@@ -105,7 +105,7 @@ rb_vm_get_sourceline(const rb_control_frame_t *cfp)
             return line;
         }
         else {
-            return FIX2INT(rb_iseq_first_lineno(iseq));
+            return ISEQ_BODY(iseq)->location.first_lineno;
         }
     }
     else {

@@ -909,7 +909,7 @@ rb_method_entry_make(VALUE klass, ID mid, VALUE defined_class, rb_method_visibil
             }
             if (iseq) {
                 rb_compile_warning(RSTRING_PTR(rb_iseq_path(iseq)),
-                                   FIX2INT(ISEQ_BODY(iseq)->location.first_lineno),
+                                   ISEQ_BODY(iseq)->location.first_lineno,
                                    "previous definition of %"PRIsVALUE" was here",
                                    rb_id2str(old_def->original_id));
             }
