@@ -4384,12 +4384,15 @@ AC_CONFIG_FILES(Makefile:template/Makefile.in, [
 	AS_CASE("$VCS",
 		['$(GIT)'|git], [VCSUP='$(VCS) pull --rebase $(GITPULLOPTIONS)'],
 		[VCSUP='$(VCS)'])
-	sed -n \
-	    -e '[/^@%:@define \(RUBY_RELEASE_[A-Z]*\) \([0-9][0-9]*\)/]{' \
-	    -e   's//\1 = \2/' \
-	    -e   '[s/ \([0-9]\)$/ 0\1/]' \
-	    -e   p \
-	    -e '}' "$srcdir/version.h"
+	for f in "$srcdir/version.h" "$srcdir/revision.h"; do
+            test -f "$f" || continue
+	    sed -n \
+	        -e '[/^@%:@define \(RUBY_RELEASE_[A-Z]*\) \([0-9][0-9]*\)/]{' \
+	        -e   's//\1 = \2/' \
+	        -e   '[s/ \([0-9]\)$/ 0\1/]' \
+	        -e   p \
+	        -e '}' "$f"
+        done
 	sed '/^MISSING/s/\$U\././g;/^VCS *=/s#@VCS@#'"$VCS"'#;/^VCSUP *=/s#@VCSUP@#'"$VCSUP"'#' Makefile
 	echo; test x"$EXEEXT" = x || echo 'miniruby: miniruby$(EXEEXT)'
 	AS_IF([test "$gnumake" != yes], [
