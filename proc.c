@@ -1363,7 +1363,7 @@ iseq_location(const rb_iseq_t *iseq)
     if (!iseq) return Qnil;
     rb_iseq_check(iseq);
     loc[0] = rb_iseq_path(iseq);
-    loc[1] = ISEQ_BODY(iseq)->location.first_lineno;
+    loc[1] = RB_INT2NUM(ISEQ_BODY(iseq)->location.first_lineno);
 
     return rb_ary_new4(2, loc);
 }
@@ -1544,7 +1544,7 @@ rb_block_to_s(VALUE self, const struct rb_block *block, const char *additional_i
             const rb_iseq_t *iseq = rb_iseq_check(block->as.captured.code.iseq);
             rb_str_catf(str, "%p %"PRIsVALUE":%d", (void *)self,
                         rb_iseq_path(iseq),
-                        FIX2INT(ISEQ_BODY(iseq)->location.first_lineno));
+                        ISEQ_BODY(iseq)->location.first_lineno);
         }
         break;
       case block_type_symbol:
@@ -3506,7 +3506,7 @@ proc_binding(VALUE self)
     if (iseq) {
         rb_iseq_check(iseq);
         RB_OBJ_WRITE(bindval, &bind->pathobj, ISEQ_BODY(iseq)->location.pathobj);
-        bind->first_lineno = FIX2INT(rb_iseq_first_lineno(iseq));
+        bind->first_lineno = ISEQ_BODY(iseq)->location.first_lineno;
     }
     else {
         RB_OBJ_WRITE(bindval, &bind->pathobj,

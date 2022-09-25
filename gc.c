@@ -13804,11 +13804,10 @@ rb_raw_iseq_info(char *const buff, const size_t buff_size, const rb_iseq_t *iseq
 {
     if (buff_size > 0 && ISEQ_BODY(iseq) && ISEQ_BODY(iseq)->location.label && !RB_TYPE_P(ISEQ_BODY(iseq)->location.pathobj, T_MOVED)) {
         VALUE path = rb_iseq_path(iseq);
-        VALUE n = ISEQ_BODY(iseq)->location.first_lineno;
+        int n = ISEQ_BODY(iseq)->location.first_lineno;
         snprintf(buff, buff_size, " %s@%s:%d",
                  RSTRING_PTR(ISEQ_BODY(iseq)->location.label),
-                 RSTRING_PTR(path),
-                 n ? FIX2INT(n) : 0 );
+                 RSTRING_PTR(path), n);
     }
 }
 
