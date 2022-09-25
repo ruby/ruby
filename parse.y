@@ -355,6 +355,8 @@ struct parser_params {
     VALUE error_buffer;
     VALUE debug_lines;
     const struct rb_iseq_struct *parent_iseq;
+    /* store specific keyword localtions to generate dummy end token */
+    VALUE end_expect_token_localtions;
 #else
     /* Ripper only */
 
@@ -407,6 +409,36 @@ pop_pktbl(struct parser_params *p, st_table *tbl)
     if (p->pktbl) st_free_table(p->pktbl);
     p->pktbl = tbl;
 }
+
+#ifndef RIPPER
+static void flush_debug_buffer(struct parser_params *p, VALUE out, VALUE str);
+
+static void
+debug_end_expect_token_localtions(struct parser_params *p, const char *name)
+{
+    if(p->debug) {
+        VALUE mesg = rb_sprintf("%s: ", name);
+        rb_str_catf(mesg, " %"PRIsVALUE"\n", p->end_expect_token_localtions);
+        flush_debug_buffer(p, p->debug_output, mesg);
+    }
+}
+
+static void
+push_end_expect_token_localtions(struct parser_params *p, const rb_code_position_t *pos)
+{
+    if(NIL_P(p->end_expect_token_localtions)) return;
+    rb_ary_push(p->end_expect_token_localtions, rb_ary_new_from_args(2, INT2NUM(pos->lineno), INT2NUM(pos->column)));
+    debug_end_expect_token_localtions(p, "push_end_expect_token_localtions");
+}
+
+static void
+pop_end_expect_token_localtions(struct parser_params *p)
+{
+    if(NIL_P(p->end_expect_token_localtions)) return;
+    rb_ary_pop(p->end_expect_token_localtions);
+    debug_end_expect_token_localtions(p, "pop_end_expect_token_localtions");
+}
+#endif
 
 RBIMPL_ATTR_NONNULL((1, 2, 3))
 static int parser_yyerror(struct parser_params*, const YYLTYPE *yylloc, const char*);
@@ -1214,6 +1246,7 @@ static int looking_at_eol_p(struct parser_params *p);
 %token <node> tBACK_REF      "back reference"
 %token <node> tSTRING_CONTENT "literal content"
 %token <num>  tREGEXP_END
+%token <num>  tDUMNY_END     "dummy end"
 
 %type <node> singleton strings string string1 xstring regexp
 %type <node> string_contents xstring_contents regexp_contents string_content
@@ -3307,28 +3340,38 @@ primary		: literal
 		    }
 		| defn_head
 		  f_arglist
+		    {
+		    /*%%%*/
+			push_end_expect_token_localtions(p, &@1.beg_pos);
+		    /*% %*/
+		    }
 		  bodystmt
 		  k_end
 		    {
 			restore_defun(p, $<node>1->nd_defn);
 		    /*%%%*/
-			$$ = set_defun_body(p, $1, $2, $3, &@$);
+			$$ = set_defun_body(p, $1, $2, $4, &@$);
 		    /*% %*/
-		    /*% ripper: def!(get_value($1), $2, $3) %*/
+		    /*% ripper: def!(get_value($1), $2, $4) %*/
 			local_pop(p);
 		    }
 		| defs_head
 		  f_arglist
+		    {
+		    /*%%%*/
+			push_end_expect_token_localtions(p, &@1.beg_pos);
+		    /*% %*/
+		    }
 		  bodystmt
 		  k_end
 		    {
 			restore_defun(p, $<node>1->nd_defn);
 		    /*%%%*/
-			$$ = set_defun_body(p, $1, $2, $3, &@$);
+			$$ = set_defun_body(p, $1, $2, $4, &@$);
 		    /*%
 			$1 = get_value($1);
 		    %*/
-		    /*% ripper: defs!(AREF($1, 0), AREF($1, 1), AREF($1, 2), $2, $3) %*/
+		    /*% ripper: defs!(AREF($1, 0), AREF($1, 1), AREF($1, 2), $2, $4) %*/
 			local_pop(p);
 		    }
 		| keyword_break
@@ -3371,6 +3414,9 @@ primary_value	: primary
 k_begin		: keyword_begin
 		    {
 			token_info_push(p, "begin", &@$);
+		    /*%%%*/
+			push_end_expect_token_localtions(p, &@1.beg_pos);
+		    /*% %*/
 		    }
 		;
 
@@ -3388,36 +3434,54 @@ k_if		: keyword_if
 				p->token_info->nonspc = 0;
 			    }
 			}
+		    /*%%%*/
+			push_end_expect_token_localtions(p, &@1.beg_pos);
+		    /*% %*/
 		    }
 		;
 
 k_unless	: keyword_unless
 		    {
 			token_info_push(p, "unless", &@$);
+		    /*%%%*/
+			push_end_expect_token_localtions(p, &@1.beg_pos);
+		    /*% %*/
 		    }
 		;
 
 k_while		: keyword_while
 		    {
 			token_info_push(p, "while", &@$);
+		    /*%%%*/
+			push_end_expect_token_localtions(p, &@1.beg_pos);
+		    /*% %*/
 		    }
 		;
 
 k_until		: keyword_until
 		    {
 			token_info_push(p, "until", &@$);
+		    /*%%%*/
+			push_end_expect_token_localtions(p, &@1.beg_pos);
+		    /*% %*/
 		    }
 		;
 
 k_case		: keyword_case
 		    {
 			token_info_push(p, "case", &@$);
+		    /*%%%*/
+			push_end_expect_token_localtions(p, &@1.beg_pos);
+		    /*% %*/
 		    }
 		;
 
 k_for		: keyword_for
 		    {
 			token_info_push(p, "for", &@$);
+		    /*%%%*/
+			push_end_expect_token_localtions(p, &@1.beg_pos);
+		    /*% %*/
 		    }
 		;
 
@@ -3425,6 +3489,9 @@ k_class		: keyword_class
 		    {
 			token_info_push(p, "class", &@$);
 			$<ctxt>$ = p->ctxt;
+		    /*%%%*/
+			push_end_expect_token_localtions(p, &@1.beg_pos);
+		    /*% %*/
 		    }
 		;
 
@@ -3432,6 +3499,9 @@ k_module	: keyword_module
 		    {
 			token_info_push(p, "module", &@$);
 			$<ctxt>$ = p->ctxt;
+		    /*%%%*/
+			push_end_expect_token_localtions(p, &@1.beg_pos);
+		    /*% %*/
 		    }
 		;
 
@@ -3445,12 +3515,19 @@ k_def		: keyword_def
 k_do		: keyword_do
 		    {
 			token_info_push(p, "do", &@$);
+		    /*%%%*/
+			push_end_expect_token_localtions(p, &@1.beg_pos);
+		    /*% %*/
+
 		    }
 		;
 
 k_do_block	: keyword_do_block
 		    {
 			token_info_push(p, "do", &@$);
+		    /*%%%*/
+			push_end_expect_token_localtions(p, &@1.beg_pos);
+		    /*% %*/
 		    }
 		;
 
@@ -3497,6 +3574,13 @@ k_elsif 	: keyword_elsif
 k_end		: keyword_end
 		    {
 			token_info_pop(p, "end", &@$);
+		    /*%%%*/
+			pop_end_expect_token_localtions(p);
+		    /*% %*/
+		    }
+		| tDUMNY_END
+		    {
+			compile_error(p, "syntax error, unexpected end-of-input");
 		    }
 		;
 
@@ -3862,9 +3946,15 @@ lambda_body	: tLAMBEG compstmt '}'
 			token_info_pop(p, "}", &@3);
 			$$ = $2;
 		    }
-		| keyword_do_LAMBDA bodystmt k_end
+		| keyword_do_LAMBDA
 		    {
-			$$ = $2;
+		    /*%%%*/
+			push_end_expect_token_localtions(p, &@1.beg_pos);
+		    /*% %*/
+		    }
+		  bodystmt k_end
+		    {
+			$$ = $3;
 		    }
 		;
 
@@ -9319,6 +9409,12 @@ parser_yylex(struct parser_params *p)
       case '\032':		/* ^Z */
       case -1:			/* end of script. */
 	p->eofp  = 1;
+#ifndef RIPPER
+	if (!NIL_P(p->end_expect_token_localtions) && RARRAY_LEN(p->end_expect_token_localtions) > 0) {
+	    pop_end_expect_token_localtions(p);
+	    return tDUMNY_END;
+	}
+#endif
 	return 0;
 
 	/* white spaces */
@@ -13184,6 +13280,7 @@ parser_initialize(struct parser_params *p)
     p->parsing_thread = Qnil;
 #else
     p->error_buffer = Qfalse;
+    p->end_expect_token_localtions = Qnil;
 #endif
     p->debug_buffer = Qnil;
     p->debug_output = rb_ractor_stdout();
@@ -13212,6 +13309,7 @@ parser_mark(void *ptr)
     rb_gc_mark(p->debug_lines);
     rb_gc_mark(p->compile_option);
     rb_gc_mark(p->error_buffer);
+    rb_gc_mark(p->end_expect_token_localtions);
 #else
     rb_gc_mark(p->delayed.token);
     rb_gc_mark(p->value);
@@ -13324,6 +13422,7 @@ rb_parser_error_tolerant(VALUE vparser)
 
     TypedData_Get_Struct(vparser, struct parser_params, &parser_data_type, p);
     p->error_tolerant = 1;
+    p->end_expect_token_localtions = rb_ary_new();
 }
 
 #endif
