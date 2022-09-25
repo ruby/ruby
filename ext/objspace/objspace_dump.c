@@ -141,7 +141,7 @@ dump_append_sizet(struct dump_config *dc, const size_t number)
 }
 
 static void
-dump_append_c(struct dump_config *dc, char c)
+dump_append_c(struct dump_config *dc, unsigned char c)
 {
     if (c <= 0x1f) {
         const unsigned int width = (sizeof(c) * CHAR_BIT / 4) + 5;
