@@ -212,7 +212,7 @@ module FileUtils
       path = remove_trailing_slash(item)
 
       stack = []
-      until File.directory?(path)
+      until File.directory?(path) || File.dirname(path) == path
         stack.push path
         path = File.dirname(path)
       end
