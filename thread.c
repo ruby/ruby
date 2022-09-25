@@ -1364,6 +1364,10 @@ thread_value(VALUE self)
 {
     rb_thread_t *th = rb_thread_ptr(self);
     thread_join(th, Qnil, 0);
+    if (th->value == Qundef) {
+        // If the thread is dead because we forked th->value is still Qundef.
+        return Qnil;
+    }
     return th->value;
 }
 
