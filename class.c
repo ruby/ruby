@@ -1589,6 +1589,33 @@ rb_class_subclasses(VALUE klass)
     return class_descendants(klass, true);
 }
 
+/*
+ *  call-seq:
+ *     attached_object -> object
+ *
+ *  Returns the object for which the receiver is the singleton class.
+ *
+ *  Raises an TypeError if the class is not a singleton class.
+ *
+ *     class Foo; end
+ *
+ *     Foo.singleton_class.attached_object        #=> Foo
+ *     Foo.attached_object                        #=> TypeError: `Foo' is not a singleton class
+ *     Foo.new.singleton_class.attached_object    #=> #<Foo:0x000000010491a370>
+ *     TrueClass.attached_object                  #=> TypeError: `TrueClass' is not a singleton class
+ *     NilClass.attached_object                   #=> TypeError: `NilClass' is not a singleton class
+ */
+
+VALUE
+rb_class_attached_object(VALUE klass)
+{
+    if (!FL_TEST(klass, FL_SINGLETON)) {
+        rb_raise(rb_eTypeError, "`%"PRIsVALUE"' is not a singleton class", klass);
+    }
+
+    return rb_attr_get(klass, id_attached);
+}
+
 static void
 ins_methods_push(st_data_t name, st_data_t ary)
 {

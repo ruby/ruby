@@ -115,6 +115,21 @@ Note: We're only listing outstanding class updates.
     STDIN.read # => Blocking operation timed out! (IO::TimeoutError)
     ```
 
+* Class
+    * `Class#attached_object`, which returns the object for which
+      the receiver is the singleton class. Raises `TypeError` if the
+      receiver is not a singleton class.
+      [[Feature #12084]]
+
+      ```ruby
+      class Foo; end
+
+      Foo.singleton_class.attached_object        #=> Foo
+      Foo.new.singleton_class.attached_object    #=> #<Foo:0x000000010491a370>
+      Foo.attached_object                        #=> TypeError: `Foo' is not a singleton class
+      nil.singleton_class.attached_object        #=> TypeError: `NilClass' is not a singleton class
+      ```
+
 * Data
     * New core class to represent simple immutable value object. The class is
       similar to `Struct` and partially shares an implementation, but has more
@@ -323,6 +338,7 @@ The following deprecated APIs are removed.
 ## Miscellaneous changes
 
 [Feature #12005]: https://bugs.ruby-lang.org/issues/12005
+[Feature #12084]: https://bugs.ruby-lang.org/issues/12084
 [Feature #12655]: https://bugs.ruby-lang.org/issues/12655
 [Feature #12737]: https://bugs.ruby-lang.org/issues/12737
 [Feature #13110]: https://bugs.ruby-lang.org/issues/13110
