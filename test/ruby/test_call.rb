@@ -47,12 +47,19 @@ class TestCall < Test::Unit::TestCase
     assert_equal(5, o.y)
     o&.z ||= 6
     assert_equal(6, o.z)
+    o&.z &&= 7
+    assert_equal(7, o.z)
 
     o = nil
     assert_nil(o&.x)
     assert_nothing_raised(NoMethodError) {o&.x = raise}
+    assert_nothing_raised(NoMethodError) {o&.x = raise; nil}
     assert_nothing_raised(NoMethodError) {o&.x *= raise}
     assert_nothing_raised(NoMethodError) {o&.x *= raise; nil}
+    assert_nothing_raised(NoMethodError) {o&.x ||= raise}
+    assert_nothing_raised(NoMethodError) {o&.x ||= raise; nil}
+    assert_nothing_raised(NoMethodError) {o&.x &&= raise}
+    assert_nothing_raised(NoMethodError) {o&.x &&= raise; nil}
   end
 
   def test_safe_call_evaluate_arguments_only_method_call_is_made
