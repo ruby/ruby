@@ -4368,6 +4368,14 @@ AC_SUBST(XCC_WRAPPER)
 
 AS_CASE([" $CPP "], [*" $CC "*], [CPP=`echo " $CPP " | sed "s| $CC |"' $(CC) |;s/^ *//;s/  *$//'`])
 
+AS_IF([test ! -f "$srcdir/revision.h"], [
+    AS_IF([test "x$HAVE_BASERUBY" = xyes], [
+	${BASERUBY} -C "$srcdir" tool/file2lastrev.rb -q --revision.h > "$srcdir/revision.h"
+    ], [
+	touch "$srcdir/revision.h"
+    ])
+])
+
 AS_IF([test x"$firstmf" != x], [
     AC_CONFIG_FILES($firstmf:$firsttmpl, [], [firstmf="$firstmf" firsttmpl="$firsttmpl"])
 ])
