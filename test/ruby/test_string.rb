@@ -2614,11 +2614,6 @@ CODE
     assert_equal '"\x0012"', s.inspect, bug8290
   end
 
-  def test_inspect_next_line
-    bug16842 = '[ruby-core:98231]'
-    assert_equal '"\\u0085"', 0x85.chr(Encoding::UTF_8).inspect, bug16842
-  end
-
   def test_partition
     assert_equal(%w(he l lo), S("hello").partition(/l/))
     assert_equal(%w(he l lo), S("hello").partition("l"))
@@ -3170,6 +3165,45 @@ CODE
     assert_equal(false, ("\u3042"*10).byteslice(0, 20).valid_encoding?, bug7954)
   end
 
+  def test_byteslice!
+    assert_byteslice!("h", "ello", S("hello"), 0)
+    assert_byteslice!(nil, "hello", S("hello"), 5)
+    assert_byteslice!("o", "hell", S("hello"), -1)
+    assert_byteslice!(nil, "hello", S("hello"), -6)
+
+    assert_byteslice!("", "hello", S("hello"), 0, 0)
+    assert_byteslice!("hello", "", S("hello"), 0, 6)
+    assert_byteslice!("hello", "", S("hello"), 0, 6)
+    assert_byteslice!("", "hello", S("hello"), 5, 1)
+    assert_byteslice!("o", "hell", S("hello"), -1, 6)
+    assert_byteslice!(nil, "hello", S("hello"), -6, 1)
+    assert_byteslice!(nil, "hello", S("hello"), 0, -1)
+
+    assert_byteslice!("h", "ello", S("hello"), 0..0)
+    assert_byteslice!("", "hello", S("hello"), 5..0)
+    assert_byteslice!("o", "hell", S("hello"), 4..5)
+    assert_byteslice!(nil, "hello", S("hello"), 6..0)
+    assert_byteslice!("", "hello", S("hello"), -1..0)
+    assert_byteslice!("llo", "he", S("hello"), -3..5)
+
+    assert_equal(u("\x81"), S("\u3042").byteslice!(1))
+    assert_equal(u("\x81\x82"), S("\u3042").byteslice!(1, 2))
+    assert_equal(u("\x81\x82"), S("\u3042").byteslice!(1..2))
+
+    assert_equal(u("\x82")+("\u3042"*9), S("\u3042"*10).byteslice!(2, 28))
+
+    bug7954 = '[ruby-dev:47108]'
+    assert_equal(false, S("\u3042").byteslice!(0, 2).valid_encoding?, bug7954)
+    assert_equal(false, ("\u3042"*10).byteslice(0, 20).valid_encoding?, bug7954)
+  end
+
+  def test_shared_string_byteslice!
+    shared_string = ("hello" * 20).freeze
+    string = shared_string.dup
+    assert_equal "h", string.byteslice!(0)
+    assert_equal ("hello" * 20).freeze, shared_string
+  end
+
   def test_unknown_string_option
     str = nil
     assert_nothing_raised(SyntaxError) do
@@ -3440,6 +3474,11 @@ CODE
   end
 
   private
+
+  def assert_byteslice!(expected_return, expected_result, original_string, *args)
+    assert_equal(expected_return, original_string.byteslice!(*args), "Unexpected byteslice!(#{args.map(&:inspect).join(", ")}) return")
+    assert_equal(expected_result, original_string, "Unexpected byteslice!(#{args.map(&:inspect).join(", ")}) mutation")
+  end
 
   def assert_bytesplice_result(expected, s, *args)
     assert_equal(args.last, s.send(:bytesplice, *args))

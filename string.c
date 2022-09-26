@@ -5486,6 +5486,37 @@ rb_str_insert(VALUE str, VALUE idx, VALUE str2)
     return str;
 }
 
+static inline void
+rb_str_squash_bytes(VALUE str, long beg, long len)
+{
+    if (len > 0) {
+        switch (ENC_CODERANGE(str)) {
+          case ENC_CODERANGE_7BIT:
+            break;
+          case ENC_CODERANGE_VALID:
+            if (ENCODING_GET_INLINED(str) == ENCINDEX_ASCII_8BIT) {
+              break;
+            }
+          default:
+            ENC_CODERANGE_CLEAR(str);
+        }
+
+        if (beg == 0) {
+            rb_str_drop_bytes(str, len);
+        } else {
+            char *sptr = RSTRING_PTR(str);
+            long slen = RSTRING_LEN(str);
+            if (beg + len > slen) /* pathological check */
+                len = slen - beg;
+            memmove(sptr + beg,
+                    sptr + beg + len,
+                    slen - (beg + len));
+            slen -= len;
+            STR_SET_LEN(str, slen);
+            TERM_FILL(&sptr[slen], TERM_LEN(str));
+        }
+    }
+}
 
 /*
  *  call-seq:
@@ -5576,23 +5607,7 @@ rb_str_slice_bang(int argc, VALUE *argv, VALUE str)
     rb_enc_cr_str_copy_for_substr(result, str);
 
   squash:
-    if (len > 0) {
-        if (beg == 0) {
-            rb_str_drop_bytes(str, len);
-        }
-        else {
-            char *sptr = RSTRING_PTR(str);
-            long slen = RSTRING_LEN(str);
-            if (beg + len > slen) /* pathological check */
-                len = slen - beg;
-            memmove(sptr + beg,
-                    sptr + beg + len,
-                    slen - (beg + len));
-            slen -= len;
-            STR_SET_LEN(str, slen);
-            TERM_FILL(&sptr[slen], TERM_LEN(str));
-        }
-    }
+    rb_str_squash_bytes(str, beg, len);
     return result;
 }
 
@@ -6140,7 +6155,7 @@ rb_str_setbyte(VALUE str, VALUE index, VALUE value)
 }
 
 static VALUE
-str_byte_substr(VALUE str, long beg, long len, int empty)
+str_byte_substr(VALUE str, long beg, long len, int empty, int inplace)
 {
     char *p, *s = RSTRING_PTR(str);
     long n = RSTRING_LEN(str);
@@ -6161,7 +6176,7 @@ str_byte_substr(VALUE str, long beg, long len, int empty)
     else
         p = s + beg;
 
-    if (!STR_EMBEDDABLE_P(len, TERM_LEN(str)) && SHARABLE_SUBSTRING_P(beg, len, n)) {
+    if (!inplace && !STR_EMBEDDABLE_P(len, TERM_LEN(str)) && SHARABLE_SUBSTRING_P(beg, len, n)) {
         str2 = rb_str_new_frozen(str);
         str2 = str_new_shared(rb_cString, str2);
         RSTRING(str2)->as.heap.ptr += beg;
@@ -6169,6 +6184,10 @@ str_byte_substr(VALUE str, long beg, long len, int empty)
     }
     else {
         str2 = rb_str_new(p, len);
+    }
+
+    if (inplace && len > 0) {
+        rb_str_squash_bytes(str, beg, len);
     }
 
     str_enc_copy(str2, str);
@@ -6194,7 +6213,7 @@ str_byte_substr(VALUE str, long beg, long len, int empty)
 }
 
 static VALUE
-str_byte_aref(VALUE str, VALUE indx)
+str_byte_aref(VALUE str, VALUE indx, int inplace)
 {
     long idx;
     if (FIXNUM_P(indx)) {
@@ -6210,12 +6229,12 @@ str_byte_aref(VALUE str, VALUE indx)
           case Qnil:
             return Qnil;
           default:
-            return str_byte_substr(str, beg, len, TRUE);
+            return str_byte_substr(str, beg, len, TRUE, inplace);
         }
 
         idx = NUM2LONG(indx);
     }
-    return str_byte_substr(str, idx, 1, FALSE);
+    return str_byte_substr(str, idx, 1, FALSE, inplace);
 }
 
 /*
@@ -6267,10 +6286,24 @@ rb_str_byteslice(int argc, VALUE *argv, VALUE str)
     if (argc == 2) {
         long beg = NUM2LONG(argv[0]);
         long len = NUM2LONG(argv[1]);
-        return str_byte_substr(str, beg, len, TRUE);
+        return str_byte_substr(str, beg, len, TRUE, FALSE);
     }
     rb_check_arity(argc, 1, 2);
-    return str_byte_aref(str, argv[0]);
+    return str_byte_aref(str, argv[0], FALSE);
+}
+
+static VALUE
+rb_str_byteslice_bang(int argc, VALUE *argv, VALUE str)
+{
+    rb_check_arity(argc, 1, 2);
+    str_modify_keep_cr(str);
+
+    if (argc == 2) {
+        long beg = NUM2LONG(argv[0]);
+        long len = NUM2LONG(argv[1]);
+        return str_byte_substr(str, beg, len, TRUE, TRUE);
+    }
+    return str_byte_aref(str, argv[0], TRUE);
 }
 
 /*
@@ -11991,6 +12024,7 @@ Init_String(void)
     rb_define_method(rb_cString, "getbyte", rb_str_getbyte, 1);
     rb_define_method(rb_cString, "setbyte", rb_str_setbyte, 2);
     rb_define_method(rb_cString, "byteslice", rb_str_byteslice, -1);
+    rb_define_method(rb_cString, "byteslice!", rb_str_byteslice_bang, -1);
     rb_define_method(rb_cString, "bytesplice", rb_str_bytesplice, -1);
     rb_define_method(rb_cString, "scrub", str_scrub, -1);
     rb_define_method(rb_cString, "scrub!", str_scrub_bang, -1);
