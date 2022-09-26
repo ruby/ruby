@@ -70,7 +70,7 @@ struct lex_context {
     BITFIELD(enum shareability, shareable_constant_value, 2);
 };
 
-#ifdef __GNUC__
+#if defined(__GNUC__) && !defined(__clang__)
 // Suppress "parameter passing for argument of type 'struct
 // lex_context' changed" notes.  `struct lex_context` is file scope,
 // and has no ABI compatibility issue.
