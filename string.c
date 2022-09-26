@@ -2923,8 +2923,7 @@ str_substr(VALUE str, long beg, long len, int empty)
     if (!STR_EMBEDDABLE_P(len, TERM_LEN(str)) &&
         SHARABLE_SUBSTRING_P(p, len, RSTRING_END(str))) {
         long ofs = p - RSTRING_PTR(str);
-        str2 = rb_str_new_frozen(str);
-        str2 = str_new_shared(rb_cString, str2);
+        str2 = str_new_shared(rb_cString, str);
         RSTRING(str2)->as.heap.ptr += ofs;
         RSTRING(str2)->as.heap.len = len;
         ENC_CODERANGE_CLEAR(str2);
@@ -6162,8 +6161,7 @@ str_byte_substr(VALUE str, long beg, long len, int empty)
         p = s + beg;
 
     if (!STR_EMBEDDABLE_P(len, TERM_LEN(str)) && SHARABLE_SUBSTRING_P(beg, len, n)) {
-        str2 = rb_str_new_frozen(str);
-        str2 = str_new_shared(rb_cString, str2);
+        str2 = str_new_shared(rb_cString, str);
         RSTRING(str2)->as.heap.ptr += beg;
         RSTRING(str2)->as.heap.len = len;
     }
