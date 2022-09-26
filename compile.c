@@ -2459,7 +2459,7 @@ iseq_set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *const anchor)
                             generated_iseq[code_index + 1 + j] = (VALUE)ic;
                         }
                         break;
-		      case TS_IVC: /* inline ivar cache */
+                      case TS_IVC: /* inline ivar cache */
                         {
                             unsigned int ic_index = FIX2UINT(operands[j]);
                             vm_ic_attr_index_initialize(((IVC)&body->is_entries[ic_index]), INVALID_SHAPE_ID);

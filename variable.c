@@ -1048,7 +1048,7 @@ rb_mark_generic_ivar(VALUE obj)
 #if !SHAPE_IN_BASIC_FLAGS
         rb_gc_mark((VALUE)rb_shape_get_shape_by_id(ivtbl->shape_id));
 #endif
-	gen_ivtbl_mark(ivtbl);
+        gen_ivtbl_mark(ivtbl);
     }
 }
 
@@ -1077,7 +1077,7 @@ rb_generic_ivar_memsize(VALUE obj)
     struct gen_ivtbl *ivtbl;
 
     if (rb_gen_ivtbl_get(obj, 0, &ivtbl))
-	return gen_ivtbl_bytes(ivtbl->numiv);
+        return gen_ivtbl_bytes(ivtbl->numiv);
     return 0;
 }
 
@@ -1779,17 +1779,17 @@ rb_ivar_count(VALUE obj)
 
     switch (BUILTIN_TYPE(obj)) {
       case T_OBJECT:
-	if (rb_shape_get_shape(obj)->iv_count > 0) {
-	    st_index_t i, count, num = ROBJECT_NUMIV(obj);
-	    const VALUE *const ivptr = ROBJECT_IVPTR(obj);
-	    for (i = count = 0; i < num; ++i) {
-		if (ivptr[i] != Qundef) {
-		    count++;
-		}
-	    }
-	    return count;
-	}
-	break;
+        if (rb_shape_get_shape(obj)->iv_count > 0) {
+            st_index_t i, count, num = ROBJECT_NUMIV(obj);
+            const VALUE *const ivptr = ROBJECT_IVPTR(obj);
+            for (i = count = 0; i < num; ++i) {
+                if (ivptr[i] != Qundef) {
+                    count++;
+                }
+            }
+            return count;
+        }
+        break;
       case T_CLASS:
       case T_MODULE:
         if ((tbl = RCLASS_IV_TBL(obj)) != 0) {
@@ -1800,11 +1800,11 @@ rb_ivar_count(VALUE obj)
         if (FL_TEST(obj, FL_EXIVAR)) {
             struct gen_ivtbl *ivtbl;
 
-	    if (rb_gen_ivtbl_get(obj, 0, &ivtbl)) {
-		return gen_ivtbl_count(ivtbl);
-	    }
-	}
-	break;
+            if (rb_gen_ivtbl_get(obj, 0, &ivtbl)) {
+                return gen_ivtbl_count(ivtbl);
+            }
+        }
+        break;
     }
     return 0;
 }

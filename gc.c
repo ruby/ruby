@@ -3779,8 +3779,8 @@ obj_free(rb_objspace_t *objspace, VALUE obj)
                 RB_DEBUG_COUNTER_INC(obj_imemo_shape);
                 break;
             }
-	}
-	return TRUE;
+        }
+        return TRUE;
 
       default:
         rb_bug("gc_sweep(): unknown data type 0x%x(%p) 0x%"PRIxVALUE,
