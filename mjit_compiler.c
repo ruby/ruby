@@ -169,12 +169,9 @@ extern bool rb_splat_or_kwargs_p(const struct rb_callinfo *restrict ci);
 #define OFFSETOF(ptr, member) RB_SIZE2NUM(((char *)&ptr.member - (char*)&ptr) * 8)
 
 #define SIZEOF(type) RB_SIZE2NUM(sizeof(type))
-#define SIGNED_TYPE_P(type) RBOOL((type)(-1) < (type)(0))
+#define SIGNED_TYPE_P(type) RBOOL((type)(-1) < (type)(1))
 
-RBIMPL_WARNING_PUSH()
-RBIMPL_WARNING_IGNORED(-Wtype-limits) // for SIGNED_TYPE_P
 #include "mjit_c.rbinc"
-RBIMPL_WARNING_POP()
 
 #include "mjit_compiler.rbinc"
 
