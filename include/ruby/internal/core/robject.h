@@ -46,6 +46,7 @@
 #define ROBJECT_EMBED         ROBJECT_EMBED
 #define ROBJECT_NUMIV         ROBJECT_NUMIV
 #define ROBJECT_IVPTR         ROBJECT_IVPTR
+#define ROBJECT_IV_INDEX_TBL  ROBJECT_IV_INDEX_TBL
 /** @endcond */
 
 /**
@@ -131,7 +132,7 @@ struct RObject {
              *
              * This is a shortcut for `RCLASS_IV_INDEX_TBL(rb_obj_class(obj))`.
              */
-            struct rb_id_table *iv_index_tbl;
+            struct st_table *iv_index_tbl;
         } heap;
 
 #if USE_RVARGC

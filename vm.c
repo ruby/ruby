@@ -26,7 +26,6 @@
 #include "internal/thread.h"
 #include "internal/vm.h"
 #include "internal/sanitizers.h"
-#include "internal/variable.h"
 #include "iseq.h"
 #include "mjit.h"
 #include "yjit.h"
@@ -2721,12 +2720,6 @@ rb_vm_update_references(void *ptr)
         vm->top_self = rb_gc_location(vm->top_self);
         vm->orig_progname = rb_gc_location(vm->orig_progname);
 
-        for (shape_id_t i = 0; i <= vm->max_shape_count; i++) {
-            if (vm->shape_list[i]) {
-                vm->shape_list[i] = (rb_shape_t *)rb_gc_location((VALUE)vm->shape_list[i]);
-            }
-        }
-
         rb_gc_update_tbl_refs(vm->overloaded_cme_table);
 
         if (vm->coverages) {
@@ -2808,8 +2801,6 @@ rb_vm_mark(void *ptr)
             obj_ary++;
         }
 
-        rb_gc_mark((VALUE)vm->root_shape);
-        rb_gc_mark((VALUE)vm->frozen_root_shape);
         rb_gc_mark_movable(vm->load_path);
         rb_gc_mark_movable(vm->load_path_snapshot);
         RUBY_MARK_MOVABLE_UNLESS_NULL(vm->load_path_check_cache);
@@ -4030,11 +4021,6 @@ Init_BareVM(void)
     rb_native_cond_initialize(&vm->ractor.sync.terminate_cond);
 }
 
-#ifndef _WIN32
-#include <unistd.h>
-#include <sys/mman.h>
-#endif
-
 void
 Init_vm_objects(void)
 {
@@ -4046,37 +4032,6 @@ Init_vm_objects(void)
     vm->mark_object_ary = rb_ary_hidden_new(128);
     vm->loading_table = st_init_strtable();
     vm->frozen_strings = st_init_table_with_size(&rb_fstring_hash_type, 10000);
-
-#if HAVE_MMAP
-    vm->shape_list = (rb_shape_t **)mmap(NULL, rb_size_mul_or_raise(SHAPE_BITMAP_SIZE * 32, sizeof(rb_shape_t *), rb_eRuntimeError),
-                         PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
-    if (vm->shape_list == MAP_FAILED) {
-        vm->shape_list = 0;
-    }
-#else
-    vm->shape_list = xcalloc(SHAPE_BITMAP_SIZE * 32, sizeof(rb_shape_t *));
-#endif
-
-    if (!vm->shape_list) {
-        rb_memerror();
-    }
-
-    // Root shape
-    vm->root_shape = rb_shape_alloc(ROOT_SHAPE_ID,
-            0,
-            0);
-    rb_shape_set_shape_by_id(ROOT_SHAPE_ID, vm->root_shape);
-    RB_OBJ_WRITTEN(vm->root_shape, Qundef, (VALUE)vm);
-
-    // Frozen root shape
-    vm->frozen_root_shape = rb_shape_alloc(FROZEN_ROOT_SHAPE_ID,
-            rb_make_internal_id(),
-            vm->root_shape);
-    vm->frozen_root_shape->type = (uint8_t)SHAPE_FROZEN;
-    RB_OBJ_FREEZE_RAW((VALUE)vm->frozen_root_shape);
-    rb_shape_set_shape_by_id(FROZEN_ROOT_SHAPE_ID, vm->frozen_root_shape);
-    RB_OBJ_WRITTEN(vm->frozen_root_shape, Qundef, (VALUE)vm);
-    vm->max_shape_count = 1;
 }
 
 /* Stub for builtin function when not building YJIT units*/

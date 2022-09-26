@@ -1938,12 +1938,14 @@ fn gen_set_ivar(
     let val_opnd = ctx.stack_pop(1);
     let recv_opnd = ctx.stack_pop(1);
 
-    // Call rb_vm_set_ivar_id with the receiver, the ivar name, and the value
+    let ivar_index: u32 = unsafe { rb_obj_ensure_iv_index_mapping(recv, ivar_name) };
+
+    // Call rb_vm_set_ivar_idx with the receiver, the index of the ivar, and the value
     let val = asm.ccall(
-        rb_vm_set_ivar_id as *const u8,
+        rb_vm_set_ivar_idx as *const u8,
         vec![
             recv_opnd,
-            Opnd::UImm(ivar_name.into()),
+            Opnd::Imm(ivar_index.into()),
             val_opnd,
         ],
     );
@@ -2021,82 +2023,81 @@ fn gen_get_ivar(
         return EndBlock;
     }
 
-    let ivar_index = unsafe {
-        let shape_id = comptime_receiver.shape_of();
-        let shape = rb_shape_get_shape_by_id(shape_id);
-        let mut ivar_index: u32 = 0;
-        if rb_shape_get_iv_index(shape, ivar_name, &mut ivar_index) {
-            Some(ivar_index as usize)
-        } else {
-            None
-        }
-    };
-
-    // must be before stack_pop
-    let recv_type = ctx.get_opnd_type(recv_opnd);
-
-    // Upgrade type
-    if !recv_type.is_heap() {
-        ctx.upgrade_opnd_type(recv_opnd, Type::UnknownHeap);
-    }
+    // FIXME: Mapping the index could fail when there is too many ivar names. If we're
+    // compiling for a branch stub that can cause the exception to be thrown from the
+    // wrong PC.
+    let ivar_index =
+        unsafe { rb_obj_ensure_iv_index_mapping(comptime_receiver, ivar_name) }.as_usize();
 
     // Pop receiver if it's on the temp stack
     if recv_opnd != SelfOpnd {
         ctx.stack_pop(1);
     }
 
-    // Guard heap object
-    if !recv_type.is_heap() {
-        guard_object_is_heap(asm, recv, side_exit);
+    if USE_RVARGC != 0 {
+        // Check that the ivar table is big enough
+        // Check that the slot is inside the ivar table (num_slots > index)
+        let num_slots = Opnd::mem(32, recv, ROBJECT_OFFSET_NUMIV);
+        asm.cmp(num_slots, Opnd::UImm(ivar_index as u64));
+        asm.jbe(counted_exit!(ocb, side_exit, getivar_idx_out_of_range).into());
     }
 
     // Compile time self is embedded and the ivar index lands within the object
-    let embed_test_result = unsafe { FL_TEST_RAW(comptime_receiver, VALUE(ROBJECT_EMBED.as_usize())) != VALUE(0) };
-
-    let flags_mask: usize = unsafe { rb_shape_flags_mask() }.as_usize();
-    let expected_flags_mask: usize = (RUBY_T_MASK as usize) | !flags_mask | (ROBJECT_EMBED as usize);
-    let expected_flags = comptime_receiver.builtin_flags() & expected_flags_mask;
-
-    // Combined guard for all flags: shape, embeddedness, and T_OBJECT
-    let flags_opnd = Opnd::mem(64, recv, RUBY_OFFSET_RBASIC_FLAGS);
-
-    asm.comment("guard shape, embedded, and T_OBJECT");
-    let flags_opnd = asm.and(flags_opnd, Opnd::UImm(expected_flags_mask as u64));
-    asm.cmp(flags_opnd, Opnd::UImm(expected_flags as u64));
-    jit_chain_guard(
-        JCC_JNE,
-        jit,
-        &starting_context,
-        asm,
-        ocb,
-        max_chain_depth,
-        side_exit,
-    );
-
-    // If there is no IVAR index, then the ivar was undefined
-    // when we entered the compiler.  That means we can just return
-    // nil for this shape + iv name
-    if ivar_index.is_none() {
-        let out_opnd = ctx.stack_push(Type::Nil);
-        asm.mov(out_opnd, Qnil.into());
-    } else if embed_test_result {
+    let test_result = unsafe { FL_TEST_RAW(comptime_receiver, VALUE(ROBJECT_EMBED.as_usize())) != VALUE(0) };
+    if test_result {
         // See ROBJECT_IVPTR() from include/ruby/internal/core/robject.h
 
+        // Guard that self is embedded
+        // TODO: BT and JC is shorter
+        asm.comment("guard embedded getivar");
+        let flags_opnd = Opnd::mem(64, recv, RUBY_OFFSET_RBASIC_FLAGS);
+        asm.test(flags_opnd, Opnd::UImm(ROBJECT_EMBED as u64));
+        let side_exit = counted_exit!(ocb, side_exit, getivar_megamorphic);
+        jit_chain_guard(
+            JCC_JZ,
+            jit,
+            &starting_context,
+            asm,
+            ocb,
+            max_chain_depth,
+            side_exit,
+        );
+
         // Load the variable
-        let offs = ROBJECT_OFFSET_AS_ARY + (ivar_index.unwrap() * SIZEOF_VALUE) as i32;
+        let offs = ROBJECT_OFFSET_AS_ARY + (ivar_index * SIZEOF_VALUE) as i32;
         let ivar_opnd = Opnd::mem(64, recv, offs);
+
+        // Guard that the variable is not Qundef
+        asm.cmp(ivar_opnd, Qundef.into());
+        let out_val = asm.csel_e(Qnil.into(), ivar_opnd);
 
         // Push the ivar on the stack
         let out_opnd = ctx.stack_push(Type::Unknown);
-        asm.mov(out_opnd, ivar_opnd);
+        asm.mov(out_opnd, out_val);
     } else {
         // Compile time value is *not* embedded.
+
+        // Guard that value is *not* embedded
+        // See ROBJECT_IVPTR() from include/ruby/internal/core/robject.h
+        asm.comment("guard extended getivar");
+        let flags_opnd = Opnd::mem(64, recv, RUBY_OFFSET_RBASIC_FLAGS);
+        asm.test(flags_opnd, Opnd::UImm(ROBJECT_EMBED as u64));
+        let megamorphic_side_exit = counted_exit!(ocb, side_exit, getivar_megamorphic);
+        jit_chain_guard(
+            JCC_JNZ,
+            jit,
+            &starting_context,
+            asm,
+            ocb,
+            max_chain_depth,
+            megamorphic_side_exit,
+        );
 
         if USE_RVARGC == 0 {
             // Check that the extended table is big enough
             // Check that the slot is inside the extended table (num_slots > index)
             let num_slots = Opnd::mem(32, recv, ROBJECT_OFFSET_NUMIV);
-            asm.cmp(num_slots, Opnd::UImm(ivar_index.unwrap() as u64));
+            asm.cmp(num_slots, Opnd::UImm(ivar_index as u64));
             asm.jbe(counted_exit!(ocb, side_exit, getivar_idx_out_of_range).into());
         }
 
@@ -2104,10 +2105,15 @@ fn gen_get_ivar(
         let tbl_opnd = asm.load(Opnd::mem(64, recv, ROBJECT_OFFSET_AS_HEAP_IVPTR));
 
         // Read the ivar from the extended table
-        let ivar_opnd = Opnd::mem(64, tbl_opnd, (SIZEOF_VALUE * ivar_index.unwrap()) as i32);
+        let ivar_opnd = Opnd::mem(64, tbl_opnd, (SIZEOF_VALUE * ivar_index) as i32);
 
+        // Check that the ivar is not Qundef
+        asm.cmp(ivar_opnd, Qundef.into());
+        let out_val = asm.csel_ne(ivar_opnd, Qnil.into());
+
+        // Push the ivar on the stack
         let out_opnd = ctx.stack_push(Type::Unknown);
-        asm.mov(out_opnd, ivar_opnd);
+        asm.mov(out_opnd, out_val);
     }
 
     // Jump to next instruction. This allows guard chains to share the same successor.
@@ -2130,12 +2136,25 @@ fn gen_getinstancevariable(
     let ivar_name = jit_get_arg(jit, 0).as_u64();
 
     let comptime_val = jit_peek_at_self(jit);
+    let comptime_val_klass = comptime_val.class_of();
 
     // Generate a side exit
     let side_exit = get_side_exit(jit, ocb, ctx);
 
     // Guard that the receiver has the same class as the one from compile time.
     let self_asm_opnd = Opnd::mem(64, CFP, RUBY_OFFSET_CFP_SELF);
+    jit_guard_known_klass(
+        jit,
+        ctx,
+        asm,
+        ocb,
+        comptime_val_klass,
+        self_asm_opnd,
+        SelfOpnd,
+        comptime_val,
+        GET_IVAR_MAX_DEPTH,
+        side_exit,
+    );
 
     gen_get_ivar(
         jit,

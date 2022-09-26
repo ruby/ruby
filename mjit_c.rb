@@ -5,10 +5,6 @@ module RubyVM::MJIT
   C = Object.new
 
   class << C
-    def SHAPE_BITS
-      RubyVM::Shape::SHAPE_BITS
-    end
-
     def ROBJECT_EMBED_LEN_MAX
       Primitive.cexpr! 'INT2NUM(RBIMPL_EMBED_LEN_MAX_OF(VALUE))'
     end
@@ -169,14 +165,6 @@ module RubyVM::MJIT
     Primitive.cexpr! %q{ INT2NUM(VM_METHOD_TYPE_ISEQ) }
   end
 
-  def C.INVALID_SHAPE_ID
-    Primitive.cexpr! %q{ ULONG2NUM(INVALID_SHAPE_ID) }
-  end
-
-  def C.SHAPE_MASK
-    Primitive.cexpr! %q{ ULONG2NUM(SHAPE_MASK) }
-  end
-
   def C.CALL_DATA
     @CALL_DATA ||= self.rb_call_data
   end
@@ -191,10 +179,6 @@ module RubyVM::MJIT
 
   def C.RB_BUILTIN
     @RB_BUILTIN ||= self.rb_builtin_function
-  end
-
-  def C.attr_index_t
-    @attr_index_t ||= CType::Immediate.parse("uint32_t")
   end
 
   def C.compile_branch
@@ -217,6 +201,7 @@ module RubyVM::MJIT
       compiled_id: [CType::Immediate.parse("int"), Primitive.cexpr!("OFFSETOF((*((struct compile_status *)NULL)), compiled_id)")],
       compile_info: [CType::Pointer.new { self.rb_mjit_compile_info }, Primitive.cexpr!("OFFSETOF((*((struct compile_status *)NULL)), compile_info)")],
       merge_ivar_guards_p: [self._Bool, Primitive.cexpr!("OFFSETOF((*((struct compile_status *)NULL)), merge_ivar_guards_p)")],
+      ivar_serial: [self.rb_serial_t, Primitive.cexpr!("OFFSETOF((*((struct compile_status *)NULL)), ivar_serial)")],
       max_ivar_index: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct compile_status *)NULL)), max_ivar_index)")],
       inlined_iseqs: [CType::Pointer.new { CType::Pointer.new { self.rb_iseq_constant_body } }, Primitive.cexpr!("OFFSETOF((*((struct compile_status *)NULL)), inlined_iseqs)")],
       inline_context: [self.inlined_call_context, Primitive.cexpr!("OFFSETOF((*((struct compile_status *)NULL)), inline_context)")],
@@ -255,9 +240,7 @@ module RubyVM::MJIT
   def C.iseq_inline_iv_cache_entry
     @iseq_inline_iv_cache_entry ||= CType::Struct.new(
       "iseq_inline_iv_cache_entry", Primitive.cexpr!("SIZEOF(struct iseq_inline_iv_cache_entry)"),
-      source_shape_id: [self.shape_id_t, Primitive.cexpr!("OFFSETOF((*((struct iseq_inline_iv_cache_entry *)NULL)), source_shape_id)")],
-      dest_shape_id: [self.shape_id_t, Primitive.cexpr!("OFFSETOF((*((struct iseq_inline_iv_cache_entry *)NULL)), dest_shape_id)")],
-      attr_index: [self.attr_index_t, Primitive.cexpr!("OFFSETOF((*((struct iseq_inline_iv_cache_entry *)NULL)), attr_index)")],
+      entry: [CType::Pointer.new { self.rb_iv_index_tbl_entry }, Primitive.cexpr!("OFFSETOF((*((struct iseq_inline_iv_cache_entry *)NULL)), entry)")],
     )
   end
 
@@ -330,11 +313,7 @@ module RubyVM::MJIT
       call_: [self.vm_call_handler, Primitive.cexpr!("OFFSETOF((*((struct rb_callcache *)NULL)), call_)")],
       aux_: [CType::Union.new(
         "", Primitive.cexpr!("SIZEOF(((struct rb_callcache *)NULL)->aux_)"),
-        attr: CType::Struct.new(
-          "", Primitive.cexpr!("SIZEOF(((struct rb_callcache *)NULL)->aux_.attr)"),
-          index: [self.attr_index_t, Primitive.cexpr!("OFFSETOF(((struct rb_callcache *)NULL)->aux_.attr, index)")],
-          dest_shape_id: [self.shape_id_t, Primitive.cexpr!("OFFSETOF(((struct rb_callcache *)NULL)->aux_.attr, dest_shape_id)")],
-        ),
+        attr_index: CType::Immediate.parse("unsigned int"),
         method_missing_reason: self.method_missing_reason,
         v: self.VALUE,
       ), Primitive.cexpr!("OFFSETOF((*((struct rb_callcache *)NULL)), aux_)")],
@@ -523,9 +502,9 @@ module RubyVM::MJIT
   def C.rb_iv_index_tbl_entry
     @rb_iv_index_tbl_entry ||= CType::Struct.new(
       "rb_iv_index_tbl_entry", Primitive.cexpr!("SIZEOF(struct rb_iv_index_tbl_entry)"),
-      idx: [CType::Immediate.parse("uint32_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_iv_index_tbl_entry *)NULL)), idx)")],
-      source_shape_id: [self.shape_id_t, Primitive.cexpr!("OFFSETOF((*((struct rb_iv_index_tbl_entry *)NULL)), source_shape_id)")],
-      dest_shape_id: [self.shape_id_t, Primitive.cexpr!("OFFSETOF((*((struct rb_iv_index_tbl_entry *)NULL)), dest_shape_id)")],
+      index: [CType::Immediate.parse("uint32_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_iv_index_tbl_entry *)NULL)), index)")],
+      class_serial: [self.rb_serial_t, Primitive.cexpr!("OFFSETOF((*((struct rb_iv_index_tbl_entry *)NULL)), class_serial)")],
+      class_value: [self.VALUE, Primitive.cexpr!("OFFSETOF((*((struct rb_iv_index_tbl_entry *)NULL)), class_value)")],
     )
   end
 
@@ -596,10 +575,6 @@ module RubyVM::MJIT
 
   def C.VALUE
     @VALUE ||= CType::Immediate.find(Primitive.cexpr!("SIZEOF(VALUE)"), Primitive.cexpr!("SIGNED_TYPE_P(VALUE)"))
-  end
-
-  def C.shape_id_t
-    @shape_id_t ||= CType::Immediate.find(Primitive.cexpr!("SIZEOF(shape_id_t)"), Primitive.cexpr!("SIGNED_TYPE_P(shape_id_t)"))
   end
 
   def C._Bool

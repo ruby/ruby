@@ -8,9 +8,16 @@ describe :rbasic, shared: true do
 
   it "reports the appropriate FREEZE flag for the object when reading" do
     obj, _ = @data.call
-    (@specs.get_flags(obj) & @freeze).should == 0
+    initial = @specs.get_flags(obj)
     obj.freeze
-    (@specs.get_flags(obj) & @freeze).should == @freeze
+    @specs.get_flags(obj).should == @freeze | initial
+  end
+
+  it "supports setting the FREEZE flag" do
+    obj, _ = @data.call
+    initial = @specs.get_flags(obj)
+    @specs.set_flags(obj, @freeze | initial).should == @freeze | initial
+    obj.should.frozen?
   end
 
   it "supports retrieving the (meta)class" do
