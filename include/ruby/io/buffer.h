@@ -1,5 +1,5 @@
-#ifndef RUBY_IO_BUFFER_T
-#define RUBY_IO_BUFFER_T 1
+#ifndef RUBY_IO_BUFFER_H
+#define RUBY_IO_BUFFER_H
 /**
  * @file
  * @author     Samuel Williams
@@ -88,4 +88,4 @@ VALUE rb_io_buffer_pwrite(VALUE self, VALUE io, size_t length, rb_off_t offset);
 
 RBIMPL_SYMBOL_EXPORT_END()
 
-#endif  /* RUBY_IO_BUFFER_T */
+#endif  /* RUBY_IO_BUFFER_H */
