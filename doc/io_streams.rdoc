@@ -235,7 +235,7 @@ You can read an \IO stream line-by-line using these methods:
     "rth line\n"
     "Fifth line\n"
 
-- IO#gets(also in Kernel): Returns the next line (which may begin mid-line):
+- IO#gets (also in Kernel): Returns the next line (which may begin mid-line):
 
     f = File.new('t.txt')
     f.gets      # => "First line\n"
@@ -358,7 +358,7 @@ in the stream where the next read will occur.
 
 A new stream is initially has line number +0+.
 
-\Method IO#lineno (also in \ARGF, \File, and \StringIO) returns the line number.
+\Method IO#lineno returns the line number.
 
 Reading lines from a stream usually changes its line number:
 
@@ -417,13 +417,11 @@ You can process an \IO stream character-by-character using these methods:
 - IO#ungetc (not in \ARGF):
   Pushes back ("unshifts") a character or integer onto the stream:
 
-    f = File.new('t.rus')
-    c = f.getc         # => "т"
-    f.ungetc(c)
-    f.ungetc(c)
-    f.read             # => "ттест"
+    f = File.new('t.tmp', 'w')
+    f.putc("т")
+    f.putc("т")
     f.close
-    File.read('t.rus') # => "тест"
+    File.read('t.tmp')         # => "тт"
 
 - IO#putc (also in Kernel): Writes a character to the stream:
 
@@ -499,9 +497,3 @@ You can process an \IO stream codepoint-by-codepoint using method
   f.each_codepoint {|c| a << c }
   a # => [1090, 1077, 1089, 1090]
   f.close
-
-<<<<<<< HEAD
-=======
-- IO#eof? (also aliased as +#eof+):
-  Returns whether the stream is at end-of-file.
->>>>>>> 34506865e69d73078ada01381789a9b804e1e643
