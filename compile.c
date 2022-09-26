@@ -8728,10 +8728,6 @@ compile_op_asgn2(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node
         }
 
         ADD_LABEL(ret, lfin);
-        ADD_INSN(ret, node, pop);
-        if (lskip) {
-            ADD_LABEL(ret, lskip);
-        }
     }
     else {
         CHECK(COMPILE(ret, "NODE_OP_ASGN2 val", node->nd_value));
@@ -8741,13 +8737,13 @@ compile_op_asgn2(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node
             ADD_INSN1(ret, node, topn, INT2FIX(1));
         }
         ADD_SEND_WITH_FLAG(ret, node, aid, INT2FIX(1), INT2FIX(asgnflag));
-        if (lskip && popped) {
-            ADD_LABEL(ret, lskip);
-        }
-        ADD_INSN(ret, node, pop);
-        if (lskip && !popped) {
-            ADD_LABEL(ret, lskip);
-        }
+    }
+    if (lskip && popped) {
+        ADD_LABEL(ret, lskip);
+    }
+    ADD_INSN(ret, node, pop);
+    if (lskip && !popped) {
+        ADD_LABEL(ret, lskip);
     }
     return COMPILE_OK;
 }
