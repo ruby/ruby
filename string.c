@@ -2811,6 +2811,7 @@ str_subseq(VALUE str, long beg, long len)
     }
     else {
         str2 = str_new_shared(rb_cString, str);
+        ENC_CODERANGE_CLEAR(str2);
         RSTRING(str2)->as.heap.ptr += beg;
         if (RSTRING(str2)->as.heap.len > len) {
             RSTRING(str2)->as.heap.len = len;
