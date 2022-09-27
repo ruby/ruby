@@ -4071,7 +4071,7 @@ rb_io_gets_internal(VALUE io)
  *  - But returns no more bytes than are allowed by the limit.
  *
  *  For all forms above, optional keyword arguments +line_opts+ specify
- *  {Line Options}[rdoc-ref:IO@Line+Options]:
+ *  {Line Options}[rdoc-ref:doc/io_streams.rdoc@Line+Options]:
  *
  *    f = File.open('t.txt')
  *    # Chomp the lines.
@@ -4215,7 +4215,7 @@ static VALUE io_readlines(const struct getline_arg *arg, VALUE io);
  *  - But returns no more bytes in a line than are allowed by the limit.
  *
  *  For all forms above, optional keyword arguments +line_opts+ specify
- *  {Line Options}[rdoc-ref:IO@Line+Options]:
+ *  {Line Options}[rdoc-ref:doc/io_streams.rdoc@Line+Options]:
  *
  *    f = File.new('t.txt')
  *    f.readlines(chomp: true)
@@ -4338,7 +4338,7 @@ io_readlines(const struct getline_arg *arg, VALUE io)
  *  - But returns no more bytes than are allowed by the limit.
  *
  *  For all forms above, optional keyword arguments +line_opts+ specify
- *  {Line Options}[rdoc-ref:IO@Line+Options]:
+ *  {Line Options}[rdoc-ref:doc/io_streams.rdoc@Line+Options]:
  *
  *    f = File.new('t.txt')
  *    f.each_line(chomp: true) {|line| p line }
@@ -10075,7 +10075,7 @@ static VALUE argf_readlines(int, VALUE *, VALUE);
  *
  *  For all forms above, optional keyword arguments specify:
  *
- *  - {Line Options}[rdoc-ref:IO@Line+Options].
+ *  - {Line Options}[rdoc-ref:doc/io_streams.rdoc@Line+Options].
  *  - {Encoding options}[rdoc-ref:encodings.rdoc@Encoding+Options].
  *
  *  Examples:
@@ -11607,7 +11607,7 @@ io_s_foreach(VALUE v)
  *
  *  - {Open Options}[rdoc-ref:IO@Open+Options].
  *  - {Encoding options}[rdoc-ref:encodings.rdoc@Encoding+Options].
- *  - {Line Options}[rdoc-ref:IO@Line+Options].
+ *  - {Line Options}[rdoc-ref:doc/io_streams.rdoc@Line+Options].
  *
  *  Returns an Enumerator if no block is given.
  *
@@ -11705,7 +11705,7 @@ io_s_readlines(VALUE v)
  *
  *  - {Open Options}[rdoc-ref:IO@Open+Options].
  *  - {Encoding options}[rdoc-ref:encodings.rdoc@Encoding+Options].
- *  - {Line Options}[rdoc-ref:IO@Line+Options].
+ *  - {Line Options}[rdoc-ref:doc/io_streams.rdoc@Line+Options].
  *
  */
 
@@ -14372,7 +14372,10 @@ set_LAST_READ_LINE(VALUE val, ID _x, VALUE *_y)
  *  The global constant ARGF (also accessible as <tt>$<</tt>)
  *  provides an IO-like stream that allows access to all file paths
  *  found in ARGV (or found in STDIN if ARGV is empty).
- *  Note that ARGF is not itself a subclass of \IO.
+ *  ARGF is not itself a subclass of \IO.
+ *
+ *  \Class StringIO provides an IO-like stream that handles a String.
+ *  \StringIO is not itself a subclass of \IO.
  *
  *  Important objects based on \IO include:
  *
@@ -14390,20 +14393,23 @@ set_LAST_READ_LINE(VALUE val, ID _x, VALUE *_y)
  *  - Kernel#open: Returns a new \IO object connected to a given source:
  *    stream, file, or subprocess.
  *
- *  An \IO stream has:
+ *  Like a \File stream, an \IO stream has:
  *
  *  - A read/write mode, which may be read-only, write-only, or read/write;
- *    see {Read/Write Mode}[rdoc-ref:IO@Read-2FWrite+Mode].
+ *    see {Read/Write Mode}[rdoc-ref:File@Read-2FWrite+Mode].
  *  - A data mode, which may be text-only or binary;
- *    see {Data Mode}[rdoc-ref:IO@Data+Mode].
+ *    see {Data Mode}[rdoc-ref:File@Data+Mode].
+ *  - Internal and external encodings;
+ *    see {Encodings}[rdoc-ref:File@Encodings].
+ *
+ *  And like other \IO streams, it has:
+ *
  *  - A position, which determines where in the stream the next
  *    read or write is to occur;
- *    see {Position}[rdoc-ref:IO@Position].
+ *    see {Position}[rdoc-ref:doc/io_streams.rdoc@Position].
  *  - A line number, which is a special, line-oriented, "position"
  *    (different from the position mentioned above);
- *    see {Line Number}[rdoc-ref:IO@Line+Number].
- *  - Internal and external encodings;
- *    see {Encodings}[rdoc-ref:IO@Encodings].
+ *    see {Line Number}[rdoc-ref:doc/io_streams.rdoc@Line+Number].
  *
  *  == Extension <tt>io/console</tt>
  *
@@ -14411,162 +14417,23 @@ set_LAST_READ_LINE(VALUE val, ID _x, VALUE *_y)
  *  for interacting with the console;
  *  requiring it adds numerous methods to class \IO.
  *
+ *  == Extension <tt>expect</tt>
+ *
+ *  The Expect extension (not available on Windows)
+  * adds instance method IO#expect, which is similar to
+ *  {TCL's expect extension}[https://www.tcl.tk/man/expect5.31/expect.1.html].
+ *
+ *  To use the method, you must require expect:
+ *
+ *    require 'expect'
+ *
+ *  See IO#expect.
+ *
  *  == Example Files
  *
- *  Many examples here use these filenames and their corresponding files:
+ *  Many examples here use these variables:
  *
- *  - <tt>t.txt</tt>: A text-only file that is assumed to exist via:
- *
- *      text = <<~EOT
- *        First line
- *        Second line
- *
- *        Fourth line
- *        Fifth line
- *      EOT
- *      File.write('t.txt', text)
- *
- *  - <tt>t.dat</tt>: A data file that is assumed to exist via:
- *
- *      data = "\u9990\u9991\u9992\u9993\u9994"
- *      f = File.open('t.dat', 'wb:UTF-16')
- *      f.write(data)
- *      f.close
- *
- *  - <tt>t.rus</tt>: A Russian-language text file that is assumed to exist via:
- *
- *      File.write('t.rus', "\u{442 435 441 442}")
- *
- *  - <tt>t.tmp</tt>: A file that is assumed _not_ to exist.
- *
- *  == Modes
- *
- *  A number of \IO method calls must or may specify a _mode_ for the stream;
- *  the mode determines how stream is to be accessible, including:
- *
- *  - Whether the stream is to be read-only, write-only, or read-write.
- *  - Whether the stream is positioned at its beginning or its end.
- *  - Whether the stream treats data as text-only or binary.
- *  - The external and internal encodings.
- *
- *  === Read/Write Mode
- *
- *  ==== Read/Write Mode Specified as an \Integer
- *
- *  When +mode+ is an integer it must be one or more (combined by bitwise OR (<tt>|</tt>)
- *  of the following modes:
- *
- *  - +File::RDONLY+: Open for reading only.
- *  - +File::WRONLY+: Open for writing only.
- *  - +File::RDWR+: Open for reading and writing.
- *  - +File::APPEND+: Open for appending only.
- *  - +File::CREAT+: Create file if it does not exist.
- *  - +File::EXCL+: Raise an exception if +File::CREAT+ is given and the file exists.
- *
- *  Examples:
- *
- *    File.new('t.txt', File::RDONLY)
- *    File.new('t.tmp', File::RDWR | File::CREAT | File::EXCL)
- *
- *  Note: Method IO#set_encoding does not allow the mode to be specified as an integer.
- *
- *  ==== Read/Write Mode Specified As a \String
- *
- *  When +mode+ is a string it must begin with one of the following:
- *
- *  - <tt>'r'</tt>: Read-only stream, positioned at the beginning;
- *    the stream cannot be changed to writable.
- *  - <tt>'w'</tt>: Write-only stream, positioned at the beginning;
- *    the stream cannot be changed to readable.
- *  - <tt>'a'</tt>: Write-only stream, positioned at the end;
- *    every write appends to the end;
- *    the stream cannot be changed to readable.
- *  - <tt>'r+'</tt>: Read-write stream, positioned at the beginning.
- *  - <tt>'w+'</tt>: Read-write stream, positioned at the end.
- *  - <tt>'a+'</tt>: Read-write stream, positioned at the end.
- *
- *  For a writable file stream (that is, any except read-only),
- *  the file is truncated to zero if it exists,
- *  and is created if it does not exist.
- *
- *  Examples:
- *
- *    File.open('t.txt', 'r')
- *    File.open('t.tmp', 'w')
- *
- *  === Data Mode
- *
- *  Either of the following may be suffixed to any of the string read/write modes above:
- *
- *  - <tt>'t'</tt>: Text data; sets the default external encoding to +Encoding::UTF_8+;
- *    on Windows, enables conversion between EOL and CRLF and enables interpreting +0x1A+
- *    as an end-of-file marker.
- *  - <tt>'b'</tt>: Binary data; sets the default external encoding to +Encoding::ASCII_8BIT+;
- *    on Windows, suppresses conversion between EOL and CRLF and disables interpreting +0x1A+
- *    as an end-of-file marker.
- *
- *  If neither is given, the stream defaults to text data.
- *
- *  Examples:
- *
- *    File.open('t.txt', 'rt')
- *    File.open('t.dat', 'rb')
- *
- *  The following may be suffixed to any writable string mode above:
- *
- *  - <tt>'x'</tt>: Creates the file if it does not exist;
- *    raises an exception if the file exists.
- *
- *  Example:
- *
- *    File.open('t.tmp', 'wx')
- *
- *  Note that when using integer flags to set the read/write mode, it's not
- *  possible to also set the binary data mode by adding the File::BINARY flag
- *  to the bitwise OR combination of integer flags. This is because, as
- *  documented in File::Constants, the File::BINARY flag only disables line code
- *  conversion, but does not change the external encoding at all.
- *
- *  == Encodings
- *
- *  Any of the string modes above may specify encodings --
- *  either external encoding only or both external and internal encodings --
- *  by appending one or both encoding names, separated by colons:
- *
- *    f = File.new('t.dat', 'rb')
- *    f.external_encoding # => #<Encoding:ASCII-8BIT>
- *    f.internal_encoding # => nil
- *    f = File.new('t.dat', 'rb:UTF-16')
- *    f.external_encoding # => #<Encoding:UTF-16 (dummy)>
- *    f.internal_encoding # => nil
- *    f = File.new('t.dat', 'rb:UTF-16:UTF-16')
- *    f.external_encoding # => #<Encoding:UTF-16 (dummy)>
- *    f.internal_encoding # => #<Encoding:UTF-16>
- *    f.close
- *
- *  The numerous encoding names are available in array Encoding.name_list:
- *
- *    Encoding.name_list.size    # => 175
- *    Encoding.name_list.take(3) # => ["ASCII-8BIT", "UTF-8", "US-ASCII"]
- *
- *  When the external encoding is set,
- *  strings read are tagged by that encoding
- *  when reading, and strings written are converted to that
- *  encoding when writing.
- *
- *  When both external and internal encodings are set,
- *  strings read are converted from external to internal encoding,
- *  and strings written are converted from internal to external encoding.
- *  For further details about transcoding input and output, see Encoding.
- *
- *  If the external encoding is <tt>'BOM|UTF-8'</tt>, <tt>'BOM|UTF-16LE'</tt>
- *  or <tt>'BOM|UTF16-BE'</tt>, Ruby checks for
- *  a Unicode BOM in the input document to help determine the encoding.  For
- *  UTF-16 encodings the file open mode must be binary.
- *  If the BOM is found, it is stripped and the external encoding from the BOM is used.
- *
- *  Note that the BOM-style encoding option is case insensitive,
- *  so 'bom|utf-8' is also valid.)
+ *    :include: doc/examples/files.rdoc
  *
  *  == Open Options
  *
@@ -14588,159 +14455,6 @@ set_LAST_READ_LINE(VALUE val, ID _x, VALUE *_y)
  *
  *  Also available are the options offered in String#encode,
  *  which may control conversion between external internal encoding.
- *
- *  == Lines
- *
- *  Some reader methods in \IO are line-oriented;
- *  such a method reads one or more lines,
- *  which are separated by an implicit or explicit line separator.
- *
- *  These methods include:
- *
- *  - Kernel#gets
- *  - Kernel#readline
- *  - Kernel#readlines
- *  - IO.foreach
- *  - IO.readlines
- *  - IO#each_line
- *  - IO#gets
- *  - IO#readline
- *  - IO#readlines
- *  - ARGF.each
- *  - ARGF.gets
- *  - ARGF.readline
- *  - ARGF.readlines
- *
- *  Each of these methods returns +nil+ if called when already at end-of-stream,
- *  except for IO#readline, which raises an exception.
- *
- *  Each of these methods may be called with:
- *
- *  - An optional line separator, +sep+.
- *  - An optional line-size limit, +limit+.
- *  - Both +sep+ and +limit+.
- *
- *  === Line Separator
- *
- *  The default line separator is the given by the global variable <tt>$/</tt>,
- *  whose value is often <tt>"\n"</tt>.
- *  The line to be read next is all data from the current position
- *  to the next line separator:
- *
- *    f = File.open('t.txt')
- *    f.gets # => "First line\n"
- *    f.gets # => "Second line\n"
- *    f.gets # => "\n"
- *    f.gets # => "Fourth line\n"
- *    f.gets # => "Fifth line\n"
- *    f.close
- *
- *  You can specify a different line separator:
- *
- *    f = File.new('t.txt')
- *    f.gets('l')   # => "First l"
- *    f.gets('li')  # => "ine\nSecond li"
- *    f.gets('lin') # => "ne\n\nFourth lin"
- *    f.gets        # => "e\n"
- *    f.close
- *
- *  There are two special line separators:
- *
- *  - +nil+: The entire stream is read into a single string:
- *
- *      f = File.new('t.txt')
- *      f.gets(nil) # => "First line\nSecond line\n\nFourth line\nFifth line\n"
- *      f.close
- *
- *  - <tt>''</tt> (the empty string): The next "paragraph" is read
- *    (paragraphs being separated by two consecutive line separators):
- *
- *      f = File.new('t.txt')
- *      f.gets('') # => "First line\nSecond line\n\n"
- *      f.gets('') # => "Fourth line\nFifth line\n"
- *      f.close
- *
- *  === Line Limit
- *
- *  The line to be read may be further defined by an optional argument +limit+,
- *  which specifies that the line may not be (much) longer than the given limit;
- *  a multi-byte character will not be split, and so a line may be slightly longer
- *  than the given limit.
- *
- *  If +limit+ is not given, the line is determined only by +sep+.
- *
- *    # Text with 1-byte characters.
- *    File.open('t.txt') {|f| f.gets(1) }  # => "F"
- *    File.open('t.txt') {|f| f.gets(2) }  # => "Fi"
- *    File.open('t.txt') {|f| f.gets(3) }  # => "Fir"
- *    File.open('t.txt') {|f| f.gets(4) }  # => "Firs"
- *    # No more than one line.
- *    File.open('t.txt') {|f| f.gets(10) } # => "First line"
- *    File.open('t.txt') {|f| f.gets(11) } # => "First line\n"
- *    File.open('t.txt') {|f| f.gets(12) } # => "First line\n"
- *
- *    # Text with 2-byte characters, which will not be split.
- *    File.open('r.rus') {|f| f.gets(1).size } # => 1
- *    File.open('r.rus') {|f| f.gets(2).size } # => 1
- *    File.open('r.rus') {|f| f.gets(3).size } # => 2
- *    File.open('r.rus') {|f| f.gets(4).size } # => 2
- *
- *  === Line Separator and Line Limit
- *
- *  With arguments +sep+ and +limit+ given,
- *  combines the two behaviors:
- *
- *  - Returns the next line as determined by line separator +sep+.
- *  - But returns no more bytes than are allowed by the limit.
- *
- *  Example:
- *
- *    File.open('t.txt') {|f| f.gets('li', 20) } # => "First li"
- *    File.open('t.txt') {|f| f.gets('li', 2) }  # => "Fi"
- *
- *  === Line Number
- *
- *  A readable \IO stream has a _line_ _number_,
- *  which is the non-negative integer line number
- *  in the stream where the next read will occur.
- *
- *  A new stream is initially has line number +0+.
- *
- *  \Method IO#lineno returns the line number.
- *
- *  Reading lines from a stream usually changes its line number:
- *
- *    f = File.open('t.txt', 'r')
- *    f.lineno   # => 0
- *    f.readline # => "This is line one.\n"
- *    f.lineno   # => 1
- *    f.readline # => "This is the second line.\n"
- *    f.lineno   # => 2
- *    f.readline # => "Here's the third line.\n"
- *    f.lineno   # => 3
- *    f.eof?     # => true
- *    f.close
- *
- *  Iterating over lines in a stream usually changes its line number:
- *
- *       f = File.open('t.txt')
- *       f.each_line do |line|
- *         p "position=#{f.pos} eof?=#{f.eof?} line=#{line}"
- *       end
- *       f.close
- *
- *  Output:
- *
- *   "position=19 eof?=false line=This is line one.\n"
- *   "position=45 eof?=false line=This is the second line.\n"
- *   "position=70 eof?=true line=This is the third line.\n"
- *
- *  === Line Options
- *
- *  A number of \IO methods accept optional keyword arguments
- *  that determine how lines in a stream are to be treated:
- *
- *  - +:chomp+: If +true+, line separators are omitted; default is +false+.
  *
  *  == What's Here
  *
