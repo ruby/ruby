@@ -152,17 +152,13 @@ class RubyLex
       lexer = Ripper::Lexer.new(inner_code, '-', line_no)
       if lexer.respond_to?(:scan) # Ruby 2.7+
         tokens = []
-        pos_to_index = {}
         lexer.scan.each do |t|
           next if t.pos.first == 0
-          if pos_to_index.has_key?(t.pos)
-            index = pos_to_index[t.pos]
-            found_tk = tokens[index]
-            if ERROR_TOKENS.include?(found_tk.event) && !ERROR_TOKENS.include?(t.event)
-              tokens[index] = t
-            end
+          prev_tk = tokens.last
+          position_overlapped = prev_tk && t.pos[0] == prev_tk.pos[0] && t.pos[1] < prev_tk.pos[1] + prev_tk.tok.bytesize
+          if position_overlapped
+            tokens[-1] = t if ERROR_TOKENS.include?(prev_tk.event) && !ERROR_TOKENS.include?(t.event)
           else
-            pos_to_index[t.pos] = tokens.size
             tokens << t
           end
         end
