@@ -331,6 +331,20 @@ pub fn ldaddal(cb: &mut CodeBlock, rs: A64Opnd, rt: A64Opnd, rn: A64Opnd) {
     cb.write_bytes(&bytes);
 }
 
+/// LDAXR - atomic load with acquire semantics
+pub fn ldaxr(cb: &mut CodeBlock, rt: A64Opnd, rn: A64Opnd) {
+    let bytes: [u8; 4] = match (rt, rn) {
+        (A64Opnd::Reg(rt), A64Opnd::Reg(rn)) => {
+            assert_eq!(rn.num_bits, 64, "rn must be a 64-bit register.");
+
+            LoadStoreExclusive::ldaxr(rt.reg_no, rn.reg_no, rt.num_bits).into()
+        },
+        _ => panic!("Invalid operand combination to ldaxr instruction."),
+    };
+
+    cb.write_bytes(&bytes);
+}
+
 /// LDP (signed offset) - load a pair of registers from memory
 pub fn ldp(cb: &mut CodeBlock, rt1: A64Opnd, rt2: A64Opnd, rn: A64Opnd) {
     let bytes: [u8; 4] = match (rt1, rt2, rn) {
@@ -702,6 +716,21 @@ pub fn orr(cb: &mut CodeBlock, rd: A64Opnd, rn: A64Opnd, rm: A64Opnd) {
             LogicalImm::orr(rd.reg_no, rn.reg_no, imm.try_into().unwrap(), rd.num_bits).into()
         },
         _ => panic!("Invalid operand combination to orr instruction."),
+    };
+
+    cb.write_bytes(&bytes);
+}
+
+/// STLXR - store a value to memory, release exclusive access
+pub fn stlxr(cb: &mut CodeBlock, rs: A64Opnd, rt: A64Opnd, rn: A64Opnd) {
+    let bytes: [u8; 4] = match (rs, rt, rn) {
+        (A64Opnd::Reg(rs), A64Opnd::Reg(rt), A64Opnd::Reg(rn)) => {
+            assert_eq!(rs.num_bits, 32, "rs must be a 32-bit register.");
+            assert_eq!(rn.num_bits, 64, "rn must be a 64-bit register.");
+
+            LoadStoreExclusive::stlxr(rs.reg_no, rt.reg_no, rn.reg_no, rn.num_bits).into()
+        },
+        _ => panic!("Invalid operand combination to stlxr instruction.")
     };
 
     cb.write_bytes(&bytes);
@@ -1184,6 +1213,11 @@ mod tests {
     }
 
     #[test]
+    fn test_ldaxr() {
+        check_bytes("6afd5fc8", |cb| ldaxr(cb, X10, X11));
+    }
+
+    #[test]
     fn test_ldp() {
         check_bytes("8a2d4da9", |cb| ldp(cb, X10, X11, A64Opnd::new_mem(64, X12, 208)));
     }
@@ -1331,6 +1365,11 @@ mod tests {
     #[test]
     fn test_ret_register() {
         check_bytes("80025fd6", |cb| ret(cb, X20));
+    }
+
+    #[test]
+    fn test_stlxr() {
+        check_bytes("8bfd0ac8", |cb| stlxr(cb, W10, X11, X12));
     }
 
     #[test]

@@ -84,6 +84,14 @@ impl A64Opnd {
             _ => false
         }
     }
+
+    /// Unwrap a register from an operand.
+    pub fn unwrap_reg(&self) -> A64Reg {
+        match self {
+            A64Opnd::Reg(reg) => *reg,
+            _ => panic!("Expected register operand")
+        }
+    }
 }
 
 // argument registers
@@ -102,6 +110,8 @@ pub const X12_REG: A64Reg = A64Reg { num_bits: 64, reg_no: 12 };
 pub const X13_REG: A64Reg = A64Reg { num_bits: 64, reg_no: 13 };
 pub const X14_REG: A64Reg = A64Reg { num_bits: 64, reg_no: 14 };
 pub const X15_REG: A64Reg = A64Reg { num_bits: 64, reg_no: 15 };
+pub const X16_REG: A64Reg = A64Reg { num_bits: 64, reg_no: 16 };
+pub const X17_REG: A64Reg = A64Reg { num_bits: 64, reg_no: 17 };
 
 // callee-save registers
 pub const X19_REG: A64Reg = A64Reg { num_bits: 64, reg_no: 19 };

@@ -70,7 +70,8 @@ impl Assembler
 {
     // A special scratch register for intermediate processing.
     // This register is caller-saved (so we don't have to save it before using it)
-    const SCRATCH0: A64Opnd = A64Opnd::Reg(X15_REG);
+    const SCRATCH0: A64Opnd = A64Opnd::Reg(X16_REG);
+    const SCRATCH1: A64Opnd = A64Opnd::Reg(X17_REG);    
 
     /// Get the list of registers from which we will allocate on this platform
     /// These are caller-saved registers
@@ -373,17 +374,12 @@ impl Assembler
                     asm.csel_ge(opnd0, opnd1);
                 },
                 Insn::IncrCounter { mem, value } => {
-                    // We'll use LDADD later which only works with registers
-                    // ... Load pointer into register
-                    let counter_addr = split_lea_operand(asm, mem);
-
-                    // Load immediates into a register
-                    let addend = match value {
-                        opnd @ Opnd::Imm(_) | opnd @ Opnd::UImm(_) => asm.load(opnd),
-                        opnd => opnd,
+                    let counter_addr = match mem {
+                        Opnd::Mem(_) => split_lea_operand(asm, mem),
+                        _ => mem
                     };
 
-                    asm.incr_counter(counter_addr, addend);
+                    asm.incr_counter(counter_addr, value);
                 },
                 Insn::JmpOpnd(opnd) => {
                     if let Opnd::Mem(_) = opnd {
@@ -936,7 +932,21 @@ impl Assembler
                     emit_conditional_jump::<{Condition::VS}>(cb, *target);
                 },
                 Insn::IncrCounter { mem, value } => {
-                    ldaddal(cb, value.into(), value.into(), mem.into());
+                    let label = cb.new_label("exclusive loop".to_string());
+                    cb.write_label(label);
+
+                    ldaxr(cb, Self::SCRATCH0, mem.into());
+                    add(cb, Self::SCRATCH0, Self::SCRATCH0, value.into());
+
+                    // The status register that gets used to track whether or
+                    // not the store was successful must be 32 bytes. Since we
+                    // store the SCRATCH registers as their 64-bit versions, we
+                    // need to rewrap it here.
+                    let status = A64Opnd::Reg(Self::SCRATCH1.unwrap_reg().with_num_bits(32));
+                    stlxr(cb, status, Self::SCRATCH0, mem.into());
+
+                    cmp(cb, Self::SCRATCH1, A64Opnd::new_uimm(0));
+                    emit_conditional_jump::<{Condition::NE}>(cb, Target::Label(label));
                 },
                 Insn::Breakpoint => {
                     brk(cb, A64Opnd::None);
