@@ -137,7 +137,7 @@ module SyntaxSuggest
     #       puts "woof" # 3
     #   end             # 4
     #
-    # However due to https://github.com/zombocom/syntax_suggest/issues/32
+    # However due to https://github.com/ruby/syntax_suggest/issues/32
     # the problem line will be identified as:
     #
     #  ❯ class Dog       # 1

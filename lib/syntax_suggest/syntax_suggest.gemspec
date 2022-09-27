@@ -14,12 +14,12 @@ Gem::Specification.new do |spec|
 
   spec.summary = "Find syntax errors in your source in a snap"
   spec.description = 'When you get an "unexpected end" in your syntax this gem helps you find it'
-  spec.homepage = "https://github.com/zombocom/syntax_suggest.git"
+  spec.homepage = "https://github.com/ruby/syntax_suggest.git"
   spec.license = "MIT"
   spec.required_ruby_version = Gem::Requirement.new(">= 2.5.0")
 
   spec.metadata["homepage_uri"] = spec.homepage
-  spec.metadata["source_code_uri"] = "https://github.com/zombocom/syntax_suggest.git"
+  spec.metadata["source_code_uri"] = "https://github.com/ruby/syntax_suggest.git"
 
   # Specify which files should be added to the gem when it is released.
   # The `git ls-files -z` loads the files in the RubyGem that have been added into git.

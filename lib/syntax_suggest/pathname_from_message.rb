@@ -4,7 +4,7 @@ module SyntaxSuggest
   # Converts a SyntaxError message to a path
   #
   # Handles the case where the filename has a colon in it
-  # such as on a windows file system: https://github.com/zombocom/syntax_suggest/issues/111
+  # such as on a windows file system: https://github.com/ruby/syntax_suggest/issues/111
   #
   # Example:
   #
