@@ -53,22 +53,29 @@ You can create streams:
 
 - \File:
 
-  - File.new: returns a new \File object.
-  - File.open: passes a new \File object to given the block.
+  - File.new: returns a new \File object;
+    the file should be closed when no longer needed.
+  - File.open: passes a new \File object to given the block;
+    the file is automatically closed on block exit.
 
 - \IO:
 
-  - IO.new: returns a new \IO object for the given integer file descriptor.
-  - IO.open: passes a new \IO object to the given block.
+  - IO.new: returns a new \IO object for the given integer file descriptor;
+    the \IO object should be closed when no longer needed.
+  - IO.open: passes a new \IO object to the given block;
+    the \IO object is automatically closed on block exit.
   - IO.popen: returns a new \IO object that is connected to the $stdin
     and $stdout of a newly-launched subprocess.
   - Kernel#open: returns a new \IO object connected to a given source:
-    stream, file, or subprocess.
+    stream, file, or subprocess;
+    the \IO object should be closed when no longer needed.
 
 - \StringIO:
 
-  - StringIO.new: returns a new \StringIO object.
-  - StringIO.open: passes a new \StringIO object to the given block.
+  - StringIO.new: returns a new \StringIO object;
+    the \StringIO object should be closed when no longer needed.
+  - StringIO.open: passes a new \StringIO object to the given block;
+    the \StringIO object is automatically closed on block exit.
 
 (You cannot create an \ARGF object, but one already exists.)
 
@@ -375,11 +382,11 @@ Reading lines from a stream usually changes its line number:
 
 Iterating over lines in a stream usually changes its line number:
 
-  f = File.new('t.txt')
-  f.each_line do |line|
-    p "position=#{f.pos} eof?=#{f.eof?} lineno=#{f.lineno}"
+  File.open('t.txt') do |f|
+    f.each_line do |line|
+      p "position=#{f.pos} eof?=#{f.eof?} lineno=#{f.lineno}"
+    end
   end
-  f.close
 
 Output:
 
@@ -417,27 +424,30 @@ You can process an \IO stream character-by-character using these methods:
 - IO#ungetc (not in \ARGF):
   Pushes back ("unshifts") a character or integer onto the stream:
 
-    f = File.new('t.tmp', 'w')
-    f.putc("т")
-    f.putc("т")
-    f.close
-    File.read('t.tmp')         # => "тт"
+    path = 't.tmp'
+    File.write(path, 'foo')
+    File.open(path) do |f|
+      f.ungetc('т')
+      f.read # => "тfoo"
+    end
 
 - IO#putc (also in Kernel): Writes a character to the stream:
 
-    c = File.new('t.rus').getc # => "т"
-    f = File.new('t.tmp', 'w')
-    f.putc(c)
-    f.putc(c)
-    f.close
-    File.read('t.tmp')         # => "тт"
+    File.open('t.tmp', 'w') do |f|
+      f.putc('т')
+      f.putc('е')
+      f.putc('с')
+      f.putc('т')
+    end
+    File.read('t.tmp') # => "тест"
 
 - IO#each_char: Reads each remaining character in the stream,
   passing the character to the given block:
 
-    f = File.new('t.rus')
-    f.pos = 4
-    f.each_char {|c| p c }
+    File.open('t.rus') do |f|
+      f.pos = 4
+      f.each_char {|c| p c }
+    end
 
   Output:
 
@@ -492,8 +502,8 @@ You can process an \IO stream byte-by-byte using these methods:
 You can process an \IO stream codepoint-by-codepoint using method
 +#each_codepoint+:
 
-  f = File.new('t.rus')
   a = []
-  f.each_codepoint {|c| a << c }
+  File.open('t.rus') do |f|
+    f.each_codepoint {|c| a << c }
+  end
   a # => [1090, 1077, 1089, 1090]
-  f.close
