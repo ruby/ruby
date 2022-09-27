@@ -220,6 +220,8 @@ impl CodeBlock {
 
     /// Allocate a new label with a given name
     pub fn new_label(&mut self, name: String) -> usize {
+        assert!(!name.contains(" "), "use underscores in label names, not spaces");
+
         // This label doesn't have an address yet
         self.label_addrs.push(0);
         self.label_names.push(name);
