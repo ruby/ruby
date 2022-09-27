@@ -2802,17 +2802,19 @@ str_subseq(VALUE str, long beg, long len)
 {
     VALUE str2;
 
-    if (!STR_EMBEDDABLE_P(len, TERM_LEN(str)) &&
-            SHARABLE_SUBSTRING_P(beg, len, RSTRING_LEN(str))) {
-        str2 = rb_str_new_shared(str);
+    const long rstring_embed_capa_max = ((sizeof(struct RString) - offsetof(struct RString, as.embed.ary)) / sizeof(char)) - 1;
+
+    if (!SHARABLE_SUBSTRING_P(beg, len, RSTRING_LEN(str)) ||
+            len <= rstring_embed_capa_max) {
+        str2 = rb_str_new(RSTRING_PTR(str) + beg, len);
+        RB_GC_GUARD(str);
+    }
+    else {
+        str2 = str_new_shared(rb_cString, str);
         RSTRING(str2)->as.heap.ptr += beg;
         if (RSTRING(str2)->as.heap.len > len) {
             RSTRING(str2)->as.heap.len = len;
         }
-    }
-    else {
-        str2 = rb_str_new(RSTRING_PTR(str) + beg, len);
-        RB_GC_GUARD(str);
     }
 
     return str2;
