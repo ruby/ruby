@@ -205,10 +205,14 @@ rb_ec_cleanup(rb_execution_context_t *ec, int ex0)
         SAVE_ROOT_JMPBUF(th, rb_ec_teardown(ec));
 
       step_1: step++;
+        errs[0] = ec->errinfo;
+        ec->errinfo = errs[1];
+        sysex = error_handle(ec, ex);
+
+      step_2: step++;
         /* protect from Thread#raise */
         th->status = THREAD_KILLED;
 
-        errs[0] = ec->errinfo;
         SAVE_ROOT_JMPBUF(th, rb_ractor_terminate_all());
     }
     else {
@@ -216,11 +220,10 @@ rb_ec_cleanup(rb_execution_context_t *ec, int ex0)
         switch (step) {
           case 0: goto step_0;
           case 1: goto step_1;
+          case 2: goto step_2;
         }
         if (ex == 0) ex = state;
     }
-    ec->errinfo = errs[1];
-    sysex = error_handle(ec, ex);
 
     state = 0;
     for (nerr = 0; nerr < numberof(errs); ++nerr) {
