@@ -932,7 +932,7 @@ impl Assembler
                     emit_conditional_jump::<{Condition::VS}>(cb, *target);
                 },
                 Insn::IncrCounter { mem, value } => {
-                    let label = cb.new_label("exclusive loop".to_string());
+                    let label = cb.new_label("incr_counter_loop".to_string());
                     cb.write_label(label);
 
                     ldaxr(cb, Self::SCRATCH0, mem.into());
