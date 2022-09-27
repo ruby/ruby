@@ -1,5 +1,29 @@
 == \IO Streams
 
+This page describes:
+
+- {Stream classes}[rdoc-ref:io_streams.rdoc@Stream+Classes].
+- {Pre-existing streams}[rdoc-ref:io_streams.rdoc@Pre-Existing+Streams].
+- {User-created streams}[rdoc-ref:io_streams.rdoc@User-Created+Streams].
+- {Basic \IO}[rdoc-ref:io_streams.rdoc@Basic+IO], including:
+
+  - {Position}[rdoc-ref:io_streams.rdoc@Position].
+  - {Open and closed streams}[rdoc-ref:io_streams.rdoc@Open+and+Closed+Streams].
+  - {End-of-stream}[rdoc-ref:io_streams.rdoc@End-of-Stream].
+
+- {Line \IO}[rdoc-ref:io_streams.rdoc@Line+IO], including:
+
+  - {Line separator}[rdoc-ref:io_streams.rdoc@Line+Separator].
+  - {Line limit}[rdoc-ref:io_streams.rdoc@Line+Limit].
+  - {Line number}[rdoc-ref:io_streams.rdoc@Line+Number].
+  - {Line options}[rdoc-ref:io_streams.rdoc@Line+Options].
+
+- {Character \IO}[rdoc-ref:io_streams.rdoc@Character+IO].
+- {Byte \IO}[rdoc-ref:io_streams.rdoc@Byte+IO].
+- {Codepoint \IO}[rdoc-ref:io_streams.rdoc@Codepoint+IO].
+
+=== Stream Classes
+
 Ruby supports processing data as \IO streams;
 that is, as data that may be read, re-read, written, re-written,
 and traversed via iteration.
@@ -10,14 +34,22 @@ Core classes with such support include:
 - {StringIO}[rdoc-ref:StringIO]: for processing a string.
 - {ARGF}[rdoc-ref:ARGF]: for processing files cited on the command line.
 
-Pre-existing stream objects that are referenced by constants include:
+Except as noted, the instance methods described on this page
+are available in classes \ARGF, \File, \IO, and \StringIO.
+A few, also noted, are available in class \Kernel.
+
+=== Pre-Existing Streams
+
+Pre-existing streams that are referenced by constants include:
 
 - $stdin: read-only instance of \IO.
 - $stdout: write-only instance of \IO.
 - $stderr: read-only instance of \IO.
 - \ARGF: read-only instance of \ARGF.
 
-You can create stream objects:
+=== User-Created Streams
+
+You can create streams:
 
 - \File:
 
@@ -44,33 +76,34 @@ You can create stream objects:
 
 Many examples here use these variables:
 
-  # English text with newlines.
-  text = <<~EOT
-    First line
-    Second line
+  :include: doc/examples/files.rdoc
 
-    Fourth line
-    Fifth line
-  EOT
+=== Basic \IO
 
-  # Russian text.
-  russian = "\u{442 435 441 442}" # => "тест"
+You can perform basic stream \IO with these methods:
 
-  # Binary data.
-  data = "\u9990\u9991\u9992\u9993\u9994"
+- IO#read: Returns all remaining or the next _n_ bytes read from the stream,
+  for a given _n_:
 
-  # Text file.
-  File.write('t.txt', text)
+    f = File.new('t.txt')
+    f.read     # => "First line\nSecond line\n\nFourth line\nFifth line\n"
+    f.rewind
+    f.read(30) # => "First line\r\nSecond line\r\n\r\nFou"
+    f.read(30) # => "rth line\r\nFifth line\r\n"
+    f.read(30) # => nil
+    f.close
 
-  # File with Russian text.
-  File.write('t.rus', russian)
+- IO#write: Writes one or more given strings to the stream:
 
-  # File with binary data.
-  f = File.new('t.dat', 'wb:UTF-16')
-  f.write(data)
-  f.close
+    $stdout.write('Hello', ', ', 'World!', "\n") # => 14
+    $stdout.write('foo', :bar, 2, "\n")
 
-=== Position
+  Output:
+
+    Hello, World!
+    foobar2
+
+==== Position
 
 An \IO stream has a nonnegative integer _position_,
 which is the byte offset at which the next read or write is to occur;
@@ -141,16 +174,44 @@ the relevant methods:
     f.tell     # => 0
     f.close
 
-=== Lines
+==== Open and Closed Streams
 
-Some reader methods in \IO streams are line-oriented;
-such a method reads one or more lines,
-which are separated by an implicit or explicit line separator.
+A new \IO stream may be open for reading, open for writing, or both.
 
-These methods are included (except as noted) in classes Kernel, IO, File,
-and {ARGF}[rdoc-ref:ARGF]:
+You can close a stream using these methods:
 
-- IO#each_line: Passes each line to the block; not in Kernel:
+- IO#close: Closes the stream for both reading and writing.
+- IO#close_read (not in \ARGF): Closes the stream for reading.
+- IO#close_write (not in \ARGF): Closes the stream for writing.
+
+You can query whether a stream is closed using this method:
+
+- IO#closed?: Returns whether the stream is closed.
+
+==== End-of-Stream
+
+You can query whether a stream is positioned at its end using
+method IO#eof? (also aliased as +#eof+).
+
+You can reposition to end-of-stream by reading all stream content:
+
+  f = File.new('t.txt')
+  f.eof? # => false
+  f.read # => "First line\nSecond line\n\nFourth line\nFifth line\n"
+  f.eof? # => true
+
+Or by using method IO#seek:
+
+  f = File.new('t.txt')
+  f.eof? # => false
+  f.seek(0, :END)
+  f.eof? # => true
+
+=== Line \IO
+
+You can read an \IO stream line-by-line using these methods:
+
+- IO#each_line: Passes each line to the block:
 
     f = File.new('t.txt')
     f.each_line {|line| p line }
@@ -174,7 +235,7 @@ and {ARGF}[rdoc-ref:ARGF]:
     "rth line\n"
     "Fifth line\n"
 
-- IO#gets: Returns the next line (which may begin mid-line):
+- IO#gets (also in Kernel): Returns the next line (which may begin mid-line):
 
     f = File.new('t.txt')
     f.gets      # => "First line\n"
@@ -184,10 +245,10 @@ and {ARGF}[rdoc-ref:ARGF]:
     f.readlines # => ["Fifth line\n"]
     f.gets      # => nil
 
-- IO#readline: Like #gets, but raises an exception at end-of-file;
-  not in StringIO.
+- IO#readline (also in Kernel; not in StringIO):
+  Like #gets, but raises an exception at end-of-stream.
 
-- IO#readlines: Returns all remaining lines in an array;
+- IO#readlines (also in Kernel): Returns all remaining lines in an array;
   may begin mid-line:
 
     f = File.new('t.txt')
@@ -195,11 +256,20 @@ and {ARGF}[rdoc-ref:ARGF]:
     f.readlines # => ["ine\n", "\n", "Fourth line\n", "Fifth line\n"]
     f.readlines # => []
 
-Each of these methods may be called with:
+Each of these reader methods may be called with:
 
 - An optional line separator, +sep+.
 - An optional line-size limit, +limit+.
 - Both +sep+ and +limit+.
+
+You can write to an \IO stream line-by-line using this method:
+
+- IO#puts (also in Kernel; not in \StringIO): Writes objects to the stream:
+
+    f = File.new('t.tmp', 'w')
+    f.puts('foo', :bar, 1, 2.0, Complex(3, 0))
+    f.flush
+    File.read('t.tmp') # => "foo\nbar\n1\n2.0\n3+0i\n"
 
 ==== Line Separator
 
@@ -326,23 +396,104 @@ that determine how lines in a stream are to be treated:
 
 - +:chomp+: If +true+, line separators are omitted; default is +false+.
 
-=== Open and Closed \IO Streams
+=== Character \IO
 
-A new \IO stream may be open for reading, open for writing, or both.
+You can process an \IO stream character-by-character using these methods:
 
-You can close a stream using these methods:
+- IO#getc: Reads and returns the next character from the stream:
 
-- IO#close: Closes the stream for both reading and writing.
-- IO#close_read (not available in \ARGF): Closes the stream for reading.
-- IO#close_write (not available in \ARGF): Closes the stream for writing.
+    f = File.new('t.rus')
+    f.getc # => "т"
+    f.getc # => "е"
+    f.getc # => "с"
+    f.getc # => "т"
+    f.getc # => nil
 
-You can query whether a stream is closed using these methods:
+- IO#readchar (not in \StringIO):
+  Like #getc, but raises an exception at end-of-stream:
 
-- IO#closed?: Returns whether the stream is closed.
+    f.readchar # Raises EOFError.
 
-=== Stream End-of-File
+- IO#ungetc (not in \ARGF):
+  Pushes back ("unshifts") a character or integer onto the stream:
 
-You can query whether a stream is at end-of-file using this method:
+    f = File.new('t.tmp', 'w')
+    f.putc("т")
+    f.putc("т")
+    f.close
+    File.read('t.tmp')         # => "тт"
 
-- IO#eof? (also aliased as +#eof+):
-  Returns whether the stream is at end-of-file.
+- IO#putc (also in Kernel): Writes a character to the stream:
+
+    c = File.new('t.rus').getc # => "т"
+    f = File.new('t.tmp', 'w')
+    f.putc(c)
+    f.putc(c)
+    f.close
+    File.read('t.tmp')         # => "тт"
+
+- IO#each_char: Reads each remaining character in the stream,
+  passing the character to the given block:
+
+    f = File.new('t.rus')
+    f.pos = 4
+    f.each_char {|c| p c }
+
+  Output:
+
+    "с"
+    "т"
+
+=== Byte \IO
+
+You can process an \IO stream byte-by-byte using these methods:
+
+- IO#getbyte: Returns the next 8-bit byte as an integer in range 0..255:
+
+    File.read('t.dat')
+    # => "\xFE\xFF\x99\x90\x99\x91\x99\x92\x99\x93\x99\x94"
+    File.read('t.dat')
+    # => "\xFE\xFF\x99\x90\x99\x91\x99\x92\x99\x93\x99\x94"
+    f = File.new('t.dat')
+    f.getbyte # => 254
+    f.getbyte # => 255
+    f.seek(-2, :END)
+    f.getbyte # => 153
+    f.getbyte # => 148
+    f.getbyte # => nil
+
+- IO#readbyte (not in \StringIO):
+  Like #getbyte, but raises an exception if at end-of-stream:
+
+    f.readbyte # Raises EOFError.
+
+- IO#ungetbyte (not in \ARGF):
+  Pushes back ("unshifts") a byte back onto the stream:
+
+    f.ungetbyte(0)
+    f.ungetbyte(01)
+    f.read # => "\u0001\u0000"
+
+- IO#each_byte: Reads each remaining byte in the stream,
+  passing the byte to the given block:
+
+    f.seek(-4, :END)
+    f.each_byte {|b| p b }
+
+  Output:
+
+    153
+    147
+    153
+    148
+
+=== Codepoint \IO
+
+You can process an \IO stream codepoint-by-codepoint using method
++#each_codepoint+:
+
+  f = File.new('t.rus')
+  a = []
+  f.each_codepoint {|c| a << c }
+  a # => [1090, 1077, 1089, 1090]
+  f.close
