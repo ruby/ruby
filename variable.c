@@ -1404,9 +1404,6 @@ rb_ensure_iv_list_size(VALUE obj, uint32_t len, uint32_t newsize)
         newptr = obj_ivar_heap_realloc(obj, len, newsize);
     }
 
-    for (; len < newsize; len++) {
-        newptr[len] = Qundef;
-    }
 #if USE_RVARGC
     ROBJECT(obj)->numiv = newsize;
 #else
