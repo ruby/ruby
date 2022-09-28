@@ -3363,24 +3363,25 @@ method_super_method(VALUE method)
     const struct METHOD *data;
     VALUE super_class, iclass;
     ID mid;
-    const rb_method_entry_t *me;
+    const rb_method_entry_t *super_me, *me;
 
     TypedData_Get_Struct(method, struct METHOD, &method_data_type, data);
-    iclass = data->iclass;
-    if (!iclass) return Qnil;
-    if (data->me->def->type == VM_METHOD_TYPE_ALIAS && data->me->defined_class) {
-        super_class = RCLASS_SUPER(rb_find_defined_class_by_owner(data->me->defined_class,
-            data->me->def->body.alias.original_me->owner));
-        mid = data->me->def->body.alias.original_me->def->original_id;
+    me = zsuper_resolve(data->me);
+    VALUE defined_class = me->defined_class ? me->defined_class : me->owner;
+    if (!defined_class) return Qnil;
+    if (me->def->type == VM_METHOD_TYPE_ALIAS && me->defined_class) {
+        super_class = RCLASS_SUPER(rb_find_defined_class_by_owner(me->defined_class,
+            me->def->body.alias.original_me->owner));
+        mid = me->def->body.alias.original_me->def->original_id;
     }
     else {
-        super_class = RCLASS_SUPER(RCLASS_ORIGIN(iclass));
-        mid = data->me->def->original_id;
+        super_class = RCLASS_SUPER(RCLASS_ORIGIN(defined_class));
+        mid = me->def->original_id;
     }
     if (!super_class) return Qnil;
-    me = (rb_method_entry_t *)rb_callable_method_entry_with_refinements(super_class, mid, &iclass);
-    if (!me) return Qnil;
-    return mnew_internal(me, me->owner, iclass, data->recv, mid, rb_obj_class(method), FALSE, FALSE);
+    super_me = (rb_method_entry_t *)rb_callable_method_entry_with_refinements(super_class, mid, &iclass);
+    if (!super_me) return Qnil;
+    return mnew_internal(super_me, super_me->owner, iclass, data->recv, mid, rb_obj_class(method), FALSE, FALSE);
 }
 
 /*
