@@ -172,6 +172,14 @@ class TestCoverage < Test::Unit::TestCase
     end;
   end
 
+  def test_coverage_supported
+    assert Coverage.supported?(:lines)
+    assert Coverage.supported?(:branches)
+    assert Coverage.supported?(:methods)
+    assert Coverage.supported?(:eval)
+    refute Coverage.supported?(:all)
+  end
+
   def test_nocoverage_optimized_line
     assert_ruby_status(%w[], "#{<<-"begin;"}\n#{<<-'end;'}")
     begin;
