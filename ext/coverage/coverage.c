@@ -25,10 +25,10 @@ static VALUE me2counter = Qnil;
 
 /*
  * call-seq:
- *    Coverage.setup                                              => nil
- *    Coverage.setup(:all)                                        => nil
- *    Coverage.setup(lines: bool, branches: bool, methods: bool)  => nil
- *    Coverage.setup(oneshot_lines: true)                         => nil
+ *    Coverage.setup                                                          => nil
+ *    Coverage.setup(:all)                                                    => nil
+ *    Coverage.setup(lines: bool, branches: bool, methods: bool, eval: bool)  => nil
+ *    Coverage.setup(oneshot_lines: true)                                     => nil
  *
  * Set up the coverage measurement.
  *
@@ -53,7 +53,7 @@ rb_coverage_setup(int argc, VALUE *argv, VALUE klass)
         mode = 0; /* compatible mode */
     }
     else if (opt == ID2SYM(rb_intern("all"))) {
-        mode = COVERAGE_TARGET_LINES | COVERAGE_TARGET_BRANCHES | COVERAGE_TARGET_METHODS;
+        mode = COVERAGE_TARGET_LINES | COVERAGE_TARGET_BRANCHES | COVERAGE_TARGET_METHODS | COVERAGE_TARGET_EVAL;
     }
     else {
         mode = 0;
@@ -71,6 +71,8 @@ rb_coverage_setup(int argc, VALUE *argv, VALUE klass)
             mode |= COVERAGE_TARGET_LINES;
             mode |= COVERAGE_TARGET_ONESHOT_LINES;
         }
+        if (RTEST(rb_hash_lookup(opt, ID2SYM(rb_intern("eval")))))
+            mode |= COVERAGE_TARGET_EVAL;
     }
 
     if (mode & COVERAGE_TARGET_METHODS) {
@@ -92,7 +94,6 @@ rb_coverage_setup(int argc, VALUE *argv, VALUE klass)
     else if (current_mode != mode) {
         rb_raise(rb_eRuntimeError, "cannot change the measuring target during coverage measurement");
     }
-
 
     return Qnil;
 }
@@ -124,10 +125,10 @@ rb_coverage_resume(VALUE klass)
 
 /*
  * call-seq:
- *    Coverage.start                                              => nil
- *    Coverage.start(:all)                                        => nil
- *    Coverage.start(lines: bool, branches: bool, methods: bool)  => nil
- *    Coverage.start(oneshot_lines: true)                         => nil
+ *    Coverage.start                                                          => nil
+ *    Coverage.start(:all)                                                    => nil
+ *    Coverage.start(lines: bool, branches: bool, methods: bool, eval: bool)  => nil
+ *    Coverage.start(oneshot_lines: true)                                     => nil
  *
  * Enables the coverage measurement.
  * See the documentation of Coverage class in detail.

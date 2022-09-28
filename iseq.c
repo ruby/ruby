@@ -929,9 +929,11 @@ rb_iseq_new_main(const rb_ast_body_t *ast, VALUE path, VALUE realpath, const rb_
 rb_iseq_t *
 rb_iseq_new_eval(const rb_ast_body_t *ast, VALUE name, VALUE path, VALUE realpath, int first_lineno, const rb_iseq_t *parent, int isolated_depth)
 {
-    VALUE coverages = rb_get_coverages();
-    if (RTEST(coverages) && RTEST(path) && !RTEST(rb_hash_has_key(coverages, path))) {
-        iseq_setup_coverage(coverages, path, ast, first_lineno - 1);
+    if (rb_get_coverage_mode() & COVERAGE_TARGET_EVAL) {
+        VALUE coverages = rb_get_coverages();
+        if (RTEST(coverages) && RTEST(path) && !RTEST(rb_hash_has_key(coverages, path))) {
+            iseq_setup_coverage(coverages, path, ast, first_lineno - 1);
+        }
     }
 
     return rb_iseq_new_with_opt(ast, name, path, realpath, first_lineno,

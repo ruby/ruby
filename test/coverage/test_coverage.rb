@@ -147,11 +147,11 @@ class TestCoverage < Test::Unit::TestCase
         end
 
         assert_in_out_err(%w[-W0 -rcoverage], <<-"end;", ["[1, 1, 1, 400, nil, nil, nil, nil, nil, nil, nil]"], [], bug13305)
-          Coverage.start
+          Coverage.start(:all)
           tmp = Dir.pwd
           require tmp + '/test.rb'
           add_method(Class.new)
-          p Coverage.result[tmp + "/test.rb"]
+          p Coverage.result[tmp + "/test.rb"][:lines]
         end;
       }
     }
@@ -159,7 +159,7 @@ class TestCoverage < Test::Unit::TestCase
 
   def test_eval_coverage
     assert_in_out_err(%w[-rcoverage], <<-"end;", ["[1, nil, 1, nil]"], [])
-      Coverage.start
+      Coverage.start(eval: true, lines: true)
 
       eval(<<-RUBY, TOPLEVEL_BINDING, "test.rb")
       s = String.new
@@ -168,7 +168,7 @@ class TestCoverage < Test::Unit::TestCase
       bar".freeze; end
       RUBY
 
-      p Coverage.result["test.rb"]
+      p Coverage.result["test.rb"][:lines]
     end;
   end
 
