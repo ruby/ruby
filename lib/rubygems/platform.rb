@@ -181,9 +181,18 @@ class Gem::Platform
       # version
       (
         (@os != "linux" && (@version.nil? || other.version.nil?)) ||
-        (@os == "linux" && (other.version == "gnu#{@version}" || other.version == "musl#{@version}" || @version == "gnu#{other.version}")) ||
+        (@os == "linux" && (normalized_linux_version == other.normalized_linux_version || other.version == "musl#{@version}")) ||
         @version == other.version
       )
+  end
+
+  def normalized_linux_version
+    return nil unless @version
+
+    without_gnu = @version.sub(/\Agnu/, "")
+    return nil if without_gnu.empty?
+
+    without_gnu
   end
 
   ##
