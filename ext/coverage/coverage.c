@@ -24,6 +24,32 @@ static int current_mode;
 static VALUE me2counter = Qnil;
 
 /*
+ *  call-seq: Coverage.supported?(mode) -> true or false
+ *
+ *  Returns true if coverage measurement is supported for the given mode.
+ *
+ *  The mode should be one of the following symbols:
+ *  +:lines+, +:branches+, +:methods+, +:eval+.
+ *
+ *  Example:
+ *
+ *    Coverage.supported?(:lines)  #=> true
+ *    Coverage.supported?(:all)    #=> false
+ */
+static VALUE
+rb_coverage_supported(VALUE self, VALUE _mode)
+{
+    ID mode = RB_SYM2ID(_mode);
+
+    return RBOOL(
+        mode == rb_intern("lines") ||
+        mode == rb_intern("branches") ||
+        mode == rb_intern("methods") ||
+        mode == rb_intern("eval")
+    );
+}
+
+/*
  * call-seq:
  *    Coverage.setup                                                          => nil
  *    Coverage.setup(:all)                                                    => nil
@@ -590,6 +616,9 @@ void
 Init_coverage(void)
 {
     VALUE rb_mCoverage = rb_define_module("Coverage");
+
+    rb_define_singleton_method(rb_mCoverage, "supported?", rb_coverage_supported, 1);
+
     rb_define_module_function(rb_mCoverage, "setup", rb_coverage_setup, -1);
     rb_define_module_function(rb_mCoverage, "start", rb_coverage_start, -1);
     rb_define_module_function(rb_mCoverage, "resume", rb_coverage_resume, 0);
