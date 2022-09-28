@@ -298,18 +298,12 @@ rb_shape_set_shape(VALUE obj, rb_shape_t* shape)
 
 VALUE rb_cShape;
 
-static void
-shape_mark(void *ptr)
-{
-    rb_gc_mark((VALUE)ptr);
-}
-
 /*
  * Exposing Shape to Ruby via RubyVM.debug_shape
  */
 static const rb_data_type_t shape_data_type = {
     "Shape",
-    {shape_mark, NULL, NULL,},
+    {NULL, NULL, NULL,},
     0, 0, RUBY_TYPED_FREE_IMMEDIATELY|RUBY_TYPED_WB_PROTECTED
 };
 
