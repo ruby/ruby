@@ -61,7 +61,7 @@ if !Dir.respond_to?(:mktmpdir)
 end
 
 # Configuration
-BT = Struct.new(:ruby,
+bt = Struct.new(:ruby,
                 :verbose,
                 :color,
                 :tty,
@@ -76,7 +76,8 @@ BT = Struct.new(:ruby,
                 :window_width,
                 :width,
                 :platform,
-                ) do
+                )
+BT = Class.new(bt) do
   def putc(c)
     unless self.quiet
       if self.window_width == nil
@@ -97,6 +98,40 @@ BT = Struct.new(:ruby,
       $stderr.print c
       self.columns += 1
     end
+  end
+
+  def wn=(wn)
+    if wn <= 0
+      wn = nil
+      if /(?:\A|\s)--jobserver-(?:auth|fds)=\K(\d+),(\d+)/ =~ ENV.delete("MAKEFLAGS")
+        begin
+          r = IO.for_fd($1.to_i(10), "rb", autoclose: false)
+          w = IO.for_fd($2.to_i(10), "wb", autoclose: false)
+        rescue => e
+          r.close if r
+        else
+          r.close_on_exec = true
+          w.close_on_exec = true
+          tokens = r.read_nonblock(1024, exception: false)
+          r.close
+          if String === tokens
+            tokens.freeze
+            auth = w
+            w = nil
+            at_exit {auth << tokens; auth.close}
+            wn = tokens.size + 1
+          else
+            w.close
+            wn = 1
+          end
+        end
+      end
+      unless wn
+        require 'etc'
+        wn = [Etc.nprocessors / 2, 1].max
+      end
+    end
+    super wn
   end
 end.new
 
@@ -145,12 +180,7 @@ def main
       BT.quiet = true
       true
     when /\A-j(\d+)?/
-      wn = $1.to_i
-      if wn <= 0
-        require 'etc'
-        wn = [Etc.nprocessors / 2, 1].max
-      end
-      BT.wn = wn
+      BT.wn = $1.to_i
       true
     when /\A(-v|--v(erbose))\z/
       BT.verbose = true
@@ -297,7 +327,7 @@ def exec_test(pathes)
 
   # execute tests
   if BT.wn > 1
-    concurrent_exec_test if BT.wn > 1
+    concurrent_exec_test
   else
     prev_basename = nil
     Assertion.all.each do |basename, assertions|
