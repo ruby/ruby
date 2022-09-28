@@ -333,6 +333,26 @@ class TestGemPlatform < Gem::TestCase
     refute(arm_linux_uclibceabi === arm_linux_eabi, "linux-uclibceabi =~ linux-eabi")
   end
 
+  def test_eabi_and_nil_version_combination_strictness
+    arm_linux = Gem::Platform.new "arm-linux"
+    arm_linux_eabi = Gem::Platform.new "arm-linux-eabi"
+    arm_linux_gnueabi = Gem::Platform.new "arm-linux-gnueabi"
+    arm_linux_musleabi = Gem::Platform.new "arm-linux-musleabi"
+    arm_linux_uclibceabi = Gem::Platform.new "arm-linux-uclibceabi"
+
+    # generic arm host runtime with eabi modifier accepts generic arm gems
+    assert(arm_linux === arm_linux_eabi, "arm-linux =~ arm-linux-eabi")
+
+    # explicit gnu arm host runtime with eabi modifier accepts generic arm gems
+    assert(arm_linux === arm_linux_gnueabi, "arm-linux =~ arm-linux-gnueabi")
+
+    # musl arm host runtime accepts libc-generic or statically linked gems...
+    assert(arm_linux === arm_linux_musleabi, "arm-linux =~ arm-linux-musleabi")
+
+    # other libc arm hosts are not glibc compatible
+    refute(arm_linux === arm_linux_uclibceabi, "arm-linux =~ arm-linux-uclibceabi")
+  end
+
   def test_equals3_cpu_arm
     arm   = Gem::Platform.new "arm-linux"
     armv5 = Gem::Platform.new "armv5-linux"
