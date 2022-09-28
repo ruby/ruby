@@ -686,7 +686,13 @@ install?(:dbg, :nodefault) do
       RbConfig.expand(File.read(src), conf)
     }
   end
-  install File.join(srcdir, "misc/lldb_cruby.py"), File.join(rubylibdir, "lldb_cruby.py")
+  Dir.glob(File.join(srcdir, "misc/lldb_*")) do |src|
+    if File.directory?(src)
+      install_recursive src, File.join(rubylibdir, File.basename(src))
+    else
+      install src, rubylibdir
+    end
+  end
   install File.join(srcdir, ".gdbinit"), File.join(rubylibdir, "gdbinit")
   if $debug_symbols
     {
