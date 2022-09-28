@@ -213,6 +213,8 @@ describe "IO#gets" do
 
   it "returns empty string when 0 passed as a limit" do
     @io.gets(0).should == ""
+    @io.gets(nil, 0).should == ""
+    @io.gets("", 0).should == ""
   end
 end
 

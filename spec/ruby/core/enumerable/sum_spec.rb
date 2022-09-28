@@ -22,8 +22,21 @@ describe 'Enumerable#sum' do
     @enum.sum.should == 5/3r
   end
 
-  it 'takes a block to transform the elements' do
-    @enum.sum { |element| element * 2 }.should == 10/3r
+  context 'with a block' do
+    it 'transforms the elements' do
+      @enum.sum { |element| element * 2 }.should == 10/3r
+    end
+
+    it 'does not destructure array elements' do
+      class << @enum
+        def each
+          yield [1,2]
+          yield [3]
+        end
+      end
+
+      @enum.sum(&:last).should == 5
+    end
   end
 
   # https://bugs.ruby-lang.org/issues/12217

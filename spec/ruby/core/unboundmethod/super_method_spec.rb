@@ -1,5 +1,6 @@
 require_relative '../../spec_helper'
 require_relative 'fixtures/classes'
+require_relative '../method/fixtures/classes'
 
 describe "UnboundMethod#super_method" do
   it "returns the method that would be called by super in the method" do
@@ -24,5 +25,29 @@ describe "UnboundMethod#super_method" do
     parent.send(:undef_method, :foo)
 
     method.super_method.should == nil
+  end
+
+  # https://github.com/jruby/jruby/issues/7240
+  context "after changing an inherited methods visibility" do
+    ruby_version_is ""..."3.2" do
+      it "returns the expected super_method" do
+        method = MethodSpecs::InheritedMethods::C.instance_method(:derp)
+        method.super_method.owner.should == MethodSpecs::InheritedMethods::A
+      end
+    end
+
+    ruby_version_is "3.2" do
+      it "returns the expected super_method" do
+        method = MethodSpecs::InheritedMethods::C.instance_method(:derp)
+        method.super_method.owner.should == MethodSpecs::InheritedMethods::B
+      end
+    end
+  end
+
+  context "after aliasing an inherited method" do
+    it "returns the expected super_method" do
+      method = MethodSpecs::InheritedMethods::C.instance_method(:meow)
+      method.super_method.owner.should == MethodSpecs::InheritedMethods::A
+    end
   end
 end

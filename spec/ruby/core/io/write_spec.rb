@@ -44,6 +44,16 @@ describe "IO#write on a file" do
     @file.write("hellø").should == 6
   end
 
+  it "does not modify the passed argument" do
+    File.open(@filename, "w") do |f|
+      f.set_encoding(Encoding::IBM437)
+      # A character whose codepoint differs between UTF-8 and IBM437
+      f.write("ƒ".freeze)
+    end
+
+    File.binread(@filename).bytes.should == [159]
+  end
+
   it "uses the encoding from the given option for non-ascii encoding" do
     File.open(@filename, "w", encoding: Encoding::UTF_32LE) do |file|
       file.write("hi").should == 8

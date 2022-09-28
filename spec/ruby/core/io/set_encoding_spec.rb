@@ -188,4 +188,21 @@ describe "IO#set_encoding" do
     @io.external_encoding.should == Encoding::UTF_8
     @io.internal_encoding.should == Encoding::UTF_16BE
   end
+
+  it "saves encoding options passed as a hash in the last argument" do
+    File.write(@name, "\xff")
+    io = File.open(@name)
+    io.set_encoding(Encoding::EUC_JP, Encoding::SHIFT_JIS, invalid: :replace, replace: ".")
+    io.read.should == "."
+  ensure
+    io.close
+  end
+
+  it "raises ArgumentError when no arguments are given" do
+    -> { @io.set_encoding() }.should raise_error(ArgumentError)
+  end
+
+  it "raises ArgumentError when too many arguments are given" do
+    -> { @io.set_encoding(1, 2, 3) }.should raise_error(ArgumentError)
+  end
 end

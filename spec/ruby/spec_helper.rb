@@ -27,7 +27,8 @@ unless ENV['MSPEC_RUNNER'] # Running directly with ruby some_spec.rb
   end
 end
 
-ruby_version_is ""..."2.7" do
+# Compare with SpecVersion directly here so it works even with --unguarded
+if VersionGuard::FULL_RUBY_VERSION < SpecVersion.new('2.7')
   abort "This version of ruby/spec requires Ruby 2.7+"
 end
 

@@ -1,4 +1,5 @@
 require_relative 'spec_helper'
+require_relative 'fixtures/object'
 
 load_extension("object")
 
@@ -982,6 +983,25 @@ describe "CApiObject" do
 
         @o.speced_allocator?(parent).should == true
       end
+    end
+
+    describe "rb_ivar_foreach" do
+      it "calls the callback function for each instance variable on an object" do
+        o = CApiObjectSpecs::IVars.new
+        ary = @o.rb_ivar_foreach(o)
+        ary.should == [:@a, 3, :@b, 7, :@c, 4]
+      end
+
+      it "calls the callback function for each cvar and ivar on a class" do
+        ary = @o.rb_ivar_foreach(CApiObjectSpecs::CVars)
+        ary.should == [:__classpath__, 'CApiObjectSpecs::CVars', :@@cvar, :foo, :@@cvar2, :bar, :@ivar, :baz]
+      end
+
+      it "calls the callback function for each cvar and ivar on a module" do
+        ary = @o.rb_ivar_foreach(CApiObjectSpecs::MVars)
+        ary.should == [:__classpath__, 'CApiObjectSpecs::MVars', :@@mvar, :foo, :@@mvar2, :bar, :@ivar, :baz]
+      end
+
     end
   end
 end
