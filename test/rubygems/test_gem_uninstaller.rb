@@ -372,7 +372,7 @@ create_makefile '#{@spec.name}'
     @user_spec = Gem::Specification.find_by_name "b"
 
     uninstaller = Gem::Uninstaller.new(@user_spec.name,
-                                       :executables  => true,
+                                       :executables => true,
                                        :user_install => true)
 
     gem_dir = File.join @user_spec.gem_dir

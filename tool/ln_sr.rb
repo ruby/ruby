@@ -3,6 +3,7 @@
 target_directory = true
 noop = false
 force = false
+quiet = false
 
 until ARGV.empty?
   case ARGV[0]
@@ -12,6 +13,8 @@ until ARGV.empty?
     force = true
   when '-T'
     target_directory = false
+  when '-q'
+    quiet = true
   else
     break
   end
@@ -114,9 +117,12 @@ unless respond_to?(:ln_sr)
 end
 
 if File.respond_to?(:symlink)
+  if quiet and File.identical?(src, dest)
+    exit
+  end
   begin
     ln_sr(src, dest, verbose: true, target_directory: target_directory, force: force, noop: noop)
-  rescue NotImplementedError, Errno::EPERM
+  rescue NotImplementedError, Errno::EPERM, Errno::EACCES
   else
     exit
   end

@@ -517,7 +517,7 @@ module Bundler
       end
     end
 
-    desc "version", "Prints the bundler's version information"
+    desc "version", "Prints Bundler version information"
     def version
       cli_help = current_command.name == "cli_help"
       if cli_help || ARGV.include?("version")

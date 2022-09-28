@@ -245,18 +245,8 @@ static VALUE protected_event_location(VALUE pointer)
     return rb_funcall3(args[0], id_event_location, 4, args + 1);
 }
 
-/*
- * call-seq:
- *    parser.parse(yaml)
- *
- * Parse the YAML document contained in +yaml+.  Events will be called on
- * the handler set on the parser instance.
- *
- * See Psych::Parser and Psych::Parser#handler
- */
-static VALUE parse(int argc, VALUE *argv, VALUE self)
+static VALUE parse(VALUE self, VALUE handler, VALUE yaml, VALUE path)
 {
-    VALUE yaml, path;
     yaml_parser_t * parser;
     yaml_event_t event;
     int done = 0;
@@ -264,14 +254,6 @@ static VALUE parse(int argc, VALUE *argv, VALUE self)
     int parser_encoding = YAML_ANY_ENCODING;
     int encoding = rb_utf8_encindex();
     rb_encoding * internal_enc = rb_default_internal_encoding();
-    VALUE handler = rb_iv_get(self, "@handler");
-
-    if (rb_scan_args(argc, argv, "11", &yaml, &path) == 1) {
-	if(rb_respond_to(yaml, id_path))
-	    path = rb_funcall(yaml, id_path, 0);
-	else
-	    path = rb_str_new2("<unknown>");
-    }
 
     TypedData_Get_Struct(self, yaml_parser_t, &psych_parser_type, parser);
 
@@ -562,7 +544,7 @@ void Init_psych_parser(void)
 
     rb_require("psych/syntax_error");
 
-    rb_define_method(cPsychParser, "parse", parse, -1);
+    rb_define_private_method(cPsychParser, "_native_parse", parse, 3);
     rb_define_method(cPsychParser, "mark", mark, 0);
 
     id_read            = rb_intern("read");

@@ -103,22 +103,22 @@ class Gem::Package::TarHeader
 
     fields = header.unpack UNPACK_FORMAT
 
-    new :name     => fields.shift,
-        :mode     => strict_oct(fields.shift),
-        :uid      => oct_or_256based(fields.shift),
-        :gid      => oct_or_256based(fields.shift),
-        :size     => strict_oct(fields.shift),
-        :mtime    => strict_oct(fields.shift),
+    new :name => fields.shift,
+        :mode => strict_oct(fields.shift),
+        :uid => oct_or_256based(fields.shift),
+        :gid => oct_or_256based(fields.shift),
+        :size => strict_oct(fields.shift),
+        :mtime => strict_oct(fields.shift),
         :checksum => strict_oct(fields.shift),
         :typeflag => fields.shift,
         :linkname => fields.shift,
-        :magic    => fields.shift,
-        :version  => strict_oct(fields.shift),
-        :uname    => fields.shift,
-        :gname    => fields.shift,
+        :magic => fields.shift,
+        :version => strict_oct(fields.shift),
+        :uname => fields.shift,
+        :gname => fields.shift,
         :devmajor => strict_oct(fields.shift),
         :devminor => strict_oct(fields.shift),
-        :prefix   => fields.shift,
+        :prefix => fields.shift,
 
         :empty => empty
   end

@@ -799,7 +799,7 @@ cref_replace_with_duplicated_cref_each_frame(const VALUE *vptr, int can_be_svar,
             break;
         }
     }
-    return FALSE;
+    return NULL;
 }
 
 static rb_cref_t *
@@ -1980,8 +1980,33 @@ vm_search_method(VALUE cd_owner, struct rb_call_data *cd, VALUE recv)
     return vm_search_method_fastpath(cd_owner, cd, klass);
 }
 
+#if __has_attribute(transparent_union)
+typedef union {
+    VALUE (*anyargs)(ANYARGS);
+    VALUE (*f00)(VALUE);
+    VALUE (*f01)(VALUE, VALUE);
+    VALUE (*f02)(VALUE, VALUE, VALUE);
+    VALUE (*f03)(VALUE, VALUE, VALUE, VALUE);
+    VALUE (*f04)(VALUE, VALUE, VALUE, VALUE, VALUE);
+    VALUE (*f05)(VALUE, VALUE, VALUE, VALUE, VALUE, VALUE);
+    VALUE (*f06)(VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE);
+    VALUE (*f07)(VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE);
+    VALUE (*f08)(VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE);
+    VALUE (*f09)(VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE);
+    VALUE (*f10)(VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE);
+    VALUE (*f11)(VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE);
+    VALUE (*f12)(VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE);
+    VALUE (*f13)(VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE);
+    VALUE (*f14)(VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE);
+    VALUE (*f15)(VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE);
+    VALUE (*fm1)(int, union { VALUE *x; const VALUE *y; } __attribute__((__transparent_union__)), VALUE);
+} __attribute__((__transparent_union__)) cfunc_type;
+#else
+typedef VALUE (*cfunc_type)(ANYARGS);
+#endif
+
 static inline int
-check_cfunc(const rb_callable_method_entry_t *me, VALUE (*func)(ANYARGS))
+check_cfunc(const rb_callable_method_entry_t *me, cfunc_type func)
 {
     if (! me) {
         return false;
@@ -1994,13 +2019,17 @@ check_cfunc(const rb_callable_method_entry_t *me, VALUE (*func)(ANYARGS))
             return false;
         }
         else {
+#if __has_attribute(transparent_union)
+            return me->def->body.cfunc.func == func.anyargs;
+#else
             return me->def->body.cfunc.func == func;
+#endif
         }
     }
 }
 
 static inline int
-vm_method_cfunc_is(const rb_iseq_t *iseq, CALL_DATA cd, VALUE recv, VALUE (*func)(ANYARGS))
+vm_method_cfunc_is(const rb_iseq_t *iseq, CALL_DATA cd, VALUE recv, cfunc_type func)
 {
     VM_ASSERT(iseq != NULL);
     const struct rb_callcache *cc = vm_search_method((VALUE)iseq, cd, recv);
@@ -2700,14 +2729,16 @@ static VALUE
 call_cfunc_m2(VALUE recv, int argc, const VALUE *argv, VALUE (*func)(ANYARGS))
 {
     ractor_unsafe_check();
-    return (*func)(recv, rb_ary_new4(argc, argv));
+    VALUE(*f)(VALUE, VALUE) = (VALUE(*)(VALUE, VALUE))func;
+    return (*f)(recv, rb_ary_new4(argc, argv));
 }
 
 static VALUE
 call_cfunc_m1(VALUE recv, int argc, const VALUE *argv, VALUE (*func)(ANYARGS))
 {
     ractor_unsafe_check();
-    return (*func)(argc, argv, recv);
+    VALUE(*f)(int, const VALUE *, VALUE) = (VALUE(*)(int, const VALUE *, VALUE))func;
+    return (*f)(argc, argv, recv);
 }
 
 static VALUE
@@ -2841,13 +2872,15 @@ call_cfunc_15(VALUE recv, int argc, const VALUE *argv, VALUE (*func)(ANYARGS))
 static VALUE
 ractor_safe_call_cfunc_m2(VALUE recv, int argc, const VALUE *argv, VALUE (*func)(ANYARGS))
 {
-    return (*func)(recv, rb_ary_new4(argc, argv));
+    VALUE(*f)(VALUE, VALUE) = (VALUE(*)(VALUE, VALUE))func;
+    return (*f)(recv, rb_ary_new4(argc, argv));
 }
 
 static VALUE
 ractor_safe_call_cfunc_m1(VALUE recv, int argc, const VALUE *argv, VALUE (*func)(ANYARGS))
 {
-    return (*func)(argc, argv, recv);
+    VALUE(*f)(int, const VALUE *, VALUE) = (VALUE(*)(int, const VALUE *, VALUE))func;
+    return (*f)(argc, argv, recv);
 }
 
 static VALUE
@@ -4851,11 +4884,14 @@ VALUE rb_mod_name(VALUE);
 static VALUE
 vm_objtostring(const rb_iseq_t *iseq, VALUE recv, CALL_DATA cd)
 {
+    int type = TYPE(recv);
+    if (type == T_STRING) {
+        return recv;
+    }
+
     const struct rb_callcache *cc = vm_search_method((VALUE)iseq, cd, recv);
 
-    switch (TYPE(recv)) {
-      case T_STRING:
-        return recv;
+    switch (type) {
       case T_SYMBOL:
         if (check_cfunc(vm_cc_cme(cc), rb_sym_to_s)) {
             // rb_sym_to_s() allocates a mutable string, but since we are only

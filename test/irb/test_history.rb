@@ -158,6 +158,31 @@ module TestIRB
       end
     end
 
+    def test_history_concurrent_use_not_present
+      backup_home = ENV["HOME"]
+      backup_xdg_config_home = ENV.delete("XDG_CONFIG_HOME")
+      backup_irbrc = ENV.delete("IRBRC")
+      IRB.conf[:LC_MESSAGES] = IRB::Locale.new
+      IRB.conf[:SAVE_HISTORY] = 1
+      Dir.mktmpdir("test_irb_history_") do |tmpdir|
+        ENV["HOME"] = tmpdir
+        io = TestInputMethod.new
+        io.class::HISTORY.clear
+        io.load_history
+        io.class::HISTORY.concat(%w"line1 line2")
+
+        history_file = IRB.rc_file("_history")
+        assert_not_send [File, :file?, history_file]
+        File.write(history_file, "line0\n")
+        io.save_history
+        assert_equal(%w"line0 line1 line2", File.read(history_file).split)
+      end
+    ensure
+      ENV["HOME"] = backup_home
+      ENV["XDG_CONFIG_HOME"] = backup_xdg_config_home
+      ENV["IRBRC"] = backup_irbrc
+    end
+
     private
 
     def assert_history(expected_history, initial_irb_history, input)
@@ -166,7 +191,7 @@ module TestIRB
       backup_xdg_config_home = ENV.delete("XDG_CONFIG_HOME")
       IRB.conf[:LC_MESSAGES] = IRB::Locale.new
       actual_history = nil
-      Dir.mktmpdir("test_irb_history_#{$$}") do |tmpdir|
+      Dir.mktmpdir("test_irb_history_") do |tmpdir|
         ENV["HOME"] = tmpdir
         open(IRB.rc_file("_history"), "w") do |f|
           f.write(initial_irb_history)

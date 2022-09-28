@@ -27,7 +27,7 @@ module RubyVM::MJIT
     end
 
     module Immediate
-      # @param fiddle_type [Integer] Fiddle::TYPE_*
+      # @param fiddle_type [Integer]
       def self.new(fiddle_type)
         name = Fiddle.constants.find do |const|
           const.start_with?('TYPE_') && Fiddle.const_get(const) == fiddle_type.abs
@@ -40,6 +40,20 @@ module RubyVM::MJIT
           CPointer::Immediate.define(fiddle_type)
         end
       end
+
+      # @param type [String]
+      def self.parse(ctype)
+        new(Fiddle::Importer.parse_ctype(ctype))
+      end
+
+      def self.find(size, signed)
+        fiddle_type = TYPE_MAP.fetch(size)
+        fiddle_type = -fiddle_type unless signed
+        new(fiddle_type)
+      end
+
+      TYPE_MAP = Fiddle::PackInfo::SIZE_MAP.map { |type, size| [size, type.abs] }.to_h
+      private_constant :TYPE_MAP
     end
 
     module Bool

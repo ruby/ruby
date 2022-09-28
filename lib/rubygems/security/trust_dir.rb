@@ -8,7 +8,7 @@ class Gem::Security::TrustDir
   # Default permissions for the trust directory and its contents
 
   DEFAULT_PERMISSIONS = {
-    :trust_dir    => 0700,
+    :trust_dir => 0700,
     :trusted_cert => 0600,
   }.freeze
 

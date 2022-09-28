@@ -172,7 +172,7 @@ impl Type {
         }
     }
 
-    /// Returns an Option with the exact value if it is known, otherwise None
+    /// Returns an Option boolean representing whether the value is truthy if known, otherwise None
     pub fn known_truthy(&self) -> Option<bool> {
         match self {
             Type::Nil => Some(false),
@@ -180,6 +180,16 @@ impl Type {
             Type::UnknownHeap => Some(true),
             Type::Unknown | Type::UnknownImm => None,
             _ => Some(true)
+        }
+    }
+
+    /// Returns an Option boolean representing whether the value is equal to nil if known, otherwise None
+    pub fn known_nil(&self) -> Option<bool> {
+        match (self, self.known_truthy()) {
+            (Type::Nil, _) => Some(true),
+            (Type::False, _) => Some(false), // Qfalse is not nil
+            (_, Some(true))  => Some(false), // if truthy, can't be nil
+            (_, _) => None // otherwise unknown
         }
     }
 

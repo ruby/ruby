@@ -408,7 +408,7 @@ cc_new(VALUE klass, ID mid, int argc, const rb_callable_method_entry_t *cme)
         }
 
         if (cc == NULL) {
-            const struct rb_callinfo *ci = vm_ci_new(mid, 0, argc, false); // TODO: proper ci
+            const struct rb_callinfo *ci = vm_ci_new(mid, 0, argc, NULL); // TODO: proper ci
             cc = vm_cc_new(klass, cme, vm_call_general);
             METHOD_ENTRY_CACHED_SET((struct rb_callable_method_entry_struct *)cme);
             vm_ccs_push(klass, ccs, ci, cc);
@@ -1672,6 +1672,8 @@ eval_make_iseq(VALUE src, VALUE fname, int line, const rb_binding_t *bind,
     rb_iseq_t *iseq = NULL;
     rb_ast_t *ast;
     int isolated_depth = 0;
+    int coverage_enabled = Qtrue;
+
     {
         int depth = 1;
         const VALUE *ep = vm_block_ep(base_block);
@@ -1703,14 +1705,20 @@ eval_make_iseq(VALUE src, VALUE fname, int line, const rb_binding_t *bind,
             rb_gc_register_mark_object(eval_default_path);
         }
         fname = eval_default_path;
+        coverage_enabled = Qfalse;
     }
 
     rb_parser_set_context(parser, parent, FALSE);
     ast = rb_parser_compile_string_path(parser, fname, src, line);
     if (ast->body.root) {
+        if (ast->body.compile_option == Qnil) {
+            ast->body.compile_option = rb_obj_hide(rb_ident_hash_new());
+        }
+        rb_hash_aset(ast->body.compile_option, rb_sym_intern_ascii_cstr("coverage_enabled"), coverage_enabled);
+
         iseq = rb_iseq_new_eval(&ast->body,
                                 ISEQ_BODY(parent)->location.label,
-                                fname, Qnil, INT2FIX(line),
+                                fname, Qnil, line,
                                 parent, isolated_depth);
     }
     rb_ast_dispose(ast);

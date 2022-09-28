@@ -276,7 +276,7 @@ VALUE rb_fiber_scheduler_io_write(VALUE scheduler, VALUE io, VALUE buffer, size_
  * @retval      RUBY_Qundef  `scheduler` doesn't have `#io_read`.
  * @return      otherwise    What `scheduler.io_read` returns.
  */
-VALUE rb_fiber_scheduler_io_pread(VALUE scheduler, VALUE io, VALUE buffer, size_t length, off_t offset);
+VALUE rb_fiber_scheduler_io_pread(VALUE scheduler, VALUE io, VALUE buffer, size_t length, rb_off_t offset);
 
 /**
  * Nonblocking write to the passed IO at the specified offset.
@@ -289,7 +289,7 @@ VALUE rb_fiber_scheduler_io_pread(VALUE scheduler, VALUE io, VALUE buffer, size_
  * @retval      RUBY_Qundef  `scheduler` doesn't have `#io_write`.
  * @return      otherwise    What `scheduler.io_write` returns.
  */
-VALUE rb_fiber_scheduler_io_pwrite(VALUE scheduler, VALUE io, VALUE buffer, size_t length, off_t offset);
+VALUE rb_fiber_scheduler_io_pwrite(VALUE scheduler, VALUE io, VALUE buffer, size_t length, rb_off_t offset);
 
 /**
  * Nonblocking read from the passed IO using a native buffer.

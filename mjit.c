@@ -707,15 +707,12 @@ mjit_compact(char* c_file)
         char funcname[MAXPATHLEN];
         sprint_funcname(funcname, child_unit);
 
-        long iseq_lineno = 0;
-        if (FIXNUM_P(ISEQ_BODY(child_unit->iseq)->location.first_lineno))
-            // FIX2INT may fallback to rb_num2long(), which is a method call and dangerous in MJIT worker. So using only FIX2LONG.
-            iseq_lineno = FIX2LONG(ISEQ_BODY(child_unit->iseq)->location.first_lineno);
+        int iseq_lineno = ISEQ_BODY(child_unit->iseq)->location.first_lineno;
         const char *sep = "@";
         const char *iseq_label = RSTRING_PTR(ISEQ_BODY(child_unit->iseq)->location.label);
         const char *iseq_path = RSTRING_PTR(rb_iseq_path(child_unit->iseq));
         if (!iseq_label) iseq_label = sep = "";
-        fprintf(f, "\n/* %s%s%s:%ld */\n", iseq_label, sep, iseq_path, iseq_lineno);
+        fprintf(f, "\n/* %s%s%s:%d */\n", iseq_label, sep, iseq_path, iseq_lineno);
         success &= mjit_compile(f, child_unit->iseq, funcname, child_unit->id);
     }
 
@@ -875,24 +872,21 @@ mjit_compile_unit(struct rb_mjit_unit *unit)
     compile_prelude(f);
 
     // To make MJIT worker thread-safe against GC.compact, copy ISeq values while `in_jit` is true.
-    long iseq_lineno = 0;
-    if (FIXNUM_P(ISEQ_BODY(unit->iseq)->location.first_lineno))
-        // FIX2INT may fallback to rb_num2long(), which is a method call and dangerous in MJIT worker. So using only FIX2LONG.
-        iseq_lineno = FIX2LONG(ISEQ_BODY(unit->iseq)->location.first_lineno);
+    int iseq_lineno = ISEQ_BODY(unit->iseq)->location.first_lineno;
     char *iseq_label = alloca(RSTRING_LEN(ISEQ_BODY(unit->iseq)->location.label) + 1);
     char *iseq_path  = alloca(RSTRING_LEN(rb_iseq_path(unit->iseq)) + 1);
     strcpy(iseq_label, RSTRING_PTR(ISEQ_BODY(unit->iseq)->location.label));
     strcpy(iseq_path,  RSTRING_PTR(rb_iseq_path(unit->iseq)));
 
-    verbose(2, "start compilation: %s@%s:%ld -> %s", iseq_label, iseq_path, iseq_lineno, c_file);
-    fprintf(f, "/* %s@%s:%ld */\n\n", iseq_label, iseq_path, iseq_lineno);
+    verbose(2, "start compilation: %s@%s:%d -> %s", iseq_label, iseq_path, iseq_lineno, c_file);
+    fprintf(f, "/* %s@%s:%d */\n\n", iseq_label, iseq_path, iseq_lineno);
     bool success = mjit_compile(f, unit->iseq, funcname, unit->id);
 
     fclose(f);
     if (!success) {
         if (!mjit_opts.save_temps)
             remove_file(c_file);
-        verbose(1, "JIT failure: %s@%s:%ld -> %s", iseq_label, iseq_path, iseq_lineno, c_file);
+        verbose(1, "JIT failure: %s@%s:%d -> %s", iseq_label, iseq_path, iseq_lineno, c_file);
         return 1;
     }
 
@@ -1372,9 +1366,9 @@ mjit_notify_waitpid(int exit_code)
             rb_iseq_t *iseq = current_cc_unit->iseq;
             if ((uintptr_t)func > (uintptr_t)LAST_JIT_ISEQ_FUNC) {
                 double end_time = real_ms_time();
-                verbose(1, "JIT success (%.1fms): %s@%s:%ld -> %s",
+                verbose(1, "JIT success (%.1fms): %s@%s:%d -> %s",
                         end_time - current_cc_ms, RSTRING_PTR(ISEQ_BODY(iseq)->location.label),
-                        RSTRING_PTR(rb_iseq_path(iseq)), FIX2LONG(ISEQ_BODY(iseq)->location.first_lineno), c_file);
+                        RSTRING_PTR(rb_iseq_path(iseq)), ISEQ_BODY(iseq)->location.first_lineno, c_file);
 
                 add_to_list(current_cc_unit, &active_units);
             }
@@ -1531,7 +1525,7 @@ mjit_recompile(const rb_iseq_t *iseq)
         return;
 
     verbose(1, "JIT recompile: %s@%s:%d", RSTRING_PTR(ISEQ_BODY(iseq)->location.label),
-            RSTRING_PTR(rb_iseq_path(iseq)), FIX2INT(ISEQ_BODY(iseq)->location.first_lineno));
+            RSTRING_PTR(rb_iseq_path(iseq)), ISEQ_BODY(iseq)->location.first_lineno);
     VM_ASSERT(ISEQ_BODY(iseq)->jit_unit != NULL);
 
     mjit_add_iseq_to_process(iseq, &ISEQ_BODY(iseq)->jit_unit->compile_info, true);
@@ -2011,7 +2005,7 @@ mjit_dump_total_calls(void)
     ccan_list_for_each(&active_units.head, unit, unode) {
         const rb_iseq_t *iseq = unit->iseq;
         fprintf(stderr, "%8ld: %s@%s:%d\n", ISEQ_BODY(iseq)->total_calls, RSTRING_PTR(ISEQ_BODY(iseq)->location.label),
-                RSTRING_PTR(rb_iseq_path(iseq)), FIX2INT(ISEQ_BODY(iseq)->location.first_lineno));
+                RSTRING_PTR(rb_iseq_path(iseq)), ISEQ_BODY(iseq)->location.first_lineno);
     }
 }
 #endif

@@ -90,11 +90,21 @@ Note that each entry is kept to a minimum, see links for details.
     foo(k: 1)
     ```
 
+* `eval` and related methods are able to generate code coverage.
+  [[Feature #19008]]
+
 ## Command line options
 
 ## Core classes updates
 
 Note: We're only listing outstanding class updates.
+
+* Encoding
+    * Encoding#replicate has been deprecated and will be removed in 3.3. [[Feature #18949]]
+    * The dummy `Encoding::UTF_16` and `Encoding::UTF_32` encodings no longer
+      try to dynamically guess the endian based on a byte order mark.
+      Use `Encoding::UTF_16BE/UTF_16LE` and `Encoding::UTF_32BE/UTF_32LE` instead.
+      This change speeds up getting the encoding of a String. [[Feature #18949]]
 
 * Enumerator
     * Enumerator.product has been added.  Enumerator::Product is the implementation. [[Feature #18685]]
@@ -124,10 +134,13 @@ Note: We're only listing outstanding class updates.
     * Proc#dup returns an instance of subclass. [[Bug #17545]]
     * Proc#parameters now accepts lambda keyword. [[Feature #15357]]
 
+* Process
+    * Added `RLIMIT_NPTS` constant to FreeBSD platform
+
 * Regexp
     * Regexp.new now supports passing the regexp flags not only as an Integer,
-      but also as a String Unknown flags raise errors.  Otherwise, anything
-      other than `true`, `false`, `nil` or Integer will be warned.
+      but also as a String.  Unknown flags raise ArgumentError.
+      Otherwise, anything other than `true`, `false`, `nil` or Integer will be warned.
       [[Feature #18788]]
 
 * Refinement
@@ -136,6 +149,16 @@ Note: We're only listing outstanding class updates.
 * Set
     * Set is now available as a built-in class without the need for `require "set"`. [[Feature #16989]]
       It is currently autoloaded via the `Set` constant or a call to `Enumerable#to_set`.
+
+* Socket
+    * Added the following constants for supported platforms.
+      * `SO_INCOMING_CPU`
+      * `SO_INCOMING_NAPI_ID`
+      * `SO_RTABLE`
+      * `SO_SETFIB`
+      * `SO_USER_COOKIE`
+      * `TCP_KEEPALIVE`
+      * `TCP_CONNECTION_INFO`
 
 * String
     * String#byteindex and String#byterindex have been added. [[Feature #13110]]
@@ -165,7 +188,7 @@ Note: We're only listing outstanding class updates.
     * RubyGems 3.4.0.dev
     * bigdecimal 3.1.2
     * bundler 2.4.0.dev
-    * cgi 0.3.2
+    * cgi 0.3.3
     * date 3.2.3
     * error_highlight 0.4.0
     * etc 1.4.0
@@ -292,3 +315,5 @@ The following deprecated APIs are removed.
 [Feature #18788]: https://bugs.ruby-lang.org/issues/18788
 [Feature #18809]: https://bugs.ruby-lang.org/issues/18809
 [Feature #18481]: https://bugs.ruby-lang.org/issues/18481
+[Feature #18949]: https://bugs.ruby-lang.org/issues/18949
+[Feature #19008]: https://bugs.ruby-lang.org/issues/19008

@@ -30,9 +30,9 @@ module Bundler
 
     def get_constant(name)
       const_name = {
-        "pry"  => :Pry,
+        "pry" => :Pry,
         "ripl" => :Ripl,
-        "irb"  => :IRB,
+        "irb" => :IRB,
       }[name]
       Object.const_get(const_name)
     rescue NameError

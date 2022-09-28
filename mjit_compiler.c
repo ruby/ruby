@@ -164,7 +164,15 @@ has_cache_for_send(rb_execution_context_t *ec, VALUE self, VALUE cc_addr, VALUE 
 
 extern bool rb_splat_or_kwargs_p(const struct rb_callinfo *restrict ci);
 
+// An offsetof implementation that works for unnamed struct and union.
+// Multiplying 8 for compatibility with libclang's offsetof.
+#define OFFSETOF(ptr, member) RB_SIZE2NUM(((char *)&ptr.member - (char*)&ptr) * 8)
+
+#define SIZEOF(type) RB_SIZE2NUM(sizeof(type))
+#define SIGNED_TYPE_P(type) RBOOL((type)(-1) < (type)(1))
+
+#include "mjit_c.rbinc"
+
 #include "mjit_compiler.rbinc"
-#include "mjit_instruction.rbinc"
 
 #endif // USE_MJIT

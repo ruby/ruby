@@ -372,7 +372,7 @@ void
 rb_add_method_cfunc(VALUE klass, ID mid, VALUE (*func)(ANYARGS), int argc, rb_method_visibility_t visi)
 {
     if (argc < -2 || 15 < argc) rb_raise(rb_eArgError, "arity out of range: %d for -2..15", argc);
-    if (func != rb_f_notimplement) {
+    if (func != (VALUE(*)(ANYARGS))rb_f_notimplement) {
         rb_method_cfunc_t opt;
         opt.func = func;
         opt.argc = argc;
@@ -561,7 +561,7 @@ rb_method_definition_set(const rb_method_entry_t *me, rb_method_definition_t *de
             RB_OBJ_WRITE(me, &def->body.bmethod.defined_ractor, rb_ractor_self(GET_RACTOR()));
             return;
           case VM_METHOD_TYPE_NOTIMPLEMENTED:
-            setup_method_cfunc_struct(UNALIGNED_MEMBER_PTR(def, body.cfunc), rb_f_notimplement_internal, -1);
+            setup_method_cfunc_struct(UNALIGNED_MEMBER_PTR(def, body.cfunc), (VALUE(*)(ANYARGS))rb_f_notimplement_internal, -1);
             return;
           case VM_METHOD_TYPE_OPTIMIZED:
             def->body.optimized = *(rb_method_optimized_t *)opts;
@@ -909,7 +909,7 @@ rb_method_entry_make(VALUE klass, ID mid, VALUE defined_class, rb_method_visibil
             }
             if (iseq) {
                 rb_compile_warning(RSTRING_PTR(rb_iseq_path(iseq)),
-                                   FIX2INT(ISEQ_BODY(iseq)->location.first_lineno),
+                                   ISEQ_BODY(iseq)->location.first_lineno,
                                    "previous definition of %"PRIsVALUE" was here",
                                    rb_id2str(old_def->original_id));
             }
@@ -1347,7 +1347,7 @@ negative_cme(ID mid)
 }
 
 static const rb_callable_method_entry_t *
-callable_method_entry(VALUE klass, ID mid, VALUE *defined_class_ptr)
+callable_method_entry_or_negative(VALUE klass, ID mid, VALUE *defined_class_ptr)
 {
     const rb_callable_method_entry_t *cme;
 
@@ -1376,6 +1376,20 @@ callable_method_entry(VALUE klass, ID mid, VALUE *defined_class_ptr)
     }
     RB_VM_LOCK_LEAVE();
 
+    return cme;
+}
+
+// This is exposed for YJIT so that we can make assumptions that methods are
+// not defined.
+const rb_callable_method_entry_t *
+rb_callable_method_entry_or_negative(VALUE klass, ID mid) {
+    return callable_method_entry_or_negative(klass, mid, NULL);
+}
+
+static const rb_callable_method_entry_t *
+callable_method_entry(VALUE klass, ID mid, VALUE *defined_class_ptr) {
+    const rb_callable_method_entry_t *cme;
+    cme = callable_method_entry_or_negative(klass, mid, defined_class_ptr);
     return !UNDEFINED_METHOD_ENTRY_P(cme) ? cme : NULL;
 }
 

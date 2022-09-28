@@ -1876,6 +1876,28 @@ class TestProcess < Test::Unit::TestCase
       assert_not_equal(cpid, dpid)
     end
 
+    def test_daemon_detached
+      IO.popen("-", "r+") do |f|
+        if f
+          assert_equal(f.pid, Process.wait(f.pid))
+
+          dpid, ppid, dsid = 3.times.map {Integer(f.gets)}
+
+          message = "daemon #{dpid} should be detached"
+          assert_not_equal($$, ppid, message) # would be 1 almost always
+          assert_raise(Errno::ECHILD, message) {Process.wait(dpid)}
+          assert_kind_of(Integer, Process.kill(0, dpid), message)
+          assert_equal(dpid, dsid)
+
+          break # close f, and let the daemon resume and exit
+        end
+        Process.setsid rescue nil
+        Process.daemon(false, true)
+        puts $$, Process.ppid, Process.getsid
+        $stdin.gets # wait for the above assertions using signals
+      end
+    end
+
     if File.directory?("/proc/self/task") && /netbsd[a-z]*[1-6]/ !~ RUBY_PLATFORM
       def test_daemon_no_threads
         pid, data = IO.popen("-", "r+") do |f|

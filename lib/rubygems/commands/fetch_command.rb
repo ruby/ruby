@@ -10,7 +10,7 @@ class Gem::Commands::FetchCommand < Gem::Command
   def initialize
     defaults = {
       :suggest_alternate => true,
-      :version           => Gem::Requirement.default,
+      :version => Gem::Requirement.default,
     }
 
     super "fetch", "Download a gem and place it in the current directory", defaults

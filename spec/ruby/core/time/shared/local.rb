@@ -6,7 +6,6 @@ describe :time_local, shared: true do
     end
   end
 
-=begin
   platform_is_not :windows do
     describe "timezone changes" do
       it "correctly adjusts the timezone change to 'CET' on 'Europe/Amsterdam'" do
@@ -17,7 +16,6 @@ describe :time_local, shared: true do
       end
     end
   end
-=end
 end
 
 describe :time_local_10_arg, shared: true do

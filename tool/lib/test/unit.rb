@@ -1,5 +1,20 @@
 # frozen_string_literal: true
 
+# Enable deprecation warnings for test-all, so deprecated methods/constants/functions are dealt with early.
+Warning[:deprecated] = true
+
+if ENV['BACKTRACE_FOR_DEPRECATION_WARNINGS']
+  Warning.extend Module.new {
+    def warn(message, category: nil, **kwargs)
+      if category == :deprecated and $stderr.respond_to?(:puts)
+        $stderr.puts nil, message, caller, nil
+      else
+        super
+      end
+    end
+  }
+end
+
 require_relative '../envutil'
 require_relative '../colorize'
 require_relative '../leakchecker'

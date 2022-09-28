@@ -766,7 +766,7 @@ rb_iseq_compile_node(rb_iseq_t *iseq, const NODE *node)
                 end->rescued = LABEL_RESCUE_END;
 
                 ADD_TRACE(ret, RUBY_EVENT_B_CALL);
-                NODE dummy_line_node = generate_dummy_line_node(FIX2INT(ISEQ_BODY(iseq)->location.first_lineno), -1);
+                NODE dummy_line_node = generate_dummy_line_node(ISEQ_BODY(iseq)->location.first_lineno, -1);
                 ADD_INSN (ret, &dummy_line_node, nop);
                 ADD_LABEL(ret, start);
                 CHECK(COMPILE(ret, "block body", node->nd_body));
@@ -1333,7 +1333,7 @@ new_child_iseq(rb_iseq_t *iseq, const NODE *const node,
     int isolated_depth = ISEQ_COMPILE_DATA(iseq)->isolated_depth;
     ret_iseq = rb_iseq_new_with_opt(&ast, name,
                                     rb_iseq_path(iseq), rb_iseq_realpath(iseq),
-                                    INT2FIX(line_no), parent,
+                                    line_no, parent,
                                     isolated_depth ? isolated_depth + 1 : 0,
                                     type, ISEQ_COMPILE_DATA(iseq)->option);
     debugs("[new_child_iseq]< ---------------------------------------\n");
@@ -1349,7 +1349,7 @@ new_child_iseq_with_callback(rb_iseq_t *iseq, const struct rb_iseq_new_with_call
     debugs("[new_child_iseq_with_callback]> ---------------------------------------\n");
     ret_iseq = rb_iseq_new_with_callback(ifunc, name,
                                  rb_iseq_path(iseq), rb_iseq_realpath(iseq),
-                                 INT2FIX(line_no), parent, type, ISEQ_COMPILE_DATA(iseq)->option);
+                                 line_no, parent, type, ISEQ_COMPILE_DATA(iseq)->option);
     debugs("[new_child_iseq_with_callback]< ---------------------------------------\n");
     return ret_iseq;
 }
@@ -2308,9 +2308,9 @@ iseq_set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *const anchor)
                 if (ISEQ_COVERAGE(iseq)) {
                     if (ISEQ_LINE_COVERAGE(iseq) && (events & RUBY_EVENT_COVERAGE_LINE) &&
                         !(rb_get_coverage_mode() & COVERAGE_TARGET_ONESHOT_LINES)) {
-                        int line = iobj->insn_info.line_no;
-                        if (line >= 1) {
-                            RARRAY_ASET(ISEQ_LINE_COVERAGE(iseq), line - 1, INT2FIX(0));
+                        int line = iobj->insn_info.line_no - 1;
+                        if (line >= 0 && line < RARRAY_LEN(ISEQ_LINE_COVERAGE(iseq))) {
+                            RARRAY_ASET(ISEQ_LINE_COVERAGE(iseq), line, INT2FIX(0));
                         }
                     }
                     if (ISEQ_BRANCH_COVERAGE(iseq) && (events & RUBY_EVENT_COVERAGE_BRANCH)) {
@@ -3571,6 +3571,15 @@ iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list, const int do_tailcal
     if (IS_INSN_ID(iobj, dup)) {
         if (IS_NEXT_INSN_ID(&iobj->link, setlocal)) {
             LINK_ELEMENT *set1 = iobj->link.next, *set2 = NULL;
+
+            /*
+            *  dup
+            *  setlocal x, y
+            *  setlocal x, y
+            * =>
+            *  dup
+            *  setlocal x, y
+            */
             if (IS_NEXT_INSN_ID(set1, setlocal)) {
                 set2 = set1->next;
                 if (OPERAND_AT(set1, 0) == OPERAND_AT(set2, 0) &&
@@ -3579,6 +3588,16 @@ iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list, const int do_tailcal
                     ELEM_REMOVE(&iobj->link);
                 }
             }
+
+            /*
+            *  dup
+            *  setlocal x, y
+            *  dup
+            *  setlocal x, y
+            * =>
+            *  dup
+            *  setlocal x, y
+            */
             else if (IS_NEXT_INSN_ID(set1, dup) &&
                      IS_NEXT_INSN_ID(set1->next, setlocal)) {
                 set2 = set1->next->next;
@@ -3591,6 +3610,13 @@ iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list, const int do_tailcal
         }
     }
 
+    /*
+    *  getlocal x, y
+    *  dup
+    *  setlocal x, y
+    * =>
+    *  dup
+    */
     if (IS_INSN_ID(iobj, getlocal)) {
         LINK_ELEMENT *niobj = &iobj->link;
         if (IS_NEXT_INSN_ID(niobj, dup)) {
@@ -3606,6 +3632,15 @@ iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list, const int do_tailcal
         }
     }
 
+    /*
+    *  opt_invokebuiltin_delegate
+    *  trace
+    *  leave
+    * =>
+    *  opt_invokebuiltin_delegate_leave
+    *  trace
+    *  leave
+    */
     if (IS_INSN_ID(iobj, opt_invokebuiltin_delegate)) {
         if (IS_TRACE(iobj->link.next)) {
             if (IS_NEXT_INSN_ID(iobj->link.next, leave)) {
@@ -3614,6 +3649,13 @@ iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list, const int do_tailcal
         }
     }
 
+    /*
+    *  getblockparam
+    *  branchif / branchunless
+    * =>
+    *  getblockparamproxy
+    *  branchif / branchunless
+    */
     if (IS_INSN_ID(iobj, getblockparam)) {
         if (IS_NEXT_INSN_ID(&iobj->link, branchif) || IS_NEXT_INSN_ID(&iobj->link, branchunless)) {
             iobj->insn_id = BIN(getblockparamproxy);
@@ -8189,7 +8231,7 @@ compile_builtin_mandatory_only_method(rb_iseq_t *iseq, const NODE *node, const N
     ISEQ_BODY(iseq)->mandatory_only_iseq =
       rb_iseq_new_with_opt(&ast, rb_iseq_base_label(iseq),
                            rb_iseq_path(iseq), rb_iseq_realpath(iseq),
-                           INT2FIX(nd_line(line_node)), NULL, 0,
+                           nd_line(line_node), NULL, 0,
                            ISEQ_TYPE_METHOD, ISEQ_COMPILE_DATA(iseq)->option);
 
     GET_VM()->builtin_inline_index = prev_inline_index;
@@ -8621,6 +8663,17 @@ compile_op_asgn2(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node
       lfin:       # o ?
       pop       # o
 
+      # or (popped)
+      if lcfin  # r
+      eval v    # r v
+      send a=   # ?
+      jump lfin # ?
+
+      lcfin:      # r
+
+      lfin:       # ?
+      pop       #
+
       # and
       dup       # r o o
       unless lcfin
@@ -8649,32 +8702,32 @@ compile_op_asgn2(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node
     ADD_SEND_WITH_FLAG(ret, node, vid, INT2FIX(0), INT2FIX(asgnflag));
 
     if (atype == idOROP || atype == idANDOP) {
-        ADD_INSN(ret, node, dup);
+        if (!popped) {
+            ADD_INSN(ret, node, dup);
+        }
         if (atype == idOROP) {
             ADD_INSNL(ret, node, branchif, lcfin);
         }
         else { /* idANDOP */
             ADD_INSNL(ret, node, branchunless, lcfin);
         }
-        ADD_INSN(ret, node, pop);
+        if (!popped) {
+            ADD_INSN(ret, node, pop);
+        }
         CHECK(COMPILE(ret, "NODE_OP_ASGN2 val", node->nd_value));
-        ADD_INSN(ret, node, swap);
-        ADD_INSN1(ret, node, topn, INT2FIX(1));
+        if (!popped) {
+            ADD_INSN(ret, node, swap);
+            ADD_INSN1(ret, node, topn, INT2FIX(1));
+        }
         ADD_SEND_WITH_FLAG(ret, node, aid, INT2FIX(1), INT2FIX(asgnflag));
         ADD_INSNL(ret, node, jump, lfin);
 
         ADD_LABEL(ret, lcfin);
-        ADD_INSN(ret, node, swap);
+        if (!popped) {
+            ADD_INSN(ret, node, swap);
+        }
 
         ADD_LABEL(ret, lfin);
-        ADD_INSN(ret, node, pop);
-        if (lskip) {
-            ADD_LABEL(ret, lskip);
-        }
-        if (popped) {
-            /* we can apply more optimize */
-            ADD_INSN(ret, node, pop);
-        }
     }
     else {
         CHECK(COMPILE(ret, "NODE_OP_ASGN2 val", node->nd_value));
@@ -8684,13 +8737,13 @@ compile_op_asgn2(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node
             ADD_INSN1(ret, node, topn, INT2FIX(1));
         }
         ADD_SEND_WITH_FLAG(ret, node, aid, INT2FIX(1), INT2FIX(asgnflag));
-        if (lskip && popped) {
-            ADD_LABEL(ret, lskip);
-        }
-        ADD_INSN(ret, node, pop);
-        if (lskip && !popped) {
-            ADD_LABEL(ret, lskip);
-        }
+    }
+    if (lskip && popped) {
+        ADD_LABEL(ret, lskip);
+    }
+    ADD_INSN(ret, node, pop);
+    if (lskip && !popped) {
+        ADD_LABEL(ret, lskip);
     }
     return COMPILE_OK;
 }
@@ -8789,7 +8842,10 @@ compile_op_log(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, 
     }
 
     CHECK(COMPILE(ret, "NODE_OP_ASGN_AND/OR#nd_head", node->nd_head));
-    ADD_INSN(ret, node, dup);
+
+    if (!popped) {
+        ADD_INSN(ret, node, dup);
+    }
 
     if (type == NODE_OP_ASGN_AND) {
         ADD_INSNL(ret, node, branchunless, lfin);
@@ -8798,15 +8854,13 @@ compile_op_log(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, 
         ADD_INSNL(ret, node, branchif, lfin);
     }
 
-    ADD_INSN(ret, node, pop);
-    ADD_LABEL(ret, lassign);
-    CHECK(COMPILE(ret, "NODE_OP_ASGN_AND/OR#nd_value", node->nd_value));
-    ADD_LABEL(ret, lfin);
-
-    if (popped) {
-        /* we can apply more optimize */
+    if (!popped) {
         ADD_INSN(ret, node, pop);
     }
+
+    ADD_LABEL(ret, lassign);
+    CHECK(COMPILE_(ret, "NODE_OP_ASGN_AND/OR#nd_value", node->nd_value, popped));
+    ADD_LABEL(ret, lfin);
     return COMPILE_OK;
 }
 
@@ -12077,7 +12131,7 @@ ibf_load_iseq_each(struct ibf_load *load, rb_iseq_t *iseq, ibf_offset_t offset)
     const VALUE location_pathobj_index = ibf_load_small_value(load, &reading_pos);
     const VALUE location_base_label_index = ibf_load_small_value(load, &reading_pos);
     const VALUE location_label_index = ibf_load_small_value(load, &reading_pos);
-    const VALUE location_first_lineno = ibf_load_small_value(load, &reading_pos);
+    const int location_first_lineno = (int)ibf_load_small_value(load, &reading_pos);
     const int location_node_id = (int)ibf_load_small_value(load, &reading_pos);
     const int location_code_location_beg_pos_lineno = (int)ibf_load_small_value(load, &reading_pos);
     const int location_code_location_beg_pos_column = (int)ibf_load_small_value(load, &reading_pos);

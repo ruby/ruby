@@ -2,6 +2,7 @@ use super::super::arg::truncate_imm;
 
 /// The size of the operands being operated on.
 enum Size {
+    Size8 = 0b00,
     Size32 = 0b10,
     Size64 = 0b11,
 }
@@ -81,6 +82,12 @@ impl LoadStore {
         Self { rt, rn, idx: Index::None, imm9, opc: Opc::LDR, size: num_bits.into() }
     }
 
+    /// LDURB (load register, byte, unscaled)
+    /// https://developer.arm.com/documentation/ddi0596/2021-12/Base-Instructions/LDURB--Load-Register-Byte--unscaled--?lang=en
+    pub fn ldurb(rt: u8, rn: u8, imm9: i16) -> Self {
+        Self { rt, rn, idx: Index::None, imm9, opc: Opc::LDR, size: Size::Size8 }
+    }
+
     /// LDURSW (load register, unscaled, signed)
     /// https://developer.arm.com/documentation/ddi0596/2021-12/Base-Instructions/LDURSW--Load-Register-Signed-Word--unscaled--?lang=en
     pub fn ldursw(rt: u8, rn: u8, imm9: i16) -> Self {
@@ -155,6 +162,13 @@ mod tests {
         let inst = LoadStore::ldur(0, 1, 0, 64);
         let result: u32 = inst.into();
         assert_eq!(0xf8400020, result);
+    }
+
+    #[test]
+    fn test_ldurb() {
+        let inst = LoadStore::ldurb(0, 1, 0);
+        let result: u32 = inst.into();
+        assert_eq!(0x38400020, result);
     }
 
     #[test]

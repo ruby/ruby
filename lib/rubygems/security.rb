@@ -376,8 +376,8 @@ module Gem::Security
   # * The certificate contains a subject key identifier
 
   EXTENSIONS = {
-    "basicConstraints"     => "CA:FALSE",
-    "keyUsage"             =>
+    "basicConstraints" => "CA:FALSE",
+    "keyUsage" =>
       "keyEncipherment,dataEncipherment,digitalSignature",
     "subjectKeyIdentifier" => "hash",
   }.freeze

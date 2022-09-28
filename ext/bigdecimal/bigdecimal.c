@@ -3500,6 +3500,9 @@ rb_convert_to_BigDecimal(VALUE val, size_t digs, int raise_exception)
  *  in the value, the result is rounded to that number of digits,
  *  according to the current rounding mode; see BigDecimal.mode.
  *
+ *  When +ndigits+ is 0, the number of digits to correctly represent a float number
+ *  is determined automatically.
+ *
  *  Returns +value+ converted to a \BigDecimal, depending on the type of +value+:
  *
  *  - Integer, Float, Rational, Complex, or BigDecimal: converted directly:
@@ -3606,8 +3609,10 @@ BigDecimal_limit(int argc, VALUE *argv, VALUE self)
 
 /* Returns the sign of the value.
  *
- * Returns a positive value if > 0, a negative value if < 0, and a
- * zero if == 0.
+ * Returns a positive value if > 0, a negative value if < 0.
+ * It behaves the same with zeros -
+ * it returns a positive value for a positive zero (BigDecimal('0')) and
+ * a negative value for a negative zero (BigDecimal('-0')).
  *
  * The specific value returned indicates the type and sign of the BigDecimal,
  * as follows:

@@ -70,7 +70,7 @@ struct lex_context {
     BITFIELD(enum shareability, shareable_constant_value, 2);
 };
 
-#ifdef __GNUC__
+#if defined(__GNUC__) && !defined(__clang__)
 // Suppress "parameter passing for argument of type 'struct
 // lex_context' changed" notes.  `struct lex_context` is file scope,
 // and has no ABI compatibility issue.
@@ -1774,14 +1774,18 @@ expr		: command_call
 			p->ctxt.in_kwarg = 1;
 			$<tbl>$ = push_pvtbl(p);
 		    }
+		    {
+			$<tbl>$ = push_pktbl(p);
+		    }
 		  p_top_expr_body
 		    {
+			pop_pktbl(p, $<tbl>4);
 			pop_pvtbl(p, $<tbl>3);
 			p->ctxt.in_kwarg = $<ctxt>2.in_kwarg;
 		    /*%%%*/
-			$$ = NEW_CASE3($1, NEW_IN($4, 0, 0, &@4), &@$);
+			$$ = NEW_CASE3($1, NEW_IN($5, 0, 0, &@5), &@$);
 		    /*% %*/
-		    /*% ripper: case!($1, in!($4, Qnil, Qnil)) %*/
+		    /*% ripper: case!($1, in!($5, Qnil, Qnil)) %*/
 		    }
 		| arg keyword_in
 		    {
@@ -1792,14 +1796,18 @@ expr		: command_call
 			p->ctxt.in_kwarg = 1;
 			$<tbl>$ = push_pvtbl(p);
 		    }
+		    {
+			$<tbl>$ = push_pktbl(p);
+		    }
 		  p_top_expr_body
 		    {
+			pop_pktbl(p, $<tbl>4);
 			pop_pvtbl(p, $<tbl>3);
 			p->ctxt.in_kwarg = $<ctxt>2.in_kwarg;
 		    /*%%%*/
-			$$ = NEW_CASE3($1, NEW_IN($4, NEW_TRUE(&@4), NEW_FALSE(&@4), &@4), &@$);
+			$$ = NEW_CASE3($1, NEW_IN($5, NEW_TRUE(&@5), NEW_FALSE(&@5), &@5), &@$);
 		    /*% %*/
-		    /*% ripper: case!($1, in!($4, Qnil, Qnil)) %*/
+		    /*% ripper: case!($1, in!($5, Qnil, Qnil)) %*/
 		    }
 		| arg %prec tLBRACE_ARG
 		;
@@ -10553,13 +10561,7 @@ static NODE *
 kwd_append(NODE *kwlist, NODE *kw)
 {
     if (kwlist) {
-	NODE *kws = kwlist;
-	kws->nd_loc.end_pos = kw->nd_loc.end_pos;
-	while (kws->nd_next) {
-	    kws = kws->nd_next;
-	    kws->nd_loc.end_pos = kw->nd_loc.end_pos;
-	}
-	kws->nd_next = kw;
+	opt_arg_append(kwlist, kw);
     }
     return kwlist;
 }

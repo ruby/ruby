@@ -70,9 +70,9 @@ class Endpoint < Sinatra::Base
         spec = load_spec(name, version, platform, gem_repo)
         next unless gem_names.include?(spec.name)
         {
-          :name         => spec.name,
-          :number       => spec.version.version,
-          :platform     => spec.platform.to_s,
+          :name => spec.name,
+          :number => spec.version.version,
+          :platform => spec.platform.to_s,
           :dependencies => spec.dependencies.select {|dep| dep.type == :runtime }.map do |dep|
             [dep.name, dep.requirement.requirements.map {|a| a.join(" ") }.join(", ")]
           end,

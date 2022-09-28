@@ -54,8 +54,6 @@ RSpec.describe Bundler::EndpointSpecification do
       let(:required_ruby_version) { existing_value }
 
       it "should return the current value when already set on endpoint specification" do
-        remote_spec = double(:remote_spec, :required_ruby_version => "remote_value", :required_rubygems_version => nil)
-
         expect(spec.required_ruby_version). eql?(existing_value)
       end
     end

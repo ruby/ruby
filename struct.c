@@ -471,8 +471,8 @@ rb_struct_define_under(VALUE outer, const char *name, ...)
  *
  *  - May be anonymous, or may have the name given by +class_name+.
  *  - May have members as given by +member_names+.
- *  - May have initialization via ordinary arguments (the default)
- *    or via keyword arguments (if <tt>keyword_init: true</tt> is given).
+ *  - May have initialization via ordinary arguments (unless
+ *    <tt>keyword_init: true</tt> is given), or via keyword arguments
  *
  *  The new subclass has its own method <tt>::new</tt>; thus:
  *
@@ -557,7 +557,7 @@ rb_struct_define_under(VALUE outer, const char *name, ...)
  *  By default, the arguments for initializing an instance of the new subclass
  *  are ordinary arguments (not keyword arguments).
  *  With optional keyword argument <tt>keyword_init: true</tt>,
- *  the new subclass is initialized with keyword arguments:
+ *  the new subclass must be initialized with keyword arguments:
  *
  *    # Without keyword_init: true.
  *    Foo = Struct.new('Foo', :foo, :bar)
@@ -567,6 +567,7 @@ rb_struct_define_under(VALUE outer, const char *name, ...)
  *    Bar = Struct.new(:foo, :bar, keyword_init: true)
  *    Bar # =>                # => Bar(keyword_init: true)
  *    Bar.new(bar: 1, foo: 0) # => #<struct Bar foo=0, bar=1>
+ *    Bar.new(0, 1)           # Raises ArgumentError: wrong number of arguments
  *
  */
 

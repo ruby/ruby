@@ -159,4 +159,17 @@ class TestTimeout < Test::Unit::TestCase
     assert_equal 'timeout', r.read
     r.close
   end
+
+  def test_threadgroup
+    assert_separately(%w[-rtimeout], <<-'end;')
+      tg = ThreadGroup.new
+      thr = Thread.new do
+        tg.add(Thread.current)
+        Timeout.timeout(10){}
+      end
+      thr.join
+      assert_equal [].to_s, tg.list.to_s
+    end;
+  end
+
 end

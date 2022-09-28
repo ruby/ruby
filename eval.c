@@ -1792,10 +1792,12 @@ top_include(int argc, VALUE *argv, VALUE self)
 static VALUE
 top_using(VALUE self, VALUE module)
 {
-    const rb_cref_t *cref = rb_vm_cref();
+    const rb_cref_t *cref = CREF_NEXT(rb_vm_cref());;
     rb_control_frame_t *prev_cfp = previous_frame(GET_EC());
+    rb_thread_t *th = GET_THREAD();
 
-    if (CREF_NEXT(cref) || (prev_cfp && rb_vm_frame_method_entry(prev_cfp))) {
+    if ((th->top_wrapper ? CREF_NEXT(cref) : cref) ||
+        (prev_cfp && rb_vm_frame_method_entry(prev_cfp))) {
         rb_raise(rb_eRuntimeError, "main.using is permitted only at toplevel");
     }
     if (rb_block_given_p()) {

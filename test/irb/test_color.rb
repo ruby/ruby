@@ -88,6 +88,9 @@ module TestIRB
         "foo(*%W(bar))" => "foo(*#{RED}#{BOLD}%W(#{CLEAR}#{RED}bar#{CLEAR}#{RED}#{BOLD})#{CLEAR})",
         "$stdout" => "#{GREEN}#{BOLD}$stdout#{CLEAR}",
         "__END__" => "#{GREEN}__END__#{CLEAR}",
+        "foo\n__END__\nbar" => "foo\n#{GREEN}__END__#{CLEAR}\nbar",
+        "foo\n<<A\0\0bar\nA\nbaz" => "foo\n#{RED}<<A#{CLEAR}^@^@bar\n#{RED}A#{CLEAR}\nbaz",
+        "<<A+1\nA" => "#{RED}<<A#{CLEAR}+#{BLUE}#{BOLD}1#{CLEAR}\n#{RED}A#{CLEAR}",
       }
 
       # specific to Ruby 2.7+
@@ -112,11 +115,18 @@ module TestIRB
           "def req(@a) end" => "#{GREEN}def#{CLEAR} #{BLUE}#{BOLD}req#{CLEAR}(#{RED}#{REVERSE}@a#{CLEAR}) #{GREEN}end#{CLEAR}",
         })
       else
-        tests.merge!({
-          "[1]]]\u0013" => "[1]]]^S",
+        if Gem::Version.new(RUBY_VERSION) >= Gem::Version.new('2.7.0')
+          tests.merge!({
+            "[1]]]\u0013" => "[#{BLUE}#{BOLD}1#{CLEAR}]#{RED}#{REVERSE}]#{CLEAR}]^S",
+            "def req(true) end" => "#{GREEN}def#{CLEAR} #{BLUE}#{BOLD}req#{CLEAR}(#{RED}#{REVERSE}true#{CLEAR}) end",
           })
+        else
+          tests.merge!({
+            "[1]]]\u0013" => "[#{BLUE}#{BOLD}1#{CLEAR}]]]^S",
+            "def req(true) end" => "#{GREEN}def#{CLEAR} #{BLUE}#{BOLD}req#{CLEAR}(#{CYAN}#{BOLD}true#{CLEAR}) end",
+          })
+        end
         tests.merge!({
-          "def req(true) end" => "def req(true) end",
           "nil = 1" => "#{CYAN}#{BOLD}nil#{CLEAR} = #{BLUE}#{BOLD}1#{CLEAR}",
           "alias $x $1" => "#{GREEN}alias#{CLEAR} #{GREEN}#{BOLD}$x#{CLEAR} $1",
           "class bad; end" => "#{GREEN}class#{CLEAR} bad; #{GREEN}end#{CLEAR}",

@@ -423,8 +423,6 @@ copy_tables(VALUE clone, VALUE orig)
         st_delete(RCLASS_IV_TBL(clone), &id, 0);
         CONST_ID(id, "__classpath__");
         st_delete(RCLASS_IV_TBL(clone), &id, 0);
-        CONST_ID(id, "__classid__");
-        st_delete(RCLASS_IV_TBL(clone), &id, 0);
     }
     if (RCLASS_CONST_TBL(orig)) {
         struct clone_const_arg arg;

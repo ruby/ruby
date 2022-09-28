@@ -42,8 +42,7 @@ module Bundler
         remove_from_candidates(spec)
       end
 
-      @gem_version_promoter.prerelease_specified = @prerelease_specified = {}
-      requirements.each {|dep| @prerelease_specified[dep.name] ||= dep.prerelease? }
+      requirements.each {|dep| prerelease_specified[dep.name] ||= dep.prerelease? }
 
       verify_gemfile_dependencies_are_found!(requirements)
       result = @resolver.resolve(requirements).
@@ -126,13 +125,6 @@ module Bundler
         locked_requirement = base_requirements[name]
         results = results_for(dependency) + locked_results
         results = results.select {|spec| requirement_satisfied_by?(locked_requirement, nil, spec) } if locked_requirement
-
-        if !@prerelease_specified[name] && locked_results.empty?
-          # Move prereleases to the beginning of the list, so they're considered
-          # last during resolution.
-          pre, results = results.partition {|spec| spec.version.prerelease? }
-          results = pre + results
-        end
 
         if results.any?
           results = @gem_version_promoter.sort_versions(dependency, results)
@@ -221,6 +213,10 @@ module Bundler
       @base.base_requirements
     end
 
+    def prerelease_specified
+      @gem_version_promoter.prerelease_specified
+    end
+
     def remove_from_candidates(spec)
       @base.delete(spec)
 
@@ -255,7 +251,7 @@ module Bundler
           all - 1_000_000
         else
           search = search_for(dependency)
-          search = @prerelease_specified[dependency.name] ? search.count : search.count {|s| !s.version.prerelease? }
+          search = prerelease_specified[dependency.name] ? search.count : search.count {|s| !s.version.prerelease? }
           search - all
         end
       end
@@ -284,7 +280,7 @@ module Bundler
     end
 
     def gem_not_found_message(name, requirement, source, extra_message = "")
-      specs = source.specs.search(name)
+      specs = source.specs.search(name).sort_by {|s| [s.version, s.platform.to_s] }
       matching_part = name
       requirement_label = SharedHelpers.pretty_dependency(requirement)
       cache_message = begin

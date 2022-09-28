@@ -48,6 +48,7 @@ if "%1" == "--with-git" goto :git
 if "%1" == "--without-git" goto :nogit
 if "%1" == "--without-ext" goto :witharg
 if "%1" == "--without-extensions" goto :witharg
+if "%1" == "--with-gmp" goto :gmp
 if "%opt:~0,10%" == "--without-" goto :withoutarg
 if "%opt:~0,7%" == "--with-" goto :witharg
 if "%1" == "-h" goto :help
@@ -208,6 +209,12 @@ goto :loop ;
   echo>> ~tmp~.mak 	"GIT=never-use" \
   echo>> ~tmp~.mak 	"HAVE_GIT=no" \
   echo>>confargs.tmp  %1 \
+  shift
+goto :loop ;
+:gmp
+  echo>> ~tmp~.mak 	"WITH_GMP=yes" \
+  echo>>confargs.tmp  %1=1 \
+  shift
   shift
 goto :loop ;
 :witharg

@@ -22,6 +22,7 @@ class Gem::Platform
   end
 
   def self.match_platforms?(platform, platforms)
+    platform = Gem::Platform.new(platform) unless platform.is_a?(Gem::Platform)
     platforms.any? do |local_platform|
       platform.nil? ||
         local_platform == platform ||

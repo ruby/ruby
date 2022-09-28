@@ -649,9 +649,9 @@ class Gem::Installer
 
   def process_options # :nodoc:
     @options = {
-      :bin_dir      => nil,
-      :env_shebang  => false,
-      :force        => false,
+      :bin_dir => nil,
+      :env_shebang => false,
+      :force => false,
       :only_install_dir => false,
       :post_install_message => true,
     }.merge options

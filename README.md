@@ -46,6 +46,10 @@ to see the list of branches:
 You may also want to use https://git.ruby-lang.org/ruby.git (actual master of Ruby source)
 if you are a committer.
 
+## How to build
+
+see [Building Ruby](doc/contributing/building_ruby.md)
+
 ## Ruby home page
 
 https://www.ruby-lang.org/

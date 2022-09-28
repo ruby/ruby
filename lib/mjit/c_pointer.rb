@@ -2,20 +2,12 @@ module RubyVM::MJIT
   # Every class under this namespace is a pointer. Even if the type is
   # immediate, it shouldn't be dereferenced until `*` is called.
   module CPointer
-    # Patched PACK_MAP to support unsigned operations
-    PACK_MAP = Fiddle::PackInfo::PACK_MAP.dup
-    PACK_MAP.keys.each do |type|
-      if type.negative? || type == Fiddle::TYPE_VOIDP
-        PACK_MAP[type] = PACK_MAP[type].upcase
-      end
-    end
-
     # Note: We'd like to avoid alphabetic method names to avoid a conflict
     # with member methods. to_i and to_s are considered an exception.
     class Struct
       # @param name [String]
       # @param sizeof [Integer]
-      # @param members [Hash{ Symbol => [Integer, RubyVM::MJIT::CType::*] }]
+      # @param members [Hash{ Symbol => [RubyVM::MJIT::CType::*, Integer, TrueClass] }]
       def initialize(addr, sizeof, members)
         @addr = addr
         @sizeof = sizeof
@@ -42,7 +34,7 @@ module RubyVM::MJIT
       # TODO: remove this?
       # @param member [Symbol]
       def [](member)
-        offset, type = @members.fetch(member)
+        type, offset = @members.fetch(member)
         type.new(@addr + offset / 8)
       end
 
@@ -51,7 +43,7 @@ module RubyVM::MJIT
       # @param member [Symbol]
       # @param value [Object]
       def []=(member, value)
-        offset, type = @members.fetch(member)
+        type, offset = @members.fetch(member)
         type[@addr + offset / 8] = value
       end
 
@@ -69,7 +61,7 @@ module RubyVM::MJIT
             super(addr, sizeof, members)
           end
 
-          members.each do |member, (offset, type, to_ruby)|
+          members.each do |member, (type, offset, to_ruby)|
             # Intelligent API that does automatic dereference
             define_method(member) do
               value = self[member]
@@ -188,7 +180,7 @@ module RubyVM::MJIT
       # @param fiddle_type [Integer] Fiddle::TYPE_*
       def self.define(fiddle_type)
         size = Fiddle::PackInfo::SIZE_MAP.fetch(fiddle_type)
-        pack = PACK_MAP.fetch(fiddle_type)
+        pack = Fiddle::PackInfo::PACK_MAP.fetch(fiddle_type)
 
         Class.new(self) do
           define_method(:initialize) do |addr|
@@ -252,13 +244,13 @@ module RubyVM::MJIT
       # @param value [Integer, RubyVM::MJIT::CPointer::Struct] an address itself or an object that return an address with to_i
       def []=(index, value)
         Fiddle::Pointer.new(@addr + index * Fiddle::SIZEOF_VOIDP)[0, Fiddle::SIZEOF_VOIDP] =
-          [value.to_i].pack(PACK_MAP[Fiddle::TYPE_VOIDP])
+          [value.to_i].pack(Fiddle::PackInfo::PACK_MAP[Fiddle::TYPE_VOIDP])
       end
 
       private
 
       def dest_addr
-        Fiddle::Pointer.new(@addr)[0, Fiddle::SIZEOF_VOIDP].unpack1(PACK_MAP[Fiddle::TYPE_VOIDP])
+        Fiddle::Pointer.new(@addr)[0, Fiddle::SIZEOF_VOIDP].unpack1(Fiddle::PackInfo::PACK_MAP[Fiddle::TYPE_VOIDP])
       end
 
       def self.define(block)
@@ -272,7 +264,7 @@ module RubyVM::MJIT
           # @param value [Integer, RubyVM::MJIT::CPointer::Struct] an address itself, or an object that return an address with to_i
           define_singleton_method(:[]=) do |addr, value|
             value = value.to_i
-            Fiddle::Pointer.new(addr)[0, Fiddle::SIZEOF_VOIDP] = [value].pack(PACK_MAP[Fiddle::TYPE_VOIDP])
+            Fiddle::Pointer.new(addr)[0, Fiddle::SIZEOF_VOIDP] = [value].pack(Fiddle::PackInfo::PACK_MAP[Fiddle::TYPE_VOIDP])
           end
         end
       end

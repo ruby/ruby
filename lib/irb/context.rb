@@ -115,6 +115,10 @@ module IRB
         end
         @io = StdioInputMethod.new unless @io
 
+      when '-'
+        @io = FileInputMethod.new($stdin)
+        @irb_name = '-'
+        @irb_path = '-'
       when String
         @io = FileInputMethod.new(input_method)
         @irb_name = File.basename(input_method)

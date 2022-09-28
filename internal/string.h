@@ -44,6 +44,7 @@ const char *ruby_escaped_char(int c);
 void rb_str_make_independent(VALUE str);
 int rb_enc_str_coderange_scan(VALUE str, rb_encoding *enc);
 int rb_ascii8bit_appendable_encoding_index(rb_encoding *enc, unsigned int code);
+VALUE rb_str_include(VALUE str, VALUE arg);
 
 static inline bool STR_EMBED_P(VALUE str);
 static inline bool STR_SHARED_P(VALUE str);

@@ -44,10 +44,6 @@ TEST_DEPENDS += $(if $(filter great exam love check,$(MAKECMDGOALS)),all exts)
 
 in-srcdir := $(if $(filter-out .,$(srcdir)),$(CHDIR) $(srcdir) &&)
 
-ifneq ($(filter -O0 -Od,$(optflags)),)
-override XCFLAGS := $(filter-out -D_FORTIFY_SOURCE=%,$(XCFLAGS))
-endif
-
 ifeq ($(if $(filter all main exts enc trans libencs libenc libtrans \
 		    prog program ruby ruby$(EXEEXT) \
 		    wprogram rubyw rubyw$(EXEEXT) \
@@ -385,19 +381,6 @@ ifeq ($(if $(wildcard $(filter-out .,$(UNICODE_FILES) $(UNICODE_PROPERTY_FILES))
 UNICODE_TABLES_TIMESTAMP =
 $(UNICODE_SRC_DATA_DIR)/.unicode-tables.time: \
 	$(UNICODE_FILES) $(UNICODE_PROPERTY_FILES)
-endif
-
-ifeq ($(wildcard $(srcdir)/revision.h),)
-REVISION_IN_HEADER := none
-REVISION_LATEST := update
-else
-REVISION_IN_HEADER := $(shell sed -n 's/^\#define RUBY_FULL_REVISION "\(.*\)"/\1/p' $(srcdir)/revision.h 2>/dev/null)
-REVISION_LATEST := $(shell $(CHDIR) $(srcdir) && $(GIT) log -1 --format=%H 2>/dev/null)
-endif
-ifneq ($(REVISION_IN_HEADER),$(REVISION_LATEST))
-# GNU make treat the target as unmodified when its dependents get
-# updated but it is not updated, while others may not.
-$(srcdir)/revision.h: $(REVISION_H)
 endif
 
 include $(top_srcdir)/yjit/yjit.mk

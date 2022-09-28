@@ -113,7 +113,9 @@ module Forwardable
 
   # Version of +forwardable.rb+
   VERSION = "1.3.2"
+  VERSION.freeze
   FORWARDABLE_VERSION = VERSION
+  FORWARDABLE_VERSION.freeze
 
   @debug = nil
   class << self

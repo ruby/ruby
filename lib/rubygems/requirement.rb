@@ -10,13 +10,13 @@ require_relative "version"
 
 class Gem::Requirement
   OPS = { #:nodoc:
-    "="  =>  lambda {|v, r| v == r },
-    "!=" =>  lambda {|v, r| v != r },
-    ">"  =>  lambda {|v, r| v >  r },
-    "<"  =>  lambda {|v, r| v <  r },
-    ">=" =>  lambda {|v, r| v >= r },
-    "<=" =>  lambda {|v, r| v <= r },
-    "~>" =>  lambda {|v, r| v >= r && v.release < r.bump },
+    "=" => lambda {|v, r| v == r },
+    "!=" => lambda {|v, r| v != r },
+    ">" => lambda {|v, r| v >  r },
+    "<" => lambda {|v, r| v <  r },
+    ">=" => lambda {|v, r| v >= r },
+    "<=" => lambda {|v, r| v <= r },
+    "~>" => lambda {|v, r| v >= r && v.release < r.bump },
   }.freeze
 
   SOURCE_SET_REQUIREMENT = Struct.new(:for_lockfile).new "!" # :nodoc:

@@ -1430,7 +1430,7 @@ class Reline::LineEditor
     if @waiting_operator_proc
       if VI_MOTIONS.include?(method_symbol)
         old_cursor, old_byte_pointer = @cursor, @byte_pointer
-        @vi_arg = @waiting_operator_vi_arg if @waiting_operator_vi_arg > 1
+        @vi_arg = @waiting_operator_vi_arg if @waiting_operator_vi_arg&.> 1
         block.(true)
         unless @waiting_proc
           cursor_diff, byte_pointer_diff = @cursor - old_cursor, @byte_pointer - old_byte_pointer

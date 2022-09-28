@@ -478,6 +478,12 @@ end.join
       def to_s; ""; end
     end
     assert_equal(e.inspect, e.new.inspect)
+
+    # https://bugs.ruby-lang.org/issues/18170#note-13
+    assert_equal('#<Exception:"foo\nbar">', Exception.new("foo\nbar").inspect)
+    assert_equal('#<Exception: foo bar>', Exception.new("foo bar").inspect)
+    assert_equal('#<Exception: foo\bar>', Exception.new("foo\\bar").inspect)
+    assert_equal('#<Exception: "foo\nbar">', Exception.new('"foo\nbar"').inspect)
   end
 
   def test_to_s
@@ -1053,7 +1059,7 @@ $stderr = $stdout; raise "\x82\xa0"') do |outs, errs, status|
           warning << [str, category]
         end
       else
-        define_method(:warn) do |str|
+        define_method(:warn) do |str, category: nil|
           warning << str
         end
       end

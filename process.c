@@ -4222,6 +4222,7 @@ rb_mjit_fork(void)
 
     after_fork_ruby();
     disable_child_handler_fork_parent(&old);
+    if (pid == 0) rb_thread_atfork();
 
     return pid;
 }
@@ -5547,6 +5548,9 @@ rlimit_resource_name2int(const char *name, long len, int casetype)
 #ifdef RLIMIT_NPROC
         RESCHECK(NPROC);
 #endif
+#ifdef RLIMIT_NPTS
+        RESCHECK(NPTS);
+#endif
 #ifdef RLIMIT_NICE
         RESCHECK(NICE);
 #endif
@@ -5775,6 +5779,7 @@ proc_getrlimit(VALUE obj, VALUE resource)
  *  [NICE] ceiling on process's nice(2) value (number) (GNU/Linux)
  *  [NOFILE] file descriptors (number) (SUSv3)
  *  [NPROC] number of processes for the user (number) (4.4BSD, GNU/Linux)
+ *  [NPTS] number of pseudo terminals (number) (FreeBSD)
  *  [RSS] resident memory size (bytes) (4.2BSD, GNU/Linux)
  *  [RTPRIO] ceiling on the process's real-time priority (number) (GNU/Linux)
  *  [RTTIME] CPU time for real-time process (us) (GNU/Linux)
@@ -7108,19 +7113,14 @@ rb_daemon(int nochdir, int noclose)
 #else
     int n;
 
-#define fork_daemon() \
-    switch (rb_fork_ruby(NULL)) { \
-      case -1: return -1; \
-      case 0:  break; \
-      default: _exit(EXIT_SUCCESS); \
+    switch (rb_fork_ruby(NULL)) {
+      case -1: return -1;
+      case 0:  break;
+      default: _exit(EXIT_SUCCESS);
     }
 
-    fork_daemon();
-
-    if (setsid() < 0) return -1;
-
-    /* must not be process-leader */
-    fork_daemon();
+    /* ignore EPERM which means already being process-leader */
+    if (setsid() < 0) (void)0;
 
     if (!nochdir)
         err = chdir("/");
@@ -8726,7 +8726,7 @@ get_PROCESS_ID(ID _x, VALUE *_y)
 
 /*
  *  call-seq:
- *     Process.kill(signal, pid, ...)    -> integer
+ *     Process.kill(signal, pid, *pids)    -> integer
  *
  *  Sends the given signal to the specified process id(s) if _pid_ is positive.
  *  If _pid_ is zero, _signal_ is sent to all processes whose group ID is equal
@@ -8978,6 +8978,14 @@ InitVM_process(void)
      * see the system getrlimit(2) manual for details.
      */
     rb_define_const(rb_mProcess, "RLIMIT_NPROC", INT2FIX(RLIMIT_NPROC));
+#endif
+#ifdef RLIMIT_NPTS
+    /* The maximum number of pseudo-terminals that can be created for the
+     * real user ID of the calling process.
+     *
+     * see the system getrlimit(2) manual for details.
+     */
+    rb_define_const(rb_mProcess, "RLIMIT_NPTS", INT2FIX(RLIMIT_NPTS));
 #endif
 #ifdef RLIMIT_RSS
     /* Specifies the limit (in pages) of the process's resident set.

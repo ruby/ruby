@@ -178,13 +178,8 @@ class TestNetHTTP < Test::Unit::TestCase
       http = Net::HTTP.new 'hostname.example'
 
       assert_equal true, http.proxy?
-      if Net::HTTP::ENVIRONMENT_VARIABLE_IS_MULTIUSER_SAFE
-        assert_equal 'foo', http.proxy_user
-        assert_equal 'bar', http.proxy_pass
-      else
-        assert_nil http.proxy_user
-        assert_nil http.proxy_pass
-      end
+      assert_equal 'foo', http.proxy_user
+      assert_equal 'bar', http.proxy_pass
     end
   end
 
@@ -195,13 +190,8 @@ class TestNetHTTP < Test::Unit::TestCase
       http = Net::HTTP.new 'hostname.example'
 
       assert_equal true, http.proxy?
-      if Net::HTTP::ENVIRONMENT_VARIABLE_IS_MULTIUSER_SAFE
-        assert_equal "Y\\X", http.proxy_user
-        assert_equal "R%S] ?X", http.proxy_pass
-      else
-        assert_nil http.proxy_user
-        assert_nil http.proxy_pass
-      end
+      assert_equal "Y\\X", http.proxy_user
+      assert_equal "R%S] ?X", http.proxy_pass
     end
   end
 
