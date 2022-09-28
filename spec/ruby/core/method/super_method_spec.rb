@@ -49,18 +49,9 @@ describe "Method#super_method" do
       MethodSpecs::InheritedMethods::C.new.derp.should == 'BA'
     end
 
-    ruby_version_is ""..."3.2" do
-      it "returns the expected super_method" do
-        method = MethodSpecs::InheritedMethods::C.new.method(:derp)
-        method.super_method.owner.should == MethodSpecs::InheritedMethods::A
-      end
-    end
-
-    ruby_version_is "3.2" do
-      it "returns the expected super_method" do
-        method = MethodSpecs::InheritedMethods::C.new.method(:derp)
-        method.super_method.owner.should == MethodSpecs::InheritedMethods::B
-      end
+    it "returns the expected super_method" do
+      method = MethodSpecs::InheritedMethods::C.new.method(:derp)
+      method.super_method.owner.should == MethodSpecs::InheritedMethods::A
     end
   end
 

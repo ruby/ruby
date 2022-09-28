@@ -29,18 +29,14 @@ describe "UnboundMethod#super_method" do
 
   # https://github.com/jruby/jruby/issues/7240
   context "after changing an inherited methods visibility" do
-    ruby_version_is ""..."3.2" do
-      it "returns the expected super_method" do
-        method = MethodSpecs::InheritedMethods::C.instance_method(:derp)
-        method.super_method.owner.should == MethodSpecs::InheritedMethods::A
-      end
+    it "calls the proper super method" do
+      method = MethodSpecs::InheritedMethods::C.instance_method(:derp)
+      method.bind(MethodSpecs::InheritedMethods::C.new).call.should == 'BA'
     end
 
-    ruby_version_is "3.2" do
-      it "returns the expected super_method" do
-        method = MethodSpecs::InheritedMethods::C.instance_method(:derp)
-        method.super_method.owner.should == MethodSpecs::InheritedMethods::B
-      end
+    it "returns the expected super_method" do
+      method = MethodSpecs::InheritedMethods::C.instance_method(:derp)
+      method.super_method.owner.should == MethodSpecs::InheritedMethods::A
     end
   end
 
