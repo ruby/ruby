@@ -90,8 +90,11 @@ Note that each entry is kept to a minimum, see links for details.
     foo(k: 1)
     ```
 
-* `eval` and related methods are able to generate code coverage.
-  [[Feature #19008]]
+* `eval` and related methods are able to generate code coverage. Enabled using
+  `Coverage.setup(:all)` or `Coverge.setup(eval: true)`. [[Feature #19008]]
+
+* `Coverage.supported?(mode)` enables detection of what coverage modes are
+  supported. [[Feature #19026]]
 
 ## Command line options
 
@@ -317,3 +320,4 @@ The following deprecated APIs are removed.
 [Feature #18481]: https://bugs.ruby-lang.org/issues/18481
 [Feature #18949]: https://bugs.ruby-lang.org/issues/18949
 [Feature #19008]: https://bugs.ruby-lang.org/issues/19008
+[Feature #19026]: https://bugs.ruby-lang.org/issues/19026
