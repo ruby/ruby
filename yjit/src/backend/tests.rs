@@ -220,7 +220,7 @@ fn test_jcc_ptr()
 {
     let (mut asm, mut cb) = setup_asm();
 
-    let side_exit = Target::CodePtr((5 as *mut u8).into());
+    let side_exit = Target::CodePtr(((cb.get_write_ptr().raw_ptr() as usize + 4) as *mut u8).into());
     let not_mask = asm.not(Opnd::mem(32, EC, RUBY_OFFSET_EC_INTERRUPT_MASK));
     asm.test(
         Opnd::mem(32, EC, RUBY_OFFSET_EC_INTERRUPT_FLAG),
@@ -237,7 +237,7 @@ fn test_jmp_ptr()
 {
     let (mut asm, mut cb) = setup_asm();
 
-    let stub = Target::CodePtr((5 as *mut u8).into());
+    let stub = Target::CodePtr(((cb.get_write_ptr().raw_ptr() as usize + 4) as *mut u8).into());
     asm.jmp(stub);
 
     asm.compile_with_num_regs(&mut cb, 0);
@@ -248,7 +248,7 @@ fn test_jo()
 {
     let (mut asm, mut cb) = setup_asm();
 
-    let side_exit = Target::CodePtr((5 as *mut u8).into());
+    let side_exit = Target::CodePtr(((cb.get_write_ptr().raw_ptr() as usize + 4) as *mut u8).into());
 
     let arg1 = Opnd::mem(64, SP, 0);
     let arg0 = Opnd::mem(64, SP, 8);

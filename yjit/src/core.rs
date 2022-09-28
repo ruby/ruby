@@ -662,7 +662,7 @@ pub extern "C" fn rb_yjit_iseq_update_references(payload: *mut c_void) {
                 if new_addr != object {
                     for (byte_idx, &byte) in new_addr.as_u64().to_le_bytes().iter().enumerate() {
                         let byte_code_ptr = value_code_ptr.add_bytes(byte_idx);
-                        cb.get_mem().write_byte(byte_code_ptr, byte)
+                        cb.write_mem(byte_code_ptr, byte)
                             .expect("patching existing code should be within bounds");
                     }
                 }
@@ -1896,7 +1896,9 @@ pub fn gen_branch(
 
     // Call the branch generation function
     asm.mark_branch_start(&branchref);
-    gen_fn(asm, branch.dst_addrs[0].unwrap(), branch.dst_addrs[1], BranchShape::Default);
+    if let Some(dst_addr) = branch.dst_addrs[0] {
+        gen_fn(asm, dst_addr, branch.dst_addrs[1], BranchShape::Default);
+    }
     asm.mark_branch_end(&branchref);
 }
 
@@ -1935,6 +1937,7 @@ pub fn gen_direct_jump(jit: &JITState, ctx: &Context, target0: BlockId, asm: &mu
         branch.shape = BranchShape::Default;
 
         // Call the branch generation function
+        asm.comment("gen_direct_jmp: existing block");
         asm.mark_branch_start(&branchref);
         gen_jump_branch(asm, branch.dst_addrs[0].unwrap(), None, BranchShape::Default);
         asm.mark_branch_end(&branchref);
@@ -1945,6 +1948,7 @@ pub fn gen_direct_jump(jit: &JITState, ctx: &Context, target0: BlockId, asm: &mu
         branch.shape = BranchShape::Next0;
 
         // The branch is effectively empty (a noop)
+        asm.comment("gen_direct_jmp: fallthrough");
         asm.mark_branch_start(&branchref);
         asm.mark_branch_end(&branchref);
     }
@@ -1983,7 +1987,9 @@ pub fn defer_compilation(
 
     // Call the branch generation function
     asm.mark_branch_start(&branch_rc);
-    gen_jump_branch(asm, branch.dst_addrs[0].unwrap(), None, BranchShape::Default);
+    if let Some(dst_addr) = branch.dst_addrs[0] {
+        gen_jump_branch(asm, dst_addr, None, BranchShape::Default);
+    }
     asm.mark_branch_end(&branch_rc);
 }
 

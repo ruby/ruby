@@ -13,13 +13,15 @@ use crate::utils::*;
 use CodegenStatus::*;
 use InsnOpnd::*;
 
-
+use std::cell::RefCell;
+use std::cell::RefMut;
 use std::cmp;
 use std::collections::HashMap;
 use std::ffi::CStr;
 use std::mem::{self, size_of};
 use std::os::raw::c_uint;
 use std::ptr;
+use std::rc::Rc;
 use std::slice;
 
 pub use crate::virtualmem::CodePtr;
@@ -296,6 +298,7 @@ fn jit_prepare_routine_call(
 /// Record the current codeblock write position for rewriting into a jump into
 /// the outlined block later. Used to implement global code invalidation.
 fn record_global_inval_patch(asm: &mut Assembler, outline_block_target_pos: CodePtr) {
+    asm.pad_inval_patch();
     asm.pos_marker(move |code_ptr| {
         CodegenGlobals::push_global_inval_patch(code_ptr, outline_block_target_pos);
     });
@@ -606,19 +609,6 @@ fn gen_pc_guard(asm: &mut Assembler, iseq: IseqPtr, insn_idx: u32) {
 /// Compile an interpreter entry block to be inserted into an iseq
 /// Returns None if compilation fails.
 pub fn gen_entry_prologue(cb: &mut CodeBlock, iseq: IseqPtr, insn_idx: u32) -> Option<CodePtr> {
-    const MAX_PROLOGUE_SIZE: usize = 1024;
-
-    // Check if we have enough executable memory
-    if !cb.has_capacity(MAX_PROLOGUE_SIZE) {
-        return None;
-    }
-
-    let old_write_pos = cb.get_write_pos();
-
-    // TODO: figure out if this is actually beneficial for performance
-    // Align the current write position to cache line boundaries
-    cb.align_pos(64);
-
     let code_ptr = cb.get_write_ptr();
 
     let mut asm = Assembler::new();
@@ -660,10 +650,11 @@ pub fn gen_entry_prologue(cb: &mut CodeBlock, iseq: IseqPtr, insn_idx: u32) -> O
 
     asm.compile(cb);
 
-    // Verify MAX_PROLOGUE_SIZE
-    assert!(cb.get_write_pos() - old_write_pos <= MAX_PROLOGUE_SIZE);
-
-    return Some(code_ptr);
+    if (cb.has_dropped_bytes()) {
+        None
+    } else {
+        Some(code_ptr)
+    }
 }
 
 // Generate code to check for interrupts and take a side-exit.
@@ -853,7 +844,7 @@ pub fn gen_single_block(
     {
         let mut block = jit.block.borrow_mut();
         if block.entry_exit.is_some() {
-            asm.pad_entry_exit();
+            asm.pad_inval_patch();
         }
 
         // Compile code into the code block
@@ -6538,29 +6529,13 @@ static mut CODEGEN_GLOBALS: Option<CodegenGlobals> = None;
 impl CodegenGlobals {
     /// Initialize the codegen globals
     pub fn init() {
-        // Executable memory size in MiB
-        let mem_size = get_option!(exec_mem_size) * 1024 * 1024;
+        // Executable memory and code page size in bytes
+        let mem_size = get_option!(exec_mem_size);
+        let code_page_size = get_option!(code_page_size);
 
         #[cfg(not(test))]
         let (mut cb, mut ocb) = {
-            // TODO(alan): we can error more gracefully when the user gives
-            //   --yjit-exec-mem=absurdly-large-number
-            //
-            // 2 GiB. It's likely a bug if we generate this much code.
-            const MAX_BUFFER_SIZE: usize = 2 * 1024 * 1024 * 1024;
-            assert!(mem_size <= MAX_BUFFER_SIZE);
-            let mem_size_u32 = mem_size as u32;
-            let half_size = mem_size / 2;
-
-            let page_size = unsafe { rb_yjit_get_page_size() };
-            let assert_page_aligned = |ptr| assert_eq!(
-                0,
-                ptr as usize % page_size.as_usize(),
-                "Start of virtual address block should be page-aligned",
-            );
-
-            let virt_block: *mut u8 = unsafe { rb_yjit_reserve_addr_space(mem_size_u32) };
-            let second_half = virt_block.wrapping_add(half_size);
+            let virt_block: *mut u8 = unsafe { rb_yjit_reserve_addr_space(mem_size as u32) };
 
             // Memory protection syscalls need page-aligned addresses, so check it here. Assuming
             // `virt_block` is page-aligned, `second_half` should be page-aligned as long as the
@@ -6569,26 +6544,25 @@ impl CodegenGlobals {
             //
             // Basically, we don't support x86-64 2MiB and 1GiB pages. ARMv8 can do up to 64KiB
             // (2¹⁶ bytes) pages, which should be fine. 4KiB pages seem to be the most popular though.
-            assert_page_aligned(virt_block);
-            assert_page_aligned(second_half);
+            let page_size = unsafe { rb_yjit_get_page_size() };
+            assert_eq!(
+                virt_block as usize % page_size.as_usize(), 0,
+                "Start of virtual address block should be page-aligned",
+            );
+            assert_eq!(code_page_size % page_size.as_usize(), 0, "code_page_size was not page-aligned");
 
             use crate::virtualmem::*;
 
-            let first_half = VirtualMem::new(
+            let mem_block = VirtualMem::new(
                 SystemAllocator {},
                 page_size,
                 virt_block,
-                half_size
+                mem_size,
             );
-            let second_half = VirtualMem::new(
-                SystemAllocator {},
-                page_size,
-                second_half,
-                half_size
-            );
+            let mem_block = Rc::new(RefCell::new(mem_block));
 
-            let cb = CodeBlock::new(first_half, false);
-            let ocb = OutlinedCb::wrap(CodeBlock::new(second_half, true));
+            let cb = CodeBlock::new(mem_block.clone(), code_page_size, false);
+            let ocb = OutlinedCb::wrap(CodeBlock::new(mem_block, code_page_size, true));
 
             (cb, ocb)
         };
@@ -6694,6 +6668,10 @@ impl CodegenGlobals {
     /// Get a mutable reference to the codegen globals instance
     pub fn get_instance() -> &'static mut CodegenGlobals {
         unsafe { CODEGEN_GLOBALS.as_mut().unwrap() }
+    }
+
+    pub fn has_instance() -> bool {
+        unsafe { CODEGEN_GLOBALS.as_mut().is_some() }
     }
 
     /// Get a mutable reference to the inline code block

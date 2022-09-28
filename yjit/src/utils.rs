@@ -74,14 +74,13 @@ pub(crate) use offset_of;
 // This should work fine on ASCII strings and anything else
 // that is considered legal UTF-8, including embedded nulls.
 fn ruby_str_to_rust(v: VALUE) -> String {
-    // Make sure the CRuby encoding is UTF-8 compatible
-    let encoding = unsafe { rb_ENCODING_GET(v) } as u32;
-    assert!(encoding == RUBY_ENCINDEX_ASCII_8BIT || encoding == RUBY_ENCINDEX_UTF_8 || encoding == RUBY_ENCINDEX_US_ASCII);
-
     let str_ptr = unsafe { rb_RSTRING_PTR(v) } as *mut u8;
     let str_len: usize = unsafe { rb_RSTRING_LEN(v) }.try_into().unwrap();
     let str_slice: &[u8] = unsafe { slice::from_raw_parts(str_ptr, str_len) };
-    String::from_utf8(str_slice.to_vec()).unwrap() // does utf8 validation
+    match String::from_utf8(str_slice.to_vec()) {
+        Ok(utf8) => utf8,
+        Err(_) => String::new(),
+    }
 }
 
 // Location is the file defining the method, colon, method name.

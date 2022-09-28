@@ -1,9 +1,20 @@
+use std::cell::RefCell;
+use std::cmp;
 use std::fmt;
 use std::mem;
+use std::rc::Rc;
+#[cfg(target_arch = "x86_64")]
+use crate::backend::x86_64::JMP_PTR_BYTES;
+#[cfg(target_arch = "aarch64")]
+use crate::backend::arm64::JMP_PTR_BYTES;
+use crate::backend::ir::Assembler;
+use crate::backend::ir::Target;
+use crate::virtualmem::WriteError;
 
 #[cfg(feature = "asm_comments")]
 use std::collections::BTreeMap;
 
+use crate::codegen::CodegenGlobals;
 use crate::virtualmem::{VirtualMem, CodePtr};
 
 // Lots of manual vertical alignment in there that rustfmt doesn't handle well.
@@ -17,7 +28,8 @@ pub mod arm64;
 //
 
 /// Reference to an ASM label
-struct LabelRef {
+#[derive(Clone)]
+pub struct LabelRef {
     // Position in the code block where the label reference exists
     pos: usize,
 
@@ -36,13 +48,19 @@ struct LabelRef {
 /// Block of memory into which instructions can be assembled
 pub struct CodeBlock {
     // Memory for storing the encoded instructions
-    mem_block: VirtualMem,
+    mem_block: Rc<RefCell<VirtualMem>>,
 
     // Memory block size
     mem_size: usize,
 
     // Current writing position
     write_pos: usize,
+
+    // Size of a code page (inlined + outlined)
+    page_size: usize,
+
+    // Size reserved for writing a jump to the next page
+    page_end_reserve: usize,
 
     // Table of registered label addresses
     label_addrs: Vec<usize>,
@@ -58,7 +76,6 @@ pub struct CodeBlock {
     asm_comments: BTreeMap<usize, Vec<String>>,
 
     // True for OutlinedCb
-    #[cfg(feature = "disasm")]
     pub outlined: bool,
 
     // Set if the CodeBlock is unable to output some instructions,
@@ -67,27 +84,143 @@ pub struct CodeBlock {
     dropped_bytes: bool,
 }
 
+/// Set of CodeBlock label states. Used for recovering the previous state.
+pub struct LabelState {
+    label_addrs: Vec<usize>,
+    label_names: Vec<String>,
+    label_refs: Vec<LabelRef>,
+}
+
 impl CodeBlock {
     /// Make a new CodeBlock
-    pub fn new(mem_block: VirtualMem, outlined: bool) -> Self {
-        Self {
-            mem_size: mem_block.virtual_region_size(),
+    pub fn new(mem_block: Rc<RefCell<VirtualMem>>, page_size: usize, outlined: bool) -> Self {
+        let mem_size = mem_block.borrow().virtual_region_size();
+        let mut cb = Self {
             mem_block,
+            mem_size,
             write_pos: 0,
+            page_size,
+            page_end_reserve: JMP_PTR_BYTES,
             label_addrs: Vec::new(),
             label_names: Vec::new(),
             label_refs: Vec::new(),
             #[cfg(feature = "asm_comments")]
             asm_comments: BTreeMap::new(),
-            #[cfg(feature = "disasm")]
             outlined,
             dropped_bytes: false,
+        };
+        cb.write_pos = cb.page_start();
+        cb
+    }
+
+    /// Move the CodeBlock to the next page. If it's on the furthest page,
+    /// move the other CodeBlock to the next page as well.
+    pub fn next_page<F: Fn(&mut CodeBlock, CodePtr)>(&mut self, base_ptr: CodePtr, jmp_ptr: F) -> bool {
+        let old_write_ptr = self.get_write_ptr();
+        self.set_write_ptr(base_ptr);
+        self.without_page_end_reserve(|cb| assert!(cb.has_capacity(JMP_PTR_BYTES)));
+
+        // Move self to the next page
+        let next_page_idx = self.write_pos / self.page_size + 1;
+        if !self.set_page(next_page_idx, &jmp_ptr) {
+            self.set_write_ptr(old_write_ptr); // rollback if there are no more pages
+            return false;
         }
+
+        // Move the other CodeBlock to the same page if it'S on the furthest page
+        self.other_cb().unwrap().set_page(next_page_idx, &jmp_ptr);
+
+        return !self.dropped_bytes;
+    }
+
+    /// Move the CodeBlock to page_idx only if it's not going backwards.
+    fn set_page<F: Fn(&mut CodeBlock, CodePtr)>(&mut self, page_idx: usize, jmp_ptr: &F) -> bool {
+        // Do not move the CodeBlock if page_idx points to an old position so that this
+        // CodeBlock will not overwrite existing code.
+        // TODO: We could move it to the last write_pos on that page if we keep track of
+        // the past write_pos of each page.
+        let mut dst_pos = self.page_size * page_idx + self.page_start();
+        if self.page_size * page_idx < self.mem_size && self.write_pos < dst_pos {
+            // Reset dropped_bytes
+            self.dropped_bytes = false;
+
+            // Convert dst_pos to dst_ptr
+            let src_pos = self.write_pos;
+            self.write_pos = dst_pos;
+            let dst_ptr = self.get_write_ptr();
+            self.write_pos = src_pos;
+
+            // Generate jmp_ptr from src_pos to dst_pos
+            self.without_page_end_reserve(|cb| {
+                cb.add_comment("jump to next page");
+                jmp_ptr(cb, dst_ptr);
+                assert!(!cb.has_dropped_bytes());
+            });
+
+            // Start the next code from dst_pos
+            self.write_pos = dst_pos;
+        }
+        !self.dropped_bytes
+    }
+
+    /// write_pos of the current page start
+    pub fn page_start_pos(&self) -> usize {
+        self.get_write_pos() / self.page_size * self.page_size + self.page_start()
+    }
+
+    /// Offset of each page where CodeBlock should start writing
+    pub fn page_start(&self) -> usize {
+        let mut start = if self.inline() {
+            0
+        } else {
+            self.page_size / 2
+        };
+        if cfg!(debug_assertions) && !cfg!(test) {
+            // Leave illegal instructions at the beginning of each page to assert
+            // we're not accidentally crossing page boundaries.
+            start += JMP_PTR_BYTES;
+        }
+        start
+    }
+
+    /// Offset of each page where CodeBlock should stop writing (exclusive)
+    pub fn page_end(&self) -> usize {
+        let page_end = if self.inline() {
+            self.page_size / 2
+        } else {
+            self.page_size
+        };
+        page_end - self.page_end_reserve // reserve space to jump to the next page
+    }
+
+    /// Call a given function with page_end_reserve = 0
+    pub fn without_page_end_reserve<F: Fn(&mut Self)>(&mut self, block: F) {
+        let old_page_end_reserve = self.page_end_reserve;
+        self.page_end_reserve = 0;
+        block(self);
+        self.page_end_reserve = old_page_end_reserve;
+    }
+
+    /// Return the address ranges of a given address range that this CodeBlock can write.
+    pub fn writable_addrs(&self, start_ptr: CodePtr, end_ptr: CodePtr) -> Vec<(usize, usize)> {
+        let mut addrs = vec![];
+        let mut start = start_ptr.raw_ptr() as usize;
+        let codeblock_end = self.get_ptr(self.get_mem_size()).raw_ptr() as usize;
+        let end = std::cmp::min(end_ptr.raw_ptr() as usize, codeblock_end);
+        while start < end {
+            let current_page = start / self.page_size * self.page_size;
+            let page_end = std::cmp::min(end, current_page + self.page_end()) as usize;
+            addrs.push((start, page_end));
+            start = current_page + self.page_size + self.page_start();
+        }
+        addrs
     }
 
     /// Check if this code block has sufficient remaining capacity
     pub fn has_capacity(&self, num_bytes: usize) -> bool {
-        self.write_pos + num_bytes < self.mem_size
+        let page_offset = self.write_pos % self.page_size;
+        let capacity = self.page_end().saturating_sub(page_offset);
+        num_bytes <= capacity
     }
 
     /// Add an assembly comment if the feature is on.
@@ -121,8 +254,8 @@ impl CodeBlock {
         self.write_pos
     }
 
-    pub fn get_mem(&mut self) -> &mut VirtualMem {
-        &mut self.mem_block
+    pub fn write_mem(&self, write_ptr: CodePtr, byte: u8) -> Result<(), WriteError> {
+        self.mem_block.borrow_mut().write_byte(write_ptr, byte)
     }
 
     // Set the current write position
@@ -134,49 +267,31 @@ impl CodeBlock {
         self.write_pos = pos;
     }
 
-    // Align the current write pointer to a multiple of bytes
-    pub fn align_pos(&mut self, multiple: u32) {
-        // Compute the alignment boundary that is lower or equal
-        // Do everything with usize
-        let multiple: usize = multiple.try_into().unwrap();
-        let pos = self.get_write_ptr().raw_ptr() as usize;
-        let remainder = pos % multiple;
-        let prev_aligned = pos - remainder;
-
-        if prev_aligned == pos {
-            // Already aligned so do nothing
-        } else {
-            // Align by advancing
-            let pad = multiple - remainder;
-            self.set_pos(self.get_write_pos() + pad);
-        }
-    }
-
     // Set the current write position from a pointer
     pub fn set_write_ptr(&mut self, code_ptr: CodePtr) {
-        let pos = code_ptr.into_usize() - self.mem_block.start_ptr().into_usize();
+        let pos = code_ptr.into_usize() - self.mem_block.borrow().start_ptr().into_usize();
         self.set_pos(pos);
     }
 
     /// Get a (possibly dangling) direct pointer into the executable memory block
     pub fn get_ptr(&self, offset: usize) -> CodePtr {
-        self.mem_block.start_ptr().add_bytes(offset)
+        self.mem_block.borrow().start_ptr().add_bytes(offset)
     }
 
     /// Get a (possibly dangling) direct pointer to the current write position
-    pub fn get_write_ptr(&mut self) -> CodePtr {
+    pub fn get_write_ptr(&self) -> CodePtr {
         self.get_ptr(self.write_pos)
     }
 
     /// Write a single byte at the current position.
     pub fn write_byte(&mut self, byte: u8) {
         let write_ptr = self.get_write_ptr();
-
-        if self.mem_block.write_byte(write_ptr, byte).is_ok() {
-            self.write_pos += 1;
-        } else {
+        if !self.has_capacity(1) || self.mem_block.borrow_mut().write_byte(write_ptr, byte).is_err() {
             self.dropped_bytes = true;
         }
+
+        // Always advance write_pos since arm64 PadEntryExit needs this to stop the loop.
+        self.write_pos += 1;
     }
 
     /// Write multiple bytes starting from the current position.
@@ -242,6 +357,9 @@ impl CodeBlock {
         self.label_refs.push(LabelRef { pos: self.write_pos, label_idx, num_bytes, encode });
 
         // Move past however many bytes the instruction takes up
+        if !self.has_capacity(num_bytes) {
+            self.dropped_bytes = true; // retry emitting the Insn after next_page
+        }
         self.write_pos += num_bytes;
     }
 
@@ -274,13 +392,42 @@ impl CodeBlock {
         assert!(self.label_refs.is_empty());
     }
 
-    pub fn mark_all_executable(&mut self) {
-        self.mem_block.mark_all_executable();
+    pub fn clear_labels(&mut self) {
+        self.label_addrs.clear();
+        self.label_names.clear();
+        self.label_refs.clear();
     }
 
-    #[cfg(feature = "disasm")]
+    pub fn get_label_state(&self) -> LabelState {
+        LabelState {
+            label_addrs: self.label_addrs.clone(),
+            label_names: self.label_names.clone(),
+            label_refs: self.label_refs.clone(),
+        }
+    }
+
+    pub fn set_label_state(&mut self, state: LabelState) {
+        self.label_addrs = state.label_addrs;
+        self.label_names = state.label_names;
+        self.label_refs = state.label_refs;
+    }
+
+    pub fn mark_all_executable(&mut self) {
+        self.mem_block.borrow_mut().mark_all_executable();
+    }
+
     pub fn inline(&self) -> bool {
         !self.outlined
+    }
+
+    pub fn other_cb(&self) -> Option<&'static mut Self> {
+        if !CodegenGlobals::has_instance() {
+            None
+        } else if self.inline() {
+            Some(CodegenGlobals::get_outlined_cb().unwrap())
+        } else {
+            Some(CodegenGlobals::get_inline_cb())
+        }
     }
 }
 
@@ -295,7 +442,7 @@ impl CodeBlock {
         let mem_start: *const u8 = alloc.mem_start();
         let virt_mem = VirtualMem::new(alloc, 1, mem_start as *mut u8, mem_size);
 
-        Self::new(virt_mem, false)
+        Self::new(Rc::new(RefCell::new(virt_mem)), 16 * 1024, false)
     }
 }
 
@@ -303,7 +450,7 @@ impl CodeBlock {
 impl fmt::LowerHex for CodeBlock {
     fn fmt(&self, fmtr: &mut fmt::Formatter) -> fmt::Result {
         for pos in 0..self.write_pos {
-            let byte = unsafe { self.mem_block.start_ptr().raw_ptr().add(pos).read() };
+            let byte = unsafe { self.mem_block.borrow().start_ptr().raw_ptr().add(pos).read() };
             fmtr.write_fmt(format_args!("{:02x}", byte))?;
         }
         Ok(())
