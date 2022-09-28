@@ -676,6 +676,9 @@ AS_CASE(["$GCC:${warnflags+set}:${extra_warnflags:+set}:"],
     AS_IF([test $icc_version -gt 0], [
 	particular_werror_flags=no
     ])
+    AS_IF([test $gcc_major -gt 11], [
+  extra_warnflags="$extra_warnflags -Wuse-after-free=1"
+    ])
     for wflag in \
 		 -Werror=extra-tokens \
 		 -Werror=deprecated-declarations \
