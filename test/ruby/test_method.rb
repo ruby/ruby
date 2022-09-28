@@ -1075,19 +1075,26 @@ class TestMethod < Test::Unit::TestCase
   end
 
   def test_prepended_public_zsuper
-    mod = EnvUtil.labeled_module("Mod") {private def foo; :ok end}
+    mod = EnvUtil.labeled_module("Mod") {private def foo; [:ok] end}
     obj = Object.new.extend(mod)
-    mods = [obj.singleton_class]
+
     class << obj
       public :foo
     end
-    2.times do |i|
-      mods.unshift(mod = EnvUtil.labeled_module("Mod#{i}") {def foo; end})
-      obj.singleton_class.prepend(mod)
-    end
+
+    mod1 = EnvUtil.labeled_module("Mod1") {def foo; [:mod1] + super end}
+    obj.singleton_class.prepend(mod1)
+
+    mod2 = EnvUtil.labeled_module("Mod2") {def foo; [:mod2] + super end}
+    obj.singleton_class.prepend(mod2)
+
     m = obj.method(:foo)
-    assert_equal(mods, mods.map {m.owner.tap {m = m.super_method}})
-    assert_nil(m.super_method)
+    assert_equal mod2, m.owner
+    assert_equal mod1, m.super_method.owner
+    assert_equal obj.singleton_class, m.super_method.super_method.owner
+    assert_equal nil, m.super_method.super_method.super_method
+
+    assert_equal [:mod2, :mod1, :ok], obj.foo
   end
 
   def test_super_method_with_prepended_module
@@ -1234,11 +1241,48 @@ class TestMethod < Test::Unit::TestCase
 
     a.remove_method(:foo)
 
-    assert_equal [[:rest]], unbound.parameters
-    assert_equal "#<UnboundMethod: B#foo(*)>", unbound.inspect
+    assert_equal [[:opt, :arg]], unbound.parameters
+    assert_equal "#<UnboundMethod: B(A)#foo(arg=...) #{__FILE__}:#{line}>", unbound.inspect
 
     obj = b.new
-    assert_raise_with_message(NoMethodError, /super: no superclass method `foo'/) { unbound.bind_call(obj) }
+    assert_equal 1, unbound.bind_call(obj)
+  end
+
+  def test_zsuper_method_redefined_bind_call
+    c0 = EnvUtil.labeled_class('C0') do
+      def foo
+        [:foo]
+      end
+    end
+
+    c1 = EnvUtil.labeled_class('C1', c0) do
+      def foo
+        super + [:bar]
+      end
+    end
+    m1 = c1.instance_method(:foo)
+
+    c2 = EnvUtil.labeled_class('C2', c1) do
+      private :foo
+    end
+
+    assert_equal [:foo], c2.private_instance_methods(false)
+    m2 = c2.instance_method(:foo)
+
+    c1.class_exec do
+      def foo
+        [:bar2]
+      end
+    end
+
+    m3 = c2.instance_method(:foo)
+    c = c2.new
+    assert_equal [:foo, :bar], m1.bind_call(c)
+    assert_equal c1, m1.owner
+    assert_equal [:foo, :bar], m2.bind_call(c)
+    assert_equal c2, m2.owner
+    assert_equal [:bar2], m3.bind_call(c)
+    assert_equal c2, m3.owner
   end
 
   # Bug #18751

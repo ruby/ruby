@@ -37,7 +37,11 @@ const rb_cref_t *rb_vm_cref_in_context(VALUE self, VALUE cbase);
 struct METHOD {
     const VALUE recv;
     const VALUE klass;
+    /* needed for #super_method */
     const VALUE iclass;
+    /* Different than me->owner only for ZSUPER methods.
+       This is error-prone but unavoidable unless ZSUPER methods are removed. */
+    const VALUE owner;
     const rb_method_entry_t * const me;
     /* for bound methods, `me' should be rb_callable_method_entry_t * */
 };
@@ -1655,6 +1659,7 @@ mnew_missing(VALUE klass, VALUE obj, ID id, VALUE mclass)
 
     RB_OBJ_WRITE(method, &data->recv, obj);
     RB_OBJ_WRITE(method, &data->klass, klass);
+    RB_OBJ_WRITE(method, &data->owner, klass);
 
     def = ZALLOC(rb_method_definition_t);
     def->type = VM_METHOD_TYPE_MISSING;
@@ -1676,12 +1681,40 @@ mnew_missing_by_name(VALUE klass, VALUE obj, VALUE *name, int scope, VALUE mclas
     return mnew_missing(klass, obj, SYM2ID(vid), mclass);
 }
 
+static inline VALUE
+method_entry_defined_class(const rb_method_entry_t *me)
+{
+    VALUE defined_class = me->defined_class;
+    return defined_class ? defined_class : me->owner;
+}
+
+static const rb_method_entry_t*
+zsuper_resolve(const rb_method_entry_t *me, VALUE *iclass_ptr)
+{
+    const rb_method_entry_t *super_me;
+    while (me->def->type == VM_METHOD_TYPE_ZSUPER) {
+        VALUE defined_class = method_entry_defined_class(me);
+        VALUE super_class = RCLASS_SUPER(RCLASS_ORIGIN(defined_class));
+        if (!super_class) {
+            break;
+        }
+        ID id = me->def->original_id;
+        super_me = (rb_method_entry_t *)rb_callable_method_entry_with_refinements(super_class, id, iclass_ptr);
+        if (!super_me) {
+            break;
+        }
+        me = super_me;
+    }
+    return me;
+}
+
 static VALUE
 mnew_internal(const rb_method_entry_t *me, VALUE klass, VALUE iclass,
               VALUE obj, ID id, VALUE mclass, int scope, int error)
 {
     struct METHOD *data;
     VALUE method;
+    const rb_method_entry_t *zsuper_resolved_me;
     rb_method_visibility_t visi = METHOD_VISI_UNDEF;
 
     if (UNDEFINED_METHOD_ENTRY_P(me)) {
@@ -1699,13 +1732,15 @@ mnew_internal(const rb_method_entry_t *me, VALUE klass, VALUE iclass,
             rb_print_inaccessible(klass, id, visi);
         }
     }
+    zsuper_resolved_me = zsuper_resolve(me, &iclass);
 
     method = TypedData_Make_Struct(mclass, struct METHOD, &method_data_type, data);
 
     RB_OBJ_WRITE(method, &data->recv, obj);
     RB_OBJ_WRITE(method, &data->klass, klass);
     RB_OBJ_WRITE(method, &data->iclass, iclass);
-    RB_OBJ_WRITE(method, &data->me, me);
+    RB_OBJ_WRITE(method, &data->owner, me->owner);
+    RB_OBJ_WRITE(method, &data->me, zsuper_resolved_me);
 
     return method;
 }
@@ -1736,34 +1771,6 @@ mnew_unbound(VALUE klass, ID id, VALUE mclass, int scope)
 
     me = rb_method_entry_with_refinements(klass, id, &iclass);
     return mnew_from_me(me, klass, iclass, Qundef, id, mclass, scope);
-}
-
-static const rb_method_entry_t*
-zsuper_resolve(const rb_method_entry_t *me)
-{
-    const rb_method_entry_t *super_me;
-    while (me->def->type == VM_METHOD_TYPE_ZSUPER) {
-        VALUE defined_class = me->defined_class ? me->defined_class : me->owner;
-        VALUE super_class = RCLASS_SUPER(RCLASS_ORIGIN(defined_class));
-        if (!super_class) {
-            break;
-        }
-        ID id = me->def->original_id;
-        VALUE iclass;
-        super_me = (rb_method_entry_t *)rb_callable_method_entry_with_refinements(super_class, id, &iclass);
-        if (!super_me) {
-            break;
-        }
-        me = super_me;
-    }
-    return me;
-}
-
-static inline VALUE
-method_entry_defined_class(const rb_method_entry_t *me)
-{
-    VALUE defined_class = me->defined_class;
-    return defined_class ? defined_class : me->owner;
 }
 
 /**********************************************************************
@@ -1819,8 +1826,8 @@ method_eq(VALUE method, VALUE other)
     m1 = (struct METHOD *)DATA_PTR(method);
     m2 = (struct METHOD *)DATA_PTR(other);
 
-    const rb_method_entry_t *m1_me = zsuper_resolve(m1->me);
-    const rb_method_entry_t *m2_me = zsuper_resolve(m2->me);
+    const rb_method_entry_t *m1_me = m1->me;
+    const rb_method_entry_t *m2_me = m2->me;
 
     klass1 = method_entry_defined_class(m1_me);
     klass2 = method_entry_defined_class(m2_me);
@@ -1879,6 +1886,7 @@ method_unbind(VALUE obj)
     RB_OBJ_WRITE(method, &data->recv, Qundef);
     RB_OBJ_WRITE(method, &data->klass, orig->klass);
     RB_OBJ_WRITE(method, &data->iclass, orig->iclass);
+    RB_OBJ_WRITE(method, &data->owner, orig->owner);
     RB_OBJ_WRITE(method, &data->me, rb_method_entry_clone(orig->me));
 
     return method;
@@ -1963,7 +1971,7 @@ method_owner(VALUE obj)
 {
     struct METHOD *data;
     TypedData_Get_Struct(obj, struct METHOD, &method_data_type, data);
-    return data->me->owner;
+    return data->owner;
 }
 
 void
@@ -2402,6 +2410,7 @@ method_clone(VALUE self)
     RB_OBJ_WRITE(clone, &data->recv, orig->recv);
     RB_OBJ_WRITE(clone, &data->klass, orig->klass);
     RB_OBJ_WRITE(clone, &data->iclass, orig->iclass);
+    RB_OBJ_WRITE(clone, &data->owner, orig->owner);
     RB_OBJ_WRITE(clone, &data->me, rb_method_entry_clone(orig->me));
     return clone;
 }
@@ -2562,7 +2571,7 @@ rb_method_call_with_block(int argc, const VALUE *argv, VALUE method, VALUE passe
 static void
 convert_umethod_to_method_components(const struct METHOD *data, VALUE recv, VALUE *methclass_out, VALUE *klass_out, VALUE *iclass_out, const rb_method_entry_t **me_out, const bool clone)
 {
-    VALUE methclass = data->me->owner;
+    VALUE methclass = data->owner;
     VALUE iclass = data->me->defined_class;
     VALUE klass = CLASS_OF(recv);
 
@@ -2593,7 +2602,7 @@ convert_umethod_to_method_components(const struct METHOD *data, VALUE recv, VALU
     if (RB_TYPE_P(me->owner, T_MODULE)) {
         if (!clone) {
             // if we didn't previously clone the method entry, then we need to clone it now
-            // because this branch manipualtes it in rb_method_entry_complement_defined_class
+            // because this branch manipulates it in rb_method_entry_complement_defined_class
             me = rb_method_entry_clone(me);
         }
         VALUE ic = rb_class_search_ancestor(klass, me->owner);
@@ -2662,6 +2671,7 @@ umethod_bind(VALUE method, VALUE recv)
     RB_OBJ_WRITE(method, &bound->recv, recv);
     RB_OBJ_WRITE(method, &bound->klass, klass);
     RB_OBJ_WRITE(method, &bound->iclass, iclass);
+    RB_OBJ_WRITE(method, &bound->owner, methclass);
     RB_OBJ_WRITE(method, &bound->me, me);
 
     return method;
@@ -2698,7 +2708,7 @@ umethod_bind_call(int argc, VALUE *argv, VALUE method)
         VALUE methclass, klass, iclass;
         const rb_method_entry_t *me;
         convert_umethod_to_method_components(data, recv, &methclass, &klass, &iclass, &me, false);
-        struct METHOD bound = { recv, klass, 0, me };
+        struct METHOD bound = { recv, klass, 0, methclass, me };
 
         return call_method_data(ec, &bound, argc, argv, passed_procval, RB_PASS_CALLED_KEYWORDS);
     }
@@ -2974,7 +2984,7 @@ zsuper_ref_method_def(VALUE method)
 {
     const struct METHOD *data;
     TypedData_Get_Struct(method, struct METHOD, &method_data_type, data);
-    return zsuper_resolve(data->me)->def;
+    return data->me->def;
 }
 
 /*
@@ -3139,7 +3149,7 @@ method_inspect(VALUE method)
         defined_class = data->me->def->body.alias.original_me->owner;
     }
     else {
-        defined_class = method_entry_defined_class(zsuper_resolve(data->me));
+        defined_class = method_entry_defined_class(data->me);
     }
 
     if (RB_TYPE_P(defined_class, T_ICLASS)) {
@@ -3363,25 +3373,24 @@ method_super_method(VALUE method)
     const struct METHOD *data;
     VALUE super_class, iclass;
     ID mid;
-    const rb_method_entry_t *super_me, *me;
+    const rb_method_entry_t *me;
 
     TypedData_Get_Struct(method, struct METHOD, &method_data_type, data);
-    me = zsuper_resolve(data->me);
-    VALUE defined_class = me->defined_class ? me->defined_class : me->owner;
-    if (!defined_class) return Qnil;
-    if (me->def->type == VM_METHOD_TYPE_ALIAS && me->defined_class) {
-        super_class = RCLASS_SUPER(rb_find_defined_class_by_owner(me->defined_class,
-            me->def->body.alias.original_me->owner));
-        mid = me->def->body.alias.original_me->def->original_id;
+    iclass = data->iclass;
+    if (!iclass) return Qnil;
+    if (data->me->def->type == VM_METHOD_TYPE_ALIAS && data->me->defined_class) {
+        super_class = RCLASS_SUPER(rb_find_defined_class_by_owner(data->me->defined_class,
+            data->me->def->body.alias.original_me->owner));
+        mid = data->me->def->body.alias.original_me->def->original_id;
     }
     else {
-        super_class = RCLASS_SUPER(RCLASS_ORIGIN(defined_class));
-        mid = me->def->original_id;
+        super_class = RCLASS_SUPER(RCLASS_ORIGIN(iclass));
+        mid = data->me->def->original_id;
     }
     if (!super_class) return Qnil;
-    super_me = (rb_method_entry_t *)rb_callable_method_entry_with_refinements(super_class, mid, &iclass);
-    if (!super_me) return Qnil;
-    return mnew_internal(super_me, super_me->owner, iclass, data->recv, mid, rb_obj_class(method), FALSE, FALSE);
+    me = (rb_method_entry_t *)rb_callable_method_entry_with_refinements(super_class, mid, &iclass);
+    if (!me) return Qnil;
+    return mnew_internal(me, me->owner, iclass, data->recv, mid, rb_obj_class(method), FALSE, FALSE);
 }
 
 /*
