@@ -84,12 +84,7 @@ class MSpecScript
 
     names.each do |name|
       config[:path].each do |dir|
-        begin
-          file = File.expand_path name, dir
-        rescue ArgumentError
-          # File.expand_path can issue error e.g. if HOME is not available
-          next
-        end
+        file = File.expand_path name, dir
         if @loaded.include?(file)
           return true
         elsif File.exist? file
@@ -288,7 +283,6 @@ class MSpecScript
 
     script = new
     script.load_default
-    script.try_load '~/.mspecrc'
     script.options
     script.signals
     script.register
