@@ -73,9 +73,32 @@ BT = Struct.new(:ruby,
                 :failed,
                 :reset,
                 :columns,
+                :window_width,
                 :width,
                 :platform,
-                ).new
+                ) do
+  def putc(c)
+    unless self.quiet
+      if self.window_width == nil
+        if BT.tty
+          unless w = ENV["COLUMNS"] and (w = w.to_i) > 0
+            w = 80
+          end
+          w -= 1
+        else
+          w = false
+        end
+        self.window_width = w
+      end
+      if self.window_width and self.columns >= self.window_width
+        $stderr.puts
+        self.columns = 0
+      end
+      $stderr.print c
+      self.columns += 1
+    end
+  end
+end.new
 
 BT_STATE = Struct.new(:count, :error).new
 
@@ -240,7 +263,7 @@ def concurrent_exec_test
     end
   end
 
-  $stderr.print ' ' unless BT.quiet
+  BT.putc ' '
   aq.close
   i = 1
   term_wn = 0
@@ -252,7 +275,7 @@ def concurrent_exec_test
         when BT.tty
           $stderr.print "#{BT.progress_bs}#{BT.progress[(i+=1) % BT.progress.size]}"
         else
-          $stderr.print '.'
+          BT.putc '.'
         end
       else
         term_wn += 1
@@ -427,7 +450,7 @@ class Assertion < Struct.new(:src, :path, :lineno, :proc)
       elsif BT.verbose
         $stderr.printf(". %.3f\n", t)
       else
-        $stderr.print '.'
+        BT.putc '.'
       end
     else
       $stderr.print "#{BT.failed}F"
