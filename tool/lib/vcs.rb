@@ -104,6 +104,10 @@ class VCS
     ]
   end
 
+  def self.short_revision(rev)
+    rev
+  end
+
   attr_reader :srcdir
 
   def initialize(path)
@@ -249,10 +253,6 @@ class VCS
 
     def self.revision_name(rev)
       "r#{rev}"
-    end
-
-    def self.short_revision(rev)
-      rev
     end
 
     def _get_revisions(path, srcdir = nil)
