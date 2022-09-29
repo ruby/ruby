@@ -7672,7 +7672,7 @@ rb_str_capitalize(int argc, VALUE *argv, VALUE str)
  *
  *    s = 'Hello World!' # => "Hello World!"
  *    s.swapcase!        # => "hELLO wORLD!"
- *    s                  # => "Hello World!"
+ *    s                  # => "hELLO wORLD!"
  *    ''.swapcase!       # => nil
  *
  *  The casing may be affected by the given +options+;
