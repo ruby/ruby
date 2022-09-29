@@ -1241,11 +1241,52 @@ class TestMethod < Test::Unit::TestCase
 
     a.remove_method(:foo)
 
-    assert_equal [[:opt, :arg]], unbound.parameters
     assert_equal "#<UnboundMethod: B(A)#foo(arg=...) #{__FILE__}:#{line}>", unbound.inspect
+    assert_equal [[:opt, :arg]], unbound.parameters
 
     obj = b.new
     assert_equal 1, unbound.bind_call(obj)
+
+    assert_include b.instance_methods(false), :foo
+    assert_equal "#<UnboundMethod: B#foo(*)>", b.instance_method(:foo).inspect
+  end
+
+  def test_zsuper_method_removed_higher_method
+    a0 = EnvUtil.labeled_class('A0') do
+      def foo(arg1 = nil, arg2 = nil)
+        0
+      end
+    end
+    line0 = __LINE__ - 4
+    a0_foo = a0.instance_method(:foo)
+
+    a = EnvUtil.labeled_class('A', a0) do
+      private
+      def foo(arg = nil)
+        1
+      end
+    end
+    line = __LINE__ - 4
+
+    b = EnvUtil.labeled_class('B', a) do
+      public :foo
+    end
+
+    unbound = b.instance_method(:foo)
+
+    assert_equal a0_foo, unbound.super_method
+
+    a.remove_method(:foo)
+
+    assert_equal "#<UnboundMethod: B(A)#foo(arg=...) #{__FILE__}:#{line}>", unbound.inspect
+    assert_equal [[:opt, :arg]], unbound.parameters
+    assert_equal a0_foo, unbound.super_method
+
+    obj = b.new
+    assert_equal 1, unbound.bind_call(obj)
+
+    assert_include b.instance_methods(false), :foo
+    assert_equal "#<UnboundMethod: B(A0)#foo(arg1=..., arg2=...) #{__FILE__}:#{line0}>", b.instance_method(:foo).inspect
   end
 
   def test_zsuper_method_redefined_bind_call
