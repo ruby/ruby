@@ -578,8 +578,8 @@ module Bundler
       ].select(&:first).map(&:last).join(", ")
     end
 
-    def pretty_dep(dep, source = false)
-      SharedHelpers.pretty_dependency(dep, source)
+    def pretty_dep(dep)
+      SharedHelpers.pretty_dependency(dep)
     end
 
     # Check if the specs of the given source changed
