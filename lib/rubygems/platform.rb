@@ -163,6 +163,9 @@ class Gem::Platform
   # runtime platform "no version" stands for 'gnu'. To be able to disinguish
   # these, the method receiver is the gem platform, while the argument is
   # the runtime platform.
+  #
+  #--
+  # NOTE: Until it can be removed, changes to this method must also be reflected in `bundler/lib/bundler/rubygems_ext.rb`
 
   def ===(other)
     return nil unless Gem::Platform === other
@@ -185,6 +188,9 @@ class Gem::Platform
         @version == other.version
       )
   end
+
+  #--
+  # NOTE: Until it can be removed, changes to this method must also be reflected in `bundler/lib/bundler/rubygems_ext.rb`
 
   def normalized_linux_version
     return nil unless @version
