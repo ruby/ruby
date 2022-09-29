@@ -264,18 +264,7 @@ module Bundler
         next requirement unless search_for(requirement).empty?
         next unless requirement.current_platform?
 
-        if (base = @base[name]) && !base.empty?
-          version = base.first.version
-          message = "You have requested:\n" \
-            "  #{name} #{requirement.requirement}\n\n" \
-            "The bundle currently has #{name} locked at #{version}.\n" \
-            "Try running `bundle update #{name}`\n\n" \
-            "If you are updating multiple gems in your Gemfile at once,\n" \
-            "try passing them all to `bundle update`"
-        else
-          message = gem_not_found_message(name, requirement, source_for(name))
-        end
-        raise GemNotFound, message
+        raise GemNotFound, gem_not_found_message(name, requirement, source_for(name))
       end.compact!
     end
 
