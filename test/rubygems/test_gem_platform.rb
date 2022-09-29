@@ -336,21 +336,29 @@ class TestGemPlatform < Gem::TestCase
   def test_eabi_and_nil_version_combination_strictness
     arm_linux = Gem::Platform.new "arm-linux"
     arm_linux_eabi = Gem::Platform.new "arm-linux-eabi"
+    arm_linux_eabihf = Gem::Platform.new "arm-linux-eabihf"
     arm_linux_gnueabi = Gem::Platform.new "arm-linux-gnueabi"
+    arm_linux_gnueabihf = Gem::Platform.new "arm-linux-gnueabihf"
     arm_linux_musleabi = Gem::Platform.new "arm-linux-musleabi"
+    arm_linux_musleabihf = Gem::Platform.new "arm-linux-musleabihf"
     arm_linux_uclibceabi = Gem::Platform.new "arm-linux-uclibceabi"
+    arm_linux_uclibceabihf = Gem::Platform.new "arm-linux-uclibceabihf"
 
     # generic arm host runtime with eabi modifier accepts generic arm gems
     assert(arm_linux === arm_linux_eabi, "arm-linux =~ arm-linux-eabi")
+    assert(arm_linux === arm_linux_eabihf, "arm-linux =~ arm-linux-eabihf")
 
     # explicit gnu arm host runtime with eabi modifier accepts generic arm gems
     assert(arm_linux === arm_linux_gnueabi, "arm-linux =~ arm-linux-gnueabi")
+    assert(arm_linux === arm_linux_gnueabihf, "arm-linux =~ arm-linux-gnueabihf")
 
     # musl arm host runtime accepts libc-generic or statically linked gems...
     assert(arm_linux === arm_linux_musleabi, "arm-linux =~ arm-linux-musleabi")
+    assert(arm_linux === arm_linux_musleabihf, "arm-linux =~ arm-linux-musleabihf")
 
     # other libc arm hosts are not glibc compatible
     refute(arm_linux === arm_linux_uclibceabi, "arm-linux =~ arm-linux-uclibceabi")
+    refute(arm_linux === arm_linux_uclibceabihf, "arm-linux =~ arm-linux-uclibceabihf")
   end
 
   def test_equals3_cpu_arm

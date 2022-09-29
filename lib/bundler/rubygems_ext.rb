@@ -261,7 +261,7 @@ module Gem
           # version
           (
             (@os != "linux" && (@version.nil? || other.version.nil?)) ||
-            (@os == "linux" && (normalized_linux_version_ext == other.normalized_linux_version_ext || other.version == "musl#{@version}" || other.version == "musleabi#{@version}")) ||
+            (@os == "linux" && (normalized_linux_version_ext == other.normalized_linux_version_ext || ["musl#{@version}", "musleabi#{@version}", "musleabihf#{@version}"].include?(other.version))) ||
             @version == other.version
           )
       end
@@ -271,7 +271,7 @@ module Gem
       def normalized_linux_version_ext
         return nil unless @version
 
-        without_gnu_nor_abi_modifiers = @version.sub(/\Agnu/, "").sub(/eabi\Z/, "")
+        without_gnu_nor_abi_modifiers = @version.sub(/\Agnu/, "").sub(/eabi(hf)?\Z/, "")
         return nil if without_gnu_nor_abi_modifiers.empty?
 
         without_gnu_nor_abi_modifiers
