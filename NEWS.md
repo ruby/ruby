@@ -213,7 +213,7 @@ Note: We're only listing outstanding class updates.
     * timeout 0.3.0
 *   The following bundled gems are updated.
     * minitest 5.16.3
-    * net-imap 0.3.0
+    * net-imap 0.3.1
     * net-pop 0.1.2
     * net-smtp 0.3.2
     * rbs 2.6.0
