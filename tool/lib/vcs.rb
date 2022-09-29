@@ -98,7 +98,7 @@ class VCS
     opts
   end
 
-  def self.release_date(time = Time.now - 10) # the same default as make-snapshot
+  def release_date(time)
     t = time.utc
     [
       t.strftime('#define RUBY_RELEASE_YEAR %Y'),
@@ -246,7 +246,7 @@ class VCS
       t = release_datetime.utc
       code << t.strftime('#define RUBY_RELEASE_DATETIME "%FT%TZ"')
     end
-    code += VCS.release_date(release_date)
+    code += self.release_date(release_date)
     code
   end
 
@@ -773,6 +773,17 @@ class VCS
         end
       end
       true
+    end
+  end
+
+  class Null < self
+    def get_revisions(path, srcdir = nil)
+      @modified ||= Time.now - 10
+      return nil, nil, @modified
+    end
+
+    def revision_header(last, release_date, release_datetime = nil, branch = nil, title = nil, limit: 20)
+      self.release_date(release_date)
     end
   end
 end

@@ -32,8 +32,8 @@ OptionParser.new {|opts|
     rescue VCS::NotFoundError => e
       abort "#{File.basename(Program)}: #{e.message}" unless @suppress_not_found
       opts.remove
+      nil
     end
-    nil
   end
   opts.new
   opts.on("--srcdir=PATH", "use PATH as source directory") do |path|
@@ -62,15 +62,11 @@ OptionParser.new {|opts|
   opts.order! rescue abort "#{File.basename(Program)}: #{$!}\n#{opts}"
   if vcs
     vcs.set_options(vcs_options) # options after --srcdir
-  else
-    new_vcs["."]
+  elsif new_vcs["."]
+  else @suppress_not_found
+    (vcs = VCS::Null.new(nil)).set_options(vcs_options)
   end
 }
-unless vcs
-  # Output only release_date when .git is missing
-  puts VCS.release_date if @output == :revision_h
-  exit
-end
 
 output =
   case @output
@@ -99,10 +95,6 @@ ok = true
   begin
     puts output[*vcs.get_revisions(arg)]
   rescue => e
-    if @suppress_not_found and VCS::NotFoundError === e
-      puts VCS.release_date if @output == :revision_h
-      next
-    end
     warn "#{File.basename(Program)}: #{e.message}"
     ok = false
   end
