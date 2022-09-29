@@ -1681,42 +1681,16 @@ mnew_missing_by_name(VALUE klass, VALUE obj, VALUE *name, int scope, VALUE mclas
     return mnew_missing(klass, obj, SYM2ID(vid), mclass);
 }
 
-static inline VALUE
-method_entry_defined_class(const rb_method_entry_t *me)
-{
-    VALUE defined_class = me->defined_class;
-    return defined_class ? defined_class : me->owner;
-}
-
-static const rb_method_entry_t*
-zsuper_resolve(const rb_method_entry_t *me, VALUE *iclass_ptr)
-{
-    const rb_method_entry_t *super_me;
-    while (me->def->type == VM_METHOD_TYPE_ZSUPER) {
-        VALUE defined_class = method_entry_defined_class(me);
-        VALUE super_class = RCLASS_SUPER(RCLASS_ORIGIN(defined_class));
-        if (!super_class) {
-            break;
-        }
-        ID id = me->def->original_id;
-        super_me = (rb_method_entry_t *)rb_callable_method_entry_with_refinements(super_class, id, iclass_ptr);
-        if (!super_me) {
-            break;
-        }
-        me = super_me;
-    }
-    return me;
-}
-
 static VALUE
 mnew_internal(const rb_method_entry_t *me, VALUE klass, VALUE iclass,
               VALUE obj, ID id, VALUE mclass, int scope, int error)
 {
     struct METHOD *data;
     VALUE method;
-    const rb_method_entry_t *zsuper_resolved_me;
+    const rb_method_entry_t *original_me = me;
     rb_method_visibility_t visi = METHOD_VISI_UNDEF;
 
+  again:
     if (UNDEFINED_METHOD_ENTRY_P(me)) {
         if (respond_to_missing_p(klass, obj, ID2SYM(id), scope)) {
             return mnew_missing(klass, obj, id, mclass);
@@ -1732,15 +1706,27 @@ mnew_internal(const rb_method_entry_t *me, VALUE klass, VALUE iclass,
             rb_print_inaccessible(klass, id, visi);
         }
     }
-    zsuper_resolved_me = zsuper_resolve(me, &iclass);
+    if (me->def->type == VM_METHOD_TYPE_ZSUPER) {
+        if (me->defined_class) {
+            VALUE klass = RCLASS_SUPER(RCLASS_ORIGIN(me->defined_class));
+            id = me->def->original_id;
+            me = (rb_method_entry_t *)rb_callable_method_entry_with_refinements(klass, id, &iclass);
+        }
+        else {
+            VALUE klass = RCLASS_SUPER(RCLASS_ORIGIN(me->owner));
+            id = me->def->original_id;
+            me = rb_method_entry_without_refinements(klass, id, &iclass);
+        }
+        goto again;
+    }
 
     method = TypedData_Make_Struct(mclass, struct METHOD, &method_data_type, data);
 
     RB_OBJ_WRITE(method, &data->recv, obj);
     RB_OBJ_WRITE(method, &data->klass, klass);
     RB_OBJ_WRITE(method, &data->iclass, iclass);
-    RB_OBJ_WRITE(method, &data->owner, me->owner);
-    RB_OBJ_WRITE(method, &data->me, zsuper_resolved_me);
+    RB_OBJ_WRITE(method, &data->owner, original_me->owner);
+    RB_OBJ_WRITE(method, &data->me, me);
 
     return method;
 }
@@ -1771,6 +1757,13 @@ mnew_unbound(VALUE klass, ID id, VALUE mclass, int scope)
 
     me = rb_method_entry_with_refinements(klass, id, &iclass);
     return mnew_from_me(me, klass, iclass, Qundef, id, mclass, scope);
+}
+
+static inline VALUE
+method_entry_defined_class(const rb_method_entry_t *me)
+{
+    VALUE defined_class = me->defined_class;
+    return defined_class ? defined_class : me->owner;
 }
 
 /**********************************************************************
@@ -1826,13 +1819,10 @@ method_eq(VALUE method, VALUE other)
     m1 = (struct METHOD *)DATA_PTR(method);
     m2 = (struct METHOD *)DATA_PTR(other);
 
-    const rb_method_entry_t *m1_me = m1->me;
-    const rb_method_entry_t *m2_me = m2->me;
+    klass1 = method_entry_defined_class(m1->me);
+    klass2 = method_entry_defined_class(m2->me);
 
-    klass1 = method_entry_defined_class(m1_me);
-    klass2 = method_entry_defined_class(m2_me);
-
-    if (!rb_method_entry_eq(m1_me, m2_me) ||
+    if (!rb_method_entry_eq(m1->me, m2->me) ||
         klass1 != klass2 ||
         m1->klass != m2->klass ||
         m1->recv != m2->recv) {
@@ -2979,14 +2969,6 @@ rb_method_entry_location(const rb_method_entry_t *me)
     return method_def_location(me->def);
 }
 
-static const rb_method_definition_t *
-zsuper_ref_method_def(VALUE method)
-{
-    const struct METHOD *data;
-    TypedData_Get_Struct(method, struct METHOD, &method_data_type, data);
-    return data->me->def;
-}
-
 /*
  * call-seq:
  *    meth.source_location  -> [String, Integer]
@@ -2998,7 +2980,7 @@ zsuper_ref_method_def(VALUE method)
 VALUE
 rb_method_location(VALUE method)
 {
-    return method_def_location(zsuper_ref_method_def(method));
+    return method_def_location(rb_method_def(method));
 }
 
 static const rb_method_definition_t *
@@ -3086,7 +3068,7 @@ method_def_parameters(const rb_method_definition_t *def)
 static VALUE
 rb_method_parameters(VALUE method)
 {
-    return method_def_parameters(zsuper_ref_method_def(method));
+    return method_def_parameters(rb_method_def(method));
 }
 
 /*

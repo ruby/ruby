@@ -1063,7 +1063,7 @@ class TestMethod < Test::Unit::TestCase
     c1.class_eval {undef foo}
     m = c3.instance_method(:foo)
     m = assert_nothing_raised(NameError, Feature9781) {break m.super_method}
-    assert_equal c2, m.owner
+    assert_nil(m, Feature9781)
   end
 
   def test_super_method_removed_regular
@@ -1248,7 +1248,10 @@ class TestMethod < Test::Unit::TestCase
     assert_equal 1, unbound.bind_call(obj)
 
     assert_include b.instance_methods(false), :foo
-    assert_equal "#<UnboundMethod: B#foo(*)>", b.instance_method(:foo).inspect
+    link = 'https://github.com/ruby/ruby/pull/6467#issuecomment-1262159088'
+    assert_raise(NameError, link) { b.instance_method(:foo) }
+    # For #test_method_list below, otherwise we get the same error as just above
+    b.remove_method(:foo)
   end
 
   def test_zsuper_method_removed_higher_method
