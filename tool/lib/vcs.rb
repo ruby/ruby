@@ -95,11 +95,12 @@ class VCS
     parser.separator("  VCS common options:")
     parser.define("--[no-]dryrun") {|v| opts[:dryrun] = v}
     parser.define("--[no-]debug") {|v| opts[:debug] = v}
+    parser.define("-z", "--zone=OFFSET", /\A[-+]\d\d:\d\d\z/) {|v| opts[:zone] = v}
     opts
   end
 
   def release_date(time)
-    t = time.utc
+    t = time.getlocal(@zone)
     [
       t.strftime('#define RUBY_RELEASE_YEAR %Y'),
       t.strftime('#define RUBY_RELEASE_MONTH %-m'),
@@ -128,6 +129,7 @@ class VCS
   def set_options(opts)
     @debug = opts.fetch(:debug) {$DEBUG}
     @dryrun = opts.fetch(:dryrun) {@debug}
+    @zone = opts.fetch(:zone) {'+09:00'}
   end
 
   attr_reader :dryrun, :debug
