@@ -442,14 +442,14 @@ date_zone_to_diff(VALUE str)
 	{
 	    const char *zn = s;
 	    long sl = shrunk_size(s, l);
-	    VALUE vbuf = 0;
+	    char shrunk_buff[MAX_WORD_LENGTH]; /* no terminator to be added */
 	    const struct zone *z = 0;
 
 	    if (sl <= 0) {
 		sl = l;
 	    }
 	    else if (sl <= MAX_WORD_LENGTH) {
-		char *d = ALLOCV_N(char, vbuf, sl);
+		char *d = shrunk_buff;
 		sl = shrink_space(d, s, l);
 		zn = d;
 	    }
@@ -457,7 +457,6 @@ date_zone_to_diff(VALUE str)
 	    if (sl > 0 && sl <= MAX_WORD_LENGTH) {
 		z = zonetab(zn, (unsigned int)sl);
 	    }
-	    ALLOCV_END(vbuf);
 
 	    if (z) {
 		int d = z->offset;

@@ -41,6 +41,7 @@ class TestDateParse < Test::Unit::TestCase
      [['Sat Aug 28 02:29:34 Mountain Daylight Time 2000',false],[2000,8,28,2,29,34,'Mountain Daylight Time',-6*3600,6], __LINE__],
      [['Sat Aug 28 02:29:34 Mexico Standard Time 2000',false],[2000,8,28,2,29,34,'Mexico Standard Time',-6*3600,6], __LINE__],
      [['Sat Aug 28 02:29:34 E. Australia Standard Time 2000',false],[2000,8,28,2,29,34,'E. Australia Standard Time',10*3600,6], __LINE__],
+     [['Sat Aug 28 02:29:34 W.  Central  Africa  Standard  Time 2000',false],[2000,8,28,2,29,34,'W. Central Africa Standard Time',1*3600,6], __LINE__],
 
      # part of iso 8601
      [['1999-05-23 23:55:21',false],[1999,5,23,23,55,21,nil,nil,nil], __LINE__],
