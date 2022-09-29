@@ -2057,7 +2057,8 @@ io_writev(int argc, const VALUE *argv, VALUE io)
  *    write(*objects) -> integer
  *
  *  Writes each of the given +objects+ to +self+,
- *  which must be opened for writing (see IO@Modes);
+ *  which must be opened for writing
+ *  (see {Access Modes}[rdoc-ref:File@Access+Modes]);
  *  returns the total number bytes written;
  *  each of +objects+ that is not a string is converted via method +to_s+:
  *
@@ -2116,7 +2117,7 @@ rb_io_writev(VALUE io, int argc, const VALUE *argv)
  *    self << object -> self
  *
  *  Writes the given +object+ to +self+,
- *  which must be opened for writing (see IO@Modes);
+ *  which must be opened for writing (see {Access Modes}[rdoc-ref:File@Access+Modes]);
  *  returns +self+;
  *  if +object+ is not a string, it is converted via method +to_s+:
  *
@@ -2198,7 +2199,7 @@ rb_io_flush(VALUE io)
  *    tell -> integer
  *
  *  Returns the current position (in bytes) in +self+
- *  (see {Position}[rdoc-ref:IO@Position]):
+ *  (see {Position}[rdoc-ref:doc/io_streams.rdoc@Position]):
  *
  *    f = File.open('t.txt')
  *    f.tell # => 0
@@ -2264,7 +2265,7 @@ interpret_seek_whence(VALUE vwhence)
  *    seek(offset, whence = IO::SEEK_SET) -> 0
  *
  *  Seeks to the position given by integer +offset+
- *  (see {Position}[rdoc-ref:IO@Position])
+ *  (see {Position}[rdoc-ref:doc/io_streams.rdoc@Position])
  *  and constant +whence+, which is one of:
  *
  *  - +:CUR+ or <tt>IO::SEEK_CUR</tt>:
@@ -2324,7 +2325,7 @@ rb_io_seek_m(int argc, VALUE *argv, VALUE io)
  *    pos = new_position -> new_position
  *
  *  Seeks to the given +new_position+ (in bytes);
- *  see {Position}[rdoc-ref:IO@Position]:
+ *  see {Position}[rdoc-ref:doc/io_streams.rdoc@Position]:
  *
  *    f = File.open('t.txt')
  *    f.tell     # => 0
@@ -2358,8 +2359,8 @@ static void clear_readconv(rb_io_t *fptr);
  *
  *  Repositions the stream to its beginning,
  *  setting both the position and the line number to zero;
- *  see {Position}[rdoc-ref:IO@Position]
- *  and {Line Number}[rdoc-ref:IO@Line+Number]:
+ *  see {Position}[rdoc-ref:doc/io_streams.rdoc@Position]
+ *  and {Line Number}[rdoc-ref:doc/io_streams.rdoc@Line+Number]:
  *
  *    f = File.open('t.txt')
  *    f.tell     # => 0
@@ -2449,7 +2450,7 @@ io_fillbuf(rb_io_t *fptr)
  *    eof -> true or false
  *
  *  Returns +true+ if the stream is positioned at its end, +false+ otherwise;
- *  see {Position}[rdoc-ref:IO@Position]:
+ *  see {Position}[rdoc-ref:doc/io_streams.rdoc@Position]:
  *
  *    f = File.open('t.txt')
  *    f.eof           # => false
@@ -2458,7 +2459,7 @@ io_fillbuf(rb_io_t *fptr)
  *    f.close
  *
  *  Raises an exception unless the stream is opened for reading;
- *  see {Mode}[rdoc-ref:IO@Mode].
+ *  see {Mode}[rdoc-ref:File@Access+Modes].
  *
  *  If +self+ is a stream such as pipe or socket, this method
  *  blocks until the other end sends some data or closes it:
@@ -4017,7 +4018,7 @@ rb_io_gets_internal(VALUE io)
  *    gets(sep, limit, **line_opts) -> string or nil
  *
  *  Reads and returns a line from the stream
- *  (see {Lines}[rdoc-ref:IO@Lines]);
+ *  (see {Line IO}[rdoc-ref:doc/io_streams.rdoc@Line+IO]);
  *  assigns the return value to <tt>$_</tt>.
  *
  *  With no arguments given, returns the next line
@@ -4035,7 +4036,7 @@ rb_io_gets_internal(VALUE io)
  *  With only string argument +sep+ given,
  *  returns the next line as determined by line separator +sep+,
  *  or +nil+ if none;
- *  see {Line Separator}[rdoc-ref:IO@Line+Separator]:
+ *  see {Line Separator}[rdoc-ref:doc/io_streams.rdoc@Line+Separator]:
  *
  *    f = File.new('t.txt')
  *    f.gets('l')   # => "First l"
@@ -4056,7 +4057,7 @@ rb_io_gets_internal(VALUE io)
  *
  *  With only integer argument +limit+ given,
  *  limits the number of bytes in the line;
- *  see {Line Limit}[rdoc-ref:IO@Line+Limit]:
+ *  see {Line Limit}[rdoc-ref:doc/io_streams.rdoc@Line+Limit]:
  *
  *    # No more than one line.
  *    File.open('t.txt') {|f| f.gets(10) } # => "First line"
@@ -4101,7 +4102,7 @@ rb_io_gets_m(int argc, VALUE *argv, VALUE io)
  *    lineno -> integer
  *
  *  Returns the current line number for the stream.
- *  See {Line Number}[rdoc-ref:IO@Line+Number].
+ *  See {Line Number}[rdoc-ref:doc/io_streams.rdoc@Line+Number].
  *
  */
 
@@ -4120,7 +4121,7 @@ rb_io_lineno(VALUE io)
  *    lineno = integer -> integer
  *
  *  Sets and returns the line number for the stream.
- *  See {Line Number}[rdoc-ref:IO@Line+Number].
+ *  See {Line Number}[rdoc-ref:doc/io_streams.rdoc@Line+Number].
  *
  */
 
@@ -4165,7 +4166,7 @@ static VALUE io_readlines(const struct getline_arg *arg, VALUE io);
  *    readlines(sep, limit, **line_opts) -> array
  *
  *  Reads and returns all remaining line from the stream
- *  (see {Lines}[rdoc-ref:IO@Lines]);
+ *  (see {Line IO}[rdoc-ref:doc/io_streams.rdoc@Line+IO]);
  *  does not modify <tt>$_</tt>.
  *
  *  With no arguments given, returns lines
@@ -4180,7 +4181,7 @@ static VALUE io_readlines(const struct getline_arg *arg, VALUE io);
  *  With only string argument +sep+ given,
  *  returns lines as determined by line separator +sep+,
  *  or +nil+ if none;
- *  see {Line Separator}[rdoc-ref:IO@Line+Separator]:
+ *  see {Line Separator}[rdoc-ref:doc/io_streams.rdoc@Line+Separator]:
  *
  *    f = File.new('t.txt')
  *    f.readlines('li')
@@ -4201,7 +4202,7 @@ static VALUE io_readlines(const struct getline_arg *arg, VALUE io);
  *
  *  With only integer argument +limit+ given,
  *  limits the number of bytes in each line;
- *  see {Line Limit}[rdoc-ref:IO@Line+Limit]:
+ *  see {Line Limit}[rdoc-ref:doc/io_streams.rdoc@Line+Limit]:
  *
  *    f = File.new('t.txt')
  *    f.readlines(8)
@@ -4255,7 +4256,7 @@ io_readlines(const struct getline_arg *arg, VALUE io)
  *    each_line                                   -> enumerator
  *
  *  Calls the block with each remaining line read from the stream
- *  (see {Lines}[rdoc-ref:IO@Lines]);
+ *  (see {Line IO}[rdoc-ref:doc/io_streams.rdoc@Line+IO]);
  *  does nothing if already at end-of-file;
  *  returns +self+.
  *
@@ -4277,7 +4278,7 @@ io_readlines(const struct getline_arg *arg, VALUE io)
  *
  *  With only string argument +sep+ given,
  *  reads lines as determined by line separator +sep+;
- *  see {Line Separator}[rdoc-ref:IO@Line+Separator]:
+ *  see {Line Separator}[rdoc-ref:doc/io_streams.rdoc@Line+Separator]:
  *
  *    f = File.new('t.txt')
  *    f.each_line('li') {|line| p line }
@@ -4313,7 +4314,7 @@ io_readlines(const struct getline_arg *arg, VALUE io)
  *
  *  With only integer argument +limit+ given,
  *  limits the number of bytes in each line;
- *  see {Line Limit}[rdoc-ref:IO@Line+Limit]:
+ *  see {Line Limit}[rdoc-ref:doc/io_streams.rdoc@Line+Limit]:
  *
  *    f = File.new('t.txt')
  *    f.each_line(8) {|line| p line }
@@ -5811,7 +5812,7 @@ pread_internal_call(VALUE arg)
  *
  *  - Reads at the given +offset+ (in bytes).
  *  - Disregards, and does not modify, the stream's position
- *    (see {Position}[rdoc-ref:IO@Position]).
+ *    (see {Position}[rdoc-ref:doc/io_streams.rdoc@Position]).
  *  - Bypasses any user space buffering in the stream.
  *
  *  Because this method does not disturb the stream's state
@@ -5887,7 +5888,7 @@ internal_pwrite_func(void *ptr)
  *
  *  - Writes at the given +offset+ (in bytes).
  *  - Disregards, and does not modify, the stream's position
- *    (see {Position}[rdoc-ref:IO@Position]).
+ *    (see {Position}[rdoc-ref:doc/io_streams.rdoc@Position]).
  *  - Bypasses any user space buffering in the stream.
  *
  *  Because this method does not disturb the stream's state
@@ -5998,7 +5999,7 @@ rb_io_ascii8bit_binmode(VALUE io)
  *    binmode -> self
  *
  *  Sets the stream's data mode as binary
- *  (see {Data Mode}[rdoc-ref:IO@Data+Mode]).
+ *  (see {Data Mode}[rdoc-ref:File@Data+Mode]).
  *
  *  A stream's data mode may not be changed from binary to text.
  *
@@ -6022,7 +6023,7 @@ rb_io_binmode_m(VALUE io)
  *    binmode? -> true or false
  *
  *  Returns +true+ if the stream is on binary mode, +false+ otherwise.
- *  See {Data Mode}[rdoc-ref:IO@Data+Mode].
+ *  See {Data Mode}[rdoc-ref:File@Data+Mode].
  *
  */
 static VALUE
@@ -7453,7 +7454,7 @@ static VALUE popen_finish(VALUE port, VALUE klass);
  *  and the block's value is assigned to global variable <tt>$?</tt> and returned.
  *
  *  Optional argument +mode+ may be any valid \IO mode.
- *  See IO@Modes.
+ *  See {Access Modes}[rdoc-ref:File@Access+Modes].
  *
  *  Required argument +cmd+ determines which of the following occurs:
  *
@@ -9027,8 +9028,8 @@ rb_io_make_open_file(VALUE obj)
  *    io = IO.new(fd)
  *    io.external_encoding # => #<Encoding:UTF-8> # Not ASCII-8BIT.
  *
- *  Optional argument +mode+ (defaults to 'r') must specify a valid mode
- *  see IO@Modes:
+ *  Optional argument +mode+ (defaults to 'r') must specify a valid mode;
+ *  see {Access Modes}[rdoc-ref:File@Access+Modes]:
  *
  *    IO.new(fd, 'w')         # => #<IO:fd 3>
  *    IO.new(fd, File::WRONLY) # => #<IO:fd 3>
@@ -9165,14 +9166,14 @@ rb_io_set_encoding_by_bom(VALUE io)
  *    File.new('/etc/fstab')
  *    File.new('t.txt')
  *
- *  Optional argument +mode+ (defaults to 'r') must specify a valid mode
- *  see IO@Modes:
+ *  Optional argument +mode+ (defaults to 'r') must specify a valid mode;
+ *  see {Access Modes}[rdoc-ref:File@Access+Modes]:
  *
  *    File.new('t.tmp', 'w')
  *    File.new('t.tmp', File::RDONLY)
  *
  *  Optional argument +perm+ (defaults to 0666) must specify valid permissions
- *  see {File Permissions}[rdoc-ref:IO@File+Permissions]:
+ *  see {File Permissions}[rdoc-ref:File@File+Permissions]:
  *
  *    File.new('t.tmp', File::CREAT, 0644)
  *    File.new('t.tmp', File::CREAT, 0444)
@@ -10034,12 +10035,12 @@ static VALUE argf_readlines(int, VALUE *, VALUE);
  *
  *  Returns an array containing the lines returned by calling
  *  Kernel#gets until the end-of-file is reached;
- *  (see {Lines}[rdoc-ref:IO@Lines]).
+ *  (see {Line IO}[rdoc-ref:doc/io_streams.rdoc@Line+IO]).
  *
  *  With only string argument +sep+ given,
  *  returns the remaining lines as determined by line separator +sep+,
  *  or +nil+ if none;
- *  see {Line Separator}[rdoc-ref:IO@Line+Separator]:
+ *  see {Line Separator}[rdoc-ref:doc/io_streams.rdoc@Line+Separator]:
  *
  *    # Default separator.
  *    $ cat t.txt | ruby -e "p readlines"
@@ -10059,7 +10060,7 @@ static VALUE argf_readlines(int, VALUE *, VALUE);
  *
  *  With only integer argument +limit+ given,
  *  limits the number of bytes in the line;
- *  see {Line Limit}[rdoc-ref:IO@Line+Limit]:
+ *  see {Line Limit}[rdoc-ref:doc/io_streams.rdoc@Line+Limit]:
  *
  *    $cat t.txt | ruby -e "p readlines 10"
  *    ["First line", "\n", "Second lin", "e\n", "\n", "Fourth lin", "e\n", "Fifth line", "\n"]
@@ -10071,7 +10072,7 @@ static VALUE argf_readlines(int, VALUE *, VALUE);
  *    ["First line\n", "Second line\n", "\n", "Fourth line\n", "Fifth line\n"]
  *
  *  With arguments +sep+ and +limit+ given, combines the two behaviors;
- *  see {Line Separator and Line Limit}[rdoc-ref:IO@Line+Separator+and+Line+Limit].
+ *  see {Line Separator and Line Limit}[rdoc-ref:doc/io_streams.rdoc@Line+Separator+and+Line+Limit].
  *
  *  For all forms above, optional keyword arguments specify:
  *
@@ -11559,7 +11560,7 @@ io_s_foreach(VALUE v)
  *  For both forms, command and path, the remaining arguments are the same.
  *
  *  With argument +sep+ given, parses lines as determined by that line separator
- *  (see {Line Separator}[rdoc-ref:IO@Line+Separator]):
+ *  (see {Line Separator}[rdoc-ref:doc/io_streams.rdoc@Line+Separator]):
  *
  *    File.foreach('t.txt', 'li') {|line| p line }
  *
@@ -11582,7 +11583,7 @@ io_s_foreach(VALUE v)
  *
  *  With argument +limit+ given, parses lines as determined by the default
  *  line separator and the given line-length limit
- *  (see {Line Limit}[rdoc-ref:IO@Line+Limit]):
+ *  (see {Line Limit}[rdoc-ref:doc/io_streams.rdoc@Line+Limit]):
  *
  *    File.foreach('t.txt', 7) {|line| p line }
  *
@@ -11601,7 +11602,7 @@ io_s_foreach(VALUE v)
  *  With arguments +sep+ and  +limit+ given,
  *  parses lines as determined by the given
  *  line separator and the given line-length limit
- *  (see {Line Separator and Line Limit}[rdoc-ref:IO@Line+Separator+and+Line+Limit]):
+ *  (see {Line Separator and Line Limit}[rdoc-ref:doc/io_streams.rdoc@Line+Separator+and+Line+Limit]):
  *
  *  Optional keyword arguments +opts+ specify:
  *
@@ -11677,7 +11678,7 @@ io_s_readlines(VALUE v)
  *  For both forms, command and path, the remaining arguments are the same.
  *
  *  With argument +sep+ given, parses lines as determined by that line separator
- *  (see {Line Separator}[rdoc-ref:IO@Line+Separator]):
+ *  (see {Line Separator}[rdoc-ref:doc/io_streams.rdoc@Line+Separator]):
  *
  *    # Ordinary separator.
  *    IO.readlines('t.txt', 'li')
@@ -11691,7 +11692,7 @@ io_s_readlines(VALUE v)
  *
  *  With argument +limit+ given, parses lines as determined by the default
  *  line separator and the given line-length limit
- *  (see {Line Limit}[rdoc-ref:IO@Line+Limit]):
+ *  (see {Line Limit}[rdoc-ref:doc/io_streams.rdoc@Line+Limit]):
  *
  *    IO.readlines('t.txt', 7)
  *    # => ["First l", "ine\n", "Second ", "line\n", "\n", "Third l", "ine\n", "Fourth ", "line\n"]
@@ -11699,7 +11700,7 @@ io_s_readlines(VALUE v)
  *  With arguments +sep+ and  +limit+ given,
  *  parses lines as determined by the given
  *  line separator and the given line-length limit
- *  (see {Line Separator and Line Limit}[rdoc-ref:IO@Line+Separator+and+Line+Limit]):
+ *  (see {Line Separator and Line Limit}[rdoc-ref:doc/io_streams.rdoc@Line+Separator+and+Line+Limit]):
  *
  *  Optional keyword arguments +opts+ specify:
  *
@@ -13012,7 +13013,7 @@ rb_io_s_copy_stream(int argc, VALUE *argv, VALUE io)
  *  Returns the Encoding object that represents the encoding of the stream,
  *  or +nil+ if the stream is in write mode and no encoding is specified.
  *
- *  See {Encodings}[rdoc-ref:IO@Encodings].
+ *  See {Encodings}[rdoc-ref:File@Encodings].
  *
  */
 
@@ -13040,7 +13041,7 @@ rb_io_external_encoding(VALUE io)
  *  if conversion is specified,
  *  or +nil+ otherwise.
  *
- *  See {Encodings}[rdoc-ref:IO@Encodings].
+ *  See {Encodings}[rdoc-ref:File@Encodings].
  *
  */
 
@@ -13059,7 +13060,7 @@ rb_io_internal_encoding(VALUE io)
  *    set_encoding(ext_enc, int_enc, **enc_opts)  -> self
  *    set_encoding('ext_enc:int_enc', **enc_opts) -> self
  *
- *  See {Encodings}[rdoc-ref:IO@Encodings].
+ *  See {Encodings}[rdoc-ref:File@Encodings].
  *
  *  Argument +ext_enc+, if given, must be an Encoding object;
  *  it is assigned as the encoding for the stream.
@@ -14417,18 +14418,6 @@ set_LAST_READ_LINE(VALUE val, ID _x, VALUE *_y)
  *  for interacting with the console;
  *  requiring it adds numerous methods to class \IO.
  *
- *  == Extension <tt>expect</tt>
- *
- *  The Expect extension (not available on Windows)
-  * adds instance method IO#expect, which is similar to
- *  {TCL's expect extension}[https://www.tcl.tk/man/expect5.31/expect.1.html].
- *
- *  To use the method, you must require expect:
- *
- *    require 'expect'
- *
- *  See IO#expect.
- *
  *  == Example Files
  *
  *  Many examples here use these variables:
@@ -14469,7 +14458,7 @@ set_LAST_READ_LINE(VALUE val, ID _x, VALUE *_y)
  *  - {Creating}[rdoc-ref:IO@Creating]
  *  - {Reading}[rdoc-ref:IO@Reading]
  *  - {Writing}[rdoc-ref:IO@Writing]
- *  - {Positioning}[rdoc-ref:IO@Positioning]
+ *  - {Positioning}[rdoc-ref:doc/io_streams.rdoc@Positioning]
  *  - {Iterating}[rdoc-ref:IO@Iterating]
  *  - {Settings}[rdoc-ref:IO@Settings]
  *  - {Querying}[rdoc-ref:IO@Querying]

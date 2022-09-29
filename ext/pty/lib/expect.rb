@@ -6,6 +6,14 @@ class IO
   #   IO#expect(pattern,timeout=9999999)                  ->  Array
   #   IO#expect(pattern,timeout=9999999) { |result| ... } ->  nil
   #
+  # The +expect+ library adds instance method IO#expect,
+  # which is similar to the
+  # {TCL expect extension}[https://www.tcl.tk/man/expect5.31/expect.1.html].
+  #
+  # To use this method, you must require +expect+:
+  #
+  #   require 'expect'
+  #
   # Reads from the IO until the given +pattern+ matches or the +timeout+ is over.
   #
   # It returns an array with the read buffer, followed by the matches.
