@@ -31,7 +31,8 @@ enum {
 /* Note: Data is a stricter version of the Struct: no attr writers & no
    hash-alike/array-alike behavior. It shares most of the implementation
    on the C level, but is unrelated on the Ruby level. */
-VALUE rb_cStruct, rb_cData;
+VALUE rb_cStruct;
+static VALUE rb_cData;
 static ID id_members, id_back_members, id_keyword_init;
 
 static VALUE struct_alloc(VALUE);
@@ -313,8 +314,8 @@ rb_data_s_new(int argc, const VALUE *argv, VALUE klass)
         VALUE members = struct_ivar_get(klass, id_members);
         int num_members = RARRAY_LENINT(members);
 
-         rb_check_arity(argc, 0, num_members);
-        VALUE arg_hash = rb_hash_new_with_size(num_members);
+        rb_check_arity(argc, 0, num_members);
+        VALUE arg_hash = rb_hash_new_with_size(argc);
         for (long i=0; i<argc; i++) {
             VALUE k = rb_ary_entry(members, i), v = argv[i];
             rb_hash_aset(arg_hash, k, v);
