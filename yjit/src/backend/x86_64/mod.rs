@@ -131,7 +131,7 @@ impl Assembler
             //     VALUEs alive. This is a sort of canonicalization.
             let mut unmapped_opnds: Vec<Opnd> = vec![];
 
-            let is_load = matches!(insn, Insn::Load { .. });
+            let is_load = matches!(insn, Insn::Load { .. } | Insn::LoadInto { .. });
             let mut opnd_iter = insn.opnd_iter_mut();
 
             while let Some(opnd) = opnd_iter.next() {
@@ -145,7 +145,7 @@ impl Assembler
                     if !value.special_const_p() || imm_num_bits(value.as_i64()) > 32 {
                         asm.load(iterator.map_opnd(*opnd))
                     } else {
-                        iterator.map_opnd(*opnd)
+                        Opnd::UImm(value.as_u64())
                     }
                 } else {
                     iterator.map_opnd(*opnd)
@@ -221,18 +221,25 @@ impl Assembler
                 Insn::CSelLE { truthy, falsy, out } |
                 Insn::CSelG { truthy, falsy, out } |
                 Insn::CSelGE { truthy, falsy, out } => {
-                    match truthy {
-                        Opnd::Reg(_) | Opnd::InsnOut { .. } => {},
-                        _ => {
+                    match unmapped_opnds[0] {
+                        // If we have an instruction output whose live range
+                        // spans beyond this instruction, we have to load it.
+                        Opnd::InsnOut { idx, .. } => {
+                            if live_ranges[idx] > index {
+                                *truthy = asm.load(*truthy);
+                            }
+                        },
+                        Opnd::UImm(_) | Opnd::Imm(_) | Opnd::Value(_) => {
                             *truthy = asm.load(*truthy);
-                        }
+                        },
+                        _ => {}
                     };
 
                     match falsy {
-                        Opnd::Reg(_) | Opnd::InsnOut { .. } => {},
-                        _ => {
+                        Opnd::UImm(_) | Opnd::Imm(_) => {
                             *falsy = asm.load(*falsy);
-                        }
+                        },
+                        _ => {}
                     };
 
                     *out = asm.next_opnd_out(Opnd::match_num_bits(&[*truthy, *falsy]));
@@ -289,6 +296,19 @@ impl Assembler
 
                     asm.not(opnd0);
                 },
+                Insn::CCall { opnds, target, .. } => {
+                    assert!(opnds.len() <= C_ARG_OPNDS.len());
+
+                    // Load each operand into the corresponding argument
+                    // register.
+                    for (idx, opnd) in opnds.into_iter().enumerate() {
+                        asm.load_into(C_ARG_OPNDS[idx], *opnd);
+                    }
+
+                    // Now we push the CCall without any arguments so that it
+                    // just performs the call.
+                    asm.ccall(target.unwrap_fun_ptr(), vec![]);
+                },
                 _ => {
                     if insn.out_opnd().is_some() {
                         let out_num_bits = Opnd::match_num_bits_iter(insn.opnd_iter());
@@ -335,6 +355,14 @@ impl Assembler
                 },
                 _ => opnd.into()
             }
+        }
+
+
+        fn emit_csel(cb: &mut CodeBlock, truthy: Opnd, falsy: Opnd, out: Opnd, cmov_fn: fn(&mut CodeBlock, X86Opnd, X86Opnd)) {
+            if out != truthy {
+                mov(cb, out.into(), truthy.into());
+            }
+            cmov_fn(cb, out.into(), falsy.into());
         }
 
         //dbg!(&self.insns);
@@ -421,7 +449,8 @@ impl Assembler
                 },
 
                 // This assumes only load instructions can contain references to GC'd Value operands
-                Insn::Load { opnd, out } => {
+                Insn::Load { opnd, out } |
+                Insn::LoadInto { dest: out, opnd } => {
                     mov(cb, out.into(), opnd.into());
 
                     // If the value being loaded is a heap object
@@ -490,17 +519,8 @@ impl Assembler
                 },
 
                 // C function call
-                Insn::CCall { opnds, target, .. } => {
-                    // Temporary
-                    assert!(opnds.len() <= _C_ARG_OPNDS.len());
-
-                    // For each operand
-                    for (idx, opnd) in opnds.iter().enumerate() {
-                        mov(cb, X86Opnd::Reg(_C_ARG_OPNDS[idx].unwrap_reg()), opnds[idx].into());
-                    }
-
-                    let ptr = target.unwrap_fun_ptr();
-                    call_ptr(cb, RAX, ptr);
+                Insn::CCall { target, .. } => {
+                    call_ptr(cb, RAX, target.unwrap_fun_ptr());
                 },
 
                 Insn::CRet(opnd) => {
@@ -604,36 +624,28 @@ impl Assembler
                 Insn::Breakpoint => int3(cb),
 
                 Insn::CSelZ { truthy, falsy, out } => {
-                    mov(cb, out.into(), truthy.into());
-                    cmovnz(cb, out.into(), falsy.into());
+                    emit_csel(cb, *truthy, *falsy, *out, cmovnz);
                 },
                 Insn::CSelNZ { truthy, falsy, out } => {
-                    mov(cb, out.into(), truthy.into());
-                    cmovz(cb, out.into(), falsy.into());
+                    emit_csel(cb, *truthy, *falsy, *out, cmovz);
                 },
                 Insn::CSelE { truthy, falsy, out } => {
-                    mov(cb, out.into(), truthy.into());
-                    cmovne(cb, out.into(), falsy.into());
+                    emit_csel(cb, *truthy, *falsy, *out, cmovne);
                 },
                 Insn::CSelNE { truthy, falsy, out } => {
-                    mov(cb, out.into(), truthy.into());
-                    cmove(cb, out.into(), falsy.into());
+                    emit_csel(cb, *truthy, *falsy, *out, cmove);
                 },
                 Insn::CSelL { truthy, falsy, out } => {
-                    mov(cb, out.into(), truthy.into());
-                    cmovge(cb, out.into(), falsy.into());
+                    emit_csel(cb, *truthy, *falsy, *out, cmovge);
                 },
                 Insn::CSelLE { truthy, falsy, out } => {
-                    mov(cb, out.into(), truthy.into());
-                    cmovg(cb, out.into(), falsy.into());
+                    emit_csel(cb, *truthy, *falsy, *out, cmovg);
                 },
                 Insn::CSelG { truthy, falsy, out } => {
-                    mov(cb, out.into(), truthy.into());
-                    cmovle(cb, out.into(), falsy.into());
+                    emit_csel(cb, *truthy, *falsy, *out, cmovle);
                 },
                 Insn::CSelGE { truthy, falsy, out } => {
-                    mov(cb, out.into(), truthy.into());
-                    cmovl(cb, out.into(), falsy.into());
+                    emit_csel(cb, *truthy, *falsy, *out, cmovl);
                 }
                 Insn::LiveReg { .. } => (), // just a reg alloc signal, no code
                 Insn::PadEntryExit => {

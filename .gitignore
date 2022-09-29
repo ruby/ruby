@@ -233,10 +233,13 @@ lcov*.info
 /win32/*.ico
 
 # MJIT
-/rb_mjit_header.h
-/mjit_config.h
 /include/ruby-*/*/rb_mjit_min_header-*.h
-/mjit_instruction.rb
+/lib/mjit/instruction.rb
+/mjit_config.h
+/rb_mjit_header.h
+
+# YJIT
+/yjit-bench
 
 # /wasm/
 /wasm/tests/*.wasm

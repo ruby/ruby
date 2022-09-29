@@ -89,6 +89,8 @@ rb_yjit_icache_invalidate(void *start, void *end)
     // On Darwin it's the same as calling sys_icache_invalidate().
 #ifdef __GNUC__
     __builtin___clear_cache(start, end);
+#elif defined(__aarch64__)
+#error No instruction cache clear available with this compiler on Aarch64!
 #endif
 }
 
@@ -486,7 +488,11 @@ rb_METHOD_ENTRY_VISI(const rb_callable_method_entry_t *me)
 rb_method_type_t
 rb_get_cme_def_type(const rb_callable_method_entry_t *cme)
 {
-    return cme->def->type;
+    if (UNDEFINED_METHOD_ENTRY_P(cme)) {
+        return VM_METHOD_TYPE_UNDEF;
+    } else {
+        return cme->def->type;
+    }
 }
 
 ID
@@ -601,6 +607,12 @@ bool
 rb_get_iseq_flags_has_rest(const rb_iseq_t *iseq)
 {
     return iseq->body->param.flags.has_rest;
+}
+
+bool
+rb_get_iseq_flags_ruby2_keywords(const rb_iseq_t *iseq)
+{
+    return iseq->body->param.flags.ruby2_keywords;
 }
 
 bool

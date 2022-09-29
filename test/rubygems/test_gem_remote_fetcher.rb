@@ -1174,10 +1174,10 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
   def start_server(data)
     null_logger = NilLog.new
     s = WEBrick::HTTPServer.new(
-      :Port            => 0,
-      :DocumentRoot    => nil,
-      :Logger          => null_logger,
-      :AccessLog       => null_logger
+      :Port => 0,
+      :DocumentRoot => nil,
+      :Logger => null_logger,
+      :AccessLog => null_logger
     )
     s.mount_proc("/kill") {|req, res| s.shutdown }
     s.mount_proc("/yaml") do |req, res|

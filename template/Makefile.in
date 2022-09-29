@@ -170,6 +170,7 @@ yes_baseruby = $(HAVE_BASERUBY:no=)
 no_baseruby = $(HAVE_BASERUBY:yes=)
 BOOTSTRAPRUBY = $(yes_baseruby:yes=$(BASERUBY)) $(no_baseruby:no=$(MINIRUBY))
 BOOTSTRAPRUBY_OPT = $(yes_baseruby:yes=-r./$(arch)-fake)
+BOOTSTRAPRUBY_FAKE = $(yes_baseruby:yes=$(arch)-fake.rb)
 
 COROUTINE_H = @X_COROUTINE_H@
 COROUTINE_OBJ = $(COROUTINE_H:.h=.$(OBJEXT))
@@ -380,7 +381,7 @@ install-cross: $(arch)-fake.rb $(RBCONFIG) rbconfig.rb $(arch_hdrdir)/ruby/confi
 
 Makefile:	$(srcdir)/template/Makefile.in $(srcdir)/enc/Makefile.in
 
-$(MKFILES): config.status $(srcdir)/version.h $(ABI_VERSION_HDR)
+$(MKFILES): config.status $(srcdir)/version.h $(srcdir)/revision.h $(ABI_VERSION_HDR)
 		@[ -f $@ ] && mv $@ $@.old
 		MAKE=$(MAKE) $(SHELL) ./config.status $@
 		@cmp $@ $@.old > /dev/null 2>&1 && echo $@ unchanged && exit 0; \
@@ -665,10 +666,6 @@ $(INSNS): $(srcdir)/insns.def vm_opts.h \
 	  $(tooldir)/ruby_vm/views/optunifs.inc.erb \
 	  $(tooldir)/ruby_vm/views/vm.inc.erb \
 	  $(tooldir)/ruby_vm/views/vmtc.inc.erb
-	$(ECHO) generating $@
-	$(Q) $(BASERUBY) -Ku $(tooldir)/insns2vm.rb $(INSNS2VMOPT) $@
-
-$(srcdir)/mjit_instruction.rb: $(tooldir)/ruby_vm/views/mjit_instruction.rb.erb
 	$(ECHO) generating $@
 	$(Q) $(BASERUBY) -Ku $(tooldir)/insns2vm.rb $(INSNS2VMOPT) $@
 

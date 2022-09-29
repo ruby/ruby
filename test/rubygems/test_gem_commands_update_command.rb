@@ -669,10 +669,10 @@ class TestGemCommandsUpdateCommand < Gem::TestCase
     @cmd.handle_options %w[--system]
 
     expected = {
-      :args     => [],
+      :args => [],
       :document => %w[ri],
-      :force    => false,
-      :system   => true,
+      :force => false,
+      :system => true,
     }
 
     assert_equal expected, @cmd.options
@@ -688,10 +688,10 @@ class TestGemCommandsUpdateCommand < Gem::TestCase
     @cmd.handle_options %w[--system 1.3.7]
 
     expected = {
-      :args     => [],
+      :args => [],
       :document => %w[ri],
-      :force    => false,
-      :system   => "1.3.7",
+      :force => false,
+      :system => "1.3.7",
     }
 
     assert_equal expected, @cmd.options

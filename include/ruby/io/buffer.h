@@ -1,5 +1,5 @@
-#ifndef RUBY_IO_BUFFER_T
-#define RUBY_IO_BUFFER_T 1
+#ifndef RUBY_IO_BUFFER_H
+#define RUBY_IO_BUFFER_H
 /**
  * @file
  * @author     Samuel Williams
@@ -65,7 +65,7 @@ enum rb_io_buffer_endian {
 };
 
 VALUE rb_io_buffer_new(void *base, size_t size, enum rb_io_buffer_flags flags);
-VALUE rb_io_buffer_map(VALUE io, size_t size, off_t offset, enum rb_io_buffer_flags flags);
+VALUE rb_io_buffer_map(VALUE io, size_t size, rb_off_t offset, enum rb_io_buffer_flags flags);
 
 VALUE rb_io_buffer_lock(VALUE self);
 VALUE rb_io_buffer_unlock(VALUE self);
@@ -82,10 +82,10 @@ void rb_io_buffer_clear(VALUE self, uint8_t value, size_t offset, size_t length)
 
 // The length is the minimum required length.
 VALUE rb_io_buffer_read(VALUE self, VALUE io, size_t length);
-VALUE rb_io_buffer_pread(VALUE self, VALUE io, size_t length, off_t offset);
+VALUE rb_io_buffer_pread(VALUE self, VALUE io, size_t length, rb_off_t offset);
 VALUE rb_io_buffer_write(VALUE self, VALUE io, size_t length);
-VALUE rb_io_buffer_pwrite(VALUE self, VALUE io, size_t length, off_t offset);
+VALUE rb_io_buffer_pwrite(VALUE self, VALUE io, size_t length, rb_off_t offset);
 
 RBIMPL_SYMBOL_EXPORT_END()
 
-#endif  /* RUBY_IO_BUFFER_T */
+#endif  /* RUBY_IO_BUFFER_H */

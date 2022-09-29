@@ -23,9 +23,6 @@ jobs:
       matrix:
         include:
           - task: mjit-bindgen
-            configure: '--enable-yjit=dev_nodebug'
-          - task: mjit-bindgen
-            arch: i686
       fail-fast: false
     env:
       SETARCH: ${{ matrix.arch && format('setarch {0}', matrix.arch) }}
@@ -74,7 +71,7 @@ jobs:
         env:
           arch: ${{ matrix.arch }}
         run: >-
-          $SETARCH ../src/configure -C --disable-install-doc --prefix=$(pwd)/install ${{ matrix.configure }}
+          $SETARCH ../src/configure -C --disable-install-doc --prefix=$(pwd)/install --enable-yjit=dev_nodebug
           ${arch:+--target=$arch-$OSTYPE --host=$arch-$OSTYPE}
       - run: $SETARCH make incs
       - run: $SETARCH make

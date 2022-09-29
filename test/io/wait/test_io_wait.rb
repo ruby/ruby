@@ -50,6 +50,7 @@ class TestIOWait < Test::Unit::TestCase
   end
 
   def test_wait
+    omit 'unstable on MinGW' if /mingw/ =~ RUBY_PLATFORM
     assert_nil @r.wait(0)
     @w.syswrite "."
     sleep 0.1

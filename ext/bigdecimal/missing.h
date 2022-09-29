@@ -172,45 +172,6 @@ rb_complex_imag(VALUE cmp)
 }
 #endif
 
-/* array */
-
-#ifndef FIX_CONST_VALUE_PTR
-# if defined(__fcc__) || defined(__fcc_version) || \
-    defined(__FCC__) || defined(__FCC_VERSION)
-/* workaround for old version of Fujitsu C Compiler (fcc) */
-#  define FIX_CONST_VALUE_PTR(x) ((const VALUE *)(x))
-# else
-#  define FIX_CONST_VALUE_PTR(x) (x)
-# endif
-#endif
-
-#ifndef HAVE_RB_ARRAY_CONST_PTR
-static inline const VALUE *
-rb_array_const_ptr(VALUE a)
-{
-    return FIX_CONST_VALUE_PTR((RBASIC(a)->flags & RARRAY_EMBED_FLAG) ?
-	RARRAY(a)->as.ary : RARRAY(a)->as.heap.ptr);
-}
-#endif
-
-#ifndef RARRAY_CONST_PTR
-# define RARRAY_CONST_PTR(a) rb_array_const_ptr(a)
-#endif
-
-#ifndef RARRAY_AREF
-# define RARRAY_AREF(a, i) (RARRAY_CONST_PTR(a)[i])
-#endif
-
-/* symbol */
-
-#ifndef HAVE_RB_SYM2STR
-static inline VALUE
-rb_sym2str(VALUE sym)
-{
-    return rb_id2str(SYM2ID(sym));
-}
-#endif
-
 /* st */
 
 #ifndef ST2FIX

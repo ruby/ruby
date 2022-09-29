@@ -52,7 +52,7 @@ $(RUBY_EXP) $(LIBRUBY_SO): $(DLL_BASE_NAME).res.$(OBJEXT)
 	$(ECHO) compiling $@
 	$(Q) $(WINDRES) --include-dir . --include-dir $(<D) --include-dir $(srcdir)/win32 $< $@
 
-%.rc: $(RBCONFIG) $(srcdir)/revision.h $(srcdir)/win32/resource.rb
+%.rc: $(BOOTSTRAPRUBY_FAKE) $(RBCONFIG) $(srcdir)/revision.h $(srcdir)/win32/resource.rb
 	$(ECHO) generating $@
 	$(Q) $(BOOTSTRAPRUBY_COMMAND) $(srcdir)/win32/resource.rb \
 	  -ruby_name=$(RUBY_INSTALL_NAME) -rubyw_name=$(RUBYW_INSTALL_NAME) \
@@ -94,7 +94,7 @@ endif
 
 $(LIBRUBY_SO): $(RUBYDEF)
 
-$(RUBYDEF): $(LIBRUBY_A) $(PREP) $(RBCONFIG)
+$(RUBYDEF): $(LIBRUBY_A) $(PREP) $(BOOTSTRAPRUBY_FAKE) $(RBCONFIG)
 	$(ECHO) generating $@
 	$(Q) $(BOOTSTRAPRUBY_COMMAND) $(srcdir)/win32/mkexports.rb -output=$@ $(LIBRUBY_A)
 

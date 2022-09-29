@@ -1960,10 +1960,10 @@ end
   def test_parse_method_bracket
     util_parser <<-RUBY
 class C
-  def [] end
-  def self.[] end
-  def []= end
-  def self.[]= end
+  def []; end
+  def self.[]; end
+  def []=; end
+  def self.[]=; end
 end
     RUBY
 

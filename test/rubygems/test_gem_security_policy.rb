@@ -43,22 +43,22 @@ class TestGemSecurityPolicy < Gem::TestCase
 
     @chain = Gem::Security::Policy.new(
       "Chain",
-      :verify_data   => true,
+      :verify_data => true,
       :verify_signer => true,
-      :verify_chain  => true,
-      :verify_root   => false,
-      :only_trusted  => false,
-      :only_signed   => false
+      :verify_chain => true,
+      :verify_root => false,
+      :only_trusted => false,
+      :only_signed => false
     )
 
     @root = Gem::Security::Policy.new(
       "Root",
-      :verify_data   => true,
+      :verify_data => true,
       :verify_signer => true,
-      :verify_chain  => true,
-      :verify_root   => true,
-      :only_trusted  => false,
-      :only_signed   => false
+      :verify_chain => true,
+      :verify_root => true,
+      :only_trusted => false,
+      :only_signed => false
     )
   end
 

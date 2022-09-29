@@ -1221,16 +1221,9 @@ module Net   #:nodoc:
       end
     end
 
-    # [Bug #12921]
-    if /linux|freebsd|darwin/ =~ RUBY_PLATFORM
-      ENVIRONMENT_VARIABLE_IS_MULTIUSER_SAFE = true
-    else
-      ENVIRONMENT_VARIABLE_IS_MULTIUSER_SAFE = false
-    end
-
     # The username of the proxy server, if one is configured.
     def proxy_user
-      if ENVIRONMENT_VARIABLE_IS_MULTIUSER_SAFE && @proxy_from_env
+      if @proxy_from_env
         user = proxy_uri&.user
         unescape(user) if user
       else
@@ -1240,7 +1233,7 @@ module Net   #:nodoc:
 
     # The password of the proxy server, if one is configured.
     def proxy_pass
-      if ENVIRONMENT_VARIABLE_IS_MULTIUSER_SAFE && @proxy_from_env
+      if @proxy_from_env
         pass = proxy_uri&.password
         unescape(pass) if pass
       else

@@ -21,32 +21,33 @@ jobs:
   make:
     strategy:
       matrix:
-        test_task: ["check", "test-syntax-suggest", "test-bundler-parallel", "test-bundled-gems"]
-        os:
-          - ubuntu-20.04
-        configure: ["", "cppflags=-DRUBY_DEBUG"]
+        # main variables included in the job name
+        test_task: [check]
+        configure: [cppflags=-DRUBY_DEBUG] # default to use more assertions
+        arch: ['']
+        # specify all jobs with `include` to avoid testing duplicated things
         include:
-          - test_task: "check"
-            configure: ""
+          - test_task: check
+          - test_task: check
             arch: i686
-          - test_task: "check"
+            configure: '' # test without -DRUBY_DEBUG as well
+          - test_task: check
             configure: "--enable-shared --enable-load-relative"
-            skipped_tests: "TestGem#test_.*_from_binstubs.*"
-            continue-on-skipped_tests: true
-          - test_task: "test-all TESTS=--repeat-count=2"
+          - test_task: test-all TESTS=--repeat-count=2
+          - test_task: test-syntax-suggest
+          - test_task: test-bundler-parallel
+          - test_task: test-bundled-gems
       fail-fast: false
     env:
       GITPULLOPTIONS: --no-tags origin ${{github.ref}}
       RUBY_DEBUG: ci
       SETARCH: ${{ matrix.arch && format('setarch {0}', matrix.arch) }}
-    runs-on: ${{ matrix.os || 'ubuntu-20.04' }}
+    runs-on: ubuntu-20.04
     if: ${{ !contains(github.event.head_commit.message, '[DOC]') && !contains(github.event.pull_request.labels.*.name, 'Documentation') }}
     steps:
       - run: mkdir build
         working-directory:
       - name: Set ENV
-        env:
-          configure: ${{matrix.configure}}
         run: |
           echo "GNUMAKEFLAGS=-j$((1 + $(nproc --all)))" >> $GITHUB_ENV
       - name: Install libraries
@@ -120,7 +121,7 @@ jobs:
           payload: |
             {
               "ci": "GitHub Actions",
-              "env": "${{ matrix.os }} / ${{ matrix.test_task }}${{ matrix.configure }}",
+              "env": "${{ github.workflow }} / ${{ matrix.test_task }} ${{ matrix.configure }}${{ matrix.arch }}",
               "url": "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}",
               "commit": "${{ github.sha }}",
               "branch": "${{ github.ref }}".split('/').reverse()[0]

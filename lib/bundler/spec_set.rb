@@ -176,7 +176,7 @@ module Bundler
     def lookup
       @lookup ||= begin
         lookup = Hash.new {|h, k| h[k] = [] }
-        Index.sort_specs(@specs).reverse_each do |s|
+        @specs.each do |s|
           lookup[s.name] << s
         end
         lookup

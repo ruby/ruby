@@ -68,14 +68,14 @@ module Spec
       if RUBY_PLATFORM == "java"
         :jruby
       elsif ["x64-mingw32", "x64-mingw-ucrt"].include?(RUBY_PLATFORM)
-        :x64_mingw
+        :windows
       else
         :ruby
       end
     end
 
     def not_local_tag
-      [:jruby, :x64_mingw, :ruby].find {|tag| tag != local_tag }
+      [:jruby, :windows, :ruby].find {|tag| tag != local_tag }
     end
 
     def local_ruby_engine
@@ -88,7 +88,7 @@ module Spec
 
     def not_local_engine_version
       case not_local_tag
-      when :ruby, :x64_mingw
+      when :ruby, :windows
         not_local_ruby_version
       when :jruby
         "1.6.1"

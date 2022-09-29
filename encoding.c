@@ -17,6 +17,7 @@
 #include "internal.h"
 #include "internal/enc.h"
 #include "internal/encoding.h"
+#include "internal/error.h"
 #include "internal/inits.h"
 #include "internal/load.h"
 #include "internal/object.h"
@@ -49,7 +50,6 @@ void rb_encdb_declare(const char *name);
 int rb_encdb_replicate(const char *name, const char *orig);
 int rb_encdb_dummy(const char *name);
 int rb_encdb_alias(const char *alias, const char *orig);
-void rb_encdb_set_unicode(int index);
 #pragma GCC visibility pop
 #endif
 
@@ -569,7 +569,10 @@ rb_enc_replicate(const char *name, rb_encoding *encoding)
 static VALUE
 enc_replicate_m(VALUE encoding, VALUE name)
 {
-    int idx = rb_enc_replicate(name_for_encoding(&name), rb_to_encoding(encoding));
+    int idx;
+    rb_warn_deprecated_to_remove("3.3", "Encoding#replicate", "the original encoding");
+
+    idx = rb_enc_replicate(name_for_encoding(&name), rb_to_encoding(encoding));
     RB_GC_GUARD(name);
     return rb_enc_from_encoding_index(idx);
 }
@@ -754,14 +757,6 @@ rb_encdb_alias(const char *alias, const char *orig)
     GLOBAL_ENC_TABLE_LEAVE();
 
     return r;
-}
-
-void
-rb_encdb_set_unicode(int index)
-{
-    rb_raw_encoding *enc = (rb_raw_encoding *)rb_enc_from_index(index);
-    ASSUME(enc);
-    enc->flags |= ONIGENC_FLAG_UNICODE;
 }
 
 static void

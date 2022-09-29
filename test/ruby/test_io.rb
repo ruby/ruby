@@ -2213,6 +2213,14 @@ class TestIO < Test::Unit::TestCase
     end)
   end
 
+  def test_sysread_with_negative_length
+    make_tempfile {|t|
+      open(t.path) do |f|
+        assert_raise(ArgumentError) { f.sysread(-1) }
+      end
+    }
+  end
+
   def test_flag
     make_tempfile {|t|
       assert_raise(ArgumentError) do

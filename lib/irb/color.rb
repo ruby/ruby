@@ -128,10 +128,14 @@ module IRB # :nodoc:
 
         symbol_state = SymbolState.new
         colored = +''
-        length = 0
-        end_seen = false
 
         scan(code, allow_last_error: !complete) do |token, str, expr|
+          # handle uncolorable code
+          if token.nil?
+            colored << Reline::Unicode.escape_for_print(str)
+            next
+          end
+
           # IRB::ColorPrinter skips colorizing fragments with any invalid token
           if ignore_error && ERROR_TOKENS.include?(token)
             return Reline::Unicode.escape_for_print(code)
@@ -147,15 +151,7 @@ module IRB # :nodoc:
               colored << line
             end
           end
-          length += str.bytesize
-          end_seen = true if token == :on___end__
         end
-
-        # give up colorizing incomplete Ripper tokens
-        unless end_seen or length == code.bytesize
-          return Reline::Unicode.escape_for_print(code)
-        end
-
         colored
       end
 
@@ -170,33 +166,42 @@ module IRB # :nodoc:
       end
 
       def scan(code, allow_last_error:)
-        pos = [1, 0]
-
         verbose, $VERBOSE = $VERBOSE, nil
         RubyLex.compile_with_errors_suppressed(code) do |inner_code, line_no|
           lexer = Ripper::Lexer.new(inner_code, '(ripper)', line_no)
-          if lexer.respond_to?(:scan) # Ruby 2.7+
-            lexer.scan.each do |elem|
-              str = elem.tok
-              next if allow_last_error and /meets end of file|unexpected end-of-input/ =~ elem.message
-              next if ([elem.pos[0], elem.pos[1] + str.bytesize] <=> pos) <= 0
+          byte_pos = 0
+          line_positions = [0]
+          inner_code.lines.each do |line|
+            line_positions << line_positions.last + line.bytesize
+          end
 
-              str.each_line do |line|
-                if line.end_with?("\n")
-                  pos[0] += 1
-                  pos[1] = 0
-                else
-                  pos[1] += line.bytesize
-                end
-              end
+          on_scan = proc do |elem|
+            start_pos = line_positions[elem.pos[0] - 1] + elem.pos[1]
 
-              yield(elem.event, str, elem.state)
+            # yield uncolorable code
+            if byte_pos < start_pos
+              yield(nil, inner_code.byteslice(byte_pos...start_pos), nil)
             end
-          else
-            lexer.parse.each do |elem|
-              yield(elem.event, elem.tok, elem.state)
+
+            if byte_pos <= start_pos
+              str = elem.tok
+              yield(elem.event, str, elem.state)
+              byte_pos = start_pos + str.bytesize
             end
           end
+
+          if lexer.respond_to?(:scan) # Ruby 2.7+
+            lexer.scan.each do |elem|
+              next if allow_last_error and /meets end of file|unexpected end-of-input/ =~ elem.message
+              on_scan.call(elem)
+            end
+          else
+            lexer.parse.sort_by(&:pos).each do |elem|
+              on_scan.call(elem)
+            end
+          end
+          # yield uncolorable DATA section
+          yield(nil, inner_code.byteslice(byte_pos...inner_code.bytesize), nil) if byte_pos < inner_code.bytesize
         end
       ensure
         $VERBOSE = verbose

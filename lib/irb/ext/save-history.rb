@@ -107,13 +107,13 @@ module IRB
           raise
         end
 
-        if File.exist?(history_file) && @loaded_history_mtime &&
+        if File.exist?(history_file) &&
            File.mtime(history_file) != @loaded_history_mtime
-          history = history[@loaded_history_lines..-1]
+          history = history[@loaded_history_lines..-1] if @loaded_history_lines
           append_history = true
         end
 
-        open(history_file, "#{append_history ? 'a' : 'w'}:#{IRB.conf[:LC_MESSAGES].encoding}", 0600) do |f|
+        File.open(history_file, (append_history ? 'a' : 'w'), 0o600, encoding: IRB.conf[:LC_MESSAGES]&.encoding) do |f|
           hist = history.map{ |l| l.split("\n").join("\\\n") }
           unless append_history
             begin

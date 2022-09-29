@@ -100,7 +100,7 @@ RBIMPL_ATTR_NONNULL((2, 3))
  * param-arg-spec        := pre-arg-spec [post-arg-spec] / post-arg-spec /
  *                          pre-opt-post-arg-spec
  * pre-arg-spec          := num-of-leading-mandatory-args
-                            [num-of-optional-args]
+ *                          [num-of-optional-args]
  * post-arg-spec         := sym-for-variable-length-args
  *                          [num-of-trailing-mandatory-args]
  * pre-opt-post-arg-spec := num-of-leading-mandatory-args num-of-optional-args

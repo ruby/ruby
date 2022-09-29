@@ -60,7 +60,14 @@ module IRB
           end
         }
       }.flatten if defined?(Gem::Specification)
-      (gem_paths.to_a | $LOAD_PATH).sort
+      candidates = (gem_paths.to_a | $LOAD_PATH)
+      candidates.map do |p|
+        if p.respond_to?(:to_path)
+          p.to_path
+        else
+          String(p) rescue nil
+        end
+      end.compact.sort
     end
 
     def self.retrieve_files_to_require_from_load_path

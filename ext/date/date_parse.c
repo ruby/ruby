@@ -473,27 +473,53 @@ date_zone_to_diff(VALUE str)
 		s++;
 		l--;
 
+#define out_of_range(v, min, max) ((v) < (min) || (max) < (v))
 		hour = STRTOUL(s, &p, 10);
 		if (*p == ':') {
+		    if (out_of_range(sec, 0, 59)) return Qnil;
 		    s = ++p;
 		    min = STRTOUL(s, &p, 10);
+		    if (out_of_range(min, 0, 59)) return Qnil;
 		    if (*p == ':') {
 			s = ++p;
 			sec = STRTOUL(s, &p, 10);
+			if (out_of_range(hour, 0, 23)) return Qnil;
 		    }
-		    goto num;
 		}
-		if (*p == ',' || *p == '.') {
-		    char *e = 0;
-		    p++;
-		    min = STRTOUL(p, &e, 10) * 3600;
+		else if (*p == ',' || *p == '.') {
+		    /* fractional hour */
+		    size_t n;
+		    int ov;
+		    /* no over precision for offset; 10**-7 hour = 0.36
+		     * milliseconds should be enough. */
+		    const size_t max_digits = 7; /* 36 * 10**7 < 32-bit FIXNUM_MAX */
+
+		    if (out_of_range(hour, 0, 23)) return Qnil;
+
+		    n = (s + l) - ++p;
+		    if (n > max_digits) n = max_digits;
+		    sec = ruby_scan_digits(p, n, 10, &n, &ov);
+		    if ((p += n) < s + l && *p >= ('5' + !(sec & 1)) && *p <= '9') {
+			/* round half to even */
+			sec++;
+		    }
+		    sec *= 36;
 		    if (sign) {
 			hour = -hour;
-			min = -min;
+			sec = -sec;
 		    }
-		    offset = rb_rational_new(INT2FIX(min),
-					     rb_int_positive_pow(10, (int)(e - p)));
-		    offset = f_add(INT2FIX(hour * 3600), offset);
+		    if (n <= 2) {
+			/* HH.nn or HH.n */
+			if (n == 1) sec *= 10;
+			offset = INT2FIX(sec + hour * 3600);
+		    }
+		    else {
+			VALUE denom = rb_int_positive_pow(10, (int)(n - 2));
+			offset = f_add(rb_rational_new(INT2FIX(sec), denom), INT2FIX(hour * 3600));
+			if (rb_rational_den(offset) == INT2FIX(1)) {
+			    offset = rb_rational_num(offset);
+			}
+		    }
 		    goto ok;
 		}
 		else if (l > 2) {
@@ -506,12 +532,11 @@ date_zone_to_diff(VALUE str)
 			min  = ruby_scan_digits(&s[2 - l % 2], 2, 10, &n, &ov);
 		    if (l >= 5)
 			sec  = ruby_scan_digits(&s[4 - l % 2], 2, 10, &n, &ov);
-		    goto num;
 		}
-	      num:
 		sec += min * 60 + hour * 3600;
 		if (sign) sec = -sec;
 		offset = INT2FIX(sec);
+#undef out_of_range
 	    }
 	}
     }

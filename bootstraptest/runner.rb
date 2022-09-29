@@ -154,8 +154,7 @@ End
     end
   }
   if tests and not ARGV.empty?
-    $stderr.puts "--tests and arguments are exclusive"
-    exit false
+    abort "--sets and arguments are exclusive"
   end
   tests ||= ARGV
   tests = Dir.glob("#{File.dirname($0)}/test_*.rb").sort if tests.empty?

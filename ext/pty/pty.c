@@ -170,7 +170,7 @@ establishShell(int argc, VALUE *argv, struct pty_info *info,
 {
     int 		master, slave, status = 0;
     rb_pid_t		pid;
-    char		*p, *getenv();
+    char		*p;
     VALUE		v;
     struct child_info   carg;
     char		errbuf[32];

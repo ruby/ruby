@@ -311,18 +311,19 @@ end
 def data_foreach(name, &block)
   fn = get_file(name)
   warn "Reading #{name}"
-  if /^emoji/ =~ name
-    sep = ""
-    pat = /^# #{Regexp.quote(File.basename(name))}.*^# Version: ([\d.]+)/m
-    type = :Emoji
-  else
-    sep = "\n"
-    pat = /^# #{File.basename(name).sub(/\./, '-([\\d.]+)\\.')}/
-    type = :Unicode
-  end
   File.open(fn, 'rb') do |f|
-    line = f.gets(sep)
-    unless version = line[pat, 1]
+    if /^emoji/ =~ name
+      line = f.gets("")
+      # Headers till Emoji 13 or 15
+      version = line[/^# #{Regexp.quote(File.basename(name))}.*(?:^# Version:|Emoji Version) ([\d.]+)/m, 1]
+      type = :Emoji
+    else
+      # Headers since Emoji 14 or other Unicode data
+      line = f.gets("\n")
+      type = :Unicode
+    end
+    version ||= line[/^# #{File.basename(name).sub(/\./, '-([\\d.]+)\\.')}/, 1]
+    unless version
       raise ArgumentError, <<-ERROR
 #{name}: no #{type} version
 #{line.gsub(/^/, '> ')}
@@ -330,7 +331,7 @@ def data_foreach(name, &block)
     end
     if !(v = $versions[type])
       $versions[type] = version
-    elsif v != version
+    elsif v != version and "#{v}.0" != version
       raise ArgumentError, <<-ERROR
 #{name}: #{type} version mismatch: #{version} to #{v}
 #{line.gsub(/^/, '> ')}
@@ -464,11 +465,7 @@ struct uniname2ctype_struct {
 };
 #define uniname2ctype_offset(str) offsetof(struct uniname2ctype_pool_t, uniname2ctype_pool_##str)
 
-static const struct uniname2ctype_struct *uniname2ctype_p(
-#if !(/*ANSI*/+0) /* if ANSI, old style not to conflict with generated prototype */
-    const char *, unsigned int
-#endif
-);
+static const struct uniname2ctype_struct *uniname2ctype_p(register const char *str, register size_t len);
 %}
 struct uniname2ctype_struct;
 %%

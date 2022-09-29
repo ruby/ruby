@@ -19,9 +19,9 @@ class Gem::StubSpecification < Gem::BasicSpecification
 
     # These are common require paths.
     REQUIRE_PATHS = { # :nodoc:
-      "lib"  => "lib".freeze,
+      "lib" => "lib".freeze,
       "test" => "test".freeze,
-      "ext"  => "ext".freeze,
+      "ext" => "ext".freeze,
     }.freeze
 
     # These are common require path lists.  This hash is used to optimize

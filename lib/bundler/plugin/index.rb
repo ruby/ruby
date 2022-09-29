@@ -167,11 +167,11 @@ module Bundler
       # to be only String key value pairs)
       def save_index
         index = {
-          "commands"     => @commands,
-          "hooks"        => @hooks,
-          "load_paths"   => @load_paths,
+          "commands" => @commands,
+          "hooks" => @hooks,
+          "load_paths" => @load_paths,
           "plugin_paths" => @plugin_paths,
-          "sources"      => @sources,
+          "sources" => @sources,
         }
 
         require_relative "../yaml_serializer"

@@ -151,6 +151,16 @@ impl Opnd
         }
     }
 
+    pub fn with_num_bits(&self, num_bits: u8) -> Option<Opnd> {
+        assert!(num_bits == 8 || num_bits == 16 || num_bits == 32 || num_bits == 64);
+        match *self {
+            Opnd::Reg(reg) => Some(Opnd::Reg(reg.with_num_bits(num_bits))),
+            Opnd::Mem(Mem { base, disp, .. }) => Some(Opnd::Mem(Mem { base, disp, num_bits })),
+            Opnd::InsnOut { idx, .. } => Some(Opnd::InsnOut { idx, num_bits }),
+            _ => None,
+        }
+    }
+
     /// Get the size in bits for register/memory operands.
     pub fn rm_num_bits(&self) -> u8 {
         self.num_bits().unwrap()
@@ -401,6 +411,9 @@ pub enum Insn {
     // A low-level instruction that loads a value into a register.
     Load { opnd: Opnd, out: Opnd },
 
+    // A low-level instruction that loads a value into a specified register.
+    LoadInto { dest: Opnd, opnd: Opnd },
+
     // A low-level instruction that loads a value into a register and
     // sign-extends it to a 64-bit value.
     LoadSExt { opnd: Opnd, out: Opnd },
@@ -502,6 +515,7 @@ impl Insn {
             Insn::Lea { .. } => "Lea",
             Insn::LiveReg { .. } => "LiveReg",
             Insn::Load { .. } => "Load",
+            Insn::LoadInto { .. } => "LoadInto",
             Insn::LoadSExt { .. } => "LoadSExt",
             Insn::LShift { .. } => "LShift",
             Insn::Mov { .. } => "Mov",
@@ -675,6 +689,7 @@ impl<'a> Iterator for InsnOpndIterator<'a> {
             Insn::CSelNZ { truthy: opnd0, falsy: opnd1, .. } |
             Insn::CSelZ { truthy: opnd0, falsy: opnd1, .. } |
             Insn::IncrCounter { mem: opnd0, value: opnd1, .. } |
+            Insn::LoadInto { dest: opnd0, opnd: opnd1 } |
             Insn::LShift { opnd: opnd0, shift: opnd1, .. } |
             Insn::Mov { dest: opnd0, src: opnd1 } |
             Insn::Or { left: opnd0, right: opnd1, .. } |
@@ -771,6 +786,7 @@ impl<'a> InsnOpndMutIterator<'a> {
             Insn::CSelNZ { truthy: opnd0, falsy: opnd1, .. } |
             Insn::CSelZ { truthy: opnd0, falsy: opnd1, .. } |
             Insn::IncrCounter { mem: opnd0, value: opnd1, .. } |
+            Insn::LoadInto { dest: opnd0, opnd: opnd1 } |
             Insn::LShift { opnd: opnd0, shift: opnd1, .. } |
             Insn::Mov { dest: opnd0, src: opnd1 } |
             Insn::Or { left: opnd0, right: opnd1, .. } |
@@ -1046,21 +1062,21 @@ impl Assembler
                 // output operand on this instruction because the live range
                 // extends beyond the index of the instruction.
                 let out = insn.out_opnd_mut().unwrap();
-                *out = Opnd::Reg(out_reg.unwrap().sub_reg(out_num_bits));
+                *out = Opnd::Reg(out_reg.unwrap().with_num_bits(out_num_bits));
             }
 
             // Replace InsnOut operands by their corresponding register
             let mut opnd_iter = insn.opnd_iter_mut();
             while let Some(opnd) = opnd_iter.next() {
                 match *opnd {
-                    Opnd::InsnOut { idx, .. } => {
-                        *opnd = *asm.insns[idx].out_opnd().unwrap();
+                    Opnd::InsnOut { idx, num_bits } => {
+                        *opnd = (*asm.insns[idx].out_opnd().unwrap()).with_num_bits(num_bits).unwrap();
                     },
                     Opnd::Mem(Mem { base: MemBase::InsnOut(idx), disp, num_bits }) => {
                         let base = MemBase::Reg(asm.insns[idx].out_opnd().unwrap().unwrap_reg().reg_no);
                         *opnd = Opnd::Mem(Mem { base, disp, num_bits });
                     }
-                     _ => {},
+                    _ => {},
                 }
             }
 
@@ -1420,6 +1436,10 @@ impl Assembler {
         let out = self.next_opnd_out(Opnd::match_num_bits(&[opnd]));
         self.push_insn(Insn::Load { opnd, out });
         out
+    }
+
+    pub fn load_into(&mut self, dest: Opnd, opnd: Opnd) {
+        self.push_insn(Insn::LoadInto { dest, opnd });
     }
 
     #[must_use]

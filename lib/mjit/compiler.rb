@@ -785,8 +785,8 @@ module RubyVM::MJIT
 
             if C.mjit_opts.verbose >= 1 # print beforehand because ISeq may be GCed during copy job.
               child_location = child_iseq.body.location
-              $stderr.puts "JIT inline: #{child_location.label}@#{C.rb_iseq_path(child_iseq)}:#{child_location.first_lineno} " \
-                "=> #{iseq.body.location.label}@#{C.rb_iseq_path(iseq)}:#{iseq.body.location.first_lineno}"
+              $stderr.puts "JIT inline: #{child_location.label}@#{C.rb_iseq_path(child_iseq)}:#{C.rb_iseq_first_lineno(child_iseq)} " \
+                "=> #{iseq.body.location.label}@#{C.rb_iseq_path(iseq)}:#{C.rb_iseq_first_lineno(iseq)}"
             end
             if !precompile_inlinable_child_iseq(f, child_iseq, status, ci, cc, pos)
               return false

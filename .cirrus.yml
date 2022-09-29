@@ -90,6 +90,7 @@ yjit_task:
     matrix:
       - CC: clang-12
         configure: --enable-yjit=dev
+        rustup_init: --default-toolchain=1.58.1
       - CC: gcc-11
         configure: --enable-yjit
   id_script: id
@@ -107,7 +108,7 @@ yjit_task:
   install_rust_script:
     - sudo apt-get update -y
     - sudo apt-get install -y curl
-    - "curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y"
+    - "curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y $rustup_init"
   autogen_script: ./autogen.sh
   configure_script: >-
     source $HOME/.cargo/env && ./configure -C

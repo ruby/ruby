@@ -66,9 +66,13 @@ OptionParser.new {|opts|
     new_vcs["."]
   end
 }
-exit unless vcs
+unless vcs
+  # Output only release_date when .git is missing
+  puts VCS.release_date if @output == :revision_h
+  exit
+end
 
-@output =
+output =
   case @output
   when :changed, nil
     Proc.new {|last, changed|
@@ -76,7 +80,7 @@ exit unless vcs
     }
   when :revision_h
     Proc.new {|last, changed, modified, branch, title|
-      vcs.revision_header(last, modified, branch, title, limit: @limit)
+      vcs.revision_header(last, modified, modified, branch, title, limit: @limit)
     }
   when :doxygen
     Proc.new {|last, changed|
@@ -93,9 +97,12 @@ exit unless vcs
 ok = true
 (ARGV.empty? ? [nil] : ARGV).each do |arg|
   begin
-    puts @output[*vcs.get_revisions(arg)]
+    puts output[*vcs.get_revisions(arg)]
   rescue => e
-    next if @suppress_not_found and VCS::NotFoundError === e
+    if @suppress_not_found and VCS::NotFoundError === e
+      puts VCS.release_date if @output == :revision_h
+      next
+    end
     warn "#{File.basename(Program)}: #{e.message}"
     ok = false
   end

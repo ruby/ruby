@@ -11,10 +11,8 @@
 
 **********************************************************************/
 <%
-op_id_offset = 128
-
 defs = File.join(File.dirname(File.dirname(erb.filename)), "defs/id.def")
-ids = eval(File.read(defs), binding, defs)
+ids = eval(File.read(defs), nil, defs)
 types = ids.keys.grep(/^[A-Z]/)
 %>
 #ifndef RUBY_ID_H
@@ -49,11 +47,9 @@ enum ruby_id_types {
 #define symIFUNC ID2SYM(idIFUNC)
 #define symCFUNC ID2SYM(idCFUNC)
 
-% index = op_id_offset
-% ids[:token_op].each do |_id, _op, token|
+% ids[:token_op].each do |_id, _op, token, index|
 %   next unless token
 #define RUBY_TOKEN_<%=token%> <%=index%>
-%   index += 1
 % end
 #define RUBY_TOKEN(t) RUBY_TOKEN_##t
 
@@ -66,7 +62,7 @@ enum ruby_method_ids {
 % ids[:token_op].uniq {|_, op| op}.each do |id, op, token|
     id<%=id%> = <%=token ? "RUBY_TOKEN(#{token})" : "'#{op}'"%>,
 % end
-    tPRESERVED_ID_BEGIN = <%=index-1%>,
+    tPRESERVED_ID_BEGIN = <%=ids[:last_token]%>,
 % ids[:preserved].each do |token|
     id<%=token%>,
 % end

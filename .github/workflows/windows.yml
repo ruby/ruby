@@ -128,14 +128,12 @@ jobs:
           YACC: win_bison
       - run: nmake test
         timeout-minutes: 5
+      - run: nmake test-spec
+        timeout-minutes: 10
       - run: nmake test-all
         env:
           RUBY_TESTOPTS: -j${{env.TEST_JOBS}} --job-status=normal
         timeout-minutes: 60
-        continue-on-error: ${{ matrix.continue-on-error || false }}
-      - run: nmake test-spec
-        timeout-minutes: 10
-        continue-on-error: ${{ matrix.continue-on-error || false }}
       - uses: k0kubun/action-slack@v2.0.0
         with:
           payload: |

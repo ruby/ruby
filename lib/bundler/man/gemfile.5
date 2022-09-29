@@ -1,7 +1,7 @@
 .\" generated with Ronn/v0.7.3
 .\" http://github.com/rtomayko/ronn/tree/0.7.3
 .
-.TH "GEMFILE" "5" "August 2022" "" ""
+.TH "GEMFILE" "5" "September 2022" "" ""
 .
 .SH "NAME"
 \fBGemfile\fR \- A format for describing gem dependencies for Ruby programs
@@ -254,19 +254,15 @@ There are a number of \fBGemfile\fR platforms:
 .
 .TP
 \fBruby\fR
-C Ruby (MRI), Rubinius or TruffleRuby, but \fBNOT\fR Windows
+C Ruby (MRI), Rubinius, or TruffleRuby, but not Windows
 .
 .TP
 \fBmri\fR
-Same as \fIruby\fR, but only C Ruby (MRI)
+C Ruby (MRI) only, but not Windows
 .
 .TP
-\fBmingw\fR
-Windows 32 bit \'mingw32\' platform (aka RubyInstaller)
-.
-.TP
-\fBx64_mingw\fR
-Windows 64 bit \'mingw32\' platform (aka RubyInstaller x64)
+\fBwindows\fR
+Windows C Ruby (MRI), including RubyInstaller 32\-bit and 64\-bit versions
 .
 .TP
 \fBrbx\fR
@@ -280,15 +276,8 @@ JRuby
 \fBtruffleruby\fR
 TruffleRuby
 .
-.TP
-\fBmswin\fR
-Windows
-.
 .P
-You can restrict further by platform and version for all platforms \fIexcept\fR for \fBrbx\fR, \fBjruby\fR, \fBtruffleruby\fR and \fBmswin\fR\.
-.
-.P
-To specify a version in addition to a platform, append the version number without the delimiter to the platform\. For example, to specify that a gem should only be used on platforms with Ruby 2\.3, use:
+On platforms \fBruby\fR, \fBmri\fR, and \fBwindows\fR, you may additionally specify a version by appending the major and minor version numbers without a delimiter\. For example, to specify that a gem should only be used on platform \fBruby\fR version 2\.3, use:
 .
 .IP "" 4
 .
@@ -301,26 +290,7 @@ ruby_23
 .IP "" 0
 .
 .P
-The full list of platforms and supported versions includes:
-.
-.TP
-\fBruby\fR
-1\.8, 1\.9, 2\.0, 2\.1, 2\.2, 2\.3, 2\.4, 2\.5, 2\.6
-.
-.TP
-\fBmri\fR
-1\.8, 1\.9, 2\.0, 2\.1, 2\.2, 2\.3, 2\.4, 2\.5, 2\.6
-.
-.TP
-\fBmingw\fR
-1\.8, 1\.9, 2\.0, 2\.1, 2\.2, 2\.3, 2\.4, 2\.5, 2\.6
-.
-.TP
-\fBx64_mingw\fR
-2\.0, 2\.1, 2\.2, 2\.3, 2\.4, 2\.5, 2\.6
-.
-.P
-As with groups, you can specify one or more platforms:
+As with groups (above), you may specify one or more platforms:
 .
 .IP "" 4
 .
@@ -328,7 +298,7 @@ As with groups, you can specify one or more platforms:
 
 gem "weakling",   platforms: :jruby
 gem "ruby\-debug", platforms: :mri_18
-gem "nokogiri",   platforms: [:mri_18, :jruby]
+gem "nokogiri",   platforms: [:windows_26, :jruby]
 .
 .fi
 .

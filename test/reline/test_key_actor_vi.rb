@@ -1454,4 +1454,12 @@ class Reline::KeyActor::ViInsert::Test < Reline::TestCase
     assert_cursor_max(1)
     assert_line('c')
   end
+
+  def test_vi_motion_operators
+    assert_instance_of(Reline::KeyActor::ViInsert, @config.editing_mode)
+
+    assert_nothing_raised do
+      input_keys("test = { foo: bar }\C-[BBBldt}b")
+    end
+  end
 end

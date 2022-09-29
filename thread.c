@@ -2332,16 +2332,16 @@ rb_threadptr_execute_interrupts(rb_thread_t *th, int blocking_timing)
                 ret |= rb_signal_exec(th, sig);
             }
             th->status = prev_status;
+        }
 
 #if USE_MJIT
-            // Handle waitpid_signal for MJIT issued by ruby_sigchld_handler. This needs to be done
-            // outside ruby_sigchld_handler to avoid recursively relying on the SIGCHLD handler.
-            if (mjit_waitpid_finished) {
-                mjit_waitpid_finished = false;
-                mjit_notify_waitpid(WIFEXITED(mjit_waitpid_status) ? WEXITSTATUS(mjit_waitpid_status) : -1);
-            }
-#endif
+        // Handle waitpid_signal for MJIT issued by ruby_sigchld_handler. This needs to be done
+        // outside ruby_sigchld_handler to avoid recursively relying on the SIGCHLD handler.
+        if (mjit_waitpid_finished && th == th->vm->ractor.main_thread) {
+            mjit_waitpid_finished = false;
+            mjit_notify_waitpid(WIFEXITED(mjit_waitpid_status) ? WEXITSTATUS(mjit_waitpid_status) : -1);
         }
+#endif
 
         /* exception from another thread */
         if (pending_interrupt && threadptr_pending_interrupt_active_p(th)) {
