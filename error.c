@@ -406,8 +406,10 @@ warning_string(rb_encoding *enc, const char *fmt, va_list args)
 }
 
 #define with_warning_string(mesg, enc, fmt) \
+    with_warning_string_from(mesg, enc, fmt, fmt)
+#define with_warning_string_from(mesg, enc, fmt, last_arg) \
     VALUE mesg; \
-    va_list args; va_start(args, fmt); \
+    va_list args; va_start(args, last_arg); \
     mesg = warning_string(enc, fmt, args); \
     va_end(args);
 
