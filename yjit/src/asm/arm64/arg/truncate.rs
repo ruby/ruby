@@ -31,7 +31,7 @@ pub fn truncate_imm<T: Into<i32>, const WIDTH: usize>(imm: T) -> u32 {
 /// This should effectively be a no-op since we're just dropping leading zeroes.
 pub fn truncate_uimm<T: Into<u32>, const WIDTH: usize>(uimm: T) -> u32 {
     let value: u32 = uimm.into();
-    let masked = (value & ((1 << WIDTH) - 1));
+    let masked = value & ((1 << WIDTH) - 1);
 
     // Assert that we didn't drop any bits by truncating.
     assert_eq!(value, masked);
@@ -46,21 +46,21 @@ mod tests {
     #[test]
     fn test_truncate_imm_positive() {
         let inst = truncate_imm::<i32, 4>(5);
-        let result: u32 = inst.into();
+        let result: u32 = inst;
         assert_eq!(0b0101, result);
     }
 
     #[test]
     fn test_truncate_imm_negative() {
         let inst = truncate_imm::<i32, 4>(-5);
-        let result: u32 = inst.into();
+        let result: u32 = inst;
         assert_eq!(0b1011, result);
     }
 
     #[test]
     fn test_truncate_uimm() {
         let inst = truncate_uimm::<u32, 4>(5);
-        let result: u32 = inst.into();
+        let result: u32 = inst;
         assert_eq!(0b0101, result);
     }
 }

@@ -84,7 +84,7 @@
 
 use std::convert::From;
 use std::ffi::CString;
-use std::os::raw::{c_char, c_int, c_long, c_uint};
+use std::os::raw::{c_char, c_int, c_uint};
 use std::panic::{catch_unwind, UnwindSafe};
 
 // We check that we can do this with the configure script and a couple of

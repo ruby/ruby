@@ -220,7 +220,7 @@ impl CodeBlock {
 
     /// Allocate a new label with a given name
     pub fn new_label(&mut self, name: String) -> usize {
-        assert!(!name.contains(" "), "use underscores in label names, not spaces");
+        assert!(!name.contains(' '), "use underscores in label names, not spaces");
 
         // This label doesn't have an address yet
         self.label_addrs.push(0);
@@ -378,8 +378,8 @@ mod tests
         assert_eq!(imm_num_bits(i32::MIN.into()), 32);
         assert_eq!(imm_num_bits(i32::MAX.into()), 32);
 
-        assert_eq!(imm_num_bits(i64::MIN.into()), 64);
-        assert_eq!(imm_num_bits(i64::MAX.into()), 64);
+        assert_eq!(imm_num_bits(i64::MIN), 64);
+        assert_eq!(imm_num_bits(i64::MAX), 64);
     }
 
     #[test]
@@ -393,7 +393,7 @@ mod tests
         assert_eq!(uimm_num_bits(((u16::MAX as u32) + 1).into()), 32);
         assert_eq!(uimm_num_bits(u32::MAX.into()), 32);
 
-        assert_eq!(uimm_num_bits(((u32::MAX as u64) + 1).into()), 64);
-        assert_eq!(uimm_num_bits(u64::MAX.into()), 64);
+        assert_eq!(uimm_num_bits(((u32::MAX as u64) + 1)), 64);
+        assert_eq!(uimm_num_bits(u64::MAX), 64);
     }
 }

@@ -428,7 +428,7 @@ pub extern "C" fn rb_yjit_record_exit_stack(exit_pc: *const VALUE)
         const BUFF_LEN: usize = 2048;
 
         // Create 2 array buffers to be used to collect frames and lines.
-        let mut frames_buffer = [VALUE(0 as usize); BUFF_LEN];
+        let mut frames_buffer = [VALUE(0_usize); BUFF_LEN];
         let mut lines_buffer = [0; BUFF_LEN];
 
         // Records call frame and line information for each method entry into two
@@ -511,7 +511,7 @@ pub extern "C" fn rb_yjit_record_exit_stack(exit_pc: *const VALUE)
 
         // Push number of times seen onto the stack, which is 1
         // because it's the first time we've seen it.
-        yjit_raw_samples.push(VALUE(1 as usize));
+        yjit_raw_samples.push(VALUE(1_usize));
         yjit_line_samples.push(1);
     }
 }

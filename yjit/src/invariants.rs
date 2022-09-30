@@ -165,7 +165,7 @@ pub fn assume_method_basic_definition(
     mid: ID
     ) -> bool {
     if unsafe { rb_method_basic_definition_p(klass, mid) } != 0 {
-        let mut cme = unsafe { rb_callable_method_entry(klass, mid) };
+        let cme = unsafe { rb_callable_method_entry(klass, mid) };
         assume_method_lookup_stable(jit, ocb, klass, cme);
         true
     } else {
