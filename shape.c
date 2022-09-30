@@ -149,12 +149,11 @@ get_next_shape_internal(rb_shape_t* shape, ID id, VALUE obj, enum shape_type sha
                         }
                         break;
                     case SHAPE_IVAR_UNDEF:
+                    case SHAPE_FROZEN:
                         new_shape->iv_count = new_shape->parent->iv_count;
                         break;
                     case SHAPE_ROOT:
                         rb_bug("Unreachable");
-                        break;
-                    case SHAPE_FROZEN:
                         break;
                 }
 
