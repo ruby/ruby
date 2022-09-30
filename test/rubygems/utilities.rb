@@ -93,7 +93,7 @@ class Gem::FakeFetcher
 
   # Thanks, FakeWeb!
   def open_uri_or_path(path)
-    data = find_data(path)
+    find_data(path)
 
     create_response(uri)
   end
