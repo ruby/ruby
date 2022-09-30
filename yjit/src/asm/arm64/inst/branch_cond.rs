@@ -1,4 +1,4 @@
-use super::super::arg::{Condition, InstructionOffset, truncate_imm};
+use super::super::arg::{InstructionOffset, truncate_imm};
 
 /// The struct that represents an A64 conditional branch instruction that can be
 /// encoded.
@@ -50,6 +50,7 @@ impl From<BranchCond> for [u8; 4] {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use super::super::super::arg::Condition;
 
     #[test]
     fn test_b_eq() {

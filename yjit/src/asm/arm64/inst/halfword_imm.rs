@@ -95,7 +95,7 @@ const FAMILY: u32 = 0b111100;
 impl From<HalfwordImm> for u32 {
     /// Convert an instruction into a 32-bit value.
     fn from(inst: HalfwordImm) -> Self {
-        let (mut opc, imm) = match inst.index {
+        let (opc, imm) = match inst.index {
             Index::None => {
                 assert_eq!(inst.imm & 1, 0, "immediate offset must be even");
                 let imm12 = truncate_imm::<_, 12>(inst.imm / 2);

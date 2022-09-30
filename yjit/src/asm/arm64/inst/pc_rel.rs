@@ -53,7 +53,7 @@ impl From<PCRelative> for u32 {
 
         // Toggle the sign bit if necessary.
         if inst.imm < 0 {
-            immhi |= (1 << 18);
+            immhi |= 1 << 18;
         }
 
         0

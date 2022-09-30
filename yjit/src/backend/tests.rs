@@ -29,11 +29,11 @@ fn guard_object_is_heap(
     asm.comment("guard object is heap");
 
     // Test that the object is not an immediate
-    asm.test(object_opnd.clone(), Opnd::UImm(RUBY_IMMEDIATE_MASK as u64));
+    asm.test(object_opnd, Opnd::UImm(RUBY_IMMEDIATE_MASK as u64));
     asm.jnz(Target::CodePtr(side_exit));
 
     // Test that the object is not false or nil
-    asm.cmp(object_opnd.clone(), Opnd::UImm(Qnil.into()));
+    asm.cmp(object_opnd, Opnd::UImm(Qnil.into()));
     asm.jbe(Target::CodePtr(side_exit));
 }
 
