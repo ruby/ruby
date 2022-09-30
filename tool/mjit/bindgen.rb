@@ -341,17 +341,12 @@ generator = BindingGenerator.new(
       VM_METHOD_TYPE_CFUNC
       VM_METHOD_TYPE_ISEQ
     ],
-    ULONG: %w[
-      INVALID_SHAPE_ID
-      SHAPE_MASK
-    ],
   },
   types: %w[
     CALL_DATA
     IC
     IVC
     RB_BUILTIN
-    attr_index_t
     compile_branch
     compile_status
     inlined_call_context
@@ -365,10 +360,10 @@ generator = BindingGenerator.new(
     rb_callable_method_entry_struct
     rb_callcache
     rb_callinfo
-    rb_control_frame_t
     rb_cref_t
-    rb_execution_context_struct
+    rb_control_frame_t
     rb_execution_context_t
+    rb_execution_context_struct
     rb_iseq_constant_body
     rb_iseq_location_t
     rb_iseq_struct
@@ -383,7 +378,6 @@ generator = BindingGenerator.new(
   ],
   dynamic_types: %w[
     VALUE
-    shape_id_t
   ],
   skip_fields: {
     'rb_execution_context_struct.machine': %w[regs], # differs between macOS and Linux

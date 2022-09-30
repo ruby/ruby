@@ -993,13 +993,4 @@ class TestObject < Test::Unit::TestCase
       end
     EOS
   end
-
-  def test_frozen_inspect
-    obj = Object.new
-    obj.instance_variable_set(:@a, "a")
-    ins = obj.inspect
-    obj.freeze
-
-    assert_equal(ins, obj.inspect)
-  end
 end

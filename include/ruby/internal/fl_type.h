@@ -941,8 +941,21 @@ RB_OBJ_FREEZE_RAW(VALUE obj)
     RB_FL_SET_RAW(obj, RUBY_FL_FREEZE);
 }
 
-RUBY_SYMBOL_EXPORT_BEGIN
-void rb_obj_freeze_inline(VALUE obj);
-RUBY_SYMBOL_EXPORT_END
+/**
+ * Prevents further modifications to the given object.  ::rb_eFrozenError shall
+ * be raised if modification is attempted.
+ *
+ * @param[out]  x  Object in question.
+ */
+static inline void
+rb_obj_freeze_inline(VALUE x)
+{
+    if (RB_FL_ABLE(x)) {
+        RB_OBJ_FREEZE_RAW(x);
+        if (RBASIC_CLASS(x) && !(RBASIC(x)->flags & RUBY_FL_SINGLETON)) {
+            rb_freeze_singleton_class(x);
+        }
+    }
+}
 
 #endif /* RBIMPL_FL_TYPE_H */

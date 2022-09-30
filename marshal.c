@@ -39,7 +39,6 @@
 #include "ruby/st.h"
 #include "ruby/util.h"
 #include "builtin.h"
-#include "shape.h"
 
 #define BITSPERSHORT (2*CHAR_BIT)
 #define SHORTMASK ((1<<BITSPERSHORT)-1)
@@ -623,6 +622,10 @@ w_obj_each(st_data_t key, st_data_t val, st_data_t a)
         }
         return ST_CONTINUE;
     }
+    if (!ivarg->num_ivar) {
+        rb_raise(rb_eRuntimeError, "instance variable added to %"PRIsVALUE" instance",
+                 CLASS_OF(arg->obj));
+    }
     --ivarg->num_ivar;
     w_symbol(ID2SYM(id), arg->arg);
     w_object(value, arg->arg, arg->limit);
@@ -717,16 +720,11 @@ has_ivars(VALUE obj, VALUE encname, VALUE *ivobj)
 static void
 w_ivar_each(VALUE obj, st_index_t num, struct dump_call_arg *arg)
 {
-    shape_id_t shape_id = rb_shape_get_shape_id(arg->obj);
     struct w_ivar_arg ivarg = {arg, num};
     if (!num) return;
     rb_ivar_foreach(obj, w_obj_each, (st_data_t)&ivarg);
     if (ivarg.num_ivar) {
         rb_raise(rb_eRuntimeError, "instance variable removed from %"PRIsVALUE" instance",
-                 CLASS_OF(arg->obj));
-    }
-    if (shape_id != rb_shape_get_shape_id(arg->obj)) {
-        rb_raise(rb_eRuntimeError, "instance variable added to %"PRIsVALUE" instance",
                  CLASS_OF(arg->obj));
     }
 }

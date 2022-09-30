@@ -2895,7 +2895,8 @@ rb_class_instance_allocate_internal(VALUE klass, VALUE flags, bool wb_protected)
     GC_ASSERT((flags & RUBY_T_MASK) == T_OBJECT);
     GC_ASSERT(flags & ROBJECT_EMBED);
 
-    uint32_t index_tbl_num_entries = RCLASS_EXT(klass)->max_iv_count;
+    st_table *index_tbl = RCLASS_IV_INDEX_TBL(klass);
+    uint32_t index_tbl_num_entries = index_tbl == NULL ? 0 : (uint32_t)index_tbl->num_entries;
 
     size_t size;
     bool embed = true;
@@ -2930,7 +2931,7 @@ rb_class_instance_allocate_internal(VALUE klass, VALUE flags, bool wb_protected)
 #endif
     }
     else {
-        rb_ensure_iv_list_size(obj, 0, index_tbl_num_entries);
+        rb_init_iv_list(obj);
     }
 
     return obj;
@@ -3205,6 +3206,20 @@ rb_free_const_table(struct rb_id_table *tbl)
     rb_id_table_free(tbl);
 }
 
+static int
+free_iv_index_tbl_free_i(st_data_t key, st_data_t value, st_data_t data)
+{
+    xfree((void *)value);
+    return ST_CONTINUE;
+}
+
+static void
+iv_index_tbl_free(struct st_table *tbl)
+{
+    st_foreach(tbl, free_iv_index_tbl_free_i, 0);
+    st_free_table(tbl);
+}
+
 // alive: if false, target pointers can be freed already.
 //        To check it, we need objspace parameter.
 static void
@@ -3420,16 +3435,6 @@ obj_free(rb_objspace_t *objspace, VALUE obj)
             RB_DEBUG_COUNTER_INC(obj_obj_transient);
         }
         else {
-            rb_shape_t *shape = rb_shape_get_shape_by_id(ROBJECT_SHAPE_ID(obj));
-            if (shape) {
-                VALUE klass = RBASIC_CLASS(obj);
-
-                // Increment max_iv_count if applicable, used to determine size pool allocation
-                uint32_t num_of_ivs = shape->iv_count;
-                if (RCLASS_EXT(klass)->max_iv_count < num_of_ivs) {
-                    RCLASS_EXT(klass)->max_iv_count = num_of_ivs;
-                }
-            }
             xfree(RANY(obj)->as.object.as.heap.ivptr);
             RB_DEBUG_COUNTER_INC(obj_obj_ptr);
         }
@@ -3443,6 +3448,9 @@ obj_free(rb_objspace_t *objspace, VALUE obj)
         }
         if (RCLASS_CONST_TBL(obj)) {
             rb_free_const_table(RCLASS_CONST_TBL(obj));
+        }
+        if (RCLASS_IV_INDEX_TBL(obj)) {
+            iv_index_tbl_free(RCLASS_IV_INDEX_TBL(obj));
         }
         if (RCLASS_CVC_TBL(obj)) {
             rb_id_table_foreach_values(RCLASS_CVC_TBL(obj), cvar_table_free_i, NULL);
@@ -4864,6 +4872,10 @@ obj_memsize_of(VALUE obj, int use_all_types)
             }
             if (RCLASS_CVC_TBL(obj)) {
                 size += rb_id_table_memsize(RCLASS_CVC_TBL(obj));
+            }
+            if (RCLASS_IV_INDEX_TBL(obj)) {
+                // TODO: more correct value
+                size += st_memsize(RCLASS_IV_INDEX_TBL(obj));
             }
             if (RCLASS_EXT(obj)->iv_tbl) {
                 size += st_memsize(RCLASS_EXT(obj)->iv_tbl);
@@ -10395,6 +10407,15 @@ update_subclass_entries(rb_objspace_t *objspace, rb_subclass_entry_t *entry)
     }
 }
 
+static int
+update_iv_index_tbl_i(st_data_t key, st_data_t value, st_data_t arg)
+{
+    rb_objspace_t *objspace = (rb_objspace_t *)arg;
+    struct rb_iv_index_tbl_entry *ent = (struct rb_iv_index_tbl_entry *)value;
+    UPDATE_IF_MOVED(objspace, ent->class_value);
+    return ST_CONTINUE;
+}
+
 static void
 update_class_ext(rb_objspace_t *objspace, rb_classext_t *ext)
 {
@@ -10402,6 +10423,11 @@ update_class_ext(rb_objspace_t *objspace, rb_classext_t *ext)
     UPDATE_IF_MOVED(objspace, ext->includer);
     UPDATE_IF_MOVED(objspace, ext->refined_class);
     update_subclass_entries(objspace, ext->subclasses);
+
+    // ext->iv_index_tbl
+    if (ext->iv_index_tbl) {
+        st_foreach(ext->iv_index_tbl, update_iv_index_tbl_i, (st_data_t)objspace);
+    }
 }
 
 static void
