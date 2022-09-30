@@ -1927,7 +1927,7 @@ fn gen_set_ivar(
     jit: &mut JITState,
     ctx: &mut Context,
     asm: &mut Assembler,
-    _recv: VALUE,
+    recv: VALUE,
     ivar_name: ID,
 ) -> CodegenStatus {
     // Save the PC and SP because the callee may allocate
