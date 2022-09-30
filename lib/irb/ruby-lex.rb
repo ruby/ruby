@@ -139,7 +139,7 @@ class RubyLex
   def self.ripper_lex_without_warning(code, context: nil)
     verbose, $VERBOSE = $VERBOSE, nil
     if context
-      lvars = context&.workspace&.binding&.local_variables
+      lvars = context.workspace&.binding&.local_variables
       if lvars && !lvars.empty?
         code = "#{lvars.join('=')}=nil\n#{code}"
         line_no = 0
@@ -147,12 +147,11 @@ class RubyLex
         line_no = 1
       end
     end
-    tokens = nil
+
     compile_with_errors_suppressed(code, line_no: line_no) do |inner_code, line_no|
       lexer = Ripper::Lexer.new(inner_code, '-', line_no)
       if lexer.respond_to?(:scan) # Ruby 2.7+
-        tokens = []
-        lexer.scan.each do |t|
+        lexer.scan.each_with_object([]) do |t, tokens|
           next if t.pos.first == 0
           prev_tk = tokens.last
           position_overlapped = prev_tk && t.pos[0] == prev_tk.pos[0] && t.pos[1] < prev_tk.pos[1] + prev_tk.tok.bytesize
@@ -163,10 +162,9 @@ class RubyLex
           end
         end
       else
-        tokens = lexer.parse.reject { |it| it.pos.first == 0 }
+        lexer.parse.reject { |it| it.pos.first == 0 }
       end
     end
-    tokens
   ensure
     $VERBOSE = verbose
   end
