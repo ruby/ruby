@@ -203,12 +203,7 @@ class RubyLex
           last_line = lines[line_index]&.byteslice(0, byte_pointer)
           code += last_line if last_line
           @tokens = self.class.ripper_lex_without_warning(code, context: context)
-          corresponding_token_depth = check_corresponding_token_depth(lines, line_index)
-          if corresponding_token_depth
-            corresponding_token_depth
-          else
-            nil
-          end
+          check_corresponding_token_depth(lines, line_index)
         end
       end
     end
