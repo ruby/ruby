@@ -5587,7 +5587,7 @@ ary_recycle_hash(VALUE hash)
  *  Related: Array#difference.
  */
 
-static VALUE
+VALUE
 rb_ary_diff(VALUE ary1, VALUE ary2)
 {
     VALUE ary3;
