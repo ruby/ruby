@@ -297,7 +297,7 @@ class RubyLex
       return true
     elsif tokens.size >= 1 and tokens[-1].event == :on_heredoc_end # "EOH\n"
       return false
-    elsif tokens.size >= 2 and defined?(Ripper::EXPR_BEG) and tokens[-2].state.anybits?(Ripper::EXPR_BEG | Ripper::EXPR_FNAME) and tokens[-2].tok !~ /\A\.\.\.?\z/
+    elsif tokens.size >= 2 and tokens[-2].state.anybits?(Ripper::EXPR_BEG | Ripper::EXPR_FNAME) and tokens[-2].tok !~ /\A\.\.\.?\z/
       # end of literal except for regexp
       # endless range at end of line is not a continue
       return true
@@ -378,21 +378,20 @@ class RubyLex
       $VERBOSE = verbose
     end
 
-    if defined?(Ripper::EXPR_BEG)
-      last_lex_state = tokens.last.state
-      if last_lex_state.allbits?(Ripper::EXPR_BEG)
-        return false
-      elsif last_lex_state.allbits?(Ripper::EXPR_DOT)
-        return true
-      elsif last_lex_state.allbits?(Ripper::EXPR_CLASS)
-        return true
-      elsif last_lex_state.allbits?(Ripper::EXPR_FNAME)
-        return true
-      elsif last_lex_state.allbits?(Ripper::EXPR_VALUE)
-        return true
-      elsif last_lex_state.allbits?(Ripper::EXPR_ARG)
-        return false
-      end
+    last_lex_state = tokens.last.state
+
+    if last_lex_state.allbits?(Ripper::EXPR_BEG)
+      return false
+    elsif last_lex_state.allbits?(Ripper::EXPR_DOT)
+      return true
+    elsif last_lex_state.allbits?(Ripper::EXPR_CLASS)
+      return true
+    elsif last_lex_state.allbits?(Ripper::EXPR_FNAME)
+      return true
+    elsif last_lex_state.allbits?(Ripper::EXPR_VALUE)
+      return true
+    elsif last_lex_state.allbits?(Ripper::EXPR_ARG)
+      return false
     end
 
     false
