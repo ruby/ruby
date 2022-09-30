@@ -69,6 +69,9 @@ class VCS
     begin
       @@dirs.each do |dir, klass, pred|
         if pred ? pred[curr, dir] : File.directory?(File.join(curr, dir))
+          if klass.const_defined?(:COMMAND)
+            IO.pread([{'LANG' => 'C', 'LC_ALL' => 'C'}, klass::COMMAND, "--version"]) rescue next
+          end
           vcs = klass.new(curr)
           vcs.define_options(parser) if parser
           vcs.set_options(options)
