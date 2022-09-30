@@ -511,12 +511,9 @@ rb_warn_deprecated(const char *fmt, const char *suggest, ...)
 {
     if (!deprecation_warning_enabled()) return;
 
-    va_list args;
-    va_start(args, suggest);
-    VALUE mesg = warning_string(0, fmt, args);
-    va_end(args);
-
-    warn_deprecated(mesg, NULL, suggest);
+    with_warning_string(mesg, 0, suggest) {
+        warn_deprecated(mesg, NULL, suggest);
+    }
 }
 
 void
