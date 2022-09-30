@@ -1173,7 +1173,7 @@ vm_getivar(VALUE obj, ID id, const rb_iseq_t *iseq, IVC ic, const struct rb_call
         }
 
         val = ivar_list[index];
-        VM_ASSERT(rb_ractor_shareable_p(obj) ? rb_ractor_shareable_p(val) : true);
+        VM_ASSERT(BUILTIN_TYPE(obj) == T_OBJECT && rb_ractor_shareable_p(obj) ? rb_ractor_shareable_p(val) : true);
     }
     else { // cache miss case
 #if RUBY_DEBUG
