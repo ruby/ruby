@@ -1052,7 +1052,7 @@ class TestMethod < Test::Unit::TestCase
     c1.class_eval {undef foo}
     m = c3.instance_method(:foo)
     m = assert_nothing_raised(NameError, Feature9781) {break m.super_method}
-    assert_equal c2, m.owner
+    assert_nil(m, Feature9781)
   end
 
   def test_super_method_removed_regular
@@ -1064,19 +1064,26 @@ class TestMethod < Test::Unit::TestCase
   end
 
   def test_prepended_public_zsuper
-    mod = EnvUtil.labeled_module("Mod") {private def foo; :ok end}
+    mod = EnvUtil.labeled_module("Mod") {private def foo; [:ok] end}
     obj = Object.new.extend(mod)
-    mods = [obj.singleton_class]
+
     class << obj
       public :foo
     end
-    2.times do |i|
-      mods.unshift(mod = EnvUtil.labeled_module("Mod#{i}") {def foo; end})
-      obj.singleton_class.prepend(mod)
-    end
+
+    mod1 = EnvUtil.labeled_module("Mod1") {def foo; [:mod1] + super end}
+    obj.singleton_class.prepend(mod1)
+
+    mod2 = EnvUtil.labeled_module("Mod2") {def foo; [:mod2] + super end}
+    obj.singleton_class.prepend(mod2)
+
     m = obj.method(:foo)
-    assert_equal(mods, mods.map {m.owner.tap {m = m.super_method}})
-    assert_nil(m.super_method)
+    assert_equal mod2, m.owner
+    assert_equal mod1, m.super_method.owner
+    assert_equal obj.singleton_class, m.super_method.super_method.owner
+    assert_equal nil, m.super_method.super_method.super_method
+
+    assert_equal [:mod2, :mod1, :ok], obj.foo
   end
 
   def test_super_method_with_prepended_module
@@ -1242,11 +1249,92 @@ class TestMethod < Test::Unit::TestCase
 
     a.remove_method(:foo)
 
-    assert_equal [[:rest]], unbound.parameters
-    assert_equal "#<UnboundMethod: B#foo(*)>", unbound.inspect
+    assert_equal "#<UnboundMethod: B(A)#foo(arg=...) #{__FILE__}:#{line}>", unbound.inspect
+    assert_equal [[:opt, :arg]], unbound.parameters
 
     obj = b.new
-    assert_raise_with_message(NoMethodError, /super: no superclass method `foo'/) { unbound.bind_call(obj) }
+    assert_equal 1, unbound.bind_call(obj)
+
+    assert_include b.instance_methods(false), :foo
+    link = 'https://github.com/ruby/ruby/pull/6467#issuecomment-1262159088'
+    assert_raise(NameError, link) { b.instance_method(:foo) }
+    # For #test_method_list below, otherwise we get the same error as just above
+    b.remove_method(:foo)
+  end
+
+  def test_zsuper_method_removed_higher_method
+    a0 = EnvUtil.labeled_class('A0') do
+      def foo(arg1 = nil, arg2 = nil)
+        0
+      end
+    end
+    line0 = __LINE__ - 4
+    a0_foo = a0.instance_method(:foo)
+
+    a = EnvUtil.labeled_class('A', a0) do
+      private
+      def foo(arg = nil)
+        1
+      end
+    end
+    line = __LINE__ - 4
+
+    b = EnvUtil.labeled_class('B', a) do
+      public :foo
+    end
+
+    unbound = b.instance_method(:foo)
+
+    assert_equal a0_foo, unbound.super_method
+
+    a.remove_method(:foo)
+
+    assert_equal "#<UnboundMethod: B(A)#foo(arg=...) #{__FILE__}:#{line}>", unbound.inspect
+    assert_equal [[:opt, :arg]], unbound.parameters
+    assert_equal a0_foo, unbound.super_method
+
+    obj = b.new
+    assert_equal 1, unbound.bind_call(obj)
+
+    assert_include b.instance_methods(false), :foo
+    assert_equal "#<UnboundMethod: B(A0)#foo(arg1=..., arg2=...) #{__FILE__}:#{line0}>", b.instance_method(:foo).inspect
+  end
+
+  def test_zsuper_method_redefined_bind_call
+    c0 = EnvUtil.labeled_class('C0') do
+      def foo
+        [:foo]
+      end
+    end
+
+    c1 = EnvUtil.labeled_class('C1', c0) do
+      def foo
+        super + [:bar]
+      end
+    end
+    m1 = c1.instance_method(:foo)
+
+    c2 = EnvUtil.labeled_class('C2', c1) do
+      private :foo
+    end
+
+    assert_equal [:foo], c2.private_instance_methods(false)
+    m2 = c2.instance_method(:foo)
+
+    c1.class_exec do
+      def foo
+        [:bar2]
+      end
+    end
+
+    m3 = c2.instance_method(:foo)
+    c = c2.new
+    assert_equal [:foo, :bar], m1.bind_call(c)
+    assert_equal c1, m1.owner
+    assert_equal [:foo, :bar], m2.bind_call(c)
+    assert_equal c2, m2.owner
+    assert_equal [:bar2], m3.bind_call(c)
+    assert_equal c2, m3.owner
   end
 
   # Bug #18751
