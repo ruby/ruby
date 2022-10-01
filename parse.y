@@ -1430,10 +1430,6 @@ top_stmts	: none
 		    /*% %*/
 		    /*% ripper: stmts_add!($1, $3) %*/
 		    }
-		| error top_stmt
-		    {
-			$$ = remove_begin($2);
-		    }
 		;
 
 top_stmt	: stmt
@@ -1502,10 +1498,6 @@ stmts		: none
 			$$ = block_append(p, $1, newline_node($3));
 		    /*% %*/
 		    /*% ripper: stmts_add!($1, $3) %*/
-		    }
-		| error stmt
-		    {
-			$$ = remove_begin($2);
 		    }
 		;
 
@@ -1659,6 +1651,12 @@ stmt		: keyword_alias fitem {SET_LEX_STATE(EXPR_FNAME|EXPR_FITEM);} fitem
 		    /*% ripper: massign!($1, $4) %*/
 		    }
 		| expr
+		| error
+		    {
+		    /*%%%*/
+			$$ = NEW_ERROR(&@$);
+		    /*% %*/
+		    }
 		;
 
 command_asgn	: lhs '=' lex_ctxt command_rhs
