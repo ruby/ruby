@@ -56,6 +56,12 @@ update-yjit-bench:
 	$(Q) $(tooldir)/git-refresh -C $(srcdir) --branch main \
 		https://github.com/Shopify/yjit-bench yjit-bench $(GIT_OPTS)
 
+YJIT_TESTS =
+yes-test-yjit:
+	$(ACTIONS_GROUP)
+	$(Q)$(gnumake_recursive)$(exec) $(RUNRUBY) "$(srcdir)/bootstraptest/runner.rb" --ruby="$(PROGRAM) -I$(srcdir)/lib $(RUN_OPTS)" $(OPTS) $(TESTOPTS) $(srcdir)/test/yjit/btest_*.rb $(YJIT_TESTS)
+	$(ACTIONS_ENDGROUP)
+
 # Generate Rust bindings. See source for details.
 # Needs `./configure --enable-yjit=dev` and Clang.
 ifneq ($(strip $(CARGO)),) # if configure found Cargo
