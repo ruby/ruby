@@ -956,4 +956,55 @@ dummy
              body: (VCALL@2:2-2:3 :a))))
     EXP
   end
+
+  def test_error_tolerant_treat_end_as_keyword_based_on_indent
+    node = RubyVM::AbstractSyntaxTree.parse(<<~STR, error_tolerant: true)
+      module Z
+        class Foo
+          foo.
+        end
+
+        def bar
+        end
+      end
+    STR
+
+    str = ""
+    PP.pp(node, str)
+    assert_equal(<<~EXP, str)
+      (SCOPE@1:0-8:3
+       tbl: []
+       args: nil
+       body:
+         (MODULE@1:0-8:3 (COLON2@1:7-1:8 nil :Z)
+            (SCOPE@1:0-8:3
+             tbl: []
+             args: nil
+             body:
+               (BLOCK@1:8-8:3 (BEGIN@1:8-1:8 nil)
+                  (CLASS@2:2-8:3 (COLON2@2:8-2:11 nil :Foo) nil
+                     (SCOPE@2:2-8:3
+                      tbl: []
+                      args: nil
+                      body:
+                        (DEFN@6:2-7:5
+                         mid: :bar
+                         body:
+                           (SCOPE@6:2-7:5
+                            tbl: []
+                            args:
+                              (ARGS@6:9-6:9
+                               pre_num: 0
+                               pre_init: nil
+                               opt: nil
+                               first_post: nil
+                               post_num: 0
+                               post_init: nil
+                               rest: nil
+                               kw: nil
+                               kwrest: nil
+                               block: nil)
+                            body: nil))))))))
+    EXP
+  end
 end
