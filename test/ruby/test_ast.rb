@@ -981,30 +981,30 @@ dummy
              tbl: []
              args: nil
              body:
-               (BLOCK@1:8-8:3 (BEGIN@1:8-1:8 nil)
-                  (CLASS@2:2-8:3 (COLON2@2:8-2:11 nil :Foo) nil
-                     (SCOPE@2:2-8:3
+               (BLOCK@1:8-7:5 (BEGIN@1:8-1:8 nil)
+                  (CLASS@2:2-4:5 (COLON2@2:8-2:11 nil :Foo) nil
+                     (SCOPE@2:2-4:5
                       tbl: []
                       args: nil
-                      body:
-                        (DEFN@6:2-7:5
-                         mid: :bar
-                         body:
-                           (SCOPE@6:2-7:5
-                            tbl: []
-                            args:
-                              (ARGS@6:9-6:9
-                               pre_num: 0
-                               pre_init: nil
-                               opt: nil
-                               first_post: nil
-                               post_num: 0
-                               post_init: nil
-                               rest: nil
-                               kw: nil
-                               kwrest: nil
-                               block: nil)
-                            body: nil))))))))
+                      body: (BLOCK@2:11-4:5 (BEGIN@2:11-2:11 nil) (ERROR@3:4-4:5))))
+                  (DEFN@6:2-7:5
+                   mid: :bar
+                   body:
+                     (SCOPE@6:2-7:5
+                      tbl: []
+                      args:
+                        (ARGS@6:9-6:9
+                         pre_num: 0
+                         pre_init: nil
+                         opt: nil
+                         first_post: nil
+                         post_num: 0
+                         post_init: nil
+                         rest: nil
+                         kw: nil
+                         kwrest: nil
+                         block: nil)
+                      body: nil))))))
     EXP
   end
 end

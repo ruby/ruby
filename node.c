@@ -1098,6 +1098,9 @@ dump_node(VALUE buf, VALUE indent, int comment, const NODE * node)
             F_NODE(nd_pkwrestarg, "keyword rest argument");
         }
         return;
+      case NODE_ERROR:
+        ANN("Broken input recovered by Error Tolerant mode");
+        return;
 
       case NODE_ARGS_AUX:
       case NODE_LAST:

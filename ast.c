@@ -648,6 +648,8 @@ node_children(rb_ast_t *ast, const NODE *node)
                                         NEW_CHILD(ast, node->nd_pkwargs),
                                         kwrest);
         }
+      case NODE_ERROR:
+        return rb_ary_new_from_node_args(ast, 0);
       case NODE_ARGS_AUX:
       case NODE_LAST:
         break;

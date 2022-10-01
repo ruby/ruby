@@ -493,6 +493,7 @@ count_nodes(int argc, VALUE *argv, VALUE os)
                 COUNT_NODE(NODE_ARYPTN);
                 COUNT_NODE(NODE_FNDPTN);
                 COUNT_NODE(NODE_HSHPTN);
+                COUNT_NODE(NODE_ERROR);
 #undef COUNT_NODE
               case NODE_LAST: break;
             }
