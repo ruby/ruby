@@ -2167,7 +2167,9 @@ InitVM_Struct(void)
     rb_undef_alloc_func(rb_cData);
     rb_define_singleton_method(rb_cData, "define", rb_data_s_def, -1);
 
+#if 0 /* for RDoc */
     rb_define_singleton_method(rb_cData, "members", rb_data_s_members_m, 0);
+#endif
 
     rb_define_method(rb_cData, "initialize", rb_data_initialize_m, -1);
     rb_define_method(rb_cData, "initialize_copy", rb_struct_init_copy, 1);
