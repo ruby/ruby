@@ -1793,6 +1793,12 @@ rb_data_initialize_m(int argc, const VALUE *argv, VALUE self)
     VALUE members = struct_ivar_get(klass, id_members);
     size_t num_members = RARRAY_LEN(members);
 
+    if (argc == 0) {
+        if (num_members > 0) {
+            rb_exc_raise(rb_keyword_error_new("missing", members));
+        }
+        return Qnil;
+    }
     if (argc > 1 || !RB_TYPE_P(argv[0], T_HASH)) {
         rb_raise(rb_eArgError, "wrong number of arguments (given %d, expected 0)", argc);
     }
