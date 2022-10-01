@@ -428,16 +428,17 @@ rb_vm_pop_frame(rb_execution_context_t *ec)
 static inline VALUE
 rb_arity_error_new(int argc, int min, int max)
 {
-    VALUE err_mess = 0;
+    VALUE err_mess = rb_sprintf("wrong number of arguments (given %d, expected %d", argc, min);
     if (min == max) {
-        err_mess = rb_sprintf("wrong number of arguments (given %d, expected %d)", argc, min);
+        /* max is not needed */
     }
     else if (max == UNLIMITED_ARGUMENTS) {
-        err_mess = rb_sprintf("wrong number of arguments (given %d, expected %d+)", argc, min);
+        rb_str_cat_cstr(err_mess, "+");
     }
     else {
-        err_mess = rb_sprintf("wrong number of arguments (given %d, expected %d..%d)", argc, min, max);
+        rb_str_catf(err_mess, "..%d", max);
     }
+    rb_str_cat_cstr(err_mess, ")");
     return rb_exc_new3(rb_eArgError, err_mess);
 }
 

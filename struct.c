@@ -742,7 +742,7 @@ rb_struct_initialize_m(int argc, const VALUE *argv, VALUE self)
     switch (rb_struct_s_keyword_init(klass)) {
       default:
         if (argc > 1 || !RB_TYPE_P(argv[0], T_HASH)) {
-            rb_raise(rb_eArgError, "wrong number of arguments (given %d, expected 0)", argc);
+            rb_error_arity(argc, 0, 0);
         }
         keyword_init = true;
         break;
@@ -1800,7 +1800,7 @@ rb_data_initialize_m(int argc, const VALUE *argv, VALUE self)
         return Qnil;
     }
     if (argc > 1 || !RB_TYPE_P(argv[0], T_HASH)) {
-        rb_raise(rb_eArgError, "wrong number of arguments (given %d, expected 0)", argc);
+        rb_error_arity(argc, 0, 0);
     }
 
     if (RHASH_SIZE(argv[0]) < num_members) {
