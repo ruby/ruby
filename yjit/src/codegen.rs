@@ -1945,7 +1945,7 @@ fn gen_set_ivar(
         rb_vm_set_ivar_idx as *const u8,
         vec![
             recv_opnd,
-            Opnd::UImm(ivar_name),
+            ivar_index.into(),
             val_opnd,
         ],
     );
