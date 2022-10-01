@@ -1901,6 +1901,12 @@ expr_value	: expr
 			value_expr($1);
 			$$ = $1;
 		    }
+		| error
+		    {
+		    /*%%%*/
+			$$ = NEW_ERROR(&@$);
+		    /*% %*/
+		    }
 		;
 
 expr_value_do	: {COND_PUSH(1);} expr_value do {COND_POP();}

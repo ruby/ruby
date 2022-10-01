@@ -1007,4 +1007,39 @@ dummy
                       body: nil))))))
     EXP
   end
+
+  def test_error_tolerant_expr_value_can_be_error
+    node = RubyVM::AbstractSyntaxTree.parse(<<~STR, error_tolerant: true)
+      def m
+        if
+      end
+    STR
+
+    str = ""
+    PP.pp(node, str)
+    assert_equal(<<~EXP, str)
+      (SCOPE@1:0-3:3
+       tbl: []
+       args: nil
+       body:
+         (DEFN@1:0-3:3
+          mid: :m
+          body:
+            (SCOPE@1:0-3:3
+             tbl: []
+             args:
+               (ARGS@1:5-1:5
+                pre_num: 0
+                pre_init: nil
+                opt: nil
+                first_post: nil
+                post_num: 0
+                post_init: nil
+                rest: nil
+                kw: nil
+                kwrest: nil
+                block: nil)
+             body: (IF@2:2-3:3 (ERROR@3:0-3:3) nil nil))))
+    EXP
+  end
 end
