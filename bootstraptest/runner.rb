@@ -75,27 +75,33 @@ bt = Struct.new(:ruby,
                 :columns,
                 :window_width,
                 :width,
+                :indent,
                 :platform,
                 )
 BT = Class.new(bt) do
+  def indent=(n)
+    super
+    if (self.columns ||= 0) < n
+      $stderr.print(' ' * (n - self.columns))
+    end
+    self.columns = indent
+  end
+
   def putc(c)
     unless self.quiet
       if self.window_width == nil
-        if BT.tty
-          unless w = ENV["COLUMNS"] and (w = w.to_i) > 0
-            w = 80
-          end
-          w -= 1
-        else
-          w = false
+        unless w = ENV["COLUMNS"] and (w = w.to_i) > 0
+          w = 80
         end
+        w -= 1
         self.window_width = w
       end
       if self.window_width and self.columns >= self.window_width
-        $stderr.puts
-        self.columns = 0
+        $stderr.print "\n", " " * (self.indent ||= 0)
+        self.columns = indent
       end
       $stderr.print c
+      $stderr.flush
       self.columns += 1
     end
   end
@@ -293,7 +299,7 @@ def concurrent_exec_test
     end
   end
 
-  BT.putc ' '
+  BT.indent = 1
   aq.close
   i = 1
   term_wn = 0
