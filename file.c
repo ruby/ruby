@@ -6573,7 +6573,7 @@ const char ruby_null_device[] =
  *
  *    :include: doc/examples/files.rdoc
  *
- *  == \File Access Modes
+ *  == Access Modes
  *
  *  \Methods File.new and File.open each create a \File object for a given file path.
  *
