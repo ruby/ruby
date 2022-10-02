@@ -11,7 +11,29 @@ require_relative 'ruby-lex'
 
 module IRB
   module InputCompletor # :nodoc:
+    using Module.new {
+      refine ::Binding do
+        def eval_methods
+          ::Kernel.instance_method(:methods).bind(eval("self")).call
+        end
 
+        def eval_private_methods
+          ::Kernel.instance_method(:private_methods).bind(eval("self")).call
+        end
+
+        def eval_instance_variables
+          ::Kernel.instance_method(:instance_variables).bind(eval("self")).call
+        end
+
+        def eval_global_variables
+          ::Kernel.instance_method(:global_variables).bind(eval("self")).call
+        end
+
+        def eval_class_constants
+          ::Module.instance_method(:constants).bind(eval("self.class")).call
+        end
+      end
+    }
 
     # Set of reserved words used by Ruby, you should not use these for
     # constants or variables
@@ -303,10 +325,10 @@ module IRB
         sep = $2
         message = $3
 
-        gv = eval("global_variables", bind).collect{|m| m.to_s}.push("true", "false", "nil")
-        lv = eval("local_variables", bind).collect{|m| m.to_s}
-        iv = eval("instance_variables", bind).collect{|m| m.to_s}
-        cv = eval("self.class.constants", bind).collect{|m| m.to_s}
+        gv = bind.eval_global_variables.collect{|m| m.to_s}.push("true", "false", "nil")
+        lv = bind.local_variables.collect{|m| m.to_s}
+        iv = bind.eval_instance_variables.collect{|m| m.to_s}
+        cv = bind.eval_class_constants.collect{|m| m.to_s}
 
         if (gv | lv | iv | cv).include?(receiver) or /^[A-Z]/ =~ receiver && /\./ !~ receiver
           # foo.func and foo is var. OR
@@ -356,17 +378,17 @@ module IRB
 
       else
         if doc_namespace
-          vars = eval("local_variables | instance_variables", bind).collect{|m| m.to_s}
+          vars = (bind.local_variables | bind.eval_instance_variables).collect{|m| m.to_s}
           perfect_match_var = vars.find{|m| m.to_s == input}
           if perfect_match_var
             eval("#{perfect_match_var}.class.name", bind)
           else
-            candidates = eval("methods | private_methods | local_variables | instance_variables | self.class.constants", bind).collect{|m| m.to_s}
+            candidates = (bind.eval_methods | bind.eval_private_methods | bind.local_variables | bind.eval_instance_variables | bind.eval_class_constants).collect{|m| m.to_s}
             candidates |= ReservedWords
             candidates.find{ |i| i == input }
           end
         else
-          candidates = eval("methods | private_methods | local_variables | instance_variables | self.class.constants", bind).collect{|m| m.to_s}
+          candidates = (bind.eval_methods | bind.eval_private_methods | bind.local_variables | bind.eval_instance_variables | bind.eval_class_constants).collect{|m| m.to_s}
           candidates |= ReservedWords
           candidates.grep(/^#{Regexp.quote(input)}/)
         end
