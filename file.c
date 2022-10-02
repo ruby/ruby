@@ -2876,6 +2876,7 @@ utime_failed(struct apply_arg *aa)
 # if defined(__APPLE__) && \
     (!defined(MAC_OS_X_VERSION_13_0) || (MAC_OS_X_VERSION_MIN_REQUIRED < MAC_OS_X_VERSION_13_0))
 
+#  if defined(HAVE_UTIMENSAT)
 #   if defined(__has_attribute) && __has_attribute(availability)
 typedef int utimensat_func(int, const char *, const struct timespec [2], int);
 
@@ -2887,6 +2888,7 @@ rb_utimensat(void)
     return &utimensat;
 }
 RBIMPL_WARNING_POP()
+#  endif
 
 #   define utimensat rb_utimensat()
 #   else /* __API_AVAILABLE macro does nothing on gcc */
