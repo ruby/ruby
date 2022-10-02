@@ -5373,109 +5373,136 @@ test_check(int n, int argc, VALUE *argv)
  *  Tests using only +file1+ (but +file2+ must still be given):
  *
  *  <table>
- *  <tr>
- *  <tr><th>Character</th><th>Return Type<th>Meaning</tr>
- *  </tr>
- *  <tr>
- *  <th><tt>'A'</tt></th><th><tt>Time</tt></th>
- *  <td>Last access time for <tt>file1</tt>.</td>
- *  </tr>
- *  <tr>
- *  <th><tt>'b'</tt></th><th>Boolean</th>
- *  <td>Whether <tt>file1</tt> is a block device.</td>
- *  </tr>
- *  <tr>
- *  <th><tt>'c'</tt></th><th>Boolean</th>
- *  <td>Whether <tt>file1</tt> is a character device.</td>
- *  </tr>
- *  <tr>
- *  <th><tt>'C'</tt></th><th><tt>Time</tt></th>
- *  <td>Last modification time for <tt>file1</tt>.</td>
- *  </tr>
- *  <tr>
- *  <th><tt>'d'</tt></th><th>Boolean</th>
- *  <td>Whether <tt>file1</tt> exists and is a directory.</td>
- *  </tr>
- *  <tr>
- *  <th><tt>'e'</tt></th><th>Boolean</th>
- *  <td>Whether <tt>file1</tt> exists.</td>
- *  </tr>
- *  <tr>
- *  <th><tt>'f'</tt></th><th>Boolean</th>
- *  <td>Whether <tt>file1</tt> exists and is a regular file.</td>
- *  </tr>
- *  <tr>
- *  <th><tt>'g'</tt></th><th>Boolean</th>
- *  <td>Whether <tt>file1</tt> has the \CF{setgid} bit set (false in Windows).</td>
- *  </tr>
- *  <tr>
- *  <th><tt>'G'</tt></th><th>Boolean</th>
- *  <td>Whether <tt>file1</tt> exists and has a group ownership equal to the caller's group.</td>
- *  </tr>
- *  <tr>
- *  <th><tt>'k'</tt></th><th>Boolean</th>
- *  <td>Whether <tt>file1</tt> exists and has the sticky bit set.</td>
- *  </tr>
- *  <tr>
- *  <th><tt>'l'</tt></th><th>Boolean</th>
- *  <td>Whether <tt>file1</tt> exists and is a symbolic link.</td>
- *  </tr>
- *  <tr>
- *  <th><tt>'M'</tt></th><th><tt>Time</tt></th>
- *  <td>Last modification time for <tt>file1</tt>.</td>
- *  </tr>
- *  <tr>
- *  <th><tt>'o'</tt></th><th>Boolean</th>
- *  <td>Whether <tt>file1</tt> exists and is owned by the caller's effective uid.</td>
- *  </tr>
- *  <tr>
- *  <th><tt>'O'</tt></th><th>Boolean</th>
- *  <td>Whether <tt>file1</tt> exists and is owned by the caller's real uid.</td>
- *  </tr>
- *  <tr>
- *  <th><tt>'p'</tt></th><th>Boolean</th>
- *  <td>Whether <tt>file1</tt> exists and is a fifo.</td>
- *  </tr>
- *  <tr>
- *  <th><tt>'r'</tt></th><th>Boolean</th>
- *  <td>Whether <tt>file1</tt> is readable by the effective uid/gid of the caller.</td>
- *  </tr>
- *  <tr>
- *  <th><tt>'R'</tt></th><th>Boolean</th>
- *  <td>Whether file is readable by the real uid/gid of the caller.</td>
- *  </tr>
- *  <tr>
- *  <th><tt>'s'</tt></th><th><tt>Integer</tt></br>or <tt>nil</tt></th>
- *  <td>Size of <tt>file1</tt> if non-empty, otherwise <tt>nil</tt>.</td>
- *  </tr>
- *  <tr>
- *  <th><tt>'S'</tt></th><th>Boolean</th>
- *  <td>Whether <tt>file1</tt> exists and is a socket.</td>
- *  </tr>
- *  <tr>
- *  <th><tt>'u'</tt></th><th>Boolean</th>
- *  <td>Whether <tt>file1</tt> has the setuid bit set.</td>
- *  </tr>
- *  <tr>
- *  <th><tt>'w'</tt></th><th>Boolean</th>
- *  <td>Whether <tt>file1</tt> exists and is writable by the effective uid/gid.</td>
- *  </tr>
- *  <tr>
- *  <th><tt>'W'</tt></th><th>Boolean</th>
- *  <td>Whether <tt>file1</tt> exists and is writable by the real uid/gid.</td>
- *  </tr>
- *  <tr>
- *  <th><tt>'x'</tt></th><th>Boolean</th>
- *  <td>Whether <tt>file1</tt> exists and is executable by the effective uid/gid.</td>
- *  </tr>
- *  <tr>
- *  <th><tt>'X'</tt></th><th>Boolean</th>
- *  <td>Whether <tt>file1</tt> exists and is executable by the real uid/gid.</td>
- *  </tr>
- *  <tr>
- *  <th><tt>'z'</tt></th><th>Boolean</th>
- *  <td>Whether <tt>file1</tt> exists and has a zero length.</td>
- *  </tr>
+ *    <tr>
+ *      <th>Character</th>
+ *      <th>Return Type
+ *      <th>Meaning
+ *    </tr>
+ *    <tr>
+ *      <th><tt>'A'</tt></th>
+ *      <th><tt>Time</tt></th>
+ *      <td>Last access time for <tt>file1</tt>.</td>
+ *    </tr>
+ *    <tr>
+ *      <th><tt>'b'</tt></th>
+ *      <th>Boolean</th>
+ *      <td>Whether <tt>file1</tt> is a block device.</td>
+ *    </tr>
+ *    <tr>
+ *      <th><tt>'c'</tt></th>
+ *      <th>Boolean</th>
+ *      <td>Whether <tt>file1</tt> is a character device.</td>
+ *    </tr>
+ *    <tr>
+ *      <th><tt>'C'</tt></th>
+ *      <th><tt>Time</tt></th>
+ *      <td>Last modification time for <tt>file1</tt>.</td>
+ *    </tr>
+ *    <tr>
+ *      <th><tt>'d'</tt></th>
+ *      <th>Boolean</th>
+ *      <td>Whether <tt>file1</tt> exists and is a directory.</td>
+ *    </tr>
+ *    <tr>
+ *      <th><tt>'e'</tt></th>
+ *      <th>Boolean</th>
+ *      <td>Whether <tt>file1</tt> exists.</td>
+ *    </tr>
+ *    <tr>
+ *      <th><tt>'f'</tt></th>
+ *      <th>Boolean</th>
+ *      <td>Whether <tt>file1</tt> exists and is a regular file.</td>
+ *    </tr>
+ *    <tr>
+ *      <th><tt>'g'</tt></th>
+ *      <th>Boolean</th>
+ *      <td>Whether <tt>file1</tt> has the \CF{setgid} bit set (false in Windows).</td>
+ *    </tr>
+ *    <tr>
+ *      <th><tt>'G'</tt></th>
+ *      <th>Boolean</th>
+ *      <td>Whether <tt>file1</tt> exists and has a group ownership equal to the caller's group.</td>
+ *    </tr>
+ *    <tr>
+ *      <th><tt>'k'</tt></th>
+ *      <th>Boolean</th>
+ *      <td>Whether <tt>file1</tt> exists and has the sticky bit set.</td>
+ *    </tr>
+ *    <tr>
+ *      <th><tt>'l'</tt></th>
+ *      <th>Boolean</th>
+ *      <td>Whether <tt>file1</tt> exists and is a symbolic link.</td>
+ *    </tr>
+ *    <tr>
+ *      <th><tt>'M'</tt></th>
+ *      <th><tt>Time</tt></th>
+ *      <td>Last modification time for <tt>file1</tt>.</td>
+ *    </tr>
+ *    <tr>
+ *      <th><tt>'o'</tt></th>
+ *      <th>Boolean</th>
+ *      <td>Whether <tt>file1</tt> exists and is owned by the caller's effective uid.</td>
+ *    </tr>
+ *    <tr>
+ *      <th><tt>'O'</tt></th>
+ *      <th>Boolean</th>
+ *      <td>Whether <tt>file1</tt> exists and is owned by the caller's real uid.</td>
+ *    </tr>
+ *    <tr>
+ *      <th><tt>'p'</tt></th>
+ *      <th>Boolean</th>
+ *      <td>Whether <tt>file1</tt> exists and is a fifo.</td>
+ *    </tr>
+ *    <tr>
+ *      <th><tt>'r'</tt></th>
+ *      <th>Boolean</th>
+ *      <td>Whether <tt>file1</tt> is readable by the effective uid/gid of the caller.</td>
+ *    </tr>
+ *    <tr>
+ *      <th><tt>'R'</tt></th>
+ *      <th>Boolean</th>
+ *      <td>Whether file is readable by the real uid/gid of the caller.</td>
+ *    </tr>
+ *    <tr>
+ *      <th><tt>'s'</tt></th>
+ *      <th><tt>Integer</tt></br>or <tt>nil</tt></th>
+ *      <td>Size of <tt>file1</tt> if non-empty, otherwise <tt>nil</tt>.</td>
+ *    </tr>
+ *    <tr>
+ *      <th><tt>'S'</tt></th>
+ *      <th>Boolean</th>
+ *      <td>Whether <tt>file1</tt> exists and is a socket.</td>
+ *    </tr>
+ *    <tr>
+ *      <th><tt>'u'</tt></th>
+ *      <th>Boolean</th>
+ *      <td>Whether <tt>file1</tt> has the setuid bit set.</td>
+ *    </tr>
+ *    <tr>
+ *      <th><tt>'w'</tt></th>
+ *      <th>Boolean</th>
+ *      <td>Whether <tt>file1</tt> exists and is writable by the effective uid/gid.</td>
+ *    </tr>
+ *    <tr>
+ *      <th><tt>'W'</tt></th>
+ *      <th>Boolean</th>
+ *      <td>Whether <tt>file1</tt> exists and is writable by the real uid/gid.</td>
+ *    </tr>
+ *    <tr>
+ *      <th><tt>'x'</tt></th>
+ *      <th>Boolean</th>
+ *      <td>Whether <tt>file1</tt> exists and is executable by the effective uid/gid.</td>
+ *    </tr>
+ *    <tr>
+ *      <th><tt>'X'</tt></th>
+ *      <th>Boolean</th>
+ *      <td>Whether <tt>file1</tt> exists and is executable by the real uid/gid.</td>
+ *    </tr>
+ *    <tr>
+ *      <th><tt>'z'</tt></th>
+ *      <th>Boolean</th>
+ *      <td>Whether <tt>file1</tt> exists and has a zero length.</td>
+ *    </tr>
  *  </table>
  *
  *  Tests that use both +file1+ and +file2+:
