@@ -389,11 +389,7 @@ module IRB
   #
   # Will raise an Abort exception, or the given +exception+.
   def IRB.irb_abort(irb, exception = Abort)
-    if defined? Thread
-      irb.context.thread.raise exception, "abort then interrupt!"
-    else
-      raise exception, "abort then interrupt!"
-    end
+    irb.context.thread.raise exception, "abort then interrupt!"
   end
 
   class Irb

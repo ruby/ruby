@@ -32,7 +32,7 @@ module IRB
       else
         @workspace = WorkSpace.new
       end
-      @thread = Thread.current if defined? Thread
+      @thread = Thread.current
 
       # copy of default configuration
       @ap_name = IRB.conf[:AP_NAME]
