@@ -5481,29 +5481,36 @@ test_check(int n, int argc, VALUE *argv)
  *  Tests that use both +file1+ and +file2+:
  *
  *  <table>
- *  <tr><th>Character</th><th>Return Type<th>Meaning</tr>
- *  <tr>
- *  <th><tt>'-'</tt></th>
- *  <th>Boolean</th>
- *  <td>Whether <tt>file1</tt> and <tt>file2</tt> are identical.</td>
- *  </tr>
- *  <tr>
- *  <th><tt>'='</tt></th>
- *  <th>Boolean</th>
- *  <td>Whether <tt>file1</tt> and <tt>file2</tt> have the same modification time.</td>
- *  </tr>
- *  <tr>
- *  <th><tt>'<'</tt></th>
- *  <th>Boolean</th>
- *  <td>Whether <tt>file1</tt> has an earlier modification time than
- *  <tt>file2</tt>.</td>
- *  </tr>
- *  <tr>
- *  <th><tt>'>'</tt></th>
- *  <th>Boolean</th>
- *  <td>Whether <tt>file1</tt> has a later modification time than
- *  <tt>file2</tt>.</td>
- *  </tr>
+ *    <tr>
+ *      <th>Character</th>
+ *      <th>Return Type
+ *      <th>Meaning
+ *    </tr>
+ *    <tr>
+ *      <th><tt>'-'</tt></th>
+ *      <th>Boolean</th>
+ *      <td>Whether <tt>file1</tt> and <tt>file2</tt> are identical.</td>
+ *    </tr>
+ *    <tr>
+ *      <th><tt>'='</tt></th>
+ *      <th>Boolean</th>
+ *      <td>Whether <tt>file1</tt> and <tt>file2</tt> have the same modification time.</td>
+ *    </tr>
+ *    <tr>
+ *      <th><tt>'<'< /tt>
+ *      </th>
+ *      <th>Boolean</th>
+ *      <td>Whether <tt>file1</tt> has an earlier modification time than
+ *        <tt>file2</tt>.
+ *      </td>
+ *    </tr>
+ *    <tr>
+ *      <th><tt>'>'</tt></th>
+ *      <th>Boolean</th>
+ *      <td>Whether <tt>file1</tt> has a later modification time than
+ *        <tt>file2</tt>.
+ *      </td>
+ *    </tr>
  *  </table>
  *
  */
