@@ -384,10 +384,12 @@ setup_data(VALUE subclass, VALUE members)
     members = struct_set_members(subclass, members);
 
     rb_define_alloc_func(subclass, struct_alloc);
-    rb_define_singleton_method(subclass, "new", rb_data_s_new, -1);
-    rb_define_singleton_method(subclass, "[]", rb_data_s_new, -1);
-    rb_define_singleton_method(subclass, "members", rb_struct_s_members_m, 0);
-    rb_define_singleton_method(subclass, "inspect", rb_struct_s_inspect, 0); // FIXME: just a separate method?..
+    VALUE sclass = rb_singleton_class(subclass);
+    rb_undef_method(sclass, "define");
+    rb_define_method(sclass, "new", rb_data_s_new, -1);
+    rb_define_method(sclass, "[]", rb_data_s_new, -1);
+    rb_define_method(sclass, "members", rb_struct_s_members_m, 0);
+    rb_define_method(sclass, "inspect", rb_struct_s_inspect, 0); // FIXME: just a separate method?..
 
     len = RARRAY_LEN(members);
     for (i=0; i< len; i++) {

@@ -14,6 +14,8 @@ class TestData < Test::Unit::TestCase
 
     # Because some code is shared with Struct, check we don't share unnecessary functionality
     assert_raise(TypeError) { Data.define(:foo, keyword_init: true) }
+
+    assert_not_respond_to(Data.define, :define, "Cannot define from defined Data class")
   end
 
   def test_define_edge_cases
