@@ -91,7 +91,7 @@ rb_shape_get_shape(VALUE obj)
 
 static rb_shape_t *
 rb_shape_lookup_id(rb_shape_t* shape, ID id, enum shape_type shape_type) {
-    while (shape->parent) {
+    while (shape->parent_id != INVALID_SHAPE_ID) {
         if (shape->edge_name == id) {
             // If the shape type is different, we don't
             // want this to count as a "found" ID
@@ -102,7 +102,7 @@ rb_shape_lookup_id(rb_shape_t* shape, ID id, enum shape_type shape_type) {
                 return NULL;
             }
         }
-        shape = shape->parent;
+        shape = rb_shape_get_shape_by_id(shape->parent_id);
     }
     return NULL;
 }
@@ -129,7 +129,7 @@ get_next_shape_internal(rb_shape_t* shape, ID id, VALUE obj, enum shape_type sha
                 // In this case, the shape exists, but the shape is garbage, so we need to recreate it
                 if (res) {
                     rb_id_table_delete(shape->edges, id);
-                    res->parent = NULL;
+                    res->parent_id = INVALID_SHAPE_ID;
                 }
 
                 rb_shape_t * new_shape = rb_shape_alloc(id, shape);
@@ -138,7 +138,7 @@ get_next_shape_internal(rb_shape_t* shape, ID id, VALUE obj, enum shape_type sha
 
                 switch(shape_type) {
                     case SHAPE_IVAR:
-                        new_shape->iv_count = new_shape->parent->iv_count + 1;
+                        new_shape->iv_count = rb_shape_get_shape_by_id(new_shape->parent_id)->iv_count + 1;
 
                         // Check if we should update max_iv_count on the object's class
                         if (BUILTIN_TYPE(obj) == T_OBJECT) {
@@ -150,7 +150,7 @@ get_next_shape_internal(rb_shape_t* shape, ID id, VALUE obj, enum shape_type sha
                         break;
                     case SHAPE_IVAR_UNDEF:
                     case SHAPE_FROZEN:
-                        new_shape->iv_count = new_shape->parent->iv_count;
+                        new_shape->iv_count = rb_shape_get_shape_by_id(new_shape->parent_id)->iv_count;
                         break;
                     case SHAPE_ROOT:
                         rb_bug("Unreachable");
@@ -240,7 +240,7 @@ rb_shape_get_next(rb_shape_t* shape, VALUE obj, ID id)
 
 bool
 rb_shape_get_iv_index(rb_shape_t * shape, ID id, attr_index_t *value) {
-    while (shape->parent) {
+    while (shape->parent_id != INVALID_SHAPE_ID) {
         if (shape->edge_name == id) {
             enum shape_type shape_type;
             shape_type = (enum shape_type)shape->type;
@@ -257,7 +257,7 @@ rb_shape_get_iv_index(rb_shape_t * shape, ID id, attr_index_t *value) {
                     rb_bug("Ivar should not exist on frozen transition\n");
             }
         }
-        shape = shape->parent;
+        shape = rb_shape_get_shape_by_id(shape->parent_id);
     }
     return false;
 }
@@ -278,15 +278,21 @@ shape_alloc(void)
 }
 
 rb_shape_t *
-rb_shape_alloc(ID edge_name, rb_shape_t * parent)
+rb_shape_alloc_with_parent_id(ID edge_name, shape_id_t parent_id)
 {
     rb_shape_t * shape = shape_alloc();
 
     shape->edge_name = edge_name;
     shape->iv_count = 0;
-    shape->parent = parent;
+    shape->parent_id = parent_id;
 
     return shape;
+}
+
+rb_shape_t *
+rb_shape_alloc(ID edge_name, rb_shape_t * parent)
+{
+    return rb_shape_alloc_with_parent_id(edge_name, rb_shape_id(parent));
 }
 
 MJIT_FUNC_EXPORTED void
@@ -325,8 +331,8 @@ rb_shape_parent_id(VALUE self)
 {
     rb_shape_t * shape;
     TypedData_Get_Struct(self, rb_shape_t, &shape_data_type, shape);
-    if (shape->parent) {
-        return INT2NUM(rb_shape_id(shape->parent));
+    if (shape->parent_id != INVALID_SHAPE_ID) {
+        return INT2NUM(shape->parent_id);
     }
     else {
         return Qnil;
@@ -402,9 +408,9 @@ rb_shape_export_depth(VALUE self)
     TypedData_Get_Struct(self, rb_shape_t, &shape_data_type, shape);
 
     unsigned int depth = 0;
-    while (shape->parent) {
+    while (shape->parent_id != INVALID_SHAPE_ID) {
         depth++;
-        shape = shape->parent;
+        shape = rb_shape_get_shape_by_id(shape->parent_id);
     }
     return INT2NUM(depth);
 }
@@ -414,8 +420,8 @@ rb_shape_parent(VALUE self)
 {
     rb_shape_t * shape;
     TypedData_Get_Struct(self, rb_shape_t, &shape_data_type, shape);
-    if (shape->parent) {
-        return rb_shape_t_to_rb_cShape(shape->parent);
+    if (shape->parent_id != INVALID_SHAPE_ID) {
+        return rb_shape_t_to_rb_cShape(rb_shape_get_shape_by_id(shape->parent_id));
     }
     else {
         return Qnil;
@@ -426,11 +432,11 @@ VALUE rb_shape_debug_shape(VALUE self, VALUE obj) {
     return rb_shape_t_to_rb_cShape(rb_shape_get_shape(obj));
 }
 
-VALUE rb_shape_debug_root_shape(VALUE self) {
+VALUE rb_shape_root_shape(VALUE self) {
     return rb_shape_t_to_rb_cShape(rb_shape_get_root_shape());
 }
 
-VALUE rb_shape_debug_frozen_root_shape(VALUE self) {
+VALUE rb_shape_frozen_root_shape(VALUE self) {
     return rb_shape_t_to_rb_cShape(rb_shape_get_frozen_root_shape());
 }
 
@@ -460,7 +466,7 @@ VALUE rb_obj_shape(rb_shape_t* shape) {
         rb_hash_aset(rb_shape, ID2SYM(rb_intern("parent_id")), INT2NUM(ROOT_SHAPE_ID));
     }
     else {
-        rb_hash_aset(rb_shape, ID2SYM(rb_intern("parent_id")), INT2NUM(rb_shape_id(shape->parent)));
+        rb_hash_aset(rb_shape, ID2SYM(rb_intern("parent_id")), INT2NUM(shape->parent_id));
     }
 
     rb_hash_aset(rb_shape, ID2SYM(rb_intern("edge_name")), rb_id2str(shape->edge_name));
@@ -471,20 +477,7 @@ static VALUE shape_transition_tree(VALUE self) {
     return rb_obj_shape(rb_shape_get_root_shape());
 }
 
-static VALUE shape_count(VALUE self) {
-    int shape_count = 0;
-    rb_vm_t *vm = GET_VM();
-    for(shape_id_t i = 0; i < vm->next_shape_id; i++) {
-        if(rb_shape_get_shape_by_id_without_assertion(i)) {
-            shape_count++;
-        }
-    }
-    return INT2NUM(shape_count);
-}
-
-static VALUE
-shape_max_shape_count(VALUE self)
-{
+static VALUE next_shape_id(VALUE self) {
     return INT2NUM(GET_VM()->next_shape_id);
 }
 
@@ -492,6 +485,16 @@ VALUE
 rb_shape_flags_mask(void)
 {
     return SHAPE_FLAG_MASK;
+}
+
+static VALUE
+rb_shape_find_by_id(VALUE mod, VALUE id)
+{
+    shape_id_t shape_id = NUM2INT(id);
+    if (shape_id < 0 || shape_id >= GET_VM()->next_shape_id) {
+        rb_raise(rb_eArgError, "Shape ID %d is out of bounds\n", shape_id);
+    }
+    return rb_shape_t_to_rb_cShape(rb_shape_get_shape_by_id(shape_id));
 }
 
 void
@@ -513,11 +516,12 @@ Init_shape(void)
     rb_define_const(rb_cShape, "SHAPE_IVAR_UNDEF", INT2NUM(SHAPE_IVAR_UNDEF));
     rb_define_const(rb_cShape, "SHAPE_FROZEN", INT2NUM(SHAPE_FROZEN));
     rb_define_const(rb_cShape, "SHAPE_BITS", INT2NUM(SHAPE_BITS));
+    rb_define_const(rb_cShape, "SHAPE_FLAG_SHIFT", INT2NUM(SHAPE_FLAG_SHIFT));
 
-    rb_define_module_function(rb_cRubyVM, "debug_shape_transition_tree", shape_transition_tree, 0);
-    rb_define_module_function(rb_cRubyVM, "debug_shape_count", shape_count, 0);
-    rb_define_singleton_method(rb_cRubyVM, "debug_shape", rb_shape_debug_shape, 1);
-    rb_define_singleton_method(rb_cRubyVM, "debug_max_shape_count", shape_max_shape_count, 0);
-    rb_define_singleton_method(rb_cRubyVM, "debug_root_shape", rb_shape_debug_root_shape, 0);
-    rb_define_singleton_method(rb_cRubyVM, "debug_frozen_root_shape", rb_shape_debug_frozen_root_shape, 0);
+    rb_define_singleton_method(rb_cShape, "transition_tree", shape_transition_tree, 0);
+    rb_define_singleton_method(rb_cShape, "find_by_id", rb_shape_find_by_id, 1);
+    rb_define_singleton_method(rb_cShape, "next_shape_id", next_shape_id, 0);
+    rb_define_singleton_method(rb_cShape, "of", rb_shape_debug_shape, 1);
+    rb_define_singleton_method(rb_cShape, "root_shape", rb_shape_root_shape, 0);
+    rb_define_singleton_method(rb_cShape, "frozen_root_shape", rb_shape_frozen_root_shape, 0);
 }

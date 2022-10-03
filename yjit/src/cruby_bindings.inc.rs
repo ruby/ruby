@@ -406,11 +406,11 @@ pub type attr_index_t = u32;
 pub type shape_id_t = u32;
 #[repr(C)]
 pub struct rb_shape {
-    pub parent: *mut rb_shape,
     pub edges: *mut rb_id_table,
     pub edge_name: ID,
     pub iv_count: attr_index_t,
     pub type_: u8,
+    pub parent_id: shape_id_t,
 }
 pub type rb_shape_t = rb_shape;
 extern "C" {
@@ -775,10 +775,9 @@ pub struct iseq_inline_constant_cache {
     pub segments: *const ID,
 }
 #[repr(C)]
+#[derive(Debug, Copy, Clone)]
 pub struct iseq_inline_iv_cache_entry {
-    pub source_shape_id: shape_id_t,
-    pub dest_shape_id: shape_id_t,
-    pub attr_index: attr_index_t,
+    pub value: usize,
 }
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]

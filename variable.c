@@ -1627,7 +1627,7 @@ iterate_over_shapes_with_callback(rb_shape_t *shape, VALUE* iv_list, rb_ivar_for
         case SHAPE_ROOT:
             return;
         case SHAPE_IVAR:
-            iterate_over_shapes_with_callback(shape->parent, iv_list, callback, arg);
+            iterate_over_shapes_with_callback(rb_shape_get_shape_by_id(shape->parent_id), iv_list, callback, arg);
             VALUE val = iv_list[shape->iv_count - 1];
             if (val != Qundef) {
                 callback(shape->edge_name, val, arg);
@@ -1635,7 +1635,7 @@ iterate_over_shapes_with_callback(rb_shape_t *shape, VALUE* iv_list, rb_ivar_for
             return;
         case SHAPE_IVAR_UNDEF:
         case SHAPE_FROZEN:
-            iterate_over_shapes_with_callback(shape->parent, iv_list, callback, arg);
+            iterate_over_shapes_with_callback(rb_shape_get_shape_by_id(shape->parent_id), iv_list, callback, arg);
             return;
     }
 }
@@ -1694,7 +1694,7 @@ rb_copy_generic_ivar(VALUE clone, VALUE obj)
 
         rb_shape_t * obj_shape = rb_shape_get_shape(obj);
         if (rb_shape_frozen_shape_p(obj_shape)) {
-            rb_shape_set_shape(clone, obj_shape->parent);
+            rb_shape_set_shape_id(clone, obj_shape->parent_id);
         }
         else {
             rb_shape_set_shape(clone, obj_shape);

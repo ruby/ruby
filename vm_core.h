@@ -273,9 +273,7 @@ struct iseq_inline_constant_cache {
 };
 
 struct iseq_inline_iv_cache_entry {
-    shape_id_t source_shape_id;
-    shape_id_t dest_shape_id;
-    attr_index_t attr_index;
+    uintptr_t value; // attr_index in lower bits, dest_shape_id in upper bits
 };
 
 struct iseq_inline_cvar_cache_entry {

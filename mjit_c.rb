@@ -9,6 +9,10 @@ module RubyVM::MJIT
       RubyVM::Shape::SHAPE_BITS
     end
 
+    def SHAPE_FLAG_SHIFT
+      RubyVM::Shape::SHAPE_FLAG_SHIFT
+    end
+
     def ROBJECT_EMBED_LEN_MAX
       Primitive.cexpr! 'INT2NUM(RBIMPL_EMBED_LEN_MAX_OF(VALUE))'
     end
@@ -255,9 +259,7 @@ module RubyVM::MJIT
   def C.iseq_inline_iv_cache_entry
     @iseq_inline_iv_cache_entry ||= CType::Struct.new(
       "iseq_inline_iv_cache_entry", Primitive.cexpr!("SIZEOF(struct iseq_inline_iv_cache_entry)"),
-      source_shape_id: [self.shape_id_t, Primitive.cexpr!("OFFSETOF((*((struct iseq_inline_iv_cache_entry *)NULL)), source_shape_id)")],
-      dest_shape_id: [self.shape_id_t, Primitive.cexpr!("OFFSETOF((*((struct iseq_inline_iv_cache_entry *)NULL)), dest_shape_id)")],
-      attr_index: [self.attr_index_t, Primitive.cexpr!("OFFSETOF((*((struct iseq_inline_iv_cache_entry *)NULL)), attr_index)")],
+      value: [CType::Immediate.parse("uintptr_t"), Primitive.cexpr!("OFFSETOF((*((struct iseq_inline_iv_cache_entry *)NULL)), value)")],
     )
   end
 
@@ -332,8 +334,7 @@ module RubyVM::MJIT
         "", Primitive.cexpr!("SIZEOF(((struct rb_callcache *)NULL)->aux_)"),
         attr: CType::Struct.new(
           "", Primitive.cexpr!("SIZEOF(((struct rb_callcache *)NULL)->aux_.attr)"),
-          index: [self.attr_index_t, Primitive.cexpr!("OFFSETOF(((struct rb_callcache *)NULL)->aux_.attr, index)")],
-          dest_shape_id: [self.shape_id_t, Primitive.cexpr!("OFFSETOF(((struct rb_callcache *)NULL)->aux_.attr, dest_shape_id)")],
+          value: [CType::Immediate.parse("uintptr_t"), Primitive.cexpr!("OFFSETOF(((struct rb_callcache *)NULL)->aux_.attr, value)")],
         ),
         method_missing_reason: self.method_missing_reason,
         v: self.VALUE,

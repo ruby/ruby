@@ -4054,11 +4054,11 @@ Init_vm_objects(void)
     }
 
     // Root shape
-    vm->root_shape = rb_shape_alloc(0, 0);
+    vm->root_shape = rb_shape_alloc_with_parent_id(0, INVALID_SHAPE_ID);
     RUBY_ASSERT(rb_shape_id(vm->root_shape) == ROOT_SHAPE_ID);
 
     // Frozen root shape
-    vm->frozen_root_shape = rb_shape_alloc(rb_make_internal_id(), vm->root_shape);
+    vm->frozen_root_shape = rb_shape_alloc_with_parent_id(rb_make_internal_id(), rb_shape_id(vm->root_shape));
     vm->frozen_root_shape->type = (uint8_t)SHAPE_FROZEN;
     RUBY_ASSERT(rb_shape_id(vm->frozen_root_shape) == FROZEN_ROOT_SHAPE_ID);
 

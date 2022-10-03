@@ -43,11 +43,11 @@ typedef uint16_t shape_id_t;
 # define FROZEN_ROOT_SHAPE_ID 0x1
 
 struct rb_shape {
-    struct rb_shape * parent; // Pointer to the parent
     struct rb_id_table * edges; // id_table from ID (ivar) to next shape
     ID edge_name; // ID (ivar) for transition from parent to rb_shape
     attr_index_t iv_count;
     uint8_t type;
+    shape_id_t parent_id;
 };
 
 typedef struct rb_shape rb_shape_t;
@@ -58,21 +58,6 @@ enum shape_type {
     SHAPE_FROZEN,
     SHAPE_IVAR_UNDEF,
 };
-
-static inline shape_id_t
-IMEMO_CACHED_SHAPE_ID(VALUE cc)
-{
-    RBIMPL_ASSERT_TYPE((VALUE)cc, RUBY_T_IMEMO);
-    return (shape_id_t)(SHAPE_MASK & (RBASIC(cc)->flags >> SHAPE_FLAG_SHIFT));
-}
-
-static inline void
-IMEMO_SET_CACHED_SHAPE_ID(VALUE cc, shape_id_t shape_id)
-{
-    RBIMPL_ASSERT_TYPE((VALUE)cc, RUBY_T_IMEMO);
-    RBASIC(cc)->flags &= SHAPE_FLAG_MASK;
-    RBASIC(cc)->flags |= ((VALUE)(shape_id) << SHAPE_FLAG_SHIFT);
-}
 
 #if SHAPE_IN_BASIC_FLAGS
 static inline shape_id_t
@@ -141,6 +126,7 @@ shape_id_t rb_shape_id(rb_shape_t * shape);
 MJIT_SYMBOL_EXPORT_END
 
 rb_shape_t * rb_shape_alloc(ID edge_name, rb_shape_t * parent);
+rb_shape_t * rb_shape_alloc_with_parent_id(ID edge_name, shape_id_t parent_id);
 
 bool rb_shape_set_shape_id(VALUE obj, shape_id_t shape_id);
 
