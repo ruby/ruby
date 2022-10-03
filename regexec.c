@@ -821,6 +821,11 @@ onig_region_copy(OnigRegion* to, const OnigRegion* from)
   (msa).best_len = ONIG_MISMATCH;\
   (msa).counter  = 0;\
   (msa).end_time = 0;\
+  (msa).enable_cache_match_opt = 0;\
+  (msa).num_fail = 0;\
+  (msa).num_cache_opcode = NUM_CACHE_OPCODE_UNINIT;\
+  (msa).cache_index_table = (UChar **)0;\
+  (msa).match_cache = (uint8_t *)0;\
 } while(0)
 #else
 # define MATCH_ARG_INIT(msa, arg_option, arg_region, arg_start, arg_gpos) do {\
@@ -871,7 +876,11 @@ onig_region_copy(OnigRegion* to, const OnigRegion* from)
   }\
 } while(0)
 #else /* USE_COMBINATION_EXPLOSION_CHECK */
-# define MATCH_ARG_FREE(msa)  if ((msa).stack_p) xfree((msa).stack_p)
+# define MATCH_ARG_FREE(msa) do {\
+  if ((msa).stack_p) xfree((msa).stack_p);\
+  if ((msa).cache_index_table) xfree((msa).cache_index_table);\
+  if ((msa).match_cache) xfree((msa).match_cache);\
+} while (0)
 #endif /* USE_COMBINATION_EXPLOSION_CHECK */
 
 
@@ -1091,10 +1100,7 @@ stack_double(OnigStackType** arg_stk_base, OnigStackType** arg_stk_end,
     int index = key >> 3;\
     int mask = 1 << (key & 7);\
     if ((match_cache)[index] & mask) {\
-      /* fprintf(stderr, "Use cache at %d (%d, %d, %d, %d, %d)\n", (pos), index, mask, key, cache_index, p - pstart); */\
       goto fail;\
-    } else {\
-      /* fprintf(stderr, "Cache at %d (%d, %d, %d, %d, %d)\n", (pos), index, mask, key, cache_index, p - pstart); */\
     }\
     (match_cache)[index] |= mask;\
   }\
@@ -1878,11 +1884,6 @@ match_at(regex_t* reg, const UChar* str, const UChar* end,
 #endif
 #ifdef USE_CACHE_MATCH_OPT
   UChar   *pstart = reg->p;
-  int      num_fail = 0;
-  int      enable_cache_match_opt = 0;
-  int      num_cache_opcode = NUM_CACHE_OPCODE_UNINIT;
-  UChar**  cache_index_table = (UChar **)0; /* array of pointer to p (regex program) */
-  uint8_t *match_cache = (uint8_t *)0;
 #endif
 
 #if USE_TOKEN_THREADED_VM
@@ -3267,7 +3268,7 @@ match_at(regex_t* reg, const UChar* str, const UChar* end,
 
     CASE(OP_PUSH)  MOP_IN(OP_PUSH);
       GET_RELADDR_INC(addr, p);
-      DO_CACHE_MATCH_OPT(enable_cache_match_opt, pbegin, num_cache_opcode, cache_index_table, s - sstart, match_cache);
+      DO_CACHE_MATCH_OPT(msa->enable_cache_match_opt, pbegin, msa->num_cache_opcode, msa->cache_index_table, end - s, msa->match_cache);
       STACK_PUSH_ALT(p + addr, s, sprev, pkeep);
       MOP_OUT;
       JUMP;
@@ -3599,35 +3600,33 @@ match_at(regex_t* reg, const UChar* str, const UChar* end,
       pkeep = stk->u.state.pkeep;
 
 #ifdef USE_CACHE_MATCH_OPT
-      if (++num_fail == (int)(end - sstart) + 1 && num_cache_opcode == NUM_CACHE_OPCODE_UNINIT) {
-	enable_cache_match_opt = 1;
-	if (num_cache_opcode == NUM_CACHE_OPCODE_UNINIT) {
-	  num_cache_opcode = count_num_cache_opcode(reg);
+      if (++msa->num_fail == (int)(end - str) + 1 && msa->num_cache_opcode == NUM_CACHE_OPCODE_UNINIT) {
+	msa->enable_cache_match_opt = 1;
+	if (msa->num_cache_opcode == NUM_CACHE_OPCODE_UNINIT) {
+	  msa->num_cache_opcode = count_num_cache_opcode(reg);
 	}
-	if (num_cache_opcode == NUM_CACHE_OPCODE_FAIL || num_cache_opcode == 0) {
-	  enable_cache_match_opt = 0;
+	if (msa->num_cache_opcode == NUM_CACHE_OPCODE_FAIL || msa->num_cache_opcode == 0) {
+	  msa->enable_cache_match_opt = 0;
 	  goto fail_match_cache_opt;
 	}
-	if (cache_index_table == NULL) {
-	  UChar **table = xmalloc(num_cache_opcode * sizeof(UChar*));
+	if (msa->cache_index_table == NULL) {
+	  UChar **table = xmalloc(msa->num_cache_opcode * sizeof(UChar*));
 	  if (table == NULL) {
-	    enable_cache_match_opt = 0;
+	    msa->enable_cache_match_opt = 0;
 	    goto fail_match_cache_opt;
 	  }
 	  init_cache_index_table(reg, table);
-	  cache_index_table = table;
+	  msa->cache_index_table = table;
 	}
 	// TODO: check arithemetic overflow.
-	int match_cache_size8 = num_cache_opcode * ((int)(end - sstart) + 1);
+	int match_cache_size8 = msa->num_cache_opcode * ((int)(end - str) + 1);
 	int match_cache_size = (match_cache_size8 >> 3) + (match_cache_size8 & 7 ? 1 : 0);
-	// fprintf(stderr, "match_cache_size8: %d, match_cache_size: %d\n", match_cache_size8, match_cache_size);
-	match_cache = (uint8_t*)xmalloc(match_cache_size * sizeof(uint8_t));
-	if (match_cache == NULL) {
-	  enable_cache_match_opt = 0;
+	msa->match_cache = (uint8_t*)xmalloc(match_cache_size * sizeof(uint8_t));
+	if (msa->match_cache == NULL) {
+	  msa->enable_cache_match_opt = 0;
 	  goto fail_match_cache_opt;
 	}
-	xmemset(match_cache, 0, match_cache_size * sizeof(uint8_t));
-	/* fprintf(stderr, "enable cache match opt\n"); */
+	xmemset(msa->match_cache, 0, match_cache_size * sizeof(uint8_t));
       }
       fail_match_cache_opt:
 #endif
@@ -3650,31 +3649,23 @@ match_at(regex_t* reg, const UChar* str, const UChar* end,
  finish:
   STACK_SAVE;
   if (xmalloc_base) xfree(xmalloc_base);
-  if (cache_index_table) xfree(cache_index_table);
-  if (match_cache) xfree(match_cache);
   return best_len;
 
 #ifdef ONIG_DEBUG
  stack_error:
   STACK_SAVE;
   if (xmalloc_base) xfree(xmalloc_base);
-  if (cache_index_table) xfree(cache_index_table);
-  if (match_cache) xfree(match_cache);
   return ONIGERR_STACK_BUG;
 #endif
 
  bytecode_error:
   STACK_SAVE;
   if (xmalloc_base) xfree(xmalloc_base);
-  if (cache_index_table) xfree(cache_index_table);
-  if (match_cache) xfree(match_cache);
   return ONIGERR_UNDEFINED_BYTECODE;
 
  unexpected_bytecode_error:
   STACK_SAVE;
   if (xmalloc_base) xfree(xmalloc_base);
-  if (cache_index_table) xfree(cache_index_table);
-  if (match_cache) xfree(match_cache);
   return ONIGERR_UNEXPECTED_BYTECODE;
 }
 
