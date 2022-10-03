@@ -1564,6 +1564,7 @@ bm_mark(void *ptr)
     rb_gc_mark_movable(data->recv);
     rb_gc_mark_movable(data->klass);
     rb_gc_mark_movable(data->iclass);
+    rb_gc_mark_movable(data->owner);
     rb_gc_mark_movable((VALUE)data->me);
 }
 
@@ -1574,6 +1575,7 @@ bm_compact(void *ptr)
     UPDATE_REFERENCE(data->recv);
     UPDATE_REFERENCE(data->klass);
     UPDATE_REFERENCE(data->iclass);
+    UPDATE_REFERENCE(data->owner);
     UPDATE_TYPED_REFERENCE(rb_method_entry_t *, data->me);
 }
 
