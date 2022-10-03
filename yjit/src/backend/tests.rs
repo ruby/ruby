@@ -341,3 +341,12 @@ fn test_lookback_iterator() {
         }
     }
 }
+
+#[test]
+fn test_cmp_8_bit() {
+    let (mut asm, mut cb) = setup_asm();
+    let reg = Assembler::get_alloc_regs()[0];
+    asm.cmp(Opnd::Reg(reg).with_num_bits(8).unwrap(), Opnd::UImm(RUBY_SYMBOL_FLAG as u64));
+
+    asm.compile_with_num_regs(&mut cb, 1);
+}

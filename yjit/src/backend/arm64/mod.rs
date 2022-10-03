@@ -234,6 +234,20 @@ impl Assembler
             (opnd0, opnd1)
         }
 
+        fn split_less_than_32_cmp(asm: &mut Assembler, opnd0: Opnd) -> Opnd {
+            match opnd0 {
+                Opnd::Reg(_) | Opnd::InsnOut { .. } => {
+                    match opnd0.rm_num_bits() {
+                        8 => asm.and(opnd0.with_num_bits(64).unwrap(), Opnd::UImm(0xff)),
+                        16 => asm.and(opnd0.with_num_bits(64).unwrap(), Opnd::UImm(0xffff)),
+                        32 | 64 => opnd0,
+                        bits => unreachable!("Invalid number of bits. {}", bits)
+                    }
+                }
+                _ => opnd0
+            }
+        }
+
         let mut asm_local = Assembler::new_with_label_names(std::mem::take(&mut self.label_names));
         let asm = &mut asm_local;
         let mut iterator = self.into_draining_iter();
@@ -316,6 +330,7 @@ impl Assembler
                 },
                 Insn::Cmp { left, right } => {
                     let opnd0 = split_load_operand(asm, left);
+                    let opnd0 = split_less_than_32_cmp(asm, opnd0);
                     let opnd1 = split_shifted_immediate(asm, right);
                     asm.cmp(opnd0, opnd1);
                 },
