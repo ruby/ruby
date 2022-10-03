@@ -231,6 +231,404 @@ onig_get_capture_tree(OnigRegion* region)
 }
 #endif /* USE_CAPTURE_HISTORY */
 
+#ifdef USE_CACHE_MATCH_OPT
+
+/* count number of jump-like opcodes for allocation of cache memory. */
+/* return -1 if we cannot optimize the regex matching by using cache. */
+int count_num_cache_opcode(regex_t* reg)
+{
+  int num = 0;
+  UChar* pbegin;
+  UChar* p = reg->p;
+  UChar* pend = p + reg->used;
+  LengthType len;
+  RelAddrType addr;
+  OnigEncoding enc = reg->enc;
+
+  while (p < pend) {
+    pbegin = p;
+    switch (*p++) {
+      case OP_FINISH:
+      case OP_END:
+	break;
+
+      case OP_EXACT1: p++; break;
+      case OP_EXACT2: p += 2; break;
+      case OP_EXACT3: p += 3; break;
+      case OP_EXACT4: p += 4; break;
+      case OP_EXACT5: p += 5; break;
+      case OP_EXACTN:
+        GET_LENGTH_INC(len, p); p += len; break;
+      case OP_EXACTMB2N1: p += 2; break;
+      case OP_EXACTMB2N2: p += 4; break;
+      case OP_EXACTMB2N3: p += 6; break;
+      case OP_EXACTMB2N:
+	GET_LENGTH_INC(len, p); p += len * 2; break;
+      case OP_EXACTMB3N:
+	GET_LENGTH_INC(len, p); p += len * 3; break;
+      case OP_EXACTMBN:
+	{
+	  int mb_len;
+	  GET_LENGTH_INC(mb_len, p);
+	  GET_LENGTH_INC(len, p);
+	  p += mb_len * len;
+	}
+        break;
+
+      case OP_EXACT1_IC:
+	len = enclen(enc, p, pend); p += len; break;
+      case OP_EXACTN_IC:
+	GET_LENGTH_INC(len, p); p += len; break;
+
+      case OP_CCLASS:
+      case OP_CCLASS_NOT:
+        p += SIZE_BITSET; break;
+      case OP_CCLASS_MB:
+      case OP_CCLASS_MB_NOT:
+      case OP_CCLASS_MIX:
+      case OP_CCLASS_MIX_NOT:
+	GET_LENGTH_INC(len, p); p += len; break;
+
+      case OP_ANYCHAR:
+      case OP_ANYCHAR_ML:
+	break;
+      case OP_ANYCHAR_STAR:
+      case OP_ANYCHAR_ML_STAR:
+	num++; break;
+      case OP_ANYCHAR_STAR_PEEK_NEXT:
+      case OP_ANYCHAR_ML_STAR_PEEK_NEXT:
+	p++; num++; break;
+
+      case OP_WORD:
+      case OP_NOT_WORD:
+      case OP_WORD_BOUND:
+      case OP_NOT_WORD_BOUND:
+      case OP_WORD_BEGIN:
+      case OP_WORD_END:
+	break;
+
+      case OP_ASCII_WORD:
+      case OP_NOT_ASCII_WORD:
+      case OP_ASCII_WORD_BOUND:
+      case OP_NOT_ASCII_WORD_BOUND:
+      case OP_ASCII_WORD_BEGIN:
+      case OP_ASCII_WORD_END:
+	break;
+
+      case OP_BEGIN_BUF:
+      case OP_END_BUF:
+      case OP_BEGIN_LINE:
+      case OP_END_LINE:
+      case OP_SEMI_END_BUF:
+      case OP_BEGIN_POSITION:
+	break;
+
+      case OP_BACKREF1:
+      case OP_BACKREF2:
+      case OP_BACKREFN:
+      case OP_BACKREFN_IC:
+      case OP_BACKREF_MULTI:
+      case OP_BACKREF_MULTI_IC:
+      case OP_BACKREF_WITH_LEVEL:
+	return NUM_CACHE_OPCODE_FAIL;
+
+      case OP_MEMORY_START:
+      case OP_MEMORY_START_PUSH:
+      case OP_MEMORY_END_PUSH:
+      case OP_MEMORY_END_PUSH_REC:
+      case OP_MEMORY_END:
+      case OP_MEMORY_END_REC:
+	p += SIZE_MEMNUM; break;
+
+      case OP_KEEP:
+	break;
+
+      case OP_FAIL:
+	break;
+      case OP_JUMP:
+	GET_RELADDR_INC(addr, p);
+	break;
+      case OP_PUSH:
+	GET_RELADDR_INC(addr, p);
+	num++;
+	break;
+      case OP_POP:
+	break;
+      case OP_PUSH_OR_JUMP_EXACT1:
+      case OP_PUSH_IF_PEEK_NEXT:
+	p += SIZE_RELADDR + 1; num++; break;
+      case OP_REPEAT:
+      case OP_REPEAT_NG:
+      case OP_REPEAT_INC:
+      case OP_REPEAT_INC_NG:
+      case OP_REPEAT_INC_SG:
+      case OP_REPEAT_INC_NG_SG:
+	// TODO: support OP_REPEAT opcodes.
+	return NUM_CACHE_OPCODE_FAIL;
+      case OP_NULL_CHECK_START:
+      case OP_NULL_CHECK_END:
+      case OP_NULL_CHECK_END_MEMST:
+      case OP_NULL_CHECK_END_MEMST_PUSH:
+	p += SIZE_MEMNUM; break;
+
+      case OP_PUSH_POS:
+      case OP_POP_POS:
+	break;
+      case OP_PUSH_POS_NOT:
+	p += SIZE_RELADDR; break;
+      case OP_FAIL_POS:
+	break;
+      case OP_PUSH_STOP_BT:
+      case OP_POP_STOP_BT:
+	return NUM_CACHE_OPCODE_FAIL;
+      case OP_LOOK_BEHIND:
+	/* GET_LENGTH_INC(len, p); break; */
+	return NUM_CACHE_OPCODE_FAIL;
+      case OP_PUSH_LOOK_BEHIND_NOT:
+	// Since optimization assumes a string offset does not back,
+	// we cannot optimize look-behind opcodes.
+	/*
+	  GET_RELADDR_INC(addr, p);
+	  GET_LENGTH_INC(len, p);
+	  break;
+	*/
+	return NUM_CACHE_OPCODE_FAIL;
+      case OP_FAIL_LOOK_BEHIND_NOT:
+	return NUM_CACHE_OPCODE_FAIL;
+      case OP_PUSH_ABSENT_POS:
+      case OP_ABSENT_END:
+	break;
+      case OP_ABSENT:
+	p += SIZE_RELADDR; break;
+
+      case OP_CALL:
+      case OP_RETURN:
+	return NUM_CACHE_OPCODE_FAIL;
+
+      case OP_CONDITION:
+	return NUM_CACHE_OPCODE_FAIL;
+
+      case OP_STATE_CHECK_PUSH:
+      case OP_STATE_CHECK_PUSH_OR_JUMP:
+      case OP_STATE_CHECK:
+      case OP_STATE_CHECK_ANYCHAR_STAR:
+      case OP_STATE_CHECK_ANYCHAR_ML_STAR:
+	return NUM_CACHE_OPCODE_FAIL;
+
+      case OP_SET_OPTION_PUSH:
+      case OP_SET_OPTION:
+	p += SIZE_OPTION;
+	break;
+    }
+  }
+
+  return num;
+}
+
+void init_cache_index_table(regex_t* reg, UChar **table)
+{
+  UChar* pbegin;
+  UChar* p = reg->p;
+  UChar* pend = p + reg->used;
+  LengthType len;
+  RelAddrType addr;
+  OnigEncoding enc = reg->enc;
+
+  while (p < pend) {
+    pbegin = p;
+    switch (*p++) {
+      case OP_FINISH:
+      case OP_END:
+	break;
+
+      case OP_EXACT1: p++; break;
+      case OP_EXACT2: p += 2; break;
+      case OP_EXACT3: p += 3; break;
+      case OP_EXACT4: p += 4; break;
+      case OP_EXACT5: p += 5; break;
+      case OP_EXACTN:
+        GET_LENGTH_INC(len, p); p += len; break;
+      case OP_EXACTMB2N1: p += 2; break;
+      case OP_EXACTMB2N2: p += 4; break;
+      case OP_EXACTMB2N3: p += 6; break;
+      case OP_EXACTMB2N:
+	GET_LENGTH_INC(len, p); p += len * 2; break;
+      case OP_EXACTMB3N:
+	GET_LENGTH_INC(len, p); p += len * 3; break;
+      case OP_EXACTMBN:
+	{
+	  int mb_len;
+	  GET_LENGTH_INC(mb_len, p);
+	  GET_LENGTH_INC(len, p);
+	  p += mb_len * len;
+	}
+        break;
+
+      case OP_EXACT1_IC:
+	len = enclen(enc, p, pend); p += len; break;
+      case OP_EXACTN_IC:
+	GET_LENGTH_INC(len, p); p += len; break;
+
+      case OP_CCLASS:
+      case OP_CCLASS_NOT:
+        p += SIZE_BITSET; break;
+      case OP_CCLASS_MB:
+      case OP_CCLASS_MB_NOT:
+      case OP_CCLASS_MIX:
+      case OP_CCLASS_MIX_NOT:
+	GET_LENGTH_INC(len, p); p += len; break;
+
+      case OP_ANYCHAR:
+      case OP_ANYCHAR_ML:
+	break;
+      case OP_ANYCHAR_STAR:
+      case OP_ANYCHAR_ML_STAR:
+	*table++ = pbegin; break;
+      case OP_ANYCHAR_STAR_PEEK_NEXT:
+      case OP_ANYCHAR_ML_STAR_PEEK_NEXT:
+	p++;
+	*table++ = pbegin;
+	break;
+
+      case OP_WORD:
+      case OP_NOT_WORD:
+      case OP_WORD_BOUND:
+      case OP_NOT_WORD_BOUND:
+      case OP_WORD_BEGIN:
+      case OP_WORD_END:
+	break;
+
+      case OP_ASCII_WORD:
+      case OP_NOT_ASCII_WORD:
+      case OP_ASCII_WORD_BOUND:
+      case OP_NOT_ASCII_WORD_BOUND:
+      case OP_ASCII_WORD_BEGIN:
+      case OP_ASCII_WORD_END:
+	break;
+
+      case OP_BEGIN_BUF:
+      case OP_END_BUF:
+      case OP_BEGIN_LINE:
+      case OP_END_LINE:
+      case OP_SEMI_END_BUF:
+      case OP_BEGIN_POSITION:
+	break;
+
+      case OP_BACKREF1:
+      case OP_BACKREF2:
+      case OP_BACKREFN:
+      case OP_BACKREFN_IC:
+      case OP_BACKREF_MULTI:
+      case OP_BACKREF_MULTI_IC:
+      case OP_BACKREF_WITH_LEVEL:
+	return;
+
+      case OP_MEMORY_START:
+      case OP_MEMORY_START_PUSH:
+      case OP_MEMORY_END_PUSH:
+      case OP_MEMORY_END_PUSH_REC:
+      case OP_MEMORY_END:
+      case OP_MEMORY_END_REC:
+	p += SIZE_MEMNUM; break;
+
+      case OP_KEEP:
+	break;
+
+      case OP_FAIL:
+	break;
+      case OP_JUMP:
+	GET_RELADDR_INC(addr, p);
+	break;
+      case OP_PUSH:
+	GET_RELADDR_INC(addr, p);
+	*table++ = pbegin;
+	break;
+      case OP_POP:
+	break;
+      case OP_PUSH_OR_JUMP_EXACT1:
+      case OP_PUSH_IF_PEEK_NEXT:
+	p += SIZE_RELADDR + 1; *table++ = pbegin; break;
+      case OP_REPEAT:
+      case OP_REPEAT_NG:
+      case OP_REPEAT_INC:
+      case OP_REPEAT_INC_NG:
+      case OP_REPEAT_INC_SG:
+      case OP_REPEAT_INC_NG_SG:
+	// TODO: support OP_REPEAT opcodes.
+	return;
+      case OP_NULL_CHECK_START:
+      case OP_NULL_CHECK_END:
+      case OP_NULL_CHECK_END_MEMST:
+      case OP_NULL_CHECK_END_MEMST_PUSH:
+	p += SIZE_MEMNUM; break;
+
+      case OP_PUSH_POS:
+      case OP_POP_POS:
+	break;
+      case OP_PUSH_POS_NOT:
+	p += SIZE_RELADDR; break;
+      case OP_FAIL_POS:
+	break;
+      case OP_PUSH_STOP_BT:
+      case OP_POP_STOP_BT:
+	return;
+      case OP_LOOK_BEHIND:
+	/* GET_LENGTH_INC(len, p); break; */
+	return;
+      case OP_PUSH_LOOK_BEHIND_NOT:
+	// Since optimization assumes a string offset does not back,
+	// we cannot optimize look-behind opcodes.
+	/*
+	  GET_RELADDR_INC(addr, p);
+	  GET_LENGTH_INC(len, p);
+	  break;
+	*/
+	return;
+      case OP_FAIL_LOOK_BEHIND_NOT:
+	return;
+      case OP_PUSH_ABSENT_POS:
+      case OP_ABSENT_END:
+	break;
+      case OP_ABSENT:
+	p += SIZE_RELADDR; break;
+
+      case OP_CALL:
+      case OP_RETURN:
+	return;
+
+      case OP_CONDITION:
+	return;
+
+      case OP_STATE_CHECK_PUSH:
+      case OP_STATE_CHECK_PUSH_OR_JUMP:
+      case OP_STATE_CHECK:
+      case OP_STATE_CHECK_ANYCHAR_STAR:
+      case OP_STATE_CHECK_ANYCHAR_ML_STAR:
+	return;
+
+      case OP_SET_OPTION_PUSH:
+      case OP_SET_OPTION:
+	p += SIZE_OPTION;
+	break;
+    }
+  }
+}
+
+int find_cache_index_table(UChar** table, int num_cache_table, UChar* p)
+{
+  int l = 0, r = num_cache_table - 1, m;
+
+  while (l <= r) {
+    m = (l + r) / 2;
+    if (table[m] == p) return m;
+    if (table[m] < p) l = m + 1;
+    else r = m - 1;
+  }
+
+  return -1;
+}
+#endif /* USE_MATCH_CACHE */
+
 extern void
 onig_region_clear(OnigRegion* region)
 {
@@ -685,6 +1083,22 @@ stack_double(OnigStackType** arg_stk_base, OnigStackType** arg_stk_end,
 #define STACK_PUSH_STOP_BT                   STACK_PUSH_TYPE(STK_STOP_BT)
 #define STACK_PUSH_LOOK_BEHIND_NOT(pat,s,sprev,keep) \
         STACK_PUSH(STK_LOOK_BEHIND_NOT,pat,s,sprev,keep)
+
+#define DO_CACHE_MATCH_OPT(enable,p,num_cache_table,table,pos,match_cache) do {\
+  if (enable) {\
+    int cache_index = find_cache_index_table((table), (num_cache_table), (p));\
+    int key = (num_cache_table) * (pos) + cache_index;\
+    int index = key >> 3;\
+    int mask = 1 << (key & 7);\
+    if ((match_cache)[index] & mask) {\
+      /* fprintf(stderr, "Use cache at %d (%d, %d, %d, %d, %d)\n", (pos), index, mask, key, cache_index, p - pstart); */\
+      goto fail;\
+    } else {\
+      /* fprintf(stderr, "Cache at %d (%d, %d, %d, %d, %d)\n", (pos), index, mask, key, cache_index, p - pstart); */\
+    }\
+    (match_cache)[index] |= mask;\
+  }\
+} while (0)
 
 #define STACK_PUSH_REPEAT(id, pat) do {\
   STACK_ENSURE(1);\
@@ -1448,6 +1862,7 @@ match_at(regex_t* reg, const UChar* str, const UChar* end,
   OnigCaseFoldType case_fold_flag = reg->case_fold_flag;
   UChar *s, *q, *sbegin;
   UChar *p = reg->p;
+  UChar *pbegin = p;
   UChar *pkeep;
   char *alloca_base;
   char *xmalloc_base = NULL;
@@ -1461,6 +1876,14 @@ match_at(regex_t* reg, const UChar* str, const UChar* end,
   unsigned char* state_check_buff = msa->state_check_buff;
   int num_comb_exp_check = reg->num_comb_exp_check;
 #endif
+#ifdef USE_CACHE_MATCH_OPT
+  UChar   *pstart = reg->p;
+  int      num_fail = 0;
+  int      enable_cache_match_opt = 0;
+  int      num_cache_opcode = NUM_CACHE_OPCODE_UNINIT;
+  UChar**  cache_index_table = (UChar **)0; /* array of pointer to p (regex program) */
+  uint8_t *match_cache = (uint8_t *)0;
+#endif
 
 #if USE_TOKEN_THREADED_VM
 # define OP_OFFSET  1
@@ -1469,7 +1892,7 @@ match_at(regex_t* reg, const UChar* str, const UChar* end,
 # define CASE(x) L_##x: sbegin = s; OPCODE_EXEC_HOOK;
 # define DEFAULT L_DEFAULT:
 # define NEXT sprev = sbegin; JUMP
-# define JUMP RB_GNUC_EXTENSION_BLOCK(goto *oplabels[*p++])
+# define JUMP pbegin = p; RB_GNUC_EXTENSION_BLOCK(goto *oplabels[*p++])
 
   RB_GNUC_EXTENSION static const void *oplabels[] = {
     &&L_OP_FINISH,               /* matching process terminator (no more alternative) */
@@ -1645,6 +2068,7 @@ match_at(regex_t* reg, const UChar* str, const UChar* end,
 # define VM_LOOP                                \
   while (1) {                                   \
   OPCODE_EXEC_HOOK;                             \
+  pbegin = p;                                   \
   sbegin = s;                                   \
   switch (*p++) {
 # define VM_LOOP_END } sprev = sbegin; }
@@ -2843,6 +3267,7 @@ match_at(regex_t* reg, const UChar* str, const UChar* end,
 
     CASE(OP_PUSH)  MOP_IN(OP_PUSH);
       GET_RELADDR_INC(addr, p);
+      DO_CACHE_MATCH_OPT(enable_cache_match_opt, pbegin, num_cache_opcode, cache_index_table, s - sstart, match_cache);
       STACK_PUSH_ALT(p + addr, s, sprev, pkeep);
       MOP_OUT;
       JUMP;
@@ -3173,6 +3598,40 @@ match_at(regex_t* reg, const UChar* str, const UChar* end,
       sprev = stk->u.state.pstr_prev;
       pkeep = stk->u.state.pkeep;
 
+#ifdef USE_CACHE_MATCH_OPT
+      if (++num_fail == (int)(end - sstart) + 1 && num_cache_opcode == NUM_CACHE_OPCODE_UNINIT) {
+	enable_cache_match_opt = 1;
+	if (num_cache_opcode == NUM_CACHE_OPCODE_UNINIT) {
+	  num_cache_opcode = count_num_cache_opcode(reg);
+	}
+	if (num_cache_opcode == NUM_CACHE_OPCODE_FAIL || num_cache_opcode == 0) {
+	  enable_cache_match_opt = 0;
+	  goto fail_match_cache_opt;
+	}
+	if (cache_index_table == NULL) {
+	  UChar **table = xmalloc(num_cache_opcode * sizeof(UChar*));
+	  if (table == NULL) {
+	    enable_cache_match_opt = 0;
+	    goto fail_match_cache_opt;
+	  }
+	  init_cache_index_table(reg, table);
+	  cache_index_table = table;
+	}
+	// TODO: check arithemetic overflow.
+	int match_cache_size8 = num_cache_opcode * ((int)(end - sstart) + 1);
+	int match_cache_size = (match_cache_size8 >> 3) + (match_cache_size8 & 7 ? 1 : 0);
+	// fprintf(stderr, "match_cache_size8: %d, match_cache_size: %d\n", match_cache_size8, match_cache_size);
+	match_cache = (uint8_t*)xmalloc(match_cache_size * sizeof(uint8_t));
+	if (match_cache == NULL) {
+	  enable_cache_match_opt = 0;
+	  goto fail_match_cache_opt;
+	}
+	xmemset(match_cache, 0, match_cache_size * sizeof(uint8_t));
+	/* fprintf(stderr, "enable cache match opt\n"); */
+      }
+      fail_match_cache_opt:
+#endif
+
 #ifdef USE_COMBINATION_EXPLOSION_CHECK
       if (stk->u.state.state_check != 0) {
 	stk->type = STK_STATE_CHECK_MARK;
@@ -3191,23 +3650,31 @@ match_at(regex_t* reg, const UChar* str, const UChar* end,
  finish:
   STACK_SAVE;
   if (xmalloc_base) xfree(xmalloc_base);
+  if (cache_index_table) xfree(cache_index_table);
+  if (match_cache) xfree(match_cache);
   return best_len;
 
 #ifdef ONIG_DEBUG
  stack_error:
   STACK_SAVE;
   if (xmalloc_base) xfree(xmalloc_base);
+  if (cache_index_table) xfree(cache_index_table);
+  if (match_cache) xfree(match_cache);
   return ONIGERR_STACK_BUG;
 #endif
 
  bytecode_error:
   STACK_SAVE;
   if (xmalloc_base) xfree(xmalloc_base);
+  if (cache_index_table) xfree(cache_index_table);
+  if (match_cache) xfree(match_cache);
   return ONIGERR_UNDEFINED_BYTECODE;
 
  unexpected_bytecode_error:
   STACK_SAVE;
   if (xmalloc_base) xfree(xmalloc_base);
+  if (cache_index_table) xfree(cache_index_table);
+  if (match_cache) xfree(match_cache);
   return ONIGERR_UNEXPECTED_BYTECODE;
 }
 
