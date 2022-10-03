@@ -2894,10 +2894,6 @@ RBIMPL_WARNING_POP()
 #   else /* __API_AVAILABLE macro does nothing on gcc */
 __attribute__((weak)) int utimensat(int, const char *, const struct timespec [2], int);
 #   endif
-
-#   define utimensat_available_p() (utimensat != NULL)
-# else
-#   define utimensat_available_p() 1
 # endif
 
 static int
