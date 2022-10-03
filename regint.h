@@ -893,6 +893,13 @@ typedef struct {
 #else
   uint64_t end_time;
 #endif
+#ifdef USE_CACHE_MATCH_OPT
+  int      num_fail;
+  int      enable_cache_match_opt;
+  int      num_cache_opcode;
+  UChar**  cache_index_table; /* array of pointer to p (regex program) */
+  uint8_t *match_cache;
+#endif
 } OnigMatchArg;
 
 
