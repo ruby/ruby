@@ -5365,12 +5365,13 @@ test_check(int n, int argc, VALUE *argv)
 /*
  *  :markup: markdown
  *  call-seq:
+ *    test(character, file1) -> obj
  *    test(character, file1, file2) -> obj
  *
  *  Argument +character+ specifies a test to be performed
  *  using one or both of the string arguments +file1+ and +file2+.
  *
- *  Tests using only +file1+ (but +file2+ must still be given):
+ *  Tests using only +file1+ (+file2+ must not be given):
  *
  *  <table>
  *    <tr>
