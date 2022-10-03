@@ -2873,7 +2873,9 @@ utime_failed(struct apply_arg *aa)
 
 #if defined(HAVE_UTIMES)
 
-# if defined(__APPLE__) && \
+# if !defined(HAVE_UTIMENSAT)
+/* utimensat() is not found, runtime check is not needed */
+# elif defined(__APPLE__) && \
     (!defined(MAC_OS_X_VERSION_13_0) || (MAC_OS_X_VERSION_MIN_REQUIRED < MAC_OS_X_VERSION_13_0))
 
 #   if defined(__has_attribute) && __has_attribute(availability)
