@@ -41,6 +41,14 @@
 /* for byte-code statistical data. */
 /* #define ONIG_DEBUG_STATISTICS */
 
+/* enable matching optimization by using cache. */
+#define USE_CACHE_MATCH_OPT
+
+#ifdef USE_CACHE_MATCH_OPT
+#  define NUM_CACHE_OPCODE_FAIL -1
+#  define NUM_CACHE_OPCODE_UNINIT -2
+#endif
+
 #if defined(ONIG_DEBUG_PARSE_TREE) || defined(ONIG_DEBUG_MATCH) || \
     defined(ONIG_DEBUG_SEARCH) || defined(ONIG_DEBUG_COMPILE) || \
     defined(ONIG_DEBUG_STATISTICS) || defined(ONIG_DEBUG_MEMLEAK)
