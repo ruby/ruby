@@ -73,23 +73,6 @@ module RubyVM::MJIT
       src << "#undef GET_SELF\n"
       src << "#define GET_SELF() cfp_self\n"
 
-      # Generate merged ivar guards first if needed
-      if !status.compile_info.disable_ivar_cache && status.merge_ivar_guards_p
-        src << "    if (UNLIKELY(!(RB_TYPE_P(GET_SELF(), T_OBJECT) && (rb_serial_t)#{status.ivar_serial} == RCLASS_SERIAL(RBASIC(GET_SELF())->klass) &&"
-        if USE_RVARGC
-          src << "#{status.max_ivar_index} < ROBJECT_NUMIV(GET_SELF())" # index < ROBJECT_NUMIV(obj)
-        else
-          if status.max_ivar_index >= ROBJECT_EMBED_LEN_MAX
-            src << "#{status.max_ivar_index} < ROBJECT_NUMIV(GET_SELF())" # index < ROBJECT_NUMIV(obj) && !RB_FL_ANY_RAW(obj, ROBJECT_EMBED)
-          else
-            src << "ROBJECT_EMBED_LEN_MAX == ROBJECT_NUMIV(GET_SELF())" # index < ROBJECT_NUMIV(obj) && RB_FL_ANY_RAW(obj, ROBJECT_EMBED)
-          end
-        end
-        src << "))) {\n"
-        src << "        goto ivar_cancel;\n"
-        src << "    }\n"
-      end
-
       # Simulate `opt_pc` in setup_parameters_complex. Other PCs which may be passed by catch tables
       # are not considered since vm_exec doesn't call jit_exec for catch tables.
       if iseq.body.param.flags.has_opt
@@ -100,6 +83,13 @@ module RubyVM::MJIT
           src << "      case #{pc_offset}:\n"
           src << "        goto label_#{pc_offset};\n"
         end
+        src << "    }\n"
+      end
+
+      # Generate merged ivar guards first if needed
+      if !status.compile_info.disable_ivar_cache && status.merge_ivar_guards_p
+        src << "    if (UNLIKELY(!(RB_TYPE_P(GET_SELF(), T_OBJECT)))) {"
+        src << "        goto ivar_cancel;\n"
         src << "    }\n"
       end
 
@@ -363,52 +353,37 @@ module RubyVM::MJIT
       ic_copy = (status.is_entries + (C.iseq_inline_storage_entry.new(operands[1]) - body.is_entries)).iv_cache
 
       src = +''
-      if !status.compile_info.disable_ivar_cache && ic_copy.entry
+      if !status.compile_info.disable_ivar_cache && ic_copy.source_shape_id != C.INVALID_SHAPE_ID
         # JIT: optimize away motion of sp and pc. This path does not call rb_warning() and so it's always leaf and not `handles_sp`.
         # compile_pc_and_sp(src, insn, stack_size, sp_inc, local_stack_p, next_pos)
 
         # JIT: prepare vm_getivar/vm_setivar arguments and variables
         src << "{\n"
         src << "    VALUE obj = GET_SELF();\n"
-        src << "    const uint32_t index = #{ic_copy.entry.index};\n"
-        if status.merge_ivar_guards_p
-          # JIT: Access ivar without checking these VM_ASSERTed prerequisites as we checked them in the beginning of `mjit_compile_body`
-          src << "    VM_ASSERT(RB_TYPE_P(obj, T_OBJECT));\n"
-          src << "    VM_ASSERT((rb_serial_t)#{ic_copy.entry.class_serial} == RCLASS_SERIAL(RBASIC(obj)->klass));\n"
-          src << "    VM_ASSERT(index < ROBJECT_NUMIV(obj));\n"
-          if insn_name == :setinstancevariable
-            if USE_RVARGC
-              src << "    if (LIKELY(!RB_OBJ_FROZEN_RAW(obj) && index < ROBJECT_NUMIV(obj))) {\n"
-              src << "        RB_OBJ_WRITE(obj, &ROBJECT_IVPTR(obj)[index], stack[#{stack_size - 1}]);\n"
-            else
-              heap_ivar_p = status.max_ivar_index >= ROBJECT_EMBED_LEN_MAX
-              src << "    if (LIKELY(!RB_OBJ_FROZEN_RAW(obj) && #{heap_ivar_p ? 'true' : 'RB_FL_ANY_RAW(obj, ROBJECT_EMBED)'})) {\n"
-              src << "        RB_OBJ_WRITE(obj, &ROBJECT(obj)->as.#{heap_ivar_p ? 'heap.ivptr[index]' : 'ary[index]'}, stack[#{stack_size - 1}]);\n"
-            end
-            src << "    }\n"
-          else
-            src << "    VALUE val;\n"
-            if USE_RVARGC
-              src << "    if (LIKELY(index < ROBJECT_NUMIV(obj) && (val = ROBJECT_IVPTR(obj)[index]) != Qundef)) {\n"
-            else
-              heap_ivar_p = status.max_ivar_index >= ROBJECT_EMBED_LEN_MAX
-              src << "    if (LIKELY(#{heap_ivar_p ? 'true' : 'RB_FL_ANY_RAW(obj, ROBJECT_EMBED)'} && (val = ROBJECT(obj)->as.#{heap_ivar_p ? 'heap.ivptr[index]' : 'ary[index]'}) != Qundef)) {\n"
-            end
-            src << "        stack[#{stack_size}] = val;\n"
-            src << "    }\n"
-          end
+        src << "    const shape_id_t source_shape_id = (rb_serial_t)#{ic_copy.source_shape_id};\n"
+        # JIT: cache hit path of vm_getivar/vm_setivar, or cancel JIT (recompile it with exivar)
+        if insn_name == :setinstancevariable
+          src << "    const uint32_t index = #{ic_copy.attr_index - 1};\n"
+          src << "    const shape_id_t dest_shape_id = (rb_serial_t)#{ic_copy.dest_shape_id};\n"
+          src << "    if (source_shape_id == ROBJECT_SHAPE_ID(obj) && \n"
+          src << "        dest_shape_id != ROBJECT_SHAPE_ID(obj)) {\n"
+          src << "        if (UNLIKELY(index >= ROBJECT_NUMIV(obj))) {\n"
+          src << "           rb_init_iv_list(obj);\n"
+          src << "        }\n"
+          src << "        ROBJECT_SET_SHAPE_ID(obj, dest_shape_id);\n"
+          src << "        VALUE *ptr = ROBJECT_IVPTR(obj);\n"
+          src << "        RB_OBJ_WRITE(obj, &ptr[index], stack[#{stack_size - 1}]);\n"
+          src << "    }\n"
         else
-          src << "    const rb_serial_t ic_serial = (rb_serial_t)#{ic_copy.entry.class_serial};\n"
-          # JIT: cache hit path of vm_getivar/vm_setivar, or cancel JIT (recompile it with exivar)
-          if insn_name == :setinstancevariable
-            src << "    if (LIKELY(RB_TYPE_P(obj, T_OBJECT) && ic_serial == RCLASS_SERIAL(RBASIC(obj)->klass) && index < ROBJECT_NUMIV(obj) && !RB_OBJ_FROZEN_RAW(obj))) {\n"
-            src << "        VALUE *ptr = ROBJECT_IVPTR(obj);\n"
-            src << "        RB_OBJ_WRITE(obj, &ptr[index], stack[#{stack_size - 1}]);\n"
+          if ic_copy.attr_index == 0 # cache hit, but uninitialized iv
+            src << "    /* Uninitialized instance variable */\n"
+            src << "    if (source_shape_id == ROBJECT_SHAPE_ID(obj)) {\n"
+            src << "        stack[#{stack_size}] = Qnil;\n"
             src << "    }\n"
           else
-            src << "    VALUE val;\n"
-            src << "    if (LIKELY(RB_TYPE_P(obj, T_OBJECT) && ic_serial == RCLASS_SERIAL(RBASIC(obj)->klass) && index < ROBJECT_NUMIV(obj) && (val = ROBJECT_IVPTR(obj)[index]) != Qundef)) {\n"
-            src << "        stack[#{stack_size}] = val;\n"
+            src << "    const uint32_t index = #{ic_copy.attr_index - 1};\n"
+            src << "    if (source_shape_id == ROBJECT_SHAPE_ID(obj)) {\n"
+            src << "        stack[#{stack_size}] = ROBJECT_IVPTR(obj)[index];\n"
             src << "    }\n"
           end
         end
@@ -419,20 +394,19 @@ module RubyVM::MJIT
         src << "    }\n"
         src << "}\n"
         return src
-      elsif insn_name == :getinstancevariable && !status.compile_info.disable_exivar_cache && ic_copy.entry
+      elsif insn_name == :getinstancevariable && !status.compile_info.disable_exivar_cache && ic_copy.source_shape_id != C.INVALID_SHAPE_ID
         # JIT: optimize away motion of sp and pc. This path does not call rb_warning() and so it's always leaf and not `handles_sp`.
         # compile_pc_and_sp(src, insn, stack_size, sp_inc, local_stack_p, next_pos)
 
         # JIT: prepare vm_getivar's arguments and variables
         src << "{\n"
         src << "    VALUE obj = GET_SELF();\n"
-        src << "    const rb_serial_t ic_serial = (rb_serial_t)#{ic_copy.entry.class_serial};\n"
-        src << "    const uint32_t index = #{ic_copy.entry.index};\n"
+        src << "    const shape_id_t source_shape_id = (rb_serial_t)#{ic_copy.source_shape_id};\n"
+        src << "    const uint32_t index = #{ic_copy.attr_index - 1};\n"
         # JIT: cache hit path of vm_getivar, or cancel JIT (recompile it without any ivar optimization)
         src << "    struct gen_ivtbl *ivtbl;\n"
-        src << "    VALUE val;\n"
-        src << "    if (LIKELY(FL_TEST_RAW(obj, FL_EXIVAR) && ic_serial == RCLASS_SERIAL(RBASIC(obj)->klass) && rb_ivar_generic_ivtbl_lookup(obj, &ivtbl) && index < ivtbl->numiv && (val = ivtbl->ivptr[index]) != Qundef)) {\n"
-        src << "        stack[#{stack_size}] = val;\n"
+        src << "    if (LIKELY(FL_TEST_RAW(obj, FL_EXIVAR) && source_shape_id == rb_shape_get_shape_id(obj) && rb_ivar_generic_ivtbl_lookup(obj, &ivtbl))) {\n"
+        src << "        stack[#{stack_size}] = ivtbl->ivptr[index];\n"
         src << "    }\n"
         src << "    else {\n"
         src << "        reg_cfp->pc = original_body_iseq + #{pos};\n"
@@ -832,35 +806,16 @@ module RubyVM::MJIT
     def init_ivar_compile_status(body, status)
       C.mjit_capture_is_entries(body, status.is_entries)
 
-      num_ivars = 0
       pos = 0
-      status.max_ivar_index = 0
-      status.ivar_serial = 0
 
       while pos < body.iseq_size
         insn = INSNS.fetch(C.rb_vm_insn_decode(body.iseq_encoded[pos]))
         if insn.name == :getinstancevariable || insn.name == :setinstancevariable
-          ic = body.iseq_encoded[pos+2]
-          ic_copy = (status.is_entries + (C.iseq_inline_storage_entry.new(ic) - body.is_entries)).iv_cache
-          if ic_copy.entry # Only initialized (ic_serial > 0) IVCs are optimized
-            num_ivars += 1
-
-            if status.max_ivar_index < ic_copy.entry.index
-              status.max_ivar_index = ic_copy.entry.index
-            end
-
-            if status.ivar_serial == 0
-              status.ivar_serial = ic_copy.entry.class_serial
-            elsif status.ivar_serial != ic_copy.entry.class_serial
-              # Multiple classes have used this ISeq. Give up assuming one serial.
-              status.merge_ivar_guards_p = false
-              return
-            end
-          end
+          status.merge_ivar_guards_p = true
+          return
         end
         pos += insn.len
       end
-      status.merge_ivar_guards_p = status.ivar_serial > 0 && num_ivars >= 2
     end
 
     # Expand simple macro that doesn't require dynamic C code.
