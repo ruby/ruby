@@ -151,6 +151,30 @@ We might consider whether to suppress when:
 - The same reference is repeated many times
   (e.g., _RDoc_ on this page).
 
+### HTML Tags
+
+In general, avoid using HTML tags (even in formats where it's allowed)
+because `ri` (the Ruby Interactive reference tool)
+may not render them properly.
+
+### Tables
+
+Avoid building tables with HTML tags
+(<tt><table></tt>, etc.)
+
+Alternatives are:
+
+- The GFM (GitHub Flavored Markdown) table extension,
+  which is enabled by default. See
+  {GFM tables extension}[https://github.github.com/gfm/#tables-extension-].
+
+- A {verbatim text block}[rdoc-ref:RDoc::MarkupReference@Verbatim+Text+Blocks],
+  using spaces and punctuation to format the text.
+
+Note that in neither case will
+{text markup}[rdoc-ref:RDoc::MarkupReference@Text+Markup]
+be honored.
+
 ## Documenting Classes and Modules
 
 The general structure of the class or module documentation should be:
