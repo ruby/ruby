@@ -1077,13 +1077,13 @@ stack_double(OnigStackType** arg_stk_base, OnigStackType** arg_stk_end,
       int index = key >> 3;\
       int mask = 1 << (key & 7);\
       if ((match_cache)[index] & mask) {\
-	/*fprintf(stderr, "Use cache (pos: %d, p: %p, pc: %d, cache index: %d, key: %d, index: %d, mask: %d)\n", pos, p, (int)(p - pstart), cache_index, key, index, mask);*/\
+	/* fprintf(stderr, "Use cache (pos: %d, p: %p, pc: %d, cache index: %d, key: %d, index: %d, mask: %d)\n", pos, p, (int)(p - pstart), cache_index, key, index, mask); */\
 	goto fail;\
       }\
-      /*fprintf(stderr, "Add cache (pos: %d, p: %p, pc: %d, cache index: %d, key: %d, index: %d, mask: %d)\n", pos, p, (int)(p - pstart), cache_index, key, index, mask);*/\
+      /* fprintf(stderr, "Add cache (pos: %d, p: %p, pc: %d, cache index: %d, key: %d, index: %d, mask: %d)\n", pos, p, (int)(p - pstart), cache_index, key, index, mask); */\
       (match_cache)[index] |= mask;\
     } else {\
-      /*fprintf(stderr, "Miss cache (pos: %d, p: %p, pc: %d, cache index: %d)\n", pos, p, (int)(p - pstart), cache_index);*/\
+      /* fprintf(stderr, "Miss cache (pos: %d, p: %p, pc: %d, cache index: %d)\n", pos, p, (int)(p - pstart), cache_index); */\
     }\
   }\
 } while (0)
@@ -3291,6 +3291,9 @@ match_at(regex_t* reg, const UChar* str, const UChar* end,
 
     CASE(OP_POP)  MOP_IN(OP_POP);
       STACK_POP_ONE;
+      /* We need to increment num_fail here, for invoking a cache optimization correctly, */
+      /* because Onigmo makes a loop, which is pairwise disjoint to the following set, as atomic. */
+      msa->num_fail++;
       MOP_OUT;
       JUMP;
 
@@ -3582,11 +3585,12 @@ match_at(regex_t* reg, const UChar* str, const UChar* end,
       pkeep = stk->u.state.pkeep;
 
 #ifdef USE_CACHE_MATCH_OPT
-      if (++msa->num_fail == (int)(end - str) + 1 && msa->num_cache_opcode == NUM_CACHE_OPCODE_UNINIT) {
+      if (++msa->num_fail >= (int)(end - str) + 1 && msa->num_cache_opcode == NUM_CACHE_OPCODE_UNINIT) {
 	msa->enable_cache_match_opt = 1;
 	if (msa->num_cache_opcode == NUM_CACHE_OPCODE_UNINIT) {
 	  msa->num_cache_opcode = count_num_cache_opcode(reg);
 	}
+	// fprintf(stderr, "num_cache_opcode: %d\n", msa->num_cache_opcode);
 	if (msa->num_cache_opcode == NUM_CACHE_OPCODE_FAIL || msa->num_cache_opcode == 0) {
 	  msa->enable_cache_match_opt = 0;
 	  goto fail_match_cache_opt;
@@ -3599,6 +3603,13 @@ match_at(regex_t* reg, const UChar* str, const UChar* end,
 	  }
 	  init_cache_index_table(reg, table);
 	  msa->cache_index_table = table;
+	  /*
+	  fprintf(stderr, "table = {%p", table);
+	  for (int i = 1; i < msa->num_cache_opcode; i++) {
+	    fprintf(stderr, ", %p", table+i);
+	  }
+	  fprintf(stderr, "}\n");
+	  */
 	}
 	// TODO: check arithemetic overflow.
 	int match_cache_size8 = msa->num_cache_opcode * ((int)(end - str) + 1);
