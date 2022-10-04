@@ -285,9 +285,13 @@ int count_num_cache_opcode(regex_t* reg)
         p += SIZE_BITSET; break;
       case OP_CCLASS_MB:
       case OP_CCLASS_MB_NOT:
+	GET_LENGTH_INC(len, p); p += len; break;
       case OP_CCLASS_MIX:
       case OP_CCLASS_MIX_NOT:
-	GET_LENGTH_INC(len, p); p += len; break;
+	p += SIZE_BITSET;
+	GET_LENGTH_INC(len, p);
+	p += len;
+	break;
 
       case OP_ANYCHAR:
       case OP_ANYCHAR_ML:
@@ -373,33 +377,17 @@ int count_num_cache_opcode(regex_t* reg)
 
       case OP_PUSH_POS:
       case OP_POP_POS:
-	break;
       case OP_PUSH_POS_NOT:
-	p += SIZE_RELADDR; break;
       case OP_FAIL_POS:
-	break;
       case OP_PUSH_STOP_BT:
       case OP_POP_STOP_BT:
-	return NUM_CACHE_OPCODE_FAIL;
       case OP_LOOK_BEHIND:
-	/* GET_LENGTH_INC(len, p); break; */
-	return NUM_CACHE_OPCODE_FAIL;
       case OP_PUSH_LOOK_BEHIND_NOT:
-	// Since optimization assumes a string offset does not back,
-	// we cannot optimize look-behind opcodes.
-	/*
-	  GET_RELADDR_INC(addr, p);
-	  GET_LENGTH_INC(len, p);
-	  break;
-	*/
-	return NUM_CACHE_OPCODE_FAIL;
       case OP_FAIL_LOOK_BEHIND_NOT:
-	return NUM_CACHE_OPCODE_FAIL;
       case OP_PUSH_ABSENT_POS:
       case OP_ABSENT_END:
-	break;
       case OP_ABSENT:
-	p += SIZE_RELADDR; break;
+	return NUM_CACHE_OPCODE_FAIL;
 
       case OP_CALL:
       case OP_RETURN:
@@ -427,6 +415,7 @@ int count_num_cache_opcode(regex_t* reg)
 
 void init_cache_index_table(regex_t* reg, UChar **table)
 {
+  UChar** tstart = table;
   UChar* pbegin;
   UChar* p = reg->p;
   UChar* pend = p + reg->used;
@@ -472,11 +461,14 @@ void init_cache_index_table(regex_t* reg, UChar **table)
       case OP_CCLASS:
       case OP_CCLASS_NOT:
         p += SIZE_BITSET; break;
-      case OP_CCLASS_MB:
       case OP_CCLASS_MB_NOT:
+	GET_LENGTH_INC(len, p); p += len; break;
       case OP_CCLASS_MIX:
       case OP_CCLASS_MIX_NOT:
-	GET_LENGTH_INC(len, p); p += len; break;
+	p += SIZE_BITSET;
+	GET_LENGTH_INC(len, p);
+	p += len;
+	break;
 
       case OP_ANYCHAR:
       case OP_ANYCHAR_ML:
@@ -564,33 +556,17 @@ void init_cache_index_table(regex_t* reg, UChar **table)
 
       case OP_PUSH_POS:
       case OP_POP_POS:
-	break;
       case OP_PUSH_POS_NOT:
-	p += SIZE_RELADDR; break;
       case OP_FAIL_POS:
-	break;
       case OP_PUSH_STOP_BT:
       case OP_POP_STOP_BT:
-	return;
       case OP_LOOK_BEHIND:
-	/* GET_LENGTH_INC(len, p); break; */
-	return;
       case OP_PUSH_LOOK_BEHIND_NOT:
-	// Since optimization assumes a string offset does not back,
-	// we cannot optimize look-behind opcodes.
-	/*
-	  GET_RELADDR_INC(addr, p);
-	  GET_LENGTH_INC(len, p);
-	  break;
-	*/
-	return;
       case OP_FAIL_LOOK_BEHIND_NOT:
-	return;
       case OP_PUSH_ABSENT_POS:
       case OP_ABSENT_END:
-	break;
       case OP_ABSENT:
-	p += SIZE_RELADDR; break;
+	return;
 
       case OP_CALL:
       case OP_RETURN:
@@ -1096,13 +1072,19 @@ stack_double(OnigStackType** arg_stk_base, OnigStackType** arg_stk_end,
 #define DO_CACHE_MATCH_OPT(enable,p,num_cache_table,table,pos,match_cache) do {\
   if (enable) {\
     int cache_index = find_cache_index_table((table), (num_cache_table), (p));\
-    int key = (num_cache_table) * (pos) + cache_index;\
-    int index = key >> 3;\
-    int mask = 1 << (key & 7);\
-    if ((match_cache)[index] & mask) {\
-      goto fail;\
+    if (cache_index >= 0) {\
+      int key = (num_cache_table) * (pos) + cache_index;\
+      int index = key >> 3;\
+      int mask = 1 << (key & 7);\
+      if ((match_cache)[index] & mask) {\
+	/*fprintf(stderr, "Use cache (pos: %d, p: %p, pc: %d, cache index: %d, key: %d, index: %d, mask: %d)\n", pos, p, (int)(p - pstart), cache_index, key, index, mask);*/\
+	goto fail;\
+      }\
+      /*fprintf(stderr, "Add cache (pos: %d, p: %p, pc: %d, cache index: %d, key: %d, index: %d, mask: %d)\n", pos, p, (int)(p - pstart), cache_index, key, index, mask);*/\
+      (match_cache)[index] |= mask;\
+    } else {\
+      /*fprintf(stderr, "Miss cache (pos: %d, p: %p, pc: %d, cache index: %d)\n", pos, p, (int)(p - pstart), cache_index);*/\
     }\
-    (match_cache)[index] |= mask;\
   }\
 } while (0)
 
