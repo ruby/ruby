@@ -870,7 +870,7 @@ typedef struct rb_objspace {
 
 #define BASE_SLOT_SIZE sizeof(RVALUE)
 
-#define CEILDIV(i, mod) (((i) + (mod) - 1)/(mod))
+#define CEILDIV(i, mod) roomof(i, mod)
 enum {
     HEAP_PAGE_ALIGN = (1UL << HEAP_PAGE_ALIGN_LOG),
     HEAP_PAGE_ALIGN_MASK = (~(~0UL << HEAP_PAGE_ALIGN_LOG)),

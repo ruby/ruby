@@ -1055,7 +1055,7 @@ flo_to_s(VALUE flt)
 {
     enum {decimal_mant = DBL_MANT_DIG-DBL_DIG};
     enum {float_dig = DBL_DIG+1};
-    char buf[float_dig + (decimal_mant + CHAR_BIT - 1) / CHAR_BIT + 10];
+    char buf[float_dig + roomof(decimal_mant, CHAR_BIT) + 10];
     double value = RFLOAT_VALUE(flt);
     VALUE s;
     char *p, *e;

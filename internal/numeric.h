@@ -35,12 +35,16 @@ enum ruby_num_rounding_mode {
     RUBY_NUM_ROUND_DEFAULT = ROUND_DEFAULT,
 };
 
+/* same as internal.h */
+#define numberof(array) ((int)(sizeof(array) / sizeof((array)[0])))
+#define roomof(x, y) (((x) + (y) - 1) / (y))
+#define type_roomof(x, y) roomof(sizeof(x), sizeof(y))
+
 #if SIZEOF_DOUBLE <= SIZEOF_VALUE
 typedef double rb_float_value_type;
 #else
 typedef struct {
-    VALUE values[(SIZEOF_DOUBLE + SIZEOF_VALUE - 1) / SIZEOF_VALUE];
-    /* roomof() needs internal.h, and the order of some macros may matter */
+    VALUE values[roomof(SIZEOF_DOUBLE, SIZEOF_VALUE)];
 } rb_float_value_type;
 #endif
 
