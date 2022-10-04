@@ -69,6 +69,7 @@ jobs:
         run: |
           ulimit -c unlimited
           make -s test RUN_OPTS="$RUN_OPTS"
+          make -s test-yjit RUN_OPTS="$RUN_OPTS"
         timeout-minutes: 60
       - name: Run test-all
         run: |
