@@ -511,7 +511,7 @@ rb_warn_deprecated(const char *fmt, const char *suggest, ...)
 {
     if (!deprecation_warning_enabled()) return;
 
-    with_warning_string(mesg, 0, fmt) {
+    with_warning_string_from(mesg, 0, fmt, suggest) {
         warn_deprecated(mesg, NULL, suggest);
     }
 }
@@ -521,7 +521,7 @@ rb_warn_deprecated_to_remove(const char *removal, const char *fmt, const char *s
 {
     if (!deprecation_warning_enabled()) return;
 
-    with_warning_string(mesg, 0, fmt) {
+    with_warning_string_from(mesg, 0, fmt, suggest) {
         warn_deprecated(mesg, removal, suggest);
     }
 }
