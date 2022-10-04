@@ -151,7 +151,7 @@ We might consider whether to suppress when:
 - The same reference is repeated many times
   (e.g., _RDoc_ on this page).
 
-### HMTL Tags
+### HTML Tags
 
 In general, avoid using HTML tags (even in formats where it's allowed)
 because `ri` (the Ruby Interactive reference tool)
