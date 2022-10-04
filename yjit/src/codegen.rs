@@ -4035,6 +4035,7 @@ struct ControlFrame {
     pc: Option<u64>,
     frame_type: u32,
     block_handler: BlockHandler,
+    prev_ep: Option<*const VALUE>,
     cme: *const rb_callable_method_entry_t,
     local_size: i32
 }
@@ -4076,7 +4077,7 @@ fn gen_push_frame(
         }
     }
 
-    asm.comment("push cme, block handler, frame type");
+    asm.comment("push cme, specval, frame type");
 
     // Write method entry at sp[-3]
     // sp[-3] = me;
@@ -4084,18 +4085,24 @@ fn gen_push_frame(
     // any cme we depend on become outdated. See yjit_method_lookup_change().
     asm.store(Opnd::mem(64, sp, SIZEOF_VALUE_I32 * -3), VALUE::from(frame.cme).into());
 
-    // Write block handler at sp[-2]
-    // sp[-2] = block_handler;
-    let block_handler: Opnd = match frame.block_handler {
-        BlockHandler::None => {
+    // Write special value at sp[-2]. It's either a block handler or a pointer to
+    // the outer environment depending on the frame type.
+    // sp[-2] = specval;
+    let specval: Opnd = match (frame.prev_ep, frame.block_handler) {
+        (None, BlockHandler::None) => {
             VM_BLOCK_HANDLER_NONE.into()
-        },
-        BlockHandler::CurrentFrame => {
+        }
+        (None, BlockHandler::CurrentFrame) => {
             let cfp_self = asm.lea(Opnd::mem(64, CFP, RUBY_OFFSET_CFP_SELF));
             asm.or(cfp_self, Opnd::Imm(1))
-        },
+        }
+        (Some(prev_ep), BlockHandler::None) => {
+            let tagged_prev_ep = (prev_ep as usize) | 1;
+            VALUE(tagged_prev_ep).into()
+        }
+        (_, _) => panic!("specval can only be one of prev_ep or block_handler")
     };
-    asm.store(Opnd::mem(64, sp, SIZEOF_VALUE_I32 * -2), block_handler);
+    asm.store(Opnd::mem(64, sp, SIZEOF_VALUE_I32 * -2), specval);
 
     // Write env flags at sp[-1]
     // sp[-1] = frame_type;
@@ -4274,6 +4281,7 @@ fn gen_send_cfunc(
         cme,
         recv,
         sp,
+        prev_ep: None,
         pc: Some(0),
         iseq: None,
         local_size: 0,
@@ -4443,7 +4451,7 @@ fn push_splat_args(required_args: i32, ctx: &mut Context, asm: &mut Assembler, o
     }
 }
 
-fn gen_send_iseq(
+fn gen_send_bmethod(
     jit: &mut JITState,
     ctx: &mut Context,
     asm: &mut Assembler,
@@ -4453,7 +4461,49 @@ fn gen_send_iseq(
     block: Option<IseqPtr>,
     argc: i32,
 ) -> CodegenStatus {
-    let iseq = unsafe { get_def_iseq_ptr((*cme).def) };
+    let procv = unsafe { rb_get_def_bmethod_proc((*cme).def) };
+
+    let proc = unsafe { rb_yjit_get_proc_ptr(procv) };
+    let proc_block = unsafe { &(*proc).block };
+
+    if proc_block.type_ != block_type_iseq {
+        return CantCompile;
+    }
+
+    let capture = unsafe { proc_block.as_.captured.as_ref() };
+    let iseq = unsafe { *capture.code.iseq.as_ref() };
+
+    // Optimize for single ractor mode and avoid runtime check for
+    // "defined with an un-shareable Proc in a different Ractor"
+    if !assume_single_ractor_mode(jit, ocb) {
+        gen_counter_incr!(asm, send_bmethod_ractor);
+        return CantCompile;
+    }
+
+    // Passing a block to a block needs logic different from passing
+    // a block to a method and sometimes requires allocation. Bail for now.
+    if block.is_some() {
+        gen_counter_incr!(asm, send_bmethod_block_arg);
+        return CantCompile;
+    }
+
+    let frame_type = VM_FRAME_MAGIC_BLOCK | VM_FRAME_FLAG_BMETHOD | VM_FRAME_FLAG_LAMBDA;
+    gen_send_iseq(jit, ctx, asm, ocb, iseq, ci, frame_type, Some(capture.ep), cme, block, argc)
+}
+
+fn gen_send_iseq(
+    jit: &mut JITState,
+    ctx: &mut Context,
+    asm: &mut Assembler,
+    ocb: &mut OutlinedCb,
+    iseq: *const rb_iseq_t,
+    ci: *const rb_callinfo,
+    frame_type: u32,
+    prev_ep: Option<*const VALUE>,
+    cme: *const rb_callable_method_entry_t,
+    block: Option<IseqPtr>,
+    argc: i32,
+) -> CodegenStatus {
     let mut argc = argc;
 
     let flags = unsafe { vm_ci_flag(ci) };
@@ -4893,8 +4943,6 @@ fn gen_send_iseq(
         BlockHandler::None
     };
 
-    let frame_type = VM_FRAME_MAGIC_METHOD | VM_ENV_FLAG_LOCAL;
-
     // Setup the new frame
     gen_push_frame(jit, ctx, asm, true, ControlFrame {
         frame_type,
@@ -4902,6 +4950,7 @@ fn gen_send_iseq(
         cme,
         recv,
         sp: callee_sp,
+        prev_ep,
         iseq: Some(iseq),
         pc: None, // We are calling into jitted code, which will set the PC as necessary
         local_size: num_locals
@@ -5173,7 +5222,9 @@ fn gen_send_general(
 
         match def_type {
             VM_METHOD_TYPE_ISEQ => {
-                return gen_send_iseq(jit, ctx, asm, ocb, ci, cme, block, argc);
+                let iseq = unsafe { get_def_iseq_ptr((*cme).def) };
+                let frame_type = VM_FRAME_MAGIC_METHOD | VM_ENV_FLAG_LOCAL;
+                return gen_send_iseq(jit, ctx, asm, ocb, iseq, ci, frame_type, None, cme, block, argc);
             }
             VM_METHOD_TYPE_CFUNC => {
                 return gen_send_cfunc(
@@ -5243,8 +5294,7 @@ fn gen_send_general(
             }
             // Block method, e.g. define_method(:foo) { :my_block }
             VM_METHOD_TYPE_BMETHOD => {
-                gen_counter_incr!(asm, send_bmethod);
-                return CantCompile;
+                return gen_send_bmethod(jit, ctx, asm, ocb, ci, cme, block, argc);
             }
             VM_METHOD_TYPE_ZSUPER => {
                 gen_counter_incr!(asm, send_zsuper_method);
@@ -5481,7 +5531,11 @@ fn gen_invokesuper(
     ctx.clear_local_types();
 
     match cme_def_type {
-        VM_METHOD_TYPE_ISEQ => gen_send_iseq(jit, ctx, asm, ocb, ci, cme, block, argc),
+        VM_METHOD_TYPE_ISEQ => {
+            let iseq = unsafe { get_def_iseq_ptr((*cme).def) };
+            let frame_type = VM_FRAME_MAGIC_METHOD | VM_ENV_FLAG_LOCAL;
+            gen_send_iseq(jit, ctx, asm, ocb, iseq, ci, frame_type, None, cme, block, argc)
+        }
         VM_METHOD_TYPE_CFUNC => {
             gen_send_cfunc(jit, ctx, asm, ocb, ci, cme, block, argc, ptr::null())
         }
