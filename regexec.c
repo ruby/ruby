@@ -235,7 +235,7 @@ onig_get_capture_tree(OnigRegion* region)
 
 /* count number of jump-like opcodes for allocation of cache memory. */
 /* return -1 if we cannot optimize the regex matching by using cache. */
-int count_num_cache_opcode(regex_t* reg)
+static int count_num_cache_opcode(regex_t* reg)
 {
   int num = 0;
   UChar* pbegin;
@@ -413,7 +413,7 @@ int count_num_cache_opcode(regex_t* reg)
   return num;
 }
 
-void init_cache_index_table(regex_t* reg, UChar **table)
+static void init_cache_index_table(regex_t* reg, UChar **table)
 {
   UChar** tstart = table;
   UChar* pbegin;
@@ -590,7 +590,7 @@ void init_cache_index_table(regex_t* reg, UChar **table)
   }
 }
 
-int find_cache_index_table(UChar** table, int num_cache_table, UChar* p)
+static int find_cache_index_table(UChar** table, int num_cache_table, UChar* p)
 {
   int l = 0, r = num_cache_table - 1, m;
 
