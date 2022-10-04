@@ -22,7 +22,7 @@ module IRB
     #
     # The optional +input_method+ argument:
     #
-    # +nil+::     uses stdin or Reidline or Readline
+    # +nil+::     uses stdin or Reline or Readline
     # +String+::  uses a File
     # +other+::   uses this as InputMethod
     def initialize(irb, workspace = nil, input_method = nil)
@@ -48,8 +48,13 @@ module IRB
       end
       if IRB.conf.has_key?(:USE_MULTILINE)
         @use_multiline = IRB.conf[:USE_MULTILINE]
-      elsif IRB.conf.has_key?(:USE_REIDLINE) # backward compatibility
-        @use_multiline = IRB.conf[:USE_REIDLINE]
+      elsif IRB.conf.has_key?(:USE_RELINE) # backward compatibility
+        @use_multiline = IRB.conf[:USE_RELINE]
+      elsif IRB.conf.has_key?(:USE_REIDLINE)
+        warn <<~MSG.strip
+          USE_REIDLINE is deprecated, please use USE_RELINE instead.
+        MSG
+        @use_multiline = IRB.conf[:USE_RELINE]
       else
         @use_multiline = nil
       end
@@ -83,14 +88,14 @@ module IRB
         when nil
           if STDIN.tty? && IRB.conf[:PROMPT_MODE] != :INF_RUBY && !use_singleline?
             # Both of multiline mode and singleline mode aren't specified.
-            @io = ReidlineInputMethod.new
+            @io = RelineInputMethod.new
           else
             @io = nil
           end
         when false
           @io = nil
         when true
-          @io = ReidlineInputMethod.new
+          @io = RelineInputMethod.new
         end
         unless @io
           case use_singleline?
@@ -160,7 +165,7 @@ module IRB
     # The current input method.
     #
     # Can be either StdioInputMethod, ReadlineInputMethod,
-    # ReidlineInputMethod, FileInputMethod or other specified when the
+    # RelineInputMethod, FileInputMethod or other specified when the
     # context is created. See ::new for more # information on +input_method+.
     attr_accessor :io
 
@@ -326,9 +331,9 @@ module IRB
     # Alias for #use_singleline
     alias use_singleline? use_singleline
     # backward compatibility
-    alias use_reidline use_multiline
+    alias use_reline use_multiline
     # backward compatibility
-    alias use_reidline? use_multiline
+    alias use_reline? use_multiline
     # backward compatibility
     alias use_readline use_singleline
     # backward compatibility
@@ -346,7 +351,7 @@ module IRB
     # Returns whether messages are displayed or not.
     def verbose?
       if @verbose.nil?
-        if @io.kind_of?(ReidlineInputMethod)
+        if @io.kind_of?(RelineInputMethod)
           false
         elsif defined?(ReadlineInputMethod) && @io.kind_of?(ReadlineInputMethod)
           false
@@ -361,11 +366,11 @@ module IRB
     end
 
     # Whether #verbose? is +true+, and +input_method+ is either
-    # StdioInputMethod or ReidlineInputMethod or ReadlineInputMethod, see #io
+    # StdioInputMethod or RelineInputMethod or ReadlineInputMethod, see #io
     # for more information.
     def prompting?
       verbose? || (STDIN.tty? && @io.kind_of?(StdioInputMethod) ||
-                   @io.kind_of?(ReidlineInputMethod) ||
+                   @io.kind_of?(RelineInputMethod) ||
                    (defined?(ReadlineInputMethod) && @io.kind_of?(ReadlineInputMethod)))
     end
 
