@@ -175,6 +175,7 @@ fn main() {
         .allowlist_function("rb_id2sym")
         .allowlist_function("rb_sym2id")
         .allowlist_function("rb_str_intern")
+        .allowlist_function("rb_yjit_check_symbol")
 
         // From internal/string.h
         .allowlist_function("rb_ec_str_resurrect")
@@ -325,6 +326,7 @@ fn main() {
         .allowlist_function("rb_get_cfp_ep_level")
         .allowlist_function("rb_get_cme_def_type")
         .allowlist_function("rb_get_cme_def_body_attr_id")
+        .allowlist_function("rb_get_symbol_id")
         .allowlist_function("rb_get_cme_def_body_optimized_type")
         .allowlist_function("rb_get_cme_def_body_optimized_index")
         .allowlist_function("rb_get_cme_def_body_cfunc")

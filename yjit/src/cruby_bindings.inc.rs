@@ -1341,6 +1341,9 @@ extern "C" {
     pub fn rb_get_cme_def_body_attr_id(cme: *const rb_callable_method_entry_t) -> ID;
 }
 extern "C" {
+    pub fn rb_get_symbol_id(namep: VALUE) -> ID;
+}
+extern "C" {
     pub fn rb_get_cme_def_body_optimized_type(
         cme: *const rb_callable_method_entry_t,
     ) -> method_optimized_type;
@@ -1541,4 +1544,7 @@ extern "C" {
         file: *const ::std::os::raw::c_char,
         line: ::std::os::raw::c_int,
     );
+}
+extern "C" {
+    pub fn rb_yjit_check_symbol(namep: VALUE) -> VALUE;
 }

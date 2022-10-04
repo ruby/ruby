@@ -509,6 +509,11 @@ rb_get_cme_def_body_attr_id(const rb_callable_method_entry_t *cme)
     return cme->def->body.attr.id;
 }
 
+ID
+rb_get_symbol_id(VALUE namep) {
+    return rb_check_id(&namep);
+}
+
 enum method_optimized_type
 rb_get_cme_def_body_optimized_type(const rb_callable_method_entry_t *cme)
 {
@@ -1038,4 +1043,10 @@ rb_yjit_init(void)
     struct yjit_root_struct *root;
     VALUE yjit_root = TypedData_Make_Struct(0, struct yjit_root_struct, &yjit_root_type, root);
     rb_gc_register_mark_object(yjit_root);
+}
+
+VALUE
+rb_yjit_check_symbol(VALUE namep)
+{
+    return rb_check_symbol(&namep);
 }
