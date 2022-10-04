@@ -4051,14 +4051,14 @@ struct ControlFrame {
 //   * Provided sp should point to the new frame's sp, immediately following locals and the environment
 //   * At entry, CFP points to the caller (not callee) frame
 //   * At exit, ec->cfp is updated to the pushed CFP
-//   * CFP and SP registers are updated only if switch_in_jit is set
+//   * CFP and SP registers are updated only if set_sp_cfp is set
 //   * Stack overflow is not checked (should be done by the caller)
 //   * Interrupts are not checked (should be done by the caller)
 fn gen_push_frame(
     _jit: &mut JITState,
     _ctx: &mut Context,
     asm: &mut Assembler,
-    set_pc_cfp: bool, // if true CFP and SP will be switched to the callee
+    set_sp_cfp: bool, // if true CFP and SP will be switched to the callee
     frame: ControlFrame,
 ) {
     assert!(frame.local_size >= 0);
@@ -4134,7 +4134,7 @@ fn gen_push_frame(
     asm.mov(cfp_opnd(RUBY_OFFSET_CFP_SELF), frame.recv);
     asm.mov(cfp_opnd(RUBY_OFFSET_CFP_BLOCK_CODE), 0.into());
 
-    if set_pc_cfp {
+    if set_sp_cfp {
         // Saving SP before calculating ep avoids a dependency on a register
         // However this must be done after referencing frame.recv, which may be SP-relative
         asm.mov(SP, sp);
@@ -4144,7 +4144,7 @@ fn gen_push_frame(
 
     asm.comment("switch to new CFP");
     let new_cfp = asm.lea(cfp_opnd(0));
-    if set_pc_cfp {
+    if set_sp_cfp {
         asm.mov(CFP, new_cfp);
         asm.store(Opnd::mem(64, EC, RUBY_OFFSET_EC_CFP), CFP);
     } else {
