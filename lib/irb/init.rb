@@ -260,8 +260,20 @@ module IRB # :nodoc:
       when "--nosingleline", "--noreadline"
         @CONF[:USE_SINGLELINE] = false
       when "--multiline", "--reidline"
+        if opt == "--reidline"
+          warn <<~MSG.strip
+            --reidline is deprecated, please use --multiline instead.
+          MSG
+        end
+
         @CONF[:USE_MULTILINE] = true
       when "--nomultiline", "--noreidline"
+        if opt == "--noreidline"
+          warn <<~MSG.strip
+            --noreidline is deprecated, please use --nomultiline instead.
+          MSG
+        end
+
         @CONF[:USE_MULTILINE] = false
       when /^--extra-doc-dir(?:=(.+))?/
         opt = $1 || argv.shift
