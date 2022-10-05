@@ -272,44 +272,11 @@ class RDoc::Markup::Parser
       end
 
       case type
-      when :HEADER then
-        line << '=' * data
-        _, _, peek_column, = peek_token
-        peek_column ||= column + data
-        indent = peek_column - column - data
-        line << ' ' * indent
-      when :RULE then
-        width = 2 + data
-        line << '-' * width
-        _, _, peek_column, = peek_token
-        peek_column ||= column + width
-        indent = peek_column - column - width
-        line << ' ' * indent
       when :BREAK, :TEXT then
         line << data
-      when :BLOCKQUOTE then
-        line << '>>>'
-        peek_type, _, peek_column = peek_token
-        if peek_type != :NEWLINE and peek_column
-          line << ' ' * (peek_column - column - 3)
-        end
-      else # *LIST_TOKENS
-        list_marker = case type
-                      when :BULLET then data
-                      when :LABEL  then "[#{data}]"
-                      when :NOTE   then "#{data}::"
-                      else # :LALPHA, :NUMBER, :UALPHA
-                        "#{data}."
-                      end
-        line << list_marker
-        peek_type, _, peek_column = peek_token
-        unless peek_type == :NEWLINE then
-          peek_column ||= column + list_marker.length
-          indent = peek_column - column - list_marker.length
-          line << ' ' * indent
-        end
+      else
+        raise TypeError, "unexpected token under verbatim: #{type}"
       end
-
     end
 
     verbatim << line << "\n" unless line.empty?
@@ -481,11 +448,37 @@ class RDoc::Markup::Parser
   ##
   # Turns text +input+ into a stream of tokens
 
-  def tokenize input
+  def tokenize(input)
     setup_scanner input
+    margin = @s.pos[0]
+    tokenize_indented(margin)
+    tokenize_input(margin)
+  end
 
-    until @s.eos? do
+  def newline!(pos = nil)
+    if pos or (@s.scan(/ *(?=\r?\n)/) and pos = @s.pos and @s.scan(/\r?\n/))
+      @tokens << [:NEWLINE, @s.matched, *pos]
+      @s.newline!
+    end
+  end
+
+  def tokenize_indented(column)
+    indent = / {#{column+1},}(?=\S)| *(?=\r?\n)/
+    while @s.scan(indent)
       pos = @s.pos
+      if @s.scan(/(.+)(?=\r?\n)?/)
+        @tokens << [:TEXT, @s.matched, *pos]
+      end
+      newline! or break
+    end
+  end
+
+  def tokenize_input(margin)
+    column = 0
+
+    until @s.eos?
+      pos = @s.pos
+      break if pos[0] < (margin ||= pos[0])
 
       # leading spaces will be reflected by the column of the next token
       # the only thing we loose are trailing spaces at the end of the file
@@ -494,75 +487,84 @@ class RDoc::Markup::Parser
       # note: after BULLET, LABEL, etc.,
       # indent will be the column of the next non-newline token
 
-      @tokens << case
-                 # [CR]LF => :NEWLINE
-                 when @s.scan(/\r?\n/) then
-                   token = [:NEWLINE, @s.matched, *pos]
-                   @s.newline!
-                   token
-                 # === text => :HEADER then :TEXT
-                 when @s.scan(/(=+)(\s*)/) then
-                   level = @s[1].length
-                   header = [:HEADER, level, *pos]
+      case
+      # [CR]LF => :NEWLINE
+      when @s.scan(/\r?\n/)
+        newline!(pos)
+        next
 
-                   if @s[2] =~ /^\r?\n/ then
-                     @s.unscan(@s[2])
-                     header
-                   else
-                     pos = @s.pos
-                     @s.scan(/.*/)
-                     @tokens << header
-                     [:TEXT, @s.matched.sub(/\r$/, ''), *pos]
-                   end
-                 # --- (at least 3) and nothing else on the line => :RULE
-                 when @s.scan(/(-{3,}) *\r?$/) then
-                   [:RULE, @s[1].length - 2, *pos]
-                 # * or - followed by white space and text => :BULLET
-                 when @s.scan(/([*-]) +(\S)/) then
-                   @s.unscan(@s[2])
-                   [:BULLET, @s[1], *pos]
-                 # A. text, a. text, 12. text => :UALPHA, :LALPHA, :NUMBER
-                 when @s.scan(/([a-z]|\d+)\. +(\S)/i) then
-                   # FIXME if tab(s), the column will be wrong
-                   # either support tabs everywhere by first expanding them to
-                   # spaces, or assume that they will have been replaced
-                   # before (and provide a check for that at least in debug
-                   # mode)
-                   list_label = @s[1]
-                   @s.unscan(@s[2])
-                   list_type =
-                     case list_label
-                     when /[a-z]/ then :LALPHA
-                     when /[A-Z]/ then :UALPHA
-                     when /\d/    then :NUMBER
-                     else
-                       raise ParseError, "BUG token #{list_label}"
-                     end
-                   [list_type, list_label, *pos]
-                 # [text] followed by spaces or end of line => :LABEL
-                 when @s.scan(/\[(.*?)\]( +|\r?$)/) then
-                   [:LABEL, @s[1], *pos]
-                 # text:: followed by spaces or end of line => :NOTE
-                 when @s.scan(/(.*?)::( +|\r?$)/) then
-                   [:NOTE, @s[1], *pos]
-                 # >>> followed by end of line => :BLOCKQUOTE
-                 when @s.scan(/>>> *(\w+)?$/) then
-                   if word = @s[1]
-                     @s.unscan(word)
-                   end
-                   [:BLOCKQUOTE, word, *pos]
-                 # anything else: :TEXT
-                 else
-                   @s.scan(/(.*?)(  )?\r?$/)
-                   token = [:TEXT, @s[1], *pos]
+      # === text => :HEADER then :TEXT
+      when @s.scan(/(=+)(\s*)/)
+        level = @s[1].length
+        header = [:HEADER, level, *pos]
 
-                   if @s[2] then
-                     @tokens << token
-                     [:BREAK, @s[2], pos[0] + @s[1].length, pos[1]]
-                   else
-                     token
-                   end
-                 end
+        if @s[2] =~ /^\r?\n/
+          @s.unscan(@s[2])
+          @tokens << header
+        else
+          pos = @s.pos
+          @s.scan(/.*/)
+          @tokens << header
+          @tokens << [:TEXT, @s.matched.sub(/\r$/, ''), *pos]
+        end
+
+      # --- (at least 3) and nothing else on the line => :RULE
+      when @s.scan(/(-{3,}) *\r?$/)
+        @tokens << [:RULE, @s[1].length - 2, *pos]
+
+      # * or - followed by white space and text => :BULLET
+      when @s.scan(/([*-]) +(?=\S)/)
+        @tokens << [:BULLET, @s[1], *pos]
+        tokenize_input(nil)
+
+      # A. text, a. text, 12. text => :UALPHA, :LALPHA, :NUMBER
+      when @s.scan(/([a-z]|\d+)\. +(?=\S)/i)
+        # FIXME if tab(s), the column will be wrong
+        # either support tabs everywhere by first expanding them to
+        # spaces, or assume that they will have been replaced
+        # before (and provide a check for that at least in debug
+        # mode)
+        list_label = @s[1]
+        list_type =
+          case list_label
+          when /[a-z]/ then :LALPHA
+          when /[A-Z]/ then :UALPHA
+          when /\d/    then :NUMBER
+          else
+            raise ParseError, "BUG token #{list_label}"
+          end
+        @tokens << [list_type, list_label, *pos]
+        tokenize_input(nil)
+
+      # [text] followed by spaces or end of line => :LABEL
+      when @s.scan(/\[(.*?)\]( +|\r?$)/)
+        @tokens << [:LABEL, @s[1], *pos]
+        tokenize_input(nil)
+
+      # text:: followed by spaces or end of line => :NOTE
+      when @s.scan(/(.*?)::( +|\r?$)/)
+        @tokens << [:NOTE, @s[1], *pos]
+        tokenize_input(nil)
+
+      # >>> followed by end of line => :BLOCKQUOTE
+      when @s.scan(/>>> *(\w+)?\r?$/)
+        @tokens << [:BLOCKQUOTE, @s[1], *pos]
+        newline!
+        tokenize_input(nil)
+
+      # anything else: :TEXT
+      else
+        column = pos[0]
+        @s.scan(/(.*?)(  )?\r?$/)
+        @tokens << [:TEXT, @s[1], *pos]
+
+        if @s[2]
+          @tokens << [:BREAK, @s[2], pos[0] + @s[1].length, pos[1]]
+        end
+        if newline!
+          tokenize_indented(column)
+        end
+      end
     end
 
     self
