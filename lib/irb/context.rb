@@ -54,7 +54,7 @@ module IRB
         warn <<~MSG.strip
           USE_REIDLINE is deprecated, please use USE_RELINE instead.
         MSG
-        @use_multiline = IRB.conf[:USE_RELINE]
+        @use_multiline = IRB.conf[:USE_REIDLINE]
       else
         @use_multiline = nil
       end
