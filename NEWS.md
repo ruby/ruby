@@ -256,7 +256,8 @@ The following deprecated methods are removed.
 ## Stdlib compatibility issues
 
 * `Psych` no longer bundles libyaml sources.
-  Users need to install the libyaml library themselves via the package
+  And also `Fiddle` no longer bundles libffi sources.
+  Users need to install the libyaml/libffi library themselves via the package
   system. [[Feature #18571]]
 
 ## C API updates
