@@ -305,7 +305,7 @@ RSpec.describe "bundle install with install-time dependencies" do
         end
       end
 
-      context "in a transitive dependencies in a lockfile" do
+      context "with transitive dependencies in a lockfile" do
         before do
           build_repo2 do
             build_gem "rubocop", "1.28.2" do |s|
