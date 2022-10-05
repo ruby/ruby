@@ -273,6 +273,7 @@ fn main() {
         .allowlist_function("rb_RSTRING_PTR")
         .allowlist_function("rb_RSTRING_LEN")
         .allowlist_function("rb_ENCODING_GET")
+        .allowlist_function("rb_yjit_get_proc_ptr")
         .allowlist_function("rb_yjit_exit_locations_dict")
         .allowlist_function("rb_yjit_icache_invalidate")
 
@@ -332,6 +333,7 @@ fn main() {
         .allowlist_function("rb_get_mct_argc")
         .allowlist_function("rb_get_mct_func")
         .allowlist_function("rb_get_def_iseq_ptr")
+        .allowlist_function("rb_get_def_bmethod_proc")
         .allowlist_function("rb_iseq_encoded_size")
         .allowlist_function("rb_get_iseq_body_local_iseq")
         .allowlist_function("rb_get_iseq_body_iseq_encoded")

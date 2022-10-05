@@ -175,7 +175,6 @@ make_counters! {
     send_optimized_method_call,
     send_optimized_method_block_call,
     send_missing_method,
-    send_bmethod,
     send_refined_method,
     send_cfunc_ruby_array_varg,
     send_cfunc_argc_mismatch,
@@ -198,6 +197,8 @@ make_counters! {
     send_args_splat_non_iseq,
     send_args_splat_cfunc,
     send_iseq_ruby2_keywords,
+    send_bmethod_ractor,
+    send_bmethod_block_arg,
 
     traced_cfunc_return,
 
