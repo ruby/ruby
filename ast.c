@@ -364,17 +364,13 @@ node_children(rb_ast_t *ast, const NODE *node)
       case NODE_BLOCK:
         return dump_block(ast, node);
       case NODE_IF:
-        return rb_ary_new_from_node_args(ast, 3, node->nd_cond, node->nd_body, node->nd_else);
       case NODE_UNLESS:
         return rb_ary_new_from_node_args(ast, 3, node->nd_cond, node->nd_body, node->nd_else);
       case NODE_CASE:
-        return rb_ary_new_from_node_args(ast, 2, node->nd_head, node->nd_body);
       case NODE_CASE2:
-        return rb_ary_new_from_node_args(ast, 2, node->nd_head, node->nd_body);
       case NODE_CASE3:
         return rb_ary_new_from_node_args(ast, 2, node->nd_head, node->nd_body);
       case NODE_WHEN:
-        return rb_ary_new_from_node_args(ast, 3, node->nd_head, node->nd_body, node->nd_next);
       case NODE_IN:
         return rb_ary_new_from_node_args(ast, 3, node->nd_head, node->nd_body, node->nd_next);
       case NODE_WHILE:
@@ -391,7 +387,6 @@ node_children(rb_ast_t *ast, const NODE *node)
       case NODE_RETURN:
         return rb_ary_new_from_node_args(ast, 1, node->nd_stts);
       case NODE_REDO:
-        return rb_ary_new_from_node_args(ast, 0);
       case NODE_RETRY:
         return rb_ary_new_from_node_args(ast, 0);
       case NODE_BEGIN:
@@ -481,7 +476,6 @@ node_children(rb_ast_t *ast, const NODE *node)
       case NODE_ZLIST:
         return rb_ary_new_from_node_args(ast, 0);
       case NODE_HASH:
-        return rb_ary_new_from_node_args(ast, 1, node->nd_head);
       case NODE_YIELD:
         return rb_ary_new_from_node_args(ast, 1, node->nd_head);
       case NODE_LVAR:
@@ -530,7 +524,6 @@ node_children(rb_ast_t *ast, const NODE *node)
       case NODE_EVSTR:
         return rb_ary_new_from_node_args(ast, 1, node->nd_body);
       case NODE_ARGSCAT:
-        return rb_ary_new_from_node_args(ast, 2, node->nd_head, node->nd_body);
       case NODE_ARGSPUSH:
         return rb_ary_new_from_node_args(ast, 2, node->nd_head, node->nd_body);
       case NODE_SPLAT:
@@ -563,13 +556,9 @@ node_children(rb_ast_t *ast, const NODE *node)
       case NODE_FLIP3:
         return rb_ary_new_from_node_args(ast, 2, node->nd_beg, node->nd_end);
       case NODE_SELF:
-        return rb_ary_new_from_node_args(ast, 0);
       case NODE_NIL:
-        return rb_ary_new_from_node_args(ast, 0);
       case NODE_TRUE:
-        return rb_ary_new_from_node_args(ast, 0);
       case NODE_FALSE:
-        return rb_ary_new_from_node_args(ast, 0);
       case NODE_ERRINFO:
         return rb_ary_new_from_node_args(ast, 0);
       case NODE_DEFINED:
@@ -581,7 +570,6 @@ node_children(rb_ast_t *ast, const NODE *node)
       case NODE_LAMBDA:
         return rb_ary_new_from_node_args(ast, 1, node->nd_body);
       case NODE_OPT_ARG:
-        return rb_ary_new_from_node_args(ast, 2, node->nd_body, node->nd_next);
       case NODE_KW_ARG:
         return rb_ary_new_from_node_args(ast, 2, node->nd_body, node->nd_next);
       case NODE_POSTARG:
