@@ -11,12 +11,6 @@ RSpec.describe "bundle install with complex dependencies", :realworld => true do
       gem "mongoid", ">= 0.10.2"
     G
 
-    start_time = Time.now
-
-    bundle "lock"
-
-    duration = Time.now - start_time
-
-    expect(duration.to_f).to be < 18 # seconds
+    expect { bundle "lock" }.to take_less_than(18) # seconds
   end
 end
