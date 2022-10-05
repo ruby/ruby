@@ -513,9 +513,8 @@ class TestYJIT < Test::Unit::TestCase
     RUBY
   end
 
-  def test_getblockparamproxy_with_no_block
-    # Currently side exits on the send
-    assert_compiles(<<~'RUBY', insns: [:getblockparamproxy], exits: { send: 2 })
+  def test_send_blockarg
+    assert_compiles(<<~'RUBY', insns: [:getblockparamproxy, :send], exits: {})
       def bar
       end
 
@@ -526,6 +525,9 @@ class TestYJIT < Test::Unit::TestCase
 
       foo
       foo
+
+      foo { }
+      foo { }
     RUBY
   end
 

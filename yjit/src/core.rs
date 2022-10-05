@@ -44,6 +44,9 @@ pub enum Type {
 
     TString, // An object with the T_STRING flag set, possibly an rb_cString
     CString, // An un-subclassed string of type rb_cString (can have instance vars in some cases)
+
+    BlockParamProxy, // A special sentinel value indicating the block parameter should be read from
+                     // the current surrounding cfp
 }
 
 // Default initialization
@@ -78,6 +81,12 @@ impl Type {
             #[cfg(not(test))]
             if val.class_of() == unsafe { rb_cString } {
                 return Type::CString;
+            }
+            // We likewise can't reference rb_block_param_proxy, but it's again an optimisation;
+            // we can just treat it as a normal Object.
+            #[cfg(not(test))]
+            if val == unsafe { rb_block_param_proxy } {
+                return Type::BlockParamProxy;
             }
             match val.builtin_type() {
                 RUBY_T_ARRAY => Type::Array,
@@ -142,7 +151,8 @@ impl Type {
             Type::Hash => Some(RUBY_T_HASH),
             Type::ImmSymbol | Type::HeapSymbol => Some(RUBY_T_SYMBOL),
             Type::TString | Type::CString => Some(RUBY_T_STRING),
-            Type::Unknown | Type::UnknownImm | Type::UnknownHeap => None
+            Type::Unknown | Type::UnknownImm | Type::UnknownHeap => None,
+            Type::BlockParamProxy => None,
         }
     }
 

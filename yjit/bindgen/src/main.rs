@@ -350,6 +350,7 @@ fn main() {
         .allowlist_function("rb_get_def_bmethod_proc")
         .allowlist_function("rb_iseq_encoded_size")
         .allowlist_function("rb_get_iseq_body_local_iseq")
+        .allowlist_function("rb_get_iseq_body_parent_iseq")
         .allowlist_function("rb_get_iseq_body_iseq_encoded")
         .allowlist_function("rb_get_iseq_body_stack_max")
         .allowlist_function("rb_get_iseq_flags_has_opt")
