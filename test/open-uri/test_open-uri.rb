@@ -904,6 +904,7 @@ class TestOpenURI < Test::Unit::TestCase
 
   def test_meta_init_doesnt_bump_global_constant_state
     skip "RubyVM.stat not defined" unless defined? RubyVM.stat
+    skip unless RubyVM.stat.has_key?(:global_constant_state)
 
     OpenURI::Meta.init(Object.new) # prewarm
 
