@@ -1063,11 +1063,12 @@ and an extra note.[^2]
   end
 
   def test_gfm_table_2
-    doc = parse <<~MD
+    doc = parse <<~'MD'
     | Cmd | Returns | Meaning
     ------|---------|--------
     |"b"  | boolean | True if file1 is a block device
     "c"   | boolean | True if file1 is a character device
+    |"\|" | boolean | escaped bar \| test
     MD
 
     head = %w[Cmd Returns Meaning]
@@ -1075,6 +1076,7 @@ and an extra note.[^2]
     body = [
       ['"b"', 'boolean', 'True if file1 is a block device'],
       ['"c"', 'boolean', 'True if file1 is a character device'],
+      ['"|"', 'boolean', 'escaped bar | test'],
     ]
     expected = doc(@RM::Table.new(head, align, body))
 
