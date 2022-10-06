@@ -1097,7 +1097,6 @@ VALUE rb_eRuntimeError;
 VALUE rb_eFrozenError;
 VALUE rb_eTypeError;
 VALUE rb_eArgError;
-VALUE rb_eTimeoutError;
 VALUE rb_eIndexError;
 VALUE rb_eKeyError;
 VALUE rb_eRangeError;
@@ -3002,7 +3001,6 @@ Init_Exception(void)
     rb_eStandardError = rb_define_class("StandardError", rb_eException);
     rb_eTypeError     = rb_define_class("TypeError", rb_eStandardError);
     rb_eArgError      = rb_define_class("ArgumentError", rb_eStandardError);
-    rb_eTimeoutError  = rb_define_class("TimeoutError", rb_eStandardError);
     rb_eIndexError    = rb_define_class("IndexError", rb_eStandardError);
     rb_eKeyError      = rb_define_class("KeyError", rb_eIndexError);
     rb_define_method(rb_eKeyError, "initialize", key_err_initialize, -1);

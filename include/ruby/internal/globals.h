@@ -113,7 +113,6 @@ RUBY_EXTERN VALUE rb_eInterrupt;                 /**< `Interrupt` exception. */
 RUBY_EXTERN VALUE rb_eSignal;                    /**< `SignalException` exception. */
 RUBY_EXTERN VALUE rb_eFatal;                     /**< `fatal` exception. */
 RUBY_EXTERN VALUE rb_eArgError;                  /**< `ArgumentError` exception. */
-RUBY_EXTERN VALUE rb_eTimeoutError;              /**< `TimeoutError` exception. */
 RUBY_EXTERN VALUE rb_eEOFError;                  /**< `EOFError` exception. */
 RUBY_EXTERN VALUE rb_eIndexError;                /**< `IndexError` exception. */
 RUBY_EXTERN VALUE rb_eStopIteration;             /**< `StopIteration` exception. */

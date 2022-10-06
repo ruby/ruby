@@ -14855,7 +14855,7 @@ Init_IO(void)
     rb_cIO = rb_define_class("IO", rb_cObject);
     rb_include_module(rb_cIO, rb_mEnumerable);
 
-    rb_eIOTimeoutError = rb_define_class_under(rb_cIO, "TimeoutError", rb_eTimeoutError);
+    rb_eIOTimeoutError = rb_define_class_under(rb_cIO, "TimeoutError", rb_eIOError);
 
     rb_define_const(rb_cIO, "READABLE", INT2NUM(RUBY_IO_READABLE));
     rb_define_const(rb_cIO, "WRITABLE", INT2NUM(RUBY_IO_WRITABLE));
