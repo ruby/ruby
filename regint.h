@@ -828,6 +828,7 @@ typedef intptr_t OnigStackIndex;
 
 typedef struct _OnigStackType {
   unsigned int type;
+  OnigStackIndex null_check;
   union {
     struct {
       UChar *pcode;      /* byte code position */
