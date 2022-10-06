@@ -261,9 +261,20 @@ module Gem
           # version
           (
             (@os != "linux" && (@version.nil? || other.version.nil?)) ||
-            (@os == "linux" && (other.version == "gnu#{@version}" || other.version == "musl#{@version}" || @version == "gnu#{other.version}")) ||
+            (@os == "linux" && (normalized_linux_version_ext == other.normalized_linux_version_ext || ["musl#{@version}", "musleabi#{@version}", "musleabihf#{@version}"].include?(other.version))) ||
             @version == other.version
           )
+      end
+
+      # This is a copy of RubyGems 3.3.23 or higher `normalized_linux_method`.
+      # Once only 3.3.23 is supported, we can use the method in RubyGems.
+      def normalized_linux_version_ext
+        return nil unless @version
+
+        without_gnu_nor_abi_modifiers = @version.sub(/\Agnu/, "").sub(/eabi(hf)?\Z/, "")
+        return nil if without_gnu_nor_abi_modifiers.empty?
+
+        without_gnu_nor_abi_modifiers
       end
     end
   end

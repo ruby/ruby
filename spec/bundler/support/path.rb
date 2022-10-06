@@ -312,6 +312,10 @@ module Spec
       source_root.join("tool/bundler")
     end
 
+    def templates_dir
+      lib_dir.join("bundler", "templates")
+    end
+
     extend self
   end
 end

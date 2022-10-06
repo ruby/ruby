@@ -22,6 +22,7 @@ class Gem::Platform
   end
 
   def self.match_platforms?(platform, platforms)
+    platform = Gem::Platform.new(platform) unless platform.is_a?(Gem::Platform)
     platforms.any? do |local_platform|
       platform.nil? ||
         local_platform == platform ||
@@ -162,6 +163,9 @@ class Gem::Platform
   # runtime platform "no version" stands for 'gnu'. To be able to disinguish
   # these, the method receiver is the gem platform, while the argument is
   # the runtime platform.
+  #
+  #--
+  # NOTE: Until it can be removed, changes to this method must also be reflected in `bundler/lib/bundler/rubygems_ext.rb`
 
   def ===(other)
     return nil unless Gem::Platform === other
@@ -180,9 +184,21 @@ class Gem::Platform
       # version
       (
         (@os != "linux" && (@version.nil? || other.version.nil?)) ||
-        (@os == "linux" && (other.version == "gnu#{@version}" || other.version == "musl#{@version}" || @version == "gnu#{other.version}")) ||
+        (@os == "linux" && (normalized_linux_version == other.normalized_linux_version || ["musl#{@version}", "musleabi#{@version}", "musleabihf#{@version}"].include?(other.version))) ||
         @version == other.version
       )
+  end
+
+  #--
+  # NOTE: Until it can be removed, changes to this method must also be reflected in `bundler/lib/bundler/rubygems_ext.rb`
+
+  def normalized_linux_version
+    return nil unless @version
+
+    without_gnu_nor_abi_modifiers = @version.sub(/\Agnu/, "").sub(/eabi(hf)?\Z/, "")
+    return nil if without_gnu_nor_abi_modifiers.empty?
+
+    without_gnu_nor_abi_modifiers
   end
 
   ##

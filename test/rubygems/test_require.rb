@@ -252,9 +252,9 @@ class TestGemRequire < Gem::TestCase
     # Activates a-1, but not b-1 and b-2
     assert_require "test_gem_require_a"
     assert_equal %w[a-1], loaded_spec_names
-    assert $LOAD_PATH.include? a1.load_paths[0]
-    refute $LOAD_PATH.include? b1.load_paths[0]
-    refute $LOAD_PATH.include? b2.load_paths[0]
+    assert $LOAD_PATH.include? a1.full_require_paths[0]
+    refute $LOAD_PATH.include? b1.full_require_paths[0]
+    refute $LOAD_PATH.include? b2.full_require_paths[0]
 
     assert_equal unresolved_names, ["b (>= 1)"]
 
@@ -265,13 +265,13 @@ class TestGemRequire < Gem::TestCase
     # and as a result #gem_original_require returns false.
     refute require("benchmark"), "the benchmark stdlib should be recognized as already loaded"
 
-    assert_includes $LOAD_PATH, b2.load_paths[0]
+    assert_includes $LOAD_PATH, b2.full_require_paths[0]
     assert_includes $LOAD_PATH, rubylibdir
     message = proc {
       "this test relies on the b-2 gem lib/ to be before stdlib to make sense\n" +
         $LOAD_PATH.pretty_inspect
     }
-    assert_operator $LOAD_PATH.index(b2.load_paths[0]), :<, $LOAD_PATH.index(rubylibdir), message
+    assert_operator $LOAD_PATH.index(b2.full_require_paths[0]), :<, $LOAD_PATH.index(rubylibdir), message
 
     # We detected that we should activate b-2, so we did so, but
     # then #gem_original_require decided "I've already got some benchmark.rb" loaded.

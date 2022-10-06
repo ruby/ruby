@@ -2,24 +2,9 @@
 
 require "rubygems"
 
-# If bundler gemspec exists, add to stubs
-bundler_gemspec = File.expand_path("../../bundler/bundler.gemspec", __dir__)
-if File.exist?(bundler_gemspec)
-  Gem::Specification.dirs.unshift File.dirname(bundler_gemspec)
-  Gem::Specification.class_variable_set :@@stubs, nil
-  Gem::Specification.stubs
-  Gem::Specification.dirs.shift
-end
-
 begin
   gem "test-unit", "~> 3.0"
 rescue Gem::LoadError
-end
-
-if File.exist?(bundler_gemspec)
-  require_relative "../../bundler/lib/bundler"
-else
-  require "bundler"
 end
 
 require "test/unit"
@@ -409,7 +394,6 @@ class Gem::TestCase < Test::Unit::TestCase
     Gem.loaded_specs.clear
     Gem.instance_variable_set(:@activated_gem_paths, 0)
     Gem.clear_default_specs
-    Bundler.reset!
 
     Gem.configuration.verbose = true
     Gem.configuration.update_sources = true
@@ -465,7 +449,7 @@ class Gem::TestCase < Test::Unit::TestCase
 
     FileUtils.rm_rf @tempdir
 
-    ENV.replace(@orig_env)
+    restore_env
 
     Gem::ConfigFile.send :remove_const, :SYSTEM_WIDE_CONFIG_FILE
     Gem::ConfigFile.send :const_set, :SYSTEM_WIDE_CONFIG_FILE,
@@ -575,6 +559,7 @@ class Gem::TestCase < Test::Unit::TestCase
     Dir.chdir directory do
       unless File.exist? ".git"
         system @git, "init", "--quiet"
+        system @git, "checkout", "-b", "master", "--quiet"
         system @git, "config", "user.name",  "RubyGems Tests"
         system @git, "config", "user.email", "rubygems@example"
       end
@@ -1301,6 +1286,10 @@ Also, a list:
     $LOAD_PATH.find {|p| p == File.dirname($LOADED_FEATURES.find {|f| f.end_with?("/rubygems.rb") }) }
   end
 
+  def bundler_path
+    $LOAD_PATH.find {|p| p == File.dirname($LOADED_FEATURES.find {|f| f.end_with?("/bundler.rb") }) }
+  end
+
   def with_clean_path_to_ruby
     orig_ruby = Gem.ruby
 
@@ -1581,6 +1570,23 @@ Also, a list:
     PUBLIC_KEY  = nil
     PUBLIC_CERT = nil
   end if Gem::HAVE_OPENSSL
+
+  private
+
+  def restore_env
+    unless Gem.win_platform?
+      ENV.replace(@orig_env)
+      return
+    end
+
+    # Fallback logic for Windows below to workaround
+    # https://bugs.ruby-lang.org/issues/16798. Can be dropped once all
+    # supported rubies include the fix for that.
+
+    ENV.clear
+
+    @orig_env.each {|k, v| ENV[k] = v }
+  end
 end
 
 # https://github.com/seattlerb/minitest/blob/13c48a03d84a2a87855a4de0c959f96800100357/lib/minitest/mock.rb#L192

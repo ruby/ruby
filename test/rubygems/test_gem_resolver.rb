@@ -391,6 +391,39 @@ class TestGemResolver < Gem::TestCase
     end
   end
 
+  def test_pick_generic_linux_variants_on_musl_linux
+    util_set_arch "aarch64-linux-musl" do
+      is = Gem::Resolver::IndexSpecification
+
+      linux = Gem::Platform.new("aarch64-linux")
+
+      spec_fetcher do |fetcher|
+        fetcher.spec "libv8-node", "15.14.0.1" do |s|
+          s.platform = linux
+        end
+
+        fetcher.spec "libv8-node", "15.14.0.1"
+      end
+
+      v15 = v("15.14.0.1")
+      source = Gem::Source.new @gem_repo
+
+      s = set
+
+      v15_ruby = is.new s, "libv8-node", v15, source, Gem::Platform::RUBY
+      v15_linux = is.new s, "libv8-node", v15, source, linux.to_s
+
+      s.add v15_linux
+      s.add v15_ruby
+
+      ad = make_dep "libv8-node", "= 15.14.0.1"
+
+      res = Gem::Resolver.new([ad], s)
+
+      assert_resolves_to [v15_linux.spec], res
+    end
+  end
+
   def test_only_returns_spec_once
     a1 = util_spec "a", "1", "c" => "= 1"
     b1 = util_spec "b", "1", "c" => "= 1"
