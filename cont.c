@@ -2413,6 +2413,37 @@ rb_fiber_blocking_p(VALUE fiber)
     return RBOOL(fiber_ptr(fiber)->blocking != 0);
 }
 
+static VALUE
+fiber_blocking_yield(VALUE fiber)
+{
+    fiber_ptr(fiber)->blocking += 1;
+    return rb_yield(fiber);
+}
+
+static VALUE
+fiber_blocking_ensure(VALUE fiber)
+{
+    fiber_ptr(fiber)->blocking -= 1;
+    return Qnil;
+}
+
+/*
+ *  call-seq:
+ *     Fiber.blocking{|fiber| ...} -> result
+ *
+ *  Forces the fiber to be blocking for the duration of the block. Returns the
+ *  result of the block.
+ *
+ *  See the "Non-blocking fibers" section in class docs for details.
+ *
+ */
+VALUE
+rb_fiber_blocking(VALUE class)
+{
+    VALUE fiber = rb_fiber_current();
+    return rb_ensure(fiber_blocking_yield, fiber, fiber_blocking_ensure, fiber);
+}
+
 /*
  *  call-seq:
  *     Fiber.blocking? -> false or 1
@@ -3303,6 +3334,7 @@ Init_Cont(void)
     rb_eFiberError = rb_define_class("FiberError", rb_eStandardError);
     rb_define_singleton_method(rb_cFiber, "yield", rb_fiber_s_yield, -1);
     rb_define_singleton_method(rb_cFiber, "current", rb_fiber_s_current, 0);
+    rb_define_singleton_method(rb_cFiber, "blocking", rb_fiber_blocking, 0);
     rb_define_method(rb_cFiber, "initialize", rb_fiber_initialize, -1);
     rb_define_method(rb_cFiber, "blocking?", rb_fiber_blocking_p, 0);
     rb_define_method(rb_cFiber, "resume", rb_fiber_m_resume, -1);
