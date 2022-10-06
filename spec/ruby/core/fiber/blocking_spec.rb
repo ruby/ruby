@@ -59,7 +59,9 @@ ruby_version_is "3.0" do
       end
     end
   end
+end
 
+ruby_version_is "3.2" do
   describe "Fiber.blocking" do
     context "when fiber is non-blocking" do
       it "can become blocking" do
