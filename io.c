@@ -2070,6 +2070,7 @@ io_writev(int argc, const VALUE *argv, VALUE io)
  *    Hello, World!
  *    foobar2
  *
+ *  Related: IO#read.
  */
 
 static VALUE
@@ -3529,6 +3530,7 @@ io_write_nonblock(rb_execution_context_t *ec, VALUE io, VALUE str, VALUE ex)
  *  If you need the behavior like a single read(2) system call,
  *  consider #readpartial, #read_nonblock, and #sysread.
  *
+ *  Related: IO#write.
  */
 
 static VALUE
@@ -4017,9 +4019,9 @@ rb_io_gets_internal(VALUE io)
  *    gets(limit, **line_opts)      -> string or nil
  *    gets(sep, limit, **line_opts) -> string or nil
  *
- *  Reads and returns a line from the stream
- *  (see {Line IO}[rdoc-ref:io_streams.rdoc@Line+IO]);
+ *  Reads and returns a line from the stream;
  *  assigns the return value to <tt>$_</tt>.
+ *  See {Line IO}[rdoc-ref:io_streams.rdoc@Line+IO].
  *
  *  With no arguments given, returns the next line
  *  as determined by line separator <tt>$/</tt>, or +nil+ if none:
@@ -4165,9 +4167,9 @@ static VALUE io_readlines(const struct getline_arg *arg, VALUE io);
  *    readlines(limit, **line_opts)       -> array
  *    readlines(sep, limit, **line_opts) -> array
  *
- *  Reads and returns all remaining line from the stream
- *  (see {Line IO}[rdoc-ref:io_streams.rdoc@Line+IO]);
+ *  Reads and returns all remaining line from the stream;
  *  does not modify <tt>$_</tt>.
+ *  See {Line IO}[rdoc-ref:io_streams.rdoc@Line+IO].
  *
  *  With no arguments given, returns lines
  *  as determined by line separator <tt>$/</tt>, or +nil+ if none:
@@ -4255,10 +4257,10 @@ io_readlines(const struct getline_arg *arg, VALUE io)
  *    each_line(sep, limit, **line_opts) {|line| ... } -> self
  *    each_line                                   -> enumerator
  *
- *  Calls the block with each remaining line read from the stream
- *  (see {Line IO}[rdoc-ref:io_streams.rdoc@Line+IO]);
+ *  Calls the block with each remaining line read from the stream;
  *  does nothing if already at end-of-file;
  *  returns +self+.
+ *  See {Line IO}[rdoc-ref:io_streams.rdoc@Line+IO].
  *
  *  With no arguments given, reads lines
  *  as determined by line separator <tt>$/</tt>:
@@ -4380,7 +4382,8 @@ rb_io_each_line(int argc, VALUE *argv, VALUE io)
  *    each_byte {|byte| ... } -> self
  *    each_byte               -> enumerator
  *
- *  Calls the given block with each byte (0..255) in the stream; returns +self+:
+ *  Calls the given block with each byte (0..255) in the stream; returns +self+.
+ *  See {Byte IO}[rdoc-ref:io_streams.rdoc@Byte+IO].
  *
  *    f = File.new('t.rus')
  *    a = []
@@ -4527,7 +4530,8 @@ io_getc(rb_io_t *fptr, rb_encoding *enc)
  *    each_char {|c| ... } -> self
  *    each_char            -> enumerator
  *
- *  Calls the given block with each character in the stream; returns +self+:
+ *  Calls the given block with each character in the stream; returns +self+.
+ *  See {Character IO}[rdoc-ref:io_streams.rdoc@Character+IO].
  *
  *    f = File.new('t.rus')
  *    a = []
@@ -4688,7 +4692,8 @@ rb_io_each_codepoint(VALUE io)
  *    getc -> character or nil
  *
  *  Reads and returns the next 1-character string from the stream;
- *  returns +nil+ if already at end-of-file:
+ *  returns +nil+ if already at end-of-file.
+ *  See {Character IO}[rdoc-ref:io_streams.rdoc@Character+IO].
  *
  *    f = File.open('t.txt')
  *    f.getc     # => "F"
@@ -4720,7 +4725,8 @@ rb_io_getc(VALUE io)
  *    readchar -> string
  *
  *  Reads and returns the next 1-character string from the stream;
- *  raises EOFError if already at end-of-file:
+ *  raises EOFError if already at end-of-file.
+ *  See {Character IO}[rdoc-ref:io_streams.rdoc@Character+IO].
  *
  *    f = File.open('t.txt')
  *    f.readchar     # => "F"
@@ -4749,7 +4755,8 @@ rb_io_readchar(VALUE io)
  *    getbyte -> integer or nil
  *
  *  Reads and returns the next byte (in range 0..255) from the stream;
- *  returns +nil+ if already at end-of-file:
+ *  returns +nil+ if already at end-of-file.
+ *  See {Byte IO}[rdoc-ref:io_streams.rdoc@Byte+IO].
  *
  *    f = File.open('t.txt')
  *    f.getbyte # => 70
@@ -4793,7 +4800,8 @@ rb_io_getbyte(VALUE io)
  *    readbyte -> integer
  *
  *  Reads and returns the next byte (in range 0..255) from the stream;
- *  raises EOFError if already at end-of-file:
+ *  raises EOFError if already at end-of-file.
+ *  See {Byte IO}[rdoc-ref:io_streams.rdoc@Byte+IO].
  *
  *    f = File.open('t.txt')
  *    f.readbyte # => 70
@@ -4824,10 +4832,11 @@ rb_io_readbyte(VALUE io)
  *
  *  Pushes back ("unshifts") the given data onto the stream's buffer,
  *  placing the data so that it is next to be read; returns +nil+.
+ *  See {Byte IO}[rdoc-ref:io_streams.rdoc@Byte+IO].
  *
  *  Note that:
  *
- *  - Calling the method hs no effect with unbuffered reads (such as IO#sysread).
+ *  - Calling the method has no effect with unbuffered reads (such as IO#sysread).
  *  - Calling #rewind on the stream discards the pushed-back data.
  *
  *  When argument +integer+ is given, uses only its low-order byte:
@@ -4884,10 +4893,11 @@ rb_io_ungetbyte(VALUE io, VALUE b)
  *
  *  Pushes back ("unshifts") the given data onto the stream's buffer,
  *  placing the data so that it is next to be read; returns +nil+.
+ *  See {Character IO}[rdoc-ref:io_streams.rdoc@Character+IO].
  *
  *  Note that:
  *
- *  - Calling the method hs no effect with unbuffered reads (such as IO#sysread).
+ *  - Calling the method has no effect with unbuffered reads (such as IO#sysread).
  *  - Calling #rewind on the stream discards the pushed-back data.
  *
  *  When argument +integer+ is given, interprets the integer as a character:
@@ -5456,6 +5466,7 @@ rb_io_close(VALUE io)
  *
  *  If the stream was opened by IO.popen, #close sets global variable <tt>$?</tt>.
  *
+ *  See also {Open and Closed Streams}[rdoc-ref:io_streams.rdoc@Open+and+Closed+Streams].
  */
 
 static VALUE
@@ -5515,6 +5526,8 @@ io_close(VALUE io)
  *    f.close_read   # => nil
  *    f.closed?      # => true
  *
+ *
+ *  See also {Open and Closed Streams}[rdoc-ref:io_streams.rdoc@Open+and+Closed+Streams].
  */
 
 
@@ -5547,6 +5560,8 @@ rb_io_closed(VALUE io)
  *    f = IO.popen('/bin/sh','r+')
  *    f.close_read
  *    f.readlines # Raises IOError
+ *
+ *  See also {Open and Closed Streams}[rdoc-ref:io_streams.rdoc@Open+and+Closed+Streams].
  *
  *  Raises an exception if the stream is not duplexed.
  *
@@ -5604,6 +5619,7 @@ rb_io_close_read(VALUE io)
  *    f.close_write
  *    f.print 'nowhere' # Raises IOError.
  *
+ *  See also {Open and Closed Streams}[rdoc-ref:io_streams.rdoc@Open+and+Closed+Streams].
  */
 
 static VALUE
@@ -8322,6 +8338,7 @@ deprecated_str_setter(VALUE val, ID id, VALUE *var)
  *  Writes the given objects to the stream; returns +nil+.
  *  Appends the output record separator <tt>$OUTPUT_RECORD_SEPARATOR</tt>
  *  (<tt>$\\</tt>), if it is not +nil+.
+ *  See {Line IO}[rdoc-ref:io_streams.rdoc@Line+IO].
  *
  *  With argument +objects+ given, for each object:
  *
@@ -8459,6 +8476,7 @@ rb_f_print(int argc, const VALUE *argv, VALUE _)
  *    putc(object) -> object
  *
  *  Writes a character to the stream.
+ *  See {Character IO}[rdoc-ref:io_streams.rdoc@Character+IO].
  *
  *  If +object+ is numeric, converts to integer if necessary,
  *  then writes the character whose code is the
@@ -8562,6 +8580,7 @@ io_puts_ary(VALUE ary, VALUE out, int recur)
  *  returns +nil+.\
  *  Writes a newline after each that does not already end with a newline sequence.
  *  If called without arguments, writes a newline.
+ *  See {Line IO}[rdoc-ref:io_streams.rdoc@Line+IO].
  *
  *  Note that each added newline is the character <tt>"\n"<//tt>,
  *  not the output record separator (<tt>$\\</tt>).
