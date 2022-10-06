@@ -16296,7 +16296,7 @@ class RDoc::Markdown
         self.pos = _save
         break
       end
-      @result = begin; 
+      @result = begin;
                 text.start_with?(":") ?
                 (text.end_with?(":") ? :center : :left) :
                 (text.end_with?(":") ? :right : nil)
