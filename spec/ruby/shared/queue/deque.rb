@@ -87,6 +87,13 @@ describe :queue_deq, shared: true do
         t.join
       end
 
+      it "immediately returns nil if no item is available and the timeout is 0" do
+        q = @object.call
+        q << 1
+        q.send(@method, timeout: 0).should == 1
+        q.send(@method, timeout: 0).should == nil
+      end
+
       it "raise TypeError if timeout is not a valid numeric" do
         q = @object.call
         -> { q.send(@method, timeout: "1") }.should raise_error(
