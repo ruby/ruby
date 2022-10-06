@@ -246,7 +246,7 @@ class Gem::Resolver
 
     sources.each do |source|
       groups[source].
-        sort_by {|spec| [spec.version, Gem::Platform.local =~ spec.platform ? 1 : 0] }.
+        sort_by {|spec| [spec.version, spec.platform =~ Gem::Platform.local ? 1 : 0] }.
         map {|spec| ActivationRequest.new spec, dependency }.
         each {|activation_request| activation_requests << activation_request }
     end

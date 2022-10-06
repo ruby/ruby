@@ -71,6 +71,31 @@ class TestGemCommandsSigninCommand < Gem::TestCase
     assert_equal api_key, credentials[host]
   end
 
+  def test_execute_with_host_permanent_redirect
+    host = "http://rubygems.example/"
+    ENV["RUBYGEMS_HOST"] = host
+    path = "/api/v1/api_key"
+    redirected_uri = "http://rubygems.example#{path}"
+    fetcher = Gem::FakeFetcher.new
+    fetcher.data["#{host}#{path}"] = HTTPResponseFactory.create(
+      body: "",
+      code: "308",
+      msg: "Permanent Redirect",
+      headers: { "location" => redirected_uri }
+    )
+    Gem::RemoteFetcher.fetcher = fetcher
+    ui = Gem::MockGemUi.new("you@example.com\nsecret\n\n\n\n\n\n\n\n\n")
+
+    assert_raise Gem::MockGemUi::TermError do
+      use_ui ui do
+        @cmd.execute
+      end
+    end
+
+    response = "The request has redirected permanently to #{redirected_uri}. Please check your defined push host URL."
+    assert_match response, ui.output
+  end
+
   def test_execute_with_valid_creds_set_for_default_host
     util_capture { @cmd.execute }
 
@@ -186,7 +211,7 @@ class TestGemCommandsSigninCommand < Gem::TestCase
     # Set the expected response for the Web-API supplied
     ENV["RUBYGEMS_HOST"]       = host
     data_key                   = "#{ENV['RUBYGEMS_HOST']}/api/v1/api_key"
-    fetcher.data[data_key]     = [api_key, 200, "OK"]
+    fetcher.data[data_key]     = HTTPResponseFactory.create(body: api_key, code: 200, msg: "OK")
 
     use_ui key_name_ui do
       @cmd.execute
@@ -209,8 +234,8 @@ class TestGemCommandsSigninCommand < Gem::TestCase
 
   def util_capture(ui_stub = nil, host = nil, api_key = nil, fetcher = Gem::FakeFetcher.new, mfa_level = "disabled", warning = nil)
     api_key        ||= "a5fdbb6ba150cbb83aad2bb2fede64cf040453903"
-    response         = [api_key, 200, "OK"]
-    profile_response = [ "mfa: #{mfa_level}\nwarning: #{warning}" , 200, "OK"]
+    response         = HTTPResponseFactory.create(body: api_key, code: 200, msg: "OK")
+    profile_response = HTTPResponseFactory.create(body: "mfa: #{mfa_level}\nwarning: #{warning}", code: 200, msg: "OK")
     email            = "you@example.com"
     password         = "secret"
 

@@ -43,7 +43,7 @@ class TestGemCommandsYankCommand < Gem::TestCase
 
   def test_execute
     yank_uri = "http://example/api/v1/gems/yank"
-    @fetcher.data[yank_uri] = ["Successfully yanked", 200, "OK"]
+    @fetcher.data[yank_uri] = HTTPResponseFactory.create(body: "Successfully yanked", code: 200, msg: "OK")
 
     @cmd.options[:args]           = %w[a]
     @cmd.options[:added_platform] = true
@@ -69,8 +69,8 @@ class TestGemCommandsYankCommand < Gem::TestCase
     response_fail = "You have enabled multifactor authentication but your request doesn't have the correct OTP code. Please check it and retry."
     yank_uri = "http://example/api/v1/gems/yank"
     @fetcher.data[yank_uri] = [
-      [response_fail, 401, "Unauthorized"],
-      ["Successfully yanked", 200, "OK"],
+      HTTPResponseFactory.create(body: response_fail, code: 401, msg: "Unauthorized"),
+      HTTPResponseFactory.create(body: "Successfully yanked", code: 200, msg: "OK"),
     ]
 
     @cmd.options[:args]           = %w[a]
@@ -92,7 +92,7 @@ class TestGemCommandsYankCommand < Gem::TestCase
   def test_execute_with_otp_failure
     response = "You have enabled multifactor authentication but your request doesn't have the correct OTP code. Please check it and retry."
     yank_uri = "http://example/api/v1/gems/yank"
-    @fetcher.data[yank_uri] = [response, 401, "Unauthorized"]
+    @fetcher.data[yank_uri] = HTTPResponseFactory.create(body: response, code: 401, msg: "Unauthorized")
 
     @cmd.options[:args]           = %w[a]
     @cmd.options[:added_platform] = true
@@ -111,7 +111,7 @@ class TestGemCommandsYankCommand < Gem::TestCase
 
   def test_execute_key
     yank_uri = "http://example/api/v1/gems/yank"
-    @fetcher.data[yank_uri] = ["Successfully yanked", 200, "OK"]
+    @fetcher.data[yank_uri] = HTTPResponseFactory.create(body: "Successfully yanked", code: 200, msg: "OK")
 
     @cmd.options[:args]    = %w[a]
     @cmd.options[:version] = req("= 1.0")
@@ -129,7 +129,7 @@ class TestGemCommandsYankCommand < Gem::TestCase
   def test_execute_host
     host = "https://other.example"
     yank_uri = "#{host}/api/v1/gems/yank"
-    @fetcher.data[yank_uri] = ["Successfully yanked", 200, "OK"]
+    @fetcher.data[yank_uri] = HTTPResponseFactory.create(body: "Successfully yanked", code: 200, msg: "OK")
 
     @cmd.options[:args]    = %w[a]
     @cmd.options[:version] = req("= 1.0")
@@ -154,11 +154,11 @@ class TestGemCommandsYankCommand < Gem::TestCase
     host               = "http://example"
 
     @fetcher.data["#{host}/api/v1/gems/yank"] = [
-      [response_forbidden, 403, "Forbidden"],
-      [response_success, 200, "OK"],
+      HTTPResponseFactory.create(body: response_forbidden, code: 403, msg: "Forbidden"),
+      HTTPResponseFactory.create(body: response_success, code: 200, msg: "OK"),
     ]
 
-    @fetcher.data["#{host}/api/v1/api_key"] = ["", 200, "OK"]
+    @fetcher.data["#{host}/api/v1/api_key"] = HTTPResponseFactory.create(body: "", code: 200, msg: "OK")
     @cmd.options[:args]           = %w[a]
     @cmd.options[:added_platform] = true
     @cmd.options[:version]        = req("= 1.0")

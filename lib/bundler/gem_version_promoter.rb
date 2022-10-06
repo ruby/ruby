@@ -116,15 +116,14 @@ module Bundler
     end
 
     def sort_dep_specs(spec_groups, locked_spec)
-      return spec_groups unless locked_spec
-      @gem_name = locked_spec.name
-      @locked_version = locked_spec.version
+      @locked_version = locked_spec&.version
+      @gem_name = locked_spec&.name
 
       result = spec_groups.sort do |a, b|
         @a_ver = a.version
         @b_ver = b.version
 
-        unless @prerelease_specified[@gem_name]
+        unless @gem_name && @prerelease_specified[@gem_name]
           a_pre = @a_ver.prerelease?
           b_pre = @b_ver.prerelease?
 
@@ -148,7 +147,7 @@ module Bundler
     end
 
     def either_version_older_than_locked
-      @a_ver < @locked_version || @b_ver < @locked_version
+      @locked_version && (@a_ver < @locked_version || @b_ver < @locked_version)
     end
 
     def segments_do_not_match(level)
@@ -157,7 +156,7 @@ module Bundler
     end
 
     def unlocking_gem?
-      unlock_gems.empty? || unlock_gems.include?(@gem_name)
+      unlock_gems.empty? || (@gem_name && unlock_gems.include?(@gem_name))
     end
 
     # Specific version moves can't always reliably be done during sorting
@@ -165,7 +164,7 @@ module Bundler
     def post_sort(result)
       # default :major behavior in Bundler does not do this
       return result if major?
-      if unlocking_gem?
+      if unlocking_gem? || @locked_version.nil?
         result
       else
         move_version_to_end(result, @locked_version)

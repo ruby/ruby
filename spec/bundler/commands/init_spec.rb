@@ -7,6 +7,29 @@ RSpec.describe "bundle init" do
     expect(bundled_app_gemfile).to be_file
   end
 
+  context "with a template with permission flags not matching current process umask" do
+    let(:template_file) do
+      gemfile = Bundler.preferred_gemfile_name
+      templates_dir.join(gemfile)
+    end
+
+    let(:target_dir) { bundled_app("init_permissions_test") }
+
+    around do |example|
+      old_chmod = File.stat(template_file).mode
+      FileUtils.chmod(old_chmod | 0o111, template_file) # chmod +x
+      example.run
+      FileUtils.chmod(old_chmod, template_file)
+    end
+
+    it "honours the current process umask when generating from a template" do
+      FileUtils.mkdir(target_dir)
+      bundle :init, :dir => target_dir
+      generated_mode = File.stat(File.join(target_dir, "Gemfile")).mode & 0o111
+      expect(generated_mode).to be_zero
+    end
+  end
+
   context "when a Gemfile already exists" do
     before do
       create_file "Gemfile", <<-G
