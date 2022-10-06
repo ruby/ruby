@@ -882,6 +882,7 @@ EXPECTED
       %w[cell1_1 cell1_2 cell1_3],
       %w[cell2_1 cell2_2 cell2_3],
       ['<script>alert("foo");</script>',],
+      %w[+code+ _em_ **strong**],
     ]
     aligns = [:left, :right, nil]
     @to.start_accepting
@@ -898,6 +899,9 @@ EXPECTED
     assert_not_include(res[%r<<td[^<>]*>cell2_3</td>>], 'align=')
     assert_not_include(res, '<script>')
     assert_include(res[%r<<td[^<>]*>.*script.*</td>>], '&lt;script&gt;')
+    assert_include(res[%r<<td[^<>]*>.*code.*</td>>], '<code>code</code>')
+    assert_include(res[%r<<td[^<>]*>.*em.*</td>>], '<em>em</em>')
+    assert_include(res[%r<<td[^<>]*>.*strong.*</td>>], '<strong>strong</strong>')
   end
 end
 

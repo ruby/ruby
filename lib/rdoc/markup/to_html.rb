@@ -324,7 +324,7 @@ class RDoc::Markup::ToHtml < RDoc::Markup::Formatter
     header.zip(aligns) do |text, align|
       @res << '<th'
       @res << ' align="' << align << '"' if align
-      @res << '>' << CGI.escapeHTML(text) << "</th>\n"
+      @res << '>' << to_html(text) << "</th>\n"
     end
     @res << "</tr>\n</thead>\n<tbody>\n"
     body.each do |row|
@@ -332,7 +332,7 @@ class RDoc::Markup::ToHtml < RDoc::Markup::Formatter
       row.zip(aligns) do |text, align|
         @res << '<td'
         @res << ' align="' << align << '"' if align
-        @res << '>' << CGI.escapeHTML(text) << "</td>\n"
+        @res << '>' << to_html(text) << "</td>\n"
       end
       @res << "</tr>\n"
     end
