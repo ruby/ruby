@@ -1062,6 +1062,25 @@ and an extra note.[^2]
     assert_equal expected, doc
   end
 
+  def test_gfm_table_2
+    doc = parse <<~MD
+    | Cmd | Returns | Meaning
+    |-----|---------|--------
+    | "b" | boolean | True if file1 is a block device
+    | "c" | boolean | True if file1 is a character device
+    MD
+
+    head = %w[Cmd Returns Meaning]
+    align = [nil, nil, nil]
+    body = [
+      ['"b"', 'boolean', 'True if file1 is a block device'],
+      ['"c"', 'boolean', 'True if file1 is a character device'],
+    ]
+    expected = doc(@RM::Table.new(head, align, body))
+
+    assert_equal expected, doc
+  end
+
   def parse text
     @parser.parse text
   end

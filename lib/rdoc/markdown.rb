@@ -15966,7 +15966,7 @@ class RDoc::Markdown
     return _tmp
   end
 
-  # TableRow = TableItem+:row "|" @Newline { row }
+  # TableRow = TableItem+:row "|"? @Newline { row }
   def _TableRow
 
     _save = self.pos
@@ -15991,7 +15991,12 @@ class RDoc::Markdown
         self.pos = _save
         break
       end
+      _save2 = self.pos
       _tmp = match_string("|")
+      unless _tmp
+        _tmp = true
+        self.pos = _save2
+      end
       unless _tmp
         self.pos = _save
         break
@@ -16104,7 +16109,7 @@ class RDoc::Markdown
     return _tmp
   end
 
-  # TableLine = TableColumn+:line "|" @Newline { line }
+  # TableLine = TableColumn+:line "|"? @Newline { line }
   def _TableLine
 
     _save = self.pos
@@ -16129,7 +16134,12 @@ class RDoc::Markdown
         self.pos = _save
         break
       end
+      _save2 = self.pos
       _tmp = match_string("|")
+      unless _tmp
+        _tmp = true
+        self.pos = _save2
+      end
       unless _tmp
         self.pos = _save
         break
@@ -16675,9 +16685,9 @@ class RDoc::Markdown
   Rules[:_RawNoteBlock] = rule_info("RawNoteBlock", "@StartList:a (!@BlankLine !RawNoteReference OptionallyIndentedLine:l { a << l })+ < @BlankLine* > { a << text } { a }")
   Rules[:_CodeFence] = rule_info("CodeFence", "&{ github? } Ticks3 (@Sp StrChunk:format)? Spnl < ((!\"`\" Nonspacechar)+ | !Ticks3 /`+/ | Spacechar | @Newline)+ > Ticks3 @Sp @Newline* { verbatim = RDoc::Markup::Verbatim.new text               verbatim.format = format.intern if format.instance_of?(String)               verbatim             }")
   Rules[:_Table] = rule_info("Table", "&{ github? } TableRow:header TableLine:line TableRow+:body { table = RDoc::Markup::Table.new(header, line, body) }")
-  Rules[:_TableRow] = rule_info("TableRow", "TableItem+:row \"|\" @Newline { row }")
+  Rules[:_TableRow] = rule_info("TableRow", "TableItem+:row \"|\"? @Newline { row }")
   Rules[:_TableItem] = rule_info("TableItem", "\"|\" < (!\"|\" !@Newline .)+ > { text.strip }")
-  Rules[:_TableLine] = rule_info("TableLine", "TableColumn+:line \"|\" @Newline { line }")
+  Rules[:_TableLine] = rule_info("TableLine", "TableColumn+:line \"|\"? @Newline { line }")
   Rules[:_TableColumn] = rule_info("TableColumn", "\"|\" < (\"-\"+ \":\"? | \":\" \"-\"*) > { text.start_with?(\":\") ? :left :                 text.end_with?(\":\") ? :right : nil               }")
   Rules[:_DefinitionList] = rule_info("DefinitionList", "&{ definition_lists? } DefinitionListItem+:list { RDoc::Markup::List.new :NOTE, *list.flatten }")
   Rules[:_DefinitionListItem] = rule_info("DefinitionListItem", "DefinitionListLabel+:label DefinitionListDefinition+:defns { list_items = []                        list_items <<                          RDoc::Markup::ListItem.new(label, defns.shift)                         list_items.concat defns.map { |defn|                          RDoc::Markup::ListItem.new nil, defn                        } unless list_items.empty?                         list_items                      }")
