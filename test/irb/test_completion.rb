@@ -194,6 +194,22 @@ module TestIRB
       end
     end
 
+    class TestConstantCompletion < TestCompletion
+      class Foo
+        B1 = 1
+        B2 = 2
+      end
+
+      def test_complete_constants
+        assert_equal(["Foo"], IRB::InputCompletor.retrieve_completion_data("Fo", bind: binding))
+        assert_equal(["Foo::B1", "Foo::B2"], IRB::InputCompletor.retrieve_completion_data("Foo::B", bind: binding))
+        assert_equal(["Foo::B1.positive?"], IRB::InputCompletor.retrieve_completion_data("Foo::B1.pos", bind: binding))
+
+        assert_equal(["::Forwardable"], IRB::InputCompletor.retrieve_completion_data("::Fo", bind: binding))
+        assert_equal("Forwardable", IRB::InputCompletor.retrieve_completion_data("::Forwardable", bind: binding, doc_namespace: true))
+      end
+    end
+
     def test_complete_symbol
       %w"UTF-16LE UTF-7".each do |enc|
         "K".force_encoding(enc).to_sym
