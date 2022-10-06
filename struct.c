@@ -1855,13 +1855,13 @@ rb_data_inspect(VALUE s)
  *
  *  Examples:
  *
- *    Measure = Data.new(:amount, :unit)
+ *    Measure = Data.define(:amount, :unit)
  *
  *    Measure[1, 'km'] == Measure[1, 'km'] #=> true
  *    Measure[1, 'km'] == Measure[2, 'km'] #=> false
  *    Measure[1, 'km'] == Measure[1, 'm']  #=> false
  *
- *    Measurement = Data.new(:amount, :unit)
+ *    Measurement = Data.define(:amount, :unit)
  *    # Even though Measurement and Measure have the same "shape"
  *    # their instances are never equal
  *    Measure[1, 'km'] == Measurement[1, 'km'] #=> false
@@ -1878,7 +1878,7 @@ rb_data_inspect(VALUE s)
  *  The subtle difference with #== is that members are also compared with their
  *  #eql? method, which might be important in some cases:
  *
- *    Measure = Data.new(:amount, :unit)
+ *    Measure = Data.define(:amount, :unit)
  *
  *    Measure[1, 'km'] == Measure[1.0, 'km'] #=> true, they are equal as values
  *    # ...but...
