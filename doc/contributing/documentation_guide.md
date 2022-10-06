@@ -159,8 +159,8 @@ may not render them properly.
 
 ### Tables
 
-Avoid building tables with HTML tags
-(<tt><table></tt>, etc.)
+In particular, avoid building tables with HTML tags
+(<tt><table></tt>, etc.).
 
 Alternatives are:
 
@@ -170,10 +170,8 @@ Alternatives are:
 
 - A {verbatim text block}[rdoc-ref:RDoc::MarkupReference@Verbatim+Text+Blocks],
   using spaces and punctuation to format the text.
-
-Note that in neither case will
-{text markup}[rdoc-ref:RDoc::MarkupReference@Text+Markup]
-be honored.
+  Note that {text markup}[rdoc-ref:RDoc::MarkupReference@Text+Markup]
+  will not be honored.
 
 ## Documenting Classes and Modules
 
