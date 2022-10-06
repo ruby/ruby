@@ -30,50 +30,50 @@ module TestIRB
     class TestMethodCompletion < TestCompletion
       def test_complete_string
         assert_include(IRB::InputCompletor.retrieve_completion_data("'foo'.up", bind: binding), "'foo'.upcase")
-        assert_equal(IRB::InputCompletor.retrieve_completion_data("'foo'.upcase", bind: binding, doc_namespace: true), "String.upcase")
+        assert_equal("String.upcase", IRB::InputCompletor.retrieve_completion_data("'foo'.upcase", bind: binding, doc_namespace: true))
       end
 
       def test_complete_regexp
         assert_include(IRB::InputCompletor.retrieve_completion_data("/foo/.ma", bind: binding), "/foo/.match")
-        assert_equal(IRB::InputCompletor.retrieve_completion_data("/foo/.match", bind: binding, doc_namespace: true), "Regexp.match")
+        assert_equal("Regexp.match", IRB::InputCompletor.retrieve_completion_data("/foo/.match", bind: binding, doc_namespace: true))
       end
 
       def test_complete_array
         assert_include(IRB::InputCompletor.retrieve_completion_data("[].an", bind: binding), "[].any?")
-        assert_equal(IRB::InputCompletor.retrieve_completion_data("[].any?", bind: binding, doc_namespace: true), "Array.any?")
+        assert_equal("Array.any?", IRB::InputCompletor.retrieve_completion_data("[].any?", bind: binding, doc_namespace: true))
       end
 
       def test_complete_hash_and_proc
         # hash
         assert_include(IRB::InputCompletor.retrieve_completion_data("{}.an", bind: binding), "{}.any?")
-        assert_include(IRB::InputCompletor.retrieve_completion_data("{}.any?", bind: binding, doc_namespace: true), "Proc.any?", "Hash.any?")
+        assert_equal(["Proc.any?", "Hash.any?"], IRB::InputCompletor.retrieve_completion_data("{}.any?", bind: binding, doc_namespace: true))
 
         # proc
         assert_include(IRB::InputCompletor.retrieve_completion_data("{}.bin", bind: binding), "{}.binding")
-        assert_include(IRB::InputCompletor.retrieve_completion_data("{}.binding", bind: binding, doc_namespace: true), "Proc.binding", "Hash.binding")
+        assert_equal(["Proc.binding", "Hash.binding"], IRB::InputCompletor.retrieve_completion_data("{}.binding", bind: binding, doc_namespace: true))
       end
 
       def test_complete_numeric
         assert_include(IRB::InputCompletor.retrieve_completion_data("1.positi", bind: binding), "1.positive?")
-        assert_equal(IRB::InputCompletor.retrieve_completion_data("1.positive?", bind: binding, doc_namespace: true), "Integer.positive?")
+        assert_equal("Integer.positive?", IRB::InputCompletor.retrieve_completion_data("1.positive?", bind: binding, doc_namespace: true))
 
         assert_include(IRB::InputCompletor.retrieve_completion_data("1r.positi", bind: binding), "1r.positive?")
-        assert_equal(IRB::InputCompletor.retrieve_completion_data("1r.positive?", bind: binding, doc_namespace: true), "Rational.positive?")
+        assert_equal("Rational.positive?", IRB::InputCompletor.retrieve_completion_data("1r.positive?", bind: binding, doc_namespace: true))
 
         assert_include(IRB::InputCompletor.retrieve_completion_data("0xFFFF.positi", bind: binding), "0xFFFF.positive?")
-        assert_equal(IRB::InputCompletor.retrieve_completion_data("0xFFFF.positive?", bind: binding, doc_namespace: true), "Integer.positive?")
+        assert_equal("Integer.positive?", IRB::InputCompletor.retrieve_completion_data("0xFFFF.positive?", bind: binding, doc_namespace: true))
 
         assert_empty(IRB::InputCompletor.retrieve_completion_data("1i.positi", bind: binding))
       end
 
       def test_complete_symbol
         assert_include(IRB::InputCompletor.retrieve_completion_data(":foo.to_p", bind: binding), ":foo.to_proc")
-        assert_equal(IRB::InputCompletor.retrieve_completion_data(":foo.to_proc", bind: binding, doc_namespace: true), "Symbol.to_proc")
+        assert_equal("Symbol.to_proc", IRB::InputCompletor.retrieve_completion_data(":foo.to_proc", bind: binding, doc_namespace: true))
       end
 
       def test_complete_class
         assert_include(IRB::InputCompletor.retrieve_completion_data("String.ne", bind: binding), "String.new")
-        assert_equal(IRB::InputCompletor.retrieve_completion_data("String.new", bind: binding, doc_namespace: true), "String.new")
+        assert_equal("String.new", IRB::InputCompletor.retrieve_completion_data("String.new", bind: binding, doc_namespace: true))
       end
     end
 
@@ -174,12 +174,12 @@ module TestIRB
         instance_variables.clear
 
         assert_include(IRB::InputCompletor.retrieve_completion_data("str_examp", bind: binding), "str_example")
-        assert_equal(IRB::InputCompletor.retrieve_completion_data("str_example", bind: binding, doc_namespace: true), "String")
-        assert_equal(IRB::InputCompletor.retrieve_completion_data("str_example.to_s", bind: binding, doc_namespace: true), "String.to_s")
+        assert_equal("String", IRB::InputCompletor.retrieve_completion_data("str_example", bind: binding, doc_namespace: true))
+        assert_equal("String.to_s", IRB::InputCompletor.retrieve_completion_data("str_example.to_s", bind: binding, doc_namespace: true))
 
         assert_include(IRB::InputCompletor.retrieve_completion_data("@str_examp", bind: binding), "@str_example")
-        assert_equal(IRB::InputCompletor.retrieve_completion_data("@str_example", bind: binding, doc_namespace: true), "String")
-        assert_equal(IRB::InputCompletor.retrieve_completion_data("@str_example.to_s", bind: binding, doc_namespace: true), "String.to_s")
+        assert_equal("String", IRB::InputCompletor.retrieve_completion_data("@str_example", bind: binding, doc_namespace: true))
+        assert_equal("String.to_s", IRB::InputCompletor.retrieve_completion_data("@str_example.to_s", bind: binding, doc_namespace: true))
       end
 
       def test_complete_sort_variables
@@ -190,7 +190,7 @@ module TestIRB
         xzy2.clear
 
         candidates = IRB::InputCompletor.retrieve_completion_data("xz", bind: binding, doc_namespace: false)
-        assert_equal(candidates, %w[xzy xzy2 xzy_1])
+        assert_equal(%w[xzy xzy2 xzy_1], candidates)
       end
     end
 
