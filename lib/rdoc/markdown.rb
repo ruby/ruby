@@ -16132,13 +16132,73 @@ class RDoc::Markdown
     return _tmp
   end
 
-  # TableItem = < /(?:\\.|[^|\n])+/ > { text.strip.gsub(/\\(.)/, '\1')  }
+  # TableItem = < (!"|" !@Newline .)+ > { text.strip }
   def _TableItem
 
     _save = self.pos
     while true # sequence
       _text_start = self.pos
-      _tmp = scan(/\G(?-mix:(?:\\.|[^|\n])+)/)
+      _save1 = self.pos
+
+      _save2 = self.pos
+      while true # sequence
+        _save3 = self.pos
+        _tmp = match_string("|")
+        _tmp = _tmp ? nil : true
+        self.pos = _save3
+        unless _tmp
+          self.pos = _save2
+          break
+        end
+        _save4 = self.pos
+        _tmp = _Newline()
+        _tmp = _tmp ? nil : true
+        self.pos = _save4
+        unless _tmp
+          self.pos = _save2
+          break
+        end
+        _tmp = get_byte
+        unless _tmp
+          self.pos = _save2
+        end
+        break
+      end # end sequence
+
+      if _tmp
+        while true
+
+          _save5 = self.pos
+          while true # sequence
+            _save6 = self.pos
+            _tmp = match_string("|")
+            _tmp = _tmp ? nil : true
+            self.pos = _save6
+            unless _tmp
+              self.pos = _save5
+              break
+            end
+            _save7 = self.pos
+            _tmp = _Newline()
+            _tmp = _tmp ? nil : true
+            self.pos = _save7
+            unless _tmp
+              self.pos = _save5
+              break
+            end
+            _tmp = get_byte
+            unless _tmp
+              self.pos = _save5
+            end
+            break
+          end # end sequence
+
+          break unless _tmp
+        end
+        _tmp = true
+      else
+        self.pos = _save1
+      end
       if _tmp
         text = get_text(_text_start)
       end
@@ -16146,7 +16206,7 @@ class RDoc::Markdown
         self.pos = _save
         break
       end
-      @result = begin;  text.strip.gsub(/\\(.)/, '\1')  ; end
+      @result = begin;  text.strip ; end
       _tmp = true
       unless _tmp
         self.pos = _save
@@ -16746,7 +16806,7 @@ class RDoc::Markdown
   Rules[:_TableHead] = rule_info("TableHead", "TableItem2+:items \"|\"? @Newline { items }")
   Rules[:_TableRow] = rule_info("TableRow", "((TableItem:item1 TableItem2*:items { [item1, *items] }):row | TableItem2+:row) \"|\"? @Newline { row }")
   Rules[:_TableItem2] = rule_info("TableItem2", "\"|\" TableItem")
-  Rules[:_TableItem] = rule_info("TableItem", "< /(?:\\\\.|[^|\\n])+/ > { text.strip.gsub(/\\\\(.)/, '\\1')  }")
+  Rules[:_TableItem] = rule_info("TableItem", "< (!\"|\" !@Newline .)+ > { text.strip }")
   Rules[:_TableLine] = rule_info("TableLine", "((TableAlign:align1 TableAlign2*:aligns {[align1, *aligns] }):line | TableAlign2+:line) \"|\"? @Newline { line }")
   Rules[:_TableAlign2] = rule_info("TableAlign2", "\"|\" @Sp TableAlign")
   Rules[:_TableAlign] = rule_info("TableAlign", "< /:?-+:?/ > @Sp { text.start_with?(\":\") ? :left :                 text.end_with?(\":\") ? :right : nil               }")

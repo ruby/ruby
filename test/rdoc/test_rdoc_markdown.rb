@@ -1065,7 +1065,7 @@ and an extra note.[^2]
   def test_gfm_table_2
     doc = parse <<~'MD'
     | Cmd | Returns | Meaning
-    ------|---------|--------
+    ----- | ------- | -------
     |"b"  | boolean | True if file1 is a block device
     "c"   | boolean | True if file1 is a character device
     |"\|" | boolean | escaped bar \| test
