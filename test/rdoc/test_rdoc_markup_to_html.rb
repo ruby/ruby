@@ -876,5 +876,28 @@ EXPECTED
     @to.end_accepting
   end
 
+  def test_accept_table
+    header = %w[Col1 Col2 Col3]
+    body = [
+      %w[cell1_1 cell1_2 cell1_3],
+      %w[cell2_1 cell2_2 cell2_3],
+      ['<script>alert("foo");</script>',],
+    ]
+    aligns = [:left, :right, nil]
+    @to.start_accepting
+    @to.accept_table(header, body, aligns)
+    res = @to.end_accepting
+    assert_include(res[%r<<th[^<>]*>Col1</th>>], 'align="left"')
+    assert_include(res[%r<<th[^<>]*>Col2</th>>], 'align="right"')
+    assert_not_include(res[%r<<th[^<>]*>Col3</th>>], 'align=')
+    assert_include(res[%r<<td[^<>]*>cell1_1</td>>], 'align="left"')
+    assert_include(res[%r<<td[^<>]*>cell1_2</td>>], 'align="right"')
+    assert_not_include(res[%r<<td[^<>]*>cell1_3</td>>], 'align=')
+    assert_include(res[%r<<td[^<>]*>cell2_1</td>>], 'align="left"')
+    assert_include(res[%r<<td[^<>]*>cell2_2</td>>], 'align="right"')
+    assert_not_include(res[%r<<td[^<>]*>cell2_3</td>>], 'align=')
+    assert_not_include(res, '<script>')
+    assert_include(res[%r<<td[^<>]*>.*script.*</td>>], '&lt;script&gt;')
+  end
 end
 
