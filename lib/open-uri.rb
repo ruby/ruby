@@ -356,7 +356,8 @@ module OpenURI
     when Net::HTTPMovedPermanently, # 301
          Net::HTTPFound, # 302
          Net::HTTPSeeOther, # 303
-         Net::HTTPTemporaryRedirect # 307
+         Net::HTTPTemporaryRedirect, # 307
+         Net::HTTPPermanentRedirect # 308
       begin
         loc_uri = URI.parse(resp['location'])
       rescue URI::InvalidURIError
