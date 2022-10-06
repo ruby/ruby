@@ -255,7 +255,7 @@ module IRB
             candidates = []
           end
 
-          select_message(receiver, message, candidates, "::")
+          select_message(receiver, message, candidates.sort, "::")
         end
 
       when /^(:[^:.]+)(\.|::)([^.]*)$/

@@ -196,13 +196,14 @@ module TestIRB
 
     class TestConstantCompletion < TestCompletion
       class Foo
+        B3 = 1
         B1 = 1
-        B2 = 2
+        B2 = 1
       end
 
       def test_complete_constants
         assert_equal(["Foo"], IRB::InputCompletor.retrieve_completion_data("Fo", bind: binding))
-        assert_equal(["Foo::B1", "Foo::B2"], IRB::InputCompletor.retrieve_completion_data("Foo::B", bind: binding))
+        assert_equal(["Foo::B1", "Foo::B2", "Foo::B3"], IRB::InputCompletor.retrieve_completion_data("Foo::B", bind: binding))
         assert_equal(["Foo::B1.positive?"], IRB::InputCompletor.retrieve_completion_data("Foo::B1.pos", bind: binding))
 
         assert_equal(["::Forwardable"], IRB::InputCompletor.retrieve_completion_data("::Fo", bind: binding))
