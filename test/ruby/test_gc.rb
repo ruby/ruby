@@ -405,7 +405,7 @@ class TestGc < Test::Unit::TestCase
   def test_thrashing_for_young_objects
     # This test prevents bugs like [Bug #18929]
 
-    assert_separately %w[--disable-gem], __FILE__, __LINE__, <<-RUBY
+    assert_separately %w[--disable-gem], __FILE__, __LINE__, <<-'RUBY'
       # Warmup to make sure heap stabilizes
       1_000_000.times { Object.new }
 
@@ -419,12 +419,15 @@ class TestGc < Test::Unit::TestCase
 
       after_stats = GC.stat
 
+      # Debugging output to for failures in trunk-repeat50@phosphorus-docker
+      debug_msg = "before_stats: #{before_stats}\nafter_stats: #{after_stats}"
+
       # Should not be thrashing in page creation
-      assert_equal before_stats[:heap_allocated_pages], after_stats[:heap_allocated_pages]
-      assert_equal 0, after_stats[:heap_tomb_pages]
-      assert_equal 0, after_stats[:total_freed_pages]
+      assert_equal before_stats[:heap_allocated_pages], after_stats[:heap_allocated_pages], debug_msg
+      assert_equal 0, after_stats[:heap_tomb_pages], debug_msg
+      assert_equal 0, after_stats[:total_freed_pages], debug_msg
       # Only young objects, so should not trigger major GC
-      assert_equal before_stats[:major_gc_count], after_stats[:major_gc_count]
+      assert_equal before_stats[:major_gc_count], after_stats[:major_gc_count], debug_msg
     RUBY
   end
 
