@@ -2,6 +2,8 @@ require 'rbconfig'
 require 'timeout'
 require 'fileutils'
 
+ENV.delete("GNUMAKEFLAGS")
+
 github_actions = ENV["GITHUB_ACTIONS"] == "true"
 
 allowed_failures = ENV['TEST_BUNDLED_GEMS_ALLOW_FAILURES'] || ''
