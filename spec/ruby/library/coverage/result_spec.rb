@@ -107,14 +107,16 @@ describe 'Coverage.result' do
 
   ruby_version_is '3.2' do
     it 'returns the correct results when eval is used' do
-      Coverage.start
+      Coverage.supported?(:eval).should == true
+
+      Coverage.start(lines: true, eval: true)
       require @eval_code_file.chomp('.rb')
       result = Coverage.result
 
       result.should == {
-          @eval_code_file => [
-              1, nil, 1, nil, 1, 1, nil, nil, nil, nil, 1
-          ]
+          @eval_code_file => {
+              lines: [1, nil, 1, nil, 1, 1, nil, nil, nil, nil, 1]
+          }
       }
     end
   end
