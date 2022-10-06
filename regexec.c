@@ -978,6 +978,7 @@ stack_double(OnigStackType** arg_stk_base, OnigStackType** arg_stk_end,
 #define STACK_PUSH_TYPE(stack_type) do {\
   STACK_ENSURE(1);\
   stk->type = (stack_type);\
+  stk->null_check = stk == stk_base ? 0 : (stk-1)->null_check;\
   STACK_INC;\
 } while(0)
 
@@ -1047,6 +1048,7 @@ stack_double(OnigStackType** arg_stk_base, OnigStackType** arg_stk_end,
 # define STACK_PUSH(stack_type,pat,s,sprev,keep) do {\
   STACK_ENSURE(1);\
   stk->type = (stack_type);\
+  stk->null_check = stk == stk_base ? 0 : (stk-1)->null_check;\
   stk->u.state.pcode     = (pat);\
   stk->u.state.pstr      = (s);\
   stk->u.state.pstr_prev = (sprev);\
@@ -1056,6 +1058,7 @@ stack_double(OnigStackType** arg_stk_base, OnigStackType** arg_stk_end,
 
 # define STACK_PUSH_ENSURED(stack_type,pat) do {\
   stk->type = (stack_type);\
+  stk->null_check = stk == stk_base ? 0 : (stk-1)->null_check;\
   stk->u.state.pcode = (pat);\
   STACK_INC;\
 } while(0)
@@ -1091,6 +1094,7 @@ stack_double(OnigStackType** arg_stk_base, OnigStackType** arg_stk_end,
 #define STACK_PUSH_REPEAT(id, pat) do {\
   STACK_ENSURE(1);\
   stk->type = STK_REPEAT;\
+  stk->null_check = stk == stk_base ? 0 : (stk-1)->null_check;\
   stk->u.repeat.num    = (id);\
   stk->u.repeat.pcode  = (pat);\
   stk->u.repeat.count  = 0;\
@@ -1100,6 +1104,7 @@ stack_double(OnigStackType** arg_stk_base, OnigStackType** arg_stk_end,
 #define STACK_PUSH_REPEAT_INC(sindex) do {\
   STACK_ENSURE(1);\
   stk->type = STK_REPEAT_INC;\
+  stk->null_check = stk == stk_base ? 0 : (stk-1)->null_check;\
   stk->u.repeat_inc.si  = (sindex);\
   STACK_INC;\
 } while(0)
@@ -1107,6 +1112,7 @@ stack_double(OnigStackType** arg_stk_base, OnigStackType** arg_stk_end,
 #define STACK_PUSH_MEM_START(mnum, s) do {\
   STACK_ENSURE(1);\
   stk->type = STK_MEM_START;\
+  stk->null_check = stk == stk_base ? 0 : (stk-1)->null_check;\
   stk->u.mem.num      = (mnum);\
   stk->u.mem.pstr     = (s);\
   stk->u.mem.start    = mem_start_stk[mnum];\
@@ -1119,6 +1125,7 @@ stack_double(OnigStackType** arg_stk_base, OnigStackType** arg_stk_end,
 #define STACK_PUSH_MEM_END(mnum, s) do {\
   STACK_ENSURE(1);\
   stk->type = STK_MEM_END;\
+  stk->null_check = stk == stk_base ? 0 : (stk-1)->null_check;\
   stk->u.mem.num    = (mnum);\
   stk->u.mem.pstr   = (s);\
   stk->u.mem.start  = mem_start_stk[mnum];\
@@ -1130,6 +1137,7 @@ stack_double(OnigStackType** arg_stk_base, OnigStackType** arg_stk_end,
 #define STACK_PUSH_MEM_END_MARK(mnum) do {\
   STACK_ENSURE(1);\
   stk->type = STK_MEM_END_MARK;\
+  stk->null_check = stk == stk_base ? 0 : (stk-1)->null_check;\
   stk->u.mem.num = (mnum);\
   STACK_INC;\
 } while(0)
@@ -1171,6 +1179,7 @@ stack_double(OnigStackType** arg_stk_base, OnigStackType** arg_stk_end,
 #define STACK_PUSH_NULL_CHECK_START(cnum, s) do {\
   STACK_ENSURE(1);\
   stk->type = STK_NULL_CHECK_START;\
+  stk->null_check = (OnigStackIndex)(stk - stk_base);\
   stk->u.null_check.num  = (cnum);\
   stk->u.null_check.pstr = (s);\
   STACK_INC;\
@@ -1179,6 +1188,7 @@ stack_double(OnigStackType** arg_stk_base, OnigStackType** arg_stk_end,
 #define STACK_PUSH_NULL_CHECK_END(cnum) do {\
   STACK_ENSURE(1);\
   stk->type = STK_NULL_CHECK_END;\
+  stk->null_check = (OnigStackIndex)(stk - stk_base);\
   stk->u.null_check.num  = (cnum);\
   STACK_INC;\
 } while(0)
@@ -1186,6 +1196,7 @@ stack_double(OnigStackType** arg_stk_base, OnigStackType** arg_stk_end,
 #define STACK_PUSH_CALL_FRAME(pat) do {\
   STACK_ENSURE(1);\
   stk->type = STK_CALL_FRAME;\
+  stk->null_check = stk == stk_base ? 0 : (stk-1)->null_check;\
   stk->u.call_frame.ret_addr = (pat);\
   STACK_INC;\
 } while(0)
@@ -1193,12 +1204,14 @@ stack_double(OnigStackType** arg_stk_base, OnigStackType** arg_stk_end,
 #define STACK_PUSH_RETURN do {\
   STACK_ENSURE(1);\
   stk->type = STK_RETURN;\
+  stk->null_check = stk == stk_base ? 0 : (stk-1)->null_check;\
   STACK_INC;\
 } while(0)
 
 #define STACK_PUSH_ABSENT_POS(start, end) do {\
   STACK_ENSURE(1);\
   stk->type = STK_ABSENT_POS;\
+  stk->null_check = stk == stk_base ? 0 : (stk-1)->null_check;\
   stk->u.absent_pos.abs_pstr = (start);\
   stk->u.absent_pos.end_pstr = (end);\
   STACK_INC;\
@@ -1362,7 +1375,7 @@ stack_double(OnigStackType** arg_stk_base, OnigStackType** arg_stk_end,
 } while(0)
 
 #define STACK_NULL_CHECK(isnull,id,s) do {\
-  OnigStackType* k = stk;\
+  OnigStackType* k = STACK_AT((stk-1)->null_check)+1;\
   while (1) {\
     k--;\
     STACK_BASE_CHECK(k, "STACK_NULL_CHECK"); \
@@ -1377,7 +1390,7 @@ stack_double(OnigStackType** arg_stk_base, OnigStackType** arg_stk_end,
 
 #define STACK_NULL_CHECK_REC(isnull,id,s) do {\
   int level = 0;\
-  OnigStackType* k = stk;\
+  OnigStackType* k = STACK_AT((stk-1)->null_check)+1;\
   while (1) {\
     k--;\
     STACK_BASE_CHECK(k, "STACK_NULL_CHECK_REC"); \
@@ -1397,7 +1410,7 @@ stack_double(OnigStackType** arg_stk_base, OnigStackType** arg_stk_end,
 } while(0)
 
 #define STACK_NULL_CHECK_MEMST(isnull,id,s,reg) do {\
-  OnigStackType* k = stk;\
+  OnigStackType* k = STACK_AT((stk-1)->null_check)+1;\
   while (1) {\
     k--;\
     STACK_BASE_CHECK(k, "STACK_NULL_CHECK_MEMST"); \
@@ -1437,7 +1450,7 @@ stack_double(OnigStackType** arg_stk_base, OnigStackType** arg_stk_end,
 
 #define STACK_NULL_CHECK_MEMST_REC(isnull,id,s,reg) do {\
   int level = 0;\
-  OnigStackType* k = stk;\
+  OnigStackType* k = STACK_AT((stk-1)->null_check)+1;\
   while (1) {\
     k--;\
     STACK_BASE_CHECK(k, "STACK_NULL_CHECK_MEMST_REC"); \
