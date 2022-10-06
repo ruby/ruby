@@ -77,6 +77,123 @@ module TestIRB
       end
     end
 
+    class TestRequireComepletion < TestCompletion
+      def test_complete_require
+        candidates = IRB::InputCompletor::CompletionProc.("'irb", "require ", "")
+        %w['irb/init 'irb/ruby-lex].each do |word|
+          assert_include candidates, word
+        end
+        # Test cache
+        candidates = IRB::InputCompletor::CompletionProc.("'irb", "require ", "")
+        %w['irb/init 'irb/ruby-lex].each do |word|
+          assert_include candidates, word
+        end
+      end
+
+      def test_complete_require_with_pathname_in_load_path
+        temp_dir = Dir.mktmpdir
+        File.write(File.join(temp_dir, "foo.rb"), "test")
+        test_path = Pathname.new(temp_dir)
+        $LOAD_PATH << test_path
+
+        candidates = IRB::InputCompletor::CompletionProc.("'foo", "require ", "")
+        assert_include candidates, "'foo"
+      ensure
+        $LOAD_PATH.pop if test_path
+        FileUtils.remove_entry(temp_dir) if temp_dir
+      end
+
+      def test_complete_require_with_string_convertable_in_load_path
+        temp_dir = Dir.mktmpdir
+        File.write(File.join(temp_dir, "foo.rb"), "test")
+        object = Object.new
+        object.define_singleton_method(:to_s) { temp_dir }
+        $LOAD_PATH << object
+
+        candidates = IRB::InputCompletor::CompletionProc.("'foo", "require ", "")
+        assert_include candidates, "'foo"
+      ensure
+        $LOAD_PATH.pop if object
+        FileUtils.remove_entry(temp_dir) if temp_dir
+      end
+
+      def test_complete_require_with_malformed_object_in_load_path
+        object = Object.new
+        def object.to_s; raise; end
+        $LOAD_PATH << object
+
+        assert_nothing_raised do
+          IRB::InputCompletor::CompletionProc.("'foo", "require ", "")
+        end
+      ensure
+        $LOAD_PATH.pop if object
+      end
+
+      def test_complete_require_library_name_first
+        pend 'Need to use virtual library paths'
+        candidates = IRB::InputCompletor::CompletionProc.("'csv", "require ", "")
+        assert_equal "'csv", candidates.first
+      end
+
+      def test_complete_require_relative
+        candidates = Dir.chdir(__dir__ + "/../..") do
+          IRB::InputCompletor::CompletionProc.("'lib/irb", "require_relative ", "")
+        end
+        %w['lib/irb/init 'lib/irb/ruby-lex].each do |word|
+          assert_include candidates, word
+        end
+        # Test cache
+        candidates = Dir.chdir(__dir__ + "/../..") do
+          IRB::InputCompletor::CompletionProc.("'lib/irb", "require_relative ", "")
+        end
+        %w['lib/irb/init 'lib/irb/ruby-lex].each do |word|
+          assert_include candidates, word
+        end
+      end
+    end
+
+    class TestVariableCompletion < TestCompletion
+      def test_complete_variable
+        # Bug fix issues https://github.com/ruby/irb/issues/368
+        # Variables other than `str_example` and `@str_example` are defined to ensure that irb completion does not cause unintended behavior
+        str_example = ''
+        @str_example = ''
+        private_methods = ''
+        methods = ''
+        global_variables = ''
+        local_variables = ''
+        instance_variables = ''
+
+        # suppress "assigned but unused variable" warning
+        str_example.clear
+        @str_example.clear
+        private_methods.clear
+        methods.clear
+        global_variables.clear
+        local_variables.clear
+        instance_variables.clear
+
+        assert_include(IRB::InputCompletor.retrieve_completion_data("str_examp", bind: binding), "str_example")
+        assert_equal(IRB::InputCompletor.retrieve_completion_data("str_example", bind: binding, doc_namespace: true), "String")
+        assert_equal(IRB::InputCompletor.retrieve_completion_data("str_example.to_s", bind: binding, doc_namespace: true), "String.to_s")
+
+        assert_include(IRB::InputCompletor.retrieve_completion_data("@str_examp", bind: binding), "@str_example")
+        assert_equal(IRB::InputCompletor.retrieve_completion_data("@str_example", bind: binding, doc_namespace: true), "String")
+        assert_equal(IRB::InputCompletor.retrieve_completion_data("@str_example.to_s", bind: binding, doc_namespace: true), "String.to_s")
+      end
+
+      def test_complete_sort_variables
+        xzy, xzy_1, xzy2 = '', '', ''
+
+        xzy.clear
+        xzy_1.clear
+        xzy2.clear
+
+        candidates = IRB::InputCompletor.retrieve_completion_data("xz", bind: binding, doc_namespace: false)
+        assert_equal(candidates, %w[xzy xzy2 xzy_1])
+      end
+    end
+
     def test_complete_symbol
       %w"UTF-16LE UTF-7".each do |enc|
         "K".force_encoding(enc).to_sym
@@ -115,108 +232,6 @@ module TestIRB
       end
     end
 
-    def test_complete_require
-      candidates = IRB::InputCompletor::CompletionProc.("'irb", "require ", "")
-      %w['irb/init 'irb/ruby-lex].each do |word|
-        assert_include candidates, word
-      end
-      # Test cache
-      candidates = IRB::InputCompletor::CompletionProc.("'irb", "require ", "")
-      %w['irb/init 'irb/ruby-lex].each do |word|
-        assert_include candidates, word
-      end
-    end
-
-    def test_complete_require_with_pathname_in_load_path
-      temp_dir = Dir.mktmpdir
-      File.write(File.join(temp_dir, "foo.rb"), "test")
-      test_path = Pathname.new(temp_dir)
-      $LOAD_PATH << test_path
-
-      candidates = IRB::InputCompletor::CompletionProc.("'foo", "require ", "")
-      assert_include candidates, "'foo"
-    ensure
-      $LOAD_PATH.pop if test_path
-      FileUtils.remove_entry(temp_dir) if temp_dir
-    end
-
-    def test_complete_require_with_string_convertable_in_load_path
-      temp_dir = Dir.mktmpdir
-      File.write(File.join(temp_dir, "foo.rb"), "test")
-      object = Object.new
-      object.define_singleton_method(:to_s) { temp_dir }
-      $LOAD_PATH << object
-
-      candidates = IRB::InputCompletor::CompletionProc.("'foo", "require ", "")
-      assert_include candidates, "'foo"
-    ensure
-      $LOAD_PATH.pop if object
-      FileUtils.remove_entry(temp_dir) if temp_dir
-    end
-
-    def test_complete_require_with_malformed_object_in_load_path
-      object = Object.new
-      def object.to_s; raise; end
-      $LOAD_PATH << object
-
-      assert_nothing_raised do
-        IRB::InputCompletor::CompletionProc.("'foo", "require ", "")
-      end
-    ensure
-      $LOAD_PATH.pop if object
-    end
-
-    def test_complete_require_library_name_first
-      pend 'Need to use virtual library paths'
-      candidates = IRB::InputCompletor::CompletionProc.("'csv", "require ", "")
-      assert_equal "'csv", candidates.first
-    end
-
-    def test_complete_require_relative
-      candidates = Dir.chdir(__dir__ + "/../..") do
-        IRB::InputCompletor::CompletionProc.("'lib/irb", "require_relative ", "")
-      end
-      %w['lib/irb/init 'lib/irb/ruby-lex].each do |word|
-        assert_include candidates, word
-      end
-      # Test cache
-      candidates = Dir.chdir(__dir__ + "/../..") do
-        IRB::InputCompletor::CompletionProc.("'lib/irb", "require_relative ", "")
-      end
-      %w['lib/irb/init 'lib/irb/ruby-lex].each do |word|
-        assert_include candidates, word
-      end
-    end
-
-    def test_complete_variable
-      # Bug fix issues https://github.com/ruby/irb/issues/368
-      # Variables other than `str_example` and `@str_example` are defined to ensure that irb completion does not cause unintended behavior
-      str_example = ''
-      @str_example = ''
-      private_methods = ''
-      methods = ''
-      global_variables = ''
-      local_variables = ''
-      instance_variables = ''
-
-      # suppress "assigned but unused variable" warning
-      str_example.clear
-      @str_example.clear
-      private_methods.clear
-      methods.clear
-      global_variables.clear
-      local_variables.clear
-      instance_variables.clear
-
-      assert_include(IRB::InputCompletor.retrieve_completion_data("str_examp", bind: binding), "str_example")
-      assert_equal(IRB::InputCompletor.retrieve_completion_data("str_example", bind: binding, doc_namespace: true), "String")
-      assert_equal(IRB::InputCompletor.retrieve_completion_data("str_example.to_s", bind: binding, doc_namespace: true), "String.to_s")
-
-      assert_include(IRB::InputCompletor.retrieve_completion_data("@str_examp", bind: binding), "@str_example")
-      assert_equal(IRB::InputCompletor.retrieve_completion_data("@str_example", bind: binding, doc_namespace: true), "String")
-      assert_equal(IRB::InputCompletor.retrieve_completion_data("@str_example.to_s", bind: binding, doc_namespace: true), "String.to_s")
-    end
-
     def test_complete_methods
       obj = Object.new
       obj.singleton_class.class_eval {
@@ -239,17 +254,6 @@ module TestIRB
       assert_include(IRB::InputCompletor.retrieve_completion_data("private_hog", bind: bind), "private_hoge")
       assert_include(IRB::InputCompletor.retrieve_completion_data("private_hoge.to_s", bind: bind), "private_hoge.to_s")
       assert_include(IRB::InputCompletor.retrieve_completion_data("private_hoge", bind: bind, doc_namespace: true), "private_hoge")
-    end
-
-    def test_complete_sort_variables
-      xzy, xzy_1, xzy2 = '', '', ''
-
-      xzy.clear
-      xzy_1.clear
-      xzy2.clear
-
-      candidates = IRB::InputCompletor.retrieve_completion_data("xz", bind: binding, doc_namespace: false)
-      assert_equal(candidates, %w[xzy xzy2 xzy_1])
     end
   end
 end
