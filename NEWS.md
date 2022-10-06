@@ -282,6 +282,13 @@ The following deprecated APIs are removed.
 ## Implementation improvements
 
 * Fixed several race conditions in `Kernel#autoload`. [[Bug #18782]]
+* Cache invalidation for expressions referencing constants is now
+  more fine-grained. `RubyVM.stat(:global_constant_state)` was
+  removed because it was closely tied to the previous caching scheme
+  where setting any constant invalidates all caches in the system.
+  New keys, `:constant_cache_invalidations` and `:constant_cache_misses`,
+  were introduced to help with use cases for `:global_constant_state`.
+  [[Feature #18589]]
 
 ## JIT
 
@@ -343,3 +350,4 @@ The following deprecated APIs are removed.
 [Feature #19026]: https://bugs.ruby-lang.org/issues/19026
 [Feature #16122]: https://bugs.ruby-lang.org/issues/16122
 [Feature #18630]: https://bugs.ruby-lang.org/issues/18630
+[Feature #18589]: https://bugs.ruby-lang.org/issues/18589
