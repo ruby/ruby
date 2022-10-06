@@ -299,7 +299,7 @@ module OpenURI
       require 'net/https'
       http.use_ssl = true
       http.verify_mode = options[:ssl_verify_mode] || OpenSSL::SSL::VERIFY_PEER
-      http.ssl_version = options[:ssl_version] if options[:ssl_version] && 
+      http.ssl_version = options[:ssl_version] if options[:ssl_version] &&
                                     OpenSSL::SSL::SSLContext::METHODS.include?(options[:ssl_version])
       store = OpenSSL::X509::Store.new
       if options[:ssl_ca_cert]
