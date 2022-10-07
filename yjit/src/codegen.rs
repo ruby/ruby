@@ -5388,6 +5388,11 @@ fn gen_send_general(
 
                         let compile_time_name = jit_peek_at_stack(jit, ctx, argc as isize);
 
+                        if !compile_time_name.string_p() && !compile_time_name.static_sym_p()  {
+                            gen_counter_incr!(asm, send_send_chain_not_string_or_sym);
+                            return CantCompile;
+                        }
+
                         mid = unsafe { rb_get_symbol_id(compile_time_name) };
                         if mid == 0 {
                             gen_counter_incr!(asm, send_send_null_mid);
@@ -5423,25 +5428,17 @@ fn gen_send_general(
 
                         assume_method_lookup_stable(jit, ocb, comptime_recv_klass, cme);
 
-                        if !compile_time_name.string_p() && !compile_time_name.static_sym_p()  {
-                            gen_counter_incr!(asm, send_send_chain_not_string_or_sym);
-                            return CantCompile;
-                        }
-
-
-
-                        let (known_class, type_mismatch_exit, compile_time_symbol) = {
+                        let (known_class, type_mismatch_exit) = {
                             if compile_time_name.string_p() {
                                 (
                                     unsafe { rb_cString },
                                     counted_exit!(ocb, side_exit, send_send_chain_not_string),
-                                    unsafe { rb_yjit_check_symbol(compile_time_name) },
+
                                 )
                             } else {
                                 (
                                     unsafe { rb_cSymbol },
                                     counted_exit!(ocb, side_exit, send_send_chain_not_sym),
-                                    compile_time_name,
                                 )
                             }
                         };
@@ -5463,18 +5460,14 @@ fn gen_send_general(
                         // values for the register allocator.
                         let name_opnd = asm.load(ctx.stack_opnd(argc));
 
-                        let symbol_opnd = if compile_time_name.string_p() {
-                            asm.ccall(rb_yjit_check_symbol as *const u8, vec![name_opnd])
-                        } else {
-                            name_opnd
-                        };
+                        let symbol_id_opnd = asm.ccall(rb_get_symbol_id as *const u8, vec![name_opnd]);
 
                         asm.comment("chain_guard_send");
                         let chain_exit = counted_exit!(ocb, side_exit, send_send_chain);
-                        asm.cmp(symbol_opnd, Qnil.into());
+                        asm.cmp(symbol_id_opnd, Qnil.into());
                         asm.jbe(chain_exit.into());
 
-                        asm.cmp(symbol_opnd, compile_time_symbol.into());
+                        asm.cmp(symbol_id_opnd, mid.into());
                         jit_chain_guard(
                             JCC_JNE,
                             jit,

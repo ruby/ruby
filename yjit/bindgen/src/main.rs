@@ -175,7 +175,7 @@ fn main() {
         .allowlist_function("rb_id2sym")
         .allowlist_function("rb_sym2id")
         .allowlist_function("rb_str_intern")
-        .allowlist_function("rb_yjit_check_symbol")
+        .allowlist_function("rb_to_id")
 
         // From internal/string.h
         .allowlist_function("rb_ec_str_resurrect")

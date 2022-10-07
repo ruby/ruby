@@ -511,7 +511,7 @@ rb_get_cme_def_body_attr_id(const rb_callable_method_entry_t *cme)
 
 ID
 rb_get_symbol_id(VALUE namep) {
-    return rb_check_id(&namep);
+    return rb_check_id2(&namep);
 }
 
 enum method_optimized_type

@@ -1112,6 +1112,38 @@ rb_check_id(volatile VALUE *namep)
     return lookup_str_id(name);
 }
 
+ID
+rb_check_id2(volatile VALUE *namep)
+{
+    VALUE tmp;
+    VALUE name = *namep;
+
+    if (STATIC_SYM_P(name)) {
+        return STATIC_SYM2ID(name);
+    }
+    else if (DYNAMIC_SYM_P(name)) {
+        if (SYMBOL_PINNED_P(name)) {
+            return RSYMBOL(name)->id;
+        }
+        else {
+            *namep = RSYMBOL(name)->fstr;
+            return 0;
+        }
+    }
+    else if (!RB_TYPE_P(name, T_STRING)) {
+        tmp = rb_check_string_type(name);
+        if (NIL_P(tmp)) {
+            rb_raise(rb_eTypeError, "%+"PRIsVALUE" is not a symbol nor a string",
+                     name);
+        }
+        name = tmp;
+        *namep = name;
+    }
+
+    return lookup_str_id(name);
+}
+
+
 VALUE
 rb_check_symbol(volatile VALUE *namep)
 {

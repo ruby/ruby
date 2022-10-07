@@ -1545,6 +1545,3 @@ extern "C" {
         line: ::std::os::raw::c_int,
     );
 }
-extern "C" {
-    pub fn rb_yjit_check_symbol(namep: VALUE) -> VALUE;
-}
