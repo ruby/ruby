@@ -1701,15 +1701,16 @@ no_exception_p(VALUE opts)
     return 0;
 }
 
-#ifndef RB_IO_TIMEOUT_DEFAULT
-#define RB_IO_TIMEOUT_DEFAULT Qnil
+// Provided by Ruby 3.2.0 and later in order to support the default IO#timeout.
+#ifndef RUBY_IO_TIMEOUT_DEFAULT
+#define RUBY_IO_TIMEOUT_DEFAULT Qnil
 #endif
 
 static void
 io_wait_writable(rb_io_t *fptr)
 {
 #ifdef HAVE_RB_IO_MAYBE_WAIT
-    rb_io_maybe_wait_writable(errno, fptr->self, RB_IO_TIMEOUT_DEFAULT);
+    rb_io_maybe_wait_writable(errno, fptr->self, RUBY_IO_TIMEOUT_DEFAULT);
 #else
     rb_io_wait_writable(fptr->fd);
 #endif
@@ -1719,7 +1720,7 @@ static void
 io_wait_readable(rb_io_t *fptr)
 {
 #ifdef HAVE_RB_IO_MAYBE_WAIT
-    rb_io_maybe_wait_readable(errno, fptr->self, RB_IO_TIMEOUT_DEFAULT);
+    rb_io_maybe_wait_readable(errno, fptr->self, RUBY_IO_TIMEOUT_DEFAULT);
 #else
     rb_io_wait_readable(fptr->fd);
 #endif
