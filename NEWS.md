@@ -223,7 +223,7 @@ Note: We're only listing outstanding class updates.
     * net-imap 0.3.1
     * net-pop 0.1.2
     * net-smtp 0.3.2
-    * rbs 2.6.0
+    * rbs 2.7.0
     * typeprof 0.21.3
     * debug 1.6.2
 *   The following default gems are now bundled gems.
