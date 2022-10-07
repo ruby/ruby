@@ -6,7 +6,7 @@ if $mswin or $mingw or $cygwin
   $CPPFLAGS << " -DYAML_DECLARE_STATIC"
 end
 
-yaml_source = with_config("libyaml-source-dir") || enable_config("bundled-libyaml", false)
+yaml_source = with_config("libyaml-source-dir")
 unless yaml_source # default to pre-installed libyaml
   pkg_config('yaml-0.1')
   dir_config('libyaml')
