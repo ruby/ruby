@@ -58,6 +58,9 @@
 // IO#wait, IO#wait_readable, IO#wait_writable, IO#wait_priority are defined by this implementation.
 #define RUBY_IO_WAIT_METHODS
 
+// Used as the default timeout argument to `rb_io_wait` to use the `IO#timeout` value.
+#define RUBY_IO_TIMEOUT_DEFAULT Qundef
+
 RBIMPL_SYMBOL_EXPORT_BEGIN()
 
 struct stat;
@@ -884,6 +887,8 @@ VALUE rb_io_set_timeout(VALUE io, VALUE timeout);
  * @param[in]  io                   An IO object to wait.
  * @param[in]  events               See above.
  * @param[in]  timeout              Time, or numeric seconds since UNIX epoch.
+ *                                  If Qnil, wait forever. If Qundef, use the
+ *                                  default timeout.
  * @exception  rb_eIOError          `io` is not open.
  * @exception  rb_eRangeError       `timeout` is out of range.
  * @exception  rb_eSystemCallError  `select(2)` failed for some reason.

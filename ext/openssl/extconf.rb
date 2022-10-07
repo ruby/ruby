@@ -27,7 +27,6 @@ if with_config("debug") or enable_config("debug")
 end
 
 have_func("rb_io_maybe_wait") # Ruby 3.1
-have_func("rb_io_timeout") # Ruby 3.2
 
 Logging::message "=== Checking for system dependent stuff... ===\n"
 have_library("nsl", "t_open")
