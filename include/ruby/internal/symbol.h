@@ -174,25 +174,6 @@ RBIMPL_ATTR_NONNULL(())
 ID rb_check_id(volatile VALUE *namep);
 
 /**
- *
- * @internal
- *
- * Indentical to rb_check_id excepted doesn't throw rb_eEncodingError error
- *
- * @param[in,out]  namep              A pointer to a name to query.
- * @pre            The object referred  by `*namep` must either  be an instance
- *                 of ::rb_cSymbol, or an instance of ::rb_cString, or responds
- *                 to `#to_str` method.
- * @exception      rb_eTypeError      Can't convert `*namep` into ::rb_cString.
- * @retval         0                  No such id ever existed in the history.
- * @retval         otherwise          The id that represents the given name.
- * @post           The object  that `*namep`  points to  is a  converted result
- *                 object, which  is always an instance  of either ::rb_cSymbol
- *                 or ::rb_cString.
- */
-ID rb_check_id2(volatile VALUE *namep);
-
-/**
  * @copydoc rb_intern_str()
  *
  * @internal

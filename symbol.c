@@ -1113,7 +1113,7 @@ rb_check_id(volatile VALUE *namep)
 }
 
 ID
-rb_check_id2(volatile VALUE *namep)
+rb_check_id2(VALUE *namep)
 {
     VALUE tmp;
     VALUE name = *namep;
@@ -1130,17 +1130,10 @@ rb_check_id2(volatile VALUE *namep)
             return 0;
         }
     }
-    else if (!RB_TYPE_P(name, T_STRING)) {
-        tmp = rb_check_string_type(name);
-        if (NIL_P(tmp)) {
-            rb_raise(rb_eTypeError, "%+"PRIsVALUE" is not a symbol nor a string",
-                     name);
-        }
-        name = tmp;
-        *namep = name;
+    else {
+        assert(RB_TYPE_P(name, T_STRING));
+        return lookup_str_id(name);
     }
-
-    return lookup_str_id(name);
 }
 
 
