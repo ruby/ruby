@@ -1419,11 +1419,11 @@ rb_io_wait(VALUE io, VALUE events, VALUE timeout)
     struct timeval tv_storage;
     struct timeval *tv = NULL;
 
-    if (timeout == Qundef) {
+    if (timeout == Qnil || timeout == Qundef) {
         timeout = fptr->timeout;
     }
 
-    if (timeout != Qnil) {
+    if (timeout != Qfalse) {
         tv_storage = rb_time_interval(timeout);
         tv = &tv_storage;
     }
