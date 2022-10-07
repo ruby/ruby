@@ -102,6 +102,16 @@ Note that each entry is kept to a minimum, see links for details.
 
 Note: We're only listing outstanding class updates.
 
+* IO
+    * Introduce `IO#timeout=` and `IO#timeout` which can cause
+    `IO::TimeoutError` to be raised if a blocking operation exceeds the
+    specified timeout. [[Feature #18630]]
+
+    ```ruby
+    STDIN.timeout = 1
+    STDIN.read # => Blocking operation timed out! (IO::TimeoutError)
+    ```
+
 * Data
     * New core class to represent simple immutable value object. The class is
       similar to `Struct` and partially shares an implementation, but has more
@@ -332,3 +342,4 @@ The following deprecated APIs are removed.
 [Feature #19008]: https://bugs.ruby-lang.org/issues/19008
 [Feature #19026]: https://bugs.ruby-lang.org/issues/19026
 [Feature #16122]: https://bugs.ruby-lang.org/issues/16122
+[Feature #18630]: https://bugs.ruby-lang.org/issues/18630

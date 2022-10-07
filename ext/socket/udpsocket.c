@@ -170,7 +170,7 @@ udp_send_internal(VALUE v)
 
         if (n >= 0) return RB_SSIZE2NUM(n);
 
-        if (rb_io_maybe_wait_writable(errno, fptr->self, Qnil)) {
+        if (rb_io_maybe_wait_writable(errno, fptr->self, fptr->timeout)) {
             goto retry;
         }
     }

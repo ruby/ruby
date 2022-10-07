@@ -7303,6 +7303,7 @@ gc_mark_children(rb_objspace_t *objspace, VALUE obj)
             gc_mark(objspace, any->as.file.fptr->writeconv_pre_ecopts);
             gc_mark(objspace, any->as.file.fptr->encs.ecopts);
             gc_mark(objspace, any->as.file.fptr->write_lock);
+            gc_mark(objspace, any->as.file.fptr->timeout);
         }
         break;
 

@@ -1641,11 +1641,21 @@ no_exception_p(VALUE opts)
     return 0;
 }
 
+inline static
+VALUE io_timeout()
+{
+#ifdef HAVE_RB_IO_TIMEOUT
+    return Qundef;
+#else
+    return Qnil;
+#endif
+}
+
 static void
 io_wait_writable(rb_io_t *fptr)
 {
 #ifdef HAVE_RB_IO_MAYBE_WAIT
-    rb_io_maybe_wait_writable(errno, fptr->self, Qnil);
+    rb_io_maybe_wait_writable(errno, fptr->self, io_timeout());
 #else
     rb_io_wait_writable(fptr->fd);
 #endif
@@ -1655,7 +1665,7 @@ static void
 io_wait_readable(rb_io_t *fptr)
 {
 #ifdef HAVE_RB_IO_MAYBE_WAIT
-    rb_io_maybe_wait_readable(errno, fptr->self, Qnil);
+    rb_io_maybe_wait_readable(errno, fptr->self, io_timeout());
 #else
     rb_io_wait_readable(fptr->fd);
 #endif

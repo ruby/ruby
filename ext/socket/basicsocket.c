@@ -601,7 +601,7 @@ rsock_bsock_send(int argc, VALUE *argv, VALUE socket)
 
         if (n >= 0) return SSIZET2NUM(n);
 
-        if (rb_io_maybe_wait_writable(errno, socket, Qnil)) {
+        if (rb_io_maybe_wait_writable(errno, socket, fptr->timeout)) {
             continue;
         }
 

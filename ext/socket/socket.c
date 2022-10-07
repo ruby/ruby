@@ -28,6 +28,10 @@ rsock_syserr_fail_host_port(int err, const char *mesg, VALUE host, VALUE port)
     message = rb_sprintf("%s for %+"PRIsVALUE" port % "PRIsVALUE"",
                          mesg, host, port);
 
+    if (err == ETIMEDOUT) {
+        rb_exc_raise(rb_exc_new3(rb_eIOTimeoutError, message));
+    }
+
     rb_syserr_fail_str(err, message);
 }
 
