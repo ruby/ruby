@@ -15,13 +15,8 @@ unless yaml_source # default to pre-installed libyaml
   end
 end
 
-if yaml_source == true
-  # search the latest libyaml source under $srcdir
-  yaml_source = Dir.glob("#{$srcdir}/yaml{,-*}/").max_by {|n| File.basename(n).scan(/\d+/).map(&:to_i)}
-elsif yaml_source
-  yaml_source = yaml_source.gsub(/\$\((\w+)\)|\$\{(\w+)\}/) {ENV[$1||$2]}
-end
 if yaml_source
+  yaml_source = yaml_source.gsub(/\$\((\w+)\)|\$\{(\w+)\}/) {ENV[$1||$2]}
   yaml_source = yaml_source.chomp("/")
   yaml_configure = "#{File.expand_path(yaml_source)}/configure"
   unless File.exist?(yaml_configure)
