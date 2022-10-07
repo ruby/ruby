@@ -39,20 +39,19 @@ Directives may be mixed as desired
 
 Either of the following two modifiers may be applied to any directive:
 
-- <tt>'*'</tt> - specifies that the directive is to be applied
-  as many times as needed:
+- <tt>'*'</tt> - The directive is to be applied as many times as needed:
 
     [65, 66].pack('C*') # => "AB"
     'AB'.unpack('C*')   # => [65, 66]
 
-- Integer +n+ - specifies that the directive is to be applied +n+ times:
+- Integer +n+ - The directive is to be applied +n+ times:
 
     [65, 66].pack('C2') # => "AB"
     [65, 66].pack('C3') # Raises ArgumentError.
     'AB'.unpack('C2')   # => [65, 66]
     'AB'.unpack('C3')   # => [65, 66, nil]
 
-  Note: Directives in <tt>%w[A a Z]</tt> use _n_ as a field-width specifier;
+  Note: Directives in <tt>%w[A a Z m]</tt> use _n_ differently;
   see {String Directives}[rdoc-ref:packed_data.md@String+Directives].
 
 The packing method accepts optional keyword argument
@@ -78,14 +77,14 @@ Any of the packing/unpacking methods may have a block:
 
 ==== 8-Bit \Integer Directives
 
-- <tt>'c'</tt> - specifies an 8-bit signed integer
+- <tt>'c'</tt> - 8-bit signed integer
   (like C <tt>signed char</tt>):
 
     [0, 1, 255].pack('c*')  # => "\x00\x01\xFF"
     [0, 1, -1].pack('c*')   # => "\x00\x01\xFF"
     "\0\1\xFF".unpack('c*') # => [0, 1, -1]
 
-- <tt>'C'</tt> - specifies an 8-bit signed integer
+- <tt>'C'</tt> - 8-bit signed integer
   (like C <tt>unsigned char</tt>):
 
     [0, 1, 255].pack('C*')    # => "\x00\x01\xFF"
@@ -94,28 +93,28 @@ Any of the packing/unpacking methods may have a block:
 
 ==== 16-Bit \Integer Directives
 
-- <tt>'s'</tt> - specifies a 16-bit signed integer, native-endian
+- <tt>'s'</tt> - 16-bit signed integer, native-endian
   (like C <tt>int16_t</tt>):
 
     [513, -514].pack('s*')      # => "\x01\x02\xFE\xFD"
     s = [513, 65022].pack('s*') # => "\x01\x02\xFE\xFD"
     s.unpack('s*')              # => [513, -514]
 
-- <tt>'S'</tt> - specifies a 16-bit unsigned integer, native-endian
+- <tt>'S'</tt> - 16-bit unsigned integer, native-endian
   (like C <tt>uint16_t</tt>):
 
     [513, -514].pack('S*')      # => "\x01\x02\xFE\xFD"
     s = [513, 65022].pack('S*') # => "\x01\x02\xFE\xFD"
     s.unpack('S*')              # => [513, 65022]
 
-- <tt>'n'</tt> - specifies a 16-bit network integer, big-endian:
+- <tt>'n'</tt> - 16-bit network integer, big-endian:
 
     s = [0, 1, -1, 32767, -32768, 65535].pack('n*')
     # => "\x00\x00\x00\x01\xFF\xFF\x7F\xFF\x80\x00\xFF\xFF"
     s.unpack('n*')
     # => [0, 1, 65535, 32767, 32768, 65535]
 
-- <tt>'v'</tt> - specifies a 16-bit VAX integer, little-endian:
+- <tt>'v'</tt> - 16-bit VAX integer, little-endian:
 
     s = [0, 1, -1, 32767, -32768, 65535].pack('v*')
     # => "\x00\x00\x01\x00\xFF\xFF\xFF\x7F\x00\x80\xFF\xFF"
@@ -124,7 +123,7 @@ Any of the packing/unpacking methods may have a block:
 
 ==== 32-Bit \Integer Directives
 
-- <tt>'l'</tt> - specifies a 32-bit signed integer, native-endian
+- <tt>'l'</tt> - 32-bit signed integer, native-endian
   (like C <tt>int32_t</tt>):
 
     s = [67305985, -50462977].pack('l*')
@@ -132,7 +131,7 @@ Any of the packing/unpacking methods may have a block:
     s.unpack('l*')
     # => [67305985, -50462977]
 
-- <tt>'L'</tt> - specifies a 32-bit unsigned integer, native-endian
+- <tt>'L'</tt> - 32-bit unsigned integer, native-endian
   (like C <tt>uint32_t</tt>):
 
     s = [67305985, 4244504319].pack('L*')
@@ -140,14 +139,14 @@ Any of the packing/unpacking methods may have a block:
     s.unpack('L*')
     # => [67305985, 4244504319]
 
-- <tt>'N'</tt> - specifies a 32-bit network integer, big-endian:
+- <tt>'N'</tt> - 32-bit network integer, big-endian:
 
     s = [0,1,-1].pack('N*')
     # => "\x00\x00\x00\x00\x00\x00\x00\x01\xFF\xFF\xFF\xFF"
     s.unpack('N*')
     # => [0, 1, 4294967295]
 
-- <tt>'V'</tt> - specifies a 32-bit VAX integer, little-endian:
+- <tt>'V'</tt> - 32-bit VAX integer, little-endian:
 
     s = [0,1,-1].pack('V*')
     # => "\x00\x00\x00\x00\x01\x00\x00\x00\xFF\xFF\xFF\xFF"
@@ -156,7 +155,7 @@ Any of the packing/unpacking methods may have a block:
 
 ==== 64-Bit \Integer Directives
 
-- <tt>'q'</tt> - specifies a 64-bit signed integer, native-endian
+- <tt>'q'</tt> - 64-bit signed integer, native-endian
   (like C <tt>int64_t</tt>):
 
     s = [578437695752307201, -506097522914230529].pack('q*')
@@ -164,7 +163,7 @@ Any of the packing/unpacking methods may have a block:
     s.unpack('q*')
     # => [578437695752307201, -506097522914230529]
 
-- <tt>'Q'</tt> - specifies a 64-bit unsigned integer, native-endian
+- <tt>'Q'</tt> - 64-bit unsigned integer, native-endian
   (like C <tt>uint64_t</tt>):
 
     s = [578437695752307201, 17940646550795321087].pack('Q*')
@@ -174,7 +173,7 @@ Any of the packing/unpacking methods may have a block:
 
 ==== Platform-Dependent \Integer Directives
 
-- <tt>'i'</tt> - specifies a platform-dependent width signed integer,
+- <tt>'i'</tt> - Platform-dependent width signed integer,
   native-endian:
 
     s = [67305985, -50462977].pack('i*')
@@ -182,7 +181,7 @@ Any of the packing/unpacking methods may have a block:
     s.unpack('i*')
     # => [67305985, -50462977]
 
-- <tt>'I'</tt> - specifies a platform-dependent width unsigned integer,
+- <tt>'I'</tt> - Platform-dependent width unsigned integer,
   native-endian:
 
     s = [67305985, -50462977].pack('I*')
@@ -192,7 +191,7 @@ Any of the packing/unpacking methods may have a block:
 
 ==== Pointer Directives
 
-- <tt>'j'</tt> - specifies a 64-bit pointer-width signed integer,
+- <tt>'j'</tt> - 64-bit pointer-width signed integer,
   native-endian (like C <tt>intptr_t</tt>):
 
     s = [67305985, -50462977].pack('j*')
@@ -200,7 +199,7 @@ Any of the packing/unpacking methods may have a block:
     s.unpack('j*')
     # => [67305985, -50462977]
 
-- <tt>'j'</tt> - specifies a 64-bit pointer-width unsigned integer,
+- <tt>'j'</tt> - 64-bit pointer-width unsigned integer,
   native-endian (like C <tt>uintptr_t</tt>):
 
     s = [67305985, 4244504319].pack('J*')
@@ -209,7 +208,7 @@ Any of the packing/unpacking methods may have a block:
     # => [67305985, 4244504319]
 
 ==== Other \Integer Directives
-                                 |
+:
 - <tt>'U'</tt> - UTF-8 character:
 
     s = [4194304].pack('U*')
@@ -230,61 +229,92 @@ Any of the packing/unpacking methods may have a block:
 For directives in <tt>%w[ i I s S l L q Q j J]</tt>,
 these modifiers may be suffixed:
 
- - <tt>'!'</tt> or <tt>'_'</tt>:
-   use the underlying platform’s native size:
-
-- <tt>'>'</tt> - Big-endian:
-
-- <tt>'<'</tt> - Little-endian:
+- <tt>'!'</tt> or <tt>'_'</tt> - Underlying platform’s native size.
+- <tt>'>'</tt> - Big-endian.
+- <tt>'<'</tt> - Little-endian.
 
 === \Float Directives
 
-==== Double-Precision \Float Directives
-
-| Directive  | Meaning                                           |
-|------------|---------------------------------------------------|
-| 'F' or 'f' | single-precision, native format                   |
-| 'e'        | single-precision, little-endian byte order        |
-| 'g'        | single-precision, network (big-endian) byte order |
-
 ==== Single-Precision \Float Directives
 
-| 'D' or 'd' | double-precision, native format                   |
-| 'E'        | double-precision, little-endian byte order        |
-| 'G'        | double-precision, network (big-endian) byte order |
+- <tt>'F'</tt> or <tt>'f'</tt> - Native format:
+
+    s = [3.0].pack('F') # => "\x00\x00@@"
+    s.unpack('F')       # => [3.0]
+
+- <tt>'e'</tt> - Little-endian:
+
+    s = [3.0].pack('e') # => "\x00\x00@@"
+    s.unpack('e')       # => [3.0]
+
+- <tt>'g'</tt> - Big-endian:
+
+    s = [3.0].pack('g') # => "@@\x00\x00"
+    s.unpack('g')       # => [3.0]
+
+==== Double-Precision \Float Directives
+
+- <tt>'D'</tt> or <tt>'d'</tt> - Native format:
+
+    s = [3.0].pack('D') # => "\x00\x00\x00\x00\x00\x00\b@"
+    s.unpack('D')       # => [3.0]
+
+- <tt>'E'</tt> - Little-endian:
+
+    s = [3.0].pack('E') # => "\x00\x00\x00\x00\x00\x00\b@"
+    s.unpack('E')       # => [3.0]
+
+- <tt>'G'</tt> - Big-endian:
+
+    s = [3.0].pack('G') # => "@\b\x00\x00\x00\x00\x00\x00"
+    s.unpack('G')       # => [3.0]
 
 === \String Directives
 
-| Directive    | Meaning                                                |
-|--------------|--------------------------------------------------------|
-| 'A'          | Arbitrary binary string (space padded, count is width) |
-| 'a'          | Arbitrary binary string (null padded, count is width)  |
-| 'Z'          | Same as ``a'', except that null is added with *        |
+==== Binary \String Directives
 
-| 'B'          | Bit string (MSB first)                                 |
-| 'b'          | Bit string (LSB first)                                 |
+- <tt>'A'</tt> - Arbitrary binary string (space padded, count is width):
 
-| 'H'          | Hex string (high nibble first)                         |
-| 'h'          | Hex string (low nibble first)                          |
+- <tt>'a'</tt> - Arbitrary binary string (null padded, count is width):
 
-| 'P           | Pointer to a structure (fixed-length string)           |
-| 'p           | Pointer to a null-terminated string                    |
+- <tt>'Z'</tt> - Same as ``a'', except that null is added with *:
 
-| 'u'          | UU-encoded string                                      |
-| 'M'          | Quoted printable, MIME encoding (see note 1)           |
-| 'm           | Base64 encoded string (see note 2)                     |
+==== Bit \String Directives
 
-Notes:
+- <tt>'B'</tt> - Bit string (high byte first):
 
-1. Text mode, but input must use LF and output LF (see RFC 2045).
-2. Count specifies input bytes between each newline,
-   rounded down to nearest multiple of 3.
-   If count is 0, no newlines are added (see RFC 4648);
+- <tt>'b'</tt> - Bit string (low byte first):
 
-=== Other Directives
+==== Hex \String Directives
 
-| Directive | Meaning                    |
-|-----------|----------------------------|
-| '@'       | Moves to absolute position |
-| 'X'       | Back up a byte             |
-| 'x'       | Null byte                  |
+- <tt>'H'</tt> - Hex string (high nibble first):
+
+- <tt>'h'</tt> - Hex string (low nibble first):
+
+==== Pointer \String Directives
+
+- <tt>'P'</tt> - Pointer to a structure (fixed-length string):
+
+- <tt>'p'</tt> - Pointer to a null-terminated string:
+
+==== Other \String Directives
+
+- <tt>'u'</tt> - UU-encoded string:
+
+- <tt>'M'</tt> - Quoted printable, MIME encoding;
+  text mode, but input must use LF and output LF (see RFC 2045):
+
+- <tt>'m'</tt> - Base64 encoded string.
+  Count specifies input bytes between each newline,
+  rounded down to nearest multiple of 3;
+  If count is zero, no newlines are added (see RFC 4648):
+
+=== Offset Directives
+
+- <tt>'@'</tt> - Moves to absolute position:
+
+- <tt>'X'</tt> - Back up a byte:
+
+=== Null Byte Direcive
+
+- <tt>'x'</tt> - Null byte:
