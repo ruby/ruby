@@ -184,7 +184,6 @@ ID rb_check_id(volatile VALUE *namep);
  *                 of ::rb_cSymbol, or an instance of ::rb_cString, or responds
  *                 to `#to_str` method.
  * @exception      rb_eTypeError      Can't convert `*namep` into ::rb_cString.
- * @exception      rb_eEncodingError  Given string is non-ASCII.
  * @retval         0                  No such id ever existed in the history.
  * @retval         otherwise          The id that represents the given name.
  * @post           The object  that `*namep`  points to  is a  converted result
