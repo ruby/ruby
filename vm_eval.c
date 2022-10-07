@@ -11,6 +11,7 @@
 
 **********************************************************************/
 
+#include "internal/thread.h"
 struct local_var_list {
     VALUE tbl;
 };
@@ -1672,7 +1673,9 @@ eval_make_iseq(VALUE src, VALUE fname, int line, const rb_binding_t *bind,
     rb_iseq_t *iseq = NULL;
     rb_ast_t *ast;
     int isolated_depth = 0;
-    int coverage_enabled = Qtrue;
+
+    // Conditionally enable coverage depending on the current mode:
+    VALUE coverage_enabled = RBOOL(rb_get_coverage_mode() & COVERAGE_TARGET_EVAL);
 
     {
         int depth = 1;
