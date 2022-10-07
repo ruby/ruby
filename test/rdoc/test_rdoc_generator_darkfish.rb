@@ -234,7 +234,16 @@ class TestRDocGeneratorDarkfish < RDoc::TestCase
   end
 
   def test_generated_filename_with_html_tag
-    @store.add_file '"><em>should be escaped'
+    filename = '"><em>should be escaped'
+    begin # in @tmpdir
+      File.write(filename, '')
+    rescue SystemCallError
+      # ", <, > chars are prohibited as filename
+      return
+    else
+      File.unlink(filename)
+    end
+    @store.add_file filename
     doc = @store.all_files.last
     doc.parser = RDoc::Parser::Simple
 
