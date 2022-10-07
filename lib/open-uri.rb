@@ -99,7 +99,8 @@ module OpenURI
     :open_timeout => true,
     :ssl_ca_cert => nil,
     :ssl_verify_mode => nil,
-    :ssl_version => nil,
+    :ssl_min_version => nil,
+    :ssl_max_version => nil,
     :ftp_active_mode => false,
     :redirect => true,
     :encoding => nil,
@@ -299,8 +300,8 @@ module OpenURI
       require 'net/https'
       http.use_ssl = true
       http.verify_mode = options[:ssl_verify_mode] || OpenSSL::SSL::VERIFY_PEER
-      http.ssl_version = options[:ssl_version] if options[:ssl_version] &&
-                                    OpenSSL::SSL::SSLContext::METHODS.include?(options[:ssl_version])
+      http.min_version = options[:ssl_min_version]
+      http.max_version = options[:ssl_max_version]
       store = OpenSSL::X509::Store.new
       if options[:ssl_ca_cert]
         Array(options[:ssl_ca_cert]).each do |cert|
@@ -701,6 +702,20 @@ module OpenURI
     #    :ssl_verify_mode=>mode
     #
     #  :ssl_verify_mode is used to specify openssl verify mode.
+    #
+    # [:ssl_min_version]
+    #  Synopsis:
+    #    :ssl_min_version=>:TLS1_2
+    #
+    #  :ssl_min_version option specifies the minimum allowed SSL/TLS protocol
+    #  version.  See also OpenSSL::SSL::SSLContext#min_version=.
+    #
+    # [:ssl_max_version]
+    #  Synopsis:
+    #    :ssl_max_version=>:TLS1_2
+    #
+    #  :ssl_max_version option specifies the maximum allowed SSL/TLS protocol
+    #  version.  See also OpenSSL::SSL::SSLContext#max_version=.
     #
     # [:ftp_active_mode]
     #  Synopsis:
