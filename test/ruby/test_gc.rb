@@ -410,6 +410,7 @@ class TestGc < Test::Unit::TestCase
       1_000_000.times { Object.new }
 
       before_stats = GC.stat
+      before_stat_heap = GC.stat_heap
 
       1_000_000.times { Object.new }
 
@@ -418,9 +419,10 @@ class TestGc < Test::Unit::TestCase
       GC.start(full_mark: false)
 
       after_stats = GC.stat
+      after_stat_heap = GC.stat_heap
 
       # Debugging output to for failures in trunk-repeat50@phosphorus-docker
-      debug_msg = "before_stats: #{before_stats}\nafter_stats: #{after_stats}"
+      debug_msg = "before_stats: #{before_stats}\nbefore_stat_heap: #{before_stat_heap}\nafter_stats: #{after_stats}\nafter_stat_heap: #{after_stat_heap}"
 
       # Should not be thrashing in page creation
       assert_equal before_stats[:heap_allocated_pages], after_stats[:heap_allocated_pages], debug_msg
