@@ -494,7 +494,7 @@ rb_cloexec_fcntl_dupfd(int fd, int minfd)
 
 #if defined(_WIN32)
 #define WAIT_FD_IN_WIN32(fptr) \
-    (rb_w32_io_cancelable_p((fptr)->fd) ? Qnil : rb_io_wait(fptr->self, RB_INT2NUM(RUBY_IO_READABLE), fptr->timeout))
+    (rb_w32_io_cancelable_p((fptr)->fd) ? Qnil : rb_io_wait(fptr->self, RB_INT2NUM(RUBY_IO_READABLE), RUBY_IO_TIMEOUT_DEFAULT))
 #else
 #define WAIT_FD_IN_WIN32(fptr)
 #endif
@@ -866,6 +866,11 @@ rb_io_timeout(VALUE self)
 VALUE
 rb_io_set_timeout(VALUE self, VALUE timeout)
 {
+    // Validate it:
+    if (RTEST(timeout)) {
+        rb_time_interval(timeout);
+    }
+
     rb_io_t *fptr = rb_io_get_fptr(self);
 
     fptr->timeout = timeout;
@@ -1044,7 +1049,7 @@ void
 rb_io_read_check(rb_io_t *fptr)
 {
     if (!READ_DATA_PENDING(fptr)) {
-        rb_io_wait(fptr->self, RB_INT2NUM(RUBY_IO_READABLE), fptr->timeout);
+        rb_io_wait(fptr->self, RB_INT2NUM(RUBY_IO_READABLE), RUBY_IO_TIMEOUT_DEFAULT);
     }
     return;
 }
@@ -1395,7 +1400,7 @@ io_fflush(rb_io_t *fptr)
         return 0;
 
     while (fptr->wbuf.len > 0 && io_flush_buffer(fptr) != 0) {
-        if (!rb_io_maybe_wait_writable(errno, fptr->self, fptr->timeout))
+        if (!rb_io_maybe_wait_writable(errno, fptr->self, RUBY_IO_TIMEOUT_DEFAULT))
             return -1;
 
         rb_io_check_closed(fptr);
@@ -1423,7 +1428,7 @@ rb_io_wait(VALUE io, VALUE events, VALUE timeout)
         timeout = fptr->timeout;
     }
 
-    if (timeout != Qfalse) {
+    if (timeout != Qnil) {
         tv_storage = rb_time_interval(timeout);
         tv = &tv_storage;
     }
@@ -1793,7 +1798,7 @@ io_binwrite_string(VALUE arg)
             remaining -= result;
         }
         // Wait for it to become writable:
-        else if (rb_io_maybe_wait_writable(errno, p->fptr->self, p->fptr->timeout)) {
+        else if (rb_io_maybe_wait_writable(errno, p->fptr->self, RUBY_IO_TIMEOUT_DEFAULT)) {
             rb_io_check_closed(p->fptr);
         }
         else {
@@ -2060,7 +2065,7 @@ io_binwritev_internal(VALUE arg)
             iov->iov_base = (char *)iov->iov_base + result;
             iov->iov_len -= result;
         }
-        else if (rb_io_maybe_wait_writable(errno, fptr->self, fptr->timeout)) {
+        else if (rb_io_maybe_wait_writable(errno, fptr->self, RUBY_IO_TIMEOUT_DEFAULT)) {
             rb_io_check_closed(fptr);
         }
         else {
@@ -2567,7 +2572,7 @@ rb_io_rewind(VALUE io)
 static int
 fptr_wait_readable(rb_io_t *fptr)
 {
-    int result = rb_io_maybe_wait_readable(errno, fptr->self, fptr->timeout);
+    int result = rb_io_maybe_wait_readable(errno, fptr->self, RUBY_IO_TIMEOUT_DEFAULT);
 
     if (result)
         rb_io_check_closed(fptr);
@@ -5291,7 +5296,7 @@ finish_writeconv(rb_io_t *fptr, int noalloc)
                     ds += result;
                     if ((size_t)result == remaining) break;
                 }
-                else if (rb_io_maybe_wait_writable(errno, fptr->self, fptr->timeout)) {
+                else if (rb_io_maybe_wait_writable(errno, fptr->self, RUBY_IO_TIMEOUT_DEFAULT)) {
                     if (fptr->fd < 0)
                         return noalloc ? Qtrue : rb_exc_new3(rb_eIOError, rb_str_new_cstr(closed_stream));
                 }
@@ -12284,7 +12289,7 @@ fiber_scheduler_wait_for(void * _arguments)
 {
     struct fiber_scheduler_wait_for_arguments *arguments = (struct fiber_scheduler_wait_for_arguments *)_arguments;
 
-    arguments->result = rb_fiber_scheduler_io_wait(arguments->scheduler, arguments->fptr->self, INT2NUM(arguments->events), arguments->fptr->timeout);
+    arguments->result = rb_fiber_scheduler_io_wait(arguments->scheduler, arguments->fptr->self, INT2NUM(arguments->events), RUBY_IO_TIMEOUT_DEFAULT);
 
     return NULL;
 }

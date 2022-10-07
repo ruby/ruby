@@ -170,7 +170,7 @@ udp_send_internal(VALUE v)
 
         if (n >= 0) return RB_SSIZE2NUM(n);
 
-        if (rb_io_maybe_wait_writable(errno, fptr->self, fptr->timeout)) {
+        if (rb_io_maybe_wait_writable(errno, fptr->self, RUBY_IO_TIMEOUT_DEFAULT)) {
             goto retry;
         }
     }
