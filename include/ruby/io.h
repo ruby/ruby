@@ -59,7 +59,7 @@
 #define RUBY_IO_WAIT_METHODS
 
 // Used as the default timeout argument to `rb_io_wait` to use the `IO#timeout` value.
-#define RUBY_IO_TIMEOUT_DEFAULT Qundef
+#define RUBY_IO_TIMEOUT_DEFAULT Qnil
 
 RBIMPL_SYMBOL_EXPORT_BEGIN()
 
