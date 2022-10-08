@@ -16,10 +16,6 @@
 #include "ruby/fiber/scheduler.h"
 #include "ruby/io/buffer.h"
 
-#ifdef _WIN32
-# include "ruby/ruby.h"
-#endif
-
 #include <ctype.h>
 #include <errno.h>
 #include <stddef.h>
