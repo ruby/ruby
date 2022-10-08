@@ -5602,6 +5602,7 @@ f_kwrest	: kwrest_mark tIDENTIFIER
 		    {
 			arg_var(p, ANON_KEYWORD_REST_ID);
 		    /*%%%*/
+			$$ = internal_id(p);
 		    /*% %*/
 		    /*% ripper: kwrest_param!(Qnil) %*/
 		    }
@@ -5677,6 +5678,7 @@ f_rest_arg	: restarg_mark tIDENTIFIER
 		    {
 			arg_var(p, ANON_REST_ID);
 		    /*%%%*/
+			$$ = internal_id(p);
 		    /*% %*/
 		    /*% ripper: rest_param!(Qnil) %*/
 		    }
@@ -5698,6 +5700,7 @@ f_block_arg	: blkarg_mark tIDENTIFIER
                     {
 			arg_var(p, ANON_BLOCK_ID);
                     /*%%%*/
+			$$ = internal_id(p);
                     /*% %*/
 		    /*% ripper: blockarg!(Qnil) %*/
                     }
