@@ -363,7 +363,8 @@ module OpenSSL::PKey
     #    rsa.private_encrypt(string, padding) -> String
     #
     # Encrypt +string+ with the private key.  +padding+ defaults to
-    # PKCS1_PADDING. The encrypted string output can be decrypted using
+    # PKCS1_PADDING, which is known to be insecure but is kept for backwards
+    # compatibility. The encrypted string output can be decrypted using
     # #public_decrypt.
     #
     # <b>Deprecated in version 3.0</b>.
@@ -386,7 +387,8 @@ module OpenSSL::PKey
     #    rsa.public_decrypt(string, padding) -> String
     #
     # Decrypt +string+, which has been encrypted with the private key, with the
-    # public key.  +padding+ defaults to PKCS1_PADDING.
+    # public key.  +padding+ defaults to PKCS1_PADDING which is known to be
+    # insecure but is kept for backwards compatibility.
     #
     # <b>Deprecated in version 3.0</b>.
     # Consider using PKey::PKey#sign_raw and PKey::PKey#verify_raw, and
@@ -407,7 +409,8 @@ module OpenSSL::PKey
     #    rsa.public_encrypt(string, padding) -> String
     #
     # Encrypt +string+ with the public key.  +padding+ defaults to
-    # PKCS1_PADDING. The encrypted string output can be decrypted using
+    # PKCS1_PADDING, which is known to be insecure but is kept for backwards
+    # compatibility. The encrypted string output can be decrypted using
     # #private_decrypt.
     #
     # <b>Deprecated in version 3.0</b>.
@@ -428,7 +431,8 @@ module OpenSSL::PKey
     #    rsa.private_decrypt(string, padding) -> String
     #
     # Decrypt +string+, which has been encrypted with the public key, with the
-    # private key. +padding+ defaults to PKCS1_PADDING.
+    # private key. +padding+ defaults to PKCS1_PADDING, which is known to be
+    # insecure but is kept for backwards compatibility.
     #
     # <b>Deprecated in version 3.0</b>.
     # Consider using PKey::PKey#encrypt and PKey::PKey#decrypt instead.
