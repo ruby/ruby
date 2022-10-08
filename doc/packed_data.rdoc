@@ -303,10 +303,14 @@ for one byte in the input or output string.
     "foo".unpack('A4')   # => ["foo"]
 
     russian = "\u{442 435 441 442}" # => "тест"
-    russian.unpack('A')             # => ["\xD1"]
-    russian.unpack('A2')            # => ["\xD1\x82"]
-    russian.unpack('A4')            # => ["\xD1\x82\xD0\xB5"]
-    russian.unpack('A*')            # => ["\xD1\x82\xD0\xB5\xD1\x81\xD1\x82"]
+    russian.size         # => 4
+    russian.bytesize     # => 8
+    [russian].pack('A')  # => "\xD1"
+    [russian].pack('A*') # => "\xD1\x82\xD0\xB5\xD1\x81\xD1\x82"
+    russian.unpack('A')  # => ["\xD1"]
+    russian.unpack('A2') # => ["\xD1\x82"]
+    russian.unpack('A4') # => ["\xD1\x82\xD0\xB5"]
+    russian.unpack('A*') # => ["\xD1\x82\xD0\xB5\xD1\x81\xD1\x82"]
 
 - <tt>'a'</tt> - Arbitrary binary string (null padded; count is width):
 
@@ -337,13 +341,91 @@ for one byte in the input or output string.
 
 - <tt>'B'</tt> - Bit string (high byte first):
 
+    ['11111111' + '00000000'].pack('B*') # => "\xFF\x00"
+    ['10000000' + '01000000'].pack('B*') # => "\x80@"
+
+    ['1'].pack('B0') # => ""
+    ['1'].pack('B1') # => "\x80"
+    ['1'].pack('B2') # => "\x80\x00"
+    ['1'].pack('B3') # => "\x80\x00"
+    ['1'].pack('B4') # => "\x80\x00\x00"
+    ['1'].pack('B5') # => "\x80\x00\x00"
+    ['1'].pack('B6') # => "\x80\x00\x00\x00"
+
+    "\xff\x00".unpack("B*") # => ["1111111100000000"]
+    "\x01\x02".unpack("B*") # => ["0000000100000010"]
+
+    "".unpack("B0")     # => [""]
+    "\x80".unpack("B1") # => ["1"]
+    "\x80".unpack("B2") # => ["10"]
+    "\x80".unpack("B3") # => ["100"]
+
 - <tt>'b'</tt> - Bit string (low byte first):
+
+    ['11111111' + '00000000'].pack('b*') # => "\xFF\x00"
+    ['10000000' + '01000000'].pack('b*') # => "\x01\x02"
+
+    ['1'].pack('b0') # => ""
+    ['1'].pack('b1') # => "\x01"
+    ['1'].pack('b2') # => "\x01\x00"
+    ['1'].pack('b3') # => "\x01\x00"
+    ['1'].pack('b4') # => "\x01\x00\x00"
+    ['1'].pack('b5') # => "\x01\x00\x00"
+    ['1'].pack('b6') # => "\x01\x00\x00\x00"
+
+    "\xff\x00".unpack("b*") # => ["1111111100000000"]
+    "\x01\x02".unpack("b*") # => ["1000000001000000"]
+
+    "".unpack("b0")     # => [""]
+    "\x01".unpack("b1") # => ["1"]
+    "\x01".unpack("b2") # => ["10"]
+    "\x01".unpack("b3") # => ["100"]
 
 ==== Hex \String Directives
 
 - <tt>'H'</tt> - Hex string (high nibble first):
 
+    ['10ef'].pack('H*')    # => "\x10\xEF"
+    ['10ef'].pack('H0')    # => ""
+    ['10ef'].pack('H3')    # => "\x10\xE0"
+    ['10ef'].pack('H5')    # => "\x10\xEF\x00"
+
+    ['fff'].pack('H3')    # => "\xFF\xF0"
+    ['fff'].pack('H4')    # => "\xFF\xF0"
+    ['fff'].pack('H5')    # => "\xFF\xF0\x00"
+    ['fff'].pack('H6')    # => "\xFF\xF0\x00"
+    ['fff'].pack('H7')    # => "\xFF\xF0\x00\x00"
+    ['fff'].pack('H8')    # => "\xFF\xF0\x00\x00"
+
+    "\x10\xef".unpack('H*')    # => ["10ef"]
+    "\x10\xef".unpack('H0')    # => [""]
+    "\x10\xef".unpack('H1')    # => ["1"]
+    "\x10\xef".unpack('H2')    # => ["10"]
+    "\x10\xef".unpack('H3')    # => ["10e"]
+    "\x10\xef".unpack('H4')    # => ["10ef"]
+    "\x10\xef".unpack('H5')    # => ["10ef"]
+
 - <tt>'h'</tt> - Hex string (low nibble first):
+
+    ['10ef'].pack('h*') # => "\x01\xFE"
+    ['10ef'].pack('h0') # => ""
+    ['10ef'].pack('h3') # => "\x01\x0E"
+    ['10ef'].pack('h5') # => "\x01\xFE\x00"
+
+    ['fff'].pack('h3') # => "\xFF\x0F"
+    ['fff'].pack('h4') # => "\xFF\x0F"
+    ['fff'].pack('h5') # => "\xFF\x0F\x00"
+    ['fff'].pack('h6') # => "\xFF\x0F\x00"
+    ['fff'].pack('h7') # => "\xFF\x0F\x00\x00"
+    ['fff'].pack('h8') # => "\xFF\x0F\x00\x00"
+
+    "\x01\xfe".unpack('h*') # => ["10ef"]
+    "\x01\xfe".unpack('h0') # => [""]
+    "\x01\xfe".unpack('h1') # => ["1"]
+    "\x01\xfe".unpack('h2') # => ["10"]
+    "\x01\xfe".unpack('h3') # => ["10e"]
+    "\x01\xfe".unpack('h4') # => ["10ef"]
+    "\x01\xfe".unpack('h5') # => ["10ef"]
 
 ==== Pointer \String Directives
 
