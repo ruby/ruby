@@ -406,6 +406,9 @@ class TestGc < Test::Unit::TestCase
     # This test prevents bugs like [Bug #18929]
 
     assert_separately %w[--disable-gem], __FILE__, __LINE__, <<-'RUBY'
+      # Grow the heap
+      @ary = 100_000.times.map { Object.new }
+
       # Warmup to make sure heap stabilizes
       1_000_000.times { Object.new }
 
