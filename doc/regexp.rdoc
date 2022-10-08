@@ -796,6 +796,6 @@ The other is timeout keyword of Regexp.new.
 
 When using Regexps to process untrusted input, you should use the timeout
 feature to avoid excessive backtracking. Otherwise, a malicious user can
-provide input to Regexp causing Denail-of-Service attack.
+provide input to Regexp causing Denial-of-Service attack.
 Note that the timeout is not set by default because an appropriate limit
 highly depends on an application requirement and context.
