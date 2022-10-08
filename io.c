@@ -7253,7 +7253,7 @@ static void
 fptr_copy_finalizer(rb_io_t *fptr, const rb_io_t *orig)
 {
 #if defined(__CYGWIN__) || !defined(HAVE_WORKING_FORK)
-    void (*const old_finalize)(struct rb_io_t*,int) = fptr->finalize;
+    void (*const old_finalize)(rb_io_t*,int) = fptr->finalize;
 
     if (old_finalize == orig->finalize) return;
 #endif
