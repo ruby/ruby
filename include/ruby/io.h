@@ -59,7 +59,7 @@
 #define RUBY_IO_WAIT_METHODS
 
 // Used as the default timeout argument to `rb_io_wait` to use the `IO#timeout` value.
-#define RUBY_IO_TIMEOUT_DEFAULT Qundef
+#define RUBY_IO_TIMEOUT_DEFAULT Qnil
 
 RBIMPL_SYMBOL_EXPORT_BEGIN()
 
@@ -881,14 +881,14 @@ VALUE rb_io_set_timeout(VALUE io, VALUE timeout);
  * here is  a Ruby level  integer, which is  an OR-ed value  of `IO::READABLE`,
  * `IO::WRITable`, and `IO::PRIORITY`.
  *
- * If timeout is `Qundef`, it will use the default timeout as given by
+ * If timeout is `Qnil`, it will use the default timeout as given by
  * `rb_io_timeout(io)`.
  *
  * @param[in]  io                   An IO object to wait.
  * @param[in]  events               See above.
  * @param[in]  timeout              Time, or numeric seconds since UNIX epoch.
- *                                  If Qnil, wait forever. If Qundef, use the
- *                                  default timeout.
+ *                                  If Qnil, use the default timeout. If Qfalse
+ *                                  or Qundef, wait forever.
  * @exception  rb_eIOError          `io` is not open.
  * @exception  rb_eRangeError       `timeout` is out of range.
  * @exception  rb_eSystemCallError  `select(2)` failed for some reason.
