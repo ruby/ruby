@@ -84,29 +84,6 @@ typedef enum {
     RUBY_IO_PRIORITY = RB_WAITFD_PRI, /**< `IO::PRIORITY` */
 } rb_io_event_t;
 
-/**
- * IO  buffers.   This  is  an implementation  detail  of  ::rb_io_t::wbuf  and
- * ::rb_io_t::rbuf.  People don't manipulate it directly.
- */
-RBIMPL_ATTR_PACKED_STRUCT_UNALIGNED_BEGIN()
-struct rb_io_buffer_t {
-
-    /** Pointer to the underlying memory region, of at least `capa` bytes. */
-    char *ptr;                  /* off + len <= capa */
-
-    /** Offset inside of `ptr`. */
-    int off;
-
-    /** Length of the buffer. */
-    int len;
-
-    /** Designed capacity of the buffer. */
-    int capa;
-} RBIMPL_ATTR_PACKED_STRUCT_UNALIGNED_END();
-
-/** @alias{rb_io_buffer_t} */
-typedef struct rb_io_buffer_t rb_io_buffer_t;
-
 /** Decomposed encoding flags (e.g. `"enc:enc2""`). */
 /*
  * enc  enc2 read action                      write action
@@ -135,9 +112,12 @@ struct rb_io_enc_t {
     VALUE ecopts;
 };
 
+#ifdef RB_IO_T
+// Internal definition of `struct rb_io`.
+struct rb_io;
+#else
 /** Ruby's IO, metadata and buffers. */
-typedef struct rb_io_t {
-
+struct rb_io {
     /** The IO's Ruby level counterpart. */
     VALUE self;
 
@@ -159,78 +139,16 @@ typedef struct rb_io_t {
     /** pathname for file */
     VALUE pathv;
 
-    /** finalize proc */
-    void (*finalize)(struct rb_io_t*,int);
-
-    /** Write buffer. */
-    rb_io_buffer_t wbuf;
-
-    /**
-     * (Byte)  read   buffer.   Note  also   that  there  is  a   field  called
-     * ::rb_io_t::cbuf, which also concerns read IO.
-     */
-    rb_io_buffer_t rbuf;
-
     /**
      * Duplex IO object, if set.
      *
      * @see rb_io_set_write_io()
      */
     VALUE tied_io_for_writing;
+};
+#endif
 
-    struct rb_io_enc_t encs; /**< Decomposed encoding flags. */
-
-    /** Encoding converter used when reading from this IO. */
-    rb_econv_t *readconv;
-
-    /**
-     * rb_io_ungetc()  destination.   This  buffer   is  read  before  checking
-     * ::rb_io_t::rbuf
-     */
-    rb_io_buffer_t cbuf;
-
-    /** Encoding converter used when writing to this IO. */
-    rb_econv_t *writeconv;
-
-    /**
-     * This is, when set, an instance  of ::rb_cString which holds the "common"
-     * encoding.   Write  conversion  can  convert strings  twice...   In  case
-     * conversion from encoding  X to encoding Y does not  exist, Ruby finds an
-     * encoding Z that bridges the two, so that X to Z to Y conversion happens.
-     */
-    VALUE writeconv_asciicompat;
-
-    /** Whether ::rb_io_t::writeconv is already set up. */
-    int writeconv_initialized;
-
-    /**
-     * Value   of    ::rb_io_t::rb_io_enc_t::ecflags   stored    right   before
-     * initialising ::rb_io_t::writeconv.
-     */
-    int writeconv_pre_ecflags;
-
-    /**
-     * Value of ::rb_io_t::rb_io_enc_t::ecopts stored right before initialising
-     * ::rb_io_t::writeconv.
-     */
-    VALUE writeconv_pre_ecopts;
-
-    /**
-     * This is a Ruby  level mutex.  It avoids multiple threads  to write to an
-     * IO at  once; helps  for instance rb_io_puts()  to ensure  newlines right
-     * next to its arguments.
-     *
-     * This of course doesn't help inter-process IO interleaves, though.
-     */
-    VALUE write_lock;
-
-    /**
-     * The timeout associated with this IO when performing blocking operations.
-     */
-    VALUE timeout;
-} rb_io_t;
-
-/** @alias{rb_io_enc_t} */
+typedef struct rb_io rb_io_t;
 typedef struct rb_io_enc_t rb_io_enc_t;
 
 /**

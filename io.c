@@ -18,7 +18,6 @@
 
 #ifdef _WIN32
 # include "ruby/ruby.h"
-# include "ruby/io.h"
 #endif
 
 #include <ctype.h>
@@ -5419,7 +5418,7 @@ maygvl_fclose(FILE *file, int keepgvl)
     return (int)(intptr_t)rb_thread_call_without_gvl(nogvl_fclose, file, RUBY_UBF_IO, 0);
 }
 
-static void free_io_buffer(rb_io_buffer_t *buf);
+static void free_io_buffer(struct rb_io_internal_buffer *buf);
 static void clear_codeconv(rb_io_t *fptr);
 
 static void*
@@ -5542,7 +5541,7 @@ rb_io_fptr_cleanup(rb_io_t *fptr, int noraise)
 }
 
 static void
-free_io_buffer(rb_io_buffer_t *buf)
+free_io_buffer(struct rb_io_internal_buffer *buf)
 {
     if (buf->ptr) {
         ruby_sized_xfree(buf->ptr, (size_t)buf->capa);
@@ -9266,7 +9265,7 @@ rb_io_stdio_file(rb_io_t *fptr)
 }
 
 static inline void
-rb_io_buffer_init(rb_io_buffer_t *buf)
+rb_io_buffer_init(struct rb_io_internal_buffer *buf)
 {
     buf->ptr = NULL;
     buf->off = 0;
