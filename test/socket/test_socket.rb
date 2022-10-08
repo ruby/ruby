@@ -240,7 +240,7 @@ class TestSocket < Test::Unit::TestCase
           serv = Socket.unix_server_socket(path)
           begin
             assert_kind_of(Socket, serv)
-            assert(File.socket?(path))
+            assert(File.exist?(path))
             assert_equal(path, serv.local_address.unix_path)
           ensure
             serv.close

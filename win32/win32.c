@@ -4018,15 +4018,32 @@ rb_w32_getservbyport(int port, const char *proto)
     return r;
 }
 
+#ifdef HAVE_TYPE_STRUCT_SOCKADDR_UN
+static size_t
+socketpair_unix_path(char * path, size_t size)
+{
+    LARGE_INTEGER ticks;
+    QueryPerformanceCounter(&ticks);
+    return snprintf(path, size, "%lu-%lu.ipc", GetCurrentProcessId(), (unsigned long)ticks.QuadPart);
+}
+#endif
+
 /* License: Ruby's */
 static int
 socketpair_internal(int af, int type, int protocol, SOCKET *sv)
 {
     SOCKET svr = INVALID_SOCKET, r = INVALID_SOCKET, w = INVALID_SOCKET;
     struct sockaddr_in sock_in4;
+
 #ifdef INET6
     struct sockaddr_in6 sock_in6;
 #endif
+
+#ifdef HAVE_TYPE_STRUCT_SOCKADDR_UN
+    char path[MAX_PATH];
+    struct sockaddr_un sock_un = {0, 0};
+#endif
+
     struct sockaddr *addr;
     int ret = -1;
     int len;
@@ -4049,6 +4066,14 @@ socketpair_internal(int af, int type, int protocol, SOCKET *sv)
         sock_in6.sin6_addr = IN6ADDR_LOOPBACK_INIT;
         addr = (struct sockaddr *)&sock_in6;
         len = sizeof(sock_in6);
+        break;
+#endif
+#ifdef HAVE_TYPE_STRUCT_SOCKADDR_UN
+      case AF_UNIX:
+        sock_un.sun_family = AF_UNIX;
+        socketpair_unix_path(sock_un.sun_path, sizeof(sock_un.sun_path));
+        addr = (struct sockaddr *)&sock_un;
+        len = sizeof(sock_un);
         break;
 #endif
       default:
@@ -4101,6 +4126,10 @@ socketpair_internal(int af, int type, int protocol, SOCKET *sv)
         }
         if (svr != INVALID_SOCKET)
             closesocket(svr);
+#ifdef HAVE_TYPE_STRUCT_SOCKADDR_UN
+        if (sock_un.sun_family == AF_UNIX)
+            DeleteFileA(sock_un.sun_path);
+#endif
     }
 
     return ret;

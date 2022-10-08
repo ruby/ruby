@@ -209,7 +209,7 @@ rsock_s_recvfrom(VALUE socket, int argc, VALUE *argv, enum sock_recv_type from)
         else
             return rb_assoc_new(str, Qnil);
 
-#ifdef HAVE_SYS_UN_H
+#ifdef HAVE_TYPE_STRUCT_SOCKADDR_UN
       case RECV_UNIX:
         return rb_assoc_new(str, rsock_unixaddr(&arg.buf.un, arg.alen));
 #endif

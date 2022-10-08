@@ -310,6 +310,8 @@ class TestFileExhaustive < Test::Unit::TestCase
   end
 
   def test_socket_p
+    omit("socket? is not supported") if /mswin|mingw/ =~ RUBY_PLATFORM
+
     assert_file.not_socket?(@dir)
     assert_file.not_socket?(regular_file)
     assert_file.not_socket?(utf8_file)
@@ -649,7 +651,7 @@ class TestFileExhaustive < Test::Unit::TestCase
       # ignore unsupporting filesystems
     rescue Errno::EPERM
       # Docker prohibits statx syscall by the default.
-      skip("statx(2) is prohibited by seccomp")
+      omit("statx(2) is prohibited by seccomp")
     end
     assert_raise(Errno::ENOENT) { File.birthtime(nofile) }
   end if File.respond_to?(:birthtime)
@@ -1635,6 +1637,8 @@ class TestFileExhaustive < Test::Unit::TestCase
   end
 
   def test_stat_socket_p
+    omit("socket? is not supported") if /mswin|mingw/ =~ RUBY_PLATFORM
+
     assert_not_predicate(File::Stat.new(@dir), :socket?)
     assert_not_predicate(File::Stat.new(regular_file), :socket?)
     assert_predicate(File::Stat.new(socket), :socket?) if socket

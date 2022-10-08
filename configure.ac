@@ -1283,6 +1283,7 @@ dnl AC_HEADER_STDC has been checked in AC_USE_SYSTEM_EXTENSIONS
 AC_HEADER_STDBOOL
 AC_HEADER_SYS_WAIT
 
+AC_CHECK_HEADERS(afunix.h)
 AC_CHECK_HEADERS(atomic.h)
 AC_CHECK_HEADERS(copyfile.h)
 AC_CHECK_HEADERS(direct.h)
@@ -1298,6 +1299,7 @@ AC_CHECK_HEADERS(malloc.h)
 AC_CHECK_HEADERS(malloc/malloc.h)
 AC_CHECK_HEADERS(malloc_np.h)
 AC_CHECK_HEADERS(net/socket.h)
+AC_CHECK_HEADERS(ntifs.h)
 AC_CHECK_HEADERS(process.h)
 AC_CHECK_HEADERS(pwd.h)
 AC_CHECK_HEADERS(sanitizer/asan_interface.h)

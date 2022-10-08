@@ -69,6 +69,14 @@
 #  include <sys/un.h>
 #endif
 
+#ifdef HAVE_AFUNIX_H
+// The afunix.h header is borked and requires this header to work:
+#  include <winsock2.h>
+#  include <ws2tcpip.h>
+// Windows doesn't have sys/un.h, but it does have afunix.h just to be special:
+#  include <afunix.h>
+#endif
+
 #if defined(HAVE_FCNTL)
 #  ifdef HAVE_SYS_SELECT_H
 #    include <sys/select.h>
@@ -268,7 +276,7 @@ extern VALUE rb_cIPSocket;
 extern VALUE rb_cTCPSocket;
 extern VALUE rb_cTCPServer;
 extern VALUE rb_cUDPSocket;
-#ifdef HAVE_SYS_UN_H
+#ifdef HAVE_TYPE_STRUCT_SOCKADDR_UN
 extern VALUE rb_cUNIXSocket;
 extern VALUE rb_cUNIXServer;
 #endif
@@ -336,7 +344,7 @@ VALUE rsock_sockaddr_obj(struct sockaddr *addr, socklen_t len);
 
 int rsock_revlookup_flag(VALUE revlookup, int *norevlookup);
 
-#ifdef HAVE_SYS_UN_H
+#ifdef HAVE_TYPE_STRUCT_SOCKADDR_UN
 VALUE rsock_unixpath_str(struct sockaddr_un *sockaddr, socklen_t len);
 VALUE rsock_unixaddr(struct sockaddr_un *sockaddr, socklen_t len);
 socklen_t rsock_unix_sockaddr_len(VALUE path);

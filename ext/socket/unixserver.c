@@ -10,7 +10,7 @@
 
 #include "rubysocket.h"
 
-#ifdef HAVE_SYS_UN_H
+#ifdef HAVE_TYPE_STRUCT_SOCKADDR_UN
 /*
  * call-seq:
  *   UNIXServer.new(path) => unixserver
@@ -101,7 +101,7 @@ unix_sysaccept(VALUE server)
 void
 rsock_init_unixserver(void)
 {
-#ifdef HAVE_SYS_UN_H
+#ifdef HAVE_TYPE_STRUCT_SOCKADDR_UN
     /*
      * Document-class: UNIXServer < UNIXSocket
      *

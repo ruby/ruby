@@ -670,10 +670,10 @@ rb_if_indextoname(const char *succ_prefix, const char *fail_prefix, unsigned int
 {
 #if defined(HAVE_IF_INDEXTONAME)
     char ifbuf[IFNAMSIZ];
-    if (if_indextoname(ifindex, ifbuf) == NULL)
-        return snprintf(buf, len, "%s%u", fail_prefix, ifindex);
-    else
+    if (if_indextoname(ifindex, ifbuf))
         return snprintf(buf, len, "%s%s", succ_prefix, ifbuf);
+    else
+        return snprintf(buf, len, "%s%u", fail_prefix, ifindex);
 #else
 #   ifndef IFNAMSIZ
 #       define IFNAMSIZ (sizeof(unsigned int)*3+1)
@@ -1229,7 +1229,7 @@ sockopt_inspect(VALUE self)
         else
             rb_str_catf(ret, " optname:%d", optname);
     }
-#ifdef HAVE_SYS_UN_H
+#ifdef HAVE_TYPE_STRUCT_SOCKADDR_UN
     else if (family == AF_UNIX) {
         rb_str_catf(ret, " level:%d", level);
 
@@ -1393,7 +1393,7 @@ sockopt_inspect(VALUE self)
         }
         break;
 
-#ifdef HAVE_SYS_UN_H
+#ifdef HAVE_TYPE_STRUCT_SOCKADDR_UN
       case AF_UNIX:
         switch (level) {
           case 0:

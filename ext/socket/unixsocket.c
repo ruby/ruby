@@ -10,7 +10,7 @@
 
 #include "rubysocket.h"
 
-#ifdef HAVE_SYS_UN_H
+#ifdef HAVE_TYPE_STRUCT_SOCKADDR_UN
 struct unixsock_arg {
     struct sockaddr_un *sockaddr;
     socklen_t sockaddrlen;
@@ -571,7 +571,7 @@ unix_s_socketpair(int argc, VALUE *argv, VALUE klass)
 void
 rsock_init_unixsocket(void)
 {
-#ifdef HAVE_SYS_UN_H
+#ifdef HAVE_TYPE_STRUCT_SOCKADDR_UN
     /*
      * Document-class: UNIXSocket < BasicSocket
      *

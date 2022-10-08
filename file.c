@@ -21,6 +21,10 @@
 #include <ctype.h>
 #include <time.h>
 
+#ifdef HAVE_NTIFS_H
+#include <ntifs.h>
+#endif
+
 #ifdef __CYGWIN__
 # include <windows.h>
 # include <sys/cygwin.h>
@@ -1746,6 +1750,27 @@ rb_file_symlink_p(VALUE obj, VALUE fname)
 static VALUE
 rb_file_socket_p(VALUE obj, VALUE fname)
 {
+#ifdef HAVE_NTIFS_H
+    HANDLE handle = CreateFileA(RSTRING_PTR(fname), GENERIC_READ, 0, NULL, OPEN_EXISTING, FILE_FLAG_OPEN_REPARSE_POINT|FILE_FLAG_BACKUP_SEMANTICS, NULL);
+
+    if (!handle) {
+        return Qfalse;
+    }
+    else {
+        char buffer[MAXIMUM_REPARSE_DATA_BUFFER_SIZE];
+        DWORD bytes;
+        REPARSE_DATA_BUFFER *reparse_data_buffer = (REPARSE_DATA_BUFFER *)buffer;
+        BOOL result = DeviceIoControl(handle, FSCTL_GET_REPARSE_POINT, NULL, 0, reparse_data_buffer, MAXIMUM_REPARSE_DATA_BUFFER_SIZE, &bytes, NULL);
+        CloseHandle(handle);
+
+        if (!result) {
+            return Qfalse;
+        }
+
+        return RBOOL(reparse_data_buffer->ReparseTag == IO_REPARSE_TAG_AF_UNIX);
+    }
+#endif
+
 #ifndef S_ISSOCK
 #  ifdef _S_ISSOCK
 #    define S_ISSOCK(m) _S_ISSOCK(m)
@@ -1765,8 +1790,8 @@ rb_file_socket_p(VALUE obj, VALUE fname)
 
     if (rb_stat(fname, &st) < 0) return Qfalse;
     if (S_ISSOCK(st.st_mode)) return Qtrue;
-
 #endif
+
     return Qfalse;
 }
 
@@ -5600,6 +5625,7 @@ rb_stat_init(VALUE obj, VALUE fname)
     if (STAT(StringValueCStr(fname), &st) == -1) {
         rb_sys_fail_path(fname);
     }
+
     if (DATA_PTR(obj)) {
         xfree(DATA_PTR(obj));
         DATA_PTR(obj) = NULL;

@@ -19,11 +19,6 @@ RUBY_SYMBOL_EXPORT_BEGIN
  */
 
 /*
- * Definitions for NT port of Perl
- */
-
-
-/*
  * Ok now we can include the normal include files.
  */
 
@@ -46,6 +41,11 @@ extern "C++" {			/* template without extern "C++" */
 #if defined(__cplusplus) && defined(_MSC_VER)
 }
 #endif
+#endif
+
+#if defined(_MSC_VER) && _MSC_VER >= 1920
+#include <afunix.h>
+#define HAVE_TYPE_STRUCT_SOCKADDR_UN
 #endif
 
 /*
