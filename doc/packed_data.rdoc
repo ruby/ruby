@@ -13,7 +13,7 @@ Certain Ruby core methods deal with packing and unpacking data:
   Does the same, but the returned array
   contains only the first extracted object.
 
-Each of these methods uses a <i>template string</i>,
+Each of these methods accepts a string +template+,
 consisting of zero or more _directive_ characters,
 each followed by zero or more _modifier_ characters.
 
@@ -37,43 +37,49 @@ Directives may be mixed as desired
   [65, -1].pack('cC')  # => "A\xFF"
   "A\xFF".unpack('cC') # => [65, 255]
 
-Either of the following two modifiers may be applied to any directive:
+Any directive may be followed by either of these modifiers:
 
 - <tt>'*'</tt> - The directive is to be applied as many times as needed:
 
     [65, 66].pack('C*') # => "AB"
     'AB'.unpack('C*')   # => [65, 66]
 
-- Integer +n+ - The directive is to be applied +n+ times:
+- Integer +count+ - The directive is to be applied +count+ times:
 
     [65, 66].pack('C2') # => "AB"
     [65, 66].pack('C3') # Raises ArgumentError.
     'AB'.unpack('C2')   # => [65, 66]
     'AB'.unpack('C3')   # => [65, 66, nil]
 
-  Note: Directives in <tt>%w[A a Z m]</tt> use _n_ differently;
+  Note: Directives in <tt>%w[A a Z m]</tt> use +count+ differently;
   see {String Directives}[rdoc-ref:packed_data.md@String+Directives].
 
-The packing method accepts optional keyword argument
+\Method Array#pack accepts optional keyword argument
 +buffer+ that specifies the target string (instead of a new string):
 
   [65, 66].pack('C*', buffer: 'foo') # => "fooAB"
 
-An unpacking method accepts optional keyword argument
-+offset+ that specifies an offset into the string:
+Methods String#unpack and String#unpack1 each accept
+an optional keyword argument +offset+ that specifies an offset
+into the string:
 
   'ABC'.unpack('C*', offset: 1)  # => [66, 67]
   'ABC'.unpack1('C*', offset: 1) # => 66
 
-Any of the packing/unpacking methods may have a block:
+Any of the three methods may have a block:
 
   [65, 66].pack('C*') {|s| p s }    # => "AB"
+
   a = []
   'AB'.unpack('C*') {|e le| a << ele }
   a                                 # => [65, 66]
+
   'AB'.unpack1('C*') {|ele| p ele } # => 65
 
 === \Integer Directives
+
+Each integer directive specifies the packing or unpacking
+for one element in the input or output array.
 
 ==== 8-Bit \Integer Directives
 
@@ -235,6 +241,9 @@ these modifiers may be suffixed:
 
 === \Float Directives
 
+Each float directive specifies the packing or unpacking
+for one element in the input or output array.
+
 ==== Single-Precision \Float Directives
 
 - <tt>'F'</tt> or <tt>'f'</tt> - Native format:
@@ -271,13 +280,58 @@ these modifiers may be suffixed:
 
 === \String Directives
 
+Each string directive specifies the packing or unpacking
+for one byte in the input or output string.
+
 ==== Binary \String Directives
 
-- <tt>'A'</tt> - Arbitrary binary string (space padded, count is width):
+- <tt>'A'</tt> - Arbitrary binary string (space padded; count is width):
 
-- <tt>'a'</tt> - Arbitrary binary string (null padded, count is width):
+    ['foo'].pack('A')    # => "f"
+    ['foo'].pack('A*')   # => "foo"
+    ['foo'].pack('A2')   # => "fo"
+    ['foo'].pack('A4')   # => "foo "
+    [nil].pack('A')      # => " "
+    [nil].pack('A*')     # => ""
+    [nil].pack('A2')     # => "  "
+    [nil].pack('A4')     # => "    "
 
-- <tt>'Z'</tt> - Same as ``a'', except that null is added with *:
+    "foo\0".unpack('A')  # => ["f"]
+    "foo\0".unpack('A4') # => ["foo"]
+    "foo ".unpack('A')   # => ["f"]
+    "foo ".unpack('A4')  # => ["foo"]
+    "foo".unpack('A4')   # => ["foo"]
+
+    russian = "\u{442 435 441 442}" # => "тест"
+    russian.unpack('A')             # => ["\xD1"]
+    russian.unpack('A2')            # => ["\xD1\x82"]
+    russian.unpack('A4')            # => ["\xD1\x82\xD0\xB5"]
+    russian.unpack('A*')            # => ["\xD1\x82\xD0\xB5\xD1\x81\xD1\x82"]
+
+- <tt>'a'</tt> - Arbitrary binary string (null padded; count is width):
+
+    ["foo"].pack('a')    # => "f"
+    ["foo"].pack('a*')   # => "foo"
+    ["foo"].pack('a2')   # => "fo"
+    ["foo\0"].pack('a4') # => "foo\x00"
+    [nil].pack('a')      # => "\x00"
+    [nil].pack('a*')     # => ""
+    [nil].pack('a2')     # => "\x00\x00"
+    [nil].pack('a4')     # => "\x00\x00\x00\x00"
+
+    "foo\0".unpack('a')  # => ["f"]
+    "foo\0".unpack('a4') # => ["foo\x00"]
+    "foo ".unpack('a4')  # => ["foo "]
+    "foo".unpack('a4')   # => ["foo"]
+
+- <tt>'Z'</tt> - Same as <tt>'a'</tt>,
+  except that null is added or ignored with <tt>'*'</tt>:
+
+    ["foo"].pack('Z*')   # => "foo\x00"
+    [nil].pack('Z*')     # => "\x00"
+
+    "foo\0".unpack('Z*') # => ["foo"]
+    "foo".unpack('Z*')   # => ["foo"]
 
 ==== Bit \String Directives
 
