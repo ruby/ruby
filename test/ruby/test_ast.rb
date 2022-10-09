@@ -576,6 +576,7 @@ dummy
         end
       end
     STR
+    assert_nil($!)
 
     assert_equal(:SCOPE, node.type)
   end
@@ -965,6 +966,7 @@ dummy
 
   def assert_error_tolerant(src, expected)
     node = RubyVM::AbstractSyntaxTree.parse(src, error_tolerant: true)
+    assert_nil($!)
     str = ""
     PP.pp(node, str, 80)
     assert_equal(expected, str)

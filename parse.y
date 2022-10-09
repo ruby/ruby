@@ -6488,8 +6488,8 @@ yycompile0(VALUE arg)
 	if (!mesg) {
 	    mesg = rb_class_new_instance(0, 0, rb_eSyntaxError);
 	}
-	rb_set_errinfo(mesg);
 	if (!p->error_tolerant) {
+	    rb_set_errinfo(mesg);
 	    return FALSE;
 	}
     }
