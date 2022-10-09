@@ -581,14 +581,10 @@ dummy
   end
 
   def test_error_tolerant_end_is_short_for_method_define
-    node = RubyVM::AbstractSyntaxTree.parse(<<~STR, error_tolerant: true)
+    assert_error_tolerant(<<~STR, <<~EXP)
       def m
         m2
     STR
-
-    str = ""
-    PP.pp(node, str, 80)
-    assert_equal(<<~EXP, str)
       (SCOPE@1:0-2:4
        tbl: []
        args: nil
@@ -615,14 +611,10 @@ dummy
   end
 
   def test_error_tolerant_end_is_short_for_singleton_method_define
-    node = RubyVM::AbstractSyntaxTree.parse(<<~STR, error_tolerant: true)
+    assert_error_tolerant(<<~STR, <<~EXP)
       def obj.m
         m2
     STR
-
-    str = ""
-    PP.pp(node, str, 80)
-    assert_equal(<<~EXP, str)
       (SCOPE@1:0-2:4
        tbl: []
        args: nil
@@ -647,27 +639,19 @@ dummy
   end
 
   def test_error_tolerant_end_is_short_for_begin
-    node = RubyVM::AbstractSyntaxTree.parse(<<~STR, error_tolerant: true)
+    assert_error_tolerant(<<~STR, <<~EXP)
       begin
         a = 1
     STR
-
-    str = ""
-    PP.pp(node, str, 80)
-    assert_equal(<<~EXP, str)
       (SCOPE@1:0-2:7 tbl: [:a] args: nil body: (LASGN@2:2-2:7 :a (LIT@2:6-2:7 1)))
     EXP
   end
 
   def test_error_tolerant_end_is_short_for_if
-    node = RubyVM::AbstractSyntaxTree.parse(<<~STR, error_tolerant: true)
+    assert_error_tolerant(<<~STR, <<~EXP)
       if cond
         a = 1
     STR
-
-    str = ""
-    PP.pp(node, str, 80)
-    assert_equal(<<~EXP, str)
       (SCOPE@1:0-2:7
        tbl: [:a]
        args: nil
@@ -675,15 +659,11 @@ dummy
          (IF@1:0-2:7 (VCALL@1:3-1:7 :cond) (LASGN@2:2-2:7 :a (LIT@2:6-2:7 1)) nil))
     EXP
 
-    node = RubyVM::AbstractSyntaxTree.parse(<<~STR, error_tolerant: true)
+    assert_error_tolerant(<<~STR, <<~EXP)
       if cond
         a = 1
       else
     STR
-
-    str = ""
-    PP.pp(node, str, 80)
-    assert_equal(<<~EXP, str)
       (SCOPE@1:0-3:5
        tbl: [:a]
        args: nil
@@ -694,14 +674,10 @@ dummy
   end
 
   def test_error_tolerant_end_is_short_for_unless
-    node = RubyVM::AbstractSyntaxTree.parse(<<~STR, error_tolerant: true)
+    assert_error_tolerant(<<~STR, <<~EXP)
       unless cond
         a = 1
     STR
-
-    str = ""
-    PP.pp(node, str, 80)
-    assert_equal(<<~EXP, str)
       (SCOPE@1:0-2:7
        tbl: [:a]
        args: nil
@@ -710,15 +686,11 @@ dummy
             nil))
     EXP
 
-    node = RubyVM::AbstractSyntaxTree.parse(<<~STR, error_tolerant: true)
+    assert_error_tolerant(<<~STR, <<~EXP)
       unless cond
         a = 1
       else
     STR
-
-    str = ""
-    PP.pp(node, str, 80)
-    assert_equal(<<~EXP, str)
       (SCOPE@1:0-3:5
        tbl: [:a]
        args: nil
@@ -729,14 +701,10 @@ dummy
   end
 
   def test_error_tolerant_end_is_short_for_while
-    node = RubyVM::AbstractSyntaxTree.parse(<<~STR, error_tolerant: true)
+    assert_error_tolerant(<<~STR, <<~EXP)
       while true
         m
     STR
-
-    str = ""
-    PP.pp(node, str, 80)
-    assert_equal(<<~EXP, str)
       (SCOPE@1:0-2:3
        tbl: []
        args: nil
@@ -745,14 +713,10 @@ dummy
   end
 
   def test_error_tolerant_end_is_short_for_until
-    node = RubyVM::AbstractSyntaxTree.parse(<<~STR, error_tolerant: true)
+    assert_error_tolerant(<<~STR, <<~EXP)
       until true
         m
     STR
-
-    str = ""
-    PP.pp(node, str, 80)
-    assert_equal(<<~EXP, str)
       (SCOPE@1:0-2:3
        tbl: []
        args: nil
@@ -761,14 +725,10 @@ dummy
   end
 
   def test_error_tolerant_end_is_short_for_case
-    node = RubyVM::AbstractSyntaxTree.parse(<<~STR, error_tolerant: true)
+    assert_error_tolerant(<<~STR, <<~EXP)
       case a
       when 1
     STR
-
-    str = ""
-    PP.pp(node, str, 80)
-    assert_equal(<<~EXP, str)
       (SCOPE@1:0-2:6
        tbl: []
        args: nil
@@ -779,14 +739,10 @@ dummy
     EXP
 
 
-    node = RubyVM::AbstractSyntaxTree.parse(<<~STR, error_tolerant: true)
+    assert_error_tolerant(<<~STR, <<~EXP)
       case
       when a == 1
     STR
-
-    str = ""
-    PP.pp(node, str, 80)
-    assert_equal(<<~EXP, str)
       (SCOPE@1:0-2:11
        tbl: []
        args: nil
@@ -800,14 +756,10 @@ dummy
     EXP
 
 
-    node = RubyVM::AbstractSyntaxTree.parse(<<~STR, error_tolerant: true)
+    assert_error_tolerant(<<~STR, <<~EXP)
       case a
       in {a: String}
     STR
-
-    str = ""
-    PP.pp(node, str, 80)
-    assert_equal(<<~EXP, str)
       (SCOPE@1:0-2:14
        tbl: []
        args: nil
@@ -824,14 +776,10 @@ dummy
   end
 
   def test_error_tolerant_end_is_short_for_for
-    node = RubyVM::AbstractSyntaxTree.parse(<<~STR, error_tolerant: true)
+    assert_error_tolerant(<<~STR, <<~EXP)
       for i in ary
         m
     STR
-
-    str = ""
-    PP.pp(node, str, 80)
-    assert_equal(<<~EXP, str)
       (SCOPE@1:0-2:3
        tbl: [:i]
        args: nil
@@ -856,13 +804,9 @@ dummy
   end
 
   def test_error_tolerant_end_is_short_for_class
-    node = RubyVM::AbstractSyntaxTree.parse(<<~STR, error_tolerant: true)
+    assert_error_tolerant(<<~STR, <<~EXP)
       class C
     STR
-
-    str = ""
-    PP.pp(node, str, 80)
-    assert_equal(<<~EXP, str)
       (SCOPE@1:0-1:7
        tbl: []
        args: nil
@@ -873,13 +817,9 @@ dummy
   end
 
   def test_error_tolerant_end_is_short_for_module
-    node = RubyVM::AbstractSyntaxTree.parse(<<~STR, error_tolerant: true)
+    assert_error_tolerant(<<~STR, <<~EXP)
       module M
     STR
-
-    str = ""
-    PP.pp(node, str, 80)
-    assert_equal(<<~EXP, str)
       (SCOPE@1:0-1:8
        tbl: []
        args: nil
@@ -890,14 +830,10 @@ dummy
   end
 
   def test_error_tolerant_end_is_short_for_do
-    node = RubyVM::AbstractSyntaxTree.parse(<<~STR, error_tolerant: true)
+    assert_error_tolerant(<<~STR, <<~EXP)
       m do
         a
     STR
-
-    str = ""
-    PP.pp(node, str, 80)
-    assert_equal(<<~EXP, str)
       (SCOPE@1:0-2:3
        tbl: []
        args: nil
@@ -908,14 +844,10 @@ dummy
   end
 
   def test_error_tolerant_end_is_short_for_do_block
-    node = RubyVM::AbstractSyntaxTree.parse(<<~STR, error_tolerant: true)
+    assert_error_tolerant(<<~STR, <<~EXP)
       m 1 do
         a
     STR
-
-    str = ""
-    PP.pp(node, str, 80)
-    assert_equal(<<~EXP, str)
       (SCOPE@1:0-2:3
        tbl: []
        args: nil
@@ -926,14 +858,10 @@ dummy
   end
 
   def test_error_tolerant_end_is_short_for_do_LAMBDA
-    node = RubyVM::AbstractSyntaxTree.parse(<<~STR, error_tolerant: true)
+    assert_error_tolerant(<<~STR, <<~EXP)
       -> do
         a
     STR
-
-    str = ""
-    PP.pp(node, str, 80)
-    assert_equal(<<~EXP, str)
       (SCOPE@1:0-2:3
        tbl: []
        args: nil
@@ -958,7 +886,7 @@ dummy
   end
 
   def test_error_tolerant_treat_end_as_keyword_based_on_indent
-    node = RubyVM::AbstractSyntaxTree.parse(<<~STR, error_tolerant: true)
+    assert_error_tolerant(<<~STR, <<~EXP)
       module Z
         class Foo
           foo.
@@ -968,10 +896,6 @@ dummy
         end
       end
     STR
-
-    str = ""
-    PP.pp(node, str, 80)
-    assert_equal(<<~EXP, str)
       (SCOPE@1:0-8:3
        tbl: []
        args: nil
@@ -1009,15 +933,11 @@ dummy
   end
 
   def test_error_tolerant_expr_value_can_be_error
-    node = RubyVM::AbstractSyntaxTree.parse(<<~STR, error_tolerant: true)
+    assert_error_tolerant(<<~STR, <<~EXP)
       def m
         if
       end
     STR
-
-    str = ""
-    PP.pp(node, str, 80)
-    assert_equal(<<~EXP, str)
       (SCOPE@1:0-3:3
        tbl: []
        args: nil
@@ -1041,5 +961,12 @@ dummy
                 block: nil)
              body: (IF@2:2-3:3 (ERROR@3:0-3:3) nil nil))))
     EXP
+  end
+
+  def assert_error_tolerant(src, expected)
+    node = RubyVM::AbstractSyntaxTree.parse(src, error_tolerant: true)
+    str = ""
+    PP.pp(node, str, 80)
+    assert_equal(expected, str)
   end
 end
