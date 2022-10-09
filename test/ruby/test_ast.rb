@@ -587,7 +587,7 @@ dummy
     STR
 
     str = ""
-    PP.pp(node, str)
+    PP.pp(node, str, 80)
     assert_equal(<<~EXP, str)
       (SCOPE@1:0-2:4
        tbl: []
@@ -621,7 +621,7 @@ dummy
     STR
 
     str = ""
-    PP.pp(node, str)
+    PP.pp(node, str, 80)
     assert_equal(<<~EXP, str)
       (SCOPE@1:0-2:4
        tbl: []
@@ -653,7 +653,7 @@ dummy
     STR
 
     str = ""
-    PP.pp(node, str)
+    PP.pp(node, str, 80)
     assert_equal(<<~EXP, str)
       (SCOPE@1:0-2:7 tbl: [:a] args: nil body: (LASGN@2:2-2:7 :a (LIT@2:6-2:7 1)))
     EXP
@@ -666,7 +666,7 @@ dummy
     STR
 
     str = ""
-    PP.pp(node, str)
+    PP.pp(node, str, 80)
     assert_equal(<<~EXP, str)
       (SCOPE@1:0-2:7
        tbl: [:a]
@@ -682,7 +682,7 @@ dummy
     STR
 
     str = ""
-    PP.pp(node, str)
+    PP.pp(node, str, 80)
     assert_equal(<<~EXP, str)
       (SCOPE@1:0-3:5
        tbl: [:a]
@@ -700,7 +700,7 @@ dummy
     STR
 
     str = ""
-    PP.pp(node, str)
+    PP.pp(node, str, 80)
     assert_equal(<<~EXP, str)
       (SCOPE@1:0-2:7
        tbl: [:a]
@@ -717,7 +717,7 @@ dummy
     STR
 
     str = ""
-    PP.pp(node, str)
+    PP.pp(node, str, 80)
     assert_equal(<<~EXP, str)
       (SCOPE@1:0-3:5
        tbl: [:a]
@@ -735,7 +735,7 @@ dummy
     STR
 
     str = ""
-    PP.pp(node, str)
+    PP.pp(node, str, 80)
     assert_equal(<<~EXP, str)
       (SCOPE@1:0-2:3
        tbl: []
@@ -751,7 +751,7 @@ dummy
     STR
 
     str = ""
-    PP.pp(node, str)
+    PP.pp(node, str, 80)
     assert_equal(<<~EXP, str)
       (SCOPE@1:0-2:3
        tbl: []
@@ -767,7 +767,7 @@ dummy
     STR
 
     str = ""
-    PP.pp(node, str)
+    PP.pp(node, str, 80)
     assert_equal(<<~EXP, str)
       (SCOPE@1:0-2:6
        tbl: []
@@ -785,7 +785,7 @@ dummy
     STR
 
     str = ""
-    PP.pp(node, str)
+    PP.pp(node, str, 80)
     assert_equal(<<~EXP, str)
       (SCOPE@1:0-2:11
        tbl: []
@@ -806,7 +806,7 @@ dummy
     STR
 
     str = ""
-    PP.pp(node, str)
+    PP.pp(node, str, 80)
     assert_equal(<<~EXP, str)
       (SCOPE@1:0-2:14
        tbl: []
@@ -830,7 +830,7 @@ dummy
     STR
 
     str = ""
-    PP.pp(node, str)
+    PP.pp(node, str, 80)
     assert_equal(<<~EXP, str)
       (SCOPE@1:0-2:3
        tbl: [:i]
@@ -861,7 +861,7 @@ dummy
     STR
 
     str = ""
-    PP.pp(node, str)
+    PP.pp(node, str, 80)
     assert_equal(<<~EXP, str)
       (SCOPE@1:0-1:7
        tbl: []
@@ -878,7 +878,7 @@ dummy
     STR
 
     str = ""
-    PP.pp(node, str)
+    PP.pp(node, str, 80)
     assert_equal(<<~EXP, str)
       (SCOPE@1:0-1:8
        tbl: []
@@ -896,7 +896,7 @@ dummy
     STR
 
     str = ""
-    PP.pp(node, str)
+    PP.pp(node, str, 80)
     assert_equal(<<~EXP, str)
       (SCOPE@1:0-2:3
        tbl: []
@@ -914,7 +914,7 @@ dummy
     STR
 
     str = ""
-    PP.pp(node, str)
+    PP.pp(node, str, 80)
     assert_equal(<<~EXP, str)
       (SCOPE@1:0-2:3
        tbl: []
@@ -932,7 +932,7 @@ dummy
     STR
 
     str = ""
-    PP.pp(node, str)
+    PP.pp(node, str, 80)
     assert_equal(<<~EXP, str)
       (SCOPE@1:0-2:3
        tbl: []
@@ -970,7 +970,7 @@ dummy
     STR
 
     str = ""
-    PP.pp(node, str)
+    PP.pp(node, str, 80)
     assert_equal(<<~EXP, str)
       (SCOPE@1:0-8:3
        tbl: []
@@ -1016,7 +1016,7 @@ dummy
     STR
 
     str = ""
-    PP.pp(node, str)
+    PP.pp(node, str, 80)
     assert_equal(<<~EXP, str)
       (SCOPE@1:0-3:3
        tbl: []
