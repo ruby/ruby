@@ -78,9 +78,9 @@ Any of the three methods may have a block:
 
   [65, 66].pack('C*') {|s| p s }    # => "AB"
 
-  a = []
-  'AB'.unpack('C*') {|e le| a << ele }
-  a                                 # => [65, 66]
+  ret = []
+  "ABCD".unpack("C*") {|c| ret << c }
+  ret # => [65, 66, 67, 68]
 
   'AB'.unpack1('C*') {|ele| p ele } # => 65
 
@@ -449,13 +449,19 @@ for one byte in the input or output string.
 
 - <tt>'P'</tt> - Pointer to a structure (fixed-length string):
 
-    s = ['abc'].pack('P') # => "\xE0O\x7F\xE5\xA1\x01\x00\x00"
-    s.freeze.unpack('P*') # => ["abc"]
+    s = ['abc'].pack('P')     # => "\xE0O\x7F\xE5\xA1\x01\x00\x00"
+    s.freeze.unpack('P*')     # => ["abc"]
+    ".".unpack("P")           # => []
+    ("\0" * 1024).unpack("P") # => [nil]
+    [nil].pack("P")           # => "\x00\x00\x00\x00\x00\x00\x00\x00"
 
 - <tt>'p'</tt> - Pointer to a null-terminated string:
 
-    s = ['abc'].pack('p') # => "(\xE4u\xE5\xA1\x01\x00\x00"
-    s.freeze.unpack('p*') # => ["abc"]
+    s = ['abc'].pack('p')     # => "(\xE4u\xE5\xA1\x01\x00\x00"
+    s.freeze.unpack('p*')     # => ["abc"]
+    ".".unpack("p")           # => []
+    ("\0" * 1024).unpack("p") # => [nil]
+    [nil].pack("p")           # => "\x00\x00\x00\x00\x00\x00\x00\x00"
 
 ==== Other \String Directives
 
