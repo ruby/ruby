@@ -431,19 +431,87 @@ for one byte in the input or output string.
 
 - <tt>'P'</tt> - Pointer to a structure (fixed-length string):
 
+    s = ['abc'].pack('P') # => "\xE0O\x7F\xE5\xA1\x01\x00\x00"
+    s.freeze.unpack('P*') # => ["abc"]
+
 - <tt>'p'</tt> - Pointer to a null-terminated string:
+
+    s = ['abc'].pack('p') # => "(\xE4u\xE5\xA1\x01\x00\x00"
+    s.freeze.unpack('p*') # => ["abc"]
 
 ==== Other \String Directives
 
+- <tt>'M'</tt> - Quoted printable, MIME encoding;
+  text mode, but input must use LF and output LF;
+  (see {RFC 2045}[https://www.ietf.org/rfc/rfc2045.txt]):
+
+    ["a b c\td \ne"].pack('M') # => "a b c\td =\n\ne=\n"
+    ["\0"].pack('M')           # => "=00=\n"
+
+    ["a"*1023].pack('M') == ("a"*73+"=\n")*14+"a=\n"     # => true
+    ("a"*73+"=\na=\n").unpack('M') == ["a"*74]           # => true
+    (("a"*73+"=\n")*14+"a=\n").unpack('M') == ["a"*1023] # => true
+
+    "a b c\td =\n\ne=\n".unpack('M')    # => ["a b c\td \ne"]
+    "=00=\n".unpack('M')    # => ["\x00"]
+
+    "pre=31=32=33after".unpack('M') # => ["pre123after"]
+    "pre=\nafter".unpack('M')       # => ["preafter"]
+    "pre=\r\nafter".unpack('M')     # => ["preafter"]
+    "pre=".unpack('M')              # => ["pre="]
+    "pre=\r".unpack('M')            # => ["pre=\r"]
+    "pre=hoge".unpack('M')          # => ["pre=hoge"]
+    "pre==31after".unpack('M')      # => ["pre==31after"]
+    "pre===31after".unpack('M')     # => ["pre===31after"]
+
+- <tt>'m'</tt> - Base64 encoded string;
+  count specifies input bytes between each newline,
+  rounded down to nearest multiple of 3;
+  if count is zero, no newlines are added;
+  (see {RFC 4648}[https://www.ietf.org/rfc/rfc4648.txt]):
+
+    [""].pack('m')             # => ""
+    ["\0"].pack('m')           # => "AA==\n"
+    ["\0\0"].pack('m')         # => "AAA=\n"
+    ["\0\0\0"].pack('m')       # => "AAAA\n"
+    ["\377"].pack('m')         # => "/w==\n"
+    ["\377\377"].pack('m')     # => "//8=\n"
+    ["\377\377\377"].pack('m') # => "////\n"
+
+    "".unpack('m')       # => [""]
+    "AA==\n".unpack('m') # => ["\x00"]
+    "AAA=\n".unpack('m') # => ["\x00\x00"]
+    "AAAA\n".unpack('m') # => ["\x00\x00\x00"]
+    "/w==\n".unpack('m') # => ["\xFF"]
+    "//8=\n".unpack('m') # => ["\xFF\xFF"]
+    "////\n".unpack('m') # => ["\xFF\xFF\xFF"]
+    "A\n".unpack('m')    # => [""]
+    "AA\n".unpack('m')   # => ["\x00"]
+    "AA=\n".unpack('m')  # => ["\x00"]
+    "AAA\n".unpack('m')  # => ["\x00\x00"]
+
+    [""].pack('m0')             # => ""
+    ["\0"].pack('m0')           # => "AA=="
+    ["\0\0"].pack('m0')         # => "AAA="
+    ["\0\0\0"].pack('m0')       # => "AAAA"
+    ["\377"].pack('m0')         # => "/w=="
+    ["\377\377"].pack('m0')     # => "//8="
+    ["\377\377\377"].pack('m0') # => "////"
+
+    "".unpack('m0')     # => [""]
+    "AA==".unpack('m0') # => ["\x00"]
+    "AAA=".unpack('m0') # => ["\x00\x00"]
+    "AAAA".unpack('m0') # => ["\x00\x00\x00"]
+    "/w==".unpack('m0') # => ["\xFF"]
+    "//8=".unpack('m0') # => ["\xFF\xFF"]
+    "////".unpack('m0') # => ["\xFF\xFF\xFF"]
+
 - <tt>'u'</tt> - UU-encoded string:
 
-- <tt>'M'</tt> - Quoted printable, MIME encoding;
-  text mode, but input must use LF and output LF (see RFC 2045):
-
-- <tt>'m'</tt> - Base64 encoded string.
-  Count specifies input bytes between each newline,
-  rounded down to nearest multiple of 3;
-  If count is zero, no newlines are added (see RFC 4648):
+    [0].pack("U")          # => "\u0000"
+    [0x3fffffff].pack("U") # => "\xFC\xBF\xBF\xBF\xBF\xBF"
+    [0x40000000].pack("U") # => "\xFD\x80\x80\x80\x80\x80"
+    [0x7fffffff].pack("U") # => "\xFD\xBF\xBF\xBF\xBF\xBF"
 
 === Offset Directives
 
