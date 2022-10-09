@@ -533,10 +533,27 @@ for one byte in the input or output string.
 
 === Offset Directives
 
-- <tt>'@'</tt> - Moves to absolute position:
+- <tt>'@'</tt> - Begin packing at the given byte offset;
+  for packing, null fill if necessary:
+
+    [1, 2].pack("C@0C") # => "\x02"
+    [1, 2].pack("C@1C") # => "\x01\x02"
+    [1, 2].pack("C@5C") # => "\x01\x00\x00\x00\x00\x02"
+
+    "\x01\x00\x00\x02".unpack("C@3C") # => [1, 2]
+    "\x00".unpack("@1C")              # => [nil]
 
 - <tt>'X'</tt> - Back up a byte:
+
+    [0, 1, 2].pack("CCXC")    # => "\x00\x02"
+    [0, 1, 2].pack("CCX2C")   # => "\x02"
+    "\x00\x02".unpack("CCXC") # => [0, 2, 2]
 
 === Null Byte Direcive
 
 - <tt>'x'</tt> - Null byte:
+
+    [].pack("x0")                # => ""
+    [].pack("x")                 # => "\x00"
+    [].pack("x8")                # => "\x00\x00\x00\x00\x00\x00\x00\x00"
+    "\x00\x00\x02".unpack("CxC") # => [0, 2]
