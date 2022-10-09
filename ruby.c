@@ -156,6 +156,9 @@ enum dump_flag_bits {
     dump_version_v,
     dump_error_tolerant,
     EACH_DUMPS(DEFINE_DUMP, COMMA),
+    dump_error_tolerant_bits = (DUMP_BIT(yydebug) |
+                                DUMP_BIT(parsetree) |
+                                DUMP_BIT(parsetree_with_comment)),
     dump_exit_bits = (DUMP_BIT(yydebug) | DUMP_BIT(syntax) |
                       DUMP_BIT(parsetree) | DUMP_BIT(parsetree_with_comment) |
                       DUMP_BIT(insns) | DUMP_BIT(insns_without_opt))
@@ -900,14 +903,16 @@ name_match_p(const char *name, const char *str, size_t len)
     if (len == 0) return 0;
     while (1) {
         while (TOLOWER(*str) == *name) {
-            if (!--len || !*++str) return 1;
+            if (!--len) return 1;
             ++name;
+            ++str;
         }
         if (*str != '-' && *str != '_') return 0;
         while (ISALNUM(*name)) name++;
         if (*name != '-' && *name != '_') return 0;
         ++name;
         ++str;
+        if (--len == 0) return 1;
     }
 }
 
@@ -1013,16 +1018,49 @@ debug_option(const char *str, int len, void *arg)
     rb_warn("debug features are [%.*s].", (int)strlen(list), list);
 }
 
+static int
+memtermspn(const char *str, char term, int len)
+{
+    RUBY_ASSERT(len >= 0);
+    if (len <= 0) return 0;
+    const char *next = memchr(str, term, len);
+    return next ? (int)(next - str) : len;
+}
+
+static const char additional_opt_sep = '+';
+
+static unsigned int
+dump_additional_option(const char *str, int len, unsigned int bits, const char *name)
+{
+    int w;
+    for (; len-- > 0 && *str++ == additional_opt_sep; len -= w, str += w) {
+        w = memtermspn(str, additional_opt_sep, len);
+#define SET_ADDITIONAL(bit) if (NAME_MATCH_P(#bit, str, w)) { \
+            if (bits & DUMP_BIT(bit)) \
+                rb_warn("duplicate option to dump %s: `%.*s'", name, w, str); \
+            bits |= DUMP_BIT(bit); \
+            continue; \
+        }
+        if (dump_error_tolerant_bits & bits) {
+            SET_ADDITIONAL(error_tolerant);
+        }
+        rb_warn("don't know how to dump %s with `%.*s'", name, w, str);
+    }
+    return bits;
+}
+
 static void
 dump_option(const char *str, int len, void *arg)
 {
     static const char list[] = EACH_DUMPS(LITERAL_NAME_ELEMENT, ", ");
-#define NAME_MATCH_TOLERANT_P(name) (len >= 15 && NAME_MATCH_P(#name "+error-tolerant", str, len))
-    if (NAME_MATCH_TOLERANT_P(yydebug) || NAME_MATCH_TOLERANT_P(parsetree) || NAME_MATCH_TOLERANT_P(parsetree_with_comment)) {
-        *(unsigned int *)arg |= DUMP_BIT(error_tolerant);
-        len -= 15;
+    int w = memtermspn(str, additional_opt_sep, len);
+
+#define SET_WHEN_DUMP(bit) \
+    if (NAME_MATCH_P(#bit, (str), (w))) { \
+        *(unsigned int *)arg |= \
+            dump_additional_option(str + w, len - w, DUMP_BIT(bit), #bit); \
+        return; \
     }
-#define SET_WHEN_DUMP(bit) SET_WHEN(#bit, DUMP_BIT(bit), str, len)
     EACH_DUMPS(SET_WHEN_DUMP, ;);
     rb_warn("don't know how to dump `%.*s',", len, str);
     rb_warn("but only [%.*s].", (int)strlen(list), list);
