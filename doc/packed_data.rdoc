@@ -286,6 +286,16 @@ for one element in the input or output array.
     s = [3.0].pack('G') # => "@\b\x00\x00\x00\x00\x00\x00"
     s.unpack('G')       # => [3.0]
 
+A float directive may be infinity or not-a-number:
+
+  inf = 1.0/0.0                  # => Infinity
+  [inf].pack('f')                # => "\x00\x00\x80\x7F"
+  "\x00\x00\x80\x7F".unpack('f') # => [Infinity]
+
+  nan = inf/inf                  # => NaN
+  [nan].pack('f')                # => "\x00\x00\xC0\x7F"
+  "\x00\x00\xC0\x7F".unpack('f') # => [NaN]
+
 === \String Directives
 
 Each string directive specifies the packing or unpacking
