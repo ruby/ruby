@@ -31,11 +31,19 @@ Examples (directive <tt>'C'</tt> specifies 'unsigned character'):
   'A'.unpack('CC')  # => [65, nil] # Extra directive generates nil.
   'AB'.unpack('')   # => []        # No directives.
 
-Directives may be mixed as desired
+The string +template+ may contain any mixture of valid directives
 (directive <tt>'c'</tt> specifies 'signed character'):
 
   [65, -1].pack('cC')  # => "A\xFF"
   "A\xFF".unpack('cC') # => [65, 255]
+
+The string +template+ may contain comments,
+each of which begins with character <tt>'#'</tt>
+and continues up to and including the next following newline:
+
+
+  [0,1].pack("  C  #foo \n  C  ")    # => "\x00\x01"
+  "\0\1".unpack("  C  #foo \n  C  ") # => [0, 1]
 
 Any directive may be followed by either of these modifiers:
 
