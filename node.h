@@ -384,7 +384,6 @@ typedef struct RNode {
 #define NEW_FALSE(loc) NEW_NODE(NODE_FALSE,0,0,0,loc)
 #define NEW_ERRINFO(loc) NEW_NODE(NODE_ERRINFO,0,0,0,loc)
 #define NEW_DEFINED(e,loc) NEW_NODE(NODE_DEFINED,e,0,0,loc)
-#define NEW_PREEXE(b,loc) NEW_SCOPE(b,loc)
 #define NEW_POSTEXE(b,loc) NEW_NODE(NODE_POSTEXE,0,b,0,loc)
 #define NEW_ATTRASGN(r,m,a,loc) NEW_NODE(NODE_ATTRASGN,r,m,a,loc)
 #define NEW_ERROR(loc) NEW_NODE(NODE_ERROR,0,0,0,loc)
