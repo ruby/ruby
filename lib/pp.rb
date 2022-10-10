@@ -434,7 +434,7 @@ class Data # :nodoc:
   def pretty_print_cycle(q) # :nodoc:
     q.text sprintf("#<data %s:...>", PP.mcall(self, Kernel, :class).name)
   end
-end
+end if "3.2" <= RUBY_VERSION
 
 class Range # :nodoc:
   def pretty_print(q) # :nodoc:
