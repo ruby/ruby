@@ -243,3 +243,6 @@ lcov*.info
 
 # /wasm/
 /wasm/tests/*.wasm
+
+# Compiler config files
+.idea/
