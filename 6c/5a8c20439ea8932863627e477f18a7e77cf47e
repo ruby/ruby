@@ -1,0 +1,4 @@
+2i||
+3i|On filesystems where have precisions more than microseconds, even when|
+4i|the whole fractional part is not zero, the microsecond can be zero in|
+5i|about 1/1,000,000 probabilities.|
