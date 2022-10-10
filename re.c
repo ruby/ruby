@@ -2405,7 +2405,7 @@ match_deconstruct_keys(VALUE match, VALUE keys)
         VALUE key = RARRAY_AREF(keys, i);
         VALUE name;
 
-	Check_Type(key, T_SYMBOL);
+        Check_Type(key, T_SYMBOL);
 
         name = rb_sym2str(key);
 
@@ -2415,7 +2415,7 @@ match_deconstruct_keys(VALUE match, VALUE keys)
         if (num >= 0) {
             rb_hash_aset(h, key, rb_reg_nth_match(num, match));
         }
-	else {
+        else {
             return h;
         }
     }
