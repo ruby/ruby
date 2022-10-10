@@ -2393,12 +2393,7 @@ match_deconstruct_keys(VALUE match, VALUE keys)
         return h;
     }
 
-    if (UNLIKELY(!RB_TYPE_P(keys, T_ARRAY))) {
-        rb_raise(rb_eTypeError,
-                 "wrong argument type %"PRIsVALUE" (expected Array or nil)",
-                 rb_obj_class(keys));
-
-    }
+    Check_Type(keys, T_ARRAY);
 
     if (onig_number_of_names(RREGEXP_PTR(RMATCH(match)->regexp)) < RARRAY_LEN(keys)) {
         return rb_hash_new_with_size(0);
@@ -2410,11 +2405,7 @@ match_deconstruct_keys(VALUE match, VALUE keys)
         VALUE key = RARRAY_AREF(keys, i);
         VALUE name;
 
-        if (UNLIKELY(!SYMBOL_P(key))) {
-            rb_raise(rb_eTypeError,
-                 "wrong argument type %"PRIsVALUE" (expected Symbol)",
-                 rb_obj_class(key));
-        }
+	Check_Type(key, T_SYMBOL);
 
         name = rb_sym2str(key);
 
@@ -2423,7 +2414,8 @@ match_deconstruct_keys(VALUE match, VALUE keys)
 
         if (num >= 0) {
             rb_hash_aset(h, key, rb_reg_nth_match(num, match));
-        } else {
+        }
+	else {
             return h;
         }
     }
