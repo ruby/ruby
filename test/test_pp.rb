@@ -152,12 +152,14 @@ class PPCycleTest < Test::Unit::TestCase
     assert_equal("#{a.inspect}\n", PP.pp(a, ''.dup))
   end
 
-  D = Data.define(:aaa, :bbb)
-  def test_data
-    a = D.new("aaa", "bbb")
-    assert_equal("#<data PPTestModule::PPCycleTest::D\n aaa=\"aaa\",\n bbb=\"bbb\">\n", PP.pp(a, ''.dup, 20))
-    assert_equal("#{a.inspect}\n", PP.pp(a, ''.dup))
-  end unless RUBY_VERSION < "3.2"
+  if "3.2" <= RUBY_VERSION
+    D = Data.define(:aaa, :bbb)
+    def test_data
+      a = D.new("aaa", "bbb")
+      assert_equal("#<data PPTestModule::PPCycleTest::D\n aaa=\"aaa\",\n bbb=\"bbb\">\n", PP.pp(a, ''.dup, 20))
+      assert_equal("#{a.inspect}\n", PP.pp(a, ''.dup))
+    end
+  end
 
   def test_object
     a = Object.new
