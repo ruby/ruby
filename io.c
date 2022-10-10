@@ -3571,7 +3571,7 @@ io_read_nonblock(rb_execution_context_t *ec, VALUE io, VALUE length, VALUE str, 
 
     n = read_buffered_data(RSTRING_PTR(str), len, fptr);
     if (n <= 0) {
-        rb_io_set_nonblock(fptr);
+        rb_fd_set_nonblock(fptr->fd);
         shrinkable |= io_setstrbuf(&str, len);
         iis.fptr = fptr;
         iis.nonblock = 1;
@@ -3618,7 +3618,7 @@ io_write_nonblock(rb_execution_context_t *ec, VALUE io, VALUE str, VALUE ex)
     if (io_fflush(fptr) < 0)
         rb_sys_fail_on_write(fptr);
 
-    rb_io_set_nonblock(fptr);
+    rb_fd_set_nonblock(fptr->fd);
     n = write(fptr->fd, RSTRING_PTR(str), RSTRING_LEN(str));
     RB_GC_GUARD(str);
 
