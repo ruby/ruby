@@ -17,7 +17,7 @@ describe "File.mtime" do
 
   platform_is :linux, :windows do
     it "returns the modification Time of the file with microseconds" do
-      supports_subseconds = Integer(`stat -c%y '#{__FILE__}'`[/\.(\d+)/, 1], 10)
+      supports_subseconds = Integer(`stat -c%y '#{__FILE__}'`[/\.(\d{1,6})/, 1], 10)
       if supports_subseconds != 0
         expected_time = Time.at(Time.now.to_i + 0.123456)
         File.utime 0, expected_time, @filename
