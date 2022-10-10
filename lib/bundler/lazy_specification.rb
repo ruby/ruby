@@ -151,7 +151,8 @@ module Bundler
 
     #
     # For backwards compatibility with existing lockfiles, if the most specific
-    # locked platform is RUBY, we keep the previous behaviour of resolving the
+    # locked platform is not a specific platform like x86_64-linux or
+    # universal-java-11, then we keep the previous behaviour of resolving the
     # best platform variant at materiliazation time. For previous bundler
     # versions (before 2.2.0) this was always the case (except when the lockfile
     # only included non-ruby platforms), but we're also keeping this behaviour
@@ -159,7 +160,9 @@ module Bundler
     # explicitly add a more specific platform.
     #
     def ruby_platform_materializes_to_ruby_platform?
-      !Bundler.most_specific_locked_platform?(generic_local_platform) || force_ruby_platform || Bundler.settings[:force_ruby_platform]
+      generic_platform = generic_local_platform == Gem::Platform::JAVA ? Gem::Platform::JAVA : Gem::Platform::RUBY
+
+      !Bundler.most_specific_locked_platform?(generic_platform) || force_ruby_platform || Bundler.settings[:force_ruby_platform]
     end
   end
 end
