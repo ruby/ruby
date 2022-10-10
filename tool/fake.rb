@@ -49,6 +49,7 @@ prehook = proc do |extmk|
   RbConfig.fire_update!("builddir", builddir)
   RbConfig.fire_update!("buildlibdir", builddir)
   RbConfig.fire_update!("libdir", builddir)
+  RbConfig.fire_update!("prefix", $topdir)
   RbConfig.fire_update!("top_srcdir", $top_srcdir ||= top_srcdir)
   RbConfig.fire_update!("extout", $extout)
   RbConfig.fire_update!("rubyhdrdir", "$(top_srcdir)/include")
