@@ -2382,6 +2382,29 @@ rb_io_buffer_read(VALUE self, VALUE io, size_t length, size_t offset)
     return rb_thread_io_blocking_region(io_buffer_read_internal, &argument, descriptor);
 }
 
+/*
+ *  call-seq: read(io, [length, [offset]]) -> self
+ *
+ *  Read at most +length+ bytes from +io+ into the buffer, starting at
+ *  +offset+.
+ *
+ *  If +length+ is not given, read until the end of the buffer.
+ *
+ *  If +offset+ is not given, read from the beginning of the buffer.
+ *
+ *  If +length+ is 0, read nothing.
+ *
+ *  Example:
+ *
+ *    buffer = IO::Buffer.for('test')
+ *    # =>
+ *    # <IO::Buffer 0x00007fca40087c38+4 SLICE>
+ *    # 0x00000000  74 65 73 74         test
+ *    buffer.read(File.open('/dev/urandom', 'rb'), 4)
+ *    # =>
+ *    # <IO::Buffer 0x00007fca40087c38+4 SLICE>
+ *    # 0x00000000  2a 0e 0e 0e         *...
+ */
 static VALUE
 io_buffer_read(int argc, VALUE *argv, VALUE self)
 {

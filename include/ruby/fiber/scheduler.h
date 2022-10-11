@@ -23,6 +23,8 @@
 
 RBIMPL_SYMBOL_EXPORT_BEGIN()
 
+#define RUBY_FIBER_SCHEDULER_VERSION 2
+
 struct timeval;
 
 /**

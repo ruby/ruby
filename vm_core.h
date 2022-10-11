@@ -1099,7 +1099,7 @@ typedef struct rb_thread_struct {
     rb_fiber_t *root_fiber;
 
     VALUE scheduler;
-    unsigned blocking;
+    unsigned int blocking;
 
     /* misc */
     VALUE name;

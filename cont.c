@@ -2410,20 +2410,34 @@ rb_fiber_transfer(VALUE fiber_value, int argc, const VALUE *argv)
 VALUE
 rb_fiber_blocking_p(VALUE fiber)
 {
-    return RBOOL(fiber_ptr(fiber)->blocking != 0);
+    return RBOOL(fiber_ptr(fiber)->blocking);
 }
 
 static VALUE
-fiber_blocking_yield(VALUE fiber)
+fiber_blocking_yield(VALUE fiber_value)
 {
-    fiber_ptr(fiber)->blocking += 1;
-    return rb_yield(fiber);
+    rb_fiber_t *fiber = fiber_ptr(fiber_value);
+    rb_thread_t * volatile th = fiber->cont.saved_ec.thread_ptr;
+
+    // fiber->blocking is `unsigned int : 1`, so we use it as a boolean:
+    fiber->blocking = 1;
+
+    // Once the fiber is blocking, and current, we increment the thread blocking state:
+    th->blocking += 1;
+
+    return rb_yield(fiber_value);
 }
 
 static VALUE
-fiber_blocking_ensure(VALUE fiber)
+fiber_blocking_ensure(VALUE fiber_value)
 {
-    fiber_ptr(fiber)->blocking -= 1;
+    rb_fiber_t *fiber = fiber_ptr(fiber_value);
+    rb_thread_t * volatile th = fiber->cont.saved_ec.thread_ptr;
+
+    // We are no longer blocking:
+    fiber->blocking = 0;
+    th->blocking -= 1;
+
     return Qnil;
 }
 
@@ -2440,8 +2454,15 @@ fiber_blocking_ensure(VALUE fiber)
 VALUE
 rb_fiber_blocking(VALUE class)
 {
-    VALUE fiber = rb_fiber_current();
-    return rb_ensure(fiber_blocking_yield, fiber, fiber_blocking_ensure, fiber);
+    VALUE fiber_value = rb_fiber_current();
+    rb_fiber_t *fiber = fiber_ptr(fiber_value);
+
+    // If we are already blocking, this is essentially a no-op:
+    if (fiber->blocking) {
+        return rb_yield(fiber_value);
+    } else {
+        return rb_ensure(fiber_blocking_yield, fiber_value, fiber_blocking_ensure, fiber_value);
+    }
 }
 
 /*
