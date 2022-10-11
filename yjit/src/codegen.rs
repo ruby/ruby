@@ -18,11 +18,9 @@ use std::cmp;
 use std::collections::HashMap;
 use std::ffi::CStr;
 use std::mem::{self, size_of};
-use std::os::raw::c_uchar;
 use std::os::raw::c_uint;
 use std::ptr;
 use std::slice;
-use std::str::from_utf8;
 
 pub use crate::virtualmem::CodePtr;
 
@@ -5419,12 +5417,7 @@ fn gen_send_general(
                             }
                         }
 
-                        let kw_splat = if flags & VM_CALL_KW_SPLAT != 0 {
-                            VM_CALL_KW_SPLAT
-                        } else {
-                            0
-                        };
-                        flags |= VM_CALL_FCALL | VM_CALL_OPT_SEND | kw_splat;
+                        flags |= VM_CALL_FCALL | VM_CALL_OPT_SEND;
 
                         assume_method_lookup_stable(jit, ocb, comptime_recv_klass, cme);
 

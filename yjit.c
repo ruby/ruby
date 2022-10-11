@@ -1048,9 +1048,3 @@ rb_yjit_init(void)
     VALUE yjit_root = TypedData_Make_Struct(0, struct yjit_root_struct, &yjit_root_type, root);
     rb_gc_register_mark_object(yjit_root);
 }
-
-VALUE
-rb_yjit_check_symbol(VALUE namep)
-{
-    return rb_check_symbol(&namep);
-}
