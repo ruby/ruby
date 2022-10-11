@@ -1131,7 +1131,7 @@ rb_check_id2(VALUE *namep)
         }
     }
     else {
-        assert(RB_TYPE_P(name, T_STRING));
+        RUBY_ASSERT_ALWAYS(RB_TYPE_P(name, T_STRING));
         return lookup_str_id(name);
     }
 }
