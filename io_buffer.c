@@ -1149,7 +1149,7 @@ rb_io_buffer_slice(struct rb_io_buffer *data, VALUE self, size_t offset, size_t 
     return instance;
 }
 
-VALUE
+static VALUE
 io_buffer_slice(int argc, VALUE *argv, VALUE self)
 {
     rb_check_arity(argc, 0, 2);
