@@ -470,9 +470,7 @@ rb_io_buffer_map(VALUE io, size_t size, rb_off_t offset, enum rb_io_buffer_flags
 static VALUE
 io_buffer_map(int argc, VALUE *argv, VALUE klass)
 {
-    if (argc < 1 || argc > 4) {
-        rb_error_arity(argc, 2, 4);
-    }
+    rb_check_arity(argc, 1, 4);
 
     // We might like to handle a string path?
     VALUE io = argv[0];
@@ -553,9 +551,7 @@ rb_io_buffer_initialize(int argc, VALUE *argv, VALUE self)
 {
     io_buffer_experimental();
 
-    if (argc < 0 || argc > 2) {
-        rb_error_arity(argc, 0, 2);
-    }
+    rb_check_arity(argc, 0, 2);
 
     struct rb_io_buffer *data = NULL;
     TypedData_Get_Struct(self, struct rb_io_buffer, &rb_io_buffer_type, data);
@@ -1085,10 +1081,12 @@ io_buffer_validate_range(struct rb_io_buffer *data, size_t offset, size_t length
  *  The slicing happens without copying of memory, and the slice keeps being
  *  associated with the original buffer's source (string, or file), if any.
  *
- *  If the offset is not given, it will be zero.
+ *  If the offset is not given, it will be zero. If the offset is negative, it
+ *  will raise an ArgumentError.
  *
  *  If the length is not given, the slice will be as long as the original
- *  buffer minus the specified offset.
+ *  buffer minus the specified offset. If the length is negative, it will raise
+ *  an ArgumentError.
  *
  *  Raises RuntimeError if the <tt>offset+length</tt> is out of the current
  *  buffer's bounds.
@@ -1154,6 +1152,8 @@ rb_io_buffer_slice(struct rb_io_buffer *data, VALUE self, size_t offset, size_t 
 VALUE
 io_buffer_slice(int argc, VALUE *argv, VALUE self)
 {
+    rb_check_arity(argc, 0, 2);
+
     struct rb_io_buffer *data = NULL;
     TypedData_Get_Struct(self, struct rb_io_buffer, &rb_io_buffer_type, data);
 
@@ -1175,10 +1175,6 @@ io_buffer_slice(int argc, VALUE *argv, VALUE self)
         length = NUM2SIZET(argv[1]);
     } else {
         length = data->size - offset;
-    }
-
-    if (argc > 2) {
-        rb_error_arity(argc, 0, 2);
     }
 
     return rb_io_buffer_slice(data, self, offset, length);
@@ -2133,7 +2129,7 @@ rb_io_buffer_initialize_copy(VALUE self, VALUE source)
 static VALUE
 io_buffer_copy(int argc, VALUE *argv, VALUE self)
 {
-    if (argc < 1 || argc > 4) rb_error_arity(argc, 1, 4);
+    rb_check_arity(argc, 1, 4);
 
     struct rb_io_buffer *data = NULL;
     TypedData_Get_Struct(self, struct rb_io_buffer, &rb_io_buffer_type, data);
@@ -2164,7 +2160,7 @@ io_buffer_copy(int argc, VALUE *argv, VALUE self)
 static VALUE
 io_buffer_get_string(int argc, VALUE *argv, VALUE self)
 {
-    if (argc > 3) rb_error_arity(argc, 0, 3);
+    rb_check_arity(argc, 0, 3);
 
     struct rb_io_buffer *data = NULL;
     TypedData_Get_Struct(self, struct rb_io_buffer, &rb_io_buffer_type, data);
@@ -2223,7 +2219,7 @@ io_buffer_get_string(int argc, VALUE *argv, VALUE self)
 static VALUE
 io_buffer_set_string(int argc, VALUE *argv, VALUE self)
 {
-    if (argc < 1 || argc > 4) rb_error_arity(argc, 1, 4);
+    rb_check_arity(argc, 1, 4);
 
     struct rb_io_buffer *data = NULL;
     TypedData_Get_Struct(self, struct rb_io_buffer, &rb_io_buffer_type, data);
@@ -2285,7 +2281,7 @@ rb_io_buffer_clear(VALUE self, uint8_t value, size_t offset, size_t length)
 static VALUE
 io_buffer_clear(int argc, VALUE *argv, VALUE self)
 {
-    if (argc > 3) rb_error_arity(argc, 0, 3);
+    rb_check_arity(argc, 0, 3);
 
     struct rb_io_buffer *data = NULL;
     TypedData_Get_Struct(self, struct rb_io_buffer, &rb_io_buffer_type, data);
@@ -2353,11 +2349,11 @@ io_buffer_read_internal(void *_argument)
 }
 
 VALUE
-rb_io_buffer_read(VALUE self, VALUE io, size_t length)
+rb_io_buffer_read(VALUE self, VALUE io, size_t length, size_t offset)
 {
     VALUE scheduler = rb_fiber_scheduler_current();
     if (scheduler != Qnil) {
-        VALUE result = rb_fiber_scheduler_io_read(scheduler, io, self, length);
+        VALUE result = rb_fiber_scheduler_io_read(scheduler, io, self, SIZET2NUM(length), SIZET2NUM(offset));
 
         if (result != Qundef) {
             return result;
@@ -2367,13 +2363,15 @@ rb_io_buffer_read(VALUE self, VALUE io, size_t length)
     struct rb_io_buffer *data = NULL;
     TypedData_Get_Struct(self, struct rb_io_buffer, &rb_io_buffer_type, data);
 
-    io_buffer_validate_range(data, 0, length);
+    io_buffer_validate_range(data, offset, length);
 
     int descriptor = rb_io_descriptor(io);
 
     void * base;
     size_t size;
     io_buffer_get_bytes_for_writing(data, &base, &size);
+
+    base = (unsigned char*)base + offset;
 
     struct io_buffer_read_internal_argument argument = {
         .descriptor = descriptor,
@@ -2385,9 +2383,31 @@ rb_io_buffer_read(VALUE self, VALUE io, size_t length)
 }
 
 static VALUE
-io_buffer_read(VALUE self, VALUE io, VALUE length)
+io_buffer_read(int argc, VALUE *argv, VALUE self)
 {
-    return rb_io_buffer_read(self, io, NUM2SIZET(length));
+    rb_check_arity(argc, 2, 3);
+
+    VALUE io = argv[0];
+
+    size_t length;
+    if (argc >= 2) {
+        if (rb_int_negative_p(argv[1])) {
+            rb_raise(rb_eArgError, "Length can't be negative!");
+        }
+
+        length = NUM2SIZET(argv[1]);
+    }
+
+    size_t offset = 0;
+    if (argc >= 3) {
+        if (rb_int_negative_p(argv[2])) {
+            rb_raise(rb_eArgError, "Offset can't be negative!");
+        }
+
+        offset = NUM2SIZET(argv[2]);
+    }
+
+    return rb_io_buffer_read(self, io, length, offset);
 }
 
 struct io_buffer_pread_internal_argument {
@@ -2423,11 +2443,11 @@ io_buffer_pread_internal(void *_argument)
 }
 
 VALUE
-rb_io_buffer_pread(VALUE self, VALUE io, size_t length, rb_off_t offset)
+rb_io_buffer_pread(VALUE self, VALUE io, rb_off_t from, size_t length, size_t offset)
 {
     VALUE scheduler = rb_fiber_scheduler_current();
     if (scheduler != Qnil) {
-        VALUE result = rb_fiber_scheduler_io_pread(scheduler, io, self, length, offset);
+        VALUE result = rb_fiber_scheduler_io_pread(scheduler, io, self, OFFT2NUM(from), SIZET2NUM(length), SIZET2NUM(offset));
 
         if (result != Qundef) {
             return result;
@@ -2449,16 +2469,36 @@ rb_io_buffer_pread(VALUE self, VALUE io, size_t length, rb_off_t offset)
         .descriptor = descriptor,
         .base = base,
         .size = length,
-        .offset = offset,
+        .offset = from,
     };
 
     return rb_thread_io_blocking_region(io_buffer_pread_internal, &argument, descriptor);
 }
 
 static VALUE
-io_buffer_pread(VALUE self, VALUE io, VALUE length, VALUE offset)
+io_buffer_pread(int argc, VALUE *argv, VALUE self)
 {
-    return rb_io_buffer_pread(self, io, RB_NUM2SIZE(length), NUM2OFFT(offset));
+    rb_check_arity(argc, 3, 4);
+
+    VALUE io = argv[0];
+    rb_off_t from = NUM2OFFT(argv[1]);
+
+    size_t length;
+    if (rb_int_negative_p(argv[2])) {
+        rb_raise(rb_eArgError, "Length can't be negative!");
+    }
+    length = NUM2SIZET(argv[2]);
+
+    size_t offset = 0;
+    if (argc >= 4) {
+        if (rb_int_negative_p(argv[3])) {
+            rb_raise(rb_eArgError, "Offset can't be negative!");
+        }
+
+        offset = NUM2SIZET(argv[3]);
+    }
+
+    return rb_io_buffer_pread(self, io, from, length, offset);
 }
 
 struct io_buffer_write_internal_argument {
@@ -2476,11 +2516,11 @@ io_buffer_write_internal(void *_argument)
 }
 
 VALUE
-rb_io_buffer_write(VALUE self, VALUE io, size_t length)
+rb_io_buffer_write(VALUE self, VALUE io, size_t length, size_t offset)
 {
     VALUE scheduler = rb_fiber_scheduler_current();
     if (scheduler != Qnil) {
-        VALUE result = rb_fiber_scheduler_io_write(scheduler, io, self, length);
+        VALUE result = rb_fiber_scheduler_io_write(scheduler, io, self, SIZET2NUM(length), SIZET2NUM(offset));
 
         if (result != Qundef) {
             return result;
@@ -2490,13 +2530,15 @@ rb_io_buffer_write(VALUE self, VALUE io, size_t length)
     struct rb_io_buffer *data = NULL;
     TypedData_Get_Struct(self, struct rb_io_buffer, &rb_io_buffer_type, data);
 
-    io_buffer_validate_range(data, 0, length);
+    io_buffer_validate_range(data, offset, length);
 
     int descriptor = rb_io_descriptor(io);
 
     const void * base;
     size_t size;
     io_buffer_get_bytes_for_reading(data, &base, &size);
+
+    base = (unsigned char *)base + offset;
 
     struct io_buffer_write_internal_argument argument = {
         .descriptor = descriptor,
@@ -2508,9 +2550,31 @@ rb_io_buffer_write(VALUE self, VALUE io, size_t length)
 }
 
 static VALUE
-io_buffer_write(VALUE self, VALUE io, VALUE length)
+io_buffer_write(int argc, VALUE *argv, VALUE self)
 {
-    return rb_io_buffer_write(self, io, RB_NUM2SIZE(length));
+    rb_check_arity(argc, 2, 3);
+
+    VALUE io = argv[0];
+
+    size_t length;
+    if (argc >= 2) {
+        if (rb_int_negative_p(argv[1])) {
+            rb_raise(rb_eArgError, "Length can't be negative!");
+        }
+
+        length = NUM2SIZET(argv[1]);
+    }
+
+    size_t offset = 0;
+    if (argc >= 3) {
+        if (rb_int_negative_p(argv[2])) {
+            rb_raise(rb_eArgError, "Offset can't be negative!");
+        }
+
+        offset = NUM2SIZET(argv[2]);
+    }
+
+    return rb_io_buffer_write(self, io, length, offset);
 }
 
 struct io_buffer_pwrite_internal_argument {
@@ -2546,11 +2610,11 @@ io_buffer_pwrite_internal(void *_argument)
 }
 
 VALUE
-rb_io_buffer_pwrite(VALUE self, VALUE io, size_t length, rb_off_t offset)
+rb_io_buffer_pwrite(VALUE self, VALUE io, rb_off_t from, size_t length, size_t offset)
 {
     VALUE scheduler = rb_fiber_scheduler_current();
     if (scheduler != Qnil) {
-        VALUE result = rb_fiber_scheduler_io_pwrite(scheduler, io, self, length, OFFT2NUM(offset));
+        VALUE result = rb_fiber_scheduler_io_pwrite(scheduler, io, self, OFFT2NUM(from), SIZET2NUM(length), SIZET2NUM(offset));
 
         if (result != Qundef) {
             return result;
@@ -2572,16 +2636,36 @@ rb_io_buffer_pwrite(VALUE self, VALUE io, size_t length, rb_off_t offset)
         .descriptor = descriptor,
         .base = base,
         .size = length,
-        .offset = offset,
+        .offset = from,
     };
 
     return rb_thread_io_blocking_region(io_buffer_pwrite_internal, &argument, descriptor);
 }
 
 static VALUE
-io_buffer_pwrite(VALUE self, VALUE io, VALUE length, VALUE offset)
+io_buffer_pwrite(int argc, VALUE *argv, VALUE self)
 {
-    return rb_io_buffer_pwrite(self, io, RB_NUM2SIZE(length), NUM2OFFT(offset));
+    rb_check_arity(argc, 3, 4);
+
+    VALUE io = argv[0];
+    rb_off_t from = NUM2OFFT(argv[1]);
+
+    size_t length;
+    if (rb_int_negative_p(argv[2])) {
+        rb_raise(rb_eArgError, "Length can't be negative!");
+    }
+    length = NUM2SIZET(argv[2]);
+
+    size_t offset = 0;
+    if (argc >= 4) {
+        if (rb_int_negative_p(argv[3])) {
+            rb_raise(rb_eArgError, "Offset can't be negative!");
+        }
+
+        offset = NUM2SIZET(argv[3]);
+    }
+
+    return rb_io_buffer_pwrite(self, io, from, length, offset);
 }
 
 static inline void
@@ -3154,8 +3238,8 @@ Init_IO_Buffer(void)
     rb_define_method(rb_cIOBuffer, "not!", io_buffer_not_inplace, 0);
 
     // IO operations:
-    rb_define_method(rb_cIOBuffer, "read", io_buffer_read, 2);
-    rb_define_method(rb_cIOBuffer, "pread", io_buffer_pread, 3);
-    rb_define_method(rb_cIOBuffer, "write", io_buffer_write, 2);
-    rb_define_method(rb_cIOBuffer, "pwrite", io_buffer_pwrite, 3);
+    rb_define_method(rb_cIOBuffer, "read", io_buffer_read, -1);
+    rb_define_method(rb_cIOBuffer, "pread", io_buffer_pread, -1);
+    rb_define_method(rb_cIOBuffer, "write", io_buffer_write, -1);
+    rb_define_method(rb_cIOBuffer, "pwrite", io_buffer_pwrite, -1);
 }

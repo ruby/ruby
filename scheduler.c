@@ -232,43 +232,43 @@ rb_fiber_scheduler_io_wait_writable(VALUE scheduler, VALUE io)
 }
 
 VALUE
-rb_fiber_scheduler_io_read(VALUE scheduler, VALUE io, VALUE buffer, size_t length)
+rb_fiber_scheduler_io_read(VALUE scheduler, VALUE io, VALUE buffer, size_t length, size_t offset)
 {
     VALUE arguments[] = {
-        io, buffer, SIZET2NUM(length)
+        io, buffer, SIZET2NUM(length), SIZET2NUM(offset)
     };
 
-    return rb_check_funcall(scheduler, id_io_read, 3, arguments);
+    return rb_check_funcall(scheduler, id_io_read, 4, arguments);
 }
 
 VALUE
-rb_fiber_scheduler_io_pread(VALUE scheduler, VALUE io, VALUE buffer, size_t length, rb_off_t offset)
+rb_fiber_scheduler_io_pread(VALUE scheduler, VALUE io, VALUE buffer, rb_off_t from, size_t length, size_t offset)
 {
     VALUE arguments[] = {
-        io, buffer, SIZET2NUM(length), OFFT2NUM(offset)
+        io, buffer, OFFT2NUM(from), SIZET2NUM(length), SIZET2NUM(offset)
     };
 
-    return rb_check_funcall(scheduler, id_io_pread, 4, arguments);
+    return rb_check_funcall(scheduler, id_io_pread, 5, arguments);
 }
 
 VALUE
-rb_fiber_scheduler_io_write(VALUE scheduler, VALUE io, VALUE buffer, size_t length)
+rb_fiber_scheduler_io_write(VALUE scheduler, VALUE io, VALUE buffer, size_t length, size_t offset)
 {
     VALUE arguments[] = {
-        io, buffer, SIZET2NUM(length)
+        io, buffer, SIZET2NUM(length), SIZET2NUM(offset)
     };
 
-    return rb_check_funcall(scheduler, id_io_write, 3, arguments);
+    return rb_check_funcall(scheduler, id_io_write, 4, arguments);
 }
 
 VALUE
-rb_fiber_scheduler_io_pwrite(VALUE scheduler, VALUE io, VALUE buffer, size_t length, rb_off_t offset)
+rb_fiber_scheduler_io_pwrite(VALUE scheduler, VALUE io, VALUE buffer, rb_off_t from, size_t length, size_t offset)
 {
     VALUE arguments[] = {
-        io, buffer, SIZET2NUM(length), OFFT2NUM(offset)
+        io, buffer, OFFT2NUM(from), SIZET2NUM(length), SIZET2NUM(offset)
     };
 
-    return rb_check_funcall(scheduler, id_io_pwrite, 4, arguments);
+    return rb_check_funcall(scheduler, id_io_pwrite, 5, arguments);
 }
 
 VALUE
@@ -276,7 +276,7 @@ rb_fiber_scheduler_io_read_memory(VALUE scheduler, VALUE io, void *base, size_t 
 {
     VALUE buffer = rb_io_buffer_new(base, size, RB_IO_BUFFER_LOCKED);
 
-    VALUE result = rb_fiber_scheduler_io_read(scheduler, io, buffer, length);
+    VALUE result = rb_fiber_scheduler_io_read(scheduler, io, buffer, length, 0);
 
     rb_io_buffer_unlock(buffer);
     rb_io_buffer_free(buffer);
@@ -289,7 +289,7 @@ rb_fiber_scheduler_io_write_memory(VALUE scheduler, VALUE io, const void *base, 
 {
     VALUE buffer = rb_io_buffer_new((void*)base, size, RB_IO_BUFFER_LOCKED|RB_IO_BUFFER_READONLY);
 
-    VALUE result = rb_fiber_scheduler_io_write(scheduler, io, buffer, length);
+    VALUE result = rb_fiber_scheduler_io_write(scheduler, io, buffer, length, 0);
 
     rb_io_buffer_unlock(buffer);
     rb_io_buffer_free(buffer);

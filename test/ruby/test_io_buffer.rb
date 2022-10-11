@@ -361,7 +361,7 @@ class TestIOBuffer < Test::Unit::TestCase
     io.seek(0)
 
     buffer = IO::Buffer.new(128)
-    buffer.pread(io, 5, 6)
+    buffer.pread(io, 6, 5)
 
     assert_equal "World", buffer.get_string(0, 5)
     assert_equal 0, io.tell
@@ -374,7 +374,7 @@ class TestIOBuffer < Test::Unit::TestCase
 
     buffer = IO::Buffer.new(128)
     buffer.set_string("World")
-    buffer.pwrite(io, 5, 6)
+    buffer.pwrite(io, 6, 5)
 
     assert_equal 0, io.tell
 
