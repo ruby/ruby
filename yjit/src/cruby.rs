@@ -352,6 +352,10 @@ impl VALUE {
         self == Qnil
     }
 
+    pub fn string_p(self) -> bool {
+        self.class_of() == unsafe { rb_cString }
+    }
+
     /// Read the flags bits from the RBasic object, then return a Ruby type enum (e.g. RUBY_T_ARRAY)
     pub fn builtin_type(self) -> ruby_value_type {
         (self.builtin_flags() & (RUBY_T_MASK as usize)) as ruby_value_type
@@ -629,6 +633,7 @@ mod manual_defs {
     pub const VM_CALL_KW_SPLAT: u32 = 1 << VM_CALL_KW_SPLAT_bit;
     pub const VM_CALL_TAILCALL: u32 = 1 << VM_CALL_TAILCALL_bit;
     pub const VM_CALL_ZSUPER : u32 = 1 << VM_CALL_ZSUPER_bit;
+    pub const VM_CALL_OPT_SEND : u32 = 1 << VM_CALL_OPT_SEND_bit;
 
     // From internal/struct.h - in anonymous enum, so we can't easily import it
     pub const RSTRUCT_EMBED_LEN_MASK: usize = (RUBY_FL_USER2 | RUBY_FL_USER1) as usize;

@@ -1363,6 +1363,9 @@ extern "C" {
     pub fn rb_get_cme_def_body_attr_id(cme: *const rb_callable_method_entry_t) -> ID;
 }
 extern "C" {
+    pub fn rb_get_symbol_id(namep: VALUE) -> ID;
+}
+extern "C" {
     pub fn rb_get_cme_def_body_optimized_type(
         cme: *const rb_callable_method_entry_t,
     ) -> method_optimized_type;

@@ -509,6 +509,8 @@ rb_get_cme_def_body_attr_id(const rb_callable_method_entry_t *cme)
     return cme->def->body.attr.id;
 }
 
+ID rb_get_symbol_id(VALUE namep);
+
 enum method_optimized_type
 rb_get_cme_def_body_optimized_type(const rb_callable_method_entry_t *cme)
 {

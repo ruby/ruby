@@ -1918,6 +1918,9 @@ pub const OPT_AREF_MAX_CHAIN_DEPTH: i32 = 2;
 // up to 5 different classes
 pub const SEND_MAX_DEPTH: i32 = 5;
 
+// up to 20 different methods for send
+pub const SEND_MAX_CHAIN_DEPTH: i32 = 20;
+
 // Codegen for setting an instance variable.
 // Preconditions:
 //   - receiver is in REG0
@@ -1929,7 +1932,15 @@ fn gen_set_ivar(
     asm: &mut Assembler,
     recv: VALUE,
     ivar_name: ID,
+    flags: u32,
+    argc: i32,
 ) -> CodegenStatus {
+
+    // This is a .send call and we need to adjust the stack
+    if flags & VM_CALL_OPT_SEND != 0 {
+        handle_opt_send_shift_stack(asm, argc as i32, ctx);
+    }
+
     // Save the PC and SP because the callee may allocate
     // Note that this modifies REG_SP, which is why we do it first
     jit_prepare_routine_call(jit, ctx, asm);
@@ -4148,8 +4159,9 @@ fn gen_send_cfunc(
     ci: *const rb_callinfo,
     cme: *const rb_callable_method_entry_t,
     block: Option<IseqPtr>,
-    argc: i32,
     recv_known_klass: *const VALUE,
+    flags: u32,
+    argc: i32,
 ) -> CodegenStatus {
     let cfunc = unsafe { get_cme_def_body_cfunc(cme) };
     let cfunc_argc = unsafe { get_mct_argc(cfunc) };
@@ -4157,8 +4169,6 @@ fn gen_send_cfunc(
 
     // Create a side-exit to fall back to the interpreter
     let side_exit = get_side_exit(jit, ocb, ctx);
-
-    let flags = unsafe { vm_ci_flag(ci) };
 
     // If the function expects a Ruby array of arguments
     if cfunc_argc < 0 && cfunc_argc != -1 {
@@ -4226,6 +4236,11 @@ fn gen_send_cfunc(
     if cfunc_argc >= 0 && passed_argc + 1 > (C_ARG_OPNDS.len() as i32) {
         gen_counter_incr!(asm, send_cfunc_toomany_args);
         return CantCompile;
+    }
+
+    // This is a .send call and we need to adjust the stack
+    if flags & VM_CALL_OPT_SEND != 0 {
+        handle_opt_send_shift_stack(asm, argc as i32, ctx);
     }
 
     // Points to the receiver operand on the stack
@@ -4440,6 +4455,7 @@ fn gen_send_bmethod(
     ci: *const rb_callinfo,
     cme: *const rb_callable_method_entry_t,
     block: Option<IseqPtr>,
+    flags: u32,
     argc: i32,
 ) -> CodegenStatus {
     let procv = unsafe { rb_get_def_bmethod_proc((*cme).def) };
@@ -4469,7 +4485,7 @@ fn gen_send_bmethod(
     }
 
     let frame_type = VM_FRAME_MAGIC_BLOCK | VM_FRAME_FLAG_BMETHOD | VM_FRAME_FLAG_LAMBDA;
-    gen_send_iseq(jit, ctx, asm, ocb, iseq, ci, frame_type, Some(capture.ep), cme, block, argc)
+    gen_send_iseq(jit, ctx, asm, ocb, iseq, ci, frame_type, Some(capture.ep), cme, block, flags, argc)
 }
 
 fn gen_send_iseq(
@@ -4483,11 +4499,11 @@ fn gen_send_iseq(
     prev_ep: Option<*const VALUE>,
     cme: *const rb_callable_method_entry_t,
     block: Option<IseqPtr>,
+    flags: u32,
     argc: i32,
 ) -> CodegenStatus {
     let mut argc = argc;
 
-    let flags = unsafe { vm_ci_flag(ci) };
 
     // Create a side-exit to fall back to the interpreter
     let side_exit = get_side_exit(jit, ocb, ctx);
@@ -4711,6 +4727,13 @@ fn gen_send_iseq(
         Some(leaf_builtin_raw)
     };
     if let (None, Some(builtin_info)) = (block, leaf_builtin) {
+
+        // this is a .send call not currently supported for builtins
+        if flags & VM_CALL_OPT_SEND != 0 {
+            gen_counter_incr!(asm, send_send_builtin);
+            return CantCompile;
+        }
+
         let builtin_argc = unsafe { (*builtin_info).argc };
         if builtin_argc + 1 < (C_ARG_OPNDS.len() as i32) {
             asm.comment("inlined leaf builtin");
@@ -4756,6 +4779,11 @@ fn gen_send_iseq(
         // we test if this is true and if not side exit.
         argc = num_params as i32;
         push_splat_args(required_args, ctx, asm, ocb, side_exit)
+    }
+
+    // This is a .send call and we need to adjust the stack
+    if flags & VM_CALL_OPT_SEND != 0 {
+        handle_opt_send_shift_stack(asm, argc as i32, ctx);
     }
 
     if doing_kw_call {
@@ -5012,7 +5040,10 @@ fn gen_struct_aref(
     cme: *const rb_callable_method_entry_t,
     comptime_recv: VALUE,
     _comptime_recv_klass: VALUE,
+    flags: u32,
+    argc: i32,
 ) -> CodegenStatus {
+
     if unsafe { vm_ci_argc(ci) } != 0 {
         return CantCompile;
     }
@@ -5032,6 +5063,11 @@ fn gen_struct_aref(
         if native_off > (i32::MAX as i64) {
             return CantCompile;
         }
+    }
+
+    // This is a .send call and we need to adjust the stack
+    if flags & VM_CALL_OPT_SEND != 0 {
+        handle_opt_send_shift_stack(asm, argc as i32, ctx);
     }
 
     // All structs from the same Struct class should have the same
@@ -5067,9 +5103,16 @@ fn gen_struct_aset(
     cme: *const rb_callable_method_entry_t,
     comptime_recv: VALUE,
     _comptime_recv_klass: VALUE,
+    flags: u32,
+    argc: i32,
 ) -> CodegenStatus {
     if unsafe { vm_ci_argc(ci) } != 1 {
         return CantCompile;
+    }
+
+    // This is a .send call and we need to adjust the stack
+    if flags & VM_CALL_OPT_SEND != 0 {
+        handle_opt_send_shift_stack(asm, argc, ctx);
     }
 
     let off: i32 = unsafe { get_cme_def_body_optimized_index(cme) }
@@ -5113,9 +5156,9 @@ fn gen_send_general(
     // see vm_call_method().
 
     let ci = unsafe { get_call_data_ci(cd) }; // info about the call site
-    let argc: i32 = unsafe { vm_ci_argc(ci) }.try_into().unwrap();
-    let mid = unsafe { vm_ci_mid(ci) };
-    let flags = unsafe { vm_ci_flag(ci) };
+    let mut argc: i32 = unsafe { vm_ci_argc(ci) }.try_into().unwrap();
+    let mut mid = unsafe { vm_ci_mid(ci) };
+    let mut flags = unsafe { vm_ci_flag(ci) };
 
     // Don't JIT calls with keyword splat
     if flags & VM_CALL_KW_SPLAT != 0 {
@@ -5205,7 +5248,7 @@ fn gen_send_general(
             VM_METHOD_TYPE_ISEQ => {
                 let iseq = unsafe { get_def_iseq_ptr((*cme).def) };
                 let frame_type = VM_FRAME_MAGIC_METHOD | VM_ENV_FLAG_LOCAL;
-                return gen_send_iseq(jit, ctx, asm, ocb, iseq, ci, frame_type, None, cme, block, argc);
+                return gen_send_iseq(jit, ctx, asm, ocb, iseq, ci, frame_type, None, cme, block, flags, argc);
             }
             VM_METHOD_TYPE_CFUNC => {
                 return gen_send_cfunc(
@@ -5216,14 +5259,21 @@ fn gen_send_general(
                     ci,
                     cme,
                     block,
-                    argc,
                     &comptime_recv_klass,
+                    flags,
+                    argc,
                 );
             }
             VM_METHOD_TYPE_IVAR => {
                 if argc != 0 {
                     // Argument count mismatch. Getters take no arguments.
                     gen_counter_incr!(asm, send_getter_arity);
+                    return CantCompile;
+                }
+
+                // This is a .send call not supported right now for getters
+                if flags & VM_CALL_OPT_SEND != 0 {
+                    gen_counter_incr!(asm, send_send_getter);
                     return CantCompile;
                 }
 
@@ -5270,12 +5320,12 @@ fn gen_send_general(
                     return CantCompile;
                 } else {
                     let ivar_name = unsafe { get_cme_def_body_attr_id(cme) };
-                    return gen_set_ivar(jit, ctx, asm, comptime_recv, ivar_name);
+                    return gen_set_ivar(jit, ctx, asm, comptime_recv, ivar_name, flags, argc);
                 }
             }
             // Block method, e.g. define_method(:foo) { :my_block }
             VM_METHOD_TYPE_BMETHOD => {
-                return gen_send_bmethod(jit, ctx, asm, ocb, ci, cme, block, argc);
+                return gen_send_bmethod(jit, ctx, asm, ocb, ci, cme, block, flags, argc);
             }
             VM_METHOD_TYPE_ZSUPER => {
                 gen_counter_incr!(asm, send_zsuper_method);
@@ -5296,11 +5346,116 @@ fn gen_send_general(
             }
             // Send family of methods, e.g. call/apply
             VM_METHOD_TYPE_OPTIMIZED => {
+
                 let opt_type = unsafe { get_cme_def_body_optimized_type(cme) };
                 match opt_type {
                     OPTIMIZED_METHOD_TYPE_SEND => {
-                        gen_counter_incr!(asm, send_optimized_method_send);
-                        return CantCompile;
+
+                        // This is for method calls like `foo.send(:bar)`
+                        // The `send` method does not get its own stack frame.
+                        // instead we look up the method and call it,
+                        // doing some stack shifting based on the VM_CALL_OPT_SEND flag
+
+                        let starting_context = *ctx;
+
+                        if argc == 0 {
+                            gen_counter_incr!(asm, send_send_wrong_args);
+                            return CantCompile;
+                        }
+
+                        argc -= 1;
+
+                        let compile_time_name = jit_peek_at_stack(jit, ctx, argc as isize);
+
+                        if !compile_time_name.string_p() && !compile_time_name.static_sym_p()  {
+                            gen_counter_incr!(asm, send_send_chain_not_string_or_sym);
+                            return CantCompile;
+                        }
+
+                        mid = unsafe { rb_get_symbol_id(compile_time_name) };
+                        if mid == 0 {
+                            gen_counter_incr!(asm, send_send_null_mid);
+                            return CantCompile;
+                        }
+
+                        cme = unsafe { rb_callable_method_entry(comptime_recv_klass, mid) };
+                        if cme.is_null() {
+                            gen_counter_incr!(asm, send_send_null_cme);
+                            return CantCompile;
+                        }
+
+                        // We aren't going to handle `send(send(:foo))`. We would need to
+                        // do some stack manipulation here or keep track of how many levels
+                        // deep we need to stack manipulate
+                        // Because of how exits currently work, we can't do stack manipulation
+                        // until we will no longer side exit.
+                        let def_type = unsafe { get_cme_def_type(cme) };
+                        if let VM_METHOD_TYPE_OPTIMIZED = def_type {
+                            let opt_type = unsafe { get_cme_def_body_optimized_type(cme) };
+                            if let OPTIMIZED_METHOD_TYPE_SEND = opt_type {
+                                gen_counter_incr!(asm, send_send_nested);
+                                return CantCompile;
+                            }
+                        }
+
+                        flags |= VM_CALL_FCALL | VM_CALL_OPT_SEND;
+
+                        assume_method_lookup_stable(jit, ocb, comptime_recv_klass, cme);
+
+                        let (known_class, type_mismatch_exit) = {
+                            if compile_time_name.string_p() {
+                                (
+                                    unsafe { rb_cString },
+                                    counted_exit!(ocb, side_exit, send_send_chain_not_string),
+
+                                )
+                            } else {
+                                (
+                                    unsafe { rb_cSymbol },
+                                    counted_exit!(ocb, side_exit, send_send_chain_not_sym),
+                                )
+                            }
+                        };
+
+                        jit_guard_known_klass(
+                            jit,
+                            ctx,
+                            asm,
+                            ocb,
+                            known_class,
+                            ctx.stack_opnd(argc),
+                            StackOpnd(argc as u16),
+                            compile_time_name,
+                            2, // We have string or symbol, so max depth is 2
+                            type_mismatch_exit
+                        );
+
+                        // Need to do this here so we don't have too many live
+                        // values for the register allocator.
+                        let name_opnd = asm.load(ctx.stack_opnd(argc));
+
+                        let symbol_id_opnd = asm.ccall(rb_get_symbol_id as *const u8, vec![name_opnd]);
+
+                        asm.comment("chain_guard_send");
+                        let chain_exit = counted_exit!(ocb, side_exit, send_send_chain);
+                        asm.cmp(symbol_id_opnd, 0.into());
+                        asm.jbe(chain_exit.into());
+
+                        asm.cmp(symbol_id_opnd, mid.into());
+                        jit_chain_guard(
+                            JCC_JNE,
+                            jit,
+                            &starting_context,
+                            asm,
+                            ocb,
+                            SEND_MAX_CHAIN_DEPTH as i32,
+                            chain_exit,
+                        );
+
+                        // We have changed the argc, flags, mid, and cme, so we need to re-enter the match
+                        // and compile whatever method we found from send.
+                        continue;
+
                     }
                     OPTIMIZED_METHOD_TYPE_CALL => {
                         gen_counter_incr!(asm, send_optimized_method_call);
@@ -5320,6 +5475,8 @@ fn gen_send_general(
                             cme,
                             comptime_recv,
                             comptime_recv_klass,
+                            flags,
+                            argc,
                         );
                     }
                     OPTIMIZED_METHOD_TYPE_STRUCT_ASET => {
@@ -5332,6 +5489,8 @@ fn gen_send_general(
                             cme,
                             comptime_recv,
                             comptime_recv_klass,
+                            flags,
+                            argc,
                         );
                     }
                     _ => {
@@ -5352,6 +5511,32 @@ fn gen_send_general(
             }
         }
     }
+}
+
+
+/// Shifts the stack for send in order to remove the name of the method
+/// Comment below borrow from vm_call_opt_send in vm_insnhelper.c
+/// E.g. when argc == 2
+///  |      |        |      |  TOPN
+///  +------+        |      |
+///  | arg1 | ---+   |      |    0
+///  +------+    |   +------+
+///  | arg0 | -+ +-> | arg1 |    1
+///  +------+  |     +------+
+///  | sym  |  +---> | arg0 |    2
+///  +------+        +------+
+///  | recv |        | recv |    3
+///--+------+--------+------+------
+///
+/// We do this for our compiletime context and the actual stack
+fn handle_opt_send_shift_stack(asm: &mut Assembler, argc: i32, ctx: &mut Context) {
+    asm.comment("shift_stack");
+    for j in (0..argc).rev() {
+        let opnd = ctx.stack_opnd(j);
+        let opnd2 = ctx.stack_opnd(j + 1);
+        asm.mov(opnd2, opnd);
+    }
+    ctx.shift_stack(argc as usize);
 }
 
 fn gen_opt_send_without_block(
@@ -5515,10 +5700,10 @@ fn gen_invokesuper(
         VM_METHOD_TYPE_ISEQ => {
             let iseq = unsafe { get_def_iseq_ptr((*cme).def) };
             let frame_type = VM_FRAME_MAGIC_METHOD | VM_ENV_FLAG_LOCAL;
-            gen_send_iseq(jit, ctx, asm, ocb, iseq, ci, frame_type, None, cme, block, argc)
+            gen_send_iseq(jit, ctx, asm, ocb, iseq, ci, frame_type, None, cme, block, ci_flags, argc)
         }
         VM_METHOD_TYPE_CFUNC => {
-            gen_send_cfunc(jit, ctx, asm, ocb, ci, cme, block, argc, ptr::null())
+            gen_send_cfunc(jit, ctx, asm, ocb, ci, cme, block, ptr::null(), ci_flags, argc)
         }
         _ => unreachable!(),
     }

@@ -332,6 +332,7 @@ fn main() {
         .allowlist_function("rb_get_cfp_ep_level")
         .allowlist_function("rb_get_cme_def_type")
         .allowlist_function("rb_get_cme_def_body_attr_id")
+        .allowlist_function("rb_get_symbol_id")
         .allowlist_function("rb_get_cme_def_body_optimized_type")
         .allowlist_function("rb_get_cme_def_body_optimized_index")
         .allowlist_function("rb_get_cme_def_body_cfunc")

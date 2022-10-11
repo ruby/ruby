@@ -1061,6 +1061,21 @@ impl Context {
         return top;
     }
 
+    pub fn shift_stack(&mut self, argc: usize) {
+        assert!(argc < self.stack_size.into());
+
+        let method_name_index = (self.stack_size - argc as u16 - 1) as usize;
+
+        for i in method_name_index..(self.stack_size - 1) as usize {
+
+            if i + 1 < MAX_TEMP_TYPES {
+                self.temp_types[i] = self.temp_types[i + 1];
+                self.temp_mapping[i] = self.temp_mapping[i + 1];
+            }
+        }
+        self.stack_pop(1);
+    }
+
     /// Get an operand pointing to a slot on the temp stack
     pub fn stack_opnd(&self, idx: i32) -> Opnd {
         // SP points just above the topmost value
