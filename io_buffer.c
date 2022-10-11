@@ -1099,11 +1099,11 @@ io_buffer_validate_range(struct rb_io_buffer *data, size_t offset, size_t length
  *    slice = buffer.slice
  *    # =>
  *    # #<IO::Buffer 0x0000000108338e68+4 SLICE>
- *    # 0x00000000  74 65 73 74                                     test 
+ *    # 0x00000000  74 65 73 74                                     test
  *
  *    buffer.slice(2)
- *    # => 
- *    # #<IO::Buffer 0x0000000108338e6a+2 SLICE>                
+ *    # =>
+ *    # #<IO::Buffer 0x0000000108338e6a+2 SLICE>
  *    # 0x00000000  73 74                                           st
  *
  *    slice = buffer.slice(1, 2)
