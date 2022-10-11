@@ -69,6 +69,9 @@ class VCS
     begin
       @@dirs.each do |dir, klass, pred|
         if pred ? pred[curr, dir] : File.directory?(File.join(curr, dir))
+          if klass.const_defined?(:COMMAND)
+            IO.pread([{'LANG' => 'C', 'LC_ALL' => 'C'}, klass::COMMAND, "--version"]) rescue next
+          end
           vcs = klass.new(curr)
           vcs.define_options(parser) if parser
           vcs.set_options(options)
@@ -92,16 +95,21 @@ class VCS
     parser.separator("  VCS common options:")
     parser.define("--[no-]dryrun") {|v| opts[:dryrun] = v}
     parser.define("--[no-]debug") {|v| opts[:debug] = v}
+    parser.define("-z", "--zone=OFFSET", /\A[-+]\d\d:\d\d\z/) {|v| opts[:zone] = v}
     opts
   end
 
-  def self.release_date(time = Time.now - 10) # the same default as make-snapshot
-    t = time.utc
+  def release_date(time)
+    t = time.getlocal(@zone)
     [
       t.strftime('#define RUBY_RELEASE_YEAR %Y'),
       t.strftime('#define RUBY_RELEASE_MONTH %-m'),
       t.strftime('#define RUBY_RELEASE_DAY %-d'),
     ]
+  end
+
+  def self.short_revision(rev)
+    rev
   end
 
   attr_reader :srcdir
@@ -121,6 +129,7 @@ class VCS
   def set_options(opts)
     @debug = opts.fetch(:debug) {$DEBUG}
     @dryrun = opts.fetch(:dryrun) {@debug}
+    @zone = opts.fetch(:zone) {'+09:00'}
   end
 
   attr_reader :dryrun, :debug
@@ -239,7 +248,7 @@ class VCS
       t = release_datetime.utc
       code << t.strftime('#define RUBY_RELEASE_DATETIME "%FT%TZ"')
     end
-    code += VCS.release_date(release_date)
+    code += self.release_date(release_date)
     code
   end
 
@@ -249,10 +258,6 @@ class VCS
 
     def self.revision_name(rev)
       "r#{rev}"
-    end
-
-    def self.short_revision(rev)
-      rev
     end
 
     def _get_revisions(path, srcdir = nil)
@@ -770,6 +775,17 @@ class VCS
         end
       end
       true
+    end
+  end
+
+  class Null < self
+    def get_revisions(path, srcdir = nil)
+      @modified ||= Time.now - 10
+      return nil, nil, @modified
+    end
+
+    def revision_header(last, release_date, release_datetime = nil, branch = nil, title = nil, limit: 20)
+      self.release_date(release_date)
     end
   end
 end

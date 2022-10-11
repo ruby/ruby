@@ -13,7 +13,7 @@ use crate::utils::*;
 use CodegenStatus::*;
 use InsnOpnd::*;
 
-use std::cell::RefMut;
+
 use std::cmp;
 use std::collections::HashMap;
 use std::ffi::CStr;
@@ -269,7 +269,7 @@ fn jit_save_pc(jit: &JITState, asm: &mut Assembler) {
 /// This realigns the interpreter SP with the JIT SP
 /// Note: this will change the current value of REG_SP,
 ///       which could invalidate memory operands
-fn gen_save_sp(jit: &JITState, asm: &mut Assembler, ctx: &mut Context) {
+fn gen_save_sp(_jit: &JITState, asm: &mut Assembler, ctx: &mut Context) {
     if ctx.get_sp_offset() != 0 {
         asm.comment("save SP to CFP");
         let stack_pointer = ctx.sp_opnd(0);
@@ -515,7 +515,7 @@ pub fn jit_ensure_block_entry_exit(jit: &mut JITState, ocb: &mut OutlinedCb) {
         // Generate the exit with the cache in jitstate.
         block.entry_exit = Some(get_side_exit(jit, ocb, &block_ctx));
     } else {
-        let pc = unsafe { rb_iseq_pc_at_idx(blockid.iseq, blockid.idx) };
+        let _pc = unsafe { rb_iseq_pc_at_idx(blockid.iseq, blockid.idx) };
         block.entry_exit = Some(gen_outlined_exit(jit.pc, &block_ctx, ocb));
     }
 }
@@ -913,7 +913,7 @@ fn gen_pop(
 }
 
 fn gen_dup(
-    jit: &mut JITState,
+    _jit: &mut JITState,
     ctx: &mut Context,
     asm: &mut Assembler,
     _ocb: &mut OutlinedCb,
@@ -971,7 +971,7 @@ fn gen_swap(
 }
 
 fn stack_swap(
-    jit: &mut JITState,
+    _jit: &mut JITState,
     ctx: &mut Context,
     asm: &mut Assembler,
     offset0: u16,
@@ -1002,7 +1002,7 @@ fn gen_putnil(
     KeepCompiling
 }
 
-fn jit_putobject(jit: &mut JITState, ctx: &mut Context, asm: &mut Assembler, arg: VALUE) {
+fn jit_putobject(_jit: &mut JITState, ctx: &mut Context, asm: &mut Assembler, arg: VALUE) {
     let val_type: Type = Type::from(arg);
     let stack_top = ctx.stack_push(val_type);
     asm.mov(stack_top, arg.into());
@@ -1945,7 +1945,7 @@ fn gen_set_ivar(
         rb_vm_set_ivar_idx as *const u8,
         vec![
             recv_opnd,
-            Opnd::Imm(ivar_index.into()),
+            ivar_index.into(),
             val_opnd,
         ],
     );
@@ -2759,7 +2759,7 @@ fn gen_opt_aset(
     // Get the operands from the stack
     let recv = ctx.stack_opnd(2);
     let key = ctx.stack_opnd(1);
-    let val = ctx.stack_opnd(0);
+    let _val = ctx.stack_opnd(0);
 
     if comptime_recv.class_of() == unsafe { rb_cArray } && comptime_key.fixnum_p() {
         let side_exit = get_side_exit(jit, ocb, ctx);
@@ -3248,7 +3248,7 @@ fn gen_branchif(
         let target = if result { jump_block } else { next_block };
         gen_direct_jump(jit, ctx, target, asm);
     } else {
-        asm.test(val_opnd.into(), Opnd::Imm(!Qnil.as_i64()));
+        asm.test(val_opnd, Opnd::Imm(!Qnil.as_i64()));
 
         // Generate the branch instructions
         gen_branch(
@@ -3320,7 +3320,7 @@ fn gen_branchunless(
         // RUBY_Qfalse  /* ...0000 0000 */
         // RUBY_Qnil    /* ...0000 1000 */
         let not_qnil = !Qnil.as_i64();
-        asm.test(val_opnd.into(), not_qnil.into());
+        asm.test(val_opnd, not_qnil.into());
 
         // Generate the branch instructions
         gen_branch(
@@ -3582,7 +3582,7 @@ fn jit_guard_known_klass(
 // Generate ancestry guard for protected callee.
 // Calls to protected callees only go through when self.is_a?(klass_that_defines_the_callee).
 fn jit_protected_callee_ancestry_guard(
-    jit: &mut JITState,
+    _jit: &mut JITState,
     asm: &mut Assembler,
     ocb: &mut OutlinedCb,
     cme: *const rb_callable_method_entry_t,
@@ -3908,7 +3908,7 @@ fn jit_obj_respond_to(
         ctx.get_opnd_type(StackOpnd(0)).known_truthy()
     };
 
-    let mut target_cme = unsafe { rb_callable_method_entry_or_negative(recv_class, mid) };
+    let target_cme = unsafe { rb_callable_method_entry_or_negative(recv_class, mid) };
 
     // Should never be null, as in that case we will be returned a "negative CME"
     assert!(!target_cme.is_null());
@@ -3954,7 +3954,7 @@ fn jit_obj_respond_to(
     }
 
     let sym_opnd = ctx.stack_pop(1);
-    let recv_opnd = ctx.stack_pop(1);
+    let _recv_opnd = ctx.stack_pop(1);
 
     // This is necessary because we have no guarantee that sym_opnd is a constant
     asm.comment("guard known mid");
@@ -4035,6 +4035,7 @@ struct ControlFrame {
     pc: Option<u64>,
     frame_type: u32,
     block_handler: BlockHandler,
+    prev_ep: Option<*const VALUE>,
     cme: *const rb_callable_method_entry_t,
     local_size: i32
 }
@@ -4051,14 +4052,14 @@ struct ControlFrame {
 //   * Provided sp should point to the new frame's sp, immediately following locals and the environment
 //   * At entry, CFP points to the caller (not callee) frame
 //   * At exit, ec->cfp is updated to the pushed CFP
-//   * CFP and SP registers are updated only if switch_in_jit is set
+//   * CFP and SP registers are updated only if set_sp_cfp is set
 //   * Stack overflow is not checked (should be done by the caller)
 //   * Interrupts are not checked (should be done by the caller)
 fn gen_push_frame(
-    jit: &mut JITState,
-    ctx: &mut Context,
+    _jit: &mut JITState,
+    _ctx: &mut Context,
     asm: &mut Assembler,
-    set_pc_cfp: bool, // if true CFP and SP will be switched to the callee
+    set_sp_cfp: bool, // if true CFP and SP will be switched to the callee
     frame: ControlFrame,
 ) {
     assert!(frame.local_size >= 0);
@@ -4076,7 +4077,7 @@ fn gen_push_frame(
         }
     }
 
-    asm.comment("push cme, block handler, frame type");
+    asm.comment("push cme, specval, frame type");
 
     // Write method entry at sp[-3]
     // sp[-3] = me;
@@ -4084,18 +4085,24 @@ fn gen_push_frame(
     // any cme we depend on become outdated. See yjit_method_lookup_change().
     asm.store(Opnd::mem(64, sp, SIZEOF_VALUE_I32 * -3), VALUE::from(frame.cme).into());
 
-    // Write block handler at sp[-2]
-    // sp[-2] = block_handler;
-    let block_handler: Opnd = match frame.block_handler {
-        BlockHandler::None => {
+    // Write special value at sp[-2]. It's either a block handler or a pointer to
+    // the outer environment depending on the frame type.
+    // sp[-2] = specval;
+    let specval: Opnd = match (frame.prev_ep, frame.block_handler) {
+        (None, BlockHandler::None) => {
             VM_BLOCK_HANDLER_NONE.into()
-        },
-        BlockHandler::CurrentFrame => {
+        }
+        (None, BlockHandler::CurrentFrame) => {
             let cfp_self = asm.lea(Opnd::mem(64, CFP, RUBY_OFFSET_CFP_SELF));
             asm.or(cfp_self, Opnd::Imm(1))
-        },
+        }
+        (Some(prev_ep), BlockHandler::None) => {
+            let tagged_prev_ep = (prev_ep as usize) | 1;
+            VALUE(tagged_prev_ep).into()
+        }
+        (_, _) => panic!("specval can only be one of prev_ep or block_handler")
     };
-    asm.store(Opnd::mem(64, sp, SIZEOF_VALUE_I32 * -2), block_handler);
+    asm.store(Opnd::mem(64, sp, SIZEOF_VALUE_I32 * -2), specval);
 
     // Write env flags at sp[-1]
     // sp[-1] = frame_type;
@@ -4120,7 +4127,7 @@ fn gen_push_frame(
 
     // For an iseq call PC may be None, in which case we will not set PC and will allow jitted code
     // to set it as necessary.
-    let pc = if let Some(pc) = frame.pc {
+    let _pc = if let Some(pc) = frame.pc {
         asm.mov(cfp_opnd(RUBY_OFFSET_CFP_PC), pc.into());
     };
     asm.mov(cfp_opnd(RUBY_OFFSET_CFP_BP), sp);
@@ -4134,7 +4141,7 @@ fn gen_push_frame(
     asm.mov(cfp_opnd(RUBY_OFFSET_CFP_SELF), frame.recv);
     asm.mov(cfp_opnd(RUBY_OFFSET_CFP_BLOCK_CODE), 0.into());
 
-    if set_pc_cfp {
+    if set_sp_cfp {
         // Saving SP before calculating ep avoids a dependency on a register
         // However this must be done after referencing frame.recv, which may be SP-relative
         asm.mov(SP, sp);
@@ -4144,7 +4151,7 @@ fn gen_push_frame(
 
     asm.comment("switch to new CFP");
     let new_cfp = asm.lea(cfp_opnd(0));
-    if set_pc_cfp {
+    if set_sp_cfp {
         asm.mov(CFP, new_cfp);
         asm.store(Opnd::mem(64, EC, RUBY_OFFSET_EC_CFP), CFP);
     } else {
@@ -4165,7 +4172,7 @@ fn gen_send_cfunc(
 ) -> CodegenStatus {
     let cfunc = unsafe { get_cme_def_body_cfunc(cme) };
     let cfunc_argc = unsafe { get_mct_argc(cfunc) };
-    let mut argc = argc;
+    let argc = argc;
 
     // Create a side-exit to fall back to the interpreter
     let side_exit = get_side_exit(jit, ocb, ctx);
@@ -4274,6 +4281,7 @@ fn gen_send_cfunc(
         cme,
         recv,
         sp,
+        prev_ep: None,
         pc: Some(0),
         iseq: None,
         local_size: 0,
@@ -4436,14 +4444,14 @@ fn push_splat_args(required_args: i32, ctx: &mut Context, asm: &mut Assembler, o
 
         let ary_opnd = asm.csel_nz(ary_opnd, heap_ptr_opnd);
 
-        for i in (0..required_args as i32) {
+        for i in 0..required_args as i32 {
             let top = ctx.stack_push(Type::Unknown);
             asm.mov(top, Opnd::mem(64, ary_opnd, i * (SIZEOF_VALUE as i32)));
         }
     }
 }
 
-fn gen_send_iseq(
+fn gen_send_bmethod(
     jit: &mut JITState,
     ctx: &mut Context,
     asm: &mut Assembler,
@@ -4453,7 +4461,49 @@ fn gen_send_iseq(
     block: Option<IseqPtr>,
     argc: i32,
 ) -> CodegenStatus {
-    let iseq = unsafe { get_def_iseq_ptr((*cme).def) };
+    let procv = unsafe { rb_get_def_bmethod_proc((*cme).def) };
+
+    let proc = unsafe { rb_yjit_get_proc_ptr(procv) };
+    let proc_block = unsafe { &(*proc).block };
+
+    if proc_block.type_ != block_type_iseq {
+        return CantCompile;
+    }
+
+    let capture = unsafe { proc_block.as_.captured.as_ref() };
+    let iseq = unsafe { *capture.code.iseq.as_ref() };
+
+    // Optimize for single ractor mode and avoid runtime check for
+    // "defined with an un-shareable Proc in a different Ractor"
+    if !assume_single_ractor_mode(jit, ocb) {
+        gen_counter_incr!(asm, send_bmethod_ractor);
+        return CantCompile;
+    }
+
+    // Passing a block to a block needs logic different from passing
+    // a block to a method and sometimes requires allocation. Bail for now.
+    if block.is_some() {
+        gen_counter_incr!(asm, send_bmethod_block_arg);
+        return CantCompile;
+    }
+
+    let frame_type = VM_FRAME_MAGIC_BLOCK | VM_FRAME_FLAG_BMETHOD | VM_FRAME_FLAG_LAMBDA;
+    gen_send_iseq(jit, ctx, asm, ocb, iseq, ci, frame_type, Some(capture.ep), cme, block, argc)
+}
+
+fn gen_send_iseq(
+    jit: &mut JITState,
+    ctx: &mut Context,
+    asm: &mut Assembler,
+    ocb: &mut OutlinedCb,
+    iseq: *const rb_iseq_t,
+    ci: *const rb_callinfo,
+    frame_type: u32,
+    prev_ep: Option<*const VALUE>,
+    cme: *const rb_callable_method_entry_t,
+    block: Option<IseqPtr>,
+    argc: i32,
+) -> CodegenStatus {
     let mut argc = argc;
 
     let flags = unsafe { vm_ci_flag(ci) };
@@ -4681,7 +4731,7 @@ fn gen_send_iseq(
     };
     if let (None, Some(builtin_info)) = (block, leaf_builtin) {
         let builtin_argc = unsafe { (*builtin_info).argc };
-        if builtin_argc + 1 /* for self */ + 1 /* for ec */ <= (C_ARG_OPNDS.len() as i32) {
+        if builtin_argc + 1 < (C_ARG_OPNDS.len() as i32) {
             asm.comment("inlined leaf builtin");
 
             // Call the builtin func (ec, recv, arg1, arg2, ...)
@@ -4893,8 +4943,6 @@ fn gen_send_iseq(
         BlockHandler::None
     };
 
-    let frame_type = VM_FRAME_MAGIC_METHOD | VM_ENV_FLAG_LOCAL;
-
     // Setup the new frame
     gen_push_frame(jit, ctx, asm, true, ControlFrame {
         frame_type,
@@ -4902,6 +4950,7 @@ fn gen_send_iseq(
         cme,
         recv,
         sp: callee_sp,
+        prev_ep,
         iseq: Some(iseq),
         pc: None, // We are calling into jitted code, which will set the PC as necessary
         local_size: num_locals
@@ -5173,7 +5222,9 @@ fn gen_send_general(
 
         match def_type {
             VM_METHOD_TYPE_ISEQ => {
-                return gen_send_iseq(jit, ctx, asm, ocb, ci, cme, block, argc);
+                let iseq = unsafe { get_def_iseq_ptr((*cme).def) };
+                let frame_type = VM_FRAME_MAGIC_METHOD | VM_ENV_FLAG_LOCAL;
+                return gen_send_iseq(jit, ctx, asm, ocb, iseq, ci, frame_type, None, cme, block, argc);
             }
             VM_METHOD_TYPE_CFUNC => {
                 return gen_send_cfunc(
@@ -5243,8 +5294,7 @@ fn gen_send_general(
             }
             // Block method, e.g. define_method(:foo) { :my_block }
             VM_METHOD_TYPE_BMETHOD => {
-                gen_counter_incr!(asm, send_bmethod);
-                return CantCompile;
+                return gen_send_bmethod(jit, ctx, asm, ocb, ci, cme, block, argc);
             }
             VM_METHOD_TYPE_ZSUPER => {
                 gen_counter_incr!(asm, send_zsuper_method);
@@ -5481,7 +5531,11 @@ fn gen_invokesuper(
     ctx.clear_local_types();
 
     match cme_def_type {
-        VM_METHOD_TYPE_ISEQ => gen_send_iseq(jit, ctx, asm, ocb, ci, cme, block, argc),
+        VM_METHOD_TYPE_ISEQ => {
+            let iseq = unsafe { get_def_iseq_ptr((*cme).def) };
+            let frame_type = VM_FRAME_MAGIC_METHOD | VM_ENV_FLAG_LOCAL;
+            gen_send_iseq(jit, ctx, asm, ocb, iseq, ci, frame_type, None, cme, block, argc)
+        }
         VM_METHOD_TYPE_CFUNC => {
             gen_send_cfunc(jit, ctx, asm, ocb, ci, cme, block, argc, ptr::null())
         }
@@ -5500,7 +5554,7 @@ fn gen_leave(
 
     // Create a side-exit to fall back to the interpreter
     let side_exit = get_side_exit(jit, ocb, ctx);
-    let mut ocb_asm = Assembler::new();
+    let ocb_asm = Assembler::new();
 
     // Check for interrupts
     gen_check_ints(asm, counted_exit!(ocb, side_exit, leave_se_interrupt));

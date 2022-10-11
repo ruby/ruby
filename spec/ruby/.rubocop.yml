@@ -161,6 +161,9 @@ Lint/Debugger:
 Lint/Loop:
   Enabled: false
 
+Style/BlockComments:
+  Enabled: true
+
 Style/Lambda:
   Enabled: true
   EnforcedStyle: literal

@@ -270,6 +270,13 @@ describe "IO#read" do
     @io.read(nil, buf).should equal buf
   end
 
+  it "returns the given buffer when there is nothing to read" do
+    buf = ""
+
+    @io.read
+    @io.read(nil, buf).should equal buf
+  end
+
   it "coerces the second argument to string and uses it as a buffer" do
     buf = "ABCDE"
     obj = mock("buff")
@@ -312,6 +319,9 @@ describe "IO#read" do
     -> { IOSpecs.closed_io.read }.should raise_error(IOError)
   end
 
+  it "raises ArgumentError when length is less than 0" do
+    -> { @io.read(-1) }.should raise_error(ArgumentError)
+  end
 
   platform_is_not :windows do
     it "raises IOError when stream is closed by another thread" do

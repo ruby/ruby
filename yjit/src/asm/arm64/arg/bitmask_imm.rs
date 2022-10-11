@@ -72,13 +72,31 @@ impl TryFrom<u64> for BitmaskImmediate {
     }
 }
 
-impl From<BitmaskImmediate> for u32 {
+impl BitmaskImmediate {
+    /// Attempt to make a BitmaskImmediate for a 32 bit register.
+    /// The result has N==0, which is required for some 32-bit instructions.
+    /// Note that the exact same BitmaskImmediate produces different values
+    /// depending on the size of the target register.
+    pub fn new_32b_reg(value: u32) -> Result<Self, ()> {
+        // The same bit pattern replicated to u64
+        let value = value as u64;
+        let replicated: u64 = (value << 32) | value;
+        let converted = Self::try_from(replicated);
+        if let Ok(ref imm) = converted {
+            assert_eq!(0, imm.n);
+        }
+
+        converted
+    }
+}
+
+impl BitmaskImmediate {
     /// Encode a bitmask immediate into a 32-bit value.
-    fn from(bitmask: BitmaskImmediate) -> Self {
+    pub fn encode(self) -> u32 {
         0
-        | ((bitmask.n as u32) << 12)
-        | ((bitmask.immr as u32) << 6)
-        | (bitmask.imms as u32)
+        | ((self.n as u32) << 12)
+        | ((self.immr as u32) << 6)
+        | (self.imms as u32)
     }
 }
 
@@ -96,7 +114,7 @@ mod tests {
     #[test]
     fn test_negative() {
         let bitmask: BitmaskImmediate = (-9_i64 as u64).try_into().unwrap();
-        let encoded: u32 = bitmask.into();
+        let encoded: u32 = bitmask.encode();
         assert_eq!(7998, encoded);
     }
 
@@ -206,5 +224,32 @@ mod tests {
     fn test_size_64_invalid() {
         let bitmask = BitmaskImmediate::try_from(u64::MAX);
         assert!(matches!(bitmask, Err(())));
+    }
+
+    #[test]
+    fn test_all_valid_32b_pattern() {
+        let mut patterns = vec![];
+        for pattern_size in [2, 4, 8, 16, 32_u64] {
+            for ones_count in 1..pattern_size {
+                for rotation in 0..pattern_size {
+                    let ones = (1_u64 << ones_count) - 1;
+                    let rotated = (ones >> rotation) |
+                        ((ones & ((1 << rotation) - 1)) << (pattern_size - rotation));
+                    let mut replicated = rotated;
+                    let mut shift = pattern_size;
+                    while shift < 32 {
+                        replicated |= replicated << shift;
+                        shift *= 2;
+                    }
+                    let replicated: u32 = replicated.try_into().unwrap();
+                    assert!(BitmaskImmediate::new_32b_reg(replicated).is_ok());
+                    patterns.push(replicated);
+                }
+            }
+        }
+        patterns.sort();
+        patterns.dedup();
+        // Up to {size}-1 ones, and a total of {size} possible rotations.
+        assert_eq!(1*2 + 3*4 + 7*8 + 15*16 + 31*32, patterns.len());
     }
 }

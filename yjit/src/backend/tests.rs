@@ -29,11 +29,11 @@ fn guard_object_is_heap(
     asm.comment("guard object is heap");
 
     // Test that the object is not an immediate
-    asm.test(object_opnd.clone(), Opnd::UImm(RUBY_IMMEDIATE_MASK as u64));
+    asm.test(object_opnd, Opnd::UImm(RUBY_IMMEDIATE_MASK as u64));
     asm.jnz(Target::CodePtr(side_exit));
 
     // Test that the object is not false or nil
-    asm.cmp(object_opnd.clone(), Opnd::UImm(Qnil.into()));
+    asm.cmp(object_opnd, Opnd::UImm(Qnil.into()));
     asm.jbe(Target::CodePtr(side_exit));
 }
 
@@ -340,4 +340,13 @@ fn test_lookback_iterator() {
             assert!(matches!(insn, Insn::Store { .. }));
         }
     }
+}
+
+#[test]
+fn test_cmp_8_bit() {
+    let (mut asm, mut cb) = setup_asm();
+    let reg = Assembler::get_alloc_regs()[0];
+    asm.cmp(Opnd::Reg(reg).with_num_bits(8).unwrap(), Opnd::UImm(RUBY_SYMBOL_FLAG as u64));
+
+    asm.compile_with_num_regs(&mut cb, 1);
 }

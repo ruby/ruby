@@ -2873,7 +2873,9 @@ utime_failed(struct apply_arg *aa)
 
 #if defined(HAVE_UTIMES)
 
-# if defined(__APPLE__) && \
+# if !defined(HAVE_UTIMENSAT)
+/* utimensat() is not found, runtime check is not needed */
+# elif defined(__APPLE__) && \
     (!defined(MAC_OS_X_VERSION_13_0) || (MAC_OS_X_VERSION_MIN_REQUIRED < MAC_OS_X_VERSION_13_0))
 
 #   if defined(__has_attribute) && __has_attribute(availability)
@@ -2892,10 +2894,6 @@ RBIMPL_WARNING_POP()
 #   else /* __API_AVAILABLE macro does nothing on gcc */
 __attribute__((weak)) int utimensat(int, const char *, const struct timespec [2], int);
 #   endif
-
-#   define utimensat_available_p() (utimensat != NULL)
-# else
-#   define utimensat_available_p() 1
 # endif
 
 static int
@@ -4902,7 +4900,7 @@ rb_file_dirname_n(VALUE fname, int n)
  *   dotfile       top       0
  *   end with dot  dot       1
  *   .ext          dot       len of .ext
- *   .ext:stream   dot       len of .ext without :stream (NT only)
+ *   .ext:stream   dot       len of .ext without :stream (NTFS only)
  *
  */
 const char *
@@ -5379,8 +5377,7 @@ test_check(int n, int argc, VALUE *argv)
  *    "d"  | boolean | True if file1 exists and is a directory
  *    "e"  | boolean | True if file1 exists
  *    "f"  | boolean | True if file1 exists and is a regular file
- *    "g"  | boolean | True if file1 has the \CF{setgid} bit
- *         |         | set (false under NT)
+ *    "g"  | boolean | True if file1 has the setgid bit set
  *    "G"  | boolean | True if file1 exists and has a group
  *         |         | ownership equal to the caller's group
  *    "k"  | boolean | True if file1 exists and has the sticky bit set
@@ -5811,7 +5808,7 @@ rb_stat_rowned(VALUE obj)
  *     stat.grpowned?   -> true or false
  *
  *  Returns true if the effective group id of the process is the same as
- *  the group id of <i>stat</i>. On Windows NT, returns <code>false</code>.
+ *  the group id of <i>stat</i>. On Windows, returns <code>false</code>.
  *
  *     File.stat("testfile").grpowned?      #=> true
  *     File.stat("/etc/passwd").grpowned?   #=> false
@@ -6573,7 +6570,7 @@ const char ruby_null_device[] =
  *
  *    :include: doc/examples/files.rdoc
  *
- *  == \File Access Modes
+ *  == Access Modes
  *
  *  \Methods File.new and File.open each create a \File object for a given file path.
  *

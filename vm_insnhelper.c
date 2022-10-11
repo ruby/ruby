@@ -428,16 +428,17 @@ rb_vm_pop_frame(rb_execution_context_t *ec)
 static inline VALUE
 rb_arity_error_new(int argc, int min, int max)
 {
-    VALUE err_mess = 0;
+    VALUE err_mess = rb_sprintf("wrong number of arguments (given %d, expected %d", argc, min);
     if (min == max) {
-        err_mess = rb_sprintf("wrong number of arguments (given %d, expected %d)", argc, min);
+        /* max is not needed */
     }
     else if (max == UNLIMITED_ARGUMENTS) {
-        err_mess = rb_sprintf("wrong number of arguments (given %d, expected %d+)", argc, min);
+        rb_str_cat_cstr(err_mess, "+");
     }
     else {
-        err_mess = rb_sprintf("wrong number of arguments (given %d, expected %d..%d)", argc, min, max);
+        rb_str_catf(err_mess, "..%d", max);
     }
+    rb_str_cat_cstr(err_mess, ")");
     return rb_exc_new3(rb_eArgError, err_mess);
 }
 
@@ -1117,6 +1118,11 @@ fill_ivar_cache(const rb_iseq_t *iseq, IVC ic, const struct rb_callcache *cc, in
     }
 }
 
+#define ractor_incidental_shareable_p(cond, val) \
+    (!(cond) || rb_ractor_shareable_p(val))
+#define ractor_object_incidental_shareable_p(obj, val) \
+    ractor_incidental_shareable_p(rb_ractor_shareable_p(obj), val)
+
 ALWAYS_INLINE(static VALUE vm_getivar(VALUE, ID, const rb_iseq_t *, IVC, const struct rb_callcache *, int));
 static inline VALUE
 vm_getivar(VALUE obj, ID id, const rb_iseq_t *iseq, IVC ic, const struct rb_callcache *cc, int is_attr)
@@ -1138,7 +1144,7 @@ vm_getivar(VALUE obj, ID id, const rb_iseq_t *iseq, IVC ic, const struct rb_call
             LIKELY(index < ROBJECT_NUMIV(obj))) {
             val = ROBJECT_IVPTR(obj)[index];
 
-            VM_ASSERT(rb_ractor_shareable_p(obj) ? rb_ractor_shareable_p(val) : true);
+            VM_ASSERT(ractor_object_incidental_shareable_p(obj, val));
         }
         else if (FL_TEST_RAW(obj, FL_EXIVAR)) {
             val = rb_ivar_generic_lookup_with_index(obj, id, index);
@@ -1159,7 +1165,7 @@ vm_getivar(VALUE obj, ID id, const rb_iseq_t *iseq, IVC ic, const struct rb_call
                 if (ent->index < ROBJECT_NUMIV(obj)) {
                     val = ROBJECT_IVPTR(obj)[ent->index];
 
-                    VM_ASSERT(rb_ractor_shareable_p(obj) ? rb_ractor_shareable_p(val) : true);
+                    VM_ASSERT(ractor_object_incidental_shareable_p(obj, val));
                 }
             }
         }
@@ -5042,7 +5048,7 @@ static inline bool
 vm_inlined_ic_hit_p(VALUE flags, VALUE value, const rb_cref_t *ic_cref, const VALUE *reg_ep)
 {
     if ((flags & IMEMO_CONST_CACHE_SHAREABLE) || rb_ractor_main_p()) {
-        VM_ASSERT((flags & IMEMO_CONST_CACHE_SHAREABLE) ? rb_ractor_shareable_p(value) : true);
+        VM_ASSERT(ractor_incidental_shareable_p(flags & IMEMO_CONST_CACHE_SHAREABLE, value));
 
         return (ic_cref == NULL || // no need to check CREF
                 ic_cref == vm_get_cref(reg_ep));

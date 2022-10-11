@@ -406,8 +406,10 @@ warning_string(rb_encoding *enc, const char *fmt, va_list args)
 }
 
 #define with_warning_string(mesg, enc, fmt) \
+    with_warning_string_from(mesg, enc, fmt, fmt)
+#define with_warning_string_from(mesg, enc, fmt, last_arg) \
     VALUE mesg; \
-    va_list args; va_start(args, fmt); \
+    va_list args; va_start(args, last_arg); \
     mesg = warning_string(enc, fmt, args); \
     va_end(args);
 
@@ -509,12 +511,9 @@ rb_warn_deprecated(const char *fmt, const char *suggest, ...)
 {
     if (!deprecation_warning_enabled()) return;
 
-    va_list args;
-    va_start(args, suggest);
-    VALUE mesg = warning_string(0, fmt, args);
-    va_end(args);
-
-    warn_deprecated(mesg, NULL, suggest);
+    with_warning_string_from(mesg, 0, fmt, suggest) {
+        warn_deprecated(mesg, NULL, suggest);
+    }
 }
 
 void
@@ -522,12 +521,9 @@ rb_warn_deprecated_to_remove(const char *removal, const char *fmt, const char *s
 {
     if (!deprecation_warning_enabled()) return;
 
-    va_list args;
-    va_start(args, suggest);
-    VALUE mesg = warning_string(0, fmt, args);
-    va_end(args);
-
-    warn_deprecated(mesg, removal, suggest);
+    with_warning_string_from(mesg, 0, fmt, suggest) {
+        warn_deprecated(mesg, removal, suggest);
+    }
 }
 
 static inline int

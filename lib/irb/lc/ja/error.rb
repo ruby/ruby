@@ -48,11 +48,6 @@ module IRB
       super("そのようなジョブ(#{val})はありません.")
     end
   end
-  class CantShiftToMultiIrbMode < StandardError
-    def initialize
-      super("multi-irb modeに移れません.")
-    end
-  end
   class CantChangeBinding < StandardError
     def initialize(val)
       super("バインディング(#{val})に変更できません.")

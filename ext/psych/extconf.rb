@@ -6,7 +6,7 @@ if $mswin or $mingw or $cygwin
   $CPPFLAGS << " -DYAML_DECLARE_STATIC"
 end
 
-yaml_source = with_config("libyaml-source-dir") || enable_config("bundled-libyaml", false)
+yaml_source = with_config("libyaml-source-dir")
 unless yaml_source # default to pre-installed libyaml
   pkg_config('yaml-0.1')
   dir_config('libyaml')
@@ -15,30 +15,8 @@ unless yaml_source # default to pre-installed libyaml
   end
 end
 
-if yaml_source == true
-  # search the latest libyaml source under $srcdir
-  yaml_source = Dir.glob("#{$srcdir}/yaml{,-*}/").max_by {|n| File.basename(n).scan(/\d+/).map(&:to_i)}
-  unless yaml_source
-    download_failure = "failed to download libyaml source. Try manually installing libyaml?"
-    begin
-      require_relative '../../tool/extlibs.rb'
-    rescue LoadError
-      # When running in ruby/ruby, we use miniruby and don't have stdlib.
-      # Avoid LoadError because it aborts the whole build. Usually when
-      # stdlib extension fail to configure we skip it and continue.
-      raise download_failure
-    end
-    extlibs = ExtLibs.new(cache_dir: File.expand_path("../../tmp/download_cache", $srcdir))
-    unless extlibs.process_under($srcdir)
-      raise download_failure
-    end
-    yaml_source, = Dir.glob("#{$srcdir}/yaml-*/")
-    raise "libyaml not found" unless yaml_source
-  end
-elsif yaml_source
-  yaml_source = yaml_source.gsub(/\$\((\w+)\)|\$\{(\w+)\}/) {ENV[$1||$2]}
-end
 if yaml_source
+  yaml_source = yaml_source.gsub(/\$\((\w+)\)|\$\{(\w+)\}/) {ENV[$1||$2]}
   yaml_source = yaml_source.chomp("/")
   yaml_configure = "#{File.expand_path(yaml_source)}/configure"
   unless File.exist?(yaml_configure)

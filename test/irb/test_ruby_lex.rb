@@ -619,5 +619,18 @@ module TestIRB
         pos_to_index[t.pos] = i
       }
     end
+
+    def test_unterminated_code
+      if Gem::Version.new(RUBY_VERSION) < Gem::Version.new('2.7.0')
+        pend 'This test needs Ripper::Lexer#scan to take broken tokens'
+      end
+
+      ['do', '<<A'].each do |code|
+        tokens = RubyLex.ripper_lex_without_warning(code)
+        assert_equal(code, tokens.map(&:tok).join, "Cannot reconstruct code from tokens")
+        error_tokens = tokens.map(&:event).grep(/error/)
+        assert_empty(error_tokens, 'Error tokens must be ignored if there is corresponding non-error token')
+      end
+    end
   end
 end

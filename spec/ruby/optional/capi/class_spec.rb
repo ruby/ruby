@@ -204,6 +204,10 @@ describe "C-API Class function" do
     it "returns a string for an anonymous class" do
       @s.rb_class2name(Class.new).should be_kind_of(String)
     end
+
+    it "returns a string beginning with # for an anonymous class" do
+      @s.rb_class2name(Struct.new(:x, :y).new(1, 2).class).should.start_with?('#')
+    end
   end
 
   describe "rb_class_path" do

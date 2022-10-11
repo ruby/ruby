@@ -175,7 +175,6 @@ make_counters! {
     send_optimized_method_call,
     send_optimized_method_block_call,
     send_missing_method,
-    send_bmethod,
     send_refined_method,
     send_cfunc_ruby_array_varg,
     send_cfunc_argc_mismatch,
@@ -198,6 +197,8 @@ make_counters! {
     send_args_splat_non_iseq,
     send_args_splat_cfunc,
     send_iseq_ruby2_keywords,
+    send_bmethod_ractor,
+    send_bmethod_block_arg,
 
     traced_cfunc_return,
 
@@ -428,7 +429,7 @@ pub extern "C" fn rb_yjit_record_exit_stack(exit_pc: *const VALUE)
         const BUFF_LEN: usize = 2048;
 
         // Create 2 array buffers to be used to collect frames and lines.
-        let mut frames_buffer = [VALUE(0 as usize); BUFF_LEN];
+        let mut frames_buffer = [VALUE(0_usize); BUFF_LEN];
         let mut lines_buffer = [0; BUFF_LEN];
 
         // Records call frame and line information for each method entry into two
@@ -511,7 +512,7 @@ pub extern "C" fn rb_yjit_record_exit_stack(exit_pc: *const VALUE)
 
         // Push number of times seen onto the stack, which is 1
         // because it's the first time we've seen it.
-        yjit_raw_samples.push(VALUE(1 as usize));
+        yjit_raw_samples.push(VALUE(1_usize));
         yjit_line_samples.push(1);
     }
 }

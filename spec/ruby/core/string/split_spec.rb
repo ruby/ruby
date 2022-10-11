@@ -29,9 +29,35 @@ describe "String#split with String" do
     "1,2,,3,4,,".split(',').should == ["1", "2", "", "3", "4"]
     "1,2,,3,4,,".split(',', 0).should == ["1", "2", "", "3", "4"]
     "  a  b  c\nd  ".split("  ").should == ["", "a", "b", "c\nd"]
+    "  a  あ  c\nd  ".split("  ").should == ["", "a", "あ", "c\nd"]
     "hai".split("hai").should == []
     ",".split(",").should == []
     ",".split(",", 0).should == []
+    "あ".split("あ").should == []
+    "あ".split("あ", 0).should == []
+  end
+
+  it "does not suppress trailing empty fields when a positive limit is given" do
+    " 1 2 ".split(" ", 2).should == ["1", "2 "]
+    " 1 2 ".split(" ", 3).should == ["1", "2", ""]
+    " 1 2 ".split(" ", 4).should == ["1", "2", ""]
+    " 1 あ ".split(" ", 2).should == ["1", "あ "]
+    " 1 あ ".split(" ", 3).should == ["1", "あ", ""]
+    " 1 あ ".split(" ", 4).should == ["1", "あ", ""]
+
+    "1,2,".split(',', 2).should == ["1", "2,"]
+    "1,2,".split(',', 3).should == ["1", "2", ""]
+    "1,2,".split(',', 4).should == ["1", "2", ""]
+    "1,あ,".split(',', 2).should == ["1", "あ,"]
+    "1,あ,".split(',', 3).should == ["1", "あ", ""]
+    "1,あ,".split(',', 4).should == ["1", "あ", ""]
+
+    "1 2 ".split(/ /, 2).should == ["1", "2 "]
+    "1 2 ".split(/ /, 3).should == ["1", "2", ""]
+    "1 2 ".split(/ /, 4).should == ["1", "2", ""]
+    "1 あ ".split(/ /, 2).should == ["1", "あ "]
+    "1 あ ".split(/ /, 3).should == ["1", "あ", ""]
+    "1 あ ".split(/ /, 4).should == ["1", "あ", ""]
   end
 
   it "returns an array with one entry if limit is 1: the original string" do

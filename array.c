@@ -505,15 +505,19 @@ rb_ary_make_embedded(VALUE ary)
 {
     assert(rb_ary_embeddable_p(ary));
     if (!ARY_EMBED_P(ary)) {
-        VALUE *buf = RARRAY_PTR(ary);
-        long len = RARRAY_LEN(ary);
+        const VALUE *buf = ARY_HEAP_PTR(ary);
+        long len = ARY_HEAP_LEN(ary);
+        bool was_transient = RARRAY_TRANSIENT_P(ary);
 
+        // FL_SET_EMBED also unsets the transient flag
         FL_SET_EMBED(ary);
         ARY_SET_EMBED_LEN(ary, len);
-        RARY_TRANSIENT_UNSET(ary);
 
-        memmove(RARRAY_PTR(ary), buf, len * sizeof(VALUE));
-        ary_heap_free_ptr(ary, buf, len * sizeof(VALUE));
+        MEMCPY((void *)ARY_EMBED_PTR(ary), (void *)buf, VALUE, len);
+
+        if (!was_transient) {
+            ary_heap_free_ptr(ary, buf, len * sizeof(VALUE));
+        }
     }
 }
 
@@ -5583,7 +5587,7 @@ ary_recycle_hash(VALUE hash)
  *  Related: Array#difference.
  */
 
-static VALUE
+VALUE
 rb_ary_diff(VALUE ary1, VALUE ary2)
 {
     VALUE ary3;

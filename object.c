@@ -138,12 +138,12 @@ rb_eql(VALUE obj1, VALUE obj2)
 {
     VALUE result;
 
-    if (obj1 == obj2) return Qtrue;
+    if (obj1 == obj2) return TRUE;
     result = rb_eql_opt(obj1, obj2);
     if (result == Qundef) {
         result = rb_funcall(obj1, id_eql, 1, obj2);
     }
-    return RBOOL(RTEST(result));
+    return RTEST(result);
 }
 
 /**

@@ -24,11 +24,37 @@ static int current_mode;
 static VALUE me2counter = Qnil;
 
 /*
+ *  call-seq: Coverage.supported?(mode) -> true or false
+ *
+ *  Returns true if coverage measurement is supported for the given mode.
+ *
+ *  The mode should be one of the following symbols:
+ *  +:lines+, +:branches+, +:methods+, +:eval+.
+ *
+ *  Example:
+ *
+ *    Coverage.supported?(:lines)  #=> true
+ *    Coverage.supported?(:all)    #=> false
+ */
+static VALUE
+rb_coverage_supported(VALUE self, VALUE _mode)
+{
+    ID mode = RB_SYM2ID(_mode);
+
+    return RBOOL(
+        mode == rb_intern("lines") ||
+        mode == rb_intern("branches") ||
+        mode == rb_intern("methods") ||
+        mode == rb_intern("eval")
+    );
+}
+
+/*
  * call-seq:
- *    Coverage.setup                                              => nil
- *    Coverage.setup(:all)                                        => nil
- *    Coverage.setup(lines: bool, branches: bool, methods: bool)  => nil
- *    Coverage.setup(oneshot_lines: true)                         => nil
+ *    Coverage.setup                                                          => nil
+ *    Coverage.setup(:all)                                                    => nil
+ *    Coverage.setup(lines: bool, branches: bool, methods: bool, eval: bool)  => nil
+ *    Coverage.setup(oneshot_lines: true)                                     => nil
  *
  * Set up the coverage measurement.
  *
@@ -53,7 +79,7 @@ rb_coverage_setup(int argc, VALUE *argv, VALUE klass)
         mode = 0; /* compatible mode */
     }
     else if (opt == ID2SYM(rb_intern("all"))) {
-        mode = COVERAGE_TARGET_LINES | COVERAGE_TARGET_BRANCHES | COVERAGE_TARGET_METHODS;
+        mode = COVERAGE_TARGET_LINES | COVERAGE_TARGET_BRANCHES | COVERAGE_TARGET_METHODS | COVERAGE_TARGET_EVAL;
     }
     else {
         mode = 0;
@@ -71,6 +97,8 @@ rb_coverage_setup(int argc, VALUE *argv, VALUE klass)
             mode |= COVERAGE_TARGET_LINES;
             mode |= COVERAGE_TARGET_ONESHOT_LINES;
         }
+        if (RTEST(rb_hash_lookup(opt, ID2SYM(rb_intern("eval")))))
+            mode |= COVERAGE_TARGET_EVAL;
     }
 
     if (mode & COVERAGE_TARGET_METHODS) {
@@ -92,7 +120,6 @@ rb_coverage_setup(int argc, VALUE *argv, VALUE klass)
     else if (current_mode != mode) {
         rb_raise(rb_eRuntimeError, "cannot change the measuring target during coverage measurement");
     }
-
 
     return Qnil;
 }
@@ -124,10 +151,10 @@ rb_coverage_resume(VALUE klass)
 
 /*
  * call-seq:
- *    Coverage.start                                              => nil
- *    Coverage.start(:all)                                        => nil
- *    Coverage.start(lines: bool, branches: bool, methods: bool)  => nil
- *    Coverage.start(oneshot_lines: true)                         => nil
+ *    Coverage.start                                                          => nil
+ *    Coverage.start(:all)                                                    => nil
+ *    Coverage.start(lines: bool, branches: bool, methods: bool, eval: bool)  => nil
+ *    Coverage.start(oneshot_lines: true)                                     => nil
  *
  * Enables the coverage measurement.
  * See the documentation of Coverage class in detail.
@@ -589,6 +616,9 @@ void
 Init_coverage(void)
 {
     VALUE rb_mCoverage = rb_define_module("Coverage");
+
+    rb_define_singleton_method(rb_mCoverage, "supported?", rb_coverage_supported, 1);
+
     rb_define_module_function(rb_mCoverage, "setup", rb_coverage_setup, -1);
     rb_define_module_function(rb_mCoverage, "start", rb_coverage_start, -1);
     rb_define_module_function(rb_mCoverage, "resume", rb_coverage_resume, 0);

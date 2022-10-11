@@ -18,7 +18,7 @@ impl TryFrom<u64> for ShiftedImmediate {
 
     /// Attempt to convert a u64 into a BitmaskImm.
     fn try_from(value: u64) -> Result<Self, Self::Error> {
-        let mut current = value;
+        let current = value;
         if current < 2_u64.pow(12) {
             return Ok(ShiftedImmediate { shift: Shift::LSL0, value: current as u16 });
         }

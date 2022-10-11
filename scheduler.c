@@ -222,13 +222,13 @@ rb_fiber_scheduler_io_wait(VALUE scheduler, VALUE io, VALUE events, VALUE timeou
 VALUE
 rb_fiber_scheduler_io_wait_readable(VALUE scheduler, VALUE io)
 {
-    return rb_fiber_scheduler_io_wait(scheduler, io, RB_UINT2NUM(RUBY_IO_READABLE), Qnil);
+    return rb_fiber_scheduler_io_wait(scheduler, io, RB_UINT2NUM(RUBY_IO_READABLE), rb_io_timeout(io));
 }
 
 VALUE
 rb_fiber_scheduler_io_wait_writable(VALUE scheduler, VALUE io)
 {
-    return rb_fiber_scheduler_io_wait(scheduler, io, RB_UINT2NUM(RUBY_IO_WRITABLE), Qnil);
+    return rb_fiber_scheduler_io_wait(scheduler, io, RB_UINT2NUM(RUBY_IO_WRITABLE), rb_io_timeout(io));
 }
 
 VALUE

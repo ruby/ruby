@@ -140,7 +140,7 @@ module Bundler
         @unlock[:gems] ||= @dependencies.map(&:name)
       else
         eager_unlock = expand_dependencies(@unlock[:gems] || [], true)
-        @unlock[:gems] = @locked_specs.for(eager_unlock, false, platforms).map(&:name)
+        @unlock[:gems] = @locked_specs.for(eager_unlock, false, platforms).map(&:name).uniq
       end
 
       @dependency_changes = converge_dependencies

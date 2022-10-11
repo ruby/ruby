@@ -84,4 +84,14 @@ module UnboundMethodSpecs
   class C < B
     def overridden; end
   end
+
+  module HashSpecs
+    class SuperClass
+      def foo
+      end
+    end
+
+    class SubClass < SuperClass
+    end
+  end
 end

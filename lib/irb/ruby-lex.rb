@@ -139,7 +139,7 @@ class RubyLex
   def self.ripper_lex_without_warning(code, context: nil)
     verbose, $VERBOSE = $VERBOSE, nil
     if context
-      lvars = context&.workspace&.binding&.local_variables
+      lvars = context.workspace&.binding&.local_variables
       if lvars && !lvars.empty?
         code = "#{lvars.join('=')}=nil\n#{code}"
         line_no = 0
@@ -147,30 +147,24 @@ class RubyLex
         line_no = 1
       end
     end
-    tokens = nil
+
     compile_with_errors_suppressed(code, line_no: line_no) do |inner_code, line_no|
       lexer = Ripper::Lexer.new(inner_code, '-', line_no)
       if lexer.respond_to?(:scan) # Ruby 2.7+
-        tokens = []
-        pos_to_index = {}
-        lexer.scan.each do |t|
+        lexer.scan.each_with_object([]) do |t, tokens|
           next if t.pos.first == 0
-          if pos_to_index.has_key?(t.pos)
-            index = pos_to_index[t.pos]
-            found_tk = tokens[index]
-            if ERROR_TOKENS.include?(found_tk.event) && !ERROR_TOKENS.include?(t.event)
-              tokens[index] = t
-            end
+          prev_tk = tokens.last
+          position_overlapped = prev_tk && t.pos[0] == prev_tk.pos[0] && t.pos[1] < prev_tk.pos[1] + prev_tk.tok.bytesize
+          if position_overlapped
+            tokens[-1] = t if ERROR_TOKENS.include?(prev_tk.event) && !ERROR_TOKENS.include?(t.event)
           else
-            pos_to_index[t.pos] = tokens.size
             tokens << t
           end
         end
       else
-        tokens = lexer.parse.reject { |it| it.pos.first == 0 }
+        lexer.parse.reject { |it| it.pos.first == 0 }
       end
     end
-    tokens
   ensure
     $VERBOSE = verbose
   end
@@ -209,12 +203,7 @@ class RubyLex
           last_line = lines[line_index]&.byteslice(0, byte_pointer)
           code += last_line if last_line
           @tokens = self.class.ripper_lex_without_warning(code, context: context)
-          corresponding_token_depth = check_corresponding_token_depth(lines, line_index)
-          if corresponding_token_depth
-            corresponding_token_depth
-          else
-            nil
-          end
+          check_corresponding_token_depth(lines, line_index)
         end
       end
     end
@@ -308,7 +297,7 @@ class RubyLex
       return true
     elsif tokens.size >= 1 and tokens[-1].event == :on_heredoc_end # "EOH\n"
       return false
-    elsif tokens.size >= 2 and defined?(Ripper::EXPR_BEG) and tokens[-2].state.anybits?(Ripper::EXPR_BEG | Ripper::EXPR_FNAME) and tokens[-2].tok !~ /\A\.\.\.?\z/
+    elsif tokens.size >= 2 and tokens[-2].state.anybits?(Ripper::EXPR_BEG | Ripper::EXPR_FNAME) and tokens[-2].tok !~ /\A\.\.\.?\z/
       # end of literal except for regexp
       # endless range at end of line is not a continue
       return true
@@ -389,21 +378,20 @@ class RubyLex
       $VERBOSE = verbose
     end
 
-    if defined?(Ripper::EXPR_BEG)
-      last_lex_state = tokens.last.state
-      if last_lex_state.allbits?(Ripper::EXPR_BEG)
-        return false
-      elsif last_lex_state.allbits?(Ripper::EXPR_DOT)
-        return true
-      elsif last_lex_state.allbits?(Ripper::EXPR_CLASS)
-        return true
-      elsif last_lex_state.allbits?(Ripper::EXPR_FNAME)
-        return true
-      elsif last_lex_state.allbits?(Ripper::EXPR_VALUE)
-        return true
-      elsif last_lex_state.allbits?(Ripper::EXPR_ARG)
-        return false
-      end
+    last_lex_state = tokens.last.state
+
+    if last_lex_state.allbits?(Ripper::EXPR_BEG)
+      return false
+    elsif last_lex_state.allbits?(Ripper::EXPR_DOT)
+      return true
+    elsif last_lex_state.allbits?(Ripper::EXPR_CLASS)
+      return true
+    elsif last_lex_state.allbits?(Ripper::EXPR_FNAME)
+      return true
+    elsif last_lex_state.allbits?(Ripper::EXPR_VALUE)
+      return true
+    elsif last_lex_state.allbits?(Ripper::EXPR_ARG)
+      return false
     end
 
     false

@@ -3311,3 +3311,31 @@ assert_equal 'true', %q{
   end
   foo(Foo.new)
 }
+
+# bmethod
+assert_equal '[1, 2, 3]', %q{
+  one = 1
+  define_method(:foo) do
+    one
+  end
+
+  3.times.map { |i| foo + i }
+}
+
+# return inside bmethod
+assert_equal 'ok', %q{
+  define_method(:foo) do
+    1.tap { return :ok }
+  end
+
+  foo
+}
+
+# bmethod optional and keywords
+assert_equal '[[1, nil, 2]]', %q{
+  define_method(:opt_and_kwargs) do |a = {}, b: nil, c: nil|
+    [a, b, c]
+  end
+
+  5.times.map { opt_and_kwargs(1, c: 2) }.uniq
+}

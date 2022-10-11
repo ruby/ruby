@@ -219,18 +219,55 @@ describe "Module#define_method" do
     o.block_test2.should == o
   end
 
+  it "raises TypeError if name cannot converted to String" do
+    -> {
+      Class.new { define_method(1001, -> {}) }
+    }.should raise_error(TypeError, /is not a symbol nor a string/)
+
+    -> {
+      Class.new { define_method([], -> {}) }
+    }.should raise_error(TypeError, /is not a symbol nor a string/)
+  end
+
+  it "converts non-String name to String with #to_str" do
+    obj = Object.new
+    def obj.to_str() "foo" end
+
+    new_class = Class.new { define_method(obj, -> { :called }) }
+    new_class.new.foo.should == :called
+  end
+
+  it "raises TypeError when #to_str called on non-String name returns non-String value" do
+    obj = Object.new
+    def obj.to_str() [] end
+
+    -> {
+      Class.new { define_method(obj, -> {}) }
+    }.should raise_error(TypeError, /can't convert Object to String/)
+  end
+
   it "raises a TypeError when the given method is no Method/Proc" do
     -> {
       Class.new { define_method(:test, "self") }
-    }.should raise_error(TypeError)
+    }.should raise_error(TypeError, "wrong argument type String (expected Proc/Method/UnboundMethod)")
 
     -> {
       Class.new { define_method(:test, 1234) }
-    }.should raise_error(TypeError)
+    }.should raise_error(TypeError, "wrong argument type Integer (expected Proc/Method/UnboundMethod)")
 
     -> {
       Class.new { define_method(:test, nil) }
-    }.should raise_error(TypeError)
+    }.should raise_error(TypeError, "wrong argument type NilClass (expected Proc/Method/UnboundMethod)")
+  end
+
+  it "uses provided Method/Proc even if block is specified" do
+    new_class = Class.new do
+      define_method(:test, -> { :method_is_called }) do
+        :block_is_called
+      end
+    end
+
+    new_class.new.test.should == :method_is_called
   end
 
   it "raises an ArgumentError when no block is given" do

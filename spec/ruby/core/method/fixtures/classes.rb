@@ -213,4 +213,28 @@ module MethodSpecs
       n * m
     end
   end
+
+  module InheritedMethods
+    module A
+      private
+      def derp(message)
+        'A'
+      end
+    end
+
+    module B
+      private
+      def derp
+        'B' + super('superclass')
+      end
+    end
+
+    class C
+      include A
+      include B
+
+      public :derp
+      alias_method :meow, :derp
+    end
+  end
 end

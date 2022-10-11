@@ -912,7 +912,7 @@ impl Assembler
     /// Create a new label instance that we can jump to
     pub fn new_label(&mut self, name: &str) -> Target
     {
-        assert!(!name.contains(" "), "use underscores in label names, not spaces");
+        assert!(!name.contains(' '), "use underscores in label names, not spaces");
 
         let label_idx = self.label_names.len();
         self.label_names.push(name.to_string());
@@ -1232,10 +1232,10 @@ impl AssemblerLookbackIterator {
 
 impl fmt::Debug for Assembler {
     fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
-        write!(fmt, "Assembler\n")?;
+        writeln!(fmt, "Assembler")?;
 
         for (idx, insn) in self.insns.iter().enumerate() {
-            write!(fmt, "    {idx:03} {insn:?}\n")?;
+            writeln!(fmt, "    {idx:03} {insn:?}")?;
         }
 
         Ok(())

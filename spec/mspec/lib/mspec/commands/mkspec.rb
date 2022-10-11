@@ -95,7 +95,9 @@ class MkSpec
 
   def write_spec(file, meth, exists)
     if exists
-      out = `#{ruby} #{MSPEC_HOME}/bin/mspec-run --dry-run --unguarded -fs -e '#{meth}' #{file}`
+      command = "#{RbConfig.ruby} #{MSPEC_HOME}/bin/mspec-run --dry-run --unguarded -fs -e '#{meth}' #{file}"
+      puts "$ #{command}" if $DEBUG
+      out = `#{command}`
       return if out.include?(meth)
     end
 
@@ -131,18 +133,6 @@ EOS
 
       methods.each { |method| create_file dir, name, method, mod + method }
     end
-  end
-
-  ##
-  # Determine and return the path of the ruby executable.
-
-  def ruby
-    ruby = File.join(RbConfig::CONFIG['bindir'],
-                     RbConfig::CONFIG['ruby_install_name'])
-
-    ruby.gsub! File::SEPARATOR, File::ALT_SEPARATOR if File::ALT_SEPARATOR
-
-    return ruby
   end
 
   def self.main

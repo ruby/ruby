@@ -27,6 +27,17 @@ class TestFiberScheduler < Test::Unit::TestCase
     refute f.blocking?
   end
 
+  def test_fiber_blocking
+    f = Fiber.new(blocking: false) do
+      fiber = Fiber.current
+      refute fiber.blocking?
+      Fiber.blocking do |_fiber|
+        assert_equal fiber, _fiber
+        assert fiber.blocking?
+      end
+    end
+  end
+
   def test_closed_at_thread_exit
     scheduler = Scheduler.new
 

@@ -1,4 +1,4 @@
-use crate::asm::{imm_num_bits, uimm_num_bits};
+
 
 /// This operand represents a register.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]

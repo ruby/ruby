@@ -189,7 +189,7 @@ rsock_s_recvfrom(VALUE socket, int argc, VALUE *argv, enum sock_recv_type from)
 
         if (slen >= 0) break;
 
-        if (!rb_io_maybe_wait_readable(errno, socket, Qnil))
+        if (!rb_io_maybe_wait_readable(errno, socket, RUBY_IO_TIMEOUT_DEFAULT))
             rb_sys_fail("recvfrom(2)");
     }
 
@@ -705,7 +705,7 @@ rsock_s_accept(VALUE klass, VALUE io, struct sockaddr *sockaddr, socklen_t *len)
             retry = 1;
             goto retry;
           default:
-            if (!rb_io_maybe_wait_readable(error, io, Qnil)) break;
+            if (!rb_io_maybe_wait_readable(error, io, RUBY_IO_TIMEOUT_DEFAULT)) break;
             retry = 0;
             goto retry;
         }

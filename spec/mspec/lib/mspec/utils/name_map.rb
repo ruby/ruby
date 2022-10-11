@@ -51,6 +51,10 @@ class NameMap
     SpecVersion
   ]
 
+  ALWAYS_PRIVATE = %w[
+    initialize initialize_copy initialize_clone initialize_dup respond_to_missing?
+  ].map(&:to_sym)
+
   def initialize(filter = false)
     @seen = {}
     @filter = filter
@@ -86,7 +90,8 @@ class NameMap
       hash["#{name}."] = ms.sort unless ms.empty?
 
       ms = m.public_instance_methods(false) +
-           m.protected_instance_methods(false)
+           m.protected_instance_methods(false) +
+           (m.private_instance_methods(false) & ALWAYS_PRIVATE)
       ms.map! { |x| x.to_s }
       hash["#{name}#"] = ms.sort unless ms.empty?
 

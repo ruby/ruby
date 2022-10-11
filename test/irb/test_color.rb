@@ -114,6 +114,11 @@ module TestIRB
           "class bad; end" => "#{GREEN}class#{CLEAR} #{RED}#{REVERSE}bad#{CLEAR}; #{GREEN}end#{CLEAR}",
           "def req(@a) end" => "#{GREEN}def#{CLEAR} #{BLUE}#{BOLD}req#{CLEAR}(#{RED}#{REVERSE}@a#{CLEAR}) #{GREEN}end#{CLEAR}",
         })
+        if Gem::Version.new(RUBY_VERSION) >= Gem::Version.new('3.2.0')
+          tests.merge!({
+            "def req(true) end" => "#{GREEN}def#{CLEAR} #{BLUE}#{BOLD}req#{CLEAR}(#{RED}#{REVERSE}true#{CLEAR}#{RED}#{REVERSE})#{CLEAR} #{RED}#{REVERSE}end#{CLEAR}",
+          })
+        end
       else
         if Gem::Version.new(RUBY_VERSION) >= Gem::Version.new('2.7.0')
           tests.merge!({

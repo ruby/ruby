@@ -521,11 +521,14 @@ AS_IF([test "$cross_compiling:$ac_cv_prog_DTRACE" = no: -a -n "$ac_tool_prefix"]
 AC_CHECK_PROGS(DOT, dot)
 AC_CHECK_PROGS(DOXYGEN, doxygen)
 
-for prog in ${ac_tool_prefix:+${ac_tool_prefix}pkg-config} pkg-config; do
-    AC_CHECK_PROG(PKG_CONFIG, $prog, [$prog], [], [],
-        [`"$as_dir/$ac_word$ac_exec_ext" --print-errors --version > /dev/null 2>&1 || echo "$as_dir/$ac_word$ac_exec_ext"`])
-    test -z "${PKG_CONFIG}" || break
-done
+AC_CHECK_TOOL(PKG_CONFIG, pkg-config)
+AS_IF([test -z "$PKG_CONFIG"], [],
+["$PKG_CONFIG" --print-errors --version > /dev/null 2>&1], [],
+[
+    unset ac_cv_prog_PKG_CONFIG
+    PKG_CONFIG=
+    AC_MSG_WARN([$PKG_CONFIG does not work; ignore])
+])
 
 AC_MSG_CHECKING([whether it is Android])
 AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[

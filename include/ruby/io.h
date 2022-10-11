@@ -58,10 +58,18 @@
 // IO#wait, IO#wait_readable, IO#wait_writable, IO#wait_priority are defined by this implementation.
 #define RUBY_IO_WAIT_METHODS
 
+// Used as the default timeout argument to `rb_io_wait` to use the `IO#timeout` value.
+#define RUBY_IO_TIMEOUT_DEFAULT Qnil
+
 RBIMPL_SYMBOL_EXPORT_BEGIN()
 
 struct stat;
 struct timeval;
+
+/**
+ * Indicates that a timeout has occurred while performing an IO operation.
+ */
+RUBY_EXTERN VALUE rb_eIOTimeoutError;
 
 /**
  * Type of events that an IO can wait.
@@ -214,6 +222,11 @@ typedef struct rb_io_t {
      * This of course doesn't help inter-process IO interleaves, though.
      */
     VALUE write_lock;
+
+    /**
+     * The timeout associated with this IO when performing blocking operations.
+     */
+    VALUE timeout;
 } rb_io_t;
 
 /** @alias{rb_io_enc_t} */
@@ -845,13 +858,37 @@ int rb_io_wait_writable(int fd);
 int rb_wait_for_single_fd(int fd, int events, struct timeval *tv);
 
 /**
+ * Get the timeout associated with the specified io object.
+ *
+ * @param[in]  io                   An IO object.
+ * @retval     RUBY_Qnil            There is no associated timeout.
+ * @retval     Otherwise            The timeout value.
+ */
+VALUE rb_io_timeout(VALUE io);
+
+/**
+ * Set the timeout associated with the specified io object. This timeout is
+ * used as a best effort timeout to prevent operations from blocking forever.
+ *
+ * @param[in]  io                   An IO object.
+ * @param[in]  timeout              A timeout value. Must respond to #to_f.
+ * @
+ */
+VALUE rb_io_set_timeout(VALUE io, VALUE timeout);
+
+/**
  * Blocks until  the passed IO  is ready for  the passed events.   The "events"
  * here is  a Ruby level  integer, which is  an OR-ed value  of `IO::READABLE`,
  * `IO::WRITable`, and `IO::PRIORITY`.
  *
+ * If timeout is `Qnil`, it will use the default timeout as given by
+ * `rb_io_timeout(io)`.
+ *
  * @param[in]  io                   An IO object to wait.
  * @param[in]  events               See above.
  * @param[in]  timeout              Time, or numeric seconds since UNIX epoch.
+ *                                  If Qnil, use the default timeout. If Qfalse
+ *                                  or Qundef, wait forever.
  * @exception  rb_eIOError          `io` is not open.
  * @exception  rb_eRangeError       `timeout` is out of range.
  * @exception  rb_eSystemCallError  `select(2)` failed for some reason.
@@ -903,13 +940,8 @@ VALUE rb_io_maybe_wait(int error, VALUE io, VALUE events, VALUE timeout);
  * @exception  rb_eIOError          `io` is not open.
  * @exception  rb_eRangeError       `timeout` is out of range.
  * @exception  rb_eSystemCallError  `select(2)` failed for some reason.
- * @exception  rb_eTypeError        Operation timed out.
- * @return     Always returns ::RUBY_IO_READABLE.
- *
- * @internal
- *
- * Because rb_io_maybe_wait()  returns ::RUBY_Qfalse on timeout,  this function
- * fails to convert that value to `int`, and raises ::rb_eTypeError.
+ * @retval     0                    Operation timed out.
+ * @retval     Otherwise            Always returns ::RUBY_IO_READABLE.
  */
 int rb_io_maybe_wait_readable(int error, VALUE io, VALUE timeout);
 
@@ -924,13 +956,8 @@ int rb_io_maybe_wait_readable(int error, VALUE io, VALUE timeout);
  * @exception  rb_eIOError          `io` is not open.
  * @exception  rb_eRangeError       `timeout` is out of range.
  * @exception  rb_eSystemCallError  `select(2)` failed for some reason.
- * @exception  rb_eTypeError        Operation timed out.
- * @return     Always returns ::RUBY_IO_WRITABLE.
- *
- * @internal
- *
- * Because rb_io_maybe_wait()  returns ::RUBY_Qfalse on timeout,  this function
- * fails to convert that value to `int`, and raises ::rb_eTypeError.
+ * @retval     0                    Operation timed out.
+ * @retval     Otherwise            Always returns ::RUBY_IO_WRITABLE.
  */
 int rb_io_maybe_wait_writable(int error, VALUE io, VALUE timeout);
 

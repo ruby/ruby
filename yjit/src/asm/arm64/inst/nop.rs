@@ -18,7 +18,7 @@ impl Nop {
 
 impl From<Nop> for u32 {
     /// Convert an instruction into a 32-bit value.
-    fn from(inst: Nop) -> Self {
+    fn from(_inst: Nop) -> Self {
         0b11010101000000110010000000011111
     }
 }

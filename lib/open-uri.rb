@@ -99,6 +99,7 @@ module OpenURI
     :open_timeout => true,
     :ssl_ca_cert => nil,
     :ssl_verify_mode => nil,
+    :ssl_version => nil,
     :ftp_active_mode => false,
     :redirect => true,
     :encoding => nil,
@@ -298,6 +299,8 @@ module OpenURI
       require 'net/https'
       http.use_ssl = true
       http.verify_mode = options[:ssl_verify_mode] || OpenSSL::SSL::VERIFY_PEER
+      http.ssl_version = options[:ssl_version] if options[:ssl_version] &&
+                                    OpenSSL::SSL::SSLContext::METHODS.include?(options[:ssl_version])
       store = OpenSSL::X509::Store.new
       if options[:ssl_ca_cert]
         Array(options[:ssl_ca_cert]).each do |cert|
@@ -353,7 +356,8 @@ module OpenURI
     when Net::HTTPMovedPermanently, # 301
          Net::HTTPFound, # 302
          Net::HTTPSeeOther, # 303
-         Net::HTTPTemporaryRedirect # 307
+         Net::HTTPTemporaryRedirect, # 307
+         Net::HTTPPermanentRedirect # 308
       begin
         loc_uri = URI.parse(resp['location'])
       rescue URI::InvalidURIError
@@ -409,6 +413,13 @@ module OpenURI
       @io
     end
   end
+
+  # :stopdoc:
+  RE_LWS = /[\r\n\t ]+/n
+  RE_TOKEN = %r{[^\x00- ()<>@,;:\\"/\[\]?={}\x7f]+}n
+  RE_QUOTED_STRING = %r{"(?:[\r\n\t !#-\[\]-~\x80-\xff]|\\[\x00-\x7f])*"}n
+  RE_PARAMETERS = %r{(?:;#{RE_LWS}?#{RE_TOKEN}#{RE_LWS}?=#{RE_LWS}?(?:#{RE_TOKEN}|#{RE_QUOTED_STRING})#{RE_LWS}?)*}n
+  # :startdoc:
 
   # Mixin for holding meta-information.
   module Meta
@@ -486,13 +497,6 @@ module OpenURI
         nil
       end
     end
-
-    # :stopdoc:
-    RE_LWS = /[\r\n\t ]+/n
-    RE_TOKEN = %r{[^\x00- ()<>@,;:\\"/\[\]?={}\x7f]+}n
-    RE_QUOTED_STRING = %r{"(?:[\r\n\t !#-\[\]-~\x80-\xff]|\\[\x00-\x7f])*"}n
-    RE_PARAMETERS = %r{(?:;#{RE_LWS}?#{RE_TOKEN}#{RE_LWS}?=#{RE_LWS}?(?:#{RE_TOKEN}|#{RE_QUOTED_STRING})#{RE_LWS}?)*}n
-    # :startdoc:
 
     def content_type_parse # :nodoc:
       vs = @metas['content-type']

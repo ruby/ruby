@@ -55,40 +55,49 @@ describe :module_class_eval, shared: true do
   it "converts a non-string filename to a string using to_str" do
     (file = mock(__FILE__)).should_receive(:to_str).and_return(__FILE__)
     ModuleSpecs.send(@method, "1+1", file)
+
+    (file = mock(__FILE__)).should_receive(:to_str).and_return(__FILE__)
+    ModuleSpecs.send(@method, "1+1", file, 15)
   end
 
   it "raises a TypeError when the given filename can't be converted to string using to_str" do
     (file = mock('123')).should_receive(:to_str).and_return(123)
-    -> { ModuleSpecs.send(@method, "1+1", file) }.should raise_error(TypeError)
+    -> { ModuleSpecs.send(@method, "1+1", file) }.should raise_error(TypeError, /can't convert MockObject to String/)
   end
 
   it "converts non string eval-string to string using to_str" do
     (o = mock('1 + 1')).should_receive(:to_str).and_return("1 + 1")
     ModuleSpecs.send(@method, o).should == 2
+
+    (o = mock('1 + 1')).should_receive(:to_str).and_return("1 + 1")
+    ModuleSpecs.send(@method, o, "file.rb").should == 2
+
+    (o = mock('1 + 1')).should_receive(:to_str).and_return("1 + 1")
+    ModuleSpecs.send(@method, o, "file.rb", 15).should == 2
   end
 
   it "raises a TypeError when the given eval-string can't be converted to string using to_str" do
     o = mock('x')
-    -> { ModuleSpecs.send(@method, o) }.should raise_error(TypeError)
+    -> { ModuleSpecs.send(@method, o) }.should raise_error(TypeError, "no implicit conversion of MockObject into String")
 
     (o = mock('123')).should_receive(:to_str).and_return(123)
-    -> { ModuleSpecs.send(@method, o) }.should raise_error(TypeError)
+    -> { ModuleSpecs.send(@method, o) }.should raise_error(TypeError, /can't convert MockObject to String/)
   end
 
   it "raises an ArgumentError when no arguments and no block are given" do
-    -> { ModuleSpecs.send(@method) }.should raise_error(ArgumentError)
+    -> { ModuleSpecs.send(@method) }.should raise_error(ArgumentError, "wrong number of arguments (given 0, expected 1..3)")
   end
 
   it "raises an ArgumentError when more than 3 arguments are given" do
     -> {
       ModuleSpecs.send(@method, "1 + 1", "some file", 0, "bogus")
-    }.should raise_error(ArgumentError)
+    }.should raise_error(ArgumentError, "wrong number of arguments (given 4, expected 1..3)")
   end
 
   it "raises an ArgumentError when a block and normal arguments are given" do
     -> {
       ModuleSpecs.send(@method, "1 + 1") { 1 + 1 }
-    }.should raise_error(ArgumentError)
+    }.should raise_error(ArgumentError, "wrong number of arguments (given 1, expected 0)")
   end
 
   # This case was found because Rubinius was caching the compiled

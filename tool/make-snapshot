@@ -295,7 +295,7 @@ def package(vcs, rev, destdir, tmp = nil)
   if info = vcs.get_revisions(url)
     modified = info[2]
   else
-    modified = Time.now - 10
+    _, _, modified = VCS::Null.new(nil).get_revisions(url)
   end
   if !revision and info
     revision = info

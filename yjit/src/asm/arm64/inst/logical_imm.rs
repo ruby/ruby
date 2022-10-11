@@ -86,7 +86,7 @@ const FAMILY: u32 = 0b1001;
 impl From<LogicalImm> for u32 {
     /// Convert an instruction into a 32-bit value.
     fn from(inst: LogicalImm) -> Self {
-        let imm: u32 = inst.imm.into();
+        let imm: u32 = inst.imm.encode();
 
         0
         | ((inst.sf as u32) << 31)

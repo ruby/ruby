@@ -14,7 +14,7 @@ Gem::Specification.new do |spec|
   spec.metadata["source_code_uri"] = spec.homepage
 
   spec.files         = Dir.chdir(File.expand_path('..', __FILE__)) do
-    `git ls-files -z`.split("\x0").reject { |f| f.match(%r{^(test|spec|features)/}) }
+    `git ls-files -z`.split("\x0").reject { |f| f.match(%r{\A((bin|test|spec|features)/|\.git|[Rr]ake|Gemfile)|\.gemspec\z}) }
   end
   spec.executables   = []
   spec.require_paths = ["lib"]

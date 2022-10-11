@@ -261,7 +261,7 @@ module IRB
     end
   end
 
-  class ReidlineInputMethod < InputMethod
+  class RelineInputMethod < InputMethod
     include Reline
 
     # Creates a new input method object using Reline
@@ -468,6 +468,15 @@ module IRB
       end
       str += " and #{inputrc_path}" if File.exist?(inputrc_path)
       str
+    end
+  end
+
+  class ReidlineInputMethod < RelineInputMethod
+    def initialize
+      warn <<~MSG.strip
+        IRB::ReidlineInputMethod is deprecated, please use IRB::RelineInputMethod instead.
+      MSG
+      super
     end
   end
 end
