@@ -515,7 +515,7 @@ ID rb_check_id2(VALUE *namep);
 // Indentical to rb_check_id excepted doesn't throw
 ID
 rb_get_symbol_id(VALUE namep) {
-    return rb_check_id2(&namep);
+    return rb_check_id2(namep);
 }
 
 enum method_optimized_type

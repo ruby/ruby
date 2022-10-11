@@ -1112,12 +1112,10 @@ rb_check_id(volatile VALUE *namep)
     return lookup_str_id(name);
 }
 
+// Used by yjit for handling .send without throwin exceptions
 ID
-rb_check_id2(VALUE *namep)
+rb_check_id2(VALUE name)
 {
-    VALUE tmp;
-    VALUE name = *namep;
-
     if (STATIC_SYM_P(name)) {
         return STATIC_SYM2ID(name);
     }
@@ -1126,7 +1124,6 @@ rb_check_id2(VALUE *namep)
             return RSYMBOL(name)->id;
         }
         else {
-            *namep = RSYMBOL(name)->fstr;
             return 0;
         }
     }

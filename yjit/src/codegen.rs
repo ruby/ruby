@@ -5424,7 +5424,7 @@ fn gen_send_general(
                         } else {
                             0
                         };
-                        flags = VM_CALL_FCALL | VM_CALL_OPT_SEND | kw_splat;
+                        flags |= VM_CALL_FCALL | VM_CALL_OPT_SEND | kw_splat;
 
                         assume_method_lookup_stable(jit, ocb, comptime_recv_klass, cme);
 
