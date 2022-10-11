@@ -29,6 +29,18 @@ class TestDelegateClass < Test::Unit::TestCase
     assert_equal(1, klass.new([1]).foo)
   end
 
+  def test_delegate_class_block_with_override
+    warning = EnvUtil.verbose_warning do
+      klass = DelegateClass(Array) do
+        def first
+          super.inspect
+        end
+      end
+      assert_equal("1", klass.new([1]).first)
+    end
+    assert_empty(warning)
+  end
+
   def test_systemcallerror_eq
     e = SystemCallError.new(0)
     assert((SimpleDelegator.new(e) == e) == (e == SimpleDelegator.new(e)), "[ruby-dev:34808]")
