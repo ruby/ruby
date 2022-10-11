@@ -169,16 +169,26 @@ class TestIOBuffer < Test::Unit::TestCase
     assert_equal("Hello World", buffer.get_string(8, 11))
   end
 
-  def test_slice_bounds
+  def test_slice_arguments
+    buffer = IO::Buffer.for("Hello World")
+
+    slice = buffer.slice
+    assert_equal "Hello World", slice.get_string
+
+    slice = buffer.slice(2)
+    assert_equal("llo World", slice.get_string)
+  end
+
+  def test_slice_bounds_error
     buffer = IO::Buffer.new(128)
 
     assert_raise ArgumentError do
       buffer.slice(128, 10)
     end
 
-    # assert_raise RuntimeError do
-    #   pp buffer.slice(-10, 10)
-    # end
+    assert_raise ArgumentError do
+      buffer.slice(-10, 10)
+    end
   end
 
   def test_locked
