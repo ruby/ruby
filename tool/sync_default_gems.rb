@@ -642,6 +642,17 @@ when "--message-filter"
   abort unless ARGV.size == 2
   message_filter(*ARGV)
   exit
+when "rdoc-ref"
+  ARGV.shift
+  pattern = ARGV.empty? ? %w[*.c *.rb *.rdoc] : ARGV
+  result = pipe_readlines(%W"git grep -z -l -F [https://docs.ruby-lang.org/en/master/ --" + pattern)
+  result.inject(false) do |changed, file|
+    if replace_rdoc_ref(file)
+      puts "replaced rdoc-ref in #{file}"
+      changed = true
+    end
+    changed
+  end
 when nil, "-h", "--help"
     puts <<-HELP
 \e[1mSync with upstream code of default libraries\e[0m
