@@ -3,11 +3,6 @@
 # Copyright (C) 2000  Information-technology Promotion Agency, Japan
 # Copyright (C) 2000-2003  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
 
-if $SAFE > 0
-  STDERR.print "-r debug.rb is not available in safe mode\n"
-  exit 1
-end
-
 require 'tracer'
 require 'pp'
 
