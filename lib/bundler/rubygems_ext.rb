@@ -308,6 +308,28 @@ module Gem
     end
   end
 
+  # On universal Rubies, resolve the "universal" arch to the real CPU arch, without changing the extension directory.
+  class Specification
+    if /^universal\.(?<arch>.*?)-/ =~ RUBY_PLATFORM
+      local_platform = Platform.local
+      if local_platform.cpu == "universal"
+        ORIGINAL_LOCAL_PLATFORM = local_platform.to_s.freeze
+
+        local_platform.cpu = if arch == "arm64e" # arm64e is only permitted for Apple system binaries
+          "arm64"
+        else
+          arch
+        end
+
+        def extensions_dir
+          Gem.default_ext_dir_for(base_dir) ||
+            File.join(base_dir, "extensions", ORIGINAL_LOCAL_PLATFORM,
+                      Gem.extension_api_version)
+        end
+      end
+    end
+  end
+
   require "rubygems/util"
 
   Util.singleton_class.module_eval do
