@@ -306,6 +306,13 @@ rb_shape_set_shape(VALUE obj, rb_shape_t* shape)
     rb_shape_set_shape_id(obj, rb_shape_id(shape));
 }
 
+VALUE
+rb_shape_flags_mask(void)
+{
+    return SHAPE_FLAG_MASK;
+}
+
+#if VM_CHECK_MODE > 0
 VALUE rb_cShape;
 
 /*
@@ -440,19 +447,19 @@ rb_shape_parent(VALUE self)
     }
 }
 
-VALUE
+static VALUE
 rb_shape_debug_shape(VALUE self, VALUE obj)
 {
     return rb_shape_t_to_rb_cShape(rb_shape_get_shape(obj));
 }
 
-VALUE
+static VALUE
 rb_shape_root_shape(VALUE self)
 {
     return rb_shape_t_to_rb_cShape(rb_shape_get_root_shape());
 }
 
-VALUE
+static VALUE
 rb_shape_frozen_root_shape(VALUE self)
 {
     return rb_shape_t_to_rb_cShape(rb_shape_get_frozen_root_shape());
@@ -505,12 +512,6 @@ next_shape_id(VALUE self)
     return INT2NUM(GET_VM()->next_shape_id);
 }
 
-VALUE
-rb_shape_flags_mask(void)
-{
-    return SHAPE_FLAG_MASK;
-}
-
 static VALUE
 rb_shape_find_by_id(VALUE mod, VALUE id)
 {
@@ -520,10 +521,12 @@ rb_shape_find_by_id(VALUE mod, VALUE id)
     }
     return rb_shape_t_to_rb_cShape(rb_shape_get_shape_by_id(shape_id));
 }
+#endif
 
 void
 Init_shape(void)
 {
+#if VM_CHECK_MODE > 0
     rb_cShape = rb_define_class_under(rb_cRubyVM, "Shape", rb_cObject);
     rb_undef_alloc_func(rb_cShape);
 
@@ -548,4 +551,5 @@ Init_shape(void)
     rb_define_singleton_method(rb_cShape, "of", rb_shape_debug_shape, 1);
     rb_define_singleton_method(rb_cShape, "root_shape", rb_shape_root_shape, 0);
     rb_define_singleton_method(rb_cShape, "frozen_root_shape", rb_shape_frozen_root_shape, 0);
+#endif
 }

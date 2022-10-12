@@ -179,4 +179,4 @@ class TestShapes < Test::Unit::TestCase
       RubyVM::Shape.find_by_id(-1)
     end
   end
-end
+end if defined?(RubyVM::Shape)
