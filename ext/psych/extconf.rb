@@ -7,14 +7,6 @@ if $mswin or $mingw or $cygwin
 end
 
 yaml_source = with_config("libyaml-source-dir")
-unless yaml_source # default to pre-installed libyaml
-  pkg_config('yaml-0.1')
-  dir_config('libyaml')
-  unless find_header('yaml.h') && find_library('yaml', 'yaml_get_version')
-    yaml_source = true # fallback to the bundled source if exists
-  end
-end
-
 if yaml_source
   yaml_source = yaml_source.gsub(/\$\((\w+)\)|\$\{(\w+)\}/) {ENV[$1||$2]}
   yaml_source = yaml_source.chomp("/")
@@ -44,6 +36,11 @@ if yaml_source
   libyaml = "libyaml.#$LIBEXT"
   $cleanfiles << libyaml
   $LOCAL_LIBS.prepend("$(LIBYAML) ")
+else # default to pre-installed libyaml
+  pkg_config('yaml-0.1')
+  dir_config('libyaml')
+  find_header('yaml.h') or abort "yaml.h not found"
+  find_library('yaml', 'yaml_get_version') or "libyaml not found"
 end
 
 create_makefile 'psych' do |mk|
