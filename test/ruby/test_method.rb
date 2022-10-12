@@ -1314,6 +1314,7 @@ class TestMethod < Test::Unit::TestCase
     m2 = c2.instance_method(:foo)
 
     c1.class_exec do
+      remove_method :foo
       def foo
         [:bar2]
       end
