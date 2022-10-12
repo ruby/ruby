@@ -10,8 +10,7 @@ Certain Ruby core methods deal with packing and unpacking data:
   forming objects that become the elements of a new array;
   returns that array.
 - \Method String#unpack1:
-  Does the same, but the returned array
-  contains only the first extracted object.
+  Does the same, but returns only the first extracted object.
 
 Each of these methods accepts a string +template+,
 consisting of zero or more _directive_ characters,
@@ -37,10 +36,9 @@ The string +template+ may contain any mixture of valid directives
   [65, -1].pack('cC')  # => "A\xFF"
   "A\xFF".unpack('cC') # => [65, 255]
 
-The string +template+ may contain comments,
-each of which begins with character <tt>'#'</tt>
+The string +template+ may contain whitespace (which is ignored)
+and comments, each of which begins with character <tt>'#'</tt>
 and continues up to and including the next following newline:
-
 
   [0,1].pack("  C  #foo \n  C  ")    # => "\x00\x01"
   "\0\1".unpack("  C  #foo \n  C  ") # => [0, 1]
@@ -60,12 +58,21 @@ Any directive may be followed by either of these modifiers:
     'AB'.unpack('C3')   # => [65, 66, nil]
 
   Note: Directives in <tt>%w[A a Z m]</tt> use +count+ differently;
-  see {String Directives}[rdoc-ref:packed_data.md@String+Directives].
+  see {String Directives}[rdoc-ref:packed_data.rdoc@String+Directives].
+
+=== Packing \Method
 
 \Method Array#pack accepts optional keyword argument
 +buffer+ that specifies the target string (instead of a new string):
 
   [65, 66].pack('C*', buffer: 'foo') # => "fooAB"
+
+The method can accept a block:
+
+  # Packed string is passed to the block.
+  [65, 66].pack('C*') {|s| p s }    # => "AB"
+
+=== Unpacking Methods
 
 Methods String#unpack and String#unpack1 each accept
 an optional keyword argument +offset+ that specifies an offset
@@ -74,14 +81,14 @@ into the string:
   'ABC'.unpack('C*', offset: 1)  # => [66, 67]
   'ABC'.unpack1('C*', offset: 1) # => 66
 
-Any of the three methods may have a block:
+Both methods can accept a block:
 
-  [65, 66].pack('C*') {|s| p s }    # => "AB"
-
+  # Each unpacked object is passed to the block.
   ret = []
   "ABCD".unpack("C*") {|c| ret << c }
   ret # => [65, 66, 67, 68]
 
+  # The single unpacked object is passed to the block.
   'AB'.unpack1('C*') {|ele| p ele } # => 65
 
 === \Integer Directives
@@ -95,8 +102,8 @@ for one element in the input or output array.
   (like C <tt>signed char</tt>):
 
     [0, 1, 255].pack('c*')  # => "\x00\x01\xFF"
-    [0, 1, -1].pack('c*')   # => "\x00\x01\xFF"
-    "\0\1\xFF".unpack('c*') # => [0, 1, -1]
+    s = [0, 1, -1].pack('c*') # => "\x00\x01\xFF"
+    s.unpack('c*') # => [0, 1, -1]
 
 - <tt>'C'</tt> - 8-bit signed integer
   (like C <tt>unsigned char</tt>):
@@ -188,7 +195,7 @@ for one element in the input or output array.
 ==== Platform-Dependent \Integer Directives
 
 - <tt>'i'</tt> - Platform-dependent width signed integer,
-  native-endian:
+  native-endian (like C <tt>int</tt>):
 
     s = [67305985, -50462977].pack('i*')
     # => "\x01\x02\x03\x04\xFF\xFE\xFD\xFC"
@@ -196,7 +203,7 @@ for one element in the input or output array.
     # => [67305985, -50462977]
 
 - <tt>'I'</tt> - Platform-dependent width unsigned integer,
-  native-endian:
+  native-endian (like C <tt>unsigned int</tt>):
 
     s = [67305985, -50462977].pack('I*')
     # => "\x01\x02\x03\x04\xFF\xFE\xFD\xFC"
@@ -240,7 +247,17 @@ for one element in the input or output array.
 
 ==== Modifiers for \Integer Directives
 
-For directives in <tt>%w[ i I s S l L q Q j J]</tt>,
+For directives in
+<tt>'i'</tt>,
+<tt>'I'</tt>,
+<tt>'s'</tt>,
+<tt>'S'</tt>,
+<tt>'l'</tt>,
+<tt>'L'</tt>,
+<tt>'q'</tt>,
+<tt>'Q'</tt>,
+<tt>'j'</tt>, and
+<tt>'J'</tt>,
 these modifiers may be suffixed:
 
 - <tt>'!'</tt> or <tt>'_'</tt> - Underlying platform’s native size.
@@ -303,7 +320,8 @@ for one byte in the input or output string.
 
 ==== Binary \String Directives
 
-- <tt>'A'</tt> - Arbitrary binary string (space padded; count is width):
+- <tt>'A'</tt> - Arbitrary binary string (space padded; count is width)
+  +nil+ is treated as the empty string:
 
     ['foo'].pack('A')    # => "f"
     ['foo'].pack('A*')   # => "foo"
@@ -314,11 +332,12 @@ for one byte in the input or output string.
     [nil].pack('A2')     # => "  "
     [nil].pack('A4')     # => "    "
 
-    "foo\0".unpack('A')  # => ["f"]
-    "foo\0".unpack('A4') # => ["foo"]
-    "foo ".unpack('A')   # => ["f"]
-    "foo ".unpack('A4')  # => ["foo"]
-    "foo".unpack('A4')   # => ["foo"]
+    "foo\0".unpack('A')      # => ["f"]
+    "foo\0".unpack('A4')     # => ["foo"]
+    "foo\0bar".unpack('A10') # => ["foo\x00bar"] # Reads past "\0".
+    "foo ".unpack('A')       # => ["f"]
+    "foo ".unpack('A4')      # => ["foo"]
+    "foo".unpack('A4')       # => ["foo"]
 
     russian = "\u{442 435 441 442}" # => "тест"
     russian.size         # => 4
@@ -341,10 +360,11 @@ for one byte in the input or output string.
     [nil].pack('a2')     # => "\x00\x00"
     [nil].pack('a4')     # => "\x00\x00\x00\x00"
 
-    "foo\0".unpack('a')  # => ["f"]
-    "foo\0".unpack('a4') # => ["foo\x00"]
-    "foo ".unpack('a4')  # => ["foo "]
-    "foo".unpack('a4')   # => ["foo"]
+    "foo\0".unpack('a')     # => ["f"]
+    "foo\0".unpack('a4')    # => ["foo\x00"]
+    "foo ".unpack('a4')     # => ["foo "]
+    "foo".unpack('a4')      # => ["foo"]
+    "foo\0bar".unpack('a4') # => ["foo\x00"] # Reads past "\0".
 
 - <tt>'Z'</tt> - Same as <tt>'a'</tt>,
   except that null is added or ignored with <tt>'*'</tt>:
@@ -352,8 +372,9 @@ for one byte in the input or output string.
     ["foo"].pack('Z*')   # => "foo\x00"
     [nil].pack('Z*')     # => "\x00"
 
-    "foo\0".unpack('Z*') # => ["foo"]
-    "foo".unpack('Z*')   # => ["foo"]
+    "foo\0".unpack('Z*')    # => ["foo"]
+    "foo".unpack('Z*')      # => ["foo"]
+    "foo\0bar".unpack('Z*') # => ["foo"] # Does not read past "\0".
 
 ==== Bit \String Directives
 
@@ -449,19 +470,19 @@ for one byte in the input or output string.
 
 - <tt>'P'</tt> - Pointer to a structure (fixed-length string):
 
-    s = ['abc'].pack('P')     # => "\xE0O\x7F\xE5\xA1\x01\x00\x00"
-    s.freeze.unpack('P*')     # => ["abc"]
-    ".".unpack("P")           # => []
-    ("\0" * 1024).unpack("P") # => [nil]
-    [nil].pack("P")           # => "\x00\x00\x00\x00\x00\x00\x00\x00"
+    s = ['abc'].pack('P')  # => "\xE0O\x7F\xE5\xA1\x01\x00\x00"
+    s.unpack('P*')         # => ["abc"]
+    ".".unpack("P")        # => []
+    ("\0" * 8).unpack("P") # => [nil]
+    [nil].pack("P")        # => "\x00\x00\x00\x00\x00\x00\x00\x00"
 
 - <tt>'p'</tt> - Pointer to a null-terminated string:
 
-    s = ['abc'].pack('p')     # => "(\xE4u\xE5\xA1\x01\x00\x00"
-    s.freeze.unpack('p*')     # => ["abc"]
-    ".".unpack("p")           # => []
-    ("\0" * 1024).unpack("p") # => [nil]
-    [nil].pack("p")           # => "\x00\x00\x00\x00\x00\x00\x00\x00"
+    s = ['abc'].pack('p')  # => "(\xE4u\xE5\xA1\x01\x00\x00"
+    s.unpack('p*')         # => ["abc"]
+    ".".unpack("p")        # => []
+    ("\0" * 8).unpack("p") # => [nil]
+    [nil].pack("p")        # => "\x00\x00\x00\x00\x00\x00\x00\x00"
 
 ==== Other \String Directives
 
