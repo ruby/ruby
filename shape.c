@@ -514,8 +514,8 @@ rb_shape_flags_mask(void)
 static VALUE
 rb_shape_find_by_id(VALUE mod, VALUE id)
 {
-    shape_id_t shape_id = NUM2INT(id);
-    if (shape_id < 0 || shape_id >= GET_VM()->next_shape_id) {
+    shape_id_t shape_id = NUM2UINT(id);
+    if (shape_id >= GET_VM()->next_shape_id) {
         rb_raise(rb_eArgError, "Shape ID %d is out of bounds\n", shape_id);
     }
     return rb_shape_t_to_rb_cShape(rb_shape_get_shape_by_id(shape_id));
