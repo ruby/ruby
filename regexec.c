@@ -3319,6 +3319,7 @@ match_at(regex_t* reg, const UChar* str, const UChar* end,
       GET_RELADDR_INC(addr, p);
       if (*p == *s && DATA_ENSURE_CHECK1) {
 	p++;
+	DO_CACHE_MATCH_OPT(msa->enable_cache_match_opt, pbegin, msa->num_cache_opcode, msa->cache_index_table, end - s, msa->match_cache);
 	STACK_PUSH_ALT(p + addr, s, sprev, pkeep);
 	MOP_OUT;
 	JUMP;
@@ -3332,6 +3333,7 @@ match_at(regex_t* reg, const UChar* str, const UChar* end,
       GET_RELADDR_INC(addr, p);
       if (*p == *s) {
 	p++;
+	DO_CACHE_MATCH_OPT(msa->enable_cache_match_opt, pbegin, msa->num_cache_opcode, msa->cache_index_table, end - s, msa->match_cache);
 	STACK_PUSH_ALT(p + addr, s, sprev, pkeep);
 	MOP_OUT;
 	JUMP;
