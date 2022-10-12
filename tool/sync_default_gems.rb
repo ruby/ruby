@@ -86,7 +86,7 @@ end
 
 def replace_rdoc_ref(file)
   src = File.binread(file)
-  src.gsub!(%r[\[\Khttps://docs\.ruby-lang\.org/en/master/(([A-Z]\w+(?:/[A-Z]\w+)*)|\w+_rdoc)\.html(\#\S+)?(?=\])]) do
+  src.gsub!(%r[\[\Khttps://docs\.ruby-lang\.org/en/master(?:/doc)?/(([A-Z]\w+(?:/[A-Z]\w+)*)|\w+_rdoc)\.html(\#\S+)?(?=\])]) do
     name, mod, label = $1, $2, $3
     mod &&= mod.gsub('/', '::')
     if label && (m = label.match(/\A\#(?:method-([ci])|(?:(?:class|module)-#{mod}-)?label)-([-+\w]+)\z/))
