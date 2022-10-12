@@ -385,6 +385,7 @@ vm_cc_attr_index_dest_shape_id(const struct rb_callcache *cc)
 static inline void
 vm_cc_atomic_shape_and_index(const struct rb_callcache *cc, shape_id_t * shape_id, attr_index_t * index)
 {
+    VM_ASSERT(vm_cc_markable(cc));
     uintptr_t cache_value = cc->aux_.attr.value; // Atomically read 64 bits
     *shape_id = (shape_id_t)(cache_value >> SHAPE_FLAG_SHIFT);
     *index = (attr_index_t)(cache_value & SHAPE_FLAG_MASK) - 1;

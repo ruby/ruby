@@ -1160,7 +1160,13 @@ vm_getivar(VALUE obj, ID id, const rb_iseq_t *iseq, IVC ic, const struct rb_call
     attr_index_t index;
 
     if (is_attr) {
-        vm_cc_atomic_shape_and_index(cc, &cached_id, &index);
+        if (vm_cc_markable(cc)) {
+            vm_cc_atomic_shape_and_index(cc, &cached_id, &index);
+        }
+        else {
+            cached_id = INVALID_SHAPE_ID;
+            index = ATTR_INDEX_NOT_SET;
+        }
     }
     else {
         vm_ic_atomic_shape_and_index(ic, &cached_id, &index);
