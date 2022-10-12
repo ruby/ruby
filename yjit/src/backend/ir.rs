@@ -4,6 +4,8 @@
 
 use std::cell::Cell;
 use std::fmt;
+use std::fs::File;
+use std::io::Write;
 use std::convert::From;
 use std::mem::take;
 use crate::cruby::{VALUE};
@@ -1099,12 +1101,18 @@ impl Assembler
         let gc_offsets = self.compile_with_regs(cb, alloc_regs);
 
         #[cfg(feature = "disasm")]
-        if get_option!(dump_disasm) == DumpDisasm::All || (get_option!(dump_disasm) == DumpDisasm::Inline && cb.inline()) {
+        if let Some(dump_disasm) = get_option_ref!(dump_disasm) {
             use crate::disasm::disasm_addr_range;
             let last_ptr = cb.get_write_ptr();
             let disasm = disasm_addr_range(cb, start_addr, last_ptr.raw_ptr() as usize - start_addr as usize);
             if disasm.len() > 0 {
-                println!("{disasm}");
+                match dump_disasm {
+                    DumpDisasm::Stdout => println!("{disasm}"),
+                    DumpDisasm::File(path) => {
+                        let mut f = File::options().append(true).create(true).open(path).unwrap();
+                        f.write_all(disasm.as_bytes()).unwrap();
+                    }
+                };
             }
         }
         gc_offsets

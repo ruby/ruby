@@ -31,7 +31,7 @@ pub struct Options {
     pub dump_insns: bool,
 
     /// Dump all compiled instructions of target cbs.
-    pub dump_disasm: DumpDisasm,
+    pub dump_disasm: Option<DumpDisasm>,
 
     /// Print when specific ISEQ items are compiled or invalidated
     pub dump_iseq_disasm: Option<String>,
@@ -56,26 +56,18 @@ pub static mut OPTIONS: Options = Options {
     gen_stats: false,
     gen_trace_exits: false,
     dump_insns: false,
-    dump_disasm: DumpDisasm::None,
+    dump_disasm: None,
     verify_ctx: false,
     global_constant_state: false,
     dump_iseq_disasm: None,
 };
 
-#[derive(Copy, Clone, PartialEq, Eq, Debug)]
+#[derive(Clone, PartialEq, Eq, Debug)]
 pub enum DumpDisasm {
-    // Dump only inline cb
-    Inline,
-    // Dump both inline and outlined cbs
-    All,
-    // Dont dump anything
-    None,
-}
-
-impl DumpDisasm {
-    pub fn is_enabled(&self) -> bool {
-        *self != DumpDisasm::None
-    }
+    // Dump to stdout
+    Stdout,
+    // Dump to "yjit_{pid}.log" file under the specified directory
+    File(String),
 }
 
 /// Macro to get an option value by name
@@ -140,9 +132,13 @@ pub fn parse_option(str_ptr: *const std::os::raw::c_char) -> Option<()> {
         },
 
         ("dump-disasm", _) => match opt_val.to_string().as_str() {
-            "all" => unsafe { OPTIONS.dump_disasm = DumpDisasm::All },
-            "" => unsafe { OPTIONS.dump_disasm = DumpDisasm::Inline },
-            _ => return None,
+            "" => unsafe { OPTIONS.dump_disasm = Some(DumpDisasm::Stdout) },
+            directory => {
+                let pid = std::process::id();
+                let path = format!("{directory}/yjit_{pid}.log");
+                println!("YJIT disasm dump: {path}");
+                unsafe { OPTIONS.dump_disasm = Some(DumpDisasm::File(path)) }
+            }
          },
 
         ("dump-iseq-disasm", _) => unsafe {
