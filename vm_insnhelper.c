@@ -1096,9 +1096,7 @@ static inline void
 fill_ivar_cache(const rb_iseq_t *iseq, IVC ic, const struct rb_callcache *cc, int is_attr, attr_index_t index, shape_id_t shape_id)
 {
     if (is_attr) {
-        if (vm_cc_markable(cc)) {
-            vm_cc_attr_index_set(cc, index, shape_id);
-        }
+        vm_cc_attr_index_set(cc, index, shape_id);
     }
     else {
         vm_ic_attr_index_set(iseq, ic, index, shape_id);
@@ -1160,13 +1158,7 @@ vm_getivar(VALUE obj, ID id, const rb_iseq_t *iseq, IVC ic, const struct rb_call
     attr_index_t index;
 
     if (is_attr) {
-        if (vm_cc_markable(cc)) {
-            vm_cc_atomic_shape_and_index(cc, &cached_id, &index);
-        }
-        else {
-            cached_id = INVALID_SHAPE_ID;
-            index = ATTR_INDEX_NOT_SET;
-        }
+        vm_cc_atomic_shape_and_index(cc, &cached_id, &index);
     }
     else {
         vm_ic_atomic_shape_and_index(ic, &cached_id, &index);
@@ -1211,9 +1203,7 @@ vm_getivar(VALUE obj, ID id, const rb_iseq_t *iseq, IVC ic, const struct rb_call
         }
         else {
             if (is_attr) {
-                if (vm_cc_markable(cc)) {
-                    vm_cc_attr_index_initialize(cc, shape_id);
-                }
+                vm_cc_attr_index_initialize(cc, shape_id);
             }
             else {
                 vm_ic_attr_index_initialize(ic, shape_id);
@@ -1245,9 +1235,7 @@ populate_cache(attr_index_t index, shape_id_t next_shape_id, ID id, const rb_ise
 {
     // Cache population code
     if (is_attr) {
-        if (vm_cc_markable(cc)) {
-            vm_cc_attr_index_set(cc, index, next_shape_id);
-        }
+        vm_cc_attr_index_set(cc, index, next_shape_id);
     }
     else {
         vm_ic_attr_index_set(iseq, ic, index, next_shape_id);
@@ -3922,9 +3910,7 @@ vm_call_method_each_type(rb_execution_context_t *ec, rb_control_frame_t *cfp, st
         CALLER_SETUP_ARG(cfp, calling, ci);
         CALLER_REMOVE_EMPTY_KW_SPLAT(cfp, calling, ci);
         rb_check_arity(calling->argc, 0, 0);
-        if (vm_cc_markable(cc)) {
-            vm_cc_attr_index_initialize(cc, INVALID_SHAPE_ID);
-        }
+        vm_cc_attr_index_initialize(cc, INVALID_SHAPE_ID);
         const unsigned int ivar_mask = (VM_CALL_ARGS_SPLAT | VM_CALL_KW_SPLAT);
         VM_CALL_METHOD_ATTR(v,
                             vm_call_ivar(ec, cfp, calling),
