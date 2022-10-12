@@ -2727,6 +2727,14 @@ rb_vm_update_references(void *ptr)
             vm->coverages = rb_gc_location(vm->coverages);
             vm->me2counter = rb_gc_location(vm->me2counter);
         }
+
+        for (int i=0; i<VM_GLOBAL_CC_CACHE_TABLE_SIZE; i++) {
+            const struct rb_callcache *cc = vm->global_cc_cache_table[i];
+
+            if (RB_TYPE_P((VALUE)cc, T_MOVED)) {
+                vm->global_cc_cache_table[i] = (const struct rb_callcache *)rb_gc_location((VALUE)cc);
+            }
+         }
     }
 }
 
