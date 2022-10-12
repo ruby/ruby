@@ -40,7 +40,7 @@ else # default to pre-installed libyaml
   pkg_config('yaml-0.1')
   dir_config('libyaml')
   find_header('yaml.h') or abort "yaml.h not found"
-  find_library('yaml', 'yaml_get_version') or "libyaml not found"
+  find_library('yaml', 'yaml_get_version') or abort "libyaml not found"
 end
 
 create_makefile 'psych' do |mk|
