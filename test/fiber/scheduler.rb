@@ -269,15 +269,14 @@ class IOBufferScheduler < Scheduler
     total = 0
     io.nonblock = true
 
-    while length >= 0
+    while true
       maximum_size = buffer.size - offset
-
       result = blocking{buffer.read(io, maximum_size, offset)}
 
       if result > 0
         total += result
         offset += result
-        break if result >= length
+        break if total >= length
       elsif result == 0
         break
       elsif result == EAGAIN
@@ -298,15 +297,14 @@ class IOBufferScheduler < Scheduler
     total = 0
     io.nonblock = true
 
-    while length >= 0
+    while true
       maximum_size = buffer.size - offset
-
       result = blocking{buffer.write(io, maximum_size, offset)}
 
       if result > 0
         total += result
         offset += result
-        break if result >= length
+        break if total >= length
       elsif result == 0
         break
       elsif result == EAGAIN
