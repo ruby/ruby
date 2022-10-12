@@ -478,13 +478,13 @@ def sync_default_gems_with_commits(gem, ranges, edit: nil)
       skipped = true
     elsif /^CONFLICT/ =~ result
       result = pipe_readlines(%W"git status --porcelain -z")
-      result.map! {|line| line[/^.U (.*)/, 1]}
+      result.map! {|line| line[/\A.U (.*)/, 1]}
       result.compact!
       ignore, conflict = result.partition {|name| IGNORE_FILE_PATTERN =~ name}
       unless ignore.empty?
         system(*%W"git reset HEAD --", *ignore)
         File.unlink(*ignore)
-        ignore = pipe_readlines(%W"git status --porcelain -z" + ignore).map! {|line| line[/^.. (.*)/, 1]}
+        ignore = pipe_readlines(%W"git status --porcelain -z" + ignore).map! {|line| line[/\A.. (.*)/, 1]}
         system(*%W"git checkout HEAD --", *ignore) unless ignore.empty?
       end
       unless conflict.empty?
