@@ -2579,6 +2579,7 @@ match_at(regex_t* reg, const UChar* str, const UChar* end,
 
     CASE(OP_ANYCHAR_STAR)  MOP_IN(OP_ANYCHAR_STAR);
       while (DATA_ENSURE_CHECK1) {
+	DO_CACHE_MATCH_OPT(msa->enable_cache_match_opt, pbegin, msa->num_cache_opcode, msa->cache_index_table, end - s, msa->match_cache);
 	STACK_PUSH_ALT(p, s, sprev, pkeep);
 	n = enclen(encode, s, end);
 	DATA_ENSURE(n);
@@ -2591,6 +2592,7 @@ match_at(regex_t* reg, const UChar* str, const UChar* end,
 
     CASE(OP_ANYCHAR_ML_STAR)  MOP_IN(OP_ANYCHAR_ML_STAR);
       while (DATA_ENSURE_CHECK1) {
+        DO_CACHE_MATCH_OPT(msa->enable_cache_match_opt, pbegin, msa->num_cache_opcode, msa->cache_index_table, end - s, msa->match_cache);
 	STACK_PUSH_ALT(p, s, sprev, pkeep);
 	n = enclen(encode, s, end);
 	if (n > 1) {
@@ -2609,6 +2611,7 @@ match_at(regex_t* reg, const UChar* str, const UChar* end,
     CASE(OP_ANYCHAR_STAR_PEEK_NEXT)  MOP_IN(OP_ANYCHAR_STAR_PEEK_NEXT);
       while (DATA_ENSURE_CHECK1) {
 	if (*p == *s) {
+	  DO_CACHE_MATCH_OPT(msa->enable_cache_match_opt, pbegin, msa->num_cache_opcode, msa->cache_index_table, end - s, msa->match_cache);
 	  STACK_PUSH_ALT(p + 1, s, sprev, pkeep);
 	}
 	n = enclen(encode, s, end);
@@ -2624,6 +2627,7 @@ match_at(regex_t* reg, const UChar* str, const UChar* end,
     CASE(OP_ANYCHAR_ML_STAR_PEEK_NEXT)MOP_IN(OP_ANYCHAR_ML_STAR_PEEK_NEXT);
       while (DATA_ENSURE_CHECK1) {
 	if (*p == *s) {
+	  DO_CACHE_MATCH_OPT(msa->enable_cache_match_opt, pbegin, msa->num_cache_opcode, msa->cache_index_table, end - s, msa->match_cache);
 	  STACK_PUSH_ALT(p + 1, s, sprev, pkeep);
 	}
 	n = enclen(encode, s, end);
