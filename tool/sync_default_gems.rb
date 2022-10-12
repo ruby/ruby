@@ -84,6 +84,30 @@ def pipe_readlines(args, rs: "\0", chomp: true)
   end
 end
 
+def replace_rdoc_ref(file)
+  src = File.binread(file)
+  src.gsub!(%r[\[\Khttps://docs\.ruby-lang\.org/en/master/(([A-Z]\w+(?:/[A-Z]\w+)*)|\w+_rdoc)\.html(\#\S+)?(?=\])]) do
+    name, mod, label = $1, $2, $3
+    mod &&= mod.gsub('/', '::')
+    if label && (m = label.match(/\A\#(?:method-([ci])|(?:(?:class|module)-#{mod}-)?label)-([-+\w]+)\z/))
+      scope, label = m[1], m[2]
+      scope = scope ? scope.tr('ci', '.#') : '@'
+    end
+    "rdoc-ref:#{mod || name.chomp("_rdoc") + ".rdoc"}#{scope}#{label}"
+  end or return false
+  File.rename(file, file + "~")
+  File.binwrite(file, src)
+  return true
+end
+
+def replace_rdoc_ref_all
+  result = pipe_readlines(%W"git status porcelain -z -- *.c *.rb *.rdoc")
+  result.map! {|line| line[/\A.M (.*)/, 1]}
+  result.compact!
+  result = pipe_readlines(%W"git grep -z -l -F [https://docs.ruby-lang.org/en/master/ --" + result)
+  result.inject(false) {|changed, file| changed | replace_rdoc_ref(file)}
+end
+
 # We usually don't use this. Please consider using #sync_default_gems_with_commits instead.
 def sync_default_gems(gem)
   repo = REPOSITORIES[gem.to_sym]
@@ -382,6 +406,7 @@ def sync_default_gems(gem)
   else
     sync_lib gem, upstream
   end
+  replace_rdoc_ref_all
 end
 
 IGNORE_FILE_PATTERN =
@@ -506,6 +531,10 @@ def sync_default_gems_with_commits(gem, ranges, edit: nil)
       `git reset` && `git checkout .` && `git clean -fd`
       puts "Failed to pick #{sha}"
       next
+    end
+
+    if replace_rdoc_ref_all
+      `git commit --amend --no-edit`
     end
 
     puts "Update commit message: #{sha}"
