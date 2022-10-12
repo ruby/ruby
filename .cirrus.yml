@@ -39,9 +39,9 @@ task:
     # the `make` environment variable used in compilers.yml causes some rubygems
     # tests to fail.
     # https://github.com/rubygems/rubygems/issues/4921
-    - echo "GNUMAKEFLAGS=-s -j$((1 + $CIRRUS_CPU))" >> $CIRRUS_ENV
+    - echo "GNUMAKEFLAGS=-s -j$((1 + $CIRRUS_CPU))" >> "$CIRRUS_ENV"
   print_env_script:
-    - echo "GNUMAKEFLAGS=$GNUMAKEFLAGS"
+    - cat "$CIRRUS_ENV"
   # Arm containers are executed in AWS's EKS, and it's not yet supporting IPv6
   # See https://github.com/aws/containers-roadmap/issues/835
   disable_ipv6_script: sudo ./tool/disable_ipv6.sh
@@ -99,9 +99,10 @@ yjit_task:
     # the `make` environment variable used in compilers.yml causes some rubygems
     # tests to fail.
     # https://github.com/rubygems/rubygems/issues/4921
-    - echo "GNUMAKEFLAGS=-s -j$((1 + $CIRRUS_CPU))" >> $CIRRUS_ENV
+    - echo "GNUMAKEFLAGS=-s -j$((1 + $CIRRUS_CPU))" >> "$CIRRUS_ENV"
+    - echo RUST_BACKTRACE=1 >> "$CIRRUS_ENV"
   print_env_script:
-    - echo "GNUMAKEFLAGS=$GNUMAKEFLAGS"
+    - cat "$CIRRUS_ENV"
   # Arm containers are executed in AWS's EKS, and it's not yet supporting IPv6
   # See https://github.com/aws/containers-roadmap/issues/835
   disable_ipv6_script: sudo ./tool/disable_ipv6.sh
@@ -124,9 +125,9 @@ yjit_task:
     else
       echo "only running bindgen on clang image"
     fi
-  boot_miniruby_script: RUST_BACKTRACE=1 ./miniruby --yjit-call-threshold=1 -e0
-  test_dump_insns_script: RUST_BACKTRACE=1 ./miniruby --yjit-call-threshold=1 --yjit-dump-insns -e0
-  output_stats_script: RUST_BACKTRACE=1 ./miniruby --yjit-call-threshold=1 --yjit-stats -e0
+  boot_miniruby_script: ./miniruby --yjit-call-threshold=1 -e0
+  test_dump_insns_script: ./miniruby --yjit-call-threshold=1 --yjit-dump-insns -e0
+  output_stats_script: ./miniruby --yjit-call-threshold=1 --yjit-stats -e0
   full_build_script: source $HOME/.cargo/env && make
   cargo_test_script: source $HOME/.cargo/env && cd yjit && cargo test
   make_test_script: source $HOME/.cargo/env && make test RUN_OPTS="--yjit-call-threshold=1 --yjit-verify-ctx"
