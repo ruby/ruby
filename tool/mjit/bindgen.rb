@@ -380,6 +380,8 @@ generator = BindingGenerator.new(
     rb_mjit_compile_info
     rb_mjit_unit
     rb_serial_t
+    rb_shape
+    rb_shape_t
   ],
   dynamic_types: %w[
     VALUE

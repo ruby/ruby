@@ -6,11 +6,11 @@ module RubyVM::MJIT
 
   class << C
     def SHAPE_BITS
-      RubyVM::Shape::SHAPE_BITS
+      Primitive.cexpr! 'UINT2NUM(SHAPE_BITS)'
     end
 
     def SHAPE_FLAG_SHIFT
-      RubyVM::Shape::SHAPE_FLAG_SHIFT
+      Primitive.cexpr! 'UINT2NUM(SHAPE_FLAG_SHIFT)'
     end
 
     def ROBJECT_EMBED_LEN_MAX
@@ -27,6 +27,12 @@ module RubyVM::MJIT
 
     def has_cache_for_send(cc, insn)
       Primitive.has_cache_for_send(cc.to_i, insn)
+    end
+
+    def rb_shape_get_shape_by_id(shape_id)
+      _shape_id = shape_id.to_i
+      shape_addr = Primitive.cexpr! 'PTR2NUM((VALUE)rb_shape_get_shape_by_id((shape_id_t)NUM2UINT(_shape_id)))'
+      rb_shape_t.new(shape_addr)
     end
 
     def rb_iseq_check(iseq)
@@ -593,6 +599,21 @@ module RubyVM::MJIT
 
   def C.rb_serial_t
     @rb_serial_t ||= CType::Immediate.parse("unsigned long long")
+  end
+
+  def C.rb_shape
+    @rb_shape ||= CType::Struct.new(
+      "rb_shape", Primitive.cexpr!("SIZEOF(struct rb_shape)"),
+      edges: [CType::Pointer.new { self.rb_id_table }, Primitive.cexpr!("OFFSETOF((*((struct rb_shape *)NULL)), edges)")],
+      edge_name: [self.ID, Primitive.cexpr!("OFFSETOF((*((struct rb_shape *)NULL)), edge_name)")],
+      iv_count: [self.attr_index_t, Primitive.cexpr!("OFFSETOF((*((struct rb_shape *)NULL)), iv_count)")],
+      type: [CType::Immediate.parse("uint8_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_shape *)NULL)), type)")],
+      parent_id: [self.shape_id_t, Primitive.cexpr!("OFFSETOF((*((struct rb_shape *)NULL)), parent_id)")],
+    )
+  end
+
+  def C.rb_shape_t
+    @rb_shape_t ||= self.rb_shape
   end
 
   def C.VALUE

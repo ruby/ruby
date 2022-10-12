@@ -356,7 +356,7 @@ module RubyVM::MJIT
       source_shape_id = if dest_shape_id == C.INVALID_SHAPE_ID
                           dest_shape_id
                         else
-                          RubyVM::Shape.find_by_id(dest_shape_id).parent_id
+                          C.rb_shape_get_shape_by_id(dest_shape_id).parent_id
                         end
 
       src = +''
