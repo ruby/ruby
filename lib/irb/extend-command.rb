@@ -162,6 +162,11 @@ module IRB # :nodoc:
     # +irb_fg+::                          JobManager#switch
     # +irb_kill+::                        JobManager#kill
     # +irb_help+::                        IRB@Command+line+options
+    # +irb_info+::                        #inspect
+    # +irb_ls+::                          Output#dump
+    # +irb_measure+::                     IRB::unset_measure_callback
+    # +irb_show_source+::                 #find_source, #show_source
+    # +irb_whereami+::                    Workspace#code_around_binding
     def self.install_extend_commands
       for args in @EXTEND_COMMANDS
         def_extend_command(*args)

@@ -486,14 +486,14 @@ date_zone_to_diff(VALUE str)
 #define out_of_range(v, min, max) ((v) < (min) || (max) < (v))
 		hour = STRTOUL(s, &p, 10);
 		if (*p == ':') {
-		    if (out_of_range(sec, 0, 59)) return Qnil;
+		    if (out_of_range(hour, 0, 23)) return Qnil;
 		    s = ++p;
 		    min = STRTOUL(s, &p, 10);
 		    if (out_of_range(min, 0, 59)) return Qnil;
 		    if (*p == ':') {
 			s = ++p;
 			sec = STRTOUL(s, &p, 10);
-			if (out_of_range(hour, 0, 23)) return Qnil;
+			if (out_of_range(sec, 0, 59)) return Qnil;
 		    }
 		}
 		else if (*p == ',' || *p == '.') {

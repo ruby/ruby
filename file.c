@@ -4900,7 +4900,7 @@ rb_file_dirname_n(VALUE fname, int n)
  *   dotfile       top       0
  *   end with dot  dot       1
  *   .ext          dot       len of .ext
- *   .ext:stream   dot       len of .ext without :stream (NT only)
+ *   .ext:stream   dot       len of .ext without :stream (NTFS only)
  *
  */
 const char *
@@ -5377,8 +5377,7 @@ test_check(int n, int argc, VALUE *argv)
  *    "d"  | boolean | True if file1 exists and is a directory
  *    "e"  | boolean | True if file1 exists
  *    "f"  | boolean | True if file1 exists and is a regular file
- *    "g"  | boolean | True if file1 has the \CF{setgid} bit
- *         |         | set (false under NT)
+ *    "g"  | boolean | True if file1 has the setgid bit set
  *    "G"  | boolean | True if file1 exists and has a group
  *         |         | ownership equal to the caller's group
  *    "k"  | boolean | True if file1 exists and has the sticky bit set
@@ -5809,7 +5808,7 @@ rb_stat_rowned(VALUE obj)
  *     stat.grpowned?   -> true or false
  *
  *  Returns true if the effective group id of the process is the same as
- *  the group id of <i>stat</i>. On Windows NT, returns <code>false</code>.
+ *  the group id of <i>stat</i>. On Windows, returns <code>false</code>.
  *
  *     File.stat("testfile").grpowned?      #=> true
  *     File.stat("/etc/passwd").grpowned?   #=> false

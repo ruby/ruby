@@ -97,3 +97,17 @@ jobs:
           GIT_AUTHOR_NAME: git
           GIT_COMMITTER_NAME: git
         if: ${{ github.repository == 'ruby/ruby' && !startsWith(github.event_name, 'pull') && steps.diff.outcome == 'failure' }}
+
+      - uses: k0kubun/action-slack@v2.0.0
+        with:
+          payload: |
+            {
+              "ci": "GitHub Actions",
+              "env": "${{ github.workflow }}",
+              "url": "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}",
+              "commit": "${{ github.sha }}",
+              "branch": "${{ github.ref }}".split('/').reverse()[0]
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SIMPLER_ALERTS_URL }} # ruby-lang slack: ruby/simpler-alerts-bot
+        if: ${{ failure() && github.event_name == 'push' }}

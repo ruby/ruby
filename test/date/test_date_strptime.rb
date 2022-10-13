@@ -296,6 +296,11 @@ class TestDateStrptime < Test::Unit::TestCase
     assert_not_nil(Date._strptime('Januari', '%B'))
     assert_nil(Date._strptime('Sundai,', '%A,'))
     assert_nil(Date._strptime('Januari,', '%B,'))
+
+    assert_nil(Date._strptime('+24:00', '%Z')[:offset])
+    assert_nil(Date._strptime('+23:60', '%Z')[:offset])
+    assert_nil(Date._strptime('+23:00:60', '%Z')[:offset])
+    assert_nil(Date._strptime('+23:00:60', '%Z')[:offset])
   end
 
   def test_strptime

@@ -425,6 +425,14 @@ rb_RSTRING_PTR(VALUE str)
     return RSTRING_PTR(str);
 }
 
+rb_proc_t *
+rb_yjit_get_proc_ptr(VALUE procv)
+{
+    rb_proc_t *proc;
+    GetProcPtr(procv, proc);
+    return proc;
+}
+
 // This is defined only as a named struct inside rb_iseq_constant_body.
 // By giving it a separate typedef, we make it nameable by rust-bindgen.
 // Bindgen's temp/anon name isn't guaranteed stable.
@@ -501,6 +509,8 @@ rb_get_cme_def_body_attr_id(const rb_callable_method_entry_t *cme)
     return cme->def->body.attr.id;
 }
 
+ID rb_get_symbol_id(VALUE namep);
+
 enum method_optimized_type
 rb_get_cme_def_body_optimized_type(const rb_callable_method_entry_t *cme)
 {
@@ -547,6 +557,13 @@ const rb_iseq_t *
 rb_get_def_iseq_ptr(rb_method_definition_t *def)
 {
     return def_iseq_ptr(def);
+}
+
+VALUE
+rb_get_def_bmethod_proc(rb_method_definition_t *def)
+{
+    RUBY_ASSERT(def->type == VM_METHOD_TYPE_BMETHOD);
+    return def->body.bmethod.proc;
 }
 
 const rb_iseq_t *

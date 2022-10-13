@@ -23,6 +23,8 @@
 
 RBIMPL_SYMBOL_EXPORT_BEGIN()
 
+#define RUBY_FIBER_SCHEDULER_VERSION 2
+
 struct timeval;
 
 /**
@@ -248,10 +250,11 @@ VALUE rb_fiber_scheduler_io_wait_writable(VALUE scheduler, VALUE io);
  * @param[out]  io           An io object to read from.
  * @param[out]  buffer       Return buffer.
  * @param[in]   length       Requested number of bytes to read.
+ * @param[in]   offset       The offset in the buffer to read to.
  * @retval      RUBY_Qundef  `scheduler` doesn't have `#io_read`.
  * @return      otherwise    What `scheduler.io_read` returns `[-errno, size]`.
  */
-VALUE rb_fiber_scheduler_io_read(VALUE scheduler, VALUE io, VALUE buffer, size_t length);
+VALUE rb_fiber_scheduler_io_read(VALUE scheduler, VALUE io, VALUE buffer, size_t length, size_t offset);
 
 /**
  * Nonblocking write to the passed IO.
@@ -260,36 +263,39 @@ VALUE rb_fiber_scheduler_io_read(VALUE scheduler, VALUE io, VALUE buffer, size_t
  * @param[out]  io           An io object to write to.
  * @param[in]   buffer       What to write.
  * @param[in]   length       Number of bytes to write.
+ * @param[in]   offset       The offset in the buffer to write from.
  * @retval      RUBY_Qundef  `scheduler` doesn't have `#io_write`.
  * @return      otherwise    What `scheduler.io_write` returns `[-errno, size]`.
  */
-VALUE rb_fiber_scheduler_io_write(VALUE scheduler, VALUE io, VALUE buffer, size_t length);
+VALUE rb_fiber_scheduler_io_write(VALUE scheduler, VALUE io, VALUE buffer, size_t length, size_t offset);
 
 /**
  * Nonblocking read from the passed IO at the specified offset.
  *
  * @param[in]   scheduler    Target scheduler.
  * @param[out]  io           An io object to read from.
- * @param[out]  buffer       Return buffer.
+ * @param[in]   from         The offset in the given IO to read the data from.
+ * @param[out]  buffer       The buffer to read the data to.
  * @param[in]   length       Requested number of bytes to read.
- * @param[in]   offset       The offset in the given IO to read the data from.
+ * @param[in]   offset       The offset in the buffer to read to.
  * @retval      RUBY_Qundef  `scheduler` doesn't have `#io_read`.
  * @return      otherwise    What `scheduler.io_read` returns.
  */
-VALUE rb_fiber_scheduler_io_pread(VALUE scheduler, VALUE io, VALUE buffer, size_t length, rb_off_t offset);
+VALUE rb_fiber_scheduler_io_pread(VALUE scheduler, VALUE io, rb_off_t from, VALUE buffer, size_t length, size_t offset);
 
 /**
  * Nonblocking write to the passed IO at the specified offset.
  *
  * @param[in]   scheduler    Target scheduler.
  * @param[out]  io           An io object to write to.
- * @param[in]   buffer       What to write.
+ * @param[in]   from         The offset in the given IO to write the data to.
+ * @param[in]   buffer       The buffer to write the data from.
  * @param[in]   length       Number of bytes to write.
- * @param[in]   offset       The offset in the given IO to write the data to.
+ * @param[in]   offset       The offset in the buffer to write from.
  * @retval      RUBY_Qundef  `scheduler` doesn't have `#io_write`.
  * @return      otherwise    What `scheduler.io_write` returns.
  */
-VALUE rb_fiber_scheduler_io_pwrite(VALUE scheduler, VALUE io, VALUE buffer, size_t length, rb_off_t offset);
+VALUE rb_fiber_scheduler_io_pwrite(VALUE scheduler, VALUE io, rb_off_t from, VALUE buffer, size_t length, size_t offset);
 
 /**
  * Nonblocking read from the passed IO using a native buffer.

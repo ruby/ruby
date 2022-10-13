@@ -1502,7 +1502,7 @@ XXX
         style = notwice(default_style.guess(arg = o), style, 'style')
         default_pattern, conv = search(:atype, Object) unless default_pattern
       else
-        desc.push(o)
+        desc.push(o) if o && !o.empty?
       end
     end
 

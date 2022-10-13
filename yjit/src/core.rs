@@ -1061,6 +1061,21 @@ impl Context {
         return top;
     }
 
+    pub fn shift_stack(&mut self, argc: usize) {
+        assert!(argc < self.stack_size.into());
+
+        let method_name_index = (self.stack_size - argc as u16 - 1) as usize;
+
+        for i in method_name_index..(self.stack_size - 1) as usize {
+
+            if i + 1 < MAX_TEMP_TYPES {
+                self.temp_types[i] = self.temp_types[i + 1];
+                self.temp_mapping[i] = self.temp_mapping[i + 1];
+            }
+        }
+        self.stack_pop(1);
+    }
+
     /// Get an operand pointing to a slot on the temp stack
     pub fn stack_opnd(&self, idx: i32) -> Opnd {
         // SP points just above the topmost value
@@ -1647,8 +1662,11 @@ fn branch_stub_hit_body(branch_ptr: *const c_void, target_idx: u32, ec: EcPtr) -
         let cfp = get_ec_cfp(ec);
         let original_interp_sp = get_cfp_sp(cfp);
 
-        let reconned_pc = rb_iseq_pc_at_idx(rb_cfp_get_iseq(cfp), target.idx);
+        let running_iseq = rb_cfp_get_iseq(cfp);
+        let reconned_pc = rb_iseq_pc_at_idx(running_iseq, target.idx);
         let reconned_sp = original_interp_sp.offset(target_ctx.sp_offset.into());
+
+        assert_eq!(running_iseq, target.iseq as _, "each stub expects a particular iseq");
 
         // Update the PC in the current CFP, because it may be out of sync in JITted code
         rb_set_cfp_pc(cfp, reconned_pc);

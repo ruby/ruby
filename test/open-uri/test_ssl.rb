@@ -107,6 +107,25 @@ class TestOpenURISSL
     }
   end
 
+  def test_ssl_min_version
+    with_https {|srv, dr, url|
+      setup_validation(srv, dr)
+      URI.open("#{url}/data", :ssl_verify_mode => OpenSSL::SSL::VERIFY_NONE, :ssl_min_version => :TLS1_2) {|f|
+        assert_equal("200", f.status[0])
+        assert_equal("ddd", f.read)
+      }
+    }
+  end
+
+  def test_bad_ssl_version
+    with_https(nil) {|srv, dr, url|
+      setup_validation(srv, dr)
+      assert_raise(ArgumentError) {
+        URI.open("#{url}/data", :ssl_verify_mode => OpenSSL::SSL::VERIFY_NONE, :ssl_min_version => :TLS_no_such_version) {}
+      }
+    }
+  end
+
   def with_https_proxy(proxy_log_tester=lambda {|proxy_log, proxy_access_log| assert_equal([], proxy_log) })
     proxy_log = []
     proxy_logger = WEBrick::Log.new(proxy_log, WEBrick::BasicLog::WARN)

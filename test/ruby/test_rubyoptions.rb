@@ -1001,8 +1001,7 @@ class TestRubyOptions < Test::Unit::TestCase
     stderr = []
     Tempfile.create(%w"bug10435- .rb") do |script|
       dir, base = File.split(script.path)
-      script.puts "abort ':run'"
-      script.close
+      File.write(script, "abort ':run'\n")
       opts = ['-C', dir, '-r', "./#{base}", *opt]
       _, e = assert_in_out_err([*opts, '-ep'], "", //)
       stderr.concat(e) if e
@@ -1026,6 +1025,8 @@ class TestRubyOptions < Test::Unit::TestCase
   def test_dump_parsetree_with_rflag
     assert_norun_with_rflag('--dump=parsetree')
     assert_norun_with_rflag('--dump=parsetree', '-e', '#frozen-string-literal: true')
+    assert_norun_with_rflag('--dump=parsetree+error_tolerant')
+    assert_norun_with_rflag('--dump=parse+error_tolerant')
   end
 
   def test_dump_insns_with_rflag

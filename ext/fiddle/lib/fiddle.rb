@@ -67,4 +67,8 @@ module Fiddle
   RTLD_GLOBAL = Handle::RTLD_GLOBAL # :nodoc:
   RTLD_LAZY   = Handle::RTLD_LAZY   # :nodoc:
   RTLD_NOW    = Handle::RTLD_NOW    # :nodoc:
+
+  Fiddle::Types.constants.each do |type|
+    const_set "TYPE_#{type}", Fiddle::Types.const_get(type)
+  end
 end

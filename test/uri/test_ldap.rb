@@ -39,7 +39,7 @@ class TestLDAP < Test::Unit::TestCase
     # from RFC2255, section 6.
     {
       'ldap:///o=University%20of%20Michigan,c=US' =>
-      ['ldap', nil, URI::LDAP::DEFAULT_PORT,
+      ['ldap', '', URI::LDAP::DEFAULT_PORT,
 	'o=University%20of%20Michigan,c=US',
 	nil, nil, nil, nil],
 
@@ -74,12 +74,12 @@ class TestLDAP < Test::Unit::TestCase
 	nil, '(int=%5c00%5c00%5c00%5c04)', nil, nil],
 
       'ldap:///??sub??bindname=cn=Manager%2co=Foo' =>
-      ['ldap', nil, URI::LDAP::DEFAULT_PORT,
+      ['ldap', '', URI::LDAP::DEFAULT_PORT,
 	'',
 	nil, 'sub', nil, 'bindname=cn=Manager%2co=Foo'],
 
       'ldap:///??sub??!bindname=cn=Manager%2co=Foo' =>
-      ['ldap', nil, URI::LDAP::DEFAULT_PORT,
+      ['ldap', '', URI::LDAP::DEFAULT_PORT,
 	'',
 	nil, 'sub', nil, '!bindname=cn=Manager%2co=Foo'],
     }.each do |url2, ary|

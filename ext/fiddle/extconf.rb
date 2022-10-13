@@ -46,7 +46,7 @@ end
 
 libffi_version = nil
 have_libffi = false
-bundle = enable_config('bundled-libffi')
+bundle = with_config("libffi-source-dir")
 unless bundle
   dir_config 'libffi'
 
@@ -67,27 +67,11 @@ unless bundle
 end
 
 unless have_libffi
-  # for https://github.com/ruby/fiddle
-  extlibs_rb = File.expand_path("../../bin/extlibs.rb", $srcdir)
-  if bundle && File.exist?(extlibs_rb)
-    require "fileutils"
-    require_relative "../../bin/extlibs"
-    extlibs = ExtLibs.new
-    cache_dir = File.expand_path("../../tmp/.download_cache", $srcdir)
-    ext_dir = File.expand_path("../../ext", $srcdir)
-    Dir.glob("#{$srcdir}/libffi-*/").each{|dir| FileUtils.rm_rf(dir)}
-    extlibs.run(["--cache=#{cache_dir}", ext_dir])
+  if bundle
+    libffi_srcdir = libffi_package_name = bundle
+  else
+    raise "missing libffi. Please install libffi or use --with-libffi-source-dir with libffi source location."
   end
-  if bundle != false
-    libffi_package_name = Dir.glob("#{$srcdir}/libffi-*/")
-                            .map {|n| File.basename(n)}
-                            .max_by {|n| n.scan(/\d+/).map(&:to_i)}
-  end
-  unless libffi_package_name
-    raise "missing libffi. Please install libffi."
-  end
-
-  libffi_srcdir = "#{$srcdir}/#{libffi_package_name}"
   ffi_header = 'ffi.h'
   libffi = Struct.new(*%I[dir srcdir builddir include lib a cflags ldflags opt arch]).new
   libffi.dir = libffi_package_name
@@ -226,7 +210,7 @@ types.each do |type, signed|
 end
 
 if libffi
-  $LOCAL_LIBS.prepend("./#{libffi.a} ").strip! # to exts.mk
+  $LOCAL_LIBS.prepend("#{libffi.a} ").strip! # to exts.mk
   $INCFLAGS.gsub!(/-I#{libffi.dir}/, '-I$(LIBFFI_DIR)')
 end
 create_makefile 'fiddle' do |conf|

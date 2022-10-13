@@ -26,6 +26,7 @@
 #include "internal/thread.h"
 #include "internal/vm.h"
 #include "internal/sanitizers.h"
+#include "internal/variable.h"
 #include "iseq.h"
 #include "mjit.h"
 #include "yjit.h"
@@ -4021,6 +4022,11 @@ Init_BareVM(void)
     rb_native_cond_initialize(&vm->ractor.sync.terminate_cond);
 }
 
+#ifndef _WIN32
+#include <unistd.h>
+#include <sys/mman.h>
+#endif
+
 void
 Init_vm_objects(void)
 {
@@ -4032,6 +4038,31 @@ Init_vm_objects(void)
     vm->mark_object_ary = rb_ary_hidden_new(128);
     vm->loading_table = st_init_strtable();
     vm->frozen_strings = st_init_table_with_size(&rb_fstring_hash_type, 10000);
+
+#if HAVE_MMAP
+    vm->shape_list = (rb_shape_t *)mmap(NULL, rb_size_mul_or_raise(SHAPE_BITMAP_SIZE * 32, sizeof(rb_shape_t), rb_eRuntimeError),
+                         PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+    if (vm->shape_list == MAP_FAILED) {
+        vm->shape_list = 0;
+    }
+#else
+    vm->shape_list = xcalloc(SHAPE_BITMAP_SIZE * 32, sizeof(rb_shape_t));
+#endif
+
+    if (!vm->shape_list) {
+        rb_memerror();
+    }
+
+    // Root shape
+    vm->root_shape = rb_shape_alloc_with_parent_id(0, INVALID_SHAPE_ID);
+    RUBY_ASSERT(rb_shape_id(vm->root_shape) == ROOT_SHAPE_ID);
+
+    // Frozen root shape
+    vm->frozen_root_shape = rb_shape_alloc_with_parent_id(rb_make_internal_id(), rb_shape_id(vm->root_shape));
+    vm->frozen_root_shape->type = (uint8_t)SHAPE_FROZEN;
+    RUBY_ASSERT(rb_shape_id(vm->frozen_root_shape) == FROZEN_ROOT_SHAPE_ID);
+
+    vm->next_shape_id = 2;
 }
 
 /* Stub for builtin function when not building YJIT units*/

@@ -107,7 +107,7 @@ require_relative 'logger/errors'
 #
 # - \Severity (one letter).
 # - Timestamp.
-# - Timezone.
+# - Process id.
 # - \Severity (word).
 # - Program name.
 # - Message.
@@ -147,7 +147,7 @@ require_relative 'logger/errors'
 # when the entry is created.
 #
 # The logged timestamp is formatted by method
-# {Time#strftime}[https://docs.ruby-lang.org/en/master/Time.html#method-i-strftime]
+# {Time#strftime}[rdoc-ref:Time#strftime]
 # using this format string:
 #
 #   '%Y-%m-%dT%H:%M:%S.%6N'
@@ -365,7 +365,7 @@ require_relative 'logger/errors'
 # You can set a different format using create-time option
 # +shift_period_suffix+;
 # see details and suggestions at
-# {Time#strftime}[https://docs.ruby-lang.org/en/master/Time.html#method-i-strftime].
+# {Time#strftime}[rdoc-ref:Time#strftime].
 #
 class Logger
   _, name, rev = %w$Id$
@@ -425,7 +425,7 @@ class Logger
   # Argument +datetime_format+ should be either of these:
   #
   # - A string suitable for use as a format for method
-  #   {Time#strftime}[https://docs.ruby-lang.org/en/master/Time.html#method-i-strftime].
+  #   {Time#strftime}[rdoc-ref:Time#strftime].
   # - +nil+: the logger uses <tt>'%Y-%m-%dT%H:%M:%S.%6N'</tt>.
   #
   def datetime_format=(datetime_format)
@@ -453,7 +453,7 @@ class Logger
   # The proc should return a string containing the formatted entry.
   #
   # This custom formatter uses
-  # {String#dump}[https://docs.ruby-lang.org/en/master/String.html#method-i-dump]
+  # {String#dump}[rdoc-ref:String#dump]
   # to escape the message string:
   #
   #   logger = Logger.new($stdout, progname: 'mung')

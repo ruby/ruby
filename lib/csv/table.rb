@@ -172,7 +172,7 @@ class CSV
     #
     # Raises an exception if the access mode is <tt>:row</tt>
     # and +n+ is not an
-    # {Integer-convertible object}[https://docs.ruby-lang.org/en/master/implicit_conversion_rdoc.html#label-Integer-Convertible+Objects].
+    # {Integer-convertible object}[rdoc-ref:implicit_conversion.rdoc@Integer-Convertible+Objects].
     #   table.by_row! # => #<CSV::Table mode:row row_count:4>
     #   # Raises TypeError (no implicit conversion of String into Integer):
     #   table['Name']

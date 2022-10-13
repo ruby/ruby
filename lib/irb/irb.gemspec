@@ -8,8 +8,8 @@ end
 Gem::Specification.new do |spec|
   spec.name          = "irb"
   spec.version       = IRB::VERSION
-  spec.authors       = ["Keiju ISHITSUKA"]
-  spec.email         = ["keiju@ruby-lang.org"]
+  spec.authors       = ["aycabta", "Keiju ISHITSUKA"]
+  spec.email         = ["aycabta@gmail.com", "keiju@ruby-lang.org"]
 
   spec.summary       = %q{Interactive Ruby command-line tool for REPL (Read Eval Print Loop).}
   spec.description   = %q{Interactive Ruby command-line tool for REPL (Read Eval Print Loop).}

@@ -40,6 +40,7 @@ fn main() {
         .header("internal.h")
         .header("internal/re.h")
         .header("include/ruby/ruby.h")
+        .header("shape.h")
         .header("vm_core.h")
         .header("vm_callinfo.h")
 
@@ -80,6 +81,12 @@ fn main() {
         // From internal.h
         // This function prints info about a value and is useful for debugging
         .allowlist_function("rb_obj_info_dump")
+
+        // From shape.h
+        .allowlist_function("rb_shape_get_shape_id")
+        .allowlist_function("rb_shape_get_shape_by_id")
+        .allowlist_function("rb_shape_flags_mask")
+        .allowlist_function("rb_shape_get_iv_index")
 
         // From ruby/internal/intern/object.h
         .allowlist_function("rb_obj_is_kind_of")
@@ -273,6 +280,7 @@ fn main() {
         .allowlist_function("rb_RSTRING_PTR")
         .allowlist_function("rb_RSTRING_LEN")
         .allowlist_function("rb_ENCODING_GET")
+        .allowlist_function("rb_yjit_get_proc_ptr")
         .allowlist_function("rb_yjit_exit_locations_dict")
         .allowlist_function("rb_yjit_icache_invalidate")
 
@@ -324,6 +332,7 @@ fn main() {
         .allowlist_function("rb_get_cfp_ep_level")
         .allowlist_function("rb_get_cme_def_type")
         .allowlist_function("rb_get_cme_def_body_attr_id")
+        .allowlist_function("rb_get_symbol_id")
         .allowlist_function("rb_get_cme_def_body_optimized_type")
         .allowlist_function("rb_get_cme_def_body_optimized_index")
         .allowlist_function("rb_get_cme_def_body_cfunc")
@@ -332,6 +341,7 @@ fn main() {
         .allowlist_function("rb_get_mct_argc")
         .allowlist_function("rb_get_mct_func")
         .allowlist_function("rb_get_def_iseq_ptr")
+        .allowlist_function("rb_get_def_bmethod_proc")
         .allowlist_function("rb_iseq_encoded_size")
         .allowlist_function("rb_get_iseq_body_local_iseq")
         .allowlist_function("rb_get_iseq_body_iseq_encoded")

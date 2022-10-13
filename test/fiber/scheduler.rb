@@ -263,81 +263,66 @@ class Scheduler
 end
 
 class IOBufferScheduler < Scheduler
-  EAGAIN = Errno::EAGAIN::Errno
+  EAGAIN = -Errno::EAGAIN::Errno
 
-  def io_read(io, buffer, length)
-    offset = 0
+  def io_read(io, buffer, length, offset)
+    total = 0
+    io.nonblock = true
 
     while true
       maximum_size = buffer.size - offset
-      result = blocking{io.read_nonblock(maximum_size, exception: false)}
+      result = blocking{buffer.read(io, maximum_size, offset)}
 
-      # blocking{pp read: maximum_size, result: result, length: length}
-
-      case result
-      when :wait_readable
+      if result > 0
+        total += result
+        offset += result
+        break if total >= length
+      elsif result == 0
+        break
+      elsif result == EAGAIN
         if length > 0
           self.io_wait(io, IO::READABLE, nil)
         else
-          return -EAGAIN
+          return result
         end
-      when :wait_writable
-        if length > 0
-          self.io_wait(io, IO::WRITABLE, nil)
-        else
-          return -EAGAIN
-        end
-      else
-        break unless result
-
-        buffer.set_string(result, offset)
-
-        size = result.bytesize
-        offset += size
-        break if size >= length
-        length -= size
+      elsif result < 0
+        return result
       end
     end
 
-    return offset
+    return total
   end
 
-  def io_write(io, buffer, length)
-    offset = 0
+  def io_write(io, buffer, length, offset)
+    total = 0
+    io.nonblock = true
 
     while true
       maximum_size = buffer.size - offset
+      result = blocking{buffer.write(io, maximum_size, offset)}
 
-      chunk = buffer.get_string(offset, maximum_size)
-      result = blocking{io.write_nonblock(chunk, exception: false)}
-
-      # blocking{pp write: maximum_size, result: result, length: length}
-
-      case result
-      when :wait_readable
-        if length > 0
-          self.io_wait(io, IO::READABLE, nil)
-        else
-          return -EAGAIN
-        end
-      when :wait_writable
+      if result > 0
+        total += result
+        offset += result
+        break if total >= length
+      elsif result == 0
+        break
+      elsif result == EAGAIN
         if length > 0
           self.io_wait(io, IO::WRITABLE, nil)
         else
-          return -EAGAIN
+          return result
         end
-      else
-        offset += result
-        break if result >= length
-        length -= result
+      elsif result < 0
+        return result
       end
     end
 
-    return offset
+    return total
   end
 
   def blocking(&block)
-    Fiber.new(blocking: true, &block).resume
+    Fiber.blocking(&block)
   end
 end
 

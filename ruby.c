@@ -154,7 +154,11 @@ enum feature_flag_bits {
     /* END OF DUMPS */
 enum dump_flag_bits {
     dump_version_v,
+    dump_error_tolerant,
     EACH_DUMPS(DEFINE_DUMP, COMMA),
+    dump_error_tolerant_bits = (DUMP_BIT(yydebug) |
+                                DUMP_BIT(parsetree) |
+                                DUMP_BIT(parsetree_with_comment)),
     dump_exit_bits = (DUMP_BIT(yydebug) | DUMP_BIT(syntax) |
                       DUMP_BIT(parsetree) | DUMP_BIT(parsetree_with_comment) |
                       DUMP_BIT(insns) | DUMP_BIT(insns_without_opt))
@@ -301,9 +305,9 @@ usage(const char *name, int help, int highlight, int columns)
     static const struct ruby_opt_message dumps[] = {
         M("insns",                  "", "instruction sequences"),
         M("insns_without_opt",      "", "instruction sequences compiled with no optimization"),
-        M("yydebug",                "", "yydebug of yacc parser generator"),
-        M("parsetree",              "", "AST"),
-        M("parsetree_with_comment", "", "AST with comments"),
+        M("yydebug(+error-tolerant)", "", "yydebug of yacc parser generator"),
+        M("parsetree(+error-tolerant)","", "AST"),
+        M("parsetree_with_comment(+error-tolerant)", "", "AST with comments"),
     };
     static const struct ruby_opt_message features[] = {
         M("gems",    "",        "rubygems (only for debugging, default: "DEFAULT_RUBYGEMS_ENABLED")"),
@@ -899,14 +903,16 @@ name_match_p(const char *name, const char *str, size_t len)
     if (len == 0) return 0;
     while (1) {
         while (TOLOWER(*str) == *name) {
-            if (!--len || !*++str) return 1;
+            if (!--len) return 1;
             ++name;
+            ++str;
         }
         if (*str != '-' && *str != '_') return 0;
         while (ISALNUM(*name)) name++;
         if (*name != '-' && *name != '_') return 0;
         ++name;
         ++str;
+        if (--len == 0) return 1;
     }
 }
 
@@ -1012,11 +1018,49 @@ debug_option(const char *str, int len, void *arg)
     rb_warn("debug features are [%.*s].", (int)strlen(list), list);
 }
 
+static int
+memtermspn(const char *str, char term, int len)
+{
+    RUBY_ASSERT(len >= 0);
+    if (len <= 0) return 0;
+    const char *next = memchr(str, term, len);
+    return next ? (int)(next - str) : len;
+}
+
+static const char additional_opt_sep = '+';
+
+static unsigned int
+dump_additional_option(const char *str, int len, unsigned int bits, const char *name)
+{
+    int w;
+    for (; len-- > 0 && *str++ == additional_opt_sep; len -= w, str += w) {
+        w = memtermspn(str, additional_opt_sep, len);
+#define SET_ADDITIONAL(bit) if (NAME_MATCH_P(#bit, str, w)) { \
+            if (bits & DUMP_BIT(bit)) \
+                rb_warn("duplicate option to dump %s: `%.*s'", name, w, str); \
+            bits |= DUMP_BIT(bit); \
+            continue; \
+        }
+        if (dump_error_tolerant_bits & bits) {
+            SET_ADDITIONAL(error_tolerant);
+        }
+        rb_warn("don't know how to dump %s with `%.*s'", name, w, str);
+    }
+    return bits;
+}
+
 static void
 dump_option(const char *str, int len, void *arg)
 {
     static const char list[] = EACH_DUMPS(LITERAL_NAME_ELEMENT, ", ");
-#define SET_WHEN_DUMP(bit) SET_WHEN(#bit, DUMP_BIT(bit), str, len)
+    int w = memtermspn(str, additional_opt_sep, len);
+
+#define SET_WHEN_DUMP(bit) \
+    if (NAME_MATCH_P(#bit, (str), (w))) { \
+        *(unsigned int *)arg |= \
+            dump_additional_option(str + w, len - w, DUMP_BIT(bit), #bit); \
+        return; \
+    }
     EACH_DUMPS(SET_WHEN_DUMP, ;);
     rb_warn("don't know how to dump `%.*s',", len, str);
     rb_warn("but only [%.*s].", (int)strlen(list), list);
@@ -1934,6 +1978,9 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
     parser = rb_parser_new();
     if (opt->dump & DUMP_BIT(yydebug)) {
         rb_parser_set_yydebug(parser, Qtrue);
+    }
+    if (opt->dump & DUMP_BIT(error_tolerant)) {
+        rb_parser_error_tolerant(parser);
     }
     if (opt->ext.enc.name != 0) {
         opt->ext.enc.index = opt_enc_index(opt->ext.enc.name);

@@ -157,24 +157,31 @@ impl Assembler
         /// Operands that take the place of bitmask immediates must follow a
         /// certain encoding. In this function we ensure that those operands
         /// do follow that encoding, and if they don't then we load them first.
-        fn split_bitmask_immediate(asm: &mut Assembler, opnd: Opnd) -> Opnd {
+        fn split_bitmask_immediate(asm: &mut Assembler, opnd: Opnd, dest_num_bits: u8) -> Opnd {
             match opnd {
                 Opnd::Reg(_) | Opnd::InsnOut { .. } => opnd,
                 Opnd::Mem(_) => split_load_operand(asm, opnd),
                 Opnd::Imm(imm) => {
                     if imm <= 0 {
                         asm.load(opnd)
-                    } else if BitmaskImmediate::try_from(imm as u64).is_ok() {
+                    } else if (dest_num_bits == 64 &&
+                                BitmaskImmediate::try_from(imm as u64).is_ok()) ||
+                            (dest_num_bits == 32 &&
+                                u32::try_from(imm).is_ok() &&
+                                BitmaskImmediate::new_32b_reg(imm as u32).is_ok()) {
                         Opnd::UImm(imm as u64)
                     } else {
-                        asm.load(opnd)
+                        asm.load(opnd).with_num_bits(dest_num_bits).unwrap()
                     }
                 },
                 Opnd::UImm(uimm) => {
-                    if BitmaskImmediate::try_from(uimm).is_ok() {
+                    if (dest_num_bits == 64 && BitmaskImmediate::try_from(uimm).is_ok()) ||
+                        (dest_num_bits == 32 &&
+                            u32::try_from(uimm).is_ok() &&
+                            BitmaskImmediate::new_32b_reg(uimm as u32).is_ok()) {
                         opnd
                     } else {
-                        asm.load(opnd)
+                        asm.load(opnd).with_num_bits(dest_num_bits).unwrap()
                     }
                 },
                 Opnd::None | Opnd::Value(_) => unreachable!()
@@ -208,12 +215,12 @@ impl Assembler
                 },
                 (reg_opnd @ Opnd::Reg(_), other_opnd) |
                 (other_opnd, reg_opnd @ Opnd::Reg(_)) => {
-                    let opnd1 = split_bitmask_immediate(asm, other_opnd);
+                    let opnd1 = split_bitmask_immediate(asm, other_opnd, reg_opnd.rm_num_bits());
                     (reg_opnd, opnd1)
                 },
                 _ => {
                     let opnd0 = split_load_operand(asm, opnd0);
-                    let opnd1 = split_bitmask_immediate(asm, opnd1);
+                    let opnd1 = split_bitmask_immediate(asm, opnd1, opnd0.rm_num_bits());
                     (opnd0, opnd1)
                 }
             }
@@ -449,7 +456,7 @@ impl Assembler
                         // register or an immediate that can be encoded as a
                         // bitmask immediate. Otherwise, we'll need to split the
                         // move into multiple instructions.
-                        _ => split_bitmask_immediate(asm, src)
+                        _ => split_bitmask_immediate(asm, src, dest.rm_num_bits())
                     };
 
                     // If we're attempting to load into a memory operand, then
@@ -508,7 +515,7 @@ impl Assembler
                     // unsigned immediate that can be encoded as a bitmask
                     // immediate. If it's not one of those, we'll need to load
                     // it first.
-                    let opnd1 = split_bitmask_immediate(asm, right);
+                    let opnd1 = split_bitmask_immediate(asm, right, opnd0.rm_num_bits());
                     asm.test(opnd0, opnd1);
                 },
                 _ => {
@@ -1184,6 +1191,24 @@ mod tests {
         // Assert that five instructions were written since the value is not an
         // immediate and needs to be loaded into a register.
         assert_eq!(20, cb.get_write_pos());
+    }
+
+    #[test]
+    fn test_emit_test_32b_reg_not_bitmask_imm() {
+        let (mut asm, mut cb) = setup_asm();
+        let w0 = Opnd::Reg(X0_REG).with_num_bits(32).unwrap();
+        asm.test(w0, Opnd::UImm(u32::MAX.into()));
+        // All ones is not encodable with a bitmask immediate,
+        // so this needs one register
+        asm.compile_with_num_regs(&mut cb, 1);
+    }
+
+    #[test]
+    fn test_emit_test_32b_reg_bitmask_imm() {
+        let (mut asm, mut cb) = setup_asm();
+        let w0 = Opnd::Reg(X0_REG).with_num_bits(32).unwrap();
+        asm.test(w0, Opnd::UImm(0x80000001));
+        asm.compile_with_num_regs(&mut cb, 0);
     }
 
     #[test]

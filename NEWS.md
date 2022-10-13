@@ -102,6 +102,16 @@ Note that each entry is kept to a minimum, see links for details.
 
 Note: We're only listing outstanding class updates.
 
+* IO
+    * Introduce `IO#timeout=` and `IO#timeout` which can cause
+    `IO::TimeoutError` to be raised if a blocking operation exceeds the
+    specified timeout. [[Feature #18630]]
+
+    ```ruby
+    STDIN.timeout = 1
+    STDIN.read # => Blocking operation timed out! (IO::TimeoutError)
+    ```
+
 * Data
     * New core class to represent simple immutable value object. The class is
       similar to `Struct` and partially shares an implementation, but has more
@@ -131,6 +141,8 @@ Note: We're only listing outstanding class updates.
 
 * MatchData
     * MatchData#byteoffset has been added. [[Feature #13110]]
+    * MatchData#deconstruct has been added. [[Feature #18821]]
+    * MatchData#deconstruct_keys has been added. [[Feature #18821]]
 
 * Module
     * Module.used_refinements has been added. [[Feature #14332]]
@@ -204,6 +216,7 @@ Note: We're only listing outstanding class updates.
     * io-nonblock 0.1.1
     * io-wait 0.3.0.pre
     * ipaddr 1.2.4
+    * irb 1.4.2
     * json 2.6.2
     * logger 1.5.1
     * net-http 0.2.2
@@ -219,10 +232,11 @@ Note: We're only listing outstanding class updates.
 *   The following bundled gems are updated.
     * minitest 5.16.3
     * test-unit 3.5.5
+    * net-ftp 0.2.0
     * net-imap 0.3.1
     * net-pop 0.1.2
     * net-smtp 0.3.2
-    * rbs 2.6.0
+    * rbs 2.7.0
     * typeprof 0.21.3
     * debug 1.6.2
 *   The following default gems are now bundled gems.
@@ -255,7 +269,8 @@ The following deprecated methods are removed.
 ## Stdlib compatibility issues
 
 * `Psych` no longer bundles libyaml sources.
-  Users need to install the libyaml library themselves via the package
+  And also `Fiddle` no longer bundles libffi sources.
+  Users need to install the libyaml/libffi library themselves via the package
   system. [[Feature #18571]]
 
 ## C API updates
@@ -270,6 +285,13 @@ The following deprecated APIs are removed.
 ## Implementation improvements
 
 * Fixed several race conditions in `Kernel#autoload`. [[Bug #18782]]
+* Cache invalidation for expressions referencing constants is now
+  more fine-grained. `RubyVM.stat(:global_constant_state)` was
+  removed because it was closely tied to the previous caching scheme
+  where setting any constant invalidates all caches in the system.
+  New keys, `:constant_cache_invalidations` and `:constant_cache_misses`,
+  were introduced to help with use cases for `:global_constant_state`.
+  [[Feature #18589]]
 
 ## JIT
 
@@ -330,3 +352,5 @@ The following deprecated APIs are removed.
 [Feature #19008]: https://bugs.ruby-lang.org/issues/19008
 [Feature #19026]: https://bugs.ruby-lang.org/issues/19026
 [Feature #16122]: https://bugs.ruby-lang.org/issues/16122
+[Feature #18630]: https://bugs.ruby-lang.org/issues/18630
+[Feature #18589]: https://bugs.ruby-lang.org/issues/18589

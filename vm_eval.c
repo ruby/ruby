@@ -11,6 +11,7 @@
 
 **********************************************************************/
 
+#include "internal/thread.h"
 struct local_var_list {
     VALUE tbl;
 };
@@ -47,7 +48,7 @@ rb_vm_call0(rb_execution_context_t *ec, VALUE recv, ID id, int argc, const VALUE
 {
     struct rb_calling_info calling = {
         .ci = &VM_CI_ON_STACK(id, kw_splat ? VM_CALL_KW_SPLAT : 0, argc, NULL),
-        .cc = &VM_CC_ON_STACK(Qfalse, vm_call_general, { 0 }, cme),
+        .cc = &VM_CC_ON_STACK(Qfalse, vm_call_general, {{ 0 }}, cme),
         .block_handler = vm_passed_block_handler(ec),
         .recv = recv,
         .argc = argc,
@@ -89,7 +90,7 @@ vm_call0_cc(rb_execution_context_t *ec, VALUE recv, ID id, int argc, const VALUE
 static VALUE
 vm_call0_cme(rb_execution_context_t *ec, struct rb_calling_info *calling, const VALUE *argv, const rb_callable_method_entry_t *cme)
 {
-    calling->cc = &VM_CC_ON_STACK(Qfalse, vm_call_general, { 0 }, cme);
+    calling->cc = &VM_CC_ON_STACK(Qfalse, vm_call_general, {{ 0 }}, cme);
     return vm_call0_body(ec, calling, argv);
 }
 
@@ -1672,7 +1673,9 @@ eval_make_iseq(VALUE src, VALUE fname, int line, const rb_binding_t *bind,
     rb_iseq_t *iseq = NULL;
     rb_ast_t *ast;
     int isolated_depth = 0;
-    int coverage_enabled = Qtrue;
+
+    // Conditionally enable coverage depending on the current mode:
+    VALUE coverage_enabled = RBOOL(rb_get_coverage_mode() & COVERAGE_TARGET_EVAL);
 
     {
         int depth = 1;

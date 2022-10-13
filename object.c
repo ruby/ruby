@@ -39,6 +39,7 @@
 #include "ruby/util.h"
 #include "ruby/assert.h"
 #include "builtin.h"
+#include "shape.h"
 
 /*!
  * \addtogroup object
@@ -134,12 +135,12 @@ rb_eql(VALUE obj1, VALUE obj2)
 {
     VALUE result;
 
-    if (obj1 == obj2) return Qtrue;
+    if (obj1 == obj2) return TRUE;
     result = rb_eql_opt(obj1, obj2);
     if (result == Qundef) {
         result = rb_funcall(obj1, id_eql, 1, obj2);
     }
-    return RBOOL(RTEST(result));
+    return RTEST(result);
 }
 
 /**
@@ -271,9 +272,33 @@ rb_obj_copy_ivar(VALUE dest, VALUE obj)
     VALUE *src_buf = ROBJECT_IVPTR(obj);
     uint32_t dest_len = ROBJECT_NUMIV(dest);
     uint32_t src_len = ROBJECT_NUMIV(obj);
-    uint32_t len = dest_len < src_len ? dest_len : src_len;
+    uint32_t max_len = dest_len < src_len ? src_len : dest_len;
 
-    MEMCPY(dest_buf, src_buf, VALUE, len);
+    rb_ensure_iv_list_size(dest, dest_len, max_len);
+
+    dest_len = ROBJECT_NUMIV(dest);
+    uint32_t min_len = dest_len > src_len ? src_len : dest_len;
+
+    if (RBASIC(obj)->flags & ROBJECT_EMBED) {
+        src_buf = ROBJECT(obj)->as.ary;
+
+        // embedded -> embedded
+        if (RBASIC(dest)->flags & ROBJECT_EMBED) {
+            dest_buf = ROBJECT(dest)->as.ary;
+        }
+        // embedded -> extended
+        else {
+            dest_buf = ROBJECT(dest)->as.heap.ivptr;
+        }
+    }
+    // extended -> extended
+    else {
+        RUBY_ASSERT(!(RBASIC(dest)->flags & ROBJECT_EMBED));
+        dest_buf = ROBJECT(dest)->as.heap.ivptr;
+        src_buf = ROBJECT(obj)->as.heap.ivptr;
+    }
+
+    MEMCPY(dest_buf, src_buf, VALUE, min_len);
 }
 
 static void
@@ -283,10 +308,23 @@ init_copy(VALUE dest, VALUE obj)
         rb_raise(rb_eTypeError, "[bug] frozen object (%s) allocated", rb_obj_classname(dest));
     }
     RBASIC(dest)->flags &= ~(T_MASK|FL_EXIVAR);
+    // Copies the shape id from obj to dest
     RBASIC(dest)->flags |= RBASIC(obj)->flags & (T_MASK|FL_EXIVAR);
     rb_copy_wb_protected_attribute(dest, obj);
     rb_copy_generic_ivar(dest, obj);
     rb_gc_copy_finalizer(dest, obj);
+
+    rb_shape_t *shape_to_set = rb_shape_get_shape(obj);
+
+    // If the object is frozen, the "dup"'d object will *not* be frozen,
+    // so we need to copy the frozen shape's parent to the new object.
+    if (rb_shape_frozen_shape_p(shape_to_set)) {
+        shape_to_set = rb_shape_get_shape_by_id(shape_to_set->parent_id);
+    }
+
+    // shape ids are different
+    rb_shape_set_shape(dest, shape_to_set);
+
     if (RB_TYPE_P(obj, T_OBJECT)) {
         rb_obj_copy_ivar(dest, obj);
     }
@@ -392,6 +430,9 @@ mutable_obj_clone(VALUE obj, VALUE kwfreeze)
       case Qnil:
         rb_funcall(clone, id_init_clone, 1, obj);
         RBASIC(clone)->flags |= RBASIC(obj)->flags & FL_FREEZE;
+        if (RB_OBJ_FROZEN(obj)) {
+            rb_shape_transition_shape_frozen(clone);
+        }
         break;
       case Qtrue:
         {
@@ -407,6 +448,7 @@ mutable_obj_clone(VALUE obj, VALUE kwfreeze)
         argv[1] = freeze_true_hash;
         rb_funcallv_kw(clone, id_init_clone, 2, argv, RB_PASS_KEYWORDS);
         RBASIC(clone)->flags |= FL_FREEZE;
+        rb_shape_transition_shape_frozen(clone);
         break;
         }
       case Qfalse:

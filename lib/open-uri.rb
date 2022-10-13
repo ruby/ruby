@@ -99,6 +99,8 @@ module OpenURI
     :open_timeout => true,
     :ssl_ca_cert => nil,
     :ssl_verify_mode => nil,
+    :ssl_min_version => nil,
+    :ssl_max_version => nil,
     :ftp_active_mode => false,
     :redirect => true,
     :encoding => nil,
@@ -298,6 +300,8 @@ module OpenURI
       require 'net/https'
       http.use_ssl = true
       http.verify_mode = options[:ssl_verify_mode] || OpenSSL::SSL::VERIFY_PEER
+      http.min_version = options[:ssl_min_version]
+      http.max_version = options[:ssl_max_version]
       store = OpenSSL::X509::Store.new
       if options[:ssl_ca_cert]
         Array(options[:ssl_ca_cert]).each do |cert|
@@ -353,7 +357,8 @@ module OpenURI
     when Net::HTTPMovedPermanently, # 301
          Net::HTTPFound, # 302
          Net::HTTPSeeOther, # 303
-         Net::HTTPTemporaryRedirect # 307
+         Net::HTTPTemporaryRedirect, # 307
+         Net::HTTPPermanentRedirect # 308
       begin
         loc_uri = URI.parse(resp['location'])
       rescue URI::InvalidURIError
@@ -409,6 +414,13 @@ module OpenURI
       @io
     end
   end
+
+  # :stopdoc:
+  RE_LWS = /[\r\n\t ]+/n
+  RE_TOKEN = %r{[^\x00- ()<>@,;:\\"/\[\]?={}\x7f]+}n
+  RE_QUOTED_STRING = %r{"(?:[\r\n\t !#-\[\]-~\x80-\xff]|\\[\x00-\x7f])*"}n
+  RE_PARAMETERS = %r{(?:;#{RE_LWS}?#{RE_TOKEN}#{RE_LWS}?=#{RE_LWS}?(?:#{RE_TOKEN}|#{RE_QUOTED_STRING})#{RE_LWS}?)*}n
+  # :startdoc:
 
   # Mixin for holding meta-information.
   module Meta
@@ -486,13 +498,6 @@ module OpenURI
         nil
       end
     end
-
-    # :stopdoc:
-    RE_LWS = /[\r\n\t ]+/n
-    RE_TOKEN = %r{[^\x00- ()<>@,;:\\"/\[\]?={}\x7f]+}n
-    RE_QUOTED_STRING = %r{"(?:[\r\n\t !#-\[\]-~\x80-\xff]|\\[\x00-\x7f])*"}n
-    RE_PARAMETERS = %r{(?:;#{RE_LWS}?#{RE_TOKEN}#{RE_LWS}?=#{RE_LWS}?(?:#{RE_TOKEN}|#{RE_QUOTED_STRING})#{RE_LWS}?)*}n
-    # :startdoc:
 
     def content_type_parse # :nodoc:
       vs = @metas['content-type']
@@ -697,6 +702,20 @@ module OpenURI
     #    :ssl_verify_mode=>mode
     #
     #  :ssl_verify_mode is used to specify openssl verify mode.
+    #
+    # [:ssl_min_version]
+    #  Synopsis:
+    #    :ssl_min_version=>:TLS1_2
+    #
+    #  :ssl_min_version option specifies the minimum allowed SSL/TLS protocol
+    #  version.  See also OpenSSL::SSL::SSLContext#min_version=.
+    #
+    # [:ssl_max_version]
+    #  Synopsis:
+    #    :ssl_max_version=>:TLS1_2
+    #
+    #  :ssl_max_version option specifies the maximum allowed SSL/TLS protocol
+    #  version.  See also OpenSSL::SSL::SSLContext#max_version=.
     #
     # [:ftp_active_mode]
     #  Synopsis:

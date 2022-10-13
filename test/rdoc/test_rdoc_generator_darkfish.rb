@@ -233,6 +233,29 @@ class TestRDocGeneratorDarkfish < RDoc::TestCase
     assert_includes method_name, '{ |%&lt;&lt;script&gt;alert(&quot;atui&quot;)&lt;/script&gt;&gt;, yield_arg| ... }'
   end
 
+  def test_generated_filename_with_html_tag
+    filename = '"><em>should be escaped'
+    begin # in @tmpdir
+      File.write(filename, '')
+    rescue SystemCallError
+      # ", <, > chars are prohibited as filename
+      return
+    else
+      File.unlink(filename)
+    end
+    @store.add_file filename
+    doc = @store.all_files.last
+    doc.parser = RDoc::Parser::Simple
+
+    @g.generate
+
+    Dir.glob("*.html", base: @tmpdir) do |html|
+      File.read(File.join(@tmpdir, html)).scan(/.*should be escaped.*/) do |line|
+        assert_not_include line, "<em>", html
+      end
+    end
+  end
+
   def test_template_stylesheets
     css = Tempfile.create(%W'hoge .css', Dir.mktmpdir('tmp', '.'))
     File.write(css, '')
@@ -246,6 +269,22 @@ class TestRDocGeneratorDarkfish < RDoc::TestCase
 
     assert_file base
     assert_include File.read('index.html'), %Q[href="./#{base}"]
+  end
+
+  def test_title
+    title = "RDoc Test".freeze
+    @options.title = title
+    @g.generate
+
+    assert_main_title(File.read('index.html'), title)
+  end
+
+  def test_title_escape
+    title = %[<script>alert("RDoc")</script>].freeze
+    @options.title = title
+    @g.generate
+
+    assert_main_title(File.read('index.html'), title)
   end
 
   ##
@@ -271,4 +310,9 @@ class TestRDocGeneratorDarkfish < RDoc::TestCase
                     "#{filename} is not hard-linked"
   end
 
+  def assert_main_title(content, title)
+    title = CGI.escapeHTML(title)
+    assert_equal(title, content[%r[<title>(.*?)<\/title>]im, 1])
+    assert_include(content[%r[<main\s[^<>]*+>\s*(.*?)</main>]im, 1], title)
+  end
 end

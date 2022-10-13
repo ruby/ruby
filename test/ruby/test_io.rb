@@ -1597,6 +1597,22 @@ class TestIO < Test::Unit::TestCase
     end
   end
 
+  def test_read_nonblock_file
+    make_tempfile do |path|
+      File.open(path, 'r') do |file|
+        file.read_nonblock(4)
+      end
+    end
+  end
+
+  def test_write_nonblock_file
+    make_tempfile do |path|
+      File.open(path, 'w') do |file|
+        file.write_nonblock("Ruby")
+      end
+    end
+  end
+
   def test_write_nonblock_simple_no_exceptions
     pipe(proc do |w|
       w.write_nonblock('1', exception: false)
@@ -3960,6 +3976,9 @@ __END__
       noex = Thread.new do # everything right and never see exceptions :)
         until sig_rd.wait_readable(0)
           IO.pipe do |r, w|
+            assert_nil r.timeout
+            assert_nil w.timeout
+
             th = Thread.new { r.read(1) }
             w.write(dot)
 
