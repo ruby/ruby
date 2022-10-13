@@ -1114,6 +1114,13 @@ s,@MJIT_SUPPORT@,$(MJIT_SUPPORT),;t t
 $(RBCONFIG): $(PREP)
 !endif
 
+revision.tmp::
+!if "$(HAVE_BASERUBY)" == "yes"
+	$(Q) $(NULLCMD) > $@
+!else
+	$(Q) $(BASERUBY) $(tooldir)/file2lastrev.rb -q --revision.h --srcdir="$(srcdir)" > $@
+!endif
+
 miniruby: miniruby$(EXEEXT)
 
 miniruby$(EXEEXT):
