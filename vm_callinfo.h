@@ -457,13 +457,13 @@ vm_cc_attr_index_set(const struct rb_callcache *cc, attr_index_t index, shape_id
     }
     VM_ASSERT(IMEMO_TYPE_P(cc, imemo_callcache));
     VM_ASSERT(cc != vm_cc_empty());
-    *attr_value = (index + 1) | ((uintptr_t)(dest_shape_id) << SHAPE_FLAG_SHIFT);
+    *attr_value = (attr_index_t)(index + 1) | ((uintptr_t)(dest_shape_id) << SHAPE_FLAG_SHIFT);
 }
 
 static inline void
 vm_ic_attr_index_set(const rb_iseq_t *iseq, const struct iseq_inline_iv_cache_entry *ic, attr_index_t index, shape_id_t dest_shape_id)
 {
-    *(uintptr_t *)&ic->value = ((uintptr_t)dest_shape_id << SHAPE_FLAG_SHIFT) | (index + 1);
+    *(uintptr_t *)&ic->value = ((uintptr_t)dest_shape_id << SHAPE_FLAG_SHIFT) | (attr_index_t)(index + 1);
 }
 
 static inline void
