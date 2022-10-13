@@ -36,6 +36,7 @@ class TestFiberScheduler < Test::Unit::TestCase
         assert fiber.blocking?
       end
     end
+    f.resume
   end
 
   def test_closed_at_thread_exit
