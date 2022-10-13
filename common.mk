@@ -1228,9 +1228,9 @@ $(BUILTIN_RB_INCS): $(top_srcdir)/tool/mk_builtin_loader.rb
 
 $(srcdir)/revision.h: $(REVISION_H)
 
-revision.$(HAVE_BASERUBY:no=tmp)::
+revision.$(HAVE_BASERUBY:no=tmp):
 	$(Q) $(NULLCMD) > $@
-revision.$(HAVE_BASERUBY:yes=tmp):: $(srcdir)/version.h $(tooldir)/file2lastrev.rb $(REVISION_FORCE)
+revision.$(HAVE_BASERUBY:yes=tmp): $(srcdir)/version.h $(tooldir)/file2lastrev.rb $(REVISION_FORCE)
 	$(Q) $(BASERUBY) $(tooldir)/file2lastrev.rb -q --revision.h --srcdir="$(srcdir)" > $@
 
 $(REVISION_H): revision.tmp
