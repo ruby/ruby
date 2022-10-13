@@ -220,7 +220,7 @@ impl From<usize> for Opnd {
 
 impl From<u64> for Opnd {
     fn from(value: u64) -> Self {
-        Opnd::UImm(value.try_into().unwrap())
+        Opnd::UImm(value)
     }
 }
 

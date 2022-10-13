@@ -300,7 +300,7 @@ impl CodeBlock {
 }
 
 /// Produce hex string output from the bytes in a code block
-impl<'a> fmt::LowerHex for CodeBlock {
+impl fmt::LowerHex for CodeBlock {
     fn fmt(&self, fmtr: &mut fmt::Formatter) -> fmt::Result {
         for pos in 0..self.write_pos {
             let byte = unsafe { self.mem_block.start_ptr().raw_ptr().add(pos).read() };
@@ -393,7 +393,7 @@ mod tests
         assert_eq!(uimm_num_bits(((u16::MAX as u32) + 1).into()), 32);
         assert_eq!(uimm_num_bits(u32::MAX.into()), 32);
 
-        assert_eq!(uimm_num_bits(((u32::MAX as u64) + 1)), 64);
+        assert_eq!(uimm_num_bits((u32::MAX as u64) + 1), 64);
         assert_eq!(uimm_num_bits(u64::MAX), 64);
     }
 }

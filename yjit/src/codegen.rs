@@ -189,13 +189,6 @@ fn jit_peek_at_block_handler(jit: &JITState, level: u32) -> VALUE {
     }
 }
 
-// Add a comment at the current position in the code block
-fn add_comment(cb: &mut CodeBlock, comment_str: &str) {
-    if cfg!(feature = "asm_comments") {
-        cb.add_comment(comment_str);
-    }
-}
-
 /// Increment a profiling counter with counter_name
 #[cfg(not(feature = "stats"))]
 macro_rules! gen_counter_incr {
@@ -6638,7 +6631,7 @@ mod tests {
 
     #[test]
     fn test_gen_check_ints() {
-        let (_, _ctx, mut asm, mut cb, mut ocb) = setup_codegen();
+        let (_, _ctx, mut asm, _cb, mut ocb) = setup_codegen();
         let side_exit = ocb.unwrap().get_write_ptr();
         gen_check_ints(&mut asm, side_exit);
     }
@@ -6656,7 +6649,7 @@ mod tests {
 
     #[test]
     fn test_gen_pop() {
-        let (mut jit, _, mut asm, mut cb, mut ocb) = setup_codegen();
+        let (mut jit, _, mut asm, _cb, mut ocb) = setup_codegen();
         let mut context = Context::new_with_stack_size(1);
         let status = gen_pop(&mut jit, &mut context, &mut asm, &mut ocb);
 
@@ -6706,7 +6699,7 @@ mod tests {
 
     #[test]
     fn test_gen_swap() {
-        let (mut jit, mut context, mut asm, mut cb, mut ocb) = setup_codegen();
+        let (mut jit, mut context, mut asm, _cb, mut ocb) = setup_codegen();
         context.stack_push(Type::Fixnum);
         context.stack_push(Type::Flonum);
 
@@ -6774,7 +6767,7 @@ mod tests {
 
     #[test]
     fn test_int2fix() {
-        let (mut jit, mut context, mut asm, mut cb, mut ocb) = setup_codegen();
+        let (mut jit, mut context, mut asm, _cb, mut ocb) = setup_codegen();
         jit.opcode = YARVINSN_putobject_INT2FIX_0_.as_usize();
         let status = gen_putobject_int2fix(&mut jit, &mut context, &mut asm, &mut ocb);
 
@@ -6863,7 +6856,7 @@ mod tests {
 
     #[test]
     fn test_gen_leave() {
-        let (mut jit, mut context, mut asm, mut cb, mut ocb) = setup_codegen();
+        let (mut jit, mut context, mut asm, _cb, mut ocb) = setup_codegen();
         // Push return value
         context.stack_push(Type::Fixnum);
         gen_leave(&mut jit, &mut context, &mut asm, &mut ocb);
