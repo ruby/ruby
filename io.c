@@ -5715,6 +5715,9 @@ rb_io_closed(VALUE io)
     VALUE write_io;
     rb_io_t *write_fptr;
 
+    // If someone has called `rb_io_fptr_finalize`, then the fptr is already NULL.
+    if (RFILE(io)->fptr == NULL) return Qtrue;
+
     write_io = GetWriteIO(io);
     if (io != write_io) {
         write_fptr = RFILE(write_io)->fptr;
