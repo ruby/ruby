@@ -71,7 +71,7 @@ impl Assembler
     // A special scratch register for intermediate processing.
     // This register is caller-saved (so we don't have to save it before using it)
     const SCRATCH0: A64Opnd = A64Opnd::Reg(X16_REG);
-    const SCRATCH1: A64Opnd = A64Opnd::Reg(X17_REG);    
+    const SCRATCH1: A64Opnd = A64Opnd::Reg(X17_REG);
 
     /// Get the list of registers from which we will allocate on this platform
     /// These are caller-saved registers
@@ -281,6 +281,9 @@ impl Assembler
                 };
             }
 
+            // We are replacing instructions here so we know they are already
+            // being used. It is okay not to use their output here.
+            #[allow(unused_must_use)]
             match insn {
                 Insn::Add { left, right, .. } => {
                     match (left, right) {

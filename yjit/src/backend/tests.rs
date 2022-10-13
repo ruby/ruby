@@ -1,47 +1,14 @@
 #![cfg(test)]
-
 use crate::asm::{CodeBlock};
-use crate::virtualmem::{CodePtr};
 use crate::backend::ir::*;
 use crate::cruby::*;
-use crate::core::*;
 use crate::utils::c_callable;
-use InsnOpnd::*;
-
-// Test that this function type checks
-fn gen_dup(
-    ctx: &mut Context,
-    asm: &mut Assembler,
-) {
-    let dup_val = ctx.stack_pop(0);
-    let (mapping, tmp_type) = ctx.get_opnd_mapping(StackOpnd(0));
-
-    let loc0 = ctx.stack_push_mapping((mapping, tmp_type));
-    asm.mov(loc0, dup_val);
-}
-
-fn guard_object_is_heap(
-    asm: &mut Assembler,
-    object_opnd: Opnd,
-    ctx: &mut Context,
-    side_exit: CodePtr,
-) {
-    asm.comment("guard object is heap");
-
-    // Test that the object is not an immediate
-    asm.test(object_opnd, Opnd::UImm(RUBY_IMMEDIATE_MASK as u64));
-    asm.jnz(Target::CodePtr(side_exit));
-
-    // Test that the object is not false or nil
-    asm.cmp(object_opnd, Opnd::UImm(Qnil.into()));
-    asm.jbe(Target::CodePtr(side_exit));
-}
 
 #[test]
 fn test_add() {
     let mut asm = Assembler::new();
     let out = asm.add(SP, Opnd::UImm(1));
-    asm.add(out, Opnd::UImm(2));
+    let _ = asm.add(out, Opnd::UImm(2));
 }
 
 #[test]
@@ -52,21 +19,21 @@ fn test_alloc_regs() {
     let out1 = asm.add(EC, Opnd::UImm(1));
 
     // Pad some instructions in to make sure it can handle that.
-    asm.add(EC, Opnd::UImm(2));
+    let _ = asm.add(EC, Opnd::UImm(2));
 
     // Get the second output we're going to reuse.
     let out2 = asm.add(EC, Opnd::UImm(3));
 
     // Pad another instruction.
-    asm.add(EC, Opnd::UImm(4));
+    let _ =  asm.add(EC, Opnd::UImm(4));
 
     // Reuse both the previously captured outputs.
-    asm.add(out1, out2);
+    let _ = asm.add(out1, out2);
 
     // Now get a third output to make sure that the pool has registers to
     // allocate now that the previous ones have been returned.
     let out3 = asm.add(EC, Opnd::UImm(5));
-    asm.add(out3, Opnd::UImm(6));
+    let _ = asm.add(out3, Opnd::UImm(6));
 
     // Here we're going to allocate the registers.
     let result = asm.alloc_regs(Assembler::get_alloc_regs());
@@ -198,7 +165,7 @@ fn test_base_insn_out()
 fn test_c_call()
 {
     c_callable! {
-        fn dummy_c_fun(v0: usize, v1: usize) {}
+        fn dummy_c_fun(_v0: usize, _v1: usize) {}
     }
 
     let (mut asm, mut cb) = setup_asm();
@@ -305,11 +272,12 @@ fn test_bake_string() {
 
 #[test]
 fn test_draining_iterator() {
+
     let mut asm = Assembler::new();
 
-    asm.load(Opnd::None);
+    let _ = asm.load(Opnd::None);
     asm.store(Opnd::None, Opnd::None);
-    asm.add(Opnd::None, Opnd::None);
+    let _ = asm.add(Opnd::None, Opnd::None);
 
     let mut iter = asm.into_draining_iter();
 
@@ -327,11 +295,11 @@ fn test_draining_iterator() {
 fn test_lookback_iterator() {
     let mut asm = Assembler::new();
 
-    asm.load(Opnd::None);
+    let _ = asm.load(Opnd::None);
     asm.store(Opnd::None, Opnd::None);
     asm.store(Opnd::None, Opnd::None);
 
-    let mut iter = asm.into_lookback_iter();
+    let iter = asm.into_lookback_iter();
 
     while let Some((index, insn)) = iter.next_unmapped() {
         if index > 0 {

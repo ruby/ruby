@@ -122,12 +122,20 @@ yjit_print_iseq(const rb_iseq_t *iseq)
 
 #[cfg(target_arch = "aarch64")]
 macro_rules! c_callable {
-    (fn $f:ident $args:tt $(-> $ret:ty)? $body:block) => { extern "C" fn $f $args $(-> $ret)? $body };
+    ($(#[$outer:meta])*
+    fn $f:ident $args:tt $(-> $ret:ty)? $body:block) => {
+        $(#[$outer])*
+        extern "C" fn $f $args $(-> $ret)? $body
+    };
 }
 
 #[cfg(target_arch = "x86_64")]
 macro_rules! c_callable {
-    (fn $f:ident $args:tt $(-> $ret:ty)? $body:block) => { extern "sysv64" fn $f $args $(-> $ret)? $body };
+    ($(#[$outer:meta])*
+    fn $f:ident $args:tt $(-> $ret:ty)? $body:block) => {
+        $(#[$outer])*
+        extern "sysv64" fn $f $args $(-> $ret)? $body
+    };
 }
 pub(crate) use c_callable;
 

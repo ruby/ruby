@@ -585,10 +585,8 @@ pub extern "C" fn rb_yjit_iseq_mark(payload: *mut c_void) {
             // Mark outgoing branch entries
             for branch in &block.outgoing {
                 let branch = branch.borrow();
-                for target in &branch.targets {
-                    if let Some(target) = target {
-                        unsafe { rb_gc_mark_movable(target.iseq.into()) };
-                    }
+                for target in branch.targets.iter().flatten() {
+                    unsafe { rb_gc_mark_movable(target.iseq.into()) };
                 }
             }
 
@@ -643,10 +641,8 @@ pub extern "C" fn rb_yjit_iseq_update_references(payload: *mut c_void) {
             // Update outgoing branch entries
             for branch in &block.outgoing {
                 let mut branch = branch.borrow_mut();
-                for target in &mut branch.targets {
-                    if let Some(target) = target {
-                        target.iseq = unsafe { rb_gc_location(target.iseq.into()) }.as_iseq();
-                    }
+                for target in branch.targets.iter_mut().flatten() {
+                    target.iseq = unsafe { rb_gc_location(target.iseq.into()) }.as_iseq();
                 }
             }
 
@@ -1605,9 +1601,10 @@ fn make_branch_entry(block: &BlockRef, src_ctx: &Context, gen_fn: BranchGenFn) -
     return branchref;
 }
 
-/// Generated code calls this function with the SysV calling convention.
-/// See [get_branch_target].
+
 c_callable! {
+    /// Generated code calls this function with the SysV calling convention.
+    /// See [get_branch_target].
     fn branch_stub_hit(
         branch_ptr: *const c_void,
         target_idx: u32,
@@ -2018,14 +2015,12 @@ fn free_block(blockref: &BlockRef) {
         let out_branch = out_branchref.borrow();
 
         // For each successor block
-        for succ in &out_branch.blocks {
-            if let Some(succ) = succ {
-                // Remove outgoing branch from the successor's incoming list
-                let mut succ_block = succ.borrow_mut();
-                succ_block
-                    .incoming
-                    .retain(|succ_incoming| !Rc::ptr_eq(succ_incoming, out_branchref));
-            }
+        for succ in out_branch.blocks.iter().flatten() {
+            // Remove outgoing branch from the successor's incoming list
+            let mut succ_block = succ.borrow_mut();
+            succ_block
+                .incoming
+                .retain(|succ_incoming| !Rc::ptr_eq(succ_incoming, out_branchref));
         }
     }
 

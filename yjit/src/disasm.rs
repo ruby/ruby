@@ -70,11 +70,8 @@ pub fn disasm_iseq_insn_range(iseq: IseqPtr, start_idx: u32, end_idx: u32) -> St
         total_code_size += blockref.borrow().code_size();
     }
 
-    out.push_str(&format!("NUM BLOCK VERSIONS: {}\n", block_list.len()));
-    out.push_str(&format!(
-        "TOTAL INLINE CODE SIZE: {} bytes\n",
-        total_code_size
-    ));
+    writeln!(out, "NUM BLOCK VERSIONS: {}", block_list.len()).unwrap();
+    writeln!(out,  "TOTAL INLINE CODE SIZE: {} bytes", total_code_size).unwrap();
 
     // For each block, sorted by increasing start address
     for block_idx in 0..block_list.len() {
@@ -95,7 +92,7 @@ pub fn disasm_iseq_insn_range(iseq: IseqPtr, start_idx: u32, end_idx: u32) -> St
                 end_idx,
                 code_size
             );
-            out.push_str(&format!("== {:=<60}\n", block_ident));
+            writeln!(out, "== {:=<60}", block_ident).unwrap();
 
             // Disassemble the instructions
             out.push_str(&disasm_addr_range(global_cb, start_addr, code_size));
@@ -109,7 +106,7 @@ pub fn disasm_iseq_insn_range(iseq: IseqPtr, start_idx: u32, end_idx: u32) -> St
 
                 // Log the size of the gap between the blocks if nonzero
                 if gap_size > 0 {
-                    out.push_str(&format!("... {} byte gap ...\n", gap_size));
+                    writeln!(out, "... {} byte gap ...", gap_size).unwrap();
                 }
             }
         }
@@ -141,7 +138,7 @@ pub fn disasm_addr_range(cb: &CodeBlock, start_addr: *const u8, code_size: usize
         .detail(true)
         .build()
         .unwrap();
-    cs.set_skipdata(true);
+    cs.set_skipdata(true).unwrap();
 
     // Disassemble the instructions
     let code_slice = unsafe { std::slice::from_raw_parts(start_addr, code_size) };
