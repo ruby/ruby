@@ -18,7 +18,7 @@ skip_commits:
     - '**/*.rdoc'
 environment:
   ruby_version: "24-%Platform%"
-  zlib_version: "1.2.12"
+  zlib_version: "1.2.13"
   matrix:
     - build: vs
       vs: 120
