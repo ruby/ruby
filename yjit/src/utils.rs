@@ -131,7 +131,11 @@ macro_rules! c_callable {
 
 #[cfg(target_arch = "x86_64")]
 macro_rules! c_callable {
-    (fn $f:ident $args:tt $(-> $ret:ty)? $body:block) => { extern "sysv64" fn $f $args $(-> $ret)? $body };
+    ($(#[$outer:meta])*
+    fn $f:ident $args:tt $(-> $ret:ty)? $body:block) => {
+        $(#[$outer])*
+        extern "sysv64" fn $f $args $(-> $ret)? $body
+    };
 }
 pub(crate) use c_callable;
 
