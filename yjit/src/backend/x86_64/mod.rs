@@ -152,6 +152,9 @@ impl Assembler
                 }
             }
 
+            // We are replacing instructions here so we know they are already
+            // being used. It is okay not to use their output here.
+            #[allow(unused_must_use)]
             match &mut insn {
                 Insn::Add { left, right, out } |
                 Insn::Sub { left, right, out } |
@@ -660,6 +663,7 @@ impl Assembler
                 // we feed to the backend could get lowered into other
                 // instructions. So it's possible that some of our backend
                 // instructions can never make it to the emit stage.
+                #[allow(unreachable_patterns)]
                 _ => panic!("unsupported instruction passed to x86 backend: {:?}", insn)
             };
         }
@@ -700,7 +704,7 @@ mod tests {
     fn test_emit_add_lt_32_bits() {
         let (mut asm, mut cb) = setup_asm();
 
-        asm.add(Opnd::Reg(RAX_REG), Opnd::UImm(0xFF));
+        let _ = asm.add(Opnd::Reg(RAX_REG), Opnd::UImm(0xFF));
         asm.compile_with_num_regs(&mut cb, 1);
 
         assert_eq!(format!("{:x}", cb), "4889c04881c0ff000000");
@@ -710,7 +714,7 @@ mod tests {
     fn test_emit_add_gt_32_bits() {
         let (mut asm, mut cb) = setup_asm();
 
-        asm.add(Opnd::Reg(RAX_REG), Opnd::UImm(0xFFFF_FFFF_FFFF));
+        let _ = asm.add(Opnd::Reg(RAX_REG), Opnd::UImm(0xFFFF_FFFF_FFFF));
         asm.compile_with_num_regs(&mut cb, 1);
 
         assert_eq!(format!("{:x}", cb), "4889c049bbffffffffffff00004c01d8");
@@ -720,7 +724,7 @@ mod tests {
     fn test_emit_and_lt_32_bits() {
         let (mut asm, mut cb) = setup_asm();
 
-        asm.and(Opnd::Reg(RAX_REG), Opnd::UImm(0xFF));
+        let _ = asm.and(Opnd::Reg(RAX_REG), Opnd::UImm(0xFF));
         asm.compile_with_num_regs(&mut cb, 1);
 
         assert_eq!(format!("{:x}", cb), "4889c04881e0ff000000");
@@ -730,7 +734,7 @@ mod tests {
     fn test_emit_and_gt_32_bits() {
         let (mut asm, mut cb) = setup_asm();
 
-        asm.and(Opnd::Reg(RAX_REG), Opnd::UImm(0xFFFF_FFFF_FFFF));
+        let _ = asm.and(Opnd::Reg(RAX_REG), Opnd::UImm(0xFFFF_FFFF_FFFF));
         asm.compile_with_num_regs(&mut cb, 1);
 
         assert_eq!(format!("{:x}", cb), "4889c049bbffffffffffff00004c21d8");
@@ -760,7 +764,7 @@ mod tests {
     fn test_emit_or_lt_32_bits() {
         let (mut asm, mut cb) = setup_asm();
 
-        asm.or(Opnd::Reg(RAX_REG), Opnd::UImm(0xFF));
+        let _ = asm.or(Opnd::Reg(RAX_REG), Opnd::UImm(0xFF));
         asm.compile_with_num_regs(&mut cb, 1);
 
         assert_eq!(format!("{:x}", cb), "4889c04881c8ff000000");
@@ -770,7 +774,7 @@ mod tests {
     fn test_emit_or_gt_32_bits() {
         let (mut asm, mut cb) = setup_asm();
 
-        asm.or(Opnd::Reg(RAX_REG), Opnd::UImm(0xFFFF_FFFF_FFFF));
+        let _ = asm.or(Opnd::Reg(RAX_REG), Opnd::UImm(0xFFFF_FFFF_FFFF));
         asm.compile_with_num_regs(&mut cb, 1);
 
         assert_eq!(format!("{:x}", cb), "4889c049bbffffffffffff00004c09d8");
@@ -780,7 +784,7 @@ mod tests {
     fn test_emit_sub_lt_32_bits() {
         let (mut asm, mut cb) = setup_asm();
 
-        asm.sub(Opnd::Reg(RAX_REG), Opnd::UImm(0xFF));
+        let _ = asm.sub(Opnd::Reg(RAX_REG), Opnd::UImm(0xFF));
         asm.compile_with_num_regs(&mut cb, 1);
 
         assert_eq!(format!("{:x}", cb), "4889c04881e8ff000000");
@@ -790,7 +794,7 @@ mod tests {
     fn test_emit_sub_gt_32_bits() {
         let (mut asm, mut cb) = setup_asm();
 
-        asm.sub(Opnd::Reg(RAX_REG), Opnd::UImm(0xFFFF_FFFF_FFFF));
+        let _ = asm.sub(Opnd::Reg(RAX_REG), Opnd::UImm(0xFFFF_FFFF_FFFF));
         asm.compile_with_num_regs(&mut cb, 1);
 
         assert_eq!(format!("{:x}", cb), "4889c049bbffffffffffff00004c29d8");
@@ -820,7 +824,7 @@ mod tests {
     fn test_emit_xor_lt_32_bits() {
         let (mut asm, mut cb) = setup_asm();
 
-        asm.xor(Opnd::Reg(RAX_REG), Opnd::UImm(0xFF));
+        let _ = asm.xor(Opnd::Reg(RAX_REG), Opnd::UImm(0xFF));
         asm.compile_with_num_regs(&mut cb, 1);
 
         assert_eq!(format!("{:x}", cb), "4889c04881f0ff000000");
@@ -830,7 +834,7 @@ mod tests {
     fn test_emit_xor_gt_32_bits() {
         let (mut asm, mut cb) = setup_asm();
 
-        asm.xor(Opnd::Reg(RAX_REG), Opnd::UImm(0xFFFF_FFFF_FFFF));
+        let _ = asm.xor(Opnd::Reg(RAX_REG), Opnd::UImm(0xFFFF_FFFF_FFFF));
         asm.compile_with_num_regs(&mut cb, 1);
 
         assert_eq!(format!("{:x}", cb), "4889c049bbffffffffffff00004c31d8");

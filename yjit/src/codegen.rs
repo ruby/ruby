@@ -1923,7 +1923,7 @@ fn gen_set_ivar(
     jit: &mut JITState,
     ctx: &mut Context,
     asm: &mut Assembler,
-    recv: VALUE,
+    _recv: VALUE,
     ivar_name: ID,
     flags: u32,
     argc: i32,
@@ -1947,7 +1947,7 @@ fn gen_set_ivar(
         rb_vm_set_ivar_id as *const u8,
         vec![
             recv_opnd,
-            Opnd::UImm(ivar_name.into()),
+            Opnd::UImm(ivar_name),
             val_opnd,
         ],
     );
@@ -2077,41 +2077,46 @@ fn gen_get_ivar(
         side_exit,
     );
 
-    // If there is no IVAR index, then the ivar was undefined
-    // when we entered the compiler.  That means we can just return
-    // nil for this shape + iv name
-    if ivar_index.is_none() {
-        let out_opnd = ctx.stack_push(Type::Nil);
-        asm.mov(out_opnd, Qnil.into());
-    } else if embed_test_result {
-        // See ROBJECT_IVPTR() from include/ruby/internal/core/robject.h
-
-        // Load the variable
-        let offs = ROBJECT_OFFSET_AS_ARY + (ivar_index.unwrap() * SIZEOF_VALUE) as i32;
-        let ivar_opnd = Opnd::mem(64, recv, offs);
-
-        // Push the ivar on the stack
-        let out_opnd = ctx.stack_push(Type::Unknown);
-        asm.mov(out_opnd, ivar_opnd);
-    } else {
-        // Compile time value is *not* embedded.
-
-        if USE_RVARGC == 0 {
-            // Check that the extended table is big enough
-            // Check that the slot is inside the extended table (num_slots > index)
-            let num_slots = Opnd::mem(32, recv, ROBJECT_OFFSET_NUMIV);
-            asm.cmp(num_slots, Opnd::UImm(ivar_index.unwrap() as u64));
-            asm.jbe(counted_exit!(ocb, side_exit, getivar_idx_out_of_range).into());
+    match ivar_index {
+        // If there is no IVAR index, then the ivar was undefined
+        // when we entered the compiler.  That means we can just return
+        // nil for this shape + iv name
+        None => {
+            let out_opnd = ctx.stack_push(Type::Nil);
+            asm.mov(out_opnd, Qnil.into());
         }
+        Some(ivar_index) => {
+            if embed_test_result {
+                // See ROBJECT_IVPTR() from include/ruby/internal/core/robject.h
 
-        // Get a pointer to the extended table
-        let tbl_opnd = asm.load(Opnd::mem(64, recv, ROBJECT_OFFSET_AS_HEAP_IVPTR));
+                // Load the variable
+                let offs = ROBJECT_OFFSET_AS_ARY + (ivar_index * SIZEOF_VALUE) as i32;
+                let ivar_opnd = Opnd::mem(64, recv, offs);
 
-        // Read the ivar from the extended table
-        let ivar_opnd = Opnd::mem(64, tbl_opnd, (SIZEOF_VALUE * ivar_index.unwrap()) as i32);
+                // Push the ivar on the stack
+                let out_opnd = ctx.stack_push(Type::Unknown);
+                asm.mov(out_opnd, ivar_opnd);
+            } else {
+                // Compile time value is *not* embedded.
 
-        let out_opnd = ctx.stack_push(Type::Unknown);
-        asm.mov(out_opnd, ivar_opnd);
+                if USE_RVARGC == 0 {
+                    // Check that the extended table is big enough
+                    // Check that the slot is inside the extended table (num_slots > index)
+                    let num_slots = Opnd::mem(32, recv, ROBJECT_OFFSET_NUMIV);
+                    asm.cmp(num_slots, Opnd::UImm(ivar_index as u64));
+                    asm.jbe(counted_exit!(ocb, side_exit, getivar_idx_out_of_range).into());
+                }
+
+                // Get a pointer to the extended table
+                let tbl_opnd = asm.load(Opnd::mem(64, recv, ROBJECT_OFFSET_AS_HEAP_IVPTR));
+
+                // Read the ivar from the extended table
+                let ivar_opnd = Opnd::mem(64, tbl_opnd, (SIZEOF_VALUE * ivar_index) as i32);
+
+                let out_opnd = ctx.stack_push(Type::Unknown);
+                asm.mov(out_opnd, ivar_opnd);
+            }
+        }
     }
 
     // Jump to next instruction. This allows guard chains to share the same successor.
