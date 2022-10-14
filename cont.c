@@ -34,7 +34,9 @@ extern int madvise(caddr_t, size_t, int);
 #include "internal/warnings.h"
 #include "ruby/fiber/scheduler.h"
 #include "mjit.h"
+#include "yjit.h"
 #include "vm_core.h"
+#include "vm_sync.h"
 #include "id_table.h"
 #include "ractor_core.h"
 
@@ -66,6 +68,8 @@ static VALUE rb_cFiberPool;
 #ifdef RB_EXPERIMENTAL_FIBER_POOL
 #define FIBER_POOL_ALLOCATION_FREE
 #endif
+
+#define jit_cont_enabled mjit_enabled // To be used by YJIT later
 
 enum context_type {
     CONTINUATION_CONTEXT = 0,
@@ -195,6 +199,15 @@ struct fiber_pool {
     size_t vm_stack_size;
 };
 
+// Continuation contexts used by JITs
+struct rb_jit_cont {
+    rb_execution_context_t *ec; // continuation ec
+    struct rb_jit_cont *prev, *next; // used to form lists
+};
+
+// Doubly linked list for enumerating all on-stack ISEQs.
+static struct rb_jit_cont *first_jit_cont;
+
 typedef struct rb_context_struct {
     enum context_type type;
     int argc;
@@ -212,8 +225,7 @@ typedef struct rb_context_struct {
     rb_execution_context_t saved_ec;
     rb_jmpbuf_t jmpbuf;
     rb_ensure_entry_t *ensure_array;
-    /* Pointer to MJIT info about the continuation.  */
-    struct mjit_cont *mjit_cont;
+    struct rb_jit_cont *jit_cont; // Continuation contexts for JITs
 } rb_context_t;
 
 
@@ -1000,6 +1012,8 @@ fiber_is_root_p(const rb_fiber_t *fiber)
 }
 #endif
 
+static void jit_cont_free(struct rb_jit_cont *cont);
+
 static void
 cont_free(void *ptr)
 {
@@ -1020,9 +1034,9 @@ cont_free(void *ptr)
 
     RUBY_FREE_UNLESS_NULL(cont->saved_vm_stack.ptr);
 
-    if (mjit_enabled) {
-        VM_ASSERT(cont->mjit_cont != NULL);
-        mjit_cont_free(cont->mjit_cont);
+    if (jit_cont_enabled) {
+        VM_ASSERT(cont->jit_cont != NULL);
+        jit_cont_free(cont->jit_cont);
     }
     /* free rb_cont_t or rb_fiber_t */
     ruby_xfree(ptr);
@@ -1187,12 +1201,98 @@ cont_save_thread(rb_context_t *cont, rb_thread_t *th)
     sec->machine.stack_end = NULL;
 }
 
-static void
-cont_init_mjit_cont(rb_context_t *cont)
+// Register a new continuation with execution context `ec`. Return JIT info about
+// the continuation.
+static struct rb_jit_cont *
+jit_cont_new(rb_execution_context_t *ec)
 {
-    VM_ASSERT(cont->mjit_cont == NULL);
-    if (mjit_enabled) {
-        cont->mjit_cont = mjit_cont_new(&(cont->saved_ec));
+    struct rb_jit_cont *cont;
+
+    // We need to use calloc instead of something like ZALLOC to avoid triggering GC here.
+    // When this function is called from rb_thread_alloc through rb_threadptr_root_fiber_setup,
+    // the thread is still being prepared and marking it causes SEGV.
+    cont = calloc(1, sizeof(struct rb_jit_cont));
+    if (cont == NULL)
+        rb_memerror();
+    cont->ec = ec;
+
+    RB_VM_LOCK_ENTER();
+    if (first_jit_cont == NULL) {
+        cont->next = cont->prev = NULL;
+    }
+    else {
+        cont->prev = NULL;
+        cont->next = first_jit_cont;
+        first_jit_cont->prev = cont;
+    }
+    first_jit_cont = cont;
+    RB_VM_LOCK_LEAVE();
+
+    return cont;
+}
+
+// Unregister continuation `cont`.
+static void
+jit_cont_free(struct rb_jit_cont *cont)
+{
+    RB_VM_LOCK_ENTER();
+    if (cont == first_jit_cont) {
+        first_jit_cont = cont->next;
+        if (first_jit_cont != NULL)
+            first_jit_cont->prev = NULL;
+    }
+    else {
+        cont->prev->next = cont->next;
+        if (cont->next != NULL)
+            cont->next->prev = cont->prev;
+    }
+    RB_VM_LOCK_LEAVE();
+
+    free(cont);
+}
+
+// Call a given callback against all on-stack ISEQs.
+void
+rb_jit_cont_each_iseq(rb_iseq_callback callback)
+{
+    struct rb_jit_cont *cont;
+    for (cont = first_jit_cont; cont != NULL; cont = cont->next) {
+        if (cont->ec->vm_stack == NULL)
+            continue;
+
+        const rb_control_frame_t *cfp;
+        for (cfp = RUBY_VM_END_CONTROL_FRAME(cont->ec) - 1; ; cfp = RUBY_VM_NEXT_CONTROL_FRAME(cfp)) {
+            const rb_iseq_t *iseq;
+            if (cfp->pc && (iseq = cfp->iseq) != NULL && imemo_type((VALUE)iseq) == imemo_iseq) {
+                callback(iseq);
+            }
+
+            if (cfp == cont->ec->cfp)
+                break; // reached the most recent cfp
+        }
+    }
+}
+
+// Finish working with continuation info.
+void
+rb_jit_cont_finish(void)
+{
+    if (!jit_cont_enabled)
+        return;
+
+    struct rb_jit_cont *cont, *next;
+    for (cont = first_jit_cont; cont != NULL; cont = next) {
+        next = cont->next;
+        xfree(cont);
+    }
+}
+
+static void
+cont_init_jit_cont(rb_context_t *cont)
+{
+    VM_ASSERT(cont->jit_cont == NULL);
+    if (jit_cont_enabled) {
+        cont->jit_cont = jit_cont_new(&(cont->saved_ec));
     }
 }
 
@@ -1211,7 +1311,7 @@ cont_init(rb_context_t *cont, rb_thread_t *th)
     cont->saved_ec.local_storage = NULL;
     cont->saved_ec.local_storage_recursive_hash = Qnil;
     cont->saved_ec.local_storage_recursive_hash_for_trace = Qnil;
-    cont_init_mjit_cont(cont);
+    cont_init_jit_cont(cont);
 }
 
 static rb_context_t *
@@ -1242,9 +1342,9 @@ rb_fiberptr_blocking(struct rb_fiber_struct *fiber)
 
 // This is used for root_fiber because other fibers call cont_init_mjit_cont through cont_new.
 void
-rb_fiber_init_mjit_cont(struct rb_fiber_struct *fiber)
+rb_fiber_init_jit_cont(struct rb_fiber_struct *fiber)
 {
-    cont_init_mjit_cont(&fiber->cont);
+    cont_init_jit_cont(&fiber->cont);
 }
 
 #if 0
@@ -2187,9 +2287,10 @@ rb_threadptr_root_fiber_setup(rb_thread_t *th)
     fiber->blocking = 1;
     fiber_status_set(fiber, FIBER_RESUMED); /* skip CREATED */
     th->ec = &fiber->cont.saved_ec;
-    // This skips mjit_cont_new for the initial thread because mjit_enabled is always false
-    // at this point. mjit_init calls rb_fiber_init_mjit_cont again for this root_fiber.
-    rb_fiber_init_mjit_cont(fiber);
+    // This skips jit_cont_new for the initial thread because rb_yjit_enabled_p() and
+    // mjit_enabled are false at this point. ruby_opt_init will call rb_fiber_init_jit_cont
+    // again for this root_fiber.
+    rb_fiber_init_jit_cont(fiber);
 }
 
 void

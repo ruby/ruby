@@ -44,6 +44,7 @@
 #include "eval_intern.h"
 #include "internal.h"
 #include "internal/cmdlineopt.h"
+#include "internal/cont.h"
 #include "internal/error.h"
 #include "internal/file.h"
 #include "internal/inits.h"
@@ -1618,6 +1619,12 @@ ruby_opt_init(ruby_cmdline_options_t *opt)
     rb_call_builtin_inits();
     ruby_init_prelude();
 
+    // Make sure the saved_ec of the initial thread's root_fiber is scanned by rb_jit_cont_each_ec.
+    //
+    // rb_threadptr_root_fiber_setup for the initial thread is called before rb_yjit_enabled_p()
+    // or mjit_enabled becomes true, meaning jit_cont_new is skipped for the root_fiber.
+    // Therefore we need to call this again here to set the root_fiber's jit_cont.
+    rb_fiber_init_jit_cont(GET_EC()->fiber_ptr);
 #if USE_MJIT
     // mjit_init is safe only after rb_call_builtin_inits defines RubyVM::MJIT::Compiler
     if (opt->mjit.on)

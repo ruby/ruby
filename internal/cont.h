@@ -9,6 +9,7 @@
  * @brief      Internal header for Fiber.
  */
 #include "ruby/ruby.h"          /* for VALUE */
+#include "iseq.h"
 
 struct rb_thread_struct;        /* in vm_core.h */
 struct rb_fiber_struct;         /* in cont.c */
@@ -17,7 +18,9 @@ struct rb_execution_context_struct; /* in vm_core.c */
 /* cont.c */
 void rb_fiber_reset_root_local_storage(struct rb_thread_struct *);
 void ruby_register_rollback_func_for_ensure(VALUE (*ensure_func)(VALUE), VALUE (*rollback_func)(VALUE));
-void rb_fiber_init_mjit_cont(struct rb_fiber_struct *fiber);
+void rb_fiber_init_jit_cont(struct rb_fiber_struct *fiber);
+void rb_jit_cont_each_iseq(rb_iseq_callback callback);
+void rb_jit_cont_finish(void);
 
 VALUE rb_fiberptr_self(struct rb_fiber_struct *fiber);
 unsigned int rb_fiberptr_blocking(struct rb_fiber_struct *fiber);
