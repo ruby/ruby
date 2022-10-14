@@ -354,7 +354,7 @@ AS_CASE(["$target_os"],
 [darwin*], [
     AC_MSG_CHECKING(if minimum required OS X version is supported)
     AC_PREPROC_IFELSE([AC_LANG_SOURCE([[@%:@include <AvailabilityMacros.h>
-	@%:@if MAC_OS_X_VERSION_MIN_REQUIRED < __MAC_10_5
+	@%:@if MAC_OS_X_VERSION_MIN_REQUIRED < 1050
 	@%:@error pre OS X 10.5
 	[!<===== pre OS X 10.5 =====>]
 	@%:@endif
@@ -1902,8 +1902,8 @@ AS_CASE(["${target_cpu}-${target_os}:${target_archs}"],
 [universal-darwin*:*ppc*], [
   AC_LIBSOURCES(alloca.c)
   AC_SUBST([ALLOCA], [\${LIBOBJDIR}alloca.${ac_objext}])
-  RUBY_DEFINE_IF([defined __powerpc__], C_ALLOCA, 1)
-  RUBY_DEFINE_IF([defined __powerpc__], alloca, alloca)
+  RUBY_DEFINE_IF([defined __POWERPC__], C_ALLOCA, 1)
+  RUBY_DEFINE_IF([defined __POWERPC__], alloca, alloca)
   ],
 [
   AC_FUNC_ALLOCA
@@ -3828,11 +3828,11 @@ AS_CASE(["$target_os"],
 	    AC_LANG_BOOL_COMPILE_TRY([
 @%:@include <AvailabilityMacros.h>
 enum {
-    least = MAC_OS_X_VERSION_10_7, /* just fail if undefined */
+    least = 1070, /* just fail if undefined */
     required = MAC_OS_X_VERSION_MIN_REQUIRED,
     upper /* bigger than MIN_REQUIRED, or */
 @%:@ifdef MAC_OS_X_VERSION_10_10
-        = MAC_OS_X_VERSION_10_10
+        = 101000
 @%:@endif
 };],
 	    [required >= least && required < upper])],
