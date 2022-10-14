@@ -37,10 +37,7 @@ jobs:
     strategy:
       matrix:
         include:
-          - msystem: "MINGW64"
-            base_ruby: 2.6
-            test_task: "check"
-            test-all-opts: "--name=!/TestObjSpace#test_reachable_objects_during_iteration/"
+          # To mitigate flakiness of MinGW CI, we test only one runtime that newer MSYS2 uses.
           - msystem: "UCRT64"
             base_ruby: head
             test_task: "check"
