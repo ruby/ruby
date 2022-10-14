@@ -8407,6 +8407,7 @@ rb_io_init_copy(VALUE dest, VALUE io)
     fptr->encs = orig->encs;
     fptr->pid = orig->pid;
     fptr->lineno = orig->lineno;
+    fptr->timeout = orig->timeout;
     if (!NIL_P(orig->pathv)) fptr->pathv = orig->pathv;
     fptr_copy_finalizer(fptr, orig);
 
