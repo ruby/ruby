@@ -42,7 +42,7 @@ pub fn disasm_iseq_insn_range(iseq: IseqPtr, start_idx: u32, end_idx: u32) -> St
     let mut out = String::from("");
 
     // Get a list of block versions generated for this iseq
-    let mut block_list = get_iseq_block_list(iseq);
+    let mut block_list = get_or_create_iseq_block_list(iseq);
 
     // Get a list of codeblocks relevant to this iseq
     let global_cb = crate::codegen::CodegenGlobals::get_inline_cb();
@@ -206,7 +206,7 @@ fn insns_compiled(iseq: IseqPtr) -> Vec<(String, u32)> {
     let mut insn_vec = Vec::new();
 
     // Get a list of block versions generated for this iseq
-    let block_list = get_iseq_block_list(iseq);
+    let block_list = get_or_create_iseq_block_list(iseq);
 
     // For each block associated with this iseq
     for blockref in &block_list {

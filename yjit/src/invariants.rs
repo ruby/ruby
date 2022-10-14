@@ -535,7 +535,7 @@ pub extern "C" fn rb_yjit_tracing_invalidate_all() {
         unsafe { rb_yjit_for_each_iseq(Some(invalidate_all_blocks_for_tracing)) };
 
         extern "C" fn invalidate_all_blocks_for_tracing(iseq: IseqPtr) {
-            if let Some(payload) = unsafe { load_iseq_payload(iseq) } {
+            if let Some(payload) = unsafe { get_iseq_payload(iseq) } {
                 // C comment:
                 //   Leaking the blocks for now since we might have situations where
                 //   a different ractor is waiting for the VM lock in branch_stub_hit().
