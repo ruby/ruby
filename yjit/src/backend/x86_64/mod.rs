@@ -376,8 +376,8 @@ impl Assembler
 
         // For each instruction
         let start_write_pos = cb.get_write_pos();
-        let mut i: usize = 0;
-        while let Some(insn) = self.insns.get(i) {
+        let mut insns_idx: usize = 0;
+        while let Some(insn) = self.insns.get(insns_idx) {
             let src_ptr = cb.get_write_ptr();
             let had_dropped_bytes = cb.has_dropped_bytes();
             let old_label_state = cb.get_label_state();
@@ -677,7 +677,7 @@ impl Assembler
                 // Reset cb states before retrying the current Insn
                 cb.set_label_state(old_label_state);
             } else {
-                i += 1;
+                insns_idx += 1;
                 gc_offsets.append(&mut insn_gc_offsets);
             }
         }
