@@ -2573,10 +2573,10 @@ AS_CASE([$coroutine_type], [yes|''], [
         [arm64-darwin*], [
             coroutine_type=arm64
         ],
-        [powerpc-darwin*], [
+        [powerpc-darwin*|ppc-darwin*], [
             coroutine_type=ppc
         ],
-        [powerpc64-darwin*], [
+        [powerpc64-darwin*|ppc64-darwin*], [
             coroutine_type=ppc64
         ],
         [x*64-linux*], [
