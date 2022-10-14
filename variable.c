@@ -1449,7 +1449,7 @@ rb_init_iv_list(VALUE obj)
 // @note May raise when there are too many instance variables.
 // @note YJIT uses this function at compile time to simplify the work needed to
 //       access the variable at runtime.
-uint32_t
+static uint32_t
 rb_obj_ensure_iv_index_mapping(VALUE obj, ID id)
 {
     RUBY_ASSERT(RB_TYPE_P(obj, T_OBJECT));

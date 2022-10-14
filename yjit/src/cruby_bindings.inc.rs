@@ -1016,9 +1016,6 @@ extern "C" {
     pub fn rb_hash_resurrect(hash: VALUE) -> VALUE;
 }
 extern "C" {
-    pub fn rb_obj_ensure_iv_index_mapping(obj: VALUE, id: ID) -> u32;
-}
-extern "C" {
     pub fn rb_gvar_get(arg1: ID) -> VALUE;
 }
 extern "C" {
