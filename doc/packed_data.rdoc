@@ -320,7 +320,7 @@ for one byte in the input or output string.
 
 ==== Binary \String Directives
 
-- <tt>'A'</tt> - Arbitrary binary string (space padded; count is width)
+- <tt>'A'</tt> - Arbitrary binary string (space padded; count is width);
   +nil+ is treated as the empty string:
 
     ['foo'].pack('A')    # => "f"
