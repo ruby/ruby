@@ -884,6 +884,7 @@ pub fn gen_single_block(
 
     // If code for the block doesn't fit, fail
     if cb.has_dropped_bytes() || ocb.unwrap().has_dropped_bytes() {
+        free_block(&blockref);
         return Err(());
     }
 

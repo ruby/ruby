@@ -1420,11 +1420,9 @@ fn gen_block_series_body(
         if result.is_err() {
             // Remove previously compiled block
             // versions from the version map
+            mem::drop(last_branch); // end borrow
             for blockref in &batch {
-                // FIXME: should be deallocating resources here too
-                // e.g. invariants, etc.
-                //free_block(blockref)
-
+                free_block(blockref);
                 remove_block_version(blockref);
             }
 
@@ -1991,7 +1989,7 @@ pub fn defer_compilation(
 }
 
 // Remove all references to a block then free it.
-fn free_block(blockref: &BlockRef) {
+pub fn free_block(blockref: &BlockRef) {
     use crate::invariants::*;
 
     block_assumptions_free(blockref);
