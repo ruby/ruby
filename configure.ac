@@ -3070,7 +3070,7 @@ AS_IF([test "$rb_cv_dlopen" = yes], [
 	  "-undefined dynamic_lookup" \
 	  ; do
             test "x${linker_flag}" = x || flag="${linker_flag}`echo ${flag} | tr ' ' ,`"
-            RUBY_TRY_LDFLAGS([$flag], [], [$flag=])
+            RUBY_TRY_LDFLAGS([$flag], [], [flag=])
             AS_IF([test x"$flag" = x], [continue])
 
             AC_MSG_CHECKING([whether $flag is accepted for bundle])
