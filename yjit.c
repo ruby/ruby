@@ -74,6 +74,11 @@ rb_yjit_mark_writable(void *mem_block, uint32_t mem_size)
 void
 rb_yjit_mark_executable(void *mem_block, uint32_t mem_size)
 {
+    // Do not call mprotect when mem_size is zero. Some platforms may return
+    // an error for it. https://github.com/Shopify/ruby/issues/450
+    if (mem_size == 0) {
+        return;
+    }
     if (mprotect(mem_block, mem_size, PROT_READ | PROT_EXEC)) {
         rb_bug("Couldn't make JIT page (%p, %lu bytes) executable, errno: %s\n",
             mem_block, (unsigned long)mem_size, strerror(errno));
