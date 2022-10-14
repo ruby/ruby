@@ -698,7 +698,9 @@ impl Assembler
 
         let gc_offsets = asm.x86_emit(cb);
 
-        if !cb.has_dropped_bytes() {
+        if cb.has_dropped_bytes() {
+            cb.clear_labels();
+        } else {
             cb.link_labels();
         }
 
