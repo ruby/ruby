@@ -137,8 +137,23 @@ impl CodeBlock {
     fn set_page<F: Fn(&mut CodeBlock, CodePtr)>(&mut self, page_idx: usize, jmp_ptr: &F) -> bool {
         // Do not move the CodeBlock if page_idx points to an old position so that this
         // CodeBlock will not overwrite existing code.
-        // TODO: We could move it to the last write_pos on that page if we keep track of
-        // the past write_pos of each page.
+        //
+        // Let's say this is the current situation:
+        //   cb: [page1, page2, page3 (write_pos)], ocb: [page1, page2, page3 (write_pos)]
+        //
+        // When cb needs to patch page1, this will be temporarily changed to:
+        //   cb: [page1 (write_pos), page2, page3], ocb: [page1, page2, page3 (write_pos)]
+        //
+        // While patching page1, cb may need to jump to page2. What set_page currently does is:
+        //   cb: [page1, page2 (write_pos), page3], ocb: [page1, page2, page3 (write_pos)]
+        // instead of:
+        //   cb: [page1, page2 (write_pos), page3], ocb: [page1, page2 (write_pos), page3]
+        // because moving ocb's write_pos from page3 to the beginning of page2 will let ocb's
+        // write_pos point to existing code in page2, which might let ocb overwrite it later.
+        //
+        // We could remember the last write_pos in page2 and let set_page use that position,
+        // but you need to waste some space for keeping write_pos for every single page.
+        // It doesn't seem necessary for performance either. So we're currently not doing it.
         let mut dst_pos = self.page_size * page_idx + self.page_start();
         if self.page_size * page_idx < self.mem_size && self.write_pos < dst_pos {
             // Reset dropped_bytes
