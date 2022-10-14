@@ -491,14 +491,14 @@ impl IseqPayload {
 
 /// Get the payload for an iseq. For safety it's up to the caller to ensure the returned `&mut`
 /// upholds aliasing rules and that the argument is a valid iseq.
-pub unsafe fn load_iseq_payload(iseq: IseqPtr) -> Option<&'static mut IseqPayload> {
-    let payload = rb_iseq_get_yjit_payload(iseq);
+pub fn get_iseq_payload(iseq: IseqPtr) -> Option<&'static mut IseqPayload> {
+    let payload = unsafe { rb_iseq_get_yjit_payload(iseq) };
     let payload: *mut IseqPayload = payload.cast();
-    payload.as_mut()
+    unsafe { payload.as_mut() }
 }
 
 /// Get the payload object associated with an iseq. Create one if none exists.
-fn get_iseq_payload(iseq: IseqPtr) -> &'static mut IseqPayload {
+fn get_or_create_iseq_payload(iseq: IseqPtr) -> &'static mut IseqPayload {
     type VoidPtr = *mut c_void;
 
     let payload_non_null = unsafe {
@@ -545,6 +545,9 @@ pub extern "C" fn rb_yjit_iseq_free(payload: *mut c_void) {
     // It drops right before this function returns.
     // SAFETY: We got the pointer from Box::into_raw().
     let payload = unsafe { Box::from_raw(payload) };
+
+    // Increment the freed iseq count
+    incr_counter!(freed_iseq_count);
 
     // Remove all blocks in the payload from global invariants table.
     for versions in &payload.version_map {
@@ -679,8 +682,19 @@ pub extern "C" fn rb_yjit_iseq_update_references(payload: *mut c_void) {
 }
 
 /// Get all blocks for a particular place in an iseq.
-fn get_version_list(blockid: BlockId) -> &'static mut VersionList {
-    let payload = get_iseq_payload(blockid.iseq);
+fn get_version_list(blockid: BlockId) -> Option<&'static mut VersionList> {
+    let insn_idx = blockid.idx.as_usize();
+    match get_iseq_payload(blockid.iseq) {
+        Some(payload) if insn_idx < payload.version_map.len() => {
+            Some(payload.version_map.get_mut(insn_idx).unwrap())
+        },
+        _ => None
+    }
+}
+
+/// Get or create all blocks for a particular place in an iseq.
+fn get_or_create_version_list(blockid: BlockId) -> &'static mut VersionList {
+    let payload = get_or_create_iseq_payload(blockid.iseq);
     let insn_idx = blockid.idx.as_usize();
 
     // Expand the version map as necessary
@@ -695,32 +709,34 @@ fn get_version_list(blockid: BlockId) -> &'static mut VersionList {
 
 /// Take all of the blocks for a particular place in an iseq
 pub fn take_version_list(blockid: BlockId) -> VersionList {
-    let payload = get_iseq_payload(blockid.iseq);
     let insn_idx = blockid.idx.as_usize();
-
-    if insn_idx >= payload.version_map.len() {
-        VersionList::default()
-    } else {
-        mem::take(&mut payload.version_map[insn_idx])
+    match get_iseq_payload(blockid.iseq) {
+        Some(payload) if insn_idx < payload.version_map.len() => {
+            mem::take(&mut payload.version_map[insn_idx])
+        },
+        _ => VersionList::default(),
     }
 }
 
 /// Count the number of block versions matching a given blockid
 fn get_num_versions(blockid: BlockId) -> usize {
     let insn_idx = blockid.idx.as_usize();
-    let payload = get_iseq_payload(blockid.iseq);
-
-    payload
-        .version_map
-        .get(insn_idx)
-        .map(|versions| versions.len())
-        .unwrap_or(0)
+    match get_iseq_payload(blockid.iseq) {
+        Some(payload) => {
+            payload
+                .version_map
+                .get(insn_idx)
+                .map(|versions| versions.len())
+                .unwrap_or(0)
+        }
+        None => 0,
+    }
 }
 
-/// Get a list of block versions generated for an iseq
+/// Get or create a list of block versions generated for an iseq
 /// This is used for disassembly (see disasm.rs)
-pub fn get_iseq_block_list(iseq: IseqPtr) -> Vec<BlockRef> {
-    let payload = get_iseq_payload(iseq);
+pub fn get_or_create_iseq_block_list(iseq: IseqPtr) -> Vec<BlockRef> {
+    let payload = get_or_create_iseq_payload(iseq);
 
     let mut blocks = Vec::<BlockRef>::new();
 
@@ -741,7 +757,10 @@ pub fn get_iseq_block_list(iseq: IseqPtr) -> Vec<BlockRef> {
 /// Retrieve a basic block version for an (iseq, idx) tuple
 /// This will return None if no version is found
 fn find_block_version(blockid: BlockId, ctx: &Context) -> Option<BlockRef> {
-    let versions = get_version_list(blockid);
+    let versions = match get_version_list(blockid) {
+        Some(versions) => versions,
+        None => return None,
+    };
 
     // Best match found
     let mut best_version: Option<BlockRef> = None;
@@ -802,7 +821,7 @@ fn add_block_version(blockref: &BlockRef, cb: &CodeBlock) {
     // Function entry blocks must have stack size 0
     assert!(!(block.blockid.idx == 0 && block.ctx.stack_size > 0));
 
-    let version_list = get_version_list(block.blockid);
+    let version_list = get_or_create_version_list(block.blockid);
 
     version_list.push(blockref.clone());
 
@@ -830,7 +849,10 @@ fn add_block_version(blockref: &BlockRef, cb: &CodeBlock) {
 /// Remove a block version from the version map of its parent ISEQ
 fn remove_block_version(blockref: &BlockRef) {
     let block = blockref.borrow();
-    let version_list = get_version_list(block.blockid);
+    let version_list = match get_version_list(block.blockid) {
+        Some(version_list) => version_list,
+        None => return,
+    };
 
     // Retain the versions that are not this one
     version_list.retain(|other| blockref != other);
