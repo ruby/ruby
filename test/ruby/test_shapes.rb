@@ -3,6 +3,20 @@ require 'test/unit'
 
 # These test the functionality of object shapes
 class TestShapes < Test::Unit::TestCase
+  class ShapeOrder
+    def initialize
+      @b = :b # 5 => 6
+    end
+
+    def set_b
+      @b = :b # 5 => 6
+    end
+
+    def set_c
+      @c = :c # 5 => 7
+    end
+  end
+
   class Example
     def initialize
       @a = 1
@@ -35,6 +49,17 @@ class TestShapes < Test::Unit::TestCase
 
   def refute_shape_equal(shape1, shape2)
     refute_equal(shape1.id, shape2.id)
+  end
+
+  def test_shape_order
+    bar = ShapeOrder.new # 0 => 1
+    bar.set_c # 1 => 2
+    bar.set_b # 2 => 2
+
+    foo = ShapeOrder.new # 0 => 1
+    shape_id = RubyVM::Shape.of(foo).id
+    foo.set_b # should not transition
+    assert_equal shape_id, RubyVM::Shape.of(foo).id
   end
 
   def test_iv_index
