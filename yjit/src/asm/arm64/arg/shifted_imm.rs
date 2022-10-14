@@ -46,18 +46,24 @@ mod tests {
 
     #[test]
     fn test_no_shift() {
-        let value = 256;
-        let result = ShiftedImmediate::try_from(value);
+        let expected_value = 256;
+        let result = ShiftedImmediate::try_from(expected_value);
 
-        assert!(matches!(result, Ok(ShiftedImmediate { shift: Shift::LSL0, value })));
+        match result {
+            Ok(ShiftedImmediate { shift: Shift::LSL0, value }) => assert_eq!(value as u64, expected_value),
+            _ => panic!("Unexpected shift value")
+        }
     }
 
     #[test]
     fn test_maximum_no_shift() {
-        let value = (1 << 12) - 1;
-        let result = ShiftedImmediate::try_from(value);
+        let expected_value = (1 << 12) - 1;
+        let result = ShiftedImmediate::try_from(expected_value);
 
-        assert!(matches!(result, Ok(ShiftedImmediate { shift: Shift::LSL0, value })));
+        match result {
+            Ok(ShiftedImmediate { shift: Shift::LSL0, value }) => assert_eq!(value as u64, expected_value),
+            _ => panic!("Unexpected shift value")
+        }
     }
 
     #[test]

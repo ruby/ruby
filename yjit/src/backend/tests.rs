@@ -44,9 +44,20 @@ fn test_alloc_regs() {
     let reg0 = regs[0];
     let reg1 = regs[1];
 
-    assert!(matches!(result.insns[0].out_opnd(), Some(Opnd::Reg(reg0))));
-    assert!(matches!(result.insns[2].out_opnd(), Some(Opnd::Reg(reg1))));
-    assert!(matches!(result.insns[5].out_opnd(), Some(Opnd::Reg(reg0))));
+    match result.insns[0].out_opnd() {
+        Some(Opnd::Reg(value)) => assert_eq!(value, &reg0),
+        val => panic!("Unexpected register value {:?}", val),
+    }
+
+    match result.insns[2].out_opnd() {
+        Some(Opnd::Reg(value)) => assert_eq!(value, &reg1),
+        val => panic!("Unexpected register value {:?}", val),
+    }
+
+    match result.insns[5].out_opnd() {
+        Some(Opnd::Reg(value)) => assert_eq!(value, &reg0),
+        val => panic!("Unexpected register value {:?}", val),
+    }
 }
 
 fn setup_asm() -> (Assembler, CodeBlock) {
