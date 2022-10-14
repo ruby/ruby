@@ -546,6 +546,9 @@ pub extern "C" fn rb_yjit_iseq_free(payload: *mut c_void) {
     // SAFETY: We got the pointer from Box::into_raw().
     let payload = unsafe { Box::from_raw(payload) };
 
+    // Increment the freed iseq count
+    incr_counter!(freed_iseq_count);
+
     // Remove all blocks in the payload from global invariants table.
     for versions in &payload.version_map {
         for block in versions {

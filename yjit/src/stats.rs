@@ -252,6 +252,7 @@ make_counters! {
     compiled_iseq_count,
     compiled_block_count,
     compilation_failure,
+    freed_iseq_count,
 
     exit_from_branch_stub,
 
