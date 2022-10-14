@@ -23,8 +23,9 @@
 #include "ruby/internal/core/rbasic.h"
 #include "ruby/internal/cast.h"
 
-/* rb_io_t is in ruby/io.h.  The header file has historically not been included
- * into ruby/ruby.h.  We follow that tradition. */
+/* rb_io is in ruby/io.h and internal/io.h.  The header file has historically
+ * not been included into ruby/ruby.h.  We follow that tradition.
+ */
 struct rb_io;
 
 /**

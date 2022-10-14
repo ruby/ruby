@@ -145,6 +145,12 @@ struct rb_io {
      * @see rb_io_set_write_io()
      */
     VALUE tied_io_for_writing;
+
+    /*************************************************************************/
+    /**   THE FIELDS ABOVE THIS POINT ARE PART OF THE PUBLIC INTERFACE AND  **/
+    /**      MUST BE KEPT IN SYNC WITH THE PRIVATE INTERFACE DEFINED IN     **/
+    /**                           `internal/io.h`                           **/
+    /*************************************************************************/
 };
 #endif
 

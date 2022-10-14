@@ -64,6 +64,11 @@ struct rb_io {
      */
     VALUE tied_io_for_writing;
 
+    /*************************************************************************/
+    /**    THE FIELDS ABOVE THIS POINT ARE PART OF THE PUBLIC INTERFACE     **/
+    /**       DEFINED IN `include/ruby/io.h` AND MUST BE KEPT IN SYNC       **/
+    /*************************************************************************/
+
     /** finalize proc */
     void (*finalize)(struct rb_io*,int);
 
