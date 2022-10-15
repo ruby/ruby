@@ -703,34 +703,39 @@ count_collision(const struct st_hash_type *type)
 static void
 rebuild_table(st_table *tab)
 {
-    st_index_t i, ni, bound;
+    st_index_t i, ni;
     unsigned int size_ind;
     st_table *new_tab;
-    st_table_entry *entries, *new_entries;
+    st_table_entry *new_entries;
     st_table_entry *curr_entry_ptr;
     st_index_t *bins;
     st_index_t bin_ind;
 
-    bound = tab->entries_bound;
-    entries = tab->entries;
     if ((2 * tab->num_entries <= get_allocated_entries(tab)
 	 && REBUILD_THRESHOLD * tab->num_entries > get_allocated_entries(tab))
 	|| tab->num_entries < (1 << MINIMAL_POWER2)) {
         /* Compaction: */
         tab->num_entries = 0;
-	if (tab->bins != NULL)
-	    initialize_bins(tab);
-	new_tab = tab;
-	new_entries = entries;
+        if (tab->bins != NULL)
+            initialize_bins(tab);
+        new_tab = tab;
+        new_entries = tab->entries;
     }
     else {
+        /* This allocation could trigger GC and compaction. If tab is the
+         * gen_iv_tbl, then tab could have changed in size due to objects being
+         * freed and/or moved. Do not store attributes of tab before this line. */
         new_tab = st_init_table_with_size(tab->type,
 					  2 * tab->num_entries - 1);
 	new_entries = new_tab->entries;
     }
+
     ni = 0;
     bins = new_tab->bins;
     size_ind = get_size_ind(new_tab);
+    st_index_t bound = tab->entries_bound;
+    st_table_entry *entries = tab->entries;
+
     for (i = tab->entries_start; i < bound; i++) {
         curr_entry_ptr = &entries[i];
 	PREFETCH(entries + i + 1, 0);
