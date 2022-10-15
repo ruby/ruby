@@ -848,9 +848,6 @@ module RbInstall
     def write_cache_file
     end
 
-    def build_extensions
-    end if /mswin|mingw/ =~ RUBY_PLATFORM || RbConfig::CONFIG["CROSS_COMPILING"] == "yes"
-
     def shebang(bin_file_name)
       path = File.join(gem_dir, spec.bindir, bin_file_name)
       first_line = File.open(path, "rb") {|file| file.gets}
@@ -900,6 +897,13 @@ module RbInstall
     def install
       spec.post_install_message = nil
       RbInstall.no_write(options) {super}
+    end
+
+    if RbConfig::CONFIG["LIBRUBY_RELATIVE"] == "yes" || RbConfig::CONFIG["CROSS_COMPILING"] == "yes"
+      # TODO: always build extensions in bundled gems by build-ext and
+      # install the built binaries.
+      def build_extensions
+      end
     end
 
     def generate_bin_script(filename, bindir)
