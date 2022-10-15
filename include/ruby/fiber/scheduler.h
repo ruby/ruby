@@ -146,7 +146,7 @@ VALUE rb_fiber_scheduler_make_timeout(struct timeval *timeout);
 VALUE rb_fiber_scheduler_close(VALUE scheduler);
 
 /**
- * Nonblocking  `sleep`.   Depending  on  scheduler  implementation,  this  for
+ * Non-blocking  `sleep`.  Depending  on  scheduler  implementation,  this  for
  * instance switches to another fiber etc.
  *
  * @param[in]  scheduler  Target scheduler.
@@ -174,7 +174,7 @@ int rb_fiber_scheduler_supports_process_wait(VALUE scheduler);
 #endif
 
 /**
- * Nonblocking  `waitpid`.  Depending  on  scheduler  implementation, this  for
+ * Non-blocking `waitpid`.  Depending  on  scheduler  implementation, this  for
  * instance switches to another fiber etc.
  *
  * @param[in]  scheduler  Target scheduler.
@@ -185,7 +185,7 @@ int rb_fiber_scheduler_supports_process_wait(VALUE scheduler);
 VALUE rb_fiber_scheduler_process_wait(VALUE scheduler, rb_pid_t pid, int flags);
 
 /**
- * Nonblocking  wait   for  the  passed   "blocker",  which  is   for  instance
+ * Non-blocking  wait  for  the  passed   "blocker",  which  is   for  instance
  * `Thread.join` or `Mutex.lock`.  Depending  on scheduler implementation, this
  * for instance switches to another fiber etc.
  *
@@ -207,8 +207,8 @@ VALUE rb_fiber_scheduler_block(VALUE scheduler, VALUE blocker, VALUE timeout);
 VALUE rb_fiber_scheduler_unblock(VALUE scheduler, VALUE blocker, VALUE fiber);
 
 /**
- * Nonblocking version of rb_io_wait().  Depending on scheduler implementation,
- * this for instance switches to another fiber etc.
+ * Non-blocking version of rb_io_wait().  Depending on scheduler
+ * implementation, this for instance switches to another fiber etc.
  *
  * The  "events" here  is a  Ruby level  integer, which  is an  OR-ed value  of
  * `IO::READABLE`, `IO::WRITABLE`, and `IO::PRIORITY`.
@@ -222,7 +222,7 @@ VALUE rb_fiber_scheduler_unblock(VALUE scheduler, VALUE blocker, VALUE fiber);
 VALUE rb_fiber_scheduler_io_wait(VALUE scheduler, VALUE io, VALUE events, VALUE timeout);
 
 /**
- * Nonblocking  wait until  the passed  IO  is ready  for reading.   This is  a
+ * Non-blocking  wait until the passed  IO  is ready  for reading.   This is  a
  * special  case   of  rb_fiber_scheduler_io_wait(),  where  the   interest  is
  * `IO::READABLE` and timeout is never.
  *
@@ -233,7 +233,7 @@ VALUE rb_fiber_scheduler_io_wait(VALUE scheduler, VALUE io, VALUE events, VALUE 
 VALUE rb_fiber_scheduler_io_wait_readable(VALUE scheduler, VALUE io);
 
 /**
- * Nonblocking  wait until  the passed  IO  is ready  for writing.   This is  a
+ * Non-blocking  wait until  the passed  IO  is ready  for writing.   This is a
  * special  case   of  rb_fiber_scheduler_io_wait(),  where  the   interest  is
  * `IO::WRITABLE` and timeout is never.
  *
@@ -277,7 +277,7 @@ VALUE rb_fiber_scheduler_io_selectv(VALUE scheduler, int argc, VALUE *argv);
 VALUE rb_fiber_scheduler_io_read(VALUE scheduler, VALUE io, VALUE buffer, size_t length, size_t offset);
 
 /**
- * Nonblocking write to the passed IO.
+ * Non-blocking write to the passed IO.
  *
  * @param[in]   scheduler    Target scheduler.
  * @param[out]  io           An io object to write to.
@@ -290,7 +290,7 @@ VALUE rb_fiber_scheduler_io_read(VALUE scheduler, VALUE io, VALUE buffer, size_t
 VALUE rb_fiber_scheduler_io_write(VALUE scheduler, VALUE io, VALUE buffer, size_t length, size_t offset);
 
 /**
- * Nonblocking read from the passed IO at the specified offset.
+ * Non-blocking read from the passed IO at the specified offset.
  *
  * @param[in]   scheduler    Target scheduler.
  * @param[out]  io           An io object to read from.
@@ -304,7 +304,7 @@ VALUE rb_fiber_scheduler_io_write(VALUE scheduler, VALUE io, VALUE buffer, size_
 VALUE rb_fiber_scheduler_io_pread(VALUE scheduler, VALUE io, rb_off_t from, VALUE buffer, size_t length, size_t offset);
 
 /**
- * Nonblocking write to the passed IO at the specified offset.
+ * Non-blocking write to the passed IO at the specified offset.
  *
  * @param[in]   scheduler    Target scheduler.
  * @param[out]  io           An io object to write to.
@@ -318,7 +318,7 @@ VALUE rb_fiber_scheduler_io_pread(VALUE scheduler, VALUE io, rb_off_t from, VALU
 VALUE rb_fiber_scheduler_io_pwrite(VALUE scheduler, VALUE io, rb_off_t from, VALUE buffer, size_t length, size_t offset);
 
 /**
- * Nonblocking read from the passed IO using a native buffer.
+ * Non-blocking read from the passed IO using a native buffer.
  *
  * @param[in]   scheduler    Target scheduler.
  * @param[out]  io           An io object to read from.
@@ -331,7 +331,7 @@ VALUE rb_fiber_scheduler_io_pwrite(VALUE scheduler, VALUE io, rb_off_t from, VAL
 VALUE rb_fiber_scheduler_io_read_memory(VALUE scheduler, VALUE io, void *buffer, size_t size, size_t length);
 
 /**
- * Nonblocking write to the passed IO using a native buffer.
+ * Non-blocking write to the passed IO using a native buffer.
  *
  * @param[in]   scheduler    Target scheduler.
  * @param[out]  io           An io object to write to.
@@ -344,7 +344,7 @@ VALUE rb_fiber_scheduler_io_read_memory(VALUE scheduler, VALUE io, void *buffer,
 VALUE rb_fiber_scheduler_io_write_memory(VALUE scheduler, VALUE io, const void *buffer, size_t size, size_t length);
 
 /**
- * Nonblocking close the given IO.
+ * Non-blocking close the given IO.
  *
  * @param[in]  scheduler    Target scheduler.
  * @param[in]  io           An io object to close.
@@ -354,7 +354,7 @@ VALUE rb_fiber_scheduler_io_write_memory(VALUE scheduler, VALUE io, const void *
 VALUE rb_fiber_scheduler_io_close(VALUE scheduler, VALUE io);
 
 /**
- * Nonblocking DNS lookup.
+ * Non-blocking DNS lookup.
  *
  * @param[in]  scheduler    Target scheduler.
  * @param[in]  hostname     A host name to query.
@@ -362,6 +362,12 @@ VALUE rb_fiber_scheduler_io_close(VALUE scheduler, VALUE io);
  * @return     otherwise    What `scheduler.address_resolve` returns.
  */
 VALUE rb_fiber_scheduler_address_resolve(VALUE scheduler, VALUE hostname);
+
+/**
+ * Create and schedule a non-blocking fiber.
+ *
+ */
+VALUE rb_fiber_scheduler_fiber(VALUE scheduler, int argc, VALUE *argv, int kw_splat);
 
 RBIMPL_SYMBOL_EXPORT_END()
 
