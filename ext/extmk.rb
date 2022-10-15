@@ -589,6 +589,25 @@ exts.each do |d|
   end
 end
 
+if @gemname
+  src_gemlib = File.join($top_srcdir, ext_prefix, @gemname, "lib")
+  src_gemlib = relative_from(src_gemlib, ([".."]*ext_prefix.count("/")).join("/"))
+  gemlib = "#{@gemname}/lib"
+  if File.directory?(src_gemlib)
+    if File.exist?(gemlib)
+      puts "using #{gemlib}"
+    else
+      begin
+        File.symlink(relative_from(src_gemlib, ".."), gemlib)
+        puts "linked #{gemlib}"
+      rescue NotImplementedError, Errno::EPERM
+        FileUtils.cp_r(src_gemlib, gemlib)
+        puts "copied #{gemlib}"
+      end
+    end
+  end
+end
+
 $top_srcdir = srcdir
 $topdir = "."
 $hdrdir = hdrdir
