@@ -1247,6 +1247,7 @@ pub const YARVINSN_trace_putobject_INT2FIX_0_: ruby_vminsn_type = 200;
 pub const YARVINSN_trace_putobject_INT2FIX_1_: ruby_vminsn_type = 201;
 pub const VM_INSTRUCTION_SIZE: ruby_vminsn_type = 202;
 pub type ruby_vminsn_type = u32;
+pub type rb_iseq_callback = ::std::option::Option<unsafe extern "C" fn(arg1: *const rb_iseq_t)>;
 extern "C" {
     pub fn rb_vm_insn_addr2opcode(addr: *const ::std::os::raw::c_void) -> ::std::os::raw::c_int;
 }
@@ -1541,9 +1542,8 @@ extern "C" {
 extern "C" {
     pub fn rb_assert_cme_handle(handle: VALUE);
 }
-pub type iseq_callback = ::std::option::Option<unsafe extern "C" fn(arg1: *const rb_iseq_t)>;
 extern "C" {
-    pub fn rb_yjit_for_each_iseq(callback: iseq_callback);
+    pub fn rb_yjit_for_each_iseq(callback: rb_iseq_callback);
 }
 extern "C" {
     pub fn rb_yjit_obj_written(
