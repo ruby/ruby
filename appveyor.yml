@@ -8,7 +8,6 @@ platform:
   - x64
 environment:
   ruby_version: "24-%Platform%"
-  zlib_version: "1.2.13"
   matrix:
     - build: vs
       vs: 120
@@ -61,9 +60,6 @@ for:
     - mkdir \usr\local\bin
     - mkdir \usr\local\include
     - mkdir \usr\local\lib
-    - SET ZLIB_ZIP=.downloaded-cache\zlib%zlib_version:.=%.zip
-    - if not exist %ZLIB_ZIP% curl -fsSL -o %ZLIB_ZIP% --retry 10 https://zlib.net/zlib%zlib_version:.=%.zip
-    - 7z x -aos -o%APPVEYOR_BUILD_FOLDER%\ext\zlib %ZLIB_ZIP%
     - for %%I in (%OPENSSL_DIR%\*.dll) do mklink /h \usr\local\bin\%%~nxI %%I
     - attrib +r /s /d
     - mkdir %Platform%-mswin_%vs%
