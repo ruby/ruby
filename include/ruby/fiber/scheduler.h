@@ -244,7 +244,27 @@ VALUE rb_fiber_scheduler_io_wait_readable(VALUE scheduler, VALUE io);
 VALUE rb_fiber_scheduler_io_wait_writable(VALUE scheduler, VALUE io);
 
 /**
- * Nonblocking read from the passed IO.
+ * Non-blocking version of `IO.select`.
+ *
+ * It's possible that this will be emulated using a thread, so you should not
+ * rely on it for high performance.
+ *
+ * @param[in]  scheduler    Target scheduler.
+ * @param[in]  readables    An array of readable objects.
+ * @param[in]  writables    An array of writable objects.
+ * @param[in]  exceptables  An array of objects that might encounter exceptional conditions.
+ * @param[in]  timeout      Numeric timeout or nil.
+ * @return     What `scheduler.io_select` returns, normally a 3-tuple of arrays of ready objects.
+ */
+VALUE rb_fiber_scheduler_io_select(VALUE scheduler, VALUE readables, VALUE writables, VALUE exceptables, VALUE timeout);
+
+/**
+ * Non-blocking version of `IO.select`, `argv` variant.
+ */
+VALUE rb_fiber_scheduler_io_selectv(VALUE scheduler, int argc, VALUE *argv);
+
+/**
+ * Non-blocking read from the passed IO.
  *
  * @param[in]   scheduler    Target scheduler.
  * @param[out]  io           An io object to read from.

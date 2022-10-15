@@ -28,6 +28,7 @@ static ID id_process_wait;
 static ID id_io_read, id_io_pread;
 static ID id_io_write, id_io_pwrite;
 static ID id_io_wait;
+static ID id_io_select;
 static ID id_io_close;
 
 static ID id_address_resolve;
@@ -51,6 +52,7 @@ Init_Fiber_Scheduler(void)
     id_io_pwrite = rb_intern_const("io_pwrite");
 
     id_io_wait = rb_intern_const("io_wait");
+    id_io_select = rb_intern_const("io_select");
     id_io_close = rb_intern_const("io_close");
 
     id_address_resolve = rb_intern_const("address_resolve");
@@ -229,6 +231,25 @@ VALUE
 rb_fiber_scheduler_io_wait_writable(VALUE scheduler, VALUE io)
 {
     return rb_fiber_scheduler_io_wait(scheduler, io, RB_UINT2NUM(RUBY_IO_WRITABLE), rb_io_timeout(io));
+}
+
+VALUE rb_fiber_scheduler_io_select(VALUE scheduler, VALUE readables, VALUE writables, VALUE exceptables, VALUE timeout)
+{
+    VALUE arguments[] = {
+        readables, writables, exceptables, timeout
+    };
+
+    return rb_fiber_scheduler_io_selectv(scheduler, 4, arguments);
+}
+
+VALUE rb_fiber_scheduler_io_selectv(VALUE scheduler, int argc, VALUE *argv)
+{
+    // I wondered about extracting argv, and checking if there is only a single
+    // IO instance, and instead calling `io_wait`. However, it would require a
+    // decent amount of work and it would be hard to preserve the exact
+    // semantics of IO.select.
+
+    return rb_check_funcall(scheduler, id_io_select, argc, argv);
 }
 
 VALUE
