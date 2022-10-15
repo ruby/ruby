@@ -21,13 +21,11 @@ environment:
   ruby_version: "24-%Platform%"
   zlib_version: "1.2.13"
   matrix:
+    # Test only the oldest supported version because AppVeyor is unstable, its concurrency
+    # is limited, and compatibility issues that happen only in newer versions are rare.
+    # You may test some other stuff on GitHub Actions instead.
     - build: vs
       vs: 120
-      ssl: OpenSSL
-      APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2015
-      GEMS_FOR_TEST: ""
-    - build: vs
-      vs: 140
       ssl: OpenSSL-v111
       APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2015
       GEMS_FOR_TEST: ""
