@@ -3564,6 +3564,7 @@ cont.$(OBJEXT): {$(VPATH)}internal/value_type.h
 cont.$(OBJEXT): {$(VPATH)}internal/variable.h
 cont.$(OBJEXT): {$(VPATH)}internal/warning_push.h
 cont.$(OBJEXT): {$(VPATH)}internal/xmalloc.h
+cont.$(OBJEXT): {$(VPATH)}iseq.h
 cont.$(OBJEXT): {$(VPATH)}method.h
 cont.$(OBJEXT): {$(VPATH)}missing.h
 cont.$(OBJEXT): {$(VPATH)}mjit.h
@@ -3580,6 +3581,8 @@ cont.$(OBJEXT): {$(VPATH)}thread_native.h
 cont.$(OBJEXT): {$(VPATH)}vm_core.h
 cont.$(OBJEXT): {$(VPATH)}vm_debug.h
 cont.$(OBJEXT): {$(VPATH)}vm_opts.h
+cont.$(OBJEXT): {$(VPATH)}vm_sync.h
+cont.$(OBJEXT): {$(VPATH)}yjit.h
 debug.$(OBJEXT): $(CCAN_DIR)/check_type/check_type.h
 debug.$(OBJEXT): $(CCAN_DIR)/container_of/container_of.h
 debug.$(OBJEXT): $(CCAN_DIR)/list/list.h
@@ -6262,6 +6265,7 @@ eval.$(OBJEXT): $(hdrdir)/ruby/ruby.h
 eval.$(OBJEXT): $(top_srcdir)/internal/array.h
 eval.$(OBJEXT): $(top_srcdir)/internal/class.h
 eval.$(OBJEXT): $(top_srcdir)/internal/compilers.h
+eval.$(OBJEXT): $(top_srcdir)/internal/cont.h
 eval.$(OBJEXT): $(top_srcdir)/internal/error.h
 eval.$(OBJEXT): $(top_srcdir)/internal/eval.h
 eval.$(OBJEXT): $(top_srcdir)/internal/gc.h
@@ -6902,6 +6906,7 @@ gc.$(OBJEXT): {$(VPATH)}internal/variable.h
 gc.$(OBJEXT): {$(VPATH)}internal/warning_push.h
 gc.$(OBJEXT): {$(VPATH)}internal/xmalloc.h
 gc.$(OBJEXT): {$(VPATH)}io.h
+gc.$(OBJEXT): {$(VPATH)}iseq.h
 gc.$(OBJEXT): {$(VPATH)}method.h
 gc.$(OBJEXT): {$(VPATH)}missing.h
 gc.$(OBJEXT): {$(VPATH)}mjit.h
@@ -7124,6 +7129,10 @@ goruby.$(OBJEXT): {$(VPATH)}thread_native.h
 goruby.$(OBJEXT): {$(VPATH)}vm_core.h
 goruby.$(OBJEXT): {$(VPATH)}vm_debug.h
 goruby.$(OBJEXT): {$(VPATH)}vm_opts.h
+hash.$(OBJEXT): $(CCAN_DIR)/check_type/check_type.h
+hash.$(OBJEXT): $(CCAN_DIR)/container_of/container_of.h
+hash.$(OBJEXT): $(CCAN_DIR)/list/list.h
+hash.$(OBJEXT): $(CCAN_DIR)/str/str.h
 hash.$(OBJEXT): $(hdrdir)/ruby/ruby.h
 hash.$(OBJEXT): $(top_srcdir)/internal/array.h
 hash.$(OBJEXT): $(top_srcdir)/internal/bignum.h
@@ -7134,6 +7143,7 @@ hash.$(OBJEXT): $(top_srcdir)/internal/cont.h
 hash.$(OBJEXT): $(top_srcdir)/internal/error.h
 hash.$(OBJEXT): $(top_srcdir)/internal/gc.h
 hash.$(OBJEXT): $(top_srcdir)/internal/hash.h
+hash.$(OBJEXT): $(top_srcdir)/internal/imemo.h
 hash.$(OBJEXT): $(top_srcdir)/internal/object.h
 hash.$(OBJEXT): $(top_srcdir)/internal/proc.h
 hash.$(OBJEXT): $(top_srcdir)/internal/serial.h
@@ -7146,6 +7156,7 @@ hash.$(OBJEXT): $(top_srcdir)/internal/variable.h
 hash.$(OBJEXT): $(top_srcdir)/internal/vm.h
 hash.$(OBJEXT): $(top_srcdir)/internal/warnings.h
 hash.$(OBJEXT): {$(VPATH)}assert.h
+hash.$(OBJEXT): {$(VPATH)}atomic.h
 hash.$(OBJEXT): {$(VPATH)}backward/2/assume.h
 hash.$(OBJEXT): {$(VPATH)}backward/2/attributes.h
 hash.$(OBJEXT): {$(VPATH)}backward/2/bool.h
@@ -7314,21 +7325,28 @@ hash.$(OBJEXT): {$(VPATH)}internal/value_type.h
 hash.$(OBJEXT): {$(VPATH)}internal/variable.h
 hash.$(OBJEXT): {$(VPATH)}internal/warning_push.h
 hash.$(OBJEXT): {$(VPATH)}internal/xmalloc.h
+hash.$(OBJEXT): {$(VPATH)}iseq.h
+hash.$(OBJEXT): {$(VPATH)}method.h
 hash.$(OBJEXT): {$(VPATH)}missing.h
+hash.$(OBJEXT): {$(VPATH)}node.h
 hash.$(OBJEXT): {$(VPATH)}onigmo.h
 hash.$(OBJEXT): {$(VPATH)}oniguruma.h
 hash.$(OBJEXT): {$(VPATH)}probes.dmyh
 hash.$(OBJEXT): {$(VPATH)}probes.h
 hash.$(OBJEXT): {$(VPATH)}ractor.h
 hash.$(OBJEXT): {$(VPATH)}ruby_assert.h
+hash.$(OBJEXT): {$(VPATH)}ruby_atomic.h
 hash.$(OBJEXT): {$(VPATH)}shape.h
 hash.$(OBJEXT): {$(VPATH)}st.h
 hash.$(OBJEXT): {$(VPATH)}subst.h
 hash.$(OBJEXT): {$(VPATH)}symbol.h
+hash.$(OBJEXT): {$(VPATH)}thread_$(THREAD_MODEL).h
 hash.$(OBJEXT): {$(VPATH)}thread_native.h
 hash.$(OBJEXT): {$(VPATH)}transient_heap.h
 hash.$(OBJEXT): {$(VPATH)}util.h
+hash.$(OBJEXT): {$(VPATH)}vm_core.h
 hash.$(OBJEXT): {$(VPATH)}vm_debug.h
+hash.$(OBJEXT): {$(VPATH)}vm_opts.h
 hash.$(OBJEXT): {$(VPATH)}vm_sync.h
 inits.$(OBJEXT): $(hdrdir)/ruby.h
 inits.$(OBJEXT): $(hdrdir)/ruby/ruby.h
@@ -13408,6 +13426,7 @@ ruby.$(OBJEXT): $(top_srcdir)/internal/array.h
 ruby.$(OBJEXT): $(top_srcdir)/internal/class.h
 ruby.$(OBJEXT): $(top_srcdir)/internal/cmdlineopt.h
 ruby.$(OBJEXT): $(top_srcdir)/internal/compilers.h
+ruby.$(OBJEXT): $(top_srcdir)/internal/cont.h
 ruby.$(OBJEXT): $(top_srcdir)/internal/error.h
 ruby.$(OBJEXT): $(top_srcdir)/internal/file.h
 ruby.$(OBJEXT): $(top_srcdir)/internal/gc.h
@@ -13598,6 +13617,7 @@ ruby.$(OBJEXT): {$(VPATH)}internal/variable.h
 ruby.$(OBJEXT): {$(VPATH)}internal/warning_push.h
 ruby.$(OBJEXT): {$(VPATH)}internal/xmalloc.h
 ruby.$(OBJEXT): {$(VPATH)}io.h
+ruby.$(OBJEXT): {$(VPATH)}iseq.h
 ruby.$(OBJEXT): {$(VPATH)}method.h
 ruby.$(OBJEXT): {$(VPATH)}missing.h
 ruby.$(OBJEXT): {$(VPATH)}mjit.h
