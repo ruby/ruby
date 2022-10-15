@@ -1361,10 +1361,11 @@ extract-gems$(gnumake:yes=-nongnumake): PHONY
 	$(Q) $(RUNRUBY) -C "$(srcdir)" \
 	    -Itool -rgem-unpack -answ \
 	    -e 'BEGIN {FileUtils.mkdir_p(d = ".bundle/gems")}' \
+	    -e 'BEGIN {FileUtils.mkdir_p(s = ".bundle/specifications")}' \
 	    -e 'gem, ver = *$$F' \
 	    -e 'next if !ver or /^#/=~gem' \
 	    -e 'g = "#{gem}-#{ver}"' \
-	    -e 'File.directory?("#{d}/#{g}") or Gem.unpack("gems/#{g}.gem", d)' \
+	    -e 'File.directory?("#{d}/#{g}") or Gem.unpack("gems/#{g}.gem", d, s)' \
 	    gems/bundled_gems
 
 update-bundled_gems: PHONY
