@@ -560,6 +560,17 @@ clean-so::
   end
 }
 
+if @gemname
+  gemdir = File.join($top_srcdir, ext_prefix, @gemname)
+  if File.exist?(spec_file = File.join(gemdir, ".bundled.#{@gemname}.gemspec")) or
+    File.exist?(spec_file = File.join(gemdir, "#{@gemname}.gemspec"))
+    dest = "#{File.dirname(ext_prefix)}/specifications"
+    FileUtils.mkdir_p(dest)
+    File.copy_stream(spec_file, "#{dest}/#{@gemname}.gemspec")
+    puts "copied #{@gemname}.gemspec"
+  end
+end
+
 dir = Dir.pwd
 FileUtils::makedirs(ext_prefix)
 Dir::chdir(ext_prefix)
