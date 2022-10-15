@@ -849,7 +849,7 @@ module RbInstall
     end
 
     def build_extensions
-    end if /mswin|mingw/ =~ RUBY_PLATFORM
+    end if /mswin|mingw/ =~ RUBY_PLATFORM || RbConfig::CONFIG["CROSS_COMPILING"] == "yes"
 
     def shebang(bin_file_name)
       path = File.join(gem_dir, spec.bindir, bin_file_name)
