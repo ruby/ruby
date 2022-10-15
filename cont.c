@@ -2404,7 +2404,7 @@ rb_fiber_transfer(VALUE fiber_value, int argc, const VALUE *argv)
 /**
  *  call-seq:
  *    fiber.annotation -> object
- * 
+ *
  *  Returns the current annotation of the fiber, if any.
  *
  *  A fiber annotation is used to indicate what the fiber is doing for the
@@ -3091,7 +3091,7 @@ Init_Cont(void)
     rb_cFiber = rb_define_class("Fiber", rb_cObject);
     rb_define_alloc_func(rb_cFiber, fiber_alloc);
     rb_eFiberError = rb_define_class("FiberError", rb_eStandardError);
-    
+
     rb_define_singleton_method(rb_cFiber, "yield", rb_fiber_s_yield, -1);
     rb_define_singleton_method(rb_cFiber, "current", rb_fiber_s_current, 0);
     rb_define_singleton_method(rb_cFiber, "blocking", rb_fiber_blocking, 0);

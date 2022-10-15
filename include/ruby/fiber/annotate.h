@@ -26,7 +26,7 @@ VALUE rb_fiber_annotate(VALUE annotation);
 /**
  *  Set the annotation of the specified fiber. Will discard any previous
  *  annotation.
- * 
+ *
  *  @param  fiber       The receiver.
  *  @param  annotation  The annotation to assign.
  *  @retval VALUE       The previous annotation.
@@ -35,7 +35,7 @@ VALUE rb_fiber_annotation_set(VALUE fiber, VALUE annotation);
 
 /**
  *  Retrieves the annotation attached to the given fiber.
- * 
+ *
  *  @param  fiber       The receiver.
  *  @retval VALUE       The annotation.
  */
