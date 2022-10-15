@@ -7270,7 +7270,7 @@ gc_mark_children(rb_objspace_t *objspace, VALUE obj)
         {
             const VALUE * const ptr = ROBJECT_IVPTR(obj);
 
-            uint32_t i, len = ROBJECT_NUMIV(obj);
+            uint32_t i, len = ROBJECT_IV_COUNT(obj);
             for (i  = 0; i < len; i++) {
                 gc_mark(objspace, ptr[i]);
             }
@@ -10019,7 +10019,7 @@ gc_ref_update_object(rb_objspace_t *objspace, VALUE v)
     }
 #endif
 
-    for (uint32_t i = 0; i < numiv; i++) {
+    for (uint32_t i = 0; i < ROBJECT_IV_COUNT(v); i++) {
         UPDATE_IF_MOVED(objspace, ptr[i]);
     }
 }

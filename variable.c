@@ -1443,43 +1443,32 @@ rb_init_iv_list(VALUE obj)
     rb_ensure_iv_list_size(obj, len, newsize < len ? len : newsize);
 }
 
-// Return the instance variable index for a given name and T_OBJECT object. The
-// mapping between name and index lives on `rb_obj_class(obj)` and is created
-// if not already present.
-//
-// @note May raise when there are too many instance variables.
-// @note YJIT uses this function at compile time to simplify the work needed to
-//       access the variable at runtime.
-static uint32_t
-rb_obj_ensure_iv_index_mapping(VALUE obj, ID id)
+static VALUE
+obj_ivar_set(VALUE obj, ID id, VALUE val)
 {
-    RUBY_ASSERT(RB_TYPE_P(obj, T_OBJECT));
     attr_index_t index;
-
-    // Ensure there is a transition for IVAR +id+
-    rb_shape_transition_shape(obj, id, rb_shape_get_shape_by_id(ROBJECT_SHAPE_ID(obj)));
 
     // Get the current shape
     rb_shape_t * shape = rb_shape_get_shape_by_id(ROBJECT_SHAPE_ID(obj));
 
     if (!rb_shape_get_iv_index(shape, id, &index)) {
-        rb_bug("unreachable.  Shape was not found for id: %s", rb_id2name(id));
+        shape = rb_shape_get_next(shape, obj, id);
+        index = shape->iv_count - 1;
     }
 
     uint32_t len = ROBJECT_NUMIV(obj);
+
+    // Reallocating can kick off GC.  We can't set the new shape
+    // on this object until the buffer has been allocated, otherwise
+    // GC could read off the end of the buffer.
     if (len <= index) {
-        uint32_t newsize = (uint32_t)((shape->iv_count + 1) * 1.25);
+        uint32_t newsize = (uint32_t)((len + 1) * 1.25);
         rb_ensure_iv_list_size(obj, len, newsize);
     }
-    RUBY_ASSERT(index <= ROBJECT_NUMIV(obj));
-    return index;
-}
 
-static VALUE
-obj_ivar_set(VALUE obj, ID id, VALUE val)
-{
-    attr_index_t index = rb_obj_ensure_iv_index_mapping(obj, id);
     RB_OBJ_WRITE(obj, &ROBJECT_IVPTR(obj)[index], val);
+    rb_shape_set_shape(obj, shape);
+
     return val;
 }
 
@@ -1768,7 +1757,7 @@ rb_ivar_count(VALUE obj)
     switch (BUILTIN_TYPE(obj)) {
       case T_OBJECT:
         if (rb_shape_get_shape(obj)->iv_count > 0) {
-            st_index_t i, count, num = ROBJECT_NUMIV(obj);
+            st_index_t i, count, num = ROBJECT_IV_COUNT(obj);
             const VALUE *const ivptr = ROBJECT_IVPTR(obj);
             for (i = count = 0; i < num; ++i) {
                 if (ivptr[i] != Qundef) {
