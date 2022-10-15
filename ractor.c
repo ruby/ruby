@@ -2312,7 +2312,7 @@ obj_traverse_i(VALUE obj, struct obj_traverse_data *data)
 
       case T_OBJECT:
         {
-            uint32_t len = ROBJECT_NUMIV(obj);
+            uint32_t len = ROBJECT_IV_COUNT(obj);
             VALUE *ptr = ROBJECT_IVPTR(obj);
 
             for (uint32_t i=0; i<len; i++) {
@@ -2766,7 +2766,7 @@ obj_traverse_replace_i(VALUE obj, struct obj_traverse_replace_data *data)
             if (data->move) rb_obj_transient_heap_evacuate(obj, TRUE);
 #endif
 
-            uint32_t len = ROBJECT_NUMIV(obj);
+            uint32_t len = ROBJECT_IV_COUNT(obj);
             VALUE *ptr = ROBJECT_IVPTR(obj);
 
             for (uint32_t i=0; i<len; i++) {

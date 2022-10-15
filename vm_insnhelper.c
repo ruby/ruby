@@ -1268,8 +1268,7 @@ vm_setivar_slowpath(VALUE obj, ID id, VALUE val, const rb_iseq_t *iseq, IVC ic, 
 
             if (shape != next_shape) {
                 RUBY_ASSERT(next_shape->parent_id == rb_shape_id(shape));
-                rb_shape_set_shape(obj, next_shape);
-                next_shape_id = ROBJECT_SHAPE_ID(obj);
+                next_shape_id = rb_shape_id(next_shape);
             }
 
             if (rb_shape_get_iv_index(next_shape, id, &index)) { // based off the hash stored in the transition tree
@@ -1289,6 +1288,9 @@ vm_setivar_slowpath(VALUE obj, ID id, VALUE val, const rb_iseq_t *iseq, IVC ic, 
                 rb_init_iv_list(obj);
             }
 
+            if (shape != next_shape) {
+                rb_shape_set_shape(obj, next_shape);
+            }
             VALUE *ptr = ROBJECT_IVPTR(obj);
             RB_OBJ_WRITE(obj, &ptr[index], val);
             RB_DEBUG_COUNTER_INC(ivar_set_ic_miss_iv_hit);

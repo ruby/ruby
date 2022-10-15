@@ -125,6 +125,15 @@ bool rb_shape_get_iv_index(rb_shape_t * shape, ID id, attr_index_t * value);
 shape_id_t rb_shape_id(rb_shape_t * shape);
 MJIT_SYMBOL_EXPORT_END
 
+static inline uint32_t
+ROBJECT_IV_COUNT(VALUE obj)
+{
+    RBIMPL_ASSERT_TYPE(obj, RUBY_T_OBJECT);
+    uint32_t ivc = rb_shape_get_shape_by_id(ROBJECT_SHAPE_ID(obj))->iv_count;
+    RUBY_ASSERT(ivc <= ROBJECT_NUMIV(obj));
+    return ivc;
+}
+
 rb_shape_t * rb_shape_alloc(ID edge_name, rb_shape_t * parent);
 rb_shape_t * rb_shape_alloc_with_parent_id(ID edge_name, shape_id_t parent_id);
 
