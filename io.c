@@ -10855,9 +10855,7 @@ rb_f_select(int argc, VALUE *argv, VALUE obj)
     if (scheduler != Qnil) {
         // It's optionally supported.
         VALUE result = rb_fiber_scheduler_io_selectv(scheduler, argc, argv);
-        if (result != Qundef) {
-            return result;
-        }
+        if (result != Qundef) return result;
     }
 
     VALUE timeout;
