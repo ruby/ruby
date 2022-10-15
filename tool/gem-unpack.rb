@@ -11,10 +11,12 @@ def Gem.unpack(file, dir = nil, spec_dir = nil)
   target = spec.full_name
   target = File.join(dir, target) if dir
   pkg.extract_files target
-  FileUtils.mkdir_p(spec_dir ||= target)
-  spec_file = File.join(spec_dir, "#{spec.name}-#{spec.version}.gemspec")
-  open(spec_file, 'wb') do |f|
-    f.print spec.to_ruby
+  if spec.extensions.empty?
+    spec_dir ||= target
+  else
+    spec_dir = target
   end
+  FileUtils.mkdir_p(spec_dir)
+  File.binwrite(File.join(spec_dir, "#{spec.name}-#{spec.version}.gemspec"), spec.to_ruby)
   puts "Unpacked #{file}"
 end
