@@ -75,6 +75,81 @@ RSpec.describe "bundle install across platforms" do
     expect(the_bundle).to include_gems "platform_specific 1.0 RUBY"
   end
 
+  context "on universal Rubies" do
+    before do
+      build_repo4 do
+        build_gem "darwin_single_arch" do |s|
+          s.platform = "ruby"
+          s.write "lib/darwin_single_arch.rb", "DARWIN_SINGLE_ARCH = '1.0 RUBY'"
+        end
+        build_gem "darwin_single_arch" do |s|
+          s.platform = "arm64-darwin"
+          s.write "lib/darwin_single_arch.rb", "DARWIN_SINGLE_ARCH = '1.0 arm64-darwin'"
+        end
+        build_gem "darwin_single_arch" do |s|
+          s.platform = "x86_64-darwin"
+          s.write "lib/darwin_single_arch.rb", "DARWIN_SINGLE_ARCH = '1.0 x86_64-darwin'"
+        end
+      end
+    end
+
+    it "pulls in the correct architecture gem" do
+      lockfile <<-G
+        GEM
+          remote: #{file_uri_for(gem_repo4)}
+          specs:
+            darwin_single_arch (1.0)
+            darwin_single_arch (1.0-arm64-darwin)
+            darwin_single_arch (1.0-x86_64-darwin)
+
+        PLATFORMS
+          ruby
+
+        DEPENDENCIES
+          darwin_single_arch
+      G
+
+      simulate_platform "universal-darwin-21"
+      simulate_ruby_platform "universal.x86_64-darwin21" do
+        install_gemfile <<-G
+          source "#{file_uri_for(gem_repo4)}"
+
+          gem "darwin_single_arch"
+        G
+
+        expect(the_bundle).to include_gems "darwin_single_arch 1.0 x86_64-darwin"
+      end
+    end
+
+    it "pulls in the correct architecture gem on arm64e macOS Ruby" do
+      lockfile <<-G
+        GEM
+          remote: #{file_uri_for(gem_repo4)}
+          specs:
+            darwin_single_arch (1.0)
+            darwin_single_arch (1.0-arm64-darwin)
+            darwin_single_arch (1.0-x86_64-darwin)
+
+        PLATFORMS
+          ruby
+
+        DEPENDENCIES
+          darwin_single_arch
+      G
+
+      simulate_platform "universal-darwin-21"
+      simulate_ruby_platform "universal.arm64e-darwin21" do
+        install_gemfile <<-G
+          source "#{file_uri_for(gem_repo4)}"
+
+          gem "darwin_single_arch"
+        G
+
+        expect(the_bundle).to include_gems "darwin_single_arch 1.0 arm64-darwin"
+      end
+    end
+  end
+
   it "works with gems that have different dependencies" do
     simulate_platform "java"
     install_gemfile <<-G

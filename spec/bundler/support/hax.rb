@@ -1,5 +1,10 @@
 # frozen_string_literal: true
 
+if ENV["BUNDLER_SPEC_RUBY_PLATFORM"]
+  Object.send(:remove_const, :RUBY_PLATFORM)
+  RUBY_PLATFORM = ENV["BUNDLER_SPEC_RUBY_PLATFORM"]
+end
+
 module Gem
   def self.ruby=(ruby)
     @ruby = ruby
