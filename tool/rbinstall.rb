@@ -899,7 +899,7 @@ module RbInstall
       RbInstall.no_write(options) {super}
     end
 
-    if RbConfig::CONFIG["LIBRUBY_RELATIVE"] == "yes" || RbConfig::CONFIG["CROSS_COMPILING"] == "yes"
+    if RbConfig::CONFIG["LIBRUBY_RELATIVE"] == "yes" || RbConfig::CONFIG["CROSS_COMPILING"] == "yes" || ENV["DESTDIR"]
       # TODO: always build extensions in bundled gems by build-ext and
       # install the built binaries.
       def build_extensions
