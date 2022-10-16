@@ -256,6 +256,7 @@ enum fiber_status {
 
 struct rb_fiber_struct {
     rb_context_t cont;
+    VALUE locals;
     VALUE first_proc;
     struct rb_fiber_struct *prev;
     struct rb_fiber_struct *resuming_fiber;
@@ -271,7 +272,7 @@ struct rb_fiber_struct {
 
 static struct fiber_pool shared_fiber_pool = {NULL, NULL, 0, 0, 0, 0};
 
-static ID fiber_initialize_keywords[2] = {0};
+static ID fiber_initialize_keywords[3] = {0};
 
 /*
  * FreeBSD require a first (i.e. addr) argument of mmap(2) is not NULL
@@ -1092,6 +1093,7 @@ static void
 fiber_compact(void *ptr)
 {
     rb_fiber_t *fiber = ptr;
+    fiber->locals = rb_gc_location(fiber->locals);
     fiber->first_proc = rb_gc_location(fiber->first_proc);
 
     if (fiber->prev) rb_fiber_update_self(fiber->prev);
@@ -1106,6 +1108,7 @@ fiber_mark(void *ptr)
     rb_fiber_t *fiber = ptr;
     RUBY_MARK_ENTER("cont");
     fiber_verify(fiber);
+    rb_gc_mark_movable(fiber->locals);
     rb_gc_mark_movable(fiber->first_proc);
     if (fiber->prev) rb_fiber_mark_self(fiber->prev);
     cont_mark(&fiber->cont);
@@ -1993,10 +1996,11 @@ fiber_t_alloc(VALUE fiber_value, unsigned int blocking)
 }
 
 static VALUE
-fiber_initialize(VALUE self, VALUE proc, struct fiber_pool * fiber_pool, unsigned int blocking)
+fiber_initialize(VALUE self, VALUE proc, struct fiber_pool * fiber_pool, unsigned int blocking, VALUE locals)
 {
     rb_fiber_t *fiber = fiber_t_alloc(self, blocking);
 
+    fiber->locals = locals;
     fiber->first_proc = proc;
     fiber->stack.base = NULL;
     fiber->stack.pool = fiber_pool;
@@ -2029,19 +2033,29 @@ rb_fiber_pool_default(VALUE pool)
     return &shared_fiber_pool;
 }
 
+static inline rb_fiber_t*
+fiber_current(void);
+
+static inline VALUE
+fiber_locals(void)
+{
+    return fiber_current()->locals;
+}
+
 /* :nodoc: */
 static VALUE
 rb_fiber_initialize_kw(int argc, VALUE* argv, VALUE self, int kw_splat)
 {
     VALUE pool = Qnil;
     VALUE blocking = Qfalse;
+    VALUE locals = Qundef;
 
     if (kw_splat != RB_NO_KEYWORDS) {
         VALUE options = Qnil;
-        VALUE arguments[2] = {Qundef};
+        VALUE arguments[3] = {Qundef};
 
         argc = rb_scan_args_kw(kw_splat, argc, argv, ":", &options);
-        rb_get_kwargs(options, fiber_initialize_keywords, 0, 2, arguments);
+        rb_get_kwargs(options, fiber_initialize_keywords, 0, 3, arguments);
 
         if (arguments[0] != Qundef) {
             blocking = arguments[0];
@@ -2050,9 +2064,16 @@ rb_fiber_initialize_kw(int argc, VALUE* argv, VALUE self, int kw_splat)
         if (arguments[1] != Qundef) {
             pool = arguments[1];
         }
+
+        locals = arguments[2];
     }
 
-    return fiber_initialize(self, rb_block_proc(), rb_fiber_pool_default(pool), RTEST(blocking));
+    if (locals == Qundef) {
+        // The default, inherit locals from the current fiber:
+        locals = fiber_locals();
+    }
+
+    return fiber_initialize(self, rb_block_proc(), rb_fiber_pool_default(pool), RTEST(blocking), locals);
 }
 
 /*
@@ -2087,7 +2108,7 @@ rb_fiber_initialize(int argc, VALUE* argv, VALUE self)
 VALUE
 rb_fiber_new(rb_block_call_func_t func, VALUE obj)
 {
-    return fiber_initialize(fiber_alloc(rb_cFiber), rb_proc_new(func, obj), rb_fiber_pool_default(Qnil), 1);
+    return fiber_initialize(fiber_alloc(rb_cFiber), rb_proc_new(func, obj), rb_fiber_pool_default(Qnil), 1, fiber_locals());
 }
 
 static VALUE
@@ -2274,6 +2295,8 @@ root_fiber_alloc(rb_thread_t *th)
     th->root_fiber = fiber;
     DATA_PTR(fiber_value) = fiber;
     fiber->cont.self = fiber_value;
+
+    fiber->locals = rb_hash_new();
 
     coroutine_initialize_main(&fiber->context);
 
@@ -2521,6 +2544,44 @@ VALUE
 rb_fiber_blocking_p(VALUE fiber)
 {
     return RBOOL(fiber_ptr(fiber)->blocking);
+}
+
+static VALUE
+rb_fiber_locals_get(VALUE self)
+{
+    return fiber_ptr(self)->locals;
+}
+
+static VALUE
+rb_fiber_locals_set(VALUE self, VALUE value)
+{
+    return fiber_ptr(self)->locals = value;
+}
+
+static VALUE
+rb_fiber_locals_aref(VALUE class, VALUE key)
+{
+    rb_fiber_t *fiber = fiber_current();
+    VALUE locals = fiber->locals;
+    if (NIL_P(locals)) return Qnil;
+    if (RB_TYPE_P(locals, T_HASH)) {
+        return rb_hash_aref(locals, key);
+    } else {
+        return rb_funcall(locals, idAREF, 1, key);
+    }
+}
+
+static VALUE
+rb_fiber_locals_aset(VALUE class, VALUE key, VALUE value)
+{
+    rb_fiber_t *fiber = fiber_current();
+    VALUE locals = fiber->locals;
+
+    if (RB_TYPE_P(locals, T_HASH)) {
+        return rb_hash_aset(locals, key, value);
+    } else {
+        return rb_funcall(locals, idASET, 2, key, value);
+    }
 }
 
 static VALUE
@@ -3131,6 +3192,7 @@ Init_Cont(void)
 
     fiber_initialize_keywords[0] = rb_intern_const("blocking");
     fiber_initialize_keywords[1] = rb_intern_const("pool");
+    fiber_initialize_keywords[2] = rb_intern_const("locals");
 
     const char *fiber_shared_fiber_pool_free_stacks = getenv("RUBY_SHARED_FIBER_POOL_FREE_STACKS");
     if (fiber_shared_fiber_pool_free_stacks) {
@@ -3143,8 +3205,13 @@ Init_Cont(void)
     rb_define_singleton_method(rb_cFiber, "yield", rb_fiber_s_yield, -1);
     rb_define_singleton_method(rb_cFiber, "current", rb_fiber_s_current, 0);
     rb_define_singleton_method(rb_cFiber, "blocking", rb_fiber_blocking, 0);
+    rb_define_singleton_method(rb_cFiber, "[]", rb_fiber_locals_aref, 1);
+    rb_define_singleton_method(rb_cFiber, "[]=", rb_fiber_locals_aset, 2);
+
     rb_define_method(rb_cFiber, "initialize", rb_fiber_initialize, -1);
     rb_define_method(rb_cFiber, "blocking?", rb_fiber_blocking_p, 0);
+    rb_define_method(rb_cFiber, "locals", rb_fiber_locals_get, 0);
+    rb_define_method(rb_cFiber, "locals=", rb_fiber_locals_set, 1);
     rb_define_method(rb_cFiber, "resume", rb_fiber_m_resume, -1);
     rb_define_method(rb_cFiber, "raise", rb_fiber_m_raise, -1);
     rb_define_method(rb_cFiber, "backtrace", rb_fiber_backtrace, -1);
