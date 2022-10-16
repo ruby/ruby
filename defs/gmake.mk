@@ -290,7 +290,7 @@ extract-gems: | $(patsubst %,.bundle/gems/%,$(bundled-gems))
 	$(ECHO) Extracting bundle gem $*...
 	$(Q) $(BASERUBY) -C "$(srcdir)" \
 	    -Itool -rgem-unpack \
-	    -e 'Gem.unpack("gems/$(@F).gem", ".bundle/gems", ".bundle/specifications")'
+	    -e 'Gem.unpack("gems/$(@F).gem", ".bundle")'
 
 $(srcdir)/.bundle/gems:
 	$(MAKEDIRS) $@
