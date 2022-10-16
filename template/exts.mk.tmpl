@@ -19,7 +19,7 @@ opt = OptionParser.new do |o|
   o.on('--configure-exts=FILE') {|v| confexts = v}
   o.order!(ARGV)
 end
-confexts &&= File.read(confexts).scan(/^exts: (.*\.mk)/).flatten rescue nil
+confexts &&= File.read(confexts).scan(/^(?:ext|gem)s: (.*\.mk)/).flatten rescue nil
 confexts ||= []
 macros["old_extensions"] = []
 
@@ -30,7 +30,7 @@ Dir.glob("{ext,.bundle/gems}/*/exts.mk") do |e|
   s.scan(/^(extensions|SUBMAKEOPTS|EXT[A-Z]+|MFLAGS|NOTE_[A-Z]+)[ \t]*=[ \t]*(#{contpat})$/o) do |n, v|
     v.gsub!(/\\\n[ \t]*/, ' ')
     next if v.empty?
-    next if gem and n != "extensions"
+    next if n != "extensions"
     n = "old_extensions" if n == "extensions" and !confexts.include?(e)
     v = v.split
     m = macros[n] ||= []
