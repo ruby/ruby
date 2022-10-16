@@ -1356,7 +1356,7 @@ hash_iter_status_check(int status)
       case ST_STOP:
         return ST_STOP;
     }
-    return ST_CHECK;  
+    return ST_CHECK;
 }
 
 static int
