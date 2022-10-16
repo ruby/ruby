@@ -508,12 +508,12 @@ ext/clean.mk ext/distclean.mk ext/realclean.mk::
 ext/clean:: ext/clean.sub
 ext/distclean:: ext/distclean.sub
 ext/realclean:: ext/realclean.sub
-gems/clean:: gems/clean.sub
-gems/distclean:: gems/distclean.sub
-gems/realclean:: gems/realclean.sub
+.bundle/clean:: .bundle/clean.sub
+.bundle/distclean:: .bundle/distclean.sub
+.bundle/realclean:: .bundle/realclean.sub
 
 ext/clean.sub ext/distclean.sub ext/realclean.sub \
-gems/clean.sub gems/distclean.sub gems/realclean.sub::
+.bundle/clean.sub .bundle/distclean.sub .bundle/realclean.sub::
 	$(Q) set dummy `echo "${EXTS}" | tr , ' '`; shift; \
 	test "$$#" = 0 && set .; \
 	set dummy `\
@@ -529,7 +529,7 @@ gems/clean.sub gems/distclean.sub gems/realclean.sub::
 	    fi; \
 	done || true
 
-ext/distclean ext/realclean gems/distclean gems/realclean::
+ext/distclean ext/realclean .bundle/distclean .bundle/realclean::
 	$(Q) set dummy `echo "${EXTS}" | tr , ' '`; shift; \
 	test "$$#" = 0 && set .; \
 	cd $(@D) 2>/dev/null && \
