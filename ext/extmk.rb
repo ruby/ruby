@@ -2,6 +2,9 @@
 # -*- mode: ruby; coding: us-ascii -*-
 # frozen_string_literal: false
 
+module Gem; end # only needs Gem::Platform
+require 'rubygems/platform'
+
 # :stopdoc:
 $extension = nil
 $extstatic = nil
@@ -538,11 +541,12 @@ extend Module.new {
     super(*args) do |conf|
       conf.find do |s|
         s.sub!(/^(TARGET_SO_DIR *= *)\$\(RUBYARCHDIR\)/) {
-          "TARGET_GEM_DIR = $(extout)/gems/$(arch)/#{@gemname}\n"\
+          "TARGET_GEM_DIR = $(topdir)/.bundle/extensions/$(gem_platform)/$(ruby_version)/#{@gemname}\n"\
           "#{$1}$(TARGET_GEM_DIR)$(target_prefix)"
         }
       end
       conf.any? {|s| /^TARGET *= *\S/ =~ s} and conf << %{
+gem_platform = #{Gem::Platform.local}
 
 # default target
 all:
