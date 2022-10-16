@@ -1,4 +1,4 @@
-== Packed Data
+== Packed \Data
 
 Certain Ruby core methods deal with packing and unpacking data:
 
@@ -10,7 +10,7 @@ Certain Ruby core methods deal with packing and unpacking data:
   forming objects that become the elements of a new array;
   returns that array.
 - \Method String#unpack1:
-  Does the same, but returns only the first extracted object.
+  Does the same, but unpacks and returns only the first extracted object.
 
 Each of these methods accepts a string +template+,
 consisting of zero or more _directive_ characters,
