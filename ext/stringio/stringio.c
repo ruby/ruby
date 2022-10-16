@@ -257,9 +257,20 @@ strio_s_allocate(VALUE klass)
 }
 
 /*
- * call-seq: StringIO.new(string=""[, mode])
+ * call-seq:
+ *   StringIO.new(string = '', mode = 'r+') -> new_stringio
  *
- * Creates new StringIO instance from with _string_ and _mode_.
+ * Note that +mode+ defaults to <tt>'r'</tt> if +string+ is frozen.
+ *
+ * Returns a new \StringIO instance formed from +string+ and +mode+;
+ * see {Access Modes}[rdoc-ref:File@Access+Modes]:
+ *
+ *   strio = StringIO.new # => #<StringIO>
+ *   strio.close
+ *
+ * The instance should be closed when no longer needed.
+ *
+ * Related: StringIO.open (accepts block; closes automatically).
  */
 static VALUE
 strio_initialize(int argc, VALUE *argv, VALUE self)
@@ -392,11 +403,26 @@ strio_finalize(VALUE self)
 }
 
 /*
- * call-seq: StringIO.open(string=""[, mode]) {|strio| ...}
+ * call-seq:
+ *   StringIO.open(string = '', mode = 'r+') {|strio| ... }
  *
- * Equivalent to StringIO.new except that when it is called with a block, it
- * yields with the new instance and closes it, and returns the result which
- * returned from the block.
+ * Note that +mode+ defaults to <tt>'r'</tt> if +string+ is frozen.
+ *
+ * Creates a new \StringIO instance formed from +string+ and +mode+;
+ * see {Access Modes}[rdoc-ref:File@Access+Modes].
+ *
+ * With no block, returns the new instance:
+ *
+ *   strio = StringIO.open # => #<StringIO>
+ *
+ * With a block, calls the block with the new instance
+ * and returns the block's value;
+ * closes the instance on block exit.
+ *
+ *   StringIO.open {|strio| p strio }
+ *   # => #<StringIO>
+ *
+ * Related: StringIO.new.
  */
 static VALUE
 strio_s_open(int argc, VALUE *argv, VALUE klass)
@@ -482,9 +508,23 @@ strio_unimpl(int argc, VALUE *argv, VALUE self)
 }
 
 /*
- * call-seq: strio.string     -> string
+ * call-seq:
+ *   string -> string
  *
- * Returns underlying String object, the subject of IO.
+ * Returns underlying string:
+ *
+ *   StringIO.open('foo') do |strio|
+ *     p strio.string
+ *     strio.string = 'bar'
+ *     p strio.string
+ *   end
+ *
+ * Output:
+ *
+ *   "foo"
+ *   "bar"
+ *
+ * Related: StringIO#string= (assigns the underlying string).
  */
 static VALUE
 strio_get_string(VALUE self)
@@ -494,9 +534,23 @@ strio_get_string(VALUE self)
 
 /*
  * call-seq:
- *   strio.string = string  -> string
+ *   string = other_string -> other_string
  *
- * Changes underlying String object, the subject of IO.
+ * Assigns the underlying string as +other_string+, and sets position to zero;
+ * returns +other_string+:
+ *
+ *   StringIO.open('foo') do |strio|
+ *     p strio.string
+ *     strio.string = 'bar'
+ *     p strio.string
+ *   end
+ *
+ * Output:
+ *
+ *   "foo"
+ *   "bar"
+ *
+ * Related: StringIO#string (returns the underlying string).
  */
 static VALUE
 strio_set_string(VALUE self, VALUE string)
@@ -514,10 +568,13 @@ strio_set_string(VALUE self, VALUE string)
 
 /*
  * call-seq:
- *   strio.close  -> nil
+ *   close -> nil
  *
- * Closes a StringIO. The stream is unavailable for any further data
- * operations; an +IOError+ is raised if such an attempt is made.
+ * Closes +self+ for both reading and writing.
+ *
+ * Raises IOError if reading or writing is attempted.
+ *
+ * Related: StringIO#close_read, StringIO#close_write.
  */
 static VALUE
 strio_close(VALUE self)
@@ -529,10 +586,13 @@ strio_close(VALUE self)
 
 /*
  * call-seq:
- *   strio.close_read    -> nil
+ *   close_read -> nil
  *
- * Closes the read end of a StringIO.  Will raise an +IOError+ if the
- * receiver is not readable.
+ * Closes +self+ for reading; closed-write setting remains unchanged.
+ *
+ * Raises IOError if reading is attempted.
+ *
+ * Related: StringIO#close, StringIO#close_write.
  */
 static VALUE
 strio_close_read(VALUE self)
@@ -547,10 +607,13 @@ strio_close_read(VALUE self)
 
 /*
  * call-seq:
- *   strio.close_write    -> nil
+ *   close_write -> nil
  *
- * Closes the write end of a StringIO.  Will raise an  +IOError+ if the
- * receiver is not writeable.
+ * Closes +self+ for writing; closed-read setting remains unchanged.
+ *
+ * Raises IOError if writing is attempted.
+ *
+ * Related: StringIO#close, StringIO#close_read.
  */
 static VALUE
 strio_close_write(VALUE self)
@@ -565,9 +628,10 @@ strio_close_write(VALUE self)
 
 /*
  * call-seq:
- *   strio.closed?    -> true or false
+ *   closed? -> true or false
  *
- * Returns +true+ if the stream is completely closed, +false+ otherwise.
+ * Returns +true+ if +self+ is closed for both reading and writing,
+ * +false+ otherwise.
  */
 static VALUE
 strio_closed(VALUE self)
@@ -579,9 +643,9 @@ strio_closed(VALUE self)
 
 /*
  * call-seq:
- *   strio.closed_read?    -> true or false
+ *   closed_read? -> true or false
  *
- * Returns +true+ if the stream is not readable, +false+ otherwise.
+ * Returns +true+ if +self+ is closed for reading, +false+ otherwise.
  */
 static VALUE
 strio_closed_read(VALUE self)
@@ -593,9 +657,9 @@ strio_closed_read(VALUE self)
 
 /*
  * call-seq:
- *   strio.closed_write?    -> true or false
+ *   closed_write? -> true or false
  *
- * Returns +true+ if the stream is not writable, +false+ otherwise.
+ * Returns +true+ if +self+ is closed for writing, +false+ otherwise.
  */
 static VALUE
 strio_closed_write(VALUE self)
@@ -615,11 +679,14 @@ strio_to_read(VALUE self)
 
 /*
  * call-seq:
- *   strio.eof     -> true or false
- *   strio.eof?    -> true or false
+ *   eof? -> true or false
  *
- * Returns true if the stream is at the end of the data (underlying string).
- * The stream must be opened for reading or an +IOError+ will be raised.
+ * Returns +true+ if positioned at end-of-stream, +false+ otherwise;
+ * see {Position}[rdoc-ref:File@Position].
+ *
+ * Raises IOError if the stream is not opened for reading.
+ *
+ * StreamIO#eof is an alias for StreamIO#eof?.
  */
 static VALUE
 strio_eof(VALUE self)
@@ -1772,24 +1839,16 @@ strio_set_encoding_by_bom(VALUE self)
 }
 
 /*
- * Pseudo I/O on String object, with interface corresponding to IO.
+ * \IO streams for strings, with access similar to
+ * {IO}[rdoc-ref:IO];
+ * see {IO Streams}[rdoc-ref:io_streams.rdoc].
  *
- * Commonly used to simulate <code>$stdio</code> or <code>$stderr</code>
+ * === About the Examples
  *
- * === Examples
+ * Examples on this page assume that \StringIO has been required:
  *
  *   require 'stringio'
  *
- *   # Writing stream emulation
- *   io = StringIO.new
- *   io.puts "Hello World"
- *   io.string #=> "Hello World\n"
- *
- *   # Reading stream emulation
- *   io = StringIO.new "first\nsecond\nlast\n"
- *   io.getc #=> "f"
- *   io.gets #=> "irst\n"
- *   io.read #=> "second\nlast\n"
  */
 void
 Init_stringio(void)
