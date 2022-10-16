@@ -5305,6 +5305,7 @@ fn gen_send_general(
                 );
             }
             VM_METHOD_TYPE_ATTRSET => {
+                #[allow(clippy::if_same_then_else)]
                 if flags & VM_CALL_KWARG != 0 {
                     gen_counter_incr!(asm, send_attrset_kwargs);
                     return CantCompile;
