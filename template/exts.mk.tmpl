@@ -30,7 +30,6 @@ Dir.glob("{ext,.bundle/gems}/*/exts.mk") do |e|
   s.scan(/^(extensions|SUBMAKEOPTS|EXT[A-Z]+|MFLAGS|NOTE_[A-Z]+)[ \t]*=[ \t]*(#{contpat})$/o) do |n, v|
     v.gsub!(/\\\n[ \t]*/, ' ')
     next if v.empty?
-    next if n != "extensions"
     n = "old_extensions" if n == "extensions" and !confexts.include?(e)
     v = v.split
     m = macros[n] ||= []
