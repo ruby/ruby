@@ -25,7 +25,7 @@ macros["old_extensions"] = []
 
 contpat = /(?>(?>[^\\\n]|\\.)*\\\n)*(?>[^\\\n]|\\.)*/
 Dir.glob("{ext,.bundle/gems}/*/exts.mk") do |e|
-  gem = /\Agems(?=\/)/ =~ e
+  gem = e.start_with?(".bundle/gems/")
   s = File.read(e)
   s.scan(/^(extensions|SUBMAKEOPTS|EXT[A-Z]+|MFLAGS|NOTE_[A-Z]+)[ \t]*=[ \t]*(#{contpat})$/o) do |n, v|
     v.gsub!(/\\\n[ \t]*/, ' ')

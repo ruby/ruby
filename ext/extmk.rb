@@ -146,7 +146,7 @@ def extmake(target, basedir = 'ext', maybestatic = true)
     top_srcdir = $top_srcdir
     topdir = $topdir
     hdrdir = $hdrdir
-    prefix = "../" * (target.count("/")+1)
+    prefix = "../" * (basedir.count("/")+target.count("/")+1)
     $top_srcdir = relative_from(top_srcdir, prefix)
     $hdrdir = relative_from(hdrdir, prefix)
     $topdir = prefix + $topdir
@@ -463,10 +463,11 @@ for dir in ["ext", File::join($top_srcdir, "ext")]
 end unless $extstatic
 
 @gemname = nil
-if ARGV[0]
-  ext_prefix, exts = ARGV.shift.split('/', 2)
+if exts = ARGV.shift
+  ext_prefix = exts[%r[\A(?>\.bundle/)?[^/]+(?:/(?=(.+)?)|\z)]]
+  exts = $1
   $extension = [exts] if exts
-  if ext_prefix == 'gems'
+  if ext_prefix.start_with?('.')
     @gemname = exts
   elsif exts
     $static_ext.delete_if {|t, *| !File.fnmatch(t, exts)}
@@ -518,7 +519,7 @@ cond = proc {|ext, *|
     exts.delete_if {|d| File.fnmatch?("-*", d)}
   end
 end
-ext_prefix = File.basename(ext_prefix)
+ext_prefix = ext_prefix[$top_srcdir.size+1..-2]
 
 extend Module.new {
   def timestamp_file(name, target_prefix = nil)
@@ -667,7 +668,7 @@ rubies = []
   end
 }
 
-Dir.chdir ".."
+Dir.chdir dir
 unless $destdir.to_s.empty?
   $mflags.defined?("DESTDIR") or $mflags << "DESTDIR=#{$destdir}"
 end
