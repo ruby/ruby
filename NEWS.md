@@ -234,6 +234,7 @@ Note: We're only listing outstanding class updates.
     * timeout 0.3.0
 *   The following bundled gems are updated.
     * minitest 5.16.3
+    * power_assert 2.0.2
     * test-unit 3.5.5
     * net-ftp 0.2.0
     * net-imap 0.3.1
