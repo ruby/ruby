@@ -11,6 +11,7 @@ on:
       - 'gems/bundled_gems'
   schedule:
     - cron: '45 6 * * *'
+  workflow_dispatch:
 
 jobs:
   update:
