@@ -207,19 +207,19 @@ class TestCoverage < Test::Unit::TestCase
   def test_coverage_ensure_if_return
     result = {
       :branches => {
-        [:if, 0, 3, 1, 6, 4] => {
-          [:then, 1, 3, 6, 3, 6] => 0,
-          [:else, 2, 5, 3, 5, 9] => 1,
-	},
+        [:if, 0, 3, 2, 6, 5] => {
+          [:then, 1, 3, 7, 3, 7] => 0,
+          [:else, 2, 5, 4, 5, 10] => 1,
+        },
       },
     }
     assert_coverage(<<~"end;", { branches: true }, result)
       def flush
       ensure
-	if $!
-	else
-	  return
-	end
+        if $!
+        else
+          return
+        end
       end
       flush
     end;
