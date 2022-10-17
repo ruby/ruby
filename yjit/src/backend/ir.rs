@@ -5,6 +5,7 @@
 use std::cell::Cell;
 use std::fmt;
 use std::convert::From;
+use std::io::Write;
 use std::mem::take;
 use crate::cruby::{VALUE};
 use crate::virtualmem::{CodePtr};
@@ -433,9 +434,9 @@ pub enum Insn {
     // binary OR operation.
     Or { left: Opnd, right: Opnd, out: Opnd },
 
-    /// Pad nop instructions to accomodate Op::Jmp in case the block is
-    /// invalidated.
-    PadEntryExit,
+    /// Pad nop instructions to accomodate Op::Jmp in case the block or the insn
+    /// is invalidated.
+    PadInvalPatch,
 
     // Mark a position in the generated code
     PosMarker(PosMarkerFn),
@@ -521,7 +522,7 @@ impl Insn {
             Insn::Mov { .. } => "Mov",
             Insn::Not { .. } => "Not",
             Insn::Or { .. } => "Or",
-            Insn::PadEntryExit => "PadEntryExit",
+            Insn::PadInvalPatch => "PadEntryExit",
             Insn::PosMarker(_) => "PosMarker",
             Insn::RShift { .. } => "RShift",
             Insn::Store { .. } => "Store",
@@ -658,7 +659,7 @@ impl<'a> Iterator for InsnOpndIterator<'a> {
             Insn::Jz(_) |
             Insn::Label(_) |
             Insn::LeaLabel { .. } |
-            Insn::PadEntryExit |
+            Insn::PadInvalPatch |
             Insn::PosMarker(_) => None,
             Insn::CPopInto(opnd) |
             Insn::CPush(opnd) |
@@ -755,7 +756,7 @@ impl<'a> InsnOpndMutIterator<'a> {
             Insn::Jz(_) |
             Insn::Label(_) |
             Insn::LeaLabel { .. } |
-            Insn::PadEntryExit |
+            Insn::PadInvalPatch |
             Insn::PosMarker(_) => None,
             Insn::CPopInto(opnd) |
             Insn::CPush(opnd) |
@@ -1474,8 +1475,8 @@ impl Assembler {
         out
     }
 
-    pub fn pad_entry_exit(&mut self) {
-        self.push_insn(Insn::PadEntryExit);
+    pub fn pad_inval_patch(&mut self) {
+        self.push_insn(Insn::PadInvalPatch);
     }
 
     //pub fn pos_marker<F: FnMut(CodePtr)>(&mut self, marker_fn: F)

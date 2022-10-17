@@ -4,8 +4,13 @@ use std::ffi::CStr;
 #[derive(Clone, PartialEq, Eq, Debug)]
 #[repr(C)]
 pub struct Options {
-    // Size of the executable memory block to allocate in MiB
+    // Size of the executable memory block to allocate in bytes
+    // Note that the command line argument is expressed in MiB and not bytes
     pub exec_mem_size: usize,
+
+    // Size of each executable memory code page in bytes
+    // Note that the command line argument is expressed in KiB and not bytes
+    pub code_page_size: usize,
 
     // Number of method calls after which to start generating code
     // Threshold==1 means compile on first execution
@@ -48,7 +53,8 @@ pub struct Options {
 
 // Initialize the options to default values
 pub static mut OPTIONS: Options = Options {
-    exec_mem_size: 256,
+    exec_mem_size: 256 * 1024 * 1024,
+    code_page_size: 16 * 1024,
     call_threshold: 10,
     greedy_versioning: false,
     no_type_prop: false,
@@ -118,8 +124,30 @@ pub fn parse_option(str_ptr: *const std::os::raw::c_char) -> Option<()> {
     match (opt_name, opt_val) {
         ("", "") => (), // Simply --yjit
 
-        ("exec-mem-size", _) => match opt_val.parse() {
-            Ok(n) => unsafe { OPTIONS.exec_mem_size = n },
+        ("exec-mem-size", _) => match opt_val.parse::<usize>() {
+            Ok(n) => {
+                if n == 0 || n > 2 * 1024 * 1024 {
+                    return None
+                }
+
+                // Convert from MiB to bytes internally for convenience
+                unsafe { OPTIONS.exec_mem_size = n * 1024 * 1024 }
+            }
+            Err(_) => {
+                return None;
+            }
+        },
+
+        ("code-page-size", _) => match opt_val.parse::<usize>() {
+            Ok(n) => {
+                // Enforce bounds checks and that n is divisible by 4KiB
+                if n < 4 || n > 256 || n % 4 != 0 {
+                    return None
+                }
+
+                // Convert from KiB to bytes internally for convenience
+                unsafe { OPTIONS.code_page_size = n * 1024 }
+            }
             Err(_) => {
                 return None;
             }
