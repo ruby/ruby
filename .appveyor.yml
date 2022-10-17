@@ -46,7 +46,7 @@ for:
     - git pull -q
     - .\bootstrap-vcpkg.bat
     - cd %APPVEYOR_BUILD_FOLDER%
-    - vcpkg --triplet %Platform%-windows install libffi libyaml readline zlib
+    - vcpkg --triplet %Platform%-windows install --x-use-aria2 libffi libyaml readline zlib
     - CALL SET vcvars=%%^VS%VS%COMNTOOLS^%%..\..\VC\vcvarsall.bat
     - SET vcvars
     - '"%vcvars%" %Platform:x64=amd64%'
