@@ -11,7 +11,7 @@ end
 
 class String
   # call-seq:
-  #   unpack(template, offset = 0) -> array
+  #   unpack(template, offset: 0) -> array
   #
   #  Extracts data from +self+, forming objects that become the elements of a new array;
   #  returns that array.
