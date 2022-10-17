@@ -96,7 +96,7 @@ pub fn disasm_iseq_insn_range(iseq: IseqPtr, start_idx: u32, end_idx: u32) -> St
             writeln!(out, "== {:=<60}", block_ident).unwrap();
 
             // Disassemble the instructions
-            out.push_str(&disasm_addr_range(global_cb, start_addr, code_size));
+            out.push_str(&disasm_addr_range(global_cb, start_addr, (start_addr as usize + code_size) as *const u8));
 
             // If this is not the last block
             if block_idx < block_list.len() - 1 {
@@ -117,11 +117,11 @@ pub fn disasm_iseq_insn_range(iseq: IseqPtr, start_idx: u32, end_idx: u32) -> St
 }
 
 #[cfg(feature = "disasm")]
-pub fn dump_disasm_addr_range(cb: &CodeBlock, start_addr: *const u8, code_size: usize, dump_disasm: &DumpDisasm) {
+pub fn dump_disasm_addr_range(cb: &CodeBlock, start_addr: *const u8, end_addr: *const u8, dump_disasm: &DumpDisasm) {
     use std::fs::File;
     use std::io::Write;
 
-    let disasm = disasm_addr_range(cb, start_addr, code_size);
+    let disasm = disasm_addr_range(cb, start_addr, end_addr);
     if disasm.len() > 0 {
         match dump_disasm {
             DumpDisasm::Stdout => println!("{disasm}"),
@@ -134,7 +134,7 @@ pub fn dump_disasm_addr_range(cb: &CodeBlock, start_addr: *const u8, code_size: 
 }
 
 #[cfg(feature = "disasm")]
-pub fn disasm_addr_range(cb: &CodeBlock, start_addr: *const u8, code_size: usize) -> String {
+pub fn disasm_addr_range(cb: &CodeBlock, start_addr: *const u8, end_addr: *const u8) -> String {
     let mut out = String::from("");
 
     // Initialize capstone
@@ -158,6 +158,7 @@ pub fn disasm_addr_range(cb: &CodeBlock, start_addr: *const u8, code_size: usize
     cs.set_skipdata(true).unwrap();
 
     // Disassemble the instructions
+    let code_size = end_addr as usize - start_addr as usize;
     let code_slice = unsafe { std::slice::from_raw_parts(start_addr, code_size) };
     let insns = cs.disasm_all(code_slice, start_addr as u64).unwrap();
 
