@@ -681,6 +681,8 @@ load_iseq_eval(rb_execution_context_t *ec, VALUE fname)
     const rb_iseq_t *iseq = rb_iseq_load_iseq(fname);
 
     if (!iseq) {
+        rb_execution_context_t *ec = GET_EC();
+        VALUE v = rb_vm_push_frame_fname(ec, fname);
         rb_ast_t *ast;
         VALUE parser = rb_parser_new();
         rb_parser_set_context(parser, NULL, FALSE);
@@ -688,6 +690,8 @@ load_iseq_eval(rb_execution_context_t *ec, VALUE fname)
         iseq = rb_iseq_new_top(&ast->body, rb_fstring_lit("<top (required)>"),
                                fname, rb_realpath_internal(Qnil, fname, 1), NULL);
         rb_ast_dispose(ast);
+        rb_vm_pop_frame(ec);
+        RB_GC_GUARD(v);
     }
     rb_exec_event_hook_script_compiled(ec, iseq, Qnil);
     rb_iseq_eval(iseq);
