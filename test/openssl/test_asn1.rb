@@ -323,14 +323,9 @@ class  OpenSSL::TestASN1 < OpenSSL::TestCase
     assert_raise(OpenSSL::ASN1::ASN1Error) { OpenSSL::ASN1::ObjectId.new("3.0".b).to_der }
     assert_raise(OpenSSL::ASN1::ASN1Error) { OpenSSL::ASN1::ObjectId.new("0.40".b).to_der }
 
-    begin
-      oid = (0...100).to_a.join(".").b
-      obj = OpenSSL::ASN1::ObjectId.new(oid)
-      assert_equal oid, obj.oid
-    rescue OpenSSL::ASN1::ASN1Error
-      pend "OBJ_obj2txt() not working (LibreSSL?)" if $!.message =~ /OBJ_obj2txt/
-      raise
-    end
+    oid = (0...100).to_a.join(".").b
+    obj = OpenSSL::ASN1::ObjectId.new(oid)
+    assert_equal oid, obj.oid
 
     aki = [
       OpenSSL::ASN1::ObjectId.new("authorityKeyIdentifier"),
