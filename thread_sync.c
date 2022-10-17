@@ -1030,13 +1030,13 @@ queue_do_pop(VALUE self, struct rb_queue *q, int should_block, VALUE timeout)
 {
     check_array(self, q->que);
     if (RARRAY_LEN(q->que) == 0) {
-      if (!should_block) {
-          rb_raise(rb_eThreadError, "queue empty");
-      }
+        if (!should_block) {
+            rb_raise(rb_eThreadError, "queue empty");
+        }
 
-      if (RTEST(rb_equal(INT2FIX(0), timeout))) {
-        return Qnil;
-      }
+        if (RTEST(rb_equal(INT2FIX(0), timeout))) {
+            return Qnil;
+        }
     }
 
     rb_hrtime_t end = queue_timeout2hrtime(timeout);
@@ -1241,13 +1241,13 @@ rb_szqueue_push(rb_execution_context_t *ec, VALUE self, VALUE object, VALUE non_
     struct rb_szqueue *sq = szqueue_ptr(self);
 
     if (queue_length(self, &sq->q) >= sq->max) {
-      if (RTEST(non_block)) {
-          rb_raise(rb_eThreadError, "queue full");
-      }
+        if (RTEST(non_block)) {
+            rb_raise(rb_eThreadError, "queue full");
+        }
 
-      if (RTEST(rb_equal(INT2FIX(0), timeout))) {
-        return Qnil;
-      }
+        if (RTEST(rb_equal(INT2FIX(0), timeout))) {
+            return Qnil;
+        }
     }
 
     rb_hrtime_t end = queue_timeout2hrtime(timeout);
