@@ -894,11 +894,17 @@ rb_assert_cme_handle(VALUE handle)
     RUBY_ASSERT_ALWAYS(IMEMO_TYPE_P(handle, imemo_ment));
 }
 
+// Used for passing a callback and other data over rb_objspace_each_objects
+struct iseq_callback_data {
+    rb_iseq_callback callback;
+    void *data;
+};
+
 // Heap-walking callback for rb_yjit_for_each_iseq().
 static int
 for_each_iseq_i(void *vstart, void *vend, size_t stride, void *data)
 {
-    const rb_iseq_callback callback = (rb_iseq_callback)data;
+    const struct iseq_callback_data *callback_data = (struct iseq_callback_data *)data;
     VALUE v = (VALUE)vstart;
     for (; v != (VALUE)vend; v += stride) {
         void *ptr = asan_poisoned_object_p(v);
@@ -906,7 +912,7 @@ for_each_iseq_i(void *vstart, void *vend, size_t stride, void *data)
 
         if (rb_obj_is_iseq(v)) {
             rb_iseq_t *iseq = (rb_iseq_t *)v;
-            callback(iseq);
+            callback_data->callback(iseq, callback_data->data);
         }
 
         asan_poison_object_if(ptr, v);
@@ -917,9 +923,10 @@ for_each_iseq_i(void *vstart, void *vend, size_t stride, void *data)
 // Iterate through the whole GC heap and invoke a callback for each iseq.
 // Used for global code invalidation.
 void
-rb_yjit_for_each_iseq(rb_iseq_callback callback)
+rb_yjit_for_each_iseq(rb_iseq_callback callback, void *data)
 {
-    rb_objspace_each_objects(for_each_iseq_i, (void *)callback);
+    struct iseq_callback_data callback_data = { .callback = callback, .data = data };
+    rb_objspace_each_objects(for_each_iseq_i, (void *)&callback_data);
 }
 
 // For running write barriers from Rust. Required when we add a new edge in the

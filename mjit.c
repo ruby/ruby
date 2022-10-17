@@ -951,7 +951,7 @@ mjit_capture_cc_entries(const struct rb_iseq_constant_body *compiled_iseq, const
 
 // Set up field `used_code_p` for unit iseqs whose iseq on the stack of ec.
 static void
-mark_iseq_units(const rb_iseq_t *iseq)
+mark_iseq_units(const rb_iseq_t *iseq, void *data)
 {
     if (ISEQ_BODY(iseq)->jit_unit != NULL) {
         ISEQ_BODY(iseq)->jit_unit->used_code_p = true;
@@ -982,7 +982,7 @@ unload_units(void)
     }
     // All threads have a root_fiber which has a mjit_cont. Other normal fibers also
     // have a mjit_cont. Thus we can check ISeqs in use by scanning ec of mjit_conts.
-    rb_jit_cont_each_iseq(mark_iseq_units);
+    rb_jit_cont_each_iseq(mark_iseq_units, NULL);
     // TODO: check stale_units and unload unused ones! (note that the unit is not associated to ISeq anymore)
 
     // Unload units whose total_calls is smaller than any total_calls in unit_queue.

@@ -532,9 +532,7 @@ pub extern "C" fn rb_yjit_tracing_invalidate_all() {
     // Stop other ractors since we are going to patch machine code.
     with_vm_lock(src_loc!(), || {
         // Make it so all live block versions are no longer valid branch targets
-        unsafe { rb_yjit_for_each_iseq(Some(invalidate_all_blocks_for_tracing)) };
-
-        extern "C" fn invalidate_all_blocks_for_tracing(iseq: IseqPtr) {
+        for_each_iseq(|iseq| {
             if let Some(payload) = unsafe { get_iseq_payload(iseq) } {
                 // C comment:
                 //   Leaking the blocks for now since we might have situations where
@@ -554,7 +552,7 @@ pub extern "C" fn rb_yjit_tracing_invalidate_all() {
 
             // Reset output code entry point
             unsafe { rb_iseq_reset_jit_func(iseq) };
-        }
+        });
 
         let cb = CodegenGlobals::get_inline_cb();
 
