@@ -21,7 +21,7 @@ class String
   end
 
   # call-seq:
-  #   unpack1(template, offset = 0) -> object
+  #   unpack1(template, offset: 0) -> object
   #
   #  Like String#unpack, but unpacks and returns only the first extracted object.
   #  See {Packed Data}[rdoc-ref:packed_data.rdoc].
