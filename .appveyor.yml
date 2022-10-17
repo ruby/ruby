@@ -118,7 +118,7 @@ notifications:
       {{^isPullRequest}}
         {
           "ci": "AppVeyor CI",
-          "env": "Visual Studio 2013 / 2015",
+          "env": "Visual Studio 2013",
           "url": "{{buildUrl}}",
           "commit": "{{commitId}}",
           "branch": "{{branch}}"
