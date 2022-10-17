@@ -101,7 +101,7 @@ void *alloca();
 #  define SUPPORT_COMPRESSED_DEBUG_LINE
 # endif
 #else /* compatibility with glibc < 2.22 */
-# define SHF_COMPRESSED 0
+# define SHF_COMPRESSED (1 << 11)
 #endif
 
 #ifndef PATH_MAX
@@ -844,6 +844,7 @@ typedef struct {
     const char *pend;
     const char *q0;
     const char *q;
+    uint16_t version;
     int format; // 4 or 8
     uint8_t address_size;
     int level;
@@ -869,8 +870,11 @@ typedef struct {
     int type;
 } DebugInfoValue;
 
-/* TODO: Big Endian */
+#ifdef WORDS_BIGENDIAN
+#define MERGE_2INTS(a,b,sz) (((uint64_t)(a)<<sz)|(b))
+#else
 #define MERGE_2INTS(a,b,sz) (((uint64_t)(b)<<sz)|(a))
+#endif
 
 static uint16_t
 get_uint16(const uint8_t *p)
@@ -911,7 +915,11 @@ read_uint24(const char **ptr)
 {
     const char *p = *ptr;
     *ptr = (p + 3);
+#ifdef WORDS_BIGENDIAN
     return ((uint8_t)*p << 16) | get_uint16((const uint8_t *)p+1);
+#else
+    return (*(uint8_t *)(p+2) << 16) | get_uint16((const uint8_t *)p);
+#endif
 }
 
 static uint32_t
@@ -1437,7 +1445,10 @@ ranges_include(DebugInfoReader *reader, ranges_t *ptr, uint64_t addr)
         const char *p;
         uint64_t base = ptr->low_pc_set ? ptr->low_pc : reader->current_low_pc;
         bool base_valid = true;
-        if (reader->obj->debug_rnglists.ptr) {
+        if (reader->version >= 5) {
+            if (!reader->obj->debug_rnglists.ptr) {
+                return false;
+            }
             p = reader->obj->debug_rnglists.ptr + ptr->ranges;
             for (;;) {
                 uint8_t rle = read_uint8(&p);
@@ -1478,6 +1489,10 @@ ranges_include(DebugInfoReader *reader, ranges_t *ptr, uint64_t addr)
                     return from;
                 }
             }
+            return false;
+        }
+        /* assert(reader->version < 5); */
+        if (!reader->obj->debug_ranges.ptr) {
             return false;
         }
         p = reader->obj->debug_ranges.ptr + ptr->ranges;
@@ -1537,7 +1552,6 @@ static int
 di_read_cu(DebugInfoReader *reader)
 {
     uint64_t unit_length;
-    uint16_t version;
     uint64_t debug_abbrev_offset;
     reader->format = 4;
     reader->current_cu = reader->p;
@@ -1547,11 +1561,11 @@ di_read_cu(DebugInfoReader *reader)
         reader->format = 8;
     }
     reader->cu_end = reader->p + unit_length;
-    version = read_uint16(&reader->p);
-    if (version > 5) {
+    reader->version = read_uint16(&reader->p);
+    if (reader->version > 5) {
         return -1;
     }
-    else if (version == 5) {
+    else if (reader->version == 5) {
         /* unit_type = */ read_uint8(&reader->p);
         reader->address_size = read_uint8(&reader->p);
         debug_abbrev_offset = read_uint(reader);
