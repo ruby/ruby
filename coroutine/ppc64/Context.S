@@ -4,6 +4,9 @@
 ; https://github.com/gcc-mirror/gcc/blob/master/libgcc/config/rs6000/darwin-gpsave.S
 ; https://www.ibm.com/docs/en/aix/7.2?topic=epilogs-saving-gprs-only
 
+; Notice that this code is only for Darwin (macOS). Darwin ABI differs from AIX and ELF.
+; To add support for AIX, *BSD or *Linux, please make separate implementations.
+
 #define TOKEN_PASTE(x,y) x##y
 #define PREFIXED_SYMBOL(prefix,name) TOKEN_PASTE(prefix,name)
 #define RED_ZONE 288 ; we do not use it below yet

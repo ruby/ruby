@@ -1671,6 +1671,7 @@ st_values_check(st_table *tab, st_data_t *values, st_index_t size,
  */
 #define FNV_32_PRIME 0x01000193
 
+/* __POWERPC__ added to accommodate Darwin case. */
 #ifndef UNALIGNED_WORD_ACCESS
 # if defined(__i386) || defined(__i386__) || defined(_M_IX86) || \
      defined(__x86_64) || defined(__x86_64__) || defined(_M_AMD64) || \
