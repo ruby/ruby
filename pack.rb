@@ -1,6 +1,6 @@
 class Array
   #  call-seq:
-  #    pack(template, buffer = nil) -> string
+  #    pack(template, buffer: nil) -> string
   #
   #  Formats each element in +self+ into a binary string; returns that string.
   #  See {Packed Data}[rdoc-ref:packed_data.rdoc].
