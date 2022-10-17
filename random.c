@@ -487,13 +487,17 @@ fill_random_bytes_urandom(void *seed, size_t size)
 #if 0
 #elif defined MAC_OS_X_VERSION_10_7 && MAC_OS_X_VERSION_MIN_REQUIRED >= MAC_OS_X_VERSION_10_7
 
-# if defined MAC_OS_X_VERSION_10_10 && MAC_OS_X_VERSION_MIN_REQUIRED >= MAC_OS_X_VERSION_10_10
-#   include <CommonCrypto/CommonCryptoError.h> /* for old Xcode */
-#   include <CommonCrypto/CommonRandom.h>
+# if defined(USE_COMMON_RANDOM)
+# elif defined MAC_OS_X_VERSION_10_10 && MAC_OS_X_VERSION_MIN_REQUIRED >= MAC_OS_X_VERSION_10_10
 #   define USE_COMMON_RANDOM 1
 # else
-#   include <Security/SecRandom.h>
 #   define USE_COMMON_RANDOM 0
+# endif
+# if USE_COMMON_RANDOM
+#   include <CommonCrypto/CommonCryptoError.h> /* for old Xcode */
+#   include <CommonCrypto/CommonRandom.h>
+# else
+#   include <Security/SecRandom.h>
 # endif
 
 static int
