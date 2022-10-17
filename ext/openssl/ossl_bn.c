@@ -599,6 +599,7 @@ BIGNUM_2c(mod_sqr)
 BIGNUM_2cr(mod_sqrt)
 
 /*
+ * Document-method: OpenSSL::BN#mod_inverse
  * call-seq:
  *    bn.mod_inverse(bn2) => aBN
  */
