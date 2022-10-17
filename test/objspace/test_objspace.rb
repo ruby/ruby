@@ -726,6 +726,65 @@ class TestObjSpace < Test::Unit::TestCase
     end
   end
 
+  def load_allocation_path_helper method, to_binary: false
+
+    Tempfile.create(["test_ruby_load_allocation_path", ".rb"]) do |t|
+      path = t.path
+      str = "#{Time.now.to_f.to_s}_#{rand.to_s}"
+      t.puts script = <<~RUBY
+        # frozen-string-literal: true
+        return if Time.now.to_i > 0
+        $gv = 'rnd-#{str}' # unreachable, but the string literal was written
+      RUBY
+
+      t.close
+
+      if to_binary
+        bin = RubyVM::InstructionSequence.compile_file(t.path).to_binary
+        bt = Tempfile.new(['test_ruby_load_allocation_path', '.yarb'], mode: File::Constants::WRONLY)
+        bt.write bin
+        bt.close
+
+        path = bt.path
+      end
+
+      assert_separately(%w[-robjspace -rtempfile], <<~RUBY)
+        GC.disable
+        path = "#{path}"
+        ObjectSpace.trace_object_allocations do
+          #{method}
+        end
+
+        n = 0
+        dump = ObjectSpace.dump_all(output: :string)
+        dump.each_line do |line|
+          if /"value":"rnd-#{str}"/ =~ line && /"frozen":true/ =~ line
+            assert Regexp.new('"file":"' + "#{path}") =~ line
+            assert Regexp.new('"line":') !~ line
+            n += 1
+          end
+        rescue ArgumentError
+        end
+
+        assert_equal(1, n)
+      RUBY
+    ensure
+      bt.unlink if bt
+    end
+  end
+
+  def test_load_allocation_path_load
+    load_allocation_path_helper 'load(path)'
+  end
+
+  def test_load_allocation_path_compile_file
+    load_allocation_path_helper 'RubyVM::InstructionSequence.compile_file(path)'
+  end
+
+  def test_load_allocation_path_load_from_binary
+    # load_allocation_path_helper 'iseq = RubyVM::InstructionSequence.load_from_binary(File.binread(path))', to_binary: true
+  end
+
   def test_utf8_method_names
     name = "utf8_❨╯°□°❩╯︵┻━┻"
     obj = ObjectSpace.trace_object_allocations do

@@ -89,6 +89,9 @@ control_frame_dump(const rb_execution_context_t *ec, const rb_control_frame_t *c
       case VM_FRAME_MAGIC_RESCUE:
         magic = "RESCUE";
         break;
+      case VM_FRAME_MAGIC_DUMMY:
+        magic = "DUMMY";
+        break;
       case 0:
         magic = "------";
         break;
@@ -117,12 +120,17 @@ control_frame_dump(const rb_execution_context_t *ec, const rb_control_frame_t *c
             line = -1;
         }
         else {
-            iseq = cfp->iseq;
-            pc = cfp->pc - ISEQ_BODY(iseq)->iseq_encoded;
-            iseq_name = RSTRING_PTR(ISEQ_BODY(iseq)->location.label);
-            line = rb_vm_get_sourceline(cfp);
-            if (line) {
-                snprintf(posbuf, MAX_POSBUF, "%s:%d", RSTRING_PTR(rb_iseq_path(iseq)), line);
+            if (cfp->pc) {
+                iseq = cfp->iseq;
+                pc = cfp->pc - ISEQ_BODY(iseq)->iseq_encoded;
+                iseq_name = RSTRING_PTR(ISEQ_BODY(iseq)->location.label);
+                line = rb_vm_get_sourceline(cfp);
+                if (line) {
+                    snprintf(posbuf, MAX_POSBUF, "%s:%d", RSTRING_PTR(rb_iseq_path(iseq)), line);
+                }
+            }
+            else {
+                iseq_name = "<dummy_frame>";
             }
         }
     }
