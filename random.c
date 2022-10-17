@@ -500,15 +500,18 @@ static int
 fill_random_bytes_syscall(void *seed, size_t size, int unused)
 {
 #if USE_COMMON_RANDOM
-    int failed = CCRandomGenerateBytes(seed, size) != kCCSuccess;
+    CCRNGStatus status = CCRandomGenerateBytes(seed, size);
+    int failed = status != kCCSuccess;
 #else
-    int failed = SecRandomCopyBytes(kSecRandomDefault, size, seed) != errSecSuccess;
+    int status = SecRandomCopyBytes(kSecRandomDefault, size, seed);
+    int failed = status != errSecSuccess;
 #endif
 
     if (failed) {
 # if 0
 # if USE_COMMON_RANDOM
         /* How to get the error message? */
+        fprintf(stderr, "CCRandomGenerateBytes failed: %d\n", status);
 # else
         CFStringRef s = SecCopyErrorMessageString(status, NULL);
         const char *m = s ? CFStringGetCStringPtr(s, kCFStringEncodingUTF8) : NULL;
