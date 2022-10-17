@@ -298,14 +298,14 @@ COMPILER_WARNING_POP
 /* assume others than old Mac OS X have no problem */
 # define dln_disable_dlclose() false
 
-#elif MAC_OS_X_VERSION_MIN_REQUIRED >= MAC_OS_X_VERSION_10_11
-/* targeting newer versions only */
-# define dln_disable_dlclose() false
-
 #elif !defined(MAC_OS_X_VERSION_10_11) || \
     (MAC_OS_X_VERSION_MAX_ALLOWED < MAC_OS_X_VERSION_10_11)
 /* targeting older versions only */
 # define dln_disable_dlclose() true
+
+#elif MAC_OS_X_VERSION_MIN_REQUIRED >= MAC_OS_X_VERSION_10_11
+/* targeting newer versions only */
+# define dln_disable_dlclose() false
 
 #else
 /* support both versions, and check at runtime */
