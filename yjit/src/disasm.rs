@@ -2,6 +2,7 @@ use crate::core::*;
 use crate::cruby::*;
 use crate::yjit::yjit_enabled_p;
 use crate::asm::CodeBlock;
+use crate::options::DumpDisasm;
 
 use std::fmt::Write;
 
@@ -115,6 +116,22 @@ pub fn disasm_iseq_insn_range(iseq: IseqPtr, start_idx: u32, end_idx: u32) -> St
     return out;
 }
 
+#[cfg(feature = "disasm")]
+pub fn dump_disasm_addr_range(cb: &CodeBlock, start_addr: *const u8, code_size: usize, dump_disasm: &DumpDisasm) {
+    use std::fs::File;
+    use std::io::Write;
+
+    let disasm = disasm_addr_range(cb, start_addr, code_size);
+    if disasm.len() > 0 {
+        match dump_disasm {
+            DumpDisasm::Stdout => println!("{disasm}"),
+            DumpDisasm::File(path) => {
+                let mut f = File::options().append(true).create(true).open(path).unwrap();
+                f.write_all(disasm.as_bytes()).unwrap();
+            }
+        };
+    }
+}
 
 #[cfg(feature = "disasm")]
 pub fn disasm_addr_range(cb: &CodeBlock, start_addr: *const u8, code_size: usize) -> String {
