@@ -577,22 +577,25 @@ BIGNUM_2c(gcd)
  */
 BIGNUM_2c(mod_sqr)
 
+#define BIGNUM_2cr(func)					\
+    static VALUE						\
+    ossl_bn_##func(VALUE self, VALUE other)			\
+    {								\
+	BIGNUM *bn1, *bn2 = GetBNPtr(other), *result;		\
+	VALUE obj;						\
+	GetBN(self, bn1);					\
+	obj = NewBN(rb_obj_class(self));			\
+	if (!(result = BN_##func(NULL, bn1, bn2, ossl_bn_ctx)))	\
+	    ossl_raise(eBNError, NULL);				\
+	SetBN(obj, result);					\
+	return obj;						\
+    }
+
 /*
  * call-seq:
  *    bn.mod_inverse(bn2) => aBN
  */
-static VALUE
-ossl_bn_mod_inverse(VALUE self, VALUE other)
-{
-    BIGNUM *bn1, *bn2 = GetBNPtr(other), *result;
-    VALUE obj;
-    GetBN(self, bn1);
-    obj = NewBN(rb_obj_class(self));
-    if (!(result = BN_mod_inverse(NULL, bn1, bn2, ossl_bn_ctx)))
-        ossl_raise(eBNError, "BN_mod_inverse");
-    SetBN(obj, result);
-    return obj;
-}
+BIGNUM_2cr(mod_inverse)
 
 /*
  * call-seq:
