@@ -14,8 +14,7 @@
 #define numberof(ary) (int)(sizeof(ary)/sizeof((ary)[0]))
 
 #if !defined(TLS1_3_VERSION) && \
-    defined(LIBRESSL_VERSION_NUMBER) && \
-    LIBRESSL_VERSION_NUMBER >= 0x3020000fL
+    OSSL_LIBRESSL_PREREQ(3, 2, 0) && !OSSL_LIBRESSL_PREREQ(3, 4, 0)
 #  define TLS1_3_VERSION 0x0304
 #endif
 
