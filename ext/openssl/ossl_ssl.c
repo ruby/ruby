@@ -13,6 +13,10 @@
 
 #define numberof(ary) (int)(sizeof(ary)/sizeof((ary)[0]))
 
+#if !defined(OPENSSL_NO_NEXTPROTONEG) && !OSSL_IS_LIBRESSL
+# define OSSL_USE_NEXTPROTONEG
+#endif
+
 #if !defined(TLS1_3_VERSION) && \
     OSSL_LIBRESSL_PREREQ(3, 2, 0) && !OSSL_LIBRESSL_PREREQ(3, 4, 0)
 #  define TLS1_3_VERSION 0x0304
@@ -702,7 +706,7 @@ ssl_npn_select_cb_common(SSL *ssl, VALUE cb, const unsigned char **out,
     return SSL_TLSEXT_ERR_OK;
 }
 
-#ifndef OPENSSL_NO_NEXTPROTONEG
+#ifdef OSSL_USE_NEXTPROTONEG
 static int
 ssl_npn_advertise_cb(SSL *ssl, const unsigned char **out, unsigned int *outlen,
 		     void *arg)
@@ -899,7 +903,7 @@ ossl_sslctx_setup(VALUE self)
     val = rb_attr_get(self, id_i_verify_depth);
     if(!NIL_P(val)) SSL_CTX_set_verify_depth(ctx, NUM2INT(val));
 
-#ifndef OPENSSL_NO_NEXTPROTONEG
+#ifdef OSSL_USE_NEXTPROTONEG
     val = rb_attr_get(self, id_i_npn_protocols);
     if (!NIL_P(val)) {
 	VALUE encoded = ssl_encode_npn_protocols(val);
@@ -2445,7 +2449,7 @@ ossl_ssl_get_client_ca_list(VALUE self)
     return ossl_x509name_sk2ary(ca);
 }
 
-# ifndef OPENSSL_NO_NEXTPROTONEG
+# ifdef OSSL_USE_NEXTPROTONEG
 /*
  * call-seq:
  *    ssl.npn_protocol => String | nil
@@ -2781,7 +2785,7 @@ Init_ossl_ssl(void)
      *   end
      */
     rb_attr(cSSLContext, rb_intern_const("renegotiation_cb"), 1, 1, Qfalse);
-#ifndef OPENSSL_NO_NEXTPROTONEG
+#ifdef OSSL_USE_NEXTPROTONEG
     /*
      * An Enumerable of Strings. Each String represents a protocol to be
      * advertised as the list of supported protocols for Next Protocol
@@ -2987,7 +2991,7 @@ Init_ossl_ssl(void)
     rb_define_method(cSSLSocket, "tmp_key", ossl_ssl_tmp_key, 0);
     rb_define_method(cSSLSocket, "alpn_protocol", ossl_ssl_alpn_protocol, 0);
     rb_define_method(cSSLSocket, "export_keying_material", ossl_ssl_export_keying_material, -1);
-# ifndef OPENSSL_NO_NEXTPROTONEG
+# ifdef OSSL_USE_NEXTPROTONEG
     rb_define_method(cSSLSocket, "npn_protocol", ossl_ssl_npn_protocol, 0);
 # endif
 #endif
