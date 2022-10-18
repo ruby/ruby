@@ -156,10 +156,10 @@ module IRB # :nodoc:
         end
 
         if lvars_code
-          colored.sub(/\A.+\n/, '')
-        else
-          colored
+          raise "#{lvars_code.dump} should have no \\n" if lvars_code.include?("\n")
+          colored.sub!(/\A.+\n/, '') # delete_prefix lvars_code with colors
         end
+        colored
       end
 
       private
