@@ -47,7 +47,7 @@ struct rb_io_buffer {
 };
 
 static inline void *
-io_buffer_map_memory(size_t size)
+io_buffer_map_memory(size_t size, int flags)
 {
 #if defined(_WIN32)
     void * base = VirtualAlloc(0, size, MEM_COMMIT, PAGE_READWRITE);
@@ -56,7 +56,12 @@ io_buffer_map_memory(size_t size)
         rb_sys_fail("io_buffer_map_memory:VirtualAlloc");
     }
 #else
-    void * base = mmap(NULL, size, PROT_READ | PROT_WRITE, MAP_ANON | MAP_PRIVATE, -1, 0);
+    int mmap_flags = MAP_PRIVATE | MAP_ANON;
+    if (flags & RB_IO_BUFFER_SHARED) {
+        mmap_flags |= MAP_SHARED;
+    }
+
+    void * base = mmap(NULL, size, PROT_READ | PROT_WRITE, mmap_flags, -1, 0);
 
     if (base == MAP_FAILED) {
         rb_sys_fail("io_buffer_map_memory:mmap");
@@ -93,6 +98,7 @@ io_buffer_map_file(struct rb_io_buffer *data, int descriptor, size_t size, rb_of
     else {
         // This buffer refers to external data.
         data->flags |= RB_IO_BUFFER_EXTERNAL;
+        data->flags |= RB_IO_BUFFER_SHARED;
     }
 
     void *base = MapViewOfFile(mapping, access, (DWORD)(offset >> 32), (DWORD)(offset & 0xFFFFFFFF), size);
@@ -119,6 +125,7 @@ io_buffer_map_file(struct rb_io_buffer *data, int descriptor, size_t size, rb_of
     else {
         // This buffer refers to external data.
         data->flags |= RB_IO_BUFFER_EXTERNAL;
+        data->flags |= RB_IO_BUFFER_SHARED;
         access |= MAP_SHARED;
     }
 
@@ -184,7 +191,7 @@ io_buffer_initialize(struct rb_io_buffer *data, void *base, size_t size, enum rb
             base = calloc(size, 1);
         }
         else if (flags & RB_IO_BUFFER_MAPPED) {
-            base = io_buffer_map_memory(size);
+            base = io_buffer_map_memory(size, flags);
         }
 
         if (!base) {
@@ -655,6 +662,10 @@ rb_io_buffer_to_s(VALUE self)
         rb_str_cat2(result, " MAPPED");
     }
 
+    if (data->flags & RB_IO_BUFFER_SHARED) {
+        rb_str_cat2(result, " SHARED");
+    }
+
     if (data->flags & RB_IO_BUFFER_LOCKED) {
         rb_str_cat2(result, " LOCKED");
     }
@@ -877,6 +888,22 @@ rb_io_buffer_mapped_p(VALUE self)
     TypedData_Get_Struct(self, struct rb_io_buffer, &rb_io_buffer_type, data);
 
     return RBOOL(data->flags & RB_IO_BUFFER_MAPPED);
+}
+
+/*
+ *  call-seq: shared? -> true or false
+ *
+ *  If the buffer is _shared_, meaning it references memory that can be shared
+ *  with other processes (and thus might change without being modified
+ *  locally). 
+ */
+static VALUE
+rb_io_buffer_shared_p(VALUE self)
+{
+    struct rb_io_buffer *data = NULL;
+    TypedData_Get_Struct(self, struct rb_io_buffer, &rb_io_buffer_type, data);
+
+    return RBOOL(data->flags & RB_IO_BUFFER_SHARED);
 }
 
 /*
@@ -3176,6 +3203,7 @@ Init_IO_Buffer(void)
     rb_define_const(rb_cIOBuffer, "EXTERNAL", RB_INT2NUM(RB_IO_BUFFER_EXTERNAL));
     rb_define_const(rb_cIOBuffer, "INTERNAL", RB_INT2NUM(RB_IO_BUFFER_INTERNAL));
     rb_define_const(rb_cIOBuffer, "MAPPED", RB_INT2NUM(RB_IO_BUFFER_MAPPED));
+    rb_define_const(rb_cIOBuffer, "SHARED", RB_INT2NUM(RB_IO_BUFFER_SHARED));
     rb_define_const(rb_cIOBuffer, "LOCKED", RB_INT2NUM(RB_IO_BUFFER_LOCKED));
     rb_define_const(rb_cIOBuffer, "PRIVATE", RB_INT2NUM(RB_IO_BUFFER_PRIVATE));
     rb_define_const(rb_cIOBuffer, "READONLY", RB_INT2NUM(RB_IO_BUFFER_READONLY));
@@ -3191,6 +3219,7 @@ Init_IO_Buffer(void)
     rb_define_method(rb_cIOBuffer, "external?", rb_io_buffer_external_p, 0);
     rb_define_method(rb_cIOBuffer, "internal?", rb_io_buffer_internal_p, 0);
     rb_define_method(rb_cIOBuffer, "mapped?", rb_io_buffer_mapped_p, 0);
+    rb_define_method(rb_cIOBuffer, "shared?", rb_io_buffer_shared_p, 0);
     rb_define_method(rb_cIOBuffer, "locked?", rb_io_buffer_locked_p, 0);
     rb_define_method(rb_cIOBuffer, "readonly?", io_buffer_readonly_p, 0);
 
