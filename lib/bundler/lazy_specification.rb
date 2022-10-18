@@ -120,19 +120,12 @@ module Bundler
     end
 
     def identifier
-      @__identifier ||= [name, version, platform_string]
+      @__identifier ||= [name, version, platform.to_s]
     end
 
     def git_version
       return unless source.is_a?(Bundler::Source::Git)
       " #{source.revision[0..6]}"
-    end
-
-    protected
-
-    def platform_string
-      platform_string = platform.to_s
-      platform_string == Index::RUBY ? Index::NULL : platform_string
     end
 
     private

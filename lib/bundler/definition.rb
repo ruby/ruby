@@ -479,7 +479,7 @@ module Bundler
     end
 
     def expanded_dependencies
-      @expanded_dependencies ||= expand_dependencies(dependencies + metadata_dependencies)
+      @expanded_dependencies ||= dependencies + metadata_dependencies
     end
 
     def filter_specs(specs, deps)
@@ -789,14 +789,6 @@ module Bundler
         Dependency.new("Ruby\0", Gem.ruby_version),
         Dependency.new("RubyGems\0", Gem::VERSION),
       ]
-    end
-
-    def expand_dependencies(dependencies)
-      dependencies.flat_map do |dep|
-        dep.gem_platforms(@platforms).map do |p|
-          DepProxy.get_proxy(dep, p)
-        end
-      end
     end
 
     def source_requirements
