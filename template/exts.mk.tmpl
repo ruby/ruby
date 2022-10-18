@@ -132,7 +132,7 @@ distclean:
 % end
 
 libencs:
-	$(Q)$(MAKE)<%=mflags%> -f enc.mk V=$(V) $@
+	$(Q)$(MAKE)<%=mflags%> -f enc.mk V=$(V) MINIRUBY="$(MINIRUBY)" $@
 ext/extinit.<%=objext%>:
 	$(Q)$(MAKE)<%=mflags%> V=$(V) EXTINITS="$(EXTINITS)" $@
 
