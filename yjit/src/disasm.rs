@@ -1,9 +1,12 @@
 use crate::core::*;
 use crate::cruby::*;
 use crate::yjit::yjit_enabled_p;
+#[cfg(feature = "disasm")]
 use crate::asm::CodeBlock;
+#[cfg(feature = "disasm")]
 use crate::options::DumpDisasm;
 
+#[cfg(feature = "disasm")]
 use std::fmt::Write;
 
 /// Primitive called in yjit.rb

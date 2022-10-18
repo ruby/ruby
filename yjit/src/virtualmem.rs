@@ -198,6 +198,7 @@ impl CodePtr {
         ptr as i64
     }
 
+    #[cfg(target_arch = "aarch64")]
     pub fn into_u64(self) -> u64 {
         let CodePtr(ptr) = self;
         ptr as u64

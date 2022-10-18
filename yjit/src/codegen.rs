@@ -8,20 +8,18 @@ use crate::core::*;
 use crate::cruby::*;
 use crate::invariants::*;
 use crate::options::*;
+#[cfg(feature = "stats")]
 use crate::stats::*;
 use crate::utils::*;
 use CodegenStatus::*;
 use InsnOpnd::*;
 
-use std::cell::RefCell;
-use std::cell::RefMut;
 use std::cmp;
 use std::collections::HashMap;
 use std::ffi::CStr;
 use std::mem::{self, size_of};
 use std::os::raw::c_uint;
 use std::ptr;
-use std::rc::Rc;
 use std::slice;
 
 pub use crate::virtualmem::CodePtr;
@@ -650,7 +648,7 @@ pub fn gen_entry_prologue(cb: &mut CodeBlock, iseq: IseqPtr, insn_idx: u32) -> O
 
     asm.compile(cb);
 
-    if (cb.has_dropped_bytes()) {
+    if cb.has_dropped_bytes() {
         None
     } else {
         Some(code_ptr)
@@ -6537,10 +6535,15 @@ impl CodegenGlobals {
     pub fn init() {
         // Executable memory and code page size in bytes
         let mem_size = get_option!(exec_mem_size);
-        let code_page_size = get_option!(code_page_size);
+
 
         #[cfg(not(test))]
         let (mut cb, mut ocb) = {
+            use std::cell::RefCell;
+            use std::rc::Rc;
+
+            let code_page_size = get_option!(code_page_size);
+
             let virt_block: *mut u8 = unsafe { rb_yjit_reserve_addr_space(mem_size as u32) };
 
             // Memory protection syscalls need page-aligned addresses, so check it here. Assuming
