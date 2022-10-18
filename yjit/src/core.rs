@@ -11,6 +11,7 @@ use crate::utils::*;
 use crate::disasm::*;
 use core::ffi::c_void;
 use std::cell::*;
+use std::collections::HashSet;
 use std::hash::{Hash, Hasher};
 use std::mem;
 use std::rc::{Rc};
@@ -321,7 +322,7 @@ struct Branch {
 
     // Positions where the generated code starts and ends
     start_addr: Option<CodePtr>,
-    end_addr: Option<CodePtr>,
+    end_addr: Option<CodePtr>, // exclusive
 
     // Context right after the branch instruction
     #[allow(unused)] // set but not read at the moment
@@ -475,7 +476,11 @@ impl Eq for BlockRef {}
 /// when calling into YJIT
 #[derive(Default)]
 pub struct IseqPayload {
+    // Basic block versions
     version_map: VersionMap,
+
+    // Indexes of code pages used by this this ISEQ
+    pub pages: HashSet<usize>,
 }
 
 impl IseqPayload {
@@ -498,7 +503,7 @@ pub fn get_iseq_payload(iseq: IseqPtr) -> Option<&'static mut IseqPayload> {
 }
 
 /// Get the payload object associated with an iseq. Create one if none exists.
-fn get_or_create_iseq_payload(iseq: IseqPtr) -> &'static mut IseqPayload {
+pub fn get_or_create_iseq_payload(iseq: IseqPtr) -> &'static mut IseqPayload {
     type VoidPtr = *mut c_void;
 
     let payload_non_null = unsafe {
@@ -536,6 +541,21 @@ pub fn for_each_iseq<F: FnMut(IseqPtr)>(mut callback: F) {
     let mut data: &mut dyn FnMut(IseqPtr) = &mut callback;
     unsafe { rb_yjit_for_each_iseq(Some(callback_wrapper), (&mut data) as *mut _ as *mut c_void) };
 }
+
+/// Iterate over all on-stack ISEQ payloads
+#[cfg(not(test))]
+pub fn for_each_on_stack_iseq_payload<F: FnMut(&IseqPayload)>(mut callback: F) {
+    unsafe extern "C" fn callback_wrapper(iseq: IseqPtr, data: *mut c_void) {
+        let callback: &mut &mut dyn FnMut(&IseqPayload) -> bool = std::mem::transmute(&mut *data);
+        if let Some(iseq_payload) = get_iseq_payload(iseq) {
+            callback(iseq_payload);
+        }
+    }
+    let mut data: &mut dyn FnMut(&IseqPayload) = &mut callback;
+    unsafe { rb_jit_cont_each_iseq(Some(callback_wrapper), (&mut data) as *mut _ as *mut c_void) };
+}
+#[cfg(test)]
+pub fn for_each_on_stack_iseq_payload<F: FnMut(&IseqPayload)>(mut _callback: F) {}
 
 /// Free the per-iseq payload
 #[no_mangle]
@@ -854,6 +874,12 @@ fn add_block_version(blockref: &BlockRef, cb: &CodeBlock) {
     }
 
     incr_counter!(compiled_block_count);
+
+    // Mark code pages for code GC
+    let iseq_payload = get_iseq_payload(block.blockid.iseq).unwrap();
+    for page in cb.addrs_to_pages(block.start_addr.unwrap(), block.end_addr.unwrap()) {
+        iseq_payload.pages.insert(page);
+    }
 }
 
 /// Remove a block version from the version map of its parent ISEQ
@@ -1526,7 +1552,11 @@ pub fn gen_entry_point(iseq: IseqPtr, ec: EcPtr) -> Option<CodePtr> {
 
     match block {
         // Compilation failed
-        None => return None,
+        None => {
+            // Trigger code GC. This entry point will be recompiled later.
+            cb.code_gc();
+            return None;
+        }
 
         // If the block contains no Ruby instructions
         Some(block) => {
@@ -1776,6 +1806,18 @@ fn branch_stub_hit_body(branch_ptr: *const c_void, target_idx: u32, ec: EcPtr) -
             block_rc.borrow().start_addr.unwrap()
         }
         None => {
+            // Code GC needs to borrow blocks for invalidation, so their mutable
+            // borrows must be dropped first.
+            drop(block);
+            drop(branch);
+            // Trigger code GC. The whole ISEQ will be recompiled later.
+            // We shouldn't trigger it in the middle of compilation in branch_stub_hit
+            // because incomplete code could be used when cb.dropped_bytes is flipped
+            // by code GC. So this place, after all compilation, is the safest place
+            // to hook code GC on branch_stub_hit.
+            cb.code_gc();
+            branch = branch_rc.borrow_mut();
+
             // Failed to service the stub by generating a new block so now we
             // need to exit to the interpreter at the stubbed location. We are
             // intentionally *not* restoring original_interp_sp. At the time of
@@ -1793,7 +1835,8 @@ fn branch_stub_hit_body(branch_ptr: *const c_void, target_idx: u32, ec: EcPtr) -
     let new_branch_size = branch.code_size();
     assert!(
         new_branch_size <= branch_size_on_entry,
-        "branch stubs should never enlarge branches"
+        "branch stubs should never enlarge branches: (old_size: {}, new_size: {})",
+        branch_size_on_entry, new_branch_size,
     );
 
     // Return a pointer to the compiled block version
@@ -1904,7 +1947,10 @@ pub fn gen_branch(
     // Get the branch targets or stubs
     let dst_addr0 = get_branch_target(target0, ctx0, &branchref, 0, ocb);
     let dst_addr1 = if let Some(ctx) = ctx1 {
-        get_branch_target(target1.unwrap(), ctx, &branchref, 1, ocb)
+        match get_branch_target(target1.unwrap(), ctx, &branchref, 1, ocb) {
+            Some(dst_addr) => Some(dst_addr),
+            None => return, // avoid unwrap() in gen_fn()
+        }
     } else {
         None
     };

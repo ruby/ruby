@@ -6,6 +6,9 @@ use std::rc::Rc;
 use crate::backend::x86_64::JMP_PTR_BYTES;
 #[cfg(target_arch = "aarch64")]
 use crate::backend::arm64::JMP_PTR_BYTES;
+use crate::core::for_each_on_stack_iseq_payload;
+use crate::invariants::rb_yjit_tracing_invalidate_all;
+use crate::stats::incr_counter;
 use crate::virtualmem::WriteError;
 
 #[cfg(feature = "disasm")]
@@ -115,17 +118,23 @@ impl CodeBlock {
     pub fn next_page<F: Fn(&mut CodeBlock, CodePtr)>(&mut self, base_ptr: CodePtr, jmp_ptr: F) -> bool {
         let old_write_ptr = self.get_write_ptr();
         self.set_write_ptr(base_ptr);
-        self.without_page_end_reserve(|cb| assert!(cb.has_capacity(JMP_PTR_BYTES)));
+
+        // Use the freed_pages list if code GC has been used. Otherwise use the next page.
+        let next_page_idx = if let Some(freed_pages) = CodegenGlobals::get_freed_pages() {
+            let current_page = self.write_pos / self.page_size;
+            freed_pages.iter().find(|&&page| current_page < page).map(|&page| page)
+        } else {
+            Some(self.write_pos / self.page_size + 1)
+        };
 
         // Move self to the next page
-        let next_page_idx = self.write_pos / self.page_size + 1;
-        if !self.set_page(next_page_idx, &jmp_ptr) {
+        if next_page_idx.is_none() || !self.set_page(next_page_idx.unwrap(), &jmp_ptr) {
             self.set_write_ptr(old_write_ptr); // rollback if there are no more pages
             return false;
         }
 
         // Move the other CodeBlock to the same page if it'S on the furthest page
-        self.other_cb().unwrap().set_page(next_page_idx, &jmp_ptr);
+        self.other_cb().unwrap().set_page(next_page_idx.unwrap(), &jmp_ptr);
 
         return !self.dropped_bytes;
     }
@@ -151,7 +160,7 @@ impl CodeBlock {
         // We could remember the last write_pos in page2 and let set_page use that position,
         // but you need to waste some space for keeping write_pos for every single page.
         // It doesn't seem necessary for performance either. So we're currently not doing it.
-        let dst_pos = self.page_size * page_idx + self.page_start();
+        let dst_pos = self.get_page_pos(page_idx);
         if self.page_size * page_idx < self.mem_size && self.write_pos < dst_pos {
             // Reset dropped_bytes
             self.dropped_bytes = false;
@@ -161,6 +170,7 @@ impl CodeBlock {
             self.write_pos = dst_pos;
             let dst_ptr = self.get_write_ptr();
             self.write_pos = src_pos;
+            self.without_page_end_reserve(|cb| assert!(cb.has_capacity(JMP_PTR_BYTES)));
 
             // Generate jmp_ptr from src_pos to dst_pos
             self.without_page_end_reserve(|cb| {
@@ -173,6 +183,53 @@ impl CodeBlock {
             self.write_pos = dst_pos;
         }
         !self.dropped_bytes
+    }
+
+    /// Free the memory pages of given code page indexes
+    fn free_pages(&mut self, page_idxs: &Vec<usize>) {
+        let mut page_idxs = page_idxs.clone();
+        page_idxs.reverse(); // to loop with pop()
+
+        // Group adjacent page indexes and free them in batches to reduce the # of syscalls.
+        while let Some(page_idx) = page_idxs.pop() {
+            // Group first adjacent page indexes
+            let mut batch_idxs = vec![page_idx];
+            while page_idxs.last() == Some(&(batch_idxs.last().unwrap() + 1)) {
+                batch_idxs.push(page_idxs.pop().unwrap());
+            }
+
+            // Free the grouped pages at once
+            let start_ptr = self.mem_block.borrow().start_ptr().add_bytes(page_idx * self.page_size);
+            let batch_size = self.page_size * batch_idxs.len();
+            self.mem_block.borrow_mut().free_bytes(start_ptr, batch_size as u32);
+        }
+    }
+
+    pub fn page_size(&self) -> usize {
+        self.page_size
+    }
+
+    /// Return the number of code pages that have been allocated by the VirtualMemory.
+    pub fn num_pages(&self) -> usize {
+        let mapped_region_size = self.mem_block.borrow().mapped_region_size();
+        // CodeBlock's page size != VirtualMem's page size on Linux,
+        // so mapped_region_size % self.page_size may not be 0
+        ((mapped_region_size - 1) / self.page_size) + 1
+    }
+
+    /// Return the number of code pages that have been freed and not used yet.
+    pub fn num_freed_pages(&self) -> usize {
+        (0..self.num_pages()).filter(|&page_idx| self.has_freed_page(page_idx)).count()
+    }
+
+    pub fn has_freed_page(&self, page_idx: usize) -> bool {
+        CodegenGlobals::get_freed_pages().as_ref().map_or(false, |pages| pages.contains(&page_idx)) && // code GCed
+            self.write_pos < page_idx * self.page_size // and not written yet
+    }
+
+    /// Convert a page index to the write_pos for the page start.
+    fn get_page_pos(&self, page_idx: usize) -> usize {
+        self.page_size * page_idx + self.page_start()
     }
 
     /// write_pos of the current page start
@@ -216,19 +273,46 @@ impl CodeBlock {
     /// Return the address ranges of a given address range that this CodeBlock can write.
     #[cfg(any(feature = "disasm", target_arch = "aarch64"))]
     pub fn writable_addrs(&self, start_ptr: CodePtr, end_ptr: CodePtr) -> Vec<(usize, usize)> {
-        let mut addrs = vec![];
-        let mut start = start_ptr.into_usize();
+        // CodegenGlobals is not initialized when we write initial ocb code
+        let freed_pages = if CodegenGlobals::has_instance() {
+            CodegenGlobals::get_freed_pages().as_ref()
+        } else {
+            None
+        };
+
         let region_start = self.get_ptr(0).into_usize();
         let region_end = self.get_ptr(self.get_mem_size()).into_usize();
+        let mut start = start_ptr.into_usize();
         let end = std::cmp::min(end_ptr.into_usize(), region_end);
+
+        let mut addrs = vec![];
         while start < end {
-            let current_page = region_start +
-                (start.saturating_sub(region_start) / self.page_size * self.page_size);
+            let page_idx = start.saturating_sub(region_start) / self.page_size;
+            let current_page = region_start + (page_idx * self.page_size);
             let page_end = std::cmp::min(end, current_page + self.page_end());
-            addrs.push((start, page_end));
+            // If code GC has been used, skip pages that are used by past on-stack code
+            if freed_pages.map_or(true, |pages| pages.contains(&page_idx)) {
+                addrs.push((start, page_end));
+            }
             start = current_page + self.page_size + self.page_start();
         }
         addrs
+    }
+
+    /// Return the code size that has been used by this CodeBlock.
+    pub fn code_size(&self) -> usize {
+        let mut size = 0;
+        let current_page_idx = self.write_pos / self.page_size;
+        for page_idx in 0..self.num_pages() {
+            if page_idx == current_page_idx {
+                // Count only actually used bytes for the current page.
+                size += (self.write_pos % self.page_size).saturating_sub(self.page_start());
+            } else if !self.has_freed_page(page_idx) {
+                // Count an entire range for any non-freed pages that have been used.
+                size += self.page_end() - self.page_start() + self.page_end_reserve;
+            }
+        }
+        size
     }
 
     /// Check if this code block has sufficient remaining capacity
@@ -261,6 +345,11 @@ impl CodeBlock {
         self.asm_comments.get(&pos)
     }
 
+    pub fn clear_comments(&mut self) {
+        #[cfg(feature = "disasm")]
+        self.asm_comments.clear();
+    }
+
     pub fn get_mem_size(&self) -> usize {
         self.mem_size
     }
@@ -291,6 +380,24 @@ impl CodeBlock {
     /// Get a (possibly dangling) direct pointer into the executable memory block
     pub fn get_ptr(&self, offset: usize) -> CodePtr {
         self.mem_block.borrow().start_ptr().add_bytes(offset)
+    }
+
+    /// Convert an address range to memory page indexes against a num_pages()-sized array.
+    pub fn addrs_to_pages(&self, start_addr: CodePtr, end_addr: CodePtr) -> Vec<usize> {
+        let mem_start = self.mem_block.borrow().start_ptr().into_usize();
+        let mem_end = self.mem_block.borrow().end_ptr().into_usize();
+        assert!(mem_start <= start_addr.into_usize());
+        assert!(start_addr.into_usize() <= end_addr.into_usize());
+        assert!(end_addr.into_usize() <= mem_end);
+
+        // Ignore empty code ranges
+        if start_addr == end_addr {
+            return vec![];
+        }
+
+        let start_page = (start_addr.into_usize() - mem_start) / self.page_size;
+        let end_page = (end_addr.into_usize() - mem_start - 1) / self.page_size;
+        (start_page..=end_page).collect() // TODO: consider returning an iterator
     }
 
     /// Get a (possibly dangling) direct pointer to the current write position
@@ -429,6 +536,58 @@ impl CodeBlock {
 
     pub fn mark_all_executable(&mut self) {
         self.mem_block.borrow_mut().mark_all_executable();
+    }
+
+    /// Code GC. Free code pages that are not on stack and reuse them.
+    pub fn code_gc(&mut self) {
+        // The previous code GC failed to free any pages. Give up.
+        if CodegenGlobals::get_freed_pages() == &Some(vec![]) {
+            return;
+        }
+
+        // Check which pages are still in use
+        let mut pages_in_use = vec![false; self.num_pages()];
+        // For each ISEQ, we currently assume that only code pages used by inline code
+        // are used by outlined code, so we mark only code pages used by inlined code.
+        for_each_on_stack_iseq_payload(|iseq_payload| {
+            for page in &iseq_payload.pages {
+                pages_in_use[*page] = true;
+            }
+        });
+        // Outlined code generated by CodegenGlobals::init() should also be kept.
+        for page in CodegenGlobals::get_ocb_pages() {
+            pages_in_use[*page] = true;
+        }
+
+        // Let VirtuamMem free the pages
+        let freed_pages: Vec<usize> = pages_in_use.iter().enumerate()
+            .filter(|&(_, &in_use)| !in_use).map(|(page, _)| page).collect();
+        self.free_pages(&freed_pages);
+
+        // Invalidate everything to have more compact code after code GC.
+        // This currently patches every ISEQ, which works, but in the future,
+        // we could limit that to patch only on-stack ISEQs for optimizing code GC.
+        rb_yjit_tracing_invalidate_all();
+        // When code GC runs next time, we could have reused pages in between
+        // invalidated pages. To invalidate them, we skip freezing them here.
+        // We free or not reuse the bytes frozen by any past invalidation, so this
+        // can be safely reset to pass the frozen bytes check on invalidation.
+        CodegenGlobals::set_inline_frozen_bytes(0);
+
+        if let Some(&first_page) = freed_pages.first() {
+            let mut cb = CodegenGlobals::get_inline_cb();
+            cb.write_pos = cb.get_page_pos(first_page);
+            cb.dropped_bytes = false;
+            cb.clear_comments();
+
+            let mut ocb = CodegenGlobals::get_outlined_cb().unwrap();
+            ocb.write_pos = ocb.get_page_pos(first_page);
+            ocb.dropped_bytes = false;
+            ocb.clear_comments();
+        }
+
+        CodegenGlobals::set_freed_pages(freed_pages);
+        incr_counter!(code_gc_count);
     }
 
     pub fn inline(&self) -> bool {

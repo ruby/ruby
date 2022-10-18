@@ -643,6 +643,11 @@ pub fn gen_entry_prologue(cb: &mut CodeBlock, iseq: IseqPtr, insn_idx: u32) -> O
     if cb.has_dropped_bytes() {
         None
     } else {
+        // Mark code pages for code GC
+        let iseq_payload = get_or_create_iseq_payload(iseq);
+        for page in cb.addrs_to_pages(code_ptr, cb.get_write_ptr()) {
+            iseq_payload.pages.insert(page);
+        }
         Some(code_ptr)
     }
 }
@@ -6504,6 +6509,12 @@ pub struct CodegenGlobals {
 
     // Methods for generating code for hardcoded (usually C) methods
     method_codegen_table: HashMap<usize, MethodGenFn>,
+
+    /// Page indexes for outlined code that are not associated to any ISEQ.
+    ocb_pages: Vec<usize>,
+
+    /// Freed page indexes. None if code GC has not been used.
+    freed_pages: Option<Vec<usize>>,
 }
 
 /// For implementing global code invalidation. A position in the inline
@@ -6570,12 +6581,16 @@ impl CodegenGlobals {
         #[cfg(test)]
         let mut ocb = OutlinedCb::wrap(CodeBlock::new_dummy(mem_size / 2));
 
+        let ocb_start_addr = ocb.unwrap().get_write_ptr();
         let leave_exit_code = gen_leave_exit(&mut ocb);
 
         let stub_exit_code = gen_code_for_exit_from_stub(&mut ocb);
 
         // Generate full exit code for C func
         let cfunc_exit_code = gen_full_cfunc_return(&mut ocb);
+
+        let ocb_end_addr = ocb.unwrap().get_write_ptr();
+        let ocb_pages = ocb.unwrap().addrs_to_pages(ocb_start_addr, ocb_end_addr);
 
         // Mark all code memory as executable
         cb.mark_all_executable();
@@ -6590,6 +6605,8 @@ impl CodegenGlobals {
             global_inval_patches: Vec::new(),
             inline_frozen_bytes: 0,
             method_codegen_table: HashMap::new(),
+            ocb_pages,
+            freed_pages: None,
         };
 
         // Register the method codegen functions
@@ -6724,6 +6741,18 @@ impl CodegenGlobals {
             None => None,
             Some(&mgf) => Some(mgf), // Deref
         }
+    }
+
+    pub fn get_ocb_pages() -> &'static Vec<usize> {
+        &CodegenGlobals::get_instance().ocb_pages
+    }
+
+    pub fn get_freed_pages() -> &'static mut Option<Vec<usize>> {
+        &mut CodegenGlobals::get_instance().freed_pages
+    }
+
+    pub fn set_freed_pages(freed_pages: Vec<usize>) {
+        CodegenGlobals::get_instance().freed_pages = Some(freed_pages)
     }
 }
 
