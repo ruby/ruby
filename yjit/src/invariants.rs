@@ -533,7 +533,7 @@ pub extern "C" fn rb_yjit_tracing_invalidate_all() {
     with_vm_lock(src_loc!(), || {
         // Make it so all live block versions are no longer valid branch targets
         for_each_iseq(|iseq| {
-            if let Some(payload) = unsafe { get_iseq_payload(iseq) } {
+            if let Some(payload) = get_iseq_payload(iseq) {
                 // C comment:
                 //   Leaking the blocks for now since we might have situations where
                 //   a different ractor is waiting for the VM lock in branch_stub_hit().
