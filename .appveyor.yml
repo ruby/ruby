@@ -17,6 +17,8 @@ skip_commits:
     - '**/*.md'
     - '**/*.rdoc'
     - '**/.document'
+    - '**/*.[1-8]'
+    - '**/*.ronn'
 environment:
   ruby_version: "24-%Platform%"
   matrix:
