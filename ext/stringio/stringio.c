@@ -652,7 +652,7 @@ strio_copy(VALUE copy, VALUE orig)
  *   lineno -> current_line_number
  *
  * Returns the current line number in +self+;
- * see {Line Number}[https://docs.ruby-lang.org/en/master/io_streams_rdoc.html#label-Line+Number].
+ * see {Line Number}[rdoc-ref:io_streams.rdoc@Line+Number].
  */
 static VALUE
 strio_get_lineno(VALUE self)
@@ -665,7 +665,7 @@ strio_get_lineno(VALUE self)
  *   lineno = new_line_number -> new_line_number
  *
  * Sets the current line number in +self+ to the given +new_line_number+;
- * see {Line Number}[https://docs.ruby-lang.org/en/master/io_streams_rdoc.html#label-Line+Number].
+ * see {Line Number}[rdoc-ref:io_streams.rdoc@Line+Number].
  */
 static VALUE
 strio_set_lineno(VALUE self, VALUE lineno)
@@ -679,7 +679,7 @@ strio_set_lineno(VALUE self, VALUE lineno)
  *   binmode -> self
  *
  * Sets the data mode in +self+ to binary mode;
- * see {Data Mode}[https://docs.ruby-lang.org/en/master/File.html#class-File-label-Data+Mode].
+ * see {Data Mode}[rdoc-ref:File@Data+Mode].
  *
  */
 static VALUE
@@ -740,7 +740,7 @@ strio_reopen(int argc, VALUE *argv, VALUE self)
  *   pos -> stream_position
  *
  * Returns the current position (in bytes);
- * see {Position}[https://docs.ruby-lang.org/en/master/io_streams_rdoc.html#label-Position].
+ * see {Position}[rdoc-ref:io_streams.rdoc@Position].
  *
  * StringIO#tell is an alias for StringIO#pos.
  */
@@ -755,7 +755,7 @@ strio_get_pos(VALUE self)
  *   pos = new_position -> new_position
  *
  * Sets the current position (in bytes);
- * see {Position}[https://docs.ruby-lang.org/en/master/io_streams_rdoc.html#label-Position].
+ * see {Position}[rdoc-ref:io_streams.rdoc@Position].
  */
 static VALUE
 strio_set_pos(VALUE self, VALUE pos)
@@ -774,8 +774,8 @@ strio_set_pos(VALUE self, VALUE pos)
  *   rewind -> 0
  *
  * Sets the current position and line number to zero;
- * see {Position}[https://docs.ruby-lang.org/en/master/io_streams_rdoc.html#label-Position]
- * and {Line Number}[https://docs.ruby-lang.org/en/master/io_streams_rdoc.html#label-Line+Number].
+ * see {Position}[rdoc-ref:io_streams.rdoc@Position]
+ * and {Line Number}[rdoc-ref:io_streams.rdoc@Line+Number].
  */
 static VALUE
 strio_rewind(VALUE self)
@@ -792,7 +792,7 @@ strio_rewind(VALUE self)
  *
  * Sets the current position to the given integer +offset+ (in bytes),
  * with respect to a given constant +whence+;
- * see {Position}[https://docs.ruby-lang.org/en/master/io_streams_rdoc.html#label-Position].
+ * see {Position}[rdoc-ref:io_streams.rdoc@Position].
  */
 static VALUE
 strio_seek(int argc, VALUE *argv, VALUE self)
@@ -848,7 +848,7 @@ strio_get_sync(VALUE self)
  *   each_byte {|byte| ... } -> self
  *
  * With a block given, calls the block with each remaining byte in the stream;
- * see {Byte IO}[https://docs.ruby-lang.org/en/master/io_streams_rdoc.html#label-Byte+IO].
+ * see {Byte IO}[rdoc-ref:io_streams.rdoc@Byte+IO].
  *
  * With no block given, returns an enumerator.
  */
