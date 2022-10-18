@@ -530,9 +530,9 @@ fn get_or_create_iseq_payload(iseq: IseqPtr) -> &'static mut IseqPayload {
 /// Iterate over all existing ISEQs
 pub fn for_each_iseq<F: FnMut(IseqPtr)>(mut callback: F) {
     unsafe extern "C" fn callback_wrapper(iseq: IseqPtr, data: *mut c_void) {
-        let callback: &mut &mut dyn FnMut(IseqPtr) -> bool = unsafe { std::mem::transmute(data) };
+        let callback: &mut &mut dyn FnMut(IseqPtr) -> bool = std::mem::transmute(&mut *data);
         callback(iseq);
-    };
+    }
     let mut data: &mut dyn FnMut(IseqPtr) = &mut callback;
     unsafe { rb_yjit_for_each_iseq(Some(callback_wrapper), (&mut data) as *mut _ as *mut c_void) };
 }
