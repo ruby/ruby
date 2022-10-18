@@ -4140,6 +4140,14 @@ f_sprintf(int c, const VALUE *v, VALUE _)
  *
  */
 
+#if RUBY_DEBUG
+static VALUE
+rb_max_iv_count(VALUE klass)
+{
+    return INT2NUM(RCLASS_EXT(klass)->max_iv_count);
+}
+#endif
+
 /*!
  *--
  * \private
@@ -4461,6 +4469,9 @@ InitVM_Object(void)
     rb_define_method(rb_cClass, "initialize", rb_class_initialize, -1);
     rb_define_method(rb_cClass, "superclass", rb_class_superclass, 0);
     rb_define_method(rb_cClass, "subclasses", rb_class_subclasses, 0); /* in class.c */
+#if RUBY_DEBUG
+    rb_define_method(rb_cClass, "max_iv_count", rb_max_iv_count, 0); // Useful for debugging shapes
+#endif
     rb_define_alloc_func(rb_cClass, rb_class_s_alloc);
     rb_undef_method(rb_cClass, "extend_object");
     rb_undef_method(rb_cClass, "append_features");
