@@ -215,6 +215,7 @@ Note: We're only listing outstanding class updates.
     * date 3.2.3
     * error_highlight 0.4.0
     * etc 1.4.0
+    * fiddle 1.1.1
     * io-console 0.5.11
     * io-nonblock 0.1.1
     * io-wait 0.3.0.pre
