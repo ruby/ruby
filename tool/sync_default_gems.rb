@@ -422,16 +422,30 @@ def message_filter(repo, sha)
   log = STDIN.read
   log.delete!("\r")
   url = "https://github.com/#{repo}"
-  log.gsub!(/\b(?:(?i:fix(?:e[sd])?) +)\K#(?=\d+\b)|\bGH-#?(?=\d+\b)|\(\K#(?=\d+\))/) {
-    "#{url}/pull/"
-  }
-  log.gsub!(%r{(?<![-\[\](){}\w@/])(?:(\w+(?:-\w+)*/\w+(?:-\w+)*)@)?(\h{10,40})\b}) {|c|
-    "https://github.com/#{$1 || repo}/commit/#{$2[0,12]}"
-  }
-  log.sub!(/\s*(?=(?i:\nCo-authored-by:.*)*\Z)/) {
-    "\n\n" "#{url}/commit/#{sha[0,10]}\n"
-  }
-  print "[#{repo}] ", log
+  subject, log = log.split("\n\n", 2)
+  conv = proc do |s|
+    mod = true if s.gsub!(/\b(?:(?i:fix(?:e[sd])?) +)\K#(?=\d+\b)|\bGH-#?(?=\d+\b)|\(\K#(?=\d+\))/) {
+      "#{url}/pull/"
+    }
+    mod |= true if s.gsub!(%r{(?<![-\[\](){}\w@/])(?:(\w+(?:-\w+)*/\w+(?:-\w+)*)@)?(\h{10,40})\b}) {|c|
+      "https://github.com/#{$1 || repo}/commit/#{$2[0,12]}"
+    }
+    mod
+  end
+  subject = "[#{repo}] #{subject}"
+  subject.gsub!(/\s*\n\s*/, " ")
+  if conv[subject]
+    if subject.size > 68
+      subject.gsub!(/\G.{,67}[^\s.,][.,]*\K\s+/, "\n")
+    end
+  end
+  if log
+    conv[log]
+    log.sub!(/\s*(?=(?i:\nCo-authored-by:.*)*\Z)/) {
+      "\n\n" "#{url}/commit/#{sha[0,10]}\n"
+    }
+  end
+  print subject, "\n\n", log
 end
 
 # NOTE: This method is also used by GitHub ruby/git.ruby-lang.org's bin/update-default-gem.sh
