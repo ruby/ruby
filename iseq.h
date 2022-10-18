@@ -31,7 +31,7 @@ RUBY_EXTERN const int ruby_api_version[];
 typedef struct rb_iseq_struct rb_iseq_t;
 #define rb_iseq_t rb_iseq_t
 #endif
-typedef void (*rb_iseq_callback)(const rb_iseq_t *);
+typedef void (*rb_iseq_callback)(const rb_iseq_t *, void *);
 
 extern const ID rb_iseq_shared_exc_local_tbl[];
 

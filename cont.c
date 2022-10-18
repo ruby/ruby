@@ -1253,7 +1253,7 @@ jit_cont_free(struct rb_jit_cont *cont)
 
 // Call a given callback against all on-stack ISEQs.
 void
-rb_jit_cont_each_iseq(rb_iseq_callback callback)
+rb_jit_cont_each_iseq(rb_iseq_callback callback, void *data)
 {
     struct rb_jit_cont *cont;
     for (cont = first_jit_cont; cont != NULL; cont = cont->next) {
@@ -1264,7 +1264,7 @@ rb_jit_cont_each_iseq(rb_iseq_callback callback)
         for (cfp = RUBY_VM_END_CONTROL_FRAME(cont->ec) - 1; ; cfp = RUBY_VM_NEXT_CONTROL_FRAME(cfp)) {
             const rb_iseq_t *iseq;
             if (cfp->pc && (iseq = cfp->iseq) != NULL && imemo_type((VALUE)iseq) == imemo_iseq) {
-                callback(iseq);
+                callback(iseq, data);
             }
 
             if (cfp == cont->ec->cfp)
