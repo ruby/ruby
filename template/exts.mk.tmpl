@@ -154,7 +154,7 @@ ext/extinit.<%=objext%>:
 %     end
 	$(Q)<%= submake %><%=mflags%> V=$(V) $(@F)
 %     if /^(dist|real)clean$/ =~ tgt
-	$(Q)$(RM) $(@D)/exts.mk
+	$(Q)$(RM) <%=t[%r[\A(?:\.[^/]+/)?(?:[^/]+/){2}]]%>exts.mk
 	$(Q)$(RMDIRS) $(@D)
 %     end
 %   end
