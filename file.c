@@ -7037,7 +7037,7 @@ const char ruby_null_device[] =
  *        f.pos = 800
  *        f.read # => ""
  *
- *  ==== Data Mode
+ *  ==== \Data Mode
  *
  *  To specify whether data is to be treated as text or as binary data,
  *  either of the following may be suffixed to any of the string read/write modes
@@ -7106,7 +7106,7 @@ const char ruby_null_device[] =
  *  - +File::CREAT+: Create file if it does not exist.
  *  - +File::EXCL+: Raise an exception if +File::CREAT+ is given and the file exists.
  *
- *  === Data Mode Specified as an \Integer
+ *  === \Data Mode Specified as an \Integer
  *
  *  Data mode cannot be specified as an integer.
  *  When the stream access mode is given as an integer,
@@ -7211,7 +7211,7 @@ const char ruby_null_device[] =
  *    f.chmod(0644)
  *    f.chmod(0444)
  *
- *  == \File Constants
+ *  == \File \Constants
  *
  *  Various constants for use in \File and \IO methods
  *  may be found in module File::Constants;

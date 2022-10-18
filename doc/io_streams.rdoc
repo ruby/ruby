@@ -171,7 +171,7 @@ the relevant methods:
       f.tell           # => 40
       f.close
 
-- IO#rewind: Positions the stream to the beginning:
+- IO#rewind: Positions the stream to the beginning (also resetting the line number):
 
     f = File.new('t.txt')
     f.tell     # => 0
@@ -179,6 +179,7 @@ the relevant methods:
     f.tell     # => 12
     f.rewind   # => 0
     f.tell     # => 0
+    f.lineno   # => 0
     f.close
 
 ==== Open and Closed Streams
@@ -363,7 +364,15 @@ A readable \IO stream has a _line_ _number_,
 which is the non-negative integer line number
 in the stream where the next read will occur.
 
-A new stream is initially has line number +0+.
+The line number is the number of lines read by certain line-oriented methods
+(+each_line+, +foreach+, +gets+, +readline+, and +readlines+),
+not the number of newlines read; the two numbers:
+
+- Will be the same if those methods are called only with the default line separator.
+- May differ if any is called with a non-default line separator.
+
+A new stream is initially has line number zero,
+and method +rewind+ resets the line number to zero.
 
 \Method IO#lineno returns the line number.
 
