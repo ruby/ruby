@@ -341,7 +341,7 @@ static int
 select_str_opcode(int mb_len, OnigDistance byte_len, int ignore_case)
 {
   int op;
-  OnigDistance str_len = (byte_len + mb_len - 1) / mb_len;
+  OnigDistance str_len = roomof(byte_len, mb_len);
 
   if (ignore_case) {
     switch (str_len) {

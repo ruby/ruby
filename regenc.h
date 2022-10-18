@@ -125,10 +125,9 @@ typedef struct {
 #define POSIX_BRACKET_ENTRY_INIT(name, ctype) \
   {(short int )(sizeof(name) - 1), name, (ctype)}
 
-#ifndef numberof
-# define numberof(array) (int )(sizeof(array) / sizeof((array)[0]))
-#endif
-
+#define numberof(array) ((int)(sizeof(array) / sizeof((array)[0])))
+#define roomof(x, y) (((x) + (y) - 1) / (y))
+#define type_roomof(x, y) roomof(sizeof(x), sizeof(y))
 
 #define USE_CRNL_AS_LINE_TERMINATOR
 #define USE_UNICODE_PROPERTIES

@@ -4,3 +4,6 @@ updates:
     directory: '/'
     schedule:
       interval: 'weekly'
+    ignore:
+      # It doesn't update the version comment for us
+      - dependency-name: 'necojackarc/auto-request-review'

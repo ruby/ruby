@@ -2,6 +2,7 @@ use crate::core::*;
 use crate::cruby::*;
 use crate::yjit::yjit_enabled_p;
 use crate::asm::CodeBlock;
+use crate::options::DumpDisasm;
 
 use std::fmt::Write;
 
@@ -42,7 +43,7 @@ pub fn disasm_iseq_insn_range(iseq: IseqPtr, start_idx: u32, end_idx: u32) -> St
     let mut out = String::from("");
 
     // Get a list of block versions generated for this iseq
-    let mut block_list = get_iseq_block_list(iseq);
+    let mut block_list = get_or_create_iseq_block_list(iseq);
 
     // Get a list of codeblocks relevant to this iseq
     let global_cb = crate::codegen::CodegenGlobals::get_inline_cb();
@@ -70,11 +71,8 @@ pub fn disasm_iseq_insn_range(iseq: IseqPtr, start_idx: u32, end_idx: u32) -> St
         total_code_size += blockref.borrow().code_size();
     }
 
-    out.push_str(&format!("NUM BLOCK VERSIONS: {}\n", block_list.len()));
-    out.push_str(&format!(
-        "TOTAL INLINE CODE SIZE: {} bytes\n",
-        total_code_size
-    ));
+    writeln!(out, "NUM BLOCK VERSIONS: {}", block_list.len()).unwrap();
+    writeln!(out,  "TOTAL INLINE CODE SIZE: {} bytes", total_code_size).unwrap();
 
     // For each block, sorted by increasing start address
     for block_idx in 0..block_list.len() {
@@ -95,10 +93,10 @@ pub fn disasm_iseq_insn_range(iseq: IseqPtr, start_idx: u32, end_idx: u32) -> St
                 end_idx,
                 code_size
             );
-            out.push_str(&format!("== {:=<60}\n", block_ident));
+            writeln!(out, "== {:=<60}", block_ident).unwrap();
 
             // Disassemble the instructions
-            out.push_str(&disasm_addr_range(global_cb, start_addr, code_size));
+            out.push_str(&disasm_addr_range(global_cb, start_addr, (start_addr as usize + code_size) as *const u8));
 
             // If this is not the last block
             if block_idx < block_list.len() - 1 {
@@ -109,7 +107,7 @@ pub fn disasm_iseq_insn_range(iseq: IseqPtr, start_idx: u32, end_idx: u32) -> St
 
                 // Log the size of the gap between the blocks if nonzero
                 if gap_size > 0 {
-                    out.push_str(&format!("... {} byte gap ...\n", gap_size));
+                    writeln!(out, "... {} byte gap ...", gap_size).unwrap();
                 }
             }
         }
@@ -118,9 +116,25 @@ pub fn disasm_iseq_insn_range(iseq: IseqPtr, start_idx: u32, end_idx: u32) -> St
     return out;
 }
 
+#[cfg(feature = "disasm")]
+pub fn dump_disasm_addr_range(cb: &CodeBlock, start_addr: *const u8, end_addr: *const u8, dump_disasm: &DumpDisasm) {
+    use std::fs::File;
+    use std::io::Write;
+
+    let disasm = disasm_addr_range(cb, start_addr, end_addr);
+    if disasm.len() > 0 {
+        match dump_disasm {
+            DumpDisasm::Stdout => println!("{disasm}"),
+            DumpDisasm::File(path) => {
+                let mut f = File::options().append(true).create(true).open(path).unwrap();
+                f.write_all(disasm.as_bytes()).unwrap();
+            }
+        };
+    }
+}
 
 #[cfg(feature = "disasm")]
-pub fn disasm_addr_range(cb: &CodeBlock, start_addr: *const u8, code_size: usize) -> String {
+pub fn disasm_addr_range(cb: &CodeBlock, start_addr: *const u8, end_addr: *const u8) -> String {
     let mut out = String::from("");
 
     // Initialize capstone
@@ -141,9 +155,10 @@ pub fn disasm_addr_range(cb: &CodeBlock, start_addr: *const u8, code_size: usize
         .detail(true)
         .build()
         .unwrap();
-    cs.set_skipdata(true);
+    cs.set_skipdata(true).unwrap();
 
     // Disassemble the instructions
+    let code_size = end_addr as usize - start_addr as usize;
     let code_slice = unsafe { std::slice::from_raw_parts(start_addr, code_size) };
     let insns = cs.disasm_all(code_slice, start_addr as u64).unwrap();
 
@@ -209,7 +224,7 @@ fn insns_compiled(iseq: IseqPtr) -> Vec<(String, u32)> {
     let mut insn_vec = Vec::new();
 
     // Get a list of block versions generated for this iseq
-    let block_list = get_iseq_block_list(iseq);
+    let block_list = get_or_create_iseq_block_list(iseq);
 
     // For each block associated with this iseq
     for blockref in &block_list {

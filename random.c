@@ -487,28 +487,35 @@ fill_random_bytes_urandom(void *seed, size_t size)
 #if 0
 #elif defined MAC_OS_X_VERSION_10_7 && MAC_OS_X_VERSION_MIN_REQUIRED >= MAC_OS_X_VERSION_10_7
 
-# if defined MAC_OS_X_VERSION_10_10 && MAC_OS_X_VERSION_MIN_REQUIRED >= MAC_OS_X_VERSION_10_10
-#   include <CommonCrypto/CommonCryptoError.h> /* for old Xcode */
-#   include <CommonCrypto/CommonRandom.h>
+# if defined(USE_COMMON_RANDOM)
+# elif defined MAC_OS_X_VERSION_10_10 && MAC_OS_X_VERSION_MIN_REQUIRED >= MAC_OS_X_VERSION_10_10
 #   define USE_COMMON_RANDOM 1
 # else
-#   include <Security/SecRandom.h>
 #   define USE_COMMON_RANDOM 0
+# endif
+# if USE_COMMON_RANDOM
+#   include <CommonCrypto/CommonCryptoError.h> /* for old Xcode */
+#   include <CommonCrypto/CommonRandom.h>
+# else
+#   include <Security/SecRandom.h>
 # endif
 
 static int
 fill_random_bytes_syscall(void *seed, size_t size, int unused)
 {
 #if USE_COMMON_RANDOM
-    int failed = CCRandomGenerateBytes(seed, size) != kCCSuccess;
+    CCRNGStatus status = CCRandomGenerateBytes(seed, size);
+    int failed = status != kCCSuccess;
 #else
-    int failed = SecRandomCopyBytes(kSecRandomDefault, size, seed) != errSecSuccess;
+    int status = SecRandomCopyBytes(kSecRandomDefault, size, seed);
+    int failed = status != errSecSuccess;
 #endif
 
     if (failed) {
 # if 0
 # if USE_COMMON_RANDOM
         /* How to get the error message? */
+        fprintf(stderr, "CCRandomGenerateBytes failed: %d\n", status);
 # else
         CFStringRef s = SecCopyErrorMessageString(status, NULL);
         const char *m = s ? CFStringGetCStringPtr(s, kCFStringEncodingUTF8) : NULL;

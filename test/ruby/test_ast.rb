@@ -568,6 +568,7 @@ dummy
   end
 
   def test_error_tolerant
+    verbose_bak, $VERBOSE = $VERBOSE, false
     node = RubyVM::AbstractSyntaxTree.parse(<<~STR, error_tolerant: true)
       class A
         def m
@@ -579,6 +580,8 @@ dummy
     assert_nil($!)
 
     assert_equal(:SCOPE, node.type)
+  ensure
+    $VERBOSE = verbose_bak
   end
 
   def test_error_tolerant_end_is_short_for_method_define
@@ -965,7 +968,12 @@ dummy
   end
 
   def assert_error_tolerant(src, expected)
-    node = RubyVM::AbstractSyntaxTree.parse(src, error_tolerant: true)
+    begin
+      verbose_bak, $VERBOSE = $VERBOSE, false
+      node = RubyVM::AbstractSyntaxTree.parse(src, error_tolerant: true)
+    ensure
+      $VERBOSE = verbose_bak
+    end
     assert_nil($!)
     str = ""
     PP.pp(node, str, 80)

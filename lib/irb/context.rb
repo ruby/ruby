@@ -518,5 +518,9 @@ module IRB
     end
     alias __to_s__ to_s
     alias to_s inspect
+
+    def local_variables # :nodoc:
+      workspace.binding.local_variables
+    end
   end
 end

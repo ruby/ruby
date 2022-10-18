@@ -172,4 +172,26 @@ class TestFiberIO < Test::Unit::TestCase
     assert_predicate(i, :closed?)
     assert_predicate(o, :closed?)
   end
+
+  def test_io_select
+    omit "UNIXSocket is not defined!" unless defined?(UNIXSocket)
+
+    UNIXSocket.pair do |r, w|
+      result = nil
+
+      thread = Thread.new do
+        scheduler = Scheduler.new
+        Fiber.set_scheduler scheduler
+
+        Fiber.schedule do
+          w.write("Hello World")
+          result = IO.select([r], [w])
+        end
+      end
+
+      thread.join
+
+      assert_equal [[r], [w], []], result
+    end
+  end
 end

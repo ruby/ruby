@@ -108,6 +108,11 @@ class OpenSSL::TestPKeyRSA < OpenSSL::PKeyTestCase
                                       salt_length: 20, mgf1_hash: "SHA1")
     # Defaults to PKCS #1 v1.5 padding => verification failure
     assert_equal false, key.verify("SHA256", sig_pss, data)
+
+    # option type check
+    assert_raise_with_message(TypeError, /expected Hash/) {
+      key.sign("SHA256", data, ["x"])
+    }
   end
 
   def test_sign_verify_raw

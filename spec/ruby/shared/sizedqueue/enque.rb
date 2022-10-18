@@ -73,7 +73,13 @@ describe :sizedqueue_enq, shared: true do
         t.join
       end
 
-      it "returns nil if no item is available in time" do
+      it "returns nil if no space is avialable and timeout is 0" do
+        q = @object.call(1)
+        q.send(@method, 1, timeout: 0).should == q
+        q.send(@method, 2, timeout: 0).should == nil
+      end
+
+      it "returns nil if no space is available in time" do
         q = @object.call(1)
         q << 1
         t = Thread.new {

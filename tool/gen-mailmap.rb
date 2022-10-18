@@ -3,7 +3,7 @@
 require "open-uri"
 require "yaml"
 
-EMAIL_YML_URL = "https://cdn.jsdelivr.net/gh/ruby/ruby-commit-hook/config/email.yml"
+EMAIL_YML_URL = "https://cdn.jsdelivr.net/gh/ruby/git.ruby-lang.org/config/email.yml"
 
 email_yml = URI(EMAIL_YML_URL).read.sub(/\A(?:#.*\n)+/, "").gsub(/^# +(.+)$/) { $1 + ": []" }
 

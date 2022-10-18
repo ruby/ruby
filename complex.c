@@ -2026,6 +2026,12 @@ string_to_c_strict(VALUE self, int raise)
  *    '1/2+3/4i'.to_c    #=> ((1/2)+(3/4)*i)
  *    'ruby'.to_c        #=> (0+0i)
  *
+ * Polar form:
+ *    include Math
+ *    "1.0@0".to_c        #=> (1+0.0i)
+ *    "1.0@#{PI/2}".to_c  #=> (0.0+1i)
+ *    "1.0@#{PI}".to_c    #=> (-1+0.0i)
+ *
  * See Kernel.Complex.
  */
 static VALUE

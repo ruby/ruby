@@ -21,6 +21,7 @@
 #include "gc.h"
 #include "internal.h"
 #include "internal/class.h"
+#include "internal/cont.h"
 #include "internal/error.h"
 #include "internal/eval.h"
 #include "internal/hash.h"
@@ -251,7 +252,8 @@ rb_ec_cleanup(rb_execution_context_t *ec, int ex0)
         }
     }
 
-    mjit_finish(true); // We still need ISeqs here.
+    mjit_finish(true); // We still need ISeqs here, so it's before rb_ec_finalize().
+    rb_jit_cont_finish();
 
     rb_ec_finalize(ec);
 

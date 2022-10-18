@@ -165,7 +165,9 @@ coverage.o: $(top_srcdir)/ccan/check_type/check_type.h
 coverage.o: $(top_srcdir)/ccan/container_of/container_of.h
 coverage.o: $(top_srcdir)/ccan/list/list.h
 coverage.o: $(top_srcdir)/ccan/str/str.h
+coverage.o: $(top_srcdir)/constant.h
 coverage.o: $(top_srcdir)/gc.h
+coverage.o: $(top_srcdir)/id_table.h
 coverage.o: $(top_srcdir)/internal.h
 coverage.o: $(top_srcdir)/internal/array.h
 coverage.o: $(top_srcdir)/internal/compilers.h
@@ -176,12 +178,14 @@ coverage.o: $(top_srcdir)/internal/sanitizers.h
 coverage.o: $(top_srcdir)/internal/serial.h
 coverage.o: $(top_srcdir)/internal/static_assert.h
 coverage.o: $(top_srcdir)/internal/thread.h
+coverage.o: $(top_srcdir)/internal/variable.h
 coverage.o: $(top_srcdir)/internal/vm.h
 coverage.o: $(top_srcdir)/internal/warnings.h
 coverage.o: $(top_srcdir)/method.h
 coverage.o: $(top_srcdir)/node.h
 coverage.o: $(top_srcdir)/ruby_assert.h
 coverage.o: $(top_srcdir)/ruby_atomic.h
+coverage.o: $(top_srcdir)/shape.h
 coverage.o: $(top_srcdir)/thread_pthread.h
 coverage.o: $(top_srcdir)/vm_core.h
 coverage.o: $(top_srcdir)/vm_opts.h

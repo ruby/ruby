@@ -102,6 +102,9 @@ Note that each entry is kept to a minimum, see links for details.
 
 Note: We're only listing outstanding class updates.
 
+* Fiber::Scheduler
+    * Introduce `Fiber::Scheduler#io_select` for non-blocking `IO.select`. [[Feature #19060]]
+
 * IO
     * Introduce `IO#timeout=` and `IO#timeout` which can cause
     `IO::TimeoutError` to be raised if a blocking operation exceeds the
@@ -212,6 +215,7 @@ Note: We're only listing outstanding class updates.
     * date 3.2.3
     * error_highlight 0.4.0
     * etc 1.4.0
+    * fiddle 1.1.1
     * io-console 0.5.11
     * io-nonblock 0.1.1
     * io-wait 0.3.0.pre
@@ -221,6 +225,7 @@ Note: We're only listing outstanding class updates.
     * logger 1.5.1
     * net-http 0.2.2
     * net-protocol 0.1.3
+    * openssl 3.1.0.pre
     * ostruct 0.5.5
     * psych 5.0.0.dev
     * reline 0.3.1
@@ -231,6 +236,7 @@ Note: We're only listing outstanding class updates.
     * timeout 0.3.0
 *   The following bundled gems are updated.
     * minitest 5.16.3
+    * power_assert 2.0.2
     * test-unit 3.5.5
     * net-ftp 0.2.0
     * net-imap 0.3.1
@@ -354,3 +360,4 @@ The following deprecated APIs are removed.
 [Feature #16122]: https://bugs.ruby-lang.org/issues/16122
 [Feature #18630]: https://bugs.ruby-lang.org/issues/18630
 [Feature #18589]: https://bugs.ruby-lang.org/issues/18589
+[Feature #19060]: https://bugs.ruby-lang.org/issues/19060

@@ -1389,7 +1389,7 @@ ary_make_partial_step(VALUE ary, VALUE klass, long offset, long len, long step)
     }
 
     long ustep = (step < 0) ? -step : step;
-    len = (len + ustep - 1) / ustep;
+    len = roomof(len, ustep);
 
     long i;
     long j = offset + ((step > 0) ? 0 : (orig_len - 1));

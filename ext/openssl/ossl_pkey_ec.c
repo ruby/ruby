@@ -414,6 +414,8 @@ ossl_ec_key_export(int argc, VALUE *argv, VALUE self)
     EC_KEY *ec;
 
     GetEC(self, ec);
+    if (EC_KEY_get0_public_key(ec) == NULL)
+        ossl_raise(eECError, "can't export - no public key set");
     if (EC_KEY_get0_private_key(ec))
         return ossl_pkey_export_traditional(argc, argv, self, 0);
     else
@@ -432,6 +434,8 @@ ossl_ec_key_to_der(VALUE self)
     EC_KEY *ec;
 
     GetEC(self, ec);
+    if (EC_KEY_get0_public_key(ec) == NULL)
+        ossl_raise(eECError, "can't export - no public key set");
     if (EC_KEY_get0_private_key(ec))
         return ossl_pkey_export_traditional(0, NULL, self, 1);
     else
@@ -1462,7 +1466,7 @@ static VALUE ossl_ec_point_mul(int argc, VALUE *argv, VALUE self)
                    "use #mul(bn) form instead");
 
 	num = RARRAY_LEN(arg1);
-	bns_tmp = rb_ary_hidden_new(num);
+	bns_tmp = rb_ary_tmp_new(num);
 	bignums = ALLOCV_N(const BIGNUM *, tmp_b, num);
 	for (i = 0; i < num; i++) {
 	    VALUE item = RARRAY_AREF(arg1, i);

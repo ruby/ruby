@@ -104,7 +104,7 @@ class Tempfile < DelegateClass(File)
   # - Directory is the system temporary directory (system-dependent).
   # - Generated filename is unique in that directory.
   # - Permissions are <tt>0600</tt>;
-  #   see {File Permissions}[https://docs.ruby-lang.org/en/master/File.html#label-File+Permissions].
+  #   see {File Permissions}[rdoc-ref:File@File+Permissions].
   # - Mode is <tt>'w+'</tt> (read/write mode, positioned at the end).
   #
   # The underlying file is removed when the \Tempfile object dies
@@ -136,12 +136,12 @@ class Tempfile < DelegateClass(File)
   #   Tempfile.new('foo', '.') # => #<Tempfile:./foo20220505-17839-xfstr8>
   #
   # Keyword arguments +mode+ and +options+ are passed directly to method
-  # {File.open}[https://docs.ruby-lang.org/en/master/File.html#method-c-open]:
+  # {File.open}[rdoc-ref:File.open]:
   #
   # - The value given with +mode+ must be an integer,
   #   and may be expressed as the logical OR of constants defined in
-  #   {File::Constants}[https://docs.ruby-lang.org/en/master/File/Constants.html].
-  # - For +options+, see {Open Options}[https://docs.ruby-lang.org/en/master/IO.html#class-IO-label-Open+Options].
+  #   {File::Constants}[rdoc-ref:File::Constants].
+  # - For +options+, see {Open Options}[rdoc-ref:IO@Open+Options].
   #
   # Related: Tempfile.create.
   #
@@ -344,11 +344,11 @@ end
 #
 # With no block given and no arguments, creates and returns file whose:
 #
-# - Class is {File}[https://docs.ruby-lang.org/en/master/File.html] (not \Tempfile).
+# - Class is {File}[rdoc-ref:File] (not \Tempfile).
 # - Directory is the system temporary directory (system-dependent).
 # - Generated filename is unique in that directory.
 # - Permissions are <tt>0600</tt>;
-#   see {File Permissions}[https://docs.ruby-lang.org/en/master/File.html#label-File+Permissions].
+#   see {File Permissions}[rdoc-ref:File@File+Permissions].
 # - Mode is <tt>'w+'</tt> (read/write mode, positioned at the end).
 #
 # With no block, the file is not removed automatically,
@@ -380,12 +380,12 @@ end
 #   Tempfile.create('foo', '.') # => #<File:./foo20220505-9795-1emu6g8>
 #
 # Keyword arguments +mode+ and +options+ are passed directly to method
-# {File.open}[https://docs.ruby-lang.org/en/master/File.html#method-c-open]:
+# {File.open}[rdoc-ref:File.open]:
 #
 # - The value given with +mode+ must be an integer,
 #   and may be expressed as the logical OR of constants defined in
-#   {File::Constants}[https://docs.ruby-lang.org/en/master/File/Constants.html].
-# - For +options+, see {Open Options}[https://docs.ruby-lang.org/en/master/IO.html#class-IO-label-Open+Options].
+#   {File::Constants}[rdoc-ref:File::Constants].
+# - For +options+, see {Open Options}[rdoc-ref:IO@Open+Options].
 #
 # With a block given, creates the file as above, passes it to the block,
 # and returns the block's value;

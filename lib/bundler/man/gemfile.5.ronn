@@ -369,7 +369,7 @@ same, you can omit one.
 
 Are both equivalent to
 
-    gem "rails", git: "git://github.com/rails/rails.git"
+    gem "rails", git: "https://github.com/rails/rails.git"
 
 Since the `github` method is a specialization of `git_source`, it accepts a `:branch` named argument.
 

@@ -48,9 +48,6 @@
 #undef RHASH_TBL
 #undef RHASH_EMPTY_P
 
-/* internal/object.h */
-#undef ROBJECT_IV_INDEX_TBL
-
 /* internal/struct.h */
 #undef RSTRUCT_LEN
 #undef RSTRUCT_PTR

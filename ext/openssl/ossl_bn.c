@@ -577,22 +577,33 @@ BIGNUM_2c(gcd)
  */
 BIGNUM_2c(mod_sqr)
 
+#define BIGNUM_2cr(func)					\
+    static VALUE						\
+    ossl_bn_##func(VALUE self, VALUE other)			\
+    {								\
+	BIGNUM *bn1, *bn2 = GetBNPtr(other), *result;		\
+	VALUE obj;						\
+	GetBN(self, bn1);					\
+	obj = NewBN(rb_obj_class(self));			\
+	if (!(result = BN_##func(NULL, bn1, bn2, ossl_bn_ctx)))	\
+	    ossl_raise(eBNError, NULL);				\
+	SetBN(obj, result);					\
+	return obj;						\
+    }
+
 /*
+ * Document-method: OpenSSL::BN#mod_sqrt
+ * call-seq:
+ *   bn.mod_sqrt(bn2) => aBN
+ */
+BIGNUM_2cr(mod_sqrt)
+
+/*
+ * Document-method: OpenSSL::BN#mod_inverse
  * call-seq:
  *    bn.mod_inverse(bn2) => aBN
  */
-static VALUE
-ossl_bn_mod_inverse(VALUE self, VALUE other)
-{
-    BIGNUM *bn1, *bn2 = GetBNPtr(other), *result;
-    VALUE obj;
-    GetBN(self, bn1);
-    obj = NewBN(rb_obj_class(self));
-    if (!(result = BN_mod_inverse(NULL, bn1, bn2, ossl_bn_ctx)))
-        ossl_raise(eBNError, "BN_mod_inverse");
-    SetBN(obj, result);
-    return obj;
-}
+BIGNUM_2cr(mod_inverse)
 
 /*
  * call-seq:
@@ -1234,6 +1245,7 @@ Init_ossl_bn(void)
     rb_define_method(cBN, "mod_sub", ossl_bn_mod_sub, 2);
     rb_define_method(cBN, "mod_mul", ossl_bn_mod_mul, 2);
     rb_define_method(cBN, "mod_sqr", ossl_bn_mod_sqr, 1);
+    rb_define_method(cBN, "mod_sqrt", ossl_bn_mod_sqrt, 1);
     rb_define_method(cBN, "**", ossl_bn_exp, 1);
     rb_define_method(cBN, "mod_exp", ossl_bn_mod_exp, 2);
     rb_define_method(cBN, "gcd", ossl_bn_gcd, 1);
