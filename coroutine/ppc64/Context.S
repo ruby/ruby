@@ -9,7 +9,6 @@
 
 #define TOKEN_PASTE(x,y) x##y
 #define PREFIXED_SYMBOL(prefix,name) TOKEN_PASTE(prefix,name)
-#define RED_ZONE 288 ; we do not use it below yet
 
 .machine ppc64 ; = G5
 .text
