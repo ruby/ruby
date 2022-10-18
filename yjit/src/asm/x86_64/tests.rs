@@ -413,7 +413,7 @@ fn basic_capstone_usage() -> std::result::Result<(), capstone::Error> {
 }
 
 #[test]
-#[cfg(feature = "asm_comments")]
+#[cfg(feature = "disasm")]
 fn block_comments() {
     let mut cb = super::CodeBlock::new_dummy(4096);
 
