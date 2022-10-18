@@ -162,7 +162,7 @@ class RubyLex
           end
         end
       else
-        lexer.parse.reject { |it| it.pos.first == 0 }
+        lexer.parse.reject { |it| it.pos.first == 0 }.sort_by(&:pos)
       end
     end
   ensure
@@ -706,6 +706,7 @@ class RubyLex
     i = 0
     start_token = []
     end_type = []
+    pending_heredocs = []
     while i < tokens.size
       t = tokens[i]
       case t.event
@@ -729,18 +730,27 @@ class RubyLex
           end
         end
       when :on_backtick
-        start_token << t
-        end_type << :on_tstring_end
+        if t.state.allbits?(Ripper::EXPR_BEG)
+          start_token << t
+          end_type << :on_tstring_end
+        end
       when :on_qwords_beg, :on_words_beg, :on_qsymbols_beg, :on_symbols_beg
         start_token << t
         end_type << :on_tstring_end
       when :on_heredoc_beg
-        start_token << t
-        end_type << :on_heredoc_end
+        pending_heredocs << t
+      end
+
+      if pending_heredocs.any? && t.tok.include?("\n")
+        pending_heredocs.reverse_each do |t|
+          start_token << t
+          end_type << :on_heredoc_end
+        end
+        pending_heredocs = []
       end
       i += 1
     end
-    start_token.last.nil? ? nil : start_token.last
+    pending_heredocs.first || start_token.last
   end
 
   def process_literal_type(tokens = @tokens)

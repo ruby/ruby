@@ -170,6 +170,40 @@ module TestIRB
       assert_dynamic_prompt(lines, expected_prompt_list)
     end
 
+    def test_heredoc_with_embexpr
+      input_with_prompt = [
+        PromptRow.new('001:0:":* ', %q(<<A+%W[#{<<B)),
+        PromptRow.new('002:0:":* ', %q(#{<<C+%W[)),
+        PromptRow.new('003:0:":* ', %q()),
+        PromptRow.new('004:0:":* ', %q(C)),
+        PromptRow.new('005:0:]:* ', %q()),
+        PromptRow.new('006:0:":* ', %q(]})),
+        PromptRow.new('007:0:":* ', %q(})),
+        PromptRow.new('008:0:":* ', %q(A)),
+        PromptRow.new('009:0:]:* ', %q(B)),
+        PromptRow.new('010:0:]:* ', %q(})),
+        PromptRow.new('011:0: :> ', %q(])),
+        PromptRow.new('012:0: :* ', %q()),
+      ]
+
+      lines = input_with_prompt.map(&:content)
+      expected_prompt_list = input_with_prompt.map(&:prompt)
+      assert_dynamic_prompt(lines, expected_prompt_list)
+    end
+
+    def test_backtick_method
+      input_with_prompt = [
+        PromptRow.new('001:0: :> ', %q(self.`(arg))),
+        PromptRow.new('002:0: :* ', %q()),
+        PromptRow.new('003:0: :> ', %q(def `(); end)),
+        PromptRow.new('004:0: :* ', %q()),
+      ]
+
+      lines = input_with_prompt.map(&:content)
+      expected_prompt_list = input_with_prompt.map(&:prompt)
+      assert_dynamic_prompt(lines, expected_prompt_list)
+    end
+
     def test_incomplete_coding_magic_comment
       input_with_correct_indents = [
         Row.new(%q(#coding:u), nil, 0),
@@ -630,6 +664,14 @@ module TestIRB
         assert_equal(code, tokens.map(&:tok).join, "Cannot reconstruct code from tokens")
         error_tokens = tokens.map(&:event).grep(/error/)
         assert_empty(error_tokens, 'Error tokens must be ignored if there is corresponding non-error token')
+      end
+    end
+
+    def test_unterminated_heredoc_string_literal
+      ['<<A;<<B', "<<A;<<B\n", "%W[\#{<<A;<<B", "%W[\#{<<A;<<B\n"].each do |code|
+        tokens = RubyLex.ripper_lex_without_warning(code)
+        string_literal = RubyLex.new.check_string_literal(tokens)
+        assert_equal('<<A', string_literal&.tok)
       end
     end
   end
