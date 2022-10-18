@@ -136,16 +136,18 @@ class RubyLex
     :on_param_error
   ]
 
+  def self.generate_local_variables_assign_code(local_variables)
+    "#{local_variables.join('=')}=nil;" unless local_variables.empty?
+  end
+
   def self.ripper_lex_without_warning(code, context: nil)
     verbose, $VERBOSE = $VERBOSE, nil
-    if context
-      lvars = context.workspace&.binding&.local_variables
-      if lvars && !lvars.empty?
-        code = "#{lvars.join('=')}=nil\n#{code}"
-        line_no = 0
-      else
-        line_no = 1
-      end
+    lvars_code = generate_local_variables_assign_code(context&.local_variables || [])
+    if lvars_code
+      code = "#{lvars_code}\n#{code}"
+      line_no = 0
+    else
+      line_no = 1
     end
 
     compile_with_errors_suppressed(code, line_no: line_no) do |inner_code, line_no|
@@ -214,6 +216,8 @@ class RubyLex
     ltype = process_literal_type(tokens)
     indent = process_nesting_level(tokens)
     continue = process_continue(tokens)
+    lvars_code = self.class.generate_local_variables_assign_code(context&.local_variables || [])
+    code = "#{lvars_code}\n#{code}" if lvars_code
     code_block_open = check_code_block(code, tokens)
     [ltype, indent, continue, code_block_open]
   end
@@ -233,13 +237,13 @@ class RubyLex
     @code_block_open = false
   end
 
-  def each_top_level_statement
+  def each_top_level_statement(context)
     initialize_input
     catch(:TERM_INPUT) do
       loop do
         begin
           prompt
-          unless l = lex
+          unless l = lex(context)
             throw :TERM_INPUT if @line == ''
           else
             @line_no += l.count("\n")
@@ -269,18 +273,15 @@ class RubyLex
     end
   end
 
-  def lex
+  def lex(context)
     line = @input.call
     if @io.respond_to?(:check_termination)
       return line # multiline
     end
     code = @line + (line.nil? ? '' : line)
     code.gsub!(/\s*\z/, '').concat("\n")
-    @tokens = self.class.ripper_lex_without_warning(code)
-    @continue = process_continue
-    @code_block_open = check_code_block(code)
-    @indent = process_nesting_level
-    @ltype = process_literal_type
+    @tokens = self.class.ripper_lex_without_warning(code, context: context)
+    @ltype, @indent, @continue, @code_block_open = check_state(code, @tokens, context: context)
     line
   end
 

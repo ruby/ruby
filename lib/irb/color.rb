@@ -123,13 +123,15 @@ module IRB # :nodoc:
       # If `complete` is false (code is incomplete), this does not warn compile_error.
       # This option is needed to avoid warning a user when the compile_error is happening
       # because the input is not wrong but just incomplete.
-      def colorize_code(code, complete: true, ignore_error: false, colorable: colorable?)
+      def colorize_code(code, complete: true, ignore_error: false, colorable: colorable?, local_variables: [])
         return code unless colorable
 
         symbol_state = SymbolState.new
         colored = +''
+        lvars_code = RubyLex.generate_local_variables_assign_code(local_variables)
+        code_with_lvars = lvars_code ? "#{lvars_code}\n#{code}" : code
 
-        scan(code, allow_last_error: !complete) do |token, str, expr|
+        scan(code_with_lvars, allow_last_error: !complete) do |token, str, expr|
           # handle uncolorable code
           if token.nil?
             colored << Reline::Unicode.escape_for_print(str)
@@ -152,7 +154,12 @@ module IRB # :nodoc:
             end
           end
         end
-        colored
+
+        if lvars_code
+          colored.sub(/\A.+\n/, '')
+        else
+          colored
+        end
       end
 
       private

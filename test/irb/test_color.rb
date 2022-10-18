@@ -156,6 +156,17 @@ module TestIRB
       end
     end
 
+    def test_colorize_code_with_local_variables
+      code = "a /(b +1)/i"
+      result_without_lvars = "a #{RED}#{BOLD}/#{CLEAR}#{RED}(b +1)#{CLEAR}#{RED}#{BOLD}/i#{CLEAR}"
+      result_with_lvar = "a /(b #{BLUE}#{BOLD}+1#{CLEAR})/i"
+      result_with_lvars = "a /(b +#{BLUE}#{BOLD}1#{CLEAR})/i"
+
+      assert_equal_with_term(result_without_lvars, code)
+      assert_equal_with_term(result_with_lvar, code, local_variables: ['a'])
+      assert_equal_with_term(result_with_lvars, code, local_variables: ['a', 'b'])
+    end
+
     def test_colorize_code_complete_true
       unless complete_option_supported?
         pend '`complete: true` is the same as `complete: false` in Ruby 2.6-'

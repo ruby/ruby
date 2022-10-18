@@ -34,13 +34,27 @@ module TestIRB
       ruby_lex.set_auto_indent(context)
     end
 
-    def assert_nesting_level(lines, expected)
+    def assert_nesting_level(lines, expected, local_variables: [])
+      ruby_lex = ruby_lex_for_lines(lines, local_variables: local_variables)
+      error_message = "Calculated the wrong number of nesting level for:\n #{lines.join("\n")}"
+      assert_equal(expected, ruby_lex.instance_variable_get(:@indent), error_message)
+    end
+
+    def assert_code_block_open(lines, expected, local_variables: [])
+      ruby_lex = ruby_lex_for_lines(lines, local_variables: local_variables)
+      error_message = "Wrong result of code_block_open for:\n #{lines.join("\n")}"
+      assert_equal(expected, ruby_lex.instance_variable_get(:@code_block_open), error_message)
+    end
+
+    def ruby_lex_for_lines(lines, local_variables: [])
       ruby_lex = RubyLex.new()
       io = proc{ lines.join("\n") }
       ruby_lex.set_input(io, io)
-      ruby_lex.lex
-      error_message = "Calculated the wrong number of nesting level for:\n #{lines.join("\n")}"
-      assert_equal(expected, ruby_lex.instance_variable_get(:@indent), error_message)
+      unless local_variables.empty?
+        context = OpenStruct.new(local_variables: local_variables)
+      end
+      ruby_lex.lex(context)
+      ruby_lex
     end
 
     def test_auto_indent
@@ -512,6 +526,15 @@ module TestIRB
         assert_indenting(lines, row.new_line_spaces, true)
         assert_nesting_level(lines, row.nesting_level)
       end
+    end
+
+    def test_local_variables_dependent_code
+      pend if RUBY_ENGINE == 'truffleruby'
+      lines = ["a /1#/ do", "2"]
+      assert_nesting_level(lines, 1)
+      assert_code_block_open(lines, true)
+      assert_nesting_level(lines, 0, local_variables: ['a'])
+      assert_code_block_open(lines, false, local_variables: ['a'])
     end
 
     def test_heredoc_with_indent
