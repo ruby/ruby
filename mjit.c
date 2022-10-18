@@ -951,34 +951,12 @@ mjit_capture_cc_entries(const struct rb_iseq_constant_body *compiled_iseq, const
 
 // Set up field `used_code_p` for unit iseqs whose iseq on the stack of ec.
 static void
-mark_ec_units(rb_execution_context_t *ec)
+mark_iseq_units(const rb_iseq_t *iseq)
 {
-    const rb_control_frame_t *cfp;
-
-    if (ec->vm_stack == NULL)
-        return;
-    for (cfp = RUBY_VM_END_CONTROL_FRAME(ec) - 1; ; cfp = RUBY_VM_NEXT_CONTROL_FRAME(cfp)) {
-        const rb_iseq_t *iseq;
-        if (cfp->pc && (iseq = cfp->iseq) != NULL
-            && imemo_type((VALUE) iseq) == imemo_iseq
-            && (ISEQ_BODY(iseq)->jit_unit) != NULL) {
-            ISEQ_BODY(iseq)->jit_unit->used_code_p = true;
-        }
-
-        if (cfp == ec->cfp)
-            break; // reached the most recent cfp
+    if (ISEQ_BODY(iseq)->jit_unit != NULL) {
+        ISEQ_BODY(iseq)->jit_unit->used_code_p = true;
     }
 }
-
-// MJIT info related to an existing continutaion.
-struct mjit_cont {
-    rb_execution_context_t *ec; // continuation ec
-    struct mjit_cont *prev, *next; // used to form lists
-};
-
-// Double linked list of registered continuations. This is used to detect
-// units which are in use in unload_units.
-static struct mjit_cont *first_cont;
 
 // Unload JIT code of some units to satisfy the maximum permitted
 // number of units with a loaded code.
@@ -986,7 +964,6 @@ static void
 unload_units(void)
 {
     struct rb_mjit_unit *unit = 0, *next;
-    struct mjit_cont *cont;
     int units_num = active_units.length;
 
     // For now, we don't unload units when ISeq is GCed. We should
@@ -1005,9 +982,7 @@ unload_units(void)
     }
     // All threads have a root_fiber which has a mjit_cont. Other normal fibers also
     // have a mjit_cont. Thus we can check ISeqs in use by scanning ec of mjit_conts.
-    for (cont = first_cont; cont != NULL; cont = cont->next) {
-        mark_ec_units(cont->ec);
-    }
+    rb_jit_cont_each_iseq(mark_iseq_units);
     // TODO: check stale_units and unload unused ones! (note that the unit is not associated to ISeq anymore)
 
     // Unload units whose total_calls is smaller than any total_calls in unit_queue.
@@ -1161,68 +1136,6 @@ free_list(struct rb_mjit_unit_list *list, bool close_handle_p)
         }
     }
     list->length = 0;
-}
-
-// Register a new continuation with execution context `ec`. Return MJIT info about
-// the continuation.
-struct mjit_cont *
-mjit_cont_new(rb_execution_context_t *ec)
-{
-    struct mjit_cont *cont;
-
-    // We need to use calloc instead of something like ZALLOC to avoid triggering GC here.
-    // When this function is called from rb_thread_alloc through rb_threadptr_root_fiber_setup,
-    // the thread is still being prepared and marking it causes SEGV.
-    cont = calloc(1, sizeof(struct mjit_cont));
-    if (cont == NULL)
-        rb_memerror();
-    cont->ec = ec;
-
-    CRITICAL_SECTION_START(3, "in mjit_cont_new");
-    if (first_cont == NULL) {
-        cont->next = cont->prev = NULL;
-    }
-    else {
-        cont->prev = NULL;
-        cont->next = first_cont;
-        first_cont->prev = cont;
-    }
-    first_cont = cont;
-    CRITICAL_SECTION_FINISH(3, "in mjit_cont_new");
-
-    return cont;
-}
-
-// Unregister continuation `cont`.
-void
-mjit_cont_free(struct mjit_cont *cont)
-{
-    CRITICAL_SECTION_START(3, "in mjit_cont_new");
-    if (cont == first_cont) {
-        first_cont = cont->next;
-        if (first_cont != NULL)
-            first_cont->prev = NULL;
-    }
-    else {
-        cont->prev->next = cont->next;
-        if (cont->next != NULL)
-            cont->next->prev = cont->prev;
-    }
-    CRITICAL_SECTION_FINISH(3, "in mjit_cont_new");
-
-    free(cont);
-}
-
-// Finish work with continuation info.
-static void
-finish_conts(void)
-{
-    struct mjit_cont *cont, *next;
-
-    for (cont = first_cont; cont != NULL; cont = next) {
-        next = cont->next;
-        xfree(cont);
-    }
 }
 
 static void mjit_wait(struct rb_iseq_constant_body *body);
@@ -1889,13 +1802,6 @@ mjit_init(const struct mjit_options *opts)
     rb_native_cond_initialize(&mjit_worker_wakeup);
     rb_native_cond_initialize(&mjit_gc_wakeup);
 
-    // Make sure the saved_ec of the initial thread's root_fiber is scanned by mark_ec_units.
-    //
-    // rb_threadptr_root_fiber_setup for the initial thread is called before mjit_init,
-    // meaning mjit_cont_new is skipped for the root_fiber. Therefore we need to call
-    // rb_fiber_init_mjit_cont again with mjit_enabled=true to set the root_fiber's mjit_cont.
-    rb_fiber_init_mjit_cont(GET_EC()->fiber_ptr);
-
     // If --mjit=pause is given, lazily start MJIT when RubyVM::MJIT.resume is called.
     // You can use it to control MJIT warmup, or to customize the JIT implementation.
     if (!mjit_opts.pause) {
@@ -2052,7 +1958,6 @@ mjit_finish(bool close_handle_p)
     free_list(&active_units, close_handle_p);
     free_list(&compact_units, close_handle_p);
     free_list(&stale_units, close_handle_p);
-    finish_conts();
 
     mjit_enabled = false;
     verbose(1, "Successful MJIT finish");

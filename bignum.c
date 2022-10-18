@@ -977,7 +977,7 @@ integer_unpack_num_bdigits_small(size_t numwords, size_t wordsize, size_t nails,
 {
     /* nlp_bits stands for number of leading padding bits */
     size_t num_bits = (wordsize * CHAR_BIT - nails) * numwords;
-    size_t num_bdigits = (num_bits + BITSPERDIG - 1) / BITSPERDIG;
+    size_t num_bdigits = roomof(num_bits, BITSPERDIG);
     *nlp_bits_ret = (int)(num_bdigits * BITSPERDIG - num_bits);
     return num_bdigits;
 }
@@ -987,7 +987,7 @@ integer_unpack_num_bdigits_generic(size_t numwords, size_t wordsize, size_t nail
 {
     /* BITSPERDIG = SIZEOF_BDIGIT * CHAR_BIT */
     /* num_bits = (wordsize * CHAR_BIT - nails) * numwords */
-    /* num_bdigits = (num_bits + BITSPERDIG - 1) / BITSPERDIG */
+    /* num_bdigits = roomof(num_bits, BITSPERDIG) */
 
     /* num_bits = CHAR_BIT * (wordsize * numwords) - nails * numwords = CHAR_BIT * num_bytes1 - nails * numwords */
     size_t num_bytes1 = wordsize * numwords;

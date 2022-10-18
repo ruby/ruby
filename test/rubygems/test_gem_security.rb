@@ -51,7 +51,7 @@ class TestGemSecurity < Gem::TestCase
 
     key_ident = cert.extensions.find {|ext| ext.oid == "subjectKeyIdentifier" }
     assert_equal 59, key_ident.value.length
-    assert_equal "5F:43:6E:F6:9A:8E:45:25:E9:22:E3:7D:37:5E:A4:D5:36:02:85:1B",
+    assert_equal "B1:1A:54:09:67:45:60:02:02:D7:CE:F4:1D:60:4A:89:DF:E7:58:D9",
                  key_ident.value
 
     assert_equal "", cert.issuer.to_s
@@ -99,7 +99,7 @@ class TestGemSecurity < Gem::TestCase
 
     key_ident = cert.extensions.find {|ext| ext.oid == "subjectKeyIdentifier" }
     assert_equal 59, key_ident.value.length
-    assert_equal "5F:43:6E:F6:9A:8E:45:25:E9:22:E3:7D:37:5E:A4:D5:36:02:85:1B",
+    assert_equal "B1:1A:54:09:67:45:60:02:02:D7:CE:F4:1D:60:4A:89:DF:E7:58:D9",
                  key_ident.value
   end
 
@@ -151,7 +151,7 @@ class TestGemSecurity < Gem::TestCase
   end
 
   def test_class_re_sign
-    assert_equal "sha1WithRSAEncryption", EXPIRED_CERT.signature_algorithm
+    assert_equal "sha256WithRSAEncryption", EXPIRED_CERT.signature_algorithm
     re_signed = Gem::Security.re_sign EXPIRED_CERT, PRIVATE_KEY, 60
 
     assert_in_delta Time.now,      re_signed.not_before, 10
@@ -230,7 +230,7 @@ class TestGemSecurity < Gem::TestCase
     key_ident =
       signed.extensions.find {|ext| ext.oid == "subjectKeyIdentifier" }
     assert_equal 59, key_ident.value.length
-    assert_equal "5F:43:6E:F6:9A:8E:45:25:E9:22:E3:7D:37:5E:A4:D5:36:02:85:1B",
+    assert_equal "B1:1A:54:09:67:45:60:02:02:D7:CE:F4:1D:60:4A:89:DF:E7:58:D9",
                  key_ident.value
 
     assert signed.verify key
@@ -272,7 +272,7 @@ class TestGemSecurity < Gem::TestCase
     key_ident =
       signed.extensions.find {|ext| ext.oid == "subjectKeyIdentifier" }
     assert_equal 59, key_ident.value.length
-    assert_equal "5F:43:6E:F6:9A:8E:45:25:E9:22:E3:7D:37:5E:A4:D5:36:02:85:1B",
+    assert_equal "B1:1A:54:09:67:45:60:02:02:D7:CE:F4:1D:60:4A:89:DF:E7:58:D9",
                  key_ident.value
 
     assert signed.verify PUBLIC_KEY

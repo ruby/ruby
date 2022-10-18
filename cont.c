@@ -34,7 +34,9 @@ extern int madvise(caddr_t, size_t, int);
 #include "internal/warnings.h"
 #include "ruby/fiber/scheduler.h"
 #include "mjit.h"
+#include "yjit.h"
 #include "vm_core.h"
+#include "vm_sync.h"
 #include "id_table.h"
 #include "ractor_core.h"
 
@@ -66,6 +68,8 @@ static VALUE rb_cFiberPool;
 #ifdef RB_EXPERIMENTAL_FIBER_POOL
 #define FIBER_POOL_ALLOCATION_FREE
 #endif
+
+#define jit_cont_enabled mjit_enabled // To be used by YJIT later
 
 enum context_type {
     CONTINUATION_CONTEXT = 0,
@@ -195,6 +199,15 @@ struct fiber_pool {
     size_t vm_stack_size;
 };
 
+// Continuation contexts used by JITs
+struct rb_jit_cont {
+    rb_execution_context_t *ec; // continuation ec
+    struct rb_jit_cont *prev, *next; // used to form lists
+};
+
+// Doubly linked list for enumerating all on-stack ISEQs.
+static struct rb_jit_cont *first_jit_cont;
+
 typedef struct rb_context_struct {
     enum context_type type;
     int argc;
@@ -212,8 +225,7 @@ typedef struct rb_context_struct {
     rb_execution_context_t saved_ec;
     rb_jmpbuf_t jmpbuf;
     rb_ensure_entry_t *ensure_array;
-    /* Pointer to MJIT info about the continuation.  */
-    struct mjit_cont *mjit_cont;
+    struct rb_jit_cont *jit_cont; // Continuation contexts for JITs
 } rb_context_t;
 
 
@@ -1000,6 +1012,8 @@ fiber_is_root_p(const rb_fiber_t *fiber)
 }
 #endif
 
+static void jit_cont_free(struct rb_jit_cont *cont);
+
 static void
 cont_free(void *ptr)
 {
@@ -1020,9 +1034,9 @@ cont_free(void *ptr)
 
     RUBY_FREE_UNLESS_NULL(cont->saved_vm_stack.ptr);
 
-    if (mjit_enabled) {
-        VM_ASSERT(cont->mjit_cont != NULL);
-        mjit_cont_free(cont->mjit_cont);
+    if (jit_cont_enabled) {
+        VM_ASSERT(cont->jit_cont != NULL);
+        jit_cont_free(cont->jit_cont);
     }
     /* free rb_cont_t or rb_fiber_t */
     ruby_xfree(ptr);
@@ -1187,12 +1201,98 @@ cont_save_thread(rb_context_t *cont, rb_thread_t *th)
     sec->machine.stack_end = NULL;
 }
 
-static void
-cont_init_mjit_cont(rb_context_t *cont)
+// Register a new continuation with execution context `ec`. Return JIT info about
+// the continuation.
+static struct rb_jit_cont *
+jit_cont_new(rb_execution_context_t *ec)
 {
-    VM_ASSERT(cont->mjit_cont == NULL);
-    if (mjit_enabled) {
-        cont->mjit_cont = mjit_cont_new(&(cont->saved_ec));
+    struct rb_jit_cont *cont;
+
+    // We need to use calloc instead of something like ZALLOC to avoid triggering GC here.
+    // When this function is called from rb_thread_alloc through rb_threadptr_root_fiber_setup,
+    // the thread is still being prepared and marking it causes SEGV.
+    cont = calloc(1, sizeof(struct rb_jit_cont));
+    if (cont == NULL)
+        rb_memerror();
+    cont->ec = ec;
+
+    RB_VM_LOCK_ENTER();
+    if (first_jit_cont == NULL) {
+        cont->next = cont->prev = NULL;
+    }
+    else {
+        cont->prev = NULL;
+        cont->next = first_jit_cont;
+        first_jit_cont->prev = cont;
+    }
+    first_jit_cont = cont;
+    RB_VM_LOCK_LEAVE();
+
+    return cont;
+}
+
+// Unregister continuation `cont`.
+static void
+jit_cont_free(struct rb_jit_cont *cont)
+{
+    RB_VM_LOCK_ENTER();
+    if (cont == first_jit_cont) {
+        first_jit_cont = cont->next;
+        if (first_jit_cont != NULL)
+            first_jit_cont->prev = NULL;
+    }
+    else {
+        cont->prev->next = cont->next;
+        if (cont->next != NULL)
+            cont->next->prev = cont->prev;
+    }
+    RB_VM_LOCK_LEAVE();
+
+    free(cont);
+}
+
+// Call a given callback against all on-stack ISEQs.
+void
+rb_jit_cont_each_iseq(rb_iseq_callback callback)
+{
+    struct rb_jit_cont *cont;
+    for (cont = first_jit_cont; cont != NULL; cont = cont->next) {
+        if (cont->ec->vm_stack == NULL)
+            continue;
+
+        const rb_control_frame_t *cfp;
+        for (cfp = RUBY_VM_END_CONTROL_FRAME(cont->ec) - 1; ; cfp = RUBY_VM_NEXT_CONTROL_FRAME(cfp)) {
+            const rb_iseq_t *iseq;
+            if (cfp->pc && (iseq = cfp->iseq) != NULL && imemo_type((VALUE)iseq) == imemo_iseq) {
+                callback(iseq);
+            }
+
+            if (cfp == cont->ec->cfp)
+                break; // reached the most recent cfp
+        }
+    }
+}
+
+// Finish working with continuation info.
+void
+rb_jit_cont_finish(void)
+{
+    if (!jit_cont_enabled)
+        return;
+
+    struct rb_jit_cont *cont, *next;
+    for (cont = first_jit_cont; cont != NULL; cont = next) {
+        next = cont->next;
+        xfree(cont);
+    }
+}
+
+static void
+cont_init_jit_cont(rb_context_t *cont)
+{
+    VM_ASSERT(cont->jit_cont == NULL);
+    if (jit_cont_enabled) {
+        cont->jit_cont = jit_cont_new(&(cont->saved_ec));
     }
 }
 
@@ -1211,7 +1311,7 @@ cont_init(rb_context_t *cont, rb_thread_t *th)
     cont->saved_ec.local_storage = NULL;
     cont->saved_ec.local_storage_recursive_hash = Qnil;
     cont->saved_ec.local_storage_recursive_hash_for_trace = Qnil;
-    cont_init_mjit_cont(cont);
+    cont_init_jit_cont(cont);
 }
 
 static rb_context_t *
@@ -1242,9 +1342,9 @@ rb_fiberptr_blocking(struct rb_fiber_struct *fiber)
 
 // This is used for root_fiber because other fibers call cont_init_mjit_cont through cont_new.
 void
-rb_fiber_init_mjit_cont(struct rb_fiber_struct *fiber)
+rb_fiber_init_jit_cont(struct rb_fiber_struct *fiber)
 {
-    cont_init_mjit_cont(&fiber->cont);
+    cont_init_jit_cont(&fiber->cont);
 }
 
 #if 0
@@ -1991,7 +2091,7 @@ rb_fiber_s_schedule_kw(int argc, VALUE* argv, int kw_splat)
     VALUE fiber = Qnil;
 
     if (scheduler != Qnil) {
-        fiber = rb_funcall_passing_block_kw(scheduler, rb_intern("fiber"), argc, argv, kw_splat);
+        fiber = rb_fiber_scheduler_fiber(scheduler, argc, argv, kw_splat);
     }
     else {
         rb_raise(rb_eRuntimeError, "No scheduler is available!");
@@ -2187,9 +2287,10 @@ rb_threadptr_root_fiber_setup(rb_thread_t *th)
     fiber->blocking = 1;
     fiber_status_set(fiber, FIBER_RESUMED); /* skip CREATED */
     th->ec = &fiber->cont.saved_ec;
-    // This skips mjit_cont_new for the initial thread because mjit_enabled is always false
-    // at this point. mjit_init calls rb_fiber_init_mjit_cont again for this root_fiber.
-    rb_fiber_init_mjit_cont(fiber);
+    // This skips jit_cont_new for the initial thread because rb_yjit_enabled_p() and
+    // mjit_enabled are false at this point. ruby_opt_init will call rb_fiber_init_jit_cont
+    // again for this root_fiber.
+    rb_fiber_init_jit_cont(fiber);
 }
 
 void
@@ -2410,20 +2511,34 @@ rb_fiber_transfer(VALUE fiber_value, int argc, const VALUE *argv)
 VALUE
 rb_fiber_blocking_p(VALUE fiber)
 {
-    return RBOOL(fiber_ptr(fiber)->blocking != 0);
+    return RBOOL(fiber_ptr(fiber)->blocking);
 }
 
 static VALUE
-fiber_blocking_yield(VALUE fiber)
+fiber_blocking_yield(VALUE fiber_value)
 {
-    fiber_ptr(fiber)->blocking += 1;
-    return rb_yield(fiber);
+    rb_fiber_t *fiber = fiber_ptr(fiber_value);
+    rb_thread_t * volatile th = fiber->cont.saved_ec.thread_ptr;
+
+    // fiber->blocking is `unsigned int : 1`, so we use it as a boolean:
+    fiber->blocking = 1;
+
+    // Once the fiber is blocking, and current, we increment the thread blocking state:
+    th->blocking += 1;
+
+    return rb_yield(fiber_value);
 }
 
 static VALUE
-fiber_blocking_ensure(VALUE fiber)
+fiber_blocking_ensure(VALUE fiber_value)
 {
-    fiber_ptr(fiber)->blocking -= 1;
+    rb_fiber_t *fiber = fiber_ptr(fiber_value);
+    rb_thread_t * volatile th = fiber->cont.saved_ec.thread_ptr;
+
+    // We are no longer blocking:
+    fiber->blocking = 0;
+    th->blocking -= 1;
+
     return Qnil;
 }
 
@@ -2440,8 +2555,15 @@ fiber_blocking_ensure(VALUE fiber)
 VALUE
 rb_fiber_blocking(VALUE class)
 {
-    VALUE fiber = rb_fiber_current();
-    return rb_ensure(fiber_blocking_yield, fiber, fiber_blocking_ensure, fiber);
+    VALUE fiber_value = rb_fiber_current();
+    rb_fiber_t *fiber = fiber_ptr(fiber_value);
+
+    // If we are already blocking, this is essentially a no-op:
+    if (fiber->blocking) {
+        return rb_yield(fiber_value);
+    } else {
+        return rb_ensure(fiber_blocking_yield, fiber_value, fiber_blocking_ensure, fiber_value);
+    }
 }
 
 /*
@@ -2979,329 +3101,6 @@ rb_fiber_pool_initialize(int argc, VALUE* argv, VALUE self)
  *     fiber.resume #=> FiberError: dead fiber called
  */
 
-/*
- *  Document-class: Fiber::SchedulerInterface
- *
- *  This is not an existing class, but documentation of the interface that Scheduler
- *  object should comply to in order to be used as argument to Fiber.scheduler and handle non-blocking
- *  fibers. See also the "Non-blocking fibers" section in Fiber class docs for explanations
- *  of some concepts.
- *
- *  Scheduler's behavior and usage are expected to be as follows:
- *
- *  * When the execution in the non-blocking Fiber reaches some blocking operation (like
- *    sleep, wait for a process, or a non-ready I/O), it calls some of the scheduler's
- *    hook methods, listed below.
- *  * Scheduler somehow registers what the current fiber is waiting on, and yields control
- *    to other fibers with Fiber.yield (so the fiber would be suspended while expecting its
- *    wait to end, and other fibers in the same thread can perform)
- *  * At the end of the current thread execution, the scheduler's method #close is called
- *  * The scheduler runs into a wait loop, checking all the blocked fibers (which it has
- *    registered on hook calls) and resuming them when the awaited resource is ready
- *    (e.g. I/O ready or sleep time elapsed).
- *
- *  A typical implementation would probably rely for this closing loop on a gem like
- *  EventMachine[https://github.com/eventmachine/eventmachine] or
- *  Async[https://github.com/socketry/async].
- *
- *  This way concurrent execution will be achieved transparently for every
- *  individual Fiber's code.
- *
- *  Hook methods are:
- *
- *  * #io_wait, #io_read, and #io_write
- *  * #process_wait
- *  * #kernel_sleep
- *  * #timeout_after
- *  * #address_resolve
- *  * #block and #unblock
- *  * (the list is expanded as Ruby developers make more methods having non-blocking calls)
- *
- *  When not specified otherwise, the hook implementations are mandatory: if they are not
- *  implemented, the methods trying to call hook will fail. To provide backward compatibility,
- *  in the future hooks will be optional (if they are not implemented, due to the scheduler
- *  being created for the older Ruby version, the code which needs this hook will not fail,
- *  and will just behave in a blocking fashion).
- *
- *  It is also strongly recommended that the scheduler implements the #fiber method, which is
- *  delegated to by Fiber.schedule.
- *
- *  Sample _toy_ implementation of the scheduler can be found in Ruby's code, in
- *  <tt>test/fiber/scheduler.rb</tt>
- *
- */
-
-#if 0 /* for RDoc */
-/*
- *
- *  Document-method: Fiber::SchedulerInterface#close
- *
- *  Called when the current thread exits. The scheduler is expected to implement this
- *  method in order to allow all waiting fibers to finalize their execution.
- *
- *  The suggested pattern is to implement the main event loop in the #close method.
- *
- */
-static VALUE
-rb_fiber_scheduler_interface_close(VALUE self)
-{
-}
-
-/*
- *  Document-method: SchedulerInterface#process_wait
- *  call-seq: process_wait(pid, flags)
- *
- *  Invoked by Process::Status.wait in order to wait for a specified process.
- *  See that method description for arguments description.
- *
- *  Suggested minimal implementation:
- *
- *      Thread.new do
- *        Process::Status.wait(pid, flags)
- *      end.value
- *
- *  This hook is optional: if it is not present in the current scheduler,
- *  Process::Status.wait will behave as a blocking method.
- *
- *  Expected to return a Process::Status instance.
- */
-static VALUE
-rb_fiber_scheduler_interface_process_wait(VALUE self)
-{
-}
-
-/*
- *  Document-method: SchedulerInterface#io_wait
- *  call-seq: io_wait(io, events, timeout)
- *
- *  Invoked by IO#wait, IO#wait_readable, IO#wait_writable to ask whether the
- *  specified descriptor is ready for specified events within
- *  the specified +timeout+.
- *
- *  +events+ is a bit mask of <tt>IO::READABLE</tt>, <tt>IO::WRITABLE</tt>, and
- *  <tt>IO::PRIORITY</tt>.
- *
- *  Suggested implementation should register which Fiber is waiting for which
- *  resources and immediately calling Fiber.yield to pass control to other
- *  fibers. Then, in the #close method, the scheduler might dispatch all the
- *  I/O resources to fibers waiting for it.
- *
- *  Expected to return the subset of events that are ready immediately.
- *
- */
-static VALUE
-rb_fiber_scheduler_interface_io_wait(VALUE self)
-{
-}
-
-/*
- *  Document-method: SchedulerInterface#io_read
- *  call-seq: io_read(io, buffer, length) -> read length or -errno
- *
- *  Invoked by IO#read to read +length+ bytes from +io+ into a specified
- *  +buffer+ (see IO::Buffer).
- *
- *  The +length+ argument is the "minimum length to be read".
- *  If the IO buffer size is 8KiB, but the +length+ is +1024+ (1KiB), up to
- *  8KiB might be read, but at least 1KiB will be.
- *  Generally, the only case where less data than +length+ will be read is if
- *  there is an error reading the data.
- *
- *  Specifying a +length+ of 0 is valid and means try reading at least once
- *  and return any available data.
- *
- *  Suggested implementation should try to read from +io+ in a non-blocking
- *  manner and call #io_wait if the +io+ is not ready (which will yield control
- *  to other fibers).
- *
- *  See IO::Buffer for an interface available to return data.
- *
- *  Expected to return number of bytes read, or, in case of an error, <tt>-errno</tt>
- *  (negated number corresponding to system's error code).
- *
- *  The method should be considered _experimental_.
- */
-static VALUE
-rb_fiber_scheduler_interface_io_read(VALUE self)
-{
-}
-
-/*
- *  Document-method: SchedulerInterface#io_write
- *  call-seq: io_write(io, buffer, length) -> written length or -errno
- *
- *  Invoked by IO#write to write +length+ bytes to +io+ from
- *  from a specified +buffer+ (see IO::Buffer).
- *
- *  The +length+ argument is the "(minimum) length to be written".
- *  If the IO buffer size is 8KiB, but the +length+ specified is 1024 (1KiB),
- *  at most 8KiB will be written, but at least 1KiB will be.
- *  Generally, the only case where less data than +length+ will be written is if
- *  there is an error writing the data.
- *
- *  Specifying a +length+ of 0 is valid and means try writing at least once,
- *  as much data as possible.
- *
- *  Suggested implementation should try to write to +io+ in a non-blocking
- *  manner and call #io_wait if the +io+ is not ready (which will yield control
- *  to other fibers).
- *
- *  See IO::Buffer for an interface available to get data from buffer efficiently.
- *
- *  Expected to return number of bytes written, or, in case of an error, <tt>-errno</tt>
- *  (negated number corresponding to system's error code).
- *
- *  The method should be considered _experimental_.
- */
-static VALUE
-rb_fiber_scheduler_interface_io_write(VALUE self)
-{
-}
-
-/*
- *  Document-method: SchedulerInterface#kernel_sleep
- *  call-seq: kernel_sleep(duration = nil)
- *
- *  Invoked by Kernel#sleep and Mutex#sleep and is expected to provide
- *  an implementation of sleeping in a non-blocking way. Implementation might
- *  register the current fiber in some list of "which fiber wait until what
- *  moment", call Fiber.yield to pass control, and then in #close resume
- *  the fibers whose wait period has elapsed.
- *
- */
-static VALUE
-rb_fiber_scheduler_interface_kernel_sleep(VALUE self)
-{
-}
-
-/*
- *  Document-method: SchedulerInterface#address_resolve
- *  call-seq: address_resolve(hostname) -> array_of_strings or nil
- *
- *  Invoked by any method that performs a non-reverse DNS lookup. The most
- *  notable method is Addrinfo.getaddrinfo, but there are many other.
- *
- *  The method is expected to return an array of strings corresponding to ip
- *  addresses the +hostname+ is resolved to, or +nil+ if it can not be resolved.
- *
- *  Fairly exhaustive list of all possible call-sites:
- *
- *  - Addrinfo.getaddrinfo
- *  - Addrinfo.tcp
- *  - Addrinfo.udp
- *  - Addrinfo.ip
- *  - Addrinfo.new
- *  - Addrinfo.marshal_load
- *  - SOCKSSocket.new
- *  - TCPServer.new
- *  - TCPSocket.new
- *  - IPSocket.getaddress
- *  - TCPSocket.gethostbyname
- *  - UDPSocket#connect
- *  - UDPSocket#bind
- *  - UDPSocket#send
- *  - Socket.getaddrinfo
- *  - Socket.gethostbyname
- *  - Socket.pack_sockaddr_in
- *  - Socket.sockaddr_in
- *  - Socket.unpack_sockaddr_in
- */
-static VALUE
-rb_fiber_scheduler_interface_address_resolve(VALUE self)
-{
-}
-
-/*
- *  Document-method: SchedulerInterface#timeout_after
- *  call-seq: timeout_after(duration, exception_class, *exception_arguments, &block) -> result of block
- *
- *  Invoked by Timeout.timeout to execute the given +block+ within the given
- *  +duration+. It can also be invoked directly by the scheduler or user code.
- *
- *  Attempt to limit the execution time of a given +block+ to the given
- *  +duration+ if possible. When a non-blocking operation causes the +block+'s
- *  execution time to exceed the specified +duration+, that non-blocking
- *  operation should be interrupted by raising the specified +exception_class+
- *  constructed with the given +exception_arguments+.
- *
- *  General execution timeouts are often considered risky. This implementation
- *  will only interrupt non-blocking operations. This is by design because it's
- *  expected that non-blocking operations can fail for a variety of
- *  unpredictable reasons, so applications should already be robust in handling
- *  these conditions and by implication timeouts.
- *
- *  However, as a result of this design, if the +block+ does not invoke any
- *  non-blocking operations, it will be impossible to interrupt it. If you
- *  desire to provide predictable points for timeouts, consider adding
- *  +sleep(0)+.
- *
- *  If the block is executed successfully, its result will be returned.
- *
- *  The exception will typically be raised using Fiber#raise.
- */
-static VALUE
-rb_fiber_scheduler_interface_timeout_after(VALUE self)
-{
-}
-
-/*
- *  Document-method: SchedulerInterface#block
- *  call-seq: block(blocker, timeout = nil)
- *
- *  Invoked by methods like Thread.join, and by Mutex, to signify that current
- *  Fiber is blocked until further notice (e.g. #unblock) or until +timeout+ has
- *  elapsed.
- *
- *  +blocker+ is what we are waiting on, informational only (for debugging and
- *  logging). There are no guarantee about its value.
- *
- *  Expected to return boolean, specifying whether the blocking operation was
- *  successful or not.
- */
-static VALUE
-rb_fiber_scheduler_interface_block(VALUE self)
-{
-}
-
-/*
- *  Document-method: SchedulerInterface#unblock
- *  call-seq: unblock(blocker, fiber)
- *
- *  Invoked to wake up Fiber previously blocked with #block (for example, Mutex#lock
- *  calls #block and Mutex#unlock calls #unblock). The scheduler should use
- *  the +fiber+ parameter to understand which fiber is unblocked.
- *
- *  +blocker+ is what was awaited for, but it is informational only (for debugging
- *  and logging), and it is not guaranteed to be the same value as the +blocker+ for
- *  #block.
- *
- */
-static VALUE
-rb_fiber_scheduler_interface_unblock(VALUE self)
-{
-}
-
-/*
- *  Document-method: SchedulerInterface#fiber
- *  call-seq: fiber(&block)
- *
- *  Implementation of the Fiber.schedule. The method is <em>expected</em> to immediately
- *  run the given block of code in a separate non-blocking fiber, and to return that Fiber.
- *
- *  Minimal suggested implementation is:
- *
- *     def fiber(&block)
- *       fiber = Fiber.new(blocking: false, &block)
- *       fiber.resume
- *       fiber
- *     end
- */
-static VALUE
-rb_fiber_scheduler_interface_fiber(VALUE self)
-{
-}
-#endif
-
 void
 Init_Cont(void)
 {
@@ -3352,21 +3151,6 @@ Init_Cont(void)
     rb_define_singleton_method(rb_cFiber, "current_scheduler", rb_fiber_current_scheduler, 0);
 
     rb_define_singleton_method(rb_cFiber, "schedule", rb_fiber_s_schedule, -1);
-
-#if 0 /* for RDoc */
-    rb_cFiberScheduler = rb_define_class_under(rb_cFiber, "SchedulerInterface", rb_cObject);
-    rb_define_method(rb_cFiberScheduler, "close", rb_fiber_scheduler_interface_close, 0);
-    rb_define_method(rb_cFiberScheduler, "process_wait", rb_fiber_scheduler_interface_process_wait, 0);
-    rb_define_method(rb_cFiberScheduler, "io_wait", rb_fiber_scheduler_interface_io_wait, 0);
-    rb_define_method(rb_cFiberScheduler, "io_read", rb_fiber_scheduler_interface_io_read, 0);
-    rb_define_method(rb_cFiberScheduler, "io_write", rb_fiber_scheduler_interface_io_write, 0);
-    rb_define_method(rb_cFiberScheduler, "kernel_sleep", rb_fiber_scheduler_interface_kernel_sleep, 0);
-    rb_define_method(rb_cFiberScheduler, "address_resolve", rb_fiber_scheduler_interface_address_resolve, 0);
-    rb_define_method(rb_cFiberScheduler, "timeout_after", rb_fiber_scheduler_interface_timeout_after, 0);
-    rb_define_method(rb_cFiberScheduler, "block", rb_fiber_scheduler_interface_block, 0);
-    rb_define_method(rb_cFiberScheduler, "unblock", rb_fiber_scheduler_interface_unblock, 0);
-    rb_define_method(rb_cFiberScheduler, "fiber", rb_fiber_scheduler_interface_fiber, 0);
-#endif
 
 #ifdef RB_EXPERIMENTAL_FIBER_POOL
     rb_cFiberPool = rb_define_class_under(rb_cFiber, "Pool", rb_cObject);

@@ -1112,6 +1112,28 @@ rb_check_id(volatile VALUE *namep)
     return lookup_str_id(name);
 }
 
+// Used by yjit for handling .send without throwing exceptions
+ID
+rb_get_symbol_id(VALUE name)
+{
+    if (STATIC_SYM_P(name)) {
+        return STATIC_SYM2ID(name);
+    }
+    else if (DYNAMIC_SYM_P(name)) {
+        if (SYMBOL_PINNED_P(name)) {
+            return RSYMBOL(name)->id;
+        }
+        else {
+            return 0;
+        }
+    }
+    else {
+        RUBY_ASSERT_ALWAYS(RB_TYPE_P(name, T_STRING));
+        return lookup_str_id(name);
+    }
+}
+
+
 VALUE
 rb_check_symbol(volatile VALUE *namep)
 {

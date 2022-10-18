@@ -10,7 +10,7 @@ class Thread
     # +ThreadError+ is raised.
     #
     # If +timeout+ seconds have passed and no data is available +nil+ is
-    # returned.
+    # returned. If +timeout+ is +0+ it returns immediately.
     def pop(non_block = false, timeout: nil)
       if non_block && timeout
         raise ArgumentError, "can't set a timeout if non_block is enabled"
@@ -32,7 +32,7 @@ class Thread
     # suspended, and +ThreadError+ is raised.
     #
     # If +timeout+ seconds have passed and no data is available +nil+ is
-    # returned.
+    # returned. If +timeout+ is +0+ it returns immediately.
     def pop(non_block = false, timeout: nil)
       if non_block && timeout
         raise ArgumentError, "can't set a timeout if non_block is enabled"
@@ -54,7 +54,7 @@ class Thread
     # thread isn't suspended, and +ThreadError+ is raised.
     #
     # If +timeout+ seconds have passed and no space is available +nil+ is
-    # returned.
+    # returned. If +timeout+ is +0+ it returns immediately.
     # Otherwise it returns +self+.
     def push(object, non_block = false, timeout: nil)
       if non_block && timeout

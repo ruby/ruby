@@ -8407,6 +8407,7 @@ rb_io_init_copy(VALUE dest, VALUE io)
     fptr->encs = orig->encs;
     fptr->pid = orig->pid;
     fptr->lineno = orig->lineno;
+    fptr->timeout = orig->timeout;
     if (!NIL_P(orig->pathv)) fptr->pathv = orig->pathv;
     fptr_copy_finalizer(fptr, orig);
 
@@ -10850,6 +10851,13 @@ rb_io_advise(int argc, VALUE *argv, VALUE io)
 static VALUE
 rb_f_select(int argc, VALUE *argv, VALUE obj)
 {
+    VALUE scheduler = rb_fiber_scheduler_current();
+    if (scheduler != Qnil) {
+        // It's optionally supported.
+        VALUE result = rb_fiber_scheduler_io_selectv(scheduler, argc, argv);
+        if (result != Qundef) return result;
+    }
+
     VALUE timeout;
     struct select_args args;
     struct timeval timerec;

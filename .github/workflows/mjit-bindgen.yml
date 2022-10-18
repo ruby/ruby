@@ -6,12 +6,16 @@ on:
       - '**.md'
       - '**.rdoc'
       - '**/.document'
+      - '**.[1-8]'
+      - '**.ronn'
   pull_request:
     paths-ignore:
       - 'doc/**'
       - '**.md'
       - '**.rdoc'
       - '**/.document'
+      - '**.[1-8]'
+      - '**.ronn'
 
 concurrency:
   group: ${{ github.workflow }} / ${{ startsWith(github.event_name, 'pull') && github.ref_name || github.sha }}

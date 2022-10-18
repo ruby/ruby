@@ -7,6 +7,7 @@ module Bug end
 module Bug::Marshal
   class TestInternalIVar < Test::Unit::TestCase
     def test_marshal
+      pend "We don't support IVs with ID of 0"
       v = InternalIVar.new("hello", "world", "bye")
       assert_equal("hello", v.normal)
       assert_equal("world", v.internal)

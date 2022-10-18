@@ -5,6 +5,7 @@
 use std::cell::Cell;
 use std::fmt;
 use std::convert::From;
+use std::io::Write;
 use std::mem::take;
 use crate::cruby::{VALUE};
 use crate::virtualmem::{CodePtr};
@@ -220,7 +221,7 @@ impl From<usize> for Opnd {
 
 impl From<u64> for Opnd {
     fn from(value: u64) -> Self {
-        Opnd::UImm(value.try_into().unwrap())
+        Opnd::UImm(value)
     }
 }
 
@@ -433,9 +434,9 @@ pub enum Insn {
     // binary OR operation.
     Or { left: Opnd, right: Opnd, out: Opnd },
 
-    /// Pad nop instructions to accomodate Op::Jmp in case the block is
-    /// invalidated.
-    PadEntryExit,
+    /// Pad nop instructions to accomodate Op::Jmp in case the block or the insn
+    /// is invalidated.
+    PadInvalPatch,
 
     // Mark a position in the generated code
     PosMarker(PosMarkerFn),
@@ -521,7 +522,7 @@ impl Insn {
             Insn::Mov { .. } => "Mov",
             Insn::Not { .. } => "Not",
             Insn::Or { .. } => "Or",
-            Insn::PadEntryExit => "PadEntryExit",
+            Insn::PadInvalPatch => "PadEntryExit",
             Insn::PosMarker(_) => "PosMarker",
             Insn::RShift { .. } => "RShift",
             Insn::Store { .. } => "Store",
@@ -658,7 +659,7 @@ impl<'a> Iterator for InsnOpndIterator<'a> {
             Insn::Jz(_) |
             Insn::Label(_) |
             Insn::LeaLabel { .. } |
-            Insn::PadEntryExit |
+            Insn::PadInvalPatch |
             Insn::PosMarker(_) => None,
             Insn::CPopInto(opnd) |
             Insn::CPush(opnd) |
@@ -755,7 +756,7 @@ impl<'a> InsnOpndMutIterator<'a> {
             Insn::Jz(_) |
             Insn::Label(_) |
             Insn::LeaLabel { .. } |
-            Insn::PadEntryExit |
+            Insn::PadInvalPatch |
             Insn::PosMarker(_) => None,
             Insn::CPopInto(opnd) |
             Insn::CPush(opnd) |
@@ -1099,13 +1100,10 @@ impl Assembler
         let gc_offsets = self.compile_with_regs(cb, alloc_regs);
 
         #[cfg(feature = "disasm")]
-        if get_option!(dump_disasm) == DumpDisasm::All || (get_option!(dump_disasm) == DumpDisasm::Inline && cb.inline()) {
-            use crate::disasm::disasm_addr_range;
-            let last_ptr = cb.get_write_ptr();
-            let disasm = disasm_addr_range(cb, start_addr, last_ptr.raw_ptr() as usize - start_addr as usize);
-            if disasm.len() > 0 {
-                println!("{disasm}");
-            }
+        if let Some(dump_disasm) = get_option_ref!(dump_disasm) {
+            use crate::disasm::dump_disasm_addr_range;
+            let end_addr = cb.get_write_ptr().raw_ptr();
+            dump_disasm_addr_range(cb, start_addr, end_addr, dump_disasm)
         }
         gc_offsets
     }
@@ -1474,8 +1472,8 @@ impl Assembler {
         out
     }
 
-    pub fn pad_entry_exit(&mut self) {
-        self.push_insn(Insn::PadEntryExit);
+    pub fn pad_inval_patch(&mut self) {
+        self.push_insn(Insn::PadInvalPatch);
     }
 
     //pub fn pos_marker<F: FnMut(CodePtr)>(&mut self, marker_fn: F)

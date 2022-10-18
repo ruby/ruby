@@ -350,6 +350,7 @@ objspace.o: $(top_srcdir)/internal/serial.h
 objspace.o: $(top_srcdir)/internal/static_assert.h
 objspace.o: $(top_srcdir)/internal/warnings.h
 objspace.o: $(top_srcdir)/node.h
+objspace.o: $(top_srcdir)/shape.h
 objspace.o: $(top_srcdir)/symbol.h
 objspace.o: objspace.c
 objspace.o: {$(VPATH)}id.h
@@ -533,7 +534,9 @@ objspace_dump.o: $(top_srcdir)/ccan/check_type/check_type.h
 objspace_dump.o: $(top_srcdir)/ccan/container_of/container_of.h
 objspace_dump.o: $(top_srcdir)/ccan/list/list.h
 objspace_dump.o: $(top_srcdir)/ccan/str/str.h
+objspace_dump.o: $(top_srcdir)/constant.h
 objspace_dump.o: $(top_srcdir)/gc.h
+objspace_dump.o: $(top_srcdir)/id_table.h
 objspace_dump.o: $(top_srcdir)/internal.h
 objspace_dump.o: $(top_srcdir)/internal/array.h
 objspace_dump.o: $(top_srcdir)/internal/compilers.h
@@ -544,12 +547,14 @@ objspace_dump.o: $(top_srcdir)/internal/sanitizers.h
 objspace_dump.o: $(top_srcdir)/internal/serial.h
 objspace_dump.o: $(top_srcdir)/internal/static_assert.h
 objspace_dump.o: $(top_srcdir)/internal/string.h
+objspace_dump.o: $(top_srcdir)/internal/variable.h
 objspace_dump.o: $(top_srcdir)/internal/vm.h
 objspace_dump.o: $(top_srcdir)/internal/warnings.h
 objspace_dump.o: $(top_srcdir)/method.h
 objspace_dump.o: $(top_srcdir)/node.h
 objspace_dump.o: $(top_srcdir)/ruby_assert.h
 objspace_dump.o: $(top_srcdir)/ruby_atomic.h
+objspace_dump.o: $(top_srcdir)/shape.h
 objspace_dump.o: $(top_srcdir)/thread_pthread.h
 objspace_dump.o: $(top_srcdir)/vm_core.h
 objspace_dump.o: $(top_srcdir)/vm_opts.h

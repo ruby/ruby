@@ -140,24 +140,31 @@ module TestIRB
       end
 
       tests.each do |code, result|
-        if colorize_code_supported?
-          assert_equal_with_term(result, code, complete: true)
-          assert_equal_with_term(result, code, complete: false)
+        assert_equal_with_term(result, code, complete: true)
+        assert_equal_with_term(result, code, complete: false)
 
-          assert_equal_with_term(code, code, complete: true, tty: false)
-          assert_equal_with_term(code, code, complete: false, tty: false)
+        assert_equal_with_term(code, code, complete: true, tty: false)
+        assert_equal_with_term(code, code, complete: false, tty: false)
 
-          assert_equal_with_term(code, code, complete: true, colorable: false)
+        assert_equal_with_term(code, code, complete: true, colorable: false)
 
-          assert_equal_with_term(code, code, complete: false, colorable: false)
+        assert_equal_with_term(code, code, complete: false, colorable: false)
 
-          assert_equal_with_term(result, code, complete: true, tty: false, colorable: true)
+        assert_equal_with_term(result, code, complete: true, tty: false, colorable: true)
 
-          assert_equal_with_term(result, code, complete: false, tty: false, colorable: true)
-        else
-          assert_equal_with_term(code, code)
-        end
+        assert_equal_with_term(result, code, complete: false, tty: false, colorable: true)
       end
+    end
+
+    def test_colorize_code_with_local_variables
+      code = "a /(b +1)/i"
+      result_without_lvars = "a #{RED}#{BOLD}/#{CLEAR}#{RED}(b +1)#{CLEAR}#{RED}#{BOLD}/i#{CLEAR}"
+      result_with_lvar = "a /(b #{BLUE}#{BOLD}+1#{CLEAR})/i"
+      result_with_lvars = "a /(b +#{BLUE}#{BOLD}1#{CLEAR})/i"
+
+      assert_equal_with_term(result_without_lvars, code)
+      assert_equal_with_term(result_with_lvar, code, local_variables: ['a'])
+      assert_equal_with_term(result_with_lvars, code, local_variables: ['a', 'b'])
     end
 
     def test_colorize_code_complete_true
@@ -186,26 +193,22 @@ module TestIRB
         "'foo' + 'bar" => "#{RED}#{BOLD}'#{CLEAR}#{RED}foo#{CLEAR}#{RED}#{BOLD}'#{CLEAR} + #{RED}#{BOLD}'#{CLEAR}#{RED}bar#{CLEAR}",
         "('foo" => "(#{RED}#{BOLD}'#{CLEAR}#{RED}foo#{CLEAR}",
       }.each do |code, result|
-        if colorize_code_supported?
-          assert_equal_with_term(result, code, complete: false)
+        assert_equal_with_term(result, code, complete: false)
 
-          assert_equal_with_term(code, code, complete: false, tty: false)
+        assert_equal_with_term(code, code, complete: false, tty: false)
 
-          assert_equal_with_term(code, code, complete: false, colorable: false)
+        assert_equal_with_term(code, code, complete: false, colorable: false)
 
-          assert_equal_with_term(result, code, complete: false, tty: false, colorable: true)
+        assert_equal_with_term(result, code, complete: false, tty: false, colorable: true)
 
-          unless complete_option_supported?
-            assert_equal_with_term(result, code, complete: true)
+        unless complete_option_supported?
+          assert_equal_with_term(result, code, complete: true)
 
-            assert_equal_with_term(code, code, complete: true, tty: false)
+          assert_equal_with_term(code, code, complete: true, tty: false)
 
-            assert_equal_with_term(code, code, complete: true, colorable: false)
+          assert_equal_with_term(code, code, complete: true, colorable: false)
 
-            assert_equal_with_term(result, code, complete: true, tty: false, colorable: true)
-          end
-        else
-          assert_equal_with_term(code, code)
+          assert_equal_with_term(result, code, complete: true, tty: false, colorable: true)
         end
       end
     end
@@ -231,11 +234,6 @@ module TestIRB
     end
 
     private
-
-    # `#colorize_code` is supported only for Ruby 2.5+. It just returns the original code in 2.4-.
-    def colorize_code_supported?
-      Gem::Version.new(RUBY_VERSION) >= Gem::Version.new('2.5.0')
-    end
 
     # `complete: true` is the same as `complete: false` in Ruby 2.6-
     def complete_option_supported?

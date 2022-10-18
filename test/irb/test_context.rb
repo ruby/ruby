@@ -225,6 +225,16 @@ module TestIRB
       end
     end
 
+    def test_assignment_expression_with_local_variable
+      input = TestInputMethod.new
+      irb = IRB::Irb.new(IRB::WorkSpace.new(Object.new), input)
+      code = "a /1;x=1#/"
+      refute(irb.assignment_expression?(code), "#{code}: should not be an assignment expression")
+      irb.context.workspace.binding.eval('a = 1')
+      assert(irb.assignment_expression?(code), "#{code}: should be an assignment expression")
+      refute(irb.assignment_expression?(""), "empty code should not be an assignment expression")
+    end
+
     def test_echo_on_assignment
       input = TestInputMethod.new([
         "a = 1\n",

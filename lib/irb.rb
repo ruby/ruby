@@ -506,13 +506,15 @@ module IRB
 
       @scanner.set_auto_indent(@context) if @context.auto_indent_mode
 
-      @scanner.each_top_level_statement do |line, line_no|
+      @scanner.each_top_level_statement(@context) do |line, line_no|
         signal_status(:IN_EVAL) do
           begin
             line.untaint if RUBY_VERSION < '2.7'
             if IRB.conf[:MEASURE] && IRB.conf[:MEASURE_CALLBACKS].empty?
               IRB.set_measure_callback
             end
+            # Assignment expression check should be done before @context.evaluate to handle code like `a /2#/ if false; a = 1`
+            is_assignment = assignment_expression?(line)
             if IRB.conf[:MEASURE] && !IRB.conf[:MEASURE_CALLBACKS].empty?
               result = nil
               last_proc = proc{ result = @context.evaluate(line, line_no, exception: exc) }
@@ -529,7 +531,7 @@ module IRB
               @context.evaluate(line, line_no, exception: exc)
             end
             if @context.echo?
-              if assignment_expression?(line)
+              if is_assignment
                 if @context.echo_on_assignment?
                   output_value(@context.echo_on_assignment? == :truncate)
                 end
@@ -827,9 +829,12 @@ module IRB
       # array of parsed expressions. The first element of each expression is the
       # expression's type.
       verbose, $VERBOSE = $VERBOSE, nil
-      result = ASSIGNMENT_NODE_TYPES.include?(Ripper.sexp(line)&.dig(1,-1,0))
+      code = "#{RubyLex.generate_local_variables_assign_code(@context.local_variables) || 'nil;'}\n#{line}"
+      # Get the last node_type of the line. drop(1) is to ignore the local_variables_assign_code part.
+      node_type = Ripper.sexp(code)&.dig(1)&.drop(1)&.dig(-1, 0)
+      ASSIGNMENT_NODE_TYPES.include?(node_type)
+    ensure
       $VERBOSE = verbose
-      result
     end
 
     ATTR_TTY = "\e[%sm"

@@ -40,7 +40,7 @@ module Bundler
         base_requirements = {}
         @base.each do |ls|
           dep = Dependency.new(ls.name, ls.version)
-          base_requirements[ls.name] = DepProxy.get_proxy(dep, ls.platform)
+          base_requirements[ls.name] = dep
         end
         @additional_base_requirements.each {|d| base_requirements[d.name] = d }
         base_requirements

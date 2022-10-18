@@ -74,6 +74,11 @@ rb_yjit_mark_writable(void *mem_block, uint32_t mem_size)
 void
 rb_yjit_mark_executable(void *mem_block, uint32_t mem_size)
 {
+    // Do not call mprotect when mem_size is zero. Some platforms may return
+    // an error for it. https://github.com/Shopify/ruby/issues/450
+    if (mem_size == 0) {
+        return;
+    }
     if (mprotect(mem_block, mem_size, PROT_READ | PROT_EXEC)) {
         rb_bug("Couldn't make JIT page (%p, %lu bytes) executable, errno: %s\n",
             mem_block, (unsigned long)mem_size, strerror(errno));
@@ -509,6 +514,8 @@ rb_get_cme_def_body_attr_id(const rb_callable_method_entry_t *cme)
     return cme->def->body.attr.id;
 }
 
+ID rb_get_symbol_id(VALUE namep);
+
 enum method_optimized_type
 rb_get_cme_def_body_optimized_type(const rb_callable_method_entry_t *cme)
 {
@@ -887,13 +894,11 @@ rb_assert_cme_handle(VALUE handle)
     RUBY_ASSERT_ALWAYS(IMEMO_TYPE_P(handle, imemo_ment));
 }
 
-typedef void (*iseq_callback)(const rb_iseq_t *);
-
 // Heap-walking callback for rb_yjit_for_each_iseq().
 static int
 for_each_iseq_i(void *vstart, void *vend, size_t stride, void *data)
 {
-    const iseq_callback callback = (iseq_callback)data;
+    const rb_iseq_callback callback = (rb_iseq_callback)data;
     VALUE v = (VALUE)vstart;
     for (; v != (VALUE)vend; v += stride) {
         void *ptr = asan_poisoned_object_p(v);
@@ -912,7 +917,7 @@ for_each_iseq_i(void *vstart, void *vend, size_t stride, void *data)
 // Iterate through the whole GC heap and invoke a callback for each iseq.
 // Used for global code invalidation.
 void
-rb_yjit_for_each_iseq(iseq_callback callback)
+rb_yjit_for_each_iseq(rb_iseq_callback callback)
 {
     rb_objspace_each_objects(for_each_iseq_i, (void *)callback);
 }

@@ -4,8 +4,13 @@ use std::ffi::CStr;
 #[derive(Clone, PartialEq, Eq, Debug)]
 #[repr(C)]
 pub struct Options {
-    // Size of the executable memory block to allocate in MiB
+    // Size of the executable memory block to allocate in bytes
+    // Note that the command line argument is expressed in MiB and not bytes
     pub exec_mem_size: usize,
+
+    // Size of each executable memory code page in bytes
+    // Note that the command line argument is expressed in KiB and not bytes
+    pub code_page_size: usize,
 
     // Number of method calls after which to start generating code
     // Threshold==1 means compile on first execution
@@ -31,7 +36,7 @@ pub struct Options {
     pub dump_insns: bool,
 
     /// Dump all compiled instructions of target cbs.
-    pub dump_disasm: DumpDisasm,
+    pub dump_disasm: Option<DumpDisasm>,
 
     /// Print when specific ISEQ items are compiled or invalidated
     pub dump_iseq_disasm: Option<String>,
@@ -48,7 +53,8 @@ pub struct Options {
 
 // Initialize the options to default values
 pub static mut OPTIONS: Options = Options {
-    exec_mem_size: 256,
+    exec_mem_size: 256 * 1024 * 1024,
+    code_page_size: 16 * 1024,
     call_threshold: 10,
     greedy_versioning: false,
     no_type_prop: false,
@@ -56,26 +62,18 @@ pub static mut OPTIONS: Options = Options {
     gen_stats: false,
     gen_trace_exits: false,
     dump_insns: false,
-    dump_disasm: DumpDisasm::None,
+    dump_disasm: None,
     verify_ctx: false,
     global_constant_state: false,
     dump_iseq_disasm: None,
 };
 
-#[derive(Copy, Clone, PartialEq, Eq, Debug)]
+#[derive(Clone, PartialEq, Eq, Debug)]
 pub enum DumpDisasm {
-    // Dump only inline cb
-    Inline,
-    // Dump both inline and outlined cbs
-    All,
-    // Dont dump anything
-    None,
-}
-
-impl DumpDisasm {
-    pub fn is_enabled(&self) -> bool {
-        *self != DumpDisasm::None
-    }
+    // Dump to stdout
+    Stdout,
+    // Dump to "yjit_{pid}.log" file under the specified directory
+    File(String),
 }
 
 /// Macro to get an option value by name
@@ -118,8 +116,30 @@ pub fn parse_option(str_ptr: *const std::os::raw::c_char) -> Option<()> {
     match (opt_name, opt_val) {
         ("", "") => (), // Simply --yjit
 
-        ("exec-mem-size", _) => match opt_val.parse() {
-            Ok(n) => unsafe { OPTIONS.exec_mem_size = n },
+        ("exec-mem-size", _) => match opt_val.parse::<usize>() {
+            Ok(n) => {
+                if n == 0 || n > 2 * 1024 * 1024 {
+                    return None
+                }
+
+                // Convert from MiB to bytes internally for convenience
+                unsafe { OPTIONS.exec_mem_size = n * 1024 * 1024 }
+            }
+            Err(_) => {
+                return None;
+            }
+        },
+
+        ("code-page-size", _) => match opt_val.parse::<usize>() {
+            Ok(n) => {
+                // Enforce bounds checks and that n is divisible by 4KiB
+                if n < 4 || n > 256 || n % 4 != 0 {
+                    return None
+                }
+
+                // Convert from KiB to bytes internally for convenience
+                unsafe { OPTIONS.code_page_size = n * 1024 }
+            }
             Err(_) => {
                 return None;
             }
@@ -140,9 +160,13 @@ pub fn parse_option(str_ptr: *const std::os::raw::c_char) -> Option<()> {
         },
 
         ("dump-disasm", _) => match opt_val.to_string().as_str() {
-            "all" => unsafe { OPTIONS.dump_disasm = DumpDisasm::All },
-            "" => unsafe { OPTIONS.dump_disasm = DumpDisasm::Inline },
-            _ => return None,
+            "" => unsafe { OPTIONS.dump_disasm = Some(DumpDisasm::Stdout) },
+            directory => {
+                let pid = std::process::id();
+                let path = format!("{directory}/yjit_{pid}.log");
+                println!("YJIT disasm dump: {path}");
+                unsafe { OPTIONS.dump_disasm = Some(DumpDisasm::File(path)) }
+            }
          },
 
         ("dump-iseq-disasm", _) => unsafe {

@@ -97,6 +97,18 @@ module Spec
       end
     end
 
+    RSpec::Matchers.define :take_less_than do |seconds|
+      match do |actual|
+        start_time = Time.now
+
+        actual.call
+
+        (Time.now - start_time).to_f < seconds
+      end
+
+      supports_block_expectations
+    end
+
     define_compound_matcher :read_as, [exist] do |file_contents|
       diffable
 

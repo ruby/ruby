@@ -491,14 +491,14 @@ impl IseqPayload {
 
 /// Get the payload for an iseq. For safety it's up to the caller to ensure the returned `&mut`
 /// upholds aliasing rules and that the argument is a valid iseq.
-pub unsafe fn load_iseq_payload(iseq: IseqPtr) -> Option<&'static mut IseqPayload> {
-    let payload = rb_iseq_get_yjit_payload(iseq);
+pub fn get_iseq_payload(iseq: IseqPtr) -> Option<&'static mut IseqPayload> {
+    let payload = unsafe { rb_iseq_get_yjit_payload(iseq) };
     let payload: *mut IseqPayload = payload.cast();
-    payload.as_mut()
+    unsafe { payload.as_mut() }
 }
 
 /// Get the payload object associated with an iseq. Create one if none exists.
-fn get_iseq_payload(iseq: IseqPtr) -> &'static mut IseqPayload {
+fn get_or_create_iseq_payload(iseq: IseqPtr) -> &'static mut IseqPayload {
     type VoidPtr = *mut c_void;
 
     let payload_non_null = unsafe {
@@ -546,6 +546,9 @@ pub extern "C" fn rb_yjit_iseq_free(payload: *mut c_void) {
     // SAFETY: We got the pointer from Box::into_raw().
     let payload = unsafe { Box::from_raw(payload) };
 
+    // Increment the freed iseq count
+    incr_counter!(freed_iseq_count);
+
     // Remove all blocks in the payload from global invariants table.
     for versions in &payload.version_map {
         for block in versions {
@@ -585,10 +588,8 @@ pub extern "C" fn rb_yjit_iseq_mark(payload: *mut c_void) {
             // Mark outgoing branch entries
             for branch in &block.outgoing {
                 let branch = branch.borrow();
-                for target in &branch.targets {
-                    if let Some(target) = target {
-                        unsafe { rb_gc_mark_movable(target.iseq.into()) };
-                    }
+                for target in branch.targets.iter().flatten() {
+                    unsafe { rb_gc_mark_movable(target.iseq.into()) };
                 }
             }
 
@@ -643,10 +644,8 @@ pub extern "C" fn rb_yjit_iseq_update_references(payload: *mut c_void) {
             // Update outgoing branch entries
             for branch in &block.outgoing {
                 let mut branch = branch.borrow_mut();
-                for target in &mut branch.targets {
-                    if let Some(target) = target {
-                        target.iseq = unsafe { rb_gc_location(target.iseq.into()) }.as_iseq();
-                    }
+                for target in branch.targets.iter_mut().flatten() {
+                    target.iseq = unsafe { rb_gc_location(target.iseq.into()) }.as_iseq();
                 }
             }
 
@@ -666,7 +665,7 @@ pub extern "C" fn rb_yjit_iseq_update_references(payload: *mut c_void) {
                 if new_addr != object {
                     for (byte_idx, &byte) in new_addr.as_u64().to_le_bytes().iter().enumerate() {
                         let byte_code_ptr = value_code_ptr.add_bytes(byte_idx);
-                        cb.get_mem().write_byte(byte_code_ptr, byte)
+                        cb.write_mem(byte_code_ptr, byte)
                             .expect("patching existing code should be within bounds");
                     }
                 }
@@ -683,8 +682,19 @@ pub extern "C" fn rb_yjit_iseq_update_references(payload: *mut c_void) {
 }
 
 /// Get all blocks for a particular place in an iseq.
-fn get_version_list(blockid: BlockId) -> &'static mut VersionList {
-    let payload = get_iseq_payload(blockid.iseq);
+fn get_version_list(blockid: BlockId) -> Option<&'static mut VersionList> {
+    let insn_idx = blockid.idx.as_usize();
+    match get_iseq_payload(blockid.iseq) {
+        Some(payload) if insn_idx < payload.version_map.len() => {
+            Some(payload.version_map.get_mut(insn_idx).unwrap())
+        },
+        _ => None
+    }
+}
+
+/// Get or create all blocks for a particular place in an iseq.
+fn get_or_create_version_list(blockid: BlockId) -> &'static mut VersionList {
+    let payload = get_or_create_iseq_payload(blockid.iseq);
     let insn_idx = blockid.idx.as_usize();
 
     // Expand the version map as necessary
@@ -699,32 +709,34 @@ fn get_version_list(blockid: BlockId) -> &'static mut VersionList {
 
 /// Take all of the blocks for a particular place in an iseq
 pub fn take_version_list(blockid: BlockId) -> VersionList {
-    let payload = get_iseq_payload(blockid.iseq);
     let insn_idx = blockid.idx.as_usize();
-
-    if insn_idx >= payload.version_map.len() {
-        VersionList::default()
-    } else {
-        mem::take(&mut payload.version_map[insn_idx])
+    match get_iseq_payload(blockid.iseq) {
+        Some(payload) if insn_idx < payload.version_map.len() => {
+            mem::take(&mut payload.version_map[insn_idx])
+        },
+        _ => VersionList::default(),
     }
 }
 
 /// Count the number of block versions matching a given blockid
 fn get_num_versions(blockid: BlockId) -> usize {
     let insn_idx = blockid.idx.as_usize();
-    let payload = get_iseq_payload(blockid.iseq);
-
-    payload
-        .version_map
-        .get(insn_idx)
-        .map(|versions| versions.len())
-        .unwrap_or(0)
+    match get_iseq_payload(blockid.iseq) {
+        Some(payload) => {
+            payload
+                .version_map
+                .get(insn_idx)
+                .map(|versions| versions.len())
+                .unwrap_or(0)
+        }
+        None => 0,
+    }
 }
 
-/// Get a list of block versions generated for an iseq
+/// Get or create a list of block versions generated for an iseq
 /// This is used for disassembly (see disasm.rs)
-pub fn get_iseq_block_list(iseq: IseqPtr) -> Vec<BlockRef> {
-    let payload = get_iseq_payload(iseq);
+pub fn get_or_create_iseq_block_list(iseq: IseqPtr) -> Vec<BlockRef> {
+    let payload = get_or_create_iseq_payload(iseq);
 
     let mut blocks = Vec::<BlockRef>::new();
 
@@ -745,7 +757,10 @@ pub fn get_iseq_block_list(iseq: IseqPtr) -> Vec<BlockRef> {
 /// Retrieve a basic block version for an (iseq, idx) tuple
 /// This will return None if no version is found
 fn find_block_version(blockid: BlockId, ctx: &Context) -> Option<BlockRef> {
-    let versions = get_version_list(blockid);
+    let versions = match get_version_list(blockid) {
+        Some(versions) => versions,
+        None => return None,
+    };
 
     // Best match found
     let mut best_version: Option<BlockRef> = None;
@@ -806,7 +821,7 @@ fn add_block_version(blockref: &BlockRef, cb: &CodeBlock) {
     // Function entry blocks must have stack size 0
     assert!(!(block.blockid.idx == 0 && block.ctx.stack_size > 0));
 
-    let version_list = get_version_list(block.blockid);
+    let version_list = get_or_create_version_list(block.blockid);
 
     version_list.push(blockref.clone());
 
@@ -834,7 +849,10 @@ fn add_block_version(blockref: &BlockRef, cb: &CodeBlock) {
 /// Remove a block version from the version map of its parent ISEQ
 fn remove_block_version(blockref: &BlockRef) {
     let block = blockref.borrow();
-    let version_list = get_version_list(block.blockid);
+    let version_list = match get_version_list(block.blockid) {
+        Some(version_list) => version_list,
+        None => return,
+    };
 
     // Retain the versions that are not this one
     version_list.retain(|other| blockref != other);
@@ -1059,6 +1077,21 @@ impl Context {
         self.sp_offset -= n as i16;
 
         return top;
+    }
+
+    pub fn shift_stack(&mut self, argc: usize) {
+        assert!(argc < self.stack_size.into());
+
+        let method_name_index = (self.stack_size - argc as u16 - 1) as usize;
+
+        for i in method_name_index..(self.stack_size - 1) as usize {
+
+            if i + 1 < MAX_TEMP_TYPES {
+                self.temp_types[i] = self.temp_types[i + 1];
+                self.temp_mapping[i] = self.temp_mapping[i + 1];
+            }
+        }
+        self.stack_pop(1);
     }
 
     /// Get an operand pointing to a slot on the temp stack
@@ -1405,11 +1438,9 @@ fn gen_block_series_body(
         if result.is_err() {
             // Remove previously compiled block
             // versions from the version map
+            mem::drop(last_branch); // end borrow
             for blockref in &batch {
-                // FIXME: should be deallocating resources here too
-                // e.g. invariants, etc.
-                //free_block(blockref)
-
+                free_block(blockref);
                 remove_block_version(blockref);
             }
 
@@ -1590,9 +1621,10 @@ fn make_branch_entry(block: &BlockRef, src_ctx: &Context, gen_fn: BranchGenFn) -
     return branchref;
 }
 
-/// Generated code calls this function with the SysV calling convention.
-/// See [get_branch_target].
+
 c_callable! {
+    /// Generated code calls this function with the SysV calling convention.
+    /// See [get_branch_target].
     fn branch_stub_hit(
         branch_ptr: *const c_void,
         target_idx: u32,
@@ -1884,7 +1916,9 @@ pub fn gen_branch(
 
     // Call the branch generation function
     asm.mark_branch_start(&branchref);
-    gen_fn(asm, branch.dst_addrs[0].unwrap(), branch.dst_addrs[1], BranchShape::Default);
+    if let Some(dst_addr) = branch.dst_addrs[0] {
+        gen_fn(asm, dst_addr, branch.dst_addrs[1], BranchShape::Default);
+    }
     asm.mark_branch_end(&branchref);
 }
 
@@ -1923,6 +1957,7 @@ pub fn gen_direct_jump(jit: &JITState, ctx: &Context, target0: BlockId, asm: &mu
         branch.shape = BranchShape::Default;
 
         // Call the branch generation function
+        asm.comment("gen_direct_jmp: existing block");
         asm.mark_branch_start(&branchref);
         gen_jump_branch(asm, branch.dst_addrs[0].unwrap(), None, BranchShape::Default);
         asm.mark_branch_end(&branchref);
@@ -1933,6 +1968,7 @@ pub fn gen_direct_jump(jit: &JITState, ctx: &Context, target0: BlockId, asm: &mu
         branch.shape = BranchShape::Next0;
 
         // The branch is effectively empty (a noop)
+        asm.comment("gen_direct_jmp: fallthrough");
         asm.mark_branch_start(&branchref);
         asm.mark_branch_end(&branchref);
     }
@@ -1971,12 +2007,14 @@ pub fn defer_compilation(
 
     // Call the branch generation function
     asm.mark_branch_start(&branch_rc);
-    gen_jump_branch(asm, branch.dst_addrs[0].unwrap(), None, BranchShape::Default);
+    if let Some(dst_addr) = branch.dst_addrs[0] {
+        gen_jump_branch(asm, dst_addr, None, BranchShape::Default);
+    }
     asm.mark_branch_end(&branch_rc);
 }
 
 // Remove all references to a block then free it.
-fn free_block(blockref: &BlockRef) {
+pub fn free_block(blockref: &BlockRef) {
     use crate::invariants::*;
 
     block_assumptions_free(blockref);
@@ -2003,14 +2041,12 @@ fn free_block(blockref: &BlockRef) {
         let out_branch = out_branchref.borrow();
 
         // For each successor block
-        for succ in &out_branch.blocks {
-            if let Some(succ) = succ {
-                // Remove outgoing branch from the successor's incoming list
-                let mut succ_block = succ.borrow_mut();
-                succ_block
-                    .incoming
-                    .retain(|succ_incoming| !Rc::ptr_eq(succ_incoming, out_branchref));
-            }
+        for succ in out_branch.blocks.iter().flatten() {
+            // Remove outgoing branch from the successor's incoming list
+            let mut succ_block = succ.borrow_mut();
+            succ_block
+                .incoming
+                .retain(|succ_incoming| !Rc::ptr_eq(succ_incoming, out_branchref));
         }
     }
 

@@ -84,6 +84,30 @@ def pipe_readlines(args, rs: "\0", chomp: true)
   end
 end
 
+def replace_rdoc_ref(file)
+  src = File.binread(file)
+  src.gsub!(%r[\[\Khttps://docs\.ruby-lang\.org/en/master(?:/doc)?/(([A-Z]\w+(?:/[A-Z]\w+)*)|\w+_rdoc)\.html(\#\S+)?(?=\])]) do
+    name, mod, label = $1, $2, $3
+    mod &&= mod.gsub('/', '::')
+    if label && (m = label.match(/\A\#(?:method-([ci])|(?:(?:class|module)-#{mod}-)?label)-([-+\w]+)\z/))
+      scope, label = m[1], m[2]
+      scope = scope ? scope.tr('ci', '.#') : '@'
+    end
+    "rdoc-ref:#{mod || name.chomp("_rdoc") + ".rdoc"}#{scope}#{label}"
+  end or return false
+  File.rename(file, file + "~")
+  File.binwrite(file, src)
+  return true
+end
+
+def replace_rdoc_ref_all
+  result = pipe_readlines(%W"git status porcelain -z -- *.c *.rb *.rdoc")
+  result.map! {|line| line[/\A.M (.*)/, 1]}
+  result.compact!
+  result = pipe_readlines(%W"git grep -z -l -F [https://docs.ruby-lang.org/en/master/ --" + result)
+  result.inject(false) {|changed, file| changed | replace_rdoc_ref(file)}
+end
+
 # We usually don't use this. Please consider using #sync_default_gems_with_commits instead.
 def sync_default_gems(gem)
   repo = REPOSITORIES[gem.to_sym]
@@ -382,6 +406,7 @@ def sync_default_gems(gem)
   else
     sync_lib gem, upstream
   end
+  replace_rdoc_ref_all
 end
 
 IGNORE_FILE_PATTERN =
@@ -397,16 +422,33 @@ def message_filter(repo, sha)
   log = STDIN.read
   log.delete!("\r")
   url = "https://github.com/#{repo}"
-  print "[#{repo}] ", log.gsub(/\b(?:(?i:fix(?:e[sd])?) +|GH-)\K#(?=\d+\b)|\(\K#(?=\d+\))/) {
-    "#{url}/pull/"
-  }.gsub(%r{(?<![-\[\](){}\w@/])(?:(\w+(?:-\w+)*/\w+(?:-\w+)*)@)?(\h{10,40})\b}) {|c|
-    "https://github.com/#{$1 || repo}/commit/#{$2[0,12]}"
-  }.sub(/\s*(?=(?i:\nCo-authored-by:.*)*\Z)/) {
-    "\n\n" "#{url}/commit/#{sha[0,10]}\n"
-  }
+  subject, log = log.split("\n\n", 2)
+  conv = proc do |s|
+    mod = true if s.gsub!(/\b(?:(?i:fix(?:e[sd])?) +)\K#(?=\d+\b)|\bGH-#?(?=\d+\b)|\(\K#(?=\d+\))/) {
+      "#{url}/pull/"
+    }
+    mod |= true if s.gsub!(%r{(?<![-\[\](){}\w@/])(?:(\w+(?:-\w+)*/\w+(?:-\w+)*)@)?(\h{10,40})\b}) {|c|
+      "https://github.com/#{$1 || repo}/commit/#{$2[0,12]}"
+    }
+    mod
+  end
+  subject = "[#{repo}] #{subject}"
+  subject.gsub!(/\s*\n\s*/, " ")
+  if conv[subject]
+    if subject.size > 68
+      subject.gsub!(/\G.{,67}[^\s.,][.,]*\K\s+/, "\n")
+    end
+  end
+  if log
+    conv[log]
+    log.sub!(/\s*(?=(?i:\nCo-authored-by:.*)*\Z)/) {
+      "\n\n" "#{url}/commit/#{sha[0,10]}\n"
+    }
+  end
+  print subject, "\n\n", log
 end
 
-# NOTE: This method is also used by ruby-commit-hook/bin/update-default-gem.sh
+# NOTE: This method is also used by GitHub ruby/git.ruby-lang.org's bin/update-default-gem.sh
 # @param gem [String] A gem name, also used as a git remote name. REPOSITORIES converts it to the appropriate GitHub repository.
 # @param ranges [Array<String>] "before..after". Note that it will NOT sync "before" (but commits after that).
 # @param edit [TrueClass] Set true if you want to resolve conflicts. Obviously, update-default-gem.sh doesn't use this.
@@ -478,13 +520,13 @@ def sync_default_gems_with_commits(gem, ranges, edit: nil)
       skipped = true
     elsif /^CONFLICT/ =~ result
       result = pipe_readlines(%W"git status --porcelain -z")
-      result.map! {|line| line[/^.U (.*)/, 1]}
+      result.map! {|line| line[/\A.U (.*)/, 1]}
       result.compact!
       ignore, conflict = result.partition {|name| IGNORE_FILE_PATTERN =~ name}
       unless ignore.empty?
         system(*%W"git reset HEAD --", *ignore)
         File.unlink(*ignore)
-        ignore = pipe_readlines(%W"git status --porcelain -z" + ignore).map! {|line| line[/^.. (.*)/, 1]}
+        ignore = pipe_readlines(%W"git status --porcelain -z" + ignore).map! {|line| line[/\A.. (.*)/, 1]}
         system(*%W"git checkout HEAD --", *ignore) unless ignore.empty?
       end
       unless conflict.empty?
@@ -506,6 +548,10 @@ def sync_default_gems_with_commits(gem, ranges, edit: nil)
       `git reset` && `git checkout .` && `git clean -fd`
       puts "Failed to pick #{sha}"
       next
+    end
+
+    if replace_rdoc_ref_all
+      `git commit --amend --no-edit`
     end
 
     puts "Update commit message: #{sha}"
@@ -613,6 +659,17 @@ when "--message-filter"
   abort unless ARGV.size == 2
   message_filter(*ARGV)
   exit
+when "rdoc-ref"
+  ARGV.shift
+  pattern = ARGV.empty? ? %w[*.c *.rb *.rdoc] : ARGV
+  result = pipe_readlines(%W"git grep -z -l -F [https://docs.ruby-lang.org/en/master/ --" + pattern)
+  result.inject(false) do |changed, file|
+    if replace_rdoc_ref(file)
+      puts "replaced rdoc-ref in #{file}"
+      changed = true
+    end
+    changed
+  end
 when nil, "-h", "--help"
     puts <<-HELP
 \e[1mSync with upstream code of default libraries\e[0m

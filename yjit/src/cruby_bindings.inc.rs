@@ -402,6 +402,29 @@ extern "C" {
 extern "C" {
     pub fn rb_reg_new_ary(ary: VALUE, options: ::std::os::raw::c_int) -> VALUE;
 }
+pub type attr_index_t = u32;
+pub type shape_id_t = u32;
+#[repr(C)]
+pub struct rb_shape {
+    pub edges: *mut rb_id_table,
+    pub edge_name: ID,
+    pub iv_count: attr_index_t,
+    pub type_: u8,
+    pub parent_id: shape_id_t,
+}
+pub type rb_shape_t = rb_shape;
+extern "C" {
+    pub fn rb_shape_get_shape_by_id(shape_id: shape_id_t) -> *mut rb_shape_t;
+}
+extern "C" {
+    pub fn rb_shape_get_shape_id(obj: VALUE) -> shape_id_t;
+}
+extern "C" {
+    pub fn rb_shape_get_iv_index(shape: *mut rb_shape_t, id: ID, value: *mut attr_index_t) -> bool;
+}
+extern "C" {
+    pub fn rb_shape_flags_mask() -> VALUE;
+}
 pub const idDot2: ruby_method_ids = 128;
 pub const idDot3: ruby_method_ids = 129;
 pub const idUPlus: ruby_method_ids = 132;
@@ -719,6 +742,11 @@ pub const OPTIMIZED_METHOD_TYPE_STRUCT_AREF: method_optimized_type = 3;
 pub const OPTIMIZED_METHOD_TYPE_STRUCT_ASET: method_optimized_type = 4;
 pub const OPTIMIZED_METHOD_TYPE__MAX: method_optimized_type = 5;
 pub type method_optimized_type = u32;
+#[repr(C)]
+#[derive(Debug, Copy, Clone)]
+pub struct rb_id_table {
+    _unused: [u8; 0],
+}
 extern "C" {
     pub fn rb_method_entry_at(obj: VALUE, id: ID) -> *const rb_method_entry_t;
 }
@@ -749,7 +777,7 @@ pub struct iseq_inline_constant_cache {
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
 pub struct iseq_inline_iv_cache_entry {
-    pub entry: *mut rb_iv_index_tbl_entry,
+    pub value: usize,
 }
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
@@ -938,12 +966,6 @@ extern "C" {
     ) -> *const rb_callable_method_entry_t;
 }
 #[repr(C)]
-pub struct rb_iv_index_tbl_entry {
-    pub index: u32,
-    pub class_serial: rb_serial_t,
-    pub class_value: VALUE,
-}
-#[repr(C)]
 pub struct rb_cvar_class_tbl_entry {
     pub index: u32,
     pub global_cvar_state: rb_serial_t,
@@ -992,9 +1014,6 @@ extern "C" {
 }
 extern "C" {
     pub fn rb_hash_resurrect(hash: VALUE) -> VALUE;
-}
-extern "C" {
-    pub fn rb_obj_ensure_iv_index_mapping(obj: VALUE, id: ID) -> u32;
 }
 extern "C" {
     pub fn rb_gvar_get(arg1: ID) -> VALUE;
@@ -1225,6 +1244,7 @@ pub const YARVINSN_trace_putobject_INT2FIX_0_: ruby_vminsn_type = 200;
 pub const YARVINSN_trace_putobject_INT2FIX_1_: ruby_vminsn_type = 201;
 pub const VM_INSTRUCTION_SIZE: ruby_vminsn_type = 202;
 pub type ruby_vminsn_type = u32;
+pub type rb_iseq_callback = ::std::option::Option<unsafe extern "C" fn(arg1: *const rb_iseq_t)>;
 extern "C" {
     pub fn rb_vm_insn_addr2opcode(addr: *const ::std::os::raw::c_void) -> ::std::os::raw::c_int;
 }
@@ -1339,6 +1359,9 @@ extern "C" {
 }
 extern "C" {
     pub fn rb_get_cme_def_body_attr_id(cme: *const rb_callable_method_entry_t) -> ID;
+}
+extern "C" {
+    pub fn rb_get_symbol_id(namep: VALUE) -> ID;
 }
 extern "C" {
     pub fn rb_get_cme_def_body_optimized_type(
@@ -1516,9 +1539,8 @@ extern "C" {
 extern "C" {
     pub fn rb_assert_cme_handle(handle: VALUE);
 }
-pub type iseq_callback = ::std::option::Option<unsafe extern "C" fn(arg1: *const rb_iseq_t)>;
 extern "C" {
-    pub fn rb_yjit_for_each_iseq(callback: iseq_callback);
+    pub fn rb_yjit_for_each_iseq(callback: rb_iseq_callback);
 }
 extern "C" {
     pub fn rb_yjit_obj_written(

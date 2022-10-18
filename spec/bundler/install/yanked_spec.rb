@@ -30,6 +30,72 @@ RSpec.context "when installing a bundle that includes yanked gems" do
     expect(err).to include("Your bundle is locked to foo (10.0.0)")
   end
 
+  context "when a re-resolve is necessary, and a yanked version is considered by the resolver" do
+    before do
+      skip "Materialization on Windows is not yet strict, so the example does not detect the gem has been yanked" if Gem.win_platform?
+
+      build_repo4 do
+        build_gem "foo", "1.0.0", "1.0.1"
+        build_gem "actiontext", "6.1.7" do |s|
+          s.add_dependency "nokogiri", ">= 1.8"
+        end
+        build_gem "actiontext", "6.1.6" do |s|
+          s.add_dependency "nokogiri", ">= 1.8"
+        end
+        build_gem "actiontext", "6.1.7" do |s|
+          s.add_dependency "nokogiri", ">= 1.8"
+        end
+        build_gem "nokogiri", "1.13.8"
+      end
+
+      gemfile <<~G
+        source "#{source_uri}"
+        gem "foo", "1.0.1"
+        gem "actiontext", "6.1.6"
+      G
+
+      lockfile <<~L
+        GEM
+          remote: #{source_uri}/
+          specs:
+            actiontext (6.1.6)
+              nokogiri (>= 1.8)
+            foo (1.0.0)
+            nokogiri (1.13.8-#{Bundler.local_platform})
+
+        PLATFORMS
+          #{lockfile_platforms}
+
+        DEPENDENCIES
+          actiontext (= 6.1.6)
+          foo (= 1.0.0)
+
+        BUNDLED WITH
+           #{Bundler::VERSION}
+      L
+    end
+
+    context "and the old index is used" do
+      let(:source_uri) { file_uri_for(gem_repo4) }
+
+      it "reports the yanked gem properly" do
+        bundle "install", :raise_on_error => false
+
+        expect(err).to include("Your bundle is locked to nokogiri (1.13.8-#{Bundler.local_platform})")
+      end
+    end
+
+    context "and the compact index API is used" do
+      let(:source_uri) { "https://gem.repo4" }
+
+      it "reports the yanked gem properly" do
+        bundle "install", :artifice => "compact_index", :raise_on_error => false
+
+        expect(err).to include("Your bundle is locked to nokogiri (1.13.8-#{Bundler.local_platform})")
+      end
+    end
+  end
+
   it "throws the original error when only the Gemfile specifies a gem version that doesn't exist" do
     bundle "config set force_ruby_platform true"
 

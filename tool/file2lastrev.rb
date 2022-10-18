@@ -26,19 +26,11 @@ vcs = nil
 OptionParser.new {|opts|
   opts.banner << " paths..."
   vcs_options = VCS.define_options(opts)
-  new_vcs = proc do |path|
-    begin
-      vcs = VCS.detect(path, vcs_options, opts.new)
-    rescue VCS::NotFoundError => e
-      abort "#{File.basename(Program)}: #{e.message}" unless @suppress_not_found
-      opts.remove
-      nil
-    end
-  end
+  srcdir = nil
   opts.new
   opts.on("--srcdir=PATH", "use PATH as source directory") do |path|
-    abort "#{File.basename(Program)}: srcdir is already set" if vcs
-    new_vcs[path]
+    abort "#{File.basename(Program)}: srcdir is already set" if srcdir
+    srcdir = path
   end
   opts.on("--changed", "changed rev") do
     self.output = :changed
@@ -60,10 +52,11 @@ OptionParser.new {|opts|
     @suppress_not_found = true
   end
   opts.order! rescue abort "#{File.basename(Program)}: #{$!}\n#{opts}"
-  if vcs
-    vcs.set_options(vcs_options) # options after --srcdir
-  elsif new_vcs["."]
-  else @suppress_not_found
+  begin
+    vcs = VCS.detect(srcdir || ".", vcs_options, opts.new)
+  rescue VCS::NotFoundError => e
+    abort "#{File.basename(Program)}: #{e.message}" unless @suppress_not_found
+    opts.remove
     (vcs = VCS::Null.new(nil)).set_options(vcs_options)
   end
 }

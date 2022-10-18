@@ -61,8 +61,10 @@ class OpenSSL::TestEC < OpenSSL::PKeyTestCase
   def test_generate_key
     ec = OpenSSL::PKey::EC.new("prime256v1")
     assert_equal false, ec.private?
+    assert_raise(OpenSSL::PKey::ECError) { ec.to_der }
     ec.generate_key!
     assert_equal true, ec.private?
+    assert_nothing_raised { ec.to_der }
   end if !openssl?(3, 0, 0)
 
   def test_marshal
@@ -197,6 +199,29 @@ class OpenSSL::TestEC < OpenSSL::PKeyTestCase
 
     assert_equal asn1.to_der, p256.to_der
     assert_equal pem, p256.export
+  end
+
+  def test_ECPrivateKey_with_parameters
+    p256 = Fixtures.pkey("p256")
+
+    # The format used by "openssl ecparam -name prime256v1 -genkey -outform PEM"
+    #
+    # "EC PARAMETERS" block should be ignored if it is followed by an
+    # "EC PRIVATE KEY" block
+    in_pem = <<~EOF
+    -----BEGIN EC PARAMETERS-----
+    BggqhkjOPQMBBw==
+    -----END EC PARAMETERS-----
+    -----BEGIN EC PRIVATE KEY-----
+    MHcCAQEEIID49FDqcf1O1eO8saTgG70UbXQw9Fqwseliit2aWhH1oAoGCCqGSM49
+    AwEHoUQDQgAEFglk2c+oVUIKQ64eZG9bhLNPWB7lSZ/ArK41eGy5wAzU/0G51Xtt
+    CeBUl+MahZtn9fO1JKdF4qJmS39dXnpENg==
+    -----END EC PRIVATE KEY-----
+    EOF
+
+    key = OpenSSL::PKey::EC.new(in_pem)
+    assert_same_ec p256, key
+    assert_equal p256.to_der, key.to_der
   end
 
   def test_ECPrivateKey_encrypted

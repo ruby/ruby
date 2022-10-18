@@ -21,6 +21,8 @@ RBIMPL_SYMBOL_EXPORT_BEGIN()
 // WARNING: This entire interface is experimental and may change in the future!
 #define RB_IO_BUFFER_EXPERIMENTAL 1
 
+#define RUBY_IO_BUFFER_VERSION 2
+
 RUBY_EXTERN VALUE rb_cIOBuffer;
 RUBY_EXTERN size_t RUBY_IO_BUFFER_PAGE_SIZE;
 RUBY_EXTERN size_t RUBY_IO_BUFFER_DEFAULT_SIZE;
@@ -81,10 +83,10 @@ void rb_io_buffer_resize(VALUE self, size_t size);
 void rb_io_buffer_clear(VALUE self, uint8_t value, size_t offset, size_t length);
 
 // The length is the minimum required length.
-VALUE rb_io_buffer_read(VALUE self, VALUE io, size_t length);
-VALUE rb_io_buffer_pread(VALUE self, VALUE io, size_t length, rb_off_t offset);
-VALUE rb_io_buffer_write(VALUE self, VALUE io, size_t length);
-VALUE rb_io_buffer_pwrite(VALUE self, VALUE io, size_t length, rb_off_t offset);
+VALUE rb_io_buffer_read(VALUE self, VALUE io, size_t length, size_t offset);
+VALUE rb_io_buffer_pread(VALUE self, VALUE io, rb_off_t from, size_t length, size_t offset);
+VALUE rb_io_buffer_write(VALUE self, VALUE io, size_t length, size_t offset);
+VALUE rb_io_buffer_pwrite(VALUE self, VALUE io, rb_off_t from, size_t length, size_t offset);
 
 RBIMPL_SYMBOL_EXPORT_END()
 

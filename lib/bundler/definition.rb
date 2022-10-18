@@ -139,7 +139,7 @@ module Bundler
       if @unlock[:conservative]
         @unlock[:gems] ||= @dependencies.map(&:name)
       else
-        eager_unlock = expand_dependencies(@unlock[:gems] || [], true)
+        eager_unlock = (@unlock[:gems] || []).map {|name| Dependency.new(name, ">= 0") }
         @unlock[:gems] = @locked_specs.for(eager_unlock, false, platforms).map(&:name).uniq
       end
 
@@ -224,7 +224,7 @@ module Bundler
 
     def current_dependencies
       dependencies.select do |d|
-        d.should_include? && !d.gem_platforms(@platforms).empty?
+        d.should_include? && !d.gem_platforms([generic_local_platform]).empty?
       end
     end
 
@@ -248,10 +248,9 @@ module Bundler
 
     def dependencies_for(groups)
       groups.map!(&:to_sym)
-      deps = current_dependencies.reject do |d|
+      current_dependencies.reject do |d|
         (d.groups & groups).empty?
       end
-      expand_dependencies(deps)
     end
 
     # Resolve all the dependencies specified in Gemfile. It ensures that
@@ -474,17 +473,17 @@ module Bundler
     def resolver
       @resolver ||= begin
         last_resolve = converge_locked_specs
-        remove_ruby_from_platforms_if_necessary!(dependencies)
+        remove_ruby_from_platforms_if_necessary!(current_dependencies)
         Resolver.new(source_requirements, last_resolve, gem_version_promoter, additional_base_requirements_for_resolve(last_resolve), platforms)
       end
     end
 
     def expanded_dependencies
-      @expanded_dependencies ||= expand_dependencies(dependencies + metadata_dependencies, true)
+      @expanded_dependencies ||= dependencies + metadata_dependencies
     end
 
     def filter_specs(specs, deps)
-      SpecSet.new(specs).for(expand_dependencies(deps, true), false, platforms)
+      SpecSet.new(specs).for(deps, false, platforms)
     end
 
     def materialize(dependencies)
@@ -578,8 +577,8 @@ module Bundler
       ].select(&:first).map(&:last).join(", ")
     end
 
-    def pretty_dep(dep, source = false)
-      SharedHelpers.pretty_dependency(dep, source)
+    def pretty_dep(dep)
+      SharedHelpers.pretty_dependency(dep)
     end
 
     # Check if the specs of the given source changed
@@ -792,23 +791,6 @@ module Bundler
       ]
     end
 
-    def expand_dependencies(dependencies, remote = false)
-      deps = []
-      dependencies.each do |dep|
-        dep = Dependency.new(dep, ">= 0") unless dep.respond_to?(:name)
-        next unless remote || dep.current_platform?
-        target_platforms = dep.gem_platforms(remote ? @platforms : [generic_local_platform])
-        deps += expand_dependency_with_platforms(dep, target_platforms)
-      end
-      deps
-    end
-
-    def expand_dependency_with_platforms(dep, platforms)
-      platforms.map do |p|
-        DepProxy.get_proxy(dep, p)
-      end
-    end
-
     def source_requirements
       # Record the specs available in each gem's source, so that those
       # specs will be available later when the resolver knows where to
@@ -880,7 +862,7 @@ module Bundler
                 Bundler.local_platform == Gem::Platform::RUBY ||
                 !platforms.include?(Gem::Platform::RUBY) ||
                 (@new_platform && platforms.last == Gem::Platform::RUBY) ||
-                !@originally_locked_specs.incomplete_ruby_specs?(expand_dependencies(dependencies))
+                !@originally_locked_specs.incomplete_ruby_specs?(dependencies)
 
       remove_platform(Gem::Platform::RUBY)
       add_current_platform

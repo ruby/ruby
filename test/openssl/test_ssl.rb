@@ -804,6 +804,54 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
     end
   end
 
+  def test_keylog_cb
+    pend "Keylog callback is not supported" if !openssl?(1, 1, 1) || libressl?
+
+    prefix = 'CLIENT_RANDOM'
+    context = OpenSSL::SSL::SSLContext.new
+    context.min_version = context.max_version = OpenSSL::SSL::TLS1_2_VERSION
+
+    cb_called = false
+    context.keylog_cb = proc do |_sock, line|
+      cb_called = true
+      assert_equal(prefix, line.split.first)
+    end
+
+    start_server do |port|
+      server_connect(port, context) do |ssl|
+        ssl.puts "abc"
+        assert_equal("abc\n", ssl.gets)
+        assert_equal(true, cb_called)
+      end
+    end
+
+    if tls13_supported?
+      prefixes = [
+        'SERVER_HANDSHAKE_TRAFFIC_SECRET',
+        'EXPORTER_SECRET',
+        'SERVER_TRAFFIC_SECRET_0',
+        'CLIENT_HANDSHAKE_TRAFFIC_SECRET',
+        'CLIENT_TRAFFIC_SECRET_0',
+      ]
+      context = OpenSSL::SSL::SSLContext.new
+      context.min_version = context.max_version = OpenSSL::SSL::TLS1_3_VERSION
+      cb_called = false
+      context.keylog_cb = proc do |_sock, line|
+        cb_called = true
+        assert_not_nil(prefixes.delete(line.split.first))
+      end
+
+      start_server do |port|
+        server_connect(port, context) do |ssl|
+          ssl.puts "abc"
+          assert_equal("abc\n", ssl.gets)
+          assert_equal(true, cb_called)
+        end
+        assert_equal(0, prefixes.size)
+      end
+    end
+  end
+
   def test_tlsext_hostname
     fooctx = OpenSSL::SSL::SSLContext.new
     fooctx.cert = @cli_cert
@@ -1815,6 +1863,19 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
   ensure
     sock1.close
     sock2.close
+  end
+
+  def test_export_keying_material
+    start_server do |port|
+      cli_ctx = OpenSSL::SSL::SSLContext.new
+      server_connect(port, cli_ctx) do |ssl|
+        assert_instance_of(String, ssl.export_keying_material('ttls keying material', 64))
+        assert_operator(64, :==, ssl.export_keying_material('ttls keying material', 64).b.length)
+        assert_operator(8, :==, ssl.export_keying_material('ttls keying material', 8).b.length)
+        assert_operator(5, :==, ssl.export_keying_material('test', 5, 'context').b.length)
+        ssl.puts "abc"; ssl.gets # workaround to make tests work on windows
+      end
+    end
   end
 
   private

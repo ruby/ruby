@@ -26,6 +26,10 @@ module Bundler
       @platform
     end
 
+    def identifier
+      @__identifier ||= [name, version, platform.to_s]
+    end
+
     # needed for standalone, load required_paths from local gemspec
     # after the gem is installed
     def require_paths
