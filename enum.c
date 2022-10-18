@@ -3834,7 +3834,7 @@ slicebefore_i(RB_BLOCK_CALL_FUNC_ARGLIST(yielder, enumerator))
 /*
  *  call-seq:
  *    slice_before(pattern)       -> enumerator
- *    slice_before {|array| ... } -> enumerator
+ *    slice_before {|elt| ... } -> enumerator
  *
  *  With argument +pattern+, returns an enumerator that uses the pattern
  *  to partition elements into arrays ("slices").
