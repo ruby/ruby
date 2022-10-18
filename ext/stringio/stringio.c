@@ -649,13 +649,10 @@ strio_copy(VALUE copy, VALUE orig)
 
 /*
  * call-seq:
- *   strio.lineno    -> integer
+ *   lineno -> current_line_number
  *
- * Returns the current line number. The stream must be
- * opened for reading. +lineno+ counts the number of times  +gets+ is
- * called, rather than the number of newlines  encountered. The two
- * values will differ if +gets+ is  called with a separator other than
- * newline.  See also the  <code>$.</code> variable.
+ * Returns the current line number in +self+;
+ * see {Line Number}[https://docs.ruby-lang.org/en/master/io_streams_rdoc.html#label-Line+Number].
  */
 static VALUE
 strio_get_lineno(VALUE self)
@@ -665,10 +662,10 @@ strio_get_lineno(VALUE self)
 
 /*
  * call-seq:
- *   strio.lineno = integer    -> integer
+ *   lineno = new_line_number -> new_line_number
  *
- * Manually sets the current line number to the given value.
- * <code>$.</code> is updated only on the next read.
+ * Sets the current line number in +self+ to the given +new_line_number+;
+ * see {Line Number}[https://docs.ruby-lang.org/en/master/io_streams_rdoc.html#label-Line+Number].
  */
 static VALUE
 strio_set_lineno(VALUE self, VALUE lineno)
@@ -679,9 +676,10 @@ strio_set_lineno(VALUE self, VALUE lineno)
 
 /*
  * call-seq:
- *   strio.binmode    -> stringio
+ *   binmode -> self
  *
- * Puts stream into binary mode. See IO#binmode.
+ * Sets the data mode in +self+ to binary mode;
+ * see {Data Mode}[https://docs.ruby-lang.org/en/master/File.html#class-File-label-Data+Mode].
  *
  */
 static VALUE
@@ -705,11 +703,27 @@ strio_binmode(VALUE self)
 
 /*
  * call-seq:
- *   strio.reopen(other_StrIO)     -> strio
- *   strio.reopen(string, mode)    -> strio
+ *   reopen(other, mode = 'r+') -> self
  *
- * Reinitializes the stream with the given <i>other_StrIO</i> or _string_
- * and _mode_ (see StringIO#new).
+ * Reinitializes the stream with the given +other+ (string or StringIO) and +mode+;
+ * see IO.new:
+ *
+ *   StringIO.open('foo') do |strio|
+ *     p strio.string
+ *     strio.reopen('bar')
+ *     p strio.string
+ *     other_strio = StringIO.new('baz')
+ *     strio.reopen(other_strio)
+ *     p strio.string
+ *     other_strio.close
+ *   end
+ *
+ * Output:
+ *
+ *   "foo"
+ *   "bar"
+ *   "baz"
+ *
  */
 static VALUE
 strio_reopen(int argc, VALUE *argv, VALUE self)
@@ -723,10 +737,12 @@ strio_reopen(int argc, VALUE *argv, VALUE self)
 
 /*
  * call-seq:
- *   strio.pos     -> integer
- *   strio.tell    -> integer
+ *   pos -> stream_position
  *
- * Returns the current offset (in bytes).
+ * Returns the current position (in bytes);
+ * see {Position}[https://docs.ruby-lang.org/en/master/io_streams_rdoc.html#label-Position].
+ *
+ * StringIO#tell is an alias for StringIO#pos.
  */
 static VALUE
 strio_get_pos(VALUE self)
@@ -736,9 +752,10 @@ strio_get_pos(VALUE self)
 
 /*
  * call-seq:
- *   strio.pos = integer    -> integer
+ *   pos = new_position -> new_position
  *
- * Seeks to the given position (in bytes).
+ * Sets the current position (in bytes);
+ * see {Position}[https://docs.ruby-lang.org/en/master/io_streams_rdoc.html#label-Position].
  */
 static VALUE
 strio_set_pos(VALUE self, VALUE pos)
@@ -754,10 +771,11 @@ strio_set_pos(VALUE self, VALUE pos)
 
 /*
  * call-seq:
- *   strio.rewind    -> 0
+ *   rewind -> 0
  *
- * Positions the stream to the beginning of input, resetting
- * +lineno+ to zero.
+ * Sets the current position and line number to zero;
+ * see {Position}[https://docs.ruby-lang.org/en/master/io_streams_rdoc.html#label-Position]
+ * and {Line Number}[https://docs.ruby-lang.org/en/master/io_streams_rdoc.html#label-Line+Number].
  */
 static VALUE
 strio_rewind(VALUE self)
@@ -770,10 +788,11 @@ strio_rewind(VALUE self)
 
 /*
  * call-seq:
- *   strio.seek(amount, whence=SEEK_SET) -> 0
+ *   seek(offset, whence = SEEK_SET) -> 0
  *
- * Seeks to a given offset _amount_ in the stream according to
- * the value of _whence_ (see IO#seek).
+ * Sets the current position to the given integer +offset+ (in bytes),
+ * with respect to a given constant +whence+;
+ * see {Position}[https://docs.ruby-lang.org/en/master/io_streams_rdoc.html#label-Position].
  */
 static VALUE
 strio_seek(int argc, VALUE *argv, VALUE self)
@@ -809,9 +828,9 @@ strio_seek(int argc, VALUE *argv, VALUE self)
 
 /*
  * call-seq:
- *   strio.sync    -> true
+ *   sync -> true
  *
- * Returns +true+ always.
+ * Returns +true+; implemented only for compatibility with other stream classes.
  */
 static VALUE
 strio_get_sync(VALUE self)
@@ -826,10 +845,12 @@ strio_get_sync(VALUE self)
 
 /*
  * call-seq:
- *   strio.each_byte {|byte| block }  -> strio
- *   strio.each_byte                  -> anEnumerator
+ *   each_byte {|byte| ... } -> self
  *
- * See IO#each_byte.
+ * With a block given, calls the block with each remaining byte in the stream;
+ * see {Byte IO}[https://docs.ruby-lang.org/en/master/io_streams_rdoc.html#label-Byte+IO].
+ *
+ * With no block given, returns an enumerator.
  */
 static VALUE
 strio_each_byte(VALUE self)
