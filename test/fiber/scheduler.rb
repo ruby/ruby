@@ -350,3 +350,13 @@ class SleepingUnblockScheduler < Scheduler
     sleep(0.1)
   end
 end
+
+class SleepingBlockingScheduler < Scheduler
+  def kernel_sleep(duration = nil)
+    Fiber.blocking{sleep 0.0001}
+
+    self.block(:sleep, duration)
+
+    return true
+  end
+end
