@@ -238,15 +238,12 @@ onig_get_capture_tree(OnigRegion* region)
 static int count_num_cache_opcode(regex_t* reg)
 {
   int num = 0;
-  UChar* pbegin;
   UChar* p = reg->p;
   UChar* pend = p + reg->used;
   LengthType len;
-  RelAddrType addr;
   OnigEncoding enc = reg->enc;
 
   while (p < pend) {
-    pbegin = p;
     switch (*p++) {
       case OP_FINISH:
       case OP_END:
@@ -350,10 +347,10 @@ static int count_num_cache_opcode(regex_t* reg)
       case OP_FAIL:
 	break;
       case OP_JUMP:
-	GET_RELADDR_INC(addr, p);
+        p += SIZE_RELADDR;
 	break;
       case OP_PUSH:
-	GET_RELADDR_INC(addr, p);
+        p += SIZE_RELADDR;
 	num++;
 	break;
       case OP_POP:
@@ -415,12 +412,10 @@ static int count_num_cache_opcode(regex_t* reg)
 
 static void init_cache_index_table(regex_t* reg, UChar **table)
 {
-  UChar** tstart = table;
   UChar* pbegin;
   UChar* p = reg->p;
   UChar* pend = p + reg->used;
   LengthType len;
-  RelAddrType addr;
   OnigEncoding enc = reg->enc;
 
   while (p < pend) {
@@ -529,10 +524,10 @@ static void init_cache_index_table(regex_t* reg, UChar **table)
       case OP_FAIL:
 	break;
       case OP_JUMP:
-	GET_RELADDR_INC(addr, p);
+        p += SIZE_RELADDR;
 	break;
       case OP_PUSH:
-	GET_RELADDR_INC(addr, p);
+        p += SIZE_RELADDR;
 	*table++ = pbegin;
 	break;
       case OP_POP:
@@ -793,7 +788,7 @@ onig_region_copy(OnigRegion* to, const OnigRegion* from)
   (msa).num_fail = 0;\
   (msa).num_cache_opcode = NUM_CACHE_OPCODE_UNINIT;\
   (msa).cache_index_table = (UChar **)0;\
-  (msa).match_cache = (uint8_t *)0;\  
+  (msa).match_cache = (uint8_t *)0;\
 } while(0)
 #define MATCH_ARG_FREE_CACHE_MATCH_OPT(msa) do {\
   if ((msa).cache_index_table) xfree((msa).cache_index_table);\
@@ -1092,17 +1087,13 @@ stack_double(OnigStackType** arg_stk_base, OnigStackType** arg_stk_end,
   if (enable) {\
     int cache_index = find_cache_index_table((table), (num_cache_table), (p));\
     if (cache_index >= 0) {\
-      int key = (num_cache_table) * (pos) + cache_index;\
+      int key = (num_cache_table) * (int)(pos) + cache_index;\
       int index = key >> 3;\
       int mask = 1 << (key & 7);\
       if ((match_cache)[index] & mask) {\
-	/* fprintf(stderr, "Use cache (pos: %d, p: %p, pc: %d, cache index: %d, key: %d, index: %d, mask: %d)\n", pos, p, (int)(p - pstart), cache_index, key, index, mask); */\
 	goto fail;\
       }\
-      /* fprintf(stderr, "Add cache (pos: %d, p: %p, pc: %d, cache index: %d, key: %d, index: %d, mask: %d)\n", pos, p, (int)(p - pstart), cache_index, key, index, mask); */\
       (match_cache)[index] |= mask;\
-    } else {\
-      /* fprintf(stderr, "Miss cache (pos: %d, p: %p, pc: %d, cache index: %d)\n", pos, p, (int)(p - pstart), cache_index); */\
     }\
   }\
 } while (0)
@@ -1896,9 +1887,6 @@ match_at(regex_t* reg, const UChar* str, const UChar* end,
   int scv;
   unsigned char* state_check_buff = msa->state_check_buff;
   int num_comb_exp_check = reg->num_comb_exp_check;
-#endif
-#ifdef USE_CACHE_MATCH_OPT
-  UChar   *pstart = reg->p;
 #endif
 
 #if USE_TOKEN_THREADED_VM
@@ -3631,7 +3619,6 @@ match_at(regex_t* reg, const UChar* str, const UChar* end,
 	if (msa->num_cache_opcode == NUM_CACHE_OPCODE_UNINIT) {
 	  msa->num_cache_opcode = count_num_cache_opcode(reg);
 	}
-	// fprintf(stderr, "num_cache_opcode: %d\n", msa->num_cache_opcode);
 	if (msa->num_cache_opcode == NUM_CACHE_OPCODE_FAIL || msa->num_cache_opcode == 0) {
 	  msa->enable_cache_match_opt = 0;
 	  goto fail_match_cache_opt;
@@ -3644,13 +3631,6 @@ match_at(regex_t* reg, const UChar* str, const UChar* end,
 	  }
 	  init_cache_index_table(reg, table);
 	  msa->cache_index_table = table;
-	  /*
-	  fprintf(stderr, "table = {%p", table);
-	  for (int i = 1; i < msa->num_cache_opcode; i++) {
-	    fprintf(stderr, ", %p", table+i);
-	  }
-	  fprintf(stderr, "}\n");
-	  */
 	}
 	// TODO: check arithemetic overflow.
 	int match_cache_size8 = msa->num_cache_opcode * ((int)(end - str) + 1);
