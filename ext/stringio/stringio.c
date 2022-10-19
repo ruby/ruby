@@ -935,9 +935,10 @@ strio_each_byte(VALUE self)
 
 /*
  * call-seq:
- *   strio.getc   -> string or nil
+ *   getc -> character or nil
  *
- * See IO#getc.
+ * Reads and returns the next character from the stream;
+ * see {Character IO}[rdoc-ref:io_streams.rdoc@Character+IO].
  */
 static VALUE
 strio_getc(VALUE self)
@@ -960,9 +961,10 @@ strio_getc(VALUE self)
 
 /*
  * call-seq:
- *   strio.getbyte   -> fixnum or nil
+ *   getbyte -> byte or nil
  *
- * See IO#getbyte.
+ * Reads and returns the next 8-bit byte from the stream;
+ * see {Byte IO}[rdoc-ref:io_streams.rdoc@Byte+IO].
  */
 static VALUE
 strio_getbyte(VALUE self)
@@ -998,12 +1000,10 @@ strio_extend(struct StringIO *ptr, long pos, long len)
 
 /*
  * call-seq:
- *   strio.ungetc(string)   -> nil
+ *   ungetc(character) -> nil
  *
- * Pushes back one character (passed as a parameter)
- * such that a subsequent buffered read will return it.  There is no
- * limitation for multiple pushbacks including pushing back behind the
- * beginning of the buffer string.
+ * Pushes back ("unshifts") a character or integer onto the stream;
+ * see {Character IO}[rdoc-ref:io_streams.rdoc@Character+IO].
  */
 static VALUE
 strio_ungetc(VALUE self, VALUE c)
@@ -1038,9 +1038,10 @@ strio_ungetc(VALUE self, VALUE c)
 
 /*
  * call-seq:
- *   strio.ungetbyte(fixnum)   -> nil
+ *   ungetbyte(byte) -> nil
  *
- * See IO#ungetbyte
+ * Pushes back ("unshifts") an 8-bit byte onto the stream;
+ * see {Byte IO}[rdoc-ref:io_streams.rdoc@Byte+IO].
  */
 static VALUE
 strio_ungetbyte(VALUE self, VALUE c)
@@ -1100,9 +1101,10 @@ strio_unget_bytes(struct StringIO *ptr, const char *cp, long cl)
 
 /*
  * call-seq:
- *   strio.readchar   -> string
+ *   readchar -> string
  *
- * See IO#readchar.
+ * Like +getc+, but raises an exception if already at end-of-stream;
+ * see {Character IO}[rdoc-ref:io_streams.rdoc@Character+IO].
  */
 static VALUE
 strio_readchar(VALUE self)
@@ -1114,9 +1116,10 @@ strio_readchar(VALUE self)
 
 /*
  * call-seq:
- *   strio.readbyte   -> fixnum
+ *   readbyte -> byte
  *
- * See IO#readbyte.
+ * Like +getbyte+, but raises an exception if already at end-of-stream;
+ * see {Byte IO}[rdoc-ref:io_streams.rdoc@Byte+IO].
  */
 static VALUE
 strio_readbyte(VALUE self)
@@ -1128,10 +1131,12 @@ strio_readbyte(VALUE self)
 
 /*
  * call-seq:
- *   strio.each_char {|char| block }  -> strio
- *   strio.each_char                  -> anEnumerator
+ *   each_char {|c| ... } -> self
  *
- * See IO#each_char.
+ * With a block given, calls the block with each remaining character in the stream;
+ * see {Character IO}[rdoc-ref:io_streams.rdoc@Character+IO].
+ *
+ * With no block given, returns an enumerator.
  */
 static VALUE
 strio_each_char(VALUE self)
