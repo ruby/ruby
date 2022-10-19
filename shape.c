@@ -203,14 +203,6 @@ rb_shape_transition_shape_frozen(VALUE obj)
     rb_shape_t* next_shape;
 
     if (shape == rb_shape_get_root_shape()) {
-        switch (BUILTIN_TYPE(obj)) {
-          case T_OBJECT:
-          case T_CLASS:
-          case T_MODULE:
-            break;
-          default:
-            return;
-        }
         next_shape = rb_shape_get_frozen_root_shape();
     }
     else {

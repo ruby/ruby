@@ -10,7 +10,7 @@ describe :rbasic, shared: true do
     obj, _ = @data.call
     initial = @specs.get_flags(obj)
     obj.freeze
-    @specs.get_flags(obj).should == @freeze | initial
+    (@specs.get_flags(obj) & 0xFFFF).should == (@freeze | initial) & 0xFFFF
   end
 
   it "supports setting the FREEZE flag" do
