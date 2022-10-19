@@ -56,9 +56,11 @@ io_buffer_map_memory(size_t size, int flags)
         rb_sys_fail("io_buffer_map_memory:VirtualAlloc");
     }
 #else
-    int mmap_flags = MAP_PRIVATE | MAP_ANON;
+    int mmap_flags = MAP_ANONYMOUS;
     if (flags & RB_IO_BUFFER_SHARED) {
         mmap_flags |= MAP_SHARED;
+    } else {
+        mmap_flags |= MAP_PRIVATE;
     }
 
     void * base = mmap(NULL, size, PROT_READ | PROT_WRITE, mmap_flags, -1, 0);
