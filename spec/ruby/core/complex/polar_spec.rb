@@ -11,7 +11,7 @@ describe "Complex.polar" do
     ->{ Complex.polar(nil, nil) }.should raise_error(TypeError)
   end
 
-  ruby_version_is "3.2" do
+  ruby_bug "#19004", ""..."3.2" do
     it "computes the real values of the real & imaginary parts from the polar form" do
       a = Complex.polar(1.0+0.0i, Math::PI/2+0.0i)
       a.real.should be_close(0.0, TOLERANCE)
