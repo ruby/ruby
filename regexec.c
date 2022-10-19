@@ -787,6 +787,23 @@ onig_region_copy(OnigRegion* to, const OnigRegion* from)
 #define STK_MASK_TO_VOID_TARGET    0x10ff
 #define STK_MASK_MEM_END_OR_MARK   0x8000  /* MEM_END or MEM_END_MARK */
 
+#ifdef USE_CACHE_MATCH_OPT
+#define MATCH_ARG_INIT_CACHE_MATCH_OPT(msa) do {\
+  (msa).enable_cache_match_opt = 0;\
+  (msa).num_fail = 0;\
+  (msa).num_cache_opcode = NUM_CACHE_OPCODE_UNINIT;\
+  (msa).cache_index_table = (UChar **)0;\
+  (msa).match_cache = (uint8_t *)0;\  
+} while(0)
+#define MATCH_ARG_FREE_CACHE_MATCH_OPT(msa) do {\
+  if ((msa).cache_index_table) xfree((msa).cache_index_table);\
+  if ((msa).match_cache) xfree((msa).match_cache);\
+} while(0)
+#else
+#define MATCH_ARG_INIT_CACHE_MATCH_OPT(msa)
+#define MATCH_ARG_FREE_CACHE_MATCH_OPT(msa)
+#endif
+
 #ifdef USE_FIND_LONGEST_SEARCH_ALL_OF_RANGE
 # define MATCH_ARG_INIT(msa, arg_option, arg_region, arg_start, arg_gpos) do {\
   (msa).stack_p  = (void* )0;\
@@ -797,11 +814,7 @@ onig_region_copy(OnigRegion* to, const OnigRegion* from)
   (msa).best_len = ONIG_MISMATCH;\
   (msa).counter  = 0;\
   (msa).end_time = 0;\
-  (msa).enable_cache_match_opt = 0;\
-  (msa).num_fail = 0;\
-  (msa).num_cache_opcode = NUM_CACHE_OPCODE_UNINIT;\
-  (msa).cache_index_table = (UChar **)0;\
-  (msa).match_cache = (uint8_t *)0;\
+  MATCH_ARG_INIT_CACHE_MATCH_OPT(msa);\
 } while(0)
 #else
 # define MATCH_ARG_INIT(msa, arg_option, arg_region, arg_start, arg_gpos) do {\
@@ -812,6 +825,7 @@ onig_region_copy(OnigRegion* to, const OnigRegion* from)
   (msa).gpos     = (arg_gpos);\
   (msa).counter  = 0;\
   (msa).end_time = 0;\
+  MATCH_ARG_INIT_CACHE_MATCH_OPT(msa);\
 } while(0)
 #endif
 
@@ -850,12 +864,12 @@ onig_region_copy(OnigRegion* to, const OnigRegion* from)
   if ((msa).state_check_buff_size >= STATE_CHECK_BUFF_MALLOC_THRESHOLD_SIZE) { \
     if ((msa).state_check_buff) xfree((msa).state_check_buff);\
   }\
+  MATCH_ARG_FREE_CACHE_MATCH_OPT(msa);\
 } while(0)
 #else /* USE_COMBINATION_EXPLOSION_CHECK */
 # define MATCH_ARG_FREE(msa) do {\
   if ((msa).stack_p) xfree((msa).stack_p);\
-  if ((msa).cache_index_table) xfree((msa).cache_index_table);\
-  if ((msa).match_cache) xfree((msa).match_cache);\
+  MATCH_ARG_FREE_CACHE_MATCH_OPT(msa);\
 } while (0)
 #endif /* USE_COMBINATION_EXPLOSION_CHECK */
 
@@ -1072,6 +1086,8 @@ stack_double(OnigStackType** arg_stk_base, OnigStackType** arg_stk_end,
 #define STACK_PUSH_LOOK_BEHIND_NOT(pat,s,sprev,keep) \
         STACK_PUSH(STK_LOOK_BEHIND_NOT,pat,s,sprev,keep)
 
+#ifdef USE_CACHE_MATCH_OPT
+
 #define DO_CACHE_MATCH_OPT(enable,p,num_cache_table,table,pos,match_cache) do {\
   if (enable) {\
     int cache_index = find_cache_index_table((table), (num_cache_table), (p));\
@@ -1090,6 +1106,10 @@ stack_double(OnigStackType** arg_stk_base, OnigStackType** arg_stk_end,
     }\
   }\
 } while (0)
+
+#else
+#define DO_CACHE_MATCH_OPT(enable,p,num_cache_table,table,pos,match_cache)
+#endif /* USE_CACHE_MATCH_OPT */
 
 #define STACK_PUSH_REPEAT(id, pat) do {\
   STACK_ENSURE(1);\
@@ -3310,7 +3330,9 @@ match_at(regex_t* reg, const UChar* str, const UChar* end,
       STACK_POP_ONE;
       /* We need to increment num_fail here, for invoking a cache optimization correctly, */
       /* because Onigmo makes a loop, which is pairwise disjoint to the following set, as atomic. */
+#ifdef USE_CACHE_MATCH_OPT
       msa->num_fail++;
+#endif
       MOP_OUT;
       JUMP;
 
