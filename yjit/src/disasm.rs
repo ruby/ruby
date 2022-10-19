@@ -85,8 +85,8 @@ pub fn disasm_iseq_insn_range(iseq: IseqPtr, start_idx: u32, end_idx: u32) -> St
         let blockid = block.get_blockid();
         if blockid.idx >= start_idx && blockid.idx < end_idx {
             let end_idx = block.get_end_idx();
-            let start_addr = block.get_start_addr().unwrap().raw_ptr();
-            let end_addr = block.get_end_addr().unwrap().raw_ptr();
+            let start_addr = block.get_start_addr().unwrap();
+            let end_addr = block.get_end_addr().unwrap();
             let code_size = block.code_size();
 
             // Write some info about the current block
@@ -101,14 +101,17 @@ pub fn disasm_iseq_insn_range(iseq: IseqPtr, start_idx: u32, end_idx: u32) -> St
             writeln!(out, "== {:=<60}", block_ident).unwrap();
 
             // Disassemble the instructions
-            out.push_str(&disasm_addr_range(global_cb, start_addr, (start_addr as usize + code_size) as *const u8));
+            for (start_addr, end_addr) in global_cb.writable_addrs(start_addr, end_addr) {
+                out.push_str(&disasm_addr_range(global_cb, start_addr, end_addr));
+                writeln!(out).unwrap();
+            }
 
             // If this is not the last block
             if block_idx < block_list.len() - 1 {
                 // Compute the size of the gap between this block and the next
                 let next_block = block_list[block_idx + 1].borrow();
-                let next_start_addr = next_block.get_start_addr().unwrap().raw_ptr();
-                let gap_size = (next_start_addr as usize) - (end_addr as usize);
+                let next_start_addr = next_block.get_start_addr().unwrap();
+                let gap_size = next_start_addr.into_usize() - end_addr.into_usize();
 
                 // Log the size of the gap between the blocks if nonzero
                 if gap_size > 0 {
@@ -127,7 +130,7 @@ pub fn dump_disasm_addr_range(cb: &CodeBlock, start_addr: CodePtr, end_addr: Cod
     use std::io::Write;
 
     for (start_addr, end_addr) in cb.writable_addrs(start_addr, end_addr) {
-        let disasm = disasm_addr_range(cb, start_addr as *const u8, end_addr as *const u8);
+        let disasm = disasm_addr_range(cb, start_addr, end_addr);
         if disasm.len() > 0 {
             match dump_disasm {
                 DumpDisasm::Stdout => println!("{disasm}"),
@@ -141,7 +144,7 @@ pub fn dump_disasm_addr_range(cb: &CodeBlock, start_addr: CodePtr, end_addr: Cod
 }
 
 #[cfg(feature = "disasm")]
-pub fn disasm_addr_range(cb: &CodeBlock, start_addr: *const u8, end_addr: *const u8) -> String {
+pub fn disasm_addr_range(cb: &CodeBlock, start_addr: usize, end_addr: usize) -> String {
     let mut out = String::from("");
 
     // Initialize capstone
@@ -165,8 +168,8 @@ pub fn disasm_addr_range(cb: &CodeBlock, start_addr: *const u8, end_addr: *const
     cs.set_skipdata(true).unwrap();
 
     // Disassemble the instructions
-    let code_size = end_addr as usize - start_addr as usize;
-    let code_slice = unsafe { std::slice::from_raw_parts(start_addr, code_size) };
+    let code_size = end_addr - start_addr;
+    let code_slice = unsafe { std::slice::from_raw_parts(start_addr as _, code_size) };
     let insns = cs.disasm_all(code_slice, start_addr as u64).unwrap();
 
     // For each instruction in this block
