@@ -887,6 +887,18 @@ CODE
     end
   end
 
+  class StringWithIVSet < String
+    def set_iv
+      @foo = 1
+    end
+  end
+
+  def test_ivar_set_after_frozen_dup
+    str = StringWithIVSet.new.freeze
+    str.dup.set_iv
+    assert_raise(FrozenError) { str.set_iv }
+  end
+
   def test_each
     verbose, $VERBOSE = $VERBOSE, nil
 
