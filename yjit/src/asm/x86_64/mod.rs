@@ -111,7 +111,7 @@ impl X86Opnd {
             X86Opnd::Imm(_) => false,
             X86Opnd::UImm(_) => false,
             X86Opnd::Reg(reg) => reg.reg_no > 7 || reg.num_bits == 8 && reg.reg_no >= 4,
-            X86Opnd::Mem(mem) => (mem.base_reg_no > 7 || (mem.idx_reg_no.unwrap_or(0) > 7)),
+            X86Opnd::Mem(mem) => mem.base_reg_no > 7 || (mem.idx_reg_no.unwrap_or(0) > 7),
             X86Opnd::IPRel(_) => false
         }
     }
