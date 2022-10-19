@@ -225,6 +225,10 @@ Note: We're only listing outstanding class updates.
     * A Struct class can also be initialized with keyword arguments
       without `keyword_init: true` on `Struct.new` [[Feature #16806]]
 
+* Time
+    * `Time#deconstruct_keys` is added, allowing to use `Time` instances
+      in pattern-matching expressions [[Feature #19071]]
+
 * TracePoint
     * TracePoint#binding now returns `nil` for `c_call`/`c_return` TracePoints.
       [[Bug #18487]]
@@ -448,3 +452,4 @@ The following deprecated APIs are removed.
 [Feature #19070]: https://bugs.ruby-lang.org/issues/19070
 [Bug #19100]:     https://bugs.ruby-lang.org/issues/19100
 [Feature #19135]: https://bugs.ruby-lang.org/issues/19135
+[Feature #19071]: https://bugs.ruby-lang.org/issues/19071
