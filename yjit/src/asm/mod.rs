@@ -8,7 +8,7 @@ use crate::backend::x86_64::JMP_PTR_BYTES;
 use crate::backend::arm64::JMP_PTR_BYTES;
 use crate::virtualmem::WriteError;
 
-#[cfg(feature = "asm_comments")]
+#[cfg(feature = "disasm")]
 use std::collections::BTreeMap;
 
 use crate::codegen::CodegenGlobals;
@@ -69,7 +69,7 @@ pub struct CodeBlock {
     label_refs: Vec<LabelRef>,
 
     // Comments for assembly instructions, if that feature is enabled
-    #[cfg(feature = "asm_comments")]
+    #[cfg(feature = "disasm")]
     asm_comments: BTreeMap<usize, Vec<String>>,
 
     // True for OutlinedCb
@@ -101,7 +101,7 @@ impl CodeBlock {
             label_addrs: Vec::new(),
             label_names: Vec::new(),
             label_refs: Vec::new(),
-            #[cfg(feature = "asm_comments")]
+            #[cfg(feature = "disasm")]
             asm_comments: BTreeMap::new(),
             outlined,
             dropped_bytes: false,
@@ -239,7 +239,7 @@ impl CodeBlock {
 
     /// Add an assembly comment if the feature is on.
     /// If not, this becomes an inline no-op.
-    #[cfg(feature = "asm_comments")]
+    #[cfg(feature = "disasm")]
     pub fn add_comment(&mut self, comment: &str) {
         let cur_ptr = self.get_write_ptr().into_usize();
 
@@ -251,11 +251,11 @@ impl CodeBlock {
             this_line_comments.push(comment.to_string());
         }
     }
-    #[cfg(not(feature = "asm_comments"))]
+    #[cfg(not(feature = "disasm"))]
     #[inline]
     pub fn add_comment(&mut self, _: &str) {}
 
-    #[cfg(feature = "asm_comments")]
+    #[cfg(feature = "disasm")]
     pub fn comments_at(&self, pos: usize) -> Option<&Vec<String>> {
         self.asm_comments.get(&pos)
     }

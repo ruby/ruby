@@ -3754,12 +3754,12 @@ AS_CASE(["${YJIT_SUPPORT}"],
     ],
     [dev], [
 	rb_rust_target_subdir=debug
-	CARGO_BUILD_ARGS='--features stats,disasm,asm_comments'
+	CARGO_BUILD_ARGS='--features stats,disasm'
 	AC_DEFINE(RUBY_DEBUG, 1)
     ],
     [dev_nodebug], [
 	rb_rust_target_subdir=dev_nodebug
-	CARGO_BUILD_ARGS='--profile dev_nodebug --features stats,disasm,asm_comments'
+	CARGO_BUILD_ARGS='--profile dev_nodebug --features stats,disasm'
     ],
     [stats], [
 	rb_rust_target_subdir=stats

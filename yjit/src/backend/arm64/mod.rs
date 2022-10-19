@@ -724,7 +724,7 @@ impl Assembler
 
             match insn {
                 Insn::Comment(text) => {
-                    if cfg!(feature = "asm_comments") {
+                    if cfg!(feature = "disasm") {
                         cb.add_comment(text);
                     }
                 },
