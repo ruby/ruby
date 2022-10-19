@@ -62,6 +62,9 @@
 #include "ruby/version.h"
 #include "ruby/internal/error.h"
 
+#define singlebit_only_p(x) !((x) & ((x)-1))
+STATIC_ASSERT(Qnil_1bit_from_Qfalse, singlebit_only_p(Qnil^Qfalse));
+
 #ifndef MAXPATHLEN
 # define MAXPATHLEN 1024
 #endif

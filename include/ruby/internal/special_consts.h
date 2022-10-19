@@ -136,12 +136,21 @@ static inline bool
 RB_TEST(VALUE obj)
 {
     /*
+     * if USE_FLONUM
      *  Qfalse:  ....0000 0000
      *  Qnil:    ....0000 1000
      * ~Qnil:    ....1111 0111
      *  v        ....xxxx xxxx
      * ----------------------------
      *  RTEST(v) ....xxxx 0xxx
+     *
+     * if ! USE_FLONUM
+     *  Qfalse:  ....0000 0000
+     *  Qnil:    ....0000 0100
+     * ~Qnil:    ....1111 1011
+     *  v        ....xxxx xxxx
+     * ----------------------------
+     *  RTEST(v) ....xxxx x0xx
      *
      *  RTEST(v) can be 0 if and only if (v == Qfalse || v == Qnil).
      */
