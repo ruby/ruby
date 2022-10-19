@@ -869,8 +869,11 @@ typedef struct {
     int type;
 } DebugInfoValue;
 
-/* TODO: Big Endian */
+#if defined(WORDS_BIGENDIAN)
+#define MERGE_2INTS(a,b,sz) (((uint64_t)(a)<<sz)|(b))
+#else
 #define MERGE_2INTS(a,b,sz) (((uint64_t)(b)<<sz)|(a))
+#endif
 
 static uint16_t
 get_uint16(const uint8_t *p)

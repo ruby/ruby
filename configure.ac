@@ -1902,8 +1902,8 @@ AS_CASE(["${target_cpu}-${target_os}:${target_archs}"],
 [universal-darwin*:*ppc*], [
   AC_LIBSOURCES(alloca.c)
   AC_SUBST([ALLOCA], [\${LIBOBJDIR}alloca.${ac_objext}])
-  RUBY_DEFINE_IF([defined __powerpc__], C_ALLOCA, 1)
-  RUBY_DEFINE_IF([defined __powerpc__], alloca, alloca)
+  RUBY_DEFINE_IF([defined __POWERPC__], C_ALLOCA, 1) # Darwin defines __POWERPC__ for ppc and ppc64 both
+  RUBY_DEFINE_IF([defined __POWERPC__], alloca, alloca)
   ],
 [
   AC_FUNC_ALLOCA
@@ -2573,10 +2573,13 @@ AS_CASE([$coroutine_type], [yes|''], [
         [arm64-darwin*], [
             coroutine_type=arm64
         ],
-        [powerpc-darwin*], [
+        # Correct target name is powerpc*-, but Ruby seems to prefer ppc*-.
+        # Notice that Darwin PPC ABI differs from AIX and ELF.
+        # Adding PPC targets for AIX, *BSD and *Linux will require separate implementations.
+        [powerpc-darwin*|ppc-darwin*], [
             coroutine_type=ppc
         ],
-        [powerpc64-darwin*], [
+        [powerpc64-darwin*|ppc64-darwin*], [
             coroutine_type=ppc64
         ],
         [x*64-linux*], [
