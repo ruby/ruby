@@ -403,4 +403,19 @@ class TestIOBuffer < Test::Unit::TestCase
     assert_equal IO::Buffer.for("\x00\x01\x004\x00\x01\x004\x00\x01"), source.dup.xor!(mask)
     assert_equal IO::Buffer.for("\xce\xcd\xcc\xcb\xce\xcd\xcc\xcb\xce\xcd"), source.dup.not!
   end
+
+  def test_shared
+    message = "Hello World"
+    buffer = IO::Buffer.new(64, IO::Buffer::MAPPED | IO::Buffer::SHARED)
+
+    pid = fork do
+      buffer.set_string(message)
+    end
+
+    Process.wait(pid)
+    string = buffer.get_string(0, message.bytesize)
+    assert_equal message, string
+  rescue NotImplementedError
+    skip "Fork/shared memory is not supported."
+  end
 end
