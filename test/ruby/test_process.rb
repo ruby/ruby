@@ -4,6 +4,7 @@ require 'test/unit'
 require 'tempfile'
 require 'timeout'
 require 'rbconfig'
+require 'objspace'
 
 class TestProcess < Test::Unit::TestCase
   RUBY = EnvUtil.rubybin
@@ -2658,4 +2659,11 @@ EOS
       end
     end;
   end if Process.respond_to?(:_fork)
+
+  def test_warmup_promote_all_objects_to_oldgen
+    obj = Object.new
+    refute_includes(ObjectSpace.dump(obj), '"old":true')
+    Process.warmup
+    assert_includes(ObjectSpace.dump(obj), '"old":true')
+  end
 end

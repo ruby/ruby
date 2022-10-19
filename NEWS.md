@@ -26,6 +26,13 @@ Note: We're only listing outstanding class updates.
       The class use equality semantic to lookup keys like a regular hash,
       but it doesn't hold strong references on the keys. [[Feature #18498]]
 
+* Process.warnup
+
+    * Notify the Ruby virtual machine that the boot sequence is finished,
+      and that now is a good time to optimize the application. This is useful
+      for long running applications. The actual optimizations performed are entirely
+      implementation specific and may change in the future without notice. [[Feature #18885]
+
 ## Stdlib updates
 
 The following default gems are updated.

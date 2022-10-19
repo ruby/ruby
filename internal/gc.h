@@ -212,6 +212,7 @@ extern VALUE *ruby_initial_gc_stress_ptr;
 extern int ruby_disable_gc;
 RUBY_ATTR_MALLOC void *ruby_mimmalloc(size_t size);
 void ruby_mimfree(void *ptr);
+void rb_gc_prepare_heap(void);
 void rb_objspace_set_event_hook(const rb_event_flag_t event);
 VALUE rb_objspace_gc_enable(struct rb_objspace *);
 VALUE rb_objspace_gc_disable(struct rb_objspace *);
