@@ -201,6 +201,7 @@
 # - #getlocal: Returns a new time converted to local time.
 # - #utc (aliased as #gmtime): Converts time to UTC in place.
 # - #localtime: Converts time to local time in place.
+# - #deconstruct_keys: Returns a hash of time components used in pattern-matching.
 #
 # === Methods for Rounding
 #
