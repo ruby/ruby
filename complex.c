@@ -704,12 +704,14 @@ nucomp_s_polar(int argc, VALUE *argv, VALUE klass)
 {
     VALUE abs, arg;
 
-    if (rb_scan_args(argc, argv, "11", &abs, &arg) == 1) {
-        arg = ZERO;
-    } else {
+    argc = rb_scan_args(argc, argv, "11", &abs, &arg);
+    nucomp_real_check(abs);
+    if (argc == 2) {
         nucomp_real_check(arg);
     }
-    nucomp_real_check(abs);
+    else {
+        arg = ZERO;
+    }
     return f_complex_polar(klass, abs, arg);
 }
 
