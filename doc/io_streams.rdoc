@@ -113,8 +113,11 @@ You can perform basic stream \IO with these methods:
 ==== Position
 
 An \IO stream has a nonnegative integer _position_,
-which is the byte offset at which the next read or write is to occur;
-the relevant methods:
+which is the byte offset at which the next read or write is to occur.
+A new stream has position zero (and line number zero);
+method +rewind+ resets the position (and line number) to zero.
+
+The relevant methods:
 
 - IO#tell (aliased as +#pos+):
   Returns the current position (in bytes) in the stream:
@@ -171,7 +174,7 @@ the relevant methods:
       f.tell           # => 40
       f.close
 
-- IO#rewind: Positions the stream to the beginning:
+- IO#rewind: Positions the stream to the beginning (also resetting the line number):
 
     f = File.new('t.txt')
     f.tell     # => 0
@@ -179,6 +182,7 @@ the relevant methods:
     f.tell     # => 12
     f.rewind   # => 0
     f.tell     # => 0
+    f.lineno   # => 0
     f.close
 
 ==== Open and Closed Streams
@@ -363,7 +367,12 @@ A readable \IO stream has a _line_ _number_,
 which is the non-negative integer line number
 in the stream where the next read will occur.
 
-A new stream is initially has line number +0+.
+The line number is the number of lines read by certain line-oriented methods
+(IO.foreach, IO#each_line, IO#gets, IO#readline, and IO#readlines)
+according to the given (or default) line separator +sep+.
+
+A new stream is initially has line number zero (and position zero);
+method +rewind+ resets the line number (and position) to zero.
 
 \Method IO#lineno returns the line number.
 
