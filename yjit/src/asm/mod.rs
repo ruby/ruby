@@ -213,9 +213,8 @@ impl CodeBlock {
         self.page_end_reserve = old_page_end_reserve;
     }
 
-    #[cfg(target_arch = "aarch64")]
-    #[cfg(not(test))]
     /// Return the address ranges of a given address range that this CodeBlock can write.
+    #[cfg(any(feature = "disasm", target_arch = "aarch64"))]
     pub fn writable_addrs(&self, start_ptr: CodePtr, end_ptr: CodePtr) -> Vec<(usize, usize)> {
         let mut addrs = vec![];
         let mut start = start_ptr.raw_ptr() as usize;
