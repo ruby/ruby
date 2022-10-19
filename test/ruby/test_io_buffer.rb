@@ -416,6 +416,6 @@ class TestIOBuffer < Test::Unit::TestCase
     string = buffer.get_string(0, message.bytesize)
     assert_equal message, string
   rescue NotImplementedError
-    skip "Fork/shared memory is not supported."
+    omit "Fork/shared memory is not supported."
   end
 end
