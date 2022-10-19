@@ -895,7 +895,7 @@ rb_io_buffer_mapped_p(VALUE self)
  *
  *  If the buffer is _shared_, meaning it references memory that can be shared
  *  with other processes (and thus might change without being modified
- *  locally). 
+ *  locally).
  */
 static VALUE
 rb_io_buffer_shared_p(VALUE self)
