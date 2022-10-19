@@ -446,7 +446,7 @@ rb_mutex_unlock_th(rb_mutex_t *mutex, rb_thread_t *th, rb_fiber_t *fiber)
         ccan_list_for_each_safe(&mutex->waitq, cur, next, node) {
             ccan_list_del_init(&cur->node);
 
-            if (cur->th->scheduler != Qnil && rb_fiberptr_blocking(cur->fiber) == 0) {
+            if (cur->th->scheduler != Qnil && cur->fiber) {
                 rb_fiber_scheduler_unblock(cur->th->scheduler, cur->self, rb_fiberptr_self(cur->fiber));
                 goto found;
             }
