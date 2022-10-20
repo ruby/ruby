@@ -3296,8 +3296,7 @@ fn gen_branchunless(
         gen_direct_jump(jit, ctx, target, asm);
     } else {
         // Test if any bit (outside of the Qnil bit) is on
-        // RUBY_Qfalse  /* ...0000 0000 */
-        // RUBY_Qnil    /* ...0000 1000 */
+        // See RB_TEST()
         let not_qnil = !Qnil.as_i64();
         asm.test(val_opnd, not_qnil.into());
 
@@ -3368,7 +3367,6 @@ fn gen_branchnil(
         gen_direct_jump(jit, ctx, target, asm);
     } else {
         // Test if the value is Qnil
-        // RUBY_Qnil    /* ...0000 1000 */
         asm.cmp(val_opnd, Opnd::UImm(Qnil.into()));
         // Generate the branch instructions
         gen_branch(
