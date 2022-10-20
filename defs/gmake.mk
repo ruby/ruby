@@ -289,6 +289,9 @@ gems/%.gem:
 	    -e 'File.unlink(*old) and' \
 	    -e 'FileUtils.rm_rf(old.map{'"|n|"'n.chomp(".gem")})'
 
+ifeq (,)
+extract-gems: extract-gems-sequential
+else
 extract-gems: | $(patsubst %,.bundle/gems/%,$(bundled-gems))
 
 .bundle/gems/%: gems/%.gem | .bundle/gems
@@ -299,6 +302,7 @@ extract-gems: | $(patsubst %,.bundle/gems/%,$(bundled-gems))
 
 $(srcdir)/.bundle/gems:
 	$(MAKEDIRS) $@
+endif
 
 ifneq ($(filter update-bundled_gems refresh-gems,$(MAKECMDGOALS)),)
 update-gems: update-bundled_gems
