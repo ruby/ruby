@@ -322,7 +322,8 @@ impl VALUE {
     /// Return true if the number is an immediate integer, flonum or static symbol
     fn immediate_p(self) -> bool {
         let VALUE(cval) = self;
-        (cval & 7) != 0
+        let mask = RUBY_IMMEDIATE_MASK as usize;
+        (cval & mask) != 0
     }
 
     /// Return true if the value is a Ruby immediate integer, flonum, static symbol, nil or false
@@ -333,19 +334,23 @@ impl VALUE {
     /// Return true if the value is a Ruby Fixnum (immediate-size integer)
     pub fn fixnum_p(self) -> bool {
         let VALUE(cval) = self;
-        (cval & 1) == 1
+        let flag = RUBY_FIXNUM_FLAG as usize;
+        (cval & flag) == flag
     }
 
     /// Return true if the value is an immediate Ruby floating-point number (flonum)
     pub fn flonum_p(self) -> bool {
         let VALUE(cval) = self;
-        (cval & 3) == 2
+        let mask = RUBY_FLONUM_MASK as usize;
+        let flag = RUBY_FLONUM_FLAG as usize;
+        (cval & mask) == flag
     }
 
     /// Return true for a static (non-heap) Ruby symbol
     pub fn static_sym_p(self) -> bool {
         let VALUE(cval) = self;
-        (cval & 0xff) == RUBY_SYMBOL_FLAG
+        let flag = RUBY_SYMBOL_FLAG as usize;
+        (cval & 0xff) == flag
     }
 
     /// Returns true or false depending on whether the value is nil
@@ -595,13 +600,13 @@ where
 
 // Non-idiomatic capitalization for consistency with CRuby code
 #[allow(non_upper_case_globals)]
-pub const Qfalse: VALUE = VALUE(0);
+pub const Qfalse: VALUE = VALUE(RUBY_Qfalse as usize);
 #[allow(non_upper_case_globals)]
-pub const Qnil: VALUE = VALUE(4);
+pub const Qnil: VALUE = VALUE(RUBY_Qnil as usize);
 #[allow(non_upper_case_globals)]
-pub const Qtrue: VALUE = VALUE(20);
+pub const Qtrue: VALUE = VALUE(RUBY_Qtrue as usize);
 #[allow(non_upper_case_globals)]
-pub const Qundef: VALUE = VALUE(0x24);
+pub const Qundef: VALUE = VALUE(RUBY_Qundef as usize);
 
 #[allow(unused)]
 mod manual_defs {
@@ -615,16 +620,6 @@ mod manual_defs {
 
     pub const RUBY_FIXNUM_MIN: isize = RUBY_LONG_MIN / 2;
     pub const RUBY_FIXNUM_MAX: isize = RUBY_LONG_MAX / 2;
-    pub const RUBY_FIXNUM_FLAG: usize = 0x1;
-
-    // All these are defined in include/ruby/internal/special_consts.h,
-    // in the same enum as RUBY_Qfalse, etc.
-    // Do we want to switch to using Ruby's definition of Qnil, Qfalse, etc?
-    pub const RUBY_SYMBOL_FLAG: usize = 0x0c;
-    pub const RUBY_FLONUM_FLAG: usize = 0x2;
-    pub const RUBY_FLONUM_MASK: usize = 0x3;
-    pub const RUBY_SPECIAL_SHIFT: usize = 8;
-    pub const RUBY_IMMEDIATE_MASK: usize = 0x7;
 
     // From vm_callinfo.h - uses calculation that seems to confuse bindgen
     pub const VM_CALL_ARGS_SPLAT: u32 = 1 << VM_CALL_ARGS_SPLAT_bit;

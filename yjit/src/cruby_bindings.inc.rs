@@ -152,6 +152,17 @@ extern "C" {
 extern "C" {
     pub fn rb_method_basic_definition_p(klass: VALUE, mid: ID) -> ::std::os::raw::c_int;
 }
+pub const RUBY_Qfalse: ruby_special_consts = 0;
+pub const RUBY_Qnil: ruby_special_consts = 4;
+pub const RUBY_Qtrue: ruby_special_consts = 20;
+pub const RUBY_Qundef: ruby_special_consts = 36;
+pub const RUBY_IMMEDIATE_MASK: ruby_special_consts = 7;
+pub const RUBY_FIXNUM_FLAG: ruby_special_consts = 1;
+pub const RUBY_FLONUM_MASK: ruby_special_consts = 3;
+pub const RUBY_FLONUM_FLAG: ruby_special_consts = 2;
+pub const RUBY_SYMBOL_FLAG: ruby_special_consts = 12;
+pub const RUBY_SPECIAL_SHIFT: ruby_special_consts = 8;
+pub type ruby_special_consts = u32;
 #[repr(C)]
 pub struct RBasic {
     pub flags: VALUE,
