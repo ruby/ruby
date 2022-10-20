@@ -306,12 +306,12 @@ init_copy(VALUE dest, VALUE obj)
         shape_to_set = rb_shape_get_shape_by_id(shape_to_set->parent_id);
     }
 
-    // shape ids are different
-    rb_shape_set_shape(dest, shape_to_set);
-
     if (RB_TYPE_P(obj, T_OBJECT)) {
         rb_obj_copy_ivar(dest, obj);
     }
+
+    // shape ids are different
+    rb_shape_set_shape(dest, shape_to_set);
 }
 
 static VALUE immutable_obj_clone(VALUE obj, VALUE kwfreeze);
