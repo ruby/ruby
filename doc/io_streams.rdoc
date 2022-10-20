@@ -406,7 +406,7 @@ which is the non-negative integer line number
 in the stream where the next read will occur.
 
 The line number is the number of lines read by certain line-oriented methods
-({::foreach}[https://docs.ruby-lang.org/en/master/IO.html#method-c-foreach],
+({::foreach}[rdoc-ref:IO.foreach],
 {#each_line}[rdoc-ref:io_streams.rdoc@Method+-23each_line],
 {#gets}[rdoc-ref:io_streams.rdoc@Method+-23gets],
 {#readline}[rdoc-ref:io_streams.rdoc@Method+-23readline],
