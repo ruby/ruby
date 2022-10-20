@@ -597,11 +597,11 @@ where
 #[allow(non_upper_case_globals)]
 pub const Qfalse: VALUE = VALUE(0);
 #[allow(non_upper_case_globals)]
-pub const Qnil: VALUE = VALUE(8);
+pub const Qnil: VALUE = VALUE(4);
 #[allow(non_upper_case_globals)]
 pub const Qtrue: VALUE = VALUE(20);
 #[allow(non_upper_case_globals)]
-pub const Qundef: VALUE = VALUE(52);
+pub const Qundef: VALUE = VALUE(0x24);
 
 #[allow(unused)]
 mod manual_defs {

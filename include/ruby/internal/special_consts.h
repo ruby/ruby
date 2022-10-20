@@ -94,9 +94,9 @@ ruby_special_consts {
     RUBY_SYMBOL_FLAG,           /**< Flag to denote a static symbol. */
 #elif USE_FLONUM
     RUBY_Qfalse         = 0x00, /* ...0000 0000 */
+    RUBY_Qnil           = 0x04, /* ...0000 0100 */
     RUBY_Qtrue          = 0x14, /* ...0001 0100 */
-    RUBY_Qnil           = 0x08, /* ...0000 1000 */
-    RUBY_Qundef         = 0x34, /* ...0011 0100 */
+    RUBY_Qundef         = 0x24, /* ...0010 0100 */
     RUBY_IMMEDIATE_MASK = 0x07, /* ...0000 0111 */
     RUBY_FIXNUM_FLAG    = 0x01, /* ...xxxx xxx1 */
     RUBY_FLONUM_MASK    = 0x03, /* ...0000 0011 */
@@ -104,9 +104,9 @@ ruby_special_consts {
     RUBY_SYMBOL_FLAG    = 0x0c, /* ...xxxx 1100 */
 #else
     RUBY_Qfalse         = 0x00, /* ...0000 0000 */
-    RUBY_Qtrue          = 0x02, /* ...0000 0010 */
-    RUBY_Qnil           = 0x04, /* ...0000 0100 */
-    RUBY_Qundef         = 0x06, /* ...0000 0110 */
+    RUBY_Qnil           = 0x02, /* ...0000 0010 */
+    RUBY_Qtrue          = 0x06, /* ...0000 0110 */
+    RUBY_Qundef         = 0x0a, /* ...0000 1010 */
     RUBY_IMMEDIATE_MASK = 0x03, /* ...0000 0011 */
     RUBY_FIXNUM_FLAG    = 0x01, /* ...xxxx xxx1 */
     RUBY_FLONUM_MASK    = 0x00, /* any values ANDed with FLONUM_MASK cannot be FLONUM_FLAG */
@@ -138,19 +138,19 @@ RB_TEST(VALUE obj)
     /*
      * if USE_FLONUM
      *  Qfalse:  ....0000 0000
-     *  Qnil:    ....0000 1000
-     * ~Qnil:    ....1111 0111
-     *  v        ....xxxx xxxx
-     * ----------------------------
-     *  RTEST(v) ....xxxx 0xxx
-     *
-     * if ! USE_FLONUM
-     *  Qfalse:  ....0000 0000
      *  Qnil:    ....0000 0100
      * ~Qnil:    ....1111 1011
      *  v        ....xxxx xxxx
      * ----------------------------
      *  RTEST(v) ....xxxx x0xx
+     *
+     * if ! USE_FLONUM
+     *  Qfalse:  ....0000 0000
+     *  Qnil:    ....0000 0010
+     * ~Qnil:    ....1111 1101
+     *  v        ....xxxx xxxx
+     * ----------------------------
+     *  RTEST(v) ....xxxx xx0x
      *
      *  RTEST(v) can be 0 if and only if (v == Qfalse || v == Qnil).
      */
