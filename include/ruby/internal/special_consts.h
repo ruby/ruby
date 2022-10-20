@@ -111,7 +111,7 @@ ruby_special_consts {
     RUBY_FIXNUM_FLAG    = 0x01, /* ...xxxx xxx1 */
     RUBY_FLONUM_MASK    = 0x00, /* any values ANDed with FLONUM_MASK cannot be FLONUM_FLAG */
     RUBY_FLONUM_FLAG    = 0x02, /* ...0000 0010 */
-    RUBY_SYMBOL_FLAG    = 0x0e, /* ...0000 1110 */
+    RUBY_SYMBOL_FLAG    = 0x0e, /* ...xxxx 1110 */
 #endif
 
     RUBY_SPECIAL_SHIFT  = 8 /**< Least significant 8 bits are reserved. */
