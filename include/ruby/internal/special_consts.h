@@ -76,6 +76,8 @@
 #define RB_SPECIAL_CONST_P RB_SPECIAL_CONST_P
 #define RB_STATIC_SYM_P    RB_STATIC_SYM_P
 #define RB_TEST            RB_TEST
+#define RB_UNDEF_P         RB_UNDEF_P
+#define RB_NIL_OR_UNDEF_P  RB_NIL_OR_UNDEF_P
 /** @endcond */
 
 /** special constants - i.e. non-zero and non-fixnum constants */
@@ -171,6 +173,62 @@ static inline bool
 RB_NIL_P(VALUE obj)
 {
     return obj == RUBY_Qnil;
+}
+
+RBIMPL_ATTR_CONST()
+RBIMPL_ATTR_CONSTEXPR(CXX11)
+RBIMPL_ATTR_ARTIFICIAL()
+/**
+ * Checks if the given object is undef.
+ *
+ * @param[in]  obj    An arbitrary ruby object.
+ * @retval     true   `obj` is ::RUBY_Qundef.
+ * @retval     false  Anything else.
+ */
+static inline bool
+RB_UNDEF_P(VALUE obj)
+{
+    return obj == RUBY_Qundef;
+}
+
+RBIMPL_ATTR_CONST()
+RBIMPL_ATTR_CONSTEXPR(CXX11)
+RBIMPL_ATTR_ARTIFICIAL()
+/**
+ * Checks if the given object is nil or undef.  Can be used to see if
+ * a keyword argument is not given or given `nil`.
+ *
+ * @param[in]  obj    An arbitrary ruby object.
+ * @retval     true   `obj` is ::RUBY_Qnil or ::RUBY_Qundef.
+ * @retval     false  Anything else.
+ */
+static inline bool
+RB_NIL_OR_UNDEF_P(VALUE obj)
+{
+    /*
+     * if USE_FLONUM
+     *  Qundef:       ....0010 0100
+     *  Qnil:         ....0000 0100
+     *  mask:         ....1101 1111
+     *  common_bits:  ....0000 0100
+     * ---------------------------------
+     *  Qnil & mask   ....0000 0100
+     *  Qundef & mask ....0000 0100
+     *
+     * if ! USE_FLONUM
+     *  Qundef:       ....0000 1010
+     *  Qnil:         ....0000 0010
+     *  mask:         ....1111 0111
+     *  common_bits:  ....0000 0010
+     * ----------------------------
+     *  Qnil & mask   ....0000 0010
+     *  Qundef & mask ....0000 0010
+     *
+     *  NIL_OR_UNDEF_P(v) can be true only when v is Qundef or Qnil.
+     */
+    const VALUE mask = ~(RUBY_Qundef ^ RUBY_Qnil);
+    const VALUE common_bits = RUBY_Qundef & RUBY_Qnil;
+    return (obj & mask) == common_bits;
 }
 
 RBIMPL_ATTR_CONST()
