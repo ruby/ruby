@@ -64,6 +64,11 @@ class TestGemSourceGit < Gem::TestCase
   end
 
   def test_checkout_submodules
+    # We need to allow to checkout submodules with file:// protocol
+    # CVE-2022-39253
+    # https://lore.kernel.org/lkml/xmqq4jw1uku5.fsf@gitster.g/
+    system(@git, *%W[config --global protocol.file.allow always])
+
     source = Gem::Source::Git.new @name, @repository, 'master', true
 
     git_gem 'b'
