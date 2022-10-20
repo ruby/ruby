@@ -872,6 +872,14 @@ typedef struct _OnigStackType {
   } u;
 } OnigStackType;
 
+#ifdef USE_CACHE_MATCH_OPT
+typedef struct {
+  UChar *addr;
+  int num;
+  int outer_repeat;
+} OnigCacheIndex;
+#endif
+
 typedef struct {
   void* stack_p;
   size_t stack_n;
@@ -895,11 +903,12 @@ typedef struct {
   uint64_t end_time;
 #endif
 #ifdef USE_CACHE_MATCH_OPT
-  int      num_fail;
-  int      enable_cache_match_opt;
-  int      num_cache_opcode;
-  UChar**  cache_index_table; /* array of pointer to p (regex program) */
-  uint8_t *match_cache;
+  int              num_fail;
+  int              enable_cache_match_opt;
+  int              num_cache_opcode;
+  int              num_cache_table;
+  OnigCacheIndex *cache_index_table;
+  uint8_t        *match_cache;
 #endif
 } OnigMatchArg;
 
