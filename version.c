@@ -9,6 +9,7 @@
 
 **********************************************************************/
 
+#include "internal/cmdlineopt.h"
 #include "ruby/ruby.h"
 #include "version.h"
 #include "vm_core.h"
@@ -121,13 +122,19 @@ Init_version(void)
 }
 
 #if USE_MJIT
-#define MJIT_OPTS_ON mjit_opts.on
+#define MJIT_OPTS_ON opt->mjit.on
 #else
 #define MJIT_OPTS_ON 0
 #endif
 
+#if USE_YJIT
+#define YJIT_OPTS_ON opt->yjit
+#else
+#define YJIT_OPTS_ON 0
+#endif
+
 void
-Init_ruby_description(void)
+Init_ruby_description(ruby_cmdline_options_t *opt)
 {
     VALUE description;
 
@@ -135,7 +142,7 @@ Init_ruby_description(void)
         rb_dynamic_description = ruby_description_with_mjit;
         description = MKSTR(description_with_mjit);
     }
-    else if (rb_yjit_enabled_p()) {
+    else if (YJIT_OPTS_ON) {
         rb_dynamic_description = ruby_description_with_yjit;
         description = MKSTR(description_with_yjit);
     }
