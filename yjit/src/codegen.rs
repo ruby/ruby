@@ -1,7 +1,6 @@
 // We use the YARV bytecode constants which have a CRuby-style name
 #![allow(non_upper_case_globals)]
 
-//use crate::asm::x86_64::*;
 use crate::asm::*;
 use crate::backend::ir::*;
 use crate::core::*;
@@ -23,13 +22,6 @@ use std::ptr;
 use std::slice;
 
 pub use crate::virtualmem::CodePtr;
-
-// A block that can be invalidated needs space to write a jump.
-// We'll reserve a minimum size for any block that could
-// be invalidated. In this case the JMP takes 5 bytes, but
-// gen_send_general will always MOV the receiving object
-// into place, so 2 bytes are always written automatically.
-//pub const JUMP_SIZE_IN_BYTES: usize = 3;
 
 /// Status returned by code generation functions
 #[derive(PartialEq, Debug)]
