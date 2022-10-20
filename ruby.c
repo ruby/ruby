@@ -1627,8 +1627,6 @@ ruby_opt_init(ruby_cmdline_options_t *opt)
     rb_call_builtin_inits();
     ruby_init_prelude();
 
-    // Make sure the saved_ec of the initial thread's root_fiber is scanned by rb_jit_cont_each_ec.
-    //
 #if USE_MJIT
     // mjit_init is safe only after rb_call_builtin_inits defines RubyVM::MJIT::Compiler
     if (opt->mjit.on)
