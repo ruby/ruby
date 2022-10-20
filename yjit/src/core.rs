@@ -1487,7 +1487,7 @@ fn gen_block_series_body(
             if iseq_location.contains(substr) {
                 let last_block = last_blockref.borrow();
                 println!("Compiling {} block(s) for {}, ISEQ offsets [{}, {})", batch.len(), iseq_location, blockid.idx, last_block.end_idx);
-                println!("{}", disasm_iseq_insn_range(blockid.iseq, blockid.idx, last_block.end_idx));
+                print!("{}", disasm_iseq_insn_range(blockid.iseq, blockid.idx, last_block.end_idx));
             }
         }
     }
