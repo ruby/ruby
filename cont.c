@@ -1201,6 +1201,8 @@ cont_save_thread(rb_context_t *cont, rb_thread_t *th)
     sec->machine.stack_end = NULL;
 }
 
+static rb_nativethread_lock_t jit_cont_lock;
+
 // Register a new continuation with execution context `ec`. Return JIT info about
 // the continuation.
 static struct rb_jit_cont *
@@ -1216,7 +1218,7 @@ jit_cont_new(rb_execution_context_t *ec)
         rb_memerror();
     cont->ec = ec;
 
-    RB_VM_LOCK_ENTER();
+    rb_native_mutex_lock(&jit_cont_lock);
     if (first_jit_cont == NULL) {
         cont->next = cont->prev = NULL;
     }
@@ -1226,7 +1228,7 @@ jit_cont_new(rb_execution_context_t *ec)
         first_jit_cont->prev = cont;
     }
     first_jit_cont = cont;
-    RB_VM_LOCK_LEAVE();
+    rb_native_mutex_unlock(&jit_cont_lock);
 
     return cont;
 }
@@ -1235,7 +1237,7 @@ jit_cont_new(rb_execution_context_t *ec)
 static void
 jit_cont_free(struct rb_jit_cont *cont)
 {
-    RB_VM_LOCK_ENTER();
+    rb_native_mutex_lock(&jit_cont_lock);
     if (cont == first_jit_cont) {
         first_jit_cont = cont->next;
         if (first_jit_cont != NULL)
@@ -1246,7 +1248,7 @@ jit_cont_free(struct rb_jit_cont *cont)
         if (cont->next != NULL)
             cont->next->prev = cont->prev;
     }
-    RB_VM_LOCK_LEAVE();
+    rb_native_mutex_unlock(&jit_cont_lock);
 
     free(cont);
 }
@@ -1273,7 +1275,7 @@ rb_jit_cont_each_iseq(rb_iseq_callback callback, void *data)
     }
 }
 
-// Finish working with continuation info.
+// Finish working with jit_cont.
 void
 rb_jit_cont_finish(void)
 {
@@ -1283,8 +1285,9 @@ rb_jit_cont_finish(void)
     struct rb_jit_cont *cont, *next;
     for (cont = first_jit_cont; cont != NULL; cont = next) {
         next = cont->next;
-        xfree(cont);
+        free(cont); // Don't use xfree because it's allocated by calloc.
     }
+    rb_native_mutex_destroy(&jit_cont_lock);
 }
 
 static void
@@ -1340,11 +1343,15 @@ rb_fiberptr_blocking(struct rb_fiber_struct *fiber)
     return fiber->blocking;
 }
 
-// This is used for root_fiber because other fibers call cont_init_mjit_cont through cont_new.
+// Start working with jit_cont.
 void
-rb_fiber_init_jit_cont(struct rb_fiber_struct *fiber)
+rb_jit_cont_init(void)
 {
-    cont_init_jit_cont(&fiber->cont);
+    if (!jit_cont_enabled)
+        return;
+
+    rb_native_mutex_initialize(&jit_cont_lock);
+    cont_init_jit_cont(&GET_EC()->fiber_ptr->cont);
 }
 
 #if 0
@@ -2273,6 +2280,7 @@ root_fiber_alloc(rb_thread_t *th)
     return fiber;
 }
 
+// Set up a "root fiber", which is the fiber that every Ractor has.
 void
 rb_threadptr_root_fiber_setup(rb_thread_t *th)
 {
@@ -2287,10 +2295,11 @@ rb_threadptr_root_fiber_setup(rb_thread_t *th)
     fiber->blocking = 1;
     fiber_status_set(fiber, FIBER_RESUMED); /* skip CREATED */
     th->ec = &fiber->cont.saved_ec;
-    // This skips jit_cont_new for the initial thread because rb_yjit_enabled_p() and
-    // mjit_enabled are false at this point. ruby_opt_init will call rb_fiber_init_jit_cont
-    // again for this root_fiber.
-    rb_fiber_init_jit_cont(fiber);
+    // When rb_threadptr_root_fiber_setup is called for the first time, mjit_enabled and
+    // rb_yjit_enabled_p() are still false. So this does nothing and rb_jit_cont_init() that is
+    // called later will take care of it. However, you still have to call cont_init_jit_cont()
+    // here for other Ractors, which are not initialized by rb_jit_cont_init().
+    cont_init_jit_cont(&fiber->cont);
 }
 
 void

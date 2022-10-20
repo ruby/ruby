@@ -253,7 +253,6 @@ rb_ec_cleanup(rb_execution_context_t *ec, int ex0)
     }
 
     mjit_finish(true); // We still need ISeqs here, so it's before rb_ec_finalize().
-    rb_jit_cont_finish();
 
     rb_ec_finalize(ec);
 
@@ -264,6 +263,8 @@ rb_ec_cleanup(rb_execution_context_t *ec, int ex0)
     th = th0;
     rb_thread_stop_timer_thread();
     ruby_vm_destruct(th->vm);
+    // For YJIT, call this after ruby_vm_destruct() frees jit_cont for the root fiber.
+    rb_jit_cont_finish();
     if (state) ruby_default_signal(state);
 
     return sysex;
