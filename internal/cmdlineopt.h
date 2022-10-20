@@ -26,9 +26,6 @@ typedef struct ruby_cmdline_options {
 #if USE_MJIT
     struct mjit_options mjit;
 #endif
-#if USE_YJIT
-    bool yjit;
-#endif
 
     int sflag, xflag;
     unsigned int warning: 1;
@@ -39,6 +36,9 @@ typedef struct ruby_cmdline_options {
     unsigned int do_split: 1;
     unsigned int do_search: 1;
     unsigned int setids: 2;
+#if USE_YJIT
+    unsigned int yjit: 1;
+#endif
 } ruby_cmdline_options_t;
 
 struct ruby_opt_message {
