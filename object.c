@@ -3138,6 +3138,9 @@ rb_convert_to_integer(VALUE val, int base, int raise_exception)
     tmp = rb_protect(rb_check_to_int, val, NULL);
     if (RB_INTEGER_TYPE_P(tmp)) return tmp;
     rb_set_errinfo(Qnil);
+    if (!NIL_P(tmp = rb_check_string_type(val))) {
+        return rb_str_convert_to_inum(tmp, base, TRUE, raise_exception);
+    }
 
     if (!raise_exception) {
         VALUE result = rb_protect(rb_check_to_i, val, NULL);
