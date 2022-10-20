@@ -138,4 +138,46 @@ class TestFiberScheduler < Test::Unit::TestCase
       Object.send(:remove_const, :TestFiberSchedulerAutoload)
     end
   end
+
+  def test_deadlock
+    mutex = Thread::Mutex.new
+    condition = Thread::ConditionVariable.new
+    q = 0.0001
+
+    signaller = Thread.new do
+      loop do
+        mutex.synchronize do
+          condition.signal
+        end
+        sleep q
+      end
+    end
+
+    i = 0
+
+    thread = Thread.new do
+      scheduler = SleepingBlockingScheduler.new
+      Fiber.set_scheduler scheduler
+
+      Fiber.schedule do
+        10.times do
+          mutex.synchronize do
+            condition.wait(mutex)
+            sleep q
+            i += 1
+          end
+        end
+      end
+    end
+
+    # Wait for 10 seconds at most... if it doesn't finish, it's deadlocked.
+    thread.join(10)
+
+    # If it's deadlocked, it will never finish, so this will be 0.
+    assert_equal 10, i
+  ensure
+    # Make sure the threads are dead...
+    thread.kill
+    signaller.kill
+  end
 end
