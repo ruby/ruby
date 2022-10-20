@@ -1373,33 +1373,33 @@ fn gen_expandarray(
     asm: &mut Assembler,
     ocb: &mut OutlinedCb,
 ) -> CodegenStatus {
-    let flag = jit_get_arg(jit, 1);
-    let VALUE(flag_value) = flag;
+    // Both arguments are rb_num_t which is unsigned
+    let num = jit_get_arg(jit, 0).as_usize();
+    let flag = jit_get_arg(jit, 1).as_usize();
 
     // If this instruction has the splat flag, then bail out.
-    if flag_value & 0x01 != 0 {
+    if flag & 0x01 != 0 {
         gen_counter_incr!(asm, expandarray_splat);
         return CantCompile;
     }
 
     // If this instruction has the postarg flag, then bail out.
-    if flag_value & 0x02 != 0 {
+    if flag & 0x02 != 0 {
         gen_counter_incr!(asm, expandarray_postarg);
         return CantCompile;
     }
 
     let side_exit = get_side_exit(jit, ocb, ctx);
 
-    // num is the number of requested values. If there aren't enough in the
-    // array then we're going to push on nils.
-    let num = jit_get_arg(jit, 0);
     let array_type = ctx.get_opnd_type(StackOpnd(0));
     let array_opnd = ctx.stack_pop(1);
 
+    // num is the number of requested values. If there aren't enough in the
+    // array then we're going to push on nils.
     if matches!(array_type, Type::Nil) {
         // special case for a, b = nil pattern
         // push N nils onto the stack
-        for _i in 0..(num.into()) {
+        for _ in 0..num {
             let push_opnd = ctx.stack_push(Type::Nil);
             asm.mov(push_opnd, Qnil.into());
         }
@@ -1420,7 +1420,7 @@ fn gen_expandarray(
     );
 
     // If we don't actually want any values, then just return.
-    if num == VALUE(0) {
+    if num == 0 {
         return KeepCompiling;
     }
 
@@ -1463,9 +1463,10 @@ fn gen_expandarray(
     let ary_opnd = asm.csel_nz(ary_opnd, heap_ptr_opnd);
 
     // Loop backward through the array and push each element onto the stack.
-    for i in (0..(num.as_i32())).rev() {
+    for i in (0..num).rev() {
         let top = ctx.stack_push(Type::Unknown);
-        asm.mov(top, Opnd::mem(64, ary_opnd, i * (SIZEOF_VALUE as i32)));
+        let offset = i32::try_from(i * SIZEOF_VALUE).unwrap();
+        asm.mov(top, Opnd::mem(64, ary_opnd, offset));
     }
 
     KeepCompiling
