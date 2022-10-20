@@ -1388,8 +1388,12 @@ test-bundled-gems-precheck: $(TEST_RUNNABLE)-test-bundled-gems-precheck
 yes-test-bundled-gems-precheck: main
 no-test-bundled-gems-precheck:
 
-test-bundled-gems-fetch: $(PREP)
+test-bundled-gems-fetch: yes-test-bundled-gems-fetch
+yes-test-bundled-gems-fetch: $(PREP)
+	$(ACTIONS_GROUP)
 	$(Q) $(BASERUBY) -C $(srcdir)/gems ../tool/fetch-bundled_gems.rb src bundled_gems
+	$(ACTIONS_ENDGROUP)
+no-test-bundled-gems-fetch:
 
 test-bundled-gems-prepare: test-bundled-gems-precheck test-bundled-gems-fetch
 test-bundled-gems-prepare: $(TEST_RUNNABLE)-test-bundled-gems-prepare

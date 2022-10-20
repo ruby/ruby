@@ -7,7 +7,7 @@ MSPECOPT += $(if $(filter -j%,$(MFLAGS)),-j)
 nproc = $(subst -j,,$(filter -j%,$(MFLAGS)))
 
 ifeq ($(GITHUB_ACTIONS),true)
-override ACTIONS_GROUP = @echo "\#\#[group]$(@:yes-=)"
+override ACTIONS_GROUP = @echo "\#\#[group]$(patsubst yes-%,%,$@)"
 override ACTIONS_ENDGROUP = @echo "\#\#[endgroup]"
 endif
 
@@ -33,6 +33,9 @@ TEST_DEPENDS := $(filter-out test-all $(TEST_TARGETS),$(TEST_DEPENDS))
 TEST_TARGETS := $(patsubst test,test-short,$(TEST_TARGETS))
 TEST_DEPENDS := $(filter-out test $(TEST_TARGETS),$(TEST_DEPENDS))
 TEST_TARGETS := $(patsubst test-short,btest-ruby test-knownbug test-basic,$(TEST_TARGETS))
+TEST_TARGETS := $(patsubst test-bundled-gems,test-bundled-gems-run,$(TEST_TARGETS))
+TEST_TARGETS := $(patsubst test-bundled-gems-run,test-bundled-gems-run $(PREPARE_BUNDLED_GEMS),$(TEST_TARGETS))
+TEST_TARGETS := $(patsubst test-bundled-gems-prepare,test-bundled-gems-prepare test-bundled-gems-precheck test-bundled-gems-fetch,$(TEST_TARGETS))
 TEST_DEPENDS := $(filter-out test-short $(TEST_TARGETS),$(TEST_DEPENDS))
 TEST_DEPENDS += $(if $(filter great exam love check,$(MAKECMDGOALS)),all exts)
 
@@ -79,6 +82,8 @@ ORDERED_TEST_TARGETS := $(filter $(TEST_TARGETS), \
 	btest-ruby test-knownbug test-basic \
 	test-testframework test-tool test-ruby test-all \
 	test-spec test-bundler-prepare test-bundler test-bundler-parallel \
+	test-bundled-gems-precheck test-bundled-gems-fetch \
+	test-bundled-gems-prepare test-bundled-gems-run \
 	)
 prev_test := $(if $(filter test-spec,$(ORDERED_TEST_TARGETS)),test-spec-precheck)
 $(foreach test,$(ORDERED_TEST_TARGETS), \
