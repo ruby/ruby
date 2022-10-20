@@ -35,7 +35,7 @@ TEST_DEPENDS := $(filter-out test $(TEST_TARGETS),$(TEST_DEPENDS))
 TEST_TARGETS := $(patsubst test-short,btest-ruby test-knownbug test-basic,$(TEST_TARGETS))
 TEST_TARGETS := $(patsubst test-bundled-gems,test-bundled-gems-run,$(TEST_TARGETS))
 TEST_TARGETS := $(patsubst test-bundled-gems-run,test-bundled-gems-run $(PREPARE_BUNDLED_GEMS),$(TEST_TARGETS))
-TEST_TARGETS := $(patsubst test-bundled-gems-prepare,test-bundled-gems-prepare test-bundled-gems-precheck test-bundled-gems-fetch,$(TEST_TARGETS))
+TEST_TARGETS := $(patsubst test-bundled-gems-prepare,test-bundled-gems-prepare $(PRECHECK_BUNDLED_GEMS) test-bundled-gems-fetch,$(TEST_TARGETS))
 TEST_DEPENDS := $(filter-out test-short $(TEST_TARGETS),$(TEST_DEPENDS))
 TEST_DEPENDS += $(if $(filter great exam love check,$(MAKECMDGOALS)),all exts)
 

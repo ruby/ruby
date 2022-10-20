@@ -1384,6 +1384,7 @@ update-bundled_gems: PHONY
 	git -C "$(srcdir)" diff --no-ext-diff --ignore-submodules --exit-code || \
 	git -C "$(srcdir)" commit -m "Update bundled_gems" gems/bundled_gems
 
+PRECHECK_BUNDLED_GEMS = test-bundled-gems-precheck
 test-bundled-gems-precheck: $(TEST_RUNNABLE)-test-bundled-gems-precheck
 yes-test-bundled-gems-precheck: main
 no-test-bundled-gems-precheck:
@@ -1395,7 +1396,7 @@ yes-test-bundled-gems-fetch: $(PREP)
 	$(ACTIONS_ENDGROUP)
 no-test-bundled-gems-fetch:
 
-test-bundled-gems-prepare: test-bundled-gems-precheck test-bundled-gems-fetch
+test-bundled-gems-prepare: $(PRECHECK_BUNDLED_GEMS) test-bundled-gems-fetch
 test-bundled-gems-prepare: $(TEST_RUNNABLE)-test-bundled-gems-prepare
 no-test-bundled-gems-prepare: no-test-bundled-gems-precheck
 yes-test-bundled-gems-prepare: yes-test-bundled-gems-precheck
