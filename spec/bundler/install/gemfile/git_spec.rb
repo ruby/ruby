@@ -826,6 +826,9 @@ RSpec.describe "bundle install with git sources" do
   end
 
   it "ignores submodules if :submodule is not passed" do
+    # CVE-2022-39253: https://lore.kernel.org/lkml/xmqq4jw1uku5.fsf@gitster.g/
+    system(*%W[git config --global protocol.file.allow always])
+
     build_git "submodule", "1.0"
     build_git "has_submodule", "1.0" do |s|
       s.add_dependency "submodule"
@@ -846,6 +849,9 @@ RSpec.describe "bundle install with git sources" do
   end
 
   it "handles repos with submodules" do
+    # CVE-2022-39253: https://lore.kernel.org/lkml/xmqq4jw1uku5.fsf@gitster.g/
+    system(*%W[git config --global protocol.file.allow always])
+
     build_git "submodule", "1.0"
     build_git "has_submodule", "1.0" do |s|
       s.add_dependency "submodule"
