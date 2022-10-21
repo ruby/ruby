@@ -198,7 +198,7 @@ jobs:
         run: |
           echo "${{ matrix.entry.key }}=${{ matrix.entry.value }}" >> $GITHUB_ENV
           echo "GNUMAKEFLAGS=-sj$((1 + $(nproc --all)))" >> $GITHUB_ENV
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
         with:
           path: src
       - uses: actions/cache@v3
