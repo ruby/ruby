@@ -8,7 +8,7 @@ require_relative 'visibility_tests'
 class TestFileUtilsVerbose < Test::Unit::TestCase
 
   include FileUtils::Verbose
-  include TestFileUtilsInc::Visibility
+  include TestFileUtilsIncVisibility
 
   def setup
     super

@@ -1,7 +1,7 @@
 # frozen_string_literal: false
 require_relative 'test_optparse'
 
-class TestOptionParser::SummaryTest < TestOptionParser
+class TestOptionParserSummaryTest < TestOptionParser
   def test_short_clash
     r = nil
     o = OptionParser.new do |opts|
