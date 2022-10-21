@@ -43,7 +43,7 @@ jobs:
       - uses: actions/checkout@v2
         with:
           path: src
-      - uses: actions/cache@v2
+      - uses: actions/cache@v3
         with:
           path: src/.downloaded-cache
           key: downloaded-cache
