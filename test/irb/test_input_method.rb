@@ -53,6 +53,37 @@ module TestIRB
     ensure
       Reline.add_dialog_proc(:show_doc, original_show_doc_proc, Reline::DEFAULT_DIALOG_CONTEXT)
     end
+
+    def test_initialization_with_use_autocomplete_but_without_rdoc
+      original_show_doc_proc = Reline.dialog_proc(:show_doc)&.dialog_proc
+      empty_proc = Proc.new {}
+      Reline.add_dialog_proc(:show_doc, empty_proc)
+
+      IRB.conf[:USE_AUTOCOMPLETE] = true
+
+      without_rdoc do
+        IRB::RelineInputMethod.new
+      end
+
+      assert Reline.autocompletion
+      # doesn't register show_doc dialog
+      assert_equal empty_proc, Reline.dialog_proc(:show_doc).dialog_proc
+    ensure
+      Reline.add_dialog_proc(:show_doc, original_show_doc_proc, Reline::DEFAULT_DIALOG_CONTEXT)
+    end
+
+    def without_rdoc(&block)
+      ::Kernel.send(:alias_method, :old_require, :require)
+
+      ::Kernel.define_method(:require) do |name|
+        raise LoadError, "cannot load such file -- rdoc (test)" if name == "rdoc"
+        original_require(name)
+      end
+
+      yield
+    ensure
+      ::Kernel.send(:alias_method, :require, :old_require)
+    end
   end
 end
 
