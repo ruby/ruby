@@ -7,9 +7,7 @@ require 'rbconfig'
 require 'fileutils'
 require 'shellwords'
 
-class String
-  # :stopdoc:
-
+class String # :nodoc:
   # Wraps a string in escaped quotes if it contains whitespace.
   def quote
     /\s/ =~ self ? "\"#{self}\"" : "#{self}"
@@ -32,19 +30,13 @@ class String
   def sans_arguments
     self[/\A[^()]+/]
   end
-
-  # :startdoc:
 end
 
-class Array
-  # :stopdoc:
-
+class Array # :nodoc:
   # Wraps all strings in escaped quotes if they contain whitespace.
   def quote
     map {|s| s.quote}
   end
-
-  # :startdoc:
 end
 
 ##
@@ -1364,8 +1356,10 @@ SRC
 
   # :stopdoc:
   STRING_OR_FAILED_FORMAT = "%s"
-  def STRING_OR_FAILED_FORMAT.%(x) # :nodoc:
-    x ? super : "failed"
+  class << STRING_OR_FAILED_FORMAT # :nodoc:
+    def %(x)
+      x ? super : "failed"
+    end
   end
 
   def typedef_expr(type, headers)
