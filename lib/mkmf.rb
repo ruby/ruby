@@ -688,16 +688,6 @@ MSG
     try_compile(MAIN_DOES_NOTHING, flags, {:werror => true}.update(opts))
   end
 
-  def append_cflags(flags, *opts)
-    Array(flags).each do |flag|
-      if checking_for("whether #{flag} is accepted as CFLAGS") {
-           try_cflags(flag, *opts)
-         }
-        $CFLAGS << " " << flag
-      end
-    end
-  end
-
   def with_ldflags(flags)
     ldflags = $LDFLAGS
     $LDFLAGS = flags.dup
@@ -1031,6 +1021,21 @@ SRC
   end
 
   # :startdoc:
+
+  # Check whether each given C compiler flag is acceptable and append it
+  # to <tt>$CFLAGS</tt> if so.
+  #
+  # [+flags+] a C compiler flag as a +String+ or an +Array+ of them
+  #
+  def append_cflags(flags, *opts)
+    Array(flags).each do |flag|
+      if checking_for("whether #{flag} is accepted as CFLAGS") {
+           try_cflags(flag, *opts)
+         }
+        $CFLAGS << " " << flag
+      end
+    end
+  end
 
   # Returns whether or not +macro+ is defined either in the common header
   # files or within any +headers+ you provide.
