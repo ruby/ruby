@@ -217,12 +217,14 @@ impl CodeBlock {
     #[cfg(any(feature = "disasm", target_arch = "aarch64"))]
     pub fn writable_addrs(&self, start_ptr: CodePtr, end_ptr: CodePtr) -> Vec<(usize, usize)> {
         let mut addrs = vec![];
-        let mut start = start_ptr.raw_ptr() as usize;
-        let codeblock_end = self.get_ptr(self.get_mem_size()).raw_ptr() as usize;
-        let end = std::cmp::min(end_ptr.raw_ptr() as usize, codeblock_end);
+        let mut start = start_ptr.into_usize();
+        let region_start = self.get_ptr(0).into_usize();
+        let region_end = self.get_ptr(self.get_mem_size()).into_usize();
+        let end = std::cmp::min(end_ptr.into_usize(), region_end);
         while start < end {
-            let current_page = start / self.page_size * self.page_size;
-            let page_end = std::cmp::min(end, current_page + self.page_end()) as usize;
+            let current_page = region_start +
+                (start.saturating_sub(region_start) / self.page_size * self.page_size);
+            let page_end = std::cmp::min(end, current_page + self.page_end());
             addrs.push((start, page_end));
             start = current_page + self.page_size + self.page_start();
         }
