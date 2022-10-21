@@ -3752,6 +3752,76 @@ rb_ary_bsearch_index(VALUE ary)
     return INT2FIX(low);
 }
 
+static VALUE rb_ary_bsearch_last_index(VALUE ary);
+
+/*
+ *  call-seq:
+ *    array.bsearch_last {|element| ... } -> object
+ *    array.bsearch_last -> new_enumerator
+ *
+ *  Returns the last element which satisfies the given block using a binary search.
+ *
+ *  See {Binary Searching}[rdoc-ref:bsearch.rdoc].
+ */
+
+static VALUE
+rb_ary_bsearch_last(VALUE ary)
+{
+    VALUE index_result = rb_ary_bsearch_last_index(ary);
+
+    if (FIXNUM_P(index_result)) {
+        return rb_ary_entry(ary, FIX2LONG(index_result));
+    }
+    return index_result;
+}
+
+/*
+ *  call-seq:
+ *    array.bsearch_last_index {|element| ... } -> integer or nil
+ *    array.bsearch_last_index -> new_enumerator
+ *
+ *  Searches +self+ as described at method #bsearch_last,
+ *  but returns the _index_ of the found element instead of the element itself.
+ */
+
+static VALUE
+rb_ary_bsearch_last_index(VALUE ary)
+{
+    long low = 0, high = RARRAY_LEN(ary), mid;
+    int smaller = 0;
+    VALUE v, val;
+
+    RETURN_ENUMERATOR(ary, 0, 0);
+    while (low < high) {
+        mid = low + ((high - low) / 2);
+        val = rb_ary_entry(ary, mid);
+        v = rb_yield(val);
+        if (v == Qtrue) {
+            smaller = 0;
+        }
+        else if (!RTEST(v)) {
+            smaller = 1;
+        }
+        else {
+            rb_raise(rb_eTypeError, "wrong argument type %"PRIsVALUE
+                     " (must be true, false or nil)",
+                     rb_obj_class(v));
+        }
+        if (smaller) {
+            high = mid;
+        }
+        else {
+            low = mid + 1;
+        }
+    }
+
+    if (low == 0) {
+        return Qnil;
+    }
+    else {
+        return INT2FIX(low - 1);
+    }
+}
 
 static VALUE
 sort_by_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, dummy))
@@ -8926,6 +8996,8 @@ Init_Array(void)
     rb_define_method(rb_cArray, "drop_while", rb_ary_drop_while, 0);
     rb_define_method(rb_cArray, "bsearch", rb_ary_bsearch, 0);
     rb_define_method(rb_cArray, "bsearch_index", rb_ary_bsearch_index, 0);
+    rb_define_method(rb_cArray, "bsearch_last", rb_ary_bsearch_last, 0);
+    rb_define_method(rb_cArray, "bsearch_last_index", rb_ary_bsearch_last_index, 0);
     rb_define_method(rb_cArray, "any?", rb_ary_any_p, -1);
     rb_define_method(rb_cArray, "all?", rb_ary_all_p, -1);
     rb_define_method(rb_cArray, "none?", rb_ary_none_p, -1);

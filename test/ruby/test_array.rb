@@ -3348,6 +3348,58 @@ class TestArray < Test::Unit::TestCase
     assert_include([1, 2], a.bsearch_index {|x| (2**100).coerce((1 - x / 4) * (2**100)).first })
   end
 
+  def test_bsearch_last_index
+    a = [0, 4, 7, 10, 12]
+    assert_equal(nil, a.bsearch_last_index {|x| x <= -1 })
+    assert_equal(1, a.bsearch_last_index {|x| x <= 4 })
+    assert_equal(2, a.bsearch_last_index {|x| x <= 9 })
+    assert_equal(4, a.bsearch_last_index {|x| x <= 100 })
+
+    assert_equal(nil, [].bsearch_last_index {|x| x < 0 })
+  end
+
+  def test_bsearch_last_index_with_no_block
+    enum = [1, 2, 42, 100, 666].bsearch_last_index
+    assert_nil enum.size
+    assert_equal 1, enum.each{|x| x <= 33 }
+  end
+
+  def test_bsearch_last_index_typechecks_return_values
+    assert_raise(TypeError) do
+      [1, 2, 42, 100, 666].bsearch_last_index {"not ok"}
+    end
+    assert_raise(TypeError) do
+      [1, 2, 42, 100, 666].bsearch_last_index {0}
+    end
+    assert_equal [1, 2, 42, 100, 666].bsearch_last_index {}, [1, 2, 42, 100, 666].bsearch_last_index {false}
+  end
+
+  def test_bsearch_last
+    a = [0, 4, 7, 10, 12]
+    assert_equal(nil, a.bsearch_last {|x| x <= -1 })
+    assert_equal(4, a.bsearch_last {|x| x <= 4 })
+    assert_equal(7, a.bsearch_last {|x| x <= 9 })
+    assert_equal(12, a.bsearch_last {|x| x <= 100 })
+
+    assert_equal(nil, [].bsearch_last {|x| x < 0 })
+  end
+
+  def test_bsearch_last_with_no_block
+    enum = [1, 2, 42, 100, 666].bsearch_last
+    assert_nil enum.size
+    assert_equal 2, enum.each{|x| x <= 33 }
+  end
+
+  def test_bsearch_last_typechecks_return_values
+    assert_raise(TypeError) do
+      [1, 2, 42, 100, 666].bsearch_last {"not ok"}
+    end
+    assert_raise(TypeError) do
+      [1, 2, 42, 100, 666].bsearch_last {0}
+    end
+    assert_equal [1, 2, 42, 100, 666].bsearch_last {}, [1, 2, 42, 100, 666].bsearch_last {false}
+  end
+
   def test_shared_marking
     reduce = proc do |s|
       s.gsub(/(verify_internal_consistency_reachable_i:\sWB\smiss\s\S+\s\(T_ARRAY\)\s->\s)\S+\s\((proc|T_NONE)\)\n
