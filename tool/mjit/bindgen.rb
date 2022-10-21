@@ -373,7 +373,6 @@ generator = BindingGenerator.new(
     rb_iseq_location_t
     rb_iseq_struct
     rb_iseq_t
-    rb_iv_index_tbl_entry
     rb_method_definition_struct
     rb_method_iseq_t
     rb_method_type_t

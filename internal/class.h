@@ -26,12 +26,6 @@ struct rb_subclass_entry {
     struct rb_subclass_entry *prev;
 };
 
-struct rb_iv_index_tbl_entry {
-    uint32_t index;
-    shape_id_t source_shape_id;
-    shape_id_t dest_shape_id;
-};
-
 struct rb_cvar_class_tbl_entry {
     uint32_t index;
     rb_serial_t global_cvar_state;
