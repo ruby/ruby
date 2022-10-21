@@ -297,8 +297,8 @@ extract-gems: | $(patsubst %,.bundle/gems/%,$(bundled-gems))
 .bundle/gems/%: gems/%.gem | .bundle/gems
 	$(ECHO) Extracting bundle gem $*...
 	$(Q) $(BASERUBY) -C "$(srcdir)" \
-	    -Itool -rgem-unpack \
-	    -e 'Gem.unpack("gems/$(@F).gem", ".bundle")'
+	    -Itool/lib -rbundled_gem \
+	    -e 'BundledGem.unpack("gems/$(@F).gem", ".bundle")'
 	$(RMALL) "$(srcdir)/$(@:.gem=)/".git*
 
 $(srcdir)/.bundle/gems:
