@@ -142,19 +142,19 @@ get_next_shape_internal(rb_shape_t* shape, ID id, VALUE obj, enum shape_type sha
 
                 switch (shape_type) {
                   case SHAPE_IVAR:
-                    new_shape->iv_count = rb_shape_get_shape_by_id(new_shape->parent_id)->iv_count + 1;
+                    new_shape->next_iv_index = rb_shape_get_shape_by_id(new_shape->parent_id)->next_iv_index + 1;
 
-                    // Check if we should update max_iv_count on the object's class
+                    // Check if we should update next_iv_index on the object's class
                     if (BUILTIN_TYPE(obj) == T_OBJECT) {
                         VALUE klass = rb_obj_class(obj);
-                        if (new_shape->iv_count > RCLASS_EXT(klass)->max_iv_count) {
-                            RCLASS_EXT(klass)->max_iv_count = new_shape->iv_count;
+                        if (new_shape->next_iv_index > RCLASS_EXT(klass)->max_iv_count) {
+                            RCLASS_EXT(klass)->max_iv_count = new_shape->next_iv_index;
                         }
                     }
                     break;
                   case SHAPE_IVAR_UNDEF:
                   case SHAPE_FROZEN:
-                    new_shape->iv_count = rb_shape_get_shape_by_id(new_shape->parent_id)->iv_count;
+                    new_shape->next_iv_index = rb_shape_get_shape_by_id(new_shape->parent_id)->next_iv_index;
                     break;
                   case SHAPE_ROOT:
                     rb_bug("Unreachable");
@@ -244,8 +244,8 @@ rb_shape_get_iv_index(rb_shape_t * shape, ID id, attr_index_t *value)
 
             switch (shape_type) {
               case SHAPE_IVAR:
-                RUBY_ASSERT(shape->iv_count > 0);
-                *value = shape->iv_count - 1;
+                RUBY_ASSERT(shape->next_iv_index > 0);
+                *value = shape->next_iv_index - 1;
                 return true;
               case SHAPE_IVAR_UNDEF:
               case SHAPE_ROOT:
@@ -280,7 +280,7 @@ rb_shape_alloc_with_parent_id(ID edge_name, shape_id_t parent_id)
     rb_shape_t * shape = shape_alloc();
 
     shape->edge_name = edge_name;
-    shape->iv_count = 0;
+    shape->next_iv_index = 0;
     shape->parent_id = parent_id;
 
     return shape;
@@ -404,12 +404,12 @@ rb_shape_edge_name(VALUE self)
 }
 
 static VALUE
-rb_shape_iv_count(VALUE self)
+rb_shape_next_iv_index(VALUE self)
 {
     rb_shape_t* shape;
     TypedData_Get_Struct(self, rb_shape_t, &shape_data_type, shape);
 
-    return INT2NUM(shape->iv_count);
+    return INT2NUM(shape->next_iv_index);
 }
 
 static VALUE
@@ -526,7 +526,7 @@ Init_shape(void)
     rb_define_method(rb_cShape, "parent", rb_shape_parent, 0);
     rb_define_method(rb_cShape, "edges", rb_shape_edges, 0);
     rb_define_method(rb_cShape, "edge_name", rb_shape_edge_name, 0);
-    rb_define_method(rb_cShape, "iv_count", rb_shape_iv_count, 0);
+    rb_define_method(rb_cShape, "next_iv_index", rb_shape_next_iv_index, 0);
     rb_define_method(rb_cShape, "depth", rb_shape_export_depth, 0);
     rb_define_method(rb_cShape, "id", rb_wrapped_shape_id, 0);
     rb_define_method(rb_cShape, "type", rb_shape_type, 0);
