@@ -34,11 +34,28 @@ describe "Range#size" do
     eval("([]...)").size.should == nil
   end
 
-  it 'returns Float::INFINITY for all beginless ranges' do
-    (..1).size.should == Float::INFINITY
-    (...0.5).size.should == Float::INFINITY
-    (..nil).size.should == Float::INFINITY
-    (...'o').size.should == Float::INFINITY
+  ruby_version_is ""..."3.2" do
+    it 'returns Float::INFINITY for all beginless ranges' do
+      (..1).size.should == Float::INFINITY
+      (...0.5).size.should == Float::INFINITY
+      (..nil).size.should == Float::INFINITY
+      (...'o').size.should == Float::INFINITY
+    end
+  end
+
+  ruby_version_is "3.2" do
+    it 'returns Float::INFINITY for all beginless ranges if the start is numeric' do
+      (..1).size.should == Float::INFINITY
+      (...0.5).size.should == Float::INFINITY
+    end
+
+    it 'returns nil for all beginless ranges if the start is numeric' do
+      (...'o').size.should == nil
+    end
+
+    it 'returns nil if the start and the end is both nil' do
+      (nil..nil).size.should == nil
+    end
   end
 
   it "returns nil if first and last are not Numeric" do

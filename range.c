@@ -816,7 +816,9 @@ range_size(VALUE range)
         }
     }
     else if (NIL_P(b)) {
-        return DBL2NUM(HUGE_VAL);
+        if (rb_obj_is_kind_of(e, rb_cNumeric)) {
+            return DBL2NUM(HUGE_VAL);
+        }
     }
 
     return Qnil;
