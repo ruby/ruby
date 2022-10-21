@@ -81,6 +81,18 @@ jobs:
           done
           $result
 
+      - name: version check
+        run: |
+          # show version
+          result=true
+          for e in gcc ragel make bison "openssl version"; do
+            case "$e" in *" "*) ;; *) e="$e --version";; esac
+            echo '##['group']'$'\033[93m'$e$'\033[m'
+            $e || result=false
+            echo '##['endgroup']'
+          done
+          $result
+
       - name: autogen
         run: |
           ./autogen.sh
