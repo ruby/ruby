@@ -116,7 +116,7 @@ end
 if File.respond_to?(:symlink)
   begin
     ln_sr(src, dest, verbose: true, target_directory: target_directory, force: force, noop: noop)
-  rescue NotImplementedError, Errno::EPERM
+  rescue NotImplementedError, Errno::EPERM, Errno::EACCES
   else
     exit
   end
