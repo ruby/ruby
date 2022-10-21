@@ -291,13 +291,13 @@ Also in Kernel; not in StringIO.
 
 ===== \Method <tt>#readlines</tt>
 
- Returns all remaining lines in an array;
-  may begin mid-line:
+Returns all remaining lines in an array;
+may begin mid-line:
 
-    f = File.new('t.txt')
-    f.pos = 19
-    f.readlines # => ["ine\n", "\n", "Fourth line\n", "Fifth line\n"]
-    f.readlines # => []
+  f = File.new('t.txt')
+  f.pos = 19
+  f.readlines # => ["ine\n", "\n", "Fourth line\n", "Fifth line\n"]
+  f.readlines # => []
 
 Also in Kernel.
 
