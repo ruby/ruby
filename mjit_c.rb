@@ -527,15 +527,6 @@ module RubyVM::MJIT
     @rb_iseq_t ||= self.rb_iseq_struct
   end
 
-  def C.rb_iv_index_tbl_entry
-    @rb_iv_index_tbl_entry ||= CType::Struct.new(
-      "rb_iv_index_tbl_entry", Primitive.cexpr!("SIZEOF(struct rb_iv_index_tbl_entry)"),
-      index: [CType::Immediate.parse("uint32_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_iv_index_tbl_entry *)NULL)), index)")],
-      source_shape_id: [self.shape_id_t, Primitive.cexpr!("OFFSETOF((*((struct rb_iv_index_tbl_entry *)NULL)), source_shape_id)")],
-      dest_shape_id: [self.shape_id_t, Primitive.cexpr!("OFFSETOF((*((struct rb_iv_index_tbl_entry *)NULL)), dest_shape_id)")],
-    )
-  end
-
   def C.rb_method_definition_struct
     @rb_method_definition_struct ||= CType::Struct.new(
       "rb_method_definition_struct", Primitive.cexpr!("SIZEOF(struct rb_method_definition_struct)"),
