@@ -1877,21 +1877,16 @@ SRC
         xsystem([*envs, $PKGCONFIG, "--exists", pkg])
       # default to pkg-config command
       pkgconfig = $PKGCONFIG
-      get = proc {|opts|
-        opts = Array(opts).map { |o| "--#{o}" }
-        opts = xpopen([*envs, $PKGCONFIG, *opts, pkg], err:[:child, :out], &:read)
-        Logging.open {puts opts.each_line.map{|s|"=> #{s.inspect}"}}
-        opts.strip if $?.success?
-      }
+      args = [pkg]
     elsif find_executable0(pkgconfig = "#{pkg}-config")
       # default to package specific config command, as a last resort.
     else
       pkgconfig = nil
     end
     if pkgconfig
-      get ||= proc {|opts|
+      get = proc {|opts|
         opts = Array(opts).map { |o| "--#{o}" }
-        opts = xpopen([*envs, pkgconfig, *opts], err:[:child, :out], &:read)
+        opts = xpopen([*envs, pkgconfig, *opts, *args], err:[:child, :out], &:read)
         Logging.open {puts opts.each_line.map{|s|"=> #{s.inspect}"}}
         opts.strip if $?.success?
       }
