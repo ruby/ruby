@@ -606,7 +606,7 @@ module RubyVM::MJIT
       "rb_shape", Primitive.cexpr!("SIZEOF(struct rb_shape)"),
       edges: [CType::Pointer.new { self.rb_id_table }, Primitive.cexpr!("OFFSETOF((*((struct rb_shape *)NULL)), edges)")],
       edge_name: [self.ID, Primitive.cexpr!("OFFSETOF((*((struct rb_shape *)NULL)), edge_name)")],
-      iv_count: [self.attr_index_t, Primitive.cexpr!("OFFSETOF((*((struct rb_shape *)NULL)), iv_count)")],
+      next_iv_index: [self.attr_index_t, Primitive.cexpr!("OFFSETOF((*((struct rb_shape *)NULL)), next_iv_index)")],
       type: [CType::Immediate.parse("uint8_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_shape *)NULL)), type)")],
       parent_id: [self.shape_id_t, Primitive.cexpr!("OFFSETOF((*((struct rb_shape *)NULL)), parent_id)")],
     )

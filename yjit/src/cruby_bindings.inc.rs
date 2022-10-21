@@ -419,7 +419,7 @@ pub type shape_id_t = u32;
 pub struct rb_shape {
     pub edges: *mut rb_id_table,
     pub edge_name: ID,
-    pub iv_count: attr_index_t,
+    pub next_iv_index: attr_index_t,
     pub type_: u8,
     pub parent_id: shape_id_t,
 }
