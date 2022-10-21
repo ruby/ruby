@@ -1368,7 +1368,7 @@ update-gems$(gnumake:yes=-sequential): PHONY
 extract-gems$(gnumake:yes=-sequential): PHONY
 	$(ECHO) Extracting bundled gem files...
 	$(Q) $(RUNRUBY) -C "$(srcdir)" \
-	    -Itool -rgem-unpack -answ \
+	    -Itool -rfileutils -rgem-unpack -answ \
 	    -e 'BEGIN {FileUtils.mkdir_p(d = ".bundle/gems")}' \
 	    -e 'gem, ver, _, rev = *$$F' \
 	    -e 'next if !ver or /^#/=~gem' \
@@ -1379,6 +1379,7 @@ extract-gems$(gnumake:yes=-sequential): PHONY
 	    -e 'else' \
 	    -e   'Gem.unpack("gems/#{g}.gem", ".bundle")' \
 	    -e 'end' \
+	    -e 'FileUtils.rm_rf("#{d}/#{g}/.github")' \
 	    gems/bundled_gems
 
 update-bundled_gems: PHONY

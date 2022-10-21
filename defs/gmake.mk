@@ -299,6 +299,7 @@ extract-gems: | $(patsubst %,.bundle/gems/%,$(bundled-gems))
 	$(Q) $(BASERUBY) -C "$(srcdir)" \
 	    -Itool -rgem-unpack \
 	    -e 'Gem.unpack("gems/$(@F).gem", ".bundle")'
+	$(RMALL) "$(srcdir)/$(@:.gem=)/".git*
 
 $(srcdir)/.bundle/gems:
 	$(MAKEDIRS) $@
