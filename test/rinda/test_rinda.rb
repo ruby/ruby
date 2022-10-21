@@ -496,6 +496,9 @@ class TupleSpaceProxyTest < Test::Unit::TestCase
   include TupleSpaceTestModule
 
   def setup
+    if RUBY_PLATFORM.match?(/mingw/) && ENV['MSYSTEM'] == 'UCRT64'
+      omit 'This test seems to randomly hang on GitHub Actions MinGW UCRT64'
+    end
     super
     ThreadGroup.new.add(Thread.current)
     @ts_base = Rinda::TupleSpace.new(1)
