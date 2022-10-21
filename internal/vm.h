@@ -40,7 +40,6 @@ enum method_missing_reason {
 };
 
 /* vm_insnhelper.h */
-rb_serial_t rb_next_class_serial(void);
 VALUE rb_vm_push_frame_fname(struct rb_execution_context_struct *ec, VALUE fname);
 
 /* vm.c */
