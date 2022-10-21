@@ -55,13 +55,6 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-vcpkg-download-${{ matrix.os }}-
             ${{ runner.os }}-vcpkg-download-
-      - uses: actions/cache@v3
-        with:
-          path: C:\vcpkg\installed
-          key: ${{ runner.os }}-vcpkg-installed-${{ matrix.os }}-${{ github.sha }}
-          restore-keys: |
-            ${{ runner.os }}-vcpkg-installed-${{ matrix.os }}-
-            ${{ runner.os }}-vcpkg-installed-
       - name: Install libraries with vcpkg
         run: |
           vcpkg --triplet x64-windows install readline zlib
