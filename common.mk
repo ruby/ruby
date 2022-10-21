@@ -845,6 +845,8 @@ extconf: $(PREP)
 	$(Q) $(MAKEDIRS) "$(EXTCONFDIR)"
 	$(RUNRUBY) -C "$(EXTCONFDIR)" $(EXTCONF) $(EXTCONFARGS)
 
+rbconfig.rb: $(RBCONFIG)
+
 $(HAVE_BASERUBY:no=)$(RBCONFIG)$(HAVE_BASERUBY:no=): $(PREP)
 $(RBCONFIG): $(tooldir)/mkconfig.rb config.status $(srcdir)/version.h
 	$(Q)$(BOOTSTRAPRUBY) -n \
