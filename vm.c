@@ -3189,6 +3189,7 @@ rb_execution_context_mark(const rb_execution_context_t *ec)
     }
     RUBY_MARK_UNLESS_NULL(ec->local_storage_recursive_hash);
     RUBY_MARK_UNLESS_NULL(ec->local_storage_recursive_hash_for_trace);
+    RUBY_MARK_UNLESS_NULL(ec->locals);
     RUBY_MARK_UNLESS_NULL(ec->private_const_reference);
 }
 
@@ -3379,6 +3380,8 @@ th_init(rb_thread_t *th, VALUE self, rb_vm_t *vm)
     th->ec->root_svar = Qfalse;
     th->ec->local_storage_recursive_hash = Qnil;
     th->ec->local_storage_recursive_hash_for_trace = Qnil;
+
+    th->ec->locals = Qnil;
 
 #if OPT_CALL_THREADED_CODE
     th->retval = Qundef;

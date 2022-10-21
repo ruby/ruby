@@ -256,7 +256,6 @@ enum fiber_status {
 
 struct rb_fiber_struct {
     rb_context_t cont;
-    VALUE locals;
     VALUE first_proc;
     struct rb_fiber_struct *prev;
     struct rb_fiber_struct *resuming_fiber;
@@ -1093,7 +1092,6 @@ static void
 fiber_compact(void *ptr)
 {
     rb_fiber_t *fiber = ptr;
-    fiber->locals = rb_gc_location(fiber->locals);
     fiber->first_proc = rb_gc_location(fiber->first_proc);
 
     if (fiber->prev) rb_fiber_update_self(fiber->prev);
@@ -1108,7 +1106,6 @@ fiber_mark(void *ptr)
     rb_fiber_t *fiber = ptr;
     RUBY_MARK_ENTER("cont");
     fiber_verify(fiber);
-    rb_gc_mark_movable(fiber->locals);
     rb_gc_mark_movable(fiber->first_proc);
     if (fiber->prev) rb_fiber_mark_self(fiber->prev);
     cont_mark(&fiber->cont);
@@ -1144,7 +1141,9 @@ fiber_memsize(const void *ptr)
      */
     if (saved_ec->local_storage && fiber != th->root_fiber) {
         size += rb_id_table_memsize(saved_ec->local_storage);
+        size += rb_obj_memsize_of(saved_ec->locals);
     }
+
     size += cont_memsize(&fiber->cont);
     return size;
 }
@@ -2000,7 +1999,7 @@ fiber_initialize(VALUE self, VALUE proc, struct fiber_pool * fiber_pool, unsigne
 {
     rb_fiber_t *fiber = fiber_t_alloc(self, blocking);
 
-    fiber->locals = locals;
+    fiber->cont.saved_ec.locals = locals;
     fiber->first_proc = proc;
     fiber->stack.base = NULL;
     fiber->stack.pool = fiber_pool;
@@ -2036,10 +2035,24 @@ rb_fiber_pool_default(VALUE pool)
 static inline rb_fiber_t*
 fiber_current(void);
 
-static inline VALUE
-fiber_locals(void)
+static inline void
+fiber_locals_set(struct rb_fiber_struct *fiber, VALUE locals)
 {
-    return fiber_current()->locals;
+    fiber->cont.saved_ec.locals = locals;
+}
+
+static inline VALUE
+default_fiber_locals(void)
+{
+    rb_execution_context_t *ec = GET_EC();
+    return rb_obj_dup(ec->locals);
+}
+
+VALUE rb_fiber_inherit_locals(struct rb_execution_context_struct *ec, struct rb_fiber_struct *fiber)
+{
+    VALUE locals = rb_obj_dup(ec->locals);
+    fiber->cont.saved_ec.locals = locals;
+    return locals;
 }
 
 /* :nodoc: */
@@ -2070,7 +2083,7 @@ rb_fiber_initialize_kw(int argc, VALUE* argv, VALUE self, int kw_splat)
 
     if (locals == Qundef) {
         // The default, inherit locals from the current fiber:
-        locals = fiber_locals();
+        locals = default_fiber_locals();
     }
 
     return fiber_initialize(self, rb_block_proc(), rb_fiber_pool_default(pool), RTEST(blocking), locals);
@@ -2106,9 +2119,15 @@ rb_fiber_initialize(int argc, VALUE* argv, VALUE self)
 }
 
 VALUE
+rb_fiber_new2(rb_block_call_func_t func, VALUE obj, VALUE locals)
+{
+    return fiber_initialize(fiber_alloc(rb_cFiber), rb_proc_new(func, obj), rb_fiber_pool_default(Qnil), 1, locals);
+}
+
+VALUE
 rb_fiber_new(rb_block_call_func_t func, VALUE obj)
 {
-    return fiber_initialize(fiber_alloc(rb_cFiber), rb_proc_new(func, obj), rb_fiber_pool_default(Qnil), 1, fiber_locals());
+    return rb_fiber_new2(func, obj, default_fiber_locals());
 }
 
 static VALUE
@@ -2291,15 +2310,10 @@ root_fiber_alloc(rb_thread_t *th)
     VM_ASSERT(DATA_PTR(fiber_value) == NULL);
     VM_ASSERT(fiber->cont.type == FIBER_CONTEXT);
     VM_ASSERT(fiber->status == FIBER_RESUMED);
-
     th->root_fiber = fiber;
     DATA_PTR(fiber_value) = fiber;
     fiber->cont.self = fiber_value;
-
-    fiber->locals = rb_hash_new();
-
     coroutine_initialize_main(&fiber->context);
-
     return fiber;
 }
 
@@ -2546,24 +2560,42 @@ rb_fiber_blocking_p(VALUE fiber)
     return RBOOL(fiber_ptr(fiber)->blocking);
 }
 
+static inline VALUE
+fiber_locals_get(rb_fiber_t *fiber)
+{
+    VALUE locals = fiber->cont.saved_ec.locals;
+    if (locals == Qnil) {
+        locals = rb_hash_new();
+        fiber->cont.saved_ec.locals = locals;
+    }
+    return locals;
+}
+
 static VALUE
 rb_fiber_locals_get(VALUE self)
 {
-    return fiber_ptr(self)->locals;
+    return fiber_locals_get(fiber_ptr(self));
 }
 
 static VALUE
 rb_fiber_locals_set(VALUE self, VALUE value)
 {
-    return fiber_ptr(self)->locals = value;
+    return fiber_ptr(self)->cont.saved_ec.locals = value;
+}
+
+VALUE
+rb_fiber_locals(void)
+{
+    return fiber_locals_get(fiber_current());
 }
 
 static VALUE
 rb_fiber_locals_aref(VALUE class, VALUE key)
 {
-    rb_fiber_t *fiber = fiber_current();
-    VALUE locals = fiber->locals;
-    if (NIL_P(locals)) return Qnil;
+    VALUE locals = fiber_locals_get(fiber_current());
+
+    if (locals == Qnil) return Qnil;
+
     if (RB_TYPE_P(locals, T_HASH)) {
         return rb_hash_aref(locals, key);
     } else {
@@ -2574,8 +2606,7 @@ rb_fiber_locals_aref(VALUE class, VALUE key)
 static VALUE
 rb_fiber_locals_aset(VALUE class, VALUE key, VALUE value)
 {
-    rb_fiber_t *fiber = fiber_current();
-    VALUE locals = fiber->locals;
+    VALUE locals = fiber_locals_get(fiber_current());
 
     if (RB_TYPE_P(locals, T_HASH)) {
         return rb_hash_aset(locals, key, value);

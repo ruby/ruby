@@ -960,6 +960,9 @@ struct rb_execution_context_struct {
     VALUE local_storage_recursive_hash;
     VALUE local_storage_recursive_hash_for_trace;
 
+    /* Fiber locals. */
+    VALUE locals;
+
     /* eval env */
     const VALUE *root_lep;
     VALUE root_svar;

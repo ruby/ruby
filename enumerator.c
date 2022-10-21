@@ -760,7 +760,7 @@ next_init(VALUE obj, struct enumerator *e)
 {
     VALUE curr = rb_fiber_current();
     e->dst = curr;
-    e->fib = rb_fiber_new(next_i, obj);
+    e->fib = rb_fiber_new2(next_i, obj, rb_fiber_locals());
     e->lookahead = Qundef;
 }
 

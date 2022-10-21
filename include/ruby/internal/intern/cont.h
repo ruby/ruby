@@ -39,12 +39,31 @@ RBIMPL_SYMBOL_EXPORT_BEGIN()
 VALUE rb_fiber_new(rb_block_call_func_t func, VALUE callback_obj);
 
 /**
+ * Creates a Fiber instance from a C-backended block with the specified locals.
+ *
+ * If the given locals are nil, this function is equivalent to rb_fiber_new().
+ *
+ * @param[in]  func          A function, to become the fiber's body.
+ * @param[in]  callback_obj  Passed as-is to `func`.
+ * @return     An allocated  new instance  of rb_cFiber, which  is ready  to be
+ *             "resume"d.
+ */
+VALUE rb_fiber_new2(rb_block_call_func_t func, VALUE callback_obj, VALUE locals);
+
+/**
  * Queries  the fiber  which  is  calling this  function.   Any ruby  execution
  * context has its fiber, either explicitly or implicitly.
  *
  * @return  The current fiber.
  */
 VALUE rb_fiber_current(void);
+
+/**
+ * Current fiber locals.
+ *
+ * @return  The locals of the current fiber.
+ */
+VALUE rb_fiber_locals(void);
 
 /**
  * Queries the  liveness of the  passed fiber.   "Alive" in this  context means
