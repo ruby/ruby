@@ -208,9 +208,6 @@ class_alloc(VALUE flags, VALUE klass)
 
 #if USE_RVARGC
     memset(RCLASS_EXT(obj), 0, sizeof(rb_classext_t));
-# if SIZEOF_SERIAL_T != SIZEOF_VALUE
-    RCLASS(obj)->class_serial_ptr = ZALLOC(rb_serial_t);
-# endif
 #else
     obj->ptr = ZALLOC(rb_classext_t);
 #endif
@@ -226,7 +223,6 @@ class_alloc(VALUE flags, VALUE klass)
       RCLASS_MODULE_SUBCLASSES(obj) = NULL;
      */
     RCLASS_SET_ORIGIN((VALUE)obj, (VALUE)obj);
-    RCLASS_SERIAL(obj) = rb_next_class_serial();
     RB_OBJ_WRITE(obj, &RCLASS_REFINED_CLASS(obj), Qnil);
     RCLASS_ALLOCATOR(obj) = 0;
 
@@ -2143,9 +2139,7 @@ singleton_class_of(VALUE obj)
     klass = METACLASS_OF(obj);
     if (!(FL_TEST(klass, FL_SINGLETON) &&
           rb_attr_get(klass, id_attached) == obj)) {
-        rb_serial_t serial = RCLASS_SERIAL(klass);
         klass = rb_make_metaclass(obj, klass);
-        RCLASS_SERIAL(klass) = serial;
     }
 
     RB_FL_SET_RAW(klass, RB_OBJ_FROZEN_RAW(obj));
