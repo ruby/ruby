@@ -496,7 +496,7 @@ class TupleSpaceProxyTest < Test::Unit::TestCase
   include TupleSpaceTestModule
 
   def setup
-    if RUBY_PLATFORM.match?(/mingw/) && ENV['MSYSTEM'] == 'UCRT64'
+    if RUBY_PLATFORM.match?(/mingw/)
       @omitted = true
       omit 'This test seems to randomly hang on GitHub Actions MinGW UCRT64'
     end
