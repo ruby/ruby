@@ -1841,26 +1841,26 @@ SRC
     $config_dirs[target] = [idir, ldir]
   end
 
-  # Returns compile/link information about an installed library in a
-  # tuple of <code>[cflags, ldflags, libs]</code>, by using the
-  # command found first in the following commands:
+  # Returns compile/link information about an installed library in a tuple of <code>[cflags,
+  # ldflags, libs]</code>, by using the command found first in the following commands:
   #
   # 1. If <code>--with-{pkg}-config={command}</code> is given via
-  #    command line option: <code>{command} {option}</code>
+  #    command line option: <code>{command} {options}</code>
   #
-  # 2. <code>{pkg}-config {option}</code>
+  # 2. <code>{pkg}-config {options}</code>
   #
-  # 3. <code>pkg-config {option} {pkg}</code>
+  # 3. <code>pkg-config {options} {pkg}</code>
   #
-  # Where {option} is, for instance, <code>--cflags</code>.
+  # Where +options+ is the option name without dashes, for instance <code>"cflags"</code> for the
+  # <code>--cflags</code> flag.
   #
-  # The values obtained are appended to +$INCFLAGS+, +$CFLAGS+, +$LDFLAGS+ and
-  # +$libs+.
+  # The values obtained are appended to <code>$INCFLAGS</code>, <code>$CFLAGS</code>,
+  # <code>$LDFLAGS</code> and <code>$libs</code>.
   #
-  # If an <code>option</code> argument is given, the config command is
-  # invoked with the option and a stripped output string is returned
-  # without modifying any of the global values mentioned above.
-  def pkg_config(pkg, option=nil)
+  # If one or more <code>options</code> argument is given, the config command is
+  # invoked with the options and a stripped output string is returned without
+  # modifying any of the global values mentioned above.
+  def pkg_config(pkg, *options)
     _, ldir = dir_config(pkg)
     if ldir
       pkg_config_path = "#{ldir}/pkgconfig"
@@ -1877,10 +1877,11 @@ SRC
         xsystem([*envs, $PKGCONFIG, "--exists", pkg])
       # default to pkg-config command
       pkgconfig = $PKGCONFIG
-      get = proc {|opt|
-        opt = xpopen([*envs, $PKGCONFIG, "--#{opt}", pkg], err:[:child, :out], &:read)
-        Logging.open {puts opt.each_line.map{|s|"=> #{s.inspect}"}}
-        opt.strip if $?.success?
+      get = proc {|opts|
+        opts = Array(opts).map { |o| "--#{o}" }
+        opts = xpopen([*envs, $PKGCONFIG, *opts, pkg], err:[:child, :out], &:read)
+        Logging.open {puts opts.each_line.map{|s|"=> #{s.inspect}"}}
+        opts.strip if $?.success?
       }
     elsif find_executable0(pkgconfig = "#{pkg}-config")
       # default to package specific config command, as a last resort.
@@ -1888,15 +1889,16 @@ SRC
       pkgconfig = nil
     end
     if pkgconfig
-      get ||= proc {|opt|
-        opt = xpopen([*envs, pkgconfig, "--#{opt}"], err:[:child, :out], &:read)
-        Logging.open {puts opt.each_line.map{|s|"=> #{s.inspect}"}}
-        opt.strip if $?.success?
+      get ||= proc {|opts|
+        opts = Array(opts).map { |o| "--#{o}" }
+        opts = xpopen([*envs, pkgconfig, *opts], err:[:child, :out], &:read)
+        Logging.open {puts opts.each_line.map{|s|"=> #{s.inspect}"}}
+        opts.strip if $?.success?
       }
     end
     orig_ldflags = $LDFLAGS
-    if get and option
-      get[option]
+    if get and !options.empty?
+      get[options]
     elsif get and try_ldflags(ldflags = get['libs'])
       if incflags = get['cflags-only-I']
         $INCFLAGS << " " << incflags
