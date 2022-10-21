@@ -910,9 +910,7 @@ fn gen_dupn(
     asm: &mut Assembler,
     _ocb: &mut OutlinedCb,
 ) -> CodegenStatus {
-
-    let nval: VALUE = jit_get_arg(jit, 0);
-    let VALUE(n) = nval;
+    let n = jit_get_arg(jit, 0).as_usize();
 
     // In practice, seems to be only used for n==2
     if n != 2 {
@@ -1035,9 +1033,9 @@ fn gen_putspecialobject(
     asm: &mut Assembler,
     _ocb: &mut OutlinedCb,
 ) -> CodegenStatus {
-    let object_type = jit_get_arg(jit, 0);
+    let object_type = jit_get_arg(jit, 0).as_usize();
 
-    if object_type == VALUE(VM_SPECIAL_OBJECT_VMCORE.as_usize()) {
+    if object_type == VM_SPECIAL_OBJECT_VMCORE.as_usize() {
         let stack_top = ctx.stack_push(Type::UnknownHeap);
         let frozen_core = unsafe { rb_mRubyVMFrozenCore };
         asm.mov(stack_top, frozen_core.into());
@@ -1056,17 +1054,17 @@ fn gen_setn(
     asm: &mut Assembler,
     _ocb: &mut OutlinedCb,
 ) -> CodegenStatus {
-    let n: VALUE = jit_get_arg(jit, 0);
+    let n = jit_get_arg(jit, 0).as_usize();
 
     let top_val = ctx.stack_pop(0);
-    let dst_opnd = ctx.stack_opnd(n.into());
+    let dst_opnd = ctx.stack_opnd(n.try_into().unwrap());
     asm.mov(
         dst_opnd,
         top_val
     );
 
     let mapping = ctx.get_opnd_mapping(StackOpnd(0));
-    ctx.set_opnd_mapping(StackOpnd(n.into()), mapping);
+    ctx.set_opnd_mapping(StackOpnd(n.try_into().unwrap()), mapping);
 
     KeepCompiling
 }
@@ -1078,10 +1076,10 @@ fn gen_topn(
     asm: &mut Assembler,
     _ocb: &mut OutlinedCb,
 ) -> CodegenStatus {
-    let nval = jit_get_arg(jit, 0);
+    let n = jit_get_arg(jit, 0).as_usize();
 
-    let top_n_val = ctx.stack_opnd(nval.into());
-    let mapping = ctx.get_opnd_mapping(StackOpnd(nval.into()));
+    let top_n_val = ctx.stack_opnd(n.try_into().unwrap());
+    let mapping = ctx.get_opnd_mapping(StackOpnd(n.try_into().unwrap()));
     let loc0 = ctx.stack_push_mapping(mapping);
     asm.mov(loc0, top_n_val);
 
@@ -1095,8 +1093,7 @@ fn gen_adjuststack(
     _cb: &mut Assembler,
     _ocb: &mut OutlinedCb,
 ) -> CodegenStatus {
-    let nval: VALUE = jit_get_arg(jit, 0);
-    let VALUE(n) = nval;
+    let n = jit_get_arg(jit, 0).as_usize();
     ctx.stack_pop(n);
     KeepCompiling
 }
@@ -1237,7 +1234,7 @@ fn gen_splatarray(
     asm: &mut Assembler,
     _ocb: &mut OutlinedCb,
 ) -> CodegenStatus {
-    let flag = jit_get_arg(jit, 0);
+    let flag = jit_get_arg(jit, 0).as_usize();
 
     // Save the PC and SP because the callee may allocate
     // Note that this modifies REG_SP, which is why we do it first
@@ -1286,7 +1283,7 @@ fn gen_newrange(
     asm: &mut Assembler,
     _ocb: &mut OutlinedCb,
 ) -> CodegenStatus {
-    let flag = jit_get_arg(jit, 0);
+    let flag = jit_get_arg(jit, 0).as_usize();
 
     // rb_range_new() allocates and can raise
     jit_prepare_routine_call(jit, ctx, asm);
@@ -2149,7 +2146,7 @@ fn gen_setinstancevariable(
     asm: &mut Assembler,
     _ocb: &mut OutlinedCb,
 ) -> CodegenStatus {
-    let id = jit_get_arg(jit, 0);
+    let id = jit_get_arg(jit, 0).as_usize();
     let ic = jit_get_arg(jit, 1).as_u64(); // type IVC
 
     // Save the PC and SP because the callee may allocate
@@ -2165,7 +2162,7 @@ fn gen_setinstancevariable(
         vec![
             Opnd::const_ptr(jit.iseq as *const u8),
             Opnd::mem(64, CFP, RUBY_OFFSET_CFP_SELF),
-            Opnd::UImm(id.into()),
+            id.into(),
             val_opnd,
             Opnd::const_ptr(ic as *const u8),
         ]
@@ -2273,20 +2270,20 @@ fn gen_concatstrings(
     asm: &mut Assembler,
     _ocb: &mut OutlinedCb,
 ) -> CodegenStatus {
-    let n = jit_get_arg(jit, 0);
+    let n = jit_get_arg(jit, 0).as_usize();
 
     // Save the PC and SP because we are allocating
     jit_prepare_routine_call(jit, ctx, asm);
 
-    let values_ptr = asm.lea(ctx.sp_opnd(-((SIZEOF_VALUE as isize) * n.as_isize())));
+    let values_ptr = asm.lea(ctx.sp_opnd(-((SIZEOF_VALUE as isize) * n as isize)));
 
-    // call rb_str_concat_literals(long n, const VALUE *strings);
+    // call rb_str_concat_literals(size_t n, const VALUE *strings);
     let return_value = asm.ccall(
         rb_str_concat_literals as *const u8,
-        vec![Opnd::UImm(n.into()), values_ptr]
+        vec![n.into(), values_ptr]
     );
 
-    ctx.stack_pop(n.as_usize());
+    ctx.stack_pop(n);
     let stack_ret = ctx.stack_push(Type::CString);
     asm.mov(stack_ret, return_value);
 
@@ -5736,7 +5733,7 @@ fn gen_getglobal(
     asm: &mut Assembler,
     _ocb: &mut OutlinedCb,
 ) -> CodegenStatus {
-    let gid = jit_get_arg(jit, 0);
+    let gid = jit_get_arg(jit, 0).as_usize();
 
     // Save the PC and SP because we might make a Ruby call for warning
     jit_prepare_routine_call(jit, ctx, asm);
@@ -5758,7 +5755,7 @@ fn gen_setglobal(
     asm: &mut Assembler,
     _ocb: &mut OutlinedCb,
 ) -> CodegenStatus {
-    let gid = jit_get_arg(jit, 0);
+    let gid = jit_get_arg(jit, 0).as_usize();
 
     // Save the PC and SP because we might make a Ruby call for
     // Kernel#set_trace_var
@@ -5872,7 +5869,7 @@ fn gen_toregexp(
         rb_ary_tmp_new_from_values as *const u8,
         vec![
             Opnd::Imm(0),
-            Opnd::UImm(jit_get_arg(jit, 1).as_u64()),
+            cnt.into(),
             values_ptr,
         ]
     );
