@@ -327,7 +327,7 @@ class TestInteger < Test::Unit::TestCase
         alias < old_lt
       end
       bug18377 = "[ruby-core:106361]"
-      assert_equal(false, called, bug18377)
+      assert_equal(true, called, bug18377)
     end;
   end
 

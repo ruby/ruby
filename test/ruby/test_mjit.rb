@@ -212,7 +212,7 @@ class TestMJIT < Test::Unit::TestCase
   end
 
   def test_compile_insn_definemethod_definesmethod
-    assert_eval_with_jit("#{<<~"begin;"}\n#{<<~"end;"}", stdout: 'helloworld', success_count: 3, insns: %i[definemethod definesmethod])
+    assert_eval_with_jit("#{<<~"begin;"}\n#{<<~"end;"}", stdout: 'helloworld', success_count: 4, insns: %i[definemethod definesmethod])
     begin;
       print 1.times.map {
         def method_definition
@@ -229,7 +229,7 @@ class TestMJIT < Test::Unit::TestCase
   end
 
   def test_compile_insn_putspecialobject
-    assert_eval_with_jit("#{<<~"begin;"}\n#{<<~"end;"}", stdout: 'a', success_count: 2, insns: %i[putspecialobject])
+    assert_eval_with_jit("#{<<~"begin;"}\n#{<<~"end;"}", stdout: 'a', success_count: 3, insns: %i[putspecialobject])
     begin;
       print 1.times.map {
         def a
@@ -1054,7 +1054,7 @@ class TestMJIT < Test::Unit::TestCase
   end
 
   def test_stack_pointer_with_assignment
-    assert_eval_with_jit("#{<<~"begin;"}\n#{<<~"end;"}", stdout: "nil\nnil\n", success_count: 1)
+    assert_eval_with_jit("#{<<~"begin;"}\n#{<<~"end;"}", stdout: "nil\nnil\n", success_count: 2)
     begin;
       2.times do
         a, _ = nil
@@ -1097,7 +1097,7 @@ class TestMJIT < Test::Unit::TestCase
   end
 
   def test_program_counter_with_regexpmatch
-    assert_eval_with_jit("#{<<~"begin;"}\n#{<<~"end;"}", stdout: "aa", success_count: 1)
+    assert_eval_with_jit("#{<<~"begin;"}\n#{<<~"end;"}", stdout: "aa", success_count: 2)
     begin;
       2.times do
         break if /a/ =~ "ab" && !$~[0]
@@ -1107,7 +1107,7 @@ class TestMJIT < Test::Unit::TestCase
   end
 
   def test_pushed_values_with_opt_aset_with
-    assert_eval_with_jit("#{<<~"begin;"}\n#{<<~"end;"}", stdout: "{}{}", success_count: 1)
+    assert_eval_with_jit("#{<<~"begin;"}\n#{<<~"end;"}", stdout: "{}{}", success_count: 2)
     begin;
       2.times do
         print(Thread.current["a"] = {})
@@ -1116,7 +1116,7 @@ class TestMJIT < Test::Unit::TestCase
   end
 
   def test_pushed_values_with_opt_aref_with
-    assert_eval_with_jit("#{<<~"begin;"}\n#{<<~"end;"}", stdout: "nil\nnil\n", success_count: 1)
+    assert_eval_with_jit("#{<<~"begin;"}\n#{<<~"end;"}", stdout: "nil\nnil\n", success_count: 2)
     begin;
       2.times do
         p(Thread.current["a"])
