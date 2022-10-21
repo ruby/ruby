@@ -66,12 +66,17 @@ end
 
 def atomic_write_open(filename)
   filename_new = filename + ".new.#$$"
-  open(filename_new, "wb") do |f|
+  clean = false
+  File.open(filename_new, "wbx") do |f|
+    clean = true
     yield f
   end
   if File.binread(filename_new) != (File.binread(filename) rescue nil)
     File.rename(filename_new, filename)
-  else
+    clean = false
+  end
+ensure
+  if clean
     File.unlink(filename_new)
   end
 end
