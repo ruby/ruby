@@ -389,7 +389,7 @@ BOOTSTRAPRUBY = $(MINIRUBY)
 BOOTSTRAPRUBY_OPT =
 XRUBY = $(RUNRUBY)
 !endif
-BTESTRUBY = $(MINIRUBY)
+BTESTRUBY = $(MINIRUBY) -r./$(arch)-fake
 !ifndef RUBY
 RUBY = ruby
 !endif

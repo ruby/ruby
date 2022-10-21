@@ -147,8 +147,7 @@ RUNRUBY = @RUNRUBY@ $(RUN_OPTS)
 # RUNRUBY_DEBUGGER:: debugging option for runruby.rb
 RUNRUBY_DEBUGGER = --debugger='gdb -x run.gdb --quiet --args'
 XRUBY = @XRUBY@
-BTESTRUBY = @BTESTRUBY@\
-	$(MINIRUBYOPT)
+BTESTRUBY = @BTESTRUBY@ -r./$(arch)-fake
 INSTALL = @INSTALL@
 INSTALL_DATA = @INSTALL_DATA@
 INSTALL_SCRIPT = @INSTALL_SCRIPT@

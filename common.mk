@@ -771,7 +771,7 @@ noarch-fake.rb: # prerequisite of yes-fake
 
 btest: $(TEST_RUNNABLE)-btest
 no-btest: PHONY
-yes-btest: fake miniruby$(EXEEXT) PHONY
+yes-btest: yes-fake miniruby$(EXEEXT) PHONY
 	$(ACTIONS_GROUP)
 	$(Q)$(exec) $(BOOTSTRAPRUBY) "$(srcdir)/bootstraptest/runner.rb" --ruby="$(BTESTRUBY) $(RUN_OPTS)" $(OPTS) $(TESTOPTS) $(BTESTS)
 	$(ACTIONS_ENDGROUP)
@@ -783,7 +783,7 @@ yes-btest-ruby: prog PHONY
 	$(Q)$(exec) $(RUNRUBY) "$(srcdir)/bootstraptest/runner.rb" --ruby="$(PROGRAM) -I$(srcdir)/lib $(RUN_OPTS)" -q $(OPTS) $(TESTOPTS) $(BTESTS)
 	$(ACTIONS_ENDGROUP)
 
-rtest: fake miniruby$(EXEEXT) PHONY
+rtest: yes-fake miniruby$(EXEEXT) PHONY
 	$(ACTIONS_GROUP)
 	$(Q)$(exec) $(BOOTSTRAPRUBY) "$(srcdir)/bootstraptest/runner.rb" --ruby="$(BTESTRUBY) $(RUN_OPTS)" --sets=ractor -v
 	$(ACTIONS_ENDGROUP)
@@ -1251,7 +1251,7 @@ $(srcdir)/ext/etc/constdefs.h: $(srcdir)/ext/etc/depend
 
 ##
 
-run: fake miniruby$(EXEEXT) PHONY
+run: yes-fake miniruby$(EXEEXT) PHONY
 	$(BTESTRUBY) $(RUNOPT0) $(TESTRUN_SCRIPT) $(RUNOPT)
 
 runruby: $(PROGRAM) PHONY
@@ -1260,7 +1260,7 @@ runruby: $(PROGRAM) PHONY
 runirb: $(PROGRAM) PHONY
 	RUBY_ON_BUG='gdb -x $(srcdir)/.gdbinit -p' $(RUNRUBY) $(RUNOPT0) -r irb -e 'IRB.start("make runirb")' $(RUNOPT)
 
-parse: fake miniruby$(EXEEXT) PHONY
+parse: yes-fake miniruby$(EXEEXT) PHONY
 	$(BTESTRUBY) --dump=parsetree_with_comment,insns $(TESTRUN_SCRIPT)
 
 bisect: PHONY

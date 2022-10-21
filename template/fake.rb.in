@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+# shareable_constant_value: literal
 <%
 arg = {}
 while /\A(\w+)=(.*)/ =~ ARGV[0]
