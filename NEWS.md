@@ -184,6 +184,9 @@ Note: We're only listing outstanding class updates.
 * Refinement
     * Refinement#refined_class has been added. [[Feature #12737]]
 
+* RubyVM::AbstractSyntaxTree
+    * Add `error_tolerant` option for `parse`, `parse_file` and `of`. [[Feature #19013]]
+
 * Set
     * Set is now available as a built-in class without the need for `require "set"`. [[Feature #16989]]
       It is currently autoloaded via the `Set` constant or a call to `Enumerable#to_set`.
