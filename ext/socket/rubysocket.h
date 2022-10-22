@@ -33,6 +33,9 @@
 #endif
 
 #ifdef _WIN32
+#  include <winsock2.h>
+#  include <ws2tcpip.h>
+#  include <iphlpapi.h>
 #  if defined(_MSC_VER)
 #    undef HAVE_TYPE_STRUCT_SOCKADDR_DL
 #  endif
@@ -71,8 +74,6 @@
 
 #ifdef HAVE_AFUNIX_H
 // The afunix.h header is borked and requires this header to work:
-#  include <winsock2.h>
-#  include <ws2tcpip.h>
 // Windows doesn't have sys/un.h, but it does have afunix.h just to be special:
 #  include <afunix.h>
 #endif
