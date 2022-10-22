@@ -1,0 +1,13 @@
+prelude: |
+  prc = proc{|x, y=42, *other|}
+  lam = lambda{|x, y=42, *other|}
+benchmark:
+  proc_no_kwarg: |
+    prc.parameters
+  proc_given_kwarg: |
+    prc.parameters(lambda: false)
+  lambda_no_kwarg: |    
+    prc.parameters
+  lambda_given_kwarg: |
+    prc.parameters(lambda: false)
+loop_count: 20000000

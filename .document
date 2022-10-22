@@ -21,6 +21,7 @@ marshal.rb
 numeric.rb
 nilclass.rb
 pack.rb
+proc.rb
 ractor.rb
 string.rb
 timev.rb

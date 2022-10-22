@@ -1098,6 +1098,7 @@ BUILTIN_RB_SRCS = \
 		$(srcdir)/mjit_c.rb \
 		$(srcdir)/mjit_compiler.rb \
 		$(srcdir)/pack.rb \
+		$(srcdir)/proc.rb \
 		$(srcdir)/trace_point.rb \
 		$(srcdir)/warning.rb \
 		$(srcdir)/array.rb \
@@ -9593,6 +9594,7 @@ miniinit.$(OBJEXT): {$(VPATH)}numeric.rb
 miniinit.$(OBJEXT): {$(VPATH)}onigmo.h
 miniinit.$(OBJEXT): {$(VPATH)}oniguruma.h
 miniinit.$(OBJEXT): {$(VPATH)}pack.rb
+miniinit.$(OBJEXT): {$(VPATH)}proc.rb
 miniinit.$(OBJEXT): {$(VPATH)}prelude.rb
 miniinit.$(OBJEXT): {$(VPATH)}ractor.rb
 miniinit.$(OBJEXT): {$(VPATH)}ruby_assert.h
@@ -11229,6 +11231,7 @@ proc.$(OBJEXT): {$(VPATH)}node.h
 proc.$(OBJEXT): {$(VPATH)}onigmo.h
 proc.$(OBJEXT): {$(VPATH)}oniguruma.h
 proc.$(OBJEXT): {$(VPATH)}proc.c
+proc.$(OBJEXT): {$(VPATH)}proc.rbinc
 proc.$(OBJEXT): {$(VPATH)}ruby_assert.h
 proc.$(OBJEXT): {$(VPATH)}ruby_atomic.h
 proc.$(OBJEXT): {$(VPATH)}shape.h

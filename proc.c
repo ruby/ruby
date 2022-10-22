@@ -1411,46 +1411,16 @@ rb_unnamed_parameters(int arity)
     return param;
 }
 
-/*
- * call-seq:
- *    prc.parameters(lambda: nil)  -> array
- *
- * Returns the parameter information of this proc.  If the lambda
- * keyword is provided and not nil, treats the proc as a lambda if
- * true and as a non-lambda if false.
- *
- *    prc = proc{|x, y=42, *other|}
- *    prc.parameters  #=> [[:opt, :x], [:opt, :y], [:rest, :other]]
- *    prc = lambda{|x, y=42, *other|}
- *    prc.parameters  #=> [[:req, :x], [:opt, :y], [:rest, :other]]
- *    prc = proc{|x, y=42, *other|}
- *    prc.parameters(lambda: true)  #=> [[:req, :x], [:opt, :y], [:rest, :other]]
- *    prc = lambda{|x, y=42, *other|}
- *    prc.parameters(lambda: false) #=> [[:opt, :x], [:opt, :y], [:rest, :other]]
- */
-
 static VALUE
-rb_proc_parameters(int argc, VALUE *argv, VALUE self)
+rb_proc_parameters(rb_execution_context_t *ec, VALUE self, VALUE lambda)
 {
-    static ID keyword_ids[1];
-    VALUE opt, lambda;
-    VALUE kwargs[1];
     int is_proc ;
     const rb_iseq_t *iseq;
 
     iseq = rb_proc_get_iseq(self, &is_proc);
 
-    if (!keyword_ids[0]) {
-        CONST_ID(keyword_ids[0], "lambda");
-    }
-
-    rb_scan_args(argc, argv, "0:", &opt);
-    if (!NIL_P(opt)) {
-        rb_get_kwargs(opt, keyword_ids, 0, 1, kwargs);
-        lambda = kwargs[0];
-        if (!NIL_P(lambda)) {
-            is_proc = !RTEST(lambda);
-        }
+    if (!NIL_P(lambda)) {
+        is_proc = !RTEST(lambda);
     }
 
     if (!iseq) {
@@ -4275,7 +4245,6 @@ Init_Proc(void)
     rb_define_method(rb_cProc, "==", proc_eq, 1);
     rb_define_method(rb_cProc, "eql?", proc_eq, 1);
     rb_define_method(rb_cProc, "source_location", rb_proc_location, 0);
-    rb_define_method(rb_cProc, "parameters", rb_proc_parameters, -1);
     rb_define_method(rb_cProc, "ruby2_keywords", proc_ruby2_keywords, 0);
     // rb_define_method(rb_cProc, "isolate", rb_proc_isolate, 0); is not accepted.
 
@@ -4405,3 +4374,5 @@ Init_Binding(void)
     rb_define_method(rb_cBinding, "source_location", bind_location, 0);
     rb_define_global_function("binding", rb_f_binding, 0);
 }
+
+#include "proc.rbinc"
