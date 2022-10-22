@@ -49,6 +49,9 @@
 #ifdef __MINGW32__
 #include <mswsock.h>
 #endif
+#ifdef HAVE_AFUNIX_H
+# include <afunix.h>
+#endif
 #include "ruby/win32.h"
 #include "ruby/vm.h"
 #include "win32/dir.h"
@@ -4018,13 +4021,72 @@ rb_w32_getservbyport(int port, const char *proto)
     return r;
 }
 
-#ifdef HAVE_TYPE_STRUCT_SOCKADDR_UN
+#ifdef HAVE_AFUNIX_H
+
+/* This function is derived from
+ * https://gitlab.com/openconnect/openconnect/-/blob/76dc6794a4150dcf62ad42d4e286d5df5f0da091/compat.c#L398
+ */
 static size_t
-socketpair_unix_path(char * path, size_t size)
+socketpair_unix_path(struct sockaddr_un *sock_un)
 {
-    LARGE_INTEGER ticks;
-    QueryPerformanceCounter(&ticks);
-    return snprintf(path, size, "%lu-%lu.ipc", GetCurrentProcessId(), (unsigned long)ticks.QuadPart);
+    SOCKET listener;
+    /* AF_UNIX/SOCK_STREAM became available in Windows 10
+     * See https://devblogs.microsoft.com/commandline/af_unix-comes-to-windows
+     */
+    listener = socket(AF_UNIX, SOCK_STREAM, 0);
+    if (listener == INVALID_SOCKET)
+        return 0;
+
+    memset(sock_un, 0, sizeof(*sock_un));
+    sock_un->sun_family = AF_UNIX;
+
+    /* Abstract sockets (filesystem-independent) don't work, contrary to
+     * the claims of the aforementioned blog post:
+     * https://github.com/microsoft/WSL/issues/4240#issuecomment-549663217
+     *
+     * So we must use a named path, and that comes with all the attendant
+     * problems of permissions and collisions. Trying various temporary
+     * directories and putting high-res time and PID in the filename.
+     */
+    for (int try = 0; ; try++) {
+        LARGE_INTEGER ticks;
+        size_t path_len = 0;
+        size_t maxpath = sizeof(sock_un->sun_path)/sizeof(*sock_un->sun_path);
+
+        switch (try) {
+        case 0:
+            /* "The returned string ends with a backslash" */
+            path_len = GetTempPathA(maxpath, sock_un->sun_path);
+            break;
+        case 1:
+            /* temp dir in the users home directory */
+            path_len = GetWindowsDirectoryA(sock_un->sun_path, maxpath);
+            path_len += snprintf(sock_un->sun_path + path_len, maxpath - path_len, "\\Temp\\");
+            break;
+        case 2:
+            path_len = snprintf(sock_un->sun_path, maxpath, "C:\\Temp\\");
+            break;
+        case 3:
+            path_len = 0; /* Current directory */
+            break;
+        case 4:
+            closesocket(listener);
+            return 0;
+        }
+
+        QueryPerformanceCounter(&ticks);
+        snprintf(sock_un->sun_path + path_len,
+                 maxpath - path_len,
+                 "%lld-%ld.($)",
+                 ticks.QuadPart,
+                 GetCurrentProcessId());
+
+        if (bind(listener, (struct sockaddr *)sock_un, sizeof(*sock_un)) != SOCKET_ERROR)
+            break;
+    }
+    closesocket(listener);
+    DeleteFileA(sock_un->sun_path);
+    return sizeof(*sock_un);
 }
 #endif
 
@@ -4039,9 +4101,8 @@ socketpair_internal(int af, int type, int protocol, SOCKET *sv)
     struct sockaddr_in6 sock_in6;
 #endif
 
-#ifdef HAVE_TYPE_STRUCT_SOCKADDR_UN
-    char path[MAX_PATH];
-    struct sockaddr_un sock_un = {0, 0};
+#ifdef HAVE_AFUNIX_H
+    struct sockaddr_un sock_un = {0, {0}};
 #endif
 
     struct sockaddr *addr;
@@ -4068,13 +4129,13 @@ socketpair_internal(int af, int type, int protocol, SOCKET *sv)
         len = sizeof(sock_in6);
         break;
 #endif
-#ifdef HAVE_TYPE_STRUCT_SOCKADDR_UN
+#ifdef HAVE_AFUNIX_H
       case AF_UNIX:
-        sock_un.sun_family = AF_UNIX;
-        socketpair_unix_path(sock_un.sun_path, sizeof(sock_un.sun_path));
         addr = (struct sockaddr *)&sock_un;
-        len = sizeof(sock_un);
-        break;
+        len = socketpair_unix_path(&sock_un);
+        if (len)
+            break;
+        /* fall through */
 #endif
       default:
         errno = EAFNOSUPPORT;
@@ -4126,7 +4187,7 @@ socketpair_internal(int af, int type, int protocol, SOCKET *sv)
         }
         if (svr != INVALID_SOCKET)
             closesocket(svr);
-#ifdef HAVE_TYPE_STRUCT_SOCKADDR_UN
+#ifdef HAVE_AFUNIX_H
         if (sock_un.sun_family == AF_UNIX)
             DeleteFileA(sock_un.sun_path);
 #endif

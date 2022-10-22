@@ -45,7 +45,7 @@ extern "C++" {			/* template without extern "C++" */
 
 #if defined(_MSC_VER) && _MSC_VER >= 1920
 #include <afunix.h>
-#define HAVE_TYPE_STRUCT_SOCKADDR_UN
+#define HAVE_AFUNIX_H
 #endif
 
 /*

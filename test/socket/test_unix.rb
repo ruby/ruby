@@ -475,7 +475,7 @@ class TestSocket_UNIXSocket < Test::Unit::TestCase
   def test_epipe # [ruby-dev:34619]
     # This is a good example of why reporting the exact `errno` is a terrible
     # idea for platform abstractions.
-    if RUBY_PLATFORM =~ /mswin/
+    if RUBY_PLATFORM =~ /mswin|mingw/
       error = Errno::ESHUTDOWN
     else
       error = Errno::EPIPE
