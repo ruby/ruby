@@ -968,6 +968,9 @@ struct rb_execution_context_struct {
     VALUE local_storage_recursive_hash;
     VALUE local_storage_recursive_hash_for_trace;
 
+    /* Inheritable fiber storage. */
+    VALUE storage;
+
     /* eval env */
     const VALUE *root_lep;
     VALUE root_svar;
@@ -2010,7 +2013,7 @@ void rb_threadptr_pending_interrupt_clear(rb_thread_t *th);
 void rb_threadptr_pending_interrupt_enque(rb_thread_t *th, VALUE v);
 VALUE rb_ec_get_errinfo(const rb_execution_context_t *ec);
 void rb_ec_error_print(rb_execution_context_t * volatile ec, volatile VALUE errinfo);
-void rb_execution_context_update(const rb_execution_context_t *ec);
+void rb_execution_context_update(rb_execution_context_t *ec);
 void rb_execution_context_mark(const rb_execution_context_t *ec);
 void rb_fiber_close(rb_fiber_t *fib);
 void Init_native_thread(rb_thread_t *th);

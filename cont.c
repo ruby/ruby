@@ -271,7 +271,7 @@ struct rb_fiber_struct {
 
 static struct fiber_pool shared_fiber_pool = {NULL, NULL, 0, 0, 0, 0};
 
-static ID fiber_initialize_keywords[2] = {0};
+static ID fiber_initialize_keywords[3] = {0};
 
 /*
  * FreeBSD require a first (i.e. addr) argument of mmap(2) is not NULL
@@ -1156,7 +1156,9 @@ fiber_memsize(const void *ptr)
      */
     if (saved_ec->local_storage && fiber != th->root_fiber) {
         size += rb_id_table_memsize(saved_ec->local_storage);
+        size += rb_obj_memsize_of(saved_ec->storage);
     }
+
     size += cont_memsize(&fiber->cont);
     return size;
 }
@@ -2007,11 +2009,118 @@ fiber_t_alloc(VALUE fiber_value, unsigned int blocking)
     return fiber;
 }
 
+static rb_fiber_t *
+root_fiber_alloc(rb_thread_t *th)
+{
+    VALUE fiber_value = fiber_alloc(rb_cFiber);
+    rb_fiber_t *fiber = th->ec->fiber_ptr;
+
+    VM_ASSERT(DATA_PTR(fiber_value) == NULL);
+    VM_ASSERT(fiber->cont.type == FIBER_CONTEXT);
+    VM_ASSERT(FIBER_RESUMED_P(fiber));
+
+    th->root_fiber = fiber;
+    DATA_PTR(fiber_value) = fiber;
+    fiber->cont.self = fiber_value;
+
+    coroutine_initialize_main(&fiber->context);
+
+    return fiber;
+}
+
+static inline rb_fiber_t*
+fiber_current(void)
+{
+    rb_execution_context_t *ec = GET_EC();
+    if (ec->fiber_ptr->cont.self == 0) {
+        root_fiber_alloc(rb_ec_thread_ptr(ec));
+    }
+    return ec->fiber_ptr;
+}
+
+static inline VALUE
+current_fiber_storage(void)
+{
+    rb_execution_context_t *ec = GET_EC();
+    return ec->storage;
+}
+
+static inline VALUE
+inherit_fiber_storage(void)
+{
+    return rb_obj_dup(current_fiber_storage());
+}
+
+static inline void
+fiber_storage_set(struct rb_fiber_struct *fiber, VALUE storage)
+{
+    fiber->cont.saved_ec.storage = storage;
+}
+
+static inline VALUE
+fiber_storage_get(rb_fiber_t *fiber)
+{
+    VALUE storage = fiber->cont.saved_ec.storage;
+    if (storage == Qnil) {
+        storage = rb_hash_new();
+        fiber_storage_set(fiber, storage);
+    }
+    return storage;
+}
+
 static VALUE
-fiber_initialize(VALUE self, VALUE proc, struct fiber_pool * fiber_pool, unsigned int blocking)
+rb_fiber_storage_get(VALUE self)
+{
+    return rb_obj_dup(fiber_storage_get(fiber_ptr(self)));
+}
+
+static VALUE
+rb_fiber_storage_set(VALUE self, VALUE value)
+{
+    fiber_ptr(self)->cont.saved_ec.storage = value;
+    return value;
+}
+
+static VALUE
+rb_fiber_storage_aref(VALUE class, VALUE key)
+{
+    VALUE storage = fiber_storage_get(fiber_current());
+
+    if (storage == Qnil) return Qnil;
+
+    if (RB_TYPE_P(storage, T_HASH)) {
+        return rb_hash_aref(storage, key);
+    } else {
+        return rb_funcall(storage, idAREF, 1, key);
+    }
+}
+
+static VALUE
+rb_fiber_storage_aset(VALUE class, VALUE key, VALUE value)
+{
+    VALUE storage = fiber_storage_get(fiber_current());
+
+    if (RB_TYPE_P(storage, T_HASH)) {
+        return rb_hash_aset(storage, key, value);
+    } else {
+        return rb_funcall(storage, idASET, 2, key, value);
+    }
+}
+
+static VALUE
+fiber_initialize(VALUE self, VALUE proc, struct fiber_pool * fiber_pool, unsigned int blocking, VALUE storage)
 {
     rb_fiber_t *fiber = fiber_t_alloc(self, blocking);
 
+    if (storage == Qundef) {
+        // The default, inherit storage (dup) from the current fiber:
+        storage = inherit_fiber_storage();
+    }
+    else if (storage == Qfalse) {
+        storage = current_fiber_storage();
+    }
+
+    fiber->cont.saved_ec.storage = storage;
     fiber->first_proc = proc;
     fiber->stack.base = NULL;
     fiber->stack.pool = fiber_pool;
@@ -2044,19 +2153,27 @@ rb_fiber_pool_default(VALUE pool)
     return &shared_fiber_pool;
 }
 
+VALUE rb_fiber_inherit_storage(struct rb_execution_context_struct *ec, struct rb_fiber_struct *fiber)
+{
+    VALUE storage = rb_obj_dup(ec->storage);
+    fiber->cont.saved_ec.storage = storage;
+    return storage;
+}
+
 /* :nodoc: */
 static VALUE
 rb_fiber_initialize_kw(int argc, VALUE* argv, VALUE self, int kw_splat)
 {
     VALUE pool = Qnil;
     VALUE blocking = Qfalse;
+    VALUE storage = Qundef;
 
     if (kw_splat != RB_NO_KEYWORDS) {
         VALUE options = Qnil;
-        VALUE arguments[2] = {Qundef};
+        VALUE arguments[3] = {Qundef};
 
         argc = rb_scan_args_kw(kw_splat, argc, argv, ":", &options);
-        rb_get_kwargs(options, fiber_initialize_keywords, 0, 2, arguments);
+        rb_get_kwargs(options, fiber_initialize_keywords, 0, 3, arguments);
 
         if (!UNDEF_P(arguments[0])) {
             blocking = arguments[0];
@@ -2065,9 +2182,11 @@ rb_fiber_initialize_kw(int argc, VALUE* argv, VALUE self, int kw_splat)
         if (!UNDEF_P(arguments[1])) {
             pool = arguments[1];
         }
+
+        storage = arguments[2];
     }
 
-    return fiber_initialize(self, rb_block_proc(), rb_fiber_pool_default(pool), RTEST(blocking));
+    return fiber_initialize(self, rb_block_proc(), rb_fiber_pool_default(pool), RTEST(blocking), storage);
 }
 
 /*
@@ -2100,9 +2219,15 @@ rb_fiber_initialize(int argc, VALUE* argv, VALUE self)
 }
 
 VALUE
+rb_fiber_new_storage(rb_block_call_func_t func, VALUE obj, VALUE storage)
+{
+    return fiber_initialize(fiber_alloc(rb_cFiber), rb_proc_new(func, obj), rb_fiber_pool_default(Qnil), 1, storage);
+}
+
+VALUE
 rb_fiber_new(rb_block_call_func_t func, VALUE obj)
 {
-    return fiber_initialize(fiber_alloc(rb_cFiber), rb_proc_new(func, obj), rb_fiber_pool_default(Qnil), 1);
+    return rb_fiber_new_storage(func, obj, inherit_fiber_storage());
 }
 
 static VALUE
@@ -2276,25 +2401,6 @@ rb_fiber_start(rb_fiber_t *fiber)
     rb_fiber_terminate(fiber, need_interrupt, err);
 }
 
-static rb_fiber_t *
-root_fiber_alloc(rb_thread_t *th)
-{
-    VALUE fiber_value = fiber_alloc(rb_cFiber);
-    rb_fiber_t *fiber = th->ec->fiber_ptr;
-
-    VM_ASSERT(DATA_PTR(fiber_value) == NULL);
-    VM_ASSERT(fiber->cont.type == FIBER_CONTEXT);
-    VM_ASSERT(FIBER_RESUMED_P(fiber));
-
-    th->root_fiber = fiber;
-    DATA_PTR(fiber_value) = fiber;
-    fiber->cont.self = fiber_value;
-
-    coroutine_initialize_main(&fiber->context);
-
-    return fiber;
-}
-
 // Set up a "root fiber", which is the fiber that every Ractor has.
 void
 rb_threadptr_root_fiber_setup(rb_thread_t *th)
@@ -2346,16 +2452,6 @@ rb_threadptr_root_fiber_terminate(rb_thread_t *th)
 
     // The vm_stack is `alloca`ed on the thread stack, so it's gone too:
     rb_ec_clear_vm_stack(th->ec);
-}
-
-static inline rb_fiber_t*
-fiber_current(void)
-{
-    rb_execution_context_t *ec = GET_EC();
-    if (ec->fiber_ptr->cont.self == 0) {
-        root_fiber_alloc(rb_ec_thread_ptr(ec));
-    }
-    return ec->fiber_ptr;
 }
 
 static inline rb_fiber_t*
@@ -3146,6 +3242,7 @@ Init_Cont(void)
 
     fiber_initialize_keywords[0] = rb_intern_const("blocking");
     fiber_initialize_keywords[1] = rb_intern_const("pool");
+    fiber_initialize_keywords[2] = rb_intern_const("storage");
 
     const char *fiber_shared_fiber_pool_free_stacks = getenv("RUBY_SHARED_FIBER_POOL_FREE_STACKS");
     if (fiber_shared_fiber_pool_free_stacks) {
@@ -3158,8 +3255,13 @@ Init_Cont(void)
     rb_define_singleton_method(rb_cFiber, "yield", rb_fiber_s_yield, -1);
     rb_define_singleton_method(rb_cFiber, "current", rb_fiber_s_current, 0);
     rb_define_singleton_method(rb_cFiber, "blocking", rb_fiber_blocking, 0);
+    rb_define_singleton_method(rb_cFiber, "[]", rb_fiber_storage_aref, 1);
+    rb_define_singleton_method(rb_cFiber, "[]=", rb_fiber_storage_aset, 2);
+
     rb_define_method(rb_cFiber, "initialize", rb_fiber_initialize, -1);
     rb_define_method(rb_cFiber, "blocking?", rb_fiber_blocking_p, 0);
+    rb_define_method(rb_cFiber, "storage", rb_fiber_storage_get, 0);
+    rb_define_method(rb_cFiber, "storage=", rb_fiber_storage_set, 1);
     rb_define_method(rb_cFiber, "resume", rb_fiber_m_resume, -1);
     rb_define_method(rb_cFiber, "raise", rb_fiber_m_raise, -1);
     rb_define_method(rb_cFiber, "backtrace", rb_fiber_backtrace, -1);
