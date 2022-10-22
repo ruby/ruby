@@ -41,7 +41,16 @@ VALUE rb_fiber_new(rb_block_call_func_t func, VALUE callback_obj);
 /**
  * Creates a Fiber instance from a C-backended block with the specified storage.
  *
- * If the given storage is nil, this function is equivalent to rb_fiber_new().
+ * If the given storage is Qundef, this function is equivalent to
+ * rb_fiber_new() which inherits storage from the current fiber.
+ *
+ * If the given storage is Qfalse, this function uses the current fiber's
+ * storage by reference.
+ *
+ * If the given storage is Qnil, this function will lazy initialize the
+ * internal storage which starts of empty (without any inheritance).
+ *
+ * Otherwise, the given storage is used as the internal storage.
  *
  * @param[in]  func          A function, to become the fiber's body.
  * @param[in]  callback_obj  Passed as-is to `func`.

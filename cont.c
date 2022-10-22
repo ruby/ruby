@@ -2068,19 +2068,44 @@ fiber_storage_get(rb_fiber_t *fiber)
     return storage;
 }
 
+/**
+ *  call-seq: Fiber.current.storage -> hash (dup)
+ *
+ *  Returns a copy of the storage hash for the current fiber.
+ */
 static VALUE
 rb_fiber_storage_get(VALUE self)
 {
     return rb_obj_dup(fiber_storage_get(fiber_ptr(self)));
 }
 
+/**
+ *  call-seq: Fiber.current.storage = hash
+ *
+ *  Sets the storage hash for the current fiber.
+ *
+ *  Example:
+ *
+ *    while request = request_queue.pop
+ *      # Reset the per-request state:
+ *      Fiber.current.storage = nil
+ *      handle_request(request)
+ *    end
+ */
 static VALUE
 rb_fiber_storage_set(VALUE self, VALUE value)
 {
-    fiber_ptr(self)->cont.saved_ec.storage = value;
+    fiber_ptr(self)->cont.saved_ec.storage = rb_obj_dup(value);
     return value;
 }
 
+/**
+ *  call-seq: Fiber[key] -> value
+ *
+ *  Returns the value of the fiber-local variable identified by +key+.
+ *
+ *  See also Fiber[]=.
+ */
 static VALUE
 rb_fiber_storage_aref(VALUE class, VALUE key)
 {
@@ -2095,6 +2120,14 @@ rb_fiber_storage_aref(VALUE class, VALUE key)
     }
 }
 
+/**
+ *  call-seq: Fiber[key] = value
+ *
+ *  Assign +value+ to the fiber-local variable identified by +key+.
+ *  The variable is created if it doesn't exist.
+ *
+ *  See also Fiber[].
+ */
 static VALUE
 rb_fiber_storage_aset(VALUE class, VALUE key, VALUE value)
 {
@@ -2112,12 +2145,15 @@ fiber_initialize(VALUE self, VALUE proc, struct fiber_pool * fiber_pool, unsigne
 {
     rb_fiber_t *fiber = fiber_t_alloc(self, blocking);
 
-    if (storage == Qundef) {
+    if (storage == Qundef || storage == Qtrue) {
         // The default, inherit storage (dup) from the current fiber:
         storage = inherit_fiber_storage();
     }
     else if (storage == Qfalse) {
         storage = current_fiber_storage();
+    }
+    else /* nil, hash, etc. */ {
+        storage = rb_obj_dup(storage);
     }
 
     fiber->cont.saved_ec.storage = storage;
@@ -2191,26 +2227,56 @@ rb_fiber_initialize_kw(int argc, VALUE* argv, VALUE self, int kw_splat)
 
 /*
  *  call-seq:
- *     Fiber.new(blocking: false) { |*args| ... } -> fiber
+ *     Fiber.new(blocking: false, storage: true) { |*args| ... } -> fiber
  *
  *  Creates new Fiber. Initially, the fiber is not running and can be resumed with
  *  #resume. Arguments to the first #resume call will be passed to the block:
  *
- *      f = Fiber.new do |initial|
- *         current = initial
- *         loop do
- *           puts "current: #{current.inspect}"
- *           current = Fiber.yield
- *         end
- *      end
- *      f.resume(100)     # prints: current: 100
- *      f.resume(1, 2, 3) # prints: current: [1, 2, 3]
- *      f.resume          # prints: current: nil
- *      # ... and so on ...
+ *    f = Fiber.new do |initial|
+ *       current = initial
+ *       loop do
+ *         puts "current: #{current.inspect}"
+ *         current = Fiber.yield
+ *       end
+ *    end
+ *    f.resume(100)     # prints: current: 100
+ *    f.resume(1, 2, 3) # prints: current: [1, 2, 3]
+ *    f.resume          # prints: current: nil
+ *    # ... and so on ...
  *
  *  If <tt>blocking: false</tt> is passed to <tt>Fiber.new</tt>, _and_ current thread
  *  has a Fiber.scheduler defined, the Fiber becomes non-blocking (see "Non-blocking
  *  Fibers" section in class docs).
+ *
+ *  If the <tt>storage</tt> is unspecified, the default is to inherit a copy of
+ *  the storage from the current fiber.
+ *
+ *    Fiber[:x] = 1
+ *    Fiber.new do
+ *      Fiber[:x] # => 1
+ *    end
+ *
+ *  If the <tt>storage</tt> is <tt>false</tt>, this function uses the current
+ *  fiber's storage by reference. This is used for `Enumerator` to create
+ *  hidden fiber.
+ *
+ *    Fiber[:count] = 0
+ *    enumerator = Enumerator.new do |y|
+ *      loop{y << (Fiber[:count] += 1)}
+ *    end
+ *    Fiber[:count] # => 0
+ *    enumerator.next # => 1
+ *    Fiber[:count] # => 1
+ *
+ *  If the given <tt>storage</tt> is <tt>nil</tt>, this function will lazy
+ *  initialize the internal storage, and starts as empty.
+ *
+ *    Fiber[:x] = "Hello World"
+ *    Fiber.new(storage: nil) do
+ *      Fiber[:x] # nil
+ *    end
+ *
+ *  Otherwise, the given <tt>storage</tt> is used as the new fiber's storage.
  */
 static VALUE
 rb_fiber_initialize(int argc, VALUE* argv, VALUE self)
