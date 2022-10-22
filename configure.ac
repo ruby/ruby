@@ -1283,7 +1283,11 @@ dnl AC_HEADER_STDC has been checked in AC_USE_SYSTEM_EXTENSIONS
 AC_HEADER_STDBOOL
 AC_HEADER_SYS_WAIT
 
-AC_CHECK_HEADERS(afunix.h)
+AC_CHECK_HEADERS([afunix.h], [], [],
+[#ifdef _WIN32
+# include <winsock2.h>
+#endif
+])
 AC_CHECK_HEADERS(atomic.h)
 AC_CHECK_HEADERS(copyfile.h)
 AC_CHECK_HEADERS(direct.h)
