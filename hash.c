@@ -1349,10 +1349,10 @@ static int
 hash_ar_foreach_iter(st_data_t key, st_data_t value, st_data_t argp, int error)
 {
     struct hash_foreach_arg *arg = (struct hash_foreach_arg *)argp;
-    int status;
 
     if (error) return ST_STOP;
-    status = (*arg->func)((VALUE)key, (VALUE)value, arg->arg);
+
+    int status = (*arg->func)((VALUE)key, (VALUE)value, arg->arg);
     /* TODO: rehash check? rb_raise(rb_eRuntimeError, "rehash occurred during iteration"); */
 
     switch (status) {
@@ -1363,6 +1363,7 @@ hash_ar_foreach_iter(st_data_t key, st_data_t value, st_data_t argp, int error)
       case ST_STOP:
         return ST_STOP;
     }
+
     return ST_CHECK;
 }
 
@@ -1370,15 +1371,16 @@ static int
 hash_foreach_iter(st_data_t key, st_data_t value, st_data_t argp, int error)
 {
     struct hash_foreach_arg *arg = (struct hash_foreach_arg *)argp;
-    int status;
-    st_table *tbl;
 
     if (error) return ST_STOP;
-    tbl = RHASH_ST_TABLE(arg->hash);
-    status = (*arg->func)((VALUE)key, (VALUE)value, arg->arg);
+
+    st_table *tbl = RHASH_ST_TABLE(arg->hash);
+    int status = (*arg->func)((VALUE)key, (VALUE)value, arg->arg);
+
     if (RHASH_ST_TABLE(arg->hash) != tbl) {
-    	rb_raise(rb_eRuntimeError, "rehash occurred during iteration");
+        rb_raise(rb_eRuntimeError, "rehash occurred during iteration");
     }
+
     switch (status) {
       case ST_DELETE:
         return ST_DELETE;
@@ -1387,6 +1389,7 @@ hash_foreach_iter(st_data_t key, st_data_t value, st_data_t argp, int error)
       case ST_STOP:
         return ST_STOP;
     }
+
     return ST_CHECK;
 }
 
