@@ -23,6 +23,8 @@
 #include "vm_core.h"
 #include "yjit.h"
 
+#include "builtin.h"
+
 #if !defined(__GNUC__) || __GNUC__ < 5 || defined(__MINGW32__)
 # define NO_CLOBBERED(v) (*(volatile VALUE *)&(v))
 #else
