@@ -259,6 +259,20 @@ class TestDir < Test::Unit::TestCase
     end
   end
 
+  def test_glob_recursive_with_brace
+    Dir.chdir(@root) do
+      bug19042 = '[ruby-core:110220] [Bug #19042]'
+      %w"c/dir_a c/dir_b c/dir_b/dir".each do |d|
+        Dir.mkdir(d)
+      end
+      expected = %w"c/dir_a/file c/dir_b/dir/file"
+      expected.each do |f|
+        File.write(f, "")
+      end
+      assert_equal(expected, Dir.glob("**/{dir_a,dir_b/dir}/file"), bug19042)
+    end
+  end
+
   def test_glob_order
     Dir.chdir(@root) do
       assert_equal(["#{@root}/a", "#{@root}/b"], Dir.glob("#{@root}/[ba]"))

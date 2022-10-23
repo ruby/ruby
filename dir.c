@@ -2295,7 +2295,7 @@ glob_helper(
 #endif
 	    break;
 	  case BRACE:
-	    if (!recursive) {
+	    if (!recursive || strchr(p->str, '/')) {
 		brace = 1;
 	    }
 	    break;
