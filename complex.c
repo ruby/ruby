@@ -421,15 +421,22 @@ f_complex_new_bang2(VALUE klass, VALUE x, VALUE y)
     return nucomp_s_new_internal(klass, x, y);
 }
 
-inline static void
+WARN_UNUSED_RESULT(inline static VALUE nucomp_real_check(VALUE num));
+inline static VALUE
 nucomp_real_check(VALUE num)
 {
     if (!RB_INTEGER_TYPE_P(num) &&
         !RB_FLOAT_TYPE_P(num) &&
         !RB_TYPE_P(num, T_RATIONAL)) {
+        if (RB_TYPE_P(num, T_COMPLEX) && nucomp_real_p(num)) {
+            VALUE real = RCOMPLEX(num)->real;
+            assert(!RB_TYPE_P(real, T_COMPLEX));
+            return real;
+        }
         if (!k_numeric_p(num) || !f_real_p(num))
             rb_raise(rb_eTypeError, "not a real");
     }
+    return num;
 }
 
 inline static VALUE
@@ -480,16 +487,16 @@ nucomp_s_new(int argc, VALUE *argv, VALUE klass)
 
     switch (rb_scan_args(argc, argv, "11", &real, &imag)) {
       case 1:
-        nucomp_real_check(real);
+        real = nucomp_real_check(real);
         imag = ZERO;
         break;
       default:
-        nucomp_real_check(real);
-        nucomp_real_check(imag);
+        real = nucomp_real_check(real);
+        imag = nucomp_real_check(imag);
         break;
     }
 
-    return nucomp_s_canonicalize_internal(klass, real, imag);
+    return nucomp_s_new_internal(klass, real, imag);
 }
 
 inline static VALUE
@@ -611,16 +618,8 @@ m_sin(VALUE x)
 }
 
 static VALUE
-f_complex_polar(VALUE klass, VALUE x, VALUE y)
+f_complex_polar_real(VALUE klass, VALUE x, VALUE y)
 {
-    if (RB_TYPE_P(x, T_COMPLEX)) {
-        get_dat1(x);
-        x = dat->real;
-    }
-    if (RB_TYPE_P(y, T_COMPLEX)) {
-        get_dat1(y);
-        y = dat->real;
-    }
     if (f_zero_p(x) || f_zero_p(y)) {
         return nucomp_s_new_internal(klass, x, RFLOAT_0);
     }
@@ -654,6 +653,14 @@ f_complex_polar(VALUE klass, VALUE x, VALUE y)
     return nucomp_s_canonicalize_internal(klass,
                                           f_mul(x, m_cos(y)),
                                           f_mul(x, m_sin(y)));
+}
+
+static VALUE
+f_complex_polar(VALUE klass, VALUE x, VALUE y)
+{
+    x = nucomp_real_check(x);
+    y = nucomp_real_check(y);
+    return f_complex_polar_real(klass, x, y);
 }
 
 #ifdef HAVE___COSPI
@@ -705,14 +712,14 @@ nucomp_s_polar(int argc, VALUE *argv, VALUE klass)
     VALUE abs, arg;
 
     argc = rb_scan_args(argc, argv, "11", &abs, &arg);
-    nucomp_real_check(abs);
+    abs = nucomp_real_check(abs);
     if (argc == 2) {
-        nucomp_real_check(arg);
+        arg = nucomp_real_check(arg);
     }
     else {
         arg = ZERO;
     }
-    return f_complex_polar(klass, abs, arg);
+    return f_complex_polar_real(klass, abs, arg);
 }
 
 /*
