@@ -937,6 +937,12 @@ struct iseq_callback_data {
     void *data;
 };
 
+int
+rb_RCLASS_SUPERCLASS_DEPTH(VALUE c)
+{
+    return RCLASS_SUPERCLASS_DEPTH(c);
+}
+
 // Heap-walking callback for rb_yjit_for_each_iseq().
 static int
 for_each_iseq_i(void *vstart, void *vend, size_t stride, void *data)

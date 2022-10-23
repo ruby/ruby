@@ -39,6 +39,7 @@ fn main() {
         .header("encindex.h")
         .header("internal.h")
         .header("internal/re.h")
+        .header("internal/object.h")
         .header("include/ruby/ruby.h")
         .header("shape.h")
         .header("vm_core.h")
@@ -94,6 +95,9 @@ fn main() {
         // From ruby/internal/intern/object.h
         .allowlist_function("rb_obj_is_kind_of")
 
+        // From internal/object.h
+        .allowlist_function("rb_class_search_ancestor")
+
         // From ruby/internal/encoding/encoding.h
         .allowlist_type("ruby_encoding_consts")
 
@@ -144,6 +148,9 @@ fn main() {
         .allowlist_var("rb_cThread")
         .allowlist_var("rb_cArray")
         .allowlist_var("rb_cHash")
+        .allowlist_var("rb_cObject")
+        .allowlist_var("rb_cClass")
+        .allowlist_var("rb_cNumeric")
 
         // From include/ruby/internal/fl_type.h
         .allowlist_type("ruby_fl_type")
@@ -286,6 +293,7 @@ fn main() {
         .allowlist_function("rb_RSTRING_LEN")
         .allowlist_function("rb_ENCODING_GET")
         .allowlist_function("rb_yjit_get_proc_ptr")
+        .allowlist_function("rb_RCLASS_SUPERCLASS_DEPTH")
         .allowlist_function("rb_yjit_exit_locations_dict")
         .allowlist_function("rb_yjit_icache_invalidate")
 

@@ -112,6 +112,8 @@ pub use autogened::*;
 // Use bindgen for functions that are defined in headers or in yjit.c.
 #[cfg_attr(test, allow(unused))] // We don't link against C code when testing
 extern "C" {
+    // Ruby only defines these in vm_insnhelper.c, not in any header.
+    // Parsing it would result in a lot of duplicate definitions.
     pub fn rb_vm_splat_array(flag: VALUE, ary: VALUE) -> VALUE;
     pub fn rb_vm_concat_array(ary1: VALUE, ary2st: VALUE) -> VALUE;
     pub fn rb_vm_defined(
@@ -687,5 +689,9 @@ mod manual_defs {
     // Constants from iseq_inline_constant_cache (IC) and iseq_inline_constant_cache_entry (ICE) in vm_core.h
     pub const RUBY_OFFSET_IC_ENTRY: i32 = 0;
     pub const RUBY_OFFSET_ICE_VALUE: i32 = 8;
+
+    // From internal/class.h
+    pub const RUBY_OFFSET_RCLASS_SUPERCLASS_DEPTH: i32 = 32 + 40;
+    pub const RUBY_OFFSET_RCLASS_SUPERCLASSES: i32 = 32 + 48;
 }
 pub use manual_defs::*;
