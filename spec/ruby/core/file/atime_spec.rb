@@ -16,7 +16,7 @@ describe "File.atime" do
   end
 
   platform_is :linux, :windows do
-    platform_is_not :"powerpc64le-linux" do # https://bugs.ruby-lang.org/issues/17926
+    platform_is_not "powerpc64le-linux", "s390x-linux" do # https://bugs.ruby-lang.org/issues/17926
       ## NOTE also that some Linux systems disable atime (e.g. via mount params) for better filesystem speed.
       it "returns the last access time for the named file with microseconds" do
         supports_subseconds = Integer(`stat -c%x '#{__FILE__}'`[/\.(\d{1,6})/, 1], 10)
