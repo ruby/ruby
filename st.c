@@ -645,9 +645,11 @@ st_free_table(st_table *tab)
 size_t
 st_memsize(const st_table *tab)
 {
-    return(sizeof(st_table)
+    size_t total = sizeof(st_table)
            + (tab->bins == NULL ? 0 : bins_size(tab))
-           + get_allocated_entries(tab) * sizeof(st_table_entry));
+           + get_allocated_entries(tab) * sizeof(st_table_entry);
+
+    return total;
 }
 
 static st_index_t

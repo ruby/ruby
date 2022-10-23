@@ -1380,11 +1380,8 @@ hash_foreach_iter(st_data_t key, st_data_t value, st_data_t argp, int error)
 
     if (error) return ST_STOP;
 
-    st_table *tbl = RHASH_ST_TABLE(arg->hash);
     int status = (*arg->func)((VALUE)key, (VALUE)value, arg->arg);
 
-    if (RHASH_ST_TABLE(arg->hash) != tbl) {
-        rb_raise(rb_eRuntimeError, "rehash occurred during iteration");
     }
 
     return hash_iter_status_check(status);
@@ -1595,29 +1592,57 @@ rb_hash_new_capa(long capa)
     return rb_hash_new_with_size((st_index_t)capa);
 }
 
-static VALUE
-hash_copy(VALUE ret, VALUE hash)
+static inline int
+hash_copy_on_write_p(VALUE hash)
 {
-    if (!RHASH_EMPTY_P(hash)) {
-        if (RHASH_AR_TABLE_P(hash))
-            ar_copy(ret, hash);
-        else if (RHASH_ST_TABLE_P(hash))
-            RHASH_ST_TABLE_SET(ret, st_copy(RHASH_ST_TABLE(hash)));
-    }
-    return ret;
+    return RHASH(hash)->basic.flags & RHASH_COPY_ON_WRITE;
+}
+
+static inline void
+hash_copy_on_write_set(VALUE hash)
+{
+    RHASH(hash)->basic.flags |= RHASH_COPY_ON_WRITE;
+}
+
+static inline void
+hash_copy_on_write_clear(VALUE hash)
+{
+    RHASH(hash)->basic.flags &= ~RHASH_COPY_ON_WRITE;
 }
 
 static VALUE
-hash_dup_with_compare_by_id(VALUE hash)
+hash_copy(VALUE output, VALUE source, int shared)
 {
-    return hash_copy(copy_compare_by_id(rb_hash_new(), hash), hash);
+    if (!RHASH_EMPTY_P(source)) {
+        if (RHASH_AR_TABLE_P(source)) {
+            ar_copy(output, source);
+        }
+        else if (RHASH_ST_TABLE_P(source)) {
+            st_table *table = RHASH_ST_TABLE(source);
+
+            // if (shared) {
+            //     RHASH_ST_TABLE_SET(output, table);
+            //     hash_copy_on_write_set(output);
+            // }
+            // else {
+                table = st_copy(table);
+                RHASH_ST_TABLE_SET(output, table);
+            // }
+        }
+    }
+    return output;
+}
+
+static VALUE
+hash_dup_mutable(VALUE hash)
+{
+    return hash_copy(copy_compare_by_id(rb_hash_new(), hash), hash, 0);
 }
 
 static VALUE
 hash_dup(VALUE hash, VALUE klass, VALUE flags)
 {
-    return hash_copy(hash_alloc_flags(klass, flags, RHASH_IFNONE(hash)),
-                     hash);
+    return hash_copy(hash_alloc_flags(klass, flags, RHASH_IFNONE(hash)), hash, 1);
 }
 
 VALUE
@@ -1642,6 +1667,24 @@ static void
 rb_hash_modify_check(VALUE hash)
 {
     rb_check_frozen(hash);
+
+    if (hash_copy_on_write_p(hash)) {
+        if (RHASH_AR_TABLE_P(hash)) {
+            // struct ar_table *table = RHASH_AR_TABLE(hash);
+            // if (table) {
+            //     table = ar_copy(table);
+            //     RHASH_AR_TABLE_SET(hash, table);
+            // }
+            rb_bug("Copy on write set for ar_table!");
+        }
+        else if (RHASH_ST_TABLE_P(hash)) {
+            struct st_table *table = RHASH_ST_TABLE(hash);
+            if (table) {
+                RHASH_ST_TABLE_SET(hash, st_copy(table));
+            }
+            hash_copy_on_write_clear(hash);
+        }
+    }
 }
 
 MJIT_FUNC_EXPORTED struct st_table *
@@ -1882,7 +1925,7 @@ rb_hash_s_create(int argc, VALUE *argv, VALUE klass)
         tmp = rb_hash_s_try_convert(Qnil, argv[0]);
         if (!NIL_P(tmp)) {
             hash = hash_alloc(klass);
-            hash_copy(hash, tmp);
+            hash_copy(hash, tmp, 1);
             return hash;
         }
 
@@ -2626,7 +2669,7 @@ rb_hash_reject(VALUE hash)
     VALUE result;
 
     RETURN_SIZED_ENUMERATOR(hash, 0, 0, hash_enum_size);
-    result = hash_dup_with_compare_by_id(hash);
+    result = hash_dup_mutable(hash);
     if (!RHASH_EMPTY_P(hash)) {
         rb_hash_foreach(result, delete_if_i, result);
     }
@@ -2682,7 +2725,7 @@ rb_hash_except(int argc, VALUE *argv, VALUE hash)
     int i;
     VALUE key, result;
 
-    result = hash_dup_with_compare_by_id(hash);
+    result = hash_dup_mutable(hash);
 
     for (i = 0; i < argc; i++) {
         key = argv[i];
@@ -2782,7 +2825,7 @@ rb_hash_select(VALUE hash)
     VALUE result;
 
     RETURN_SIZED_ENUMERATOR(hash, 0, 0, hash_enum_size);
-    result = hash_dup_with_compare_by_id(hash);
+    result = hash_dup_mutable(hash);
     if (!RHASH_EMPTY_P(hash)) {
         rb_hash_foreach(result, keep_if_i, result);
     }
@@ -2987,7 +3030,7 @@ rb_hash_replace(VALUE hash, VALUE hash2)
         st_free_table(RHASH_ST_TABLE(hash));
         RHASH_ST_CLEAR(hash);
     }
-    hash_copy(hash, hash2);
+    hash_copy(hash, hash2, 1);
     if (RHASH_EMPTY_P(hash2) && RHASH_ST_TABLE_P(hash2)) {
         /* ident hash */
         RHASH_ST_TABLE_SET(hash, st_init_table_with_size(RHASH_TYPE(hash2), 0));
@@ -3366,7 +3409,7 @@ rb_hash_transform_values(VALUE hash)
     VALUE result;
 
     RETURN_SIZED_ENUMERATOR(hash, 0, 0, hash_enum_size);
-    result = hash_dup_with_compare_by_id(hash);
+    result = hash_dup_mutable(hash);
     SET_DEFAULT(result, Qnil);
 
     if (!RHASH_EMPTY_P(hash)) {
