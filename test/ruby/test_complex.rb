@@ -221,10 +221,16 @@ class Complex_Test < Test::Unit::TestCase
     assert_equal([1,2], Complex.polar(1,2).polar)
     assert_equal(Complex.polar(1.0, Math::PI * 2 / 3), Complex.polar(1, Math::PI * 2 / 3))
 
-    assert_in_out_err([], <<-'end;', ['OK'], [])
-      Complex.polar(1, Complex(1, 0))
-      puts :OK
-    end;
+    one = 1+0i
+    c = Complex.polar(0, one)
+    assert_equal(0, c)
+    assert_predicate(c.real, :real?)
+    c = Complex.polar(one, 0)
+    assert_equal(1, c)
+    assert_predicate(c.real, :real?)
+    c = Complex.polar(one)
+    assert_equal(1, c)
+    assert_predicate(c.real, :real?)
   end
 
   def test_uplus
