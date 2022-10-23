@@ -963,7 +963,7 @@ ar_foreach(VALUE hash, st_foreach_callback_func *func, st_data_t arg)
 
 static int
 ar_foreach_check(VALUE hash, st_foreach_check_callback_func *func, st_data_t arg,
-                     st_data_t never)
+                 st_data_t never)
 {
     if (RHASH_AR_TABLE_SIZE(hash) > 0) {
         unsigned i, ret = 0, bound = RHASH_AR_TABLE_BOUND(hash);
@@ -984,13 +984,13 @@ ar_foreach_check(VALUE hash, st_foreach_check_callback_func *func, st_data_t arg
 
             switch (retval) {
               case ST_CHECK: {
-                  pair = RHASH_AR_TABLE_REF(hash, i);
-                  if (pair->key == never) break;
-                  ret = ar_find_entry_hint(hash, hint, key);
-                  if (ret == RHASH_AR_TABLE_MAX_BOUND) {
-                      retval = (*func)(0, 0, arg, 1);
-                      return 2;
-                  }
+                pair = RHASH_AR_TABLE_REF(hash, i);
+                if (pair->key == never) break;
+                ret = ar_find_entry_hint(hash, hint, key);
+                if (ret == RHASH_AR_TABLE_MAX_BOUND) {
+                    retval = (*func)(0, 0, arg, 1);
+                    return 2;
+                }
               }
               case ST_CONTINUE:
                 break;
@@ -998,11 +998,11 @@ ar_foreach_check(VALUE hash, st_foreach_check_callback_func *func, st_data_t arg
               case ST_REPLACE:
                 return 0;
               case ST_DELETE: {
-                  if (!ar_cleared_entry(hash, i)) {
-                      ar_clear_entry(hash, i);
-                      RHASH_AR_TABLE_SIZE_DEC(hash);
-                  }
-                  break;
+                if (!ar_cleared_entry(hash, i)) {
+                    ar_clear_entry(hash, i);
+                    RHASH_AR_TABLE_SIZE_DEC(hash);
+                }
+                break;
               }
             }
         }
