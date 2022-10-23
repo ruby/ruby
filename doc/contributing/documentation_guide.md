@@ -141,10 +141,14 @@ This is unnecessary for the HTML output, but helps in the `ri` output.
 
 For a method name in text:
 
-- When the class name is included, use a dot or a hash mark:
-  <tt>Foo.bar</tt>, <tt>Foo#baz</tt>.
-- Otherwise, use a double-colon or a hash mark:
+- For a method in the current class or module,
+  use a double-colon for a singleton method,
+  or a hash mark for an instance method:
   <tt>::bar</tt>, <tt>#baz</tt>.
+- Otherwise, include the class or module name
+  and use a dot for a singleton method,
+  or a hash mark for an instance method:
+  <tt>Foo.bar</tt>, <tt>Foo#baz</tt>.
 
 ### Auto-Linking
 
