@@ -705,17 +705,17 @@ class Reline::LineEditor
           dialog.scroll_top = dialog.pointer
         end
         pointer = dialog.pointer - dialog.scroll_top
+      else
+        dialog.scroll_top = 0
       end
       dialog.contents = dialog.contents[dialog.scroll_top, height]
-    end
-    if dialog.contents and dialog.scroll_top >= dialog.contents.size
-      dialog.scroll_top = dialog.contents.size - height
     end
     if dialog_render_info.scrollbar and dialog_render_info.contents.size > height
       bar_max_height = height * 2
       moving_distance = (dialog_render_info.contents.size - height) * 2
       position_ratio = dialog.scroll_top.zero? ? 0.0 : ((dialog.scroll_top * 2).to_f / moving_distance)
       bar_height = (bar_max_height * ((dialog.contents.size * 2).to_f / (dialog_render_info.contents.size * 2))).floor.to_i
+      bar_height = 1 if bar_height.zero?
       dialog.scrollbar_pos = ((bar_max_height - bar_height) * position_ratio).floor.to_i
     else
       dialog.scrollbar_pos = nil
@@ -757,7 +757,7 @@ class Reline::LineEditor
       str_width = dialog.width - (dialog.scrollbar_pos.nil? ? 0 : @block_elem_width)
       str = padding_space_with_escape_sequences(Reline::Unicode.take_range(item, 0, str_width), str_width)
       @output.write "\e[#{bg_color}m\e[#{fg_color}m#{str}"
-      if dialog.scrollbar_pos and (dialog.scrollbar_pos != old_dialog.scrollbar_pos or dialog.column != old_dialog.column)
+      if dialog.scrollbar_pos
         @output.write "\e[37m"
         if dialog.scrollbar_pos <= (i * 2) and (i * 2 + 1) < (dialog.scrollbar_pos + bar_height)
           @output.write @full_block
