@@ -137,6 +137,15 @@ or [list](rdoc-ref:RDoc::Markup@Simple+Lists)
 should be preceded by and followed by a blank line.
 This is unnecessary for the HTML output, but helps in the `ri` output.
 
+### \Method Names
+
+For a method name in text:
+
+- When the class name is included, use a dot or a hash mark:
+  <tt>Foo.bar</tt>, <tt>Foo#baz</tt>.
+- Otherwise, use a double-colon or a hash mark:
+  <tt>::bar</tt>, <tt>#baz</tt>.
+
 ### Auto-Linking
 
 In general, \RDoc's auto-linking should not be suppressed.
