@@ -1145,15 +1145,34 @@ class Complex_Test < Test::Unit::TestCase
   end
 
   def test_canonicalize_polar
-    obj = Class.new(Numeric) do
-      def initialize
-        @x = 2
+    error = "not a real"
+    assert_raise_with_message(TypeError, error) do
+      Complex.polar(1i)
+    end
+    assert_raise_with_message(TypeError, error) do
+      Complex.polar(1i, 0)
+    end
+    assert_raise_with_message(TypeError, error) do
+      Complex.polar(0, 1i)
+    end
+    n = Class.new(Numeric) do
+      def initialize(x = 1)
+        @x = x
       end
       def real?
         (@x -= 1) > 0
       end
-    end.new
-    assert_raise(TypeError) do
+    end
+    obj = n.new
+    assert_raise_with_message(TypeError, error) do
+      Complex.polar(obj)
+    end
+    obj = n.new
+    assert_raise_with_message(TypeError, error) do
+      Complex.polar(obj, 0)
+    end
+    obj = n.new
+    assert_raise_with_message(TypeError, error) do
       Complex.polar(1, obj)
     end
   end
