@@ -220,14 +220,8 @@ rb_memsearch_qs_utf8(const unsigned char *xs, long m, const unsigned char *ys, l
     return -1;
 }
 
-enum char_size
-{
-    WCHAR_SIZE = 2,
-    QCHAR_SIZE = 4
-};
-
 static inline long
-rb_memsearch_with_char_size(const unsigned char *xs, long m, const unsigned char *ys, long n, enum char_size char_size)
+rb_memsearch_with_char_size(const unsigned char *xs, long m, const unsigned char *ys, long n, int char_size)
 {
     const unsigned char *x = xs, x0 = *xs, *y = ys;
 
@@ -241,13 +235,13 @@ rb_memsearch_with_char_size(const unsigned char *xs, long m, const unsigned char
 static inline long
 rb_memsearch_wchar(const unsigned char *xs, long m, const unsigned char *ys, long n)
 {
-    return rb_memsearch_with_char_size(xs, m, ys, n, WCHAR_SIZE);
+    return rb_memsearch_with_char_size(xs, m, ys, n, 2);
 }
 
 static inline long
 rb_memsearch_qchar(const unsigned char *xs, long m, const unsigned char *ys, long n)
 {
-    return rb_memsearch_with_char_size(xs, m, ys, n, QCHAR_SIZE);
+    return rb_memsearch_with_char_size(xs, m, ys, n, 4);
 }
 
 long
