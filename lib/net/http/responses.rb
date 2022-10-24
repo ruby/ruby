@@ -1,231 +1,238 @@
 # frozen_string_literal: true
-# :stopdoc:
+#--
 # https://www.iana.org/assignments/http-status-codes/http-status-codes.xhtml
-class Net::HTTPUnknownResponse < Net::HTTPResponse
-  HAS_BODY = true
-  EXCEPTION_TYPE = Net::HTTPError
-end
-class Net::HTTPInformation < Net::HTTPResponse           # 1xx
-  HAS_BODY = false
-  EXCEPTION_TYPE = Net::HTTPError
-end
-class Net::HTTPSuccess < Net::HTTPResponse               # 2xx
-  HAS_BODY = true
-  EXCEPTION_TYPE = Net::HTTPError
-end
-class Net::HTTPRedirection < Net::HTTPResponse           # 3xx
-  HAS_BODY = true
-  EXCEPTION_TYPE = Net::HTTPRetriableError
-end
-class Net::HTTPClientError < Net::HTTPResponse           # 4xx
-  HAS_BODY = true
-  EXCEPTION_TYPE = Net::HTTPClientException   # for backward compatibility
-end
-class Net::HTTPServerError < Net::HTTPResponse           # 5xx
-  HAS_BODY = true
-  EXCEPTION_TYPE = Net::HTTPFatalError    # for backward compatibility
-end
 
-class Net::HTTPContinue < Net::HTTPInformation           # 100
-  HAS_BODY = false
-end
-class Net::HTTPSwitchProtocol < Net::HTTPInformation     # 101
-  HAS_BODY = false
-end
-class Net::HTTPProcessing < Net::HTTPInformation         # 102
-  HAS_BODY = false
-end
-class Net::HTTPEarlyHints < Net::HTTPInformation         # 103 - RFC 8297
-  HAS_BODY = false
-end
+module Net
+  # :stopdoc:
 
-class Net::HTTPOK < Net::HTTPSuccess                            # 200
-  HAS_BODY = true
-end
-class Net::HTTPCreated < Net::HTTPSuccess                       # 201
-  HAS_BODY = true
-end
-class Net::HTTPAccepted < Net::HTTPSuccess                      # 202
-  HAS_BODY = true
-end
-class Net::HTTPNonAuthoritativeInformation < Net::HTTPSuccess   # 203
-  HAS_BODY = true
-end
-class Net::HTTPNoContent < Net::HTTPSuccess                     # 204
-  HAS_BODY = false
-end
-class Net::HTTPResetContent < Net::HTTPSuccess                  # 205
-  HAS_BODY = false
-end
-class Net::HTTPPartialContent < Net::HTTPSuccess                # 206
-  HAS_BODY = true
-end
-class Net::HTTPMultiStatus < Net::HTTPSuccess                   # 207 - RFC 4918
-  HAS_BODY = true
-end
-class Net::HTTPAlreadyReported < Net::HTTPSuccess               # 208 - RFC 5842
-  HAS_BODY = true
-end
-class Net::HTTPIMUsed < Net::HTTPSuccess                        # 226 - RFC 3229
-  HAS_BODY = true
-end
+  class HTTPUnknownResponse < HTTPResponse
+    HAS_BODY = true
+    EXCEPTION_TYPE = HTTPError                  #
+  end
+  class HTTPInformation < HTTPResponse          # 1xx
+    HAS_BODY = false
+    EXCEPTION_TYPE = HTTPError                  #
+  end
+  class HTTPSuccess < HTTPResponse              # 2xx
+    HAS_BODY = true
+    EXCEPTION_TYPE = HTTPError                  #
+  end
+  class HTTPRedirection < HTTPResponse          # 3xx
+    HAS_BODY = true
+    EXCEPTION_TYPE = HTTPRetriableError         #
+  end
+  class HTTPClientError < HTTPResponse          # 4xx
+    HAS_BODY = true
+    EXCEPTION_TYPE = HTTPClientException        #
+  end
+  class HTTPServerError < HTTPResponse          # 5xx
+    HAS_BODY = true
+    EXCEPTION_TYPE = HTTPFatalError             #
+  end
 
-class Net::HTTPMultipleChoices < Net::HTTPRedirection    # 300
-  HAS_BODY = true
-end
-Net::HTTPMultipleChoice = Net::HTTPMultipleChoices
-class Net::HTTPMovedPermanently < Net::HTTPRedirection   # 301
-  HAS_BODY = true
-end
-class Net::HTTPFound < Net::HTTPRedirection              # 302
-  HAS_BODY = true
-end
-Net::HTTPMovedTemporarily = Net::HTTPFound
-class Net::HTTPSeeOther < Net::HTTPRedirection           # 303
-  HAS_BODY = true
-end
-class Net::HTTPNotModified < Net::HTTPRedirection        # 304
-  HAS_BODY = false
-end
-class Net::HTTPUseProxy < Net::HTTPRedirection           # 305
-  HAS_BODY = false
-end
-# 306 Switch Proxy - no longer unused
-class Net::HTTPTemporaryRedirect < Net::HTTPRedirection  # 307
-  HAS_BODY = true
-end
-class Net::HTTPPermanentRedirect < Net::HTTPRedirection  # 308
-  HAS_BODY = true
-end
+  class HTTPContinue < HTTPInformation          # 100
+    HAS_BODY = false
+  end
+  class HTTPSwitchProtocol < HTTPInformation    # 101
+    HAS_BODY = false
+  end
+  class HTTPProcessing < HTTPInformation        # 102
+    HAS_BODY = false
+  end
+  class HTTPEarlyHints < HTTPInformation        # 103 - RFC 8297
+    HAS_BODY = false
+  end
 
-class Net::HTTPBadRequest < Net::HTTPClientError                    # 400
-  HAS_BODY = true
-end
-class Net::HTTPUnauthorized < Net::HTTPClientError                  # 401
-  HAS_BODY = true
-end
-class Net::HTTPPaymentRequired < Net::HTTPClientError               # 402
-  HAS_BODY = true
-end
-class Net::HTTPForbidden < Net::HTTPClientError                     # 403
-  HAS_BODY = true
-end
-class Net::HTTPNotFound < Net::HTTPClientError                      # 404
-  HAS_BODY = true
-end
-class Net::HTTPMethodNotAllowed < Net::HTTPClientError              # 405
-  HAS_BODY = true
-end
-class Net::HTTPNotAcceptable < Net::HTTPClientError                 # 406
-  HAS_BODY = true
-end
-class Net::HTTPProxyAuthenticationRequired < Net::HTTPClientError   # 407
-  HAS_BODY = true
-end
-class Net::HTTPRequestTimeout < Net::HTTPClientError                # 408
-  HAS_BODY = true
-end
-Net::HTTPRequestTimeOut = Net::HTTPRequestTimeout
-class Net::HTTPConflict < Net::HTTPClientError                      # 409
-  HAS_BODY = true
-end
-class Net::HTTPGone < Net::HTTPClientError                          # 410
-  HAS_BODY = true
-end
-class Net::HTTPLengthRequired < Net::HTTPClientError                # 411
-  HAS_BODY = true
-end
-class Net::HTTPPreconditionFailed < Net::HTTPClientError            # 412
-  HAS_BODY = true
-end
-class Net::HTTPPayloadTooLarge < Net::HTTPClientError               # 413
-  HAS_BODY = true
-end
-Net::HTTPRequestEntityTooLarge = Net::HTTPPayloadTooLarge
-class Net::HTTPURITooLong < Net::HTTPClientError                    # 414
-  HAS_BODY = true
-end
-Net::HTTPRequestURITooLong = Net::HTTPURITooLong
-Net::HTTPRequestURITooLarge = Net::HTTPRequestURITooLong
-class Net::HTTPUnsupportedMediaType < Net::HTTPClientError          # 415
-  HAS_BODY = true
-end
-class Net::HTTPRangeNotSatisfiable < Net::HTTPClientError           # 416
-  HAS_BODY = true
-end
-Net::HTTPRequestedRangeNotSatisfiable = Net::HTTPRangeNotSatisfiable
-class Net::HTTPExpectationFailed < Net::HTTPClientError             # 417
-  HAS_BODY = true
-end
-# 418 I'm a teapot - RFC 2324; a joke RFC
-# 420 Enhance Your Calm - Twitter
-class Net::HTTPMisdirectedRequest < Net::HTTPClientError            # 421 - RFC 7540
-  HAS_BODY = true
-end
-class Net::HTTPUnprocessableEntity < Net::HTTPClientError           # 422 - RFC 4918
-  HAS_BODY = true
-end
-class Net::HTTPLocked < Net::HTTPClientError                        # 423 - RFC 4918
-  HAS_BODY = true
-end
-class Net::HTTPFailedDependency < Net::HTTPClientError              # 424 - RFC 4918
-  HAS_BODY = true
-end
-# 425 Unordered Collection - existed only in draft
-class Net::HTTPUpgradeRequired < Net::HTTPClientError               # 426 - RFC 2817
-  HAS_BODY = true
-end
-class Net::HTTPPreconditionRequired < Net::HTTPClientError          # 428 - RFC 6585
-  HAS_BODY = true
-end
-class Net::HTTPTooManyRequests < Net::HTTPClientError               # 429 - RFC 6585
-  HAS_BODY = true
-end
-class Net::HTTPRequestHeaderFieldsTooLarge < Net::HTTPClientError   # 431 - RFC 6585
-  HAS_BODY = true
-end
-class Net::HTTPUnavailableForLegalReasons < Net::HTTPClientError    # 451 - RFC 7725
-  HAS_BODY = true
-end
-# 444 No Response - Nginx
-# 449 Retry With - Microsoft
-# 450 Blocked by Windows Parental Controls - Microsoft
-# 499 Client Closed Request - Nginx
+  class HTTPOK < HTTPSuccess                            # 200
+    HAS_BODY = true
+  end
+  class HTTPCreated < HTTPSuccess                       # 201
+    HAS_BODY = true
+  end
+  class HTTPAccepted < HTTPSuccess                      # 202
+    HAS_BODY = true
+  end
+  class HTTPNonAuthoritativeInformation < HTTPSuccess   # 203
+    HAS_BODY = true
+  end
+  class HTTPNoContent < HTTPSuccess                     # 204
+    HAS_BODY = false
+  end
+  class HTTPResetContent < HTTPSuccess                  # 205
+    HAS_BODY = false
+  end
+  class HTTPPartialContent < HTTPSuccess                # 206
+    HAS_BODY = true
+  end
+  class HTTPMultiStatus < HTTPSuccess                   # 207 - RFC 4918
+    HAS_BODY = true
+  end
+  class HTTPAlreadyReported < HTTPSuccess               # 208 - RFC 5842
+    HAS_BODY = true
+  end
+  class HTTPIMUsed < HTTPSuccess                        # 226 - RFC 3229
+    HAS_BODY = true
+  end
 
-class Net::HTTPInternalServerError < Net::HTTPServerError           # 500
-  HAS_BODY = true
-end
-class Net::HTTPNotImplemented < Net::HTTPServerError                # 501
-  HAS_BODY = true
-end
-class Net::HTTPBadGateway < Net::HTTPServerError                    # 502
-  HAS_BODY = true
-end
-class Net::HTTPServiceUnavailable < Net::HTTPServerError            # 503
-  HAS_BODY = true
-end
-class Net::HTTPGatewayTimeout < Net::HTTPServerError                # 504
-  HAS_BODY = true
-end
-Net::HTTPGatewayTimeOut = Net::HTTPGatewayTimeout
-class Net::HTTPVersionNotSupported < Net::HTTPServerError           # 505
-  HAS_BODY = true
-end
-class Net::HTTPVariantAlsoNegotiates < Net::HTTPServerError         # 506
-  HAS_BODY = true
-end
-class Net::HTTPInsufficientStorage < Net::HTTPServerError           # 507 - RFC 4918
-  HAS_BODY = true
-end
-class Net::HTTPLoopDetected < Net::HTTPServerError                  # 508 - RFC 5842
-  HAS_BODY = true
-end
-# 509 Bandwidth Limit Exceeded - Apache bw/limited extension
-class Net::HTTPNotExtended < Net::HTTPServerError                   # 510 - RFC 2774
-  HAS_BODY = true
-end
-class Net::HTTPNetworkAuthenticationRequired < Net::HTTPServerError # 511 - RFC 6585
-  HAS_BODY = true
+  class HTTPMultipleChoices < HTTPRedirection   # 300
+    HAS_BODY = true
+  end
+  HTTPMultipleChoice = HTTPMultipleChoices
+  class HTTPMovedPermanently < HTTPRedirection  # 301
+    HAS_BODY = true
+  end
+  class HTTPFound < HTTPRedirection             # 302
+    HAS_BODY = true
+  end
+  HTTPMovedTemporarily = HTTPFound
+  class HTTPSeeOther < HTTPRedirection          # 303
+    HAS_BODY = true
+  end
+  class HTTPNotModified < HTTPRedirection       # 304
+    HAS_BODY = false
+  end
+  class HTTPUseProxy < HTTPRedirection          # 305
+    HAS_BODY = false
+  end
+  # 306 Switch Proxy - no longer unused
+  class HTTPTemporaryRedirect < HTTPRedirection # 307
+    HAS_BODY = true
+  end
+  class HTTPPermanentRedirect < HTTPRedirection # 308
+    HAS_BODY = true
+  end
+
+  class HTTPBadRequest < HTTPClientError                    # 400
+    HAS_BODY = true
+  end
+  class HTTPUnauthorized < HTTPClientError                  # 401
+    HAS_BODY = true
+  end
+  class HTTPPaymentRequired < HTTPClientError               # 402
+    HAS_BODY = true
+  end
+  class HTTPForbidden < HTTPClientError                     # 403
+    HAS_BODY = true
+  end
+  class HTTPNotFound < HTTPClientError                      # 404
+    HAS_BODY = true
+  end
+  class HTTPMethodNotAllowed < HTTPClientError              # 405
+    HAS_BODY = true
+  end
+  class HTTPNotAcceptable < HTTPClientError                 # 406
+    HAS_BODY = true
+  end
+  class HTTPProxyAuthenticationRequired < HTTPClientError   # 407
+    HAS_BODY = true
+  end
+  class HTTPRequestTimeout < HTTPClientError                # 408
+    HAS_BODY = true
+  end
+  HTTPRequestTimeOut = HTTPRequestTimeout
+  class HTTPConflict < HTTPClientError                      # 409
+    HAS_BODY = true
+  end
+  class HTTPGone < HTTPClientError                          # 410
+    HAS_BODY = true
+  end
+  class HTTPLengthRequired < HTTPClientError                # 411
+    HAS_BODY = true
+  end
+  class HTTPPreconditionFailed < HTTPClientError            # 412
+    HAS_BODY = true
+  end
+  class HTTPPayloadTooLarge < HTTPClientError               # 413
+    HAS_BODY = true
+  end
+  HTTPRequestEntityTooLarge = HTTPPayloadTooLarge
+  class HTTPURITooLong < HTTPClientError                    # 414
+    HAS_BODY = true
+  end
+  HTTPRequestURITooLong = HTTPURITooLong
+  HTTPRequestURITooLarge = HTTPRequestURITooLong
+  class HTTPUnsupportedMediaType < HTTPClientError          # 415
+    HAS_BODY = true
+  end
+  class HTTPRangeNotSatisfiable < HTTPClientError           # 416
+    HAS_BODY = true
+  end
+  HTTPRequestedRangeNotSatisfiable = HTTPRangeNotSatisfiable
+  class HTTPExpectationFailed < HTTPClientError             # 417
+    HAS_BODY = true
+  end
+  # 418 I'm a teapot - RFC 2324; a joke RFC
+  # 420 Enhance Your Calm - Twitter
+  class HTTPMisdirectedRequest < HTTPClientError            # 421 - RFC 7540
+    HAS_BODY = true
+  end
+  class HTTPUnprocessableEntity < HTTPClientError           # 422 - RFC 4918
+    HAS_BODY = true
+  end
+  class HTTPLocked < HTTPClientError                        # 423 - RFC 4918
+    HAS_BODY = true
+  end
+  class HTTPFailedDependency < HTTPClientError              # 424 - RFC 4918
+    HAS_BODY = true
+  end
+  # 425 Unordered Collection - existed only in draft
+  class HTTPUpgradeRequired < HTTPClientError               # 426 - RFC 2817
+    HAS_BODY = true
+  end
+  class HTTPPreconditionRequired < HTTPClientError          # 428 - RFC 6585
+    HAS_BODY = true
+  end
+  class HTTPTooManyRequests < HTTPClientError               # 429 - RFC 6585
+    HAS_BODY = true
+  end
+  class HTTPRequestHeaderFieldsTooLarge < HTTPClientError   # 431 - RFC 6585
+    HAS_BODY = true
+  end
+  class HTTPUnavailableForLegalReasons < HTTPClientError    # 451 - RFC 7725
+    HAS_BODY = true
+  end
+  # 444 No Response - Nginx
+  # 449 Retry With - Microsoft
+  # 450 Blocked by Windows Parental Controls - Microsoft
+  # 499 Client Closed Request - Nginx
+
+  class HTTPInternalServerError < HTTPServerError           # 500
+    HAS_BODY = true
+  end
+  class HTTPNotImplemented < HTTPServerError                # 501
+    HAS_BODY = true
+  end
+  class HTTPBadGateway < HTTPServerError                    # 502
+    HAS_BODY = true
+  end
+  class HTTPServiceUnavailable < HTTPServerError            # 503
+    HAS_BODY = true
+  end
+  class HTTPGatewayTimeout < HTTPServerError                # 504
+    HAS_BODY = true
+  end
+  HTTPGatewayTimeOut = HTTPGatewayTimeout
+  class HTTPVersionNotSupported < HTTPServerError           # 505
+    HAS_BODY = true
+  end
+  class HTTPVariantAlsoNegotiates < HTTPServerError         # 506
+    HAS_BODY = true
+  end
+  class HTTPInsufficientStorage < HTTPServerError           # 507 - RFC 4918
+    HAS_BODY = true
+  end
+  class HTTPLoopDetected < HTTPServerError                  # 508 - RFC 5842
+    HAS_BODY = true
+  end
+  # 509 Bandwidth Limit Exceeded - Apache bw/limited extension
+  class HTTPNotExtended < HTTPServerError                   # 510 - RFC 2774
+    HAS_BODY = true
+  end
+  class HTTPNetworkAuthenticationRequired < HTTPServerError # 511 - RFC 6585
+    HAS_BODY = true
+  end
+
+  # :startdoc:
 end
 
 class Net::HTTPResponse
@@ -303,5 +310,3 @@ class Net::HTTPResponse
     '511' => Net::HTTPNetworkAuthenticationRequired,
   }
 end
-
-# :startdoc:

@@ -137,7 +137,7 @@ class TestNetHTTPS < Test::Unit::TestCase
   def test_session_reuse
     # FIXME: The new_session_cb is known broken for clients in OpenSSL 1.1.0h.
     # See https://github.com/openssl/openssl/pull/5967 for details.
-    skip if OpenSSL::OPENSSL_LIBRARY_VERSION =~ /OpenSSL 1.1.0h/
+    omit if OpenSSL::OPENSSL_LIBRARY_VERSION.include?('OpenSSL 1.1.0h')
 
     http = Net::HTTP.new(HOST, config("port"))
     http.use_ssl = true
@@ -152,19 +152,21 @@ class TestNetHTTPS < Test::Unit::TestCase
     end
 
     http.start
-    assert_equal false, http.instance_variable_get(:@socket).io.session_reused?
+    session_reused = http.instance_variable_get(:@socket).io.session_reused?
+    assert_false session_reused unless session_reused.nil? # can not detect re-use under JRuby
     http.get("/")
     http.finish
 
     http.start
-    assert_equal true, http.instance_variable_get(:@socket).io.session_reused?
+    session_reused = http.instance_variable_get(:@socket).io.session_reused?
+    assert_true session_reused unless session_reused.nil? # can not detect re-use under JRuby
     assert_equal $test_net_http_data, http.get("/").body
     http.finish
   end
 
   def test_session_reuse_but_expire
     # FIXME: The new_session_cb is known broken for clients in OpenSSL 1.1.0h.
-    skip if OpenSSL::OPENSSL_LIBRARY_VERSION =~ /OpenSSL 1.1.0h/
+    omit if OpenSSL::OPENSSL_LIBRARY_VERSION.include?('OpenSSL 1.1.0h')
 
     http = Net::HTTP.new(HOST, config("port"))
     http.use_ssl = true
@@ -301,7 +303,7 @@ class TestNetHTTPS < Test::Unit::TestCase
     ex = assert_raise(OpenSSL::SSL::SSLError){
       http.request_get("/") {|res| }
     }
-    re_msg = /\ASSL_connect returned=1 errno=0 |SSL_CTX_set_max_proto_version/
+    re_msg = /\ASSL_connect returned=1 errno=0 |SSL_CTX_set_max_proto_version|No appropriate protocol/
     assert_match(re_msg, ex.message)
   end
 
