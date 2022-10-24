@@ -8,10 +8,22 @@ module TestIRB
     def setup
       @conf_backup = IRB.conf.dup
       IRB.conf[:LC_MESSAGES] = IRB::Locale.new
+
+      # RelineInputMethod#initialize calls IRB.set_encoding, which mutates standard input/output's encoding
+      # so we need to make sure we set them back
+      @original_encodings = {
+        STDIN => [STDIN.external_encoding, STDIN.internal_encoding],
+        STDOUT => [STDOUT.external_encoding, STDOUT.internal_encoding],
+        STDERR => [STDERR.external_encoding, STDERR.internal_encoding],
+      }
     end
 
     def teardown
       IRB.conf.replace(@conf_backup)
+
+      @original_encodings.each do |io, (external_encoding, internal_encoding)|
+        io.set_encoding(external_encoding, internal_encoding)
+      end
     end
 
     def test_initialization
