@@ -3731,6 +3731,16 @@ str_to_option(VALUE str)
     return flag;
 }
 
+static void
+set_timeout(rb_hrtime_t *hrt, VALUE timeout)
+{
+    double timeout_d = NIL_P(timeout) ? 0.0 : NUM2DBL(timeout);
+    if (!NIL_P(timeout) && timeout_d <= 0) {
+        rb_raise(rb_eArgError, "invalid timeout: %"PRIsVALUE, timeout);
+    }
+    double2hrtime(hrt, timeout_d);
+}
+
 /*
  *  call-seq:
  *    Regexp.new(string, options = 0, n_flag = nil, timeout: nil) -> regexp
@@ -3847,13 +3857,7 @@ rb_reg_initialize_m(int argc, VALUE *argv, VALUE self)
 
     regex_t *reg = RREGEXP_PTR(self);
 
-    {
-        double timeout_d = NIL_P(timeout) ? 0.0 : NUM2DBL(timeout);
-        if (!NIL_P(timeout) && timeout_d <= 0) {
-            rb_raise(rb_eArgError, "invalid timeout: %"PRIsVALUE, timeout);
-        }
-        double2hrtime(&reg->timelimit, timeout_d);
-    }
+    set_timeout(&reg->timelimit, timeout);
 
     return self;
 }
@@ -4478,14 +4482,9 @@ rb_reg_s_timeout_get(VALUE dummy)
 static VALUE
 rb_reg_s_timeout_set(VALUE dummy, VALUE timeout)
 {
-    double timeout_d = NIL_P(timeout) ? 0.0 : NUM2DBL(timeout);
-
     rb_ractor_ensure_main_ractor("can not access Regexp.timeout from non-main Ractors");
 
-    if (!NIL_P(timeout) && timeout_d <= 0) {
-        rb_raise(rb_eArgError, "invalid timeout: %"PRIsVALUE, timeout);
-    }
-    double2hrtime(&rb_reg_match_time_limit, timeout_d);
+    set_timeout(&rb_reg_match_time_limit, timeout);
 
     return timeout;
 }
