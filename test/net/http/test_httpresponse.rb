@@ -54,6 +54,241 @@ EOS
     assert_equal 'hello', body
   end
 
+  def test_read_body_body_encoding_false
+    body = "hello\u1234"
+    io = dummy_io(<<EOS)
+HTTP/1.1 200 OK
+Connection: close
+Content-Length: #{body.bytesize}
+
+#{body}
+EOS
+
+    res = Net::HTTPResponse.read_new(io)
+
+    body = nil
+
+    res.reading_body io, true do
+      body = res.read_body
+    end
+
+    assert_equal "hello\u1234".b, body
+    assert_equal Encoding::ASCII_8BIT, body.encoding
+  end
+
+  def test_read_body_body_encoding_encoding
+    body = "hello\u1234"
+    io = dummy_io(<<EOS)
+HTTP/1.1 200 OK
+Connection: close
+Content-Length: #{body.bytesize}
+
+#{body}
+EOS
+
+    res = Net::HTTPResponse.read_new(io)
+    res.body_encoding = Encoding.find('utf-8')
+
+    body = nil
+
+    res.reading_body io, true do
+      body = res.read_body
+    end
+
+    assert_equal "hello\u1234", body
+    assert_equal Encoding::UTF_8, body.encoding
+  end
+
+  def test_read_body_body_encoding_string
+    body = "hello\u1234"
+    io = dummy_io(<<EOS)
+HTTP/1.1 200 OK
+Connection: close
+Content-Length: #{body.bytesize}
+
+#{body}
+EOS
+
+    res = Net::HTTPResponse.read_new(io)
+    res.body_encoding = 'utf-8'
+
+    body = nil
+
+    res.reading_body io, true do
+      body = res.read_body
+    end
+
+    assert_equal "hello\u1234", body
+    assert_equal Encoding::UTF_8, body.encoding
+  end
+
+  def test_read_body_body_encoding_true_without_content_type_header
+    body = "hello\u1234"
+    io = dummy_io(<<EOS)
+HTTP/1.1 200 OK
+Connection: close
+Content-Length: #{body.bytesize}
+
+#{body}
+EOS
+
+    res = Net::HTTPResponse.read_new(io)
+    res.body_encoding = true
+
+    body = nil
+
+    res.reading_body io, true do
+      body = res.read_body
+    end
+
+    assert_equal "hello\u1234".b, body
+    assert_equal Encoding::ASCII_8BIT, body.encoding
+  end
+
+  def test_read_body_body_encoding_true_with_utf8_content_type_header
+    body = "hello\u1234"
+    io = dummy_io(<<EOS)
+HTTP/1.1 200 OK
+Connection: close
+Content-Length: #{body.bytesize}
+Content-Type: text/plain; charset=utf-8
+
+#{body}
+EOS
+
+    res = Net::HTTPResponse.read_new(io)
+    res.body_encoding = true
+
+    body = nil
+
+    res.reading_body io, true do
+      body = res.read_body
+    end
+
+    assert_equal "hello\u1234", body
+    assert_equal Encoding::UTF_8, body.encoding
+  end
+
+  def test_read_body_body_encoding_true_with_iso_8859_1_content_type_header
+    body = "hello\u1234"
+    io = dummy_io(<<EOS)
+HTTP/1.1 200 OK
+Connection: close
+Content-Length: #{body.bytesize}
+Content-Type: text/plain; charset=iso-8859-1
+
+#{body}
+EOS
+
+    res = Net::HTTPResponse.read_new(io)
+    res.body_encoding = true
+
+    body = nil
+
+    res.reading_body io, true do
+      body = res.read_body
+    end
+
+    assert_equal "hello\u1234".force_encoding("ISO-8859-1"), body
+    assert_equal Encoding::ISO_8859_1, body.encoding
+  end
+
+  def test_read_body_body_encoding_true_with_utf8_meta_charset
+    res_body = "<html><meta charset=\"utf-8\">hello\u1234</html>"
+    io = dummy_io(<<EOS)
+HTTP/1.1 200 OK
+Connection: close
+Content-Length: #{res_body.bytesize}
+Content-Type: text/html
+
+#{res_body}
+EOS
+
+    res = Net::HTTPResponse.read_new(io)
+    res.body_encoding = true
+
+    body = nil
+
+    res.reading_body io, true do
+      body = res.read_body
+    end
+
+    assert_equal res_body, body
+    assert_equal Encoding::UTF_8, body.encoding
+  end
+
+  def test_read_body_body_encoding_true_with_iso8859_1_meta_charset
+    res_body = "<html><meta charset=\"iso-8859-1\">hello\u1234</html>"
+    io = dummy_io(<<EOS)
+HTTP/1.1 200 OK
+Connection: close
+Content-Length: #{res_body.bytesize}
+Content-Type: text/html
+
+#{res_body}
+EOS
+
+    res = Net::HTTPResponse.read_new(io)
+    res.body_encoding = true
+
+    body = nil
+
+    res.reading_body io, true do
+      body = res.read_body
+    end
+
+    assert_equal res_body.force_encoding("ISO-8859-1"), body
+    assert_equal Encoding::ISO_8859_1, body.encoding
+  end
+
+  def test_read_body_body_encoding_true_with_utf8_meta_content_charset
+    res_body = "<meta http-equiv='content-type' content='text/html; charset=UTF-8'>hello\u1234</html>"
+    io = dummy_io(<<EOS)
+HTTP/1.1 200 OK
+Connection: close
+Content-Length: #{res_body.bytesize}
+Content-Type: text/html
+
+#{res_body}
+EOS
+
+    res = Net::HTTPResponse.read_new(io)
+    res.body_encoding = true
+
+    body = nil
+
+    res.reading_body io, true do
+      body = res.read_body
+    end
+
+    assert_equal res_body, body
+    assert_equal Encoding::UTF_8, body.encoding
+  end
+
+  def test_read_body_body_encoding_true_with_iso8859_1_meta_content_charset
+    res_body = "<meta http-equiv='content-type' content='text/html; charset=ISO-8859-1'>hello\u1234</html>"
+    io = dummy_io(<<EOS)
+HTTP/1.1 200 OK
+Connection: close
+Content-Length: #{res_body.bytesize}
+Content-Type: text/html
+
+#{res_body}
+EOS
+
+    res = Net::HTTPResponse.read_new(io)
+    res.body_encoding = true
+
+    body = nil
+
+    res.reading_body io, true do
+      body = res.read_body
+    end
+
+    assert_equal res_body.force_encoding("ISO-8859-1"), body
+    assert_equal Encoding::ISO_8859_1, body.encoding
+  end
+
   def test_read_body_block
     io = dummy_io(<<EOS)
 HTTP/1.1 200 OK
@@ -78,7 +313,7 @@ EOS
 
   def test_read_body_block_mod
     # http://ci.rvm.jp/results/trunk-mjit-wait@silicon-docker/3019353
-    if defined?(RubyVM::MJIT) ? RubyVM::MJIT.enabled? : defined?(RubyVM::MJIT) && RubyVM::MJIT.enabled?
+    if defined?(RubyVM::MJIT) && RubyVM::MJIT.enabled?
       omit 'too unstable with --jit-wait, and extending read_timeout did not help it'
     end
     IO.pipe do |r, w|
@@ -127,9 +362,11 @@ EOS
 
     if Net::HTTP::HAVE_ZLIB
       assert_equal nil, res['content-encoding']
+      assert_equal '5', res['content-length']
       assert_equal 'hello', body
     else
       assert_equal 'deflate', res['content-encoding']
+      assert_equal '13', res['content-length']
       assert_equal "x\x9C\xCBH\xCD\xC9\xC9\a\x00\x06,\x02\x15", body
     end
   end
@@ -155,9 +392,11 @@ EOS
 
     if Net::HTTP::HAVE_ZLIB
       assert_equal nil, res['content-encoding']
+      assert_equal '5', res['content-length']
       assert_equal 'hello', body
     else
       assert_equal 'DEFLATE', res['content-encoding']
+      assert_equal '13', res['content-length']
       assert_equal "x\x9C\xCBH\xCD\xC9\xC9\a\x00\x06,\x02\x15", body
     end
   end
@@ -188,9 +427,11 @@ EOS
 
     if Net::HTTP::HAVE_ZLIB
       assert_equal nil, res['content-encoding']
+      assert_equal nil, res['content-length']
       assert_equal 'hello', body
     else
       assert_equal 'deflate', res['content-encoding']
+      assert_equal nil, res['content-length']
       assert_equal "x\x9C\xCBH\xCD\xC9\xC9\a\x00\x06,\x02\x15", body
     end
   end
@@ -215,6 +456,7 @@ EOS
     end
 
     assert_equal 'deflate', res['content-encoding'], 'Bug #7831'
+    assert_equal '13', res['content-length']
     assert_equal "x\x9C\xCBH\xCD\xC9\xC9\a\x00\x06,\x02\x15", body, 'Bug #7381'
   end
 
@@ -238,9 +480,11 @@ EOS
 
     if Net::HTTP::HAVE_ZLIB
       assert_equal nil, res['content-encoding']
+      assert_equal nil, res['content-length']
       assert_equal 'hello', body
     else
       assert_equal 'deflate', res['content-encoding']
+      assert_equal nil, res['content-length']
       assert_equal "x\x9C\xCBH\xCD\xC9\xC9\a\x00\x06,\x02\x15\r\n", body
     end
   end
@@ -288,9 +532,11 @@ EOS
 
     if Net::HTTP::HAVE_ZLIB
       assert_equal nil, res['content-encoding']
+      assert_equal '0', res['content-length']
       assert_equal '', body
     else
       assert_equal 'deflate', res['content-encoding']
+      assert_equal '0', res['content-length']
       assert_equal '', body
     end
   end
@@ -314,9 +560,11 @@ EOS
 
     if Net::HTTP::HAVE_ZLIB
       assert_equal nil, res['content-encoding']
+      assert_equal nil, res['content-length']
       assert_equal '', body
     else
       assert_equal 'deflate', res['content-encoding']
+      assert_equal nil, res['content-length']
       assert_equal '', body
     end
   end

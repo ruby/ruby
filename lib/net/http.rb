@@ -22,6 +22,7 @@
 
 require 'net/protocol'
 require 'uri'
+require 'resolv'
 autoload :OpenSSL, 'openssl'
 
 module Net   #:nodoc:
@@ -132,7 +133,7 @@ module Net   #:nodoc:
   #   puts res.class.name # => 'HTTPOK'
   #
   #   # Body
-  #   puts res.body if res.response_body_permitted?
+  #   puts res.body
   #
   # === Following Redirection
   #
@@ -396,7 +397,7 @@ module Net   #:nodoc:
   class HTTP < Protocol
 
     # :stopdoc:
-    VERSION = "0.2.0"
+    VERSION = "0.3.0"
     Revision = %q$Revision$.split[1]
     HTTPVersion = '1.1'
     begin
@@ -697,6 +698,8 @@ module Net   #:nodoc:
       @continue_timeout = nil
       @max_retries = 1
       @debug_output = nil
+      @response_body_encoding = false
+      @ignore_eof = true
 
       @proxy_from_env = false
       @proxy_uri      = nil
@@ -743,6 +746,18 @@ module Net   #:nodoc:
 
     # The local port used to establish the connection.
     attr_accessor :local_port
+
+    # The encoding to use for the response body.  If Encoding, uses the
+    # specified encoding.  If other true value, tries to detect the response
+    # body encoding.
+    attr_reader :response_body_encoding
+
+    # Set the encoding to use for the response body.  If given a String, find
+    # the related Encoding.
+    def response_body_encoding=(value)
+      value = Encoding.find(value) if value.is_a?(String)
+      @response_body_encoding = value
+    end
 
     attr_writer :proxy_from_env
     attr_writer :proxy_address
@@ -824,6 +839,10 @@ module Net   #:nodoc:
     # Net::HTTP reuses the TCP/IP socket used by the previous communication.
     # The default value is 2 seconds.
     attr_accessor :keep_alive_timeout
+
+    # Whether to ignore EOF when reading response bodies with defined
+    # Content-Length headers. For backwards compatibility, the default is true.
+    attr_accessor :ignore_eof
 
     # Returns true if the HTTP session has been started.
     def started?
@@ -1033,21 +1052,42 @@ module Net   #:nodoc:
           end
         end
         @ssl_context.set_params(ssl_parameters)
-        @ssl_context.session_cache_mode =
-          OpenSSL::SSL::SSLContext::SESSION_CACHE_CLIENT |
-          OpenSSL::SSL::SSLContext::SESSION_CACHE_NO_INTERNAL_STORE
-        @ssl_context.session_new_cb = proc {|sock, sess| @ssl_session = sess }
+        unless @ssl_context.session_cache_mode.nil? # a dummy method on JRuby
+          @ssl_context.session_cache_mode =
+              OpenSSL::SSL::SSLContext::SESSION_CACHE_CLIENT |
+                  OpenSSL::SSL::SSLContext::SESSION_CACHE_NO_INTERNAL_STORE
+        end
+        if @ssl_context.respond_to?(:session_new_cb) # not implemented under JRuby
+          @ssl_context.session_new_cb = proc {|sock, sess| @ssl_session = sess }
+        end
+
+        # Still do the post_connection_check below even if connecting
+        # to IP address
+        verify_hostname = @ssl_context.verify_hostname
+
+        # Server Name Indication (SNI) RFC 3546/6066
+        case @address
+        when Resolv::IPv4::Regex, Resolv::IPv6::Regex
+          # don't set SNI, as IP addresses in SNI is not valid
+          # per RFC 6066, section 3.
+
+          # Avoid openssl warning
+          @ssl_context.verify_hostname = false
+        else
+          ssl_host_address = @address
+        end
+
         debug "starting SSL for #{conn_addr}:#{conn_port}..."
         s = OpenSSL::SSL::SSLSocket.new(s, @ssl_context)
         s.sync_close = true
-        # Server Name Indication (SNI) RFC 3546
-        s.hostname = @address if s.respond_to? :hostname=
+        s.hostname = ssl_host_address if s.respond_to?(:hostname=) && ssl_host_address
+
         if @ssl_session and
            Process.clock_gettime(Process::CLOCK_REALTIME) < @ssl_session.time.to_f + @ssl_session.timeout
           s.session = @ssl_session
         end
         ssl_socket_connect(s, @open_timeout)
-        if (@ssl_context.verify_mode != OpenSSL::SSL::VERIFY_NONE) && @ssl_context.verify_hostname
+        if (@ssl_context.verify_mode != OpenSSL::SSL::VERIFY_NONE) && verify_hostname
           s.post_connection_check(@address)
         end
         debug "SSL established, protocol: #{s.ssl_version}, cipher: #{s.cipher[0]}"
@@ -1182,16 +1222,9 @@ module Net   #:nodoc:
       end
     end
 
-    # [Bug #12921]
-    if /linux|freebsd|darwin/ =~ RUBY_PLATFORM
-      ENVIRONMENT_VARIABLE_IS_MULTIUSER_SAFE = true
-    else
-      ENVIRONMENT_VARIABLE_IS_MULTIUSER_SAFE = false
-    end
-
     # The username of the proxy server, if one is configured.
     def proxy_user
-      if ENVIRONMENT_VARIABLE_IS_MULTIUSER_SAFE && @proxy_from_env
+      if @proxy_from_env
         user = proxy_uri&.user
         unescape(user) if user
       else
@@ -1201,7 +1234,7 @@ module Net   #:nodoc:
 
     # The password of the proxy server, if one is configured.
     def proxy_pass
-      if ENVIRONMENT_VARIABLE_IS_MULTIUSER_SAFE && @proxy_from_env
+      if @proxy_from_env
         pass = proxy_uri&.password
         unescape(pass) if pass
       else
@@ -1575,6 +1608,8 @@ module Net   #:nodoc:
           begin
             res = HTTPResponse.read_new(@socket)
             res.decode_content = req.decode_content
+            res.body_encoding = @response_body_encoding
+            res.ignore_eof = @ignore_eof
           end while res.kind_of?(HTTPInformation)
 
           res.uri = req.uri
