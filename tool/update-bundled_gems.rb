@@ -17,6 +17,6 @@ unless /^[^#]/ !~ (gem = $F[0])
     end
   end
   f = [gem.name, gem.version.to_s, uri, *$F[3..-1]]
-  $_.gsub!(/\S+\s*/) {|s| f.shift.ljust(s.size)}
+  $_.gsub!(/\S+\s*/) {|s| (f.shift || "").ljust(s.size)}
   $_ = [$_, *f].join(" ") unless f.empty?
 end
