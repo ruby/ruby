@@ -3848,11 +3848,11 @@ rb_reg_initialize_m(int argc, VALUE *argv, VALUE self)
     regex_t *reg = RREGEXP_PTR(self);
 
     {
-        double limit = NIL_P(timeout) ? 0.0 : NUM2DBL(timeout);
-        if (!NIL_P(timeout) && limit <= 0) {
+        double timeout_d = NIL_P(timeout) ? 0.0 : NUM2DBL(timeout);
+        if (!NIL_P(timeout) && timeout_d <= 0) {
             rb_raise(rb_eArgError, "invalid timeout: %"PRIsVALUE, timeout);
         }
-        double2hrtime(&reg->timelimit, limit);
+        double2hrtime(&reg->timelimit, timeout_d);
     }
 
     return self;
@@ -4476,18 +4476,18 @@ rb_reg_s_timeout_get(VALUE dummy)
  */
 
 static VALUE
-rb_reg_s_timeout_set(VALUE dummy, VALUE limit)
+rb_reg_s_timeout_set(VALUE dummy, VALUE timeout)
 {
-    double timeout = NIL_P(limit) ? 0.0 : NUM2DBL(limit);
+    double timeout_d = NIL_P(timeout) ? 0.0 : NUM2DBL(timeout);
 
     rb_ractor_ensure_main_ractor("can not access Regexp.timeout from non-main Ractors");
 
-    if (!NIL_P(limit) && timeout <= 0) {
-        rb_raise(rb_eArgError, "invalid timeout: %"PRIsVALUE, limit);
+    if (!NIL_P(timeout) && timeout_d <= 0) {
+        rb_raise(rb_eArgError, "invalid timeout: %"PRIsVALUE, timeout);
     }
-    double2hrtime(&rb_reg_match_time_limit, timeout);
+    double2hrtime(&rb_reg_match_time_limit, timeout_d);
 
-    return limit;
+    return timeout;
 }
 
 /*
