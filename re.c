@@ -3772,6 +3772,8 @@ str_to_option(VALUE str)
  *  If optional keyword argument +timeout+ is given,
  *  its float value overrides the timeout interval for the class,
  *  Regexp.timeout.
+ *  If +nil+ is passed as +timeout, it uses the timeout interval
+ *  for the class, Regexp.timeout.
  *
  *  With argument +regexp+ given, returns a new regexp. The source,
  *  options, timeout are the same as +regexp+. +options+ and +n_flag+
@@ -3847,7 +3849,9 @@ rb_reg_initialize_m(int argc, VALUE *argv, VALUE self)
 
     {
         double limit = NIL_P(timeout) ? 0.0 : NUM2DBL(timeout);
-        if (limit < 0) limit = 0;
+        if (!NIL_P(timeout) && limit <= 0) {
+            rb_raise(rb_eArgError, "invalid timeout: %"PRIsVALUE, timeout);
+        }
         double2hrtime(&reg->timelimit, limit);
     }
 
@@ -4478,7 +4482,9 @@ rb_reg_s_timeout_set(VALUE dummy, VALUE limit)
 
     rb_ractor_ensure_main_ractor("can not access Regexp.timeout from non-main Ractors");
 
-    if (timeout < 0) timeout = 0;
+    if (!NIL_P(limit) && timeout <= 0) {
+        rb_raise(rb_eArgError, "invalid timeout: %"PRIsVALUE, limit);
+    }
     double2hrtime(&rb_reg_match_time_limit, timeout);
 
     return limit;

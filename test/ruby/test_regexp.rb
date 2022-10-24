@@ -1579,7 +1579,7 @@ class TestRegexp < Test::Unit::TestCase
   end
 
   def test_s_timeout
-    assert_separately([], "#{<<-"begin;"}\n#{<<-"end;"}")
+    assert_separately([], "#{<<-"begin;"}\n#{<<-'end;'}")
     begin;
       timeout = EnvUtil.apply_timeout_scale(0.2)
 
@@ -1597,15 +1597,42 @@ class TestRegexp < Test::Unit::TestCase
     end;
   end
 
-  def test_timeout
-    assert_separately([], "#{<<-"begin;"}\n#{<<-"end;"}")
+  def test_s_timeout_corner_cases
+    assert_separately([], "#{<<-"begin;"}\n#{<<-'end;'}")
     begin;
-      dummy_timeout = EnvUtil.apply_timeout_scale(10)
-      timeout = EnvUtil.apply_timeout_scale(0.2)
+      assert_nil(Regexp.timeout)
 
-      Regexp.timeout = dummy_timeout # This should be ignored
+      # This is just an implementation detail that users should not depend on:
+      # If Regexp.timeout is set to a value greater than the value that can be
+      # represented in the internal representation of timeout, it uses the
+      # maximum value that can be represented.
+      Regexp.timeout = Float::INFINITY
+      assert_equal(((1<<64)-1) / 1000000000.0, Regexp.timeout)
 
-      re = Regexp.new("^a*b?a*$", timeout: timeout)
+      Regexp.timeout = 1e300
+      assert_equal(((1<<64)-1) / 1000000000.0, Regexp.timeout)
+
+      assert_raise(ArgumentError) { Regexp.timeout = 0 }
+      assert_raise(ArgumentError) { Regexp.timeout = -1 }
+
+      Regexp.timeout = nil
+      assert_nil(Regexp.timeout)
+    end;
+  end
+
+  def per_instance_redos_test(global_timeout, per_instance_timeout, expected_timeout)
+    assert_separately([], "#{<<-"begin;"}\n#{<<-'end;'}")
+      global_timeout = #{ global_timeout.inspect }
+      per_instance_timeout = #{ per_instance_timeout.inspect }
+      expected_timeout = #{ expected_timeout.inspect }
+    begin;
+      global_timeout = EnvUtil.apply_timeout_scale(global_timeout)
+      per_instance_timeout = EnvUtil.apply_timeout_scale(per_instance_timeout)
+
+      Regexp.timeout = global_timeout
+
+      re = Regexp.new("^a*b?a*$", timeout: per_instance_timeout)
+      assert_equal(per_instance_timeout, re.timeout)
 
       t = Time.now
       assert_raise_with_message(Regexp::TimeoutError, "regexp match timeout") do
@@ -1613,7 +1640,37 @@ class TestRegexp < Test::Unit::TestCase
       end
       t = Time.now - t
 
-      assert_in_delta(timeout, t, timeout / 2)
+      assert_in_delta(expected_timeout, t, expected_timeout / 2)
+    end;
+  end
+
+  def test_timeout_shorter_than_global
+    per_instance_redos_test(10, 0.2, 0.2)
+  end
+
+  def test_timeout_longer_than_global
+    per_instance_redos_test(0.01, 0.5, 0.5)
+  end
+
+  def test_timeout_nil
+    per_instance_redos_test(0.5, nil, 0.5)
+  end
+
+  def test_timeout_corner_cases
+    assert_separately([], "#{<<-"begin;"}\n#{<<-'end;'}")
+    begin;
+      assert_nil(//.timeout)
+
+      # This is just an implementation detail that users should not depend on:
+      # If Regexp.timeout is set to a value greater than the value that can be
+      # represented in the internal representation of timeout, it uses the
+      # maximum value that can be represented.
+      assert_equal(((1<<64)-1) / 1000000000.0, Regexp.new("foo", timeout: Float::INFINITY).timeout)
+
+      assert_equal(((1<<64)-1) / 1000000000.0, Regexp.new("foo", timeout: 1e300).timeout)
+
+      assert_raise(ArgumentError) { Regexp.new("foo", timeout: 0) }
+      assert_raise(ArgumentError) { Regexp.new("foo", timeout: -1) }
     end;
   end
 end

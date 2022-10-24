@@ -206,6 +206,7 @@ double2hrtime(rb_hrtime_t *hrt, double d)
     const double TIMESPEC_SEC_MAX_PLUS_ONE = 2.0 * (TIMESPEC_SEC_MAX_as_double / 2.0 + 1.0);
 
     if (TIMESPEC_SEC_MAX_PLUS_ONE <= d) {
+        *hrt = RB_HRTIME_MAX;
         return NULL;
     }
     else if (d <= 0) {
