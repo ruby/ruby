@@ -86,19 +86,6 @@ module TestIRB
     ensure
       Reline.add_dialog_proc(:show_doc, original_show_doc_proc, Reline::DEFAULT_DIALOG_CONTEXT)
     end
-
-    def without_rdoc(&block)
-      ::Kernel.send(:alias_method, :old_require, :require)
-
-      ::Kernel.define_method(:require) do |name|
-        raise LoadError, "cannot load such file -- rdoc (test)" if name == "rdoc"
-        original_require(name)
-      end
-
-      yield
-    ensure
-      ::Kernel.send(:alias_method, :require, :old_require)
-    end
   end
 end
 
