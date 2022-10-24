@@ -1493,32 +1493,28 @@ rb_shape_set_shape_id(VALUE obj, shape_id_t shape_id)
 #else
     switch (BUILTIN_TYPE(obj)) {
       case T_OBJECT:
-          ROBJECT_SET_SHAPE_ID(obj, shape_id);
-          break;
+        ROBJECT_SET_SHAPE_ID(obj, shape_id);
+        break;
       case T_CLASS:
       case T_MODULE:
-          {
-              RCLASS_EXT(obj)->shape_id = shape_id;
-              break;
-          }
+        RCLASS_EXT(obj)->shape_id = shape_id;
+        break;
       default:
-          {
-              if (shape_id != FROZEN_ROOT_SHAPE_ID) {
-                  struct gen_ivtbl *ivtbl = 0;
-                  RB_VM_LOCK_ENTER();
-                  {
-                      st_table* global_iv_table = generic_ivtbl(obj, 0, false);
+        if (shape_id != FROZEN_ROOT_SHAPE_ID) {
+            struct gen_ivtbl *ivtbl = 0;
+            RB_VM_LOCK_ENTER();
+            {
+                st_table* global_iv_table = generic_ivtbl(obj, 0, false);
 
-                      if (st_lookup(global_iv_table, obj, (st_data_t *)&ivtbl)) {
-                          ivtbl->shape_id = shape_id;
-                      }
-                      else {
-                          rb_bug("Expected shape_id entry in global iv table");
-                      }
-                  }
-                  RB_VM_LOCK_LEAVE();
-              }
-          }
+                if (st_lookup(global_iv_table, obj, (st_data_t *)&ivtbl)) {
+                    ivtbl->shape_id = shape_id;
+                }
+                else {
+                    rb_bug("Expected shape_id entry in global iv table");
+                }
+            }
+            RB_VM_LOCK_LEAVE();
+        }
     }
 #endif
 
@@ -1604,21 +1600,22 @@ typedef int rb_ivar_foreach_callback_func(ID key, VALUE val, st_data_t arg);
 st_data_t rb_st_nth_key(st_table *tab, st_index_t index);
 
 static void
-iterate_over_shapes_with_callback(rb_shape_t *shape, VALUE* iv_list, rb_ivar_foreach_callback_func *callback, st_data_t arg) {
+iterate_over_shapes_with_callback(rb_shape_t *shape, VALUE* iv_list, rb_ivar_foreach_callback_func *callback, st_data_t arg)
+{
     switch ((enum shape_type)shape->type) {
-        case SHAPE_ROOT:
-            return;
-        case SHAPE_IVAR:
-            iterate_over_shapes_with_callback(rb_shape_get_shape_by_id(shape->parent_id), iv_list, callback, arg);
-            VALUE val = iv_list[shape->next_iv_index - 1];
-            if (val != Qundef) {
-                callback(shape->edge_name, val, arg);
-            }
-            return;
-        case SHAPE_IVAR_UNDEF:
-        case SHAPE_FROZEN:
-            iterate_over_shapes_with_callback(rb_shape_get_shape_by_id(shape->parent_id), iv_list, callback, arg);
-            return;
+      case SHAPE_ROOT:
+        return;
+      case SHAPE_IVAR:
+        iterate_over_shapes_with_callback(rb_shape_get_shape_by_id(shape->parent_id), iv_list, callback, arg);
+        VALUE val = iv_list[shape->next_iv_index - 1];
+        if (val != Qundef) {
+            callback(shape->edge_name, val, arg);
+        }
+        return;
+      case SHAPE_IVAR_UNDEF:
+      case SHAPE_FROZEN:
+        iterate_over_shapes_with_callback(rb_shape_get_shape_by_id(shape->parent_id), iv_list, callback, arg);
+        return;
     }
 }
 
