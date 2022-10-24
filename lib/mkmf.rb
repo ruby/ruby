@@ -2383,6 +2383,7 @@ TARGET_SO_DIR =#{$extout ? " $(RUBYARCHDIR)/" : ''}
 TARGET_SO     = $(TARGET_SO_DIR)$(DLLIB)
 CLEANLIBS     = #{'$(TARGET_SO) ' if target}#{config_string('cleanlibs') {|t| t.gsub(/\$\*/) {n}}}
 CLEANOBJS     = *.#{$OBJEXT} #{config_string('cleanobjs') {|t| t.gsub(/\$\*/, "$(TARGET)#{deffile ? '-$(arch)': ''}")} if target} *.bak
+TARGET_SO_DIR_TIMESTAMP = #{timestamp_file(sodir, target_prefix)}
 " #"
 
     conf = yield(conf) if block_given?
@@ -2416,7 +2417,7 @@ static: #{$extmk && !$static ? "all" : "$(STATIC_LIB)#{$extout ? " install-rb" :
     if target
       f = "$(DLLIB)"
       dest = "$(TARGET_SO)"
-      stamp = timestamp_file(dir, target_prefix)
+      stamp = '$(TARGET_SO_DIR_TIMESTAMP)'
       if $extout
         mfile.puts dest
         mfile.print "clean-so::\n"
@@ -2485,7 +2486,9 @@ static: #{$extmk && !$static ? "all" : "$(STATIC_LIB)#{$extout ? " install-rb" :
         end
       end
     end
-    dirs.unshift(sodir) if target and !dirs.include?(sodir)
+    if target and !dirs.include?(sodir)
+      mfile.print "$(TARGET_SO_DIR_TIMESTAMP):\n\t$(Q) $(MAKEDIRS) $(@D) #{sodir}\n\t$(Q) $(TOUCH) $@\n"
+    end
     dirs.each do |d|
       t = timestamp_file(d, target_prefix)
       mfile.print "#{t}:\n\t$(Q) $(MAKEDIRS) $(@D) #{d}\n\t$(Q) $(TOUCH) $@\n"
@@ -2529,7 +2532,7 @@ site-install-rb: install-rb
     mfile.print "$(TARGET_SO): "
     mfile.print "$(DEFFILE) " if makedef
     mfile.print "$(OBJS) Makefile"
-    mfile.print " #{timestamp_file(sodir, target_prefix)}" if $extout
+    mfile.print " $(TARGET_SO_DIR_TIMESTAMP)" if $extout
     mfile.print "\n"
     mfile.print "\t$(ECHO) linking shared-object #{target_prefix.sub(/\A\/(.*)/, '\1/')}$(DLLIB)\n"
     mfile.print "\t-$(Q)$(RM) $(@#{sep})\n"
