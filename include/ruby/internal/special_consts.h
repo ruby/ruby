@@ -192,7 +192,7 @@ RB_UNDEF_P(VALUE obj)
 }
 
 RBIMPL_ATTR_CONST()
-RBIMPL_ATTR_CONSTEXPR(CXX11)
+RBIMPL_ATTR_CONSTEXPR(CXX14)
 RBIMPL_ATTR_ARTIFICIAL()
 /**
  * Checks if the given object is nil or undef.  Can be used to see if
