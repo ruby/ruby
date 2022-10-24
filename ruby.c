@@ -73,7 +73,7 @@ STATIC_ASSERT(Qundef_1bit_from_Qnil, singlebit_only_p(Qundef^Qnil));
 # define O_ACCMODE (O_RDONLY | O_WRONLY | O_RDWR)
 #endif
 
-void Init_ruby_description(void);
+void Init_ruby_description(ruby_cmdline_options_t *opt);
 
 #ifndef HAVE_STDLIB_H
 char *getenv();
@@ -1614,13 +1614,8 @@ ruby_opt_init(ruby_cmdline_options_t *opt)
 
 #if USE_MJIT
     // rb_call_builtin_inits depends on RubyVM::MJIT.enabled?
-    if (opt->mjit.on) {
+    if (opt->mjit.on)
         mjit_enabled = true;
-        // rb_threadptr_root_fiber_setup for the initial thread is called before rb_yjit_enabled_p()
-        // or mjit_enabled becomes true, meaning jit_cont_new is skipped for the initial root fiber.
-        // Therefore we need to call this again here to set the initial root fiber's jit_cont.
-        rb_jit_cont_init(); // must be after mjit_enabled = true
-    }
 #endif
 
     Init_ext(); /* load statically linked extensions before rubygems */
@@ -1628,11 +1623,20 @@ ruby_opt_init(ruby_cmdline_options_t *opt)
     rb_call_builtin_inits();
     ruby_init_prelude();
 
+    // Initialize JITs after prelude because JITing prelude is typically not optimal.
 #if USE_MJIT
-    // mjit_init is safe only after rb_call_builtin_inits defines RubyVM::MJIT::Compiler
+    // Also, mjit_init is safe only after rb_call_builtin_inits() defines RubyVM::MJIT::Compiler.
     if (opt->mjit.on)
         mjit_init(&opt->mjit);
 #endif
+#if USE_YJIT
+    if (opt->yjit)
+        rb_yjit_init();
+#endif
+    // rb_threadptr_root_fiber_setup for the initial thread is called before rb_yjit_enabled_p()
+    // or mjit_enabled becomes true, meaning jit_cont_new is skipped for the initial root fiber.
+    // Therefore we need to call this again here to set the initial root fiber's jit_cont.
+    rb_jit_cont_init(); // must be after mjit_enabled = true and rb_yjit_init()
 
     ruby_set_script_name(opt->script_name);
     require_libraries(&opt->req_list);
@@ -1916,22 +1920,15 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
 
 #if USE_MJIT
     if (FEATURE_SET_P(opt->features, mjit)) {
-        opt->mjit.on = true; // set mjit.on for ruby_show_version() API and check to call mjit_init()
+        opt->mjit.on = true; // set opt->mjit.on for Init_ruby_description() and calling mjit_init()
     }
 #endif
 #if USE_YJIT
     if (FEATURE_SET_P(opt->features, yjit)) {
-        rb_yjit_init();
-        // rb_threadptr_root_fiber_setup for the initial thread is called before rb_yjit_enabled_p()
-        // or mjit_enabled becomes true, meaning jit_cont_new is skipped for the initial root fiber.
-        // Therefore we need to call this again here to set the initial root fiber's jit_cont.
-        rb_jit_cont_init(); // must be after rb_yjit_init(), but before parsing options raises an exception.
+        opt->yjit = true; // set opt->yjit for Init_ruby_description() and calling rb_yjit_init()
     }
 #endif
-#if USE_MJIT
-    mjit_opts.on = opt->mjit.on; /* used by Init_ruby_description(). mjit_init() still can't be called here. */
-#endif
-    Init_ruby_description();
+    Init_ruby_description(opt);
     if (opt->dump & (DUMP_BIT(version) | DUMP_BIT(version_v))) {
         ruby_show_version();
         if (opt->dump & DUMP_BIT(version)) return Qtrue;
