@@ -333,7 +333,7 @@ onig_vsnprintf_with_pattern(UChar buf[], int bufsize, OnigEncoding enc,
       if (ONIGENC_IS_MBC_HEAD(enc, p, pat_end)) {
         len = enclen(enc, p, pat_end);
         if (ONIGENC_MBC_MINLEN(enc) == 1) {
-          while (len-- > 0) *s++ = *p++;
+          while (len-- > 0 && p < pat_end) *s++ = *p++;
         }
         else { /* for UTF16/32 */
           int blen;
@@ -349,7 +349,7 @@ onig_vsnprintf_with_pattern(UChar buf[], int bufsize, OnigEncoding enc,
       else if (*p == '\\') {
 	*s++ = *p++;
 	len = enclen(enc, p, pat_end);
-	while (len-- > 0) *s++ = *p++;
+	while (len-- > 0 && p < pat_end) *s++ = *p++;
       }
       else if (*p == '/') {
 	*s++ = (unsigned char )'\\';
