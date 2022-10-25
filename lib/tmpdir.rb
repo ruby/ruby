@@ -19,7 +19,7 @@ class Dir
   # Returns the operating system's temporary file path.
 
   def self.tmpdir
-    tmp = ['TMPDIR', 'TMP', 'TEMP', ['system temporary path', @@systmpdir], ['/tmp']*2, ['.']*2].find do |name, dir = ENV[name]|
+    ['TMPDIR', 'TMP', 'TEMP', ['system temporary path', @@systmpdir], ['/tmp']*2, ['.']*2].find do |name, dir = ENV[name]|
       next if !dir
       dir = File.expand_path(dir)
       stat = File.stat(dir) rescue next
@@ -33,9 +33,7 @@ class Dir
       else
         break dir
       end
-    end
-    raise ArgumentError, "could not find a temporary directory" unless tmp
-    tmp
+    end or raise ArgumentError, "could not find a temporary directory"
   end
 
   # Dir.mktmpdir creates a temporary directory.
