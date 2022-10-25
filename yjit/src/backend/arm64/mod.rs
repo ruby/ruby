@@ -1042,6 +1042,7 @@ impl Assembler
         }
 
         let start_ptr = cb.get_write_ptr();
+        let other_start_ptr = cb.other_cb().map(|other_cb| other_cb.get_write_ptr());
         let gc_offsets = asm.arm64_emit(cb);
 
         if cb.has_dropped_bytes() {
@@ -1058,6 +1059,16 @@ impl Assembler
                     unsafe { rb_yjit_icache_invalidate(start as _, end as _) };
                 }
             });
+
+            // CodeBlock#next_page could generate code for the other cb as well
+            #[cfg(not(test))]
+            if other_start_ptr != cb.other_cb().map(|other_cb| other_cb.get_write_ptr()) {
+                cb.other_cb().unwrap().without_page_end_reserve(|other_cb| {
+                    for (start, end) in other_cb.writable_addrs(other_start_ptr.unwrap(), other_cb.get_write_ptr()) {
+                        unsafe { rb_yjit_icache_invalidate(start as _, end as _) };
+                    }
+                });
+            }
         }
 
         gc_offsets
